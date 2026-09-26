@@ -362,10 +362,9 @@ const deletedMessageIds = ref<Set<string>>(
  * 2026-08-09：过滤本地删除的消息（页面级持久隐藏）。
  */
 const messageRows = computed(() =>
-  buildChatMessageRows(currentMessagesView.value).filter((row) => {
-    if (row.type !== "message" || !row.message) return true;
-    return !deletedMessageIds.value.has(row.message.id);
-  })
+  buildChatMessageRows(
+    currentMessagesView.value.filter((m) => !deletedMessageIds.value.has(m.id))
+  )
 );
 
 /** scroll-view 纵向滚动位置（上拉加载旧消息时用于保持视口） */
@@ -2973,9 +2972,12 @@ defineExpose({ noop });
 
 /* 2026-08-09 微信 1:1：发送按钮置灰态（输入为空时，微信行为：不可点击） */
 .wechat-input-bar__send--disabled {
-  background: var(--c-neutral-300, rgba(0, 0, 0, 0.2));
+  background: var(--c-status-disabled, #dce5e2);
   box-shadow: none;
-  opacity: 0.7;
+}
+
+.wechat-input-bar__send--disabled .wechat-input-bar__send-text {
+  color: var(--c-text-tertiary);
 }
 
 /* 语音功能已移除：voice-hold 按住说话按钮样式与键盘切换按钮文字样式一并下线 */
@@ -3279,27 +3281,9 @@ defineExpose({ noop });
 }
 
 
-/* ========== 返回按钮 ========== */
-.chat-session-back {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-5) var(--sp-8);
-  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-5));
-}
-
-.chat-session-back__arrow {
-  font-size: var(--fs-3xl);
-  color: var(--c-brand-400);
-  font-weight: 700;
-}
-
-.chat-session-back__text {
-  font-size: var(--fs-lg);
-  color: var(--c-brand-400);
-  font-weight: 500;
-}
-
+/* MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A03：原 .chat-session-back 三条规则整块删除。
+   模板里 0 引用（返回钮由 ChatHeader/AppShell 承担），
+   顶部避让也已由它们处理；留着这份死样式正是"看着有返回栏实现、其实没接线"的来源。 */
 /* ========== 2026-08-09 微信 1:1 重构新增样式 ========== */
 
 /* 「有新消息」提示条：输入区上方居中胶囊条，点击跳转最新 */

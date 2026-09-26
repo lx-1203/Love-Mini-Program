@@ -16,7 +16,8 @@
       "statusbar-time-visible-home",
       "statusbar-time-visible-settings",
       "statusbar-time-visible-profile-loggedout",
-      "statusbar-offset-guard-fail-fast-on-real-build"
+      "statusbar-offset-guard-fail-fast-on-real-build",
+      "realdevice-double-avoidance-campus-village-posttopic"
     ],
     "severity": "P1"
   },
@@ -254,7 +255,8 @@
     "verification": [
       "tour-boot-verify-session-loggedin-check",
       "dual-identity-a-vs-b-pixel-diff-nonzero",
-      "logged-out-state-reachability-in-mock-build"
+      "logged-out-state-reachability-in-mock-build",
+      "screenshot-page-path-verified-before-capture"
     ],
     "severity": "P0"
   },
@@ -273,7 +275,8 @@
       "system-proxy-127-0-0-1-7897-off-check",
       "node22-precheck-before-uni-build",
       "navigate-back-limit-no-relaunch-storm",
-      "automator-catchtap-dispatch-caveat-noted"
+      "automator-catchtap-dispatch-caveat-noted",
+      "open-window-from-dist-build-mp-weixin-dir"
     ],
     "severity": "P2"
   },
@@ -934,7 +937,7 @@
     "riskFiles": [
       "apps/client/src/pages/profile/index.vue",
       "apps/client/src/stores/profile.ts",
-      "apps/client/src/components/profile/mine/MyContent.vue"
+      "apps/client/src/components/profile/mine/MyProfile.vue"
     ],
     "verification": [
       "my-posts-list-loadsmyposts-wired-onshow"
@@ -1803,8 +1806,7 @@
     ],
     "riskFiles": [
       "apps/client/src/pages/messages/index.vue",
-      "apps/client/src/stores/messages.ts",
-      "apps/client/src/components/message/ConversationItem.vue"
+      "apps/client/src/stores/messages.ts"
     ],
     "verification": [
       "messages-pin-shows-pinned-marker-and-reorders",
@@ -2954,5 +2956,1475 @@
       "lbs-phase2-disposition-record-checked"
     ],
     "severity": "P3"
+  },
+  {
+    "id": "MP-R3-VILLAGE-POST-R001",
+    "page": "subpackages/village/village/post（第四周期 P0 回归核对：发布钮与胶囊碰撞，修复在位但 --capsule-right 未接 useMenuButtonRect 恒走 7px 兜底）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/post.vue",
+      "apps/client/src/composables/useMenuButtonRect.ts"
+    ],
+    "verification": [
+      "post-publish-btn-vs-capsule-clearance-runtime",
+      "post-capsule-right-from-menubuttonrect-not-static-7px-fallback"
+    ],
+    "severity": "P0"
+  },
+  {
+    "id": "MP-R3-VILLAGE-PUBLISH-001",
+    "page": "subpackages/village/village/publish（第四周期 P0 回归核对：渠道弹层兴趣圈子组三级分组+懒加载+三态）",
+    "components": [
+      "TopicSelector"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/publish.vue",
+      "apps/client/src/stores/circle.ts"
+    ],
+    "verification": [
+      "publish-channel-sheet-interest-group-runtime-recheck",
+      "publish-limit-500-runtime-recheck",
+      "publish-group-lazyload-runtime-recheck"
+    ],
+    "severity": "P0"
+  },
+  {
+    "id": "R13-CHAT-409",
+    "page": "subpackages/chat/chat-session（第五周期 P0：get-or-create 稳定幂等键二次进会话 409 IDEMPOTENT_CONFLICT 整页只剩技术串；已修+已验证，凡幂等键策略联动改动必回归）",
+    "components": [
+      "ChatBubble",
+      "ChatInput",
+      "ChatHeader"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/chat/chat-session/index.vue",
+      "apps/client/src/stores/chat/actions/session.ts",
+      "apps/client/src/services/http.ts",
+      "apps/client/src/services/websocket/transport.ts"
+    ],
+    "verification": [
+      "chat-session-second-entry-no-409",
+      "get-or-create-endpoints-unique-idempotency-key",
+      "idempotency-key-strategy-change-chat-full-regression",
+      "friendly-error-sanitizer-covers-idempotency-chinese-terms"
+    ],
+    "severity": "P0"
+  },
+  {
+    "id": "R13-AVATAR-REAL",
+    "page": "全局头像（第五周期 P1 近 P0：real 构建 prepare-static 裁掉 avatars/people + Avatar.vue 裸绑 src；已修=media.ts 两前缀改写 app-assets + 组件内 resolvedSrc，动 prepare-static/包体积门禁/Avatar.vue 必须全站回归头像）",
+    "components": [
+      "Avatar",
+      "SafeImage"
+    ],
+    "riskFiles": [
+      "apps/client/src/utils/media.ts",
+      "apps/client/src/components/common/Avatar.vue",
+      "apps/client/scripts/prepare-static.mjs"
+    ],
+    "verification": [
+      "real-build-library-user-avatars-render-all-pages",
+      "media-avatars-people-prefix-rewrite-to-app-assets",
+      "avatar-resolves-src-inside-component-not-raw-bind",
+      "prepare-static-or-package-gate-change-full-site-avatar-rerun"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PAGES-HOME-INDEX-001",
+    "page": "pages/home（第四周期 R1：InviteBanner「去邀请」CTA 静默失效，profile 不消费 invite 桥接参数）",
+    "components": [
+      "InviteBanner"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/home/InviteBanner.vue",
+      "apps/client/src/pages/home/index.vue",
+      "apps/client/src/pages/profile/index.vue"
+    ],
+    "verification": [
+      "home-invite-cta-observable-feedback",
+      "profile-consumes-invite-bridge-param"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PAGES-MESSAGES-INDEX-004",
+    "page": "pages/messages（第四周期 R1：会话列表「时间」整列永不显示——模板读不存在字段；真实字段 lastMessageSentAt）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/messages/index.vue",
+      "apps/client/src/stores/messages.ts"
+    ],
+    "verification": [
+      "messages-session-time-column-renders-real-field"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PAGES-MESSAGES-INDEX-005",
+    "page": "pages/messages（第四周期 R1：未登录「手机号登录」死交互——NotLoggedWaiting emit goPhoneLogin 页面未监听）",
+    "components": [
+      "NotLoggedWaiting"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/discover/NotLoggedWaiting.vue",
+      "apps/client/src/pages/messages/index.vue"
+    ],
+    "verification": [
+      "messages-loggedout-phone-login-tap-navigates"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PAGES-NEARBY-INDEX-001",
+    "page": "pages/nearby（第四周期 R1：未登录 real 态 onLoad 无条件打受保护接口 → 401 强踢登录）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/nearby/index.vue"
+    ],
+    "verification": [
+      "nearby-loggedout-no-protected-api-before-login"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PROFILE-201",
+    "page": "pages/profile（第四周期 R1：我的故事配图裸直连 /api/v1/media/**，MP-R7-PROFILE-002 同病复发）",
+    "components": [
+      "Avatar"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/profile/index.vue",
+      "apps/client/src/components/profile/mine/MyStory.vue",
+      "apps/client/src/utils/media.ts"
+    ],
+    "verification": [
+      "profile-story-images-via-resolvemediaurl"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PROFILE-202",
+    "page": "pages/profile（第四周期 R1：语音介绍/背景图上传 UI 全在 v-if=false 不可达 legacy 槽）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/profile/index.vue"
+    ],
+    "verification": [
+      "profile-voice-bg-upload-ui-reachable-or-removed"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-CAMPUSPOST-002",
+    "page": "subpackages/campus/campus/post-topic（第四周期 R1：real 配图上传幂等键恒定冲突——每张图同名 campus-topic.jpg 同键 409/去重）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "apps/client/src/services/http.ts"
+    ],
+    "verification": [
+      "campus-post-image-upload-unique-key-per-file-no-409"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-VILLAGE-INDEX-101",
+    "page": "subpackages/village/village/index（第四周期 R1：ChannelTabs 先 emit update:modelValue 再 emit change，v-model 同步后 @change 旧值判断恒提前 return → 频道切换主链路死代码）",
+    "components": [
+      "ChannelTabs"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/village/ChannelTabs.vue",
+      "apps/client/src/subpackages/village/village/index.vue"
+    ],
+    "verification": [
+      "village-channel-switch-changes-feed"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-VILLAGE-INDEX-102",
+    "page": "subpackages/village/village/index（第四周期 R1：ActivityCard 报名按钮靠 e?.stopPropagation?.() 阻断冒泡，uni-app Vue3 小程序端补丁不存在 → 点报名同时打开详情，须改 @tap.stop；关联 MP-R1-POSTTOPIC-009 同组件 emit 无监听）",
+    "components": [
+      "ActivityCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/village/ActivityCard.vue",
+      "apps/client/src/subpackages/village/village/index.vue"
+    ],
+    "verification": [
+      "activitycard-enroll-tap-no-detail-jump",
+      "activitycard-open-detail-enroll-handled-by-parent"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-VILLAGE-INDEX-103",
+    "page": "subpackages/village/village/index（第四周期 R1：mock 图文不符单例 post-7 日落配城堡图，属 MP-R3-VILLAGE-INDEX-001 批量族一例）",
+    "components": [
+      "PostCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/stores/village/mock-data.ts"
+    ],
+    "verification": [
+      "village-post7-image-matches-caption-disk-read"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-POST-101",
+    "page": "subpackages/village/village/post（第四周期 R1：发圈成功后草稿残留 → 下次进页 UI 显示个人动态、实际提交进圈，目标不一致）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/post.vue",
+      "apps/client/src/stores/village/index.ts"
+    ],
+    "verification": [
+      "circle-publish-success-clears-draft-and-target-consistent"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-PUBLISH-001",
+    "page": "subpackages/village/village/publish（第四周期 R1：visibility 后端 CreatePostRequest 无字段被静默丢弃）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/publish.vue",
+      "apps/api/src/main/java/com/campuslove/api/village/VillageController.java"
+    ],
+    "verification": [
+      "publish-visibility-persisted-and-honored"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-DETAIL-001-CODEFINDING",
+    "page": "subpackages/village/village/detail【与 R21 交互案 MP-R1-DETAIL-001(interact) 同 ID 异题，此为第四周期代码审查案】（第四周期 R1：全屏查看层样式孤立在 </style> 之后整体失效，SFC 解析实证）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/detail.vue"
+    ],
+    "verification": [
+      "detail-fullscreen-viewer-style-applied-sfc-parse"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-HELP-101",
+    "page": "subpackages/tools/help（第四周期 R1 回归证实仍未修：复制到的是文案标签而非邮箱地址）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/help/index.vue"
+    ],
+    "verification": [
+      "help-copy-clipboard-contains-email-address"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-LNEARBY-101",
+    "page": "subpackages/tools/love-center/nearby（第四周期 R1：滑动链路与 discover store 脱节，卡片永不推进）",
+    "components": [
+      "CardSwiper"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/love-center/nearby.vue",
+      "apps/client/src/stores/discover/index.ts"
+    ],
+    "verification": [
+      "lnearby-swipe-advances-card"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-LMBTI-101",
+    "page": "subpackages/tools/love-center/mbti（第四周期 R1：返回键与胶囊矩形几乎完全重叠）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/love-center/mbti.vue"
+    ],
+    "verification": [
+      "lmbti-back-btn-clear-of-capsule"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-VERIFY-INDEX-001",
+    "page": "subpackages/profile-extra/verification/index（第四周期 R1：nav-bar 在 safe-top 之前顶进状态栏）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/verification/index.vue"
+    ],
+    "verification": [
+      "verification-navbar-below-statusbar"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-OTHER-002",
+    "page": "subpackages/profile-extra/profile/other（第四周期 R1 P1：whisper 事件链上游无人 emit，「送心动卡/悄悄话」完全不可达）",
+    "components": [
+      "WhisperComposeSheet",
+      "RelationshipCTA"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/profile/other.vue",
+      "apps/client/src/components/profile/public/PublicProfile.vue",
+      "apps/client/src/components/profile/public/RelationshipCTA.vue"
+    ],
+    "verification": [
+      "other-whisper-entry-reachable-and-functional"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-DND-002",
+    "page": "subpackages/profile-extra/settings/dnd（第四周期 R1：自绘导航顶进状态栏）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/settings/dnd.vue"
+    ],
+    "verification": [
+      "dnd-nav-below-statusbar"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R2-PAGES-LOGIN-INDEX-001",
+    "page": "pages/login（第四周期 R2：input type=password 非法值 mp 端密码明文；落盘时点工作区已修 type=text，终验未见）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/login/index.vue"
+    ],
+    "verification": [
+      "login-password-input-masked-mp-valid-type"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R2-PAGES-NEARBY-INDEX-001",
+    "page": "pages/nearby（第四周期 R2：reportLocation 在登录门外执行 → 未登录授权定位后 401 强踢；与 MP-R1-PAGES-NEARBY-INDEX-001 同源）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/nearby/index.vue",
+      "apps/client/src/utils/location.ts"
+    ],
+    "verification": [
+      "nearby-location-auth-loggedout-no-401-hijack"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R2-CAMPUSINDEX-001",
+    "page": "subpackages/campus/campus/index（第四周期 R2 P1：scroll-view 无有界高度 → scrolltolower 翻页永不触发，10 条之后帖子永不可见）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/index.vue"
+    ],
+    "verification": [
+      "campus-index-scrolltolower-paginates-past-10"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R2-CHAT-CHAT-SESSION-INDEX-001",
+    "page": "subpackages/chat/chat-session（第四周期 R2：errorMessage 差分检测连续同文案失效 → 消息丢失无反馈）",
+    "components": [
+      "ChatBubble"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/chat/chat-session/index.vue"
+    ],
+    "verification": [
+      "chat-consecutive-same-error-still-surfaced"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R2-POSTTOPIC-001",
+    "page": "subpackages/circles/circles/post-topic（第四周期 R2：帖子模式本地临时图片直出未经 upload → 裂图）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/post-topic.vue"
+    ],
+    "verification": [
+      "posttopic-local-images-uploaded-not-temp-path"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R2-MATCHING-002",
+    "page": "subpackages/discover-extra/discover/match-success（第四周期 R2：匹配动画双头像未过 resolveMediaUrl，real 空圆；R10-P1-004 同页族新发）",
+    "components": [
+      "MatchSuccess",
+      "MatchLoading"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/discover-extra/discover/match-success.vue",
+      "apps/client/src/components/match/MatchSuccess.vue"
+    ],
+    "verification": [
+      "matching-animation-avatars-resolved-real-mode"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R2-PUB-101",
+    "page": "subpackages/village/village/publish（第四周期 R2：restoreDraft 缺 friends 分支 → 目标卡与可见性矛盾）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/publish.vue",
+      "apps/client/src/stores/village/index.ts"
+    ],
+    "verification": [
+      "restore-draft-friends-branch-target-consistent"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R2-SEGMENT-001",
+    "page": "subpackages/discover-extra/home/segment（第四周期 R2：头像裸直连相对路径）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/discover-extra/home/segment.vue"
+    ],
+    "verification": [
+      "segment-avatar-via-media-resolver"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R2-SEARCH-001",
+    "page": "subpackages/tools/search（第四周期 R2：两处头像裸直连）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/search/index.vue"
+    ],
+    "verification": [
+      "search-avatars-via-media-resolver"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R2-OTHER-001",
+    "page": "subpackages/profile-extra/profile/other（第四周期 R2：相册缩略图/动态配图/头像裸直连）",
+    "components": [
+      "Avatar"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/profile/other.vue",
+      "apps/client/src/components/profile/public/PublicGallery.vue"
+    ],
+    "verification": [
+      "other-page-images-via-media-resolver"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R3-PAGES-HOME-INDEX-001",
+    "page": "pages/home（第四周期 R3 P1：TodayRecommendationCard 在 defineProps 声明之前的 watch 回调引用 props → TDZ ReferenceError，watch 从未建立每挂载必报）",
+    "components": [
+      "TodayRecommendationCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/home/TodayRecommendationCard.vue"
+    ],
+    "verification": [
+      "home-recommend-card-watch-established-no-referenceerror",
+      "photo-failed-reset-rebuilds-image"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R3-CAMPUS-INDEX-001",
+    "page": "subpackages/campus/campus/index（第四周期 R3 P1：未认证视角渲染 i18n 裸 key hotCirclesTitle/viewMore——键实际只在 campus.postTopic 下）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/index.vue",
+      "apps/client/src/i18n/locales/zh-CN.ts",
+      "apps/client/src/i18n/locales/en-US.ts"
+    ],
+    "verification": [
+      "campus-unauth-view-no-raw-i18n-key"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R3-CAMPUS-INDEX-002",
+    "page": "subpackages/campus/campus/index（第四周期 R3 P1：真机「双重避让」——全局 App.vue page padding-top env() + 页头 --statusbar JS 测量相加整体下移；DevTools env=0 不可见，静态守卫查不出；叠加连带 .campus-page 定高裁底）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/index.vue",
+      "apps/client/src/App.vue",
+      "apps/client/src/composables/useStatusBarHeight.ts"
+    ],
+    "verification": [
+      "campus-realdevice-no-double-statusbar-offset",
+      "campus-index-list-bottom-not-clipped"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R3-POSTTOPIC-001",
+    "page": "subpackages/campus/campus/post-topic（第四周期 R3 P1：catch 引用 try 内 campusPostFallback → 失败路径二次 ReferenceError、失败 toast 永不展示、isSubmitting 永不复位按钮锁死；R2 修复批引入，R13 vue-tsc 批已修但未单独回归）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/post-topic.vue"
+    ],
+    "verification": [
+      "campus-post-failure-toast-shown-and-submit-unlocks"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R3-VILLAGE-INDEX-001",
+    "page": "subpackages/village/village/index（第四周期 R3 P1：mock 今日广场 feed 批量图文不符 ≥13 帖——注释声称内容与静态资源实图相反；实读图片核对是唯一可靠验证法；含 MP-R2-VILL-013 晚霞帖族）",
+    "components": [
+      "PostCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/stores/village/mock-data.ts",
+      "apps/client/src/services/mocks/fixtures.ts"
+    ],
+    "verification": [
+      "village-mock-feed-images-match-captions-disk-read",
+      "village-sunrise-post-image-fixed-disk-read"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R3-VILLAGE-INDEX-002",
+    "page": "subpackages/village/village/index（第四周期 R3 P1：热度榜上拉加载「替换」而非「追加」，前 20 条消失）",
+    "components": [
+      "HotTopicsSection"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/village/HotTopicsSection.vue",
+      "apps/client/src/subpackages/village/village/index.vue"
+    ],
+    "verification": [
+      "village-hot-topics-loadmore-appends-not-replaces"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R3-PAGES-MESSAGES-INDEX-002-005",
+    "page": "pages/messages（第四周期 R3 回归核对批次：角标+tabBar 角标全链/置顶免打扰/滚动遮罩——均代码层闭环，运行时终验欠账优先对象）",
+    "components": [
+      "AssistantCard",
+      "UnreadBadge"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/message/AssistantCard.vue",
+      "apps/client/src/stores/messages.ts",
+      "apps/client/src/composables/useUnreadBadge.ts",
+      "apps/client/src/custom-tab-bar/index.js",
+      "apps/client/src/pages/messages/index.vue"
+    ],
+    "verification": [
+      "messages-badge-red-dot-enter-clear-runtime",
+      "messages-pin-mute-feedback-runtime",
+      "messages-scroll-mask-runtime"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R3-PAGES-PROFILE-INDEX-001-005",
+    "page": "pages/profile（第四周期 R3 回归核对批次：他人态顶栏避让/媒体解析双保险/ROUTES.ALBUM/FAB BottomSheet/完成度口径——含 100→85 魔改残留复核）",
+    "components": [
+      "ProfileShell",
+      "GlobalPublishFab",
+      "BottomSheet"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/profile/index.vue",
+      "apps/client/src/components/profile/public/PublicHero.vue",
+      "apps/client/src/components/common/GlobalPublishFab.vue",
+      "apps/client/src/components/common/BottomSheet.vue",
+      "apps/client/src/constants/routes.ts"
+    ],
+    "verification": [
+      "profile-other-topbar-avoidance-runtime",
+      "profile-media-double-guarantee-runtime",
+      "album-entry-navigates-runtime",
+      "profile-fab-bottomsheet-runtime",
+      "completion-85-vs-100-magic-remnant-check"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "R13-TSC-DEFECTS",
+    "page": "setup/schedule、verification、village/history、discover-extra/nearby/people、campus/post-topic、图标常量、i18n（第五周期 vue-tsc 33→0 清出的真实缺陷族：ref 未 import 崩溃/resolveMediaUrl 未 import/isRefreshing 绑定不存在/3 处图标 key 不存在/7 个 i18n 重复 key last-wins/campusPostFallback 作用域；已修代码级，逐项运行时回归未见）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/setup/schedule/index.vue",
+      "apps/client/src/subpackages/profile-extra/verification/index.vue",
+      "apps/client/src/subpackages/village/village/history.vue",
+      "apps/client/src/subpackages/discover-extra/nearby/people.vue",
+      "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "apps/client/src/config/images.ts",
+      "apps/client/src/i18n/locales/zh-CN.ts",
+      "apps/client/src/i18n/locales/en-US.ts"
+    ],
+    "verification": [
+      "typecheck-zero-errors-sustained-not-parity",
+      "schedule-ref-import-runtime-no-crash",
+      "verification-resolvemediaurl-import-runtime",
+      "history-refreshing-state-recovers",
+      "icon-constant-keys-exist-on-disk",
+      "i18n-duplicate-keys-audit-last-wins"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "R13-DATA-3894",
+    "page": "pages/messages + 数据库（第五周期 P1：private_messages id=3894 巡检残留「全链路验收测试消息 2026-09-12」外露消息预览位，推翻 R12「残留全 0」；删除不可逆停在等授权，需同步查 private_conversations.last_message_preview；回归时任何「残留已清」结论都要 SQL+页面实拍双证）",
+    "components": [],
+    "riskFiles": [],
+    "verification": [
+      "private-messages-3894-authorized-deletion-sql-and-page-proof",
+      "conversation-preview-synced-after-cleanup"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "R13-PARITY",
+    "page": "首页/附近/寻觅/消息/帖子详情/village-index/兴趣圈/圈主页/相册/话题详情（第五周期设计一致性布局级未修清单：匹配度绿色环形需 SVG stroke-dasharray 勿接 conic-gradient 版 XunmiMatchRing、circle-home hero 暗罩白字、相对时间收敛未进 dist、帖子详情圈子归属/话题标签/定位胶囊/多发送钮、首页多本人头像/缺缩略行/徽章压文案/关系动态竖排、寻觅 tab 行缺收藏入口、话题详情导航绿渐变、相册「1/6」压胶囊、circles 搜索钮/campus hub 绿钮胶囊避让）",
+    "components": [
+      "TodayRecommendationCard",
+      "RelationActivity",
+      "MatchCard",
+      "XunmiMatchRing",
+      "XunmiFeedCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/home/index.vue",
+      "apps/client/src/pages/nearby/index.vue",
+      "apps/client/src/pages/discover/index.vue",
+      "apps/client/src/pages/messages/index.vue",
+      "apps/client/src/components/home/TodayRecommendationCard.vue",
+      "apps/client/src/components/home/RelationActivity.vue",
+      "apps/client/src/components/match/MatchCard.vue",
+      "apps/client/src/components/common/XunmiMatchRing.vue",
+      "apps/client/src/subpackages/village/village/detail.vue",
+      "apps/client/src/subpackages/village/village/index.vue",
+      "apps/client/src/subpackages/circles/circles/index.vue",
+      "apps/client/src/subpackages/circles/circles/circle-home.vue",
+      "apps/client/src/subpackages/circles/circles/topic-detail.vue",
+      "apps/client/src/subpackages/profile-extra/profile/album.vue"
+    ],
+    "verification": [
+      "discover-parity-match-ring-svg-stroke-dasharray",
+      "circlehome-parity-dark-hero-white-text",
+      "relative-time-converged-into-dist-and-shot",
+      "post-detail-parity-share-label-circle-badge-location-pill-single-send",
+      "home-parity-thumbnails-row-no-avatar-echo",
+      "nearby-parity-vertical-circle-cards",
+      "discover-parity-favorite-heart-entry",
+      "circles-parity-search-filter-vs-capsule",
+      "album-parity-counter-vs-capsule",
+      "campus-hub-green-btn-vs-capsule",
+      "topic-detail-nav-gradient-parity"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-CHAT-CHAT-SESSION-INDEX-001-005",
+    "page": "subpackages/chat/chat-session（第四周期 R1 临时会话/消息族：倒计时不启动、发送失败仍清草稿、失败渲染假空会话、real 图片消息被两处 kind 映射降级为 text、conv- 冷启动深链 400 仍复现）",
+    "components": [
+      "ChatBubble",
+      "ChatInput"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/chat/chat-session/index.vue",
+      "apps/client/src/stores/chat/index.ts",
+      "apps/client/src/stores/chat/actions/messaging.ts",
+      "apps/client/src/stores/messages.ts"
+    ],
+    "verification": [
+      "chat-temp-countdown-starts",
+      "chat-send-failure-keeps-draft",
+      "chat-failure-no-fake-empty-session",
+      "chat-image-message-kind-not-downgraded-to-text",
+      "chat-conv-deeplink-coldstart-no-400"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "MP-R1-LOGIN-002-004",
+    "page": "pages/login（第四周期 R1 P2 批：双导航竞争、未登录 bindPhone 401、倒计时定时器不清理）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/login/index.vue",
+      "apps/client/src/services/auth.ts"
+    ],
+    "verification": [
+      "login-navigation-single-flight",
+      "login-bindphone-401-graceful",
+      "login-countdown-timer-cleared-on-unmount"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-PAGES-MESSAGES-INDEX-006-011",
+    "page": "pages/messages（第四周期 R1 P2 批：空 catch、dashboard 并发整表覆盖 sessions、长按失败打成全屏错误态、下拉刷新 30s TTL 空转、--statusbar/--capsule-right 未注入、助手卡假数据 ??2 兜底+硬编码周末露营）",
+    "components": [
+      "AssistantCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/messages/index.vue",
+      "apps/client/src/stores/messages.ts",
+      "apps/client/src/components/message/AssistantCard.vue"
+    ],
+    "verification": [
+      "messages-no-empty-catch",
+      "messages-dashboard-concurrent-no-overwrite",
+      "messages-longpress-error-scoped",
+      "messages-pull-refresh-effective-ttl",
+      "messages-statusbar-capsule-vars-injected",
+      "messages-assistant-card-no-fake-copy"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-PAGES-HOME-INDEX-002-004",
+    "page": "pages/home（第四周期 R1 P2 批：换一位无错误处理、加入态破口、逆地理编码 key=YOUR_KEY 恒失败——与 NEARBY-005/LOCATION-001 同源三连）",
+    "components": [
+      "HomeHeader"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/home/index.vue",
+      "apps/client/src/components/home/HomeHeader.vue",
+      "apps/client/src/utils/location.ts"
+    ],
+    "verification": [
+      "home-swap-person-error-handling",
+      "home-join-state-toggles",
+      "reverse-geocode-key-not-placeholder"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-PAGES-NEARBY-INDEX-002-004",
+    "page": "pages/nearby（第四周期 R1 P2 批：死数据链、下拉刷新空操作、附近动态整会话不更新）",
+    "components": [
+      "NearbySection"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/nearby/index.vue"
+    ],
+    "verification": [
+      "nearby-pull-refresh-refetches",
+      "nearby-feed-refreshes-within-session"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-VILLAGE-INDEX-104",
+    "page": "subpackages/village/village/index（第四周期 R1 P2：发布失败后 30s 内重试/下拉全空操作；MP-R3-VILLAGE-INDEX-003 事件契约断裂同源）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/index.vue"
+    ],
+    "verification": [
+      "village-retry-within-30s-refetches"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-PUBLISH-002-006-012",
+    "page": "subpackages/village/village/publish + post（第四周期 R1 草稿族 P2：watch 对 images/topics 原地变异无感知 deep:false、防抖定时器丢尾帧保留草稿快照永不落盘、publish 与 post 共用存储键结构互不兼容、friends 入口被旧草稿改写隐私语义、添加位置读 nearby:city 全库无写入方恒北京市、双实现 733/1528 行重复且行为分叉）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/publish.vue",
+      "apps/client/src/subpackages/village/village/post.vue",
+      "apps/client/src/stores/village/index.ts",
+      "apps/client/src/stores/village/constants.ts",
+      "apps/client/src/stores/village/utils.ts"
+    ],
+    "verification": [
+      "draft-watch-detects-push-splice-mutation",
+      "debounce-flushes-final-snapshot-on-keep",
+      "draft-storage-key-structure-compat",
+      "friends-entry-privacy-semantic-guard",
+      "publish-location-has-writer-not-constant-beijing",
+      "publish-post-divergence-ledger-checked"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-POST-102",
+    "page": "subpackages/village/village/post（第四周期 R1 P2：圈内发帖失败取错数据源）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/post.vue"
+    ],
+    "verification": [
+      "circle-post-failure-error-from-correct-source"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-POSTTOPIC-003-004-007",
+    "page": "subpackages/circles/circles/post-topic（第四周期 R1 P2 批：tags/favorite real 丢弃、兴趣分类 slug 必然 500、占位符 {n}/{max} 名不匹配数字插值不出）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/post-topic.vue",
+      "apps/client/src/stores/circle.ts",
+      "apps/client/src/i18n/locales/zh-CN.ts"
+    ],
+    "verification": [
+      "posttopic-tags-favorite-persisted-real",
+      "posttopic-interest-slug-no-500",
+      "posttopic-placeholder-name-matches"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-PROFILE-203-207",
+    "page": "pages/profile（第四周期 R1 P2 批：850+ 行不可达模板/5 孤儿组件、growth-items/growth-tap props 未声明未转发、他人态「动态」Tab 空白、VIP 卡渲染位置颠倒、targetUserId 无复位；204 工作区注释称已删，回归确认）",
+    "components": [
+      "ProfileShell",
+      "MyProfile"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/profile/index.vue",
+      "apps/client/src/components/profile/ProfileShell.vue",
+      "apps/client/src/components/profile/mine/MyProfile.vue"
+    ],
+    "verification": [
+      "profile-no-unreachable-template",
+      "growth-items-prop-declared-and-wired",
+      "other-mode-posts-tab-not-blank",
+      "vip-card-render-order",
+      "target-user-id-reset-on-exit"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-CAMPUS-HUB-004",
+    "page": "subpackages/campus/campus/hub（第四周期 R1 P2：状态栏叠加两次，T1 双重避让同族）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/hub.vue",
+      "apps/client/src/App.vue"
+    ],
+    "verification": [
+      "campus-hub-no-double-statusbar-offset"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-CAMPUSINDEX-002-004",
+    "page": "subpackages/campus/campus/index（第四周期 R1 P2 批：定高 overflow:hidden 裁底连带、话题作者头像裸绑定等）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/index.vue"
+    ],
+    "verification": [
+      "campus-index-no-bottom-clip",
+      "campus-index-topic-author-avatar-resolved"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-TOPICDETAIL-001-401",
+    "page": "subpackages/circles/circles/topic-detail【与 R21 案 MP-R1-TOPICDETAIL-001（回复徽标 vs 空态）同 ID 异题，此为 401 误渲染案】（第四周期 R1 P2：401 静默误渲染「话题不存在」——R12-IND-TOPICS-001 同病 circles 侧复发；含返回前清空共享 store 的 MP-R1-TOPICDETAIL-004）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/topic-detail.vue",
+      "apps/client/src/stores/circle.ts"
+    ],
+    "verification": [
+      "circles-topic-detail-401-error-state-not-false-empty",
+      "topic-detail-back-does-not-clear-shared-store"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-CIRCLEHOME-001-002",
+    "page": "subpackages/circles/circles/circle-home（第四周期 R1 P2：real 模式圈内无话题仍回退渲染 3 条写死演示动态、「等 0 位朋友已加入」real 模式依旧可见）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/circle-home.vue",
+      "apps/client/src/stores/circle/mock-data.ts"
+    ],
+    "verification": [
+      "circlehome-real-empty-no-demo-posts",
+      "circlehome-friend-joined-count-real-mode"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-CERT-101",
+    "page": "subpackages/campus/campus/certification（第四周期 R1 P2：实名门槛只在 onMounted 判一次）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/certification.vue"
+    ],
+    "verification": [
+      "campus-cert-gate-recheck-after-realname"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-LIKES-102-103",
+    "page": "subpackages/discover-extra/likes（第四周期 R1 P2 批：NotLoggedWaiting emit goPhoneLogin 页面只监听 @go-login 同款缺陷、余额不足死路）",
+    "components": [
+      "NotLoggedWaiting"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/discover-extra/likes/index.vue",
+      "apps/client/src/components/discover/NotLoggedWaiting.vue"
+    ],
+    "verification": [
+      "likes-phone-login-button-wired",
+      "likes-insufficient-balance-path"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-HSIGNALS-101",
+    "page": "subpackages/tools/heart-signals（第四周期 R1 P2：real 模式「已拒绝」被折叠回「待处理」——mapToHeartSignal 缺 declined 分支）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/stores/likes.ts",
+      "apps/client/src/subpackages/tools/heart-signals/index.vue"
+    ],
+    "verification": [
+      "heartsignals-declined-state-preserved"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-PRIVACY-001",
+    "page": "subpackages/profile-extra/profile/privacy（第四周期 R1 P2：隐私两开关假保存——只写本地 storage 从不调后端，real 也不回填）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/profile/privacy.vue"
+    ],
+    "verification": [
+      "privacy-toggles-persist-to-backend-and-refill"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-VERIFY-INDEX-002-003",
+    "page": "subpackages/profile-extra/verification/index（第四周期 R1 P2：「重新认证/删除人工认证」real 模式只重置本地 ref 无 API 假状态骗用户）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/verification/index.vue"
+    ],
+    "verification": [
+      "verification-recertify-calls-api-real-mode",
+      "verification-delete-manual-cert-real-api"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-DISCOVERACTIVITIES-001-002",
+    "page": "subpackages/discover/activities（第四周期 R1 P2 批：AppShell 无确定高度链 flex:1+height:0 失效、报名失败弹成功 toast）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/discover/activities/index.vue",
+      "apps/client/src/stores/activity.ts"
+    ],
+    "verification": [
+      "activities-bounded-height-chain",
+      "activities-enroll-failure-no-success-toast"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-SETUPINTEREST-003",
+    "page": "subpackages/setup/interest（第四周期 R1 P2：4 组标签只存 1 组静默丢数据）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/setup/interest/index.vue"
+    ],
+    "verification": [
+      "interest-all-four-groups-persisted"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-VIP-001",
+    "page": "subpackages/vip（第四周期 R1 P2：VIP 页守卫/渲染项回归核对）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/vip/index.vue",
+      "apps/client/src/stores/vip.ts"
+    ],
+    "verification": [
+      "vip-guard-and-render-probe-recheck"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-MP-VIP-001",
+    "page": "subpackages/vip（第四周期：自动续费原生 switch 取消确认后 UI 与 store 脱节——忽略 e.detail.value 取消后不回拨）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/vip/index.vue",
+      "apps/client/src/stores/vip-auto-renew.ts"
+    ],
+    "verification": [
+      "vip-autorenew-cancel-reverts-switch"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-BILLS-001",
+    "page": "subpackages/vip/bills（第四周期：会员开关关闭时 bills 页仍无条件发起后端请求）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/vip/bills.vue",
+      "apps/client/src/stores/vip-billing.ts"
+    ],
+    "verification": [
+      "bills-no-backend-request-when-commerce-off"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-SAFEAREA-001",
+    "page": "全局（第四周期 R1 P2：safe-area 变量口径统一回归）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/App.vue",
+      "apps/client/src/composables/useStatusBarHeight.ts"
+    ],
+    "verification": [
+      "safe-area-vars-single-source"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-TASKS-004-005",
+    "page": "subpackages/profile-extra/profile/tasks（第四周期 R1 P2：claim 后 load-once 守卫不刷新、refreshSession void 剥离 catch）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/profile/tasks.vue",
+      "apps/client/src/stores/checkin.ts",
+      "apps/client/src/stores/session.ts"
+    ],
+    "verification": [
+      "tasks-claim-refreshes-state",
+      "session-refresh-catchable"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-FEEDBACKHIST-001",
+    "page": "subpackages/profile-extra/feedback/history（第四周期 R1 P2：store 吞错 → 错误 UI 死代码）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/stores/feedback.ts",
+      "apps/client/src/subpackages/profile-extra/feedback/history.vue"
+    ],
+    "verification": [
+      "feedback-history-error-ui-reachable"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-OFFICIALCHAT-004",
+    "page": "subpackages/chat/official-chat（第四周期 R1 P2：活动卡封面硬编码）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/chat/official-chat/index.vue"
+    ],
+    "verification": [
+      "officialchat-activity-card-cover-not-hardcoded"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R2-PAGES-DISCOVER-INDEX-001-002",
+    "page": "pages/discover（第四周期 R2 P2 批：游客胶囊浮岛越出 40rpx 修 128rpx 后 iPhone 安全区下残余 2-4rpx 圆弧相切、MatchActions 三键下缘被半透明 tabBar 层覆盖——页面 padding 仍按旧 112rpx，与 MP-R1-DISCOVER-INDEX-006 同源）",
+    "components": [
+      "MatchActions",
+      "custom-tab-bar"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/discover/index.vue",
+      "apps/client/src/components/match/MatchActions.vue",
+      "apps/client/src/custom-tab-bar/index.wxss"
+    ],
+    "verification": [
+      "discover-guest-pill-iphone-safearea-runtime",
+      "match-actions-clear-of-tabbar-layer"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R2-PAGES-HOME-INDEX-001",
+    "page": "pages/home（第四周期 R2 P2：未登录 401 强踢——与 nearby 同族）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/home/index.vue"
+    ],
+    "verification": [
+      "home-loggedout-no-protected-api"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R2-CAMPUS-HUB-001-003",
+    "page": "subpackages/campus/campus/hub（第四周期 R2 P2 批：搜索框/头部 token 与状态栏叠加回归）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/hub.vue"
+    ],
+    "verification": [
+      "campus-hub-search-visible-token-distinct",
+      "campus-hub-statusbar-single-offset"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R2-POSTTOPIC-002-003",
+    "page": "subpackages/circles/circles/post-topic（第四周期 R2 P2：真机双重避让等回归；与 MP-R3-POSTTOPIC-002-009 同页）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/post-topic.vue",
+      "apps/client/src/App.vue"
+    ],
+    "verification": [
+      "posttopic-circles-realdevice-no-double-offset"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R2-MSG-001-002",
+    "page": "pages/messages（第四周期 R2 P2 批：muted 重拉丢失、消息页底部无 tabBar 避让最后一条会话无法滚出）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/messages/index.vue",
+      "apps/client/src/stores/messages.ts"
+    ],
+    "verification": [
+      "messages-mute-persists-after-refetch",
+      "messages-bottom-clears-tabbar-last-row-scrollable"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-PAGES-DISCOVER-INDEX-007",
+    "page": "pages/discover（第四周期 R3 P2：寻觅每日配额设备级单键 discover_daily_record 无 userId 命名空间——跨账号继承配额/排除名单/rewind 快照，登出不清）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/discover/index.vue",
+      "apps/client/src/stores/discover/constants.ts",
+      "apps/client/src/stores/discover/index.ts"
+    ],
+    "verification": [
+      "discover-quota-key-namespaced-by-userid",
+      "logout-clears-quota-snapshot"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-PAGES-HOME-INDEX-002",
+    "page": "pages/home（第四周期 R3 P2：3 组图片绑定绕过统一媒体出口——TodayRecommendationCard 主图 + RelationActivity 四组头像）",
+    "components": [
+      "TodayRecommendationCard",
+      "RelationActivity"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/home/TodayRecommendationCard.vue",
+      "apps/client/src/components/home/RelationActivity.vue"
+    ],
+    "verification": [
+      "home-images-via-unified-media-exit"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-PAGES-HOME-INDEX-003",
+    "page": "pages/home（第四周期 R3 P2：mock 旅行圈 icon 指向磁盘不存在文件且 / 开头路径无条件信任 → 恒空白）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/home/index.vue",
+      "apps/client/src/config/images.ts"
+    ],
+    "verification": [
+      "home-travel-circle-icon-exists-on-disk"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-PAGES-PROFILE-INDEX-006",
+    "page": "pages/profile（第四周期 R3 P2：邀请好友弹窗幻影 token --f-*，字号层级塌平）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/pages/profile/index.vue"
+    ],
+    "verification": [
+      "profile-invite-modal-real-tokens"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-PAGES-PROFILE-INDEX-009",
+    "page": "pages/profile（第四周期 R3 P2：mine/* 五组件 27 处零 token + 内联透明度 hack）",
+    "components": [
+      "MyHeader",
+      "MyStats",
+      "MyStory",
+      "MyInteraction",
+      "MyMore"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/profile/mine/MyHeader.vue",
+      "apps/client/src/components/profile/mine/MyStats.vue",
+      "apps/client/src/components/profile/mine/MyStory.vue",
+      "apps/client/src/components/profile/mine/MyInteraction.vue",
+      "apps/client/src/components/profile/mine/MyMore.vue"
+    ],
+    "verification": [
+      "profile-mine-components-tokenized-no-opacity-hack"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-CAMPUS-HUB-001",
+    "page": "subpackages/campus/campus/hub（第四周期 R3 P2：搜索框与容器同 token 不可见）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/hub.vue"
+    ],
+    "verification": [
+      "campus-hub-search-input-visible"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-CAMPUS-INDEX-003",
+    "page": "subpackages/campus/campus/index（第四周期 R3 P2：发布回流新帖挂错 Tab）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/campus/campus/index.vue",
+      "apps/client/src/stores/campus.ts"
+    ],
+    "verification": [
+      "campus-publish-return-lands-correct-tab"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-POSTTOPIC-002-009",
+    "page": "subpackages/circles/circles/post-topic（第四周期 R3 P2：真机「双重避让」——page 级 env() + 页头 --statusbar 叠加；含 IA-POSTTOPIC-01 回归核对项）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/circles/circles/post-topic.vue",
+      "apps/client/src/App.vue",
+      "apps/client/src/composables/useStatusBarHeight.ts"
+    ],
+    "verification": [
+      "posttopic-circles-realdevice-no-double-offset",
+      "posttopic-nav-statusbar-clear-recheck"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-VILLAGE-INDEX-003",
+    "page": "subpackages/village/village/index（第四周期 R3 P2：village:post-created 事件契约断裂——唯一 emit 方是 circles/post-topic（post-topic.vue:366），标准发帖页 post.vue 从不 emit → real 模式发帖返回不刷新，与 MP-R1-POST-109/104 同源）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/post.vue",
+      "apps/client/src/subpackages/circles/circles/post-topic.vue",
+      "apps/client/src/subpackages/village/village/index.vue"
+    ],
+    "verification": [
+      "village-post-created-emitted-by-post-page",
+      "village-feed-refreshes-after-real-publish"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-VILLAGE-INDEX-004",
+    "page": "subpackages/village/village/index（第四周期 R3 P2：状态栏疑似双重避让，T1 真机亚型）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/index.vue",
+      "apps/client/src/App.vue"
+    ],
+    "verification": [
+      "village-index-realdevice-no-double-offset"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-VILLAGE-POST-001-002",
+    "page": "subpackages/village/village/post（第四周期 R3 P2 批：提交链路仍用裸 /^https?:\\/\\// 判定 DevTools tmp 路径落死链——R7 修复只改了草稿侧；圈子目标下已选话题两条路径仍被静默带走）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/post.vue"
+    ],
+    "verification": [
+      "post-submit-uses-isuploadedmediaurl-not-bare-regex",
+      "post-circle-target-topics-preserved"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R3-VILLAGE-PUBLISH-004-006",
+    "page": "subpackages/village/village/publish（第四周期 R3 P2 批：snapshotDraft 回归核对、19 处裸 hex dark 模式实害、添加话题硬编码单话题与 post 弹层能力分叉）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/village/village/publish.vue",
+      "apps/client/src/stores/village/utils.ts"
+    ],
+    "verification": [
+      "publish-snapshot-draft-regression",
+      "publish-dark-mode-no-bare-hex",
+      "publish-add-topic-parity-with-post"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-ALBUM-001",
+    "page": "subpackages/profile-extra/profile/album（第四周期 R1：uni.previewImage 直传原始 URL 数组未过媒体解析）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/profile-extra/profile/album.vue"
+    ],
+    "verification": [
+      "album-preview-uses-resolved-urls"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "MP-R1-CHAT-CHAT-SESSION-INDEX-006-012",
+    "page": "subpackages/chat/chat-session（第四周期 R1 P2 批：上拉无 catch、i18n key chat.muteLocalOnly 双语言包均缺失上屏原始 key、发图逐张吞错全失败仍 toast 成功、免打扰失败静默、空 catch、ChatHeader 裸 hex、6 处硬编码中文+拍一拍把中文写进消息正文）",
+    "components": [
+      "ChatHeader",
+      "ChatInput"
+    ],
+    "riskFiles": [
+      "apps/client/src/subpackages/chat/chat-session/index.vue",
+      "apps/client/src/components/chat/ChatHeader.vue",
+      "apps/client/src/i18n/locales/zh-CN.ts",
+      "apps/client/src/i18n/locales/en-US.ts"
+    ],
+    "verification": [
+      "chat-loadmore-has-catch",
+      "chat-mutelocalonly-key-exists-both-locales",
+      "chat-image-send-partial-failure-not-success-toast",
+      "chat-mute-failure-visible",
+      "chat-header-no-bare-hex",
+      "chat-no-hardcoded-chinese-in-message-body"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "R13-ADMIN-IMG-STATIC",
+    "page": "apps/admin（第五周期：withMediaToken 不改写遗留 /static 路径 → 后台裂图 users 2/9；已修 /static→app-assets 改写 9/9+25 图 0 裂图）",
+    "components": [],
+    "riskFiles": [
+      "apps/admin/src/api/media.ts"
+    ],
+    "verification": [
+      "admin-user-avatars-no-broken-images",
+      "admin-static-path-rewritten-to-app-assets"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "R13-UNITTEST",
+    "page": "apps/client tests（第五周期：串行全量 1245 通过/1 失败 campus store fetchTopics mock 期望（测试侧）；profile-index.spec 既有失败留档）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/stores/campus.ts",
+      "apps/client/src/tests/components/profile-index.spec.ts"
+    ],
+    "verification": [
+      "full-suite-serial-green",
+      "campus-store-fetchtopics-mock-expectation-fixed",
+      "profile-index-spec-known-failures-tracked"
+    ],
+    "severity": "P2"
+  },
+  {
+    "id": "R13-PROJECTCFG",
+    "page": "工程（第五周期：仓库根 project.config.json 开窗不编译真因未定位，现绕过=以 dist/build/mp-weixin 产物目录开窗）",
+    "components": [],
+    "riskFiles": [
+      "project.config.json"
+    ],
+    "verification": [
+      "window-open-from-dist-dir-workaround-documented",
+      "root-projectconfig-compile-failure-rootcause"
+    ],
+    "severity": "P3"
+  },
+  {
+    "id": "R12-IND-LOVECENTER-CIRCLES-001",
+    "page": "subpackages/tools/love-center/index、subpackages/circles/circles/index（R12 遗留两项，historical-issues §八.4 仅列 ID 无详情，回归时补查）",
+    "components": [],
+    "riskFiles": [
+      "apps/client/src/subpackages/tools/love-center/index.vue",
+      "apps/client/src/subpackages/circles/circles/index.vue"
+    ],
+    "verification": [
+      "r12-leftover-lovecenter-circles-recheck"
+    ],
+    "severity": "P3"
+  },
+  {
+    "id": "T16",
+    "page": "全局（作用域/初始化/未导入引用类运行时崩溃：IA-CONSOLE-01/02、MP-R3-PAGES-HOME-INDEX-001 TDZ、MP-R3-POSTTOPIC-001 catch 作用域、R13 vue-tsc 族 ref/resolveMediaUrl 未 import）",
+    "components": [
+      "TodayRecommendationCard"
+    ],
+    "riskFiles": [
+      "apps/client/src/components/home/TodayRecommendationCard.vue",
+      "apps/client/src/subpackages/setup/schedule/index.vue",
+      "apps/client/src/subpackages/profile-extra/verification/index.vue",
+      "apps/client/src/subpackages/village/village/history.vue",
+      "apps/client/src/subpackages/discover-extra/nearby/people.vue",
+      "apps/client/src/pages/login/index.vue",
+      "apps/client/src/pages/home/index.vue",
+      "apps/client/src/pages/nearby/index.vue",
+      "apps/client/src/utils/location.ts"
+    ],
+    "verification": [
+      "typecheck-zero-errors-sustained-not-parity",
+      "boot-and-page-mount-console-no-referenceerror",
+      "watch-before-defineprops-tdz-check",
+      "theme-regression-whenever-composable-or-import-touched"
+    ],
+    "severity": "P1"
+  },
+  {
+    "id": "T17",
+    "page": "全局（tabBar 原生层遮挡 fixed 元素 + scroll-view 无界高度：游客胶囊/FAB/消息页底部避让/campus 翻页失效/favorites 双滚动/history 100vh/activities 高度链/matching-circle-home min-height）",
+    "components": [
+      "GlobalPublishFab",
+      "custom-tab-bar"
+    ],
+    "riskFiles": [
+      "apps/client/src/pages/discover/index.vue",
+      "apps/client/src/pages/messages/index.vue",
+      "apps/client/src/custom-tab-bar/index.wxss",
+      "apps/client/src/components/common/GlobalPublishFab.vue",
+      "apps/client/src/subpackages/campus/campus/index.vue",
+      "apps/client/src/subpackages/profile-extra/profile/favorites.vue",
+      "apps/client/src/subpackages/village/village/history.vue",
+      "apps/client/src/subpackages/discover/activities/index.vue",
+      "apps/client/src/subpackages/discover-extra/discover/matching.vue",
+      "apps/client/src/subpackages/circles/circles/circle-home.vue",
+      "apps/client/src/App.vue"
+    ],
+    "verification": [
+      "tabbar-native-layer-fixed-element-clearance",
+      "scrollview-bounded-height-scrolltolower-fires",
+      "bottom-clearance-tri-check-on-tabbar-or-page-style-change",
+      "realdevice-spot-check-devtools-env-zero-masks-offsets"
+    ],
+    "severity": "P1"
   }
 ]

@@ -27,6 +27,8 @@
     "build:mp-weixin:showcase": "node scripts/check-mp-image-styles.mjs --strict && node scripts/prepare-static.mjs --dev && node scripts/profile-svg-to-png.mjs && uni build --platform mp-weixin --mode mp-weixin-showcase",
     "build:mp-weixin:real": "node scripts/check-mp-image-styles.mjs --strict && node scripts/check-statusbar-offset.mjs && node scripts/check-tabbar-consistency.mjs && node scripts/check-project-rules.mjs && node scripts/inject-wx-appid.mjs && node scripts/prepare-static.mjs --real && node scripts/profile-svg-to-png.mjs && node ../../scripts/verify-env-release.mjs && node scripts/strip-mock-for-mp.mjs \"uni build --platform mp-weixin --mode real\" && node scripts/prune-unreferenced-static.mjs && node ../../scripts/verify-package-size.mjs",
     "build:mp-weixin:real:dev": "node scripts/check-mp-image-styles.mjs --strict && node scripts/check-statusbar-offset.mjs && node scripts/check-tabbar-consistency.mjs && node scripts/check-project-rules.mjs && node scripts/inject-wx-appid.mjs && node scripts/prepare-static.mjs --dev && node scripts/profile-svg-to-png.mjs && node scripts/strip-mock-for-mp.mjs \"uni build --platform mp-weixin --mode real\"",
+    "build:mp-weixin:real:isolated": "node scripts/build-real-isolated.mjs",
+    "build:mp-weixin:real:isolated:full": "node scripts/build-real-isolated.mjs --full-chain",
     "typecheck": "vue-tsc --noEmit",
     "check:tabbar": "node scripts/check-tabbar-consistency.mjs",
     "check:statusbar": "node scripts/check-statusbar-offset.mjs",

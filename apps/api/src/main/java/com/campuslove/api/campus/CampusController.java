@@ -176,7 +176,8 @@ public class CampusController {
                 .map(UserCampusProfile::getCampusName).orElse(null);
         campusPermissionService.requireVerifiedSameSchool(userId, campusName);
         CampusTopicView topic = campusService.createCampusTopic(
-                userId, schoolId, req.category(), req.title(), req.content(), req.tags());
+                userId, schoolId, req.category(), req.title(), req.content(), req.tags(),
+                req.images(), req.isAnonymous());
         return ApiResponse.ok(topic);
     }
 
@@ -239,7 +240,8 @@ public class CampusController {
         String topicSchool = schoolRepository.findById(topic.schoolId())
                 .map(School::getName).orElse(null);
         campusPermissionService.requireVerifiedSameSchool(userId, topicSchool);
-        CampusTopicReplyView reply = campusService.replyCampusTopic(id, userId, req.content());
+        CampusTopicReplyView reply = campusService.replyCampusTopic(id, userId, req.content(),
+                req.isAnonymous());
         return ApiResponse.ok(reply);
     }
 
@@ -444,23 +446,31 @@ record CampusReplyPageResponse(
 /**
  * 创建校园话题请求体。
  *
- * @param category 话题分类（必填）
- * @param title    话题标题（必填，≤200 字）
- * @param content  话题内容（必填，≤5000 字）
- * @param tags     话题标签数组（3-L：可选，≤5 个，每个 ≤20 字符）
+ * @param category    话题分类（必填）
+ * @param title       话题标题（必填，≤200 字）
+ * @param content     话题内容（必填，≤5000 字）
+ * @param tags        话题标签数组（3-L：可选，≤5 个，每个 ≤20 字符）
+ * @param images      话题配图 URL 数组（可选，≤6 张，每个 ≤2048 字符；落 campus_topics.images）
+ * @param isAnonymous 是否匿名发布（可空，缺省视为 false；true 时读侧隐藏作者昵称/头像）
  */
 record CreateCampusTopicRequest(
     @NotBlank String category,
     @NotBlank @Size(max = 200) String title,
     @NotBlank @Size(max = 5000) String content,
-    @Size(max = 5) List<@Size(max = 20) String> tags
+    @Size(max = 5) List<@Size(max = 20) String> tags,
+    @Size(max = 6) List<@Size(max = 2048) String> images,
+    Boolean isAnonymous
 ) {}
 
 /**
  * 创建校园话题回复请求体。
+ *
+ * @param content     回复内容（必填，≤2000 字）
+ * @param isAnonymous 是否匿名回复（可空，缺省视为 false；落 campus_topic_replies.is_anonymous）
  */
 record CreateCampusReplyRequest(
-    @NotBlank @Size(max = 2000) String content
+    @NotBlank @Size(max = 2000) String content,
+    Boolean isAnonymous
 ) {}
 
 /**

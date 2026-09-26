@@ -28,7 +28,21 @@ const sessionStore = useSessionStore();
 
 const city = ref("");
 const campusName = computed(() => sessionStore.userSession?.campusName || "");
-const displayText = computed(() => buildLocationText(city.value, campusName.value));
+// MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001：城市可能不是从这对经纬度解析来的——
+// 逆地理拿不到时，utils/location 会退回按请求方 IP 归属地推断的城市（那是 MP-R1-PAGES-NEARBY-INDEX-005
+// 的补救，两个值可以差出一个省）。本页是全站唯一把「城市」和「坐标」并排展示的地方，所以必须同源诚实：
+// ip 来源加「服务器所在城市」标注；城市为空时**不再**走 buildLocationText——
+// 那条链会落到硬编码「北京大学 · 附近」，等于把假城市写进与坐标同源的展示里，改后只见坐标行。
+const cityFromIp = ref(false);
+const displayText = computed(() => {
+  if (city.value) {
+    return cityFromIp.value
+      ? `${city.value} · ${t("locationPage.serverCityTag")}`
+      : buildLocationText(city.value, campusName.value);
+  }
+  if (campusName.value) return buildLocationText("", campusName.value);
+  return t("locationPage.addressUnavailable");
+});
 const coords = ref<{ latitude: number; longitude: number } | null>(null);
 const locating = ref(false);
 /** 物理地址文本（chooseLocation 返回 address；或校区/城市文本） */
@@ -63,6 +77,7 @@ async function loadLocation() {
     const loc = await fetchCurrentLocation();
     if (loc) {
       city.value = loc.city || "";
+      cityFromIp.value = loc.citySource === "ip";
       coords.value = { latitude: loc.latitude, longitude: loc.longitude };
       void reportLocation(loc.latitude, loc.longitude);
     }
@@ -133,7 +148,7 @@ onLoad(() => {
     <view class="location-body">
       <view class="location-card">
         <view class="location-card__row">
-          <image class="location-card__icon" :src="resolveMediaUrl(IMAGE_PATHS.HOME_ICONS.LOCATION_PIN)" mode="aspectFit" alt="" />
+          <image class="location-card__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.LOCATION)" mode="aspectFit" alt="" />
           <view class="location-card__info">
             <text class="location-card__label">当前位置</text>
             <text class="location-card__value">{{ displayText }}</text>

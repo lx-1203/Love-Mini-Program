@@ -1,0 +1,326 @@
+{
+  "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+  "judged": 40,
+  "by": {
+    "VERIFIED": 1,
+    "FAILED": 1,
+    "UNVERIFIED": 11,
+    "UNVERIFIED_INSTRUMENT": 14,
+    "NOT_EVIDENCED": 13
+  },
+  "noEvidenceExcludedFromCompletion": 7,
+  "issues": [
+    {
+      "id": "MP-R2-POSTTOPIC-012",
+      "canonical": true,
+      "severity": "P4",
+      "page": "subpackages/circles/circles/post-topic",
+      "observed": "栈底点返回后仍停本页、无 Toast，console 实录 navigateBack:fail 未捕获拒绝；HEAD 源码 :459-466 已有 catch→switchTab→reLaunch 兜底，被测 bundle（15:03）早于该修复（20:56）",
+      "expected": "返回钮在栈底必须有兜底落点与可观测反馈，console 不得出现 unhandled rejection",
+      "evidence": [
+        "reports/screenshots/round-6-interact/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-CPT37-after.png",
+        "apps/client/src/subpackages/circles/circles/post-topic.vue:454-466",
+        "reports/audit/round-6/issue-matrix.md:141"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT01",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：2 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT02",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT03",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT04",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "dom 探针全部是非 class 令牌（把 i18n key / JS 标识符当选择器查）：.postCategory:absent —— 该观察不能支撑任何判决",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT05",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT06",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT07",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT08",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT09",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT10",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ① 30 字 → ② 清空 → ③ 600 字 → ④ 含换行/制表/emoji/HTML 片段混排，每步读 .content-count",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT11",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT12",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT13",
+      "verdict": "VERIFIED",
+      "reason": "三方一致：toast[] 实录「请输入标题」= circle.postTopicErrTitle 口径，before/after 帧齐备、停留本页、console 无报错。",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT14",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判；且期望所需维度未采集：network 请求计数；另有非 class 探针 .postTopicErrContent:absent",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT15",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT16",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT17",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT18",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT19",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT20",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT21",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT22",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT23",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT24",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT25",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT26",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(.category-chip)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT27",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT28",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判；另有非 class 探针 .color:present",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT29",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT30",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.image-item__remove)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT31",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT32",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.activity-add) ; tap(.activity-picker) ; tap(.activity-picker) ; tap(.activity-picker)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT33",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT34",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT35",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT36",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：automator 无 input 方法（el.input is not a function），表单前置态无法构造",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT37",
+      "verdict": "FAILED",
+      "reason": "三方不一致：点 .post-header__back 后 CPT37-after.png 仍停在 post-topic、无 Toast，console 实录 navigateBack:fail 未捕获拒绝。注意：HEAD 源码已按 MP-R2-POSTTOPIC-012 补 catch 兜底（post-topic.vue:459-466），而被测 bundle 构建于 15:03、源码改于 20:56 → 本条证据来自修复前产物，台账应按「已修复待复验」处置而非重修。",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT38",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT39",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC/CPT40",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判；且期望所需维度未采集：几何/热区实测数值",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    }
+  ],
+  "notes": [
+    "CPT37 判 FAILED 但注明证据来自过期产物：被测 bundle 构建于 2026-09-25 15:03，circles/post-topic.vue 的 MP-R2-POSTTOPIC-012 兜底（:459-466 catch→switchTab→reLaunch）写入源码于 20:56。台账修订员应据此把该行推进为「已修复待复验」，本轮不重复立号。",
+    "裁定口径：三方一致=ops expected × exec observed/route/toast/console/evidence × 真打开的帧（round-6-tour 巡检帧含 zoom3x、round-6-interact 操作前后图）；复合键 manifest+caseId。",
+    "输入快照：.zcode/tmp/adjudicate/exec-results.snapshot.json（updatedAt 2026-09-25T15:28:18.856Z，509 行，gitSha 874ff52f）。执行轮仍在追加权威件，本文件只覆盖快照内已记录用例。",
+    "ERROR:timeout 尾注的帧一律按 NO-EVIDENCE 处置并计入 UNVERIFIED，不读作已取证；本清单该类 7 条已从完成度中排除。"
+  ]
+}

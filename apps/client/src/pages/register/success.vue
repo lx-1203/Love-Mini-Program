@@ -12,6 +12,8 @@ import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
 import { IMAGE_PATHS } from "../../config/images";
 // R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
 import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
+// MP-R2-PAGES-REGISTER-INDEX-010：脱敏正则收编到 utils 单一实现（与 register/index.vue 同源）
+import { maskPhone } from "../../utils/form-validator";
 const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 
@@ -25,7 +27,7 @@ const subLines = ["欢迎加入寻觅，接下来用 1 分钟", "把资料填成
 onLoad((query) => {
   const raw = String(query?.phone || "").replace(/\D/g, "");
   if (raw.length === 11) {
-    maskedPhone.value = raw.replace(/^(\d{3})\d{4}(\d{4})$/, "$1****$2");
+    maskedPhone.value = maskPhone(raw);
   }
 });
 

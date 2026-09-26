@@ -18,6 +18,9 @@ export interface LocationResult {
   longitude: number;
   /** 城市/区域名（解析失败时为空串） */
   city: string;
+  /** 城市来源：gps=由本次经纬度逆地理得到；ip=逆地理没成、改由请求方 IP 归属地推断。
+   *  可选，旧消费方不读即保持原行为（LOCATION-001 的同源判据只在需要诚实标注的页面生效）。 */
+  citySource?: "gps" | "ip";
 }
 
 /** 上报节流：上次上报时间戳（ms），5 分钟内不重复上报 */
@@ -41,14 +44,20 @@ export async function fetchCurrentLocation(): Promise<LocationResult | null> {
     const { latitude, longitude } = res;
     // 尝试逆地理编码获取城市名（腾讯地图 key 未配置时内部直接短路返回空串）
     let city = await reverseGeocode(latitude, longitude);
+    let citySource: "gps" | "ip" = "gps";
     if (!city) {
       // MP-R1-PAGES-NEARBY-INDEX-005：腾讯地图 key 未配置/解析失败时，
       // 回退后端公开端点 /location/ip-city（SecurityConfig permitAll）解析城市，
       // 避免「城市」维度因 key 缺失整链失真（currentCity 永不设置、
       // 城市过滤/副标题恒走兜底文案）。
       city = await fetchCityFromBackend().catch(() => "");
+      // MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001：走到这里说明城市**不是**
+      // 由上面那对经纬度解析出来的，而是按请求方 IP 归属地推断的——两者可以差出一个省。
+      // 只打标记、不改 city 的取值：home/nearby/publish 三个消费方都不读这个新字段，
+      // 行为零变化、005 的补救也不回退；只有需要"城市与坐标同源"的页面才按标记分支。
+      if (city) citySource = "ip";
     }
-    return { latitude, longitude, city };
+    return { latitude, longitude, city, citySource };
   } catch (_err) {
     // 定位失败（用户拒绝授权 / 系统关闭定位等）
     return null;
@@ -155,13 +164,13 @@ export async function reportLocation(latitude: number, longitude: number, force 
   if (getToken().length === 0) return;
   const now = Date.now();
   if (!force && now - lastReportAt < REPORT_THROTTLE_MS) return;
-  lastReportAt = now;
   try {
     await request({
       url: "/location/report",
       method: "POST",
       data: { latitude, longitude },
     });
+    lastReportAt = now;
   } catch (_e) {
     // 上报失败静默忽略
   }

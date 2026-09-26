@@ -1,0 +1,1262 @@
+{
+  "schemaVersion": "round-report-metrics-1",
+  "generatedAt": "2026-09-26T01:38:11.422Z",
+  "startedAt": "2026-09-26T01:37:49.139Z",
+  "roundDir": "reports/audit/round-6",
+  "reportFile": "reports/audit/round-6/round-6-report.md",
+  "identity": {
+    "head": "874ff52f",
+    "porcelain": 173,
+    "porcelainApps": 90,
+    "jvmPid": "29536",
+    "jvmStartedAt": "2026-09-26 03:12:29",
+    "backendRestartVerdict": "PASS JVM 晚于全部 java 源码改动与 HEAD 提交，可作前后端联通取证的前提",
+    "backendRestartExit": 0,
+    "mockBundleFingerprint": "ff6dd482",
+    "realBundleFingerprint": "05637737",
+    "bundleFingerprintInputs": [
+      "app.json",
+      "config/env.js",
+      "config/showcase.js",
+      "config/feature-flags.js"
+    ],
+    "runnerNode": "v22.17.0",
+    "runnerPath": "D:/codex-tools/node-v22.17.0-win-x64/node.exe"
+  },
+  "coverage": {
+    "plannedSuites": 24,
+    "plannedCases": 1107,
+    "recordedCases": 1107,
+    "gap": 0,
+    "neverRanSuites": 0,
+    "neverRanCases": 0,
+    "neverRanList": [],
+    "errTainted": 145,
+    "requiresReal": {
+      "true": 236,
+      "false": 871,
+      "unlabeled": 0
+    },
+    "ckptFile": "tmp/qa/checkpoints/exec-R6.json",
+    "ckptStatuses": {
+      "completed": 29
+    },
+    "pendingManifestsFromCkpt": [],
+    "ckptSuiteUnmappable": 0
+  },
+  "execBoundary": {
+    "snapshot": ".zcode/tmp/round6-exec/exec-results.snapshot-82e9960db122090c.json",
+    "snapshotRows": 556,
+    "execRows": 1107,
+    "keyFields": [
+      "suite",
+      "manifest",
+      "id"
+    ],
+    "upsertKeyLineInRexec": 478,
+    "sideA": {
+      "rows": 556,
+      "EXECUTED": 291,
+      "FAILED": 157,
+      "SKIPPED": 108,
+      "other": 0,
+      "otherBy": {},
+      "subject": "冻结 874ff52f 构建 + 旧后端"
+    },
+    "sideB": {
+      "rows": 551,
+      "EXECUTED": 299,
+      "FAILED": 220,
+      "SKIPPED": 32,
+      "other": 0,
+      "otherBy": {},
+      "subject": "重建构建 + 重启后后端"
+    },
+    "combinedLabelledAsMixed": {
+      "rows": 1107,
+      "EXECUTED": 590,
+      "FAILED": 377,
+      "SKIPPED": 140,
+      "other": 0,
+      "otherBy": {}
+    },
+    "rowsDroppedFromSnapshot": 0,
+    "statusUpsertedAcrossBoundary": [
+      "P-PAGES-DISCOVER-INDEX-01|PAGES-DISCOVER-INDEX|DC20",
+      "P-PAGES-LOGIN-INDEX-01|PAGES-LOGIN-INDEX|LG12",
+      "P-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-01|SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI03"
+    ],
+    "perSuite": [
+      {
+        "manifest": "次要21",
+        "suite": "P-次要21-01",
+        "n": 76,
+        "EXECUTED": 50,
+        "FAILED": 19,
+        "SKIPPED": 7,
+        "other": 0,
+        "a": 0,
+        "b": 76
+      },
+      {
+        "manifest": "次要20",
+        "suite": "P-次要20-01",
+        "n": 73,
+        "EXECUTED": 48,
+        "FAILED": 21,
+        "SKIPPED": 4,
+        "other": 0,
+        "a": 0,
+        "b": 73
+      },
+      {
+        "manifest": "次要18",
+        "suite": "P-次要18-01",
+        "n": 70,
+        "EXECUTED": 34,
+        "FAILED": 33,
+        "SKIPPED": 3,
+        "other": 0,
+        "a": 0,
+        "b": 70
+      },
+      {
+        "manifest": "次要22",
+        "suite": "P-次要22-01",
+        "n": 66,
+        "EXECUTED": 41,
+        "FAILED": 24,
+        "SKIPPED": 1,
+        "other": 0,
+        "a": 0,
+        "b": 66
+      },
+      {
+        "manifest": "次要19",
+        "suite": "P-次要19-01",
+        "n": 51,
+        "EXECUTED": 28,
+        "FAILED": 19,
+        "SKIPPED": 4,
+        "other": 0,
+        "a": 0,
+        "b": 51
+      },
+      {
+        "manifest": "PAGES-HOME-INDEX",
+        "suite": "P-PAGES-HOME-INDEX-01",
+        "n": 48,
+        "EXECUTED": 37,
+        "FAILED": 3,
+        "SKIPPED": 8,
+        "other": 0,
+        "a": 48,
+        "b": 0
+      },
+      {
+        "manifest": "PAGES-DISCOVER-INDEX",
+        "suite": "P-PAGES-DISCOVER-INDEX-01",
+        "n": 45,
+        "EXECUTED": 22,
+        "FAILED": 8,
+        "SKIPPED": 15,
+        "other": 0,
+        "a": 45,
+        "b": 0
+      },
+      {
+        "manifest": "PAGES-PROFILE-INDEX",
+        "suite": "P-PAGES-PROFILE-INDEX-01",
+        "n": 45,
+        "EXECUTED": 20,
+        "FAILED": 8,
+        "SKIPPED": 17,
+        "other": 0,
+        "a": 45,
+        "b": 0
+      },
+      {
+        "manifest": "PAGES-NEARBY-INDEX",
+        "suite": "P-PAGES-NEARBY-INDEX-01",
+        "n": 42,
+        "EXECUTED": 24,
+        "FAILED": 0,
+        "SKIPPED": 18,
+        "other": 0,
+        "a": 42,
+        "b": 0
+      },
+      {
+        "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+        "suite": "P-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-01",
+        "n": 42,
+        "EXECUTED": 23,
+        "FAILED": 15,
+        "SKIPPED": 4,
+        "other": 0,
+        "a": 3,
+        "b": 39
+      },
+      {
+        "manifest": "PAGES-MESSAGES-INDEX",
+        "suite": "P-PAGES-MESSAGES-INDEX-01",
+        "n": 41,
+        "EXECUTED": 14,
+        "FAILED": 11,
+        "SKIPPED": 16,
+        "other": 0,
+        "a": 41,
+        "b": 0
+      },
+      {
+        "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+        "suite": "P-SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-01",
+        "n": 41,
+        "EXECUTED": 22,
+        "FAILED": 18,
+        "SKIPPED": 1,
+        "other": 0,
+        "a": 41,
+        "b": 0
+      },
+      {
+        "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+        "suite": "P-SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-01",
+        "n": 40,
+        "EXECUTED": 20,
+        "FAILED": 17,
+        "SKIPPED": 3,
+        "other": 0,
+        "a": 40,
+        "b": 0
+      },
+      {
+        "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+        "suite": "P-SUBPACKAGES-VILLAGE-VILLAGE-POST-01",
+        "n": 40,
+        "EXECUTED": 14,
+        "FAILED": 23,
+        "SKIPPED": 3,
+        "other": 0,
+        "a": 0,
+        "b": 40
+      },
+      {
+        "manifest": "PAGES-LOGIN-INDEX",
+        "suite": "P-PAGES-LOGIN-INDEX-01",
+        "n": 38,
+        "EXECUTED": 14,
+        "FAILED": 17,
+        "SKIPPED": 7,
+        "other": 0,
+        "a": 38,
+        "b": 0
+      },
+      {
+        "manifest": "PAGES-REGISTER-INDEX",
+        "suite": "P-PAGES-REGISTER-INDEX-01",
+        "n": 37,
+        "EXECUTED": 20,
+        "FAILED": 13,
+        "SKIPPED": 4,
+        "other": 0,
+        "a": 37,
+        "b": 0
+      },
+      {
+        "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+        "suite": "P-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-01",
+        "n": 34,
+        "EXECUTED": 7,
+        "FAILED": 24,
+        "SKIPPED": 3,
+        "other": 0,
+        "a": 34,
+        "b": 0
+      },
+      {
+        "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+        "suite": "P-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-01",
+        "n": 34,
+        "EXECUTED": 10,
+        "FAILED": 22,
+        "SKIPPED": 2,
+        "other": 0,
+        "a": 0,
+        "b": 34
+      },
+      {
+        "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+        "suite": "P-SUBPACKAGES-CAMPUS-CAMPUS-INDEX-01",
+        "n": 30,
+        "EXECUTED": 13,
+        "FAILED": 12,
+        "SKIPPED": 5,
+        "other": 0,
+        "a": 30,
+        "b": 0
+      },
+      {
+        "manifest": "次要20",
+        "suite": "P-次要20-02",
+        "n": 28,
+        "EXECUTED": 20,
+        "FAILED": 6,
+        "SKIPPED": 2,
+        "other": 0,
+        "a": 0,
+        "b": 28
+      },
+      {
+        "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+        "suite": "P-SUBPACKAGES-CAMPUS-CAMPUS-HUB-01",
+        "n": 27,
+        "EXECUTED": 23,
+        "FAILED": 4,
+        "SKIPPED": 0,
+        "other": 0,
+        "a": 27,
+        "b": 0
+      },
+      {
+        "manifest": "次要21",
+        "suite": "P-次要21-02",
+        "n": 26,
+        "EXECUTED": 16,
+        "FAILED": 10,
+        "SKIPPED": 0,
+        "other": 0,
+        "a": 0,
+        "b": 26
+      },
+      {
+        "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+        "suite": "P-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-01",
+        "n": 25,
+        "EXECUTED": 16,
+        "FAILED": 6,
+        "SKIPPED": 3,
+        "other": 0,
+        "a": 25,
+        "b": 0
+      },
+      {
+        "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+        "suite": "P-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-01",
+        "n": 24,
+        "EXECUTED": 15,
+        "FAILED": 5,
+        "SKIPPED": 4,
+        "other": 0,
+        "a": 24,
+        "b": 0
+      },
+      {
+        "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+        "suite": "P-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-01",
+        "n": 20,
+        "EXECUTED": 12,
+        "FAILED": 6,
+        "SKIPPED": 2,
+        "other": 0,
+        "a": 20,
+        "b": 0
+      },
+      {
+        "manifest": "次要18",
+        "suite": "P-次要18-02",
+        "n": 18,
+        "EXECUTED": 12,
+        "FAILED": 5,
+        "SKIPPED": 1,
+        "other": 0,
+        "a": 0,
+        "b": 18
+      },
+      {
+        "manifest": "次要19",
+        "suite": "P-次要19-02",
+        "n": 18,
+        "EXECUTED": 3,
+        "FAILED": 14,
+        "SKIPPED": 1,
+        "other": 0,
+        "a": 0,
+        "b": 18
+      },
+      {
+        "manifest": "PAGES-REGISTER-SUCCESS",
+        "suite": "P-PAGES-REGISTER-SUCCESS-01",
+        "n": 16,
+        "EXECUTED": 10,
+        "FAILED": 4,
+        "SKIPPED": 2,
+        "other": 0,
+        "a": 16,
+        "b": 0
+      },
+      {
+        "manifest": "次要22",
+        "suite": "P-次要22-02",
+        "n": 12,
+        "EXECUTED": 2,
+        "FAILED": 10,
+        "SKIPPED": 0,
+        "other": 0,
+        "a": 0,
+        "b": 12
+      }
+    ]
+  },
+  "triage": {
+    "used": "本次由本报告启动的分诊台（其 stdout + 它自己写的 JSON sidecar）",
+    "rows": 1107,
+    "buckets": {
+      "EXECUTED": 590,
+      "locate-label": 115,
+      "SKIPPED-not-automatable": 140,
+      "locate-selector": 144,
+      "locate-label-token-lost": 79,
+      "harness-api": 19,
+      "timeout": 20
+    },
+    "unclassified": 79,
+    "fourCell": {
+      "两载皆有且就在目标页：构建里有却定位不到 → 状态没到/时机太早/作用域找错（harness 或产品状态机）": 154,
+      "两载皆无：本构建确无此文案/类，用例断言的目标不存在（产品缺或规格臆造）": 73,
+      "不在目标页：前置导航没到位（用例前置/harness 通道），元素存在性无从判断": 31,
+      "仅源码有：修复波补上了它 → 本轮失败作废，重建后必须复验": 1
+    },
+    "suspect": 27,
+    "tokenLost": 79,
+    "offTarget": 65,
+    "cannotTellOnTarget": 0,
+    "mismatch": 187,
+    "fallbackTotal": 79
+  },
+  "evidence": {
+    "readjudicate": {
+      "perExec": {
+        "CLEAN_EVIDENCE": 378,
+        "TAINTED_BUT_FILE_PRESENT": 13,
+        "NO_EVIDENCE_MISSING_FILE": 2,
+        "NOT_A_FILE_REF": 75,
+        "EXECUTED_WITHOUT_TIER_EVIDENCE": 122
+      },
+      "CLEAN_EVIDENCE": 565,
+      "TAINTED_BUT_FILE_PRESENT": 33,
+      "NO_EVIDENCE_MISSING_FILE": 112,
+      "NOT_A_FILE_REF": 275,
+      "EXECUTED_WITHOUT_TIER_EVIDENCE": 122,
+      "rows": 1107,
+      "status": "{\"EXECUTED\":590,\"FAILED\":377,\"SKIPPED\":140}",
+      "domainViolations": "0",
+      "identical": 1,
+      "executedTierUnmet": 122,
+      "downgrade": 122,
+      "sizeOnly": 503,
+      "notAFileCases": 275,
+      "taintedUniverse": 145,
+      "gateEquiv": 145
+    },
+    "independent": {
+      "executed": 590,
+      "hit": 331,
+      "deadOnly": 0,
+      "noPngRef": 259
+    },
+    "note": "两条规则并列，不合并"
+  },
+  "tour": {
+    "file": "reports/screenshots/round-6-tour/manifest-detail.json",
+    "sha8": "3f132cee",
+    "gitSha": "874ff52f",
+    "shots": 263,
+    "byIdentity": {
+      "A": 133,
+      "B": 130
+    },
+    "failures": 46,
+    "failuresByIdentity": {
+      "A": 21,
+      "B": 25
+    },
+    "stateNotApplied": 37,
+    "aliasTrue": 24,
+    "aliasFalse": 13,
+    "routeDrifts": 11,
+    "routeDriftsByIdentity": {
+      "A": 5,
+      "B": 6
+    },
+    "zoomFrames": 336,
+    "zoomCropsSumFromShots": 336,
+    "carrierWorktreeDirty": 12
+  },
+  "live": {
+    "g7": {
+      "exit": 0,
+      "result": "PASS",
+      "runner": "node22"
+    },
+    "g8": {
+      "exit": 0,
+      "result": "PASS",
+      "ringsOk": "10/10",
+      "rings": [
+        {
+          "n": 1,
+          "name": "客户端身份（体验账号）",
+          "ok": true,
+          "detail": "POST /auth/guest-login -> 200，已取到 JWT"
+        },
+        {
+          "n": 2,
+          "name": "客户端写库 POST /posts",
+          "ok": true,
+          "detail": "HTTP 200，返回 id=252"
+        },
+        {
+          "n": 3,
+          "name": "后台按 id 读到该帖",
+          "ok": true,
+          "detail": "GET admin/village-posts/252 -> 200；title 字段可见=是（值 \"G8取证2609260138号\"）"
+        },
+        {
+          "n": 4,
+          "name": "审核驱动前端可见性",
+          "ok": true,
+          "detail": "审核前在列表=false(total=200) / audit HTTP 200 / 审核后在列表=false(total=201) / 可见性以 total 增量为准=true；实测确认：新帖默认 audit_status=pending 且前端列表不可见，审核通过后 total +1 → v32 G8(4) 的假设成立（我一度因 javadoc 写「默认 approved」而怀疑它，那是注释与实现不一致）"
+        },
+        {
+          "n": 5,
+          "name": "同 Idempotency-Key 重放",
+          "ok": true,
+          "detail": "重放 HTTP 409（期望 409）；重放后 total=201 vs 审核后 201 → 未新增行 ✔"
+        },
+        {
+          "n": 6,
+          "name": "计数客户端↔后台一致",
+          "ok": true,
+          "detail": "评论 HTTP 200 / 点赞 HTTP 200；客户端(comment=1, like=1) vs 后台字段集=id,authorId,authorNickname,authorAvatar,title,content,images,tags,category,status,auditStatus,visibility,circleId,auditRemark → 若后台视图根本没有计数字段，这是**后台字段对账缺口**，不是数值不一致"
+        },
+        {
+          "n": 7,
+          "name": "校园话题写侧收 images/isAnonymous",
+          "ok": true,
+          "detail": "POST /campus/topics -> HTTP 200；响应体 images=\"[\\\"http://127.0.0.1:8080/api/v1/media/app-assets/assets/default-avatar.jpg\\\"]\"（含所发 URL=true）isAnonymous=true（=true）authorName=\"匿名校友\""
+        },
+        {
+          "n": 8,
+          "name": "创建响应回主键 data.id",
+          "ok": true,
+          "detail": "HTTP 200，data.id=281 → 主键已回，客户端可直接定位新行（#27 的 save(topic) 返回值接生的实测证；此前该字段为 null，见台账 §22）"
+        },
+        {
+          "n": 9,
+          "name": "读回 images 落库 + 匿名标记",
+          "ok": true,
+          "detail": "GET /campus/topics/281 -> 200；images 字段=\"[\"http://127.0.0.1:8080/api/v1/media/app-assets/assets/default-avatar.jpg\"]\"（含所发 URL=true）；isAnonymous=true；authorId=null authorName=\"匿名校友\" → 匿名若为真，作者字段应被遮蔽"
+        },
+        {
+          "n": 10,
+          "name": "匿名回复透传并可读回",
+          "ok": true,
+          "detail": "POST replies -> 200 id=13；列表 200 命中本条=true；isAnonymous=true；authorName=\"匿名校友\""
+        }
+      ],
+      "artifacts": "posts.id=252 ; comments.id=1220 ; campus_topics.id=281 ; campus_replies.id=13  ← 本轮写入的真实数据，未删除，交你决定去留"
+    },
+    "g9": {
+      "exit": 0,
+      "result": "PASS",
+      "extracted": 455,
+      "probed": 455,
+      "ok": 455,
+      "skipped": 0,
+      "fail": 0,
+      "control": {
+        "在盘且200": 455,
+        "在盘但失败": 0,
+        "不在盘但200": 0,
+        "不在盘且失败": 0
+      }
+    },
+    "probe": {
+      "exit": 0,
+      "backend": "UP",
+      "verdict": "READY",
+      "reachable": "8/8",
+      "onDisk": 1440
+    }
+  },
+  "defects": {
+    "derivedCount": 2
+  },
+  "gates": {
+    "verify-ledger": {
+      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-ledger.mjs reports/audit/round-6",
+      "exitCode": 0,
+      "stdoutSha8": "54c02319"
+    },
+    "verify-state-truth": {
+      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-state-truth.mjs reports/audit/round-6",
+      "exitCode": 0,
+      "stdoutSha8": "0aeaa393"
+    },
+    "verify-evidence-integrity（权威索引=本轮全部 corpus）": {
+      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/audit/round-6/screenshot-manifest.json --dir reports/screenshots/round-6-tour --exec reports/audit/round-6/interact/exec-results.json",
+      "exitCode": 0,
+      "stdoutSha8": "a5113737"
+    },
+    "verify-evidence-corpus（本轮 scope）": {
+      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-6,reports/screenshots/round-6-interact,reports/screenshots/round-6-real-tour,reports/screenshots/round-6-tour,reports/screenshots/round-6-tour-chat,reports/screenshots/round-6-tour-dupfix,reports/screenshots/round-6-tour-reshoot",
+      "exitCode": 0,
+      "stdoutSha8": "9e7cbc09"
+    },
+    "verify-provenance-all（本轮 scope）": {
+      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-6,reports/screenshots/round-6-interact,reports/screenshots/round-6-real-tour,reports/screenshots/round-6-tour,reports/screenshots/round-6-tour-chat,reports/screenshots/round-6-tour-dupfix,reports/screenshots/round-6-tour-reshoot",
+      "exitCode": 0,
+      "stdoutSha8": "2a89cb30"
+    },
+    "verify-queue-reconcile": {
+      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-queue-reconcile.mjs reports/audit/round-6",
+      "exitCode": 0,
+      "stdoutSha8": "d31ad3a5"
+    },
+    "verify-backend-restarted": {
+      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-backend-restarted.mjs --port 8080",
+      "exitCode": 0,
+      "stdoutSha8": "1729f300"
+    },
+    "verify-i18n-orphan": {
+      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-i18n-orphan.mjs",
+      "exitCode": 0,
+      "stdoutSha8": "2e773de8"
+    },
+    "probe-real-env": {
+      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/probe-real-env.mjs",
+      "exitCode": 0,
+      "stdoutSha8": "9e008813"
+    },
+    "baseline": {
+      "file": ".zcode/tmp/round6-LEDGER.md",
+      "rowsRedAtStart": 8,
+      "nowRed": []
+    }
+  },
+  "provenance": {
+    "files": [
+      {
+        "path": "reports/audit/round-6/interact/exec-results.json",
+        "mtime": "2026-09-25T22:57:26.937Z",
+        "size": 1161149,
+        "sha8": "e7a7fe79"
+      },
+      {
+        "path": ".zcode/tmp/round6-exec/exec-results.snapshot-82e9960db122090c.json",
+        "mtime": "2026-09-25T16:11:03.230Z",
+        "size": 535492,
+        "sha8": "82e9960d"
+      },
+      {
+        "path": "tmp/qa/checkpoints/exec-R6.json",
+        "mtime": "2026-09-25T22:57:26.939Z",
+        "size": 58639,
+        "sha8": "c87ef147"
+      },
+      {
+        "path": "reports/screenshots/round-6-tour/manifest-detail.json",
+        "mtime": "2026-09-25T09:24:49.927Z",
+        "size": 725431,
+        "sha8": "3f132cee"
+      },
+      {
+        "path": "reports/audit/round-6/screenshot-manifest.json",
+        "mtime": "2026-09-26T01:25:40.468Z",
+        "size": 951195,
+        "sha8": "6e9f69ce"
+      },
+      {
+        "path": "reports/audit/real-e2e/GATES.json",
+        "mtime": "2026-09-25T07:50:26.489Z",
+        "size": 6766,
+        "sha8": "97fde23b"
+      },
+      {
+        "path": ".zcode/tmp/round6-LEDGER.md",
+        "mtime": "2026-09-26T01:37:32.038Z",
+        "size": 316917,
+        "sha8": "6088d1b9"
+      },
+      {
+        "path": "reports/audit/round-6/ops/",
+        "mtime": "(目录：登记条目数 24，无单文件语义)",
+        "size": 24,
+        "sha8": "4e5c2793"
+      },
+      {
+        "path": "scripts/qa/r-exec.cjs",
+        "mtime": "2026-09-25T23:59:25.629Z",
+        "size": 128320,
+        "sha8": "5891159b"
+      },
+      {
+        "path": "apps/client/dist/build/mp-weixin/app.json",
+        "mtime": "2026-09-25T23:00:13.505Z",
+        "size": 5264,
+        "sha8": "207f7136"
+      },
+      {
+        "path": "apps/client/dist/build/mp-weixin/config/env.js",
+        "mtime": "2026-09-25T23:00:13.327Z",
+        "size": 2402,
+        "sha8": "f1c7b96b"
+      },
+      {
+        "path": "apps/client/dist/build/mp-weixin/config/showcase.js",
+        "mtime": "2026-09-25T23:00:13.386Z",
+        "size": 920,
+        "sha8": "59e2a9c9"
+      },
+      {
+        "path": "apps/client/dist/build/mp-weixin/config/feature-flags.js",
+        "mtime": "2026-09-25T23:00:13.386Z",
+        "size": 134,
+        "sha8": "08a7cff6"
+      },
+      {
+        "path": "apps/client/dist/build/mp-weixin-real/app.json",
+        "mtime": "2026-09-25T23:46:43.438Z",
+        "size": 5264,
+        "sha8": "207f7136"
+      },
+      {
+        "path": "apps/client/dist/build/mp-weixin-real/config/env.js",
+        "mtime": "2026-09-25T23:46:43.292Z",
+        "size": 2392,
+        "sha8": "f0677920"
+      },
+      {
+        "path": "apps/client/dist/build/mp-weixin-real/config/showcase.js",
+        "mtime": "2026-09-25T23:46:43.381Z",
+        "size": 910,
+        "sha8": "3039fc25"
+      },
+      {
+        "path": "apps/client/dist/build/mp-weixin-real/config/feature-flags.js",
+        "mtime": "2026-09-25T23:46:43.381Z",
+        "size": 134,
+        "sha8": "08a7cff6"
+      },
+      {
+        "path": ".zcode/tmp/report-emitter/triage-r6-at-report.json",
+        "mtime": "2026-09-26T01:37:53.066Z",
+        "size": 250456,
+        "sha8": "d4319cc0"
+      },
+      {
+        "path": ".zcode/tmp/fixverify/verdicts.json",
+        "mtime": "2026-09-26T01:12:22.339Z",
+        "size": 513998,
+        "sha8": "73ca4761"
+      }
+    ],
+    "commands": [
+      {
+        "name": "verify-backend-restarted",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-backend-restarted.mjs --port 8080",
+        "exitCode": 0,
+        "stdoutBytes": 415,
+        "sha8": "1729f300",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "git HEAD",
+        "cmd": "git rev-parse --short HEAD",
+        "exitCode": 0,
+        "stdoutBytes": 9,
+        "sha8": "7ce54ca0",
+        "note": "",
+        "runner": "git"
+      },
+      {
+        "name": "git worktree 脏项",
+        "cmd": "git status --porcelain",
+        "exitCode": 0,
+        "stdoutBytes": 8963,
+        "sha8": "362a4e97",
+        "note": "",
+        "runner": "git"
+      },
+      {
+        "name": "git worktree 脏项(apps/)",
+        "cmd": "git status --porcelain -- apps/",
+        "exitCode": 0,
+        "stdoutBytes": 5256,
+        "sha8": "4b2ec5d8",
+        "note": "",
+        "runner": "git"
+      },
+      {
+        "name": "verify-queue-reconcile",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-queue-reconcile.mjs reports/audit/round-6",
+        "exitCode": 0,
+        "stdoutBytes": 808,
+        "sha8": "d31ad3a5",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "triage-exec-failures",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/triage-exec-failures.mjs --results reports/audit/round-6/interact/exec-results.json --out .zcode/tmp/report-emitter/triage-r6-at-report",
+        "exitCode": 0,
+        "stdoutBytes": 304,
+        "sha8": "ec631cc1",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "readjudicate-evidence",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/readjudicate-evidence.mjs reports/audit/round-6/interact/exec-results.json --ops reports/audit/round-6/ops --no-lines --samples 1",
+        "exitCode": 0,
+        "stdoutBytes": 5294,
+        "sha8": "59e25d54",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "verify-state-truth",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-state-truth.mjs reports/audit/round-6",
+        "exitCode": 0,
+        "stdoutBytes": 1108,
+        "sha8": "0aeaa393",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "verify-ledger",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-ledger.mjs reports/audit/round-6",
+        "exitCode": 0,
+        "stdoutBytes": 6009,
+        "sha8": "54c02319",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "verify-evidence-integrity（权威索引=本轮全部 corpus）",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/audit/round-6/screenshot-manifest.json --dir reports/screenshots/round-6-tour --exec reports/audit/round-6/interact/exec-results.json",
+        "exitCode": 0,
+        "stdoutBytes": 1146,
+        "sha8": "a5113737",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "verify-evidence-corpus（全域）",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs",
+        "exitCode": 1,
+        "stdoutBytes": 1948,
+        "sha8": "e480c8ff",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "verify-provenance-all（全域）",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs",
+        "exitCode": 1,
+        "stdoutBytes": 2642,
+        "sha8": "f20e5368",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "verify-evidence-corpus（本轮 scope）",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-6,reports/screenshots/round-6-interact,reports/screenshots/round-6-real-tour,reports/screenshots/round-6-tour,reports/screenshots/round-6-tour-chat,reports/screenshots/round-6-tour-dupfix,reports/screenshots/round-6-tour-reshoot",
+        "exitCode": 0,
+        "stdoutBytes": 1631,
+        "sha8": "9e7cbc09",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "verify-provenance-all（本轮 scope）",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-6,reports/screenshots/round-6-interact,reports/screenshots/round-6-real-tour,reports/screenshots/round-6-tour,reports/screenshots/round-6-tour-chat,reports/screenshots/round-6-tour-dupfix,reports/screenshots/round-6-tour-reshoot",
+        "exitCode": 0,
+        "stdoutBytes": 2222,
+        "sha8": "2a89cb30",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "verify-evidence-integrity（原始 corpus：round-6-real-tour，信息轴）",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/screenshots/round-6-real-tour/manifest-detail.json --dir reports/screenshots/round-6-real-tour",
+        "exitCode": 0,
+        "stdoutBytes": 649,
+        "sha8": "78a8267b",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "verify-evidence-integrity（原始 corpus：round-6-tour，信息轴）",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/screenshots/round-6-tour/manifest-detail.json --dir reports/screenshots/round-6-tour",
+        "exitCode": 1,
+        "stdoutBytes": 1379,
+        "sha8": "341ec026",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "verify-evidence-integrity（原始 corpus：round-6-tour-chat，信息轴）",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/screenshots/round-6-tour-chat/manifest-detail.json --dir reports/screenshots/round-6-tour-chat",
+        "exitCode": 0,
+        "stdoutBytes": 643,
+        "sha8": "0d227663",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "verify-evidence-integrity（原始 corpus：round-6-tour-dupfix，信息轴）",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/screenshots/round-6-tour-dupfix/manifest-detail.json --dir reports/screenshots/round-6-tour-dupfix",
+        "exitCode": 0,
+        "stdoutBytes": 647,
+        "sha8": "e9528fdb",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "verify-evidence-integrity（原始 corpus：round-6-tour-reshoot，信息轴）",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/screenshots/round-6-tour-reshoot/manifest-detail.json --dir reports/screenshots/round-6-tour-reshoot",
+        "exitCode": 1,
+        "stdoutBytes": 1495,
+        "sha8": "021ae26d",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "verify-i18n-orphan",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-i18n-orphan.mjs",
+        "exitCode": 0,
+        "stdoutBytes": 1851,
+        "sha8": "2e773de8",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "G7 产物自证",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe apps/client/scripts/build-real-isolated.mjs --check-only",
+        "exitCode": 0,
+        "stdoutBytes": 200,
+        "sha8": "265f3f57",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "G8 十环",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/g8-e2e.cjs",
+        "exitCode": 0,
+        "stdoutBytes": 2510,
+        "sha8": "839c1ebc",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "G9 素材探针",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe .zcode/tmp/g9-probe.cjs",
+        "exitCode": 0,
+        "stdoutBytes": 402,
+        "sha8": "96ec2406",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      },
+      {
+        "name": "probe-real-env",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/probe-real-env.mjs",
+        "exitCode": 0,
+        "stdoutBytes": 1093,
+        "sha8": "9e008813",
+        "note": "",
+        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
+      }
+    ]
+  },
+  "conservation": [
+    {
+      "what": "计划 − 记录 vs GAP",
+      "parts": [
+        1107,
+        0
+      ],
+      "sum": 1107,
+      "whole": 1107,
+      "ok": true
+    },
+    {
+      "what": "status 分布 vs 检查点 suites",
+      "parts": [
+        29
+      ],
+      "sum": 29,
+      "whole": 29,
+      "ok": true
+    },
+    {
+      "what": "已认领 + 从未开跑 vs 计划套件",
+      "parts": [
+        24,
+        0
+      ],
+      "sum": 24,
+      "whole": 24,
+      "ok": true
+    },
+    {
+      "what": "A 侧 + B 侧 vs 在盘行数",
+      "parts": [
+        556,
+        551
+      ],
+      "sum": 1107,
+      "whole": 1107,
+      "ok": true
+    },
+    {
+      "what": "A 侧三态 vs A 侧行数",
+      "parts": [
+        291,
+        157,
+        108,
+        0
+      ],
+      "sum": 556,
+      "whole": 556,
+      "ok": true
+    },
+    {
+      "what": "B 侧三态 vs B 侧行数",
+      "parts": [
+        299,
+        220,
+        32,
+        0
+      ],
+      "sum": 551,
+      "whole": 551,
+      "ok": true
+    },
+    {
+      "what": "快照中已从在盘消失的行（应为 0）",
+      "parts": [
+        0
+      ],
+      "sum": 0,
+      "whole": 0,
+      "ok": true
+    },
+    {
+      "what": "套件表行数合计 vs 在盘行数",
+      "parts": [
+        1107
+      ],
+      "sum": 1107,
+      "whole": 1107,
+      "ok": true
+    },
+    {
+      "what": "套件表状态格合计 vs 在盘行数",
+      "parts": [
+        1107
+      ],
+      "sum": 1107,
+      "whole": 1107,
+      "ok": true
+    },
+    {
+      "what": "分诊桶合计 vs 行数",
+      "parts": [
+        590,
+        140,
+        115,
+        79,
+        144,
+        19,
+        20
+      ],
+      "sum": 1107,
+      "whole": 1107,
+      "ok": true
+    },
+    {
+      "what": "四格合计 vs 有查找目标的定位失败",
+      "parts": [
+        154,
+        73,
+        31,
+        1
+      ],
+      "sum": 259,
+      "whole": 259,
+      "ok": true
+    },
+    {
+      "what": "在目标页三态（是/否/判不了）vs 分诊条目",
+      "parts": [
+        452,
+        65,
+        0
+      ],
+      "sum": 517,
+      "whole": 517,
+      "ok": true
+    },
+    {
+      "what": "五类合计 vs 改判台行数",
+      "parts": [
+        565,
+        33,
+        112,
+        275,
+        122
+      ],
+      "sum": 1107,
+      "whole": 1107,
+      "ok": true
+    },
+    {
+      "what": "有图 / 断链 / 无 .png 引用 vs EXECUTED 行数",
+      "parts": [
+        331,
+        0,
+        259
+      ],
+      "sum": 590,
+      "whole": 590,
+      "ok": true
+    },
+    {
+      "what": "aliasLabel 拆项 vs stateNotApplied",
+      "parts": [
+        24,
+        13,
+        0
+      ],
+      "sum": 37,
+      "whole": 37,
+      "ok": true
+    },
+    {
+      "what": "stateNotApplied + 其它 failure vs failures 总数",
+      "parts": [
+        37,
+        9
+      ],
+      "sum": 46,
+      "whole": 46,
+      "ok": true
+    },
+    {
+      "what": "identity 分组 vs shots 总数",
+      "parts": [
+        133,
+        130
+      ],
+      "sum": 263,
+      "whole": 263,
+      "ok": true
+    },
+    {
+      "what": "zoomFrames vs shots[].zoomCrops（两处独立取数）",
+      "parts": [
+        336
+      ],
+      "sum": 336,
+      "whole": 336,
+      "ok": true
+    },
+    {
+      "what": "G9 ok+skipped+fail vs PROBED",
+      "parts": [
+        455,
+        0,
+        0
+      ],
+      "sum": 455,
+      "whole": 455,
+      "ok": true
+    },
+    {
+      "what": "G9 对照表四格 vs PROBED",
+      "parts": [
+        455,
+        0,
+        0,
+        0
+      ],
+      "sum": 455,
+      "whole": 455,
+      "ok": true
+    },
+    {
+      "what": "G8 OK 环 + MISS 环 vs 环总数",
+      "parts": [
+        10,
+        0
+      ],
+      "sum": 10,
+      "whole": 10,
+      "ok": true
+    }
+  ],
+  "failures": [],
+  "openItems": [
+    {
+      "item": "3 行跨边界被就地改写",
+      "why": "同一用例在两个被测物上各记一次，后写覆盖前写，A 侧该项已非冻结构建产物"
+    },
+    {
+      "item": "79 条定位失败无法复核（token-lost）",
+      "why": "取证字段缺失，属执行器取证缺陷，不得记产品失败"
+    },
+    {
+      "item": "187 条前置身份/状态自报不符（MISMATCH!）",
+      "why": "前置没到位，其结论不能当被测物证据"
+    },
+    {
+      "item": "13 个状态帧未真正应用状态（aliasLabel=false）",
+      "why": "该状态没有独立像素证据，只有默认帧"
+    },
+    {
+      "item": "11 条 routeDrift（落点非目标页）",
+      "why": "巡检自报落点在别的页，那些帧不能证明目标页"
+    },
+    {
+      "item": "真实模式：wx.login 真机身份链路",
+      "why": "NOT-EVIDENCED"
+    },
+    {
+      "item": "真实模式：real 产物下的 UI 截图",
+      "why": "NOT-EVIDENCED"
+    },
+    {
+      "item": "真实模式在盘载体 GATES.json",
+      "why": "记的是 6/6，本次为 10/10（且环集已变），需在重建后重出载体"
+    },
+    {
+      "item": "verify-evidence-integrity（原始 corpus：round-6-tour，信息轴） —— 同页同身份却同字节的帧仍在原始记录里：6 组",
+      "why": "信息轴不否决；这 6 组已由权威索引 stateNotApplied[] 承接（retroactive 改判），产品侧「该状态是否真的不改变画面」仍是待复验项，下一轮需要元素级交互断言而不是像素比对"
+    },
+    {
+      "item": "verify-evidence-integrity（原始 corpus：round-6-tour-reshoot，信息轴） —— 同页同身份却同字节的帧仍在原始记录里：7 组",
+      "why": "信息轴不否决；这 7 组已由权威索引 stateNotApplied[] 承接（retroactive 改判），产品侧「该状态是否真的不改变画面」仍是待复验项，下一轮需要元素级交互断言而不是像素比对"
+    },
+    {
+      "item": "门禁 verify-evidence-corpus（全域）",
+      "why": "本次退出码 1 —— 历史口径红（round-1/2 无 gitSha 或无日期戳），不否决本轮，但那些证据不可复用"
+    },
+    {
+      "item": "门禁 verify-provenance-all（全域）",
+      "why": "本次退出码 1 —— 历史口径红（round-1/2 无 gitSha 或无日期戳），不否决本轮，但那些证据不可复用"
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import { useMatchStore } from "../../../stores/match";
 import { useDiscoverStore } from "../../../stores/discover";
 import { clientApi } from "../../../services/api";
 import { mapToDiscoverCard } from "../../../stores/discover/utils";
+import type { DiscoverCard } from "../../../stores/discover/types";
 import { toMatchCardUser } from "../../../view-models/match";
 import type { MatchCardUser } from "../../../types/match";
 import { useProfileStore } from "../../../stores/profile";
@@ -30,6 +31,14 @@ const checked = ref(false);
 const previewMode = ref(false);
 /** 2026-08-31 修复「喜欢/超赞后返回仍停留原卡」：记录本次匹配消费的卡片，成功后从卡组移除 */
 const consumedCardId = ref("");
+let redirectingToSuccess = false;
+/**
+ * MP-R2-MATCHING-016：URL 直达分支的自持卡片快照与「资料拉取完成」信号。
+ * runMatchCheck 需要快照才能消费这张不在 deck 里的卡，故状态机必须等资料到位后启动；
+ * 常规导航分支不写快照（保持 null），行为与改动前逐字一致（swipeRight 回退查表）。
+ */
+let directCardSnapshot: DiscoverCard | null = null;
+let directProfileReady: Promise<void> = Promise.resolve();
 
 const partner = computed(() => matchStore.matchedUser);
 // MP-R2-MATCHING-002 (P1)：双头像必须经统一媒体出口 resolveMediaUrl——服务端原始
@@ -46,6 +55,7 @@ const partnerAvatar = computed(
 
 function redirectToSuccess() {
   const userId = partner.value?.userId ?? "";
+  redirectingToSuccess = true;
   uni.redirectTo({
     url: `${ROUTES.DISCOVER.MATCH_SUCCESS}?userId=${encodeURIComponent(userId)}`,
   });
@@ -135,7 +145,9 @@ onLoad((query) => {
         cardId,
         action as "like" | "superLike"
       );
-      void loadPartnerProfile(userId).then((user) => {
+      // MP-R2-MATCHING-016：不再 fire-and-forget——把这次资料拉取交给下方状态机等待，
+      // 否则 runMatchCheck 先于快照到位，直达链路必然 failed。
+      directProfileReady = loadPartnerProfile(userId).then((user) => {
         if (user) {
           matchStore.setMatchedUser(user);
         }
@@ -154,9 +166,17 @@ onLoad((query) => {
       });
   }
 
-  void matchStore.runMatchCheck().finally(() => {
-    checked.value = true;
-  });
+  // MP-R2-MATCHING-016：直达分支须等资料→快照到位后再启动状态机；常规导航分支
+  // directProfileReady 是已 resolve 的常量 Promise，时序等价于改动前（不传快照，
+  // swipeRight 仍按 deck 查表）。
+  void directProfileReady
+    .catch((e) => {
+      console.warn("[matching] 直达资料拉取异常，按无快照继续:", e);
+    })
+    .then(() => matchStore.runMatchCheck(directCardSnapshot))
+    .finally(() => {
+      checked.value = true;
+    });
 });
 
 /**
@@ -174,7 +194,7 @@ async function consumeCardFromDeck() {
   const discoverStore = useDiscoverStore();
   if (!discoverStore.cards.some((c) => c.id === id)) return;
   try {
-    await discoverStore.swipeRight(id);
+    await discoverStore.swipeRight(id, matchStore.pendingAction === "superLike");
   } catch (_e) {
     // 卡已被消费/移除（「卡片不存在」）→ 幂等成功：不 set errorMessage、不上报
   }
@@ -185,7 +205,11 @@ async function loadPartnerProfile(userId: string): Promise<MatchCardUser | null>
   try {
     const person = await clientApi.getPersonProfile(userId);
     if (!person) return null;
-    return toMatchCardUser(mapToDiscoverCard(person));
+    // MP-R2-MATCHING-016：同一份映射既供匹配卡资料，也供 swipeRight 的自持卡片快照
+    // （直达场景 discover deck 为空，不透传快照即 cardNotFound → 状态机恒 failed）。
+    const card = mapToDiscoverCard(person);
+    directCardSnapshot = card;
+    return toMatchCardUser(card);
   } catch (_e) {
     return null;
   }
@@ -212,7 +236,9 @@ function handleSkip() {
 // previewMode 两入口与「check 完成前退出」时 status 停在 checking/matched，
 // 残留 pendingCardId 会使下次进入绕过 200ms 兜底 → 对已消费卡 swipeRight → 误报错误
 onUnload(() => {
+  const keepMatchedUser = redirectingToSuccess ? matchStore.matchedUser : null;
   matchStore.reset();
+  if (keepMatchedUser) matchStore.setMatchedUser(keepMatchedUser);
 });
 </script>
 
@@ -236,7 +262,10 @@ onUnload(() => {
 .matching-page {
   position: relative;
   min-height: 100%;
-  background: #f4fbf8;
+  /* MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-002：裸 #f4fbf8 收编到
+     匹配域语义底（theme/design-variables.scss:172 $gradient-match → --c-gradient-match，
+     styles/tokens.scss:74 已补别名），与 MatchLoading / match-success 同一来源 */
+  background: var(--c-gradient-match);
 }
 
 .matching-page__back {

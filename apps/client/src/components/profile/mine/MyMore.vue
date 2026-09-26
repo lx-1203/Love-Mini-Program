@@ -48,7 +48,7 @@ const ICONS: Record<string, { iconSrc?: string; image?: string; color: string }>
 
 <style scoped lang="scss">
 .my-more {
-  margin: 24rpx 24rpx 0;
+  margin: var(--page-padding) var(--page-padding) 0;
 }
 
 .my-more__title {

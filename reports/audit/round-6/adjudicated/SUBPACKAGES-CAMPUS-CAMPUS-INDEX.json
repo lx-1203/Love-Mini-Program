@@ -1,0 +1,252 @@
+{
+  "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+  "judged": 30,
+  "by": {
+    "VERIFIED": 0,
+    "FAILED": 0,
+    "UNVERIFIED": 14,
+    "UNVERIFIED_INSTRUMENT": 6,
+    "NOT_EVIDENCED": 10
+  },
+  "noEvidenceExcludedFromCompletion": 1,
+  "issues": [],
+  "cases": [
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX01",
+      "verdict": "UNVERIFIED",
+      "reason": "落点错位：用例页 subpackages/campus/campus/index 但 observed top=pages/login/index（前置导航未落到本页/被上一页残留态带偏），观察对象不是本页",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX02",
+      "verdict": "UNVERIFIED",
+      "reason": "落点错位：用例页 subpackages/campus/campus/index 但 observed top=pages/login/index（前置导航未落到本页/被上一页残留态带偏），观察对象不是本页",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX03",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 分别 reLaunch '/subpackages/campus/campus/index?school=' 与 '?school=%20%20'（纯空格）",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX04",
+      "verdict": "UNVERIFIED",
+      "reason": "落点错位：用例页 subpackages/campus/campus/index 但 observed top=pages/login/index（前置导航未落到本页/被上一页残留态带偏），观察对象不是本页",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX05",
+      "verdict": "UNVERIFIED",
+      "reason": "落点错位：用例页 subpackages/campus/campus/index 但 observed top=pages/login/index（前置导航未落到本页/被上一页残留态带偏），观察对象不是本页",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX06",
+      "verdict": "UNVERIFIED",
+      "reason": "落点错位：用例页 subpackages/campus/campus/index 但 observed top=pages/login/index（前置导航未落到本页/被上一页残留态带偏），观察对象不是本页",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX07",
+      "verdict": "UNVERIFIED",
+      "reason": "落点错位：用例页 subpackages/campus/campus/index 但 observed top=pages/login/index（前置导航未落到本页/被上一页残留态带偏），观察对象不是本页",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX08",
+      "verdict": "UNVERIFIED",
+      "reason": "落点错位：用例页 subpackages/campus/campus/index 但 observed top=pages/login/index（前置导航未落到本页/被上一页残留态带偏），观察对象不是本页",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX09",
+      "verdict": "UNVERIFIED",
+      "reason": "落点错位：用例页 subpackages/campus/campus/index 但 observed top=pages/login/index（前置导航未落到本页/被上一页残留态带偏），观察对象不是本页",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX10",
+      "verdict": "UNVERIFIED",
+      "reason": "落点错位：用例页 subpackages/campus/campus/index 但 observed top=pages/login/index（前置导航未落到本页/被上一页残留态带偏），观察对象不是本页",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX11",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX12",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX13",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：swipe 无 element api，滑动手势未下发",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX14",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX15",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX16",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX17",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.reply-btn)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX18",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX19",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.campus-state__btn) ; tap(.campus-state__btn)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX20",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX21",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX22",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX23",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判；另有非 class 探针 .allSettled:absent",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX24",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX25",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— reLaunch '/subpackages/campus/campus/index?school=%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6&category=study_help&topicId=99&id",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX26",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判；且期望所需维度未采集：几何/热区实测数值",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX27",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX28",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX29",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX/CX30",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    }
+  ],
+  "notes": [
+    "CX01–CX15 连续 15 例 observed top=pages/login/index（用例页为 campus/campus/index），且 pre 均报 `login A ok userId=user-1001 MISMATCH!`、多例 navError=timeout waiting for automator response → 身份前置未成立被访问守卫弹回登录页，观察对象不是本页。落点六码=HARNESS_CALL_DEFECT，owner=instrument，最高 P2 以下；最低成本解法：pre 步骤先断言 getCurrentPages() 末位等于用例页且 token 身份 userId 与目标一致，不等即重登并复检后再进页。 反证：同清单 CX16 之后落点回到 campus/campus/index，说明是执行期登录态抖动而非产品缺陷。",
+    "裁定口径：三方一致=ops expected × exec observed/route/toast/console/evidence × 真打开的帧（round-6-tour 巡检帧含 zoom3x、round-6-interact 操作前后图）；复合键 manifest+caseId。",
+    "输入快照：.zcode/tmp/adjudicate/exec-results.snapshot.json（updatedAt 2026-09-25T15:28:18.856Z，509 行，gitSha 874ff52f）。执行轮仍在追加权威件，本文件只覆盖快照内已记录用例。",
+    "ERROR:timeout 尾注的帧一律按 NO-EVIDENCE 处置并计入 UNVERIFIED，不读作已取证；本清单该类 1 条已从完成度中排除。"
+  ]
+}

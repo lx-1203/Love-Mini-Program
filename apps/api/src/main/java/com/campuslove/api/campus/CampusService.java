@@ -31,26 +31,31 @@ public interface CampusService {
     /**
      * 创建新的校园话题。
      *
-     * @param userId   发帖用户 ID
-     * @param schoolId 学校 ID
-     * @param category 话题分类
-     * @param title    话题标题
-     * @param content  话题内容
-     * @param tags     话题标签数组（3-L，≤5 个，每个 ≤20 字符；可空/空列表）
+     * @param userId      发帖用户 ID
+     * @param schoolId    学校 ID
+     * @param category    话题分类
+     * @param title       话题标题
+     * @param content     话题内容
+     * @param tags        话题标签数组（3-L，≤5 个，每个 ≤20 字符；可空/空列表）
+     * @param images      话题配图 URL 数组（≤6 个，每个 ≤2048 字符；可空/空列表 → 列存 null）
+     * @param isAnonymous 是否匿名发布（null 视为 false）
      * @return 创建的话题视图
      */
     CampusTopicView createCampusTopic(Long userId, Long schoolId, String category,
-                                      String title, String content, List<String> tags);
+                                      String title, String content, List<String> tags,
+                                      List<String> images, Boolean isAnonymous);
 
     /**
      * 回复校园话题。
      *
-     * @param topicId 话题 ID
-     * @param userId  回复者用户 ID
-     * @param content 回复内容
+     * @param topicId     话题 ID
+     * @param userId      回复者用户 ID
+     * @param content     回复内容
+     * @param isAnonymous 是否匿名回复（null 视为 false）
      * @return 回复视图
      */
-    CampusTopicReplyView replyCampusTopic(Long topicId, Long userId, String content);
+    CampusTopicReplyView replyCampusTopic(Long topicId, Long userId, String content,
+                                          Boolean isAnonymous);
 
     /**
      * 获取校园话题的回复列表。

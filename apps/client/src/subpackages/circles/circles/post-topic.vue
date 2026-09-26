@@ -446,14 +446,22 @@ function onSelectedActivityOpen(): void {
   openAppPath(`${ROUTES.ACTIVITY_DETAIL}?id=${encodeURIComponent(String(selectedActivity.value.id))}`);
 }
 function onSelectedActivityEnroll(): void {
-  uni.showToast({ title: t("circle.postTopicActivityRemove"), icon: "none" });
+  uni.showToast({ title: t("circle.postTopicActivityEnrollHint"), icon: "none" });
 }
 
 /**
  * 返回上一页
+ * MP-R2-POSTTOPIC-012：原 `uni.navigateBack()` 无兜底——冷启动深链/直开本页时栈深 1，
+ * navigateBack 静默失败，返回钮按下去毫无反应。改抄同分包既有范式
+ * （subpackages/circles/circles/index.vue:298-304，亦与本页提交路径 :374/:420 的
+ * MP-R1-POSTTOPIC-102 兜底口径一致）：退栈失败 → switchTab 首页 → reLaunch 首页。
  */
 function goBack() {
-  uni.navigateBack();
+  uni.navigateBack({ delta: 1 }).catch(() => {
+    uni.switchTab({ url: "/pages/home/index" }).catch(() => {
+      uni.reLaunch({ url: "/pages/home/index" });
+    });
+  });
 }
 
 // MP-R1-POSTTOPIC-001（2026-09-20）：改用 onLoad(query) 取参（参照 topic-detail.vue 同款修复）。
@@ -487,7 +495,7 @@ onLoad((query) => {
       <text class="post-header__title">{{ t("circle.postTopicNavTitle") }}</text>
       <view
         class="post-header__submit press-feedback"
-        :class="{ 'post-header__submit--disabled': !title.trim() || !content.trim() || isOverLimit }"
+        :class="{ 'post-header__submit--disabled': !title.trim() || !content.trim() || isOverLimit || isSubmitting }"
         hover-class="press-feedback--active"
         hover-stay-time="120"
         @tap="submitTopic"
@@ -694,7 +702,7 @@ onLoad((query) => {
       <view class="bottom-submit">
         <view
           class="bottom-submit__btn press-feedback"
-          :class="{ 'bottom-submit__btn--disabled': !title.trim() || !content.trim() || isOverLimit }"
+          :class="{ 'bottom-submit__btn--disabled': !title.trim() || !content.trim() || isOverLimit || isSubmitting }"
           hover-class="press-feedback--active"
           hover-stay-time="120"
           @tap="submitTopic"
@@ -1297,7 +1305,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   position: fixed;
   inset: 0;
   z-index: var(--z-modal, 1000);
-  background: var(--c-overlay-bg, rgba(0, 0, 0, 0.45));
+  background: var(--c-bg-overlay, rgba(0, 0, 0, 0.45));
   display: flex;
   align-items: center;
   justify-content: center;

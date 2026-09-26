@@ -1,0 +1,247 @@
+{
+ "gitSha": "874ff52f",
+ "workflowVersion": "3.2-cli",
+ "buildMode": "build:mp-weixin:real:isolated",
+ "generatedAt": "2026-09-26T01:14:25.973Z",
+ "harness": "wechatide CLI: simulator_open_page + simulator_screenshot + automation_evaluate",
+ "captureLimitations": [
+  "出图尺寸由 IDE 决定（与 miniprogram-automator 的 378×814 不同尺，禁止跨 harness 比像素）",
+  "只拍「默认」态：交互态/弹层态需要元素级选择器映射，本轮不扩范围",
+  "无 zoom 裁切帧、无滚动分帧",
+  "落点判定用 getCurrentPages()，与 WS 巡检同源"
+ ],
+ "shots": [
+  {
+   "identity": "A",
+   "page": "pages/discover/index",
+   "state": "默认",
+   "route": "pages/discover/index",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/A/pages_discover_index__默认.png",
+   "bytes": 9380,
+   "contentHash": "7f0e99cda993c03c",
+   "params": null,
+   "at": "2026-09-26T01:08:44.743Z"
+  },
+  {
+   "identity": "A",
+   "page": "pages/home/index",
+   "state": "默认",
+   "route": "pages/home/index",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/A/pages_home_index__默认.png",
+   "bytes": 14803,
+   "contentHash": "8b922bbfc1f31465",
+   "params": null,
+   "at": "2026-09-26T01:09:04.317Z"
+  },
+  {
+   "identity": "A",
+   "page": "pages/login/index",
+   "state": "默认",
+   "route": "pages/discover/index",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/A/pages_login_index__默认.png",
+   "bytes": 9337,
+   "contentHash": "6b9fb98034d41e55",
+   "params": null,
+   "at": "2026-09-26T01:09:24.138Z"
+  },
+  {
+   "identity": "A",
+   "page": "pages/messages/index",
+   "state": "默认",
+   "route": "pages/messages/index",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/A/pages_messages_index__默认.png",
+   "bytes": 9943,
+   "contentHash": "ac87ee6804c0a7ae",
+   "params": null,
+   "at": "2026-09-26T01:09:44.168Z"
+  },
+  {
+   "identity": "A",
+   "page": "pages/nearby/index",
+   "state": "默认",
+   "route": "pages/nearby/index",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/A/pages_nearby_index__默认.png",
+   "bytes": 12693,
+   "contentHash": "823a1a9daa01297d",
+   "params": null,
+   "at": "2026-09-26T01:10:04.246Z"
+  },
+  {
+   "identity": "A",
+   "page": "pages/profile/index",
+   "state": "默认",
+   "route": "pages/profile/index",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/A/pages_profile_index__默认.png",
+   "bytes": 9954,
+   "contentHash": "6b35a5c9e68e44e8",
+   "params": null,
+   "at": "2026-09-26T01:10:24.222Z"
+  },
+  {
+   "identity": "A",
+   "page": "subpackages/campus/campus/hub",
+   "state": "默认",
+   "route": "subpackages/campus/campus/hub",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/A/subpackages_campus_campus_hub__默认.png",
+   "bytes": 14809,
+   "contentHash": "8db239d173876bfd",
+   "params": null,
+   "at": "2026-09-26T01:10:44.335Z"
+  },
+  {
+   "identity": "A",
+   "page": "subpackages/campus/campus/index",
+   "state": "默认",
+   "route": "subpackages/campus/campus/index",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/A/subpackages_campus_campus_index__默认.png",
+   "bytes": 12105,
+   "contentHash": "1885ae37336f6d21",
+   "params": "school=%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6",
+   "at": "2026-09-26T01:11:04.201Z"
+  },
+  {
+   "identity": "A",
+   "page": "subpackages/campus/campus/post-topic",
+   "state": "默认",
+   "route": "subpackages/campus/campus/post-topic",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/A/subpackages_campus_campus_post-topic__默认.png",
+   "bytes": 9278,
+   "contentHash": "326dfeda35d10ec3",
+   "params": null,
+   "at": "2026-09-26T01:11:23.946Z"
+  },
+  {
+   "identity": "A",
+   "page": "subpackages/circles/circles/index",
+   "state": "默认",
+   "route": "subpackages/circles/circles/index",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/A/subpackages_circles_circles_index__默认.png",
+   "bytes": 15138,
+   "contentHash": "d2c3c28fe233926c",
+   "params": null,
+   "at": "2026-09-26T01:11:43.845Z"
+  },
+  {
+   "identity": "A",
+   "page": "subpackages/circles/circles/post-topic",
+   "state": "默认",
+   "route": "subpackages/circles/circles/post-topic",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/A/subpackages_circles_circles_post-topic__默认.png",
+   "bytes": 6871,
+   "contentHash": "7aca2ac78db388db",
+   "params": "circleId=8",
+   "at": "2026-09-26T01:12:03.282Z"
+  },
+  {
+   "identity": "A",
+   "page": "subpackages/village/village/index",
+   "state": "默认",
+   "route": "subpackages/village/village/index",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/A/subpackages_village_village_index__默认.png",
+   "bytes": 9820,
+   "contentHash": "2799e4d8e8b9bc8b",
+   "params": null,
+   "at": "2026-09-26T01:12:23.458Z"
+  },
+  {
+   "identity": "B",
+   "page": "pages/discover/index",
+   "state": "默认",
+   "route": "pages/discover/index",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/B/pages_discover_index__默认.png",
+   "bytes": 12936,
+   "contentHash": "db907c24e2d02304",
+   "params": null,
+   "at": "2026-09-26T01:12:45.757Z"
+  },
+  {
+   "identity": "B",
+   "page": "pages/home/index",
+   "state": "默认",
+   "route": "pages/home/index",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/B/pages_home_index__默认.png",
+   "bytes": 15083,
+   "contentHash": "e1218e68eb2df9bc",
+   "params": null,
+   "at": "2026-09-26T01:13:05.856Z"
+  },
+  {
+   "identity": "B",
+   "page": "pages/login/index",
+   "state": "默认",
+   "route": "pages/discover/index",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/B/pages_login_index__默认.png",
+   "bytes": 12870,
+   "contentHash": "7373e9096cd4bf08",
+   "params": null,
+   "at": "2026-09-26T01:13:26.456Z"
+  },
+  {
+   "identity": "B",
+   "page": "pages/messages/index",
+   "state": "默认",
+   "route": "pages/messages/index",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/B/pages_messages_index__默认.png",
+   "bytes": 11112,
+   "contentHash": "0d8a0a2c978877fe",
+   "params": null,
+   "at": "2026-09-26T01:13:46.192Z"
+  },
+  {
+   "identity": "B",
+   "page": "pages/nearby/index",
+   "state": "默认",
+   "route": "pages/nearby/index",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/B/pages_nearby_index__默认.png",
+   "bytes": 12707,
+   "contentHash": "3fc9db3726a5659d",
+   "params": null,
+   "at": "2026-09-26T01:14:06.249Z"
+  },
+  {
+   "identity": "B",
+   "page": "pages/profile/index",
+   "state": "默认",
+   "route": "pages/profile/index",
+   "suite": "REAL",
+   "path": "reports/screenshots/round-6-real-tour/B/pages_profile_index__默认.png",
+   "bytes": 11796,
+   "contentHash": "51fcfa5d0f50149a",
+   "params": null,
+   "at": "2026-09-26T01:14:25.973Z"
+  }
+ ],
+ "failures": [
+  {
+   "identity": "A",
+   "page": "pages/login/index",
+   "severity": "P1",
+   "reason": "落在 pages/discover/index ≠ 目标页",
+   "landed": "pages/discover/index"
+  },
+  {
+   "identity": "B",
+   "page": "pages/login/index",
+   "severity": "P1",
+   "reason": "落在 pages/discover/index ≠ 目标页",
+   "landed": "pages/discover/index"
+  }
+ ]
+}

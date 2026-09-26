@@ -1,0 +1,86 @@
+{
+  "gitSha": "874ff52f",
+  "gitShaFull": "874ff52f587c2f1cb180105a29dba090facf651d",
+  "gitShaDerivedAtRuntime": true,
+  "gitShaDerivation": "git rev-parse --short HEAD（由本生成器运行时 execSync 取得，文件内无字面量 SHA）",
+  "capturedAt": "2026-09-25T07:46:27.372Z",
+  "headSubject": "fix(miniprogram,api,admin): round-2 audit fixes（R2 中断批次固化 + 协议checkbox测试同步合规默认）",
+  "branch": "main",
+  "worktreeDirtyFiles": 55,
+  "jvmPid": 11800,
+  "jvmStartedAt": "2026-09-25 11:37:11",
+  "jvmPrecondition": {
+    "tool": "scripts/qa/verify-backend-restarted.mjs",
+    "rawOutput": "RESTARTED_PID=11800 startedAt=\"2026-09-25 11:37:11\"\nRESTARTED_NEWEST_SOURCE=D:/6/恋爱小程序/apps/api/src/main/java/com/campuslove/api/media/MediaAccessController.java mtime=2026-09-24T17:40:55.722Z\nRESTARTED_HEAD_COMMIT_TIME=2026-09-24T16:31:39.000Z\nRESTARTED_STALE_SOURCE=none  HEAD_NEWER_THAN_JVM=no\nRESTARTED_RESULT=PASS JVM 晚于全部 java 源码改动与 HEAD 提交，可作前后端联通取证的前提",
+    "pass": true
+  },
+  "backendBaseUrl": "http://127.0.0.1:8080/api/v1",
+  "realArtifactDir": "apps/client/dist/build/mp-weixin-real",
+  "realArtifactSelfAttest": "MODE=real VITE_API_MODE=real VITE_API_BASE_URL=http://127.0.0.1:8080/api ; sharedOutUntouched=yes",
+  "database": {
+    "engine": "MySQL 8.0.45",
+    "host": "127.0.0.1:3306",
+    "schema": "campus_love",
+    "credentialSource": "apps/api/restart-backend.ps1（运行时从文件解析，口令未内联进命令行）",
+    "accessMode": "只读 SELECT；本轮写库全部经后端 HTTP 接口，未对库执行 INSERT/UPDATE/DELETE"
+  },
+  "tools": {
+    "node22": {
+      "path": "D:/codex-tools/node-v22.17.0-win-x64/node.exe",
+      "version": "v22.17.0",
+      "role": "本轮全部探测脚本的执行器"
+    },
+    "nodeOnPath": {
+      "path": "PATH 上的 node（微信开发者工具自带）",
+      "version": "v16.13.1",
+      "role": "未使用。v16 无全局 fetch，且 build-real-isolated.mjs 在 v16 上自报 G7_RESULT=FAIL（环境噪声，非产品缺陷）"
+    },
+    "node22Wrapper": {
+      "path": "tmp/run-node22.cjs",
+      "version": "n/a",
+      "role": "编排层拿不到绝对路径 node 时的替代入口，本轮直连 node22 未用"
+    },
+    "jdk": {
+      "path": "D:/jdk17/bin/java.exe",
+      "version": "openjdk 17.0.18 2026-01-20"
+    },
+    "git": {
+      "version": "git version 2.44.0.windows.1"
+    },
+    "mysqlCli": {
+      "path": "D:/mysql-8.0.45-winx64/bin/mysql.exe",
+      "version": "Ver 8.0.45 for Win64"
+    },
+    "pnpm": {
+      "version": "11.17.0"
+    }
+  },
+  "gates": {
+    "G7": {
+      "tool": "apps/client/scripts/build-real-isolated.mjs --check-only",
+      "result": "PASS",
+      "exitCode": 0
+    },
+    "G8": {
+      "tool": "scripts/qa/g8-e2e.cjs",
+      "result": "PASS",
+      "rings": "6/6",
+      "exitCode": 0
+    },
+    "G9": {
+      "tool": ".zcode/tmp/g9-probe.cjs",
+      "result": "PASS",
+      "probed": 455,
+      "ok": 455,
+      "fail": 0,
+      "exitCode": 0
+    }
+  },
+  "scopeExclusions": [
+    "未启动/未连接微信开发者工具，未占用 9420/9430/94xx 自动化端口（UI 会话由另一代理独占）",
+    "未重启 8080 后端，未修改 apps/api/** 与任何 Java 源码，未跑构建",
+    "未改 .zcode/workflows/**、scripts/**、apps/client/scripts/** 内的工具（仅调用）",
+    "未执行任何 git 写操作（rev-parse / log / status 均为只读）",
+    "G8 写入的库内主键全部保留，未删除"
+  ]
+}

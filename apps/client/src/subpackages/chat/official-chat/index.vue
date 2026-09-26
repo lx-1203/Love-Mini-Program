@@ -117,7 +117,9 @@ const sendMessage = async () => {
       messages.value.push({
         id: nextLocalId(),
         messageType: "text",
-        content: "收到啦～我会帮你留意合适的活动和人哦 😊",
+        // MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001：正文走 i18n；😊 已在
+        // config/emoji-map.ts 映射表内、经 EmojiText 渲染为 SVG，按 Lane 2 裁决留在拼接位。
+        content: `${t("messages.officialChatMockReply")} 😊`,
         cardTitle: null, cardDesc: null, cardTag: null, cardTargetUrl: null,
         publishedAt: new Date().toISOString(), cardActivity: null,
       });
@@ -162,7 +164,7 @@ const onActionBtnTap = (label: string) => {
     messages.value.push({
       id: Date.now(),
       messageType: "user-text",
-      content: "好的，稍后再说～",
+      content: t("messages.officialChatUserDecline"),
       cardTitle: null, cardDesc: null, cardTag: null, cardTargetUrl: null,
       publishedAt: new Date().toISOString(), cardActivity: null,
     });
@@ -222,13 +224,15 @@ async function loadOfficialChat(): Promise<void> {
       messages.value = [
         {
           id: 101, messageType: "text",
-          content: "Hi~ 我是寻觅助手 🌱 我会帮你发现有趣的人和活动，让每一次相遇都更有意义✨",
+          // MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001：问候正文走 i18n；✨ 在
+          // config/emoji-map.ts 内、经 EmojiText 渲染为 SVG，按 Lane 2 裁决留在拼接位。
+          content: `${t("messages.officialChatAssistantGreeting")}✨`,
           cardTitle: null, cardDesc: null, cardTag: null, cardTargetUrl: null,
           publishedAt: new Date(Date.now() - 2 * 86400000).toISOString(), cardActivity: null,
         },
         {
           id: 102, messageType: "card",
-          content: "这个活动和你的兴趣很匹配哦~ 要一起去认识新朋友吗？😊",
+          content: t("messages.officialChatCardHint"),
           cardTitle: "城市露营计划",
           cardDesc: "周六 14:00-18:00 · 中央公园 2.3km",
           cardTag: "发现一个适合你的活动",

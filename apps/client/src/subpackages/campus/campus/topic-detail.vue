@@ -14,8 +14,6 @@ import { onLoad, onShareAppMessage } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useCampusStore, CAMPUS_CATEGORY_MAP, formatCampusTime, MAX_REPLY_LENGTH } from "../../../stores/campus";
-// MP-R1-CAMPUSPOSTTOPIC-202：real 契约无 isAnonymous 落点，页面需按模式差异化文案
-import { useMock } from "../../../stores/helpers/use-mock";
 import { ROUTES } from "../../../constants/routes";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../../utils/media";
@@ -43,12 +41,12 @@ const topicId = ref("");
 const isAnonymousReply = ref(false);
 
 /**
- * MP-R1-CAMPUSPOSTTOPIC-202：real 契约不承载 isAnonymous
- * （CampusController.java:462-464 回复体只有 content；RealCampusService.java:196 硬编码 false），
- * 故 real 下「匿名」按钮不得承诺匿名 —— 文案就地改为「匿名·暂不生效」，
- * 而不是等用户发出去才发现以昵称展示。mock 分支仍真实生效，保留原文案。
+ * MP-R1-CAMPUSPOSTTOPIC-202 已闭合（2026-09-26）：CreateCampusReplyRequest 现承载
+ * isAnonymous（CampusController.java:471-474），RealCampusService 落库并按匿名决定作者展示，
+ * G8 RING10 实测回复读回 isAnonymous=true、authorName="匿名校友"。
+ * store 侧同批补上传参（stores/campus.ts replyToCampusTopic），故 real 不再需要
+ * 「暂不生效」的差异化文案——按钮承诺的就是实际行为。
  */
-const isMockMode = useMock();
 
 /**
  * A3 超长态可观测性：回复输入框带 :maxlength 硬截断（模板 .reply-input），
@@ -350,7 +348,7 @@ onShareAppMessage(() => {
         hover-stay-time="120"
         @tap="isAnonymousReply = !isAnonymousReply"
       >
-        <text class="anonymous-toggle__text">{{ isAnonymousReply ? (isMockMode ? t('campus.topicDetail.anonymousToggleOn') : t('campus.topicDetail.anonymousToggleOnReal')) : t('campus.topicDetail.anonymousToggleOff') }}</text>
+        <text class="anonymous-toggle__text">{{ isAnonymousReply ? t('campus.topicDetail.anonymousToggleOn') : t('campus.topicDetail.anonymousToggleOff') }}</text>
       </view>
       <view
         class="reply-btn press-feedback"

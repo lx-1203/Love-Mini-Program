@@ -82,7 +82,12 @@ function goMyProfile() {
   /* 状态栏避让：--statusbar 由 useMenuButtonRect 注入（开发者工具 var(--statusbar, env(safe-area-inset-top)) 恒为 0，
      仅靠 env 会与系统时间/刘海叠印）；右侧避让微信胶囊：--capsule-right 仅是胶囊右缘到屏幕右缘的间隙（≈7px），
      预留量必须再加胶囊本体宽度（标准 87px），否则头像/定位/铃铛被胶囊叠压 */
-  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 12rpx) calc(var(--capsule-right, 7px) + 104px) 16rpx 40rpx;
+  /* MP-R2VIS-PAGES-HOME-INDEX-005（视觉裁决 2026-09-25）：首页左基线按理想图
+     素材/理想效果图/首页.png 量得 29.0rpx（卡片/横幅左缘 x=33px、标题字形左缘 x=35px，
+     亚像素过零 32.7px），与 --page-padding(32rpx=36.4px) 同侧、与 40rpx(45.5px) 差 12.5px
+     → 图支持 32rpx 一档；左内距收敛到令牌，与 TodayRecommendationCard/RelationActivity
+     等 32rpx 消费页同基线 */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 12rpx) calc(var(--capsule-right, 7px) + 104px) 16rpx var(--page-padding);
 }
 
 .home-header__top {

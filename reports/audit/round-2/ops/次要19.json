@@ -1,0 +1,695 @@
+{
+  "cases": [
+    {
+      "id": "SG01",
+      "page": "subpackages/discover-extra/home/segment",
+      "title": "冷启动深链 type 三分支：合法值 / 未知值 / 缺参，均不闪错误空态",
+      "tier": "navigation",
+      "pre": "身份A mock 登录（tmp_r11_login.json JWT 经 automation_evaluate 注入 wx.setStorageSync('token') 后调 getApp().$vm.$pinia._s.get('session').bootstrap()，校验 isLoggedIn=true）→ wx.reLaunch('/subpackages/discover-extra/home/segment?type=nearby')（栈=1）。本页唯一消费参数是 query.type，白名单 online|sameSchool|sameInterest|nearby|newcomer|highMatch（segment.vue:39-43 + TYPE_LABEL_KEY :28-35，默认 online :23）",
+      "action": "三条前置分别 reLaunch：(a) type=nearby；(b) type=not-exist；(c) 无 type。各自 0/0.5/1s 采样标题文案、.segment-state 类型与列表条数",
+      "expected": "(a) 标题=「细分发现 · 附近」（t('home.segmentTitle') · t(TYPE_LABEL_KEY)，:37）且请求带 distanceMax=5（buildFilter :78-82）；(b)(c) 回退 online 语义（不报错、不白屏）；三态首帧至多为骨架（SkeletonBlock :126-128），数据落定后为列表或诚实空态（:135-137），不得闪现错误态；console 无异常",
+      "evidence": "navigation：三次路由 options.type 断言 + 三态 after 截图 + network（getRecommendations 入参）"
+    },
+    {
+      "id": "SG02",
+      "page": "subpackages/discover-extra/home/segment",
+      "title": "幻影参数断言：?type=online&userId=1&tab=all&keyword=x 全不消费",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → reLaunch segment?type=online&userId=1&tab=all&keyword=x（栈=1）。segment.vue 全文仅读取 query.type（:39-45），其余无消费点",
+      "action": "进入后读渲染结果与 network 条数，再与 SG01(a)（无幻影参数）比对标题、列表条数、请求序列",
+      "expected": "userId/tab/keyword 为幻影参数：渲染结果与不带它们完全一致、请求条数不增加（getRecommendations 仅 1 次）、无 Toast、无 console 报错；不得因未知参数走错误分支",
+      "evidence": "navigation：路由 options 原文 + 与基线一致性比对截图 + network 条数"
+    },
+    {
+      "id": "SG03",
+      "page": "subpackages/discover-extra/home/segment",
+      "title": "返回键两路落点 + 热区实测不足判定",
+      "tier": "navigation",
+      "pre": "两条前置：(a) 从首页快捷入口点入（栈=2）；(b) wx.reLaunch 直开（栈=1，模拟分享直达）",
+      "action": "两种前置各 tap .segment-header__back（:120-122 → goBack :51-59 带 fail 兜底），并对该键与列表行取 boundingBox",
+      "expected": "(a) 回来源页且来源页滚动位置与入口激活态恢复；(b) navigateBack fail → switchTab('/pages/home/index')（:55-57），不得停留本页或白屏；点击 500ms 内必有路由变化（无变化即死按钮）；热区：.segment-header__back 样式为 56rpx×56rpx（:182-192）< 88rpx → 记 FAILED 并写实测像素（750rpx=屏宽换算）",
+      "evidence": "navigation：两态路由链 + observed 记录两个元素 boundingBox（px 与 rpx）"
+    },
+    {
+      "id": "SG04",
+      "page": "subpackages/discover-extra/home/segment",
+      "title": "整行点击进他人主页并返回；行内无第二热区",
+      "tier": "navigation",
+      "pre": "身份A 已进入有 ≥2 条结果的细分发现页（list 非空，:138-162）",
+      "action": "① tap 第 1 行 .segment-row（:139-148 → openProfile :112-114）；② 从他人主页返回；③ 同一行连点 ×2 观察栈深；④ tap 行内头像（:149）与箭头（:160）",
+      "expected": "① 落点=/subpackages/profile-extra/profile/other 且 options.userId=item.userId（:113 encodeURIComponent）；② 返回后本页分段与滚动位置保持、列表不被重置；③ 只入栈一层；④ 行内子节点点击不得产生与行不同的第二种落点（要么等同行行为、要么无副作用）",
+      "evidence": "navigation：路由链 + options.userId 断言 + 返回帧截图"
+    },
+    {
+      "id": "SG05",
+      "page": "subpackages/discover-extra/home/segment",
+      "title": "六个分段口径与 i18n 标题（过滤谓词逐一对应）",
+      "tier": "normal",
+      "pre": "身份A 依次以 type=online/sameSchool/sameInterest/nearby/newcomer/highMatch 进入本页（6 次 reLaunch）",
+      "action": "每次记录标题分段名、请求入参（onlineOnly / distanceMax）与结果行可见字段（在线标记、距离文案、校名）；en-US locale 重跑 online 一次",
+      "expected": "online→请求带 onlineOnly（:79）且行内显示在线态（isOnline :109-111 + :153-156）；nearby→distanceMax=5（:80）且距离文案纯数值才拼 km（formatDistance :103-106）；sameSchool/sameInterest/highMatch 走客户端过滤（predicate :84-97：isSameSchool / commonCircleCount>0 / >=3）；newcomer 不过滤（:91）；分段名全部经 i18n（TYPE_LABEL_KEY :28-35），en-US 下不得残留中文或裸键；结果被 slice(0,50) 截断时（:68）须在 observed 记录实际条数",
+      "evidence": "normal：6 个分段各一帧截图 + observed（标题/入参/条数）+ network 清单"
+    },
+    {
+      "id": "SG06",
+      "page": "subpackages/discover-extra/home/segment",
+      "title": "三态齐全（骨架 / 错误+重试 / 空态）与下拉刷新不可达确证",
+      "tier": "normal",
+      "pre": "失败前置：把 getRecommendations 打成 500 或断网。⚠ 不可达前置：本页注册了 onPullDownRefresh（:47-49），但 pages.json 该条目未开 enablePullDownRefresh（pages.json:145-147 home/segment 无 style）→ 下拉手势不会触发，属已记录缺口 MP-R2-SEGMENT-003，不得当应用崩溃写用例",
+      "action": "① 触发失败态读文案，tap .segment-retry（:131-133 → load）；② 空数据前置下读空态文案；③ 尝试整页下拉并记录是否出现刷新指示器与新增请求",
+      "expected": "① 失败必须同时给出可见文案与可点重试（showErrorToast + errorMessage，:70-75），重试回骨架后成功渲染，不得把失败当空态；② 空态显示 t('home.segmentEmpty')（:136）且与错误态可区分；③ 实测无刷新指示器、请求条数不变 → 判「前置未构造/功能未开启」，修复后应有表现为开启 enablePullDownRefresh 后下拉可重拉并 stopPullDownRefresh 收起（:48）",
+      "evidence": "normal：错误态/空态/下拉尝试三帧截图 + Toast 文案 + network（下拉前后条数差）"
+    },
+    {
+      "id": "SG07",
+      "page": "subpackages/discover-extra/home/segment",
+      "title": "头像 resolveMediaUrl + 默认头像兜底链（未提交改动证伪：utils/media.ts 新分支）",
+      "tier": "normal",
+      "pre": "⚠ 本轮 git diff 未提交清单含 utils/media.ts（resolveMediaUrl 新增 /static/assets/images/avatars/ 与 /people/ 走后端 APP_ASSET_PREFIX 分支：media.ts:129 入口、:222-232 新分支、:72 前缀常量）与 components/common/Avatar.vue。R2 发现 MP-R2-SEGMENT-001 记本页头像是裸 <image> 直连相对路径，工作树已改为 resolveMediaUrl 包裹 + 默认头像兜底（segment.vue:149）→ 本条断言修复后表现",
+      "action": "① 逐行读 .segment-row__avatar 的 src 与 naturalWidth；② 以空/坏路径造两态；③ real 后端可达时比对 /uploads/... 与 /static/assets/images/avatars/... 两种来源的解析结果",
+      "expected": "① 所有 src 均为解析后的可加载地址（不得以裸 /uploads/... 或裸 /static/... 下发导致 mp 端加载失败），naturalWidth>0；② 空或坏路径必须落 IMAGE_PATHS.DEFAULT_AVATAR（:149 第二分支），再失败不得是空白方块；③ real 包下 avatars/people 目录前缀应为 /api/v1/media/app-assets/，mock 包退回本地路径仍须可见；仍见裸相对路径即判 FAILED（修复丢失）",
+      "evidence": "normal：头像放大截图 + observed 逐行记录解析后 src 与 naturalWidth"
+    },
+    {
+      "id": "PE01",
+      "page": "subpackages/discover-extra/nearby/people",
+      "title": "冷启动深链 scope 三种取值与非法值回退；其余参数为幻影",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → wx.reLaunch('/subpackages/discover-extra/nearby/people?scope=city')。本页唯一消费参数是 query.scope（严格等值判 city，否则 nearby；people.vue:56-59），distance/sort 等无读取点=幻影参数",
+      "action": "三条前置分别 reLaunch：(a) scope=city；(b) scope=nearby；(c) scope=CITY&sort=distance；采样标题、激活 tab、请求入参、console",
+      "expected": "(a) 标题与激活态为「同城」（title :52-54；tab 结构 :170-189）且请求不带 distanceMax（:75 三元）；(b) 「附近」+ distanceMax=NEARBY_MAX_DISTANCE_KM（:13/:75）；(c) 大写未识别 → 回退 nearby，sort 幻影不生效、不新增请求；三态首帧为骨架（:192-194）不闪错误态",
+      "evidence": "navigation：三次路由 options 与请求入参断言 + 三态截图"
+    },
+    {
+      "id": "PE02",
+      "page": "subpackages/discover-extra/nearby/people",
+      "title": "附近/同城切换：同值不重拉 + 竞态 token 不得错配",
+      "tier": "normal",
+      "pre": "身份A 已进入附近的人页；network 面板开始记录（本页有 loadToken 竞态守卫：:66/:70/:78/:108/:112-114）",
+      "action": "① tap 已激活的「附近」tab（:171-179 → switchScope :152-156）；② tap「同城」，在其请求未回时立刻 tap 回「附近」×2 制造竞态；③ 稳定后读标题与列表首条",
+      "expected": "① 同值切换被短路（:153）不发第二次请求（network 条数不增）；②③ 最终渲染必须与最终 scope 一致（旧响应被 token 丢弃），不得出现「标题同城、列表仍是附近」的错配；loading 起止成对（:71/:113）无骨架永驻；切换重置 visibleCount（:106）→ 不回残留上一批",
+      "evidence": "normal：两 tab 激活态截图 + network 请求序列（条数与入参）+ observed 最终标题/首条"
+    },
+    {
+      "id": "PE03",
+      "page": "subpackages/discover-extra/nearby/people",
+      "title": "下拉刷新（本页已开 enablePullDownRefresh）：重拉一次且指示器收起",
+      "tier": "normal",
+      "pre": "pages.json 该条目显式开启下拉刷新（pages.json:148-151 → style.enablePullDownRefresh=true），页面 onPullDownRefresh 在 people.vue:61-63 且 finally 调 stopPullDownRefresh",
+      "action": "整页下拉触发刷新，采样请求条数与指示器收起时刻；下拉期间再下拉一次",
+      "expected": "下拉后重发 getRecommendations 且判定点为「客户端请求条数」（loadToken 只保证结果一致，不保证只发 1 次，须如实记录）；列表按新数据重排（去重 :81-89 + 排序 :91-103）；uni.stopPullDownRefresh 必须被调用（刷新圈不常驻）；失败时 errorMessage 渲染 + 重试按钮（:195-200），Toast/文案不得缺席",
+      "evidence": "normal：下拉中态 + 完成态截图 + network 条数 + console"
+    },
+    {
+      "id": "PE04",
+      "page": "subpackages/discover-extra/nearby/people",
+      "title": "触底增量渲染：第 21 人起必须可见（证伪 MP-R2-PEOPLE-001 分页死路）",
+      "tier": "normal",
+      "pre": "前置：结果集 >20 条（PAGE_SIZE=20，:41/:106；不足时用 mock 推荐池或换身份，不可造则记前置未构造）。工作树已给容器定高（.people-page height:100% + overflow:hidden，:249-259，注释标注 MP-R2-PEOPLE-001）→ 断言修复后表现",
+      "action": "① 在 .people-list scroll-view（:207 @scrolltolower → loadMoreVisible :46-50）连续触底直至无增量；② 全程记录可见行数与 scrollTop；③ 触底后回到顶部",
+      "expected": "① 每次触底使 visibleCount 增加 20 且新行出现在 DOM（首屏只能看到 20 条属预期分批，但第 21 条必须在触底后出现；触底完全不增即 FAILED）；② 内滚必须生效（scrollTop 可变、非整页 window 滚动；若 scroll-view 无确定高度导致 @scrolltolower 永不触发即修复丢失）；③ 回顶后已渲染行不丢失、无重复 key；到底后不再增长且无「加载更多」幻影",
+      "evidence": "normal：触底前/后/到底三帧截图 + observed（scrollTop、DOM 行数、visibleCount 序列）"
+    },
+    {
+      "id": "PE05",
+      "page": "subpackages/discover-extra/nearby/people",
+      "title": "行点击进他人主页与返回键两路落点（栈=1 兜底寻觅 Tab）",
+      "tier": "navigation",
+      "pre": "身份A 已进入附近的人页（列表非空）。返回兜底指向 /pages/discover/index（people.vue:142-149），而 pages/discover/index.vue 恰在本轮未提交改动清单 → 落点页渲染须一并断言",
+      "action": "① tap .people-row（:208-217 → openProfile :138-140 openUserProfile）；② 从他人主页返回本页；③ tap .people-header__back（:162-164 goBack）在栈=2；④ wx.reLaunch 直开本页（栈=1）后再 tap 返回键",
+      "expected": "① 落点他人主页且 userId 有效（openUserProfile 空值守卫，userId 缺失不得跳空白页）；② 返回后本页所在 tab、滚动位置与已渲染行数恢复；③ 回来源页；④ 栈=1 走 switchTab('/pages/discover/index')（:147），落点寻觅页必须正常渲染（无错误态/无白屏，本页未提交改动的回归面），不得停留或报 cannot navigate back",
+      "evidence": "navigation：四步路由链 + options.userId 断言 + ④ 落点帧截图"
+    },
+    {
+      "id": "PE06",
+      "page": "subpackages/discover-extra/nearby/people",
+      "title": "头像 SafeImage 兜底链 + 标签文案单一映射源",
+      "tier": "normal",
+      "pre": "身份A 已进入列表（行内结构 :223-238：外包确定尺寸 .people-row__avatar-wrap + SafeImage，标签 rowTags :35）",
+      "action": "① 逐行读头像节点 src/naturalWidth 与尺寸（是否塌陷为 0×0）；② 把某行头像改为坏路径观察兜底；③ 读标签文案是否中文可读（非 photo/cat 等原值）；④ 年龄/在线点在缺失时是否整节点不渲染",
+      "expected": "① 头像必须有确定尺寸（不得因跨组件作用域塌陷，:218-222 注释口径）且经 SafeImage 解析（内部 resolveMediaUrl → 鉴权代理/本地化，与未提交 media.ts 新分支联动）；② 坏路径回退默认头像，不得空白方块；③ 标签走单一映射源 tagLabelsFor（:23/:237），en-US 下随 locale 切换；④ item.age 缺失时不渲染空 pill（:229）、无距离时不拼「·」（:235）",
+      "evidence": "normal：头像与标签区放大截图 + observed 记录 src、尺寸与标签原文"
+    },
+    {
+      "id": "PE07",
+      "page": "subpackages/discover-extra/nearby/people",
+      "title": "三态（骨架 / 错误+重试 / 空态+引导文案）与 Loading 不永驻",
+      "tier": "normal",
+      "pre": "失败前置：把 getRecommendations 打成 500/断网；空态前置：过滤后集合为空（如把 scope 切到无数据的城市）",
+      "action": "① 失败态读文案并 tap .people-state__retry（:195-200 → load）；② 空态读两条文案（:201-204）；③ 全程采样 loading 是否残留",
+      "expected": "① 失败时 errorMessage 可见且重试可恢复（点击回骨架再进 content），不得渲染成空态误导；② 空态同时给出主文案与引导 hint（nearby.peopleEmpty / peopleEmptyHint），且列表容器不出现；③ 任何路径结束后骨架必须消失（token 守卫 :112-114 不得把 loading 卡在 true）",
+      "evidence": "normal：错误/空/恢复三态截图 + Toast 文案 + network 重试条数"
+    },
+    {
+      "id": "PE08",
+      "page": "subpackages/discover-extra/nearby/people",
+      "title": "热区实测与滚动顶底（noop 装饰项）",
+      "tier": "normal",
+      "pre": "身份A 已进入附近的人页（列表 ≥3 行，含在线点/箭头/统计文本）",
+      "action": "① 对 .people-header__back、两个 tab、三个列表行、重试按钮取 boundingBox；② scroll-view 滚到顶/底；③ tap 在线图标（:230-233）、箭头（:240）、meta 文本（:235）等非交互节点",
+      "expected": "① 热区均 ≥88rpx：返回键样式为 64rpx×64rpx（:268-277）<88rpx → 记 FAILED 并写实测；tab 命中高度（padding 18rpx + 文字，:301-310）须实测；② 顶/底可达、末行与 footer 占位（:242）不被裁切；③ 装饰节点点击无路由、无请求（noop 日志），不抛异常",
+      "evidence": "normal：尺寸清单截图 + observed（元素尺寸、scrollTop、noop 日志）"
+    },
+    {
+      "id": "LK01",
+      "page": "subpackages/discover-extra/likes/index",
+      "title": "未登录态双入口接线：微信登录与手机号登录均可跳转",
+      "tier": "navigation",
+      "pre": "未登录前置：清 token 后 wx.reLaunch('/subpackages/discover-extra/likes/index')（NotLoggedWaiting 渲染条件 likes/index.vue:606；两 handler goLogin :29-31 / goPhoneLogin :34-37）",
+      "action": "① tap 组件内「微信登录」按钮（emit goLogin）；② 返回后 tap「手机号登录」（emit goPhoneLogin）；③ 未登录态尝试整页下拉",
+      "expected": "①② 两路均落 /pages/login/index（:31/:36 openAppPath），点击 500ms 内必有路由变化（MP-R1-LIKES-102 的「手机号登录零响应」形态不得复现）；③ 未登录下拉只 stopPullDownRefresh、不发受保护请求（:565-568）；落点登录页需正常渲染（不得白屏）",
+      "evidence": "navigation：两路路由链断言 + 未登录态截图 + network（受保护请求条数=0）"
+    },
+    {
+      "id": "LK02",
+      "page": "subpackages/discover-extra/likes/index",
+      "title": "冷启动深链：登录态门槛已降为 isLoggedIn，数据必须真拉取；任意参数为幻影",
+      "tier": "navigation",
+      "pre": "身份A mock 登录（profileCompleted 可为 false，用于证伪 MP-R8-LIKES-001「正常 UI + 永远空态」）→ wx.reLaunch likes/index。本页无 onLoad（无任何 query 消费点）→ tab=visitors、userId 等任意参数皆为幻影参数",
+      "action": "① 冷启动采样 0/0.5/1s：骨架（:697-699）/列表/空态；② 读 network（fetchLikes + fetchHeartSignals 条数）；③ 以未完善资料身份重复 ①；④ 带 ?tab=visitors 重进比对结果与激活 tab",
+      "expected": "① 已登录即触发拉取（isUnlocked=sessionStore.isLoggedIn，:390；onMounted :492-499 + watch :539-547 + onShow :553-558 三处补拉），列表或诚实空态可见，不得永驻骨架；③ 未完善资料也必须出数据（旧门槛 isProfileComplete 形态复现即 FAILED）；④ 幻影参数不得改 activeTab（默认 likedBy :151）、不得新增 visitors 请求；判定点：同一逻辑拉取的多处触发须记录实际请求条数（重复 2 条即记缺陷，不得以「数据出来了」掩盖）",
+      "evidence": "navigation：路由 options + 三帧采样截图 + network 逐条（fetch 类请求条数与参数）"
+    },
+    {
+      "id": "LK03",
+      "page": "subpackages/discover-extra/likes/index",
+      "title": "三 Tab 切换：访客懒加载 + 切 Tab 清搜索与批量态",
+      "tier": "normal",
+      "pre": "身份A 已进入喜欢页（三 tab 由 BaseTabs 驱动，:687-693；tabs 数据 :432-436 带 badge 计数）",
+      "action": "① 在「喜欢我的」输入搜索词并进入批量模式；② tap 切到「访客」；③ 再切「我喜欢的」；④ 每次读激活态、列表来源与 network",
+      "expected": "② 切换后搜索词被清空（watch activeTab → handleClearSearch，:368-373 + :141-148）、批量模式退出（:370-372）、输入框回空态；③ 三 tab 分别渲染 likedBy / myLikes / visitors 三源（:101-106 空态区分按当前 tab）；④ 首次进访客懒拉 fetchVisitors 恰 1 次（:425-427），反复来回切不得重复请求（除非该源为空）；badge 数字与列表长度一致",
+      "evidence": "normal：三 tab 激活态截图 + observed（输入框值、batchMode、列表条数）+ network 请求序列"
+    },
+    {
+      "id": "LK04",
+      "page": "subpackages/discover-extra/likes/index",
+      "title": "解锁全部：封存态入口隐藏（不可达前置确证）与放行后扣费/幂等拆两判定点",
+      "tier": "critical",
+      "pre": "⚠ 不可达前置：底部「解锁全部」仅在 commerce.coin=true 时渲染（:1002 的 v-if 含 commerceCoinOn，computed :66；app-config isCommerceOn 在 commerce.enabled 缺失时恒 false，stores/app-config.ts:64-76）→ 默认 mock 包下该按钮不存在，须按「前置未构造」记录并标注所需构建/后台开关变体，不得据此判 VERIFIED 也不得报成缺陷。真实解锁为写链路（:194-271）",
+      "action": "(a) 默认封存态：读底部栏与单条打码项点击行为；(b) commerce.coin=true 前置：tap .likes-unlock-bar__btn（:1002-1010）并在原生 Modal 点「确认」；(c) 同一前置 300ms 内 rapidTap 解锁 ×5；(d) 余额不足/失败前置重复 (b)",
+      "expected": "(a) 封存态无解锁入口，单条打码项点击给出封存提示（handleUnlock :196-199 的 t('commerce.sealedToast')，经 handleLockedItemTap :481-483 触发）且不发写请求；(b) 判定点①（客户端）：network 面板 POST /wallet/unlock 条数=未解锁项数且逐条记录 Idempotency-Key；判定点②（服务端）：钱包余额扣减与 unlocked 状态回读一致（:242-245 本地置位不得作为通过依据），余额刷新 :247；(c) 不得因客户端无守卫连发 5 轮（若发出 5 轮则记 FAILED，服务端幂等去重不得判通过）；(d) 余额不足必须给跳转钱包的引导 Modal（:255-268 含 ROUTES.WALLET），非余额错误必须 Toast 后端文案（:269）",
+      "evidence": "critical：封存态/确认框/成功后/失败态四帧截图 + Toast 文案 + network 逐条（POST 条数与幂等键）+ 钱包余额与 unlocked 服务端回读"
+    },
+    {
+      "id": "LK05",
+      "page": "subpackages/discover-extra/likes/index",
+      "title": "打码项与已解锁项点击分流：可见性、模糊态与锁标识",
+      "tier": "normal",
+      "pre": "身份A 已进入「喜欢我的」（列表含未解锁项，blur+lock 结构 :743-757）",
+      "action": "① tap 未解锁项（:731 三元分支 → handleLockedItemTap）；② tap 已解锁项（→ handleItemClick :467-474）；③ 对互相喜欢项 tap（isMutualMatch :459-461）；④ 观察 aria-label 与昵称隐藏（:730）",
+      "expected": "① 未解锁项点击必须进入解锁流程（有弹层/Toast，无静默）；② 已解锁项按是否互相喜欢分流：互喜欢→chat-session?userId（:450-453），非互→他人主页（:472），路由只入栈一层；③ 未解锁项昵称/签名不得可见（nameHidden 口径 :730）；④ userId 为空时点击必须无跳转且不报错（:451/:468 守卫），不得进空白会话页",
+      "evidence": "normal：三类项各点击后截图 + 路由链 + observed 记录 aria-label 与昵称可见性"
+    },
+    {
+      "id": "LK06",
+      "page": "subpackages/discover-extra/likes/index",
+      "title": "批量模式全链：进入 / 单选 / 全选 / 取消全选 / 退出",
+      "tier": "normal",
+      "pre": "身份A 已进入喜欢页且列表 ≥3 条（批量入口 :645-656，底部批量栏 :933-1006）",
+      "action": "① tap 批量管理按钮（toggleBatchMode :301-304）；② tap 两行的选中区（handleToggleSelect :310-313）；③ tap 全选（handleSelectAll :318-328）；④ 再 tap 全选（取消）；⑤ tap「完成」退出；⑥ 在批量态下点击行内头像/聊天按钮",
+      "expected": "① 进入后文案切「完成」（:650-655）且行出现 checkbox（:734-740）；②③ 选中态与 .likes-card--selected 同步、已选计数文案更新（:933-939 selectedCount）；④ 取消全选仅影响当前可见项（:320-323）；⑤ 退出后 selectedIds 清空、批量栏消失；⑥ 批量态下行点击一律走选中而非跳主页（:731 三元），无路由变化（noop 语义须记录）",
+      "evidence": "normal：批量态/选中态/全选态/退出后四帧截图 + observed（selectedIds 与计数文本）"
+    },
+    {
+      "id": "LK07",
+      "page": "subpackages/discover-extra/likes/index",
+      "title": "批量喜欢/跳过/取消：空选提示 + 连点 ×5 拆两判定点 + real 模式跳过不落库（证伪 MP-R2-LIKES-001）",
+      "tier": "critical",
+      "pre": "身份A 已进入批量模式。⚠ 假通过陷阱：http.ts:262-274 的稳定 Idempotency-Key 会让「连点 5 次只落 1 次」被服务端去重掩盖，客户端请求数与服务端回读条数必须拆开判。批量 store 侧有 batchProcessing 锁（:347）",
+      "action": "① 不选任何项直接 tap 喜欢（:954）/跳过（:969）/取消（:984）；② 选 2 项后 tap「跳过」；③ 重新进入批量、选 2 项后 300ms 内 rapidTap「喜欢」×5；④ real 后端下重复 ② 并重进本页回读",
+      "expected": "① 三项均只给 t('likes.batchEmpty') Toast 且零写请求（:342-345）；② 成功 Toast t('likes.batchSuccess')（:353）+ 自动退出批量（:355）+ 列表移除对应项；③ 判定点①：network 面板批量写请求条数（batchProcessing 是否吞掉后 4 次，须逐条记录方法与键）；判定点②：服务端喜欢/跳过关系回读只发生一次净变化；④ 跳过在 real 模式仅前端过滤、无后端持久化（源码 TODO(backend) 自述，对应 MP-R2-LIKES-001）→ 重进后该项必须仍在列表则判 FAILED 并写明「跳过未落库、刷新复活」，不得因本次列表变短判通过",
+      "evidence": "critical：空选/成功/连点后/重进回读四帧截图 + Toast 文案 + network 逐条（条数+键+状态码）+ 服务端喜欢与跳过关系回读条数"
+    },
+    {
+      "id": "LK08",
+      "page": "subpackages/discover-extra/likes/index",
+      "title": "搜索框三态：300ms 防抖 / 清空 / 超长与特殊字符",
+      "tier": "normal",
+      "pre": "身份A 已进入喜欢页（输入框 :664-672，防抖常量 SEARCH_DEBOUNCE_MS=300 :112，handler :122-135，清空 :673-681/:141-148）",
+      "action": "① 连续输入「摄影」两字（间隔 <300ms）观察过滤时机；② tap × 清空；③ 输入 100 字超长串；④ 输入「<img src=x onerror=alert(1)> 　全角」与 emoji；⑤ 输入必然无匹配的词",
+      "expected": "① 过滤只在停止输入约 300ms 后发生一次（store.setSearchQuery 被防抖调用，:131-134），期间列表不抖动；② 清空立即生效（不等防抖，:141-148）且 × 按钮随输入值出现/消失（:674）；③④ 不得异常、不得被当 HTML 解析（昵称行以文本渲染），无匹配时显示搜索专属空态 t('likes.searchEmpty')（isSearchEmpty :101-106 + :712），与真无数据空态区分；⑤ 清空后回全量列表；三态均无 Loading 永驻",
+      "evidence": "normal：输入中/过滤后/清空后/无匹配四帧截图 + observed（过滤后条数与空态标题原文）"
+    },
+    {
+      "id": "LK09",
+      "page": "subpackages/discover-extra/likes/index",
+      "title": "心动信号入口显隐与跳转；返回键两路落点",
+      "tier": "navigation",
+      "pre": "两态前置：有心动信号（hasHeartSignal :393 → 入口 :631-643）与无信号；返回 goBack 见 :157-164（栈=1 兜底 switchTab ROUTES.TAB.HOME）",
+      "action": "① 有信号态 tap .likes-header__signal；② 无信号态确认入口不渲染且不留空位；③ 栈=2 tap .likes-header__back；④ 栈=1（reLaunch 直开）再 tap 返回",
+      "expected": "① 落点=心动信号页（goToHeartSignals :488-490 → ROUTES.HEART_SIGNALS），角标可见；② 无信号时整节点不渲染（v-if :632）且头部布局不塌陷；③ 回来源页且本页批量/搜索态按 watch 规则恢复；④ 栈=1 兜底 switchTab('/pages/home/index')（:162），不得停留或白屏；四路均有 500ms 内可观测变化",
+      "evidence": "navigation：四步路由链断言 + 有/无信号两态截图；可免截图给 ③④"
+    },
+    {
+      "id": "LK10",
+      "page": "subpackages/discover-extra/likes/index",
+      "title": "错误态重试三源齐拉 + 断网 Toast + Loading/骨架不永驻",
+      "tier": "normal",
+      "pre": "失败前置：把 likes 三源接口（fetchLikes/fetchHeartSignals/fetchVisitors）之一打成 500 或断网（ErrorState :702-704，retryLoad :582-586）",
+      "action": "① 触发错误态 tap ErrorState 重试；② 断网态观察 Toast；③ 恢复网络后下拉刷新；④ 全程采样骨架与 spinner",
+      "expected": "① 重试必须三源一起重拉（fetchLikes+fetchHeartSignals+fetchVisitors，:583-585，不得只恢复一源导致切访客时空列表）；errorMessage 清空条件成立（:87 派生自 store）；② 断网给 t('common.networkDisconnected')（注册于 :511-519，卸载反注册 :524-533 不得重复弹）；③ 下拉后三源刷新并 stopPullDownRefresh（:564-576）；④ 任何路径结束后骨架（:697-699）必须消失，不得永驻",
+      "evidence": "normal：错误态/重试中/恢复后三帧截图 + Toast 文案 + network 三源请求条数"
+    },
+    {
+      "id": "LK11",
+      "page": "subpackages/discover-extra/likes/index",
+      "title": "热区/胶囊避让与头像解析兜底（含未提交 media.ts 联动）",
+      "tier": "normal",
+      "pre": "身份A 已进入有已解锁项的喜欢页。三处头像均显式 resolveMediaUrl（:747/:821/:891），utils/media.ts 在本轮未提交改动清单（:222-232 新分支）；胶囊避让整行 padding-right 在 :1052-1058（MP-R8-CAPSULE-001 修复位）",
+      "action": "① 逐条读头像 src 与 naturalWidth；② 对返回键、心动信号入口、批量按钮、搜索清空 ×、BaseTabs 三项、底部批量三按钮、解锁按钮取 boundingBox；③ 检查头部文字与微信胶囊是否重叠（窄屏 375px）；④ 页面滚到顶/底",
+      "expected": "① 头像必须解析成功可见、空/坏路径落占位（已解锁项首字、未解锁项「?」，:753-757）不得空白；② 全部热区 ≥88rpx，不足者列实测 px；③ 头部标题与胶囊区不重叠、批量栏不被安全区吃掉（底部 spacer 生效）；④ 页面级滚动可达顶底、固定栏与内容无遮挡；⑤ 本包为 mock 产物时须把 buildMode 写进 actual 再判定分支",
+      "evidence": "normal：头像与头部放大截图 + observed（src、尺寸清单、scrollTop、buildMode）"
+    },
+    {
+      "id": "HP01",
+      "page": "subpackages/tools/help/index",
+      "title": "访问守卫：未登录进帮助页应被门槛拦下并给出可回退路径",
+      "tier": "navigation",
+      "pre": "未登录前置：清 token 后 wx.reLaunch('/subpackages/tools/help/index')（守卫 usePageAccess(chatPageRequirements)，help/index.vue:20-24；要求集与引导弹窗由 composable 统一处理）。本页无任何 query 参数消费点 → 所有参数为幻影参数",
+      "action": "① 未登录进入，观察是登录引导/解锁引导还是直达页面；② 走引导到登录页后返回；③ 已登录态 reLaunch 进入并 tap AppShell 返回键",
+      "expected": "① 未登录不得白屏或半可用（守卫须给出可见引导 UI，而非静默空白）；② 引导后回本页内容完整可见（FAQ + 客服三区）；③ 已登录正常渲染；AppShell 返回（show-back，AppShell.vue:201 起，navigateBack 带回调兜底 :120-140）：栈=2 回来源页、栈=1 走兜底不落空；幻影参数（?from=push）不改变渲染且无额外请求",
+      "evidence": "navigation：三态路由链 + 引导态与正常态截图 + network 条数"
+    },
+    {
+      "id": "HP02",
+      "page": "subpackages/tools/help/index",
+      "title": "FAQ 6 项折叠互斥：单开、二次点击收起、aria-expanded 同步",
+      "tier": "normal",
+      "pre": "身份A 已进入帮助页（faqItems 6 项 :32-39，toggleFaq :42-45，模板 :79-97）",
+      "action": "① 依次 tap 第 1..6 项问题行；② 每次检查同时展开的数量；③ 对已展开项再 tap；④ 读 chevron 旋转态与答案文本",
+      "expected": "① 每项点击后 500ms 内答案区出现（.help-faq__answer :94-96）且文案为对应 i18n 答案键；② 同时展开数恒 ≤1（expandedIndex 单值，:44），切换项时旧项收起；③ 二次点击收起（回 null）；④ aria-expanded 与可见态一致（:86）、chevron 旋转到 open 态（:92/:204-206），无内容高度塌陷",
+      "evidence": "normal：展开态与收起态截图（≥3 项）+ observed 记录 aria-expanded 与同时展开数"
+    },
+    {
+      "id": "HP03",
+      "page": "subpackages/tools/help/index",
+      "title": "在线客服入口跳官方号会话（accountId 参数须被下游消费或记幻影）",
+      "tier": "navigation",
+      "pre": "身份A 已进入帮助页（goOnlineService :48-51 跳 /subpackages/chat/official-chat/index?accountId=official-assistant）",
+      "action": "① tap 在线客服行（:104-120）；② 读落点页标题与账号；③ 返回帮助页",
+      "expected": "① 落点为官方客服会话页（chat/official-chat/index）且 500ms 内有路由变化；② 会话为「恋爱助手」官方号（若落点页未消费 accountId 参数而显示默认账号，须在 actual 记明 accountId 为下游幻影参数并核对目标账号是否仍正确）；③ 返回后帮助页 FAQ 展开态按页面实例保留或重置须记录（不得白屏）",
+      "evidence": "navigation：双向路由链 + options.accountId 值 + 落点页截图"
+    },
+    {
+      "id": "HP04",
+      "page": "subpackages/tools/help/index",
+      "title": "意见反馈入口跳反馈历史页（含提交通道），返回可用",
+      "tier": "navigation",
+      "pre": "身份A 已进入帮助页（goFeedback :54-57 → ROUTES.FEEDBACK_HISTORY，常量在 constants/routes.ts；已核该路由存在于产物 app.json 72 条内）",
+      "action": "① tap 意见反馈行（:122-138）；② 读落点路由与页面标题；③ 返回；④ 未登录态重复 ①（守卫前置同 HP01）",
+      "expected": "①② 落点=subpackages/profile-extra/feedback/history，页面正常渲染不闪错误空态；③ 返回后帮助页可继续交互；④ 未登录时被页面守卫拦下并给可见引导（不得跳到空白历史页）",
+      "evidence": "navigation：路由链 + 落点页标题断言；可免截图"
+    },
+    {
+      "id": "HP05",
+      "page": "subpackages/tools/help/index",
+      "title": "复制客服邮箱：剪贴板内容必须是邮箱地址而非文案标签（证伪 MP-R1-HELP-001/101）",
+      "tier": "critical",
+      "pre": "身份A 已进入帮助页（copyEmail :60-71，值来源 APP_CONFIG.SUPPORT_EMAIL，config/app.ts:47='support@campuslove.app'）。⚠ 判据必须回读剪贴板真实内容，不能只看 Toast",
+      "action": "① tap 邮箱行（:140-156）；② 用 automation 读剪贴板内容（getClipboardData 或粘贴到输入框回读）；③ 采样 Toast 文案与原生气泡；④ 连点 ×3",
+      "expected": "② 剪贴板必须等于邮箱地址字面量（含 @ 与域名），若为「客服邮箱/Support Email」标签文本即历史缺陷复发 FAILED；③ Toast 文案为 t('help.emailCopied')（:68），且不得因微信原生「内容已复制」与自定义 Toast 叠加造成双提示歧义（须记录实际出现条数与文本）；④ 连点不报错、剪贴板内容不变（该操作为本地写、不发网络请求，network 条数=0 须记录）",
+      "evidence": "critical：before+after 截图 + 剪贴板回读原文 + Toast 文案（含原生提示叠加情况）+ network（0 请求）+ console"
+    },
+    {
+      "id": "HP06",
+      "page": "subpackages/tools/help/index",
+      "title": "滚动到顶/底、热区实测与装饰项 noop（本页无输入框/无弹层，逐项确证）",
+      "tier": "normal",
+      "pre": "身份A 已进入帮助页（内容为 AppShell 默认插槽，无 input/textarea/弹层/下拉刷新，pages.json:174 未开 enablePullDownRefresh）",
+      "action": "① 页面滚到顶与底（含 .help-footer 服务说明 :161-163）；② 对 FAQ 6 项、客服 3 项、返回键取 boundingBox；③ tap 客服项图标与「复制」标签（:155）、footer 文本；④ 尝试整页下拉",
+      "expected": "① 滚动可达底且 footer 完整可见、无遮挡；② 全部热区 ≥88rpx（不足者列实测；「复制」标签若非独立按钮须记录其点击等价于整行）；③ 装饰子节点点击与整行行为一致或无副作用（noop 日志），不得出现「有动画但无行为」的中间态；④ 下拉不触发刷新（未开启），须在 actual 记「功能未开启」而非缺陷",
+      "evidence": "normal：顶/底帧截图 + observed（尺寸清单、noop 与下拉结果）"
+    },
+    {
+      "id": "SE01",
+      "page": "subpackages/tools/search/index",
+      "title": "冷启动深链 ?keyword= 与无参两种路径；其余参数为幻影；init 双调不重复请求",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → wx.reLaunch('/subpackages/tools/search/index?keyword=摄影')（栈=1）。本页唯一消费参数是 query.keyword（search/index.vue:47-54，有值走 searchByTerm、无值走 store.init）；tab/type/hot 无读取点=幻影参数",
+      "action": "① 带 keyword 进入，读输入框值、激活 tab 与 network；② 无参进入读热搜/历史区；③ 带 ?keyword=摄影&tab=users 进入比对；④ 冷启动同页停留后从后台切回（onLoad 与 onMounted 双调 init :47-58）",
+      "expected": "① 输入框回填「摄影」并出结果（searchByTerm 触发 /search/posts 恰 1 次），首帧不得先闪空态再出数据；② 无参显示热搜词 + 搜索历史（:286-327），两者皆空时 EmptyState t('search.emptyHint')（:329）；③ tab 幻影参数不得改 activeTab（默认 users :92）、不新增请求；④ init 有 loaded 幂等守卫（stores/search.ts 的 loaded 标记）→ 双次调用只应发 1 组请求，实际条数须写入 observed（≥2 即记缺陷）",
+      "evidence": "navigation：三种路由 options 断言 + 首屏/结果帧截图 + network 逐条（/search/posts 与热搜/历史请求条数）"
+    },
+    {
+      "id": "SE02",
+      "page": "subpackages/tools/search/index",
+      "title": "搜索输入框四态：正常输入 / 清空 / 超长 / 特殊字符（300ms 防抖 + 300ms 用户搜索防抖）",
+      "tier": "normal",
+      "pre": "身份A 已进入搜索页（input :243-253；输入回调 onSearchInput :61-74 按 tab 分发，users 侧本地防抖 SEARCH_USERS_DEBOUNCE_MS=300 :75；store 侧关键词防抖 300ms，stores/search.ts:21；清空 :158-165）",
+      "action": "① 在 users tab 连续输入「广州大学」（间隔 <300ms）观察 searchUsers 次数；② tap × 清空（:254-261）；③ 输入 200 字超长串并回车；④ 输入「<script>alert(1)</script> ' OR 1=1 -- 　全角 emoji」并搜索；⑤ 切到 tags tab 重复 ①③",
+      "expected": "① 停止输入约 300ms 后只发 1 次 searchUsers（防抖生效，条数须写进 actual；每个字符一发即 FAILED）；② 清空后输入框回空、结果区回到热搜/历史（:284 条件）、× 按钮随之消失（:255 v-if）且重新聚焦（:160-164）；③④ 无 JS 注入执行、无 console error，结果按纯文本查询处理；超长时后端截断或空结果均可，但必须有可区分的空态（t('search.noResult')）而非错误态；⑤ tags tab 走 store 防抖 /search/posts，两 tab 不得互相污染结果",
+      "evidence": "normal：输入中/清空后/超长/特殊字符四帧截图 + network 逐条（次数与 query 原文）+ console"
+    },
+    {
+      "id": "SE03",
+      "page": "subpackages/tools/search/index",
+      "title": "三 Tab（用户 / 标签 / 学校）切换与按 tab 分发检索（含学校本地过滤）",
+      "tier": "normal",
+      "pre": "身份A 已在搜索页并输入有效关键词（tabs :269-281；onTabChange :98-103 → runTabSearch :105-120；学校分组为本地 SCHOOLS computed 过滤 :123-127，不发请求）",
+      "action": "① 依次 tap users / tags / schools，每次读列表来源与 network 增量；② 有 keyword 时来回切 ×5；③ 无 keyword（清空后）切 schools；④ 读 tab 激活态与 aria-selected",
+      "expected": "① users→searchUsers；tags→store.search（帖子流）；schools→本地过滤（network 不得新增请求）；② 每次带词切换都触发一次对应该 tab 的检索且不产生跨 tab 结果残留；③ 无关键词时学校分组结果为空且不报错（:124 空串短路）；④ 激活 tab 文案与 aria-selected 同步（:274-277），三 tab 均 ≥88rpx 可命中",
+      "evidence": "normal：三 tab 各一帧截图 + observed（每个 tab 的条数与请求增量）+ network 清单"
+    },
+    {
+      "id": "SE04",
+      "page": "subpackages/tools/search/index",
+      "title": "热搜词与历史词点击：回填关键词并立即检索（写本地历史）",
+      "tier": "normal",
+      "pre": "身份A 已进入搜索页且热搜与历史均有数据（store.init 落历史，:292-303 热搜、:314-326 历史；onTapTerm :177-180）",
+      "action": "① tap 热搜第 1 条（含序号 rank 样式 :300）；② tap 历史词；③ 输入新词搜索后返回再进本页看历史是否新增并置顶；④ 对同一词连点 ×3",
+      "expected": "①② 点击后输入框立即回填该词并发起当前 tab 检索（500ms 内出现 loading 或结果，二者皆无即死按钮）；③ 历史记录真实持久化（重进后含新词、去重、顺序为最近优先）；④ 连点不重复入栈、历史只 1 条该词（去重判据），请求条数须如实记录（幂等无关，GET 类）",
+      "evidence": "normal：点击前后 + 重进历史三帧截图 + observed（输入框值、历史数组原文）+ network 条数"
+    },
+    {
+      "id": "SE05",
+      "page": "subpackages/tools/search/index",
+      "title": "清除搜索历史：立即生效、无确认弹窗的可回退性判定",
+      "tier": "normal",
+      "pre": "身份A 历史 ≥2 条（clearHistory 入口 :310 → store.clearHistory，stores/search.ts:196）",
+      "action": "① tap「清空历史」；② 读历史区与热搜区；③ 杀掉页面重进；④ 在历史为空时再次进入页面观察入口显隐",
+      "expected": "① 点击后历史分组整体消失（v-if :307）且不再有逐项残留；无确认弹窗即属既有实现，须在 actual 记「无二次确认」为体验项而非死按钮；② 热搜分组不受影响（不得连带清空）；③ 重进后历史仍为空（真实落存储，非仅内存）；④ 无历史时清空入口不渲染，页面回落到热搜或 EmptyState（:329）",
+      "evidence": "normal：清空前后 + 重进后三帧截图 + observed（storage 中历史键原文）"
+    },
+    {
+      "id": "SE06",
+      "page": "subpackages/tools/search/index",
+      "title": "用户结果行点击与头像解析（未提交改动证伪：utils/media.ts 新分支 + R2 裸 image 缺陷）",
+      "tier": "navigation",
+      "pre": "身份A 在 users tab 已有结果（行 :340-356；跳转 :153-155）。⚠ 未提交清单含 utils/media.ts:222-232（/static/assets/images/{avatars,people}/ 改走后端 APP_ASSET_PREFIX）；R2 发现 MP-R2-SEARCH-001 记本页两处头像为裸 <image>，工作树已改 resolveMediaUrl（:350 用户行、:394 校园预览）→ 断言修复后表现",
+      "action": "① tap .user-row；② 读该行头像 src 与 naturalWidth；③ 构造 nickname 为空与 avatarUrl 为空的数据各一条；④ 返回后确认输入框与结果保留",
+      "expected": "① 落点 /subpackages/profile-extra/profile/other 且 userId 为 String(user.userId)（不得跳成自己的主页）；② src 必须为解析后可加载地址（不得裸 /uploads/... 或裸包内路径），real 包下 avatars/people 目录前缀 /api/v1/media/app-assets/；③ 空头像回退 IMAGE_PATHS.DEFAULT_AVATAR（:350 第二分支）、空昵称不得渲染成空白行（不得出现 name[0] 类塌陷）；④ 返回后关键词、tab、结果列表与滚动位置全部恢复（不得重置成热搜页）",
+      "evidence": "navigation：路由链 + options.userId + 头像 src/naturalWidth 记录截图"
+    },
+    {
+      "id": "SE07",
+      "page": "subpackages/tools/search/index",
+      "title": "校园主页内联预览：展开/收起、客户端按校名过滤、失败不得伪装成「暂无用户」（证伪 MP-R2-SEARCH-003）",
+      "tier": "normal",
+      "pre": "身份A 已切 schools tab 且有学校结果（openCampusProfile :130-150；预览区 :381-401；失败分支 :147-149 仅清空数组）",
+      "action": "① tap 学校行展开预览；② 再 tap 同一行收起；③ 展开 A 校后直接 tap B 校行；④ 把 getRecommendations 打成 500/断网后展开；⑤ 观察预览内人员与文案",
+      "expected": "① 预览出现且只展示 campusName 与所选校名一致的 ≤5 人（:143-146 客户端过滤），入口文案变「收起」（:379）；② 收起后预览消失、campusExpanded 复位（:131-135）；③ 切换学校时旧预览人员先清空再拉新（:136-137），不得混入上一校；④ 判定点：网络失败必须给可区分于「该校暂无用户」的错误提示与重试，当前源码把失败静默为空数组 → 渲染成 t('search.campusNoUsers') 即 FAILED（该形态即 MP-R2-SEARCH-003，不得把故障说成无数据）；⑤ 预览内人员行点击落他人主页（:392）",
+      "evidence": "normal：展开/切换/失败三态截图 + network（请求与状态码）+ observed（预览人员校名清单）"
+    },
+    {
+      "id": "SE08",
+      "page": "subpackages/tools/search/index",
+      "title": "帖子结果 PostCard 七事件接线：详情/作者/标签/活动 + 点赞收藏关注三类写（拆两判定点）",
+      "tier": "critical",
+      "pre": "身份A 已切 tags tab 且有帖子结果（PostCard 事件绑定 :419-430；goToDetail :188-191、goToAuthor :220-222、goToTag :224-226、goToActivity :228-230；写侧 handleLike :194-200、handleFavorite :203-209、handleFollow :212-218）。⚠ http.ts:262-274 稳定 Idempotency-Key 会掩盖连点，须拆判定点",
+      "action": "① tap 卡片正文（open-detail）；② 返回后 tap 作者头像（open-author）；③ 返回后 tap 标签（open-tag）；④ 有活动卡时 tap（open-activity）；⑤ 在结果列表内 tap 点赞 / 收藏 / 关注各 ×1，再对点赞 rapidTap ×5；⑥ 断网态重复点赞",
+      "expected": "① 落点 village/detail 且先 setCurrentPost 再带 ?id=（:189-190，详情页在异步落定前不得误报「帖子不存在」）；② 落他人主页（userId 编码）；③ 落 tag-posts?tagName=；④ 落 activities/detail?id=；四路均只入栈一层且返回后结果列表与滚动位置恢复；⑤ 三个写操作各自 500ms 内可观测反馈（图标态/文案变化或 Toast），失败必 Toast（village.likeFailed 等，:198/:207/:216）；连点判定点①：network POST 条数与各自 Idempotency-Key；判定点②：服务端回读 like/favorite/follow 状态只 1 次净变化（不得因幂等去重判客户端通过）；⑥ 断网必须可见失败文案且本地态回滚",
+      "evidence": "critical：五步路由链截图 + 写操作前后截图 + Toast 文案 + network 逐条（写请求条数/键/状态码）+ 服务端点赞收藏关注关系回读"
+    },
+    {
+      "id": "SE09",
+      "page": "subpackages/tools/search/index",
+      "title": "帖子结果分页：触底必须能到第 2 页（证伪 MP-R2-SEARCH-002 分页死路）",
+      "tier": "normal",
+      "pre": "身份A 在 tags tab 搜索命中 >20 条的词（store 每页 20 条、hasMore 由长度判定，stores/search.ts:129/:145-146；页面 onReachBottom 已接线 :43-45）。注意本页为页面级滚动（非 scroll-view），触底判定依赖 window 滚动",
+      "action": "① 滚到结果列表底部并停留，读 network 第 2 页请求与列表条数变化；② 连续触底 3 次；③ 拉到 hasMore=false 后继续下拉触底；④ 加载中重复触底",
+      "expected": "① 触底必须触发 store.loadMore 并发出 page=2 请求（无请求即分页死路，FAILED）；② 条数按 20 递增且无重复 id（追加重复制）；③ hasMore=false 后不再发请求并显示 t('search.noMore')（:434-436），无「幻影更多」；④ loading 期间重复触底被守卫吞掉（:146）不得并发第 3 页；结果计数文案（:407）与实际条数一致",
+      "evidence": "normal：第 1 页/第 2 页/到底三帧截图 + network 分页参数序列 + observed（条数与计数文案）"
+    },
+    {
+      "id": "SE10",
+      "page": "subpackages/tools/search/index",
+      "title": "帖子分组三态（骨架 / 错误+重试 / 空态区分）与 Loading 不永驻",
+      "tier": "normal",
+      "pre": "失败前置：把 /search/posts 打成 500 或断网（ErrorState :410 @retry=store.search(true)；骨架 :412-414；空态 :416）",
+      "action": "① 触发失败态读文案与重试；② 无命中词读空态；③ 加载中读骨架；④ 重试成功后检查是否残留 loading",
+      "expected": "① 失败必须有 ErrorState（含后端/网络文案）且重试可恢复，不得渲染成「无结果」空态（空态与错误态可区分是本条主判据；用户/学校两分组的静默吞错另见 SE07/PE07）；② 空态为 t('search.noResult')（:416 三条件同时成立才出现，不得在有错误时抢显）；③ 首屏 loading 且有数据时不得用骨架覆盖（:412 条件 posts.length===0），分页加载走底部 load-more（:431-433）；④ 任何路径结束后 spinner/load-more 必须消失（store.loading 复位）",
+      "evidence": "normal：错误/空/骨架/分页加载四态截图 + Toast/文案原文 + network 重试条数"
+    },
+    {
+      "id": "SE11",
+      "page": "subpackages/tools/search/index",
+      "title": "返回键与「取消」两入口 + 热区实测（兜底落点在未提交改动清单内须确证渲染）",
+      "tier": "navigation",
+      "pre": "两条前置：(a) 从寻觅/圈子页点入搜索（栈=2）；(b) wx.reLaunch 直开（栈=1）。返回与取消共用 goBack（:168-174，fail 兜底 switchTab ROUTES.TAB.DISCOVER）；⚠ pages/discover/index.vue 在本轮未提交改动清单，兜底落点页渲染须一并断言",
+      "action": "① 两种前置分别 tap .search-back（:238-240）；② 两种前置分别 tap「取消」文本（:263-265）；③ 对返回键、输入框、× 、取消、三 tab、历史清空取 boundingBox；④ 结果页滚到顶/底",
+      "expected": "①② 栈=2 均回来源页且来源页搜索词/滚动位置恢复；栈=1 均走 switchTab 兜底，落点 pages/discover/index 正常渲染（无白屏、无错误态、console 无 navigateBack fail 未捕获报错）；同一次点击不得既回退又重发请求；③ 全部热区 ≥88rpx，不足列实测 px；④ 页面级滚动可达顶底、底部 load-more 文案不被安全区吃掉",
+      "evidence": "navigation：四步路由链断言 + 落点页截图 + observed 尺寸清单"
+    },
+    {
+      "id": "LN01",
+      "page": "subpackages/tools/love-center/nearby",
+      "title": "冷启动直开：无参数消费（全部参数为幻影）；三态首帧不闪错误",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → wx.reLaunch('/subpackages/tools/love-center/nearby')（栈=1）。本页 onLoad 不接收 query（love-center/nearby.vue:43-45），distance/schoolId/userId 等一律为幻影参数；pages.json:189 未开 enablePullDownRefresh",
+      "action": "① 进入后 0/0.5/1s 采样三态（loading :182-184 / error+retry :187-192 / empty+CTA :196-202 / 卡片区 :206-216）与 network；② 带 ?schoolId=1&userId=2 重进比对渲染与请求入参；③ 尝试整页下拉",
+      "expected": "① 首帧至多骨架/loading，落定后为卡片队列或带 CTA 的空态（R12-IND-NEARBY-LC-001 形态：插画+「看全部推荐」），不得闪「恒 0 人」式空屏或错误态；② 幻影参数不改变请求（仍固定 distanceMax=NEARBY_MAX_DISTANCE_KM，:52-54）也不新增请求；③ 无下拉刷新（未开启），记录为「功能未开启」而非缺陷",
+      "evidence": "navigation：两种路由 options 断言 + 三态采样截图 + network（getRecommendations 入参与条数）"
+    },
+    {
+      "id": "LN02",
+      "page": "subpackages/tools/love-center/nearby",
+      "title": "错误态重试与空态降级 CTA（不带距离过滤重拉全量）",
+      "tier": "normal",
+      "pre": "失败前置：把 getRecommendations 打成 500/断网；空态前置：距离过滤后 0 人（可造时）",
+      "action": "① 失败态 tap .nearby-error__retry（:189-191 → loadNearbyCards）；② 空态 tap .nearby-empty__cta（:199-201 → loadAllRecommendations :57-59）；③ 采样 loading/骨架是否残留",
+      "expected": "① 重试重新带 distanceMax 拉取并给出错误文案（errorMessage :68-69，兜底 contentPages.nearby.loadFailed），成功后进卡片区；② 空态 CTA 必须改为不带过滤的全量重拉（:58 传空 filter），若仍 0 人则保持诚实空态且 CTA 仍可再次点击（不得变死控件）；③ 两条路径 loading 文案在 finally 收起（:70-72），不得永驻",
+      "evidence": "normal：错误态/空态/CTA 后三帧截图 + observed（两次请求入参差异）+ Toast 文案"
+    },
+    {
+      "id": "LN03",
+      "page": "subpackages/tools/love-center/nearby",
+      "title": "未登录交互守卫：喜欢/超喜欢/发消息均给 Toast 且不静默（权限类）",
+      "tier": "critical",
+      "pre": "未登录前置：清 token 后 reLaunch 本页并保证卡片已加载（requireLogin :88-92 由 handleSwipe 非 left 分支 :96、handleSuperLike :132、handleMessage :161 调用）",
+      "action": "① tap 卡片「喜欢」按钮（CardSwiper.vue:1295 → emit swipe right）；② tap「超级喜欢」（:1291 → superLike）；③ 若卡片有发消息入口则 tap（message）；④ 左滑跳过（:1287 → swipe left）",
+      "expected": "①②③ 未登录时每次都必须出现 t('apiErrors.loginRequired') Toast（:90）且不发写请求、不跳空白会话页（network 写请求条数=0 须记录）；④ 左滑为本地跳过：不受登录门槛限制（:96 仅非 left 才校验），卡片须推进且不发请求；四条路径均 500ms 内可观测（Toast 或视觉推进），任一静默即死按钮 FAILED",
+      "evidence": "critical：四个动作各 before+after 截图 + Toast 文案原文 + network（写请求条数）+ console"
+    },
+    {
+      "id": "LN04",
+      "page": "subpackages/tools/love-center/nearby",
+      "title": "右滑/喜欢（写操作）：本地队列推进 + matched 跳会话；连点拆两判定点",
+      "tier": "critical",
+      "pre": "身份A mock 登录（swipe 走 discoverStore.swipeRight/swipeLeft，本页卡片为独立本地副本并显式传快照 :99-107）。⚠ 假通过陷阱：http.ts:262-274 的稳定 Idempotency-Key 会让「同帖连点 5 次」被服务端去重，客户端条数与服务端关系必须分开判",
+      "action": "① tap 卡片「喜欢」×1；② 观察是否出现 t('contentPages.nearby.liked') 或 matched 分支提示并跳 chat-session（:109-114）；③ 对同一张卡 rapidTap 喜欢 ×5；④ 检查本地队列是否移除该卡（removeLocalCard :155-157）；⑤ 断网态 tap 喜欢",
+      "expected": "①② 每次成功都有可见反馈（Toast 文案或路由到会话），matched 时跳 chat-session 且 userId 取自本地卡快照（:111，不得带空 userId）；③ 判定点①：network POST swipe 条数（含各 Idempotency-Key 是否相同）；判定点②：服务端喜欢关系与「今日喜欢配额」回读只应 1 次净变化，出现 5 次请求或配额异常扣减即 FAILED（不得以服务端去重判通过）；④ 本地卡片必须推进到下一张（视觉恒停第一张即 MP-R1-NEARBY-001 复发）；⑤ 失败 Toast 为 store.errorMessage 或 operationFailed（:120-127），队列不得错误移除",
+      "evidence": "critical：喜欢前后 + 连点后 + 断网态截图 + Toast 文案 + network 逐条（条数/键/状态码）+ 服务端喜欢关系与配额回读"
+    },
+    {
+      "id": "LN05",
+      "page": "subpackages/tools/love-center/nearby",
+      "title": "超级喜欢与发消息：写链路与会话懒创建参数",
+      "tier": "critical",
+      "pre": "身份A mock 登录（handleSuperLike :131-152 走 swipeRight(isSuper=true)；handleMessage :160-167 跳 chat-session?userId=）",
+      "action": "① tap 星星/超喜欢按钮；② matched 分支验证跳会话；③ 通过卡片详情层触发发消息；④ 造 userId 为空/空白（mock 卡片缺 userId）后发消息；⑤ 断网重复 ①",
+      "expected": "① 超喜欢为写操作：成功有可观测反馈（Toast 或匹配跳转），isSuper 语义须体现在请求参数（network 入参记录）；③ 落点 chat-session 且 userId 为该卡 userId；④ userId 空时必须 Toast t('discover.userIdInvalid')（:162-165）且不得跳空会话页；⑤ 失败 Toast store.errorMessage 或 operationFailed（:145-150），本地卡片不得被错误移除（removeLocalCard 仅在成功路径 :143）",
+      "evidence": "critical：三动作 before+after 截图 + Toast 文案 + 路由链（含 options.userId）+ network 逐条 + console"
+    },
+    {
+      "id": "LN06",
+      "page": "subpackages/tools/love-center/nearby",
+      "title": "卡片区可点元素全集与滑动/点击热区（含蒙面模式头像兜底，未提交 Avatar 改动回归面）",
+      "tier": "normal",
+      "pre": "身份A 已进入卡片区（CardSwiper 以 masked=true 挂载 :207-215 → 头像模糊、昵称显示为「?」，CardSwiper.vue:283/:298；组件按钮 skip :1287 / star :1291 / like :1295；卡片点击 handleTap :1044）。组件依赖链上 components/common/Avatar.vue 与 components/discover/CardDetailOverlay.vue 均在本轮未提交改动清单（Avatar 新增 resolveMediaUrl 解析 :83-89/:126-129）",
+      "action": "① 逐一 tap 三按钮、卡片主体（应打开详情层或预览）、详情层内发消息（CardSwiper.vue:1258 透传）；② 横向拖动卡片触发 @swipe（:871 emit 路径）；③ 读蒙面态头像/昵称可见性；④ 对三按钮与卡片取 boundingBox；⑤ 卡片区容器高度塌陷检查（:262-278 flex:1 条件编译 + CardSwiper min-height 兜底）",
+      "expected": "①② 每个可点/可滑元素都必须 500ms 内可观测反馈（卡片推进、详情层开合、Toast 之一），whisper 类未挂载的入口不得出现半死控件；③ 蒙面态头像须模糊且身份不外泄（昵称显示占位），头像解析仍须经 resolveMediaUrl 链（未提交 media.ts/Avatar 改动生效后不得空白）；④ 三按钮热区 ≥88rpx（实测 px 入 observed）；⑤ 卡片区不得塌陷为 0 高或溢出屏（宿主 flex:1 生效）",
+      "evidence": "normal：各动作前后截图 + observed（元素尺寸、卡片高度、头像 src 与 naturalWidth）"
+    },
+    {
+      "id": "LN07",
+      "page": "subpackages/tools/love-center/nearby",
+      "title": "返回键两路落点与热区（本页标题左侧返回，胶囊不遮挡）",
+      "tier": "navigation",
+      "pre": "两条前置：(a) 从恋爱中心首页点入（栈=2）；(b) wx.reLaunch 直开（栈=1）。goBack 见 :76-83（栈=1 兜底 switchTab /pages/home/index）；返回键已移到标题左侧（:175-179，R12-IND-NEARBY-LC-002）",
+      "action": "① 两种前置各 tap .content-header__back；② 在 (a) 落点后确认来源页状态恢复；③ 读返回键与标题在 375px 宽屏下是否与胶囊重叠；④ tap 标题文本（非交互）",
+      "expected": "① 栈=2 回来源页、栈=1 兜底 switchTab('/pages/home/index')（:81），两态均不得停留或白屏，console 无 navigateBack fail 未捕获 rejection；② 来源页（恋爱中心/首页）激活态与滚动位置恢复；③ 返回键与标题不被胶囊遮挡（实测矩形入 observed）；④ 标题点击无副作用（noop）",
+      "evidence": "navigation：两态路由链 + 返回键/标题几何截图 + noop 日志"
+    },
+    {
+      "id": "LM01",
+      "page": "subpackages/tools/love-center/mbti",
+      "title": "冷启动：本地内容分支可达、web-view 分支为不可达前置；无参数消费",
+      "tier": "navigation",
+      "pre": "身份A → wx.reLaunch('/subpackages/tools/love-center/mbti')（栈=1）。onLoad 只读后台配置 contentPageUrls.mbtiUrl（:29-31，config/content-pages.ts:21 默认空串），不消费任何 query 参数 → ?url=xxx 等均为幻影参数",
+      "action": "① 默认配置进入，判定渲染分支（web-view :135 vs 本地内容 :138-218）；② 带 ?url=https://evil.example 重进比对；③ 后台配置 mbtiUrl 非空（不可构造时记前置未构造并写明所需后台开关）重进判定",
+      "expected": "① 默认走本地测试内容（.content-header + 16 型宫格 + 4 题 + 提交按钮），不得白屏或永久 loading；② 幻影参数 url 绝不能被当 web-view 地址（若出现外链加载即安全问题 FAILED）；③ 配置开启时整页切换为 web-view 且不再渲染本地内容（该分支在默认产物下不可达，须记 UNVERIFIED 与所需后台配置）",
+      "evidence": "navigation：三种路由 options + 分支判定截图 + observed（实际渲染分支与配置值）"
+    },
+    {
+      "id": "LM02",
+      "page": "subpackages/tools/love-center/mbti",
+      "title": "8 个选项单选互斥：同题改选、跨题独立、aria-checked 同步",
+      "tier": "normal",
+      "pre": "身份A 已进入 MBTI 本地内容（题目 4 道 :62-67，选项 :183-207，answers 初值 [null×4] :70，selectAnswer :73-75）",
+      "action": "① 第 1 题 tap 选项 A，再 tap 选项 B；② 第 2 题 tap 任一选项后回看第 1 题；③ 全 4 题依次作答；④ 读每题 aria-checked 与选中样式",
+      "expected": "① 同题内互斥（选中态从 A 移到 B，仅 1 个 --selected，:185/:197 class 绑定）；② 跨题互不影响；③ 四题全选后答案齐备（提交不再被拦，见 LM03）；④ aria-checked 与视觉一致（:189/:201），选项热区 ≥88rpx（实测入 observed）；点选必须 500ms 内出现视觉变化",
+      "evidence": "normal：三帧（单选后/改选后/全答完）截图 + observed（answers 序列与 aria-checked 原文）"
+    },
+    {
+      "id": "LM03",
+      "page": "subpackages/tools/love-center/mbti",
+      "title": "未答完提交：Toast 拦截且不得出现结果弹层（无副作用）",
+      "tier": "normal",
+      "pre": "身份A 已进入本地内容，只作答 3 题（第 4 题留 null）",
+      "action": "① tap .quiz-submit（:212-214 → submitTest :83-88）；② 采样 Toast 与 .mbti-result-mask；③ 0 题作答时重复 ①；④ 连点提交 ×5",
+      "expected": "①② 必须出现 t('contentPages.mbti.pleaseComplete') Toast（:86）且结果弹层不渲染（showResult 保持 false）；③ 同 ①，不得跳步骤或给半成品结果；④ 连点不产生多个 Toast 叠加（Toast 条数须记录）与无异常；路由不变（本页内交互，无跳转）",
+      "evidence": "normal：拦截态截图（含 Toast）+ observed（Toast 文案与条数、showResult 态）"
+    },
+    {
+      "id": "LM04",
+      "page": "subpackages/tools/love-center/mbti",
+      "title": "答完提交 → 结果弹层：类型代码、16 型名称与 4 条建议文案正确",
+      "tier": "normal",
+      "pre": "身份A 已答完 4 题（选项下标映射维度字母：charAt(0)→前一位、charAt(1)→后一位，:89-96；建议按字母拼接 advice{E,I,S,N,T,F,J,P} :101-108）",
+      "action": "① tap 提交；② 读 .mbti-result-panel__type-code 与 __type-name；③ 数建议条数与内容；④ 换一种作答组合（全 A / 交替）重测，比对类型码；⑤ 切 en-US locale 重测一次",
+      "expected": "① 提交后 500ms 内弹层出现（showResult=true :97）；② 类型码必须是 4 字母且与选项映射严格一致（全 A→E/S/T/F 类前一位组合，禁止随机），名称为对应 i18n types.<code>（:233）；③ 建议恰 4 条（每个字母一条，:105-107）且无裸键文本；④ 不同组合产出不同类型码（用于证伪「恒显示同一类型」）；⑤ en-US 下类型名与建议均随 locale 切换，无中文残留",
+      "evidence": "normal：弹层展开态截图（两组合各一张）+ observed（类型码、名称、4 条建议原文）"
+    },
+    {
+      "id": "LM05",
+      "page": "subpackages/tools/love-center/mbti",
+      "title": "结果弹层三路关闭：遮罩 / 关闭按钮 / 重新测试（含答案复位）",
+      "tier": "normal",
+      "pre": "身份A 已展开结果弹层（遮罩 @tap=closeResult :221-228，面板 @tap.stop :229，重新测试 :243-252 → retakeTest :116-119，关闭 :253-262 → closeResult :111-113）",
+      "action": "① tap 面板内空白（非按钮区）确认不关闭（.stop 生效）；② tap 遮罩外部区域关闭；③ 重开后 tap「关闭」；④ 重开后 tap「重新测试」并读答案与弹层态；⑤ 弹层展开态按系统返回",
+      "expected": "① 面板内点击不得误关（tap.stop :229）；②③ 两路关闭后弹层移除、答案保留（closeResult 不清答案）；④ 重新测试必须同时关弹层并把 4 题答案清为未答（:117-118），再点提交应重新被拦（LM03 形态）；⑤ 系统返回优先关弹层或按页面返回，不得出现「弹层已关但页面也退出」的双重动作；四路均在 500ms 内可见变化",
+      "evidence": "normal：五步各一帧截图 + observed（answers 序列与弹层存在性）"
+    },
+    {
+      "id": "LM06",
+      "page": "subpackages/tools/love-center/mbti",
+      "title": "16 型宫格与 4 维说明：无事件节点的 noop 判定 + i18n 完整性",
+      "tier": "noop",
+      "pre": "身份A 已进入本地内容（dimensions :155-160 与 type-grid :163-173 均无 @tap；typeCodes 16 项 :36-41）",
+      "action": "① tap 任意 3 个 .type-cell 与 2 个 .dimension-chip；② 读 16 型 code 与名称是否全部有 i18n 值（en-US + zh-CN 各一轮）；③ 采样路由与 network",
+      "expected": "① 全部为展示节点：无路由、无弹层、无请求、无 console 报错（若产品需求要求可点则按功能缺失另记，不得由本用例判死按钮，因源码无 handler 且无 aria=button）；② 16 型名称与 4 维文案在双语下均存在且非裸键（缺键即记文案缺陷并写键名）；③ network 请求条数与进入前一致",
+      "evidence": "noop：仅执行日志（点击元素、路由未变、DOM 未变、i18n 缺键清单）"
+    },
+    {
+      "id": "LM07",
+      "page": "subpackages/tools/love-center/mbti",
+      "title": "返回键两路落点（本页返回兜底首页 Tab）+ 胶囊/状态栏避让",
+      "tier": "navigation",
+      "pre": "两条前置：(a) 从恋爱中心首页点入（栈=2）；(b) wx.reLaunch 直开（栈=1）。goBack :122-129（栈=1 → switchTab /pages/home/index）；--statusbar/--capsule-right 由 useMenuButtonRect 注入（:17-18/:133）",
+      "action": "① 两种前置各 tap .content-header__back（:142-144）；② 在 (a) 落点后确认来源页滚动/激活态；③ 读返回键与标题矩形是否与胶囊重叠；④ 答完题后返回再重进，确认答案不残留",
+      "expected": "① 栈=2 回来源页、栈=1 兜底 switchTab('/pages/home/index')（:127），不得停留/白屏，console 无 navigateBack fail 未捕获；② 来源页状态恢复；③ 头部不被状态栏或胶囊压住（实测矩形入 observed）；④ 答案为页面实例级 ref（:70）→ 离开重进后回到未答状态且提交被拦，不得残留上次结果",
+      "evidence": "navigation：两态路由链 + 头部几何截图 + 重进后态截图"
+    },
+    {
+      "id": "LM08",
+      "page": "subpackages/tools/love-center/mbti",
+      "title": "scroll-view 滚到顶/底与全量热区实测（含提交按钮与弹层两按钮）",
+      "tier": "normal",
+      "pre": "身份A 已进入本地内容并展开结果弹层（滚动容器 .content-scroll :148）",
+      "action": "① .content-scroll 滚到底（含 .content-footer-space :217）再回顶；② 对返回键、8 个选项、提交按钮、弹层两按钮、遮罩取 boundingBox；③ 弹层展开态下滑动背景页面；④ 采样底部安全区",
+      "expected": "① 内滚生效可达顶底、末题与提交按钮均完整可见（不被固定层遮挡）；② 全部热区 ≥88rpx（不足列实测 px，弹层两按钮尤其关注）；③ 弹层展开时背景不得穿透滚动（modal 语义）；④ 底部不留空白塌陷、安全区占位生效",
+      "evidence": "normal：顶/底/弹层展开三帧截图 + observed（元素尺寸清单与 scrollTop）"
+    },
+    {
+      "id": "ST01",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "冷启动直开设置页：无参数消费（全为幻影参数）、缓存大小真实统计、分组齐全",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → wx.reLaunch('/subpackages/profile-extra/settings/index')（栈=1）。本页无 onLoad（仅 onMounted 统计缓存，:89-92）→ ?source=xx&tab=xx 等任意参数均为幻影参数；缓存大小来自 uni.getStorageInfo.currentSize 真实读取（:71-83）",
+      "action": "① 进入后 0/0.5/1s 采样分组结构（反馈与帮助 :448-487、账号 :490-513、社交资产 :516-539、通知 :542-596、隐私安全 :599-622、缓存 :625-648、关于 :651-674、退出登录 :677-679、版本 :682-684）与「清除缓存」右侧数值；② 预置已知体积缓存（写入 USER_CACHE 键）后重进比对数值；③ 带 ?tab=about 重进比对；④ tap 缓存分组（非按钮区）确认不误清",
+      "expected": "① 全部分组一次渲染完成，无骨架/Loading 残留，数值区显示可读体积（0 时「0 KB」，formatSizeKB :64-68）；② 数值随真实 storage 变化（写入后变大、清理后变小），证明非写死文本；③ 幻影参数不改变任何分组显隐、不新增请求；④ 分组标题/箭头点击无清除副作用（noop，缓存数值不变）",
+      "evidence": "navigation：三态路由 options 断言 + 全页截图（顶/底两帧）+ observed（缓存数值原文与 storage 键清单）"
+    },
+    {
+      "id": "ST02",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "全菜单项逐条点击落点清单（数据驱动 handleMenuTap 双分支：path / action）",
+      "tier": "navigation",
+      "pre": "身份A mock 登录已进入设置页；菜单项来源 accountMenus :315-328、socialMenus :331-361、privacyMenus :364-377、aboutMenus :389-414；分流逻辑 handleMenuTap :417-429（有 path 走 navigateTo 或 switchTabWithQuery，无 path 走 action）",
+      "action": "逐条 tap 以下 15 项并记录落点路由：完善资料（action :95-98）、身份认证（:326）、我的动态（:352-354，见 ST04）、谁看过我（:355）、浏览记录（:356 → ROUTES.VILLAGE.HISTORY）、我的相册（:357）、课表设置（:358）、隐私权限（:369）、安全中心（:375）、用户协议（action :110-113）、隐私政策（action :116-119）、检查更新（action，见 ST09）、关于我们（action，见 ST09）、免打扰入口（:552 → :104-107）、反馈与帮助（:459 → :277-280）",
+      "expected": "每一项点击后 500ms 内必有路由变化或（对 action 类）可见弹层/Toast；落点必须与目标常量一致且页面正常渲染（不允许死链或落回设置页）；返回后设置页位置与两开关状态恢复（switchTab 类需经 storage 桥接，不得报 can not navigateTo a tabbar page）；任一项无反馈即按死按钮 FAILED 并写元素选择器",
+      "evidence": "navigation：15 条路由链逐项断言（目标路由 + options）；设置页返回态截图 1 张"
+    },
+    {
+      "id": "ST03",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "钱包入口受商业化开关门控（不可达前置须标注构建/开关变体）",
+      "tier": "navigation",
+      "pre": "⚠ 不可达前置：钱包菜单仅在 appConfig.isCommerceOn('coin')=true 时注入（:335-341），而开关默认封存（stores/app-config.ts:64-76，commerce.enabled 缺失即 false）→ 默认 mock 产物下该入口不存在。本条须先确认本轮 screenshot-manifest/运行时的 apiMode 与开关状态，再决定判定分支",
+      "action": "① 默认态读社交资产分组项数与是否出现「钱包/余额」项；② 后台开 commerce.coin=true（或 mock 强制置 true）后重进，tap 该项；③ 关闭后重进确认项消失",
+      "expected": "① 默认封存态不得出现钱包入口，同时分组内其余项与分隔线不得残留空槽（封存在的合理形态，不得判死链）；② 放行后落点=ROUTES.WALLET 且钱包页正常渲染；③ 再关闭后入口即时消失（computed 依赖 appConfig 生效），已放行态数据不得被前端泄露价格/币值（G5 口径：封存页无价格/币泄漏）",
+      "evidence": "navigation：三态分组截图 + 路由链（放行态）+ observed（记录开关实际取值与来源）"
+    },
+    {
+      "id": "ST04",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "「我的动态」桥接 switchTab 到「我的」Tab，且 source=my-posts 为幻影参数（证伪 MP-R2-SETTINGS-003）+ 落点页未提交改动回归",
+      "tier": "navigation",
+      "pre": "身份A mock 登录已进入设置页；该项配置 path=ROUTES.TAB.PROFILE、tabQuery={source:'my-posts'}（:348-354）→ handleMenuTap 走 switchTabWithQuery（:420-422，utils/navigation.ts:226-246 写 storage 桥接）。⚠ 目标页 pages/profile/index.vue 在本轮未提交改动清单，且其消费桥接仅读 userId 与 invite 两个键（pages/profile/index.vue:227-235）→ source 属幻影参数；components/common/Avatar.vue（未提交改动，新增 resolveMediaUrl :83-89/:126-129）正被该 Tab 页使用",
+      "action": "① tap「我的动态」；② 读落点路由与桥接 storage 内容；③ 在落点页检查「我的帖子」区块与顶部头像/背景图渲染（头像 src 与 naturalWidth）；④ 返回设置页再进一次，确认桥接被消费不重复生效；⑤ 比对 item.tabQuery 是否被目标页读取",
+      "expected": "① 落点必须是 pages/profile/index（tabBar 页经 switchTab，无「can not navigateTo a tabbar page」报错）且不得仍停在村口/今日广场（MP-R1-SETTINGS-003 的旧落点即 FAILED）；②③ 落点页正常渲染、其头像/背景须经 resolveMediaUrl 解析（未提交 Avatar 改动生效，不得空白方块——若空白即修复丢失）；④⑤ source='my-posts' 在目标页无消费点 → 幻影参数：不得据此断言「已过滤到我的动态列表」，须在 actual 明写「参数未被消费，落点为无过滤的个人主页」，若产品要求过滤则按功能缺失记录（不得判通过）",
+      "evidence": "navigation：路由链 + 桥接 storage 原文 + 落点页头像 src/naturalWidth 记录截图"
+    },
+    {
+      "id": "ST05",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "本周安排开关：切换持久化 + Toast 文案 + 消费方（首页）生效",
+      "tier": "critical",
+      "pre": "身份A mock 登录已进入设置页（switch 绑定 weeklyScheduleEnabled，:570-575；handler toggleWeeklySchedule :303-313，键 STORAGE_KEYS.WEEKLY_SCHEDULE_ENABLED，初值读 storage :294-300）",
+      "action": "① tap 开关开 → 读 Toast 与 storage 值；② 切回关 → 复读；③ 开启后切到首页确认「本周安排/课表」区块出现，再关闭后确认消失；④ 造 setStorageSync 失败（写满或 mock 抛错）后切换",
+      "expected": "①② Toast 文案随目标态切换（t('settings.weeklyScheduleOn') ↔ weeklyScheduleOff，:312），storage 值为 '1'/'0'（:308），再次进入本页开关 checked 与存储一致（不得显示与实际相反）；③ 消费方（首页）真实响应开关（若首页不消费即记功能缺失，不得判通过）；④ 存储失败时当前实现仍弹成功 Toast（:309-312 catch 后继续 toast）→ 判 FAILED 并写明「持久化失败却报成功」，修复后应有表现为失败可见、开关回弹",
+      "evidence": "critical：开/关两态 + 首页区块两张截图 + Toast 文案 + observed（storage 键值、失败注入结果）"
+    },
+    {
+      "id": "ST06",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "深色模式开关：主题真实切换 + Toast + 三态 store 被二态开关驱动的边界（证伪 MP-R2-SETTINGS-002）",
+      "tier": "critical",
+      "pre": "身份A 已进入设置页（switch :588-593 → handleThemeSwitch :41-44 → themeStore.toggleTheme；store 为 auto/dark/light 三态，见 stores/theme.ts）；本页 switch 的 checked 绑定 isDark（:589）",
+      "action": "① 在 mode=auto 且系统深色（H5/模拟器可造时）态下 tap 开关一次；② 连续 tap ×5 观察主题与 Toast 交替；③ 切到其他页（如首页）确认主题同步生效；④ 杀进程重进确认持久化；⑤ 读开关与当前实际主题是否一致",
+      "expected": "① auto 态下首击应产生可观测变化（页面配色或 Toast 文案任一）；若首击后视觉无变化即为源码注释自述的 auto 边界缺陷（MP-R2-SETTINGS-002，H5 限定，须按「mp 端不可达/H5 端 FAILED」分支记录，不得判通过）；② 每次点击 Toast 文案与 themeStore.isDark 一致（:43），页面根 class/CSS 变量随之变化，无中间态闪烁残留；③④ 主题跨页生效并持久化（storage 键 THEME_MODE）；⑤ 二态 switch 若与三态 store 冲突（显示开但实际 auto）须记录不一致并判 FAILED",
+      "evidence": "critical：开关前后主题对比截图（首页与本叶各一对）+ Toast 文案 + observed（mode/theme 值、storage）"
+    },
+    {
+      "id": "ST07",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "清除缓存确认框三路（原生 Modal：取消 / 确认 / 遮罩外）+ 只清白名单键、保留登录态",
+      "tier": "critical",
+      "pre": "身份A mock 登录已进入设置页，先预置可清缓存键 USER_CACHE 与必须保留的键（token、THEME_MODE、语言、WEEKLY_SCHEDULE、草稿）；clearCache :127-154，白名单 CACHE_KEYS_TO_CLEAR :61",
+      "action": "① tap 清除缓存行（:630-646）弹原生 Modal；② 点「取消」；③ 重开点 Modal 外部（原生弹窗不可穿透，记录实际行为）；④ 重开点「确认清除」→ 采样 showLoading/hideLoading、数值变化与各 storage 键；⑤ 确认后立刻 tap 返回与切页验证登录态",
+      "expected": "① Modal 文案含当前体积数值（content 带 size 参数，:131）与明确按钮文本；② 取消后不清任何键、数值不变；③ Modal 外部不可穿透且不误清；④ 确认路径：showLoading「正在清理」（:136）必须在同步清理后立即 hideLoading（:144）不永驻，仅白名单键被 removeStorageSync（:137-143），token/主题/语言/开关/草稿必须全部保留，数值刷新为清理后真实值（:146），Toast t('settings.cacheCleared')（:147-151）；⑤ 清理后仍在登录态（isLoggedIn=true，不跳登录页）；连点确认 ×5 结果一致（该操作为本地写，network 请求条数须记录为 0，不得当作幂等验证）",
+      "evidence": "critical：Modal/取消/清理后三帧截图 + Toast 文案 + observed（清理前后 storage 键清单与数值）+ network（0 写请求）"
+    },
+    {
+      "id": "ST08",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "退出登录确认：三路 + 真实 logout 链路（写请求与服务端态拆两判定点）",
+      "tier": "critical",
+      "pre": "身份A mock 登录已进入设置页（logout :242-261 → sessionStore.logout()）。⚠ 判据须分「客户端是否只发一次登出请求」与「服务端会话是否真失效」两层；连点场景另受 http.ts:262-274 稳定 Idempotency-Key 影响（同 body 的 POST 会被服务端去重，不能据此认定客户端有防抖）",
+      "action": "① tap 退出登录（:677-679）弹 Modal；② 点「取消」；③ 点 Modal 外部；④ 重开点「退出」→ 读请求、本地 token、路由；⑤ 用旧 token 调一个受保护接口验证服务端；⑥ 恢复登录态后对确认按钮 rapidTap ×5",
+      "expected": "②③ 取消/不可穿透：token 保留、仍停留设置页、无登出请求；④ 确认后走统一 logout（:253-254）：本地 token 与 userSession 清空 + 通知后端 + 跳登录页（判定点①：network 面板登出/清态请求条数与各自 Idempotency-Key，须逐条记录）；⑤ 判定点②：服务端回读该 token 应已失效（若仍可用即为服务端/客户端契约问题，须记 FAILED 不得因已跳登录页判通过）；⑥ 连点不得重复入栈多个登录页，也不得抛未捕获 rejection（:255-257 catch 内仅 dev warn）",
+      "evidence": "critical：Modal/取消/确认后三帧截图 + 路由链（落地登录页）+ network 逐条（条数/键/状态码）+ 旧 token 复调结果（服务端回读）"
+    },
+    {
+      "id": "ST09",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "检查更新 / 关于我们 / 推荐给好友三个 action：原生弹窗与 Toast，Loading 不永驻",
+      "tier": "normal",
+      "pre": "身份A 已进入设置页；checkUpdate :161-218（mp 端走 uni.getUpdateManager 四回调，H5 走 800ms 延迟弹窗）、aboutUs :231-239、shareFriend :380-386（uni.showShareMenu）",
+      "action": "① tap 检查更新 → 读 showLoading 与后续 Modal 文案；② 在 onUpdateReady/onUpdateFailed 不可造时记录实际命中的分支；③ tap 关于我们 → 读 Modal 标题与内容、点确认；④ tap 推荐给好友 → 读是否出现分享菜单/面板并取消；⑤ 连点检查更新 ×3；⑥ 离开页面后再回（定时器清理 :225-228）",
+      "expected": "① 检查更新必须出现 loading 且任一回调路径都有收尾（hideLoading :171/:180/:195/:207），不得永驻「正在检查」；无更新时弹「已是最新版本」类 Modal（:172-177，showCancel=false，确认文案 settings.gotIt）；② 未触发的分支须在 actual 标注「不可造/仅代码路径存在」；③ 关于我们弹层文案非空、确认后关闭、页面可继续交互；④ shareFriend 走原生 showShareMenu（mp 端为开启菜单：无 Toast 亦不得判死按钮，但必须可观测——菜单/面板出现或原生提示），若完全无任何可观测变化即 FAILED；⑤ 连点不得叠加多个 Modal 或多个 loading；⑥ 卸载后无残留定时器在离开页面时弹更新框（operationTimers 已统一 clearTimeout）",
+      "evidence": "normal：三个 action 各 before/after 截图 + Modal 文案原文 + observed（命中分支与连点叠加计数）+ console"
+    },
+    {
+      "id": "ST10",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "隐私政策双入口已收敛为一处（证伪 MP-R2-SETTINGS-001）+ 两个开关的 switch 硬编码色记录",
+      "tier": "normal",
+      "pre": "身份A 已进入设置页；关于分组含「隐私政策」（aboutMenus :396-401），隐私安全分组内原重复入口已删除（:620 注释标注 MP-R2-SETTINGS-001）；两个 switch 的 color 属性写死品牌色（:572/:590）",
+      "action": "① 全文检索「隐私政策」文案项在页面上出现的次数并分别 tap；② 检查两处落点路由是否同源；③ 读分组结构：隐私安全分组应只剩「隐私权限」与「安全中心」两项（:364-377）；④ 记录开关颜色是否随深色模式失效",
+      "expected": "① 隐私政策入口全页应恰 1 处（出现两处即修复丢失，FAILED；须给出两处节点路径）；③ 隐私安全分组两项、关于分组四项，与数据源长度一致（不得有空白/半行残留）；④ switch 硬编码色在深色模式下的可读性问题作为遗留项写入 observed（不作为交互 FAIL 判据，但须留痕以便 G3/视觉复核）",
+      "evidence": "normal：分组全景截图（含计数标注）+ 隐私政策落点路由断言 + observed（DOM 命中次数、颜色写法）"
+    },
+    {
+      "id": "ST11",
+      "page": "subpackages/profile-extra/settings/index",
+      "title": "返回键两路落点 + 全页热区实测 + 滚动到顶/底与版本信息可见",
+      "tier": "navigation",
+      "pre": "两条前置：(a) 从「我的」Tab 齿轮点入（栈=2）；(b) wx.reLaunch 直开（栈=1）。goBack :264-271（栈=1 兜底 switchTab '/pages/profile/index'，MP-R1-SETTINGS-002 修复位；兜底落点页在本轮未提交清单）；头部安全区与胶囊避让见 safe-top/nav-bar（:436-445 + menuStyleVars :36/:433）",
+      "action": "① 两种前置各 tap .nav-bar__back（:440-442）；② 在 (a) 落点后确认「我的」页状态恢复（该页在未提交改动清单，须确认无新增错误态）；③ 对返回键、15 个菜单项行、两个 switch、退出登录按钮取 boundingBox；④ 页面滚到顶与底（版本信息 :682-684 与安全区占位 :687）；⑤ 在底部开关处再 tap 一次确认无遮挡误触",
+      "expected": "① 栈=2 回来源页、栈=1 走 switchTab('/pages/profile/index')（:269）且个人主页正常渲染（未提交改动不得引入白屏/错误态；空白头像或报错即 FAILED）；③ 全部热区 ≥88rpx（不足者列实测 px），switch 命中区按其宿主行高计算；④ 滚动可达顶/底、nav-bar 常驻不被内容顶走、底部安全区不留塌陷；⑤ 底部元素可点且不被固定层遮挡；全程 console 无 error",
+      "evidence": "navigation：两态路由链 + 落点页截图 + observed（元素尺寸清单、scrollTop）"
+    }
+  ]
+}
+

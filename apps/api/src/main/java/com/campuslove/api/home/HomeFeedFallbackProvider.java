@@ -29,7 +29,8 @@ public class HomeFeedFallbackProvider {
             true,
             92,
             "/static/assets/images/people/person-01.png",
-            null // V2026.08.17.0001 星座（mock/fallback 未维护）
+            null, // V2026.08.17.0001 星座（mock/fallback 未维护）
+            false
         );
     }
 
@@ -68,7 +69,8 @@ public class HomeFeedFallbackProvider {
                     "/static/assets/images/posts/post-3.jpg"
                 ),
                 128,
-                24
+                24,
+                false
             )
         );
     }

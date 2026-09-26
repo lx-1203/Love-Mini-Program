@@ -141,6 +141,17 @@ const pageState = computed<"loading" | "error" | "empty" | "content">(() => {
 const errorText = computed(() => errorMessage.value || t("circle.loadFailedRetry"));
 
 /**
+ * MP-R2-CIRCLES-INDEX-006：未登录（real）时 onLoad 的登录门不发请求，列表恒空，
+ * 空态不得把「未拉取」伪装成「无内容」——给登录引导文案 + 去登录 CTA
+ * （同 pages/nearby/index.vue protectedBlocked 口径；mock 模式本地 8 圈可渲染，不引导）。
+ */
+const isGuest = computed(() => !sessionStore.isLoggedIn && !useMock());
+const emptyText = computed(() =>
+  isGuest.value ? t("circle.circlesEmptyLogin") : t("circle.circlesEmpty")
+);
+const emptyActionText = computed(() => (isGuest.value ? t("discover.card.goLogin") : ""));
+
+/**
  * 重试：重新拉取兴趣圈列表
  */
 function handleRetry() {
@@ -220,14 +231,14 @@ const HOT_THRESHOLD = 8000;
 
 /** 2026-08-25 P0：快捷分类 tab（规格书 14.5） */
 type QuickTab = "all" | "photo" | "travel" | "music" | "sports" | "food" | "more";
-const QUICK_TABS: { key: QuickTab; label: string; keyword: string | null; iconSrc?: string }[] = [
-  { key: "all", label: "全部", keyword: null },
-  { key: "photo", label: "摄影", keyword: "摄影" },
-  { key: "travel", label: "旅行", keyword: "旅行" },
-  { key: "music", label: "音乐", keyword: "音乐" },
-  { key: "sports", label: "运动", keyword: "运动" },
-  { key: "food", label: "美食", keyword: "美食" },
-  { key: "more", label: "更多", keyword: null, iconSrc: IMAGE_PATHS.ICONS_EMOJI.LIST },
+const QUICK_TABS: { key: QuickTab; labelKey: string; keyword: string | null; iconSrc?: string }[] = [
+  { key: "all", labelKey: "circle.tabAll", keyword: null },
+  { key: "photo", labelKey: "circle.catPhoto", keyword: "摄影" },
+  { key: "travel", labelKey: "circle.catTravel", keyword: "旅行" },
+  { key: "music", labelKey: "circle.catMusic", keyword: "音乐" },
+  { key: "sports", labelKey: "circle.catSports", keyword: "运动" },
+  { key: "food", labelKey: "circle.catFood", keyword: "美食" },
+  { key: "more", labelKey: "common.more", keyword: null, iconSrc: IMAGE_PATHS.ICONS_EMOJI.LIST },
 ];
 const activeQuickTab = ref<QuickTab>("all");
 
@@ -299,6 +310,11 @@ function goSearch() {
   openAppPath(ROUTES.SEARCH);
 }
 
+/** 未登录引导：跳登录页（MP-R2-CIRCLES-INDEX-006，同 pages/nearby/index.vue:238 口径） */
+function goLogin() {
+  openAppPath(ROUTES.LOGIN);
+}
+
 const circleCover = circleCoverFor;
 
 // 修复#3（第五轮 QA）：拉取逻辑已移入 onLoad（含 mock 放行），
@@ -359,9 +375,11 @@ defineExpose({ toggleJoin });
     <!-- 统一页面状态容器：loading / error / empty / content 四态切换 -->
     <PageStateContainer
       :state="pageState"
-      :empty-text="t('circle.circlesEmpty')"
+      :empty-text="emptyText"
+      :empty-action-text="emptyActionText"
       :error-text="errorText"
       @retry="handleRetry"
+      @empty-action="goLogin"
     >
       <template #default>
         <!-- 兴趣圈列表 -->
@@ -386,7 +404,7 @@ defineExpose({ toggleJoin });
                 @tap="activeQuickTab = tab.key"
               >
                 <image v-if="tab.iconSrc" class="circles-tab__icon" :src="tab.iconSrc" mode="aspectFit" alt="" />
-                <text v-else class="circles-tab__text">{{ tab.label }}</text>
+                <text v-else class="circles-tab__text">{{ t(tab.labelKey) }}</text>
               </view>
             </view>
           </scroll-view>
@@ -414,7 +432,7 @@ defineExpose({ toggleJoin });
                 <view class="circle-card__meta">
                   <image class="circle-card__meta-icon" :src="IMAGE_PATHS.ICONS_EMOJI.GROUP" mode="aspectFit" alt="" />
                   <!-- R3：文案精简（人加入→人），避免被「加入」按钮列省略号吃掉动态数（judged：统计行不可读） -->
-                  <text class="circle-card__count">{{ formatMemberCount(circle.memberCount) }} 人 · {{ circle.topicCount }} 条动态</text>
+                  <text class="circle-card__count">{{ t("circle.cardStats", { members: formatMemberCount(circle.memberCount), posts: circle.topicCount }) }}</text>
                 </view>
                 <!-- 2026-08-25 P0：等 N 位朋友已加入 + 头像组（规格书 14.6）
                      MP-R2-CIRCLES-INDEX-002：数字改由后端 friendJoinedCount 驱动；
@@ -604,10 +622,17 @@ defineExpose({ toggleJoin });
 }
 
 /* ========== 推荐副标题（对齐理想图"找到与你志趣相投的人"） ========== */
+/* MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001（页内侧）：本页根节点是 AppShell，
+   .shell--standard 已提供 28rpx 水平内边距（components/layout/AppShell.vue:280-282）。
+   页面自身再叠 var(--sp-6)=24rpx → 正文实际缩进 52rpx，而自定义头部只有 28rpx，
+   同页双基线。台账口径「水平内边距单一来源：由 AppShell 承担，页内层水平 padding 归零」，
+   故 banner / card-list / tabs 三处活的横向内缩一并归零（纵向值不动）。
+   理想图 素材/理想效果图/兴趣圈列表.png 实测卡框左缘约 25rpx、副标题与首枚 chip 约 37rpx，
+   与 28rpx 单源一致（原 52rpx 两处都偏宽）。.discover-entry 一族是死样式（模板 0 命中），不动。 */
 .circles-banner {
   display: flex;
   align-items: center;
-  margin: var(--sp-5) var(--sp-6) 0;
+  margin: var(--sp-5) 0 0;
 }
 
 .circles-banner__title {
@@ -622,7 +647,8 @@ defineExpose({ toggleJoin });
 }
 
 .circles-card-list {
-  padding: var(--sp-5) var(--sp-6) 0;
+  /* MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001：横向内缩归零，见 .circles-banner 上方说明 */
+  padding: var(--sp-5) 0 0;
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
@@ -882,7 +908,7 @@ defineExpose({ toggleJoin });
      字重 800 → 600 让"趣"字底部留白更清晰，避免与下划线连笔；
      第五轮 V-06：字距 0 → 2rpx + 左右 padding 2rpx，与"兴/圈"整体字距更协调。 */
   display: inline-block;
-  border-bottom: 3rpx solid #36C99A;
+  border-bottom: 3rpx solid var(--c-brand, #36C99A);
   padding: 0 2rpx 8rpx;
   font-weight: 600;
   letter-spacing: 2rpx;
@@ -892,7 +918,7 @@ defineExpose({ toggleJoin });
   width: 64rpx;
   height: 64rpx;
   border-radius: 50%;
-  background: var(--c-bg-surface, #EEF7F2);
+  background: var(--c-bg-surface, #F3FAF6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -918,7 +944,9 @@ defineExpose({ toggleJoin });
 /* ===== 2026-08-25 P0：7 个快捷分类 tab ===== */
 .circles-tabs {
   width: 100%;
-  padding: 0 var(--sp-6);
+  /* MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001：横向内缩归零（首枚 chip 与卡框同基线，
+     尾部间距由 .circles-tabs__list 的 padding-right 承担），见 .circles-banner 上方说明 */
+  padding: 0;
   margin-top: var(--sp-2);
 }
 
@@ -942,7 +970,7 @@ defineExpose({ toggleJoin });
 }
 
 .circles-tab--active {
-  background: var(--c-bg-brand, #E8F8F1);
+  background: var(--c-brand, #36C99A);
   border-color: var(--c-brand, #36C99A);
 }
 
@@ -959,7 +987,7 @@ defineExpose({ toggleJoin });
 }
 
 .circles-tab--active .circles-tab__text {
-  color: var(--c-brand, #36C99A);
+  color: var(--c-neutral-0, #FFFFFF);
   font-weight: 700;
 }
 

@@ -30,6 +30,23 @@ const metaLine = computed(() => {
   if (item.gradeLabel) parts.push(item.gradeLabel);
   return parts.join(" · ");
 });
+
+/**
+ * MP-R2-PAGES-HOME-INDEX-110：距离行同 :24-32 metaLine 口径改数组拼接。
+ * 原模板把分隔符硬写进各分支（`{{ distanceText || '' }}` + `<text v-if="certified"> · </text>`
+ * + `<text v-if="constellation"> · {{ constellation }}</text>`），distanceText 为空而
+ * constellation 非空时整行以「 · 」开头（理想图 首页.png 无首分隔点）。
+ * 「已认证」是本组件既有中文字面量（本组件无 t()），不属本条判据，保持原样。
+ */
+const distanceLine = computed(() => {
+  const item = props.item;
+  if (!item) return "";
+  const parts: string[] = [];
+  if (item.distanceText) parts.push(item.distanceText);
+  if (item.certified) parts.push("已认证");
+  if (item.constellation) parts.push(item.constellation);
+  return parts.join(" · ");
+});
 </script>
 
 <template>
@@ -48,7 +65,7 @@ const metaLine = computed(() => {
       <view class="today-card__photo-wrap press-feedback" hover-class="press-feedback--active" @tap="$emit('view')" role="button" :aria-label="item.name || '查看推荐人主页'">
         <image
           class="today-card__photo"
-          :src="photoFailed || !item.photoUrl ? IMAGE_PATHS.POST_PLACEHOLDER : item.photoUrl"
+          :src="photoFailed || !item.photoUrl ? IMAGE_PATHS.POST_PLACEHOLDER : resolveMediaUrl(item.photoUrl)"
           mode="aspectFill"
           lazy-load
           alt=""
@@ -76,9 +93,7 @@ const metaLine = computed(() => {
         </view>
         <text v-if="item.bio" class="today-card__bio">{{ item.bio }}</text>
         <text v-if="item.expectation" class="today-card__expect">{{ item.expectation }}</text>
-        <text class="today-card__distance">
-          {{ item.distanceText || '' }}<text v-if="item.distanceText && item.certified"> · </text><text v-if="item.certified">已认证</text><text v-if="item.constellation"> · {{ item.constellation }}</text>
-        </text>
+        <text class="today-card__distance">{{ distanceLine }}</text>
         <view class="today-card__actions">
           <view class="today-card__btn today-card__btn--outline" @tap.stop="$emit('view')">看看TA</view>
           <view class="today-card__btn today-card__btn--love" :class="{ 'today-card__btn--loading': likeLoading }" @tap.stop="$emit('like')">

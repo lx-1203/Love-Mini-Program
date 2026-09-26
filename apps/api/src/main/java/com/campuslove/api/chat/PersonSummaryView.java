@@ -11,5 +11,7 @@ public record PersonSummaryView(
         String avatarUrl,
         String headline,
         List<String> tags,
-        String distanceText) {
+        String distanceText,
+        /** 当前请求者是否已喜欢该用户（likes 表真源，非客户端本地镜像） */
+        boolean liked) {
 }

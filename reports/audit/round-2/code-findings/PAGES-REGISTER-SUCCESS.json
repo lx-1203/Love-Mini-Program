@@ -1,6 +1,6 @@
 {
   "round": "R2",
-  "reviewer": "A2 代码审查员（Layer A · 代码层只读审查）",
+  "reviewer": "A2 代码审查员（Layer A · 代码层只读审查）· 本轮为修复后复核",
   "pages": ["pages/register/success"],
   "issues": [
     {
@@ -10,13 +10,13 @@
       "screenshot": "无（Layer A 代码层审查，不驱动开发者工具）",
       "category": "Style",
       "severity": "P3",
-      "description": "设计 token 强制违反：主按钮渐变第二色阶硬编码 #55d5a7（success.vue:165），未走 CSS 变量；同文件其余颜色均采用 var(--c-*, fallback) 规范写法，唯此处第二 stop 裸写十六进制。项目本身已有该色阶 token：design-variables.scss:14 定义 $brand-400: #55D5A7，design-variables.scss:258 注出 --c-brand-400，可直接引用。",
-      "evidence": "success.vue:165 `background: linear-gradient(135deg, var(--c-brand, #36c99a) 0%, #55d5a7 100%);`（第一 stop 有 var、第二 stop 无）。对照 src/theme/design-variables.scss:14 `$brand-400: #55D5A7;` 与 :258 `--c-brand-400: #{$brand-400};`。同款硬编码模式另见于 src/pages/register/index.vue:1059 与 src/subpackages/setup/profile/index.vue:1282（跨页复制扩散）。当前无用户可见差异：tokens.scss:197-256 的 dark-theme-vars mixin 未覆盖 --c-brand（仅覆盖 --c-bg-brand/--c-brand-50/100/200/--c-gradient-brand），故暗色模式下该渐变也不会错色，属 token 治理问题而非视觉缺陷。",
+      "description": "【已修复·代码层复核通过】原发现：主按钮渐变第二色阶硬编码 #55d5a7 未走 token。当前代码 success.vue:166 第二 stop 已改为 var(--c-brand-400, #55d5a7)，与 design-variables.scss:14（$brand-400: #55D5A7）、:258（--c-brand-400）对齐，修复落在 commit 29a2b1df（fix(miniprogram): round-2 audit fixes），该文件无未提交 diff。",
+      "evidence": "复核读到的当前代码 success.vue:166 `background: linear-gradient(135deg, var(--c-brand, #36c99a) 0%, var(--c-brand-400, #55d5a7) 100%);`；git log 该文件最近一笔即 29a2b1df，`git diff --stat HEAD -- <file>` 输出为空（修复已提交、无回退）。",
       "sources": ["code"],
       "confidence": 0.9,
-      "ideal": "所有色值经 token 引用：`linear-gradient(135deg, var(--c-brand, #36c99a) 0%, var(--c-brand-400, #55d5a7) 100%)`，与同页 line 81/99/112/119/134/148/153/181 的 var(--c-*, fallback) 写法一致。",
-      "fix": "success.vue:165 第二 stop 改为 var(--c-brand-400, #55d5a7)。同模式建议一并修 register/index.vue:1059、setup/profile/index.vue:1282（另两页归属各自审查员，此处仅登记线索）。",
-      "status": "待修复"
+      "ideal": "所有色值经 token 引用（已达成）。",
+      "fix": "无需再改；待 Layer B 视觉终验确认渐变渲染无回归后置「已验证」。",
+      "status": "已修复待终验"
     },
     {
       "id": "MP-R2-PAGES-REGISTER-SUCCESS-002",
@@ -25,13 +25,13 @@
       "screenshot": "无（Layer A 代码层审查，不驱动开发者工具）",
       "category": "Interaction",
       "severity": "P3",
-      "description": "主按钮热区缩小：视觉按钮 .reg-success__btn 高 96rpx（success.vue:157-167），但 @tap 绑在内层 <text> 上（success.vue:69）。text 作为 flex 子项宽 100%、高仅行高（font-size 30rpx × 默认行高 ≈ 42rpx），view 本体与任何祖先节点均无 tap 处理器，按钮上下各约 27rpx（合计约 56% 高度外的部分）为点击死区——用户点在按钮视觉实体的上/下沿无响应。",
-      "evidence": "success.vue:68-70：`<view class=\"reg-success__btn\">` 无 @tap；`<text class=\"reg-success__btn-text\" @tap=\"goSetupProfile\">`。success.vue:157-167：view 高 96rpx、flex 居中；169-176：text 仅设 width:100%，无 height/line-height 撑满。旁证：同链路姊妹页 register/index.vue:688-690 的主按钮把 @tap 与 hover-class 直接绑在 view 上（项目既有正确模式）。success.vue:67 注释「view+hover-class 绑定失效、text 绑定可用」——hover-class 是按压态视觉属性而非事件绑定，该理由不构成把 @tap 移到内层 text 的依据。",
+      "description": "【已修复·代码层复核通过】原发现：主按钮 @tap 绑在内层 text 上致 96rpx 按钮上下约 27rpx 点击死区。当前代码 success.vue:69 @tap 已移至 view（`.reg-success__btn` 全实体可点），内层 text（success.vue:70）回归纯展示，并在 success.vue:67-68 留档修复说明；热区与视觉实体一致。",
+      "evidence": "当前代码 success.vue:69 `<view class=\"reg-success__btn\" @tap=\"goSetupProfile\">`；success.vue:70 text 无任何事件绑定；同 commit 29a2b1df。",
       "sources": ["code"],
       "confidence": 0.75,
-      "ideal": "主 CTA 的可点区域与其视觉实体一致（整枚 96rpx 按钮），符合小程序最小热区惯例。",
-      "fix": "将 @tap 移至 success.vue:68 的 view 上（text 保留纯展示），或给 .reg-success__btn-text 补 height:100%/line-height:96rpx 使其撑满按钮。次级出口 .reg-success__alt（success.vue:73，26rpx 字号无内边距）热区同样偏小，可一并加 padding 扩热区。",
-      "status": "待修复"
+      "ideal": "主 CTA 可点区域与视觉实体一致（已达成）。",
+      "fix": "无需再改；待 Layer B 真机/模拟器点击终验后置「已验证」。",
+      "status": "已修复待终验"
     },
     {
       "id": "MP-R2-PAGES-REGISTER-SUCCESS-003",
@@ -40,12 +40,12 @@
       "screenshot": "无（Layer A 代码层审查，不驱动开发者工具）",
       "category": "Consistency",
       "severity": "P4",
-      "description": "文档注释与实现不符：文件头注释（success.vue:7）声称 phone「缺省时回退会话存储」，但 onLoad（success.vue:25-30）仅解析路由参数，全文无任何 uni.getStorageSync/会话回退逻辑；line 20 注释亦自述「UserSession 无手机号字段，仅从路由参数取」。当前注册链路恒传参（register/index.vue:336 redirectTo 带 ?phone=），行为正确，属注释描述了不存在的回退路径。",
-      "evidence": "success.vue:7 「入参：phone（注册手机号，用于脱敏展示；缺省时回退会话存储）」 vs success.vue:25-30 仅 `query?.phone` 解析；全文件 grep 无 getStorageSync（逐行通读确认）。src/pages/register/index.vue:336 redirectTo 恒带 phone 参数。",
+      "description": "文档注释与实现不符（本轮复核仍未修复）：文件头注释（success.vue:7）声称 phone「缺省时回退会话存储」，但 onLoad（success.vue:25-30）仅解析路由参数，全文件无任何 uni.getStorageSync/会话回退逻辑；line 20 注释亦自述「UserSession 无手机号字段，仅从路由参数取」。当前唯一入口 register/index.vue:363 redirectTo 恒带 encodeURIComponent(phone)，行为正确，属注释描述了不存在的回退路径。",
+      "evidence": "success.vue:7「缺省时回退会话存储」 vs success.vue:25-30 仅 query?.phone 解析；本页 grep getStorageSync 零命中（本轮约束关键词扫描确认）；register/index.vue:363 `uni.redirectTo({ url: \\`${ROUTES.REGISTER_SUCCESS}?phone=${encodeURIComponent(phoneRaw.value)}\\` })`。",
       "sources": ["code"],
       "confidence": 0.9,
-      "ideal": "注释与实现一致：要么删除「回退会话存储」表述，要么补实现——后续若从其他入口（如深链直达）进入本页，缺省时首行 tag 回退「完成」（success.vue:34 已兜底），不会空串。",
-      "fix": "修正 success.vue:7 注释为实际行为（缺省时首行 tag 显示「完成」），或按注释补会话级回退。二选一，推荐改注释（当前唯一入口已保证传参）。",
+      "ideal": "注释与实现一致；缺省入口（如深链直达）时首行 tag 已由 success.vue:34 兜底「完成」，不会空串。",
+      "fix": "修正 success.vue:7 注释为实际行为（删「回退会话存储」表述，注明缺省时 tag 显示「完成」）；或按注释补会话级回退。推荐改注释。",
       "status": "待修复"
     },
     {
@@ -55,31 +55,40 @@
       "screenshot": "无（Layer A 代码层审查，不驱动开发者工具）",
       "category": "Architecture",
       "severity": "P4",
-      "description": "死代码：样式段末尾的 .press-feedback / .press-feedback--active 两条规则（success.vue:184-191）在本页模板中零引用，为从 register/index.vue 复制样式时的残留（原页配合 hover-class 使用，见 register/index.vue:433、688；本页无任何 hover-class 属性）。",
-      "evidence": "success.vue 全文 grep \"press-feedback\" 命中 2 次，均为 184-191 的 CSS 规则定义本身；模板段（50-75 行）无引用、无 hover-class。",
+      "description": "死代码（本轮复核仍未修复）：样式段末尾 .press-feedback / .press-feedback--active 两条规则（success.vue:185-192）在本页模板中零引用，为从 register/index.vue 复制样式时的残留。另注：主按钮当前无任何按压反馈（view 未配 hover-class），与姊妹页 register/index.vue:688 的 view+hover-class 模式不一致——处理本条时二选一：删除死规则，或将其接线为按钮 hover-class 按压态（消除死代码的同时补齐按压反馈）。",
+      "evidence": "success.vue 全文 grep \"press-feedback\" 仅命中 185/189 两处 CSS 定义；模板段（50-75 行）无引用、无 hover-class；本轮约束关键词扫描（hover|catch|setTimeout 等）在模板/脚本段零命中。对照 register/index.vue:688 区域主按钮使用 view+hover-class 模式。",
       "sources": ["code"],
       "confidence": 0.95,
-      "ideal": "页面样式表只保留模板实际引用的规则。",
-      "fix": "删除 success.vue:184-191 两个空引用规则块。",
+      "ideal": "页面样式表只保留模板实际引用的规则；主 CTA 具备与注册页一致的按压反馈。",
+      "fix": "删除 success.vue:185-192 两个未引用规则块；或保留并在 .reg-success__btn 上加 class=\"press-feedback\" + hover-class=\"press-feedback--active\"（uni-app view 支持 hover-class）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-SUCCESS-005",
+      "round": "R2",
+      "page": "pages/register/success",
+      "screenshot": "无（Layer A 代码层审查，不驱动开发者工具）",
+      "category": "Interaction",
+      "severity": "P4",
+      "description": "次级出口热区偏小（本轮新立案，承 002 修复建议残留项）：「稍后再说，先随便逛逛」为 26rpx text（success.vue:74），样式（success.vue:179-183）无 padding/height 扩展，实际可点高度仅约行高 ≈40rpx（≈20px），低于小程序 88rpx（44px）舒适热区惯例；002 的已落地修复只移动了主按钮 @tap，本项维持原状。原轮审查将其作为 002 的可选项记载，本轮主按钮已修、残留独立成条。",
+      "evidence": "success.vue:74 `<text class=\"reg-success__alt\" @tap=\"goBrowse\">稍后再说，先随便逛逛</text>`；success.vue:179-183 仅 margin-top/font-size/color 三项，无 padding；对照主按钮 .reg-success__btn 高 96rpx（success.vue:158-168）。依据为热区惯例而非强制规范，故置信度 0.6。",
+      "sources": ["code"],
+      "confidence": 0.6,
+      "ideal": "可点元素热区 ≥ 88rpx（44px）惯例值，且不缩小视觉间距。",
+      "fix": "为 .reg-success__alt 增加 padding（如 20rpx 24rpx）并以负 margin 抵消视觉位移，或改 min-height:88rpx + flex 居中。",
       "status": "待修复"
     }
   ],
   "coverage": [
-    {
-      "page": "pages/register/success",
-      "file": "apps/client/src/pages/register/success.vue（192 行，逐行通读）",
-      "checks": [
-        "架构/状态管理：页面零 store 依赖，maskedPhone 单一 ref 为唯一数据源，rows 用 computed 派生（success.vue:33-37），无 store/页面双源同步问题；subLines 静态常量合理。",
-        "API 错误处理：本页无任何 API 调用、无 try/catch（天然无空 catch）；两个导航 API（success.vue:40-42 navigateTo、45-47 switchTab）目标路由均已在 pages.json 核实存在——register/success 注册于 pages.json:49、pages/home/index 为 tabBar 页（switchTab 合法）、/subpackages/setup/profile/index 在 subpackages/setup 分包（pages.json:255）且磁盘文件存在，无静默导航失败风险。",
-        "异步流程：onLoad 同步解析 query，String(query?.phone || \"\") 空值安全，11 位纯数字校验 + 脱敏正则（success.vue:26-29）正确；无未处理 Promise 拒绝。",
-        "路由入链/页面栈：上游客 register/index.vue:336 以 redirectTo 进入（不叠栈）且恒带 encodeURIComponent(phone)；iOS 侧滑回退落 login 页时 login/index.vue:96-98 onShow 已登录守卫会自动 switchTab 离开，无死循环/死端。",
-        "样式：图片走 IMAGE_PATHS（success.vue:12,18,52,61，REGISTER.SUCCESS 与 REGISTER_ICONS.CHECK_GREEN 均在 images.ts:618/637 定义且磁盘文件存在 check-green.svg、reg-success-illustration.jpg），无硬编码 /static/ 字符串；颜色除 MP-R2-001 登记的 #55d5a7 外全部 var(--c-*, fallback)；安全区 padding 用 var(--statusbar, env(...)) + env(safe-area-inset-bottom)（success.vue:85），--statusbar 由 useMenuButtonRect.styleVars 注入（useMenuButtonRect.ts:49-52，依赖 useStatusBarHeight.ts 模块级单例 + 非空 catch，链路完整）；无 :hover、无 grid、无 backdrop-filter、无 import.meta.env.DEV、无 emoji（「→」为 U+2192 箭头符号非 emoji）、无自定义组件（宿主 flex:1 与 CardSwiper 条款 N/A）、页面切换逻辑全部内联本 .vue。",
-        "组件事件接线：本页无子组件、无 emit 接线面；@tap 未用 .stop 但无嵌套可点祖先，无冒泡误触。",
-        "小程序专项：无 scroll-view；flex+gap 用法与姊妹页（register/index.vue 7 处、setup/profile/index.vue 10 处）一致，非本页特有风险；无键盘输入面。",
-        "硬约束清点（R11 附录 B）：10 项中 9 项通过，仅「设计 token 强制」命中 1 处（MP-R2-PAGES-REGISTER-SUCCESS-001）。",
-        "回归核对 MP-R1-PAGES-REGISTER-SUCCESS-001（三态正确/截图弹窗为环境伪影）：代码层复核通过——三行清单由 computed 稳定渲染、缺省 phone 时 tag 兜底「完成」（success.vue:34）、双出口路由与素材均验证存在；本页全文无任何模态弹窗 API，环境弹窗非本页代码产物。不作为 Regression 发现立案，状态：代码层已验证无回归。",
-        "回归核对 MP-R1-PAGES-REGISTER-INDEX-001（captureException 噪音）：属 pages/register/index.vue（非本页依赖，success.vue 不引用该文件），不在本任务页面范围，未核查、未立案。"
-      ]
-    }
+    "pages/register/success · 范围与文件：apps/client/src/pages/register/success.vue（193 行，逐行通读，本轮复核）；依赖链核实——constants/routes.ts（ROUTES.TAB.HOME:36、SUBPACKAGE_ROUTES.SETUP_PROGRESS.PROFILE:233-234、REGISTER_SUCCESS:56）、config/images.ts（REGISTER.SUCCESS:631、REGISTER_ICONS.CHECK_GREEN:650）、composables/useMenuButtonRect.ts（全文）、useStatusBarHeight.ts（全文）、compat/index.ts（getMenuButtonRect:419、getWindowWidth:450）、上游客 pages/register/index.vue（导航入链）、pages/login/index.vue（回退守卫）、pages.json（路由注册）。",
+    "pages/register/success · 架构/状态管理：页面零 store 依赖，maskedPhone 单一 ref 为唯一数据源，rows 用 computed 派生（success.vue:33-37），无 store/页面双源同步问题；subLines 静态常量、v-for key 唯一。",
+    "pages/register/success · API 错误处理/异步流程：本页无任何网络 API、无 try/catch（天然无空 catch，R11-B 该项通过）；onLoad 同步解析 query，String(query?.phone || \"\") 空值安全 + 11 位纯数字校验 + 脱敏正则（success.vue:26-29）；无未处理 Promise 拒绝；全页无 uni.show* 模态 API（本轮 grep 零命中，复核 R1 弹窗伪影结论仍成立）。",
+    "pages/register/success · 路由与页面栈：上游 register/index.vue:363 以 uni.redirectTo 进入（不叠栈、返回不落注册页）且恒带 encodeURIComponent(phone)；注册成功后 sessionStore.refreshSession()（register/index.vue:360-362，非空 catch）；iOS 侧滑回退落 login 页时 login/index.vue:96-98 onShow 已登录守卫自动 switchTab 离开（本轮重读代码确认），无死端。出链两目标均实存：/pages/home/index 为 tabBar 页（pages.json:398 pagePath，switchTab 合法）；/subpackages/setup/profile/index 属 subpackages/setup 分包（pages.json:255）且磁盘文件存在。",
+    "pages/register/success · 样式与素材：图片全走 IMAGE_PATHS（success.vue:12,18,52,61），无硬编码 /static 字符串；REGISTER.SUCCESS 与 CHECK_GREEN 磁盘文件实存（static/assets/images/register/reg-success-illustration.jpg、static/assets/icons/register/check-green.svg，本轮 ls 确认）；安全区 padding 用 var(--statusbar, env(...)) + env(safe-area-inset-bottom)（success.vue:86），--statusbar 由 useMenuButtonRect.styleVars 注入（useMenuButtonRect.ts:49-52）→ useStatusBarHeight 模块级单例且 catch 非空（useStatusBarHeight.ts:10-14），链路完整；无 :hover、无 grid、无 backdrop-filter、无 import.meta.env.DEV、无 emoji（「→」为 U+2192 符号）、无自定义组件（宿主 flex:1 与 CardSwiper 条款 N/A）、页面切换逻辑全部内联本 .vue、无独立工具函数（R11-B 10 项逐项过）。token 残留线索（不立案）：success.vue:176 color:#ffffff 与全项目主按钮文案写法一致（register/index.vue:1021、1104 同款且 register 页审查同轮未立案；token 侧 --c-text-inverse 实存于 design-variables.scss:353，留作全项目统一收口线索）；box-shadow 复合 rgba（success.vue:123-125,167）与姊妹页逐字同款（register/index.vue:1096 同为 0 8rpx 32rpx rgba(54,201,154,0.28)），属页面层既有惯例。",
+    "pages/register/success · 组件事件接线：本页无子组件、无 emit 接线面；@tap 未用 .stop 但页面无可点祖先嵌套，无冒泡误触；002 复核通过后主按钮热区与视觉实体一致（详见 002）。",
+    "pages/register/success · 小程序专项：无 scroll-view、无 fixed 元素、无键盘输入面；终端成功页无需 onShow 刷新（状态一次性）；flex+gap 用法与姊妹页一致；min-height:100vh 页面根 + flex 纵向布局，无高度塌陷风险。",
+    "pages/register/success · i18n 观察（不立案）：项目启用 vue-i18n（main.ts:8,70），src/pages 下 8 页中 6 页用 useI18n，唯 register/index.vue 与本页硬编码中文；subpackages 61/65 文件同样硬编码——属项目级迁移中途状态，与本页直接上游客 register/index.vue 行为一致，不宜单页立案，留作项目级线索。",
+    "pages/register/success · 回归核对：MP-R2-001/002（上轮待修复）本轮确认已修，置「已修复待终验」；MP-R2-003/004 复核仍在，维持「待修复」；R1 遗留（三态正确、弹窗伪影）复核结论不变——页面无模态 API、缺省 phone 兜底「完成」（success.vue:34）。本轮核查命令：逐行 Read success.vue、git log/diff 该文件、grep 约束关键词（hover|grid|backdrop-filter|import.meta.env|catch|getStorageSync|press-feedback 等）、ls 素材目录、grep pages.json/routes.ts/images.ts/compat、Read useMenuButtonRect.ts 与 useStatusBarHeight.ts 全文。",
+    "pages/register/success · 未尽事项：Layer A 不驱动开发者工具，未做真机点击/视觉终验（001/002 的「已验证」需 Layer B）；--c-text-inverse、i18n 两项为项目级线索，超出单页范围未深挖。"
   ]
 }

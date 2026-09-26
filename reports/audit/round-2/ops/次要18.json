@@ -1,0 +1,884 @@
+{
+  "cases": [
+    {
+      "id": "VD01",
+      "page": "subpackages/village/village/detail",
+      "title": "冷启动深链 ?id=post-16：骨架→正文，全程不闪「帖子不存在」空态",
+      "tier": "navigation",
+      "pre": "身份A mock 登录（tmp_r11_login.json JWT 经 automation_evaluate 注入 wx.setStorageSync('token') 后调 getApp().$vm.$pinia._s.get('session').bootstrap()，校验 isLoggedIn=true）→ wx.reLaunch('/subpackages/village/village/detail?id=post-16')（页面栈=1）。本页唯一被消费的深链参数是 query.id（detail.vue:679-682）",
+      "action": "启动后 0s/0.5s/1s 三次 DOM 采样（.detail-page 存在性、.comments-loading 骨架、toast 队列），不打点",
+      "expected": "有 id 分支：命中 store 缓存则首帧直渲、未命中置 detailLoading 骨架（detail.vue:685-693），setCurrentPost 落定后 finally 关骨架（:702-704）；:713 的 t('village.detail.postNotExist') toast 全程不出现、不闪错误/空态；1s 内标题/作者/正文可见；console 无 TypeError/unhandledRejection",
+      "evidence": "navigation：getCurrentPages 栈顶=subpackages/village/village/detail + options.id=post-16；三次采样截图（骨架帧与正文帧）+ console"
+    },
+    {
+      "id": "VD02",
+      "page": "subpackages/village/village/detail",
+      "title": "幻影参数不消费断言：?id=post-16&from=push&highlight=1&tab=hot",
+      "tier": "navigation",
+      "pre": "同 VD01（mock 身份A，reLaunch 栈=1）",
+      "action": "reLaunch 携带 from/highlight/tab 三个非契约参数，观察渲染与 network 面板",
+      "expected": "三个参数在 detail.vue 全文无读取点（onLoad 仅取 query.id，:679-682）→ 幻影参数，应被静默忽略：渲染结果与 VD01 完全一致、无额外请求、无错误态、无 console 报错；本条判定点是「不产生副作用」而非「参数生效」",
+      "evidence": "navigation：路由链 + DOM 与 VD01 一致性比对（标题/作者/正文同文本）；console"
+    },
+    {
+      "id": "VD03",
+      "page": "subpackages/village/village/detail",
+      "title": "点赞单击：500ms 内红心实心+计数 +1（非死按钮）",
+      "tier": "critical",
+      "pre": "身份A 已按 VD01 进入帖子详情，正文区可见；记录当前 currentPost.likes 与 .post-actions-inline__count 文本",
+      "action": "tap .post-actions-inline__item（点赞项，detail.vue:891-908，aria-label=village.likePostAria，handler handleLike :412-422）×1",
+      "expected": "500ms 内可观测反馈二选一：图标由 HEART_OUTLINE 切 HEART_FILLED（:901-905）或计数 +1（:906）；store 乐观更新生效、失败时 Toast t('village.likeFailed')（:419）并回滚；禁止点击后无任何 DOM/toast 变化",
+      "evidence": "critical：before+after 截图（.post-actions-inline 区域）+ Toast 文案 + console（POST 请求与响应码）"
+    },
+    {
+      "id": "VD04",
+      "page": "subpackages/village/village/detail",
+      "title": "点赞连点×5 防重：客户端多余请求数与服务端回读数拆两判定点",
+      "tier": "critical",
+      "pre": "身份A 已进入帖子详情。⚠ 假通过陷阱：services/http.ts:262-274 给所有 POST 兜底注入稳定哈希 Idempotency-Key（idem-{method}-{hash(url+body)}），服务端幂等去重会掩盖客户端无守卫的连发，故必须分两层判定",
+      "action": "300ms 内 rapidTap 点赞项 ×5，随后停留 2s 等回包",
+      "expected": "判定点①（客户端层，network 面板）：5 次点击产生的 POST /posts/{id}/like 请求条数须等于「未被本地守卫吞掉」的条数并逐条记录（含各自 Idempotency-Key 是否相同）；判定点②（服务端层）：GET 详情回读的 likeCount 增量只能是 ±1（toggle 语义下奇偶一致），不得出现 +5/-5；两层任一不满足即 FAILED，不得因「只多 1 个点赞」直接判 VERIFIED",
+      "evidence": "critical：before+after 截图 + network 逐条请求清单（URL/方法/Idempotency-Key）+ 服务端回读 likeCount 数值 + console"
+    },
+    {
+      "id": "VD05",
+      "page": "subpackages/village/village/detail",
+      "title": "关注按钮仅非本人帖渲染 + 关注/取关文案切换（isOwnPost 守卫）",
+      "tier": "normal",
+      "pre": "身份A mock 登录（session userId 与 mock 作者不同）→ reLaunch detail?id=post-16；对照组：用作者本人身份进入同帖",
+      "action": "① tap .author-inline__follow（detail.vue:822，handler handleFollow :434-444）→ 观察文案；② 再 tap 取关；③ 换本人身份重进同帖，检查按钮存在性",
+      "expected": "非本人帖：按钮存在（v-if=!isOwnPost :815），点击后文案「关注」↔「已关注」500ms 内切换，失败 Toast t('village.followFailed')（:441）；本人帖：isOwnPost=true（:428-432 以 String 比对 userId）→ 按钮不渲染，不出现「关注自己」",
+      "evidence": "normal：after 截图（作者行区域两种身份各一张）+ Toast 文案 + console"
+    },
+    {
+      "id": "VD06",
+      "page": "subpackages/village/village/detail",
+      "title": "全可点击元素热区实测：≥88rpx（≈44px）判定",
+      "tier": "normal",
+      "pre": "身份A 已进入帖子详情（含图片、评论、相似作者、底部输入栏的完整帖）",
+      "action": "对以下节点逐一 boundingBox 取宽高：.detail-header__back（:763）、.detail-header__menu（:768）、.author-inline__avatar（:786）、.author-inline__follow（:822）、.post-image（:848）、行内点赞/评论/分享（:891/:912/:923）、.comments-sort（:947）、.input-bar__input（:1277）、@/表情/图片三图标（:1291/:1295/:1299）、发送（:1310）",
+      "expected": "全部热区宽高均 ≥88rpx；任一元素 <88rpx 记 FAILED 并在 actual 写实测像素与 rpx 换算（750rpx=屏宽）；文字型可点元素（如 ···）须以容器而非字形计算",
+      "evidence": "normal：after 截图 + 逐元素 boundingBox 数值清单（写入 observed）"
+    },
+    {
+      "id": "VD07",
+      "page": "subpackages/village/village/detail",
+      "title": "帖子图片全屏查看与遮罩关闭（弹层两路）",
+      "tier": "normal",
+      "pre": "身份A 进入含 ≥1 张配图的帖子详情",
+      "action": "① tap .post-image（detail.vue:848 → openImageViewer :84-98）；② tap .image-viewer 遮罩（:1327-1335 → closeImageViewer）；③ 重开后改按系统返回",
+      "expected": "打开后 .image-viewer 存在且 src=imageViewerSrc（:1335）；关闭后节点移除、路由不变仍在详情；两路均 500ms 内可见 DOM 变化；图片 src 须经 resolveMediaUrl 解析（缩略 :848 与查看层同源）",
+      "evidence": "normal：打开态与关闭态 after 截图 + 路由不变断言 + console"
+    },
+    {
+      "id": "VD08",
+      "page": "subpackages/village/village/detail",
+      "title": "标签跳 tag-posts 与返回落点状态恢复",
+      "tier": "navigation",
+      "pre": "身份A 进入带 #标签 的帖子详情（currentPost.tags 非空）",
+      "action": "tap .post-tag（detail.vue:877 → goToTagPosts :380-383）→ 观察路由 → 在 tag-posts 按返回键 → 观察落点与详情页滚动位置",
+      "expected": "去程：栈顶=subpackages/village/village/tag-posts 且 options.tagName 已去 # 前缀并 encodeURIComponent（:381-382）；回程：落点=subpackages/village/village/detail（来源页），帖子内容与滚动位置恢复、评论未被清空、点赞态不变；不得 reLaunch 丢栈",
+      "evidence": "navigation：getCurrentPages 双向路由链（去程/回程各一次）+ 落点页标题断言；可免截图"
+    },
+    {
+      "id": "VD09",
+      "page": "subpackages/village/village/detail",
+      "title": "评论排序切换最热/最新 + 加载更多/到底两态",
+      "tier": "normal",
+      "pre": "身份A 进入评论数 >1 页的帖子详情（comments 长度 >10 的 mock 帖，如 post-16 likes 83/comments 30）",
+      "action": "① tap .comments-sort（detail.vue:947 → toggleCommentSort :75-83）两次，比对首条评论与文案；② tap 加载更多评论（:1134）至出现「没有更多」；③ 滚动 .detail-body（:781）到顶与到底",
+      "expected": "排序文案在「最热」↔「最新」切换且列表顺序随之变（:948-949）；分页追加不重复不丢条、到底后不再出现可点「更多」（幻影更多即 FAILED，参照 noMoreComments 自愈 :475）；scroll-view 触顶/触底均有位置变化，无 Loading 永驻",
+      "evidence": "normal：切换前后 + 到底帧 after 截图 + observed 记录首条评论内容与列表长度"
+    },
+    {
+      "id": "VD10",
+      "page": "subpackages/village/village/detail",
+      "title": "发评论三态：正常提交成功 toast 与列表回读（写操作）",
+      "tier": "critical",
+      "pre": "身份A 进入帖子详情，底部输入栏可见；记录 .comments-count（:939）当前值 N",
+      "action": "tap .input-bar__input（:1277）→ 输入「QA-自检-正常文本」→ tap 发送（:1310）；再走一次输入后按键盘 send（@confirm submitComment :1285）",
+      "expected": "两次均 Toast t('village.commentSuccess')（:469）；输入框清空（:466）、待发图片清空（:467）；评论计数回读为 N+2（服务端为准，不以本地乐观值定论）；store 侧受 commentPost 防抖与重入守卫约束（village/index.ts:756-793，MAX_CONTENT_LENGTH=constants.ts:12）；失败路径须 Toast 服务端文案（:471-474）",
+      "evidence": "critical：before+after 截图 + Toast 文案原文 + network（POST /comments 条数）+ 评论列表服务端回读条数（两个判定点分开记）"
+    },
+    {
+      "id": "VD11",
+      "page": "subpackages/village/village/detail",
+      "title": "评论输入框边界四连：清空 / 501 字超长 / 纯空格 / 特殊字符+emoji",
+      "tier": "critical",
+      "pre": "身份A 进入帖子详情，输入框为空",
+      "action": "① 输入文本后点清空（若无清空按钮则全选删除）；② 输入 501 字（>MAX_CONTENT_LENGTH=500）后 tap 发送；③ 输入 3 个空格后 tap 发送；④ 输入「<img src=x onerror=alert(1)> \uD83D\uDE00 emoji」后 tap 发送",
+      "expected": "①清空后 tap 发送零请求、零 toast（trim 空即 return，detail.vue:455）；②超长：被拦或截断，必须有用户可见文案（Toast，非静默），且服务端不新增该条；③纯空格等同空，不得发出请求；④特殊字符不得被当作 HTML 渲染（评论列表以 <text> 原样展示），emoji 正常落库回显；每种输入后输入框状态可判定，无 Loading 永驻",
+      "evidence": "critical：每态 after 截图（含超长与 XSS 字面串回显）+ Toast 文案 + network 请求条数 + console（无 uncaught 异常）"
+    },
+    {
+      "id": "VD12",
+      "page": "subpackages/village/village/detail",
+      "title": "@ 提及与表情面板：插入生效 + 面板三路关闭（含点击表情不关闭面板）",
+      "tier": "normal",
+      "pre": "身份A 进入帖子详情，底部输入栏可见，输入框先填入「QA」",
+      "action": "① tap @ 图标（detail.vue:1291 → insertMention :499-）；② tap 表情图标（:1295 → toggleEmojiPanel :482-487）打开面板，tap 面板内任一 .emoji-panel__item（:1319 → appendEmoji）；③ 面板展开态下 tap 输入框（键盘路径）；④ 再 tap 表情图标关闭；⑤ tap 发送区空白处不影响面板态",
+      "expected": "①输入框值追加 @ 且聚焦（:499-505）；②面板展开（emojiPanelVisible=true，图标激活态 :1295 class 变化）且点选后 commentContent 末尾追加该字符；③④两路均能使面板收起（500ms 内 DOM 变化），面板打开时键盘收起（:485）；表情面板 30 项可滚且首尾项均可点中",
+      "evidence": "normal：面板打开态与插入后输入框值 after 截图 + observed 记录输入框 value"
+    },
+    {
+      "id": "VD13",
+      "page": "subpackages/village/village/detail",
+      "title": "评论图片上传：限 3 张 + 第 4 张拦截 + Loading 不永驻 + 缩略图预览/移除",
+      "tier": "critical",
+      "pre": "身份A 进入帖子详情。dev 构建为 mock 包（build:mp-weixin:mock），上传走 clientApi.uploadPostImage 的 mock 分支；若需真实 409/幂等验证须切 real 后端前置，另记 UNVERIFIED",
+      "action": "① 连点 .input-bar__icon（图片，detail.vue:1299 → chooseCommentImage :505-）逐个加图至 3 张；② 尝试加第 4 张；③ tap 缩略图（:1269 → previewCommentImage :562）；④ tap 缩略图 ×（:1270 → removeCommentImage）移除 1 张；⑤ 在上传中态采样 loading",
+      "expected": "第 4 张被拦并 Toast「最多 3 张图片」（:520-523）；上传期间 uni.showLoading（:532）在成功与失败两条路径都被 hideLoading（:549），不得永驻；失败 Toast「图片上传失败，请重试」（:547）；缩略图 src 经 resolveMediaUrl 解析（:1269）且预览可打开、移除后计数回退；文件名须含每图唯一量（:539-541，防恒定名命中同一 Idempotency-Key）",
+      "evidence": "critical：上传前/中/后三帧截图 + Toast 文案 + network（/media/upload 条数与 name 字段、Idempotency-Key 是否互不相同）+ console"
+    },
+    {
+      "id": "VD14",
+      "page": "subpackages/village/village/detail",
+      "title": "分享弹层三路关闭与附加评论 200 字上限；确认分享为写链路",
+      "tier": "critical",
+      "pre": "身份A 进入帖子详情",
+      "action": "① tap 行内分享（detail.vue:923 → openShareModal :609）打开弹层；② 关闭路径三路各测一次：tap 遮罩（:1350）、tap 右上 X（:1362）、tap 取消（:1390）；④ 在 textarea（:1370）输入 201 字观察计数 .share-modal__count（:1379）；⑤ 重开弹层 tap 确认分享（:1401 → confirmShare :629-646）",
+      "expected": "三路关闭均在 500ms 内使弹层移除且路由不变；textarea maxlength=200 生效（计数不超 200/200，超出被截断）；确认分享后：mp 端走原生转发或 Toast 反馈（成功 t('village.detail.shareSuccess') :637、失败显示 store/失败文案 :639-642），isSharing 复位（:644）不永驻 loading 态",
+      "evidence": "critical：弹层展开/关闭、计数满格、确认分享后共 4 张截图 + Toast 文案 + console"
+    },
+    {
+      "id": "VD15",
+      "page": "subpackages/village/village/detail",
+      "title": "长按举报链路：ActionSheet 取消 / 选原因 + Modal 补充描述 / 跳过 → 提交 toast",
+      "tier": "critical",
+      "pre": "身份A 进入他人帖子详情（不得是本人帖，避免与 isOwnPost 路径混淆）",
+      "action": "① 长按 .post-content 区（detail.vue:774 → handlePostLongpress :302-）；② ActionSheet 点「取消」；③ 重开选原因（:309）后在 showModal 描述框留空并点「跳过/取消」；④ 重开走完填描述 + 提交；⑤ 另测 PostReportDialog 分支（:1416）",
+      "expected": "取消与跳过路径均不得发写请求、无「提交成功」toast；走完提交后 Toast t('village.detail.reportSubmitted')（:370），失败显示后端文案（:373）；ActionSheet/Modal 关闭后页面仍可交互（无遮罩残留）；举报写请求数与后端回读条数拆两判定点（http.ts:262-274 幂等键会掩盖重复提交）",
+      "evidence": "critical：before+after 截图（两态弹层各一张）+ Toast 文案 + network（写请求条数）+ console"
+    },
+    {
+      "id": "VD16",
+      "page": "subpackages/village/village/detail",
+      "title": "相似作者三入口（头像/关注/私信）与关注失败必须可见（证伪静默失败）",
+      "tier": "critical",
+      "pre": "身份A 进入有相似作者区块的帖子详情（.similar-authors-section 存在，detail.vue:1143-1151）",
+      "action": "① tap 作者头像（:1160）；② tap「+关注」（:1204 → handleFollowSimilarAuthor :651-662）并使其失败（real 后端置 500 或断网复现）；③ tap 私信（:1216 → sendMessageToSimilarAuthor :667-676）；④ 断网态重复 ②",
+      "expected": "①跳他人主页且落点参数为 userId；②失败必须有用户可见反馈：Toast（当前源码仅 console.error、无 toast，detail.vue:659-661 = 开放缺陷 MP-R2-DETAIL-002 → 修复后应有表现为 Toast t('village.followFailed')，若仅 console 判 FAILED）；④ 同 ②，静默失败即 FAILED；③跳 chat-session 且按已有会话优先带 sessionId（:672）否则 userId（:674）",
+      "evidence": "critical：三入口各 before+after 截图 + Toast 文案（或缺失记录）+ 路由链 + console"
+    },
+    {
+      "id": "VD17",
+      "page": "subpackages/village/village/detail",
+      "title": "返回落点=来源页 + 栈=1 兜底不静默失败",
+      "tier": "navigation",
+      "pre": "两条前置：(a) 从村口列表点击进入详情（栈=2）；(b) wx.reLaunch 直开详情（栈=1，模拟分享卡直达）",
+      "action": "两种前置下各 tap .detail-header__back（detail.vue:763 → goBack :278-285）",
+      "expected": "(a) 返回来源页（栈顶=subpackages/village/village/index）且来源页滚动位置与已点赞态恢复；(b) 栈=1 时走兜底分支（navigateBack 的 fail/reLaunch 兜底），不得停在空白详情页、不得报 cannot navigate back；console 无未捕获 rejection",
+      "evidence": "navigation：两种前置各一次 getCurrentPages 链断言 + console"
+    },
+    {
+      "id": "VD18",
+      "page": "subpackages/village/village/detail",
+      "title": "位置标签：学校名保留、假距离「距你 1.2km」不得出现（未提交改动证伪）",
+      "tier": "normal",
+      "pre": "身份A 进入作者带 campusName 的帖子详情；本轮 git diff 显示 utils/media.ts、stores/village/mock-data.ts 在未提交清单里，本条覆盖 detail 页展示断言",
+      "action": "读取 .post-location 子节点文本（detail.vue:882-887），并对全文检索字符串「距你」与「1.2km」",
+      "expected": "位置行仅显示学校名，.post-location__distance 为空注释节点、无数据绑定（:886，MP-R2-DETAIL-001 已在工作树移除）；若出现任何写死距离文案即 FAILED（不得以「视觉细节」降级）；en-US locale 下该行不得残留中文硬编码（并入 MP-R2-I18N-001 复核）",
+      "evidence": "normal：位置行放大截图 + observed 记录 .post-location 全量文本"
+    },
+    {
+      "id": "VD19",
+      "page": "subpackages/village/village/detail",
+      "title": "图片/头像兜底链与 mock-data 未提交改动证伪：post-16 图文相符（泡茶→杯子图）",
+      "tier": "normal",
+      "pre": "身份A reLaunch detail?id=post-16（正文「雨天宅家，泡杯茶看看书」，stores/village/mock-data.ts:609-613）。⚠ mock-data.ts 与 utils/media.ts 均在本轮未提交改动清单（git diff --name-only），图片改为 post-4.jpg 且 resolveMediaUrl 对 /static/assets/images/{avatars,people}/ 新走后端 app-assets 分支（utils/media.ts:222-232）",
+      "action": "读取 .post-image 的 src 与渲染尺寸（naturalWidth>0）；另 tap 作者头像读落点；再对无头像作者帖观察兜底",
+      "expected": "详情配图 src 解析为可加载绝对/包内路径且实际加载成功（naturalWidth>0），图像语义为杯/饮品特写而非海岸礁石（对照 mock-data.ts:611-613 注释的定标理由）；头像为空时走首字/默认头像兜底链，不得空白方块；若命中 avatars/people 目录，real 包下 URL 前缀应为 /api/v1/media/app-assets/（media.ts:72,:229-231），dev mock 包退回本地路径亦须可显示",
+      "evidence": "normal：after 截图（配图与头像区）+ observed 记录解析后 URL 与 naturalWidth"
+    },
+    {
+      "id": "VD20",
+      "page": "subpackages/village/village/detail",
+      "title": "无副作用装饰元素点击零反馈（noop 基线）+ Loading 不永驻总检",
+      "tier": "noop",
+      "pre": "身份A 进入帖子详情并完成一次完整交互序列（点赞/评论/分享/返回）后回到本页",
+      "action": "① tap 评论区时间戳文本与「说点什么」占位文本（非按钮节点）；② tap 相似作者区块标题文本；③ 全程监听 loading/toast 队列",
+      "expected": "装饰文本节点点击不触发路由/写请求（允许聚焦类副作用则不计死按钮），也不得抛异常；页面所有 spinner/showLoading 在交互结束后均已消失（无永驻），console 无新增 error",
+      "evidence": "noop：仅执行日志（记录点击元素、路由未变、DOM 未变、loading 计数=0）"
+    },
+    {
+      "id": "TP01",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "冷启动深链 ?tagName=%23摄影：解码 + 标题带 # 前缀，不闪错误态",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → wx.reLaunch('/subpackages/village/village/tag-posts?tagName=%23%E6%91%84%E5%BD%B1')（栈=1）。本页唯一消费参数为 query.tagName（tag-posts.vue:262-267，decodeURIComponent 在 :265）",
+      "action": "启动后读 .tag-header__title（:300）与列表首条；再测未编码的中文 tagName 与含空格值",
+      "expected": "标题渲染为「#摄影」（tagName 非空即走 # 前缀分支 :300），列表非空或有诚实空态；加载态 spinner 在 finally 收起（:196-199）不永驻；含空格/未编码值不得抛 URIError 中断渲染",
+      "evidence": "navigation：路由链（栈顶=tag-posts，options.tagName 原值）+ after 截图（标题与列表帧）"
+    },
+    {
+      "id": "TP02",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "幻影参数与缺参兜底：?page=2 不生效；无 tagName → toast + 占位标题 + 返回兜底",
+      "tier": "navigation",
+      "pre": "身份A mock 登录，两条前置：(a) reLaunch tag-posts?tagName=摄影&page=3&sort=hot；(b) reLaunch tag-posts（无任何参数，栈=1）",
+      "action": "(a) 观察首屏与 network 请求 page 参数；(b) 观察 toast、标题文案，再 tap .tag-header__back（:296）",
+      "expected": "(a) page/sort 在页面源码无读取点（唯一入参见 :262-263，分页游标为内部 ref :105）→ 幻影参数，首屏必须仍为第 1 页、请求 page=1；(b) 缺参路径：Toast t('village.tagPostsMissingParam')（:270）+ 标题走占位 t('village.tagFallbackTitle')（:300）+ 返回走 reLaunch 村口兜底（goBack :254-260），全程不白屏",
+      "evidence": "navigation：路由链 + Toast 文案 + network 请求参数（page 值）"
+    },
+    {
+      "id": "TP03",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "mock 模式点赞本地翻转成功（证伪 MP-R2-TAGPOSTS-001 恒失败）",
+      "tier": "critical",
+      "pre": "dev 构建为 mock 包（build:mp-weixin:mock；config/env.ts 未配 VITE_API_MODE 时默认 mock）。R2 代码发现记该页 mock 点赞恒抛「帖子不存在」，工作树已改为 useMock() 分支本地翻转（tag-posts.vue:31-39）→ 本用例断言修复后表现",
+      "action": "tap 卡片点赞 .action-btn（:391-402，aria-label=village.tagPosts.likeAria，@tap.stop toggleLike :32）×1，再 tap ×1 取消",
+      "expected": "两次点击图标均在 500ms 内空心↔实心切换（:400）且计数 +1/−1（:401/:37）；全程不得出现错误 Toast（:47-50 分支不触发）、console 无「帖子不存在」；mock 下不发网络请求（network 面板该 URL 条数=0）",
+      "evidence": "critical：before/中间/取消后三帧截图 + Toast 队列（须为空）+ network（无 /like 请求）+ console"
+    },
+    {
+      "id": "TP04",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "real 模式点赞连点×5：客户端请求数与服务端回读条数拆两判定点",
+      "tier": "critical",
+      "pre": "需真实后端前置（real 构建变体或 VITE_API_MODE=real + 8080 存活）；不满足则该条记 UNVERIFIED，不得用 mock 结果判 VERIFIED。⚠ http.ts:262-274 稳定哈希幂等键会使 5 连发被服务端去重 → 假通过风险",
+      "action": "300ms 内 rapidTap 同一卡片点赞 ×5，停 2s 后重进该标签页服务端回读 likeCount",
+      "expected": "判定点①：network 面板记录 POST /posts/{id}/like 实际发出条数与各自 Idempotency-Key（若相同即为客户端复用同键、不能据此认定客户端有守卫）；判定点②：回读 likeCount 相对初始值只能 ±1（toggle 语义，奇偶一致），出现 +5 或状态与图标不一致即 FAILED；页面本地态与服务端回读须一致（:42-45 同步逻辑）",
+      "evidence": "critical：before+after 截图 + network 逐条（URL/键/状态码）+ 服务端回读数值 + console"
+    },
+    {
+      "id": "TP05",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "卡片与三个互动按钮的事件隔离：@tap.stop 不得双触发或落空",
+      "tier": "normal",
+      "pre": "身份A 已进入标签帖子列表（posts.length>0，卡片含点赞/评论/分享三按钮 :379-414）",
+      "action": "依次 tap：卡片正文区（:339 → goToDetail）、评论按钮（:386）、点赞按钮（:398）、分享按钮（:409）各一次，每次返回后继续",
+      "expected": "正文区与评论按钮均跳详情且路由链只增加一层（无二次 navigateTo 重复入栈）；点赞按钮只翻本地态、不跳详情（.stop 生效 :398）；分享按钮只开原生转发菜单 + Toast t('village.tagPosts.shareHint')（:59-70），不跳页；四者均 500ms 内有可观测反馈，无死按钮",
+      "evidence": "normal：每步 after 截图 + 路由链 + Toast 文案"
+    },
+    {
+      "id": "TP06",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "下拉刷新（scroll-view refresher）动画受控收起 + 数据替换",
+      "tier": "normal",
+      "pre": "身份A 已进入标签帖子列表且首屏已加载完成",
+      "action": "在 .post-feed（:305-312，refresher-enabled=true / :refresher-triggered=isRefreshing）内下拉至出现刷新指示器并松手，采样收起时刻",
+      "expected": "触发 @refresherrefresh → onRefresh（:206-209）置 isRefreshing=true、loadPosts(true)；请求/模拟延迟结束后 isRefreshing 在 finally 归 false（:198）→ 动画必须自动收起（不得常驻顶部圈），列表条数与首条内容刷新且无重复；下拉期间不得重复触发第二次（loading 守卫 :123）",
+      "evidence": "normal：下拉中态与收起后两帧截图 + observed 记录条数与首条标题 + console"
+    },
+    {
+      "id": "TP07",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "触底加载更多与失败不得静默（证伪 MP-R2-TAGPOSTS-002 开放缺陷）",
+      "tier": "normal",
+      "pre": "身份A 进入 mock 标签页（mock 下 getMockTagPosts 聚合 mockTagPosts+mockPosts，:227-236，总数 ≤PAGE_SIZE=20 → 分页到底）；另造一条失败前置（real 后端断网或 500）",
+      "action": "① 滚动 .post-feed 至触底触发 @scrolltolower（:311 → onLoadMore :214-218），观察是否出现「没有更多」；② 失败前置下重复触底",
+      "expected": "① 到底时 hasMore=false 且显示 t('village.tagPosts.noMore')（:423-425），不得继续发第 2 页请求；② 已有列表时的加载失败必须有可见反馈（inline 提示或 Toast）——当前源码仅置 errorMessage、模板错误态只在 posts.length===0 时渲染（:320 条件）→ 静默失败判 FAILED（该缺陷在本轮 code-findings 记为 MP-R2-TAGPOSTS-002 未修）",
+      "evidence": "normal：到底帧 + 失败态帧截图（含 Toast 队列或「无任何提示」的截图证据）+ network 请求条数"
+    },
+    {
+      "id": "TP08",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "头像兜底链与空名首字（证伪 MP-R2-TAGPOSTS-004）+ 双重 resolveMediaUrl 路径可加载",
+      "tier": "normal",
+      "pre": "身份A 进入标签列表。mockTagPosts 的图片路径存在多层 resolveMediaUrl 包裹（stores/village/mock-data.ts:57-97，最深 3 层，MP-R2-MOCKDATA-001）；utils/media.ts 在本轮未提交改动清单",
+      "action": "① 逐卡读取 .user-avatar__img 的 src 与 naturalWidth；② 造 nickname 为空的卡片（real 后端可置空，mock 下改由头像缺失分支验证）；③ 读取无头像时的 .user-avatar__char",
+      "expected": "① 所有头像/配图 src 均为可加载结果（不出现 /uploads//uploads 或 /static//static 之类嵌套重复，naturalWidth>0），失败时须回退默认头像而非空白；②③ 昵称为空时 :352 直接取 name[0] → 当前实现渲染空白（同页其他卡片有 initialOf 兜底口径），修复后应有表现为占位符「?」（对齐 history.vue:36-38）→ 空白即 FAILED",
+      "evidence": "normal：卡片头像区放大截图 + observed 记录解析后 src 字符串（用于判嵌套）"
+    },
+    {
+      "id": "TP09",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "返回落点：栈>1 回来源页且列表位置恢复；栈=1 reLaunch 村口",
+      "tier": "navigation",
+      "pre": "两条前置：(a) 从详情页 tap 标签进入（栈=2，列表已滚动到中部）；(b) wx.reLaunch 直开（栈=1）",
+      "action": "两种前置下各 tap .tag-header__back（:296 → goBack :254-260）",
+      "expected": "(a) 落点=subpackages/village/village/detail（来源页），详情页阅读位置与点赞态恢复；(b) 落点=subpackages/village/village/index 且页面正常渲染（reLaunch 兜底，非 switchTab 静默失败）；两条均不得白屏或停留原页无反应",
+      "evidence": "navigation：两种前置各一次 getCurrentPages 链断言 + console"
+    },
+    {
+      "id": "TP10",
+      "page": "subpackages/village/village/tag-posts",
+      "title": "滚动到顶/底与热区实测（含 refresher 与分页共存的高度约束）",
+      "tier": "normal",
+      "pre": "身份A 进入标签列表且卡片 ≥3 张（含页脚「没有更多」节点）",
+      "action": "① scroll-view 滚到底再滚回顶，读 scrollTop 与可见节点；② 对 .tag-header__back（:296）、.feed-state__btn（:323）、三互动按钮（:386/:398/:409）、卡片（:339）取 boundingBox",
+      "expected": "① 内滚生效（scrollTop 可变、非整页 window 滚动，否则 @scrolltolower 永不触发 = MP-R2-TOPICS-003 同类风险须记 actual）；到底后「没有更多」可见、回顶后第一张卡片完整；② 全部热区 ≥88rpx，不足者列实测值",
+      "evidence": "normal：顶/底两帧截图 + observed 记录 scrollTop 与元素尺寸清单"
+    },
+    {
+      "id": "HS01",
+      "page": "subpackages/village/village/history",
+      "title": "冷启动直开浏览记录：加载态→列表/空态，无错误态闪现；本页不消费任何 query 参数",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → wx.reLaunch('/subpackages/village/village/history')（栈=1）。history.vue onLoad（:130-132）与 onShow（:134-137）均未读取 query → 任意参数（如 ?userId=1&tab=all）均为幻影参数",
+      "action": "启动后 0/0.5/1s 采样 .history-loading（:174）、列表首条或 EmptyState（:240-246）；另以 reLaunch 带 ?userId=1 重进一次比对",
+      "expected": "首帧至多有骨架/loading，不得出现错误 Toast 或空态抖动；数据落定后为记录列表或诚实空态（含「返回村口」动作）；带幻影参数时渲染结果与不带参数完全一致且无额外请求",
+      "evidence": "navigation：路由链 + 采样帧截图 + network 请求条数（两次一致）"
+    },
+    {
+      "id": "HS02",
+      "page": "subpackages/village/village/history",
+      "title": "首进 onLoad+onShow 双请求（证伪 MP-R2-HISTORY-003）",
+      "tier": "normal",
+      "pre": "身份A 已登录，network 面板清空并开始记录",
+      "action": "冷启动进入本页，统计 GET /posts/history（villageStore.fetchPostHistory）请求条数；再从详情页返回本页一次，再次统计",
+      "expected": "判定点①首进：同一次进入的 fetchPostHistory 请求条数应为 1（当前源码 onLoad :130-132 与 onShow :134-137 各调一次，且二者无去重守卫 → 观测到 2 条即 FAILED，须在 actual 写明条数与调用栈来源）；判定点②从详情返回：应恰好 1 条（onShow 静默刷新语义，属预期）；列表不得因双请求出现重复条目",
+      "evidence": "normal：after 截图 + network 请求逐条清单（时间戳+URL）+ 列表条数与去重结果"
+    },
+    {
+      "id": "HS03",
+      "page": "subpackages/village/village/history",
+      "title": "下拉刷新受控收起（refresher-triggered 绑定 loadingHistory）",
+      "tier": "normal",
+      "pre": "身份A 已进入有 ≥1 条记录的浏览历史页（scroll-view .history-list 存在，:180-188）",
+      "action": "下拉触发 @refresherrefresh（:186 → onRefresh :80-82）并松手，采样指示器收起时刻与列表刷新结果",
+      "expected": "刷新指示器由 loadingHistory 驱动（:185 已绑定业务态，R2 发现 MP-R2-HISTORY-001 写死 false 的形态不得复现）：fetchPostHistory 结束后必须自动收起，不得常驻；列表为最新记录且无重复；下拉期间不得并发触发第二次（store/页面守卫）",
+      "evidence": "normal：下拉中态 + 收起后两帧截图 + console（无 refresher 相关 warning）"
+    },
+    {
+      "id": "HS04",
+      "page": "subpackages/village/village/history",
+      "title": "触底加载更多与到底判定（hasMore 由条数增量推导）",
+      "tier": "normal",
+      "pre": "身份A 浏览记录条数 >1 页（不足时先用 mock 会话刷若干详情页补足；不可满足则记前置未构造）",
+      "action": "滚动 .history-list 至底部触发 @scrolltolower（:187 → onLoadMore :85-97），连续 3 次直到到底",
+      "expected": "每次触底追加下一页且 isLoadingMore 期间显示 spinner（:229-232）；条数不再增长时 hasMore=false 并显示 t('village.noMorePosts')（:233-235），此后不再发请求；失败时 hasMore 置 false 且给出可见提示（不得静默停在半页）",
+      "evidence": "normal：中部/到底两帧截图 + network 分页请求参数（page）与条数增量"
+    },
+    {
+      "id": "HS05",
+      "page": "subpackages/village/village/history",
+      "title": "记录卡点击带 id 直达详情 + 返回后落点与位置恢复",
+      "tier": "navigation",
+      "pre": "身份A 已进入浏览历史列表（≥5 条），列表滚动到第 3 条附近",
+      "action": "tap 第 3 条 .history-item（:189-194 → goToDetail :118-122）→ 进详情 → tap 详情返回 → 采样列表状态",
+      "expected": "去程路由=subpackages/village/village/detail 且 options.id 为该条 post.id（:121 带 encodeURIComponent，不得无 id 直开导致详情页误报「帖子不存在」）；回程落点=subpackages/village/village/history，滚动位置仍在第 3 条附近、列表未回到顶部且无重复条目；onShow 刷新后条目集合不减少",
+      "evidence": "navigation：双向路由链 + options.id 值 + 回程帧截图"
+    },
+    {
+      "id": "HS06",
+      "page": "subpackages/village/village/history",
+      "title": "头像点击与图片 error 兜底链（首字占位）",
+      "tier": "normal",
+      "pre": "身份A 已进入浏览历史列表；可用 devtools 把某条头像 src 改写为必然 404 的路径以造 @error",
+      "action": "① tap .history-item__avatar（:197-200，@tap.stop goToUserProfile :125-128）；② 对改写为坏地址的头像观察兜底；③ tap 同一行的标题区确认不冒泡成头像跳主页",
+      "expected": "① 落点=subpackages/profile-extra/profile/other 且 userId 有效（userId 缺失时不得跳转、不得白屏——openUserProfile 有空值守卫）；② @error 触发 onImageError（:206）后该条切换为首字兜底 .history-item__avatar-text（:208，initialOf :36-38 空名回退「?」），不得空白方块；③ 标题区点击进详情，两条路径互不干扰",
+      "evidence": "normal：兜底前后两帧截图 + 路由链 + observed 记录 src 与兜底节点"
+    },
+    {
+      "id": "HS07",
+      "page": "subpackages/village/village/history",
+      "title": "清空确认弹窗三路关闭：遮罩 / 取消 / 确认（写操作）",
+      "tier": "critical",
+      "pre": "身份A 已进入有 ≥1 条记录的浏览历史页（.history-clear 可见，:161-170）",
+      "action": "① tap .history-clear（:167）开弹窗；② tap .clear-dialog-mask 遮罩自身（:249 @tap.self）；③ 重开后 tap 取消（:259）；④ 重开后 tap 确认清空（:269 → handleClear :100-115）",
+      "expected": "① 弹窗展开且 500ms 内可见；②③ 两路仅关弹窗、列表条数不变、不发写请求；④ 确认后才发 DELETE /posts/history，按钮文案在 clearing 期间显示 loading 文案（:271）且不永驻；成功 Toast t('village.history.cleared')（:106）、列表转空态；失败 Toast 后端/兜底文案（:108-111）且列表不变；重复确认（连点×5）只应落 1 次效果",
+      "evidence": "critical：弹窗态与清空后截图 + Toast 文案 + network（DELETE 条数与 Idempotency-Key）+ 服务端回读记录条数（两判定点分开记）"
+    },
+    {
+      "id": "HS08",
+      "page": "subpackages/village/village/history",
+      "title": "空态动作回村口 + 热区/滚动总检（noop 装饰项）",
+      "tier": "normal",
+      "pre": "前置：先执行 HS07④ 清空，或新账号无浏览记录（不可构造时记 UNVERIFIED 并说明）",
+      "action": "① 在空态 tap EmptyState 动作「返回村口」（:245 → openAppPath 村口）；② 对 .history-back（:147-156）、.history-clear（:161）取 boundingBox；③ 列表滚到顶/底",
+      "expected": "① 落点=subpackages/village/village/index 且正常渲染（村口非 tabBar 页，不得 switchTab 静默失败）；② 热区 ≥88rpx，不足记实测值；③ 顶/底滚动均可达、底部留白不遮挡最后一条与「没有更多」文案；空态文案为 t('village.history.empty')，不得出现错误态样式",
+      "evidence": "normal：空态帧 + 落点帧截图 + 路由链 + observed 元素尺寸清单"
+    },
+    {
+      "id": "CI01",
+      "page": "subpackages/circles/circles/index",
+      "title": "冷启动直开兴趣圈列表：loading→content，onShow 自愈补拉不闪空态",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → wx.reLaunch('/subpackages/circles/circles/index')（栈=1）。本页唯一消费参数为 query.category（circles/index.vue:66-69），circleId/tab/page 均无读取点=幻影参数",
+      "action": "启动后 0/0.5/1s 采样 PageStateContainer 当前态（loading/error/empty/content）与卡片数；再从后台切回触发一次 onShow（:82-86）",
+      "expected": "首屏骨架/loading→content（8 圈卡片），不得出现「空态一闪再变列表」；onShow 仅在列表为空且非 loading 时补拉（:83 条件），补拉不得造成重复请求或重复卡片；console 无 TypeError/未捕获 rejection",
+      "evidence": "navigation：路由链 + 三帧采样截图 + network 请求条数（fetchCircles 次数）"
+    },
+    {
+      "id": "CI02",
+      "page": "subpackages/circles/circles/index",
+      "title": "category 深链过滤：有映射按关键词诚实过滤，未知分类回退全量",
+      "tier": "navigation",
+      "pre": "身份A mock 登录，三条前置分别 reLaunch：?category=photo、?category=reading、?category=not-exist",
+      "action": "分别读取卡片列表标题集合与卡片数，并核对页内快捷 tab 选中态未被 category 改写",
+      "expected": "photo→仅含「摄影」名圈（CATEGORY_KEYWORDS 无 photo 时按 labelKey/locale 标签命中，:55-64/:100-114）；reading→含「读书」圈；not-exist（无关键词且无标签映射）→回退全量（:104）；三种情形 category 都不得污染 activeQuickTab（:225-232 与 category 互不干扰）；有映射但零命中时展示诚实空列表而非回退全量（:98-99 口径）",
+      "evidence": "navigation：三组路由 options.category + 卡片名清单截图"
+    },
+    {
+      "id": "CI03",
+      "page": "subpackages/circles/circles/index",
+      "title": "返回键：navigateBack 失败两级兜底（switchTab→reLaunch）",
+      "tier": "navigation",
+      "pre": "两条前置：(a) 从我的/首页点入（栈=2）；(b) wx.reLaunch 直开（栈=1）",
+      "action": "两种前置各 tap .circles-header__back（:301-310 → goBack :255-261）",
+      "expected": "(a) 回来源页且来源页状态恢复；(b) 栈=1 时不得停留本页，须落 /pages/home/index（switchTab 成功或 reLaunch 兜底，:256-260）；console 不得出现未捕获的 navigateBack fail rejection（该链路用回调/catch 吞掉）",
+      "evidence": "navigation：两种前置各一次路由链断言 + console"
+    },
+    {
+      "id": "CI04",
+      "page": "subpackages/circles/circles/index",
+      "title": "搜索入口跳全局搜索页（不得是 toast 占位）",
+      "tier": "navigation",
+      "pre": "身份A 已进入兴趣圈列表",
+      "action": "tap .circles-header__search（:315-324 → goSearch :266-268，openAppPath ROUTES.SEARCH）→ 在搜索页按返回",
+      "expected": "去程落点=subpackages/tools/search/index（常量 ROUTES.SEARCH，非 toast 提示），返回后落点仍是本页且快捷 tab/滚动位置恢复；若出现「功能开发中」类占位 Toast 即 FAILED",
+      "evidence": "navigation：双向路由链断言（目标 /subpackages/tools/search/index）；可免截图"
+    },
+    {
+      "id": "CI05",
+      "page": "subpackages/circles/circles/index",
+      "title": "7 个快捷分类 tab 逐个切换 + 横向 scroll-view 可滚",
+      "tier": "normal",
+      "pre": "身份A 已进入兴趣圈列表（QUICK_TABS 共 7 项：全部/摄影/旅行/音乐/运动/美食/更多，:213-221）",
+      "action": "依次 tap 7 个 .circles-tab（:346-357 → activeQuickTab 赋值 :353），每次记录卡片集合；对「更多」（仅图标无文字，:355）单独确认；横向滚动 .circles-tabs（:344）到尾并点最后一项",
+      "expected": "每次切换 500ms 内出现激活态 class（:350）与列表变化：有关键词的 tab 只留名称含该词的圈（:229-231）；all 与 more 均回全量（:226-228）；「更多」tab 必须是可点且有可观测反馈（若与 all 完全同列表且无激活反馈，记死控件候选）；横向可滚且尾项「更多」可点中（不得被裁切或遮挡）",
+      "evidence": "normal：每个 tab 激活态 after 截图 + observed 记录卡片数与激活类名"
+    },
+    {
+      "id": "CI06",
+      "page": "subpackages/circles/circles/index",
+      "title": "卡片点击进入圈主页；校园认证圈未认证时 Toast 拦截",
+      "tier": "navigation",
+      "pre": "身份A mock 登录（campusName 为空/有值两态，分别构造）。campusVerified 圈见 :151-158 分支",
+      "action": "① tap 普通圈卡 .circle-card（:363-367 → goToCircleHome :151-161）→ 观察路由；② tap campusVerified=true 的圈（未认证身份）；③ 返回后确认列表态",
+      "expected": "① 落点=subpackages/circles/circles/circle-home 且 options.circleId 等于该圈 id（:160）；② 未认证身份下不发跳转、Toast t('circle.campusVerifyRequired')（:156）且 500ms 内可见；③ 返回后列表位置与已加入态保留（不得整页重置）",
+      "evidence": "navigation：路由链 + options.circleId + Toast 文案"
+    },
+    {
+      "id": "CI07",
+      "page": "subpackages/circles/circles/index",
+      "title": "加入/退出兴趣圈：按钮文案态切换 + 失败 Toast（写操作，拆两判定点）",
+      "tier": "critical",
+      "pre": "身份A mock 登录。⚠ http.ts:262-274 稳定 Idempotency-Key 会掩盖连点 → 客户端请求数与后端回读成员数分开判定；本卡片加入按钮以 @tap.stop 阻止冒泡（:404-414，R4-00099）",
+      "action": "① tap .circle-card__action ×1 加入，再 ×1 退出；② 300ms 内 rapidTap ×5；③ 失败前置（real 断网/500）tap ×1",
+      "expected": "① 文案在 t('circle.joinBtn')↔t('circle.joinedBtn') 切换（:411-413）、成员数变化（:384）、且不冒泡进圈主页（路由不变）；② 判定点①：network 面板 POST/DELETE 请求条数须被客户端守卫抑制或逐条记录（本页 :173-188 无 isJoining 守卫，属可观测风险，须在 actual 写明条数）；判定点②：服务端回读 isJoined 与 memberCount 只允许一次净变化（不得 +5）；③ 失败必须 Toast（:183-186，取 e.message 或 apiErrors.operationFailed），不得静默",
+      "evidence": "critical：加入前后 + 连点后 + 失败态截图 + Toast 文案 + network 条数 + 服务端回读 memberCount"
+    },
+    {
+      "id": "CI08",
+      "page": "subpackages/circles/circles/index",
+      "title": "错误态重试接线（PageStateContainer @retry→handleRetry）与 Loading 不永驻",
+      "tier": "normal",
+      "pre": "失败前置：real 后端下线或把 fetchCircles 打成 500（mock 包下不可构造时记 UNVERIFIED）",
+      "action": "① 触发加载失败态，读 error 文案；② tap 重试按钮（PageStateContainer emit retry → 本页 @retry :331 → handleRetry :138-140）；③ 恢复后端后再 tap 重试",
+      "expected": "① 文案为 store errorMessage 或 t('circle.loadFailedRetry')（:133），不得渲染成空态；② 点击后 500ms 内回到 loading 态（组件重试链路已接线：PageStateContainer.vue:118-132 emit('retry')）；③ 恢复后成功进入 content；任何时刻不得出现 spinner 永驻或 error 态卡死",
+      "evidence": "normal：error/loading/content 三态截图 + network 重试请求条数 + console"
+    },
+    {
+      "id": "CI09",
+      "page": "subpackages/circles/circles/index",
+      "title": "假社交证据与统计数字（证伪 MP-R2-CIRCLES-001/数字格式混用，本批未修）",
+      "tier": "normal",
+      "pre": "身份A 已进入列表；mock 与 real 两态分别观察（real 态须后台无真实好友数据）",
+      "action": "① 读取卡片「等 N 位朋友加入」文案与三枚头像 src（:386-399 → friendJoinCount :248-252 / friendAvatars :243-247）；② 对同一列表内成员数 ≥10000 与 ≥1000 的两条记录读取数字格式（formatMemberCount :193-203）；③ 读取 topicCount 文案",
+      "expected": "① 该 N 与头像在 real 模式也来自 circleId 字符哈希凭空捏造（源码无真实数据源）→ 判 FAILED 并写明「展示虚假社交数据」，不得因「有渲染」判 VERIFIED；② 同一屏不得「1.2w」与千分位「8,932」两口径混用（混用即记缺陷，口径需与理想图一致）；③ 统计行不得被按钮挤压截断（.circle-card__count 自身 ellipsis 且完整值可读，:384）",
+      "evidence": "normal：卡片放大截图（含 N 位朋友行与统计行）+ observed 记录两口径数字原文"
+    },
+    {
+      "id": "CT01",
+      "page": "subpackages/circles/circles/topics",
+      "title": "冷启动深链 ?circleId&circleName（URL 编码与非法 % 两种输入）",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → reLaunch('/subpackages/circles/circles/topics?circleId=circle-photo&circleName=%E6%91%84%E5%BD%B1%E5%9C%88')。本页消费 circleId（:314-316）与 circleName（:319-323，decodeURIComponent 带 URIError 兜底）；tab/page/anchor 均无读取点=幻影参数",
+      "action": "① 编码正常值进页，读标题与 hero；② 改传 circleName=%E0%A4%A（非法编码）重进；③ 再传未编码中文重进",
+      "expected": "① 标题显示圈名（:353），hero 与话题列表在 fetchCircles→fetchTopics 顺序下拉取成功（:325-334），不白屏；②③ 解码失败按原始串展示（:321-323），不得抛 URIError 中断渲染；三态 console 均无 uncaught 异常",
+      "evidence": "navigation：路由 options 原文 + 三态 after 截图"
+    },
+    {
+      "id": "CT02",
+      "page": "subpackages/circles/circles/topics",
+      "title": "缺 circleId 直开：Toast 提示 + 不白屏 + 幻影参数不生效",
+      "tier": "navigation",
+      "pre": "身份A reLaunch('/subpackages/circles/circles/topics?tab=hot')（无 circleId）",
+      "action": "启动后读 Toast 队列、标题与列表区域；再 tap 返回键",
+      "expected": "circleId 为空即走 else 分支 Toast t('storeErrors.circle.circleIdInvalid')（:335-338），页面仍可渲染（hero 不渲染、列表为空态或骨架），不得白屏或永久 loading；tab 为幻影参数不得改变 detailTab 初值（默认 feed，:119）；返回按栈=1 兜底 reLaunch 兴趣圈列表（goBack :305-312）",
+      "evidence": "navigation：Toast 文案 + 路由链（返回后落点 /subpackages/circles/circles/index）+ 帧截图"
+    },
+    {
+      "id": "CT03",
+      "page": "subpackages/circles/circles/topics",
+      "title": "5 个详情 tab 逐个切换（动态/精华/活动/作品墙/成员）与数据一致性",
+      "tier": "normal",
+      "pre": "身份A 已进入话题列表（detailTabs 5 项 :275-281；活动 tab 首次点击才懒拉 activityStore.fetchActivities :285-290）",
+      "action": "依次 tap .circle-tab ×5（:440-450 → switchTab :285-290），每个 tab 读激活态与内容区；在「成员」tab 读人数拼接（:280）；在「作品墙」只应有带图话题",
+      "expected": "每次切换 500ms 内激活 class 与内容变化；精华按 replyCount 降序（:195-199）；作品墙仅 images 非空话题（:122-124），无带图数据时走专属空态文案（:492）；成员 tab 显示成员数与圈内作者头像集合（:557-567，空集合时诚实空态）；活动 tab 首次进入才发请求且只 1 次（连点 ×5 不得重复拉，判定点写 network 条数）",
+      "evidence": "normal：5 个 tab 各一帧截图 + network 请求条数 + observed 记录激活 tab 文案"
+    },
+    {
+      "id": "CT04",
+      "page": "subpackages/circles/circles/topics",
+      "title": "右上角「···」ActionSheet：仅「写话题」有效项 + 取消路径（证伪 MP-R2-TOPICS-001 死选项）",
+      "tier": "normal",
+      "pre": "身份A 已进入话题列表",
+      "action": "① tap .topics-header__icon-btn（「···」，:366-375 → onTopicsMore :257-265）；② 在原生菜单 tap「写话题」；③ 重开后 tap 取消/点遮罩外",
+      "expected": "① itemList 必须只有 1 项「写话题」（:260）——若出现「举报圈子」「分享圈子」等无行为项即 FAILED（该缺陷工作树已收敛，须确证）；② 落点=subpackages/circles/circles/post-topic 且 options.circleId 正确（:114-116）；③ 取消仅关菜单、路由与列表不变、无 Toast",
+      "evidence": "normal：菜单展开态 + 两路结果帧截图 + 路由链"
+    },
+    {
+      "id": "CT05",
+      "page": "subpackages/circles/circles/topics",
+      "title": "写话题两处入口（头部编辑图标 + 底部 FAB）参数一致",
+      "tier": "navigation",
+      "pre": "身份A 已进入话题列表（circleId=circle-photo）",
+      "action": "分别 tap 头部 .topics-header__icon-btn（EDIT，:356-365）与底部 .circle-bottom__fab（:609-618），各返回一次",
+      "expected": "两入口落点均为 post-topic 且带同一 circleId（:114-116），不得出现其中一处无 circleId 导致发帖页选不到圈；返回后话题列表页保持原位（不重新加载、滚动位置恢复）",
+      "evidence": "navigation：两路路由链 + options.circleId 值断言；可免截图"
+    },
+    {
+      "id": "CT06",
+      "page": "subpackages/circles/circles/topics",
+      "title": "加入/退出圈子两处按钮共享态 + 失败 Toast + 连点拆两判定点（写操作）",
+      "tier": "critical",
+      "pre": "身份A mock 登录。hero 加入按钮（:425-435 @tap.stop toggleJoin）与底部栏按钮（:598-608）走同一 handler（:211-224）。⚠ 幂等键会掩盖连点（http.ts:262-274）",
+      "action": "① tap hero 加入 → 观察两处按钮文案是否同步；② 再 tap 底部按钮退出；③ 300ms 内 rapidTap hero ×5；④ 失败前置（real 500/断网）tap ×1",
+      "expected": "①②两处按钮文案同步切换（同一 computed circle.isJoined，:434/:607），成员数变化；③ 判定点①：network 面板 POST/DELETE /circles/{id}/join 条数逐条记录（本页 :211-224 无 isJoining 守卫 → 若发 5 条即为客户端缺陷，须写进 actual）；判定点②：服务端回读 isJoined 与 memberCount 净变化只能 ±1；④ 失败必须 Toast（:219-222）且按钮态回滚",
+      "evidence": "critical：加入前后两按钮区截图 + Toast 文案 + network 条数/键 + 服务端回读数值"
+    },
+    {
+      "id": "CT07",
+      "page": "subpackages/circles/circles/topics",
+      "title": "话题卡三入口事件隔离：整卡进详情 / 头像 stop / 认识 TA stop",
+      "tier": "navigation",
+      "pre": "身份A 已进入话题列表（listForTab 非空；卡片元素见 :499-553）",
+      "action": "① tap .topic-card 正文（:504 goToDetail）；② 返回后 tap .topic-card__avatar（:529-531）；③ 返回后 tap .topic-card__meet（:551-553 meetAuthor :268-270）；④ 对同一卡片连点 ①×2",
+      "expected": "① 落点=circles/topic-detail 且 query 同时带 topicId 与 circleId（:97-99，circleId 在详情页属幻影参数、须由 VD/TD 断言其无害）；② 落点他人主页（openUserProfile，userId 空时不得跳空白主页）；③ 同 ②；三者均只入栈一层（连点不得双入栈）；返回话题列表后所在 tab 与滚动位置恢复",
+      "evidence": "navigation：三路由链 + options 值 + 栈深度断言（每次仅 +1）"
+    },
+    {
+      "id": "CT08",
+      "page": "subpackages/circles/circles/topics",
+      "title": "下拉刷新与触底分页共存（scroll-view 定高，证伪 MP-R2-TOPICS-003）",
+      "tier": "normal",
+      "pre": "身份A 进入话题数 >1 页的圈子（不足时先经 mock 造数据；不可造则记前置未构造）",
+      "action": "① 在 .topics-list（:471-479）下拉触发 @refresherrefresh（onRefresh :70-78），松手采样收起；② 连续触底 @scrolltolower（:83-91）直至出现「没有更多」（:588-590）；③ 全程读 scrollTop 与 window 滚动位置",
+      "expected": "① isRefreshing 驱动指示器并在 finally 收起（:74-77），另调 uni.stopPullDownRefresh 不得报错；② 分页 fetchTopics(page+1) 逐页追加、无重复无丢条，到底显示 t('circle.topicsLoadMoreEnd')；③ 内滚必须生效（.topics-list 有确定高度，:629-631 修复注释口径）；若出现整页 window 滚动导致 @scrolltolower 与 refresher 永不触发即 FAILED（该形态即 R2 发现 MP-R2-TOPICS-003）",
+      "evidence": "normal：刷新态/到底态截图 + network 分页参数（page 序列）+ observed 记录 scrollTop 与 windowScrollY"
+    },
+    {
+      "id": "CT09",
+      "page": "subpackages/circles/circles/topics",
+      "title": "圈封面/头像/配图兜底链与封面映射副本（证伪 MP-R2-TOPICS-002）",
+      "tier": "normal",
+      "pre": "身份A 进入若干圈子（含「学习搭子/桌游/考研/天文」等边界名）。本页保留私有 CIRCLE_COVER 副本（:156-192），未收敛到 config/circle-covers 的 circleCoverFor；utils/media.ts 在本轮未提交改动清单",
+      "action": "① 对同一圈名分别读取本页 hero 封面（:381/:387-392）与兴趣圈列表页卡片封面，比对 URL；② 把某配图 src 改写为 404 观察 @error 兜底（:522/:539）；③ 读无头像作者的字符兜底（initialOf :541）",
+      "expected": "① 两页对同一圈名必须解析到同一封面（出现「列表专属图、进详情页回退默认」的漂移即 FAILED，记录两处 URL 原文）；② 图片失败不得留空白块，须回退占位（封面未命中时走 resolveCircleIcon→首字 :393-400）；③ 头像为空回退首字、空名回退「?」；/static/ 装饰图在本页须仍可本地加载（media.ts 新分支仅对 avatars/people 目录改走后端 app-assets）",
+      "evidence": "normal：hero 与列表同圈封面并排截图 + observed 记录两个 src 字符串"
+    },
+    {
+      "id": "CT10",
+      "page": "subpackages/circles/circles/topics",
+      "title": "加载失败错误态重试 / 空态动作跳写话题 / Loading 不永驻",
+      "tier": "normal",
+      "pre": "失败前置：fetchTopics 打成 500 或断网（mock 包不可构造时记 UNVERIFIED）；空态前置：某圈话题数=0",
+      "action": "① error 态读文案并 tap 重试（:465-467 → onRefresh）；② 空态 tap EmptyState 动作（:488-496 @action goToPostTopic）；③ 在加载全程采样 spinner",
+      "expected": "① 有错误文案 + 重试可恢复（点击后回 loading 并成功渲染）；不得用字面空 .catch 把失败吞成空态（:328/:333 三处空 catch 属开放风险，若失败态与空态无法区分即记 FAILED，MP-R2-TOPICS-004）；② 空态动作直达 post-topic 且带 circleId；③ 任何路径结束后 spinner/loading 必须消失（不得永驻）；返回键在栈=1 时 reLaunch 兴趣圈列表（goBack :305-312、圈规条 goCircleDetail :297-303）",
+      "evidence": "normal：error/空态/loading 三态截图 + network 请求条数 + console"
+    },
+    {
+      "id": "CT11",
+      "page": "subpackages/circles/circles/topics",
+      "title": "置顶圈规条点击与热区总检（noop 装饰项）",
+      "tier": "normal",
+      "pre": "身份A 进入动态或精华 tab（置顶规条仅在 feed/hot 渲染，:481）",
+      "action": "① tap .topic-rule（:481 → goCircleDetail :297-303）在栈=2 与栈=1 两种前置下各测；② 对 .topics-header__back、两个 header 图标、5 个 tab、加入按钮、话题卡、meet 按钮取 boundingBox；③ tap 回复数/时间文本等装饰节点",
+      "expected": "① 栈=2 回上一页、栈=1 reLaunch 兴趣圈列表，两态都不得无反应（死按钮）；② 全部热区 ≥88rpx（不足者列实测 px/rpx）；③ 装饰节点点击不产生路由或写请求（允许 hover 视觉态），且无 console error",
+      "evidence": "normal：路由链断言 + observed 元素尺寸清单 + 执行日志（noop 项）"
+    },
+    {
+      "id": "TD01",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "冷启动深链两种参数名（topicId 与 id）均兼容；circleId 为幻影参数",
+      "tier": "navigation",
+      "pre": "身份A mock 登录，两条前置分别 reLaunch：(a) topic-detail?topicId=photo-topic-1；(b) topic-detail?id=photo-topic-1。本页 onLoad 取 query.topicId ?? query.id（:217），上游 topics.vue:98 与分享 path（:254）携带的 circleId 在本页无任何读取点=幻影参数",
+      "action": "两种前置各采样 0/0.5/1s 渲染态，并读 network（fetchTopicDetail + fetchReplies 各 1 次）；再带 &circleId=not-exist 重进一次",
+      "expected": "(a)(b) 均渲染同一话题详情、不出现「话题不存在」（:219-223 有值即拉取）；幻影 circleId 不得影响渲染、不得发无效请求（结果与 (b) 一致）；全程 Toast 队列为空，console 无异常",
+      "evidence": "navigation：三次路由 options 断言 + 渲染帧截图 + network 条数"
+    },
+    {
+      "id": "TD02",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "缺参 Toast + 「话题不存在」与「加载失败网络态」两类空/错态区分与重试",
+      "tier": "normal",
+      "pre": "三条前置：(a) 无参数直开；(b) topicId 有效但详情接口 500/断网（MP-R1-TOPICDETAIL-001 场景）；(c) topicId 为不存在的 id",
+      "action": "分别读取 Toast 与主区文案：(a) 应 Toast topicIdInvalid（:226）；(b) 读 EmptyState type=network 分支（:396-403 区段）与「重试」动作；(c) 读「话题不存在」+ 返回动作（:410-418 区段）",
+      "expected": "(b) 必须显示网络/错误文案并提供重试，不得被误渲染成「话题不存在」（区分点即本用例主判据）；(c) 才是「话题不存在」；(b) tap 重试触发 retryLoad（:234-239）并清空 errorMessage 后重拉，成功后正常渲染；三态均不得永久 loading、不得白屏",
+      "evidence": "normal：三态截图（文案原文入 observed）+ network 重试条数 + console"
+    },
+    {
+      "id": "TD03",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "发回复三态：正常提交 / 空与纯空格拦截 / 连点去重（写操作，拆两判定点）",
+      "tier": "critical",
+      "pre": "身份A 进入话题详情（回复栏 :412-428）。⚠ http.ts:262-274 稳定 Idempotency-Key 会让「连点 5 次只落 1 条」被服务端去重掩盖，必须拆判定点。本批未提交改动 stores/campus.ts:296,709-715 新增 MAX_REPLY_LENGTH=500 属校园话题 replyTopic 路径，本页回复走 circleStore.replyToTopic（:90）→ 须确证两路不串",
+      "action": "① 输入「QA-自检-正常回复」tap 发送（:426 submitReply）；② 清空后 tap 发送；③ 输入 3 个空格 tap 发送；④ 输入 501 字超长文本 tap 发送；⑤ 有效内容下 rapidTap 发送 ×5；⑥ 断网态 tap 发送",
+      "expected": "① Toast t('circle.topicDetailReplySuccess')（:92）+ 输入框清空（:91）+ 回复数 +1（以服务端回读为准）；②③ 静默无请求（:86 trim 空即 return，不得发空回复）；④ 超长须有用户可见拦截或截断（本页当前无 maxlength，circle store 文案见 storeErrors.circle.replyContentEmpty 族；若被后端 400 拒须 Toast 后端文案 :94-97，不得静默失败）；⑤ 判定点①：network POST /topics/{id}/replies 条数（含各 Idempotency-Key 是否相同）；判定点②：服务端回读回复条数只能 +1；⑥ Toast 显示 errorMessage 或 replyFailed（:94-97），发送态按钮不得永驻「发送中」（isSubmitting finally :99）",
+      "evidence": "critical：before+after 截图 + Toast 文案 + network 逐条（POST 条数/键/状态码）+ 服务端回读 replies 条数（两判定点分别记）"
+    },
+    {
+      "id": "TD04",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "回复输入框特殊字符与图片墙回显（表单三态 + 兜底链）",
+      "tier": "normal",
+      "pre": "身份A 进入带配图与多条回复的话题",
+      "action": "① 输入「<b>粗</b> & \\n emoji表情 #标签」观察输入框与提交后列表回显；② tap 话题配图（图片墙 :297-300 区段）观察是否可放大；③ 读头像缺失回复项的兜底（:340-344，initialOf :71-73）",
+      "expected": "① 富文本/HTML 字面串必须以纯文本回显（<text> 渲染，不得被解析）；换行与 emoji 正常显示、不得撑破布局；② 若实现支持预览则须可关闭（遮罩/返回两路），不支持预览则点击不得留下「有反应但无内容」的中间态（既无放大也无 Toast 记为无反馈）；③ 头像缺失回退首字、空名回退「?」，无空白方块",
+      "evidence": "normal：提交后回显帧 + 图片点击态帧 + observed 记录回复原文"
+    },
+    {
+      "id": "TD05",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "回复分页加载更多：到底不显示按钮 + 失败 Toast",
+      "tier": "normal",
+      "pre": "身份A 进入 replyCount > 单页回复数的话题（mock 下 replyCount 与明细已对齐：stores/circle/mock-data.ts 的按 replyCount 生成明细口径）",
+      "action": "① 连续 tap .replies-more（:371-386 → loadMoreReplies :54-65）至按钮消失；② 造失败（断网/500）后 tap；③ 采样加载中文案与 spinner",
+      "expected": "① 每点一次追加下一页且 repliesHasMore 以服务端 replyCount 为准（:47-49）；已加载数==replyCount 时按钮不再渲染（不得出现「永远有更多」幻影）；② 失败 Toast t('circle.topicDetailLoadMoreFailed')（:61）且 isLoadingMoreReplies 在 finally 复位（:63）不永驻「加载中」；③ 加载中按钮文案切 t('circle.topicDetailLoadingMoreReplies')",
+      "evidence": "normal：分页前/后/到底/失败四帧截图 + network 分页 page 参数序列 + Toast 文案"
+    },
+    {
+      "id": "TD06",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "长按举报：ActionSheet 取消 / Modal 跳过 / 完整提交（写操作，Toast 文案）",
+      "tier": "critical",
+      "pre": "身份A 进入他人话题详情（不得长按自己的内容混淆判定）；REPORT_REASONS 5 项（:156-162）",
+      "action": "① 长按 .topic-content（:293 @longpress → handleReportTopic :170-209）；② 原生 ActionSheet 点取消；③ 重开选「垃圾广告」后在补充描述 Modal 点「跳过」（:188-194）；④ 重开选原因 + 填描述 + 提交；⑤ 断网态重走 ④",
+      "expected": "② 取消后不发写请求、无成功 Toast；③ 跳过后仍继续提交（源码语义：取消描述不影响提交，:198-200）→ 出现 t('circle.topicDetailReportSubmitted')（:205）；④ 提交成功后弹层全关、页面可继续交互；⑤ 失败 Toast 显示后端文案或 reportFailed（:206-209）；连点提交×5 须按两判定点记录（客户端条数 / 后端举报记录回读条数，幂等键掩盖不得判 VERIFIED）",
+      "evidence": "critical：两态弹层截图 + 成功/失败 Toast 文案 + network 条数 + 后台/接口回读举报条数"
+    },
+    {
+      "id": "TD07",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "「打招呼」认证门槛与私信参数（写链路前置）",
+      "tier": "critical",
+      "pre": "身份A 进入有多个回复的话题；门槛前置需 real 后端 + 未实名账号（ensureCertified('realname')，:110）；不可构造时记 UNVERIFIED 并说明所需构建变体/账号",
+      "action": "① 未实名态 tap .say-hello（回复项 :358 @tap.stop sayHello :107-130）；② 已实名态重复；③ 检查去程路由 query 三项（userId / prefillMessage / quoteContext，:127-129）",
+      "expected": "① 被门槛拦下：跳实名认证引导或 Toast，不得静默；② 落点=subpackages/chat/chat-session/index，且 prefillMessage 为话题上下文破冰文案（t('circle.topicDetailSayHelloPrefill')）、quoteContext 为可解析 JSON（含 topicId/replyId/replyAuthorName）；③ 会话页收到预填内容（回读会话输入框）；userId 缺失时不得跳空会话（:108 守卫）",
+      "evidence": "critical：拦截态与放行态截图 + 路由链（含 query 解码后原文）+ console"
+    },
+    {
+      "id": "TD08",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "作者头像落点=「我的」Tab 他人态，且落点页头像渲染须正常（未提交改动证伪）",
+      "tier": "navigation",
+      "pre": "身份A 进入话题详情。⚠ 本轮未提交改动含 components/common/Avatar.vue（新增 resolveMediaUrl 解析 props.src，Avatar.vue:83-89/:126-129）与 pages/profile/index.vue，二者恰是本页返回键的落点页；本页 goToAuthorProfile 跳 /pages/profile/index?userId=（:137-140，与全站 openUserProfile 分叉=MP-R2-TOPICDETAIL-001）",
+      "action": "① tap 话题作者头像（:276）与回复者头像（:336）各一次，读路由与落点页；② 在落点页读取头像节点 src 与 naturalWidth；③ 从落点页返回，确认本页状态",
+      "expected": "① 两处均落 pages/profile/index（tabBar 页经 openAppPath 桥接，utils/navigation.ts:53-116）且 userId 生效为他人态（不得显示成自己的主页）；② 落点页头像不得因未走 resolveMediaUrl 而空白——修复后应有表现为 src 解析成可加载地址（/static/assets/images/{avatars,people}/ 在 real 包走 /api/v1/media/app-assets/ 前缀，media.ts:222-232），空白方块即 FAILED；③ 返回后话题详情滚动位置与回复输入框内容恢复",
+      "evidence": "navigation：路由链 + 落点页头像节点 src/naturalWidth 记录 + 返回帧截图"
+    },
+    {
+      "id": "TD09",
+      "page": "subpackages/circles/circles/topic-detail",
+      "title": "返回键栈守卫与热区/滚动总检（noop 装饰项）",
+      "tier": "navigation",
+      "pre": "两条前置：(a) 从话题列表点入（栈=2）；(b) wx.reLaunch 直开（栈=1）",
+      "action": "① 两种前置各 tap .detail-header__back（:263 → goBack :145-153）；② 对返回键、回复输入框、发送按钮、回复项三按钮、头像取 boundingBox；③ 滚动 .detail-body（:271）到顶/底",
+      "expected": "(a) 回话题列表且 currentTopic 被清理（goBack :146 clearCurrentTopic）、列表所在 tab 与滚动位置恢复；(b) 栈=1 时 reLaunch 兴趣圈列表（:151），不得停留或白屏；② 全部热区 ≥88rpx；③ 内滚生效、到底部「加载更多」与回复栏不互相遮挡；装饰文本（时间/回复数）点击无副作用（noop，记执行日志）",
+      "evidence": "navigation：两态路由链 + observed 元素尺寸清单 + scroll-view 位置记录"
+    },
+    {
+      "id": "CH01",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "mock 冷启动深链 circleId=circle-photo：骨架→内容，不得闪「圈子不存在」",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → wx.reLaunch('/subpackages/circles/circles/circle-home?circleId=circle-photo')（栈=1）。本页唯一消费参数为 query.circleId（:271-274）；tab/page/mode 无读取点=幻影参数。R10-P1-001 落定门见 :88-94/:277-296",
+      "action": "启动后 0/0.5/1s 采样当前分支（骨架 :447-451 / 未知圈空态 :436-445 / 正文 :452+），并读 network",
+      "expected": "首帧必须为骨架（SkeletonBlock，circlesFetchSettled=false），1s 内进入正文且 hero 显示摄影圈名与封面；全程 .circle-notfound 不得闪现（出现即 R10-P1-001 复发 FAILED）；fetchCircles 与 fetchTopics 各恰 1 次（:277-303），幻影参数不得增加请求",
+      "evidence": "navigation：路由 options 断言 + 三帧采样截图 + network 条数"
+    },
+    {
+      "id": "CH02",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "real 模式未知/缺 circleId：真实空态与返回；mock 模式回退演示圈（模式分支）",
+      "tier": "navigation",
+      "pre": "需 real 构建变体或 VITE_API_MODE=real 的产物（dev 巡检包为 build:mp-weixin:mock，isUnknownCircle 在 mock 下恒 false :90）→ mock 包下该分支不可达，须按「前置未构造」记 UNVERIFIED 并写明所需变体；mock 侧另测：无 circleId 直开",
+      "action": "(a) real 包 reLaunch circle-home?circleId=not-exist；(b) mock 包 reLaunch circle-home（无参数）与 circleId=not-exist，分别读取渲染与统计数字来源",
+      "expected": "(a) 拉取落定后走「圈子不存在或已解散」真实空态（:436-445），tap 返回可离开；不得渲染演示圈统计与演示动态；(b) mock 下回退演示圈为允许行为（:79-81），但必须记录实际分支，且 real 缺失字段时「等 N 位朋友已加入」在 friendJoinedCount<=0 时整行不渲染（:209-215/:487）——real 下出现「等 0 位朋友已加入」即 FAILED（MP-R2-CIRCLEHOME-001）",
+      "evidence": "navigation：两包路由链 + 分支判定截图 + observed 记录 apiMode 来源（screenshot-manifest buildMode 或运行时 apiMode）"
+    },
+    {
+      "id": "CH03",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "hero 返回键与无栈兜底（goBack → 兴趣圈列表）",
+      "tier": "navigation",
+      "pre": "两条前置：(a) 从兴趣圈列表点入（栈=2）；(b) wx.reLaunch 直开（栈=1）",
+      "action": "两种前置各 tap .hero-btn（:457-460 → goBack :332-339）",
+      "expected": "(a) 回兴趣圈列表且其所在快捷 tab 与滚动位置恢复；(b) 走 openAppPath(ROUTES.CIRCLES.INDEX) 兜底（:337），不得白屏或停留本页；两态 console 无 navigateBack fail 未捕获报错",
+      "evidence": "navigation：两态 getCurrentPages 链断言 + console；可免截图"
+    },
+    {
+      "id": "CH04",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "hero 分享按钮走原生转发（button open-type=share，非死按钮）",
+      "tier": "normal",
+      "pre": "身份A 已进入圈子主页（分享回调 onShareAppMessage :307-310）",
+      "action": "tap .hero-btn--share（:464-466）→ 观察原生分享面板/菜单；取消；再在系统右上角胶囊菜单选择「转发」比对标题与路径",
+      "expected": "点击后 500ms 内出现原生分享面板（或开发者工具的分享态），取消后停留本页无副作用；分享卡片 path 为 circles/circle-home?circleId={当前圈 id}（:309）且标题为圈名（:308）；若按钮点击毫无反应（无面板、无 Toast）即 FAILED（MP-R1-CIRCLEHOME-004 复发）",
+      "evidence": "normal：分享面板态与取消后截图 + observed 记录分享 path/title"
+    },
+    {
+      "id": "CH05",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "加入/退出圈子（三处入口共享 isJoining 守卫）连点×5 拆两判定点（写操作）",
+      "tier": "critical",
+      "pre": "身份A mock 登录。信息卡 .info-join（:502-506）、底部栏 .bottom-join（:611-613）与已加入后的 .bottom-post（:614-616）共享 toggleJoin（:348-366，isJoining 守卫 :347/:349）。⚠ 幂等键掩盖（http.ts:262-274）",
+      "action": "① tap .info-join ×1 → 观察两处按钮文案同步；② tap 底部按钮退出；③ 300ms 内 rapidTap .info-join ×5；④ 失败前置（real 500/断网）tap ×1",
+      "expected": "①② 三处按钮态同步切换（同一 joined computed :105），未加入→加入后底部栏由「加入」变「去发帖」；③ 判定点①：network 面板 join/leave 请求条数（本页有 isJoining 串行守卫 → 期望远小于 5 条，且不得因 await 期间未置位而并发；须逐条记录）；判定点②：服务端回读 isJoined 与 memberCount 净变化只能 ±1（不得抖动 +5）；④ 失败必须 Toast（:359-362）且 isJoining 复位（:364）不永驻",
+      "evidence": "critical：加入前后 + 连点后 + 失败态截图 + Toast 文案 + network 条数 + 服务端回读数值"
+    },
+    {
+      "id": "CH06",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "5 个 Tab 切换与「仅动态 tab 有内容」的空态口径",
+      "tier": "normal",
+      "pre": "身份A 已进入圈子主页（TAB_KEYS 5 项 :54）",
+      "action": "依次 tap .tab-item ×5（:519-528）读激活态与内容区；在「成员」tab 核对文案是否拼接成员数（tabLabel :426-431）",
+      "expected": "每次切换 500ms 内出现激活 class + 指示条（:527）；仅 posts tab 渲染 feed（:539-600），featured/activities/works/members 四 tab 当前均显示 t('circle.home.emptyTab')（:602-604）→ 须逐 tab 记录实际内容，若产品预期有数据而恒空态则按功能缺失记 FAILED（不得算视觉问题）；成员 tab 文案须含格式化成员数；tab 切换不得触发额外写请求",
+      "evidence": "normal：5 个 tab 各一帧截图 + observed 记录每 tab 文案与请求条数"
+    },
+    {
+      "id": "CH07",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "动态卡点击进话题详情（去白名单后非空 id 均可跳，证伪 MP-R1-CIRCLEHOME-002 复发）",
+      "tier": "navigation",
+      "pre": "身份A 进入有真实话题（mock 标准圈话题 id 形如 photo-topic-1）的圈子主页动态 tab（feed 卡 :543）",
+      "action": "① tap .feed-card 正文区；② tap 卡片内「评论」action（:588 @tap.stop openFeedDetail）；③ 返回；④ 对 mock 无话题而回退演示 feed 的场景重复 tap（演示 id f1/f2）",
+      "expected": "①② 均落 circles/topic-detail 且 topicId 为卡片 id（:415-418），只入栈一层；详情页对演示 id 应给「话题不存在」降级态而非白屏（:224-227 与 :410-418 口径）；② 的 .stop 不得双触发（同一次点击只 1 次路由）；任何情形下点击卡片都不得零反馈（静默 return 即 FAILED，MP-R1-CIRCLEHOME-002 复发）",
+      "evidence": "navigation：四步路由链 + options.topicId 断言 + 返回帧截图"
+    },
+    {
+      "id": "CH08",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "动态卡「···」图标 ActionSheet 两项与冒泡隔离（证伪死图标）",
+      "tier": "navigation",
+      "pre": "身份A 已进入动态 feed 有卡片的圈子主页（feed-more 图标 :557，onFeedMore :395-406）",
+      "action": "① tap .feed-more；② 原生菜单选第 1 项「查看全部话题」；③ 返回重开后选第 2 项「去圈内发帖」；④ 重开后取消；⑤ 验证 tap 图标不冒泡进详情",
+      "expected": "① 菜单必须弹出且只有 2 项（:397）；② 落点 circles/topics?circleId=当前圈（:371-373）；③ 落点 circles/post-topic?circleId=当前圈（:378-380）；④ 取消仅关菜单、无路由变化、无 Toast；⑤ 图标点击不得同时触发卡片 openFeedDetail（:556 注释口径 .stop），双触发即 FAILED；图标自身热区若 <88rpx 须记录实测值",
+      "evidence": "navigation：四步路由链 + 菜单展开态截图 + observed 记录是否双触发"
+    },
+    {
+      "id": "CH09",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "动态卡点赞/评论反馈：本地翻转可见 + real 不持久化断言（证伪 MP-R2-CIRCLEHOME-002）",
+      "tier": "critical",
+      "pre": "身份A 已进入动态 tab。toggleLike 为纯本地翻转（:385-388，源码注释 TODO 后端点赞接口），realFeed 的 likes 恒置 0（:252）",
+      "action": "① tap .feed-action（点赞，:577-586）×1 与 ×2；② 记录 network 面板是否有写请求；③ 下拉重进/切后台回页后再读点赞数；④ real 包重复 ①③",
+      "expected": "① 500ms 内图标实心/空心切换且计数 ±1（:580-585）——无变化即死按钮 FAILED；② 无网络写请求（本地态，须在 actual 明写「客户端 0 请求」）；③④ 刷新后点赞态与计数回退为初始值 → 属功能缺失（无后端持久化），按 Function/严重度如实记录，不得因「本次点击有反馈」判整页通过；「···」图标之外任何无 handler 的装饰图标同样计入死控件清单",
+      "evidence": "critical：点赞前后 + 刷新后三帧截图 + network 条数（0 或逐条）+ observed 记录计数值"
+    },
+    {
+      "id": "CH10",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "图片/头像兜底链与解析正确性（未提交改动证伪：media.ts 新分支）",
+      "tier": "normal",
+      "pre": "身份A 已进入圈子主页动态 tab。⚠ 本轮未提交改动含 utils/media.ts:222-232（/static/assets/images/{avatars,people}/ 改走后端 APP_ASSET_PREFIX，media.ts:72）；本页 feed 头像与图片均经 resolveMediaUrl（:247/:251），feed-avatar 另有 IMAGE_PATHS.DEFAULT_AVATAR 兜底（:545）",
+      "action": "① 读取 feed 头像与配图解析后的 src、naturalWidth；② 造头像字段为空/坏路径两种数据；③ 读 hero 封面与圈头像（:455/:476 → circleCoverFor :102）；④ 记录样式硬编码色",
+      "expected": "① real 包下 avatars/people 目录头像 URL 前缀为 /api/v1/media/app-assets/（后端可达时须真加载），mock 包退回本地路径也须 naturalWidth>0；② 空/坏头像必须落默认头像或首字兜底，不得空白方块；③ 封面与列表页同圈名同源（circleCoverFor 单一真相源，与 topics.vue 私有副本对照见 CT09）；④ 全页裸 hex 样式（MP-R2-CIRCLEHOME-003）不作为交互判 FAIL，但须在 observed 记为遗留项",
+      "evidence": "normal：头像/封面/配图放大截图 + observed 记录解析后 URL 与 naturalWidth"
+    },
+    {
+      "id": "CH11",
+      "page": "subpackages/circles/circles/circle-home",
+      "title": "底部栏 / 查看全部话题 / FAB 导航与热区+滚动总检（noop 装饰项）",
+      "tier": "normal",
+      "pre": "身份A 分别以「未加入」与「已加入」两态进入本页（底部栏两种分支 :610-620）",
+      "action": "① 未加入态 tap .bottom-join（断言为加入而非跳转）；② 已加入态 tap .bottom-post 与 .bottom-fab；③ tap .topics-link「查看全部话题」（:596-599）；④ 对 hero 两按钮、三处加入、5 个 tab、feed 四类可点元素、topics-link 取 boundingBox；⑤ 页面滚到顶与底",
+      "expected": "② 两处均直达 post-topic 且带 circleId（:378-380），不重复入栈；③ 直达 circles/topics?circleId；④ 全部热区 ≥88rpx，不足者列实测 px；⑤ 页面级滚动可达顶/底、底部固定栏不遮挡最后一条 feed 与 topics-link；置顶公告箭头（:535）与成员/统计文本无点击副作用（noop，记执行日志）；Loading（:623-625 骨架）在数据落定后消失不永驻",
+      "evidence": "normal：三态路由链 + 顶/底帧截图 + observed 元素尺寸清单与 noop 项日志"
+    },
+    {
+      "id": "CF01",
+      "page": "subpackages/campus/campus/certification",
+      "title": "冷启动直开学生认证：状态卡/表单/已认证三态渲染，本页不消费任何 query 参数",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → wx.reLaunch('/subpackages/campus/campus/certification')（栈=1）。certification.vue 无 onLoad（仅 onMounted 拉状态 + onShow 门槛重拉 :261-263）→ userId/id/return 等任意参数皆为幻影参数；状态三态分支见 :279-301/:443-455",
+      "action": "① 以 certificationStatus=unverified / pending / verified / rejected 四态分别进入（mock 下改 store 态；不可造者记前置未构造），读 .status-card 与表单可见性；② 带 ?return=xxx 重进比对渲染与请求",
+      "expected": "unverified：无状态卡、表单完整可见；pending：状态卡显示「审核中」且左侧图标为真实图片、不得是 64rpx 空框（MP-R2-CERT-002 的 statusIcon 空串形态须确证已修或记 FAILED）；verified：状态卡 + 已认证信息卡（学校/专业回读），表单不渲染；rejected：卡内显示驳回原因（certificationInfo.reviewComment 或默认文案 :294-296）且表单重新可填；幻影参数不改变任何渲染、不新增请求",
+      "evidence": "navigation：四态 after 截图 + observed 记录状态卡文案与请求条数"
+    },
+    {
+      "id": "CF02",
+      "page": "subpackages/campus/campus/certification",
+      "title": "返回键：栈>1 回来源页（状态保留）；栈=1 兜底 switchTab 首页",
+      "tier": "navigation",
+      "pre": "两条前置：(a) 从校园页/实名页点入（栈≥2）；(b) wx.reLaunch 直开（栈=1）",
+      "action": "两种前置各 tap .cert-header__back（:270 → goBack :205-212）；(a) 态下先在表单输入部分文字再返回重进，检查草稿是否被误保留或误清空",
+      "expected": "(a) navigateBack 回来源页且来源页正常；(b) 兜底 switchTab('/pages/home/index')（:210，首页为 tabBar 页），不得停留/白屏；两态 console 无 navigateBack fail 未捕获报错；返回来源页状态与来源侧文案恢复（本侧输入属页面局部 ref，不要求跨页持久化）",
+      "evidence": "navigation：两态 getCurrentPages 链断言 + console"
+    },
+    {
+      "id": "CF03",
+      "page": "subpackages/campus/campus/certification",
+      "title": "学生证上传：隐私授权前置（拒绝即中止并 Toast）与 chooseImage 失败提示（权限类写链路）",
+      "tier": "critical",
+      "pre": "身份A 已进入可填表单态（unverified/rejected）。隐私授权分支需 mp-weixin + 未同意隐私协议的真实窗口（:113-122，ensurePrivacyAuthorized）；开发者工具拒绝授权不可构造时记 UNVERIFIED 并说明",
+      "action": "① 首次 tap .upload-area（:353 → uploadStudentCard :113-136）触发隐私授权弹窗，选「拒绝」；② 重进选「同意」并完成相册选图；③ 选图后改 tap「×」移除（:369）；④ 再 tap「重新上传」（:366）换图；⑤ 造 chooseImage fail（取消系统选图）观察",
+      "expected": "① 拒绝后必须 Toast t('campus.certification.privacyRequiredImage')（:117-121）且不发上传、预览态不出现；② 预览出现本地 temp 路径图（:360-364）；③④ 移除后回到 .upload-area 空态、重换图后 src 变化；⑤ 取消选图不得留 error Toast 误导（fail 分支 Toast chooseImageFailed :133 仅用于真失败），任何一路都有 500ms 内可观测反馈，无 Loading 永驻",
+      "evidence": "critical：授权弹窗/拒绝/成功/移除四帧截图 + Toast 文案 + network（上传请求条数）+ console"
+    },
+    {
+      "id": "CF04",
+      "page": "subpackages/campus/campus/certification",
+      "title": "「移除→重选→再上传」幂等键不再恒定（未提交改动/已修项证伪，拆两判定点）",
+      "tier": "critical",
+      "pre": "real 后端前置（POST /media/upload 与 @Idempotent 去重只在 real 下可观测）；dev mock 包下该分支不可达 → 记 UNVERIFIED 并写明所需构建变体。⚠ 判据须区分「客户端 URL+body 哈希」与「服务端 409」两层（http.ts:262-274）；工作树已把文件名改为含时间戳（certification.vue:166-181）",
+      "action": "① 选图 A → 上传成功；② tap 移除 → 重选同一张图 A → 再上传；③ 300ms 内对同一未变更图 rapidTap 上传 ×5；④ 记录各次 POST /media/upload 的 name、body 与 Idempotency-Key 与响应码",
+      "expected": "② 判定点①（客户端）：第二次的 name 必须与第一次不同（含 Date.now()，:168/:177）→ 从而 Idempotency-Key 不同、network 面板应出现 2 条独立上传请求；判定点②（服务端）：media_asset 表/接口回读应新增 2 条，且不得返回 409「请勿重复提交」；③ 同一份 body 的连点应命中同一稳定键并被服务端去重（此时客户端多余请求数须如实记录，不得据此判客户端防抖通过）；若第二次上传仍与第一次同键 → 修复丢失，FAILED",
+      "evidence": "critical：两次上传前后截图 + network 逐条（name / 解析后的 Idempotency-Key / 状态码）+ 服务端 media_asset 回读条数 + Toast 文案"
+    },
+    {
+      "id": "CF05",
+      "page": "subpackages/campus/campus/certification",
+      "title": "三个输入框四态：正常 / 清空 / 超长 / 特殊字符（表单三态判定）",
+      "tier": "critical",
+      "pre": "身份A 已进入表单态；本页三个 input 均无 maxlength（schoolName :327-332、major :338-343、chsiCode :382-387），校验只在页面与 store 两层（:147-158；stores/campus.ts:849-904）",
+      "action": "对 schoolName、major、chsiCode 各执行：① 正常值（学校=广州大学 / 专业=软件工程 / 验证码=AB123456）；② 清空后提交；③ 输入 200 字超长串；④ 输入「' OR 1=1 -- <img src=x onerror=alert(1)> 　全角空格」；⑤ 仅全角空格",
+      "expected": "①合法值下提交成功（见 CF07）；② 清空时 Toast 必填文案（学校 t('campus.certification.errSchoolName') :148 / 专业 errMajor :152 / 未传图 errStudentCard :156），文案须与字段对应不得串台；③ 超长不得崩溃、不得溢出容器，须被前后端之一拦截并给出可见文案（服务端 @Size 或 store 校验），提交失败时显示 campusStore.errorMessage（:193-196）；④ 注入串必须原样纯文本存储/回显、不得被 HTML 解析，且不产生 SQL 侧异常；⑤ 纯全角空格按 trim 视同空并提示（v-model 值 trim :183-184）；全程 Loading 不永驻、按钮文案回到「提交认证」",
+      "evidence": "critical：五态各截图（含超长与注入串回显）+ Toast 文案原文 + network（被拦时请求条数=0）+ console"
+    },
+    {
+      "id": "CF06",
+      "page": "subpackages/campus/campus/certification",
+      "title": "必填三连缺失与未实名双保险拦截（门槛提示文案）",
+      "tier": "normal",
+      "pre": "身份A 已进入表单，学生证已上传与否两态；未实名门槛见 CF07 的 real 前置",
+      "action": "① 依次只填一项后 tap 提交（:421-431 submitCert）；② 三项齐全但无学生证图提交；③ 未实名态（idCardVerified=false）提交；④ 未实名态读 .gate-banner",
+      "expected": "①② 每次都命中对应 Toast 且顺序正确（学校→专业→学生证，:147-158）；③ 未实名时 Toast realNameRequiredBanner（:144）且不发写请求（双保险，按钮同时为禁用态 :423）；④ 门槛横幅文案与「去认证」按钮同时可见（:303-308）；四路都必须 500ms 内可观测反馈，不得静默 return",
+      "evidence": "normal：每路 Toast 截图 + Toast 文案 + network（写请求条数=0 的断言）"
+    },
+    {
+      "id": "CF07",
+      "page": "subpackages/campus/campus/certification",
+      "title": "实名门槛与认证状态：real 拉取失败 fail-open（证伪 MP-R2-CERT-004）+ onShow 重拉",
+      "tier": "critical",
+      "pre": "需 real 后端 + 一个未实名账号（idCardVerified 来自 GET /profile/basic，:75-77）；dev mock 包下 useMock() 直接放行（:70-73），该分支不可达 → 记 UNVERIFIED 并写明所需变体/账号。⚠ 本轮未提交改动含 stores/campus.ts（新增 MAX_REPLY_LENGTH :296 与 replyTopic 超长校验 :712-715，属校园话题回复路径），本页消费 CERT_STATUS_MAP / submitCertification（:849-904）→ 须确证两路不串",
+      "action": "① real 下把 /profile/basic 打成 500/断网后进入本页，读门槛与提交可用性；② 正常未实名态进入；③ 完成一次提交后重进本页读状态；④ 从本页跳实名页并返回（:218 navigateTo real-name），采样请求条数；⑤ 断言提交错误文案来源",
+      "expected": "① 拉取失败当前 fail-open（:78-81 置 true 放行）→ 与「后端兜底校验」的假设冲突，用户可在未实名时进入提交流程；须按 FAIL 记录并写明期望（拉取失败应显式提示或禁用表单，而非静默放行）；② 未实名时表单禁用 + 门槛横幅；③ 提交成功后重新拉取状态（:190 fetchCertificationStatus），状态卡应变「审核中」且不再出现可提交表单；④ 判定点①：一次进入的 GET /profile/basic 与 GET 认证状态请求条数（onMounted + onShow 两处调用 :261-263 → 首进应各 1 次，出现 2 次即双请求缺陷，如实记录）；判定点②：从实名页返回后门槛自动消失、表单自动解禁（MP-R1-CERT-101）；⑤ 提交失败文案须来自 storeErrors.campus.*（en-US 下无裸键、无中文残留；zh-CN.ts:3918-3921 与 en-US.ts 对应键须双侧存在）",
+      "evidence": "critical：门槛三态截图 + Toast/横幅文案 + network（GET/POST 逐条）+ 服务端认证状态回读（pending）"
+    },
+    {
+      "id": "CF08",
+      "page": "subpackages/campus/campus/certification",
+      "title": "提交认证成功：Toast + 状态卡刷新 + 重复提交防重（写操作，拆两判定点）",
+      "tier": "critical",
+      "pre": "身份A 已进入表单且三项合法（mock 下 submitCertification 走本地 1s 演示；real 走 POST）。⚠ 幂等键掩盖连点（http.ts:262-274）：客户端请求数与服务端认证记录条数必须分开判定",
+      "action": "① tap .submit-btn（:421）×1；② 观察按钮文案（提交中↔提交认证）；③ 成功后重进页面读状态；④ 回到可提交态后 300ms 内 rapidTap 提交 ×5；⑤ 断网态提交 ×1",
+      "expected": "① Toast t('campus.certification.submitSuccess')（:191）+ 状态卡刷新为审核中（:190 重拉）；② isSubmitting 期间按钮禁用/文案「提交中」（:423/:429），结束后必须复位（:198）不得永驻；③ 服务端回读认证记录条数=1；④ 判定点①：network 面板 POST /certification 条数（页面层 isSubmitting 串行守卫是否吞掉后 4 次，须逐条记录含 Idempotency-Key）；判定点②：后端认证记录仍只能 1 条（若 5 条则为客户端缺陷，不得因服务端幂等去重判 VERIFIED）；⑤ 失败 Toast 显示 campusStore.errorMessage 或 submitFailed（:193-196），表单内容不丢",
+      "evidence": "critical：提交前/中/后 + 失败态截图 + Toast 文案 + network 逐条（含键）+ 服务端认证记录回读条数"
+    },
+    {
+      "id": "CF09",
+      "page": "subpackages/campus/campus/certification",
+      "title": "学信网（选填）截图上传/移除与两处上传实现一致性（证伪 MP-R2-CERT-003 双轨）",
+      "tier": "critical",
+      "pre": "身份A 已进入表单（chsi 两字段选填，:377-418）。chsi 走统一封装 chooseImages（:90-103，utils/media.ts 未提交改动文件），学生证走内联 uni.chooseImage + ensurePrivacyAuthorized（:113-136）→ 两轨须在授权与体积校验上表现一致",
+      "action": "① tap 学信网 .upload-area（:397）→ 选图 → 移除（:413）→ 重选（:410）；② 仅填 chsiCode 不传图提交；③ 两字段都填提交；④ 对两轨分别选一张 >5MB 图（可造时）",
+      "expected": "① 学信网预览/移除/重传均有 500ms 内可见反馈；取消选择不得报错；②③ 选填空缺不得被当必填拦（:141-158 仅校验三项），提交成功；④ 超限须被拒并给出可见文案（chooseImages 的 maxSizeMB=5，:92 与学生证侧对齐口径）；两轨在隐私授权、大小校验、失败提示三处表现必须一致（不一致即记 MP-R2-CERT-003 双轨缺陷，不得以 mock 下「都能跑通」判 VERIFIED）",
+      "evidence": "critical：两轨上传/移除/重传四帧截图 + Toast 文案 + network（/media/upload 条数与 name）+ console"
+    },
+    {
+      "id": "CF10",
+      "page": "subpackages/campus/campus/certification",
+      "title": "scroll-view 内滚与键盘弹起（cursor-spacing）+ 热区总检 + 装饰项 noop",
+      "tier": "normal",
+      "pre": "身份A 已进入表单态（页面为 .cert-body scroll-y :277，三个 input 均带 cursor-spacing=20 :328/:340/:384）",
+      "action": "① 分别聚焦三个输入框，观察键盘是否遮挡输入框与提交按钮；② .cert-body 滚到顶/底（含底部隐私提示 :434-438 可见）；③ 对返回键、两处上传区、重传/移除按钮、提交按钮、门槛「去认证」取 boundingBox；④ tap 说明卡条目与隐私提示文本（非交互）",
+      "expected": "① 键盘弹起时聚焦输入框与提交按钮均不被遮挡（cursor-spacing 生效，无整页错位）；收起后布局复位、无 Loading 残留；② 内滚生效可达顶底、头部「学生认证」不被推走（MP-R2 高度约束同类风险须记录 scrollTop 与 windowScrollY）；③ 全部热区 ≥88rpx，不足列实测值；④ 装饰文本点击无路由/无写请求（noop，仅记日志）",
+      "evidence": "normal：键盘态/顶/底三帧截图 + observed（scrollTop、windowScrollY、元素尺寸清单）+ 装饰项执行日志"
+    }
+  ]
+}

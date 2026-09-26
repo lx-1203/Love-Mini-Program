@@ -56,7 +56,7 @@ function openPost(postId: string): void {
   <view class="my-story">
     <text class="my-story__title">我的故事</text>
 
-    <!-- ===== 我的故事卡（R16：真实「日常」内容 + 添加日常虚线卡常驻） ===== -->
+    <!-- ===== 我的故事卡（R16：真实「日常」内容 + 添加故事虚线卡常驻） ===== -->
     <view class="story-cards">
       <scroll-view scroll-x class="story-cards__scroll" :show-scrollbar="false">
         <view class="story-cards__row">
@@ -82,11 +82,11 @@ function openPost(postId: string): void {
             hover-class="press-feedback--active"
             hover-stay-time="120"
             role="button"
-            aria-label="添加日常"
+            aria-label="添加故事"
             @tap="emit('addStory')"
           >
             <image class="story-add__icon" :src="IMAGE_PATHS.ICONS_EMOJI.PLUS" mode="aspectFit" alt="" />
-            <text class="story-add__text">添加日常</text>
+            <text class="story-add__text">添加故事</text>
           </view>
         </view>
       </scroll-view>
@@ -169,7 +169,7 @@ function openPost(postId: string): void {
 <style scoped lang="scss">
 /* ===== 故事区容器 ===== */
 .my-story {
-  margin: var(--sp-5) var(--sp-5) 0;
+  margin: var(--sp-5) var(--page-padding) 0;
 }
 
 .my-story__title {

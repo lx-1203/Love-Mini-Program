@@ -655,16 +655,18 @@ export const useCampusStore = defineStore("campus", {
       title: string;
       content: string;
       /**
-       * MP-R1-CAMPUSPOSTTOPIC-202：仅 mock 分支生效。real 契约无 isAnonymous
-       * （CampusController.java:452-457），后端硬编码 false（RealCampusService.java:159），
-       * 故 real 下必然以昵称展示 —— 调用方需在提交前把这一点告知用户，不得静默。
+       * MP-R1-CAMPUSPOSTTOPIC-202：mock 与 real 均真实生效（2026-09-26 闭合）。
+       * real 侧 CreateCampusTopicRequest 已带 isAnonymous（CampusController.java:456-463），
+       * 落库后匿名帖读回是 authorId=null + authorName="匿名校友"（G8 RING9 实测）。
        */
       isAnonymous: boolean;
       /** 2026-08-10 B5：话题标签（后端 ≤5 个、每个 ≤20 字符；mock 分支由调用方拼入内容） */
       tags?: string[];
       /**
-       * MP-R1-CAMPUSPOSTTOPIC-201：仅 mock 分支生效。real 契约无 images 字段
-       * （CampusController.java:452-457），下方 real 分支已停止发送该字段。
+       * MP-R1-CAMPUSPOSTTOPIC-201：mock 与 real 均真实生效（2026-09-26 闭合）。
+       * real 侧收 images（≤6 个、每个 ≤2048 字符，CampusController.java:461），落
+       * campus_topics.images 的 JSON 列；real 的 tempFilePath 必须先在 post-topic.vue:315-341
+       * 经 uploadPostImage 换成服务端 URL 再传进来，本 store 不负责换取。
        */
       images?: string[];
     }) {
@@ -709,20 +711,24 @@ export const useCampusStore = defineStore("campus", {
         // 调用后端 API: POST /api/campus/topics
         // 2026-08-10 B5：real 分支携带 tags 字段（后端实体已有 tags JSON 列，≤5 个、每个 ≤20 字符）
         //
-        // MP-R1-CAMPUSPOSTTOPIC-201/-202（只读核对，未改后端）：真实请求体契约是
-        // record CreateCampusTopicRequest(category, title, content, tags)
-        // —— apps/api/.../campus/CampusController.java:452-457，**没有 images、没有 isAnonymous**。
-        // Jackson 未开 FAIL_ON_UNKNOWN_PROPERTIES（WebConfig.java:180-187 仅注册 Long 反序列化器），
-        // 故原样多传 images 不会报错，只会被**静默丢弃**（RealCampusService.java:151-165 亦无 setImages，
-        // :159 硬编码 setIsAnonymous(false)）。既已确认服务端不落库，这里就不再发这个字段：
-        // 幂等键 = hash(url|body)（http.ts:273），把「服务端根本不看的图片临时路径」塞进 body
-        // 会让同一段文字带不同配图时算出不同 key，绕过本该生效的判重。
-        // 调用方（post-topic.vue）负责在 real 模式下就「配图/匿名不会生效」给用户可见提示。
+        // MP-R1-CAMPUSPOSTTOPIC-201/-202 闭合（2026-09-26）：写侧契约已承载这两项——
+        // CreateCampusTopicRequest 现为 (category, title, content, tags, images, isAnonymous)
+        // （CampusController.java:456-463），RealCampusService 落 images(JSON 列) 并按
+        // isAnonymous 决定作者展示。G8 实测链路通：POST 带 1 图 + 匿名 → 回列表定位到该帖 →
+        // GET /campus/topics/{id} 读回 images 含所发 URL、isAnonymous=true、authorId=null、
+        // authorName="匿名校友"（scripts/qa/g8-e2e.cjs RING7/RING9）。
+        // 原注释「后端静默丢弃、故不发」的前提（:452-457 无此二字段、:159 硬编码 false）已随
+        // 本轮后端修复失效，照旧就是页面传到位、store 断链。
+        // 幂等键顾虑不成立：post-topic.vue:315-341 在 real 下先把 tempFilePath 经
+        // clientApi.uploadPostImage 换成服务端 URL 才提交，body 里没有本地临时路径；
+        // 且同一次重放的 body 恒定，判重照旧生效（http.ts:262-274）。
         const result = await request<BackendCampusTopicView, {
           category: string;
           title: string;
           content: string;
           tags?: string[];
+          images?: string[];
+          isAnonymous?: boolean;
         }>({
           url: "/campus/topics",
           method: "POST",
@@ -731,6 +737,8 @@ export const useCampusStore = defineStore("campus", {
             title: data.title.trim(),
             content: data.content.trim(),
             ...(data.tags && data.tags.length > 0 ? { tags: data.tags } : {}),
+            ...(data.images && data.images.length > 0 ? { images: data.images } : {}),
+            isAnonymous: data.isAnonymous,
           },
         });
 
@@ -806,12 +814,17 @@ export const useCampusStore = defineStore("campus", {
         }
 
         // 调用后端 API: POST /api/campus/topics/{topicId}/replies
+        // MP-R1-CAMPUSPOSTTOPIC-202 闭合（2026-09-26 G8 RING10 实测）：
+        // CreateCampusReplyRequest 现已承载 isAnonymous（CampusController.java:471-474），
+        // RealCampusService 落库并回匿名作者名（G8 取证：回复读回 isAnonymous=true、
+        // authorName="匿名校友"）→ 这里不再只发 content，否则页面传下来的匿名开关又在此断链。
         const result = await request<BackendCampusReplyView, {
           content: string;
+          isAnonymous?: boolean;
         }>({
           url: `/campus/topics/${topicId}/replies`,
           method: "POST",
-          data: { content: content.trim() },
+          data: { content: content.trim(), isAnonymous },
         });
 
         const mapped = mapToCampusReplyItem(result);

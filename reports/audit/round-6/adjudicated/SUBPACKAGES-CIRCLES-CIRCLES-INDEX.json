@@ -1,0 +1,203 @@
+{
+  "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+  "judged": 25,
+  "by": {
+    "VERIFIED": 0,
+    "FAILED": 0,
+    "UNVERIFIED": 16,
+    "UNVERIFIED_INSTRUMENT": 8,
+    "NOT_EVIDENCED": 1
+  },
+  "noEvidenceExcludedFromCompletion": 5,
+  "issues": [],
+  "cases": [
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI01",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI02",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI03",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__) ; tap(.circlesEmpty)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI04",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI05",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.key)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI06",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI07",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ①依次用 study/sports/music/movie/travel/game/food/reading 八个值直开，各记录卡片数与首卡名，并抄录顶部标题文本；②用未知值 category=astro；③用 category=%E6%9",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI08",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：rapidTap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI09",
+      "verdict": "UNVERIFIED",
+      "reason": "落点错位：用例页 subpackages/circles/circles/index 但 observed top=subpackages/tools/search/index（前置导航未落到本页/被上一页残留态带偏），观察对象不是本页",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI10",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI11",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI12",
+      "verdict": "UNVERIFIED",
+      "reason": "部分期望项由非 class 探针承载（.memberCount:absent），仅 .circle-card__action--joined 可核；证据不足以判三方一致",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI13",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI14",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "dom 探针全部是非 class 令牌（把 i18n key / JS 标识符当选择器查）：.message:absent .operationFailed:absent —— 该观察不能支撑任何判决",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI15",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.campusVerifyRequired)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI16",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：en-US 语种轮（observed 无对应读数）",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI17",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI18",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI19",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI20",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：几何/热区实测数值（observed 无对应读数）",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI21",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI22",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：network 请求计数（observed 无对应读数）",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI23",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判；且期望所需维度未采集：network 请求计数",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI24",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ①逐字段极值卡抄录渲染文本；②核对 'undefined'/'null'/'NaN'/'0 人 · undefined 条动态' 等字面量是否出现在页面上；③核对 memberCount>=10000 的 x.xw 与 0/负数的显示；④核",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX/CI25",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    }
+  ],
+  "notes": [
+    "CI09（搜索钮与胶囊碰撞，MP-R2-CIRCLES-INDEX-001 修复后核对）observed top=subpackages/tools/search/index —— 探针落在搜索页，`.circles-header__search:absent` 因此无意义，未判 P1 复发也未判通过。落点六码=HARNESS_CALL_DEFECT，owner=instrument，最高 P2 以下；最低成本解法：pre 步骤先断言 getCurrentPages() 末位等于用例页且 token 身份 userId 与目标一致，不等即重登并复检后再进页。",
+    "CI10/CI12/CI14 的点击目标是文本定位（act:tap \"入\"）或 .circle-card__action--joined:absent，命中与否不可证，按 UNVERIFIED_INSTRUMENT 处置；CI14 前后帧字节相同（192137B）但动作未证实命中，不足以立死按钮缺陷。",
+    "CI20/PT35/CPT40 三条热区量测要求逐项回填 rpx 数值，observed 未产出数值表 → 按证据缺失 UNVERIFIED，未因源码 padding 预判 FAILED（用例正文明令禁止该做法）。",
+    "裁定口径：三方一致=ops expected × exec observed/route/toast/console/evidence × 真打开的帧（round-6-tour 巡检帧含 zoom3x、round-6-interact 操作前后图）；复合键 manifest+caseId。",
+    "输入快照：.zcode/tmp/adjudicate/exec-results.snapshot.json（updatedAt 2026-09-25T15:28:18.856Z，509 行，gitSha 874ff52f）。执行轮仍在追加权威件，本文件只覆盖快照内已记录用例。",
+    "ERROR:timeout 尾注的帧一律按 NO-EVIDENCE 处置并计入 UNVERIFIED，不读作已取证；本清单该类 5 条已从完成度中排除。"
+  ]
+}

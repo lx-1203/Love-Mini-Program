@@ -85,7 +85,10 @@ function relativeTime(iso?: string): string {
           <image class="public-moment__stat-icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
           <text>{{ post.likes }}</text>
         </view>
-        <text class="public-moment__stat">○ {{ post.comments }}</text>
+        <view class="public-moment__stat">
+          <image class="public-moment__stat-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.MESSAGE" mode="aspectFit" alt="" />
+          <text>{{ post.comments }}</text>
+        </view>
       </view>
     </view>
   </view>

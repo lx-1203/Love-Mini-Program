@@ -1263,8 +1263,10 @@ export const useMessagesStore = defineStore("messages", {
     toggleSessionPin(sessionId: string) {
       const session = this.sessions.find((s) => s.id === sessionId);
       if (session) {
-        void this.setSessionPinned(sessionId, !session.pinned).catch(() => {
-          // 失败时由 setSessionPinned 设置 errorMessage，此处不再重复处理
+        void this.setSessionPinned(sessionId, !session.pinned).catch((error) => {
+          // 失败时由 setSessionPinned 设置 errorMessage，此处不再重复处理；
+          // MP-R2-PAGES-MESSAGES-INDEX-018(c)：留痕对齐 R4-00165（原为注释型空 catch）
+          console.warn("[messages.toggleSessionPin] 置顶切换失败:", error);
         });
       }
     },
@@ -1504,7 +1506,11 @@ export const useMessagesStore = defineStore("messages", {
         if (useMock()) { e.isRead = true; return; }
         await withTimeout(request<void>({ url: `/notifications/interactions/${eventId}/read`, method: "PUT" }), ASYNC_TIMEOUT_MS, t("storeErrors.messages.timeoutMarkInteractionRead")); // infra R2-00028
         e.isRead = true;
-      } catch (_e) { /* 静默失败 */ }
+      } catch (error) {
+        // MP-R2-PAGES-MESSAGES-INDEX-018(b)：兜底逻辑保留（失败仍按未读处理），
+        // 但不再零留痕——对齐同文件 markNotificationRead 的 R4-00165 口径
+        console.warn("[messages.markInteractionRead] 标记互动已读失败:", error);
+      }
     },
 
     async markAllInteractionsRead() {

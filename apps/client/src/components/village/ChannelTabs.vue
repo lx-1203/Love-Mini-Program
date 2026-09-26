@@ -21,13 +21,11 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "update:modelValue", id: string): void;
   (e: "change", id: string): void;
 }>();
 
 function select(id: string) {
   if (props.modelValue === id) return;
-  emit("update:modelValue", id);
   emit("change", id);
 }
 </script>

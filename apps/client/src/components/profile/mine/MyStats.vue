@@ -44,7 +44,7 @@ function statValue(key: string, socialProof: UserProfileSocialProof): number {
 
 <style scoped lang="scss">
 .my-stats {
-  margin: 24rpx 24rpx 0;
+  margin: var(--page-padding) var(--page-padding) 0;
   /* V-04（第五轮 QA）：4 列统计上下内边距 28→32rpx，数字与图标呼吸感 */
   padding: 32rpx 8rpx;
   border-radius: 32rpx;

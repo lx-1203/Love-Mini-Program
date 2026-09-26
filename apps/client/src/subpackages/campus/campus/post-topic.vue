@@ -39,6 +39,8 @@ import TopicSelector from "../../../components/village/TopicSelector.vue";
 import { designTokens } from "../../../theme/tokens";
 // R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+// MP-R2-CAMPUSPOST-016：onLoad import 归位文件头 import 区（原夹在 selectedCategory 声明之后）
+import { onLoad } from "@dcloudio/uni-app";
 const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 
@@ -46,22 +48,21 @@ const campusStore = useCampusStore();
 const { t } = useI18n();
 
 /**
- * MP-R1-CAMPUSPOSTTOPIC-201 能力开关（客户端唯一改点，后端补字段后改成 true 即恢复）。
+ * MP-R1-CAMPUSPOSTTOPIC-201 能力开关（客户端唯一改点，按 :51 的原设计置 true 即恢复）。
  *
- * 只读核对结论：后端真实请求契约
- * `record CreateCampusTopicRequest(@NotBlank String category, @NotBlank @Size(max=200) String title,
- *  @NotBlank @Size(max=5000) String content, @Size(max=5) List<@Size(max=20) String> tags)`
- * —— apps/api/src/main/java/com/campuslove/api/campus/CampusController.java:452-457，
- * **没有 images**；读侧 CampusTopicView.java:14 与实体列 CampusTopic.java:61-63（JSON 列）都在，
- * 写侧 RealCampusService.java:151-165 建话题时也没有 setImages。
- * Jackson 未开 FAIL_ON_UNKNOWN_PROPERTIES（config/WebConfig.java:180-187 仅注册 Long 反序列化器），
- * 所以多传 images 不报错、只被**静默丢弃**——这正是本条被判「发帖带图、发布后无图」的机理。
+ * 2026-09-26 闭合：写侧契约已补 images（CampusController.java:456-463，
+ * `@Size(max=6) List<@Size(max=2048) String> images`）并落 campus_topics.images，
+ * 匿名同批补齐。判据不是注释而是实测：G8 `scripts/qa/g8-e2e.cjs` RING7 带 1 图提交 →
+ * 回列表定位该帖 → RING9 读回 images 含所发 URL、isAnonymous=true、
+ * authorId=null、authorName="匿名校友"。
  *
- * 既知服务端不落库，客户端就不该再演一遍成功：real 模式下不再选图/不再上传/不再提交该字段，
- * 并把原因写在图片区，而不是发完 6 个请求、在服务端留孤儿文件、再给用户一个假的「发布成功」。
- * （幂等键 = hash(url|body)，http.ts:262-274：把临时路径塞进 body 还会绕开本该生效的判重。）
+ * 保留开关而非删掉：后端若再退回去丢字段，这里翻回 false 就能立刻恢复
+ * "在选择环节讲明原因、不发 6 个请求、不在服务端留孤儿文件、不给假的成功"这套 UX
+ * （原核对结论见本条 issue 记录）。tempFilePath 一律先经 uploadPostImage 换服务端 URL
+ * 再提交（见 :315-341），所以 body 里不会出现本地路径，http.ts:262-274 的
+ * hash(url|body) 幂等判重也不受影响。
  */
-const CAMPUS_TOPIC_IMAGES_SUPPORTED = false;
+const CAMPUS_TOPIC_IMAGES_SUPPORTED = true;
 
 /** mock 判定（useMock 是静态 env 检查，setup 期取一次即可） */
 const isMockMode = useMock();
@@ -88,7 +89,6 @@ onUnmounted(() => {
 const selectedCategory = ref<CampusTopicCategory>("course_exchange");
 // MP-R2-CAMPUSINDEX-002(a)：消费 campus/index 透传的当前分类（原恒默认 course_exchange，
 // 发布回流后新帖出现在错误 Tab 顶部）
-import { onLoad } from "@dcloudio/uni-app";
 
 /**
  * 校园发布资格三态（未认证视角差异化，MP-R1-CAMPUSPOSTTOPIC-202 同族的 real 可达性前置）：
@@ -127,7 +127,10 @@ function goCertification() {
 onLoad((query) => {
   const cat = query?.category;
   if (typeof cat === "string" && cat.trim().length > 0) {
-    selectedCategory.value = cat as CampusTopicCategory;
+    // MP-R2-CAMPUSPOST-013：深链非法分类回落默认值（本页分类 chip 只有 CAMPUS_CATEGORY_MAP 六项，
+    // 非法值会渲染成「无一选中」且 real 提交被后端枚举校验 400）
+    const key = cat.trim() as CampusTopicCategory;
+    selectedCategory.value = key in CAMPUS_CATEGORY_MAP ? key : "course_exchange";
   }
   // 正常路径由 campus/campus/index.vue onShow 取过认证状态；但本页可被深链直达，
   // 彼时 store 仍是默认值 "unverified" —— 直接据此判 denied 会把已认证用户挡在门外，
@@ -229,9 +232,9 @@ function toggleAnonymous() {
  * 2026-08-26 P7：选择配图上传（Task 0.2.4 隐私授权检查；上限 MAX_IMAGES 张）
  */
 async function chooseImage() {
-  // MP-R1-CAMPUSPOSTTOPIC-201：real 契约不收 images（依据见上方 CAMPUS_TOPIC_IMAGES_SUPPORTED
-  // 注释），选图即注定丢失 → 在选择环节就把原因讲出来，而不是让用户选完 6 张图后
-  // 收到一个「发布成功」但配图全没了的结果（那才是本条 issue 的原始表现）。
+  // MP-R1-CAMPUSPOSTTOPIC-201 已闭合（见上方开关注释：G8 RING7/RING9 实测带图能落能读回）。
+  // 这段守卫留着不删——它是能力开关的另一半：后端若退回丢字段，开关翻回 false 就能在
+  // 选择环节讲明原因，而不是让用户选完 6 张图后收到一个「发布成功」但配图全没了的结果。
   if (!imagesAccepted.value) {
     uni.showToast({ title: t("campus.postTopic.imagesUnsupported"), icon: "none" });
     return;
@@ -259,7 +262,8 @@ async function chooseImage() {
           // MP-R2-CAMPUSPOST-005：区分用户取消与真实失败（权限被拒等），失败给可见反馈
           const msg = String((err as { errMsg?: string })?.errMsg ?? "");
           if (!/cancel/i.test(msg)) {
-            uni.showToast({ title: "选择图片失败，请检查相册/相机权限", icon: "none" });
+            // MP-R2-CAMPUSPOST-011：文案入 i18n（原硬编码中文，en 语料下弹中文）
+            uni.showToast({ title: t("campus.postTopic.chooseImageFailed"), icon: "none" });
           }
         },
   });
@@ -309,8 +313,8 @@ async function submitTopic() {
     const trimmedContent = content.value.trim();
     // 2026-08-26 P7：配图本地临时路径（tempFilePath）在 real 模式先经
     // clientApi.uploadPostImage 逐张上传换取可访问 URL，mock 模式保留原始路径。
-    // MP-R1-CAMPUSPOSTTOPIC-201：real 后端契约无 images（CampusController.java:452-457），
-    // 上传结果注定被丢弃 → 由 CAMPUS_TOPIC_IMAGES_SUPPORTED 单点关掉整条上传链路。
+    // MP-R1-CAMPUSPOSTTOPIC-201：real 契约现已收 images（CampusController.java:456-463），
+    // 所以这条换取 URL 的链路是必须走的——提交给服务端的必须是可访问 URL，不能是 tempFilePath。
     let submitImages = images.value;
     if (
       imagesAccepted.value &&
@@ -515,7 +519,8 @@ function goBack() {
              → 常驻说明写在这里，而不是只在点「+」时闪一个 toast -->
         <text v-if="!imagesAccepted" class="images-section__warn">{{ t('campus.postTopic.imagesUnsupported') }}</text>
         <view class="images-list">
-          <view v-for="(img, idx) in images" :key="idx" class="image-item">
+          <!-- MP-R2-CAMPUSPOST-014：key 用临时路径（本页生命周期内稳定唯一），删中间图后其后项不再整体重绑 -->
+          <view v-for="(img, idx) in images" :key="img" class="image-item">
             <image class="image-item__img" :src="img" mode="aspectFill" lazy-load alt="" />
             <view class="image-item__remove press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" aria-label="删除图片" @tap="removeImage(idx)">
               <text class="image-item__remove-icon">×</text>
@@ -886,7 +891,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   color: $text-tertiary;
 }
 
-/* MP-R1-CAMPUSPOSTTOPIC-201：real 契约不收 images 时的常驻说明（不靠 toast 一闪而过） */
+/* MP-R1-CAMPUSPOSTTOPIC-201：能力开关关掉配图时的常驻说明（不靠 toast 一闪而过） */
 .images-section__warn {
   display: block;
   margin-bottom: 16rpx;

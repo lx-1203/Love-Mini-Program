@@ -1,0 +1,135 @@
+{
+  "manifest": "PAGES-REGISTER-SUCCESS",
+  "judged": 16,
+  "by": {
+    "VERIFIED": 0,
+    "FAILED": 0,
+    "UNVERIFIED": 11,
+    "UNVERIFIED_INSTRUMENT": 5,
+    "NOT_EVIDENCED": 0
+  },
+  "noEvidenceExcludedFromCompletion": 5,
+  "issues": [],
+  "cases": [
+    {
+      "caseId": "PAGES-REGISTER-SUCCESS/RS01",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-SUCCESS/RS02",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-SUCCESS/RS03",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "dom 探针全部是非 class 令牌（把 i18n key / JS 标识符当选择器查）：.replace:absent —— 该观察不能支撑任何判决",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-SUCCESS/RS04",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-SUCCESS/RS05",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-SUCCESS/RS06",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 对 .reg-success__btn 以 <200ms 间隔连点 5 次",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-SUCCESS/RS07",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-SUCCESS/RS08",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-SUCCESS/RS09",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-SUCCESS/RS10",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-SUCCESS/RS11",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-SUCCESS/RS12",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-SUCCESS/RS13",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-SUCCESS/RS14",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-SUCCESS/RS15",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-SUCCESS/RS16",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ①正常态核对插图渲染（.reg-success__img mode=aspectFit，success.vue:52）；②资源失败态核对标题/清单/两按钮是否仍完整可用；③对照设计稿资源路径常量 IMAGE_PATHS.REGISTER.S",
+      "attempts": 1
+    }
+  ],
+  "notes": [
+    "RS02/RS03 的 phone 入参前置未在 observed 的 pre 中出现（只见 pre:logout ok），脱敏文案不可判；`.tag`/`.replace` 为非 class 探针。",
+    "裁定口径：三方一致=ops expected × exec observed/route/toast/console/evidence × 真打开的帧（round-6-tour 巡检帧含 zoom3x、round-6-interact 操作前后图）；复合键 manifest+caseId。",
+    "输入快照：.zcode/tmp/adjudicate/exec-results.snapshot.json（updatedAt 2026-09-25T15:28:18.856Z，509 行，gitSha 874ff52f）。执行轮仍在追加权威件，本文件只覆盖快照内已记录用例。",
+    "ERROR:timeout 尾注的帧一律按 NO-EVIDENCE 处置并计入 UNVERIFIED，不读作已取证；本清单该类 5 条已从完成度中排除。"
+  ]
+}

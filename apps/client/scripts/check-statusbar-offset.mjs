@@ -44,6 +44,11 @@ const HOST_INJECTED_ALLOW = new Set(
     "components/match/MatchLoading.vue", // 宿主：discover/matching（已注入）
     "components/match/MatchSuccess.vue", // 宿主：discover/match-success（已注入）
     "components/profile/mine/MyHeader.vue", // 宿主：profile 相关页（已注入）
+    // NotLoggedProfile 与 MyHeader 同理：CSS 自定义属性沿 DOM 树继承，注入点在页面根，
+    // 链路 pages/profile/index.vue（useMenuButtonRect 3 处实测）→ ProfileShell.vue → mine/MyProfile.vue
+    // → components/profile/NotLoggedProfile.vue；中间两层自身都不测状态栏，
+    // 要求每一层各测一遍反而是错的（多次测量、多次 setData）。宿主已注入并被本守卫覆盖。
+    "components/profile/NotLoggedProfile.vue",
     "styles/_components.scss", // mixin/占位类，消费方为已注入页面
     "styles/_mixins.scss",
     "theme/global.scss", // 全局 token 定义（:root/page 级）

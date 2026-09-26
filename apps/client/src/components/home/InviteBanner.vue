@@ -32,7 +32,7 @@ defineEmits<{ (e: "invite"): void }>();
   position: relative;
   /* 2026-09-04 问题5修复：banner 下方由首页 .home-section-gap（tabBar 净空区）兜底，
      上方与 CommunityFeed 之间留 16rpx 间距即可，去掉原 16rpx 下 margin */
-  margin: 16rpx 40rpx 0;
+  margin: 16rpx var(--page-padding) 0;
   padding: 24rpx 28rpx;
   border-radius: 40rpx;
   /* R20（2026-09-08）：高饱和粉渐变（#FF6B81→#FF8DA1 满铺）与页面浅绿主色冲突突兀，

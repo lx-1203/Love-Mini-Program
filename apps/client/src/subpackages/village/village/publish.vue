@@ -164,7 +164,12 @@ const visibilityText = computed(() => {
 onLoad((query) => {
   const cid = query?.circleId ? Number(query.circleId) : null;
   const entryTarget = query?.target;
-  if (entryTarget === "campus") targetType.value = "campus";
+  // MP-R2-PUB-114：入口回设同步 visibility（原只设 targetType，无草稿时 restoreDraft
+  // 在 :496 早退，campus/circleId 深链同屏出现「校园圈·所有校园成员可见」与「谁可以看=所有人可见」）
+  if (entryTarget === "campus") {
+    targetType.value = "campus";
+    visibility.value = "school";
+  }
   // R16：日常模式入口（我的故事「添加日常」）
   if (entryTarget === "friends") {
     targetType.value = "friends";
@@ -173,6 +178,7 @@ onLoad((query) => {
   if (cid && !Number.isNaN(cid)) {
     targetType.value = "circle";
     targetId.value = cid;
+    visibility.value = "interest";
   }
   void loadTarget();
   // MP-R1-PUBLISH-005：入口参数（friends/campus/circleId）优先级高于旧草稿——
@@ -740,7 +746,7 @@ onUnmounted(() => {
       <!-- 发布到 -->
       <view class="publish-to">
         <text class="publish-to__label">发布到</text>
-        <view class="publish-to__card press-feedback" role="button" @tap="targetOpen = !targetOpen">
+        <view class="publish-to__card press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="targetOpen = !targetOpen">
           <view class="publish-to__avatar">
             <image v-if="isCircleTarget && targetCircle" class="publish-to__avatar-img" :src="IMAGE_PATHS.CIRCLE_COVERS.DEFAULT" mode="aspectFill" alt="" />
             <image v-else-if="isCircleTarget" class="publish-to__avatar-emoji" :src="IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON" mode="aspectFit" alt="" />
@@ -754,54 +760,6 @@ onUnmounted(() => {
             <text class="publish-to__subtitle">{{ targetSubtitle }}</text>
           </view>
           <text class="publish-to__arrow">›</text>
-        </view>
-        <!-- 目标选择弹层（R20：公域 → 校园私域 → 兴趣圈子 三级分组） -->
-        <view v-if="targetOpen" class="publish-target-sheet" @tap="targetOpen = false">
-          <view class="publish-target-sheet__panel" @tap.stop>
-            <view class="publish-target-sheet__head">
-              <text class="publish-target-sheet__title">选择发布到</text>
-            </view>
-            <text class="publish-target-sheet__group">公域 · 所有人可见</text>
-            <view class="publish-target-sheet__option press-feedback" role="button" @tap="chooseGeneral">
-              <text class="publish-target-sheet__name">个人动态</text>
-              <text class="publish-target-sheet__desc">默认公开，所有人可见</text>
-              <image v-if="targetType === 'general'" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
-            </view>
-            <text class="publish-target-sheet__group">校园私域 · 同校可见</text>
-            <view class="publish-target-sheet__option press-feedback" role="button" @tap="chooseCampus">
-              <text class="publish-target-sheet__name">校园圈</text>
-              <text class="publish-target-sheet__desc">仅认证同校同学可见</text>
-              <image v-if="targetType === 'campus'" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
-            </view>
-            <template v-if="circlesLoading">
-              <text class="publish-target-sheet__hint">兴趣圈子加载中…</text>
-            </template>
-            <!-- MP-R2-PUB-103：失败态区别于空态（原失败渲染「尚未加入兴趣圈子」误导已加入用户），可重试 -->
-            <template v-else-if="circlesLoadFailed">
-              <text class="publish-target-sheet__hint">圈子列表加载失败，请稍后重试</text>
-              <view class="publish-target-sheet__option press-feedback" role="button" @tap="retryLoadCircles">
-                <text class="publish-target-sheet__name">重试加载</text>
-              </view>
-            </template>
-            <template v-else-if="joinedCircles.length > 0">
-              <text class="publish-target-sheet__group">兴趣圈子 · 圈内成员可见</text>
-              <view
-                v-for="circle in joinedCircles"
-                :key="circle.id"
-                class="publish-target-sheet__option press-feedback"
-                role="button"
-                @tap="selectTarget(circle)"
-              >
-                <text class="publish-target-sheet__name">{{ circle.name }}</text>
-                <text class="publish-target-sheet__joined">已加入</text>
-                <text class="publish-target-sheet__desc">{{ formatMemberShort(circle.memberCount) }} 成员</text>
-                <image v-if="isCircleTarget && targetId === Number(circle.id)" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
-              </view>
-            </template>
-            <template v-else>
-              <text class="publish-target-sheet__hint">尚未加入兴趣圈子，可先在「附近 - 热门兴趣圈」加入</text>
-            </template>
-          </view>
         </view>
       </view>
 
@@ -827,11 +785,11 @@ onUnmounted(() => {
       <view class="publish-images">
         <view v-for="(img, idx) in images" :key="idx" class="publish-image">
           <image class="publish-image__img" :src="img" mode="aspectFill" alt="" />
-          <view class="publish-image__remove press-feedback" role="button" @tap="removeImage(idx)">
+          <view class="publish-image__remove press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="removeImage(idx)">
             <image class="publish-image__remove-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
           </view>
         </view>
-        <view v-if="images.length < POST_MAX_IMAGES" class="publish-image publish-image--add press-feedback" role="button" @tap="chooseImage">
+        <view v-if="images.length < POST_MAX_IMAGES" class="publish-image publish-image--add press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="chooseImage">
           <text class="publish-image__plus">＋</text>
         </view>
       </view>
@@ -864,10 +822,17 @@ onUnmounted(() => {
           <!-- MP-R1-PUBLISH-006：无定位缓存时不再宣称「自动定位」（原恒显示缺省「北京市 · 自动定位」） -->
           <text class="publish-row__meta">{{ currentCity ? currentCityLabel : '选择位置' }}</text>
         </view>
-        <view class="publish-row press-feedback" role="button" @tap="openMentionPicker">
+        <!-- MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01：本行能力与 post.vue:164-168
+             insertMention（真往正文插 @）不一致，且本页 openMentionPicker 只弹「即将开放」。
+             按台账 (b) 支取只读形态：剥掉 press-feedback / hover-class / role=button / › 四件
+             交互线索（对齐 MP-R1-VILLAGE-PUBLISH-103 对「谁可以看」行的既有裁定——点了不改值
+             却保留可点线索=可点假象）；@tap 保留，因为「即将开放」这一信息只有点下去才拿得到
+             （tap-to-explain，同页 -A04 已认可的形态）。行内灰色「即将开放」常驻标记需新增
+             village.post.comingSoon 双语键，已登记 .zcode/tmp/fixwave/i18n-requests/closer.json，
+             键落地后再补标记，避免本轮出现渲染键路径字面量的中间态。 -->
+        <view class="publish-row" @tap="openMentionPicker">
           <text class="publish-row__icon">@</text>
           <text class="publish-row__label">提及好友</text>
-          <text class="publish-row__arrow">›</text>
         </view>
         <!-- MP-R2-PUB-105：friends 目标锁定可见范围（原可轮换落入 interest 桶，UI 当场失真）
              MP-R1-VILLAGE-PUBLISH-103：cycleVisibility 四目标轮换列表均为单值（点击永远
@@ -901,13 +866,66 @@ onUnmounted(() => {
           </view>
           <text class="publish-tip__desc">真实分享校园生活，友善互动，让更多人认识有趣的你～</text>
         </view>
-        <view class="publish-tip__close press-feedback" role="button" @tap="tipVisible = false">
+        <view class="publish-tip__close press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="tipVisible = false">
           <image class="publish-tip__close-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
         </view>
       </view>
 
       <view class="publish-body__bottom-space" />
     </scroll-view>
+
+    <!-- MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A05：目标选择弹层自 scroll-view 内迁出到页面根，
+         与下方话题弹层同层（position:fixed 面板嵌在 scroll-view 内会随内容滚动/被裁切），
+         消除同页两套层级策略。DOM 顺序仍在话题弹层之前，等 z-index 下的叠放关系不变 -->
+    <view v-if="targetOpen" class="publish-target-sheet" @tap="targetOpen = false">
+      <view class="publish-target-sheet__panel" @tap.stop>
+        <view class="publish-target-sheet__head">
+          <text class="publish-target-sheet__title">选择发布到</text>
+        </view>
+        <text class="publish-target-sheet__group">公域 · 所有人可见</text>
+        <view class="publish-target-sheet__option press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="chooseGeneral">
+          <text class="publish-target-sheet__name">个人动态</text>
+          <text class="publish-target-sheet__desc">默认公开，所有人可见</text>
+          <image v-if="targetType === 'general'" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
+        </view>
+        <text class="publish-target-sheet__group">校园私域 · 同校可见</text>
+        <view class="publish-target-sheet__option press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="chooseCampus">
+          <text class="publish-target-sheet__name">校园圈</text>
+          <text class="publish-target-sheet__desc">仅认证同校同学可见</text>
+          <image v-if="targetType === 'campus'" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
+        </view>
+        <template v-if="circlesLoading">
+          <text class="publish-target-sheet__hint">兴趣圈子加载中…</text>
+        </template>
+        <!-- MP-R2-PUB-103：失败态区别于空态（原失败渲染「尚未加入兴趣圈子」误导已加入用户），可重试 -->
+        <template v-else-if="circlesLoadFailed">
+          <text class="publish-target-sheet__hint">圈子列表加载失败，请稍后重试</text>
+          <view class="publish-target-sheet__option press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="retryLoadCircles">
+            <text class="publish-target-sheet__name">重试加载</text>
+          </view>
+        </template>
+        <template v-else-if="joinedCircles.length > 0">
+          <text class="publish-target-sheet__group">兴趣圈子 · 圈内成员可见</text>
+          <view
+            v-for="circle in joinedCircles"
+            :key="circle.id"
+            class="publish-target-sheet__option press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            @tap="selectTarget(circle)"
+          >
+            <text class="publish-target-sheet__name">{{ circle.name }}</text>
+            <text class="publish-target-sheet__joined">已加入</text>
+            <text class="publish-target-sheet__desc">{{ formatMemberShort(circle.memberCount) }} 成员</text>
+            <image v-if="isCircleTarget && targetId === Number(circle.id)" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
+          </view>
+        </template>
+        <template v-else>
+          <text class="publish-target-sheet__hint">尚未加入兴趣圈子，可先在「附近 - 热门兴趣圈」加入</text>
+        </template>
+      </view>
+    </view>
 
     <!-- ===== W2-PUBLISH-TOPIC：话题选择弹层（与 post.vue:1067 同构：热门点选 + 自定义输入）
            放在 scroll-view 之外、页面根层级——position:fixed 面板嵌在 scroll-view 内会随内容

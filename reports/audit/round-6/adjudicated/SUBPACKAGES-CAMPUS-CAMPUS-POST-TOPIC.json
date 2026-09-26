@@ -1,0 +1,339 @@
+{
+  "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+  "judged": 41,
+  "by": {
+    "VERIFIED": 1,
+    "FAILED": 1,
+    "UNVERIFIED": 9,
+    "UNVERIFIED_INSTRUMENT": 14,
+    "NOT_EVIDENCED": 16
+  },
+  "noEvidenceExcludedFromCompletion": 3,
+  "issues": [
+    {
+      "id": "MP-R2-CAMPUSPOST-008",
+      "canonical": true,
+      "severity": "P2",
+      "page": "subpackages/campus/campus/post-topic",
+      "observed": "栈底 reLaunch 直达后连点两次返回钮：路由不变、无 Toast，console 2 轮 navigateBack:fail 未捕获拒绝（PT06/PT31 同签名但帧缺失，未计入判决）",
+      "expected": "goBack 需带 fail/catch 兜底（对照 circles/post-topic MP-R1-POSTTOPIC-102 口径）；栈底点击必须有可观测反馈，否则按死按钮立案 P2/Interaction",
+      "evidence": [
+        "reports/screenshots/round-6-interact/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT07-after.png",
+        "apps/client/src/subpackages/campus/campus/post-topic.vue:424-425",
+        "reports/audit/round-2/issue-matrix.md:255"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT01",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT02",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT03",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT04",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT05",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT06",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：automator 无 input 方法（el.input is not a function），表单前置态无法构造",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT07",
+      "verdict": "FAILED",
+      "reason": "三方不一致：栈底（reLaunch 直达，栈=1）连点两次 .post-header__back 后 PT07-after.png 仍停在 post-topic 首屏、toast[] 为空、console 实录 2 轮 [Global Error][uni.onUnhandledRejection] navigateBack:fail cannot navigate back at first page. → 返回钮在栈底为无反馈死按钮。",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT08",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT09",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT10",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT11",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT12",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT13",
+      "verdict": "VERIFIED",
+      "reason": "三方一致：toast[] 实录「请输入标题」= campus.postTopic.errTitle 口径，PT13-before/after 两帧齐备且停留本页、console 无报错。",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT14",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判；且期望所需维度未采集：network 请求计数；另有非 class 探针 .postTopic:absent .errContent:absent",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT15",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT16",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT17",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT18",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT19",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT20",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT21",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.image-item__remove)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT22",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT23",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判；且期望所需维度未采集：en-US 语种轮；另有非 class 探针 .postTopic:absent .maxImages:absent",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT24",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT25",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— tap switch 开（post-topic.vue:389-393 @change → toggleAnonymous :127-129）→ 再 tap 关 → 再开并保持，随后填表提交一次（唯一标题）",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT26",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT27",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(.topic-chip) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT28",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__) ; tap(__CAND__) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT29",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT30",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT31",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT32",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT33",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判；且期望所需维度未采集：几何/热区实测数值",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT34",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT35",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判；且期望所需维度未采集：几何/热区实测数值",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT36",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT37",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT38",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT39",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT40",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT41",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    }
+  ],
+  "notes": [
+    "PT06/PT31 与 PT07 同为栈底 navigateBack:fail 未捕获拒绝（console 签名一致），但 PT06 evidence[] 为空、PT31 唯一帧带 ERROR:timeout 尾注 → 按规则只能记 UNVERIFIED（证据缺失/NO-EVIDENCE），不得并入 FAILED；缺陷本体由 PT07 一条承载，沿用 canonical 号不另立号。",
+    "本清单大量 pre-FAIL:input el.input is not a function —— automator 无 input 方法，导致「已输入标题/正文」类前置全部未构造，相关分支（如 PT14 期望「请输入内容」）不可判。落点六码=HARNESS_CALL_DEFECT，owner=instrument，最高 P2 以下；最低成本解法：pre 步骤先断言 getCurrentPages() 末位等于用例页且 token 身份 userId 与目标一致，不等即重登并复检后再进页。",
+    "裁定口径：三方一致=ops expected × exec observed/route/toast/console/evidence × 真打开的帧（round-6-tour 巡检帧含 zoom3x、round-6-interact 操作前后图）；复合键 manifest+caseId。",
+    "输入快照：.zcode/tmp/adjudicate/exec-results.snapshot.json（updatedAt 2026-09-25T15:28:18.856Z，509 行，gitSha 874ff52f）。执行轮仍在追加权威件，本文件只覆盖快照内已记录用例。",
+    "ERROR:timeout 尾注的帧一律按 NO-EVIDENCE 处置并计入 UNVERIFIED，不读作已取证；本清单该类 3 条已从完成度中排除。"
+  ]
+}

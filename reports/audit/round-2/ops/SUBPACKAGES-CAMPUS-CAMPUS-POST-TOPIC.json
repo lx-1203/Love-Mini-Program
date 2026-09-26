@@ -1,0 +1,437 @@
+{
+  "chunkKey": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+  "round": "R2",
+  "page": "subpackages/campus/campus/post-topic",
+  "route": "/subpackages/campus/campus/post-topic",
+  "core": true,
+  "sourceOfTruth": [
+    "apps/client/src/subpackages/campus/campus/post-topic.vue",
+    "apps/client/src/stores/campus.ts",
+    "apps/client/src/services/http.ts",
+    "apps/client/src/components/village/TopicSelector.vue",
+    "apps/client/src/constants/limits.ts",
+    "apps/api/src/main/java/com/campuslove/api/campus/CampusController.java"
+  ],
+  "pageNotes": {
+    "execConvention": "PRE 中「身份A mock 登录」= tmp_r11_login.json JWT → wx.setStorageSync('token') → session.bootstrap()。「REAL_ONLY」= 只有真实后端(8080)才能构造的前置（服务端幂等/落库回读/真实媒体 URL 解析/未登录视角），必须在 real 构建轮执行，mock 轮如实记 UNVERIFIED。",
+    "idempotencyTrap": "【假通过防线】apps/client/src/services/http.ts:254-276 对全部 POST/PUT/DELETE/PATCH 兜底注入稳定哈希幂等键 idem-<METHOD>-hash(url + \"|\" + JSON(body))（:273），后端 POST /campus/topics 标注 @Idempotent（CampusController.java:166-170，Redis SETNX，TTL=4h，IdempotentInterceptor.java:147-160 + Idempotent.DEFAULT_TTL_SECONDS=4*3600）。因此「连点 5 次只提交 1 次」这类结论**无法区分**是客户端 isSubmitting 守卫生效还是服务端幂等去重生效。本文件所有连点/重复提交用例（PT16-PT20）的 expected 一律要求把 ① 客户端多余请求计数（network 面板 URL 命中条数）与 ② 服务端实际落库/回读条数（重新拉 GET /campus/topics 后按 title 计）分开回填，缺任一列即记 UNVERIFIED 不得判 VERIFIED。",
+    "paramsConsumed": "onLoad 仅读 query?.category 且不做白名单校验、不解码（post-topic.vue:61-66，MP-R2-CAMPUSINDEX-002(a) 由 campus/index FAB 透传 encodeURIComponent(activeCategory)）→ 非法/未知值直接 as CampusTopicCategory 赋给 selectedCategory。上游 campus/index 另有 ?school=，本页不消费；?topicId=/?circleId=/?target= 均为幽灵参数（PT05 守卫）。",
+    "inputCaps": "三个输入通道：标题 input maxlength=\"50\"（:329，后端 @Size(max=200) CampusController.java:454）；正文 textarea :maxlength=MAX_LENGTH(500)（:105,:341，后端 @Size(max=5000) :455）；因此 isOverLimit（:110）与提交时 isOverLimit 静默 return（:191-193）在正常打字/粘贴路径**不可达**，content-count--over 红色样式（:650-652）同不可达 → PT12 为证伪用例，须用程序化赋值绕过原生截断才能触达。",
+    "sideEffects": "发布=写操作，本页所有提交路径用例（含空提交、校验失败）一律 tier=critical：before+after 截图 + 路由 + Toast 文案 + console + network 写请求计数。",
+    "mockVsReal": "mock 轮 createCampusTopic 走本地 unshift、不发真实请求（campus.ts:638-663），且 mock 下带图发帖把本地临时路径原样入库（post-topic.vue:200-219 的上传块被 !useMock() 短路）→ mock 轮无法验证服务端幂等/图片落库/审核流；REAL_ONLY 用例（PT15-PT17、PT22、PT28、PT30）必须排进 real 轮。",
+    "successPathNoReset": "成功路径不复位 isSubmitting（post-topic.vue:249-256，MP-R1-CAMPUSPOST-004），由页面销毁终结；仅失败复位（:262）→ PT19 验证 800ms 窗口内的二次点击被吞。",
+    "concurrentEditsWarning": "【必读·源码在动】本清单落盘期间，另有修复泳道正在并发改写 apps/client/src/subpackages/campus/campus/post-topic.vue（工作树 diff +241 行）。PT01-PT36 的行号锚点取自我读取时的版本，执行前必须按当轮 gitSha 重新核对行号；下列新增用例（PT37-PT41）改用**当前工作树**的锚点，并覆盖并发新引入的行为。既有用例中与下列新增前提冲突的，执行时以新增用例为准：PT07（navigateBack fail 兜底已补，见新增 PT37）、PT16/PT30（409/400 文案已由 store 归一化，见 PT38）、PT20/PT21/PT22（real 下配图整条链路被关闭，见 PT39）、PT25（real 下匿名不落库并原地改文案，见 PT40）。"
+  },
+  "cases": [
+    {
+      "id": "PT01",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "从 campus/index FAB 正常进入首屏：默认分类高亮 + 全部区块渲染 + 发布钮置灰",
+      "tier": "normal",
+      "pre": "REAL_ONLY 视角优先（FAB 仅已认证本校渲染）；mock 轮以深链等价进入：身份A mock 登录 → wx.reLaunch('/subpackages/campus/campus/post-topic?category=course_exchange')（栈=1）",
+      "action": "仅等待首屏渲染；≤500ms 首拍 + 2s 复拍",
+      "expected": "500ms 内渲染：header「取消 / 发布话题 / 发布」（post-topic.vue:278-290 ← campus.postTopic.cancel/navTitle/submitPublish，zh-CN.ts:3551-3557）；6 个分类 chip 两行三列、第 1 个「课程交流」带 --selected（:295-319 ← CAMPUS_CATEGORY_MAP 硬编码中文 campus.ts:171-178）；标题 input placeholder 与正文 textarea placeholder 正常（:322-347）；字数计数「0/500」（:344-346）；配图区标题 +「0/6」提示 + 单个「+ 上传图片」块（:350-375，MAX_IMAGES=UI_LIMITS.PHOTO_GALLERY_MAX=6 constants/limits.ts:29）；TopicSelector 区块渲染（已选 0/3 空态 + 搜索框 + 热门话题 + 自定义创建输入，:378-380）；匿名 switch 关闭态（:383-395）；底部「发布」大按钮（:398-408）；canSubmit=false → 顶部与底部按钮均带 --disabled 灰态（:112-114,:284,:401）；header 右侧避让微信胶囊（:444-453 padding-right capsule+104px）；console 无报错",
+      "evidence": "normal：after 截图（fullPage）+ getCurrentPages 栈顶 route + options.category 实值 + console"
+    },
+    {
+      "id": "PT02",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "?category= 合法值回显：study_help / alumni_news 等 6 值分别正确预选",
+      "tier": "normal",
+      "pre": "身份A mock 登录",
+      "action": "依次 reLaunch 带 ?category=study_help、?category=life_service、?category=alumni_news（各一次），观察高亮 chip",
+      "expected": "onLoad 直接赋值 selectedCategory（post-topic.vue:61-66）→ 对应 chip 出现 --selected（:299-306）；分类值不做 encodeURIComponent 解码也成立（值为纯 ASCII）；页面无需其它前置即保持可提交态；console 无报错；回填每次实际高亮的 chip 文案",
+      "evidence": "normal：3 张 after 截图 + 每次路由 options 快照 + console"
+    },
+    {
+      "id": "PT03",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "?category= 非法值：无白名单校验的证伪（不预选 + 提交时把非法值发给后端）",
+      "tier": "critical",
+      "pre": "身份A mock 登录 → reLaunch '/subpackages/campus/campus/post-topic?category=not_a_category'",
+      "action": "观察 6 个 chip 是否有任何选中态 → 填标题+正文 → tap 顶部「发布」，观察请求 category 实参",
+      "expected": "6 个 chip 全部无 --selected（selectedCategory 被置为非法值，post-topic.vue:64 无校验）→ 页面呈现「无分类」视觉态，如实截图；提交时 category 原样透传（:226 mock / :239 real → campus.ts:674-680 data.category）；mock 轮：本地创建成功、新话题带非法 category（列表按 category 过滤时不可见 → 属静默丢内容，回填 topic.category 实值）；REAL_ONLY 轮：后端 @RequestParam 枚举/@Positive 校验应拒绝，回填 {status, error, message} 原文（CampusController.java:170-188 + CreateCampusTopicRequest 定义 :452-456）；无论成功失败都必须有 Toast（无 Toast 且无跳转=死按钮）",
+      "evidence": "critical：before（非法分类无高亮态）+ after（Toast）截图 + 路由 + Toast 文案 + console + network POST /campus/topics 的 category 实参与响应"
+    },
+    {
+      "id": "PT04",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "?category= 空串/缺省：保持默认 course_exchange（不被空值污染）",
+      "tier": "normal",
+      "pre": "身份A mock 登录",
+      "action": "分别 reLaunch '?category=' 与不带 category 两种入口，各观察高亮",
+      "expected": "typeof cat==='string' && cat.trim().length>0 双条件（post-topic.vue:63）→ 空串与缺省都不覆盖初值 → 首个 chip「课程交流」恒高亮（初值 :57）；不出现「无选中态」；console 无报错",
+      "evidence": "normal：两张 after 截图 + 两次路由 options + console"
+    },
+    {
+      "id": "PT05",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "幽灵参数守卫：school / topicId / circleId / target / channel 全部零消费",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → reLaunch '/subpackages/campus/campus/post-topic?category=course_exchange&school=%E6%B8%85%E5%8D%8E%E5%A4%A7%E5%AD%A6&topicId=99&circleId=3&target=campus&channel=school'",
+      "action": "观察首屏与提交 payload",
+      "expected": "本页 onLoad 只读 category（post-topic.vue:61-66）→ 不得出现校名选择器/预填标题/关联活动卡/目标圈展示；提交 payload 不含 school/topicId/circleId/target/channel 字段（回填实际 body）；getCurrentPages 栈顶 route 正确；渲染结果与 PT01 等价；若任何参数被消费即判幽灵参数回归",
+      "evidence": "navigation：路由链 + options 快照 + 提交 body 快照 + console"
+    },
+    {
+      "id": "PT06",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "「取消」返回（栈>1）：不保存草稿、直接回校园圈首页",
+      "tier": "navigation",
+      "pre": "身份A mock 登录 → campus/index（带 ?school=）→ tap FAB → post-topic（栈=2）→ 输入任意标题",
+      "action": "tap .post-header__back（post-topic.vue:278-280 → goBack :269-271）",
+      "expected": "uni.navigateBack 回到 subpackages/campus/campus/index（栈-1）；输入内容不残留（本页无草稿机制，全页无 setStorageSync 调用）；index 的 activeCategory 保持进入前值；无 Toast；console 无报错",
+      "evidence": "navigation：往返路由链 + console"
+    },
+    {
+      "id": "PT07",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "证伪：栈底（reLaunch 直达）点「取消」→ navigateBack 无 fail 兜底，页面卡死风险",
+      "tier": "critical",
+      "pre": "身份A mock 登录 → wx.reLaunch('/subpackages/campus/campus/post-topic?category=course_exchange')（页面栈=1，无上一页）",
+      "action": "tap .post-header__back 一次；等 ≥1s 后再 tap 一次",
+      "expected": "goBack 为裸 uni.navigateBack()、无 fail 回调（post-topic.vue:269-271）→ 栈=1 时navigateBack 静默失败：如实回填 ① 是否仍在 post-topic（栈顶 route 不变）② 是否出现任何可观测反馈（Toast/路由/DOM 变化，铁律要求 500ms 内有反馈）③ console 是否出现 navigateBack:fail 日志。对照口径：circles/post-topic 已为同类问题补 fail 兜底（circles/post-topic.vue:371-379，MP-R1-POSTTOPIC-102）→ 本页缺失该兜底即按 P2/Interaction 立案；执行员不得因「通常不会直链发布页」而降级",
+      "evidence": "critical：before（栈底首屏）+ after（两次点击后）截图 + 完整路由栈快照 + Toast 文案（应为无）+ console"
+    },
+    {
+      "id": "PT08",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "6 个分类 chip 逐个点选：单选语义（不出现多选中）",
+      "tier": "normal",
+      "pre": "同 PT01",
+      "action": "依次 tap 6 个 .category-option（post-topic.vue:299-317 → selectCategory :120-122），每次记录高亮集合",
+      "expected": "每次 tap 后**有且仅有**一个 chip 带 --selected（selectedCategory 为单值 ref :57）；文案与 key 映射一致（campus_activity→校园活动 等，campus.ts:171-178）；切换分类不清空已输入的标题/正文；无写请求产生；console 无报错",
+      "evidence": "normal：6 张 after 截图（高亮态）+ console"
+    },
+    {
+      "id": "PT09",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "标题输入框四态：正常 / 清空 / 超长（maxlength=50 截断）/ 特殊字符",
+      "tier": "normal",
+      "pre": "同 PT01（正文保持为空，单独观察标题通道）",
+      "action": "① 输入「周末组队去国博」→ ② 全清 → ③ 输入 80 字符长串 → ④ 输入「%22'<>&@#\\n中文 English」并回读实际值",
+      "expected": "① input.value 与 v-model 一致、发布钮因正文空仍为灰（canSubmit 需双非空，post-topic.vue:112-114）；② 清空后钮仍灰、无残留空格；③ 实际文本长度必须 =50（maxlength=\"50\" :329 截断），若 >50 说明绑定未生效；后端上限为 200（CampusController.java:454）→ 回填「前端更严」这一事实；④ 特殊字符原样保留、不触发 XSS 渲染（input 为原生控件）、不崩溃；每步 console 无报错",
+      "evidence": "normal：四态 after 截图 + 每步实际 title.length 实测值 + console"
+    },
+    {
+      "id": "PT10",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "正文 textarea 四态：正常 / 清空 / 超长（maxlength=500）/ 特殊字符 + 计数同步",
+      "tier": "normal",
+      "pre": "同 PT01（标题填一句合法文本）",
+      "action": "① 输入 30 字 → ② 清空 → ③ 输入 600 字 → ④ 输入含换行/制表/emoji/HTML 片段的 500 字内混合文本，每步读 .content-count 文本",
+      "expected": "计数文本恒为「<currentLength>/500」并随输入实时更新（post-topic.vue:108,:344-346）；① 计数=30 且 canSubmit=true → 顶部/底部按钮恢复实心绿（:112-114,:282-290,:398-408）；② 清空后计数 0、按钮回灰（content.trim() 判空）；③ 实际 textarea 长度必须=500（maxlength :341），计数不得变红（--over 分支 isOverLimit 不可达，见 PT12）；④ 换行/emoji 正常计入、不截断错位、不破图布局（min-height 240rpx :622-634）；console 无报错",
+      "evidence": "normal：四态 after 截图 + 每步 content.length 与计数文本实测值 + console"
+    },
+    {
+      "id": "PT11",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "网络超时自动重试与稳定幂等键的叠加效应：客户端可发 2 条而服务端只落 1 条（分列取证）",
+      "tier": "critical",
+      "pre": "REAL_ONLY：真实后端(8080) 在跑，用 DevTools/代理把 POST /campus/topics 的响应延迟抬到超过请求超时（触发 category=network 错误）或直接掐断首个响应 → 制造「客户端已超时重试、服务端其实已落库」的经典重叠。mock 轮无真实网络层 → 记 UNVERIFIED。唯一标题正文，与 PT16-PT20 的用串不重复",
+      "action": "tap 顶部「发布」一次（只点一次）→ 记录 network 面板该端点的全部请求条目与其 Idempotency-Key、状态码与时间间隔 → 等 ≥5s 后重新 GET /campus/topics 回读该标题条数",
+      "expected": "request 的重试只针对 category===network（services/http.ts:851-856），默认重试 1 次（constants/api.ts:17 DEFAULT_RETRY_COUNT=1）、指数退避 500ms 起（:20 + http.ts:867）→ 单次点击允许出现 2 条同名请求，且两条的 Idempotency-Key **必须相同**（key 由 url+body 稳定哈希生成 http.ts:262-274，不含时间戳）：这是该修复（R4-00168）的正向证据。断言两列：① 客户端层：请求条数（1 或 2）、两条 Key 字面值是否一致、各自状态码；若两条 Key 不同即说明稳定哈希失效（掺入了随机量），判 P1；若出现 ≥3 条即重试次数超上限，判 P2；② 服务端层：回读该标题落库条数必须=1（若=2 → 幂等未生效或首次请求实际未落库，回填两条 id/createdAt 并判 P1 重复发帖）；③ UI 层：只允许 1 次「发布成功」Toast 与 1 次 navigateBack（重试成功也算成功，不得双 Toast 双返回）；若重试耗尽仍失败则必须走 :257-263 展示可区分原因；console 允许超时/重试日志、不得有未捕获 rejection",
+      "evidence": "critical：点击前 before + 结果态 after 截图 + 路由链 + 全部 Toast 文案与条数 + console + network 明细表（每条 URL/Idempotency-Key 实值/状态码/发起时刻）+ 服务端回读条数与 id"
+    },
+    {
+      "id": "PT12",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "证伪「超字数拦截」：程序化注入 501 字才能触达 isOverLimit 静默分支，回填是否有任何提示",
+      "tier": "critical",
+      "pre": "同 PT01；标题填合法值。本用例走 automation evaluate 直接给组件 content 赋 501 字符（绕过 textarea 原生 maxlength），PT10-③ 先证明正常输入不可达该分支",
+      "action": "evaluate 置 content=501 字 → 读 .content-count 与 --over 类名 → tap 顶部「发布」→ 等 ≥1.5s 观察",
+      "expected": "isOverLimit=true（post-topic.vue:110）→ 计数文本「501/500」且颜色变错误色（:344 content-count--over + :650-652）；两枚发布钮因 canSubmit=false 变灰（:112-114）；即便强行 tap，submitTopic 在 isOverLimit 分支**静默 return**、无 Toast（:191-193）→ 与同族页面口径不一致（circles/post-topic.vue:297-300 会弹「内容不能超过500字」）；断言三列：① 客户端 POST /campus/topics 计数=0；② 服务端回读新增条数=0；③ 用户可感知反馈条数=0（如实记录，无反馈即按「静默禁用无提示」由判定员裁量，不得判通过）；store 层无超长校验（campus.ts:628-636 仅校验标题/正文非空）→ 与校园圈回复新增的 MAX_REPLY_LENGTH 守卫（campus.ts:712-715）形成不一致先例，回填为 ③ 号回归项的对照证据",
+      "evidence": "critical：注入后计数态 before + 点击后 after 截图 + 路由 + Toast 文案（应为无）+ console + network 写请求计数"
+    },
+    {
+      "id": "PT13",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "空提交（全空表单）：Toast「请输入标题」且零请求（MP-R1-CAMPUSPOST-001）",
+      "tier": "critical",
+      "pre": "同 PT01（标题、正文、图片、话题全空，未切分类）",
+      "action": "tap 顶部 .post-header__submit（post-topic.vue:282-290 → submitTopic :175-193）",
+      "expected": "500ms 内出现 Toast「请输入标题」（:181-184 ← campus.postTopic.errTitle，zh-CN.ts:3551）；不因 canSubmit=false 而被静默吞掉（首行只守卫 isSubmitting，:179）；POST /campus/topics 计数=0；页面停留本页、已填内容不变；isSubmitting 仍 false；console 无报错",
+      "evidence": "critical：before（空表单）+ after（Toast）截图 + 路由 + Toast 文案逐字 + console + network 写请求计数"
+    },
+    {
+      "id": "PT14",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "空提交（有标题无正文）：Toast「请输入内容」且零请求",
+      "tier": "critical",
+      "pre": "同 PT01，仅标题填「周末组队去国博」",
+      "action": "分别 tap 顶部「发布」与底部 .bottom-submit__btn 各一次",
+      "expected": "两次都命中 :186-189 分支 → Toast「请输入内容」（campus.postTopic.errContent，zh-CN.ts:3552）；两个入口共用同一 submitTopic（:287,:404）→ 行为必须一致；POST 计数=0；console 无报错；回填两次 Toast 文案与间隔",
+      "evidence": "critical：before + 两次 Toast after 截图 + 路由 + Toast 文案 + console + network 写请求计数"
+    },
+    {
+      "id": "PT15",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "有效发布（mock）：Toast「发布成功」+ 800ms 自动返回 + 列表顶插 1 条，全链路仅 1 次创建",
+      "tier": "critical",
+      "pre": "身份A mock 登录 → reLaunch post-topic?category=course_exchange；标题「R2-PT15-唯一标识串」+ 正文 30 字（含不可与 PT16 复用的随机后缀）",
+      "action": "tap 顶部「发布」一次 → 立即连拍（0/300/600/900/1500ms）观察 Toast 与返回时机 → 返回后数列表首条",
+      "expected": "Toast「发布成功」icon=success（post-topic.vue:248 ← campus.postTopic.publishSuccess，zh-CN.ts:3553）；800ms 后 uni.navigateBack（:252-256）；创建走 campus.ts:638-663 mock 分支本地 unshift（real 轮见 PT16）；回填三列：① 客户端 POST /campus/topics 真实网络请求条数（mock 轮应为 0，属预期，不得据此判「幂等已验证」）；② 返回后 campus/index 当前分类列表新增条数=1 且标题与提交一致、不重复；③ Toast 出现次数=1（多次=重复提交信号）；console 无报错",
+      "evidence": "critical：before（填好的表单）+ after（Toast + 返回列表首条）截图 + 路由链 + Toast 文案 + console + 列表条数/新增标题快照"
+    },
+    {
+      "id": "PT16",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "【重点回归②核心】REAL_ONLY 同内容二次提交：必须得到可区分的失败提示，不得静默",
+      "tier": "critical",
+      "pre": "REAL_ONLY：真实后端(8080) + guest-login 已认证本校身份 → 由 campus/index FAB 正常链路进入 post-topic（栈=2）。第一次发布成功后**不刷新小程序**，用完全相同的标题+正文（逐字符一致、无图片）再发一次；两次 content 必须与 PT17 用例互不重复以免串扰",
+      "action": "第一次：填表 → tap 发布 → 等返回（≥2s）。第二次：再次进入 post-topic → 填**完全相同**的标题与正文 → tap 发布 → 等 ≥2s，观察 Toast 与网络响应",
+      "expected": "第二次 POST /campus/topics 因幂等键相同（idem-POST-<hash(url|body)>，http.ts:273；body 逐字节相同→哈希相同）被 @Idempotent 拦截（CampusController.java:166-170 + IdempotentInterceptor.java:147-160）→ HTTP 409 / error=IDEMPOTENT_CONFLICT / message=「重复请求已被拦截，请勿使用相同的 Idempotency-Key」（IdempotencyException.java:22,29-30）。页面必须命中 catch 分支（post-topic.vue:257-263）：Toast 文案 = campusStore.errorMessage（=后端原文，campus.ts:687-689）→ **回填实际 Toast 全文**，判定要点：① 用户必须看到可区分的失败原因，出现「发布失败」泛化文案或无任何 Toast 即判 FAILED（静默）；② Toast 后 isSubmitting 必须复位为 false（:262），使「改一个字再发」可继续；③ 页面不得自动 navigateBack（:252-256 仅成功路径执行）；④ 服务端回读 GET /campus/topics 中该标题条数=1（不是 2）——这是「服务端去重生效」的唯一证据，不得用 Toast 条数替代",
+      "evidence": "critical：第一次成功 before/after + 第二次失败的 before/after 共 4 张截图 + 路由链（第二次应仍停留 post-topic）+ 两次 Toast 文案逐字 + console + network 两条请求的状态码/Idempotency-Key 头值/error.code/message 原文 + 服务端回读条数"
+    },
+    {
+      "id": "PT17",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "【重点回归②】REAL_ONLY 二次提交仅改 1 字：幂等键变化必须放行，不得被误吞",
+      "tier": "critical",
+      "pre": "REAL_ONLY：紧接 PT16 之后（同会话、同校、TTL 4h 内），把标题末字改为「。」或加 1 个字符",
+      "action": "填「与 PT16 仅差 1 字」的表单 → tap 发布 → 等 ≥2s",
+      "expected": "body 变化 → 哈希变化 → 新 Idempotency-Key（http.ts:262-274，已有手动 key 不覆盖）→ 后端放行 200；Toast「发布成功」；服务端回读该两标题共 2 条（各 1）；断言两列分开：① 客户端 POST 计数=1（不多发）；② 服务端回读新增条数=1；若本用例也返回 409 → 说明 key 生成把无关字段（如时间戳/随机量）漏入或 body 归一错误，判 FAILED 并回填两次请求的 Idempotency-Key 实值对比",
+      "evidence": "critical：before + after 截图 + 路由 + Toast 文案 + console + network（本次与前次 Idempotency-Key 头值对比、状态码）+ 服务端回读条数"
+    },
+    {
+      "id": "PT18",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "连点顶部「发布」×5：客户端多余请求计数与服务端落库条数分列断言（防幂等假通过）",
+      "tier": "critical",
+      "pre": "REAL_ONLY 优先（只有 real 轮能区分客户端守卫与服务端去重）；mock 轮同样跑一次并明确标注「仅验证客户端守卫」。表单内容与其他用例唯一不重复，避免与 PT16-PT17 串扰",
+      "action": "500ms 内对 .post-header__submit 快速 tap×5（rapidTap，逐次记录 tap 序号与时刻）",
+      "expected": "必须两列分开回填，不允许合并成一句「只提交 1 次」：① 【客户端层】network 面板 POST /campus/topics 请求条数、每次的 Idempotency-Key 头值是否相同、5 次 tap 中 handler 实际进入 submitTopic 主体的次数（首行 isSubmitting 守卫 post-topic.vue:179 生效证据）；若条数=1 → 客户端守卫已生效（此时服务端去重是否生效无法判定，需在报告注明）；若条数>1 → 客户端守卫失效，回填每条状态码（200/409 分布），409 计数即为幂等兜底次数；② 【服务端层】发布返回后重新 GET /campus/topics（real 轮）并按该唯一标题计数，落库条数必须=1；③ Toast「发布成功」出现次数=1、页面 navigateBack 只发生 1 次（成功路径不复位 isSubmitting :249-256，MP-R1-CAMPUSPOST-004）；console 无未捕获异常",
+      "evidence": "critical：before（填好的表单）+ after（返回列表）截图 + 完整路由链 + 全部 Toast 文案与条数 + console + network 5 次点击对应的请求明细表（URL/Key/状态码）+ 服务端回读条数"
+    },
+    {
+      "id": "PT19",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "连点底部「发布」大按钮×5（与顶部同一 handler 的第二入口）",
+      "tier": "critical",
+      "pre": "同 PT18（唯一标题内容，另起一组避免幂等串扰）",
+      "action": "滚动 .post-body 到底 → 500ms 内对 .bottom-submit__btn（post-topic.vue:398-408）快速 tap×5",
+      "expected": "与 PT18 同口径两列分开回填（① 客户端请求条数与 Idempotency-Key 一致性；② 服务端回读条数=1）；额外断言：底部按钮与顶部按钮共用 submitTopic（:404 vs :287）→ 两入口**不得各自提交一次**（若先点顶部再点底部共 2 次落库即判 FAILED）；发布中按钮文案变「发布中」（:406 ← campus.postTopic.submitPublishingBottom）且 --disabled 类移除后不应再吞正常点击；console 无报错",
+      "evidence": "critical：滚动到底 before + after 截图 + 路由 + Toast/按钮文案序列 + console + network 请求明细 + 服务端回读条数"
+    },
+    {
+      "id": "PT20",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "重复提交（成功 Toast 与 800ms 返回窗口内再点）：二次提交必须被吞（MP-R1-CAMPUSPOST-004）",
+      "tier": "critical",
+      "pre": "REAL_ONLY 优先；填唯一标题正文",
+      "action": "tap 顶部「发布」→ 看到「发布成功」Toast 后立刻（600ms 内，即返回前）再 tap 顶部与底部各一次",
+      "expected": "① 客户端层：成功路径不复位 isSubmitting（post-topic.vue:249-256）→ 窗口内两次 tap 应在 :179 首行 return → 无新增 POST 请求；回填窗口内请求增量（期望 0）；② 服务端层：窗口结束后重新 GET /campus/topics 按唯一标题回读，条数必须=1（若=2 即为重复发帖 P0/P1，并回填两条 id 与 createdAt）；③ Toast 只出现 1 次「发布成功」，第二次点击不得再出 Toast；④ 若客户端守卫被绕过（出现第 2 条请求），要求该请求因稳定幂等键返回 409 且用户看到可区分失败文案（与 PT16 同判据），不得静默；console 无报错",
+      "evidence": "critical：Toast 时刻 before + 二次点击后 after 截图 + 路由 + Toast 文案与次数 + console + network 窗口内请求增量 + 服务端回读条数"
+    },
+    {
+      "id": "PT21",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "选图与九宫格：隐私授权弹窗 → 计数 0/6→1/6 → 删除 × 回到 0/6",
+      "tier": "normal",
+      "pre": "身份A mock 登录 → post-topic（隐私协议未授权态：清 storage 中隐私同意键）",
+      "action": "tap .image-upload（post-topic.vue:362-373 → chooseImage :134-162）→ 隐私弹窗点「同意」→ 在系统选图器选 1 张 → 观察九宫格 → tap .image-item__remove（:358-360）",
+      "expected": "未授权时 ensurePrivacyAuthorized reject → Toast 走 campus.postTopic.privacyRequired（:143）；同意后 uni.chooseImage count=6-已有（:146-149）；成功回调把 tempFilePaths push 进 images（:150-152）→ 提示计数变「1/6」（:353）、九宫格出现 1 图与 × 删除钮；点 × 后 images splice（:165-167）→ 回「0/6」且「+」块重新出现（v-if images.length<MAX_IMAGES :363）；mock 轮本用例零真实上传请求（campus.ts:660-663 直接把本地路径入库），如实记录；console 无报错",
+      "evidence": "normal：授权弹窗/选图后/删除后 3 张 after 截图 + 路由 + Toast 文案 + console + network（应无 /media/upload）"
+    },
+    {
+      "id": "PT22",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "REAL_ONLY 多图上传的幂等键唯一性：同帖 2 张不同图必须都能传成（MP-R1-CAMPUSPOST-002 回归）",
+      "tier": "critical",
+      "pre": "REAL_ONLY：真实后端 + 相册准备 2 张内容不同的图；进入 post-topic 并填唯一标题正文",
+      "action": "连续选 2 张图（或一次多选 2 张）→ 补齐标题正文 → tap 发布 → 观察两次上传请求与最终结果",
+      "expected": "上传文件名必须带每图唯一量 post-topic-<ts>-<idx>.jpg（post-topic.vue:212-215 注释所指）→ 两次 POST /media/upload 的 Idempotency-Key 必须不同（因 body 中 name 参与哈希，http.ts:262-274）；两次均返回 200 与可访问 URL；断言两列：① 客户端上传请求条数=2 且 key 值互不相同（回填两个 key 实值）；② 服务端回读：创建出的话题 images 数组长度=2 且两个 URL 均可 GET 通（不得因恒定文件名让第 2 张撞 409「重复请求已被拦截」导致整帖失败）；若第 2 张返回 409 → 直接判 P1 回归（同 MP-R1-CAMPUSPOST-002 复发）；失败时必须有可区分 Toast（与 PT16 同判据）；console 无未捕获异常",
+      "evidence": "critical：选图后九宫格 before + 发布后 after（含话题详情/列表配图）截图 + 路由 + Toast 文案 + console + 两次 /media/upload 请求（URL/Key/状态码/响应 url）+ 服务端回读 images 数组"
+    },
+    {
+      "id": "PT23",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "配图达上限 6：第 7 次入口隐藏 + 越界提示插值正确（MP-R2-CAMPUSPOST-002 回归）",
+      "tier": "normal",
+      "pre": "身份A mock 登录 → post-topic；连续选满 6 张图",
+      "action": "选满 6 张后观察「+」块是否消失 → evaluate 直调 chooseImage 处理器（或在删除 1 张前反复触达）以走 :135-139 上限分支",
+      "expected": "images.length===6 时提示恒为「6/6」（post-topic.vue:353）、「+」块隐藏（v-if :363）；命中上限 Toast 文案必须把 {n} 替换为 6（:136-137 t('campus.postTopic.maxImages',{n:MAX_IMAGES})，MAX_IMAGES=UI_LIMITS.PHOTO_GALLERY_MAX=6 constants/limits.ts:29）→ **不得出现字面 {max} 或空串**（该插值曾错用 {max} 变量名，zh/en 现均为 {n}）；en-US 下同步核对；console 无报错",
+      "evidence": "normal：满 6 张态截图 + Toast 文案逐字（zh 与 en 各一次）+ console"
+    },
+    {
+      "id": "PT24",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "取消选图（用户主动）：不得弹「选择图片失败」Toast（MP-R2-CAMPUSPOST-005）",
+      "tier": "normal",
+      "pre": "身份A mock 登录 → post-topic（已授权）",
+      "action": "tap .image-upload → 在系统选图器点「取消」；随后再制造一次真实失败（拒绝相册权限后重试）",
+      "expected": "cancel 分支：errMsg 命中 /cancel/i → 不弹 Toast（post-topic.vue:153-160），images 不变、仍 0/6；真实失败分支（权限被拒）：必须弹「选择图片失败，请检查相册/相机权限」(:157-159) 且 console.error 留痕（:154）；两种路径都不崩溃；回填两次的 errMsg 原文",
+      "evidence": "normal：取消后 + 失败后 2 张 after 截图 + Toast 文案（取消应无）+ console + errMsg 原文"
+    },
+    {
+      "id": "PT25",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "匿名开关 switch：开/关两次切换的乐观语义与提交 payload 一致性",
+      "tier": "normal",
+      "pre": "同 PT01",
+      "action": "tap switch 开（post-topic.vue:389-393 @change → toggleAnonymous :127-129）→ 再 tap 关 → 再开并保持，随后填表提交一次（唯一标题）",
+      "expected": "switch checked 与 isAnonymous 双向一致（:390）；switch color 取 designTokens.color.brand[500]（:84,:391，小程序原生属性不支持 CSS 变量）；@change 每次只触发一次（不得出现抖动导致连翻）；提交 payload.isAnonymous 与最终 UI 态一致（real 轮回填 POST body；mock 轮决定作者名走「匿名校友」还是昵称，campus.ts:646-652）；无额外写请求；console 无报错",
+      "evidence": "normal：三态截图（开/关/最终开）+ 提交 body 快照 + Toast + console"
+    },
+    {
+      "id": "PT26",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "TopicSelector 搜索框四态：正常 / 清空 / 超长 / 特殊字符（300ms 防抖核对）",
+      "tier": "normal",
+      "pre": "同 PT01（TopicSelector 区块可见，组件 components/village/TopicSelector.vue）",
+      "action": "向 .topic-selector__search-input（TopicSelector.vue:232-240）依次：输入「校园」→ 清空 → 输入 200 字符 → 输入「%22'<>&@#」，每步观察热门话题列表",
+      "expected": "过滤按名称 includes（组件内 computed 过滤，TopicSelector.vue:242-254 filteredTopics）；「校园」→ 命中项集收窄且清空后恢复全量；空结果时显示「未找到」类空态文案（TopicSelector.vue:255-257 topicSelector.searchEmpty）而非空白；200 字符不破布局、不报错；特殊字符不误命中、不崩溃；组件搜索为 v-model 同步、无 300ms 防抖实现 → 如实回填实测延迟，交判定员裁量",
+      "evidence": "normal：四态 after 截图 + 各步命中条数 + console"
+    },
+    {
+      "id": "PT27",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "TopicSelector 话题选择：点选/取消/第 4 个上限 Toast/全部清除（最多 3 个）",
+      "tier": "normal",
+      "pre": "同 PT01（selectedTopics 初值 []，post-topic.vue:92）",
+      "action": "依次 tap 4 个 .topic-chip（TopicSelector.vue:246-256 → toggleTopic :107-127）→ tap 已选项取消 1 个 → tap「全部清除」（:200-210 clearAll）",
+      "expected": "选中计数文案随 modelValue 更新（:203-206 topicSelector.selectedCount n/max=3）；第 4 个 chip 点击被拒并弹 Toast（TopicSelector.vue:116-121 topicSelector.maxReached {max:3}）→ 文案中 {max} 必须被替换为 3；取消选中走 removeTopic splice（:130-140）后计数-1；clearAll 置空（:181）→ 回到「未选择话题」空态（:226-228 topicSelector.emptyTip）；父组件 v-model 同步（post-topic.vue:379）；无写请求；console 无报错",
+      "evidence": "normal：选中 3 个/上限 Toast/清空后 3 张 after 截图 + Toast 文案逐字 + console"
+    },
+    {
+      "id": "PT28",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "TopicSelector 自定义创建话题：空/纯空格/超长/特殊字符/# 前缀去重",
+      "tier": "normal",
+      "pre": "同 PT01",
+      "action": "在 .topic-selector__create-input（TopicSelector.vue:268-279）依次：留空 tap 创建 → 输入「   」tap → 输入 60 字符 tap → 输入「#已有话题名」tap（该话题已在热门列表）→ 输入「R2自定义话题xyz」tap",
+      "expected": "空与纯空格：createCustomTopic 早退、列表不变、不报错（组件内 trim 守卫）；60 字符：如实回填是否被截断/是否有提示（后端 tags 单项 @Size(max=20) CampusController.java:456 → 前端若既不截断也不提示即为契约缺口）；已存在话题：不得重复加入（去重）；合法新话题被加入并在已选区出现「#R2自定义话题xyz」；计数不超过 3；console 无报错",
+      "evidence": "normal：五步 after 截图 + 各步实际 modelValue 值清单 + console"
+    },
+    {
+      "id": "PT29",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "mock 模式话题标签以「#tag」拼进正文末尾；REAL_ONLY 模式走 tags 数组字段（两模式各一次）",
+      "tier": "critical",
+      "pre": "身份A mock 登录跑一次（PT30 之外独立唯一标题）；REAL_ONLY 轮再跑一次，选 2 个话题 + 输入 1 个自定义话题",
+      "action": "选 2-3 个话题 → 填标题正文 → tap 发布 → 回读创建结果正文与 tags",
+      "expected": "mock：finalContent = 正文 + 空行 + 「#tag1 #tag2」（post-topic.vue:221-231）→ 回读新话题 contentPreview 含 # 串、且不含 tags 字段；REAL_ONLY：tags 独立提交并做 ≤5 个、每项 ≤20 字截断（:233-245）→ 回填 POST body 的 tags 数组与后端回读值；断言两列：① 客户端 POST 条数=1；② 服务端回读该标题条数=1 且 tags/正文与所选一致（mock 轮此列记 N/A）；两模式的差异必须在报告里显式标注构建模式来源；console 无报错",
+      "evidence": "critical：before（已选话题态）+ after（创建结果与正文/tags）截图 + 路由 + Toast 文案 + console + 提交 body 快照 + 服务端回读（real）"
+    },
+    {
+      "id": "PT30",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "REAL_ONLY 发布失败（服务端 4xx）：Toast 展示后端原文且不自动返回、可立即改后重试",
+      "tier": "critical",
+      "pre": "REAL_ONLY：真实后端 + 已认证本校身份；制造失败：先按 PT16 用同内容占位使第二次返回 409，或用超 200 字标题（正常输入受 maxlength=50 限制，需 evaluate 注入）触发 400；两变体各跑一次",
+      "action": "提交 → 观察 Toast 与停留态 → 修改标题 1 字后再次提交",
+      "expected": "失败必须命中 post-topic.vue:257-263：Toast 文案=campusStore.errorMessage（campus.ts:687-689 把 error.message 透传，http.ts:594-604 buildError 取后端 message 字段）→ 回填原文，不得只显示「发布失败」（该兜底仅当 errorMessage 为空时使用 :259）；不触发 navigateBack（成功专属定时器 :252-256 不执行）；isSubmitting 复位（:262）→ 第二次提交（改 1 字，key 变化）必须成功；断言两列：① 客户端两次请求的状态码与 Idempotency-Key；② 服务端回读条数（第一次 0 增量、第二次 +1）；console 允许 4xx 日志、不得有未捕获 rejection；mock 轮不可构造 → 记 UNVERIFIED",
+      "evidence": "critical：失败 before/after + 重试成功 after 共 3 张截图 + 路由 + 两次 Toast 文案逐字 + console + network 明细（状态码/key/body）+ 服务端回读条数"
+    },
+    {
+      "id": "PT31",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "打开即返回：无副作用、无未清理定时器、再次进入表单为全新（本无草稿）",
+      "tier": "normal",
+      "pre": "同 PT01（栈=1 reLaunch）",
+      "action": "进入后 300ms 内改选分类 + 输入标题 → tap .post-header__back（栈底场景见 PT07，此处用栈=2 变体：由 campus/index 进入）→ 再重新进入",
+      "expected": "返回成功、无 Toast、无请求；重新进入后标题/正文/图片/话题/匿名全部为初值（post-topic.vue:57,:68-92 均为组件内 ref，无 storage 持久化）→ 与 village/post 的草稿机制形成口径差异，如实记录不判缺陷；onUnmounted 清理成功跳转定时器（:49-54，SubTask 1.5.2）→ 无「返回后 800ms 又触发一次 navigateBack」的过导航；console 无报错、无 Timer 相关告警",
+      "evidence": "normal：二次进入 after 截图 + 两段路由链 + console"
+    },
+    {
+      "id": "PT32",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "重复进出×3（每次填不同内容不提交）：状态不残留、内存/监听不累积",
+      "tier": "normal",
+      "pre": "同 PT01，由 campus/index 进入（栈=2）",
+      "action": "循环 3 次：进入 → 选不同分类 + 填不同标题 → tap 取消返回 → 再进入",
+      "expected": "每轮初值都回 default（分类高亮回 course_exchange、表单空）；每轮不产生任何 POST 请求（network 累计增量=0）；3 轮后 getCurrentPages 栈长稳定=2（不泄漏页面栈）；console 无累积错误/内存告警",
+      "evidence": "normal：每轮截图（3）+ 每轮路由 + network 累计计数 + console"
+    },
+    {
+      "id": "PT33",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "表单滚动到顶/底：内滚容器边界、header 常驻、底部按钮完整可见",
+      "tier": "noop",
+      "pre": "同 PT01，正文填 400 字使内容超屏",
+      "action": ".post-body（post-topic.vue:293 scroll-view）滚到底 → 回顶；数值回填",
+      "expected": "滚动只发生在 .post-body（容器 height:100% + overflow:hidden :429-441，MP-R1-CAMPUSPOST-101 修复：原整页滚动会把自定义 header 滚出视口）→ 滚动到底时底部「发布」大按钮完整可见可点（:398-408）、TopicSelector 与匿名行不被裁切；回顶后「取消/发布话题/发布」三元素完整、分类 chip 不顶入状态栏文字（padding-top 走 --statusbar :444-448 + useMenuButtonRect :34-35）；无白屏；scrollTop/scrollHeight 回填",
+      "evidence": "noop：执行日志（scrollTop、scrollHeight、底部按钮 rect）+ console；可免截图"
+    },
+    {
+      "id": "PT34",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "键盘弹起：textarea 聚焦后输入区不被遮挡、show-confirm-bar=false 无多余确认条",
+      "tier": "noop",
+      "pre": "同 PT01（正文聚焦前不滚动）",
+      "action": "tap .content-input 聚焦 → 输入 3 行文本 → 观察光标与键盘间距 → 收起键盘",
+      "expected": "cursor-spacing=\"20\"（post-topic.vue:337）生效：键盘弹起后 textarea 末行与键盘顶缘有可见间距；:show-confirm-bar=\"false\"（:342）→ 不出现微信默认的「完成」确认条；键盘弹起时顶部 header 与字数计数不重叠；收起后布局复位；console 无报错",
+      "evidence": "noop：键盘弹起/收起两张截图 + 执行日志（textarea rect 与键盘高度）+ console"
+    },
+    {
+      "id": "PT35",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "热区量测：取消 / 顶部发布 / 分类 chip / 图片删除 × / 底部发布（铁律 ≥88rpx）",
+      "tier": "noop",
+      "pre": "同 PT01；量测 .image-item__remove 需先选入 1 张图",
+      "action": "对 .post-header__back、.post-header__submit、.category-option、.image-item__remove、.bottom-submit__btn 逐个 boundingClientRect 量测",
+      "expected": "如实回填 rpx：取消 padding 12×20rpx + 28rpx 文字（post-topic.vue:455-473）、顶部发布 padding 14×32rpx min-width 80rpx（:481-491）、分类 chip padding 20×8rpx（:549-559）、图片删除 × 40×40rpx（:704-715，明显低于铁律 88rpx）、底部按钮整行（:810-820）；低于 88rpx 者交判定员按 R11 §5 裁量；执行员不得省略实测数值；无写请求",
+      "evidence": "noop：执行日志（各元素 width/height 数值表）；可免截图"
+    },
+    {
+      "id": "PT36",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "发布回流后新帖归属正确 Tab（MP-R2-CAMPUSINDEX-002(a) 回归）：当前分类即所选分类",
+      "tier": "critical",
+      "pre": "REAL_ONLY 优先（mock 需 school=北京大学 且分类过滤可辨）；由 campus/index 切到第 4 个分类「学习互助」(study_help) → tap FAB 进入本页",
+      "action": "确认本页预选分类=学习互助 → 填唯一标题正文 → tap 发布 → 返回后观察 index 停在哪个 Tab、新帖出现在哪个 Tab 列表",
+      "expected": "goToPostTopic 透传 encodeURIComponent(activeCategory)（campus/index:122-126）→ 本页首屏「学习互助」高亮（post-topic.vue:61-66）；发布成功后自动返回（:252-256）→ index 列表顶部出现新帖（campus.ts:683 unshift）且其 category=study_help；不得出现「新帖顶在别的 Tab 名下」（MP-R2-CAMPUSINDEX-002(a) 回归点）；断言两列：① 客户端 POST 条数=1；② 服务端/列表回读新帖的 category 字段实值=study_help、且其它 5 个 Tab 条数不变；Toast「发布成功」1 次；console 无报错",
+      "evidence": "critical：本页预选态 before + 回流后 index 列表 after 截图 + 路由链 + Toast 文案 + console + 新帖 category 实值（body + 回读）"
+    },
+    {
+      "id": "PT37",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "【并发修复·当前源码】未认证/审核中/驳回视角：页顶常驻 cert-banner + 提交被本地门禁拒且零必败请求",
+      "tier": "critical",
+      "pre": "REAL_ONLY：真实后端(8080) + guest-login **未校园认证**身份 → reLaunch '/subpackages/campus/campus/post-topic?category=course_exchange'（深链直达，绕开 index 的 FAB 权限闸）。第二变体：pending 身份；第三变体：已认证（banner 必须不出现）。mock 轮 resolveCertGate 恒 allowed（post-topic.vue:114-115）→ 无法构造，记 UNVERIFIED",
+      "action": "① 进入后观察页顶是否出现横幅与其按钮；② 填合法标题正文 → tap 发布 → 观察 Toast 与 network；③ tap 横幅「去认证」；④ 已认证变体重复 ①②；⑤ evaluate 在深链进入瞬间读 certGate 值（未取到状态应为 unknown 而非 denied）",
+      "expected": "① certGate='denied' 时渲染 .cert-banner（post-topic.vue:446-451），文案=campus.postTopic.certRequired「校园话题仅限本校已认证同学发布，请先完成校园认证」（zh-CN.ts:3576 / en-US.ts:3498）+ 「去认证」按钮；② 提交必须被本地拦截：submitTopic 在 isSubmitting/标题/正文/超长之后判 certGate==='denied' → Toast 同文案并 return（:302-305）→ **断言两列：① 客户端 POST /campus/topics 计数必须=0（不发必败请求，MP-R1-CAMPUSPOSTTOPIC-202）；② 服务端回读落库条数=0**；③ 「去认证」→ openAppPath(ROUTES.CAMPUS.CERTIFICATION)（:123-125），栈+1；④ 已认证时 banner 不渲染（v-if='denied'）、提交正常放行；⑤ 深链瞬间 certGate 先置 unknown 不拦（:135），仅当 getToken() 非空才补发 GET /campus/certification（:140-145，未登录不得被 401 劫持进登录流程 → 回填该请求条数=0）；pending/rejected 同样落 denied（resolveCertGate 只认 verified，:118-119）；取状态本身失败（errorMessage 非空）→ unknown 不拦（:117），须单独构造一次断网取证；console 无报错",
+      "evidence": "critical：banner 态 before + 被拒 Toast + 跳认证页 + 已认证对照 共 4 组截图 + 路由链 + 全部 Toast 文案 + certGate 实测值 + console + network（POST 计数必须 0、GET /campus/certification 条数）"
+    },
+    {
+      "id": "PT38",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "【并发修复·重点回归②当前口径】409 幂等冲突与 400 门禁的失败文案已由 store 归一化为可读且互不相同",
+      "tier": "critical",
+      "pre": "REAL_ONLY：真实后端。变体A（幂等）：同内容二次提交（与 PT16 同法，body 逐字符相同）；变体B（门禁）：以「已绑定学校但未认证」身份绕过前端判定直连 POST /campus/topics（evaluate 调 request，携带正常 Idempotency-Key）。mock 轮两通道均本地成功 → 记 UNVERIFIED",
+      "action": "A：第一次成功 → 第二次同内容提交 → 回填两次 Toast 全文；B：直连发一条必被私域门禁拒的请求（若可行），或在未认证视角下用 evaluate 强行把 certGate 置 allowed 后提交 → 回填 Toast 全文；随后各改 1 字重试一次",
+      "expected": "错误文案归一化位于 store 层 describeCampusWriteFailure（stores/campus.ts:325-335）：status===409 → storeErrors.campus.duplicateTopicSubmit「这条话题刚才已发布成功，请勿重复提交」（zh-CN.ts:3945 / en-US 对应键，位于 en-US.ts:3926 之后）；status===400 → storeErrors.campus.campusWriteForbidden「仅本校已认证同学可在校园圈发布或回复，请先完成校园认证并绑定学校」（zh-CN.ts:3944）；其它 → error.message 或 fallback（:332-334）。createCampusTopic 的 catch 在 campus.ts:741-745 调用它 → 页面 Toast（post-topic.vue:408-411 读 campusStore.errorMessage）必须逐字命中上述两句之一：① **A 与 B 的文案必须不同且可区分**（本轮 ② 的核心判据：不得都是「发布失败」也不得都引用后端被脱敏的「请求参数错误」，GlobalExceptionHandler 脱敏依据见 stores/campus.ts:319-323 注释）；② A 的措辞必须表达「首条已成功」而非「本次失败」→ 若 A 显示成失败语义即判 P2/Consistency；③ 断言两列：A 第一次 200 + 第二次 409 且两次 Idempotency-Key 实值相同（http.ts:262-274），服务端回读该标题条数=1；B 请求 400、服务端回读落库 0；④ 两次失败后 isSubmitting 均复位（:412）可改字重试，改字后 200 且回读 +1；console 允许 4xx 日志、不得有未捕获 rejection",
+      "evidence": "critical：A/B 各 before/after 截图 + 路由 + 四段 Toast 文案逐字（与 zh/en 期望串对齐表）+ console + network 明细（状态码/error.code/Idempotency-Key 实值对比/原始后端 message）+ 服务端回读条数"
+    },
+    {
+      "id": "PT39",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "【并发修复·当前源码】real 构建下配图整条链路关闭：图片区常驻说明 + 点「+」直接提示，不再产生上传请求与孤儿文件",
+      "tier": "critical",
+      "pre": "REAL_ONLY：真实后端 + 已认证本校身份（先满足 PT37 的 allowed）→ 由 campus/index FAB 进入本页。mock 构建下 imagesAccepted 恒真（post-topic.vue:70）→ 本用例在 mock 轮反向执行（必须仍能正常选图，即 PT20/PT21/PT22 的旧断言），real 轮执行下列断言",
+      "action": "① 观察图片区是否有常驻说明行；② tap「+」块（:524-535 → chooseImage :231-243）；③ 若仍想验证提交体：evaluate 向 images 塞入一个 URL 后填表发布一次 → 回读 body 与响应",
+      "expected": "① imagesAccepted=false 时图片区渲染常驻警示 .images-section__warn（:514-516）文案=campus.postTopic.imagesUnsupported「校园话题暂未开放配图，图片不会随话题保存」（zh-CN.ts:3578 / en-US.ts:3500）→ 必须**常驻可见**，不是只在点击时闪一个 Toast；② tap「+」→ 先命中 !imagesAccepted 分支 Toast 同文案并 return（:235-238）→ **不弹隐私授权、不弹系统选图器**；③ 断言两列：① 客户端 POST /media/upload 计数=0（整条上传链路由 CAMPUS_TOPIC_IMAGES_SUPPORTED 单点关闭，:64 + :315-319）、创建请求 body 是否仍带 images 字段须回填原文（后端 CreateCampusTopicRequest 无 images，CampusController.java:452-457 → 多传只被 Jackson 静默丢弃，见 :48-63 注释）；② 服务端回读该话题：无配图（与 UI 承诺一致），且**服务端不残留孤儿上传文件**（可用管理员只读核对或回填不可验证说明）；④ 发布成功仍是「发布成功」Toast 而非 PT38 的 contentMasked 分支；mock 轮反向断言：警示行不渲染、选图正常、PT22 的多图唯一文件名断言仍适用；console 无报错",
+      "evidence": "critical：图片区常驻警示 before + 点「+」Toast after + 发布后话题态 共 3 张截图 + 路由 + Toast 文案逐字（zh/en）+ console + network（/media/upload 计数与创建 body 原文）+ 服务端回读"
+    },
+    {
+      "id": "PT40",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "【并发修复·当前源码】real 下匿名开关不可生效：开启后同行文案原地替换为「以你的昵称公开」",
+      "tier": "normal",
+      "pre": "REAL_ONLY：真实后端 + 已认证本校身份 → 进入本页（PT37 的 allowed 前置）。mock 轮反向执行：开启匿名后说明文案必须仍是原 anonymousDesc（本地真实生效，post-topic.vue:160-168）",
+      "action": "tap 匿名 switch 开 → 读 .option-desc 文本与类名 → 关 → 再开；随后带匿名开启状态发布一次，回读创建话题的作者显示名与后端 isAnonymous 落库值",
+      "expected": "anonymousBlocked=!isMockMode && isAnonymous（:168）→ 开启后 .option-desc 文案替换为 campus.postTopic.anonymousUnsupported「校园话题暂未开放匿名发布，内容将以你的昵称公开」（:549-551，zh-CN.ts:3579 / en-US.ts:3501）并带 --warn 类；关闭后恢复原 anonymousDesc；行高与卡片结构不得变化（复用同一文案位）；断言两列：① 客户端创建请求 1 条、body.isAnonymous=true 原文回填；② 服务端回读该话题实际作者显示=本人昵称、isAnonymous=false（后端 RealCampusService 硬编码 false，依据见 :161-166 注释）→ 若 UI 已如实说明则判通过、若仍承诺匿名即判 P1/Consistency；mock 轮 author.name 应为「匿名校友」（campus.ts:646-652）；console 无报错",
+      "evidence": "normal：开/关两态文案截图 + 发布后话题作者区截图 + 路由 + body.isAnonymous 与回读值对照表 + console"
+    },
+    {
+      "id": "PT41",
+      "page": "subpackages/campus/campus/post-topic",
+      "title": "【并发修复·当前源码】敏感词静默替换的可观测性：回包正文≠提交正文时必须提示「部分文字已被自动屏蔽」",
+      "tier": "critical",
+      "pre": "REAL_ONLY：真实后端 + 已认证本校身份；正文含后端敏感词表内词汇（先用只读方式确认一个会被替换的词，避免瞎猜）。对照变体：完全正常的正文",
+      "action": "① 正文填入含敏感词的文本 → 发布 → 观察 Toast；② 返回后进入该话题详情/列表比对回显正文与提交原文；③ 用正常正文再发一次作对照",
+      "expected": "maskedBySensitiveFilter = !isMock && created!=null && created.contentPreview !== submittedContent（post-topic.vue:373-377）→ ① Toast 必须是 campus.postTopic.contentMasked「内容含敏感词，部分文字已被自动屏蔽」（:379-380，zh-CN.ts:3580 / en-US.ts:3502）而**不是**「发布成功」；② 列表/详情回显文本=后端替换后的文本（后端 filterWithLog 为静默替换，依据 :373-375 注释），须回填提交原文与回显文本的逐字差异；③ 正常正文走 else 分支 → Toast「发布成功」（:382）；断言两列：① 两次创建请求各 1 条、状态码 2xx、Key 不同（body 不同）；② 服务端回读落库正文=替换后文本、条数各 1；成功后仍 800ms navigateBack 且成功路径不复位 isSubmitting（:384-402）；mock 轮不做该断言（无敏感词服务，须标注 N/A）；console 无报错",
+      "evidence": "critical：敏感词提交 before + contentMasked Toast after + 回显正文比对截图 + 正常正文对照截图 + 路由 + 全部 Toast 文案 + 提交原文/回显文差异表 + console + network 两条明细 + 服务端回读"
+    }
+  ]
+}

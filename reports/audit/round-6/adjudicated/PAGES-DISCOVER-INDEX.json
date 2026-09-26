@@ -1,0 +1,333 @@
+{
+  "manifest": "PAGES-DISCOVER-INDEX",
+  "judged": 45,
+  "by": {
+    "VERIFIED": 0,
+    "FAILED": 0,
+    "UNVERIFIED": 30,
+    "UNVERIFIED_INSTRUMENT": 14,
+    "NOT_EVIDENCED": 1
+  },
+  "noEvidenceExcludedFromCompletion": 5,
+  "issues": [],
+  "cases": [
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC01",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC02",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读两个 .discover-header__tab-text（index.vue:270、:283）文本、aria-label、role/aria-selected 属性",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC03",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC04",
+      "verdict": "UNVERIFIED",
+      "reason": "部分期望项由非 class 探针承载（.nearbyEmptyTitle:absent），仅 .card 可核；证据不足以判三方一致",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC05",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读 .match-card__distance / __distance-text / __online / __online-dot / __online-text 的计算样式与文本；切 en-US 再读一次",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC06",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 检查 .match-info__intro 区域是否存在 ❝ 字形文本节点，读 .match-info__intro-quote 的 rect 与 background",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC07",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC08",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 在卡片上向右拖动 >SWIPE_THRESHOLD 后松手（SwipeGesture.ts:37-42 判定，常量见其 :4-7 导入）；另做向左、向上、向下各一次",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC09",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：swipe 无 element api，滑动手势未下发",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC10",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：network 请求计数、几何/热区实测数值（observed 无对应读数）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC11",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC12",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC13",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC14",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC15",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC16",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC17",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：network 请求计数（observed 无对应读数）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC18",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC19",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.openFilterDrawer)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC20",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC21",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC22",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ① 拖动下限滑块到最大（250）；② 拖动上限滑块到最小（120）；③ 两端各推到边界（120/250）；④ 尝试做出 min>max 的组合",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC23",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ① 依次点 4 个学历 chip（FilterDrawer.vue:702 toggleEducation）做 0→2→4→0 选择；② 依次点 4 个感情状态 chip（:725 toggleRelationship）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC24",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC25",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC26",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC27",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC28",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读 .discover-header__filter、两个 .discover-header__tab、.match-actions__item ×3、.discover-login-hint 的 rect 并换算 rpx；对各元素做边缘命",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC29",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：act:pullDown 抛 ERR uni is not defined，下拉刷新动作未真正下发",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC30",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读 .discover-login-hint（模板 index.vue:349-351）的 rect 与自定义 tabBar 顶边、中央浮岛顶边 rect；点该提示条 1 次",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC31",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读 .match-actions 三个 .match-actions__label 与「喜欢」圆钮的 rect 与 tabBar 顶边 rect；点击每个按钮验证可命中",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC32",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "dom 探针全部是非 class 令牌（把 i18n key / JS 标识符当选择器查）：.beginCheck:absent —— 该观察不能支撑任何判决",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC33",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC34",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC35",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：swipe 无 element api，滑动手势未下发",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC36",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读 .match-card__photo 渲染结果与 MatchInfo 区文本/rect",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC37",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC38",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 逐个点击：标题区 heart 图标、筛选钮、两个分段 Tab、卡片主体（点击而非滑动）、三键（跳过/打招呼/喜欢）、底部登录提示（若有）、错误横幅重试，逐一从点击起计时",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC39",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 逐态截图并标注构造方式与是否受构建模式限制",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC40",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC41",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC42",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC43",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ① 登录态读 .discover-quota / .discover-quota__pill / .discover-quota__text（index.vue:322-326）文本与 rect；② 连续滑动 5 张后再读一次；③ 游客态确",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC44",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读 .match-card-area（样式 index.vue:500-512：height:70vh / min-height:860rpx / max-height:1400rpx）与卡内 MatchCard 的 rect，计算卡片高 ",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-DISCOVER-INDEX/DC45",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读 .match-error / __text / __retry 与 .discover-header__tab-line 的计算样式，并与 theme token 表比对；切 en-US 复测一次",
+      "attempts": 1
+    }
+  ],
+  "notes": [
+    "DC37 期望点名「若模板仍引用 CheckinPopup 致编译期报错/白屏判 P0」：实测 DC37 与本页多帧正常渲染卡片与 Tab，无白屏、console 无编译错 → P0 前提不成立；签到入口是否残留属源码事实，DOM 探针无法承载，未据此改判。",
+    "裁定口径：三方一致=ops expected × exec observed/route/toast/console/evidence × 真打开的帧（round-6-tour 巡检帧含 zoom3x、round-6-interact 操作前后图）；复合键 manifest+caseId。",
+    "输入快照：.zcode/tmp/adjudicate/exec-results.snapshot.json（updatedAt 2026-09-25T15:28:18.856Z，509 行，gitSha 874ff52f）。执行轮仍在追加权威件，本文件只覆盖快照内已记录用例。",
+    "ERROR:timeout 尾注的帧一律按 NO-EVIDENCE 处置并计入 UNVERIFIED，不读作已取证；本清单该类 5 条已从完成度中排除。"
+  ]
+}

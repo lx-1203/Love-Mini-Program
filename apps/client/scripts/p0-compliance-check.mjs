@@ -96,6 +96,61 @@ function grepFiles(dir, pattern, extensions = [".java", ".vue", ".ts"]) {
 const checks = [];
 const issues = [];
 
+/**
+ * 剥 JSON 注释：必须按字符串状态走，不能用一条正则。
+ * 旧写法 `/\/\*[\s\S]*?\*\/|(^|[^:])\/\/.*$/gm` 在 src/manifest.json 上实测直接解析失败
+ * （`Unexpected token b in JSON at position 4`，因为文件里那段头注释被吃了半截、
+ * 留下 `build:* 不注入…` 当正文），而更糟的是这条异常原先不进 issues，门照样绿——
+ * "检查 5：requiredPrivateInfos 一致性"整条从未真正执行过（见 §53）。
+ * 正则版还会顺手咬字符串里的 `//`（如 "https://x"），所以这里改成字符级状态机。
+ */
+function stripJsonComments(text) {
+  let out = "";
+  let i = 0;
+  let inStr = false;
+  let quote = "";
+  while (i < text.length) {
+    const c = text[i];
+    const n = text[i + 1];
+    if (inStr) {
+      out += c;
+      if (c === "\\") { out += n || ""; i += 2; continue; }
+      if (c === quote) inStr = false;
+      i++;
+      continue;
+    }
+    if (c === '"' || c === "'") { inStr = true; quote = c; out += c; i++; continue; }
+    if (c === "/" && n === "*") { const j = text.indexOf("*/", i + 2); i = j < 0 ? text.length : j + 2; out += " "; continue; }
+    if (c === "/" && n === "/") { let j = i + 2; while (j < text.length && text[j] !== "\n") j++; i = j; out += " "; continue; }
+    out += c;
+    i++;
+  }
+  return out;
+}
+
+function parseJsonLoose(raw) {
+  const text = String(raw || "{}");
+  try {
+    return JSON.parse(stripJsonComments(text));
+  } catch (e) {
+    /* 状态机仍会在这里失败：manifest.json 的头注释里就写了 `/* … *\/` 这种字样，
+       于是"第一个 *\/ 结束注释"的规则被注释正文自己骗过一次（实测 position 5 留下 `build:* 不注入`）。
+       第二道防线按行洗：uni-app 这份 manifest 的注释行一律以 `*`、`/*`、`*\/` 或 `//` 开头，
+       洗掉后再解析；仍失败就带着两段文本的片段抛错，不再让异常悄悄过去（异常现已计入不通过）。 */
+    const scrubbed = text
+      .split("\n")
+      .filter((l) => !/^\s*(\*|\/\/|\/\*|\*\/)/.test(l))
+      .join("\n");
+    try {
+      return JSON.parse(scrubbed);
+    } catch (e2) {
+      throw new Error(
+        "manifest 注释剥离两次都失败：" + e2.message + " ／ 残段=" + JSON.stringify(scrubbed.slice(0, 90))
+      );
+    }
+  }
+}
+
 function check(id, name, level, fn) {
   try {
     const result = fn();
@@ -111,6 +166,10 @@ function check(id, name, level, fn) {
       status: "error",
       detail: `检查脚本异常: ${e.message}`,
     });
+    /* R6 收尾时补的：异常原先只进 checks 展示、不进 issues，于是"检查 5 解析 manifest 崩了"
+       照样整门绿——一条根本没执行的 P0-必选检查被当成通过了。
+       崩溃与被拒在验收上是同一件事：都不知道合规与否。所以异常一律计入 issues。 */
+    issues.push({ id, name, level, detail: `检查脚本异常（视同未通过）: ${e.message}` });
     issues.push({ id, name, level, detail: `脚本异常: ${e.message}` });
   }
 }
@@ -118,12 +177,7 @@ function check(id, name, level, fn) {
 // 2. __usePrivacyCheck__: true
 check("2", "__usePrivacyCheck__: true", "P0-必选", () => {
   // R11-G2：manifest.json 含注释（uni-app 允许），先剥注释再解析
-  const manifest = JSON.parse(
-    (readText(join(CLIENT_ROOT, "src", "manifest.json")) || "{}").replace(
-      /\/\*[\s\S]*?\*\/|(^|[^:])\/\/.*$/gm,
-      "$1"
-    )
-  );
+  const manifest = parseJsonLoose(readText(join(CLIENT_ROOT, "src", "manifest.json")));
   const value = manifest?.["mp-weixin"]?.["__usePrivacyCheck__"];
   // R11-G2：false 为 manifest 内书面豁免决策（2026-08-29：DevTools 隐私弹窗模拟会阻塞
   // 自动化回归；真机隐私授权由微信平台统一处理）。记录豁免而非 fail。
@@ -164,12 +218,7 @@ check("4", "ensurePrivacyAuthorized 调用点", "P0-必选", () => {
 // 5. requiredPrivateInfos 与实际使用一致
 check("5", "requiredPrivateInfos 与实际使用一致", "P0-必选", () => {
   // R11-G2：manifest.json 含注释（uni-app 允许），先剥注释再解析
-  const manifest = JSON.parse(
-    (readText(join(CLIENT_ROOT, "src", "manifest.json")) || "{}").replace(
-      /\/\*[\s\S]*?\*\/|(^|[^:])\/\/.*$/gm,
-      "$1"
-    )
-  );
+  const manifest = parseJsonLoose(readText(join(CLIENT_ROOT, "src", "manifest.json")));
   const declared = manifest?.["mp-weixin"]?.["requiredPrivateInfos"] || [];
   const sourceFiles = grepFiles(
     join(CLIENT_ROOT, "src"),
@@ -430,6 +479,10 @@ check("18", "用户注销机制", "P0-必选-待补", () => ({
 // ==================== 汇总输出 ====================
 
 const passed = checks.filter((c) => c.status === "pass").length;
+/* R6 收尾实测：`[5] requiredPrivateInfos 一致性` 这条 P0-必选检查一直在抛异常
+   （manifest 注释剥不干净），而 failed 只数 status==="fail"，异常态是 "error"，
+   于是一条从未真正执行的 P0 检查被算成"通过"。error 与 fail 在验收上同义：都不知道合不合规。 */
+const errored = checks.filter((c) => c.status === "error").length;
 const failed = checks.filter((c) => c.status === "fail").length;
 const manual = checks.filter((c) => c.status === "manual").length;
 const todo = checks.filter((c) => c.status === "todo").length;
@@ -459,7 +512,7 @@ console.log("=".repeat(60));
 console.log(`生成时间：${report.generatedAt}`);
 console.log(`总项数：${checks.length}`);
 console.log(`通过：${passed}`);
-console.log(`不通过：${failed}`);
+console.log(`不通过：${failed}${errored ? ` +异常 ${errored}` : ""}`);
 console.log(`需手动确认：${manual}`);
 console.log(`待补（P1）：${todo}`);
 console.log(`总体结论：${report.summary.overall}`);
@@ -474,3 +527,8 @@ if (issues.length > 0) {
   }
 }
 console.log("=".repeat(60));
+
+/* R6 收尾时补的第二层洞：本门**从来没有设过退出码**，node 一路跑到最后自然退 0，
+   所以"不通过 N 项"只会印在 stdout 里，CI 与任何 `&&` 链都拿不到失败信号——
+   `pnpm check:p0` 因此永远绿。现在：有 fail、有 error（异常态）、或 issues 非空即退 1。 */
+process.exit(failed > 0 || errored > 0 || issues.length > 0 ? 1 : 0);

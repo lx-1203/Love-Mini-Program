@@ -1163,7 +1163,7 @@ function openPrivacyPolicy() {
 .btn-primary {
   width: 100%;
   height: var(--btn-height-md);
-  border-radius: var(--r-xl);
+  border-radius: var(--r-full);
   background: var(--c-brand);
   display: flex;
   align-items: center;
@@ -1209,9 +1209,10 @@ function openPrivacyPolicy() {
 .btn-phone-quick {
   width: 100%;
   height: var(--btn-height-md);
-  border-radius: var(--r-xl);
+  border-radius: var(--r-full);
   background: var(--c-bg-container);
   border: 2rpx solid var(--c-border-default);
+  box-shadow: var(--card-shadow);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1254,13 +1255,12 @@ function openPrivacyPolicy() {
 
 /* MP-R2-PAGES-LOGIN-INDEX-008：.btn-secondary* 死样式已删（模板零引用） */
 
-/* 稍后再看按钮：浅灰描边，弱于主/次按钮 */
+/* 稍后再看按钮：浅灰填充无描边，弱于主/次按钮 */
 .btn-guest {
   width: 100%;
   height: var(--btn-height-md);
-  border-radius: var(--r-xl);
-  background: var(--c-bg-container);
-  border: 2rpx solid var(--c-neutral-200, #E8ECEA);
+  border-radius: var(--r-full);
+  background: var(--c-bg-surface);
   display: flex;
   align-items: center;
   justify-content: center;

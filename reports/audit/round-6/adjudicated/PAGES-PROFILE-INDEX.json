@@ -1,0 +1,318 @@
+{
+  "manifest": "PAGES-PROFILE-INDEX",
+  "judged": 45,
+  "by": {
+    "VERIFIED": 0,
+    "FAILED": 0,
+    "UNVERIFIED": 30,
+    "UNVERIFIED_INSTRUMENT": 9,
+    "NOT_EVIDENCED": 6
+  },
+  "noEvidenceExcludedFromCompletion": 8,
+  "issues": [],
+  "cases": [
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI01",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI02",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI03",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI04",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：network 请求计数（observed 无对应读数）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI05",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读 .nlp-footer-btn 的 rect 与自定义 tabBar 顶边 rect；从按钮中心与下半部各点一次",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI06",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 点 MyHeader 左上角第一枚图标 .my-header__icon--share（components/profile/mine/MyHeader.vue:41-43，本轮由 view+@tap=handleShare 改为 <but",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI07",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI08",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.profile-settings)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI09",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ① 点头像 .my-header__avatar（MyHeader.vue:47 → emit tapAvatar → onProfileShellAvatar :778-780 → handleAvatarTap :861-876）；② ",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI10",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 点菜单第 1 项（handleAvatarMenuSelect index :882-891）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI11",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI12",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ① chooseImage 面板点取消；② 构造 tempFilePaths 为空数组",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI13",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读头像区角标（index.vue:1929-1940）文本与样式",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI14",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI15",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI16",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读 MyCompletion（components/profile/mine/MyCompletion.vue:12-18）的百分比文本与进度条内层 width；点该卡（emit complete → onProfileShellCompl",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI17",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 依次点四格：我喜欢 / 喜欢我的 / 我赞 / 访客（MyStats.vue:24-33 → onProfileShellStatTap :809-821）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI18",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 依次点 likedMe / match / likes / visitors / chat（components/profile/mine/MyInteraction.vue:37 → onProfileShellInteractionTa",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI19",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ① 逐项点击四项；② 全页搜索是否存在「资料/动态」双 Tab 切换器并尝试切换；③ automation 触发 moreTap('posts')",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI20",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI21",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读「我的帖子」卡配图与相册缩略图的实际 src（页面边界 resolveMediaUrls，index.vue:664-676、:742）与渲染结果",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI22",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI23",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI24",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ① 点播放（index.vue:1718-1727 → handlePlayVoice :1345-1392）；② 播放中再点 4 次（切播放/暂停）；③ 失效 URL 播一次；④ 无语音态尝试点播放",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI25",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI26",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI27",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI28",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.invite-modal) ; tap(.invite-modal)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI29",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI30",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI31",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI32",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.greet-btn)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI33",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读 .profile-top-bar（index.vue:1847-1871）与其内 .profile-share、.profile-settings、MatchCountChip 的 rect，与微信胶囊 rect（--capsule-r",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI34",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.vip-card)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI35",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ① 点 VerificationBadge（index.vue:1957-1963 → handleVerificationClick :514）；② 点 CertBadgeRow（:1971-1974 → openCertSheet :5",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI36",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI37",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：act:pullDown 抛 ERR uni is not defined，下拉刷新动作未真正下发",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI38",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI39",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI40",
+      "verdict": "UNVERIFIED",
+      "reason": "部分期望项由非 class 探针承载（.options:absent），仅 .userId 可核；证据不足以判三方一致",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI41",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI42",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI43",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.profile-bg__edit)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI44",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 逐态截图，特别构造：加载失败 → ProfileShell 是否给「重试」入口并可恢复",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-PROFILE-INDEX/PFI45",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    }
+  ],
+  "notes": [
+    "PFI31 observed 含 act:navigateBack NAV_ERROR: Uncaught [object Object]，与栈底 navigateBack 同族，但用例页为 profile（tab 页）且无帧支持落点，按证据缺失处置。",
+    "裁定口径：三方一致=ops expected × exec observed/route/toast/console/evidence × 真打开的帧（round-6-tour 巡检帧含 zoom3x、round-6-interact 操作前后图）；复合键 manifest+caseId。",
+    "输入快照：.zcode/tmp/adjudicate/exec-results.snapshot.json（updatedAt 2026-09-25T15:28:18.856Z，509 行，gitSha 874ff52f）。执行轮仍在追加权威件，本文件只覆盖快照内已记录用例。",
+    "ERROR:timeout 尾注的帧一律按 NO-EVIDENCE 处置并计入 UNVERIFIED，不读作已取证；本清单该类 8 条已从完成度中排除。"
+  ]
+}

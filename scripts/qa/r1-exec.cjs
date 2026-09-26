@@ -48,7 +48,17 @@ const RESULTS_FILE = path.join(INTERACT_DIR, 'exec-results.json');
 const CKPT_FILE = path.join(REPO, 'tmp', 'qa', 'checkpoints', 'exec-R1.json');
 const LOCK_FILE = path.join(REPO, 'tmp', 'qa', 'locks', 'wechat-automation-9420.lock');
 const WS_ENDPOINT = 'ws://127.0.0.1:9420';
-const GIT_SHA = 'aefd8a72';
+// provenance 必须运行时取，不能写死：这里曾固定 'aefd8a72'，而当时 HEAD 已是 18c91ccf，
+// 于是整轮证据按 G6"同轮同 SHA"契约全部过期（D1 实测事故）。取不到就拒绝起跑，
+// 宁可不出证据，也不出一条对不上提交的证据。
+const GIT_SHA = (() => {
+  try {
+    return require('child_process').execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
+  } catch (e) {
+    console.error('[provenance] 取不到 gitSha：' + e.message);
+    process.exit(1);
+  }
+})();
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const now = () => new Date().toISOString();

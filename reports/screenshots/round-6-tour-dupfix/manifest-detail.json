@@ -1,0 +1,3856 @@
+{
+  "gitSha": "874ff52f",
+  "workflowVersion": "3.1",
+  "buildMode": "build:mp-weixin:mock",
+  "gitWorktreeDirtyPaths": 90,
+  "buildFingerprint": {
+    "buildMode": "build:mp-weixin:mock",
+    "mode": "mp-weixin-mock",
+    "apiMode": "mock",
+    "isShowcaseMode": false,
+    "membershipEnabled": false,
+    "readFrom": [
+      "apps/client/dist/build/mp-weixin/config/env.js",
+      "apps/client/dist/build/mp-weixin/config/showcase.js",
+      "apps/client/dist/build/mp-weixin/config/feature-flags.js"
+    ]
+  },
+  "generatedAt": "2026-09-26T00:26:59.334Z",
+  "shots": [
+    {
+      "page": "pages/nearby/index",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__默认.png",
+      "state": "默认",
+      "identity": "A",
+      "bytes": 137910,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "pages/nearby/index",
+      "routeStack": [
+        "pages/nearby/index"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "pages/nearby/index",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "0edcdd8975886c4a",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 4,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__默认__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__默认__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__默认__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "pages/nearby/index",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__滚动-中部.png",
+      "state": "滚动-中部",
+      "identity": "A",
+      "bytes": 141829,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "pages/nearby/index",
+      "routeStack": [
+        "pages/nearby/index"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "pages/nearby/index",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "70e675d61aa56b28",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 6,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__滚动-中部__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__滚动-中部__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__滚动-中部__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "pages/nearby/index",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__滚动-底部.png",
+      "state": "滚动-底部",
+      "identity": "A",
+      "bytes": 204683,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "pages/nearby/index",
+      "routeStack": [
+        "pages/nearby/index"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "pages/nearby/index",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "52037b3dcda910a9",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 6,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__滚动-底部__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__滚动-底部__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__滚动-底部__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "pages/nearby/index",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__交互后.png",
+      "state": "交互后",
+      "identity": "A",
+      "bytes": 137826,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "pages/nearby/index",
+      "routeStack": [
+        "pages/nearby/index"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "pages/nearby/index",
+      "routeDisagree": false,
+      "routeAtDecision": "pages/nearby/index",
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "3bbcca18535174ce",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 6,
+      "aliasLabel": false,
+      "interaction": {
+        "action": "tap 通用入口 [class*=\"card\"]",
+        "expect": "页内状态变化",
+        "observedRoute": "pages/nearby/index",
+        "applied": true
+      },
+      "interactionApplied": true,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__交互后__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__交互后__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__交互后__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__默认.png",
+      "state": "默认",
+      "identity": "A",
+      "bytes": 55623,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/village/village/publish",
+      "routeStack": [
+        "subpackages/village/village/publish"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/village/village/publish",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "ca8b8e38e8fd22aa",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 8,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__默认__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__默认__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__默认__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__交互后.png",
+      "state": "交互后",
+      "identity": "A",
+      "bytes": 56669,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/village/village/publish",
+      "routeStack": [
+        "subpackages/village/village/publish"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/village/village/publish",
+      "routeDisagree": false,
+      "routeAtDecision": "subpackages/village/village/publish",
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "62d27631cdf0ee83",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 8,
+      "aliasLabel": false,
+      "interaction": {
+        "action": "tap 通用入口 [class*=\"card\"]",
+        "expect": "页内状态变化",
+        "observedRoute": "subpackages/village/village/publish",
+        "applied": true
+      },
+      "interactionApplied": true,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__交互后__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__交互后__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__交互后__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__弹层态.png",
+      "state": "弹层态",
+      "identity": "A",
+      "bytes": 55676,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/village/village/publish",
+      "routeStack": [
+        "subpackages/village/village/publish"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/village/village/publish",
+      "routeDisagree": false,
+      "routeAtDecision": "subpackages/village/village/publish",
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "3d27ec7a6fc7d77f",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 8,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__弹层态__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__弹层态__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__弹层态__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__校验错误.png",
+      "state": "校验错误",
+      "identity": "A",
+      "bytes": 55646,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/village/village/publish",
+      "routeStack": [
+        "subpackages/village/village/publish"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/village/village/publish",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "25750541899ba254",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 8,
+      "aliasLabel": false,
+      "interaction": {
+        "action": "tap 提交按钮 [class*=\"submit\"]",
+        "expect": "行内错误/校验 toast",
+        "observedRoute": "subpackages/village/village/publish",
+        "applied": true
+      },
+      "interactionApplied": true,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__校验错误__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__校验错误__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__校验错误__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__键盘弹起-输入后.png",
+      "state": "键盘弹起-输入后",
+      "identity": "A",
+      "bytes": 55496,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/village/village/publish",
+      "routeStack": [
+        "subpackages/village/village/publish"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/village/village/publish",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "42bcb07489a0664b",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 9,
+      "aliasLabel": false,
+      "interaction": {
+        "action": "input 输入框 textarea",
+        "expect": "输入值上屏（桌面模拟器不渲染软键盘）",
+        "observedRoute": "subpackages/village/village/publish",
+        "applied": true
+      },
+      "interactionApplied": true,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__键盘弹起-输入后__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__键盘弹起-输入后__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__键盘弹起-输入后__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_post__默认.png",
+      "state": "默认",
+      "identity": "A",
+      "bytes": 66821,
+      "params": "?id=1",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/village/village/post",
+      "routeStack": [
+        "subpackages/village/village/post"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/village/village/post",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "4b56e2000c77e92d",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 10,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_post__默认__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_post__默认__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_post__默认__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_post__交互后.png",
+      "state": "交互后",
+      "identity": "A",
+      "bytes": 63189,
+      "params": "?id=1",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/village/village/post",
+      "routeStack": [
+        "subpackages/village/village/post"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/village/village/post",
+      "routeDisagree": false,
+      "routeAtDecision": "subpackages/village/village/post",
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "d86cb7301b07d302",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 10,
+      "aliasLabel": false,
+      "interaction": {
+        "action": "tap 通用入口 [class*=\"card\"]",
+        "expect": "页内状态变化",
+        "observedRoute": "subpackages/village/village/post",
+        "applied": true
+      },
+      "interactionApplied": true,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_post__交互后__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_post__交互后__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_post__交互后__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__默认.png",
+      "state": "默认",
+      "identity": "A",
+      "bytes": 195790,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/campus/campus/hub",
+      "routeStack": [
+        "subpackages/campus/campus/hub"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/campus/campus/hub",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "95927c67959f4d67",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 12,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__默认__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__默认__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__默认__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__滚动-中部.png",
+      "state": "滚动-中部",
+      "identity": "A",
+      "bytes": 228018,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/campus/campus/hub",
+      "routeStack": [
+        "subpackages/campus/campus/hub"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/campus/campus/hub",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "09b9431dcbffc94a",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 13,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__滚动-中部__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__滚动-中部__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__滚动-中部__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__滚动-底部.png",
+      "state": "滚动-底部",
+      "identity": "A",
+      "bytes": 217401,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/campus/campus/hub",
+      "routeStack": [
+        "subpackages/campus/campus/hub"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/campus/campus/hub",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "5f499207c80762c4",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 13,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__滚动-底部__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__滚动-底部__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__滚动-底部__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__交互后.png",
+      "state": "交互后",
+      "identity": "A",
+      "bytes": 195685,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/campus/campus/hub",
+      "routeStack": [
+        "subpackages/campus/campus/hub"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/campus/campus/hub",
+      "routeDisagree": false,
+      "routeAtDecision": "subpackages/campus/campus/hub",
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "8efcbe58c8051397",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 13,
+      "aliasLabel": false,
+      "interaction": {
+        "action": "tap 通用入口 [class*=\"card\"]",
+        "expect": "页内状态变化",
+        "observedRoute": "subpackages/campus/campus/hub",
+        "applied": true
+      },
+      "interactionApplied": true,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__交互后__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__交互后__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__交互后__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "pages/nearby/index",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__默认.png",
+      "state": "默认",
+      "identity": "B",
+      "bytes": 137982,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "pages/nearby/index",
+      "routeStack": [
+        "pages/nearby/index"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "pages/nearby/index",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "5f7b12e4e34c5309",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 16,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__默认__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__默认__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__默认__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "pages/nearby/index",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__滚动-中部.png",
+      "state": "滚动-中部",
+      "identity": "B",
+      "bytes": 141899,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "pages/nearby/index",
+      "routeStack": [
+        "pages/nearby/index"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "pages/nearby/index",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "c652a9e91e6987c8",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 17,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__滚动-中部__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__滚动-中部__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__滚动-中部__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "pages/nearby/index",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__滚动-底部.png",
+      "state": "滚动-底部",
+      "identity": "B",
+      "bytes": 204756,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "pages/nearby/index",
+      "routeStack": [
+        "pages/nearby/index"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "pages/nearby/index",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "84b839a734793d07",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 17,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__滚动-底部__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__滚动-底部__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__滚动-底部__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__默认.png",
+      "state": "默认",
+      "identity": "B",
+      "bytes": 55532,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/village/village/publish",
+      "routeStack": [
+        "subpackages/village/village/publish"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/village/village/publish",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "f4729f75e9d837fa",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 18,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__默认__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__默认__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__默认__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__交互后.png",
+      "state": "交互后",
+      "identity": "B",
+      "bytes": 57158,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/village/village/publish",
+      "routeStack": [
+        "subpackages/village/village/publish"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/village/village/publish",
+      "routeDisagree": false,
+      "routeAtDecision": "subpackages/village/village/publish",
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "6c35e8d7fd782c58",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 18,
+      "aliasLabel": false,
+      "interaction": {
+        "action": "tap 通用入口 [class*=\"card\"]",
+        "expect": "页内状态变化",
+        "observedRoute": "subpackages/village/village/publish",
+        "applied": true
+      },
+      "interactionApplied": true,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__交互后__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__交互后__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__交互后__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/village/village/publish",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__校验错误.png",
+      "state": "校验错误",
+      "identity": "B",
+      "bytes": 153320,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/village/village/index",
+      "routeStack": [
+        "subpackages/village/village/index"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/village/village/index",
+      "routeDisagree": false,
+      "routeDrift": true,
+      "stateFrame": false,
+      "countsTowardStateQuota": false,
+      "contentHash": "53d84213063b7de8",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 18,
+      "aliasLabel": false,
+      "interaction": {
+        "action": "tap 提交按钮 [class*=\"submit\"]",
+        "expect": "行内错误/校验 toast",
+        "observedRoute": "subpackages/village/village/index",
+        "applied": false
+      },
+      "interactionApplied": false,
+      "note": "本帧画面落在 subpackages/village/village/index，是跳出到别的页，不是 subpackages/village/village/publish 的页内状态",
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__校验错误__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__校验错误__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__校验错误__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_post__默认.png",
+      "state": "默认",
+      "identity": "B",
+      "bytes": 66890,
+      "params": "?id=1",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/village/village/post",
+      "routeStack": [
+        "subpackages/village/village/post"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/village/village/post",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "14ec49a7d7748bf5",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 19,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_post__默认__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_post__默认__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_post__默认__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/village/village/post",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_post__交互后.png",
+      "state": "交互后",
+      "identity": "B",
+      "bytes": 63215,
+      "params": "?id=1",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/village/village/post",
+      "routeStack": [
+        "subpackages/village/village/post"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/village/village/post",
+      "routeDisagree": false,
+      "routeAtDecision": "subpackages/village/village/post",
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "4eb7ce2767148cdc",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 19,
+      "aliasLabel": false,
+      "interaction": {
+        "action": "tap 通用入口 [class*=\"card\"]",
+        "expect": "页内状态变化",
+        "observedRoute": "subpackages/village/village/post",
+        "applied": true
+      },
+      "interactionApplied": true,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_post__交互后__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_post__交互后__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_post__交互后__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__默认.png",
+      "state": "默认",
+      "identity": "B",
+      "bytes": 195777,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/campus/campus/hub",
+      "routeStack": [
+        "subpackages/campus/campus/hub"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/campus/campus/hub",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "d04ef49b63f515f3",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 21,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__默认__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__默认__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__默认__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__滚动-中部.png",
+      "state": "滚动-中部",
+      "identity": "B",
+      "bytes": 228014,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/campus/campus/hub",
+      "routeStack": [
+        "subpackages/campus/campus/hub"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/campus/campus/hub",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "2528e578f6eb2a56",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 22,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__滚动-中部__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__滚动-中部__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__滚动-中部__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__滚动-底部.png",
+      "state": "滚动-底部",
+      "identity": "B",
+      "bytes": 217385,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/campus/campus/hub",
+      "routeStack": [
+        "subpackages/campus/campus/hub"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/campus/campus/hub",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "eb6d783ed8153a18",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 22,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__滚动-底部__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__滚动-底部__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__滚动-底部__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/campus/campus/hub",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__交互后.png",
+      "state": "交互后",
+      "identity": "B",
+      "bytes": 195822,
+      "params": "",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/campus/campus/hub",
+      "routeStack": [
+        "subpackages/campus/campus/hub"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/campus/campus/hub",
+      "routeDisagree": false,
+      "routeAtDecision": "subpackages/campus/campus/hub",
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "ac0d5aa520978a8f",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 22,
+      "aliasLabel": false,
+      "interaction": {
+        "action": "tap 通用入口 [class*=\"card\"]",
+        "expect": "页内状态变化",
+        "observedRoute": "subpackages/campus/campus/hub",
+        "applied": true
+      },
+      "interactionApplied": true,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__交互后__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__交互后__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__交互后__zoom3x-底部带.png"
+      ]
+    }
+  ],
+  "failures": [
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/post",
+      "suite": "S03",
+      "state": "弹层态",
+      "reason": "state-not-applied: 「弹层态」帧内容与本页已落盘帧「默认」字节完全相同（sha256:4b56e2000c77e92d，同图帧=默认）",
+      "action": "state-not-applied",
+      "dupOf": "默认",
+      "contentHash": "4b56e2000c77e92d",
+      "notSavedAs": "subpackages_village_village_post__弹层态.png",
+      "realContentOfFrame": "默认",
+      "aliasLabel": false,
+      "severity": "P2"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/campus/campus/hub",
+      "suite": "S05",
+      "state": "弹层态",
+      "reason": "state-not-applied: 「弹层态」帧内容与本页已落盘帧「交互后」字节完全相同（sha256:8efcbe58c8051397，同图帧=交互后）",
+      "action": "state-not-applied",
+      "dupOf": "交互后",
+      "contentHash": "8efcbe58c8051397",
+      "notSavedAs": "subpackages_campus_campus_hub__弹层态.png",
+      "realContentOfFrame": "交互后",
+      "aliasLabel": false,
+      "severity": "P2"
+    },
+    {
+      "identity": "B",
+      "page": "pages/nearby/index",
+      "suite": "S01",
+      "state": "交互后",
+      "reason": "state-not-applied: 「交互后」帧内容与本页已落盘帧「默认」字节完全相同（sha256:5f7b12e4e34c5309，同图帧=默认）",
+      "action": "state-not-applied",
+      "dupOf": "默认",
+      "contentHash": "5f7b12e4e34c5309",
+      "notSavedAs": "pages_nearby_index__交互后.png",
+      "realContentOfFrame": "默认",
+      "aliasLabel": false,
+      "severity": "P2"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/publish",
+      "suite": "S03",
+      "state": "弹层态",
+      "reason": "state-not-applied: 「弹层态」帧内容与本页已落盘帧「默认」字节完全相同（sha256:f4729f75e9d837fa，同图帧=默认）",
+      "action": "state-not-applied",
+      "dupOf": "默认",
+      "contentHash": "f4729f75e9d837fa",
+      "notSavedAs": "subpackages_village_village_publish__弹层态.png",
+      "realContentOfFrame": "默认",
+      "aliasLabel": false,
+      "severity": "P2"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/publish",
+      "suite": "S03",
+      "reason": "键盘弹起态不可达：未命中输入框（桌面模拟器不渲染软键盘）",
+      "severity": "P2"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/post",
+      "suite": "S03",
+      "state": "弹层态",
+      "reason": "state-not-applied: 「弹层态」帧内容与本页已落盘帧「默认」字节完全相同（sha256:14ec49a7d7748bf5，同图帧=默认）",
+      "action": "state-not-applied",
+      "dupOf": "默认",
+      "contentHash": "14ec49a7d7748bf5",
+      "notSavedAs": "subpackages_village_village_post__弹层态.png",
+      "realContentOfFrame": "默认",
+      "aliasLabel": false,
+      "severity": "P2"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/campus/campus/hub",
+      "suite": "S05",
+      "state": "弹层态",
+      "reason": "state-not-applied: 「弹层态」帧内容与本页已落盘帧「交互后」字节完全相同（sha256:ac0d5aa520978a8f，同图帧=交互后）",
+      "action": "state-not-applied",
+      "dupOf": "交互后",
+      "contentHash": "ac0d5aa520978a8f",
+      "notSavedAs": "subpackages_campus_campus_hub__弹层态.png",
+      "realContentOfFrame": "交互后",
+      "aliasLabel": false,
+      "severity": "P2"
+    }
+  ],
+  "suiteLog": [],
+  "stateNotApplied": [
+    {
+      "at": "2026-09-26T00:20:11.906Z",
+      "identity": "A",
+      "page": "subpackages/village/village/post",
+      "suite": "S03",
+      "state": "弹层态",
+      "reason": "state-not-applied: 「弹层态」帧内容与本页已落盘帧「默认」字节完全相同（sha256:4b56e2000c77e92d，同图帧=默认）",
+      "action": "state-not-applied",
+      "dupOf": "默认",
+      "contentHash": "4b56e2000c77e92d",
+      "notSavedAs": "subpackages_village_village_post__弹层态.png",
+      "realContentOfFrame": "默认",
+      "aliasLabel": false,
+      "severity": "P2"
+    },
+    {
+      "at": "2026-09-26T00:21:51.058Z",
+      "identity": "A",
+      "page": "subpackages/campus/campus/hub",
+      "suite": "S05",
+      "state": "弹层态",
+      "reason": "state-not-applied: 「弹层态」帧内容与本页已落盘帧「交互后」字节完全相同（sha256:8efcbe58c8051397，同图帧=交互后）",
+      "action": "state-not-applied",
+      "dupOf": "交互后",
+      "contentHash": "8efcbe58c8051397",
+      "notSavedAs": "subpackages_campus_campus_hub__弹层态.png",
+      "realContentOfFrame": "交互后",
+      "aliasLabel": false,
+      "severity": "P2"
+    },
+    {
+      "at": "2026-09-26T00:23:28.730Z",
+      "identity": "B",
+      "page": "pages/nearby/index",
+      "suite": "S01",
+      "state": "交互后",
+      "reason": "state-not-applied: 「交互后」帧内容与本页已落盘帧「默认」字节完全相同（sha256:5f7b12e4e34c5309，同图帧=默认）",
+      "action": "state-not-applied",
+      "dupOf": "默认",
+      "contentHash": "5f7b12e4e34c5309",
+      "notSavedAs": "pages_nearby_index__交互后.png",
+      "realContentOfFrame": "默认",
+      "aliasLabel": false,
+      "severity": "P2"
+    },
+    {
+      "at": "2026-09-26T00:24:18.175Z",
+      "identity": "B",
+      "page": "subpackages/village/village/publish",
+      "suite": "S03",
+      "state": "弹层态",
+      "reason": "state-not-applied: 「弹层态」帧内容与本页已落盘帧「默认」字节完全相同（sha256:f4729f75e9d837fa，同图帧=默认）",
+      "action": "state-not-applied",
+      "dupOf": "默认",
+      "contentHash": "f4729f75e9d837fa",
+      "notSavedAs": "subpackages_village_village_publish__弹层态.png",
+      "realContentOfFrame": "默认",
+      "aliasLabel": false,
+      "severity": "P2"
+    },
+    {
+      "at": "2026-09-26T00:25:18.961Z",
+      "identity": "B",
+      "page": "subpackages/village/village/post",
+      "suite": "S03",
+      "state": "弹层态",
+      "reason": "state-not-applied: 「弹层态」帧内容与本页已落盘帧「默认」字节完全相同（sha256:14ec49a7d7748bf5，同图帧=默认）",
+      "action": "state-not-applied",
+      "dupOf": "默认",
+      "contentHash": "14ec49a7d7748bf5",
+      "notSavedAs": "subpackages_village_village_post__弹层态.png",
+      "realContentOfFrame": "默认",
+      "aliasLabel": false,
+      "severity": "P2"
+    },
+    {
+      "at": "2026-09-26T00:26:58.077Z",
+      "identity": "B",
+      "page": "subpackages/campus/campus/hub",
+      "suite": "S05",
+      "state": "弹层态",
+      "reason": "state-not-applied: 「弹层态」帧内容与本页已落盘帧「交互后」字节完全相同（sha256:ac0d5aa520978a8f，同图帧=交互后）",
+      "action": "state-not-applied",
+      "dupOf": "交互后",
+      "contentHash": "ac0d5aa520978a8f",
+      "notSavedAs": "subpackages_campus_campus_hub__弹层态.png",
+      "realContentOfFrame": "交互后",
+      "aliasLabel": false,
+      "severity": "P2"
+    }
+  ],
+  "routeDrifts": [
+    {
+      "at": "2026-09-26T00:24:29.589Z",
+      "identity": "B",
+      "page": "subpackages/village/village/publish",
+      "suite": "S03",
+      "state": "校验错误",
+      "route": "subpackages/village/village/index",
+      "routeStack": [
+        "subpackages/village/village/index"
+      ],
+      "framePath": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__校验错误.png",
+      "action": "tap 提交按钮 [class*=\"submit\"]",
+      "routeFromCurrentPage": "subpackages/village/village/index",
+      "routeDisagree": false,
+      "reason": "校验错误（tap 提交按钮 [class*=\"submit\"]） 落点在 subpackages/village/village/index，非目标页 subpackages/village/village/publish（文件名已带落点路由；不得当作页内状态生效证据）",
+      "severity": "P3"
+    }
+  ],
+  "zoomFrames": [
+    {
+      "identity": "A",
+      "page": "pages/nearby/index",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__默认__zoom3x-顶部带.png",
+      "bytes": 21557,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "0edcdd8975886c4a"
+    },
+    {
+      "identity": "A",
+      "page": "pages/nearby/index",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__默认__zoom3x-正文带.png",
+      "bytes": 75882,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "0edcdd8975886c4a"
+    },
+    {
+      "identity": "A",
+      "page": "pages/nearby/index",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__默认__zoom3x-底部带.png",
+      "bytes": 46574,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "0edcdd8975886c4a"
+    },
+    {
+      "identity": "A",
+      "page": "pages/nearby/index",
+      "state": "滚动-中部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__滚动-中部__zoom3x-顶部带.png",
+      "bytes": 29215,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "70e675d61aa56b28"
+    },
+    {
+      "identity": "A",
+      "page": "pages/nearby/index",
+      "state": "滚动-中部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__滚动-中部__zoom3x-正文带.png",
+      "bytes": 49486,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "70e675d61aa56b28"
+    },
+    {
+      "identity": "A",
+      "page": "pages/nearby/index",
+      "state": "滚动-中部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__滚动-中部__zoom3x-底部带.png",
+      "bytes": 75262,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "70e675d61aa56b28"
+    },
+    {
+      "identity": "A",
+      "page": "pages/nearby/index",
+      "state": "滚动-底部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__滚动-底部__zoom3x-顶部带.png",
+      "bytes": 43510,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "52037b3dcda910a9"
+    },
+    {
+      "identity": "A",
+      "page": "pages/nearby/index",
+      "state": "滚动-底部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__滚动-底部__zoom3x-正文带.png",
+      "bytes": 89414,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "52037b3dcda910a9"
+    },
+    {
+      "identity": "A",
+      "page": "pages/nearby/index",
+      "state": "滚动-底部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__滚动-底部__zoom3x-底部带.png",
+      "bytes": 104080,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "52037b3dcda910a9"
+    },
+    {
+      "identity": "A",
+      "page": "pages/nearby/index",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__交互后__zoom3x-顶部带.png",
+      "bytes": 21453,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "3bbcca18535174ce"
+    },
+    {
+      "identity": "A",
+      "page": "pages/nearby/index",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__交互后__zoom3x-正文带.png",
+      "bytes": 75882,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "3bbcca18535174ce"
+    },
+    {
+      "identity": "A",
+      "page": "pages/nearby/index",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/pages_nearby_index__交互后__zoom3x-底部带.png",
+      "bytes": 46574,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "3bbcca18535174ce"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/publish",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__默认__zoom3x-顶部带.png",
+      "bytes": 14898,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "ca8b8e38e8fd22aa"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/publish",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__默认__zoom3x-正文带.png",
+      "bytes": 9392,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "ca8b8e38e8fd22aa"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/publish",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__默认__zoom3x-底部带.png",
+      "bytes": 40708,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "ca8b8e38e8fd22aa"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/publish",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__交互后__zoom3x-顶部带.png",
+      "bytes": 16070,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "62d27631cdf0ee83"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/publish",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__交互后__zoom3x-正文带.png",
+      "bytes": 10959,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "62d27631cdf0ee83"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/publish",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__交互后__zoom3x-底部带.png",
+      "bytes": 34858,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "62d27631cdf0ee83"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/publish",
+      "state": "弹层态",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__弹层态__zoom3x-顶部带.png",
+      "bytes": 15026,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "3d27ec7a6fc7d77f"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/publish",
+      "state": "弹层态",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__弹层态__zoom3x-正文带.png",
+      "bytes": 9392,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "3d27ec7a6fc7d77f"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/publish",
+      "state": "弹层态",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__弹层态__zoom3x-底部带.png",
+      "bytes": 40708,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "3d27ec7a6fc7d77f"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/publish",
+      "state": "校验错误",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__校验错误__zoom3x-顶部带.png",
+      "bytes": 14915,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "25750541899ba254"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/publish",
+      "state": "校验错误",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__校验错误__zoom3x-正文带.png",
+      "bytes": 9392,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "25750541899ba254"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/publish",
+      "state": "校验错误",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__校验错误__zoom3x-底部带.png",
+      "bytes": 40692,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "25750541899ba254"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/publish",
+      "state": "键盘弹起-输入后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__键盘弹起-输入后__zoom3x-顶部带.png",
+      "bytes": 15243,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "42bcb07489a0664b"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/publish",
+      "state": "键盘弹起-输入后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__键盘弹起-输入后__zoom3x-正文带.png",
+      "bytes": 9389,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "42bcb07489a0664b"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/publish",
+      "state": "键盘弹起-输入后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_publish__键盘弹起-输入后__zoom3x-底部带.png",
+      "bytes": 40708,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "42bcb07489a0664b"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/post",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_post__默认__zoom3x-顶部带.png",
+      "bytes": 17417,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "4b56e2000c77e92d"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/post",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_post__默认__zoom3x-正文带.png",
+      "bytes": 19287,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "4b56e2000c77e92d"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/post",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_post__默认__zoom3x-底部带.png",
+      "bytes": 40727,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "4b56e2000c77e92d"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/post",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_post__交互后__zoom3x-顶部带.png",
+      "bytes": 17229,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "d86cb7301b07d302"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/post",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_post__交互后__zoom3x-正文带.png",
+      "bytes": 17163,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "d86cb7301b07d302"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/village/village/post",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_village_village_post__交互后__zoom3x-底部带.png",
+      "bytes": 35486,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "d86cb7301b07d302"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/campus/campus/hub",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__默认__zoom3x-顶部带.png",
+      "bytes": 23318,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "95927c67959f4d67"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/campus/campus/hub",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__默认__zoom3x-正文带.png",
+      "bytes": 91997,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "95927c67959f4d67"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/campus/campus/hub",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__默认__zoom3x-底部带.png",
+      "bytes": 107903,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "95927c67959f4d67"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/campus/campus/hub",
+      "state": "滚动-中部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__滚动-中部__zoom3x-顶部带.png",
+      "bytes": 47389,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "09b9431dcbffc94a"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/campus/campus/hub",
+      "state": "滚动-中部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__滚动-中部__zoom3x-正文带.png",
+      "bytes": 92745,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "09b9431dcbffc94a"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/campus/campus/hub",
+      "state": "滚动-中部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__滚动-中部__zoom3x-底部带.png",
+      "bytes": 98941,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "09b9431dcbffc94a"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/campus/campus/hub",
+      "state": "滚动-底部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__滚动-底部__zoom3x-顶部带.png",
+      "bytes": 50341,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "5f499207c80762c4"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/campus/campus/hub",
+      "state": "滚动-底部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__滚动-底部__zoom3x-正文带.png",
+      "bytes": 105829,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "5f499207c80762c4"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/campus/campus/hub",
+      "state": "滚动-底部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__滚动-底部__zoom3x-底部带.png",
+      "bytes": 94510,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "5f499207c80762c4"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/campus/campus/hub",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__交互后__zoom3x-顶部带.png",
+      "bytes": 23144,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "8efcbe58c8051397"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/campus/campus/hub",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__交互后__zoom3x-正文带.png",
+      "bytes": 91997,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "8efcbe58c8051397"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/campus/campus/hub",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/A/subpackages_campus_campus_hub__交互后__zoom3x-底部带.png",
+      "bytes": 107903,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "8efcbe58c8051397"
+    },
+    {
+      "identity": "B",
+      "page": "pages/nearby/index",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__默认__zoom3x-顶部带.png",
+      "bytes": 21615,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "5f7b12e4e34c5309"
+    },
+    {
+      "identity": "B",
+      "page": "pages/nearby/index",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__默认__zoom3x-正文带.png",
+      "bytes": 75882,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "5f7b12e4e34c5309"
+    },
+    {
+      "identity": "B",
+      "page": "pages/nearby/index",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__默认__zoom3x-底部带.png",
+      "bytes": 46574,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "5f7b12e4e34c5309"
+    },
+    {
+      "identity": "B",
+      "page": "pages/nearby/index",
+      "state": "滚动-中部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__滚动-中部__zoom3x-顶部带.png",
+      "bytes": 29293,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "c652a9e91e6987c8"
+    },
+    {
+      "identity": "B",
+      "page": "pages/nearby/index",
+      "state": "滚动-中部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__滚动-中部__zoom3x-正文带.png",
+      "bytes": 49486,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "c652a9e91e6987c8"
+    },
+    {
+      "identity": "B",
+      "page": "pages/nearby/index",
+      "state": "滚动-中部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__滚动-中部__zoom3x-底部带.png",
+      "bytes": 75262,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "c652a9e91e6987c8"
+    },
+    {
+      "identity": "B",
+      "page": "pages/nearby/index",
+      "state": "滚动-底部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__滚动-底部__zoom3x-顶部带.png",
+      "bytes": 43597,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "84b839a734793d07"
+    },
+    {
+      "identity": "B",
+      "page": "pages/nearby/index",
+      "state": "滚动-底部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__滚动-底部__zoom3x-正文带.png",
+      "bytes": 89414,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "84b839a734793d07"
+    },
+    {
+      "identity": "B",
+      "page": "pages/nearby/index",
+      "state": "滚动-底部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/pages_nearby_index__滚动-底部__zoom3x-底部带.png",
+      "bytes": 104080,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "84b839a734793d07"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/publish",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__默认__zoom3x-顶部带.png",
+      "bytes": 15337,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "f4729f75e9d837fa"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/publish",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__默认__zoom3x-正文带.png",
+      "bytes": 9389,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "f4729f75e9d837fa"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/publish",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__默认__zoom3x-底部带.png",
+      "bytes": 40708,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "f4729f75e9d837fa"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/publish",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__交互后__zoom3x-顶部带.png",
+      "bytes": 16589,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "6c35e8d7fd782c58"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/publish",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__交互后__zoom3x-正文带.png",
+      "bytes": 11022,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "6c35e8d7fd782c58"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/publish",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__交互后__zoom3x-底部带.png",
+      "bytes": 34858,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "6c35e8d7fd782c58"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/publish",
+      "state": "校验错误",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__校验错误__zoom3x-顶部带.png",
+      "bytes": 21111,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "53d84213063b7de8"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/publish",
+      "state": "校验错误",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__校验错误__zoom3x-正文带.png",
+      "bytes": 84550,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "53d84213063b7de8"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/publish",
+      "state": "校验错误",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_publish__校验错误__zoom3x-底部带.png",
+      "bytes": 84336,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "53d84213063b7de8"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/post",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_post__默认__zoom3x-顶部带.png",
+      "bytes": 17471,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "14ec49a7d7748bf5"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/post",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_post__默认__zoom3x-正文带.png",
+      "bytes": 19287,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "14ec49a7d7748bf5"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/post",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_post__默认__zoom3x-底部带.png",
+      "bytes": 40727,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "14ec49a7d7748bf5"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/post",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_post__交互后__zoom3x-顶部带.png",
+      "bytes": 17261,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "4eb7ce2767148cdc"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/post",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_post__交互后__zoom3x-正文带.png",
+      "bytes": 17163,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "4eb7ce2767148cdc"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/village/village/post",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_village_village_post__交互后__zoom3x-底部带.png",
+      "bytes": 35486,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "4eb7ce2767148cdc"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/campus/campus/hub",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__默认__zoom3x-顶部带.png",
+      "bytes": 23283,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "d04ef49b63f515f3"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/campus/campus/hub",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__默认__zoom3x-正文带.png",
+      "bytes": 91997,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "d04ef49b63f515f3"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/campus/campus/hub",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__默认__zoom3x-底部带.png",
+      "bytes": 107903,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "d04ef49b63f515f3"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/campus/campus/hub",
+      "state": "滚动-中部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__滚动-中部__zoom3x-顶部带.png",
+      "bytes": 47383,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "2528e578f6eb2a56"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/campus/campus/hub",
+      "state": "滚动-中部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__滚动-中部__zoom3x-正文带.png",
+      "bytes": 92745,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "2528e578f6eb2a56"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/campus/campus/hub",
+      "state": "滚动-中部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__滚动-中部__zoom3x-底部带.png",
+      "bytes": 98941,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "2528e578f6eb2a56"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/campus/campus/hub",
+      "state": "滚动-底部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__滚动-底部__zoom3x-顶部带.png",
+      "bytes": 50307,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "eb6d783ed8153a18"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/campus/campus/hub",
+      "state": "滚动-底部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__滚动-底部__zoom3x-正文带.png",
+      "bytes": 105829,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "eb6d783ed8153a18"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/campus/campus/hub",
+      "state": "滚动-底部",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__滚动-底部__zoom3x-底部带.png",
+      "bytes": 94510,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "eb6d783ed8153a18"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/campus/campus/hub",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__交互后__zoom3x-顶部带.png",
+      "bytes": 23341,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "ac0d5aa520978a8f"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/campus/campus/hub",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__交互后__zoom3x-正文带.png",
+      "bytes": 91997,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "ac0d5aa520978a8f"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/campus/campus/hub",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-dupfix/B/subpackages_campus_campus_hub__交互后__zoom3x-底部带.png",
+      "bytes": 107903,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "ac0d5aa520978a8f"
+    }
+  ],
+  "permissionSuppression": {
+    "mockMethods": [
+      "getLocation",
+      "chooseLocation",
+      "authorize",
+      "getSetting",
+      "requirePrivacyAuthorize",
+      "getPrivacySetting"
+    ],
+    "notes": {
+      "getLocation": "抑制 wx.getLocation 触发的 scope.userLocation 原生授权框（标题「获取你的位置信息」，描述文案实取自 apps/client/src/manifest.json:38-39，:42 requiredPrivateInfos=[\"getLocation\"]）；改为直接回固定坐标（合成值）。真实调用点 apps/client/src/utils/location.ts:34（uni.getLocation），上游 apps/client/src/pages/home/index.vue:70 与 :249、apps/client/src/pages/nearby/index.vue:111、apps/client/src/subpackages/profile-extra/profile/location.vue:63",
+      "chooseLocation": "抑制 wx.chooseLocation 原生地图选点框（按「用户取消」返回，不编造 POI）。真实调用点 apps/client/src/subpackages/profile-extra/profile/location.vue:82",
+      "authorize": "抑制 wx.authorize 授权框。本项目唯一调用点申请的是 scope.record（麦克风，不是定位）：apps/client/src/utils/audio-recorder.ts:273",
+      "getSetting": "抑制「读权限 → 未授权即申请」这条链上的框：apps/client/src/utils/audio-recorder.ts:264 读到已授权后就不会再走到 :273",
+      "requirePrivacyAuthorize": "抑制 wx.requirePrivacyAuthorize 的《用户隐私保护指引》同意框。真实调用点 apps/client/src/utils/privacy.ts:257（由 :344 ensurePrivacyAuthorized → :358 触发；入口如 apps/client/src/pages/profile/index.vue:921、apps/client/src/utils/media.ts:371）",
+      "getPrivacySetting": "回报 needAuthorization:false，让 apps/client/src/utils/privacy.ts:153 的检查早退，协议框不进取证帧"
+    },
+    "grepEvidence": {
+      "wx.getLocation": "apps/client/src/utils/location.ts:34（uni.getLocation）→ 产物 apps/client/dist/build/mp-weixin/utils/location.js 内 index.getLocation",
+      "wx.chooseLocation": "apps/client/src/subpackages/profile-extra/profile/location.vue:82",
+      "wx.authorize": "apps/client/src/utils/audio-recorder.ts:273（scope:**record**）",
+      "wx.getSetting": "apps/client/src/utils/audio-recorder.ts:264",
+      "wx.requirePrivacyAuthorize": "apps/client/src/utils/privacy.ts:257",
+      "wx.getPrivacySetting": "apps/client/src/utils/privacy.ts:153",
+      "wx.onNeedPrivacyAuthorization": "apps/client/src/App.vue:98,:106 —— 注册型 API，故意不 mock",
+      "popupDescSource": "apps/client/src/manifest.json:38-41（scope.userLocation.desc 与评审转写的弹窗描述逐字一致）",
+      "distConsumers": "对 apps/client/dist/build/mp-weixin 递归 grep fetchCurrentLocation/chooseLocation/authorize(：只有 pages/home/index.js、pages/nearby/index.js、subpackages/profile-extra/profile/location.js 三个消费方（village/circles 产物已一并 grep 过，无定位调用）⇒ 这两页帧上的弹窗是 S01 触发后跨 reLaunch 常驻的原生层（推断，待实测）"
+    },
+    "notMockedBecauseAbsent": [
+      "wx.getFuzzyLocation（apps/client/src 全仓 grep 命中 0 次）",
+      "wx.startLocationUpdate / wx.onLocationChange（命中 0 次）"
+    ],
+    "notMockedOnPurpose": [
+      "wx.onNeedPrivacyAuthorization（注册型 API，见 PERM_MOCKS 上方注释）"
+    ],
+    "apiCannotAssertNativeDialog": true,
+    "armCount": 19,
+    "generations": 22,
+    "installFailures": [],
+    "armedAtExit": [
+      "getLocation",
+      "chooseLocation",
+      "authorize",
+      "getSetting",
+      "requirePrivacyAuthorize",
+      "getPrivacySetting"
+    ],
+    "firstFrameRisk": "app 冷启动（simulator_refresh 后由 IDE 自动打开入口页）到脚本首次注入之间有一个时间窗，若入口页在这一窗内已弹框，automator 无法从外部关掉它；对策是「连接成功即注入 + 每页 reLaunch 前与每帧落盘前各确认一次代次」，残余风险如实记于此。"
+  },
+  "captureLimitations": {
+    "screenshotDprSupported": false,
+    "apiEvidence": "miniprogram-automator/out/MiniProgram.d.ts:6-8 IScreenshotOptions{path?} + MiniProgram.js screenshot(){send(\"App.captureScreenshot\")} 无参",
+    "zoomCropSupported": true,
+    "zoomFactor": 3,
+    "zoomOn": true,
+    "deviceInfo": {
+      "model": "iPhone 12/13 (Pro)",
+      "SDKVersion": "3.16.3",
+      "windowWidth": 390,
+      "windowHeight": 844,
+      "pixelRatio": 3,
+      "screenWidth": 390,
+      "screenHeight": 844
+    },
+    "pngLib": "pngjs(automator 自带依赖)"
+  }
+}

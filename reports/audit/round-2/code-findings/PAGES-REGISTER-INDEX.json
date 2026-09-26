@@ -1,8 +1,10 @@
 {
   "round": "R2",
-  "reviewer": "A2 代码审查员（Layer A，只读代码层）",
-  "reviewedAt": "2026-09-22",
-  "pages": ["pages/register/index"],
+  "reviewer": "A2 代码审查员（Layer A，只读代码层）｜R2 复核轮：001-005 修复逐行复核 + 006-008 行号刷新 + 新增/补录 009-015",
+  "reviewedAt": "2026-09-24",
+  "pages": [
+    "pages/register/index"
+  ],
   "issues": [
     {
       "id": "MP-R2-PAGES-REGISTER-INDEX-001",
@@ -12,12 +14,14 @@
       "category": "Regression",
       "severity": "P3",
       "description": "回归核对（MP-R1-PAGES-REGISTER-INDEX-001(R21)，R1 状态「待修复」，本轮逐行复核确认未修复、机制原样存在）：重复注册拦截本身正确——页面 handleRegisterError 按 detail.includes(\"已注册\") 分支（index.vue:353-359），与后端 RealAuthService.java:587/609 抛出的 ErrorMessages.PHONE_ALREADY_REGISTERED=\"该手机号已注册\"/PHONE_REGISTERED_PLEASE_LOGIN=\"该手机号已注册，请直接登录\"（ErrorMessages.java:232/235）子串匹配成立，经 RegisterValidationException（RegisterValidationException.java:34，HttpStatus.BAD_REQUEST）以 400 透出。但副作用仍在：registerUser（auth.ts:338-347）与 sendSmsCode（auth.ts:375-381）的 request 均未设置 reportError:false，http.ts:857-863 对所有「非 401 且 reportError!==false」的最终失败统一 captureException——预期业务 400（已注册/验证码错误/未满18/昵称长度等）每次提交/重试都触发一次上报。mp-weixin 降级通道为 console.error（sentry.ts:188-192）；因注册失败时无 token，reportErrorToBackend 的 hasToken 前置（sentry.ts:466-472）会跳过后端 POST，故噪音主体是 console.error；H5+Sentry 已初始化时为真实 Sentry 异常噪音。页面 index.vue:394 注释「预期业务拒绝为噪音不上报——与登录页口径一致」只覆盖页面层（index.vue:395-399 仅对 !apiError 上报），与 http 层实际行为矛盾。同文件 loginAsGuest（auth.ts:393）已有 reportError:false 先例及注释「预期业务状态…无需上报 Sentry 噪音」，证明机制存在但未应用于注册链路。",
-      "evidence": "apps/client/src/pages/register/index.vue:353-359（已注册分支，拦截正确）; index.vue:394-399（页面层注释与仅 !apiError 上报）; apps/client/src/services/auth.ts:338-347（registerUser request 无 reportError）; auth.ts:375-381（sendSmsCode 同）; auth.ts:391-394（loginAsGuest reportError:false 先例）; apps/client/src/services/http.ts:852-864（options.reportError!==false && status!==401 → captureException）; apps/client/src/services/sentry.ts:188-192（降级 console.error）+ sentry.ts:466-472（无 token 跳过后端上报）; apps/api/src/main/java/com/campuslove/api/auth/RealAuthService.java:587,609（业务 400 触发源）; apps/api/src/main/java/com/campuslove/api/common/RegisterValidationException.java:34（HttpStatus.BAD_REQUEST）; apps/api/src/main/java/com/campuslove/api/common/ErrorMessages.java:232,235（「已注册」文案来源）",
-      "sources": ["code"],
+      "evidence": "apps/client/src/pages/register/index.vue:353-359（已注册分支，拦截正确）; index.vue:394-399（页面层注释与仅 !apiError 上报）; apps/client/src/services/auth.ts:338-347（registerUser request 无 reportError）; auth.ts:375-381（sendSmsCode 同）; auth.ts:391-394（loginAsGuest reportError:false 先例）; apps/client/src/services/http.ts:852-864（options.reportError!==false && status!==401 → captureException）; apps/client/src/services/sentry.ts:188-192（降级 console.error）+ sentry.ts:466-472（无 token 跳过后端上报）; apps/api/src/main/java/com/campuslove/api/auth/RealAuthService.java:587,609（业务 400 触发源）; apps/api/src/main/java/com/campuslove/api/common/RegisterValidationException.java:34（HttpStatus.BAD_REQUEST）; apps/api/src/main/java/com/campuslove/api/common/ErrorMessages.java:232,235（「已注册」文案来源） 【R2 复核 2026-09-24】修复已落地并逐行复核：services/auth.ts:353-355（registerUser 传 reportError:false + noRetry:true，注释引本条）、auth.ts:389-391（sendSmsCode 同）；页面兜底补报落地 index.vue:421-432（!apiError → captureException；apiError.status>=500 → captureException，注释引本条）；http 层上报门复核 http.ts:857-861（仅 options.reportError !== false 且 status !== 401 才 captureException），预期业务 400/403 已不再触发 http 层上报；页面七类子串分支（index.vue:380-416）与后端 ErrorMessages.java:232/235/460 逐一命中。残留仅为运行时终验（本轮未驱动开发者工具），故置「已修复待终验」。",
+      "sources": [
+        "code"
+      ],
       "confidence": 0.92,
       "ideal": "预期业务拒绝（4xx 业务校验类）不产生 captureException console/Sentry 噪音；非预期错误（网络层、非 AppApiError、5xx）仍正常上报；页面注释与 http 层实际口径一致。",
       "fix": "对齐 loginAsGuest 先例：registerUser/sendSmsCode 的 request 选项增加 reportError:false（auth.ts:344-346/378-380），同时在页面 handleRegisterError 兜底处补报非预期错误（现有 index.vue:395-399 的 !apiError 分支保留，扩一格 apiError.status>=500 时 captureException），并同步修正 index.vue:394 注释。替代方案：http.ts 按 category=\"business\" 且 status<500 收敛为不自动上报、由调用方决定。",
-      "status": "待修复"
+      "status": "已修复待终验"
     },
     {
       "id": "MP-R2-PAGES-REGISTER-INDEX-002",
@@ -27,12 +31,14 @@
       "category": "MiniProgram",
       "severity": "P2",
       "description": "【本轮新增】页面顶部未做状态栏高度补偿：全局 navigationStyle=custom（pages.json:36）下页面自 y=0 布局，返回按钮固定 top:88rpx=44px（index.vue:771）、标题组固定 top:208rpx（index.vue:794），全文件 0 处引用 --statusbar/--status-bar-height/env(safe-area-inset-top)（grep 计数 0）。设计规范自身约定「状态栏 375×44，系统区域，不遮挡」（deliverables/注册页/寻觅注册页-设计规范.md:34），即按 44px 状态栏设计；iPhone 14 Pro/15/16 系列 47-54px、主流 Android 48px+ 的机型上，返回按钮顶部 3-10px 压入状态栏区域，与左侧时钟文字重叠（时钟与按钮同处左上 x 16-50px 区域）。同链路兄弟页面均已补偿：login/index.vue:998（calc(var(--statusbar,...) + 88rpx)）、register/success.vue:85（同模式，且注明「R11-G2：DevTools env 恒 0 必须由 JS 注入」）、App.vue:336、theme/global.scss:6，全仓 15+ 页面使用该模式——register/index 是登录→注册→注册成功链路中唯一未补偿的页面。R11 理想图对照在 44px 状态栏设备/模拟器上通过，未暴露此差异。",
-      "evidence": "apps/client/src/pages/register/index.vue:769-784（.hero__back 固定 top:88rpx，无状态栏变量）; index.vue:791-798（.hero__txt 固定 top:208rpx）; grep \"status-bar-height|--statusbar\" index.vue 计数=0（本次实际执行）; 对照组：apps/client/src/pages/login/index.vue:998、apps/client/src/pages/register/success.vue:13,85、apps/client/src/App.vue:336、apps/client/src/theme/global.scss:6-14; pages.json:36（navigationStyle:custom 全局）; deliverables/注册页/寻觅注册页-设计规范.md:34（「系统区域，不遮挡」按 44px 设计）",
-      "sources": ["code"],
+      "evidence": "apps/client/src/pages/register/index.vue:769-784（.hero__back 固定 top:88rpx，无状态栏变量）; index.vue:791-798（.hero__txt 固定 top:208rpx）; grep \"status-bar-height|--statusbar\" index.vue 计数=0（本次实际执行）; 对照组：apps/client/src/pages/login/index.vue:998、apps/client/src/pages/register/success.vue:13,85、apps/client/src/App.vue:336、apps/client/src/theme/global.scss:6-14; pages.json:36（navigationStyle:custom 全局）; deliverables/注册页/寻觅注册页-设计规范.md:34（「系统区域，不遮挡」按 44px 设计） 【R2 复核 2026-09-24】修复已落地并逐行复核：index.vue:24-25（注释引本条）、index.vue:26+42（useMenuButtonRect().styleVars 接入；composables/useMenuButtonRect.ts:47-52 注入 --capsule-right/--statusbar 两个变量）、index.vue:460（页面根节点 :style=\"menuStyleVars\"）、index.vue:806（.hero__back top: calc(var(--statusbar, env(safe-area-inset-top)) + 88rpx)）、index.vue:830（.hero__txt 同模式 +208rpx），与 login/index.vue:1017-1018 兜底链同构。多状态栏高度机型的像素级不遮挡仍需真机终验。",
+      "sources": [
+        "code"
+      ],
       "confidence": 0.85,
       "ideal": "与 login/success 同模式：返回按钮/标题组的 top 使用 calc(var(--statusbar, env(safe-area-inset-top)) + 原偏移) 动态补偿，任意状态栏高度下均不遮挡系统区域（设计规范 §设计稿第 34 行约束）。",
       "fix": "在 index.vue 样式层将 .hero__back 的 top:88rpx 改为 calc(var(--statusbar, env(safe-area-inset-top)) + 88rpx)，.hero__txt 的 top:208rpx 同理改为 calc(var(--statusbar, env(safe-area-inset-top)) + 208rpx)；如 DevTools 下 env 恒 0，参照 success.vue:13 的 R11-G2 方案由 JS 注入 --statusbar。",
-      "status": "待修复"
+      "status": "已修复待终验"
     },
     {
       "id": "MP-R2-PAGES-REGISTER-INDEX-003",
@@ -42,12 +48,14 @@
       "category": "Interaction",
       "severity": "P3",
       "description": "回归核对（承 R1-002，未修复，行号复核属实）：onShow 的 B6 兜底「注册功能暂未开放」用 800ms 延迟跳转，setTimeout 返回值未保存（index.vue:291），onUnmounted 只清理 smsTimer/shakeTimer/agreeShakeTimer 三个定时器（index.vue:295-299），不包含该跳转定时器。后果：① 用户在 800ms 窗口内点返回离开页面后，挂起的 goLogin 仍执行——此时页面已出栈，getCurrentPages().length>1 判定下移栈到登录页的 navigateBack 可能多弹一层，或走 reLaunch(LOGIN) 造成登录页无谓重载闪现；② 从本页 navigateTo 协议/隐私页再返回会再次触发 onShow，多个 800ms 定时器叠加（register_open=false 期间）。",
-      "evidence": "apps/client/src/pages/register/index.vue:289-292（setTimeout(() => goLogin(), 800) 未保存引用）; index.vue:295-299（onUnmounted 清理清单无此定时器）; 对照：goLogin 的页面栈分支 index.vue:404-411（navigateBack/reLaunch 双路径，被陈旧定时器触发时语义失真）",
-      "sources": ["code"],
+      "evidence": "apps/client/src/pages/register/index.vue:289-292（setTimeout(() => goLogin(), 800) 未保存引用）; index.vue:295-299（onUnmounted 清理清单无此定时器）; 对照：goLogin 的页面栈分支 index.vue:404-411（navigateBack/reLaunch 双路径，被陈旧定时器触发时语义失真） 【R2 复核 2026-09-24】修复已落地并逐行复核：index.vue:293-296（模块级 let b6ExitTimer 声明，注释引本条）、index.vue:306-314（onShow 重入先 if (b6ExitTimer) clearTimeout(b6ExitTimer) 防叠加，再设 800ms goLogin）、index.vue:317-326（onUnmounted 清理 smsTimer/shakeTimer/agreeShakeTimer 之外补 clearTimeout(b6ExitTimer) 并置 null）。叠加与出栈后误跳两路径均已闭合。",
+      "sources": [
+        "code"
+      ],
       "confidence": 0.85,
       "ideal": "离开页面前取消待执行的 B6 跳转；同一页面生命周期内不叠加多个跳转定时器。",
       "fix": "模块级 let b6ExitTimer: ReturnType<typeof setTimeout> | null = null 保存引用，onUnmounted 中 clearTimeout；onShow 触发前先 clearTimeout 防叠加。",
-      "status": "待修复"
+      "status": "已修复待终验"
     },
     {
       "id": "MP-R2-PAGES-REGISTER-INDEX-004",
@@ -57,12 +65,14 @@
       "category": "Consistency",
       "severity": "P3",
       "description": "回归核对（承 R1-003，未修复，行号复核属实）：「该手机号已注册」后的状态复位不对称——清空按钮 clearPhone 同时复位 errors.phone 与 phoneRegistered（index.vue:183-187），但直接编辑手机号字符的 onPhoneInput 只清 errors.phone（index.vue:150），不复位 phoneRegistered。用户改输另一个手机号后，「用这个手机号登录」次级出口（index.vue:697-699）仍指向旧手机号语境常驻显示，误导去登录的出口语义。",
-      "evidence": "apps/client/src/pages/register/index.vue:144-151（onPhoneInput 不触碰 phoneRegistered）; index.vue:183-187（clearPhone 复位两态，行为不对称的参照）; index.vue:697-699（ghost-btn 常驻条件 v-if=\"phoneRegistered\"）",
-      "sources": ["code"],
+      "evidence": "apps/client/src/pages/register/index.vue:144-151（onPhoneInput 不触碰 phoneRegistered）; index.vue:183-187（clearPhone 复位两态，行为不对称的参照）; index.vue:697-699（ghost-btn 常驻条件 v-if=\"phoneRegistered\"） 【R2 复核 2026-09-24】修复已落地并逐行复核：index.vue:155-160（onPhoneInput 尾部 if (phoneRegistered.value) phoneRegistered.value = false，注释引本条），与 clearPhone（index.vue:193-197）复位口径对齐；ghost-btn 出口（index.vue:730-732）随新号码输入正确消失。",
+      "sources": [
+        "code"
+      ],
       "confidence": 0.9,
       "ideal": "手机号内容发生变化即认为「已注册」结论失效：onPhoneInput 中 phoneRaw 变化时复位 phoneRegistered=false，与 clearPhone 口径一致。",
       "fix": "在 onPhoneInput 内（index.vue:150 附近）追加 if (phoneRegistered.value) phoneRegistered.value = false;（或仅当号码编辑后与触发已注册的号码不同时复位，实现成本相近）。",
-      "status": "待修复"
+      "status": "已修复待终验"
     },
     {
       "id": "MP-R2-PAGES-REGISTER-INDEX-005",
@@ -72,12 +82,14 @@
       "category": "UI",
       "severity": "P3",
       "description": "回归核对（承 R1-004，未修复，本轮重新核对该 token 确实存在）：设计 token 强制（R11 附录B）旁路——theme/design-variables.scss 已定义 $brand-700/--c-brand-700=#1F8D6A（design-variables.scss:17,261），但页面 4 处硬编码 #1f8d6a（hero__eyebrow index.vue:804、sms-btn__spinner index.vue:1014-1015、sms-btn--sending 文字 index.vue:1003、agree__link index.vue:1158）；另有 #55d5a7 渐变终点（index.vue:1059，token 侧 $gradient-brand 同值硬编码，属成对旁路）。JS 侧 PWD_STRENGTH_META（index.vue:118-123）硬编码 #E5454D/--c-error、#F59E0B/warning、#B87400、#1F8D6A 四组色值，未引用 token（:style 内联可用 var(--c-error) 等 CSS 变量）。同文件其余样式已规范使用 var(--token, #fallback) 模式，上述为残留旁路。",
-      "evidence": "apps/client/src/theme/design-variables.scss:17（$brand-700: #1F8D6A）、:261（--c-brand-700 定义）; apps/client/src/pages/register/index.vue:804,1003,1014-1015,1059,1158（样式硬编码）; index.vue:118-123（PWD_STRENGTH_META JS 侧硬编码）; 对照规范用法 index.vue:873（border-color: var(--c-brand, #36c99a)）",
-      "sources": ["code"],
+      "evidence": "apps/client/src/theme/design-variables.scss:17（$brand-700: #1F8D6A）、:261（--c-brand-700 定义）; apps/client/src/pages/register/index.vue:804,1003,1014-1015,1059,1158（样式硬编码）; index.vue:118-123（PWD_STRENGTH_META JS 侧硬编码）; 对照规范用法 index.vue:873（border-color: var(--c-brand, #36c99a)） 【R2 复核 2026-09-24】修复已落地并逐行复核：PWD_STRENGTH_META 改 CSS 变量串（index.vue:123-130：var(--c-error, #E5454D)/var(--c-warning, #F59E0B)/var(--c-brand, #36C99A) 等，越界回退空串 index.vue:132-135）；样式 4 处 #1f8d6a → var(--c-brand-700, #1f8d6a)（index.vue:840 hero__eyebrow、1039 sms-btn--sending 文字、1051 sms-btn__spinner 边框、1194 agree__link）；渐变终点 → var(--c-brand-400, #55d5a7)（index.vue:1095）。本条范围（#1f8d6a×4/#55d5a7/PWD_STRENGTH_META）已清零；样式内另存的裸 #ffffff×5 与 #fef5f6 不在本条范围，本轮另立 014 补录。",
+      "sources": [
+        "code"
+      ],
       "confidence": 0.9,
       "ideal": "全文件颜色经 token 引用：#1f8d6a → var(--c-brand-700)；渐变终点 → var(--c-brand-400)（如已定义）或与 $gradient-brand 同源变量；PWD_STRENGTH_META 色值改用 var(--c-error)/var(--c-warning)/var(--c-brand-700) 形式的 CSS 变量字符串（内联 :style 支持 var()）。",
       "fix": "样式 4 处 #1f8d6a 替换为 var(--c-brand-700, #1f8d6a)；submit-btn 渐变终点 var(--c-brand-400, #55d5a7)；PWD_STRENGTH_META 的 color/text 改为 'var(--c-error)' 等字符串（mp-weixin 内联样式支持 CSS 变量），越界回退项保留空串。",
-      "status": "待修复"
+      "status": "已修复待终验"
     },
     {
       "id": "MP-R2-PAGES-REGISTER-INDEX-006",
@@ -87,8 +99,10 @@
       "category": "Architecture",
       "severity": "P4",
       "description": "回归核对（承 R1-005，未修复，行号复核属实）：手机号正则 /^1[3-9]\\d{9}$/ 三处重复实现而非单一来源——注册页 index.vue:88（phoneValid computed）、登录页 login/index.vue:134（isPhoneValid computed）、utils/form-validator.ts:81（PHONE_REGEX 常量，工具层本应是唯一来源）。三份拷贝今后任一改动（如虚拟运营商号段放行）需同步三处，漏改即页面间校验口径分裂。注册页注释自述「工具函数从 .ts 导入」的架构约定未在此落实。",
-      "evidence": "apps/client/src/pages/register/index.vue:88; apps/client/src/pages/login/index.vue:134; apps/client/src/utils/form-validator.ts:75-81（PHONE_REGEX 已存在却未被两页面引用）",
-      "sources": ["code"],
+      "evidence": "apps/client/src/pages/register/index.vue:88; apps/client/src/pages/login/index.vue:134; apps/client/src/utils/form-validator.ts:75-81（PHONE_REGEX 已存在却未被两页面引用） 【R2 复核 2026-09-24】复核仍未修复：pages/register/index.vue:93（phoneValid computed 内联 /^1[3-9]\\d{9}$/）、pages/login/index.vue:139（isPhoneValid computed 同正则）、utils/form-validator.ts:75-86（phone() 规则函数内 PHONE_REGEX:81，工具层有实现但未导出独立谓词，两页面均未引用）——三份拷贝原样存在。",
+      "sources": [
+        "code"
+      ],
       "confidence": 0.95,
       "ideal": "手机号格式判定单一来源：页面统一 import utils/form-validator.ts 的 PHONE_REGEX/isValidPhone，页面内不再手写正则字面量。",
       "fix": "form-validator.ts 导出 isValidPhone(phone)（或已导出等价函数），index.vue:88 与 login/index.vue:134 改为调用该工具函数；删除两处正则字面量。",
@@ -102,8 +116,10 @@
       "category": "Consistency",
       "severity": "P4",
       "description": "回归核对（承 R1-006，未修复，行号复核属实）：services/auth.ts 中 sendSmsCode 函数（auth.ts:372-383，POST /v1/sms/send-code）的 JSDoc 是从 loginAsGuest 复制来的「体验账号一键登录」文档——通篇描述 guest-login 的行为、幂等性与「入口关闭」语义，与函数实际功能（发送短信验证码）完全不符。注册页是该函数唯一消费方之一，错误文档误导维护者与注册页验证码链路的理解。",
-      "evidence": "apps/client/src/services/auth.ts:359-371（sendSmsCode 头部 JSDoc，内容为「体验账号一键登录…POST /v1/auth/guest-login」）; auth.ts:372-383（函数体实为 POST /v1/sms/send-code）; auth.ts:385-404（loginAsGuest，JSDoc 的真实出处）",
-      "sources": ["code"],
+      "evidence": "apps/client/src/services/auth.ts:359-371（sendSmsCode 头部 JSDoc，内容为「体验账号一键登录…POST /v1/auth/guest-login」）; auth.ts:372-383（函数体实为 POST /v1/sms/send-code）; auth.ts:385-404（loginAsGuest，JSDoc 的真实出处） 【R2 复核 2026-09-24】复核仍未修复：services/auth.ts:368-380（sendSmsCode 头部 JSDoc 仍为「体验账号一键登录…POST /v1/auth/guest-login」全文）、auth.ts:381-394（函数体实为 POST /v1/sms/send-code）、auth.ts:396-415（loginAsGuest，JSDoc 真实出处）——复制粘贴文档原样存在。",
+      "sources": [
+        "code"
+      ],
       "confidence": 0.95,
       "ideal": "sendSmsCode 的 JSDoc 描述其真实契约：发送验证码、模拟短信返回 mockCode、真实网关接入后不再返回验证码本体（与 SmsCodeController 注释口径一致）。",
       "fix": "重写 auth.ts:359-371 的 JSDoc：@param phone、@returns {success, mockCode, message}、说明 mock 短信语义与后端 SmsCodeController.java:40-55 对齐。",
@@ -117,28 +133,150 @@
       "category": "Function",
       "severity": "P4",
       "description": "回归核对（承 R1-007，未修复，行号复核属实；当前后端下不可达、防御性不足）：handleSendSms 判定失败的条件是 res?.success === false && res.message（index.vue:256）——若后端返回 success:false 但缺失/空 message，代码落入成功路径：toast「验证码已发送至 …」并启动 60s 倒计时（index.vue:261-264），实际验证码未发出且 60s 内无法重发。当前后端 SmsCodeController 恒返回 success:true（SmsCodeController.java:49-54），失败走非 2xx 由 request() 抛异常进 catch 分支，故该路径现阶段不可达；但契约上 success 字段既已建模，message 缺失时语义应仍成立。",
-      "evidence": "apps/client/src/pages/register/index.vue:255-264（success===false && message 才提前 return；无 message 落入成功路径启动倒计时）; apps/api/src/main/java/com/campuslove/api/auth/SmsCodeController.java:45-55（当前恒 success:true，不可达性佐证）",
-      "sources": ["code"],
+      "evidence": "apps/client/src/pages/register/index.vue:255-264（success===false && message 才提前 return；无 message 落入成功路径启动倒计时）; apps/api/src/main/java/com/campuslove/api/auth/SmsCodeController.java:45-55（当前恒 success:true，不可达性佐证） 【R2 复核 2026-09-24】复核仍未修复：index.vue:266 仍为 if (res?.success === false && res.message)，message 缺失场景仍会落入成功路径 toast「验证码已发送」并启动 60s 倒计时（index.vue:273-285）。",
+      "sources": [
+        "code"
+      ],
       "confidence": 0.85,
       "ideal": "success 字段是唯一成功判据：res?.success === false 即提前 return（toast res.message 或通用兜底文案），不依赖 message 是否存在。",
       "fix": "index.vue:256 改为 if (res?.success === false) { toast(res.message || \"验证码发送失败，请稍后重试\"); return; }。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-INDEX-009",
+      "round": "R2",
+      "page": "pages/register/index",
+      "screenshot": "无（代码层审查，未截图）",
+      "category": "Function",
+      "severity": "P3",
+      "description": "【本轮补录，承 MP-R1-PAGES-REGISTER-INDEX-002（09-22 批次遗漏未带入）】isAdult 满十八周岁预检在 UTC+8 存在生日当天误拒：isAdult（index.vue:103-109）把 new Date('yyyy-MM-dd')（ES 规范按 UTC 午夜解析）与 adultSince=new Date(y-18, m, d)（本地时区午夜）直接比 getTime()。UTC+8 下出生日期恰为 18 岁生日当天时，UTC 午夜时间戳比本地午夜大 8 小时，d.getTime() <= adultSince.getTime() 为 false → validateFirstError（index.vue:222）报「未满 18 岁暂无法注册」。而 picker :end=\"today\"（index.vue:694-699，today 计算 index.vue:95-100）允许选到当天，后端 AgePolicy 按周岁亦放行——客户端对 18 岁生日当天单日误拒，与后端口径分裂。本轮 node 实测复现（本机 TZ=UTC+8，new Date().getTimezoneOffset()=-480）：birthDate='2008-09-24'、now=2026-09-24 时 isAdult 返回 false。",
+      "evidence": "apps/client/src/pages/register/index.vue:103-109（isAdult 实现，UTC 解析 vs 本地午夜比较）; index.vue:221-222（validateFirstError 调用点）; index.vue:694-699（picker :end=\"today\" 允许选当天）; 实测命令（本轮执行）：node -e 构造 d=new Date('2008-09-24')、adultSince=new Date(2008,8,24)，本机 getTimezoneOffset()=-480（UTC+8），d.getTime()=1222214400000，d <= adultSince → false（即生日当天被客户端拦截）",
+      "sources": [
+        "code",
+        "log"
+      ],
+      "confidence": 0.9,
+      "ideal": "18 岁生日当天（picker 允许选择的日期）客户端预检与后端 AgePolicy 判定一致放行，无时区依赖。",
+      "fix": "放弃 ISO 解析改为本地时区构造：const [y, m, d] = dateStr.split('-').map(Number); return new Date(y, m - 1, d).getTime() <= new Date(now.getFullYear() - 18, now.getMonth(), now.getDate()).getTime()（两端同为本地时区，无 UTC 偏移差）；或直接做 y/m/d 元组比较。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-INDEX-010",
+      "round": "R2",
+      "page": "pages/register/index",
+      "screenshot": "无（代码层审查，未截图）",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "【本轮补录，承 MP-R1-PAGES-REGISTER-INDEX-006（09-22 批次遗漏未带入）】手机号脱敏正则在同一注册流两处内联重复：注册页 index.vue:273 与成功页 success.vue:28 各写一份完全相同的 raw.replace(/^(\\d{3})\\d{4}(\\d{4})$/, \"$1****$2\")。号段规则或脱敏口径调整需同步两处，漏改即注册页与成功页脱敏展示口径分裂。utils/ 层无对应函数。",
+      "evidence": "apps/client/src/pages/register/index.vue:273; apps/client/src/pages/register/success.vue:28（本轮 grep 复核两处均在）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.9,
+      "ideal": "脱敏逻辑单一来源（utils .ts 导出），页面零正则字面量。",
+      "fix": "utils 新增（如 utils/form-validator.ts 或独立 format 工具）export function maskPhone(phone: string): string，注册页与成功页改为调用。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-INDEX-011",
+      "round": "R2",
+      "page": "pages/register/index",
+      "screenshot": "无（代码层审查，未截图）",
+      "category": "Interaction",
+      "severity": "P4",
+      "description": "【本轮补录，承 MP-R1-PAGES-REGISTER-INDEX-008（09-22 批次遗漏未带入）】四处可点元素触控热区低于微信最小触控标准（约 88rpx/44px）：hero__back 返回键 68×68rpx（index.vue:807-808，@tap goLogin index.vue:466）、field__clear 清除钮 32×32rpx（index.vue:944-948，@tap clearPhone index.vue:507-514）、field__eye 密码可见切换 40×40rpx（index.vue:950-954，@tap index.vue:588-594/639-645）、agree__chk 协议勾选框 32×32rpx（index.vue:1151-1163，@tap 切换 agreed index.vue:737-741）；sms-btn 高 64rpx（index.vue:1005-1016）亦偏小。注册表单误触成本高（勾选丢失/密文误切/误清号码）。",
+      "evidence": "上述行号本轮逐行复核未变；对照 reports/audit/round-1/audit-report.md:281 交互判定同口径（hero__back 68 / field__clear 32 / field__eye 40 / agree__chk 32 rpx）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.8,
+      "ideal": "全部可点元素命中区 ≥88×88rpx，视觉尺寸不变。",
+      "fix": "不放大视觉尺寸、外扩透明热区：元素外包一层 88rpx 透明 view（或 padding 扩展 + 等量负 margin）承载 @tap；agree__chk 同理。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-INDEX-012",
+      "round": "R2",
+      "page": "pages/register/index",
+      "screenshot": "无（代码层审查，未截图）",
+      "category": "UX",
+      "severity": "P4",
+      "description": "【本轮补录，承 MP-R1-PAGES-REGISTER-INDEX-011（09-22 批次遗漏未带入）】确认密码比对触发时机与设计规范不符，且注释与实现自相矛盾：设计规范规定确认密码「密码框失焦后实时比对」（deliverables/注册页/寻觅注册页-设计规范.md:231），实现把比对绑在确认框 @input（index.vue:635 → onConfirmInput index.vue:173-181），逐字符输入时第一个不匹配字符即亮红框 + 行内「两次输入的密码不一致」，输入过程被报错打扰；index.vue:175 注释自述「密码框失焦后实时比对（设计规范 §6.1）」与实际 input 绑定矛盾。",
+      "evidence": "apps/client/src/pages/register/index.vue:173-181（onConfirmInput 在 @input 中即时比对置错）; index.vue:635（@input=\"onConfirmInput\"，无失焦比对路径）; deliverables/注册页/寻觅注册页-设计规范.md:231（规范触发时机）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.8,
+      "ideal": "失焦才报错、输入中只清错不加错，与规范 §6.1 表格一致。",
+      "fix": "比对迁移到确认框 @blur（新增 onConfirmBlur），@input 保留「已有错误时实时清除」；同步修正 index.vue:175 注释。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-INDEX-013",
+      "round": "R2",
+      "page": "pages/register/index",
+      "screenshot": "无（代码层审查，未截图）",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "【本轮补录，承 MP-R1-PAGES-REGISTER-INDEX-012（09-22 批次遗漏未带入）】注册页短信/协议/网络类用户可见文案硬编码中文，而镜像登录页同语义文案已完成 i18n 化，注册页头注所依据的「既有页面实践」对这组文案已不成立：注册页硬编码 index.vue:260（「请先输入正确的手机号」）、273-275（「验证码已发送（模拟：…）」/「验证码已发送至 ${masked}」）、287（「网络异常，请检查网络后重试」）、306-308（「注册功能暂未开放」）等；登录页同语义已走 t()：login/index.vue:238 t(\"login.phoneInvalid\")、252-253 t(\"login.smsSentMock\")/t(\"login.smsSent\")、286 t(\"login.agreeFirst\")。页面头注 index.vue:17-18「文案为中文硬编码（与 discover-login-hint 等既有页面实践一致）」对短信文案链路已过时；后续多语言/文案统一时注册页成漏网面。",
+      "evidence": "apps/client/src/pages/register/index.vue:257-261、273-275、287、306-308（硬编码中文）; apps/client/src/pages/login/index.vue:238、252-253、286（同语义 t() 调用，本轮复核）; index.vue:17-18（头注依据已过时）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.8,
+      "ideal": "注册页用户可见文案与登录页同走 vue-i18n，无硬编码中文。",
+      "fix": "仿 login 的 i18n key 体系补 register.* 键（zh/en 同步），页面 toast() 调用改 t()；同步更新 index.vue:17-18 头注。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-INDEX-014",
+      "round": "R2",
+      "page": "pages/register/index",
+      "screenshot": "无（代码层审查，未截图）",
+      "category": "UI",
+      "severity": "P4",
+      "description": "【本轮新增】设计 token 强制（R11 附录 B）残留 6 处裸色值：.field--focus background:#ffffff（index.vue:908）、.sms-btn__text color:#ffffff（index.vue:1023）、.submit-btn__text color:#ffffff（index.vue:1104）、.ghost-btn background:#ffffff（index.vue:1134）、.agree__chk background:#ffffff（index.vue:1156）均为裸 hex，未走全文件主流的 var(--token, #fallback) 兜底写法——主题侧已有对应 --c-bg-container（theme/design-variables.scss:360）；.field--error background:#fef5f6（index.vue:917）无精确同名 token，语义对应 --c-error-bg-tint（design-variables.scss:773）。R2-005 修复已清零其范围内旁路后，上述为该页样式 token 化的残余缺口；深色主题下 --c-bg-container 变化时这 6 处不跟随。",
+      "evidence": "apps/client/src/pages/register/index.vue:908、917、1023、1104、1134、1156（本轮逐行复核）; token 侧 theme/design-variables.scss:360（--c-bg-container）、:773（--c-error-bg-tint）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.85,
+      "ideal": "scoped 样式零裸 hex（var() 兜底写法除外），主题切换全页跟随。",
+      "fix": "#ffffff → var(--c-bg-container, #ffffff)（5 处）；#fef5f6 → var(--c-error-bg-tint, #fef5f6)（或在 theme 侧补实色 error-tint token 后引用）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-INDEX-015",
+      "round": "R2",
+      "page": "pages/register/index",
+      "screenshot": "无（代码层审查，未截图）",
+      "category": "Architecture",
+      "severity": "P4",
+      "description": "【本轮新增，承 MP-R1-PAGES-REGISTER-INDEX-003 并修正定性（09-22 批次遗漏未带入）】注册错误分支仅靠后端中文文案子串匹配（index.vue:380-416 七类 detail.includes），无机器可读错误码通道。本轮核对后端：RegisterValidationException 把 userFacingCode 同时作为 code 与 message 下发（RegisterValidationException.java:30-35），而 ErrorMessages 常量值本身即中文文案（ErrorMessages.java:232「该手机号已注册」、:460「未满 18 周岁，暂不支持注册」）——wire 上 code 字段并无机器码，页面注释（index.vue:376-377）「message/code 同文案」属实，R1-003「后端已提供机器可读 code」前提在当前后端实现下不成立，故从 P3 下调 P4、定性为跨端契约改进项而非缺陷：现状行为正确，文案由后端 ErrorMessages 单点约束；残余风险为后端文案改动或 i18n 化时前端分支静默失准（降级路径 index.vue:433 仍 toast 后端原文，仅丢失行内字段定位，无用户面错误）。",
+      "evidence": "apps/client/src/pages/register/index.vue:374-434（七类子串分支 + 降级 toast）; apps/api/src/main/java/com/campuslove/api/common/RegisterValidationException.java:30-35（code=message 同文案构造）; apps/api/src/main/java/com/campuslove/api/common/ErrorMessages.java:232、460（常量值即中文文案）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.75,
+      "ideal": "错误分支以机器可读 code 为准（如 PHONE_ALREADY_REGISTERED），文案仅作展示。",
+      "fix": "后端 ErrorMessages 拆「机器码 + 用户文案」两字段下发，客户端 AppApiError 打通 code 通道后按 code 分支；在后端改造前维持现状可接受（降级路径无害）。",
       "status": "待修复"
     }
   ],
   "coverage": [
     {
       "page": "pages/register/index",
-      "checked": "本页 1223 行 index.vue 全量阅读；引用链逐文件核对：services/auth.ts、services/http.ts、services/api-error.ts、services/sentry.ts、stores/app-config.ts、stores/session.ts（refreshSession:467 签名核对）、utils/debounce.ts（createButtonGuard:145-169 leading 锁核对）、config/env.ts（isDev:104-139 无 import.meta 依赖）、config/images.ts（REGISTER:616-621 / REGISTER_ICONS:626-645）、constants/routes.ts（ROUTES.REGISTER/REGISTER_SUCCESS:55-56、SUBPACKAGE_ROUTES.LEGAL:249-252）；pages.json:46/49 页面注册 + :36 navigationStyle=custom + legal 分包 :304-312；static/assets/icons/register 24 个 SVG 与 reg-hero/reg-success 两张 JPEG 磁盘存在性 ls 核对；后端契约核对 SmsCodeController.java、RegisterValidationException.java、ErrorMessages.java:232/235/460、RealAuthService.java:587/609（页面「已注册/验证码/未满 18」子串分支全部命中）。",
+      "checked": "R2 复核轮（2026-09-24）：当前 1259 行 index.vue 全量重读；对 09-22 批次 8 条逐条复核——001-005 经逐行验证修复落地（reportError:false @ auth.ts:353-355/389-391、页面兜底补报 @ index.vue:421-432、--statusbar 注入 @ index.vue:26/42/460/806/830、b6ExitTimer @ index.vue:293-296/306-314/317-326、phoneRegistered 复位 @ index.vue:155-160、token 旁路清零 @ index.vue:123-130/840/1039/1051/1095/1194），置「已修复待终验」；006-008 复核仍未修复并刷新行号（正则三处 @ index.vue:93 + login:139 + form-validator:81、sendSmsCode 错挂 JSDoc @ auth.ts:368-380、success===false 静默误判 @ index.vue:266）。新增/补录 009-015：009 为 09-22 批次遗漏的 R1-002（isAdult 时区 off-by-one，node 实测复现），010-013 为遗漏的 R1-006/008/011/012 补录（脱敏正则重复/触控热区/确认密码比对时机/i18n 硬编码，均按当前行号复核属实），014 为 005 修复后残余裸色值清点，015 为 R1-003 修正定性补录（后端 code 字段经实读 RegisterValidationException.java:30-35 确认与 message 同文案，下调 P4）。",
       "checklist": [
-        "架构/重复/命名/状态管理：发现正则三处重复（006）；errors/shake/smsCountdown 等本地态初始化完整（Record<FieldKey> 全键，index.vue:58-65），isRegisterOpen 经 storeToRefs 响应式接入且未加载默认开放（app-config.ts:37）不误踢；单一数据源无 store 与页面双写。",
-        "API 错误处理：无空 catch {}、无未处理 Promise 拒绝（refreshSession().catch index.vue:333-335；handleSubmit 全路径 try/catch/finally）；发现 http 层业务 400 上报噪音（001，Regression）。",
-        "异步流程：smsSending/smsCountdown/submitting 三重重入防护 + createButtonGuard 2s leading 锁（index.vue:423）互不冲突；Promise.all+delay(400) 防闪烁；倒计时时间戳基准切后台冻结安全（index.vue:266-272,280-287）；发现 onShow 800ms 定时器泄漏（003）。",
-        "样式：发现 token 旁路（005）；IMAGE_PATHS 引用规范（REGISTER.HERO/REGISTER_ICONS，无散落字面量路径）；布局全 flex 无 grid；禁 :hover 通过（hover-class+press-feedback，index.vue:433,688）；backdrop-filter 仅 #ifdef H5 通过（index.vue:776-778）；底部 env(safe-area-inset-bottom) 正确（index.vue:740）；发现顶部状态栏未补偿（002，新增）。",
-        "组件事件接线：本页无自定义子组件（模板仅 view/image/input/picker/text 内置组件），无 emit 接线缺陷面；协议链接 @tap.stop 阻断冒泡不改变勾选态（index.vue:714,716），与 checkbox 平级不嵌套，正确。",
-        "小程序专项：无 scroll-view（不适用）；CardSwiper 不适用；键盘 cursor-spacing=120 全输入框覆盖（index.vue:469,506,550,601,642）；onShow 倒计时回前台重同步正确（index.vue:280-287）；页面栈 goLogin navigateBack/reLaunch 双路径（index.vue:404-411）；成功跳转 redirectTo REGISTER_SUCCESS 路由常量与 pages.json:49 一致。",
-        "硬约束 R11 附录B：禁 :hover 通过 / 禁 grid 通过 / 禁空 catch 通过（页面无，依赖层 catch(_e) 均带注释有绑定）/ 组件禁 import.meta.env.DEV 通过（经 config/env isDev）/ 业务组件禁 emoji 通过（正则扫描 0 命中）/ token 强制发现旁路（005）/ backdrop-filter H5 条件编译通过 / 页面切换逻辑内联 .vue 通过 / 工具函数 .ts 导入通过（debounce/env 均自 ts 导入）/ 自定义组件宿主 flex:1 不适用（无自定义组件）/ CardSwiper 兜底不适用。"
+        "架构/重复/命名/状态管理：正则三处重复未修（006）；新增脱敏正则两处重复补录（010）与错误码通道契约项（015）；本地态 errors/shakeField/smsCountdown/phoneRegistered 等初始化完整且复位口径经 004 修复后一致；isRegisterOpen 经 storeToRefs 响应式接入、未加载默认开放（app-config.ts:37）不误踢；store 与页面无双写单一数据源成立。",
+        "API 错误处理：无空 catch {}、无未处理 Promise 拒绝（refreshSession().catch index.vue:360-362 带 dev 日志；handleSubmit 全路径 try/catch/finally index.vue:351-372）；001 修复后 http 层与页面层不再对预期业务 4xx 双通道上报。",
+        "异步流程：smsSending/smsCountdown/submitting 三重重入防护 + createButtonGuard(handleSubmit, 2000)（index.vue:456）互不冲突；Promise.all+delay(400) 防闪烁；倒计时时间戳基准（smsEndTime index.vue:84-86、279-285）与 onShow 回前台重同步（index.vue:299-305）；B6 跳转定时器已可取消（003 修复）。",
+        "样式：IMAGE_PATHS 引用规范（REGISTER.HERO index.vue:463、REGISTER_ICONS 全键与 config/images.ts:629-655 一致）；布局全 flex 无 grid；残留裸 #ffffff×5 + #fef5f6（014）。",
+        "组件事件接线：本页无自定义子组件（模板仅 view/image/input/picker/text 内置组件），无 emit 接线缺陷面；协议链接 @tap.stop 阻断冒泡不改变勾选态（index.vue:747、749），与 checkbox 平级不嵌套，正确。",
+        "小程序专项：无 scroll-view（不适用）；CardSwiper 不适用；cursor-spacing=120 五个输入框全覆盖（index.vue:502、539、583、634、675）；onShow 倒计时重同步正确；goLogin 页面栈 navigateBack/reLaunch 双路径（index.vue:437-444）；redirectTo REGISTER_SUCCESS 与 routes.ts:56、pages.json:49 一致；触控热区不足补录（011）。",
+        "硬约束 R11 附录B 复测：禁 :hover 通过（grep 0 命中，hover-class×2 为合法替代 index.vue:466、721）/ 禁 grid 通过（grep 0 命中）/ 禁空 catch 通过（catch 均带绑定与处理 index.vue:286、364）/ 组件禁 import.meta.env.DEV 通过（grep 0 命中，经 config/env.ts isDev/isMockMode）/ 业务组件禁 emoji 通过（正则扫描 0 命中）/ token 强制残留 6 处（014）/ backdrop-filter 仅 #ifdef H5 通过（index.vue:811-813）/ 页面切换逻辑内联 .vue 通过 / 工具函数 .ts 导入通过 / 自定义组件宿主 flex:1 不适用 / CardSwiper 兜底不适用。"
       ],
-      "notRun": "未驱动开发者工具/模拟器（Layer A 职责边界），002 的机型重叠推断基于公开的状态栏高度规格与代码固定偏移，未截图取证；success.vue 属 PAGES-REGISTER-SUCCESS 审查单元（R1 已有独立文件），本轮仅作跳转目标与状态栏对照引用。"
+      "notRun": "未驱动开发者工具/模拟器/真机（Layer A 职责边界）：001-005 的「已修复待终验」中终验项（多状态栏机型像素、业务 400 不再产生 console/Sentry 噪音、B6 出栈后不误跳）需运行时取证；009 仅 node 逻辑实测未跑真机 picker 全流程；success.vue 属 PAGES-REGISTER-SUCCESS 审查单元，本轮仅作 010 的重复证据引用。"
     }
   ]
 }

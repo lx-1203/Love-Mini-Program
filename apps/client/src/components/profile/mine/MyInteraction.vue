@@ -52,7 +52,7 @@ const DEFAULT_ICONS: Record<string, { iconSrc: string; color: string }> = {
 
 <style scoped lang="scss">
 .my-interaction {
-  margin: 24rpx 24rpx 0;
+  margin: var(--page-padding) var(--page-padding) 0;
 }
 
 .my-interaction__title {

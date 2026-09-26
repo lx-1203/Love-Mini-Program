@@ -1,0 +1,484 @@
+{
+  "cases": [
+    {
+      "id": "H01",
+      "page": "pages/home/index",
+      "title": "Idle：首屏九个区块按序完整渲染且无白屏（含 TabBar 同屏）",
+      "tier": "normal",
+      "pre": "mock 构建（build:mp-weixin:mock）+ 注入固化 JWT → App.vue:208 sessionStore.bootstrap() → isLoggedIn=true → wx.reLaunch('/pages/home/index')（pages.json:53-57 已开 enablePullDownRefresh）；自定义 tabBar 选中「首页」（useTabBar(0)，index.vue:40）",
+      "action": "等待首帧稳定（≥500ms），DOM 探测 HomeHeader / TodayRecommendationCard / TodayLoveProgress / RelationActivity / InterestRecommendation / NearbyPeople / CommunityFeed / InviteBanner / .home-section-gap（index.vue:330-394）",
+      "expected": "九块按源码顺序全部挂载，首屏无白屏且 **TabBar 必须同时在屏**（R12-IND-HOME-001 白屏含 TabBar 消失，本轮保留监控：出现整页+TabBar 空白即判 P1 复发）；模板无全局 v-if 门阻塞首绘；console error=0；本页源码无任何 onLoad/query 读取（index.vue:1-322）→ 作为 H47 幽灵参数用例的前提",
+      "evidence": "normal：after 截图（含 TabBar 全帧）+ 路由断言 + console"
+    },
+    {
+      "id": "H02",
+      "page": "pages/home/index",
+      "title": "下拉刷新真实重拉：/home/dashboard 重发且动画按完成时机停止",
+      "tier": "normal",
+      "pre": "接 H01；记录刷新前时间戳与 feed 内容指纹",
+      "action": "触发页面级下拉刷新（onPullDownRefresh，index.vue:118-121），等待动画停止",
+      "expected": "必须真实调用 homeStore.fetchDashboard()（非仅动画）→ network/日志出现 1 次 dashboard 拉取；stopPullDownRefresh 在 promise 完成后调用（:120 finally），不得立即停止或未停；刷新期间不重复并发（loading 防重入在 refreshHomeFeed :86，注意下拉路径未过该函数，实测若下拉连续触发出现 ≥2 条并发请求即记并发缺陷）；数据更新后各区块回显新值",
+      "evidence": "normal：after 截图 + console + 执行日志（请求计数与动画起止时间）"
+    },
+    {
+      "id": "H03",
+      "page": "pages/home/index",
+      "title": "影响范围回归：未登录（real）下拉刷新不得被强踢登录页（待修复项证伪）",
+      "tier": "critical",
+      "pre": "需 real 构建 + 无 token（removeStorageSync('token')）；本轮构建模式恒为 mock（stage-contract §3.5，DW:657 buildMode 硬编码）→ 本条在 mock 下**只能验 mock 分支**，real 分支如实标 UNVERIFIED 并写明缺 real 构建",
+      "action": "未登录进入首页后执行下拉刷新",
+      "expected": "修复后应有的表现：onPullDownRefresh 路径必须与 refreshHomeFeed 同款登录门（现门仅在 index.vue:85-91 的 `if (!useMock() && !getToken()) return;`，下拉 :118-121 为门旁路）→ 未登录时 0 条 /home/dashboard 请求、无 401、终栈仍为 [pages/home/index]、不出现「登录已过期」toast；实测被踢到 /pages/login/index 即判 MP-R2-PAGES-HOME-INDEX-001（P2 待修复）在 UI 层复现成立",
+      "evidence": "critical：before + after 截图 + 路由链断言（终栈）+ Toast 文案 + console + network 计数"
+    },
+    {
+      "id": "H04",
+      "page": "pages/home/index",
+      "title": "影响范围回归：未登录社区动态「重试」同样绕过登录门",
+      "tier": "critical",
+      "pre": "同 H03（real 未登录；mock 下标 UNVERIFIED）；构造社区动态错误态（断网或后端 5xx 后恢复）",
+      "action": "点社区动态错误态的「重试」（CommunityFeed.vue:152-160 → index.vue:383 `@retry=\"() => homeStore.fetchDashboard()\"`）",
+      "expected": "修复后应有的表现：重试路径必须走带门的 refreshHomeFeed（MP-R2-PAGES-HOME-INDEX-101 的第二条旁路）；未登录时 0 条受保护请求、不被 redirectToLogin 踢走（services/http.ts:468-487、:501-532）；错误态在重试成功后回落 Success，失败保留错误态可再试",
+      "evidence": "critical：before + after 截图 + 路由链断言 + Toast + console + network 计数"
+    },
+    {
+      "id": "H05",
+      "page": "pages/home/index",
+      "title": "onShow 30s 陈旧阈值：静默重拉而非永不更新（R12 需求①）",
+      "tier": "normal",
+      "pre": "接 H01",
+      "action": "① 切到别的 Tab 再切回首页（间隔 <30s）；② 停留在其他页 >30s 后回首页；③ 各记录 dashboard 请求计数",
+      "expected": "HOME_FEED_STALE_MS=30_000 生效（index.vue:82-98）：<30s 且已有数据无错 → 0 次重拉；>30s → 1 次静默重拉（不得整页闪回骨架，保留 loading 防重入 :86）；发新帖/换头像后回首页能看到更新（原缺陷是仅「无数据/有错」才重拉，:79-81 注释）；登录态变化后 watch(isLoggedIn) 补拉一次（:109-116）",
+      "evidence": "normal：after 截图（两态）+ console + 执行日志（请求计数与时间间隔）"
+    },
+    {
+      "id": "H06",
+      "page": "pages/home/index",
+      "title": "顶栏「我的」头像入口 → 我的 Tab，并 2 步内可回首页",
+      "tier": "navigation",
+      "pre": "接 H01",
+      "action": "点 HomeHeader.vue:60 的 .header-me（aria-label=本人昵称，@tap=goMyProfile → openAppPath(ROUTES.PROFILE.INDEX)），再点自定义 TabBar「首页」",
+      "expected": "去程 getCurrentPages 末位 = pages/profile/index（tab 页经 switchTab，utils/navigation.ts openAppPath tab 分支）；回程 2 步内回到首页 Tab（铁律：任意页 2 步内能否回 tab）；昵称不得回退为旧 mock 假名「星野」，缺失时显示「我的」（HomeHeader.vue:40-46）",
+      "evidence": "navigation：路由链断言（去程+回程落点），可不截图"
+    },
+    {
+      "id": "H07",
+      "page": "pages/home/index",
+      "title": "顶栏定位胶囊 → 弹出「我的位置」底部弹层并自动重取定位",
+      "tier": "normal",
+      "pre": "接 H01；首次弹出会拉起授权（utils/location.ts fetchCurrentLocation）——记录拒绝授权与已授权两种结果",
+      "action": "点 .header-location（HomeHeader.vue:63 @tap=$emit('schoolTap') → index.vue:241-245 openLocationSheet）",
+      "expected": "500ms 内 BottomSheet 面板从底部滑入（BottomSheet.vue:72-108）标题「我的位置」，且自动触发一次 refetchLocation（:243-244）；定位文案 locationText 更新（拒绝授权时保留 buildLocationText 默认值，不得白屏或空串裸奔 :68）；校区行为「未认证」或真实校区名 + 已认证态（index.vue:443-450）",
+      "evidence": "normal：after 截图（弹层展开态）+ console + DOM 文本读数（校区/定位）"
+    },
+    {
+      "id": "H08",
+      "page": "pages/home/index",
+      "title": "弹层三路关闭：遮罩 / × / 「我知道了」，且 tabBar 隐藏态必须恢复",
+      "tier": "normal",
+      "pre": "接 H07 弹层已展开",
+      "action": "依次执行三条关闭路径各一轮：① 点遮罩 .bottom-sheet-mask（BottomSheet.vue:73 → onMaskTap :66-68，maskClosable 默认 true）；② 重开后点右上角 ×（:91 closeSheet，showClose 默认 true）；③ 重开后点 footer「我知道了」（index.vue:476-484 @tap=closeLocationSheet）",
+      "expected": "每路点击后 500ms 内面板与遮罩消失（DOM 不存在 .bottom-sheet-root）；三路后自定义 tabBar 均恢复可见（BottomSheet.vue:50-60 watch→setTabBarHidden(false)；卸载兜底 :58-60）——残留隐藏态污染其他 Tab 页即判 P1；关闭不触发任何请求；重开后定位数据仍在（visible 由 ref 控制，无脏态）",
+      "evidence": "normal：after 截图（三路关闭各一张 + 关闭后 TabBar 可见性）+ console + DOM 断言"
+    },
+    {
+      "id": "H09",
+      "page": "pages/home/index",
+      "title": "弹层「重新定位」在途态与终态：Loading 不永驻",
+      "tier": "normal",
+      "pre": "接 H07；构造定位成功与失败（拒绝授权/超时）两种",
+      "action": "点 footer 主按钮「重新定位」（index.vue:466-475 @tap=refetchLocation）",
+      "expected": "在途文案切「定位中...」+ aria-label「重新定位中」（:471-474），结束后必须回到「重新定位」（:246-257 finally 保证 locating=false）；成功时 locationText 更新并触发 reportLocation（内部节流 5 分钟且带登录门，utils/location.ts:155 无 token 直接 return）；失败时不得永驻「定位中...」也不得静默改文案；连点 5 次的定位请求数按节流口径判定，不受 Idempotency-Key 影响（该接口为写请求，见 LG20 同规则）",
+      "evidence": "normal：after 截图（在途态+终态）+ console + 执行日志（定位请求计数）"
+    },
+    {
+      "id": "H10",
+      "page": "pages/home/index",
+      "title": "弹层 hero「进入位置主页」→ 位置子页且弹层先关",
+      "tier": "navigation",
+      "pre": "接 H07",
+      "action": "点 .location-sheet__hero（index.vue:406-424 @tap=openLocationPage）",
+      "expected": "先 locationSheetVisible=false 再 openAppPath(ROUTES.PROFILE.LOCATION)（:266-269）→ 终栈末位 = subpackages/profile-extra/profile/location，**不得**出现「进入子页但遮罩/面板仍在」或 tabBar 残留隐藏；返回后落首页且弹层为关闭态；轻振动可有可无但不得报错",
+      "evidence": "navigation：路由链断言（去程+返回落点）+ DOM 断言（返回后无 .bottom-sheet-root），可不截图"
+    },
+    {
+      "id": "H11",
+      "page": "pages/home/index",
+      "title": "弹层内容区独立滚动且 footer 按钮不被中央浮岛遮挡",
+      "tier": "noop",
+      "pre": "接 H07（max-height-ratio=0.88，index.vue:401）",
+      "action": "在面板内容区滚动到底，观察两个 footer 按钮可见性与可点性；小屏机型重复一次",
+      "expected": "内容在 .bottom-sheet-body scroll-view 内滚动（BottomSheet.vue:97），footer 固定不随内容滚（:102-104 flex-shrink:0）；两枚按钮完整可见可命中（2026-09-04 问题1 修复：弹窗自动隐藏 tabBar，root 恢复 inset:0，不再预留 -13vh）；若「我知道了」被 tabBar 浮岛遮住或落在屏外即判 P2 复发",
+      "evidence": "noop：执行日志（按钮 rect/是否可命中 + scrollTop 读数）+ console，不强制截图（如判定失败则补一张）"
+    },
+    {
+      "id": "H12",
+      "page": "pages/home/index",
+      "title": "通知铃铛 → 消息 Tab；未读角标真实数据三态（0/1/100）",
+      "tier": "navigation",
+      "pre": "接 H01；messages bootstrap 已在登录态下被拉取（index.vue:102-104）",
+      "action": "读 .header-badge 文本；分别构造未读通知 0、1、100（可经 automation 置 messages store 的 unreadNotificationCount）后各截图一次，再点 .header-icon",
+      "expected": "角标数据源为真实未读数而非静态演示值 6（HomeHeader.vue:21-24、:67-72；MP-R1-HOME-REG-007-018 已验证项）：0 时整个角标不渲染、1 显示「1」、100 显示「99+」；点击后 getCurrentPages 末位 = pages/messages/index（switchTab，index.vue:129-131），TabBar 选中态随之为消息",
+      "evidence": "navigation：路由链断言 + 执行日志（三种角标态的 DOM 文本与 rect）；角标 0 态需一张 after 截图作反证"
+    },
+    {
+      "id": "H13",
+      "page": "pages/home/index",
+      "title": "死接线核对：HomeHeader 声明并绑定 searchTap 但模板无搜索元素",
+      "tier": "noop",
+      "pre": "接 H01",
+      "action": "在首页全部可点元素上普查是否存在搜索入口（DOM 探测 .header-search / 放大镜图标），并尝试用 automation 触发 HomeHeader emit('searchTap')",
+      "expected": "结论必须写明：首页**无搜索入口**（HomeHeader.vue:17 声明 searchTap emit、index.vue:333 绑定 openNearbyList，但模板 :52-74 只渲染 .header-me/.header-location/.header-icon 三项 → 该绑定永不触发）；这属功能缺失/死接线，按「首页无搜索」记 Function 类观察（不得凭空造视觉缺陷）；同时核对 openNearbyList 仍经 NearbyPeople「全部」入口可达（index.vue:372-377），不得因本条判整条链路死",
+      "evidence": "noop：执行日志（DOM 探测清单 + emit 触发结果）+ console"
+    },
+    {
+      "id": "H14",
+      "page": "pages/home/index",
+      "title": "今日推荐整卡/「看看TA」点击 → 他人主页；连点×5 只入栈 1 层",
+      "tier": "critical",
+      "pre": "接 H01，今日推荐有数据（viewModel.todayRecommendation 非空）",
+      "action": "500ms 内连点 .today-card__photo-wrap（TodayRecommendationCard.vue:48）与 .today-card__btn--outline「看看TA」（:83）共 5 次",
+      "expected": "todayNavLock 800ms 上锁生效（index.vue:133-143）→ 终栈只增加 1 层（subpackages/profile-extra/profile/other 或 openUserProfile 落点），**不得**出现 5 层同名页或栈深逼近 10 后 redirectTo 兜底（utils/navigation.ts openAppPath 栈满分支）；500ms 内必有路由变化，否则判死按钮；返回后仍为首页且推荐人未变",
+      "evidence": "critical：before + after 截图 + 路由链断言（逐次点击后的栈深读数）+ Toast + console"
+    },
+    {
+      "id": "H15",
+      "page": "pages/home/index",
+      "title": "「喜欢」成功后按钮无状态回显（likeSent 死状态）——乐观更新/回显铁律证伪",
+      "tier": "critical",
+      "pre": "接 H01 登录态",
+      "action": "点 .today-card__btn--love（TodayRecommendationCard.vue:84）一次，记录 toast 与按钮 DOM 类名/图标变化；等待 2s 后再观察一次",
+      "expected": "修复后应有的表现：点赞属乐观更新语义，成功后按钮必须出现可观测状态（已心动样式/禁用/文案变化）；当前实现 likeSent 只在页面 script 写入（index.vue:77、:153、:180）而 **TodayRecommendationCard 无该 prop**（组件 props 仅 item/loading/likeLoading，:11）→ 成功 toast 后按钮与点击前完全一致、可再次发请求；据此按铁律判 FAILED（无状态回显 + 可重复点赞），并如实写明证据为 DOM 前后一致 + network 出现第 2 条 like 请求",
+      "evidence": "critical：before + after 截图（点赞前后各一张用于比对）+ Toast 文案 + console + network（记录同一 userId 的 like 请求条数）"
+    },
+    {
+      "id": "H16",
+      "page": "pages/home/index",
+      "title": "「喜欢」未登录点击 → toast 登录引导且零请求",
+      "tier": "normal",
+      "pre": "构造未登录（LG01 同法：mock 下置空 session，real 下清 token）",
+      "action": "点 .today-card__btn--love 与 .today-card__rotate「换一位」各一次",
+      "expected": "两处均 toast apiErrors.loginRequired（requireLogin index.vue:123-127，被 likeToday :148 与 rotateToday :167 调用）；network 0 条 like/rotate 请求；不跳页、不弹全屏锁（首页保持未登录预览形态）；若 mock 下该前置无法构造则标 UNVERIFIED",
+      "evidence": "normal：after 截图 + 路由断言 + console + network 计数=0"
+    },
+    {
+      "id": "H17",
+      "page": "pages/home/index",
+      "title": "「喜欢」快速连点×5：客户端请求数与服务端落库数分开判",
+      "tier": "critical",
+      "pre": "接 H01 登录态，今日推荐有数据",
+      "action": "500ms 内连点 .today-card__btn--love 5 次",
+      "expected": "两个口径分别写：① 客户端——network 面板 POST /users/{id}/like（clientApi.likeUser，index.vue:152）计数必须 =1，likeLoading 在途须压制后续点击（:149-150 的 if (likeLoading.value) return），若计数 ≥2 即判防连点缺陷；② 服务端——回读该 (userId,targetUserId) 的喜欢记录条数必须 =1。不得因「服务端只落 1 条/后端幂等」判通过：http.ts:254-278 对 POST 注入按 method+URL+body 哈希的稳定 Idempotency-Key，同 body 的 5 次连点会被服务端去重成 1 次，从而掩盖客户端守卫失效；另需记录 .btn--loading 类是否在途存在",
+      "evidence": "critical：before + after 截图 + Toast 文案 + console + network 计数（含每请求 Idempotency-Key 头值）+ 回读喜欢记录条数"
+    },
+    {
+      "id": "H18",
+      "page": "pages/home/index",
+      "title": "「喜欢」失败路径：toast + 在途复位 + 不污染推荐态",
+      "tier": "critical",
+      "pre": "接 H01，构造 like 接口失败（real 断网/后端 5xx；mock 下 automation 让 clientApi.likeUser reject）",
+      "action": "点「喜欢」1 次，观察 toast、按钮类名与推荐人",
+      "expected": "toast apiErrors.operationFailed（index.vue:156）；finally 复位 likeLoading → .btn--loading 必须消失（:157-159，Loading 不永驻）；推荐人不换、likeSent 不变；console 无未处理 Promise 拒绝（MP-R1-PAGES-HOME-INDEX-002 同口径要求）",
+      "evidence": "critical：before + after 截图 + Toast 文案 + console + DOM（loading 类不存在断言）"
+    },
+    {
+      "id": "H19",
+      "page": "pages/home/index",
+      "title": "「换一位」成功链路 + 连点×5 单请求（MP-R2-HOME-003 防重入回归）",
+      "tier": "critical",
+      "pre": "接 H01 登录态",
+      "action": "点 .today-card__rotate（TodayRecommendationCard.vue:41）一次验证换人；再 500ms 内连点 5 次",
+      "expected": "成功：推荐人更换为下一位且 likeSent 重置（index.vue:180）；连点：rotateLoading 在途守卫（:164-169，MP-R2-PAGES-HOME-INDEX-003 新增）必须使 rotate 请求计数 =1，且最终展示的推荐人 = 最后一次点击结果（乱序覆盖即判 FAILED）；同样按「客户端计数」与「服务端推荐序列/喜欢记录」分开写，Idempotency-Key（http.ts:254-278）不得作为客户端通过的依据",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast + console + network 计数 + 回读（最终推荐人 userId 与 storage 历史 viewedCards 条数）"
+    },
+    {
+      "id": "H20",
+      "page": "pages/home/index",
+      "title": "「换一位」无更多推荐：提示且不静默清空卡片",
+      "tier": "normal",
+      "pre": "构造 rotateToday 返回 null（automation mock 返回或把候选池耗尽）",
+      "action": "点「换一位」",
+      "expected": "toast home.noMoreRecommendation（index.vue:176-179）；推荐人保持原样且 likeSent **不被重置**（修复语义：原实现先重置再判空 → 心动态被清但人不换，:170-173 注释）；卡片不进入空态或骨架永驻",
+      "evidence": "normal：after 截图 + Toast 文案 + console + DOM（推荐人姓名前后一致）"
+    },
+    {
+      "id": "H21",
+      "page": "pages/home/index",
+      "title": "今日推荐三态：Loading 骨架 / Empty 文案 / 无数据点击零副作用",
+      "tier": "normal",
+      "pre": "分别构造 loading=true、item=null（feed 空）两态（automation 置 homeStore 状态）",
+      "action": "两态各截图并各点一次整卡区域与「喜欢」按钮",
+      "expected": "loading → .today-card__skeleton「正在为你挑选心动的人…」（TodayRecommendationCard.vue:44）；无 item → .today-card__empty 文案（:45）；两态下点击必须零请求零跳转（goTodayProfile `if (!item) return;` index.vue:136-137；likeToday 同 :146-147）→ 若点击出现跳转/请求即判缺陷；loading 结束后骨架必须消失",
+      "evidence": "normal：after 截图（两态各一张）+ console + network 计数=0"
+    },
+    {
+      "id": "H22",
+      "page": "pages/home/index",
+      "title": "今日推荐主图失败终态 + 统一媒体出口回归（MP-R2-HOME-012 / -102）",
+      "tier": "normal",
+      "pre": "构造 photoUrl 为无效路径/断图；另在 real 模式构造后端返回 /uploads/** 或 /api/v1/media/** 相对路径",
+      "action": "观察主图区域与 console 图片加载日志",
+      "expected": "图片加载失败必须切占位图（photoFailed + @error，TodayRecommendationCard.vue:15-23、:51、:55），不得永久灰底（MP-R2-PAGES-HOME-INDEX-012 已修项的终验）；换人后 photoFailed 需重置（watch :16-22）；同时记录未落地项：主图 src 直绑 item.photoUrl 未经 resolveMediaUrl（MP-R2-PAGES-HOME-INDEX-102 待修复）→ real 模式相对路径必破图，mock 模式因全是 /static 检不出，需在 observed 里写明模式差异",
+      "evidence": "normal：after 截图（失败终态）+ console（图片 404/协议限制计数）"
+    },
+    {
+      "id": "H23",
+      "page": "pages/home/index",
+      "title": "数据维极值：meta 行缺字段不残留尾点、长昵称不破版",
+      "tier": "normal",
+      "pre": "构造 item 的 campusName/gradeLabel 缺失、age=0、bio 500 字、昵称 20 字（automation 置 homeFeed 数据）",
+      "action": "读取 .today-card__meta / __bio / __name 文本与 rect",
+      "expected": "metaLine 用数组 join（TodayRecommendationCard.vue:26-32）→ 缺字段时不得出现「25岁 ·」尾点或首点（MP-R1-HOME-REG-007-018 尾点子项已验证，本条为 UI 终验）；age<=0 不输出「0岁」；500 字 bio/超长昵称需省略号或换行不撑破卡片、不遮挡操作按钮（tags 最多 4 个，:74-76）",
+      "evidence": "normal：after 截图 + 执行日志（三处文本与 rect 读数）"
+    },
+    {
+      "id": "H24",
+      "page": "pages/home/index",
+      "title": "今日恋爱进度 4 格分别跳对应 Tab（navigation 全覆盖）",
+      "tier": "navigation",
+      "pre": "接 H01，steps 数据齐备（TodayLoveProgress）",
+      "action": "逐一点击 .love-step（TodayLoveProgress.vue:79 @tap=$emit('step', step.action)），覆盖 action=profile/discover/messages/nearby 四值",
+      "expected": "四格分别 switchTab 到 /pages/profile/index、/pages/discover/index、/pages/messages/index、/pages/nearby/index（index.vue:188-193）；每次 500ms 内路由变化；未知 action 值必须零跳转（无 else 分支）且不报错——若出现空白页或抛错判缺陷；TabBar 选中态随目标页同步",
+      "evidence": "navigation：路由链断言 ×4 + 返回落点断言，可不截图"
+    },
+    {
+      "id": "H25",
+      "page": "pages/home/index",
+      "title": "关系动态四格落点（含跳转失败可见性）",
+      "tier": "navigation",
+      "pre": "接 H01，relationActivity 四项数值齐备",
+      "action": "逐一点击 .relation-cell（RelationActivity.vue:34 liked-by、:45 whispers、:56 visitors、:67 matches），并执行一次返回",
+      "expected": "落点分别为 /subpackages/discover-extra/likes-visitors/index、/pages/messages/index（tab→switchTab）、/subpackages/profile-extra/profile/visitors、/subpackages/discover-extra/likes/index（index.vue:284-303）；四格均带 hover-class 按下态（MP-R1-HOME-REG 第 6 项修复：4 格仅第一个可感知的缺陷），每格 500ms 内路由变化；返回落点=首页；aria-label 含真实计数",
+      "evidence": "navigation：路由链断言 ×4 + 返回落点，可不截图"
+    },
+    {
+      "id": "H26",
+      "page": "pages/home/index",
+      "title": "关系动态「全部 ›」→ 消息 Tab（无 fail toast 的裸 emit 核对）",
+      "tier": "navigation",
+      "pre": "接 H01",
+      "action": "点 RelationActivity.vue:22 的 .relation-activity__all",
+      "expected": "goMessages → switchTab /pages/messages/index（index.vue:357、:129-131）；注意该元素**无 hover-class 且无 role=button**（RelationActivity.vue:22），若实测不可命中或无按下反馈按铁律记 P2/P3（不得凭代码判 VERIFIED）",
+      "evidence": "navigation：路由链断言 + 执行日志（可命中性/按下态观察）"
+    },
+    {
+      "id": "H27",
+      "page": "pages/home/index",
+      "title": "关系动态四组头像未经统一媒体出口（回归项 UI 证伪）",
+      "tier": "normal",
+      "pre": "real 模式下后端下发 /api/v1/media/** 相对路径头像；mock 下为 /static 路径",
+      "action": "读取四组头像 image 元素的 src 实际值与渲染结果（RelationActivity.vue:42、53、64、75 直绑 av）",
+      "expected": "修复后应有的表现：头像 src 必须是可加载地址（经 resolveMediaUrl 拼 apiRoot+token）；当前直绑 → real 模式破图/回退默认头像，mock 模式正常（MP-R2-PAGES-HOME-INDEX-102 待修复，同页 NearbyPeople.vue:59 与 CommunityFeed 已走统一出口，形成一致性对照）；头像兜底链：无头像时必须落到默认头像而非空白；console 图片加载错误计数须记录",
+      "evidence": "normal：after 截图（四组头像区）+ console（图片错误）+ 执行日志（4 个 src 实际值）"
+    },
+    {
+      "id": "H28",
+      "page": "pages/home/index",
+      "title": "兴趣推荐「查看更多」内联跳转缺少失败可见性（一致性对照）",
+      "tier": "navigation",
+      "pre": "接 H01",
+      "action": "点 InterestRecommendation.vue:39 的 .section-head__more（index.vue:367 内联 @more=\"openAppPath(ROUTES.CIRCLES.INDEX)\"）",
+      "expected": "落 /subpackages/circles/circles/index；同时按一致性维度记录：该入口与同页其余跳转（openNearbyList / openRelation* 带 fail→toast「页面打开失败，请重试」，index.vue:271-303）**不同**——内联写法无 fail 回调，栈满/被拦截时静默失败；判定口径：正常路径可达即记 VERIFIED（跳转）+ 观察项记「无失败兜底」不一致，不得凭空判死按钮",
+      "evidence": "navigation：路由链断言 + 执行日志（是否存在 fail toast 能力）"
+    },
+    {
+      "id": "H29",
+      "page": "pages/home/index",
+      "title": "兴趣卡整体点击 → 圈子主页 circle-home?circleId=",
+      "tier": "navigation",
+      "pre": "接 H01",
+      "action": "点 .interest-card（InterestRecommendation.vue:50-51 @tap=$emit('select', item.id)）",
+      "expected": "落 /subpackages/circles/circles/circle-home 且 query 带真实 circleId（index.vue:195-198 走 encodeURIComponent）；圈子主页能读到该参数（与本页无关但影响判定：若落点页空白说明参数口径不符，按事实记录）；返回后首页滚动位置与数据不丢",
+      "evidence": "navigation：路由链断言（含 options 读数）+ 返回落点断言"
+    },
+    {
+      "id": "H30",
+      "page": "pages/home/index",
+      "title": "「加入」按钮：成功翻转 + 人数同步 + toast",
+      "tier": "critical",
+      "pre": "接 H01 登录态，取一张未加入的兴趣卡（joined=false，记录 memberCount）",
+      "action": "点 .interest-card__join（InterestRecommendation.vue:69-71 @tap.stop）一次",
+      "expected": "加入按钮点击**不得**冒泡触发整卡跳详情（@tap.stop 生效）；成功后 toast common.success（index.vue:225）、按钮立即翻转为「已加入」态（rec.joined=true 同步单一数据源，:216-218，MP-R1-HOME-016 修复：原点击零反馈）、memberCount 与 circle store 一致（:220-223 消除首页与圈子页人数漂移，MP-R2-HOME-004 项）；服务端回读该圈子成员数 +1",
+      "evidence": "critical：before + after 截图（按钮态+人数）+ Toast 文案 + console + 回读成员数"
+    },
+    {
+      "id": "H31",
+      "page": "pages/home/index",
+      "title": "「加入」连点×5：客户端 1 次请求与服务端 1 条成员记录分开判",
+      "tier": "critical",
+      "pre": "接 H01 登录态，取未加入圈子",
+      "action": "500ms 内连点同一张卡的「加入」5 次",
+      "expected": "① 客户端：network 计数 POST /circles/{id}/join 必须 =1（joinPendingIds 守卫 index.vue:206 + finally 清除 :229-231）；② 服务端：回读该圈 memberCount 只 +1、成员表只新增 1 行。**必须分别写两条判定**：http.ts:254-278 会给 POST 注入按 method+URL+body 哈希的稳定 Idempotency-Key，客户端防重入完全失效时后端仍会去重成 1 条，故「memberCount 只 +1」不得单独作为通过依据；另断言 mock 下不出现重复 +1（MP-R2-HOME-004 原缺陷即 mock 重复自增）",
+      "evidence": "critical：before + after 截图 + Toast + console + network 计数（含每请求 Idempotency-Key 头值）+ 回读 memberCount 与成员表行数"
+    },
+    {
+      "id": "H32",
+      "page": "pages/home/index",
+      "title": "「加入」失败：toast 且按钮不翻转（无吞错）",
+      "tier": "critical",
+      "pre": "构造 joinCircle reject（real 断网/5xx 或 mock automation）",
+      "action": "点「加入」1 次",
+      "expected": "toast apiErrors.operationFailed（index.vue:227）；按钮保持「加入」不可出现已加入态；pending 集合必须清除（finally :229-231）→ 若后续合法点击永久无响应即判锁死缺陷；不得出现未处理 Promise 拒绝",
+      "evidence": "critical：before + after 截图 + Toast 文案 + console"
+    },
+    {
+      "id": "H33",
+      "page": "pages/home/index",
+      "title": "旅行圈封面空白（MP-R2-HOME-INDEX-103 待修复项证伪）",
+      "tier": "normal",
+      "pre": "接 H01，兴趣推荐含「旅行圈」卡（mock fixtures.ts:1150 icon 指向不存在的 /static/assets/icons/common/travel.svg）",
+      "action": "读取旅行圈卡 .interest-card__cover 的 src 与渲染尺寸，并对比同排其他 3 卡",
+      "expected": "修复后应有的表现：4 张封面卡均显示有效图；旅行圈恒空白/破图即判 P2 在 UI 复现成立；附加断言：coverSrc 对「/」开头路径无条件信任且 <image> 无 @error 兜底（InterestRecommendation.vue:25-29、:56-61）→ 坏路径直通渲染层，按铁律「头像/图片兜底链」记为缺陷；mock 与 real 均应可见（素材缺失属包内问题，不依赖后端）",
+      "evidence": "normal：after 截图（4 卡封面并排）+ console（图片加载错误）+ 执行日志（src 实际值）"
+    },
+    {
+      "id": "H34",
+      "page": "pages/home/index",
+      "title": "附近的人条目与两个「全部」入口的落点与热区",
+      "tier": "navigation",
+      "pre": "接 H01，nearbyPeople 有数据",
+      "action": "① 点 .nearby-item（NearbyPeople.vue:51）→ 他人主页；② 点头部「全部 ›」（:37）；③ 点底部 .nearby-people__bar（:73）",
+      "expected": "① openUserProfile 落他人主页（index.vue:376）；②③ 均 openNearbyList 落 /subpackages/discover-extra/nearby/people（:271-278），失败必须有 toast「页面打开失败，请重试」（2026-09-04 问题4 修复，无 fail 回调即判复发）；三处均可命中且 500ms 内有反馈；实测各元素高度需 ≥88rpx 热区",
+      "evidence": "navigation：路由链断言 ×3 + 执行日志（rect 读数）"
+    },
+    {
+      "id": "H35",
+      "page": "pages/home/index",
+      "title": "附近的人空态与骨架",
+      "tier": "normal",
+      "pre": "构造 items=[]（loading=false）与 loading=true 两态",
+      "action": "两态各截图，并在空态下确认无残留可点空区",
+      "expected": "空态渲染兜底文案（NearbyPeople.vue:40-48，MP-R1-HOME-REG 空白态子项）；loading 态骨架 shimmer；两态不得出现「区块标题在、内容空白且无提示」；空态时底部条仍指向附近列表页或按实现隐藏，须与实际一致并写明",
+      "evidence": "normal：after 截图（两态）+ console"
+    },
+    {
+      "id": "H36",
+      "page": "pages/home/index",
+      "title": "社区动态帖子卡点击 → 详情；作者头像/昵称点击不冒泡进详情",
+      "tier": "navigation",
+      "pre": "接 H01，communityPosts 有数据",
+      "action": "① 点 .post-card 正文区（CommunityFeed.vue:164）；② 点作者头像 .post-card__author-tap（:168-174）；③ 点昵称行 .post-card__author（:177-181）",
+      "expected": "① 落 /subpackages/village/village/detail?id=<真实 postId>（index.vue:305-307）；②③ 经 @tap.stop 只落他人主页（index.vue:310-312 + :386）且**不得**同时跳详情（双跳即判缺陷）；authorId 缺失的作者行不可点（onAuthorTap :155-158 直接 return，模板应无可点态）",
+      "evidence": "navigation：路由链断言 ×3（含 options 读数）+ 执行日志（是否双跳）"
+    },
+    {
+      "id": "H37",
+      "page": "pages/home/index",
+      "title": "「关注」芯片：在途反馈缺失（乐观更新+回滚铁律证伪）",
+      "tier": "critical",
+      "pre": "接 H01 登录态，取一个未关注作者",
+      "action": "点 .post-card__follow（CommunityFeed.vue:192-200）一次，从点击起计时观察 500ms 内 DOM 是否有任何变化（文案/类名/禁用态）",
+      "expected": "铁律口径：点击后 500ms 内必须有可观测反馈。当前实现为 await 后才改 followedIds（:108-116），pending 集合仅用于守卫、**未驱动任何视觉态**（模板无 pending 类绑定）→ 若 500ms 内除 hover-class 按下态外无文案/禁用/骨架变化，即判「乐观更新缺失（响应慢时近似死按钮）」FAILED；成功翻转「已关注」+ 失败 toast apiErrors.operationFailed 且态不变（:117-119）；不得出现冒泡跳详情（@tap.stop）",
+      "evidence": "critical：before + after 截图（点击后 500ms 与 3s 各一张）+ Toast 文案 + console + 执行日志（首次 DOM 变化耗时）"
+    },
+    {
+      "id": "H38",
+      "page": "pages/home/index",
+      "title": "「关注」连点×5 + 取消关注往返：客户端请求数与服务端关注行数分开判",
+      "tier": "critical",
+      "pre": "接 H01 登录态，未关注作者",
+      "action": "① 500ms 内连点同一作者「关注」5 次；② 成功后再连点「已关注」5 次（取消）；③ 关注→取消→关注 往返 3 轮",
+      "expected": "① 客户端：POST follow 计数 =1（followPendingIds 守卫 CommunityFeed.vue:100-101）；服务端：回读关注表该 (me,author) 行数 =1。② 客户端：DELETE/PUT unfollow 计数 =1，态回到「关注」。③ 三轮往返后状态与最后一次操作一致、无错乱。两个口径必须分开写：http.ts:254-278 稳定 Idempotency-Key 会把同 body 的 5 次连点在服务端压成 1 次，只报「只关注成功 1 次」不足以判防连点通过；network 计数 ≥2 判 FAILED",
+      "evidence": "critical：before + after 截图 + Toast + console + network 计数（含 Idempotency-Key 头值）+ 回读关注关系行数"
+    },
+    {
+      "id": "H39",
+      "page": "pages/home/index",
+      "title": "已关注态初始化与持久性（MP-R2-HOME-002 回归）",
+      "tier": "normal",
+      "pre": "接 H01 登录态；预先在服务端关注某作者（或 mock 让 getMyFollowing 返回该 id）",
+      "action": "进入首页 → 切走 Tab → 再回首页；期间不点关注",
+      "expected": "挂载时从「我的关注列表」初始化（onMounted getMyFollowing，CommunityFeed.vue:69-88）→ 已关注作者一进首页即显示「已关注」，不得出现「可对已关注作者重复发起 follow」的本地内存态回归；离开再回来态不丢；初始化失败必须静默降级不弹错（:85-87）",
+      "evidence": "normal：after 截图（进页即「已关注」）+ console（getMyFollowing 结果）+ 执行日志"
+    },
+    {
+      "id": "H40",
+      "page": "pages/home/index",
+      "title": "社区动态「查看更多 ›」→ 村口动态流（R21 修复回归）",
+      "tier": "navigation",
+      "pre": "接 H01",
+      "action": "点 .section-head__more（CommunityFeed.vue:137-138）",
+      "expected": "落 /subpackages/village/village/index 而**不是**发帖页（R21 2026-09-09 修复，index.vue:314-317；R1 清单口径可能仍是「刷新」，本轮文案为「查看更多 ›」→ 按现状判定，落点错即判 P1 复发）；返回后首页数据与滚动位不丢",
+      "evidence": "navigation：路由链断言 + 返回落点断言"
+    },
+    {
+      "id": "H41",
+      "page": "pages/home/index",
+      "title": "社区动态错误态与重试可点性（三态齐备）",
+      "tier": "normal",
+      "pre": "构造 homeStore.errorMessage 非空（mock automation 置错误 + 空列表）",
+      "action": "观察错误块渲染与「重试」按钮，点重试（正常网络下）",
+      "expected": "错误态必须展示错误文案 + 重试入口（CommunityFeed.vue:152-160，error prop 由 index.vue:382 传入）；重试后成功→回 Success、失败→保留 Error（不得伪装成 Empty）；三态 Idle/Loading/Success/Empty/Error 齐备性在此页一并记录；未登录 real 下重试的登录门缺失由 H04 单独判",
+      "evidence": "normal：after 截图（错误态 + 重试后态）+ console + network"
+    },
+    {
+      "id": "H42",
+      "page": "pages/home/index",
+      "title": "帖子配图加载失败兜底（大图 24s 灰占位历史项回归）",
+      "tier": "normal",
+      "pre": "构造 post.images 含失效 URL",
+      "action": "观察 .post-card__img 区域 10s",
+      "expected": "图片失败必须切默认占位/纯色块并有终态（failedKeys + onImageError，CommunityFeed.vue:37-43、:204-225 最多取 3 图）；不得永久灰占位（2026-08-31 修复项的 UI 终验）；重试需清失败记录以便重加载（handleRefresh :50-54，注意该函数当前仅被 void 引用，若重试后图片不恢复按事实记录）",
+      "evidence": "normal：after 截图（失败终态）+ console（图片错误计数）"
+    },
+    {
+      "id": "H43",
+      "page": "pages/home/index",
+      "title": "邀请 banner →「我的」Tab 桥接 invite=1 并弹邀请弹窗（跨页回归）",
+      "tier": "critical",
+      "pre": "接 H01 登录态；先 wx.removeStorageSync 清 pending-tab-query 桥接残留",
+      "action": "点 .invite-banner（InviteBanner.vue:15 → index.vue:319-321 switchTabWithQuery(ROUTES.PROFILE.INDEX,{invite:'1'})）",
+      "expected": "落 /pages/profile/index 且我的页 onShow 消费 invite=1 弹出邀请弹窗（pages/profile/index.vue:227-243，MP-R1-PAGES-HOME-INDEX-001 已验证项的本轮 UI 终验）；桥接 key 即读即清（utils/navigation.ts consumePendingTabQuery :140-169）；未登录时应 toast apiErrors.loginRequired 而不发起受保护 POST /invites（pages/profile/index.vue:236-243，MP-R2-PROFILE-008 门）；CTA 若只切 Tab 不弹窗判 P1",
+      "evidence": "critical：before + after 截图（弹窗出现）+ 路由链断言 + Toast + console + storage 回读（桥接 key 已清）"
+    },
+    {
+      "id": "H44",
+      "page": "pages/home/index",
+      "title": "switchTab 桥接失败/参数残留防污染",
+      "tier": "noop",
+      "pre": "接 H43 之后仍在首页场景；构造 switchTab 失败（栈内异常态）或以 automation 直接写桥接 key 指向其他路径",
+      "action": "重复进出首页与我的 Tab 各 3 次，检查 invite 弹窗是否被误触发",
+      "expected": "桥接按目标 path 匹配后才消费（utils/navigation.ts:152-164），非目标页不得误消费；switchTab fail 时清理本次桥接（:231-244）→ 不得出现「下次进我的页凭空弹邀请窗」的残留；连续 3 轮无脏弹窗",
+      "evidence": "noop：执行日志（每轮 storage 读数 + 是否弹窗）+ console"
+    },
+    {
+      "id": "H45",
+      "page": "pages/home/index",
+      "title": "滚动铁律：顶部遮罩淡入且不拦截点击；滚到底内容不被 tabBar 遮挡",
+      "tier": "noop",
+      "pre": "接 H01（整页自然滚动，无 scroll-view）",
+      "expected": "滚过 10px 后 .home-page__top-scrim 淡入（index.vue:56-65，遮罩高 statusBar+28px），数字随滚动淡出而非硬裁切，且遮罩不得吞掉其下方元素的点击（在遮罩覆盖区点头部按钮仍生效）；滚到底最后区块（InviteBanner + .home-section-gap，:389-394 顺序为 gap 兜底在最后）完整可见不被自定义 tabBar 浮岛遮挡；回顶 scrollTop=0",
+      "action": "滚到底 → 点最后 banner → 回顶 → 在遮罩区点头部入口",
+      "evidence": "noop：执行日志（scrollTop 序列 + 最后元素 rect 与 tabBar rect 对比）+ console；遮挡成立时补一张 after 截图"
+    },
+    {
+      "id": "H46",
+      "page": "pages/home/index",
+      "title": "打开即返回 / 重复进出 ×3：请求叠加与 console 洁净",
+      "tier": "normal",
+      "pre": "接 H01",
+      "action": "从登录页 reLaunch 首页 → 立即切走/返回，重复 3 次，统计 dashboard / messages bootstrap / 定位上报次数",
+      "expected": "onShow 门控生效（:93-105）→ 30s 内重复进出不得叠加 ≥2 条 dashboard 请求；messagesStore.bootstrap 仅登录态调用（:102-104，内部 30s 新鲜度缓存幂等）；reportLocation 内部节流且无 token 直接 return（utils/location.ts:155，MP-R2-NEARBY-002 同口径）；console error=0、无未处理拒绝、无「Page route 错误」",
+      "evidence": "normal：after 截图 + console + 执行日志（三类请求计数）"
+    },
+    {
+      "id": "H47",
+      "page": "pages/home/index",
+      "title": "参数消费核对：首页无 onLoad → 所有深链参数为幽灵参数",
+      "tier": "noop",
+      "pre": "构造 /pages/home/index?tab=community&postId=1&focus=feed&dev-user=1（tab 页，走 switchTab 不带 query）",
+      "action": "以 reLaunch 与 switchTabWithQuery 两种方式进入，观察是否定位到社区区/滚动到帖子；并读取 storage 桥接 key 是否残留",
+      "expected": "首页源码只注册 onShow/onPullDownRefresh/onPageScroll，**无 onLoad、无 consumeTabQuery 调用**（index.vue:10、:62、:93、:118 全量核对）→ tab/communityId/postId/focus 等深链参数一律不被消费，属幽灵参数（若固化表声称这些参数生效即判文档过期）；唯一真实生效的入参是 dev-user=1，且由 App.onLaunch/全局导航拦截器消费而非本页（utils/dev-user.ts:80-132）；写入桥接但未消费的 key 不得残留污染后续页面",
+      "evidence": "noop：执行日志（两种方式的路由/滚动结论 + storage 读数）+ console"
+    },
+    {
+      "id": "H48",
+      "page": "pages/home/index",
+      "title": "七态齐备 + 首页交互形态铁律（禁 CardSwiper、热区普查、2 步回 Tab）",
+      "tier": "normal",
+      "pre": "接 H01 及前面各态构造结果汇总",
+      "action": "① DOM 普查首页是否存在 CardSwiper/滑动卡片结构；② 逐可点元素（9 区块内全部 @tap，含 TodayLoveProgress 4 格、RelationActivity 4 格、Interest 卡与加入、Nearby 条目、Community 卡/关注/作者/更多、Invite）验证 500ms 内反馈；③ 逐元素 rect 换算热区；④ 从任一子页返回后确认 2 步内可回任一 Tab",
+      "expected": "① 首页渲染树**不得**出现 CardSwiper/连续滑动卡片（源码注释硬约束：禁止使用 CardSwiper，连续人物浏览属寻觅 Tab，index.vue:5-8）→ 出现即判架构违规 P2；② 每个可点元素 500ms 内必有路由/DOM/Toast 之一，否则「死按钮」FAILED（G4 死按钮=0）；③ 热区 <88rpx 的元素逐个列出（不得凭代码判过）；④ 七态：Idle/Loading(骨架 H21)/Success/Empty(H21、H35)/Error(H41)/Disabled(未登录拦截 H16)/Refreshing(H02) 必须各有截图或日志支撑；⑤ 本页无输入框 → 表单三态记「不适用」并写明依据",
+      "evidence": "normal：after 截图（每态一张 + 死按钮/热区普查清单）+ 路由断言 + console"
+    }
+  ]
+}

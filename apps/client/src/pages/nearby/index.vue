@@ -110,7 +110,14 @@ const homeSubtitle = ref(buildLocationText("", sessionStore.userSession?.campusN
 async function initLocation() {
   const loc = await fetchCurrentLocation();
   if (loc) {
-    homeSubtitle.value = buildLocationText(loc.city, sessionStore.userSession?.campusName);
+    // MP-R6-F1-NEARBY-IP-CITY-001：citySource==="ip" 时，城市是后端按**请求方 IP 归属地**推断的
+    // （逆地理拿不到城市时的兜底，见 utils/location.ts:44-56），与用户真实所在城市可能差出一个省。
+    // 这样的城市只够用来标注，不能当同城过滤键，也不能写进 NEARBY_CITY——
+    // publish 页的「添加位置 · 自动定位」正把那个缓存当用户所在城市用。
+    const ipSourced = loc.citySource === "ip";
+    homeSubtitle.value =
+      buildLocationText(loc.city, sessionStore.userSession?.campusName) +
+      (ipSourced && loc.city ? ` · ${t("locationPage.serverCityTag")}` : "");
     // R16（2026-09-07）：定位成功立即上报坐标（force 跳过节流）——
     // 此前 nearby 页只取城市不上报，后端推荐距离仍按旧坐标/默认点计算，
     // 出现「1893km」级异常距离与区域错乱
@@ -118,12 +125,14 @@ async function initLocation() {
     // 2026-08-27 修复：定位成功后用真实城市刷新附近动态（不再仅登录态）。
     // MP-R1-PAGES-NEARBY-INDEX-001：城市变化强制重拉（绕过 30s TTL），但仍受登录门约束
     if (loc.city && loc.city !== currentCity.value) {
-      currentCity.value = loc.city;
-      // MP-R1-PUBLISH-006：持久化城市（publish 页「添加位置 · 自动定位」的数据源，
-      // 原全库无写入方导致其恒显示缺省「北京市」）
-      try {
-        uni.setStorageSync(STORAGE_KEYS.NEARBY_CITY, loc.city);
-      } catch (_e) { /* storage 失败不影响主流程 */ }
+      if (!ipSourced) {
+        currentCity.value = loc.city;
+        // MP-R1-PUBLISH-006：持久化城市（publish 页「添加位置 · 自动定位」的数据源，
+        // 原全库无写入方导致其恒显示缺省「北京市」）
+        try {
+          uni.setStorageSync(STORAGE_KEYS.NEARBY_CITY, loc.city);
+        } catch (_e) { /* storage 失败不影响主流程 */ }
+      }
       if (canFetchProtected()) {
         void loadCirclePosts(true);
       }
@@ -204,6 +213,7 @@ async function loadActivities(force = false) {
     await activityStore.fetchActivities(true);
     return;
   }
+  if (activityStore.loading) return;
   if (activityStore.activities.length === 0) {
     await activityStore.fetchActivities();
   }
@@ -646,9 +656,7 @@ function formatMemberCount(count: number): string {
 .nearby-home {
   min-height: 100%;
   background: var(--c-bg-page, #EEF7F2);
-  /* R20：padding-top 注入状态栏高度（env() 在模拟器为 0 会顶进状态栏）；
-     R10-P1-003：收敛自造变量 --statusbar-height → 统一 var(--statusbar, env(...)) 兜底链 */
-  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20px + 24rpx) 32rpx 0;
+  padding: 24rpx 32rpx 0;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;

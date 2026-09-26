@@ -53,7 +53,7 @@ public class MockPrivateMessageService implements PrivateMessageService {
 
     @Override
     public MessageView sendMessage(Long conversationId, Long senderId, String content, String kind,
-                                   Integer durationSeconds) {
+                                   Integer durationSeconds, String quoteRef) {
         return new MessageView(
             1L, conversationId, senderId, content, kind, false,
             java.time.LocalDateTime.now().toString(),

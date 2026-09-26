@@ -1,0 +1,305 @@
+{
+  "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+  "judged": 34,
+  "by": {
+    "VERIFIED": 0,
+    "FAILED": 0,
+    "UNVERIFIED": 6,
+    "UNVERIFIED_INSTRUMENT": 23,
+    "NOT_EVIDENCED": 5
+  },
+  "noEvidenceExcludedFromCompletion": 0,
+  "issues": [],
+  "cases": [
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS01",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判；且期望所需维度未采集：network 请求计数",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS02",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.lock-screen__btn) ; tap(.lock-screen__btn-link)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS03",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判；且期望所需维度未采集：network 请求计数",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS04",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS05",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__) ; tap(.wechat-input-bar__send)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS06",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS07",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.temp-action-row)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS08",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS09",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS10",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS11",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS12",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__) ; tap(.wechat-input-bar__send) ; tap(.wechat-input-bar__send)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS13",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS14",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__) ; tap(.wechat-input-bar__input)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS15",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__) ; tap(.wechat-input-bar__icon-btn--emoji) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS16",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.wechat-input-bar__icon-btn--more) ; tap(.more-menu-overlay) ; tap(.more-menu-sheet__cancel) ; tap(.more-menu-sheet)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS17",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(.wechat-input-bar__icon-btn--more) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS18",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 三态各走一遍：more 菜单 → 图片项 → 选图确认；抄录 showLoading/hideLoading 与最终 Toast 原文，并回读消息列表中 image 气泡条数",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS19",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：longpress(__CAND__) ; tap(__CAND__) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS20",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：longpress(__CAND__) ; input(__CAND__) ; tap(.quote-reply-bar) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS21",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__) ; tap(__CAND__) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS22",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS23",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS24",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.unread-hint)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS25",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS26",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS27",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS28",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS29",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS30",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 五路直开并抄录结果：①?sessionId=SA&prefillMessage=%E4%BD%A0%E5%A5%BD123；②?sessionId=SA&icebreaker=%E5%96%9C%E6%AC%A2%E6%91%84%E5%B",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS31",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "dom 探针全部是非 class 令牌（把 i18n key / JS 标识符当选择器查）：.chat-session:absent .jwt:absent —— 该观察不能支撑任何判决",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS32",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：rapidTap(__CAND__) ; tap(.chat-header__back)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS33",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX/CS34",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    }
+  ],
+  "notes": [
+    "本页在 round-6-tour 下零截图（A/B 两目录均只有 subpackages_chat_official-chat_index，实测 find 计数 0）。落点六码=PARAM_REQUIRED，owner=instrument，最高 P2 以下；最低成本解法：巡检入口带 mock 会话参数（?sessionId=S0 或由消息页点入）后再截图。 实测依据：CS01-after.png 显示页面能打开但报「缺少会话标识，请从聊天列表或匹配结果进入。」，即无 sessionId/userId 入参的裸路由。",
+    "CS01 期望的整页 LockScreen 在 mock 构建不可达：apps/client/src/subpackages/chat/chat-session/index.vue:543 `isUnlocked = sessionStore.isLoggedIn || useMock()`，mock 下恒 true → :1945 `v-if=\"!isUnlocked\"` 永不成立。落点六码=BUILD_FLAG_ABSENT，owner=instrument，最高 P2 以下；最低成本解法：该断言改用 real 构建跑，或在 mock 下加一个仅 dev 生效的「强制未登录」开关绕开 useMock() 短路。",
+    "CS31 的 dom 探针把 .chat-session/.jwt 当 class 查询（源码无此类名），属非 class 令牌噪声，未据此判任何结论。",
+    "裁定口径：三方一致=ops expected × exec observed/route/toast/console/evidence × 真打开的帧（round-6-tour 巡检帧含 zoom3x、round-6-interact 操作前后图）；复合键 manifest+caseId。",
+    "输入快照：.zcode/tmp/adjudicate/exec-results.snapshot.json（updatedAt 2026-09-25T15:28:18.856Z，509 行，gitSha 874ff52f）。执行轮仍在追加权威件，本文件只覆盖快照内已记录用例。",
+    "ERROR:timeout 尾注的帧一律按 NO-EVIDENCE 处置并计入 UNVERIFIED，不读作已取证；本清单该类 0 条已从完成度中排除。"
+  ]
+}

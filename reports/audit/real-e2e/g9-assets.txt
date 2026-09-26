@@ -1,0 +1,13 @@
+# G9 素材可达性 — .zcode/tmp/g9-probe.cjs（只读探测，不写库不写盘素材）
+# capturedAt: 2026-09-25T15:43:30+08:00
+# runner: D:/codex-tools/node-v22.17.0-win-x64/node.exe (v22.17.0)
+# 来源常量: apps/client/src/config/images.ts 的 export const IMAGE_PATHS 块
+# 基址: http://127.0.0.1:8080/api/v1/media/app-assets   盘上对照根: apps/api/uploads/app-assets/
+# ---- BEGIN ORIGINAL STDOUT+STDERR ----
+G9_EXTRACTED=455 (IMAGE_PATHS 块 61376 字节 / 字面量 458 条 / 模板拼接需人工判定 0 条)
+G9_PROBED=455 G9_OK=455 G9_SKIPPED=0 G9_FAIL=0
+G9_CONTROL 在盘且200=455 在盘但失败=0 不在盘但200=0 不在盘且失败=0
+G9_NONASCII_FAILS=0  G9_ASCII_FAILS=0  (只判路径段，已剥掉 [在盘]/[不在盘] 中文标签——这个标签污染同类计数踩过两次)
+G9_RESULT=PASS
+# ---- END ----
+G9_EXIT_CODE=0

@@ -23,6 +23,7 @@ import com.campuslove.api.repository.CircleMembershipRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.InterestCircleRepository;
 import com.campuslove.api.repository.PostRepository;
+import com.campuslove.api.repository.PostLikeRepository;
 import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
@@ -67,6 +68,7 @@ public class RealHomeService implements HomeService {
     private final CircleMembershipRepository circleMembershipRepository;
     private final ProfileQueryService profileQueryService;
     private final UserRepository userRepository;
+    private final PostLikeRepository postLikeRepository;
     private final HomeFeedFallbackProvider homeFeedFallbackProvider;
 
     /**
@@ -85,7 +87,8 @@ public class RealHomeService implements HomeService {
             CircleMembershipRepository circleMembershipRepository,
             ProfileQueryService profileQueryService,
             HomeFeedFallbackProvider homeFeedFallbackProvider,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            PostLikeRepository postLikeRepository) {
         this.recommendationService = recommendationService;
         this.checkInService = checkInService;
         this.dailyQuestionService = dailyQuestionService;
@@ -98,6 +101,7 @@ public class RealHomeService implements HomeService {
         this.circleMembershipRepository = circleMembershipRepository;
         this.profileQueryService = profileQueryService;
         this.userRepository = userRepository;
+        this.postLikeRepository = postLikeRepository;
         this.homeFeedFallbackProvider = homeFeedFallbackProvider;
     }
 
@@ -411,9 +415,10 @@ public class RealHomeService implements HomeService {
         // 2026-09-02 推荐去重红线：候选只取一次，今日推荐取首位，
         // 附近的人从剩余候选生成——同一人不得同屏出现在两个板块
         java.util.List<RecommendedPersonView> candidates = homeCandidates();
+        java.util.Set<Long> myLiked = myLikedUserIds(userId);
         TodayRecommendationView recommendation = candidates.isEmpty()
             ? homeFeedFallbackProvider.fallbackTodayRecommendation()
-            : toTodayRecommendation(candidates.get(0));
+            : toTodayRecommendation(candidates.get(0), myLiked);
         LoveProgressView loveProgress = buildLoveProgress(userId);
         RelationActivityView relationActivity = buildRelationActivity(userId);
         java.util.List<InterestCircleSummaryView> interests = buildInterestRecommendations(userId);
@@ -424,7 +429,7 @@ public class RealHomeService implements HomeService {
         if (nearby.isEmpty()) {
             nearby = homeFeedFallbackProvider.fallbackNearbyPeople();
         }
-        java.util.List<CommunityPostSummaryView> posts = buildCommunityPosts();
+        java.util.List<CommunityPostSummaryView> posts = buildCommunityPosts(userId);
         if (posts.isEmpty()) {
             posts = homeFeedFallbackProvider.fallbackCommunityPosts();
         }
@@ -440,7 +445,27 @@ public class RealHomeService implements HomeService {
         if (candidates.size() <= 1) {
             return null;
         }
-        return toTodayRecommendation(candidates.get(1));
+        return toTodayRecommendation(candidates.get(1), myLikedUserIds(userId));
+    }
+
+    /**
+     * 当前请求者的主动喜欢集合（likes 表现查真源）。
+     *
+     * <p>未登录（userId 为 null）或查询失败时返回空集，对应视图 liked=false——
+     * 首页/消息页在看不到登录态时不应假装已喜欢。</p>
+     */
+    private java.util.Set<Long> myLikedUserIds(Long userId) {
+        if (userId == null) {
+            return java.util.Set.of();
+        }
+        try {
+            return matchService.getMyLikes(userId).stream()
+                    .map(LikedUserView::userId)
+                    .collect(java.util.stream.Collectors.toSet());
+        } catch (RuntimeException e) {
+            log.warn("聚合我的喜欢列表失败, userId={}: {}", userId, e.getMessage());
+            return java.util.Set.of();
+        }
     }
 
     /**
@@ -457,7 +482,8 @@ public class RealHomeService implements HomeService {
         }
     }
 
-    private TodayRecommendationView toTodayRecommendation(RecommendedPersonView view) {
+    private TodayRecommendationView toTodayRecommendation(RecommendedPersonView view,
+                                                           java.util.Set<Long> myLiked) {
         boolean certified = view.verificationBadgeLevel() != null
             && !"none".equalsIgnoreCase(view.verificationBadgeLevel());
         boolean online = "online".equals(view.activeStatusText()) || "just_now".equals(view.activeStatusText());
@@ -480,7 +506,8 @@ public class RealHomeService implements HomeService {
             online,
             matchScore,
             photoUrl,
-            view.constellation()
+            view.constellation(),
+            view.id() != null && myLiked.contains(view.id())
         );
     }
 
@@ -624,7 +651,7 @@ public class RealHomeService implements HomeService {
         }
     }
 
-    private java.util.List<CommunityPostSummaryView> buildCommunityPosts() {
+    private java.util.List<CommunityPostSummaryView> buildCommunityPosts(Long userId) {
         try {
             // 2026-08-26 R4 契约：timeText 保持 ISO 字符串下发（LocalDateTime.toString()），
             // 相对时间由前端统一 formatRelativeTime 格式化（解析失败原样透传）；
@@ -659,7 +686,9 @@ public class RealHomeService implements HomeService {
                     truncateContent(post.getContent(), 80),
                     profileQueryService.parseStringList(post.getImages()).stream().limit(3).toList(),
                     post.getLikesCount() == null ? 0 : post.getLikesCount(),
-                    post.getCommentsCount() == null ? 0 : post.getCommentsCount()
+                    post.getCommentsCount() == null ? 0 : post.getCommentsCount(),
+                    // liked 真源：post_likes 表现查（与 likeCount 计数是两件事，未登录恒 false）
+                    userId != null && postLikeRepository.existsByUserIdAndPostId(userId, post.getId())
                 );
             }).toList();
         } catch (RuntimeException e) {

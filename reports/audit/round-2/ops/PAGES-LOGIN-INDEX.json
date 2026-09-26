@@ -1,0 +1,384 @@
+{
+  "cases": [
+    {
+      "id": "LG01",
+      "page": "pages/login/index",
+      "title": "Idle：清登录态冷启动落登录页，协议默认「未勾选」（证伪 R1 旧预期「默认已勾选」）",
+      "tier": "normal",
+      "pre": "mock 构建（build:mp-weixin:mock，本轮构建模式恒 mock，见 reports/audit/round-2/screenshot-manifest.json buildMode）。注意：mock 下 App.vue:208 → sessionStore.bootstrap() 在 useMock() 分支无条件写入 mockUserSession（stores/session.ts:616-619，loggedIn:true 在 :40）→ isLoggedIn 恒 true，登录页会立即自动前进。构造方式：先清 token（wx.removeStorageSync('token')），再 automation_evaluate 把 session store 的 userSession 置 null 并保证此后不再触发 bootstrap；失败即判 UNVERIFIED（前置未构造）",
+      "action": "reLaunch('/pages/login/index')（本页为 pages.json 首个页面即启动页，pages.json:41-43），等待首帧，探测 .login-page__brand / .hero-image / .login-page__tagline / .btn-primary / .btn-phone-quick / .login-sms-fallback / .btn-guest / .terms-wrap .checkbox / .dev-user-entry",
+      "expected": "停留登录页，getCurrentPages=[pages/login/index]；品牌区主标题+小苗图标、插画、slogan 三行、微信登录/手机号快捷/手机号登录文字/稍后再看四类入口、协议行全部可见；**协议勾选框必须为未勾选态**：.checkbox 无 checkbox--checked 类、role=checkbox 的 aria-checked=false、无 CHECK_WHITE_SVG 勾图标（agreed 初始 false，index.vue:58-61 引注 MP-R1-PAGES-LOGIN-INDEX-102「默认勾选属微信拒审项」）；R1 清单写的「默认已勾选 agreed=true」是修复前旧预期，按本轮判 FAILED；console 无 TypeError/NAV_FAIL",
+      "evidence": "normal：after 截图 + 路由断言（getCurrentPages 链）+ console；协议默认态另需 DOM 属性读数（aria-checked / class 列表）"
+    },
+    {
+      "id": "LG02",
+      "page": "pages/login/index",
+      "title": "已登录进入登录页自动前进寻觅，全程只 1 次导航（无双跳竞争）",
+      "tier": "navigation",
+      "pre": "接 LG01 的 mock 构造路径反向：automation_evaluate 注入 mock 会话使 isLoggedIn=true（或 reLaunch 后立即触发一次 bootstrap），当前在 /pages/login/index",
+      "action": "停留 ≤3s，等 onShow 检查（index.vue:98-101）与 watch(!loading && isLoggedIn)（index.vue:122-136）两条路径竞争完成",
+      "expected": "自动 uni.switchTab('/pages/discover/index')，getCurrentPages=[pages/discover/index]；一次性标记 autoForwardedToMain（index.vue:113）保证 onShow 与 watch 二者只导航一次；console 无「Page route 错误(system error)」「routeDone with a webviewId that is not the current page」（回归断言，index.vue:94-97、104-111 注释）",
+      "evidence": "navigation：getCurrentPages 路由链断言 + console 双跳错误过滤，可不截图"
+    },
+    {
+      "id": "LG03",
+      "page": "pages/login/index",
+      "title": "重复进出登录页 ×2：每次新实例均自动前进且均为单跳",
+      "tier": "navigation",
+      "pre": "接 LG02，当前在 /pages/discover/index，登录态保持",
+      "action": "miniProgram.reLaunch('/pages/login/index') → 等自动前进 → 重复 1 次（共 2 轮）",
+      "expected": "每轮均再次单跳落 /pages/discover/index；autoForwardedToMain 与 stopSessionForwardWatch 为模块/实例级变量，新页面实例重置后仍可前进一次（index.vue:112-113、163-175）；console 无 routeDone 竞争错、无 watch 泄漏类报错",
+      "evidence": "navigation：路由链断言（每轮落点均 = /pages/discover/index）+ console，可不截图"
+    },
+    {
+      "id": "LG04",
+      "page": "pages/login/index",
+      "title": "快速连点「微信登录」×5：客户端只发 1 次 wx.login/POST /v1/auth/wechat",
+      "tier": "critical",
+      "pre": "LG01 未登录态 + 主动勾选协议（点 .checkbox，见 LG06）；appConfigStore.isLoginOpen=true",
+      "action": "对 .btn-primary（aria-label=login.wechatLogin，@tap=onWechatLoginGuarded，index.vue:674-687）在 500ms 内连点 5 次",
+      "expected": "分两个口径独立判定，不得互相掩盖：① 客户端口径——network 面板 POST /v1/auth/wechat 计数必须 =1、wx.login 只拉起 1 次（防抖窗口 1500ms，createButtonGuard 见 index.vue:322 与 utils/debounce.ts:145-168 首触发即上锁）；② 服务端/会话口径——最终会话数只建立 1 次（回读 storage token 变化次数 / /auth/me 只 1 次）。http.ts:254-278 会给所有写请求注入按 method+URL+body 哈希的稳定 Idempotency-Key，服务端去重可把「客户端连点失效」伪装成通过：若 network 计数 ≥2 即使只落 1 次会话也必须判 FAILED（category=Interaction，防连点缺陷）；.btn--loading 类须在在途期间存在（loginFlowActive，MP-R2-PAGES-LOGIN-INDEX-007 已把死绑定的 store.loading 改为页内 ref，index.vue:118-121）",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案 + console + network 面板请求计数（含每请求 Idempotency-Key 头值，用于区分客户端重复与服务端去重）"
+    },
+    {
+      "id": "LG05",
+      "page": "pages/login/index",
+      "title": "未勾选协议点登录入口：agreeFirst 守卫拦截，零请求",
+      "tier": "normal",
+      "pre": "LG01 未登录态（协议默认未勾选，index.vue:61）",
+      "action": "点 .btn-primary（微信登录）1 次；再点 .btn-guest（稍后再看）1 次",
+      "expected": "两次点击各自 500ms 内出现 Toast「login.agreeFirst」对应文案（onWechatLogin index.vue:285-288；onGuestLogin index.vue:496-499），协议行不自动勾选、不跳页；network 面板 0 条 /auth/* 请求（守卫在请求之前 return）",
+      "evidence": "normal：after 截图 + 路由断言 + console + Toast 文案 + network 计数=0"
+    },
+    {
+      "id": "LG06",
+      "page": "pages/login/index",
+      "title": "协议勾选/取消切换 + 复选框热区铁律实测",
+      "tier": "normal",
+      "pre": "LG01 未登录态",
+      "action": "点 .checkbox（@tap=onAgreeTap，index.vue:601-603、模板 :912-921）一次，再点一次；用 createSelectorQuery 读 .checkbox 与 .terms-text-wrap 的 rect",
+      "expected": "每次点击 500ms 内 DOM 可观测变化：checkbox--checked 类翻转、v-if 白勾图标显隐、aria-checked true↔false（index.vue:913-921）；热区铁律：.checkbox 实测 34rpx×34rpx（index.vue:1488-1490），低于「热区≥88rpx」——按铁律判 FAILED（P2 可达性缺陷），执行时若坐标点不中可回退到文字区并另记「勾选区不可命中」；不得因能点到文字就判热区合格",
+      "evidence": "normal：after 截图 + 路由断言 + console + 元素 rect 读数（rpx 换算后写入 observed）"
+    },
+    {
+      "id": "LG07",
+      "page": "pages/login/index",
+      "title": "「用户协议」链接跳转与返回落点",
+      "tier": "navigation",
+      "pre": "LG01 未登录态",
+      "action": "点协议行第一个 .terms-link（@tap=openUserAgreement，index.vue:924）",
+      "expected": "navigateTo /subpackages/legal/agreement/index，getCurrentPages=[pages/login/index, subpackages/legal/agreement/index]；跳转经 openLegalPage→openAppPath 统一通道（index.vue:611-616，MP-R2-PAGES-LOGIN-INDEX-004 已删两处重复实现与空 fail），失败时必须有可见 toast 而非静默；轻振动一次；返回后回登录页且协议勾选态、已输入内容不丢",
+      "evidence": "navigation：路由链断言 + 返回落点断言（含 agreed 勾选态与输入值回读），可不截图"
+    },
+    {
+      "id": "LG08",
+      "page": "pages/login/index",
+      "title": "「隐私政策」链接跳转与返回落点",
+      "tier": "navigation",
+      "pre": "LG01 未登录态",
+      "action": "点协议行第二个 .terms-link（@tap=openPrivacyPolicy，index.vue:926）",
+      "expected": "navigateTo /subpackages/legal/privacy/index（index.vue:619-622）；栈深 +1；返回后回 /pages/login/index 无白屏、无重复 onShow 自动前进（未登录态下 watch 不触发）",
+      "evidence": "navigation：路由链断言 + 返回落点断言，可不截图"
+    },
+    {
+      "id": "LG09",
+      "page": "pages/login/index",
+      "title": "手机号表单「常驻文字入口」在位（证伪「表单仅靠 getPhoneNumber 自动展开」）",
+      "tier": "normal",
+      "pre": "LG01 未登录态；构建为 MP-WEIXIN 条件编译分支",
+      "action": "在快捷登录面板（v-if=!showPhoneLogin）内点 .login-sms-fallback（aria-label=login.phoneLogin，@tap=togglePhoneLogin，模板 :712-722）",
+      "expected": "showPhoneLogin=true，.login-quick 收起、.login-form 展开（index.vue:178-180、:754）；500ms 内 DOM 变化：出现 #login-phone / #login-password 两个输入框与「登录」「去注册」「返回微信登录」三按钮；入口必须不依赖 open-type=getPhoneNumber 回调（MP-R1-PAGES-LOGIN-INDEX-201 新增的兜底入口；DevTools/自动化下该回调不触发，若表单仅能靠回调展开即判死路 FAILED）",
+      "evidence": "normal：after 截图（表单展开态）+ 路由断言 + console + DOM 断言（#login-phone:present）"
+    },
+    {
+      "id": "LG10",
+      "page": "pages/login/index",
+      "title": "手机号快捷登录失败兜底：401/404 均展开表单且不踢重载（回归 MP-R1-LOGIN-003）",
+      "tier": "critical",
+      "pre": "LG01 未登录态 + 已勾选协议；DevTools 下 .btn-phone-quick（open-type=getPhoneNumber，模板 :700-710）的回调可被 automation_evaluate 以 {detail:{errMsg:'getPhoneNumber:fail ...'}} 直接调用，或走真机拒绝授权",
+      "action": "触发 handleGetPhoneNumberGuarded 三条分支：① errMsg 含 cancel/deny；② 后端返回 404；③ 后端返回 401",
+      "expected": "① 拒绝/环境类失败：showPhoneLogin=true 展开表单（index.vue:342-353，MP-R1-LOGIN-001「拒绝授权也展开表单」），面包屑 phone_auth_cancelled 仍记录；② 404：toast login.useSmsInDevMode + 展开表单（:386-390）；③ 401：toast login.useSmsToLogin + 展开表单（:396-400），**且不得**走 http 层通用 401 分支在登录页自身 reLaunch 重载或出现「登录已过期」文案（MP-R1-LOGIN-003；对照 services/http.ts:468-487 redirectToLogin、:501-532 handle401）；三分支均不得向 Sentry 上报该预期态；表单在 401 兜底后仍在位＝本轮影响范围必须证伪项",
+      "evidence": "critical：before + after 截图 + 路由断言（终栈必须仍为 [pages/login/index]）+ Toast 文案 + console（含 Sentry 上报与否、有无 reLaunch 重载日志）"
+    },
+    {
+      "id": "LG11",
+      "page": "pages/login/index",
+      "title": "手机号输入框正常输入：11 位合法号回显且校验通过",
+      "tier": "normal",
+      "pre": "接 LG09（表单已展开），协议已勾选",
+      "action": "在 #login-phone（type=number maxlength=11 inputmode=numeric，模板 :762-776）输入 13800138000；读输入框 value 与 .btn-primary 可提交态",
+      "expected": "value 完整回显 11 位；/^1[3-9]\\d{9}$/ 通过（index.vue:139）；配合密码 6 位 + agreed=true 时 canPhoneLogin=true（:141），提交按钮无禁用样式；无 Toast 报错",
+      "evidence": "normal：after 截图 + 路由断言 + console + 输入框 value 读数"
+    },
+    {
+      "id": "LG12",
+      "page": "pages/login/index",
+      "title": "手机号超长输入 20 位：被 maxlength 截断，不撑破布局",
+      "tier": "normal",
+      "pre": "接 LG09",
+      "action": "向 #login-phone 连续输入 20 位数字（13800138000123456789）",
+      "expected": "实际值长度 ≤11（maxlength=11 生效，模板 :767）；不出现横向溢出/换行/遮挡（.input-field 宽度稳定）；截断后校验结果与剩余字符一致（若截断只剩 11 位仍非法则提交被拦）",
+      "evidence": "normal：after 截图 + console + 输入框 value 长度读数"
+    },
+    {
+      "id": "LG13",
+      "page": "pages/login/index",
+      "title": "手机号特殊字符：中文/emoji/符号/前后空格不污染校验与请求体",
+      "tier": "normal",
+      "pre": "接 LG09",
+      "action": "输入「１３８００１３８０（全角）+ 中文 + 空格 + emoji」组合，然后点「登录」",
+      "expected": "type=number 下非数字字符不被写入 value（或写入后被校验拒绝）；提交必须被 canPhoneLogin 拦为 toast login.phoneAndCodeInvalid（index.vue:428-432），**不得**发出带脏字符的 POST /v1/auth/phone-login；若发出请求，body.phone 必须为 trim 后的值（提交处用 phone.value.trim()，index.vue:442）；页面无 JS 异常",
+      "evidence": "normal：after 截图 + console + network（0 请求或 body 快照）+ 输入框 value 读数"
+    },
+    {
+      "id": "LG14",
+      "page": "pages/login/index",
+      "title": "手机号清空：清空后提交被拦（表单三态之空态）",
+      "tier": "normal",
+      "pre": "接 LG11 已输入合法手机号",
+      "action": "全选删除 #login-phone 内容使其为空，点「登录」主按钮",
+      "expected": "toast login.phoneAndCodeInvalid（index.vue:430），无 /auth/phone-login 请求；placeholder「输入手机号」文案回显；输入框 aria-required=true 保持",
+      "evidence": "normal：after 截图 + console + network 计数=0"
+    },
+    {
+      "id": "LG15",
+      "page": "pages/login/index",
+      "title": "手机号非法格式（首位非 1 / 次位 12）：正则拒绝",
+      "tier": "normal",
+      "pre": "接 LG09",
+      "action": "依次输入 12345678901、2380013800、1380013800（10 位），各点一次「登录」",
+      "expected": "三种均判 isPhoneValid=false（/^1[3-9]\\d{9}$/，index.vue:139）→ toast phoneAndCodeInvalid、0 请求；不得出现「前端放过、后端 400」的组合（若 network 出现 POST 即判校验缺陷）",
+      "evidence": "normal：after 截图 + console + network 计数"
+    },
+    {
+      "id": "LG16",
+      "page": "pages/login/index",
+      "title": "验证码/密码框长度边界 5 位 vs 6 位（表单三态之非法→合法）",
+      "tier": "normal",
+      "pre": "接 LG09，#login-phone 已填合法号，协议已勾选",
+      "action": "#login-password 先输 5 位点「登录」，再补到 6 位点「登录」",
+      "expected": "5 位：isCodeValid=false（长度 6..64，index.vue:140）→ toast phoneAndCodeInvalid、0 请求；6 位：canPhoneLogin=true → 发出 1 次 POST /v1/auth/phone-login（skipAuth + reportError:false，见 tests/services/auth.spec.ts 断言的 reportError 参数与本文件 auth.ts 实现在位）",
+      "evidence": "normal：after 截图 + console + network（第 1 次 0 请求、第 2 次 1 请求）"
+    },
+    {
+      "id": "LG17",
+      "page": "pages/login/index",
+      "title": "密码框密文渲染回归（type=text + :password=true，证伪「明文显示」历史项）",
+      "tier": "normal",
+      "pre": "接 LG09",
+      "action": "在 #login-password 输入 8 位数字后截图并读取该 input 的编译属性",
+      "expected": "输入后视觉为密文圆点而非明文；实现必须为 mp 合法属性组合 type=\"text\" + :password=\"true\"（index.vue:784-795，MP-R2-PAGES-LOGIN-INDEX-001 代码层与编译产物双复核标「已修复待终验」，本条即其 UI 终验环节）；出现明文即判 P1 复发；label.sr-only 与 aria-label 关联存在（模板 :779）",
+      "evidence": "normal：after 截图（密文可见性为判定核心，必须截图）+ console + DOM 属性读数（type/password）"
+    },
+    {
+      "id": "LG18",
+      "page": "pages/login/index",
+      "title": "密码超长（65 位）与特殊字符",
+      "tier": "normal",
+      "pre": "接 LG09",
+      "action": "#login-password 输入 65 位（无 maxlength 限制）后点「登录」；再改为含空格/引号/中文的 8 位串点「登录」",
+      "expected": "65 位超出 isCodeValid 上限 64（index.vue:140）→ 拦为 toast，不发请求；特殊字符组合允许通过长度校验，但提交体必须原样且 JSON 序列化不破（若 network 出现 body 被截断/转义异常或 console 抛 JSON 错误即判缺陷）；页面不出现溢出/换行错乱",
+      "evidence": "normal：after 截图 + console + network body 快照"
+    },
+    {
+      "id": "LG19",
+      "page": "pages/login/index",
+      "title": "空提交（手机号与验证码全空、协议已勾选）",
+      "tier": "normal",
+      "pre": "接 LG09 + 主动勾选协议",
+      "action": "不输入任何内容直接点「登录」",
+      "expected": "toast login.phoneAndCodeInvalid（index.vue:428-432）；不进入 loading 态（loginFlowActive 保持 false，:436 在校验之后才置位）；0 网络请求",
+      "evidence": "normal：after 截图 + console + network 计数=0 + .btn--loading 不存在断言"
+    },
+    {
+      "id": "LG20",
+      "page": "pages/login/index",
+      "title": "快速连点手机号「登录」×5：客户端请求数与服务端会话数分开判",
+      "tier": "critical",
+      "pre": "接 LG09，填入合法手机号 + 6 位验证码 + 勾选协议",
+      "action": "500ms 内连点表单内 .btn-primary（@tap=onPhoneLoginGuarded，防抖窗 2000ms，index.vue:481）5 次",
+      "expected": "① 客户端：network 面板 POST /v1/auth/phone-login 计数 =1（createButtonGuard 首触发上锁 2000ms，utils/debounce.ts:149-160）；② 服务端/结果：toast 只出现 1 次、storage token 只写入 1 次、后续 /auth/me 只 1 次。两者分开写：http.ts:254-278 稳定 Idempotency-Key（同 URL 同 body 命中同 key）会让「发了 5 次但服务端只认 1 次」看起来通过——只要 network 计数 ≥2 即判 FAILED（防连点缺陷），不得以「最终只成功登录一次」洗白",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案 + console + network 计数与各请求 Idempotency-Key 头值"
+    },
+    {
+      "id": "LG21",
+      "page": "pages/login/index",
+      "title": "登录成功统一导航：toast 后 1500ms 落寻觅，仅 1 次导航",
+      "tier": "critical",
+      "pre": "接 LG20 凭据合法（mock/real 任一按当前构建模式实际可用凭据）；无 pending 跳转残留（wx.removeStorageSync('campus-love:pending-login-redirect')）",
+      "action": "提交合法凭据后观察 toast 与跳转，期间不再操作",
+      "expected": "toast login.loginSuccess（icon=success，index.vue:445）→ 1500ms 后 loginSuccessNavigate→navigateAfterLogin→replaceAppPath('/pages/discover/index')（index.vue:188-216）；主动 refreshSession 同步会话（:449-454）；getCurrentPages 终态 = [pages/discover/index]（无登录页残留）；全程只 1 次导航（autoForwardedToMain 先置位压制 onShow/watch 补偿，MP-R1-LOGIN-002）",
+      "evidence": "critical：before + after 截图 + 路由链断言 + Toast 文案 + console"
+    },
+    {
+      "id": "LG22",
+      "page": "pages/login/index",
+      "title": "登录成功后消费 pending 跳转：落资料完善页而非寻觅",
+      "tier": "critical",
+      "pre": "wx.setStorageSync('campus-love:pending-login-redirect','/subpackages/setup/profile/index')（key 见 utils/navigation.ts:185，写入方 LockScreen）；清 token → 构造未登录登录页（LG01 路径）",
+      "action": "点 .btn-guest（临时体验号）完成登录",
+      "expected": "toast login.guestEnterToast（index.vue:514，游客文案已按「进入体验模式」口径改过，不得再是「登录成功」）→ 1500ms 后 replaceAppPath 落 /subpackages/setup/profile/index（index.vue:188-190）；storage 中该 key 被即读即清（utils/navigation.ts:204-215，回读 getStorageSync 应为空）；若落回 /pages/discover/index 即消费链路断裂判 P1",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案 + console + storage 回读（消费前后各一次）"
+    },
+    {
+      "id": "LG23",
+      "page": "pages/login/index",
+      "title": "「去注册」跳独立注册页并可返回",
+      "tier": "navigation",
+      "pre": "接 LG09 表单展开态；appConfig isRegisterOpen=true",
+      "action": "点 .btn-text（文案 login.goRegister，@tap=goRegisterPage，index.vue:880-888、:227-229）",
+      "expected": "uni.navigateTo('/pages/register/index')（ROUTES.REGISTER，constants/routes.ts:55；页已在 pages.json:46 注册），栈=[pages/login/index, pages/register/index]；navigateBack 回登录页后 showPhoneLogin=true（表单展开态是页面实例态，若被重置为 false 判状态恢复缺陷）；跳转失败必须有可见 toast（走 uni 原生 API，需实测 fail 分支）",
+      "evidence": "navigation：路由链断言（去程+回程落点）+ console，可不截图"
+    },
+    {
+      "id": "LG24",
+      "page": "pages/login/index",
+      "title": "内联注册模式降级：仅残留 phoneRegisterMode 时出现「返回登录」，不得再出现旧版三输入框注册表单",
+      "tier": "normal",
+      "pre": "接 LG09（默认 phoneRegisterMode=false）",
+      "action": "确认默认表单只有手机号+验证码两输入框；再用 automation_evaluate 置 phoneRegisterMode=true 观察新增三项与按钮文案",
+      "expected": "默认态：#login-nickname / 出生日期 picker / #login-sms-code 三个注册专属控件均不存在（模板 v-if=phoneRegisterMode，index.vue:800-870），提交按钮文案 login.loginButton；置 true 后三控件出现、文案变 login.registerButton、出现「返回登录」（toggleRegisterMode，:890-897）——2026-09-12 起新用户走独立注册页（index.vue:222-229），内联注册仅降级路径，若「去注册」点击后仍走内联注册即判与代码不符",
+      "evidence": "normal：after 截图（两态各一张）+ console + DOM 存在性断言（三控件 present/absent）"
+    },
+    {
+      "id": "LG25",
+      "page": "pages/login/index",
+      "title": "表单「三路关闭/收起」路径 + 弹层式表单不残留",
+      "tier": "normal",
+      "pre": "接 LG09 表单展开态",
+      "action": "分别验证三条回到快捷登录面板的路径：① 点「返回微信登录」.btn-text（@tap=togglePhoneLogin，index.vue:899-902）；② 页面返回手势/物理返回（登录页为启动页时不应退出小程序）；③ automation 置 showPhoneLogin=false 模拟状态复位后重进",
+      "expected": "① 500ms 内 .login-form 收起、.login-quick 重现，已输入值不报错；② 启动页无上一页：返回不得把小程序置后台白屏或跳错页（如实记录实测行为）；③ 无遮罩层/无键盘残留（若键盘未收起、输入框仍聚焦即判缺陷）；三条路径后均无「半屏表单+快捷按钮同时存在」的脏渲染",
+      "evidence": "normal：after 截图（每路径一张）+ console + DOM 断言"
+    },
+    {
+      "id": "LG26",
+      "page": "pages/login/index",
+      "title": "键盘弹起/收起：输入框不被遮挡，值与焦点保留",
+      "tier": "normal",
+      "pre": "接 LG09 表单展开态",
+      "action": "聚焦 #login-phone 使键盘弹起（cursor-spacing=20，模板 :763），输入后聚焦 #login-password，再点空白收起键盘",
+      "expected": "键盘弹起时被聚焦输入框完整可见（不被键盘覆盖，页面整体上移而非裁切）；两个输入框均在视口内、协议行/登录按钮不被永久顶出屏幕；收起键盘后值保留、无布局回弹错位、无 onPageScroll 相关报错；真机/模拟器安全区不叠压",
+      "evidence": "normal：after 截图（键盘弹起态必须截图）+ console + 输入框 rect 读数"
+    },
+    {
+      "id": "LG27",
+      "page": "pages/login/index",
+      "title": "滚动到顶/到底 + 无下拉刷新（本页未开启 enablePullDownRefresh）",
+      "tier": "noop",
+      "pre": "LG01 未登录态（小屏机型内容溢出时）",
+      "action": "pageScrollTo 到底 → 回顶；随后执行一次下拉手势",
+      "expected": "滚动顺滑无卡死，回顶后 scrollTop=0；**不得出现下拉刷新动画/刷新指示器**（pages.json:41-43 未给本页配置 enablePullDownRefresh，页面也未注册 onPullDownRefresh）；出现刷新动画或 onPullDownRefresh 回调即判配置/实现不一致缺陷",
+      "evidence": "noop：执行日志（scrollTop 前后值、下拉手势后 500ms 内刷新动画是否出现）+ console，不强制截图"
+    },
+    {
+      "id": "LG28",
+      "page": "pages/login/index",
+      "title": "打开即返回 / 重复进出：定时器与 watch 不泄漏",
+      "tier": "normal",
+      "pre": "LG01 未登录态",
+      "action": "navigateTo 登录页 → 立即 navigateBack，重复 3 次；其中 1 次在发送验证码倒计时（见 LG30）进行中转出",
+      "expected": "每次退出后 onUnmounted 清理生效：loginNavTimer 与 smsCountdownTimer 均被 clear、stopSessionForwardWatch 被调用（index.vue:163-175，MP-R2-PAGES-LOGIN-INDEX-006 补清短信定时器）；不得出现「离开页面后定时器空转最长 60s」或回调改已销毁页面状态的 console 报错；无内存类告警",
+      "evidence": "normal：after 截图 + console（定时器/已销毁页面告警过滤）+ 执行日志（进出次数）"
+    },
+    {
+      "id": "LG29",
+      "page": "pages/login/index",
+      "title": "「获取验证码」非法手机号前置校验",
+      "tier": "normal",
+      "pre": "接 LG24（置 phoneRegisterMode=true）使 .sms-send-btn 可见",
+      "action": "手机号留空点 .sms-send-btn；再填 1380013800（10 位）点一次",
+      "expected": "两次均 toast login.phoneInvalid（onSendSmsCode index.vue:237-240），倒计时不启动（smsCountdown 保持 0、按钮文案不变），0 条 POST /v1/sms/send-code",
+      "evidence": "normal：after 截图 + console + network 计数=0"
+    },
+    {
+      "id": "LG30",
+      "page": "pages/login/index",
+      "title": "「获取验证码」成功：mockCode 提示 + 60s 倒计时禁用态",
+      "tier": "critical",
+      "pre": "接 LG29，填合法 11 位手机号",
+      "action": "点 .sms-send-btn 一次；随后 1s 内再连点 4 次",
+      "expected": "toast「login.smsSentMock」文案且仅在 dev/mock 构建内嵌 mockCode（index.vue:250-254，MP-R2-PAGES-LOGIN-INDEX-005 文案 i18n 化：en-US 语言下不得吐中文）；按钮进入禁用态 sms-send-btn--disabled 并显示 `${n}s` 逐秒递减（:255-263）；连点 4 次因 smsCountdown>0 首行短路（:236）→ network 面板 POST /v1/sms/send-code 计数必须 =1（同时服务端 60s 窗口内该手机号验证码记录只 1 条，回读口径独立写）；倒计时归零后按钮恢复可点",
+      "evidence": "critical：before + after 截图 + Toast 文案（含 mockCode 可见性）+ console + network 计数（4 次点击 → 1 条请求）"
+    },
+    {
+      "id": "LG31",
+      "page": "pages/login/index",
+      "title": "验证码长度边界（5/6/7 位，maxlength=6）",
+      "tier": "normal",
+      "pre": "接 LG30 已获取验证码",
+      "action": "#login-sms-code 依次输入 5 位、7 位（观察截断）、6 位，各点一次「注册/登录」主按钮",
+      "expected": "7 位被截为 6 位（maxlength=6，模板 :857）；5 位时 canPhoneRegister=false → toast phoneAndCodeInvalid、0 请求（index.vue:143 要求长度恰为 6）；6 位且其余项合法才放行；截断逻辑不得把值污染成非数字",
+      "evidence": "normal：after 截图 + console + network 计数 + 输入框 value 读数"
+    },
+    {
+      "id": "LG32",
+      "page": "pages/login/index",
+      "title": "出生日期 picker：不可选未来日期，取消选择保留占位",
+      "tier": "normal",
+      "pre": "接 LG24 注册模式，picker mode=\"date\" :end=birthDateMax（index.vue:74、模板 :828-835）",
+      "action": "① 打开 picker 尝试选到今天之后；② 选一个合法日期；③ 重开 picker 点取消",
+      "expected": "① 未来日期不可选（end 限制为今天）；② 选中后 .picker-field 文本变为 yyyy-MM-dd，占位类 picker-field--placeholder 移除；③ 取消不改值、不报错，birthDate 保持上一次值；未满 18 岁提交由后端 403 MINOR_NOT_ALLOWED 判定 → 前端必须 toast login.minorNotAllowed 而非通用失败文案（index.vue:466-470）",
+      "evidence": "normal：after 截图（选中态/占位态各一张）+ console + DOM 文本读数"
+    },
+    {
+      "id": "LG33",
+      "page": "pages/login/index",
+      "title": "「临时体验号」×5 连点：一次请求、一次导航",
+      "tier": "critical",
+      "pre": "LG01 未登录态 + 已勾选协议",
+      "action": "500ms 内连点 .btn-guest（@tap=onGuestLoginGuarded，2000ms 窗口，index.vue:540、模板 :741-752）",
+      "expected": "① 客户端：POST /v1/auth/guest-login 计数 =1（loginAsGuest 由 auth 层带 skipAuth，见 services/auth.spec.ts 同族断言）；② 结果：toast 只 1 次（login.guestEnterToast）、终栈只 1 个页面、会话只建立一次。后端 guest-login 本身幂等（首次创建后续复用，index.vue:486-494 注释），故「只落 1 个账号」不能证明客户端防连点有效——network 计数 ≥2 判 FAILED；在途期间 .btn--loading 类存在（loginFlowActive，:118-121）",
+      "evidence": "critical：before + after 截图 + 路由断言 + Toast 文案 + console + network 计数与 Idempotency-Key 头值"
+    },
+    {
+      "id": "LG34",
+      "page": "pages/login/index",
+      "title": "DEV 演示入口：mock 构建可见并 reLaunch 寻觅",
+      "tier": "critical",
+      "pre": "mock 构建（showDevUserEntry = isDev || isMockMode()，index.vue:65-71）",
+      "action": "点 .dev-user-entry（aria-label=login.devUserEntryTitle，@tap=onDevUserEntry，模板 :947-958）",
+      "expected": "不要求勾选协议（内部 QA 入口，index.vue:585-600 注释）；sessionStore.enterDevUserDemo() 注入 mockUserSession 后 uni.reLaunch('/pages/discover/index')（:590-595）；终栈 = [pages/discover/index] 且仅 1 次导航（先置 autoForwardedToMain 压制 watch 补偿，MP-R1-LOGIN-002）；console 不得出现双导航 routeDone 错误；真实构建应隐藏该入口（real 专属分支本轮 mock 构建不可验，需标 UNVERIFIED 并说明缺 real 构建）",
+      "evidence": "critical：before + after 截图 + 路由链断言 + console + Toast（无 toast 即为预期）"
+    },
+    {
+      "id": "LG35",
+      "page": "pages/login/index",
+      "title": "展示模式入口在标准 mock 构建不可达（幽灵入口断言）",
+      "tier": "noop",
+      "pre": "本轮构建 = build:mp-weixin:mock（VITE_SHOWCASE_MODE 未开启，isShowcaseMode=false）",
+      "action": "DOM 探测 .showcase-entry 是否存在（模板 :933-945）",
+      "expected": "标准 mock/real 构建下 .showcase-entry 不得渲染（仅 VITE_SHOWCASE_MODE=true 展示构建可见，index.vue:23 引注 R4-00226）；若渲染则属演示入口泄漏进正式包，按 P1 立卡；同时记录为「展示模式相关用例在本轮不可构造」的不可达前置",
+      "evidence": "noop：执行日志（DOM 存在性断言结果）+ console，不强制截图"
+    },
+    {
+      "id": "LG36",
+      "page": "pages/login/index",
+      "title": "Disabled：后台关闭登录功能（login_open=false）横幅 + 三入口拒绝",
+      "tier": "critical",
+      "pre": "构造方式二选一：① real 模式用管理端把 login_open 置 false（B6 配置链路）；② mock 下 automation_evaluate 置 appConfigStore 的该开关为 false。构造失败判 UNVERIFIED",
+      "action": "依次点 .btn-primary（微信登录）、.btn-guest（体验号）、展开表单后点提交",
+      "expected": "三入口均 toast login.closedTitle（index.vue:290-293、:358-361、:420-423），且 0 条 /auth/* 请求；.login-closed-banner 横幅出现（role=alert，模板 :670-675）并带 login.closedDesc；卡片置 login-blocked 视觉态；register_open=false 时「去注册」入口必须隐藏（v-if=isRegisterOpen，:880）且 onShow 会把残留 phoneRegisterMode 强制复位（:88-90）",
+      "evidence": "critical：before + after 截图 + Toast 文案 + console + network 计数=0"
+    },
+    {
+      "id": "LG37",
+      "page": "pages/login/index",
+      "title": "参数消费核对：登录页无 onLoad，URL query 一律不消费（幽灵参数记录）",
+      "tier": "noop",
+      "pre": "清登录态；准备 URL：/pages/login/index?redirect=%2Fpages%2Fhome%2Findex&from=r2&dev-user=1",
+      "action": "reLaunch 到上述带参 URL，观察是否按 redirect 落地、是否被注入 dev-user 会话，并读取 storage 的 pending-login-redirect",
+      "expected": "登录页只注册 onShow（index.vue:83），**不存在 onLoad/query 读取**（全文件 grep 无 onLoad）→ redirect/from 等参数为幽灵参数，实际登录后落点只由 storage 桥接 key 决定（utils/navigation.ts:185-215 + index.vue:188-190）；dev-user=1 由 App.onLaunch 的 applyDevUserFromLaunch 与全局导航拦截器消费（utils/dev-user.ts:80-132），非本页；若实测 redirect 参数直接生效或 scripts/r11-param-map.json 类固化表把 redirect/from 记为「已消费」，判文档与代码不符（本轮以源码为准，不读该固化表）",
+      "evidence": "noop：执行日志（终路由 + storage 回读 + 参数生效性结论）+ console"
+    },
+    {
+      "id": "LG38",
+      "page": "pages/login/index",
+      "title": "七态齐备性与死按钮普查（Idle/Loading/Success/Error/Disabled/Empty/Refreshing）",
+      "tier": "normal",
+      "pre": "汇总执行：LG01（Idle）、LG04/LG20 在途（Loading .btn--loading）、LG21（Success）、凭据错误 400（Error）、LG36（Disabled）；Empty 与 Refreshing 本页无对应语义",
+      "action": "逐态截图并普查页内全部可点元素（.btn-primary ×2、.btn-phone-quick、.login-sms-fallback、.btn-guest、.checkbox、.terms-link ×2、.dev-user-entry、.sms-send-btn、.btn-text ×3、picker 触发区）在 500ms 内是否产生可观测反馈（路由/DOM/Toast 之一）",
+      "expected": "每个可点元素点击后 500ms 内必须有路由变化、DOM 变化或 Toast 之一，否则判「死按钮」FAILED（G4 死按钮=0）；Loading 态不得永驻（任何请求终态后 .btn--loading 必须消失，finally 分支 index.vue:312-314、:404-406、:473-475）；Error 态 toast 必须展示后端具体 message 或 login.loginFailed（:466-472），不得静默；Empty/Refreshing 明确记「本页无列表与下拉刷新语义，不适用」（配合 LG27 的未开刷新断言）；未构造成功的态如实标 UNVERIFIED 并写明缺哪种前置",
+      "evidence": "normal：after 截图（每态一张 + 死按钮普查清单）+ 路由断言 + console；关键失败态另需 Toast 文案"
+    }
+  ]
+}

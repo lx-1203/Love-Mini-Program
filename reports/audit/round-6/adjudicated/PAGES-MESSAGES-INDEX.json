@@ -1,0 +1,306 @@
+{
+  "manifest": "PAGES-MESSAGES-INDEX",
+  "judged": 41,
+  "by": {
+    "VERIFIED": 0,
+    "FAILED": 0,
+    "UNVERIFIED": 25,
+    "UNVERIFIED_INSTRUMENT": 13,
+    "NOT_EVIDENCED": 3
+  },
+  "noEvidenceExcludedFromCompletion": 3,
+  "issues": [],
+  "cases": [
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG01",
+      "verdict": "UNVERIFIED",
+      "reason": "部分期望项由非 class 探针承载（.headerTitle:absent .headerSubtitle:absent），仅 .header .quick-cards .assistant-card .section 可核；证据不足以判三方一致",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG02",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 逐条读 .chat-item__time 文本（模板 :564 formatTime(session.lastMessageSentAt)）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG03",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 重读 .chat-item__time 与「昨天/星期」文本、页面标题、空态文案",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG04",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 逐条读 .chat-item__preview / EmojiText 渲染文本（:548-554），检索是否含「全链路验收测试消息」「测试消息」等残留",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG05",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：act:pullDown 抛 ERR uni is not defined，下拉刷新动作未真正下发",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG06",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG07",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 三态各截图；Error 态点重试（ErrorState @retry 与 PageStateContainer @retry=handleRetry :398-404）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG08",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG09",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG10",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG11",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG12",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG13",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：network 请求计数（observed 无对应读数）；另有非 class 探针 .likedBy:absent",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG14",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ① count>0 时点该卡（index.vue:432-443 → goReply :240-247）；② count=0 时确认卡片不渲染；③ 无会话但 count>0 时点击",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG15",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG16",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 两态各读 .assistant-card__activity 是否渲染及其文案",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG17",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 在活动推荐区（:581-606）读四种 icon 的渲染节点类型",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG18",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.warm-item)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG19",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.section__more)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG20",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读 .chat-item 顺序并逐项记录 pinned/relationship 标记",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG21",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG22",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：longpress(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG23",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG24",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG25",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：longpress(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG26",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG27",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG28",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 分别点两类 .activity-rec-card（index.vue:586-604 → openActivity :257-259）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG29",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG30",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG31",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：几何/热区实测数值（observed 无对应读数）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG32",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读三类行的 .chat-item__name / preview 文本与 rect",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG33",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG34",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG35",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ① 首页→消息→首页 各 3 轮；② 消息页→聊天页→返回；③ 消息页→喜欢页→返回",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG36",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG37",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读各行 .chat-item__status 文本与类名",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG38",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 用 createSelectorQuery 读 .header__icon-btn ×2、.search-bar__clear、.quick-card、.assistant-card、.chat-item、.warm-item、.activ",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG39",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 逐态截图并写明每态构造方式与是否受构建模式限制",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG40",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 并排比对：空态插画与文案样式、错误态重试按钮样式、Toast 文案（apiErrors.operationFailed）、卡片圆角/间距 token",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-MESSAGES-INDEX/MSG41",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：act:pullDown 抛 ERR uni is not defined，下拉刷新动作未真正下发",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    }
+  ],
+  "notes": [
+    "MSG01 帧内「正在升温」段未渲染，源码 pages/messages/index.vue:486 为 `v-if=\"warmPeople.length > 0\"` 的数据条件渲染，mock 无 warm 数据即不出现 → 期望的六段顺序前提未构造，判 UNVERIFIED 而非缺陷。",
+    "裁定口径：三方一致=ops expected × exec observed/route/toast/console/evidence × 真打开的帧（round-6-tour 巡检帧含 zoom3x、round-6-interact 操作前后图）；复合键 manifest+caseId。",
+    "输入快照：.zcode/tmp/adjudicate/exec-results.snapshot.json（updatedAt 2026-09-25T15:28:18.856Z，509 行，gitSha 874ff52f）。执行轮仍在追加权威件，本文件只覆盖快照内已记录用例。",
+    "ERROR:timeout 尾注的帧一律按 NO-EVIDENCE 处置并计入 UNVERIFIED，不读作已取证；本清单该类 3 条已从完成度中排除。"
+  ]
+}

@@ -2,9 +2,9 @@
   "meta": {
     "round": "R2",
     "reviewer": "代码审查员-R2-PAGES-MESSAGES-INDEX (A2/Layer A)",
-    "date": "2026-09-22",
-    "scope": "pages/messages/index（消息 tabBar 页）及其引用组件/store/utils 的只读代码层审查",
-    "method": "静态代码审查（无截图/无开发者工具/无构建），所有发现均到文件行号取证；历史回归线索均经本轮代码层验证后才列入（category=Regression）"
+    "date": "2026-09-24",
+    "scope": "pages/messages/index（消息 tabBar 页）及其引用组件/store/utils/composables 的只读代码层审查（复核版：本文件 2026-09-22 初版产出后，001-006 已在代码层落地修复，本轮逐项复核并更新状态；新增 014-022）",
+    "method": "静态代码审查（无截图/无开发者工具/无构建），所有发现均到文件行号取证；历史回归线索均经本轮代码层验证后才列入（category=Regression）；R13-DATA-3894 另以只读 SQL SELECT（pymysql，campus@127.0.0.1:3306/campus_love，凭据来自仓库 .env）实证，未执行任何写操作"
   },
   "issues": [
     {
@@ -14,13 +14,15 @@
       "screenshot": "",
       "category": "Data",
       "severity": "P2",
-      "description": "real 模式免打扰（muted）状态在列表重拉取后必丢失：长按设为免打扰时 setSessionMuted 先 PUT 后端成功、再本地置 session.muted=true（stores/messages.ts:1230-1247），且 store 注释（1226-1228）声称「后端持久化后刷新/换端不还原（ConversationView.muted 下发）」；但前端 ConversationView 接口根本没有 muted 字段（messages.ts:198-217），mapToMessageSession 映射也不拷贝 muted（messages.ts:261-279）。任何一次会话列表重建——bootstrap 30s TTL 过期（messages.ts:543）、下拉刷新 force（messages.ts:548-552）、onShow loadPage（messages/index.vue:270-274）——都会用 mapToMessageSession 重建 sessions 数组，muted 变回 undefined，页面 v-if=\"session.muted\" 的免打扰图标（messages/index.vue:502-507、558-563）随之消失，而后端仍处于免打扰态；fetchRelationshipDashboard 的合并逻辑同样只回填 pinned 不保留 muted（messages.ts:589-594），连「本页停留期间 dashboard 后到」这条路也会洗掉免打扰。与置顶（后端下发 + 映射齐全 + 合并回填，三条路径都闭环）形成直接对照，属数据链路单字段缺失。",
-      "evidence": "stores/messages.ts:198-217（ConversationView 无 muted 声明）、252-280（mapToMessageSession 返回对象无 muted）、589-594（dashboard 合并仅 session.pinned=oldSession.pinned）、616-616/684-687（fetchSessions 整表 this.sessions=...map(mapToMessageSession) 重建）、1226-1228（注释与实现矛盾）、1230-1247（setSessionMuted 本地置位）；messages/index.vue:502-507/558-563（图标渲染依赖 session.muted）、270-274（onShow 每次进页 loadPage）。对照 pinned 链路：messages.ts:273（pinned: raw.pinned ?? false）+ 591-593（合并回填）均存在。",
-      "sources": ["code"],
-      "confidence": 0.85,
-      "ideal": "免打扰与置顶同为后端持久化状态：ConversationView/mapToMessageSession 补 muted 映射（raw.muted ?? false），fetchRelationshipDashboard 合并时与 pinned 一并保留旧值或采用服务端新值；重拉取后免打扰图标与后端状态一致。",
-      "fix": "messages.ts:216 ConversationView 增加 muted?: boolean；messages.ts:278 附近映射补 muted: raw.muted ?? false；messages.ts:589-594 合并块对 muted 采用与 pinned 相同的保留策略（session.muted = oldSession.muted ?? session.muted）；若后端 /messages/conversations 实际未下发 muted，则同步修 1226-1228 注释并提后端补字段（TODO(backend)）。mock 分支已有运行态保留（632 行），无需改动。",
-      "status": "待修复"
+      "description": "【初版发现·本轮复核确认已修复】real 模式免打扰（muted）状态在列表重拉取后丢失。修复已落地：ConversationView 补 muted 声明、映射补 muted 兜底、dashboard 合并保留本地 muted（且后端 PUT mute 持久化后 recent-chats 已可下发）。",
+      "evidence": "stores/messages.ts:210-211（ConversationView.muted?: boolean，注释引用本 ID）；276-277（mapToMessageSession：muted: (raw as {muted?: boolean}).muted ?? false，注释引用本 ID）；594-600（fetchRelationshipDashboard 合并保留：注释引用本 ID，if (session.muted !== true) session.muted = oldSession.muted）；1251-1268（setSessionMuted real 分支 PUT /messages/conversations/{id}/mute 持久化，注释引用 MP-R1-PAGES-MESSAGES-INDEX-008）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.95,
+      "ideal": "免打扰状态后端持久化 + 前端三条数据链路（fetchSessions 重建/dashboard 合并/本地置位）均不丢失",
+      "fix": "已按上述证据落地，无需再改；终验口径：设免打扰 → 下拉刷新/30s TTL 过期重进 → 免打扰图标仍显示",
+      "status": "已修复待终验"
     },
     {
       "id": "MP-R2-PAGES-MESSAGES-INDEX-002",
@@ -29,13 +31,15 @@
       "screenshot": "",
       "category": "MiniProgram",
       "severity": "P2",
-      "description": "消息页底部无自定义 tabBar 避让，最后一条会话/活动卡被浮动 tabBar 遮挡且无法滚动出来：本项目 tabBar.custom:true（pages.json:391），custom-tab-bar 为 position:fixed 悬浮层（custom-tab-bar/index.wxss:12-17，height calc(160rpx + env(safe-area-inset-bottom))），页面视口不会被自动让出底部。兄弟 tab 页都做了避让——home/index.vue:479-480「底部避开自定义 tabbar」padding-bottom: calc(112rpx + env(safe-area-inset-bottom))，discover/index.vue:341 同款 +16rpx，App.vue:725-735 还提供了全局工具类 .page-bottom-safe——唯独本页 .messages-page（messages/index.vue:609-614）只有 min-height/background/flex，整页无任何 padding-bottom，模板末尾（活动推荐区 576-601）也没有占位元素。会话多时最后一行的下半部分恒处于 tabBar 之下：可见性受损，且该区域的长按菜单（onSessionLongpress，469-470 行绑定）与点击被 tabBar 拦截。",
-      "evidence": "custom-tab-bar/index.wxss:12-17（.tab-bar position:fixed; height calc(160rpx + env(safe-area-inset-bottom))）；pages/home/index.vue:479-480、pages/discover/index.vue:341（同项目 tab 页避让惯例）；App.vue:727-729（.page-bottom-safe 全局类，本页未使用）；pages/messages/index.vue:609-614（.messages-page 无 padding-bottom）、316（根节点仅 class=\"messages-page\"）、576-601（内容末尾无占位视图）。grep \"padding-bottom\" pages/messages/index.vue 零命中。",
-      "sources": ["code"],
-      "confidence": 0.8,
-      "ideal": "与首页/寻觅页一致：滚动内容末尾预留 tabBar 高度（padding-bottom: calc(112rpx + env(safe-area-inset-bottom)) 或挂 .page-bottom-safe），最后一条会话完整可见、可点、可长按。",
-      "fix": "messages/index.vue:609-614 .messages-page 增加 padding-bottom: calc(112rpx + env(safe-area-inset-bottom))（或根节点加全局类 page-bottom-safe，与 home 页 480 行同口径）。",
-      "status": "待修复"
+      "description": "【初版发现·本轮复核确认已修复】消息页底部无自定义 tabBar（fixed 悬浮层）避让，最后一条会话被遮挡。已补 padding-bottom，与 home 页同口径。",
+      "evidence": "pages/messages/index.vue:623-625（.messages-page padding-bottom: calc(112rpx + env(safe-area-inset-bottom) + 16rpx)，注释引用本 ID）；对照 pages/home/index.vue:514（calc(112rpx + env(safe-area-inset-bottom))，同口径）；pages.json:391（tabBar.custom: true）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.95,
+      "ideal": "滚动到底部时最后一条会话/活动卡完整可见，不被浮动 tabBar 遮挡",
+      "fix": "已落地；终验口径：会话数多到一屏半以上，滚动到底观察最后一条完整可见",
+      "status": "已修复待终验"
     },
     {
       "id": "MP-R2-PAGES-MESSAGES-INDEX-003",
@@ -44,13 +48,15 @@
       "screenshot": "",
       "category": "Architecture",
       "severity": "P3",
-      "description": "会话行模板整段内联重复 ×2，且项目已有的同功能组件 ConversationItem 处于零引用孤儿状态：messages/index.vue 用 <template v-if=\"!searchKeyword\">/v-else 两条分支各手写了一份几乎相同的 chat-item 标记（464-515 与 522-571，约 50 行×2：头像/名称/置顶角标/关系标签/EmojiText 预览/免打扰图标/时间/未读数），本轮可见的 pinned/muted/lastMessageSentAt 修复都被迫双写（480-509 与 536-565 成对出现注释即为证据）。而 components/message/ConversationItem.vue 是同一功能的现成行组件（props session，emits tap/longpress/mute/delete，带头像加载失败兜底 avatarLoadError+首字 fallbackInitial，第 21-35 行），grep 全仓（pages/subpackages/components，排除自身）无任何消费者。页面内联版反而缺失头像错误兜底（473/531 行仅对空串回退 default-avatar.jpg，URL 失效时渲染破图），功能弱于孤儿组件。",
-      "evidence": "messages/index.vue:464-515（主列表 chat-item）vs 522-571（搜索分支 chat-item），480-509 与 536-565 注释成对（「置顶会话角标」「免打扰会话行内图标」「真实字段 lastMessageSentAt」双份）；grep -rn \"ConversationItem\" --include=*.vue pages subpackages components | grep -v \"components/message/ConversationItem.vue:\" 输出为空（零引用）；components/message/ConversationItem.vue:8-19（emits 定义）、21-35（头像错误兜底+首字回退）、37-45（本地 formatTime）；messages/index.vue:473/531（内联版无 onError 兜底）。",
-      "sources": ["code"],
-      "confidence": 0.85,
-      "ideal": "会话行渲染收敛到单一实现：两个分支改用 ConversationItem（或至少抽成本页子模板/组件），头像错误兜底能力随之补齐；ConversationItem 若确认废弃则删除，避免死代码与双实现漂移。",
-      "fix": "短期：把 522-571 搜索分支并入主分支（列表数据源改 orderedSessions/filteredSessions 二选一，单模板渲染），先消一半重复；中期：以 ConversationItem.vue 为基准补齐内联版差异（头像 onError）后切换引用并删除内联模板。",
-      "status": "待修复"
+      "description": "【初版发现·本轮复核确认已修复】会话行模板内联重复 ×2 + 孤儿组件 ConversationItem。已收敛为单一份（显示列表 = 搜索态 filteredSessions / 常态 orderedSessions 三元切换），孤儿组件已从仓库移除。",
+      "evidence": "pages/messages/index.vue:515-570（唯一一段会话行 v-for，注释引用本 ID；572-577 列表空态文案按搜索/常态区分）；全仓 grep ConversationItem（--include=*.vue，apps/client/src 下）零命中（孤儿组件已删除）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.95,
+      "ideal": "会话行模板单一份；无零引用孤儿组件",
+      "fix": "已落地，无需再改",
+      "status": "已修复待终验"
     },
     {
       "id": "MP-R2-PAGES-MESSAGES-INDEX-004",
@@ -59,13 +65,15 @@
       "screenshot": "",
       "category": "Architecture",
       "severity": "P3",
-      "description": "formatTime/getStatusLabel/getStatusClass 以页面内联函数存在且全仓多点复制，违反硬约束「工具函数从 .ts 导入」：本页 messages/index.vue:302-312 自带 formatTime（当天 HH:mm / 否则 M/D），grep \"function formatTime\" 在 6 个文件各有一份近似实现——pages/messages/index.vue、components/message/ConversationItem.vue:37、subpackages/chat/official-chat/index.vue、subpackages/discover-extra/likes/index.vue、subpackages/discover-extra/likes-visitors/index.vue、subpackages/profile-extra/profile/visitors.vue——各版本行为还有漂移（ConversationItem 版多了「昨天」分支，本页没有，同一会话行在两处的展示规则不一致）；utils/time.ts:384 早已提供 formatChatListTime（当天/昨天/本周/更早 + NaN 防护 + i18n），是现成单一真相源。getStatusLabel/getStatusClass（282-300 行硬编码中文状态表）也与 subpackages/tools/heart-signals/index.vue 重复。",
-      "evidence": "grep -rln \"function formatTime\" pages components subpackages → 6 文件（messages/index.vue、ConversationItem.vue、official-chat/index.vue、likes/index.vue、likes-visitors/index.vue、visitors.vue）；utils/time.ts:384-433（formatChatListTime 完整实现）；messages/index.vue:302-312（本页副本，无「昨天」分支）、282-300（状态标签/样式内联映射）；grep -rln \"getStatusLabel\\|getStatusClass\" → messages/index.vue 与 subpackages/tools/heart-signals/index.vue。",
-      "sources": ["code"],
+      "description": "【初版发现·本轮复核确认核心已修复】formatTime/getStatusLabel/getStatusClass 页面内联且全仓多点复制，违反「工具函数从 .ts 导入」。formatTime 已收敛到 utils/time.formatChatListTime 单一实现（全仓唯一消费方即本页）；getStatusLabel/getStatusClass 仍为页面内联（残留部分并入 -007 的 i18n 问题跟踪——其文案硬编码中文），但已不再是全仓复制（heart-signals 页同名函数为不同领域——信号状态且已 i18n 化，不构成重复）。",
+      "evidence": "pages/messages/index.vue:9-10（import { formatChatListTime } from \"../../utils/time\"，注释引用本 ID）；344-353（formatTime：Date.parse + NaN 防护 + locale 透传，委托 utils/time）；utils/time.ts:384-433（formatChatListTime 唯一定义）；全仓 grep formatChatListTime 仅本页 + tests/i18n.spec.ts 消费；pages/messages/index.vue:324-342（getStatusLabel/getStatusClass 仍内联，残留）",
+      "sources": [
+        "code"
+      ],
       "confidence": 0.9,
-      "ideal": "聊天列表时间统一 import { formatChatListTime } from \"@/utils/time\"；状态标签/样式映射下沉到 constants 或 utils 单一实现；页面 .vue 内不再定义通用工具函数（符合 R11 附录 B「工具函数从 .ts 导入」）。",
-      "fix": "本页 302-312 行替换为 formatChatListTime(new Date(dateStr))（入参为 ISO 串时先 new Date，NaN 由工具内兜底）；282-300 状态表抽到 utils/relationship-status.ts 或 constants 并由 heart-signals 页共享；ConversationItem 等 5 处副本按同一入口收敛（可拆后续轮次，本页先改）。",
-      "status": "待修复"
+      "ideal": "时间格式化单一实现从 .ts 导入；状态标签文案 i18n 化",
+      "fix": "formatTime 部分已落地；状态标签残留并入 MP-R2-PAGES-MESSAGES-INDEX-007 跟踪",
+      "status": "已修复待终验"
     },
     {
       "id": "MP-R2-PAGES-MESSAGES-INDEX-005",
@@ -74,13 +82,15 @@
       "screenshot": "",
       "category": "UI",
       "severity": "P3",
-      "description": "页面 4 处硬编码 /static 资源路径，绕过 IMAGE_PATHS 统一入口：config/images.ts:8 明文约束「禁止在页面/组件中硬编码 \"/static/assets/...\" 字符串」，且 15-33 行显示 real 模式下 IMAGE_PATHS 全量动态重写到后端 app-assets 基址（APP_ASSETS_BASE，配合「主包素材全量迁后端」2MB 门禁）；本页却在 444、473、531 行硬编码 '/static/assets/default-avatar.jpg'（既有现成 IMAGE_PATHS.DEFAULT_AVATAR 不用）、356 行硬编码 resolveMediaUrl('/static/assets/images/mascot/default.png')。这些路径不随 real 模式重定向：一旦主包瘦身将 default-avatar 迁出包内（该策略的下一步），本页兜底头像将率先 404，而走 IMAGE_PATHS 的页面不受影响。",
-      "evidence": "config/images.ts:8（禁令原文）、15-33（REAL_ASSETS/STATIC_BASE 运行时切换）、42（IMAGE_PATHS.DEFAULT_AVATAR = STATIC_BASE + '/default-avatar.jpg' 已存在）；messages/index.vue:444、473、531（硬编码 default-avatar.jpg）、356（硬编码 mascot/default.png）。本轮已验证静态文件当前存在（static/assets/default-avatar.jpg、static/assets/images/mascot/default.png），故为规范性/前瞻性缺陷而非即时故障。",
-      "sources": ["code"],
-      "confidence": 0.9,
-      "ideal": "兜底头像与空态图统一走 IMAGE_PATHS.DEFAULT_AVATAR（real 模式自动指向后端）；页面零 /static 硬编码字符串。",
-      "fix": "444/473/531 行改 :src=\"session.partnerAvatar || IMAGE_PATHS.DEFAULT_AVATAR\"；356 行改 :src=\"resolveMediaUrl(IMAGE_PATHS.MASCOT.DEFAULT ?? 具名常量)\"（mascot default.png 若无常量则在 images.ts MASCOT 组补 DEFAULT 键后再引用）。",
-      "status": "待修复"
+      "description": "【初版发现·本轮复核确认已修复】页面 4 处硬编码 /static 资源路径，绕过 IMAGE_PATHS 统一入口。现已全部走 IMAGE_PATHS（页面共 12 处引用，硬编码 /static 零命中），空态吉祥物路径已收编为 IMAGE_PATHS.MASCOT.DEFAULT。",
+      "evidence": "grep '/static' pages/messages/index.vue → 零命中；页面 IMAGE_PATHS 引用 12 处（376/386/407/422/434/474/499/501/529/541/561 + EmojiText 组件内部）；config/images.ts:341-342（MASCOT.DEFAULT 收编，注释引用本 ID）；本轮逐键核对全部存在：DEFAULT_AVATAR(images.ts:41)、ICONS_V2.SPROUT(:445)、ICONS_EMOJI.SEARCH(:481)/PIN(:536)/VOLUME_X(:552)/LEAF(:568)、MASCOT.DEFAULT(:342)/HEART_GREEN(:363)/CHAT_HI(:353)",
+      "sources": [
+        "code"
+      ],
+      "confidence": 1.0,
+      "ideal": "页面图片资源一律经 IMAGE_PATHS 常量，无 /static 字面量",
+      "fix": "已落地，无需再改",
+      "status": "已修复待终验"
     },
     {
       "id": "MP-R2-PAGES-MESSAGES-INDEX-006",
@@ -89,13 +99,15 @@
       "screenshot": "",
       "category": "Interaction",
       "severity": "P3",
-      "description": "下拉刷新期间整页内容区被骨架屏替换再切回（内容闪烁）：pageState（messages/index.vue:151-160）只要 messagesStore.pageLoading 为真即返回 \"loading\"，而 pageLoading = loading||loadingSignals||loadingNotifications||loadingInteractions（stores/messages.ts:512-513）；force 下拉刷新路径（bootstrap messages.ts:548-552 → fetchSessions:616 置 loading=true，fetchHeartSignals:1022 置 loadingSignals，fetchNotifications:1086 置 loadingNotifications）在数据到达前 PageStateContainer 会卸载 default slot 整块内容、渲染 Skeleton count=5（index.vue:347-350，PageStateContainer.vue:15-21 v-if 分支），完成后重新挂载——用户在已有内容上下拉，看到的是旧内容消失→骨架→新内容的闪变，与下拉刷新「保内容、换数据」的常规预期相悖。bootstrap 注释（536-538）表明 force 路径刻意「等待真实数据完成」，却未同步让 loading 态走 SWR 的「先见旧值」路径。",
-      "evidence": "messages/index.vue:151-160（pageState 判定）、347-350（loading slot=Skeleton count=5）；stores/messages.ts:512-513（pageLoading 聚合）、516（fetchSessions 置 loading=true）、548-552（force await fetchAll）、554-562（非 force SWR 路径同样会短暂置位）；components/common/PageStateContainer.vue:15-21（loading 时 v-if 卸载内容 slot）。",
-      "sources": ["code"],
-      "confidence": 0.7,
-      "ideal": "下拉刷新（force）时保留现有内容，仅以顶部下拉动画表达刷新中；仅首屏（sessions/dashboard 均为空）才显示整块 Skeleton。",
-      "fix": "pageState 的 loading 判定区分首屏与刷新：如 messagesStore.pageLoading && privateSessions.length===0 && warmPeople.length===0 才返回 \"loading\"（或为 store 增加 refreshing 标志并在 pageState 中豁免）；数据到达后自然原位更新。",
-      "status": "待修复"
+      "description": "【初版发现·本轮复核确认已修复】下拉刷新期间整页内容区被骨架屏替换再切回（内容闪烁）。pageState 已改为仅「首屏（无任何可展示数据）」才显示整块 Skeleton，force 刷新保留现有内容。",
+      "evidence": "pages/messages/index.vue:155-165（pageState：loading 分支加 orderedSessions.length===0 && warmPeople.length===0 守卫，注释引用本 ID）；317-322（onPullDownRefresh await loadPage(true) 后才 stopPullDownRefresh）；stores/messages.ts:544-557（bootstrap force 路径 await fetchAll + 回写缓存）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.95,
+      "ideal": "下拉刷新期间已加载内容保持可见，仅首屏无数据时展示骨架",
+      "fix": "已落地，无需再改",
+      "status": "已修复待终验"
     },
     {
       "id": "MP-R2-PAGES-MESSAGES-INDEX-007",
@@ -104,12 +116,14 @@
       "screenshot": "",
       "category": "Consistency",
       "severity": "P4",
-      "description": "i18n 半迁移：header 走 t()，页面其余文案全部硬编码中文。327-331 行用 t('chat.headerTitle')/t('chat.headerSubtitle')（键存在于 zh-CN.ts:1256 与 en-US.ts:1168-1170），而同页「有人喜欢你/去看看/正在等待回复/去回复/寻觅助手/官方/你的恋爱小管家/今天附近有 N 场活动…/正在升温/更多/最近聊天/暂无聊天记录/未知用户/暂无消息/未找到匹配的聊天/活动推荐/查看详情/搜索聊天记录.../还没有新的缘分/去附近看看吧/确定删除该会话？/置顶/取消置顶/标为未读/恢复提醒/免打扰/删除会话」等约 25 处（370、374、382-383、405、410、420、424、432-433、457、462、479、497、519-520、540、588-596、343、357-358、221、236）均为硬编码。因 i18n/index.ts:22 明确「全代码库无 setLocale，小程序端恒为 zh-CN」，当前无用户可见故障，但 en-US 目录仍在维护，一旦启用切换即中英混排；且 store 层同类文案已 i18n 化（messages.ts 内 t(\"storeErrors...\")），页面层与其口径不一致。",
-      "evidence": "messages/index.vue:327-331（t() 用法）对照 343、357-358、370-383、405-424、432-433、457-462、479-497、519-596、221-236（硬编码中文清单）；i18n/index.ts:22（恒为 zh-CN 的声明）；stores/messages.ts 多处 t()（如 564、692、1196）。",
-      "sources": ["code"],
-      "confidence": 0.9,
-      "ideal": "同页文案口径一致：要么全部走 t()（keys 补入 zh-CN/en-US），要么在确认恒为 zh-CN 的前提下统一硬编码并移除半迁移状态。",
-      "fix": "将上述 ~25 条文案补入 i18n messages 命名空间并替换 t() 调用（header 已有先例）；若产品确认单语，可在代码注释标注「zh-CN-only by design」以免后续轮次反复报同一问题。",
+      "description": "【本轮复核仍存在】i18n 半迁移：header 标题/副标、发起会话 aria、空态 aria 走 t()（键在 zh-CN.ts:1194-1195/1288-1289/2703 与 en-US.ts:1098-1099/1201-1203/2531 均存在），但页面其余用户可见文案全部硬编码中文——en-US 语言下界面中英混排。含：长按菜单 4 项、删除确认弹窗、关系状态标签（getStatusLabel 4 键映射）、搜索占位符、空态标题/CTA、两张快捷卡标题与描述、助手卡名称/副标/活动文案、三个 section 标题、「更多」「查看详情」「暂无消息」「未知用户」「加载失败」兜底等。",
+      "evidence": "pages/messages/index.vue:263（showActionSheet itemList 4 项硬编码）、278（「确定删除该会话？」）、325-331（getStatusLabel 聊天中/刚认识/互相关注/暧昧中/新朋友）、394（placeholder=\"搜索聊天记录...\"）、408/412（「还没有新的缘分」「去附近看看」）、425-426/437-438（「有人喜欢你」「正在等待回复」及 desc）、460-465/475（「寻觅助手」「你的恋爱小管家」「今天附近有 N 场活动适合你参加」）、487-488/512/583（「正在升温」「更多 ›」「最近聊天」「活动推荐」）、537/554/576/600（「未知用户」「暂无消息」「未找到匹配的聊天/暂无聊天记录」「查看详情」）、398（error-text 兜底「加载失败」）；对照 374/378（t('chat.headerTitle'/'chat.headerSubtitle')）、382/411（aria 用 t()）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.95,
+      "ideal": "用户可见文案全部走 i18n 键（zh-CN/en-US 双语齐备），与 header 既有口径一致",
+      "fix": "为上述文案补 zh-CN/en-US 键并替换为 t() 调用；关系状态标签可复用 -004 的 utils 收敛思路一并处理",
       "status": "待修复"
     },
     {
@@ -119,12 +133,14 @@
       "screenshot": "",
       "category": "Architecture",
       "severity": "P4",
-      "description": "页面顶部重复调用已封装的 uni.getSystemInfoSync()：messages/index.vue:43 直接 uni.getSystemInfoSync().statusBarHeight 计算 statusBarPx（滚动遮罩高度用），而 composables/useStatusBarHeight.ts:15-21 已封装同一调用（含 try/catch 兜底、模块级单例），且本页已通过 useMenuButtonRect（index.vue:60 → useMenuButtonRect.ts:48 内部即 useStatusBarHeight()）间接持有同一数据——同一页面对同一系统 API 一直两取、一处有容错一处没有；pages/home/index.vue:52 亦同款直调，属跨页重复模式（uni 官方已将 getSystemInfoSync 标记为 deprecated，项目收敛点已存在却未被使用）。",
-      "evidence": "messages/index.vue:43（直调无 try/catch）；composables/useStatusBarHeight.ts:15-21（既有封装）；composables/useMenuButtonRect.ts:48（styleVars 内部已引用 useStatusBarHeight）；pages/home/index.vue:52（同款直调）。",
-      "sources": ["code"],
-      "confidence": 0.85,
-      "ideal": "statusBarPx 取自 useStatusBarHeight()（或直接复用 useMenuButtonRect 返回的 --statusbar 值），页面不再直调 getSystemInfoSync。",
-      "fix": "messages/index.vue:43 改 const statusBarPx = useStatusBarHeight().value（或 const { statusBarHeight } = useStatusBarHeight()），删除直调；home 页同款问题可另轮处理。",
+      "description": "【本轮复核仍存在】页面 setup 顶部直接 uni.getSystemInfoSync() 取 statusBarHeight（index.vue:46），与既有单例 composables/useStatusBarHeight.ts 重复实现；同文件下方 useMenuButtonRect() 内部正是消费该单例取 --statusbar（useMenuButtonRect.ts:48），同页两种取值口径并存。home 页同款问题已立 MP-R2-PAGES-HOME-INDEX-114，本页为同模式残留。",
+      "evidence": "pages/messages/index.vue:46（const statusBarPx = Number(uni.getSystemInfoSync().statusBarHeight ?? 0)）；composables/useStatusBarHeight.ts（单例 composable 存在）；composables/useMenuButtonRect.ts:48（const statusBarHeight = useStatusBarHeight()）；63（本页同时调用 useMenuButtonRect）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.9,
+      "ideal": "状态栏高度单一来源：删除页面内 getSystemInfoSync 直调，改用 useStatusBarHeight()（与 useMenuButtonRect 同源）",
+      "fix": "import { useStatusBarHeight } 后取其返回值计算 topScrimStyle，删除 46 行直调",
       "status": "待修复"
     },
     {
@@ -134,12 +150,14 @@
       "screenshot": "",
       "category": "Consistency",
       "severity": "P4",
-      "description": "助手卡未读角标与 tabBar 消息红点口径不一致：助手卡 = totalUnreadCount + unreadNotificationCount（messages/index.vue:399-400，会话未读+通知未读），而 tabBar 红点只 watch totalUnreadCount（composables/useUnreadBadge.ts:136-147），且 totalUnreadCount 还排除 muted 会话（stores/messages.ts:516-517）。组合后果：仅存在未读通知（或未读仅来自免打扰会话）时，助手卡显示红色角标而 tabBar 消息 tab 无任何红点；用户按角标进消息页后，onShow 的 markAllSessionsRead（index.vue:273、store 1316-1321）清零会话未读，助手卡角标随即只剩通知部分——两处入口的数字永不相等也无解释，易被复判为「红点没闭环」。",
-      "evidence": "messages/index.vue:399-400（角标求和公式）；composables/useUnreadBadge.ts:133-152（watch totalUnreadCount 写 storage+setData）；stores/messages.ts:516-517（totalUnreadCount 排除 muted）、518（unreadNotificationCount）；custom-tab-bar/index.wxml:22-28（tab 红点仅渲染 chatBadge）。",
-      "sources": ["code"],
-      "confidence": 0.7,
-      "ideal": "两处未读入口口径统一：tabBar 红点同样计入通知未读（或助手卡角标只算会话未读），并明确免打扰是否计入；至少在口径分歧处留注释说明产品语义。",
-      "fix": "若产品口径为「消息 tab=会话+通知」：useUnreadBadge 改 watch [totalUnreadCount, unreadNotificationCount] 求和；若为「tab=仅会话」：将 index.vue:399 改回 totalUnreadCount 并删除 MP-R2-MSG-006 修复注释，另行给通知未读单独入口。免打扰是否计入随所选口径对齐（store getter 已支持排除）。",
+      "description": "【本轮复核仍存在】助手卡未读角标与 tabBar 消息红点口径不一致：助手卡 = 会话未读+通知未读 合计（index.vue:454-455），tabBar 红点 = 仅 totalUnreadCount（useUnreadBadge watch 源），通知未读不驱动 tabBar。用户视角：补种未读通知后助手卡显示角标而 tabBar 无红点，两处「消息未读」数字对不上。",
+      "evidence": "pages/messages/index.vue:454-455（v-if=\"messagesStore.totalUnreadCount + messagesStore.unreadNotificationCount > 0\"，角标取二者合计 min 99）；composables/useUnreadBadge.ts:135-146（watch storeToRefs(messagesStore) 的 totalUnreadCount 单源 → setChatTabBadge），未读通知（unreadNotificationCount）不在 tabBar 口径内；stores/messages.ts:520-522（两 getter 定义：totalUnreadCount 排除 muted 会话；unreadNotificationCount 为未读通知数）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.85,
+      "ideal": "同一「消息未读」语义在助手卡与 tabBar 使用同一数据源（要么都含通知、要么都不含）",
+      "fix": "二选一对齐：useUnreadBadge 改 watch (totalUnreadCount + unreadNotificationCount)；或助手卡角标回落为 totalUnreadCount 单源。需产品口径裁决",
       "status": "待修复"
     },
     {
@@ -149,12 +167,14 @@
       "screenshot": "",
       "category": "Regression",
       "severity": "P1",
-      "description": "【历史回归核对·MP-R2-MSG-006】代码层验证为已修复：(a) 助手卡红色未读角标数据源已改为「会话未读+通知未读」合计（messages/index.vue:399-401），unreadNotificationCount 为 store getter（messages.ts:518），其数据源 notifications 由 bootstrap fetchAll 内的 fetchNotifications 填充（messages.ts:546-547）——「补种通知后仍不显示」的缺口已闭合；(b) tabBar 消息角标接 custom-tab-bar 的遗留待办已闭环：App.vue:51 onLaunch 调 useUnreadBadge → watch totalUnreadCount（useUnreadBadge.ts:142-148）→ storage 键 tabbar_chat_unread（storage-keys.ts:50 与 custom-tab-bar/index.js:116 手工同步同一键）+ getTabBar().setData({chatBadge})（useUnreadBadge.ts:62-72），custom-tab-bar/index.js:91-105 attached/pageLifetimes.show 双通道 syncBadge，index.wxml:22-28 渲染 >99 显示 99+。遗留口径差异（tab 红点不含通知/免打扰未读）已另立 MP-R2-PAGES-MESSAGES-INDEX-009 跟踪。",
-      "evidence": "messages/index.vue:397-401；stores/messages.ts:518、546-547；App.vue:25/51；composables/useUnreadBadge.ts:62-72、133-152；constants/storage-keys.ts:50；custom-tab-bar/index.js:88、91-105、113-123；custom-tab-bar/index.wxml:22-28。",
-      "sources": ["code"],
-      "confidence": 0.9,
-      "ideal": "（同上已达成；口径统一见 009 号发现）",
-      "fix": "无需修复；口径差异按 009 号发现处理。",
+      "description": "【历史回归核对·MP-R2-MSG-006】代码层验证为已修复：(a) 助手卡红色未读角标数据源已改为「会话未读+通知未读」合计（index.vue:454-455，注释 R21）；(b) 初版复核时该口径与 tabBar 红点仍不一致，已另立 -009 跟踪（与本条「角标能显示」的验证目标不冲突）。",
+      "evidence": "pages/messages/index.vue:452-456（v-if 合计>0，badge 文本 min(合计,99)+\"+\"）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.95,
+      "ideal": "补种未读通知后助手卡角标可见",
+      "fix": "无需修复；口径差异由 -009 跟踪",
       "status": "已验证"
     },
     {
@@ -164,12 +184,14 @@
       "screenshot": "",
       "category": "Regression",
       "severity": "P3",
-      "description": "【历史回归核对·MP-R1-PAGES-MESSAGES-INDEX-001(R21)「header + 死交互元素」】代码层验证为已修复：现 header 右侧唯一交互元素是搜索按钮（messages/index.vue:334-336，@tap=toggleSearch，hover-class 反馈），模板中已无「+」元素；toggleSearch（162-165 行）切换 searchActive 并在关闭时清空关键字，展开的搜索栏（341-345 行）含 v-model 输入与 × 清除（clearSearch 167-169），filteredSessions（141-149）按名称/预览实时过滤并渲染（522-571）。整链路（tap→state→template→过滤）接线完整，非死交互。",
-      "evidence": "messages/index.vue:333-337（header 右侧搜索按钮）、162-165（toggleSearch）、341-345（搜索栏）、141-149（过滤 computed）、518-571（搜索结果渲染）；模板 grep 无独立「+」交互元素。",
-      "sources": ["code"],
-      "confidence": 0.85,
-      "ideal": "（已达成）",
-      "fix": "无需修复。",
+      "description": "【历史回归核对·MP-R1-PAGES-MESSAGES-INDEX-001(R21)「header + 死交互元素」】代码层验证为已修复：header 右侧「+」与放大镜两钮均有接线（handleStartChat / toggleSearch），hover-class 反馈齐备，无死元素。",
+      "evidence": "pages/messages/index.vue:380-388（两枚 header__icon-btn，@tap=handleStartChat / @tap=toggleSearch，hover-class）；177-202/167-170（两 handler 实现完整）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.95,
+      "ideal": "header 所有可感知控件均有点击响应",
+      "fix": "无需修复",
       "status": "已验证"
     },
     {
@@ -179,12 +201,14 @@
       "screenshot": "",
       "category": "Regression",
       "severity": "P3",
-      "description": "【历史回归核对·MP-R1-PAGES-MESSAGES-INDEX-002/003(R21)「置顶/免打扰 store 已生效但页面零可见反馈」】代码层验证为已修复（UI 层）：置顶——排序纳入 pinned（118-139 行 orderedSessions 置顶组全局最前）+ 行内置顶角标图标（481-486 主列表 / 537-542 搜索分支）；免打扰——时间行内 volume-x 图标（502-507 / 558-563）；两者均在长按 ActionSheet（219-244）中可设置且操作失败有 toast（180-185 toastOpError、226/230/238 行 catch/then 反馈）。注意：免打扰反馈存在「重拉取后状态丢失」的新缺陷，已另立 MP-R2-PAGES-MESSAGES-INDEX-001（P2）跟踪，不影响本条历史项「页面有可见反馈」的验证结论。",
-      "evidence": "messages/index.vue:118-139（pinned 排序）、481-486/537-542（pin 图标）、502-507/558-563（muted 图标）、219-244（长按菜单四项操作）、180-185（失败 toast）；stores/messages.ts:1191-1200（setSessionPinned）、1230-1247（setSessionMuted）、1278-1283（markSessionUnread）。",
-      "sources": ["code"],
-      "confidence": 0.85,
-      "ideal": "（反馈层已达成；状态持久化缺口见 001 号发现）",
-      "fix": "无需修复；muted 持久化按 001 号发现处理。",
+      "description": "【历史回归核对·MP-R1-PAGES-MESSAGES-INDEX-002/003(R21)「置顶/免打扰 store 已生效但页面零可见反馈」】代码层验证为已修复：置顶会话全局置前 + pin 角标；免打扰会话显示静音图标且不计入 tabBar 总角标。",
+      "evidence": "pages/messages/index.vue:121-142（pinnedTopSessions 优先排序，注释引用 MP-R1-002 修复）、538-543（session.pinned → pin 图标）、557-565（session.muted → VOLUME_X 图标，注释引用 MP-R1-003）；stores/messages.ts:520-521（totalUnreadCount 过滤 !s.muted，注释引用红点修复）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.95,
+      "ideal": "置顶/免打扰操作后列表即时可见反馈",
+      "fix": "无需修复",
       "status": "已验证"
     },
     {
@@ -194,26 +218,172 @@
       "screenshot": "",
       "category": "Regression",
       "severity": "P2",
-      "description": "【历史回归核对·INDEP-004「消息页无滚动遮罩（与首页不一致）」】代码层验证为已修复：本页已实现与首页同款滚动状态栏遮罩——messages/index.vue:43-52（statusBarPx 计算 + onPageScroll scrollTop>10 驱动 pageScrolled，状态变化才写 ref）、45-48（topScrimStyle 高度 statusBarPx+28px、透明度联动）、318（.messages-page__top-scrim 节点）、616-625（fixed 顶部渐变遮罩样式，z-index 9，pointer-events:none 不挡交互）。",
-      "evidence": "messages/index.vue:42-52、318、616-625；onPageScroll 为 @dcloudio/uni-app 页面生命周期（10 行 import）。",
-      "sources": ["code"],
-      "confidence": 0.85,
-      "ideal": "（已达成）",
-      "fix": "无需修复。",
+      "description": "【历史回归核对·INDEP-004「消息页无滚动遮罩（与首页不一致）」】代码层验证为已修复：本页已实现与首页同款滚动状态栏遮罩（白色渐变，滚动 >10px 淡入），固定层不拦截触控。",
+      "evidence": "pages/messages/index.vue:45-55（statusBarPx + pageScrolled + onPageScroll 阈值切换）、364-365（messages-page__top-scrim 节点，:style=topScrimStyle）、628-638（fixed/pointer-events:none/transition 160ms）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.95,
+      "ideal": "滚动后内容与状态栏/系统时间之间有遮罩，不叠印",
+      "fix": "无需修复",
       "status": "已验证"
+    },
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-014",
+      "round": "R2",
+      "page": "pages/messages/index",
+      "screenshot": "",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "【历史回归核对·R13-DATA-3894，本轮 SQL 实证仍存在】巡检残留 private_messages id=3894「全链路验收测试消息 2026-09-12」仍外露消息预览位，且其所在会话 private_conversations id=461 的 last_message_preview 字段本身就是该残留文案——即使删除消息行，列表预览仍会继续外露，必须同步修 conversation preview。前端代码层无任何过滤/脱敏（预览字段原样透传渲染）。id=3334（conv 390「你好呀，测试消息」）为种子演示文案，按基线裁决保留。",
+      "evidence": "本轮只读 SQL（pymysql，campus@127.0.0.1:3306/campus_love，凭据读自仓库 .env，2026-09-24 执行）：SELECT ... FROM private_messages WHERE id IN (3894,3334) → 2 行：id=3894 (conversation_id=461, sender_id=100151, kind=text, content='全链路验收测试消息 2026-09-12', created 2026-09-12 00:28:28)、id=3334 (conversation_id=390, sender_id=100129, content='你好呀，测试消息')；SELECT id,last_message_preview,last_message_at FROM private_conversations WHERE id=461 → (461,'全链路验收测试消息 2026-09-12',2026-09-12 00:28:28)。前端链路：stores/messages.ts:272（lastMessagePreview: raw.lastMessagePreview 原样映射）→ pages/messages/index.vue:548-553（EmojiText 渲染 session.lastMessagePreview）。基线：reports/audit/baseline/historical-issues.md:377（未修·等授权删除）；reports/audit/2026-09-22-r13-goal/R13-ACCEPTANCE.md:188/216",
+      "sources": [
+        "code",
+        "log"
+      ],
+      "confidence": 1.0,
+      "ideal": "消息列表预览位无审计/验收残留文案；删除授权后 SQL + 页面实拍双证闭环（基线明确要求）",
+      "fix": "待授权执行：DELETE private_messages WHERE id=3894（不可逆，先备份）；同步 UPDATE private_conversations SET last_message_preview=<该会话剩余最新消息或''>、last_message_at 同步核对 WHERE id=461；完成后 SQL 截图 + 消息页实拍双证。id=3334 保留",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-015",
+      "round": "R2",
+      "page": "pages/messages/index",
+      "screenshot": "",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "【历史回归核对·MP-R1-PAGES-MESSAGES-INDEX-004「会话列表时间整列永不显示（模板读不存在的 lastMessageTime）」】代码层验证为已修复：模板读真实字段 lastMessageSentAt（类型存在、映射存在），formatTime 带 NaN 防护并收敛到 utils/time 单一实现（i18n：当天/昨天/本周/更早）。",
+      "evidence": "pages/messages/index.vue:564（{{ formatTime(session.lastMessageSentAt) }}）；stores/messages.ts:69（MessageSession.lastMessageSentAt: string | null）、273（lastMessageSentAt: raw.lastMessageAt）；pages/messages/index.vue:344-353（Number.isNaN 防护 + locale + formatChatListTime 委托）；utils/time.ts:384-433（formatChatListTime：当天 HH:mm / 昨天 / 周内星期 / 更早日期）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 1.0,
+      "ideal": "有消息的会话行右侧渲染真实时间列",
+      "fix": "无需修复",
+      "status": "已验证"
+    },
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-016",
+      "round": "R2",
+      "page": "pages/messages/index",
+      "screenshot": "",
+      "category": "Regression",
+      "severity": "P1",
+      "description": "【历史回归核对·MP-R1-PAGES-MESSAGES-INDEX-005「未登录态手机号登录死交互（NotLoggedWaiting emit goPhoneLogin 无监听者）」】代码层验证为已修复：页面已绑定 @go-phone-login，handler 跳登录页；且未登录无 token 时 usePageAccess 放行（不重定向），该分支真实可达。",
+      "evidence": "pages/messages/index.vue:366-368（@go-login=\"goLogin\" @go-phone-login=\"goPhoneLogin\"，注释引用本 ID）；components/discover/NotLoggedWaiting.vue:22-25（defineEmits goLogin/goPhoneLogin）、31-33（goPhoneLogin → emit）、90-99（手机号登录按钮 @tap=goPhoneLogin）；pages/messages/index.vue:71-74（goPhoneLogin → openAppPath('/pages/login/index')）；composables/usePageAccess.ts:75-81（未登录且无 token 一律放行，交由页面自身未登录态引导）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 1.0,
+      "ideal": "未登录态「手机号登录」按钮点击进入登录页（含手机号登录表单入口）",
+      "fix": "无需修复",
+      "status": "已验证"
+    },
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-017",
+      "round": "R2",
+      "page": "pages/messages/index",
+      "screenshot": "",
+      "category": "Regression",
+      "severity": "P2",
+      "description": "【历史回归核对·R1-PAGES-MESSAGES-INDEX-006..018 P2 簇（6 子项中 5 项已修复）】(1) dashboard 并发整表覆盖 sessions → 改按 id 合并、保留官方号/临时会话与本地置顶；(2) 长按失败打成全屏错误态 → pageState 与 errorMessage 解耦 + 单会话操作 toast；(3) 下拉刷新 30s TTL 空转 → force 路径穿透缓存且 await 真实完成；(4) --statusbar/--capsule-right 未注入 → useMenuButtonRect styleVars 绑根节点；(5) 助手卡假数据（?? 2 兜底 + 硬编码露营行）→ 全部数据驱动、无数据整块隐藏。第 6 子项（空 catch）仅部分修复，另立 -018。",
+      "evidence": "(1) stores/messages.ts:583-613（mergedById 合并，注释引用 MP-R1-007）；(2) pages/messages/index.vue:155-165（error 判定加双重空守卫，注释引用 MP-R1-008）、216-222（toastOpError）、268/272-274/280（.catch(toastOpError) / ok===false toast）；(3) index.vue:317-322（await loadPage(true) 后 stopPullDownRefresh）+ stores/messages.ts:544-557（force await fetchAll + setCachedValue）+ pages.json:64（enablePullDownRefresh: true）；(4) index.vue:60-63（useMenuButtonRect().styleVars）+ 363（根节点 :style=\"menuStyleVars\"）+ useMenuButtonRect.ts:47-52（注入 --capsule-right/--statusbar）+ 648-649（header padding 消费两变量）；(5) index.vue:82-97（?? 2 已删、硬编码露营行已删，注释引用 MP-R1-011）、469-481（assistantActivityCount>0 守卫）、485（warmPeople.length>0 守卫）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.95,
+      "ideal": "六子项全部闭环（第 6 项见 -018）",
+      "fix": "5 子项无需修复；空 catch 残留见 -018",
+      "status": "已验证"
+    },
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-018",
+      "round": "R2",
+      "page": "pages/messages/index",
+      "screenshot": "",
+      "category": "Regression",
+      "severity": "P3",
+      "description": "【历史回归核对·R1 P2 簇「空 catch」子项：部分修复，残留 2+1 处违反硬约束「禁空 catch {}」】loadPage 内 fetchLikes 的空 catch 已按 MP-R1-006 改为 console.warn 留痕，但同页 handleStartChat 的 fetchVisitors catch 与 store 两处 catch 仍是仅有注释的空块：(a) index.vue:180-182 fetchVisitors().catch(() => { /* 注释 */ })——行为有兜底（people.length===0 → goNearby）但违反约束字面义，且与同页 fetchLikes 的修复标准不一致；(b) stores/messages.ts:1477-1478 markInteractionRead catch (_e) { /* 静默失败 */ }——网络写操作失败完全无痕（注释自述静默失败），而姊妹方法 markNotificationRead 已按 R4-00165 补 console.warn（1155-1159），同一文件双标准；(c) stores/messages.ts:1237-1239 toggleSessionPin 空 catch（errorMessage 已由内层 setSessionPinned 设置，非静默，但该 action 生产代码零引用，见 -022）。",
+      "evidence": "pages/messages/index.vue:293-296（fetchLikes 修复样例：catch 带 console.warn('[messages] fetchLikes failed')，注释引用 MP-R1-006「空 catch 违反硬约束且静默失败，改为留痕」）对照 180-182（fetchVisitors catch 仅注释）；stores/messages.ts:1477-1478（markInteractionRead：catch (_e) { /* 静默失败 */ }，前一行 1476 为带超时的 PUT /notifications/interactions/{id}/read）对照 1155-1159（markNotificationRead：console.warn 留痕，注释引用 R4-00165）；stores/messages.ts:1237-1239（toggleSessionPin 空 catch）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.9,
+      "ideal": "全页+store 无空 catch 块：失败路径一律留痕（console.warn/error）或显式处理并注释裁决依据",
+      "fix": "(a) fetchVisitors catch 补 console.warn 留痕（兜底逻辑保留）；(b) markInteractionRead catch 补 console.warn（对齐 markNotificationRead 的 R4-00165 标准）；(c) 随 -022 一并处理",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-019",
+      "round": "R2",
+      "page": "pages/messages/index",
+      "screenshot": "",
+      "category": "Interaction",
+      "severity": "P4",
+      "description": "活动推荐卡「查看详情」CTA 死按钮风险：卡片与 CTA 无条件渲染，openActivity 对空 targetUrl 静默 no-op——后端 assistant 项缺 targetUrl 时，整卡（含「查看详情」）可点击但点击零响应、无 toast、无禁用态，落入本项目「可感知控件无响应」高频缺陷类。",
+      "evidence": "pages/messages/index.vue:88-97（activityRecommendations 映射 targetUrl: a.targetUrl || \"\"，空值不剔除项）、257-259（openActivity：if (targetUrl) 才跳转，否则什么都不做）、586-604（卡片 @tap=openActivity(act.targetUrl) 无条件渲染 + 599-601 CTA「查看详情 ›」恒显示）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.7,
+      "ideal": "无目标地址的活动卡不渲染 CTA（或整卡置灰/点击给轻提示），不出现可点击零响应",
+      "fix": "模板按 act.targetUrl 条件渲染 CTA（v-if），或 openActivity 空值分支给轻提示；亦可在映射层过滤掉无 targetUrl 的项",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
+      "round": "R2",
+      "page": "pages/messages/index",
+      "screenshot": "",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "长按菜单「标为未读」为纯本地态：store 仅本地置 max(1, unreadCount)（TODO(backend) 无后端同步），下一次任何列表重建（30s TTL 过期重进、下拉刷新、dashboard 合并以服务端未读为准）都会把该会话未读数静默还原，用户操作无持久性也无任何提示。",
+      "evidence": "stores/messages.ts:1295-1304（markSessionUnread：session.unreadCount = Math.max(1, ...)，注释 R4-00184 + TODO(backend)「后端补充会话未读元数据同步接口」）；对照 stores/messages.ts:609-612/691-694（fetchSessions/dashboard 合并以服务端值重建 unreadCount）；pages/messages/index.vue:270（tapIndex===1 直接调用，无一次性说明）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.85,
+      "ideal": "「标为未读」要么后端持久化，要么在刷新还原时不违背用户感知；当前「操作成功→刷新即消失」最伤感知",
+      "fix": "短期：无后端接口前可接受（已知 TODO），建议操作后 toast「已标为未读」；长期：TODO(backend) 落地会话未读元数据同步",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
+      "round": "R2",
+      "page": "pages/messages/index",
+      "screenshot": "",
+      "category": "Interaction",
+      "severity": "P4",
+      "description": "头像加载失败记录（avatarFailedIds）只增不清：SWR 后台刷新/下拉刷新拿到新数据后，先前因网络抖动失败的会话即使已换到有效头像 URL，仍恒显示默认头像，直到页面重挂载（tabBar 常驻页几乎不重挂载）。",
+      "evidence": "pages/messages/index.vue:355-359（avatarFailedIds 仅 onAvatarError 添加，无任何清除点）；529（:src 三元优先读 avatarFailedIds.has(session.id)）；对照 onShow/下拉刷新/错误重试（312-322/208-214）均未重置该 Set",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.7,
+      "ideal": "数据刷新（loadPage 成功）后清空失败记录，给新 URL 重新加载机会",
+      "fix": "loadPage await 完成后 avatarFailedIds.value = new Set()（或按 session.id 精细清除）",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-022",
+      "round": "R2",
+      "page": "pages/messages/index",
+      "screenshot": "",
+      "category": "Architecture",
+      "severity": "P4",
+      "description": "toggleSessionPin 为生产死代码：全仓唯一调用方是测试（tests/stores/messages.spec.ts），页面长按置顶走的是 setSessionPinned 直调；且该 action 内含注释型空 catch（违反硬约束字面义）。死代码 + 硬约束违规叠加，建议裁决去留。",
+      "evidence": "stores/messages.ts:1233-1241（toggleSessionPin，注释「Phase 4.3 验收」；1237-1239 catch (() => { /* 注释 */ })）；全仓 grep toggleSessionPin：仅 tests/stores/messages.spec.ts:41-49 命中，页面/组件零引用；对照 pages/messages/index.vue:268（置顶走 setSessionPinned 直调）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.85,
+      "ideal": "无生产引用的 action 删除（测试随迁），或页面改用该 action 收敛入口；catch 一律留痕",
+      "fix": "二选一：删除 toggleSessionPin 并同步删测试用例；或长按菜单改调 toggleSessionPin 并把空 catch 补 console.warn",
+      "status": "待修复"
     }
   ],
   "coverage": [
-    "pages/messages/index（1210 行全文逐行）：架构（store 单一数据源/页面 computed 组装/孤儿组件 ConversationItem/模板双分支）、命名、状态管理（messagesStore+likesStore 双源仅 likedMeCount/waitingReplyCount 兜底，pinned/muted 运行态与服务端态同步链路）、API 错误处理（bootstrap/fetchLikes/setSessionPinned/deleteSession 均有 catch 或页面 toast；markSessionUnread 为同步；setSessionMuted 恒 resolve；无空 catch {}、无未处理 rejection；handleRetry 经 removeCache 穿透 TTL）、异步流程（onLoad+onShow+watch(isUnlocked) 多入口并发由 SWR inflight 去重（cache-ttl.ts:88-102）+ fetchLikes AbortController 收敛；onPullDownRefresh await loadPage(true) 后 stopPullDownRefresh）、样式（token var(--x,#fallback) 全覆盖本页；硬编码 /static ×4 见 005；无 :hover/grid/backdrop-filter）、组件事件接线（NotLoggedWaiting @go-login/@go-phone-login ← emit goLogin/goPhoneLogin ✓；PageStateContainer/ErrorState @retry ← emit retry ✓；其余均为页面原生 tap/longpress）、小程序专项（pages.json:63-64 enablePullDownRefresh=true 与 onPullDownRefresh 匹配 ✓；自定义导航经 useMenuButtonRect 注入 --statusbar/--capsule-right ✓；搜索框 cursor-spacing ✓；onShow 刷新 ✓；无 scroll-view；无 @tap.stop 需求；底部 tabBar 避让缺失见 002）",
-    "stores/messages.ts（1486 行全文）：bootstrap/SWR/TTL、竞态 token、dashboard 合并（muted 丢失证据链）、setSessionPinned/setSessionMuted/markSessionUnread/markAllSessionsRead/markConversationRead、totalUnreadCount/unreadNotificationCount getter",
-    "stores/likes.ts（fetchLikes abort/rethrow，页面 .catch 留痕匹配）、stores/helpers/use-mock.ts、stores/session.ts（isLoggedIn）",
-    "composables：useTabBar（onShow setData selected）、useUnreadBadge（storage+setData 双通道）、useMenuButtonRect、useStatusBarHeight、usePageAccess（config/page-access.ts:32-37 requiresAuth:true/requiresProfile:false，页面 spread 覆盖冗余无害）",
-    "components：NotLoggedWaiting（emits/props 匹配；raw hex 无 token 兜底，量级大且属共享组件，暂记观察未立案）、PageStateContainer、Skeleton（variant=list ✓）、ErrorState（emit retry ✓）、EmojiText（text-class/emoji-size ✓）、XunmiMascot（mood=mascot_smile 在 V2 映射内 ✓）、ConversationItem（零引用孤儿，见 003）",
-    "custom-tab-bar/（index.js syncBadge/syncSelected/switchTab、index.wxml 角标渲染、index.wxss fixed 高度）与 pages.json（tabBar.custom:true、messages 页 enablePullDownRefresh）",
-    "config/images.ts（IMAGE_PATHS 全部被引用键存在 + real 模式基址切换）、constants/routes.ts（OFFICIAL_CHAT/SESSION/VISITORS_LIKES/TAB 均存在）、utils/navigation.ts（openAppPath 空串防御/switchTab query 桥接）、utils/cache-ttl.ts、utils/dev-user.ts（onLoad dev-user=1 注入，页面级兜底）、utils/media.ts（resolveMediaUrl 空守卫/本地化）、utils/time.ts（formatChatListTime）",
-    "静态资源存在性（逐一 ls 验证）：icons/v2/search.png、icons/search.svg、icons/common/pin.svg、icons/common/volume-x.svg、svg-spec/08-mascot/sprout-default.svg、svg-spec/09-decorations/leaf-2.svg、images/mascot/{sprout,default,heart_green,chat_hi}.png、images/posters/notlogged-waiting.png、default-avatar.jpg —— 全部存在",
-    "硬约束扫描（grep，页面+6 个引用组件）：:hover 0 命中；display:grid/grid-template 0 命中；backdrop-filter 0 命中；import.meta.env 0 命中（components 禁 DEV ✓）；emoji 仅出现在 messages/index.vue:97-98 注释与 images.ts 注释中，非渲染 UI；页面切 tab 逻辑经 useTabBar 内联于页面 ✓",
-    "历史回归 4 条全部代码层验证（010-013）：MP-R2-MSG-006 已修复闭环、R1-001「+」死交互已消除、R1-002/003 置顶/免打扰反馈已落地、INDEP-004 滚动遮罩已补",
-    "未执行项（如实声明）：未运行构建/vue-tsc/单测，未启动开发者工具，未截图，未做真机/交互验证——本审查为只读静态代码审查，UI 类发现（002/006）的最终影响需交互取证轮确认"
+    "pages/messages/index（1248 行全文逐行复核，2026-09-24）：【架构/状态管理】store 单一数据源确认：sessions/dashboard/notifications 均以 messagesStore 为源，likesStore 仅作 likedMeCount/waitingReplyCount 兜底（80-81）；pinned/muted 运行态与服务端态同步三条链路（fetchSessions 重建/dashboard 按 id 合并/本地置位）代码层闭环（-001）；多入口并发（onLoad 306-311 + onShow 312-316 + watch(isUnlocked) 302-304）由 bootstrap TTL + SWR inflight 去重（cache-ttl.ts:88-102）收敛，无重复请求；useTabBar(3) 与 pages.json tabBar list 第 3 位=messages 一致（pages.json:396-423）。【API 错误处理】bootstrap/fetchSessions/fetchLikes 等均有 catch（store 侧 errorMessage/console.warn）；页面单会话操作 .catch(toastOpError)（268/272-274/280）；无未处理 rejection（所有 void 调用链内部自捕获）；空 catch 残留 2+1 处已立 -018/-022。【异步流程】onPullDownRefresh await loadPage(true) 后 stopPullDownRefresh（317-322，pages.json:64 enablePullDownRefresh=true）；错误重试 removeCache 穿透 TTL（208-214）；handleRetry 登录锁守卫。【样式/硬约束】禁 :hover ✓（仅 hover-class）；禁 grid ✓；组件禁 import.meta.env.DEV ✓；禁 backdrop-filter ✓（全无）；业务组件无 emoji 渲染 ✓（emoji 仅存于注释 100-101；activity icon 的 emoji 透传走 <text> 且为后端数据非组件自置，103-105 isIconUrl 分流）；token：页面颜色基本 var(--x, #fallback) 形态，页面级白底覆写有注释裁决（616-620），rgba 阴影/淡底为品牌色派生小样、与全项目现状同口径未单独立项；IMAGE_PATHS 12 处引用、/static 字面量零命中（-005 已验证修复）；页面切换逻辑内联 .vue ✓；工具函数从 .ts 导入 ✓（-004 formatTime 已收敛）。【组件事件接线】NotLoggedWaiting emit goLogin/goPhoneLogin ↔ @go-login/@go-phone-login ✓（-016）；PageStateContainer/ErrorState @retry ↔ handleRetry ✓（398/403）；image @error ↔ onAvatarError ✓（531）；无其他自定义子组件事件缺失。【小程序专项】scroll-view 无（页面原生滚动 + onPageScroll 遮罩 45-55）；fixed 层（top-scrim 628-638）pointer-events:none ✓；safe-area：底部 tabBar 避让 623-625 与 home 同口径 ✓、header --statusbar/--capsule-right 注入 60-63/648-649 ✓（-017(4)）；键盘：搜索 input 带 cursor-spacing=20（394）；onShow 刷新 + 红点闭环（312-316）；页面栈：openAppPath/ROUTES 常量（22-24/67-74/177-202/249-259）无字面量路径；@tap.stop/catchtap 无冒泡敏感场景（本页无嵌套可点击叠层需阻断冒泡）。【数据层】R13-DATA-3894 经只读 SQL 实证仍存在（含 conversation preview 同源污染），-014 待授权删除。本轮未运行构建/测试套件、未截图（职责边界：A2 代码层）。"
   ]
 }

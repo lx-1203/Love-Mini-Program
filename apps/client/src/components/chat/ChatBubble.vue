@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import VoicePill from "./VoicePill.vue";
@@ -110,6 +110,17 @@ function previewImage() {
   uni.previewImage({ urls: [resolveMediaUrl(props.body)] });
 }
 
+/** 图片消息渲染态：未加载完显示骨架底，加载失败切占位文案 */
+const imageLoaded = ref(false);
+const imageError = ref(false);
+watch(
+  () => props.body,
+  () => {
+    imageLoaded.value = false;
+    imageError.value = false;
+  }
+);
+
 /** 点击引用消息 */
 function handleTapQuote() {
   if (props.quoteRef) {
@@ -200,15 +211,19 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
         </template>
         <!-- 2026-08-10 功能补齐：图片消息渲染（微信风格，宽度自适应气泡内） -->
         <image
-          v-else-if="kind === 'image' && body"
+          v-else-if="kind === 'image' && body && !imageError"
           class="bubble__image"
+          :class="{ 'bubble__image--skeleton': !imageLoaded }"
           :src="resolveMediaUrl(body)"
           mode="widthFix"
           lazy-load
+          @load="imageLoaded = true"
+          @error="imageError = true"
           @tap="previewImage"
           role="img"
           :aria-label="t('chat.imageMessage')"
         />
+        <text v-else-if="kind === 'image' && body" class="bubble__image-failed">{{ t('chat.imageLoadFailed') }}</text>
         <template v-else>
           <!-- 2026-08-26 第三轮：emoji / 文本消息统一走 EmojiText，
                body 中命中 EMOJI_SVG_MAP 的 emoji 字符会自动替换为 SVG，
@@ -410,6 +425,21 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   max-width: 420rpx;
   border-radius: var(--r-lg, 16rpx);
   overflow: hidden;
+}
+.bubble__image--skeleton {
+  min-height: 160rpx;
+  background: var(--c-bg-surface, #F3FAF6);
+}
+.bubble__image-failed {
+  display: block;
+  max-width: 420rpx;
+  min-height: 160rpx;
+  padding: var(--sp-3, 12rpx);
+  border-radius: var(--r-lg, 16rpx);
+  background: var(--c-bg-surface, #F3FAF6);
+  font-size: var(--fs-sm, 22rpx);
+  color: var(--c-text-tertiary, #9AA39F);
+  box-sizing: border-box;
 }
 
 .bubble__footer {

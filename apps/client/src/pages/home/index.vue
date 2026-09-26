@@ -69,12 +69,16 @@ const locationText = ref(buildLocationText("", sessionStore.userSession?.campusN
 async function initLocation() {
   const loc = await fetchCurrentLocation();
   if (loc) {
-    locationText.value = buildLocationText(loc.city, sessionStore.userSession?.campusName);
+    // MP-R6-F1-NEARBY-IP-CITY-001：逆地理失败时城市是后端按请求方 IP 推断的，
+    // 与用户真实所在城市可能差一个省——这里把它标注出来，不再与 GPS 结果同形展示。
+    const ipSourced = loc.citySource === "ip";
+    locationText.value =
+      buildLocationText(loc.city, sessionStore.userSession?.campusName) +
+      (ipSourced && loc.city ? ` · ${t("locationPage.serverCityTag")}` : "");
     // LBS Phase 2：上报坐标到后端（内部节流 5 分钟）
     void reportLocation(loc.latitude, loc.longitude);
   }
 }
-const likeSent = ref(false);
 
 // 2026-09-02 R12（需求①）：论坛图片/首页数据更新不及时——
 // 此前 onShow 仅在「无数据/有错」时重拉，发新帖或换头像后回到首页永远看不到更新。
@@ -150,7 +154,6 @@ async function likeToday() {
   likeLoading.value = true;
   try {
     await clientApi.likeUser(String(item.userId));
-    likeSent.value = true;
     uni.showToast({ title: t("discover.likeSent"), icon: "success" });
   } catch (error) {
     uni.showToast({ title: t("apiErrors.operationFailed"), icon: "none" });
@@ -168,16 +171,13 @@ async function rotateToday() {
   if (rotateLoading.value) return;
   rotateLoading.value = true;
   // MP-R1-PAGES-HOME-INDEX-002：与 likeToday 同口径 try/catch——
-  // 此前裸 await，real 模式接口失败即未处理 Promise 拒绝，且 likeSent 已被提前
-  // 重置（心动态被清但推荐人不换、无任何提示）。现：失败 toast；likeSent 重置
-  // 移入成功路径（换到新推荐人才重置心动状态，无更多推荐时保留原状态）。
+  // 此前裸 await，real 模式接口失败即未处理 Promise 拒绝、无任何提示。现：失败 toast。
   try {
     const next = await homeStore.rotateTodayRecommendation();
     if (!next) {
       uni.showToast({ title: t("home.noMoreRecommendation"), icon: "none" });
       return;
     }
-    likeSent.value = false;
   } catch (_e) {
     uni.showToast({ title: t("apiErrors.operationFailed"), icon: "none" });
   } finally {

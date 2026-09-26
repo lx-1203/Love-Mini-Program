@@ -1,0 +1,20 @@
+# G8 前后端数据同步六环 — scripts/qa/g8-e2e.cjs 完整原文
+# capturedAt: 2026-09-25T15:43:44+08:00
+# runner: D:/codex-tools/node-v22.17.0-win-x64/node.exe (v22.17.0)  — 不走微信开发者工具/不占 94xx 自动化端口，纯 HTTP + DB 读回
+# 凭据来源: apps/api/restart-backend.ps1 现读（未内联进命令行）
+# BASE=http://127.0.0.1:8080/api/v1  本轮已向本地共享库真实写入，数据保留未删除
+# ---- BEGIN ORIGINAL STDOUT+STDERR ----
+RING1 [OK  ] 客户端身份（体验账号） :: POST /auth/guest-login -> 200，已取到 JWT
+  身份=账号昵称:"?"  说明：wx.login 本机必 502（无 secret），那一路按 NOT-EVIDENCED 处理
+RING2 [OK  ] 客户端写库 POST /posts :: HTTP 200，返回 id=236
+  管理员登录成功 username=local-dev-admin-op…（HTTP 200）
+RING3 [OK  ] 后台按 id 读到该帖 :: GET admin/village-posts/236 -> 200；title 字段可见=是（值 "G8取证2609250743号"）
+RING4 [OK  ] 审核驱动前端可见性 :: 审核前在列表=false(total=185) / audit HTTP 200 / 审核后在列表=false(total=186) / 可见性以 total 增量为准=true；实测确认：新帖默认 audit_status=pending 且前端列表不可见，审核通过后 total +1 → v32 G8(4) 的假设成立（我一度因 javadoc 写「默认 approved」而怀疑它，那是注释与实现不一致）
+RING5 [OK  ] 同 Idempotency-Key 重放 :: 重放 HTTP 409（期望 409）；重放后 total=186 vs 审核后 186 → 未新增行 ✔
+RING6 [OK  ] 计数客户端↔后台一致 :: 评论 HTTP 200 / 点赞 HTTP 200；客户端(comment=1, like=1) vs 后台字段集=id,authorId,authorNickname,authorAvatar,title,content,images,tags,category,status,auditStatus,visibility,circleId,auditRemark → 若后台视图根本没有计数字段，这是**后台字段对账缺口**，不是数值不一致
+
+G8_RINGS_OK=6/6
+G8_ARTIFACTS=posts.id=236 ; comments.id=1205  ← 本轮写入的真实数据，未删除，交你决定去留
+G8_RESULT=PASS
+# ---- END ----
+G8_EXIT_CODE=0

@@ -1,0 +1,953 @@
+{
+  "gitSha": "874ff52f",
+  "workflowVersion": "3.1",
+  "buildMode": "build:mp-weixin:mock",
+  "gitWorktreeDirtyPaths": 90,
+  "buildFingerprint": {
+    "buildMode": "build:mp-weixin:mock",
+    "mode": "mp-weixin-mock",
+    "apiMode": "mock",
+    "isShowcaseMode": false,
+    "membershipEnabled": false,
+    "readFrom": [
+      "apps/client/dist/build/mp-weixin/config/env.js",
+      "apps/client/dist/build/mp-weixin/config/showcase.js",
+      "apps/client/dist/build/mp-weixin/config/feature-flags.js"
+    ]
+  },
+  "generatedAt": "2026-09-26T00:09:25.591Z",
+  "shots": [
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "path": "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__默认.png",
+      "state": "默认",
+      "identity": "A",
+      "bytes": 42118,
+      "params": "?userId=10003",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/chat/chat-session/index",
+      "routeStack": [
+        "subpackages/chat/chat-session/index"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/chat/chat-session/index",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": false,
+      "countsTowardStateQuota": true,
+      "contentHash": "f3d8d77fbd42947d",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 4,
+      "aliasLabel": false,
+      "note": "默认帧同时含 空态 要素（listCount=0 emptySeen=true），数据态/空态不再另起名 —— 见 A-2 内容哈希去重",
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__默认__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__默认__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__默认__zoom3x-底部带.png"
+      ],
+      "alsoShows": [
+        "空态"
+      ]
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "path": "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__交互后.png",
+      "state": "交互后",
+      "identity": "A",
+      "bytes": 87429,
+      "params": "?userId=10003",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/chat/chat-session/index",
+      "routeStack": [
+        "subpackages/chat/chat-session/index"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/chat/chat-session/index",
+      "routeDisagree": false,
+      "routeAtDecision": "subpackages/chat/chat-session/index",
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "355c545ae38153ab",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 4,
+      "aliasLabel": false,
+      "interaction": {
+        "action": "tap 通用入口 [class*=\"btn\"]",
+        "expect": "页内状态变化",
+        "observedRoute": "subpackages/chat/chat-session/index",
+        "applied": true
+      },
+      "interactionApplied": true,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__交互后__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__交互后__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__交互后__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "path": "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__弹层态.png",
+      "state": "弹层态",
+      "identity": "A",
+      "bytes": 43937,
+      "params": "?userId=10003",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/chat/chat-session/index",
+      "routeStack": [
+        "subpackages/chat/chat-session/index"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/chat/chat-session/index",
+      "routeDisagree": false,
+      "routeAtDecision": "subpackages/chat/chat-session/index",
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "fc92ca1dc3ea6770",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 4,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__弹层态__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__弹层态__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__弹层态__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "path": "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__默认.png",
+      "state": "默认",
+      "identity": "B",
+      "bytes": 42129,
+      "params": "?userId=10003",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/chat/chat-session/index",
+      "routeStack": [
+        "subpackages/chat/chat-session/index"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/chat/chat-session/index",
+      "routeDisagree": false,
+      "routeDrift": false,
+      "stateFrame": false,
+      "countsTowardStateQuota": true,
+      "contentHash": "774cc5ced99664be",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 8,
+      "aliasLabel": false,
+      "note": "默认帧同时含 空态 要素（listCount=0 emptySeen=true），数据态/空态不再另起名 —— 见 A-2 内容哈希去重",
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__默认__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__默认__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__默认__zoom3x-底部带.png"
+      ],
+      "alsoShows": [
+        "空态"
+      ]
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "path": "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__交互后.png",
+      "state": "交互后",
+      "identity": "B",
+      "bytes": 87489,
+      "params": "?userId=10003",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/chat/chat-session/index",
+      "routeStack": [
+        "subpackages/chat/chat-session/index"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/chat/chat-session/index",
+      "routeDisagree": false,
+      "routeAtDecision": "subpackages/chat/chat-session/index",
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "579c2b0309a0fa9c",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 8,
+      "aliasLabel": false,
+      "interaction": {
+        "action": "tap 通用入口 [class*=\"btn\"]",
+        "expect": "页内状态变化",
+        "observedRoute": "subpackages/chat/chat-session/index",
+        "applied": true
+      },
+      "interactionApplied": true,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__交互后__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__交互后__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__交互后__zoom3x-底部带.png"
+      ]
+    },
+    {
+      "page": "subpackages/chat/chat-session/index",
+      "path": "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__弹层态.png",
+      "state": "弹层态",
+      "identity": "B",
+      "bytes": 43990,
+      "params": "?userId=10003",
+      "gateBypass": false,
+      "gateNote": null,
+      "route": "subpackages/chat/chat-session/index",
+      "routeStack": [
+        "subpackages/chat/chat-session/index"
+      ],
+      "routeDepth": 1,
+      "routeProbeError": "",
+      "routeFromCurrentPage": "subpackages/chat/chat-session/index",
+      "routeDisagree": false,
+      "routeAtDecision": "subpackages/chat/chat-session/index",
+      "routeDrift": false,
+      "stateFrame": true,
+      "countsTowardStateQuota": true,
+      "contentHash": "d92b22e2a98f4782",
+      "width": 378,
+      "height": 814,
+      "blankSuspect": false,
+      "permSuppressed": true,
+      "permMethods": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permMethodsWanted": [
+        "getLocation",
+        "chooseLocation",
+        "authorize",
+        "getSetting",
+        "requirePrivacyAuthorize",
+        "getPrivacySetting"
+      ],
+      "permSuppressedFailed": [],
+      "permSuppressedUnconfirmed": true,
+      "permGeneration": 8,
+      "aliasLabel": false,
+      "zoomCrops": [
+        "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__弹层态__zoom3x-顶部带.png",
+        "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__弹层态__zoom3x-正文带.png",
+        "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__弹层态__zoom3x-底部带.png"
+      ]
+    }
+  ],
+  "failures": [
+    {
+      "identity": "A",
+      "page": "subpackages/chat/chat-session/index",
+      "suite": "S10",
+      "state": "空态",
+      "reason": "state-not-applied: 「空态」帧内容与本页已落盘帧「默认」字节完全相同（sha256:f3d8d77fbd42947d，同图帧=默认）；本条是「同帧别名标签」，即把默认帧再标一次数据态/空态，不属独立状态变更",
+      "action": "state-not-applied",
+      "dupOf": "默认",
+      "contentHash": "f3d8d77fbd42947d",
+      "notSavedAs": "subpackages_chat_chat-session_index__空态.png",
+      "realContentOfFrame": "默认",
+      "aliasLabel": true,
+      "severity": "P3"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/chat/chat-session/index",
+      "suite": "S10",
+      "state": "空态",
+      "reason": "state-not-applied: 「空态」帧内容与本页已落盘帧「默认」字节完全相同（sha256:774cc5ced99664be，同图帧=默认）；本条是「同帧别名标签」，即把默认帧再标一次数据态/空态，不属独立状态变更",
+      "action": "state-not-applied",
+      "dupOf": "默认",
+      "contentHash": "774cc5ced99664be",
+      "notSavedAs": "subpackages_chat_chat-session_index__空态.png",
+      "realContentOfFrame": "默认",
+      "aliasLabel": true,
+      "severity": "P3"
+    }
+  ],
+  "suiteLog": [],
+  "stateNotApplied": [
+    {
+      "at": "2026-09-26T00:07:34.358Z",
+      "identity": "A",
+      "page": "subpackages/chat/chat-session/index",
+      "suite": "S10",
+      "state": "空态",
+      "reason": "state-not-applied: 「空态」帧内容与本页已落盘帧「默认」字节完全相同（sha256:f3d8d77fbd42947d，同图帧=默认）；本条是「同帧别名标签」，即把默认帧再标一次数据态/空态，不属独立状态变更",
+      "action": "state-not-applied",
+      "dupOf": "默认",
+      "contentHash": "f3d8d77fbd42947d",
+      "notSavedAs": "subpackages_chat_chat-session_index__空态.png",
+      "realContentOfFrame": "默认",
+      "aliasLabel": true,
+      "severity": "P3"
+    },
+    {
+      "at": "2026-09-26T00:09:00.522Z",
+      "identity": "B",
+      "page": "subpackages/chat/chat-session/index",
+      "suite": "S10",
+      "state": "空态",
+      "reason": "state-not-applied: 「空态」帧内容与本页已落盘帧「默认」字节完全相同（sha256:774cc5ced99664be，同图帧=默认）；本条是「同帧别名标签」，即把默认帧再标一次数据态/空态，不属独立状态变更",
+      "action": "state-not-applied",
+      "dupOf": "默认",
+      "contentHash": "774cc5ced99664be",
+      "notSavedAs": "subpackages_chat_chat-session_index__空态.png",
+      "realContentOfFrame": "默认",
+      "aliasLabel": true,
+      "severity": "P3"
+    }
+  ],
+  "routeDrifts": [],
+  "zoomFrames": [
+    {
+      "identity": "A",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__默认__zoom3x-顶部带.png",
+      "bytes": 20639,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "f3d8d77fbd42947d"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__默认__zoom3x-正文带.png",
+      "bytes": 4592,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "f3d8d77fbd42947d"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__默认__zoom3x-底部带.png",
+      "bytes": 16391,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "f3d8d77fbd42947d"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__交互后__zoom3x-顶部带.png",
+      "bytes": 20598,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "355c545ae38153ab"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__交互后__zoom3x-正文带.png",
+      "bytes": 4592,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "355c545ae38153ab"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__交互后__zoom3x-底部带.png",
+      "bytes": 71817,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "355c545ae38153ab"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "弹层态",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__弹层态__zoom3x-顶部带.png",
+      "bytes": 20042,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "fc92ca1dc3ea6770"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "弹层态",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__弹层态__zoom3x-正文带.png",
+      "bytes": 4612,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "fc92ca1dc3ea6770"
+    },
+    {
+      "identity": "A",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "弹层态",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/A/subpackages_chat_chat-session_index__弹层态__zoom3x-底部带.png",
+      "bytes": 22050,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "fc92ca1dc3ea6770"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__默认__zoom3x-顶部带.png",
+      "bytes": 20668,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "774cc5ced99664be"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__默认__zoom3x-正文带.png",
+      "bytes": 4592,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "774cc5ced99664be"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "默认",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__默认__zoom3x-底部带.png",
+      "bytes": 16391,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "774cc5ced99664be"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__交互后__zoom3x-顶部带.png",
+      "bytes": 20706,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "579c2b0309a0fa9c"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__交互后__zoom3x-正文带.png",
+      "bytes": 4592,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "579c2b0309a0fa9c"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "交互后",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__交互后__zoom3x-底部带.png",
+      "bytes": 71817,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "579c2b0309a0fa9c"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "弹层态",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__弹层态__zoom3x-顶部带.png",
+      "bytes": 20156,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "w": 378,
+        "h": 113
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 339
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "d92b22e2a98f4782"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "弹层态",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__弹层态__zoom3x-正文带.png",
+      "bytes": 4612,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 244,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "d92b22e2a98f4782"
+    },
+    {
+      "identity": "B",
+      "page": "subpackages/chat/chat-session/index",
+      "state": "弹层态",
+      "kind": "zoom-crop",
+      "path": "reports/screenshots/round-6-tour-chat/B/subpackages_chat_chat-session_index__弹层态__zoom3x-底部带.png",
+      "bytes": 22050,
+      "factor": 3,
+      "upscaleAddsDetail": false,
+      "roi": {
+        "x": 0,
+        "y": 569,
+        "w": 378,
+        "h": 244
+      },
+      "srcDims": {
+        "width": 378,
+        "height": 814
+      },
+      "outDims": {
+        "width": 1134,
+        "height": 732
+      },
+      "note": "辅助帧：1x 原帧的整数倍最近邻放大裁切，不产生新细节，不计入 R11 §3 状态配额",
+      "contentHash": "d92b22e2a98f4782"
+    }
+  ],
+  "permissionSuppression": {
+    "mockMethods": [
+      "getLocation",
+      "chooseLocation",
+      "authorize",
+      "getSetting",
+      "requirePrivacyAuthorize",
+      "getPrivacySetting"
+    ],
+    "notes": {
+      "getLocation": "抑制 wx.getLocation 触发的 scope.userLocation 原生授权框（标题「获取你的位置信息」，描述文案实取自 apps/client/src/manifest.json:38-39，:42 requiredPrivateInfos=[\"getLocation\"]）；改为直接回固定坐标（合成值）。真实调用点 apps/client/src/utils/location.ts:34（uni.getLocation），上游 apps/client/src/pages/home/index.vue:70 与 :249、apps/client/src/pages/nearby/index.vue:111、apps/client/src/subpackages/profile-extra/profile/location.vue:63",
+      "chooseLocation": "抑制 wx.chooseLocation 原生地图选点框（按「用户取消」返回，不编造 POI）。真实调用点 apps/client/src/subpackages/profile-extra/profile/location.vue:82",
+      "authorize": "抑制 wx.authorize 授权框。本项目唯一调用点申请的是 scope.record（麦克风，不是定位）：apps/client/src/utils/audio-recorder.ts:273",
+      "getSetting": "抑制「读权限 → 未授权即申请」这条链上的框：apps/client/src/utils/audio-recorder.ts:264 读到已授权后就不会再走到 :273",
+      "requirePrivacyAuthorize": "抑制 wx.requirePrivacyAuthorize 的《用户隐私保护指引》同意框。真实调用点 apps/client/src/utils/privacy.ts:257（由 :344 ensurePrivacyAuthorized → :358 触发；入口如 apps/client/src/pages/profile/index.vue:921、apps/client/src/utils/media.ts:371）",
+      "getPrivacySetting": "回报 needAuthorization:false，让 apps/client/src/utils/privacy.ts:153 的检查早退，协议框不进取证帧"
+    },
+    "grepEvidence": {
+      "wx.getLocation": "apps/client/src/utils/location.ts:34（uni.getLocation）→ 产物 apps/client/dist/build/mp-weixin/utils/location.js 内 index.getLocation",
+      "wx.chooseLocation": "apps/client/src/subpackages/profile-extra/profile/location.vue:82",
+      "wx.authorize": "apps/client/src/utils/audio-recorder.ts:273（scope:**record**）",
+      "wx.getSetting": "apps/client/src/utils/audio-recorder.ts:264",
+      "wx.requirePrivacyAuthorize": "apps/client/src/utils/privacy.ts:257",
+      "wx.getPrivacySetting": "apps/client/src/utils/privacy.ts:153",
+      "wx.onNeedPrivacyAuthorization": "apps/client/src/App.vue:98,:106 —— 注册型 API，故意不 mock",
+      "popupDescSource": "apps/client/src/manifest.json:38-41（scope.userLocation.desc 与评审转写的弹窗描述逐字一致）",
+      "distConsumers": "对 apps/client/dist/build/mp-weixin 递归 grep fetchCurrentLocation/chooseLocation/authorize(：只有 pages/home/index.js、pages/nearby/index.js、subpackages/profile-extra/profile/location.js 三个消费方（village/circles 产物已一并 grep 过，无定位调用）⇒ 这两页帧上的弹窗是 S01 触发后跨 reLaunch 常驻的原生层（推断，待实测）"
+    },
+    "notMockedBecauseAbsent": [
+      "wx.getFuzzyLocation（apps/client/src 全仓 grep 命中 0 次）",
+      "wx.startLocationUpdate / wx.onLocationChange（命中 0 次）"
+    ],
+    "notMockedOnPurpose": [
+      "wx.onNeedPrivacyAuthorization（注册型 API，见 PERM_MOCKS 上方注释）"
+    ],
+    "apiCannotAssertNativeDialog": true,
+    "armCount": 5,
+    "generations": 8,
+    "installFailures": [],
+    "armedAtExit": [
+      "getLocation",
+      "chooseLocation",
+      "authorize",
+      "getSetting",
+      "requirePrivacyAuthorize",
+      "getPrivacySetting"
+    ],
+    "firstFrameRisk": "app 冷启动（simulator_refresh 后由 IDE 自动打开入口页）到脚本首次注入之间有一个时间窗，若入口页在这一窗内已弹框，automator 无法从外部关掉它；对策是「连接成功即注入 + 每页 reLaunch 前与每帧落盘前各确认一次代次」，残余风险如实记于此。"
+  },
+  "captureLimitations": {
+    "screenshotDprSupported": false,
+    "apiEvidence": "miniprogram-automator/out/MiniProgram.d.ts:6-8 IScreenshotOptions{path?} + MiniProgram.js screenshot(){send(\"App.captureScreenshot\")} 无参",
+    "zoomCropSupported": true,
+    "zoomFactor": 3,
+    "zoomOn": true,
+    "deviceInfo": {
+      "model": "iPhone 12/13 (Pro)",
+      "SDKVersion": "3.16.3",
+      "windowWidth": 390,
+      "windowHeight": 844,
+      "pixelRatio": 3,
+      "screenWidth": 390,
+      "screenHeight": 844
+    },
+    "pngLib": "pngjs(automator 自带依赖)"
+  }
+}

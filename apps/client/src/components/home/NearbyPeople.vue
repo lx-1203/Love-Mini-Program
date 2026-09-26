@@ -65,7 +65,6 @@ function onNearbyAvatarError(event: Event) {
           </view>
           <text class="nearby-item__name">{{ item.name }}</text>
           <text class="nearby-item__distance">{{ item.distanceText }}</text>
-          <text v-if="item.commonInterests.length" class="nearby-item__common">{{ item.commonInterests.slice(0, 2).join(' · ') }}</text>
         </view>
       </view>
     </scroll-view>
@@ -191,13 +190,6 @@ function onNearbyAvatarError(event: Event) {
   font-size: 20rpx;
   color: var(--c-text-secondary, #666666);
   line-height: 1.3;
-}
-
-.nearby-item__common {
-  font-size: 20rpx;
-  color: var(--c-text-tertiary, #999999);
-  text-align: center;
-  line-height: 1.4;
 }
 
 .nearby-people__bar {

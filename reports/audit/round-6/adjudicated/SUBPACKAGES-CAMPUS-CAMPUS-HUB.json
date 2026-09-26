@@ -1,0 +1,228 @@
+{
+  "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+  "judged": 27,
+  "by": {
+    "VERIFIED": 1,
+    "FAILED": 1,
+    "UNVERIFIED": 15,
+    "UNVERIFIED_INSTRUMENT": 6,
+    "NOT_EVIDENCED": 4
+  },
+  "noEvidenceExcludedFromCompletion": 9,
+  "issues": [
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001",
+      "canonical": true,
+      "severity": "P2",
+      "page": "subpackages/campus/campus/hub",
+      "observed": "校卡统计行 3x 实测为「约3.2k 同学 · …」，「· 约X 动态」半句被裁成省略号（北京大学/清华大学两卡同状）",
+      "expected": "每张校卡统计行完整显示「约X 同学 · 约X 动态」（hub.vue:75-83 statsOf）",
+      "evidence": [
+        "reports/screenshots/round-6-interact/SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH01-after2.png",
+        "reports/screenshots/round-6-tour/A/subpackages_campus_campus_hub__默认__zoom3x-正文带.png",
+        "apps/client/src/subpackages/campus/campus/hub.vue:711-723"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH01",
+      "verdict": "FAILED",
+      "reason": "三方不一致：expected 要求每张校卡统计行为「约X 同学 · 约X 动态」全文；CH01-after2.png 与 hub__默认__zoom3x-正文带.png 3x 实测该行为「约3.2k 同学 · …」「约2.6k 同学 · …」——「· 约X 动态」半句被 nowrap+overflow:hidden 截成省略号。",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH02",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH03",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH04",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH05",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH06",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH07",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：automator 无 input 方法（el.input is not a function），表单前置态无法构造",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH08",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH09",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH10",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH11",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH12",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH13",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：network 请求计数（observed 无对应读数）",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH14",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH15",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH16",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH17",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH18",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH19",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH20",
+      "verdict": "UNVERIFIED",
+      "reason": "harness 看门狗/导航超时（25000ms 或 automator response timeout），动作未完成",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH21",
+      "verdict": "VERIFIED",
+      "reason": "三方一致：CH21-after.png 与 tour A/subpackages_campus_campus_hub__默认__zoom3x-正文带.png 中校卡封面全部为实景照片，未见 v-else「浅绿底+校名」兜底、未见破图；console 无图片加载失败日志。",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH22",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判；且期望所需维度未采集：几何/热区实测数值",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH23",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：automator 无 input 方法（el.input is not a function），表单前置态无法构造",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH24",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH25",
+      "verdict": "UNVERIFIED",
+      "reason": "身份前置未成立：pre:login 报 MISMATCH（userId 与目标身份不符），依赖登录身份的期望项不可判",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH26",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "SUBPACKAGES-CAMPUS-CAMPUS-HUB/CH27",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    }
+  ],
+  "notes": [
+    "CH01 判 FAILED 的文案级结论有 3x 帧支持（hub__默认__zoom3x-正文带.png），未用 1× 帧读文案。",
+    "CH16 observed top=pages/discover/index（用例页为 hub），属落点错位，未判缺陷。",
+    "裁定口径：三方一致=ops expected × exec observed/route/toast/console/evidence × 真打开的帧（round-6-tour 巡检帧含 zoom3x、round-6-interact 操作前后图）；复合键 manifest+caseId。",
+    "输入快照：.zcode/tmp/adjudicate/exec-results.snapshot.json（updatedAt 2026-09-25T15:28:18.856Z，509 行，gitSha 874ff52f）。执行轮仍在追加权威件，本文件只覆盖快照内已记录用例。",
+    "ERROR:timeout 尾注的帧一律按 NO-EVIDENCE 处置并计入 UNVERIFIED，不读作已取证；本清单该类 9 条已从完成度中排除。"
+  ]
+}

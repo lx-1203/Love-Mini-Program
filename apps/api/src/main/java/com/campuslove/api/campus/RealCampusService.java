@@ -128,7 +128,8 @@ public class RealCampusService implements CampusService {
     @Override
     @Transactional
     public CampusTopicView createCampusTopic(Long userId, Long schoolId, String category,
-                                             String title, String content, List<String> tags) {
+                                             String title, String content, List<String> tags,
+                                             List<String> images, Boolean isAnonymous) {
         if (userId == null) {
             throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
@@ -156,13 +157,19 @@ public class RealCampusService implements CampusService {
         topic.setAuthorId(userId);
         topic.setReplyCount(0);
         topic.setViewCount(0);
-        topic.setIsAnonymous(false);
+        topic.setIsAnonymous(Boolean.TRUE.equals(isAnonymous));
+        // 写侧契约补齐：配图 URL 数组落 campus_topics.images（JSON 列，读侧原样下发字符串）
+        topic.setImages(serializeImages(images));
         // 3-L：标签去空白/去重/截断后序列化为 JSON 存储（Controller 已做 ≤5 个、每个 ≤20 字校验）
         topic.setTags(serializeTags(normalizeTags(tags)));
         topic.setCreatedAt(now);
         topic.setUpdatedAt(now);
 
-        campusTopicRepository.save(topic);
+        // 同 :204 回复侧那条：本实体带 @Version，SimpleJpaRepository.save() 在 isNew() 为假时走 merge()
+        // 并**返回另一个托管实例**，参数对象的 id 仍是 null —— 行确实 insert 了（G8 回列表能定位到 265-269），
+        // 但 toCampusTopicView(topic) 拿到的是无主键的旧实例，于是 POST /campus/topics 回 200 + data.id=null，
+        // 客户端 stores/campus.ts:737 就 unshift 一条没有 id 的镜像、点进去变 /campus/topics/null。
+        topic = campusTopicRepository.save(topic);
         // Task 2.2.3：使用统一 Map 复用预加载逻辑
         Map<Long, User> authorMap = batchLoadAuthors(List.of(topic));
         return toCampusTopicView(topic, authorMap);
@@ -172,7 +179,8 @@ public class RealCampusService implements CampusService {
 
     @Override
     @Transactional
-    public CampusTopicReplyView replyCampusTopic(Long topicId, Long userId, String content) {
+    public CampusTopicReplyView replyCampusTopic(Long topicId, Long userId, String content,
+                                                 Boolean isAnonymous) {
         if (topicId == null) {
             throw new IllegalArgumentException(ErrorMessages.TOPIC_ID_REQUIRED);
         }
@@ -193,7 +201,7 @@ public class RealCampusService implements CampusService {
         reply.setTopicId(topicId);
         reply.setAuthorId(userId);
         reply.setContent(filteredContent);
-        reply.setIsAnonymous(false);
+        reply.setIsAnonymous(Boolean.TRUE.equals(isAnonymous));
         reply.setCreatedAt(now);
 
         // 实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id，
@@ -644,6 +652,43 @@ public class RealCampusService implements CampusService {
         }
         try {
             return objectMapper.writeValueAsString(tags);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 话题配图 URL 列表序列化为 JSON 数组字符串（落 campus_topics.images JSON 列）。
+     *
+     * <p>与 tags 同款口径：逐项去空白、丢弃空项、去重、上限 6 个（与前端
+     * UI_LIMITS.PHOTO_GALLERY_MAX 一致），无有效配图时返回 null。</p>
+     *
+     * @param images 配图 URL 列表（可空）
+     * @return JSON 数组字符串，或 null
+     */
+    private String serializeImages(List<String> images) {
+        if (images == null || images.isEmpty()) {
+            return null;
+        }
+        List<String> normalized = new ArrayList<>();
+        for (String url : images) {
+            if (url == null) {
+                continue;
+            }
+            String trimmed = url.trim();
+            if (trimmed.isEmpty() || normalized.contains(trimmed)) {
+                continue;
+            }
+            normalized.add(trimmed);
+            if (normalized.size() >= 6) {
+                break;
+            }
+        }
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(normalized);
         } catch (JsonProcessingException e) {
             return null;
         }

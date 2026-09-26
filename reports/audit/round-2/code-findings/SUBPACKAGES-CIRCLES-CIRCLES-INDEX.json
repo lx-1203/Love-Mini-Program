@@ -1,0 +1,210 @@
+{
+  "meta": {
+    "round": "R2",
+    "reviewer": "代码审查员-R2-SUBPACKAGES-CIRCLES-CIRCLES-INDEX (A2/Layer A)",
+    "date": "2026-09-24",
+    "scope": "subpackages/circles/circles/index（兴趣圈列表）及其引用组件/store/utils 的只读代码层审查",
+    "note": "本页历史线索仅 1 条（MP-R1-CIRCLE-004 统计行半字硬裁 P0），已在代码层复核：R20/R21 修复链在位，转『已修复待终验』（375px 复拍属交互取证轮职责）。另按检查清单新增 001-009 共 9 条，其中 001（胶囊压搜索按钮）为项目内已被 campus/hub（R4『认证按钮被胶囊压住 85%』）与 village（MP-R1-VILLAGE-002）两次实证的同类缺陷在本页的复发。",
+    "method": "静态代码审查（无截图/无开发者工具/无构建/无测试运行），所有发现均到文件行号取证；R11 附录 B 硬约束以 grep + Node 码点扫描本页全文核验（:hover / display:grid / 空 catch / import.meta.env / backdrop-filter / emoji 均 0 命中）；历史问题 1 条在代码层回归核对；未修改任何源文件（仅写入本报告）。检查命令：grep -rn ':hover|display:.*grid|import.meta.env|backdrop-filter' 与 node emoji 码点扫描（均 0 命中）；grep campusVerified/friendJoinedCount 全仓溯源；grep pages.json 页面注册与 navigationStyle。"
+  },
+  "coverage": [
+    {
+      "page": "subpackages/circles/circles/index",
+      "filesReviewed": [
+        "apps/client/src/subpackages/circles/circles/index.vue（964 行全文：script/template/style 逐段）",
+        "apps/client/src/stores/circle.ts（771 行全文：fetchCircles/joinCircle/leaveCircle/mapToCircleItem/BackendCircleView，campusVerified 与 friendJoinedCount 字段溯源）",
+        "apps/client/src/stores/circle/mock-data.ts（campusVerified/friendJoinedCount grep 0 命中）",
+        "apps/client/src/components/layout/AppShell.vue（397 行全文：props 契约/is-fixed 吸顶/shell__body 布局/header-right 插槽无样式）",
+        "apps/client/src/components/common/PageStateContainer.vue（198 行全文：四态切换/retry 接线/emptyActionText 规范注释）",
+        "apps/client/src/config/circle-covers.ts（45 行全文，单一真相源 circleCoverFor）",
+        "apps/client/src/config/images.ts（AVATARS/ICONS_COMMON.SEARCH/ICONS_EMOJI.LIST/ICONS_EMOJI.GROUP/CIRCLE_COVERS 键存在性核验）",
+        "apps/client/src/constants/routes.ts（ROUTES.CIRCLES.HOME/INDEX、ROUTES.SEARCH）",
+        "apps/client/src/utils/navigation.ts（openAppPath 空值防御/tab 桥接/页面栈 10 层兜底）",
+        "apps/client/src/services/http.ts（getToken：storage 读取，try/catch 回退空串）",
+        "apps/client/src/i18n/locales/zh-CN.ts、en-US.ts（circle.circlesSubtitle/circlesEmpty/loadFailedRetry/hotBadge/joinBtn/joinedBtn/campusVerifyRequired/catXxx、apiErrors.operationFailed、common.back 双语键逐一核验存在；zh 374 行 nearby.circlesEmpty 为他命名空间同名键，无冲突）",
+        "apps/client/src/pages.json（circles 子包 5 页注册 97-116；全局 navigationStyle:custom 36 行；tools/search 页注册 180 行）",
+        "对照先例：subpackages/village/village/index.vue:879-886（MP-R1-VILLAGE-INDEX-201 定高修复）、subpackages/campus/campus/hub.vue:383-389（胶囊避让 padding-right calc(var(--capsule-right)+104px)）、subpackages/circles/circles/circle-home.vue:207-217（MP-R1-CIRCLEHOME-003 真实 friendJoinedCount 优先）"
+      ],
+      "checks": [
+        "R11 附录 B 硬约束：grep :hover / display:grid / import.meta.env / backdrop-filter / 空 catch{} → 全部 0 命中；node emoji 码点扫描（U+1F000-1FAFF/2600-27BF/FE0F/2B00-2BFF）→ 0 命中；:active 均在 /* #ifdef H5 */ 内（624-628、778-782）合规",
+        "组件事件接线：PageStateContainer @retry→handleRetry（index.vue:331）、ErrorState→容器→页面重试链路完整；加入按钮 @tap.stop（409）阻冒泡到卡片 goToCircleHome 合规（R4-00099）",
+        "异步流程：onLoad(66-78)+onShow 自愈(82-86)+watch isLoggedIn(276-283) 三路拉取经 loading 守卫互斥，无双发；toggleJoin catch 有 toast 可见反馈（MP-R1-CIRCLES-001 已修）；fetchCircles 失败→errorMessage→pageState=error→retry 闭环",
+        "IMAGE_PATHS：ICONS_EMOJI.LIST/GROUP、ICONS_COMMON.SEARCH、AVATARS.AVATAR_1~4、CIRCLE_COVERS.* 键全部存在；封面映射统一走 circleCoverFor 单一真相源",
+        "未运行任何测试/构建（Layer A 只读约束，ask 未要求）",
+        "未截图/未驱动开发者工具（Layer A 职责边界，001/R01 两项的视觉终验移交交互取证轮）"
+      ]
+    }
+  ],
+  "issues": [
+    {
+      "id": "MP-R2-CIRCLES-INDEX-R01",
+      "round": "R2",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "无（Layer A 代码审查，未截图）",
+      "category": "Regression",
+      "severity": "P0",
+      "description": "历史缺陷 MP-R1-CIRCLE-004（统计行半字硬裁，R21 375px 再犯再修）复审核对：代码层修复链完整在位。省略号已落到统计文本节点自身（R21 注释明言「省略号必须落在文本节点自身，否则统计行在加入按钮列被硬裁成半字」），配合卡片内边距收窄（sp-7→sp-5）、列间距收窄（sp-5→sp-4）、字号 fs-sm→fs-xs、好友行 R20 单行省略兜底，375px 宽度预算内统计行不再被「加入」按钮列裁切。",
+      "evidence": "index.vue:747-758 `.circle-card__count { font-size: var(--fs-xs); flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis }`（R21 注释 751-752）；index.vue:609-613 卡片 `gap: var(--sp-4); padding: var(--sp-6) var(--sp-5)`（MP-R1-CIRCLE-005 收窄注释）；index.vue:726-738 meta 容器 nowrap+min-width:0；index.vue:954-963 好友行同款省略（R20 注释 957）；regression-index.json:407-416 该问题 verification 项 circles-stats-line-375px-no-midchar-clip。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.85,
+      "ideal": "375px 视口下「N 人 · N 条动态」统计行完整可读，省略号落在自身文本节点，不被「加入」按钮列硬裁成半字。",
+      "fix": "代码层已闭环；『待 375px 复拍闭环』为截图职责，移交交互取证轮在 375px 模拟器/真机复拍后关闭本项。",
+      "status": "已修复待终验"
+    },
+    {
+      "id": "MP-R2-CIRCLES-INDEX-001",
+      "round": "R2",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "无（Layer A 代码审查，未截图；几何推导+项目双先例取证）",
+      "category": "MiniProgram",
+      "severity": "P1",
+      "description": "右上角搜索按钮未做微信胶囊避让：全局 navigationStyle=custom（pages.json:36），胶囊按钮常驻右上（右缘 7px、宽 87px、纵向 statusBar+4~+36px，均为项目 useMenuButtonRect 实测口径）；本页 #header-right 搜索按钮（64rpx 圆钮）经 AppShell 吸顶头布局落在「右缘 14~46px、纵向 statusBar+8~+40px」——横纵双向与胶囊投影带大面积重叠，真机上搜索按钮 ≈ 整体被原生胶囊压住不可点。项目内同类缺陷已两次实证并修复：campus/hub R4『认证按钮被胶囊压住 85%』、village MP-R1-VILLAGE-002。",
+      "evidence": "index.vue:314-325 搜索按钮置于 #header-right 插槽、无任何胶囊处理（全文件 grep useMenuButtonRect/capsule-right 0 命中）；AppShell.vue:220-222 `<view class=\"shell__header-right\"><slot/>` 且 AppShell.vue 全文无 .shell__header-right 样式（grep styles/theme/App.vue 0 命中）；AppShell.vue:99-105+306-314 is-fixed 吸顶头 padding-top=inline(statusBarHeightPx+8px)、左右 28rpx（负边距铺满屏宽）→ 按钮右缘距屏 14px、顶自 statusBar+8px；campus/hub.vue:383-389 先例：`padding-right: calc(var(--capsule-right, 7px) + 104px)`，注释明言『原 padding-right=capsule-right(7px)+8px 漏加胶囊本体 87px，认证按钮被胶囊压住 85%』；campus/campus/post-topic.vue:451 同款修复；village/index.vue:879-886 同类几何缺陷先例。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.8,
+      "ideal": "mp-weixin 真机上搜索按钮完整可见可点，与胶囊保持 ≥10px 间距（对齐 campus/hub 修复口径：右侧避让 = --capsule-right + 胶囊本体宽度 + 呼吸间距）；H5 端无胶囊不受影响。",
+      "fix": "页根注入 useMenuButtonRect().styleVars（campus/campus/index.vue:22-23 口径），为 .circles-header__search 或 #header-right 容器增加右侧预留 `padding-right/margin-right: calc(var(--capsule-right, 7px) + 104px)`；或将搜索入口移入标题行左侧非胶囊区。修复后需开发者工具/真机截图复核胶囊-按钮间距后关闭。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-CIRCLES-INDEX-002",
+      "round": "R2",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "无（Layer A 代码审查，未截图）",
+      "category": "Data",
+      "severity": "P2",
+      "description": "「等 N 位朋友加入」为前端无条件伪造数据，无视 store 已映射的后端真实字段 friendJoinedCount：列表页按 circleId 字符哈希推导 5~12 的假数并配 4 张静态头像冒充好友头像（real 模式同样伪造）；而圈子主页同字段已按 MP-R1-CIRCLEHOME-003 改为「真实字段优先、real 模式缺字段显示 0 隐藏该行」。同一圈子列表页与主页数字必不一致；后端若未返回该字段，列表页在生产环境持续展示虚构社交证明。",
+      "evidence": "index.vue:243-247 friendAvatars 用 AVATARS.AVATAR_1~4 静态图按 id 取模；index.vue:248-252 friendJoinCount `return 5 + (seed % 8)`（无 useMock 分支，_memberCount 参数弃用）；stores/circle.ts:31+90 后端字段 friendJoinedCount 已映射进 CircleItem；circle-home.vue:207-217 对照实现：`if (raw != null && raw > 0) return raw; if (!useMock()) return 0;`（真实优先+real 模式不伪造）、circle-home.vue:487 `v-if=\"friendJoinedCount > 0\"` 缺失即隐藏；index.vue:390-398 模板无条件渲染头像组与假数。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.9,
+      "ideal": "列表页与主页同源同口径：真实 friendJoinedCount 优先展示；real 模式缺字段时隐藏「等 N 位朋友加入」行（不伪造）；mock 模式按稳定种子推导可在两页复用同一实现。",
+      "fix": "index.vue 删除 friendAvatars/friendJoinCount 本地实现，改为消费 circle.friendJoinedCount（对齐 circle-home.vue:207-217 逻辑，可抽 utils/config 共用）；real 模式无值时 v-if 隐藏该行。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-CIRCLES-INDEX-003",
+      "round": "R2",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "无（Layer A 代码审查，未截图）",
+      "category": "Function",
+      "severity": "P2",
+      "description": "「校园认证圈未认证拦截」在全模式下为死代码：goToCircleHome 的拦截分支依赖 circle.campusVerified，但该字段无任何数据源写入——后端视图 BackendCircleView 无此字段、mapToCircleItem 不映射、mockCircles 亦不设置（全仓 grep 仅 userSession.campusVerified 命中，CircleItem.campusVerified 0 写入点）。真实与 mock 模式下 campusVerified 恒为 undefined，未认证用户点认证圈照样直接进入；随附的 .circle-card__badge 认证徽标样式因模板从未渲染同为死代码。",
+      "evidence": "index.vue:151-161 `if (circle.campusVerified) { ... uni.showToast(campusVerifyRequired); return }`；stores/circle.ts:21-32 BackendCircleView 字段清单无 campusVerified；stores/circle.ts:81-92 mapToCircleItem 返回对象无 campusVerified；mock-data.ts grep campusVerified 0 命中；全仓 grep（.ts/.vue）campusVerified 命中均为 userSession/ guards 语境，无 CircleItem 写入点；index.vue:690-709 .circle-card__badge* 样式模板零引用。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.9,
+      "ideal": "后端 CircleView 返回 campusVerified（或由前端按圈子配置表判定）→ mapToCircleItem 映射 → 列表渲染认证徽标 + 未认证用户点击被拦截并引导认证；后端支持前应明确降级策略而非保留恒假分支。",
+      "fix": "短期：在 mapToCircleItem/mock-data 接入数据源并渲染徽标使拦截生效；或若后端无此规划则删除 index.vue:153-159 死分支与 690-709 死样式，避免假性防护。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-CIRCLES-INDEX-004",
+      "round": "R2",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "无（Layer A 代码审查，未截图）",
+      "category": "Consistency",
+      "severity": "P3",
+      "description": "en-US 下用户可见中文残留：快捷分类 tab 标签（全部/摄影/旅行/音乐/运动/美食/更多）、统计行「N 人 · N 条动态」、好友行「等 N 位朋友加入」、搜索按钮 aria-label「搜索」均为硬编码中文；而 i18n 层已维护同名词汇（catSports/catMusic/catTravel/catFood 等双语键），同页其余文案均走 t()。en-US 用户在双语一等公民应用中看到成片中文。",
+      "evidence": "index.vue:213-221 QUICK_TABS label: \"全部\"/\"摄影\"/\"旅行\"/\"音乐\"/\"运动\"/\"美食\"/\"更多\"；index.vue:384 `{{ formatMemberCount(circle.memberCount) }} 人 · {{ circle.topicCount }} 条动态`；index.vue:398 `等 {{ friendJoinCount(...) }} 位朋友加入`；index.vue:320 `:aria-label=\"'搜索'\"`（同页 306 对照 `:aria-label=\"t('common.back')\"`）；对照 zh-CN.ts:3720-3727 catStudy~catReading、en-US.ts:3661-3668 已有双语分类键未被 tab 消费。（页头「兴趣圈」下划线字标为理想图设计元素，不计入。）",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.9,
+      "ideal": "模板与 aria-label 全部经 i18n：tab 标签复用/新增 catXxx·tabAll·tabMore 双语键，统计行与好友行走 t() 插值，搜索 aria-label 用既有 common.search 类键。",
+      "fix": "QUICK_TABS 的 label 改 i18n key（新增 circle.tabAll/tabPhoto/tabMore，复用 catTravel/catMusic/catSports/catFood）；384/398 行改 t() 插值；320 行 aria-label 改 t()。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-CIRCLES-INDEX-005",
+      "round": "R2",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "无（Layer A 代码审查，未截图）",
+      "category": "MiniProgram",
+      "severity": "P3",
+      "description": "scroll-view 无高度约束链，scroll-y 永不生效：.circles-list 声明 flex:1 但其父链 .state-slot（非 flex）、.page-state-container（auto 高）、.shell__body（flex 容器但自身 auto 高）、.shell（block，min-height:100%）全链无定高，scroll-view 被内容撑开 → 内部滚动死死不触发，:enhanced/:bounces/:show-scrollbar 三个增强属性全部空转，实际滚动退化为整页 window 滚动。与 R1 已实证修复的 MP-R1-VILLAGE-INDEX-201 同一缺陷类（village 修复注释：min-height 让容器随内容增长，flex:1 的 scroll-view 失去高度约束）。本页后果较 village 轻（吸顶头为 sticky、整页滚动下仍可达），但列表滚动语义与增强属性失效属实。",
+      "evidence": "index.vue:335 `<scroll-view class=\"circles-list\" scroll-y :enhanced=\"true\" :bounces=\"true\">`；index.vue:584-587 `.circles-list { flex:1; overflow-y:auto }`；PageStateContainer.vue:138-148 .page-state-container（仅 min-height:320rpx）与 .state-slot（无 display:flex）；AppShell.vue:250-258 `.shell { min-height:100% }`（注释明言禁止锁死 height:100%）、AppShell.vue:368-374 .shell__body flex 列但无高度；对照修复先例 village/index.vue:879-886 `height:100% + overflow:hidden` 恢复 scroll-view 内部滚动。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.85,
+      "ideal": "列表容器高度受约束（视口剩余高度），scroll-y 内部滚动真实生效，enhanced/bounces 属性有意义；吸顶头+滚动行为与 village 修复后口径一致。",
+      "fix": "为 .circles-list 建立定高链（如 .state-slot/.page-state-container height:100% + AppShell body 供给视口高度，或该页直接给 scroll-view calc(100vh - 头高) 定高）；注意与 AppShell「禁止锁死 .shell height:100%」注释的约束协调，修复后双端滚动回归。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-CIRCLES-INDEX-006",
+      "round": "R2",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "无（Layer A 代码审查，未截图）",
+      "category": "UX",
+      "severity": "P3",
+      "description": "空态语义混淆且无去路：未登录（无 token 且非 mock）时 onLoad/onShow 均跳过拉取（设计意图为避免 401 雪崩），circles 恒空 → pageState 判定为 empty → 展示「暂无兴趣圈」，把「未授权」伪装成「无数据」误导用户；且未传 emptyActionText/@emptyAction，空态无任何去路，违背 PageStateContainer 自身注释的竞品规范「空态必须带去路」。",
+      "evidence": "index.vue:75-77 `if (getToken() || useMock()) { void circleStore.fetchCircles() }`（未登录不发请求）；index.vue:123-128 pageState：circles 空且无错误 → \"empty\"；index.vue:327-332 仅传 :empty-text，未传 emptyActionText、未监听 @emptyAction；PageStateContainer.vue:88 注释「2026-08-31 Phase 1：空态 CTA 按钮文案（竞品规范：空态必须带去路）」+ 118-134 emptyAction emit 已具备而页面未接线。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.8,
+      "ideal": "未登录时展示登录引导态（或空态 CTA 指向登录/首页），真实无数据时才展示「暂无兴趣圈」且 CTA 有去路。",
+      "fix": "增加登录态分支（未登录 → 独立提示态或 emptyActionText 引导登录）；有数据能力但为空时接 emptyActionText+@emptyAction 给出去路（如去发现页）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-CIRCLES-INDEX-007",
+      "round": "R2",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "无（Layer A 代码审查，未截图）",
+      "category": "UI",
+      "severity": "P3",
+      "description": "三处颜色字面量脱离设计 token 体系：① 页头下划线 border-bottom 硬编码 #36C99A——该值即 --c-brand 的现行值，同文件 8 处对照写法均为 var(--c-brand, #36C99A)，此处漏 token（品牌色将来调整时下划线脱队）；② 热门徽标底 rgba(255,77,92,0.92) 全仓唯一出现、tokens.scss 无任何 danger/red/热色 token；③ 热门徽标文字 #FFFFFF 硬编码（浅色 token 体系有 --c-neutral-0）。",
+      "evidence": "index.vue:850 `border-bottom: 3rpx solid #36C99A`（对照 index.vue:901 `var(--c-brand, #36C99A)`、AppShell.vue:349 同 token）；index.vue:650 `background: rgba(255, 77, 92, 0.92)`（grep 全仓 .vue/.scss 仅本页出现；tokens.scss grep danger/FF4D5C/255,77,92 0 命中）；index.vue:656 `color: #FFFFFF`。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.85,
+      "ideal": "①改 var(--c-brand, #36C99A)；②③在 tokens.scss 定义语义 token（如 --c-danger-500/--c-hot-badge 与文字色）后引用，保持设计 token 强制约束。",
+      "fix": "850 行换 --c-brand token；新增热色语义 token 并替换 650/656 行字面量（需主题双套取值确认）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-CIRCLES-INDEX-008",
+      "round": "R2",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "无（Layer A 代码审查，未截图）",
+      "category": "Architecture",
+      "severity": "P4",
+      "description": "约 140 行死 CSS：四个样式族在模板中零引用——① 状态族 .circles-state/.loading-spinner/@keyframes spin/.error-icon/.circles-state__btn*/.circles-empty*（本页四态已整体交由 PageStateContainer + LoadingSpinner/ErrorState/EmptyState 渲染）；② .discover-entry* 附近的人入口族（2026-08-25 P1 已随模板移除，注释见 index.vue:164-166、336）；③ .circle-card__badge* 校园认证徽标族（模板从未渲染，见 MP-R2-CIRCLES-INDEX-003）；④ .circle-card__divider（分隔符已内联进统计行文案）。死样式会误导后续维护者以为功能仍在，且拉长样式编译产物。",
+      "evidence": "index.vue:427-473（状态族）、475-500（.circles-empty*）、502-569（.discover-entry*）、690-709（.circle-card__badge*）、760-763（.circle-card__divider）；对照模板段 index.vue:290-423 逐元素核对：仅使用 circles-header/circles-banner/circles-tabs/circles-tab/circles-list/circles-card-list/circle-card__{cover-wrap,cover,body,name-row,name,hot-badge,hot-text,desc,meta,meta-icon,count,friends,friends-avatars,friends-avatar,friends-text,action,action-text}/list-bottom-spacer，上述四族类名 0 出现。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 0.95,
+      "ideal": "样式表与模板一一对应，无长期零引用的死样式块。",
+      "fix": "删除 index.vue:427-500、502-569、690-709、760-763 四段死样式（若 MP-R2-CIRCLES-INDEX-003 选择接通认证徽标，则 ③ 保留并接线）。",
+      "status": "待修复"
+    },
+    {
+      "id": "MP-R2-CIRCLES-INDEX-009",
+      "round": "R2",
+      "page": "subpackages/circles/circles/index",
+      "screenshot": "无（Layer A 代码审查，未截图）",
+      "category": "Consistency",
+      "severity": "P4",
+      "description": "goToCircleHome 函数体内重复实例化 useSessionStore 并遮蔽 setup 作用域同名常量：setup 第 28 行已有 `const sessionStore = useSessionStore()`（watch isLoggedIn 在用），函数内 154 行又 `const sessionStore = useSessionStore()` 局部重建。同一 pinia store 实例故无行为差异，但属命名遮蔽式重复代码，易在后续维护中误判为两个状态源。",
+      "evidence": "index.vue:28 `const sessionStore = useSessionStore();`（setup 顶层，276-283 watch 消费）；index.vue:153-155 `const sessionStore = useSessionStore();`（goToCircleHome 内局部 shadow，仅 155 行 campusName 判断消费）。",
+      "sources": [
+        "code"
+      ],
+      "confidence": 1.0,
+      "ideal": "函数内直接复用 setup 作用域的 sessionStore，无重复实例化与命名遮蔽。",
+      "fix": "删除 index.vue:154 行局部声明，直接使用外层 sessionStore。",
+      "status": "待修复"
+    }
+  ]
+}

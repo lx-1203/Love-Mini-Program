@@ -578,9 +578,13 @@ export default {
   },
 
   /* 2026-08-25 P0: NotLoggedWaiting copy (aligned to spec 12) */
+  /* MP-R2VIS-PAGES-MESSAGES-INDEX-002 裁定（2026-09-25 store 接线收口）：
+     副标不含人数计数，subtitleWithCount 键两份都不落——游客态没有真值可填，
+     原值把理想效果图的拼版演示常量 12 烘进文案，属伪造社交证明
+     （同 MP-R2-CIRCLES-INDEX-002「取不到真值就不渲染」口径），现值与 zh-CN 同义。 */
   notLoggedWaiting: {
     title: "Looking for someone on your wavelength",
-    subtitle: "12 like-minded people nearby",
+    subtitle: "Discover more people on your wavelength",
     unlockHint: "Log in to unlock all features",
     feature1: "Precision matching",
     feature2: "Chat & interact",
@@ -1340,6 +1344,8 @@ export default {
       /* 2026-08-13：与 zh-CN 对齐（图片发送上线收尾） */
       sendingImage: "Sending image...",
       sendImageFailed: "Failed to send image",
+    imageMessage: "Image",
+    imageLoadFailed: "Image failed to load",
   },
 
   /* ========== Likes ========== */
@@ -1686,6 +1692,13 @@ export default {
   },
 
   /* ========== P2.6: Help & Support ========== */
+  // MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001 counterpart — key-set must stay identical
+  // to zh-CN (asserted by src/tests/i18n.spec.ts:125): "我的位置" page shows city next to coordinates,
+  // so an IP-inferred city must be labelled as such and a missing city must not fall back to a fake default.
+  locationPage: {
+    serverCityTag: "Server-side city",
+    addressUnavailable: "Address lookup unavailable"
+  },
   help: {
     navTitle: "Help & Support",
     subtitle: "FAQ and contact us",
@@ -2172,6 +2185,25 @@ export default {
     closedDesc: "Sign-in is under maintenance. Please try again later.",
   },
 
+  /* Standalone register page (pages/register/index.vue) validation & toast copy
+     (MP-R2-PAGES-REGISTER-INDEX-013). Key order mirrors zh-CN.ts register block. */
+  register: {
+    errPhoneFormat: "Invalid phone number. Enter an 11-digit mobile number.",
+    errPhoneRegistered: "This number is already registered. Try signing in.",
+    errSmsInvalid: "Code is wrong or expired. Request a new one.",
+    errPasswordWeak: "Password needs 8+ characters with letters and numbers",
+    errPasswordMismatch: "Passwords do not match",
+    errNicknameLength: "Nickname must be 1-20 characters",
+    errBirthMinor: "You must be at least 18 to register",
+    toastPhoneRequired: "Enter a valid phone number first",
+    toastPhoneRegistered: "Already registered — sign in directly",
+    smsSent: "Code sent to {phone}",
+    smsSentMock: "Code sent (mock: {code})",
+    registerClosed: "Registration is temporarily closed",
+    networkError: "Network error. Check your connection and retry.",
+    serviceUnavailable: "Service temporarily unavailable. Try again later.",
+  },
+
   /* ========== Showcase page (VITE_SHOWCASE_MODE build only, R4-00039) ========== */
   showcase: {
     title: "Full Showcase",
@@ -2639,6 +2671,13 @@ export default {
     /* R4-00082: official message load failed (no mock fallback in real mode) */
     officialChatLoadFailed: "Failed to load official messages. Please retry.",
     officialChatSendFailed: "Failed to send, please retry",
+    /* Assistant-chat mock message bodies (MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001).
+       Mirrors the zh-CN.ts officialChat* entries; emoji glyphs (😊/✨) stay at the source
+       concatenation site per Lane 2's emoji-map ruling, not in these values. */
+    officialChatAssistantGreeting: "Hi~ I'm the Xunmi Assistant. I help you find interesting people and events, and make every encounter a little more meaningful.",
+    officialChatCardHint: "This event matches your interests~ Want to go meet some new people?",
+    officialChatMockReply: "Got it! I'll keep an eye out for events and people for you.",
+    officialChatUserDecline: "OK, maybe later~",
     officialActivityTitle: "Upcoming Events",
     officialActivityCta: "View details",
     officialAssistantMsg1: "Hi, I'm the Love Assistant. Ask me anything about love!",
@@ -3499,7 +3538,8 @@ export default {
       goCertification: "Verify",
       imagesUnsupported: "Campus topics don't support images yet, so photos won't be saved with the topic.",
       anonymousUnsupported: "Anonymous publishing isn't available for campus topics yet; your post will show your nickname.",
-      contentMasked: "Your content contains restricted words; part of it was automatically masked."
+      contentMasked: "Your content contains restricted words; part of it was automatically masked.",
+      chooseImageFailed: "Failed to select images. Please check album/camera permission."
     },
     /* topic-detail.vue */
     topicDetail: {
@@ -3522,7 +3562,6 @@ export default {
       sendSend: "Send",
       replyAtLimit: "Reached the {n}-character limit; you can't type more.",
       replyMasked: "Your reply contains restricted words; part of it was automatically masked.",
-      anonymousToggleOnReal: "Anon · not live",
     },
   },
 
@@ -3641,6 +3680,9 @@ export default {
     circlesNavTitle: "Interest Circles",
     circlesSubtitle: "Find people who share your interests",
     circlesEmpty: "No circles yet",
+    circlesEmptyLogin: "Log in to see all interest circles",
+    tabAll: "All",
+    cardStats: "{members} members · {posts} posts",
     campusBadge: "Campus Verified",
     campusVerifyRequired: "Complete campus verification to enter",
     discoverEntryTitle: "Nearby",
@@ -3669,7 +3711,9 @@ export default {
     postTopicActivityPick: "Pick an event to recommend",
     postTopicActivityRemove: "Remove link",
     postTopicActivityEmpty: "No events available",
+    postTopicActivityEnrollHint: "Enroll on the event detail page",
     /* ========== Task B2/B5: Interest categories & post-topic page enhancements ========== */
+    catPhoto: "Photography",
     catStudy: "Study",
     catSports: "Sports",
     catMusic: "Music",

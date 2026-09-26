@@ -55,17 +55,42 @@ public class MockCampusService implements CampusService {
 
     @Override
     public CampusTopicView createCampusTopic(Long userId, Long schoolId, String category,
-                                             String title, String content, List<String> tags) {
+                                             String title, String content, List<String> tags,
+                                             List<String> images, Boolean isAnonymous) {
         long id = topicIdGen.incrementAndGet();
         MockTopicData topic = new MockTopicData(
-                id, schoolId, category, title, content, List.of(), userId,
-                "Mock校友", null, 0, 0, false,
+                id, schoolId, category, title, content, normalizeImages(images), userId,
+                "Mock校友", null, 0, 0, Boolean.TRUE.equals(isAnonymous),
                 LocalDateTime.now(TimeZones.BUSINESS), LocalDateTime.now(TimeZones.BUSINESS),
                 // 3-L：标签归一化（去空白/去重/限 5 个/每个 ≤20 字），与 real 口径一致
                 normalizeTags(tags)
         );
         topics.add(0, topic);
         return toTopicView(topic);
+    }
+
+    /**
+     * 配图归一化——去空白、去重、限 6 张（与 real 口径一致）。
+     */
+    private static List<String> normalizeImages(List<String> images) {
+        if (images == null || images.isEmpty()) {
+            return List.of();
+        }
+        List<String> normalized = new ArrayList<>();
+        for (String url : images) {
+            if (url == null) {
+                continue;
+            }
+            String trimmed = url.trim();
+            if (trimmed.isEmpty() || normalized.contains(trimmed)) {
+                continue;
+            }
+            normalized.add(trimmed);
+            if (normalized.size() >= 6) {
+                break;
+            }
+        }
+        return normalized;
     }
 
     /**
@@ -95,11 +120,13 @@ public class MockCampusService implements CampusService {
     // ---- 校园话题回复 ----
 
     @Override
-    public CampusTopicReplyView replyCampusTopic(Long topicId, Long userId, String content) {
+    public CampusTopicReplyView replyCampusTopic(Long topicId, Long userId, String content,
+                                                 Boolean isAnonymous) {
         findTopic(topicId); // 确保话题存在
         long id = replyIdGen.incrementAndGet();
         MockReplyData reply = new MockReplyData(
-                id, topicId, userId, "Mock校友", null, content, false, LocalDateTime.now(TimeZones.BUSINESS)
+                id, topicId, userId, "Mock校友", null, content,
+                Boolean.TRUE.equals(isAnonymous), LocalDateTime.now(TimeZones.BUSINESS)
         );
         repliesByTopic.computeIfAbsent(topicId, k -> new ArrayList<>()).add(reply);
         return toReplyView(reply);

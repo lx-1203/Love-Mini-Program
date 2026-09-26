@@ -442,6 +442,14 @@ page {
      弹窗/页面底部预留统一高度，确保按钮不被遮。 */
   --tab-bar-h: 160rpx;
   --tab-bar-h-with-safe: calc(160rpx + env(safe-area-inset-bottom));
+  /* MP-R2-PAGES-DISCOVER-INDEX-014：上面两个 token 说的都是 .tab-bar 的「内容高」，
+     而 custom-tab-bar/index.wxss:14-19 在 content-box 下还另加
+     padding-bottom: calc(env(safe-area-inset-bottom) + 24rpx)，
+     所以屏幕上真正被原生层占掉的总高是 160+24 = 184rpx 再加**两倍**安全区。
+     避让型消费者（页面 padding-bottom、浮层 bottom）必须用这一把，用 --tab-bar-h-with-safe 会少让 24rpx + 一个安全区。
+     两段 env 相加而不是 2*env：本仓产物里只有 calc(A + env() + B) 这一形被验证过，
+     乘法形没有先例，不给渲染器留整条吞掉规则的机会。 */
+  --tab-bar-total-h: calc(184rpx + env(safe-area-inset-bottom) + env(safe-area-inset-bottom));
   /* 2026-09-03 R11 收尾：内容「完整越过 custom-tabBar 露出」的净留白区。
      语义：页面上若存在需要完整可见/可点的底部内容（banner / CTA / 浮层），
      且该内容与 tabBar 垂直重叠会被原生层遮挡，则用本高度兜底——

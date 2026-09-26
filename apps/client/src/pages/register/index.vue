@@ -14,10 +14,15 @@
  * 链路镜像登录页（P0-32）：注册成功即自动登录（JWT 已落 storage），
  * 主动 sessionStore.refreshSession() 消除「已登录但页面认为未登录」间隙。
  *
- * 文案为中文硬编码（与 discover-login-hint 等既有页面实践一致），
+ * 文案（MP-R2-PAGES-REGISTER-INDEX-013 收口后）：校验/toast 文案已迁 i18n
+ * （i18n/locales 的 register 命名空间，zh-CN/en-US 成对），模板内标题/字段标签等
+ * 展示文案仍为中文硬编码（未在本批键清单内，见交付 still_orphan 说明），
  * 错误文案表见设计规范 §7。
  */
 import { computed, ref, onUnmounted } from "vue";
+// MP-R2-PAGES-REGISTER-INDEX-013：本页校验/toast 文案迁 i18n（键见 i18n/locales
+// 的 register 命名空间，zh-CN/en-US 成对维护），不再在组件内硬编码中文
+import { useI18n } from "vue-i18n";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
@@ -31,7 +36,12 @@ import { useAppConfigStore } from "../../stores/app-config";
 import { useSessionStore } from "../../stores/session";
 import { addBreadcrumb, captureException } from "../../services/sentry";
 import { createButtonGuard } from "../../utils/debounce";
+// MP-R2-PAGES-REGISTER-INDEX-010：脱敏正则收编到 utils 单一实现（与 success.vue 同源）
+import { maskPhone } from "../../utils/form-validator";
 import { isDev, isMockMode } from "../../config/env";
+
+// 使用 vue-i18n 组合式 API 获取 t 函数（组件内优先使用 useI18n 而非全局 t）
+const { t } = useI18n();
 
 const ICONS = IMAGE_PATHS.REGISTER_ICONS;
 
@@ -101,7 +111,9 @@ const today = computed(() => {
 
 /** 年龄是否已满 18 周岁（客户端预检，后端 AgePolicy 兜底） */
 function isAdult(dateStr: string): boolean {
-  const d = new Date(dateStr);
+  const [year, month, day] = dateStr.split("-").map(Number);
+  if (!year || !month || !day) return false;
+  const d = new Date(year, month - 1, day);
   if (Number.isNaN(d.getTime())) return false;
   const now = new Date();
   const adultSince = new Date(now.getFullYear() - 18, now.getMonth(), now.getDate());
@@ -146,7 +158,7 @@ const formComplete = computed(() =>
 );
 
 /* ---------------- 输入处理 ---------------- */
-// 事件参数统一按 `Event & { detail? }` 声明（与 ChatInput.onInput 同一惯例）：
+// 事件参数统一按 `Event & { detail? }` 声明：
 // uni input 的原生事件基型是 Event，detail 为 uni 扩展字段，运行时由 uni 注入。
 function onPhoneInput(e: Event & { detail?: { value?: string } }) {
   const digits = String(e.detail?.value ?? "").replace(/\D/g, "").slice(0, 11);
@@ -174,7 +186,7 @@ function onConfirmInput(e: Event & { detail?: { value?: string } }) {
   confirmPassword.value = String(e.detail?.value ?? "").replace(/\s/g, "");
   // 密码框失焦后实时比对（设计规范 §6.1）
   if (password.value && confirmPassword.value) {
-    errors.value.confirm = confirmPassword.value === password.value ? "" : "两次输入的密码不一致";
+    errors.value.confirm = confirmPassword.value === password.value ? "" : t("register.errPasswordMismatch");
   } else if (errors.value.confirm) {
     errors.value.confirm = "";
   }
@@ -199,7 +211,7 @@ function clearPhone() {
 /* ---------------- 校验（文案表：设计规范 §7） ---------------- */
 function validatePassword(v: string): string {
   if (!v) return "请设置登录密码";
-  if (v.length < 8) return "密码至少 8 位，需包含字母和数字";
+  if (v.length < 8) return t("register.errPasswordWeak");
   if (v.length > 20) return "密码最多 20 位";
   if (/\s/.test(v) || /[\uFF00-\uFFEF]/.test(v)) return "密码不能包含空格或全角字符";
   if (!/[A-Za-z]/.test(v) || !/\d/.test(v)) return "密码需同时包含字母和数字";
@@ -209,13 +221,13 @@ function validatePassword(v: string): string {
 /** 逐项校验，返回首个错误（手机号 → 验证码 → 密码 → 确认密码 → 昵称 → 生日 → 协议）；无错误时 field 为 null */
 function validateFirstError(): { field: FieldKey | "agree" | null; message: string } {
   if (!phoneRaw.value) return { field: "phone", message: "请输入手机号" };
-  if (!phoneValid.value) return { field: "phone", message: "手机号格式不正确，请输入 11 位手机号" };
+  if (!phoneValid.value) return { field: "phone", message: t("register.errPhoneFormat") };
   if (!smsCode.value) return { field: "sms", message: "请输入短信验证码" };
   if (!/^\d{6}$/.test(smsCode.value)) return { field: "sms", message: "验证码为 6 位数字" };
   const pwdError = validatePassword(password.value);
   if (pwdError) return { field: "password", message: pwdError };
   if (!confirmPassword.value) return { field: "confirm", message: "请再次输入密码" };
-  if (confirmPassword.value !== password.value) return { field: "confirm", message: "两次输入的密码不一致" };
+  if (confirmPassword.value !== password.value) return { field: "confirm", message: t("register.errPasswordMismatch") };
   if (!nickname.value.trim()) return { field: "nickname", message: "请输入昵称" };
   if (nickname.value.trim().length > 20) return { field: "nickname", message: "昵称最多 20 字" };
   if (!birthDate.value) return { field: "birth", message: "请选择出生日期" };
@@ -255,9 +267,9 @@ function toast(message: string, duration = 2000) {
 async function handleSendSms() {
   if (smsSending.value || smsCountdown.value > 0 || submitting.value) return;
   if (!phoneValid.value) {
-    errors.value.phone = "手机号格式不正确，请输入 11 位手机号";
+    errors.value.phone = t("register.errPhoneFormat");
     shake("phone");
-    toast("请先输入正确的手机号");
+    toast(t("register.toastPhoneRequired"));
     return;
   }
   smsSending.value = true;
@@ -270,9 +282,12 @@ async function handleSendSms() {
     // 模拟短信：提示 mockCode。MP-R1-PAGES-REGISTER-INDEX-009：与登录页同口径
     // （login showMockCode）——mockCode 仅 isDev || isMockMode() 展示，真实构建
     // 不得向用户明文 toast 验证码本体（后端 SmsCodeController 当前恒返回 mockCode）。
-    const masked = phoneRaw.value.replace(/^(\d{3})\d{4}(\d{4})$/, "$1****$2");
+    const masked = maskPhone(phoneRaw.value);
     const showMockCode = Boolean(res?.mockCode) && (isDev || isMockMode());
-    toast(showMockCode ? `验证码已发送（模拟：${res.mockCode}）` : `验证码已发送至 ${masked}`, 1500);
+    toast(
+      showMockCode ? t("register.smsSentMock", { code: res?.mockCode }) : t("register.smsSent", { phone: masked }),
+      1500,
+    );
     smsEndTime = Date.now() + 60_000;
     smsCountdown.value = 60;
     if (smsTimer) clearInterval(smsTimer);
@@ -284,7 +299,7 @@ async function handleSendSms() {
       }
     }, 500);
   } catch (error) {
-    toast(error instanceof Error && error.message ? error.message : "网络异常，请检查网络后重试");
+    toast(error instanceof Error && error.message ? error.message : t("register.networkError"));
   } finally {
     smsSending.value = false;
   }
@@ -305,7 +320,7 @@ onShow(() => {
   }
   // B6：注册功能被后台关闭（register_open=false）→ 提示并退出
   if (!isRegisterOpen.value) {
-    toast("注册功能暂未开放");
+    toast(t("register.registerClosed"));
     if (b6ExitTimer) clearTimeout(b6ExitTimer);
     b6ExitTimer = setTimeout(() => {
       b6ExitTimer = null;
@@ -332,7 +347,7 @@ async function handleSubmit() {
   if (submitting.value) return;
   // B6 兜底：入口被后台关闭
   if (!isRegisterOpen.value) {
-    toast("注册功能暂未开放");
+    toast(t("register.registerClosed"));
     return;
   }
   const first = validateFirstError();
@@ -378,59 +393,59 @@ function handleRegisterError(error: unknown) {
   const detail = error instanceof Error && error.message ? error.message : "";
   addBreadcrumb("ui", "register_failed", { status: apiError ? String(apiError.status) : "network", detail });
   if (detail.includes("已注册")) {
-    errors.value.phone = "该手机号已注册，试试直接登录";
+    errors.value.phone = t("register.errPhoneRegistered");
     phoneRegistered.value = true;
     shake("phone");
-    toast("该手机号已注册，可直接登录");
+    toast(t("register.toastPhoneRegistered"));
     return;
   }
   if (detail.includes("验证码")) {
-    errors.value.sms = "验证码不正确或已过期，请重新获取";
+    errors.value.sms = t("register.errSmsInvalid");
     shake("sms");
-    toast("验证码不正确或已过期，请重新获取");
+    toast(t("register.errSmsInvalid"));
     return;
   }
   if (detail.includes("未满 18")) {
-    errors.value.birth = "出生日期需已满 18 周岁";
+    errors.value.birth = t("register.errBirthMinor");
     shake("birth");
     toast("未满 18 岁暂无法注册");
     return;
   }
   if (detail.includes("手机号格式")) {
-    errors.value.phone = "手机号格式不正确，请输入 11 位手机号";
+    errors.value.phone = t("register.errPhoneFormat");
     shake("phone");
     toast(detail);
     return;
   }
   if (detail.includes("密码长度")) {
-    errors.value.password = "密码至少 8 位，需包含字母和数字";
+    errors.value.password = t("register.errPasswordWeak");
     shake("password");
     toast(detail);
     return;
   }
   if (detail.includes("昵称长度")) {
-    errors.value.nickname = "昵称需为 1-20 字";
+    errors.value.nickname = t("register.errNicknameLength");
     shake("nickname");
     toast(detail);
     return;
   }
   if (detail.includes("暂未开放")) {
-    toast(detail || "注册功能暂未开放");
+    toast(detail || t("register.registerClosed"));
     return;
   }
   // MP-R2-PAGES-REGISTER-INDEX-001：预期业务拒绝（AppApiError 4xx，已注册/验证码错误/
   // 未成年/昵称长度等）为噪音不上报；非 AppApiError（网络/未知）或 5xx 才补报
   if (!apiError) {
     captureException(error, { source: "register.submit" });
-    toast("网络异常，请检查网络后重试");
+    toast(t("register.networkError"));
     return;
   }
   if (apiError.status >= 500) {
     captureException(error, { source: "register.submit" });
-    toast("服务暂时不可用，请稍后重试");
+    toast(t("register.serviceUnavailable"));
     return;
   }
-  toast(detail || "网络异常，请检查网络后重试");
+  toast(detail || t("register.networkError"));
 }
 
 /* ---------------- 导航 ---------------- */

@@ -66,6 +66,9 @@ const emit = defineEmits<{
 .my-profile {
   min-height: 100vh;
   background: #EEF7F2;
-  padding-bottom: 120rpx;
+  /* MP-R2-PROFILE-024：本人态底部留白与未登录态同口径——custom-tab-bar 实占
+     （height 160rpx+env 加 padding-bottom env+24rpx，content-box）= 184rpx + 2×env，
+     原固定 120rpx 会被 tabBar 压住末卡底缘（对齐 NotLoggedProfile.vue:161 / GlobalPublishFab） */
+  padding-bottom: calc(184rpx + env(safe-area-inset-bottom) * 2);
 }
 </style>

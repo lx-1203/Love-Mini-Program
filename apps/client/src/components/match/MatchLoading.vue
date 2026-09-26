@@ -141,7 +141,7 @@ const PROGRESS = [
   padding: 80rpx 48rpx 60rpx;
   box-sizing: border-box;
   overflow: hidden;
-  background: linear-gradient(180deg, #E8FAF3 0%, #EEF7F2 70%);
+  background: var(--c-gradient-match);
 }
 
 /* ========== 装饰爱心 ========== */

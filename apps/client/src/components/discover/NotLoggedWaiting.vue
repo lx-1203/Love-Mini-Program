@@ -4,7 +4,7 @@
  *
  * 规格书 12 节要点：
  * - 主标题"正在为你寻找 同频的那个人"（两行）
- * - 副标"附近有 12 位同频的你"
+ * - 副标：静态无计数文案（规格书原文"附近有 12 位同频的你"已判定不落，见下方裁定）
  * - "登录后即可解锁全部功能"
  * - 4 个 icon 行（精确匹配 / 聊天互动 / 校园趣遇 / 关系成长）
  * - 三个按钮：微信一键登录 / 手机号登录 / 稍后再看
@@ -12,6 +12,24 @@
  *
  * 缺素材：理想图吉祥物插画（带 6 人围成圈 + 散落爱心）→ 暂用现有 notlogged-waiting.png
  * 全屏可点跳登录；按钮各自处理 goLogin/goPhoneLogin/later。
+ *
+ * MP-R2VIS-PAGES-MESSAGES-INDEX-002 裁定（2026-09-25 store 接线收口）：
+ * 本页副标不设计数位、不加 subtitleWithCount 键，:54 恒渲染 t('notLoggedWaiting.subtitle')。
+ * 依据（游客态无任何语义正确的计数真源，详见 .zcode/tmp/subtitle-wire/REPORT.md）：
+ *  1) 两个宿主（pages/messages/index.vue:369、subpackages/discover-extra/likes/index.vue:606）
+ *     都在 !sessionStore.isLoggedIn 时整页替换成本组件——本页是登录墙，不是可逛列表；
+ *  2) discoverStore.cards 初始为空（stores/discover/index.ts:105），fetchCards 的触发点全在
+ *     寻觅域（pages/discover/index.vue:190/211、…/discover/history.vue:42、FilterDrawer），
+ *     两个宿主无一触发 → 接 cards.length 得到的是恒 0 的计数（比不接更糟）；
+ *  3) mock 侧 services/mocks/fixtures.ts:1879 → buildRecommendedPersonsMock 只有固定 9 条
+ *     演示人格（id 4001-4009），是演示池规模而非人群规模；且 messages 页在 mock 下根本不渲染本页；
+ *  4) real 侧游客确实可调 GET /recommendations（apps/api SecurityConfig.java:133-134 permitAll），
+ *     但返回值被 GUEST_LIST_LIMIT=30 截断（RealRecommendationService.java:505-529，注释自陈
+ *     "截断到前端卡片展示所需上限"）→ 列表长度是响应体上限而非"附近有 N 人"；游客无定位/无校园，
+ *     "附近"语义不成立（RecommendationController.java:298-301 按 distanceText 过滤）；
+ *  5) 理想效果图 素材/理想效果图/未登录等待页面.png 自证 12 是拼版值：副标写 12、同一张图围圈
+ *     只画 6 个头像；既有裁定 MP-R2-CIRCLES-INDEX-002（subpackages/circles/circles/index.vue:258-266、
+ *     :440）口径为"取不到真值就不渲染，宁缺不展示伪造社交证明"，游客引导注册亦为用户既成裁定。
  */
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
@@ -118,7 +136,7 @@ function goLater() {
   width: 100%;
   min-height: 100vh;
   overflow: hidden;
-  background: #f6fbfc;
+  background: var(--c-bg-page);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -150,7 +168,7 @@ function goLater() {
 
 .not-logged__title {
   display: block;
-  font-size: 40rpx;
+  font-size: 56rpx;
   font-weight: 800;
   color: #36C99A;
   line-height: 1.4;
@@ -213,7 +231,7 @@ function goLater() {
 
 .not-logged__btn {
   width: 100%;
-  height: 88rpx;
+  height: var(--btn-height-md, 96rpx);
   border-radius: 999rpx;
   display: flex;
   align-items: center;
@@ -222,7 +240,7 @@ function goLater() {
 }
 
 .not-logged__btn--primary {
-  background: linear-gradient(135deg, #36C99A 0%, #2DB97A 100%);
+  background: linear-gradient(135deg, var(--c-brand, #36C99A) 0%, var(--c-brand-600, #2AAE83) 100%);
   box-shadow: 0 8rpx 24rpx rgba(54, 201, 154, 0.32);
 }
 
@@ -232,8 +250,16 @@ function goLater() {
 }
 
 .not-logged__btn--ghost {
-  background: #F2F5F4;
+  background: transparent;
   border: none;
+}
+
+.not-logged__btn--ghost::before,
+.not-logged__btn--ghost::after {
+  content: "";
+  flex: 1;
+  height: 1rpx;
+  background: var(--c-divider-light, rgba(15, 23, 42, 0.06));
 }
 
 .not-logged__btn-icon {

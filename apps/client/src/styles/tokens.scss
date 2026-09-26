@@ -67,8 +67,11 @@ page {
   --color-bg-surface: var(--c-bg-surface);
   --color-bg-overlay: var(--c-bg-overlay);
   --color-bg-brand: var(--c-bg-brand);
+  --c-bg-brand-soft: #F0FDF9;
+  --color-bg-brand-soft: var(--c-bg-brand-soft);
   --color-bg-romance: var(--c-bg-romance);
   --color-bg-elevated: var(--c-bg-elevated);
+  --color-gradient-match: var(--c-gradient-match);
 
   // ---------- 边框色语义别名 ----------
   --color-border-light: var(--c-border-light);
@@ -267,6 +270,7 @@ page {
 
   // 品牌/浪漫背景：深色近似色
   --c-bg-brand: #156B51;
+  --c-bg-brand-soft: var(--c-brand-50);
   --c-bg-secondary: #156B51;
   --c-bg-romance: #2D1F24;
   --c-bg-hover: #222831;

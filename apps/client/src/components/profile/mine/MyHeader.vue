@@ -60,7 +60,7 @@ const genderIconSrc = computed(() => {
         />
         <text v-else class="my-header__avatar-initial">{{ (props.profile.basic.name || "?").charAt(0) }}</text>
         <view v-if="props.profile.identity.verified" class="my-header__cert-dot">
-          <image class="my-header__cert-dot-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
+          <image class="my-header__cert-dot-icon" :src="IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG" mode="aspectFit" alt="" />
         </view>
       </view>
 
@@ -184,8 +184,8 @@ const genderIconSrc = computed(() => {
   width: 44rpx;
   height: 44rpx;
   border-radius: 50%;
-  background: #36C99A;
-  border: 4rpx solid #ffffff;
+  background: var(--c-brand, #36C99A);
+  border: 4rpx solid var(--c-bg-container, #FFFFFF);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -266,6 +266,11 @@ const genderIconSrc = computed(() => {
   font-size: 24rpx;
   color: #555555;
   line-height: 1.5;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .my-header__right {

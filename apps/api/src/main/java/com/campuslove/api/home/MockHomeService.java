@@ -123,7 +123,8 @@ public class MockHomeService implements HomeService {
             true,
             92,
             "/static/assets/images/people/person-01.png",
-            null // V2026.08.17.0001 星座（mock/fallback 未维护）
+            null, // V2026.08.17.0001 星座（mock/fallback 未维护）
+            false
         ),
         new LoveProgressView(
             2,
@@ -160,7 +161,8 @@ public class MockHomeService implements HomeService {
                 "今天在颐和园拍到超美的落日，光影太治愈了～",
                 List.of("/static/assets/images/posts/post-1.jpg","/static/assets/images/posts/post-2.jpg","/static/assets/images/posts/post-3.jpg"),
                 128,
-                24
+                24,
+                false
             ),
             new CommunityPostSummaryView(
                 2L,
@@ -172,7 +174,8 @@ public class MockHomeService implements HomeService {
                 "周末去了香山，大片超好看！一起感受大自然的鬼斧神工吧～",
                 List.of("/static/assets/images/posts/post-4.jpg","/static/assets/images/posts/post-5.jpg","/static/assets/images/posts/post-6.jpg"),
                 96,
-                18
+                18,
+                false
             ),
             new CommunityPostSummaryView(
                 3L,
@@ -184,7 +187,8 @@ public class MockHomeService implements HomeService {
                 "新发现一家超好吃的日料店！食材新鲜、味道超绝～",
                 List.of("/static/assets/images/posts/post-6.jpg","/static/assets/images/posts/post-7.jpg","/static/assets/images/posts/post-8.jpg"),
                 78,
-                12
+                12,
+                false
             )
         )
     );
@@ -206,7 +210,8 @@ public class MockHomeService implements HomeService {
         true,
         90,
         "/static/assets/images/people/person-02.png",
-            null // V2026.08.17.0001 星座（mock/fallback 未维护）
+            null, // V2026.08.17.0001 星座（mock/fallback 未维护）
+            false
     );
   }
 

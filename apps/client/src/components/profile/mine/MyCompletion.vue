@@ -28,7 +28,7 @@ const emit = defineEmits<{ (e: "complete"): void }>();
 
 <style scoped lang="scss">
 .my-completion {
-  margin: 32rpx 32rpx 0;
+  margin: var(--page-padding) var(--page-padding) 0;
   padding: 28rpx 32rpx;
   border-radius: 32rpx;
   background: rgba(255, 255, 255, 0.92);

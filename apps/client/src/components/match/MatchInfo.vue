@@ -22,12 +22,15 @@ const secondary = computed(() => props.user.gradeLabel || props.user.occupation 
 
 function activeLabel(status?: string): string {
   if (!status || status === "offline") return "";
-  if (status === "online" || status === "just_now" || status === "在线") return "在线";
-  if (status === "today") return "今天活跃";
+  // MP-R2-PAGES-DISCOVER-INDEX-013：展示文案改走 t()（与同仓 MatchCard.vue:33 /
+  // CardSwiper.vue:387-391 同键同口径）；串内 "在线" 是后端/mock 下发的状态取值，
+  // 仅作匹配判据、非展示文案，故保留中文字面量比较。
+  if (status === "online" || status === "just_now" || status === "在线") return t("matchV1.online");
+  if (status === "today") return t("discover.activeToday");
   const m = /^hours_(\d+)$/.exec(status);
-  if (m) return `${m[1]}小时前活跃`;
+  if (m) return t("discover.activeHoursAgo", { n: m[1] });
   const d = /^days_(\d+)$/.exec(status);
-  if (d) return `${d[1]}天前活跃`;
+  if (d) return t("discover.activeDaysAgo", { n: d[1] });
   return "";
 }
 

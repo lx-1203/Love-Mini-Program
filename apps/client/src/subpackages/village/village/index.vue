@@ -495,7 +495,10 @@ let scrollTopRestoreTimer: ReturnType<typeof setTimeout> | null = null;
 
 onShow(() => {
   // MP-R8-LOCK-001：懒加载服务端权威资料完成度（store 内 60s TTL + 并发守卫，不会重复请求）
-  void profileStore.load().catch(() => {});
+  // MP-R2-VILLAGE-INDEX-010：去掉 `.catch(() => {})` 注释型空兜底——stores/profile.ts:398-406
+  // 的 run() 已全量吞错并写 errorMessage、:412-416 返回 run().finally()，load() 契约上不 reject，
+  // 该 catch 永不触发且形态违反「禁空 catch」口径。
+  void profileStore.load();
   // 消费 Tab 桥接参数（hot/mine 已随频道化移除，映射到今日广场防残留）
   const bridged = consumeTabQuery();
   if (bridged.tab === "hot" || bridged.tab === "mine") {
@@ -939,7 +942,7 @@ onShareAppMessage(() => ({
   max-width: 320rpx;
   margin-left: var(--sp-4);
   height: 64rpx;
-  background: var(--c-bg-input, #f2f3f5);
+  background: var(--c-neutral-50, #F7FAF9);
   border-radius: 32rpx;
   padding: 0 var(--sp-5);
 }

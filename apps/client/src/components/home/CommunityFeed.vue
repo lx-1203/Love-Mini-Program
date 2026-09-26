@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
@@ -8,7 +8,7 @@ import { useSessionStore } from "../../stores/session";
 import { clientApi } from "../../services/api";
 import SafeImage from "../common/SafeImage.vue";
 
-defineProps<{
+const props = defineProps<{
   items: CommunityPostViewModel[];
   /** 2026-08-26 R1：帖子区加载中（骨架行） */
   loading?: boolean;
@@ -40,19 +40,32 @@ function onImageError(key: string) {
 function isFailed(key: string): boolean {
   return failedKeys.value.has(key);
 }
+/**
+ * MP-R2-PAGES-HOME-INDEX-105：删掉 isFailed(`avatar-${post.id}`) 分支——失败 key 的写入
+ * 格式只有 `img-${post.id}-${idx}`（见 :216 @error），头像位取不到该 key 恒为 false；
+ * 且头像兜底已由模板上的 SafeImage :fallback 承担，这里只需回退默认头像。
+ */
 function avatarSrc(post: CommunityPostViewModel): string {
-  return isFailed(`avatar-${post.id}`) ? IMAGE_PATHS.DEFAULT_AVATAR : (post.authorAvatar || IMAGE_PATHS.DEFAULT_AVATAR);
+  return post.authorAvatar || IMAGE_PATHS.DEFAULT_AVATAR;
 }
 /**
  * 2026-09-02 R5：刷新触发——清失败记录（让已失败图片重新尝试加载）+ 触发父组件重拉
  * R21：右上入口已改为「查看更多」（emit more），刷新逻辑保留给错误态重试按钮
+ * MP-R2-PAGES-HOME-INDEX-105：错误态重试钮改绑本函数（原直连 $emit('retry') 会跳过
+ * 清失败记录，重试后旧失败图仍永久停在占位）；`void handleRefresh;` 占位随之删除。
  */
 function handleRefresh() {
   failedKeys.value = new Set();
   emit("retry");
 }
-// 引用占位避免 noUnusedLocals（保留刷新能力供错误态复用）
-void handleRefresh;
+// MP-R2-PAGES-HOME-INDEX-105：列表数据换批即清失败记录，否则上一批里失败过的
+// `img-${id}-${idx}` 会随 key 复用继续显示占位（重试/换源都不生效）。
+watch(
+  () => props.items,
+  () => {
+    failedKeys.value = new Set();
+  }
+);
 
 const { t } = useI18n();
 const sessionStore = useSessionStore();
@@ -153,7 +166,7 @@ function onAuthorTap(post: CommunityPostViewModel) {
     <!-- 2026-08-26 R1：错误态 + 重试 -->
     <view v-else-if="error" class="community-feed__error">
       <text class="community-feed__error-text">动态加载失败：{{ error }}</text>
-      <view class="community-feed__retry" hover-class="community-feed__retry--pressed" @tap="$emit('retry')">
+      <view class="community-feed__retry" hover-class="community-feed__retry--pressed" @tap="handleRefresh">
         <text class="community-feed__retry-text">重试</text>
       </view>
     </view>

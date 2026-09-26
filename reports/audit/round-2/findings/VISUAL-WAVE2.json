@@ -1,0 +1,775 @@
+{
+  "round": "R2",
+  "chunkKey": "VISUAL-WAVE2",
+  "reviewer": "Wave-2 视觉审查落账代理（W-TBD 台账补录）",
+  "date": "2026-09-24",
+  "scope": "把 Wave-2 五组视觉审查（V1/V2/V3/V4/V5a/V5b）+ R2frames 人工评审产出中、经逐条 grep 复核确认「既有台账无对应行」的条目正式立项。输入队列 .zcode/tmp/fix-queue-wave2.md §2 的 N-01…N-104（104 条）。",
+  "method": "逐条真实 grep 复核（非队列自述的签名级判定）：对每条取其物理缺陷签名（组件名/CSS 选择器/字面量/行号锚点/中文串），在 reports/audit/round-1/issue-matrix.md、round-2/issue-matrix.md、round-{1,2}/code-findings/*.json、round-1/findings/*.json、round-1/interact/*-judge.json 全量语料（4971 行）检索，逐条读命中行正文判同异；命中同缺陷者不新建，移入本文件 dupes。",
+  "evidenceBase": {
+    "headAtAudit": "18c91ccf + 34 个未提交路径",
+    "framesGitSha": "aefd8a72（全部现存帧自报，按 DW:555 属过期证据）",
+    "screenshotCorpusUsed": ".zcode/tmp/backup-round-2-tour-pre-capture/{A,B}/（267 帧冻结快照）、reports/screenshots/round-1-tour/、round-1-after/、round-1-interact/、r11-acceptance/",
+    "screenshotCorpusExcluded": "reports/screenshots/round-2-tour/（正被本轮全量巡检覆盖，一律不引用）",
+    "verificationGates": "全量巡检独占 ws://127.0.0.1:9420 期间：本会话未启动开发者工具、未跑 tour/exec 脚本、未构建、无 git 写操作",
+    "statusCeiling": "本轮只落账，无任何条目经运行时确认；全部 status=待修复，不声明已修复/已验证"
+  },
+  "idRule": "MP-R2VIS-<slug(page)>-<三位序号>；slug = page 去非字母数字后转大写（.vue/.scss/.ts/.mjs/.json 后缀不参与 slug）；同一 slug 内按 N 编号顺序连续编号。",
+  "confidenceRule": "有干净帧（未遮罩污染、非仅 0.5x）+ 代码行双证 → 0.55~0.75；仅遮罩污染帧/0.5x/1x 不可判读的像素推断 → ≤0.35；纯代码/文件存在性推断 → ≤0.4；测试台自身缺陷以脚本 grep、MD5、尺寸实测为据 → 0.7~0.75。",
+  "issues": [
+    {
+      "id": "MP-R2VIS-PAGES-LOGIN-INDEX-001", "nId": "N-01", "round": "R2", "page": "pages/login/index",
+      "severity": "P1", "category": "UI", "status": "待修复", "confidence": 0.7, "sources": ["screenshot", "code"],
+      "description": "登录页三枚按钮圆角为 --r-xl(24rpx=12px) 圆角矩形，非规范要求的胶囊，主标题区层级因此偏离。",
+      "evidence": "apps/client/src/pages/login/index.vue:1166,1211,1261 border-radius: var(--r-xl) + apps/client/src/theme/design-variables.scss:190,200 $radius-xl:24rpx；帧 .zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__默认.png 8x 裁切 .zcode/tmp/v1-login-greenbtn-corner.png（对照理想图裁切 .zcode/tmp/v1-ideal-greenbtn-corner.png 为半圆胶囊）；规范 §3.1 L156。grep 复核：r-xl / btn-guest 在两份矩阵无同缺陷行。",
+      "fix": "三枚按钮改 border-radius: var(--r-full)（§1.4 L86 已有令牌）。须排在 MP-R2VIS-THEME-DESIGN-VARIABLES-001 之后：$radius-* 去重会改变 --r-xl 生效值。",
+      "ideal": "规范 §3.1 L156 主按钮 52px + 圆角 999（胶囊）。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-LOGIN-INDEX-002", "nId": "N-02", "round": "R2", "page": "pages/login/index",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.7, "sources": ["screenshot", "code"],
+      "description": "登录主按钮实测高 46px，低于规范 52px（-6px / -11.5%）。",
+      "evidence": "apps/client/src/pages/login/index.vue:1165 height: var(--btn-height-md) → apps/client/src/theme/design-variables.scss:613 96rpx=48px，含边框实测 46px（x 17–361 / w 345）；帧 .zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__默认.png；规范 §3.1 L156。grep 复核：btn-height 全语料 0 命中。",
+      "fix": "登录页主/次/幽灵按钮改 --btn-height-lg(104rpx=52px)。",
+      "ideal": "主按钮高 52px。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-LOGIN-INDEX-003", "nId": "N-03", "round": "R2", "page": "pages/login/index",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.65, "sources": ["screenshot", "code"],
+      "description": "hero 两行标题实测 20px/15px（规范两行均 28px），slogan 层级塌陷。",
+      "evidence": "apps/client/src/pages/login/index.vue:1067 font-size:40rpx、:1078 font-size:30rpx；5x 裁切 .zcode/tmp/v1-login-tagline.png 墨迹高 18px/11px；规范 §3.1 L156、§1.3 L68。grep 复核：hero-desc 全语料 0 命中。",
+      "fix": "第一行升 56rpx 级、第二行升 40rpx，并统一 §3.1 与 §1.3 档位归属。",
+      "ideal": "页面主标题取 §1.3 的 26–28px/700–800 档。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-LOGIN-INDEX-004", "nId": "N-04", "round": "R2", "page": "pages/login/index",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "副标题 11px 且用 opacity .55 压暗，有效色约 #9AA39F，低于 --c-text-tertiary，说明文字对比不足。",
+      "evidence": "apps/client/src/pages/login/index.vue:1086 font-size: var(--fs-sm) + :1088 opacity: 0.55；5x 裁切 .zcode/tmp/v1-login-tagline.png 第三行发虚；规范 §3.1 L156（14px）、§1.2 L53、§1.3 L72/L74。",
+      "fix": "改 font-size: var(--fs-lg) + color: var(--c-text-secondary)，删除 opacity。",
+      "ideal": "说明文字 14px 且取令牌色，不用透明度压暗。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-LOGIN-INDEX-005", "nId": "N-05", "round": "R2", "page": "pages/login/index",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.7, "sources": ["screenshot", "code"],
+      "description": "规范要求的副标题句尾「粉色小爱心」节点不存在，全帧 romance 色 0 命中。",
+      "evidence": "apps/client/src/pages/login/index.vue:1076-1082 .hero-desc--sub 仅有 color 无 icon 节点；帧 .zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__默认.png 全帧 #FF6B81±45 扫描仅插画区 6 个肤色杂点；理想图 素材/理想效果图/登录页面.png 可见粉心；规范 §3.1 L156。grep 复核：矩阵唯一命中「粉色小爱心」的是 MP-R2-MATCHING-003（matching 页 heart_pink.png 全透明），非同缺陷。",
+      "fix": "在 .hero-desc--sub 后追加心形 SVG（XunmiHeartPulse 或 ICONS_*），色取 --c-romance-500。",
+      "ideal": "副标题呈现品牌粉小爱心图标。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-LOGIN-INDEX-006", "nId": "N-06", "round": "R2", "page": "pages/login/index",
+      "severity": "P2", "category": "Consistency", "status": "待修复", "confidence": 0.65, "sources": ["screenshot", "code"],
+      "description": "「稍后再看」为白底+描边胶囊，与次按钮视觉同权；三级按钮层级坍塌为两级，两枚白按钮零阴影。",
+      "evidence": "apps/client/src/pages/login/index.vue:1258-1267 .btn-guest{background: var(--c-bg-container); border: 2rpx solid var(--c-neutral-200,#E8ECEA)}、:1211-1216 次按钮同无 box-shadow；帧实测「稍后再看」填充 #FFFFFF（y 662–707 行 685 采样）、白按钮左缘 x=17 硬边 #E5E7E7、按钮下方 y606–610 无阴影带；理想图实测 #F3F4F4 无描边 + 柔影（主按钮 y553–561 有 --s-float-btn 绿影 ✓）。",
+      "fix": ".btn-guest 改 background: var(--c-bg-surface) + border: none；两枚白按钮补 box-shadow: var(--card-shadow)。",
+      "ideal": "三级层级：实心绿 › 纯白柔影 › 浅灰无描边（§3.1 L156 分区序列）。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-LOGIN-INDEX-007", "nId": "N-07", "round": "R2", "page": "pages/login/index",
+      "severity": "P2", "category": "UX", "status": "待修复", "confidence": 0.75, "sources": ["screenshot", "code"],
+      "description": "微信白按钮与 SMS 兜底入口显示同一句「手机号登录」，aria-label 亦同值，两个不同动作不可辨。",
+      "evidence": "apps/client/src/pages/login/index.vue:705 渲染 login.phoneQuickLogin（aria :703）与 :718 渲染 login.phoneLogin（aria :715），同处 #ifdef MP-WEIXIN（:720 #endif）；apps/client/src/i18n/locales/zh-CN.ts:2206 与 :687/:2171 三键值全为「手机号登录」；帧 .zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__默认.png 同屏两枚「手机号登录」。grep 复核：MP-R1-PAGES-LOGIN-INDEX-201 是「缺兜底入口」（其修法要求新增该入口）、MP-R1-PAGES-LOGIN-INDEX-004 是 401 摧毁表单，均非「两入口同值歧义」。",
+      "fix": "两 key 不得同值：分别命名（如「微信手机号快捷登录」/「使用验证码登录」）并弱化兜底样式；zh-CN/en-US 同批提交（W17 收口）。",
+      "ideal": "动作不同的两个入口在文案与无障碍标签上均可辨。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-LOGIN-INDEX-008", "nId": "N-08", "round": "R2", "page": "pages/login/index",
+      "severity": "P3", "category": "Consistency", "status": "待修复", "confidence": 0.6, "sources": ["screenshot"],
+      "description": "顶部 slogan 与头图下主副标题同屏重复两次，L2 信息层级冗余。",
+      "evidence": "帧 .zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__默认.png：品牌区「寻觅 / 遇见同频的人」（y≈94–118）与 hero 两行「遇见同频的人 / 慢慢成为特别的人」（:1067-1082）同屏重复；理想图 素材/理想效果图/登录页面.png 无此重复。",
+      "fix": "保留一处：品牌区只留「寻觅」+图形，或 hero 两行改述为不与顶部同值。",
+      "ideal": "同一屏不重复同一句 slogan。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-LOGIN-INDEX-009", "nId": "N-09", "round": "R2", "page": "pages/login/index",
+      "severity": "P4", "category": "UX", "status": "待修复", "confidence": 0.5, "sources": ["screenshot"],
+      "description": "「校验错误」态 toast 落点与主标题垂直重叠，遮挡 H1。",
+      "evidence": "帧 .zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__校验错误.png：toast 覆盖 y≈425–445 标题带；规范 §1.4 L90 模态层级。属 1x 帧位置判读，未做像素级双证。",
+      "fix": "该态改行内错误提示（协议行上方）或给 uni.showToast 设 offset 下移。",
+      "ideal": "错误提示不遮挡页面主标题。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__校验错误.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-001", "nId": "N-10", "round": "R2", "page": "pages/messages/index",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.4, "sources": ["code"],
+      "description": "未登录等待态组件底色 #f6fbfc 既非 §3.15 的 #F7FAF9 也违全站浅绿，与登录页来回必现底色断层。",
+      "evidence": "apps/client/src/components/discover/NotLoggedWaiting.vue .not-logged{background:#f6fbfc}；对照帧 .zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__默认.png (189,120)=#EEF7F2；规范 §1.1 L31、§1.2 L48、§3.15 L258。该态全语料 0 帧（#f6fbfc 取自素材 等待页面.png 自身底色 #F5FAFB）。",
+      "fix": "background: var(--c-bg-page)；素材 等待页面.png 另出浅绿底或透明底版本。",
+      "ideal": "等待态底色与全站浅绿一致。",
+      "crossRef": "挂载点：grep -rl NotLoggedWaiting apps/client/src --include=*.vue 实测只命中 pages/messages/index.vue 与 subpackages/discover-extra/likes/index.vue（pages/discover/index.vue 零命中）→ 规范 §2 L127/§3.3 L174 的映射属文档错（SPECDOC，未在本文件立项）。",
+      "screenshot": "无（该态 0 帧，需 W18 重拍）"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-002", "nId": "N-11", "round": "R2", "page": "pages/messages/index",
+      "severity": "P2", "category": "Function", "status": "待修复", "confidence": 0.4, "sources": ["code"],
+      "description": "等待态副标题为静态串，缺规范要求的动态「附近有 {n} 位同频的你」。",
+      "evidence": "apps/client/src/i18n/locales/zh-CN.ts:681 notLoggedWaiting.subtitle＝「发现更多同频的人」；理想图 素材/理想效果图/未登录等待页面.png 与规范 §3.15 L257 均为「附近有 12 位同频的你」。grep 复核：矩阵同类命中 MP-R2-PAGES-HOME-INDEX-005 是首页 NearbyPeople 的 Math.max 伪造人数，不同组件不同缺陷。",
+      "fix": "subtitle 插值「附近有 {n} 位同频的你」，n 取游客可用的附近同频数据。",
+      "ideal": "该态核心转化钩子（动态人数）呈现。",
+      "screenshot": "无（该态 0 帧）"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-003", "nId": "N-12", "round": "R2", "page": "pages/messages/index",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.4, "sources": ["code"],
+      "description": "等待态标题 20px / 主按钮 44px 双低于规范档，主按钮用未授权渐变且 #2DB97A 不在 §1.2 任一行，幽灵按钮为实心胶囊。",
+      "evidence": "apps/client/src/components/discover/NotLoggedWaiting.vue 样式 .not-logged__title{font-size:40rpx}、__btn{height:88rpx; border-radius:999rpx}、--primary{background:linear-gradient(135deg,#36C99A,#2DB97A)}、--ghost{background:#F2F5F4}；规范 §1.2 L41-42（brand-600 应 #2AAE83）、§3.15 L257、§3.1 L156（52px）。grep 复核：2DB97A 唯一命中 MP-R1-PAGES-MESSAGES-INDEX-105（快捷卡按钮渐变），非本组件。",
+      "fix": "标题升 56rpx；主按钮 background: var(--c-brand) 纯色 + --s-brand；幽灵按钮去底色改文字+左右 hairline。",
+      "ideal": "字号/按钮高度取规范档，颜色一律令牌，幽灵按钮为纯文字。",
+      "screenshot": "无（该态 0 帧）"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-004", "nId": "N-13", "round": "R2", "page": "pages/messages/index",
+      "severity": "P3", "category": "MiniProgram", "status": "待修复", "confidence": 0.4, "sources": ["code"],
+      "description": "等待态 hero 为单张 220KB 烘焙 PNG（主包门禁），无浮动静、6 头像非真实数据，规范点名的组件零引用。",
+      "evidence": "apps/client/src/components/discover/NotLoggedWaiting.vue 模板首节点为单张 PNG（apps/client/src/config/images.ts:148 → static/assets/images/posters/notlogged-waiting.png，实测 219,973 B）+ mode=\"widthFix\"；规范 §3.15 L257（吉祥物 120px 浮动 + 虚线轨道 + 6 环绕头像）、L259 点名的 XunmiMascot/UnlockGuideOverlay 零引用、WechatBtn/PhoneBtn 不存在；§1.6 L117 主包 2MB。grep 复核：notlogged-waiting、烘焙 在两份矩阵 0 命中。",
+      "fix": "拆为 XunmiMascot + CSS 虚线轨道 + 真实头像循环（assets/images/people/person-*.png 已有 21 套），删除烘焙图。",
+      "ideal": "等待态 hero 组件化、有动效、用真实头像池。",
+      "screenshot": "无（该态 0 帧）"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-HOME-INDEX-001", "nId": "N-16", "round": "R2", "page": "pages/home/index",
+      "severity": "P1", "category": "UI", "status": "待修复", "confidence": 0.65, "sources": ["screenshot", "code"],
+      "description": "首页关系动态四格格底 #EEF7F2 恰等于 --c-bg-page → 四格与页面零视觉分隔，且未用 --card-shadow。",
+      "evidence": "apps/client/src/components/home/RelationActivity.vue:120-121 .relation-cell{border-radius:24rpx; background:#EEF7F2}（=§1.2 L48 页面底色）；帧 reports/screenshots/round-1-tour/A/pages_home_index__滚动-中部.png 格内 (95,230) 与格外 (8,230) 同为 #EEF7F2，3x 裁切 .zcode/tmp/v1-home-relation.png；规范 §1.2 L48-49、§1.4 L88、§3.2 L164。grep 复核：relation-cell 唯一命中 MP-R1-PAGES-HOME-INDEX-104 讲的是竖排高卡布局，非格底同色。",
+      "fix": "background: var(--c-bg-container) + box-shadow: var(--card-shadow)。（同族「3 头像堆缺失」已由 MP-R1-PAGES-HOME-INDEX-033/-111 在账，本条不重复立项。）",
+      "ideal": "四格为可辨识的独立卡片。",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_home_index__滚动-中部.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-HOME-INDEX-002", "nId": "N-17", "round": "R2", "page": "pages/home/index",
+      "severity": "P1", "category": "MiniProgram", "status": "待修复", "confidence": 0.55, "sources": ["screenshot", "code"],
+      "description": "邀请横幅装饰爱心 image 缺 pointer-events=none，覆盖「去邀请」CTA 右缘、可能吞约 20×20px 热区。",
+      "evidence": "apps/client/src/components/home/InviteBanner.vue:97-102 .invite-banner__wing{position:absolute; right:-16rpx; bottom:-16rpx; width:80rpx; height:80rpx} 无 pointer-events，违反 §1.6 L118；帧 reports/screenshots/round-1-tour/A/pages_home_index__滚动-底部.png 4x 裁切 .zcode/tmp/v1-home-invite.png 显示粉心压住「请」字；同页 RelationActivity.vue 已加该属性 → 逐组件漏加。grep 复核：pointer-events 既有命中 MP-R1-CERT-101 为重入守卫，非本缺陷。",
+      "fix": "给 .invite-banner__wing 加 pointer-events=\"none\" + 降 z-index，装饰移至按钮左侧；并跑全站「absolute 装饰 image 未加 pointer-events」静态扫描。",
+      "ideal": "装饰图不吞 CTA 点击，装饰位与理想图一致。",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_home_index__滚动-底部.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-HOME-INDEX-003", "nId": "N-19", "round": "R2", "page": "pages/home/index",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "附近的人卡多一行理想图没有的兴趣标签（卡高 +约 20%），且圆裁把头部落在画幅外，违半身构图语言。",
+      "evidence": "apps/client/src/components/home/NearbyPeople.vue 标签行 + .nearby-avatar 1:1 圆裁；帧 reports/screenshots/round-1-tour/A/pages_home_index__滚动-底部.png 3x 裁切 .zcode/tmp/v1-home-nearby.png（小满/Luna 等只见躯干）；理想图 素材/理想效果图/首页.png 为「头像+名称+距离」两行；规范 §5.1 L304、§3.2 L164。",
+      "fix": "移除标签行（或回写规范，属 SPECDOC）；头像改用 person-* 半身池或 mode=\"aspectFill\" + 顶部锚定 focal crop。",
+      "ideal": "头像脸部完整位于画面上半部。",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_home_index__滚动-底部.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-HOME-INDEX-004", "nId": "N-20", "round": "R2", "page": "pages/home/index",
+      "severity": "P3", "category": "UI", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "「换一位」用文本字符 ↻ 而非 SVG，字形随字体栈漂移。",
+      "evidence": "apps/client/src/components/home/TodayRecommendationCard.vue 模板「↻ 换一位」；帧 reports/screenshots/round-1-tour/A/pages_home_index__默认.png（理想图为线性刷新图标）；规范 §1.1 L34。",
+      "fix": "换 SVG 图标 + --c-text-tertiary，与文字同字号。",
+      "ideal": "UI chrome 无文本符号，一律同族 SVG。",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_home_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-HOME-INDEX-005", "nId": "N-21", "round": "R2", "page": "pages/home/index",
+      "severity": "P4", "category": "UI", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "首页标题左基线 40rpx 与分区卡片 32rpx 不一致，标题比卡片右移约 4–5px。",
+      "evidence": "apps/client/src/components/home/HomeHeader.vue:88 padding-left: 40rpx(=20px)；帧 reports/screenshots/round-1-tour/A/pages_home_index__默认.png 标题墨迹左缘 x≈22–24、各分区卡左缘 x=17；规范 §1.4 L83 --page-padding=32rpx；理想图两者对齐。grep 复核：padding-left:40rpx 在两份矩阵 0 命中。",
+      "fix": "HomeHeader 左内距改 var(--page-padding)。",
+      "ideal": "页面左基线单一来源。",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_home_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-THEME-DESIGN-VARIABLES-001", "nId": "N-22", "round": "R2", "page": "theme/design-variables.scss",
+      "severity": "P2", "category": "Consistency", "status": "待修复", "confidence": 0.4, "sources": ["code"],
+      "description": "7 个 $radius-* 令牌全量重复定义（生效值被后一处改写），--sp-7=sp-8 / sp-9=sp-10 双映射。",
+      "evidence": "apps/client/src/theme/design-variables.scss:186-192 与 :195-201 —— grep -n '^\\$radius-' 实测 7 个（xs/sm/md/lg/xl/xxl/full）各定义两次（生效 lg 16→20rpx、xxl 28→32rpx）；:494-504 --sp-* = 4/8/12/16/20/24/32/32/48/48rpx 且注释自认 sp-7=sp-8、sp-9=sp-10。grep 复核：$radius- / 「令牌重复」在两份矩阵 0 命中（规范 §6 L331 只承认 lg/xxl 两条，属文档低估，SPECDOC 侧未立项）。",
+      "fix": "删除 :186-192 整块保留唯一真相源；--sp-* 去双映射。必须 W16 串行先做——它决定 MP-R2VIS-PAGES-LOGIN-INDEX-001 的 --r-xl 生效值。",
+      "ideal": "一个令牌一个值、单一真相源。",
+      "screenshot": "无（令牌层静态判定）"
+    },
+    {
+      "id": "MP-R2VIS-THEME-DESIGN-VARIABLES-002", "nId": "N-23", "round": "R2", "page": "theme/design-variables.scss",
+      "severity": "P2", "category": "Consistency", "status": "待修复", "confidence": 0.55, "sources": ["screenshot", "code"],
+      "description": "--c-text-inverse 两处定义且值相反，生效取决于 import 展开顺序，致活动详情「示例活动」徽标白底白字。",
+      "evidence": "apps/client/src/theme/design-variables.scss:107 $text-inverse:#FFFFFF → :353 --c-text-inverse:#FFFFFF；apps/client/src/styles/tokens.scss:238 --c-text-inverse:#1A1F26；apps/client/src/App.vue:301 先引 design-variables、:306 再引 tokens，且 tokens.scss:16 二次引入 design-variables。后果：apps/client/src/subpackages/tools/activities/detail.vue:504-516 background: var(--c-overlay-bg-pure)（design-variables.scss:687 = rgba(255,255,255,.95)）+ color: var(--c-text-inverse,#ffffff)；帧 .zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_official-chat_index__交互后.png 6x 裁切 .zcode/tmp/crop-activity-badge.png（最暗=1、中位=148、亮度<120 占 26.2%）。",
+      "fix": "消除双源（保留单一真相源）+ 新增 --c-text-on-overlay: #FFFFFF 供遮罩上文字显式使用。W16 串行泳道。",
+      "ideal": "遮罩上的文字有专用令牌且全站唯一来源，徽标可读。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_official-chat_index__交互后.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001", "nId": "N-24", "round": "R2", "page": "subpackages/chat/official-chat/index",
+      "severity": "P3", "category": "Consistency", "status": "待修复", "confidence": 0.4, "sources": ["code"],
+      "description": "官方号助手文案字面量内嵌 emoji ×3，违业务组件禁 emoji 硬约束。",
+      "evidence": "apps/client/src/subpackages/chat/official-chat/index.vue:120（「…哦 😊」）、:225（「…🌱 …✨」）、:231（「…吗？😊」）；依据规范 §1.1 L34 与 R11 附录 B。grep 复核：既有 MP-R1-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-004 / MP-R2-OFFICIALCHAT-004 讲的是「用户气泡不经 EmojiText」，与本条（助手文案写字面 emoji）不同缺陷。",
+      "fix": "三处文案改为 i18n 键并去 emoji（zh/en 同批，W17 收口），需图标处改 <image>/EmojiText。",
+      "ideal": "UI 文案不含系统 emoji。",
+      "screenshot": "无（源码字面量直读）"
+    },
+    {
+      "id": "MP-R2VIS-CONFIG-IMAGES-001", "nId": "N-27", "round": "R2", "page": "config/images.ts",
+      "severity": "P2", "category": "MiniProgram", "status": "待修复", "confidence": 0.4, "sources": ["code", "log"],
+      "description": "images.ts 三个图标键指向 src 与 dist 均不存在的 SVG，圈子图标断链（不只影响 mock）。",
+      "evidence": "apps/client/src/config/images.ts:581,582,583 的 paw.svg/cat.svg/planet.svg 在 apps/client/src/static/assets/icons/common/ 与 apps/client/dist/build/mp-weixin/static/assets/icons/common/ 均实测缺失（同批 music/camera/food/gamepad/book/star/ticket/fire.svg 全在盘 → 非目录级问题）；唯一消费方 apps/client/src/config/circle-icons.ts:17-19,32-36（emoji→SVG 映射）与 apps/client/src/stores/circle/mock-data.ts:69,123,134,179 → real 模式后端下发同名 emoji 时命中同一断链。grep 复核：三文件名在两份矩阵 0 命中；同族 travel.svg 已登记为 MP-R2-PAGES-HOME-INDEX-103（仅存 code-findings、未进矩阵）。",
+      "fix": "补三枚 SVG（或改指已存在件），并把 paw/cat/planet/travel 四键纳入构建期资源存在性检查。",
+      "ideal": "IMAGE_PATHS 每个键都指向在盘资源。",
+      "screenshot": "无（文件存在性核验；画面侧本轮 0 帧）"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005", "nId": "N-28", "round": "R2", "page": "pages/messages/index",
+      "severity": "P1", "category": "Function", "status": "待修复", "confidence": 0.65, "sources": ["screenshot", "code"],
+      "description": "warmPeople / activityRecommendations mock 恒空 → §3.6 两个整分区在全部可用帧中不渲染。",
+      "evidence": "apps/client/src/pages/messages/index.vue:485 v-if=\"warmPeople.length > 0\"、:581 v-if=\"activityRecommendations.length > 0\"，mock 种子两者均为空；帧 reports/screenshots/round-1-after/A/A44-messages-default.png（实测顺序「有人喜欢你/正在等待回复 → 寻觅助手 → 最近聊天 →（TabBar）」，y≈470–500 无升温区、整帧无「活动推荐」标题）、round-1-tour/A/pages_messages_index__默认.png、round-1-after/A/A44-messages-visual-states.png 三帧一致；规范 §3.6 L194、理想图 消息.png y≈530–690。grep 复核：既有 MP-R1-PAGES-MESSAGES-INDEX-011（改为数据驱动，已修复待终验）与 -107（非横滑）均不覆盖「mock 种子为空致整块不可取证」。",
+      "fix": "messages mock 补 warmPeople≥4、activityRecommendations≥1（只加种子，不碰 store 逻辑）。",
+      "ideal": "§3.6 全分区在演示构建下可渲染、可取证。",
+      "screenshot": "reports/screenshots/round-1-after/A/A44-messages-default.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-006", "nId": "N-29", "round": "R2", "page": "pages/messages/index",
+      "severity": "P1", "category": "Function", "status": "待修复", "confidence": 0.7, "sources": ["screenshot", "code", "log"],
+      "description": "mock 会话 unreadCount 全 0 → 效果图 4 处未读角标零取证（TabBar 区红像素扫描 0 命中）。",
+      "evidence": "apps/client/src/pages/messages/index.vue:566 v-if=\"session.unreadCount > 0\"，mock 会话 unreadCount 均为 0（助手卡 :454 走 totalUnreadCount + unreadNotificationCount 故只出「6+」）；对 reports/screenshots/round-1-after/A/A44-messages-default.png 的 TabBar 区 y=760–814 做 r>200 & g<120 & b<140 扫描命中 0 像素，整帧仅 52 个红像素全落在 y416–423「暧昧中」标签；效果图 素材/理想效果图/消息.png 标出 4 处角标（y≈453/796/894/1159）；对照 round-1-after/A/Z2-profile-logged-default.png 我的页 TabBar 确有红「12」→ 渲染链通、缺取证态。grep 复核：既有 -009/-010 是角标计数口径不一致，非 mock 恒 0。",
+      "fix": "mock 至少 2 条会话 unreadCount>0（其中 1 条 >99 以验 99+ 分支），并补「未读态」命名帧（取证由 W18 承接）。",
+      "ideal": "未读角标体系在取证帧内可见。",
+      "screenshot": "reports/screenshots/round-1-after/A/A44-messages-default.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-007", "nId": "N-30", "round": "R2", "page": "pages/messages/index",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.65, "sources": ["screenshot", "code"],
+      "description": "头部 ＋ 与搜索图标左右顺序与效果图相反。",
+      "evidence": "apps/client/src/pages/messages/index.vue:382-387 header__right 内先渲染 ＋（handleStartChat）后渲染 SEARCH 图标（toggleSearch）；帧 reports/screenshots/round-1-after/A/A44-messages-default.png y≈130–165 实测「＋（左）🔍（右）」、round-1-tour/A/pages_messages_index__默认.png 同；效果图 素材/理想效果图/消息.png y≈95–125 为「🔍（左）＋（右）」。",
+      "fix": "交换两 view 顺序即可，勿改点击语义。（既有 MP-R1-PAGES-MESSAGES-INDEX-019/-102 记的是「缺 + 入口」，按当前代码已陈旧。）",
+      "ideal": "头部图标顺序与效果图一致。",
+      "screenshot": "reports/screenshots/round-1-after/A/A44-messages-default.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-008", "nId": "N-31", "round": "R2", "page": "pages/messages/index",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.55, "sources": ["screenshot", "code"],
+      "description": "「有人喜欢你/正在等待回复」为两张独立白卡（效果图为同一浅绿容器+中缝），CTA 落点在左下（效果图右下）。",
+      "evidence": "apps/client/src/pages/messages/index.vue .quick-cards{display:flex;gap:20rpx} + .quick-card{background:var(--c-bg-container,#FFFFFF)} + .quick-card__btn{align-self:flex-start}；帧 reports/screenshots/round-1-after/A/A44-messages-default.png y≈180–330 两卡各 #FFFFFF、中缝 x=184–189 为页底色、「去看看」贴左缘 x≈30–95；效果图 素材/理想效果图/消息.png y≈180–310 单容器实测主色 #F2FAF7、中缝 x≈290、「去看看」在左半区右下 x≈200–280/y≈265–290。",
+      "fix": ".quick-card__btn 改 align-self:flex-end 并合并容器底色；容器色按 §1.2 L43 令牌归一。",
+      "ideal": "双卡容器与 CTA 落点同效果图（或按既成事实回写 §3.6 L194）。",
+      "screenshot": "reports/screenshots/round-1-after/A/A44-messages-default.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009", "nId": "N-32", "round": "R2", "page": "pages/messages/index",
+      "severity": "P3", "category": "UI", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "「免打扰」图标挤进时间单元格，使该行时间左移约 19px（效果图该位无图标）。",
+      "evidence": "apps/client/src/pages/messages/index.vue:558-563 时间单元格内渲染 ICONS_EMOJI.VOLUME_X；对 reports/screenshots/round-1-tour/A/pages_messages_index__默认.png 逐行测 x>290 文本包围盒：夏言 x332–356(w25)、叶知秋 x338–357(w20)、陈默 x319–357(**w39**)、匿名 x338–357(w20)，右缘恒 x356–357（gutter 15–16px ≈ §1.4 L83 32rpx ✓）。grep 复核：既有 MP-R1-PAGES-MESSAGES-INDEX-003 是「免打扰无标识」的修复行（已修复待终验），本条为其副作用。",
+      "fix": "静音图标移至昵称行尾（与「聊天中/暧昧中」标签同排），时间单元格保持纯数字。",
+      "ideal": "时间右缘对齐且单元格只放数字。",
+      "screenshot": "reports/screenshots/round-1-tour/A/pages_messages_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-PROFILE-INDEX-001", "nId": "N-34", "round": "R2", "page": "pages/profile/index",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "我的页认证勾用错素材：check.png 不透明像素均值 #94A3B8 压 #36C99A 绿底，对比度 1.23:1，截图上只剩实心绿圆。",
+      "evidence": "apps/client/src/components/profile/mine/MyHeader.vue:63 取 IMAGE_PATHS.ICONS_EMOJI.CHECK（apps/client/src/config/images.ts:186 = assets/icons/common/check.png），实测该 PNG 48×48 不透明像素平均 RGB (148,163,184)=#94A3B8；底 MyHeader.vue:187 background:#36C99A；WCAG 相对亮度 0.3596 vs 0.4534 = **1.23:1**（白字版为 2.09:1）；帧 .zcode/tmp/backup-round-2-tour-pre-capture/A/pages_profile_index__默认.png 6x 裁切 .zcode/tmp/v3/Z-profile-avatar.png 无勾形；同目录已存在 apps/client/src/static/assets/icons/register/check-white.svg（images.ts:649 已注册，202 B）。",
+      "fix": "__cert-dot-icon 的 src 换 check-white.svg；顺手把 :187 #36C99A、:188 #ffffff 换 var(--c-brand)/var(--c-bg-container)（§1.1 L33 禁私有色值）。",
+      "ideal": "规范 §3.8 L208 头像认证小绿勾 = 绿圆 + 清晰白色 ✓。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/A/pages_profile_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-PROFILE-INDEX-002", "nId": "N-36", "round": "R2", "page": "pages/profile/index",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "我的页卡片左右 gutter 实测 12px（同页另有 13/32/33px 三种），卡内外两套边距，未走 --page-padding。",
+      "evidence": "apps/client/src/components/profile/mine/MyInteraction.vue:54-55 .my-interaction{margin:24rpx 24rpx 0}(=12px) 而同文件 .my-interaction__row{padding:26rpx 32rpx} 内文用 32rpx；帧 .zcode/tmp/backup-round-2-tour-pre-capture/A/pages_profile_index__滚动-中部.png 逐行白卡边界 y=300/330/360 左 12/右 11、y=420 左 15/右 15、y=450 左 13/右 12；__默认.png y=300/330 左 32/右 32（资料完整度卡）、y=470 左 13/右 12；对照 round-1-tour/A/pages_messages_index__默认.png y=300 页底带 x1–16 = 16px ✓；规范 §1.4 L83。",
+      "fix": "改 margin: var(--page-padding)；MyStats/MyCompletion/MyInteraction 同批对齐，禁组件自带 24rpx 字面量。",
+      "ideal": "页面级左右间距 16px 单一来源。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/A/pages_profile_index__滚动-中部.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-PROFILE-INDEX-003", "nId": "N-37", "round": "R2", "page": "pages/profile/index",
+      "severity": "P2", "category": "Consistency", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "「我的故事」组件内文案与自身 CSS 注释矛盾（添加日常 vs 添加故事），且效果图 3 张照片卡实测仅 1 张虚线卡。",
+      "evidence": "apps/client/src/components/profile/mine/MyStory.vue:85,89 渲染「添加日常」（:59 注释标 R16 改版）而 :256 CSS 注释仍写「添加故事：虚线加号卡」；帧 .zcode/tmp/backup-round-2-tour-pre-capture/A/pages_profile_index__默认.png y≈620–700 仅一张虚线卡，__滚动-中部.png 该位被「我的相册/我的帖子」挤出屏；理想图 素材/理想效果图/已经填完资料的个人主页.png y≈630–760 为 3 张照片卡（生活日常 12篇 / 旅行足迹 8个地方 / 我的心愿 24篇，后两张带 ▶）+ 虚线「添加故事」。",
+      "fix": "拍板「故事/日常」术语后全组件统一（含注释）；mock 补 3 条 story 使图卡可取证。（硬编码中文部分已在 MP-R1-PROFILE-224 在账，勿重复。）",
+      "ideal": "术语一致 + 3 张照片卡可取证。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/A/pages_profile_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-PROFILE-INDEX-004", "nId": "N-38", "round": "R2", "page": "pages/profile/index",
+      "severity": "P3", "category": "UI", "status": "待修复", "confidence": 0.6, "sources": ["screenshot"],
+      "description": "签名 3 行换行、末行「魂。」2 字成孤行，无 line-clamp（效果图为单行）。",
+      "evidence": "帧 .zcode/tmp/backup-round-2-tour-pre-capture/A/pages_profile_index__默认.png 签名带 y≈195–245 三行「热爱生活，喜欢图书馆的下午 / 和操场晚风。想认识有趣的灵 / 魂。」，3x 放大件 .zcode/tmp/v3/Z-profile-header.png 逐字可辨；理想图 y≈250 为单行。",
+      "fix": "签名容器加 line-clamp: 2 + 省略号（或 mock 缩短演示签名），避免 1–2 字孤行。",
+      "ideal": "签名最多两行且无孤字。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/A/pages_profile_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001", "nId": "N-40", "round": "R2", "page": "subpackages/profile-extra/profile/other",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "他人主页身份 meta 顺序为「年龄·城市·学校」，规范与效果图为「年龄·学校·城市」。",
+      "evidence": "帧 reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__默认.png 4x 裁切 .zcode/tmp/v3/O-other-identity.png 实测「24岁 · 北京 · 清华大学」；理想图 素材/理想效果图/他人显示主页.png y≈365「21岁 · 北京大学 · 北京」；规范 §3.9 L215「年龄学校城市」。",
+      "fix": "PublicIdentity 的 meta 拼接改 age · school · city，并与我的页 MyHeader 的 metaLine 共用同一 formatter。",
+      "ideal": "两页同一 meta 顺序与同一 formatter。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002", "nId": "N-41", "round": "R2", "page": "subpackages/profile-extra/profile/other",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "他人主页头图缺 §3.9 要求的顶部深色渐变，状态栏字与返回箭头压在亮照片上不可读。",
+      "evidence": "帧 reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__默认.png 3x 裁切 .zcode/tmp/v3/O-other-hero.png：头图为浅灰木板+苔藓、顶部无压暗层，系统状态栏时间与深色「‹」落在亮度约 #B0AEB0 的照片上；理想图 y≈20–120 有明显深色渐变、返回箭头为白；规范 §3.9 L215「顶部轻微深色渐变」、L216「头图 --overlay-hero 渐变」。grep 复核：PublicHero 既有命中 MP-R1-REQ23-003 是头图大头像死按钮，非遮罩缺失。",
+      "fix": "apps/client/src/components/profile/public/PublicHero.vue 补 linear-gradient(180deg, rgba(15,23,42,.45), transparent 40%) 并注册/引用 --overlay-hero，返回与更多图标转白。",
+      "ideal": "头图顶部渐变使状态栏与返回键可读。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-003", "nId": "N-43", "round": "R2", "page": "subpackages/profile-extra/profile/other",
+      "severity": "P3", "category": "UI", "status": "待修复", "confidence": 0.5, "sources": ["screenshot"],
+      "description": "他人主页「最近动态」互动栏的评论图标渲染为约 6px 空心小圆环，不是气泡图标。",
+      "evidence": "帧 reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__滚动-底部.png 4x 裁切 .zcode/tmp/v3/O-other-recent-post.png：「♥89」后为「◦ 21」细线小圆环，与爱心视觉重量不匹配；理想图对应位为清晰气泡。未回源确认资源键 → 1x 帧形状判读，置信中。",
+      "fix": "核对该互动栏评论图标资源键是否指向缺失/错误 SVG，改 ICONS_SOCIAL.MESSAGE 系并与我的页帖子卡同键。",
+      "ideal": "点赞/评论图标同族等重。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__滚动-底部.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001", "nId": "N-44", "round": "R2", "page": "subpackages/profile-extra/profile/location",
+      "severity": "P1", "category": "Data", "status": "待修复", "confidence": 0.65, "sources": ["screenshot", "code"],
+      "description": "我的位置页同屏三处互指不同城：文案「南京」+ 坐标 113.2644/23.1292（广州）+ 校区「北京大学」；根因为逆地理空则回退 ip-city、city 与 coords 不同源且无一致性校验。",
+      "evidence": "apps/client/src/utils/location.ts:31-51（uni.getLocation 取坐标 → reverseGeocode；:42 注释 key 未配置即短路返回空串；:49 fetchCityFromBackend() → 后端 /location/ip-city 返回服务端出口 IP 城市）；apps/client/src/subpackages/profile-extra/profile/location.vue:138-140 把 city 与 coords 并排渲染；帧 reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_location__默认.png 5x 裁切 .zcode/tmp/v3/L-loc-card.png 三行「当前位置 / 南京 · 附近 / 经度 113.2644 · 纬度 23.1292」，同帧地图区 y≈250–430 标注珠江国际大厦/越秀区人民政府（=广州），下一行「所属校区：北京大学」。grep 复核：既有 MP-R1-PAGES-HOME-INDEX-004 / MP-R1-PAGES-NEARBY-INDEX-005 记的是 key 占位符恒失败的回归（已修复待终验），未涵盖 ip-city 回退导致的不同源。",
+      "fix": "城市与坐标同源：逆地理失败时同时丢弃 city（只渲染坐标 + 「地址解析不可用」），或整体走 ip-city 含地图中心；加 |cityCenter − coords| > 100km 即不显示 city 的断言；与 pages/nearby、pages/home 共用 formatter。",
+      "ideal": "同屏不出现互相矛盾的位置事实。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_location__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-002", "nId": "N-45", "round": "R2", "page": "subpackages/profile-extra/profile/location",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.45, "sources": ["screenshot", "code"],
+      "description": "定位 pin 素材自身内嵌微型文字，缩到 24px 后不可辨识，视觉上像渲染故障。",
+      "evidence": "apps/client/src/subpackages/profile-extra/profile/location.vue:136 <image class=\"location-card__icon\" :src=\"resolveMediaUrl(IMAGE_PATHS.HOME_ICONS.LOCATION_PIN)\">、:259-264 尺寸 48rpx×48rpx(=24px)+margin-top:4rpx；模板中 pin 之后无其它文本节点（label 在右侧 location-card__info 内）→ 10x 裁切 .zcode/tmp/v3/L-pin-icon.png 中 pin 下方那团灰色笔画属素材内容。",
+      "fix": "换无字版 pin（素材/组件库/理想效果图-svg拆分/03-icons/location.svg 或 xunmi-v3-icon-design-system/figma/svg/location__default__24px.svg），图标与文字彻底分离。",
+      "ideal": "pin 为无字纯净图标，24px 可辨。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_location__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001", "nId": "N-47", "round": "R2", "page": "subpackages/chat/chat-session/index",
+      "severity": "P3", "category": "Function", "status": "待修复", "confidence": 0.45, "sources": ["screenshot"],
+      "description": "时间戳分组内 0 条消息仍渲染，两帧对比出现孤立时间戳。",
+      "evidence": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-10-after.png 消息流 16:07 对方 / 16:37 自发「哈哈，我也觉得」/ 19:59 / 21:29；同会话 CHAT-CHAT-SESSION-INDEX-13-after.png（头部「夏言 ♡ 认识 12 天 / 离线」一致）中 16:37 时间戳下方空白直接接 19:59。本组对 100 张同页帧哈希头部/消息体，未见 activeSession 错配 → 只报孤立时间戳；亦可能是 tour 触发的撤回/清空，置信中低。",
+      "fix": "分组渲染前断言组内至少 1 条消息，否则不渲染该时间戳；重拍时同帧留 getCurrentPages() 栈顶 + sessionId（见 MP-R2VIS-TMP-TOUR-R2-003）。",
+      "ideal": "无空的时间戳分组。",
+      "screenshot": "reports/screenshots/round-1-interact/CHAT-CHAT-SESSION-INDEX-13-after.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002", "nId": "N-86", "round": "R2", "page": "subpackages/chat/chat-session/index",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.65, "sources": ["screenshot", "code"],
+      "description": "发送按钮禁用态白字压 --c-neutral-300（fallback 错写成遮罩色）再乘 opacity .7，几乎不可辨。",
+      "evidence": "apps/client/src/subpackages/chat/chat-session/index.vue:2939-2968 .wechat-input-bar__send--disabled{background: var(--c-neutral-300, rgba(0,0,0,.2)); opacity:.7} 而 .wechat-input-bar__send-text{color: var(--c-text-inverse)}（白）；帧 .zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_chat-session_index__默认.png 右下「发送」几乎不可辨；规范 §1.2 L58 禁用态应 --c-status-disabled #DCE5E2。",
+      "fix": "background: var(--c-status-disabled) + 文字 --c-text-tertiary，删 opacity（整块降透明度会连带洗掉文字）；修 --c-neutral-300 的遮罩色 fallback。",
+      "ideal": "禁用态走状态令牌且文字仍可辨。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_chat-session_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-003", "nId": "N-87", "round": "R2", "page": "subpackages/chat/chat-session/index",
+      "severity": "P2", "category": "Architecture", "status": "待修复", "confidence": 0.4, "sources": ["code"],
+      "description": "ChatInput.vue 全仓零引用、页面内联复刻一份，且组件内「发送」硬编码中文与页侧 t() 口径已分叉。",
+      "evidence": "grep -rn ChatInput apps/client/src --include=*.vue 仅命中 apps/client/src/pages/register/index.vue:149 注释；apps/client/src/subpackages/chat/chat-session/index.vue:2172-2220 内联复刻 .wechat-input-bar；apps/client/src/components/chat/ChatInput.vue:49「发送」为硬编码中文，页侧 :2220 用 t(\"chat.send\")。规范 §1.5 L107 仍把 ChatInput 列为聊天实现组件（文档侧属 SPECDOC）。",
+      "fix": "二选一：页面改用 ChatInput，或删除组件并把死代码从构建中摘除。",
+      "ideal": "一个功能一个实现源。",
+      "screenshot": "无（引用拓扑）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004", "nId": "N-88", "round": "R2", "page": "subpackages/chat/chat-session/index",
+      "severity": "P2", "category": "MiniProgram", "status": "待修复", "confidence": 0.35, "sources": ["code"],
+      "description": "图片消息 .bubble__image 无显式宽高（widthFix 加载前高 0 → 滚动跳动）且无 @error 兜底（real 下破图）。",
+      "evidence": "apps/client/src/components/chat/ChatBubble.vue:202-211 .bubble__image 只有 max-width:420rpx、无 width/height，<image :src=\"resolveMediaUrl(body)\" mode=\"widthFix\">；:408-413 亦无 @error 分支（同文件头像同样缺 error 分支）；违反 §1.6 L113-115 铁律 2/3。画面侧本轮 0 帧（.zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_chat-session_index__默认.png 等三帧均为空会话）。",
+      "fix": "容器加 min-height:200rpx + --c-brand-50 底骨架，并加 @error 切「图片加载失败」占位文案。",
+      "ideal": "图片消息有占位与失败终态，加载前后不跳。",
+      "screenshot": "无（图片消息 0 帧，需构造后重拍）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-005", "nId": "N-89", "round": "R2", "page": "subpackages/chat/chat-session/index",
+      "severity": "P3", "category": "UI", "status": "待修复", "confidence": 0.6, "sources": ["screenshot"],
+      "description": "表情面板与输入栏/页面同白仅一条淡线、面板顶与输入栏间有无意义空白，系统 emoji 与吉祥物贴纸同格混排。",
+      "evidence": "帧 .zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_chat-session_index__交互后.png（7×4 网格，第 2/4/5 列出现 4 个白底方图吉祥物贴纸与透明底 emoji 混排）；源 apps/client/src/subpackages/chat/chat-session/index.vue:2225 + apps/client/src/components/chat/EmojiPanel.vue；规范 §3.7 L201-203。",
+      "fix": "面板加 --c-bg-surface 底 + 顶部分隔并紧贴输入栏；emoji 与贴纸分组或统一视觉重量。",
+      "ideal": "面板层次可辨、素材同族。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_chat-session_index__交互后.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006", "nId": "N-90", "round": "R2", "page": "subpackages/chat/chat-session/index",
+      "severity": "P3", "category": "Function", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "「+」更多功能面板只有 1 个动作却占屏约 40%，触发键为无色 + 文本 glyph。",
+      "evidence": "帧 .zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_chat-session_index__弹层态.png（面板仅绿色圆形相机「发送图片」+ 取消，右侧 6/7 空白）；源 apps/client/src/subpackages/chat/chat-session/index.vue:2189-2194（+ 为文本 glyph，与左侧笑脸 <image> 不成体系，同 MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-002 病因）。",
+      "fix": "面板改一行图标条（高度按内容）或补齐拍照/位置/活动卡片等真实动作；+ 换 image 资源。",
+      "ideal": "面板高度按内容、动作真实、图标同族。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_chat-session_index__弹层态.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007", "nId": "N-92", "round": "R2", "page": "subpackages/chat/chat-session/index",
+      "severity": "P3", "category": "UI", "status": "待修复", "confidence": 0.55, "sources": ["screenshot", "code"],
+      "description": "空会话提示未做垂直居中，视觉重心悬在页面上 1/3。",
+      "evidence": "帧 .zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_chat-session_index__默认.png：chat-empty-hint「会话刚建立，还没有消息。」位于 y≈190/700（破冰 chips 下方），而消息区 y≈210–580 整块为空；代码 apps/client/src/subpackages/chat/chat-session/index.vue:2100-2101 的 R3 注释只解决了对齐与颜色。",
+      "fix": "空态容器在消息区做垂直居中（flex center）。",
+      "ideal": "空态提示居中于消息区。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_chat-session_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001", "nId": "N-48", "round": "R2", "page": "components/layout/AppShell",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "页边距双份叠加：AppShell 28rpx(14px) + 页内 --sp-6(12px) = 实测 26px vs 规范 16px，直接导致 chip 溢出。",
+      "evidence": "apps/client/src/components/layout/AppShell.vue:280-282 .shell--standard{padding:0 28rpx} 叠加 apps/client/src/subpackages/circles/circles/index.vue:624-629 .circles-card-list{padding:var(--sp-5) var(--sp-6) 0}（--sp-6=24rpx=12px，design-variables.scss:499）；帧 reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__默认.png 白卡左缘实测 x=26（x=22–24 为阴影过渡）、参考 兴趣圈列表.png chip 左缘 15.4pt；正文可用宽由 347px 降至 321px；规范 §1.4 L83。grep 复核：shell--standard 在两份矩阵 0 命中。",
+      "fix": "页内层水平内边距归零统一由 AppShell 承担，或把 AppShell 28rpx 调为 32rpx 并去页内重复值。W16 串行（全站生效）。",
+      "ideal": "页边距单一来源 16px。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001", "nId": "N-49", "round": "R2", "page": "subpackages/circles/circles/index",
+      "severity": "P1", "category": "UI", "status": "待修复", "confidence": 0.55, "sources": ["screenshot", "code"],
+      "description": "分类 chip 选中态非「绿底白字」，与页面亮度差 0 级、仅靠 1rpx 描边区分。",
+      "evidence": "apps/client/src/subpackages/circles/circles/index.vue:944-947 .circles-tab--active{background: var(--c-bg-brand,#E8F8F1); border-color: var(--c-brand)}；帧 reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__默认.png 实测选中 chip 底 (238,247,242)＝页面同色；参考 素材/理想效果图/兴趣圈列表.png「全部」填充 (5,175,102)≈#05AF66 + 白字；规范 §3.10 L222「选中绿底白字」、L223。",
+      "fix": "background: var(--c-brand) + .circles-tab--active .circles-tab__text{color:var(--c-bg-container)}，按压态走 brand-600（L42）。",
+      "ideal": "选中态为绿底白字且与页面有明确亮度差。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-002", "nId": "N-50", "round": "R2", "page": "subpackages/circles/circles/index",
+      "severity": "P1", "category": "UI", "status": "待修复", "confidence": 0.5, "sources": ["screenshot", "code"],
+      "description": "圈子卡封面 200rpx 较参考放大约 40%，单屏可见卡数由 6 降至 3.5。",
+      "evidence": "apps/client/src/subpackages/circles/circles/index.vue:665-673 .circle-card__cover{width:200rpx;height:200rpx}=99.5px；参考 素材/理想效果图/兴趣圈列表.png 封面 161×150px ÷2.272 = 71×66pt；帧 reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__默认.png 实测封面 98–99px、单屏 3.5 卡（参考 6 卡含半张）；规范 §3.10 L222、§1.1 L35。",
+      "fix": "封面降至 144rpx（或按参考 140rpx），并复核统计行剩余宽度（与 MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001 的截断风险同族）。",
+      "ideal": "封面/卡片尺寸贴唯一视觉基准。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003", "nId": "N-52", "round": "R2", "page": "subpackages/circles/circles/index",
+      "severity": "P2", "category": "Data", "status": "待修复", "confidence": 0.5, "sources": ["screenshot", "code"],
+      "description": "同一圈子在列表页与主页五处不一致（圈名/简介/动态数/朋友数/文案），根因为 mock-data 与 circle-home 的 FALLBACK_CIRCLE 双数据源。",
+      "evidence": "apps/client/src/stores/circle/mock-data.ts:58-64（列表页源，无 friendJoinedCount → aefd8a72 版 index.vue:248-252 无条件 5+seed%8=6，:396 硬编码「等 N 位朋友加入」）vs apps/client/src/subpackages/circles/circles/circle-home.vue:64-74 FALLBACK_CIRCLE（topicCount 362、friendJoinedCount 8、简介「用镜头记录生活的美好瞬间」、圈名「摄影圈」）；帧对照 reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__默认.png 与 ...circle-home__默认.png、reports/screenshots/round-1-after/A/A13-circle-home-default.png：6 vs 8、486 vs 362、「人」vs「人加入」、「加入」vs「已加入」、两句简介；两张参考图自身数值一致 → 列表页 mock 为偏离方。",
+      "fix": "删 FALLBACK_CIRCLE 成套演示统计（或仅 ?demo=1 启用），列表/主页统一由 store 单一源渲染；文案走 circle.memberUnit / friendsJoined 两键。",
+      "ideal": "同一圈子全站一份数据。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-004", "nId": "N-58", "round": "R2", "page": "subpackages/circles/circles/index",
+      "severity": "P2", "category": "Consistency", "status": "待修复", "confidence": 0.45, "sources": ["screenshot", "code"],
+      "description": "搜索圆钮底色的 fallback 写成页面底色 #EEF7F2（真值应 #F3FAF6），变量未解析分支下圆钮与页面逐像素同色。",
+      "evidence": "apps/client/src/subpackages/circles/circles/index.vue:891-899（aefd8a72 同规位于该版 :848-855）.circles-header__search{background: var(--c-bg-surface, #EEF7F2)} —— #EEF7F2 为 §1.2 L48 页面底色，--c-bg-surface 真值为 L50 的 #F3FAF6；实测改前帧弧带亮度 Δ 仅 +2.8/255（逐行游程扫描，帧 reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-01-before.png 377×814）→ fallback 生效即 Δ=0 完全隐形。grep 复核：既有 MP-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001 / MP-R2-CIRCLES-INDEX-001 讲的是胶囊遮挡，非取错令牌。",
+      "fix": "fallback 改 #F3FAF6（或直接 --c-bg-container 白底）+ 1rpx solid var(--c-border-light) 使可点区有可辨边界。",
+      "ideal": "一个令牌一个值，fallback 与令牌语义一致。",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-01-before.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001", "nId": "N-54", "round": "R2", "page": "subpackages/circles/circles/circle-home",
+      "severity": "P1", "category": "Function", "status": "待修复", "confidence": 0.65, "sources": ["screenshot", "code"],
+      "description": "圈子主页 hero 分享钮完全未做胶囊避让（命中区 100% 落在原生胶囊内），且参考图的「更多 ⋯」按钮缺失。",
+      "evidence": "apps/client/src/subpackages/circles/circles/circle-home.vue:699-707 .hero-actions{top:calc(var(--statusbar) + 16rpx); right:24rpx} + :717-720 .hero-btn{width:64rpx} → 分享钮 x334–366/y54–86、图标 x341–359/y61–79，100% 落在帧 reports/screenshots/round-1-after/A/A13-circle-home-default.png 的胶囊 x≈283–368/y50–77 内；:459-467 只渲染 hero-btn--share 一枚，参考 素材/理想效果图/圈子详情，摄影圈参考.png 右上为分享 + ⋯ 两枚（x≈316pt/348pt）。与列表页已注入 --capsule-right 的口径不一致。",
+      "fix": "注入 useMenuButtonRect 的 --capsule-right 并给 .hero-actions-right 加 padding-right: calc(var(--capsule-right,7px)+104px)；补「更多 ⋯」（复用 IMAGE_PATHS.ICONS_V2.MORE_SVG）。",
+      "ideal": "动作区不被原生层吞没，动作集合与参考一致。",
+      "screenshot": "reports/screenshots/round-1-after/A/A13-circle-home-default.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002", "nId": "N-56", "round": "R2", "page": "subpackages/circles/circles/circle-home",
+      "severity": "P3", "category": "Consistency", "status": "待修复", "confidence": 0.55, "sources": ["screenshot", "code"],
+      "description": "置顶公告文案「【规约】」与参考图「【圈规】」不一致，且硬编码中文（en 下露出）。",
+      "evidence": "apps/client/src/subpackages/circles/circles/circle-home.vue:115-117 写死「【规约】友善交流，尊重原创，分享美好瞬间」；参考 素材/理想效果图/圈子详情，摄影圈参考.png 为「【圈规】…」；帧 reports/screenshots/round-1-tour/A/subpackages_circles_circles_circle-home__默认.png 与 reports/screenshots/round-1-after/A/A13-circle-home-default.png 均实测「【规约】」；规范 §3.11 L229。grep 复核：既有 MP-R1-TOPICS-104 的「【圈规】」属 topics.vue 另一页。",
+      "fix": "文案改「【圈规】」并移入 i18n（zh/en 同批，W17 收口）。",
+      "ideal": "公告文案与参考一致且可翻译。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_circle-home__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-003", "nId": "N-57", "round": "R2", "page": "subpackages/circles/circles/circle-home",
+      "severity": "P3", "category": "UI", "status": "待修复", "confidence": 0.5, "sources": ["screenshot", "code"],
+      "description": "feed 三图比例 1.03 与参考 1.18 不符，且无视频时长角标位。",
+      "evidence": "apps/client/src/subpackages/circles/circles/circle-home.vue:1066-1076 .feed-images{gap:12rpx} + .feed-image{flex:1; height:190rpx} → 帧 reports/screenshots/round-1-tour/A/subpackages_circles_circles_circle-home__默认.png（裁切 .zcode/tmp/v4g/home-feed-R1T-3x.png）实测 98×95px＝1.03；参考 素材/理想效果图/圈子详情，摄影圈参考.png 单图 240×205 ÷2.272 = 106×90pt＝1.18，且其第 2 帖有「00:12」时长角标；规范 §3.11 L229。",
+      "fix": "高度降至 160rpx 还原 1.18；补视频态时长角标样式。",
+      "ideal": "缩略图比例与参考一致，视频态有角标。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_circles_circles_circle-home__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001", "nId": "N-59", "round": "R2", "page": "subpackages/campus/campus/hub",
+      "severity": "P2", "category": "Function", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "校园圈学校卡统计行 text-overflow:ellipsis 稳定吃掉「N 条动态」，当前代产物两帧 100% 复现。",
+      "evidence": "apps/client/src/subpackages/campus/campus/hub.vue:711-723 .campus-school-card__stats{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}（R3 注释自述为消「『态』字孤行」改单行省略）+ :62-72 stats 串；帧 reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__默认.png（373×820）与 .zcode/tmp/backup-round-2-tour-pre-capture/A/subpackages_campus_campus_hub__默认.png（378×814）每卡均「约2.6k 同学 · …」（裁切 .zcode/tmp/v4g/hub-card1-R1T-5x.png、.zcode/tmp/v5a/campus-hub-card.png）；参考 素材/理想效果图/校园圈.png 为「2.6k 位同学 · 2.1w 条动态」；规范 §3.12 L236。grep 复核：既有 MP-R1-CIRCLES-INDEX-001/MP-R2-CIRCLES-INDEX-R01 为 circles/index 统计行半字裁切的历史 P0 回归，非本页 ellipsis 吃数。",
+      "fix": "统计行允许 2 行（人数 / 动态数各一行）或降字号至 --fs-xs 并收窄封面（MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003）、给「申请加入」列限宽。",
+      "ideal": "统计行完整可读。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002", "nId": "N-60", "round": "R2", "page": "subpackages/campus/campus/hub",
+      "severity": "P2", "category": "UX", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "同屏两个实心绿「去认证」CTA（header 与横幅），且横幅标题折行剩孤字。",
+      "evidence": "apps/client/src/subpackages/campus/campus/hub.vue:200-215（header 内「去认证」）与 :232-240（认证引导横幅内「去认证」）；帧 reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__默认.png（header pill x185–246/y73–106 与横幅 pill 共存）、.zcode/tmp/backup-round-2-tour-pre-capture/A/subpackages_campus_campus_hub__默认.png 同；横幅标题「加入校园圈，发现更多同校的 TA」第二行仅剩「TA」；参考 校园圈.png 仅横幅 1 个；规范 §3.12 L236。",
+      "fix": "删除 header 内重复 CTA（或降为文字链）；横幅标题缩短或加宽容器。",
+      "ideal": "同屏单一认证 CTA、无孤字折行。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003", "nId": "N-61", "round": "R2", "page": "subpackages/campus/campus/hub",
+      "severity": "P3", "category": "UI", "status": "待修复", "confidence": 0.5, "sources": ["screenshot", "code"],
+      "description": "学校封面比例 1.33（200×150rpx）与参考近正方形 1.02（82×80pt）不符。",
+      "evidence": "apps/client/src/subpackages/campus/campus/hub.vue:590-600 .campus-school-card__cover{width:200rpx; height:150rpx}=100×75px；参考 素材/理想效果图/校园圈.png 封面 187×183px ÷2.272=82×80pt、比例 1.02；帧 reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__默认.png 实测封面块 122×90（含圆角阴影溢出）。",
+      "fix": "改 160×160rpx（80×80px）对齐参考，同时为统计行让出宽度（-001）。",
+      "ideal": "封面近正方形、与唯一视觉基准同比例。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-004", "nId": "N-62", "round": "R2", "page": "subpackages/campus/campus/hub",
+      "severity": "P2", "category": "UX", "status": "待修复", "confidence": 0.55, "sources": ["screenshot", "code"],
+      "description": "默认落在「推荐圈子」（参考默认为「我加入的」），且选中 tab 文字为 --c-text-primary 非品牌绿。",
+      "evidence": "apps/client/src/subpackages/campus/campus/hub.vue:124 activeTab = ref(\"recommend\")、:548-552 .campus-hub__tab-text--active{color: var(--c-text-primary)}；帧 reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__默认.png 实测 tab 文字 (26,30,28)=#1A1E1C、绿下划线 48rpx×6rpx @x106–130/y283–285；.zcode/tmp/backup-round-2-tour-pre-capture/A/subpackages_campus_campus_hub__默认.png 同；全部 hub 帧均停在「推荐圈子」→「我加入的」tab 零帧；参考 素材/理想效果图/校园圈.png 默认选中「我加入的」（绿色粗体+下划线）；规范 §3.12 L236。",
+      "fix": "默认 tab 依是否已绑定学校决定（未绑定时展示「我加入的」空态）；选中 tab 文字改 var(--c-brand)。",
+      "ideal": "默认分段与选中色同参考。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_campus_campus_hub__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-005", "nId": "N-63", "round": "R2", "page": "subpackages/campus/campus/hub",
+      "severity": "P2", "category": "MiniProgram", "status": "待修复", "confidence": 0.35, "sources": ["code"],
+      "description": "学校封面 coverUrl 未包 resolveMediaUrl，real 模式 http 图会被 mp 端拒绝。",
+      "evidence": "apps/client/src/subpackages/campus/campus/hub.vue:295 <image :src=\"school.coverUrl\">，取值链 :56 CAMPUS_COVER[s.id] || s.coverUrl || IMAGE_PATHS.CIRCLE_COVERS.CAMPUS 中 s.coverUrl 来自 apps/client/src/stores/campus.ts:242 后端字段未过解析；违反 §1.6 L115 铁律 3；对照 apps/client/src/subpackages/circles/circles/circle-home.vue:247/251 已正确包裹。本轮全为 mock 帧、real 路径零帧 → 静态判定。",
+      "fix": "resolveMediaUrl(school.coverUrl)，或在 store 映射时统一解析。",
+      "ideal": "裸 :src 一律经统一出口。",
+      "screenshot": "无（real 模式零帧）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006", "nId": "N-68", "round": "R2", "page": "subpackages/campus/campus/hub",
+      "severity": "P3", "category": "Architecture", "status": "待修复", "confidence": 0.4, "sources": ["code"],
+      "description": "校园 i18n 两套命名空间并存：campus.index.* 与顶层 campusHub.*。",
+      "evidence": "apps/client/src/subpackages/campus/campus/index.vue:240-356 使用 15 个 campus.index.* 键（apps/client/src/i18n/locales/zh-CN.ts:3473 campus → :3524-3546 index；en-US.ts:3447），而 apps/client/src/subpackages/campus/campus/hub.vue:246/249 走顶层 campusHub.*（zh-CN.ts:3446 / en-US.ts:3358）。grep 复核：既有 MP-R1-CAMPUS-HUB-010 只核到「5 处硬编码中文已修」，未涉及两命名空间并存。",
+      "fix": "统一到 campus.hub / campus.index 两级（W17，zh/en 同批）。",
+      "ideal": "同一业务域一层命名空间。",
+      "screenshot": "无（源码拓扑）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001", "nId": "N-65", "round": "R2", "page": "subpackages/village/village/index",
+      "severity": "P3", "category": "UI", "status": "待修复", "confidence": 0.35, "sources": ["screenshot", "code"],
+      "description": "话题 chip 配色按数组奇偶决定，同标签跨页不同色，且粉色用于非「喜欢」语义。",
+      "evidence": "apps/client/src/components/village/PostCard.vue:227 tagIdx % 2 === 0 ? '--green' : '--pink'；裁切对照 .zcode/tmp/v5a/villageidx-actions.png（第 2 枚 chip 粉底）vs .zcode/tmp/v5a/detail-actions.png（两枚均绿底）；规范 §1.1 L32「绿=行动，粉=喜欢，禁混用」。**取证强度受限**：两帧源出的整帧均在位置授权弹窗+灰遮罩下（.zcode/tmp/backup-round-2-tour-pre-capture/{A,B}/subpackages_village_village_index__默认.png）。",
+      "fix": "颜色按标签语义映射（活动/情感/普通），两页共用同一 helper；重拍后结案。",
+      "ideal": "同一标签全站同色且语义正确。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/A/subpackages_village_village_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001", "nId": "N-69", "round": "R2", "page": "subpackages/village/village/detail",
+      "severity": "P2", "category": "MiniProgram", "status": "待修复", "confidence": 0.3, "sources": ["code"],
+      "description": "详情页底部输入栏 fixed 而 .detail-body 只预留 140rpx，回复态/挂图态实高远超 → 末评论与推荐末卡遮挡风险。",
+      "evidence": "apps/client/src/subpackages/village/village/detail.vue:2913-2923 输入栏 position: fixed，:1614 .detail-body padding-bottom: calc(140rpx + safe-area)；回复模式条 :1258-1266 与已挂图缩略行 :1268-1274 使实高远超 140rpx；输入框 :1278 仅 cursor-spacing=\"20\"、未关 adjust-position。画面侧有效帧 0（唯一帧下半屏被授权弹窗覆盖），模拟器不渲染软键盘 → 纯代码推断。",
+      "fix": "动态测输入栏高度写入 CSS 变量供 .detail-body 预留（或预留提至 260rpx）；补「键盘弹起-输入后」真机帧后结案。",
+      "ideal": "任何输入态下末条内容与推荐末卡完整可见。",
+      "screenshot": "无（详情页有效帧 0）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002", "nId": "N-70", "round": "R2", "page": "subpackages/village/village/detail",
+      "severity": "P3", "category": "UI", "status": "待修复", "confidence": 0.3, "sources": ["code"],
+      "description": "详情图区首图强制 100%×400rpx、其余 33.33% → 2 图帖呈「1 大 + 1 孤立小」；无图帖详情页缺 placeholder。",
+      "evidence": "apps/client/src/subpackages/village/village/detail.vue:1985-2009（首图 width:100%; height:400rpx，其余 33.33%）；卡片侧有占位分支 apps/client/src/components/village/PostCard.vue:204-206 而详情页无；规范 §3.13 L243「大图」。无有效帧可证。",
+      "fix": "2 图时改 50%/50%（或首图亦 2/3）；补无图 placeholder 分支并拍帧验证。",
+      "ideal": "多图排版均衡、无图有空态。",
+      "screenshot": "无（详情页有效帧 0）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-003", "nId": "N-71", "round": "R2", "page": "subpackages/village/village/detail",
+      "severity": "P3", "category": "UX", "status": "待修复", "confidence": 0.4, "sources": ["code"],
+      "description": "详情页 goBack 栈深 1 时 reLaunch 恒落村口首页，深链进入后返回即丢来源上下文。",
+      "evidence": "apps/client/src/subpackages/village/village/detail.vue:278-284 goBack()：getCurrentPages().length>1 时 navigateBack，否则 reLaunch 到村口首页 → 从校园圈/兴趣圈/话题列表深链（栈深 1）返回一律落村口。grep 复核：既有 MP-R1-DETAIL-202 / MP-R1-J20-001 记的是「裸 navigateBack 无栈底兜底」（已被该 reLaunch 修掉），未涵盖此副作用。",
+      "fix": "深链带 from 参数按来源回跳，或至少 switchTab 回来源 tab。",
+      "ideal": "返回落点为来源页。",
+      "screenshot": "无（返回落点需取证轮留路由）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-004", "nId": "N-99", "round": "R2", "page": "subpackages/village/village/detail",
+      "severity": "P2", "category": "Data", "status": "待修复", "confidence": 0.4, "sources": ["code"],
+      "description": "「你可能还想认识」的 real 分支未与帖子作者比对去重，real 下仍可能推荐作者本人。",
+      "evidence": "apps/client/src/stores/village/index.ts:1216 mock 分支 mockSimilarAuthors.filter(a => a.userId !== authorId)（:1211 注释「2026-09-03 遗留差异清零：排除帖子作者本人——同屏同人违反推荐去重红线」）vs :1239 real 分支 mapped.filter 仅做 ①seenIds 列表内 userId 去重 ②seenVisual 昵称|头像 视觉去重，全程未与 currentPost.author.userId 比对。规范 §6 第 1 条记为「已清零」口径失实（文档侧另计）。",
+      "fix": "一行可修：:1239 的 filter 前加 if (u.userId === this.currentPost?.author?.userId) return false;。",
+      "ideal": "mock/real 两分支同一去重口径。",
+      "screenshot": "无（real 模式零帧）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001", "nId": "N-73", "round": "R2", "page": "subpackages/village/village/publish",
+      "severity": "P3", "category": "UI", "status": "待修复", "confidence": 0.5, "sources": ["screenshot", "code"],
+      "description": "两页图片格均无「最多 9 张 / ≤10MB」提示，且两页字数告警阈值不同（剩 50 字预警 vs 超限才警）。",
+      "evidence": "apps/client/src/constants/village.ts POST_MAX_IMAGES = 9；两页图格仅呈现单个 200rpx「＋」块（publish 侧 apps/client/src/subpackages/village/village/publish.vue:914、post 侧 apps/client/src/subpackages/village/village/post.vue:1449-1455）；阈值：publish isNearLimit（剩 ≤50 字转 --c-warning）vs post isOverLimit（>500 才变色）；帧 reports/screenshots/round-1-tour/A/subpackages_village_village_publish__默认.png 与 ...post__默认.png。grep 复核：既有 MP-R1-PUBLISH-115 记的是标题长度未走常量，非本条。",
+      "fix": "两页图格补统一的上限提示；字数告警阈值取同一实现。",
+      "ideal": "上限提示与告警阈值两页一致。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_publish__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-002", "nId": "N-74", "round": "R2", "page": "subpackages/village/village/publish",
+      "severity": "P2", "category": "MiniProgram", "status": "待修复", "confidence": 0.4, "sources": ["code"],
+      "description": "publish 与 post 各有一处裸 :src 未包 SafeImage/resolveMediaUrl，real 模式 http 相对路径会被 mp 端拒渲染。",
+      "evidence": "apps/client/src/subpackages/village/village/publish.vue:768 <image class=\"publish-image__img\" :src=\"img\"> 与 apps/client/src/subpackages/village/village/post.vue:901 <image class=\"post-image__img\" :src=\"img\">（同页其余 image 全走 IMAGE_PATHS 常量 → 属唯一裸 src）；违反 §1.6 L115 铁律 3。截图为 mock 本地图、未触发。",
+      "fix": "两处换 <SafeImage :src=\"img\">（并核 MP-R1-PROFILE-EXTRA-001 记录的 SafeImage custom-class 作用域坑）。",
+      "ideal": "用户上传图一律经统一出口或 SafeImage。",
+      "screenshot": "无（已上传图态 0 帧）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-003", "nId": "N-75", "round": "R2", "page": "subpackages/village/village/publish",
+      "severity": "P3", "category": "MiniProgram", "status": "待修复", "confidence": 0.35, "sources": ["code"],
+      "description": "发帖贴士标题装饰 image 缺 pointer-events=none（铁律 6）。",
+      "evidence": "apps/client/src/subpackages/village/village/publish.vue:817 .publish-tip__title-icon 装饰 <image> 未加 pointer-events=\"none\"，其父 .publish-tip__text-wrap 可点区可能被吞（贴士本体只有关闭钮可点 → 风险低）；§1.6 L118 铁律 6。静态可判定，无帧。",
+      "fix": "补 pointer-events=\"none\"。",
+      "ideal": "装饰 image 不参与命中。",
+      "screenshot": "无（静态判定）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-004", "nId": "N-76", "round": "R2", "page": "subpackages/village/village/publish",
+      "severity": "P3", "category": "UI", "status": "待修复", "confidence": 0.4, "sources": ["code"],
+      "description": "publish 圆角未走 --card-radius/--r-*（卡片 24 / 贴士 20 / 图格 16 / 弹层 32rpx 四套字面量）。",
+      "evidence": "apps/client/src/subpackages/village/village/publish.vue:878,893,914,922,929 四套 border-radius 字面量；post.vue 同类亦各自为政；规范 §1.4 L86/L87（§1.4 数值表本身与工程 token 错位，属 SPECDOC 项；本条仅以「未走 token」立项）。",
+      "fix": "卡片类统一 var(--card-radius)、图格 var(--r-sm)；与 W16 令牌层收口串行。",
+      "ideal": "圆角一律取令牌。",
+      "screenshot": "无（令牌存在性静态判定）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005", "nId": "N-77", "round": "R2", "page": "subpackages/village/village/publish",
+      "severity": "P3", "category": "Interaction", "status": "待修复", "confidence": 0.35, "sources": ["code"],
+      "description": "publish 多数可点元素缺 hover-class 按压反馈，post 逐条都带 → 同功能两页手感不同。",
+      "evidence": "apps/client/src/subpackages/village/village/publish.vue:682,783,790,797,806,773「发布到」卡、话题/位置/提及/谁可以看四行、图片＋格、弹层选项均无 hover-class=\"press-feedback--active\"（仅 header 关闭钮有）；apps/client/src/subpackages/village/village/post.vue:742-746,927-931,1013 同类逐条带 hover-class + hover-stay-time=\"120\"。按压反馈不可静态取证。",
+      "fix": "publish 补齐 hover-class，或抽公共组件统一。",
+      "ideal": "按压反馈全站一致。",
+      "screenshot": "无（按压反馈不可取证）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-001", "nId": "N-79", "round": "R2", "page": "subpackages/village/village/post",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "post 附加功能行标签用三级文本 #9AA39F（publish 用主文本），且 height 等于字号把中文行盒压死。",
+      "evidence": "apps/client/src/subpackages/village/village/post.vue:1506-1511 .post-row__label{color:#9AA39F; height:28rpx} vs apps/client/src/subpackages/village/village/publish.vue:925 主文本 #1A1E1C；同帧对照 reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png（四行浅灰，近 placeholder）与 ...publish__默认.png（同四项黑色）；违反 §1.2 L51、§1.3 L71。",
+      "fix": "__label 改 --c-text-primary 并删 height，与 publish 对齐。",
+      "ideal": "同一功能行标签两页同层级，行盒不被压死。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-002", "nId": "N-81", "round": "R2", "page": "subpackages/village/village/post",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "行项与底栏图标 text glyph（#/@）与 <image> 混排，同一列绿灰交替、基线不齐；对 image 写 color 为死样式。",
+      "evidence": "apps/client/src/subpackages/village/village/post.vue:930,957 为 <text> 的 #/@（被 color: var(--c-brand) 染绿）、:936,961 为定位针/眼睛 <image>（color 对 image 无效、显示素材自带深灰）、:1495-1500 与 :1622-1628 底栏同病、:1292 .post-to__avatar-emoji 对 <image> 写 color；帧 reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png 行项列与底栏呈绿灰交替、# 更大更粗；规范 §1.6 L113、§1.2 L41。",
+      "fix": "全部换同族 SVG/emoji 资源（或全用文本 glyph 并统一 color）；删对 image 无效的 color 声明。",
+      "ideal": "一列图标同族、同权重、基线一致。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-003", "nId": "N-82", "round": "R2", "page": "subpackages/village/village/post",
+      "severity": "P3", "category": "MiniProgram", "status": "待修复", "confidence": 0.45, "sources": ["code"],
+      "description": "同页两套弹层口径（78vh + 32rpx+safe vs 70vh + safe+48rpx），publish 只有 78vh 一种。",
+      "evidence": "apps/client/src/subpackages/village/village/post.vue:1341-1349（目标弹层 max-height:78vh + 底部 calc(32rpx + safe-area)）vs :1651-1658（话题/位置/可见弹层 max-height:70vh + calc(safe-area + 48rpx)）；apps/client/src/subpackages/village/village/publish.vue:893 仅 78vh。旧帧 reports/screenshots/round-1-tour/A/subpackages_village_village_post__交互后.png 末行「宠物」贴屏幕底缘（R21 已修，本条只记口径不一）。",
+      "fix": "抽 BottomSheet 统一 max-height 与 safe-area padding。",
+      "ideal": "弹层高度与安全区口径单一。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__交互后.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004", "nId": "N-83", "round": "R2", "page": "subpackages/village/village/post",
+      "severity": "P3", "category": "UI", "status": "待修复", "confidence": 0.45, "sources": ["screenshot", "code"],
+      "description": "目标卡阴影只取 --card-shadow 双层中的第二层，publish 同卡无阴影 → 两页 elevation 相反。",
+      "evidence": "apps/client/src/subpackages/village/village/post.vue:1265-1272 .post-to__card{box-shadow: 0 2rpx 16rpx rgba(15,23,42,.04)}（=§1.4 L88 --card-shadow 的第二层）vs apps/client/src/subpackages/village/village/publish.vue:878 .publish-to__card 无阴影；帧 reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png 与 ...publish__默认.png 同位对照。",
+      "fix": "统一走 var(--card-shadow) 或统一无阴影。",
+      "ideal": "同一卡片全站 elevation 一致且令牌化。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-005", "nId": "N-84", "round": "R2", "page": "subpackages/village/village/post",
+      "severity": "P3", "category": "UI", "status": "待修复", "confidence": 0.45, "sources": ["screenshot", "code"],
+      "description": "底部预留 200rpx 而 fixed 底栏实高约 94rpx，滚动到底多出约 100rpx 空白。",
+      "evidence": "apps/client/src/subpackages/village/village/post.vue:1762-1764 .post-body__bottom-space{height: calc(200rpx + safe-area)} vs :1610-1620 底栏累加约 94rpx（16+40+6+20+12）；帧 reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png 贴士与底栏间距。",
+      "fix": "预留改 calc(120rpx + env(safe-area-inset-bottom))。",
+      "ideal": "预留高度=底栏实高 + 呼吸量。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006", "nId": "N-85", "round": "R2", "page": "subpackages/village/village/post",
+      "severity": "P3", "category": "Consistency", "status": "待修复", "confidence": 0.55, "sources": ["screenshot", "code"],
+      "description": "弹层 option 结构两页不同：publish 三段胶囊，post 单行灰字。",
+      "evidence": "apps/client/src/subpackages/village/village/publish.vue:734-736「圈名 + 绿色『已加入』胶囊 + 成员数」三段 vs apps/client/src/subpackages/village/village/post.vue:846「圈名 + 『已加入 · N 成员』单行灰字」；帧对照 reports/screenshots/round-1-tour/A/subpackages_village_village_publish__交互后.png 与 ...post__交互后.png（后者行高偏大、无 desc 时行被拉空）。",
+      "fix": "抽同一 option 组件（props 控制形态）。",
+      "ideal": "同一列表同一排版。",
+      "screenshot": "reports/screenshots/round-1-tour/A/subpackages_village_village_post__交互后.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001", "nId": "N-94", "round": "R2", "page": "subpackages/discover-extra/discover/matching",
+      "severity": "P2", "category": "UI", "status": "待修复", "confidence": 0.6, "sources": ["screenshot", "code"],
+      "description": "匹配中右上「跳过」为绿实心胶囊且与居中大标题同行重叠压字；参考为白底绿字独立置于返回钮下方。",
+      "evidence": "apps/client/src/components/match/MatchLoading.vue:172-179 .match-loading__skip{top: calc(var(--statusbar) + 20px + 240rpx); right:140rpx; background: rgba(54,201,154,.85)}；帧 reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT04-after.png（settled 帧复现，非动画瞬态）、MT01-after.png，标题带放大 .zcode/tmp/v2_match_title.png 显示绿胶囊压「Ta…」；理想图 素材/理想效果图/匹配中页面.png 为白底+绿点+绿字独立成行。",
+      "fix": "跳过钮上移至标题之上独立行、改白底绿字；标题行预留右侧安全距。",
+      "ideal": "跳过钮不压标题、配色与参考一致。",
+      "screenshot": "reports/screenshots/round-1-interact/SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT04-after.png"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-002", "nId": "N-95", "round": "R2", "page": "subpackages/discover-extra/discover/matching",
+      "severity": "P3", "category": "UI", "status": "待修复", "confidence": 0.4, "sources": ["code"],
+      "description": "匹配中/匹配成功页底渐变均为绿→绿，未用 §3.4 要求的 --gradient-match（绿→粉），且含裸色值。",
+      "evidence": "apps/client/src/components/match/MatchLoading.vue:144 #E8FAF3→#EEF7F2；apps/client/src/subpackages/discover-extra/discover/matching.vue:239 外层 #f4fbf8 裸值；apps/client/src/subpackages/discover-extra/discover/match-success.vue:180 linear-gradient(180deg,#E8FBF2,#F0FFF5)；规范 §3.4 L181 要求 --gradient-match＝#E8FAF3→#FDF2F8。grep 复核：既有 MP-R1-MATCHING-005 / MP-R2-MATCHING-005（约 25 处裸色值未走 token）与 MP-R1-MATCHING-103（#f4fbf8 色差带）覆盖「裸值/色差带」，未覆盖「色相缺粉端」→ 本条与之互补并交叉引用，不重复令牌债。",
+      "fix": "底渐变改 --gradient-match（绿→粉），并与 MP-R1-MATCHING-103 一并清理裸 #f4fbf8。",
+      "ideal": "匹配中/成功页为绿→粉双色氛围且走令牌。",
+      "screenshot": "无（round-2 匹配中页 0 帧；reports/screenshots/r11-acceptance/ 仅 189×408 不可判）"
+    },
+    {
+      "id": "MP-R2VIS-TMP-TOUR-R2-001", "nId": "N-100", "round": "R2", "page": "tmp/tour-R2",
+      "severity": "P0", "category": "Architecture", "status": "待修复", "confidence": 0.75, "sources": ["screenshot", "code", "log"],
+      "description": "位置授权系统弹窗从未被处理，导致整页取证被遮罩污染（多组页面有效帧为 0）。",
+      "evidence": "tmp/tour-R2.mjs 对 拒绝|允许|authorize|handleDialog|getLocation|scope.userLocation 零命中，仅 :583 mock switchTab、:678 mock showModal、:679 mock showActionSheet —— 原生权限层不经 showModal；实测受影响帧：V4 三页 30 帧全部带遮罩（该轮有效帧 0）、消息页 6/6、他人主页 6/6、我的位置 2/2、附近 8 帧、首页 10 帧、村口/详情/发布全组，例件 .zcode/tmp/backup-round-2-tour-pre-capture/A/pages_messages_index__默认.png、.zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_village_village_index__默认.png。",
+      "fix": "进位控页前 mockWxMethod('authorize'|'getLocation'|'getFuzzyLocation'|'chooseLocation') 或 automator 预置 scope.userLocation，并在每帧落盘前断言「当前无系统弹窗层」，否则该帧记 failure。W18 泳道：须待当前独占 9420 的全量巡检结束才可开工。",
+      "ideal": "取证帧不含系统弹窗层。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/A/pages_messages_index__默认.png"
+    },
+    {
+      "id": "MP-R2VIS-TMP-TOUR-R2-002", "nId": "N-101", "round": "R2", "page": "tmp/tour-R2",
+      "severity": "P0", "category": "Architecture", "status": "待修复", "confidence": 0.75, "sources": ["screenshot", "code", "log"],
+      "description": "状态帧未做内容哈希比对，29 组「不同状态」帧字节相同（267 帧中 10.9%），≥6 状态配额被同名不同质凑满。",
+      "evidence": "md5sum 分组实测 267 帧：唯一内容 238、重复组 29、被吞帧 29；折叠组合 弹层态==默认 12、空态==默认 8、交互后==默认 4、交互后==弹层态 3、其余 2；例 .zcode/tmp/backup-round-2-tour-pre-capture/A/pages_login_index__交互后.png == __默认.png、A|B/pages_messages_index__空态.png == __默认.png、A/subpackages_village_village_publish__弹层态.png == __默认.png、A|B/subpackages_circles_circles_index__数据态.png == __默认.png；tmp/tour-R2.mjs 无哈希断言。",
+      "fix": "落盘前做内容哈希比对，与同页前一帧相同即记 state-not-applied 并计入 failures，不得按状态名落盘。",
+      "ideal": "每个状态帧内容互不相同。",
+      "crossRef": "本条是以下 3 条既有页级「证据缺陷」行的共同根因，派单时应由它们引用本条一并结案（不作为新行重复派）：MP-R1-PAGES-LOGIN-INDEX-101、MP-R1-PAGES-HOME-INDEX-036、MP-R1-PAGES-MESSAGES-INDEX-027。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/A/pages_messages_index__空态.png"
+    },
+    {
+      "id": "MP-R2VIS-TMP-TOUR-R2-003", "nId": "N-102", "round": "R2", "page": "tmp/tour-R2",
+      "severity": "P1", "category": "Architecture", "status": "待修复", "confidence": 0.7, "sources": ["screenshot", "code", "log"],
+      "description": "「交互后」帧不落 getCurrentPages() 栈顶路由，无法区分页内交互与跳出他页，错标可长期伪装成覆盖。",
+      "evidence": "两份 manifest 的 shot 条目实测只有 {page,path,state}（reports/audit/round-1/screenshot-manifest.json、reports/audit/round-2/screenshot-manifest.json）；实证 1：.zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_official-chat_index__交互后.png 实渲染活动详情页（合法跳转，源 apps/client/src/subpackages/chat/official-chat/index.vue:235 cardTargetUrl=\"/subpackages/tools/activities/detail?id=2001\"）；实证 2：reports/screenshots/round-1-after/A/Z1-profile-notlogged.png 名为未登录我的页、实为登录页（Z1b 实为已登录页）。",
+      "fix": "逐帧记录 getCurrentPages() 栈顶路由并写进 manifest shot 条目（{page,path,state,route}）。",
+      "ideal": "每帧可回溯到实际落点路由。",
+      "screenshot": ".zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_official-chat_index__交互后.png"
+    },
+    {
+      "id": "MP-R2VIS-TMP-TOUR-R2-004", "nId": "N-103", "round": "R2", "page": "tmp/tour-R2",
+      "severity": "P1", "category": "Architecture", "status": "待修复", "confidence": 0.75, "sources": ["screenshot", "log"],
+      "description": "取证视口只有 1x（378×814），字级判定不可达；r11-acceptance 更只有 189×408。",
+      "evidence": "尺寸实测：.zcode/tmp/backup-round-2-tour-pre-capture/ 全 267 帧均 378×814；reports/screenshots/r11-acceptance/ 为 189×408（0.5x）；实证为误读返工：.zcode/tmp/visual-review-R2frames.md:68 C-2 在 1x 下把 mock 正文读成「喜欢看山」「双向奔牡」，回源 apps/client/src/stores/village/mock-data.ts:309 实为「平时喜欢看书、旅行」「双向奔赴」；Wave-2 五组结论全部依赖 .zcode/tmp/ 3–12x 裁切才可判读。",
+      "fix": "改 2x/3x dpr 出图；需字级核对时由测试台自动落盘裁切放大区域。",
+      "ideal": "取证默认 ≥2x dpr，字级判定不需人工放大。",
+      "screenshot": "reports/screenshots/r11-acceptance/"
+    },
+    {
+      "id": "MP-R2VIS-REPORTS-AUDIT-SCREENSHOT-MANIFEST-001", "nId": "N-104", "round": "R2", "page": "reports/audit/screenshot-manifest",
+      "severity": "P0", "category": "Architecture", "status": "待修复", "confidence": 0.7, "sources": ["log", "code"],
+      "description": "两份 screenshot-manifest 的 gitSha 硬编码 aefd8a72（HEAD 已是 18c91ccf）且 R2 manifest 仅 8 shot → 全部终验证据按契约过期。",
+      "evidence": "reports/audit/round-1/screenshot-manifest.json:2 与 reports/audit/round-2/screenshot-manifest.json:2 的 gitSha 均为 \"aefd8a72\"（同值亦见 tmp/qa/checkpoints/tour-R2.json:2 与 round-2/code-findings/*.json），而当前 HEAD=18c91ccf + 34 个未提交路径；R2 manifest 的 shots 仅 8 条（R2 范围 24 页、核心页每页 ≥6 张）；按 .zcode/tmp/stage-contract.md §2.4 引 DW:555/DW:760「不一致的证据视为过期，不得据其下结论」。",
+      "fix": "写 manifest 时取 git rev-parse HEAD（含 dirty 标记），巡检前校验产物 sha，并补齐 R2 shot 配额。W18 泳道：巡检占用期禁触。",
+      "ideal": "manifest 的 gitSha 与实际被截构建一致，证据不因写死而失真。",
+      "screenshot": "无（manifest/证据链项）"
+    }
+  ],
+  "dupesNote": "以下 24 条经真实 grep 复核确认既有台账已有同缺陷行（含仅存于 code-findings 而未进矩阵的行），按队列自身 G5 口径「补证据不新增 ID」处理，不入 issues。既有行状态一律照抄矩阵原文，本会话未对其做任何修改。",
+  "dupes": [
+    {"n": "N-14", "queueSuffix": "PAGES-HOME-INDEX-401", "equiv": ["MP-R1-PAGES-HOME-INDEX-112", "MP-R1-PAGES-HOME-INDEX-030"], "existingStatus": "待修复 / 待修复", "basis": "同一物理缺陷同一根因链：InterestRecommendation.vue:25-29 coverSrc() 对以 / 开头的 mock icon 直通放行 → 绕过 circleCoverFor 照片映射，首页兴趣卡封面退化为线稿图标（-112 已写根因与修法，-030 记同画面 P2 Data）。", "grep": "grep -c 'coverSrc' round-1/issue-matrix.md = 2（命中 -112/-030）"},
+    {"n": "N-15", "queueSuffix": "PAGES-HOME-INDEX-402", "equiv": ["MP-R1-PAGES-HOME-INDEX-101", "MP-R1-PAGES-HOME-INDEX-031"], "existingStatus": "待修复 / 待修复", "basis": "同一缺失元素：今日推荐卡「4 张缩略图一行」模板+类型契约+mock 三层全缺，-101 为 P2 Function、-031 为 P3 UI，行号锚点同为 TodayRecommendationCard.vue。", "grep": "grep -c '4 张' round-1/issue-matrix.md = 9（含 -031/-101 两条本缺陷行）"},
+    {"n": "N-18", "queueSuffix": "PAGES-HOME-INDEX-405", "equiv": ["MP-R1-PAGES-HOME-INDEX-038"], "existingStatus": "待修复", "basis": "逐字同因：-038 原文「理想一屏三列窄卡（卡内 3 图一行）；实际 post-card 320rpx 双列+第三卡露边，且 mock 每帖仅 1 图…『关注』钮按接受偏差留档」，覆盖 V1-28 的列数/图数/关注钮三项；仅「无分享文字」为可补证据。", "grep": "grep -n 'CommunityFeed|社区动态' round-1/issue-matrix.md → -038 命中"},
+    {"n": "N-25", "queueSuffix": "AVATARS-POOL-001", "equiv": ["MP-R1-SETUPPROFILE-005"], "existingStatus": "待修复", "basis": "同一素材同一缺陷：兜底 AVATARS.AVATAR_1 = avatars/avatar-1.jpg 为航拍森林、渲染呈绿黑噪点；-005 已给 stores/profile.ts:330、config/images.ts:44 与修法（改 DEFAULT_AVATAR / 人像系列并「整组梳理」）。本批新增仅平均 RGB(59,57,33) 与首页/我的页露出面。", "grep": "grep -c 'AVATAR_1' round-1/issue-matrix.md → -005 命中"},
+    {"n": "N-26", "queueSuffix": "AVATARS-POOL-002", "equiv": ["MP-R1-SETUPPROFILE-005"], "existingStatus": "待修复", "basis": "同 N-25：avatars/avatar-*.jpg 池混入非人像已在 -005 的「AVATARS 系列…整组梳理」修法范围内；消息页/他人主页为同素材露出。", "grep": "grep -n '非人像|森林|树冠' → 唯一命中 MP-R1-SETUPPROFILE-005"},
+    {"n": "N-33", "queueSuffix": "PAGES-PROFILE-INDEX-401", "equiv": ["MP-R1-PAGES-PROFILE-INDEX-102"], "existingStatus": "待修复", "basis": "同一元素同一现象：-102 原文「本人态头部身份行信息缺失：年龄恒不显示（DTO age:null）、学校不渲染（MyHeader 无学校文本节点）、性别图标恒不渲染…实况仅『北京』」，与 V3-11「MyHeader.vue:73 metaLine 缺位即静默丢整行」同因同位置。", "grep": "grep -c 'metaLine' round-1/issue-matrix.md = 1（-102 命中）"},
+    {"n": "N-35", "queueSuffix": "MY-HEADER-002", "equiv": ["MP-R1-PAGES-PROFILE-INDEX-101", "MP-R2-PROFILE-018", "MP-R1-PROFILE-221"], "existingStatus": "待修复 / 待修复 / 待修复", "basis": "同一元素同一修法：MyHeader 分享入口（▦ 文本字形 + 占位 stub）已由 -101/-018 立「改 button open-type=share 或移除占位」；私有色 #333333 落在 MP-R1-PROFILE-221 的本组件簇 60+ 处字面色值行内。新建只会与前两行的修法互相覆盖。", "grep": "grep -n '▦|open-type=\"share\"' → -101/-215/R2-PROFILE-018 命中"},
+    {"n": "N-39", "queueSuffix": "PUBLIC-IDENTITY-001", "equiv": ["MP-R1-OTHER-103", "MP-R1-REQ23-005"], "existingStatus": "待修复 / 待修复", "basis": "同一区域同一偏离：-103「信息卡右上 CTA 与理想图偏差：理想为两枚带文字标签的胶囊，实际渲染为两个无文字圆形图标钮（粉实心+白心）」；-REQ23-005 进一步点名 PublicIdentity.vue:54-61、:177-203 并记填充/描边与底部四钮问题。V3-22 完全落在其范围内。", "grep": "grep -n 'PublicIdentity|右上' → -103/-REQ23-005 命中"},
+    {"n": "N-42", "queueSuffix": "PUBLIC-MOMENT-001", "equiv": ["MP-R1-OTHER-102"], "existingStatus": "待修复", "basis": "同一渲染破损同一量测：-102 原文「最近动态卡片配图…实际渲染为纵向错位堆叠的三个残片——第一张约 68px 食物图、其下一个空白圆角框、再下一张深蓝色图片仅剩约 13px 高的残条」，与 V3-26「1 整图 + 1 条约 15px 深蓝带 + 1 空框」为同一现象，锚点同为 PublicMoment.vue:185-196。", "grep": "grep -n 'PublicMoment|最近动态' → -102 命中"},
+    {"n": "N-46", "queueSuffix": "CHAT-SESSION-FALLBACK-001", "equiv": ["MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-206"], "existingStatus": "待修复", "basis": "同一兜底串同一缺陷：-206 已记「对方昵称兜底口径不一致…消息列表进入路径显示『对方』」（并链 index.vue:118、709-717 兜底链），队列 G16 亦自认 V3-37/V2-11 为同一串的两处露出面。残余新事实（「离线」与「认识 1 天」并存）应作证据补入该行，不新建。", "grep": "grep -n '「对方」|partnerDefaultName' → -206 命中"},
+    {"n": "N-51", "queueSuffix": "CIRCLES-INDEX-004W", "equiv": ["MP-R1-CIRCLES-INDEX-005", "MP-R1-CIRCLEHOME-104", "MP-R2-CIRCLEHOME-003"], "existingStatus": "待修复 / 待修复 / 待修复", "basis": "两页的「热门」徽标私有色均已在账：列表页 -005 的修法明写「热门徽标色若需新色值，先在 design-variables.scss 增设语义 token 再引用」；主页 -104/R2-003 逐行点名 热门徽标 #e6731c/#fdf0e3。V4-05 新增的只有「与参考图粉底红字不符」的对照证据。", "grep": "grep -n 'e6731c|热门徽标' → 三条命中"},
+    {"n": "N-53", "queueSuffix": "CIRCLEHOME-001W", "equiv": ["MP-R1-CIRCLEHOME-201"], "existingStatus": "待修复", "basis": "同一 L1 结构偏离且修法相同：-201 原文「理想为深色 hero 上直接叠白字圈信息…实现为独立白色圆角卡片承载全部圈信息（黑字）」，修法即「info-card 改绝对定位叠 hero 下缘（白字+渐变遮罩）」，已含 V4-14 的遮罩方向/token 问题。", "grep": "grep -n 'info-card|hero-mask' → -201/-104 命中"},
+    {"n": "N-55", "queueSuffix": "CIRCLEHOME-003W", "equiv": ["MP-R1-CIRCLEHOME-104", "MP-R2-CIRCLEHOME-003"], "existingStatus": "待修复 / 待修复", "basis": "同一页同一族私有色：两行已逐条列出 #1f2a25/#5d6c7b/#8595a4/#e6731c/#fdf0e3/#f1f4f3/#ffffff 并给出映射修法；V4-13 的「9 处」是其子集，.info-card #ffffff 绕主题翻转亦在 -104 的卡片 #ffffff 项内（队列 G13 对 village 已用同规则，此处应一致）。", "grep": "grep -n '8595a4' → -104/R2-CIRCLEHOME-003 命中"},
+    {"n": "N-64", "queueSuffix": "VILLAGE-INDEX-401", "equiv": ["MP-R2-VILLAGE-INDEX-009"], "existingStatus": "待修复", "basis": "同一行同一缺陷：R2 代码审查已立「搜索框背景引用未定义 token --c-bg-input，var() 恒走 fallback 硬编码」，与本条（subpackages/village/village/index.vue:942）同文件同选择器。", "grep": "grep -c 'c-bg-input' → 命中 MP-R2-VILLAGE-INDEX-009（另 MP-R2-POSTTOPIC-011 为他页同类）"},
+    {"n": "N-66", "queueSuffix": "VILLAGE-INDEX-402", "equiv": ["MP-R1-VILLAGE-INDEX-202"], "existingStatus": "待修复", "basis": "同一元素同一现象：-202 原文「搜索框被压缩至约 41% 屏宽（受 max-width:320rpx 与左侧标题组挤占），placeholder『搜索感兴趣的人、标签和…』截断显示省略号」，与 V5a-12 逐字同因。", "grep": "grep -n 'max-width: ?320rpx' → -202 命中（-112 为同文件 P0 胶囊回归行）"},
+    {"n": "N-67", "queueSuffix": "CAMPUS-INDEX-001", "equiv": ["MP-R2-CAMPUSINDEX-009"], "existingStatus": "待修复", "basis": "同一物理缺陷同一后果：-009 已记「无 school 参数命中 onLoad 的 redirectTo hub——用户每次点击都经历 index 创建→立即销毁→hub 创建的一跳闪现」，与 V5a-14「模板无 v-if 守卫 → 先渲一帧再跳，用户见闪一下空页」为同一现象（同一根因 index.vue onLoad 重定向），修法同源（消除无参一跳）。", "grep": "grep -n 'redirectedToHub|闪一下' → -009 命中"},
+    {"n": "N-72", "queueSuffix": "PUBLISH-401", "equiv": ["MP-R1-VILLAGE-PUBLISH-105"], "existingStatus": "保留", "basis": "同一残留已被裁决：-105 原文即「底部工具条已整体移除…样式残壳仍留在 scoped style 中（publish.vue:856-859 .publish-toolbar/.publish-tool）」且状态为 保留。按 DW:421 状态词表与队列 SD-20「须先拍板工具栏去留」，未拍板前不得以新 ID 复活一条保留行。", "grep": "grep -n 'publish-toolbar' → MP-R1-VILLAGE-PUBLISH-105 命中"},
+    {"n": "N-78", "queueSuffix": "PUBLISH-407", "equiv": ["MP-R1-PUBLISH-110"], "existingStatus": "待修复", "basis": "同一缺陷同一文件：-110 原文「i18n 混用：同一页面 useI18n 的 t() 调用与约 25 处硬编码中文并存…甚至同一元素内混用——textarea 的…」，即 V5b-11 的 publish.vue:672 字面量 vs :674 t() 同页混用。", "grep": "grep -n 'publish.vue:67[0-9]|硬编码中文' → -110 命中"},
+    {"n": "N-80", "queueSuffix": "POST-402", "equiv": ["MP-R2-POST-016"], "existingStatus": "待修复", "basis": "同一行同一几何缺陷：-016 原文「.post-image 的 height: calc((100% - 3*16rpx)/4)（:1343）以父容器百分比计算，而父容器 .post-images 高度由内容撑开（indefinite）」，与 V5b-21 为同一条（§1.6 铁律 2 表述为其上位依据）。两页图格栅格差异可作证据补入。", "grep": "grep -n 'post-image|aspect-ratio' → R2-POST-016 命中"},
+    {"n": "N-91", "queueSuffix": "CHAT-STYLE-DUP-001", "equiv": ["MP-R2-CHAT-CHAT-SESSION-INDEX-009"], "existingStatus": "待修复", "basis": "同一重复块已被点名：该行修法原文即「删除 2321-2400…死块，**合并两处 .chat-list 为一条**（保留 --sp-4 档）」，与本条（index.vue:2563-2567 与 :2845-2849 两处 .chat-list）同指同一重复。", "grep": "grep -n '\\.chat-list' → MP-R2-CHAT-CHAT-SESSION-INDEX-009 命中"},
+    {"n": "N-93", "queueSuffix": "MATCH-CARD-001", "equiv": ["MP-R1-PAGES-DISCOVER-INDEX-028"], "existingStatus": "待修复", "basis": "同一徽章同一偏离且更早立项：-028 原文「卡片右下角『匹配度』与理想图及验收契约不符（R11 挂起项『L4 环形⚠️』）：理想图为绿色细描边环形进度…当前实现为粉色实心圆盘」，与 V2-01 为同一缺陷（MatchCard.vue:240）。本条新证据是 §1.1 L31-32/§1.2 L41 的语义越界（进度不得占粉）。", "grep": "grep -n '匹配度|MatchCard' → -028 等 22 个 ID 命中，-028 为同缺陷"},
+    {"n": "N-96", "queueSuffix": "NEARBY-INDEX-401", "equiv": ["MP-R1VIS-PAGES-NEARBY-INDEX-007"], "existingStatus": "待修复", "basis": "同一分区同一两问：-007 原文「五宫格入口文案与图标形态两处偏差理想图：①标签实现为 热门兴趣圈/附近活动，理想图为 兴趣圈/活动；②图标实现为浅色圆角砖底+彩色线性图标，理想图为裸彩绘图标」，与 V2-14 的标签文案与图标语义错位为同一区域同一判据。", "grep": "grep -c 'MP-R1VIS-PAGES-NEARBY-INDEX-007' round-1/issue-matrix.md = 1"},
+    {"n": "N-97", "queueSuffix": "NEARBY-INDEX-402", "equiv": ["MP-R1VIS-PAGES-NEARBY-INDEX-006"], "existingStatus": "待修复", "basis": "同一页同一遮挡同一修法：-006 原文「末条帖子互动栏完全不可见…按页面自身让位链（page-bottom-safe 112rpx+…）推算应可见」，修法「按 160rpx+safe+中央钮凸出量补底部留白」，与 V2-15（footer-space 仅 48rpx 未消费 --tab-bar-clear-zone）为同一物理缺陷；-015（discover 页同族）另已在账。", "grep": "grep -n 'nearby-home__footer-space|tab-bar-clear-zone' → -006 与 MP-R1-PAGES-DISCOVER-INDEX-006/-015 命中"},
+    {"n": "N-98", "queueSuffix": "VILLAGE-INDEX-403", "equiv": ["MP-R2-VILLAGE-INDEX-008"], "existingStatus": "待修复", "basis": "同一控件同一结论：-008 原文「PostCard 底部互动栏分享按钮是死控件 @tap.stop=\"noop\"…（PostCard.vue:275-277 + SPARKLES icon）」，与 V5a-09 同一条；队列 G20 自己也写「≡ MP-R2-VILLAGE-INDEX-008，P4→P2 升级」——属改判与补图标证据，不属新行。级别调整应由书记员在原行改 severity，本会话不改既有文件。", "grep": "grep -n 'SPARKLES' → MP-R2-VILLAGE-INDEX-008 / MP-R1-N28-01 命中"}
+  ],
+  "collateralFindings": [
+    "矩阵自身失明：以「ID 是否出现在两份 issue-matrix」为准做全集比对，实测有 **237 个** 在 code-findings/findings/interact JSON 里存在的 MP-* ID 未进任何矩阵（MP-R2-* 118 个、MP-R1-* 112 个、MP-R3/R7/R8 共 7 个）。其中与 Wave-2 直接相关的整份文件：`reports/audit/round-2/code-findings/SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json` 的 MP-R2-CIRCLES-INDEX-* 在 round-2/issue-matrix.md 中 grep 结果 = **0**（矩阵目录 23 份清单亦不含该文件）→ N-51/N-58 所对照的行只存在于 JSON。队列 §2 只点出 3 个失明 ID，实际规模远大于此。",
+    "队列 P1 计数与自身表格不一致：`fix-queue-wave2.md:192` 称「P1 16 条」并列出编号，但 §2 表内 N-01 亦标 **P1**（:85）且未被计入 → 按表统计应为 17 条（N-01+N-14…N-103）。本文件按表内标注落账，其中 N-14/N-15/N-33/N-39/N-53/N-93 六条因判定为重名而移入 dupes，故 issues 内 P1 实为 11 条（含 N-01）。",
+    "队列 §7#1 自述「已抓到 4 处误判」，本会话在同一方法学下另抓得 24 条同缺陷行（见 dupes），即 N-01…N-104 的「矩阵零命中」判定实际假阳率 24/104 ≈ 23%。",
+    "既有行陈旧：MP-R1-PAGES-MESSAGES-INDEX-019/-102 仍记「消息页头部缺 + 入口」待修复，而 HEAD 代码 index.vue:382-387 已渲染 + 与搜索两枚（本次 N-30 报的是其顺序），建议书记员把这两行降级或改述。"
+  ]
+}

@@ -1,0 +1,302 @@
+{
+  "manifest": "PAGES-REGISTER-INDEX",
+  "judged": 37,
+  "by": {
+    "VERIFIED": 1,
+    "FAILED": 0,
+    "UNVERIFIED": 16,
+    "UNVERIFIED_INSTRUMENT": 18,
+    "NOT_EVIDENCED": 2
+  },
+  "noEvidenceExcludedFromCompletion": 6,
+  "issues": [],
+  "cases": [
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG01",
+      "verdict": "VERIFIED",
+      "reason": "三方一致：REG01-after.png + tour A/pages_register_index__默认__zoom3x-底部带.png 3x 实测主按钮文案为「注 册」（非「注 册 中」）、协议框为空心未勾选、hero__back 未与状态栏叠印；console 无 error。",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG02",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.hero__back)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG03",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG04",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 一次性 input 值 '1388888888823456789012345678'（28 位）到手机号 input",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG05",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— input 值 '１３８a<b>img onerror=alert(1)</b>8888 8888' 到手机号 input；随后 input '138' 三位非法短号并 blur",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG06",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(.field__clear)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG07",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__) ; tap(.field__clear)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG08",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：automator 无 input 方法（el.input is not a function），表单前置态无法构造",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG09",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：en-US 语种轮（observed 无对应读数）；另有非 class 探针 .smsSentMock:absent .mockCode:absent",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG10",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG11",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG12",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：automator 无 input 方法（el.input is not a function），表单前置态无法构造",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG13",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：automator 无 input 方法（el.input is not a function），表单前置态无法构造",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG14",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__) ; input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG15",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG16",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG17",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG18",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG19",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG20",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG21",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG22",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG23",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG24",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG25",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG26",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG27",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：几何/热区实测数值（observed 无对应读数）；另有非 class 探针 .refreshSession:absent",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG28",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.ghost-btn) ; tap(.ghost-btn)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG29",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG30",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG31",
+      "verdict": "UNVERIFIED",
+      "reason": "落点错位：用例页 pages/register/index 但 observed top=pages/discover/index（前置导航未落到本页/被上一页残留态带偏），观察对象不是本页",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG32",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：act:pullDown 抛 ERR uni is not defined，下拉刷新动作未真正下发",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG33",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG34",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG35",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__) ; tap(.sms-btn) ; tap(.hero__back)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG36",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-REGISTER-INDEX/REG37",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    }
+  ],
+  "notes": [
+    "REG16/REG31 observed top=pages/discover/index（用例页为 register/index），落点错位，未判缺陷。落点六码=HARNESS_CALL_DEFECT，owner=instrument，最高 P2 以下；最低成本解法：pre 步骤先断言 getCurrentPages() 末位等于用例页且 token 身份 userId 与目标一致，不等即重登并复检后再进页。",
+    "REG31 期望点名的 .register-page padding-bottom 实测在源码 :788（ops 件写 :773，锚点偏移 15 行，:773 实为 .to-login 节点），请台账修订员按 :788 记账；本清单未据此改判。",
+    "register 页底部「已有账号？去登录」行在 1× 与 3× 帧中均被模拟器 home 指示条压住；源码 :788 为 `calc(env(safe-area-inset-bottom) + 24rpx)` 无兜底值，模拟器 inset 解析为 0 时仅剩 12px → 落点六码=DEVICE_CAPABILITY_UNREACHABLE，owner=instrument，最高 P2 以下；最低成本解法：env(safe-area-inset-bottom, 34px) 补兜底并在真机档位复验。故未立缺陷号。",
+    "裁定口径：三方一致=ops expected × exec observed/route/toast/console/evidence × 真打开的帧（round-6-tour 巡检帧含 zoom3x、round-6-interact 操作前后图）；复合键 manifest+caseId。",
+    "输入快照：.zcode/tmp/adjudicate/exec-results.snapshot.json（updatedAt 2026-09-25T15:28:18.856Z，509 行，gitSha 874ff52f）。执行轮仍在追加权威件，本文件只覆盖快照内已记录用例。",
+    "ERROR:timeout 尾注的帧一律按 NO-EVIDENCE 处置并计入 UNVERIFIED，不读作已取证；本清单该类 6 条已从完成度中排除。"
+  ]
+}

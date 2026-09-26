@@ -24,7 +24,7 @@ import { mockFixtures } from "../../services/mocks/fixtures";
 import { mockAuthors } from "../../stores/village/mock-data";
 import type { RecommendedPersonView } from "../../stores/discover/types";
 
-import { useSocialProgressStore } from "../../stores/social-progress";
+
 import { useDiscoverStore } from "../../stores/discover";
 // review #62：动态预览点击跳转帖子详情前校验存在性
 import { useVillageStore } from "../../stores/village";
@@ -121,7 +121,7 @@ const sessionStore = useSessionStore();
 useTabBar(4);
 const profileStore = useProfileStore();
 const likesStore = useLikesStore();
-const socialProgressStore = useSocialProgressStore();
+// MP-R2-PROFILE-034：useSocialProgressStore 的实例已随本页唯一的调用点一起删除（进度 UI 早就不在本页）
 const discoverStore = useDiscoverStore();
 const villageStore = useVillageStore();
 const appConfig = useAppConfigStore();
@@ -755,7 +755,7 @@ const interactionItems = computed(() => [
   { key: "likedMe", label: "喜欢我的人", value: likesStore.likedBy.length },
   { key: "match", label: "我的匹配", value: likesStore.mutualLikes.length },
   { key: "likes", label: "我喜欢的人", value: likesStore.likes.length },
-  { key: "visitors", label: "最近访客", value: profileStore.profileStats?.visitorsCount ?? 0 },
+  { key: "visitors", label: "最近访客", value: likesStore.visitors.length || profileStore.profileStats?.visitorsCount || 0 },
 ]);
 
 const moreItems = computed(() => [
@@ -1602,12 +1602,8 @@ onShow(() => {
       console.warn("[ProfilePage] fetchProfile 失败:", error);
     }
   });
-  socialProgressStore.fetchProgress().catch((error) => {
-    // R4-batch4：诊断日志仅开发环境输出
-    if (isDev) {
-      console.warn("[ProfilePage] fetchProgress 失败:", error);
-    }
-  });
+  // MP-R2-PROFILE-034：这里原来每次都 socialProgressStore.fetchProgress()，
+  // 而本页早已没有任何进度 UI 消费它的结果——纯粹的每次 onShow 空跑一个请求。已连同实例化一并删除。
 });
 
 /**

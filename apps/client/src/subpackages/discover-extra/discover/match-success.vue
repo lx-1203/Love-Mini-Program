@@ -177,7 +177,9 @@ function handleScreenshot() {
 .success-page {
   position: relative;
   min-height: 100%;
-  background: linear-gradient(180deg, #E8FBF2 0%, #F0FFF5 60%);
+  /* MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-002：匹配域底渐变单一来源
+     （理想图 匹配成功页面.png 为薄荷绿→浅粉洗色，即 $gradient-match 本体） */
+  background: var(--c-gradient-match);
   /* MP-R2-...-MATCH-SUCCESS-009：纵向 flex 容器，使组件宿主 flex:1 高度链成立 */
   display: flex;
   flex-direction: column;

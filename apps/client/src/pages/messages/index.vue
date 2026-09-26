@@ -177,8 +177,8 @@ function toggleSearch() {
 async function handleStartChat() {
   lightHaptic();
   if (likesStore.visitors.length === 0) {
-    await likesStore.fetchVisitors().catch(() => {
-      /* 失败走下方空列表兜底 */
+    await likesStore.fetchVisitors().catch((e: unknown) => {
+      console.warn("[messages] fetchVisitors failed", e);
     });
   }
   const people = likesStore.visitors.slice(0, 6);
@@ -295,6 +295,7 @@ async function loadPage(force = false) {
       console.warn("[messages] fetchLikes failed", e);
     }),
   ]);
+  avatarFailedIds.value = new Set();
   // 2026-08-31 待办：加载完成后标记全部会话已读（红点闭环：badge→进入→清除）
   void messagesStore.markAllSessionsRead();
 }
@@ -379,11 +380,11 @@ function onAvatarError(session: MessageSession): void {
         </view>
         <view class="header__right">
           <!-- MP-R1-PAGES-MESSAGES-INDEX-102：补「+（发起会话）」入口（放大镜+加号双钮） -->
-          <view class="header__icon-btn" hover-class="header__icon-btn--hover" role="button" :aria-label="t('chat.startChatAria')" @tap="handleStartChat">
-            <text class="header__icon-plus">＋</text>
-          </view>
           <view class="header__icon-btn" hover-class="header__icon-btn--hover" @tap="toggleSearch">
             <image class="header__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.SEARCH" mode="aspectFit" />
+          </view>
+          <view class="header__icon-btn" hover-class="header__icon-btn--hover" role="button" :aria-label="t('chat.startChatAria')" @tap="handleStartChat">
+            <text class="header__icon-plus">＋</text>
           </view>
         </view>
       </view>
@@ -596,7 +597,7 @@ function onAvatarError(session: MessageSession): void {
                 <view class="activity-rec-card__body">
                   <text class="activity-rec-card__title">{{ act.title }}</text>
                   <text v-if="act.subtitle" class="activity-rec-card__subtitle">{{ act.subtitle }}</text>
-                  <view class="activity-rec-card__cta">
+                  <view v-if="act.targetUrl" class="activity-rec-card__cta">
                     <text class="activity-rec-card__cta-text">查看详情</text>
                     <text class="activity-rec-card__cta-arrow">›</text>
                   </view>
@@ -614,9 +615,12 @@ function onAvatarError(session: MessageSession): void {
 .messages-page {
   min-height: 100vh;
   /* MP-R1-PAGES-MESSAGES-INDEX-106：消息页整页白底（v3.1 契约「发现/附近/消息白底」
-     节奏红线 + 消息.png 主视觉）——页面级覆写，不动全局 --c-bg-page 避免波及深色
-     适配与其他页面；白卡以描边/浅阴影分层 */
-  --c-bg-page: #FFFFFF;
+     节奏红线 + 消息.png 主视觉）——由下方 background 字面量兑现，白卡以描边/浅阴影分层。
+     原先另附的页面级 `--c-bg-page: #FFFFFF` 覆写已移除：本页面自身对该令牌零消费
+     （grep 全页仅命中此处），其唯一存活效果是级进子组件后把 NotLoggedWaiting.vue:121
+     的游客等待态底色由全局浅薄荷绿 #EEF7F2 拉成纯白，与 未登录等待页面.png 相悖
+     （likes 页无此覆写故一直正确）。移除后白底裁决不变、游客态回到浅绿、暗色重新跟随
+     tokens.scss:234 的 --c-bg-page 深色值。 */
   background: #FFFFFF;
   display: flex;
   flex-direction: column;
@@ -790,7 +794,7 @@ function onAvatarError(session: MessageSession): void {
   color: var(--c-text-secondary, #6B7571);
 }
 .quick-card__btn {
-  align-self: flex-start;
+  align-self: flex-end;
   padding: 12rpx 32rpx;
   border-radius: 999rpx;
   /* MP-R1-PAGES-MESSAGES-INDEX-105：按 消息.png 归一为「浅绿描边小胶囊 + 品牌绿文字」，

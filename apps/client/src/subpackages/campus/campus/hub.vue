@@ -273,6 +273,13 @@ function goBack() {
       </view>
     </view>
 
+    <scroll-view
+      class="campus-hub__feed"
+      scroll-y
+      :enhanced="true"
+      :bounces="true"
+      :show-scrollbar="false"
+    >
     <!-- 空状态 -->
     <view v-if="filteredSchools.length === 0" class="campus-hub__empty">
       <text class="campus-hub__empty-text">{{ activeTab === 'joined' ? t('campusHub.emptyJoined') : t('campusHub.emptyRecommend') }}</text>
@@ -281,7 +288,7 @@ function goBack() {
     <!-- 圈子卡片列表 -->
     <view
       v-for="school in filteredSchools"
-      :key="activeTab + '-' + school.id"
+      :key="school.id"
       class="campus-school-card press-feedback"
       hover-class="press-feedback--active"
       hover-stay-time="120"
@@ -300,19 +307,14 @@ function goBack() {
       <view class="campus-school-card__body">
         <view class="campus-school-card__name-row">
           <text class="campus-school-card__name">{{ school.name }}</text>
-        </view>
-        <view class="campus-school-card__meta-row">
-          <!-- MP-R1-CAMPUS-HUB-001：badge 三态（已认证/认证中/未认证）——原实现未认证用户
-               在「我加入的」Tab 谎报「认证中」且无配色类，现按状态映射文案与修饰类，
-               对齐推荐 Tab 的「未认证」胶囊样式 -->
           <view
             class="campus-school-card__badge"
             :class="joinedBadge.class"
           >
             <text class="campus-school-card__badge-text">{{ joinedBadge.text }}</text>
           </view>
-          <text class="campus-school-card__stats">{{ statsOf(school).members }} · {{ statsOf(school).posts }}</text>
         </view>
+        <text class="campus-school-card__stats">{{ statsOf(school).members }} · {{ statsOf(school).posts }}</text>
         <!-- 成员头像预览 -->
         <view class="campus-school-card__members">
           <view class="campus-school-card__avatar-stack">
@@ -337,6 +339,7 @@ function goBack() {
       <text class="campus-hub__more-text">{{ t('campusHub.moreHint') }}</text>
     </view>
     <view class="campus-hub__footer" />
+    </scroll-view>
   </view>
 </template>
 
@@ -368,10 +371,18 @@ function goBack() {
 }
 
 .campus-hub {
-  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
   background: var(--c-bg-page, #EEF7F2);
   padding: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + 20rpx) 32rpx 0;
   box-sizing: border-box;
+}
+
+.campus-hub__feed {
+  flex: 1;
+  min-height: 0;
 }
 
 /* ===== Header ===== */
@@ -427,15 +438,12 @@ function goBack() {
 
 .campus-hub__cert-btn {
   padding: 12rpx 28rpx;
-  border-radius: 999rpx;
-  background: var(--c-brand, #36C99A);
-  box-shadow: 0 6rpx 16rpx rgba(54, 201, 154, 0.32);
 }
 
 .campus-hub__cert-btn-text {
   font-size: 24rpx;
   font-weight: 600;
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-brand, #36C99A);
 }
 
 .campus-hub__cert-badge {
@@ -545,7 +553,7 @@ function goBack() {
 
 .campus-hub__tab-text--active {
   font-weight: 700;
-  color: var(--c-text-primary, #222222);
+  color: var(--c-brand, #36C99A);
 }
 
 .campus-hub__tab-indicator {
@@ -588,8 +596,8 @@ function goBack() {
 }
 
 .campus-school-card__cover {
-  width: 200rpx;
-  height: 150rpx;
+  width: 160rpx;
+  height: 160rpx;
   border-radius: 16rpx;
   overflow: hidden;
   flex-shrink: 0;
@@ -636,21 +644,9 @@ function goBack() {
   gap: 12rpx;
 }
 
-/* R10-P2-007：badge 下沉到统计行，校名独占整行——「中国人民大学/上海交通大学」不再被挤成省略号 */
-.campus-school-card__meta-row {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  margin-top: 8rpx;
-  min-width: 0;
-}
-
-.campus-school-card__meta-row .campus-school-card__badge {
+/* R10-P2-007：校名行禁折行（超长省略），badge 不参与收缩 */
+.campus-school-card__name-row .campus-school-card__badge {
   flex-shrink: 0;
-}
-
-.campus-school-card__meta-row .campus-school-card__stats {
-  margin-top: 0;
 }
 
 .campus-school-card__name {
@@ -659,8 +655,8 @@ function goBack() {
   /* 2026-08-27：白卡上名称用正文主色 */
   color: var(--c-text-primary, #222222);
   /* MP-R8-CAMPUS-001（2026-09-16）：「中国人民大学/上海交通大学」被 badge 挤压折行（人民大/学）。
-     名称占满剩余宽度 + 禁止折行（超长省略），badge 不参与收缩。 */
-  flex: 1;
+     名称按内容收缩 + 禁止折行（超长省略），badge 不参与收缩。 */
+  flex: 0 1 auto;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -815,7 +811,7 @@ function goBack() {
   margin: 0 40rpx 20rpx;
   height: 76rpx;
   border-radius: 999rpx;
-  background: var(--c-bg-page, #F0F4F2);
+  background: var(--c-bg-page, #EEF7F2);
   display: flex;
   align-items: center;
   padding: 0 28rpx;

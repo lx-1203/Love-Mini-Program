@@ -35,10 +35,12 @@ public interface PrivateMessageService {
      * @param content         消息内容
      * @param kind            消息类型 (text/image/voice 等)
      * @param durationSeconds 语音消息时长（秒），非语音消息传 null
+     * @param quoteRef        被引用消息 ID（字符串，可空）；仅当该消息属于同一会话时
+     *                        写引用快照并将消息类型规范化为 quote，否则按普通消息发送
      * @return 消息视图
      */
     MessageView sendMessage(Long conversationId, Long senderId, String content, String kind,
-                            Integer durationSeconds);
+                            Integer durationSeconds, String quoteRef);
 
     /**
      * 获取指定会话的消息列表（分页），同时标记消息为已读。

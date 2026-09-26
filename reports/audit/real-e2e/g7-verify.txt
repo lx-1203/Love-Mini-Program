@@ -1,0 +1,10 @@
+# G7 产物自证 — apps/client/scripts/build-real-isolated.mjs --check-only
+# capturedAt: 2026-09-25T15:43:19+08:00
+# runner: D:/codex-tools/node-v22.17.0-win-x64/node.exe (v22.17.0)  [PATH node is v16.13.1; on v16 this script self-reports G7_RESULT=FAIL as testbench noise, not a product defect]
+# cwd: D:/6/恋爱小程序   argv: apps/client/scripts/build-real-isolated.mjs --check-only
+# ---- BEGIN ORIGINAL STDOUT+STDERR ----
+[g7] 产物自证 MODE=real VITE_API_MODE=real VITE_API_BASE_URL=http://127.0.0.1:8080/api
+[g7] outDir=D:\6\恋爱小程序\apps\client\dist\build\mp-weixin-real sharedOutUntouched=yes
+G7_RESULT=PASS
+# ---- END ----
+G7_EXIT_CODE=0

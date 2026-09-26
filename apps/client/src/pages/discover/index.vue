@@ -369,8 +369,12 @@ onUnload(() => {
   padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 20px);
   /* MP-R2-PAGES-DISCOVER-INDEX-002：底部避让对齐 custom-tab-bar 实高（content-box 下
      实高 184rpx + 2×safe）+ 中央「寻觅」浮岛越出量 48rpx——原 112rpx+16rpx+safe 使
-     MatchActions 三键标签与「喜欢」圆钮下缘滚动到底时被 tabBar 半透明白层遮盖 */
-  padding-bottom: calc(232rpx + 48rpx + env(safe-area-inset-bottom));
+     MatchActions 三键标签与「喜欢」圆钮下缘滚动到底时被 tabBar 半透明白层遮盖。
+     MP-R2-PAGES-DISCOVER-INDEX-014：把"实高"换成 token，别再靠手算——
+     原写法 232rpx+48rpx+safe 把浮岛越出量数了两遍（232 里已含 48），而安全区只让了一遍，
+     净结果是比真实遮挡少 20rpx（按 safe=34px≈68rpx 计），总高与两倍安全区都由
+     --tab-bar-total-h 单点定义（theme/design-variables.scss，源头是 custom-tab-bar/index.wxss:14-19） */
+  padding-bottom: calc(var(--tab-bar-total-h, 184rpx + env(safe-area-inset-bottom) + env(safe-area-inset-bottom)) + 48rpx);
   box-sizing: border-box;
 }
 

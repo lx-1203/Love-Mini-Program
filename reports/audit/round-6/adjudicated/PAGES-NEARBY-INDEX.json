@@ -1,0 +1,309 @@
+{
+  "manifest": "PAGES-NEARBY-INDEX",
+  "judged": 42,
+  "by": {
+    "VERIFIED": 0,
+    "FAILED": 0,
+    "UNVERIFIED": 28,
+    "UNVERIFIED_INSTRUMENT": 11,
+    "NOT_EVIDENCED": 3
+  },
+  "noEvidenceExcludedFromCompletion": 8,
+  "issues": [],
+  "cases": [
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N01",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N02",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：act:pullDown 抛 ERR uni is not defined，下拉刷新动作未真正下发",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N03",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：act:pullDown 抛 ERR uni is not defined，下拉刷新动作未真正下发",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N04",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：act:pullDown 抛 ERR uni is not defined，下拉刷新动作未真正下发",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N05",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：act:pullDown 抛 ERR uni is not defined，下拉刷新动作未真正下发",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N06",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N07",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N08",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读分区④（index.vue:544-590）在三种前置下的文案与按钮",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N09",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N10",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— DOM 扫描本页全部 <input>/<textarea>（含搜索区、五入口、四分区）；对扫描结果做结论记录",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N11",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N12",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N13",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：几何/热区实测数值（observed 无对应读数）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N14",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读 .nearby-home__search-btn、.nearby-home__publish、5 个 .nearby-entry、2 个 .people-entry 的 rect 并换算 rpx；对放大镜做图标本体与文字区两次边缘点击",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N15",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N16",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N17",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读前 5 张 .circle-mini 的 rect（左右缘）与视口宽；再横滑一次确认第 5 卡可完整露出",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N18",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N19",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 四态各截图分区②",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N20",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N21",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读各卡 .campus-entry__status-text（index.vue:537 → campusChipKey :338-345）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N22",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读 .activity-entry 数量与各分支文案（index.vue:545-590）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N23",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N24",
+      "verdict": "UNVERIFIED",
+      "reason": "落点错位：用例页 pages/nearby/index 但 observed top=subpackages/tools/activities/detail（前置导航未落到本页/被上一页残留态带偏），观察对象不是本页",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N25",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N26",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N27",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N28",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ① 点帖子卡片打开详情（index.vue:626 @open-detail → onPostDetail :275-277）；② 点头像/昵称（:627 @open-author → onPostAuthor :278-280）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N29",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ① 点标签（index.vue:629 @open-tag → onPostTag :312-314）；② 点内嵌活动卡「报名」（:630 @open-activity 与 :631 @enroll 两条监听）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N30",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "dom 探针全部是非 class 令牌（把 i18n key / JS 标识符当选择器查）：.nearbyPosts:absent —— 该观察不能支撑任何判决",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N31",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：act:pullDown 抛 ERR uni is not defined，下拉刷新动作未真正下发",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N32",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 登录后回本页统计请求与列表变化",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N33",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N34",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：几何/热区实测数值（observed 无对应读数）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N35",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N36",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N37",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "dom 探针全部是非 class 令牌（把 i18n key / JS 标识符当选择器查）：.onLaunch:absent —— 该观察不能支撑任何判决",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N38",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读 .circle-mini__count（index.vue:499）与各分区标题/入口 label",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N39",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读附近页全部 image 的实际 src 与渲染结果；统计 console 图片加载错误",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N40",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 逐个点击：放大镜、发动态、5 入口、分区① 2 入口、② 圈卡 + 查看全部、③ 4 张校卡 + 查看全部、④ 活动条 + 查看全部、⑤ 帖子/标签/点赞/收藏/关注/作者/查看全部、各分区标题区（应不可点），逐一计时",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N41",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 读 .nearby-home__search-btn / __publish / .nearby-entry / .people-entry / .circle-mini / .campus-entry / .activity-entry ",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-NEARBY-INDEX/N42",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 逐态截图并标注构造方式与是否受构建模式限制",
+      "attempts": 1
+    }
+  ],
+  "notes": [
+    "N24/N31 observed 落点为 activities/detail 与 discover/index（非本页），属落点错位。落点六码=HARNESS_CALL_DEFECT，owner=instrument，最高 P2 以下；最低成本解法：pre 步骤先断言 getCurrentPages() 末位等于用例页且 token 身份 userId 与目标一致，不等即重登并复检后再进页。",
+    "裁定口径：三方一致=ops expected × exec observed/route/toast/console/evidence × 真打开的帧（round-6-tour 巡检帧含 zoom3x、round-6-interact 操作前后图）；复合键 manifest+caseId。",
+    "输入快照：.zcode/tmp/adjudicate/exec-results.snapshot.json（updatedAt 2026-09-25T15:28:18.856Z，509 行，gitSha 874ff52f）。执行轮仍在追加权威件，本文件只覆盖快照内已记录用例。",
+    "ERROR:timeout 尾注的帧一律按 NO-EVIDENCE 处置并计入 UNVERIFIED，不读作已取证；本清单该类 8 条已从完成度中排除。"
+  ]
+}

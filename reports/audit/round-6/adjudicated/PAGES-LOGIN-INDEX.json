@@ -1,0 +1,317 @@
+{
+  "manifest": "PAGES-LOGIN-INDEX",
+  "judged": 38,
+  "by": {
+    "VERIFIED": 2,
+    "FAILED": 0,
+    "UNVERIFIED": 13,
+    "UNVERIFIED_INSTRUMENT": 22,
+    "NOT_EVIDENCED": 1
+  },
+  "noEvidenceExcludedFromCompletion": 3,
+  "issues": [],
+  "cases": [
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG01",
+      "verdict": "VERIFIED",
+      "reason": "三方一致：LG01-after.png 见品牌区「寻觅」+小苗、插画、slogan 三行、四类入口与协议行全部在屏；tour A/pages_login_index__默认__zoom3x-底部带.png 3x 实测协议框为空心方块（未勾选、无勾图标），返回钮位于状态栏时间之下零叠印；console 无 error。",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG02",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG03",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG04",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 对 .btn-primary（aria-label=login.wechatLogin，@tap=onWechatLoginGuarded，index.vue:674-687）在 500ms 内连点 5 次",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG05",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG06",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG07",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 点协议行第一个 .terms-link（@tap=openUserAgreement，index.vue:924）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG08",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 点协议行第二个 .terms-link（@tap=openPrivacyPolicy，index.vue:926）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG09",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.login-sms-fallback)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG10",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 触发 handleGetPhoneNumberGuarded 三条分支：① errMsg 含 cancel/deny；② 后端返回 404；③ 后端返回 401",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG11",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG12",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG13",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG14",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG15",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG16",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG17",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：input(#login-password)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG18",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(#login-password) ; tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG19",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：tap(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG20",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 500ms 内连点表单内 .btn-primary（@tap=onPhoneLoginGuarded，防抖窗 2000ms，index.vue:481）5 次",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG21",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG22",
+      "verdict": "UNVERIFIED",
+      "reason": "部分期望项由非 class 探针承载（.guestEnterToast:absent），仅 .btn-guest 可核；证据不足以判三方一致",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG23",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.btn-text) ; tap(.btn-text)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG24",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG25",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.btn-text) ; tap(.btn-text)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG26",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：input(__CAND__)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG27",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：act:pullDown 抛 ERR uni is not defined，下拉刷新动作未真正下发",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG28",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG29",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.sms-send-btn)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG30",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG31",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：input(#login-sms-code)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG32",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— ① 打开 picker 尝试选到今天之后；② 选一个合法日期；③ 重开 picker 点取消",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG33",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：network 请求计数（observed 无对应读数）；另有非 class 探针 .guestEnterToast:absent",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG34",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.dev-user-entry)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG35",
+      "verdict": "VERIFIED",
+      "reason": "三方一致：dom .showcase-entry:absent + zoom3x 底部带仅有 DEV「演示模式入口」（.dev-user-entry，源码 index.vue:945 注明 dev/mock 构建显示），SHOW 徽标入口未渲染 → 标准 mock 包无演示入口泄漏。",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG36",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 选择器兜底失败（ensureSel … STILL-missing），目标节点未定位",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG37",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "dom 探针全部是非 class 令牌（把 i18n key / JS 标识符当选择器查）：.onLaunch:absent —— 该观察不能支撑任何判决",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-LOGIN-INDEX/LG38",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 逐态截图并普查页内全部可点元素（.btn-primary ×2、.btn-phone-quick、.login-sms-fallback、.btn-guest、.checkbox、.terms-link ×2、.dev-user-entry",
+      "attempts": 1
+    }
+  ],
+  "notes": [
+    "LG01/LG35/REG01 的勾选框与文案级结论均以 zoom3x 帧复核（空心方框=未勾选），未凭 1× 帧读文案。",
+    "LG01 帧内「手机号登录」白按钮与其下「手机号登录」文字链同名（zoom3x 实测），该重复文案已由 canonical MP-R2-PAGES-LOGIN-INDEX-007 在册，不属 LG01 断言项，故不另立号、仅在此点名。",
+    "19 例 UNVERIFIED_INSTRUMENT 中含 #login-phone/#login-password/#login-sms-code/#login-nickname 等 id 探针，源码无这些 id，属选择器候选写错。",
+    "裁定口径：三方一致=ops expected × exec observed/route/toast/console/evidence × 真打开的帧（round-6-tour 巡检帧含 zoom3x、round-6-interact 操作前后图）；复合键 manifest+caseId。",
+    "输入快照：.zcode/tmp/adjudicate/exec-results.snapshot.json（updatedAt 2026-09-25T15:28:18.856Z，509 行，gitSha 874ff52f）。执行轮仍在追加权威件，本文件只覆盖快照内已记录用例。",
+    "ERROR:timeout 尾注的帧一律按 NO-EVIDENCE 处置并计入 UNVERIFIED，不读作已取证；本清单该类 3 条已从完成度中排除。"
+  ]
+}

@@ -201,7 +201,7 @@ public class RealPrivateMessageService implements PrivateMessageService {
     @Override
     @Transactional
     public MessageView sendMessage(Long conversationId, Long senderId, String content, String kind,
-                                   Integer durationSeconds) {
+                                   Integer durationSeconds, String quoteRef) {
         if (conversationId == null || senderId == null) {
             throw new IllegalArgumentException("conversationId and senderId are required");
         }
@@ -235,12 +235,21 @@ public class RealPrivateMessageService implements PrivateMessageService {
         // 敏感词过滤：过滤私信内容
         String filteredContent = sensitiveWordFilter.filterWithLog(content, senderId, "MESSAGE");
 
+        // 引用回复（对齐临时会话 TempChatMessageService 契约）：quoteRef 命中同一会话的消息时
+        // 写 quote_context 快照，并把类型规范化为 quote（读侧 MessageView.quoteContext 与
+        // 会话预览的 quote 分支由此可达）；跨会话/不存在的 quoteRef 按未引用处理，不阻断发送。
+        String quoteSnapshot = buildQuoteSnapshot(conversationId, quoteRef);
+        if (quoteSnapshot != null) {
+            resolvedKind = "quote";
+        }
+
         // 创建消息
         PrivateMessage message = new PrivateMessage();
         message.setConversation(conversation);
         message.setSenderId(senderId);
         message.setContent(filteredContent);
         message.setMessageKind(resolvedKind);
+        message.setQuoteContext(quoteSnapshot);
         message.setDurationSeconds(durationSeconds);
         message.setIsRead(false);
         message.setCreatedAt(now);
@@ -623,6 +632,46 @@ public class RealPrivateMessageService implements PrivateMessageService {
                 message.getQuoteContext(),
                 message.getDurationSeconds()
         );
+    }
+
+    /**
+     * 构建引用回复快照 JSON（与临时会话 quote_snapshot 同键：id/body/sender）。
+     *
+     * <p>校验口径与 {@code TempChatMessageService} 一致（infra R2-00253）：被引用消息
+     * 必须属于同一会话，否则视为未引用返回 null，避免跨会话窥探他人消息内容。</p>
+     *
+     * @param conversationId 当前会话 ID
+     * @param quoteRef       被引用消息 ID（字符串，可空/空白）
+     * @return 快照 JSON 字符串；未引用/非法/跨会话时为 null
+     */
+    private String buildQuoteSnapshot(Long conversationId, String quoteRef) {
+        if (quoteRef == null || quoteRef.isBlank()) {
+            return null;
+        }
+        try {
+            Long quotedId = Long.parseLong(quoteRef.trim());
+            return messageRepository.findById(quotedId)
+                    .filter(quoted -> quoted.getConversation() != null
+                            && conversationId.equals(quoted.getConversation().getId()))
+                    .map(quoted -> {
+                        java.util.Map<String, Object> snapshot = new java.util.LinkedHashMap<>();
+                        snapshot.put("id", String.valueOf(quoted.getId()));
+                        snapshot.put("body", quoted.getContent());
+                        snapshot.put("sender", quoted.getSenderId());
+                        return snapshot;
+                    })
+                    .map(snapshot -> {
+                        try {
+                            return objectMapper.writeValueAsString(snapshot);
+                        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                            return null;
+                        }
+                    })
+                    .orElse(null);
+        } catch (NumberFormatException ignored) {
+            // quoteRef 非数字 ID：按未引用处理，消息照常发出（与临时链路口径一致）
+            return null;
+        }
     }
 
     /**

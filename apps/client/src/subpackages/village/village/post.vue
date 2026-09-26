@@ -222,6 +222,7 @@ const targetSubtitle = computed(() => {
     // 两页一致：成员数短格式与 publish.vue:126 同款（1.2w / 8,932）
     return `${formatMemberShort(targetCircle.value.memberCount ?? 0)} 成员`;
   }
+  if (isCircleTarget.value) return t("village.post.visibilityCircleMembers");
   if (targetType.value === "campus") return "校园圈 · 所有校园成员可见";
   return "默认公开 · 所有人可见";
 });
@@ -1270,7 +1271,10 @@ async function submitPublish() {
   background: var(--c-bg-container, #FFFFFF);
   border-radius: var(--r-xl, 24rpx);
   border: 1rpx solid var(--c-line, #EEF2F0);
-  box-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs, rgba(15, 23, 42, 0.04));
+  /* MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004：跨页统一取「无阴影」一支——
+     权威理想图 素材/理想效果图/发布帖子页面.png 的「发布到」卡是纯描边平卡
+     （publish.vue:1021 同形，仅有 1rpx 描边），本页此前多一条 0 2rpx 16rpx 投影。
+     描边/底色保留本文件的令牌形态（比 publish 的裸字面量更正确，不反向劣化）。 */
 }
 .post-to__avatar {
   width: 88rpx;
@@ -1448,7 +1452,6 @@ async function submitPublish() {
 }
 .post-image {
   width: calc((100% - 3 * 16rpx) / 4);
-  height: calc((100% - 3 * 16rpx) / 4);
   aspect-ratio: 1;
   border-radius: var(--r-lg, 16rpx);
   overflow: hidden;
@@ -1768,7 +1771,7 @@ async function submitPublish() {
 
 /* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
 page {
-  background: #ffffff;
+  background: var(--c-neutral-0, #FFFFFF);
 }
 
 </style>

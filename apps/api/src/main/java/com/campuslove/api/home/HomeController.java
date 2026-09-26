@@ -131,7 +131,9 @@ record TodayRecommendationView(
     boolean online,
     int matchScore,
     String photoUrl,
-    String constellation
+    String constellation,
+    /** 当前请求者是否已喜欢此人（likes 表真源；未登录/无记录为 false） */
+    boolean liked
 ) {
 }
 
@@ -189,6 +191,11 @@ record CommunityPostSummaryView(
     String content,
     List<String> images,
     int likeCount,
-    int commentCount
+    int commentCount,
+    /**
+     * 当前请求者是否已点赞该帖（post_likes 表真源；未登录/无记录为 false）。
+     * 注意与 likeCount（点赞总数，客户端 camelCase / DB 列 likes_count）是两件事。
+     */
+    boolean liked
 ) {
 }

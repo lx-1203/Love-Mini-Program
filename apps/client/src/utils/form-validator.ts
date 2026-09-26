@@ -88,6 +88,21 @@ export function phone(message = t("formValidator.phone")): ValidationRule {
 }
 
 /**
+ * 手机号脱敏：13812345678 → 138****5678。
+ *
+ * MP-R2-PAGES-REGISTER-INDEX-010（canonical MP-R1-PAGES-REGISTER-INDEX-006）：
+ * 同一条 `/^(\d{3})\d{4}(\d{4})$/ → "$1****$2"` 正则在 pages/register/index.vue 的
+ * 验证码 toast 与 pages/register/success.vue 的账号行各内联一份，改口径要同时改两处。
+ * 与内联版逐字同语义：不匹配 11 位纯数字时原样返回（调用方自行决定兜底文案）。
+ *
+ * @param phone - 原始手机号（可含分隔符以外的任意串）
+ * @returns 脱敏串或原串
+ */
+export function maskPhone(phone: string): string {
+  return String(phone ?? "").replace(/^(\d{3})\d{4}(\d{4})$/, "$1****$2");
+}
+
+/**
  * 验证码校验：4-6 位纯数字。
  *
  * @param message - 校验失败时的文案，默认"验证码为4-6位数字"

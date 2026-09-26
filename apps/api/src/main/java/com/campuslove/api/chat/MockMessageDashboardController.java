@@ -90,11 +90,11 @@ public class MockMessageDashboardController {
     private List<PersonSummaryView> buildRecommendedPeople() {
         return List.of(
             new PersonSummaryView(1001L, "林晓", "/static/assets/images/avatars/avatar-1.jpg",
-                "工业设计大三 · 摄影", List.of("摄影", "旅行"), "1.2km"),
+                "工业设计大三 · 摄影", List.of("摄影", "旅行"), "1.2km", false),
             new PersonSummaryView(1002L, "周沐", "/static/assets/images/avatars/avatar-2.jpg",
-                "计算机研二 · 电影", List.of("电影", "音乐"), "2.4km"),
+                "计算机研二 · 电影", List.of("电影", "音乐"), "2.4km", false),
             new PersonSummaryView(1003L, "许诺", "/static/assets/images/avatars/avatar-3.jpg",
-                "艺术学院 · 音乐", List.of("音乐", "live"), "0.8km")
+                "艺术学院 · 音乐", List.of("音乐", "live"), "0.8km", false)
         );
     }
 }

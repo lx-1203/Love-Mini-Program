@@ -204,8 +204,13 @@ onLoad((query) => {
 
 // MP-R2-CAMPUSINDEX-006：从认证页/详情页返回时重取认证状态（原仅 onMounted 取一次，
 // 后台审核通过后返回本页仍显示「审核中」，已认证内容区/FAB 不出现）
+// MP-R2-CAMPUSINDEX-011：首次进入本页的时序是 onLoad→onShow→onMounted，两边都取认证状态
+// 就是同一个请求打两遍。这里只让 onShow 领首取，onMounted 见到已取就跳过；
+// 后续返回本页仍由 onShow 无条件重取——那正是 006 的立项目标，不能被一次性去重标志吃掉。
+let certFetchedByShow = false;
 onShow(() => {
   if (redirectedToHub.value) return;
+  certFetchedByShow = true;
   void campusStore.fetchCertificationStatus();
 });
 
@@ -213,7 +218,7 @@ onMounted(async () => {
   if (redirectedToHub.value) return;
   // 修复（review）：两个请求聚合等待，避免任一请求 reject 产生未处理 Promise
   await Promise.allSettled([
-    campusStore.fetchCertificationStatus(),
+    certFetchedByShow ? Promise.resolve() : campusStore.fetchCertificationStatus(),
     campusStore.fetchCampusTopics(activeCategory.value, 1, viewSchool.value || undefined),
   ]);
 });
@@ -890,6 +895,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .cert-recommend__label {
   position: absolute;
   left: 8rpx;
+  /* MP-R2-CAMPUSINDEX-012：只锚左边时，长推荐位名会横穿瓷片右缘；
+     补齐右边界后靠省略号收口（瓷片宽度由 grid 决定，不动版式） */
+  right: 8rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   bottom: 8rpx;
   font-size: 22rpx;
   font-weight: 700;

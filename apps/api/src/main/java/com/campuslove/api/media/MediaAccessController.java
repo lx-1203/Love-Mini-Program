@@ -533,7 +533,14 @@ public class MediaAccessController {
             // 路径不匹配预期格式，交给 Service 抛 400
             return "";
         }
-        return uri.substring(idx + APP_ASSET_URL_PREFIX.length());
+        String raw = uri.substring(idx + APP_ASSET_URL_PREFIX.length());
+        // 注册表里的 media_asset.url 存的是原始 UTF-8 路径，而 getRequestURI() 给的是**未解码**的
+        // 百分号形态：中文名素材（占 IMAGE_PATHS 的 370/393 条 404）因此永远匹配不上、
+        // 在 :356 的注册校验分支就被判 404，磁盘分支根本跑不到。
+        // 用 UriUtils 而不是 URLDecoder：后者是 form 解码器，会把路径里的 '+' 变成空格。
+        // 安全性：解码后仍要过注册表白名单（real）以及 loadAppAsset 里的
+        // validateSubPath + normalize/startsWith 双重越界校验，故不扩大穿越面。
+        return org.springframework.web.util.UriUtils.decode(raw, java.nio.charset.StandardCharsets.UTF_8);
     }
 
     /**

@@ -113,7 +113,7 @@ const circleTags = computed<string[]>(() =>
 /** 置顶公告（本地 mock —— TODO(后端): 圈公告接口）。
  *  MP-R1-CIRCLEHOME-001：real 模式不渲染写死演示公告 */
 const pinnedNotice = computed<string>(() =>
-  useMock() ? "【规约】友善交流，尊重原创，分享美好瞬间" : ""
+  useMock() ? "【圈规】友善交流，尊重原创，分享美好瞬间" : ""
 );
 
 /** 动态 feed 项（2026-09-12：真实数据来自 circleStore.fetchTopics，mock 仅兜底） */
@@ -712,6 +712,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   display: flex;
   align-items: center;
   gap: 16rpx;
+  padding-right: calc(var(--capsule-right, 7px) + 104px);
 }
 
 .hero-btn {

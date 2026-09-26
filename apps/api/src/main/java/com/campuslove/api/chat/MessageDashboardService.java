@@ -10,6 +10,8 @@ import com.campuslove.api.repository.LikeRepository;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -48,7 +50,8 @@ public class MessageDashboardService {
 
         int likedMeCount = (int) likeRepository.countByTargetUserIdAndStatus(userId, Like.LikeStatus.active);
         int mutualCount = countMutualLikes(userId);
-        int sentCount = likeRepository.findByUserIdAndStatus(userId, Like.LikeStatus.active).size();
+        List<Like> sentLikes = likeRepository.findByUserIdAndStatus(userId, Like.LikeStatus.active);
+        int sentCount = sentLikes.size();
         int waitingReplyCount = Math.max(0, sentCount - mutualCount);
 
         TodayHeartView todayHeart = new TodayHeartView(likedMeCount, waitingReplyCount, warmPeople.size());
@@ -56,10 +59,15 @@ public class MessageDashboardService {
         List<AssistantSuggestionView> assistant = buildAssistantSuggestions(
                 likedMeCount, warmPeople);
 
+        // liked 单一真源：直接取本次请求者的主动喜欢记录（likes 表），
+        // 不再让客户端用本地镜像推断（刷新即漂）
+        Set<Long> myLikedUserIds = sentLikes.stream()
+                .map(Like::getTargetUserId)
+                .collect(Collectors.toSet());
         List<PersonSummaryView> recommendedPeople = recommendationService.getRecommendations(userId)
                 .stream()
                 .limit(6)
-                .map(this::toPersonSummary)
+                .map(person -> toPersonSummary(person, myLikedUserIds))
                 .toList();
 
         return new MessageDashboardView(todayHeart, assistant, warmPeople, recommendedPeople, conversations);
@@ -162,13 +170,14 @@ public class MessageDashboardService {
         return mutual;
     }
 
-    private PersonSummaryView toPersonSummary(RecommendedPersonView person) {
+    private PersonSummaryView toPersonSummary(RecommendedPersonView person, Set<Long> myLikedUserIds) {
         return new PersonSummaryView(
                 person.id(),
                 person.name(),
                 person.avatarUrl(),
                 person.headline(),
                 person.tags(),
-                person.distanceText());
+                person.distanceText(),
+                myLikedUserIds.contains(person.id()));
     }
 }

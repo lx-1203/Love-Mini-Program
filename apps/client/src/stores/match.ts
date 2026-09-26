@@ -1,6 +1,7 @@
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 import { useDiscoverStore } from "./discover";
+import type { DiscoverCard } from "./discover/types";
 import type {
   MatchActionType,
   MatchCardUser,
@@ -39,7 +40,7 @@ export const useMatchStore = defineStore("match", () => {
     status.value = "checking";
   }
 
-  async function runMatchCheck(): Promise<void> {
+  async function runMatchCheck(callerSnapshot?: DiscoverCard | null): Promise<void> {
     if (!pendingCardId.value || !pendingAction.value) {
       lastError.value = "缺少匹配卡片信息";
       status.value = "failed";
@@ -50,9 +51,14 @@ export const useMatchStore = defineStore("match", () => {
     lastError.value = null;
     try {
       const discoverStore = useDiscoverStore();
+      // MP-R2-MATCHING-016：URL 直达（冷启动、deck 未装载）时 discover store 里没有这张卡，
+      // swipeRight 会在 useMock 分支之前抛 cardNotFound → 状态机恒 failed。
+      // discover 域早已支持调用方自备卡片快照（stores/discover/actions/swipe.ts:158-163
+      // 第三参 callerSnapshot，MP-R1-LNEARBY-101），本层此前漏了透传。
       await discoverStore.swipeRight(
         pendingCardId.value,
-        pendingAction.value === "superLike"
+        pendingAction.value === "superLike",
+        callerSnapshot ?? null
       );
       const result = discoverStore.lastSwipeResult;
       // 单向喜欢是正常结果，回到 idle；只有接口异常才 failed。

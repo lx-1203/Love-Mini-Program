@@ -1,0 +1,343 @@
+{
+  "manifest": "PAGES-HOME-INDEX",
+  "judged": 48,
+  "by": {
+    "VERIFIED": 1,
+    "FAILED": 0,
+    "UNVERIFIED": 33,
+    "UNVERIFIED_INSTRUMENT": 9,
+    "NOT_EVIDENCED": 5
+  },
+  "noEvidenceExcludedFromCompletion": 12,
+  "issues": [],
+  "cases": [
+    {
+      "caseId": "PAGES-HOME-INDEX/H01",
+      "verdict": "VERIFIED",
+      "reason": "三方一致：H01-after.png 首屏无白屏、自定义 TabBar 五枚同屏且「首页」高亮、头部/今日推荐/恋爱进度区块按序渲染；console 仅 info 无 error（R12-IND-HOME-001 白屏回归未复现）。",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H02",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：act:pullDown 抛 ERR uni is not defined，下拉刷新动作未真正下发",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H03",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "harness 调用缺陷：act:pullDown 抛 ERR uni is not defined，下拉刷新动作未真正下发",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H04",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 点社区动态错误态的「重试」（CommunityFeed.vue:152-160 → index.vue:383 `@retry=\"() => homeStore.fetchDashboard()\"`）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H05",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H06",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H07",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H08",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 依次执行三条关闭路径各一轮：① 点遮罩 .bottom-sheet-mask（BottomSheet.vue:73 → onMaskTap :66-68，maskClosable 默认 true）；② 重开后点右上角 ×（:91 close",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H09",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 点 footer 主按钮「重新定位」（index.vue:466-475 @tap=refetchLocation）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H10",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H11",
+      "verdict": "UNVERIFIED",
+      "reason": "落点错位：用例页 pages/home/index 但 observed top=subpackages/profile-extra/profile/location（前置导航未落到本页/被上一页残留态带偏），观察对象不是本页",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H12",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H13",
+      "verdict": "UNVERIFIED",
+      "reason": "部分期望项由非 class 探针承载（.header-search:absent），仅 .header-me .header-location .header-icon 可核；证据不足以判三方一致",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H14",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：几何/热区实测数值（observed 无对应读数）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H15",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：network 请求计数（observed 无对应读数）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H16",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H17",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H18",
+      "verdict": "UNVERIFIED",
+      "reason": "部分期望项由非 class 探针承载（.operationFailed:absent），仅 .btn--loading 可核；证据不足以判三方一致",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H19",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H20",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "dom 探针全部是非 class 令牌（把 i18n key / JS 标识符当选择器查）：.noMoreRecommendation:absent —— 该观察不能支撑任何判决",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H21",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 两态各截图并各点一次整卡区域与「喜欢」按钮",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H22",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H23",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H24",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H25",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.relation-cell)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H26",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 点 RelationActivity.vue:22 的 .relation-activity__all",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H27",
+      "verdict": "UNVERIFIED",
+      "reason": "NO-EVIDENCE：1 条帧全部带 ERROR:timeout 尾注，盘上无图，不计入完成度",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H28",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 点 InterestRecommendation.vue:39 的 .section-head__more（index.vue:367 内联 @more=\"openAppPath(ROUTES.CIRCLES.INDEX)\"）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H29",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器解析不到；试过的标签/候选：tap(.id)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H30",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H31",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H32",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "dom 探针全部是非 class 令牌（把 i18n key / JS 标识符当选择器查）：.operationFailed:absent —— 该观察不能支撑任何判决",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H33",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H34",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H35",
+      "verdict": "UNVERIFIED",
+      "reason": "未执行：action-not-automatable —— 两态各截图，并在空态下确认无残留可点空区",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H36",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H37",
+      "verdict": "UNVERIFIED",
+      "reason": "部分期望项由非 class 探针承载（.operationFailed:absent），仅 .post-card__follow 可核；证据不足以判三方一致",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H38",
+      "verdict": "NOT_EVIDENCED",
+      "reason": "requiresReal=true：mock 产物不打后端，本条不在本轮 G8 取证范围",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H39",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H40",
+      "verdict": "UNVERIFIED",
+      "reason": "证据缺失：evidence[] 为空",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H41",
+      "verdict": "UNVERIFIED",
+      "reason": "落点错位：用例页 pages/home/index 但 observed top=subpackages/circles/circles/index（前置导航未落到本页/被上一页残留态带偏），观察对象不是本页",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H42",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H43",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H44",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H45",
+      "verdict": "UNVERIFIED",
+      "reason": "期望所需证据维度未采集：几何/热区实测数值（observed 无对应读数）",
+      "attempts": 1
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H46",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "选择器为 __CAND__/__CASE_PAGE__ 占位，未解析到真实节点；候选：(见 observed act-FAIL)",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H47",
+      "verdict": "UNVERIFIED_INSTRUMENT",
+      "reason": "dom 探针全部是非 class 令牌（把 i18n key / JS 标识符当选择器查）：.onLaunch:absent —— 该观察不能支撑任何判决",
+      "attempts": 1,
+      "landingCode": "HARNESS_CALL_DEFECT",
+      "owner": "instrument",
+      "maxSeverity": "P2 及以下"
+    },
+    {
+      "caseId": "PAGES-HOME-INDEX/H48",
+      "verdict": "UNVERIFIED",
+      "reason": "observed 与帧不足以逐条覆盖 expected（未采集到期望要求的断言项），按证据缺失处置",
+      "attempts": 1
+    }
+  ],
+  "notes": [
+    "H01 的「九块按源码顺序全部挂载」只取证到首屏两区块 + .home-section-gap，未逐块枚举；判决建立在「无白屏 + TabBar 同屏 + console error=0」这三条 R12-IND-HOME-001 回归断言上，范围已在 cases.reason 写明。",
+    "H11/H41 observed 落点分别是 profile-extra/profile/location 与 circles/circles/index（非本页），属上一例导航残留。落点六码=HARNESS_CALL_DEFECT，owner=instrument，最高 P2 以下；最低成本解法：pre 步骤先断言 getCurrentPages() 末位等于用例页且 token 身份 userId 与目标一致，不等即重登并复检后再进页。",
+    "裁定口径：三方一致=ops expected × exec observed/route/toast/console/evidence × 真打开的帧（round-6-tour 巡检帧含 zoom3x、round-6-interact 操作前后图）；复合键 manifest+caseId。",
+    "输入快照：.zcode/tmp/adjudicate/exec-results.snapshot.json（updatedAt 2026-09-25T15:28:18.856Z，509 行，gitSha 874ff52f）。执行轮仍在追加权威件，本文件只覆盖快照内已记录用例。",
+    "ERROR:timeout 尾注的帧一律按 NO-EVIDENCE 处置并计入 UNVERIFIED，不读作已取证；本清单该类 12 条已从完成度中排除。"
+  ]
+}

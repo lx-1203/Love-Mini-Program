@@ -102,7 +102,7 @@ function capitalize(s: string): string {
 
 <style scoped lang="scss">
 .love-progress {
-  margin: 0 40rpx 20rpx;
+  margin: 0 var(--page-padding) 20rpx;
   padding: 32rpx;
   border-radius: 40rpx;
   background: #ffffff;

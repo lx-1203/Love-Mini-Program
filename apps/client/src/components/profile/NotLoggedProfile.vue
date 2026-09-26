@@ -156,7 +156,9 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
   /* R12-IND-PROFILE-INDEX-001/MP-R1-PAGES-PROFILE-INDEX-002：未登录态此前固定
      32rpx 顶距，顶部三枚 64rpx 圆钮直接顶入状态栏/胶囊带（真机截图与时钟同高实证）；
      对齐已登录态 MyHeader.vue:96-98 口径让位状态栏。--statusbar 已由页面根注入。 */
-  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 32rpx) 24rpx 140rpx;
+  /* MP-R2-PROFILE-024：底部留白按台账口径与 custom-tab-bar 总高（160rpx+env 加 padding-bottom env+24rpx
+     = 184rpx + 2×env）核算（原固定 140rpx；钮顶缘在 292rpx+2env，余差留台账复核） */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 32rpx) 24rpx calc(184rpx + env(safe-area-inset-bottom) * 2);
 }
 
 /* 2026-08-26 P0：顶部 ‹ 返回 + 应用图标 + 设置（规格书 11.1 / 11.2）
@@ -443,7 +445,10 @@ const STORIES = ["生活日常", "旅行足迹", "我的心愿"];
   position: fixed;
   left: 32rpx;
   right: 32rpx;
-  bottom: calc(112rpx + env(safe-area-inset-bottom) + 20rpx);
+  /* MP-R2-PROFILE-024：原 bottom=112rpx+env+20rpx=132rpx+env 低于 custom-tab-bar 白面板总高
+     （height 160rpx+env 加 padding-bottom env+24rpx，content-box）= 184rpx+2env，
+     整颗 CTA 没入 tabBar；改按同口径核算并留间距（对齐 components/common/GlobalPublishFab.vue:112） */
+  bottom: calc(env(safe-area-inset-bottom) * 2 + 200rpx);
   height: 92rpx;
   border-radius: 999rpx;
   background: #36C99A;

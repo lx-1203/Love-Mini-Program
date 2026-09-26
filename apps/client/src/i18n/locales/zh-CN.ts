@@ -678,6 +678,11 @@ export default {
   },
   "notLoggedWaiting": {
     "title": "正在为你寻找 同频的那个人",
+    /* MP-R2VIS-PAGES-MESSAGES-INDEX-002 裁定（2026-09-25 store 接线收口）：
+       副标本就不含人数计数，subtitleWithCount 键两份都不落——游客态没有真值可填
+       （mock 推荐池固定 9 条演示数据、real 游客列表被 GUEST_LIST_LIMIT 30 截断、
+       discover.cards 在本组件两个宿主页面从不触发拉取），理想效果图副标的 12 是拼版演示值
+       （同图围圈只画了 6 个头像），与 MP-R2-CIRCLES-INDEX-002「取不到真值就不渲染」同口径。 */
     "subtitle": "发现更多同频的人",
     "unlockHint": "登录后即可解锁全部功能",
     "feature1": "精确匹配",
@@ -1414,6 +1419,8 @@ export default {
     "imageSent": "图片已发送",
     "sendingImage": "发送图片中...",
     "sendImageFailed": "图片发送失败",
+    "imageMessage": "图片",
+    "imageLoadFailed": "图片加载失败",
     "breakQuestion": {
       "commonInterests": "你们共同喜欢",
       "recommendedOpener": "推荐开场"
@@ -1733,6 +1740,13 @@ export default {
     "recordVoiceAria": "录制语音状态",
     "playVoiceAria": "播放语音状态",
     "deleteVoiceAria": "删除语音状态"
+  },
+  /* MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001：「我的位置」页是全站唯一把城市与坐标
+     并排展示的地方。逆地理失败时城市改由请求方 IP 归属地推断（MP-R1-PAGES-NEARBY-INDEX-005 的补救），
+     两者可以差出一个省，所以必须如实标注来源；完全取不到城市时不再显示假默认城市。 */
+  "locationPage": {
+    "serverCityTag": "服务器所在城市",
+    "addressUnavailable": "地址解析不可用"
   },
   "help": {
     "navTitle": "帮助与客服",
@@ -2222,6 +2236,24 @@ export default {
     "devUserEntryTitle": "演示模式进入",
     "closedTitle": "登录功能暂未开放",
     "closedDesc": "登录通道正在维护升级，请稍后再试。"
+  },
+  /* 独立注册页 pages/register/index.vue 校验/toast 文案（MP-R2-PAGES-REGISTER-INDEX-013，
+     键值逐字取自接线前的中文字面量，改值即改可见文案；en-US.ts 同键位成对维护） */
+  "register": {
+    "errPhoneFormat": "手机号格式不正确，请输入 11 位手机号",
+    "errPhoneRegistered": "该手机号已注册，试试直接登录",
+    "errSmsInvalid": "验证码不正确或已过期，请重新获取",
+    "errPasswordWeak": "密码至少 8 位，需包含字母和数字",
+    "errPasswordMismatch": "两次输入的密码不一致",
+    "errNicknameLength": "昵称需为 1-20 字",
+    "errBirthMinor": "出生日期需已满 18 周岁",
+    "toastPhoneRequired": "请先输入正确的手机号",
+    "toastPhoneRegistered": "该手机号已注册，可直接登录",
+    "smsSent": "验证码已发送至 {phone}",
+    "smsSentMock": "验证码已发送（模拟：{code}）",
+    "registerClosed": "注册功能暂未开放",
+    "networkError": "网络异常，请检查网络后重试",
+    "serviceUnavailable": "服务暂时不可用，请稍后重试"
   },
   "showcase": {
     "title": "全功能展示",
@@ -2801,6 +2833,13 @@ export default {
     "officialChatEmpty": "暂无官方消息",
     "officialChatLoadFailed": "官方消息加载失败，请重试",
     "officialChatSendFailed": "发送失败，请重试",
+    /* 寻觅助手会话页 mock 消息正文（MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001）：
+       逐字取自接线前的组件内中文字面量；emoji（😊/✨）经 config/emoji-map.ts 渲染为 SVG，
+       按 Lane 2 裁决留在源码拼接位，不入本键值。 */
+    "officialChatAssistantGreeting": "Hi~ 我是寻觅助手，我会帮你发现有趣的人和活动，让每一次相遇都更有意义",
+    "officialChatCardHint": "这个活动和你的兴趣很匹配哦~ 要一起去认识新朋友吗？",
+    "officialChatMockReply": "收到啦～我会帮你留意合适的活动和人哦",
+    "officialChatUserDecline": "好的，稍后再说～",
     "officialActivityTitle": "近期活动",
     "officialActivityCta": "查看详情",
     "officialAssistantMsg1": "你好，我是恋爱助手 有任何恋爱困惑都可以问我～",
@@ -3577,7 +3616,8 @@ export default {
       "goCertification": "去认证",
       "imagesUnsupported": "校园话题暂未开放配图，图片不会随话题保存",
       "anonymousUnsupported": "校园话题暂未开放匿名发布，内容将以你的昵称公开",
-      "contentMasked": "内容含敏感词，部分文字已被自动屏蔽"
+      "contentMasked": "内容含敏感词，部分文字已被自动屏蔽",
+      "chooseImageFailed": "选择图片失败，请检查相册/相机权限"
     },
     "topicDetail": {
       "replySuccess": "回复成功",
@@ -3599,7 +3639,6 @@ export default {
       "sendSend": "发送",
       "replyAtLimit": "已达 {n} 字上限，无法继续输入",
       "replyMasked": "回复含敏感词，部分文字已被自动屏蔽",
-      "anonymousToggleOnReal": "匿名·暂不生效"
     }
   },
   "heartSignals": {
@@ -3703,6 +3742,9 @@ export default {
     "circlesNavTitle": "兴趣圈",
     "circlesSubtitle": "找到与你志趣相投的人",
     "circlesEmpty": "暂无兴趣圈",
+    "circlesEmptyLogin": "登录后可查看全部兴趣圈",
+    "tabAll": "全部",
+    "cardStats": "{members} 人 · {posts} 条动态",
     "campusBadge": "校园认证",
     "campusVerifyRequired": "进入校园圈需先完成校园认证",
     "discoverEntryTitle": "附近的人",
@@ -3729,6 +3771,8 @@ export default {
     "postTopicActivityPick": "选择要推荐的活动",
     "postTopicActivityRemove": "移除关联",
     "postTopicActivityEmpty": "暂无可用活动",
+    "postTopicActivityEnrollHint": "请前往活动详情页报名",
+    "catPhoto": "摄影",
     "catStudy": "学习",
     "catSports": "运动",
     "catMusic": "音乐",

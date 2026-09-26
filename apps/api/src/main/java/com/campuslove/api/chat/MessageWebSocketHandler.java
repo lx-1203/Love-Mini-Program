@@ -238,7 +238,8 @@ public class MessageWebSocketHandler {
                     // 此处不再重复推送，避免接收方收到两份消息）
                     privateMessageService.sendMessage(
                             privateConv.getId(), senderLong, content,
-                            kind != null && !kind.isBlank() ? kind : "text", null);
+                            kind != null && !kind.isBlank() ? kind : "text", null,
+                            extractString(payload, "quoteRef"));
                     log.debug("WebSocket SEND 私信已落库并推送: conversationId={}, senderId={}",
                             conversationId, senderId);
                     return;

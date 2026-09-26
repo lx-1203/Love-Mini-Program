@@ -218,13 +218,18 @@ function openActivity(activityId: number | string) {
       <ActivityCard :activity="post.activity" compact @open-detail="openActivity" @enroll="openActivity" />
     </view>
 
-    <!-- 标签 -->
+    <!-- 标签
+         MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001（视觉裁决 2026-09-25）：
+         原 tagIdx % 2 奇偶配色不携带语义（同一话题在奇/偶位会换色），且理想图
+         素材/理想效果图/圈子详情，摄影圈参考.png 中三枚话题胶囊（#校园风景 y820-839、
+         #人像写真 y1273-1292、#器材交流 y1707-1725，均 x51-152）全部为绿族、零粉族；
+         「绿=行动 / 粉=喜欢」在 帖子.png 由行动钮（关注 绿描边 x719-815/y203-250）与
+         已喜欢心形（粉实心 x47-83/y1064-1096）承载，不依赖标签配色 → 统一单色绿 -->
     <view v-if="post.tags.length > 0" class="post-card__tags">
       <text
-        v-for="(tag, tagIdx) in post.tags"
+        v-for="tag in post.tags"
         :key="tag"
-        class="post-card__tag press-feedback"
-        :class="tagIdx % 2 === 0 ? 'post-card__tag--green' : 'post-card__tag--pink'"
+        class="post-card__tag post-card__tag--green press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="40"
         @tap.stop="emit('open-tag', tag)"
@@ -542,10 +547,8 @@ function openActivity(activityId: number | string) {
   background: var(--c-bg-brand, #f0fdf9);
 }
 
-.post-card__tag--pink {
-  color: var(--c-romance-500, #FF6B81);
-  background: var(--c-bg-romance-soft, #fdf2f8);
-}
+/* MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001：原 .post-card__tag--pink 分支已删
+   （奇偶配色无语义、理想图话题胶囊为单色绿族），粉色在站内回归「喜欢」专义 */
 
 /* ---------- 最新评论预览（QQ 频道风格） ---------- */
 .post-card__comments {

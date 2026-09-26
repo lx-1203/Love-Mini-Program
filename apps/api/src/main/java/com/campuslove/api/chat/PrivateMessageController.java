@@ -101,7 +101,7 @@ public class PrivateMessageController {
         Long senderId = SecurityUtils.getCurrentUserId();
         return ApiResponse.ok(privateMessageService.sendMessage(
                 conversationId, senderId, request.content(), request.kind(),
-                request.durationSeconds()));
+                request.durationSeconds(), request.quoteRef()));
     }
 
     /**
@@ -205,11 +205,16 @@ record CreateConversationRequest(
  *
  * <p>R4-00335：kind 白名单移除 SYSTEM——系统消息仅允许服务端写入，客户端
  * 伪造 SYSTEM 类型会破坏消息可信度（用户可冒充系统推送）。</p>
+ *
+ * <p>引用回复（与临时会话 {@code ChatMessageRequest.quoteRef} 同契约）：quoteRef 为被引用
+ * 消息 ID（字符串，≤64），服务端校验其属于同一会话后写 quote_context 快照，
+ * 并把消息类型规范化为 quote；跨会话/不存在的 quoteRef 视为未引用（不阻断发送）。</p>
  */
 record SendMessageRequest(
     @NotBlank(message = ErrorMessages.CONTENT_REQUIRED) @Size(max = 5000) String content,
     @Pattern(regexp = "(?i)TEXT|IMAGE|VOICE|VIDEO|EMOJI|ACTIVITY",
         message = ErrorMessages.PRIVATE_MSG_KIND_INVALID)
     @Size(max = 32) String kind,
-    @Min(0) @Max(60) Integer durationSeconds
+    @Min(0) @Max(60) Integer durationSeconds,
+    @Size(max = 64) String quoteRef
 ) {}

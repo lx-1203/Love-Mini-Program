@@ -778,7 +778,7 @@ onShareTimeline(() => {
     </view>
 
     <!-- 帖子内容 -->
-    <scroll-view v-if="currentPost" class="detail-body" scroll-y>
+    <scroll-view v-if="currentPost" class="detail-body" :class="{ 'detail-body--bar-expanded': !!replyingTo || commentImages.length > 0 }" scroll-y>
       <!-- ===== 作者交互卡片 ===== -->
       <!-- 理想图：扁平行内作者行（头像 + 名字 + 校徽 + 关注按钮） -->
       <view class="author-inline">
@@ -1612,6 +1612,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   flex: 1;
   /* 2026-09-05 R17：输入栏改 fixed 吸底后，滚动内容底部预留输入栏高度，避免最后一条评论被遮挡 */
   padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
+}
+
+.detail-body--bar-expanded {
+  padding-bottom: calc(320rpx + env(safe-area-inset-bottom));
 }
 
 /* 2026-08-26 R4：详情加载骨架屏 */

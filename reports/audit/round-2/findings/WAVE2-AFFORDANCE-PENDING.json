@@ -1,0 +1,116 @@
+{
+  "round": "R2",
+  "source": "Wave-2 修复代理回报的「同页其它假 affordance / 非叠加待裁项」，只列未改，待裁决后并入台账",
+  "admittedBy": "主控（接管会话）",
+  "note": "以下条目均未修复、未验证；evidence 为修复代理读码时定位、主控已抽验其中 3 条。status 一律 待裁决（不是 待修复），由书记员或下一轮落账转正。",
+  "issues": [
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01",
+      "page": "subpackages/village/village/publish",
+      "severity": "P2",
+      "category": "Function",
+      "status": "待裁决",
+      "confidence": 0.6,
+      "sources": ["code"],
+      "description": "「提及好友」行是假 affordance：行带 `›` 与 role=button，但处理函数体只有 toast「提及好友即将开放」，无任何提及能力；对照 post.vue 同功能 `insertMention` 会真往正文插 `@`",
+      "evidence": "publish.vue:867（行）/ publish.vue:341（openMentionPicker 函数体）；对照 subpackages/village/village/post.vue 的 insertMention",
+      "decisionNeeded": "做真（对齐 post.vue 插 @）还是去掉可点暗示改为「即将上线」静态说明"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A02",
+      "page": "subpackages/village/village/publish",
+      "severity": "P3",
+      "category": "UI",
+      "status": "待裁决",
+      "confidence": 0.55,
+      "sources": ["code"],
+      "description": "「添加位置」行已正确不可点，但 label 写「添加位置」、无缓存城市时 meta 写「选择位置」，构成文案层假 affordance（用户仍会以为可点）",
+      "evidence": "publish.vue:860-865",
+      "decisionNeeded": "文案改为不可用说明，或恢复可点并接选点"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A03",
+      "page": "subpackages/village/village/publish",
+      "severity": "P2",
+      "category": "Interaction",
+      "status": "待裁决",
+      "confidence": 0.5,
+      "sources": ["code"],
+      "description": "selectTarget 内 `if (!circle.isJoined) return;` 为静默 no-op，而该行仍带 press-feedback 与 role=button；常规路径被列表过滤挡住，但深链/脏数据下即死按钮",
+      "evidence": "publish.vue:793",
+      "decisionNeeded": "no-op 前加可读 toast，或去掉不可用项的可点样式"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A04",
+      "page": "subpackages/village/village/publish",
+      "severity": "P3",
+      "category": "MiniProgram",
+      "status": "待裁决",
+      "confidence": 0.5,
+      "sources": ["code"],
+      "description": "头部「发布」钮在 !canSubmit 时只加浅绿 --disabled 视觉，@tap 与 role=button 保留且会弹 toast（非死按钮），但「看着禁用却可点」且缺 aria-disabled，无障碍语义与实际不一致",
+      "evidence": "publish.vue:734",
+      "decisionNeeded": "补 aria-disabled 或真正禁用点击"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A05",
+      "page": "subpackages/village/village/publish",
+      "severity": "P3",
+      "category": "Architecture",
+      "status": "待裁决",
+      "confidence": 0.45,
+      "sources": ["code"],
+      "description": "同页两套弹层层级不一致：既有「发布到」弹层 position:fixed 仍嵌在 <scroll-view> 内，Wave-2 新增的话题弹层放在页面根。mp-weixin 下 scroll-view 内的 fixed 层有被裁剪/滚动带走的既有风险",
+      "evidence": "publish.vue:759（旧弹层在 scroll-view 内）/ :912-958（新弹层在页面根）",
+      "decisionNeeded": "是否统一迁到页面根（需重拍两弹层帧确认无回归）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A01",
+      "page": "subpackages/chat/chat-session/index",
+      "severity": "P4",
+      "category": "Consistency",
+      "status": "待裁决",
+      "confidence": 0.4,
+      "sources": ["code"],
+      "description": "同页 env(safe-area-inset-bottom) 兜底写法不一致：.more-menu-sheet 写 env(...,0)，另三处无兜底。Wave-2 已判定这四处不构成叠加（不在同一嵌套链）",
+      "evidence": "chat-session/index.vue:3192 对比 :2594/:2867/:3483",
+      "decisionNeeded": "是否统一写法（纯一致性，非缺陷）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02",
+      "page": "subpackages/chat/chat-session/index",
+      "severity": "P4",
+      "category": "Architecture",
+      "status": "待裁决",
+      "confidence": 0.4,
+      "sources": ["code"],
+      "description": "Wave-2 删除内层 env() 后，.wechat-input-bar--keyboard-up 与基线等值成为空操作，但模板里的 class 绑定仍在（死分支）",
+      "evidence": "chat-session/index.vue:2876（样式）/ :2173（class 绑定）",
+      "decisionNeeded": "删死分支或恢复键盘态差异化间距（需真机确认键盘态量测）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A03",
+      "page": "subpackages/chat/chat-session/index",
+      "severity": "P4",
+      "category": "Architecture",
+      "status": "待裁决",
+      "confidence": 0.4,
+      "sources": ["code"],
+      "description": "死样式：.chat-session-back 使用 var(--statusbar,…) 但模板全篇无该 class 引用（顶部避让链，与本轮底部修复无关）",
+      "evidence": "chat-session/index.vue:3277",
+      "decisionNeeded": "删除或接线"
+    },
+    {
+      "id": "MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01",
+      "page": "components/chat/ChatInput.vue",
+      "severity": "P4",
+      "category": "Architecture",
+      "status": "待裁决",
+      "confidence": 0.35,
+      "sources": ["code"],
+      "description": "组件全仓无引用（其 :83 亦含 env(safe-area-inset-bottom)）。属死代码候选，但未验证是否被其它页面动态引用",
+      "evidence": "components/chat/ChatInput.vue:83；grep 引用零命中",
+      "decisionNeeded": "确认死代码后删除（同 MP-R1-PAGES-DISCOVER-INDEX-008 的 CheckinPopup 先例）"
+    }
+  ]
+}

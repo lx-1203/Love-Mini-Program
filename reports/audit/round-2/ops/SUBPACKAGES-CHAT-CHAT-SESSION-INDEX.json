@@ -1,0 +1,344 @@
+{
+  "cases": [
+    {
+      "id": "CS01",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "未登录冷启动深链：整页 LockScreen 引导，不发鉴权请求、不闪错误空态",
+      "tier": "normal",
+      "pre": "wx.removeStorageSync('token')/('refresh_token') 清登录态 → reLaunch '/subpackages/chat/chat-session/index?userId=100158'；isUnlocked = isLoggedIn || useMock()（index.vue:532）；onLoad 未登录分支在参数处理之前 return（:676）",
+      "action": "进入后不操作，等 ≥500ms；探测 .lock-screen 与其三出口 .lock-screen__btn / .lock-screen__btn-link / .lock-screen__close（LockScreen.vue:216,222,129），并确认 .chat-header / .chat-scroll / .wechat-input-bar 均不存在",
+      "expected": "停留本页路由；整页 LockScreen 完整渲染（标题/副标/权益清单/主按钮/次链接/关闭）；**不得**渲染聊天头/消息区/输入栏；**不得**闪现「缺少会话标识，请从聊天列表或匹配结果进入。」（:758/:1296）等错误态（冷启动深链铁律）；network 零条受保护请求；console 无 error/TypeError",
+      "evidence": "normal：after 截图 + 路由断言 + network 零请求 + console"
+    },
+    {
+      "id": "CS02",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "LockScreen 三出口逐个可点：主按钮挂起回跳、先逛逛切 Tab、× 按栈深分流",
+      "tier": "navigation",
+      "pre": "同 CS01 未登录前置渲染 LockScreen；分别准备栈深=1（reLaunch 直开）与栈深≥2（从消息列表跳入）两分支",
+      "action": "分支①tap .lock-screen__btn；分支②tap .lock-screen__btn-link；分支③在栈深=1 与栈深≥2 下各 tap .lock-screen__close",
+      "expected": "三路均须 500ms 内可观测路由变化（非死按钮）：①跳 pages/login/index 并挂起登录后回跳（LockScreen.vue:80-83 onPrimary：setPendingLoginRedirect(资料完善页) + replaceAppPath(ROUTES.LOGIN)）；②switchTab 到 pages/discover/index（LockScreen.vue:103-104 browsePublic），不得报 can not navigateTo a tabbar page；③LockScreen.vue:94-98 goBack：栈深≥2 → navigateBack 回来源页并恢复其状态；栈深=1 → switchTab 到 discover；全程无错误态、无 JS 报错",
+      "evidence": "navigation：四路 getCurrentPages 链断言（含栈深）+ console，可免截图"
+    },
+    {
+      "id": "CS03",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "userId 深链且已有私聊会话：复用既有会话，不得新建第二条",
+      "tier": "critical",
+      "pre": "身份 A mock 登录（tmp_r11_login.json JWT 注入后经 session.bootstrap()，isLoggedIn=true）；messagesStore.sessions 中已存在 partnerId=100158 且 sessionType='private' 的会话，记录其 id=S0 与会话总条数 C0",
+      "action": "reLaunch '/subpackages/chat/chat-session/index?userId=100158'；读取 sessionId.value、消息条数、network 是否出现 POST /messages/conversations；随后退出再次进入一次",
+      "expected": "命中既有会话分支（:714-721 直接取 existingSession.id 并 return）→ 会话 id=S0；**不得**发起 createSession 写请求（network 零新增 POST）；两次进入后回读会话条数仍为 C0（重复进入不产生第二条会话）；消息列表按 fetchSessionMessages 加载（:654）且末条在视口内",
+      "evidence": "critical：before/after 截图 + sessionId 求值 + network 请求列表（method/URL）+ 会话条数回读 + console"
+    },
+    {
+      "id": "CS04",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "userId 深链且无会话：创建/复用真实会话并立即加载消息",
+      "tier": "critical",
+      "pre": "身份 A 已登录；目标 userId=100159 在 messagesStore.sessions 中**无**私聊会话；回读该 (己方,100159) 会话条数 C0；network 面板清空",
+      "action": "reLaunch '...chat-session/index?userId=100159'；观察至渲染稳定；读取 sessionId、页面标题昵称、network 中 POST /messages/conversations 条数与其 Idempotency-Key",
+      "expected": "走 createSession（:729）→ sessionId 为后端返回的真实 id（数字主键或 conv- 前缀，:723-727 注释）；随后主动 loadSessionData（:743）不得出现「先渲染空列表再补」的假空态闪烁；标题显示对方真实昵称（session.partnerName 或 getPersonProfile 兜底 :734-741，不得为 'undefined'）；【客户端层】POST /messages/conversations 恰 1 条；【数据层】回读 C1=C0+1（同目标仅 1 条会话）；失败时文案必须走友好化（:748-753 过滤 HTTP/幂等/数字码等技术串）",
+      "evidence": "critical：before/after 截图 + 会话 id/标题 + network 逐条（含 Idempotency-Key 值）+ 会话条数回读 C0/C1 + console"
+    },
+    {
+      "id": "CS05",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "【本轮重点回归①】temp 深链加载失败：activeSession 不得残留上一个会话（错会话渲染/错会话发送均须为零）",
+      "tier": "critical",
+      "pre": "身份 A mock 登录（mock 构建下 temp 会话可在本地构造，无需后端）：①先 reLaunch '...chat-session/index?sessionId=mock-session-1' 进入有效 temp 会话（chat/mock-data.ts:25，含 5 条气泡 m-1-1..m-1-5），确认 activeSession.id='mock-session-1' 且 5 条气泡已渲染；②保持小程序不重启，随后对**失效** temp 深链发起进入：reLaunch '...chat-session/index?sessionId=mock-session-999'（不在 mockSessionMap → chatStore.loadSession 返 null → 显式清 activeSession 并抛「会话不存在或已失效」，stores/chat/actions/session.ts:201,222-224；real 路径同理 :208-215）；执行器须同时保留一份「store 未被清空而残留上一个会话」的对照观察记录",
+      "action": "第②步进入后等 ≥1.5s，逐项取证：(a) chatStore.activeSession 的 id 值；(b) 消息区是否存在任何气泡（.chat-bubble 计数与文本抄录）；(c) 消息区是否显示错误文案「会话不存在或已失效」（index.vue:1913,640；zh-CN.ts:1191）；(d) .temp-banner 是否仍渲染（tempLoadFailed 门 :1852,125）；(e) .wechat-input-bar 是否存在、输入框是否可用；(f) 若输入框可用则输入「残留测试」并 tap .wechat-input-bar__send，随后回到第①步会话回读消息条数",
+      "expected": "修复后应有表现（逐项判定，任一项不满足即 FAILED 并给严重级）：(a) activeSession 必须为 **null**（或其 id ≠ 当前 URL sessionId），不得残留 'mock-session-1'（残留即 P0）；(b) 消息区气泡数必须为 **0** 且不得出现 mock-session-1 的任何一条文本（页面在 pageErrorMessage 存在时以错误文案整体替换消息列表，:1913 v-if 链，且 syncChatStoreMessagesToMessagesStore 被门跳过 :639-643）→ 出现旧会话气泡判 P0「渲染错会话消息」；(c) 错误文案必须可见、不得退化为「0 气泡 + 破冰引导」假空会话（:630-632 注释口径）；(d) .temp-banner 必须仍渲染（tempLoadFailed 生效，MP-R1-...-105）；(e) 输入栏不得以「可发送」形态出现（:2008 输入区被错误文案替换）；(f) 若输入栏仍存在，发送必须被阻断并有失败 Toast，**并且**回读 mock-session-1 消息条数必须仍为 5（不得变 6）→ 发进旧会话判 P0「继续发会发进错误会话」；全程 console 不得出现未捕获 rejection",
+      "evidence": "critical：(a)-(f) 每步 before/after 截图（含旧会话回读帧）+ chatStore.activeSession/messagesStore.currentMessages 求值 + 气泡文本抄录 + 回读旧会话条数 + Toast 数组 + console"
+    },
+    {
+      "id": "CS06",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "【同文案连续失败证伪】同一失效 temp 深链连进 3 次：不得第 2 次退化为假空会话（MP-R2-CHAT-001 回归）",
+      "tier": "critical",
+      "pre": "承接 CS05：先做一次失效 temp 深链进入使 chatStore.errorMessage 置为「会话不存在或已失效」，返回后再进同一条深链（errorMessage 文案与本次完全相同 → 旧的「errorMessage 是否变化」差分检测会误判成功，:634-638 注释已改判 id 一致性的原因）",
+      "action": "以 reLaunch 方式连续 3 次进入 '...?sessionId=mock-session-999'，每次等 1.5s 并抄录：activeSession、currentMessages 条数、是否显示错误文案、破冰引导（BreakQuestion :2030-2035）是否出现、输入栏是否存在",
+      "expected": "三次表现必须完全一致：均显示错误文案、均 currentMessages=0 且无破冰引导卡、输入栏均不可用；**只要任一次**出现「0 气泡 + 破冰引导 + 可输入」组合即判 FAILED（差分误判成功导致的假空会话复活，P1）；判定依据必须是「activeSession 就绪且 id 与 URL 一致」这一确定性信号（:639），不得依赖 errorMessage 文案变化",
+      "evidence": "critical：三次 before/after 截图 + 每次的 activeSession/currentMessages/errorMessage 求值 + Toast/console 记录"
+    },
+    {
+      "id": "CS07",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "temp 会话正常加载：横幅 + 倒计时首进即出（MP-R1-...-001 回归），交换/结束入口可用",
+      "tier": "critical",
+      "pre": "身份 A mock 登录；reLaunch '...chat-session/index?sessionId=session-temp-1'（mock-data.ts:212，星河临时匿名会话，3 条消息 msg-6..msg-8，含 closesAt）",
+      "action": "进入后等 1.5s：抄录 .temp-banner 三行文本与倒计时值（:1852-1861）、页面标题（chat.tempSessionTitle :897）、气泡数；观察倒计时是否每约 1s 递减；再 tap .temp-action-row 两钮",
+      "expected": "首进即显示倒计时（不得为恒空 —— 倒计时在会话就绪后重启，:644-649 startTempCountdown），格式为剩余时间文案（formatTempCountdown，已结束不得残留「已结束」字样 :1113-1123）；横幅 hint 取 activeSession.availabilityHint 或默认文案（:1860）；标题为临时会话标题非「对方」；3 条气泡完整渲染（sync 生效 :644）；两钮可点且分别触发：同意交换 → 成功 Toast（:1206-1208），结束会话 → **先弹 showModal 确认**（:1227-1236），取消则会话不结束",
+      "evidence": "critical：before/after 截图（倒计时两个时刻各一张）+ 横幅/标题文本 + activeSession 求值 + Toast/modal 文案 + console"
+    },
+    {
+      "id": "CS08",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "会话未加载时的 temp 操作按钮：禁用态 + 点击必须有 Toast，不得静默（MP-R1-...-002/-105）",
+      "tier": "normal",
+      "pre": "构造「temp 上下文存在但 activeSession 为 null」：reLaunch '...chat-session/index?sessionId=mock-session-999'（同 CS05 失效深链）；记录 tempSessionUnavailable 求值（:886-890）",
+      "action": "①若 .temp-action-row 仍渲染，tap 两个按钮各一次并抄录 Toast；②读取按钮 class 是否含 temp-action-btn--disabled（:2099,2108）；③记录「输入区显示错误文案导致整组按钮不渲染」这一实际分支",
+      "expected": "判定按修复后应有表现：tempSessionUnavailable 为真时按钮须带禁用样式 **且** 点击给出「会话不存在或已失效」或 operationFailed Toast（:1199-1205,1219-1225），绝不允许「点了没反应」；若当前实现因 pageErrorMessage 存在而整组不渲染（:2008 v-else），执行器须如实记录「入口不渲染」并核对 :2093-2095 注释声称的『仍渲染整组禁用按钮』是否与实际一致 → 不一致记 Consistency/P2 缺陷；两种表现都必须保证无静默死按钮",
+      "evidence": "normal：after 截图（按钮区放大）+ class 与求值 + Toast 数组 + console"
+    },
+    {
+      "id": "CS09",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "结束会话的确认弹层三路关闭：确认 / 取消 / 系统返回，仅确认才销毁会话",
+      "tier": "critical",
+      "pre": "同 CS07 正常 temp 会话；回读该会话当前消息条数与 phase",
+      "action": "①tap .temp-action-btn--danger（结束会话）→ 弹 modal；tap 取消；②再次触发 → tap 确认；③第三次触发后按系统返回键关闭 modal（若可）；每步后读取会话 phase（:873-878 isSessionClosed）与按钮态",
+      "expected": "①取消路径：会话 phase 不变、无 endSession 请求、无「会话已结束」Toast；②确认路径：调 chatStore.endSession 并 Toast 成功（:1238-1240），页面转「已结束/输入禁用」态（输入框 placeholder 变会话已结束、canSend=false :893）；③系统返回关闭 modal 不得连带执行结束（Promise 未 resolve 时不得默认 true，:1227-1236 的 fail 分支 resolve(false)）；modal 文案为本地化（不得裸 key）；结束后回读服务端/本地 phase 必须为 closed（落库与 UI 一致）",
+      "evidence": "critical：三路径 before/after 截图 + modal 文案 + phase 求值 + network 请求条数 + console"
+    },
+    {
+      "id": "CS10",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "发送文字（私信会话）：气泡上屏 + 草稿清空 + 持久化草稿清除",
+      "tier": "critical",
+      "pre": "身份 A 进入一个私聊会话（?userId=100158）；草稿为空；记录消息条数 M0",
+      "action": "tap .wechat-input-bar__input → 输入「你好，测试消息」→ tap .wechat-input-bar__send（:2079-2087 @tap=onSend→sendText :1129-1192）",
+      "expected": "500ms 内可观测：新气泡上屏（右侧 self）、视口自动滚底（:466 scrollToBottom）、草稿清空（:1177）、持久化草稿被清（clearPersistedDraft :1180）；回读消息条数 M1=M0+1；【客户端层】sendMessage 写请求恰 1 条（含稳定 Idempotency-Key，services/http.ts:262-274）；【数据层】重进会话后仍为 M0+1 条（不得本地补偿出第二条，:1167-1170 注释口径）；无失败 Toast",
+      "evidence": "critical：before/after 截图（发送前后各一张 + 重进后一张）+ 气泡文本与条数 + network 逐条 + Toast 数组 + console"
+    },
+    {
+      "id": "CS11",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "发送连点×5：客户端请求条数与消息落库条数必须分开判定（防幂等假通过）",
+      "tier": "critical",
+      "pre": "同 CS10，草稿填「连点测试」；M0 已回读；network 面板清空；注意 onSend/sendText 源码**无** createButtonGuard 包裹（对照 register/index.vue:456 有）且 :1130 仅拦空草稿与无 sessionId，不拦在途重复",
+      "action": "对 .wechat-input-bar__send 以 <150ms 间隔连点 5 次；逐条记录：sendText 调用次数、写请求条数与各自 Idempotency-Key 值、气泡上屏条数、重进会话后回读条数 M1",
+      "expected": "分栏判定：【客户端层】写请求新增条数必须为 1（草稿在首次成功后被清空 → 后续点击因 draft 空而 return，:1130）；若出现 ≥2 条请求（无论 key 是否相同）→ 判 FAILED（无防连点守卫；相同 key 被服务端幂等去重只是掩盖问题，不得据此判通过，stage-contract §6.2）；【数据层】M1 = M0 + 1（重进后仍为 1 条）；【UI】同文本气泡不得出现 2 条、Toast 不叠加",
+      "evidence": "critical：before/after 截图 + 请求逐条（URL/Idempotency-Key）+ sendText 调用计数 + 重进回读 M0/M1 + console"
+    },
+    {
+      "id": "CS12",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "空提交与纯空白提交：发送按钮置灰且点击零副作用",
+      "tier": "normal",
+      "pre": "身份 A 进入私聊会话（?userId=100158，chat-session/index.vue:711-721 分支），输入框草稿为空（draft 初值，发送门 :1130）",
+      "action": "①tap .wechat-input-bar__send（空草稿）；②输入 5 个空格 → 观察按钮 class；③tap 发送；④输入 '\\n'（若可）后再发；⑤在会话已结束态（CS09 之后）重复①",
+      "expected": "①③④：canSend=false → 按钮保持 --disabled（:2081,893 trim 后判长度），**零请求**、草稿不被清空/改写、无报错 Toast；②纯空格 trim 后视为空，不得放行（:1130）；⑤已结束会话点击必须弹「会话已结束无法发送」Toast（:1134-1136）而非静默；全程无网络副作用",
+      "evidence": "normal：四步 after 截图 + 按钮 class + network 零请求断言 + Toast 数组 + console"
+    },
+    {
+      "id": "CS13",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "输入框极值：5000 字超长、特殊字符与 HTML/JS 注入、emoji 代理对",
+      "tier": "critical",
+      "pre": "私聊会话（未结束）；本输入框源码**无** maxlength（:2065-2076）→ 极值全靠渲染与后端约束，属高风险面",
+      "action": "依次输入并发送：①'x'*5000；②'<img src=x onerror=alert(1)>'；③\"'\\\"`;-- \" 与 '${1+1}'；④'😀🏵️👨‍👩‍👧'（含 ZWJ/变体选择符）；⑤500 个中文字；每条抄录气泡渲染与 rect，并做 wxml 快照",
+      "expected": "①超长不得致页面卡死/崩溃：允许后端长度校验失败但必须给用户可见失败 Toast 且**保留草稿**（temp 链路失败返回布尔并保草稿 :1157-1164；私信链路 catch :1183-1190 亦须保草稿），气泡不得溢出屏幕宽度或把布局撑破；②③不得被解析成节点/表达式求值（wxml 快照中无 img/script 类节点，页面上不出现 'NaN'/'2'），无 alert 执行；④emoji 不得显示为方块/断字，代理对不得被截半；⑤长中文必须可换行不破框；全程 console 无未捕获异常",
+      "evidence": "critical：五态 before/after 截图 + 气泡文本与 rect + wxml 快照 + Toast 数组 + 草稿是否保留的求值 + console"
+    },
+    {
+      "id": "CS14",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "【键盘铁律】输入框聚焦弹键盘：输入栏与发送钮不得被遮挡，末条气泡可见",
+      "tier": "critical",
+      "pre": "iPhone SE / iPhone 14 Pro 两机型；私聊会话且消息 ≥10 条（视口已滚到底部）；.chat-input-area 有 keyboard-up 修饰类逻辑（:2007,2040 keyboardHeight>0）",
+      "action": "①tap .wechat-input-bar__input 使键盘弹起（input 设 :adjust-position=true、cursor-spacing=20，:2066,2071）；②记录 keyboardHeightchange 回调值（:2075,1279-1281）；③读取输入框/发送钮/表情钮/「+」钮 boundingClientRect 底边与键盘上边界关系；④检查末条消息气泡是否完整可见；⑤收起键盘后再读一次布局是否复原",
+      "expected": "键盘弹起态：输入栏整体抬升，四个控件（表情/+/输入框/发送）的 rect 底边必须 ≤ 键盘上边界（零遮挡、零不可点）；cursor-spacing=20 保证光标不被键盘压住；末条气泡不得被输入栏或键盘永久遮住（允许滚动补偿）；⑤收起后布局复原、不得残留键盘抬升位移或底部空白；两机型一致；无滚动跳变/回弹异常",
+      "evidence": "critical：键盘弹起/收起前后截图（整屏含键盘）+ keyboardHeight 值 + 4 控件 rect 与键盘上沿数值表 + console"
+    },
+    {
+      "id": "CS15",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "表情面板与键盘互斥（微信行为）+ 选表情追加草稿",
+      "tier": "normal",
+      "pre": "身份 A 进入私聊会话（?userId=100158），草稿为空且键盘/表情面板均未展开（面板与键盘互斥逻辑 index.vue:1292-1297）",
+      "action": "①tap .wechat-input-bar__icon-btn--emoji（:2043-2052 toggleEmojiPanel :1292-1297）；②先聚焦输入框让键盘弹起，再点表情钮；③tap EmojiPanel 内任一表情两次；④再次点表情钮收起",
+      "expected": "①面板展开且键盘被收起（源码显式 uni.hideKeyboard() :1295）；②键盘弹起态下点表情必须**切**为面板（互斥，不得面板与键盘并存把输入栏顶出屏幕）；③草稿按选择顺序追加（handleEmojiSelect :1305），面板不自动关闭（微信行为，须记录实际）；④再点收起，面板消失且输入栏回到原位；全程 500ms 内均有可观测变化，无死按钮；aria-label 非裸 key（:2049）",
+      "evidence": "normal：四步 after 截图 + 草稿值抄录 + keyboardHeight/面板可见性求值 + console"
+    },
+    {
+      "id": "CS16",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "「+」更多菜单三路关闭：遮罩点 / 取消钮 / 选择项，且菜单项非死按钮",
+      "tier": "normal",
+      "pre": "私聊会话（非 temp，以便图片项有真实行为）；moreMenuVisible 初始 false",
+      "action": "①tap .wechat-input-bar__icon-btn--more（:2055-2062 openMoreMenu :1701-1704）；②tap .more-menu-overlay 遮罩空白处（:2209 @tap=closeMoreMenu）；③重开后 tap .more-menu-sheet__cancel（:2237-2246）；④重开后 tap .more-menu-sheet 面板本体（:2216 @tap.stop=noop）；⑤重开后点图片项",
+      "expected": "①菜单 500ms 内弹出（含标题与图片项，:2218-2235）；②③两路均关闭；④点面板本体**不得**关闭（tap.stop 生效）；⑤点图片项：菜单先关（closeMoreMenu :1715）再发起选图或给出提示；关闭后不得残留遮罩挡住输入栏；全程无「点哪儿都关不掉」的层级问题；role=dialog/aria-modal 生效（:2210-2211）",
+      "evidence": "normal：五步 after 截图 + moreMenuVisible 求值序列 + console"
+    },
+    {
+      "id": "CS17",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "temp 会话内发图片必须被前置拦截并提示，不得发必然 400 的私信请求（MP-R2-CHAT-002 回归）",
+      "tier": "critical",
+      "pre": "temp 会话 session-temp-1（同 CS07）；network 面板清空",
+      "action": "tap .wechat-input-bar__icon-btn--more → tap 图片项（:2223-2235 handleImagePlaceholder :1714-1773）；观察 Toast、network、菜单是否收起",
+      "expected": "isTempSession=true 时必须走前置提示分支（:1723-1726）：Toast 文案为 chat.imageTempUnsupported 的本地化串（「临时会话暂不支持发送图片」，zh-CN.ts:1200，不得为裸 key）；**不得**发起私信图片接口请求（network 零新增 POST /messages/conversations/... ）；不得出现 showLoading 永驻；菜单已收起；对照：若在同一入口下真的发出了请求 → 判 P2→P1（temp id 非数字必 400）",
+      "evidence": "critical：before/after 截图 + Toast 原文 + network 请求列表（须零新增写请求）+ console"
+    },
+    {
+      "id": "CS18",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "多图发送的成功/失败计数：不得「全失败仍报成功」（MP-R2-CHAT-003 回归）",
+      "tier": "critical",
+      "pre": "私聊会话；三路：①选 2 张正常图；②选 1 张正常 + 1 张 >10MB（chooseImages maxSizeMB=10 约束 :1730）；③选图后把网络切断使全部上传失败",
+      "action": "三态各走一遍：more 菜单 → 图片项 → 选图确认；抄录 showLoading/hideLoading 与最终 Toast 原文，并回读消息列表中 image 气泡条数",
+      "expected": "Toast 必须区分三态（修复后应有表现，:1736-1764）：①「图片已发送」类成功文案（chat.imageSent）；②失败数 >0 → 必须出现「已发送 {ok} 张，{fail} 张失败」计数文案（chat.imagePartialFailed，zh-CN.ts:1201），且 {ok}/{fail} 数字与实际一致；③全部失败 → **不得**报成功，必须给失败计数或 sendImageFailed；Loading 必须 hide（:1733/1756/1767）不得永驻；image 气泡条数必须等于成功张数（不得本地伪造成功）；用户取消选图（paths=0）必须静默无 Toast（:1731）",
+      "evidence": "critical：三态 before/after 截图 + Toast 原文 + 成功/失败计数值 + image 气泡条数回读 + network 逐条 + console"
+    },
+    {
+      "id": "CS19",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "长按气泡菜单六项与三路关闭：复制/引用/转发/撤回/删除/取消",
+      "tier": "critical",
+      "pre": "私聊会话中已有 self 与 peer 各若干条气泡；temp 会话另备一路（撤回入口仅 longPressMenu.isSelf && isTempSession 出现，:2171）",
+      "action": "①longpress 一条对方气泡 → 抄录出现的菜单项集合；②longpress 一条自己气泡（temp 会话）→ 抄录含撤回的集合；③菜单打开后分别用「tap 遮罩 :2128」「tap 取消 :2196」「选择某一项」三种方式关闭；④tap 复制、引用、转发各一次观察反馈",
+      "expected": "①对方气泡不得出现撤回项（仅自己 + temp 才有，:2171）；②temp 自己气泡必须出现撤回；③三路关闭全部生效且关闭后不得残留遮罩阻塞点击（:2126-2204）；④复制 → Toast 复制成功且剪贴板有该文本；引用 → 出现 .quote-reply-bar 预览条并把输入框 placeholder 切成回复态（:2020-2028,2070）；转发 → 打开会话选择弹层（openForwardSheet :1594）；所有文案不得为裸 i18n key；每项点击 500ms 内必有可观测反馈",
+      "evidence": "critical：各项 before/after 截图 + 菜单项集合抄录 + 剪贴板回读 + Toast 数组 + console"
+    },
+    {
+      "id": "CS20",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "引用回复：发送带 quoteRef、预览条可取消、tap 原文定位被引用消息",
+      "tier": "normal",
+      "pre": "私聊会话，消息 ≥5 条且首条可被引用",
+      "action": "①longpress 一条对方气泡 → tap 引用；②不取消直接输入文字发送；③重来一次 longpress → tap 引用 → tap .quote-reply-bar 取消（:2020 @tap=cancelQuoteReply :1650）；④tap 气泡上的引用区（@tap-quote=handleTapQuote :1962,1658）",
+      "expected": "①预览条显示被引用人 + 摘要，输入框 placeholder 变为回复态；②发送后新气泡带引用块（quoteRef/quoteBody/quoteSender 被同步保留 :560-564）且请求体携带 quoteRef 目标消息 id（network 逐条核对）；发送后预览条清空（:1178）；③取消后 placeholder 复原、随后发送为普通消息（无 quoteRef）；④tap 引用区能定位/滚动到被引用消息（不得无反馈）；引用不存在的消息 id 时须给提示或静默但不得崩溃",
+      "evidence": "normal：四步 after 截图 + 请求体字段（quoteRef）抄录 + 气泡引用块文本 + console"
+    },
+    {
+      "id": "CS21",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "顶部「···」菜单四项：看主页 / 免打扰（temp 降级文案）/ 拉黑 / 举报",
+      "tier": "critical",
+      "pre": "两路：私聊会话与 temp 会话（免打扰降级分支不同）；记录会话的免打扰状态与拉黑前状态",
+      "action": "①tap .chat-header__more（ChatHeader.vue:72-74 emit more → openNavMenu :957-961）；②tap 查看主页；返回；③tap 免打扰并抄录 Toast；④tap 拉黑、tap 举报各一次（确认路径先不执行，只观察是否要求二次确认）；⑤tap 取消关闭",
+      "expected": "①菜单弹出 500ms 内可见；②跳对方主页且可返回（路径 /subpackages/profile-extra/profile/other，参照 :1790-1792 口径）；③temp 会话免打扰必须走本机降级并 Toast 出**可读本地化文案** chat.muteLocalOnly（zh-CN.ts:1199，MP-R2-CHAT-005 修复后表现）→ 若 Toast 显示字面量 'chat.muteLocalOnly' 即判 P2 裸 key 回归；④拉黑/举报为破坏性操作：必须先 showModal 确认，取消即中止（不得直接生效）；若直接生效判 P1；⑤取消正常关闭；全程无裸 key 文案",
+      "evidence": "critical：五步 before/after 截图 + Toast/modal 原文 + 免打扰与拉黑状态回读 + 路由链 + console"
+    },
+    {
+      "id": "CS22",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "头像入口两路：ChatHeader 头像弹菜单（看主页/拍一拍），气泡头像直跳主页",
+      "tier": "normal",
+      "pre": "私聊会话，可解析出对方数字 id（resolvePeerUserId :1462）",
+      "action": "①tap .chat-header__avatar-wrap（ChatHeader.vue:56-62 emit avatar-tap → openAvatarMenu :1783-1785）；②tap 菜单「拍一拍」；③取消后再 longpress/双击头像（handleAvatarPat :1799-1823）；④tap 某条气泡左侧头像（onBubbleAvatarTap :1787-1795）",
+      "expected": "①菜单弹出且三项文案可读（:2374-2381，硬编码「看主页/拍一拍/取消」须记录语种）；②拍一拍必须发出且仅发出一次动作（handleAvatarPat 走 temp/私信链路，:1799-1823）；③对方气泡区出现对应提示；④气泡头像直跳对方主页（不再弹菜单，:1786 注释口径）；无 peer id 可解析时（temp 匿名）④必须静默安全、不得跳向错误用户或不崩溃；②若把「你拍了拍XX」作为正式文本消息发给对方（MP-R2-CHAT-008 指出的语义问题）须如实记录该表现",
+      "evidence": "normal：四步 after 截图 + 路由链 + 发出的消息类型/文本抄录 + console"
+    },
+    {
+      "id": "CS23",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "上拉到顶加载更早历史：视口保持不跳位、temp 会话不得请求分页",
+      "tier": "critical",
+      "pre": "私聊会话消息 >1 页（messagesStore.messageHasMore=true，页大小 20 量级）；另一路 temp 会话 session-temp-1",
+      "action": "①在 .chat-scroll 内下拉到顶触发 @scrolltoupper（:1911,397-428），记录加载前后 scrollTop 与被加载的首条消息 id；②重复上拉 3 次；③在 temp 会话执行同样的到顶手势；每步记录 network 请求",
+      "expected": "①加载后视口**保持原位**（用 scrollHeight 差值补偿，:412-420），不得跳到顶部或底部；老消息前置插入且时间条顺序正确；【客户端层】请求按页递增（第 2 页 1 条，不得重复同页风暴，:402-407 loadingOlder 门生效）；②连续上拉不得重复拉同一页；③temp 会话必须**不发**任何分页请求（isTempSession 门 :406 直接 return，temp-chat 一次性返回全部，:399-401 注释）→ 出现私信分页请求即判 P2/P1（temp id 非数字必 500）；④分页失败必须给轻提示 Toast（:422-424，MP-R2-CHAT-006），不得让 rejection 逃逸到全局 onError",
+      "evidence": "critical：①②③before/after 截图（含首条消息定位标记）+ scrollTop/scrollHeight 数值 + network 逐条 + Toast 数组 + console"
+    },
+    {
+      "id": "CS24",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "滚动到底与「新消息」浮层：jumpToLatest 可用且不打断阅读",
+      "tier": "normal",
+      "pre": "私聊会话消息 ≥2 屏；上滑至中部使 nearBottom=false，触发 unread-hint 显示条件（:1995-2004）",
+      "action": "①向上滚动至中间并停止，观察浮层；②tap .unread-hint；③滚动到最底观察最后一条气泡与安全区关系；④再滚到最顶，记录 onScroll 采样（:382-384）",
+      "expected": "①浏览历史位置时不得被强制滚回底部（阅读不被打断）；浮层文案为 chat.newMessageHint 本地化（不得裸 key）；②tap 后平滑滚至最新一条（:501-505 jumpToLatest → scrollToBottom），浮层消失；③最后一条气泡完整可见、不被输入栏/home 指示条遮挡（safe-area）；④滚动过程无回弹异常、无 nearBottom 恒真导致历史分页被误触发",
+      "evidence": "normal：①②③after 截图 + scrollTop 采样序列 + 浮层可见性求值 + console"
+    },
+    {
+      "id": "CS25",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "无参直开：必须显示「缺少会话标识」，不得渲染假空会话或诱导发言",
+      "tier": "critical",
+      "pre": "身份 A 已登录；reLaunch '/subpackages/chat/chat-session/index'（无 sessionId、无 userId）→ onLoad 末尾命中 pageErrorMessage=chat.missingSessionId（:758；文案 zh-CN.ts:1296）",
+      "action": "进入后等 1.5s：读取消息区文本、输入栏是否存在、破冰引导是否出现、network；随后 tap 顶栏返回",
+      "expected": "消息区显示「缺少会话标识，请从聊天列表或匹配结果进入。」（:1913）；**不得**出现「空会话 + 破冰引导 + 可输入输入栏」的诱导态（:655-659 注释同口径）；输入区被错误文案替换（:2008）→ 无任何可发送入口；network 零条会话/消息请求；冷启动深链不得闪现错误空态之外的骨架闪烁；返回可用（栈=1 时 switchTab 消息 Tab，:513-518）",
+      "evidence": "critical：before/after 截图 + 错误文案抄录 + 输入栏存在性 + network 零请求 + 返回后路由链 + console"
+    },
+    {
+      "id": "CS26",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "失效数字 sessionId 深链：错误态而非假空会话（私信分支失败门 MP-R1-...-201/-104）",
+      "tier": "critical",
+      "pre": "身份 A 已登录；reLaunch '...chat-session/index?sessionId=999999999'（数字但后端不存在；mock 构建下 messagesStore 的 mock 分支须为该未知会话置 errorMessage，:655-663）",
+      "action": "进入后等 1.5s；读取 pageErrorMessage/friendlyPageError、消息区文本、输入栏可用性、network 响应码；随后在 UI 上尝试输入并发送（若入口存在）",
+      "expected": "命中 :660-663 失败门 → 显示用户可读错误（不得是裸 HTTP 串/数字码）；不得渲染「破冰引导 + 空会话 + 可用输入栏」；输入栏不可用或发送必须失败并有 Toast；【数据层】不得在未知会话下于后端落任何消息记录（回读该 id 相关消息数=0）；console 允许接口 4xx 但不得有未捕获 rejection",
+      "evidence": "critical：before/after 截图 + 错误文案 + network 响应码 + 后端回读（该 id 消息数）+ console"
+    },
+    {
+      "id": "CS27",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "conv- 业务键冷启动深链：bootstrap 救援解析为数字 id，不得 400（MP-R2-CHAT-004）",
+      "tier": "critical",
+      "pre": "身份 A 已登录且与某人已有真实私聊会话，其 conversationUid 为 'conv-...' 形态；**冷启动**路径（先 reLaunch 到别处使 messagesStore.sessions 为空）→ 再 reLaunch '...chat-session/index?sessionId=<该 conv- 值>'",
+      "action": "进入后等 2s；读取：最终 sessionId.value、页面消息是否加载、network 中是否存在对 'conv-...' 直接调消息接口的请求及其响应码（应改为解析后的数字 id）",
+      "expected": "修复后应有表现：conv- 形态允许进入 bootstrap 救援（:603-614，MP-R2-...-004 已放开 !looksConversationUid 条件）→ 拉到会话列表后把 conversationUid 解析为数字 id 并改写 sessionId（:619-624）；消息正常加载；**不得**出现以 'conv-...' 为路径参数调用私信消息接口的 400/500；解析失败时必须落可读错误态（CS26 同口径），不得渲染假空会话；若冷启动下仍直发 conv- 请求 → 判 P2 未修完（原发现即此路径）",
+      "evidence": "critical：before/after 截图 + sessionId 改写前后值 + network 逐条（URL 与状态码）+ console"
+    },
+    {
+      "id": "CS28",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "草稿持久化：离开未发送再进恢复，发送后清除，不得串到别的会话",
+      "tier": "normal",
+      "pre": "私聊会话 A（sessionId=SA）；另一会话 B（SB）可切换；draftStorageKey 按会话隔离（:134-156）",
+      "action": "①在 A 输入「草稿保留测试」不发送 → reLaunch 到 B → 返回 A；②在 A 输入文字后 tap 「+」菜单再取消，检查草稿；③在 B 输入「B 草稿」后不发送退出，再进 A；④在 A 发送成功后退出再进 A",
+      "expected": "①回到 A 后草稿被恢复显示（restoreDraft 在 onShow 触发 :775-776），且 B 的输入框不得出现 A 的草稿（按会话隔离）；②菜单开关不得清草稿；③A 不得出现 B 的草稿（串会话即 P1 隐私缺陷，可能把误写的私密内容发错人）；④发送成功后持久化草稿被清（clearPersistedDraft :1180），再进 A 输入框为空；全程无「query 预填消息被本地草稿覆盖」的冲突（:775 注释口径，见 CS30）",
+      "evidence": "normal：四步 after 截图 + 每次的 draft 值与 storage key 求值 + console"
+    },
+    {
+      "id": "CS29",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "会话生命周期清理：打开即返回 / 重复进出 ×3 不得残留计时器与 typing 模拟",
+      "tier": "noop",
+      "pre": "身份 A 已登录，进入私聊会话（mock 模式下发送会排 1.5~3s 的「正在输入」模拟 scheduleTypingSimulation :1182,1343-1356）",
+      "action": "①进入后 <500ms 立即返回（打开即返回）；②「进入→发一条→立即退出」重复 3 轮，最后一轮退出后在别的页面停留 8s；③观察退出后是否仍出现「对方正在输入」提示或 Toast；④回读三轮的消息条数",
+      "expected": "onUnload 必须清 countdownTimer/typingTimer/typingStopTimer（:817-823）：退出后 8s 内不得再出现任何本页 Toast、typing 气泡、倒计时刷新（跨页幽灵反馈判 P2）；三轮进出未读数标记 setActiveSession 正常配对（:778-781 与 onHide 成对，不得出现未读恒 0 或累加异常）；回读消息条数=3（每轮恰 1 条，无重复无丢失）；无内存/计时器报错",
+      "evidence": "noop：执行日志（每轮进出时间戳 + 退出后 8s 的 Toast/typing 观察 + 消息条数）"
+    },
+    {
+      "id": "CS30",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "参数面逐项生效：fromSignal / prefillMessage / icebreaker / quoteContext 与优先级",
+      "tier": "critical",
+      "pre": "身份 A 已登录，目标会话可解析；本页实际消费参数（以源码为准）：dev-user（:669 → utils/dev-user.ts:99-103,112）、fromSignal（:679）、prefillMessage（:684）、icebreaker（:690-697，仅在 !draft 时生效）、quoteContext（:700）、sessionId（:704）、userId（:711）",
+      "action": "五路直开并抄录结果：①?sessionId=SA&prefillMessage=%E4%BD%A0%E5%A5%BD123；②?sessionId=SA&icebreaker=%E5%96%9C%E6%AC%A2%E6%91%84%E5%BD%B1；③?sessionId=SA&prefillMessage=A码&icebreaker=B码（同时给）；④?sessionId=SA&quoteContext=<合法编码 JSON>；⑤?sessionId=SA&fromSignal=1",
+      "expected": "①草稿被预填且 parsePrefillMessage 解码正确（数字/中文不丢）；②icebreaker 填入草稿（:690-697）；③prefill 优先（icebreaker 因 draft 非空被忽略，:694 条件），草稿为「A码」；④引用上下文卡片 .quote-card 渲染出 topicTitle/回复内容/作者三要素（:2011-2017,700-702），畸形 JSON 不得崩溃（须静默忽略并记实际行为）；⑤缘分速配横幅 .signal-banner 出现含渐进解锁进度条与等级点（:1865-1901），解锁全完成时出现「查看资料」入口可点（:1894 goSignalProfile :268）；所有路：不得因参数出现白屏、不得把预填内容自动发送（必须等用户点发送）",
+      "evidence": "critical：五路 before/after 截图 + draft/quoteContext/fromSignal 求值 + network（不得有自动发送请求）+ console"
+    },
+    {
+      "id": "CS31",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "幽灵参数与注入面：未消费参数与超长/编码异常值不得影响会话与鉴权",
+      "tier": "critical",
+      "pre": "本页 onLoad 消费集合已在 CS30 列明（以 :666-760 行号为准）；任何其它 query 均无读取点 → 标为幽灵参数",
+      "action": "reLaunch '...chat-session/index?sessionId=SA&partnerName=%E5%83%8F%E5%A1%AB&token=fake.jwt&targetId=999&type=temp&unread=99&redirect=%2Fpages%2Fhome%2Findex&x=' + 'y'*2000，停留 3s；随后 tap 发送一条正常消息",
+      "expected": "会话与标题必须仍由 sessionId/真实数据决定（**不得**被 partnerName 覆盖标题，:896-907 仅取 store/deepLink 真名）；unread=99 不得伪造未读角标（未读由 store 计算）；type=temp 不得把私聊会话误导入 temp 链路（判定依据为 :615-617 的 id 形态与列表匹配，非 query）；storage token 不被 query token 覆盖（回读 token 值前后一致）；redirect/x=2000 不得被消费或致溢出；发送功能不受影响（正常 1 条上屏）；observed 逐项标注幽灵参数并列源码依据行号",
+      "evidence": "critical：before/after 截图 + 标题/会话 id/token 前后求值 + network 逐条 + console"
+    },
+    {
+      "id": "CS32",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "顶栏热区与返回兜底：ChatHeader 返回钮 56rpx、栈=1 深链返回必须可退出",
+      "tier": "normal",
+      "pre": "分支A：正常链路进入（栈 ≥2）；分支B：reLaunch 直开本页（栈深=1，如推送/分享卡）；ChatHeader 声明 .chat-header__back 56rpx×56rpx（ChatHeader.vue:91-92,175-176）",
+      "action": "①两分支各 tap .chat-header__back；②读取返回钮/头像/更多三元素的 boundingClientRect 并换算 rpx；③对各钮边缘 tap 一次；④分支B 连点返回 ×5",
+      "expected": "①A 落回来源页；B 必须 switchTab('/pages/messages/index') 兜底（goBack :508-525 navigateBack fail 分支，MP-R1-...-106）→ 若困在本页或静默无反应判 P1 死按钮/被困；②热区判定：56rpx（<88rpx）的返回钮与更多钮 → 判 FAILED 并给尺寸表；③边缘点击不得串到相邻控件；④连点不得多层出栈/退出小程序",
+      "evidence": "normal：after 截图 + 尺寸表（px→rpx）+ 路由链（含连点后）+ console"
+    },
+    {
+      "id": "CS33",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "核心页七态：Idle/Loading/Success/Empty/Error/Refreshing/Disabled 逐项留证",
+      "tier": "critical",
+      "pre": "身份 A 已登录；可构造：Loading（进会话瞬间）、Success（消息 ≥1）、Empty（新会话 0 条）、Error（CS25/CS26 无参或失效 id）、Disabled（会话已关闭 CS09）、Refreshing（上拉到顶加载历史 CS23）",
+      "action": "逐态进入并各截一张图，抄录消息区文本与输入区形态；重点核对 Loading（:1915 loading copy）与 Empty（:1967-1969 chat-empty-hint）与 Error（:1913/:1918）三态互斥",
+      "expected": "每态均有唯一且正确的表现：Loading 显示加载文案（不得永驻）；Success 显示气泡列表；Empty 显示空提示 +（合法私聊才允许）破冰引导，**不得**在 Error 场景复用 Empty 形态（假空会话，见 CS05/CS26）；Error 显示可读错误且输入入口禁用；Disabled（会话 closed）输入框禁用 + placeholder 变更（:2069-2070）+ 顶部「已结束」警示（:1970-1972）；Refreshing 期间不得重复发同页请求；七态无交叉污染",
+      "evidence": "critical：七态各 before/after 截图 + 每态关键节点存在性 + network 计数（Refreshing 态）+ console"
+    },
+    {
+      "id": "CS34",
+      "page": "subpackages/chat/chat-session/index",
+      "title": "消息气泡与头像兜底链：无头像 / 相对路径 / 长昵称 / 撤回态 / 送达态",
+      "tier": "normal",
+      "pre": "对方资料 avatar 分别为：空、/uploads/... 相对路径（须走 resolveMediaUrl，ChatHeader.vue:57）、外链；另备一条已撤回消息与一条带 quoteBody 的消息",
+      "action": "进入会话后核对：①顶栏头像与气泡头像的 src 与是否出图；②无头像时首字兜底（ChatHeader.vue:58-60）；③长昵称（20 字）+ 认识天数徽标的头部布局；④撤回气泡文案与不可点击态；⑤送达状态标识；逐条抄录",
+      "expected": "①相对路径必须被解析为可加载的绝对地址、真机/模拟器出图（naturalWidth>0 等价证据），不得空白圆/破图；②无头像必须显示首字或默认头像；③长昵称不得把「在线/离线」状态与「···」钮挤出可视区或换行错位（ChatHeader.vue:64-73）；④撤回消息显示撤回提示且不得再被引用/转发（handleRecallMessage/openForwardSheet 对撤回与语音/系统消息的限制 :1554-1563,1594-1612）；⑤送达态与气泡位置（self 右 / peer 左）稳定，刷新后不得左右换位（:1167-1170 注释口径）；全程无 console error",
+      "evidence": "normal：各态 after 截图（含头部与气泡放大裁切）+ src/rect 数值 + 气泡左右归属抄录 + console"
+    }
+  ]
+}

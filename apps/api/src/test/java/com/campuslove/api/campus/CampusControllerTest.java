@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -157,10 +158,12 @@ class CampusControllerTest extends ControllerTestBase {
 
             CampusTopicView created = buildTopicView(1L, "新话题");
             when(campusService.createCampusTopic(
-                    eq(100L), anyLong(), eq("学习"), eq("新话题"), eq("内容"), eq(java.util.List.of("考试"))))
+                    eq(100L), anyLong(), eq("学习"), eq("新话题"), eq("内容"), eq(java.util.List.of("考试")),
+                    eq(java.util.List.of("https://img.example.com/a.png")), eq(true)))
                     .thenReturn(created);
 
-            CreateCampusTopicRequest req = new CreateCampusTopicRequest("学习", "新话题", "内容", java.util.List.of("考试"));
+            CreateCampusTopicRequest req = new CreateCampusTopicRequest("学习", "新话题", "内容",
+                    java.util.List.of("考试"), java.util.List.of("https://img.example.com/a.png"), true);
 
             // Act
             ApiResponse<CampusTopicView> result = controller.createTopic(req);
@@ -170,7 +173,8 @@ class CampusControllerTest extends ControllerTestBase {
             assertSame(created, result.data());
             verify(campusPermissionService).requireVerifiedSameSchool(eq(100L), eq("测试大学"));
             verify(campusService).createCampusTopic(
-                    eq(100L), anyLong(), eq("学习"), eq("新话题"), eq("内容"), eq(java.util.List.of("考试")));
+                    eq(100L), anyLong(), eq("学习"), eq("新话题"), eq("内容"), eq(java.util.List.of("考试")),
+                    eq(java.util.List.of("https://img.example.com/a.png")), eq(true));
         });
     }
 
@@ -221,10 +225,10 @@ class CampusControllerTest extends ControllerTestBase {
             CampusTopicReplyView reply = buildReplyView(1L, topicId);
             when(campusService.getCampusTopic(topicId)).thenReturn(buildTopicView(topicId, "测试话题"));
             when(schoolRepository.findById(1L)).thenReturn(Optional.of(school(1L)));
-            when(campusService.replyCampusTopic(eq(topicId), eq(100L), anyString()))
+            when(campusService.replyCampusTopic(eq(topicId), eq(100L), anyString(), eq(true)))
                     .thenReturn(reply);
 
-            CreateCampusReplyRequest req = new CreateCampusReplyRequest("回复内容");
+            CreateCampusReplyRequest req = new CreateCampusReplyRequest("回复内容", true);
 
             // Act
             ApiResponse<CampusTopicReplyView> result = controller.createReply(topicId, req);
@@ -233,7 +237,7 @@ class CampusControllerTest extends ControllerTestBase {
             assertNotNull(result);
             assertSame(reply, result.data());
             verify(campusPermissionService).requireVerifiedSameSchool(eq(100L), eq("测试大学"));
-            verify(campusService).replyCampusTopic(eq(topicId), eq(100L), eq("回复内容"));
+            verify(campusService).replyCampusTopic(eq(topicId), eq(100L), eq("回复内容"), eq(true));
         });
     }
 
