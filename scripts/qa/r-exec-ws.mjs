@@ -223,6 +223,14 @@ if (flag("redo-holes")) {
   prior.results = (prior.results || []).filter((r) => !evidenceHole(r));
   console.log("WSX_VOIDED " + (before - prior.results.length) + " 条 EXECUTED-无证据");
 }
+/* 增量补跑用：同一份结果文件里，只把"上一刀没跑的那类"退回待跑，
+   不动已 EXECUTED 的行（否则等于拿新帧把旧结论冲掉，历史就没了）。 */
+for (const [k, re] of [["redo-taps", /^action 含交互动词/], ["redo-real", /^requiresReal/]]) {
+  if (!flag(k)) continue;
+  const before = (prior.results || []).length;
+  prior.results = (prior.results || []).filter((r) => !(r.status === "SKIPPED" && re.test(String(r.failureReason || ""))));
+  console.log("WSX_VOIDED_" + k + " " + (before - prior.results.length) + " 条（退回待跑，本轮重新产生状态）");
+}
 const done = new Set((prior.results || []).map((r) => r.manifest + "|" + r.id));
 const rows = [];
 const stats = { executed: 0, failed: 0, skipTap: 0, skipReal: 0, skipRoute: 0, skipNoCrit: 0, skipMiss: 0, tapDeny: 0, tapNoTarget: 0, tapFail: 0, tapNoFrame: 0, pages: 0, probes: 0, shots: 0 };
