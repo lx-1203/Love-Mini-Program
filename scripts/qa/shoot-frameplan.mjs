@@ -79,9 +79,18 @@ function probeMany(selectors) {
   try {
     evaluate(js, { project: PROJECT });
     sleep(900);
-    const r = evaluate(read, { project: PROJECT });
-    const o = typeof r === "string" ? JSON.parse(r) : (r && r.value ? JSON.parse(r.value) : {});
+    let r = evaluate(read, { project: PROJECT });
+    let o = typeof r === "string" ? JSON.parse(r) : (r && r.value ? JSON.parse(r.value) : {});
+    /* 空 bag 再读一次：折叠探测是"点火 + 取件"两步，取件早于回调就会拿到空对象，
+       而空对象在下游会被算成"每个锚点都是 0"——那是通道故障伪装成产品缺陷（本轮 14 条）。 */
+    if (o && typeof o === "object" && !Object.keys(o).length) {
+      sleep(1600);
+      r = evaluate(read, { project: PROJECT });
+      const o2 = typeof r === "string" ? JSON.parse(r) : (r && r.value ? JSON.parse(r.value) : null);
+      if (o2 && typeof o2 === "object" && Object.keys(o2).length) o = o2;
+    }
     if (!o || typeof o !== "object") return { __err: "非 JSON 回答" };
+    if (!Object.keys(o).length) return { __err: "两次取件都是空 bag（探针没跑通）" };
     const out = {};
     uniq.forEach((s, i) => { out[s] = o[i]; });
     if (o.__err !== undefined) out.__err = o.__err;
@@ -315,6 +324,11 @@ for (const [key, grp] of byRoute) {
       if (!ss.length) return { kind: a.kind || "?", target: a.target || "", check: "FRAME_ONLY", note: "没有可机器查的选择器，帧是它的载体" };
       const hit = ss.map((s) => dom[s]).filter((v) => v !== undefined);
       if (dom.__err) return { kind: a.kind, target: a.target, check: "PROBE_NO_ANSWER", note: String(dom.__err).slice(0, 50) };
+      /* 探针没回答 ≠ 物件不存在。上一版这里让 hit 为空时继续往下算，
+         `Math.max(0, ...[])` 得到 0 ⇒ 记成 ABSENT_UNEXPECTED，
+         于是"折叠探测的第二步取回空 bag"这一条通道故障，被写成了 14 条产品判红。
+         现在明确区分：一个锚点都没有数 ⇒ PROBE_NO_ANSWER（没测到），不判红也不判绿。 */
+      if (!hit.length) return { kind: a.kind, target: a.target, check: "PROBE_NO_ANSWER", note: "折叠探测没回这些锚点的数（" + ss.join(",") + "）", anchors: ss };
       const n = Math.max(0, ...hit.map((v) => Number(v) || 0));
       /* 极性只认 lane 声明的 kind：以前还把 expected 散文里的「无 / 不」也算成"不该出现"，
          于是「未解锁分支不显示徽标」这类写法会把 present 判成 absent——判红一片，其实是我读错了。
