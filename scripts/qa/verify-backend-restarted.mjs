@@ -56,10 +56,28 @@ const head = ps(`git -C '${repoRoot.replace(/'/g, "''")}' log -1 --format=%ct`).
 const headTs = /^\d+$/.test(head) ? Number(head) * 1000 : 0;
 
 const staleSrc = n.m > started ? rel : "";
-const staleHead = headTs > started;
+let staleHead = headTs > started;
 console.log(`RESTARTED_NEWEST_SOURCE=${rel} mtime=${new Date(n.m).toISOString()}`);
 console.log(`RESTARTED_HEAD_COMMIT_TIME=${headTs ? new Date(headTs).toISOString() : "?"}`);
-console.log(`RESTARTED_STALE_SOURCE=${staleSrc || "none"}  HEAD_NEWER_THAN_JVM=${staleHead ? "YES" : "no"}`);
+/* 「HEAD 比 JVM 新」有两个完全不同的成因，必须分开，否则**收尾提交自己会把这条判红**：
+   (a) 提交之后代码真的变了 ⇒ JVM 里跑的不是 HEAD，联通结论不可背书；
+   (b) 提交只是把"JVM 启动前就在工作树里的代码"记进版本库（本轮实测：03:12 重启 → 09:45 提交 f9a60925）。
+   代码内容并没有因为提交而改变，(b) 是记账时刻问题。区分方式：
+   源码 mtime 已经证明 JVM 不落后于任何 .java（staleSrc 为空），再看 `apps/api` 相对 HEAD 是否干净 ——
+   干净 ⇒ 工作树内容 == HEAD 内容 == JVM 启动时看到的内容 ⇒ 降级成信息，不否决。
+   任一侧读不到就**保守判红**（"没测到"不等于"没问题"）。 */
+let apiClean = null;
+if (staleHead) {
+  // git 必须先是"活着"的：`ps` 失败时也返回空串，直接当"干净"就等于让一条坏掉的 git 调用给绿灯
+  const headAlive = ps(`git -C '${repoRoot.replace(/'/g, "''")}' rev-parse HEAD`).trim();
+  const dirty = headAlive ? ps(`git -C '${repoRoot.replace(/'/g, "''")}' status --porcelain apps/api`).trim() : "GIT_UNAVAILABLE";
+  apiClean = dirty === "" ? "yes" : dirty === "GIT_UNAVAILABLE" ? "git 读不到（不降级）" : "no:" + dirty.split("\n").length + " 行";
+  if (dirty === "" && !staleSrc && headAlive) {
+    staleHead = false;
+    console.log("RESTARTED_HEAD_DRIFT=content-identical（HEAD 提交晚于 JVM 只是记账，apps/api 相对 HEAD 干净且无 .java 比 JVM 新 ⇒ 不否决）");
+  }
+}
+console.log(`RESTARTED_STALE_SOURCE=${staleSrc || "none"}  HEAD_NEWER_THAN_JVM=${staleHead ? "YES" : "no"}${apiClean ? "  APPS_API_CLEAN_VS_HEAD=" + apiClean : ""}`);
 if (staleSrc || staleHead) {
   console.log(`RESTARTED_RESULT=FAIL JVM 比${staleSrc ? "最新源码 " + staleSrc : ""}${staleSrc && staleHead ? " / " : ""}${staleHead ? "HEAD 提交" : ""}更早，改动未生效，API 侧结论一律不得记 PASS`);
   process.exit(1);

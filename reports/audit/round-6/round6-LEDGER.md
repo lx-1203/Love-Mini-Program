@@ -3643,3 +3643,50 @@ C 同一条伪造挂在 `FAILED` 行**仍然判红** ⇒ 我没按状态放水�
 写这行时踩了本仓第 N 次的 Edit 不对称：`old_string` 只截到 LOGIN 行的中段，替换后把那一行拆成了
 "我的新行 + LOGIN 行的尾巴"，`cols=21` 被 `verify-ledger` 的 shape 轴抓个正着（`OFF_SCHEMA_ROWS`），
 已拆回两行并按 11 列校验通过 —— **门禁比我的眼睛可靠，这次是它救的**。
+
+## §104 提交之后判据台自己塌了（HEAD 对照的前提失效）；台账 84 行补上去向，裸状态清零 —— 2026-09-26 09:44~09:55
+
+**提交边界**：`f9a60925`（165 条显式路径 + 目录展开 = 267 个文件；pre-commit 的 mp-image strict lint 通过）。
+刻意留在门外：`apps/client/src/components/chat/ChatInput.vue` 的工作树删除（任务 #25 待裁决）、
+`reports/screenshots/**` 的 .png（清单里归 frames 一档 holdback，本轮 65MB 量级）。
+`make-commit-list.mjs` 顺手修了两处：截图帧单独 holdback 但**同目录的 `manifest-detail.json` 仍可提交**
+（只挡二进制不挡采集原始记录，配 5 条断言含反向对照）；porcelain 行过滤器由 `trim().length>=4` 改成
+原始行长 `>=4` —— 旧写法把仓库根那个单字符文件 `0` **从清单里静默吃掉**（守恒照样通过，扫描集却变小了），
+配 `porcelainRows` 的反向对照断言（旧式在同一份文本上确实少一行）。
+
+**提交之后先重建再复验**：mock 产物 `build:mp-weixin:mock` 重跑 exit 0（`verify-build-features` 4/4 PASS，
+`app.js`/`vendor.js` mtime 09:47:39），构建没有脏化任何被跟踪文件（`git status` 只剩上面那三条）。
+
+**判据台塌了，而且是"合法提交"造成的**：同一批判点在 `--baseline` 缺失时对照组是当前 HEAD，
+而 HEAD 已经收下本轮修复 ⇒ `ARTIFACT_VERIFIED 18 → 8`、`UNDECIDABLE 37 → 45`。
+逐条比对确认是**同一批 10 条**掉桶（不是巧合的计数变化）。根因写在代码注释里：那段前提
+"本仓修复全部未提交（HEAD=874ff52f 是修复前状态）"在提交那一刻失效了。
+修法是把对照组做成参数：`--baseline <本轮开跑 SHA>`，并加前提守卫
+（`BASELINE=… srcDirtyVsHead=…`，若对照组=HEAD 且 `apps/client/src` 相对 HEAD 干净 ⇒ 打
+`BASELINE_PREMISE_WARN`，"读不到就等于没测"不静默放行），meta 里记 `baselineRef/baselineSha/headSha`。
+用 `--baseline 874ff52f` 重跑：**116 条里 0 条与提交前那次不同桶**，绿集合逐 id 完全相同（18=18）。
+⇒ 结论：桶数不是证据，**逐条 id 集合才是**；聚合数相等不能用来宣称"恢复原状"。
+
+**台账 84+24 行补去向（`scripts/qa/land-verdicts-into-ledger.mjs`）**：
+- 现状实测：163 行矩阵里 61 行 `待修复`、其中 **56 行在 status／处置／statusEvidence 三格里没有任何去向标记**；
+  72 行 `已修复待复验` 全部带载体字样（那一类本来就有据）。⇒ 目标里"推到有据可查的终态"缺的正是前者。
+- 三条规则：P1 `待修复`+判据台∈{产物已见,仅源码}+closer=已改工作树 → 升 `已修复待复验（…）`；
+  P2 `已修复待复验`+产物已见+无 UI 帧依赖+有 present 硬判点 → 升 `已修复（产物侧已见，静态判据）`；
+  P3 其余**不推进状态**，只把 `closer=?；判据台=?；缺的载体=?` 写进 status 括注；
+  P4（第二轮补）判据台未覆盖的更早波次条目 → 明写"判据台未覆盖本条，缺的载体=需人复判后指定"，
+  把"没轮到判"和"判过没记录"分开。落盘后：**裸 `待修复`/`已修复待复验` = 0 行**。
+- 结果分布：`已修复待复验 57 / 待修复 60 / 已修复 16 / 保留-判据不成立 24 / 未取证/需裁决 2 / 需裁决 1 / 待复验 1 / 判据不成立 1 / 未取证 1`；
+  `verify-ledger` 全程 `DATA_ROWS=228 OFF_SCHEMA_ROWS=0 STATUS_VOCAB_BAD=0 → PASS`。
+- 一次冲突没有自动降级、只记录：`MP-R2-MATCHING-016` 状态说已修、判据台两载体都找不到修后态
+  （`callerSnapshot` 那个判点根本不存在）⇒ 交人判，脚本注释写明"降级是另一件事"。
+- 两次自伤都被下游门禁捞回来：第一轮重拼把行尾空元素也拼回去 ⇒ 85 行变 12 列，
+  `OFF_SCHEMA_ROWS=85` 判红，回滚备份后加"重拼必须保持列数"的自查（`MALFORMED` 非零就不写）；
+  写进台账的自由文本一律**只用受控中文标签 + 指针**，不写 `verdictWhy` 原文
+  （里面有 `callerSnapshot` 这种标识符形状的词，本仓实测过抽取器会把它们 mint 成硬判点反咬已修条目）。
+  写完立刻用同一份判据台复跑：**116 条 0 桶漂移**，这条纪律从"我相信"变成"我量了"。
+- 台账格子里指向的 `verdictWhy` 原本只在被 gitignore 的 `.zcode/tmp` 里 ⇒ 落盘时顺手拷一份
+  `reports/audit/round-6/fixwave-verdicts.json`（116 条 + meta 基线），让"证据能在仓库里打开"这条成立。
+
+**下一步（不藏）**：`NEEDS_UI_FRAME=54` 与 `UNDECIDABLE=37` 是本轮没能推完的两类，
+前者要先恢复 WS automator 通道（§101）再按页排帧，后者要人把判据收紧到点名物件；
+`NOT_IN_EITHER=6` 里含上面那条冲突。真实模式 4 项后端契约改动仍按既有裁定排在复验轮之后。

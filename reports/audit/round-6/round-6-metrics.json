@@ -1,13 +1,13 @@
 {
   "schemaVersion": "round-report-metrics-1",
-  "generatedAt": "2026-09-26T01:38:11.422Z",
-  "startedAt": "2026-09-26T01:37:49.139Z",
+  "generatedAt": "2026-09-26T01:58:52.328Z",
+  "startedAt": "2026-09-26T01:58:28.876Z",
   "roundDir": "reports/audit/round-6",
   "reportFile": "reports/audit/round-6/round-6-report.md",
   "identity": {
-    "head": "874ff52f",
-    "porcelain": 173,
-    "porcelainApps": 90,
+    "head": "f9a60925",
+    "porcelain": 12,
+    "porcelainApps": 1,
     "jvmPid": "29536",
     "jvmStartedAt": "2026-09-26 03:12:29",
     "backendRestartVerdict": "PASS JVM 晚于全部 java 源码改动与 HEAD 提交，可作前后端联通取证的前提",
@@ -514,25 +514,25 @@
           "n": 2,
           "name": "客户端写库 POST /posts",
           "ok": true,
-          "detail": "HTTP 200，返回 id=252"
+          "detail": "HTTP 200，返回 id=254"
         },
         {
           "n": 3,
           "name": "后台按 id 读到该帖",
           "ok": true,
-          "detail": "GET admin/village-posts/252 -> 200；title 字段可见=是（值 \"G8取证2609260138号\"）"
+          "detail": "GET admin/village-posts/254 -> 200；title 字段可见=是（值 \"G8取证2609260158号\"）"
         },
         {
           "n": 4,
           "name": "审核驱动前端可见性",
           "ok": true,
-          "detail": "审核前在列表=false(total=200) / audit HTTP 200 / 审核后在列表=false(total=201) / 可见性以 total 增量为准=true；实测确认：新帖默认 audit_status=pending 且前端列表不可见，审核通过后 total +1 → v32 G8(4) 的假设成立（我一度因 javadoc 写「默认 approved」而怀疑它，那是注释与实现不一致）"
+          "detail": "审核前在列表=false(total=202) / audit HTTP 200 / 审核后在列表=false(total=203) / 可见性以 total 增量为准=true；实测确认：新帖默认 audit_status=pending 且前端列表不可见，审核通过后 total +1 → v32 G8(4) 的假设成立（我一度因 javadoc 写「默认 approved」而怀疑它，那是注释与实现不一致）"
         },
         {
           "n": 5,
           "name": "同 Idempotency-Key 重放",
           "ok": true,
-          "detail": "重放 HTTP 409（期望 409）；重放后 total=201 vs 审核后 201 → 未新增行 ✔"
+          "detail": "重放 HTTP 409（期望 409）；重放后 total=203 vs 审核后 203 → 未新增行 ✔"
         },
         {
           "n": 6,
@@ -550,22 +550,22 @@
           "n": 8,
           "name": "创建响应回主键 data.id",
           "ok": true,
-          "detail": "HTTP 200，data.id=281 → 主键已回，客户端可直接定位新行（#27 的 save(topic) 返回值接生的实测证；此前该字段为 null，见台账 §22）"
+          "detail": "HTTP 200，data.id=283 → 主键已回，客户端可直接定位新行（#27 的 save(topic) 返回值接生的实测证；此前该字段为 null，见台账 §22）"
         },
         {
           "n": 9,
           "name": "读回 images 落库 + 匿名标记",
           "ok": true,
-          "detail": "GET /campus/topics/281 -> 200；images 字段=\"[\"http://127.0.0.1:8080/api/v1/media/app-assets/assets/default-avatar.jpg\"]\"（含所发 URL=true）；isAnonymous=true；authorId=null authorName=\"匿名校友\" → 匿名若为真，作者字段应被遮蔽"
+          "detail": "GET /campus/topics/283 -> 200；images 字段=\"[\"http://127.0.0.1:8080/api/v1/media/app-assets/assets/default-avatar.jpg\"]\"（含所发 URL=true）；isAnonymous=true；authorId=null authorName=\"匿名校友\" → 匿名若为真，作者字段应被遮蔽"
         },
         {
           "n": 10,
           "name": "匿名回复透传并可读回",
           "ok": true,
-          "detail": "POST replies -> 200 id=13；列表 200 命中本条=true；isAnonymous=true；authorName=\"匿名校友\""
+          "detail": "POST replies -> 200 id=15；列表 200 命中本条=true；isAnonymous=true；authorName=\"匿名校友\""
         }
       ],
-      "artifacts": "posts.id=252 ; comments.id=1220 ; campus_topics.id=281 ; campus_replies.id=13  ← 本轮写入的真实数据，未删除，交你决定去留"
+      "artifacts": "posts.id=254 ; comments.id=1222 ; campus_topics.id=283 ; campus_replies.id=15  ← 本轮写入的真实数据，未删除，交你决定去留"
     },
     "g9": {
       "exit": 0,
@@ -612,12 +612,12 @@
     "verify-evidence-corpus（本轮 scope）": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-6,reports/screenshots/round-6-interact,reports/screenshots/round-6-real-tour,reports/screenshots/round-6-tour,reports/screenshots/round-6-tour-chat,reports/screenshots/round-6-tour-dupfix,reports/screenshots/round-6-tour-reshoot",
       "exitCode": 0,
-      "stdoutSha8": "9e7cbc09"
+      "stdoutSha8": "a7698084"
     },
     "verify-provenance-all（本轮 scope）": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-6,reports/screenshots/round-6-interact,reports/screenshots/round-6-real-tour,reports/screenshots/round-6-tour,reports/screenshots/round-6-tour-chat,reports/screenshots/round-6-tour-dupfix,reports/screenshots/round-6-tour-reshoot",
       "exitCode": 0,
-      "stdoutSha8": "2a89cb30"
+      "stdoutSha8": "ba0bf349"
     },
     "verify-queue-reconcile": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-queue-reconcile.mjs reports/audit/round-6",
@@ -627,7 +627,7 @@
     "verify-backend-restarted": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-backend-restarted.mjs --port 8080",
       "exitCode": 0,
-      "stdoutSha8": "1729f300"
+      "stdoutSha8": "a3b6d910"
     },
     "verify-i18n-orphan": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-i18n-orphan.mjs",
@@ -685,9 +685,9 @@
       },
       {
         "path": ".zcode/tmp/round6-LEDGER.md",
-        "mtime": "2026-09-26T01:37:32.038Z",
-        "size": 316917,
-        "sha8": "6088d1b9"
+        "mtime": "2026-09-26T01:55:48.109Z",
+        "size": 322366,
+        "sha8": "7dea302e"
       },
       {
         "path": "reports/audit/round-6/ops/",
@@ -703,25 +703,25 @@
       },
       {
         "path": "apps/client/dist/build/mp-weixin/app.json",
-        "mtime": "2026-09-25T23:00:13.505Z",
+        "mtime": "2026-09-26T01:47:39.261Z",
         "size": 5264,
         "sha8": "207f7136"
       },
       {
         "path": "apps/client/dist/build/mp-weixin/config/env.js",
-        "mtime": "2026-09-25T23:00:13.327Z",
+        "mtime": "2026-09-26T01:47:39.140Z",
         "size": 2402,
         "sha8": "f1c7b96b"
       },
       {
         "path": "apps/client/dist/build/mp-weixin/config/showcase.js",
-        "mtime": "2026-09-25T23:00:13.386Z",
+        "mtime": "2026-09-26T01:47:39.209Z",
         "size": 920,
         "sha8": "59e2a9c9"
       },
       {
         "path": "apps/client/dist/build/mp-weixin/config/feature-flags.js",
-        "mtime": "2026-09-25T23:00:13.386Z",
+        "mtime": "2026-09-26T01:47:39.209Z",
         "size": 134,
         "sha8": "08a7cff6"
       },
@@ -751,15 +751,15 @@
       },
       {
         "path": ".zcode/tmp/report-emitter/triage-r6-at-report.json",
-        "mtime": "2026-09-26T01:37:53.066Z",
+        "mtime": "2026-09-26T01:58:33.666Z",
         "size": 250456,
         "sha8": "d4319cc0"
       },
       {
         "path": ".zcode/tmp/fixverify/verdicts.json",
-        "mtime": "2026-09-26T01:12:22.339Z",
-        "size": 513998,
-        "sha8": "73ca4761"
+        "mtime": "2026-09-26T01:55:21.276Z",
+        "size": 530933,
+        "sha8": "57a0a80d"
       }
     ],
     "commands": [
@@ -767,8 +767,8 @@
         "name": "verify-backend-restarted",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-backend-restarted.mjs --port 8080",
         "exitCode": 0,
-        "stdoutBytes": 415,
-        "sha8": "1729f300",
+        "stdoutBytes": 590,
+        "sha8": "a3b6d910",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -777,7 +777,7 @@
         "cmd": "git rev-parse --short HEAD",
         "exitCode": 0,
         "stdoutBytes": 9,
-        "sha8": "7ce54ca0",
+        "sha8": "254dcfc7",
         "note": "",
         "runner": "git"
       },
@@ -785,8 +785,8 @@
         "name": "git worktree 脏项",
         "cmd": "git status --porcelain",
         "exitCode": 0,
-        "stdoutBytes": 8963,
-        "sha8": "362a4e97",
+        "stdoutBytes": 522,
+        "sha8": "8234e8d8",
         "note": "",
         "runner": "git"
       },
@@ -794,8 +794,8 @@
         "name": "git worktree 脏项(apps/)",
         "cmd": "git status --porcelain -- apps/",
         "exitCode": 0,
-        "stdoutBytes": 5256,
-        "sha8": "4b2ec5d8",
+        "stdoutBytes": 49,
+        "sha8": "3c3b5285",
         "note": "",
         "runner": "git"
       },
@@ -857,8 +857,8 @@
         "name": "verify-evidence-corpus（全域）",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs",
         "exitCode": 1,
-        "stdoutBytes": 1948,
-        "sha8": "e480c8ff",
+        "stdoutBytes": 2039,
+        "sha8": "2e562eba",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -867,7 +867,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs",
         "exitCode": 1,
         "stdoutBytes": 2642,
-        "sha8": "f20e5368",
+        "sha8": "bbdbba58",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -875,8 +875,8 @@
         "name": "verify-evidence-corpus（本轮 scope）",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-6,reports/screenshots/round-6-interact,reports/screenshots/round-6-real-tour,reports/screenshots/round-6-tour,reports/screenshots/round-6-tour-chat,reports/screenshots/round-6-tour-dupfix,reports/screenshots/round-6-tour-reshoot",
         "exitCode": 0,
-        "stdoutBytes": 1631,
-        "sha8": "9e7cbc09",
+        "stdoutBytes": 1721,
+        "sha8": "a7698084",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -885,7 +885,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-6,reports/screenshots/round-6-interact,reports/screenshots/round-6-real-tour,reports/screenshots/round-6-tour,reports/screenshots/round-6-tour-chat,reports/screenshots/round-6-tour-dupfix,reports/screenshots/round-6-tour-reshoot",
         "exitCode": 0,
         "stdoutBytes": 2222,
-        "sha8": "2a89cb30",
+        "sha8": "ba0bf349",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -957,7 +957,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/g8-e2e.cjs",
         "exitCode": 0,
         "stdoutBytes": 2510,
-        "sha8": "839c1ebc",
+        "sha8": "204cff03",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },

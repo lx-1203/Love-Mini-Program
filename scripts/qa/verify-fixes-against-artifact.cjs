@@ -43,7 +43,7 @@ var ROOT = path.resolve(__dirname, "..", "..");
 /* ------------------------------------------------------------------ 参数 */
 
 function parseArgs(argv) {
-  var out = { sample: 0, only: null, trace: null, items: null, sabotage: 0, dist: null, src: null, ledger: null, lanes: null, out: null, quiet: false };
+  var out = { sample: 0, only: null, trace: null, items: null, sabotage: 0, dist: null, src: null, ledger: null, lanes: null, out: null, baseline: null, quiet: false };
   for (var i = 0; i < argv.length; i++) {
     var a = argv[i];
     var next = function () { return argv[i + 1]; };
@@ -57,6 +57,7 @@ function parseArgs(argv) {
     else if (a === "--ledger") out.ledger = next(), i++;
     else if (a === "--lanes") out.lanes = next(), i++;
     else if (a === "--out") out.out = next(), i++;
+    else if (a === "--baseline") out.baseline = next(), i++;
     else if (a === "--quiet") out.quiet = true;
   }
   return out;
@@ -75,6 +76,17 @@ var P = {
   src: path.join(ROOT, ARG.src || "apps/client/src"),
   out: path.join(ROOT, ARG.out || ".zcode/tmp/fixverify"),
 };
+/* 对照组基线（本轮实测出来的前提失效）：HEAD 对照判的是"这条判点在修复前就存在吗"，
+   它成立的前提是 **HEAD 还没收下本轮修复**。本轮把修复波提交成 f9a60925 之后，HEAD 就成了
+   "修复后"，同一批判点全部"已在 baseline 里" ⇒ ARTIFACT_VERIFIED 从 18 掉到 8、UNDECIDABLE 从 37 涨到 45，
+   一次合法的提交把核验台判成了"什么都没修"。所以对照组必须是**本轮开跑时的 SHA**，而不是"当前 HEAD"：
+   提交前用默认 HEAD，提交后显式 `--baseline 874ff52f`。写法仍记进 meta，读结果的人看得见对照的是谁。 */
+var BASELINE = String(ARG.baseline || "HEAD");
+function safeRef(s) { return /^[0-9a-zA-Z_.^{}~/+-]{1,64}$/.test(s) ? s : "HEAD"; }
+if (BASELINE !== "HEAD" && safeRef(BASELINE) !== BASELINE) {
+  console.log("BASELINE_REJECTED=" + JSON.stringify(BASELINE.slice(0, 24)) + "（字符集不合，退回 HEAD）");
+  BASELINE = "HEAD";
+}
 var SRC_SRC_PREFIX = "apps/client/src/";
 var LOCALE_DIST_REL = "i18n/locales/zh-CN.js";
 var LOCALE_SRC_REL = "i18n/locales/zh-CN.ts";
@@ -748,16 +760,17 @@ function stripComments(s) {
   }).join("\n");
 }
 
-/* "改动前的 HEAD 里就有" = 这个命中什么也没证明。本仓修复全部未提交（HEAD=874ff52f 是修复前状态），
-   所以 HEAD 版本就是天然的对照组——不必留一份旧产物也能判。缓存按 HEAD 路径去重，只给候选绿行取。 */
+/* "改动前的对照组里就有" = 这个命中什么也没证明。默认对照组是 HEAD，**这个默认只在修复尚未提交时成立**
+   （前提失效的后果见上面 BASELINE 那段）。缓存按 ref+路径去重，只给候选绿行取。 */
 var HEAD_CACHE = {};
 function headText(rel) {
-  if (Object.prototype.hasOwnProperty.call(HEAD_CACHE, rel)) return HEAD_CACHE[rel];
+  var ck = BASELINE + "#" + rel;
+  if (Object.prototype.hasOwnProperty.call(HEAD_CACHE, ck)) return HEAD_CACHE[ck];
   var txt = "";
   try {
-    txt = require("child_process").execSync('git show "HEAD:apps/client/src/' + rel + '"', { encoding: "utf8", maxBuffer: 32 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] });
+    txt = require("child_process").execSync('git show "' + safeRef(BASELINE) + ':apps/client/src/' + rel + '"', { encoding: "utf8", maxBuffer: 32 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] });
   } catch (e) { txt = ""; }
-  HEAD_CACHE[rel] = txt;
+  HEAD_CACHE[ck] = txt;
   return txt;
 }
 function grantingPredatesFix(item, probes) {
@@ -1415,6 +1428,9 @@ function main() {
       tool: "scripts/qa/verify-fixes-against-artifact.cjs",
       writtenAt: new Date().toISOString(),
       offline: true,
+      baselineRef: BASELINE,
+      baselineSha: (function () { try { return require("child_process").execSync("git rev-parse --short " + safeRef(BASELINE), { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); } catch (e) { return "?"; } })(),
+      headSha: (function () { try { return require("child_process").execSync("git rev-parse --short HEAD", { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); } catch (e) { return "?"; } })(),
       dist: path.relative(ROOT, P.dist).split(path.sep).join("/"),
       src: path.relative(ROOT, P.src).split(path.sep).join("/"),
       ledger: path.relative(ROOT, P.ledger).split(path.sep).join("/"),
@@ -1500,6 +1516,15 @@ function main() {
       console.log("  NIE_SCOPE_CHECK " + it.id + " 缺失硬判点=" + miss.length + " :: " + (segs.join(" ; ") || "(本条没有 present 硬判点缺失，NIE 由 absent/矛盾侧判出)"));
     }
   }
+  /* 前提守卫（本轮实测）：对照组 == 当前 HEAD 且 apps/client/src 相对 HEAD 干净 ⇒ 本轮修复已经落进对照组，
+     归因控制必然全线失效 —— 提交之后重跑一次，ARTIFACT_VERIFIED 18 → 8、UNDECIDABLE 37 → 45，
+     一次合法提交把核验台判成"什么都没修"。这时必须显式 `--baseline <本轮开跑 SHA>`。 */
+  try {
+    var cpBase = require("child_process");
+    var srcDirtyVsHead = cpBase.execSync("git status --porcelain apps/client/src", { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+    console.log("BASELINE=" + BASELINE + " srcDirtyVsHead=" + (srcDirtyVsHead ? "yes" : "no"));
+    if (!srcDirtyVsHead && BASELINE === "HEAD") console.log("BASELINE_PREMISE_WARN=对照组是当前 HEAD 且 src 相对 HEAD 干净 ⇒ 本轮修复已在对照组内，判点命中不再记作本轮落地；请显式 --baseline <本轮开跑 SHA>");
+  } catch (e) { console.log("BASELINE_CHECK_UNAVAILABLE=" + String(e && e.message || "").slice(0, 70) + "（读不到就等于没测，不静默放行）"); }
   var tail = "FIXVERIFY_RESULT=" + (conserved && !FATAL.length ? "OK" : "FAIL") +
     " items=" + records.length +
     " ARTIFACT_VERIFIED=" + counts.ARTIFACT_VERIFIED +
