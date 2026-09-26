@@ -1,7 +1,7 @@
 {
- "generatedAt": "2026-09-26T14:19:15.438Z",
+ "generatedAt": "2026-09-26T14:21:22.845Z",
  "source": "verify-source-shape.mjs",
- "passed": 6,
+ "passed": 7,
  "failed": 0,
  "patches": [
   {
@@ -41,6 +41,12 @@
    "why": "不借帧的名义给绿，也不再挂着待修复"
   },
   {
+   "id": "MP-R2-CAMPUS-HUB-009",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
    "id": "MP-R2-CAMPUS-HUB-012",
    "col": 9,
    "new": "源码判点：成员数/动态数每卡只计算一次（模板不得反复调 statsOf） ｜承载 apps/client/src/subpackages/campus/campus/hub.vue",
@@ -74,6 +80,12 @@
    "id": "MP-R2-PAGES-REGISTER-INDEX-014",
    "col": 9,
    "new": "源码判点：(A) 三处彩色底上的白色前景改用 var(--c-text-inverse)，并明令禁改 var(--c-bg-container) ｜承载 apps/client/src/pages/register/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-009",
+   "col": 9,
+   "new": "源码判点：同文件两处 --c-bg-page 兜底值统一：:372 用 #EEF7F2，另一处不得再留 #F0F4F2 ｜承载 apps/client/src/subpackages/campus/campus/hub.vue",
    "why": "写明这条是靠哪个谓词成立的"
   }
  ]
