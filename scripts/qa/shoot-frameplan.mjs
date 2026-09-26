@@ -171,6 +171,58 @@ async function wsSession() {
 }
 const WS_ACTS = new Set(["tap", "longpress", "input", "swipe", "swipe-card", "press-hold", "re-enter-tab"]);
 const DENY_TAP = /注销|解绑|清空|删除账号|删除帐号|退出登录|登出/;
+
+/* 数量探测回答不了"文本里有没有某个字面量"和"盒子是不是 ≥88rpx"。
+   上一轮就是把 text-not-contains / bounding-box-* 当成"物件在场否"来判，
+   于是「错误文案里出现键名字面量」这种判点被读成"节点在 ⇒ 判红"，
+   而真相要么是正确的文案（应当成立），要么根本没有正确文案（才叫未修）。
+   这里补第二载具：用 WS 那条腿逐个锚点读 element.text() / element.size()。 */
+async function wsMeasure(anchors) {
+  const m = await wsSession();
+  if (!m) return { __err: "WS 未启用或连不上" };
+  const out = {};
+  try {
+    const page = await m.currentPage();
+    for (const sel of anchors) {
+      const els = await page.$$(sel).catch(() => null);
+      if (!els) { out[sel] = { __err: "查不到" }; continue; }
+      const rec = { n: els.length };
+      if (els.length) {
+        try { rec.text = String(await els[0].text() || ""); } catch (e) { rec.textErr = String(e.message).slice(0, 30); }
+        try { const s = await els[0].size(); rec.width = s && s.width; rec.height = s && s.height; } catch (e) { rec.sizeErr = String(e.message).slice(0, 30); }
+      }
+      out[sel] = rec;
+    }
+    return out;
+  } catch (e) { wsErrs++; return { __err: String(e.message).slice(0, 60) }; }
+}
+/* 从 expected 里取被「」括起来的字面量；取不到就不许判（不是"没提到就算通过"）。 */
+const quoted = (s) => (String(s || "").match(/[「"']([^」"']{2,})[」"']/g) || []).map((x) => x.slice(1, -1));
+function textVerdict(a, rec) {
+  const need = quoted(a.expected);
+  if (!rec || rec.__err) return { check: "PROBE_NO_ANSWER", note: (rec && rec.__err) || "WS 没回文本" };
+  const got = rec.text || "";
+  if (!need.length) return { check: "PROBE_NO_ANSWER", note: "expected 里没有可核对的字面量" };
+  const wantAbsent = /not-contains|不得出现|不许出现/i.test(String(a.kind || "") + String(a.expected || ""));
+  if (wantAbsent) {
+    const hit = need.filter((x) => got.includes(x));
+    return { check: hit.length ? "TEXT_LEAK(" + hit.join(",").slice(0, 40) + ")" : "TEXT_CLEAN", count: rec.n };
+  }
+  const hit = need.filter((x) => got.includes(x));
+  return { check: hit.length ? "TEXT_MATCH(" + hit[0].slice(0, 24) + ")" : "TEXT_MISS", count: rec.n };
+}
+/* rpx→px 按视口宽/750 折算；expected 里若直接写了 px 以它为准。 */
+function boxVerdict(a, rec, vpW) {
+  if (!rec || rec.__err || rec.width === undefined) return { check: "PROBE_NO_ANSWER", note: (rec && (rec.__err || rec.sizeErr)) || "没有尺寸" };
+  const m = String(a.expected || "").match(/(\d+(?:\.\d+)?)\s*(rpx|px)/);
+  if (!m) return { check: "PROBE_NO_ANSWER", note: "expected 没写阈值" };
+  const want = m[2] === "rpx" ? Number(m[1]) * (vpW || 375) / 750 : Number(m[1]);
+  const min = /min|≥|不小于/.test(String(a.kind || "") + String(a.expected || ""));
+  const bad = rec.width < want - 1 || rec.height < want - 1;
+  if (min) return { check: bad ? "BOX_SMALL(" + rec.width + "x" + rec.height + "<" + want.toFixed(0) + ")" : "BOX_OK(" + rec.width + "x" + rec.height + ")", count: rec.n };
+  const off = Math.abs(rec.width - want) > 2 || Math.abs(rec.height - want) > 2;
+  return { check: off ? "BOX_OFF(" + rec.width + "x" + rec.height + "≠" + want.toFixed(0) + ")" : "BOX_OK(" + rec.width + "x" + rec.height + ")", count: rec.n };
+}
 async function doWsStep(st) {
   const act = String(st.action || "").trim();
   if (!WS_ACTS.has(act)) return { ok: false, why: "未知动作 " + act };
@@ -319,23 +371,37 @@ for (const [key, grp] of byRoute) {
     }
     const sels = [...new Set(it.assertionList.flatMap((a) => selectorsOf(a)))];
     const dom = (!DRY && sels.length) ? probeMany(sels) : {};
-    const per = it.assertionList.map((a) => {
+    /* 文本/尺寸判点要的是第二载具（数量探测答不了"字面量在不在文案里"、"盒子多大"）。
+       只在真的有这类判点时才走 WS，避免给纯数量条目平白加一次往返。 */
+    const needsSecond = it.assertionList.some((a) => /text|bounding-box|computed-style/i.test(String(a.kind || "")));
+    let meas = null, vpW = 0;
+    if (needsSecond && !DRY && flag("ws-taps")) {
+      meas = await wsMeasure(sels);
+      try { vpW = Number(evaluate("() => { try { return wx.getWindowInfo ? wx.getWindowInfo().windowWidth : wx.getSystemInfoSync().windowWidth; } catch(e){ return 0; } }", { project: PROJECT })) || 375; }
+      catch (e) { vpW = 375; }
+    }
+    const per = [];
+    for (const a of it.assertionList) {
       const ss = selectorsOf(a);
-      if (!ss.length) return { kind: a.kind || "?", target: a.target || "", check: "FRAME_ONLY", note: "没有可机器查的选择器，帧是它的载体" };
-      const hit = ss.map((s) => dom[s]).filter((v) => v !== undefined);
-      if (dom.__err) return { kind: a.kind, target: a.target, check: "PROBE_NO_ANSWER", note: String(dom.__err).slice(0, 50) };
-      /* 探针没回答 ≠ 物件不存在。上一版这里让 hit 为空时继续往下算，
-         `Math.max(0, ...[])` 得到 0 ⇒ 记成 ABSENT_UNEXPECTED，
-         于是"折叠探测的第二步取回空 bag"这一条通道故障，被写成了 14 条产品判红。
-         现在明确区分：一个锚点都没有数 ⇒ PROBE_NO_ANSWER（没测到），不判红也不判绿。 */
-      if (!hit.length) return { kind: a.kind, target: a.target, check: "PROBE_NO_ANSWER", note: "折叠探测没回这些锚点的数（" + ss.join(",") + "）", anchors: ss };
-      const n = Math.max(0, ...hit.map((v) => Number(v) || 0));
+      const kind = String(a.kind || "");
+      if (/text|bounding-box|computed-style/i.test(kind) && ss.length && meas) {
+        const first = ss.find((s) => meas[s] && !meas[s].__err) || ss[0];
+        const rec = meas[first];
+        const v = /text/i.test(kind) ? textVerdict(a, rec) : boxVerdict(a, rec, vpW);
+        per.push({ kind, target: a.target, anchors: ss, anchor: first, text: rec && rec.text ? rec.text.slice(0, 60) : undefined, count: rec && rec.n, ...v });
+        continue;
+      }
+      if (!ss.length) { per.push({ kind: a.kind || "?", target: a.target || "", check: "FRAME_ONLY", note: "没有可机器查的选择器，帧是它的载体" }); continue; }
+      const hit = ss.map((s) => dom[s]).filter((v2) => v2 !== undefined);
+      if (dom.__err) { per.push({ kind: a.kind, target: a.target, check: "PROBE_NO_ANSWER", note: String(dom.__err).slice(0, 50) }); continue; }
+      if (!hit.length) { per.push({ kind: a.kind, target: a.target, check: "PROBE_NO_ANSWER", note: "折叠探测没回这些锚点的数（" + ss.join(",") + "）", anchors: ss }); continue; }
+      const n = Math.max(0, ...hit.map((v2) => Number(v2) || 0));
       /* 极性只认 lane 声明的 kind：以前还把 expected 散文里的「无 / 不」也算成"不该出现"，
          于是「未解锁分支不显示徽标」这类写法会把 present 判成 absent——判红一片，其实是我读错了。
          散文里的词不是极性字段。 */
       const wantAbsent = /absent|not-|hidden|不出现/i.test(String(a.kind || ""));
-      return { kind: a.kind, target: a.target, count: n, check: wantAbsent ? (n === 0 ? "ABSENT_OK" : "PRESENT_UNEXPECTED(" + n + ")") : (n > 0 ? "PRESENT(" + n + ")" : "ABSENT_UNEXPECTED"), anchors: ss };
-    });
+      per.push({ kind: a.kind, target: a.target, count: n, check: wantAbsent ? (n === 0 ? "ABSENT_OK" : "PRESENT_UNEXPECTED(" + n + ")") : (n > 0 ? "PRESENT(" + n + ")" : "ABSENT_UNEXPECTED"), anchors: ss });
+    }
     const stepRec = { stepsApplied: sp.did, stepsUnmet: sp.unmet, wsApplied: sp.wsDid, wsFailed: sp.wsFailed, landingVia, landingAfter, stateApplied: sp.unmet.length === 0 };
     if (sp.wsDid.length || sp.wsFailed.length) console.log("  ws " + it.id + " 已做=[" + sp.wsDid.join(",") + "] 未成=[" + sp.wsFailed.join(",") + "]");
     let frame = "", bytes = 0;

@@ -875,3 +875,31 @@ countTemplateEq / importHead），逐条重跑、逐条把原文 claim 写进 st
 
 对照下来，能安全进判点库的只有 `MP-R2-CAMPUS-HUB-009`（`#F0F4F2` 0 处、`#EEF7F2` 恰 2 处），已加进 SPEC 并落账。
 判点库的价值恰恰在于它**会拒收**：一条写不出可靠谓词的"修复"就不是修复。
+
+## 36 三条"可落账的判红"其实也是载体错位：文本判点要读文案，尺寸判点要读盒子
+
+§33 之后剩下 3 条通过可判性审计的判红。逐条把 expected 和实测并排看，三条都不是产品回归：
+
+| 行 | 判点原文要求 | 数量探测给的 | 真相需要 |
+|---|---|---|---|
+| `MP-R2-PAGES-REGISTER-INDEX-011` | `.field__tap--32` / `.field__clear` 的盒子 `≥88rpx`、`32rpx×32rpx 不变` | `ABSENT_UNEXPECTED` | 盒子尺寸（清除钮本就按输入态条件渲染） |
+| `MP-R2-PAGES-REGISTER-INDEX-013` | `.field-error__text` **不得出现键路径字面量** `register.errPhoneFormat` | `PRESENT_UNEXPECTED(1)` | 渲染出的文案 |
+| `MP-R2-PUB-114` | `.publish-row__meta` 不得出现「所有人可见」 | `PRESENT_UNEXPECTED(3)` | 渲染出的文案 |
+
+也就是说我把 `text-not-contains` / `bounding-box-*` 这类判点当成"物件在不在"来判了——
+`wantAbsent` 的正则确实把 `not-` 认成了负极性，但负极性作用在**数量**上，
+而判据说的负极性作用在**文案内容**上：节点在、文案对，才是这条成立。
+数量探测回答不了它，`fields({size:true})` 的 `.length` 也回答不了它。
+
+补第二载具（`shoot-frameplan.mjs`）：
+- `wsMeasure(anchors)` 用 WS 那条腿对每个锚点取 `element.text()` 与 `element.size()`；
+- `textVerdict` 只认 expected 里被「」括起来的字面量，取不到字面量就 `PROBE_NO_ANSWER`，
+  **不许"没提到就算通过"**；`text-not-contains` 命中字面量记 `TEXT_LEAK`，未命中记 `TEXT_CLEAN`；
+- `boxVerdict` 按 `windowWidth/750` 把 rpx 折成 px（expected 里写了 px 就用 px），
+  `min` 类要求宽高都不小于阈值（容差 1px），等值类要求偏差 ≤2px，否则 `BOX_SMALL/BOX_OFF`；
+- 判决侧（`verdict-from-frames.mjs`）把 `TEXT_LEAK|TEXT_MISS|BOX_SMALL|BOX_OFF` 并入红，
+  审计侧（`audit-frame-verdicts.mjs`）把 `TEXT_MATCH/TEXT_CLEAN/BOX_OK` 承认为正对照，
+  并且**文本/尺寸判点不再因为 target 是人话而被扣住**——被读的是 anchor，anchor 仍要在产物里存在。
+
+这三条要重拍才能拿到新载具的结论，等 B 侧执行轮跑完（设备只有一条，不能并发）再做；
+在拿到之前它们维持 §33 的处置：不进台账判决，statusEvidence 里写明欠的是哪个载体。

@@ -59,7 +59,12 @@ const byId = new Map((fr.rows || []).map((r) => [r.id, r]));
 const planById = new Map((plan.rows || []).map((r) => [r.id, r]));
 
 const isBareSelector = (t) => /^[.#]?[\w-]+(?:\s*[>\s]\s*\.?[\w-]+)*$/.test(String(t || "").trim());
-const BAD = /PRESENT_UNEXPECTED|ABSENT_UNEXPECTED|PROBE_NO_ANSWER/;
+/* 文本/尺寸判点用的是"声明过的锚点 + WS 读到的真实文案/盒子"，
+   这时 target 写的是人话（"toast 浮层"）不影响可判性——被读的是 anchor，不是 target。
+   反过来数量型判点仍要求 target 本身就是单一选择器，否则就是在拿散文里的某个词代替整条判据。 */
+const SECOND = /^(TEXT_MATCH|TEXT_CLEAN|TEXT_LEAK|TEXT_MISS|BOX_OK|BOX_SMALL|BOX_OFF)\b/;
+const BAD = /PRESENT_UNEXPECTED|ABSENT_UNEXPECTED|PROBE_NO_ANSWER|TEXT_LEAK|TEXT_MISS|BOX_SMALL|BOX_OFF/;
+const POSITIVE = /^PRESENT\(\d+\)$|^TEXT_(MATCH|CLEAN)\(|^BOX_OK\(/;
 
 const rows = [];
 for (const r of fr.rows || []) {
@@ -72,13 +77,16 @@ for (const r of fr.rows || []) {
      才说明这一帧页面确实渲染了、探针也确实通了。
      全是 0 的那种帧不能判红：物件没出现、页面整片没渲染、探针冷启动没答案，
      三者在数据上一模一样，把它们统一记成"产品未修"就是把测量错写进台账。 */
-  const positive = (r.checks || []).filter((c) => /^PRESENT\(\d+\)$/.test(String(c.check)) || Number(c.count) > 0);
+  const positive = (r.checks || []).filter((c) => POSITIVE.test(String(c.check)) || Number(c.count) > 0);
   const allZeroProbe = bad.every((c) => String(c.check) === "ABSENT_UNEXPECTED") && !positive.length;
   for (const c of bad) {
     const anchors = (c.anchors && c.anchors.length ? c.anchors : []).map((a) => String(a).replace(/^\./, ""));
-    if (!isBareSelector(c.target)) problems.push("target 不是单一选择器：" + String(c.target).slice(0, 60));
+    /* 文本/尺寸判点读的是 anchor，不是 target 那句人话；这时不因 target 是散文而扣住。 */
+    const secondCarrier = SECOND.test(String(c.check)) && c.anchor;
+    if (!secondCarrier && !isBareSelector(c.target)) problems.push("target 不是单一选择器：" + String(c.target).slice(0, 60));
     if (!anchors.length) problems.push("探针没有锚点（该条只能人读帧）：" + String(c.target).slice(0, 40));
     for (const a of anchors) if (!ARTIFACT.has(a)) problems.push("产物里查无此 class：." + a);
+    if (secondCarrier && !ARTIFACT.has(String(c.anchor).replace(/^\./, ""))) problems.push("WS 读的锚点不在产物里：" + c.anchor);
     if (String(c.check).startsWith("PROBE_NO_ANSWER")) problems.push("探针没给数字答案：" + String(c.note || "").slice(0, 40));
   }
   if (allZeroProbe) problems.push("该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」");

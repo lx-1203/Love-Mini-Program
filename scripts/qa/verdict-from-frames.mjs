@@ -109,7 +109,8 @@ for (const it of planItems) {
     continue;
   }
   const hard = checks.filter((c) => !String(c.check).startsWith("FRAME_ONLY"));
-  const bad = hard.filter((c) => String(c.check).startsWith("PRESENT_UNEXPECTED") || c.check === "ABSENT_UNEXPECTED" || c.check === "PROBE_NO_ANSWER");
+  const BADV = /^PRESENT_UNEXPECTED|^ABSENT_UNEXPECTED|^PROBE_NO_ANSWER|^TEXT_LEAK|^TEXT_MISS|^BOX_SMALL|^BOX_OFF/;
+  const bad = hard.filter((c) => BADV.test(String(c.check)));
   const ev = r.frame + "(" + realBytes + "B" + (r.framesFrom ? " 取自 " + r.framesFrom.split("/").slice(-2)[0] : "") + ") 判点 " + hard.length + " 条";
   if (bad.length) {
     bucket.REGRESSION++;
