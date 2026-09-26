@@ -752,3 +752,31 @@ OPENQ_PASSED=10 HELD=3 REJECTED=0   （11 条 ALREADY_FIXED，其中 1 条被我
    17 条守恒断言全绿（`G8 10/10`、`G9 455/455`、证据 `326+0+0`、`NO_EVIDENCE_*=0`）。
 3. 顺手修掉一个会误导人的标签：分诊 sidecar 文件名写死 `triage-r6-at-report`，
    在 round-7 的报告里把新跑出来的分诊标成 r6 来源。现按 `--round-dir` 派生（`triage-r7-at-report`）。
+
+## 31 重建之后第一次有 B 侧数据：90 行重测、0 行判红迁移，21 行只是"从未测变已测"
+
+终报此前的口径是"B 侧 0 行 ⇒ 两个被测物的边界在数据上不存在"（§28 之前）。
+本轮改动编入产物 + 8080 重启之后，用 `r-exec-cli.mjs --out reports/audit/round-7/interact-b`
+跑了两个切片（home 40 行 → nearby/profile 50 行），再和 §30 冻出来的
+`exec-results.snapshot-b89dc4a71654.json`（gitSha `713c1729`、1107 行）做差：
+
+```
+HISTO_LIVE={"EXECUTED":53,"SKIPPED":37}   ONLY_IN_LIVE=0   DUP_COMPOSITE_KEY live=0 frozen=0
+MIGRATIONS=SKIPPED→EXECUTED=21
+PASSRATE_LIVE nominal=53/90=58.9%  引用了png=53  png确在盘上=53
+DELTA=OK 守恒 90=90
+```
+
+**这 21 条不是"修好了 21 条"**，逐条对过原因：
+- 20 条的 A 侧状态就是自标注的测量洞——`落点探针没给结果（routeStack 取空/超时）⇒ … 待重跑`。
+  这一轮重跑拿到了落点答案，于是从"没测"变成"测了"。
+- 1 条（`PFI06`，MyHeader 分享）A 侧按"action 含交互动词"跳过，本轮以 observe-only 记了一条
+  DOM 事实 `.my-header__icon--share:absent`。**observe-only 不判极性**，所以这条既不算通过也不算回归；
+  它的终判仍要等交互腿（WS tap）那一刀。
+- 迁移矩阵里 **没有任何 `EXECUTED→FAILED` 或 `FAILED→EXECUTED`**，
+  也就是说 `utils/location.ts` 的 `cityTrusted` 改动在 home/nearby/profile 三页上量到的是零漂移
+  （这三页都不读新字段，零漂移正是预期结果，不是额外成绩）。
+
+诚实边界：这只覆盖 1107 里的 90 行，且集中在两个直接消费 `fetchCurrentLocation` 的页面。
+"全轮 B 侧已复跑"仍然不成立，剩下 1017 行的 ONLY_IN_FROZEN 就摆在那里；
+按 §30 记进 `rerun-round7-slices.sh` 的命令续跑即可，`--out` 指到 `interact-b` 不会覆盖 A 侧权威件。
