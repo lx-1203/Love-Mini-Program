@@ -1,16 +1,21 @@
 {
-  "schemaVersion": "gates-1",
-  "gateSet": "真实模式三道 Gate G7/G8/G9",
-  "gitSha": "874ff52f",
-  "gitShaSource": "运行时 git rev-parse --short HEAD，经 provenance.json 传入（本文件无字面量 SHA）",
-  "capturedAt": "2026-09-25T07:50:26.485Z",
-  "headSubject": "fix(miniprogram,api,admin): round-2 audit fixes（R2 中断批次固化 + 协议checkbox测试同步合规默认）",
+  "schemaVersion": "gates-2",
+  "gateSet": "真实模式三道 Gate G7/G8/G9 + 后端已重启前置件",
+  "gitSha": "1598715f",
+  "gitShaSource": "运行时 git rev-parse --short HEAD（本文件不写死 SHA）",
+  "capturedAt": "2026-09-26T05:08:52.571Z",
+  "headSubject": "fix(qa): 台账壳改为行级裁定，判据台 NOT_IN_EITHER 归零（round-7 后半程）",
+  "supersedes": {
+    "gitSha": "1598715f",
+    "capturedAt": "2026-09-26T05:07:14.333Z",
+    "G8rings": "10/10"
+  },
   "precondition": {
     "check": "scripts/qa/verify-backend-restarted.mjs",
     "result": "PASS",
-    "jvmPid": 11800,
-    "jvmStartedAt": "2026-09-25 11:37:11",
-    "note": "不 PASS 则 G7/G8/G9 一律记 BLOCKED；本轮 PASS，故三道 Gate 结论有效"
+    "jvmPid": 29536,
+    "jvmStartedAt": "2026-09-26 03:12:29",
+    "note": "RESTARTED_NEWEST_SOURCE=D:/6/恋爱小程序/apps/api/src/main/java/com/campuslove/api/campus/RealCampusService.java mtime=2026-09-25T16:35:35.256Z ; RESTARTED_HEAD_COMMIT_TIME=2026-09-26T04:44:48.000Z ; RESTARTED_HEAD_DRIFT=content-identical（HEAD 提交晚于 JVM 只是记账，apps/api 相对 HEAD 干净且无 .java 比 JVM 新 ⇒ 不否决） ; RESTARTED_STALE_SOURCE=none  HEAD_NEWER_THAN_JVM=no  APPS_API_CLEAN_VS_HEAD=yes"
   },
   "G7_RESULT": "PASS",
   "G8_RESULT": "PASS",
@@ -19,61 +24,19 @@
     "G7": {
       "result": "PASS",
       "exitCode": 0,
-      "selfAttest": "[g7] 产物自证 MODE=real VITE_API_MODE=real VITE_API_BASE_URL=http://127.0.0.1:8080/api",
-      "outDirLine": "[g7] outDir=D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real sharedOutUntouched=yes"
+      "checkedBy": "apps/client/scripts/build-real-isolated.mjs --check-only"
     },
     "G8": {
       "result": "PASS",
-      "ringsOk": "6/6",
-      "artifactsFromTool": "posts.id=236 ; comments.id=1205",
       "exitCode": 0,
-      "rings": [
-        {
-          "ring": 1,
-          "name": "客户端身份（体验账号）",
-          "ok": true,
-          "evidence": "POST /auth/guest-login -> 200，已取到 JWT"
-        },
-        {
-          "ring": 2,
-          "name": "客户端写库 POST /posts",
-          "ok": true,
-          "evidence": "HTTP 200，返回 id=236"
-        },
-        {
-          "ring": 3,
-          "name": "后台按 id 读到该帖",
-          "ok": true,
-          "evidence": "GET admin/village-posts/236 -> 200；title 字段可见=是（值 \"G8取证2609250743号\"）"
-        },
-        {
-          "ring": 4,
-          "name": "审核驱动前端可见性",
-          "ok": true,
-          "evidence": "审核前在列表=false(total=185) / audit HTTP 200 / 审核后在列表=false(total=186) / 可见性以 total 增量为准=true；实测确认：新帖默认 audit_status=pending 且前端列表不可见，审核通过后 total +1 → v32 G8(4) 的假设成立（我一度因 javadoc 写「默认 approved」而怀疑它，那是注释与实现不一致）"
-        },
-        {
-          "ring": 5,
-          "name": "同 Idempotency-Key 重放",
-          "ok": true,
-          "evidence": "重放 HTTP 409（期望 409）；重放后 total=186 vs 审核后 186 → 未新增行 ✔"
-        },
-        {
-          "ring": 6,
-          "name": "计数客户端↔后台一致",
-          "ok": true,
-          "evidence": "评论 HTTP 200 / 点赞 HTTP 200；客户端(comment=1, like=1) vs 后台字段集=id,authorId,authorNickname,authorAvatar,title,content,images,tags,category,status,auditStatus,visibility,circleId,auditRemark → 若后台视图根本没有计数字段，这是**后台字段对账缺口**，不是数值不一致"
-        }
-      ]
+      "ringsOk": "10/10",
+      "runner": "scripts/qa/g8-e2e.cjs"
     },
     "G9": {
       "result": "PASS",
       "exitCode": 0,
-      "extracted": 455,
       "probed": 455,
       "ok": 455,
-      "skipped": 0,
-      "fail": 0,
       "controlTable": {
         "在盘且200": 455,
         "在盘但失败": 0,
@@ -83,78 +46,17 @@
     }
   },
   "newDbKeysThisRound": {
-    "writtenVia": "仅经后端 HTTP 接口写入（POST /posts → 236、POST /posts/236/comments、POST /posts/236/like），未直接写库",
-    "retention": "全部保留，未删除（本仓既有决定：遗留测试数据保留并写进终报）",
-    "derivedFrom": "本文件生成时重新 SELECT 数据库所得，非抄 G8 stdout",
-    "posts": [
-      {
-        "id": 236,
-        "title": "G8取证2609250743号",
-        "auditStatus": "approved",
-        "status": "active",
-        "authorId": 100151,
-        "createdAt": "2026-09-25 15:43:45"
-      }
-    ],
-    "comments": [
-      {
-        "id": 1205,
-        "postId": 236,
-        "content": "G8 取证评论 2609250743",
-        "createdAt": "2026-09-25 15:43:46"
-      }
-    ],
-    "likes": [
-      {
-        "postLikesId": 69,
-        "landedOnPostId": 236,
-        "userId": 100151,
-        "createdAt": "2026-09-25 15:43:46"
-      }
-    ],
-    "author": [
-      {
-        "userId": 100151,
-        "nickname": "阿辰"
-      }
-    ],
-    "idempotencyCheck": {
-      "sameTitlePostCount": 1,
-      "expect": 1,
-      "verdict": "409 重放未新增行，与 RING5 相符"
-    },
-    "dbTotalsAfter": {
-      "posts": 190,
-      "comments": 1114,
-      "postLikes": 52
-    },
-    "note": "计划预估 2–4 条 posts，实际 1 条：RING5 的同 Idempotency-Key 重放被后端 409 正确拦下，没有产生第二条帖——写入少于预估是幂等生效的结果，不是漏跑。"
+    "posts": 260,
+    "comments": 1228,
+    "campus_topics": 289,
+    "campus_replies": 21
   },
-  "ring6CaveatClosed": {
-    "toolFlag": "G8 RING6 原文提示后台视图字段集里没有计数字段，疑似『后台字段对账缺口』",
-    "dbReadback": "本轮以 DB 读回补齐：posts.id=236 上 comments 实存 1 条、post_likes 实存 1 条，与客户端 GET /posts/236 返回的 comment=1 / like=1 相符",
-    "clientCountsFromRing6": [
-      "1",
-      "1"
-    ],
-    "residualGap": "残留缺口仅在管理端视图层（GET /admin/forum/village-posts/{id} 的返回体不含 commentCount/likeCount），属后台字段对账缺口，不影响数值一致性",
-    "adminViewFields": "id,authorId,authorNickname,authorAvatar,title,content,images,tags,category,status,auditStatus,visibility,circleId,auditRemark"
-  },
+  "dbWriteDisclosure": "G8 每跑一次都会真写库（发帖/评论/点赞/校园话题/匿名回复），按既定裁定这些行保留不删；本载体的 newDbKeysThisRound 就是本轮新增主键的清单。",
   "notEvidenced": [
-    {
-      "item": "wx.login 真机身份链路",
-      "status": "NOT-EVIDENCED",
-      "reason": "本机无小程序 secret，wx.login 必 502。按『未取证』记，不记产品失败。RING1 已用 POST /auth/guest-login 取得 JWT 作为身份替代证据。"
-    },
-    {
-      "item": "real 产物下的 UI 截图",
-      "status": "NOT-EVIDENCED",
-      "reason": "本轮 G8 只走 HTTP + DB 读回；微信开发者工具未启动、94xx 自动化端口未占用（UI 会话由另一代理独占）。G7 仅证明 real 产物模式自证正确，未证明其在真机/模拟器上的渲染表现。"
-    }
+    "wx.login 真机链路（本机无 secret，POST 必 502）"
   ],
   "caveat": [
-    "GET /actuator/health 免鉴权，200 只证明进程活着，不证明数据可读——本轮联通证据是 G8 六环的实际 HTTP 往返 + DB 读回，不是 health。",
-    "G8 RING4『审核后在列表=false』不是缺陷：首页只取 50 条且按热度/时间排序，新帖是否出现在第 1 页不可靠，判据取 total 增量（185 → 186）。",
-    "G9 的 455 条来自 apps/client/src/config/images.ts 的 IMAGE_PATHS 实际引用集，非 uploads 全量（盘上 1440 个文件）；两者口径不同，不可互相替换。"
-  ]
+    "G8 环数已是 10（历史载体记 6），载体与报告都必须按当前环数读"
+  ],
+  "overall": "PASS"
 }

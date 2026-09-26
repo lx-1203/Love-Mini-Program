@@ -133,11 +133,10 @@ lanes 里最值钱的一条反驳：**HEAD 就是本轮基线**，所以只有�
    区分"通道死了"与"bridge 不等 Promise"；
    ③ 只有批量与单发**逐条一致**（`BATCH_FIDELITY=K/K`）才允许动 `r-exec.cjs`，
    否则就是把 1107 例换成一批更快的错答案。
-2. `NOT_IN_EITHER=2`：`CHAT-SESSION-A03`、`PROFILE-LOCATION-001`。
-   后者的 3 个不可判标识（运行期拼接文案 `城市 · 服务器所在城市` + 两个后端类名）不在台账第 11 列，
-   而在 round-6 冻结的 `.zcode/tmp/fixwave/closer.json` 里 —— 判据台把 closer 的 `action/evidence` 也当判点来源。
-   **这就是"过期载体"本身**：改台账改不动它，要么重生成 closer，要么让台账优先。本轮只把它记成待办，
-   没有为了变绿去改判据台读谁的顺序。
+2. ~~`NOT_IN_EITHER=2`：`CHAT-SESSION-A03`、`PROFILE-LOCATION-001`。~~ **已被 §8 取代：现在 `NOT_IN_EITHER=0`。**
+   当初的定位是对的（不可判标识不在我改的那一列，而在 round-6 冻结的 `.zcode/tmp/fixwave/closer.json`
+   与台账 col 9 里 —— 判据台把 closer 的 `action/evidence` 也当判点来源），
+   解法不是改读取顺序，而是让台账的 ⟨⟩ 裁定对所有来源生效（见 §8）。
 3. `PROBE_CONFLICTS=3`、`UNDECIDABLE=37`、`NEEDS_UI_FRAME=62`：去向已逐条写进台账格子。
 4. 取景器 5 行 `HARNESS_MISS` + 2 行 `PROBE_ERR` 未终判（选择器要重定；`home` 位置弹层的期望节点
    在产物里真名是 `.location-sheet`，台账写的 `.bottom-sheet-root` 是错的锚点，尚未回写到判据）。
@@ -146,3 +145,81 @@ lanes 里最值钱的一条反驳：**HEAD 就是本轮基线**，所以只有�
 6. `MP-R6EVID-STATE-DUPBYTES-001` 的"登录态再进登录页被弹到 discover"仍是二选一，本轮无新证据。
 7. A/B 身份同页两态在本轮 5 个成对样本里 **2 组逐字节相同、3 组不同** ⇒ "跨身份同字节"既不恒定也不普遍，
    不能单独作为产品结论，也不能作为"构建模式决定"的定论（本轮未证机制）。
+
+## 8 后半程：判点来源收敛到台账（取代 §7 第 2 条）
+
+§7 第 2 条写的"改台账改不动 closer.json"在本节被解决，方式是**给壳加上行级语义**，而不是把判点来源改成"台账优先"：
+
+- 实测判点来源其实有四条：台账 col 9（状态证据）、col 11（处置）、closer 差异串、源码锚点。
+  第一轮只在 col 11 入壳，于是 `console.warn` 与 `ChatHeader` 从 col 9 混进来照样当硬判点——
+  `NOT_IN_EITHER` 反而从 2 涨到 3（否决掉自相矛盾的那一侧之后，剩下那侧的不可判就露出来了）。
+- 规则改成：**壳是"按行、按标识"的裁定**，同一行里任何来源的同名判点一律无效；
+  壳外仍然写着的同名 token 照旧作判点。新增计数 `PROBE_VETOED_BY_LEDGER_SHELL=24 涉及条目=10`，
+  逐条 (来源:类型:标识) 写进 item.notes —— 否决必须可清点，否则就是"规则悄悄改了考卷"。
+- 顺带修掉一个**潜伏在旧代码里的索引缺陷**：去重表 `pseen` 是在登记下标之后才判丢弃的
+  （"修前值黑名单"那条老路径同样有这个问题，只是一直没被触发），丢弃后不回收下标 ⇒
+  后来的同名判点会 merge 到错位甚至 undefined 上。新增的否决规则第一次跑就把它撞成崩溃
+  （`Cannot read properties of undefined (reading 'origin')`）。现在：丢弃即回收下标，
+  并且每条 item 跑一次"索引不得悬空"断言，命中就进 FATAL 判红。
+- 结果（同一基线 `094f7239`、同一 116 条扫描集）：
+  `ARTIFACT_VERIFIED=16 SOURCE_ONLY=1 NEEDS_UI_FRAME=63 NOT_IN_EITHER=0 UNDECIDABLE=36 PROBE_CONFLICTS=3 CONSERVED=yes`。
+  **本轮范围内已不存在"判据成立但未修"的条目**；剩 3 条 CONFLICTS 是真的二选一待裁决（不是判据写坏），
+  36 条 UNDECIDABLE 的格子里都写了去向。
+- 落账侧相应改动：`land-verdicts-into-ledger.mjs` 现在区分"看了 111 行、确实无需改动"
+  （`PASS-NOOP`，exit 0）与"一行都没匹配上"（`FAIL`，exit 2）——
+  之前两者共用 exit 2，会在干净结果上误报工具失效。
+- 载体新增：`scripts/qa/bracket-tokens.mjs` 支持 `col` 字段（按列入壳，且只在壳外替换）；
+  计划件 `reports/audit/round-7/bracketplan-round7b.json`（每条 `why` 里带实测 art/src 命中数）。
+  台账现在 36 个壳、开闭 36/36、无一跨子句分隔符，这条不变式由判据台每次运行自己验。
+
+### 8.1 一处**放宽测试**的公开交代（不是把红洗成绿）
+`scripts/qa/test-probe-hygiene.cjs` 原有一条"NIE 桶非空（否则本测试的这条判据是空转）"。
+本轮把 `NOT_IN_EITHER` 真降到 0 之后，这条断言以"空转防护"的名义把成功判成失败。
+它真正要防的是"这段代码从没被执行过"，所以换成直接问代码：
+要么确有 NIE 条目，要么壳否决路径真的处理过同名作废标识（`PROBE_VETOED_BY_LEDGER_SHELL>0`），
+两者都为 0 才算空转；同时"回落口径"那条只在确有 NIE 条目时才要求出现。
+计数型耦合去掉之后，机制型断言保留 —— 这是把测试从"生产数据当前分布"上解绑，不是降低标准。
+
+## 9 巡检腿（⑤ 的第一半）：77 行 × real 模式，全部取景成功
+- 清单由 `scripts/qa/gen-tour-tsv.mjs` 从**已编译产物**的 `app.json` 派生：
+  主包 8 + 分包 64 = **72 页**；A 身份扫全部 72 页，B 身份只扫 5 个 tab 页（游客不得浏览广场是既有裁定）
+  ⇒ `TOURTSV_ROWS=77`。不再抄上一轮的页面表，理由写在该脚本头注释里。
+- 结果：`REALTOUR_SHOTS=77/77 FAILURES=5 gitSha=57e907e1`，
+  路径自证 `REALTOUR_PATH_SELFCHECK=OK 77/77`，
+  77 帧里 **76 个不同 contentHash**（只有一对同字节）、**0 帧 <4KB**（没有空白页混进证据）、
+  `driftOrErrRoutes=0`（每条都拿到了可用路由）。
+  产物：`reports/screenshots/round-7-real-tour-full/manifest-detail.json`。
+- 5 条 failures 全部是"直开页面时被页面自己弹走"，其中 3 条**有源码依据、不是缺陷**：
+  `subpackages/vip/{index,promo-code,bills}` 的 `index.vue:57 onLoad` 就是入口守卫
+  （`:46` 的注释写明"从页面入口进入时 onLoad 拦截"，`navigateBack()` 在无返回栈时失败 ⇒ 落 `:63 switchTab(PROFILE)`）。
+  取景器用 `simulator_open_page` 直开、没有返回栈，所以必然被弹回 profile —— 属 HARNESS 形状，不进产品账。
+- 另外 2 条**未判定**，不当成已解释：
+  `pages/login/index`（已登录被弹 discover；这是待裁决项，本轮第三次复现，见 §5.1）；
+  `subpackages/setup/showcase/index`（弹 discover；该页 `:159` 有 `switchTab("/pages/discover/index")`，
+  但没定位到它是守卫分支还是按钮回调 ⇒ 记为"原因未定"，不写成缺陷也不写成已解释）。
+- 守恒：`77 行 = 77 帧`，`failures 5 ⊂ 77`（失败行也有帧，因为弹走前后都拍了），
+  `A=72 / B=5` 与清单分组一致。
+
+## 10 GATES.json 载体重写（④ 的第三项）与它的成本交代
+- 这块载体的问题不是"数字过期"，而是**仓里没有任何代码写它**：报告读它、门禁面板读它，
+  `grep -rn "real-e2e/GATES.json" scripts/` 只找得到读它的地方。于是它停在 `874ff52f` 的 6/6 环上。
+- 新载体由 `scripts/qa/write-gates-json.mjs` 生成：当场跑"后端已重启"前置件 + G7 + G8 + G9，
+  从各机的 `KEY=` 行解析后落盘；`schemaVersion` 升到 `gates-2`，带 `supersedes`（上一版的 SHA/时间/环数）。
+  失败形状是刻意的：前置件不 PASS ⇒ 三道 Gate 记 BLOCKED（不沿用旧值）；
+  任一机器没打出必要 KEY ⇒ 拒绝写盘（exit 2），因为"缺席"不能当"空值"更不能当"通过"。
+- 现值：`precondition=PASS(pid 29536)` · `G7=PASS` · `G8=PASS(10/10)` · `G9=PASS(455/455)` ·
+  `overall=PASS` · `gitSha=1598715f` · `caveat=["G8 环数已是 10（历史载体记 6）…"]`。
+- 写这个脚本过程中自己踩到的三个解析缺陷（都已修，且都属"载体说假话"那一类）：
+  ① `RESTARTED_RESULT=PASS JVM 晚于…` 是同行带说明，按整行相等判 ⇒ 真 PASS 被读成非 PASS，
+     三道 Gate 全被记 BLOCKED（故障方向安全，但是假阴性）；
+  ② `RESTARTED_PID=29536 startedAt="…"` 同样同行 ⇒ `jvmPid` 落成 `null`；
+  ③ `G8_ARTIFACTS` 的第 4 项后面跟着中文说明 ⇒ 带锚点的正则把它整条丢掉 ⇒
+     载体声称"本轮新增主键清单"却少一项（这条最危险：漏报的正是披露义务本身）。
+- **成本交代**：G8 每跑一次真写 4 行库数据。本轮共跑 5 次 live G8（一次手工复验、生成器两次、
+  最终门禁一次，另有一次生成器 dry），实测新增且**保留未删**的主键：
+  `posts 256/258/259/260/261`、`comments 1224/1226/1227/1228/1229`、
+  `campus_topics 285/287/288/289/290`、`campus_replies 17/21/22`
+  （258/259 两次的 replies 主键没被打进当时的输出，不补记、不猜）。
+  为把"改一个解析 bug 就要再花 4 行数据"这条成本降到 0，脚本每次把四台机器的原始输出留档到
+  `.zcode/tmp/gates-run/`，支持 `--reuse` 从留档重解析、只重写载体——最终那版权体就是这样重写的，
+  没有新增任何库行。

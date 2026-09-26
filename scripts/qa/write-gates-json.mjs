@@ -10,7 +10,7 @@
      - 环数与判据台期望不一致 ⇒ 照样如实写进去，只在 caveat 里点名。
    用法：PATH=<node22 目录>:$PATH node scripts/qa/write-gates-json.mjs [--out <path>] [--dry] */
 import { execFileSync, execSync } from "node:child_process";
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { resolve, join } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..", "..");
@@ -50,23 +50,36 @@ function restLine(out, k) {
 const BAD = [];
 const capturedAt = new Date().toISOString();
 const prev = existsSync(OUT) ? JSON.parse(readFileSync(OUT, "utf8")) : null;
+/* G8 每跑一次都真写库，所以修一个解析 bug 不该再花 4 行数据：
+   每次运行都把四台机器的原始输出留档在 .zcode/tmp/gates-run/，--reuse 从那份留档重解析、只重写载体。
+   留档是"这一批测量值"的快照，不是二手结论——载体里的每个数字仍然来自一次真跑的输出。 */
+const REUSE = process.argv.includes("--reuse");
+const RUNDIR = join(ROOT, ".zcode/tmp/gates-run");
+function readLog(n) {
+  const f = join(RUNDIR, n + ".log");
+  if (!existsSync(f)) { console.log("GATESJSON_RESULT=FAIL reason=--reuse 找不到留档 " + f + "（先不带 --reuse 跑一次）"); process.exit(2); }
+  return { code: 0, out: readFileSync(f, "utf8") };
+}
 
-const pre = run(process.execPath, ["scripts/qa/verify-backend-restarted.mjs"], { timeout: 120000 });
+const pre = REUSE ? readLog("pre") : run(process.execPath, ["scripts/qa/verify-backend-restarted.mjs"], { timeout: 120000 });
 /* 前置件把结论与说明印在同一行（RESTARTED_RESULT=PASS JVM 晚于…），所以判定要看**词**而不是整行相等。
    写错这行会怎样：整趟被判成"前置件未 PASS"⇒ 三道 Gate 全记 BLOCKED。故障方向是安全的
    （宁可拒发 PASS 也不伪造），但确实是假阴性——本轮第一次跑就中过。 */
 const preRaw = need(pre.out, "RESTARTED_RESULT", "前置件 verify-backend-restarted");
 const prePass = /^PASS(\s|$)/.test(String(preRaw));
 const preResult = preRaw ? (prePass ? "PASS" : String(preRaw).split(/\s/)[0]) : "MISSING";
-const prePid = need(pre.out, "RESTARTED_PID", "前置件 verify-backend-restarted");
+const prePidRaw = need(pre.out, "RESTARTED_PID", "前置件 verify-backend-restarted");
+/* 生产者把 pid 和 startedAt 印在同一行（RESTARTED_PID=29536 startedAt="…"），
+   整行喂 Number() 会得 NaN ⇒ 载体里 jvmPid 写成 null（本轮实测踩过）。取行内第一个数字。 */
+const prePid = (String(prePidRaw).match(/(\d{2,})/) || [null, ""])[1];
 const preStart = (String(pre.out).match(/startedAt="([^"]*)"/) || [null, ""])[1];
 const preNote = String(pre.out).split(/\r?\n/).filter((l) => /RESTARTED_(NEWEST_SOURCE|HEAD_COMMIT_TIME|STALE_SOURCE|HEAD_DRIFT)=/.test(l)).join(" ; ");
 
 let g7 = { code: 0, out: "" }, g8 = { code: 0, out: "" }, g9 = { code: 0, out: "" };
 if (preResult === "PASS") {
-  g7 = run(process.execPath, ["apps/client/scripts/build-real-isolated.mjs", "--check-only"]);
-  g8 = run(process.execPath, ["scripts/qa/g8-e2e.cjs"]);
-  g9 = run(process.execPath, ["scripts/qa/g9-probe.cjs"]);
+  g7 = REUSE ? readLog("G7") : run(process.execPath, ["apps/client/scripts/build-real-isolated.mjs", "--check-only"]);
+  g8 = REUSE ? readLog("G8") : run(process.execPath, ["scripts/qa/g8-e2e.cjs"]);
+  g9 = REUSE ? readLog("G9") : run(process.execPath, ["scripts/qa/g9-probe.cjs"]);
 } else {
   console.log("GATESJSON_note=前置件未 PASS ⇒ G7/G8/G9 一律记 BLOCKED（不沿用上一版载体的值）");
 }
@@ -82,7 +95,7 @@ const G9control = preResult === "PASS" ? restLine(g9.out, "G9_CONTROL") : "";
 
 const artifactIds = {};
 for (const part of G8artifacts.split(";")) {
-  const m = part.trim().match(/^([a-z_]+)\.id=(\d+)$/);
+  const m = part.trim().match(/([a-z_]+)\.id=(\d+)/);
   if (m) artifactIds[m[1]] = Number(m[2]);
 }
 const controlTable = {};
@@ -92,6 +105,10 @@ for (const part of G9control.split(/\s+(?=\S+=)/)) {
 }
 const ringCount = (String(G8rings).match(/\/(\d+)$/) || [null, null])[1];
 
+for (const [nm, r] of [["pre", pre], ["G7", g7], ["G8", g8], ["G9", g9]]) {
+  if (REUSE) break;
+  try { mkdirSync(join(ROOT, ".zcode/tmp/gates-run"), { recursive: true }); writeFileSync(join(ROOT, ".zcode/tmp/gates-run/" + nm + ".log"), String(r.out)); } catch {}
+}
 const doc = {
   schemaVersion: "gates-2",
   gateSet: "真实模式三道 Gate G7/G8/G9 + 后端已重启前置件",
@@ -122,7 +139,10 @@ if (ringCount && ringCount !== "6") doc.caveat.push(`G8 环数已是 ${ringCount
 if (preResult !== "PASS") doc.caveat.push("前置件未 PASS ⇒ 三道 Gate 记 BLOCKED，本报告不产出真实模式结论");
 if (BAD.length) doc.caveat.push("有机器没打出必要 KEY：" + BAD.join(" / "));
 
-const ring = (doc.G7 === "PASS" && doc.G8 === "PASS" && doc.G9 === "PASS" && preResult === "PASS") ? "PASS" : "NOT_PASS";
+/* 之前写成 doc.G7（字段其实叫 G7_RESULT）⇒ 恒 undefined ⇒ 三道全 PASS 也报 NOT_PASS。
+   现在从 doc 里按真字段名取，并且把判定式打出来，读的人能自己核。 */
+const gateVals = [doc.G7_RESULT, doc.G8_RESULT, doc.G9_RESULT, String(preResult).trim().split(/\s+/)[0]];
+const ring = gateVals.every((v) => v === "PASS") ? "PASS" : "NOT_PASS";
 doc.overall = ring;
 console.log(`GATESJSON precondition=${preResult} G7=${doc.G7_RESULT} G8=${doc.G8_RESULT}(${G8rings}) G9=${doc.G9_RESULT}(${G9ok}/${G9probed}) overall=${ring}`);
 console.log(`GATESJSON newDbKeys=${JSON.stringify(artifactIds)} missing-keys=${BAD.length}`);

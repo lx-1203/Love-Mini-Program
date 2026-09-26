@@ -1,12 +1,12 @@
 {
   "schemaVersion": "round-report-metrics-1",
-  "generatedAt": "2026-09-26T04:24:59.247Z",
-  "startedAt": "2026-09-26T04:23:40.204Z",
+  "generatedAt": "2026-09-26T05:09:41.451Z",
+  "startedAt": "2026-09-26T05:09:05.453Z",
   "roundDir": "reports/audit/round-6",
   "reportFile": "reports/audit/round-6/round-6-report.md",
   "identity": {
-    "head": "91e56562",
-    "porcelain": 13,
+    "head": "1598715f",
+    "porcelain": 11,
     "porcelainApps": 0,
     "jvmPid": "29536",
     "jvmStartedAt": "2026-09-26 03:12:29",
@@ -514,25 +514,25 @@
           "n": 2,
           "name": "客户端写库 POST /posts",
           "ok": true,
-          "detail": "HTTP 200，返回 id=257"
+          "detail": "HTTP 200，返回 id=261"
         },
         {
           "n": 3,
           "name": "后台按 id 读到该帖",
           "ok": true,
-          "detail": "GET admin/village-posts/257 -> 200；title 字段可见=是（值 \"G8取证2609260424号\"）"
+          "detail": "GET admin/village-posts/261 -> 200；title 字段可见=是（值 \"G8取证2609260509号\"）"
         },
         {
           "n": 4,
           "name": "审核驱动前端可见性",
           "ok": true,
-          "detail": "审核前在列表=false(total=205) / audit HTTP 200 / 审核后在列表=false(total=206) / 可见性以 total 增量为准=true；实测确认：新帖默认 audit_status=pending 且前端列表不可见，审核通过后 total +1 → v32 G8(4) 的假设成立（我一度因 javadoc 写「默认 approved」而怀疑它，那是注释与实现不一致）"
+          "detail": "审核前在列表=false(total=209) / audit HTTP 200 / 审核后在列表=false(total=210) / 可见性以 total 增量为准=true；实测确认：新帖默认 audit_status=pending 且前端列表不可见，审核通过后 total +1 → v32 G8(4) 的假设成立（我一度因 javadoc 写「默认 approved」而怀疑它，那是注释与实现不一致）"
         },
         {
           "n": 5,
           "name": "同 Idempotency-Key 重放",
           "ok": true,
-          "detail": "重放 HTTP 409（期望 409）；重放后 total=206 vs 审核后 206 → 未新增行 ✔"
+          "detail": "重放 HTTP 409（期望 409）；重放后 total=210 vs 审核后 210 → 未新增行 ✔"
         },
         {
           "n": 6,
@@ -550,22 +550,22 @@
           "n": 8,
           "name": "创建响应回主键 data.id",
           "ok": true,
-          "detail": "HTTP 200，data.id=286 → 主键已回，客户端可直接定位新行（#27 的 save(topic) 返回值接生的实测证；此前该字段为 null，见台账 §22）"
+          "detail": "HTTP 200，data.id=290 → 主键已回，客户端可直接定位新行（#27 的 save(topic) 返回值接生的实测证；此前该字段为 null，见台账 §22）"
         },
         {
           "n": 9,
           "name": "读回 images 落库 + 匿名标记",
           "ok": true,
-          "detail": "GET /campus/topics/286 -> 200；images 字段=\"[\"http://127.0.0.1:8080/api/v1/media/app-assets/assets/default-avatar.jpg\"]\"（含所发 URL=true）；isAnonymous=true；authorId=null authorName=\"匿名校友\" → 匿名若为真，作者字段应被遮蔽"
+          "detail": "GET /campus/topics/290 -> 200；images 字段=\"[\"http://127.0.0.1:8080/api/v1/media/app-assets/assets/default-avatar.jpg\"]\"（含所发 URL=true）；isAnonymous=true；authorId=null authorName=\"匿名校友\" → 匿名若为真，作者字段应被遮蔽"
         },
         {
           "n": 10,
           "name": "匿名回复透传并可读回",
           "ok": true,
-          "detail": "POST replies -> 200 id=18；列表 200 命中本条=true；isAnonymous=true；authorName=\"匿名校友\""
+          "detail": "POST replies -> 200 id=22；列表 200 命中本条=true；isAnonymous=true；authorName=\"匿名校友\""
         }
       ],
-      "artifacts": "posts.id=257 ; comments.id=1225 ; campus_topics.id=286 ; campus_replies.id=18  ← 本轮写入的真实数据，未删除，交你决定去留"
+      "artifacts": "posts.id=261 ; comments.id=1229 ; campus_topics.id=290 ; campus_replies.id=22  ← 本轮写入的真实数据，未删除，交你决定去留"
     },
     "g9": {
       "exit": 0,
@@ -612,12 +612,12 @@
     "verify-evidence-corpus（本轮 scope）": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-6,reports/screenshots/round-6-interact,reports/screenshots/round-6-real-tour,reports/screenshots/round-6-tour,reports/screenshots/round-6-tour-chat,reports/screenshots/round-6-tour-dupfix,reports/screenshots/round-6-tour-reshoot",
       "exitCode": 0,
-      "stdoutSha8": "b463fa91"
+      "stdoutSha8": "4ea08538"
     },
     "verify-provenance-all（本轮 scope）": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-6,reports/screenshots/round-6-interact,reports/screenshots/round-6-real-tour,reports/screenshots/round-6-tour,reports/screenshots/round-6-tour-chat,reports/screenshots/round-6-tour-dupfix,reports/screenshots/round-6-tour-reshoot",
       "exitCode": 0,
-      "stdoutSha8": "07ad19b2"
+      "stdoutSha8": "4c9468b6"
     },
     "verify-queue-reconcile": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-queue-reconcile.mjs reports/audit/round-6",
@@ -627,7 +627,7 @@
     "verify-backend-restarted": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-backend-restarted.mjs --port 8080",
       "exitCode": 0,
-      "stdoutSha8": "805a2073"
+      "stdoutSha8": "d8818233"
     },
     "verify-i18n-orphan": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-i18n-orphan.mjs",
@@ -679,9 +679,9 @@
       },
       {
         "path": "reports/audit/real-e2e/GATES.json",
-        "mtime": "2026-09-25T07:50:26.489Z",
-        "size": 6766,
-        "sha8": "97fde23b"
+        "mtime": "2026-09-26T05:08:52.716Z",
+        "size": 2286,
+        "sha8": "055ed361"
       },
       {
         "path": ".zcode/tmp/round6-LEDGER.md",
@@ -751,15 +751,15 @@
       },
       {
         "path": ".zcode/tmp/report-emitter/triage-r6-at-report.json",
-        "mtime": "2026-09-26T04:24:01.490Z",
+        "mtime": "2026-09-26T05:09:12.117Z",
         "size": 250314,
         "sha8": "189ce354"
       },
       {
         "path": ".zcode/tmp/fixverify/verdicts.json",
-        "mtime": "2026-09-26T04:24:58.836Z",
-        "size": 528737,
-        "sha8": "a45b63ae"
+        "mtime": "2026-09-26T04:43:10.520Z",
+        "size": 509484,
+        "sha8": "7861fbfd"
       }
     ],
     "commands": [
@@ -768,7 +768,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-backend-restarted.mjs --port 8080",
         "exitCode": 0,
         "stdoutBytes": 590,
-        "sha8": "805a2073",
+        "sha8": "d8818233",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -777,7 +777,7 @@
         "cmd": "git rev-parse --short HEAD",
         "exitCode": 0,
         "stdoutBytes": 9,
-        "sha8": "a053bf33",
+        "sha8": "2e1206ec",
         "note": "",
         "runner": "git"
       },
@@ -785,8 +785,8 @@
         "name": "git worktree 脏项",
         "cmd": "git status --porcelain",
         "exitCode": 0,
-        "stdoutBytes": 530,
-        "sha8": "9c36c7a0",
+        "stdoutBytes": 462,
+        "sha8": "3dc341ba",
         "note": "",
         "runner": "git"
       },
@@ -857,8 +857,8 @@
         "name": "verify-evidence-corpus（全域）",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs",
         "exitCode": 1,
-        "stdoutBytes": 3144,
-        "sha8": "f39f15b6",
+        "stdoutBytes": 3338,
+        "sha8": "c083333c",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -866,8 +866,8 @@
         "name": "verify-provenance-all（全域）",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs",
         "exitCode": 1,
-        "stdoutBytes": 4363,
-        "sha8": "cbe6a9d0",
+        "stdoutBytes": 4506,
+        "sha8": "4f4ec2c6",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -876,7 +876,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-6,reports/screenshots/round-6-interact,reports/screenshots/round-6-real-tour,reports/screenshots/round-6-tour,reports/screenshots/round-6-tour-chat,reports/screenshots/round-6-tour-dupfix,reports/screenshots/round-6-tour-reshoot",
         "exitCode": 0,
         "stdoutBytes": 1721,
-        "sha8": "b463fa91",
+        "sha8": "4ea08538",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -885,7 +885,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-6,reports/screenshots/round-6-interact,reports/screenshots/round-6-real-tour,reports/screenshots/round-6-tour,reports/screenshots/round-6-tour-chat,reports/screenshots/round-6-tour-dupfix,reports/screenshots/round-6-tour-reshoot",
         "exitCode": 0,
         "stdoutBytes": 2222,
-        "sha8": "07ad19b2",
+        "sha8": "4c9468b6",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -957,7 +957,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/g8-e2e.cjs",
         "exitCode": 0,
         "stdoutBytes": 2510,
-        "sha8": "8c4c609b",
+        "sha8": "d3503001",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1231,16 +1231,8 @@
       "why": "巡检自报落点在别的页，那些帧不能证明目标页"
     },
     {
-      "item": "真实模式：wx.login 真机身份链路",
-      "why": "NOT-EVIDENCED"
-    },
-    {
-      "item": "真实模式：real 产物下的 UI 截图",
-      "why": "NOT-EVIDENCED"
-    },
-    {
-      "item": "真实模式在盘载体 GATES.json",
-      "why": "记的是 6/6，本次为 10/10（且环集已变），需在重建后重出载体"
+      "item": "真实模式：undefined",
+      "why": "undefined"
     },
     {
       "item": "verify-evidence-integrity（原始 corpus：round-6-tour，信息轴） —— 同页同身份却同字节的帧仍在原始记录里：6 组",
