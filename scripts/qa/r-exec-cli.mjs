@@ -131,6 +131,7 @@ mkdirSync(SHOT_DIR, { recursive: true });
    （同一份表也写进 shoot-frameplan.mjs；两处要保持一致。） */
 const ROUTE_QUERY = {
   "subpackages/campus/campus/index": "school=" + encodeURIComponent("南京大学"),
+  "subpackages/discover-extra/discover/matching": "dev-preview=1",
 };
 const IDENTITY = arg("identity", "A");
 let LOGIN_VERIFY = "";

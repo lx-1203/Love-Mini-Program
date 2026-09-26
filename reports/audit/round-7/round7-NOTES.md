@@ -918,8 +918,13 @@ B 侧执行轮跑到 553 行时（EXECUTED 283 / SKIPPED 209 / FAILED 61）把�
 |---|---|---|---|
 | login | `pages/login/index.vue:87-89` 已登录 ⇒ `switchTab(discover)` | 游客身份 | `r-exec-cli.mjs --identity guest`（真清会话 + 硬性要求 `not-logged-in`；旧注释写的 `--identity B` 其实仍是登录态） |
 | campus/index | `campus/index.vue:202-203` 无 `?school=` ⇒ `redirectTo(hub)`，注释自陈这是 2026-08-25 的 P0 设计 | URL 参数 | 新增 `ROUTE_QUERY`，两个执行器开页时都带 `school=…`（表在两处保持一致） |
-| matching | `matching.vue:73-80` `status!=="matched"` 分支 ⇒ `navigateBack/switchTab(discover)` | 一次真实配对会话 | 尚未补——需要往 matchStore 注入终态，属夹具刀，记在这里不假装解决 |
+| matching | `matching.vue:56-60`+`:76` 非 preview 且无在途配对 ⇒ 弹走 | URL 参数 | `onLoad` 里 **有现成的 QA 入口**：`?dev-preview=1`（注释自陈「直接停在匹配中页（QA 复验入口，规格书 06」）⇒ 已加进 `ROUTE_QUERY`，20 条不必注入 store 就能测 |
 
 配套证据：§32 那 5 条"取景未到达目标页"落在的正是同样两个路由（campus/index→hub、
 login→discover），两条独立通道给出同一个结论，所以这不是取景器的错觉。
-matching 的 20 条在 A 侧同样是 SKIPPED；补 store 注入之前，它们既不算跑过也不算失败。
+matching 的 20 条在 A 侧同样是 SKIPPED。
+
+**订正（写下本节几分钟后）**：我上一行说 matching 的前置「尚未补」是查得不够——它的 `onLoad` 里本来就留着 `?dev-preview=1` 这个 QA 复验入口，
+和 campus/index 的 `?school=` 是同一类东西。两个参数都已进 `ROUTE_QUERY`，所以这 35 条（15+20）与 26 条游客档
+一起，是**补前置**而不是等夹具；`dev-preview` 会把 status 直接置为已配对，因此它测的是这一页的呈现而不是配对算法，
+报告里引用它时必须这样限定。

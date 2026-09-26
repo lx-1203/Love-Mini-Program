@@ -323,6 +323,7 @@ if (DRY) {
    比让 15 条执行行 + 1 条帧行长期挂在"落在别的页"上要诚实得多。 */
 const ROUTE_QUERY = {
   "subpackages/campus/campus/index": "school=" + encodeURIComponent("南京大学"),
+  "subpackages/discover-extra/discover/matching": "dev-preview=1",
 };
 const queryFor = (it, route) => String((it && it.precondition && it.precondition.query) || ROUTE_QUERY[route] || "");
 
