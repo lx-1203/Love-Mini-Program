@@ -58,6 +58,12 @@ echo "== 刀 3：帧债配方（判据台 NEEDS_UI_FRAME → 可判断言 → �
   --frames reports/audit/round-7/uidebt-shoot-ws/shoot-results.json
 # 3f. 判红落账前的可判性闸：target 是散文的、锚点不在被测产物里的、
 #     整帧没有正对照的，一律不作判据——并且要撤销上一轮已经写进去的判红（--restore-from）
+#     文本/尺寸判点走第二载具（element.text / element.size）必须由 --ws-taps 这一腿跑，
+#     否则它们只会得到数量结论，等于没测；被扣住的那批就按这份 id 清单重拍：
+"$NODE" scripts/qa/shoot-frameplan.mjs --ws-taps \
+  --label "round-7-uidebt-txt-$(git rev-parse --short HEAD)" \
+  --out reports/audit/round-7/uidebt-shoot-txt \
+  --only-ids "$(node -e 'const j=require("./reports/audit/round-7/uidebt-shoot-ws/shoot-results.json");console.log(j.rows.filter(r=>(r.checks||[]).some(c=>/^(PRESENT_UNEXPECTED|ABSENT_UNEXPECTED)/.test(String(c.check)))).map(r=>r.id).join(","))')"
 "$NODE" scripts/qa/audit-frame-verdicts.mjs \
   --frames reports/audit/round-7/uidebt-shoot-ws/shoot-results.json \
   --restore-from reports/audit/round-6/issue-matrix.md.pre-cellpatch.bak
@@ -68,6 +74,12 @@ echo "== 刀 3：帧债配方（判据台 NEEDS_UI_FRAME → 可判断言 → �
 #   核对无误后自己加 --apply（直接上 apply 会跳过逐条 before/after 核对）
 
 echo "== 收尾：帧孤儿体检 + 冷启动守卫归属 + 台账/门禁面板 =="
+# 源码级判点：判据是代码结构命题的行（调用次数、import 位置、吞异常兜底、令牌改用哪个）
+# 只有源码能答，帧与像素都取不到该量；谓词不过的那几条不落账也不删。
+"$NODE" scripts/qa/verify-source-shape.mjs
+"$NODE" scripts/qa/patch-ledger-cells.mjs --plan reports/audit/round-7/cellplan-source-shape.json
+# G8 之后必须立刻重跑测试数据清单（g8-rings.txt 会被下一轮整份覆盖）
+"$NODE" scripts/qa/inventory-g8-test-data.mjs --emit-sql --from-md reports/audit/round-7/round7-final-report.md
 # 重建之前必须冻结一次：终报的 A/B 两侧分界靠这份快照，round-7 就因为没跑这步而出不来报告
 "$NODE" scripts/qa/freeze-exec-snapshot.mjs \
   --src reports/audit/round-7/interact/exec-results.pre-rebuild-1048.json --round 7
