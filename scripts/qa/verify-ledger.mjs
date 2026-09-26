@@ -330,13 +330,22 @@ let badStatus = [];
     }
   }
 }
-console.log(`LEDGER_SHAPE_DECLARED_COLS=${shapeDecl || "(表头缺失)"} DATA_ROWS=${shapeRows} OFF_SCHEMA_ROWS=${shapeOff.length} STATUS_VOCAB_BAD=${badStatus.length}`);
+/* 空转判据不能报成合规：实测 `verify-ledger.mjs reports/audit/round-7` 在 round-7 根本没有
+   issue-matrix.md 时打出 LEDGER_RESULT=PASS 且 DATA_ROWS=0 —— 一条都没查的"结构合规"是假绿。
+   （同一个坑本会话已经踩过一次：不带参数跑，默认落在 round-2，那份矩阵早于 11 列口径。） */
+const matricesInScope = currentMatrixFiles.filter((x) => /issue-matrix\.md$/.test(x)).length;
+const shapeVacuous = matricesInScope === 0 || shapeRows === 0;
+console.log(`LEDGER_SHAPE_DECLARED_COLS=${shapeDecl || "(表头缺失)"} DATA_ROWS=${shapeRows} OFF_SCHEMA_ROWS=${shapeOff.length} STATUS_VOCAB_BAD=${badStatus.length} 矩阵文件=${matricesInScope}`);
+if (shapeVacuous) console.log(`LEDGER_SHAPE_VACUOUS=1 本范围内扫到 ${matricesInScope} 份 issue-matrix.md、${shapeRows} 条数据行 ⇒ 列数/值域判据是空转，不许当合规`);
 for (const [id, v] of badStatus.slice(0, 12)) console.log(`  STATUS_VOCAB ${id} status 列开头不是受控词：${JSON.stringify(v.slice(0, 46))}`);
 if (badStatus.length > 12) console.log(`  …STATUS_VOCAB 另有 ${badStatus.length - 12} 行`);
 if (shapeNoHeader.length) console.log(`LEDGER_SHAPE_FAIL 表头无法定位（找不到含 status 的表头行）：${shapeNoHeader.join(", ")} —— 列数判据失效，不得当作合规`);
 shapeOff.slice(0, 12).forEach(([f, id, n]) => console.log(`  OFF_SCHEMA ${id} 列数=${n}（应为 ${shapeDecl}）@ ${f}`));
 if (shapeOff.length > 12) console.log(`  …OFF_SCHEMA 另有 ${shapeOff.length - 12} 条（跑 normalize-ledger-shape.mjs 归一化，不要手改）`);
 
-const ledgerHardFail = trueOrphans.length > 0 || shapeOff.length > 0 || shapeNoHeader.length > 0 || badStatus.length > 0;
-console.log(trueOrphans.length ? `LEDGER_RESULT=FAIL（${trueOrphans.length} 个 ID 全轮次矩阵均无本尊行，账实不符${tail}）` : (shapeOff.length || shapeNoHeader.length || badStatus.length ? `LEDGER_RESULT=FAIL（ID 账实相符，但表结构/值域不合规：错位行 ${shapeOff.length}、status 值域外 ${badStatus.length}${shapeNoHeader.length ? " + 表头缺失 " + shapeNoHeader.length : ""}）` : `LEDGER_RESULT=PASS${tail}`));
+const ledgerHardFail = trueOrphans.length > 0 || shapeOff.length > 0 || shapeNoHeader.length > 0 || badStatus.length > 0 || shapeVacuous;
+console.log(trueOrphans.length ? `LEDGER_RESULT=FAIL（${trueOrphans.length} 个 ID 全轮次矩阵均无本尊行，账实不符${tail}）`
+  : (shapeOff.length || shapeNoHeader.length || badStatus.length || shapeVacuous
+    ? `LEDGER_RESULT=FAIL（ID 账实相符，但表结构/值域不合规：错位行 ${shapeOff.length}、status 值域外 ${badStatus.length}${shapeNoHeader.length ? " + 表头缺失 " + shapeNoHeader.length : ""}${shapeVacuous ? " + 判据空转（本范围无 issue-matrix.md 或 0 数据行）" : ""}）`
+    : `LEDGER_RESULT=PASS${tail}`));
 process.exit(ledgerHardFail ? 1 : 0);

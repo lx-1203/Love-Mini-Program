@@ -332,3 +332,44 @@ WS_UP=ALREADY_UP port=9420 connectMs=89 page=pages/discover/index hits=11000010 
 没必要让一个已被判定为慢的通道继续占着模拟器。已 flush 的行留在
 `reports/audit/round-7/interact/exec-results.json`，`RUNNER_SCOPE=observe-only` 那句话仍然成立：
 **这不是一轮完整的执行轮**。它同时也是 §7 那条"跑完再报"的未完成项。
+
+## 16 ④ 四项待裁决落地（以及"谁来签字"这件事的变化）
+
+本轮目标里明写"把 4 项待裁决按可辩护默认落地并写明理由"，所以 §6 我那句"裁决不该由我做"
+在**这一项**上不再成立；但授权只改变"谁签字"，不改变"每一条都要有可核对的证据"。
+
+1. **登录页已登录落地页**（`MP-R6REAL-PAGES-LOGIN-INDEX-001`）：采台账里的 ①「承认现状」。
+   证据：`pages/login/index.vue:87-89` 与 `:120` 本身就是 `switchTab("/pages/discover/index")`，
+   `:504` 注释写明登录成功续体也 reLaunch 到「寻觅」⇒ "已登录访问登录页被弹到 discover" 与
+   "登录成功后的落地页" 是同一个目标，不是分叉；本轮执行轮第 N 次复现同一弹走（不是偶发）。
+   反向方案（弹 home 或弹来源页）需要"来源页"信息，而 `switchTab` 到 tab 页并不保证 referrer，
+   等于为一个没有入口的需求引入新机制。**留一口**：若将来真要做"切换账号"，登录页需要自己的显式入口，
+   这条要重开——现在的裁决只覆盖"已登录直达登录页"这一种触达。
+2. **ChatInput.vue 删除去留**（`MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01`）：采 (A) 保留删除。
+   证据三条：`git ls-files` 已无该文件（删除已进 HEAD，不是只在工作树）；全仓 `src` + `tests`
+   对 `ChatInput` **0 命中**；消费页 `subpackages/chat/chat-session/index.vue` 自带 `<textarea>/<input>`，
+   输入能力没有随删除丢失。**但这条不能算"已用帧确认不破版"**：本轮上半程的帧出自 10:48 的产物，
+   而删除是 14:42 的提交（见下面第 5 条），旧产物已被 15:13 的重建覆盖、内容无从回查 ⇒
+   "不破版"这一半只能等重建后的新帧，现在登记的只有"死组件、零引用、能力仍在"。
+3. **GATES.json 过期载体**：已按 §10 重写（`scripts/qa/write-gates-json.mjs`，带 supersedes 与 BLOCKED 语义）。
+4. **遗留测试数据处置**：维持既有"保留 + 逐轮披露"裁定，理由不变（G8/G9 写入的行是环检的对照基线，
+   清掉等于让下一轮十环没有可比对象）；累计披露见 §9/§10。
+
+## 17 执行轮的 45 条 FAILED：全部能在源码里指到那一行导航
+
+载体 `scripts/qa/triage-cold-entry.mjs`（把 FAILED 的"实际落点"回查源码，ROUTES 常量就地解析）：
+
+```
+TRIAGE_FAILED_ROWS=45 组=8 GUARD_COLD_ENTRY=34 GUARD_GLOBAL=11
+TRIAGE_OPEN=0 全部 FAILED 都能在源码里指到具体导航
+```
+
+- 34 条是**页面自己的兜底导航**（如 `matching.vue:67-69` navigateBack / switchTab 到寻觅，
+  `campus/index.vue:105-107`），即"冷启动直达"这条路本来不通；
+- 11 条（setup/campus、setup/recommend-pref）页面内没有任何导航，出处是全局会话守卫
+  `guards/session-guard.ts:93`（`redirectTo: ROUTES.TAB.DISCOVER`，缺 profile/campus/schedule 完成态就弹走）。
+
+**这条不是把红洗成绿**：`GUARD_*` 只说明"这一组用例不能靠 open_page 直达取证"，
+页面功能对不对仍要靠真实导航路径点进去看（＝交互切片的活），所以这 45 条的**覆盖债还在**，
+只是从"未知故障"变成了"已知触达方式不对"。脚本里 UNEXPLAINED/GUARD_OTHER/NO_SOURCE 三个桶
+一律算开口，`TRIAGE_OPEN` 不为 0 就不许写"已收口"。

@@ -1,0 +1,29 @@
+{
+  "note": "④ 待裁决落地（见 reports/audit/round-7/round7-NOTES.md §16）。理由：本轮目标明写「把 4 项待裁决按可辩护默认落地并写明理由」，每一条的证据都指到可核对的源码位置或 git 事实。",
+  "patches": [
+    {
+      "id": "MP-R6REAL-PAGES-LOGIN-INDEX-001",
+      "col": 6,
+      "why": "裁决：现状即意图，缺陷判据不成立",
+      "new": "判据不成立（裁决 2026-09-26：已登录直达登录页被弹到寻觅是**有意实现**，不是落地页写错——pages/login/index.vue:87-89 与 :120 本身就是 switchTab(「/pages/discover/index」)，:504 注释亦写明登录成功续体 reLaunch 到「寻觅」；同一条弹走在本轮执行轮再次复现，非偶发。改判 home/来源页需要 referrer，而 switchTab 到 tab 页不保证来源 ⇒ 不引入新机制。留口：若将来做「切换账号」，登录页要有自己的显式入口，这条届时重开）"
+    },
+    {
+      "id": "MP-R6REAL-PAGES-LOGIN-INDEX-001",
+      "col": 11,
+      "why": "处置从「待人裁决」改为已落地默认并写理由",
+      "new": "已按可辩护默认落地（本轮目标 ④ 授权）：采台账原方案①「承认现状并把 discover 定为登录后落地页」。不动代码、不改判据、不销案——把「是不是缺陷」这层判掉；home 作为 tabBar 首项与落地页语义是否一致另记为产品口径问题（需要产品口径时按 §16 第 1 条重开）。依据全文见 round7-NOTES.md §16。"
+    },
+    {
+      "id": "MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01",
+      "col": 6,
+      "why": "裁决：保留删除；帧级复验仍欠",
+      "new": "已修复待复验（裁决 2026-09-26：采 (A) 保留整件删除。三条可核对证据：① git ls-files 已无该文件 ⇒ 删除进了 HEAD 而非只在工作树；② 全仓 src + tests 对 ChatInput **0 命中**；③ 消费页 subpackages/chat/chat-session/index.vue 自带 textarea/input，输入能力未随删除丢失。**仍欠**：「删除后不破版」的帧级确认——本轮上半程的帧出自 10:48 产物而删除是 14:42 提交，旧产物已被 15:13 重建覆盖无从回查 ⇒ 须用重建后产物里 chat-session 的新帧复验，复验前不许写「已验证」）"
+    },
+    {
+      "id": "MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01",
+      "col": 11,
+      "why": "处置从二选一改为已选 (A) 并指明复验载体",
+      "new": "已落地 (A)：整件删除保留（不采纳 (B) 重构 3532 行页面输入栏去复用死组件——那是不必要的改动面）。复验载体：reports/audit/round-7/interact/exec-results.json 内对应 subpackages/chat/chat-session/index 的 EXECUTED 行 + 其 evidence 帧（须出自 gitSha 不早于删除提交的产物）。register/index.vue 注释里的悬空引用已在上一阶段闭环（全库 0 命中）。依据全文见 round7-NOTES.md §16 第 2 条。"
+    }
+  ]
+}

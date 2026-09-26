@@ -36,6 +36,8 @@ const SHOT_DIR = opt("shots", join(REPO, "reports/screenshots", LABEL + "-exec")
 const ONLY = (opt("only", "") || "").split(",").filter(Boolean);
 const LIMIT = Number(opt("limit", "0"));
 const FIDELITY = opt("fidelity", "");
+const TAP_MODE = flag("tap");
+const TAP_SETTLE = Number(opt("tap-settle", "1400"));
 const FRAME_RE = /截图|全帧|出帧|特写|帧/;
 const TAP_RE = /点击|输入|滑动|滚动|长按|拖|tap|click|input|scroll|swipe|trigger/;
 const BOOT_T = Date.now();
@@ -86,6 +88,19 @@ async function wsRoute() {
    而串行版实测 6.6–8.1ms/条。并发在这条通道上没有收益，只有把通道打死的代价。 */
 async function wsPage() {
   return await withRetry("page", async (m) => await m.currentPage());
+}
+/* 交互切片用：WS 的元素.tap()。不可逆的账号级动作（注销/解绑/清空）先禁触——
+   不是为了把红的藏起来，而是这类动作会把后面几百条用例共用的会话打掉，
+   那一次跑就只剩下"注销成功"这一帧；被禁的条目一律显式记 SKIPPED-DENY，不混进已跑。 */
+const DENY_TAP = /注销|解绑|清空|删除账号|删除帐号|退出登录|登出/;
+async function wsTap(sel) {
+  return await withRetry("tap " + sel, async (m) => {
+    const p = await m.currentPage();
+    const el = await p.$(sel);
+    if (!el) return "NO_ELEMENT";
+    await el.tap();
+    return "tapped";
+  });
 }
 function classesOf(text) {
   const seen = new Set();
@@ -149,6 +164,55 @@ function row(manifest, page, c, status, route, reason, observed, evid, miss) {
 function evidenceHole(r) {
   return r.status === "EXECUTED" && !r.evidence && !/present\(|absent/.test(String(r.observed || ""));
 }
+/* 出帧统一走桥（WS 出帧实测 61s/张）。>3000B 才算证据，这条口径与 r-exec-cli 一致 */
+function shootFor(name, id) {
+  const miss = [];
+  const f = join(SHOT_DIR, name + "-" + id + "-after.png");
+  try {
+    rmSync(f, { force: true });
+    shot(f, { project: PROJECT });
+    const sz = existsSync(f) ? statSync(f).size : 0;
+    if (sz > 3000) { stats.shots++; return { evid: relOf(f) + "(" + sz + "B)", miss }; }
+    miss.push(relOf(f) + "(仅 " + sz + "B，不当证据)");
+  } catch (e) { miss.push(relOf(f) + "(未写出:" + String(e.message).slice(0, 50) + ")"); }
+  return { evid: "", miss };
+}
+/* 交互型用例：点 action 里点名的第一个元素，等页面稳定后重问判点并必出一帧。
+   判点没变 + 有帧 = 这条交互"发生了但没改变可观测状态"，仍是 EXECUTED（证据在帧里），
+   但不许记成"交互生效"——那要看 expected 到底断言了什么，属于人工判读层。 */
+async function runTapCase(name, page, c, route, cls) {
+  const actionText = String(c.action || "");
+  const targets = classesOf(actionText);
+  if (DENY_TAP.test(actionText)) {
+    return { bucket: "tapDeny", row: row(name, page, c, "SKIPPED", route, "动作命中不可逆清单（注销/解绑/清空/登出）⇒ 禁触，否则后面几百条共用的会话会被打掉", "top=" + route + " | deny-tap | action=" + actionText.slice(0, 60)) };
+  }
+  if (!targets.length) {
+    return { bucket: "tapNoTarget", row: row(name, page, c, "SKIPPED", route, "交互动词但 action 里没点名可点元素（没有 selector 就没法把这次点击归属到某个东西）⇒ 待把判据收紧", "top=" + route + " | dom: (action 无类名) | tap-skipped") };
+  }
+  const sel = targets[0];
+  const pre = await probeSet(await wsPage(), [sel]);
+  if (pre.map[sel] !== "absent" && String(pre.map[sel]).startsWith("present") === false) {
+    return { bucket: "tapNoTarget", row: row(name, page, c, "SKIPPED", route, "目标元素探针无答案（" + pre.map[sel] + "）⇒ 通道没准备好，不盲点", "top=" + route + " | pre: " + sel + ":" + pre.map[sel] + " | tap-skipped") };
+  }
+  if (pre.map[sel] === "absent") {
+    return { bucket: "tapNoTarget", row: row(name, page, c, "SKIPPED", route, "目标元素 " + sel + " 当前不在页上（可能要先展开/滚动/登录态）⇒ 不盲点，待补前置态", "top=" + route + " | pre: " + sel + ":absent | tap-skipped") };
+  }
+  const t = await wsTap(sel);
+  if (t !== "tapped") {
+    return { bucket: "tapFail", row: row(name, page, c, "SKIPPED", route, "tap 未成功：" + String(t) + " ⇒ 通道/元素问题，不算交互失败也不算通过", "top=" + route + " | tap=" + String(t) + " | tap-skipped") };
+  }
+  await sleep(TAP_SETTLE);
+  const routeAfter = String((await wsRoute()) || "");
+  const all = [...new Set(cls.concat(targets))];
+  const post = await probeSet(await wsPage(), all);
+  const { evid, miss } = shootFor(name, c.id);
+  const observed = "top=" + routeAfter + (routeAfter !== route ? "（点击后从 " + route + " 变了）" : "") +
+    " | tap=" + sel + " | dom: " + all.map((s) => s + ":" + (post.map[s] || "no-answer")).join(" ") + " | post-tap";
+  if (!evid) {
+    return { bucket: "tapNoFrame", row: row(name, page, c, "SKIPPED", routeAfter, "点击后出帧失败（miss=" + miss.join(";") + "）⇒ 交互型没有帧就不算证据", observed, "", miss) };
+  }
+  return { bucket: "executed", row: row(name, page, c, "EXECUTED", routeAfter, "", observed, evid, miss) };
+}
 
 if (!existsSync(join(PROJECT, "app.json"))) { console.log("WSX_RESULT=FAIL reason=--project 不是已编译产物：" + PROJECT); process.exit(2); }
 mkdirSync(OUT_DIR, { recursive: true });
@@ -161,7 +225,9 @@ if (flag("redo-holes")) {
 }
 const done = new Set((prior.results || []).map((r) => r.manifest + "|" + r.id));
 const rows = [];
-const stats = { executed: 0, failed: 0, skipTap: 0, skipReal: 0, skipRoute: 0, skipNoCrit: 0, skipMiss: 0, pages: 0, probes: 0, shots: 0 };
+const stats = { executed: 0, failed: 0, skipTap: 0, skipReal: 0, skipRoute: 0, skipNoCrit: 0, skipMiss: 0, tapDeny: 0, tapNoTarget: 0, tapFail: 0, tapNoFrame: 0, pages: 0, probes: 0, shots: 0 };
+const SKIP_KEYS = ["skipTap", "skipReal", "skipRoute", "skipNoCrit", "skipMiss", "tapDeny", "tapNoTarget", "tapFail", "tapNoFrame"];
+const skipTotal = () => SKIP_KEYS.reduce((a, k) => a + stats[k], 0);
 
 function flush(final) {
   const m2 = new Map();
@@ -252,12 +318,18 @@ async function main() {
         if (c.requiresReal === true) {
           stats.skipReal++;
           rows.push(row(name, page, c, "SKIPPED", route, "requiresReal ⇒ 本切片只跑 mock 产物", observed));
-        } else if (TAP_RE.test(String(c.action || ""))) {
-          stats.skipTap++;
-          rows.push(row(name, page, c, "SKIPPED", route, "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接", observed));
         } else if (routeOk === false) {
           stats.failed++;
-          rows.push(row(name, page, c, "FAILED", route, "落在别的页（页内守卫或路由重定向），须人判", observed));
+          rows.push(row(name, page, c, "FAILED", route, "落在别的页（页内守卫或路由重定向），须人判（跑 scripts/qa/triage-cold-entry.mjs 可定位到具体守卫行）", observed));
+        } else if (TAP_RE.test(String(c.action || ""))) {
+          if (!TAP_MODE) {
+            stats.skipTap++;
+            rows.push(row(name, page, c, "SKIPPED", route, "action 含交互动词 ⇒ 未开 --tap，交互型留待下一刀", observed));
+          } else {
+            const r = await runTapCase(name, page, c, route, cls);
+            if (r.bucket !== "executed") stats[r.bucket]++; else stats.executed++;
+            rows.push(r.row);
+          }
         } else if (!cls.length && !FRAME_RE.test(String(c.evidence || ""))) {
           stats.skipNoCrit++;
           rows.push(row(name, page, c, "SKIPPED", route, "判据未点名可观测物件（既无类名也不要求出帧）⇒ 没有可判的东西，不能记 EXECUTED", observed));
@@ -289,7 +361,7 @@ async function main() {
       }
       flush();
       console.log("WSX_GROUP page=" + page + " 本次新行=" + rows.length + " executed=" + stats.executed + " failed=" + stats.failed +
-        " skipped=" + (stats.skipTap + stats.skipReal + stats.skipRoute + stats.skipNoCrit + stats.skipMiss) +
+        " skipped=" + skipTotal() +
         " 出帧=" + stats.shots + " ws重试=" + wsErrs + " 连接次数=" + conns + " 已跑=" + ((Date.now() - BOOT_T) / 60000).toFixed(1) + "min");
     }
   }
@@ -299,11 +371,11 @@ async function main() {
   const bad = all.filter((r) => !["EXECUTED", "FAILED", "SKIPPED"].includes(r.status));
   const holes = all.filter(evidenceHole);
   console.log("WSX_ROWS new=" + rows.length + " merged=" + all.length + " 之前已有=" + (prior.results || []).length + " 重复新行=" + dupNew);
-  console.log("WSX_STATS executed=" + stats.executed + " failed=" + stats.failed + " skipped=" +
-    (stats.skipTap + stats.skipReal + stats.skipRoute + stats.skipNoCrit + stats.skipMiss) +
-    "(交互动词=" + stats.skipTap + " requiresReal=" + stats.skipReal + " 落点未取证=" + stats.skipRoute +
-    " 无可判物件=" + stats.skipNoCrit + " 出帧失败=" + stats.skipMiss + ") 页组=" + stats.pages +
-    " 探针条数=" + stats.probes + " 出帧=" + stats.shots + " ws重试=" + wsErrs + " 连接次数=" + conns);
+  console.log("WSX_STATS executed=" + stats.executed + " failed=" + stats.failed + " skipped=" + skipTotal() +
+    "(交互动词未开tap=" + stats.skipTap + " requiresReal=" + stats.skipReal + " 落点未取证=" + stats.skipRoute +
+    " 无可判物件=" + stats.skipNoCrit + " 出帧失败=" + stats.skipMiss +
+    " tap禁触=" + stats.tapDeny + " tap无目标=" + stats.tapNoTarget + " tap失败=" + stats.tapFail + " tap无帧=" + stats.tapNoFrame +
+    ") 页组=" + stats.pages + " 探针条数=" + stats.probes + " 出帧=" + stats.shots + " ws重试=" + wsErrs + " 连接次数=" + conns);
   const st = {};
   for (const r of all) st[r.status] = (st[r.status] || 0) + 1;
   console.log("WSX_STATUS_ALL " + Object.keys(st).sort().map((k) => k + "=" + st[k]).join(" "));
@@ -316,7 +388,7 @@ async function main() {
   if (all.length !== (prior.results || []).length + rows.length - dupNew) fails.push("合并后总数对不上");
   if (fails.length) { console.log("WSX_RESULT=FAIL reason=" + fails.join(" / ") + " ⇒ 结论不落盘"); process.exit(2); }
   console.log("WSX_WRITTEN=" + relOf(RES) + " results=" + all.length);
-  console.log("WSX_SCOPE=observe-only（交互型与 requiresReal 未跑；这不是一轮完整的执行轮）");
+  console.log("WSX_SCOPE=" + (TAP_MODE ? "observe+tap（requiresReal 仍未跑，真实模式要 --project 指到 real 产物）" : "observe-only（交互型与 requiresReal 未跑；这不是一轮完整的执行轮）"));
   console.log("WSX_RESULT=OK");
 }
 main().catch((e) => {
