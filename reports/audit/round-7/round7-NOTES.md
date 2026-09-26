@@ -1153,6 +1153,40 @@ RUNNER_EVIDENCE_HOLE 0 ｜ 新档产物在盘，mock 未被覆盖
 最容易悄悄烂掉，所以必须带自检。本轮这一改没改变任何行的去留（那几条还有别的问题），
 但挡掉了下一轮凭空多出来的 held。
 
+## 44 交互刀真正欠的不是点击工具，是 534 条没写"点哪儿"的判据
+
+给执行器补上 `--tap`（走 CLI 的 `automation_element_action`，`tour-cli-states.mjs:107` 已在用，
+会真触发点击/输入）之后，跑 `PAGES-HOME-INDEX` 一片 27 行：
+
+```
+executed=19 failed=0 skipped=8(交互没点名=5、requiresReal=2、判据无可判物件=1) 真做过的交互=0 出帧=19
+RUNNER_EVIDENCE_HOLE 0 ｜ RUNNER_BAND mock@f1c7b96b ｜ RUNNER_IDENTITIES A=27
+```
+
+**`真做过的交互=0` 是关键那一格**：这一页 5 条交互用例，`action` 里一个 `.class` 都没有 ⇒
+点击没法归属到某个东西。于是做了普查（`scripts/qa/census-tap-targets.mjs` →
+`tap-target-census.json/.md`，守恒 `204 + 534 = 738`）：
+
+| | 数 |
+|---|---|
+| 判据台用例 | 1107 |
+| `action` 含交互动词 | 738 |
+| 其中点名了 `.class` | 204 |
+| **没点名** | **534（分布在 57 个页，全部按路由找到了源码文件）** |
+
+⇒ §38 挂着的"覆盖债"里交互那一半**不是工具欠的，是判据欠的**：
+判据只写了"点击某处"这种人话，没写要点哪个物件。
+这一条也纠正 objective 里的旧说法（原文写"37 条判据含糊"，交互判据的实测含糊量是 534 条）。
+下一步只能是把 534 条按页收紧成"点名可交互元素"的判据，再做真点击；
+直接跑 `--tap` 只会产出 534 行 `交互没点名` 的 SKIPPED——这张普查表就是为了不出现"看着像跑过了"。
+
+顺带两个通道事实（写下来免得下次重新踩）：
+WS automator 会话一旦连上 9420，**CLI 的 `simulator_open_page` 就整批失败**
+（`r-exec-ws.mjs --fidelity` 两次都卡在这，最后靠外层 timeout 才结束）——两条通道抢同一个模拟器；
+已把该脚本的对照分支改成"开页重试两次 + 打印完直接 `process.exit`"，不再挂住设备。
+所以混合传输的对照门槛（`FIDELITY=PASS` 才允许把 WS 当默认）目前**拿不到样本**，
+`FIDELITY=TOO_FEW_SAMPLES … 别拿它当通过` 是对的判读，不是把失败说成跳过。
+
 
 
 

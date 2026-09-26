@@ -1,0 +1,4268 @@
+{
+ "generatedAt": "2026-09-26T17:30:02.663Z",
+ "ops": "D:/6/恋爱小程序/reports/audit/round-6/ops",
+ "totals": {
+  "cases": 1107,
+  "withTapVerb": 738,
+  "actionNamesSelector": 204,
+  "actionMissingSelector": 534
+ },
+ "conservation": {
+  "sum": 738,
+  "equalsTapVerb": true
+ },
+ "pagesWithoutSource": [],
+ "pages": [
+  {
+   "page": "subpackages/village/village/index",
+   "missing": [
+    {
+     "id": "VI01",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "REAL_ONLY 未登录/资料未完善视角：整页锁 LockScreen，且不发受保护请求",
+     "action": "观察首屏是 LockScreen 还是频道内容 → 数一次网络请求 → tap LockScreen 上的引导按钮",
+     "requiresReal": true
+    },
+    {
+     "id": "VI03",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "搜索入口：点击进独立帖子搜索页（非页内输入框）",
+     "action": "tap .village-search（index.vue:594-604 → openAppPath(ROUTES.SEARCH) :600）",
+     "requiresReal": false
+    },
+    {
+     "id": "VI04",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "频道 Tab 五路切换：数据重拉、滚动位保存恢复、单事件不重复触发",
+     "action": "依次 tap ChannelTabs 的 **6 个**频道项（含新增「关注」follow；components/village/ChannelTabs.vue:40-50 → index.vue onChannelChange :200-202 → selectChannel :185-198），每个停留并观察；再切",
+     "requiresReal": false
+    },
+    {
+     "id": "VI06",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "学校圈认证门（未认证）：Gate 渲染 + 「去认证」+ 输入条锁定文案",
+     "action": "观察频道内容区与底部输入条 → 横滑频道 Tab 观察「学校圈」项是否带小锁标（channelLockedIds index.vue:134）→ tap 输入条",
+     "requiresReal": false
+    },
+    {
+     "id": "VI07",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "mock「模拟认证一键通过」：写请求成功 → refreshSession → Toast，并解锁学校圈内容区",
+     "action": "tap 模拟认证按钮（SchoolCircleGate.vue:77 → index.vue simulateVerify :298-313）→ 观察 Toast 与页面态 → 再 tap 一次",
+     "requiresReal": true
+    },
+    {
+     "id": "VI09",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "每日一问 entry 点击 → tools/daily-question；「附近的人」banner → 寻觅 Tab（switchTab 语义）",
+     "action": "① tap .village-daily-entry（index.vue:640-646 → openAppPath(ROUTES.DAILY_QUESTION) :646）→ 返回；② tap .discover-banner（:664-670 → goToDiscover :415-417 → ROUTES.TAB",
+     "requiresReal": false
+    },
+    {
+     "id": "VI11",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "兴趣圈频道：热门话题标签 → 标签帖列表；精选话题项 → 话题详情",
+     "action": "① tap HotTopicsSection 主话题（components/village/HotTopicsSection.vue:133）与次话题（:152）各一次 → 返回；② tap 一个 .topic-item（index.vue:732-741 → goToTopicDetail :284-286）",
+     "requiresReal": false
+    },
+    {
+     "id": "VI12",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "活动频道：ActivityCard 卡片跳详情 + 报名 toggle（写操作，状态与条数分列）",
+     "action": "① tap 一张 ActivityCard 本体（components/village/ActivityCard.vue:79 → index.vue openActivityDetail :316-318）→ 返回；② tap 卡内「报名」（ActivityCard.vue:129 → handleEnrollAct",
+     "requiresReal": true
+    },
+    {
+     "id": "VI13",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "帖子卡整卡点击与评论预览点击 → 详情带 ?id= 直达（MP-R1-DETAIL-006）",
+     "action": "① tap .post-card 本体（components/village/PostCard.vue:122 → index.vue goToDetail :362-367）→ 返回；② tap 卡内评论预览行（PostCard.vue:240）→ 返回",
+     "requiresReal": false
+    },
+    {
+     "id": "VI14",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "帖子卡头像/昵称点击 → 他人主页（openUserProfile 规避 tab 页限制）",
+     "action": "tap 卡内作者区（PostCard.vue:130 → index.vue goToAuthorProfile :369-373 → openUserProfile）；再找一条 author.userId 为空的卡 tap 作者区",
+     "requiresReal": true
+    },
+    {
+     "id": "VI15",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "帖子卡标签 chip 点击 → 标签帖列表；卡内活动子卡点击 → 活动详情",
+     "action": "① tap 标签 chip（PostCard.vue:230 → index.vue goToTagPosts :375-378）；② tap 活动子卡（PostCard.vue:217-226 → openActivityFromPost :380-382）",
+     "requiresReal": false
+    },
+    {
+     "id": "VI16",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "帖子卡图片区/活动区内侧点击不冒泡（noop 阻断）：不产生跳转",
+     "action": "tap 卡片图片区（PostCard.vue:182 @tap.stop=\"noop\"）与评论预览容器（:235）各一次，等 ≥800ms",
+     "requiresReal": false
+    },
+    {
+     "id": "VI17",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "点赞：单击乐观更新 + 服务端权威校正 + 失败回滚（写操作）",
+     "action": "① tap 卡内点赞按钮（PostCard.vue:271 handleLike → index.vue handleLike :334-341 → likePost）→ 立即观察计数与图标态；② 再 tap 一次取消；③ 断网/拦截使请求失败后再点一次观察回滚",
+     "requiresReal": true
+    },
+    {
+     "id": "VI18",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "连点同一帖点赞×5：客户端请求条数与服务端最终 liked/likeCount 分列（无幂等兜底的真实风险点）",
+     "action": "500ms 内对同一 .action-btn 点赞按钮快速 tap×5，逐次记录 tap 时刻；等 ≥2s 后回读",
+     "requiresReal": true
+    },
+    {
+     "id": "VI19",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "收藏与关注：乐观更新 + 失败回滚 + toggle 可逆（两个写通道）",
+     "action": "① tap 收藏按钮（PostCard.vue:284 → handleFavorite :343-350 → toggleFavorite）→ 再 tap 取消；② tap「关注」按钮（PostCard.vue:164 → handleFollow :352-359 → followUser）→ 再 tap 取关",
+     "requiresReal": true
+    },
+    {
+     "id": "VI20",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "置顶折叠条：展开/收起切换 + 条目点击进详情；置顶帖不双份出现在列表",
+     "action": "① 观察折叠条默认态与条数；② tap 折叠条标题行（PinnedPostsBar.vue:46 toggle）展开 → 再 tap 收起；③ tap 展开后的某条（:63 → index.vue goToDetail :362-367）",
+     "requiresReal": true
+    },
+    {
+     "id": "VI21",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "下拉刷新（scroll-view refresher）：强制穿透 30s TTL 的真实重拉 + 刷新态收起",
+     "action": "在 .channel-feed 内下拉（触发 @refresherrefresh index.vue:625 → onRefresh :423-432）→ 观察刷新指示与请求；10s 内重复下拉 3 次",
+     "requiresReal": false
+    },
+    {
+     "id": "VI22",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "错误态 + 重试按钮：ErrorState(network) 点击后强制重拉并恢复（MP-R1-VILLAGE-INDEX-104）",
+     "action": "观察错误槽 → tap ErrorState 重试按钮（components/common/ErrorState.vue:50 @retry → index.vue onRefresh :423-432）→ 恢复拦截后再 tap 一次",
+     "requiresReal": true
+    },
+    {
+     "id": "VI24",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "本轮 diff 证伪：mock post-16 配图已从 post-2.jpg（海岸礁石）换成 post-4.jpg（茶杯），语义须与「泡茶」正文一致",
+     "action": "在频道列表滚动找到该帖（分类 cat-sincere → 需在能显示它的频道，回填实际可见频道）→ 检视配图与 evaluate 读取 images[0] 最终 src",
+     "requiresReal": false
+    },
+    {
+     "id": "VI25",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "帖子卡「自己待审核新帖」置顶展示与按 id 去重（2026-09-05 R17 审核流）",
+     "action": "发布成功后返回本页 → 观察列表首条是否带「审核中」徽标 → 下拉刷新两次并数同 id 帖出现次数",
+     "requiresReal": true
+    },
+    {
+     "id": "VI26",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "底部发帖输入条（已解锁）：点击经实名认证门禁 → village/post",
+     "action": "tap ChannelComposerBar（:847-853 → @publish → handlePublish :385-390）；未认证变体重复一次并观察弹窗三路关闭",
+     "requiresReal": true
+    },
+    {
+     "id": "VI28",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "REAL_ONLY 后台发帖开关（post_publish_open=false）：输入条隐藏、空态文案切换、发帖被拒 403",
+     "action": "观察底部输入条与空态 → 改由 deep link 直达 /subpackages/village/village/post 强行发帖一次 → 观察错误提示 → 后台恢复开关后再刷新本页",
+     "requiresReal": true
+    },
+    {
+     "id": "VI30",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "频道切换后滚动位恢复与「回到顶部」按钮出现阈值（>600px）",
+     "action": "① 今日广场滚到 scrollTop>600 观察 .back-to-top 出现（index.vue:856-866 + SCROLL_TOP_THRESHOLD :451）；② tap .back-to-top（handleBackToTop :464-467）；③ 滚到中部后切到活动频道再切回，观察恢复位；④ 滚",
+     "requiresReal": false
+    },
+    {
+     "id": "VI34",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "频道内容七态演练：Idle/Loading/Success/Empty/Error/Disabled/Refreshing 逐项留证",
+     "action": "对今日广场逐项采：① 冷启动 Loading 骨架（index.vue:772-774 Skeleton variant=list）；② 成功态；③ 空态（VI27）；④ 错误态（VI22）；⑤ 下拉中 Refreshing（VI21）；⑥ 发帖开关关闭时的 Disabled 形态（VI28）；⑦ Idle（停止滚动 ",
+     "requiresReal": true
+    },
+    {
+     "id": "VI37",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "连点搜索入口×5 与连点频道 Tab×5：只压 1 层、无重复数据请求叠加",
+     "action": "① 500ms 内对 .village-search 快速 tap×5 → 回退；② 500ms 内对同一个频道 Tab 快速 tap×5（首次为切换、后续同值）",
+     "requiresReal": false
+    },
+    {
+     "id": "VI42",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "title": "【并发新增·当前源码】第 6 个频道「关注」(follow) 全链路：入口渲染、following 参数透传、未登录/无关注态、频道记忆",
+     "action": "① 进入本页 → tap 新增的「关注」频道 Tab（ChannelTabs.vue:40-50，labelKey=village.channelFollow）；② 观察请求 URL 的 category 实参；③ 滚到底触发分页；④ 重进页面验证频道记忆；⑤ 未登录/无关注关系两变体各看一次空态",
+     "requiresReal": true
+    }
+   ],
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/village/village/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "pages/login/index",
+   "missing": [
+    {
+     "id": "LG04",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "快速连点「微信登录」×5：客户端只发 1 次 wx.login/POST /v1/auth/wechat",
+     "action": "对 .btn-primary（aria-label=login.wechatLogin，@tap=onWechatLoginGuarded，index.vue:674-687）在 500ms 内连点 5 次",
+     "requiresReal": false
+    },
+    {
+     "id": "LG05",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "未勾选协议点登录入口：agreeFirst 守卫拦截，零请求",
+     "action": "点 .btn-primary（微信登录）1 次；再点 .btn-guest（稍后再看）1 次",
+     "requiresReal": false
+    },
+    {
+     "id": "LG06",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "协议勾选/取消切换 + 复选框热区铁律实测",
+     "action": "点 .checkbox（@tap=onAgreeTap，index.vue:601-603、模板 :912-921）一次，再点一次；用 createSelectorQuery 读 .checkbox 与 .terms-text-wrap 的 rect",
+     "requiresReal": false
+    },
+    {
+     "id": "LG07",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "「用户协议」链接跳转与返回落点",
+     "action": "点协议行第一个 .terms-link（@tap=openUserAgreement，index.vue:924）",
+     "requiresReal": false
+    },
+    {
+     "id": "LG08",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "「隐私政策」链接跳转与返回落点",
+     "action": "点协议行第二个 .terms-link（@tap=openPrivacyPolicy，index.vue:926）",
+     "requiresReal": false
+    },
+    {
+     "id": "LG09",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "手机号表单「常驻文字入口」在位（证伪「表单仅靠 getPhoneNumber 自动展开」）",
+     "action": "在快捷登录面板（v-if=!showPhoneLogin）内点 .login-sms-fallback（aria-label=login.phoneLogin，@tap=togglePhoneLogin，模板 :712-722）",
+     "requiresReal": false
+    },
+    {
+     "id": "LG10",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "手机号快捷登录失败兜底：401/404 均展开表单且不踢重载（回归 MP-R1-LOGIN-003）",
+     "action": "触发 handleGetPhoneNumberGuarded 三条分支：① errMsg 含 cancel/deny；② 后端返回 404；③ 后端返回 401",
+     "requiresReal": false
+    },
+    {
+     "id": "LG11",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "手机号输入框正常输入：11 位合法号回显且校验通过",
+     "action": "在 #login-phone（type=number maxlength=11 inputmode=numeric，模板 :762-776）输入 13800138000；读输入框 value 与 .btn-primary 可提交态",
+     "requiresReal": false
+    },
+    {
+     "id": "LG12",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "手机号超长输入 20 位：被 maxlength 截断，不撑破布局",
+     "action": "向 #login-phone 连续输入 20 位数字（13800138000123456789）",
+     "requiresReal": false
+    },
+    {
+     "id": "LG13",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "手机号特殊字符：中文/emoji/符号/前后空格不污染校验与请求体",
+     "action": "输入「１３８００１３８０（全角）+ 中文 + 空格 + emoji」组合，然后点「登录」",
+     "requiresReal": false
+    },
+    {
+     "id": "LG14",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "手机号清空：清空后提交被拦（表单三态之空态）",
+     "action": "全选删除 #login-phone 内容使其为空，点「登录」主按钮",
+     "requiresReal": false
+    },
+    {
+     "id": "LG15",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "手机号非法格式（首位非 1 / 次位 12）：正则拒绝",
+     "action": "依次输入 12345678901、2380013800、1380013800（10 位），各点一次「登录」",
+     "requiresReal": false
+    },
+    {
+     "id": "LG16",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "验证码/密码框长度边界 5 位 vs 6 位（表单三态之非法→合法）",
+     "action": "#login-password 先输 5 位点「登录」，再补到 6 位点「登录」",
+     "requiresReal": false
+    },
+    {
+     "id": "LG17",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "密码框密文渲染回归（type=text + :password=true，证伪「明文显示」历史项）",
+     "action": "在 #login-password 输入 8 位数字后截图并读取该 input 的编译属性",
+     "requiresReal": false
+    },
+    {
+     "id": "LG18",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "密码超长（65 位）与特殊字符",
+     "action": "#login-password 输入 65 位（无 maxlength 限制）后点「登录」；再改为含空格/引号/中文的 8 位串点「登录」",
+     "requiresReal": false
+    },
+    {
+     "id": "LG19",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "空提交（手机号与验证码全空、协议已勾选）",
+     "action": "不输入任何内容直接点「登录」",
+     "requiresReal": false
+    },
+    {
+     "id": "LG20",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "快速连点手机号「登录」×5：客户端请求数与服务端会话数分开判",
+     "action": "500ms 内连点表单内 .btn-primary（@tap=onPhoneLoginGuarded，防抖窗 2000ms，index.vue:481）5 次",
+     "requiresReal": false
+    },
+    {
+     "id": "LG23",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "「去注册」跳独立注册页并可返回",
+     "action": "点 .btn-text（文案 login.goRegister，@tap=goRegisterPage，index.vue:880-888、:227-229）",
+     "requiresReal": false
+    },
+    {
+     "id": "LG24",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "内联注册模式降级：仅残留 phoneRegisterMode 时出现「返回登录」，不得再出现旧版三输入框注册表单",
+     "action": "确认默认表单只有手机号+验证码两输入框；再用 automation_evaluate 置 phoneRegisterMode=true 观察新增三项与按钮文案",
+     "requiresReal": false
+    },
+    {
+     "id": "LG25",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "表单「三路关闭/收起」路径 + 弹层式表单不残留",
+     "action": "分别验证三条回到快捷登录面板的路径：① 点「返回微信登录」.btn-text（@tap=togglePhoneLogin，index.vue:899-902）；② 页面返回手势/物理返回（登录页为启动页时不应退出小程序）；③ automation 置 showPhoneLogin=false 模拟状态复位后重进",
+     "requiresReal": false
+    },
+    {
+     "id": "LG26",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "键盘弹起/收起：输入框不被遮挡，值与焦点保留",
+     "action": "聚焦 #login-phone 使键盘弹起（cursor-spacing=20，模板 :763），输入后聚焦 #login-password，再点空白收起键盘",
+     "requiresReal": false
+    },
+    {
+     "id": "LG27",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "滚动到顶/到底 + 无下拉刷新（本页未开启 enablePullDownRefresh）",
+     "action": "pageScrollTo 到底 → 回顶；随后执行一次下拉手势",
+     "requiresReal": false
+    },
+    {
+     "id": "LG31",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "验证码长度边界（5/6/7 位，maxlength=6）",
+     "action": "#login-sms-code 依次输入 5 位、7 位（观察截断）、6 位，各点一次「注册/登录」主按钮",
+     "requiresReal": false
+    },
+    {
+     "id": "LG33",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "「临时体验号」×5 连点：一次请求、一次导航",
+     "action": "500ms 内连点 .btn-guest（@tap=onGuestLoginGuarded，2000ms 窗口，index.vue:540、模板 :741-752）",
+     "requiresReal": false
+    },
+    {
+     "id": "LG34",
+     "manifest": "PAGES-LOGIN-INDEX",
+     "title": "DEV 演示入口：mock 构建可见并 reLaunch 寻觅",
+     "action": "点 .dev-user-entry（aria-label=login.devUserEntryTitle，@tap=onDevUserEntry，模板 :947-958）",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "PAGES-LOGIN-INDEX.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/pages/login/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/village/village/post",
+   "missing": [
+    {
+     "id": "VP02",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "?target=campus 入口：目标=校园圈、可见范围联动 school",
+     "action": "观察发布到卡片与「谁可以看」行文案 → evaluate 读取 visibility/targetType → tap 发布到卡片再关闭弹层",
+     "requiresReal": false
+    },
+    {
+     "id": "VP06",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "标题输入框四态：正常 / 清空 / 超长（maxlength=20 截断）/ 特殊字符 + 计数同步",
+     "action": "① 输入 12 字 → ② 全清 → ③ 输入 40 字 → ④ 输入「%22'<>&@#\\n😀English」，每步 evaluate 回读 title 长度与计数文本",
+     "requiresReal": false
+    },
+    {
+     "id": "VP07",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "正文 textarea 四态：正常 / 清空 / 超长（maxlength=500）/ 特殊字符 + 计数与提交裁剪",
+     "action": "① 30 字 → ② 清空（标题保留）→ 观察发布钮 → ③ 输入 600 字 → ④ 输入首尾含大量空格 + 换行 + 特殊字符的文本；② 之后 tap 一次发布观察 payload",
+     "requiresReal": false
+    },
+    {
+     "id": "VP09",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "正文 1-4 字提交（圈子/帖子两通道）：短正文与后端 title 5-30 校验的实测冲突",
+     "action": "tap 发布 → 观察 Toast / 网络响应 → 把正文补到 8 字再发一次",
+     "requiresReal": true
+    },
+    {
+     "id": "VP10",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "有效发布（mock，通用目标）：Toast「发布成功」+ 800ms 返回 + 表单清空 + 草稿清除",
+     "action": "tap 发布 → 连拍（0/300/600/900/1500ms）观察 Toast 与返回 → 返回后 evaluate 读 storage['village:post-draft'] 与本页表单态 → 重新进入本页观察是否空白",
+     "requiresReal": false
+    },
+    {
+     "id": "VP12",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "选择兴趣圈目标：圈名/成员数/「已加入」标 + 圈内成员可见联动 + 话题入口消失",
+     "action": "tap 一个圈子项（:734-752 → selectTarget :260-267）→ 观察卡片三处文案与行区变化 → 再打开弹层选另一个圈子 → 再切回「个人动态」",
+     "requiresReal": false
+    },
+    {
+     "id": "VP13",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "「谁可以看」弹层：按目标约束的选项集合 + 单选联动 + 遮罩关闭",
+     "action": "三种目标下各 tap .post-row（:858-869 → visibilitySheetOpen=true）→ 观察选项条数 → general 下 tap「学校圈可见」项（:1057-1078）→ 回弹层用遮罩关闭",
+     "requiresReal": false
+    },
+    {
+     "id": "VP15",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "【重点回归②相关】REAL_ONLY 同内容二次提交：POST /posts 幂等冲突必须给出可区分失败提示",
+     "action": "第一次发布 → 等返回（≥2s）→ 重进本页填相同内容 → tap 发布 → 等 ≥2s 观察 Toast 与停留态",
+     "requiresReal": true
+    },
+    {
+     "id": "VP16",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "成功 Toast 与 800ms 返回窗口内的二次点击（重复提交窗口）：必须被吞",
+     "action": "tap 发布 → 看到「发布成功」Toast 后 300ms 内再 tap 顶部一次、底部工具栏图片以外的位置对照一次",
+     "requiresReal": true
+    },
+    {
+     "id": "VP17",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "脏草稿 + 圈子目标：卡片文案与实际提交链路一致性（MP-R1-POST-101 全量回归）",
+     "action": "观察卡片圈名是否解析成功（无图草稿也必须解析）→ 直接 tap 发布 → evaluate 回读实际请求通道与 payload → 发布后检查草稿键与重新进入的表单态",
+     "requiresReal": false
+    },
+    {
+     "id": "VP18",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "话题弹层：热门点选 / 自定义输入四态 / 上限 5 个 / 去重提示 / 三路关闭",
+     "action": "tap .post-row「添加话题」（:821-833）→ ① 点热门 chips 若干（:965-978 toggleTopic :334-339）→ ② 自定义输入依次：留空点「添加」、输入「   」、「#」开头串、16 字 + 第 17 字、重复已有话题 → ③ 加满 5 个后再加第 6 个 → ④ 遮罩关闭 ",
+     "requiresReal": false
+    },
+    {
+     "id": "VP19",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "位置弹层：常用位置点选 / 自定义输入四态 / 清除当前位置 / 计数与文案回显",
+     "action": "tap「添加位置」行（post.vue:834-845 → customLocation=location; locationSheetOpen=true）→ ① 点常用位置「校园·食堂」（:1010-1023 pickLocation :143-146）→ ② 重开观察「当前：…」回显（:1008）→ ③ 自定义输入",
+     "requiresReal": false
+    },
+    {
+     "id": "VP20",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "「提及好友」：向正文末尾插入 @ + Toast 提示（两处入口一致性）",
+     "action": "① tap 行内「提及好友」（:846-857 → insertMention :157-160）；② 再 tap 底部工具栏「提及」（:936-945 同 handler）各一次；③ 观察正文值、光标位与计数",
+     "requiresReal": false
+    },
+    {
+     "id": "VP21",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "配图：选图/压缩/九宫格计数/删除/满 9 张上限提示（含隐私授权路径）",
+     "action": "① tap「＋」块（:804-813 → chooseImage :288-314）在未授权态 → ② 授权后选 4 张 → ③ 逐张点删除（:794-802 removeImage :329-331）→ ④ 选满 9 张后再触达上限分支",
+     "requiresReal": false
+    },
+    {
+     "id": "VP22",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "REAL_ONLY 带图发布：本地临时路径必须先换成可访问 URL，禁止 http://tmp 死链落库（MP-R1-POST-201/MP-R7-REALNAME-001）",
+     "action": "选 2 张图 → 补齐表单 → tap 发布 → 观察两次上传请求与创建 payload 的 images 数组 → 返回村口看该帖配图",
+     "requiresReal": true
+    },
+    {
+     "id": "VP23",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "草稿持久化边界：500ms 防抖窗口、只存已上传 URL、跨会话失效路径过滤（MP-R2-POST-006）",
+     "action": "① 输入正文后 200ms 内立即读 storage（防抖未触发）→ ② 1s 后再读 → ③ 选入本地临时图 + evaluate 追加一条已上传形态 URL 到 images → ④ 2s 后读草稿的 images → ⑤ 退出并把该临时路径写回 storage 后重进",
+     "requiresReal": false
+    },
+    {
+     "id": "VP24",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "圈子列表懒加载三态：加载中文案 / 失败 + 重试 / 空态（MP-R1-POST-202）",
+     "action": "tap 发布到卡片打开弹层 → 观察加载态 → 失败态下 tap「重试加载」（:723-728 retryLoadCircles :90-92）→ 再构造空态（已登录但无圈子）",
+     "requiresReal": true
+    },
+    {
+     "id": "VP27",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "退出脏数据保护：「保留草稿」/「丢弃」两分支与弹层三路关闭",
+     "action": "① tap header X（post.vue:614-623 → requestLeave :457-489）→ modal 出现 → tap 取消（丢弃分支 :483-486）；② 重新进入输入内容 → 再触发 modal → tap 确认（保留分支 :469-482）；③ 第三次触发 modal 后用系统返回关闭",
+     "requiresReal": false
+    },
+    {
+     "id": "VP29",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "打开即返回（≤500ms）与定时器清理：无悬挂草稿写、无过导航",
+     "action": "进入后 200ms 内输入正文（挂上 500ms 草稿防抖）→ 立即触发系统返回使页面销毁 → 等 1.5s 读 storage → 再次进入观察",
+     "requiresReal": false
+    },
+    {
+     "id": "VP30",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "重复进出×3：表单/草稿/弹层态不跨实例残留，请求不累积",
+     "action": "循环 3 次：进入 → 打开目标弹层选圈子 + 选 2 话题 + 选 1 图 + 改可见范围 → 直接返回（不发布，处理 modal 时选丢弃）→ 再进入观察",
+     "requiresReal": false
+    },
+    {
+     "id": "VP32",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "表单滚动与键盘：内滚边界、fixed 底部工具栏遮挡、正文末行与键盘间距",
+     "action": "① .post-body scroll-view（:636）滚到底 → 回顶；② 聚焦正文输入 3 行观察键盘；③ 检视小贴士关闭按钮与底部工具栏是否互遮",
+     "requiresReal": false
+    },
+    {
+     "id": "VP33",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "REAL_ONLY 草稿后端同步缺失的交叉取证：本页只写本地、publish 页前后端双写",
+     "action": "两页各输入同一唯一标识串 → 等 3s → 观察是否有 POST /drafts 请求 → 完全退出小程序后重进该页，对比恢复结果",
+     "requiresReal": true
+    },
+    {
+     "id": "VP38",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "【并发修复·当前源码】空快照不落盘 + 本页不再越权删后端草稿单例（MP-R2-POST-011）",
+     "action": "① 进入本页什么都不输入，等 3s 读 storage['village:post-draft']；② 只输 1 个空格再等 3s 读；③ 先由 publish 页写一条后端草稿，然后在本页输入内容→返回→选「丢弃」→ 观察 network；④ 重进 publish 页看该后端草稿是否仍在",
+     "requiresReal": true
+    },
+    {
+     "id": "VP39",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "【并发修复·当前源码】选图改走统一封装：单张 >10MB 被拒、用户取消静默、errno 112 明确提示（MP-R2-POST-012）",
+     "action": "① tap「＋」（**当前锚点** post.vue:353-360 走 utils/media 的 chooseImages，import 见 :27）选 1 张 >10MB；② 选 3 张正常图；③ 打开选图器后点「取消」；④ 制造 errno 112；⑤ 未授权态 tap「＋」",
+     "requiresReal": true
+    },
+    {
+     "id": "VP40",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+     "title": "【并发修复·当前源码】标题回退截断改用 POST_TITLE_MAX_LENGTH 并新增 POST_TITLE_MIN_LENGTH 最短校验（含阈值来源实测）",
+     "action": "① 标题留空、正文 3 字 → 发布；② 标题留空、正文 6 字 → 发布；③ 标题留空、正文首行 60 字 → 发布并回读 body.title 长度；④ 标题输入 25 字（观察 input maxlength=TITLE_MAX_LENGTH=20，post.vue:56/:872）；⑤ 正文首行为空行、次行有字",
+     "requiresReal": true
+    }
+   ],
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/village/village/post.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/village/village/publish",
+   "missing": [
+    {
+     "id": "PUB02",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "?target=campus：目标锁定校园圈；「谁可以看/添加位置」两行为只读（不得有可点假象）",
+     "action": "观察卡片名称/副标题与「谁可以看」行 → tap 该行（应为只读、无弹层）→ tap 卡片打开弹层选「校园圈」再关闭 → evaluate 回读 targetType/visibility",
+     "requiresReal": false
+    },
+    {
+     "id": "PUB06",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "正文 textarea 四态：正常 / 清空 / 超长（maxlength=500 截断）/ 特殊字符 + 计数与警示色阈值",
+     "action": "① 输入 30 字 → ② 全清 → ③ 输入 600 字 → ④ 逐步输入到 449/450/451 字观察计数颜色 → ⑤ 输入含换行/制表/emoji/HTML 片段/首尾空格的文本后提交一次，回读 body",
+     "requiresReal": false
+    },
+    {
+     "id": "PUB08",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "短文本提交（1-4 字）与 501 字注入：最短 5 字前端校验、store 层 500 字守卫可达性",
+     "action": "A：tap 发布 → 观察 Toast → 补到 8 字再发一次；B：tap 发布 → 观察 Toast、Loading 与 network",
+     "requiresReal": false
+    },
+    {
+     "id": "PUB10",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "「添加话题」行只 toggle 固定话题「#校园日常」：已选 n/5 计数与二次点击取消、满 5 静默",
+     "action": "① tap 行一次 → 观察 meta 计数；② 再 tap 一次（取消）；③ evaluate 把 topics 置为 5 项后再 tap 行，观察是否有任何反馈；④ 在正文里直接手打「#周末去哪 校园美景 #」后提交一次，回读 tags",
+     "requiresReal": false
+    },
+    {
+     "id": "PUB11",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "「提及好友」只弹 Toast、不插入 @（与 post.vue 行为分叉的交叉取证）",
+     "action": "tap .publish-row「提及好友」（:704-708 → openMentionPicker :268-270）；再连点 3 次观察 Toast 队列；随后 evaluate 回读 content",
+     "requiresReal": false
+    },
+    {
+     "id": "PUB12",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "「添加位置」只读行：城市缓存有/无两态文案，点击无动作（不得有可点假象）",
+     "action": "两态各检视位置行文案与是否带箭头/press-feedback → 各 tap 一次该行观察反馈 → 提交一次并回读 body",
+     "requiresReal": false
+    },
+    {
+     "id": "PUB13",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "圈子列表懒加载三态：加载中 / 失败+重试 / 空态（MP-R1-PUB-017 / MP-R2-PUB-103），失败与空态必须可区分",
+     "action": "① tap 发布到卡片（watch targetOpen 触发 ensureCirclesLoaded，:108-112）→ 观察加载态；② 失败态下 tap「重试加载」（:626-631 retryLoadCircles :105-107）；③ 断网后重开弹层再恢复网络后 tap 重试；④ 空态变体（已登录但无已加入",
+     "requiresReal": true
+    },
+    {
+     "id": "PUB14",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "配图：选图 / 压缩 / 九宫格与删除 / 满 9 张上限提示 / 隐私 errno 112 与其它失败的反馈分叉",
+     "action": "① tap「＋」块（:680-682 → chooseImage :226-254）在未授权态；② 授权后选 4 张 → tap 删除（:676-678 removeImage :256-258）；③ 选满 9 张后再触达上限分支；④ 制造 chooseImages 抛 errno 112；⑤ 制造其它失败（如取消选图",
+     "requiresReal": true
+    },
+    {
+     "id": "PUB15",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "REAL_ONLY 带图发布：临时路径判定走 isUploadedMediaUrl，禁止 http://tmp 死链落库（MP-R2-PUB-102）",
+     "action": "选 2 张图 → 补正文 → tap 发布 → 观察两次上传请求与创建 payload.images → 返回村口看该帖配图 → 变体：上传中途制造第 2 张失败",
+     "requiresReal": true
+    },
+    {
+     "id": "PUB17",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "【重点回归②相关】REAL_ONLY 同内容二次提交：POST /posts 幂等冲突必须给出可区分失败提示，不得静默",
+     "action": "第一次发布 → 等返回（≥2s）→ 重进本页填相同正文 → tap 发布 → 等 ≥2s 观察 Toast 与停留态 → 再改 1 字发第三次",
+     "requiresReal": true
+    },
+    {
+     "id": "PUB18",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "成功 Toast 与 400ms 返回窗口内的二次点击（本页特有窄窗口）+ 成功不清表单的重复发布风险",
+     "action": "tap 发布 → 看到「发布成功」Toast 后 200ms 内再 tap 顶部一次 → 返回村口后重新进入本页观察正文是否残留 → 若残留则直接再点一次发布",
+     "requiresReal": true
+    },
+    {
+     "id": "PUB19",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "草稿双写与取新：本地 500ms 防抖 + 2s 后端写、按 updatedAt 取新、「保留」路径同步 flush（MP-R1-PUBLISH-003/004）",
+     "action": "① 输入正文后 200ms 读 storage、1s 再读、3.5s 再读（防抖 500ms + 后端双写 2000ms 窗口）；② evaluate 把本地草稿 updatedAt 改为过去时间、后端保留新草稿 → 重进观察取哪份；③ 反向（本地新、后端旧）再测；④ 输入内容后 tap X，在 modal 点「保留」",
+     "requiresReal": true
+    },
+    {
+     "id": "PUB20",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "退出脏数据保护：「保留」/「丢弃」两分支 + modal 三路关闭 + 无改动不弹 + 只加图也算脏",
+     "action": "① 输入内容 → tap header X（:576 → requestLeave :452-468）→ modal 点「丢弃」（:465）；② 重进输入内容 → X → modal 点「保留」（:464）；③ 重进输入内容 → X → modal 用系统返回关闭；④ 全新无改动状态 tap X；⑤ 只选 1 张图不打",
+     "requiresReal": true
+    },
+    {
+     "id": "PUB21",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "发布成功清理链路：本地 + 后端草稿双删、allowLeave 置位、navigateAway 单一出口、无二次退出弹窗",
+     "action": "tap 发布 → 连拍（0/200/400/700/1200ms）观察 Toast 与返回 → 返回后 evaluate 读本地草稿键 + REAL_ONLY 用 GET /drafts/current 回读 → 重进本页观察表单 → 离开时观察是否弹「保留草稿」",
+     "requiresReal": true
+    },
+    {
+     "id": "PUB22",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "REAL_ONLY 正文最短 5 字与后端 title @Size(min=5,max=30) 的契约一致性（直连对照）",
+     "action": "① 前端输入 5 字提交；② 用 curl/evaluate 直连 POST /api/v1/posts 分别发 title=4 字与 title=31 字（三条 content 各不同以避开相同幂等键）；③ 回读列表并记录三条响应",
+     "requiresReal": true
+    },
+    {
+     "id": "PUB23",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "目标切换：正文不丢、草稿随目标重写、提交通道与可见性三字段随之切换",
+     "action": "输入 20 字正文 → 依次切目标 general → circle → campus → 每种目标各提交一次（每次给正文追加唯一后缀），并每步读草稿快照；再用 evaluate 置 friends 复现第四种目标提交一次",
+     "requiresReal": false
+    },
+    {
+     "id": "PUB24",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "REAL_ONLY 后台发帖开关（post_publish_open=false）对本页的影响：入口隐藏 + 深链强发 403 可区分提示",
+     "action": "从深链进入本页 → 填唯一正文 → tap 发布 → 观察 Toast/network → 后台恢复开关后重进本页确认能正常发布",
+     "requiresReal": true
+    },
+    {
+     "id": "PUB25",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "发帖回流村口：新帖出现在公开广场且按 id 去重（不双份、不「发完就消失」）",
+     "action": "发布成功自动返回村口 → 观察列表首条与「审核中」徽标 → 下拉刷新 2 次并数该标题出现次数 → 再等 5s 后刷新一次",
+     "requiresReal": true
+    },
+    {
+     "id": "PUB26",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "双发布页并存的完整差异清单实测（同内容两页各发一次的对照 + 草稿键互不污染）",
+     "action": "① 两页分别输入同一唯一正文串并各提交一次（第二页对正文追加后缀以避开相同幂等键）；② 逐项对照并回填两表：标题入口有无、最短校验、话题能力、位置能力、可见范围能力、圈子可选集合、目标文案、草稿键、草稿是否双写后端、成功复位策略与返回延时、工具栏有无；③ evaluate 交叉写入对方草稿键后重进两页，验证互不恢复",
+     "requiresReal": true
+    },
+    {
+     "id": "PUB27",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "打开即返回（≤500ms）与重复进出×3：定时器/请求不泄漏、状态不跨实例残留",
+     "action": "① 进入后 200ms 内输入正文（挂上 500ms 防抖与 2s 后端双写）→ 立即触发系统返回销毁本页 → 等 3.5s 读 storage 与 POST /drafts 时刻；② 循环 3 次：进入 → 打开弹层 → 不发布直接返回（modal 选丢弃），每轮观察字段与请求",
+     "requiresReal": false
+    },
+    {
+     "id": "PUB28",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "表单滚动与键盘：100vh 容器实测、内滚边界、header 常驻、正文末行与键盘间距",
+     "action": "① .publish-body scroll-view（:585）滚到底 → 回顶；② 聚焦正文输入 3 行观察键盘；③ 关闭小贴士后观察布局回收；④ 检视最后一行「谁可以看」是否被 safe-area 或弹层残留遮挡；⑤ 检查是否出现整页双滚动条",
+     "requiresReal": false
+    },
+    {
+     "id": "PUB31",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "【并发修复·当前源码】提交出口唯一、「先 hideLoading 再 toast」、二次点按被吞（MP-R1-PUBLISH-109）",
+     "action": "① 填唯一正文 → tap 发布 → 在途连点发布钮 3 次；② 观察在途是否出现全程 loading（带 mask）；③ 成功后观察 Toast 是否被随后的 hideLoading 顶掉；④ 用 evaluate 制造一次失败（直连改坏 payload）观察失败 Toast 是否同样不被吞",
+     "requiresReal": true
+    },
+    {
+     "id": "PUB33",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "【并发修复·当前源码】空快照不落盘 + 后端草稿单例不得被无意义覆盖删（MP-R2-PUB-113 / MP-R1-PUBLISH-108）",
+     "action": "① 进入本页什么都不输入，等 3.5s 读 storage['village:publish-draft'] 与 POST /drafts 条数；② 只输 1 个空格再等 3.5s；③ 先由 post 页/后台留一条后端草稿，然后在本页空表单触发退出保护（若有）与 flush 路径；④ evaluate 直接调 flu",
+     "requiresReal": true
+    },
+    {
+     "id": "PUB34",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "title": "【并发修复·当前源码】标题按 POST_TITLE_MAX_LENGTH 截断 + 最短 POST_TITLE_MIN_LENGTH 校验是否已补齐（与 post 页 VP40 对",
+     "action": "① 正文 3 字 → 发布；② 正文 6 字 → 发布；③ 正文首行 60 字 → 发布并回读 body.title 长度；④ 标题留空但正文首行含 30+ 字长句 → 观察截断；⑤ 与 post 页 VP40 同输入做数值对照",
+     "requiresReal": true
+    }
+   ],
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/village/village/publish.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/campus/campus/post-topic",
+   "missing": [
+    {
+     "id": "PT03",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "?category= 非法值：无白名单校验的证伪（不预选 + 提交时把非法值发给后端）",
+     "action": "观察 6 个 chip 是否有任何选中态 → 填标题+正文 → tap 顶部「发布」，观察请求 category 实参",
+     "requiresReal": false
+    },
+    {
+     "id": "PT08",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "6 个分类 chip 逐个点选：单选语义（不出现多选中）",
+     "action": "依次 tap 6 个 .category-option（post-topic.vue:299-317 → selectCategory :120-122），每次记录高亮集合",
+     "requiresReal": false
+    },
+    {
+     "id": "PT09",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "标题输入框四态：正常 / 清空 / 超长（maxlength=50 截断）/ 特殊字符",
+     "action": "① 输入「周末组队去国博」→ ② 全清 → ③ 输入 80 字符长串 → ④ 输入「%22'<>&@#\\n中文 English」并回读实际值",
+     "requiresReal": false
+    },
+    {
+     "id": "PT10",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "正文 textarea 四态：正常 / 清空 / 超长（maxlength=500）/ 特殊字符 + 计数同步",
+     "action": "① 输入 30 字 → ② 清空 → ③ 输入 600 字 → ④ 输入含换行/制表/emoji/HTML 片段的 500 字内混合文本，每步读 .content-count 文本",
+     "requiresReal": false
+    },
+    {
+     "id": "PT11",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "网络超时自动重试与稳定幂等键的叠加效应：客户端可发 2 条而服务端只落 1 条（分列取证）",
+     "action": "tap 顶部「发布」一次（只点一次）→ 记录 network 面板该端点的全部请求条目与其 Idempotency-Key、状态码与时间间隔 → 等 ≥5s 后重新 GET /campus/topics 回读该标题条数",
+     "requiresReal": true
+    },
+    {
+     "id": "PT12",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "证伪「超字数拦截」：程序化注入 501 字才能触达 isOverLimit 静默分支，回填是否有任何提示",
+     "action": "evaluate 置 content=501 字 → 读 .content-count 与 --over 类名 → tap 顶部「发布」→ 等 ≥1.5s 观察",
+     "requiresReal": false
+    },
+    {
+     "id": "PT15",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "有效发布（mock）：Toast「发布成功」+ 800ms 自动返回 + 列表顶插 1 条，全链路仅 1 次创建",
+     "action": "tap 顶部「发布」一次 → 立即连拍（0/300/600/900/1500ms）观察 Toast 与返回时机 → 返回后数列表首条",
+     "requiresReal": false
+    },
+    {
+     "id": "PT16",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "【重点回归②核心】REAL_ONLY 同内容二次提交：必须得到可区分的失败提示，不得静默",
+     "action": "第一次：填表 → tap 发布 → 等返回（≥2s）。第二次：再次进入 post-topic → 填**完全相同**的标题与正文 → tap 发布 → 等 ≥2s，观察 Toast 与网络响应",
+     "requiresReal": true
+    },
+    {
+     "id": "PT17",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "【重点回归②】REAL_ONLY 二次提交仅改 1 字：幂等键变化必须放行，不得被误吞",
+     "action": "填「与 PT16 仅差 1 字」的表单 → tap 发布 → 等 ≥2s",
+     "requiresReal": true
+    },
+    {
+     "id": "PT20",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "重复提交（成功 Toast 与 800ms 返回窗口内再点）：二次提交必须被吞（MP-R1-CAMPUSPOST-004）",
+     "action": "tap 顶部「发布」→ 看到「发布成功」Toast 后立刻（600ms 内，即返回前）再 tap 顶部与底部各一次",
+     "requiresReal": true
+    },
+    {
+     "id": "PT22",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "REAL_ONLY 多图上传的幂等键唯一性：同帖 2 张不同图必须都能传成（MP-R1-CAMPUSPOST-002 回归）",
+     "action": "连续选 2 张图（或一次多选 2 张）→ 补齐标题正文 → tap 发布 → 观察两次上传请求与最终结果",
+     "requiresReal": true
+    },
+    {
+     "id": "PT24",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "取消选图（用户主动）：不得弹「选择图片失败」Toast（MP-R2-CAMPUSPOST-005）",
+     "action": "tap .image-upload → 在系统选图器点「取消」；随后再制造一次真实失败（拒绝相册权限后重试）",
+     "requiresReal": false
+    },
+    {
+     "id": "PT25",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "匿名开关 switch：开/关两次切换的乐观语义与提交 payload 一致性",
+     "action": "tap switch 开（post-topic.vue:389-393 @change → toggleAnonymous :127-129）→ 再 tap 关 → 再开并保持，随后填表提交一次（唯一标题）",
+     "requiresReal": false
+    },
+    {
+     "id": "PT27",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "TopicSelector 话题选择：点选/取消/第 4 个上限 Toast/全部清除（最多 3 个）",
+     "action": "依次 tap 4 个 .topic-chip（TopicSelector.vue:246-256 → toggleTopic :107-127）→ tap 已选项取消 1 个 → tap「全部清除」（:200-210 clearAll）",
+     "requiresReal": false
+    },
+    {
+     "id": "PT29",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "mock 模式话题标签以「#tag」拼进正文末尾；REAL_ONLY 模式走 tags 数组字段（两模式各一次）",
+     "action": "选 2-3 个话题 → 填标题正文 → tap 发布 → 回读创建结果正文与 tags",
+     "requiresReal": true
+    },
+    {
+     "id": "PT30",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "REAL_ONLY 发布失败（服务端 4xx）：Toast 展示后端原文且不自动返回、可立即改后重试",
+     "action": "提交 → 观察 Toast 与停留态 → 修改标题 1 字后再次提交",
+     "requiresReal": true
+    },
+    {
+     "id": "PT32",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "重复进出×3（每次填不同内容不提交）：状态不残留、内存/监听不累积",
+     "action": "循环 3 次：进入 → 选不同分类 + 填不同标题 → tap 取消返回 → 再进入",
+     "requiresReal": false
+    },
+    {
+     "id": "PT33",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "表单滚动到顶/底：内滚容器边界、header 常驻、底部按钮完整可见",
+     "action": ".post-body（post-topic.vue:293 scroll-view）滚到底 → 回顶；数值回填",
+     "requiresReal": false
+    },
+    {
+     "id": "PT34",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "键盘弹起：textarea 聚焦后输入区不被遮挡、show-confirm-bar=false 无多余确认条",
+     "action": "tap .content-input 聚焦 → 输入 3 行文本 → 观察光标与键盘间距 → 收起键盘",
+     "requiresReal": false
+    },
+    {
+     "id": "PT36",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "发布回流后新帖归属正确 Tab（MP-R2-CAMPUSINDEX-002(a) 回归）：当前分类即所选分类",
+     "action": "确认本页预选分类=学习互助 → 填唯一标题正文 → tap 发布 → 返回后观察 index 停在哪个 Tab、新帖出现在哪个 Tab 列表",
+     "requiresReal": true
+    },
+    {
+     "id": "PT37",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "【并发修复·当前源码】未认证/审核中/驳回视角：页顶常驻 cert-banner + 提交被本地门禁拒且零必败请求",
+     "action": "① 进入后观察页顶是否出现横幅与其按钮；② 填合法标题正文 → tap 发布 → 观察 Toast 与 network；③ tap 横幅「去认证」；④ 已认证变体重复 ①②；⑤ evaluate 在深链进入瞬间读 certGate 值（未取到状态应为 unknown 而非 denied）",
+     "requiresReal": true
+    },
+    {
+     "id": "PT39",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "【并发修复·当前源码】real 构建下配图整条链路关闭：图片区常驻说明 + 点「+」直接提示，不再产生上传请求与孤儿文件",
+     "action": "① 观察图片区是否有常驻说明行；② tap「+」块（:524-535 → chooseImage :231-243）；③ 若仍想验证提交体：evaluate 向 images 塞入一个 URL 后填表发布一次 → 回读 body 与响应",
+     "requiresReal": true
+    },
+    {
+     "id": "PT40",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+     "title": "【并发修复·当前源码】real 下匿名开关不可生效：开启后同行文案原地替换为「以你的昵称公开」",
+     "action": "tap 匿名 switch 开 → 读 .option-desc 文本与类名 → 关 → 再开；随后带匿名开启状态发布一次，回读创建话题的作者显示名与后端 isAnonymous 落库值",
+     "requiresReal": true
+    }
+   ],
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/campus/campus/post-topic.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "pages/register/index",
+   "missing": [
+    {
+     "id": "REG03",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "手机号输入正常 11 位：自动 3-4-4 格式化且聚焦态生效",
+     "action": "focus 手机号 input（index.vue:494-506）→ 逐位输入 13888888888",
+     "requiresReal": false
+    },
+    {
+     "id": "REG04",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "手机号超长输入：粘贴 30 位数字被截到 11 位（maxlength=13 含空格）",
+     "action": "一次性 input 值 '1388888888823456789012345678'（28 位）到手机号 input",
+     "requiresReal": false
+    },
+    {
+     "id": "REG05",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "手机号特殊字符：非数字与全角、空格、HTML 片段被剥离且不解析",
+     "action": "input 值 '１３８a<b>img onerror=alert(1)</b>8888 8888' 到手机号 input；随后 input '138' 三位非法短号并 blur",
+     "requiresReal": false
+    },
+    {
+     "id": "REG08",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "获取验证码：合法手机号 → 请求发出 + 60s 倒计时 + 按钮四态切换",
+     "action": "tap .sms-btn 一次（index.vue:545-558 @tap=handleSendSms index.vue:255-291）",
+     "requiresReal": false
+    },
+    {
+     "id": "REG09",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "【本轮重点回归②】mockCode 明文 toast 口径核对：与登录页已修口径必须一致",
+     "action": "tap .sms-btn；完整抄录 Toast 文案原文；随后对照 pages/login/index 同操作（login/index.vue:247-253）的 Toast 文案与 i18n 键来源（login.smsSentMock），并在 en-US 下重复两页",
+     "requiresReal": false
+    },
+    {
+     "id": "REG10",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "真实构建分支：后端返回 mockCode 时不得向用户明文暴露验证码",
+     "action": "tap .sms-btn；抄录 Toast 文案并检索是否出现 6 位数字码本体或「模拟」字样",
+     "requiresReal": false
+    },
+    {
+     "id": "REG13",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "无效手机号点获取验证码：行内错误 + 抖动 + Toast，且不发出请求",
+     "action": "tap .sms-btn",
+     "requiresReal": false
+    },
+    {
+     "id": "REG14",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "验证码输入框：非数字与超长混合，仅留 6 位数字",
+     "action": "① input 'abcd12345678' 到验证码 input；② 清空后再 input '１２３４５６'（全角数字）；③ 输入 7 位以上纯数字",
+     "requiresReal": false
+    },
+    {
+     "id": "REG15",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "密码输入：空格自动剔除、全角字符校验文案、8/20 位边界",
+     "action": "依次输入到密码 input：'abcd123'（7 位）、'ab cd 1234'（含空格）、'１２３４５６７８ａｂ'（全角）、'Abcdef12!@#$%^&*12345'（21 位，maxlength=20）、'Abc12345'（合法中强）",
+     "requiresReal": false
+    },
+    {
+     "id": "REG18",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "确认密码实时比对：不一致即时行内提示，改回后自动消除",
+     "action": "① 确认密码输入 'Abc1234'（少一位）→ blur；② 改为 'Abc12345' → blur；③ 清空确认密码",
+     "requiresReal": false
+    },
+    {
+     "id": "REG19",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "昵称输入：纯空格、超长、20 字边界与 trim 后判空",
+     "action": "① 昵称输入 6 个空格 → tap .submit-btn；② 输入 25 个汉字（maxlength=20 :673）；③ 输入恰好 20 字并继续提交；④ 输入 1 字「张三」",
+     "requiresReal": false
+    },
+    {
+     "id": "REG20",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "昵称特殊字符与 emoji：不得被静默改写，不得破坏布局",
+     "action": "依次输入 '<img src=x onerror=alert(1)>'、\"'\\\";-- \"、'😀🏵️'（代理对 emoji）、'   空格包边   '，读取每次 nickname.value",
+     "requiresReal": false
+    },
+    {
+     "id": "REG24",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "空提交：全字段为空点注册，按优先级只报首个错误且零请求",
+     "action": "tap .submit-btn（置灰态仍可点，index.vue:717-727），间隔 3s 再点一次共 2 次",
+     "requiresReal": false
+    },
+    {
+     "id": "REG25",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "逐字段非法提交：错误定位顺序与「协议未勾」专用路径",
+     "action": "tap .submit-btn 一次；随后依次制造：验证码 5 位、密码缺数字（'Abcdefgh'）、生日留空，每改一次点一次（间隔 >2s 避开守卫）",
+     "requiresReal": false
+    },
+    {
+     "id": "REG27",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "注册成功链路：签发 JWT + 主动同步会话 + redirectTo 成功页（栈不残留注册页）",
+     "action": "tap .submit-btn 一次并观察至跳转完成",
+     "requiresReal": false
+    },
+    {
+     "id": "REG28",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "业务失败分支：「该手机号已注册」→ 行内错误 + 次级登录出口出现且可用",
+     "action": "tap .submit-btn；观察后 tap .ghost-btn「用这个手机号登录」（index.vue:730-732 @tap=goLogin）",
+     "requiresReal": false
+    },
+    {
+     "id": "REG29",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "业务失败分支：验证码错误 / 服务端 5xx / 网络异常的差异化文案与不残留 loading",
+     "action": "三态各 tap .submit-btn 一次，间隔 >2s",
+     "requiresReal": false
+    },
+    {
+     "id": "REG30",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "键盘弹起：协议行与主按钮不被遮挡（cursor-spacing=120 + 页面可滚）",
+     "action": "① focus 最下方「生日」上方最近的昵称 input（:667-679）使键盘弹起；② focus 手机号 input；③ 在键盘弹起状态 tap .submit-btn；④ 收起键盘（点空白/blur）",
+     "requiresReal": false
+    },
+    {
+     "id": "REG31",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "滚动到顶/到底：长表单可达性与 safe-area 底衬",
+     "action": "① 页面级下拉滚到最顶；② 上推滚到底（.to-login 与 .safety-note 可见）；③ 记录 scrollTop 极值与底部 padding",
+     "requiresReal": false
+    },
+    {
+     "id": "REG32",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "下拉刷新：本页未配置 enablePullDownRefresh，不得出现伪刷新与重复请求",
+     "action": "在页面顶部执行下拉手势 300px 并松手；观察 console 与 network",
+     "requiresReal": false
+    },
+    {
+     "id": "REG36",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "注册页参数面：仅「无 onLoad」是事实，任何 query 不得被消费（幽灵参数证伪）",
+     "action": "reLaunch '/pages/register/index?phone=13900002222&nickname=%E5%83%8F%E5%A1%AB&redirect=%2Fpages%2Fhome%2Findex&code=123456'，等 1s 读取 6 个字段值与 getCurrentPages()[末位",
+     "requiresReal": false
+    },
+    {
+     "id": "REG37",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "title": "极值与一致性：320px 窄屏 / 大号字体下的表单可读性与热区一致性",
+     "action": "两档 viewport 下：① 截图全表单；② 复核 .field 高度（声明 96rpx :898）/ .sms-btn 宽 176rpx（:1009）实际渲染值；③ 逐个 tap 6 个字段与主按钮确认热区未随缩放丢失；④ 对照 pages/login 同类控件（输入框/获取验证码/主按钮）尺寸与色值",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "PAGES-REGISTER-INDEX.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/pages/register/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/circles/circles/post-topic",
+   "missing": [
+    {
+     "id": "CPT03",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "?circleId= 不存在/为 0/为 slug：只读区回退与 real 拒发闸",
+     "action": "每个变体观察「发布到」区文案 → 各填合法标题正文 → tap 发布 → 观察 Toast 与 network",
+     "requiresReal": true
+    },
+    {
+     "id": "CPT09",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "标题输入框四态：正常 / 清空 / 超长（maxlength=30 截断）/ 特殊字符",
+     "action": "① 输入「周末一起去图书馆占座」→ ② 全清 → ③ 输入 60 字符 → ④ 输入「%22'<>&@#中文 English😀」，每步 evaluate 回读 title 实际值",
+     "requiresReal": false
+    },
+    {
+     "id": "CPT12",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "证伪「超字数提示」：maxlength 硬截断使 :297-300 的超长 Toast 与红字计数不可达",
+     "action": "evaluate 置 content=501 字 → 读计数文本与 --over 类名 → tap 顶部「发布」→ 观察 Toast/network",
+     "requiresReal": false
+    },
+    {
+     "id": "CPT15",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "兴趣圈目标未选分类：Toast「请选择兴趣分类」拦截（非帖子模式）",
+     "action": "填合法标题（≥5 字）+ 正文 → tap 发布",
+     "requiresReal": false
+    },
+    {
+     "id": "CPT16",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "帖子模式标题 4 字：Toast「标题太短」且复位提交态、零请求（后端 5-30 前置校验）",
+     "action": "tap 发布 → 观察 Toast → 把标题补到 6 字后再次 tap 发布",
+     "requiresReal": false
+    },
+    {
+     "id": "CPT17",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "REAL_ONLY real 模式非数字圈 ID 拒发闸：必须提示且零请求（MP-R1-POSTTOPIC-004）",
+     "action": "slug 变体：填合法标题正文 → tap 发布 → 观察 Toast 与 network。数字变体：重复一次作为放行对照",
+     "requiresReal": true
+    },
+    {
+     "id": "CPT18",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "mock 校园圈目标（无 circleId）隐式回退到 posts 流：categoryId=cat-campus",
+     "action": "填唯一标题（≥5 字）+ 正文 + 选 2 个话题标签 → tap 发布 → 返回村口页观察该帖落点",
+     "requiresReal": false
+    },
+    {
+     "id": "CPT19",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "【重点回归②核心】REAL_ONLY 帖子模式同内容二次提交：409 必须给出可区分失败提示，不得静默",
+     "action": "第一次：填表 → tap 发布 → 等返回（≥2s）。第二次：重进 → 填相同内容 → tap 发布 → 等 ≥2s 观察 Toast/network",
+     "requiresReal": true
+    },
+    {
+     "id": "CPT23",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "成功 Toast 与 800ms 返回窗口内再点（重复提交窗口）：二次点击必须被吞（MP-R2-POSTTOPIC-004）",
+     "action": "tap 发布 → 看到「发布成功」Toast 后 400ms 内再 tap 顶部与底部各一次",
+     "requiresReal": true
+    },
+    {
+     "id": "CPT24",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "REAL_ONLY 栈底 navigateBack 失败兜底：提交态必须复位并提示（MP-R1-POSTTOPIC-102）",
+     "action": "tap 发布 → 等 ≥3s（越过 800ms 返回延时）→ 观察是否仍在发布页、按钮是否还可点 → 改 1 字再点一次",
+     "requiresReal": true
+    },
+    {
+     "id": "CPT25",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "「发布到」chip 切换：campus↔interest 及回切清空分类（:117-122）",
+     "action": "tap「兴趣圈」chip → 观察分类宫格出现 → 选「音乐」→ tap「校园圈」chip → 再 tap「兴趣圈」",
+     "requiresReal": false
+    },
+    {
+     "id": "CPT26",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "8 个兴趣分类 chip 逐个点选 + 单选语义 + 圈名可读性",
+     "action": "依次 tap 8 个 .category-chip（学习/运动/音乐/影视/旅行/游戏/美食/阅读，:564-578 ← INTEREST_CATEGORY_KEY_MAP :84-93），每次记录高亮集合",
+     "requiresReal": false
+    },
+    {
+     "id": "CPT27",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "话题标签 7 chip（mock 区块）：点选/取消/第 4 个上限 Toast（MAX_TAGS=3）",
+     "action": "依次 tap 4 个 .tag-chip（:595-609 → toggleTag :130-141）→ 再 tap 已选中的一个取消 → 观察提示行计数",
+     "requiresReal": false
+    },
+    {
+     "id": "CPT28",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "「喜爱」开关（mock 区块）：开/关两次切换与 favorite 透传",
+     "action": "tap .favorite-section switch 开 → 关 → 再开；随后填表提交一次（唯一标题）",
+     "requiresReal": false
+    },
+    {
+     "id": "CPT31",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "REAL_ONLY 带图发布：本地临时路径必须先换成可访问 URL（MP-R2-POSTTOPIC-001）",
+     "action": "选 2 张图 → 补齐表单 → tap 发布 → 观察两次上传请求与最终帖子的 images 字段",
+     "requiresReal": true
+    },
+    {
+     "id": "CPT32",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "关联活动弹层：打开（懒加载）+ 弹层三路关闭（遮罩 / × / 选中项）",
+     "action": "① tap .activity-add（:616-626 → openActivityPicker :258-271）→ 遮罩出现 → tap 遮罩空白（.activity-picker :708）；② 重开 → tap 右上 × 图标（:712）；③ 再重开 → tap 某条活动项（:718-733 → select",
+     "requiresReal": false
+    },
+    {
+     "id": "CPT34",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "已选活动卡三个动作：卡片跳详情 / 报名提示 / 移除回空态（MP-R2-POSTTOPIC-002）",
+     "action": "① tap 活动卡本体（→ @open-detail → onSelectedActivityOpen :444-447）→ 返回；② tap 卡内「报名」（→ @enroll → onSelectedActivityEnroll :448-450）；③ tap 卡下方「移除」（:637-646 → removeAct",
+     "requiresReal": false
+    },
+    {
+     "id": "CPT35",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "发布后事件回流：uni.$emit('village:post-created') 使村口频道强制穿透 30s TTL 刷新",
+     "action": "发布 → 自动返回村口 → 观察今日广场列表首条与网络请求；等待 5s 后再下拉刷新一次作对照",
+     "requiresReal": true
+    },
+    {
+     "id": "CPT39",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "title": "表单滚动到顶/底 + 键盘弹起：内滚边界、header 常驻、光标间距",
+     "action": ".post-body（:499 scroll-view）滚到底 → 回顶；再聚焦 textarea 输入 3 行观察键盘",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/circles/circles/post-topic.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/campus/campus/index",
+   "missing": [
+    {
+     "id": "CX10",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "title": "栈中返回：由 hub 进入时返回落回 hub 且 hub 状态恢复",
+     "action": "tap .campus-back（index.vue:228-237 → goBack :102-106）",
+     "requiresReal": false
+    },
+    {
+     "id": "CX11",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "title": "REAL_ONLY 已认证查看非本校：public-browse banner 双行文案 + 无 FAB 无引导卡",
+     "action": "观察首屏 banner、header 徽章、是否出现 FAB；tap banner 区域一次",
+     "requiresReal": true
+    },
+    {
+     "id": "CX12",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "title": "REAL_ONLY 已认证本校私域视角：6 分类 Tab + 话题列表 + FAB，无引导卡/banner",
+     "action": "观察首屏 → tap .campus-fab（index.vue:363-365）→ 返回",
+     "requiresReal": true
+    },
+    {
+     "id": "CX13",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "title": "无下拉刷新（源码事实采证）：手势下拉不产生重拉，容器不外滚",
+     "action": "在 .topic-scroll 内向下滑动一次模拟下拉（touch 手势）；再 evaluate 检查 window.scrollY 与 .topic-scroll.scrollTop",
+     "requiresReal": false
+    },
+    {
+     "id": "CX14",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "title": "REAL_ONLY 分类 Tab 切换 6 次：请求按 school 透传、旧分类列表被清空（MP-R1-CAMPUSINDEX-002 / MP-R2-CAMPUSINDEX-0",
+     "action": "依次 tap 6 个 .category-tab（课程交流/社团招新/校园活动/学习互助/生活服务/校友动态，index.vue:283-292），每次等 ≤500ms 观察",
+     "requiresReal": true
+    },
+    {
+     "id": "CX15",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "title": "上拉分页 scrolltolower：page 递增、列表追加、到底出「没有更多了」（REAL_ONLY 真实分页）",
+     "action": "在 .topic-scroll 内滚动到底 → 等 ≤1s 观察 → 重复滚动到底 3 次",
+     "requiresReal": true
+    },
+    {
+     "id": "CX16",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "title": "【重点回归③】话题详情回复框 maxlength 实测：前端取 500 与后端 @Size(max=2000) 的差值采证",
+     "action": "tap 第一张 .topic-card（index.vue:320-324 → goToTopicDetail :115-117）→ 进入 topic-detail → 读 .reply-input 的 maxlength 属性值与 computed 样式；随后在输入框连打 600 个可输入字符",
+     "requiresReal": false
+    },
+    {
+     "id": "CX17",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "title": "【重点回归③】绕过原生截断注入 501 字回复：客户端 store 守卫 toast「回复内容不能超过500字」且零写请求",
+     "action": "用 automation evaluate 直接把组件 replyContent 置为 501 个字符（绕过原生 maxlength；记录所用注入方式与最终取回的 replyContent.length），再 tap .reply-btn（topic-detail.vue:306-315 → submitReply :",
+     "requiresReal": false
+    },
+    {
+     "id": "CX20",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "title": "话题卡点击进入详情并返回：?topicId= 消费正确、列表位置恢复",
+     "action": "滚动列表到中部 → tap 第 3 张 .topic-card → 在详情页 tap 返回 → 观察落点与滚动位",
+     "requiresReal": false
+    },
+    {
+     "id": "CX21",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "title": "连点分类 Tab×5：竞态 token 只让最新请求落地、列表不串类",
+     "action": "500ms 内对第 1 个 Tab 与第 4 个 Tab 交替快速 tap 共 5 次，停在第 4 个 Tab",
+     "requiresReal": true
+    },
+    {
+     "id": "CX22",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "title": "连点 FAB×5（已认证本校视角）：只压入 1 层发布页",
+     "action": "500ms 内对 .campus-fab 快速 tap×5",
+     "requiresReal": true
+    },
+    {
+     "id": "CX23",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "title": "打开即返回（≤500ms）：onMounted 两个并发请求不产生未捕获 Promise、无骨架永驻",
+     "action": "进入后 300ms 内 tap .campus-back（抢在 Promise.allSettled 完成前，index.vue:212-219）→ 观察 → 再次进入",
+     "requiresReal": false
+    },
+    {
+     "id": "CX24",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "title": "重复进出 index×3：onShow 每次重取认证状态（MP-R2-CAMPUSINDEX-006），不重复堆叠话题列表",
+     "action": "循环 3 次：tap .campus-back 回 hub → tap 同一校卡再进 index → 每次等待并断言",
+     "requiresReal": false
+    },
+    {
+     "id": "CX26",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "title": "滚动到顶/底与横向 Tab：内滚容器边界、Tab 横滑可达第 6 项、FAB 不遮最后一条",
+     "action": ".topic-scroll 滚到底 → 回顶；对 .category-tabs（index.vue:283-292 scroll-x）横向滑动到底",
+     "requiresReal": false
+    },
+    {
+     "id": "CX29",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "title": "【重点回归③+②交叉·当前源码】同内容二次回复的 409 文案归一：必须是「刚才已发送成功」而不是失败或脱敏串",
+     "action": "① 输入一条唯一回复「R2-CX29-唯一串」发送 → 等 Toast；② 不退出小程序，输入完全相同内容再发一次 → 回填第二次 Toast 全文；③ 末尾加 1 个字符再发第三次；④ 每次都 GET /campus/topics/{id}/replies 回读条数",
+     "requiresReal": true
+    },
+    {
+     "id": "CX30",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "title": "【重点回归③·当前源码】回复输入触顶的可观测性：500 字硬截断时必须出现「已达 500 字上限」提示（原为零反馈）",
+     "action": "① 在 .reply-input 连打至恰好 500 字 → 观察输入框下方是否出现提示行；② 删到 499 字 → 观察提示是否消失；③ 继续输入第 501 个字符，观察是否有「打不进字」的静默感；④ 切 en-US 重复 ①",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/campus/campus/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "pages/home/index",
+   "missing": [
+    {
+     "id": "H02",
+     "manifest": "PAGES-HOME-INDEX",
+     "title": "下拉刷新真实重拉：/home/dashboard 重发且动画按完成时机停止",
+     "action": "触发页面级下拉刷新（onPullDownRefresh，index.vue:118-121），等待动画停止",
+     "requiresReal": false
+    },
+    {
+     "id": "H03",
+     "manifest": "PAGES-HOME-INDEX",
+     "title": "影响范围回归：未登录（real）下拉刷新不得被强踢登录页（待修复项证伪）",
+     "action": "未登录进入首页后执行下拉刷新",
+     "requiresReal": false
+    },
+    {
+     "id": "H06",
+     "manifest": "PAGES-HOME-INDEX",
+     "title": "顶栏「我的」头像入口 → 我的 Tab，并 2 步内可回首页",
+     "action": "点 HomeHeader.vue:60 的 .header-me（aria-label=本人昵称，@tap=goMyProfile → openAppPath(ROUTES.PROFILE.INDEX)），再点自定义 TabBar「首页」",
+     "requiresReal": false
+    },
+    {
+     "id": "H07",
+     "manifest": "PAGES-HOME-INDEX",
+     "title": "顶栏定位胶囊 → 弹出「我的位置」底部弹层并自动重取定位",
+     "action": "点 .header-location（HomeHeader.vue:63 @tap=$emit('schoolTap') → index.vue:241-245 openLocationSheet）",
+     "requiresReal": false
+    },
+    {
+     "id": "H08",
+     "manifest": "PAGES-HOME-INDEX",
+     "title": "弹层三路关闭：遮罩 / × / 「我知道了」，且 tabBar 隐藏态必须恢复",
+     "action": "依次执行三条关闭路径各一轮：① 点遮罩 .bottom-sheet-mask（BottomSheet.vue:73 → onMaskTap :66-68，maskClosable 默认 true）；② 重开后点右上角 ×（:91 closeSheet，showClose 默认 true）；③ 重开后点 footer「我",
+     "requiresReal": false
+    },
+    {
+     "id": "H09",
+     "manifest": "PAGES-HOME-INDEX",
+     "title": "弹层「重新定位」在途态与终态：Loading 不永驻",
+     "action": "点 footer 主按钮「重新定位」（index.vue:466-475 @tap=refetchLocation）",
+     "requiresReal": false
+    },
+    {
+     "id": "H11",
+     "manifest": "PAGES-HOME-INDEX",
+     "title": "弹层内容区独立滚动且 footer 按钮不被中央浮岛遮挡",
+     "action": "在面板内容区滚动到底，观察两个 footer 按钮可见性与可点性；小屏机型重复一次",
+     "requiresReal": false
+    },
+    {
+     "id": "H13",
+     "manifest": "PAGES-HOME-INDEX",
+     "title": "死接线核对：HomeHeader 声明并绑定 searchTap 但模板无搜索元素",
+     "action": "在首页全部可点元素上普查是否存在搜索入口（DOM 探测 .header-search / 放大镜图标），并尝试用 automation 触发 HomeHeader emit('searchTap')",
+     "requiresReal": false
+    },
+    {
+     "id": "H18",
+     "manifest": "PAGES-HOME-INDEX",
+     "title": "「喜欢」失败路径：toast + 在途复位 + 不污染推荐态",
+     "action": "点「喜欢」1 次，观察 toast、按钮类名与推荐人",
+     "requiresReal": false
+    },
+    {
+     "id": "H24",
+     "manifest": "PAGES-HOME-INDEX",
+     "title": "今日恋爱进度 4 格分别跳对应 Tab（navigation 全覆盖）",
+     "action": "逐一点击 .love-step（TodayLoveProgress.vue:79 @tap=$emit('step', step.action)），覆盖 action=profile/discover/messages/nearby 四值",
+     "requiresReal": false
+    },
+    {
+     "id": "H25",
+     "manifest": "PAGES-HOME-INDEX",
+     "title": "关系动态四格落点（含跳转失败可见性）",
+     "action": "逐一点击 .relation-cell（RelationActivity.vue:34 liked-by、:45 whispers、:56 visitors、:67 matches），并执行一次返回",
+     "requiresReal": false
+    },
+    {
+     "id": "H29",
+     "manifest": "PAGES-HOME-INDEX",
+     "title": "兴趣卡整体点击 → 圈子主页 circle-home?circleId=",
+     "action": "点 .interest-card（InterestRecommendation.vue:50-51 @tap=$emit('select', item.id)）",
+     "requiresReal": false
+    },
+    {
+     "id": "H45",
+     "manifest": "PAGES-HOME-INDEX",
+     "title": "滚动铁律：顶部遮罩淡入且不拦截点击；滚到底内容不被 tabBar 遮挡",
+     "action": "滚到底 → 点最后 banner → 回顶 → 在遮罩区点头部入口",
+     "requiresReal": false
+    },
+    {
+     "id": "H47",
+     "manifest": "PAGES-HOME-INDEX",
+     "title": "参数消费核对：首页无 onLoad → 所有深链参数为幽灵参数",
+     "action": "以 reLaunch 与 switchTabWithQuery 两种方式进入，观察是否定位到社区区/滚动到帖子；并读取 storage 桥接 key 是否残留",
+     "requiresReal": false
+    },
+    {
+     "id": "H48",
+     "manifest": "PAGES-HOME-INDEX",
+     "title": "七态齐备 + 首页交互形态铁律（禁 CardSwiper、热区普查、2 步回 Tab）",
+     "action": "① DOM 普查首页是否存在 CardSwiper/滑动卡片结构；② 逐可点元素（9 区块内全部 @tap，含 TodayLoveProgress 4 格、RelationActivity 4 格、Interest 卡与加入、Nearby 条目、Community 卡/关注/作者/更多、Invite）验证 500ms ",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "PAGES-HOME-INDEX.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/pages/home/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/chat/chat-session/index",
+   "missing": [
+    {
+     "id": "CS06",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "title": "【同文案连续失败证伪】同一失效 temp 深链连进 3 次：不得第 2 次退化为假空会话（MP-R2-CHAT-001 回归）",
+     "action": "以 reLaunch 方式连续 3 次进入 '...?sessionId=mock-session-999'，每次等 1.5s 并抄录：activeSession、currentMessages 条数、是否显示错误文案、破冰引导（BreakQuestion :2030-2035）是否出现、输入栏是否存在",
+     "requiresReal": false
+    },
+    {
+     "id": "CS07",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "title": "temp 会话正常加载：横幅 + 倒计时首进即出（MP-R1-...-001 回归），交换/结束入口可用",
+     "action": "进入后等 1.5s：抄录 .temp-banner 三行文本与倒计时值（:1852-1861）、页面标题（chat.tempSessionTitle :897）、气泡数；观察倒计时是否每约 1s 递减；再 tap .temp-action-row 两钮",
+     "requiresReal": false
+    },
+    {
+     "id": "CS08",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "title": "会话未加载时的 temp 操作按钮：禁用态 + 点击必须有 Toast，不得静默（MP-R1-...-002/-105）",
+     "action": "①若 .temp-action-row 仍渲染，tap 两个按钮各一次并抄录 Toast；②读取按钮 class 是否含 temp-action-btn--disabled（:2099,2108）；③记录「输入区显示错误文案导致整组按钮不渲染」这一实际分支",
+     "requiresReal": false
+    },
+    {
+     "id": "CS13",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "title": "输入框极值：5000 字超长、特殊字符与 HTML/JS 注入、emoji 代理对",
+     "action": "依次输入并发送：①'x'*5000；②'<img src=x onerror=alert(1)>'；③\"'\\\"`;-- \" 与 '${1+1}'；④'😀🏵️👨‍👩‍👧'（含 ZWJ/变体选择符）；⑤500 个中文字；每条抄录气泡渲染与 rect，并做 wxml 快照",
+     "requiresReal": false
+    },
+    {
+     "id": "CS19",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "title": "长按气泡菜单六项与三路关闭：复制/引用/转发/撤回/删除/取消",
+     "action": "①longpress 一条对方气泡 → 抄录出现的菜单项集合；②longpress 一条自己气泡（temp 会话）→ 抄录含撤回的集合；③菜单打开后分别用「tap 遮罩 :2128」「tap 取消 :2196」「选择某一项」三种方式关闭；④tap 复制、引用、转发各一次观察反馈",
+     "requiresReal": false
+    },
+    {
+     "id": "CS20",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "title": "引用回复：发送带 quoteRef、预览条可取消、tap 原文定位被引用消息",
+     "action": "①longpress 一条对方气泡 → tap 引用；②不取消直接输入文字发送；③重来一次 longpress → tap 引用 → tap .quote-reply-bar 取消（:2020 @tap=cancelQuoteReply :1650）；④tap 气泡上的引用区（@tap-quote=handleTapQ",
+     "requiresReal": false
+    },
+    {
+     "id": "CS23",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "title": "上拉到顶加载更早历史：视口保持不跳位、temp 会话不得请求分页",
+     "action": "①在 .chat-scroll 内下拉到顶触发 @scrolltoupper（:1911,397-428），记录加载前后 scrollTop 与被加载的首条消息 id；②重复上拉 3 次；③在 temp 会话执行同样的到顶手势；每步记录 network 请求",
+     "requiresReal": false
+    },
+    {
+     "id": "CS24",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "title": "滚动到底与「新消息」浮层：jumpToLatest 可用且不打断阅读",
+     "action": "①向上滚动至中间并停止，观察浮层；②tap .unread-hint；③滚动到最底观察最后一条气泡与安全区关系；④再滚到最顶，记录 onScroll 采样（:382-384）",
+     "requiresReal": false
+    },
+    {
+     "id": "CS25",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "title": "无参直开：必须显示「缺少会话标识」，不得渲染假空会话或诱导发言",
+     "action": "进入后等 1.5s：读取消息区文本、输入栏是否存在、破冰引导是否出现、network；随后 tap 顶栏返回",
+     "requiresReal": false
+    },
+    {
+     "id": "CS26",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "title": "失效数字 sessionId 深链：错误态而非假空会话（私信分支失败门 MP-R1-...-201/-104）",
+     "action": "进入后等 1.5s；读取 pageErrorMessage/friendlyPageError、消息区文本、输入栏可用性、network 响应码；随后在 UI 上尝试输入并发送（若入口存在）",
+     "requiresReal": false
+    },
+    {
+     "id": "CS28",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "title": "草稿持久化：离开未发送再进恢复，发送后清除，不得串到别的会话",
+     "action": "①在 A 输入「草稿保留测试」不发送 → reLaunch 到 B → 返回 A；②在 A 输入文字后 tap 「+」菜单再取消，检查草稿；③在 B 输入「B 草稿」后不发送退出，再进 A；④在 A 发送成功后退出再进 A",
+     "requiresReal": false
+    },
+    {
+     "id": "CS29",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "title": "会话生命周期清理：打开即返回 / 重复进出 ×3 不得残留计时器与 typing 模拟",
+     "action": "①进入后 <500ms 立即返回（打开即返回）；②「进入→发一条→立即退出」重复 3 轮，最后一轮退出后在别的页面停留 8s；③观察退出后是否仍出现「对方正在输入」提示或 Toast；④回读三轮的消息条数",
+     "requiresReal": true
+    },
+    {
+     "id": "CS31",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "title": "幽灵参数与注入面：未消费参数与超长/编码异常值不得影响会话与鉴权",
+     "action": "reLaunch '...chat-session/index?sessionId=SA&partnerName=%E5%83%8F%E5%A1%AB&token=fake.jwt&targetId=999&type=temp&unread=99&redirect=%2Fpages%2Fhome%2Findex&x='",
+     "requiresReal": false
+    },
+    {
+     "id": "CS33",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "title": "核心页七态：Idle/Loading/Success/Empty/Error/Refreshing/Disabled 逐项留证",
+     "action": "逐态进入并各截一张图，抄录消息区文本与输入区形态；重点核对 Loading（:1915 loading copy）与 Empty（:1967-1969 chat-empty-hint）与 Error（:1913/:1918）三态互斥",
+     "requiresReal": false
+    },
+    {
+     "id": "CS34",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "title": "消息气泡与头像兜底链：无头像 / 相对路径 / 长昵称 / 撤回态 / 送达态",
+     "action": "进入会话后核对：①顶栏头像与气泡头像的 src 与是否出图；②无头像时首字兜底（ChatHeader.vue:58-60）；③长昵称（20 字）+ 认识天数徽标的头部布局；④撤回气泡文案与不可点击态；⑤送达状态标识；逐条抄录",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/chat/chat-session/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "pages/profile/index",
+   "missing": [
+    {
+     "id": "PFI17",
+     "manifest": "PAGES-PROFILE-INDEX",
+     "title": "MyStats 四格落点（访客专属落点回归 MP-R2-PROFILE-007）",
+     "action": "依次点四格：我喜欢 / 喜欢我的 / 我赞 / 访客（MyStats.vue:24-33 → onProfileShellStatTap :809-821）",
+     "requiresReal": false
+    },
+    {
+     "id": "PFI18",
+     "manifest": "PAGES-PROFILE-INDEX",
+     "title": "互动四格落点（含「悄悄话/聊天」跳消息 Tab）",
+     "action": "依次点 likedMe / match / likes / visitors / chat（components/profile/mine/MyInteraction.vue:37 → onProfileShellInteractionTap :822-832）",
+     "requiresReal": false
+    },
+    {
+     "id": "PFI19",
+     "manifest": "PAGES-PROFILE-INDEX",
+     "title": "「更多功能」四项落点 + 死接线核对（posts 分支 / activeTab 未被消费）",
+     "action": "① 逐项点击四项；② 全页搜索是否存在「资料/动态」双 Tab 切换器并尝试切换；③ automation 触发 moreTap('posts')",
+     "requiresReal": false
+    },
+    {
+     "id": "PFI20",
+     "manifest": "PAGES-PROFILE-INDEX",
+     "title": "我的故事：照片卡 / 相册缩略图 / 视频 / 添加故事 四类落点",
+     "action": "① 点故事卡（MyStory.vue:71 tapPhoto → onProfileShellStoryPhoto :788-795）；② 点相册缩略图（:111 → onProfileShellTapAlbum :799-801）；③ 点视频卡（→ onProfileShellStoryVideo :802-804）",
+     "requiresReal": false
+    },
+    {
+     "id": "PFI22",
+     "manifest": "PAGES-PROFILE-INDEX",
+     "title": "本人态功能区可达性回归（MP-R2-PROFILE-021：四块曾位于不可达分支）",
+     "action": "全页滚动，确认「语音介绍」「背景图编辑」「邀请好友」「VIP 开通卡」四块均渲染且可点；VIP 卡需 appConfig.isCommerceOn('vip')=true 且未开通",
+     "requiresReal": false
+    },
+    {
+     "id": "PFI23",
+     "manifest": "PAGES-PROFILE-INDEX",
+     "title": "语音录制：开始/停止/60s 上限/短按误触",
+     "action": "① 点录制 CTA 开始（handleRecordVoice :1285-1322），录 3s 后再点同一 CTA 停止；② 录制中观察文案与秒数 tick；③ 长按至 60s 观察自动停止；④ <1s 短按一次",
+     "requiresReal": true
+    },
+    {
+     "id": "PFI25",
+     "manifest": "PAGES-PROFILE-INDEX",
+     "title": "删除语音：二次确认 + 「本地即删」是否真删（刷新后复现证伪）",
+     "action": "① 点「删除」（index.vue:1750-1759 → handleRemoveVoice :1395-1418）在确认弹窗点取消；② 再次执行点确定，观察 toast 与卡片；③ 切走 Tab 再回本页（触发 onShow/fetchProfile）观察语音条是否复现；④ 下拉/重进冷启动一次",
+     "requiresReal": true
+    },
+    {
+     "id": "PFI28",
+     "manifest": "PAGES-PROFILE-INDEX",
+     "title": "邀请弹窗三路关闭与遮罩穿透",
+     "action": "① 点遮罩 .invite-mask（index.vue:2101 @tap 关）；② 点底部「关闭」按钮（:2145-2155）；③ 弹窗内 .invite-modal 点击（@tap.stop :2102）确认不关闭；④ 面板打开时尝试点底层元素",
+     "requiresReal": false
+    },
+    {
+     "id": "PFI34",
+     "manifest": "PAGES-PROFILE-INDEX",
+     "title": "VIP 开通卡：开关双态与落点（商业化门禁，G5 相关）",
+     "action": "① 开关开启时点 .vip-card（index.vue:1813 → handleVipClick :1148-1151）；② 开关关闭时确认不渲染；③ 全页搜索是否存在价格/交友币等泄漏文案",
+     "requiresReal": false
+    },
+    {
+     "id": "PFI35",
+     "manifest": "PAGES-PROFILE-INDEX",
+     "title": "认证入口：VerificationBadge 与 CertBadgeRow → 半屏认证详情",
+     "action": "① 点 VerificationBadge（index.vue:1957-1963 → handleVerificationClick :514）；② 点 CertBadgeRow（:1971-1974 → openCertSheet :505-513）；③ 打开 CertDetailSheet 后关闭",
+     "requiresReal": false
+    },
+    {
+     "id": "PFI37",
+     "manifest": "PAGES-PROFILE-INDEX",
+     "title": "下拉刷新不适用：本页未开且无钩子（与其余 Tab 不一致记录）",
+     "action": "在页面顶部执行下拉手势；统计 onShow 驱动刷新",
+     "requiresReal": false
+    },
+    {
+     "id": "PFI41",
+     "manifest": "PAGES-PROFILE-INDEX",
+     "title": "表单三态适用性核对（本页无输入框）与弹层内输入面",
+     "action": "全页扫描 <input>/<textarea>；核对头像菜单、认证弹层、邀请弹窗内的可输入面",
+     "requiresReal": false
+    },
+    {
+     "id": "PFI42",
+     "manifest": "PAGES-PROFILE-INDEX",
+     "title": "热区普查与死按钮普查（含原生 button 化后的分享项）",
+     "action": "逐元素点击并计时：MyHeader（分享 button / 设置 / 头像 / 编辑文本）、MyCompletion、MyStats 四格、MyStory 四类、MyInteraction 四格、MyMore 四项、功能区四块（语音/背景/邀请/VIP）、FAB、他人态（分享/设置/greet/徽章两枚/照片墙）；逐一",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "PAGES-PROFILE-INDEX.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/pages/profile/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/circles/circles/index",
+   "missing": [
+    {
+     "id": "CI03",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+     "title": "Empty / Error 态可判定性与重试按钮闭环（七态之 Empty/Error + Refreshing）",
+     "action": "真实档：①制造列表拉取失败进入本页 → 读取 .state-error 与 ErrorState 文案、重试钮（ErrorState.vue:50 @tap=emit('retry') → index.vue:331 @retry=handleRetry :138-140）；②tap 重试钮；③恢复后端后再 tap 一",
+     "requiresReal": false
+    },
+    {
+     "id": "CI05",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+     "title": "7 个快捷分类 tab 逐个切换：激活态、过滤结果与 aria-selected 同步",
+     "action": "依次 tap 7 个 .circles-tab（:353 @tap=activeQuickTab=tab.key），每个 tab 记录：卡片数、首卡名称、激活样式 class、aria-selected；再回到「全部」",
+     "requiresReal": false
+    },
+    {
+     "id": "CI06",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+     "title": "Tab 切换不得丢失滚动位与数据（铁律：Tab 切换滚动位与数据不丢）",
+     "action": "①在列表内向下滚动至第 5 张卡可见，记录 scrollTop 值；②tap 顶部第 4 个 tab（音乐）；③再 tap 回「全部」；④读取 scrollTop 与卡片渲染顺序；⑤重复 3 轮",
+     "requiresReal": false
+    },
+    {
+     "id": "CI10",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+     "title": "点击兴趣圈卡片 → 进入圈子主页并携带 circleId",
+     "action": "①tap 第 1 张 .circle-card 的**非按钮区**（封面或名称处）；②读取主页 URL 的 circleId 与页面标题；③返回本页；④对最后一张卡重复一次",
+     "requiresReal": false
+    },
+    {
+     "id": "CI14",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+     "title": "加入/退出失败必须有用户可见 Toast（MP-R1-CIRCLES-001 回归：store 吞错不出 toast）",
+     "action": "①tap 一张卡的加入钮（失败态）；②观察 Toast、按钮文案、memberCount；③连点 3 次观察是否 Toast 风暴；④真实档退出失败同样走一遍",
+     "requiresReal": false
+    },
+    {
+     "id": "CI15",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+     "title": "校园认证圈未认证拦截分支：死代码证伪（MP-R2-CIRCLES-INDEX-003）",
+     "action": "①用未完成校园认证的账号（userSession.campusName 为空）点击任一兴趣圈卡；②抄录是否出现 circle.campusVerifyRequired Toast；③读取该卡的 campusVerified 字段实际值与数据映射结果；④记录是否直接进入了主页",
+     "requiresReal": false
+    },
+    {
+     "id": "CI17",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+     "title": "统计行 375px 宽度预算：不得半字硬裁、千分位与「w」单位正确（P0 历史回归 R01）",
+     "action": "①在 375px 宽机型逐卡抄录统计行完整文本；②对含 4/5/6 位数成员数的卡核对格式（999 / 1,000 / 8,932 / 9,999 / 10,000 → 1.0w）；③核对 7,999 与 8,000 两侧热门徽标的显示切换；④横向滚动 tab 条后再回来看统计行是否仍完整",
+     "requiresReal": false
+    },
+    {
+     "id": "CI18",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+     "title": "封面图与兜底链：circleCoverFor 名称映射，未知圈名不得空白/破图",
+     "action": "①逐卡核对封面是否出图且与圈名语义匹配（图文一致性）；②对未知圈名卡核对兜底封面是否出图（不得空白框/破图图标）；③开启图片加载失败模拟（DevTools 阻断该资源）核对降级；④lazy-load 下快速滚动至底部再回顶，核对图片是否补齐",
+     "requiresReal": false
+    },
+    {
+     "id": "CI21",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+     "title": "滚动到顶/底与横向 tab 滚动、TabBar/safe-area 关系（:tab-bar-safe=false）",
+     "action": "①滚到顶、中、底各截图；②横滚 .circles-tabs 至最右（「更多」出视口）再回最左；③在 iPhone SE 与带 home 指示条机型核对最后一张卡与加入钮是否完整可见；④双指回弹观察是否出现内容裁切",
+     "requiresReal": false
+    },
+    {
+     "id": "CI22",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+     "title": "下拉刷新：本页未配置 enablePullDownRefresh，须确认刷新入口缺失是否构成缺陷",
+     "action": "①在列表顶部下拉 300px 松手 ×2；②在 scroll-view 内下拉（触发 enhanced bounces）；③观察是否出现任何刷新动画/新请求；④作为对照：退出到首页再回到本页，观察 onShow 补拉条件（:83 要求列表为空）",
+     "requiresReal": false
+    },
+    {
+     "id": "CI05",
+     "manifest": "次要18",
+     "title": "7 个快捷分类 tab 逐个切换 + 横向 scroll-view 可滚",
+     "action": "依次 tap 7 个 .circles-tab（:346-357 → activeQuickTab 赋值 :353），每次记录卡片集合；对「更多」（仅图标无文字，:355）单独确认；横向滚动 .circles-tabs（:344）到尾并点最后一项",
+     "requiresReal": false
+    },
+    {
+     "id": "CI06",
+     "manifest": "次要18",
+     "title": "卡片点击进入圈主页；校园认证圈未认证时 Toast 拦截",
+     "action": "① tap 普通圈卡 .circle-card（:363-367 → goToCircleHome :151-161）→ 观察路由；② tap campusVerified=true 的圈（未认证身份）；③ 返回后确认列表态",
+     "requiresReal": false
+    },
+    {
+     "id": "CI08",
+     "manifest": "次要18",
+     "title": "错误态重试接线（PageStateContainer @retry→handleRetry）与 Loading 不永驻",
+     "action": "① 触发加载失败态，读 error 文案；② tap 重试按钮（PageStateContainer emit retry → 本页 @retry :331 → handleRetry :138-140）；③ 恢复后端后再 tap 重试",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/circles/circles/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/setup/schedule/index",
+   "missing": [
+    {
+     "id": "SCH01",
+     "manifest": "次要21",
+     "title": "未提交改动证伪（首屏可用性）：git diff 只在 :9 补了缺失的 ref 导入，HEAD 版本用 ref 却未导入 → 修复前必崩",
+     "action": "reLaunch 后 0.5s/2s 两次采样 AppShell 头部、SectionCard、输入行、主按钮存在性 + console 全量",
+     "requiresReal": false
+    },
+    {
+     "id": "SCH02",
+     "manifest": "次要21",
+     "title": "冷启动不预填示例值 + 已存课表回显（R4-00045/46 回归）",
+     "action": "各路 reLaunch 进本页 → 检视校区输入框初值与时段行数量/内容",
+     "requiresReal": false
+    },
+    {
+     "id": "SCH03",
+     "manifest": "次要21",
+     "title": "空提交（校区必填）：Toast 文案逐字 + 零写请求 + 不跳转",
+     "action": "tap BottomActionBar 主按钮 1 次；再跑一次校区填纯空格「   」",
+     "requiresReal": false
+    },
+    {
+     "id": "SCH04",
+     "manifest": "次要21",
+     "title": "时段必填：全空或纯空格时拦截，校验按 trim 后有效项计数；空串仍随单提交的采证",
+     "action": "四种情形各 tap 主按钮一次，记录 Toast、请求体与路由",
+     "requiresReal": false
+    },
+    {
+     "id": "SCH05",
+     "manifest": "次要21",
+     "title": "校区输入框四态：正常 / 手动清空 / 超长 200 字（未设 maxlength）/ 特殊字符",
+     "action": "依次输入 ①「海淀校区」②逐字删空 ③200 字符长串 ④「%22 <script> 🌱 空格」，每态观察布局并对①④各提交一次",
+     "requiresReal": false
+    },
+    {
+     "id": "SCH06",
+     "manifest": "次要21",
+     "title": "时段输入框边界：maxlength=60 截断 + 首项与附加项 placeholder/aria 区分",
+     "action": "第 1 行输入 80 字符长串；第 2、3 行留空并观察 placeholder；聚焦观察键盘与删除钮",
+     "requiresReal": false
+    },
+    {
+     "id": "SCH07",
+     "manifest": "次要21",
+     "title": "新增时段：＋ 按钮 push 空串、连点不合并、数组与 DOM 行数一致并持久化",
+     "action": "tap .time-window-add（:116-125）×3，每次后量行数；随后填写新行内容并保存，重进本页核对",
+     "requiresReal": false
+    },
+    {
+     "id": "SCH08",
+     "manifest": "次要21",
+     "title": "删除时段：删中间行后其余值不错位，删到 1 行时删除钮消失",
+     "action": "tap 第 1 行删除钮（.time-window-remove :104-113 removeTimeWindow(0)）→ 核对剩余两行值 → 再删一行 → 核对删除钮是否消失 → 点保存核对提交数组",
+     "requiresReal": false
+    },
+    {
+     "id": "SCH09",
+     "manifest": "次要21",
+     "title": "保存成功：写请求 + replaceAppPath 进推荐偏好且不增栈层；键盘确认键为 no-op",
+     "action": "tap 主按钮保存 → 记录路由链；重新进入本页后在时段输入框触发键盘确认键一次，观察是否误提交",
+     "requiresReal": false
+    },
+    {
+     "id": "SCH10",
+     "manifest": "次要21",
+     "title": "未提交改动证伪（防连点）：saving 守卫只挡请求，提交中零反馈；BottomActionBar 仍缺 disabled 与「保存中」文案",
+     "action": "500ms 内对主按钮 rapidTap×5，逐条记录：客户端 PUT 课表条数、handler 进入次数、按钮视觉态、replaceAppPath 次数、服务端回读课表条数",
+     "requiresReal": false
+    },
+    {
+     "id": "SCH11",
+     "manifest": "次要21",
+     "title": "REAL_ONLY 保存失败：Toast 展示服务端 message、停留本页且可再次提交",
+     "action": "填有效值 → tap 保存 → 观察 Toast/路由/按钮态 → 恢复网络再 tap 一次",
+     "requiresReal": true
+    },
+    {
+     "id": "SCH12",
+     "manifest": "次要21",
+     "title": "滚动到顶/底 + 热区量测 + 底部留白证伪（MP-R2-APP-001）",
+     "action": "scrollTo 到底 → 回顶；boundingClientRect 量测 .field（校区框）、.time-window-input、.time-window-remove、.time-window-add、BottomActionBar 主按钮；量测正文 padding-bottom；下拉手势一次观察是否触发刷",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要21.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/setup/schedule/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "pages/discover/index",
+   "missing": [
+    {
+     "id": "DC07",
+     "manifest": "PAGES-DISCOVER-INDEX",
+     "title": "卡片点击 → 他人主页：单通道触发（card-tap 不与原生 tap 双发）",
+     "action": "单击卡片主体 1 次（SwipeContainer catchtap 阻断 + 手势层 onTap，SwipeContainer.vue:43-50、:64-79），观察导航次数；随后返回再点 1 次",
+     "requiresReal": false
+    },
+    {
+     "id": "DC08",
+     "manifest": "PAGES-DISCOVER-INDEX",
+     "title": "右滑手势 = 喜欢（方向语义铁律）",
+     "action": "在卡片上向右拖动 >SWIPE_THRESHOLD 后松手（SwipeGesture.ts:37-42 判定，常量见其 :4-7 导入）；另做向左、向上、向下各一次",
+     "requiresReal": false
+    },
+    {
+     "id": "DC16",
+     "manifest": "PAGES-DISCOVER-INDEX",
+     "title": "Disabled 态：isMatchOpen=false 时匹配功能关闭",
+     "action": "进入本页并尝试点击卡片与三键",
+     "requiresReal": false
+    },
+    {
+     "id": "DC20",
+     "manifest": "PAGES-DISCOVER-INDEX",
+     "title": "抽屉三路关闭：遮罩 / 关闭钮 / 确认后，tabBar 必恢复",
+     "action": "分三轮各走一条关闭路径：① 点遮罩（FilterDrawer.vue:599 @tap=handleClose）；② 点关闭按钮（:616）；③ 点「确认」（:845 handleConfirm→emit apply 后关闭）",
+     "requiresReal": false
+    },
+    {
+     "id": "DC22",
+     "manifest": "PAGES-DISCOVER-INDEX",
+     "title": "身高双滑块边界与互斥约束",
+     "action": "① 拖动下限滑块到最大（250）；② 拖动上限滑块到最小（120）；③ 两端各推到边界（120/250）；④ 尝试做出 min>max 的组合",
+     "requiresReal": false
+    },
+    {
+     "id": "DC25",
+     "manifest": "PAGES-DISCOVER-INDEX",
+     "title": "关键词输入 300ms 防抖：连续输入 10 字只发 1 次 fetchCards",
+     "action": "① 在关键词框（FilterDrawer.vue:796-802 @input=onKeywordInput）以 100ms 间隔连续输入 10 个字符；② 停顿 1s 后统计请求；③ 点清除（:807 clearKeyword）；④ 输入 200 字与 emoji + 特殊字符",
+     "requiresReal": false
+    },
+    {
+     "id": "DC27",
+     "manifest": "PAGES-DISCOVER-INDEX",
+     "title": "抽屉内容区滚动与遮罩穿透",
+     "action": "在抽屉内容区滚到底再回顶；尝试在遮罩外露的卡片区域点击",
+     "requiresReal": false
+    },
+    {
+     "id": "DC29",
+     "manifest": "PAGES-DISCOVER-INDEX",
+     "title": "下拉刷新不适用：本页未开 enablePullDownRefresh",
+     "action": "在顶部执行下拉手势；随后统计 onShow 驱动的重拉",
+     "requiresReal": false
+    },
+    {
+     "id": "DC38",
+     "manifest": "PAGES-DISCOVER-INDEX",
+     "title": "死按钮普查：本页全部可点元素 500ms 内可观测反馈",
+     "action": "逐个点击：标题区 heart 图标、筛选钮、两个分段 Tab、卡片主体（点击而非滑动）、三键（跳过/打招呼/喜欢）、底部登录提示（若有）、错误横幅重试，逐一从点击起计时",
+     "requiresReal": false
+    },
+    {
+     "id": "DC40",
+     "manifest": "PAGES-DISCOVER-INDEX",
+     "title": "表单三态齐备性（本页输入面：抽屉关键词 + 滑块 + picker）",
+     "action": "对关键词输入执行空 / 仅空格 / 超长 200 字 / 特殊字符四组，对滑块执行最小/最大/倒挂，对 picker 执行选择与取消",
+     "requiresReal": false
+    },
+    {
+     "id": "DC42",
+     "manifest": "PAGES-DISCOVER-INDEX",
+     "title": "与「我的」页匹配次数 chip 的同源一致性（跨页数据核对）",
+     "action": "切到「我的」Tab 读 MatchCountChip 计数，再回寻觅核对剩余额度与提示",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "PAGES-DISCOVER-INDEX.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/pages/discover/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/profile-extra/profile/other",
+   "missing": [
+    {
+     "id": "OT02",
+     "manifest": "次要20",
+     "title": "深链缺 userId：明确参数错误态且「不可重试」，互动 FAB 与 more 按钮同时隐藏",
+     "action": "观察首屏 → 尝试 tap 错误卡上的重试元素 → tap 右上「···」区域与右下 FAB 区域（若存在）",
+     "requiresReal": false
+    },
+    {
+     "id": "OT05",
+     "manifest": "次要20",
+     "title": "喜欢（mock，未喜欢）：500ms 内反馈 + 匹配成功 modal 双按钮行为；连点×5 客户端层守卫生效",
+     "action": "① tap RelationshipCTA 喜欢键（RelationshipCTA.vue:43-46 emit('like') → other.vue:426 handleLike）一次，200ms/800ms 各采样；② 若弹「匹配成功」modal：点「再看看」→ 再点一次喜欢 → 点「去聊天」；③ 退出重进复位后",
+     "requiresReal": true
+    },
+    {
+     "id": "OT06",
+     "manifest": "次要20",
+     "title": "已喜欢 / 互喜（matched）态重复点喜欢：零请求、零「匹配成功」modal，仅一条等待 Toast（MP-R2-OTHER-002 修复守卫）",
+     "action": "两态各 rapidTap 喜欢键 ×5，记录每次点击后的 toast/modal 序列与 handler 调用计数；随后 tap 打招呼键一次对照",
+     "requiresReal": true
+    },
+    {
+     "id": "OT07",
+     "manifest": "次要20",
+     "title": "REAL_ONLY real 喜欢链路：POST /matches/like 一次 + 喜欢列表刷新 + signal.id 决定 modal；幂等假通过双判定",
+     "action": "① tap 喜欢一次，观察 network 与回读；② 复位后 rapidTap ×5 并逐条记录 network POST 计数（含 Idempotency-Key 是否同值）；③ 匹配态用户重复点喜欢一次",
+     "requiresReal": true
+    },
+    {
+     "id": "OT08",
+     "manifest": "次要20",
+     "title": "打招呼 / 悄悄话门禁：未实名 → 认证引导 modal（confirm 跳实名认证页 / cancel 停留），未登录 → 登录提示 Toast（权限类副作用）",
+     "action": "① 态1 tap 打招呼键（RelationshipCTA.vue:52 emit('message') → other.vue:243-248）→ modal 分别点「取消」「确定」；② 态1 tap 悄悄话键（:58 → openWhisperSheet :250-258）；③ 态3 重复 ①②；④ 态2 重复 ①",
+     "requiresReal": true
+    },
+    {
+     "id": "OT09",
+     "manifest": "次要20",
+     "title": "悄悄话弹层（WhisperComposeSheet）：输入框四态（maxlength=60）+ 三路关闭 + 发送成功/失败副作用",
+     "action": "① textarea（:83-88）依次：空内容直接点发送 → 输入正常短句 → 输入 80 字符（回填 maxlength 截断值）→ 输入「<img src=x onerror=1>『😀 空格』」特殊字符；② 关闭三路：点遮罩（:70）/ 点右上 ×（:74-75）/ 发送成功后自动关；③ 每路关闭后重新打开检查",
+     "requiresReal": true
+    },
+    {
+     "id": "OT10",
+     "manifest": "次要20",
+     "title": "关注 / 取消关注：关注态必须真实回填（MP-R2-OTHER-005 未修，按修复后表现断言）+ 失败 Toast + 连点×5 双判定",
+     "action": "① 首次进入 tap 关注键（RelationshipCTA.vue:64-67 emit('follow') → other.vue:432 handleFollowToggle）；② 返回来源页再次进入本页 → 观察按钮文案；③ 已关注态 tap → 应走取关；④ rapidTap 关注键 ×5；⑤ 断网/500 ",
+     "requiresReal": true
+    },
+    {
+     "id": "OT11",
+     "manifest": "次要20",
+     "title": "右下 FAB「更多操作」BottomSheet 三路关闭 + 分享占位入口 + 举报 ActionSheet + 拉黑二次确认（写副作用）",
+     "action": "① tap .other-more-fab → sheet 弹出；② 三路关闭：点遮罩（BottomSheet.vue:73/:67）/ 点右上 ×（:91-92）/ 点任一动作项后自动关；③ 重开 tap「分享给好友」（other.vue:468-470）；④ 重开 tap「举报用户」（:471-473）→ Acti",
+     "requiresReal": true
+    },
+    {
+     "id": "OT12",
+     "manifest": "次要20",
+     "title": "头像大图与「生活瞬间」全屏查看层：索引钳制 + 遮罩关闭 + resolveMediaUrl 出图（未提交 media.ts 改动证伪）",
+     "action": "① tap PublicHero 大头像（PublicHero.vue:27 emit('tapAvatar') → ProfileShell.vue:97 → other.vue:435 previewAvatar）；② 在查看层上 tap 遮罩关闭；③ tap 第 1/第 4/（越界）第 9 张照片（PublicG",
+     "requiresReal": true
+    },
+    {
+     "id": "OT13",
+     "manifest": "次要20",
+     "title": "「最近动态」帖子卡跳转与冒泡隔离 + 头像/图片兜底链 + en-US 硬编码中文采证（MP-R2-OTHER-003）",
+     "action": "① tap 动态卡空白/标题区（PublicMoment → ProfileShell → other.vue:433 @open-post → goPostDetail :75-79）；② 卡内若有子可点元素逐个 tap 验证 @tap.stop 不双触发；③ 构造无头像/无图/缺字段用户（REAL_ONLY 数据或",
+     "requiresReal": false
+    },
+    {
+     "id": "OT14",
+     "manifest": "次要20",
+     "title": "滚动到顶/底 + 底部 CTA 固定栏遮挡检查 + 错误态重试（REAL_ONLY 401 单独文案）",
+     "action": "① A：scrollTo 底 → 顶，量测最后一条动态与底部 CTA 栏 rect；② B：reLaunch 深链观察错误卡文案与 FAB；③ C：错误卡点「重试」（:425 @retry=\"loadProfile\"）两次（断网一次、恢复网络一次）",
+     "requiresReal": true
+    }
+   ],
+   "manifest": "次要20.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/profile-extra/profile/other.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "pages/messages/index",
+   "missing": [
+    {
+     "id": "MSG05",
+     "manifest": "PAGES-MESSAGES-INDEX",
+     "title": "下拉刷新：force 穿透 30s TTL 且 await 真实完成才停动画",
+     "action": "进入页面后立即下拉刷新；统计 bootstrap 请求条数与动画起止",
+     "requiresReal": false
+    },
+    {
+     "id": "MSG09",
+     "manifest": "PAGES-MESSAGES-INDEX",
+     "title": "搜索命中过滤：昵称与消息预览双字段 + 大小写不敏感",
+     "action": "① 输入某会话昵称子串；② 输入某条消息预览关键词；③ 输入大小写混合的英文片段",
+     "requiresReal": false
+    },
+    {
+     "id": "MSG10",
+     "manifest": "PAGES-MESSAGES-INDEX",
+     "title": "搜索边界：超长串 / emoji / 正则元字符 / 纯空格",
+     "action": "依次输入 200 字串、「😀💬」、「.*[()\\\\|+*?^$&%#?/」、「   」，各读列表与 console",
+     "requiresReal": false
+    },
+    {
+     "id": "MSG11",
+     "manifest": "PAGES-MESSAGES-INDEX",
+     "title": "搜索作用域：官方号会话不参与私聊列表过滤（数据口径）",
+     "action": "输入官方号名称关键词搜索",
+     "requiresReal": false
+    },
+    {
+     "id": "MSG14",
+     "manifest": "PAGES-MESSAGES-INDEX",
+     "title": "「正在等待回复」卡的条件渲染与「去回复」真实落点",
+     "action": "① count>0 时点该卡（index.vue:432-443 → goReply :240-247）；② count=0 时确认卡片不渲染；③ 无会话但 count>0 时点击",
+     "requiresReal": false
+    },
+    {
+     "id": "MSG21",
+     "manifest": "PAGES-MESSAGES-INDEX",
+     "title": "会话行点击 → 聊天页；长按不误触发点击",
+     "action": "① 点 .chat-item（index.vue:523 → openSession :253-255）；② 长按同一条（:524 → onSessionLongpress）观察是否同时发生跳转",
+     "requiresReal": false
+    },
+    {
+     "id": "MSG22",
+     "manifest": "PAGES-MESSAGES-INDEX",
+     "title": "长按面板四项齐备与取消（面板文案随 mute 态变化）",
+     "action": "分别长按两条会话读 itemList 四项；再长按一条后点取消/外部关闭",
+     "requiresReal": false
+    },
+    {
+     "id": "MSG24",
+     "manifest": "PAGES-MESSAGES-INDEX",
+     "title": "免打扰：真实持久化 + 重拉不丢（MP-R2-MSG-001 待终验回归）",
+     "action": "① 长按选「免打扰」；② 下拉刷新（穿透 TTL 重拉）后再看；③ 切走 Tab >30s 再回；④ 恢复提醒；⑤ 断网执行一次",
+     "requiresReal": true
+    },
+    {
+     "id": "MSG25",
+     "manifest": "PAGES-MESSAGES-INDEX",
+     "title": "标为未读：本地生效与红点闭环（后端无接口的事实核对）",
+     "action": "长按选「标为未读」→ 观察徽标 → 进入该会话再返回",
+     "requiresReal": false
+    },
+    {
+     "id": "MSG26",
+     "manifest": "PAGES-MESSAGES-INDEX",
+     "title": "删除会话：二次确认弹窗双路 + 连点×5 只删 1 次（不可逆操作）",
+     "action": "① 长按→「删除会话」→ 在 showModal 点「取消」；② 再次执行并点「确定」；③ 对同一会话在 500ms 内连点删除入口 5 次（若能重复打开面板）；④ 断网执行确定",
+     "requiresReal": true
+    }
+   ],
+   "manifest": "PAGES-MESSAGES-INDEX.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/pages/messages/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "pages/nearby/index",
+   "missing": [
+    {
+     "id": "N02",
+     "manifest": "PAGES-NEARBY-INDEX",
+     "title": "下拉刷新可达性：内容整体在内层 scroll-view 时页面级下拉是否仍触发",
+     "action": "在列表顶部执行下拉手势 ≥500ms，观察刷新指示器与 onPullDownRefresh（index.vue:149）是否进入",
+     "requiresReal": false
+    },
+    {
+     "id": "N03",
+     "manifest": "PAGES-NEARBY-INDEX",
+     "title": "下拉刷新真实重拉三路数据源并 force 绕 TTL",
+     "action": "触发一次下拉刷新，统计 circles / nearbyPosts / activities 三类拉取",
+     "requiresReal": false
+    },
+    {
+     "id": "N04",
+     "manifest": "PAGES-NEARBY-INDEX",
+     "title": "下拉刷新失败必给 toast（store 吞错不再伪装成功）",
+     "action": "触发下拉刷新",
+     "requiresReal": false
+    },
+    {
+     "id": "N05",
+     "manifest": "PAGES-NEARBY-INDEX",
+     "title": "影响范围回归：未登录（real）进入附近页不被强踢（canFetchProtected 四路门）",
+     "action": "未登录冷启动 switchTab 到附近页 → 停留 30s → 下拉刷新 → 触发定位",
+     "requiresReal": false
+    },
+    {
+     "id": "N10",
+     "manifest": "PAGES-NEARBY-INDEX",
+     "title": "输入框覆盖度核对：本页已无输入框 → 正常/清空/超长/特殊字符四组不适用并转由搜索页承接",
+     "action": "DOM 扫描本页全部 <input>/<textarea>（含搜索区、五入口、四分区）；对扫描结果做结论记录",
+     "requiresReal": false
+    },
+    {
+     "id": "N15",
+     "manifest": "PAGES-NEARBY-INDEX",
+     "title": "5 个圆形入口逐一落点（含「我的人脉」语义回归）",
+     "action": "逐一点击 .nearby-entry：附近的人（index.vue:393）、热门兴趣圈（:400）、校园圈（:406）、活动（:412）、我的人脉（:418）",
+     "requiresReal": false
+    },
+    {
+     "id": "N18",
+     "manifest": "PAGES-NEARBY-INDEX",
+     "title": "兴趣圈卡点击 → circle-home?circleId=；横滑手势不误触点击；封面单一真相源",
+     "action": "① 点 .circle-mini（index.vue:483-491 → goCircleDetail :254-256）；② 在该行执行横向滑动；③ 与圈子列表页/首页同圈封面并排比对",
+     "requiresReal": false
+    },
+    {
+     "id": "N30",
+     "manifest": "PAGES-NEARBY-INDEX",
+     "title": "跨账号残留回归：登出后分区⑤不渲染上一账号动态",
+     "action": "登出后切到附近页 → 滚动到分区⑤ → 截图比对帖文/作者；再登录 B 账号回本页",
+     "requiresReal": false
+    },
+    {
+     "id": "N31",
+     "manifest": "PAGES-NEARBY-INDEX",
+     "title": "附近动态 TTL 30s 与 onShow 刷新口径；失败可立即重试",
+     "action": "① 切走 <30s 后切回；② 切走 >30s 后切回；③ 在村口发一条新动态后回本页；④ 制造一次失败后立刻再下拉刷新",
+     "requiresReal": false
+    },
+    {
+     "id": "N40",
+     "manifest": "PAGES-NEARBY-INDEX",
+     "title": "死按钮普查：本页全部可点元素 500ms 内可观测反馈",
+     "action": "逐个点击：放大镜、发动态、5 入口、分区① 2 入口、② 圈卡 + 查看全部、③ 4 张校卡 + 查看全部、④ 活动条 + 查看全部、⑤ 帖子/标签/点赞/收藏/关注/作者/查看全部、各分区标题区（应不可点），逐一计时",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "PAGES-NEARBY-INDEX.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/pages/nearby/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/village/village/detail",
+   "missing": [
+    {
+     "id": "VD01",
+     "manifest": "次要18",
+     "title": "冷启动深链 ?id=post-16：骨架→正文，全程不闪「帖子不存在」空态",
+     "action": "启动后 0s/0.5s/1s 三次 DOM 采样（.detail-page 存在性、.comments-loading 骨架、toast 队列），不打点",
+     "requiresReal": false
+    },
+    {
+     "id": "VD04",
+     "manifest": "次要18",
+     "title": "点赞连点×5 防重：客户端多余请求数与服务端回读数拆两判定点",
+     "action": "300ms 内 rapidTap 点赞项 ×5，随后停留 2s 等回包",
+     "requiresReal": true
+    },
+    {
+     "id": "VD07",
+     "manifest": "次要18",
+     "title": "帖子图片全屏查看与遮罩关闭（弹层两路）",
+     "action": "① tap .post-image（detail.vue:848 → openImageViewer :84-98）；② tap .image-viewer 遮罩（:1327-1335 → closeImageViewer）；③ 重开后改按系统返回",
+     "requiresReal": false
+    },
+    {
+     "id": "VD08",
+     "manifest": "次要18",
+     "title": "标签跳 tag-posts 与返回落点状态恢复",
+     "action": "tap .post-tag（detail.vue:877 → goToTagPosts :380-383）→ 观察路由 → 在 tag-posts 按返回键 → 观察落点与详情页滚动位置",
+     "requiresReal": false
+    },
+    {
+     "id": "VD09",
+     "manifest": "次要18",
+     "title": "评论排序切换最热/最新 + 加载更多/到底两态",
+     "action": "① tap .comments-sort（detail.vue:947 → toggleCommentSort :75-83）两次，比对首条评论与文案；② tap 加载更多评论（:1134）至出现「没有更多」；③ 滚动 .detail-body（:781）到顶与到底",
+     "requiresReal": false
+    },
+    {
+     "id": "VD11",
+     "manifest": "次要18",
+     "title": "评论输入框边界四连：清空 / 501 字超长 / 纯空格 / 特殊字符+emoji",
+     "action": "① 输入文本后点清空（若无清空按钮则全选删除）；② 输入 501 字（>MAX_CONTENT_LENGTH=500）后 tap 发送；③ 输入 3 个空格后 tap 发送；④ 输入「<img src=x onerror=alert(1)> 😀 emoji」后 tap 发送",
+     "requiresReal": false
+    },
+    {
+     "id": "VD15",
+     "manifest": "次要18",
+     "title": "长按举报链路：ActionSheet 取消 / 选原因 + Modal 补充描述 / 跳过 → 提交 toast",
+     "action": "① 长按 .post-content 区（detail.vue:774 → handlePostLongpress :302-）；② ActionSheet 点「取消」；③ 重开选原因（:309）后在 showModal 描述框留空并点「跳过/取消」；④ 重开走完填描述 + 提交；⑤ 另测 PostReportDial",
+     "requiresReal": true
+    },
+    {
+     "id": "VD16",
+     "manifest": "次要18",
+     "title": "相似作者三入口（头像/关注/私信）与关注失败必须可见（证伪静默失败）",
+     "action": "① tap 作者头像（:1160）；② tap「+关注」（:1204 → handleFollowSimilarAuthor :651-662）并使其失败（real 后端置 500 或断网复现）；③ tap 私信（:1216 → sendMessageToSimilarAuthor :667-676）；④ 断网态重复 ",
+     "requiresReal": false
+    },
+    {
+     "id": "VD19",
+     "manifest": "次要18",
+     "title": "图片/头像兜底链与 mock-data 未提交改动证伪：post-16 图文相符（泡茶→杯子图）",
+     "action": "读取 .post-image 的 src 与渲染尺寸（naturalWidth>0）；另 tap 作者头像读落点；再对无头像作者帖观察兜底",
+     "requiresReal": false
+    },
+    {
+     "id": "VD20",
+     "manifest": "次要18",
+     "title": "无副作用装饰元素点击零反馈（noop 基线）+ Loading 不永驻总检",
+     "action": "① tap 评论区时间戳文本与「说点什么」占位文本（非按钮节点）；② tap 相似作者区块标题文本；③ 全程监听 loading/toast 队列",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要18.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/village/village/detail.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/tools/search/index",
+   "missing": [
+    {
+     "id": "SE01",
+     "manifest": "次要19",
+     "title": "冷启动深链 ?keyword= 与无参两种路径；其余参数为幻影；init 双调不重复请求",
+     "action": "① 带 keyword 进入，读输入框值、激活 tab 与 network；② 无参进入读热搜/历史区；③ 带 ?keyword=摄影&tab=users 进入比对；④ 冷启动同页停留后从后台切回（onLoad 与 onMounted 双调 init :47-58）",
+     "requiresReal": false
+    },
+    {
+     "id": "SE02",
+     "manifest": "次要19",
+     "title": "搜索输入框四态：正常输入 / 清空 / 超长 / 特殊字符（300ms 防抖 + 300ms 用户搜索防抖）",
+     "action": "① 在 users tab 连续输入「广州大学」（间隔 <300ms）观察 searchUsers 次数；② tap × 清空（:254-261）；③ 输入 200 字超长串并回车；④ 输入「<script>alert(1)</script> ' OR 1=1 -- 　全角 emoji」并搜索；⑤ 切到 tags ta",
+     "requiresReal": false
+    },
+    {
+     "id": "SE03",
+     "manifest": "次要19",
+     "title": "三 Tab（用户 / 标签 / 学校）切换与按 tab 分发检索（含学校本地过滤）",
+     "action": "① 依次 tap users / tags / schools，每次读列表来源与 network 增量；② 有 keyword 时来回切 ×5；③ 无 keyword（清空后）切 schools；④ 读 tab 激活态与 aria-selected",
+     "requiresReal": false
+    },
+    {
+     "id": "SE04",
+     "manifest": "次要19",
+     "title": "热搜词与历史词点击：回填关键词并立即检索（写本地历史）",
+     "action": "① tap 热搜第 1 条（含序号 rank 样式 :300）；② tap 历史词；③ 输入新词搜索后返回再进本页看历史是否新增并置顶；④ 对同一词连点 ×3",
+     "requiresReal": false
+    },
+    {
+     "id": "SE05",
+     "manifest": "次要19",
+     "title": "清除搜索历史：立即生效、无确认弹窗的可回退性判定",
+     "action": "① tap「清空历史」；② 读历史区与热搜区；③ 杀掉页面重进；④ 在历史为空时再次进入页面观察入口显隐",
+     "requiresReal": false
+    },
+    {
+     "id": "SE06",
+     "manifest": "次要19",
+     "title": "用户结果行点击与头像解析（未提交改动证伪：utils/media.ts 新分支 + R2 裸 image 缺陷）",
+     "action": "① tap .user-row；② 读该行头像 src 与 naturalWidth；③ 构造 nickname 为空与 avatarUrl 为空的数据各一条；④ 返回后确认输入框与结果保留",
+     "requiresReal": false
+    },
+    {
+     "id": "SE07",
+     "manifest": "次要19",
+     "title": "校园主页内联预览：展开/收起、客户端按校名过滤、失败不得伪装成「暂无用户」（证伪 MP-R2-SEARCH-003）",
+     "action": "① tap 学校行展开预览；② 再 tap 同一行收起；③ 展开 A 校后直接 tap B 校行；④ 把 getRecommendations 打成 500/断网后展开；⑤ 观察预览内人员与文案",
+     "requiresReal": false
+    },
+    {
+     "id": "SE08",
+     "manifest": "次要19",
+     "title": "帖子结果 PostCard 七事件接线：详情/作者/标签/活动 + 点赞收藏关注三类写（拆两判定点）",
+     "action": "① tap 卡片正文（open-detail）；② 返回后 tap 作者头像（open-author）；③ 返回后 tap 标签（open-tag）；④ 有活动卡时 tap（open-activity）；⑤ 在结果列表内 tap 点赞 / 收藏 / 关注各 ×1，再对点赞 rapidTap ×5；⑥ 断网态重复点赞",
+     "requiresReal": true
+    },
+    {
+     "id": "SE09",
+     "manifest": "次要19",
+     "title": "帖子结果分页：触底必须能到第 2 页（证伪 MP-R2-SEARCH-002 分页死路）",
+     "action": "① 滚到结果列表底部并停留，读 network 第 2 页请求与列表条数变化；② 连续触底 3 次；③ 拉到 hasMore=false 后继续下拉触底；④ 加载中重复触底",
+     "requiresReal": false
+    },
+    {
+     "id": "SE11",
+     "manifest": "次要19",
+     "title": "返回键与「取消」两入口 + 热区实测（兜底落点在未提交改动清单内须确证渲染）",
+     "action": "① 两种前置分别 tap .search-back（:238-240）；② 两种前置分别 tap「取消」文本（:263-265）；③ 对返回键、输入框、× 、取消、三 tab、历史清空取 boundingBox；④ 结果页滚到顶/底",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要19.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/tools/search/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/profile-extra/settings/index",
+   "missing": [
+    {
+     "id": "ST01",
+     "manifest": "次要19",
+     "title": "冷启动直开设置页：无参数消费（全为幻影参数）、缓存大小真实统计、分组齐全",
+     "action": "① 进入后 0/0.5/1s 采样分组结构（反馈与帮助 :448-487、账号 :490-513、社交资产 :516-539、通知 :542-596、隐私安全 :599-622、缓存 :625-648、关于 :651-674、退出登录 :677-679、版本 :682-684）与「清除缓存」右侧数值；② 预置已知体积缓",
+     "requiresReal": false
+    },
+    {
+     "id": "ST02",
+     "manifest": "次要19",
+     "title": "全菜单项逐条点击落点清单（数据驱动 handleMenuTap 双分支：path / action）",
+     "action": "逐条 tap 以下 15 项并记录落点路由：完善资料（action :95-98）、身份认证（:326）、我的动态（:352-354，见 ST04）、谁看过我（:355）、浏览记录（:356 → ROUTES.VILLAGE.HISTORY）、我的相册（:357）、课表设置（:358）、隐私权限（:369）、安全中心（",
+     "requiresReal": false
+    },
+    {
+     "id": "ST03",
+     "manifest": "次要19",
+     "title": "钱包入口受商业化开关门控（不可达前置须标注构建/开关变体）",
+     "action": "① 默认态读社交资产分组项数与是否出现「钱包/余额」项；② 后台开 commerce.coin=true（或 mock 强制置 true）后重进，tap 该项；③ 关闭后重进确认项消失",
+     "requiresReal": false
+    },
+    {
+     "id": "ST04",
+     "manifest": "次要19",
+     "title": "「我的动态」桥接 switchTab 到「我的」Tab，且 source=my-posts 为幻影参数（证伪 MP-R2-SETTINGS-003）+ 落点页未提交改动回归",
+     "action": "① tap「我的动态」；② 读落点路由与桥接 storage 内容；③ 在落点页检查「我的帖子」区块与顶部头像/背景图渲染（头像 src 与 naturalWidth）；④ 返回设置页再进一次，确认桥接被消费不重复生效；⑤ 比对 item.tabQuery 是否被目标页读取",
+     "requiresReal": false
+    },
+    {
+     "id": "ST05",
+     "manifest": "次要19",
+     "title": "本周安排开关：切换持久化 + Toast 文案 + 消费方（首页）生效",
+     "action": "① tap 开关开 → 读 Toast 与 storage 值；② 切回关 → 复读；③ 开启后切到首页确认「本周安排/课表」区块出现，再关闭后确认消失；④ 造 setStorageSync 失败（写满或 mock 抛错）后切换",
+     "requiresReal": false
+    },
+    {
+     "id": "ST06",
+     "manifest": "次要19",
+     "title": "深色模式开关：主题真实切换 + Toast + 三态 store 被二态开关驱动的边界（证伪 MP-R2-SETTINGS-002）",
+     "action": "① 在 mode=auto 且系统深色（H5/模拟器可造时）态下 tap 开关一次；② 连续 tap ×5 观察主题与 Toast 交替；③ 切到其他页（如首页）确认主题同步生效；④ 杀进程重进确认持久化；⑤ 读开关与当前实际主题是否一致",
+     "requiresReal": false
+    },
+    {
+     "id": "ST07",
+     "manifest": "次要19",
+     "title": "清除缓存确认框三路（原生 Modal：取消 / 确认 / 遮罩外）+ 只清白名单键、保留登录态",
+     "action": "① tap 清除缓存行（:630-646）弹原生 Modal；② 点「取消」；③ 重开点 Modal 外部（原生弹窗不可穿透，记录实际行为）；④ 重开点「确认清除」→ 采样 showLoading/hideLoading、数值变化与各 storage 键；⑤ 确认后立刻 tap 返回与切页验证登录态",
+     "requiresReal": false
+    },
+    {
+     "id": "ST08",
+     "manifest": "次要19",
+     "title": "退出登录确认：三路 + 真实 logout 链路（写请求与服务端态拆两判定点）",
+     "action": "① tap 退出登录（:677-679）弹 Modal；② 点「取消」；③ 点 Modal 外部；④ 重开点「退出」→ 读请求、本地 token、路由；⑤ 用旧 token 调一个受保护接口验证服务端；⑥ 恢复登录态后对确认按钮 rapidTap ×5",
+     "requiresReal": true
+    },
+    {
+     "id": "ST09",
+     "manifest": "次要19",
+     "title": "检查更新 / 关于我们 / 推荐给好友三个 action：原生弹窗与 Toast，Loading 不永驻",
+     "action": "① tap 检查更新 → 读 showLoading 与后续 Modal 文案；② 在 onUpdateReady/onUpdateFailed 不可造时记录实际命中的分支；③ tap 关于我们 → 读 Modal 标题与内容、点确认；④ tap 推荐给好友 → 读是否出现分享菜单/面板并取消；⑤ 连点检查更新 ×3；",
+     "requiresReal": false
+    },
+    {
+     "id": "ST10",
+     "manifest": "次要19",
+     "title": "隐私政策双入口已收敛为一处（证伪 MP-R2-SETTINGS-001）+ 两个开关的 switch 硬编码色记录",
+     "action": "① 全文检索「隐私政策」文案项在页面上出现的次数并分别 tap；② 检查两处落点路由是否同源；③ 读分组结构：隐私安全分组应只剩「隐私权限」与「安全中心」两项（:364-377）；④ 记录开关颜色是否随深色模式失效",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要19.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/profile-extra/settings/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/profile-extra/profile/tasks",
+   "missing": [
+    {
+     "id": "TK01",
+     "manifest": "次要20",
+     "title": "冷启动深链首屏（mock）：4 张任务卡 + 积分概览 + 进度条齐渲染，骨架不出现且不闪现「加载失败」",
+     "action": "仅等待首屏渲染；≤500ms 首拍 + 2s 复拍；核对进度条宽度与百分比、已完成计数文案与卡片勾选态是否同源",
+     "requiresReal": false
+    },
+    {
+     "id": "TK03",
+     "manifest": "次要20",
+     "title": "已完成任务点击：必须给出「已完成」Toast（500ms 内可观测反馈，防「不可点错觉/死按钮」）",
+     "action": "tap 已完成那张 .task-item（:402-411 @tap=\"handleTaskTap(task)\"）一次，500ms 内采样 Toast 与路由",
+     "requiresReal": true
+    },
+    {
+     "id": "TK04",
+     "manifest": "次要20",
+     "title": "每日签到（mock 分支走真实 /check-in 封装）：积分/进度/勾选三处当页更新 + 成功 Toast 文案含积分数（MP-R1-TASKS-001/002 守卫）",
+     "action": "① 记录首屏三项数值（已完成计数 / 已获得积分 / 进度条宽度）→ tap「每日签到」卡；② 200ms/1s/2s 采样；③ 复核三处数值是否当页更新（不退出重进）；④ Toast 文案数字与任务 points 对照；⑤ 重进页面观察是否仍为已完成",
+     "requiresReal": true
+    },
+    {
+     "id": "TK05",
+     "manifest": "次要20",
+     "title": "连点签到×5：客户端层必现重复调用（handleTaskTap 无 in-flight 守卫），服务端「同日仅 1 条」是幂等键兜底而非客户端功劳（假通过防线）",
+     "action": "① 复位后 500ms 内 rapidTap「每日签到」卡 ×5；② 统计客户端指标：handleTaskTap 调用次数、Toast 条数、（real 轮）network POST /check-in 条数与其 Idempotency-Key 是否同值；③ 服务端回读签到记录条数与积分余额；④ 领取类任务（real ",
+     "requiresReal": true
+    },
+    {
+     "id": "TK06",
+     "manifest": "次要20",
+     "title": "未完成任务「去完成」三路跳转（mock 带 path）：完善资料/首条动态/校园认证各自落点与返回恢复",
+     "action": "① 依次 tap「完善个人资料」「发布首条动态」「完成校园认证」三张未完成卡；② 每次从目标页返回；③ 记录每次路由与 options",
+     "requiresReal": false
+    },
+    {
+     "id": "TK07",
+     "manifest": "次要20",
+     "title": "REAL_ONLY 任务列表首拉：骨架屏出现且必收起；GET /tasks 失败不得静默回退本地 mock 任务（MP-R2-TASKS-001 未修，按修复后表现断言）",
+     "action": "① 正常网络 reLaunch 进本页，记录骨架出现与收起时点、列表条目数与来源；② 断网/5xx 下 reLaunch 进本页，对比列表内容与「每日签到」卡的可点击结果（联动 TK08）；③ 恢复网络后重进",
+     "requiresReal": true
+    },
+    {
+     "id": "TK08",
+     "manifest": "次要20",
+     "title": "REAL_ONLY real 死按钮取证：回退本地列表下点「每日签到」完全无反馈（500ms 无 Toast/路由/DOM 变化 = 死按钮）",
+     "action": "① tap「每日签到」卡，500ms 内采样 Toast/DOM/路由；② 2s 复拍；③ 其余三张卡（profile/first-post/verify）各 tap 一次对照；④ 记录每次点击的 handler 调用与网络请求",
+     "requiresReal": true
+    },
+    {
+     "id": "TK09",
+     "manifest": "次要20",
+     "title": "REAL_ONLY 领取任务奖励：POST /tasks/{code}/claim 一次 + claimingCode 守卫 + 刷新必须绕过 load-once（MP-R1-TA",
+     "action": "① tap 状态位为「领取」（profile.taskClaim，:208）的任务卡；② 采样按钮态/Toast/列表刷新；③ 复位后同卡 rapidTap ×5；④ 逐条记录 network POST 计数与 Idempotency-Key（相同 body → 同键，services/http.ts:254-274）",
+     "requiresReal": true
+    },
+    {
+     "id": "TK10",
+     "manifest": "次要20",
+     "title": "REAL_ONLY 签到完成态跨日/状态翻转不得单向锁存（checkinDone 只置 true、无 else 复位）",
+     "action": "① 服务端为已签到时 reLaunch 进本页 → 读勾选态；② 把服务端状态改回未签到（或换未签到身份）→ 退出重进本页；③ 观察勾选态/积分卡是否仍显示已完成；④ evaluate 读 store/页面值对照",
+     "requiresReal": true
+    },
+    {
+     "id": "TK13",
+     "manifest": "次要20",
+     "title": "幻影参数守卫：本页零 onLoad（仅 onShow），任何 query 必须无效（含副作用参数）",
+     "action": "wx.reLaunch('/subpackages/profile-extra/profile/tasks?tab=checkin&claim=all&from=r11&code=daily-checkin') → 再对每个卡做一次 tap 复核",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要20.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/profile-extra/profile/tasks.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/support/feedback/index",
+   "missing": [
+    {
+     "id": "FB01",
+     "manifest": "次要21",
+     "title": "未提交改动证伪（头部吸顶）：AppShell 新增 fixed 后滚动时头部常驻、正文不入状态栏区",
+     "action": "首屏采样 0.5s/2s → scrollTo 到底 → 回顶，逐次量测 .shell 头部 rect 与正文首元素 top、是否出现 is-fixed 类",
+     "requiresReal": false
+    },
+    {
+     "id": "FB02",
+     "manifest": "次要21",
+     "title": "分类 chips 三型切换：仅改本地 activeType、决定提交端点，不重拉列表也不丢已填内容",
+     "action": "依次 tap 三枚 chip（反馈/建议/活动提案，:429-442）→ 每次核对高亮与已填内容 → 观察 network 是否新增请求 → 切到第三型后 tap 提交一次，核对请求端点",
+     "requiresReal": false
+    },
+    {
+     "id": "FB03",
+     "manifest": "次要21",
+     "title": "标题与微信号两个输入框四态：正常 / 清空 / 超长 / 特殊字符（均未设 maxlength）",
+     "action": "对标题 input（:444-454）与微信号 input（:468-477）分别执行：①正常中文 ②逐字删空 ③粘贴 200 字符 ④「%22 <b> @# 空格 🌱」，每态观察布局；在④态下带有效内容提交一次",
+     "requiresReal": false
+    },
+    {
+     "id": "FB04",
+     "manifest": "次要21",
+     "title": "内容 textarea 边界：maxlength=5000 截断、纯空格视为空、超长不破版",
+     "action": "①输入 6000 字长串观察实际保留字符数 ②仅输入换行与空格后提交 ③输入 5000 字整并提交（REAL_ONLY 关注服务端是否接受）④聚焦观察键盘对 textarea 与主按钮的遮挡",
+     "requiresReal": false
+    },
+    {
+     "id": "FB05",
+     "manifest": "次要21",
+     "title": "空提交（必填校验）：Toast 文案逐字 + 零写请求 + 错误信息可被无障碍读取",
+     "action": "直接 tap 主按钮 3 次；再跑一次只填标题不填内容；观察 .form-error 区是否出现",
+     "requiresReal": false
+    },
+    {
+     "id": "FB06",
+     "manifest": "次要21",
+     "title": "提交成功：POST 生效 + Toast + 表单清空，但提交记录区不即时刷新（采证）",
+     "action": "tap 主按钮 → 200ms/1.5s 采样 Toast、表单值、记录区条数 → 保持在页 3s 后再采样 → 离开并重新进入本页核对新记录是否出现",
+     "requiresReal": false
+    },
+    {
+     "id": "FB07",
+     "manifest": "次要21",
+     "title": "连点提交×5（假通过陷阱拆列）：isSubmitting 守卫只挡 handler，按钮无 disabled",
+     "action": "500ms 内对主按钮 rapidTap×5，逐条记录：客户端反馈写请求条数与 URL/Idempotency-Key 值、handler 进入次数、Toast 条数、表单是否被多次清空、服务端回读本用户反馈条数增量",
+     "requiresReal": false
+    },
+    {
+     "id": "FB08",
+     "manifest": "次要21",
+     "title": "REAL_ONLY 提交失败：store 布尔 false 时 Toast 取 store.errorMessage 且表单不丢",
+     "action": "填有效值 → tap 提交 → 观察 Toast 文案与表单值 → 恢复网络后再 tap 一次",
+     "requiresReal": true
+    },
+    {
+     "id": "FB11",
+     "manifest": "次要21",
+     "title": "缩略图两路操作与删除弹层三路关闭：预览不被删除钮冒泡打断、确定/取消/物理返回均可判定",
+     "action": "①tap 缩略图主体（:497-503 handleImageTap）②tap 缩略图右上角 ×（:512-521 @tap.stop handleRemoveImage）③长按缩略图主体（@longpress :504）④弹层点取消 ⑤重开后点确定 ⑥重开后按物理返回",
+     "requiresReal": false
+    },
+    {
+     "id": "FB13",
+     "manifest": "次要21",
+     "title": "REAL_ONLY 记录区加载失败被呈现为「暂无反馈」空态：无错误提示、无重试（MP-R2-FEEDBACK-002）",
+     "action": "进页观察记录区渲染 → 与另一身份（有记录）对照 → 保持在本页 3s 观察是否出现错误条 → 下拉一次（本页无刷新能力，见 FB14）→ 离开重进验证是否恢复",
+     "requiresReal": true
+    }
+   ],
+   "manifest": "次要21.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/support/feedback/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/profile-extra/verification/real-name",
+   "missing": [
+    {
+     "id": "VRN04",
+     "manifest": "次要20",
+     "title": "真实姓名输入框四态 + 键盘弹起避让（正常/清空/超长 40 字/特殊字符）",
+     "action": "对 #real-name-user-name（real-name.vue:478-490，maxlength=\"20\"）依次：①「张三」；② 清空；③ 40 字符（回填截断值）；④「<b>张</b>『😀』 空格」；每步后 tap 提交观察反馈；键盘弹起时截屏一次",
+     "requiresReal": false
+    },
+    {
+     "id": "VRN05",
+     "manifest": "次要20",
+     "title": "身份证号输入框：15 位/18 位/末位 X·x 合法，空格/17 位/含字母/超长 30 位/特殊字符全非法且文案正确",
+     "action": "对 #real-name-id-card-no（real-name.vue:495-507，maxlength=\"18\"）依次输入并各提交一次：①「11010119900307123X」；②「110101199003071234」（18 位纯数字）；③ 15 位「110101900307123」；④ 末位小写 x；⑤ ",
+     "requiresReal": false
+    },
+    {
+     "id": "VRN06",
+     "manifest": "次要20",
+     "title": "身份证正/反面上传卡：隐私授权前置 + 选图成功/取消/超限三路反馈 + 预览出图",
+     "action": "① tap 正面卡 .upload-card（:518-525 → chooseIdCardImage('front') :146-169）选图确认；② 再 tap 预览态「更换」→ 取消选择；③ tap 背面卡选一张 >5MB 图（count:1, maxSizeMB:5 :149）；④ 未授权分支重跑",
+     "requiresReal": false
+    },
+    {
+     "id": "VRN07",
+     "manifest": "次要20",
+     "title": "REAL_ONLY 未成年门禁：banner 出现 + 两输入框 disabled + 提交拦截；401 时门禁不得由 mock 假资料决定（MP-R2-REALNAME-001 ",
+     "action": "① 未成年身份 reLaunch 进本页观察首屏；② 尝试聚焦两输入框并输入；③ tap 提交；④ token 置为过期（或过期后）重进本页，读取 isAdult 实际取值与来源（evaluate 读组件状态或观察 DOM 分支）",
+     "requiresReal": true
+    },
+    {
+     "id": "VRN08",
+     "manifest": "次要20",
+     "title": "提交实名认证（mock 全合法）：Loading mask 不永驻 + 1s 转 pending + 成功 Toast；连点提交×5 只走一次",
+     "action": "① tap .action-btn 一次，在 200ms/800ms/1500ms/3000ms 采样；② 退出重进复位后 rapidTap .action-btn ×5（500ms 内）",
+     "requiresReal": true
+    },
+    {
+     "id": "VRN09",
+     "manifest": "次要20",
+     "title": "REAL_ONLY real 提交链路：两图各上传 1 次 + POST 提交 + 状态刷新为 PENDING；重复提交 409 文案",
+     "action": "① 填齐并选图后 tap 提交；② Network 统计 /media/upload 与 /real-name-certification 请求条数与 body 字段；③ 成功后立即再提交一次（若表单仍在）；④ 观察最终状态",
+     "requiresReal": true
+    },
+    {
+     "id": "VRN10",
+     "manifest": "次要20",
+     "title": "pending 态 30s 轮询与卸载后定时器清理（内存泄漏守卫）",
+     "action": "① 停留本页 ≥65s 记录 GET 请求时间戳；② 在等待第 2 次轮询前 tap 返回离开页面，再等 35s 观察是否仍有请求；③ 期间切后台 10s 再回前台",
+     "requiresReal": true
+    },
+    {
+     "id": "VRN11",
+     "manifest": "次要20",
+     "title": "REAL_ONLY 已认证态：脱敏身份证号回显、表单与提交按钮不得出现",
+     "action": "reLaunch 进本页 → 观察状态卡与已认证卡两行 → 全页截图并检查是否残留输入框/上传卡/提交按钮",
+     "requiresReal": true
+    },
+    {
+     "id": "VRN13",
+     "manifest": "次要20",
+     "title": "页级滚动到顶/底 + 双安全区：提交按钮与背面上传卡完整可见",
+     "action": "scrollTo 底 → 中 → 顶，记录 scrollTop/scrollHeight/windowHeight 与提交按钮 boundingClientRect",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要20.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/profile-extra/verification/real-name.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/discover-extra/discover/match-success",
+   "missing": [
+    {
+     "id": "MS02",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+     "title": "冷启动深链直开（分享/推送）：不得闪现错误空态，兜底拉取必须生效",
+     "action": "进入后每 500ms 采样至 5s：路由、页面文本、partner 名/头像、network；再 tap 顶栏返回钮",
+     "requiresReal": false
+    },
+    {
+     "id": "MS03",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+     "title": "【串号证伪】query.userId 与 store 残留 matchedUser 不一致：必须以 URL 为准（MP-R2-MATCH-SUCCESS-005 回归）",
+     "action": "三路各读取：页面显示的对方昵称/头像、matchStore.matchedUser?.userId、fallbackPartner、以及 tap「立即聊天」后聊天页 URL 的 userId 与页面标题",
+     "requiresReal": false
+    },
+    {
+     "id": "MS09",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+     "title": "顶栏相机（截图）与「···」（分享）按钮：非死按钮，占位 Toast 文案与来源可辨",
+     "action": "①tap 相机钮；②tap「···」钮；③tap 组件内「分享喜悦」；④在 en-US locale 重复三 tap；抄录每条 Toast 原文与出现时刻",
+     "requiresReal": false
+    },
+    {
+     "id": "MS12",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+     "title": "热区批量测量：顶栏 72rpx 与三个动作钮均须 ≥88rpx，边界点击验证",
+     "action": "①批量读 6 个可点元素的 boundingClientRect 并换算 rpx；②对顶栏返回钮 tap 其上/下边缘内 4rpx；③对「分享喜悦」tap 文字上下各 4rpx 处；④对主按钮 tap 左右两端 8rpx 处",
+     "requiresReal": false
+    },
+    {
+     "id": "MS13",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+     "title": "dev-preview=1 QA 入口：固定演示对象渲染且不被 query 校验干扰",
+     "action": "进入后 5s 内读取页面文本/头像 src；再带额外 userId=100158 与 dev-preview=1 组合进入一次；tap「立即聊天」观察目标",
+     "requiresReal": false
+    },
+    {
+     "id": "MS17",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+     "title": "滚动与下拉刷新：整页为 flex 撑满无滚容器，不得出现双层滚动/伪刷新",
+     "action": "①小屏机型下把内容滚到底（若组件内有可滚区）；②顶/中/底各截图；③执行下拉手势 300px ×2；④左右滑动一次",
+     "requiresReal": false
+    },
+    {
+     "id": "MS18",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+     "title": "未登录/会话过期时进入：资料拉取失败的用户可见反馈是否缺失",
+     "action": "停留 5s；读取渲染结果、network（401/失败）、Toast 数组、console；随后 tap「立即聊天」与顶栏返回",
+     "requiresReal": false
+    },
+    {
+     "id": "MS20",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+     "title": "匹配成功页之后的重复匹配：从本页回寻觅再匹配另一人，栈与状态不得串",
+     "action": "①tap「继续逛逛」回寻觅；②对另一张卡 B 执行喜欢 → 匹配页 → 成功页；③读取成功页对象；④tap「立即聊天」读取聊天页 URL userId 与标题；⑤返回两次观察栈回退顺序",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/discover-extra/discover/match-success.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/discover-extra/discover/matching",
+   "missing": [
+    {
+     "id": "MT02",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+     "title": "CardSwiper 滑动方向语义：右滑=喜欢才进本页且 action=like；左滑=跳过不得进入",
+     "action": "①对当前卡执行「右滑」（swipe right）到底；②返回寻觅后对下一张执行「左滑」（swipe left）到底；③对下一张点击「喜欢」按钮；④对下一张点击「超赞」按钮；每步抄录路由与传入本页的 action 参数",
+     "requiresReal": false
+    },
+    {
+     "id": "MT03",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+     "title": "匹配成功（status=matched）：消费卡组 + redirectTo 成功页，栈中不得残留本页",
+     "action": "进入本页后等动画播完；读取跳转前后 getCurrentPages 与 matchStore.status/animationDone/pendingCardId",
+     "requiresReal": false
+    },
+    {
+     "id": "MT04",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+     "title": "【跨页状态契约证伪】redirectTo 触发 onUnload reset → 成功页仍须正确显示对方（MP-R2-MATCHING-014）",
+     "action": "matched 跳转后：①在成功页 500ms 内、2s 内、5s 内各截一张图并读取 matchStore.matchedUser 与页面 partner 名/头像；②从成功页 tap「立即聊天」，抄录聊天页 URL 的 userId 与对方昵称；③回读本次匹配真实对方 userId（discover 卡数据）",
+     "requiresReal": false
+    },
+    {
+     "id": "MT05",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+     "title": "单向喜欢（status=idle）：Toast + 400ms 自动返回 + 卡组已消费（返回后不见同卡）",
+     "action": "等动画播完 → 观察 Toast 与自动返回 → 返回后读取寻觅页当前卡 id 与 cards 长度",
+     "requiresReal": false
+    },
+    {
+     "id": "MT06",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+     "title": "失败（status=failed）：Toast 错误文案 + 600ms 返回，不得永驻「匹配中」",
+     "action": "进入本页等动画播完，观察 Toast 与返回；记录总耗时",
+     "requiresReal": false
+    },
+    {
+     "id": "MT14",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+     "title": "URL 直达路径的写请求：客户端连点/重复进入的请求条数与后端「喜欢」记录条数分离判定",
+     "action": "①直开一次，记录新增请求条数与 URL/Idempotency-Key；②返回后再直开同一卡 3 次（每次等动画结束离开），统计累计请求条数与后端记录条数 R1",
+     "requiresReal": true
+    },
+    {
+     "id": "MT20",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+     "title": "滚动与无滚容器断言：本页无可滚内容，不得出现回弹/双层滚动",
+     "action": "①页面内上下滑动 300px 各一次；②观察动画区是否被手势干扰、是否出现双层滚动或回弹异常",
+     "requiresReal": false
+    },
+    {
+     "id": "MT21",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+     "title": "下拉刷新：未配置 enablePullDownRefresh，不得触发伪刷新与重复匹配请求",
+     "action": "进入本页后下拉 300px 松手 ×2；再在动画播放中下拉一次",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/discover-extra/discover/matching.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/profile-extra/profile/album",
+   "missing": [
+    {
+     "id": "AB03",
+     "manifest": "次要20",
+     "title": "零照片空态：空态卡（图标+标题+副标题+添加按钮）与网格/错误卡三者互斥，不得同时出现",
+     "action": "观察首屏结构 → tap 空态卡里的「添加照片」按钮（:442-449）→ 取消选图",
+     "requiresReal": true
+    },
+    {
+     "id": "AB05",
+     "manifest": "次要20",
+     "title": "上传前置三路：隐私未授权 / 用户取消 / 文件超 10MB，各路 Toast 文案不同且均不改数据",
+     "action": "依次在三种前置下 tap 同一空格子并各观察 500ms 内反馈与最终数据",
+     "requiresReal": false
+    },
+    {
+     "id": "AB06",
+     "manifest": "次要20",
+     "title": "满 6 张上限：再点空位/底部按钮必出 albumFull Toast，且底部按钮与空格子隐藏态正确",
+     "action": "① 检查格子数与页头计数；② 检查底部「添加照片」按钮是否存在；③ 若空格子已不存在则改点任一已填格子；④ evaluate 直接把 index 传满调用路径（若可）或长按已填格选「设为头像」后再看数据",
+     "requiresReal": true
+    },
+    {
+     "id": "AB07",
+     "manifest": "次要20",
+     "title": "点击已填格子预览：包内 /static 走自建查看层、其他 URL 走 uni.previewImage；查看层圆点切换 + 遮罩关闭",
+     "action": "① tap 第 1 张已填格（:465 → handlePhotoTap :361-375）；② 在自建查看层 tap 非当前圆点（:507-515 @tap.stop）；③ tap 图片本体/遮罩关闭（:505 @tap=closeViewer）；④ 关闭后再点第 2 张确认初始页正确；⑤ 对 /static 分支记",
+     "requiresReal": true
+    },
+    {
+     "id": "AB08",
+     "manifest": "次要20",
+     "title": "长拍照操作菜单（ActionSheet 三路）：设为头像 / 删除 / 取消，取消不得有副作用",
+     "action": "① 长按第 1 张已填格 → ActionSheet 出现；② 选「取消」/下滑关闭（第一路）；③ 重开选「删除」（不确认 modal，只看第二层）；④ 重开选「设为头像」；⑤ 长按空格子",
+     "requiresReal": false
+    },
+    {
+     "id": "AB09",
+     "manifest": "次要20",
+     "title": "「设为头像」：mock 本地重排 vs real 下载+POST /profile/avatar；失败回退与 Toast；连点双判定",
+     "action": "① 长按第 2 张 → 选「设为头像」；② 检查头像/顺序/Toast；③ 到「我的」页复核头像是否同步（跨页状态）；④ 复位后同路径 rapidTap 菜单项×5（能驱动则做，不能则记 UNVERIFIED）；⑤ 断网/让 downloadFile 返 4xx 再走一次",
+     "requiresReal": true
+    },
+    {
+     "id": "AB10",
+     "manifest": "次要20",
+     "title": "「删除照片」：二次确认 modal 的确认/取消两路 + 成功/失败 Toast + 索引错位防护",
+     "action": "① 长按第 2 张 → 选「删除」→ modal 点「取消」；② 重复后点「确定」；③ 连续删除第 1 张两次（观察索引）；④ 断网走一次确定；⑤ modal 出现后按系统返回键",
+     "requiresReal": true
+    },
+    {
+     "id": "AB14",
+     "manifest": "次要20",
+     "title": "en-US 语言包下本页 i18n 全量 key 采证（含 Toast/ActionSheet/modal 三类动态文案）",
+     "action": "① fullPage 截图检视页头标题/计数/长按提示/空态/添加按钮/上传中文案；② 触发长按 → 检视 ActionSheet 两项文案；③ 触发删除 → 检视 modal 四段文案；④ 触发一次上传成功/失败 Toast",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要20.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/profile-extra/profile/album.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/profile-extra/settings/dnd",
+   "missing": [
+    {
+     "id": "DND02",
+     "manifest": "次要21",
+     "title": "总开关切换：switch 态与「当前状态」文案同步、有触觉反馈、不自动保存",
+     "action": "tap 第一个 switch（dnd.vue:369-373）→ 观察 → 再 tap 切回",
+     "requiresReal": false
+    },
+    {
+     "id": "DND03",
+     "manifest": "次要21",
+     "title": "紧急消息穿透开关独立于总开关：关总开关后仍可单独切穿透",
+     "action": "总开关置关 → tap 紧急穿透 switch（dnd.vue:478-482）×2",
+     "requiresReal": false
+    },
+    {
+     "id": "DND05",
+     "manifest": "次要21",
+     "title": "重复方式单选：切 CUSTOM 才出现星期网格，切回自动清空已选星期",
+     "action": "依次 tap 四条 .radio-row（每天/工作日/周末/自定义，dnd.vue:426-440）；在 CUSTOM 下选 2 个星期；再 tap「每天」",
+     "requiresReal": false
+    },
+    {
+     "id": "DND06",
+     "manifest": "次要21",
+     "title": "星期多选：去重、升序拼接、全不选时保存被拦截且文案语义正确",
+     "action": "依次 tap 周日(7)→周三(3)→周一(1)→再 tap 周一(1) 取消 → tap 保存；随后全不选再 tap 保存",
+     "requiresReal": false
+    },
+    {
+     "id": "DND07",
+     "manifest": "次要21",
+     "title": "保存成功：Toast + 服务端回填覆盖本地值 + 按钮文案恢复",
+     "action": "tap .save-btn（dnd.vue:488-498）一次，等待响应",
+     "requiresReal": false
+    },
+    {
+     "id": "DND08",
+     "manifest": "次要21",
+     "title": "防连点×5（假通过陷阱拆列）：isSaving 守卫 + 800ms 冷却只出 1 次 Toast",
+     "action": "500ms 内对 .save-btn rapidTap×5，逐次记录：客户端 PUT /dnd 请求条数、Toast 条数、handler 进入次数（按 isSaving 早退计数）",
+     "requiresReal": false
+    },
+    {
+     "id": "DND09",
+     "manifest": "次要21",
+     "title": "REAL_ONLY 加载失败：错误态展示服务端 errorMessage 且重试真重拉",
+     "action": "进页观察错误态 → tap .retry-btn（dnd.vue:344-353）→ 恢复网络后再 tap 一次",
+     "requiresReal": true
+    },
+    {
+     "id": "DND12",
+     "manifest": "次要21",
+     "title": "页级滚动到顶/底：底部安全区占位生效、保存按钮可达不被裁",
+     "action": "切到 CUSTOM 使内容超视口 → scrollTo 到底 → 回顶；记录 scrollTop/scrollHeight/windowHeight",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要21.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/profile-extra/settings/dnd.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/setup/recommend-pref/index",
+   "missing": [
+    {
+     "id": "RP03",
+     "manifest": "次要21",
+     "title": "选项点击：时间四选一/范围三选一的即时高亮与零写请求（改值不等于保存）",
+     "action": "依次 tap 时间选项 10:00/12:00/14:00/18:00 各一次；tap 范围选项三项各一次；全程不点保存，记录 network 写请求条数",
+     "requiresReal": false
+    },
+    {
+     "id": "RP04",
+     "manifest": "次要21",
+     "title": "校园优先开关：整行可点（非仅滑块），切换即时无请求",
+     "action": "tap .toggle-row 文字侧 → 观察；tap .toggle-switch 滑块侧 → 观察；再连点×5 观察最终态",
+     "requiresReal": false
+    },
+    {
+     "id": "RP05",
+     "manifest": "次要21",
+     "title": "保存成功：PUT 字段名对齐后端 + Toast + replaceAppPath 进寻觅（完成引导）",
+     "action": "tap 主按钮保存 1 次 → 记录请求体、Toast、路由链；随后进入 discover 页核对偏好是否生效（REAL_ONLY 回读）",
+     "requiresReal": false
+    },
+    {
+     "id": "RP06",
+     "manifest": "次要21",
+     "title": "连点保存×5（假通过陷阱拆列）：saving 守卫 + 文案切换，但无 disabled",
+     "action": "500ms 内对主按钮 rapidTap×5，逐条记录：客户端 PUT 条数、handler 进入次数、按钮文案/视觉态、replaceAppPath 次数、服务端回读偏好条数",
+     "requiresReal": false
+    },
+    {
+     "id": "RP07",
+     "manifest": "次要21",
+     "title": "REAL_ONLY 未登录保存：零 PUT 却提示成功并跳转（假成功采证）",
+     "action": "reLaunch 进本页 → 观察 fetchPreferences 走的是默认值分支还是请求 → 改选项 → tap 保存 → 观察 Toast/路由 → 注入真实 token 后重进核对是否持久化",
+     "requiresReal": true
+    },
+    {
+     "id": "RP08",
+     "manifest": "次要21",
+     "title": "REAL_ONLY 拉取失败：错误态渲染 + 重试按钮真重拉（review #28 回归）",
+     "action": "进页观察错误态文案与按钮 → tap .retry-btn → 恢复网络再 tap 一次；期间记录客户端 GET 条数",
+     "requiresReal": true
+    },
+    {
+     "id": "RP09",
+     "manifest": "次要21",
+     "title": "未提交改动无关的语言包一致性：scopeOptions 非 computed → 切语言选项不更新（证伪采证）",
+     "action": "切语言后逐元素检视：范围三项、开关标签、三张卡标题副标题、保存按钮、错误/加载文案",
+     "requiresReal": false
+    },
+    {
+     "id": "RP11",
+     "manifest": "次要21",
+     "title": "滚动到顶/底 + 底部留白证伪（MP-R2-APP-001）+ 进度条与链路一致性采证",
+     "action": "scrollTo 到底 → 回顶；量测正文 padding-bottom 与主按钮位置；量测 SetupProgress 在滚动时是否随页滚出",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要21.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/setup/recommend-pref/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/vip/promo-code",
+   "missing": [
+    {
+     "id": "PC02",
+     "manifest": "次要22",
+     "title": "展示版首屏：双输入框默认值（订单金额=季卡价 48）+ 校验/重置双按钮 + safe-top 前置（-001 证伪）",
+     "action": "观察首屏（≤500ms）→ 读两个输入框初值与 placeholder → 量测 .safe-top 与 .nav-bar 顺序几何 → 滚动到底",
+     "requiresReal": false
+    },
+    {
+     "id": "PC03",
+     "manifest": "次要22",
+     "title": "优惠码输入空态与非法态：空 → 「请输入优惠码」；格式非法 → 「优惠码格式不正确（4-24 位字母/数字/-）」",
+     "action": "依次执行并各观察 toast：① 空输入 tap 校验；② 只输入空格 tap 校验；③ 输 ABC（3 位）；④ 输 ABCD（4 位合法边界）；⑤ 输 25 位字符串；⑥ 输 AB_CD（含下划线）；⑦ 输「优惠码」（中文）；⑧ 粘贴带首尾空格的「  LOVE2026  」",
+     "requiresReal": false
+    },
+    {
+     "id": "PC04",
+     "manifest": "次要22",
+     "title": "订单金额输入四态：空 / 0 / 负数 / 非数字 / 三位小数 / 超长 → 「订单金额无效」与分转换取整",
+     "action": "把订单金额依次改为：① 清空；② 0；③ -50；④ abc（type=digit 下若不可输入则回填实际行为）；⑤ 48.999；⑥ 999999999999999；⑦ 0.01，每态 tap 校验一次",
+     "requiresReal": false
+    },
+    {
+     "id": "PC05",
+     "manifest": "次要22",
+     "title": "校验成功链路：结果卡五行字段完整 + toast「优惠码可用」+ 兑换按钮出现",
+     "action": "输入 LOVE2026 → tap 校验 → 观察按钮文案变化与结果卡 → tap 兑换按钮区域（先不点，仅确认其存在与文案）",
+     "requiresReal": false
+    },
+    {
+     "id": "PC06",
+     "manifest": "次要22",
+     "title": "校验返回不可用（available=false）：展示原因、兑换按钮不得出现、结果卡走 invalid 样式",
+     "action": "输入 INVALID → tap 校验 → 观察结果卡与兑换区；再改输入 EXPIRED 重复一次；再改回合法码 LOVE2026 重复一次",
+     "requiresReal": true
+    },
+    {
+     "id": "PC07",
+     "manifest": "次要22",
+     "title": "MP-R2-次要22-006 证伪：改码后校验失败必须清空陈旧结果卡与兑换按钮（门槛不得被绕过）",
+     "action": "按前置时序执行 A 通过 → 改 B → 让 B 校验失败 → 观察结果卡与兑换按钮 → 若在失败态下强点兑换区（若按钮仍在）观察提交的 code 值",
+     "requiresReal": true
+    },
+    {
+     "id": "PC08",
+     "manifest": "次要22",
+     "title": "连点「校验」×5：mock 轮 validating 不置位（MP-R2-次要22-018 仍开放），real 轮客户端只 1 条请求（拆两列）",
+     "action": "500ms 内对 .action-btn（校验）快速 tap×5，连拍 3s 记录 toast 条数与结果卡变化；real 轮同步骤另记 network",
+     "requiresReal": true
+    },
+    {
+     "id": "PC12",
+     "manifest": "次要22",
+     "title": "超长/特殊字符输入与键盘态：maxlength=32 边界、特殊字符不被当作合法码、键盘收起不残留遮挡",
+     "action": "① 粘贴 200 字符长串（「LOVE2026」×25）→ 读实际入框字符数；② 输入含空格/引号/尖括号的 \"A'<>&2\"；③ 输入纯空格 3 个后 tap 校验；④ 聚焦后触发键盘确认键（未设 confirm-type）；⑤ 收起键盘后截图整页布局",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要22.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/vip/promo-code.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/circles/circles/circle-home",
+   "missing": [
+    {
+     "id": "CH03",
+     "manifest": "次要18",
+     "title": "hero 返回键与无栈兜底（goBack → 兴趣圈列表）",
+     "action": "两种前置各 tap .hero-btn（:457-460 → goBack :332-339）",
+     "requiresReal": false
+    },
+    {
+     "id": "CH05",
+     "manifest": "次要18",
+     "title": "加入/退出圈子（三处入口共享 isJoining 守卫）连点×5 拆两判定点（写操作）",
+     "action": "① tap .info-join ×1 → 观察两处按钮文案同步；② tap 底部按钮退出；③ 300ms 内 rapidTap .info-join ×5；④ 失败前置（real 500/断网）tap ×1",
+     "requiresReal": true
+    },
+    {
+     "id": "CH06",
+     "manifest": "次要18",
+     "title": "5 个 Tab 切换与「仅动态 tab 有内容」的空态口径",
+     "action": "依次 tap .tab-item ×5（:519-528）读激活态与内容区；在「成员」tab 核对文案是否拼接成员数（tabLabel :426-431）",
+     "requiresReal": false
+    },
+    {
+     "id": "CH07",
+     "manifest": "次要18",
+     "title": "动态卡点击进话题详情（去白名单后非空 id 均可跳，证伪 MP-R1-CIRCLEHOME-002 复发）",
+     "action": "① tap .feed-card 正文区；② tap 卡片内「评论」action（:588 @tap.stop openFeedDetail）；③ 返回；④ 对 mock 无话题而回退演示 feed 的场景重复 tap（演示 id f1/f2）",
+     "requiresReal": false
+    },
+    {
+     "id": "CH08",
+     "manifest": "次要18",
+     "title": "动态卡「···」图标 ActionSheet 两项与冒泡隔离（证伪死图标）",
+     "action": "① tap .feed-more；② 原生菜单选第 1 项「查看全部话题」；③ 返回重开后选第 2 项「去圈内发帖」；④ 重开后取消；⑤ 验证 tap 图标不冒泡进详情",
+     "requiresReal": false
+    },
+    {
+     "id": "CH09",
+     "manifest": "次要18",
+     "title": "动态卡点赞/评论反馈：本地翻转可见 + real 不持久化断言（证伪 MP-R2-CIRCLEHOME-002）",
+     "action": "① tap .feed-action（点赞，:577-586）×1 与 ×2；② 记录 network 面板是否有写请求；③ 下拉重进/切后台回页后再读点赞数；④ real 包重复 ①③",
+     "requiresReal": false
+    },
+    {
+     "id": "CH11",
+     "manifest": "次要18",
+     "title": "底部栏 / 查看全部话题 / FAB 导航与热区+滚动总检（noop 装饰项）",
+     "action": "① 未加入态 tap .bottom-join（断言为加入而非跳转）；② 已加入态 tap .bottom-post 与 .bottom-fab；③ tap .topics-link「查看全部话题」（:596-599）；④ 对 hero 两按钮、三处加入、5 个 tab、feed 四类可点元素、topics-link ",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要18.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/circles/circles/circle-home.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/campus/campus/certification",
+   "missing": [
+    {
+     "id": "CF03",
+     "manifest": "次要18",
+     "title": "学生证上传：隐私授权前置（拒绝即中止并 Toast）与 chooseImage 失败提示（权限类写链路）",
+     "action": "① 首次 tap .upload-area（:353 → uploadStudentCard :113-136）触发隐私授权弹窗，选「拒绝」；② 重进选「同意」并完成相册选图；③ 选图后改 tap「×」移除（:369）；④ 再 tap「重新上传」（:366）换图；⑤ 造 chooseImage fail（取消系统选图）",
+     "requiresReal": false
+    },
+    {
+     "id": "CF04",
+     "manifest": "次要18",
+     "title": "「移除→重选→再上传」幂等键不再恒定（未提交改动/已修项证伪，拆两判定点）",
+     "action": "① 选图 A → 上传成功；② tap 移除 → 重选同一张图 A → 再上传；③ 300ms 内对同一未变更图 rapidTap 上传 ×5；④ 记录各次 POST /media/upload 的 name、body 与 Idempotency-Key 与响应码",
+     "requiresReal": true
+    },
+    {
+     "id": "CF05",
+     "manifest": "次要18",
+     "title": "三个输入框四态：正常 / 清空 / 超长 / 特殊字符（表单三态判定）",
+     "action": "对 schoolName、major、chsiCode 各执行：① 正常值（学校=广州大学 / 专业=软件工程 / 验证码=AB123456）；② 清空后提交；③ 输入 200 字超长串；④ 输入「' OR 1=1 -- <img src=x onerror=alert(1)> 　全角空格」；⑤ 仅全角空格",
+     "requiresReal": false
+    },
+    {
+     "id": "CF06",
+     "manifest": "次要18",
+     "title": "必填三连缺失与未实名双保险拦截（门槛提示文案）",
+     "action": "① 依次只填一项后 tap 提交（:421-431 submitCert）；② 三项齐全但无学生证图提交；③ 未实名态（idCardVerified=false）提交；④ 未实名态读 .gate-banner",
+     "requiresReal": false
+    },
+    {
+     "id": "CF08",
+     "manifest": "次要18",
+     "title": "提交认证成功：Toast + 状态卡刷新 + 重复提交防重（写操作，拆两判定点）",
+     "action": "① tap .submit-btn（:421）×1；② 观察按钮文案（提交中↔提交认证）；③ 成功后重进页面读状态；④ 回到可提交态后 300ms 内 rapidTap 提交 ×5；⑤ 断网态提交 ×1",
+     "requiresReal": true
+    },
+    {
+     "id": "CF09",
+     "manifest": "次要18",
+     "title": "学信网（选填）截图上传/移除与两处上传实现一致性（证伪 MP-R2-CERT-003 双轨）",
+     "action": "① tap 学信网 .upload-area（:397）→ 选图 → 移除（:413）→ 重选（:410）；② 仅填 chsiCode 不传图提交；③ 两字段都填提交；④ 对两轨分别选一张 >5MB 图（可造时）",
+     "requiresReal": false
+    },
+    {
+     "id": "CF10",
+     "manifest": "次要18",
+     "title": "scroll-view 内滚与键盘弹起（cursor-spacing）+ 热区总检 + 装饰项 noop",
+     "action": "① 分别聚焦三个输入框，观察键盘是否遮挡输入框与提交按钮；② .cert-body 滚到顶/底（含底部隐私提示 :434-438 可见）；③ 对返回键、两处上传区、重传/移除按钮、提交按钮、门槛「去认证」取 boundingBox；④ tap 说明卡条目与隐私提示文本（非交互）",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要18.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/campus/campus/certification.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/discover-extra/likes/index",
+   "missing": [
+    {
+     "id": "LK01",
+     "manifest": "次要19",
+     "title": "未登录态双入口接线：微信登录与手机号登录均可跳转",
+     "action": "① tap 组件内「微信登录」按钮（emit goLogin）；② 返回后 tap「手机号登录」（emit goPhoneLogin）；③ 未登录态尝试整页下拉",
+     "requiresReal": false
+    },
+    {
+     "id": "LK03",
+     "manifest": "次要19",
+     "title": "三 Tab 切换：访客懒加载 + 切 Tab 清搜索与批量态",
+     "action": "① 在「喜欢我的」输入搜索词并进入批量模式；② tap 切到「访客」；③ 再切「我喜欢的」；④ 每次读激活态、列表来源与 network",
+     "requiresReal": false
+    },
+    {
+     "id": "LK05",
+     "manifest": "次要19",
+     "title": "打码项与已解锁项点击分流：可见性、模糊态与锁标识",
+     "action": "① tap 未解锁项（:731 三元分支 → handleLockedItemTap）；② tap 已解锁项（→ handleItemClick :467-474）；③ 对互相喜欢项 tap（isMutualMatch :459-461）；④ 观察 aria-label 与昵称隐藏（:730）",
+     "requiresReal": false
+    },
+    {
+     "id": "LK06",
+     "manifest": "次要19",
+     "title": "批量模式全链：进入 / 单选 / 全选 / 取消全选 / 退出",
+     "action": "① tap 批量管理按钮（toggleBatchMode :301-304）；② tap 两行的选中区（handleToggleSelect :310-313）；③ tap 全选（handleSelectAll :318-328）；④ 再 tap 全选（取消）；⑤ tap「完成」退出；⑥ 在批量态下点击行内头像/聊天按",
+     "requiresReal": false
+    },
+    {
+     "id": "LK07",
+     "manifest": "次要19",
+     "title": "批量喜欢/跳过/取消：空选提示 + 连点 ×5 拆两判定点 + real 模式跳过不落库（证伪 MP-R2-LIKES-001）",
+     "action": "① 不选任何项直接 tap 喜欢（:954）/跳过（:969）/取消（:984）；② 选 2 项后 tap「跳过」；③ 重新进入批量、选 2 项后 300ms 内 rapidTap「喜欢」×5；④ real 后端下重复 ② 并重进本页回读",
+     "requiresReal": true
+    },
+    {
+     "id": "LK08",
+     "manifest": "次要19",
+     "title": "搜索框三态：300ms 防抖 / 清空 / 超长与特殊字符",
+     "action": "① 连续输入「摄影」两字（间隔 <300ms）观察过滤时机；② tap × 清空；③ 输入 100 字超长串；④ 输入「<img src=x onerror=alert(1)> 　全角」与 emoji；⑤ 输入必然无匹配的词",
+     "requiresReal": false
+    },
+    {
+     "id": "LK10",
+     "manifest": "次要19",
+     "title": "错误态重试三源齐拉 + 断网 Toast + Loading/骨架不永驻",
+     "action": "① 触发错误态 tap ErrorState 重试；② 断网态观察 Toast；③ 恢复网络后下拉刷新；④ 全程采样骨架与 spinner",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要19.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/discover-extra/likes/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/profile-extra/verification/index",
+   "missing": [
+    {
+     "id": "VCI04",
+     "manifest": "次要20",
+     "title": "空提交：四道必填校验按序各出一次 Toast 且文案正确（姓名→学号→学校→学生证）",
+     "action": "① 全空 tap .action-btn（提交，index.vue:675-683）→ 记录 toast；② 只填姓名再提交；③ 补学号再提交；④ 补学校再提交；⑤ 最后不选图直接提交",
+     "requiresReal": false
+    },
+    {
+     "id": "VCI05",
+     "manifest": "次要20",
+     "title": "学生姓名输入框四态 + 键盘弹起避让：正常/清空/超长(maxlength=20)/特殊字符",
+     "action": "对 #verification-student-name（index.vue:596-607）依次：① 输入「张三」；② 全选清空；③ 输入 40 字符长串（源码 maxlength=\"20\" :603 → 断言实际截断长度）；④ 输入「<script>alert(1)</script>『😀 空格』」混排",
+     "requiresReal": false
+    },
+    {
+     "id": "VCI08",
+     "manifest": "次要20",
+     "title": "上传学生证：隐私授权前置 + 选图成功/取消两路反馈",
+     "action": "① tap .upload-card（index.vue:649-656 → chooseImage :138-172）→ 在选图面板选一张图确认；② 再 tap 上传卡的「更换」态（:667-669）→ 取消选择；③ 未授权分支：把隐私授权置为未同意后重进页面再 tap",
+     "requiresReal": false
+    },
+    {
+     "id": "VCI09",
+     "manifest": "次要20",
+     "title": "提交认证（mock 全填合法）：Loading mask 不永驻 + 1s 后转 pending + 成功 Toast；连点提交×5 只走一次流程",
+     "action": "① tap .action-btn 提交一次，分别在 200ms/800ms/1500ms/3000ms 采样 Loading 与状态卡；② 复位后（退出重进）500ms 内 rapidTap .action-btn ×5",
+     "requiresReal": true
+    },
+    {
+     "id": "VCI11",
+     "manifest": "次要20",
+     "title": "verified 态：权益列表 + 「重新认证」/「删除认证」两个原生 modal 的 confirm/cancel/超时三路关闭（仅 mock 提供）",
+     "action": "① 检视 verified 结构；② tap「重新认证」（index.vue:521）→ 在 modal 上点「取消」；再 tap → 点「确定」；③ tap「删除认证」（:526，红色危险态）→ modal 点确定；④ 每次 modal 出现后不操作等其自然关闭（若可）",
+     "requiresReal": true
+    },
+    {
+     "id": "VCI12",
+     "manifest": "次要20",
+     "title": "REAL_ONLY 驳回（rejected）回显：证件图必须经 resolveMediaUrl 出图 + 重新提交不再重复上传 + 409 冲突文案（MP-R2-VERIFICAT",
+     "action": "① reLaunch 进本页 → 观察状态卡与上传卡预览；② 不改任何字段直接 tap 提交；③ 打开 Network 面板统计 POST /media/upload（uploadPostImage）与 POST /verification 条数；④ 对已存在 pending 的申请再提交一次",
+     "requiresReal": true
+    },
+    {
+     "id": "VCI13",
+     "manifest": "次要20",
+     "title": "页级滚动到顶/底 + 底部安全区：提交按钮不被 home indicator/TabBar 遮挡，无内容裁切",
+     "action": "页面 scrollTo 到底 → 回顶 → 中途停一次；全程记录 scrollTop/scrollHeight/windowHeight",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要20.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/profile-extra/verification/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/profile-extra/feedback/history",
+   "missing": [
+    {
+     "id": "FHT02",
+     "manifest": "次要21",
+     "title": "类型筛选四态：每次切换真实重拉、切回不丢数据、同值重复点击早退",
+     "action": "依次 tap 反馈 / 建议 / 活动提案 / 全部四枚 .filter-chip（history.vue:274-285）；再对当前已激活 chip 连点×3",
+     "requiresReal": false
+    },
+    {
+     "id": "FHT04",
+     "manifest": "次要21",
+     "title": "详情缓存与单开互斥：同条二次展开不重发请求、跨条切换只保留一项",
+     "action": "tap 已展开的记录 A（收起）→ 再 tap A（重开）→ tap 另一条记录 B → 再 tap B 同条",
+     "requiresReal": false
+    },
+    {
+     "id": "FHT05",
+     "manifest": "次要21",
+     "title": "附件图片预览与兜底：点击全屏 previewImage、current 正确、失效 URL 不破图",
+     "action": "展开带附件记录 → tap 第 2 张 .attachment-img（:362-370 handleAttachmentTap）→ 左右滑动 → 关闭预览",
+     "requiresReal": true
+    },
+    {
+     "id": "FHT08",
+     "manifest": "次要21",
+     "title": "打开即返回（<300ms 内离开）：自动展开定时器须被清理，不产生幽灵请求/报错",
+     "action": "进入后 150ms 内立即 tap AppShell 返回钮（抢在 autoExpandTimer 触发前）→ 观察 1s → 再次进入不带 id 的 history 并等 1.5s",
+     "requiresReal": false
+    },
+    {
+     "id": "FHT10",
+     "manifest": "次要21",
+     "title": "REAL_ONLY 单条详情失败不得劫持整页列表（MP-R2-FEEDBACKHIST-001 证伪）",
+     "action": "展开一条记录使详情请求失败 → 观察整页结构 → tap 错误卡上的「重试」",
+     "requiresReal": true
+    },
+    {
+     "id": "FHT12",
+     "manifest": "次要21",
+     "title": "返回落点两路 + AppShell show-tab-bar 语义落地核对（MP-R2-APP-001 证伪）",
+     "action": "各 tap AppShell 头部返回钮一次；并在两路下量测页面正文底部留白（.record 最后一行底边到视口底边距离）",
+     "requiresReal": false
+    },
+    {
+     "id": "FHT14",
+     "manifest": "次要21",
+     "title": "页级滚动到顶/底：筛选条可见性、最后一条记录完整、无遮挡",
+     "action": "scrollTo 到底 → 回顶 → 展开一条记录后再滚到底；记录 scrollTop/scrollHeight/windowHeight",
+     "requiresReal": true
+    }
+   ],
+   "manifest": "次要21.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/profile-extra/feedback/history.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/setup/campus/index",
+   "missing": [
+    {
+     "id": "SCU06",
+     "manifest": "次要21",
+     "title": "主按钮禁用态：未完成时点击零副作用，并核对页内 errIncomplete toast 是否已成死代码",
+     "action": "对 BottomActionBar 主按钮 rapidTap×5，记录每次是否触发 handler、是否出现 Toast、network 写请求条数；再只选城市+学校（专业留空）点 1 次",
+     "requiresReal": false
+    },
+    {
+     "id": "SCU07",
+     "manifest": "次要21",
+     "title": "保存成功（注册流程）：Toast + 触觉 + replaceAppPath 进课表页且不增栈层",
+     "action": "tap 主按钮 1 次；随后在课表页 tap 返回，观察落点",
+     "requiresReal": false
+    },
+    {
+     "id": "SCU08",
+     "manifest": "次要21",
+     "title": "补认证场景分流：已有校园资料时保存/跳过都回「我的」，不入课表步骤",
+     "action": "tap 主按钮保存 → 记录落点；再进入本页 tap 跳过入口（.skip-bar :277-280）→ 记录落点",
+     "requiresReal": false
+    },
+    {
+     "id": "SCU09",
+     "manifest": "次要21",
+     "title": "跳过入口：注册流程下跳过直进课表页；跳过文案非响应式采证",
+     "action": "tap .skip-bar → 记录路由；再从 schedule 返回；另跑一次先选满城市再 tap 跳过；并跑一次同实例内切语言后观察跳过文案",
+     "requiresReal": false
+    },
+    {
+     "id": "SCU10",
+     "manifest": "次要21",
+     "title": "保存防连点×5（假通过陷阱拆列）：saving 守卫 + disabled 双重拦截",
+     "action": "500ms 内对主按钮 rapidTap×5，逐条记录：客户端校园资料写请求条数与 URL/Idempotency-Key 值、Toast 条数、最终路由栈、服务端回读校园资料条数",
+     "requiresReal": false
+    },
+    {
+     "id": "SCU11",
+     "manifest": "次要21",
+     "title": "REAL_ONLY 保存失败：Toast 展示服务端 message 且按钮恢复可点、不跳转",
+     "action": "选满三项 → tap 保存 → 观察 Toast 与路由 → 恢复网络后（值不变）再 tap 一次",
+     "requiresReal": true
+    },
+    {
+     "id": "SCU13",
+     "manifest": "次要21",
+     "title": "滚动到顶/底 + 底部留白证伪（MP-R2-APP-001）+ 进度条步骤与实际链路不符采证",
+     "action": "scrollTo 到底 → 回顶；量测正文容器 padding-bottom；沿「保存 → schedule → 返回 → recommend-pref」走一遍并逐页记录 SetupProgress 是否渲染与步骤序号",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要21.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/setup/campus/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/setup/interest/index",
+   "missing": [
+    {
+     "id": "INT03",
+     "manifest": "次要21",
+     "title": "标签选择/取消：选中态即时反馈、跨组不串值、取消后再选不重复",
+     "action": "tap 任一标签 → 核对选中态与已选计数 → 再 tap 同一标签取消 → 连点同一标签×5 观察最终态 → 逐个选 4 个不同标签",
+     "requiresReal": false
+    },
+    {
+     "id": "INT04",
+     "manifest": "次要21",
+     "title": "少于 3 项的表单三态：0/1/2 项提交必须被拦截且零请求，第 3 项放行",
+     "action": "在已选 0、1、2、3 项四种状态下各 tap 保存键一次，记录 Toast、请求、路由",
+     "requiresReal": false
+    },
+    {
+     "id": "INT05",
+     "manifest": "次要21",
+     "title": "未提交/已提交改动证伪：全量资料二次拉取失败时不得再 PUT 半份数据（MP-R2-INTEREST-002 后半）",
+     "action": "tap 保存键 1 次 → 观察 Toast、是否发出 PUT、表单是否丢失 → 取消拦截后再 tap 一次",
+     "requiresReal": true
+    },
+    {
+     "id": "INT06",
+     "manifest": "次要21",
+     "title": "全量合并防清空（MP-R1-SETUPINTEREST-002 回归）：只改兴趣不得抹掉昵称/bio 等其余字段",
+     "action": "记录保存前完整资料快照 → tap 保存 → 用服务端回读（或 store 重拉）对比保存后快照；再跑一次：从注册链路进入本页并直接保存",
+     "requiresReal": true
+    },
+    {
+     "id": "INT07",
+     "manifest": "次要21",
+     "title": "未提交改动证伪（防连点双返回）：连点×5 只提交 1 次且只返回一次（MP-R2-INTEREST-001）",
+     "action": "500ms 内对 .interest-save rapidTap×5，逐条记录：客户端 PUT 条数、Toast 条数、600ms 后返回回调执行次数、最终路由栈（每帧 route）",
+     "requiresReal": false
+    },
+    {
+     "id": "INT09",
+     "manifest": "次要21",
+     "title": "TagSelector 事件链与内容完整性：跨组过滤、超长标签、滚动可达",
+     "action": "逐一核对：兴趣标签总数与 config/profile-tags 的 interest 组条数是否一致 → tap 组内最后一个标签（须在长列表底部可达）→ 保存后重进核对回显选中态 → 检视含长文本标签的换行",
+     "requiresReal": false
+    },
+    {
+     "id": "INT10",
+     "manifest": "次要21",
+     "title": "REAL_ONLY 保存失败：Toast 展示服务端 message 且 saving 复位后可重试",
+     "action": "tap 保存 → 观察 Toast/文案/已选是否保留 → 恢复网络后再 tap 一次",
+     "requiresReal": true
+    }
+   ],
+   "manifest": "次要21.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/setup/interest/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/discover/activities/index",
+   "missing": [
+    {
+     "id": "AC02",
+     "manifest": "次要22",
+     "title": "下拉刷新必须真实重拉（MP-R2-次要22-005 证伪：fetchActivities(true) 穿透 30s TTL）",
+     "action": "在列表 scroll-view 内下拉到 refresher 触发（activities/index.vue:390-397 refresher-enabled + @refresherrefresh），松手后等待动画结束；重复下拉 3 次，每次间隔 2s",
+     "requiresReal": false
+    },
+    {
+     "id": "AC04",
+     "manifest": "次要22",
+     "title": "快捷筛选 全部/今天/周末：客户端按 scheduleText 中文子串过滤，今天为空态文案",
+     "action": "依次 tap .quick-filter 三个 chip：今天（:400-410）→ 周末 → 全部，每步等待渲染",
+     "requiresReal": false
+    },
+    {
+     "id": "AC06",
+     "manifest": "次要22",
+     "title": "点活动卡跳详情带 id 参数，返回落点=活动列表且 Tab/筛选状态恢复",
+     "action": "tap 第 1 张 .activity-row（:414-423 → goToActivityDetail :143-145）→ 在详情页用返回键回到列表",
+     "requiresReal": false
+    },
+    {
+     "id": "AC07",
+     "manifest": "次要22",
+     "title": "点「感兴趣」报名：乐观文案 toast、按钮态翻转、计数 +1，取消回滚",
+     "action": "tap 第 1 张卡的 .enroll-btn（activities/index.vue:451-459，@tap.stop）→ 等 toast → 再 tap 一次（取消报名）",
+     "requiresReal": false
+    },
+    {
+     "id": "AC08",
+     "manifest": "次要22",
+     "title": "连点报名按钮×5：客户端并发守卫只提交 1 次（防假通过：拆客户端请求数与服务端回读）",
+     "action": "500ms 内对 a-2 的 .enroll-btn 快速 tap×5（rapidTap，记录每击落点），随后静置 3s 观察",
+     "requiresReal": true
+    },
+    {
+     "id": "AC09",
+     "manifest": "次要22",
+     "title": "底部「去寻觅 / 提交活动提案」两按钮路由 + AppShell 返回键落点（含栈=1 兜底）",
+     "action": "tap SectionCard 内 BottomActionBar 的 primary「去寻觅」与 secondary「提交活动提案」（activities/index.vue:475-485）→ 各自返回；再 tap AppShell 的返回键（:340 show-back）两种栈深各一次",
+     "requiresReal": false
+    },
+    {
+     "id": "AC10",
+     "manifest": "次要22",
+     "title": "七态覆盖：Loading / Error+重试 / Empty / 列表末尾 noMore / 上拉分页 300ms 防抖",
+     "action": "（a）断网冷启动进页面观察错误盒 → tap .retry-btn；（b）网络正常滚动列表 scroll-view 到底触发 @scrolltolower，200ms 内再触发一次；（c）正常态到底观察末尾提示",
+     "requiresReal": true
+    }
+   ],
+   "manifest": "次要22.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/discover/activities/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/campus/campus/hub",
+   "missing": [
+    {
+     "id": "CH09",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+     "title": "搜索特殊字符：%22 ' < > @ # 与空格混排不崩溃、不误命中",
+     "action": "依次输入「%22'<>&@#」、「   」（纯空格）、「PKU」（大写 id）并各观察一次",
+     "requiresReal": false
+    },
+    {
+     "id": "CH10",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+     "title": "点学校卡片（未认证）：navigateTo campus/index?school=<URL编码校名> 公开浏览视角",
+     "action": "tap 第一张 .campus-school-card（北京大学，hub.vue:282-291 → goSchool :160-162）",
+     "requiresReal": false
+    },
+    {
+     "id": "CH15",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+     "title": "REAL_ONLY 本校卡「进入」→ campus/index 私域视角（分类 Tab + 发布 FAB，无公开浏览 banner）",
+     "action": "我加入的 Tab tap 本校卡（goSchool hub.vue:160-162）",
+     "requiresReal": true
+    },
+    {
+     "id": "CH19",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+     "title": "快速连点学校卡×5：只压入 1 层、目标页不重复打开",
+     "action": "500ms 内对第一张 .campus-school-card 快速 tap×5（rapidTap，记录每次 tap 落点）",
+     "requiresReal": false
+    },
+    {
+     "id": "CH22",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+     "title": "页级滚动到顶/底：底部静态提示「更多校园圈持续接入中」完整可见、无死箭头",
+     "action": "页面 scrollTo 到底 → 再回顶（页级 window 滚动，非 scroll-view）",
+     "requiresReal": false
+    },
+    {
+     "id": "CH27",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+     "title": "REAL_ONLY 未登录（无 token）视角：hub 不弹登录拦截、内容正常渲染",
+     "action": "观察首屏 → tap 一张校卡 → 返回 → tap「去认证」",
+     "requiresReal": true
+    }
+   ],
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/campus/campus/hub.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/circles/circles/topic-detail",
+   "missing": [
+    {
+     "id": "TD03",
+     "manifest": "次要18",
+     "title": "发回复三态：正常提交 / 空与纯空格拦截 / 连点去重（写操作，拆两判定点）",
+     "action": "① 输入「QA-自检-正常回复」tap 发送（:426 submitReply）；② 清空后 tap 发送；③ 输入 3 个空格 tap 发送；④ 输入 501 字超长文本 tap 发送；⑤ 有效内容下 rapidTap 发送 ×5；⑥ 断网态 tap 发送",
+     "requiresReal": true
+    },
+    {
+     "id": "TD04",
+     "manifest": "次要18",
+     "title": "回复输入框特殊字符与图片墙回显（表单三态 + 兜底链）",
+     "action": "① 输入「<b>粗</b> & \\n emoji表情 #标签」观察输入框与提交后列表回显；② tap 话题配图（图片墙 :297-300 区段）观察是否可放大；③ 读头像缺失回复项的兜底（:340-344，initialOf :71-73）",
+     "requiresReal": false
+    },
+    {
+     "id": "TD05",
+     "manifest": "次要18",
+     "title": "回复分页加载更多：到底不显示按钮 + 失败 Toast",
+     "action": "① 连续 tap .replies-more（:371-386 → loadMoreReplies :54-65）至按钮消失；② 造失败（断网/500）后 tap；③ 采样加载中文案与 spinner",
+     "requiresReal": false
+    },
+    {
+     "id": "TD06",
+     "manifest": "次要18",
+     "title": "长按举报：ActionSheet 取消 / Modal 跳过 / 完整提交（写操作，Toast 文案）",
+     "action": "① 长按 .topic-content（:293 @longpress → handleReportTopic :170-209）；② 原生 ActionSheet 点取消；③ 重开选「垃圾广告」后在补充描述 Modal 点「跳过」（:188-194）；④ 重开选原因 + 填描述 + 提交；⑤ 断网态重走 ④",
+     "requiresReal": true
+    },
+    {
+     "id": "TD07",
+     "manifest": "次要18",
+     "title": "「打招呼」认证门槛与私信参数（写链路前置）",
+     "action": "① 未实名态 tap .say-hello（回复项 :358 @tap.stop sayHello :107-130）；② 已实名态重复；③ 检查去程路由 query 三项（userId / prefillMessage / quoteContext，:127-129）",
+     "requiresReal": false
+    },
+    {
+     "id": "TD08",
+     "manifest": "次要18",
+     "title": "作者头像落点=「我的」Tab 他人态，且落点页头像渲染须正常（未提交改动证伪）",
+     "action": "① tap 话题作者头像（:276）与回复者头像（:336）各一次，读路由与落点页；② 在落点页读取头像节点 src 与 naturalWidth；③ 从落点页返回，确认本页状态",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要18.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/circles/circles/topic-detail.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/tools/help/index",
+   "missing": [
+    {
+     "id": "HP01",
+     "manifest": "次要19",
+     "title": "访问守卫：未登录进帮助页应被门槛拦下并给出可回退路径",
+     "action": "① 未登录进入，观察是登录引导/解锁引导还是直达页面；② 走引导到登录页后返回；③ 已登录态 reLaunch 进入并 tap AppShell 返回键",
+     "requiresReal": false
+    },
+    {
+     "id": "HP02",
+     "manifest": "次要19",
+     "title": "FAQ 6 项折叠互斥：单开、二次点击收起、aria-expanded 同步",
+     "action": "① 依次 tap 第 1..6 项问题行；② 每次检查同时展开的数量；③ 对已展开项再 tap；④ 读 chevron 旋转态与答案文本",
+     "requiresReal": false
+    },
+    {
+     "id": "HP03",
+     "manifest": "次要19",
+     "title": "在线客服入口跳官方号会话（accountId 参数须被下游消费或记幻影）",
+     "action": "① tap 在线客服行（:104-120）；② 读落点页标题与账号；③ 返回帮助页",
+     "requiresReal": false
+    },
+    {
+     "id": "HP04",
+     "manifest": "次要19",
+     "title": "意见反馈入口跳反馈历史页（含提交通道），返回可用",
+     "action": "① tap 意见反馈行（:122-138）；② 读落点路由与页面标题；③ 返回；④ 未登录态重复 ①（守卫前置同 HP01）",
+     "requiresReal": false
+    },
+    {
+     "id": "HP05",
+     "manifest": "次要19",
+     "title": "复制客服邮箱：剪贴板内容必须是邮箱地址而非文案标签（证伪 MP-R1-HELP-001/101）",
+     "action": "① tap 邮箱行（:140-156）；② 用 automation 读剪贴板内容（getClipboardData 或粘贴到输入框回读）；③ 采样 Toast 文案与原生气泡；④ 连点 ×3",
+     "requiresReal": false
+    },
+    {
+     "id": "HP06",
+     "manifest": "次要19",
+     "title": "滚动到顶/底、热区实测与装饰项 noop（本页无输入框/无弹层，逐项确证）",
+     "action": "① 页面滚到顶与底（含 .help-footer 服务说明 :161-163）；② 对 FAQ 6 项、客服 3 项、返回键取 boundingBox；③ tap 客服项图标与「复制」标签（:155）、footer 文本；④ 尝试整页下拉",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要19.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/tools/help/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/village/village/tag-posts",
+   "missing": [
+    {
+     "id": "TP03",
+     "manifest": "次要18",
+     "title": "mock 模式点赞本地翻转成功（证伪 MP-R2-TAGPOSTS-001 恒失败）",
+     "action": "tap 卡片点赞 .action-btn（:391-402，aria-label=village.tagPosts.likeAria，@tap.stop toggleLike :32）×1，再 tap ×1 取消",
+     "requiresReal": false
+    },
+    {
+     "id": "TP04",
+     "manifest": "次要18",
+     "title": "real 模式点赞连点×5：客户端请求数与服务端回读条数拆两判定点",
+     "action": "300ms 内 rapidTap 同一卡片点赞 ×5，停 2s 后重进该标签页服务端回读 likeCount",
+     "requiresReal": true
+    },
+    {
+     "id": "TP05",
+     "manifest": "次要18",
+     "title": "卡片与三个互动按钮的事件隔离：@tap.stop 不得双触发或落空",
+     "action": "依次 tap：卡片正文区（:339 → goToDetail）、评论按钮（:386）、点赞按钮（:398）、分享按钮（:409）各一次，每次返回后继续",
+     "requiresReal": false
+    },
+    {
+     "id": "TP06",
+     "manifest": "次要18",
+     "title": "下拉刷新（scroll-view refresher）动画受控收起 + 数据替换",
+     "action": "在 .post-feed（:305-312，refresher-enabled=true / :refresher-triggered=isRefreshing）内下拉至出现刷新指示器并松手，采样收起时刻",
+     "requiresReal": false
+    },
+    {
+     "id": "TP07",
+     "manifest": "次要18",
+     "title": "触底加载更多与失败不得静默（证伪 MP-R2-TAGPOSTS-002 开放缺陷）",
+     "action": "① 滚动 .post-feed 至触底触发 @scrolltolower（:311 → onLoadMore :214-218），观察是否出现「没有更多」；② 失败前置下重复触底",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要18.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/village/village/tag-posts.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/village/village/history",
+   "missing": [
+    {
+     "id": "HS03",
+     "manifest": "次要18",
+     "title": "下拉刷新受控收起（refresher-triggered 绑定 loadingHistory）",
+     "action": "下拉触发 @refresherrefresh（:186 → onRefresh :80-82）并松手，采样指示器收起时刻与列表刷新结果",
+     "requiresReal": false
+    },
+    {
+     "id": "HS04",
+     "manifest": "次要18",
+     "title": "触底加载更多与到底判定（hasMore 由条数增量推导）",
+     "action": "滚动 .history-list 至底部触发 @scrolltolower（:187 → onLoadMore :85-97），连续 3 次直到到底",
+     "requiresReal": false
+    },
+    {
+     "id": "HS05",
+     "manifest": "次要18",
+     "title": "记录卡点击带 id 直达详情 + 返回后落点与位置恢复",
+     "action": "tap 第 3 条 .history-item（:189-194 → goToDetail :118-122）→ 进详情 → tap 详情返回 → 采样列表状态",
+     "requiresReal": false
+    },
+    {
+     "id": "HS07",
+     "manifest": "次要18",
+     "title": "清空确认弹窗三路关闭：遮罩 / 取消 / 确认（写操作）",
+     "action": "① tap .history-clear（:167）开弹窗；② tap .clear-dialog-mask 遮罩自身（:249 @tap.self）；③ 重开后 tap 取消（:259）；④ 重开后 tap 确认清空（:269 → handleClear :100-115）",
+     "requiresReal": false
+    },
+    {
+     "id": "HS08",
+     "manifest": "次要18",
+     "title": "空态动作回村口 + 热区/滚动总检（noop 装饰项）",
+     "action": "① 在空态 tap EmptyState 动作「返回村口」（:245 → openAppPath 村口）；② 对 .history-back（:147-156）、.history-clear（:161）取 boundingBox；③ 列表滚到顶/底",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要18.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/village/village/history.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/circles/circles/topics",
+   "missing": [
+    {
+     "id": "CT02",
+     "manifest": "次要18",
+     "title": "缺 circleId 直开：Toast 提示 + 不白屏 + 幻影参数不生效",
+     "action": "启动后读 Toast 队列、标题与列表区域；再 tap 返回键",
+     "requiresReal": false
+    },
+    {
+     "id": "CT03",
+     "manifest": "次要18",
+     "title": "5 个详情 tab 逐个切换（动态/精华/活动/作品墙/成员）与数据一致性",
+     "action": "依次 tap .circle-tab ×5（:440-450 → switchTab :285-290），每个 tab 读激活态与内容区；在「成员」tab 读人数拼接（:280）；在「作品墙」只应有带图话题",
+     "requiresReal": false
+    },
+    {
+     "id": "CT06",
+     "manifest": "次要18",
+     "title": "加入/退出圈子两处按钮共享态 + 失败 Toast + 连点拆两判定点（写操作）",
+     "action": "① tap hero 加入 → 观察两处按钮文案是否同步；② 再 tap 底部按钮退出；③ 300ms 内 rapidTap hero ×5；④ 失败前置（real 500/断网）tap ×1",
+     "requiresReal": true
+    },
+    {
+     "id": "CT08",
+     "manifest": "次要18",
+     "title": "下拉刷新与触底分页共存（scroll-view 定高，证伪 MP-R2-TOPICS-003）",
+     "action": "① 在 .topics-list（:471-479）下拉触发 @refresherrefresh（onRefresh :70-78），松手采样收起；② 连续触底 @scrolltolower（:83-91）直至出现「没有更多」（:588-590）；③ 全程读 scrollTop 与 window 滚动位置",
+     "requiresReal": false
+    },
+    {
+     "id": "CT10",
+     "manifest": "次要18",
+     "title": "加载失败错误态重试 / 空态动作跳写话题 / Loading 不永驻",
+     "action": "① error 态读文案并 tap 重试（:465-467 → onRefresh）；② 空态 tap EmptyState 动作（:488-496 @action goToPostTopic）；③ 在加载全程采样 spinner",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要18.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/circles/circles/topics.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/tools/love-center/nearby",
+   "missing": [
+    {
+     "id": "LN01",
+     "manifest": "次要19",
+     "title": "冷启动直开：无参数消费（全部参数为幻影）；三态首帧不闪错误",
+     "action": "① 进入后 0/0.5/1s 采样三态（loading :182-184 / error+retry :187-192 / empty+CTA :196-202 / 卡片区 :206-216）与 network；② 带 ?schoolId=1&userId=2 重进比对渲染与请求入参；③ 尝试整页下拉",
+     "requiresReal": false
+    },
+    {
+     "id": "LN03",
+     "manifest": "次要19",
+     "title": "未登录交互守卫：喜欢/超喜欢/发消息均给 Toast 且不静默（权限类）",
+     "action": "① tap 卡片「喜欢」按钮（CardSwiper.vue:1295 → emit swipe right）；② tap「超级喜欢」（:1291 → superLike）；③ 若卡片有发消息入口则 tap（message）；④ 左滑跳过（:1287 → swipe left）",
+     "requiresReal": false
+    },
+    {
+     "id": "LN04",
+     "manifest": "次要19",
+     "title": "右滑/喜欢（写操作）：本地队列推进 + matched 跳会话；连点拆两判定点",
+     "action": "① tap 卡片「喜欢」×1；② 观察是否出现 t('contentPages.nearby.liked') 或 matched 分支提示并跳 chat-session（:109-114）；③ 对同一张卡 rapidTap 喜欢 ×5；④ 检查本地队列是否移除该卡（removeLocalCard :155-157）；⑤",
+     "requiresReal": true
+    },
+    {
+     "id": "LN05",
+     "manifest": "次要19",
+     "title": "超级喜欢与发消息：写链路与会话懒创建参数",
+     "action": "① tap 星星/超喜欢按钮；② matched 分支验证跳会话；③ 通过卡片详情层触发发消息；④ 造 userId 为空/空白（mock 卡片缺 userId）后发消息；⑤ 断网重复 ①",
+     "requiresReal": false
+    },
+    {
+     "id": "LN06",
+     "manifest": "次要19",
+     "title": "卡片区可点元素全集与滑动/点击热区（含蒙面模式头像兜底，未提交 Avatar 改动回归面）",
+     "action": "① 逐一 tap 三按钮、卡片主体（应打开详情层或预览）、详情层内发消息（CardSwiper.vue:1258 透传）；② 横向拖动卡片触发 @swipe（:871 emit 路径）；③ 读蒙面态头像/昵称可见性；④ 对三按钮与卡片取 boundingBox；⑤ 卡片区容器高度塌陷检查（:262-278 flex:1",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要19.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/tools/love-center/nearby.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/tools/love-center/mbti",
+   "missing": [
+    {
+     "id": "LM02",
+     "manifest": "次要19",
+     "title": "8 个选项单选互斥：同题改选、跨题独立、aria-checked 同步",
+     "action": "① 第 1 题 tap 选项 A，再 tap 选项 B；② 第 2 题 tap 任一选项后回看第 1 题；③ 全 4 题依次作答；④ 读每题 aria-checked 与选中样式",
+     "requiresReal": false
+    },
+    {
+     "id": "LM03",
+     "manifest": "次要19",
+     "title": "未答完提交：Toast 拦截且不得出现结果弹层（无副作用）",
+     "action": "① tap .quiz-submit（:212-214 → submitTest :83-88）；② 采样 Toast 与 .mbti-result-mask；③ 0 题作答时重复 ①；④ 连点提交 ×5",
+     "requiresReal": false
+    },
+    {
+     "id": "LM05",
+     "manifest": "次要19",
+     "title": "结果弹层三路关闭：遮罩 / 关闭按钮 / 重新测试（含答案复位）",
+     "action": "① tap 面板内空白（非按钮区）确认不关闭（.stop 生效）；② tap 遮罩外部区域关闭；③ 重开后 tap「关闭」；④ 重开后 tap「重新测试」并读答案与弹层态；⑤ 弹层展开态按系统返回",
+     "requiresReal": false
+    },
+    {
+     "id": "LM06",
+     "manifest": "次要19",
+     "title": "16 型宫格与 4 维说明：无事件节点的 noop 判定 + i18n 完整性",
+     "action": "① tap 任意 3 个 .type-cell 与 2 个 .dimension-chip；② 读 16 型 code 与名称是否全部有 i18n 值（en-US + zh-CN 各一轮）；③ 采样路由与 network",
+     "requiresReal": false
+    },
+    {
+     "id": "LM08",
+     "manifest": "次要19",
+     "title": "scroll-view 滚到顶/底与全量热区实测（含提交按钮与弹层两按钮）",
+     "action": "① .content-scroll 滚到底（含 .content-footer-space :217）再回顶；② 对返回键、8 个选项、提交按钮、弹层两按钮、遮罩取 boundingBox；③ 弹层展开态下滑动背景页面；④ 采样底部安全区",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要19.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/tools/love-center/mbti.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/chat/official-chat/index",
+   "missing": [
+    {
+     "id": "OC01",
+     "manifest": "次要21",
+     "title": "冷启动首屏滚底竞态证伪：骨架 500ms 放行后末条历史消息必须完整可见（MP-R2-OFFICIALCHAT-001）",
+     "action": "进入后 300ms（骨架期）/700ms（放行瞬间）/1500ms/3000ms 四次采样：SkeletonBlock 与 .chat-body 存在性、scroll-view 的 scroll-into-view 值、scrollTop/scrollHeight、末条消息（「太好了！已经帮你报名成功啦」）boundi",
+     "requiresReal": false
+    },
+    {
+     "id": "OC04",
+     "manifest": "次要21",
+     "title": "输入框四态：正常中文 / 清空与纯空格 / 超长 500 字 / 特殊字符与 emoji 混排",
+     "action": "依次输入 ①「在吗」②清空至仅剩空格 ③500 字长串 ④「%22 <script> @# 空格 🌱✨」，每态观察输入栏与键盘，随后各发送一次",
+     "requiresReal": false
+    },
+    {
+     "id": "OC09",
+     "manifest": "次要21",
+     "title": "REAL_ONLY 加载失败错误态+重试真重拉；发送失败回滚草稿不丢内容",
+     "action": "进页观察错误态与文案 → tap .retry-btn（:406）→ 恢复网络再 tap；另跑一次：正常加载后断网，输入文本点发送观察失败回滚",
+     "requiresReal": true
+    },
+    {
+     "id": "OC10",
+     "manifest": "次要21",
+     "title": "返回两路：栈>1 navigateBack 回消息页、栈=1 switchTab 消息 Tab（MP-R1-OFFICIALCHAT-003 回归）",
+     "action": "各 tap .nav-left（:382-385 → goBack :328-335）一次；路B 另连点×3",
+     "requiresReal": false
+    },
+    {
+     "id": "OC14",
+     "manifest": "次要21",
+     "title": "状态栏/胶囊避让与滚动高度链路：hero 折叠后 scroll-view 不溢出、输入栏不遮末条",
+     "action": "检视 nav-bar paddingTop 与系统胶囊/时间是否叠印 → 页级是否可滚（应为 scroll-view 内滚）→ 长消息滚到底并记录 .chat-scroll scrollTop/scrollHeight 与 .input-bar 高度",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要21.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/chat/official-chat/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/vip/bills",
+   "missing": [
+    {
+     "id": "VB03",
+     "manifest": "次要22",
+     "title": "MP-R2-次要22-010 部分开放：onShow 命中 store 缓存不重拉 → 开通后回账单页需下拉才更新（拆客户端请求数与服务端回读）",
+     "action": "（a）进入账单页 → 记 network 与列表条数；（b）返回 VIP → 再进入账单页（同一 app 会话内 store 未销毁）→ 记请求数与条数；（c）在 (b) 的态上下拉刷新一次 → 记请求数与条数",
+     "requiresReal": true
+    },
+    {
+     "id": "VB04",
+     "manifest": "次要22",
+     "title": "下拉刷新真实重拉（唯一有 enablePullDownRefresh 的本片页面）：动画必须收、force=true 必穿透缓存",
+     "action": "页面原生下拉刷新 3 次，每次间隔 2s；期间每 500ms 连拍；第 3 次后立即离开页面再回来",
+     "requiresReal": false
+    },
+    {
+     "id": "VB05",
+     "manifest": "次要22",
+     "title": "筛选 Tab 四态切换（全部/订阅/续费/退款）：客户端过滤、空匹配时空态正确、切回数据不丢",
+     "action": "依次 tap .filter-chip：订阅 → 续费 → 退款 → 全部，每步回填卡数与选中态；再把筛选栏横向滑到最右滑回",
+     "requiresReal": false
+    },
+    {
+     "id": "VB07",
+     "manifest": "次要22",
+     "title": "加载失败不得静默：toast 后端文案 + 界面不显示假空态（错误态与空态可区分）",
+     "action": "冷启动进入账单页（拦截生效）→ 观察 toast 与列表区 → 恢复网络后下拉刷新一次",
+     "requiresReal": true
+    },
+    {
+     "id": "VB10",
+     "manifest": "次要22",
+     "title": "空账单与长列表结构：EmptyState 文案/类型正确、无重复卡片、key 稳定不串数据",
+     "action": "（a）进入空账单页观察 EmptyState → tap 空态区域（无可点动作则记 noop 反馈缺失）；（b）进入后快速切换筛选两次并滚动到底，逐卡核对 id 与内容对应",
+     "requiresReal": true
+    }
+   ],
+   "manifest": "次要22.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/vip/bills.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "pages/register/success",
+   "missing": [
+    {
+     "id": "RS04",
+     "manifest": "PAGES-REGISTER-SUCCESS",
+     "title": "phone 参数注入与编码：HTML/换行/中文/超长 500 字不得被解析或撑破布局",
+     "action": "每种读取首行 tag、整页文本与 DOM/wxml 节点树；随后 tap 主按钮确认可用",
+     "requiresReal": false
+    },
+    {
+     "id": "RS11",
+     "manifest": "PAGES-REGISTER-SUCCESS",
+     "title": "打开即返回 / 重复进出×3：无计时器泄漏、无重复渲染与叠加 Toast",
+     "action": "①进入后 <500ms 立即返回（打开即返回）；②重复「进入→tap 主按钮→返回」3 轮；③第 4 次进入后停留 5s 观察",
+     "requiresReal": false
+    },
+    {
+     "id": "RS13",
+     "manifest": "PAGES-REGISTER-SUCCESS",
+     "title": "下拉刷新：未配置 enablePullDownRefresh，不得触发刷新或重复跳转",
+     "action": "顶部下拉 300px 松手 ×2；观察 console/network 与页面状态",
+     "requiresReal": false
+    },
+    {
+     "id": "RS14",
+     "manifest": "PAGES-REGISTER-SUCCESS",
+     "title": "注册→成功页跨页链路完整性：redirectTo 后登录态与资料完成度一致",
+     "action": "注册页提交 → 成功页 → tap 主按钮进资料完善 → 返回成功页 → tap「稍后再说」进首页；每步抄录路由链与 isLoggedIn/profileCompletion",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "PAGES-REGISTER-SUCCESS.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/pages/register/success.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/profile-extra/profile/favorites",
+   "missing": [
+    {
+     "id": "FV03",
+     "manifest": "次要20",
+     "title": "点收藏卡 → 帖子详情：setCurrentPost + navigateTo ?id=，返回后列表与收藏态不丢",
+     "action": "① tap 第 1 张 .favorite-card（:28-33 @tap=\"openPost(post.id)\"）；② 在详情页返回；③ 再 tap 第 2 张；④ 记录两次跳转的 options.id 与卡片 post.id 对应关系",
+     "requiresReal": true
+    },
+    {
+     "id": "FV05",
+     "manifest": "次要20",
+     "title": "REAL_ONLY 取消收藏失败：必出错误 Toast + 回滚到原状态 + 无未处理 Promise 拒绝（MP-R2-FAVORITES-001 修复守卫）",
+     "action": "① 故障态下 tap 某卡「取消收藏」；② 采样 200ms（乐观更新是否先移除）/1s（回滚后）/3s（Toast 是否已消失）三帧；③ 恢复网络后再点一次；④ 全程监听 console 的 unhandledRejection",
+     "requiresReal": true
+    },
+    {
+     "id": "FV07",
+     "manifest": "次要20",
+     "title": "scroll-view 滚动到顶/底 + 高度自适应：末条卡片完整可见、无页面级双滚动（MP-R2-FAVORITES-002 修复守卫）",
+     "action": "① 在 .favorites-list（:27 scroll-view scroll-y）内 scrollTo 底 → 顶，记录 scrollTop/scrollHeight/clientHeight；② 同时记录页面级 scroll 位置；③ 量测最后一张卡与 .list-bottom-spacer（:53/:186",
+     "requiresReal": true
+    },
+    {
+     "id": "FV09",
+     "manifest": "次要20",
+     "title": "onShow 重拉与「打开即返回 / 重复进出×3」：无重复请求堆积、无半途状态、无未捕获 Promise",
+     "action": "① 循环 3 次：「我的」页点收藏进本页 → 首屏断言 → 返回；② 第 4 次进入后 300ms 内立即 tap 返回（抢在 fetchPosts resolve 之前）；③ 记录每轮 GET 请求条数与时间戳；④ 再次进入检查列表完整性",
+     "requiresReal": true
+    }
+   ],
+   "manifest": "次要20.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/profile-extra/profile/favorites.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/market/shop/index",
+   "missing": [
+    {
+     "id": "MS02",
+     "manifest": "次要22",
+     "title": "Tab 切换分类：mock 本地过滤不重拉、real 按 category 重新请求，滚动位与已选态保持",
+     "action": "依次 tap .category-item：ticket（演出票）→ creative（创意）→ all（全部）；每步等渲染并回填卡数；最后把分类栏横向滑到最右再滑回",
+     "requiresReal": false
+    },
+    {
+     "id": "MS05",
+     "manifest": "次要22",
+     "title": "点商品卡 → 详情页带 id 参数（encodeURIComponent），返回后列表状态恢复",
+     "action": "tap 第 3 张 .shop-card（:346-353 goToDetail(item.id) :258-262）→ 在详情页返回 → 再切到 ticket 分类 tap 其中 1 卡后返回",
+     "requiresReal": false
+    },
+    {
+     "id": "MS08",
+     "manifest": "次要22",
+     "title": "连点同一商品卡×5：只压入 1 层详情页（导航类防连点，无写请求）",
+     "action": "500ms 内对第 1 张 .shop-card 快速 tap×5（rapidTap，记录每击落点），静置 3s",
+     "requiresReal": false
+    },
+    {
+     "id": "MS09",
+     "manifest": "次要22",
+     "title": "滚动到顶/底 + 横滑滚动条采证（MP-R2-次要22-015 仍开放：show-scrollbar 字符串字面量）",
+     "action": "商品 scroll-view 滚到底 → 回顶；分类 scroll-view 横滑到底 → 回左；分别回填 scrollTop/scrollHeight 与 scrollLeft/scrollWidth",
+     "requiresReal": true
+    }
+   ],
+   "manifest": "次要22.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/market/shop/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/discover-extra/home/segment",
+   "missing": [
+    {
+     "id": "SG01",
+     "manifest": "次要19",
+     "title": "冷启动深链 type 三分支：合法值 / 未知值 / 缺参，均不闪错误空态",
+     "action": "三条前置分别 reLaunch：(a) type=nearby；(b) type=not-exist；(c) 无 type。各自 0/0.5/1s 采样标题文案、.segment-state 类型与列表条数",
+     "requiresReal": false
+    },
+    {
+     "id": "SG04",
+     "manifest": "次要19",
+     "title": "整行点击进他人主页并返回；行内无第二热区",
+     "action": "① tap 第 1 行 .segment-row（:139-148 → openProfile :112-114）；② 从他人主页返回；③ 同一行连点 ×2 观察栈深；④ tap 行内头像（:149）与箭头（:160）",
+     "requiresReal": false
+    },
+    {
+     "id": "SG06",
+     "manifest": "次要19",
+     "title": "三态齐全（骨架 / 错误+重试 / 空态）与下拉刷新不可达确证",
+     "action": "① 触发失败态读文案，tap .segment-retry（:131-133 → load）；② 空数据前置下读空态文案；③ 尝试整页下拉并记录是否出现刷新指示器与新增请求",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要19.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/discover-extra/home/segment.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/discover-extra/nearby/people",
+   "missing": [
+    {
+     "id": "PE02",
+     "manifest": "次要19",
+     "title": "附近/同城切换：同值不重拉 + 竞态 token 不得错配",
+     "action": "① tap 已激活的「附近」tab（:171-179 → switchScope :152-156）；② tap「同城」，在其请求未回时立刻 tap 回「附近」×2 制造竞态；③ 稳定后读标题与列表首条",
+     "requiresReal": false
+    },
+    {
+     "id": "PE03",
+     "manifest": "次要19",
+     "title": "下拉刷新（本页已开 enablePullDownRefresh）：重拉一次且指示器收起",
+     "action": "整页下拉触发刷新，采样请求条数与指示器收起时刻；下拉期间再下拉一次",
+     "requiresReal": false
+    },
+    {
+     "id": "PE04",
+     "manifest": "次要19",
+     "title": "触底增量渲染：第 21 人起必须可见（证伪 MP-R2-PEOPLE-001 分页死路）",
+     "action": "① 在 .people-list scroll-view（:207 @scrolltolower → loadMoreVisible :46-50）连续触底直至无增量；② 全程记录可见行数与 scrollTop；③ 触底后回到顶部",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要19.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/discover-extra/nearby/people.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/market/detail/index",
+   "missing": [
+    {
+     "id": "MD02",
+     "manifest": "次要22",
+     "title": "封存支路：commerce.enabled 缺省时首屏必须只出封存卡且不泄露价格/商品请求（G5 数据合规）",
+     "action": "观察首屏 → tap 封存卡内的「返回」按钮（market/detail/index.vue:310-319）→ 再回本页验证一致性",
+     "requiresReal": false
+    },
+    {
+     "id": "MD07",
+     "manifest": "次要22",
+     "title": "非法/缺失 id 深链：notFound 空态 + 「返回逛逛」按钮；404 与网络错误分流正确",
+     "action": "分别进入三态 → 观察状态区 → (a)(b) tap 空态内按钮；(c) 错误态点「重试」，恢复网络后再点一次",
+     "requiresReal": true
+    },
+    {
+     "id": "MD09",
+     "manifest": "次要22",
+     "title": "长内容滚动到底：介绍正文完整可见、不被固定购买栏遮挡（MP-R2-次要22-019 结构风险采证）",
+     "action": "scroll-view/页面滚动到底 → 静置观察 → 回顶；回填 scrollTop/scrollHeight/windowHeight 三元组",
+     "requiresReal": true
+    }
+   ],
+   "manifest": "次要22.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/market/detail/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/vip/index",
+   "missing": [
+    {
+     "id": "VI03",
+     "manifest": "次要22",
+     "title": "展示版首屏结构与状态栏避让（MP-R2-次要22-001 证伪）：safe-top 前置于 nav-bar、无双份状态栏空条",
+     "action": "观察首屏（≤500ms）→ boundingClientRect 量测 .safe-top 与 .nav-bar 的 DOM 顺序与几何 → 滚动全页采集权益 6 项图标与套餐区",
+     "requiresReal": false
+    },
+    {
+     "id": "VI04",
+     "manifest": "次要22",
+     "title": "权益卡片点击 → 详情弹层三路关闭（确认 / 系统返回手势 / 再次点击外部）",
+     "action": "tap 第 1 个 .benefit-item（:439-457 viewBenefitDetail :248-256）→ 弹层出现后分别验证：① tap 确认按钮；② 用系统返回手势/物理返回关闭；③ 关闭后再 tap 第 4 个权益项",
+     "requiresReal": false
+    },
+    {
+     "id": "VI09",
+     "manifest": "次要22",
+     "title": "自动续费开关三路：确认开启 / 确认弹窗取消回弹 / 关闭确认（MP-R1-VIP-001 受控回显 key 回归）",
+     "action": "① 把 switch 拨到开 → 弹「开启自动续费」确认层 → tap 确认；② 拨到关 → 弹关闭确认 → tap 取消；③ 拨到开 → tap 取消；④ 在请求在途时再拨 2 次；⑤ 每次操作后读 switch 视觉态与 store 值（evaluate 取 useAutoRenewStore().status.e",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要22.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/vip/index.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/profile-extra/profile/location",
+   "missing": [
+    {
+     "id": "PL02",
+     "manifest": "次要20",
+     "title": "定位失败/用户拒绝授权态：页面不得卡死、坐标行为空、无错误弹窗雪崩（fetchCurrentLocation 内部消化）",
+     "action": "① 拒绝授权态下 reLaunch 进本页，500ms/2s 各采样一次；② tap「重新定位」再次触发；③ evaluate 读取页面是否残留 loading 态；④ 检查 network 是否有 /location/report 上报",
+     "requiresReal": false
+    },
+    {
+     "id": "PL05",
+     "manifest": "次要20",
+     "title": "「返回首页」按钮：openAppPath 走 Tab 语义（switchTab），栈不异常增长",
+     "action": "tap .location-actions 第二个 .location-btn（:186-188 → goHome :114-116 → openAppPath(ROUTES.TAB.HOME)）",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要20.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/profile-extra/profile/location.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/profile-extra/profile/privacy",
+   "missing": [
+    {
+     "id": "PR05",
+     "manifest": "次要20",
+     "title": "跨页与冷启动持久化：改后 switchTab 离开 → 重进/整机重启后回读同值（两条水合路径 mock/real 分别验证）",
+     "action": "① 开关1 置为 true 并确认 storage；② tap 返回离开页 → 再进入本页读值；③ wx.reLaunch('/pages/profile/index') 模拟整机回前台 → 再进本页读值；④ 清空 storage 后进入本页（缺字段/非法值兜底）",
+     "requiresReal": true
+    }
+   ],
+   "manifest": "次要20.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/profile-extra/profile/privacy.vue",
+   "sourceFound": true
+  },
+  {
+   "page": "subpackages/market/wallet/index",
+   "missing": [
+    {
+     "id": "MW09",
+     "manifest": "次要22",
+     "title": "无下拉刷新能力守卫（pages.json 未开 enablePullDownRefresh）：不得出现半截刷新",
+     "action": "在 wallet 页面上滑下拉 2 次，观察是否出现原生下拉刷新指示器；再滚到底/回顶各一次",
+     "requiresReal": false
+    }
+   ],
+   "manifest": "次要22.json",
+   "sourceGuess": "",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/market/wallet/index.vue",
+   "sourceFound": true
+  }
+ ]
+}

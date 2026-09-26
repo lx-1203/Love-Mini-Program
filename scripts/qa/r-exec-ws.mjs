@@ -320,7 +320,14 @@ async function main() {
     let cmp = 0, diff = 0, bothNoAnswer = 0;
     const diffs = [];
     for (const page of Object.keys(byPage).slice(0, Number(opt("fidelityPages", "2")))) {
-      try { openPage(page, "", { project: PROJECT }); } catch (e) { console.log("FIDELITY_OPEN_ERR " + String(e.message).slice(0, 60)); continue; }
+      /* 开页偶发整批失败是这条通道的已知行为（实测这一轮就两次），一次失败不等于这一页不能对照：
+         重试两次，仍失败才跳过——跳过要留 FIDELITY_SKIP 的痕，不能悄悄少样本。 */
+      let opened = false, lastErr = "";
+      for (let a = 0; a < 2 && !opened; a++) {
+        try { openPage(page, "", { project: PROJECT }); opened = true; }
+        catch (e) { lastErr = String(e.message).slice(0, 60); console.log("FIDELITY_OPEN_RETRY(" + a + ") " + page + " :: " + lastErr); await sleep(2000); }
+      }
+      if (!opened) { console.log("FIDELITY_SKIP page=" + page + " 开页两次都失败：" + lastErr); continue; }
       await sleep(2500);
       const sels = [...new Set(byPage[page].flatMap((c) => classesOf(c.action + " " + c.expected)))].slice(0, 24);
       if (!sels.length) { console.log("FIDELITY_SKIP page=" + page + " 没有点名类名"); continue; }
@@ -341,8 +348,9 @@ async function main() {
     diffs.forEach((d) => console.log("FIDELITY_DIFF " + d));
     console.log(cmp < 8 ? "FIDELITY=TOO_FEW_SAMPLES 可比样本 <8，这次对照不算数（别拿它当通过）"
       : (diff === 0 ? "FIDELITY=PASS 逐例结论一致 ⇒ 允许把 WS 当取证默认传输" : "FIDELITY=FAIL 有 " + diff + " 条不一致 ⇒ WS 不许当默认，先解释每一条"));
-    process.exitCode = cmp >= 8 && diff > 0 ? 2 : 0;
-    return;
+    /* 对照跑完必须真的退出：WS 会话按规矩不许 close()，事件循环会一直挂着把设备占住
+       （实测两次对照都是靠外层 timeout 才结束的）。 */
+    process.exit(cmp >= 8 && diff > 0 ? 2 : 0);
   }
 
   let budget = LIMIT > 0 ? LIMIT : Infinity;

@@ -20,7 +20,7 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { execFileSync } from "node:child_process";
-import { evaluate, openPage, shot, mintToken, bootSession, verifyLogin, routeStack, clearSession } from "./cli-automator.mjs";
+import { evaluate, openPage, shot, mintToken, bootSession, verifyLogin, routeStack, clearSession, element } from "./cli-automator.mjs";
 import { readApiMode, assertGuestCapable } from "./artifact-band.mjs";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
@@ -40,6 +40,11 @@ const SETTLE = parseInt(arg("settle", "2400"), 10);
 /* 游客档预热：先开一个与目标无关的页，把「连上工程后的第一次开页」那次启动链路消耗掉，
    再清会话——这样批次里的第一次开页就不再是冷启动。只有显式要求才做（默认拒绝跑 mock 游客）。 */
 const WARMUP_GUEST = process.argv.includes("--guest-warmup");
+/* 交互刀：真点/真输入（automation_element_action），只在显式 --tap 时开。
+   不可逆的账号级动作一律禁触并显式记 DENY——不是藏红，是这类动作会把后面几百条
+   共用的会话打掉，那一次跑就只剩下"注销成功"这一帧。 */
+const TAP_MODE = process.argv.includes("--tap");
+const DENY_TAP = /注销|解绑|清空|删除账号|删除帐号|退出登录|登出/;
 const WARMUP_PAGE = arg("warmup-page", "pages/home/index");
 const SHOT_DIR = join(REPO, "reports", "screenshots", LABEL);
 const RES = join(OUT_DIR, "exec-results.json");
@@ -203,10 +208,11 @@ function flush() {
 }
 
 const rows = [];
-const stats = { executed: 0, failed: 0, skipTap: 0, skipReal: 0, skipNonReal: 0, skipProbe: 0, skipNoCrit: 0, skipMiss: 0, pages: 0, probes: 0, shots: 0, noClass: 0 };
+const stats = { executed: 0, failed: 0, skipTap: 0, skipReal: 0, skipNonReal: 0, skipProbe: 0, skipNoCrit: 0, skipMiss: 0, pages: 0, probes: 0, shots: 0, noClass: 0, tapDeny: 0, tapNoTarget: 0, tapsDone: 0, leftPage: 0 };
 /* 增量行与终稿行共用同一个加总函数：上一版只在终稿那处补了新加的 skipNonReal，
-   组内那条 print 漏了，于是同一轮里两个 skipped 数字互相打架（差值正好是真用例跳过数）。 */
-const skippedTotal = () => stats.skipTap + stats.skipReal + stats.skipNonReal + stats.skipProbe + stats.skipNoCrit + stats.skipMiss;
+   组内那条 print 漏了，于是同一轮里两个 skipped 数字互相打架（差值正好是真用例跳过数）。
+   交互刀新增的三类跳过（DENY / 没点名元素 / 交互后离页）也走同一个函数，不再各写各的。 */
+const skippedTotal = () => stats.skipTap + stats.skipReal + stats.skipNonReal + stats.skipProbe + stats.skipNoCrit + stats.skipMiss + stats.tapDeny + stats.tapNoTarget + stats.leftPage;
 let budget = LIMIT > 0 ? LIMIT : Infinity;
 let stopped = false;
 RUN.abort = () => { stopped = true; };
@@ -252,11 +258,60 @@ for (const name of files) {
       if (!again.__err) { dom = again; probeRetry = " | probeRetry=ok（首探 " + firstErr + "）"; }
     }
     if (dom.__err) console.log("  probe-err " + page + " :: " + dom.__err);
+    const domFor = (list) => (list.length ? probeMany(list) : {});
+    /** 行里的 observed 只有一处生成，交互刀和 observe-only 共用同一个形状，
+        否则同一轮里会出现两种读法（这在本仓已经被点过一次）。 */
+    const observed0 = (c, routeStr, rOk, d, tapNote) =>
+      "top=" + (String(routeStr || "").split("|").pop() || (routeKnown ? "?" : "(落点未取证)")) + (rOk === false ? " ≠ " + page : "") +
+      " | dom: " + (classesOf(c.action + " " + c.expected).length
+        ? classesOf(c.action + " " + c.expected).map((s) => s + ":" + (d[s] || (d.__err ? "ERR" : "no-answer"))).join(" ")
+        : "(本条没点名类名)") +
+      " | " + (TAP_MODE ? "tap-腿" : "observe-only") + (d.__err ? " | probe-err:" + d.__err : "") + routeRetry + probeRetry + (tapNote || "");
     for (const c of todo) {
-      const cls = classesOf(c.action + " " + c.expected);
-      const observed = "top=" + (route.split("|").pop() || (routeKnown ? "?" : "(落点未取证)")) + (routeOk === false ? " ≠ " + page : "") +
-        " | dom: " + (cls.length ? cls.map((s) => s + ":" + (dom[s] || (dom.__err ? "ERR" : "no-answer"))).join(" ") : "(本条没点名类名)") +
-        " | observe-only" + (dom.__err ? " | probe-err:" + dom.__err : "") + routeRetry + probeRetry;
+      let cls = classesOf(c.action + " " + c.expected);
+      let dom2 = dom, tapNote = "", caseRoute = route, caseRouteOk = routeOk;
+      /* 交互刀（--tap）：这条通道的 automation_element_action 会真触发点击/输入
+         （tour-cli-states.mjs:107 已在用），所以不必为了点一下去开 WS——
+         实测 WS 会话一连上，simulator_open_page 就整批失败（r-exec-ws 的 --fidelity 就是这么卡住的）：
+         两条通道抢同一个模拟器，混用等于自断取证。 */
+      if (TAP_MODE && TAP_RE.test(String(c.action || ""))) {
+        if (DENY_TAP.test(String(c.action || ""))) {
+          stats.tapDeny++;
+          rows.push(row(name, page, c, "SKIPPED", route, "交互禁触（注销/解绑/清空这类不可逆动作会打掉后面几百条共用的会话）⇒ 显式记 DENY，不混进已跑", observed0(c, route, routeOk, dom, "")));
+          continue;
+        }
+        const targets = classesOf(String(c.action || ""));
+        if (!targets.length) {
+          stats.tapNoTarget++;
+          rows.push(row(name, page, c, "SKIPPED", route, "action 含交互动词但没点名可交互元素 ⇒ 没法把这次点击归属到某个东西，待把判据收紧", observed0(c, route, routeOk, dom, "")));
+          continue;
+        }
+        const done = [], unmet = [];
+        for (const sel of targets.slice(0, 4)) {
+          const isInput = /输入|input|填写/.test(String(c.action || ""));
+          try {
+            element(isInput ? "input" : "tap", sel, { project: PROJECT }, isInput ? ["--value", "123456"] : ["--wait", "1"]);
+            done.push((isInput ? "input:" : "tap:") + sel);
+          } catch (e) { unmet.push((isInput ? "input:" : "tap:") + sel + " :: " + String(e.message).slice(0, 40)); }
+          sleep(700);
+        }
+        sleep(SETTLE);
+        stats.tapsDone += done.length;
+        let r2 = "";
+        try { r2 = String(routeStack({ project: PROJECT }) || ""); } catch (e) { r2 = "ERR"; }
+        if (r2 && !r2.startsWith("ERR")) { caseRoute = r2; caseRouteOk = r2.includes(page); }
+        tapNote = " | tap[" + done.join(",") + "]" + (unmet.length ? " 未成[" + unmet.join(",") + "]" : "") +
+          (caseRouteOk === false ? " 交互后已离开本页 ⇒ 本条探针不在本页上，不作判" : "");
+        /* 交互把页面导航走了 ⇒ 在本页查本页物件已经没有意义，但这条不能记红：
+           它欠的是"交互后回到本页"的配方，不是产品没做。 */
+        if (caseRouteOk === false) {
+          stats.leftPage++;
+          rows.push(row(name, page, c, "SKIPPED", caseRoute, "交互后离开目标页 ⇒ 状态量不到，记 LEFT_PAGE（不是产品判红）", observed0(c, caseRoute, caseRouteOk, dom, tapNote)));
+          continue;
+        }
+        dom2 = domFor(cls);
+      }
+      const observed = observed0(c, caseRoute, caseRouteOk, dom2, tapNote);
       if (process.argv.includes("--real-cases-only") && c.requiresReal !== true) {
         /* 真实刀只欠 requiresReal 那 236 条；其余不重复跑，但仍要记一行，
            否则这个 corpus 的行数就不再是 1107，守恒核对会被"少了一类"骗过去。 */
@@ -342,7 +397,9 @@ if (Object.keys(bandOf).length > 1) console.log("RUNNER_MIXED 载体档位不止
 console.log("RUNNER_STATS identity=" + IDENTITY + " loginVerify=" + LOGIN_VERIFY + " executed=" + stats.executed + " failed=" + stats.failed +
   " skipped=" + skippedTotal() +
   "(交互动词=" + stats.skipTap + " requiresReal=" + stats.skipReal + " 非真实用例=" + stats.skipNonReal + " 探针无结果=" + stats.skipProbe +
-  " 判据无可判物件=" + stats.skipNoCrit + " 出帧失败=" + stats.skipMiss + ") 页组=" + stats.pages +
+  " 判据无可判物件=" + stats.skipNoCrit + " 出帧失败=" + stats.skipMiss +
+  " 交互禁触=" + stats.tapDeny + " 交互没点名=" + stats.tapNoTarget + " 交互后离页=" + stats.leftPage + ") 页组=" + stats.pages +
+  " 真做过的交互=" + stats.tapsDone +
   " 折叠探针类名次数=" + stats.probes + " 出帧=" + stats.shots + " 未点名类名=" + stats.noClass + " 通道异常次数=" + transportErrs);
 const statusOf = {};
 for (const r of all) statusOf[r.status] = (statusOf[r.status] || 0) + 1;
