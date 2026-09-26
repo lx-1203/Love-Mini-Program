@@ -928,3 +928,38 @@ matching 的 20 条在 A 侧同样是 SKIPPED。
 和 campus/index 的 `?school=` 是同一类东西。两个参数都已进 `ROUTE_QUERY`，所以这 35 条（15+20）与 26 条游客档
 一起，是**补前置**而不是等夹具；`dev-preview` 会把 status 直接置为已配对，因此它测的是这一页的呈现而不是配对算法，
 报告里引用它时必须这样限定。
+
+## 38 B 侧执行轮跑满 1107 行：A/B 第一次能整批对照，通过率 20.2% → 49.8%，且 0 条判绿转判红
+
+`r-exec-cli.mjs --out reports/audit/round-7/interact-b`（gitSha `af66c4ed`，重建后的 mock 产物）跑完：
+
+```
+RUNNER_ROWS new=1017 merged=1107 之前已有=90 重复新行=0
+RUNNER_STATUS_ALL EXECUTED=551 FAILED=85 SKIPPED=471
+RUNNER_EVIDENCE_HOLE 0     通道异常次数=0     页组=57     出帧=498
+```
+
+对 §30 冻结的 A 侧快照（`exec-results.snapshot-b89dc4a71654.json`，gitSha `713c1729`）做差：
+
+| | A（冻结，重建前） | B（本轮，重建后） |
+|---|---|---|
+| EXECUTED | 224 | 551 |
+| SKIPPED | 838 | 471 |
+| FAILED | 45 | 85 |
+| 通过率（三个口径同名） | 20.2% | 49.8% |
+
+`ONLY_IN_LIVE=0 ONLY_IN_FROZEN=0`、复合主键两份都 0 重复、png 三口径（字面引用 / 计数 / 确在盘上）都相等。
+迁移矩阵逐条要有归因，不能只报涨的那半边：
+
+- `SKIPPED→EXECUTED 323`、`FAILED→EXECUTED 11`：**覆盖变化，不是修好了 334 条**。
+  A 侧那 11 条的失败原因是 `routeStack 探针没结果`（§33 同一条通道故障），B 侧拿到了落点答案；
+  323 条则是 A 侧被 `requiresReal / 交互动词 / 探针空` 挡住，本轮真产物 + 修好的探针过了那道门。
+- `FAILED→SKIPPED 2`、`EXECUTED→SKIPPED 7`：**这是覆盖率倒退，必须点名**。
+  7 条全部是 `action 含交互动词 ⇒ observe-only` —— A 侧那批是在更宽松的老口径下被"跑了一遍"，
+  现在的执行器拒绝在没有交互腿时假装测过。所以这 7 条在交互刀（WS tap 那一轮）补上之前
+  不算测过，报覆盖率时要把它们从"已覆盖"里扣出来。
+- `SKIPPED→FAILED 53`：全部落在 §37 那五类"缺前置"的页（login 26 / campus-index 15 / matching 20 /
+  tag-posts 7 / 次要22 17 = 85 条 FAILED 的全部），B 侧执行轮启动早于 `ROUTE_QUERY` 与 `--identity guest`
+  两处修改，所以这一轮**没能**用上补好的前置；接刀脚本 `round7-post-b-slice.sh` 用 `interact-b2` 重测它们。
+- **没有任何 `EXECUTED→FAILED`**：重建 + 8080 契约改动 + `cityTrusted` 落地，
+  在 1107 行里没有制造一条新红。
