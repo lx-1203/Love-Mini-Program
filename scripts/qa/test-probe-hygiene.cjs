@@ -13,7 +13,11 @@ const { execFileSync } = require("node:child_process");
 
 const REPO = path.resolve(__dirname, "..", "..");
 const TOOL = path.join(REPO, "scripts", "qa", "verify-fixes-against-artifact.cjs");
-const OUT = path.join(REPO, ".zcode", "tmp", "fixverify", "verdicts.json");
+/* 隔离：这条测试**不传 --baseline** ⇒ 判据台按 HEAD 当 novelty 控制，桶数与生产那次
+   （--baseline 094f7239）天然不同。2026-09-26 实测它把生产载体 verdicts.json 覆盖了
+   （AV 18→16、NEEDS 61→62，读者会以为判据台退步了）⇒ 测试自己的产物写自己的目录。
+   BASELINE 那份 pre-* 快照是只读输入，留在原处。 */
+const OUT = path.join(REPO, ".zcode", "tmp", "fixverify-probe-hygiene", "verdicts.json");
 const BASELINE = path.join(REPO, ".zcode", "tmp", "fixverify", "verdicts.pre-probe-hygiene.json");
 
 let fails = 0, checks = 0;
@@ -25,7 +29,8 @@ function t(name, cond, detail) {
 
 let out = "";
 try {
-  out = execFileSync(process.execPath, [TOOL], { cwd: REPO, encoding: "utf8", timeout: 240000, maxBuffer: 64 * 1024 * 1024 });
+  fs.mkdirSync(path.dirname(OUT), { recursive: true });
+  out = execFileSync(process.execPath, [TOOL, "--out", ".zcode/tmp/fixverify-probe-hygiene"], { cwd: REPO, encoding: "utf8", timeout: 240000, maxBuffer: 64 * 1024 * 1024 });
 } catch (e) {
   console.log("PH_ABORT 工具本身没跑起来：" + (e && (e.stdout || e.message)));
   console.log("PH_TEST=FAIL\nPH_SUMMARY checks=1 fail=1");
