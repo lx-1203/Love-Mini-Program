@@ -47,6 +47,9 @@ for (const f of files) {
     else if (hits.route) cls = "route-assert";
     rows.push({
       manifest: f.replace(/\.json$/, ""), id: c.id, page: c.page, tier: c.tier || "normal",
+      /* 状态名不新造字段，用清单里本来就有的形状：title 的「<状态>：…」前缀（round-6 用例设计沿用的写法）。
+         在这里就落进行记录，是因为分组、去重、审计都要用同一个值，不能在第二遍里重新解析一遍。 */
+      state: (String(c.title || "").split(/[：:]/)[0].trim() || "(无名)").slice(0, 24),
       requiresReal: c.requiresReal === true, cls,
       batchable: cls === "assert-only" || cls === "route-assert",
       calls: (cls === "assert-only" || cls === "route-assert" ? 0 : hits.tap ? 1 : 0) + (hits.screenshot ? 1 : 0),
@@ -73,7 +76,45 @@ console.log("CENSUS_BATCHABLE=" + batchable + "/" + rows.length + " (" + (batcha
 console.log("CENSUS_TAPS=" + taps + " SCREENSHOTS=" + shots + " REQUIRES_REAL=" + needReal);
 console.log("CENSUS_MODEL_CALLS open=" + COST.pageOpen + "s tap=" + COST.tap + "s shot=" + COST.screenshot + "s assert=" + COST.assertion + "s/条");
 console.log("CENSUS_ESTIMATE_MINUTES=" + (seconds / 60).toFixed(1) + "（按折叠传输、每页只开一次；与 WS 通道的 r-exec 实测速度不是同一件事）");
-/* 成本要按"贵在哪"拆开报，否则"折叠断言就能救执行轮"这个结论会被断言单价带走 */
+/* ① 截图策略要回答的是"1023 张帧里有多少张其实是同一张"：
+   分组键 = manifest|page|state，同页同态的观察对象是同一棵渲染树，帧只该拍一次。 */
+const groups = {};
+for (const r of rows) {
+  if (!/(^|,)screenshot(,|$)/.test(r.hits)) continue;
+  const k = r.manifest + "|" + r.page + "|" + r.state;
+  (groups[k] = groups[k] || { cases: 0, tier: "" }).cases++;
+  if (r.tier === "critical") groups[k].tier = "critical";
+}
+const gk = Object.keys(groups);
+const uniqueFrames = gk.length;
+const withCritical = gk.filter((k) => groups[k].tier === "critical").length;
+
+/* 按策略重算时长：帧只拍 unique 张（critical 优先），tap/断言/开页不变 */
+const policy = {
+  naive: shots * COST.screenshot,
+  dedup: uniqueFrames * COST.screenshot,
+  criticalOnly: withCritical * COST.screenshot + (shots - uniqueFrames) * 0,
+};
+const secondsDedup = seconds - policy.naive + policy.dedup;
+const secondsCritical = seconds - policy.naive + policy.criticalOnly;
+console.log("CENSUS_FRAMES naive=" + shots + " unique(page+state)=" + uniqueFrames +
+  " 可省=" + (shots - uniqueFrames) + "(" + ((shots - uniqueFrames) * 100 / shots).toFixed(0) + "%)" +
+  " 含critical的组=" + withCritical);
+console.log("CENSUS_POLICY_MINUTES 现状=" + (seconds / 60).toFixed(1) +
+  " 同页同态只拍一张=" + (secondsDedup / 60).toFixed(1) +
+  " 只给critical出帧=" + (secondsCritical / 60).toFixed(1));
+if (uniqueFrames >= shots) {
+  console.log("CENSUS_RESULT=FAIL reason=分组没起到去重作用（unique>=naive）⇒ 状态名取法不对，不能拿这套策略写进执行器");
+  process.exit(2);
+}
+/* 去重账必须合得上：分组里的用例总数要等于 naive 帧数，少一条就是分组键漏了用例 */
+const groupedCases = gk.reduce((a, k) => a + groups[k].cases, 0);
+console.log("CENSUS_CONSERVE 分组内用例=" + groupedCases + " 需帧用例=" + shots +
+  (groupedCases === shots ? " 合" : " 不合(不许用这套分组写执行器)"));
+if (groupedCases !== shots) {
+  console.log("CENSUS_RESULT=FAIL reason=去重分组与需帧用例数对不上 ⇒ 有用例既没被计入组也没被排除，账本不闭合");
+  process.exit(2);
+}
 const costParts = {
   open: pageGroups * COST.pageOpen, tap: (rows.length - batchable) * COST.tap,
   shot: shots * COST.screenshot, assert: rows.length * COST.assertion,
@@ -82,6 +123,11 @@ console.log("CENSUS_COST_SHARE " + Object.keys(costParts).map((k) => k + "=" + (
 const ok = rows.length > 1000 && batchable > 0;
 console.log(ok ? "CENSUS_RESULT=OK" : "CENSUS_RESULT=FAIL reason=用例数或可折叠数为 0 ⇒ 分类器没读到东西");
 mkdirSync(dirname(OUT), { recursive: true });
-writeFileSync(OUT, JSON.stringify({ generatedAt: new Date().toISOString(), ops: OPS.replace(REPO + "/", ""), cost: COST, counts: by, batchable, cases: rows }, null, 1));
+writeFileSync(OUT, JSON.stringify({
+  generatedAt: new Date().toISOString(), ops: OPS.replace(REPO + "/", ""), cost: COST,
+  counts: by, batchable, frames: { naive: shots, unique: uniqueFrames, groups },
+  policy: { minutesNaive: +(seconds / 60).toFixed(1), minutesDedup: +(secondsDedup / 60).toFixed(1), minutesCriticalOnly: +(secondsCritical / 60).toFixed(1) },
+  cases: rows,
+}, null, 1));
 console.log("CENSUS_WRITTEN=" + OUT.replace(REPO + "/", ""));
 if (!ok) process.exit(2);
