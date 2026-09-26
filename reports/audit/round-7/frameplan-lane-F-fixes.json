@@ -1,0 +1,111 @@
+{
+ "lane": "F-fix",
+ "generatedAt": "2026-09-26",
+ "note": "本文件只判 frameplan-needs-fix.json 里的 7 个条目；未改任何源码、未改台账、未改别人的 lane 文件。每条 realAnchor 都是用 Read 工具真打开文件看到的那一行，行上确有该类名。共同成因（写在每条 reason 里，供复核工具侧参考）：scripts/qa/merge-frameplans.mjs:92 建类名索引时只收带 __ 或 -- 的名字，且 :179 要求 token 逐字出现在所标那一行，于是「单连字符 BEM 块名 + 锚点标在值/逻辑行」必然被判成全仓找不到（ANCHOR_TOKEN）。本轮 7 条全部属于这一形态，无一条是写手编造。",
+ "items": [
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
+   "verdict": "REANCHOR",
+   "fixes": [
+    {
+     "token": "pinned-text",
+     "realSelector": ".pinned-text",
+     "realAnchor": "apps/client/src/subpackages/circles/circles/circle-home.vue:534",
+     "note": "已 Read 确认：:534 是公告卡里的 text 节点，类名 pinned-text，内容为 pinnedNotice。样式声明在同文件 :951-958，其中 :955-957 正是 overflow hidden、text-overflow ellipsis、white-space nowrap，与断言自述的单行省略一致。同族兄弟类 pinned-card 在 :532、pinned-badge 在 :533（两条都未被判红，说明整块都在）。原锚 :116 是 useMock() 三元里写死值那一行（值以方括号前缀圈规开头），它只是文案来源、行上没有类名，所以工具报全仓没有。"
+    }
+   ],
+   "reason": "物件真实存在、只是指针标错了位置：类名在 :534（节点）与 :951（样式），值来源在 :116。渲染条件 v-if pinnedNotice 在 :532，real 构建下 :115-117 给空串则整卡不渲染，因此本帧必须 mock 构建（与该条 precondition 已写的 fixture 口径一致），这不是判据错。工具侧误判成因见本文件顶层 note（merge-frameplans.mjs:92 索引不含单连字符块名、:179 要求 token 在所标行）。",
+   "criterionSuggestion": "断言 1 的 sourceAnchor 改为 apps/client/src/subpackages/circles/circles/circle-home.vue:534，把「写死值出处 :116、省略声明 :955-957」降级进 note 保留；三条断言的期望文本一个字都不动。取景前置仍要求 mock 构建。"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
+   "verdict": "REANCHOR",
+   "fixes": [
+    {
+     "token": "comments-list",
+     "realSelector": ".comments-list",
+     "realAnchor": "apps/client/src/subpackages/village/village/detail.vue:961",
+     "note": "已 Read 确认：:961 是评论列表容器节点，类名 comments-list（渲染条件 v-else-if sortedComments.length > 0）；其唯一直接子节点族是 :964 的 comment-item（v-for 于 :962-966），因此 .comments-list 下的 comment-item:last-child 选得到真元素。样式规则在同文件 :2363。兄弟节点 comments-empty(:1122) 与 comments-more(:1129) 都在 comments-section 下、列表已在 :1119 闭合，不会成为 last-child 干扰项。原锚 :1618 是 detail-body--bar-expanded 规则体的 padding-bottom 值行（calc(320rpx + env(...))，同规则选择器在 :1617，普通态 140rpx 在 :1614），是被减数的出处而不是被量节点的类名行。"
+    }
+   ],
+   "reason": "遮挡判据的两端都在：来源端吸底栏已 Read 核实为 :2917 选择器行，:2920 position fixed、:2923 bottom 0、:2924 z-index 100；预留端 :1614 与 :1618 分别给普通态 140rpx 加安全区、两态 320rpx 加安全区，与 expected 里写的数值逐字吻合。所以这条不是缺码也不是判据错，只是 rect-not-overlap 断言把锚点标到了预留值行、而 target 里点名的 comments-list 类名在 :961。工具侧误判成因见顶层 note。",
+   "criterionSuggestion": "该断言改双锚：sourceAnchor 指向 apps/client/src/subpackages/village/village/detail.vue:961（被量的列表节点），把 :1617-1618 与 :1614 的两态预留值写进 note；target 保持 .comments-list 下的 comment-item:last-child 与 .detail-input-bar 不变。另建议在 steps 里保留换帖重试口径（post-1 无评论时列表不渲染，判不到末条）。"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005",
+   "verdict": "REANCHOR",
+   "fixes": [
+    {
+     "token": "publish-topic-chip",
+     "realSelector": ".publish-topic-chip",
+     "realAnchor": "apps/client/src/subpackages/village/village/publish.vue:854",
+     "note": "已 Read 确认 :854 就是 chip 本体（v-for 遍历 topics 的 view，类名 publish-topic-chip，样式在同文件 :1092）。同文件两个前缀候选都不是判据要的：publish-topic-chip__text 在 :855（chip 内的话题文字），publish-topic-chip__remove 在 :860（chip 内的 × 钮，且已在 :859-866 换型为 view 并带 hover-class 值 press-feedback--active、hover-stay-time 120、@tap removeTopic(idx)）。element-count 判的是点 × 后整枚 chip 由 1 变 0，只有容器本体 :854 对得上，选子节点会把判据变成数文字或数按钮。原锚 :343-345 是 removeTopic 函数体（:344 topics.value.splice(index, 1)），是因果来源不是类名行。"
+    }
+   ],
+   "reason": "对象、机制、对照范式三者齐备且都逐行核过：hover-class 生效值 scale(0.98) 加 opacity 0.92 在 apps/client/src/theme/global.scss:277-281（.press-feedback--active 与 .press-feedback:active 共选择器）；对照的九宫格 × 在 publish.vue:788 带同款 hover-class、样式 :1076 为 40rpx × 40rpx 绝对定位容器。因此 element-count 断言只是锚点标到了 splice 行。附带风险提示（不改变判定）：chip 区整块受 :850 的 v-if topics.length > 0 控制，且圈子目标下 :853 会提示话题不随发布，取景须保持 general 目标（该条 precondition 已这么写）。工具侧误判成因见顶层 note。",
+   "criterionSuggestion": "断言 4 的 sourceAnchor 改为 apps/client/src/subpackages/village/village/publish.vue:854，并在 note 里保留 :344 的 splice 作为 1→0 的因果来源；前三条断言锚点（:860、:860、:1076）经复核都落在含类名的行上，不动。"
+  },
+  {
+   "id": "MP-R2-PROFILE-024",
+   "verdict": "REANCHOR",
+   "fixes": [
+    {
+     "token": "not-logged-profile",
+     "realSelector": ".not-logged-profile",
+     "realAnchor": "apps/client/src/components/profile/NotLoggedProfile.vue:153",
+     "note": "已 Read 确认两处：:34 是模板根节点（class 为 not-logged-profile，模板从 :33 开始），:153 是样式选择器行 .not-logged-profile {。被测声明在 :161 的 padding 简写里，第三值即 padding-bottom 为 calc(184rpx + env(safe-area-inset-bottom) * 2)，与 expected 的 184rpx 加 2×env 逐字等值。原锚 :161 是声明行本身，行上没有类名，故被判全仓没有。"
+    }
+   ],
+   "reason": "组件确实挂在被测路由上（pages/profile/index.vue:54 引入、:1647 以 v-if !isUnlocked 渲染访客态），且同条另三条断言的锚点都落在含类名的行上：nlp-interaction--last 在 :133（:132 为 nlp-interaction 本体）、nlp-footer-btn__text 在 :147、其定位来源 .nlp-footer-btn 在 :444（:445 position fixed、:451 bottom calc(env(safe-area-inset-bottom) * 2 + 200rpx)、:452 height 92rpx，合起来正是顶缘 292rpx 加 2×env，与判红推理一致）。所以本条只是锚点从值行搬到选择器行。工具侧误判成因见顶层 note。",
+   "criterionSuggestion": "断言 1 的 sourceAnchor 改为 apps/client/src/components/profile/NotLoggedProfile.vue:153，把实测声明 :161 与 CTA 几何 :451-452 记在 note；若执行器要按 sourceAnchor 读声明值，建议约定写成「选择器行（声明在 :161）」的双段形式，而不是把锚点放在值行。"
+  },
+  {
+   "id": "MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001",
+   "verdict": "REANCHOR",
+   "fixes": [
+    {
+     "token": "circle-card",
+     "realSelector": ".circle-card",
+     "realAnchor": "apps/client/src/subpackages/circles/circles/index.vue:416",
+     "note": "已 Read 确认 :416 是圈卡节点（v-for 遍历 tabFilteredCircles，class 为 circle-card），样式在 :528-543：无 margin，卡内 padding 为 var(--sp-6) var(--sp-5)、gap var(--sp-4)，即卡的外缘只受祖先内距影响。锚点应落在页面文件而不是外壳文件。原锚 apps/client/src/components/layout/AppShell.vue:281 是声明行 padding: 0 28rpx，其选择器 .shell--standard 在 :280（同文件 :284 immersive 为 0、:288 minimal 亦为 0 28rpx）——几何来源没错，只是那行不含被量类名。横向单源也已逐行核实：.circles-card-list padding 为 var(--sp-5) 0 0（:511）、.circles-tabs padding 0（:812，:810-811 注释即本条台账口径）、.circles-tabs__list 只有 padding-right 16rpx（:819）、.circles-list 无 padding（:504-507）、.circles-banner margin var(--sp-5) 0 0（:495）；页面以 variant 值 standard 消费外壳（index.vue:339-340）。"
+    }
+   ],
+   "reason": "被量物件存在且判据成立：壳给 28rpx 唯一水平内距、页内三层横向内缩已归零，故卡左缘与首枚 chip 左缘同基线，两条 geometry 断言互相咬合；同条其余四条断言的锚点（:396、:511、:400、:391）复核时都已落在含类名的行上。只是 geometry 断言把锚点写到了来源文件的值行，被工具判成全仓没有（成因见顶层 note；shell--standard 因带 -- 本可被索引命中，circle-card 是单连字符块名所以漏检）。",
+   "criterionSuggestion": "断言 3 改双锚：类名锚 apps/client/src/subpackages/circles/circles/index.vue:416，几何来源锚 apps/client/src/components/layout/AppShell.vue:280（选择器行，行内含 shell--standard）。另按该条 unresolved：本帧只判 circles/index 一侧，全站 14 个消费页未归零前整条不收口，建议保留该保留语，别把这条升成全站判据。"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001",
+   "verdict": "REANCHOR",
+   "fixes": [
+    {
+     "token": "chat-time-bar",
+     "realSelector": ".chat-time-bar",
+     "realAnchor": "apps/client/src/subpackages/chat/chat-session/index.vue:2072",
+     "note": "已 Read 确认 :2072 是时间分隔条节点（v-if 判 row.type 等于 timebar，class 为 chat-time-bar，处于 :2071 的 messageRows 行循环模板里），样式在同文件 :2587。行模型来源：view-models.ts:336 push type 为 timebar 的行、shouldShowTimeBar 在 :267、formatChatTimeBar 在 :294；先过滤后建行发生在 index.vue:367-371（:369 按 deletedMessageIds 过滤后再交给 buildChatMessageRows），因此删掉某时间组唯一消息后不会留下无气泡的孤立时间条——element-count 少 1 的因果链在源码里成立。原锚 :367 是 computed 声明行兼上方注释块（:362-366）末尾，行上没有类名。"
+    }
+   ],
+   "reason": "对象真实存在、锚点标到了行模型的逻辑行（:367）而非渲染行（:2072）；同条另外两条断言的锚点复核都命中：chat-list--empty 在 :2060、longpress-menu__text 在 :2340（删除项文案键在 :2340 该行，删除 handler 绑在 :2336）。删除集合本身在 :358 从本地存储初始化、:1750-1752 落盘，与 expected 引用的行号一致。故本条不降级。工具侧误判成因见顶层 note。",
+   "criterionSuggestion": "断言 2 的 sourceAnchor 改为 apps/client/src/subpackages/chat/chat-session/index.vue:2072，把 :367-371（先过滤再建行）作为因果说明留在 note。另给一个不改变本条判定的提醒：断言 1 用 .chat-list--empty 当 text-contains 目标，而该类只在 currentMessages 为空时挂上（:2060），删的不是最后一条时该节点不存在；建议目标改为常驻的 .chat-list（:2059 同一节点）或给断言 1 加前置「所删为会话最后一条」。"
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-013",
+   "verdict": "REANCHOR",
+   "fixes": [
+    {
+     "token": "category-row",
+     "realSelector": ".category-row",
+     "realAnchor": "apps/client/src/subpackages/campus/campus/post-topic.vue:461",
+     "note": "已 Read 确认 :461 是第一行分类行节点（class 为 category-row，其内 v-for 取 categoryOptions.slice(0, 3) 见 :463；第二行同名在 :471，slice(3, 6) 见 :473），样式 :758 为 display flex 加 gap 14rpx。它是 category-list（:460，样式 :752 纵向 flex）的唯一首子，section-label 文字节点在更外层的 category-section（:458）里，所以 :first-child 选得到东西。原锚 :133 是 onLoad 里的非法分类回落赋值行，属判点来源、行上无类名。"
+    },
+    {
+     "token": "category-option",
+     "realSelector": ".category-option",
+     "realAnchor": "apps/client/src/subpackages/campus/campus/post-topic.vue:464",
+     "note": "已 Read 确认 :464 是 chip 本体（class 为 category-option，第二行同名节点在 :474），样式 :763。两个前缀候选都不是判据要的：category-option--selected 是同一节点上的条件修饰类（:465 与 :475，绑定条件为 selectedCategory 等于 cat.key），category-option__text 是 chip 内的文字节点（:468、:478）。count 恒 6 判的是 chip 本体个数，因此取 :464；6 这个数字来自 categoryOptions 的六项（:188-195，依次 course_exchange、club_recruitment、campus_activity、study_help、life_service、alumni_news），按 3 加 3 分到两行。原锚 :189 是数组首项数据行，行上无类名。"
+    }
+   ],
+   "reason": "三个判点彼此咬合且都有实体：回落逻辑 :130-133（非法值回落 course_exchange）、枚举与首位 :188-195（首位正是 course_exchange）、选中类绑定 :465 与 :475。于是深链带非法分类时第一枚 chip（第一行第一个 category-option）必然带 category-option--selected，且全页恰一枚选中——class-contains 与 count 断言都判得动，无需降级。两处 bad 都只是把锚点标在数据/逻辑行；单连字符块名进不了复核索引（顶层 note），故被合成「全仓找不到」。",
+   "criterionSuggestion": "断言 2 的 sourceAnchor 改为 apps/client/src/subpackages/campus/campus/post-topic.vue:461（并保留 :133 作回落值来源在 note），断言 3 的 sourceAnchor 改为 apps/client/src/subpackages/campus/campus/post-topic.vue:464（保留 :188-195 作 6 枚来源）。断言 1 锚点 :465 已命中、不动。取景前置仍按该条 steps 用非法分类深链打开，才能同时判到回落与恰一枚选中。"
+  }
+ ]
+}

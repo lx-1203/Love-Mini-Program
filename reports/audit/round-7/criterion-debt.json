@@ -1,25 +1,7 @@
 {
- "generatedAt": "2026-09-26T07:52:12.648Z",
+ "generatedAt": "2026-09-26T08:58:33.443Z",
  "source": ".zcode/tmp/fixverify/verdicts.json（--baseline 094f7239）",
  "items": [
-  {
-   "id": "MP-R2-CAMPUS-HUB-011",
-   "laneFile": "apps/client/src/subpackages/campus/campus/hub.vue",
-   "verdictWhy": "只在共享载体（语言包/主题/别页）里命中，未证明该页消费了它：school.id",
-   "closerAction": null,
-   "probes": [
-    "identifier:school.id"
-   ]
-  },
-  {
-   "id": "MP-R2-CAMPUS-HUB-012",
-   "laneFile": "apps/client/src/subpackages/campus/campus/hub.vue",
-   "verdictWhy": "唯一抠到的判点是标识符 filteredSchools，压缩构建会改名",
-   "closerAction": null,
-   "probes": [
-    "identifier:filteredSchools"
-   ]
-  },
   {
    "id": "MP-R2-CAMPUSPOST-011",
    "laneFile": "apps/client/src/subpackages/campus/campus/post-topic.vue",
@@ -29,15 +11,6 @@
     "i18n-key:campus.postTopic.chooseImageFailed",
     "identifier:chooseImageFailed",
     "en-copy:（英文文案判据）"
-   ]
-  },
-  {
-   "id": "MP-R2-CIRCLES-INDEX-004",
-   "laneFile": "apps/client/src/subpackages/circles/circles/index.vue",
-   "verdictWhy": "唯一抠到的判点是标识符 QUICK_TABS，压缩构建会改名",
-   "closerAction": null,
-   "probes": [
-    "identifier:QUICK_TABS"
    ]
   },
   {
@@ -54,42 +27,6 @@
    ]
   },
   {
-   "id": "MP-R2-PAGES-HOME-INDEX-102",
-   "laneFile": "apps/client/src/components/home/TodayRecommendationCard.vue",
-   "verdictWhy": "判据只点到两载体都不存在的名字 STILL_OPEN",
-   "closerAction": null,
-   "probes": [
-    "identifier:STILL_OPEN"
-   ]
-  },
-  {
-   "id": "MP-R2-PAGES-HOME-INDEX-112",
-   "laneFile": "apps/client/src/services/mocks/fixtures.ts",
-   "verdictWhy": "台账判据里抠不出任何可比对的具体物件（文件/选择器/值/键/文案）",
-   "closerAction": null,
-   "probes": []
-  },
-  {
-   "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
-   "laneFile": "apps/client/src/pages/messages/index.vue",
-   "verdictWhy": "判据没点名可核验的修后物件（无 closer 差异串/源码锚点/显式「改→新值」）",
-   "closerAction": null,
-   "probes": [
-    "identifier:loadPage",
-    "identifier:session.id",
-    "identifier:avatarFailedIds.value"
-   ]
-  },
-  {
-   "id": "MP-R2-PAGES-NEARBY-INDEX-011",
-   "laneFile": "apps/client/src/pages/nearby/index.vue",
-   "verdictWhy": "判据只点到两载体都不存在的名字 STILL_OPEN",
-   "closerAction": null,
-   "probes": [
-    "identifier:STILL_OPEN"
-   ]
-  },
-  {
    "id": "MP-R2-PAGES-NEARBY-INDEX-013",
    "laneFile": "apps/client/src/pages/nearby/index.vue",
    "verdictWhy": "授予绿用的判点在修复前的 HEAD 里就已存在（SCHOOLS）——命中不能证明改动落地",
@@ -97,18 +34,6 @@
    "probes": [
     "identifier:SCHOOLS",
     "identifier:STILL_OPEN"
-   ]
-  },
-  {
-   "id": "MP-R2-PAGES-REGISTER-INDEX-009",
-   "laneFile": "apps/client/src/pages/register/index.vue",
-   "verdictWhy": "唯一抠到的判点是标识符 dateStr.split, now.getDate, now.getMonth，压缩构建会改名",
-   "closerAction": null,
-   "probes": [
-    "identifier:dateStr.split",
-    "identifier:now.getDate",
-    "identifier:now.getMonth",
-    "identifier:now.getFullYear"
    ]
   },
   {
@@ -121,13 +46,6 @@
    ]
   },
   {
-   "id": "MP-R2-POST-016",
-   "laneFile": "apps/client/src/subpackages/village/village/post.vue",
-   "verdictWhy": "台账判据里抠不出任何可比对的具体物件（文件/选择器/值/键/文案）",
-   "closerAction": null,
-   "probes": []
-  },
-  {
    "id": "MP-R2-POSTTOPIC-010",
    "laneFile": "apps/client/src/subpackages/circles/circles/post-topic.vue",
    "verdictWhy": "授予绿用的判点在修复前的 HEAD 里就已存在（ActivityCard, postTopicActivityEnrollHint）——命中不能证明改动落地",
@@ -136,115 +54,6 @@
     "identifier:hideEnroll",
     "identifier:ActivityCard",
     "identifier:postTopicActivityEnrollHint"
-   ]
-  },
-  {
-   "id": "MP-R2-PROFILE-025",
-   "laneFile": "apps/client/src/pages/profile/index.vue",
-   "verdictWhy": "只在共享载体（语言包/主题/别页）里命中，未证明该页消费了它：interactionItems",
-   "closerAction": null,
-   "probes": [
-    "identifier:interactionItems",
-    "identifier:profileStore.profileStats",
-    "identifier:likesStore.visitors.length",
-    "identifier:mineSocialProof.visitorCount"
-   ]
-  },
-  {
-   "id": "MP-R2-VILLAGE-INDEX-009",
-   "laneFile": "apps/client/src/subpackages/village/village/index.vue",
-   "verdictWhy": "授予绿用的判点在修复前的 HEAD 里就已存在（--c-neutral-50, F7FAF9）——命中不能证明改动落地",
-   "closerAction": null,
-   "probes": [
-    "css-var:--c-neutral-50",
-    "identifier:F7FAF9"
-   ]
-  },
-  {
-   "id": "MP-R2VIS-PAGES-LOGIN-INDEX-006",
-   "laneFile": "apps/client/src/pages/login/index.vue",
-   "verdictWhy": "授予绿用的判点在修复前的 HEAD 里就已存在（--s-float-btn, --c-bg-surface）——命中不能证明改动落地",
-   "closerAction": null,
-   "probes": [
-    "css-var:--s-float-btn",
-    "css-var:--c-bg-surface"
-   ]
-  },
-  {
-   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-004",
-   "laneFile": "apps/client/src/components/discover/NotLoggedWaiting.vue",
-   "verdictWhy": "只在共享载体（语言包/主题/别页）里命中，未证明该页消费了它：UnlockGuideOverlay",
-   "closerAction": "deferred_p4",
-   "probes": [
-    "identifier:UnlockGuideOverlay"
-   ]
-  },
-  {
-   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
-   "laneFile": "apps/client/src/pages/messages/index.vue",
-   "verdictWhy": "台账判据里抠不出任何可比对的具体物件（文件/选择器/值/键/文案）",
-   "closerAction": null,
-   "probes": []
-  },
-  {
-   "id": "MP-R2VIS-PAGES-PROFILE-INDEX-001",
-   "laneFile": "apps/client/src/components/profile/mine/MyHeader.vue",
-   "verdictWhy": "授予绿用的判点在修复前的 HEAD 里就已存在（--c-brand, --c-bg-container, IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG）——命中不能证明改动落地",
-   "closerAction": "patched",
-   "probes": [
-    "css-var:--c-brand",
-    "css-var:--c-bg-container",
-    "symbol:IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG",
-    "identifier:FFFFFF",
-    "css-var:--c-bg-co",
-    "identifier:__cert"
-   ]
-  },
-  {
-   "id": "MP-R2VIS-PAGES-PROFILE-INDEX-003",
-   "laneFile": "apps/client/src/components/profile/mine/MyStory.vue",
-   "verdictWhy": "台账判据里抠不出任何可比对的具体物件（文件/选择器/值/键/文案）",
-   "closerAction": null,
-   "probes": []
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001",
-   "laneFile": "apps/client/src/subpackages/campus/campus/hub.vue",
-   "verdictWhy": "台账判据里抠不出任何可比对的具体物件（文件/选择器/值/键/文案）",
-   "closerAction": null,
-   "probes": []
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002",
-   "laneFile": "apps/client/src/subpackages/campus/campus/hub.vue",
-   "verdictWhy": "台账判据里抠不出任何可比对的具体物件（文件/选择器/值/键/文案）",
-   "closerAction": null,
-   "probes": []
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003",
-   "laneFile": "apps/client/src/subpackages/campus/campus/hub.vue",
-   "verdictWhy": "台账判据里抠不出任何可比对的具体物件（文件/选择器/值/键/文案）",
-   "closerAction": null,
-   "probes": []
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
-   "laneFile": "hub.vue",
-   "verdictWhy": "判据没点名可核验的修后物件（无 closer 差异串/源码锚点/显式「改→新值」）",
-   "closerAction": "deferred_p4",
-   "probes": [
-    "i18n-key:campus.index",
-    "identifier:campus.hub"
-   ]
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002",
-   "laneFile": "index.vue",
-   "verdictWhy": "授予绿用的判点在修复前的 HEAD 里就已存在（--c-status-disabled）——命中不能证明改动落地",
-   "closerAction": null,
-   "probes": [
-    "css-var:--c-status-disabled"
    ]
   },
   {
@@ -259,13 +68,6 @@
     "identifier:CHECK_WHITE_SVG",
     "identifier:CHEVRON_RIGHT_SVG"
    ]
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
-   "laneFile": "apps/client/src/subpackages/circles/circles/circle-home.vue",
-   "verdictWhy": "台账判据里抠不出任何可比对的具体物件（文件/选择器/值/键/文案）",
-   "closerAction": null,
-   "probes": []
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
@@ -284,13 +86,6 @@
    "probes": [
     "identifier:F3FAF6"
    ]
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
-   "laneFile": "apps/client/src/components/match/MatchLoading.vue",
-   "verdictWhy": "台账判据里抠不出任何可比对的具体物件（文件/选择器/值/键/文案）",
-   "closerAction": null,
-   "probes": []
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-002",
@@ -315,31 +110,6 @@
     "identifier:ICONS_EMOJI",
     "identifier:post.comments"
    ]
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
-   "laneFile": "apps/client/src/subpackages/village/village/detail.vue",
-   "verdictWhy": "判据没点名可核验的修后物件（无 closer 差异串/源码锚点/显式「改→新值」）",
-   "closerAction": null,
-   "probes": [
-    "class:detail-body"
-   ]
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
-   "laneFile": "apps/client/src/subpackages/village/village/post.vue",
-   "verdictWhy": "判据只点到两载体都不存在的名字 __joined",
-   "closerAction": "deferred_p4",
-   "probes": [
-    "identifier:__joined"
-   ]
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001",
-   "laneFile": "publish.vue",
-   "verdictWhy": "台账判据里抠不出任何可比对的具体物件（文件/选择器/值/键/文案）",
-   "closerAction": "deferred_p4",
-   "probes": []
   }
  ]
 }

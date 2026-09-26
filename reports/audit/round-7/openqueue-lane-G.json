@@ -1,0 +1,56 @@
+{
+  "lane": "G",
+  "readOnly": true,
+  "note": "本轮只读判定，未改任何 apps/client/src 源码与台账。所有 currentText 均为实测读到的行（按台账口径 trim 后截断到 80 字）。工作树三处目标文件与 HEAD 1a1df78b（2026-09-26 16:51）逐文件 git status 干净，产物 dist/build/mp-weixin 构建于 16:52，与 HEAD 同代。",
+  "items": [
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
+      "ledgerLine": 43,
+      "verdict": "CRITERION_VAGUE",
+      "currentAnchor": "apps/client/src/subpackages/circles/circles/index.vue:836",
+      "currentText": "background: var(--c-brand, #36C99A);",
+      "proposedCriterion": "三点各自点名：①.circles-tab--active 的 background 取 var(--c-brand, #36C99A)——已达成，依据 index.vue:836（同段 :837 border-color 同值）；②.circles-tab--active .circles-tab__text 的 color 取 var(--c-neutral-0, #FFFFFF)——已达成，依据 index.vue:852-853；③按压态：要求模板 index.vue:397-405 的 tab 节点新增 hover-class 值 circles-tab--pressed，并在样式段新增规则 .circles-tab--pressed{background: var(--c-brand-600, #2AAE83)}，令牌等值依据 apps/client/src/theme/design-variables.scss:16（$brand-600: #2AAE83）与 :258（--c-brand-600）。产物侧核验物件：dist/build/mp-weixin/subpackages/circles/circles/index.wxss 内字符串 circles-tab--pressed 命中 ≥1、brand-600 命中 ≥1。原判据只写「按压态走 --c-brand-600」，既没给类名/选择器，也没说走 hover-class 还是 :active（mp-weixin 端 :active 在 H5 条件编译里另有一套，见 index.vue:545-549），因此无论有没有做，静态 grep 都无靶可打——这就是它判不了的原因。",
+      "why": "①②两点在工作树与 HEAD 都已落地：index.vue:836 实测为 background: var(--c-brand, #36C99A);，index.vue:853 实测为 color: var(--c-neutral-0, #FFFFFF);，产物 index.wxss 亦编译为 .circles-tab--active.data-v-85666a04{background:var(--c-brand, #36C99A);border-color:var(--c-brand, #36C99A)} 与 .circles-tab--active .circles-tab__text.data-v-85666a04{color:var(--c-neutral-0, #FFFFFF);font-weight:700}。第③点（按压态）确实没做：全文件 grep c-brand-600 命中 0，模板 tab 节点（:397-405）无 hover-class，样式段只有 .circles-tab(:822)/--active(:835)/__text(:840)/__icon(:846)/--active __text(:852) 五段，跨 src 目录 grep circles-tab 仅本文件命中（无全局按压样式兜住）；产物 index.wxss 内 brand-600 计数 0。round-6 fixwave 该条 verdict=UNDECIDABLE、verdictWhy=「授予绿用的判点在修复前的 HEAD 里就已存在（FFFFFF）——命中不能证明改动落地」，与本判定同因：唯一被拿去做探针的 FFFFFF 是通用白值，不点名；本轮换成逐点令牌值才可判。故本行既不能整条报 ALREADY_FIXED（③未做），也不配 FIX_NEEDED（③没点名物件，写不出不掺私货的精确改点）。"
+    },
+    {
+      "id": "MP-R2-CIRCLES-INDEX-008",
+      "ledgerLine": 139,
+      "verdict": "ALREADY_FIXED",
+      "currentAnchor": "apps/client/src/subpackages/circles/circles/index.vue:479",
+      "currentText": "/* MP-R2-CIRCLES-INDEX-008：原 .circles-state 族、.loading-spinner、.error-icon、",
+      "why": "三族死样式已删且删得干净。源码侧：对整份 index.vue grep circles-state / circles-empty / discover-entry / loading-spinner / error-icon，命中只剩 :479-482 的删除墓碑注释（注释自述「模板 0 命中；加载/错误/空三态由 PageStateContainer 自带样式渲染」「.circle-card__badge 认证徽标族按台账条件保留——是否接通属未决项」，与台账 ⟨不作判点的认证徽标族⟩ 口径一致），零条选择器定义、零处 class= 引用。产物侧：台账要求的「产物 wxss 零残留」实测通过，dist/build/mp-weixin/subpackages/circles/circles/index.wxss grep 三族名计数 0。文件体量佐证：本页由台账锚点所在时的 94x+ 行缩到当前 900 行，台账原证据区间（:427-473、:475-500、:502-569）已整体位移，故该行号区间不能再当判点用。round-6 fixwave 该条 verdict 已是 ARTIFACT_VERIFIED（三探针全为 absent 极性、产物零命中），台账 status 仍挂 待修复 属状态未回收。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-002",
+      "ledgerLine": 141,
+      "verdict": "ALREADY_FIXED",
+      "currentAnchor": "apps/client/src/subpackages/circles/circles/index.vue:557",
+      "currentText": "width: 144rpx;",
+      "why": "判点（改后定值 width:144rpx + height:144rpx）已落地，只是落在了台账 ⟨⟩ 里点名的那个选择器上：.circle-card__cover-wrap 起于 :551，:557 实测 width: 144rpx;、:558 实测 height: 144rpx;，其下 :554-556 注释写明取 144rpx 的实测依据与「不是布局修复、只为对参考图」的定性。内层 .circle-card__cover(:564) 相应改为 width:100% / height:100%（:565-566），1:1 由外层定比容器 + 模板 mode=aspectFill(:421) 承担。产物佐证：dist/build/mp-weixin/subpackages/circles/circles/index.wxss 内 .circle-card__cover-wrap.data-v-85666a04{position:relative;width:144rpx;height:144rpx;border-radius:var(--r-md);overflow:hidden;flex-shrink:0}。台账证据列写的旧锚 :665-673（.circle-card__cover{width:200rpx;height:200rpx}）已失效：同页 -008 删段使本行整体上移，且 200rpx 值本身已不存在（当前 :665-666 是 24rpx 图标尺寸，勿再据此判未修）。round-6 fixwave 该条 verdict=ARTIFACT_VERIFIED（2/2 hard 探针命中）。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-002",
+      "ledgerLine": 47,
+      "verdict": "ALREADY_FIXED",
+      "currentAnchor": "apps/client/src/subpackages/village/village/post.vue:1531",
+      "currentText": ".post-row__icon--glyph {",
+      "why": "两个点名的新增类都在，且真的只被文本 glyph 消费。定义侧：:1531-1533 为 .post-row__icon--glyph{color: var(--c-brand, #36C99A);}（:1532 实测 color: var(--c-brand, #36C99A);），:1656-1658 为 .post-tool__icon--glyph{color: var(--c-text-secondary, #6B7571);}（:1657 实测），两处上方各带点名本条 ID 的注释（:1529-1530、:1654-1655）。死声明已搬走：共用类 .post-row__icon(:1522-1528) 与 .post-tool__icon(:1647-1653) 内均已无 color 行。消费侧：glyph 类只挂在 #/@ 文本上——模板 :938、:962 为 <text class=...-glyph># / @，:1039、:1059 同；而 :950、:974、:1028、:1049、:1059 旁的 <image class=...__icon> 仅带基础类。产物佐证：post.wxss 内 .post-row__icon--glyph.data-v-ef1fb74b{color:var(--c-brand, #36C99A)} 命中，.post-row__icon.data-v-ef1fb74b{width:44rpx;height:44rpx;text-align:center;font-size:var(--fs-lg, 28rpx);flex-shrink:0} 无 color。round-6 fixwave 该条 verdict=ARTIFACT_VERIFIED（2/2）。台账证据列旧锚 :930、:957 现偏移到 :938、:962，值不变。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-005",
+      "ledgerLine": 162,
+      "verdict": "ALREADY_FIXED",
+      "currentAnchor": "apps/client/src/subpackages/village/village/post.vue:1624",
+      "currentText": "height: calc(120rpx + env(safe-area-inset-bottom));",
+      "why": "台账点名的判点（改后定值 height:calc(120rpx …）已落地：.post-body__bottom-space 规则起于 :1619，:1624 实测即上述整行，+ env(safe-area-inset-bottom) 与台账 ⟨HEAD 原值 calc(200rpx + env(...)) 仅数字档不同⟩ 完全对上；:1621-1623 注释点名本条 ID 并写出 200→120rpx 的算账过程（实高约 103rpx + 17rpx 呼吸位）。产物佐证：post.wxss 内 .post-body__bottom-space.data-v-ef1fb74b{height:calc(120rpx + env(safe-area-inset-bottom))}，占位 view 在模板 :1016。台账证据列旧锚 :1762-1764 已下移到 :1619-1625（该页样式段整体重排），据旧行号会误判未修。需要记一笔的是判据措辞：本行只有「改后定值 height:calc(120rpx」是可静态核验的物件，前半句「按单一来源化贴住 fixed 底栏实高」没有点名任何令牌或声明——.post-toolbar(:1628-1640) 用 padding 撑高、无 height 声明，全仓也无 post-toolbar 高度令牌（grep toolbar-h 零命中），所以「实高是否 120rpx」这件事静态判不了、要么改判据要么补帧；但判据自己把判点定成了那个 120rpx 定值，按判点判即已达成。round-6 fixwave verdict=ARTIFACT_VERIFIED，notes 却写「closer 记为 deferred_p4（本轮未动手）」，与同条 srcEvidence/artifactEvidence 双命中自相矛盾——以本轮实测为准。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-004",
+      "ledgerLine": 168,
+      "verdict": "ALREADY_FIXED",
+      "currentAnchor": "apps/client/src/subpackages/village/village/publish.vue:1082",
+      "currentText": ".publish-rows { margin: 16rpx 32rpx; background: #fff; border-radius: var(--r-xl",
+      "why": "本行唯一带等值依据的硬判点（①档两处 24rpx 走 var(--r-xl)、且禁走 --card-radius）已在工作树与 HEAD 落地：:1038 .publish-to__card 与 :1082 .publish-rows 的 border-radius 现值均为 var(--r-xl, 24rpx)，等值依据 apps/client/src/theme/design-variables.scss:195（$radius-xl: 24rpx）→ :436（--r-xl），未改变量；禁令侧实测通过——dist/build/mp-weixin/subpackages/village/village/publish.wxss 内 card-radius 命中计数 0，同产物 .publish-to__card.data-v-5acc3bfd{...border-radius:var(--r-xl, 24rpx);border:1rpx solid #EEF2F0}。②档按判据原文属允许保留：整文件现存 border-radius 字面量仅 2 处，:1061（6rpx，无等值档：$radius-xs=4rpx、--r-sm=8rpx）与 :1074（16rpx），正是判据「或按 nit 保留」覆盖的情形。两点必须记账：一是判据 ②档里「16→--r-lg」这条映射与令牌表不等值（design-variables.scss:194 $radius-lg: 20rpx），照做会把 16rpx 改成 20rpx，与同句自订的「不等值即不替换」直接冲突，故这半句不可判、应改写为「16rpx 无等值档，按 nit 保留或新增 --r-lg-16 档另裁」；二是 :1108 .publish-sheet__input 写的是 var(--r-lg, 16rpx)（fallback 16rpx、生效 20rpx），是同一处错映射的既存产物，属另一条 nit、不在本行判点内。另：本行 status 列去向写「缺的载体=渲染帧（静态判不了）」，与实际不符——令牌化是纯静态判据，本轮不需要帧。台账别名列的「锚点修订 23:3x」也已被本轮实测覆盖：证据列 HEAD 行号 :1000/:1010/… 与收口后 :1018/:1028/… 两套行号都已过时，现行号见本条与 :1028、:1047、:1053、:1092、:1098、:1103、:1118。"
+    }
+  ]
+}

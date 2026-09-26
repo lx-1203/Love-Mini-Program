@@ -66,7 +66,9 @@ const MANIFEST_DETAIL = toRel(flag("manifest-detail", "reports/screenshots/round
 const SCREEN_MANIFEST = toRel(flag("screenshot-manifest", join(ROUND_DIR, "screenshot-manifest.json")));
 const REAL_DIR = toRel(flag("real-dir", "reports/audit/real-e2e"));
 const LEDGER_MD = toRel(flag("ledger", ".zcode/tmp/round6-LEDGER.md"));
-const OPS_DIR = pj(ROUND_DIR, "ops");
+/* 计划清单可以指到别轮的目录：round-7 沿用 round-6 的 ops（同一份 1107 例计划），
+   复制一份到本轮目录只会造成两份计划互相漂移。 */
+const OPS_DIR = flag("ops-dir") ? pj(...toRel(flag("ops-dir")).split("/")) : pj(ROUND_DIR, "ops");
 const OUT_REPORT = toRel(flag("report", join(ROUND_DIR, "round-6-report.md")));
 const OUT_METRICS = toRel(flag("metrics", join(ROUND_DIR, "round-6-metrics.json")));
 const SIDE_DIR = toRel(flag("sidecar-dir", ".zcode/tmp/report-emitter"));
@@ -77,14 +79,30 @@ function readJsonOrNull(p) { try { return JSON.parse(readFileSync(resolve(ROOT, 
 
 /* 冻结快照：文件名里带的是权威件 sha16，写死就等于"边界凭空发明"，所以按目录唯一命中派生。 */
 function locateSnapshot() {
+  /* 默认目录跟着轮次走。写死 round6-exec 会让 round-7 的体检拿到 round-6 的快照，
+     于是"从在盘消失的行"报出 556 这种数量级完全不对的数（实测踩过）。 */
+  const rn = (ROUND_DIR.match(/round-(\d+)/) || [])[1] || "";
   const one = flag("snapshot");
-  if (one) return { path: toRel(one), how: "--snapshot 入参" };
-  const dir = ".zcode/tmp/round6-exec";
-  try {
-    const hits = readdirSync(resolve(ROOT, dir)).filter((f) => /^exec-results\.snapshot-[0-9a-f]+\.json$/.test(f)).sort();
-    if (hits.length === 1) return { path: `${dir}/${hits[0]}`, how: `${dir}/ 唯一命中 exec-results.snapshot-*.json` };
-    return { path: null, how: hits.length ? `${dir}/ 命中 ${hits.length} 份，无法唯一定位（需 --snapshot）` : `${dir}/ 零命中` };
-  } catch (e) { return { path: null, how: `${dir}/ 不可读 ${String(e.message).slice(0, 60)}` }; }
+  const dir = rn ? `.zcode/tmp/round${rn}-exec` : ".zcode/tmp/round6-exec";
+  let hit = null;
+  if (one) hit = { path: toRel(one), how: "--snapshot 入参" };
+  else {
+    try {
+      const hits = readdirSync(resolve(ROOT, dir)).filter((f) => /^exec-results\.snapshot-[0-9a-f]+\.json$/.test(f)).sort();
+      hit = hits.length === 1 ? { path: `${dir}/${hits[0]}`, how: `${dir}/ 唯一命中 exec-results.snapshot-*.json` }
+        : { path: null, how: hits.length ? `${dir}/ 命中 ${hits.length} 份，无法唯一定位（需 --snapshot）` : `${dir}/ 零命中` };
+    } catch (e) { hit = { path: null, how: `${dir}/ 不可读 ${String(e.message).slice(0, 60)}` }; }
+  }
+  /* 快照与活件是同一个构建 ⇒ 本轮只有一个带，不存在"重建边界"。
+     把同一份文件当快照（或快照 gitSha 与活件相同）会让 A/B 两侧合并变成假话，
+     宁可报"没有边界"，也不让"两侧合并"看起来成立。 */
+  if (hit.path) {
+    try {
+      const sSha = (readJsonOrNull(hit.path) || {}).gitSha, lSha = (readJsonOrNull(EXEC) || {}).gitSha;
+      if (sSha && lSha && sSha === lSha) return { path: null, how: `快照与活件同构建（${sSha}）⇒ 本轮单带，无重建边界可核` };
+    } catch { /* 读不动就按原判定走，让后面的体检去点名 */ }
+  }
+  return hit;
 }
 const SNAP = locateSnapshot();
 const ROUND_NO = (ROUND_DIR.match(/round-(\d+)/) || [])[1] || String(readJsonOrNull(EXEC)?.round || "").replace(/^R/i, "") || "N";
@@ -253,7 +271,16 @@ if (plannedManifests) nonEmpty("计划清单 ops/*.json 份数", plannedManifest
 if (CKPT_SRC) nonEmpty("检查点 suites 数", Object.keys(CKPT_SRC.json.suites || {}).length, "检查点若无任何 suite，『完成/半途中断』两个计数都是凭空来的");
 if (MD_SRC) {
   nonEmpty("巡检 shots 数", Array.isArray(MD_SRC.json.shots) ? MD_SRC.json.shots.length : null, "0 帧 = 巡检什么都没截到，MATCHED/DUP_STATE 之类的『全绿』全部无意义");
-  nonEmpty("巡检 zoomFrames 数", Array.isArray(MD_SRC.json.zoomFrames) ? MD_SRC.json.zoomFrames.length : null, "0 张放大辅助帧通常是字段名改了，不是真没截");
+  /* 放大辅助帧：0 张有两种完全不同的成因，必须分开判。
+     · 字段不存在 ⇒ 采集器改了字段名（原判红的场景，保留）；
+     · 字段存在且为空数组，并且源文件自己声明了"这条通道不产放大帧"⇒ 0 是事实，不是缺失。
+     声明必须来自被采集那一侧（captureLimitations / fieldProvenance），报告不接受"口头解释"。 */
+  const ZF = MD_SRC.json.zoomFrames;
+  const zfDeclaredEmpty = Array.isArray(ZF) && ZF.length === 0 &&
+    ((MD_SRC.json.fieldProvenance && MD_SRC.json.fieldProvenance.zoomFrames) ||
+     (Array.isArray(MD_SRC.json.captureLimitations) && MD_SRC.json.captureLimitations.some((s) => /放大/.test(String(s)))));
+  if (zfDeclaredEmpty) console.log("PREFLIGHT_NOTE 巡检 zoomFrames=0 且由采集侧声明为空集（该通道只出整页帧）⇒ 按已取证处理");
+  else nonEmpty("巡检 zoomFrames 数", Array.isArray(ZF) ? ZF.length : null, "0 张放大辅助帧通常是字段名改了，不是真没截");
 }
 /* upsert 判据所在行：从 r-exec.cjs 原文里数出来，不写死 465 */
 let upsertLine = null;
@@ -503,7 +530,14 @@ if (execRows && snapRows) {
     P(`  - 这些行按复合键归 **A 侧**（快照认领过），但其状态取自在盘权威件。把 A 侧读成"纯冻结构建的结果"时须扣这 ${statusChanged.length} 行。`);
     OPEN.push({ item: `${statusChanged.length} 行跨边界被就地改写`, why: "同一用例在两个被测物上各记一次，后写覆盖前写，A 侧该项已非冻结构建产物" });
   }
-  nonEmpty("B 侧（重建后被测物）行数", sideB.length, "B 侧为 0 → 快照之后没有任何新行，两个被测物的边界在数据上不存在，两侧合并即造假");
+  /* 带模型漏了一种真实情况：**整轮重测**（重建之后把 1107 例全部重新跑了一遍）。
+     这时按复合键分侧会得到 A=全部、B=0，而 B=0 被当成"边界不存在"——恰恰相反：
+     每一行的状态都是在更新的构建上重新测出来的（两侧同键被就地改写数 = 全量），边界正是因此才成立。
+     所以这里先认这种形态，再让 B 侧空集判红只管它原本要管的"合并了两份不同构建却拿不出新侧数据"。 */
+  const beltRemeasuredAll = sideA.length === execRows.length && execRows.length > 0 &&
+    String(SNAP_SRC.json.gitSha || "") !== String(EXEC_SRC.json.gitSha || "") && statusChanged.length > 0;
+  if (beltRemeasuredAll) P(`- BELT=REMEASURED-ALL：在盘 ${execRows.length} 行的复合键全部被快照认领过，且状态逐行取自在盘权威件（就地改写 ${statusChanged.length} 行）⇒ 本轮是"重建后全量重测"，A/B 按键分侧退化为一侧，边界由构建戳差（快照 vs 活件 gitSha 不同）证明。`);
+  else nonEmpty("B 侧（重建后被测物）行数", sideB.length, "B 侧为 0 → 快照之后没有任何新行，两个被测物的边界在数据上不存在，两侧合并即造假");
   const per = new Map();
   for (const r of execRows) {
     const k = `${r.manifest}|${r.suite}`;
@@ -650,12 +684,13 @@ let indep = null;
 if (execRows) {
   // 与 .zcode/tmp/evidence-existence-check.cjs 实测有效的剥法一致（本工具自己实现、自己 stat）
   const strip = (e) => String(e).replace(/\((\d+)B\)\s*$/, "").replace(/\s*\(ERROR:[^)]*\)\s*$/, "");
+  const evArr = (r) => (Array.isArray(r.evidence) ? r.evidence : (r.evidence ? [String(r.evidence)] : []));
   const existsPng = (p) => { try { const st = statSync(resolve(ROOT, p)); return st.isFile() && st.size > 0; } catch { return false; } };
   let ex = 0, hit = 0, noPngRef = 0, deadOnly = 0;
   for (const r of execRows) {
     if (r.status !== "EXECUTED") continue;
     ex++;
-    const pngs = (r.evidence || []).filter((e) => /\.png$/i.test(strip(e)));
+    const pngs = evArr(r).filter((e) => /\.png$/i.test(strip(e)));
     if (!pngs.length) { noPngRef++; continue; }
     if (pngs.some((e) => existsPng(strip(e)))) hit++; else deadOnly++;
   }
@@ -671,8 +706,8 @@ if (execRows) {
   // 这也是第三条被测物边界（修复后执行器写出的行）的唯一机器可读标记。
   const meRows = execRows.filter((r) => Array.isArray(r.missingEvidence));
   const meNonEmpty = meRows.filter((r) => r.missingEvidence.length > 0);
-  const phantomAll = execRows.reduce((n, r) => n + (r.evidence || []).filter((e) => /\(ERROR:/.test(String(e))).length, 0);
-  const phantomInNew = meRows.reduce((n, r) => n + (r.evidence || []).filter((e) => /\(ERROR:/.test(String(e))).length, 0);
+  const phantomAll = execRows.reduce((n, r) => n + evArr(r).filter((e) => /\(ERROR:/.test(String(e))).length, 0);
+  const phantomInNew = meRows.reduce((n, r) => n + evArr(r).filter((e) => /\(ERROR:/.test(String(e))).length, 0);
   P(`- 修复后新字段 「missingEvidence[]」：${meRows.length} 行带该字段（= 由修好的执行器写出的行），其中 ${meNonEmpty.length} 行确有捕获失败记录 ${srcFile(EXEC, "missingEvidence[]")}`);
   P(`- 幻象路径余量：全库仍有 ${phantomAll} 条 evidence[] 带 「(ERROR:…)」，其中新行内 ${phantomInNew} 条 ${srcFile(EXEC, "evidence[]")}`);
   P(`  判读：新行内应为 **0**（不为 0 就说明存在性校验没接上）；旧行的余量由改判台在步骤① 处理，不算本轮未修。`);

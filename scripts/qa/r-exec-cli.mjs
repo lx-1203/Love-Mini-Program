@@ -119,7 +119,27 @@ const done = new Set((prior.results || []).map((r) => r.manifest + "|" + r.id));
 mkdirSync(OUT_DIR, { recursive: true });
 mkdirSync(SHOT_DIR, { recursive: true });
 
-console.log("[boot] " + bootSession(String(mintToken({ project: PROJECT })), { project: PROJECT }) + " / verify=" + verifyLogin({ project: PROJECT }));
+/* mintToken 的签名是 (kind, repoRoot, deviceId) 而且是 async。上一版写成 mintToken({project})：
+   kind 不等于 "A" ⇒ 走 guest 分支，返回值又被 String() 成 "[object Promise]" 存进 storage。
+   实测（scripts/qa/probe-boot-callsite.mjs，两工程各测一种形态）：
+     · mock 工程坏 token 照样 logged-in(userId=user-1001) ⇒ mock 那两刀的落点判据不受影响，不必重跑；
+     · real 工程坏 token ⇒ not-logged-in，所以 interact-real 的 259 行 SKIPPED 是我自己把门关上了。
+   登录位是执行轮的前置而不是装饰：身份不对时整批落点都不可信 ⇒ 这里不成立就一行都不跑。 */
+const IDENTITY = arg("identity", "A");
+let LOGIN_VERIFY = "";
+try {
+  const t = (await mintToken(IDENTITY === "B" ? "B" : "A", REPO, "r7-exec-" + LABEL)).token;
+  const b = bootSession(t, { project: PROJECT });
+  LOGIN_VERIFY = verifyLogin({ project: PROJECT });
+  console.log(`[boot] ${b} identity=${IDENTITY} verify=${LOGIN_VERIFY}`);
+} catch (e) {
+  console.log("RUNNER_RESULT=FAIL reason=铸 token / 写会话失败：" + String(e.message).slice(0, 140) + " ⇒ 一行都不跑");
+  process.exit(2);
+}
+if (!/^logged-in/.test(LOGIN_VERIFY)) {
+  console.log("RUNNER_RESULT=FAIL reason=store 报 " + LOGIN_VERIFY + " ⇒ 未登录画面不能当已登录证据，整批不跑（换 --identity B 跑游客档）");
+  process.exit(2);
+}
 RUN.booted = true;
 
 /* 每跑完一个页组就落一次盘：这条通道会偶发把进程带走（实测两次未捕获 socket 超时），
@@ -127,12 +147,15 @@ RUN.booted = true;
 function flush() {
   const m2 = new Map();
   for (const r of [...(prior.results || []), ...rows]) m2.set(r.manifest + "|" + r.id, r);
-  try { writeFileSync(RES, JSON.stringify({ round: LABEL, gitSha: GIT_SHA, updatedAt: new Date().toISOString(), runner: "scripts/qa/r-exec-cli.mjs（observe-only 切片，增量落盘）", results: [...m2.values()] }, null, 1)); }
+  try { writeFileSync(RES, JSON.stringify({ round: LABEL, gitSha: GIT_SHA, identity: IDENTITY, loginVerify: LOGIN_VERIFY, updatedAt: new Date().toISOString(), runner: "scripts/qa/r-exec-cli.mjs（observe-only 切片，增量落盘）", results: [...m2.values()] }, null, 1)); }
   catch (e) { console.log("FLUSH_ERR " + String(e.message).slice(0, 90)); }
 }
 
 const rows = [];
-const stats = { executed: 0, failed: 0, skipTap: 0, skipReal: 0, skipProbe: 0, skipNoCrit: 0, skipMiss: 0, pages: 0, probes: 0, shots: 0, noClass: 0 };
+const stats = { executed: 0, failed: 0, skipTap: 0, skipReal: 0, skipNonReal: 0, skipProbe: 0, skipNoCrit: 0, skipMiss: 0, pages: 0, probes: 0, shots: 0, noClass: 0 };
+/* 增量行与终稿行共用同一个加总函数：上一版只在终稿那处补了新加的 skipNonReal，
+   组内那条 print 漏了，于是同一轮里两个 skipped 数字互相打架（差值正好是真用例跳过数）。 */
+const skippedTotal = () => stats.skipTap + stats.skipReal + stats.skipNonReal + stats.skipProbe + stats.skipNoCrit + stats.skipMiss;
 let budget = LIMIT > 0 ? LIMIT : Infinity;
 let stopped = false;
 RUN.abort = () => { stopped = true; };
@@ -154,21 +177,41 @@ for (const name of files) {
       continue;
     }
     sleep(SETTLE);
-    const route = String(routeStack({ project: PROJECT }) || "");
+    let route = String(routeStack({ project: PROJECT }) || "");
     /* 空串/ERR 不等于「落在别的页」——实测这条通道会整批正常而路由探针取空（notes §12），
-       把它折叠成失败会凭空造出十条 FAILED；但也不能反过来当作已确认。三态分开。 */
+       把它折叠成失败会凭空造出十条 FAILED；但也不能反过来当作已确认。三态分开。
+       真实工程下取空的比例明显更高（实测一轮 104 条），所以先重试一次再判"没答案"，
+       且重试成功要在 observed 里留痕——通道抖过这件事必须看得见，不能被重试吃掉。 */
+    let routeRetry = "";
+    if (!route || route.startsWith("ERR")) {
+      sleep(1600);
+      const again = String(routeStack({ project: PROJECT }) || "");
+      if (again && !again.startsWith("ERR")) { route = again; routeRetry = " | routeRetry=ok（首探取空/报错）"; }
+    }
     const routeKnown = !!route && !route.startsWith("ERR");
     const routeOk = routeKnown ? route.includes(page) : null;
     const allCls = [...new Set(todo.flatMap((c) => classesOf(c.action + " " + c.expected)))];
     stats.probes += allCls.length;
-    const dom = allCls.length ? probeMany(allCls) : {};
+    let dom = allCls.length ? probeMany(allCls) : {};
+    let probeRetry = "";
+    if (allCls.length && dom.__err) {
+      const firstErr = String(dom.__err).slice(0, 46);
+      sleep(1600);
+      const again = probeMany(allCls);
+      if (!again.__err) { dom = again; probeRetry = " | probeRetry=ok（首探 " + firstErr + "）"; }
+    }
     if (dom.__err) console.log("  probe-err " + page + " :: " + dom.__err);
     for (const c of todo) {
       const cls = classesOf(c.action + " " + c.expected);
       const observed = "top=" + (route.split("|").pop() || (routeKnown ? "?" : "(落点未取证)")) + (routeOk === false ? " ≠ " + page : "") +
         " | dom: " + (cls.length ? cls.map((s) => s + ":" + (dom[s] || (dom.__err ? "ERR" : "no-answer"))).join(" ") : "(本条没点名类名)") +
-        " | observe-only" + (dom.__err ? " | probe-err:" + dom.__err : "");
-      if (c.requiresReal === true) {
+        " | observe-only" + (dom.__err ? " | probe-err:" + dom.__err : "") + routeRetry + probeRetry;
+      if (process.argv.includes("--real-cases-only") && c.requiresReal !== true) {
+        /* 真实刀只欠 requiresReal 那 236 条；其余不重复跑，但仍要记一行，
+           否则这个 corpus 的行数就不再是 1107，守恒核对会被"少了一类"骗过去。 */
+        stats.skipNonReal++;
+        rows.push(row(name, page, c, "SKIPPED", route, "真实刀只跑 requiresReal 用例（其余已在 mock 轮记过），本行只为守恒计数", observed));
+      } else if (c.requiresReal === true && !process.argv.includes("--real")) {
         stats.skipReal++;
         rows.push(row(name, page, c, "SKIPPED", route, "requiresReal ⇒ 本切片只跑 mock 产物；真实模式要换 --project 到 mp-weixin-real 且后端在跑", observed));
       } else if (TAP_RE.test(String(c.action || ""))) {
@@ -219,7 +262,7 @@ for (const name of files) {
     }
     flush();
     console.log("RUNNER_GROUP page=" + page + " 本次新行=" + rows.length + " executed=" + stats.executed +
-      " failed=" + stats.failed + " skipped=" + (stats.skipTap + stats.skipReal + stats.skipProbe + stats.skipNoCrit + stats.skipMiss) +
+      " failed=" + stats.failed + " skipped=" + skippedTotal() +
       " 出帧=" + stats.shots + " 通道异常=" + transportErrs + " 已跑=" + ((Date.now() - BOOT_T) / 60000).toFixed(1) + "min");
   }
 }
@@ -232,9 +275,9 @@ const all = [...merged.values()];
 const dupNew = rows.length - new Set(rows.map((r) => r.manifest + "|" + r.id)).size;
 const bad = all.filter((r) => !["EXECUTED", "FAILED", "SKIPPED"].includes(r.status));
 console.log("RUNNER_ROWS new=" + rows.length + " merged=" + all.length + " 之前已有=" + (prior.results || []).length + " 重复新行=" + dupNew);
-console.log("RUNNER_STATS executed=" + stats.executed + " failed=" + stats.failed +
-  " skipped=" + (stats.skipTap + stats.skipReal + stats.skipProbe + stats.skipNoCrit + stats.skipMiss) +
-  "(交互动词=" + stats.skipTap + " requiresReal=" + stats.skipReal + " 探针无结果=" + stats.skipProbe +
+console.log("RUNNER_STATS identity=" + IDENTITY + " loginVerify=" + LOGIN_VERIFY + " executed=" + stats.executed + " failed=" + stats.failed +
+  " skipped=" + skippedTotal() +
+  "(交互动词=" + stats.skipTap + " requiresReal=" + stats.skipReal + " 非真实用例=" + stats.skipNonReal + " 探针无结果=" + stats.skipProbe +
   " 判据无可判物件=" + stats.skipNoCrit + " 出帧失败=" + stats.skipMiss + ") 页组=" + stats.pages +
   " 折叠探针类名次数=" + stats.probes + " 出帧=" + stats.shots + " 未点名类名=" + stats.noClass + " 通道异常次数=" + transportErrs);
 const statusOf = {};
@@ -249,7 +292,7 @@ if (dupNew) fails.push("同一次跑里出现重复 manifest|id " + dupNew + " �
 if (bad.length) fails.push("出现非法状态 " + bad.length + " 条");
 if (all.length !== (prior.results || []).length + rows.length - dupNew) fails.push("合并后总数对不上");
 if (fails.length) { console.log("RUNNER_RESULT=FAIL reason=" + fails.join(" / ") + " ⇒ 不写盘"); process.exit(2); }
-writeFileSync(RES, JSON.stringify({ round: LABEL, gitSha: GIT_SHA, updatedAt: new Date().toISOString(), runner: "scripts/qa/r-exec-cli.mjs（observe-only 切片）", results: all }, null, 1));
+writeFileSync(RES, JSON.stringify({ round: LABEL, gitSha: GIT_SHA, identity: IDENTITY, loginVerify: LOGIN_VERIFY, updatedAt: new Date().toISOString(), runner: "scripts/qa/r-exec-cli.mjs（observe-only 切片）", results: all }, null, 1));
 console.log("RUNNER_WRITTEN=" + relOf(RES) + " results=" + all.length);
-console.log("RUNNER_SCOPE=observe-only（交互型与真实型未跑；这不是一轮完整的执行轮，覆盖数见上面 RUNNER_STATS）");
+console.log("RUNNER_SCOPE=" + (process.argv.includes("--real-cases-only") ? "real-cases-only（只跑 requiresReal 那一批，产物必须是 mp-weixin-real）" : "observe-only（交互型与真实型未跑；这不是一轮完整的执行轮，覆盖数见上面 RUNNER_STATS）"));
 console.log("RUNNER_RESULT=OK");

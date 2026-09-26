@@ -1,0 +1,116 @@
+{
+  "lane": "H",
+  "readOnly": true,
+  "generatedAt": "2026-09-26",
+  "sourceLedger": "reports/audit/round-6/issue-matrix.md",
+  "gitHeadUnderTest": "1a1df78b",
+  "worktreeNote": "本 lane 七个承载文件 git status --porcelain 全部为空 ⇒ 下述源码锚点即 HEAD 内容，不是未提交的工作树状态；产物侧取证目录 apps/client/dist/build/mp-weixin（mtime 2026-09-26 16:52）。",
+  "items": [
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001",
+      "ledgerLine": 23,
+      "verdict": "CRITERION_VAGUE",
+      "currentAnchor": "apps/client/src/utils/location.ts:58",
+      "currentText": "      if (city) citySource = \"ip\";",
+      "supportingAnchors": [
+        "apps/client/src/utils/location.ts:23 — citySource?: \"gps\" | \"ip\";（LocationResult 新增可选字段，台账原锚 :31-51 已漂移，现 fetchCurrentLocation 在 :34-65）",
+        "apps/client/src/subpackages/profile-extra/profile/location.vue:36 — const cityFromIp = ref(false);",
+        "apps/client/src/subpackages/profile-extra/profile/location.vue:80 — cityFromIp.value = loc.citySource === \"ip\";",
+        "apps/client/src/subpackages/profile-extra/profile/location.vue:40 — ? `${city.value} · ${t(\"locationPage.serverCityTag\")}`",
+        "apps/client/src/i18n/locales/zh-CN.ts:1748 — \"serverCityTag\": \"服务器所在城市\"（en-US.ts:1699 配对；addressUnavailable 在 zh-CN.ts:1749）",
+        "apps/client/dist/build/mp-weixin/subpackages/profile-extra/profile/location.js — serverCityTag 命中 1 处（标注分支确在本轮被测产物内）",
+        "apps/api/src/main/java/com/campuslove/api/location/LocationCityView.java — public record LocationCityView(String city) {}（全仓 grep cityCenter 0 命中）"
+      ],
+      "proposedCriterion": "本行拆成两半，只有前半可判：（甲，可机判，且现已成立）三件物件同批在位即判绿——① apps/client/src/utils/location.ts:58 的 if (city) citySource = \"ip\"; 与 :23 的 citySource?: \"gps\" | \"ip\";；② apps/client/src/subpackages/profile-extra/profile/location.vue:80 读 loc.citySource === \"ip\" 且 :40 以 t(\"locationPage.serverCityTag\") 拼接；③ 产物 apps/client/dist/build/mp-weixin/subpackages/profile-extra/profile/location.js 内字符串判点 serverCityTag 命中数 == 1，且 i18n/locales/zh-CN.js 内该键值为「服务器所在城市」。（乙，不可机判，须另立行）>100km 距离守卫的判点要写成「当 city 来源为 ip 且该城市中心与本次 coords 的球面距离 > 100km 时 city 被丢弃」，其前提载体（城市→中心坐标）在本仓不存在，需先由后端在 LocationCityView 增 latitude/longitude 两字段并建城市中心表；在该载体落地前，本行不得因缺这半而停在 待修复。",
+      "why": "台账状态说「部分落地：标注分支已进产物，>100km 距离守卫未落」——守卫未落这一事实今日仍成立（全 src grep cityCenter / 100km / haversine 仅命中 components/discover/AdvancedFilter.vue:9 的一句无关注释），但这条判据本身不可判：台账自己在处置里已写明 LocationCityView.java 只有 city 一个字段、全链路无坐标，本轮复核该 record 仍是 String city 单字段，且 mock 下 IP 城市恒为南京，真加 100km 断言会让城市位长期空白（把标注缺陷换成缺失缺陷）。所以本行不是「缺陷未修」而是「判据里混了一条当前无载体的断言」。另须更正台账两处失真：①证据锚 utils/location.ts:31-51 已漂移，现 :34-65 是函数体、:42 的 key 未配置短路现在 :105-110；②台账把「标注分支」写成已落地是对的，但它同时挂在 待修复 状态上，等于用一条永不可判的断言把已成立的一半扣住——按本轮口径（任何结论要有当轮源码锚点），当轮锚点支持的是甲半成立、乙半无载体。共享文件提示：utils/location.ts 为跨 lane 文件，本条只读未改，且 home/nearby 两消费方不读 citySource（:56-57 注释自证），行为零变化。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-002",
+      "ledgerLine": 45,
+      "verdict": "ALREADY_FIXED",
+      "currentAnchor": "apps/client/src/subpackages/profile-extra/profile/location.vue:151",
+      "currentText": "          <image class=\"location-card__icon\" :src=\"resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.LOCATION)\" mode=\"aspectFit\" alt=\"\" />",
+      "supportingAnchors": [
+        "apps/client/src/config/images.ts:192 — LOCATION: ICONS_BASE + '/common/location.png'（ICONS_COMMON 块起于 :177）",
+        "apps/client/src/static/assets/icons/common/location.png — 本轮直读图像：纯描边定位针，无任何文字",
+        "apps/client/src/static/assets/icons/home/tabbar-top/icon_row1_02.png — 本轮直读图像：定位针下方带「附近」二字，即原病灶的有字版",
+        "git show 874ff52f:…/location.vue:136 — 该行当时为 :src=\"resolveMediaUrl(IMAGE_PATHS.HOME_ICONS.LOCATION_PIN)\"（立案时的真锚）",
+        "apps/client/dist/build/mp-weixin/subpackages/profile-extra/profile/location.wxml — location-card__icon 节点在位，src 走 {{d}} 绑定；同页 location.js 内 ICONS_COMMON 命中 2 处"
+      ],
+      "why": "台账证据锚 location.vue:136 因 LOCATION-001 的 cityFromIp 改动整体下移 15 行，现同一节点在 :151，且键已从 HOME_ICONS.LOCATION_PIN（带「附近」字的面图）换成处置点名的无字版 common 族 pin——处置要求的「改指仓内已在盘的无字版 pin」已成立，处置给的第二个候选（common/location.svg，258B，本轮读得是 stroke=#94A394 的 map-pin 描边）与现用 PNG 同为无字，无需再换。产物侧同向可证，故不依赖任何帧即可判绿。残留一处、不属本行射程：同文件 :61 的 map marker iconPath 仍取 HOME_ICONS.LOCATION_PIN（有字版），但那是原生 map 的 marker 位、台账判据锚的是 :136 卡片图标；是否一并换需另判，本轮不动码。"
+    },
+    {
+      "id": "MP-R2-MATCHING-014",
+      "ledgerLine": 26,
+      "verdict": "ALREADY_FIXED",
+      "currentAnchor": "apps/client/src/subpackages/discover-extra/discover/matching.vue:239",
+      "currentText": "  const keepMatchedUser = redirectingToSuccess ? matchStore.matchedUser : null;",
+      "supportingAnchors": [
+        "apps/client/src/subpackages/discover-extra/discover/matching.vue:34 — let redirectingToSuccess = false;",
+        "apps/client/src/subpackages/discover-extra/discover/matching.vue:58 — redirectingToSuccess = true;（在 redirectToSuccess 体内，该函数现 :56-62，台账原锚 :47-52 已漂移）",
+        "apps/client/src/subpackages/discover-extra/discover/matching.vue:241 — if (keepMatchedUser) matchStore.setMatchedUser(keepMatchedUser);",
+        "apps/client/src/stores/match.ts:88-94 — reset() 逐字段清 status/matchedUser/pendingAction/pendingCardId/animationDone/lastError",
+        "apps/client/src/subpackages/discover-extra/discover/match-success.vue:27 — const partner = computed(() => matchStore.matchedUser ?? fallbackPartner.value);（消费方确读该字段，:70/:73 亦按 matchedUser 判定）"
+      ],
+      "why": "处置给了两条改法并以「或」相连：其一 onUnload 部分复位，其二 redirectToSuccess 置标志位让 onUnload 跳过 matchedUser 复位。现工作树/HEAD 走的是第二条且逐环在位：:34 声明、:58 在 redirectToSuccess 内置位、:238-242 的 onUnload 先存 matchedUser 再 matchStore.reset() 再回写，正是台账括号里的原句实现。跨页契约消费端也核了：match-success 只读 matchedUser 与 query.userId，不依赖 status 仍为 matched，故 reset() 把 status 打回 idle 不破坏成功页。可判物件（本轮为该条补的静态判点）＝matching.vue 源码内 redirectingToSuccess 的三处（声明/置位/onUnload 读取）计数为 3 且 :239 行含 matchStore.matchedUser。原判据之所以判不了，是因为它只写「onUnload 改部分复位」而没点名物件，且 onUnload 的复位语义在压缩产物里以 store 方法名 reset 呈现、两态同名不可分。落点溯源：git log -S redirectingToSuccess 命中 f9a60925，已进当前 HEAD。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-PROFILE-INDEX-001",
+      "ledgerLine": 34,
+      "verdict": "ALREADY_FIXED",
+      "currentAnchor": "apps/client/src/components/profile/mine/MyHeader.vue:63",
+      "currentText": "          <image class=\"my-header__cert-dot-icon\" :src=\"IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG\" mode=\"aspectFit\" alt=\"\" />",
+      "supportingAnchors": [
+        "apps/client/src/components/profile/mine/MyHeader.vue:187 — background: var(--c-brand, #36C99A);",
+        "apps/client/src/components/profile/mine/MyHeader.vue:188 — border: 4rpx solid var(--c-bg-container, #FFFFFF);",
+        "apps/client/src/config/images.ts:245 — CHECK_WHITE_SVG: ICONS_BASE + '/common/check-white.svg'（资产在盘 204B）",
+        "apps/client/dist/build/mp-weixin/components/profile/mine/MyHeader.js — 唯一 CHECK 族 token 为 ICONS_COMMON.CHECK_WHITE_SVG；该文件 ICONS_EMOJI 三处命中均为 GENDER_MALE/GENDER_FEMALE/SETTINGS，不含 CHECK",
+        "apps/client/dist/build/mp-weixin/components/profile/mine/MyHeader.wxss — 同块内 background:var(--c-brand, #36C99A);border:4rpx solid var(--c-bg-container, #FFFFFF) 逐字命中"
+      ],
+      "why": "处置授予的绿判点是三个专用物件加一条删除型判点，本轮逐条实测全部成立且都在当轮产物里：图标键 ICONS_COMMON.CHECK_WHITE_SVG 命中该组件自己的 js（wxml 侧 cert-dot 节点 src 走 {{g}} 绑定），两条令牌声明命中该组件自己的 wxss，删除型判点（该图标 src 上移除 ICONS_EMOJI.CHECK）在源码与产物两侧同时为 0。台账原状态 待修复 的理由是 closer=已改工作树、判据台=判据不足，现两点都已过期：改动经 f9a60925 进入当前 HEAD（该文件 git status 干净），且判据本身已点名可核验物件。唯一未闭合的是「已认证态个人主页那一帧里勾是白色实心」的观感半——属帧维度，不影响本条静态判绿；若主编排层要求帧级终态，需 round-7 产物里的一帧已认证个人主页，本轮不排帧也不动码。"
+    },
+    {
+      "id": "MP-R2-PAGES-LOGIN-INDEX-015",
+      "ledgerLine": 53,
+      "verdict": "ALREADY_FIXED",
+      "currentAnchor": "apps/client/src/pages/login/index.vue:1172",
+      "currentText": "/* MP-R2-PAGES-LOGIN-INDEX-015：.sms-send-btn* 死样式已删（模板零引用，注册模式整删） */",
+      "supportingAnchors": [
+        "apps/client/src/pages/login/index.vue:1187 — /* MP-R2-PAGES-LOGIN-INDEX-015：.picker-field* （3-N 注册出生日期 picker）死样式已删 */",
+        "apps/client/src/pages/login/index.vue:57 — const showPhoneLogin = ref(false);（台账原锚 :57 的 ref(false) 声明位已被复用，注册模式那个 flag 已不存在）",
+        "apps/client/src/pages/login/index.vue:49-50 与 :206-207 — 记载内联注册模式（nickname/birthDate/smsCode/toggleRegisterMode/onSendSmsCode）整删的注释",
+        "apps/client/dist/build/mp-weixin/pages/login/index.wxss — sms-send-btn 0 命中、picker-field 0 命中、birthDate 0、phoneRegister 0",
+        "apps/client/dist/build/mp-weixin/pages/login/index.wxml — sms-send-btn 0、picker-field 0、验证码 0"
+      ],
+      "why": "处置收紧后的判据是删除型三条件：模板零引用、该页 wxss 零残留、两族样式类删除。本轮实测三条全部成立，且产物侧是本仓当前被测构建（16:52）而非旧帧时代物：源码里两族只剩 :1172/:1187 两条注释、零选择器，dist 的 wxss 与 wxml 里两串各 0 命中。全 src grep .sms-send-btn 与 .picker-field 也只命中这两行注释。原判据之所以判不了，是它原先挂的五个标识符（phoneRegisterMode / onSendSmsCode / canPhoneRegister / birthDateMax / onBirthDateChange）与 login.smsCodePlaceholder 键都是压缩构建会改名或跨页共用的裸名，处置已自行作废；剩下的删除型判点用类名字面量即可机判。台账证据锚 :57 与 :88-90 已失效（onShow 现为 :75-91，内容是面包屑与自动跳转，不再复位注册模式），需一并更正。落点溯源：git log -S sms-send-btn 命中 91e56562（round-7），已进 HEAD。"
+    },
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-022",
+      "ledgerLine": 101,
+      "verdict": "ALREADY_FIXED",
+      "currentAnchor": "apps/client/src/stores/messages.ts:1241",
+      "currentText": "    async setSessionPinned(sessionId: string, pinned: boolean) {",
+      "supportingAnchors": [
+        "apps/client/src/tests/stores/messages.spec.ts:40 — // Phase 4.3 的 toggleSessionPin 已随 MP-R2-PAGES-MESSAGES-INDEX-022 一并删除（无生产调用方，",
+        "apps/client/src/pages/messages/index.vue:268 — 长按菜单改调 setSessionPinned（功能守恒，未造孤儿入口）",
+        "全仓 grep toggleSessionPin：apps/client/src 仅 1 处命中且为测试注释；apps/client/dist/build/mp-weixin 递归 .js/.wxml/.wxss/.json 命中 0 处"
+      ],
+      "why": "本行原病灶是 stores/messages.ts:1233-1241 的 toggleSessionPin 无生产调用方且 catch 里塞注释（空 catch）。处置已把自相矛盾的二选一收紧为删除型单判点：页作用域产物（stores/messages.js 与消息页编译文件）内不再保留字符串判点 toggleSessionPin。本轮实测该判点在整份 dist 里 0 命中，源码侧该 action 亦已不存在，仅剩测试文件 line 40 的说明注释——台账已显式声明源码侧注释残留不在被测载体内不计。功能面核过：置顶能力未丢，页面走 setSessionPinned（:1241 起，mock 分支与 PUT /messages/conversations/{id}/pin 均在位），故删除没造成功能回退。台账 §71 的 PROBE_CONFLICTS（同一 token 既要求 present 又要求 absent）在本条已消解：只执行了删除那一支，互斥两支不再同时存在，本行可静态结案、不需帧。落点溯源：git log -S toggleSessionPin 命中 91e56562（round-7），已进 HEAD。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006",
+      "ledgerLine": 133,
+      "verdict": "ALREADY_FIXED",
+      "currentAnchor": "apps/client/src/subpackages/chat/chat-session/index.vue:2210",
+      "currentText": "            <image class=\"wechat-input-bar__icon-img\" :src=\"iconSrc.plus\" mode=\"aspectFit\" alt=\"\" />",
+      "supportingAnchors": [
+        "apps/client/src/subpackages/chat/chat-session/index.vue:120 — plus: IMAGE_PATHS.ICONS_EMOJI.PLUS,",
+        "apps/client/src/subpackages/chat/chat-session/index.vue:2921-2922 — 记载 .wechat-input-bar__icon-text 随 glyph 改 <image> 一并删除、模板已 0 引用",
+        "apps/client/src/config/images.ts:484 — PLUS: ICONS_BASE + '/plus.svg'（ICONS_EMOJI 块），资产在盘 267B；dist 侧 static/assets/icons/plus.svg 已在",
+        "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml — icon-btn--more 节点内为 <image class=\"wechat-input-bar__icon-img\" src=\"{{ax}}\">，wechat-input-bar__icon-text 命中 0",
+        "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.js — plus:h.IMAGE_PATHS.ICONS_EMOJI.PLUS 绑定在位"
+      ],
+      "why": "本行原判据的证据是一张历史备份帧（.zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_chat-session_index__弹层态.png），按本轮口径（历史证据只作参考，结论要有当轮新拍的帧或当轮源码锚点）它不能单独结案——但本条不需要帧：判据本体是源码级物件（glyph 换 <image> + 删文本 glyph 类），当轮锚点齐备且产物同向。实测两半都落地：附件「+」已由 <text class=\"wechat-input-bar__icon-text\">+</text> 改为 :2210 的 <image>（键 :120 走 IMAGE_PATHS.ICONS_EMOJI.PLUS，资产已进 dist static），.wechat-input-bar__icon-text 类在源码里只剩 :2921 的删除说明注释、在当轮 dist wxml 里 0 命中。台账 §97 当时给的「:2193 仍是文本 glyph ⇒ 未修」在今日 HEAD 已过期（该文件 git status 干净，改动已提交）。两点更正留给下一手：①行号漂移，判据锚应写 :2210 与 :2921；②轻微残留 :2917-2919 的 .wechat-input-bar__icon-btn--more 仍留 font-weight: 700（glyph 时代的死声明，处置只点名删 __icon-text，不在本条射程）。附带一条与本轮口径相关的判定：凡以帧为唯一依据、且该帧出自历史备份目录的行，本轮一律不得直接写绿也不得据以维持 待修复——必须先找当轮锚点（源码或新帧）；本条找得到，故按当轮源码+产物双锚结案，其余同类帧锚行（如台账里另几处 .zcode/tmp/backup-round-2-tour-pre-capture 引用）应照此重锚后再判。"
+    }
+  ]
+}

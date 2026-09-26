@@ -36,11 +36,17 @@ const key = (r) => `${r.suite}|${r.manifest}|${r.id}`;
 /** 证据串里"真有一张在盘上的帧"才算有帧；(ERROR:…) / (12345B) 尾注一律先剥。 */
 function framePaths(r) {
   const out = [];
-  for (const e of r.evidence || []) {
+  /* 轮与轮的 evidence 形状不一样：round-6 是数组，round-7 的桥版执行器写的是单个字符串
+     （"reports/.../X-after.png(34078B)"）。之前只按数组迭代 ⇒ 字符串被逐字符遍历，
+     326 条有帧的行被判成"引用了 png=0"——那是读法错，不是证据不存在。 */
+  const raw = Array.isArray(r.evidence) ? r.evidence : (r.evidence ? [String(r.evidence)] : []);
+  for (const e of raw) {
     const s = typeof e === "string" ? e : (e && (e.path || e.file)) || "";
-    if (!s.includes(".png")) continue;
-    const cleaned = s.replace(/\((\d+)B\)\s*$/, "").replace(/\s*\(ERROR:[^)]*\)\s*$/, "").trim();
-    if (cleaned) out.push(cleaned);
+    for (const part of s.split(/\s+(?=reports\/|\.zcode\/|D:[\\/])/)) {
+      if (!part.includes(".png")) continue;
+      const cleaned = part.replace(/\((\d+)B\)\s*$/, "").replace(/\s*\(ERROR:[^)]*\)\s*$/, "").trim();
+      if (cleaned) out.push(cleaned);
+    }
   }
   return out;
 }

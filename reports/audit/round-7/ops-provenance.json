@@ -1,0 +1,129 @@
+{
+ "frozenFrom": "reports/audit/round-6/ops",
+ "frozenAt": "2026-09-26T12:19:55.567Z",
+ "note": "本轮沿用上一轮的 1107 例计划；这里是**冻结拷贝**而不是活引用，逐文件 sha256 见 files[]。PROVENANCE.json 自身不在 files[] 里。",
+ "planFiles": 24,
+ "totalCases": 1107,
+ "files": [
+  {
+   "name": "PAGES-DISCOVER-INDEX.json",
+   "bytes": 46151,
+   "sha256_16": "2ac0856008767417"
+  },
+  {
+   "name": "PAGES-HOME-INDEX.json",
+   "bytes": 45441,
+   "sha256_16": "b8baff1965ad54f9"
+  },
+  {
+   "name": "PAGES-LOGIN-INDEX.json",
+   "bytes": 36524,
+   "sha256_16": "bd1e5e5c668f7863"
+  },
+  {
+   "name": "PAGES-MESSAGES-INDEX.json",
+   "bytes": 41537,
+   "sha256_16": "00d360a889468e23"
+  },
+  {
+   "name": "PAGES-NEARBY-INDEX.json",
+   "bytes": 40074,
+   "sha256_16": "6f6c3426cb898e56"
+  },
+  {
+   "name": "PAGES-PROFILE-INDEX.json",
+   "bytes": 49140,
+   "sha256_16": "ea288a2ce113d36f"
+  },
+  {
+   "name": "PAGES-REGISTER-INDEX.json",
+   "bytes": 40882,
+   "sha256_16": "e1fa00d9e078e8f0"
+  },
+  {
+   "name": "PAGES-REGISTER-SUCCESS.json",
+   "bytes": 17450,
+   "sha256_16": "99f6f8471b3a84a2"
+  },
+  {
+   "name": "SUBPACKAGES-CAMPUS-CAMPUS-HUB.json",
+   "bytes": 30519,
+   "sha256_16": "1e61e5d0b125efb4"
+  },
+  {
+   "name": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json",
+   "bytes": 40935,
+   "sha256_16": "e95c80b175e180fe"
+  },
+  {
+   "name": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC.json",
+   "bytes": 58490,
+   "sha256_16": "390da47c0a26f7a6"
+  },
+  {
+   "name": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json",
+   "bytes": 46582,
+   "sha256_16": "3d79a942d66e72f1"
+  },
+  {
+   "name": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json",
+   "bytes": 34556,
+   "sha256_16": "fe125ce2d28ec53e"
+  },
+  {
+   "name": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.json",
+   "bytes": 53990,
+   "sha256_16": "037b1e77cff557c4"
+  },
+  {
+   "name": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json",
+   "bytes": 25783,
+   "sha256_16": "5f1a724676049dd1"
+  },
+  {
+   "name": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json",
+   "bytes": 30952,
+   "sha256_16": "2c4aaa776222248f"
+  },
+  {
+   "name": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX.json",
+   "bytes": 58519,
+   "sha256_16": "cba81e56e54d490f"
+  },
+  {
+   "name": "SUBPACKAGES-VILLAGE-VILLAGE-POST.json",
+   "bytes": 63288,
+   "sha256_16": "46c35c58722828b1"
+  },
+  {
+   "name": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json",
+   "bytes": 65655,
+   "sha256_16": "a159db1f582bb9a2"
+  },
+  {
+   "name": "次要18.json",
+   "bytes": 99622,
+   "sha256_16": "09150e1249b409e9"
+  },
+  {
+   "name": "次要19.json",
+   "bytes": 89791,
+   "sha256_16": "5ea5f0f82ee7bb57"
+  },
+  {
+   "name": "次要20.json",
+   "bytes": 175213,
+   "sha256_16": "d7ff6a9d8a0c2897"
+  },
+  {
+   "name": "次要21.json",
+   "bytes": 147501,
+   "sha256_16": "22a095da9578f295"
+  },
+  {
+   "name": "次要22.json",
+   "bytes": 129470,
+   "sha256_16": "9e7a6764ada7324a"
+  }
+ ]
+}

@@ -514,3 +514,155 @@ FH_DUP_GROUPS_CROSS_PAGE=3
    这 3 组作为取景嫌疑进本轮开口清单，不当成已收口。
 
 （§18 的 59%/91 那组数作废的经过记在 §19；本节是替代它的自洽测量。）
+
+## 23 真实刀不是上不去，是我把 `mintToken` 当同步函数用了
+
+上一节收口时我把真实模式记成"blocker：产物起不来登录态（verify=not-logged-in）"。这条判断是错的，
+而且错得很基础：`cli-automator.mjs:144` 的签名是 `mintToken(kind, repoRoot, deviceId)` 而且是 `async`，
+而 `r-exec-cli.mjs:122` 写的是 `String(mintToken({ project: PROJECT }))`——
+
+- `kind` 收到的是一个对象 ⇒ 不等于 `"A"` ⇒ 悄悄走了 **guest 分支**；
+- 忘了 `await` ⇒ `String(Promise)` 得到字面量 `"[object Promise]"`，被当成 token 写进 storage。
+
+载体核对（`scripts/qa/probe-boot-callsite.mjs`，两种形态 × 两个工程各测一次，串行跑，连测会把通道打挂）：
+
+| 工程 | 形态 | verify | token 长度 |
+|---|---|---|---|
+| mock | broken | `logged-in userId=user-1001` | — |
+| mock | fixed | `logged-in userId=user-1001` | 249 |
+| real | broken | `not-logged-in` | — |
+| real | fixed | `logged-in userId=100158` | 249 |
+
+两个结论分开：
+1. **mock 那两刀不受影响**——mock 的 session store 只认"有没有 token"，坏 token 也算登进（userId 就是
+   夹具里的 user-1001），所以 §17/§21 的 134 条落点归因与 513 条交互刀不必重跑。
+2. **真实模式的"blocker"是我自己造的门**。`interact-real` 那 259 行 SKIPPED 全部作废，
+   原文件留作 `exec-results.ABORTED-void-callsite.json`（不删，作为"我错过一次"的载体）。
+
+修完之后的真实刀（`reports/audit/round-7/interact-real/exec-results.json`，label `round-7-real-exec`，
+`identity=A loginVerify=logged-in userId=100158`，绑 `1a1df78b`）：
+
+```
+RUNNER_ROWS new=1107 merged=1107 重复新行=0
+EXECUTED=169 FAILED=16 SKIPPED=922（交互动词=49 非真实用例=871 判据无可判物件=2）
+requiresReal 236 = 169 + 49 + 2 + 16   出帧=169  EVIDENCE_HOLE=0  通道异常=0  RUNNER_RESULT=OK
+```
+
+顺带修掉两处同类问题（都是"同一份账两个口径"）：
+- `r-exec-cli` 组内那条 `skipped=` 漏加 `skipNonReal`，与终稿那条打架 ⇒ 两处共用 `skippedTotal()`；
+- 结果文件写盘时 `identity` / `loginVerify` 没进 JSON ⇒ 增量与终稿两处写盘都补上，身份从此是**读得见的字段**。
+
+还加了一条前置断言：铸 token 或 store 校验不成立就**一行都不跑**（`process.exit(2)`）。
+身份不对时整批落点都不可信，让它继续跑只会产出一堆需要作废的行。
+`r-exec-ws.mjs` 同样加了，但走 WS 自己的会话（`wsBootSession`/`wsVerifyLogin`）——在隔壁房间点灯不算这边亮。
+
+## 24 台账里有 10 行是"列内容转置"的，列数门禁看不见它
+
+判据台读台账是**按列名取值**的。第 16 轮账目归一化时有一批 6 列的 lane brief 被直接补成 11 列，
+于是这 10 行整体错位：`页面` 装的是判据台判决（`STILL_OPEN` / `FIXED_IN_HEAD`），
+`类别` 装的是状态文本，`severity` 装的是 `file:line`。列数正好是 11、status 那格恰好还是受控词，
+所以 `OFF_SCHEMA_ROWS` 与 `STATUS_VOCAB_BAD` 两个判据都是 0 —— **形状合规、语义错位**。
+
+- 清点：`ROTATED_ROWS=10`（229 行里的 4.4%），集中在 192–201 行。
+- 修法：`scripts/qa/repair-rotated-ledger-rows.mjs`。它只做搬运不做判断——原判词、原状态文本、
+  原 `file:line` 全部搬进「处置」，`页面` 按源文件反推成完整路由（`pages/nearby/index` 这种，
+  与其余 23 行同口径），`severity` 记 `(未评，并案行)` 而不是编一个等级。
+  **无损约束**：原行每个非空格子的文本必须在修后的整行里仍然出现，有一条丢字就不写盘。
+- 门禁补上：`verify-ledger.mjs` 现在按表头列名定位 `页面`/`severity` 两列做语义核对，
+  `ROTATED_ROWS>0` 直接判红。先在备份上证明它会咬（10），再在现行台账上证明它不误伤（0，`LEDGER_RESULT=PASS`，
+  229 行不变）。
+- **诚实记录：这次修复没有改变任何判决。** 修完后重跑判据台，116 条里只有 2 条的 `verdictWhy` 多了一句
+  "判据只点到两载体都不存在的名字 STILL_OPEN"，桶分布仍是 `AV=31 / SO=1 / NUI=79 / NIE=0 / UN=5`。
+  我原本预计这 10 行会造出假判决——错了。原因：判据台读的是「处置」列散文，而散文我一个字没动。
+  这条的价值是账本正确 + 门禁能挡住下一次，不是把红洗掉；写在这里是为了不让它被记成"修了 10 条缺陷"。
+
+## 25 79 条帧债第一次被拆开：56 条根本不需要交互，0 条需要新通道
+
+§21 说过"0/82 可拍"——那是 **ops 用例**那一份账（判据没点名元素）。判据台的 79 条 `NEEDS_UI_FRAME`
+是另一份账，之前一直没拆过。拆完（`scripts/qa/export-ui-frame-debts.mjs` →
+`reports/audit/round-7/ui-frame-debt-classes.md`）：
+
+```
+STATIC_SHOOTABLE=56  NEEDS_STATE=9  NEEDS_INTERACTION=9  NEEDS_RUNTIME=4  UNSHOOTABLE=1  （合计 79，守恒）
+```
+
+76/79 的台账「页面」列能直接给出路由，id 里也能抠出来，最终 76 条有路由、3 条没有
+（`AppShell` 组件级、`MP-R2-MATCHING-016` 冲突项、一条 `tmp/tour-R2` 来源行）。
+
+按文件切成 5 条 lane（`split-frame-debt-lanes.mjs`，**同一文件的条目必须同桶**，
+第一版按条贪心装桶会把一个文件劈成两半）交并行 agent 写"取景配方"：每条 = route + precondition +
+steps + **可机器判的 assertion**（点名 selector/文案 + 极性 + `file:line` 依据）；
+写不出来的必须显式落到 `REWRITE` 或 `NOT_SHOOTABLE`，不许含糊。
+
+结果：`SHOOT=42 / REWRITE=16 / NOT_SHOOTABLE=21`（79 条全覆盖）。
+
+**复核工具自己错了两次，这两次都会把对的配方判成假的**（`merge-frameplans.mjs`）：
+1. 类名索引只收带 `__`/`--` 的名字 ⇒ 单连字符块名（`circle-card`、`comments-list`、`pinned-text`）
+   必然"全仓找不到"。lane-F 复核时逐条证实，13 条里有 7 条是它误判。补了 `class="…"` 与 `.selector` 两路索引。
+2. BEM 前缀正则 `[A-Za-z_$][\w$]*` 不允许连字符 ⇒ `my-interaction__label` 这种根本进不了索引。
+3. 路由目录把主包当字符串读（`String(p)` 得到 `[object Object]`）⇒ `pages/profile/index` 被判成不存在的路由，
+   `ROUTE_BAD=16` 全是我造的。改成 `p.path || p`。
+   三个都修完后：`ANCHOR_MISS=0 / ANCHOR_TOKEN=0 / ROUTE_BAD=0 / stillBad=0`，`MERGE_RESULT=OK`，
+   42 条 SHOOT 的 143 条断言逐条过机器核（71 处锚点被搬回真实位置、12 处按 lane-F 改对名字，全部留痕）。
+
+顺带被 lane 指出、**尚未处理**的源码疑点（记在这里，不当已修）：
+- `pages/nearby/index.vue:659` 顶值仍是 `24rpx`，判据称已取零；
+- `subpackages/circles/circles/index.vue` 只有 900 行，判据点的 `:911` 不存在，徽标仍是 `:574` 的裸 `rgba`；
+- `village/index.vue:730 / :695` 的错误条与 EmptyState 物件不存在（判据点名的东西没落地）；
+- `MP-R2-PAGES-MESSAGES-INDEX-002` 与已生效裁定正面冲突（组件 `:16-32` + `zh-CN.ts:681-685` 双记否计数），
+  且 mock 构建下 messages 路由根本不挂该组件；
+- `--c-text-inverse` 与 `--c-bg-container` 浅/深色值完全相同（`design-variables.scss:108/121`、
+  `tokens.scss:235/244`）⇒ 用对用错逐像素一致，这条判据永不可判。
+
+## 26 帧级判决第一次跑通：8 条按帧闭环、8 条判红，而我自己的测量错改了三次才收敛
+
+配方落成之后第一次真拍（`scripts/qa/shoot-frameplan.mjs`，label `round-7-uidebt-1a1df78b`）：
+42 条 SHOOT 全出帧、字节都过 3000、守恒成立、通道异常 4 次（重试后都恢复）。
+但**判决连错三次**，每一次都是"我把自己的测量问题记成了产品缺陷"：
+
+1. **极性**：`wantAbsent` 之前从 `kind + expected` 散文里猜，散文里出现「无 / 不」就把 present 判成 absent
+   ⇒ 26 条被判"未成立"。极性只允许来自 `kind` 字段（`absent|not-|hidden|不出现`）。
+   修完 machine-pass 从 9 涨到 16，未成立从 26 降到 12。
+2. **步骤没执行**：42 条里 **36 条的 steps 含非 `open-page` 动作**（tap 15 / scroll 12 / input 4 / measure 5 /
+   capture 6 / longpress 2 …），而取景器只会"开页然后探测"。没点开弹层就看到弹层不存在，那不是回归。
+   ⇒ 加了 `runSteps()`：CLI 这条腿能做的（scroll/wait/theme/navigate）真做，做不了的（tap/input/longpress/swipe）
+   记 `stepsUnmet`，整条判 `STATE_NOT_APPLIED` 而不是判红，并显式欠给 WS 那条腿。
+3. **落点**：`routeStack` 偶发取空/报错，上一版只重试一次 ⇒ 12 条"未成立"里有 4 条其实连页面都没确认。
+   ⇒ 重试预算加到 3 次（每次之间重新开页），判决侧新增 `NO_LANDING` 桶：落点没确认的帧一律不作判据。
+   同时禁止复用上轮"落点未确认"的帧（`--reuse-frames` 只允许复用落点确认过的），否则等于把一次测量错固化成证据。
+4. 还有一个更早的：`selectorsOf` 把 lane 写的 `..publish-topic-chip__remove` 原样丢给 selectorQuery，
+   查询必然失败 ⇒ 加了点号归一。7 条受影响。
+
+当前口径（`reports/audit/round-7/frame-verdicts.md`，`FV_CONSERVED=yes` 覆盖 79/79）：
+
+| 桶 | 条数 | 含义 |
+|---|---|---|
+| FIXED_FRAME | 8 | 帧 + 机器判点全部成立 ⇒ 台账改 `已修复（帧级复验…）` |
+| REGRESSION | 8 | 落点确认、状态已施加、判点仍未成立 ⇒ 真发现，改回 `待修复` 并记实测值 |
+| NO_LANDING | 10 | 帧拍了但落点未确认 ⇒ 不作判据，待重拍（本轮已在重拍中） |
+| STATE_NOT_APPLIED | 14 | 欠 tap/input 等交互步骤 ⇒ 欠 WS 那条腿，不判 |
+| NEEDS_EYE | 2 | 判点只能人读帧，帧路径已进 statusEvidence |
+| REWRITE / NOT_SHOOTABLE | 16 / 21 | 欠的是判据或夹具，账上写明缺什么 |
+
+台账被这两轮判决改动前后：`待修复 58→47`、`已修复 18→36`、`已修复待复验 57→50`，
+`verify-ledger` 全程 `PASS`（229 行、`ROTATED_ROWS=0`、`STATUS_VOCAB_BAD=0`）。
+
+## 27 又一批"待修复"其实早修完了：13 条里 11 条是过期状态
+
+不在配方里的 13 条 `待修复` 交两条只读判定 lane（`openqueue-lane-G/H.json`），
+再用 `scripts/qa/verify-openqueue-lanes.mjs` 逐条重开文件复核它们声称的 `file:line` + 原文：
+
+```
+OPENQ_PASSED=10 HELD=3 REJECTED=0   （11 条 ALREADY_FIXED，其中 1 条被我扣住，见下）
+```
+
+- **11 条判 ALREADY_FIXED**、0 条 FIX_NEEDED。这是本轮第 N 次出现"继承来的状态是过期的"，
+  所以流程固定成：改台账之前必须机器复核锚点，`REJECTED=0` 才允许写。
+- 我扣住了 1 条（`MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-004`）：lane 自己指出判据要求把 `border-radius`
+  改成 `--r-lg`，而 `--r-lg` 实值是 20rpx、判据讲的是 16 —— 值对不对机器锚点检查看不出来，
+  这种"语义冲突"交人裁决，不跟着 11 条一起自动写绿（`--hold` 就是这个用途）。
+- 2 条 CRITERION_VAGUE 已改写判据但**不动状态**，其中 `…PROFILE-LOCATION-001` 拆成两半：
+  可判的那半（三件物件同批在位）现已成立；`>100km` 距离守卫那半**没有载体**——
+  `LocationCityView.java` 至今只有 `String city`，全仓 `cityCenter` 0 命中 ⇒ 这是一条新的 needs_backend 契约项，
+  与 ③ 那三项不同，本轮不落地，写进终报开口清单。
+

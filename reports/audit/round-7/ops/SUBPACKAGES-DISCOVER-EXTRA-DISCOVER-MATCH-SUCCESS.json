@@ -1,0 +1,224 @@
+{
+  "cases": [
+    {
+      "id": "MS01",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "正常链路渲染：由匹配页 redirectTo 带 query.userId 进入，对方信息异步补齐",
+      "tier": "critical",
+      "pre": "走完一次真实匹配（寻觅页喜欢 → matching matched → redirectTo 本页，URL 形如 ?userId=<对方 id>，matching.vue:49-51）；注意本页 onUnload 已 matchStore.reset()（matching.vue:214，match.ts:82-89）→ matchedUser 为 null，只能走 query 兜底（match-success.vue:73-78 → loadFallbackPartner :81-92）",
+      "action": "进入后在 500ms / 2s / 5s 三个时点各截图一次，读取 partner?.name、两颗 .match-loading/match-success 头像 src、.match-success__score-card 是否存在；记录 loading 标志与 getPersonProfile 请求",
+      "expected": "修复后应有表现：首屏不得白屏（partner 为空时以 discover.partnerDefaultName 占位，:167）；对方真实昵称与头像必须在 ≤5s 内补齐（loadFallbackPartner 成功回填 fallbackPartner）；匹配理由卡按 buildMatchReasons 渲染（:43；displayReasons 为空时整卡隐藏，MatchSuccess.vue:114）；console 允许一条 profile load 失败的 warn（:49 留痕）但不得有 error；若 5s 后仍为默认名/无头像 → 判 P1 Function（跨页状态契约断裂，MP-R2-MATCHING-014 后果面）",
+      "evidence": "critical：三时点 before/after 截图 + partner 名/头像 src 抄录 + network（getPersonProfile）+ console",
+      "requiresReal": false
+    },
+    {
+      "id": "MS02",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "冷启动深链直开（分享/推送）：不得闪现错误空态，兜底拉取必须生效",
+      "tier": "critical",
+      "pre": "wx.removeStorageSync 无关；直接 wx.reLaunch('/subpackages/discover-extra/discover/match-success?userId=100158')（matchStore 完全空，栈深=1）",
+      "action": "进入后每 500ms 采样至 5s：路由、页面文本、partner 名/头像、network；再 tap 顶栏返回钮",
+      "expected": "冷启动深链铁律：全程不得闪现「加载失败/错误态」再翻回内容（本无错误态设计，出现即判 ISSUE）；页面必须完整渲染（双头像 + 三个出口按钮 + 理由卡）且 5s 内填入 100158 的真实资料；返回钮在栈深=1 时走 switchTab 寻觅 Tab（:111-118 分支二），不得报 navigateBack fail、不得困在本页",
+      "evidence": "critical：深链首帧 + 5s 后 after 截图 + 路由链 + partner 值 + console",
+      "requiresReal": false
+    },
+    {
+      "id": "MS03",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "【串号证伪】query.userId 与 store 残留 matchedUser 不一致：必须以 URL 为准（MP-R2-MATCH-SUCCESS-005 回归）",
+      "tier": "critical",
+      "pre": "先真实匹配成功一次进入本页（对象 A=100158）；不退出小程序，直接 wx.reLaunch('/subpackages/discover-extra/discover/match-success?userId=100159')（对象 B），并另做一路「store 有 A 残留 + 无 userId 参数」对照",
+      "action": "三路各读取：页面显示的对方昵称/头像、matchStore.matchedUser?.userId、fallbackPartner、以及 tap「立即聊天」后聊天页 URL 的 userId 与页面标题",
+      "expected": "带 userId 且与残留不一致时：必须先 matchStore.reset()（:69-72）再按 URL 兜底 → 页面与聊天页全部指向 **B（100159）**；若仍显示 A 或聊天页跳向 A → 判 P0（展示旧匹配对象且「立即聊天」跳错人）；无 userId 而 store 有残留的对照路：允许复用残留（:73 条件不满足）但须在 observed 写明实际取到的人；三路聊天页 URL userId 与页面展示对象必须逐字一致",
+      "evidence": "critical：三路 after 截图 + matchedUser/fallbackPartner 求值 + 聊天页路由 URL + console",
+      "requiresReal": false
+    },
+    {
+      "id": "MS04",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "【铁律】匹配成功 → 进入聊天的路由栈正确性：navigateTo 压栈、来源页可回、聊天对象一致",
+      "tier": "critical",
+      "pre": "承接 MS01 的正常成功页；记录进入前 getCurrentPages 全栈 S0（预期末位为本页、且不含 matching 页）",
+      "action": "tap .match-success__primary（MatchSuccess.vue:135-143 @tap=emit('chat') → 页面 goChat match-success.vue:94-100：markChatReady + openAppPath(CHAT.SESSION + ?userId=)）；观察 500ms 内反馈，随后在聊天页 tap 返回",
+      "expected": "①500ms 内路由变化到 subpackages/chat/chat-session/index 且 URL 带 ?userId=<对方 id>；②栈=S0 + 1（openAppPath 对非 Tab 页走 navigateTo，utils/navigation.ts:106-116；栈 ≥10 层才降级 redirectTo :100-104）→ **不得**用 redirectTo/reLaunch 把成功页或寻觅页清掉；③聊天页标题与消息对象 = 同一 userId（chat-session/index.vue:711-756 的 userId 分支，复用或新建会话），不得进 temp 匿名链路（会话 id 为数字，:601-617 判定）；④聊天页返回必须落回成功页（S0 末位）且成功页仍显示同一对象；⑤markChatReady 使 status→chat_ready（match.ts:76-80）—— 返回成功页后再点「立即聊天」不得因状态机变化而失效",
+      "evidence": "critical：跳转前后 before/after 截图 + 完整栈数组（S0/S1/返回后）+ 聊天页 URL options 与标题 + console",
+      "requiresReal": false
+    },
+    {
+      "id": "MS05",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "「立即聊天」连点×5：客户端调用次数与会话创建落库条数分开判定（防幂等假通过）",
+      "tier": "critical",
+      "pre": "承接 MS01；聊天目标 userId 记录为 U；后端/本地回读 (己方,U) 的私聊会话条数 C0；network 面板清空；注意 goChat（:94-100）与 openAppPath（navigation.ts:106）**均无防连点守卫**，且聊天页 onLoad 的 createSession（chat-session:729）会发 POST /messages/conversations，http 层带**稳定** Idempotency-Key（services/http.ts:262-274）",
+      "action": "对 .match-success__primary 以 <150ms 间隔连点 5 次；记录：goChat 被调用次数（可用面包屑/console 或 handler 计数）、新增聊天页实例数、POST /messages/conversations 条数与各自 Idempotency-Key 值、回读会话条数 C1",
+      "expected": "分栏判定，不得互相顶替：【客户端层】最终聊天页实例必须恰 1 个（getCurrentPages 中 chat-session 计数=1）、navigateTo 调用只产生 1 次有效压栈；出现 ≥2 个会话页实例 → 判 FAILED（无防连点）；【请求层】POST /messages/conversations 新增条数须为 1；若出现 2-5 条**同 key** 请求 → 客户端守卫缺失，即使落库 1 条也必须判 FAILED（服务端幂等去重属假通过来源，stage-contract §6.2）；【数据层】C1 必须 = C0 + 1（同一目标用户重复进入只有一条会话）；C1>C0+1 → P1 Data",
+      "evidence": "critical：before/after 截图 + 栈数组（含同路由计数）+ network 逐条（URL/Idempotency-Key）+ 会话条数回读 C0/C1 + console",
+      "requiresReal": false
+    },
+    {
+      "id": "MS06",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "partner 为 null 时点「立即聊天」：必须给可见反馈，否则判死按钮",
+      "tier": "critical",
+      "pre": "构造 partner=null：①直开无 userId 且 store 无残留（reLaunch '/subpackages/discover-extra/discover/match-success'）；②直开带不存在的 userId=999999999（loadFallbackPersonProfile 内部 try/catch 置 null，:87-88）",
+      "action": "两路各 tap .match-success__primary 一次，观察 500ms 内 DOM/Toast/路由变化；再 tap 顶栏相机钮与「···」钮对照",
+      "expected": "当前实现 goChat 在 !partner 时**静默 return**（:95）→ 按「点击后 500ms 内必须有可观测反馈」铁律判定：两路若无任何 Toast/跳转/态变化即判 P1 死按钮（FAILED）并给缺陷描述「partner 缺失时聊天入口静默失效，用户无从得知原因」；对照路（相机/更多钮有 toast「即将上线」:106-108,121-123）证明反馈机制可用 → 死按钮结论可信；②路还须核对页面显示的兜底名（discover.partnerDefaultName）而非报错",
+      "evidence": "critical：两路 before/after 截图 + 500ms 内 DOM 差异记录 + Toast 数组（须为空则判 FAILED）+ console",
+      "requiresReal": false
+    },
+    {
+      "id": "MS07",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "「继续逛逛」→ switchTab 寻觅 Tab：栈清空且不得残留成功页",
+      "tier": "navigation",
+      "pre": "正常进入本页（栈含来源页）；keepExploring 实现 :102-104 uni.switchTab(ROUTES.TAB.DISCOVER)",
+      "action": "①tap .match-success__secondary（MatchSuccess.vue:145-153 emit('explore')）；②重来一轮改为 tap 组件内「分享喜悦」入口对照；记录两次路由链与 Toast 数组",
+      "expected": "①500ms 内 switchTab 成功，getCurrentPages=[pages/discover/index]（switchTab 清非 tab 栈），成功页不再在栈中；不得报 can not navigateTo a tabbar page；寻觅页正常渲染且不重复消费刚匹配的卡（该卡已在匹配页消费）；②「分享喜悦」→ handleShare toast「分享功能即将上线」（:106-108 + MatchSuccess.vue:156 emit share）必须 500ms 内弹 toast，不得静默",
+      "evidence": "navigation：路由链断言（两次）+ console；②补 normal 级 after 截图（Toast 可见）",
+      "requiresReal": false
+    },
+    {
+      "id": "MS08",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "顶栏返回钮：navigateBack 与栈深=1 的 switchTab 兜底，两分支都要有反馈",
+      "tier": "navigation",
+      "pre": "分支A：正常链路进入（栈 ≥2）；分支B：reLaunch 直开本页（栈=1，:2 见 :111-118 的 pages.length 判定）",
+      "action": "两分支各 tap .success-nav__btn（第一个，:130-139 @tap=goBack）；随后各执行一次连点 ×5",
+      "expected": "A：500ms 内 navigateBack delta1 生效，落回来源页（寻觅页，非匹配中页）；B：走 switchTab 寻觅 Tab，不得困在本页、不得报 navigateBack fail；连点×5 后 A 的栈深最多 -1（不得多层出栈到小程序外）→ 多层出栈判 FAILED（goBack 无守卫）；两分支均无 JS 报错",
+      "evidence": "navigation：路由链与栈深数组（含连点后）+ console；连点异常时补 after 截图",
+      "requiresReal": false
+    },
+    {
+      "id": "MS09",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "顶栏相机（截图）与「···」（分享）按钮：非死按钮，占位 Toast 文案与来源可辨",
+      "tier": "normal",
+      "pre": "正常进入本页；两钮均绑 toast 占位（:121-123「截图功能即将上线」；:106-108「分享功能即将上线」），组件内另有第三个 share 入口（MatchSuccess.vue:156）",
+      "action": "①tap 相机钮；②tap「···」钮；③tap 组件内「分享喜悦」；④在 en-US locale 重复三 tap；抄录每条 Toast 原文与出现时刻",
+      "expected": "三处点击 500ms 内**全部**弹出 Toast 且文案与实现一致（相机≠分享文案，两路不得串台）；三处均无跳转、无路由变化；en-US 下这三条为硬编码中文（:107,122）→ 如实记录「en-US 语种不一致」为一致性缺陷（P3 或以上按影响判），不得因「有反馈」就判无问题；无裸 i18n key",
+      "evidence": "normal：三次 after 截图（Toast 同框）+ Toast 数组 + 路由不变断言 + console",
+      "requiresReal": false
+    },
+    {
+      "id": "MS10",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "双头像与理由卡的数据极值：无头像 / 无理由 / 理由 1~2 项 / 长昵称",
+      "tier": "normal",
+      "pre": "三路构造：①对方 avatar 与 photo 均为空（partnerAvatar 走 DEFAULT_AVATAR，:38-42）；②对方资料无匹配理由（buildMatchReasons 返 []，:43）；③对方昵称为 20 字超长中文 + emoji",
+      "action": "三路各进入本页；读取头像 src、.match-success__score-card 是否渲染、昵称节点文本与 rect",
+      "expected": "①不得空白圆/破图，src 落包内默认头像（resolveMediaUrl 兜底，MP-R1-MATCH-SUCCESS-002 修复后表现）；②理由卡整块隐藏（MatchSuccess.vue:114 v-if length>0）且页面不得塌陷、按钮仍可达，不得显示「null/undefined」；③长昵称不得溢出、不得撑破双头像区或与「匹配度 xx%」文字重叠；三路均无 console error",
+      "evidence": "normal：三路 after 截图（含放大裁切）+ 头像 src/理由卡存在性 + 昵称 rect + console",
+      "requiresReal": false
+    },
+    {
+      "id": "MS11",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "安全区与胶囊避让：顶栏左右钮不得与系统状态栏/胶囊按钮碰撞（MP-R2-MATCH-SUCCESS-001 回归）",
+      "tier": "normal",
+      "pre": "正常进入本页；样式声明 .success-nav padding-top calc(var(--statusbar,...)+24rpx)、右侧 calc(var(--capsule-right,7px)+104px)（:189-200），--statusbar/--capsule-right 由 useMenuButtonRect 注入（:21-22）",
+      "action": "在 iPhone SE 与刘海机型（如 iPhone 14 Pro Max 等价 profile）各读 .success-nav__btn 的 boundingClientRect，并与系统状态栏/胶囊按钮矩形（uni.getMenuButtonBoundingClientRect）比对；截图顶部 88px 区域",
+      "expected": "返回钮、相机钮、更多钮的实际矩形必须：①top ≥ 状态栏下沿（无叠印）；②右上两钮右缘 ≤ 胶囊左沿（零碰撞、零被胶囊遮挡）；③--statusbar/--capsule-right 求值非 0（DevTools env 恒 0 的坑已被 JS 注入绕过）；若与胶囊/状态栏重叠 → 判 P1 MiniProgram；三个钮均要可点（不得被遮挡导致点击落到系统控件）",
+      "evidence": "normal：顶部区域截图（两机型）+ 三钮 rect 与胶囊 rect 数值表 + CSS 变量求值 + console",
+      "requiresReal": false
+    },
+    {
+      "id": "MS12",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "热区批量测量：顶栏 72rpx 与三个动作钮均须 ≥88rpx，边界点击验证",
+      "tier": "normal",
+      "pre": "正常进入本页；源码声明：顶栏三钮 72rpx×72rpx（:202-212）；主按钮 padding 24rpx 0、次按钮 padding 22rpx 0、分享 padding 14rpx 0（MatchSuccess.vue:388,401,418）",
+      "action": "①批量读 6 个可点元素的 boundingClientRect 并换算 rpx；②对顶栏返回钮 tap 其上/下边缘内 4rpx；③对「分享喜悦」tap 文字上下各 4rpx 处；④对主按钮 tap 左右两端 8rpx 处",
+      "expected": "铁律：热区 ≥88rpx。逐项给出实测值 —— 72rpx 顶栏钮与 14rpx padding 的分享入口若换算后 <88rpx 判 FAILED（P2 UX 热区不达标）；边缘点击须命中正确目标（不得串到相邻钮、不得落到页面空白导致无反馈）；主按钮两端必须可点（.match-success__primary 全宽）；任一元素点击 500ms 内无反馈即判死按钮",
+      "evidence": "normal：after 截图（每次点击结果）+ 6 元素尺寸表（px→rpx）+ 点击坐标与命中目标记录",
+      "requiresReal": false
+    },
+    {
+      "id": "MS13",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "dev-preview=1 QA 入口：固定演示对象渲染且不被 query 校验干扰",
+      "tier": "normal",
+      "pre": "reLaunch '/subpackages/discover-extra/discover/match-success?dev-preview=1'（源码 :55-64 分支：置 fallbackPartner 为固定「星野」+ 本地 AVATAR_1 并 return）",
+      "action": "进入后 5s 内读取页面文本/头像 src；再带额外 userId=100158 与 dev-preview=1 组合进入一次；tap「立即聊天」观察目标",
+      "expected": "dev-preview 优先生效：显示「星野」且不发 getPersonProfile 请求（network 零新增）；组合路（dev-preview + userId）必须以 dev-preview 为准（:55 分支在 :69 之前 return），不得被 userId 覆盖 —— 若被覆盖说明顺序与本源码不符，须记 ISSUE；「立即聊天」在预览态会跳 userId=dev-preview 的会话（:98 取 partner.userId）→ 该行为必须如实记录（预览态进入真实聊天页属可接受 QA 入口，但聊天页不得因此报错/白屏）；页面头像为包内本地资源，不得空白",
+      "evidence": "normal：两路 after 截图 + 页面 partner 值 + 聊天页 URL + network 计数 + console",
+      "requiresReal": false
+    },
+    {
+      "id": "MS14",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "参数面核查：本页仅消费 userId 与 dev-preview，cardId/action/preview 为幽灵参数",
+      "tier": "normal",
+      "pre": "源码依据：match-success.vue:54 读 query 集合，消费点仅 :55（dev-preview）与 :69/:74（userId）；全文无 cardId/action/preview/from/redirect 读取（与匹配页 matching.vue:87-89 不同，勿照抄旧参数表）",
+      "action": "reLaunch '...match-success?userId=100158&cardId=c1&action=superLike&preview=1&from=share&redirect=%2Fpages%2Fhome%2Findex'，停留 5s；读取页面文本、路由、network、storage",
+      "expected": "①cardId/action/preview/from/redirect 全部不影响行为：无自动跳转（redirect 被忽略，防开放重定向）、预览参数不使页面停在只读态（preview=1 **不**被本页识别，仍按真实兜底渲染并可聊天）；②页面文本不含 'c1'/'superLike'/'share' 字样；③getPersonProfile 只对 userId=100158 发起（network 条数=1，不得被 action/cardId 影响而多拉）；④observed 逐项标注幽灵参数并给源码行号依据",
+      "evidence": "normal：after 截图 + 页面全文本抄录 + network 请求列表 + route options 求值 + console",
+      "requiresReal": false
+    },
+    {
+      "id": "MS15",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "userId 非法/超长/编码异常：不得崩溃、不得把原文渲染出来",
+      "tier": "critical",
+      "pre": "五路直开：①userId=（空串）；②userId=abc<img src=x onerror=alert(1)>；③userId= 后接 500 字符；④userId=%E4%B8%AD%E6%96%87（中文）；⑤userId=100158%20（尾随编码空格）",
+      "action": "五路各停留 5s 读取页面文本、partner 值、network 请求参数、console 未捕获异常；②路额外做 wxml 快照核查注入",
+      "expected": "五路均：页面完整渲染（三个出口按钮可用）、无白屏、无未捕获异常；②不得出现被解析的图片节点或 alert，原文不得回显在页面上；①④⑤若 getPersonProfile 被以异常入参调用，必须失败静默（:87-88 catch → fallbackPartner=null）且用户仍能从「继续逛逛/返回」离开（不得困死）；③超长不得导致请求 URL 溢出报错；⑤尾随空格是否被 trim 须如实记录（:69 q.userId 原文比对，未 trim → 与 matchedUser 比对可能不等而触发 reset，需记实际行为）",
+      "evidence": "critical：五路 after 截图 + wxml 快照 + network 请求 URL 原文 + console 错误计数",
+      "requiresReal": false
+    },
+    {
+      "id": "MS16",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "打开即返回 / 重复进出×3：无重复兜底请求、无状态机污染",
+      "tier": "noop",
+      "pre": "正常链路进入本页；记录每次进入的 getPersonProfile 请求条数与 matchStore 状态",
+      "action": "①进入后 <500ms 立即返回（打开即返回）；②「返回→再次进入」共 3 轮；③第 4 次进入后停留 5s",
+      "expected": "每次进入各自发起 ≤1 次 getPersonProfile（无并发重复请求风暴）；无页面实例叠加（栈中本页计数=1）；聊天页/寻觅页不受污染（markChatReady 仅在实际点击聊天时发生，:96）；第 4 次停留 5s 无自发动效以外的跳转；无计时器泄漏报错",
+      "evidence": "noop：执行日志（每轮请求条数 + 栈数组 + Toast 计数）",
+      "requiresReal": false
+    },
+    {
+      "id": "MS17",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "滚动与下拉刷新：整页为 flex 撑满无滚容器，不得出现双层滚动/伪刷新",
+      "tier": "noop",
+      "pre": "本页样式 .success-page display:flex（:177-184，MP-R2-MATCH-SUCCESS-009 修复宿主高度链）+ MatchSuccess 组件内部滚动；pages.json:141-143 本页无 enablePullDownRefresh",
+      "action": "①小屏机型下把内容滚到底（若组件内有可滚区）；②顶/中/底各截图；③执行下拉手势 300px ×2；④左右滑动一次",
+      "expected": "①若有可滚区须能完整看到「继续逛逛/分享喜悦」出口且不被 safe-area 压住；若整页不可滚，须记录「内容超出视口且不可达」判 P1；②无骨架永驻；③无 onPullDownRefresh 触发、无重复 getPersonProfile；④横向滑动不得触发返回或误点相邻钮（无手势劫持）；⑤flex 高度链生效——组件宿主不得塌陷为 0 高（MP-R2-MATCH-SUCCESS-009 回归）",
+      "evidence": "noop：执行日志（scrollTop 极值 + 请求计数 + 手势后状态）+ 顶/中/底 3 张截图",
+      "requiresReal": false
+    },
+    {
+      "id": "MS18",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "未登录/会话过期时进入：资料拉取失败的用户可见反馈是否缺失",
+      "tier": "critical",
+      "pre": "wx.removeStorageSync('token')/('refresh_token') 后 reLaunch '/subpackages/discover-extra/discover/match-success?userId=100158'（本页面源码**无** isUnlocked/LockScreen 分支，与 chat-session:1836 形成对照）",
+      "action": "停留 5s；读取渲染结果、network（401/失败）、Toast 数组、console；随后 tap「立即聊天」与顶栏返回",
+      "expected": "必须给出可判定结论：①页面不得白屏/塌陷（partner 兜底名 + 默认头像仍渲染，:28-42,167）；②getPersonProfile 401 失败时：当前源码仅在 profile.load 失败留 console.warn（:46-51），loadFallbackPartner 失败则静默置 null（:87-88）→ 若结果为用户可见的空白对象且聊天入口静默（见 MS06）则判 P1「未登录/失效态无引导且无失败反馈」；③「立即聊天」进聊天页后必须命中 LockScreen 引导（chat-session:1836）而非错误空态；④返回钮可用可退出；全程无未捕获异常",
+      "evidence": "critical：before/after 截图 + network 401 证据 + Toast 数组 + 聊天页路由与渲染 + console",
+      "requiresReal": false
+    },
+    {
+      "id": "MS19",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "跨页一致性：成功页与匹配动画页/聊天页/寻觅卡片的身份与文案口径",
+      "tier": "normal",
+      "pre": "走完一次真实匹配（对象 U），保留寻觅卡片上的姓名/头像与匹配页动画头像、聊天页标题作为四方对照",
+      "action": "并排抄录四处对方身份：寻觅卡 → 匹配动画页（matching.vue:226-231）→ 本页（:164-172）→ 聊天页标题（chat-session:896-907）；在 en-US 下重复并核对 matchSuccess.sayHi/explore 与「分享喜悦/截图功能即将上线」硬编码",
+      "expected": "四处 userId/姓名/头像来源一致，出现任何一处不同（尤其本页因 reset 后异步兜底而显示默认名而动画页显示真名）→ 记录为跨页一致性缺陷并给出时间点；zh-CN 下主/次按钮文案走 i18n（MatchSuccess.vue:141,151），en-US 下不得中英混排；「分享喜悦」为组件内硬编码（MatchSuccess.vue:156）须如实记语种问题；匹配度百分比与理由条目在动画页/成功页不得矛盾",
+      "evidence": "normal：四处并排截图（zh/en 两套）+ 四处身份值抄录表 + console",
+      "requiresReal": false
+    },
+    {
+      "id": "MS20",
+      "page": "subpackages/discover-extra/discover/match-success",
+      "title": "匹配成功页之后的重复匹配：从本页回寻觅再匹配另一人，栈与状态不得串",
+      "tier": "critical",
+      "pre": "完成一次匹配到本页（对象 A）；卡数 ≥2；记录当前路由栈",
+      "action": "①tap「继续逛逛」回寻觅；②对另一张卡 B 执行喜欢 → 匹配页 → 成功页；③读取成功页对象；④tap「立即聊天」读取聊天页 URL userId 与标题；⑤返回两次观察栈回退顺序",
+      "expected": "②之后 getCurrentPages 必须为 [pages/discover/index, ...]（switchTab 已清旧成功页，:103），不得残留对象 A 的成功页实例；③新成功页显示 B 且 matchedUser/fallbackPartner 均为 B（残留 A 已被 :69-72 或 store reset 清除）；④聊天页 userId=B；⑤返回顺序为 聊天页→成功页(B)→寻觅，不得跳到 A 的旧会话或 A 的成功页；任一环出现 A/B 混用即 P0 串号",
+      "evidence": "critical：五步 before/after 截图 + 完整栈数组（每步）+ 各页 userId 抄录 + console",
+      "requiresReal": false
+    }
+  ]
+}

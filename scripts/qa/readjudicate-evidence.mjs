@@ -30,6 +30,7 @@
  *        [--list-ids]                 # 逐用例行打全量（默认只打需要动手的）
  */
 import { readFileSync, existsSync, readdirSync, writeFileSync, mkdirSync, statSync } from "node:fs";
+const evList = (r) => (Array.isArray(r.evidence) ? r.evidence : (r.evidence ? [String(r.evidence)] : []));
 import { dirname, join, resolve, basename, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -461,7 +462,7 @@ if (APPLY && applyError) {
   // 落盘前的自守恒：改判的意义就是"不存在的文件不再当证据"，如果输出里还数得出死引用，
   // 那这份输出本身又是一个不可复核的权威件——宁可不写。
   let deadLeft = 0, deadLeftSample = [];
-  for (const rr of outRows) for (const e of (rr.evidence ?? [])) {
+  for (const rr of outRows) for (const e of evList(rr)) {
     const s = String(e);
     if (!/^[A-Za-z]:[\\/]/.test(s.split("(")[0]) && !s.startsWith("/")) continue;
     const pth = s.replace(/\((\d+)B\)\s*$/, "").replace(/\s*\(ERROR:[^)]*\)\s*$/, "");

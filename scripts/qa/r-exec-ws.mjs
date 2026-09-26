@@ -22,12 +22,17 @@ import { execFileSync } from "node:child_process";
 const require = createRequire(import.meta.url);
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, "..", "..");
-const { openPage, shot, evaluate } = await import("./cli-automator.mjs");
+const { openPage, shot, evaluate, mintToken, bootSession, verifyLogin } = await import("./cli-automator.mjs");
 
 const argv = process.argv.slice(2);
 function opt(n, d) { const i = argv.indexOf("--" + n); return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[i + 1] : d; }
 function flag(n) { return argv.includes("--" + n); }
 const PROJECT = opt("project", join(REPO, "apps/client/dist/build/mp-weixin"));
+/* 身份必须被机器断言并写进结果，不能靠"上一个进程留下的 storage 状态"——
+   桥版执行器就是因为把 mintToken 的返回值当字符串用（忘了 await）才让真实模式整批 not-logged-in，
+   详见 scripts/qa/probe-boot-callsite.mjs。这里不做同样的假设。 */
+const IDENTITY = opt("identity", "A");
+let LOGIN_VERIFY = "(未前置)";
 const LABEL = opt("round", "round-7");
 const OPS = opt("ops", join(REPO, "reports/audit/round-6/ops"));
 const OUT_DIR = opt("out", join(REPO, "reports/audit", LABEL, "interact"));
@@ -42,6 +47,9 @@ const ONLY = (opt("only", "") || "").split(",").filter(Boolean);
 const LIMIT = Number(opt("limit", "0"));
 const FIDELITY = opt("fidelity", "");
 const TAP_MODE = flag("tap");
+/* 真实模式跑的时候不能再以 requiresReal 为由跳过——那 236 条正是真实刀唯一能还的债。
+   （requiresReal=false 的用例在真实产物里照样会跑，跑挂就如实记，不预先豁免。） */
+const REAL_MODE = flag("real");
 const TAP_SETTLE = Number(opt("tap-settle", "1400"));
 const FRAME_RE = /截图|全帧|出帧|特写|帧/;
 const TAP_RE = /点击|输入|滑动|滚动|长按|拖|tap|click|input|scroll|swipe|trigger/;
@@ -91,6 +99,30 @@ async function wsRoute() {
    而串行版实测 6.6–8.1ms/条。并发在这条通道上没有收益，只有把通道打死的代价。 */
 async function wsPage() {
   return await withRetry("page", async (m) => await m.currentPage());
+}
+/* 身份前置走 WS 而不是走桥：探针、tap 都发生在这个会话里，用另一条通道写 storage
+   等于"在隔壁房间点灯，却说这边亮了"。evaluate 传函数 + 参数，automator 会序列化。 */
+async function wsBootSession(token) {
+  return await withRetry("bootSession", async (m) => await m.evaluate((t) => {
+    try {
+      wx.setStorageSync("token", t);
+      var app = getApp(); var vm = app["$vm"];
+      var gp = (vm.$ && vm.$.appContext.config.globalProperties) || {};
+      var p = vm["$pinia"] || gp["$pinia"];
+      var s = p._s.get("session"); if (s && s.bootstrap) { s.bootstrap(); }
+      return "boot-ok";
+    } catch (e) { return "ERR " + e.message; }
+  }, token));
+}
+async function wsVerifyLogin() {
+  return await withRetry("verifyLogin", async (m) => await m.evaluate(() => {
+    try {
+      var app = getApp(); var vm = app["$vm"];
+      var gp = (vm.$ && vm.$.appContext.config.globalProperties) || {};
+      var p = vm["$pinia"] || gp["$pinia"]; var s = p._s.get("session");
+      return s && s.isLoggedIn ? "logged-in userId=" + (s.userSession && s.userSession.userId) : "not-logged-in";
+    } catch (e) { return "ERR " + e.message; }
+  }));
 }
 /* 交互切片用：WS 的元素.tap()。不可逆的账号级动作（注销/解绑/清空）先禁触——
    不是为了把红的藏起来，而是这类动作会把后面几百条用例共用的会话打掉，
@@ -244,7 +276,7 @@ function flush(final) {
   const m2 = new Map();
   for (const r of [...(prior.results || []), ...rows]) m2.set(r.manifest + "|" + r.id, r);
   try {
-    writeFileSync(RES, JSON.stringify({ round: LABEL, gitSha: GIT_SHA, updatedAt: new Date().toISOString(),
+    writeFileSync(RES, JSON.stringify({ round: LABEL, gitSha: GIT_SHA, identity: IDENTITY, loginVerify: LOGIN_VERIFY, updatedAt: new Date().toISOString(),
       runner: "scripts/qa/r-exec-ws.mjs（WS 取证 + 桥出帧" + (final ? "，完整跑完" : "，增量落盘") + "）", results: [...m2.values()] }, null, 1));
   } catch (e) { console.log("WSX_FLUSH_ERR " + String(e.message).slice(0, 80)); }
   return [...m2.values()];
@@ -257,6 +289,27 @@ async function main() {
   const r0 = await wsRoute();
   if (r0 === undefined) { console.log("WSX_RESULT=FAIL reason=WS 通道连不上；先跑 node scripts/qa/ws-channel-up.mjs（别用 close()）"); process.exit(2); }
   console.log("[boot] ws 当前页=" + r0);
+
+  /* 身份前置：铸真 token → 写进这个 WS 会话 → 断言 store 认了。断言不成立就不跑一行，
+     因为未登录画面不能当已登录证据（桥版执行器就是栽在没 await mintToken 上）。 */
+  if (IDENTITY === "none") {
+    LOGIN_VERIFY = "skipped-by-flag";
+    console.log("[boot] identity=none ⇒ 不写会话，按游客档跑，落点一律按未登录读");
+  } else {
+    let t = "";
+    try { t = (await mintToken(IDENTITY === "B" ? "B" : "A", REPO, "r7-ws-" + LABEL)).token; }
+    catch (e) { console.log("WSX_RESULT=FAIL reason=铸 token 失败：" + String(e.message).slice(0, 130) + " ⇒ 一行都不跑"); process.exit(2); }
+    let b = await wsBootSession(t);
+    if (b === undefined) { b = bootSession(t, { project: PROJECT }); console.log("[boot] WS 写会话没答，退回桥写入（下方 verify 仍以 WS 为准）"); }
+    let v = await wsVerifyLogin();
+    if (v === undefined) { v = "(WS 无答案，桥值=" + verifyLogin({ project: PROJECT }) + ")"; }
+    LOGIN_VERIFY = String(v);
+    console.log("[boot] " + b + " identity=" + IDENTITY + " verify=" + LOGIN_VERIFY);
+    if (!/^logged-in/.test(LOGIN_VERIFY)) {
+      console.log("WSX_RESULT=FAIL reason=store 报 " + LOGIN_VERIFY + " ⇒ 整批不跑（换 --identity B 跑游客档）");
+      process.exit(2);
+    }
+  }
 
   if (FIDELITY) {
     /* 保真对照：同一时刻同一页，WS 并发 $$ 与桥折叠探针必须给出同样的 present/absent 结论。
@@ -326,7 +379,7 @@ async function main() {
         const observed = "top=" + (route || (routeKnown ? "?" : "(落点未取证)")) + (routeOk === false ? " ≠ " + page : "") +
           " | dom: " + (cls.length ? cls.map((s) => s + ":" + (dom[s] || "no-answer")).join(" ") : "(本条没点名类名)") +
           " | ws-route+ws-probe" + (pr.broken ? " | probe-broken" : "");
-        if (c.requiresReal === true) {
+        if (c.requiresReal === true && !REAL_MODE) {
           stats.skipReal++;
           rows.push(row(name, page, c, "SKIPPED", route, "requiresReal ⇒ 本切片只跑 mock 产物", observed));
         } else if (routeOk === false) {

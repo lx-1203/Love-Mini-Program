@@ -11,6 +11,7 @@
  * contentHash 算法为实测：sha256(文件字节) 的前 16 位十六进制。
  */
 import { readFileSync, existsSync, readdirSync, lstatSync, writeFileSync } from "node:fs";
+const evList = (r) => (Array.isArray(r.evidence) ? r.evidence : (r.evidence ? [String(r.evidence)] : []));
 import { createHash } from "node:crypto";
 import { dirname, join, resolve, relative, sep } from "node:path";
 
@@ -173,7 +174,7 @@ if (execPath) {
         else { cleanNoFile++; brokenRefs++; if (broken.length < 15) broken.push(`${r.suite}/${r.id} -> ${raw}`); }
       }
     }
-    const casesWithErr = rows.filter(r => (r.evidence ?? []).some(e => typeof e === "string" && /ERROR:|timeout/i.test(e))).length;
+    const casesWithErr = rows.filter(r => evList(r).some(e => typeof e === "string" && /ERROR:|timeout/i.test(e))).length;
     const coveringRows = rows.filter(r => r.status === "EXECUTED" || r.status === "PASS").length;
     console.log(`EXEC_FILE=${execPath} gitSha=${ej.gitSha ?? "?"} cases=${rows.length}`);
     console.log(`EXEC_EVIDENCE_ENTRIES=${entries} WITH_ERROR=${withErr} (${entries ? (100 * withErr / entries).toFixed(1) : 0}% of entries) | CASES_WITH_ERROR=${casesWithErr} (${rows.length ? (100 * casesWithErr / rows.length).toFixed(1) : 0}% of cases) | COVERING_ROWS=${coveringRows}`);

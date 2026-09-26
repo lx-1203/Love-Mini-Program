@@ -1,0 +1,178 @@
+{
+ "lane": "D",
+ "generatedAt": "2026-09-26T09:25:04.231Z",
+ "total": 16,
+ "files": [
+  "apps/client/src/subpackages/circles/circles/index.vue",
+  "apps/client/src/subpackages/circles/circles/post-topic.vue",
+  "apps/client/src/pages/nearby/index.vue",
+  "index.vue",
+  "apps/client/src/components/layout/AppShell.vue",
+  "apps/client/src/components/profile/public/PublicIdentity.vue",
+  "apps/client/src/subpackages/chat/chat-session/index.vue",
+  "circle-home.vue",
+  "post.vue"
+ ],
+ "items": [
+  {
+   "id": "MP-R2-CIRCLES-INDEX-004",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/circles/circles/index",
+   "page": "subpackages/circles/circles/index",
+   "src": "apps/client/src/subpackages/circles/circles/index.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "人判：需人复验，改动早于基线且无可指向本轮的载体。判什么：兴趣圈列表页快捷分类名与统计行文案是否已全部走语言包。看代码：apps/client/src/subpackages/circles/circles/index.vue 第 234 行至第 241 行的分类表存键名而不是中文，第 407 行与第 435 行在模板里按键取值再插值。实测三处：当前源码含 ⟨circle.tabAll⟩ 与 ⟨circle.cardStats⟩ 两个键名、产物该页 js 内两个键各 1 命中且产物 locale 键位表各 1 命中"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-005",
+   "cls": "NEEDS_INTERACTION",
+   "route": "subpackages/circles/circles/index",
+   "page": "subpackages/circles/circles/index",
+   "src": "apps/client/src/subpackages/circles/circles/index.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验；判据没点名可核验的修后物件（无 closer 差异串/源码锚点/显式「改→新值」）",
+   "criterion": "修：为本页建定高链（参考 village/index.vue `.village-page` height:100% 定高链，工作树 :879-887 带 MP-R1-VILLAGE-INDEX-201 注释），使内部 scroll-y 与 enhanced/bounces 生效。**→ 本句作废为待裁决项**，三案交主编排层：**A**（台账原推荐，建定高链）代价＝正面违反 AppShell.vue:250-254 明文裁定，且 .shell 是全站共享外壳、锁高同时影响 15 个消费页，:306-314 的 s"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-006",
+   "cls": "NEEDS_STATE",
+   "route": "subpackages/circles/circles/index",
+   "page": "subpackages/circles/circles/index",
+   "src": "apps/client/src/subpackages/circles/circles/index.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（visual），静态无判点；判据没点名可核验的修后物件（无 closer 差异串/源码锚点/显式「改→新值」）",
+   "criterion": "修：未登录给独立提示态或 emptyActionText 引导登录；有权但空列表时接 emptyAction 给去路。 〔§82 注释清扫落定：ID 锚点在工作树 2 处命中、HEAD 0 命中、承载文件 dirty=1；判据台桶=UNDECIDABLE ⇒ 静态判据不足（判据未点名可核验物件或压缩改名），需补判点或帧；22:59 mock 重建已并入产物，本轮不声称观感已验〕"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-007",
+   "cls": "NEEDS_RUNTIME",
+   "route": "subpackages/circles/circles/index",
+   "page": "subpackages/circles/circles/index",
+   "src": "apps/client/src/subpackages/circles/circles/index.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime+visual），静态无判点；台账 status=「未取证/需裁决」：判据未成立或待裁决，静态命中不推进状态",
+   "criterion": "修：前半「:911 换 var(--c-brand,#36C99A)」已落（工作树）。**后半三案待主编排层拍板，收口不代拍**：**A**（台账原口径：新增 --c-hot-badge-bg/--c-hot-badge-text 成对令牌并给暗值）代价＝暗值无图可依、自创暗值正是本轮反复判罚的行为，且按现值落令牌等于把与理想图相反的配色固化成 token、后续每页复用一次错色；**B**（收编 --c-badge-on-image-bg/-text，design-variables.scss:727-734「不随"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-011",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/circles/circles/post-topic",
+   "page": "subpackages/circles/circles/post-topic",
+   "src": "apps/client/src/subpackages/circles/circles/post-topic.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime），静态无判点",
+   "criterion": "修：遮罩改已定义的 --c-bg-overlay（design-variables.scss:123 + :368）；--c-bg-brand-soft 在主题层补亮/暗双值定义（页面代码不动即生效）。"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-012",
+   "cls": "NEEDS_INTERACTION",
+   "route": "subpackages/circles/circles/post-topic",
+   "page": "subpackages/circles/circles/post-topic",
+   "src": "apps/client/src/subpackages/circles/circles/post-topic.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验；授予绿用的判点在修复前的 HEAD 里就已存在（/pages/home/index, /pages/home/index, reLaunch）——命中不能",
+   "criterion": "修：换成同分包现成范式 apps/client/src/subpackages/circles/circles/index.vue:288-292（navigateBack().catch → switchTab home → reLaunch home），与本页提交路径 :374 / :420 …；同文件另一处已按 MP-R1-POSTTOPIC-102 的兜底范式修，返回键未同步 〔§82 注释清扫落定：ID 锚点在工作树 1 处命中、HEAD 0 命中、承载文件 dirty=1；判据台桶=NEEDS_UI_F"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-013",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/circles/circles/post-topic",
+   "page": "subpackages/circles/circles/post-topic",
+   "src": "apps/client/src/subpackages/circles/circles/post-topic.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（visual），静态无判点；判据没点名可核验的修后物件（无 closer 差异串/源码锚点/显式「改→新值」）",
+   "criterion": "修：490/697 禁用条件并入 '// isSubmitting'，提交中切 loading 文案/图标，使防重在途有视觉反馈"
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-011",
+   "cls": "NEEDS_STATE",
+   "route": "pages/nearby/index",
+   "page": "pages/nearby/index",
+   "src": "apps/client/src/pages/nearby/index.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验；判据只点到两载体都不存在的名字 STILL_OPEN",
+   "criterion": "人判：需人复验。本行是形状归一留下的并案行，原判词抠出的那个全大写词是行内状态字样而不是任何载体。判什么：并案目标 ⟨MP-R1-PAGES-NEARBY-INDEX-016⟩ 所说附近页顶部内边距双机制互相覆盖是否还在。看代码：apps/client/src/pages/nearby/index.vue 第 375 行的行内顶距（状态栏高度加 12 再换算成像素）加同页样式段里页根容器的上内边距取零，两条机制已不再抢同一个属性。实测三处：该页相对基线 094f7239 零改动（本轮没碰过这页）、产物该页 js 里"
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-014",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "pages/nearby/index",
+   "page": "pages/nearby/index",
+   "src": "apps/client/src/pages/nearby/index.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime），静态无判点；唯一抠到的判点是标识符 loadActivities, activityStore.loading，压缩构建会改名",
+   "criterion": "修：loadActivities 非 force 分支前置 `if (activityStore.loading) return;`（force 除外），或 store 侧在途 fetch 去重共享同一 Promise。"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/chat/chat-session/index",
+   "page": "subpackages/chat/chat-session/index",
+   "src": "index.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime+visual），静态无判点；判据没点名可核验的修后物件（无 closer 差异串/源码锚点/显式「改→新值」）",
+   "criterion": "修：空态容器 flex:1 + align-items/justify-content center（或在 .chat-list 上对空态分支加 justify-content:center）"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02",
+   "cls": "NEEDS_INTERACTION",
+   "route": "subpackages/chat/chat-session/index",
+   "page": "subpackages/chat/chat-session/index",
+   "src": "index.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime+visual），静态无判点；唯一抠到的判点是标识符 keyboardHeight，压缩构建会改名",
+   "criterion": "修：删该死分支（样式 + :2173 绑定），或恢复键盘态差异化间距；键盘态量测需真机，故只删不猜"
+  },
+  {
+   "id": "MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "",
+   "page": "components/layout/AppShell",
+   "src": "apps/client/src/components/layout/AppShell.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验；授予绿用的判点在修复前的 HEAD 里就已存在（AppShell）——命中不能证明改动落地",
+   "criterion": "修：水平内边距单一来源：由 AppShell 承担（或调为 32rpx），页内层水平 padding 归零；W16 串行全站生效。本轮已落 circles/index.vue 页内侧一半（工作树 :949），其余 14 个消费页仍各自为政 → 整条仍开放。归零只针对容器级 `.circles-tabs`，chip 胶囊内距 `.circles-tab` 不在本条射程 〔§82 注释清扫落定：ID 锚点在工作树 3 处命中、HEAD 0 命中、承载文件 dirty=1；判据台桶=NEEDS_UI_FRAME ⇒ 需帧"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/profile-extra/profile/other",
+   "page": "subpackages/profile-extra/profile/other",
+   "src": "apps/client/src/components/profile/public/PublicIdentity.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（visual+backend），静态无判点；有 3 个硬判点是标识符，压缩构建改名后在产物里不可读（cityPart, loc.split, schoolPart",
+   "criterion": "修：PublicIdentity 的 meta 拼接改 age · school · city，与我的页 MyHeader 的 ⟨metaLine⟩ 共用同一 formatter。**删掉原句「⟨把 loc 解构顺序对调⟩」**——字面不可执行：后端 location 串本体就是「城市 · 学校」（api/profile.ts:21 实证），对调解构会把城市渲染成学校，等于把缺陷改成正错颠倒。正确改法＝解析位序不动、只改输出 push 顺序（工作树 :26-28 已按此实现） 被入壳的都是压缩改名标识与整句说明；本"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/chat/chat-session/index",
+   "page": "subpackages/chat/chat-session/index",
+   "src": "apps/client/src/subpackages/chat/chat-session/index.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime+visual），静态无判点；判据没点名可核验的修后物件（无 closer 差异串/源码锚点/显式「改→新值」）",
+   "criterion": "修：先按 deletedMessageIds 过滤消息再调 buildChatMessageRows；或过滤后二次遍历丢弃后继不是 message 的 timebar 行"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/circles/circles/circle-home",
+   "page": "subpackages/circles/circles/circle-home",
+   "src": "circle-home.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（visual），静态无判点；授予绿用的判点在修复前的 HEAD 里就已存在（IMAGE_PATHS.ICONS_V2.MORE_SVG, IMAGE_PATHS.",
+   "criterion": "修：给 .hero-actions-right 加 margin/padding-right:calc(var(--capsule-right,7px)+104px) 避让胶囊；补「更多⋯」复用 IMAGE_PATHS.ICONS_V2.MORE_SVG"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/village/village/post",
+   "page": "subpackages/village/village/post",
+   "src": "post.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（visual），静态无判点；只在共享载体（语言包/主题/别页）里命中，未证明该页消费了它：--card-shadow, --c-black-shadow-xs",
+   "criterion": "修：两页统一走 var(--card-shadow) 或统一无阴影 〔§82 注释清扫落定：ID 锚点在工作树 1 处命中、HEAD 0 命中、承载文件 dirty=1；判据台桶=UNDECIDABLE ⇒ 静态判据不足（判据未点名可核验物件或压缩改名），需补判点或帧；22:59 mock 重建已并入产物，本轮不声称观感已验〕"
+  }
+ ]
+}

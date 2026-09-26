@@ -15,6 +15,7 @@
  * 两轴一旦零交集，本工具直接 QUEUE_RESULT=FAIL reason=套件键不匹配，不再把它伪装成"还有缺口没跑完"。
  */
 import { readFileSync, readdirSync, existsSync } from "node:fs";
+const evList = (r) => (Array.isArray(r.evidence) ? r.evidence : (r.evidence ? [String(r.evidence)] : []));
 import { join, resolve, basename } from "node:path";
 
 const argv = process.argv.slice(2);
@@ -96,7 +97,7 @@ if (existsSync(resultsPath)) {
     idsBySuite.push({ suite: r.suite, id: r.id });
     compositeKeys.push(`${key}/${r.id}`);
     recordedTotal++;
-    if ((r.evidence ?? []).some((e) => typeof e === "string" && /ERROR:|timeout/i.test(e))) errTainted++;
+    if (evList(r).some((e) => typeof e === "string" && /ERROR:|timeout/i.test(e))) errTainted++;
   }
 } else {
   console.log(`QUEUE_NOTE=结果文件缺失 ${resultsPath}（按 0 条记录对账）`);

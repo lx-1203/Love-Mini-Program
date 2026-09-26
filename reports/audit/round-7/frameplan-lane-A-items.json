@@ -1,0 +1,177 @@
+{
+ "lane": "A",
+ "generatedAt": "2026-09-26T09:25:04.222Z",
+ "total": 16,
+ "files": [
+  "apps/client/src/subpackages/campus/campus/hub.vue",
+  "apps/client/src/components/discover/NotLoggedWaiting.vue",
+  "apps/client/src/pages/profile/index.vue",
+  "publish.vue",
+  "apps/client/src/components/match/MatchLoading.vue",
+  "apps/client/src/pages/home/index.vue",
+  "apps/client/src/subpackages/circles/circles/circle-home.vue",
+  "detail.vue"
+ ],
+ "items": [
+  {
+   "id": "MP-R2-CAMPUS-HUB-009",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/campus/campus/hub",
+   "page": "subpackages/campus/campus/hub",
+   "src": "apps/client/src/subpackages/campus/campus/hub.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime），静态无判点；判据没点名可核验的修后物件（无 closer 差异串/源码锚点/显式「改→新值」）",
+   "criterion": "修：两处 --c-bg-page 兜底值统一（同文件 :372 用 #EEF7F2、:818 .campus-search 用 #F0F4F2）；择一真值并让另一处复用同一 fallback。"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-010",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/campus/campus/hub",
+   "page": "subpackages/campus/campus/hub",
+   "src": "apps/client/src/subpackages/campus/campus/hub.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime），静态无判点",
+   "criterion": "修：若确立「无专属封面也展示兜底封面」为产品意图，则删掉 :296 v-else 死分支与 :21 失实注释；否则去掉末端兜底，让浅绿分支可达。"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-011",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/campus/campus/hub",
+   "page": "subpackages/campus/campus/hub",
+   "src": "apps/client/src/subpackages/campus/campus/hub.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验，静态侧亦无判点命中",
+   "criterion": "人判：本条静态判点写不出来就不硬造。要判的是切已加入与推荐两个 tab 时学校卡片列表是否被整列重建。看哪段代码：apps/client/src/subpackages/campus/campus/hub.vue:293 的列表 key 必须是 school.id 这一个稳定值，不得再有 tab 值参与拼接。对照读基线 874ff52f 的同一文件同一段。为什么静态不可判：该页产物里只剩一个逐轮改名的编译属性位，拿它当判点下一轮必然假绿或假红。复验口径：下一轮巡检出校园 hub 帧时人工裁决列表节点是否复用，需帧。"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-012",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/campus/campus/hub",
+   "page": "subpackages/campus/campus/hub",
+   "src": "apps/client/src/subpackages/campus/campus/hub.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "人判：需人复验，无可立的静态判点。判什么：校园卡片的成员数与动态数每卡是否只计算一次。看代码：apps/client/src/subpackages/campus/campus/hub.vue 第 139 行在列表末尾把每条统计预计算成一个对象键附到条目上，模板第 318 行与第 326 行改读该预计算键。实测三处：当前源码有该键、产物该页 js 内该键 1 命中、基线 094f7239 同文件零命中，方向本来可测；但唯一可读痕迹是带冒号的对象键形态，判据台的字符串字面量字符类不收冒号，抽不出判点，而编译后的该页 "
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/campus/campus/hub",
+   "page": "subpackages/campus/campus/hub",
+   "src": "apps/client/src/subpackages/campus/campus/hub.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "人判：处置原列三个改法，其中首选的统计行独立成行加徽标回校名行，已在本轮基线 094f7239 之前达成（产物 hub.wxml 里统计文本与校名行是平级兄弟、hub.wxss 统计规则已是块级），判点在基线里就在不能当本轮判点，需人裁定改判为已修复（本轮前落地）。残留的另一半是取舍不是缺陷：单行溢出已改为省略号截断以避免折行孤字，要不要接受截断需人拍板；若不接受，则在去换行禁令允许两行与给操作列限宽两个改法里选一个，台账原句是三选一，静态不代裁。看哪段代码：subpackages/campus/campus/hu"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/campus/campus/hub",
+   "page": "subpackages/campus/campus/hub",
+   "src": "apps/client/src/subpackages/campus/campus/hub.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "人判：封面尺寸在本轮基线 094f7239 之前就已改为近正方形并为统计行让出宽度，工作树、产物 hub.wxss 与基线三者同值，数值型判点在基线里就在，不能当本轮判点，需人裁定改判为已修复（本轮前落地）。还要人判的一件事：与理想图逐像素比封面是否仍偏窄或偏扁，像素比是帧判据，静态判不了。看哪段代码：subpackages/campus/campus/hub.vue 第 599 至 608 行封面规则；看哪一帧：校园圈列表卡帧。台账证据列写的 200 乘 150 与第 590 至 600 行是旧锚点，已失效要一并"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-002",
+   "cls": "NEEDS_STATE",
+   "route": "pages/messages/index",
+   "page": "pages/messages/index",
+   "src": "apps/client/src/components/discover/NotLoggedWaiting.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（visual），静态无判点",
+   "criterion": "修：subtitle 改带插值的「附近有 {n} 位同频的你」，n 取游客可用的 /recommendations/people 计数；无数据时回退现有静态串。 〔§82 注释清扫落定：ID 锚点在工作树 1 处命中、HEAD 0 命中、承载文件 dirty=1；判据台桶=UNDECIDABLE ⇒ 静态判据不足（判据未点名可核验物件或压缩改名），需补判点或帧；22:59 mock 重建已并入产物，本轮不声称观感已验〕"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-004",
+   "cls": "NEEDS_INTERACTION",
+   "route": "pages/messages/index",
+   "page": "pages/messages/index",
+   "src": "apps/client/src/components/discover/NotLoggedWaiting.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验，静态侧亦无判点命中",
+   "criterion": "本条不要写绿，按未修处理：修后物件在基线、当前源码、当前产物三处都不存在。下轮可用判点全部限定在该页或该组件自己的产物文件内：在该组件模板里补 mascot 组件节点并让虚线轨道与各格真实头像成为独立节点。在该组件产物里补 person-01 到 person-08 的头像池循环。在该页产物注册表里补引导弹层组件并在该页模板引用它。该组件首节点那张整图海报的引用要拆掉，产物里不能再出现海报族里的这个键。作废判点：app.js 里那个组件名命中属应用级挂载，不证明该页消费。现存命中也不许复用：该页模板里已有的 mas"
+  },
+  {
+   "id": "MP-R2-PROFILE-025",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "pages/profile/index",
+   "page": "pages/profile/index",
+   "src": "apps/client/src/pages/profile/index.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验；授予绿用的判点在修复前的 HEAD 里就已存在（visitors, visitorsCount, visitors.length）——命中不能证明改动落地",
+   "criterion": "人判：本条实质是两个运行时值同口径，即访客列表长度与后台统计数谁优先，产物里两边的成员访问都被改名，静态分不出修前修后。要判什么：已登录个人主页四格互动数据里最近访客那一格的数值是否等于喜欢页访客列表的长度，而不是只取后台统计。看哪段代码：apps/client/src/pages/profile/index.vue:758 与 :694 两行必须是同一表达式，且 :1657 的传参链经外壳到 MyProfile 的 interactionItems。看哪一帧：个人主页帧与喜欢页访客列表帧配对复验，两数不等即说明走"
+  },
+  {
+   "id": "MP-R2-PROFILE-034",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "pages/profile/index",
+   "page": "pages/profile/index",
+   "src": "apps/client/src/pages/profile/index.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime），静态无判点；唯一抠到的判点是标识符 fetchProgress, socialProgressStore, useSocialProgressS",
+   "criterion": "修：删除 socialProgressStore 实例化与 onShow 的 fetchProgress()（或等进度 UI 回归时一并恢复）。"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/village/village/publish",
+   "page": "subpackages/village/village/publish",
+   "src": "publish.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "人判：这条两半都不可静态判，需人先拍口径再定判点。前半要补的常驻图格上限提示至今没有定稿的元素与文案，两页图格区都只有一个加号块，超限只靠选满时弹的轻提示，产物里没有可比对的新载体。后半是两个阈值要不要取同一实现，本质是值相等比较，一页是剩 50 字内变警示色、另一页是超过上限才变红，压缩产物里只剩字面数字，静态判不了，且台账原句给了提前预警与超限报警两个改法，属未拍板。看哪段代码：constants/village.ts 第 18 与 27 行的正文与图格两个上限、subpackages/village/vill"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A05",
+   "cls": "NEEDS_INTERACTION",
+   "route": "subpackages/village/village/publish",
+   "page": "subpackages/village/village/publish",
+   "src": "publish.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "修：把 :759-802 的 target-sheet 整块移出 scroll-view 到页面根（与 :915 话题弹层同层），消除同页两套层级策略 〔§82 注释清扫落定：ID 锚点在工作树 1 处命中、HEAD 0 命中、承载文件 dirty=1；判据台桶=NEEDS_UI_FRAME ⇒ 需帧复验（T5 定向巡检覆盖本页）；22:59 mock 重建已并入产物，本轮不声称观感已验〕"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/discover-extra/discover/matching",
+   "page": "subpackages/discover-extra/discover/matching",
+   "src": "apps/client/src/components/match/MatchLoading.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验，静态侧亦无判点命中",
+   "criterion": "修：跳过钮底色改成 var(--c-bg-container)，文字色改成品牌绿，两者合起来就是台账要的白底绿字。判点载体是产物 components/match/MatchLoading.wxss 里跳过钮那条规则：当前那里是一串半透明品牌绿字面值加纯白文字，查不到该底色令牌，两个载体都查不到，判据台据此报未落地才是本条今天应有的判决。⟨--c-brand⟩ 在该组件别的规则里早已存在，按护栏显式作废不作判点。位置移到标题行之上独立成行那半段是观感，需帧复验，静态不判，也不写进判点。"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-106",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "pages/home/index",
+   "page": "pages/home/index",
+   "src": "apps/client/src/pages/home/index.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验；授予绿用的判点在修复前的 HEAD 里就已存在（discover.likeSent, userId, TodayRecommendationCard）——",
+   "criterion": "修：**两案待主编排层拍板，收口不代拍**。（A）后端在 /home/dashboard 与 rotate 响应回 `liked`、前端单源消费——代价：要改 apps/api 并重启 8080（本轮明令越权）、要重生成 ⟨TodayRecommendationView⟩、要补 mock 分支；收益是状态跨刷新/换人持久、与后端去重同源。（B）前端在 home/index.vue 记本会话已喜欢 userId 集合并作 prop 传 TodayRecommendationCard——代价：刷新即丢（「已喜欢」变假、"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/circles/circles/circle-home",
+   "page": "subpackages/circles/circles/circle-home",
+   "src": "apps/client/src/subpackages/circles/circles/circle-home.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "人判：公告文案已在本轮基线 094f7239 之前由旧词改为新词并保留方括号前缀，产物 subpackages/circles/circles/circle-home.js 里已是新词、旧词在客户端源码与产物里零命中 ⇒ 文案判点在基线里就已存在，不能当本轮判点，需人裁定改判为已修复（本轮前落地）。剩一个待拍板项：这条写死的演示公告是否按处置列的可选项入 i18n 并连 mock 夹具同批（中英同批），入词条是另一刀，需人拍板后才能定新判点。看哪段代码：subpackages/circles/circles/cir"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/village/village/detail",
+   "page": "subpackages/village/village/detail",
+   "src": "detail.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime），静态无判点",
+   "criterion": "修：2 图特判 50/50（或首图亦 2/3）；无图态按需补占位或明确不补"
+  }
+ ]
+}

@@ -38,6 +38,10 @@ const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 
 const TSV = arg("tsv", ".zcode/tmp/reverify/real-tour.tsv");
 const LABEL = arg("label", "round-6-real-tour");
 const PROJECT = arg("project", join(REPO, "apps/client/dist/build/mp-weixin-real"));
+/* buildMode 必须跟着 --project 走：这脚本叫 real-tour，但它同样能指到 mock 产物上跑
+   （本轮就这么用过）。原先这里写死 "build:mp-weixin:real:isolated"，一旦指到 mock，
+   权威索引里那一批帧就会被标成真实模式——那是伪造溯源。 */
+const BUILD_MODE = arg("build-mode", /mp-weixin-real/.test(String(PROJECT)) ? "build:mp-weixin:real:isolated" : "build:mp-weixin（mock）");
 const IDE = arg("ide", "D:/微信开发者/微信web开发者工具/wechatide.cmd");
 const OUT_DIR = join(REPO, "reports/screenshots", LABEL);
 const SETTLE_MS = Number(arg("settle", "2600"));
@@ -203,7 +207,11 @@ function routeNow() {
   }
 
   const man = {
-    gitSha: GIT_SHA, workflowVersion: "3.2-cli", buildMode: "build:mp-weixin:real:isolated",
+    gitSha: GIT_SHA, workflowVersion: "3.2-cli", buildMode: BUILD_MODE,
+    /* 这条巡检通道只出整页帧，不出放大辅助帧。字段必须**显式写成空数组**而不是缺字段：
+       报告的前置体检区分"读不到字段"与"读到 0 张"，缺字段会被判成字段名改了，
+       而这里的 0 才是事实（原因也写进 captureLimitations）。 */
+    zoomFrames: [],
     generatedAt: new Date().toISOString(), harness: "wechatide CLI: simulator_open_page + simulator_screenshot + automation_evaluate",
     captureLimitations: [
       "出图尺寸由 IDE 决定（与 miniprogram-automator 的 378×814 不同尺，禁止跨 harness 比像素）",

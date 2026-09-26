@@ -1,0 +1,421 @@
+{
+  "lane": "B",
+  "generatedAt": "2026-09-26T00:00:00.000Z",
+  "selfCheck": {
+    "inputTotal": 16,
+    "itemsLength": 16,
+    "uniqueIds": 16,
+    "idsMatchInput": true,
+    "note": "写盘前用 node 逐 id 比对 frameplan-lane-B-items.json 的 id 集合，恰好一一对应、无重复；下列 sourceAnchor 全部来自本轮实际打开过的源文件行。",
+    "filesActuallyOpened": [
+      "apps/client/src/pages/messages/index.vue",
+      "apps/client/src/subpackages/village/village/post.vue（185-345、470-510、735-885、1445-1490 段）",
+      "apps/client/src/subpackages/village/village/detail.vue（781、955-1030、1255-1300、1600-1640、2895-2930 段）",
+      "apps/client/src/stores/messages.ts",
+      "apps/client/src/components/chat/ChatBubble.vue",
+      "apps/client/src/components/home/InterestRecommendation.vue",
+      "apps/client/src/components/profile/mine/MyStory.vue",
+      "apps/client/src/pages/register/success.vue",
+      "apps/client/src/subpackages/campus/campus/hub.vue（campusHub 键位段）",
+      "apps/client/src/pages.json",
+      "apps/client/src/constants/routes.ts",
+      "apps/client/src/i18n/locales/zh-CN.ts（仅取文案值与键位）"
+    ],
+    "crossLaneBoundaries": "未读 village/publish.vue、CommunityFeed.vue、NearbyPeople.vue、campus/index.vue、apps/api 的 MockMessageDashboardController.java（均属别的 lane），凡涉及它们的判断都写进 unresolved 并注明越界。"
+  },
+  "items": [
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-018",
+      "disposition": "REWRITE",
+      "route": "pages/messages/index",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "不适用：本条判点是 console.warn 留痕，不是渲染物件；台账自己的第 10 列也写着 不适用（代码层判据，不依赖理想图）"
+      },
+      "steps": [
+        { "action": "none", "selector": "", "note": "不排帧：console.warn 不进入节点树也不进入像素，任何帧都判不了它" }
+      ],
+      "assertions": [],
+      "crop": "无（本条建议移出 NEEDS_UI_FRAME 桶）",
+      "frameName": "B-MP-R2-PAGES-MESSAGES-INDEX-018",
+      "unresolved": "原判据要什么：(a) fetchVisitors 的 catch 补 console.warn 留痕、(b) markInteractionRead 的 catch 补 console.warn（对齐同文件 markNotificationRead 口径）、(c) 随 -022 一并（原文在此被截断，未见全句）。源码实际是什么：两条留痕都已在位——apps/client/src/pages/messages/index.vue:181 是 console.warn 带 [messages] fetchVisitors failed，apps/client/src/pages/messages/index.vue:299 是 fetchLikes 同款，apps/client/src/stores/messages.ts:1500 是 markInteractionRead 的 warn；它们是可 grep 的代码物件，渲染帧里既没有对应节点也没有对应文案，帧判不了。建议改成什么判据：改成立即可判的静态判点（两条字符串各在该页产物 js 与本仓源码双命中即绿），桶位从 NEEDS_UI_FRAME 挪到静态可判；若仍坚持要帧，只能补一个后端故障注入夹具（让 fetchVisitors 与 markInteractionRead 必 reject）加一条 console 取件通道，二者本轮都不具备。"
+    },
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-019",
+      "disposition": "NOT_SHOOTABLE",
+      "route": "pages/messages/index",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "需要 real 构建 + 后端 dashboard.assistant 至少一条 targetUrl 为空；mock 构建下本块结构性不渲染"
+      },
+      "steps": [
+        { "action": "open-page", "selector": "pages/messages/index", "note": "mock 构建里 stores/messages.ts:575-577 的 useMock 分支直接 return，dashboard 恒 null，index.vue:588 的 v-if 把整个活动推荐块隐藏，帧里没有可判对象" }
+      ],
+      "assertions": [],
+      "crop": "活动推荐卡的正文区（activity-rec-card 的 cta 行）",
+      "frameName": "B-MP-R2-PAGES-MESSAGES-INDEX-019",
+      "unresolved": "缺的夹具：一条 targetUrl 为空的 assistant 数据（real 模式下由后端 /messages/relationship-dashboard 下发，见 apps/client/src/stores/messages.ts:579）。已核实的源码事实：判据点名的条件渲染在位——apps/client/src/pages/messages/index.vue:606 就是 v-if=act.targetUrl 包住 .activity-rec-card__cta（台账写的 :599 是旧行号，已漂移约 7 行），而 openActivity 的空值分支（apps/client/src/pages/messages/index.vue:257-259）仍然静默不响应、映射层（:88-97）也没有过滤，三个改法只落了第一个。如果补上夹具，断言应该长这样：kind=descendant-absent，target=活动卡内 .activity-rec-card__cta（该卡数据 targetUrl 为空），expected=0 命中；kind=descendant-count，target=.activity-rec-card__cta，expected=数量等于 dashboard.assistant 中 targetUrl 非空且 title 非空的项数，sourceAnchor=apps/client/src/pages/messages/index.vue:606；另需一条 kind=tap-then-no-change 验无 targetUrl 的卡点按后路由栈不变（对应 openActivity 静默分支，锚点 :258），并配一条轻提示文案判点才能把「静默不响应算不算缺陷」定死。"
+    },
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
+      "disposition": "NOT_SHOOTABLE",
+      "route": "pages/messages/index",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "需要一条 partnerAvatar 必然 404 的会话；mock 会话头像全是包内资源（apps/client/src/stores/messages/mock-data.ts:17、:30 走 IMAGE_PATHS.AVATARS），永不触发 error 事件"
+      },
+      "steps": [
+        { "action": "open-page", "selector": "pages/messages/index", "note": "现状能拍，但拍不到失败态：没有会 404 的头像就没有 @error，avatarFailedIds 恒为空集" }
+      ],
+      "assertions": [],
+      "crop": "最近聊天首行的头像列（chat-item__avatar）",
+      "frameName": "B-MP-R2-PAGES-MESSAGES-INDEX-021",
+      "unresolved": "缺的夹具：一枚可稳定 404 的 partnerAvatar（例如 fixture 里写一个 /uploads/not-exist-<随机>.jpg），外加台账第 11 列明写的两帧路径（先让该头像命中占位图、再下拉重载）。已核实的源码事实：重置点确在 apps/client/src/pages/messages/index.vue:302（loadPage 里 await Promise.all 之后整表重建为空集），三元兜底读该集的位置在 :534（avatarFailedIds.has(session.id) 命中即用 DEFAULT_AVATAR），@error 绑在 :536。另有一处结构性障碍：partnerAvatar 为空串的会话（mock 官方号与临时匿名会话）走的是 :534 的第二个条件，压根不产生失败态，不能拿来替这个夹具。如果补上夹具，断言应该长这样：帧一 kind=attr-equals，target=.chat-item（该会话行）内 .chat-item__avatar 的 src，expected=等于包内默认头像路径（命中兜底）；帧二在下拉重载完成后立刻读同一节点，expected=src 回到那条 404 地址（说明集合被清空），sourceAnchor=apps/client/src/pages/messages/index.vue:302 与 :534。这条断言带明确时序窗口（清集与第二次 @error 之间），自动化取件要 poll-after-refresh，否则量到的仍是兜底图；本轮不能把它当可立判点。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-007",
+      "disposition": "SHOOT",
+      "route": "pages/messages/index",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "mock 默认数据即可，页头两枚按钮与数据无关；登录锁由 dev-user=1 兜住（apps/client/src/pages/messages/index.vue:314 applyDevUserFromQuery），:373 的游客整页替换分支不触发"
+      },
+      "steps": [
+        { "action": "open-page", "selector": "pages/messages/index", "note": "打开即拍，先读 DOM 顺序再点按" },
+        { "action": "tap", "selector": ".header__right > .header__icon-btn:nth-child(1)", "note": "点第一枚（搜索钮），验证交换顺序后点击语义没被改坏；若 nth-child 在本机 IDE 退化，按 round7-NOTES §1.2 用 .header__icon-btn 首命中替代" }
+      ],
+      "assertions": [
+        {
+          "kind": "node-order",
+          "target": ".header__right > .header__icon-btn:nth-child(1)",
+          "expected": "第一个子节点内含 .header__icon-img（SEARCH 图标）、且不含 .header__icon-plus；第二个子节点才含文本 ＋ 的 .header__icon-plus",
+          "sourceAnchor": "apps/client/src/pages/messages/index.vue:387"
+        },
+        {
+          "kind": "text-equals",
+          "target": ".header__right > .header__icon-btn:nth-child(2) .header__icon-plus",
+          "expected": "文案为全角加号 ＋（源码字面量，见锚点行）",
+          "sourceAnchor": "apps/client/src/pages/messages/index.vue:391"
+        },
+        {
+          "kind": "element-exists",
+          "target": ".search-bar",
+          "expected": "点第一枚按钮后搜索条挂载（v-if=searchActive），证明该钮仍是 toggleSearch",
+          "sourceAnchor": "apps/client/src/pages/messages/index.vue:397"
+        },
+        {
+          "kind": "element-exists",
+          "target": ".header__icon-btn",
+          "expected": "两枚按钮仍是兄弟节点且各自 role 与绑法未改（第二枚带 role=button 与 aria-label 走 handleStartChat），交换的只有 DOM 顺序",
+          "sourceAnchor": "apps/client/src/pages/messages/index.vue:390"
+        }
+      ],
+      "crop": "页头右上角两枚圆形按钮（含其左侧标题行末端）",
+      "frameName": "B-MP-R2VIS-PAGES-MESSAGES-INDEX-007",
+      "unresolved": "台账第 11 列原文只写 交换两个 view 的 DOM 顺序即可（勿改点击语义），未点名是哪两个 view；锚点取自同条台账第 8 列的 header__right 描述并与源码核对：现序为搜索钮在前、加号钮在后，正是判据要的交换结果。口径以 素材/理想效果图/消息.png 为准（台账第 9 列写的亲验对象）。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
+      "disposition": "SHOOT",
+      "route": "pages/messages/index",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "mock 默认数据里的免打扰会话 session-private-2（昵称 陈默，数据行 mock-data.ts:29、muted 开关 mock-data.ts:34）；该行同时带 relationship.status=chatting，故昵称行必然既有关系标签又有免打扰图标"
+      },
+      "steps": [
+        { "action": "open-page", "selector": "pages/messages/index", "note": "打开即可；.chat-item 内全部节点声明在页模板里，页级查询可达（不是组件内节点）" },
+        { "action": "wait", "selector": ".chat-item", "note": "等 bootstrap 完成、列表挂载后再判父子位置，未挂载时 .chat-item 为 0 命中会误判" }
+      ],
+      "assertions": [
+        {
+          "kind": "descendant-exists",
+          "target": "陈默那一行的 .chat-item__top-row 内 .chat-item__muted-icon",
+          "expected": "免打扰图标挂在昵称行容器内，与 .chat-item__status（关系标签）同级同排；图标本体不得判成多余（台账明写它是 MP-R1-PAGES-MESSAGES-INDEX-003 按用户要求加的修复）",
+          "sourceAnchor": "apps/client/src/pages/messages/index.vue:556"
+        },
+        {
+          "kind": "descendant-absent",
+          "target": "陈默那一行的 .chat-item__time-row 内的 image 与 .chat-item__muted-icon",
+          "expected": "时间行内 0 个图标节点，该行只余一个 .chat-item__time 文本节点",
+          "sourceAnchor": "apps/client/src/pages/messages/index.vue:570"
+        },
+        {
+          "kind": "text-regex",
+          "target": "陈默那一行的 .chat-item__time-row",
+          "expected": "整行文本仅由时间字符组成（数字、半角冒号、中文时间用字），不含图标占位、不以空格或分隔符结尾；口径为 消息.png 的时间列只有时间数字",
+          "sourceAnchor": "apps/client/src/pages/messages/index.vue:571"
+        }
+      ],
+      "crop": "最近聊天里含免打扰图标那一行的右半（昵称行标签带 + 时间列）",
+      "frameName": "B-MP-R2VIS-PAGES-MESSAGES-INDEX-009",
+      "unresolved": "台账把 ⟨chat-item__muted-icon⟩ 与 ⟨chat-item__time-row⟩ 入壳作废，作废的是产物侧存在性判点（两名跨修复两侧同名、静态不可判位置）；本配方用它们做父子的位置判点，是帧独有的信息，不与该作废冲突。判点本身要求人裁：判的是父子归属，不是类名命中。"
+    },
+    {
+      "id": "MP-R2-POST-013",
+      "disposition": "REWRITE",
+      "route": "subpackages/village/village/post",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "若要按原判据取景，需要 isCircleTarget 为真而 targetCircle 为 null 的稳定态；本轮源码里该态只剩解析闸完成前的瞬时窗口"
+      },
+      "steps": [
+        { "action": "open-page", "selector": "subpackages/village/village/post?id 不适用", "note": "深链 ?circleId= 指向未加入或不存在的圈时，loadTarget 在 apps/client/src/subpackages/village/village/post.vue:296-301 当场把目标回退成 个人动态，判据要的副标题来不及稳定呈现" }
+      ],
+      "assertions": [],
+      "crop": "发布到卡片的标题行与副标题行（.post-to__name / .post-to__subtitle）",
+      "frameName": "B-MP-R2-POST-013",
+      "unresolved": "原判据要什么：targetSubtitle 首行补一句 isCircleTarget 且 targetCircle 为空时返回字面文案「圈子成员可见」，与 :214 标题兜底和 :771 标签同语义。源码实际是什么：兜底分支已在位但不是字面量——apps/client/src/subpackages/village/village/post.vue:225 返回 t 取的 village.post.visibilityCircleMembers，语言包 apps/client/src/i18n/locales/zh-CN.ts:2014 的值是「圈内成员可见」，不是原判据写的「圈子成员可见」；同一键还被 :772 的 .post-to__tag 消费（所以帧里同屏会出现两遍这个短语，标签与副标题各一次）。更硬的一条：判据点名的头号触发场景已被 MP-R2-POST-009 的解析闸吸收，apps/client/src/subpackages/village/village/post.vue:286-308 在 targetCircle 解析不到或未加入时直接把 targetType 打回 general（:297），catch 分支（:302-307）同样打回，所以 isCircleTarget 且 targetCircle 为 null 在 :189 与 :310-321 的正常路径下不再是可稳定停留的状态。建议改成什么判据：两个方向择一。方向一（推荐）：本条合入 MP-R2-POST-009 关闭，改判点为深链 circleId 指向未加入或不存在的圈子时，解析完成后 .post-to__name 必须显示「个人动态」且 .post-to__subtitle 显示「默认公开 · 所有人可见」（锚点 post.vue:216 与 :227）；方向二（保留本条）：把文案判据改成取语言包值「圈内成员可见」（锚点 post.vue:225 与 zh-CN.ts:2014），并补一个能在解析闸完成前停帧的夹具（例如 fetchCircles 延迟 800ms 的 mock 开关 + 深链 ?circleId=已加入圈），断言为 .post-to__subtitle 文案等于「圈内成员可见」、.post-to__name 文案等于「兴趣圈帖子」（锚点 post.vue:214）。"
+    },
+    {
+      "id": "MP-R2-POST-016",
+      "disposition": "REWRITE",
+      "route": "subpackages/village/village/post",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "判据要删的声明在源码里不存在；且本轮 DevTools 内核支持 aspect-ratio，帧也判不了极旧内核那一问"
+      },
+      "steps": [
+        { "action": "tap", "selector": ".post-tool__icon（图片工具入口，锚点 post.vue:1028 绑 ICONS_EMOJI.IMAGE）", "note": "若只想要图片九宫格帧：进发帖页后点图片工具入口加一张图，格子上出现 .post-image（模板 post.vue:900 的 .post-images 容器、:901 的单元格）；本轮不拿它当判点。注意 round7-NOTES §1.2：本机 IDE 上图标类按钮的选择器会退化成只取第一个命中" }
+      ],
+      "assertions": [],
+      "crop": "发帖页图片九宫格区（.post-images 及其内 .post-image）",
+      "frameName": "B-MP-R2-POST-016",
+      "unresolved": "原判据要什么：删掉图块规则里那条写死的高度声明（台账第 8 列旧行号 1341-1349 指向 width calc / height calc / aspect-ratio 三条）。源码实际是什么：apps/client/src/subpackages/village/village/post.vue:1461-1468 的 .post-image 规则只有宽度 calc（:1462）与 aspect-ratio: 1（:1463）两条尺寸声明，外加圆角、overflow、position 与浅底背景（:1464-:1467），没有任何 height 声明；容器 .post-images（:1455-:1460）也只有 flex/wrap/gap/padding，无固定高。也就是判据点名的物件在本仓不存在，且台账第 11 列自己已核到该状态早于本轮基线 094f7239 就是如此（属修复早于本轮、status 未同步）。建议改成什么判据：先由人改判为已修复（本轮前落地），本条不再排帧；若产品另拍「要不要为不支持 aspect-ratio 的极旧内核改百分比撑高」，那是独立需求，判据应写成该内核下 .post-image 盒高大于 0（帧判据需要一台把 aspect-ratio 关掉的渲染内核，本轮没有该夹具，属未开立案而非本条残账）。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
+      "disposition": "NOT_SHOOTABLE",
+      "route": "subpackages/village/village/post",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "mock 默认有已加入圈子（joinedCircles 走 circleStore getter，见 post.vue:199）；缺的不是数据而是 两入口取哪一种行结构 的裁决"
+      },
+      "steps": [
+        { "action": "open-page", "selector": "subpackages/village/village/post", "note": "本页可达且弹层可开" },
+        { "action": "tap", "selector": ".post-to__card", "note": "打开选择发布到弹层（@tap 绑在 post.vue:750），兴趣圈子分组在 post.vue:834-858" }
+      ],
+      "assertions": [],
+      "crop": "选择发布到弹层的兴趣圈子分组候选行",
+      "frameName": "B-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
+      "unresolved": "缺的夹具＝产品裁决，不是数据：判据本身是二选一（post 页把已加入与成员数合成一条描述，还是 publish 页拆成圈名、已加入胶囊、成员数三段），未拍板前任何断言都是替未定方案押注。已核实的本 lane 一侧源码事实：apps/client/src/subpackages/village/village/post.vue:849 是圈名 .post-target-sheet__name，:850 把 已加入 与成员数并成一条 .post-target-sheet__desc 文案。越界未证：另一侧 apps/client/src/subpackages/village/village/publish.vue:928-930 属别的 lane 的文件，本轮未打开，其对侧结构只引台账原文。补上裁决后的断言形状：若取 post 侧三段式，则在被改那页新增一个已加入胶囊类名（本仓现无此类名，台账点名的 publish-target-sheet__joined 在 post 页源码与产物均零命中），断言 kind=element-exists 指向新胶囊 + kind=descendant-count 要求该行内出现 3 个并列文本节点、且 .post-target-sheet__desc 不再包含 已加入 字样；若取 publish 侧合行式，则断言 publish 页候选行只剩一条描述文案、胶囊类名反为零命中。两种写法都必须等被改那页的类名落进源码后才可立。"
+    },
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
+      "disposition": "SHOOT",
+      "route": "pages/messages/index",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "mock 默认数据；用 session-private-2（陈默，unreadCount 0，见 mock-data.ts:32），进页面时 loadPage 与 onShow 各调一次 markAllSessionsRead（index.vue:304、:320）把所有红点清掉，正好给本条造出 从无到有再归零 的可判序列"
+      },
+      "steps": [
+        { "action": "open-page", "selector": "pages/messages/index", "note": "等列表挂载；此时该会话应无角标" },
+        { "action": "longpress", "selector": "陈默那一行的 .chat-item", "note": "长按唤出 uni.showActionSheet，菜单项数组见 index.vue:263（第 2 项文案 标为未读）；原生弹层不在页面节点树内，取件按文本定位或按像素判读" },
+        { "action": "tap", "selector": "动作面板第 2 项（文本 标为未读）", "note": "对应 index.vue:270-274 的 tapIndex===1 分支" },
+        { "action": "re-enter-tab", "selector": "pages/messages/index", "note": "切到别的 tab 再回消息页，触发 onShow 的 loadPage 与 markAllSessionsRead" }
+      ],
+      "assertions": [
+        {
+          "kind": "frame-text",
+          "target": "点 标为未读 后 2 秒内的 toast 浮层（原生层文案，页面节点树查不到，按像素判读）",
+          "expected": "toast 文案等于语言包 messages.unreadLocalHint 的中文值：已标为未读（仅本机生效，离开页面后会还原）",
+          "sourceAnchor": "apps/client/src/pages/messages/index.vue:273"
+        },
+        {
+          "kind": "text-equals",
+          "target": "语言包键 messages.unreadLocalHint 的取值",
+          "expected": "已标为未读（仅本机生效，离开页面后会还原）——原判据写的建议句是 仅本地生效，离开页面会还原，与落地的 i18n 文案不同字，判绿以语言包值为准",
+          "sourceAnchor": "apps/client/src/i18n/locales/zh-CN.ts:2723"
+        },
+        {
+          "kind": "element-exists",
+          "target": "陈默那一行的 .chat-item__unread-badge",
+          "expected": "点完之后该行出现角标（markSessionUnread 把 unreadCount 置为至少 1，见 stores/messages.ts:1318-1323），且 .chat-item__unread-text 为正整数",
+          "sourceAnchor": "apps/client/src/pages/messages/index.vue:573"
+        },
+        {
+          "kind": "element-absent-after-reenter",
+          "target": "再次进入消息页后陈默那一行的 .chat-item__unread-badge",
+          "expected": "角标消失（onShow 全清），这一条判的是 toast 承诺与实际行为是否一致；若判为消失则证明原判据 复核 markAllSessionsRead 与标为未读的语义冲突 未修，帧给红不给绿",
+          "sourceAnchor": "apps/client/src/pages/messages/index.vue:320"
+        }
+      ],
+      "crop": "陈默会话行（昵称行 + 右侧时间/角标列）与整屏 toast 浮层，共两帧：点完即时帧、重进页面帧",
+      "frameName": "B-MP-R2-PAGES-MESSAGES-INDEX-020",
+      "unresolved": "裁决点 (a)/(b) 已由代码替产品落在 (a)：toast 在位（index.vue:273）、能力没从长按菜单摘掉（:263 的数组仍含 标为未读）。判据另一半（:300 与 :316 重复调用只留一）源码里仍是两处（现行号 index.vue:304 与 :320），台账明写它改的是红点闭环时序、本轮不擅改 ⇒ 这条帧能同时把 已修一半 与 时序债仍在 说清。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
+      "disposition": "NOT_SHOOTABLE",
+      "route": "pages/messages/index",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "需要 real 构建（mock 构建下 dashboard 恒 null）+ 后端 mock dashboard 种子满足 warmPeople 至少 4 条、assistant 至少 1 条"
+      },
+      "steps": [
+        { "action": "open-page", "selector": "pages/messages/index", "note": "mock 构建：正在升温块（index.vue:490 的 v-if）与活动推荐块（:588 的 v-if）结构性不渲染，帧里没有可配对的排版对象" }
+      ],
+      "assertions": [],
+      "crop": "正在升温横排四人条 + 活动推荐首卡",
+      "frameName": "B-MP-R2VIS-PAGES-MESSAGES-INDEX-005",
+      "unresolved": "缺的夹具：apps/api 侧 MockMessageDashboardController 的 /messages/relationship-dashboard 种子（该文件属别的 lane，本轮未打开、不替它下结论）。本 lane 内已核实的障碍：apps/client/src/stores/messages.ts:575-577 在 mock 模式直接 return，dashboard 保持 :511 的 null，于是 index.vue:111 的 warmPeople 为空数组、:490 与 :588 两个 v-if 把两块整体隐藏；台账第 11 列也自证 只加种子不碰逻辑 字面不可行（五块全必填 + recentChats 必经 :587-612 的合并改写会话组成）。判据本体二选一尚未裁决（删原句 vs 改调后端），裁决前不给可立判点。补上裁决与种子后的断言形状：kind=descendant-count 指向 .section 内 .warm-item，expected=至少 4（锚点 apps/client/src/pages/messages/index.vue:495-510，切片上限见 :497）；kind=descendant-count 指向 .activity-rec-card，expected=至少 1（锚点 :592-596）；再配一条 kind=text-equals 指向 .assistant-card__activity-text，验证 N 取自 assistant 条数（锚点 :480）——这三条正是台账要拿来配对复验 -002/-003/-004 排版判据的状态帧。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004",
+      "disposition": "NOT_SHOOTABLE",
+      "route": "subpackages/chat/chat-session/index",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "需要一条 kind 为 image 且地址必 404 的消息；mock 会话消息只有 text/emoji/activity/voice 四类，且 mock 下包内图片全部可达，无失败态可拍"
+      },
+      "steps": [
+        { "action": "open-page", "selector": "subpackages/chat/chat-session/index?sessionId=session-private-1", "note": "页面可开，但取不到图片气泡" }
+      ],
+      "assertions": [],
+      "crop": "图片气泡本体（正常态骨架底 / 失败态占位文案）各一帧",
+      "frameName": "B-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004",
+      "unresolved": "缺的夹具两条，都不在本轮能力内。其一：一条 kind=image 且 src 必失败的消息——apps/client/src/components/chat/ChatBubble.vue:214 的分支要求 kind==='image' 且 body 非空且未置 error，:221 的 @error 才会把 imageError 置真并切到 :226 的 .bubble__image-failed；而 mock 数据里没有任何 image 消息（台账第 9 列同判：mock 下 IMAGE_PATHS 全部可达、没有失败态可拍）。其二：可达性通道——本条要判的类名全部声明在 ChatBubble.vue 组件自己的模板里（:226、:429-432、:433-443），按 round7-NOTES §1.1 实测，页级查询够不到自定义组件内部节点，恒 0 命中，会被判成 HARNESS_MISS 而不是产品结论。补上夹具后的断言形状：帧一（正常态未加载完）kind=box-min-height 指向 .bubble__image.bubble__image--skeleton，expected=高度不小于 160rpx 且底色为浅骨架色（锚点 apps/client/src/components/chat/ChatBubble.vue:429-432 的 min-height 与 background）；帧二（加载失败）kind=text-equals 指向 .bubble__image-failed，expected=语言包 chat.imageLoadFailed 的中文值「图片加载失败」（锚点 ChatBubble.vue:226 与 apps/client/src/i18n/locales/zh-CN.ts:1423），并配 kind=box-min-height 同节点不小于 160rpx（锚点 :436）证明气泡不塌成 0 高。两帧都需先把取件面从页级查询换成组件级或像素判读。"
+    },
+    {
+      "id": "MP-R2-PAGES-HOME-INDEX-111",
+      "disposition": "NOT_SHOOTABLE",
+      "route": "pages/home/index",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "需要兴趣推荐 items 为空数组且非加载中；现源码连空态分支都没写，任何数据态都拿不到判据要的物件"
+      },
+      "steps": [
+        { "action": "open-page", "selector": "pages/home/index", "note": "组件消费点见 apps/client/src/pages/home/index.vue:364（import 在 :27）；打开首页能看到兴趣推荐区块，但只有骨架与横滑卡两种分支" }
+      ],
+      "assertions": [],
+      "crop": "兴趣推荐区块标题行以下（section-head 与列表容器之间）",
+      "frameName": "B-MP-R2-PAGES-HOME-INDEX-111",
+      "unresolved": "缺的是修本身加数据态两样。源码事实：apps/client/src/components/home/InterestRecommendation.vue:73 是 loading 分支的骨架，:76 是 v-else 的 scroll-view，两支之间没有判据要求的 v-else-if 空态块（items 长度为 0 时 :79 的 v-for 渲出空列表，整块只剩标题与一条横滑轨），台账第 8 列说 NearbyPeople.vue 同构、第 11 列要复用 CommunityFeed.vue:161 的文案与样式口径——CommunityFeed.vue 与 NearbyPeople.vue 都不在本 lane 的可读清单内，其文案与类名本轮未证，不编。另有一道通道障碍：该组件内部类名（.interest-recommend、.interest-list 等）声明在组件自身模板里，页级查询够不到（round7-NOTES §1.1）。补上实现后的断言形状：kind=element-exists 指向组件内新增的空态节点（类名待实现方定，须与被改那页产物同名命中），expected=items 为空且 loading 为 false 时空态文案挂载且与 CommunityFeed 口径逐字相同；反向一条 kind=element-absent 指向 .interest-card，expected=该态下卡片数 0。在实现落地前，本条建议从 NEEDS_UI_FRAME 改挂 未修（判据点名的物件在源码不存在）。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-PROFILE-INDEX-003",
+      "disposition": "REWRITE",
+      "route": "pages/profile/index",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "已填完资料的个人主页（判据自写的口径）；MyStory 经 MyProfile.vue:6 引入、:49 渲染，再挂到 pages/profile/index（该页 :773 注释写明 MyProfile 事件转发）"
+      },
+      "steps": [
+        { "action": "open-page", "selector": "pages/profile/index", "note": "若本轮不拍：此步仅供人判时对照；组件内节点页级查询够不到（round7-NOTES §1.1），要判这块文案只能走像素裁片" }
+      ],
+      "assertions": [],
+      "crop": "我的故事 区块：区块标题 + 加号卡 + 其下那条可见范围提示",
+      "frameName": "B-MP-R2VIS-PAGES-PROFILE-INDEX-003",
+      "unresolved": "原判据要什么：认为术语已在基线前统一为同一个词（卡片文案、无障碍标签、两处注释同向），要人拍的只是这个词是 故事 还是 日常；若拍 日常 则反向回改后重开。源码实际是什么：判据点名的四处确实同向——apps/client/src/components/profile/mine/MyStory.vue:85 无障碍标签为 添加故事、:89 文案为 添加故事、:183 注释写 我的故事卡…添加故事虚线卡、:256 注释写 添加故事：虚线加号卡；但同屏还有它没看的一处不同向：:57 区块标题渲染 我的故事，而 :93 的可见范围提示渲染 日常仅互相喜欢或你关注的人可见（:3 与 :37 的注释同样两词混用）。也就是 术语已统一为同一词 这个前提对渲染出来的可见文案不成立，帧判据若照原判据写会永远判绿。建议改成什么判据：把判据从 拍哪个词 改成 同一区块内不得混用两个词——断言 kind=text-terms-consistent，target 为 .my-story__title 与 .story-cards__hint 两条渲染文案，expected=两者对同一物件只出现 故事 或只出现 日常 中的一个（锚点 apps/client/src/components/profile/mine/MyStory.vue:57 与 :93）；该断言在当前源码下应判红，从而把这条从 人判术语 转成 可判缺陷 或 明确裁决。另注：台账第 8 列说 :85 与 :89 渲染 添加日常，与工作树现值（添加故事）不符，那一列是旧行内容，别拿它当修后判点。"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-SUCCESS-005",
+      "disposition": "SHOOT",
+      "route": "pages/register/success",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "直开即可（本轮 real 巡检已证该页直开能落在自身路由：reports/screenshots/round-7-real-tour-full 的 A/pages_register_success__默认.png，route 与请求页一致）；不带 phone 参数时首行右侧标签走 完成 兜底（success.vue:36），与本条无关"
+      },
+      "steps": [
+        { "action": "open-page", "selector": "pages/register/success", "note": "打开即拍，取整页下半部（主按钮与次级出口）" }
+      ],
+      "assertions": [
+        {
+          "kind": "text-equals",
+          "target": ".reg-success__alt",
+          "expected": "文案为 稍后再说，先随便逛逛（源码字面量）",
+          "sourceAnchor": "apps/client/src/pages/register/success.vue:76"
+        },
+        {
+          "kind": "box-min-height",
+          "target": ".reg-success__alt",
+          "expected": "该节点盒高不小于 88rpx（约等于 44px 高，375 逻辑宽口径），即判据要的 min-height 撑高已生效；现源码规则只有 margin-top、font-size、color 三条（:182-:184），无 min-height、无 padding、无 flex 居中，预期判红",
+          "sourceAnchor": "apps/client/src/pages/register/success.vue:181"
+        },
+        {
+          "kind": "tap-area-contains-text-box",
+          "target": ".reg-success__alt",
+          "expected": "可点区（节点盒）在文本上下各留不少于 10rpx 余量且文字水平垂直居中，点按边缘仍能触发 goBrowse；若改法走 padding 20rpx 24rpx 那条，则同时判 视觉位移被等量负 margin 抵消（与主按钮的间距不变）",
+          "sourceAnchor": "apps/client/src/pages/register/success.vue:76"
+        }
+      ],
+      "crop": "主按钮 完善我的资料 到次级出口 稍后再说 之间那一横条（含其上下留白）",
+      "frameName": "B-MP-R2-PAGES-REGISTER-SUCCESS-005",
+      "unresolved": "本条排帧是为了把 未修 钉成帧级证据，不是抬绿：判据要的两条改法（min-height 88rpx + flex 居中，或 padding 20rpx 24rpx 配等量负 margin）在 apps/client/src/pages/register/success.vue:181-:185 都没落地，帧预期给红，随后本条应改判 未修 并可退回静态判据（该规则里出现 min-height 即绿）。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
+      "disposition": "SHOOT",
+      "route": "subpackages/village/village/detail",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "mock 模式下选一条有评论的帖子，路由带 ?id=post-1（village mock 的 mockComments 覆盖 post-1/2/4 并有补齐循环，详情页在 :687 与 :698 按 id 取帖并拉评论）；回复态靠点评论的回复钮进入，不靠上传"
+      },
+      "steps": [
+        { "action": "open-page", "selector": "subpackages/village/village/detail?id=post-1", "note": "等评论列表挂载（.comment-item 至少 1 条，否则换 id）" },
+        { "action": "tap", "selector": ".comment-item .comment-reply-btn", "note": "进入回复态：startReply 把 replyingTo 置真（detail.vue:571-572），弹层提示条与预留类同时挂上" },
+        { "action": "scroll", "selector": ".detail-body", "note": "把评论区滚到底，让正文末条停在吸底输入栏上方" }
+      ],
+      "assertions": [
+        {
+          "kind": "class-present",
+          "target": ".detail-body--bar-expanded",
+          "expected": "回复态下该修饰类被条件绑定挂上（绑定条件为 replyingTo 非空或 commentImages 非空），普通浏览态不得带该类",
+          "sourceAnchor": "apps/client/src/subpackages/village/village/detail.vue:781"
+        },
+        {
+          "kind": "element-exists",
+          "target": ".reply-mode-bar",
+          "expected": "输入栏上方出现回复模式提示条，证明当前帧确在 回复态 而不是默认浏览态",
+          "sourceAnchor": "apps/client/src/subpackages/village/village/detail.vue:1260"
+        },
+        {
+          "kind": "rect-not-overlap",
+          "target": ".comments-list > .comment-item:last-child 与 .detail-input-bar",
+          "expected": "正文末条评论的底边不高于吸底输入栏的顶边（两者之间留白大于等于 0），末条文字与按钮完整可读；两态预留为 320rpx 加安全区，普通态为 140rpx 加安全区",
+          "sourceAnchor": "apps/client/src/subpackages/village/village/detail.vue:1618"
+        },
+        {
+          "kind": "style-value",
+          "target": ".detail-input-bar",
+          "expected": "输入栏为 fixed 吸底（position fixed、bottom 0、z-index 100），即遮挡风险的来源端与预留端成对存在",
+          "sourceAnchor": "apps/client/src/subpackages/village/village/detail.vue:2917"
+        }
+      ],
+      "crop": "评论区末条 + 其下方吸底输入栏（含回复提示条）整段，纵向取约 480rpx",
+      "frameName": "B-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
+      "unresolved": "两帧里本轮只能稳出一帧：回复态靠点 .comment-reply-btn 即可进入；挂图态要 commentImages 非空（detail.vue:520-544 走选图上传），IDE 自动化能否驱动选图未证，故挂图态记半覆盖、不并入本帧结论。另按台账自证：:781 与 :1617 两处物件在本轮基线 094f7239 逐字相同（改动早于基线），所以本帧判的是观感是否仍成立，不能拿它记本轮落地功。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
+      "disposition": "NOT_SHOOTABLE",
+      "route": "subpackages/campus/campus/hub",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "不适用：本条判的是 i18n 键命名空间归并，两种归法渲染出的文案完全相同，帧上没有可分辨的物件"
+      },
+      "steps": [
+        { "action": "open-page", "selector": "subpackages/campus/campus/hub", "note": "页可开（路由在 pages.json 的 subpackages/campus 分包内，root+campus/hub；ROUTES.CAMPUS.HUB 常量见 constants/routes.ts:146），但拍了也判不了本条" }
+      ],
+      "assertions": [],
+      "crop": "校园圈主页页头（标题与副标题两行）",
+      "frameName": "B-MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
+      "unresolved": "缺的夹具＝主编排层对目标前缀的裁决（统一还是不统一、统一到哪一级），台账自记 closer 为 P4 延后出本轮，且明写 现在写任何键名都是替未定的方案押注。本 lane 内实测到的键位：apps/client/src/subpackages/campus/campus/hub.vue 出现 campusHub 前缀 23 处、去重后 19 个键（与台账写的 19 个键一致，引用处台账记 25、我数到 23，差异留给下一轮复核，不据以改台账），同文件对 campus.index 前缀 0 命中；语言包 apps/client/src/i18n/locales/zh-CN.ts 里两套并存（campusHub 块起于 :3477、campus 下的 index 块起于 :3554），hub 页页头两行正是走 t('campusHub.title') 与 t('campusHub.subtitle')（锚点 hub.vue:195、:196）。越界未证：campus/index.vue 的 28 处 campus.index 引用属别的 lane，本轮未打开。为何帧判不了：键命名空间是取键路径这一源码层事实，迁移前后渲染出的中文文案一字不差，像素与节点都无差异 ⇒ 本条不该停在 NEEDS_UI_FRAME。裁决后的判据形状应为静态判点（被迁那页源码与产物 js 里的取键前缀只剩一种、且中英文两包同批迁移后键数守恒），若一定要出帧，只能退化成 迁移后该页文案零变化 的回归对照帧（kind=text-equals 逐行比对页头与卡片文案，锚点 hub.vue:195-:196 等），那是回归证据不是本条判点。"
+    }
+  ]
+}

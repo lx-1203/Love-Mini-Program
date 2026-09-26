@@ -1,0 +1,927 @@
+{
+ "generatedAt": "2026-09-26T08:58:34.280Z",
+ "verdicts": ".zcode/tmp/fixverify/verdicts.json",
+ "results": "reports/audit/round-7/interact/exec-results.json",
+ "note": "只有 ANSWERED 可以直接抵债；PARTIAL/NO_* 是真取景债，必须去拍，不许并进 ANSWERED 凑数",
+ "buckets": {
+  "ANSWERED": [],
+  "PARTIAL": [
+   {
+    "id": "MP-R2-PAGES-REGISTER-SUCCESS-005",
+    "pages": [
+     "pages/register/success"
+    ],
+    "probes": 4,
+    "hits": [
+     {
+      "token": ".reg-success__alt",
+      "verdict": "present(1)",
+      "frame": "reports/screenshots/round-7-exec/PAGES-REGISTER-SUCCESS-RS01-after.png",
+      "id": "PAGES-REGISTER-SUCCESS/RS01",
+      "page": "pages/register/success"
+     }
+    ],
+    "miss": [
+     "flex",
+     ".min-height:88rpx",
+     "padding:20rpx 24rpx"
+    ]
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005",
+    "pages": [
+     "subpackages/village/village/publish"
+    ],
+    "probes": 4,
+    "hits": [
+     {
+      "token": ".publish-image__remove",
+      "verdict": "absent",
+      "frame": "reports/screenshots/round-7-exec/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB29-after.png",
+      "id": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH/PUB29",
+      "page": "subpackages/village/village/publish"
+     }
+    ],
+    "miss": [
+     "120",
+     ".press-feedback--active",
+     ".press-feedback--active"
+    ]
+   }
+  ],
+  "NO_PAGE_FRAME": [
+   {
+    "id": "MP-R2-MATCHING-016",
+    "page": "matching.vue",
+    "need": 10
+   },
+   {
+    "id": "MP-R2-PAGES-DISCOVER-INDEX-013",
+    "page": "apps/client/src/components/match/MatchInfo.vue",
+    "need": 21
+   },
+   {
+    "id": "MP-R2-PAGES-DISCOVER-INDEX-014",
+    "page": "apps/client/src/theme/design-variables.scss",
+    "need": 2
+   },
+   {
+    "id": "MP-R2-PAGES-HOME-INDEX-102",
+    "page": "apps/client/src/components/home/TodayRecommendationCard.vue",
+    "need": 0
+   },
+   {
+    "id": "MP-R2-PAGES-HOME-INDEX-105",
+    "page": "apps/client/src/components/home/CommunityFeed.vue",
+    "need": 1
+   },
+   {
+    "id": "MP-R2-PAGES-HOME-INDEX-110",
+    "page": "apps/client/src/components/home/TodayRecommendationCard.vue",
+    "need": 1
+   },
+   {
+    "id": "MP-R2-PAGES-HOME-INDEX-111",
+    "page": "apps/client/src/components/home/InterestRecommendation.vue",
+    "need": 1
+   },
+   {
+    "id": "MP-R2-PAGES-HOME-INDEX-112",
+    "page": "apps/client/src/services/mocks/fixtures.ts",
+    "need": 0
+   },
+   {
+    "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
+    "page": "apps/client/src/stores/messages.ts",
+    "need": 2
+   },
+   {
+    "id": "MP-R2-PAGES-NEARBY-INDEX-012",
+    "page": "apps/client/src/utils/location.ts",
+    "need": 2
+   },
+   {
+    "id": "MP-R2-PROFILE-024",
+    "page": "apps/client/src/components/profile/NotLoggedProfile.vue",
+    "need": 4
+   },
+   {
+    "id": "MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001",
+    "page": "apps/client/src/components/layout/AppShell.vue",
+    "need": 3
+   },
+   {
+    "id": "MP-R2VIS-PAGES-HOME-INDEX-003",
+    "page": "apps/client/src/components/home/NearbyPeople.vue",
+    "need": 1
+   },
+   {
+    "id": "MP-R2VIS-PAGES-HOME-INDEX-004",
+    "page": "apps/client/src/components/home/TodayRecommendationCard.vue",
+    "need": 2
+   },
+   {
+    "id": "MP-R2VIS-PAGES-HOME-INDEX-005",
+    "page": "apps/client/src/components/home/HomeHeader.vue",
+    "need": 2
+   },
+   {
+    "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-002",
+    "page": "apps/client/src/components/discover/NotLoggedWaiting.vue",
+    "need": 0
+   },
+   {
+    "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-004",
+    "page": "apps/client/src/components/discover/NotLoggedWaiting.vue",
+    "need": 1
+   },
+   {
+    "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
+    "page": "apps/client/src/stores/messages.ts",
+    "need": 0
+   },
+   {
+    "id": "MP-R2VIS-PAGES-PROFILE-INDEX-002",
+    "page": "apps/client/src/components/profile/mine/MyInteraction.vue",
+    "need": 7
+   },
+   {
+    "id": "MP-R2VIS-PAGES-PROFILE-INDEX-003",
+    "page": "apps/client/src/components/profile/mine/MyStory.vue",
+    "need": 0
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004",
+    "page": "apps/client/src/components/chat/ChatBubble.vue",
+    "need": 2
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
+    "page": "apps/client/src/components/match/MatchLoading.vue",
+    "need": 1
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001",
+    "page": "apps/client/src/utils/location.ts",
+    "need": 9
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+    "page": "apps/client/src/components/profile/public/PublicIdentity.vue",
+    "need": 6
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001",
+    "page": "apps/client/src/components/village/PostCard.vue",
+    "need": 0
+   },
+   {
+    "id": "MP-R2VIS-TMP-TOUR-R2-004",
+    "page": "d.ts",
+    "need": 3
+   }
+  ],
+  "NO_TOKEN_HIT": [
+   {
+    "id": "MP-R2-CAMPUS-HUB-009",
+    "pages": [
+     "subpackages/campus/campus/hub"
+    ],
+    "probes": 3,
+    "hits": [],
+    "miss": [
+     ".campus-search",
+     "EEF7F2",
+     "F0F4F2"
+    ]
+   },
+   {
+    "id": "MP-R2-CAMPUS-HUB-010",
+    "pages": [
+     "subpackages/campus/campus/hub"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2-CAMPUS-HUB-011",
+    "pages": [
+     "subpackages/campus/campus/hub"
+    ],
+    "probes": 1,
+    "hits": [],
+    "miss": [
+     "school.id"
+    ]
+   },
+   {
+    "id": "MP-R2-CAMPUS-HUB-012",
+    "pages": [
+     "subpackages/campus/campus/hub"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2-CAMPUSINDEX-010",
+    "pages": [
+     "pages/discover/index",
+     "pages/home/index",
+     "pages/messages/index",
+     "pages/nearby/index",
+     "pages/profile/index",
+     "pages/register/index",
+     "subpackages/chat/chat-session/index",
+     "subpackages/circles/circles/index",
+     "subpackages/village/village/index",
+     "subpackages/discover-extra/likes/index",
+     "subpackages/tools/search/index",
+     "subpackages/profile-extra/verification/index",
+     "subpackages/chat/official-chat/index",
+     "subpackages/setup/schedule/index",
+     "subpackages/setup/interest/index",
+     "subpackages/support/feedback/index",
+     "subpackages/discover/activities/index",
+     "subpackages/market/detail/index",
+     "subpackages/market/shop/index",
+     "subpackages/market/wallet/index"
+    ],
+    "probes": 3,
+    "hits": [],
+    "miss": [
+     "certLoadFailed",
+     "certificationInfo",
+     "certificationError"
+    ]
+   },
+   {
+    "id": "MP-R2-CAMPUSINDEX-011",
+    "pages": [
+     "pages/discover/index",
+     "pages/home/index",
+     "pages/messages/index",
+     "pages/nearby/index",
+     "pages/profile/index",
+     "pages/register/index",
+     "subpackages/chat/chat-session/index",
+     "subpackages/circles/circles/index",
+     "subpackages/village/village/index",
+     "subpackages/discover-extra/likes/index",
+     "subpackages/tools/search/index",
+     "subpackages/profile-extra/verification/index",
+     "subpackages/chat/official-chat/index",
+     "subpackages/setup/schedule/index",
+     "subpackages/setup/interest/index",
+     "subpackages/support/feedback/index",
+     "subpackages/discover/activities/index",
+     "subpackages/market/detail/index",
+     "subpackages/market/shop/index",
+     "subpackages/market/wallet/index"
+    ],
+    "probes": 4,
+    "hits": [],
+    "miss": [
+     "onLoad",
+     "Promise.resolve",
+     "certFetchedByShow",
+     "Promise.allSettled"
+    ]
+   },
+   {
+    "id": "MP-R2-CAMPUSPOST-013",
+    "pages": [
+     "subpackages/campus/campus/post-topic"
+    ],
+    "probes": 2,
+    "hits": [],
+    "miss": [
+     "course_exchange",
+     "CAMPUS_CATEGORY_MAP"
+    ]
+   },
+   {
+    "id": "MP-R2-CAMPUSPOST-014",
+    "pages": [
+     "subpackages/campus/campus/post-topic"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2-CAMPUSPOST-016",
+    "pages": [
+     "subpackages/campus/campus/post-topic"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2-CIRCLES-INDEX-004",
+    "pages": [
+     "subpackages/circles/circles/index"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2-CIRCLES-INDEX-005",
+    "pages": [
+     "subpackages/circles/circles/index"
+    ],
+    "probes": 3,
+    "hits": [],
+    "miss": [
+     "height:100%",
+     ".village-page",
+     "AppShell"
+    ]
+   },
+   {
+    "id": "MP-R2-CIRCLES-INDEX-006",
+    "pages": [
+     "subpackages/circles/circles/index"
+    ],
+    "probes": 2,
+    "hits": [],
+    "miss": [
+     "emptyAction",
+     "emptyActionText"
+    ]
+   },
+   {
+    "id": "MP-R2-CIRCLES-INDEX-007",
+    "pages": [
+     "subpackages/circles/circles/index"
+    ],
+    "probes": 1,
+    "hits": [],
+    "miss": [
+     "FFECEF"
+    ]
+   },
+   {
+    "id": "MP-R2-PAGES-HOME-INDEX-106",
+    "pages": [
+     "pages/home/index"
+    ],
+    "probes": 5,
+    "hits": [],
+    "miss": [
+     "discover.likeSent",
+     "liked",
+     "已喜欢",
+     "userId",
+     "TodayRecommendationCard"
+    ]
+   },
+   {
+    "id": "MP-R2-PAGES-MESSAGES-INDEX-018",
+    "pages": [
+     "pages/messages/index"
+    ],
+    "probes": 6,
+    "hits": [],
+    "miss": [
+     "console.warn",
+     "fetchVisitors",
+     "markInteractionRead",
+     "markNotificationRead",
+     "messages.toggleSessionPin",
+     "messages.markInteractionRead"
+    ]
+   },
+   {
+    "id": "MP-R2-PAGES-MESSAGES-INDEX-019",
+    "pages": [
+     "pages/messages/index"
+    ],
+    "probes": 3,
+    "hits": [],
+    "miss": [
+     "targetUrl",
+     "openActivity",
+     "act.targetUrl"
+    ]
+   },
+   {
+    "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
+    "pages": [
+     "pages/messages/index"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2-PAGES-NEARBY-INDEX-011",
+    "pages": [
+     "pages/nearby/index"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2-PAGES-NEARBY-INDEX-014",
+    "pages": [
+     "pages/nearby/index"
+    ],
+    "probes": 2,
+    "hits": [],
+    "miss": [
+     "loadActivities",
+     "activityStore.loading"
+    ]
+   },
+   {
+    "id": "MP-R2-PAGES-REGISTER-INDEX-009",
+    "pages": [
+     "pages/register/index"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2-PAGES-REGISTER-INDEX-011",
+    "pages": [
+     "pages/register/index"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2-PAGES-REGISTER-INDEX-012",
+    "pages": [
+     "pages/register/index"
+    ],
+    "probes": 1,
+    "hits": [],
+    "miss": [
+     "onConfirmBlur"
+    ]
+   },
+   {
+    "id": "MP-R2-PAGES-REGISTER-INDEX-013",
+    "pages": [
+     "pages/register/index"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2-PAGES-REGISTER-INDEX-014",
+    "pages": [
+     "pages/register/index"
+    ],
+    "probes": 5,
+    "hits": [],
+    "miss": [
+     "FFFFFF",
+     "FEF5F6",
+     ".ghost-btn",
+     ".agree__chk",
+     ".field--focus"
+    ]
+   },
+   {
+    "id": "MP-R2-POST-013",
+    "pages": [
+     "subpackages/village/village/post"
+    ],
+    "probes": 3,
+    "hits": [],
+    "miss": [
+     "targetSubtitle",
+     "targetCircle.value",
+     "isCircleTarget.value"
+    ]
+   },
+   {
+    "id": "MP-R2-POST-016",
+    "pages": [
+     "subpackages/village/village/post"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2-POSTTOPIC-011",
+    "pages": [
+     "subpackages/circles/circles/post-topic"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2-POSTTOPIC-012",
+    "pages": [
+     "subpackages/circles/circles/post-topic"
+    ],
+    "probes": 8,
+    "hits": [],
+    "miss": [
+     "/pages/home/index",
+     "/pages/home/index",
+     "reLaunch",
+     "switchTab",
+     "navigateBack",
+     "uni.reLaunch",
+     "uni.switchTab",
+     "uni.navigateBack"
+    ]
+   },
+   {
+    "id": "MP-R2-POSTTOPIC-013",
+    "pages": [
+     "subpackages/circles/circles/post-topic"
+    ],
+    "probes": 2,
+    "hits": [],
+    "miss": [
+     "// isSubmitting",
+     "isSubmitting"
+    ]
+   },
+   {
+    "id": "MP-R2-PROFILE-025",
+    "pages": [
+     "pages/profile/index"
+    ],
+    "probes": 7,
+    "hits": [],
+    "miss": [
+     "visitors",
+     "visitorsCount",
+     "visitors.length",
+     "interactionItems",
+     "profileStore.profileStats",
+     "likesStore.visitors.length",
+     "MyProfile"
+    ]
+   },
+   {
+    "id": "MP-R2-PROFILE-034",
+    "pages": [
+     "pages/profile/index"
+    ],
+    "probes": 4,
+    "hits": [],
+    "miss": [
+     "fetchProgress",
+     "socialProgressStore",
+     "useSocialProgressStore",
+     "socialProgressStore.fetchProgress"
+    ]
+   },
+   {
+    "id": "MP-R2-PUB-114",
+    "pages": [
+     "subpackages/village/village/publish"
+    ],
+    "probes": 6,
+    "hits": [],
+    "miss": [
+     "school",
+     "interest",
+     "onLoad",
+     "applyEntry",
+     "entryTarget",
+     "restoreDraft"
+    ]
+   },
+   {
+    "id": "MP-R2-VILLAGE-INDEX-010",
+    "pages": [
+     "subpackages/village/village/index"
+    ],
+    "probes": 1,
+    "hits": [],
+    "miss": [
+     "profileStore.load"
+    ]
+   },
+   {
+    "id": "MP-R2-VILLAGE-INDEX-012",
+    "pages": [
+     "subpackages/village/village/index"
+    ],
+    "probes": 3,
+    "hits": [],
+    "miss": [
+     "EmptyState",
+     "loadChannelData",
+     "circleStore.errorMessage"
+    ]
+   },
+   {
+    "id": "MP-R2VIS-PAGES-LOGIN-INDEX-001",
+    "pages": [
+     "pages/discover/index",
+     "pages/home/index",
+     "pages/messages/index",
+     "pages/nearby/index",
+     "pages/profile/index",
+     "pages/register/index",
+     "subpackages/chat/chat-session/index",
+     "subpackages/circles/circles/index",
+     "subpackages/village/village/index",
+     "subpackages/discover-extra/likes/index",
+     "subpackages/tools/search/index",
+     "subpackages/profile-extra/verification/index",
+     "subpackages/chat/official-chat/index",
+     "subpackages/setup/schedule/index",
+     "subpackages/setup/interest/index",
+     "subpackages/support/feedback/index",
+     "subpackages/discover/activities/index",
+     "subpackages/market/detail/index",
+     "subpackages/market/shop/index",
+     "subpackages/market/wallet/index"
+    ],
+    "probes": 3,
+    "hits": [],
+    "miss": [
+     ".--r-full",
+     ".border-radius:var(--r-full)",
+     ".btn-primary"
+    ]
+   },
+   {
+    "id": "MP-R2VIS-PAGES-LOGIN-INDEX-007",
+    "pages": [
+     "pages/discover/index",
+     "pages/home/index",
+     "pages/messages/index",
+     "pages/nearby/index",
+     "pages/profile/index",
+     "pages/register/index",
+     "subpackages/chat/chat-session/index",
+     "subpackages/circles/circles/index",
+     "subpackages/village/village/index",
+     "subpackages/discover-extra/likes/index",
+     "subpackages/tools/search/index",
+     "subpackages/profile-extra/verification/index",
+     "subpackages/chat/official-chat/index",
+     "subpackages/setup/schedule/index",
+     "subpackages/setup/interest/index",
+     "subpackages/support/feedback/index",
+     "subpackages/discover/activities/index",
+     "subpackages/market/detail/index",
+     "subpackages/market/shop/index",
+     "subpackages/market/wallet/index"
+    ],
+    "probes": 1,
+    "hits": [],
+    "miss": [
+     "（英文文案判据）"
+    ]
+   },
+   {
+    "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-007",
+    "pages": [
+     "pages/messages/index"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
+    "pages": [
+     "pages/messages/index"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001",
+    "pages": [
+     "subpackages/campus/campus/hub"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003",
+    "pages": [
+     "subpackages/campus/campus/hub"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
+    "pages": [
+     "subpackages/campus/campus/hub"
+    ],
+    "probes": 1,
+    "hits": [],
+    "miss": [
+     "（英文文案判据）"
+    ]
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001",
+    "pages": [
+     "subpackages/chat/chat-session/index"
+    ],
+    "probes": 3,
+    "hits": [],
+    "miss": [
+     "gitSha",
+     "deletedMessageIds",
+     "buildChatMessageRows"
+    ]
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007",
+    "pages": [
+     "pages/discover/index",
+     "pages/home/index",
+     "pages/messages/index",
+     "pages/nearby/index",
+     "pages/profile/index",
+     "pages/register/index",
+     "subpackages/chat/chat-session/index",
+     "subpackages/circles/circles/index",
+     "subpackages/village/village/index",
+     "subpackages/discover-extra/likes/index",
+     "subpackages/tools/search/index",
+     "subpackages/profile-extra/verification/index",
+     "subpackages/chat/official-chat/index",
+     "subpackages/setup/schedule/index",
+     "subpackages/setup/interest/index",
+     "subpackages/support/feedback/index",
+     "subpackages/discover/activities/index",
+     "subpackages/market/detail/index",
+     "subpackages/market/shop/index",
+     "subpackages/market/wallet/index"
+    ],
+    "probes": 4,
+    "hits": [],
+    "miss": [
+     "flex:1",
+     ".justify-content:center",
+     ".align-items/justify-content center",
+     ".chat-list"
+    ]
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02",
+    "pages": [
+     "pages/discover/index",
+     "pages/home/index",
+     "pages/messages/index",
+     "pages/nearby/index",
+     "pages/profile/index",
+     "pages/register/index",
+     "subpackages/chat/chat-session/index",
+     "subpackages/circles/circles/index",
+     "subpackages/village/village/index",
+     "subpackages/discover-extra/likes/index",
+     "subpackages/tools/search/index",
+     "subpackages/profile-extra/verification/index",
+     "subpackages/chat/official-chat/index",
+     "subpackages/setup/schedule/index",
+     "subpackages/setup/interest/index",
+     "subpackages/support/feedback/index",
+     "subpackages/discover/activities/index",
+     "subpackages/market/detail/index",
+     "subpackages/market/shop/index",
+     "subpackages/market/wallet/index"
+    ],
+    "probes": 1,
+    "hits": [],
+    "miss": [
+     "keyboardHeight"
+    ]
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001",
+    "pages": [
+     "subpackages/chat/official-chat/index"
+    ],
+    "probes": 5,
+    "hits": [],
+    "miss": [
+     "messages.officialChatAssistantGreeting",
+     "messages.officialChatAssistantGreeting",
+     "officialChatCardHint",
+     "officialChatMockReply",
+     "officialChatUserDecline"
+    ]
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001",
+    "pages": [
+     "subpackages/circles/circles/circle-home"
+    ],
+    "probes": 7,
+    "hits": [],
+    "miss": [
+     "IMAGE_PATHS.ICONS_V2.MORE_SVG",
+     "IMAGE_PATHS.ICONS_V2.MORE_SVG",
+     "104px)",
+     ".padding-right:calc(var(--capsule-right,7px)",
+     ".padding-right:calc(var(--capsule-right, 7px)",
+     ".--capsule-right",
+     ".hero-actions-right"
+    ]
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
+    "pages": [
+     "subpackages/circles/circles/circle-home"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
+    "pages": [
+     "subpackages/village/village/detail"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002",
+    "pages": [
+     "subpackages/village/village/detail"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004",
+    "pages": [
+     "subpackages/village/village/post"
+    ],
+    "probes": 3,
+    "hits": [],
+    "miss": [
+     ".box-shadow:0 2rpx 16rpx var(--c-black-shadow-xs, rgba(15,23,42,.04))",
+     ".--card-shadow",
+     ".--c-black-shadow-xs"
+    ]
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
+    "pages": [
+     "subpackages/village/village/post"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001",
+    "pages": [
+     "subpackages/village/village/publish"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01",
+    "pages": [
+     "subpackages/village/village/publish"
+    ],
+    "probes": 5,
+    "hits": [],
+    "miss": [
+     "village.post.mentionHint",
+     "openMentionPicker",
+     ".press-feedback--active",
+     ".press-feedback--active",
+     "insertMention"
+    ]
+   },
+   {
+    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A05",
+    "pages": [
+     "subpackages/village/village/publish"
+    ],
+    "probes": 0,
+    "hits": [],
+    "miss": []
+   }
+  ]
+ }
+}

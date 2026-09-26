@@ -1,0 +1,422 @@
+{
+  "lane": "D",
+  "generatedAt": "2026-09-26T18:20:00.000Z",
+  "source": "reports/audit/round-7/frameplan-lane-D-items.json",
+  "selfCheck": {
+    "inputTotal": 16,
+    "itemsLength": 16,
+    "uniqueIdCount": 16,
+    "idSetEqualsInput": true,
+    "dispositionTally": { "SHOOT": 10, "REWRITE": 4, "NOT_SHOOTABLE": 2 },
+    "note": "全部断言的 sourceAnchor 均来自本 lane 读集内的文件实读行号；文案值取自 apps/client/src/i18n/locales/zh-CN.ts（该目录下无 zh-CN.js，实际后缀是 .ts）"
+  },
+  "items": [
+    {
+      "id": "MP-R2-CIRCLES-INDEX-004",
+      "disposition": "SHOOT",
+      "route": "subpackages/circles/circles/index",
+      "precondition": {
+        "identity": "A",
+        "theme": "light",
+        "fixture": "mock 默认数据：onLoad 在 mock 下直发本地 8 圈（apps/client/src/subpackages/circles/circles/index.vue:83-85），列表进入 content 态（:131-136），分类 chip 与圈卡统计行均渲染"
+      },
+      "steps": [
+        { "action": "open-page", "selector": "", "note": "直开兴趣圈列表页即可，无需交互；mock 下不发受保护请求也能出数据" }
+      ],
+      "assertions": [
+        {
+          "kind": "text-contains",
+          "target": ".circles-tab__text",
+          "expected": "首枚分类 chip 文本为「全部」，即语言包 circle.tabAll 的 zh-CN 值（apps/client/src/i18n/locales/zh-CN.ts:3738），模板取键插值点在 :407",
+          "sourceAnchor": "apps/client/src/subpackages/circles/circles/index.vue:407"
+        },
+        {
+          "kind": "text-regex",
+          "target": ".circles-tab__text",
+          "expected": "6 枚文本 chip 依次命中 全部|摄影|旅行|音乐|运动|美食（键名表在 :235-241，值见 zh-CN.ts:3738-3767），任何一枚都不得出现字面量 circle.tab 或 circle.cat 前缀（键名泄漏）",
+          "sourceAnchor": "apps/client/src/subpackages/circles/circles/index.vue:235"
+        },
+        {
+          "kind": "text-regex",
+          "target": ".circle-card__count",
+          "expected": "统计行形如「1,200 人 · 5 条动态」，即 circle.cardStats 模板 {members} 人 · {posts} 条动态（zh-CN.ts:3739）已用真实数字插值；不得残留 {members} 或 {posts} 占位符，也不得出现字面量 circle.cardStats",
+          "sourceAnchor": "apps/client/src/subpackages/circles/circles/index.vue:435"
+        },
+        {
+          "kind": "text-contains",
+          "target": ".circles-banner__title",
+          "expected": "副标题为「找到与你志趣相投的人」（circle.circlesSubtitle，zh-CN.ts:3735），模板绑定 t(circle.circlesSubtitle) 在 :391",
+          "sourceAnchor": "apps/client/src/subpackages/circles/circles/index.vue:391"
+        }
+      ],
+      "crop": "首屏：副标题行 + 7 枚快捷分类 chip + 首张圈卡的统计行（meta 行）",
+      "frameName": "D-MP-R2-CIRCLES-INDEX-004",
+      "unresolved": "第 7 枚 chip（key=more）渲染的是图标节点 .circles-tab__icon 而非文本节点（:241 配 :406 的 v-if/v-else 分支），不计入 chip 文本计数，勿按 7 枚文本断言。"
+    },
+    {
+      "id": "MP-R2-CIRCLES-INDEX-005",
+      "disposition": "REWRITE",
+      "route": "subpackages/circles/circles/index",
+      "precondition": { "identity": "A", "theme": "n/a", "fixture": "不拍帧：判据自身写了本句作废为待裁决项，且推荐做法与已生效裁定冲突" },
+      "steps": [],
+      "assertions": [],
+      "crop": "不拍帧（判据需先改写）",
+      "frameName": "D-MP-R2-CIRCLES-INDEX-005",
+      "unresolved": "原判据要什么：为本页建定高链（照 village/index.vue 的 .village-page height:100% 范式），让内部 scroll-y 与 enhanced/bounces 生效，并在句内自述「本句作废为待裁决项」交主编排层三案。源码实际是什么：该做法正面违反已生效裁定——apps/client/src/components/layout/AppShell.vue:251-254 写明「禁止锁死 height:100%……仅保留 min-height 让内容自然撑高」，而 .shell 是全站共享外壳（本页经 :339 消费 AppShell）；本页滚动容器其实已经是 flex:1 + overflow-y:auto（apps/client/src/subpackages/circles/circles/index.vue:504-507），scroll-view 也已带 scroll-y / enhanced / bounces（同页 :386）。建议改成什么判据：不建定高链，改判观感三件——(1) 进入本页首屏可见至少 2 张 .circle-card（:416）；(2) 在 .circles-list 内上滑一次后首张 .circle-card 的 top 坐标变小（内滚真生效，不是整页滚）；(3) 页面底部不出现 AppShell.vue:251-253 所述的露底色断层。A/B/C 三案归主编排层裁决，本条不由帧推进状态。"
+    },
+    {
+      "id": "MP-R2-CIRCLES-INDEX-006",
+      "disposition": "NOT_SHOOTABLE",
+      "route": "subpackages/circles/circles/index",
+      "precondition": { "identity": "A", "theme": "n/a", "fixture": "缺游客夹具：需要 useMock()=false 的 real 构建 + 无 token 会话，或一个把 mock 圈列表清空的 fixture" },
+      "steps": [],
+      "assertions": [],
+      "crop": "不拍帧（状态本轮拿不到）",
+      "frameName": "D-MP-R2-CIRCLES-INDEX-006",
+      "unresolved": "缺哪个夹具：游客态且非 mock 的构建。源码事实：isGuest = !sessionStore.isLoggedIn && !useMock()（apps/client/src/subpackages/circles/circles/index.vue:148），本轮取景载体是 mock 构建（同页 :83-85 在 mock 下直出本地 8 圈），于是 mock 里 isGuest 恒 false、列表恒非空，pageState 永远进不到 empty 分支（:131-136），空态在帧上不可达；另有既有取景裁定 identity 一律 A、不给游客拍（scripts/qa/gen-states-from-debt.mjs:57）。补上夹具后断言应该长什么样：(1) kind text-contains，target 空态文案节点，expected 「登录后可查看全部兴趣圈」（circle.circlesEmptyLogin，apps/client/src/i18n/locales/zh-CN.ts:3737，经 :150 传进 PageStateContainer 的 :378）；(2) kind text-contains，expected 「去登录」（discover.card.goLogin，zh-CN.ts:1038，经 :152 传进 :379）；(3) kind route-after-tap，target 空态引导按钮，expected 落到 ROUTES.LOGIN（goLogin 实现 :314-316）。另须记一笔：判据后半「有权但空列表时接 emptyAction 给去路」在源码里根本没落地——:152 对非游客返回空串，已登录但列表为空时既无按钮文案也无去路，即使补了空列表夹具这一半也判不绿，建议拆成独立条目。"
+    },
+    {
+      "id": "MP-R2-CIRCLES-INDEX-007",
+      "disposition": "REWRITE",
+      "route": "subpackages/circles/circles/index",
+      "precondition": { "identity": "A", "theme": "n/a", "fixture": "不拍帧：判据点名的行号在承载文件里不存在，物件实际值与判据相反" },
+      "steps": [],
+      "assertions": [],
+      "crop": "不拍帧（判据需先改写）",
+      "frameName": "D-MP-R2-CIRCLES-INDEX-007",
+      "unresolved": "原判据要什么：前半称「:911 换 var(--c-brand,#36C99A)」已落（工作树），后半三案（新增 --c-hot-badge-bg/-text 或收编 --c-badge-on-image-*）待主编排层拍板。源码实际是什么：承载文件 apps/client/src/subpackages/circles/circles/index.vue 全文只有 900 行（style 段以 :900 收尾），:911 不存在；热门徽标本体仍是裸色值——background: rgba(255, 77, 92, 0.92) 在 :574、文字 color: #FFFFFF 在 :580、徽标节点类名 .circle-card__hot-badge 在 :571；而 var(--c-brand, #36C99A) 在本文件只出现在标题下划线 :774 与激活 chip :836-837，跟徽标无关，即「换 var(--c-brand)」这笔账在本文件无对应改动。建议改成什么判据：锚到真实物件——徽标阈值 HOT_THRESHOLD = 8000（:230）+ 渲染条件 :427，断言「memberCount ≥ 8000 的圈卡上 .circle-card__hot-badge 出红底白字徽标且文字完整可读」，暗色半边在令牌裁决前不建 token、不拍暗帧（自创暗值正是本轮反复判罚的行为）。"
+    },
+    {
+      "id": "MP-R2-POSTTOPIC-011",
+      "disposition": "SHOOT",
+      "route": "subpackages/circles/circles/post-topic",
+      "precondition": { "identity": "A", "theme": "light", "fixture": "带 query channel=today 进入以点亮帖子模式（onLoad 取 q.channel 见 apps/client/src/subpackages/circles/circles/post-topic.vue:475，isPostMode 判定 :238-240），使关联活动入口 .activity-add 渲染（v-if isPostMode 在 :621，入口节点 :625-633）" },
+      "steps": [
+        { "action": "open-page", "selector": "", "note": "以 channel=today 直开发布话题页" },
+        { "action": "tap", "selector": ".activity-add", "note": "点关联活动入口（绑定 :630 → openActivityPicker :258-271）打开选择弹层" }
+      ],
+      "assertions": [
+        {
+          "kind": "style-value",
+          "target": ".activity-picker",
+          "expected": "遮罩背景计算值为半透明深色，即 var(--c-bg-overlay) 的解析值或兜底 rgba(0, 0, 0, 0.45)；不得再是品牌浅绿系底（原病灶用的是 --c-bg-brand-soft）",
+          "sourceAnchor": "apps/client/src/subpackages/circles/circles/post-topic.vue:1308"
+        },
+        {
+          "kind": "geometry",
+          "target": ".activity-picker",
+          "expected": "遮罩铺满整屏（position:fixed + inset:0），内容盒 .activity-picker__content 在视口内水平垂直居中且不越出屏幕上下沿",
+          "sourceAnchor": "apps/client/src/subpackages/circles/circles/post-topic.vue:1306"
+        },
+        {
+          "kind": "text-contains",
+          "target": ".activity-picker__title",
+          "expected": "弹层标题为「选择要推荐的活动」（circle.postTopicActivityPick，apps/client/src/i18n/locales/zh-CN.ts:3763，模板绑定 :719）",
+          "sourceAnchor": "apps/client/src/subpackages/circles/circles/post-topic.vue:719"
+        }
+      ],
+      "crop": "活动选择弹层：遮罩 + 内容盒上沿（能同时看到遮罩压住的页面背景）",
+      "frameName": "D-MP-R2-POSTTOPIC-011",
+      "unresolved": "判据只落了遮罩半边。第二半「--c-bg-brand-soft 在主题层补亮/暗双值定义（页面代码不动即生效）」不在本 lane 读集内可证：页面侧调用点仍是 var(--c-bg-brand-soft, #f0fdf9)（post-topic.vue:1270），令牌本体属主题层文件（判据自指 design-variables.scss:123 与 :368），本 lane 无权取证。建议另开一帧 theme=dark 拍 .activity-add 底色来判第二半。"
+    },
+    {
+      "id": "MP-R2-POSTTOPIC-012",
+      "disposition": "SHOOT",
+      "route": "subpackages/circles/circles/post-topic",
+      "precondition": { "identity": "A", "theme": "light", "fixture": "冷启动直开本页使页面栈深度为 1（navigateBack 必失败），不依赖入口带参；这是自动化取景的默认打开方式，无需额外夹具" },
+      "steps": [
+        { "action": "open-page", "selector": "", "note": "直开 subpackages/circles/circles/post-topic，栈深 1" },
+        { "action": "tap", "selector": ".post-header__back", "note": "点左上返回钮（节点 :492，@tap goBack → 实现 :459-465）" }
+      ],
+      "assertions": [
+        {
+          "kind": "route-after-tap",
+          "target": ".post-header__back",
+          "expected": "点返回后当前页路由为 /pages/home/index（navigateBack 失败 → switchTab 首页 → 再失败 reLaunch 首页，三段链见 post-topic.vue:460-463）；若仍停在发布话题页即判红",
+          "sourceAnchor": "apps/client/src/subpackages/circles/circles/post-topic.vue:460"
+        },
+        {
+          "kind": "text-contains",
+          "target": ".back-icon",
+          "expected": "返回钮文案为「返回」（circle.postTopicBack，apps/client/src/i18n/locales/zh-CN.ts:3747，模板 :493）",
+          "sourceAnchor": "apps/client/src/subpackages/circles/circles/post-topic.vue:493"
+        }
+      ],
+      "crop": "顶部导航栏（返回钮 + 标题 + 发布钮）与跳转后首页首屏各一张",
+      "frameName": "D-MP-R2-POSTTOPIC-012",
+      "unresolved": "两处行号漂移与一处待验假设：(1) 判据点名的同分包范式锚点 apps/client/src/subpackages/circles/circles/index.vue:288-292 实际是好友头像池代码，navigateBack().catch → switchTab home → reLaunch home 的真实范式在 circles/index.vue:298-304，本页 :459-465 与之同构；(2) 判据点名的提交路径 :374 与 :420 确为两处 navigateBack 兜底（复位 isSubmitting），属另一病灶、不在本帧射程；(3) mp-weixin 端 uni.navigateBack 是否返回 Promise 需靠本帧实证——AppShell.vue:119-136 特意用 #ifdef MP-WEIXIN 的 fail 回调写法，而本页用的是 .catch() 写法，若产物端不支持 Promise 则该兜底在真机不生效，route-after-tap 断言正是为抓这一情况。"
+    },
+    {
+      "id": "MP-R2-POSTTOPIC-013",
+      "disposition": "REWRITE",
+      "route": "subpackages/circles/circles/post-topic",
+      "precondition": { "identity": "A", "theme": "n/a", "fixture": "不拍帧：判据点名的第二半物件（提交中 loading 文案/图标）在源码里不存在，且 mock 下提交瞬时完成抓不到在途帧" },
+      "steps": [],
+      "assertions": [],
+      "crop": "不拍帧（判据需先改写）",
+      "frameName": "D-MP-R2-POSTTOPIC-013",
+      "unresolved": "原判据要什么：490/697 两处禁用条件并入 isSubmitting，提交中切 loading 文案/图标，使防重在途有视觉反馈。源码实际是什么：前半已落但行号漂移——顶栏钮条件含 isSubmitting 在 apps/client/src/subpackages/circles/circles/post-topic.vue:498、底部钮在 :705，灰态样式分别在同文件 :838-841（底色转 var(--c-overlay-white-bg-stronger) + box-shadow:none，常态底色是 :824 的 var(--c-overlay-bg-pure)）与 :1241-1243；后半不存在——顶栏钮文案恒为 t(circle.postTopicSubmit)=「发布」（:503，值见 zh-CN.ts:3748）、底部钮文案恒为 t(circle.postTopicNavTitle)=「发布话题」（:710，值见 :3746），全文件无任何提交中态文案、无 spinner 类（唯一 loading 物件是活动弹层的列表加载态 :723-724，与提交无关）。建议改成什么判据：拆两条——(a) 本帧判「在途提交时两个提交钮渲染 disabled 灰态」，但这需要一个能把 createTopic 拖慢的后端延迟桩（mock 下提交即时完成，帧抓不到在途窗口），且灰态与「未填内容」的 disabled 形态完全同名同值，必须靠延迟桩区分；(b) 另立源码条目补「发布中…」文案与图标，物件写出来之后再拍。"
+    },
+    {
+      "id": "MP-R2-PAGES-NEARBY-INDEX-011",
+      "disposition": "REWRITE",
+      "route": "pages/nearby/index",
+      "precondition": { "identity": "A", "theme": "n/a", "fixture": "不拍帧：判据对源码的描述与实际不符，先改判据再拍" },
+      "steps": [],
+      "assertions": [],
+      "crop": "不拍帧（判据需先改写）",
+      "frameName": "D-MP-R2-PAGES-NEARBY-INDEX-011",
+      "unresolved": "原判据要什么：断言并案目标 MP-R1-PAGES-NEARBY-INDEX-016 的病灶已消——称 apps/client/src/pages/nearby/index.vue:375 的行内顶距加上「同页样式段里页根容器的上内边距取零」，两条机制已不再抢同一个属性。源码实际是什么：根容器 .nearby-home 的样式规则里上内边距并未取零——apps/client/src/pages/nearby/index.vue:659 为 padding: 24rpx 32rpx 0（顶值 24rpx），只是被 :375 的行内 paddingTop（statusBarHeightPx + 12 px）覆盖；两条机制至今仍在写同一个 padding-top，行内层赢、CSS 顶值变成不可达死值，判据把「被行内覆盖」写成了「已取零」。建议改成什么判据：帧侧断言「.nearby-home__header（:676 的规则，自身只有 margin-bottom 与 padding-right）顶边 y 恰等于 statusBarHeight + 12px，不含 24rpx 叠加」；源码侧另立一条把 :659 的顶值改写为 0（padding: 0 32rpx）以真正消除双机制，改完再谈本条状态。"
+    },
+    {
+      "id": "MP-R2-PAGES-NEARBY-INDEX-014",
+      "disposition": "NOT_SHOOTABLE",
+      "route": "pages/nearby/index",
+      "precondition": { "identity": "A", "theme": "n/a", "fixture": "缺 real 构建 + 慢网/后端延迟桩：本轮取景载体是 mock 构建，mock 不发网络请求，请求计数恒为 0" },
+      "steps": [],
+      "assertions": [],
+      "crop": "不拍帧（夹具缺失）",
+      "frameName": "D-MP-R2-PAGES-NEARBY-INDEX-014",
+      "unresolved": "判据本体是请求去重行为，源码侧其实已落地：apps/client/src/pages/nearby/index.vue:216 即 loadActivities 非 force 分支前置的 if (activityStore.loading) return，force 分支 :212-215 直通；调用点 onLoad :154 与 onShow :192，force 路径 :165 与 :204。缺哪个夹具：(1) VITE_API_MODE=real 的构建（模式判定是构建期注入，见 apps/client/src/config/env.ts 的 VITE_API_MODE 读取链与 apps/client/src/stores/helpers/use-mock.ts:20-24）；(2) 一个能让 /activities 在 onShow 期间仍在途的慢网或后端延迟桩，否则 onLoad 与 onShow 两次调用天然错开、断言恒绿（假通过）。补上夹具后断言应该长什么样：kind network-count，target 「GET /activities」，expected 冷启动进入附近页 + 离开再返回一次的全程请求数恰为 1；辅助 kind element-count，target .nearby-home__empty（活动区加载占位，条件 activityStore.loading 且列表为空，见 :574），expected 整个进入过程不出现第二次占位。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007",
+      "disposition": "SHOOT",
+      "route": "subpackages/chat/chat-session/index",
+      "precondition": { "identity": "A", "theme": "light", "fixture": "用 query userId=<在消息 tab 里尚无私聊会话的用户 id> 直开：onLoad 走 apps/client/src/subpackages/chat/chat-session/index.vue:743-763，mock 下 messagesStore.createSession 造本地占位会话（:759 注释说明），currentMessages 长度为 0，从而命中 :2060 的空态修饰类" },
+      "steps": [
+        { "action": "open-page", "selector": "", "note": "带 userId 直开新建占位会话（0 消息）；若该 userId 已有会话则按 :746-752 复用既有会话、空态不出现，须换 id" }
+      ],
+      "assertions": [
+        {
+          "kind": "class-present",
+          "target": ".chat-list.chat-list--empty",
+          "expected": "空会话时消息流容器同时挂 chat-list 与 chat-list--empty 两个类（绑定条件 !messagesStore.currentMessages.length）",
+          "sourceAnchor": "apps/client/src/subpackages/chat/chat-session/index.vue:2060"
+        },
+        {
+          "kind": "style-value",
+          "target": ".chat-list--empty",
+          "expected": "justify-content 计算值为 center 且 min-height 计算值等于滚动区可视高（容器基样式 display:flex + flex-direction:column 见 :2579-2583），空态不再贴顶",
+          "sourceAnchor": "apps/client/src/subpackages/chat/chat-session/index.vue:2737"
+        },
+        {
+          "kind": "text-contains",
+          "target": ".chat-empty-hint",
+          "expected": "文案为「会话刚建立，还没有消息。」（chat.emptySessionCreated，apps/client/src/i18n/locales/zh-CN.ts:1340，模板 :2111）",
+          "sourceAnchor": "apps/client/src/subpackages/chat/chat-session/index.vue:2110"
+        },
+        {
+          "kind": "geometry",
+          "target": ".chat-empty-hint",
+          "expected": "该文本块顶边 y 大于滚动区高度的 1/3（竖向不再贴顶；容器自身上内距只有 48rpx，见 :2727，贴顶时 y 会远小于此阈值）",
+          "sourceAnchor": "apps/client/src/subpackages/chat/chat-session/index.vue:2722"
+        }
+      ],
+      "crop": "聊天页消息流滚动区（空态整块）",
+      "frameName": "D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007",
+      "unresolved": "同一容器内还会渲染破冰卡 MatchGreetingTip（v-if showMatchGreeting，节点 :2064-2068，门控 userMessageCount === 0 见 :218-220），它与空态文案一起被居中，所以几何断言只能判「不贴顶」，不能判「文案独占正中」。若取景侧确实造不出 currentMessages 为 0 的会话（占位会话被 mock 塞了 system 消息之类），本条降级 NOT_SHOOTABLE，缺的夹具就是一个 0 消息会话。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02",
+      "disposition": "SHOOT",
+      "route": "subpackages/chat/chat-session/index",
+      "precondition": { "identity": "A", "theme": "light", "fixture": "任一有消息的既有会话（query sessionId=<消息 tab 首条会话 id>，走 :736-739 分支），用于唤起键盘" },
+      "steps": [
+        { "action": "open-page", "selector": "", "note": "带 sessionId 直开既有会话" },
+        { "action": "tap", "selector": ".chat-input-area", "note": "点输入区唤起键盘；keyboardHeight>0 触发 :2150 的外层修饰类绑定" }
+      ],
+      "assertions": [
+        {
+          "kind": "class-absent",
+          "target": ".wechat-input-bar",
+          "expected": "键盘弹起时输入栏自身只有基类 wechat-input-bar，不出现 wechat-input-bar--keyboard-up 修饰类（死分支的模板绑定与样式规则均已删，全文件该类名只剩两处注释文本）",
+          "sourceAnchor": "apps/client/src/subpackages/chat/chat-session/index.vue:2185"
+        },
+        {
+          "kind": "class-present",
+          "target": ".chat-input-area.chat-input-area--keyboard-up",
+          "expected": "键盘弹起时最外层输入区挂上 chat-input-area--keyboard-up（唯一真有差异的一层，绑定条件 keyboardHeight > 0）",
+          "sourceAnchor": "apps/client/src/subpackages/chat/chat-session/index.vue:2150"
+        },
+        {
+          "kind": "style-value",
+          "target": ".chat-input-area",
+          "expected": "键盘态 padding-bottom 为不含 env(safe-area-inset-bottom) 的固定值（:2619 的 var(--sp-3)），区别于常态的 calc(env(safe-area-inset-bottom) + var(--sp-2))（:2610）",
+          "sourceAnchor": "apps/client/src/subpackages/chat/chat-session/index.vue:2619"
+        }
+      ],
+      "crop": "输入区整块（输入栏 + 其下方到屏底的留白带）键盘收起/弹起各一张",
+      "frameName": "D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02",
+      "unresolved": "台账点名的行号 :2173 已漂移（该行现为 BreakQuestion 节点 :2173-2178），死分支的真实删除凭据是注释 :2181-2184 与 :2900-2904 加模板 :2185 的裸基类。另：判据后半「键盘态差异化间距量测需真机」成立——开发者工具里 env(safe-area-inset-bottom) 常为 0，与 sp-* 可能算出同值，故第三条 padding-bottom 断言在模拟器上可能不可判（同值即判不出差异），本帧以两条类形态断言为准，量测半边留真机。"
+    },
+    {
+      "id": "MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001",
+      "disposition": "SHOOT",
+      "route": "subpackages/circles/circles/index",
+      "precondition": { "identity": "A", "theme": "light", "fixture": "mock 默认数据；本条载体页取台账自述「本轮已落 circles/index.vue 页内侧」的那一半，AppShell 由 apps/client/src/subpackages/circles/circles/index.vue:19 引入、:339 使用" },
+      "steps": [
+        { "action": "open-page", "selector": "", "note": "直开兴趣圈列表页；量测用视口左缘为 x=0 基准" }
+      ],
+      "assertions": [
+        {
+          "kind": "style-value",
+          "target": ".circles-tabs",
+          "expected": "padding 计算值为 0（横向内缩归零，纵向由 margin-top 承担）",
+          "sourceAnchor": "apps/client/src/subpackages/circles/circles/index.vue:812"
+        },
+        {
+          "kind": "style-value",
+          "target": ".circles-card-list",
+          "expected": "padding 计算值左右均为 0（源码写 var(--sp-5) 0 0，只保留顶值）",
+          "sourceAnchor": "apps/client/src/subpackages/circles/circles/index.vue:511"
+        },
+        {
+          "kind": "geometry",
+          "target": ".circle-card",
+          "expected": "圈卡左缘 x 等于外壳提供的唯一水平内距 28rpx（375px 屏下约 14px），来自 AppShell .shell--standard 的 padding: 0 28rpx；页面自身不再叠加 var(--sp-6)",
+          "sourceAnchor": "apps/client/src/components/layout/AppShell.vue:281"
+        },
+        {
+          "kind": "geometry",
+          "target": ".circles-tab:first-child",
+          "expected": "首枚分类 chip 左缘 x 与 .circle-card 左缘 x 相同（同页单一基线，误差不超过 1px），chip 节点类名见锚点行",
+          "sourceAnchor": "apps/client/src/subpackages/circles/circles/index.vue:400"
+        },
+        {
+          "kind": "style-value",
+          "target": ".circles-banner",
+          "expected": "只有 margin: var(--sp-5) 0 0，横向无内缩、无左右 padding",
+          "sourceAnchor": "apps/client/src/subpackages/circles/circles/index.vue:495"
+        }
+      ],
+      "crop": "左侧一条竖向窄带：副标题首字、首枚 chip 左缘、首张卡左缘三者对齐",
+      "frameName": "D-MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001",
+      "unresolved": "本帧只判 circles/index 页内侧这一半（台账口径见 circles/index.vue:485-491 注释）；其余 14 个 AppShell 消费页仍各自加横向 padding，需各页各拍，全站归零前整条判据不能收口。另按台账自述，归零只针对容器级 .circles-tabs 与 .circles-card-list，chip 胶囊自身内距 .circles-tab（:822-833）不在本条射程。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+      "disposition": "SHOOT",
+      "route": "subpackages/profile-extra/profile/other",
+      "precondition": { "identity": "A", "theme": "light", "fixture": "带 query userId=<mock 可解析用户>（参数名与路径口径见 apps/client/src/subpackages/chat/chat-session/index.vue:1099 的跳转 path），使 PublicIdentity 经 components/profile/public/PublicProfile.vue:67 渲染进他人主页；该用户 basic.location 为「北京 · 北京大学」形态（城市在串首，判据自述的后端口径转抄于 PublicIdentity.vue:19-21），basic.age 非空" },
+      "steps": [
+        { "action": "open-page", "selector": "", "note": "带 userId 直开他人公开主页（pages.json:218 在 profile-extra 分包 root :200 下注册）" }
+      ],
+      "assertions": [
+        {
+          "kind": "text-regex",
+          "target": ".public-identity__meta-item",
+          "expected": "片段按 年龄 → 学校 → 城市 顺序出现，例：21岁 / 北京大学 / 北京（源码先 push schoolPart 再 push cityPart）",
+          "sourceAnchor": "apps/client/src/components/profile/public/PublicIdentity.vue:27"
+        },
+        {
+          "kind": "text-regex",
+          "target": ".public-identity__meta-row",
+          "expected": "整行文本形如「21岁 · 北京大学 · 北京」，分隔符只有 · 且不出现原串直出的「北京 · 北京大学」顺序、行尾无 · 与空格",
+          "sourceAnchor": "apps/client/src/components/profile/public/PublicIdentity.vue:66"
+        },
+        {
+          "kind": "text-regex",
+          "target": ".public-identity__distance-text",
+          "expected": "有距离时渲染「2.3km · 在线」、无距离时只出「在线」，两种情况都不得以 · 或空格结尾（拼接式见 distanceLine computed）",
+          "sourceAnchor": "apps/client/src/components/profile/public/PublicIdentity.vue:15"
+        }
+      ],
+      "crop": "他人主页信息卡：姓名行下方的 meta 行 + 距离行",
+      "frameName": "D-MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+      "unresolved": "两点未取证：(1) 判据点名的后端串实证 api/profile.ts:21 不在本 lane 读集，本条依据只能是 PublicIdentity.vue:18-21 的口径注释加解析代码 :26；(2) 「与我的页 MyHeader 的 metaLine 共用同一 formatter」的对照物不在本 lane 读集内，帧只能判本页输出顺序，共用 formatter 属源码侧另案。解析位序不动、只改 push 顺序的实现在 :26-28。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001",
+      "disposition": "SHOOT",
+      "route": "subpackages/chat/chat-session/index",
+      "precondition": { "identity": "A", "theme": "light", "fixture": "既有 mock 会话（query sessionId=... 含 ≥2 条分属不同时间组的消息，时间条由 :2071-2072 的 timebar 行渲染）；本地删除仅当前设备生效、走 uni.setStorageSync（:1750-1757）" },
+      "steps": [
+        { "action": "open-page", "selector": "", "note": "带 sessionId 直开既有会话" },
+        { "action": "longpress", "selector": "#msg-row-<被删消息 id>", "note": "长按该时间组内唯一那条消息的气泡宿主节点（id 前缀常量 MESSAGE_ROW_ID_PREFIX = msg-row- 见 :378，绑定 :2088）" },
+        { "action": "tap", "selector": ".longpress-menu__item", "note": "点菜单里的「删除」（handler handleDeleteMessage 绑在 :2336，文案 t(chat.longPressMenu.delete)=删除，zh-CN.ts:1377）" }
+      ],
+      "assertions": [
+        {
+          "kind": "text-contains",
+          "target": ".chat-list",
+          "expected": "删除后该消息正文不再出现在消息流内（deletedMessageIds 集合驱动，见 :358 与 :1750-1752）",
+          "sourceAnchor": "apps/client/src/subpackages/chat/chat-session/index.vue:369"
+        },
+        {
+          "kind": "element-count",
+          "target": ".chat-time-bar",
+          "expected": "删除其所在时间组唯一消息后，.chat-time-bar 节点数比删除前少 1：行模型是先按 deletedMessageIds 过滤再 buildChatMessageRows，因此不会留下后继无气泡的孤立时间条",
+          "sourceAnchor": "apps/client/src/subpackages/chat/chat-session/index.vue:367"
+        },
+        {
+          "kind": "text-contains",
+          "target": ".longpress-menu__text",
+          "expected": "长按菜单出现「复制 / 转发 / 引用 / 撤回 / 删除」项，删除项文案为「删除」（zh-CN.ts:1377，节点 :2340）",
+          "sourceAnchor": "apps/client/src/subpackages/chat/chat-session/index.vue:2340"
+        }
+      ],
+      "crop": "删除前/删除后同一会话消息流各一张，须覆盖被删消息所属时间条",
+      "frameName": "D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001",
+      "unresolved": "element-count 断言要求所选消息是其时间组内唯一一条，取景时需先读一次帧确定分组（若选到组内多条的那条，删除后时间条仍应保留，计数不变，属正常）。撤回链路另有 deletedMessageIds 之外的口径（recalled 标记见 :2094），本条只判本地删除。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001",
+      "disposition": "SHOOT",
+      "route": "subpackages/circles/circles/circle-home",
+      "precondition": { "identity": "A", "theme": "light", "fixture": "带 query circleId=<mock 圈内有效 id>（onLoad 取参见 circle-home.vue:271-273；未知 id 会走 isUnknownCircle 分支 :436 拍不到 hero），推荐从兴趣圈列表点首张圈卡进入（circles/index.vue:181 的跳转链路）；--capsule-right 由 useMenuButtonRect 注入根节点 :452" },
+      "steps": [
+        { "action": "open-page", "selector": "", "note": "直开圈子主页（带合法 circleId），等 hero 与动态流出图" }
+      ],
+      "assertions": [
+        {
+          "kind": "style-value",
+          "target": ".hero-actions-right",
+          "expected": "padding-right 计算值为 calc(var(--capsule-right, 7px) + 104px)，即实测胶囊间隙加 104px 预留（未测得时间隙兜底 7px → 111px）",
+          "sourceAnchor": "apps/client/src/subpackages/circles/circles/circle-home.vue:715"
+        },
+        {
+          "kind": "geometry",
+          "target": ".hero-btn--share",
+          "expected": "分享钮右缘距视口右缘 ≥ 120px（= .hero-actions 的 right:24rpx 折 12px 加 111px），整体落在系统胶囊左缘（距屏右约 94px）之外，横向净空 ≥ 20px，胶囊不得压住按钮",
+          "sourceAnchor": "apps/client/src/subpackages/circles/circles/circle-home.vue:704"
+        },
+        {
+          "kind": "image-src",
+          "target": ".feed-more",
+          "expected": "动态卡右上「更多⋯」图标的 src 指向 IMAGE_PATHS.ICONS_V2.MORE_SVG（与常量表同一资源），且图标完整可见未被裁",
+          "sourceAnchor": "apps/client/src/subpackages/circles/circles/circle-home.vue:557"
+        }
+      ],
+      "crop": "hero 头图右上区（胶囊带 + 分享钮）与首条动态卡的更多钮",
+      "frameName": "D-MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001",
+      "unresolved": "「补更多⋯复用 MORE_SVG」这半句的载体可疑：全文件唯一消费 IMAGE_PATHS.ICONS_V2.MORE_SVG 的是动态卡右侧 .feed-more（:557），其节点注释挂的是 MP-R1-J20-004/REQ20-004（补 @tap），属上一轮既有物件，用它判绿证明不了本轮改动；hero 区内只有返回 :457 与分享 :464 两个按钮、没有第二个更多钮。建议主编排层二选一把这半句钉死：要么改判「hero 右上按设计补更多钮并复用 MORE_SVG」（物件当前不存在，应先补码再拍），要么撤掉这半句、本条只判胶囊避让。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004",
+      "disposition": "SHOOT",
+      "route": "subpackages/village/village/post",
+      "precondition": { "identity": "A", "theme": "light", "fixture": "mock 默认数据直开发帖页；发布到卡片无条件渲染（模板 .post-to 在 post.vue:743-746），页面 query circleId 可选（:239-240）" },
+      "steps": [
+        { "action": "open-page", "selector": "", "note": "直开发帖页即可，无需交互" }
+      ],
+      "assertions": [
+        {
+          "kind": "style-value",
+          "target": ".post-to__card",
+          "expected": "box-shadow 计算值为 none（该规则只声明 display/align/gap/padding/background/border-radius/border，取的是判据给的「统一无阴影」一支）",
+          "sourceAnchor": "apps/client/src/subpackages/village/village/post.vue:1273"
+        },
+        {
+          "kind": "style-value",
+          "target": ".post-to__card",
+          "expected": "仍保留 1rpx 实线描边 var(--c-line, #EEF2F0) 与卡底 var(--c-bg-container, #FFFFFF)，即纯描边平卡而非无边框浮起",
+          "sourceAnchor": "apps/client/src/subpackages/village/village/post.vue:1280"
+        }
+      ],
+      "crop": "「发布到」卡片整块（含左缘与下缘，能判断有无投影）",
+      "frameName": "D-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004",
+      "unresolved": "判据点名的两个令牌 --card-shadow 与 --c-black-shadow-xs 在本文件 0 命中（全文件 box-shadow 只有 :1243 顶栏发布钮与其 disabled 态 :1248 两处），所以「统一走 var(--card-shadow)」那一支没被采用、也不该按它判。「两页统一」的另一页只见于 :1281-1284 注释所指（village/publish.vue:1021 同形纯描边卡），publish.vue 不在本 lane 读集内、未独立取证，需 publish 侧另拍一帧比对；本帧只证本页这一半已取无阴影支。"
+    }
+  ]
+}

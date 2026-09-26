@@ -1,0 +1,178 @@
+{
+ "lane": "C",
+ "generatedAt": "2026-09-26T09:25:04.230Z",
+ "total": 16,
+ "files": [
+  "apps/client/src/pages/register/index.vue",
+  "apps/client/src/subpackages/village/village/publish.vue",
+  "apps/client/src/subpackages/campus/campus/index.vue",
+  "apps/client/src/components/home/CommunityFeed.vue",
+  "apps/client/src/components/home/NearbyPeople.vue",
+  "apps/client/src/components/profile/NotLoggedProfile.vue",
+  "apps/client/src/services/mocks/fixtures.ts",
+  "apps/client/src/utils/location.ts",
+  "matching.vue"
+ ],
+ "items": [
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-009",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "pages/register/index",
+   "page": "pages/register/index",
+   "src": "apps/client/src/pages/register/index.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "人判：需人复验，无可立的静态判点。判什么：生日是否按本地时区而不是按 UTC 解析后再与满 18 周岁的界点比较。看代码：apps/client/src/pages/register/index.vue 第 113 行至第 121 行，先按分段的年与月和日构造本地日期对象，再用当前年份减 18 与当月当日构造界点后比较。实测三处：当前源码是该口径、基线 094f7239 第 113 行至第 120 行逐字相同（早于基线已落地）、产物该页 js 里读不到那条构造留下的局部量名 ⟨adultSince⟩ 实测零命中（压"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-011",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "pages/register/index",
+   "page": "pages/register/index",
+   "src": "apps/client/src/pages/register/index.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime+visual），静态无判点",
+   "criterion": "修：视觉尺寸不动，@tap 移到外包 88rpx 透明 view（或 padding 扩展 + 等量负 margin）。"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-012",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "pages/register/index",
+   "page": "pages/register/index",
+   "src": "apps/client/src/pages/register/index.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime），静态无判点；唯一抠到的判点是标识符 onConfirmBlur，压缩构建会改名",
+   "criterion": "修：比对迁到确认框 @blur（新增 onConfirmBlur），@input 只保留「已有错误时清除」；同步改 :175 注释。"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-013",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "pages/register/index",
+   "page": "pages/register/index",
+   "src": "apps/client/src/pages/register/index.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "修：补 register.* i18n 键（zh/en 同步）后 toast() 改 t()；更新 :17-18 头注依据。 〔§82 注释清扫落定：ID 锚点在工作树 3 处命中、HEAD 0 命中、承载文件 dirty=2；判据台桶=NEEDS_UI_FRAME ⇒ 需帧复验（T5 定向巡检覆盖本页）；22:59 mock 重建已并入产物，本轮不声称观感已验〕"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-014",
+   "cls": "NEEDS_RUNTIME",
+   "route": "pages/register/index",
+   "page": "pages/register/index",
+   "src": "apps/client/src/pages/register/index.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（visual），静态无判点；授予绿用的判点在修复前的 HEAD 里就已存在（FFFFFF, FEF5F6）——命中不能证明改动落地",
+   "criterion": "修：**拆两类映射，不得合并成一句**。（A）彩色底上的白色**前景**（:1036 .sms-btn__text、:1119 .submit-btn__text、:1136 .submit-btn__spinner 的 border-top-color）→ `var(--c-text-inverse)`（浅色 #FFFFFF、暗色 #1A1F26 皆为「叠在彩色/浅色块上的反色前景」语义）。**禁**改 `var(--c-bg-container)`——其暗色＝tokens.scss:235 #1A1F26，会把"
+  },
+  {
+   "id": "MP-R2-PUB-114",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/village/village/publish",
+   "page": "subpackages/village/village/publish",
+   "src": "apps/client/src/subpackages/village/village/publish.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（visual），静态无判点；授予绿用的判点在修复前的 HEAD 里就已存在（school, interest, onLoad）——命中不能证明改动落地",
+   "criterion": "修：onLoad 的 campus/circleId 回设处同步 visibility（campus→\"school\"、circle→\"interest\"），或把入口回设抽成 applyEntry(entryTarget, cid) 并在 restoreDraft 早退前调用。 〔§82 注释清扫落定：ID 锚点在工作树 1 处命中、HEAD 0 命中、承载文件 dirty=1；判据台桶=UNDECIDABLE ⇒ 静态判据不足（判据未点名可核验物件或压缩改名），需补判点或帧；22:59 mock 重建已并入产物，"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/village/village/publish",
+   "page": "subpackages/village/village/publish",
+   "src": "apps/client/src/subpackages/village/village/publish.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime+visual），静态无判点；判据没点名可核验的修后物件（无 closer 差异串/源码锚点/显式「改→新值」）",
+   "criterion": "修：**判据更正为「view/button 节点补 hover-class；<text> 节点须先换型为 <view> 再补」**——mp-weixin 的 hover-class 只对 view/button 生效，给上述 <text> 的 × 移除钮直接加属性即死属性（看着改了、真机无反馈）。正确范式＝publish.vue 工作树 :788 `.publish-image__remove`（`<view>` + hover-class=\"press-feedback--active\" + hover-stay"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/village/village/publish",
+   "page": "subpackages/village/village/publish",
+   "src": "apps/client/src/subpackages/village/village/publish.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验；只在源码树命中的判点（openMentionPicker）在修复前的 HEAD 里就已存在，不能算本轮落地",
+   "criterion": "修：二选一：(a) 复用 post.vue:164-168 insertMention 真往正文插 @（两页同能力，非并页）；(b) 去掉 press-feedback 与 ›、行降为只读并加灰色「即将开放」标记，对齐本页 :872-876 对「谁可以看」行的 MP-R1-VILLAGE-PUBL…；同页处置口径参照 MP-R1-VILLAGE-PUBLISH-103 〔§82 注释清扫落定：ID 锚点在工作树 1 处命中、HEAD 0 命中、承载文件 dirty=1；判据台桶=NEEDS_UI_FRAME ⇒ 需"
+  },
+  {
+   "id": "MP-R2-CAMPUSINDEX-010",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/campus/campus/index",
+   "page": "subpackages/campus/campus/index",
+   "src": "apps/client/src/subpackages/campus/campus/index.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime），静态无判点；判据没点名可核验的修后物件（无 closer 差异串/源码锚点/显式「改→新值」）",
+   "criterion": "修：store 拆 certificationError 独立字段，index.vue 在认证拉取失败时给轻量重试/toast（对齐 hub.vue:180-186 的 certLoadFailed 错误条），或失败时保留上次 certificationInfo 不回退 unverified。；关联（非同一缺陷）MP-R2-CAMPUS-HUB-004 同族页 / MP-R2-CAMPUSINDEX-007 同根因不同症状"
+  },
+  {
+   "id": "MP-R2-CAMPUSINDEX-011",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/campus/campus/index",
+   "page": "subpackages/campus/campus/index",
+   "src": "apps/client/src/subpackages/campus/campus/index.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验；有 1 个硬判点是标识符，压缩构建改名后在产物里不可读（certFetchedByShow）；其余命中不足以证明这条改动落地 → 需帧或读源码人工判",
+   "criterion": "修：去掉 onMounted 内的 ⟨fetchCertificationStatus⟩（首取交给 onShow），或加 ⟨certFetchedOnce⟩ 标志去重。；关联（非同一缺陷）MP-R2-CAMPUSINDEX-006——上遍修复建议写明需去重、落地未带 唯一改点选定为「进页面时取一次认证态」，作废分支的标识入壳；本条静态侧不再双向矛盾，余下观感部分需帧"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-105",
+   "cls": "NEEDS_STATE",
+   "route": "pages/home/index",
+   "page": "pages/home/index",
+   "src": "apps/client/src/components/home/CommunityFeed.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验；唯一抠到的判点是标识符 defineProps，压缩构建会改名",
+   "criterion": "修：错误态重试按钮 :156 改 @tap=\"⟨handleRefresh⟩\"；watch(() => ⟨props.items⟩) 变化时清 ⟨failedKeys⟩；删除 :43-45 ⟨avatarSrc⟩ 的 ⟨isFailed⟩(`avatar-${⟨post.id⟩}`) 永假分支。 上述标识为压缩改名或参照物，静态侧不作判点；失败态与刷新态是否可见需帧"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-003",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "pages/home/index",
+   "page": "pages/home/index",
+   "src": "apps/client/src/components/home/NearbyPeople.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（visual），静态无判点；判据只点到两载体都不存在的名字 SPECDOC",
+   "criterion": "修：删除 :68 共同兴趣行（或按既成事实回写规范，属 SPECDOC 裁决）；头像改用 person-* 半身池或顶部锚定裁切保证脸部入画。"
+  },
+  {
+   "id": "MP-R2-PROFILE-024",
+   "cls": "NEEDS_STATE",
+   "route": "pages/profile/index（未登录态为主，本人态同病）",
+   "page": "pages/profile/index（未登录态为主，本人态同病）",
+   "src": "apps/client/src/components/profile/NotLoggedProfile.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验，静态侧亦无判点命中",
+   "criterion": "修：**分两档写，原口径有算术缺口**。「padding-bottom 按 184rpx+2env」只等于 custom-tab-bar 面板**顶缘**（160rpx+env 加 env+24rpx，content-box 相加），清不到浮层钮顶缘——未登录态 .nlp-footer-btn 顶缘 = bottom calc(200rpx+2env) + height 92rpx = **292rpx+2env**（NotLoggedProfile.vue:451-452）；本人态 GlobalPublishFa"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-112",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "pages/home/index",
+   "page": "pages/home/index",
+   "src": "apps/client/src/services/mocks/fixtures.ts",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "人判：这条要判的是数据形状，即同一条资产路径被媒体解析函数套了几层，层数在压缩产物里不可数：函数名会被打包器改写、路径字符串本身修前修后一模一样，所以没有可判物件，需人读源码裁定。⟨resolveMediaUrl⟩ 是模块导入名，按约定只作说明不作判点。要人判什么：内层重复调用是否已去掉、是否与同数组其余条目一致为单层（数据层不预解析，交给模板层单次消费）。看哪段代码：services/mocks/fixtures.ts 第 1460 行，这是该文件里仅剩的一处两层嵌套；台账证据列原写的第 1155 至 1163 "
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-012",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "pages/nearby/index",
+   "page": "utils/location.ts",
+   "src": "apps/client/src/utils/location.ts",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime），静态无判点；授予绿用的判点在修复前的 HEAD 里就已存在（reportLocation）——命中不能证明改动落地",
+   "criterion": "MP-R1-PAGES-NEARBY-INDEX-017〔reports/audit/round-1/issue-matrix.md:172〕 / 〔形状归一 §61：本行原为 6 列，补齐到 11 列；下列为本行全部原文（竖线已替换为 ∣）〕 / MP-R2-PAGES-NEARBY-INDEX-012 / MP-R1-PAGES-NEARBY-INDEX-017〔reports/audit/round-1/issue-matrix.md:172〕 / STILL_OPEN / 待修复（并 MP-R1-PAGES"
+  },
+  {
+   "id": "MP-R2-MATCHING-016",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "",
+   "page": "matching",
+   "src": "matching.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（visual），静态无判点；授予绿用的判点在修复前的 HEAD 里就已存在（onLoad, swipeRight, runMatchCheck）——命中不能证明改",
+   "criterion": "修：runMatchCheck 支持 callerSnapshot 透传（把 loadPartnerProfile 结果 mapToDiscoverCard 后传入），直达分支自持卡片；:177 补 isSuperLike 〔§82 注释清扫落定：ID 锚点在工作树 5 处命中、HEAD 0 命中、承载文件 dirty=2；判据台桶=NOT_IN_EITHER ⇒ 判据台落点清单不全（真实改点在 stores/match.ts），补 srcRels 后重判；22:59 mock 重建已并入产物，本轮不声称观感已验〕"
+  }
+ ]
+}

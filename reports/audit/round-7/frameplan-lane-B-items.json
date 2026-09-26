@@ -1,0 +1,178 @@
+{
+ "lane": "B",
+ "generatedAt": "2026-09-26T09:25:04.229Z",
+ "total": 16,
+ "files": [
+  "apps/client/src/pages/messages/index.vue",
+  "apps/client/src/subpackages/village/village/post.vue",
+  "apps/client/src/stores/messages.ts",
+  "apps/client/src/components/chat/ChatBubble.vue",
+  "apps/client/src/components/home/InterestRecommendation.vue",
+  "apps/client/src/components/profile/mine/MyStory.vue",
+  "apps/client/src/pages/register/success.vue",
+  "apps/client/src/subpackages/village/village/detail.vue",
+  "hub.vue"
+ ],
+ "items": [
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-018",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "pages/messages/index",
+   "page": "pages/messages/index",
+   "src": "apps/client/src/pages/messages/index.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验；授予绿用的判点在修复前的 HEAD 里就已存在（console.warn, fetchVisitors）——命中不能证明改动落地",
+   "criterion": "修：(a) fetchVisitors catch 补 console.warn 留痕（兜底逻辑保留）；(b) markInteractionRead catch 补 console.warn（对齐 markNotificationRead 的 R4-00165 标准）；(c) 随 -022 一并… 〔§82 注释清扫落定：ID 锚点在工作树 2 处命中、HEAD 0 命中、承载文件 dirty=1；判据台桶=NEEDS_UI_FRAME ⇒ 需帧复验（T5 定向巡检覆盖本页）；22:59 mock 重建已并入产物"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-019",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "pages/messages/index",
+   "page": "pages/messages/index",
+   "src": "apps/client/src/pages/messages/index.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime），静态无判点；判据没点名可核验的修后物件（无 closer 差异串/源码锚点/显式「改→新值」）",
+   "criterion": "修：模板按 act.targetUrl 条件渲染 CTA（:599 v-if），或 openActivity 空值分支给轻提示；亦可在 :88-97 映射层过滤掉无 targetUrl 的项。"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
+   "cls": "NEEDS_INTERACTION",
+   "route": "pages/messages/index",
+   "page": "pages/messages/index",
+   "src": "apps/client/src/pages/messages/index.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "人判：需人复验，本条无可立的静态判点。判什么：消息页头像失败的本地兜底集合在每次列表重载后是否被清空。看代码：apps/client/src/pages/messages/index.vue 第 302 行，⟨avatarFailedIds⟩ 在 ⟨loadPage⟩ 里等 ⟨Promise.all⟩ 收尾后整体重建为空集。实测三处：当前源码有该重置、基线 094f7239 同文件第 298 行也已有同一句、产物该页 js 内 ⟨avatarFailedIds⟩ 零命中且全 dist 递归查零命中（压缩构建改局部名"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-007",
+   "cls": "NEEDS_INTERACTION",
+   "route": "pages/messages/index",
+   "page": "pages/messages/index",
+   "src": "apps/client/src/pages/messages/index.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime），静态无判点",
+   "criterion": "修：交换两个 view 的 DOM 顺序即可（勿改点击语义）。"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "pages/messages/index",
+   "page": "pages/messages/index",
+   "src": "apps/client/src/pages/messages/index.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "人判：这条修的是元素归属，即免打扰图标挂在昵称行还是时间行，两个类名在修复前后都存在且同在该页产物里，位置与父子关系在编译产物侧不可判，需人裁定。要人判什么：免打扰图标是否与关系标签同处昵称行一排、时间行是否只剩时间数字。看哪段代码：pages/messages/index.vue 第 541 至 559 行昵称行容器（图标现居其内）与第 570 至 573 行时间行（现只余时间文本）；看哪一帧：消息列表页含免打扰会话的帧，口径为 素材/理想效果图/消息.png 的时间列只有时间数字。⟨chat-item__mut"
+  },
+  {
+   "id": "MP-R2-POST-013",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/village/village/post",
+   "page": "subpackages/village/village/post",
+   "src": "apps/client/src/subpackages/village/village/post.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime），静态无判点；唯一抠到的判点是标识符 targetSubtitle, targetCircle.value, isCircleTarget.val",
+   "criterion": "修：targetSubtitle 首行补 `if (isCircleTarget.value && !targetCircle.value) return \"圈子成员可见\";`，与 :214 标题兜底和 :771 标签同语义。；同族残余 MP-R1-POST-101；头号场景已随 MP-R2-POST-009 的解析闸关闭"
+  },
+  {
+   "id": "MP-R2-POST-016",
+   "cls": "NEEDS_STATE",
+   "route": "subpackages/village/village/post",
+   "page": "subpackages/village/village/post",
+   "src": "apps/client/src/subpackages/village/village/post.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "人判：台账要删的那条高度声明在本轮基线 094f7239 里就已不存在，工作树与产物同值，属修复早于本轮而 status 未同步，需人裁定改判为已修复（本轮前落地）。⟨aspect-ratio⟩ 与 ⟨post.wxss⟩ 是核对时看到的现存载体，它们在基线里就在，拿来当判点会把旧改动算成本轮，故不作判点。要人判的另一件事：是否还要为极旧内核改百分比撑高，台账原句给了删除与换撑高法两个改法，这是设计取舍，静态不代裁。看哪段代码：subpackages/village/village/post.vue 第 1461 "
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/village/village/post",
+   "page": "subpackages/village/village/post",
+   "src": "apps/client/src/subpackages/village/village/post.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "人判：待裁决后再谈判据，静态侧无可立判点。判什么：两个发布入口的圈子候选行结构取哪一种，原判据是二选一。看代码：apps/client/src/subpackages/village/village/post.vue 第 849 行与第 850 行把已加入标记与成员数合成一条描述，apps/client/src/subpackages/village/village/publish.vue 第 928 行至第 930 行拆成圈名、已加入胶囊、成员数三段。实测三处：被点名的胶囊类名 ⟨publish-target-s"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
+   "cls": "NEEDS_INTERACTION",
+   "route": "pages/messages/index",
+   "page": "pages/messages/index",
+   "src": "apps/client/src/stores/messages.ts",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime+backend），静态无判点；授予绿用的判点在修复前的 HEAD 里就已存在（markAllSessionsRead）——命中不能证明改动落地",
+   "criterion": "修：短期：操作后 toast 明示「仅本地生效，刷新后还原」或从长按菜单摘掉该能力；长期：TODO(backend) 落地会话未读元数据同步。另须复核 markAllSessionsRead 与「标为未读」的语义冲突（进入页面即全清）。  〔22:14Z 复核补充〕裁决点收窄为二选一，两者都不需要后端：(a) 保留能力但操作后 toast 明示「仅本地生效，离开页面会还原」；(b) 从长按菜单摘掉「标为未读」。另有一条独立可即修的：:300 的 markAllSessionsRead 与 :316 onShow 重"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
+   "cls": "NEEDS_STATE",
+   "route": "pages/messages/index",
+   "page": "pages/messages/index",
+   "src": "apps/client/src/stores/messages.ts",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "修：**删掉原句「在 mock 种子补 ⟨warmPeople⟩≥4、assistant≥1（只加种子，不碰 store 逻辑）」——字面不可行**：dashboard 是单一 ⟨MessageDashboardView⟩、五块全必填（api-types-supplement.ts:708-714），且 ⟨recentChats⟩ 必经 stores/messages.ts:587-612 的按 id 合并改写会话组成，不存在「只加种子不碰逻辑」的最小路径。可行的一半＝改调后端 ⟨MockMessageDashbo"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004",
+   "cls": "NEEDS_STATE",
+   "route": "subpackages/chat/chat-session/index",
+   "page": "subpackages/chat/chat-session/index",
+   "src": "apps/client/src/components/chat/ChatBubble.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime+visual），静态无判点；授予绿用的判点在修复前的 HEAD 里就已存在（IMAGE_PATHS）——命中不能证明改动落地",
+   "criterion": "修：外层容器加 min-height + 浅色骨架底，image 补 @error 切「图片加载失败」占位文案（或统一改走 components/common/SafeImage.vue）"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-111",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "pages/home/index",
+   "page": "pages/home/index",
+   "src": "apps/client/src/components/home/InterestRecommendation.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（runtime），静态无判点；只在共享载体（语言包/主题/别页）里命中，未证明该页消费了它：items.length",
+   "criterion": "修：两组件在骨架分支后补 v-else-if=\"items.length === 0\" 空态块，复用 CommunityFeed.vue:161 的文案/样式口径。"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-PROFILE-INDEX-003",
+   "cls": "NEEDS_RUNTIME",
+   "route": "pages/profile/index",
+   "page": "pages/profile/index",
+   "src": "apps/client/src/components/profile/mine/MyStory.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "人判：术语已在本轮基线 094f7239 之前统一为同一词，卡片文案、无障碍标签、两处注释现已同向，可判物件在基线里就已存在，不能当本轮判点，需人裁定改判为已修复（本轮前落地）。若产品拍板要用的词是日常而不是故事，则本条按反向回改文案与注释后重开，那时才可判。要人判什么就是拍这个词。看哪段代码：components/profile/mine/MyStory.vue 第 85 与 89 行的加号卡文案与无障碍标签、第 183 与 256 行的两处注释；看哪一帧：已填完资料的个人主页故事卡帧。范围约束：卡片数量不属本条"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-SUCCESS-005",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "pages/register/success",
+   "page": "pages/register/success",
+   "src": "apps/client/src/pages/register/success.vue",
+   "namedSelectors": [],
+   "why": "判据是行为/观感（visual），静态无判点；判据没点名可核验的修后物件（无 closer 差异串/源码锚点/显式「改→新值」）",
+   "criterion": "修：.reg-success__alt 加 min-height:88rpx + flex 居中，或 padding:20rpx 24rpx 并以等量负 margin 抵消视觉位移。"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
+   "cls": "NEEDS_INTERACTION",
+   "route": "subpackages/village/village/detail",
+   "page": "subpackages/village/village/detail",
+   "src": "apps/client/src/subpackages/village/village/detail.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "人判：需人复验，无可指向本轮的静态判点。判什么：详情页回复态与挂图态下底部固定输入栏是否还压住正文末条。看代码：apps/client/src/subpackages/village/village/detail.vue 第 781 行的条件类绑定加第 1617 行那条预留（两态把底部预留提到 320rpx 加安全区）。实测三处：当前源码有该修饰类、产物该页 wxss 内同名类 1 命中、基线 094f7239 同文件第 781 行与第 1617 行逐字相同。命中的是基线既有词，按判据台口径既不能算本轮落地，把它写"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
+   "cls": "STATIC_SHOOTABLE",
+   "route": "subpackages/campus/campus/hub",
+   "page": "subpackages/campus/campus/hub",
+   "src": "hub.vue",
+   "namedSelectors": [],
+   "why": "台账自述需要帧/人工复验",
+   "criterion": "人判：待裁决后再谈判据，静态侧无可立判点。判什么：校园域两级键命名空间要不要统一以及统一到哪一级。看代码：apps/client/src/subpackages/campus/campus/index.vue 全页 28 处引用 ⟨campus.index⟩ 前缀键、apps/client/src/subpackages/campus/campus/hub.vue 的 19 个键共 25 处引用 ⟨campusHub⟩ 前缀键、语言包 apps/client/src/i18n/locales/zh-CN.ts 里两"
+  }
+ ]
+}

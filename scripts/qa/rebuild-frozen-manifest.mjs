@@ -23,6 +23,7 @@
 import { readFileSync, writeFileSync, existsSync, statSync, readdirSync, copyFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join, resolve, dirname, relative, sep } from "node:path";
+import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -50,10 +51,31 @@ for (const name of readdirSync(SCREEN_ROOT).sort()) {
 }
 if (!corpora.length) fail("一个 corpus 都没收到（扫描集为空不得写出权威件）");
 
-/* ---- 2. 戳记一致才许并池 ---- */
-const shas = [...new Set(corpora.map((c) => c.j.gitSha || ""))];
-if (shas.length > 1 || !shas[0]) fail("corpus 的 gitSha 不一致或缺戳：" + shas.join(","));
-const GIT_SHA = shas[0];
+/* ---- 2. 戳记一致才许并池；本轮 HEAD 中途前进过（别的会话提交），于是一轮之内本来就有几个构建带。
+          `--allow-bands` 不是放宽判据：每个 corpus 仍必须自带真实 gitSha（unknown / 缺戳一律踢出并点名），
+          权威件里逐条记下自己属于哪个带，读者看得见"这条结论绑的是哪个构建"。
+          缺了这个模式，一轮就只能存在单一戳——那会逼人给旧帧补新 SHA，等于伪造溯源。 ---- */
+const ALLOW_BANDS = process.argv.includes("--allow-bands");
+const noStamp = corpora.filter((c) => !c.j.gitSha || String(c.j.gitSha) === "unknown");
+for (const c of noStamp) console.log(`KICK ${c.name}（无真实 gitSha，不进任何带）`);
+const stamped = corpora.filter((c) => c.j.gitSha && String(c.j.gitSha) !== "unknown");
+corpora.length = 0; corpora.push(...stamped);   /* 下游一律只看带戳的 corpus，缺戳的已按 KICK 点名 */
+if (!stamped.length) fail("所有 corpus 都缺真实戳记，写不出权威索引");
+const shas = [...new Set(stamped.map((c) => c.j.gitSha))];
+if (shas.length > 1 && !ALLOW_BANDS) fail("corpus 的 gitSha 不一致（一轮多个构建带请加 --allow-bands；缺戳的先按 KICK 行修）：" + shas.join(","));
+if (noStamp.length && !ALLOW_BANDS) fail("有 corpus 缺戳：" + noStamp.map((c) => c.name).join(","));
+/* 多带模式下顶层 gitSha 必须仍是一个**真 SHA**：下游有一堆工具拿它去 `git rev-parse`/比对 HEAD，
+   给它 "bands:a,b,c" 这种自造串会让它们报 invalid object name（实测），而"哪个带是主带"本来就该写清楚：
+   当前 HEAD 所在的那个带优先，否则取帧数最多的那个带；完整列表进 gitShaBands[]。 */
+let HEAD_SHORT = "";
+try { HEAD_SHORT = execSync("git rev-parse --short HEAD", { cwd: REPO, encoding: "utf8" }).trim(); } catch { /* 取不到 HEAD 就退回首带，不影响写出 */ }
+const BAND_COUNT = {};
+for (const c of corpora) BAND_COUNT[c.j.gitSha] = (BAND_COUNT[c.j.gitSha] || 0) + (c.j.shots || []).length;
+const GIT_SHA = shas.includes(HEAD_SHORT) ? HEAD_SHORT : shas.slice().sort((a, b) => (BAND_COUNT[b] || 0) - (BAND_COUNT[a] || 0))[0];
+if (ALLOW_BANDS && shas.length > 1) {
+  console.log("UNION_BANDS=" + shas.length + " " + shas.map((s) => s + "=" + stamped.filter((c) => c.j.gitSha === s).map((c) => c.name).join("/")).join("  "));
+  if (noStamp.length) console.log("UNION_KICKED=" + noStamp.length + "（这些目录的帧不进本轮权威索引）");
+}
 const buildModes = [...new Set(corpora.map((c) => c.j.buildMode || "(未记)"))];
 
 /* ---- 3. 汇总 + 追溯改判 ---- */
@@ -122,6 +144,8 @@ const hist = {};
 for (const s of shots) { const k = `${s.width || "?"}x${s.height || "?"}`; hist[k] = (hist[k] || 0) + 1; }
 const man = {
   gitSha: GIT_SHA,
+  gitShaBands: shas.length > 1 ? shas : undefined,
+  gitShaBandNote: shas.length > 1 ? "本轮 HEAD 中途前进过，帧来自 " + shas.length + " 个构建带；顶层 gitSha 是主带（HEAD 优先，否则帧数最多），每条 shot 仍带自己的 bandSha" : undefined,
   workflowVersion: "3.2-union",
   buildMode: buildModes.length === 1 ? buildModes[0] : "MIXED（见 corpora[].buildMode，禁止跨构建比像素）",
   manifestSchemaNote: "shot 仍保留 page/path/state 三键原语义；corpus/sourceManifest/identity/route/contentHash/zoomCrops 为追加键，旧消费方忽略未知键即可。",

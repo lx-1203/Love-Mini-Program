@@ -1,0 +1,594 @@
+{
+ "generatedAt": "2026-09-26T11:28:28.262Z",
+ "source": "verdict-from-frames.mjs",
+ "frames": 42,
+ "buckets": {
+  "NO_LANDING": 5,
+  "STATE_NOT_APPLIED": 18,
+  "FIXED_FRAME": 8,
+  "REGRESSION": 9,
+  "NEEDS_EYE": 2,
+  "NO_FRAME": 0,
+  "NOT_SHOOTABLE": 21,
+  "REWRITE": 16
+ },
+ "patchIds": 79,
+ "patches": [
+  {
+   "id": "MP-R2-CAMPUS-HUB-009",
+   "col": 9,
+   "new": "配方判 REWRITE（判据本身要改）：原判据要什么：把同文件两处 --c-bg-page 兜底值统一，并点名 :372 用 #EEF7F2、:818 的 .campus-search 用 #F0F4F2，择一真值让另一处复用同一 fallback。源码实际是什么：hub.vue 全文已无 #F0F4F2 字样（对 F0F4F2 与 EE",
+   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-010",
+   "col": 6,
+   "new": "已修复（帧级复验：当轮帧 + 3 个机器判点全部成立）",
+   "why": "①的帧债按帧闭环"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-010",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2-CAMPUS-HUB-010.png(38401B) 判点 3 条",
+   "why": "帧路径 + 字节，可复查"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-011",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：缺的夹具是身份，不是取景手段。判据要判的是「切两个 tab 时学校卡片列表是否被整列重建」，而 hub.vue:89-91 的 joinedSchools 在 isVerified 为假时恒为空数组，未认证身份下点「我加入的」得到的是空态节点 .campus-hub__empty（渲染条件 hub.",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-012",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：缺的夹具是仪表，不是帧。判据要判的是「成员数与动态数每卡是否只计算一次」，这是渲染期调用次数，帧与像素两侧都取不到该量。源码侧该判点的形状已成立：hub.vue:139 在 filteredSchools 末尾用 map 把 statsOf(sc) 预计算成 stats 对象键挂到条目上，模板改读该",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001",
+   "col": 6,
+   "new": "已修复（帧级复验：当轮帧 + 4 个机器判点全部成立）",
+   "why": "①的帧债按帧闭环"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001.png(38381B) 判点 4 条",
+   "why": "帧路径 + 字节，可复查"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003",
+   "col": 6,
+   "new": "已修复（帧级复验：当轮帧 + 3 个机器判点全部成立）",
+   "why": "①的帧债按帧闭环"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003.png(38382B) 判点 3 条",
+   "why": "帧路径 + 字节，可复查"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-002",
+   "col": 9,
+   "new": "配方判 REWRITE（判据本身要改）：原判据要什么：subtitle 改成带插值的「附近有 {n} 位同频的你」，n 取游客可用的 /recommendations/people 计数，无数据时回退现有静态串。源码实际是什么：这条已被一轮已生效裁定正面否掉，不是待修。NotLoggedWaiting.vue:16-32 整段裁定写明本页",
+   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-004",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：台账自陈本条按未修处理，逐条对源码核对为真，缺的是实现刀加可达性夹具两样。一、判据要求拆掉首节点整图海报：NotLoggedWaiting.vue:62 至 66 至今仍是单张整图 image，src 绑 IMAGE_PATHS.POSTERS.NOT_LOGGED_WAITING（声明在 NotL",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2-PROFILE-025",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
+  },
+  {
+   "id": "MP-R2-PROFILE-025",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2-PROFILE-025.png(24996B) 判点 3 条 未成立：.my-interaction__label=ABSENT_UNEXPECTED、.my-stats__label=ABSENT_UNEXPECTED、「最近访客」所在 .my-interaction__row 的 .my-interaction__value 与「",
+   "why": "把实测值写进账"
+  },
+  {
+   "id": "MP-R2-PROFILE-034",
+   "col": 9,
+   "new": "配方判 REWRITE（判据本身要改）：原判据点名的物件在源码里已经不存在，而这正是修复成功的形态，所以它不可能有帧判点。判据要什么：删除 socialProgressStore 实例化与 onShow 里的 fetchProgress()。源码实际是什么：全页对 socialProgress 的引用只剩 pages/profile/in",
+   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：两半都判不了，逐条对源码核对。前半（常驻图格上限提示）：图格区在 publish.vue:785-795，里面只有已选图块与一个加号块，加号块在 images 长度达到 POST_MAX_IMAGES 时被 v-if 掉（publish.vue:792），超限反馈只有 uni.showToast（p",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A05",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 tap；帧 reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A05.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
+   "col": 9,
+   "new": "帧已拍但落点未确认（实落 ERR:automation_evaluate 调用失败：Command fai），本帧不作判据；帧 reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001.png",
+   "why": "落点不明的判决不能进账"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-106",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：判据自身未收口（原句写明两案待主编排层拍板、收口不代拍），且两案的前置这轮都拿不到。源码实况核对：今日推荐卡的挂载只传 item、loading、like-loading 三个 prop 与 view、like、rotate 三个事件（pages/home/index.vue:337-344），全页",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
+   "col": 9,
+   "new": "帧已拍：reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002.png(37442B) 判点 0 条；本条判点全部是 FRAME_ONLY（只能人读帧）",
+   "why": "欠的是人眼，不是证据"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002.png(11310B) 判点 1 条 未成立：.post-image-wrap--first=ABSENT_UNEXPECTED",
+   "why": "把实测值写进账"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-018",
+   "col": 9,
+   "new": "配方判 REWRITE（判据本身要改）：原判据要什么：(a) fetchVisitors 的 catch 补 console.warn 留痕、(b) markInteractionRead 的 catch 补 console.warn（对齐同文件 markNotificationRead 口径）、(c) 随 -022 一并（原文在此被截断",
+   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-019",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：缺的夹具：一条 targetUrl 为空的 assistant 数据（real 模式下由后端 /messages/relationship-dashboard 下发，见 apps/client/src/stores/messages.ts:579）。已核实的源码事实：判据点名的条件渲染在位——app",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：缺的夹具：一枚可稳定 404 的 partnerAvatar（例如 fixture 里写一个 /uploads/not-exist-<随机>.jpg），外加台账第 11 列明写的两帧路径（先让该头像命中占位图、再下拉重载）。已核实的源码事实：重置点确在 apps/client/src/pages/m",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-007",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 tap；帧 reports/screenshots/round-7-uidebt-1a1df78b/B-MP-R2VIS-PAGES-MESSAGES-INDEX-007.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/B-MP-R2VIS-PAGES-MESSAGES-INDEX-009.png(28724B) 判点 3 条 未成立：陈默那一行的 .chat-item__time-row 内的 image 与 .chat-item__muted-icon=PRESENT_UNEXPECTED(5)",
+   "why": "把实测值写进账"
+  },
+  {
+   "id": "MP-R2-POST-013",
+   "col": 9,
+   "new": "配方判 REWRITE（判据本身要改）：原判据要什么：targetSubtitle 首行补一句 isCircleTarget 且 targetCircle 为空时返回字面文案「圈子成员可见」，与 :214 标题兜底和 :771 标签同语义。源码实际是什么：兜底分支已在位但不是字面量——apps/client/src/subpackages",
+   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+  },
+  {
+   "id": "MP-R2-POST-016",
+   "col": 9,
+   "new": "配方判 REWRITE（判据本身要改）：原判据要什么：删掉图块规则里那条写死的高度声明（台账第 8 列旧行号 1341-1349 指向 width calc / height calc / aspect-ratio 三条）。源码实际是什么：apps/client/src/subpackages/village/village/post.v",
+   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：缺的夹具＝产品裁决，不是数据：判据本身是二选一（post 页把已加入与成员数合成一条描述，还是 publish 页拆成圈名、已加入胶囊、成员数三段），未拍板前任何断言都是替未定方案押注。已核实的本 lane 一侧源码事实：apps/client/src/subpackages/village/vil",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 longpress、tap、re-enter-tab；帧 reports/screenshots/round-7-uidebt-1a1df78b/B-MP-R2-PAGES-MESSAGES-INDEX-020.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：缺的夹具：apps/api 侧 MockMessageDashboardController 的 /messages/relationship-dashboard 种子（该文件属别的 lane，本轮未打开、不替它下结论）。本 lane 内已核实的障碍：apps/client/src/stores/m",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：缺的夹具两条，都不在本轮能力内。其一：一条 kind=image 且 src 必失败的消息——apps/client/src/components/chat/ChatBubble.vue:214 的分支要求 kind==='image' 且 body 非空且未置 error，:221 的 @erro",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-111",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：缺的是修本身加数据态两样。源码事实：apps/client/src/components/home/InterestRecommendation.vue:73 是 loading 分支的骨架，:76 是 v-else 的 scroll-view，两支之间没有判据要求的 v-else-if 空态块（i",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-PROFILE-INDEX-003",
+   "col": 9,
+   "new": "配方判 REWRITE（判据本身要改）：原判据要什么：认为术语已在基线前统一为同一个词（卡片文案、无障碍标签、两处注释同向），要人拍的只是这个词是 故事 还是 日常；若拍 日常 则反向回改后重开。源码实际是什么：判据点名的四处确实同向——apps/client/src/components/profile/mine/MyStory.vue",
+   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-SUCCESS-005",
+   "col": 6,
+   "new": "已修复（帧级复验：当轮帧 + 3 个机器判点全部成立）",
+   "why": "①的帧债按帧闭环"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-SUCCESS-005",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/B-MP-R2-PAGES-REGISTER-SUCCESS-005.png(22578B) 判点 3 条",
+   "why": "帧路径 + 字节，可复查"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 tap；帧 reports/screenshots/round-7-uidebt-1a1df78b/B-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：缺的夹具＝主编排层对目标前缀的裁决（统一还是不统一、统一到哪一级），台账自记 closer 为 P4 延后出本轮，且明写 现在写任何键名都是替未定的方案押注。本 lane 内实测到的键位：apps/client/src/subpackages/campus/campus/hub.vue 出现 cam",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-009",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：缺哪个夹具：能把 birthDate 直读到校验结果的注入点。现状是 birthDate 只能由原生 date picker 滚轮设置（apps/client/src/pages/register/index.vue:723-731，:726 的 :value 绑 birthDate、:730 @c",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-011",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 input、tap；帧 reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-PAGES-REGISTER-INDEX-011.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-012",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 input、input、tap；帧 reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-PAGES-REGISTER-INDEX-012.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-013",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 input、tap；帧 reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-PAGES-REGISTER-INDEX-013.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-014",
+   "col": 9,
+   "new": "配方判 REWRITE（判据本身要改）：原判据要什么：(A) 三处彩色底上的白色前景改用 var(--c-text-inverse)，并明令禁改 var(--c-bg-container)。源码实际是什么：工作树三处已按 (A) 落地——.sms-btn__text 的 color 在 apps/client/src/pages/regi",
+   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+  },
+  {
+   "id": "MP-R2-PUB-114",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
+  },
+  {
+   "id": "MP-R2-PUB-114",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-PUB-114.png(21902B) 判点 4 条 未成立：.publish-row__meta=PRESENT_UNEXPECTED(3)",
+   "why": "把实测值写进账"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 tap、tap、tap、press-hold；帧 reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 tap；帧 reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2-CAMPUSINDEX-010",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：缺哪个夹具：让 campusStore.fetchCertificationStatus 失败一次的非 404 故障（5xx 或超时）。本轮客户端不存在任何故障注入钩子（对 apps/client/src 全量 grep forceError、mockFail、failNext、scenario 均",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2-CAMPUSINDEX-011",
+   "col": 9,
+   "new": "帧已拍但落点未确认（实落 ERR:automation_evaluate 调用失败：Command fai），本帧不作判据；帧 reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-CAMPUSINDEX-011.png",
+   "why": "落点不明的判决不能进账"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-105",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：三个改点在源码侧都已落地：重试钮已绑 handleRefresh（apps/client/src/components/home/CommunityFeed.vue:169，函数体 :57-60）、watch props.items 清 failedKeys（:63-68）、avatarSrc 的永",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-003",
+   "col": 9,
+   "new": "配方判 REWRITE（判据本身要改）：原判据两半。半 1（删除 :68 共同兴趣行）已在基线落地且可帧判，不必改写：apps/client/src/components/home/NearbyPeople.vue 模板 :66-67 只剩 name 与 distance 两个 text 节点，组件内无任何兴趣标签节点（数据侧 commo",
+   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+  },
+  {
+   "id": "MP-R2-PROFILE-024",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
+  },
+  {
+   "id": "MP-R2-PROFILE-024",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-PROFILE-024.png(25003B) 判点 1 条 未成立：.nlp-interaction--last 底缘 到 .nlp-footer-btn 顶缘=ABSENT_UNEXPECTED",
+   "why": "把实测值写进账"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-112",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：判据自述「没有可判物件，需人读源码裁定」，台账理想图列亦为「不适用（代码层判据）」，故帧桶本身是误分。源码实测：apps/client/src/services/mocks/fixtures.ts:1460 仍是 resolveMediaUrl(resolveMediaUrl(「/static/as",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-012",
+   "col": 9,
+   "new": "配方判 REWRITE（判据本身要改）：原判据要什么：criterion 列里根本没有「改→新值」物件——本行是并案行（reports/audit/round-6/issue-matrix.md:193，状态列 STILL_OPEN、处置列 待修复（并 MP-R1-PAGES-NEARBY-INDEX-017）），整格装的是形状归一 §6",
+   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+  },
+  {
+   "id": "MP-R2-MATCHING-016",
+   "col": 9,
+   "new": "帧已拍但落点未确认（实落 ERR:automation_evaluate 调用失败：Command fai），本帧不作判据；帧 reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-MATCHING-016.png",
+   "why": "落点不明的判决不能进账"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-004",
+   "col": 6,
+   "new": "已修复（帧级复验：当轮帧 + 4 个机器判点全部成立）",
+   "why": "①的帧债按帧闭环"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-004",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2-CIRCLES-INDEX-004.png(38175B) 判点 4 条",
+   "why": "帧路径 + 字节，可复查"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-005",
+   "col": 9,
+   "new": "配方判 REWRITE（判据本身要改）：原判据要什么：为本页建定高链（照 village/index.vue 的 .village-page height:100% 范式），让内部 scroll-y 与 enhanced/bounces 生效，并在句内自述「本句作废为待裁决项」交主编排层三案。源码实际是什么：该做法正面违反已生效裁定——a",
+   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-006",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：缺哪个夹具：游客态且非 mock 的构建。源码事实：isGuest = !sessionStore.isLoggedIn && !useMock()（apps/client/src/subpackages/circles/circles/index.vue:148），本轮取景载体是 mock 构建（",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-007",
+   "col": 9,
+   "new": "配方判 REWRITE（判据本身要改）：原判据要什么：前半称「:911 换 var(--c-brand,#36C99A)」已落（工作树），后半三案（新增 --c-hot-badge-bg/-text 或收编 --c-badge-on-image-*）待主编排层拍板。源码实际是什么：承载文件 apps/client/src/subpacka",
+   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-011",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 tap；帧 reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2-POSTTOPIC-011.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-012",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 tap；帧 reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2-POSTTOPIC-012.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-013",
+   "col": 9,
+   "new": "配方判 REWRITE（判据本身要改）：原判据要什么：490/697 两处禁用条件并入 isSubmitting，提交中切 loading 文案/图标，使防重在途有视觉反馈。源码实际是什么：前半已落但行号漂移——顶栏钮条件含 isSubmitting 在 apps/client/src/subpackages/circles/circle",
+   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-011",
+   "col": 9,
+   "new": "配方判 REWRITE（判据本身要改）：原判据要什么：断言并案目标 MP-R1-PAGES-NEARBY-INDEX-016 的病灶已消——称 apps/client/src/pages/nearby/index.vue:375 的行内顶距加上「同页样式段里页根容器的上内边距取零」，两条机制已不再抢同一个属性。源码实际是什么：根容器 .n",
+   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-014",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：判据本体是请求去重行为，源码侧其实已落地：apps/client/src/pages/nearby/index.vue:216 即 loadActivities 非 force 分支前置的 if (activityStore.loading) return，force 分支 :212-215 直通；",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007.png(12425B) 判点 2 条 未成立：.chat-list.chat-list--empty=ABSENT_UNEXPECTED、.chat-list--empty=ABSENT_UNEXPECTED",
+   "why": "把实测值写进账"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 tap；帧 reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001",
+   "col": 9,
+   "new": "帧已拍：reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001.png(38167B) 判点 0 条；本条判点全部是 FRAME_ONLY（只能人读帧）",
+   "why": "欠的是人眼，不是证据"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001.png(8588B) 判点 3 条 未成立：.public-identity__meta-item=ABSENT_UNEXPECTED、.public-identity__meta-row=ABSENT_UNEXPECTED、.public-",
+   "why": "把实测值写进账"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 longpress、tap；帧 reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001",
+   "col": 6,
+   "new": "已修复（帧级复验：当轮帧 + 1 个机器判点全部成立）",
+   "why": "①的帧债按帧闭环"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001.png(37452B) 判点 1 条",
+   "why": "帧路径 + 字节，可复查"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004",
+   "col": 6,
+   "new": "已修复（帧级复验：当轮帧 + 2 个机器判点全部成立）",
+   "why": "①的帧债按帧闭环"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004.png(20580B) 判点 2 条",
+   "why": "帧路径 + 字节，可复查"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-102",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 none；帧 reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2-PAGES-HOME-INDEX-102.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-110",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 none；帧 reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2-PAGES-HOME-INDEX-110.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-004",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-004",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2VIS-PAGES-HOME-INDEX-004.png(36507B) 判点 3 条 未成立：.today-card__rotate=ABSENT_UNEXPECTED、.today-card__rotate=ABSENT_UNEXPECTED、.today-card__rotate-icon=ABSENT_UNEXPECTED",
+   "why": "把实测值写进账"
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-013",
+   "col": 6,
+   "new": "已修复（帧级复验：当轮帧 + 1 个机器判点全部成立）",
+   "why": "①的帧债按帧闭环"
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-013",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2-CAMPUSPOST-013.png(22652B) 判点 1 条",
+   "why": "帧路径 + 字节，可复查"
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-014",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：缺的夹具：让 uni.chooseImage 在自动化下确定性返回 ≥2 个 tempFilePath（或提供可直接注入 images 的 mock 入口）。补上夹具后断言应为：(1) kind=count target=.image-item expected=选 3 张后为 3；(2) 点第 2",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-016",
+   "col": 9,
+   "new": "配方判 REWRITE（判据本身要改）：原判据要什么：把 :91 的 import 上移到文件头 import 区末尾。源码实际是什么：apps/client/src/subpackages/campus/campus/post-topic.vue:43 现为从 @dcloudio/uni-app 引入 onLoad 的 import 语",
+   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-LOGIN-INDEX-001",
+   "col": 9,
+   "new": "帧已拍但落点未确认（实落 ERR:automation_evaluate 调用失败：Command fai），本帧不作判据；帧 reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2VIS-PAGES-LOGIN-INDEX-001.png",
+   "why": "落点不明的判决不能进账"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-LOGIN-INDEX-007",
+   "col": 9,
+   "new": "帧已拍但落点未确认（实落 ERR:automation_evaluate 调用失败：Command fai），本帧不作判据；帧 reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2VIS-PAGES-LOGIN-INDEX-007.png",
+   "why": "落点不明的判决不能进账"
+  },
+  {
+   "id": "MP-R2-VILLAGE-INDEX-010",
+   "col": 9,
+   "new": "配方判 REWRITE（判据本身要改）：原判据要什么：删掉 .catch(() => {})，或保留防御时改成带注释说明可吞异常类别的形式。源码实际是什么：apps/client/src/subpackages/village/village/index.vue:501 现为 void profileStore.load();，行内已无 ",
+   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+  },
+  {
+   "id": "MP-R2-VILLAGE-INDEX-012",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：缺的夹具：(a) 让 circleStore.fetchFeaturedTopics 失败的后端 500 或网络错误注入；(b) activityStore.activities 为空数组的态。更硬的阻塞是承载物件不存在：apps/client/src/subpackages/village/vil",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-005",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 none；帧 reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2VIS-PAGES-HOME-INDEX-005.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2-PAGES-DISCOVER-INDEX-013",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 swipe-card；帧 reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2-PAGES-DISCOVER-INDEX-013.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001",
+   "col": 9,
+   "new": "reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001.png(38104B) 判点 3 条 未成立：.post-card__tag=ABSENT_UNEXPECTED、.post-card__tag=ABSENT_UNEXPECTED、.post-card__tag--pink=ABSENT_UNEXPEC",
+   "why": "把实测值写进账"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001",
+   "col": 9,
+   "new": "帧已拍但状态未施加：欠 none；帧 reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-004",
+   "col": 9,
+   "new": "配方判 NOT_SHOOTABLE：缺的夹具：微信开发者工具模拟器的高 dpr 机型档（判据自述脚本无权改，且本轮禁止调用 wechatide）。补上夹具后的正确判据不是 selector 断言，而是巡检口径：在高 dpr 档重跑 tmp/tour-R2 巡检并对被判定文字出 zoomFrames 辅助帧，由人工在辅助帧上背书字级结论",
+   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  }
+ ]
+}

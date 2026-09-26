@@ -281,17 +281,30 @@ const tail = malformed.length ? `；另有 ${malformed.length} 条非 ID 截断�
    全部只覆盖了 161 条可解析行 —— 而这在本门禁里从来没有人查过（本文件此前
    连 `split('|')` 都没有）。归一化脚本见 scripts/qa/normalize-ledger-shape.mjs（台账 §61）。 */
 let shapeRows = 0, shapeOff = [], shapeDecl = 0, shapeNoHeader = [];
+/* 转置行核对：列数对得上但**内容整体错位**的行。实测第 16 轮把 6 列 lane brief 补成 11 列时，
+   10 行的「页面」列装进了判据台判决（STILL_OPEN / FIXED_IN_HEAD）、「severity」列装进了 file:line。
+   上面的列数判据和 status 值域判据都看不见它（status 那格恰好还是受控词），但判据台按列名取值，
+   于是这些行的判决是从错误格子里抠出来的。修法：跑 scripts/qa/repair-rotated-ledger-rows.mjs（搬运不丢字）。 */
+let rotated = [];
 for (const f of currentMatrixFiles.filter((x) => /issue-matrix\.md$/.test(x))) {
   const ls = txt(f).split("\n");
   const hdr = ls.find((l) => /^\|/.test(l) && /\|\s*status\s*\|/i.test(l));
   const want = hdr ? hdr.split("|").length - 2 : 0;
   if (!want) { shapeNoHeader.push(rel(f)); continue; }
   shapeDecl = want;
+  const cols = hdr.split("|").map((s) => s.trim());
+  const iPage = cols.findIndex((s) => s === "页面");
+  const iSev = cols.findIndex((s) => /severity/i.test(s));
   for (const l of ls) {
     if (!/^\|\s*MP-/.test(l)) continue;
     shapeRows++;
-    const n = l.split("|").length - 2;
-    if (n !== want) shapeOff.push([rel(f), (l.split("|")[1] || "").trim(), n]);
+    const parts = l.split("|");
+    const n = parts.length - 2;
+    const id = (parts[1] || "").trim();
+    if (n !== want) { shapeOff.push([rel(f), id, n]); continue; }
+    const pageVal = (parts[iPage] || "").trim(), sevVal = (parts[iSev] || "").trim();
+    if (iPage > 0 && /^[A-Z][A-Z_0-9]{3,}$/.test(pageVal)) rotated.push([rel(f), id, "页面列装的是判据词 " + pageVal]);
+    else if (iSev > 0 && /apps\/client|\.(vue|ts|js|scss)[:\s)]/.test(sevVal)) rotated.push([rel(f), id, "severity 列装的是源文件 " + sevVal.slice(0, 46)]);
   }
 }
 /* 值域核对（§79）：列数对≠读得懂。实测有行的 status 列里坐着一整段散文
@@ -335,7 +348,9 @@ let badStatus = [];
    （同一个坑本会话已经踩过一次：不带参数跑，默认落在 round-2，那份矩阵早于 11 列口径。） */
 const matricesInScope = currentMatrixFiles.filter((x) => /issue-matrix\.md$/.test(x)).length;
 const shapeVacuous = matricesInScope === 0 || shapeRows === 0;
-console.log(`LEDGER_SHAPE_DECLARED_COLS=${shapeDecl || "(表头缺失)"} DATA_ROWS=${shapeRows} OFF_SCHEMA_ROWS=${shapeOff.length} STATUS_VOCAB_BAD=${badStatus.length} 矩阵文件=${matricesInScope}`);
+console.log(`LEDGER_SHAPE_DECLARED_COLS=${shapeDecl || "(表头缺失)"} DATA_ROWS=${shapeRows} OFF_SCHEMA_ROWS=${shapeOff.length} ROTATED_ROWS=${rotated.length} STATUS_VOCAB_BAD=${badStatus.length} 矩阵文件=${matricesInScope}`);
+rotated.slice(0, 12).forEach(([f, id, why]) => console.log(`  ROTATED ${id} 列内容转置（${why}）@ ${f} —— 跑 scripts/qa/repair-rotated-ledger-rows.mjs，不要手改`));
+if (rotated.length > 12) console.log(`  …ROTATED 另有 ${rotated.length - 12} 行`);
 if (shapeVacuous) console.log(`LEDGER_SHAPE_VACUOUS=1 本范围内扫到 ${matricesInScope} 份 issue-matrix.md、${shapeRows} 条数据行 ⇒ 列数/值域判据是空转，不许当合规`);
 for (const [id, v] of badStatus.slice(0, 12)) console.log(`  STATUS_VOCAB ${id} status 列开头不是受控词：${JSON.stringify(v.slice(0, 46))}`);
 if (badStatus.length > 12) console.log(`  …STATUS_VOCAB 另有 ${badStatus.length - 12} 行`);
@@ -343,9 +358,9 @@ if (shapeNoHeader.length) console.log(`LEDGER_SHAPE_FAIL 表头无法定位（�
 shapeOff.slice(0, 12).forEach(([f, id, n]) => console.log(`  OFF_SCHEMA ${id} 列数=${n}（应为 ${shapeDecl}）@ ${f}`));
 if (shapeOff.length > 12) console.log(`  …OFF_SCHEMA 另有 ${shapeOff.length - 12} 条（跑 normalize-ledger-shape.mjs 归一化，不要手改）`);
 
-const ledgerHardFail = trueOrphans.length > 0 || shapeOff.length > 0 || shapeNoHeader.length > 0 || badStatus.length > 0 || shapeVacuous;
+const ledgerHardFail = trueOrphans.length > 0 || shapeOff.length > 0 || shapeNoHeader.length > 0 || badStatus.length > 0 || rotated.length > 0 || shapeVacuous;
 console.log(trueOrphans.length ? `LEDGER_RESULT=FAIL（${trueOrphans.length} 个 ID 全轮次矩阵均无本尊行，账实不符${tail}）`
-  : (shapeOff.length || shapeNoHeader.length || badStatus.length || shapeVacuous
-    ? `LEDGER_RESULT=FAIL（ID 账实相符，但表结构/值域不合规：错位行 ${shapeOff.length}、status 值域外 ${badStatus.length}${shapeNoHeader.length ? " + 表头缺失 " + shapeNoHeader.length : ""}${shapeVacuous ? " + 判据空转（本范围无 issue-matrix.md 或 0 数据行）" : ""}）`
+  : (shapeOff.length || shapeNoHeader.length || badStatus.length || rotated.length || shapeVacuous
+    ? `LEDGER_RESULT=FAIL（ID 账实相符，但表结构/值域不合规：错位行 ${shapeOff.length}、内容转置行 ${rotated.length}、status 值域外 ${badStatus.length}${shapeNoHeader.length ? " + 表头缺失 " + shapeNoHeader.length : ""}${shapeVacuous ? " + 判据空转（本范围无 issue-matrix.md 或 0 数据行）" : ""}）`
     : `LEDGER_RESULT=PASS${tail}`));
 process.exit(ledgerHardFail ? 1 : 0);
