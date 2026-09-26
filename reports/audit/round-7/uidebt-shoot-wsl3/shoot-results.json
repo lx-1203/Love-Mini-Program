@@ -1,0 +1,97 @@
+{
+ "round": "round-7-uidebt-wsl3-8df4de49",
+ "gitSha": "8df4de49",
+ "updatedAt": "2026-09-26T13:21:49.677Z",
+ "plan": "reports/audit/round-7/frameplan-merged.json",
+ "project": "apps/client/dist/build/mp-weixin",
+ "identitySeen": "guest",
+ "verifyLast": "logged-in userId=user-1001",
+ "planned": 2,
+ "rows": [
+  {
+   "id": "MP-R2VIS-PAGES-LOGIN-INDEX-001",
+   "route": "pages/login/index",
+   "landing": "pages/login/index",
+   "status": "SHOT",
+   "frame": "reports/screenshots/round-7-uidebt-wsl3-8df4de49/E-MP-R2VIS-PAGES-LOGIN-INDEX-001.png",
+   "bytes": 34084,
+   "checks": [
+    {
+     "kind": "computed-style",
+     "target": ".btn-primary",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    },
+    {
+     "kind": "computed-style",
+     "target": ".btn-phone-quick",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    },
+    {
+     "kind": "computed-style",
+     "target": ".btn-guest",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    }
+   ],
+   "identity": "guest",
+   "crop": "登录页底部按钮区（微信一键登录 / 手机号快捷登录 / 稍后再看三枚）",
+   "stepsApplied": [
+    "none"
+   ],
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingVia": "ws",
+   "landingAfter": "",
+   "stateApplied": true
+  },
+  {
+   "id": "MP-R2VIS-PAGES-LOGIN-INDEX-007",
+   "route": "pages/login/index",
+   "landing": "pages/login/index",
+   "status": "SHOT",
+   "frame": "reports/screenshots/round-7-uidebt-wsl3-8df4de49/E-MP-R2VIS-PAGES-LOGIN-INDEX-007.png",
+   "bytes": 34065,
+   "checks": [
+    {
+     "kind": "text-contains",
+     "target": ".btn-phone-quick-text",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    },
+    {
+     "kind": "text-contains",
+     "target": ".login-sms-fallback-text",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    },
+    {
+     "kind": "computed-style",
+     "target": ".login-sms-fallback-text",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    }
+   ],
+   "identity": "guest",
+   "crop": "登录页手机号快捷授权按钮 + 其下「验证码或密码登录」文字入口",
+   "stepsApplied": [
+    "none"
+   ],
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingVia": "ws",
+   "landingAfter": "",
+   "stateApplied": true
+  }
+ ],
+ "counts": {
+  "SHOT": 2,
+  "EVIDENCE_HOLE": 0,
+  "FAILED": 0,
+  "NO_EVIDENCE": 0
+ },
+ "machinePassAllChecks": 2
+}

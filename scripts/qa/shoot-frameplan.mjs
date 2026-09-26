@@ -14,10 +14,10 @@
  *   --plan reports/audit/round-7/frameplan-merged.json \
  *   --project apps/client/dist/build/mp-weixin --label round-7-uidebt [--limit N]
  * 干跑（只打印计划不出帧不写盘）：--dry */
-import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync, rmSync, readdirSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { execFileSync } from "node:child_process";
-import { evaluate, openPage, shot, mintToken, bootSession, verifyLogin, routeStack } from "./cli-automator.mjs";
+import { evaluate, openPage, shot, mintToken, bootSession, verifyLogin, routeStack, clearSession } from "./cli-automator.mjs";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
@@ -39,7 +39,18 @@ const GIT_SHA = git("rev-parse --short HEAD") || "unknown";
 if (!existsSync(PLAN)) { console.log("SHOOT_RESULT=FAIL reason=配方不存在 " + relOf(PLAN)); process.exit(2); }
 if (!existsSync(join(PROJECT, "app.json"))) { console.log("SHOOT_RESULT=FAIL reason=--project 不是已编译产物：" + relOf(PROJECT)); process.exit(2); }
 const plan = JSON.parse(readFileSync(PLAN, "utf8"));
-const items = (plan.rows || []).filter((r) => r.disposition === "SHOOT" && r.route);
+let items = (plan.rows || []).filter((r) => r.disposition === "SHOOT" && r.route);
+/* --only-ids 是子集开关，不是新的判据：用来把"上一轮卡在状态未施加"的那批单独重拍，
+   同时不覆盖上一轮已经出帧的条目（配合 --label/--out 换新目录）。子集跑完守恒只在子集内成立。 */
+const ONLY = arg("only-ids", "");
+const ONLY_SET = ONLY ? new Set(ONLY.split(/[,\s]+/).filter(Boolean)) : null;
+if (ONLY_SET) {
+  const before = items.length;
+  items = items.filter((r) => ONLY_SET.has(r.id));
+  const miss = [...ONLY_SET].filter((x) => !items.some((r) => r.id === x));
+  console.log("SHOOT_SUBSET 请求=" + ONLY_SET.size + " 命中=" + items.length + " 全集=" + before + (miss.length ? " 请求里查无此条=" + miss.join(",") : ""));
+  if (miss.length) { console.log("SHOOT_RESULT=FAIL reason=--only-ids 里有配方不认识的 id，子集不闭合"); process.exit(2); }
+}
 if (!items.length) { console.log("SHOOT_RESULT=FAIL reason=配方里没有可拍的条目（空扫描集不算跑完）"); process.exit(2); }
 if ((plan.stillBad || []).length) { console.log("SHOOT_RESULT=FAIL reason=配方里还有 " + plan.stillBad.length + " 处查无此物的依据，先去修配方"); process.exit(2); }
 
@@ -88,11 +99,12 @@ function cleanSel(s) {
   if (!t || t === ".") return "";
   return t.startsWith(".") ? t : "." + t;
 }
-function runSteps(steps, ident) {
-  const unmet = [], did = [];
+async function runSteps(steps, ident) {
+  const unmet = [], did = [], wsDid = [], wsFailed = [];
   for (const st of steps || []) {
     const a = String(st.action || "none").trim();
     if (a === "open-page" || a === "navigate" || a === "open-url") { did.push(a); continue; }   // 页已由外层打开
+    if (a === "none") { did.push("none"); continue; }
     if (a === "wait") { sleep(Number(st.ms || 1200) || 1200); did.push("wait"); continue; }
     if (a === "capture" || a === "measure") { did.push(a); continue; }                            // 出帧/量算由本执行器的帧承担
     if (a === "set-theme") {
@@ -108,20 +120,115 @@ function runSteps(steps, ident) {
       } catch (e) { unmet.push(a + ":" + String(e.message).slice(0, 40)); }
       continue;
     }
-    unmet.push(a);   // tap / input / longpress / swipe / press-hold / re-enter-tab ⇒ 交给 WS 那条腿
+    /* 交互动作走 WS 那条腿。关键记账：WS 没启用/连不上 ⇒ 记 unmet（我没做），
+       WS 做了但选择器查不到 ⇒ 也记 unmet 并写明原因——同样是"状态没施加"，不是产品判红。
+       只有真做出动作才算 applied；绝不把"试过"当成"做到了"。 */
+    if (WS_ACTS.has(a)) {
+      const r = await doWsStep(st);
+      if (r.ok) { wsDid.push(a + (r.note ? "(" + r.note + ")" : "")); did.push(a); sleep(Number(st.settle || 900) || 900); }
+      else { unmet.push(a + ":" + r.why); wsFailed.push(a + ":" + r.why); }
+      continue;
+    }
+    unmet.push(a);
   }
-  return { unmet, did };
+  return { unmet, did, wsDid, wsFailed };
 }
 
+/* WS 那条腿只用来做 CLI 做不到的动作（tap/input/longpress/swipe）。
+   为什么不让它也出帧：实测 mini.screenshot() 61 s/张且 5 次里 2 次超时，桥是 2.6 s/张。
+   绝不 close()——实测 close 会把 9420 那个 IDE 子进程整个带走；退出靠 process.exit。 */
+let wsMini = null, wsErrs = 0;
+/* miniprogram-automator 在这个仓里不在 scripts/qa 的解析路径上（pnpm 布局），
+   直接 require 会 MODULE_NOT_FOUND，必须回落到 .pnpm 存储里那份真实路径——同 r-exec-ws 的装载法。
+   绝不 close()：实测 close 会把 9420 那个 IDE 子进程整个带走；退出靠 process.exit。 */
+async function wsSession() {
+  if (wsMini) return wsMini;
+  if (!flag("ws-taps")) return null;
+  try {
+    const { createRequire } = await import("node:module");
+    const req = createRequire(import.meta.url);
+    let A = null;
+    try { A = req("miniprogram-automator"); } catch {
+      const store = join(REPO, "node_modules", ".pnpm");
+      const hit = readdirSync(store).filter((d) => d.startsWith("miniprogram-automator@")).sort()[0];
+      if (hit) A = req(join(store, hit, "node_modules", "miniprogram-automator"));
+    }
+    if (!A) throw new Error("找不到 miniprogram-automator");
+    wsMini = await Promise.race([A.connect({ wsEndpoint: "ws://127.0.0.1:" + (process.env.WSX_PORT || "9420") }),
+      new Promise((_, rj) => setTimeout(() => rj(new Error("CONNECT_TIMEOUT_8S")), 12000))]);
+    console.log("  ws-connected 9420");
+    return wsMini;
+  } catch (e) { wsErrs++; console.log("  ws-connect-err " + String(e.message).slice(0, 60) + " ⇒ 本轮交互步骤退回 unmet"); return null; }
+}
+const WS_ACTS = new Set(["tap", "longpress", "input", "swipe", "swipe-card", "press-hold", "re-enter-tab"]);
+const DENY_TAP = /注销|解绑|清空|删除账号|删除帐号|退出登录|登出/;
+async function doWsStep(st) {
+  const act = String(st.action || "").trim();
+  if (!WS_ACTS.has(act)) return { ok: false, why: "未知动作 " + act };
+  /* 不可逆动作一律不碰：这些 recipe 若真点进注销/删除流程，留下的不是证据而是被毁掉的账号。 */
+  if (DENY_TAP.test(String((st.note || "") + " " + (st.selector || "")))) return { ok: false, why: "禁触动作（不可逆）" };
+  const m = await wsSession();
+  if (!m) return { ok: false, why: "WS 未启用或连不上" };
+  const sel = cleanSel(st.selector);
+  try {
+    const page = await m.currentPage();
+    if (!sel) {
+      const r2 = await m.evaluate(() => 1).catch(() => null);
+      return r2 === null ? { ok: false, why: "会话无响应" } : { ok: true, note: act + " 无选择器：仅确认会话可达" };
+    }
+    const el = await page.$(sel);
+    if (!el) return { ok: false, why: "选择器在当前页查不到 " + sel };
+    if (act === "tap") { await el.tap(); return { ok: true }; }
+    if (act === "longpress" || act === "press-hold") { await el.longpress(); return { ok: true }; }
+    if (act === "input") { await el.input(String(st.value || st.text || "测试").slice(0, 40)); return { ok: true }; }
+    await el.tap(); return { ok: true, note: act + " 退化成 tap" };
+  } catch (e) { wsErrs++; return { ok: false, why: String(e.message).slice(0, 60) }; }
+}
+
+/* 落点确认的第二条腿：CLI 的 routeStack 会把整次 evaluate 的失败原文当值返回（"ERR:automation_evaluate 调用失败…"），
+   本轮实测有 5 条就是这样丢掉判决的——那不是"页面对不上"，是"这条通道没答案"。
+   WS 的 pageStack 走的是另一个端口，拿得到就补上；两条腿都没有答案才记 NO_LANDING。
+   记 landingVia，读者能看出这个落点是哪条通道给的。 */
+async function wsLanding() {
+  const m = await wsSession();
+  if (!m) return "";
+  try {
+    const ps = await m.pageStack();
+    if (!Array.isArray(ps) || !ps.length) return "";
+    /* 返回整条栈的拼接，不是栈顶一页：CLI 那条腿的 routeStack 给的就是"栈"，
+       落点判据写的是 landing.includes(route)。只回栈顶会让"从别的页 navigateTocampus 进来"
+       这类正常情况被误判成没到达（实测：探针在目标页查到了物件，栈读数的口径却不一样）。 */
+    return ps.map((p) => String((p && (p.path || p.__route__)) || "")).filter(Boolean).join(" → ");
+  } catch (e) { wsErrs++; return "ERR " + String(e.message).slice(0, 40); }
+}
+async function cliLanding() {
+  try { return String(routeStack({ project: PROJECT }) || ""); } catch (e) { return "ERR " + String(e.message).slice(0, 40); }
+}
+const usable = (s) => s && !String(s).startsWith("ERR") ? String(s) : "";
+
 let currentIdentity = null, verifyLast = "";
+
 async function ensureIdentity(which) {
   if (which === "guest" ? currentIdentity === "guest" : currentIdentity === "A") return;
-  const t = (await mintToken(which === "guest" ? "B" : "A", REPO, "r7-uidebt-" + which)).token;
-  const b = bootSession(t, { project: PROJECT });
+  let b;
+  if (which === "guest") {
+    /* 游客不是"铸一个 B token"——那样 boot 完还是登录态。上一版就在这里把身份标签写错了：
+       日志打 guest、verify 回 logged-in，帧却是已登录页，等于给同一页盖了两个身份的章。
+       现在必须真清会话，且量到 logged-in 就直接失败，不让它带着错标签出帧。 */
+    b = clearSession({ project: PROJECT });
+    currentIdentity = null;
+    verifyLast = verifyLogin({ project: PROJECT });
+    if (!/^not-logged-in/.test(verifyLast)) throw new Error("要游客态但会话没清掉：" + verifyLast);
+    currentIdentity = "guest";
+    console.log("[identity] guest clear=" + b + " verify=" + verifyLast);
+    return;
+  }
+  const t = (await mintToken("A", REPO, "r7-uidebt-" + which)).token;
+  b = bootSession(t, { project: PROJECT });
   verifyLast = verifyLogin({ project: PROJECT });
   currentIdentity = which;
   console.log("[identity] " + which + " boot=" + b + " verify=" + verifyLast);
-  if (which !== "guest" && !/^logged-in/.test(verifyLast)) throw new Error("身份 A 没登进去：" + verifyLast);
+  if (!/^logged-in/.test(verifyLast)) throw new Error("身份 A 没登进去：" + verifyLast);
 }
 
 /* lane 写的 precondition.identity 是一句中文（"A（已登录且资料已完善…）"、"guest 身份"…），
@@ -176,10 +283,15 @@ for (const [key, grp] of byRoute) {
   /* 落点要三态：确认 / 落在别的页 / 探针没答案。上一版只重试一次，结果 10 条因 routeStack
      取空被判成"落点未确认"，白丢 10 个判决——这条通道的 evaluate 偶发失败是已知行为，
      重试预算要给够（最多 3 次，每次之间重新开页）。 */
-  let landing = "";
-  for (let a = 0; a < 3; a++) {
-    try { landing = String(routeStack({ project: PROJECT }) || ""); } catch (e) { landing = "ERR " + String(e.message).slice(0, 40); }
-    if (landing && !landing.startsWith("ERR") && landing.includes(route)) break;
+  let landing = "", landingVia = "";
+  for (let a = 0; a < 3 && !usable(landing).includes(route); a++) {
+    landing = await cliLanding(); landingVia = "cli";
+    if (!usable(landing).includes(route)) {
+      const w = await wsLanding();
+      if (usable(w).includes(route)) { landing = w; landingVia = "ws"; }
+      else if (!usable(landing) && usable(w)) { landing = w; landingVia = "ws"; }
+    }
+    if (usable(landing).includes(route)) break;
     transportErrs++;
     sleep(1800);
     if (a > 0) { try { openPage(route, "", { project: PROJECT }); sleep(SETTLE); } catch (e) { /* 开页失败下一轮再试 */ } }
@@ -188,8 +300,14 @@ for (const [key, grp] of byRoute) {
   for (const it of grp) {
     /* 先按配方把状态做出来，再探测。做不了的步骤（tap/input…）记 unmet ⇒ 这条只能判"状态未施加"，
        不能判红：上一轮我就是把"没点开的弹层"记成了 26 条未成立判点，那是测量错不是产品缺陷。 */
-    const sp = runSteps(it.steps, ident);
+    const sp = await runSteps(it.steps, ident);
     if (sp.did.length) sleep(1000);
+    /* 步骤做完再确认一次落点：交互可能把页面导航走了（返回按钮、跳详情）。
+       不记这个，探针就会在"隔壁页"上查本页的物件，查不到 ⇒ 判红 —— 那是测量错。 */
+    let landingAfter = "";
+    if (sp.wsDid.length) {
+      try { landingAfter = String(routeStack({ project: PROJECT }) || ""); } catch (e) { landingAfter = "ERR " + String(e.message).slice(0, 40); }
+    }
     const sels = [...new Set(it.assertionList.flatMap((a) => selectorsOf(a)))];
     const dom = (!DRY && sels.length) ? probeMany(sels) : {};
     const per = it.assertionList.map((a) => {
@@ -204,7 +322,8 @@ for (const [key, grp] of byRoute) {
       const wantAbsent = /absent|not-|hidden|不出现/i.test(String(a.kind || ""));
       return { kind: a.kind, target: a.target, count: n, check: wantAbsent ? (n === 0 ? "ABSENT_OK" : "PRESENT_UNEXPECTED(" + n + ")") : (n > 0 ? "PRESENT(" + n + ")" : "ABSENT_UNEXPECTED"), anchors: ss };
     });
-    const stepRec = { stepsApplied: sp.did, stepsUnmet: sp.unmet, stateApplied: sp.unmet.length === 0 };
+    const stepRec = { stepsApplied: sp.did, stepsUnmet: sp.unmet, wsApplied: sp.wsDid, wsFailed: sp.wsFailed, landingVia, landingAfter, stateApplied: sp.unmet.length === 0 };
+    if (sp.wsDid.length || sp.wsFailed.length) console.log("  ws " + it.id + " 已做=[" + sp.wsDid.join(",") + "] 未成=[" + sp.wsFailed.join(",") + "]");
     let frame = "", bytes = 0;
     if (!DRY) {
       const name = (it.frameName || it.id) + ".png";
@@ -251,7 +370,8 @@ if (!DRY) {
   }, null, 1));
 }
 console.log("SHOOT_SUMMARY planned=" + items.length + " 出帧=" + shotRows.length + " 无证据=" + noEvidence.length + " 证据洞=" + holes + " 失败=" + rows.filter((r) => r.status === "FAILED").length +
-  " 通道异常=" + transportErrs + " 全部判点通过的条目=" + machinePass);
+  " 通道异常=" + transportErrs + " WS交互成功=" + rows.reduce((n, r) => n + ((r.wsApplied || []).length), 0) + " WS交互未成=" + rows.reduce((n, r) => n + ((r.wsFailed || []).length), 0) + " WS通道异常=" + wsErrs +
+  " 全部判点通过的条目=" + machinePass);
 const conserved = rows.length === items.length || (LIMIT && done >= LIMIT);
 console.log("SHOOT_CONSERVED=" + (conserved ? "yes" : "NO（rows=" + rows.length + " ≠ planned=" + items.length + "）"));
 if (DRY) { console.log("SHOOT_RESULT=DRY"); process.exit(0); }

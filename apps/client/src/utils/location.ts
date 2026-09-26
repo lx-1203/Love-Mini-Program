@@ -11,6 +11,24 @@ import { TENCENT_MAP_KEY, isDev } from "../config/env";
 /** 默认位置文案（校园 + 距离） */
 export const DEFAULT_LOCATION_TEXT = "北京大学 · 附近";
 
+/**
+ * IP 推断城市与本次真实坐标的最大可信距离（km）。
+ * 超过它，"城市"与"坐标"就不是同一个地方了——同源判据（LOCATION-001）要求丢弃城市。
+ */
+export const CITY_COORD_MAX_KM = 100;
+
+/** 两点间大圆距离（km，haversine）。城市级判据用地球平均半径足够。 */
+export function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
 export interface LocationResult {
   /** 纬度 */
   latitude: number;
@@ -21,6 +39,12 @@ export interface LocationResult {
   /** 城市来源：gps=由本次经纬度逆地理得到；ip=逆地理没成、改由请求方 IP 归属地推断。
    *  可选，旧消费方不读即保持原行为（LOCATION-001 的同源判据只在需要诚实标注的页面生效）。 */
   citySource?: "gps" | "ip";
+  /** citySource=ip 时，该 IP 城市中心与本次坐标的距离（km）；后端没有该城市中心表时为 undefined。 */
+  cityDistanceKm?: number;
+  /** "城市"这个值是否与本次坐标同源到可以拿去做同城语义。
+   *  false 的两种情形：距离超过 CITY_COORD_MAX_KM；或 IP 城市但距离量不出来（后端无中心表）。
+   *  citySource=gps 时恒为 true。消费方在 false 时不得把 city 当用户所在城市用。 */
+  cityTrusted: boolean;
 }
 
 /** 上报节流：上次上报时间戳（ms），5 分钟内不重复上报 */
@@ -45,19 +69,32 @@ export async function fetchCurrentLocation(): Promise<LocationResult | null> {
     // 尝试逆地理编码获取城市名（腾讯地图 key 未配置时内部直接短路返回空串）
     let city = await reverseGeocode(latitude, longitude);
     let citySource: "gps" | "ip" = "gps";
+    let cityDistanceKm: number | undefined;
+    let cityTrusted = true;
     if (!city) {
       // MP-R1-PAGES-NEARBY-INDEX-005：腾讯地图 key 未配置/解析失败时，
       // 回退后端公开端点 /location/ip-city（SecurityConfig permitAll）解析城市，
       // 避免「城市」维度因 key 缺失整链失真（currentCity 永不设置、
       // 城市过滤/副标题恒走兜底文案）。
-      city = await fetchCityFromBackend().catch(() => "");
+      const ipCity = await fetchCityFromBackend().catch(() => null);
+      city = ipCity?.city || "";
       // MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001：走到这里说明城市**不是**
       // 由上面那对经纬度解析出来的，而是按请求方 IP 归属地推断的——两者可以差出一个省。
-      // 只打标记、不改 city 的取值：home/nearby/publish 三个消费方都不读这个新字段，
+      // 只打标记、不改 city 的取值：home/nearby/publish 三个消费方都不读这些新字段，
       // 行为零变化、005 的补救也不回退；只有需要"城市与坐标同源"的页面才按标记分支。
-      if (city) citySource = "ip";
+      if (city) {
+        citySource = "ip";
+        /* >100km 丢弃判据（本行 §91 点名的未落一半）：后端把该城市的中心坐标一起给出，
+           这里量一次真实距离。量不出来（城市不在中心表里）同样算不可信——
+           "同源"是需要证据的结论，缺证据时不能默认成立。 */
+        cityDistanceKm =
+          typeof ipCity?.latitude === "number" && typeof ipCity?.longitude === "number"
+            ? distanceKm(latitude, longitude, ipCity.latitude, ipCity.longitude)
+            : undefined;
+        cityTrusted = cityDistanceKm !== undefined && cityDistanceKm <= CITY_COORD_MAX_KM;
+      }
     }
-    return { latitude, longitude, city, citySource };
+    return { latitude, longitude, city, citySource, cityDistanceKm, cityTrusted };
   } catch (_err) {
     // 定位失败（用户拒绝授权 / 系统关闭定位等）
     return null;
@@ -67,19 +104,23 @@ export async function fetchCurrentLocation(): Promise<LocationResult | null> {
 /** 后端 /location/ip-city 响应体（ApiResponse<LocationCityView> 的 data 字段）。 */
 interface LocationCityData {
   city?: string;
+  /** 城市中心坐标（gcj02）；后端无该城市中心表时不下发 */
+  latitude?: number;
+  longitude?: number;
 }
 
 /**
- * 经后端公开端点解析请求方 IP 所属城市（MP-R1-PAGES-NEARBY-INDEX-005）。
- * 失败返回空串，由调用方继续走兜底文案。
+ * 经后端公开端点解析请求方 IP 所属城市（MP-R1-PAGES-NEARBY-INDEX-005），
+ * 以及该城市的中心坐标（用来做 LOCATION-001 的 >100km 同源判据）。
+ * 失败返回 null，由调用方继续走兜底文案。
  */
-async function fetchCityFromBackend(): Promise<string> {
+async function fetchCityFromBackend(): Promise<LocationCityData | null> {
   const data = (await request({
     url: "/location/ip-city",
     method: "GET",
   })) as Partial<LocationCityData> | null;
   const city = data?.city;
-  return typeof city === "string" ? city : "";
+  return typeof city === "string" && city ? data : null;
 }
 
 /** 腾讯地图逆地理编码响应体（仅声明本文件消费的字段，apis.map.qq.com/ws/geocoder/v1）。 */

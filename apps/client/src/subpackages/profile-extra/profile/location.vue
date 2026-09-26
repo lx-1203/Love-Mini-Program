@@ -34,11 +34,17 @@ const campusName = computed(() => sessionStore.userSession?.campusName || "");
 // ip 来源加「服务器所在城市」标注；城市为空时**不再**走 buildLocationText——
 // 那条链会落到硬编码「北京大学 · 附近」，等于把假城市写进与坐标同源的展示里，改后只见坐标行。
 const cityFromIp = ref(false);
+/* LOCATION-001 的后一半：IP 推断出来的城市离本次坐标超过 CITY_COORD_MAX_KM 时，
+   这个城市与这对坐标说的不是同一个地方，必须整个丢弃（不是加个标注了事）。
+   量不出来（后端没有该城市中心表）同样丢——"同源"是要证据的结论，缺证据不默认成立。
+   丢弃后不走 buildLocationText（那条链会落到硬编码「北京大学 · 附近」），只剩坐标行。 */
+const cityDistant = ref(false);
+const shownCity = computed(() => (cityDistant.value ? "" : city.value));
 const displayText = computed(() => {
-  if (city.value) {
+  if (shownCity.value) {
     return cityFromIp.value
-      ? `${city.value} · ${t("locationPage.serverCityTag")}`
-      : buildLocationText(city.value, campusName.value);
+      ? `${shownCity.value} · ${t("locationPage.serverCityTag")}`
+      : buildLocationText(shownCity.value, campusName.value);
   }
   if (campusName.value) return buildLocationText("", campusName.value);
   return t("locationPage.addressUnavailable");
@@ -62,7 +68,7 @@ const mapMarkers = computed(() => [
     width: 36,
     height: 36,
     callout: {
-      content: addressText.value || city.value || "当前位置",
+      content: addressText.value || shownCity.value || "当前位置",
       display: "ALWAYS",
       borderRadius: 10,
       padding: 8,
@@ -78,6 +84,7 @@ async function loadLocation() {
     if (loc) {
       city.value = loc.city || "";
       cityFromIp.value = loc.citySource === "ip";
+      cityDistant.value = loc.citySource === "ip" && loc.cityTrusted === false;
       coords.value = { latitude: loc.latitude, longitude: loc.longitude };
       void reportLocation(loc.latitude, loc.longitude);
     }

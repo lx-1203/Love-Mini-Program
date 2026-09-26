@@ -1,0 +1,26 @@
+{
+ "generatedAt": "2026-09-26T13:27:06.853Z",
+ "source": "emit-landing-debt-plan.mjs",
+ "rows": 3,
+ "patches": [
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
+   "col": 9,
+   "new": "取景未到达目标页：请求 subpackages/discover-extra/discover/matching 实落 pages/discover/index（落点由 ws 通道确认，帧 reports/screenshots/round-7-uidebt-wsl2-8df4de49/A-MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001.png）。开页请求被守卫重定向，取景前要先补齐该页声（游客身份重拍已到达目标页的那两条不在本批内）",
+   "why": "拿隔壁页的帧当判据就是造假；这里只登记实测落点与欠缺的前置"
+  },
+  {
+   "id": "MP-R2-MATCHING-016",
+   "col": 9,
+   "new": "取景未到达目标页：请求 subpackages/discover-extra/discover/matching 实落 pages/discover/index（落点由 ws 通道确认，帧 reports/screenshots/round-7-uidebt-wsl2-8df4de49/C-MP-R2-MATCHING-016.png）。开页请求被守卫重定向，取景前要先补齐该页声明的前置数据（游客身份重拍已到达目标页的那两条不在本批内）",
+   "why": "拿隔壁页的帧当判据就是造假；这里只登记实测落点与欠缺的前置"
+  },
+  {
+   "id": "MP-R2-CAMPUSINDEX-011",
+   "col": 9,
+   "new": "取景未到达目标页：请求 subpackages/campus/campus/index 实落 subpackages/campus/campus/hub（落点由 ws 通道确认，帧 reports/screenshots/round-7-uidebt-wsl2-8df4de49/C-MP-R2-CAMPUSINDEX-011.png）。开页请求被守卫重定向，取景前要先补齐该页声明的前置数据（游客身份重拍已到达目标页的那两条不在本批内）",
+   "why": "拿隔壁页的帧当判据就是造假；这里只登记实测落点与欠缺的前置"
+  }
+ ],
+ "excludedAsRejudged": 2
+}

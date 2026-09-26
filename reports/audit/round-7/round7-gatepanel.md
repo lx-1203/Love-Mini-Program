@@ -1,16 +1,16 @@
 # round-7 轮末验收报告（全部数字运行时派生，零手写统计）
 
-- 生成器：`scripts/qa/emit-round-report.mjs`（启动于 2026-09-26T12:25:02.303Z，node v22.17.0，`D:/codex-tools/node-v22.17.0-win-x64/node.exe`）
-- 轮次目录 `reports/audit/round-7` · 权威件 `reports/audit/round-7/interact/exec-results.json` · 冻结快照 `reports/audit/round-7/interact/exec-results.pre-rebuild-1048.json`
+- 生成器：`scripts/qa/emit-round-report.mjs`（启动于 2026-09-26T13:39:15.475Z，node v22.17.0，`D:/codex-tools/node-v22.17.0-win-x64/node.exe`）
+- 轮次目录 `reports/audit/round-7` · 权威件 `reports/audit/round-7/interact/exec-results.json` · 冻结快照 `.zcode/tmp/round7-exec/exec-results.snapshot-b89dc4a71654.json`
 
 ## 0. 溯源表（本报告引用的每一个输入；缺此表即不可复核）
 
 | 文件 | mtime (UTC) | 字节 | sha256 前 8 |
 |---|---|---|---|
 | `.zcode/tmp/round6-LEDGER.md` | 2026-09-26T02:35:50.253Z | 327926 | `46fb9e7b` |
+| `.zcode/tmp/round7-exec/exec-results.snapshot-b89dc4a71654.json` | 2026-09-26T07:14:52.493Z | 812539 | `b89dc4a7` |
 | `reports/audit/real-e2e/GATES.json` | 2026-09-26T11:17:04.433Z | 2301 | `ffe6d0a2` |
 | `reports/audit/round-7/interact/exec-results.json` | 2026-09-26T08:49:54.068Z | 812158 | `d1e019f8` |
-| `reports/audit/round-7/interact/exec-results.pre-rebuild-1048.json` | 2026-09-26T07:14:52.493Z | 812539 | `b89dc4a7` |
 | `reports/audit/round-7/ops/` | (目录：登记条目数 24，无单文件语义) | 24 | `4e5c2793` |
 | `reports/audit/round-7/screenshot-manifest.json` | 2026-09-26T12:15:57.450Z | 314920 | `799f8875` |
 | `reports/screenshots/round-7-mock-tour-1a1df78b/manifest-detail.json` | 2026-09-26T12:11:18.305Z | 35695 | `3eec6da0` |
@@ -19,20 +19,20 @@
 
 | 子进程（命令行原样，cwd=仓库根） | 解释器 | 退出码 | stdout 字节 | sha256(stdout) 前 8 | 备注 |
 |---|---|---|---|---|---|
-| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-backend-restarted.mjs --port 8080` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 590 | `9a9b3e0d` |  |
-| `git rev-parse --short HEAD` | git | 0 | 9 | `31dd245e` |  |
-| `git status --porcelain` | git | 0 | 3164 | `fce35840` |  |
-| `git status --porcelain -- apps/` | git | 0 | 0 | `e3b0c442` |  |
+| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-backend-restarted.mjs --port 8080` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 418 | `bf9d773e` |  |
+| `git rev-parse --short HEAD` | git | 0 | 9 | `cb02961d` |  |
+| `git status --porcelain` | git | 0 | 1831 | `69b89c3a` |  |
+| `git status --porcelain -- apps/` | git | 0 | 510 | `9367edb1` |  |
 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-queue-reconcile.mjs reports/audit/round-7` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 806 | `364ace82` |  |
-| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/triage-exec-failures.mjs --results reports/audit/round-7/interact/exec-results.json --out .zcode/tmp/report-emitter/triage-r6-at-report` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 215 | `7aa7a03f` |  |
+| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/triage-exec-failures.mjs --results reports/audit/round-7/interact/exec-results.json --out .zcode/tmp/report-emitter-r7/triage-r7-at-report` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 221 | `6bc40b06` |  |
 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/readjudicate-evidence.mjs reports/audit/round-7/interact/exec-results.json --ops reports/audit/round-7/ops --no-lines --samples 1` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 3417 | `9da09aa8` |  |
 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-state-truth.mjs reports/audit/round-7` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 1105 | `1e832789` |  |
 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-ledger.mjs reports/audit/round-6` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 6039 | `a8885ed2` |  |
-| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/audit/round-7/screenshot-manifest.json --dir reports/screenshots/round-7-mock-tour-1a1df78b --exec reports/audit/round-7/interact/exec-results.json` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 1126 | `5b86ef35` |  |
-| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 1 | 3981 | `6fc11e91` |  |
-| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 1 | 5577 | `1ebecdae` |  |
-| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-7,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-uidebt-1a1df78b` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 1 | 3355 | `57c47bc4` |  |
-| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-7,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-uidebt-1a1df78b` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 1 | 4761 | `d55f76d6` |  |
+| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/audit/round-7/screenshot-manifest.json --dir reports/screenshots/round-7-mock-tour-1a1df78b --exec reports/audit/round-7/interact/exec-results.json` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 1 | 1939 | `ae1f4678` |  |
+| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 1 | 4042 | `506717fc` |  |
+| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 1 | 5577 | `d6e7aaf9` |  |
+| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-7,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-uidebt-1a1df78b,reports/screenshots/round-7-uidebt-guest-8df4de49,reports/screenshots/round-7-uidebt-guest2-8df4de49,reports/screenshots/round-7-uidebt-ws-8df4de49,reports/screenshots/round-7-uidebt-wsl2-8df4de49,reports/screenshots/round-7-uidebt-wsl3-8df4de49` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 1 | 3908 | `d66785c6` |  |
+| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-7,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-uidebt-1a1df78b,reports/screenshots/round-7-uidebt-guest-8df4de49,reports/screenshots/round-7-uidebt-guest2-8df4de49,reports/screenshots/round-7-uidebt-ws-8df4de49,reports/screenshots/round-7-uidebt-wsl2-8df4de49,reports/screenshots/round-7-uidebt-wsl3-8df4de49` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 1 | 5007 | `417e8427` |  |
 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/screenshots/round-7-mock-tour-1a1df78b/manifest-detail.json --dir reports/screenshots/round-7-mock-tour-1a1df78b` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 658 | `6d16cc27` |  |
 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/screenshots/round-7-real-exec/manifest-detail.json --dir reports/screenshots/round-7-real-exec` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 1 | 2627 | `f8b01b55` |  |
 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/screenshots/round-7-real-tour/manifest-detail.json --dir reports/screenshots/round-7-real-tour` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 649 | `600ca3d4` |  |
@@ -43,10 +43,10 @@
 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/screenshots/round-7-states-pilot2/manifest-detail.json --dir reports/screenshots/round-7-states-pilot2` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 1 | 806 | `2ca9f729` |  |
 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/screenshots/round-7-states-pilot3/manifest-detail.json --dir reports/screenshots/round-7-states-pilot3` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 1 | 806 | `5bac2e3b` |  |
 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/screenshots/round-7-states-pilot4/manifest-detail.json --dir reports/screenshots/round-7-states-pilot4` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 1 | 806 | `36f24921` |  |
-| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json --dir reports/screenshots/round-7-uidebt-1a1df78b` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 1 | 2657 | `124e2c24` |  |
-| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-i18n-orphan.mjs` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 1851 | `8ed204f4` |  |
+| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json --dir reports/screenshots/round-7-uidebt-1a1df78b` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 1 | 3423 | `fc3138fb` |  |
+| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-i18n-orphan.mjs` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 1851 | `f5b5ac4b` |  |
 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe apps/client/scripts/build-real-isolated.mjs --check-only` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 200 | `265f3f57` |  |
-| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/g8-e2e.cjs` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 2510 | `ae207a6e` |  |
+| `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/g8-e2e.cjs` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 2510 | `35cf3220` |  |
 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/g9-probe.cjs` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 402 | `96ec2406` |  |
 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/probe-real-env.mjs` | D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0 | 0 | 1093 | `9e008813` |  |
 
@@ -54,14 +54,14 @@
 
 ## A. 轮次身份
 
-- HEAD：`1a1df78b` (源: git rev-parse --short HEAD → stdout=)
-- 工作树脏项：全仓 73 项 (源: git status --porcelain → 行数=)；其中 `apps/` 下 0 项 (源: git status --porcelain -- apps/ → 行数=)
-- 后端 JVM：pid=29536，起于 2026-09-26 03:12:29 (源: D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-backend-restarted.mjs --port 8080 → RESTARTED_PID=)；该门本次判定 **PASS JVM 晚于全部 java 源码改动与 HEAD 提交，可作前后端联通取证的前提**（退出码 0）
-  - 其自报最新源码：D:/6/恋爱小程序/apps/api/src/main/java/com/campuslove/api/campus/RealCampusService.java mtime=2026-09-25T16:35:35.256Z
+- HEAD：`8df4de49` (源: git rev-parse --short HEAD → stdout=)
+- 工作树脏项：全仓 38 项 (源: git status --porcelain → 行数=)；其中 `apps/` 下 8 项 (源: git status --porcelain -- apps/ → 行数=)
+- 后端 JVM：pid=32156，起于 2026-09-26 21:32:46 (源: D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-backend-restarted.mjs --port 8080 → RESTARTED_PID=)；该门本次判定 **PASS JVM 晚于全部 java 源码改动与 HEAD 提交，可作前后端联通取证的前提**（退出码 0）
+  - 其自报最新源码：D:/6/恋爱小程序/apps/api/src/main/java/com/campuslove/api/location/LocationController.java mtime=2026-09-26T12:55:06.927Z
 - 被测物包指纹（在盘产物逐文件 sha256 前 8；brief 所说『两个 mock 包指纹』的全部可核解释一并列出）：
-  - **mock 包（执行轮被测物，重建后在盘）** `apps/client/dist/build/mp-weixin`：app.json=`207f7136` (5264B, 2026-09-26T08:52:07.291Z) · config/env.js=`fba847c4` (2397B, 2026-09-26T08:52:07.132Z) · config/showcase.js=`67628744` (915B, 2026-09-26T08:52:07.234Z) · config/feature-flags.js=`08a7cff6` (134B, 2026-09-26T08:52:07.234Z)
-    合成指纹（按 `app.json→env→showcase→feature-flags` 的 sha8 串接再 sha256）：`cd5d6e0e` (源: apps/client/dist/build/mp-weixin/app.json → sha256)
-  - **real 包（G7 隔离产物）** `apps/client/dist/build/mp-weixin-real`：app.json=`207f7136` (5264B, 2026-09-26T08:53:38.741Z) · config/env.js=`f0677920` (2392B, 2026-09-26T08:53:38.551Z) · config/showcase.js=`3039fc25` (910B, 2026-09-26T08:53:38.669Z) · config/feature-flags.js=`08a7cff6` (134B, 2026-09-26T08:53:38.669Z)
+  - **mock 包（执行轮被测物，重建后在盘）** `apps/client/dist/build/mp-weixin`：app.json=`207f7136` (5264B, 2026-09-26T13:32:19.888Z) · config/env.js=`f1c7b96b` (2402B, 2026-09-26T13:32:19.751Z) · config/showcase.js=`59e2a9c9` (920B, 2026-09-26T13:32:19.822Z) · config/feature-flags.js=`08a7cff6` (134B, 2026-09-26T13:32:19.821Z)
+    合成指纹（按 `app.json→env→showcase→feature-flags` 的 sha8 串接再 sha256）：`ff6dd482` (源: apps/client/dist/build/mp-weixin/app.json → sha256)
+  - **real 包（G7 隔离产物）** `apps/client/dist/build/mp-weixin-real`：app.json=`207f7136` (5264B, 2026-09-26T13:31:30.392Z) · config/env.js=`f0677920` (2392B, 2026-09-26T13:31:30.276Z) · config/showcase.js=`3039fc25` (910B, 2026-09-26T13:31:30.340Z) · config/feature-flags.js=`08a7cff6` (134B, 2026-09-26T13:31:30.340Z)
     合成指纹（按 `app.json→env→showcase→feature-flags` 的 sha8 串接再 sha256）：`05637737` (源: apps/client/dist/build/mp-weixin-real/app.json → sha256)
   - 两份巡检载体是否同一 gitSha：是（1a1df78b）
 
@@ -88,7 +88,7 @@
 ## C. 结果分布（重建边界两侧分开算，合并值只作守恒核对）
 
 - **边界怎么派生**：把在盘权威件与冻结快照按 `suite|manifest|id` 三字段复合键比对（与 `scripts/qa/r-exec.cjs` 第 478 行 的 `upsertResult` findIndex 同一把键，行号由本报告读该文件得出）(源: scripts/qa/r-exec.cjs → upsertResult findIndex 行号)。**不按行号**——行是就地 upsert 的，按号比必错位。
-  - 快照 `reports/audit/round-7/interact/exec-results.pre-rebuild-1048.json`：1107 行，gitSha=713c1729 updatedAt=2026-09-26T07:05:22.051Z (源: reports/audit/round-7/interact/exec-results.pre-rebuild-1048.json → results[])
+  - 快照 `.zcode/tmp/round7-exec/exec-results.snapshot-b89dc4a71654.json`：1107 行，gitSha=713c1729 updatedAt=2026-09-26T07:05:22.051Z (源: .zcode/tmp/round7-exec/exec-results.snapshot-b89dc4a71654.json → results[])
   - 在盘 `reports/audit/round-7/interact/exec-results.json`：1107 行，gitSha=086b54f8 updatedAt=2026-09-26T08:49:54.056Z (源: reports/audit/round-7/interact/exec-results.json → results[])
 - **A 侧｜冻结 `713c1729` 构建 + 旧后端**（复合键见于快照的行）：1107 行 = EXECUTED 326 / FAILED 134 / SKIPPED 647 (源: reports/audit/round-7/interact/exec-results.json → status)
 - **B 侧｜重建构建 + 重启后后端**（复合键未见于快照的行）：0 行 = EXECUTED 0 / FAILED 0 / SKIPPED 0 (源: reports/audit/round-7/interact/exec-results.json → status)
@@ -97,7 +97,7 @@
 - CONSERVED ✔ A 侧三态 vs A 侧行数: 326 + 134 + 647 + 0 = 1107 vs 全体 1107
 - CONSERVED ✔ B 侧三态 vs B 侧行数: 0 + 0 + 0 + 0 = 0 vs 全体 0
 - CONSERVED ✔ 快照中已从在盘消失的行（应为 0）: 0 = 0 vs 全体 0
-- 两侧同键但状态被改写（停机后重跑同一用例、覆盖旧结论）：**205** 行 (源: reports/audit/round-7/interact/exec-results.pre-rebuild-1048.json → status)
+- 两侧同键但状态被改写（停机后重跑同一用例、覆盖旧结论）：**205** 行 (源: .zcode/tmp/round7-exec/exec-results.snapshot-b89dc4a71654.json → status)
   - `C-PAGES-DISCOVER-INDEX|PAGES-DISCOVER-INDEX|DC07` EXECUTED → SKIPPED
   - `C-PAGES-DISCOVER-INDEX|PAGES-DISCOVER-INDEX|DC20` EXECUTED → SKIPPED
   - `C-PAGES-DISCOVER-INDEX|PAGES-DISCOVER-INDEX|DC43` SKIPPED → EXECUTED
@@ -143,8 +143,8 @@
 
 ## D. 失败分诊
 
-- **用的是刚跑的那一份**：`D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/triage-exec-failures.mjs --results reports/audit/round-7/interact/exec-results.json --out .zcode/tmp/report-emitter/triage-r6-at-report`（退出码 0），sidecar `.zcode/tmp/report-emitter/triage-r6-at-report.md/.json`
-- 来源：本次由本报告启动的分诊台（其 stdout + 它自己写的 JSON sidecar）；权威件 `reports/audit/round-7/interact/exec-results.json` updatedAt=2026-09-26T08:49:54.056Z 行数=1107 (源: D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/triage-exec-failures.mjs --results reports/audit/round-7/interact/exec-results.json --out .zcode/tmp/report-emitter/triage-r6-at-report → TRIAGE_RESULT=)
+- **用的是刚跑的那一份**：`D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/triage-exec-failures.mjs --results reports/audit/round-7/interact/exec-results.json --out .zcode/tmp/report-emitter-r7/triage-r7-at-report`（退出码 0），sidecar `.zcode/tmp/report-emitter-r7/triage-r7-at-report.md/.json`
+- 来源：本次由本报告启动的分诊台（其 stdout + 它自己写的 JSON sidecar）；权威件 `reports/audit/round-7/interact/exec-results.json` updatedAt=2026-09-26T08:49:54.056Z 行数=1107 (源: D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/triage-exec-failures.mjs --results reports/audit/round-7/interact/exec-results.json --out .zcode/tmp/report-emitter-r7/triage-r7-at-report → TRIAGE_RESULT=)
 
 | 桶 | 条数 |
 |---|---|
@@ -155,16 +155,18 @@
 - CONSERVED ✔ 分诊桶合计 vs 行数: 326 + 647 + 134 = 1107 vs 全体 1107
 - ⚠ **兜底/未归类合计 = 915**（other-fail 134、工具自报 unclassified 781）：这些行的判据形态没被任何规则接住，必须逐条读原文，不许并进任何通过率。
 
-### dist/src 四格（只对能恢复出查找目标的定位失败做双载体检；n=0）(源: .zcode/tmp/report-emitter/triage-r6-at-report.json → items[].verdict)
+### dist/src 四格（只对能恢复出查找目标的定位失败做双载体检；n=0）(源: .zcode/tmp/report-emitter-r7/triage-r7-at-report.json → items[].verdict)
 
 | 结论 | 条数 |
 |---|---|
-| ⚠ 一格都没有 | 0 |
+| （无可检对象：本轮定位类失败 0 条，四格无输入） | 0 |
+- 四格判据本轮记 **NOT_APPLICABLE**（不是 PASS）：分诊桶里 locate-label / locate-selector / locate-label-token-lost 全为 0，即没有任何一条失败属于"找物件失败"这一类，双载体检没有可检输入。
+- ⚠ 这条声明的作用是防止"四格空"被下游读成"体检通过"——它没有通过，它没跑。
 - CONSERVED ✔ 四格合计 vs 有查找目标的定位失败:  = 0 vs 全体 0
-- 单字标签（从用例散文里抠出的残字，几乎必是规格噪声而非产品缺陷）：**0** (源: .zcode/tmp/report-emitter/triage-r6-at-report.json → items[].suspect)
-- token-lost（执行器只留哨兵 `__CAND__`、没留要找的文案，事后无法复核）：**0** (源: D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/triage-exec-failures.mjs --results reports/audit/round-7/interact/exec-results.json --out .zcode/tmp/report-emitter/triage-r6-at-report → locate-label-token-lost=)
-- 动作发生时不在用例声明的页面上：**160**；`top=` 与 `route[]` 都读不到因而**判不了**：**0** (源: .zcode/tmp/report-emitter/triage-r6-at-report.json → items[].onTarget)
-- observed 带 `MISMATCH!`（执行器自报前置身份/状态不符）：**0** (源: .zcode/tmp/report-emitter/triage-r6-at-report.json → items[].mismatch)
+- 单字标签（从用例散文里抠出的残字，几乎必是规格噪声而非产品缺陷）：**0** (源: .zcode/tmp/report-emitter-r7/triage-r7-at-report.json → items[].suspect)
+- token-lost（执行器只留哨兵 `__CAND__`、没留要找的文案，事后无法复核）：**0** (源: D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/triage-exec-failures.mjs --results reports/audit/round-7/interact/exec-results.json --out .zcode/tmp/report-emitter-r7/triage-r7-at-report → locate-label-token-lost=)
+- 动作发生时不在用例声明的页面上：**160**；`top=` 与 `route[]` 都读不到因而**判不了**：**0** (源: .zcode/tmp/report-emitter-r7/triage-r7-at-report.json → items[].onTarget)
+- observed 带 `MISMATCH!`（执行器自报前置身份/状态不符）：**0** (源: .zcode/tmp/report-emitter-r7/triage-r7-at-report.json → items[].mismatch)
 - CONSERVED ✔ 在目标页三态（是/否/判不了）vs 分诊条目: 621 + 160 + 0 = 781 vs 全体 781
 
 ## E. 证据可信度（两条规则并列展示，不合并、不互相替换）
@@ -229,7 +231,7 @@
 | 件 | 命令行 | 退出码 | 关键计数（逐字取自其 stdout） |
 |---|---|---|---|
 | G7 产物自证 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe apps/client/scripts/build-real-isolated.mjs --check-only` | 0 | G7_RESULT=PASS；[g7] 产物自证 MODE=real VITE_API_MODE=real VITE_API_BASE_URL=http://127.0.0.1:8080/api；[g7] outDir=D:\6\恋爱小程序\apps\client\dist\build\mp-weixin-real sharedOutUntouched=yes ｜**必须 node22**：v16 上它自报假 FAIL（实测） |
-| G8 十环 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/g8-e2e.cjs` | 0 | G8_RESULT=PASS G8_RINGS_OK=10/10（解析到环 10 条）G8_ARTIFACTS=posts.id=270 ; comments.id=1238 ; campus_topics.id=299 ; campus_replies.id=31  ← 本轮写入的真实数据，未删除，交你决定去留 |
+| G8 十环 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/g8-e2e.cjs` | 0 | G8_RESULT=PASS G8_RINGS_OK=10/10（解析到环 10 条）G8_ARTIFACTS=posts.id=273 ; comments.id=1241 ; campus_topics.id=302 ; campus_replies.id=34  ← 本轮写入的真实数据，未删除，交你决定去留 |
 | G9 素材探针 | `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/g9-probe.cjs` | 0 | G9_RESULT=PASS EXTRACTED=455 PROBED=455 OK=455 SKIPPED=0 FAIL=0；G9_CONTROL 在盘且200=455 在盘但失败=0 不在盘但200=0 不在盘且失败=0 |
 | probe-real-env | `D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/probe-real-env.mjs` | 0 | PROBE_BACKEND=UP 可达=8/8 在盘=1440 VERDICT=READY |
 - CONSERVED ✔ G9 ok+skipped+fail vs PROBED: 455 + 0 + 0 = 455 vs 全体 455
@@ -244,10 +246,10 @@
 |---|---|---|---|
 | `verify-ledger` | **0** | SOURCES=3 DISTINCT_IDS=433 MATRIX_IDS=1700 ORPHAN_TRUE=0 MULTI_ID_FAMILIES=29 → LEDGER_RESULT=PASS；另有 5 条非 ID 截断串待改源头写法 | 台账 §1 无此行（不猜） |
 | `verify-state-truth` | **0** | CASE_SPREAD=0 FAIL_SPREAD=0 → STATE_RESULT=PASS（全局极差比的是 2 列同范围源；检查点按 subset-window 已做逐套包含核对） | 退出码 `1`：`/ verify-state-truth（round-2） / 1 / 四源 1107/941/922/940 → 用例极差 185；FAILED 289/282/288 → 极差 7；`checkpoint.failures[]` 恒空 /` |
-| `verify-evidence-integrity（权威索引=本轮全部 corpus）` | **0** | SHOTS=303 MATCHED=303 MISSING=0 HASH_MISMATCH=0 ORPHANS=0 DUP_STATE=0 SNA改判=80 盘上仅算非证据=0；exec: 0 条 WITH_ERROR=0 伪造引用=0 → EVIDENCE_RESULT=PASS | 退出码 `1`：`/ verify-evidence-integrity（round-2 manifest） / 1 / `MATCHED=254 MISSING=0 HASH_MISMATCH=0 ORPHANS=0 DUP_STATE_GROUPS=3` /` |
-| `verify-evidence-corpus（全域）` | **1** | MANIFESTS=23 SCANNED=23 EXPIRED_GITSHA=19 PROBLEMS=9 → CORPUS_RESULT=FAIL（存在不可背书证据或硬编码 SHA） | 退出码 `1`：`/ verify-evidence-corpus / 1 / 5/5 份 manifest gitSha ≠ HEAD；round-1 的 305+305 帧无 contentHash /` |
+| `verify-evidence-integrity（权威索引=本轮全部 corpus）` | **1** | SHOTS=303 MATCHED=298 MISSING=0 HASH_MISMATCH=5 ORPHANS=0 DUP_STATE=0 SNA改判=80 盘上仅算非证据=0；exec: 0 条 WITH_ERROR=0 伪造引用=0 → EVIDENCE_RESULT=FAIL（证据与盘不一致，G6 不得记 PASS） | 退出码 `1`：`/ verify-evidence-integrity（round-2 manifest） / 1 / `MATCHED=254 MISSING=0 HASH_MISMATCH=0 ORPHANS=0 DUP_STATE_GROUPS=3` /` |
+| `verify-evidence-corpus（全域）` | **1** | MANIFESTS=23 SCANNED=23 EXPIRED_GITSHA=23 PROBLEMS=11 → CORPUS_RESULT=FAIL（存在不可背书证据或硬编码 SHA） | 退出码 `1`：`/ verify-evidence-corpus / 1 / 5/5 份 manifest gitSha ≠ HEAD；round-1 的 305+305 帧无 contentHash /` |
 | `verify-provenance-all（全域）` | **1** | FRAMES_CONSISTENT=2608 PRE_STAMP=95 STALE=0 UNDATED=171 PRODUCERS=17 LITERAL_SHA=2 → PROVENANCE_RESULT=FAIL（本轮产物侧存在回填/过期戳记/断链帧/无戳，禁止据此下结论） | 退出码 `1`：`/ verify-provenance-all（本轮新建） / 1 / 帧侧 0 伪造 / 0 过期戳记（1118 张时间轴相符）；生产者侧 3 处字面量 SHA /` |
-| `verify-evidence-corpus（本轮 scope）` | **1** | MANIFESTS=12 SCANNED=12 PROBLEMS=6 → CORPUS_RESULT=FAIL（存在不可背书证据或硬编码 SHA） | 台账 §1 无此行（不猜） |
+| `verify-evidence-corpus（本轮 scope）` | **1** | MANIFESTS=12 SCANNED=12 PROBLEMS=8 → CORPUS_RESULT=FAIL（存在不可背书证据或硬编码 SHA） | 台账 §1 无此行（不猜） |
 | `verify-provenance-all（本轮 scope）` | **1** | FRAMES_CONSISTENT=591 UNDATED=27 → PROVENANCE_RESULT=FAIL（本轮产物侧存在回填/过期戳记/断链帧/无戳，禁止据此下结论） | 台账 §1 无此行（不猜） |
 | `verify-evidence-integrity（原始 corpus：round-7-mock-tour-1a1df78b，信息轴）` | **0** | SHOTS=77 DUP_STATE=0 SNA改判=0 MISSING=0 ORPHANS=0 → EVIDENCE_RESULT=PASS | 台账 §1 无此行（不猜） |
 | `verify-evidence-integrity（原始 corpus：round-7-real-exec，信息轴）` | **1** | SHOTS=169 DUP_STATE=36 SNA改判=0 MISSING=0 ORPHANS=0 → EVIDENCE_RESULT=FAIL（证据与盘不一致，G6 不得记 PASS） | 台账 §1 无此行（不猜） |
@@ -261,12 +263,12 @@
 | `verify-evidence-integrity（原始 corpus：round-7-states-pilot4，信息轴）` | **1** | SHOTS=1 DUP_STATE=0 SNA改判=0 MISSING=0 ORPHANS=1 → EVIDENCE_RESULT=FAIL（证据与盘不一致，G6 不得记 PASS） | 台账 §1 无此行（不猜） |
 | `verify-evidence-integrity（原始 corpus：round-7-uidebt-1a1df78b，信息轴）` | **1** | SHOTS=42 DUP_STATE=6 SNA改判=0 MISSING=0 ORPHANS=0 → EVIDENCE_RESULT=FAIL（证据与盘不一致，G6 不得记 PASS） | 台账 §1 无此行（不猜） |
 | `verify-queue-reconcile` | **0** | GAP=0 NEVER_RAN=0套/0例 ERR_TAINTED=0 → QUEUE_RESULT=PASS | 退出码 `1`：`/ verify-queue-reconcile（round-2, --allow-unlabeled） / 1 / 计划 1107/24 套 · 记录 941/21 套 · 缺口 166 · 从未开跑 3 套 116 例 · 重复 id 组 30 · 错误污染 373 例 /` |
-| `verify-backend-restarted` | **0** | JVM pid=29536 startedAt=2026-09-26 03:12:29 STALE_SOURCE=none  HEAD_NEWER_THAN_JVM=no  APPS_API_CLEAN_VS_HEAD=yes → PASS JVM 晚于全部 java 源码改动与 HEAD 提交，可作前后端联通取证的前提 | 退出码 `0`：`/ verify-backend-restarted / 0 / JVM pid 11800 起于 11:37:11，晚于全部 java 源码与 HEAD /` |
+| `verify-backend-restarted` | **0** | JVM pid=32156 startedAt=2026-09-26 21:32:46 STALE_SOURCE=none  HEAD_NEWER_THAN_JVM=no → PASS JVM 晚于全部 java 源码改动与 HEAD 提交，可作前后端联通取证的前提 | 退出码 `0`：`/ verify-backend-restarted / 0 / JVM pid 11800 起于 11:37:11，晚于全部 java 源码与 HEAD /` |
 | `probe-real-env` | **0** | BACKEND=UP REACHABLE=8/8 → READY | 退出码 `0`：`/ probe-real-env / 0 / `PROBE_BACKEND=UP`、素材 8/8 可达、`PROBE_VERDICT=READY` /` |
 | `verify-i18n-orphan` | **0** | ZH=4157 EN=4157 PAIR_DIFF=0+0 ORPHANS=1257/允许1257 → I18N_RESULT=PASS | 台账 §1 无此行（不猜） |
-- **本次仍判红：2 / 8** —— `verify-evidence-corpus（本轮 scope）`(1) `verify-provenance-all（本轮 scope）`(1)
+- **本次仍判红：3 / 8** —— `verify-evidence-integrity（权威索引=本轮全部 corpus）`(1) `verify-evidence-corpus（本轮 scope）`(1) `verify-provenance-all（本轮 scope）`(1)
 - 轮初基线里退出码=1 的行数（从台账 §1 原文**数出来**的，不是记忆）：**8** (源: .zcode/tmp/round6-LEDGER.md → §1 退出码列)
-- 口径注：门禁面板里的 corpus/provenance 是**本轮 scope** 版（reports/audit/round-7,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-uidebt-1a1df78b）；全域版同表打印但只作历史口径（与轮初基线可比的是全域版，能否决本轮收尾的是 scope 版）。integrity 分两类：**权威索引轴**（`reports/audit/round-7/screenshot-manifest.json`，由 scripts/qa/rebuild-frozen-manifest.mjs 从各 corpus 派生）进取决集，逐 corpus 的**原始记录轴**只打印数字、不进取决集（同字节帧已被权威索引改判进 stateNotApplied[]，原始 corpus 是采集时刻的原始记录、不改写也不删；它们的组数逐条进"一条不藏"那一节）；`--exec` 分支的否决权本轮收窄为「只否决伪造」=证据里写了图片路径、既无 ERROR/timeout 注记、盘上又不存在，自报失败的注记条目不再计红（tier 交不齐由 readjudicate-evidence/verify-queue-reconcile 记账），这条改动有配对自检 scripts/qa/test-evidence-fabrication.cjs（含反向对照）；ledger/state-truth 限定 `reports/audit/round-7`；i18n 的孤儿走棘轮（配对差异一律判红，基线与理由见 scripts/qa/verify-i18n-orphan.mjs 顶部与台账 §74）。
+- 口径注：门禁面板里的 corpus/provenance 是**本轮 scope** 版（reports/audit/round-7,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-uidebt-1a1df78b,reports/screenshots/round-7-uidebt-guest-8df4de49,reports/screenshots/round-7-uidebt-guest2-8df4de49,reports/screenshots/round-7-uidebt-ws-8df4de49,reports/screenshots/round-7-uidebt-wsl2-8df4de49,reports/screenshots/round-7-uidebt-wsl3-8df4de49）；全域版同表打印但只作历史口径（与轮初基线可比的是全域版，能否决本轮收尾的是 scope 版）。integrity 分两类：**权威索引轴**（`reports/audit/round-7/screenshot-manifest.json`，由 scripts/qa/rebuild-frozen-manifest.mjs 从各 corpus 派生）进取决集，逐 corpus 的**原始记录轴**只打印数字、不进取决集（同字节帧已被权威索引改判进 stateNotApplied[]，原始 corpus 是采集时刻的原始记录、不改写也不删；它们的组数逐条进"一条不藏"那一节）；`--exec` 分支的否决权本轮收窄为「只否决伪造」=证据里写了图片路径、既无 ERROR/timeout 注记、盘上又不存在，自报失败的注记条目不再计红（tier 交不齐由 readjudicate-evidence/verify-queue-reconcile 记账），这条改动有配对自检 scripts/qa/test-evidence-fabrication.cjs（含反向对照）；ledger/state-truth 限定 `reports/audit/round-7`；i18n 的孤儿走棘轮（配对差异一律判红，基线与理由见 scripts/qa/verify-i18n-orphan.mjs 顶部与台账 §74）。
 
 ## I. 本轮新立 / 新证缺陷（全部从门与判据的输出派生，不手写）
 
@@ -308,6 +310,8 @@
 - verify-evidence-integrity（原始 corpus：round-7-states-pilot3，信息轴） —— 原始 corpus 有 1 条断链/哈希不符/孤儿 —— 信息轴不否决，但必须先确认权威索引没漏掉同一批帧
 - verify-evidence-integrity（原始 corpus：round-7-states-pilot4，信息轴） —— 原始 corpus 有 1 条断链/哈希不符/孤儿 —— 信息轴不否决，但必须先确认权威索引没漏掉同一批帧
 - verify-evidence-integrity（原始 corpus：round-7-uidebt-1a1df78b，信息轴） —— 同页同身份却同字节的帧仍在原始记录里：6 组 —— 信息轴不否决；这 6 组已由权威索引 stateNotApplied[] 承接（retroactive 改判），产品侧「该状态是否真的不改变画面」仍是待复验项，下一轮需要元素级交互断言而不是像素比对
+- verify-evidence-integrity（原始 corpus：round-7-uidebt-1a1df78b，信息轴） —— 原始 corpus 有 5 条断链/哈希不符/孤儿 —— 信息轴不否决，但必须先确认权威索引没漏掉同一批帧
+- 门禁 verify-evidence-integrity（权威索引=本轮全部 corpus） —— 本次退出码 1（禁止静默收尾）
 - 门禁 verify-evidence-corpus（本轮 scope） —— 本次退出码 1（禁止静默收尾）
 - 门禁 verify-provenance-all（本轮 scope） —— 本次退出码 1（禁止静默收尾）
 - 门禁 verify-evidence-corpus（全域） —— 本次退出码 1 —— 历史口径红（round-1/2 无 gitSha 或无日期戳），不否决本轮，但那些证据不可复用
@@ -342,6 +346,6 @@
 
 ## 附 2：本工具自判失败清单（任一条即非零退出；报告照写，但不得当作验收通过）
 
-1. 空集判红：dist/src 四格 0 条 —— 能恢复出查找目标的定位失败为 0，通常是 token 提取失灵，不是真的没有失败
+- （空）
 
-> 本文件由 `scripts/qa/emit-round-report.mjs` 生成于 2026-09-26T12:25:25.648Z；机器可读同一份数据在 `reports/audit/round-7/round7-metrics.json`。
+> 本文件由 `scripts/qa/emit-round-report.mjs` 生成于 2026-09-26T13:39:38.780Z；机器可读同一份数据在 `reports/audit/round-7/round7-metrics.json`。

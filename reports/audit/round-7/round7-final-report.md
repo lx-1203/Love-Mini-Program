@@ -62,9 +62,13 @@ G9 素材 455/455 PASS，真实模式 UI 帧从 0 张补到 169 张（`round-7-r
 3. **`MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-004`**：判据要求把 `border-radius` 从 16 改成 `--r-lg`，
    但 `--r-lg` 实值是 20rpx ⇒ 照判据做就违反判据。它的锚点复核是通过的，所以我**主动扣住没跟着 11 条一起写绿**。
    要改的是判据还是令牌值，需要你定。
-4. **`>100km` 距离守卫（`…PROFILE-LOCATION-001` 的后半）**：没有载体 —— `LocationCityView.java` 至今只有
-   `String city`，全仓 `cityCenter` 0 命中。这是一条新的 needs_backend 契约项（和 ③ 那三项不同），
-   我按 §④ 的口径没动后端。
+4. ~~**`>100km` 距离守卫（`…PROFILE-LOCATION-001` 的后半）**：没有载体~~ —— **本项已在 §29 关闭**（这条是本轮
+   早期状态，当时 `LocationCityView.java` 确实只有 `String city`）。
+   现在契约带上了城市中心坐标（`city, latitude, longitude`，查不到中心即 `null`），
+   客户端 `cityTrusted` + 页面 `cityDistant/shownCity` 把 >100km 或量不出来的 IP 城市整块丢弃，
+   两侧 9 例测试、mock/real 双重建、8080 重启后 `curl` 回读全部在案。
+   **未随之扩大范围**：home/nearby 两页故意仍只读 `citySource`（改它们会作废自己那条待复验的重建前置），
+   所以 `MP-R6-F1-NEARBY-IP-CITY-001` 保持"已修复待复验"，不跟着改判。
 5. **`MP-R2-PAGES-MESSAGES-INDEX-002`**：判据与已生效裁定正面冲突（组件 `:16-32` 与 `zh-CN.ts:681-685` 都记了
    "否计数不该出现"，而 mock 构建下 messages 路由根本不挂该组件）。要么改判据要么改裁定，二者只能动一个。
 6. **`--c-text-inverse` 与 `--c-bg-container`** 浅色值完全相同（`design-variables.scss:108/121`、`tokens.scss:235/244`）

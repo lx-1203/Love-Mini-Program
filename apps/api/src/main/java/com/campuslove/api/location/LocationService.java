@@ -1,6 +1,7 @@
 package com.campuslove.api.location;
 
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -31,6 +32,21 @@ public class LocationService {
             new CityNet("101.36.", "上海"),
             new CityNet("118.112.", "成都"),
             new CityNet("113.98.", "广州")
+    );
+
+    /**
+     * 城市 -> 中心坐标（gcj02，城市级精度）。
+     *
+     * <p>存在的唯一理由：让调用方能量出"IP 推断出的城市"和"这一次真实经纬度"差多远，
+     * 从而执行 &gt;100km 就丢弃城市的同源判据（MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001）。
+     * 表里查不到的城市返回 null 中心坐标，语义是"量不出来"，调用方不得当成"距离 0"。</p>
+     */
+    private static final Map<String, double[]> CITY_CENTERS = Map.of(
+            "南京", new double[]{32.041544, 118.767413},
+            "杭州", new double[]{30.274150, 120.155070},
+            "上海", new double[]{31.230416, 121.473701},
+            "成都", new double[]{30.572815, 104.066801},
+            "广州", new double[]{23.129110, 113.264385}
     );
 
     private final String defaultCity;
@@ -65,6 +81,18 @@ public class LocationService {
             }
         }
         return defaultCity;
+    }
+
+    /**
+     * 解析 IP 归属城市，并带上该城市的中心坐标。
+     *
+     * <p>中心坐标只服务一件事：让调用方自己量"IP 城市"与"本次 GPS 坐标"的距离。
+     * 城市不在 {@link #CITY_CENTERS} 里时两坐标为 null —— 那是"量不出来"，不是"距离 0"。</p>
+     */
+    public LocationCityView resolveCityView(String clientIp) {
+        String city = resolveCity(clientIp);
+        double[] center = CITY_CENTERS.get(city);
+        return center == null ? new LocationCityView(city) : new LocationCityView(city, center[0], center[1]);
     }
 
     /** 是否为内网 / 环回 IP（127.x / 10.x / 192.168.x / 172.16-31.x）。 */

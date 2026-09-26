@@ -31,7 +31,7 @@ public class LocationController {
     @GetMapping("/ip-city")
     public ApiResponse<LocationCityView> getIpCity(HttpServletRequest request) {
         String ip = resolveClientIp(request);
-        return ApiResponse.ok(new LocationCityView(locationService.resolveCity(ip)));
+        return ApiResponse.ok(locationService.resolveCityView(ip));
     }
 
     /**

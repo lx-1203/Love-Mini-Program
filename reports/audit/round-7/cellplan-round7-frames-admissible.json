@@ -1,28 +1,10 @@
 {
- "generatedAt": "2026-09-26T13:09:57.982Z",
- "source": "verdict-from-frames.mjs",
- "frames": 42,
- "frameSources": [
-  {
-   "tag": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json",
-   "gitSha": "8df4de49",
-   "identitySeen": "A",
-   "verifyLast": "logged-in userId=user-1001",
-   "rows": 42
-  }
- ],
- "buckets": {
-  "NO_LANDING": 5,
-  "STATE_NOT_APPLIED": 5,
-  "LEFT_PAGE": 0,
-  "FIXED_FRAME": 12,
-  "REGRESSION": 18,
-  "NEEDS_EYE": 2,
-  "NO_FRAME": 0,
-  "NOT_SHOOTABLE": 21,
-  "REWRITE": 16
- },
- "patchIds": 79,
+ "generatedAt": "2026-09-26T13:14:41.173Z",
+ "source": "audit-frame-verdicts.mjs",
+ "artifactClassTokens": 3162,
+ "redRows": 18,
+ "admissible": 3,
+ "held": 15,
  "patches": [
   {
    "id": "MP-R2-CAMPUS-HUB-009",
@@ -92,15 +74,9 @@
   },
   {
    "id": "MP-R2-PROFILE-025",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
-  },
-  {
-   "id": "MP-R2-PROFILE-025",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2-PROFILE-025.png(34662B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条 未成立：.my-interaction__label=ABSENT_UNEXPECTED、.my-stats__label=A",
-   "why": "把实测值写进账"
+   "new": "帧级判点不作判据：target 不是单一选择器：「最近访客」所在 .my-interaction__row 的 .my-interaction__value 与「访客」；该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2-PROFILE-025.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2-PROFILE-034",
@@ -146,15 +122,9 @@
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002.png(11342B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 1 条 未成立：.post-image-wrap--first=ABSEN",
-   "why": "把实测值写进账"
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2-PAGES-MESSAGES-INDEX-018",
@@ -188,15 +158,9 @@
   },
   {
    "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
-  },
-  {
-   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/B-MP-R2VIS-PAGES-MESSAGES-INDEX-009.png(29386B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条 未成立：陈默那一行的 .chat-item__time-row 内的 image 与 .cha",
-   "why": "把实测值写进账"
+   "new": "帧级判点不作判据：target 不是单一选择器：陈默那一行的 .chat-item__time-row 内的 image 与 .chat-item__muted-ico；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/B-MP-R2VIS-PAGES-MESSAGES-INDEX-009.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2-POST-013",
@@ -290,15 +254,9 @@
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-012",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
-  },
-  {
-   "id": "MP-R2-PAGES-REGISTER-INDEX-012",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-PAGES-REGISTER-INDEX-012.png(26258B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 4 条 未成立：.field-error__text=ABSENT_UNEXPECTED、.field-er",
-   "why": "把实测值写进账"
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-PAGES-REGISTER-INDEX-012.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-013",
@@ -332,15 +290,9 @@
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005.png(18543B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条 未成立：..publish-topic-chip__remove",
-   "why": "把实测值写进账"
+   "new": "帧级判点不作判据：target 不是单一选择器：..publish-topic-chip__remove；该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01",
@@ -380,15 +332,9 @@
   },
   {
    "id": "MP-R2-PROFILE-024",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
-  },
-  {
-   "id": "MP-R2-PROFILE-024",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-PROFILE-024.png(34675B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 1 条 未成立：.nlp-interaction--last 底缘 到 .nlp-footer-btn 顶缘=ABSENT_UNEXP",
-   "why": "把实测值写进账"
+   "new": "帧级判点不作判据：target 不是单一选择器：.nlp-interaction--last 底缘 到 .nlp-footer-btn 顶缘；该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-PROFILE-024.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2-PAGES-HOME-INDEX-112",
@@ -446,15 +392,9 @@
   },
   {
    "id": "MP-R2-POSTTOPIC-012",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
-  },
-  {
-   "id": "MP-R2-POSTTOPIC-012",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2-POSTTOPIC-012.png(36503B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 1 条 未成立：.post-header__back=ABSENT_UNEXPECTED",
-   "why": "把实测值写进账"
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2-POSTTOPIC-012.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2-POSTTOPIC-013",
@@ -476,27 +416,15 @@
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007.png(12437B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 2 条 未成立：.chat-list.chat-list--empty=",
-   "why": "把实测值写进账"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
+   "new": "帧级判点不作判据：target 不是单一选择器：.chat-list.chat-list--empty；该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02.png(12437B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 1 条 未成立：.chat-input-area.chat-input-",
-   "why": "把实测值写进账"
+   "new": "帧级判点不作判据：target 不是单一选择器：.chat-input-area.chat-input-area--keyboard-up；该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001",
@@ -506,15 +434,9 @@
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001.png(8577B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条 未成立：.public-identity__meta-it",
-   "why": "把实测值写进账"
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001",
@@ -548,39 +470,21 @@
   },
   {
    "id": "MP-R2-PAGES-HOME-INDEX-102",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
-  },
-  {
-   "id": "MP-R2-PAGES-HOME-INDEX-102",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2-PAGES-HOME-INDEX-102.png(36497B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条 未成立：.today-card__photo=ABSENT_UNEXPECTED、.today-card__",
-   "why": "把实测值写进账"
-  },
-  {
-   "id": "MP-R2-PAGES-HOME-INDEX-110",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2-PAGES-HOME-INDEX-102.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2-PAGES-HOME-INDEX-110",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2-PAGES-HOME-INDEX-110.png(36506B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 2 条 未成立：.today-card__distance=ABSENT_UNEXPECTED、.today-car",
-   "why": "把实测值写进账"
-  },
-  {
-   "id": "MP-R2VIS-PAGES-HOME-INDEX-004",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2-PAGES-HOME-INDEX-110.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2VIS-PAGES-HOME-INDEX-004",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-PAGES-HOME-INDEX-004.png(36501B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条 未成立：.today-card__rotate=ABSENT_UNEXPECTED、.today-ca",
-   "why": "把实测值写进账"
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-PAGES-HOME-INDEX-004.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2-CAMPUSPOST-013",
@@ -632,15 +536,9 @@
   },
   {
    "id": "MP-R2VIS-PAGES-HOME-INDEX-005",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
-  },
-  {
-   "id": "MP-R2VIS-PAGES-HOME-INDEX-005",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-PAGES-HOME-INDEX-005.png(36501B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 1 条 未成立：.home-header__title=ABSENT_UNEXPECTED",
-   "why": "把实测值写进账"
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-PAGES-HOME-INDEX-005.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2-PAGES-DISCOVER-INDEX-013",
@@ -650,15 +548,9 @@
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001.png(38082B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条 未成立：.post-card__tag=ABSENT_UNEXPEC",
-   "why": "把实测值写进账"
+   "new": "帧级判点不作判据：产物里查无此 class：.post-card__tag--pink；该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001",
@@ -677,6 +569,96 @@
    "col": 9,
    "new": "配方判 NOT_SHOOTABLE：缺的夹具：微信开发者工具模拟器的高 dpr 机型档（判据自述脚本无权改，且本轮禁止调用 wechatide）。补上夹具后的正确判据不是 selector 断言，而是巡检口径：在高 dpr 档重跑 tmp/tour-R2 巡检并对被判定文字出 zoomFrames 辅助帧，由人工在辅助帧上背书字级结论",
    "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2-PROFILE-025",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "撤销本轮判红：探针不可判（target 不是单一选择器：「最近访客」所在 .my-interaction__row 的 .my-interacti），恢复取景前台账值，不冒充已验"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005",
+   "col": 6,
+   "new": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
+   "why": "撤销本轮判红：探针不可判（target 不是单一选择器：..publish-topic-chip__remove），恢复取景前台账值，不冒充已验"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "撤销本轮判红：探针不可判（该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」），恢复取景前台账值，不冒充已验"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "撤销本轮判红：探针不可判（target 不是单一选择器：陈默那一行的 .chat-item__time-row 内的 image 与 .chat-），恢复取景前台账值，不冒充已验"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-012",
+   "col": 6,
+   "new": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
+   "why": "撤销本轮判红：探针不可判（该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」），恢复取景前台账值，不冒充已验"
+  },
+  {
+   "id": "MP-R2-PROFILE-024",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "撤销本轮判红：探针不可判（target 不是单一选择器：.nlp-interaction--last 底缘 到 .nlp-footer-btn 顶），恢复取景前台账值，不冒充已验"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-012",
+   "col": 6,
+   "new": "已修复待复验（需帧复验（T5 定向巡检覆盖本页））",
+   "why": "撤销本轮判红：探针不可判（该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」），恢复取景前台账值，不冒充已验"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007",
+   "col": 6,
+   "new": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
+   "why": "撤销本轮判红：探针不可判（target 不是单一选择器：.chat-list.chat-list--empty），恢复取景前台账值，不冒充已验"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02",
+   "col": 6,
+   "new": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
+   "why": "撤销本轮判红：探针不可判（target 不是单一选择器：.chat-input-area.chat-input-area--keyboard-up），恢复取景前台账值，不冒充已验"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "撤销本轮判红：探针不可判（该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」），恢复取景前台账值，不冒充已验"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-102",
+   "col": 6,
+   "new": "并入-不另立案",
+   "why": "撤销本轮判红：探针不可判（该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」），恢复取景前台账值，不冒充已验"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-110",
+   "col": 6,
+   "new": "已修复待复验（静态判据不足（判据未点名可核验物件或压缩改名），需补判点或帧）",
+   "why": "撤销本轮判红：探针不可判（该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」），恢复取景前台账值，不冒充已验"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-004",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "撤销本轮判红：探针不可判（该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」），恢复取景前台账值，不冒充已验"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-005",
+   "col": 6,
+   "new": "已修复待复验（去向：closer=待人裁决；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
+   "why": "撤销本轮判红：探针不可判（该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」），恢复取景前台账值，不冒充已验"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "撤销本轮判红：探针不可判（产物里查无此 class：.post-card__tag--pink），恢复取景前台账值，不冒充已验"
   }
  ]
 }

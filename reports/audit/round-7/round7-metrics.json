@@ -1,18 +1,18 @@
 {
   "schemaVersion": "round-report-metrics-1",
-  "generatedAt": "2026-09-26T12:25:25.648Z",
-  "startedAt": "2026-09-26T12:25:02.303Z",
+  "generatedAt": "2026-09-26T13:39:38.781Z",
+  "startedAt": "2026-09-26T13:39:15.475Z",
   "roundDir": "reports/audit/round-7",
   "reportFile": "reports/audit/round-7/round7-gatepanel.md",
   "identity": {
-    "head": "1a1df78b",
-    "porcelain": 73,
-    "porcelainApps": 0,
-    "jvmPid": "29536",
-    "jvmStartedAt": "2026-09-26 03:12:29",
+    "head": "8df4de49",
+    "porcelain": 38,
+    "porcelainApps": 8,
+    "jvmPid": "32156",
+    "jvmStartedAt": "2026-09-26 21:32:46",
     "backendRestartVerdict": "PASS JVM 晚于全部 java 源码改动与 HEAD 提交，可作前后端联通取证的前提",
     "backendRestartExit": 0,
-    "mockBundleFingerprint": "cd5d6e0e",
+    "mockBundleFingerprint": "ff6dd482",
     "realBundleFingerprint": "05637737",
     "bundleFingerprintInputs": [
       "app.json",
@@ -45,7 +45,7 @@
     "ckptSuiteUnmappable": 0
   },
   "execBoundary": {
-    "snapshot": "reports/audit/round-7/interact/exec-results.pre-rebuild-1048.json",
+    "snapshot": ".zcode/tmp/round7-exec/exec-results.snapshot-b89dc4a71654.json",
     "snapshotRows": 1107,
     "execRows": 1107,
     "keyFields": [
@@ -647,25 +647,25 @@
           "n": 2,
           "name": "客户端写库 POST /posts",
           "ok": true,
-          "detail": "HTTP 200，返回 id=270"
+          "detail": "HTTP 200，返回 id=273"
         },
         {
           "n": 3,
           "name": "后台按 id 读到该帖",
           "ok": true,
-          "detail": "GET admin/village-posts/270 -> 200；title 字段可见=是（值 \"G8取证2609261225号\"）"
+          "detail": "GET admin/village-posts/273 -> 200；title 字段可见=是（值 \"G8取证2609261339号\"）"
         },
         {
           "n": 4,
           "name": "审核驱动前端可见性",
           "ok": true,
-          "detail": "审核前在列表=false(total=218) / audit HTTP 200 / 审核后在列表=false(total=219) / 可见性以 total 增量为准=true；实测确认：新帖默认 audit_status=pending 且前端列表不可见，审核通过后 total +1 → v32 G8(4) 的假设成立（我一度因 javadoc 写「默认 approved」而怀疑它，那是注释与实现不一致）"
+          "detail": "审核前在列表=false(total=221) / audit HTTP 200 / 审核后在列表=false(total=222) / 可见性以 total 增量为准=true；实测确认：新帖默认 audit_status=pending 且前端列表不可见，审核通过后 total +1 → v32 G8(4) 的假设成立（我一度因 javadoc 写「默认 approved」而怀疑它，那是注释与实现不一致）"
         },
         {
           "n": 5,
           "name": "同 Idempotency-Key 重放",
           "ok": true,
-          "detail": "重放 HTTP 409（期望 409）；重放后 total=219 vs 审核后 219 → 未新增行 ✔"
+          "detail": "重放 HTTP 409（期望 409）；重放后 total=222 vs 审核后 222 → 未新增行 ✔"
         },
         {
           "n": 6,
@@ -683,22 +683,22 @@
           "n": 8,
           "name": "创建响应回主键 data.id",
           "ok": true,
-          "detail": "HTTP 200，data.id=299 → 主键已回，客户端可直接定位新行（#27 的 save(topic) 返回值接生的实测证；此前该字段为 null，见台账 §22）"
+          "detail": "HTTP 200，data.id=302 → 主键已回，客户端可直接定位新行（#27 的 save(topic) 返回值接生的实测证；此前该字段为 null，见台账 §22）"
         },
         {
           "n": 9,
           "name": "读回 images 落库 + 匿名标记",
           "ok": true,
-          "detail": "GET /campus/topics/299 -> 200；images 字段=\"[\"http://127.0.0.1:8080/api/v1/media/app-assets/assets/default-avatar.jpg\"]\"（含所发 URL=true）；isAnonymous=true；authorId=null authorName=\"匿名校友\" → 匿名若为真，作者字段应被遮蔽"
+          "detail": "GET /campus/topics/302 -> 200；images 字段=\"[\"http://127.0.0.1:8080/api/v1/media/app-assets/assets/default-avatar.jpg\"]\"（含所发 URL=true）；isAnonymous=true；authorId=null authorName=\"匿名校友\" → 匿名若为真，作者字段应被遮蔽"
         },
         {
           "n": 10,
           "name": "匿名回复透传并可读回",
           "ok": true,
-          "detail": "POST replies -> 200 id=31；列表 200 命中本条=true；isAnonymous=true；authorName=\"匿名校友\""
+          "detail": "POST replies -> 200 id=34；列表 200 命中本条=true；isAnonymous=true；authorName=\"匿名校友\""
         }
       ],
-      "artifacts": "posts.id=270 ; comments.id=1238 ; campus_topics.id=299 ; campus_replies.id=31  ← 本轮写入的真实数据，未删除，交你决定去留"
+      "artifacts": "posts.id=273 ; comments.id=1241 ; campus_topics.id=302 ; campus_replies.id=34  ← 本轮写入的真实数据，未删除，交你决定去留"
     },
     "g9": {
       "exit": 0,
@@ -739,18 +739,18 @@
     },
     "verify-evidence-integrity（权威索引=本轮全部 corpus）": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/audit/round-7/screenshot-manifest.json --dir reports/screenshots/round-7-mock-tour-1a1df78b --exec reports/audit/round-7/interact/exec-results.json",
-      "exitCode": 0,
-      "stdoutSha8": "5b86ef35"
+      "exitCode": 1,
+      "stdoutSha8": "ae1f4678"
     },
     "verify-evidence-corpus（本轮 scope）": {
-      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-7,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-uidebt-1a1df78b",
+      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-7,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-uidebt-1a1df78b,reports/screenshots/round-7-uidebt-guest-8df4de49,reports/screenshots/round-7-uidebt-guest2-8df4de49,reports/screenshots/round-7-uidebt-ws-8df4de49,reports/screenshots/round-7-uidebt-wsl2-8df4de49,reports/screenshots/round-7-uidebt-wsl3-8df4de49",
       "exitCode": 1,
-      "stdoutSha8": "57c47bc4"
+      "stdoutSha8": "d66785c6"
     },
     "verify-provenance-all（本轮 scope）": {
-      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-7,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-uidebt-1a1df78b",
+      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-7,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-uidebt-1a1df78b,reports/screenshots/round-7-uidebt-guest-8df4de49,reports/screenshots/round-7-uidebt-guest2-8df4de49,reports/screenshots/round-7-uidebt-ws-8df4de49,reports/screenshots/round-7-uidebt-wsl2-8df4de49,reports/screenshots/round-7-uidebt-wsl3-8df4de49",
       "exitCode": 1,
-      "stdoutSha8": "d55f76d6"
+      "stdoutSha8": "417e8427"
     },
     "verify-queue-reconcile": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-queue-reconcile.mjs reports/audit/round-7",
@@ -760,12 +760,12 @@
     "verify-backend-restarted": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-backend-restarted.mjs --port 8080",
       "exitCode": 0,
-      "stdoutSha8": "9a9b3e0d"
+      "stdoutSha8": "bf9d773e"
     },
     "verify-i18n-orphan": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-i18n-orphan.mjs",
       "exitCode": 0,
-      "stdoutSha8": "8ed204f4"
+      "stdoutSha8": "f5b5ac4b"
     },
     "probe-real-env": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/probe-real-env.mjs",
@@ -776,6 +776,7 @@
       "file": ".zcode/tmp/round6-LEDGER.md",
       "rowsRedAtStart": 8,
       "nowRed": [
+        "verify-evidence-integrity（权威索引=本轮全部 corpus）",
         "verify-evidence-corpus（本轮 scope）",
         "verify-provenance-all（本轮 scope）"
       ]
@@ -790,7 +791,7 @@
         "sha8": "d1e019f8"
       },
       {
-        "path": "reports/audit/round-7/interact/exec-results.pre-rebuild-1048.json",
+        "path": ".zcode/tmp/round7-exec/exec-results.snapshot-b89dc4a71654.json",
         "mtime": "2026-09-26T07:14:52.493Z",
         "size": 812539,
         "sha8": "b89dc4a7"
@@ -839,55 +840,55 @@
       },
       {
         "path": "apps/client/dist/build/mp-weixin/app.json",
-        "mtime": "2026-09-26T08:52:07.291Z",
+        "mtime": "2026-09-26T13:32:19.888Z",
         "size": 5264,
         "sha8": "207f7136"
       },
       {
         "path": "apps/client/dist/build/mp-weixin/config/env.js",
-        "mtime": "2026-09-26T08:52:07.132Z",
-        "size": 2397,
-        "sha8": "fba847c4"
+        "mtime": "2026-09-26T13:32:19.751Z",
+        "size": 2402,
+        "sha8": "f1c7b96b"
       },
       {
         "path": "apps/client/dist/build/mp-weixin/config/showcase.js",
-        "mtime": "2026-09-26T08:52:07.234Z",
-        "size": 915,
-        "sha8": "67628744"
+        "mtime": "2026-09-26T13:32:19.822Z",
+        "size": 920,
+        "sha8": "59e2a9c9"
       },
       {
         "path": "apps/client/dist/build/mp-weixin/config/feature-flags.js",
-        "mtime": "2026-09-26T08:52:07.234Z",
+        "mtime": "2026-09-26T13:32:19.821Z",
         "size": 134,
         "sha8": "08a7cff6"
       },
       {
         "path": "apps/client/dist/build/mp-weixin-real/app.json",
-        "mtime": "2026-09-26T08:53:38.741Z",
+        "mtime": "2026-09-26T13:31:30.392Z",
         "size": 5264,
         "sha8": "207f7136"
       },
       {
         "path": "apps/client/dist/build/mp-weixin-real/config/env.js",
-        "mtime": "2026-09-26T08:53:38.551Z",
+        "mtime": "2026-09-26T13:31:30.276Z",
         "size": 2392,
         "sha8": "f0677920"
       },
       {
         "path": "apps/client/dist/build/mp-weixin-real/config/showcase.js",
-        "mtime": "2026-09-26T08:53:38.669Z",
+        "mtime": "2026-09-26T13:31:30.340Z",
         "size": 910,
         "sha8": "3039fc25"
       },
       {
         "path": "apps/client/dist/build/mp-weixin-real/config/feature-flags.js",
-        "mtime": "2026-09-26T08:53:38.669Z",
+        "mtime": "2026-09-26T13:31:30.340Z",
         "size": 134,
         "sha8": "08a7cff6"
       },
       {
-        "path": ".zcode/tmp/report-emitter/triage-r6-at-report.json",
-        "mtime": "2026-09-26T12:25:06.190Z",
+        "path": ".zcode/tmp/report-emitter-r7/triage-r7-at-report.json",
+        "mtime": "2026-09-26T13:39:18.594Z",
         "size": 321332,
         "sha8": "f3a1bcfc"
       },
@@ -903,8 +904,8 @@
         "name": "verify-backend-restarted",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-backend-restarted.mjs --port 8080",
         "exitCode": 0,
-        "stdoutBytes": 590,
-        "sha8": "9a9b3e0d",
+        "stdoutBytes": 418,
+        "sha8": "bf9d773e",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -913,7 +914,7 @@
         "cmd": "git rev-parse --short HEAD",
         "exitCode": 0,
         "stdoutBytes": 9,
-        "sha8": "31dd245e",
+        "sha8": "cb02961d",
         "note": "",
         "runner": "git"
       },
@@ -921,8 +922,8 @@
         "name": "git worktree 脏项",
         "cmd": "git status --porcelain",
         "exitCode": 0,
-        "stdoutBytes": 3164,
-        "sha8": "fce35840",
+        "stdoutBytes": 1831,
+        "sha8": "69b89c3a",
         "note": "",
         "runner": "git"
       },
@@ -930,8 +931,8 @@
         "name": "git worktree 脏项(apps/)",
         "cmd": "git status --porcelain -- apps/",
         "exitCode": 0,
-        "stdoutBytes": 0,
-        "sha8": "e3b0c442",
+        "stdoutBytes": 510,
+        "sha8": "9367edb1",
         "note": "",
         "runner": "git"
       },
@@ -946,10 +947,10 @@
       },
       {
         "name": "triage-exec-failures",
-        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/triage-exec-failures.mjs --results reports/audit/round-7/interact/exec-results.json --out .zcode/tmp/report-emitter/triage-r6-at-report",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/triage-exec-failures.mjs --results reports/audit/round-7/interact/exec-results.json --out .zcode/tmp/report-emitter-r7/triage-r7-at-report",
         "exitCode": 0,
-        "stdoutBytes": 215,
-        "sha8": "7aa7a03f",
+        "stdoutBytes": 221,
+        "sha8": "6bc40b06",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -983,9 +984,9 @@
       {
         "name": "verify-evidence-integrity（权威索引=本轮全部 corpus）",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/audit/round-7/screenshot-manifest.json --dir reports/screenshots/round-7-mock-tour-1a1df78b --exec reports/audit/round-7/interact/exec-results.json",
-        "exitCode": 0,
-        "stdoutBytes": 1126,
-        "sha8": "5b86ef35",
+        "exitCode": 1,
+        "stdoutBytes": 1939,
+        "sha8": "ae1f4678",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -993,8 +994,8 @@
         "name": "verify-evidence-corpus（全域）",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs",
         "exitCode": 1,
-        "stdoutBytes": 3981,
-        "sha8": "6fc11e91",
+        "stdoutBytes": 4042,
+        "sha8": "506717fc",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1003,25 +1004,25 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs",
         "exitCode": 1,
         "stdoutBytes": 5577,
-        "sha8": "1ebecdae",
+        "sha8": "d6e7aaf9",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
       {
         "name": "verify-evidence-corpus（本轮 scope）",
-        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-7,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-uidebt-1a1df78b",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-7,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-uidebt-1a1df78b,reports/screenshots/round-7-uidebt-guest-8df4de49,reports/screenshots/round-7-uidebt-guest2-8df4de49,reports/screenshots/round-7-uidebt-ws-8df4de49,reports/screenshots/round-7-uidebt-wsl2-8df4de49,reports/screenshots/round-7-uidebt-wsl3-8df4de49",
         "exitCode": 1,
-        "stdoutBytes": 3355,
-        "sha8": "57c47bc4",
+        "stdoutBytes": 3908,
+        "sha8": "d66785c6",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
       {
         "name": "verify-provenance-all（本轮 scope）",
-        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-7,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-uidebt-1a1df78b",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-7,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-uidebt-1a1df78b,reports/screenshots/round-7-uidebt-guest-8df4de49,reports/screenshots/round-7-uidebt-guest2-8df4de49,reports/screenshots/round-7-uidebt-ws-8df4de49,reports/screenshots/round-7-uidebt-wsl2-8df4de49,reports/screenshots/round-7-uidebt-wsl3-8df4de49",
         "exitCode": 1,
-        "stdoutBytes": 4761,
-        "sha8": "d55f76d6",
+        "stdoutBytes": 5007,
+        "sha8": "417e8427",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1119,8 +1120,8 @@
         "name": "verify-evidence-integrity（原始 corpus：round-7-uidebt-1a1df78b，信息轴）",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-evidence-integrity.mjs reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json --dir reports/screenshots/round-7-uidebt-1a1df78b",
         "exitCode": 1,
-        "stdoutBytes": 2657,
-        "sha8": "124e2c24",
+        "stdoutBytes": 3423,
+        "sha8": "fc3138fb",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1129,7 +1130,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-i18n-orphan.mjs",
         "exitCode": 0,
         "stdoutBytes": 1851,
-        "sha8": "8ed204f4",
+        "sha8": "f5b5ac4b",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1147,7 +1148,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/g8-e2e.cjs",
         "exitCode": 0,
         "stdoutBytes": 2510,
-        "sha8": "ae207a6e",
+        "sha8": "35cf3220",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1389,9 +1390,7 @@
       "ok": true
     }
   ],
-  "failures": [
-    "空集判红：dist/src 四格 0 条 —— 能恢复出查找目标的定位失败为 0，通常是 token 提取失灵，不是真的没有失败"
-  ],
+  "failures": [],
   "openItems": [
     {
       "item": "205 行跨边界被就地改写",
@@ -1432,6 +1431,14 @@
     {
       "item": "verify-evidence-integrity（原始 corpus：round-7-uidebt-1a1df78b，信息轴） —— 同页同身份却同字节的帧仍在原始记录里：6 组",
       "why": "信息轴不否决；这 6 组已由权威索引 stateNotApplied[] 承接（retroactive 改判），产品侧「该状态是否真的不改变画面」仍是待复验项，下一轮需要元素级交互断言而不是像素比对"
+    },
+    {
+      "item": "verify-evidence-integrity（原始 corpus：round-7-uidebt-1a1df78b，信息轴） —— 原始 corpus 有 5 条断链/哈希不符/孤儿",
+      "why": "信息轴不否决，但必须先确认权威索引没漏掉同一批帧"
+    },
+    {
+      "item": "门禁 verify-evidence-integrity（权威索引=本轮全部 corpus）",
+      "why": "本次退出码 1（禁止静默收尾）"
     },
     {
       "item": "门禁 verify-evidence-corpus（本轮 scope）",

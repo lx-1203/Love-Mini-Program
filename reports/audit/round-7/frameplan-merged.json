@@ -2630,13 +2630,14 @@
     }
    ],
    "precondition": {
-    "identity": "A",
+    "identity": "guest 身份（实测：已登录会话开 pages/login/index 会被重定向到 pages/discover/index，见 uidebt-shoot-wsl2 落点证据）",
     "theme": "light",
     "fixture": "mp-weixin 构建、未展开手机号表单态（showPhoneLogin=false），此时三枚按钮同帧可见：.btn-primary / .btn-phone-quick / .btn-guest"
    },
    "crop": "登录页底部按钮区（微信一键登录 / 手机号快捷登录 / 稍后再看三枚）",
    "frameName": "E-MP-R2VIS-PAGES-LOGIN-INDEX-001",
-   "unresolved": ""
+   "unresolved": "",
+   "preconditionFixed": "身份 A → guest：取景实测被守卫重定向，A 身份下这一页根本渲染不出来"
   },
   {
    "id": "MP-R2VIS-PAGES-LOGIN-INDEX-007",
@@ -2673,13 +2674,14 @@
     }
    ],
    "precondition": {
-    "identity": "A",
+    "identity": "guest 身份（实测：已登录会话开 pages/login/index 会被重定向到 pages/discover/index，见 uidebt-shoot-wsl2 落点证据）",
     "theme": "light",
     "fixture": "mp-weixin 构建、zh-CN 语料、未展开手机号表单态；两枚按钮同帧（快捷授权按钮 + 其下方的文字兜底入口）"
    },
    "crop": "登录页手机号快捷授权按钮 + 其下「验证码或密码登录」文字入口",
    "frameName": "E-MP-R2VIS-PAGES-LOGIN-INDEX-007",
-   "unresolved": ""
+   "unresolved": "",
+   "preconditionFixed": "身份 A → guest：取景实测被守卫重定向，A 身份下这一页根本渲染不出来"
   },
   {
    "id": "MP-R2-VILLAGE-INDEX-010",

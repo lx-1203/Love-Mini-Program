@@ -315,7 +315,10 @@ if (ERRORS.length) {
 
 /* ============================================ 门：一次跑完，多处引用 */
 const G = {};
-const TRIAGE_BASE = pj(SIDE_DIR, "triage-r6-at-report");
+/* 分诊台 sidecar 的文件名必须跟着本轮走：写死 r6 会让 round-7 的报告把
+   "round-7 的分诊结果"标成 r6 文件（内容是新跑的，标签却是旧轮次），读者无从分辨。 */
+const ROUND_TAG = (String(ROUND_DIR).match(/round-(\d+)/) || [])[1] || "6";
+const TRIAGE_BASE = pj(SIDE_DIR, "triage-r" + ROUND_TAG + "-at-report");
 G.restarted = runGate("verify-backend-restarted", "scripts/qa/verify-backend-restarted.mjs", ["--port", "8080"], { timeoutMs: 180000 });
 G.head = runCmd("git HEAD", "git", ["rev-parse", "--short", "HEAD"]);
 G.dirty = runCmd("git worktree 脏项", "git", ["status", "--porcelain"]);
@@ -619,7 +622,23 @@ if (tri) {
   P("|---|---|");
   const fourE = Object.entries(four).sort((a, b) => b[1] - a[1]);
   for (const [k, v] of fourE) P(`| ${k} | ${v} |`);
-  if (!fourE.length) { P(`| ⚠ 一格都没有 | 0 |`); ERRORS.push("空集判红：dist/src 四格 0 条 —— 能恢复出查找目标的定位失败为 0，通常是 token 提取失灵，不是真的没有失败"); }
+  if (!fourE.length) {
+    /* 空集有两种成因，只有第二种才是判据失灵：
+       (a) 这一轮的失败里根本没有定位类失败 ⇒ 四格没有输入，是"无可检"，不是"检了没事"；
+       (b) 有定位类失败却一条 token 都没恢复出来 ⇒ 提取器坏了，此时印 0 就是假绿。
+       旧版把两种都判红，于是本轮（12 条失败里没有一条是定位失败）永远出不了报告；
+       这里改成按桶计数分流：(a) 记 NOT_APPLICABLE 并显式声明不计入通过率，(b) 保持 FAIL。 */
+    const locateBuckets = (bs["locate-label"] || 0) + (bs["locate-label-token-lost"] || 0) + (bs["locate-selector"] || 0);
+    if (locateBuckets > 0) {
+      P(`| ⚠ 一格都没有 | 0 |`);
+      ERRORS.push(`空集判红：有 ${locateBuckets} 条定位类失败，但 dist/src 四格 0 条 —— token 提取失灵，不能当作没有失败`);
+    } else {
+      P(`| （无可检对象：本轮定位类失败 ${locateBuckets} 条，四格无输入） | 0 |`);
+      P(`- 四格判据本轮记 **NOT_APPLICABLE**（不是 PASS）：分诊桶里 locate-label / locate-selector / locate-label-token-lost 全为 0，`
+        + `即没有任何一条失败属于"找物件失败"这一类，双载体检没有可检输入。`);
+      P(`- ⚠ 这条声明的作用是防止"四格空"被下游读成"体检通过"——它没有通过，它没跑。`);
+    }
+  }
   P(`- ${conserve("四格合计 vs 有查找目标的定位失败", fourE.map(([, v]) => v), indexed)}`);
   const suspect = items.filter((it) => it.suspect).length;
   const offTarget = items.filter((it) => it.onTarget === false).length;

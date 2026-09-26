@@ -666,3 +666,89 @@ OPENQ_PASSED=10 HELD=3 REJECTED=0   （11 条 ALREADY_FIXED，其中 1 条被我
   `LocationCityView.java` 至今只有 `String city`，全仓 `cityCenter` 0 命中 ⇒ 这是一条新的 needs_backend 契约项，
   与 ③ 那三项不同，本轮不落地，写进终报开口清单。
 
+
+## 28 WS 那条腿终于用来做动作了：18 条"状态未施加"里 13 条可判，但 18 条判红最后只落账 3 条
+
+接 §27。给 `shoot-frameplan.mjs` 补上 WS 交互腿（`--ws-taps`：`page.$(sel)` + `tap/longpress/input`），
+同一条腿兼任落点确认的第二通道。跑完整 42 条配方：
+`SHOOT_SUMMARY planned=42 出帧=42 无证据=0 证据洞=0 失败=0 WS交互成功=16 WS交互未成=8`，
+判决分桶从 `STATE_NOT_APPLIED=18 / FIXED=8 / REGRESSION=9` 变成 `5 / 12 / 18`。
+
+三个只在真跑之后才暴露的测量问题，全部当场转成载体而不是"下次注意"：
+
+1. **判红不等于可判**。18 条判红里，一半的 target 是散文（`陈默那一行的 .chat-item__time-row 内的 image 与 …`），
+   `selectorsOf()` 从散文里抠一个 BEM 片段去 `selectAll`，抠到的物件条件渲染与否根本不受判据保证。
+   新增 `scripts/qa/audit-frame-verdicts.mjs`：可判性三条件（target 是单一选择器 / 锚点在产物里真实存在 /
+   探针给了数字答案）+ 第四条**正对照**（同帧至少要有一个 PRESENT(n>0)，否则"全 0"分不清是物件不在还是页面没渲染）。
+   结果：**18 → 可落账 3、不作判据 15**。审计器第一版把类名切成了 `card__photo`
+   （正则 `[a-zA-Z]\w*(__|--)\w+` 不许分隔符前有连字符），于是把真在产物里的 `.today-card__photo`
+   报成"查无此 class"——正则修成 `[\w-]*` 后重跑，剔掉的才从 8 条变成真实的 15 条。
+   被扣住的 15 条不但不落红，还要**撤销 12:14Z 那次已经写进台账的判红**：
+   审计器 `--restore-from issue-matrix.md.pre-cellpatch.bak` 逐条把 status 恢复成取景前的值，
+   statusEvidence 写明"撤销是因为探针不可判，不是因为验过没事"。15 条撤销、0 条静默丢弃。
+2. **`--identity guest` 是假的**。`ensureIdentity("guest")` 走的是"铸一个 B token 再 boot"，
+   日志打 `guest` 而 `verifyLogin` 回 `logged-in`——同一页被盖了两个身份的章。
+   补 `clearSession()`（removeStorage + logout/reset）并硬性要求量到 `not-logged-in`，否则这一组直接失败。
+3. **CLI 的 routeStack 会把子进程失败原文当值返回**（`ERR:automation_evaluate 调用失败…`），
+   于是 5 条永远停在 NO_LANDING。加 WS 落点腿之后真相出来了：这 5 条**根本没到达目标页**——
+   `pages/login/index` 实落 `pages/discover/index`、`subpackages/campus/campus/index` 实落 `…/campus/hub`。
+   这是产品守卫行为，不是取景手段问题，也不是判红理由。落账方式见 `emit-landing-debt-plan.mjs`：
+   只登记"请求哪页、实落哪页、由哪条通道确认、欠哪个前置"，不给判决。
+   其中两条登录页行改用真游客身份重拍后落点确认（`uidebt-shoot-guest2`），
+   剩下 3 条（matching ×2、campus/index ×1）按实测重定向落账。
+
+顺带把两个 `WS 未启用` 之外的记账补齐：`steps[].action === "none"` 不再算 unmet（上一版把"无需交互"
+记成"状态未施加"，白扣 6 条），以及交互后二次读栈记 `landingAfter` → 新桶 `LEFT_PAGE`
+（点了返回钮之后在本页查物件必然查不到，那不是回归）。本轮 LEFT_PAGE=0。
+
+台账现状：`待修复 47 / 已修复待复验 46 / 已修复（帧级）40`，`verify-ledger reports/audit/round-6` 仍 PASS
+（229 行、错位 0、转置 0、值域外 0）。
+
+## 29 唯一那条 P1 的未落一半，本轮真的落了：`/ip-city` 现在带城市中心坐标
+
+§27 结尾写的是"`>100km` 距离守卫没有载体，本轮不落地，写进终报开口清单"。
+这条决定在本轮稍后被推翻并落地——它不需要新裁决，需要的只是后端把中心坐标交出来。
+
+- 契约：`LocationCityView` 由 `String city` 扩成 `(city, latitude, longitude)`，
+  额外加一个"只有城市名"的兼容构造器；`LocationService` 新增 `CITY_CENTERS`
+  （南京/杭州/上海/成都/广州——正好覆盖 `DEMO_CITY_NETS` 的取值域加默认城市），
+  查不到中心的城市返回 `null` 坐标，语义是"量不出来"，**不许当距离 0**。
+  `resolveCityView(ip)` 是新的调用面，`/api/v1/location/ip-city` 直接用它。
+- 客户端：`utils/location.ts` 新增 `CITY_COORD_MAX_KM=100`、`distanceKm()`，
+  `LocationResult` 新增 `cityDistanceKm` 与 `cityTrusted`；
+  `citySource==="ip"` 且（距离 >100km 或 量不出来）⇒ `cityTrusted=false`。
+- 页面：`subpackages/profile-extra/profile/location.vue` 新增 `cityDistant` 与 `shownCity`，
+  不可信时**整块丢弃城市**（连地图 callout 一起改读 `shownCity`），落到"地址解析不可用 + 坐标行"，
+  不再走 `buildLocationText`——那条链会兜出硬编码"北京大学 · 附近"，等于用假城市盖住缺陷。
+- 载体：`apps/client/src/tests/utils/location-city.spec.ts`（6 例：跨省距离、同城市距离、
+  无中心表=不可信、无城市=不掺和）+ `apps/api/src/test/java/.../LocationServiceTest.java`
+  （3 例：演示网段带中心、内网走默认城市带中心、未知城市坐标必须是 null 不是 0）。
+  vitest 全量 `1251` 例里唯一那条红是 `stores/match.spec.ts` 的**过期断言**
+  （`swipeRight` 因 MP-R2-MATCHING-016 多了第三个实参 `callerSnapshot`，测试还按两个参数比），
+  已按新契约钉成 `("card-1", true, null)` —— 参数被删掉时这条会红，而不是静默少一个实参。
+- 重建与重启：mock 与 real 两份产物都重建，`cityTrusted` 在
+  `dist/build/mp-weixin/utils/location.js` 与 `mp-weixin-real/utils/location.js` 各自在位，
+  消费页 `subpackages/profile-extra/profile/location.js` 也读到它；8080 重启后
+  `curl /api/v1/location/ip-city` 原样回 `{"city":"南京","latitude":32.041544,"longitude":118.767413}`。
+  （共享 8080 的重启是本项明确授权的，旧进程 PID 29536 已核对命令行后停止，新 PID 32156。）
+- home/nearby **故意没动**：它们的行（MP-R6-F1-NEARBY-IP-CITY-001）已经用 `citySource`
+  把"IP 城市不做同城过滤、不写 NEARBY_CITY"关掉了，这一轮再改会作废它自己的待复验前置
+  （重建前 `serverCityTag` 在 home/nearby 各 0 次、重建后必须 ≥1 次）。
+  该行 §91 里"尚未开工"那句与源码不符：`home/index.vue:74`、`nearby/index.vue:117` 都已在读 `citySource`，
+  已在本次核对中记下。
+
+## 30 两个"跑到出报告才发现"的门禁洞：没有冻结步骤，和把空集当体检
+
+1. **round-7 从来没有"冻结快照"这一步**。终报的 A/B 两侧分界要求 `.zcode/tmp/round7-exec/exec-results.snapshot-*.json`，
+   而这个目录整轮不存在——只有 round-6 有。缺的不是文件，是**产生它的载体**：
+   round-6 那次是手抄的 cp。新增 `scripts/qa/freeze-exec-snapshot.mjs`（原样复制、文件名带源 sha256 前 12 位、
+   无真实 gitSha 或 0 行直接拒绝冻结），用它把重建前的 `exec-results.pre-rebuild-1048.json`
+   （gitSha `713c1729`、1107 行）冻成 `exec-results.snapshot-b89dc4a71654.json`。
+2. **`dist/src 四格` 把"无可检"和"检了没事"混成同一条红**。本轮定位类失败确实是 0 条
+   （`locate-label / locate-selector / locate-label-token-lost` 三桶皆 0），
+   旧逻辑一律记 `空集判红`，于是终报永远出不来。改成按桶计数分流：
+   有定位类失败却恢复不出 token ⇒ 仍然 FAIL（提取器坏了）；三桶全 0 ⇒ 印 `NOT_APPLICABLE`
+   并显式声明"它没有通过，它没跑"，不计入任何通过率。改完 `EMIT_RESULT=OK`，
+   17 条守恒断言全绿（`G8 10/10`、`G9 455/455`、证据 `326+0+0`、`NO_EVIDENCE_*=0`）。
+3. 顺手修掉一个会误导人的标签：分诊 sidecar 文件名写死 `triage-r6-at-report`，
+   在 round-7 的报告里把新跑出来的分诊标成 r6 来源。现按 `--round-dir` 派生（`triage-r7-at-report`）。

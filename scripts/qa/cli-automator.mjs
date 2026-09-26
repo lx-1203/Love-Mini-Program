@@ -158,6 +158,15 @@ export function bootSession(token, opts) {
     + " var p=vm['$pinia']||gp['$pinia'];"
     + " var s=p._s.get('session'); if(s&&s.bootstrap){ s.bootstrap(); } return 'boot-ok'; } catch(e){ return 'ERR ' + e.message; } }", opts);
 }
+/** 清掉本地会话（游客态取景用）。只清 token 不算清干净——store 里的 userSession 还在。 */
+export function clearSession(opts) {
+  return evaluate("() => { try { wx.removeStorageSync('token');"
+    + " var app=getApp(); var vm=app['$vm'];"
+    + " var gp=(vm.$&&vm.$.appContext.config.globalProperties)||{};"
+    + " var p=vm['$pinia']||gp['$pinia'];"
+    + " var s=p._s.get('session'); if(s){ if(s.logout){ s.logout(); } else if(s.reset){ s.reset(); } else { s.isLoggedIn=false; s.userSession=null; } }"
+    + " return 'clear-ok'; } catch(e){ return 'ERR ' + e.message; } }", opts);
+}
 export function verifyLogin(opts) {
   return evaluate("() => { try { var app=getApp(); var vm=app['$vm'];"
     + " var gp=(vm.$&&vm.$.appContext.config.globalProperties)||{};"

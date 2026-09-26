@@ -1,7 +1,7 @@
 {
- "round": "round-7-uidebt-1a1df78b",
+ "round": "round-7-uidebt-ws-8df4de49",
  "gitSha": "8df4de49",
- "updatedAt": "2026-09-26T12:39:21.355Z",
+ "updatedAt": "2026-09-26T13:09:04.664Z",
  "plan": "reports/audit/round-7/frameplan-merged.json",
  "project": "apps/client/dist/build/mp-weixin",
  "identitySeen": "A",
@@ -13,8 +13,8 @@
    "route": "subpackages/campus/campus/hub",
    "landing": "subpackages/campus/campus/hub",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2-CAMPUS-HUB-010.png",
-   "bytes": 38401,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2-CAMPUS-HUB-010.png",
+   "bytes": 38407,
    "checks": [
     {
      "kind": "selector-count-equal",
@@ -51,16 +51,18 @@
     "scroll→.campus-hub__feed"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001",
    "route": "subpackages/campus/campus/hub",
    "landing": "subpackages/campus/campus/hub",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001.png",
-   "bytes": 38381,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001.png",
+   "bytes": 38407,
    "checks": [
     {
      "kind": "rect-below",
@@ -107,16 +109,18 @@
     "scroll→.campus-hub__feed"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003",
    "route": "subpackages/campus/campus/hub",
    "landing": "subpackages/campus/campus/hub",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003.png",
-   "bytes": 38382,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003.png",
+   "bytes": 38407,
    "checks": [
     {
      "kind": "rect-aspect",
@@ -153,16 +157,18 @@
     "scroll→.campus-hub__feed"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2-PROFILE-025",
    "route": "pages/profile/index",
    "landing": "pages/profile/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2-PROFILE-025.png",
-   "bytes": 24996,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2-PROFILE-025.png",
+   "bytes": 34662,
    "checks": [
     {
      "kind": "text-equals",
@@ -202,16 +208,18 @@
     "scroll→.my-interaction"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A05",
    "route": "subpackages/village/village/publish",
    "landing": "subpackages/village/village/publish",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A05.png",
-   "bytes": 21894,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A05.png",
+   "bytes": 18543,
    "checks": [
     {
      "kind": "selector-absent",
@@ -228,8 +236,8 @@
     {
      "kind": "rect-unchanged",
      "target": ".publish-target-sheet__panel",
-     "count": 0,
-     "check": "ABSENT_UNEXPECTED",
+     "count": 1,
+     "check": "PRESENT(1)",
      "anchors": [
       ".publish-target-sheet__panel"
      ]
@@ -237,8 +245,8 @@
     {
      "kind": "text-equals",
      "target": ".publish-target-sheet__title",
-     "count": 0,
-     "check": "ABSENT_UNEXPECTED",
+     "count": 1,
+     "check": "PRESENT(1)",
      "anchors": [
       ".publish-target-sheet__title"
      ]
@@ -248,21 +256,24 @@
    "crop": "发布页目标弹层展开态整屏（含正文滚动后一帧）",
    "stepsApplied": [
     "open-page",
+    "tap",
     "scroll→.publish-body"
    ],
-   "stepsUnmet": [
+   "stepsUnmet": [],
+   "wsApplied": [
     "tap"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsFailed": [],
+   "landingAfter": "subpackages/village/village/publish",
+   "stateApplied": true
   },
   {
    "id": "MP-R2-PUB-114",
    "route": "subpackages/village/village/publish",
    "landing": "subpackages/village/village/publish",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-PUB-114.png",
-   "bytes": 21902,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-PUB-114.png",
+   "bytes": 18543,
    "checks": [
     {
      "kind": "text-contains",
@@ -308,16 +319,18 @@
     "scroll→.publish-rows"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005",
    "route": "subpackages/village/village/publish",
    "landing": "subpackages/village/village/publish",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005.png",
-   "bytes": 21902,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005.png",
+   "bytes": 18543,
    "checks": [
     {
      "kind": "element-present",
@@ -355,23 +368,30 @@
    ],
    "identity": "A",
    "crop": "正文下方已选话题 chip 的 × 移除钮（按住态）",
-   "stepsApplied": [],
-   "stepsUnmet": [
+   "stepsApplied": [
     "tap",
     "tap",
     "tap",
     "press-hold"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "stepsUnmet": [],
+   "wsApplied": [
+    "tap",
+    "tap",
+    "tap",
+    "press-hold"
+   ],
+   "wsFailed": [],
+   "landingAfter": "subpackages/village/village/publish",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01",
    "route": "subpackages/village/village/publish",
    "landing": "subpackages/village/village/publish",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01.png",
-   "bytes": 21902,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01.png",
+   "bytes": 18685,
    "checks": [
     {
      "kind": "element-count",
@@ -408,45 +428,60 @@
    "crop": "发布页行项区四行（含提及好友行与其点击后的 toast）",
    "stepsApplied": [
     "scroll→.publish-rows",
-    "capture"
-   ],
-   "stepsUnmet": [
+    "capture",
     "tap"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "stepsUnmet": [],
+   "wsApplied": [
+    "tap"
+   ],
+   "wsFailed": [],
+   "landingAfter": "subpackages/village/village/publish",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
    "route": "subpackages/discover-extra/discover/matching",
    "landing": "ERR:automation_evaluate 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.e",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001.png",
-   "bytes": 34094,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001.png",
+   "bytes": 34097,
    "checks": [
     {
      "kind": "computed-style",
      "target": ".match-loading__skip",
-     "check": "PROBE_NO_ANSWER",
-     "note": "automation_evaluate 调用失败：Command failed: D:\\微信开发者\\"
+     "count": 0,
+     "check": "ABSENT_UNEXPECTED",
+     "anchors": [
+      ".match-loading__skip"
+     ]
     },
     {
      "kind": "computed-style",
      "target": ".match-loading__skip-text",
-     "check": "PROBE_NO_ANSWER",
-     "note": "automation_evaluate 调用失败：Command failed: D:\\微信开发者\\"
+     "count": 0,
+     "check": "ABSENT_UNEXPECTED",
+     "anchors": [
+      ".match-loading__skip-text"
+     ]
     },
     {
      "kind": "text-equals",
      "target": ".match-loading__skip-text",
-     "check": "PROBE_NO_ANSWER",
-     "note": "automation_evaluate 调用失败：Command failed: D:\\微信开发者\\"
+     "count": 0,
+     "check": "ABSENT_UNEXPECTED",
+     "anchors": [
+      ".match-loading__skip-text"
+     ]
     },
     {
      "kind": "rect-contrast",
      "target": ".match-loading__skip",
-     "check": "PROBE_NO_ANSWER",
-     "note": "automation_evaluate 调用失败：Command failed: D:\\微信开发者\\"
+     "count": 0,
+     "check": "ABSENT_UNEXPECTED",
+     "anchors": [
+      ".match-loading__skip"
+     ]
     }
    ],
    "identity": "A",
@@ -455,6 +490,9 @@
     "open-page"
    ],
    "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
    "stateApplied": true
   },
   {
@@ -462,8 +500,8 @@
    "route": "subpackages/discover-extra/discover/matching",
    "landing": "ERR:automation_evaluate 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.e",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-MATCHING-016.png",
-   "bytes": 34094,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-MATCHING-016.png",
+   "bytes": 34106,
    "checks": [
     {
      "kind": "text-not-contains",
@@ -495,6 +533,9 @@
     "capture"
    ],
    "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
    "stateApplied": true
   },
   {
@@ -502,8 +543,8 @@
    "route": "subpackages/circles/circles/circle-home",
    "landing": "subpackages/circles/circles/circle-home",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002.png",
-   "bytes": 37442,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002.png",
+   "bytes": 36265,
    "checks": [
     {
      "kind": "text-regex",
@@ -531,16 +572,18 @@
     "scroll→.pinned-card"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001",
    "route": "subpackages/circles/circles/circle-home",
    "landing": "subpackages/circles/circles/circle-home",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001.png",
-   "bytes": 37452,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001.png",
+   "bytes": 36265,
    "checks": [
     {
      "kind": "style-value",
@@ -570,16 +613,18 @@
     "open-page"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002",
    "route": "subpackages/village/village/detail",
    "landing": "subpackages/village/village/detail",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002.png",
-   "bytes": 11310,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002.png",
+   "bytes": 11342,
    "checks": [
     {
      "kind": "selector-count",
@@ -610,16 +655,18 @@
     "scroll→.post-images"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
    "route": "subpackages/village/village/detail",
    "landing": "subpackages/village/village/detail",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/B-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001.png",
-   "bytes": 11327,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/B-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001.png",
+   "bytes": 11323,
    "checks": [
     {
      "kind": "class-present",
@@ -656,18 +703,22 @@
     "scroll→.detail-body"
    ],
    "stepsUnmet": [
-    "tap"
+    "tap:选择器在当前页查不到 .comment-item.comment-reply-btn"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [
+    "tap:选择器在当前页查不到 .comment-item.comment-reply-btn"
+   ],
+   "landingAfter": "",
+   "stateApplied": false
   },
   {
    "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-007",
    "route": "pages/messages/index",
    "landing": "pages/messages/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/B-MP-R2VIS-PAGES-MESSAGES-INDEX-007.png",
-   "bytes": 28724,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/B-MP-R2VIS-PAGES-MESSAGES-INDEX-007.png",
+   "bytes": 29386,
    "checks": [
     {
      "kind": "node-order",
@@ -709,21 +760,24 @@
    "identity": "A",
    "crop": "页头右上角两枚圆形按钮（含其左侧标题行末端）",
    "stepsApplied": [
-    "open-page"
-   ],
-   "stepsUnmet": [
+    "open-page",
     "tap"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "stepsUnmet": [],
+   "wsApplied": [
+    "tap"
+   ],
+   "wsFailed": [],
+   "landingAfter": "pages/messages/index",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
    "route": "pages/messages/index",
    "landing": "pages/messages/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/B-MP-R2VIS-PAGES-MESSAGES-INDEX-009.png",
-   "bytes": 28724,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/B-MP-R2VIS-PAGES-MESSAGES-INDEX-009.png",
+   "bytes": 29386,
    "checks": [
     {
      "kind": "descendant-exists",
@@ -762,16 +816,18 @@
     "wait"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
    "route": "pages/messages/index",
    "landing": "pages/messages/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/B-MP-R2-PAGES-MESSAGES-INDEX-020.png",
-   "bytes": 28724,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/B-MP-R2-PAGES-MESSAGES-INDEX-020.png",
+   "bytes": 29386,
    "checks": [
     {
      "kind": "frame-text",
@@ -810,20 +866,26 @@
     "open-page"
    ],
    "stepsUnmet": [
-    "longpress",
-    "tap",
-    "re-enter-tab"
+    "longpress:选择器在当前页查不到 .陈默那一行的.chat-item",
+    "tap:选择器在当前页查不到 .动作面板第2项（文本标为未读）",
+    "re-enter-tab:选择器在当前页查不到 .pages/messages/index"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [
+    "longpress:选择器在当前页查不到 .陈默那一行的.chat-item",
+    "tap:选择器在当前页查不到 .动作面板第2项（文本标为未读）",
+    "re-enter-tab:选择器在当前页查不到 .pages/messages/index"
+   ],
+   "landingAfter": "",
+   "stateApplied": false
   },
   {
    "id": "MP-R2-PAGES-REGISTER-SUCCESS-005",
    "route": "pages/register/success",
    "landing": "pages/register/success",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/B-MP-R2-PAGES-REGISTER-SUCCESS-005.png",
-   "bytes": 22578,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/B-MP-R2-PAGES-REGISTER-SUCCESS-005.png",
+   "bytes": 22585,
    "checks": [
     {
      "kind": "text-equals",
@@ -859,16 +921,18 @@
     "open-page"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-011",
    "route": "pages/register/index",
    "landing": "pages/register/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-PAGES-REGISTER-INDEX-011.png",
-   "bytes": 27180,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-PAGES-REGISTER-INDEX-011.png",
+   "bytes": 26776,
    "checks": [
     {
      "kind": "bounding-box-min",
@@ -946,24 +1010,28 @@
    "identity": "guest",
    "crop": "密码行右侧眼睛控件（含透明热区）、手机号行清除控件、左上返回圆钮",
    "stepsApplied": [
+    "input",
     "measure",
     "measure",
-    "measure"
+    "measure",
+    "tap"
    ],
-   "stepsUnmet": [
+   "stepsUnmet": [],
+   "wsApplied": [
     "input",
     "tap"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsFailed": [],
+   "landingAfter": "pages/register/index",
+   "stateApplied": true
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-012",
    "route": "pages/register/index",
    "landing": "pages/register/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-PAGES-REGISTER-INDEX-012.png",
-   "bytes": 27180,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-PAGES-REGISTER-INDEX-012.png",
+   "bytes": 26258,
    "checks": [
     {
      "kind": "text-not-contains",
@@ -1005,30 +1073,35 @@
    "identity": "guest",
    "crop": "确认密码行与其下方行内错误位",
    "stepsApplied": [
+    "input",
+    "input",
     "capture",
+    "tap",
     "capture"
    ],
-   "stepsUnmet": [
+   "stepsUnmet": [],
+   "wsApplied": [
     "input",
     "input",
     "tap"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsFailed": [],
+   "landingAfter": "pages/register/index",
+   "stateApplied": true
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-013",
    "route": "pages/register/index",
    "landing": "pages/register/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-PAGES-REGISTER-INDEX-013.png",
-   "bytes": 27180,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-PAGES-REGISTER-INDEX-013.png",
+   "bytes": 28807,
    "checks": [
     {
      "kind": "text-contains",
      "target": ".field-error__text",
-     "count": 0,
-     "check": "ABSENT_UNEXPECTED",
+     "count": 1,
+     "check": "PRESENT(1)",
      "anchors": [
       ".field-error__text"
      ]
@@ -1036,8 +1109,8 @@
     {
      "kind": "text-not-contains",
      "target": ".field-error__text",
-     "count": 0,
-     "check": "ABSENT_OK",
+     "count": 1,
+     "check": "PRESENT_UNEXPECTED(1)",
      "anchors": [
       ".field-error__text"
      ]
@@ -1052,22 +1125,26 @@
    "identity": "guest",
    "crop": "手机号行、其下方行内错误位与验证码 toast",
    "stepsApplied": [
+    "input",
+    "tap",
     "capture"
    ],
-   "stepsUnmet": [
+   "stepsUnmet": [],
+   "wsApplied": [
     "input",
     "tap"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsFailed": [],
+   "landingAfter": "pages/register/index",
+   "stateApplied": true
   },
   {
    "id": "MP-R2-CAMPUSINDEX-011",
    "route": "subpackages/campus/campus/index",
    "landing": "ERR:automation_evaluate 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.e",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-CAMPUSINDEX-011.png",
-   "bytes": 38429,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-CAMPUSINDEX-011.png",
+   "bytes": 38405,
    "checks": [
     {
      "kind": "request-count",
@@ -1078,8 +1155,8 @@
     {
      "kind": "text-regex",
      "target": ".cert-badge__text",
-     "count": 0,
-     "check": "ABSENT_UNEXPECTED",
+     "count": 1,
+     "check": "PRESENT(1)",
      "anchors": [
       ".cert-badge__text"
      ]
@@ -1099,6 +1176,9 @@
     "capture"
    ],
    "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
    "stateApplied": true
   },
   {
@@ -1106,8 +1186,8 @@
    "route": "pages/profile/index",
    "landing": "pages/profile/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-PROFILE-024.png",
-   "bytes": 25003,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-PROFILE-024.png",
+   "bytes": 34675,
    "checks": [
     {
      "kind": "computed-style",
@@ -1146,16 +1226,18 @@
     "measure"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2-CIRCLES-INDEX-004",
    "route": "subpackages/circles/circles/index",
    "landing": "subpackages/circles/circles/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2-CIRCLES-INDEX-004.png",
-   "bytes": 38175,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2-CIRCLES-INDEX-004.png",
+   "bytes": 38182,
    "checks": [
     {
      "kind": "text-contains",
@@ -1200,16 +1282,18 @@
     "open-page"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001",
    "route": "subpackages/circles/circles/index",
    "landing": "subpackages/circles/circles/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001.png",
-   "bytes": 38167,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001.png",
+   "bytes": 38179,
    "checks": [
     {
      "kind": "style-value",
@@ -1248,16 +1332,18 @@
     "open-page"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2-POSTTOPIC-011",
    "route": "subpackages/circles/circles/post-topic",
    "landing": "subpackages/circles/circles/post-topic",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2-POSTTOPIC-011.png",
-   "bytes": 23929,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2-POSTTOPIC-011.png",
+   "bytes": 23888,
    "checks": [
     {
      "kind": "style-value",
@@ -1287,24 +1373,28 @@
     "open-page"
    ],
    "stepsUnmet": [
-    "tap"
+    "tap:选择器在当前页查不到 .activity-add"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [
+    "tap:选择器在当前页查不到 .activity-add"
+   ],
+   "landingAfter": "",
+   "stateApplied": false
   },
   {
    "id": "MP-R2-POSTTOPIC-012",
    "route": "subpackages/circles/circles/post-topic",
    "landing": "subpackages/circles/circles/post-topic",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2-POSTTOPIC-012.png",
-   "bytes": 23929,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2-POSTTOPIC-012.png",
+   "bytes": 36503,
    "checks": [
     {
      "kind": "route-after-tap",
      "target": ".post-header__back",
-     "count": 1,
-     "check": "PRESENT(1)",
+     "count": 0,
+     "check": "ABSENT_UNEXPECTED",
      "anchors": [
       ".post-header__back"
      ]
@@ -1319,21 +1409,24 @@
    "identity": "A",
    "crop": "顶部导航栏（返回钮 + 标题 + 发布钮）与跳转后首页首屏各一张",
    "stepsApplied": [
-    "open-page"
-   ],
-   "stepsUnmet": [
+    "open-page",
     "tap"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "stepsUnmet": [],
+   "wsApplied": [
+    "tap"
+   ],
+   "wsFailed": [],
+   "landingAfter": "subpackages/circles/circles/post-topic",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007",
    "route": "subpackages/chat/chat-session/index",
    "landing": "subpackages/chat/chat-session/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007.png",
-   "bytes": 12425,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007.png",
+   "bytes": 12437,
    "checks": [
     {
      "kind": "class-present",
@@ -1372,16 +1465,18 @@
     "open-page"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02",
    "route": "subpackages/chat/chat-session/index",
    "landing": "subpackages/chat/chat-session/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02.png",
-   "bytes": 12423,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02.png",
+   "bytes": 12437,
    "checks": [
     {
      "kind": "class-absent",
@@ -1408,21 +1503,24 @@
    "identity": "A",
    "crop": "输入区整块（输入栏 + 其下方到屏底的留白带）键盘收起/弹起各一张",
    "stepsApplied": [
-    "open-page"
-   ],
-   "stepsUnmet": [
+    "open-page",
     "tap"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "stepsUnmet": [],
+   "wsApplied": [
+    "tap"
+   ],
+   "wsFailed": [],
+   "landingAfter": "subpackages/chat/chat-session/index",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001",
    "route": "subpackages/chat/chat-session/index",
    "landing": "subpackages/chat/chat-session/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001.png",
-   "bytes": 12423,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001.png",
+   "bytes": 12437,
    "checks": [
     {
      "kind": "text-contains",
@@ -1452,19 +1550,24 @@
     "open-page"
    ],
    "stepsUnmet": [
-    "longpress",
-    "tap"
+    "longpress:选择器在当前页查不到 .#msg-row-<被删消息id>",
+    "tap:选择器在当前页查不到 .longpress-menu__item"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [
+    "longpress:选择器在当前页查不到 .#msg-row-<被删消息id>",
+    "tap:选择器在当前页查不到 .longpress-menu__item"
+   ],
+   "landingAfter": "",
+   "stateApplied": false
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
    "route": "subpackages/profile-extra/profile/other",
    "landing": "subpackages/profile-extra/profile/other",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001.png",
-   "bytes": 8588,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001.png",
+   "bytes": 8577,
    "checks": [
     {
      "kind": "text-regex",
@@ -1500,16 +1603,18 @@
     "open-page"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004",
    "route": "subpackages/village/village/post",
    "landing": "subpackages/village/village/post",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004.png",
-   "bytes": 20580,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004.png",
+   "bytes": 20581,
    "checks": [
     {
      "kind": "style-value",
@@ -1536,16 +1641,18 @@
     "open-page"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2-PAGES-HOME-INDEX-102",
    "route": "pages/home/index",
    "landing": "pages/home/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2-PAGES-HOME-INDEX-102.png",
-   "bytes": 36507,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2-PAGES-HOME-INDEX-102.png",
+   "bytes": 36497,
    "checks": [
     {
      "kind": "count",
@@ -1577,20 +1684,22 @@
    ],
    "identity": "A",
    "crop": "首页今日推荐卡整卡（卡头换一位图标 + 主图 + 喜欢按钮心形三处 image）",
-   "stepsApplied": [],
-   "stepsUnmet": [
+   "stepsApplied": [
     "none"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2-PAGES-HOME-INDEX-110",
    "route": "pages/home/index",
    "landing": "pages/home/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2-PAGES-HOME-INDEX-110.png",
-   "bytes": 36507,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2-PAGES-HOME-INDEX-110.png",
+   "bytes": 36506,
    "checks": [
     {
      "kind": "count",
@@ -1613,20 +1722,22 @@
    ],
    "identity": "A",
    "crop": "今日推荐卡 info 区的 distance 行（单行绿字）",
-   "stepsApplied": [],
-   "stepsUnmet": [
+   "stepsApplied": [
     "none"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-PAGES-HOME-INDEX-004",
    "route": "pages/home/index",
    "landing": "pages/home/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2VIS-PAGES-HOME-INDEX-004.png",
-   "bytes": 36507,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-PAGES-HOME-INDEX-004.png",
+   "bytes": 36501,
    "checks": [
     {
      "kind": "text-regex",
@@ -1662,16 +1773,18 @@
     "set-theme"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-PAGES-HOME-INDEX-005",
    "route": "pages/home/index",
    "landing": "pages/home/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2VIS-PAGES-HOME-INDEX-005.png",
-   "bytes": 36507,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-PAGES-HOME-INDEX-005.png",
+   "bytes": 36501,
    "checks": [
     {
      "kind": "computed-style",
@@ -1697,20 +1810,22 @@
    ],
    "identity": "A",
    "crop": "首页头部整行（标题 + 右侧头像/定位/铃铛）含其下今日推荐卡左缘",
-   "stepsApplied": [],
-   "stepsUnmet": [
+   "stepsApplied": [
     "none"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2-CAMPUSPOST-013",
    "route": "subpackages/campus/campus/post-topic",
    "landing": "subpackages/campus/campus/post-topic",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2-CAMPUSPOST-013.png",
-   "bytes": 22652,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2-CAMPUSPOST-013.png",
+   "bytes": 22646,
    "checks": [
     {
      "kind": "count",
@@ -1740,16 +1855,18 @@
     "open-url"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-PAGES-LOGIN-INDEX-001",
    "route": "pages/login/index",
    "landing": "ERR:automation_evaluate 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.e",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2VIS-PAGES-LOGIN-INDEX-001.png",
-   "bytes": 34084,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-PAGES-LOGIN-INDEX-001.png",
+   "bytes": 34088,
    "checks": [
     {
      "kind": "computed-style",
@@ -1772,19 +1889,22 @@
    ],
    "identity": "A",
    "crop": "登录页底部按钮区（微信一键登录 / 手机号快捷登录 / 稍后再看三枚）",
-   "stepsApplied": [],
-   "stepsUnmet": [
+   "stepsApplied": [
     "none"
    ],
-   "stateApplied": false
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-PAGES-LOGIN-INDEX-007",
    "route": "pages/login/index",
    "landing": "ERR:automation_evaluate 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.e",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2VIS-PAGES-LOGIN-INDEX-007.png",
-   "bytes": 34084,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-PAGES-LOGIN-INDEX-007.png",
+   "bytes": 34088,
    "checks": [
     {
      "kind": "text-contains",
@@ -1807,19 +1927,22 @@
    ],
    "identity": "A",
    "crop": "登录页手机号快捷授权按钮 + 其下「验证码或密码登录」文字入口",
-   "stepsApplied": [],
-   "stepsUnmet": [
+   "stepsApplied": [
     "none"
    ],
-   "stateApplied": false
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2-PAGES-DISCOVER-INDEX-013",
    "route": "pages/discover/index",
    "landing": "pages/discover/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2-PAGES-DISCOVER-INDEX-013.png",
-   "bytes": 34084,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2-PAGES-DISCOVER-INDEX-013.png",
+   "bytes": 34078,
    "checks": [
     {
      "kind": "text-regex",
@@ -1853,18 +1976,22 @@
    "crop": "匹配卡 info 区的 distance 行（距离 · 活跃态）",
    "stepsApplied": [],
    "stepsUnmet": [
-    "swipe-card"
+    "swipe-card:选择器在当前页查不到 .match-info__distance"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [
+    "swipe-card:选择器在当前页查不到 .match-info__distance"
+   ],
+   "landingAfter": "",
+   "stateApplied": false
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001",
    "route": "subpackages/village/village/index",
    "landing": "subpackages/village/village/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001.png",
-   "bytes": 38104,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001.png",
+   "bytes": 38082,
    "checks": [
     {
      "kind": "computed-style",
@@ -1900,16 +2027,18 @@
     "scroll→.post-card__tags"
    ],
    "stepsUnmet": [],
-   "stateApplied": true,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001",
    "route": "subpackages/chat/official-chat/index",
    "landing": "subpackages/chat/official-chat/index",
    "status": "SHOT",
-   "frame": "reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001.png",
-   "bytes": 36136,
+   "frame": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001.png",
+   "bytes": 36143,
    "checks": [
     {
      "kind": "text-regex",
@@ -1941,12 +2070,14 @@
    ],
    "identity": "A",
    "crop": "助手会话消息流（助手气泡含表情位与活动卡）",
-   "stepsApplied": [],
-   "stepsUnmet": [
+   "stepsApplied": [
     "none"
    ],
-   "stateApplied": false,
-   "frameFrom": "reused@reports/screenshots/round-7-uidebt-1a1df78b"
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingAfter": "",
+   "stateApplied": true
   }
  ],
  "counts": {
@@ -1955,5 +2086,5 @@
   "FAILED": 0,
   "NO_EVIDENCE": 0
  },
- "machinePassAllChecks": 16
+ "machinePassAllChecks": 17
 }

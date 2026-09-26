@@ -63,7 +63,9 @@ describe("match store 状态机", () => {
     expect(store.canProceed).toBe(false);
     store.markAnimationDone();
     expect(store.canProceed).toBe(true);
-    expect(discoverMock.swipeRight).toHaveBeenCalledWith("card-1", true);
+    /* 第三个实参是 MP-R2-MATCHING-016 的卡片快照透传：本用例没给 snapshot，
+       所以必须是 null——写死它，透传哪天被删掉这条会红，而不是静默少一个参数。 */
+    expect(discoverMock.swipeRight).toHaveBeenCalledWith("card-1", true, null);
   });
 
   it("runMatchCheck 单向喜欢 -> idle，canProceed 保持 false", async () => {

@@ -20,21 +20,38 @@ import { resolve, join } from "node:path";
 const REPO = resolve(import.meta.dirname, "..", "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
 const PLAN = resolve(REPO, arg("plan", "reports/audit/round-7/frameplan-merged.json"));
-const FRAMES = resolve(REPO, arg("frames", "reports/audit/round-7/uidebt-shoot/shoot-results.json"));
+const FRAMES_LIST = arg("frames", "reports/audit/round-7/uidebt-shoot/shoot-results.json").split(",").map((s) => s.trim()).filter(Boolean);
 const OUT = resolve(REPO, "reports/audit/round-7");
 
-for (const [label, f] of [["配方", PLAN], ["取景结果", FRAMES]]) {
-  if (!existsSync(f)) { console.log("FV_RESULT=FAIL reason=" + label + "不存在 " + f.split(REPO + "/")[1] + "（没有证据就不出判决）"); process.exit(2); }
+const frameFiles = FRAMES_LIST.map((f) => resolve(REPO, f));
+for (const [label, f] of [["配方", PLAN], ...frameFiles.map((f) => ["取景结果", f])]) {
+  if (!existsSync(f)) { console.log("FV_RESULT=FAIL reason=" + label + "不存在 " + f.split(REPO.split("\\").join("/") + "/")[1] + "（没有证据就不出判决）"); process.exit(2); }
 }
 const plan = JSON.parse(readFileSync(PLAN, "utf8"));
-const fr = JSON.parse(readFileSync(FRAMES, "utf8"));
-const byId = new Map((fr.rows || []).map((r) => [r.id, r]));
+/* 多个取景文件：后给的覆盖先给的（同一 id 只留最后一次测量）。
+   覆盖成"没拿到帧"时必须点名——否则一次失败的补跑会静默吃掉上一轮的有效证据。
+   每条行都记下自己来自哪一份（framesFrom），判决里能看出这个结论是哪一次取景给的。 */
+const byId = new Map();
+const overwrites = [], srcs = [];
+for (let i = 0; i < frameFiles.length; i++) {
+  const f = frameFiles[i];
+  const tag = f.split(REPO.split("\\").join("/") + "/")[1] || f;
+  const j = JSON.parse(readFileSync(f, "utf8"));
+  srcs.push({ tag, gitSha: j.gitSha || "?", identitySeen: j.identitySeen || "?", verifyLast: j.verifyLast || "?", rows: (j.rows || []).length });
+  for (const r of j.rows || []) {
+    const prev = byId.get(r.id);
+    if (prev && prev.status === "SHOT" && r.status !== "SHOT") overwrites.push(r.id + ": " + prev.status + "→" + r.status);
+    byId.set(r.id, { ...r, framesFrom: tag });
+  }
+}
+if (overwrites.length) console.log("FV_WARN 后一次取景把 " + overwrites.length + " 条有效帧覆盖成无帧（后者胜，逐条点名）：" + overwrites.join("、"));
+const fr = { plan: String(plan.generatedAt || "?"), srcs };
 const planItems = plan.rows || [];
 if (!planItems.length || !byId.size) { console.log("FV_RESULT=FAIL reason=输入为空集，空集不得出判决"); process.exit(2); }
 
-const patches = [], bucket = { NO_LANDING: 0, STATE_NOT_APPLIED: 0, FIXED_FRAME: 0, REGRESSION: 0, NEEDS_EYE: 0, NO_FRAME: 0, NOT_SHOOTABLE: 0, REWRITE: 0 };
-const md = ["# round-7 · 帧级判决（配方 " + (fr.plan || "?") + " × 取景 " + (fr.gitSha || "?") + "）", "",
-  "取景身份：" + (fr.identitySeen || "?") + " / " + (fr.verifyLast || "?"), "",
+const patches = [], bucket = { NO_LANDING: 0, STATE_NOT_APPLIED: 0, LEFT_PAGE: 0, FIXED_FRAME: 0, REGRESSION: 0, NEEDS_EYE: 0, NO_FRAME: 0, NOT_SHOOTABLE: 0, REWRITE: 0 };
+const md = ["# round-7 · 帧级判决（取景来源 " + fr.srcs.length + " 份）", "",
+  ...fr.srcs.map((s) => "- 来源 `" + s.tag + "` sha=" + s.gitSha + " 行=" + s.rows + " 身份=" + s.identitySeen + "/" + s.verifyLast), "",
   "| id | 判决 | 机器判点 | 帧 |", "|---|---|---|---|"];
 
 for (const it of planItems) {
@@ -83,9 +100,17 @@ for (const it of planItems) {
     md.push("| " + it.id + " | STATE_NOT_APPLIED | 欠 " + (r.stepsUnmet || []).join("/") + " | " + r.frame + " |");
     continue;
   }
+  /* 交互确实做了，但把页面导航走了（点返回、跳详情）⇒ 探针在别的页上查本页物件，
+     查不到是必然的，那不是回归。与 NO_LANDING 同一规矩：先问"页面对不对"，再问"东西在不在"。 */
+  if (r.landingAfter && !String(r.landingAfter).startsWith("ERR") && !String(r.landingAfter).includes(String(r.route || ""))) {
+    bucket.LEFT_PAGE++;
+    patches.push({ id: it.id, col: 9, new: ("交互已施加但离开了目标页（实落 " + String(r.landingAfter).slice(0, 60) + "），本页物件的判点不作判据；帧 " + r.frame).replace(/\|/g, "／"), why: "离开目标页后的探针答案不能当判决" });
+    md.push("| " + it.id + " | LEFT_PAGE | 不作判 | " + r.frame + " |");
+    continue;
+  }
   const hard = checks.filter((c) => !String(c.check).startsWith("FRAME_ONLY"));
   const bad = hard.filter((c) => String(c.check).startsWith("PRESENT_UNEXPECTED") || c.check === "ABSENT_UNEXPECTED" || c.check === "PROBE_NO_ANSWER");
-  const ev = r.frame + "(" + realBytes + "B) 判点 " + hard.length + " 条";
+  const ev = r.frame + "(" + realBytes + "B" + (r.framesFrom ? " 取自 " + r.framesFrom.split("/").slice(-2)[0] : "") + ") 判点 " + hard.length + " 条";
   if (bad.length) {
     bucket.REGRESSION++;
     patches.push({ id: it.id, col: 6, new: "待修复（帧级复验判红：判点未成立，见 statusEvidence）", why: "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿" });
@@ -104,10 +129,11 @@ for (const it of planItems) {
 }
 const ids = new Set(patches.map((p) => p.id));
 writeFileSync(join(OUT, "cellplan-round7-frames.json"), JSON.stringify({
-  generatedAt: new Date().toISOString(), source: "verdict-from-frames.mjs", frames: fr.frames || (fr.rows || []).length,
+  generatedAt: new Date().toISOString(), source: "verdict-from-frames.mjs", frames: byId.size, frameSources: fr.srcs,
   buckets: bucket, patchIds: ids.size, patches,
 }, null, 1));
-md.splice(4, 0, "", "分桶：" + JSON.stringify(bucket), "");
+/* 分桶行插在判决表之前（不是固定第 4 行——表头上面现在有 N 个取景来源行，写死会把它插进来源清单里）。 */
+md.splice(md.findIndex((l) => l.startsWith("| id |")), 0, "分桶：" + JSON.stringify(bucket), "");
 writeFileSync(join(OUT, "frame-verdicts.md"), md.join("\n"));
 const covered = [...planItems].filter((i) => i.disposition === "SHOOT").length;
 console.log("FV_PLAN=" + planItems.length + " SHOOT=" + covered + " 取景行=" + byId.size);
