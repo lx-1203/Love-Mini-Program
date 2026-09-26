@@ -18,9 +18,15 @@ else
   exit 2
 fi
 
-echo "== 1) 前置补齐后的重测（游客档 / 带 URL 参数的两个路由），写到 interact-b2 不动 A 侧权威件"
-"$NODE" scripts/qa/r-exec-cli.mjs --project apps/client/dist/build/mp-weixin \
-  --out reports/audit/round-7/interact-b2 --identity guest --manifests PAGES-LOGIN-INDEX
+echo "== 1) 前置补齐后的重测（带 URL 参数的路由走 mock 档；游客档必须走 real 档），写到 interact-b2 不动 A 侧权威件"
+# 游客档不能跑在 mock 包上：probe-guest-band.mjs 实测 cold/warm 两腿都 AUTOLOGIN_ON_OPEN
+# （mock 的 bootstrap 无条件注入 mock 会话），跑出来的"落在别的页"是测量错，执行器现在会直接 exit 2。
+"$NODE" scripts/qa/r-exec-cli.mjs --project apps/client/dist/build/mp-weixin-real \
+  --out reports/audit/round-7/interact-real-guest --identity guest --manifests PAGES-LOGIN-INDEX \
+  --label round-7-real-guest
+"$NODE" scripts/qa/supersede-mock-guest-rows.mjs \
+  --old reports/audit/round-7/interact-b2/exec-results.json \
+  --new reports/audit/round-7/interact-real-guest/exec-results.json
 "$NODE" scripts/qa/r-exec-cli.mjs --project apps/client/dist/build/mp-weixin \
   --out reports/audit/round-7/interact-b2 \
   --manifests SUBPACKAGES-CAMPUS-CAMPUS-INDEX,SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING,次要18
@@ -50,6 +56,12 @@ echo "== 4) 判决 → 可判性闸（含撤销旧判红的 --restore-from）→
   --frames reports/audit/round-7/uidebt-shoot-txt/shoot-results.json \
   --restore-from reports/audit/round-6/issue-matrix.md.pre-cellpatch.bak
 "$NODE" scripts/qa/verify-source-shape.mjs
+
+echo "== 5) 功能开关那一档：VIP 34 条在 mock/real 上必被守卫弹回（membershipEnabled 默认 false），要 showcase 独立产物"
+# 构建不能与模拟器并发：prepare-static 要整目录换 src/static，与还在读工程的会话抢锁会 Permission denied
+"$NODE" apps/client/scripts/build-showcase-isolated.mjs
+"$NODE" scripts/qa/r-exec-cli.mjs --project apps/client/dist/build/mp-weixin-showcase \
+  --out reports/audit/round-7/interact-showcase --manifests 次要22 --label round-7-showcase
 
 echo "POSTB_RESULT=OK 取证与计划已产出；核对后自己加 --apply："
 echo "  \$NODE scripts/qa/patch-ledger-cells.mjs --plan reports/audit/round-7/cellplan-round7-frames-admissible.json --apply"

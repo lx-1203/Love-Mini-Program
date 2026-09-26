@@ -63,6 +63,19 @@ const SPEC = [
     claim: "同文件两处 --c-bg-page 兜底值统一：:372 用 #EEF7F2，另一处不得再留 #F0F4F2",
     checks: [{ kind: "absent", re: /#F0F4F2/g }, { kind: "countEq", re: /#EEF7F2/g, n: 2 }],
   },
+  {
+    /* 这一条原本是"待人读帧"：取景器给的三个判点全是 FRAME_ONLY（帧里量不到圆角数值），
+       而判据本身其实是 CSS 声明命题——三枚按钮的 border-radius 换成 var(--r-full)。
+       逐选择器量比"整文件计数"更硬：计数 3 只能证明有 3 处，不能证明正好落在这三枚按钮上。 */
+    id: "MP-R2VIS-PAGES-LOGIN-INDEX-001", file: "apps/client/src/pages/login/index.vue",
+    claim: "三枚按钮（.btn-primary / .btn-phone-quick / .btn-guest）的 border-radius 全部改用 var(--r-full)",
+    checks: [
+      { kind: "present", re: /\.btn-primary\s*\{[^}]*border-radius:\s*var\(--r-full\)/ },
+      { kind: "present", re: /\.btn-phone-quick\s*\{[^}]*border-radius:\s*var\(--r-full\)/ },
+      { kind: "present", re: /\.btn-guest\s*\{[^}]*border-radius:\s*var\(--r-full\)/ },
+      { kind: "countEq", re: /border-radius:\s*var\(--r-full\)/g, n: 3 },
+    ],
+  },
 ];
 
 /* 剥注释：禁用的写法只出现在注释里（说明"这里原来是怎么写的"）不算违反。

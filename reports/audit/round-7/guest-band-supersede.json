@@ -1,0 +1,658 @@
+{
+ "generatedAt": "2026-09-26T16:33:55.323Z",
+ "manifest": "PAGES-LOGIN-INDEX",
+ "oldFile": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json",
+ "oldGitSha": "d99f3a1f",
+ "newFile": "reports/undefined",
+ "newGitSha": "d99f3a1f",
+ "newBand": "real@f0677920",
+ "probe": "scripts/qa/probe-guest-band.mjs（cold=AUTOLOGIN_ON_OPEN warm=AUTOLOGIN_ON_OPEN，产物 mp-weixin envSha8=f1c7b96b）",
+ "rows": [
+  {
+   "id": "LG01",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: .login-page__brand:present(1) .login-page__tagline:present(1) | observe-only | routeRetry=o",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG02",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG03",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG04",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: .btn--loading:absent | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG05",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG06",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG07",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG08",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG09",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG10",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG11",
+   "page": "pages/login/index",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG12",
+   "page": "pages/login/index",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG13",
+   "page": "pages/login/index",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG14",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG15",
+   "page": "pages/login/index",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG16",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG17",
+   "page": "pages/login/index",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG18",
+   "page": "pages/login/index",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG19",
+   "page": "pages/login/index",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG20",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG21",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG22",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG23",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG24",
+   "page": "pages/login/index",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG25",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG26",
+   "page": "pages/login/index",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG27",
+   "page": "pages/login/index",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG28",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG29",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG30",
+   "page": "pages/login/index",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "requiresReal ⇒ 本切片只跑 mock 产物；真实模式要换 --project 到 mp-weixin-real 且后端在跑",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG31",
+   "page": "pages/login/index",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG32",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG33",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: .btn--loading:absent | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG34",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG35",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG36",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG37",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  },
+  {
+   "id": "LG38",
+   "page": "pages/login/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "interact-b2"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@f0677920",
+    "observed": "top=pages/login/index | dom: .btn--loading:absent | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "interact-real-guest"
+   },
+   "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
+  }
+ ]
+}

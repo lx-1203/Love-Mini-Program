@@ -963,3 +963,157 @@ RUNNER_EVIDENCE_HOLE 0     通道异常次数=0     页组=57     出帧=498
   两处修改，所以这一轮**没能**用上补好的前置；接刀脚本 `round7-post-b-slice.sh` 用 `interact-b2` 重测它们。
 - **没有任何 `EXECUTED→FAILED`**：重建 + 8080 契约改动 + `cityTrusted` 落地，
   在 1107 行里没有制造一条新红。
+
+## 39 「落在别的页」其实有两种：产品把人弹走，和载体根本表达不了那个身份
+
+接刀脚本补完三个具名前置后，`interact-b2` 的 A 侧 10 个页组 **executed=88 / failed=0**
+（`subpackages/campus/campus/index`、`discover/matching`、`village/detail`、`village/tag-posts`、
+`village/history`、`circles/index`、`circles/topics`、`circles/topic-detail`、`circles/circle-home`、
+`campus/certification`）——§37 那三类"缺前置"里带 URL 参数的两条确实被参数治好了。
+剩下没治好的是游客腿那 26 条：`[boot] clear-ok identity=guest verify=not-logged-in`
+之后开 `pages/login/index`，落点仍是 `pages/discover/index`。
+**这一条我没有直接记红，因为同一件事在帧目录里有两个反例。**
+
+| 取景目录 | 头部标的身份 | 头部 verify | 落点 |
+|---|---|---|---|
+| `uidebt-shoot-guest` | guest | `not-logged-in` | `pages/discover/index` |
+| `uidebt-shoot-guest2` | guest | `not-logged-in` | **`pages/login/index`** |
+| `uidebt-shoot-wsl3` | guest | **`logged-in userId=user-1001`** | `pages/login/index` |
+
+同样"已清会话"的两次，一次被弹走一次停住；而唯一"其实没清掉"的那次反而停住了。
+这不像产品行为，像**次序**：差别只在"这一次开页有没有顺带重跑启动链路"。
+静态证据支持这个方向——mock 包每次启动都会造一个登录态出来：
+
+- 被测物档位：`apps/client/dist/build/mp-weixin/config/env.js` → `VITE_API_MODE:"mock"`（`envSha8=f1c7b96b`），
+  `.../mp-weixin-real/config/env.js` → `VITE_API_MODE:"real"`（`envSha8=f0677920`）。
+- `apps/client/src/stores/session.ts:617` 的 `if (useMock()) { this.userSession = { ...mockUserSession }; }`
+  是**无条件**赋值（这条判点由 `scripts/qa/artifact-band.mjs` 读工作树源码算出来，不是抄注释；
+  产品哪天给它加了条件，这条前置会自己放行）。
+- 于是登录页 `pages/login/index.vue:87-89` 的 `watch(isLoggedIn) → switchTab(discover)` 按设计生效——
+  这正是 §29 已经裁过的那件事（已登录直达登录页被弹到寻觅是有意实现）。
+
+**这次新增的载体侧东西**（目的都是"下次不许再把测量错记成产品缺陷"）：
+
+1. `scripts/qa/artifact-band.mjs`：读在盘产物档位 + 读源码无条件注入判点 → `assertGuestCapable()`。
+2. `scripts/qa/probe-guest-band.mjs`：cold / warm 两条腿各量一次「开页前 / 开页后」的会话与落点，
+   把"是次序还是产品"变成一条可重跑的实测（结论见 §40）。
+3. `scripts/qa/r-exec-cli.mjs`：游客腿开跑前先过档位前置——不通过就 `exit 2` 一行都不跑，
+   确认要跑的话显式加 `--guest-warmup`（先开一个无关页把启动链路消耗掉再清会话）。
+4. 同一文件把**档位写进每一行**：行新增 `identity` 与 `band`（`mock@f1c7b96b` 这种形态），
+   文件头新增 `identities` / `project` / `band` / `fileBands`，日志新增
+   `RUNNER_BAND` / `RUNNER_IDENTITIES` / `RUNNER_FILE_BANDS`，多于一种就打 `RUNNER_MIXED`。
+   原因很具体：本轮 `interact-b2` 头部写着 `identity=A`，里面 38 行却是游客腿跑出来的——
+   单一标量的头部会替所有行说话，事后复盘时"游客档失败"到底是谁测的就查不清了。
+
+顺带从同一批数据里挖出**第三类落不了地的用例**：34 条 VIP 用例（`ops/次要22`，含 17 条判 FAILED）。
+`subpackages/vip/index.vue:57-65` 的 `onLoad` 守卫读 `featureFlags.membershipEnabled`，
+而 `apps/client/src/config/feature-flags.ts:29` 默认 `false`（会员未上线），
+只有 `config/showcase.ts:69` 的 `applyShowcaseMode()` 会置 `true` ⇒
+**mock 与 real 两档产物上都量不到 VIP 页**，被弹回「我的」Tab 是守卫按设计工作。
+为此新增 `apps/client/scripts/build-showcase-isolated.mjs`（用 `UNI_OUTPUT_DIR` 把展示版
+构建到 `apps/client/dist/build/mp-weixin-showcase`，构建前后比对 mock 产物指纹）。
+它第一次跑就**失败并自动回滚**：`prepare-static.mjs` 要整目录换 `src/static`，
+与还在读工程的模拟器抢锁 → `Permission denied`，脚本自己把 `src/static.bak.*` 移回原位。
+教训写在这里：**构建不能与模拟器并发**（这条与 §35 的"并发写同一批文件"是同一类错）。
+
+账没动的部分：那 26 条游客 FAILED 现在仍按 `FAILED` 留在 `interact-b2` 里，
+等 §40 的实测与重测自己说话——不改判、不重打戳。
+
+## 40 实测把 26 条游客 FAILED 判成"载体没量到"，并在真档上重测成 25 条通过
+
+`scripts/qa/probe-guest-band.mjs` 在 mock 产物（`envSha8=f1c7b96b`）上跑两条腿，
+两腿都是同一个结果——**清完会话、验证过 `not-logged-in` 之后，任何一次开页都会把会话造回来**：
+
+```
+cold_verify_before=not-logged-in  cold_verify_after=logged-in userId=user-1001  cold_route=pages/login/index  ⇒ AUTOLOGIN_ON_OPEN
+warm_verify_before=not-logged-in  warm_verify_after=logged-in userId=user-1001  warm_route=pages/discover/index ⇒ AUTOLOGIN_ON_OPEN
+```
+
+所以"落点是不是 login/index"根本不是这条判据要问的东西：游客身份在 mock 档上不可测，
+落点与否都只是登录页自己的 `switchTab`。§39 表里 `guest2` 那次"停在 login/index"也不是反例——
+它停在页上，但出帧那一刻 store 已登录，**那张帧是登录态帧盖了游客的章**。
+
+换 `mp-weixin-real` 档（`envSha8=f0677920`，后端 8080 在服）重跑同一份 manifest：
+
+```
+RUNNER_GUEST_BAND mode=real ok=true
+RUNNER_STATS identity=guest loginVerify=not-logged-in executed=25 failed=0 skipped=13(交互动词=11 requiresReal=1) 出帧=25
+RUNNER_EVIDENCE_HOLE 0 ｜ RUNNER_BAND project=.../mp-weixin-real VITE_API_MODE=real ｜ RUNNER_IDENTITIES guest=38
+```
+
+**取代关系写成了一张可对账的纸**：`scripts/qa/supersede-mock-guest-rows.mjs`
+→ `reports/audit/round-7/guest-band-supersede.json`（38 行逐条 old/new 对照，`SUPERSEDE_UNMATCHED 0`）。
+它不信任文件头那个 `identity` 标量（会被后跑的腿覆盖），而是回到
+`round7-post-b-slice.sh` 里核"这个 manifest 是否只出现在 `--identity guest` 那条命令上"
+（`SUPERSEDE_IDENTITY_PROOF … 是`；第一版因为它按物理行读 shell 而证明失败——续行没折起来，
+证不出来时它选择 **停住不作废**，这个行为是对的）。它还拒绝用"无证据的绿"去取代红。
+
+顺带把这类错位变成结构性拦截：
+
+- `scripts/qa/artifact-band.mjs`（新增）：读在盘产物档位 + 读工作树 `session.ts:617` 的无条件注入判点；
+  产品哪天收了那个分支，前置会自己放行。
+- 执行器：`--identity guest` 先过档位前置，不过就 `exit 2` 一行不跑；显式 `--guest-warmup` 才允许预热后跑；
+  每行带 `identity` + `band`，文件头带 `identities` / `fileBands`，多于一种就打 `RUNNER_MIXED`。
+- 取景器：出帧前再量一次身份（`identityAtFrame` / `identityOk`），
+  不符就把该组帧标成"不可当该身份证据"并记进 `identityMismatch`；`ensureIdentity` 的 guest 分支同样先过档位前置。
+- 判决器 `verdict-from-frames.mjs`：新增 `IDENTITY_MISMATCH` 桶，优先于落点/状态判定，
+  带错身份章的帧既不判红也不判绿。
+- 真档重拍 6 条被身份吃掉的帧判点（`--ws-taps` → `reports/audit/round-7/uidebt-shoot-real-guest/`）；
+  结果与它的 `identityAtFrame` 一起进 §41 的分桶。
+
+## 41 这一批落账的东西，以及我在撤销逻辑里抓到的第二个自己写的错
+
+`round7-post-b-slice.sh` 的 4 步跑完后核对再落账：
+
+- 第二载具（`element.text` / `element.size`）重拍 28 条，全部 `落点=确认`；
+  分桶 `FIXED_FRAME=13`（比上一批多 1）、`REGRESSION=18`、`STATE_NOT_APPLIED=6`、
+  `LEFT_PAGE=1`、`NEEDS_EYE=4`、`NOT_SHOOTABLE=21`、`REWRITE=16`。
+- 可判性闸：19 条判红里 **可落账 2 / 不作判据 17**。
+- **抓到的错**：第一版 `audit-frame-verdicts.mjs` 的"撤销"只挡备份值为帧级**绿**的情况，
+  备份本身是**上一轮帧级判红**时它照抄——于是 `撤销本轮判红` 的补丁会把一条判红原样写回去，
+  17 条撤销里有 9 条是这样。另一个方向也错：备份是帧级绿时它 `continue`，
+  等于本轮那条红根本没被撤销。改成分三种去向（见 `frame-red-audit.md` 新增的"撤销去向"一节）：
+  普通状态→照抄；备份是帧级绿→照抄（那才是撤销对象）；备份也是判红→写成
+  `待修复（帧级判点不可判…）`，状态仍是红但不冒充"产品未修"。
+  并加守恒行 `FRA_RESTORE_CONSERVE 被扣住=17 有去向记录=17 改写为不可判=9 备份查无=0`。
+- 落账：`cellplan-round7-frames-admissible.json` 111 处 + `cellplan-source-shape.json` 14 处，
+  台账从 `帧级绿 12 / 帧级红 10` 变成 **`帧级绿 13 / 帧级红 2 / 帧级判点不可判 9`**，
+  `源码级判点 7` 保持；`verify-ledger reports/audit/round-6` = PASS（229 行、词表非法 0），
+  `verify-state-truth reports/audit/round-7` = PASS。
+- 一个要记的坑：`patch-ledger-cells.mjs` 的备份名固定 `issue-matrix.md.pre-cellpatch.bak`，
+  第二次 apply 会把第一次的备份覆盖掉 ⇒ 现在那个 `.bak` 已经是"本轮两次写入之后"的状态，
+  再拿它当 `--restore-from` 会退到写入之后而不是之前。
+
+真档重拍那 6 条之后，判决器一次读三份帧文件（ws 42 行 + txt 28 行 + real-guest 6 行，后传覆盖先传并逐条打 `FV_WARN`）：
+`IDENTITY_MISMATCH=0`、`STATE_NOT_APPLIED=9`（6 条里 3 条 register 落到这桶）、`REGRESSION=15`、`FIXED_FRAME=13`，
+`FV_CONSERVED=yes PATCHES=107`；可判性闸 `16 条判红 → 可落账 2 / 不作判据 14`。
+**这一批落账后 `col:6` 与台账 0 处不同**（状态列不用再动），94 处补丁全是 `col:9` 的证据文本，已 apply。
+
+## 42 台账引用的载体有三分之一不在版本控制里
+
+顺手做的一次扫描（拿台账 9/11 两列里出现的路径去问 `git ls-files --error-unmatch`）：
+
+- `素材/理想效果图/*.png`（理想图基线，8 行以上在引）——文件在盘上，但被 `.gitignore:68` 的 `*.png` 整类忽略。
+  干净克隆里这些行只剩一句"理想图 = 某张不存在的图"。
+- `tmp/tour-R2.mjs`（3 行 `MP-R2VIS-TMP-TOUR-R2-001/002/003` 的承载文件）——被 `.gitignore:111` 的 `tmp/` 忽略。
+  这三行处置写的都是"**HEAD 已修**，待下轮真机帧复验"，而 HEAD 里根本没有这个文件：那句话当时是不可核的。
+  真正的后继载体是**已跟踪**的 `scripts/qa/tour-r6.mjs`，三处修都在里面，逐条对过：
+  `frameHash()` sha256→16 位（:378-380，在 `[R2-DEDUPE-BEGIN]` 块里）、
+  `probeRoute()` 返回 `{top, depth, stack}` 而不再只给栈顶（:407-425）、
+  权限抑制走 `wx.*` JS 桥那层的 `PERM_MOCKS`，且 `wx.onNeedPrivacyAuthorization` 故意不 mock（:313、:819）。
+  ⇒ 结论不变（确实已修），但**证据载体从不可核的文件换成可核的文件**，这类"HEAD 已修"以后必须指向 tracked 路径。
+- `MP-R2VIS-TMP-TOUR-R2-002` 还引了 `tmp/tour-R6.mjs` —— 这个路径**在盘上也不存在**（悬空引用）。
+- `apps/client/src/components/chat/ChatInput.vue`、`.../discover/CheckinPopup.vue`、`config/emoji-map.ts`
+  报"不在版本控制"是因为**已删除**（与 §29 的 ChatInput 裁决一致），不是载体丢失——
+  扫描要把"删了"和"没入库"分开，否则会把正确的历史写成缺陷。
+
+`MP-R2VIS-PAGES-LOGIN-INDEX-001`（P1，一直挂着"待人读帧"）改由源码级判点结案：
+判点不是"整文件有 3 处 `var(--r-full)`"这种弱计数，而是逐选择器量
+`.btn-primary` / `.btn-phone-quick` / `.btn-guest` 三条规则里各自的 `border-radius: var(--r-full)`，
+再加一条 countEq=3 兜住漂移；`verify-source-shape.mjs` 现在 8 条判点全成立。
+同族的 `-007` **没有**跟着结案：它的判据是"两键值分开命名 **并弱化兜底样式**"，
+命名那半可证（`login.phoneQuickLogin` / `login.phoneLogin` 两键在 zh-CN:2189/2215、en-US:2131/2159 各自独立），
+样式那半是视觉命题，帧里量不到 ⇒ 整条不闭环，仍挂 `待修复（P4 延后）`。
+
+
+

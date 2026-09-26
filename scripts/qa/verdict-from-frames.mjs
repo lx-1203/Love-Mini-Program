@@ -49,7 +49,7 @@ const fr = { plan: String(plan.generatedAt || "?"), srcs };
 const planItems = plan.rows || [];
 if (!planItems.length || !byId.size) { console.log("FV_RESULT=FAIL reason=输入为空集，空集不得出判决"); process.exit(2); }
 
-const patches = [], bucket = { NO_LANDING: 0, STATE_NOT_APPLIED: 0, LEFT_PAGE: 0, FIXED_FRAME: 0, REGRESSION: 0, NEEDS_EYE: 0, NO_FRAME: 0, NOT_SHOOTABLE: 0, REWRITE: 0 };
+const patches = [], bucket = { NO_LANDING: 0, IDENTITY_MISMATCH: 0, STATE_NOT_APPLIED: 0, LEFT_PAGE: 0, FIXED_FRAME: 0, REGRESSION: 0, NEEDS_EYE: 0, NO_FRAME: 0, NOT_SHOOTABLE: 0, REWRITE: 0 };
 const md = ["# round-7 · 帧级判决（取景来源 " + fr.srcs.length + " 份）", "",
   ...fr.srcs.map((s) => "- 来源 `" + s.tag + "` sha=" + s.gitSha + " 行=" + s.rows + " 身份=" + s.identitySeen + "/" + s.verifyLast), "",
   "| id | 判决 | 机器判点 | 帧 |", "|---|---|---|---|"];
@@ -85,6 +85,15 @@ for (const it of planItems) {
   /* 落点没确认 ⇒ 这一帧可能根本不是那条页（routeStack 取空/报错时最常见）。
      与 r-exec-cli 同一个三态规矩：没测到不等于测出问题。判红之前先问"页面对不对"。 */
   const landingOk = String(r.landing || "").includes(String(r.route || ""));
+  /* 帧时刻的身份与请求身份不符 ⇒ 这一帧根本不是那个身份的帧（实测 mock 包开页会把清掉的会话
+     造回来：清会话后 verify=not-logged-in，出帧时 store 已 logged-in）。
+     这种帧既不能判红也不能判绿，记进 IDENTITY_MISMATCH 并点名缺的载体档位。 */
+  if (r.identityOk === false) {
+    bucket.IDENTITY_MISMATCH++;
+    patches.push({ id: it.id, col: 9, new: ("帧已拍但身份错位：请求 " + (r.identity || "?") + "，出帧时是 " + String(r.identityAtFrame || "(没量到)").slice(0, 40) + " ⇒ 该档产物表达不了这个身份，换 mp-weixin-real 重拍；帧 " + r.frame).replace(/\|/g, "／"), why: "带着错身份章的帧进账就是造假证据" });
+    md.push("| " + it.id + " | IDENTITY_MISMATCH | 不作判 | " + r.frame + " |");
+    continue;
+  }
   if (!landingOk) {
     bucket.NO_LANDING++;
     patches.push({ id: it.id, col: 9, new: ("帧已拍但落点未确认（实落 " + String(r.landing || "(空)").slice(0, 40) + "），本帧不作判据；帧 " + r.frame).replace(/\|/g, "／"), why: "落点不明的判决不能进账" });

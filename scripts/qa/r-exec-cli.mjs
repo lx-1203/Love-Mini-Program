@@ -21,16 +21,26 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, statSy
 import { resolve, join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { evaluate, openPage, shot, mintToken, bootSession, verifyLogin, routeStack, clearSession } from "./cli-automator.mjs";
+import { readApiMode, assertGuestCapable } from "./artifact-band.mjs";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
 const PROJECT = resolve(REPO, arg("project", "apps/client/dist/build/mp-weixin"));
+/* 载体档位是被测物的一部分：同一份用例在 mock / real / showcase 三档上量到的不是同一件事
+   （mock 的 bootstrap 会无条件造出 mock 会话；VIP 页在开关关闭那档会被守卫弹回）。
+   以前只有 --project 路径进得了账，档位名字没人记，于是"游客档失败"这类结论
+   到底是产品没做到还是载体表达不了，事后无法复盘。每一行都带上档位指纹。 */
+const BAND = readApiMode(PROJECT);
 const OUT_DIR = resolve(REPO, arg("out", "reports/audit/round-7/interact"));
 const OPS = resolve(REPO, arg("ops", "reports/audit/round-6/ops"));
 const LABEL = arg("label", "round-7-exec");
 const ONLY = (arg("manifests", "") || "").split(",").map((s) => s.trim()).filter(Boolean);
 const LIMIT = parseInt(arg("limit", "0"), 10);
 const SETTLE = parseInt(arg("settle", "2400"), 10);
+/* 游客档预热：先开一个与目标无关的页，把「连上工程后的第一次开页」那次启动链路消耗掉，
+   再清会话——这样批次里的第一次开页就不再是冷启动。只有显式要求才做（默认拒绝跑 mock 游客）。 */
+const WARMUP_GUEST = process.argv.includes("--guest-warmup");
+const WARMUP_PAGE = arg("warmup-page", "pages/home/index");
 const SHOT_DIR = join(REPO, "reports", "screenshots", LABEL);
 const RES = join(OUT_DIR, "exec-results.json");
 const sleep = (ms) => { const t = Date.now() + ms; while (Date.now() < t) {} };
@@ -67,6 +77,7 @@ process.on("unhandledRejection", (e) => {
 function row(manifest, page, c, status, route, reason, observed, evid, miss) {
   return {
     suite: "C-" + manifest, manifest, id: c.id, page, tier: c.tier || "normal",
+    identity: IDENTITY, band: (BAND.mode || "?") + "@" + (BAND.sha8 || "?"),
     requiresReal: c.requiresReal === true, title: String(c.title || "").slice(0, 160),
     status, observed: observed || "", missingEvidence: miss || [], failureReason: reason || "",
     route: route || "", toast: "", console: "", evidence: evid || "", durationMs: 0,
@@ -143,9 +154,23 @@ if (IDENTITY === "guest" || IDENTITY === "none") {
      而本执行器下一道门要求 logged-in，于是 --identity B 既当不了游客也过不了门
      （B 侧执行轮里 26 条 PAGES-LOGIN-INDEX 就是被这条假路径挡在外面的）。
      真游客 = 清本地会话 + 复位 store，并且必须量到 not-logged-in 才开跑。 */
+  /* 再加一道载体档位前置：mock 包的启动链路会无条件把会话造回来（artifact-band.mjs 里
+     那条读源码的判点），所以"清完会话"只代表这一刻是游客，第一次开页就可能不是了。
+     默认拒绝开跑；确认过次序可行的话用 --guest-warmup 先预热一次再清，并把这个选择写进账。 */
+  const cap = assertGuestCapable(REPO, PROJECT, { allow: WARMUP_GUEST });
+  console.log("RUNNER_GUEST_BAND mode=" + (cap.band.mode || "?") + " ok=" + cap.ok + (cap.warned ? " warmup=请求预热后开跑" : ""));
+  if (!cap.ok) {
+    console.log("RUNNER_RESULT=FAIL reason=" + cap.reason + " ⇒ 一行都不跑（跑出来的落点红不可采信）");
+    process.exit(2);
+  }
+  if (WARMUP_GUEST) {
+    try { openPage(WARMUP_PAGE, "", { project: PROJECT }); } catch (e) { /* 预热那一次开页的落点不重要，重要的是把启动链路走完 */ }
+    sleep(SETTLE);
+    console.log("RUNNER_GUEST_WARMUP page=" + WARMUP_PAGE + " landing=" + (String(routeStack({ project: PROJECT }) || "(空)")));
+  }
   const c = clearSession({ project: PROJECT });
   LOGIN_VERIFY = verifyLogin({ project: PROJECT });
-  console.log(`[boot] ${c} identity=guest verify=${LOGIN_VERIFY}`);
+  console.log(`[boot] ${c} identity=guest verify=${LOGIN_VERIFY}${WARMUP_GUEST ? "（预热后清的会话）" : ""}`);
   if (!/^not-logged-in/.test(LOGIN_VERIFY)) {
     console.log("RUNNER_RESULT=FAIL reason=要游客态但会话没清掉：" + LOGIN_VERIFY + " ⇒ 一行都不跑");
     process.exit(2);
@@ -172,7 +197,8 @@ RUN.booted = true;
 function flush() {
   const m2 = new Map();
   for (const r of [...(prior.results || []), ...rows]) m2.set(r.manifest + "|" + r.id, r);
-  try { writeFileSync(RES, JSON.stringify({ round: LABEL, gitSha: GIT_SHA, identity: IDENTITY, loginVerify: LOGIN_VERIFY, updatedAt: new Date().toISOString(), runner: "scripts/qa/r-exec-cli.mjs（observe-only 切片，增量落盘）", results: [...m2.values()] }, null, 1)); }
+  const merged = [...m2.values()];
+  try { writeFileSync(RES, JSON.stringify({ round: LABEL, gitSha: GIT_SHA, identity: IDENTITY, identities: [...new Set(merged.map((r) => r.identity || "?"))], project: relOf(PROJECT), band: (BAND.mode || "?") + "@" + (BAND.sha8 || "?"), loginVerify: LOGIN_VERIFY, updatedAt: new Date().toISOString(), runner: "scripts/qa/r-exec-cli.mjs（observe-only 切片，增量落盘）", results: merged }, null, 1)); }
   catch (e) { console.log("FLUSH_ERR " + String(e.message).slice(0, 90)); }
 }
 
@@ -300,6 +326,19 @@ const all = [...merged.values()];
 const dupNew = rows.length - new Set(rows.map((r) => r.manifest + "|" + r.id)).size;
 const bad = all.filter((r) => !["EXECUTED", "FAILED", "SKIPPED"].includes(r.status));
 console.log("RUNNER_ROWS new=" + rows.length + " merged=" + all.length + " 之前已有=" + (prior.results || []).length + " 重复新行=" + dupNew);
+/* 一份文件里混进多个身份/档位时，头部那个标量 identity 会替所有行说话
+   （实测 interact-b2：头部 identity=A，里面 38 行是游客腿跑出来的）。
+   合并是允许的，但必须看得见：这里把两套 census 打出来，并把它们写进文件头。 */
+const identOf = {}, bandOf = {};
+for (const r of all) {
+  identOf[r.identity || "?"] = (identOf[r.identity || "?"] || 0) + 1;
+  bandOf[r.band || "?"] = (bandOf[r.band || "?"] || 0) + 1;
+}
+console.log("RUNNER_BAND project=" + relOf(PROJECT) + " VITE_API_MODE=" + (BAND.mode || "?") + " envSha8=" + (BAND.sha8 || "?"));
+console.log("RUNNER_IDENTITIES " + Object.keys(identOf).sort().map((k) => k + "=" + identOf[k]).join(" "));
+console.log("RUNNER_FILE_BANDS " + Object.keys(bandOf).sort().map((k) => k + "=" + bandOf[k]).join(" "));
+if (Object.keys(identOf).length > 1) console.log("RUNNER_MIXED identity 不止一种 ⇒ 整批通过率不能当单一身份的数（按行 identity 拆开算）");
+if (Object.keys(bandOf).length > 1) console.log("RUNNER_MIXED 载体档位不止一档 ⇒ 同上，且档位不同的行不能互相复验");
 console.log("RUNNER_STATS identity=" + IDENTITY + " loginVerify=" + LOGIN_VERIFY + " executed=" + stats.executed + " failed=" + stats.failed +
   " skipped=" + skippedTotal() +
   "(交互动词=" + stats.skipTap + " requiresReal=" + stats.skipReal + " 非真实用例=" + stats.skipNonReal + " 探针无结果=" + stats.skipProbe +
@@ -317,7 +356,7 @@ if (dupNew) fails.push("同一次跑里出现重复 manifest|id " + dupNew + " �
 if (bad.length) fails.push("出现非法状态 " + bad.length + " 条");
 if (all.length !== (prior.results || []).length + rows.length - dupNew) fails.push("合并后总数对不上");
 if (fails.length) { console.log("RUNNER_RESULT=FAIL reason=" + fails.join(" / ") + " ⇒ 不写盘"); process.exit(2); }
-writeFileSync(RES, JSON.stringify({ round: LABEL, gitSha: GIT_SHA, identity: IDENTITY, loginVerify: LOGIN_VERIFY, updatedAt: new Date().toISOString(), runner: "scripts/qa/r-exec-cli.mjs（observe-only 切片）", results: all }, null, 1));
+writeFileSync(RES, JSON.stringify({ round: LABEL, gitSha: GIT_SHA, identity: IDENTITY, identities: Object.keys(identOf).sort(), project: relOf(PROJECT), band: (BAND.mode || "?") + "@" + (BAND.sha8 || "?"), fileBands: bandOf, loginVerify: LOGIN_VERIFY, updatedAt: new Date().toISOString(), runner: "scripts/qa/r-exec-cli.mjs（observe-only 切片）", results: all }, null, 1));
 console.log("RUNNER_WRITTEN=" + relOf(RES) + " results=" + all.length);
 console.log("RUNNER_SCOPE=" + (process.argv.includes("--real-cases-only") ? "real-cases-only（只跑 requiresReal 那一批，产物必须是 mp-weixin-real）" : "observe-only（交互型与真实型未跑；这不是一轮完整的执行轮，覆盖数见上面 RUNNER_STATS）"));
 console.log("RUNNER_RESULT=OK");

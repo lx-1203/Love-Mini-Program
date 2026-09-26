@@ -1,0 +1,411 @@
+{
+ "round": "round-7-realguest",
+ "gitSha": "d99f3a1f",
+ "updatedAt": "2026-09-26T16:36:21.815Z",
+ "plan": "reports/audit/round-7/frameplan-merged.json",
+ "project": "apps/client/dist/build/mp-weixin-real",
+ "identitySeen": "guest",
+ "verifyLast": "not-logged-in",
+ "planned": 6,
+ "rows": [
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-011",
+   "route": "pages/register/index",
+   "landing": "pages/register/index",
+   "status": "SHOT",
+   "frame": "reports/screenshots/round-7-realguest/C-MP-R2-PAGES-REGISTER-INDEX-011.png",
+   "bytes": 11183,
+   "checks": [
+    {
+     "kind": "bounding-box-min",
+     "target": ".field__tap--40",
+     "anchors": [
+      ".field__tap--40"
+     ],
+     "anchor": ".field__tap--40",
+     "count": 0,
+     "check": "PROBE_NO_ANSWER",
+     "note": "没有尺寸"
+    },
+    {
+     "kind": "bounding-box-equals",
+     "target": ".field__eye",
+     "anchors": [
+      ".field__eye"
+     ],
+     "anchor": ".field__eye",
+     "count": 0,
+     "check": "PROBE_NO_ANSWER",
+     "note": "没有尺寸"
+    },
+    {
+     "kind": "bounding-box-min",
+     "target": ".field__tap--32",
+     "anchors": [
+      ".field__tap--32"
+     ],
+     "anchor": ".field__tap--32",
+     "count": 0,
+     "check": "PROBE_NO_ANSWER",
+     "note": "没有尺寸"
+    },
+    {
+     "kind": "bounding-box-equals",
+     "target": ".field__clear",
+     "anchors": [
+      ".field__clear"
+     ],
+     "anchor": ".field__clear",
+     "count": 0,
+     "check": "PROBE_NO_ANSWER",
+     "note": "没有尺寸"
+    },
+    {
+     "kind": "bounding-box-min",
+     "target": ".hero__back-hit",
+     "anchors": [
+      ".hero__back-hit"
+     ],
+     "anchor": ".hero__back-hit",
+     "count": 0,
+     "check": "PROBE_NO_ANSWER",
+     "note": "没有尺寸"
+    },
+    {
+     "kind": "bounding-box-equals",
+     "target": ".hero__back",
+     "anchors": [
+      ".hero__back"
+     ],
+     "anchor": ".hero__back",
+     "count": 0,
+     "check": "PROBE_NO_ANSWER",
+     "note": "没有尺寸"
+    },
+    {
+     "kind": "bounding-box-min",
+     "target": ".agree__hit",
+     "anchors": [
+      ".agree__hit"
+     ],
+     "anchor": ".agree__hit",
+     "count": 0,
+     "check": "PROBE_NO_ANSWER",
+     "note": "没有尺寸"
+    },
+    {
+     "kind": "attribute-changed",
+     "target": ".field__eye",
+     "count": 2,
+     "check": "PRESENT(2)",
+     "anchors": [
+      ".field__eye"
+     ]
+    }
+   ],
+   "identity": "guest",
+   "crop": "密码行右侧眼睛控件（含透明热区）、手机号行清除控件、左上返回圆钮",
+   "stepsApplied": [
+    "measure",
+    "measure",
+    "measure"
+   ],
+   "stepsUnmet": [
+    "input:选择器在当前页查不到 .field__input",
+    "tap:选择器在当前页查不到 .field__tap--40"
+   ],
+   "wsApplied": [],
+   "wsFailed": [
+    "input:选择器在当前页查不到 .field__input",
+    "tap:选择器在当前页查不到 .field__tap--40"
+   ],
+   "landingVia": "cli",
+   "landingAfter": "",
+   "stateApplied": false,
+   "identityAtFrame": "not-logged-in",
+   "identityOk": true
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-012",
+   "route": "pages/register/index",
+   "landing": "pages/register/index",
+   "status": "SHOT",
+   "frame": "reports/screenshots/round-7-realguest/C-MP-R2-PAGES-REGISTER-INDEX-012.png",
+   "bytes": 11183,
+   "checks": [
+    {
+     "kind": "text-not-contains",
+     "target": ".field-error__text",
+     "anchors": [
+      ".field-error__text"
+     ],
+     "anchor": ".field-error__text",
+     "count": 0,
+     "check": "TEXT_CLEAN"
+    },
+    {
+     "kind": "text-contains",
+     "target": ".field-error__text",
+     "anchors": [
+      ".field-error__text"
+     ],
+     "anchor": ".field-error__text",
+     "count": 0,
+     "check": "TEXT_MISS"
+    },
+    {
+     "kind": "text-contains",
+     "target": ".field-error__text",
+     "anchors": [
+      ".field-error__text"
+     ],
+     "anchor": ".field-error__text",
+     "count": 0,
+     "check": "PROBE_NO_ANSWER",
+     "note": "expected 里没有可核对的字面量"
+    },
+    {
+     "kind": "text-not-contains",
+     "target": ".field-error__text",
+     "anchors": [
+      ".field-error__text"
+     ],
+     "anchor": ".field-error__text",
+     "count": 0,
+     "check": "PROBE_NO_ANSWER",
+     "note": "expected 里没有可核对的字面量"
+    }
+   ],
+   "identity": "guest",
+   "crop": "确认密码行与其下方行内错误位",
+   "stepsApplied": [
+    "capture",
+    "capture"
+   ],
+   "stepsUnmet": [
+    "input:选择器在当前页查不到 .field__input",
+    "input:选择器在当前页查不到 .field__input--confirm",
+    "tap:选择器在当前页查不到 .field__input"
+   ],
+   "wsApplied": [],
+   "wsFailed": [
+    "input:选择器在当前页查不到 .field__input",
+    "input:选择器在当前页查不到 .field__input--confirm",
+    "tap:选择器在当前页查不到 .field__input"
+   ],
+   "landingVia": "cli",
+   "landingAfter": "",
+   "stateApplied": false,
+   "identityAtFrame": "not-logged-in",
+   "identityOk": true
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-013",
+   "route": "pages/register/index",
+   "landing": "pages/register/index",
+   "status": "SHOT",
+   "frame": "reports/screenshots/round-7-realguest/C-MP-R2-PAGES-REGISTER-INDEX-013.png",
+   "bytes": 11183,
+   "checks": [
+    {
+     "kind": "text-contains",
+     "target": ".field-error__text",
+     "anchors": [
+      ".field-error__text"
+     ],
+     "anchor": ".field-error__text",
+     "count": 0,
+     "check": "TEXT_MISS"
+    },
+    {
+     "kind": "text-not-contains",
+     "target": ".field-error__text",
+     "anchors": [
+      ".field-error__text"
+     ],
+     "anchor": ".field-error__text",
+     "count": 0,
+     "check": "PROBE_NO_ANSWER",
+     "note": "expected 里没有可核对的字面量"
+    },
+    {
+     "kind": "text-contains",
+     "target": "toast 浮层",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    }
+   ],
+   "identity": "guest",
+   "crop": "手机号行、其下方行内错误位与验证码 toast",
+   "stepsApplied": [
+    "capture"
+   ],
+   "stepsUnmet": [
+    "input:选择器在当前页查不到 .field__input",
+    "tap:选择器在当前页查不到 .sms-btn"
+   ],
+   "wsApplied": [],
+   "wsFailed": [
+    "input:选择器在当前页查不到 .field__input",
+    "tap:选择器在当前页查不到 .sms-btn"
+   ],
+   "landingVia": "cli",
+   "landingAfter": "",
+   "stateApplied": false,
+   "identityAtFrame": "not-logged-in",
+   "identityOk": true
+  },
+  {
+   "id": "MP-R2-PROFILE-024",
+   "route": "pages/profile/index",
+   "landing": "pages/profile/index",
+   "status": "SHOT",
+   "frame": "reports/screenshots/round-7-realguest/C-MP-R2-PROFILE-024.png",
+   "bytes": 8380,
+   "checks": [
+    {
+     "kind": "computed-style",
+     "target": "..not-logged-profile",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    },
+    {
+     "kind": "bounding-box-from-bottom",
+     "target": ".nlp-footer-btn",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    },
+    {
+     "kind": "bounding-box-gap",
+     "target": ".nlp-interaction--last 底缘 到 .nlp-footer-btn 顶缘",
+     "anchors": [
+      ".nlp-interaction--last"
+     ],
+     "anchor": ".nlp-interaction--last",
+     "count": 0,
+     "check": "PROBE_NO_ANSWER",
+     "note": "没有尺寸"
+    },
+    {
+     "kind": "bounding-box-from-bottom",
+     "target": ".nlp-footer-btn",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    }
+   ],
+   "identity": "guest",
+   "crop": "未登录个人主页底部：我的互动卡最后一行、固定登录 CTA、custom-tab-bar 面板顶缘",
+   "stepsApplied": [
+    "navigate",
+    "scroll→.nlp-interaction--last",
+    "measure",
+    "measure"
+   ],
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingVia": "cli",
+   "landingAfter": "",
+   "stateApplied": true,
+   "identityAtFrame": "not-logged-in",
+   "identityOk": true
+  },
+  {
+   "id": "MP-R2VIS-PAGES-LOGIN-INDEX-001",
+   "route": "pages/login/index",
+   "landing": "pages/login/index",
+   "status": "SHOT",
+   "frame": "reports/screenshots/round-7-realguest/E-MP-R2VIS-PAGES-LOGIN-INDEX-001.png",
+   "bytes": 12094,
+   "checks": [
+    {
+     "kind": "computed-style",
+     "target": ".btn-primary",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    },
+    {
+     "kind": "computed-style",
+     "target": ".btn-phone-quick",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    },
+    {
+     "kind": "computed-style",
+     "target": ".btn-guest",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    }
+   ],
+   "identity": "guest",
+   "crop": "登录页底部按钮区（微信一键登录 / 手机号快捷登录 / 稍后再看三枚）",
+   "stepsApplied": [
+    "none"
+   ],
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingVia": "cli",
+   "landingAfter": "",
+   "stateApplied": true,
+   "identityAtFrame": "not-logged-in",
+   "identityOk": true
+  },
+  {
+   "id": "MP-R2VIS-PAGES-LOGIN-INDEX-007",
+   "route": "pages/login/index",
+   "landing": "pages/login/index",
+   "status": "SHOT",
+   "frame": "reports/screenshots/round-7-realguest/E-MP-R2VIS-PAGES-LOGIN-INDEX-007.png",
+   "bytes": 12171,
+   "checks": [
+    {
+     "kind": "text-contains",
+     "target": ".btn-phone-quick-text",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    },
+    {
+     "kind": "text-contains",
+     "target": ".login-sms-fallback-text",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    },
+    {
+     "kind": "computed-style",
+     "target": ".login-sms-fallback-text",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    }
+   ],
+   "identity": "guest",
+   "crop": "登录页手机号快捷授权按钮 + 其下「验证码或密码登录」文字入口",
+   "stepsApplied": [
+    "none"
+   ],
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingVia": "cli",
+   "landingAfter": "",
+   "stateApplied": true,
+   "identityAtFrame": "not-logged-in",
+   "identityOk": true
+  }
+ ],
+ "identityAtFrameLast": "pages/login/index=not-logged-in",
+ "identityMismatch": [],
+ "artifactBand": {
+  "envFile": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real\\config\\env.js",
+  "mode": "real",
+  "viteMode": "real",
+  "sha8": "f0677920"
+ },
+ "counts": {
+  "SHOT": 6,
+  "EVIDENCE_HOLE": 0,
+  "FAILED": 0,
+  "NO_EVIDENCE": 0
+ },
+ "machinePassAllChecks": 2
+}

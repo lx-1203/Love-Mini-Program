@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-09-26T13:09:57.982Z",
+ "generatedAt": "2026-09-26T16:38:46.600Z",
  "source": "verdict-from-frames.mjs",
  "frames": 42,
  "frameSources": [
@@ -9,15 +9,30 @@
    "identitySeen": "A",
    "verifyLast": "logged-in userId=user-1001",
    "rows": 42
+  },
+  {
+   "tag": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json",
+   "gitSha": "d99f3a1f",
+   "identitySeen": "A",
+   "verifyLast": "logged-in userId=user-1001",
+   "rows": 28
+  },
+  {
+   "tag": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-real-guest\\shoot-results.json",
+   "gitSha": "d99f3a1f",
+   "identitySeen": "guest",
+   "verifyLast": "not-logged-in",
+   "rows": 6
   }
  ],
  "buckets": {
-  "NO_LANDING": 5,
-  "STATE_NOT_APPLIED": 5,
-  "LEFT_PAGE": 0,
-  "FIXED_FRAME": 12,
-  "REGRESSION": 18,
-  "NEEDS_EYE": 2,
+  "NO_LANDING": 0,
+  "IDENTITY_MISMATCH": 0,
+  "STATE_NOT_APPLIED": 9,
+  "LEFT_PAGE": 1,
+  "FIXED_FRAME": 13,
+  "REGRESSION": 15,
+  "NEEDS_EYE": 4,
   "NO_FRAME": 0,
   "NOT_SHOOTABLE": 21,
   "REWRITE": 16
@@ -99,7 +114,7 @@
   {
    "id": "MP-R2-PROFILE-025",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2-PROFILE-025.png(34662B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条 未成立：.my-interaction__label=ABSENT_UNEXPECTED、.my-stats__label=A",
+   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/A-MP-R2-PROFILE-025.png(34609B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 3 条 未成立：.my-interaction__label=TEXT_MISS、.my-stats__label=PROBE_N",
    "why": "把实测值写进账"
   },
   {
@@ -128,9 +143,15 @@
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
    "col": 9,
-   "new": "帧已拍但落点未确认（实落 ERR:automation_evaluate 调用失败：Command fai），本帧不作判据；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001.png",
-   "why": "落点不明的判决不能进账"
+   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/A-MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001.png(19886B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 4 条 未成立：.match-loading__s",
+   "why": "把实测值写进账"
   },
   {
    "id": "MP-R2-PAGES-HOME-INDEX-106",
@@ -153,7 +174,7 @@
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002.png(11342B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 1 条 未成立：.post-image-wrap--first=ABSEN",
+   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002.png(11253B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 1 条 未成立：.post-image-wrap--first=ABS",
    "why": "把实测值写进账"
   },
   {
@@ -195,7 +216,7 @@
   {
    "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/B-MP-R2VIS-PAGES-MESSAGES-INDEX-009.png(29386B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条 未成立：陈默那一行的 .chat-item__time-row 内的 image 与 .cha",
+   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/B-MP-R2VIS-PAGES-MESSAGES-INDEX-009.png(28718B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 3 条 未成立：陈默那一行的 .chat-item__time-row 内的 image 与 .c",
    "why": "把实测值写进账"
   },
   {
@@ -219,7 +240,7 @@
   {
    "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
    "col": 9,
-   "new": "帧已拍但状态未施加：欠 longpress:选择器在当前页查不到 .陈默那一行的.chat-item、tap:选择器在当前页查不到 .动作面板第2项（文本标为未读）、re-enter-tab:选择器在当前页查不到 .pages/messages/index；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/B-MP-R2-PAGES-MESSAGES-INDEX-020.png",
+   "new": "帧已拍但状态未施加：欠 longpress:选择器在当前页查不到 .陈默那一行的.chat-item、tap:选择器在当前页查不到 .动作面板第2项（文本标为未读）、re-enter-tab:选择器在当前页查不到 .pages/messages/index；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/B-MP-R2-PAGES-MESSAGES-INDEX-020.png",
    "why": "欠的是交互步骤，不是结论——写清楚谁来补"
   },
   {
@@ -261,7 +282,7 @@
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
    "col": 9,
-   "new": "帧已拍但状态未施加：欠 tap:选择器在当前页查不到 .comment-item.comment-reply-btn；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/B-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001.png",
+   "new": "帧已拍但状态未施加：欠 tap:选择器在当前页查不到 .comment-item.comment-reply-btn；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/B-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001.png",
    "why": "欠的是交互步骤，不是结论——写清楚谁来补"
   },
   {
@@ -278,39 +299,21 @@
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-011",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
-  },
-  {
-   "id": "MP-R2-PAGES-REGISTER-INDEX-011",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-PAGES-REGISTER-INDEX-011.png(26776B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 8 条 未成立：.field__tap--32=ABSENT_UNEXPECTED、.field__clea",
-   "why": "把实测值写进账"
-  },
-  {
-   "id": "MP-R2-PAGES-REGISTER-INDEX-012",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
+   "new": "帧已拍但状态未施加：欠 input:选择器在当前页查不到 .field__input、tap:选择器在当前页查不到 .field__tap--40；帧 reports/screenshots/round-7-realguest/C-MP-R2-PAGES-REGISTER-INDEX-011.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-012",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-PAGES-REGISTER-INDEX-012.png(26258B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 4 条 未成立：.field-error__text=ABSENT_UNEXPECTED、.field-er",
-   "why": "把实测值写进账"
-  },
-  {
-   "id": "MP-R2-PAGES-REGISTER-INDEX-013",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
+   "new": "帧已拍但状态未施加：欠 input:选择器在当前页查不到 .field__input、input:选择器在当前页查不到 .field__input--confirm、tap:选择器在当前页查不到 .field__input；帧 reports/screenshots/round-7-realguest/C-MP-R2-PAGES-REGISTER-INDEX-012.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-013",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-PAGES-REGISTER-INDEX-013.png(28807B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 2 条 未成立：.field-error__text=PRESENT_UNEXPECTED(1)",
-   "why": "把实测值写进账"
+   "new": "帧已拍但状态未施加：欠 input:选择器在当前页查不到 .field__input、tap:选择器在当前页查不到 .sms-btn；帧 reports/screenshots/round-7-realguest/C-MP-R2-PAGES-REGISTER-INDEX-013.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-014",
@@ -327,20 +330,14 @@
   {
    "id": "MP-R2-PUB-114",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-PUB-114.png(18543B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 4 条 未成立：.publish-row__meta=PRESENT_UNEXPECTED(3)",
+   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/C-MP-R2-PUB-114.png(19087B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 4 条 未成立：.publish-row__meta=TEXT_MISS、.publish-to__subtitle=TEXT_MISS、",
    "why": "把实测值写进账"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005.png(18543B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条 未成立：..publish-topic-chip__remove",
-   "why": "把实测值写进账"
+   "new": "帧已拍但状态未施加：欠 press-hold:选择器在当前页查不到 .publish-topic-chip__remove；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/C-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005.png",
+   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01",
@@ -362,9 +359,15 @@
   },
   {
    "id": "MP-R2-CAMPUSINDEX-011",
+   "col": 6,
+   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
+   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
+  },
+  {
+   "id": "MP-R2-CAMPUSINDEX-011",
    "col": 9,
-   "new": "帧已拍但落点未确认（实落 ERR:automation_evaluate 调用失败：Command fai），本帧不作判据；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-CAMPUSINDEX-011.png",
-   "why": "落点不明的判决不能进账"
+   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/C-MP-R2-CAMPUSINDEX-011.png(24676B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 1 条 未成立：.cert-badge__text=PROBE_NO_ANSWER",
+   "why": "把实测值写进账"
   },
   {
    "id": "MP-R2-PAGES-HOME-INDEX-105",
@@ -387,7 +390,7 @@
   {
    "id": "MP-R2-PROFILE-024",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-PROFILE-024.png(34675B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 1 条 未成立：.nlp-interaction--last 底缘 到 .nlp-footer-btn 顶缘=ABSENT_UNEXP",
+   "new": "reports/screenshots/round-7-realguest/C-MP-R2-PROFILE-024.png(8380B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-real-guest\\shoot-results.json) 判点 1 条 未成立：.nlp-interaction--last 底缘 到 .nlp-footer-btn 顶缘=PROBE_NO_ANSWE",
    "why": "把实测值写进账"
   },
   {
@@ -404,9 +407,15 @@
   },
   {
    "id": "MP-R2-MATCHING-016",
+   "col": 6,
+   "new": "已修复（帧级复验：当轮帧 + 1 个机器判点全部成立）",
+   "why": "①的帧债按帧闭环"
+  },
+  {
+   "id": "MP-R2-MATCHING-016",
    "col": 9,
-   "new": "帧已拍但落点未确认（实落 ERR:automation_evaluate 调用失败：Command fai），本帧不作判据；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-MATCHING-016.png",
-   "why": "落点不明的判决不能进账"
+   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/C-MP-R2-MATCHING-016.png(19362B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 1 条",
+   "why": "帧路径 + 字节，可复查"
   },
   {
    "id": "MP-R2-CIRCLES-INDEX-004",
@@ -441,20 +450,14 @@
   {
    "id": "MP-R2-POSTTOPIC-011",
    "col": 9,
-   "new": "帧已拍但状态未施加：欠 tap:选择器在当前页查不到 .activity-add；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2-POSTTOPIC-011.png",
+   "new": "帧已拍但状态未施加：欠 tap:选择器在当前页查不到 .activity-add；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2-POSTTOPIC-011.png",
    "why": "欠的是交互步骤，不是结论——写清楚谁来补"
   },
   {
    "id": "MP-R2-POSTTOPIC-012",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
-  },
-  {
-   "id": "MP-R2-POSTTOPIC-012",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2-POSTTOPIC-012.png(36503B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 1 条 未成立：.post-header__back=ABSENT_UNEXPECTED",
-   "why": "把实测值写进账"
+   "new": "交互已施加但离开了目标页（实落 pages/home/index），本页物件的判点不作判据；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2-POSTTOPIC-012.png",
+   "why": "离开目标页后的探针答案不能当判决"
   },
   {
    "id": "MP-R2-POSTTOPIC-013",
@@ -483,7 +486,7 @@
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007.png(12437B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 2 条 未成立：.chat-list.chat-list--empty=",
+   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007.png(12366B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 2 条 未成立：.chat-list.chat-list--empt",
    "why": "把实测值写进账"
   },
   {
@@ -495,7 +498,7 @@
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02.png(12437B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 1 条 未成立：.chat-input-area.chat-input-",
+   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02.png(12373B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 1 条 未成立：.chat-input-area.chat-inpu",
    "why": "把实测值写进账"
   },
   {
@@ -513,13 +516,13 @@
   {
    "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001.png(8577B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条 未成立：.public-identity__meta-it",
+   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001.png(8511B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 3 条 未成立：.public-identity__meta-",
    "why": "把实测值写进账"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001",
    "col": 9,
-   "new": "帧已拍但状态未施加：欠 longpress:选择器在当前页查不到 .#msg-row-<被删消息id>、tap:选择器在当前页查不到 .longpress-menu__item；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001.png",
+   "new": "帧已拍但状态未施加：欠 longpress:选择器在当前页查不到 .#msg-row-<被删消息id>、tap:选择器在当前页查不到 .longpress-menu__item；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001.png",
    "why": "欠的是交互步骤，不是结论——写清楚谁来补"
   },
   {
@@ -555,7 +558,7 @@
   {
    "id": "MP-R2-PAGES-HOME-INDEX-102",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2-PAGES-HOME-INDEX-102.png(36497B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条 未成立：.today-card__photo=ABSENT_UNEXPECTED、.today-card__",
+   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/E-MP-R2-PAGES-HOME-INDEX-102.png(36435B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 3 条 未成立：.today-card__photo=ABSENT_UNEXPECTED、.today-card",
    "why": "把实测值写进账"
   },
   {
@@ -567,7 +570,7 @@
   {
    "id": "MP-R2-PAGES-HOME-INDEX-110",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2-PAGES-HOME-INDEX-110.png(36506B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 2 条 未成立：.today-card__distance=ABSENT_UNEXPECTED、.today-car",
+   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/E-MP-R2-PAGES-HOME-INDEX-110.png(36435B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 2 条 未成立：.today-card__distance=ABSENT_UNEXPECTED、.today-c",
    "why": "把实测值写进账"
   },
   {
@@ -579,7 +582,7 @@
   {
    "id": "MP-R2VIS-PAGES-HOME-INDEX-004",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-PAGES-HOME-INDEX-004.png(36501B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条 未成立：.today-card__rotate=ABSENT_UNEXPECTED、.today-ca",
+   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/E-MP-R2VIS-PAGES-HOME-INDEX-004.png(36435B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 3 条 未成立：.today-card__rotate=PROBE_NO_ANSWER、.today-ca",
    "why": "把实测值写进账"
   },
   {
@@ -609,14 +612,14 @@
   {
    "id": "MP-R2VIS-PAGES-LOGIN-INDEX-001",
    "col": 9,
-   "new": "帧已拍但落点未确认（实落 ERR:automation_evaluate 调用失败：Command fai），本帧不作判据；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-PAGES-LOGIN-INDEX-001.png",
-   "why": "落点不明的判决不能进账"
+   "new": "帧已拍：reports/screenshots/round-7-realguest/E-MP-R2VIS-PAGES-LOGIN-INDEX-001.png(12094B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-real-guest\\shoot-results.json) 判点 0 条；本条判点全部是 FRAME_ONLY（只能人读帧）",
+   "why": "欠的是人眼，不是证据"
   },
   {
    "id": "MP-R2VIS-PAGES-LOGIN-INDEX-007",
    "col": 9,
-   "new": "帧已拍但落点未确认（实落 ERR:automation_evaluate 调用失败：Command fai），本帧不作判据；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-PAGES-LOGIN-INDEX-007.png",
-   "why": "落点不明的判决不能进账"
+   "new": "帧已拍：reports/screenshots/round-7-realguest/E-MP-R2VIS-PAGES-LOGIN-INDEX-007.png(12171B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-real-guest\\shoot-results.json) 判点 0 条；本条判点全部是 FRAME_ONLY（只能人读帧）",
+   "why": "欠的是人眼，不是证据"
   },
   {
    "id": "MP-R2-VILLAGE-INDEX-010",
@@ -639,13 +642,13 @@
   {
    "id": "MP-R2VIS-PAGES-HOME-INDEX-005",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-PAGES-HOME-INDEX-005.png(36501B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 1 条 未成立：.home-header__title=ABSENT_UNEXPECTED",
+   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/E-MP-R2VIS-PAGES-HOME-INDEX-005.png(36445B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 1 条 未成立：.home-header__title=ABSENT_UNEXPECTED",
    "why": "把实测值写进账"
   },
   {
    "id": "MP-R2-PAGES-DISCOVER-INDEX-013",
    "col": 9,
-   "new": "帧已拍但状态未施加：欠 swipe-card:选择器在当前页查不到 .match-info__distance；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2-PAGES-DISCOVER-INDEX-013.png",
+   "new": "帧已拍但状态未施加：欠 swipe-card:选择器在当前页查不到 .match-info__distance；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/E-MP-R2-PAGES-DISCOVER-INDEX-013.png",
    "why": "欠的是交互步骤，不是结论——写清楚谁来补"
   },
   {
@@ -657,7 +660,7 @@
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001.png(38082B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条 未成立：.post-card__tag=ABSENT_UNEXPEC",
+   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/E-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001.png(38030B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 3 条 未成立：.post-card__tag=PROBE_NO_ANS",
    "why": "把实测值写进账"
   },
   {

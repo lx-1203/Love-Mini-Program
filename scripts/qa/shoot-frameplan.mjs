@@ -18,6 +18,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync, rmSync, r
 import { resolve, join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { evaluate, openPage, shot, mintToken, bootSession, verifyLogin, routeStack, clearSession } from "./cli-automator.mjs";
+import { readApiMode, assertGuestCapable } from "./artifact-band.mjs";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
@@ -267,7 +268,7 @@ async function cliLanding() {
 }
 const usable = (s) => s && !String(s).startsWith("ERR") ? String(s) : "";
 
-let currentIdentity = null, verifyLast = "";
+let currentIdentity = null, verifyLast = "", lastAtFrame = "";
 
 async function ensureIdentity(which) {
   if (which === "guest" ? currentIdentity === "guest" : currentIdentity === "A") return;
@@ -276,6 +277,12 @@ async function ensureIdentity(which) {
     /* 游客不是"铸一个 B token"——那样 boot 完还是登录态。上一版就在这里把身份标签写错了：
        日志打 guest、verify 回 logged-in，帧却是已登录页，等于给同一页盖了两个身份的章。
        现在必须真清会话，且量到 logged-in 就直接失败，不让它带着错标签出帧。 */
+    /* 先问载体答得出这个问题吗：mock 包开页那次会重跑启动链路并把会话造回来
+       （probe-guest-band.mjs 实测 cold/warm 两腿都是 AUTOLOGIN_ON_OPEN），
+       所以在这档上"清完会话"的下一瞬确实是游客、出帧时却是登录态。
+       与其盖一个错的身份章，不如让这一组落到 NO_EVIDENCE 并写明缺的是哪一档载体。 */
+    const cap = assertGuestCapable(REPO, PROJECT, { allow: process.argv.includes("--allow-mock-guest") });
+    if (!cap.ok) throw new Error(cap.reason);
     b = clearSession({ project: PROJECT });
     currentIdentity = null;
     verifyLast = verifyLogin({ project: PROJECT });
@@ -372,6 +379,16 @@ for (const [key, grp] of byRoute) {
     if (a > 0) { try { openPage(route, q, { project: PROJECT }); sleep(SETTLE); } catch (e) { /* 开页失败下一轮再试 */ } }
   }
   const landed = landing.includes(route);
+  /* 身份必须在「帧的时刻」再量一次。实测（scripts/qa/probe-guest-band.mjs，两腿都 AUTOLOGIN_ON_OPEN）：
+     mock 包开页那次会重跑启动链路，把刚清掉的会话又造回来（stores/session.ts:617 的 useMock 分支），
+     于是 ensureIdentity 里那条 verify=not-logged-in 只证明"清会话那一瞬"是游客，
+     帧却是登录态画面——上一批 uidebt-shoot-guest / guest2 的 4 张帧就是这么标错的。
+     量出来不一致 ⇒ 这一组帧一律不能当该身份的证据（标 identityOk=false，不改判决颜色）。 */
+  let atFrame = "";
+  try { atFrame = String(verifyLogin({ project: PROJECT }) || ""); } catch (e) { atFrame = "ERR " + String(e.message || e).slice(0, 60); }
+  const identityOk = ident === "guest" ? /^not-logged-in/.test(atFrame) : /^logged-in/.test(atFrame);
+  if (!identityOk) console.log("  身份错位 route=" + route + " 请求=" + ident + " 帧时刻=" + atFrame + " ⇒ 这一组帧不能当该身份的证据");
+  const grpStart = rows.length;
   for (const it of grp) {
     /* 先按配方把状态做出来，再探测。做不了的步骤（tap/input…）记 unmet ⇒ 这条只能判"状态未施加"，
        不能判红：上一轮我就是把"没点开的弹层"记成了 26 条未成立判点，那是测量错不是产品缺陷。 */
@@ -446,7 +463,9 @@ for (const [key, grp] of byRoute) {
     done++;
     if (LIMIT && done >= LIMIT) break;
   }
-  console.log("SHOOT_GROUP route=" + route + " ident=" + ident + " 条目=" + grp.length + " 落点=" + (landed ? "确认" : "未确认(" + (landing || "空").slice(0, 40) + ")") + " 累计=" + done);
+  for (const r of rows.slice(grpStart)) { r.identityAtFrame = atFrame; r.identityOk = identityOk; }
+  lastAtFrame = route + "=" + (atFrame || "(空)") + (identityOk ? "" : "（与请求身份不符）");
+  console.log("SHOOT_GROUP route=" + route + " ident=" + ident + " 条目=" + grp.length + " 落点=" + (landed ? "确认" : "未确认(" + (landing || "空").slice(0, 40) + ")") + " 身份@帧=" + atFrame.slice(0, 26) + (identityOk ? "" : " ⇒不可当该身份证据") + " 累计=" + done);
 }
 
 const shotRows = rows.filter((r) => r.status === "SHOT");
@@ -459,6 +478,11 @@ if (!DRY) {
   writeFileSync(join(OUT, "shoot-results.json"), JSON.stringify({
     round: LABEL, gitSha: GIT_SHA, updatedAt: new Date().toISOString(), plan: relOf(PLAN), project: relOf(PROJECT),
     identitySeen: currentIdentity, verifyLast, planned: items.length, rows,
+    /* 帧时刻身份与档位：一组的 verifyLast 只代表"设身份那一刻"，
+       mock 包会在开页那次把会话造回来 ⇒ 只有 identityAtFrame 能证明帧是谁的帧。 */
+    identityAtFrameLast: lastAtFrame,
+    identityMismatch: rows.filter((r) => r.identityOk === false).map((r) => r.id),
+    artifactBand: readApiMode(PROJECT),
     counts: { SHOT: shotRows.length, EVIDENCE_HOLE: holes, FAILED: rows.filter((r) => r.status === "FAILED").length, NO_EVIDENCE: noEvidence.length },
     machinePassAllChecks: machinePass,
   }, null, 1));
