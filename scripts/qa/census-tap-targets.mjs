@@ -22,6 +22,8 @@ if (!existsSync(OPS)) { console.log("TAPCENSUS_RESULT=FAIL reason=判据台目�
 const TAP_RE = /(点击|按下|长按|双击|输入|滑动|滚动|拖动|下拉|勾选|切换后|聚焦|失焦|tap|click|input|scroll|swipe|trigger)/i;
 /* 类名抽取规则与执行器保持一致（同一份正则两份实现 = 两张表会打架） */
 const CLS_RE = /\.([a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:__|--)[a-z0-9_-]+)/g;
+/* 裸类名（`.title-input`、`.error-btn`）：至少一个连字符，避免把句点/小数当成选择器 */
+const BARE_CLS_RE = /\.([a-z][a-z0-9]*(?:-[a-z0-9]+)+)/g;
 const SRC_ROOT = "apps/client/src";
 
 const pages = new Map();
@@ -33,7 +35,13 @@ for (const f of readdirSync(OPS).filter((x) => x.endsWith(".json"))) {
     const actionText = String(c.action || "") + " " + String(c.pre || "");
     if (!TAP_RE.test(actionText)) continue;
     tapCases++;
-    const has = [...actionText.matchAll(CLS_RE)].length > 0;
+    /* 两种"已点名"都要算：
+       (1) action 文本里能抠出类名（BEM 或裸类名都算——之前只认 BEM，把 .title-input 这类
+           真目标误记成"没点名"，普查就低估了进度）；
+       (2) 判据带显式 tapTarget 字段（merge-tapfix-lanes 落进去的权威目标）。 */
+    const has = [...actionText.matchAll(CLS_RE)].length > 0 ||
+      [...actionText.matchAll(BARE_CLS_RE)].length > 0 ||
+      /[.#]?[a-z][a-z0-9]*(-[a-z0-9]+)+/i.test(String(c.tapTarget || ""));
     if (has) { named++; continue; }
     const p = c.page || "(无页)";
     if (!pages.has(p)) pages.set(p, { page: p, missing: [], manifest: f, sourceGuess: "" });

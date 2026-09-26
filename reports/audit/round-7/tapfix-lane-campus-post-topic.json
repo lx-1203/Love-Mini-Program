@@ -1,0 +1,239 @@
+{
+  "lane": "subpackages/campus/campus/post-topic",
+  "sourceFile": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+  "generatedAt": "2026-09-26T17:42:57.420Z",
+  "cases": [
+    {
+      "id": "PT03",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "观察 6 个 chip 是否有任何选中态 → 填标题+正文 → tap 顶部「发布」，观察请求 category 实参",
+      "selector": ".post-header__submit",
+      "newAction": "用 createSelectorQuery 数一遍 6 个 .category-option（第一行 3 个在第 464 行 v-for、第二行 3 个在第 474 行 v-for）里带 .category-option--selected（第 465/475 行）的节点数 → 对 .title-input（第 490 行）与 .content-input（第 502 行）填标题正文 → tap 第 437 行 .post-header__submit（顶部「发布」）1 次，观察请求 category 实参",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 437,
+      "how": "顶部发布钮 = 437 行 .post-header__submit（同节点 :438 可追加 post-header__submit--disabled，@tap=submitTopic 在 :441），是页面唯一「顶部发布」点击目标；分类观察对象是 464/474 行 .category-option + 465/475 行 category-option--selected。注：本页 onLoad 现已有白名单回落（:133 `key in CAMPUS_CATEGORY_MAP ? key : \"course_exchange\"`，MP-R2-CAMPUSPOST-013），故原 expected 的「6 个 chip 全无选中态」在当前源码不可达，高亮数应恒为 1。",
+      "status": "ok"
+    },
+    {
+      "id": "PT08",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "依次 tap 6 个 .category-option（post-topic.vue:299-317 → selectCategory :120-122），每次记录高亮集合",
+      "selector": ".category-option",
+      "newAction": "依次 tap .category-option（第一行 3 个在第 464 行 v-for、第二行 3 个在第 474 行 v-for）共 6 次，每次用 createSelectorQuery 记录带 .category-option--selected（第 465/475 行）的节点集合",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 464,
+      "how": "464 行（与第二行 474 行）的 .category-option 是模板里唯一 @tap=selectCategory(cat.key)（:466/:476）的分类 chip；高亮类名 category-option--selected 与单值 ref selectedCategory（:89）绑定（:465/:475），故「恰一个高亮」可由选择器直接证。selectCategory 定义在 :220-222 —— action 原引的 :299-317 / :120-122 是过期行号。",
+      "status": "ok"
+    },
+    {
+      "id": "PT09",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "① 输入「周末组队去国博」→ ② 全清 → ③ 输入 80 字符长串 → ④ 输入「%22'<>&@#\\n中文 English」并回读实际值",
+      "selector": ".title-input",
+      "newAction": "对第 490 行 .title-input（input，maxlength=\"50\"）依次：① 输入「周末组队去国博」→ ② 全清 → ③ 输入 80 字符长串 → ④ 输入「%22'<>&@#\\n中文 English」，每步回读该 input 的 value",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 490,
+      "how": "487-493 行是本页唯一的标题 input：class=title-input（:490）、v-model=title（:489）、maxlength=\"50\"（:492）；标题为空只影响 canSubmit（:212-214）导致发布钮置灰，不影响该输入框本身。",
+      "status": "ok"
+    },
+    {
+      "id": "PT10",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "① 输入 30 字 → ② 清空 → ③ 输入 600 字 → ④ 输入含换行/制表/emoji/HTML 片段的 500 字内混合文本，每步读 .content-count 文本",
+      "selector": ".content-input",
+      "newAction": "对第 502 行 .content-input（textarea，:maxlength=MAX_LENGTH=500）依次：① 输入 30 字 → ② 清空 → ③ 输入 600 字 → ④ 输入含换行/制表/emoji/HTML 片段的 500 字内混合文本，每步读第 507 行 .content-count 的文本",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 502,
+      "how": "499-506 行是唯一的正文 textarea，class=content-input（:502）、:maxlength=\"MAX_LENGTH\"（:504，MAX_LENGTH=500 见 :205）；被读的计数节点是 507 行 .content-count，其超长态类名 content-count--over 与 :class 绑定在同一行。",
+      "status": "ok"
+    },
+    {
+      "id": "PT11",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "tap 顶部「发布」一次（只点一次）→ 记录 network 面板该端点的全部请求条目与其 Idempotency-Key、状态码与时间间隔 → 等 ≥5s 后重新 GET /campus/topics 回读该标题条数",
+      "selector": ".post-header__submit",
+      "newAction": "tap 第 437 行 .post-header__submit（顶部「发布」）一次（只点一次）→ 记录 network 面板该端点的全部请求条目与其 Idempotency-Key、状态码与时间间隔 → 等 ≥5s 后重新 GET /campus/topics 回读该标题条数",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 437,
+      "how": "「顶部发布」唯一节点 437 行 .post-header__submit（@tap=submitTopic :441，文案子节点 .submit-text :443）。点击目标无条件渲染；本条的重试次数/幂等键一致性与服务端落库条数三列断言仍只能在 REAL_ONLY 轮取，mock 轮网络列记 N/A。",
+      "status": "ok"
+    },
+    {
+      "id": "PT12",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "evaluate 置 content=501 字 → 读 .content-count 与 --over 类名 → tap 顶部「发布」→ 等 ≥1.5s 观察",
+      "selector": ".post-header__submit",
+      "newAction": "evaluate 把 content 置为 501 字 → 读第 507 行 .content-count 的文本与它的 .content-count--over 类名 → tap 第 437 行 .post-header__submit（顶部「发布」）→ 等 ≥1.5s 观察",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 437,
+      "how": "507 行同一节点同时给出基类 content-count 与超长态 content-count--over（isOverLimit 见 :210，样式 :864）；超长时 canSubmit=false 只给 437 行节点追加 post-header__submit--disabled（:438），基类仍在，选择器不会因置灰而失配；submitTopic 的静默 return 分支在 :299-301（无 Toast），与 circles/post-topic 的口径差属判据本身要证的内容。",
+      "status": "ok"
+    },
+    {
+      "id": "PT15",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "tap 顶部「发布」一次 → 立即连拍（0/300/600/900/1500ms）观察 Toast 与返回时机 → 返回后数列表首条",
+      "selector": ".post-header__submit",
+      "newAction": "tap 第 437 行 .post-header__submit（顶部「发布」）一次 → 立即连拍（0/300/600/900/1500ms）观察 Toast 与返回时机 → 返回后数列表首条",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 437,
+      "how": "唯一 @tap=submitTopic 的顶部节点在 437 行；成功 Toast（campus.postTopic.publishSuccess）在 :386、800ms navigateBack 定时器在 :392-406，连拍窗口正是这段；mock 分支创建走 stores/campus 本地 unshift（:354-360）。",
+      "status": "ok"
+    },
+    {
+      "id": "PT16",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "第一次：填表 → tap 发布 → 等返回（≥2s）。第二次：再次进入 post-topic → 填**完全相同**的标题与正文 → tap 发布 → 等 ≥2s，观察 Toast 与网络响应",
+      "selector": ".post-header__submit",
+      "newAction": "第一次：对 .title-input（第 490 行）与 .content-input（第 502 行）填表 → tap 第 437 行 .post-header__submit → 等返回（≥2s）。第二次：再次进入 post-topic → 填**完全相同**的标题与正文（同样用 .title-input/.content-input）→ 再 tap 第 437 行 .post-header__submit → 等 ≥2s，观察 Toast 与网络响应",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 437,
+      "how": "两次「发布」都归到 437 行 .post-header__submit（@tap=submitTopic :441）；409/幂等命中 catch 分支（:407-417），Toast 文案取 campusStore.errorMessage（:412-415）、isSubmitting 复位在 :416、成功定时器不执行。幂等判重与服务端回读条数属 REAL_ONLY 前置，但四个点击/输入目标都在当前源码无条件渲染。",
+      "status": "ok"
+    },
+    {
+      "id": "PT17",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "填「与 PT16 仅差 1 字」的表单 → tap 发布 → 等 ≥2s",
+      "selector": ".post-header__submit",
+      "newAction": "对 .title-input（第 490 行）/.content-input（第 502 行）填「与 PT16 仅差 1 字」的表单 → tap 第 437 行 .post-header__submit → 等 ≥2s",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 437,
+      "how": "点击目标同 PT16（437 行唯一 @tap=submitTopic 顶部节点，:441）；「改 1 字 → body 变 → 幂等键变 → 放行 200」这条只能由 real 后端的 Idempotency-Key 与回读条数证实，页面无额外元素依赖。",
+      "status": "ok"
+    },
+    {
+      "id": "PT20",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "tap 顶部「发布」→ 看到「发布成功」Toast 后立刻（600ms 内，即返回前）再 tap 顶部与底部各一次",
+      "selector": ".post-header__submit",
+      "newAction": "tap 第 437 行 .post-header__submit（顶部「发布」）→ 看到「发布成功」Toast 后立刻（600ms 内，返回前）再 tap 顶部 .post-header__submit（第 437 行）与底部 .bottom-submit__btn（第 569 行）各一次",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 437,
+      "how": "两个发布入口都是 @tap=submitTopic：顶部 437 行 .post-header__submit（:441）、底部 569 行 .bottom-submit__btn（@tap 在 :573，可禁用态追加 :570 的 bottom-submit__btn--disabled）；窗口内重入靠 submitTopic 首行 isSubmitting 守卫（:287），成功路径刻意不复位提交态（:388-390 注释，MP-R1-CAMPUSPOST-004）。主 selector 取首次点击的顶部钮，底部那一步在 newAction 里另点名。",
+      "status": "ok"
+    },
+    {
+      "id": "PT22",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "连续选 2 张图（或一次多选 2 张）→ 补齐标题正文 → tap 发布 → 观察两次上传请求与最终结果",
+      "selector": ".image-upload",
+      "newAction": "连续 tap 第 531 行 .image-upload（图片区「+」块）2 次各选 1 张图（或一次多选 2 张）→ 用 .title-input（第 490 行）/.content-input（第 502 行）补齐标题正文 → tap 第 437 行 .post-header__submit → 观察两次上传请求与最终结果",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 531,
+      "how": "「+」块 = 529-540 行唯一 class=image-upload（:531，@tap=chooseImage :536）的节点，受 v-if=\"images.length < MAX_IMAGES\"（:530，上限 6 见 :161）控制，0 张时常驻；每图唯一文件名 campus-topic-<ts>-<idx>.jpg 在 :334-337（MP-R1-CAMPUSPOST-002 回归点），两次上传 key 必须不同。上传请求与后端 images 回读属 REAL_ONLY 前置。",
+      "status": "ok"
+    },
+    {
+      "id": "PT24",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "tap .image-upload → 在系统选图器点「取消」；随后再制造一次真实失败（拒绝相册权限后重试）",
+      "selector": ".image-upload",
+      "newAction": "tap 第 531 行 .image-upload（「+」块，@tap=chooseImage）→ 在系统选图器点「取消」（原生弹窗，页内无类选择器可用）→ 拒绝相册权限后再 tap 同一个第 531 行 .image-upload 制造一次真实失败",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 531,
+      "how": "页面侧可点目标只有 531 行 .image-upload（:531，@tap=chooseImage :536）；取消分支在 :260-268 用 /cancel/i 过滤后不弹 Toast（:264），真实失败才弹 campus.postTopic.chooseImageFailed（:266）并 console.error（:261）。选图器本体是原生层，第二步的「取消」无法用类选择器归属，判据靠点完之后的 Toast 与 .images-section__hint（第 516 行）计数读。",
+      "status": "ok"
+    },
+    {
+      "id": "PT27",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "依次 tap 4 个 .topic-chip（TopicSelector.vue:246-256 → toggleTopic :107-127）→ tap 已选项取消 1 个 → tap「全部清除」（:200-210 clearAll）",
+      "selector": ".topic-chip",
+      "newAction": "依次 tap 热门话题列表里的 .topic-chip（TopicSelector.vue 第 248 行 class 数组字面量，v-for 在 :246，>4 个候选）4 次 → tap 已选区的 .topic-chip.topic-chip--selected（第 216 行）取消 1 个 → tap 第 204 行 .topic-selector__clear（「全部清除」）",
+      "file": "apps/client/src/components/village/TopicSelector.vue",
+      "line": 248,
+      "how": "组件在本页以 <TopicSelector v-model=\"selectedTopics\" /> 挂载（post-topic.vue:546）。热门 chip 的 class 数组含 'topic-chip'（:248）与选中态 'topic-chip--selected'（:250），@tap=toggleTopic 在 :254（toggleTopic :105-125，第 4 个被 MAX_TOPIC_SELECTION 拒并弹 topicSelector.maxReached Toast :116-121）；已选区 chip 在 216 行（@tap=removeTopic :219）；「全部清除」= 204 行 .topic-selector__clear（@tap=clearAll :207，实现 :179-182），计数文案 .topic-selector__selected-count 在 199 行；.topic-chip 样式定义见 :402/:412。action 原引的 :246-256 与现源码一致，:200-210 现落在 clearAll 文案块附近。",
+      "status": "ok"
+    },
+    {
+      "id": "PT29",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "选 2-3 个话题 → 填标题正文 → tap 发布 → 回读创建结果正文与 tags",
+      "selector": ".post-header__submit",
+      "newAction": "tap TopicSelector.vue 第 248 行的 .topic-chip 选 2-3 个话题 → 用 .title-input（第 490 行）/.content-input（第 502 行）填标题正文 → tap 第 437 行 .post-header__submit → 回读创建结果正文与 tags",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 437,
+      "how": "判据落在提交体：mock 分支把话题以 #tag 追加到正文末尾（:349-360），real 分支走 tags 数组并做 ≤5 个/每项 ≤20 字截断（:361-375），两模式差异必须显式标注构建来源。点击目标取 437 行 .post-header__submit（@tap=submitTopic :441）；选话题那一步的目标在子组件 apps/client/src/components/village/TopicSelector.vue:248 的 .topic-chip。tags 数组与后端回读属 REAL_ONLY 前置。",
+      "status": "ok"
+    },
+    {
+      "id": "PT30",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "提交 → 观察 Toast 与停留态 → 修改标题 1 字后再次提交",
+      "selector": ".post-header__submit",
+      "newAction": "tap 第 437 行 .post-header__submit 提交 → 观察 Toast 与停留态（页面应留在本页）→ 在 .title-input（第 490 行）修改标题 1 字后再 tap 一次第 437 行 .post-header__submit",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 437,
+      "how": "两次提交都是 437 行 .post-header__submit（@tap=submitTopic :441）；服务端 4xx 命中 catch（:407-417）——Toast 用 campusStore.errorMessage（:412-415）、isSubmitting 复位 :416、成功定时器 :392-406 不执行所以不自动返回。「服务端 4xx」需 REAL_ONLY 轮构造（mock 轮按 pageNotes 记 UNVERIFIED），但点击目标无条件渲染。",
+      "status": "ok"
+    },
+    {
+      "id": "PT32",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "循环 3 次：进入 → 选不同分类 + 填不同标题 → tap 取消返回 → 再进入",
+      "selector": ".post-header__back",
+      "newAction": "循环 3 次：进入 → tap 第 464/474 行的 .category-option 选不同分类、对 .title-input（第 490 行）填不同标题 → tap 第 432 行 .post-header__back（左上「取消」）返回 → 再进入",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 432,
+      "how": "「取消」= 432 行唯一带 @tap=goBack 的 .post-header__back 节点（goBack :423-425 裸 navigateBack，文案子节点 .back-icon :433）；每轮初值回到默认由 categoryOptions 的默认选中（selectedCategory :89）与 title/content 空 ref（:151-153）决定，深链带 ?category= 时走 :127-134 的白名单回落。",
+      "status": "ok"
+    },
+    {
+      "id": "PT33",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": ".post-body（post-topic.vue:293 scroll-view）滚到底 → 回顶；数值回填",
+      "selector": ".post-body",
+      "newAction": "对第 447 行 .post-body（scroll-view scroll-y）滚到底 → 回顶，scrollTop/scrollHeight 数值回填；到底时用 createSelectorQuery 校验第 569 行 .bottom-submit__btn 完整可见，回顶后校验第 432 行 .post-header__back 与第 437 行 .post-header__submit 均在视口内",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 447,
+      "how": "唯一内滚容器是 447 行 class=\"post-body\" 的 scroll-view（:447，scroll-y）；外层 .post-page 定高 + overflow:hidden（:429 与样式 :607-608，MP-R1-CAMPUSPOST-101）保证不出现整页滚动。action 原引的 :293 是过期行号，现节点在 447 行；被检的底部按钮在 569 行、header 两元素在 432/437 行。",
+      "status": "ok"
+    },
+    {
+      "id": "PT34",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "tap .content-input 聚焦 → 输入 3 行文本 → 观察光标与键盘间距 → 收起键盘",
+      "selector": ".content-input",
+      "newAction": "tap 第 502 行 .content-input（textarea）聚焦 → 输入 3 行文本 → 观察光标与键盘间距 → 收起键盘",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 502,
+      "how": "499-506 行唯一 textarea：class=content-input（:502）、cursor-spacing=\"20\"（:500）、:show-confirm-bar=\"false\"（:505）——正是本条要证的两个属性；聚焦不追加任何类名，所以点击目标就取基类本身（样式 .content-input 见 :836）。",
+      "status": "ok"
+    },
+    {
+      "id": "PT36",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+      "oldAction": "确认本页预选分类=学习互助 → 填唯一标题正文 → tap 发布 → 返回后观察 index 停在哪个 Tab、新帖出现在哪个 Tab 列表",
+      "selector": ".post-header__submit",
+      "newAction": "用 createSelectorQuery 读第 465/475 行的 .category-option--selected，确认高亮落在第 474 行那组 v-for 的「学习互助」chip 上 → 用 .title-input（第 490 行）/.content-input（第 502 行）填唯一标题正文 → tap 第 437 行 .post-header__submit → 返回后观察 campus/index 停在哪个 Tab、新帖出现在哪个 Tab 列表",
+      "file": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "line": 437,
+      "how": "预选高亮由 465/475 行 :class=\"{ 'category-option--selected': selectedCategory === cat.key }\" 表达；study_help 属 categoryOptions.slice(3,6)（:192）所以渲染在第二行 v-for（:471-480，chip 节点 :474）。预选值来自深链 ?category=（onLoad :127-134，含白名单回落），是 URL 参数而非账号态，可构造。发布点击取 437 行 .post-header__submit（@tap=submitTopic :441）；「新帖归属哪个 Tab」需回流后在 campus/campus/index 侧取证，real 轮才能读服务端 category 落库实值。",
+      "status": "ok"
+    }
+  ],
+  "unverifiable": [
+    {
+      "id": "PT25",
+      "reason": "点击目标 <switch> 没有 class：post-topic.vue:558-562 的 switch 只绑定 :checked（:559）、:color（:560）与 @change=toggleAnonymous（:561），全文件搜不到任何作用在 switch 上的类名。同卡片里能逐字看到的类只有 .options-section（:550）、.option-row（:551）、.option-info（:552）、.option-label（:553）、.option-desc（:556），但它们都不带 @tap/@change —— 点 .option-row 命中的是左侧 .option-info 文案区，不会触发原生 switch 的 change，把 tap 归属到这些父级/兄弟类会篡改判据。按规则「只有事件绑定却没有 class 的元素如实标 unverifiable」处理。"
+    },
+    {
+      "id": "PT37",
+      "reason": "缺前置：real 构建 + 该账号处于未认证/审核中/驳回态。本条要观察与点击的横幅节点全在 `v-if=\"certGate === 'denied'\"` 分支里（post-topic.vue:450 .cert-banner、:451 .cert-banner__text、:452 .cert-banner__btn（@tap=goCertification）、:453 .cert-banner__btn-text），类名确实逐字存在但 mock/已认证视角永不渲染：resolveCertGate 在 mock 直接 return \"allowed\"（:115），未登录或取状态失败保持 \"unknown\"（:138、:143-148），只有已登录且 GET /campus/certification 回包非 verified 才落 denied。剩余可点元素（第 437 行 .post-header__submit）属于另一条链路，用它替「认证横幅 + 去认证」会改掉判据的观测对象（本地门禁拦截 :306-309 与零必败请求），故不硬凑。"
+    },
+    {
+      "id": "PT39",
+      "reason": "缺前置：imagesAccepted=false 的历史构建（CAMPUS_TOPIC_IMAGES_SUPPORTED 置 false）或后端重新丢 images 的 real 环境。本条的两个观测对象都不可达 —— 常驻说明 .images-section__warn 在 `v-if=\"!imagesAccepted\"` 分支（post-topic.vue:520，样式 :895），而 imagesAccepted = isMockMode || CAMPUS_TOPIC_IMAGES_SUPPORTED（:71）且开关在 2026-09-26 已按 MP-R1-CAMPUSPOSTTOPIC-201 闭合翻回 true（:65 及其注释），mock 与 real 两档都恒为真，警示行永不渲染；「+」块 .image-upload（:531，@tap=chooseImage :536）虽存在，但当前源码下它走的是与判据相反的可用分支（chooseImage 的 !imagesAccepted Toast 在 :238-241，同样不可达）。"
+    },
+    {
+      "id": "PT40",
+      "reason": "双重不可达：① 点击目标同 PT25 —— 匿名开关 <switch>（post-topic.vue:558-562）无 class，只有 :checked/:color/@change=toggleAnonymous（:561），可看到的 .option-desc（:556，替换态类名 option-desc--warn 同一行）只是被动的文案节点、不是可点目标；② 断言本身要求 REAL_ONLY —— anonymousBlocked = !isMockMode && isAnonymous（:171），mock 下文案永不替换、也不会产生 POST body，而「后端 isAnonymous 落库值与实际作者显示名」必须回读真实服务（依据见 :163-170 注释）。因此本条按 unverifiable 登记，等 real 轮用带 class 的替代锚点（如后续给 switch 补类名）再补点击目标。"
+    }
+  ],
+  "counts": {
+    "planned": 23,
+    "ok": 19,
+    "unverifiable": 4
+  }
+}
