@@ -132,6 +132,9 @@ mkdirSync(SHOT_DIR, { recursive: true });
 const ROUTE_QUERY = {
   "subpackages/campus/campus/index": "school=" + encodeURIComponent("南京大学"),
   "subpackages/discover-extra/discover/matching": "dev-preview=1",
+  /* tag-posts 的 onLoad：无 ?tagName= 时提示并返回（P1-36），所以裸直达必然被弹走。
+     取值用 fixture 里真实存在的标签（含 # 前缀，须 URL 编码）。 */
+  "subpackages/village/village/tag-posts": "tagName=" + encodeURIComponent("#校园日常"),
 };
 const IDENTITY = arg("identity", "A");
 let LOGIN_VERIFY = "";
