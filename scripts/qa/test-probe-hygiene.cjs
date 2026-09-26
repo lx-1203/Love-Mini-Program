@@ -62,8 +62,15 @@ t("MATCHING-002 的 background 判点仍按 closer-diff 记硬", hardOf(m002, "b
 const nie = items.filter((x) => x.verdict === "NOT_IN_EITHER");
 const nieLines = out.split("\n").filter((l) => /NIE_SCOPE_CHECK /.test(l));
 t("NIE 条数与回落观测行数一致（不许多也不漏）", nie.length === nieLines.length, "nie=" + nie.length + " lines=" + nieLines.length);
-t("NIE 桶非空（否则本测试的这条判据是空转）", nie.length > 0, "nie=0");
-t("回落口径写明『只记观测不改判』", /NIE_SOURCE_FALLBACK/.test(out) && /不改判/.test(out), out.split("\n").filter((l) => /NIE_SOURCE_FALLBACK/.test(l)).join(" ⏎ "));
+/* "NIE 桶必须非空"是把测试绑在**生产数据当前的分布**上：本轮把 NIE 真降到 0 之后，
+   这条断言就以"空转防护"的名义把成功判成失败（实测 nie=0 报 FAIL）。
+   它想防的其实是"这段代码从没被执行过"，那就直接问代码：要么真有 NIE 条目，
+   要么壳否决路径真的处理过同名作废标识（PROBE_VETOED_BY_LEDGER_SHELL>0）。两个都为 0 才是空转。 */
+const vetoed = Number((out.match(/PROBE_VETOED_BY_LEDGER_SHELL=(\d+)/) || [null, "0"])[1]);
+t("NIE/否决两条路径至少一条被走过（否则这段判据是空转）", nie.length > 0 || vetoed > 0, "nie=0 vetoed=" + vetoed);
+t("回落口径写明『只记观测不改判』（仅当确有 NIE 条目时要求）",
+  nie.length === 0 || (/NIE_SOURCE_FALLBACK/.test(out) && /不改判/.test(out)),
+  out.split("\n").filter((l) => /NIE_SOURCE_FALLBACK/.test(l)).join(" ⏎ "));
 
 /* 收紧不得把真判点一并杀掉：这些 token 在收紧前后都必须在册 */
 const mustKeep = ["--c-bg-page", "background:var(--c-gradient-match)", "--page-padding", "not-logged__btn"];

@@ -508,6 +508,8 @@ var BACKEND_MARK = /(后端|服务端|Controller|Repository|mvnw|数据库|SQL|m
  *  产物里当然 0 命中 ⇒ 一条已经改好的判据被自己的说明文字打回 NOT_IN_EITHER。
  *  未闭合的 ⟨ 按"到句尾都算说明"处理（宁可少抽也不造假指控），并在 PROSE_BRACKET_UNBALANCED 里现形。 */
 var PROSE_BRACKET = { spans: 0, tokens: 0, unbalanced: 0, samples: [] };
+/** 台账壳否决掉的"别的载体混进来的同名判点"，逐条留名——否决必须可清点，否则就等于"规则悄悄改了考卷" */
+var RETIRED_VETO = { probes: 0, items: {} };
 var BRACKET_BASE = { spans: 0, tokens: 0, unbalanced: 0 };
 function stripProseBrackets(text) {
   var s = String(text);
@@ -1157,6 +1159,22 @@ function buildItem(raw) {
   }
   item.preTokens = preTokens;
 
+  /* 台账里的 ⟨…⟩ 是**按标识**做的裁定（"这个名字是作废判点，不是要搜的东西"），所以它必须对所有判点来源生效：
+     round-7 实测两条 NOT_IN_EITHER 就卡在这里——我把标识在台账第 11 列入了壳，但 closer.json 的
+     "修→修后差异串"（origin=closer-diff，硬度最高）与源码锚点里还带着同一个名字，于是它照样被抽成硬判点。
+     改台账改不动上一轮冻结的载体 ⇒ 壳只在"读它的那一侧"起作用是不够的。
+     规则：出现在壳内的任何 token，一律不得作为判点存在（壳外的同名 token 仍然有效）。 */
+  var retiredBlob = "";
+  if (row) {
+    var rSpans = String(row.action || "").concat(" \n", row.statusEvidence || "", " \n", row.evidence || "").match(/⟨[^⟩]*⟩?/g) || [];
+    retiredBlob = rSpans.join("\n").toLowerCase();
+  }
+  item.retiredSpanCount = (retiredBlob.match(/⟨/g) || []).length;
+  function vetoedByShell(p) {
+    var t = String(p.token || "").toLowerCase();
+    return t.length >= 4 && retiredBlob && retiredBlob.indexOf(t) >= 0;
+  }
+
   var probes = [];
   var pseen = {};
   for (var c = 0; c < clauses.length; c++) {
@@ -1181,6 +1199,7 @@ function buildItem(raw) {
          归并规则：硬度取两侧更强的那个（anchored 取或、hard 来源优先）。 */
       if (pseen[k] !== undefined) {
         var prev = probes[pseen[k]];
+        if (!prev) { delete pseen[k]; continue; }
         if (pr.anchored) prev.anchored = true;
         if (isHardOrigin(pr.origin) && !isHardOrigin(prev.origin)) prev.origin = pr.origin;
         continue;
@@ -1190,7 +1209,18 @@ function buildItem(raw) {
          标识符与字符串值本来就会被修前修后两侧同时点名，一律丢会把判点全丢光。 */
       var VALUE_BEARING = { "css-var": 1, "css-var-def": 1, "css-decl": 1, class: 1, literal: 1, asset: 1 };
       var isPre = preTokens[String(pr.token).toLowerCase()] || preTokens[String(pr.token).replace(/^--/, "").toLowerCase()];
-      if (isPre && pr.polarity === "present" && VALUE_BEARING[pr.kind]) { pr.droppedAsPreFix = true; item.notes.push("丢判为「修前值」的探针：" + pr.token + "（同时出现在证据/修前列）"); continue; }
+      if (isPre && pr.polarity === "present" && VALUE_BEARING[pr.kind]) { pr.droppedAsPreFix = true; item.notes.push("丢判为「修前值」的探针：" + pr.token + "（同时出现在证据/修前列）"); delete pseen[k]; continue; }
+      /* 壳是**按行按标识**的裁定，不是按格子的排版：同一行里 col 9（状态证据）、col 11（处置）
+         都可能出现那个名字，实测 MESSAGES-022 的 console.warn 与 CHAT-SESSION-A03 的 ChatHeader
+         就是"壳在 col 11、判点从 col 9 混进来"。所以壳对所有来源生效；
+         壳外仍然写着的同名 token 不受影响（那是作者要判的东西）。 */
+      if (vetoedByShell(pr)) {
+        RETIRED_VETO.probes++;
+        (RETIRED_VETO.items[item.id] = RETIRED_VETO.items[item.id] || []).push(pr.origin + ":" + pr.kind + ":" + pr.token);
+        item.notes.push("判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=" + pr.origin + "）：" + pr.token);
+        delete pseen[k];
+        continue;
+      }
       probes.push(pr);
     }
   }
@@ -1198,6 +1228,13 @@ function buildItem(raw) {
     console.log("[trace] " + item.id + " srcRels=" + JSON.stringify(item.srcRels));
     console.log("[trace]   clauses=" + JSON.stringify(clauses.map(function (c) { return { o: c.origin, a: c.anchored, p: c.polarity, post: c.post.slice(0, 70) }; })));
     console.log("[trace]   rawProbes=" + JSON.stringify(probes.map(function (p) { return p.kind + ":" + p.token; })));
+  }
+  /* 索引一致性：判点被丢弃（修前值 / 壳否决）后，去重表里不能留下悬空下标——
+     那正是本轮新增否决规则第一次跑就撞出的崩溃（probes[pseen[k]] 取到 undefined）。 */
+  var dangling = Object.keys(pseen).filter(function (kx) { return pseen[kx] >= probes.length; });
+  if (dangling.length) {
+    item.notes.push("判点去重索引悬空 " + dangling.length + " 个");
+    FATAL.push(item.id + " 去重索引悬空（丢弃判点后未回收下标）");
   }
   item.probes = pruneProbes(probes, item);
   if (ARG.trace && ARG.trace.indexOf(item.id) >= 0) console.log("[trace]   keptProbes=" + JSON.stringify(item.probes.map(function (p) { return p.kind + ":" + p.token + (isHard(p) ? "(hard)" : "(soft)"); })));
@@ -1627,6 +1664,11 @@ function main() {
     " unbalanced=" + (PROSE_BRACKET.unbalanced - BRACKET_BASE.unbalanced) +
     (PROSE_BRACKET.unbalanced > BRACKET_BASE.unbalanced ? "  PROSE_BRACKET_UNBALANCED_WARN=有 ⟨ 未闭合，其后的内容按说明处理（不再抽判点）" : ""));
   PROSE_BRACKET.samples.forEach(function (t) { console.log("  BRACKET_UNBALANCED_SAMPLE=" + t); });
+  console.log("PROBE_VETOED_BY_LEDGER_SHELL=" + RETIRED_VETO.probes + " 涉及条目=" + Object.keys(RETIRED_VETO.items).length +
+    "（被否决的都是非台账来源的同名判点；逐条名字见各 item.notes）");
+  Object.keys(RETIRED_VETO.items).slice(0, 8).forEach(function (id) {
+    console.log("  VETO " + id + " :: " + RETIRED_VETO.items[id].join(" / "));
+  });
   console.log("输出：" + path.relative(ROOT, path.join(P.out, "verdicts.json")).split(path.sep).join("/") + " / " + path.relative(ROOT, path.join(P.out, "verdicts.md")).split(path.sep).join("/") + " / verdicts.jsonl（逐条追加，崩溃可续）");
   console.log(tail);
 

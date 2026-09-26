@@ -32,7 +32,9 @@ for (const p of plan.patches || []) {
   if (li === undefined) { console.log(`MISSING_ID ${p.id}（台账里找不到本尊行）`); missing++; continue; }
   const cells = lines[li].split("|").slice(1, -1);
   if (cells.length !== 11) { console.log(`COLCOUNT_BAD ${p.id} 列数=${cells.length}（应为 11，不动这一行）`); colBad++; continue; }
-  let c = cells[10];
+  const target = p.col ? Number(p.col) - 1 : 10;
+  if (!(target >= 0 && target < cells.length)) { console.log(`COL_BAD ${p.id} col=${p.col}（这一行只有 ${cells.length} 列）`); colBad++; continue; }
+  let c = cells[target];
   let touched = 0;
   /* 只在"壳外"替换：一个已经在 ⟨…⟩ 里的 token 再包一层会产生嵌套壳，
      而抽取器按"第一个 ⟩ 收尾"来剥壳，嵌套会让壳后半段重新变成裸文本 ⇒ 造出新判点。 */
@@ -72,7 +74,7 @@ for (const p of plan.patches || []) {
     }
     c = c.replace(/\s+$/, "") + " " + p.append;
   }
-  cells[10] = " " + c + " ";
+  cells[target] = " " + c + " ";
   lines[li] = "|" + cells.join("|") + "|";
   planned++; wrapped += touched;
   console.log(`WRAP id=${p.id} line=${li + 1} tokens-wrapped=${touched}${p.why ? " why=" + p.why : ""}`);

@@ -1,0 +1,17 @@
+{
+  "note": "round-7 第三轮收口：把仍会从**其它列/其它载体**混成硬判点的作废标识入壳。判据台现在让行内壳对所有来源生效（col 9 状态证据、col 11 处置、closer 差异串、源码锚点），所以入壳一次就够，不必逐列改写。art/src 命中数取自 .zcode/tmp/fixverify-r7h/verdicts.json 的逐条探针记录。",
+  "patches": [
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-022",
+      "col": 11,
+      "tokens": ["console.warn"],
+      "why": "art=1 的 absent 判点：未采纳分支要求补的留痕标识还有一处在壳外（a:ledger-action:console.warn），采纳的删除分支判点（入壳外的字符串判点 art=0）不受影响"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001",
+      "col": 9,
+      "tokens": ["城市 · 服务器所在城市", "LocationService", "LocationCityView", "cityFromIp", "displayText", "LocationResult"],
+      "why": "这六个 art=0：运行期拼接文案两载体都搜不到（实测 art=0 src=0）；LocationService/LocationCityView.java 是后端类名，本判据台不扫后端产物（art=0 src=0）；cityFromIp/displayText/LocationResult 是压缩改名标识（art=0 src=1）。同项 art=1 的 8 个标识（citySource/NEARBY_CITY/locationPage/serverCityTag/buildLocationText/addressUnavailable/fetchCurrentLocation 与两条文案判点）不入壳，继续作判点"
+    }
+  ]
+}

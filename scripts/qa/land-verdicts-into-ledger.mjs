@@ -78,6 +78,12 @@ for (let i = 0; i < lines.length; i++) {
   const status = c[COL_STATUS] || "";
   const head = status.split(/[（(]/)[0];
   const hardPresent = (it.probes || []).filter((p) => p && p.hard && p.polarity === "present" && p.artifact && p.artifact.hit);
+  /* 纯删除型条目（没有 present 硬判点）以前落不了账：它既进不了"产物已见"那一支（要求有命中判点），
+     也就会一直留着上一轮写进去的"去向/冲突"注记——而那条注记描述的是**当时**的判据台，现在已经是假话。
+     这里补上它自己的判据：absent 硬判点在源码里在、在产物里不在，才算"删掉了"；
+     两边都不在不算证据（那可能从来就没有过这个东西）。 */
+  const hardAbsentGone = (it.probes || []).filter((p) => p && p.hard && p.polarity === "absent"
+    && p.artifact && !p.artifact.hit && p.src && p.src.hit);
   /* 注意：判据台的 verdictWhy 是**给人看的自由文本**，里面常带 `callerSnapshot`、`IMAGE_PATHS.…` 这类
      标识符形状的词。本仓已有实测教训：把这些词写回台账格子里，抽取器会照着造出硬判点，
      反过来把已经修好的条目钉成缺陷。所以格子里只写**受控中文标签 + 指针**，原文留在 verdicts 文件里。 */
@@ -92,6 +98,10 @@ for (let i = 0; i < lines.length; i++) {
     next = `已修复（产物侧已见，静态判据可判；判据台基线 ${meta.baselineSha || "?"}）`;
     evAdd = `〔落账：命中 ${hardPresent.slice(0, 3).map((p) => p.token).join("、")}〕`;
     promoted++; promotedRows.push(id + " → 已修复（产物已见）");
+  } else if (head === "已修复待复验" && it.verdict === "ARTIFACT_VERIFIED" && it.frame === false && !hardPresent.length && hardAbsentGone.length) {
+    next = `已修复（删除判点在源码里仍在、产物作用域内已不可见，静态可判；判据台基线 ${meta.baselineSha || "?"}）`;
+    evAdd = `〔落账：删除判点已不可见 ${hardAbsentGone.slice(0, 3).map((p) => p.token).join("、")}〕`;
+    promoted++; promotedRows.push(id + " → 已修复（删除判点已不可见）");
   } else if (/^(待修复|已修复待复验)$/.test(status) && !/[（(]/.test(status)) {
     const carrier = it.verdict === "NOT_IN_EITHER" ? "两载体里都找不到预期修后状态，需收紧判据"
       : it.verdict === "NEEDS_UI_FRAME" ? "渲染帧（静态判不了）"
@@ -134,7 +144,11 @@ if (malformed.length) {
   malformed.slice(0, 6).forEach((m) => console.log("  MALFORMED " + m));
   process.exit(2);
 }
-if (!rowsTouched) { console.log("LAND_RESULT=FAIL reason=一行都没改（扫描集/规则不匹配，不得空过）"); process.exit(2); }
+/* "看了 111 行、确实没有要改的" 与 "扫描集没对上、一行都没看" 不能共用一个退出码：
+   前者是本轮的正常结果（NIE 已清零、可推进的上一轮都推进过了），后者才是工具失效。
+   判据用 seenIds——只有真匹配到台账行才算"看过了"。 */
+if (!seenIds.size) { console.log(`LAND_RESULT=FAIL reason=判据台 ${items.length} 条里一条都没匹配到台账行（扫描集/规则不匹配，不得空过）`); process.exit(2); }
+if (!rowsTouched) { console.log(`LAND_RESULT=PASS-NOOP 已核 ${seenIds.size} 行、无需改动（推进/去向/冲突标注都为 0）`); process.exit(0); }
 if (!APPLY) { console.log(`LAND_RESULT=DRY 将改 ${rowsTouched} 行（加 --apply 落盘，落盘前自动备份 .pre-verdictland.bak）`); process.exit(0); }
 copyFileSync(lPath, lPath + ".pre-verdictland.bak");
 writeFileSync(lPath, lines.join("\n"));

@@ -1,13 +1,13 @@
 {
- "copiedFrom": ".zcode/tmp/fixverify-r7f/verdicts.json",
- "copiedAt": "2026-09-26T04:06:20.282Z",
+ "copiedFrom": ".zcode/tmp/fixverify-r7i/verdicts.json",
+ "copiedAt": "2026-09-26T04:40:31.780Z",
  "meta": {
   "tool": "scripts/qa/verify-fixes-against-artifact.cjs",
-  "writtenAt": "2026-09-26T04:03:48.522Z",
+  "writtenAt": "2026-09-26T04:37:02.694Z",
   "offline": true,
   "baselineRef": "094f7239",
   "baselineSha": "094f7239",
-  "headSha": "094f7239",
+  "headSha": "57e907e1",
   "dist": "apps/client/dist/build/mp-weixin",
   "src": "apps/client/src",
   "ledger": "reports/audit/round-6/issue-matrix.md",
@@ -28,11 +28,11 @@
   "fatal": []
  },
  "summary": {
-  "ARTIFACT_VERIFIED": 14,
+  "ARTIFACT_VERIFIED": 16,
   "SOURCE_ONLY": 1,
-  "NEEDS_UI_FRAME": 62,
-  "NOT_IN_EITHER": 2,
-  "UNDECIDABLE": 37
+  "NEEDS_UI_FRAME": 63,
+  "NOT_IN_EITHER": 0,
+  "UNDECIDABLE": 36
  },
  "items": [
   {
@@ -616,33 +616,12 @@
      "srcExcerpt": "修复（review）：两个请求聚合等待，避免任一请求 reject 产生未处理 Promise await Promise.allSettled([ certFetchedByShow ? Promise.resolve() : camp…",
      "grantsGreen": true,
      "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "fetchCertificationStatus",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-statusEvidence",
-     "anchored": true,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "subpackages/campus/campus/index.js",
-     "artifactExcerpt": "hub\"})});let O=!1;return e.onShow(()=>{C.value||(O=!0,r.fetchCertificationStatus())}),e.onMounted(async()=>{C.value||aw…",
-     "artifactScope": "page",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "subpackages/campus/campus/index.vue",
-     "srcExcerpt": "return; certFetchedByShow = true; void campusStore.fetchCertificationStatus(); }); onMounted(async () => { if (redirect…",
-     "grantsGreen": true,
-     "usable": true
     }
    ],
-   "probeCount": 5,
-   "notes": [],
+   "probeCount": 4,
+   "notes": [
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=ledger-statusEvidence）：fetchCertificationStatus"
+   ],
    "closerAction": null,
    "artifactEvidence": {
     "file": "subpackages/campus/campus/index.js",
@@ -660,14 +639,13 @@
     "identifier onLoad",
     "identifier Promise.resolve",
     "identifier certFetchedByShow",
-    "identifier Promise.allSettled",
-    "identifier fetchCertificationStatus"
+    "identifier Promise.allSettled"
    ],
    "weakestCheck": {
     "kind": "identifier",
     "specificity": 2,
     "token": "onLoad",
-    "n": 4
+    "n": 3
    }
   },
   {
@@ -2941,131 +2919,13 @@
     "statusEvidence": "verify-fixes-against-artifact 逐项判定 SOURCE_ONLY：判点「post.id」命中于 components/social/PostReportDialog.js；修后状态已在源码树且 HEAD 里没有…"
    },
    "verdict": "NEEDS_UI_FRAME",
-   "verdictWhy": "台账自述需要帧/人工复验；只在源码树命中的判点（handleRefresh）在修复前的 HEAD 里就已存在，不能算本轮落地",
+   "verdictWhy": "台账自述需要帧/人工复验；唯一抠到的判点是标识符 defineProps，压缩构建会改名",
    "frame": true,
    "uiMarkers": [
     "runtime",
     "visual"
    ],
    "probes": [
-    {
-     "kind": "string-lit",
-     "token": "handleRefresh",
-     "carrier": "js",
-     "polarity": "present",
-     "origin": "closer-diff",
-     "anchored": false,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": true
-     },
-     "srcFile": "components/home/CommunityFeed.vue",
-     "srcExcerpt": "g | null; }>(); /** * 2026-09-02 R5：emit 改 const 形式以便在 handleRefresh 中引用 */ const emit = defineEmits<{ (e: \"more\"): voi…",
-     "grantsGreen": false,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "post.id",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "closer-diff",
-     "anchored": false,
-     "note": "命中不在该页作用域文件里，而在 components/social/PostReportDialog.js（该 token 全局唯一性足够，按产物可见处理）",
-     "hard": true,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "components/social/PostReportDialog.js",
-     "artifactExcerpt": "__name:\"PostReportDialog\",props:{visible:{type:Boolean},postId:{}},emits:[\"update:visible\",\"close\",\"submitted\"],setup(m…",
-     "artifactScope": "global",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "components/home/CommunityFeed.vue",
-     "srcExcerpt": "/** * MP-R2-PAGES-HOME-INDEX-105：删掉 isFailed(`avatar-${post.id}`) 分支——失败 key 的写入 * 格式只有 `img-${post.id}-${idx}`（见 :216 …",
-     "grantsGreen": false,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "isFailed",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "closer-diff",
-     "anchored": false,
-     "note": "标识符 isFailed 在压缩产物里搜不到：minifier 会改局部名，静态无从分辨「没进构建」与「改名了」",
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": true
-     },
-     "srcFile": "components/home/CommunityFeed.vue",
-     "srcExcerpt": ".value = new Set(failedKeys.value).add(key); } function isFailed(key: string): boolean { return failedKeys.value.has(ke…",
-     "grantsGreen": false,
-     "inconclusive": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "avatarSrc",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "closer-diff",
-     "anchored": false,
-     "note": "标识符 avatarSrc 在压缩产物里搜不到：minifier 会改局部名，静态无从分辨「没进构建」与「改名了」",
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": true
-     },
-     "srcFile": "components/home/CommunityFeed.vue",
-     "srcExcerpt": "底已由模板上的 SafeImage :fallback 承担，这里只需回退默认头像。 */ function avatarSrc(post: CommunityPostViewModel): string { return post.au…",
-     "grantsGreen": false,
-     "inconclusive": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "failedKeys",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "closer-diff",
-     "anchored": false,
-     "note": "标识符 failedKeys 在压缩产物里搜不到：minifier 会改局部名，静态无从分辨「没进构建」与「改名了」",
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": true
-     },
-     "srcFile": "components/home/CommunityFeed.vue",
-     "srcExcerpt": "久停在灰占位。 * 这里记录失败的 key，失败后切换为默认占位图/纯色块，保证有终态。 */ const failedKeys = ref<Set<string>>(new Set()); function onImageError(k…",
-     "grantsGreen": false,
-     "inconclusive": true,
-     "usable": true
-    },
     {
      "kind": "identifier",
      "token": "defineProps",
@@ -3089,61 +2949,30 @@
      "grantsGreen": false,
      "inconclusive": true,
      "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "props.items",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "closer-diff",
-     "anchored": false,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "components/home/CommunityFeed.js",
-     "artifactExcerpt": "feImage.js\",F=n.defineComponent({__name:\"CommunityFeed\",props:{items:{},loading:{type:Boolean},error:{}},emits:[\"more\",…",
-     "artifactScope": "page",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "components/home/CommunityFeed.vue",
-     "srcExcerpt": "{id}-${idx}` 会随 key 复用继续显示占位（重试/换源都不生效）。 watch( () => props.items, () => { failedKeys.value = new Set(); } ); const { t…",
-     "grantsGreen": true,
-     "usable": true
     }
    ],
-   "probeCount": 7,
-   "notes": [],
+   "probeCount": 1,
+   "notes": [
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=ledger-statusEvidence）：post.id",
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=closer-diff）：props.items",
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=closer-diff）：failedKeys",
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=closer-diff）：avatarSrc",
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=closer-diff）：isFailed",
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=closer-diff）：post.id",
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=closer-diff）：handleRefresh"
+   ],
    "closerAction": "patched",
-   "artifactEvidence": {
-    "file": "components/social/PostReportDialog.js",
-    "excerpt": "__name:\"PostReportDialog\",props:{visible:{type:Boolean},postId:{}},emits:[\"update:visible\",\"close\",\"submitted\"],setup(m…",
-    "kind": "identifier",
-    "token": "post.id"
-   },
+   "artifactEvidence": null,
    "srcEvidence": {
     "file": "components/home/CommunityFeed.vue",
-    "excerpt": "g | null; }>(); /** * 2026-09-02 R5：emit 改 const 形式以便在 handleRefresh 中引用 */ const emit = defineEmits<{ (e: \"more\"): voi…",
-    "kind": "string-lit",
-    "token": "handleRefresh"
+    "excerpt": "afeImage from \"../common/SafeImage.vue\"; const props = defineProps<{ items: CommunityPostViewModel[]; /** 2026-08-26 R1…",
+    "kind": "identifier",
+    "token": "defineProps"
    },
    "searched": [
-    "string-lit handleRefresh",
-    "identifier post.id",
-    "identifier isFailed",
-    "identifier avatarSrc",
-    "identifier failedKeys",
-    "identifier defineProps",
-    "identifier props.items"
+    "identifier defineProps"
    ],
-   "weakestCheck": {
-    "kind": "identifier",
-    "specificity": 2,
-    "token": "post.id",
-    "n": 2
-   }
+   "weakestCheck": null
   },
   {
    "id": "MP-R2-PAGES-HOME-INDEX-106",
@@ -3361,36 +3190,12 @@
     "statusEvidence": "—（未修，无需） 〔§82 注释清扫落定：ID 锚点在工作树 1 处命中、HEAD 0 命中、承载文件 dirty=1；判据台桶=UNDECIDABLE ⇒ 静态判据不足（判据未点名可核验物件或压缩改名），需补判点或帧；22:59 moc…"
    },
    "verdict": "NEEDS_UI_FRAME",
-   "verdictWhy": "判据是行为/观感（visual），静态无判点；唯一抠到的判点是标识符 metaLine, distanceLine，压缩构建会改名",
+   "verdictWhy": "判据是行为/观感（visual），静态无判点；唯一抠到的判点是标识符 distanceLine，压缩构建会改名",
    "frame": false,
    "uiMarkers": [
     "visual"
    ],
    "probes": [
-    {
-     "kind": "identifier",
-     "token": "metaLine",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "closer-diff",
-     "anchored": true,
-     "note": "标识符 metaLine 在压缩产物里搜不到：minifier 会改局部名，静态无从分辨「没进构建」与「改名了」",
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": true
-     },
-     "srcFile": "components/home/TodayRecommendationCard.vue",
-     "srcExcerpt": "—此前模板插值在 gradeLabel/campusName 缺失时会残留「25岁 ·」尾点 */ const metaLine = computed(() => { const item = props.item; if (!item)…",
-     "grantsGreen": false,
-     "inconclusive": true,
-     "usable": true
-    },
     {
      "kind": "identifier",
      "token": "distanceLine",
@@ -3416,18 +3221,20 @@
      "usable": true
     }
    ],
-   "probeCount": 2,
-   "notes": [],
+   "probeCount": 1,
+   "notes": [
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=ledger-action）：metaLine",
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=closer-diff）：metaLine"
+   ],
    "closerAction": "patched",
    "artifactEvidence": null,
    "srcEvidence": {
     "file": "components/home/TodayRecommendationCard.vue",
-    "excerpt": "—此前模板插值在 gradeLabel/campusName 缺失时会残留「25岁 ·」尾点 */ const metaLine = computed(() => { const item = props.item; if (!item)…",
+    "excerpt": "）。 * 「已认证」是本组件既有中文字面量（本组件无 t()），不属本条判据，保持原样。 */ const distanceLine = computed(() => { const item = props.item; if (!ite…",
     "kind": "identifier",
-    "token": "metaLine"
+    "token": "distanceLine"
    },
    "searched": [
-    "identifier metaLine",
     "identifier distanceLine"
    ],
    "weakestCheck": null
@@ -4272,8 +4079,8 @@
     "action": "修：删除型单判点：store 侧无调用方的 action 本轮已删除，修后判据为页作用域产物（stores/messages.js 与消息页编译文件）内不再保留字符串判点 \"toggleSessionPin\"，源码侧注释残留不在被测载体内…",
     "statusEvidence": "〔§71 静态判据自相矛盾〕本条被 verify-fixes-against-artifact 判为 PROBE_CONFLICTS（同一标识既要求可见又要求不可见＝台账写的是「二选一」处置），因此工具给的 SOURCE_ONLY / A…"
    },
-   "verdict": "UNDECIDABLE",
-   "verdictWhy": "判据自相矛盾：同一标识（console.warn）既被要求存在于产物、又被要求从产物里消失 —— 台账这条是「二选一」的处置，需人先选定唯一改点再判；在此之前任何一侧命中都不构成已修",
+   "verdict": "ARTIFACT_VERIFIED",
+   "verdictWhy": "删除型判点在该页产物作用域内已不可见（toggleSessionPin）",
    "frame": false,
    "uiMarkers": [
     "runtime",
@@ -4302,82 +4109,25 @@
      "srcExcerpt": null,
      "grantsGreen": false,
      "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "console.warn",
-     "carrier": "js+wxml",
-     "polarity": "absent",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "stores/messages.js",
-     "artifactExcerpt": "ageSentAt?Date.parse(r.lastMessageSentAt):0))}}catch(e){console.warn(\"[messages] fetchRelationshipDashboard failed\",e)}…",
-     "artifactScope": "page",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "stores/messages.ts",
-     "srcExcerpt": "(error) { // dashboard 失败不阻塞会话列表，保留已有数据 console.warn(\"[messages] fetchRelationshipDashboard failed\", error); } },",
-     "grantsGreen": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "console.warn",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "closer-diff",
-     "anchored": false,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "stores/messages.js",
-     "artifactExcerpt": "ageSentAt?Date.parse(r.lastMessageSentAt):0))}}catch(e){console.warn(\"[messages] fetchRelationshipDashboard failed\",e)}…",
-     "artifactScope": "page",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "stores/messages.ts",
-     "srcExcerpt": "(error) { // dashboard 失败不阻塞会话列表，保留已有数据 console.warn(\"[messages] fetchRelationshipDashboard failed\", error); } },",
-     "grantsGreen": true,
-     "usable": true
     }
    ],
-   "probeCount": 3,
+   "probeCount": 1,
    "notes": [
     "closer 记为 deferred_p4（本轮未动手）",
-    "判据自相矛盾（同一标识既要求可见又要求不可见）：console.warn"
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=ledger-action）：console.warn",
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=closer-diff）：console.warn"
    ],
    "closerAction": "deferred_p4",
-   "artifactEvidence": {
-    "file": "stores/messages.js",
-    "excerpt": "ageSentAt?Date.parse(r.lastMessageSentAt):0))}}catch(e){console.warn(\"[messages] fetchRelationshipDashboard failed\",e)}…",
-    "kind": "identifier",
-    "token": "console.warn"
-   },
-   "srcEvidence": {
-    "file": "stores/messages.ts",
-    "excerpt": "(error) { // dashboard 失败不阻塞会话列表，保留已有数据 console.warn(\"[messages] fetchRelationshipDashboard failed\", error); } },",
-    "kind": "identifier",
-    "token": "console.warn"
-   },
+   "artifactEvidence": null,
+   "srcEvidence": null,
    "searched": [
-    "ABSENT:string-lit toggleSessionPin",
-    "ABSENT:identifier console.warn",
-    "identifier console.warn"
+    "ABSENT:string-lit toggleSessionPin"
    ],
    "weakestCheck": {
-    "kind": "identifier",
-    "specificity": 2,
-    "token": "console.warn",
-    "n": 2
+    "kind": "string-lit",
+    "specificity": 4,
+    "token": "toggleSessionPin",
+    "n": 1
    }
   },
   {
@@ -9060,64 +8810,23 @@
     "statusEvidence": "〔§71 静态判据自相矛盾〕本条被 verify-fixes-against-artifact 判为 PROBE_CONFLICTS（同一标识既要求可见又要求不可见＝台账写的是「二选一」处置），因此工具给的 SOURCE_ONLY / A…"
    },
    "verdict": "NEEDS_UI_FRAME",
-   "verdictWhy": "台账自述需要帧/人工复验；判据没点名可核验的修后物件（无 closer 差异串/源码锚点/显式「改→新值」）",
+   "verdictWhy": "台账自述需要帧/人工复验",
    "frame": true,
    "uiMarkers": [
     "visual",
     "backend"
    ],
-   "probes": [
-    {
-     "kind": "identifier",
-     "token": "warmPeople",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-statusEvidence",
-     "anchored": false,
-     "note": null,
-     "hard": false,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "pages/messages/index.js",
-     "artifactExcerpt": "mputed(()=>{var t,o;return(o=(t=v.value)==null?void 0:t.warmPeople)!=null?o:[]}),d=e.computed(()=>a.sessions.filter(t=>…",
-     "artifactScope": "page",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "pages/messages/index.vue",
-     "srcExcerpt": "03（真实数据要求）：移除硬编码假用户回退（小林/小雨/小周/阿杰）—— * 仅展示后端 dashboard.warmPeople 真实数据；后端为空时区块隐藏 * （模板 v-if=\"warmPeople.length > 0\"），不再…",
-     "grantsGreen": true,
-     "usable": true
-    }
-   ],
-   "probeCount": 1,
+   "probes": [],
+   "probeCount": 0,
    "notes": [
     "closer 记为 deferred_p4（本轮未动手）",
-    "只抠到 soft 级顺手词（identifier warmPeople），不足以授予绿"
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=ledger-statusEvidence）：warmPeople"
    ],
    "closerAction": "deferred_p4",
-   "artifactEvidence": {
-    "file": "pages/messages/index.js",
-    "excerpt": "mputed(()=>{var t,o;return(o=(t=v.value)==null?void 0:t.warmPeople)!=null?o:[]}),d=e.computed(()=>a.sessions.filter(t=>…",
-    "kind": "identifier",
-    "token": "warmPeople"
-   },
-   "srcEvidence": {
-    "file": "pages/messages/index.vue",
-    "excerpt": "03（真实数据要求）：移除硬编码假用户回退（小林/小雨/小周/阿杰）—— * 仅展示后端 dashboard.warmPeople 真实数据；后端为空时区块隐藏 * （模板 v-if=\"warmPeople.length > 0\"），不再…",
-    "kind": "identifier",
-    "token": "warmPeople"
-   },
-   "searched": [
-    "identifier warmPeople"
-   ],
-   "weakestCheck": {
-    "kind": "identifier",
-    "specificity": 2,
-    "token": "warmPeople",
-    "n": 1
-   }
+   "artifactEvidence": null,
+   "srcEvidence": null,
+   "searched": [],
+   "weakestCheck": null
   },
   {
    "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-007",
@@ -11073,7 +10782,7 @@
     "statusEvidence": "—（未修，无需） 〔§97 静态实测未修：chat-session/index.vue:2193 仍是 <text class=wechat-input-bar__icon-text>+</text>（文本 glyph），而本条要求改走 …"
    },
    "verdict": "UNDECIDABLE",
-   "verdictWhy": "授予绿用的判点在修复前的 HEAD 里就已存在（CAMERA, CHECK_SVG, IMAGE_PATHS）——命中不能证明改动落地",
+   "verdictWhy": "授予绿用的判点在修复前的 HEAD 里就已存在（CAMERA, CHECK_SVG, CHECK_WHITE_SVG）——命中不能证明改动落地",
    "frame": false,
    "uiMarkers": [],
    "probes": [
@@ -11148,29 +10857,6 @@
     },
     {
      "kind": "identifier",
-     "token": "IMAGE_PATHS",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-statusEvidence",
-     "anchored": true,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "subpackages/chat/chat-session/index.js",
-     "artifactExcerpt": "截|冲突/i.test(t)?a(\"chat.loadFailed\"):t:\"\"}),x={message:h.IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,check:h.IMAGE_PATHS.ICONS_COMM…",
-     "artifactScope": "page",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "subpackages/chat/chat-session/index.vue",
-     "srcExcerpt": "m \"../../../components/common/LockScreen.vue\"; import { IMAGE_PATHS } from \"../../../config/images\"; import { ROUTES } …",
-     "grantsGreen": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
      "token": "CHECK_WHITE_SVG",
      "carrier": "js+wxml",
      "polarity": "present",
@@ -11216,8 +10902,10 @@
      "usable": true
     }
    ],
-   "probeCount": 6,
-   "notes": [],
+   "probeCount": 5,
+   "notes": [
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=ledger-statusEvidence）：IMAGE_PATHS"
+   ],
    "closerAction": null,
    "artifactEvidence": {
     "file": "subpackages/chat/chat-session/index.js",
@@ -11235,7 +10923,6 @@
     "ABSENT:class wechat-input-bar__icon-text",
     "identifier CAMERA",
     "identifier CHECK_SVG",
-    "identifier IMAGE_PATHS",
     "identifier CHECK_WHITE_SVG",
     "identifier CHEVRON_RIGHT_SVG"
    ],
@@ -11243,7 +10930,7 @@
     "kind": "identifier",
     "specificity": 2,
     "token": "CAMERA",
-    "n": 6
+    "n": 5
    }
   },
   {
@@ -11506,13 +11193,13 @@
     "page": "subpackages/chat/chat-session/index",
     "category": "Architecture",
     "severity": "P4",
-    "status": "已修复待复验（去向：closer=closer 无记录；判据台=两载体都没有；缺的载体=两载体里都找不到预期修后状态，需收紧判据；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
+    "status": "已修复待复验（去向：closer=closer 无记录；判据台=两载体都没有；缺的载体=两载体里都找不到预期修后状态，需收紧判据；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）（与判据台冲突：该删的东西在产物里还在：ChatHeader——不自动降级，待人判；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "已修复待复验",
     "action": "修：删除 .chat-session-back 整块死样式（⟨顶部避让由 ChatHeader/AppShell 承担⟩），或接线到实际返回钮 唯一改点是删除本页样式，返回钮由另一文件的头部组件提供（该组件名入壳，不作判点）；本页判点只剩…",
     "statusEvidence": "死样式三条规则已整块删除：HEAD 版该文件里 `chat-session-back` 计 3 处（`git show HEAD:apps/client/src/subpackages/chat/chat-session/index.vu…"
    },
-   "verdict": "NOT_IN_EITHER",
-   "verdictWhy": "该删的东西在产物里还在：ChatHeader",
+   "verdict": "ARTIFACT_VERIFIED",
+   "verdictWhy": "删除型判点在该页产物作用域内已不可见（chat-session-back, chat-session-back）",
    "frame": false,
    "uiMarkers": [],
    "probes": [
@@ -11561,86 +11248,15 @@
      "srcExcerpt": "/* MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A03：原 .chat-session-back 三条规则整块删除。 模板里 0 引用（返回钮由 ChatHeader/AppShell 承担…",
      "grantsGreen": false,
      "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "ChatHeader",
-     "carrier": "js+wxml",
-     "polarity": "absent",
-     "origin": "ledger-statusEvidence",
-     "anchored": true,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "subpackages/chat/chat-session/index.js",
-     "artifactExcerpt": "ts/chat/ChatBubble.js\",Tn=()=>\"../../../components/chat/ChatHeader.js\",Mn=()=>\"../../../components/chat/ActivityCard.js…",
-     "artifactScope": "page",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "subpackages/chat/chat-session/index.vue",
-     "srcExcerpt": "from \"../../../components/chat/ChatBubble.vue\"; import ChatHeader from \"../../../components/chat/ChatHeader.vue\"; impor…",
-     "grantsGreen": true,
-     "usable": true
-    },
-    {
-     "kind": "literal",
-     "token": "顶部避让由 ChatHeader/AppShell 承担",
-     "carrier": "locale+wxml",
-     "polarity": "present",
-     "origin": "ledger-statusEvidence",
-     "anchored": false,
-     "note": null,
-     "hard": false,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": false
-     },
-     "srcFile": null,
-     "srcExcerpt": null,
-     "grantsGreen": false,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "ChatHeader",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-statusEvidence",
-     "anchored": false,
-     "note": null,
-     "hard": false,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "subpackages/chat/chat-session/index.js",
-     "artifactExcerpt": "ts/chat/ChatBubble.js\",Tn=()=>\"../../../components/chat/ChatHeader.js\",Mn=()=>\"../../../components/chat/ActivityCard.js…",
-     "artifactScope": "page",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "subpackages/chat/chat-session/index.vue",
-     "srcExcerpt": "from \"../../../components/chat/ChatBubble.vue\"; import ChatHeader from \"../../../components/chat/ChatHeader.vue\"; impor…",
-     "grantsGreen": true,
-     "usable": true
     }
    ],
-   "probeCount": 5,
-   "notes": [],
+   "probeCount": 2,
+   "notes": [
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=ledger-statusEvidence）：ChatHeader",
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=ledger-statusEvidence）：顶部避让由 ChatHeader/AppShell 承担"
+   ],
    "closerAction": null,
-   "artifactEvidence": {
-    "file": "subpackages/chat/chat-session/index.js",
-    "excerpt": "ts/chat/ChatBubble.js\",Tn=()=>\"../../../components/chat/ChatHeader.js\",Mn=()=>\"../../../components/chat/ActivityCard.js…",
-    "kind": "identifier",
-    "token": "ChatHeader"
-   },
+   "artifactEvidence": null,
    "srcEvidence": {
     "file": "subpackages/chat/chat-session/index.vue",
     "excerpt": "/* MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A03：原 .chat-session-back 三条规则整块删除。 模板里 0 引用（返回钮由 ChatHeader/AppShell 承担…",
@@ -11649,16 +11265,13 @@
    },
    "searched": [
     "ABSENT:string-lit chat-session-back",
-    "ABSENT:class chat-session-back",
-    "ABSENT:identifier ChatHeader",
-    "literal 顶部避让由 ChatHeader/AppShell 承担",
-    "identifier ChatHeader"
+    "ABSENT:class chat-session-back"
    ],
    "weakestCheck": {
-    "kind": "identifier",
-    "specificity": 2,
-    "token": "ChatHeader",
-    "n": 3
+    "kind": "class",
+    "specificity": 3,
+    "token": "chat-session-back",
+    "n": 2
    }
   },
   {
@@ -11744,29 +11357,6 @@
     },
     {
      "kind": "identifier",
-     "token": "EMOJI_SVG_MAP",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-statusEvidence",
-     "anchored": false,
-     "note": null,
-     "hard": false,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": false
-     },
-     "srcFile": null,
-     "srcExcerpt": null,
-     "grantsGreen": false,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
      "token": "officialChatCardHint",
      "carrier": "js+wxml",
      "polarity": "present",
@@ -11835,10 +11425,11 @@
      "usable": true
     }
    ],
-   "probeCount": 6,
+   "probeCount": 5,
    "notes": [
     "closer 记为 deferred_p4（本轮未动手）",
-    "只抠到 soft 级顺手词（i18n-key messages.officialChatAssistantGreeting, string-lit messages.officialChatAssistantGreeting, identifier EMOJI_SVG_MAP, identifier officialChatCardHint），不足以授予绿"
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=ledger-statusEvidence）：EMOJI_SVG_MAP",
+    "只抠到 soft 级顺手词（i18n-key messages.officialChatAssistantGreeting, string-lit messages.officialChatAssistantGreeting, identifier officialChatCardHint, identifier officialChatMockReply），不足以授予绿"
    ],
    "closerAction": "deferred_p4",
    "artifactEvidence": {
@@ -11856,7 +11447,6 @@
    "searched": [
     "i18n-key messages.officialChatAssistantGreeting",
     "string-lit messages.officialChatAssistantGreeting",
-    "identifier EMOJI_SVG_MAP",
     "identifier officialChatCardHint",
     "identifier officialChatMockReply",
     "identifier officialChatUserDecline"
@@ -12589,8 +12179,8 @@
     "action": "修：城市与坐标同源：逆地理失败时不渲染 city（只留坐标 + 「地址解析不可用」），或把 ip-city 结果显式标注为「服务器所在城市」；再加 /cityCenter − coords/ > 100km 即丢弃 city 的断言",
     "statusEvidence": "本轮已按 F1 复审线的取舍落地（三案里唯一没有副作用的那条）。根因确认：utils/location.ts 的 fetchCurrentLocation 在逆地理拿不到城市时，会退回后端 /location/ip-city 按请求方 I…"
    },
-   "verdict": "NOT_IN_EITHER",
-   "verdictWhy": "判点 城市 · 服务器所在城市 在两个载体里都查不到（同项其余判点已可见）",
+   "verdict": "NEEDS_UI_FRAME",
+   "verdictWhy": "判据是行为/观感（runtime+visual+backend），静态无判点；授予绿用的判点在修复前的 HEAD 里就已存在（北京大学 · 附近, citySource, locationPage）——命中不能证明改动落地",
    "frame": false,
    "uiMarkers": [
     "runtime",
@@ -12645,40 +12235,6 @@
      "usable": true
     },
     {
-     "kind": "literal",
-     "token": "城市 · 服务器所在城市",
-     "carrier": "locale+wxml",
-     "polarity": "present",
-     "origin": "ledger-statusEvidence",
-     "anchored": true,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": false
-     },
-     "srcFile": null,
-     "srcExcerpt": null,
-     "grantsGreen": false,
-     "usable": true
-    },
-    {
-     "kind": "backend",
-     "token": "LocationService",
-     "carrier": "backend",
-     "polarity": "present",
-     "origin": "ledger-statusEvidence-pre",
-     "anchored": true,
-     "note": "后端类名不属于客户端产物载体（apps/client/dist 里没有服务端 class）",
-     "hard": true,
-     "usable": false
-    },
-    {
      "kind": "identifier",
      "token": "citySource",
      "carrier": "js+wxml",
@@ -12699,54 +12255,6 @@
      "srcFile": "utils/location.ts",
      "srcExcerpt": "可选，旧消费方不读即保持原行为（LOCATION-001 的同源判据只在需要诚实标注的页面生效）。 */ citySource?: \"gps\" | \"ip\"; } /** 上报节流：上次上报时间戳（ms），5 分钟内不重复上报 */ le…",
      "grantsGreen": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "cityFromIp",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-statusEvidence",
-     "anchored": true,
-     "note": "标识符 cityFromIp 在压缩产物里搜不到：minifier 会改局部名，静态无从分辨「没进构建」与「改名了」",
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": true
-     },
-     "srcFile": "subpackages/profile-extra/profile/location.vue",
-     "srcExcerpt": "/ 那条链会落到硬编码「北京大学 · 附近」，等于把假城市写进与坐标同源的展示里，改后只见坐标行。 const cityFromIp = ref(false); const displayText = computed(() => { i…",
-     "grantsGreen": false,
-     "inconclusive": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "displayText",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-statusEvidence",
-     "anchored": true,
-     "note": "标识符 displayText 在压缩产物里搜不到：minifier 会改局部名，静态无从分辨「没进构建」与「改名了」",
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": true
-     },
-     "srcFile": "subpackages/profile-extra/profile/location.vue",
-     "srcExcerpt": "与坐标同源的展示里，改后只见坐标行。 const cityFromIp = ref(false); const displayText = computed(() => { if (city.value) { return cityFro…",
-     "grantsGreen": false,
-     "inconclusive": true,
      "usable": true
     },
     {
@@ -12820,30 +12328,6 @@
     },
     {
      "kind": "identifier",
-     "token": "LocationResult",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-statusEvidence",
-     "anchored": true,
-     "note": "标识符 LocationResult 在压缩产物里搜不到：minifier 会改局部名，静态无从分辨「没进构建」与「改名了」",
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": true
-     },
-     "srcFile": "utils/location.ts",
-     "srcExcerpt": "DEFAULT_LOCATION_TEXT = \"北京大学 · 附近\"; export interface LocationResult { /** 纬度 */ latitude: number; /** 经度 */ longitude:…",
-     "grantsGreen": false,
-     "inconclusive": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
      "token": "buildLocationText",
      "carrier": "js+wxml",
      "polarity": "present",
@@ -12910,53 +12394,13 @@
      "srcExcerpt": "* 失败时返回 null（调用方自行 fallback）。 */ export async function fetchCurrentLocation(): Promise<LocationResult | null> { try { c…",
      "grantsGreen": true,
      "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "LocationCityView.java",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-statusEvidence-pre",
-     "anchored": true,
-     "note": "点名的标识符在两个载体里都不存在：可能是未落地，也可能只是台账里的提案名（压缩构建会改局部名，不能反推）",
-     "hard": true,
-     "usable": false,
-     "orphanName": true,
-     "artifact": {
-      "hit": false
-     },
-     "src": {
-      "hit": false
-     }
-    },
-    {
-     "kind": "literal",
-     "token": "服务器所在城市",
-     "carrier": "locale+wxml",
-     "polarity": "present",
-     "origin": "ledger-action",
-     "anchored": false,
-     "note": "命中落在 i18n/locales/zh-CN.js（不在本条判据的载体上），只记为观测、不授予绿",
-     "hard": false,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "i18n/locales/zh-CN.js",
-     "artifactExcerpt": "deleteVoiceAria:\"删除语音状态\"},locationPage:{serverCityTag:\"服务器所在城市\",addressUnavailable:\"地址解析不可用\"},help:{navTitle:\"帮助与客服\",su…",
-     "artifactScope": "page",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "subpackages/profile-extra/profile/location.vue",
-     "srcExcerpt": "值可以差出一个省）。本页是全站唯一把「城市」和「坐标」并排展示的地方，所以必须同源诚实： // ip 来源加「服务器所在城市」标注；城市为空时**不再**走 buildLocationText—— // 那条链会落到硬编码「北京大学 · …",
-     "grantsGreen": false,
-     "usable": true
     }
    ],
-   "probeCount": 16,
+   "probeCount": 9,
    "notes": [
     "closer 记为 needs_backend（修法在服务端）",
-    "判据点名的标识符 LocationCityView.java 在源码树与产物里都搜不到（疑似未落地的提案名），不据此判生死"
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=ledger-action）：服务器所在城市",
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=ledger-statusEvidence）：服务器所在城市"
    ],
    "closerAction": "needs_backend",
    "artifactEvidence": {
@@ -12974,26 +12418,19 @@
    "searched": [
     "literal 地址解析不可用",
     "literal 北京大学 · 附近",
-    "literal 城市 · 服务器所在城市",
-    "backend LocationService",
     "identifier citySource",
-    "identifier cityFromIp",
-    "identifier displayText",
     "identifier NEARBY_CITY",
     "identifier locationPage",
     "identifier serverCityTag",
-    "identifier LocationResult",
     "identifier buildLocationText",
     "identifier addressUnavailable",
-    "identifier fetchCurrentLocation",
-    "identifier LocationCityView.java",
-    "literal 服务器所在城市"
+    "identifier fetchCurrentLocation"
    ],
    "weakestCheck": {
     "kind": "literal",
     "specificity": 1,
     "token": "地址解析不可用",
-    "n": 10
+    "n": 9
    }
   },
   {
@@ -13214,29 +12651,6 @@
     },
     {
      "kind": "identifier",
-     "token": "metaLine",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-statusEvidence",
-     "anchored": false,
-     "note": null,
-     "hard": false,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": false
-     },
-     "srcFile": null,
-     "srcExcerpt": null,
-     "grantsGreen": false,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
      "token": "loc.split",
      "carrier": "js+wxml",
      "polarity": "present",
@@ -13284,9 +12698,9 @@
      "usable": true
     }
    ],
-   "probeCount": 7,
+   "probeCount": 6,
    "notes": [
-    "soft 判点未确认（不影响本判决，仅备查）：metaLine"
+    "判点被台账的 ⟨⟩ 裁定否决（同名标识已在壳内声明作废，来源=ledger-statusEvidence）：metaLine"
    ],
    "closerAction": "patched",
    "artifactEvidence": {
@@ -13306,7 +12720,6 @@
     "identifier MyHeader",
     "identifier cityPart",
     "identifier PublicIdentity",
-    "identifier metaLine",
     "identifier loc.split",
     "identifier schoolPart"
    ],
