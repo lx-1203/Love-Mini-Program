@@ -36,7 +36,12 @@ for (const p of patches) {
   if (p.new.includes("|")) { die(`${p.id} 的新内容里有竖线，会撑破表格列：先用／或顿号代替`); }
   const hits = [];
   lines.forEach((l, i) => {
-    if (!/^\| MP-/.test(l)) return;
+    /* 台账里有 65 行是 `|MP-…`（竖号后没有空格）。markdown 不需要单元格留白，
+       所以那是合法形状（verify-ledger 用 /^\|\s*MP-/ 数得到它们），但这里之前写死
+       `^\| MP-` ⇒ 这 65 行的格子永远改不动：lane 实测命中 0 行直接 FAIL，
+       只能把已经验过的结论挂在计划的 blocked 段里。改成同一个可选留白的匹配。
+       重建时会统一补上 "| "，所以被改过的行会自愈成常规形状。 */
+    if (!/^\|\s*MP-/.test(l)) return;
     const c = l.split("|").map((s) => s.trim());
     if (c[1] === p.id) hits.push({ i, c });
   });

@@ -195,18 +195,9 @@ function goBack() {
         <text class="campus-hub__title">{{ t('campusHub.title') }}</text>
         <text class="campus-hub__subtitle">{{ t('campusHub.subtitle') }}</text>
       </view>
-      <view
-        v-if="!isVerified"
-        class="campus-hub__cert-btn press-feedback"
-        hover-class="press-feedback--active"
-        hover-stay-time="120"
-        role="button"
-        :aria-label="t('campusHub.goCertify')"
-        @tap="goCertification"
-      >
-        <text class="campus-hub__cert-btn-text">{{ t('campusHub.goCertify') }}</text>
-      </view>
-      <view v-else class="campus-hub__cert-badge">
+      <!-- 页头不再放重复的认证入口（MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002）：
+           认证动作只保留下方引导横幅那一处；这里只在已认证时挂状态标记。 -->
+      <view v-if="isVerified" class="campus-hub__cert-badge">
         <text class="campus-hub__cert-badge-text">{{ t('campusHub.certified') }}</text>
       </view>
     </view>
@@ -435,16 +426,6 @@ function goBack() {
   font-size: 24rpx;
   font-weight: 400;
   color: var(--c-text-tertiary, #8A9694);
-}
-
-.campus-hub__cert-btn {
-  padding: 12rpx 28rpx;
-}
-
-.campus-hub__cert-btn-text {
-  font-size: 24rpx;
-  font-weight: 600;
-  color: var(--c-brand, #36C99A);
 }
 
 .campus-hub__cert-badge {

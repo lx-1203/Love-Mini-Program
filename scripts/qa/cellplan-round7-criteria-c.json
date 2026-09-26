@@ -1,0 +1,60 @@
+{
+ "note": "lane C：零散原因的 UNDECIDABLE 收紧。范围按 verdictWhy 前缀排除后实测是 9 条而不是简报说的约 19 条（lane A「台账判据里抠不出任何可比对的具体物件」10 条、lane B「授予绿用的判点在修复前的 HEAD 里就已存在」14 条加「只在共享载体里命中」3 条共 17 条，36 减 27 得 9）。逐条做三处验证（当前源码、该页产物 chunk、git show 094f7239 基线源码，node 走 D:/codex-tools 的 v22）。结论：9 条全都给不出可判判点，一律降级为显式人判项，原因分三类。其一，改动在基线 094f7239 之前就已落地，命中的是基线既有词，按判据台 grantingPredatesFix 口径不能算本轮落地，共 5 条（MESSAGES-021、VILLAGE-DETAIL-001、CIRCLES-004、REGISTER-009，外加并案的 HOME-INDEX-102 只有嵌套调用差异且可读词基线全有）。其二，本轮根本没动手且处置仍是二选一或未裁决，共 2 条（CAMPUS-HUB-006 键空间未统一且 closer 记 P4 延后、VILLAGE-POST-006 的参照胶囊类名只在别页产物里）。其三，并案行本身不是判据，原判词抠出的全大写词是行内状态字样，共 2 条（HOME-INDEX-102、NEARBY-INDEX-011）。每条 new 写清判什么、读哪几行代码、要帧看哪一帧，并把所有会被抠成硬判点的载体（类名、点号键名、标识符、并案目标号、压缩后改名的局部量）装进 ⟨⟩ 说明壳；壳内无全角子句分隔符，格子内无竖线无引号，自检按抽取器规则实测抽出的判点数为 0，靠 FRAME_MARK 词落 NEEDS_UI_FRAME 而不是再造一条假指控。另有 2 条（MP-R2-PAGES-HOME-INDEX-102 与 MP-R2-PAGES-NEARBY-INDEX-011）人判文本已备好但没有放进 patches：它们在台账里是竖线后不带空格的行（第 199 行与第 192 行），而 scripts/qa/patch-ledger-cells.mjs 的数据行匹配是严格的首竖线加空格加 MP- 前缀，实测命中 0 行直接 CELLPATCH_RESULT=FAIL，同形行台账里共 65 条。要收这两条需要先由主编排层放宽该匹配或重做行形状（属改台账与改工具，越出本 lane 授权），原文见本文件 blocked 段。（2026-09-26 合并前：blocked 全部提升为 patches，障碍是工具的行锚过严，已在工具侧修）",
+ "blocked": [],
+ "patches": [
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
+   "col": 11,
+   "new": "人判：需人复验，本条无可立的静态判点。判什么：消息页头像失败的本地兜底集合在每次列表重载后是否被清空。看代码：apps/client/src/pages/messages/index.vue 第 302 行，⟨avatarFailedIds⟩ 在 ⟨loadPage⟩ 里等 ⟨Promise.all⟩ 收尾后整体重建为空集。实测三处：当前源码有该重置、基线 094f7239 同文件第 298 行也已有同一句、产物该页 js 内 ⟨avatarFailedIds⟩ 零命中且全 dist 递归查零命中（压缩构建改局部名）。改动早于基线又在产物侧不可观测，立任何判点都等于拿基线既有词冒充本轮落地证据。要帧看两帧真机：先让一枚头像命中占位图，再下拉重载，看那枚是否恢复成真实头像。",
+   "why": "三处验证只过前两处：源码 apps/client/src/pages/messages/index.vue:302 确有重置，但 git show 094f7239 同文件第 298 行是同一句（早于基线）；产物 apps/client/dist/build/mp-weixin/pages/messages/index.js 内该名字 0 命中，全 dist 递归 grep 亦 0 命中（minifier 改局部名）。原判点 loadPage 与 session.id 与 avatarFailedIds.value 全是会被改名的标识符。判据台原判词 reason=判据没点名可核验的修后物件。"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
+   "col": 11,
+   "new": "人判：待裁决后再谈判据，静态侧无可立判点。判什么：校园域两级键命名空间要不要统一以及统一到哪一级。看代码：apps/client/src/subpackages/campus/campus/index.vue 全页 28 处引用 ⟨campus.index⟩ 前缀键、apps/client/src/subpackages/campus/campus/hub.vue 的 19 个键共 25 处引用 ⟨campusHub⟩ 前缀键、语言包 apps/client/src/i18n/locales/zh-CN.ts 里两套并存。实测三处：当前源码与基线 094f7239 的两个文件逐字相同（本轮零迁移，该页产物 js 内两种前缀分别仍 28 与 25 命中，键位表里两套键也都在），没有任何可指向本轮改动的载体。本条 closer 记为 P4 延后出本轮。先由主编排层裁决目标前缀并同批迁中英文，再按被改那页编译出的 js 里的取键名与该页产物命中数立判点；现在写任何键名都是替未定的方案押注。",
+   "why": "三处验证三处都不成立：index.vue 仍 28 处 ⟨campus.index⟩、hub.vue 仍 19 键 25 处 ⟨campusHub⟩，与基线 094f7239 逐字相同（本轮 zh-CN.ts 的 14 行改动全在登录域，与校园无关）；产物 i18n/locales/zh-CN.js 两套键同时存在且该两页 js 前缀命中数与源码一致，属判据台明令不授予绿的共享载体。closer=deferred_p4。原判点 i18n-key 与 identifier campus.hub 抽出来只会落回共享载体命中那条判词。"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
+   "col": 11,
+   "new": "人判：需人复验，无可指向本轮的静态判点。判什么：详情页回复态与挂图态下底部固定输入栏是否还压住正文末条。看代码：apps/client/src/subpackages/village/village/detail.vue 第 781 行的条件类绑定加第 1617 行那条预留（两态把底部预留提到 320rpx 加安全区）。实测三处：当前源码有该修饰类、产物该页 wxss 内同名类 1 命中、基线 094f7239 同文件第 781 行与第 1617 行逐字相同。命中的是基线既有词，按判据台口径既不能算本轮落地，把它写成判点也只会再落回同一句判词，本条改动早于基线。要帧看两帧真机：回复态与已挂图态各一，比对正文末条底边与输入栏顶边之间是否留白。",
+   "why": "三处验证卡在第三处：⟨detail-body--bar-expanded⟩ 在当前源码 detail.vue:781 与:1617 存在，在产物 subpackages/village/village/detail.wxss 命中 1 次（实测 padding-bottom calc(320rpx + env(safe-area-inset-bottom))），但 git show 094f7239 的第 781 行与第 1617 行同样存在；该页相对基线零改动 ⇒ 写成判点即假绿。判据台原判词 reason=判据没点名可核验的修后物件（只抠到 soft 级 class detail-body）。遮挡结论本身是观感，交两帧。"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
+   "col": 11,
+   "new": "人判：待裁决后再谈判据，静态侧无可立判点。判什么：两个发布入口的圈子候选行结构取哪一种，原判据是二选一。看代码：apps/client/src/subpackages/village/village/post.vue 第 849 行与第 850 行把已加入标记与成员数合成一条描述，apps/client/src/subpackages/village/village/publish.vue 第 928 行至第 930 行拆成圈名、已加入胶囊、成员数三段。实测三处：被点名的胶囊类名 ⟨publish-target-sheet__joined⟩ 在当前 post 页源码零命中、在 post 页产物 wxml 零命中、只存在于别页产物里（publish 页 wxml 1 命中，按判据台口径属越界命中不授予绿），本条 closer 记为 P4 延后出本轮。先裁决取哪一侧，再按被改那页新增的胶囊类名与该页 wxml 命中数立判点；现在写任何类名都是替未定的方案押注。",
+   "why": "三处验证三处不成立且原判据是二选一：post.vue 无 ⟨__joined⟩（原判点 identifier:__joined 在两载体都查不到，属孤儿提案名），参照类名实测 post.wxml 命中 0、publish.wxml 命中 1（别页）。closer=deferred_p4。方向未定我不能替产品拍，故降级人判并把参照类名装壳，避免抽成 class 判点后拿别页命中冒充本页。"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-012",
+   "col": 11,
+   "new": "人判：需人复验，无可立的静态判点。判什么：校园卡片的成员数与动态数每卡是否只计算一次。看代码：apps/client/src/subpackages/campus/campus/hub.vue 第 139 行在列表末尾把每条统计预计算成一个对象键附到条目上，模板第 318 行与第 326 行改读该预计算键。实测三处：当前源码有该键、产物该页 js 内该键 1 命中、基线 094f7239 同文件零命中，方向本来可测；但唯一可读痕迹是带冒号的对象键形态，判据台的字符串字面量字符类不收冒号，抽不出判点，而编译后的该页 wxml 又把数据路径改写成单字母，同页那个统计函数名基线源码里本来就有。故本条按人判读码结案；它是纯取值口径改动，渲染结果逐像素不变，不需要帧。",
+   "why": "本轮确有可测差异：hub.vue:139 新增预计算对象键（产物 subpackages/campus/campus/hub.js 命中 1，形态是 o 展开加 stats 冒号加函数调用），git show 094f7239 的 hub.vue 内该冒号形态 0 命中。但该形态不能被抽取器表达（reQ 字符类不含冒号，reId 又要求带大写或点号），而同页 ⟨statsOf⟩ 与 ⟨filteredSchools⟩ 基线源码里都有且会被改名。原判点 identifier:filteredSchools 即因改名不可判。故不写判点，降级人判。"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-004",
+   "col": 11,
+   "new": "人判：需人复验，改动早于基线且无可指向本轮的载体。判什么：兴趣圈列表页快捷分类名与统计行文案是否已全部走语言包。看代码：apps/client/src/subpackages/circles/circles/index.vue 第 234 行至第 241 行的分类表存键名而不是中文，第 407 行与第 435 行在模板里按键取值再插值。实测三处：当前源码含 ⟨circle.tabAll⟩ 与 ⟨circle.cardStats⟩ 两个键名、产物该页 js 内两个键各 1 命中且产物 locale 键位表各 1 命中、基线 094f7239 同文件同一区段逐字相同。命中的是基线既有词，按判据台口径不能证明本轮落地，写成判点只会落回同一句判词；本页本轮唯一改动是删死样式与缩略图尺寸，与本条无关。建议按已修于基线前结案，人读上面两处即可判定。",
+   "why": "三处验证卡在第三处：QUICK_TABS 的键名化（源码 234-241）与统计行插值（源码 435）都在，产物 subpackages/circles/circles/index.js 内 ⟨circle.tabAll⟩ 与 ⟨circle.cardStats⟩ 各命中 1、产物 i18n/locales/zh-CN.js 键位表各 1，但 git show 094f7239 同文件第 234 至 241 行与第 435 行逐字相同 ⇒ 基线既有词。原判点 identifier:QUICK_TABS 会被改名。本页本轮 10 增 147 删全是 lane A 的 CIRCLES-INDEX-008 死样式与缩略图尺寸，不能挪来授绿。"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-009",
+   "col": 11,
+   "new": "人判：需人复验，无可立的静态判点。判什么：生日是否按本地时区而不是按 UTC 解析后再与满 18 周岁的界点比较。看代码：apps/client/src/pages/register/index.vue 第 113 行至第 121 行，先按分段的年与月和日构造本地日期对象，再用当前年份减 18 与当月当日构造界点后比较。实测三处：当前源码是该口径、基线 094f7239 第 113 行至第 120 行逐字相同（早于基线已落地）、产物该页 js 里读不到那条构造留下的局部量名 ⟨adultSince⟩ 实测零命中（压缩构建改名），静态侧没有可写的载体。要判定就补一帧注册页选到恰好满 18 岁那一天的提交结果，或直接读上面九行；判据台原判词抠出的三个点号词都是会被改名的局部量。",
+   "why": "三处验证卡在第二与第三处：本地时区构造在 register/index.vue:113-121 已存在且与基线 094f7239 第 113 至 120 行逐字相同（早于基线）；产物 pages/register/index.js 内 ⟨adultSince⟩ 0 命中（minifier 改名），原判点 dateStr.split 与 now.getDate 与 now.getMonth 全是不确定标识符。本条页内本轮的改动是触控热区与配色变量（与 ⟨--c-error-bg-solid⟩ 与 ⟨hero__back-hit⟩ 与 ⟨field__tap⟩ 一族同族），归其它 id，不能挪来给本条授绿。"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-102",
+   "col": 11,
+   "new": "人判：需人复验。本行是形状归一留下的并案行，原判词抠出的那个全大写词是行内状态字样而不是任何载体。判什么：并案目标 ⟨MP-R3-PAGES-HOME-INDEX-002⟩ 所指首页三组图片绑定是否全部走统一媒体出口。看代码：apps/client/src/components/home/TodayRecommendationCard.vue 第 75 行主图取值的三个分支都已包进统一出口，基线 094f7239 同文件第 68 行那支占位图还是裸常量；apps/client/src/components/home/RelationActivity.vue 四组头像在基线里就全部已包。不立静态判点的原因：本轮差异只是一层调用嵌套，产物里可读的两个词在基线源码里本来就有（会被判据台的基线对照否掉），而编译后的该组件 wxml 把数据路径改写成单字母，静态侧没有可指向本轮的载体。要帧看一帧首页今日推荐卡，比对占位图与真实头像。",
+   "why": "实测：产物 components/home/TodayRecommendationCard.js 内 resolveMediaUrl 命中 4、POST_PLACEHOLDER 命中 1，基线源码两词都存在（无方向性）；该组件 wxml 的绑定路径被 uni-app 编译改写成 school 加单字母，本轮唯一差异无法用抽取器的任何一种判点形态表达。〔由 blocked 提升：patch-ledger-cells 的 ^| MP- 严格匹配已放宽，见该文件注释〕"
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-011",
+   "col": 11,
+   "new": "人判：需人复验。本行是形状归一留下的并案行，原判词抠出的那个全大写词是行内状态字样而不是任何载体。判什么：并案目标 ⟨MP-R1-PAGES-NEARBY-INDEX-016⟩ 所说附近页顶部内边距双机制互相覆盖是否还在。看代码：apps/client/src/pages/nearby/index.vue 第 375 行的行内顶距（状态栏高度加 12 再换算成像素）加同页样式段里页根容器的上内边距取零，两条机制已不再抢同一个属性。实测三处：该页相对基线 094f7239 零改动（本轮没碰过这页）、产物该页 js 里读不到状态栏高度变量名（压缩构建改名）、产物该页 wxss 里页根上边距为零，故无静态判点可写。要帧看一帧附近页真机，检查标题行与系统时间和胶囊是否叠压。",
+   "why": "实测：git diff 094f7239..HEAD 对 pages/nearby/index.vue 零改动；当前源码该页只保留一份行内顶距机制，样式里页根 padding 上值为零；产物 pages/nearby/index.js 读不到局部量名。判据台原判词 reason=判据只点到两载体都不存在的名字 STILL_OPEN。〔由 blocked 提升：patch-ledger-cells 的 ^| MP- 严格匹配已放宽，见该文件注释〕"
+  }
+ ]
+}

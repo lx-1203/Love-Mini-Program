@@ -1,0 +1,89 @@
+{
+  "note": "lane B：假绿判点与共享载体未证消费，共 7 条。逐条给出能真正支撑结论的判点，三处校验（基线／当前源码／当前产物）各自结果写在格内。共性发现（本 lane 最重要的结论）：这 7 条的修复全部落在提交 f9a60925（09-26 09:45），而 f9a60925 是上一轮判据台对照组 094f7239（09-26 09:59）的祖先（git merge-base --is-ancestor 已验，apps/client/src 相对当前 HEAD 干净），所以以 094f7239 为基线时，任何描述这些修复的串都必然显示为基线已存在，类 1 那四条换判点救不回来、要救的是对照组；台账自述判据台基线是 874ff52f，下面所有基线校验同时给 874ff52f 与 094f7239 两个口径。产物侧比对对象 apps/client/dist/build/mp-weixin（app.wxss mtime 2026-09-26T07:13:34Z，本地 15:13 重建，含 f9a60925 修复波）。类 2 三条实际载体不是 i18n key 而是标识符，故按等价的消费链逐环给结论。本 lane 未改台账、未改源码、未跑判据台、未碰微信开发者工具、无任何 git 写操作。",
+  "patches": [
+    {
+      "id": "MP-R2-VILLAGE-INDEX-009",
+      "col": 9,
+      "new": "修在 apps/client/src/subpackages/village/village/index.vue:945，声明为 background: var(--c-neutral-50, #F7FAF9)，改动落提交 f9a60925。三处校验（对照组 874ff52f）：基线该文件里 --c-neutral-50 出现 0 次且 F7FAF9 出现 0 次，当时同一块用的是一个全 src 零定义的变量 ⇒ 基线无成立。当前源码有。当前产物 subpackages/village/village/index.wxss 的 village-search 块内命中 background:var(--c-neutral-50,#F7FAF9) ⇒ 产物有。三处校验（对照组 094f7239）：该文件已含 :945 这条声明 ⇒ 基线无这一处不成立，本条落类 1 的成因是对照组把修复本身包了进去，不是判点选错。旧判点缺陷：--c-neutral-50 与 F7FAF9 单看都是该页其它样式也在用的通用物件，token 级命中不足以定位到本条改动。",
+      "why": "给出页作用域整条声明级判点，并把两个对照组各自的三处结果写清；094f7239 口径下基线那处不成立，成因是对照组含修复波 f9a60925。"
+    },
+    {
+      "id": "MP-R2-VILLAGE-INDEX-009",
+      "col": 11,
+      "new": "授予绿判点改为整条声明 background: var(--c-neutral-50, #F7FAF9)，它必须命中该页自己的产物样式文件而不是主题文件。删除型判点：--c-bg-input 已从该页产物里消失。三处校验对基线 874ff52f 三处全对，可机判。三处校验对基线 094f7239 里基线那一处不对，因为 f9a60925 是它的祖先，该口径下本条不得写成绿。复算口径：判据台跑本条时对照组用台账自述的 874ff52f。若不换对照组则本条按人判收口：人判＝读 apps/client/src/subpackages/village/village/index.vue:945 与基线 874ff52f 同文件同选择器块的差异，一眼可定，不必排帧。处置里的另一方案（在主题的页面块里补该变量定义）至今未做，全 src 仍是零定义，所以实际走的是换 token 的那半句。",
+      "why": "判点从裸变量名升级为块内整条声明并配一条删除型判点；同时如实记录 094f7239 口径不成立与对应的人判读法。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-LOGIN-INDEX-006",
+      "col": 9,
+      "new": "修在 apps/client/src/pages/login/index.vue:1113-1122 的稍后再看按钮块，background 改为 var(--c-bg-surface) 且 border-radius 改为 var(--r-full)。手机号快捷登录那一枚白按钮块新增 box-shadow: var(--card-shadow)。该块原有的描边声明已不在产物里。改动落提交 f9a60925。三处校验（对照组 874ff52f）：基线该文件里 --c-bg-surface 出现 0 次、--card-shadow 出现 0 次 ⇒ 基线无成立。当前源码有。当前产物 pages/login/index.wxss 命中 .btn-guest 块内 background:var(--c-bg-surface) 与 .btn-phone-quick 块内 box-shadow:var(--card-shadow) ⇒ 产物有。三处校验（对照组 094f7239）：两条都已在该对照组的源码里 ⇒ 基线无不成立。旧判点缺陷：--s-float-btn 是搭车 token，基线 874ff52f 的本文件里它就已出现一次，且至今仍只挂在绿色主按钮块上、从没挂到白按钮，命中它与本条无关。",
+      "why": "记录真正新增的两个 token 与描边删除的三处结果，并点名旧判点里 --s-float-btn 属修复前就在、且挂在另一个按钮上的搭车 token，这是假绿根因。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-LOGIN-INDEX-006",
+      "col": 11,
+      "new": "授予绿判点改为两条整声明：background: var(--c-bg-surface) 与 box-shadow: var(--card-shadow)，都须命中该页自己的产物样式文件。⟨--s-float-btn⟩ 判点作废。三处校验对基线 874ff52f 三处全对，可机判。三处校验对基线 094f7239 里基线那一处不对，该口径下不得写成绿。复算口径：对照组用 874ff52f。若不换对照组则按人判收口：人判＝读 apps/client/src/pages/login/index.vue 的 btn-guest 与 btn-phone-quick 两块的底色、描边、柔影三项，对照基线 874ff52f 同两块，并对照理想图。未落地的一半必须记清：btn-guest 自身到现在仍没有柔影声明，处置原文要求两枚白按钮都补柔影，所以本条只能算半修，不能按整条已修写绿。",
+      "why": "换成真正描述本条修复的两条声明加一条描边删除，作废搭车 token，并如实标出未落地的另半句（半修不得当整条绿）。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-PROFILE-INDEX-001",
+      "col": 9,
+      "new": "修在 apps/client/src/components/profile/mine/MyHeader.vue:63 的认证点图标 src 换为 IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG。同文件 :187 与 :188 两条声明换为 background: var(--c-brand, #36C99A) 与 border: 4rpx solid var(--c-bg-container, #FFFFFF)。改动落提交 f9a60925。三处校验（对照组 874ff52f）：基线该文件里 CHECK_WHITE_SVG 与 ICONS_COMMON 各 0 次、--c-brand 与 --c-bg-container 各 0 次，当时那两行是裸色值、图标取的是表情族那张勾 ⇒ 基线无成立。当前源码四处都有。当前产物 components/profile/mine/MyHeader.js 命中 ICONS_COMMON.CHECK_WHITE_SVG，components/profile/mine/MyHeader.wxss 命中 background:var(--c-brand,#36c99a) 与 border:4rpxsolidvar(--c-bg-container,#ffffff) ⇒ 产物有。三处校验（对照组 094f7239）：四处全部已在该对照组源码里 ⇒ 基线无不成立。",
+      "why": "把三处校验按四个专用物件逐一给结果；该条旧判点用的通用 token 与本页他处重名，换成图标链与两条整声明。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-PROFILE-INDEX-001",
+      "col": 11,
+      "new": "授予绿判点改为三个专用物件：IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG（须命中该组件自己的 js 产物），background: var(--c-brand, #36C99A) 与 border: 4rpx solid var(--c-bg-container, #FFFFFF)（须命中该组件自己的样式产物）。删除型判点：该图标的 src 上移除 IMAGE_PATHS.ICONS_EMOJI.CHECK。三处校验对基线 874ff52f 三处全对，可机判。三处校验对基线 094f7239 里基线那一处不对，该口径下不得写成绿。复算口径：对照组用 874ff52f。若不换对照组则按人判收口：人判＝读 MyHeader.vue 的 :63 与 :187-188 三行，另看已认证态个人主页那一帧里认证点内的勾是白色实心勾图标而不是表情勾。旧判点里的两个品牌色变量单独命中不算本条证据，必须与图标链同批按整条声明形态命中。",
+      "why": "把判点换成只在修复后出现的图标常量与两条整声明，配一条已验证为真的删除型判点，并给出人判读法与要看的帧位。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002",
+      "col": 9,
+      "new": "修在 apps/client/src/subpackages/chat/chat-session/index.vue:2999 的发送按钮禁用态块，background 改为 var(--c-status-disabled, #dce5e2)。该块新增一条后代规则，把禁用态文字 color 改为 var(--c-text-tertiary)。该块原有的整块降透明度声明已不在产物里。改动落提交 f9a60925。三处校验（对照组 874ff52f）：基线该文件里 --c-status-disabled 与 dce5e2 各 0 次，该块当时用中灰变量加整块降透明度 ⇒ 基线无成立。当前源码有。当前产物 subpackages/chat/chat-session/index.wxss 命中 .wechat-input-bar__send--disabled 块内 background:var(--c-status-disabled,#dce5e2)，后代规则命中 color:var(--c-text-tertiary)，整文件已搜不到那条降透明度声明 ⇒ 产物有。三处校验（对照组 094f7239）：该块已是修后形 ⇒ 基线无不成立。注意 --c-text-tertiary 单独不算新证据，基线 874ff52f 的本文件里它已有五处用法。",
+      "why": "给出块作用域整条声明加后代文字规则的三处结果，点名 --c-text-tertiary 属修复前就在的通用 token，避免再被当判点。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002",
+      "col": 11,
+      "new": "授予绿判点改为整条声明 background: var(--c-status-disabled, #dce5e2)，须命中该页自己的产物样式文件。删除型判点：opacity: 0.7 已从该块删净，该页产物样式文件里搜不到它。删除型判点：--c-neutral-300 已从该块移除，该页产物样式文件里已无此变量。三处校验对基线 874ff52f 三处全对，可机判。三处校验对基线 094f7239 里基线那一处不对，该口径下不得写成绿。复算口径：对照组用 874ff52f。若不换对照组则按人判收口：人判＝读 apps/client/src/subpackages/chat/chat-session/index.vue:2999 往后那两块声明，并在输入框为空那一帧看发送按钮是浅灰底配灰字、文字没被整块降透明度洗淡。",
+      "why": "判点换成该块独有的新声明并配两条已核实为真的删除型判点；同时写清 094f7239 口径下的不成立与对应人判读法。"
+    },
+    {
+      "id": "MP-R2-CAMPUS-HUB-011",
+      "col": 9,
+      "new": "修在 apps/client/src/subpackages/campus/campus/hub.vue:293，列表 key 表达式现在只有 school.id 这一个稳定值；基线 874ff52f 的同一处在 :284，是 tab 值与 id 的拼接，改动落提交 f9a60925。产物侧逐处检索结果（本条真正的断点在这里）：subpackages/campus/campus/hub.wxml 里该列表被编译成一个每轮都会改名的 key 属性位，subpackages/campus/campus/hub.js 里取 key 的位置形参名由压缩构建决定，两处都搜不到 school.id ⇒ 该页产物 chunk 里没有可稳定搜的判点形。上一轮那次全局命中落在 stores/likes/mock-data.js，那是另一个文件里的同名字段，与本条无关，不能当作该页消费了它的证明。结论：本条缺的是产物这一环（源码有、产物抠不出稳定可搜形），不是缺修复。",
+      "why": "逐环写清消费链断在哪：该页 chunk 内没有稳定的 school.id 形，唯一编译形含被改名的形参，并封掉那条无关文件的全局命中。"
+    },
+    {
+      "id": "MP-R2-CAMPUS-HUB-011",
+      "col": 11,
+      "new": "人判：本条静态判点写不出来就不硬造。要判的是切已加入与推荐两个 tab 时学校卡片列表是否被整列重建。看哪段代码：apps/client/src/subpackages/campus/campus/hub.vue:293 的列表 key 必须是 school.id 这一个稳定值，不得再有 tab 值参与拼接。对照读基线 874ff52f 的同一文件同一段。为什么静态不可判：该页产物里只剩一个逐轮改名的编译属性位，拿它当判点下一轮必然假绿或假红。复验口径：下一轮巡检出校园 hub 帧时人工裁决列表节点是否复用，需帧。禁止再用 stores/likes/mock-data.js 的同名命中给本条授绿。",
+      "why": "确认产物侧不可机判后按人判收口，写明要判什么、读哪一行、看哪一帧，并封掉那条无关全局命中的授绿路径。"
+    },
+    {
+      "id": "MP-R2-PROFILE-025",
+      "col": 9,
+      "new": "修在 apps/client/src/pages/profile/index.vue:758，最近访客那一格现在先取喜欢关系里的访客列表长度，再回落到后台统计的 visitorsCount，最后回落到 0，与同文件 :694 的口径完全一致；基线 874ff52f 的 :758 只有后台统计一条来源，改动落提交 f9a60925。消费链逐环结果：环一 该页源码 :1657 把这份列表以 interaction-items 属性传给外壳组件。环二 该页自己的产物注册表 pages/profile/index.json 里声明了 profile-shell 即 components/profile/ProfileShell，外壳的注册表再声明 my-profile 即 components/profile/mine/MyProfile，后者的产物 js 里保留了不会被改名的属性名 interactionItems。环三 更直接的是该页自己的产物 pages/profile/index.js 里同时搜到 interaction-items、键为 visitors 的那一项、以及其取值位置以 visitors.length 打头，回落里才出现 visitorsCount ⇒ 上一轮那句只在别处命中是判点形选错了（挑了会被压缩改名的计算属性名），不是该页没消费。产物能证到消费，证不到取值优先级。",
+      "why": "按类 2 要求把消费链逐环补齐到该页自己的 chunk 文件上，并明确产物侧能证到哪一步、哪一环仍缺。"
+    },
+    {
+      "id": "MP-R2-PROFILE-025",
+      "col": 11,
+      "new": "人判：本条实质是两个运行时值同口径，即访客列表长度与后台统计数谁优先，产物里两边的成员访问都被改名，静态分不出修前修后。要判什么：已登录个人主页四格互动数据里最近访客那一格的数值是否等于喜欢页访客列表的长度，而不是只取后台统计。看哪段代码：apps/client/src/pages/profile/index.vue:758 与 :694 两行必须是同一表达式，且 :1657 的传参链经外壳到 MyProfile 的 interactionItems。看哪一帧：个人主页帧与喜欢页访客列表帧配对复验，两数不等即说明走了回落分支。判据台侧记法：本条的命中按页作用域证据看 pages/profile/index.json 与该页自己的 index.js，不要再走 components/profile/mine/MyProfile.js 的全局回落，也不要用单 token visitors.length 授绿，它在基线 874ff52f 的 :694 里已经出现过。取值口径需帧或人工裁决。",
+      "why": "确认本条是运行时值相等、产物不可判，转人判并写明判什么、读哪两行、配哪两帧；同时钉住可用的消费链证据与不可用的授绿口径。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-004",
+      "col": 9,
+      "new": "未落地，上一轮的 UnlockGuideOverlay 命中在 app.js 里，来源是应用入口文件挂载该组件，与消息页无关，不能当作该页消费了它。逐环现状：环一 组件源码未改，apps/client/src/components/discover/NotLoggedWaiting.vue 的首节点仍是单张烘焙海报，其产物 components/discover/NotLoggedWaiting.js 仍在解析海报族里那张未登录等待图，该组件的模板与 js 里 mascot 组件均为零命中。环二 该页未消费引导弹层，apps/client/src/pages/messages/index.vue 没有引用它，全 src 只有应用入口、解锁 store、stories 与测试引用；该页产物注册表里只有 mascot、未登录等待、骨架、错误态、页面状态容器、表情文字六项，没有引导弹层。环三 资产这一环是通的，static/assets/images/people/ 下 21 张图已在产物里，person-01 到 person-08 都在，但处置写的通配形不是可搜串，判点要落到实名。三处一致：基线 094f7239 无、当前源码无、当前产物无，且基线 874ff52f 同样无。",
+      "why": "逐环给证据说明修复未落地且那次全局命中属应用级挂载；同时确认资产腿可闭合并纠正通配形不可搜的问题。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-004",
+      "col": 11,
+      "new": "本条不要写绿，按未修处理：修后物件在基线、当前源码、当前产物三处都不存在。下轮可用判点全部限定在该页或该组件自己的产物文件内：在该组件模板里补 mascot 组件节点并让虚线轨道与各格真实头像成为独立节点。在该组件产物里补 person-01 到 person-08 的头像池循环。在该页产物注册表里补引导弹层组件并在该页模板引用它。该组件首节点那张整图海报的引用要拆掉，产物里不能再出现海报族里的这个键。作废判点：app.js 里那个组件名命中属应用级挂载，不证明该页消费。现存命中也不许复用：该页模板里已有的 mascot 节点是助理卡头像，与等待页无关。拆图后的未登录等待页需要一帧与理想图配对复验，需帧。",
+      "why": "给出下轮可机判的页作用域判点与当前三处一致的未修结论，点名两条会被误用成假绿的现存命中。"
+    }
+  ]
+}
