@@ -20,7 +20,7 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { execFileSync } from "node:child_process";
-import { evaluate, openPage, shot, mintToken, bootSession, verifyLogin, routeStack } from "./cli-automator.mjs";
+import { evaluate, openPage, shot, mintToken, bootSession, verifyLogin, routeStack, clearSession } from "./cli-automator.mjs";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
@@ -127,18 +127,32 @@ mkdirSync(SHOT_DIR, { recursive: true });
    登录位是执行轮的前置而不是装饰：身份不对时整批落点都不可信 ⇒ 这里不成立就一行都不跑。 */
 const IDENTITY = arg("identity", "A");
 let LOGIN_VERIFY = "";
-try {
-  const t = (await mintToken(IDENTITY === "B" ? "B" : "A", REPO, "r7-exec-" + LABEL)).token;
-  const b = bootSession(t, { project: PROJECT });
+if (IDENTITY === "guest" || IDENTITY === "none") {
+  /* 游客档不是"铸一个 B token"：mintToken + bootSession 之后 store 仍是 logged-in，
+     而本执行器下一道门要求 logged-in，于是 --identity B 既当不了游客也过不了门
+     （B 侧执行轮里 26 条 PAGES-LOGIN-INDEX 就是被这条假路径挡在外面的）。
+     真游客 = 清本地会话 + 复位 store，并且必须量到 not-logged-in 才开跑。 */
+  const c = clearSession({ project: PROJECT });
   LOGIN_VERIFY = verifyLogin({ project: PROJECT });
-  console.log(`[boot] ${b} identity=${IDENTITY} verify=${LOGIN_VERIFY}`);
-} catch (e) {
-  console.log("RUNNER_RESULT=FAIL reason=铸 token / 写会话失败：" + String(e.message).slice(0, 140) + " ⇒ 一行都不跑");
-  process.exit(2);
-}
-if (!/^logged-in/.test(LOGIN_VERIFY)) {
-  console.log("RUNNER_RESULT=FAIL reason=store 报 " + LOGIN_VERIFY + " ⇒ 未登录画面不能当已登录证据，整批不跑（换 --identity B 跑游客档）");
-  process.exit(2);
+  console.log(`[boot] ${c} identity=guest verify=${LOGIN_VERIFY}`);
+  if (!/^not-logged-in/.test(LOGIN_VERIFY)) {
+    console.log("RUNNER_RESULT=FAIL reason=要游客态但会话没清掉：" + LOGIN_VERIFY + " ⇒ 一行都不跑");
+    process.exit(2);
+  }
+} else {
+  try {
+    const t = (await mintToken(IDENTITY === "B" ? "B" : "A", REPO, "r7-exec-" + LABEL)).token;
+    const b = bootSession(t, { project: PROJECT });
+    LOGIN_VERIFY = verifyLogin({ project: PROJECT });
+    console.log(`[boot] ${b} identity=${IDENTITY} verify=${LOGIN_VERIFY}`);
+  } catch (e) {
+    console.log("RUNNER_RESULT=FAIL reason=铸 token / 写会话失败：" + String(e.message).slice(0, 140) + " ⇒ 一行都不跑");
+    process.exit(2);
+  }
+  if (!/^logged-in/.test(LOGIN_VERIFY)) {
+    console.log("RUNNER_RESULT=FAIL reason=store 报 " + LOGIN_VERIFY + " ⇒ 未登录画面不能当已登录证据，整批不跑（游客档请用 --identity guest）");
+    process.exit(2);
+  }
 }
 RUN.booted = true;
 
