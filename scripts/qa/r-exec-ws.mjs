@@ -32,7 +32,12 @@ const LABEL = opt("round", "round-7");
 const OPS = opt("ops", join(REPO, "reports/audit/round-6/ops"));
 const OUT_DIR = opt("out", join(REPO, "reports/audit", LABEL, "interact"));
 const RES = join(OUT_DIR, "exec-results.json");
-const SHOT_DIR = opt("shots", join(REPO, "reports/screenshots", LABEL + "-exec"));
+function git(a) { try { return execFileSync("git", a.split(" "), { cwd: REPO, encoding: "utf8" }).trim(); } catch { return ""; } }
+const GIT_SHA = git("rev-parse --short HEAD") || "unknown";
+/* 取景目录默认带上仓库 sha：同一轮里重建过产物再跑，帧会落到新目录，
+   而不是按 MANIFEST-ID-after.png 同名把上一批覆盖掉（§19 就是这么丢的证据）。
+   要跨产物共用一个目录，显式传 --shots。 */
+const SHOT_DIR = opt("shots", join(REPO, "reports/screenshots", LABEL + "-exec-" + GIT_SHA.slice(0, 8)));
 const ONLY = (opt("only", "") || "").split(",").filter(Boolean);
 const LIMIT = Number(opt("limit", "0"));
 const FIDELITY = opt("fidelity", "");
@@ -43,8 +48,6 @@ const TAP_RE = /点击|输入|滑动|滚动|长按|拖|tap|click|input|scroll|sw
 const BOOT_T = Date.now();
 
 function relOf(p) { return relative(REPO, p).split("\\").join("/"); }
-function git(a) { try { return execFileSync("git", a.split(" "), { cwd: REPO, encoding: "utf8" }).trim(); } catch { return ""; } }
-const GIT_SHA = git("rev-parse --short HEAD") || "unknown";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function automator() {

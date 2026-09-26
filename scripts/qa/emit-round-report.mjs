@@ -57,6 +57,10 @@ const flag = (n, d = null) => {
 const has = (n) => argv.includes(`--${n}`);
 
 const ROUND_DIR = toRel(flag("round-dir", "reports/audit/round-6"));
+/* 台账目录不等于本轮目录：round-7 的条目登记在 round-6 那份"唯一权威台账"里，
+   把 round-7 目录传给 verify-ledger 只会撞到"本范围无 issue-matrix.md ⇒ 判据空转"的守卫。
+   所以单独开一个 --ledger-dir（默认仍是本轮目录，行为不变）。 */
+const LEDGER_DIR = toRel(flag("ledger-dir", "reports/audit/round-6"));
 const EXEC = toRel(flag("exec-results", join(ROUND_DIR, "interact", "exec-results.json")));
 const MANIFEST_DETAIL = toRel(flag("manifest-detail", "reports/screenshots/round-6-tour/manifest-detail.json"));
 const SCREEN_MANIFEST = toRel(flag("screenshot-manifest", join(ROUND_DIR, "screenshot-manifest.json")));
@@ -293,7 +297,7 @@ G.queue = runGate("verify-queue-reconcile", "scripts/verify-queue-reconcile.mjs"
 G.triage = runGate("triage-exec-failures", "scripts/qa/triage-exec-failures.mjs", ["--results", EXEC, "--out", TRIAGE_BASE], { timeoutMs: 900000 });
 G.readj = runGate("readjudicate-evidence", "scripts/qa/readjudicate-evidence.mjs", [EXEC, "--ops", OPS_DIR, "--no-lines", "--samples", "1"], { timeoutMs: 300000 });
 G.stateTruth = runGate("verify-state-truth", "scripts/qa/verify-state-truth.mjs", [ROUND_DIR], { timeoutMs: 180000 });
-G.ledger = runGate("verify-ledger", "scripts/qa/verify-ledger.mjs", [ROUND_DIR], { timeoutMs: 600000 });
+G.ledger = runGate("verify-ledger", "scripts/qa/verify-ledger.mjs", [LEDGER_DIR], { timeoutMs: 600000 });
 G.integrity = runGate("verify-evidence-integrity（权威索引=本轮全部 corpus）", "scripts/verify-evidence-integrity.mjs", [SCREEN_MANIFEST, "--dir", dirname(MANIFEST_DETAIL), "--exec", EXEC], { timeoutMs: 600000 });
 G.corpus = runGate("verify-evidence-corpus（全域）", "scripts/qa/verify-evidence-corpus.mjs", [], { timeoutMs: 600000 });
 G.provenance = runGate("verify-provenance-all（全域）", "scripts/qa/verify-provenance-all.mjs", [], { timeoutMs: 600000 });
@@ -790,7 +794,7 @@ function gateRow(rec, kw, headline) {
   const b = baseRow(kw);
   P(`| \`${rec.name}\` | **${rec.exitCode === null ? "无码" : rec.exitCode}**${rec.note ? `（${rec.note}）` : ""} | ${headline} | ${b ? "退出码 `" + (b.split("|")[2] || "").trim() + "`：`" + b.replace(/\|/g, "/") + "`" : "台账 §1 无此行（不猜）"} |`);
 }
-gateRow(G.ledger, `verify-ledger（台账目录=${ROUND_DIR}）`, `SOURCES=${n(G.ledger.re(/LEDGER_SOURCES=(\d+)/))} DISTINCT_IDS=${n(G.ledger.re(/DISTINCT_IDS=(\d+)/))} MATRIX_IDS=${n(G.ledger.re(/MATRIX_IDS=(\d+)/))} ORPHAN_TRUE=${n(G.ledger.re(/LEDGER_ORPHAN_TRUE=(\d+)/))} MULTI_ID_FAMILIES=${n(G.ledger.re(/LEDGER_MULTI_ID_FAMILIES=(\d+)/))} → ${(G.ledger.body.match(/^LEDGER_RESULT=.*/m) || [null])[0]}`);
+gateRow(G.ledger, `verify-ledger（台账目录=${LEDGER_DIR}${LEDGER_DIR !== ROUND_DIR ? "，与本轮目录不同：本轮条目登记在权威台账里" : ""}）`, `SOURCES=${n(G.ledger.re(/LEDGER_SOURCES=(\d+)/))} DISTINCT_IDS=${n(G.ledger.re(/DISTINCT_IDS=(\d+)/))} MATRIX_IDS=${n(G.ledger.re(/MATRIX_IDS=(\d+)/))} ORPHAN_TRUE=${n(G.ledger.re(/LEDGER_ORPHAN_TRUE=(\d+)/))} MULTI_ID_FAMILIES=${n(G.ledger.re(/LEDGER_MULTI_ID_FAMILIES=(\d+)/))} → ${(G.ledger.body.match(/^LEDGER_RESULT=.*/m) || [null])[0]}`);
 gateRow(G.stateTruth, "verify-state-truth", `CASE_SPREAD=${n(G.stateTruth.num("STATE_CASE_SPREAD"))} FAIL_SPREAD=${n(G.stateTruth.num("STATE_FAIL_SPREAD"))} → ${(G.stateTruth.body.match(/^STATE_RESULT=.*/m) || [null])[0]}`);
 gateRow(G.integrity, "verify-evidence-integrity", `SHOTS=${n(G.integrity.re(/EVIDENCE_SHOTS=(\d+)/))} MATCHED=${n(G.integrity.re(/MATCHED=(\d+)/))} MISSING=${n(G.integrity.re(/MISSING=(\d+)/))} HASH_MISMATCH=${n(G.integrity.re(/HASH_MISMATCH=(\d+)/))} ORPHANS=${n(G.integrity.re(/ORPHANS=(\d+)/))} DUP_STATE=${n(G.integrity.re(/DUP_STATE_GROUPS=(\d+)/))} SNA改判=${n(G.integrity.re(/EVIDENCE_SNA_RECLASSIFIED=(\d+)/))} 盘上仅算非证据=${n(G.integrity.re(/EVIDENCE_FRAMES_ON_DISK_ONLY_AS_NON_EVIDENCE=(\d+)/))}；exec: ${n(G.integrity.re(/EXEC_EVIDENCE_ENTRIES=(\d+)/))} 条 WITH_ERROR=${n(G.integrity.re(/WITH_ERROR=(\d+)/))} 伪造引用=${n(G.integrity.re(/EXEC_CLEAN_BUT_MISSING=(\d+)/))} → ${(G.integrity.body.match(/^EVIDENCE_RESULT=.*/m) || [null])[0]}`);
 gateRow(G.corpus, "verify-evidence-corpus", `MANIFESTS=${n(G.corpus.num("CORPUS_MANIFESTS"))} SCANNED=${n(G.corpus.num("CORPUS_SCANNED"))} EXPIRED_GITSHA=${n(G.corpus.num("CORPUS_EXPIRED_GITSHA"))} PROBLEMS=${n(G.corpus.num("CORPUS_PROBLEMS"))} → ${(G.corpus.body.match(/^CORPUS_RESULT=.*/m) || [null])[0]}`);
