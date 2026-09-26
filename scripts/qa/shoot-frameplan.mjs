@@ -317,6 +317,15 @@ if (DRY) {
   process.exit(0);
 }
 
+/* 有些页按设计就不接受裸直达，缺的是 URL 参数而不是产品修复：
+   campus/index 的 onLoad 写明"无 ?school= 时校园圈入口应落到 hub"（源码注释 2026-08-25 P0），
+   所以直接 openPage 必然被 redirectTo 弹走。把这类路由的必需参数写成数据，
+   比让 15 条执行行 + 1 条帧行长期挂在"落在别的页"上要诚实得多。 */
+const ROUTE_QUERY = {
+  "subpackages/campus/campus/index": "school=" + encodeURIComponent("南京大学"),
+};
+const queryFor = (it, route) => String((it && it.precondition && it.precondition.query) || ROUTE_QUERY[route] || "");
+
 const rows = [];
 let holes = 0, done = 0, transportErrs = 0;
 for (const [key, grp] of byRoute) {
@@ -335,8 +344,9 @@ for (const [key, grp] of byRoute) {
   }
   if (!booted) continue;
   let opened = false;
+  const q = queryFor(grp[0], route);
   for (let attempt = 0; attempt < 2 && !opened; attempt++) {
-    try { openPage(route, "", { project: PROJECT }); opened = true; }
+    try { openPage(route, q, { project: PROJECT }); opened = true; }
     catch (e) { transportErrs++; console.log("  open-err(" + attempt + ") " + route + " :: " + String(e.message).slice(0, 70)); sleep(1800); }
   }
   if (!opened) { for (const it of grp) rows.push({ id: it.id, route, status: "FAILED", reason: "open_page 两次都失败" }); continue; }
@@ -355,7 +365,7 @@ for (const [key, grp] of byRoute) {
     if (usable(landing).includes(route)) break;
     transportErrs++;
     sleep(1800);
-    if (a > 0) { try { openPage(route, "", { project: PROJECT }); sleep(SETTLE); } catch (e) { /* 开页失败下一轮再试 */ } }
+    if (a > 0) { try { openPage(route, q, { project: PROJECT }); sleep(SETTLE); } catch (e) { /* 开页失败下一轮再试 */ } }
   }
   const landed = landing.includes(route);
   for (const it of grp) {

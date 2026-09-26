@@ -125,6 +125,13 @@ mkdirSync(SHOT_DIR, { recursive: true });
      · mock 工程坏 token 照样 logged-in(userId=user-1001) ⇒ mock 那两刀的落点判据不受影响，不必重跑；
      · real 工程坏 token ⇒ not-logged-in，所以 interact-real 的 259 行 SKIPPED 是我自己把门关上了。
    登录位是执行轮的前置而不是装饰：身份不对时整批落点都不可信 ⇒ 这里不成立就一行都不跑。 */
+/* 按设计就不接受裸直达的路由：缺的是 URL 参数，不是产品修复。
+   campus/index 的 onLoad 注释写明"无 ?school= 时校园圈入口应落到 hub"，
+   所以这 15 条 case 在 A 侧被跳、在 B 侧被判"落在别的页"——补上参数才是它们本来的测法。
+   （同一份表也写进 shoot-frameplan.mjs；两处要保持一致。） */
+const ROUTE_QUERY = {
+  "subpackages/campus/campus/index": "school=" + encodeURIComponent("南京大学"),
+};
 const IDENTITY = arg("identity", "A");
 let LOGIN_VERIFY = "";
 if (IDENTITY === "guest" || IDENTITY === "none") {
@@ -185,7 +192,7 @@ for (const name of files) {
     if (!todo.length) continue;
     stats.pages++;
     console.log("RUNNER_GROUP_START page=" + page + " 待跑=" + todo.length + " 累计=" + ((Date.now() - BOOT_T) / 60000).toFixed(1) + "min");
-    try { openPage(page, "", { project: PROJECT }); } catch (e) {
+    try { openPage(page, ROUTE_QUERY[page] || "", { project: PROJECT }); } catch (e) {
       for (const c of todo) rows.push(row(name, page, c, "FAILED", "", "open_page 失败：" + String(e.message).slice(0, 70), ""));
       stats.failed += todo.length;
       continue;

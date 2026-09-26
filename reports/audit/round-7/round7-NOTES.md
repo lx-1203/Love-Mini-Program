@@ -903,3 +903,23 @@ countTemplateEq / importHead），逐条重跑、逐条把原文 claim 写进 st
 
 这三条要重拍才能拿到新载具的结论，等 B 侧执行轮跑完（设备只有一条，不能并发）再做；
 在拿到之前它们维持 §33 的处置：不进台账判决，statusEvidence 里写明欠的是哪个载体。
+
+## 37 B 侧 61 条失败全是同一类"到不了那一页"，拆成三个具名前置后就地补上
+
+B 侧执行轮跑到 553 行时（EXECUTED 283 / SKIPPED 209 / FAILED 61）把失败逐条过了一遍：
+**61 条的失败原因完全相同**——`落在别的页（页内守卫或路由重定向），须人判`，
+且只集中在三个 suite：`PAGES-LOGIN-INDEX` 26、`SUBPACKAGES-CAMPUS-CAMPUS-INDEX` 15、
+`SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING` 20。没有一条是别的失败形态，
+也就是说这不是产品回归，是**用例的前置没写全**（A 侧把它们记成 SKIPPED，所以我一直没看见）。
+
+三个前置逐个对到源码，都确认是"按设计就不接受裸直达"：
+
+| suite | 弹走它的那行 | 缺的前置 | 本轮补法 |
+|---|---|---|---|
+| login | `pages/login/index.vue:87-89` 已登录 ⇒ `switchTab(discover)` | 游客身份 | `r-exec-cli.mjs --identity guest`（真清会话 + 硬性要求 `not-logged-in`；旧注释写的 `--identity B` 其实仍是登录态） |
+| campus/index | `campus/index.vue:202-203` 无 `?school=` ⇒ `redirectTo(hub)`，注释自陈这是 2026-08-25 的 P0 设计 | URL 参数 | 新增 `ROUTE_QUERY`，两个执行器开页时都带 `school=…`（表在两处保持一致） |
+| matching | `matching.vue:73-80` `status!=="matched"` 分支 ⇒ `navigateBack/switchTab(discover)` | 一次真实配对会话 | 尚未补——需要往 matchStore 注入终态，属夹具刀，记在这里不假装解决 |
+
+配套证据：§32 那 5 条"取景未到达目标页"落在的正是同样两个路由（campus/index→hub、
+login→discover），两条独立通道给出同一个结论，所以这不是取景器的错觉。
+matching 的 20 条在 A 侧同样是 SKIPPED；补 store 注入之前，它们既不算跑过也不算失败。
