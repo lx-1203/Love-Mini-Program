@@ -342,7 +342,7 @@ if (!SKIP_LIVE) {
   // G7 必须 node22：实测 PATH 上的 v16 让它自报 G7_RESULT=FAIL（环境噪声，不是产品缺陷）
   G.g7 = runGate("G7 产物自证", "apps/client/scripts/build-real-isolated.mjs", ["--check-only"], { timeoutMs: 600000, needNode22: true });
   G.g8 = runGate("G8 十环", "scripts/qa/g8-e2e.cjs", [], { timeoutMs: 600000 });
-  G.g9 = runGate("G9 素材探针", ".zcode/tmp/g9-probe.cjs", [], { timeoutMs: 600000 });
+  G.g9 = runGate("G9 素材探针", "scripts/qa/g9-probe.cjs", [], { timeoutMs: 600000 });
   G.probe = runGate("probe-real-env", "scripts/probe-real-env.mjs", [], { timeoutMs: 300000 });
 } else {
   ERRORS.push("--skip-live-gates 生效：G7/G8/G9/probe 未复跑 —— 本报告不得宣称『真实模式当前结论』，按缺证据处理");

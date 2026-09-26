@@ -30,6 +30,17 @@
 - **未恢复**：`miniprogram-automator` 的 WS 通道。`cli auto --auto-port N` 返回 `✔ auto` 但不落监听端口，
   `automator.connect()` 在任何端口都是 ~15ms 失败 ⇒ `r-exec.cjs`（1107 例执行轮）跑不起来。
   CLI 通道下每次调用 3–5 s，1107 例 ≈ 7 h，不是"慢一点"，是**这条腿本轮没有**（见 §6）。
+- **批量传输层的探针跑了两次，两次都没给出吞吐结论，但量出一条新的通道性质**：
+  `scripts/qa/probe-batch-transport.mjs`（一次 `automation_evaluate` 里链 K 个 `selectAll().fields()`，
+  用 `.exec(cb)` 按链序取 K 个结果，再和"逐条单发"的 `element(offset)` 结果逐条比对保真）。
+  K=20 那次批量调用 `timeout waiting for automator response`，而**同进程内先后的非 Promise evaluate
+  （铸 token / 起会话 / verifyLogin / openPage）全部成功**；K=3 那次干脆从 try/catch 里漏出去，
+  以未捕获的 socket `_onTimeout` 结束进程。两条都是要写进执行器设计的前提：
+  ① 通道的故障率本身是实测属性（本轮 4 个批次里 3 个出现过 timeout）；
+  ② `execFileSync` 的超时在某些路径上是以**异步事件**冒出来的，外层 try/catch 兜不住 ⇒
+  真要跑 7 小时量级的批量执行轮，必须先给传输层加 `uncaughtException` 级别的隔离，
+  而不是先假设"折叠调用就更快"。 Promise 形态到底可不可用：**未判定**，探针留着，通道恢复后按 §7 的判别实验再跑。
+
 
 ## 2 判据台的列位事实（本轮纠正的第二项）
 判点是 **`issue-matrix.md` 第 11 列（处置格）** 抽的；第 8 列（证据格）只喂"修前值"。
@@ -69,7 +80,36 @@ lanes 里最值钱的一条反驳：**HEAD 就是本轮基线**，所以只有�
 另一条：`MP-R2VIS-...-CHAT-SESSION-A03` 的 baseline 命中其实来自**删除注释本身**（注释不进产物），
 所以那条 absent 判点对本基线永真 ⇒ 拒绝写成绿。我按它的证据把该格标成"与判据台冲突，待人判"。
 
-## 5 撤销与裁决
+## 5 真实模式：不重启也把话说实
+- **不重启 8080 的依据（两条实测，不是"应该没事"）**：`git log -- apps/api` 最后一次改动是 `f9a60925`；
+  在跑的 JVM 就是台账 §里记的那个 pid **29536**，`StartTime 2026/9/26 3:12:29` 晚于该提交的工作时间，
+  所以运行实例已经含全部已提交的后端代码；`GET /api/campus/topics` 返回 401（活着且在鉴权，
+  与"游客不得浏览广场"的裁定一致）。共享实例的重启成本（82s 启动 + 打断别的取证）没有对应的收益，故不动。
+- **G8 十环复跑：`G8_RINGS_OK=10/10 · G8_RESULT=PASS`**（凭据仍从 `apps/api/restart-backend.ps1` 运行时解析，未上命令行）。
+  本轮写入的真实数据 **保留未删**，按既定裁定披露：`posts.id=256`、`comments.id=1224`、
+  `campus_topics.id=285`、`campus_replies.id=17`。
+  Ring6 的判据仍如实写着"后台视图没有计数字段 ⇒ 这是后台字段对账缺口，不是数值不一致"，没有为了绿把它折叠掉。
+- **G9 素材探针：`G9_PROBED=455 G9_OK=455 G9_FAIL=0 · G9_RESULT=PASS`**，
+  且四象限对照 (`G9_CONTROL`) 全 0 异常：在盘且 200=455，其余三格=0。
+- **载体搬家（补上"建了却没接线"的老洞）**：G9 的可执行文件原本只在 `.zcode/tmp/g9-probe.cjs`——
+  一个被 gitignore 的目录里，门禁面板却直接调它。现移到 `scripts/qa/g9-probe.cjs` 并改
+  `emit-round-report.mjs:345` 的调用路径；搬完立刻从新位置跑了一次（上一条就是结果），
+  不是"移完就算好"。
+- 真实模式 UI 帧：见下方 §5c（本轮 real 巡检的结果与限制）。
+
+## 5.1 real 模式巡检（本轮新增）
+- `REALTOUR_SHOTS=18/18 FAILURES=2 gitSha=91e56562 out=reports/screenshots/round-7-real-tour`，
+  路径自证 `REALTOUR_PATH_SELFCHECK=OK 18/18 条 path 按消费方解法可 stat`。
+  gitSha 就是本轮的提交号 ⇒ 这批帧取的是**提交后的代码**，不是工作树里的半成品。
+- 两条失败是同一条已知行为，而且这次是**真实模式**下复现的：
+  已登录身份访问 `pages/login/index` 落在 `pages/discover/index`（A、B 两个身份都这样）。
+  round-6 §102 在 real 产物上测到 2/2，本轮再 2/2 ⇒ 跨两轮、两种构建模式共 4/4 稳定复现。
+  这条正是待裁决项「登录页已登录落地页」——裁决不该由我做，因为两个方向都合理
+  （承认 discover 是登录后落地页，或改弹回来源页），而它会改变产品行为。
+  所以本轮只把它从"一次性观察"升级成"可复现观察"，不动代码、不改状态。
+
+## 6 撤销与裁决
+
 - **撤销**：上一轮记忆里"3 项后端契约待改"（写侧 DTO 缺字段、私聊引用回复字段、上传扩展名校验）——
   本轮在 `apps/api` 复核，三处**都已在 HEAD 里**，`mvnw -q compile` 通过，无迁移待跑。
   那条断言的来源是我的记忆，不是工件；已把记忆原文标为 RETRACTED。
@@ -83,10 +123,16 @@ lanes 里最值钱的一条反驳：**HEAD 就是本轮基线**，所以只有�
 - **裁决（消息页死代码）**：`toggleSessionPin` 与其测试用例一并删除，长按菜单分支不采纳
   （判点只剩"被删的死函数不在产物里"，实测 art=0）。
 
-## 6 本轮范围内仍开着的（不洗、不藏）
+## 7 本轮范围内仍开着的（不洗、不藏）
 1. **1107 例执行轮跑不了**：WS 通道缺失，CLI 吞吐不支撑。可行路径是把多条断言折进**一次**
    `automation_evaluate`（一次调用返回逐例判决数组，截图仍逐例），需要先把 `r-exec.cjs` 的传输层换掉；
    本轮没有做完这件事，所以 round-7 的"完整循环"里执行轮这一格是空的。
+   **预先登记的判别实验**（通道恢复后按这个顺序跑，不要凭印象改设计）：
+   ① 先给 `cli-automator` 的传输层加 `uncaughtException`/`unhandledRejection` 隔离并重跑 K=3；
+   ② 若仍 timeout ⇒ 换成"同步形态"再试一次（在 fn-source 里不返回 Promise，改用 IDE 支持的回调返回值），
+   区分"通道死了"与"bridge 不等 Promise"；
+   ③ 只有批量与单发**逐条一致**（`BATCH_FIDELITY=K/K`）才允许动 `r-exec.cjs`，
+   否则就是把 1107 例换成一批更快的错答案。
 2. `NOT_IN_EITHER=2`：`CHAT-SESSION-A03`、`PROFILE-LOCATION-001`。
    后者的 3 个不可判标识（运行期拼接文案 `城市 · 服务器所在城市` + 两个后端类名）不在台账第 11 列，
    而在 round-6 冻结的 `.zcode/tmp/fixwave/closer.json` 里 —— 判据台把 closer 的 `action/evidence` 也当判点来源。
