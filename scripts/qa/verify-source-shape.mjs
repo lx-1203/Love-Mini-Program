@@ -76,6 +76,36 @@ const SPEC = [
       { kind: "countEq", re: /border-radius:\s*var\(--r-full\)/g, n: 3 },
     ],
   },
+  /* 下面三条原本是挂在 `tmp/tour-R2.mjs` 上的——那个文件被 .gitignore 的 `tmp/` 挡着，
+     台账写"HEAD 已修"时其实根本不在 HEAD 里（详见 NOTES §42）。
+     三处修都在**已跟踪**的后继载体 scripts/qa/tour-r6.mjs 里，判点因此改指向它。 */
+  {
+    id: "MP-R2VIS-TMP-TOUR-R2-001", file: "scripts/qa/tour-r6.mjs",
+    claim: "权限抑制点在 wx.* JS 桥那层，且注册型 API（wx.onNeedPrivacyAuthorization）故意不 mock",
+    checks: [
+      { kind: "present", re: /'wx\.onNeedPrivacyAuthorization':/ },
+      { kind: "present", re: /notMockedOnPurpose:/ },
+      { kind: "present", re: /const CAPTURE_LIMITATIONS = \{/ },
+    ],
+  },
+  {
+    id: "MP-R2VIS-TMP-TOUR-R2-002", file: "scripts/qa/tour-r6.mjs",
+    claim: "帧去重要有整帧内容哈希（sha256 前 16 位），且判等口径是字节全等而非感知哈希",
+    checks: [
+      { kind: "present", re: /function frameHash\(buf\)/ },
+      { kind: "present", re: /digest\('hex'\)\.slice\(0, 16\)/ },
+      { kind: "present", re: /'state-not-applied'/ },
+    ],
+  },
+  {
+    id: "MP-R2VIS-TMP-TOUR-R2-003", file: "scripts/qa/tour-r6.mjs",
+    claim: "probeRoute 不能只取栈顶：必须同时把整条页面栈（top/depth/stack）带回来",
+    checks: [
+      { kind: "present", re: /async function probeRoute\(\)/ },
+      { kind: "present", re: /JSON\.stringify\(\{top:[^}]*stack:/ },
+      { kind: "present", re: /stack:\s*(?:o\.stack\|\[\]|out)/ },
+    ],
+  },
 ];
 
 /* 剥注释：禁用的写法只出现在注释里（说明"这里原来是怎么写的"）不算违反。

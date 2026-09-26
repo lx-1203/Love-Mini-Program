@@ -1,7 +1,7 @@
 {
- "generatedAt": "2026-09-26T16:41:46.360Z",
+ "generatedAt": "2026-09-26T17:34:11.258Z",
  "source": "verify-source-shape.mjs",
- "passed": 8,
+ "passed": 11,
  "failed": 0,
  "patches": [
   {
@@ -53,6 +53,24 @@
    "why": "不借帧的名义给绿，也不再挂着待修复"
   },
   {
+   "id": "MP-R2VIS-TMP-TOUR-R2-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-002",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-003",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
    "id": "MP-R2-CAMPUS-HUB-012",
    "col": 9,
    "new": "源码判点：成员数/动态数每卡只计算一次（模板不得反复调 statsOf） ｜承载 apps/client/src/subpackages/campus/campus/hub.vue",
@@ -98,6 +116,24 @@
    "id": "MP-R2VIS-PAGES-LOGIN-INDEX-001",
    "col": 9,
    "new": "源码判点：三枚按钮（.btn-primary / .btn-phone-quick / .btn-guest）的 border-radius 全部改用 var(--r-full) ｜承载 apps/client/src/pages/login/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-001",
+   "col": 9,
+   "new": "源码判点：权限抑制点在 wx.* JS 桥那层，且注册型 API（wx.onNeedPrivacyAuthorization）故意不 mock ｜承载 scripts/qa/tour-r6.mjs",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-002",
+   "col": 9,
+   "new": "源码判点：帧去重要有整帧内容哈希（sha256 前 16 位），且判等口径是字节全等而非感知哈希 ｜承载 scripts/qa/tour-r6.mjs",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-003",
+   "col": 9,
+   "new": "源码判点：probeRoute 不能只取栈顶：必须同时把整条页面栈（top/depth/stack）带回来 ｜承载 scripts/qa/tour-r6.mjs",
    "why": "写明这条是靠哪个谓词成立的"
   }
  ]
