@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-09-26T16:39:34.337Z",
+ "generatedAt": "2026-09-26T16:55:17.656Z",
  "source": "audit-frame-verdicts.mjs",
  "artifactClassTokens": 3162,
  "redRows": 16,
@@ -411,13 +411,13 @@
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007",
    "col": 9,
-   "new": "帧级判点不作判据：target 不是单一选择器：.chat-list.chat-list--empty；该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007.png",
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007.png",
    "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02",
    "col": 9,
-   "new": "帧级判点不作判据：target 不是单一选择器：.chat-input-area.chat-input-area--keyboard-up；该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02.png",
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02.png",
    "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {

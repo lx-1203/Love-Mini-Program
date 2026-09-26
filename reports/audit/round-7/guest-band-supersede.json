@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-09-26T16:33:55.323Z",
+ "generatedAt": "2026-09-26T17:05:05.386Z",
  "manifest": "PAGES-LOGIN-INDEX",
  "oldFile": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json",
  "oldGitSha": "d99f3a1f",
@@ -15,13 +15,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: .login-page__brand:present(1) .login-page__tagline:present(1) | observe-only | routeRetry=o",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -32,13 +32,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -49,13 +49,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -66,13 +66,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: .btn--loading:absent | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -83,13 +83,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -100,13 +100,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -117,13 +117,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -134,13 +134,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -151,13 +151,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -168,13 +168,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -185,13 +185,13 @@
     "status": "SKIPPED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "SKIPPED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -202,13 +202,13 @@
     "status": "SKIPPED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "SKIPPED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -219,13 +219,13 @@
     "status": "SKIPPED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "SKIPPED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -236,13 +236,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -253,13 +253,13 @@
     "status": "SKIPPED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "SKIPPED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -270,13 +270,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -287,13 +287,13 @@
     "status": "SKIPPED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "SKIPPED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -304,13 +304,13 @@
     "status": "SKIPPED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "SKIPPED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -321,13 +321,13 @@
     "status": "SKIPPED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "SKIPPED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -338,13 +338,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -355,13 +355,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -372,13 +372,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -389,13 +389,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -406,13 +406,13 @@
     "status": "SKIPPED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "SKIPPED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -423,13 +423,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -440,13 +440,13 @@
     "status": "SKIPPED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "SKIPPED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -457,13 +457,13 @@
     "status": "SKIPPED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "SKIPPED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -474,13 +474,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -491,13 +491,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -508,13 +508,13 @@
     "status": "SKIPPED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "requiresReal ⇒ 本切片只跑 mock 产物；真实模式要换 --project 到 mp-weixin-real 且后端在跑",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "SKIPPED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -525,13 +525,13 @@
     "status": "SKIPPED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "SKIPPED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -542,13 +542,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -559,13 +559,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: .btn--loading:absent | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -576,13 +576,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -593,13 +593,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -610,13 +610,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -627,13 +627,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "SKIPPED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   },
@@ -644,13 +644,13 @@
     "status": "FAILED",
     "band": "mock@未知（这一批早于档位字段）",
     "reason": "落在别的页（页内守卫或路由重定向），须人判",
-    "file": "interact-b2"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b2\\exec-results.json"
    },
    "new": {
     "status": "EXECUTED",
     "band": "real@f0677920",
     "observed": "top=pages/login/index | dom: .btn--loading:absent | observe-only | routeRetry=ok（首探取空/报错）",
-    "file": "interact-real-guest"
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-real-guest\\exec-results.json"
    },
    "why": "mock 包开页会重跑启动链路并把会话造回来（probe-guest-band 两腿 AUTOLOGIN_ON_OPEN）⇒ 旧行不是产品判红，是载体没量到"
   }

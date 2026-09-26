@@ -171,8 +171,8 @@ G9 素材 455/455 PASS，真实模式 UI 帧从 0 张补到 169 张（`round-7-r
 |---|---|---|
 | 台账 `待修复` | 44 | 10 帧级判红→只剩 2 条可落账 + 9 条"判点不可判"要先把探针问对物件 + 15 判据含糊 + 5 P4 延后 + 2 待裁决 + 1 欠后端 + 1 部分落地 |
 | 台账 `已修复待复验` | 40 | 24 判据台未覆盖（要往 ops 里补 case）、4 静态判据不足、3 需帧复验、其余是去向各异的杂项 |
-| VIP 档位 | 34 | 要 `membershipEnabled=true` 那档产物。showcase 隔离产物**已构建成功**（`SHOWCASE_RESULT=PASS`，自证 `VITE_SHOWCASE_MODE=true`），但该目录从未在开发者工具里导入过 ⇒ `automation_evaluate` 直接 `{ok:false}`，执行器在启动阶段就退。跑它需要在 IDE 里导入/开一次工程窗口（会动共享 IDE 状态，等你点头我再做） |
-| 交互腿 | 7 | §38 里 `EXECUTED→SKIPPED` 那 7 条要交互刀补回；另有 register 页在 real 档查不到 `.field__input`（3 条落到 `STATE_NOT_APPLIED`），这是新出现的具名缺口，成因未查 |
+| VIP 档位 | 34→0 | **已补**：showcase 隔离产物构建 PASS，`project_import`+`open_project_window` 之后在该档跑完 `次要22` 全 78 行：`executed=41 / failed=0 / skipped=37(交互动词=11、requiresReal=26)`、0 证据洞；34 条被开关弹回的行按 `--mode flag` 作废并取代（`flag-band-supersede.json`，`UNMATCHED 0`）。剩下的 26 条 `requiresReal` + 11 条交互仍是下面两行的账 |
+| 交互腿 | 7 + 11 | §38 里 `EXECUTED→SKIPPED` 那 7 条要交互刀补回；VIP 档又新暴露 11 条同型（交互动词）；另有 register 页在 real 档查不到 `.field__input`（3 条落到 `STATE_NOT_APPLIED`），这是新出现的具名缺口，成因未查 |
 | 帧文件本身 | 全部 | `.gitignore:68` 的 `*.png` 把帧挡在版本控制外；台账引用的 `素材/理想效果图/*.png` 同样只在盘上 ⇒ 干净克隆复现不了"理想图对照"。`tmp/tour-R2.mjs`（3 行的承载文件）被 `.gitignore:111` 忽略，那句"HEAD 已修"当时不可核——三处修在**已跟踪**的 `scripts/qa/tour-r6.mjs` 里逐条对过，结论不变但证据换了载体（详见 NOTES §42） |
 
 已提交：`6a3527af`（24 个显式路径；`reports/screenshots/**` 的 PNG 因忽略规则未入库，那 6 个未跟踪 dump 目录仍等你裁决）。

@@ -83,13 +83,33 @@ const cp = JSON.parse(readFileSync(CELLPLAN, "utf8"));
 const byId = new Map((fr.rows || []).map((r) => [r.id, r]));
 const planById = new Map((plan.rows || []).map((r) => [r.id, r]));
 
-const isBareSelector = (t) => /^[.#]?[\w-]+(?:\s*[>\s]\s*\.?[\w-]+)*$/.test(String(t || "").trim());
+/* 单一选择器 = 允许 BEM 链式复合（`.a.a--b`）与后代/子代组合，但不许混进散文。
+   上一版写 /^[.#]?[\w-]+(?:\s*[>\s]\s*\.?[\w-]+)*$/，它把 `.chat-list.chat-list--empty`
+   判成"不是单一选择器"（第二个 `.` 前面没有空格）——那是**假不可判**：链式 class 是合法 CSS。
+   分开处理：原子允许紧跟 `[.#]…`，段与段之间才要空格或 `>`；含中日韩标点或汉字一律不算选择器。 */
+const CJK = /[\u3000-\u303f\u4e00-\u9fff\uff00-\uffef「」]/;
+const SEL_ATOM = /^[.#]?[A-Za-z_][\w-]*(?:[.#][A-Za-z_][\w-]*)*$/;
+const isBareSelector = (t) => {
+  const s = String(t || "").trim();
+  if (!s || CJK.test(s) || /[一-鿿]/.test(s)) return false;
+  return s.split(",").every((part) => part.trim().split(/\s*[>\s]\s*/).filter(Boolean).every((a) => SEL_ATOM.test(a)));
+};
 /* 文本/尺寸判点用的是"声明过的锚点 + WS 读到的真实文案/盒子"，
    这时 target 写的是人话（"toast 浮层"）不影响可判性——被读的是 anchor，不是 target。
    反过来数量型判点仍要求 target 本身就是单一选择器，否则就是在拿散文里的某个词代替整条判据。 */
 const SECOND = /^(TEXT_MATCH|TEXT_CLEAN|TEXT_LEAK|TEXT_MISS|BOX_OK|BOX_SMALL|BOX_OFF)\b/;
 const BAD = /PRESENT_UNEXPECTED|ABSENT_UNEXPECTED|PROBE_NO_ANSWER|TEXT_LEAK|TEXT_MISS|BOX_SMALL|BOX_OFF/;
 const POSITIVE = /^PRESENT\(\d+\)$|^TEXT_(MATCH|CLEAN)\(|^BOX_OK\(/;
+
+/* 这条判点自己被误判过一次（把合法的链式 class 当成散文挡掉），所以留一条自检：
+   判错方向是"少落账"，看不见、也不会让谁失败，最适合悄悄烂掉。 */
+{
+  const yes = [".chat-list.chat-list--empty", ".field__input", "#tab-messages", ".a .b", ".a>.b__c", ".nav-bar__back"];
+  const no = ["「最近访客」所在 .my-interaction__row 的 .my-interaction__value", ".nlp-interaction--last 底缘 到 .nlp-footer-btn 顶缘", ".#msg-row-<被删消息id>", "toast 浮层", ""];
+  const bad = [...yes.filter((s) => !isBareSelector(s)).map((s) => "应判真却判假：" + s), ...no.filter((s) => isBareSelector(s)).map((s) => "应判假却判真：" + s)];
+  console.log("FRA_SELTEST 通过=" + (yes.length + no.length - bad.length) + "/" + (yes.length + no.length) + (bad.length ? " 失败=" + bad.join(" ; ") : ""));
+  if (bad.length) { console.log("FRA_RESULT=FAIL reason=选择器判点自检不过 ⇒ 不能拿它去判任何人的可判性"); process.exit(2); }
+}
 
 const rows = [];
 for (const r of fr.rows || []) {

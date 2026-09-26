@@ -1115,5 +1115,44 @@ RUNNER_EVIDENCE_HOLE 0 ｜ RUNNER_BAND project=.../mp-weixin-real VITE_API_MODE=
 命名那半可证（`login.phoneQuickLogin` / `login.phoneLogin` 两键在 zh-CN:2189/2215、en-US:2131/2159 各自独立），
 样式那半是视觉命题，帧里量不到 ⇒ 整条不闭环，仍挂 `待修复（P4 延后）`。
 
+## 43 第三档产物（showcase）跑通了：34 条 VIP 用例从"判红/跳过"变成一次成立测量
+
+构建侧：`node apps/client/scripts/build-showcase-isolated.mjs` → `SHOWCASE_RESULT=PASS`，
+产物自证 `MODE=mp-weixin-showcase VITE_API_MODE=real VITE_SHOWCASE_MODE=true`，
+`sharedOutUntouched=yes`（mock 包指纹没动）。
+产物里的 `config/feature-flags.js` 初值仍是 `membershipEnabled:!1` —— 这不是矛盾：
+开关是**运行时**由 `main.ts` 在 mount 前调 `applyShowcaseMode()` 翻的，构建期写死的只有
+`VITE_SHOWCASE_MODE` 这一个信号。
+
+IDE 侧：那批 QA 脚本只会对着"已经在开发者工具里打开过的工程"发 `automation_evaluate`，
+新目录必须先 `project_import`（返回 `alreadyImported:false` ⇒ 之前确实没入过库）+
+`open_project_window`（`type:"newopen" winId:"s3"`）。开窗后第一次 `evaluate` 仍 `ok:false`
+（窗口还在编译），等一下就通了 ⇒ 这一档的阻塞原因是"工程没导入 + 编译没完"，不是脚本坏了。
+
+跑出来的数（`interact-showcase`，档位指纹 `real@ed1cd82c`，boot 身份
+`logged-in userId=100158`——真实后端账号，不是 mock 的 `user-1001`）：
+
+```
+RUNNER_GROUP ×7：activities 8 / market-detail 15 / market-shop 20 / market-wallet 24 /
+                  vip-index 34 / vip-promo-code 36 / vip-bills 41 条 executed，failed 全程 0
+RUNNER_STATS identity=A executed=41 failed=0 skipped=37(交互动词=11 requiresReal=26) 出帧=41 通道异常=0
+RUNNER_EVIDENCE_HOLE 0 ｜ 新档产物在盘，mock 未被覆盖
+```
+
+作废账：`supersede-mock-guest-rows.mjs` 加了 `--mode flag`，三条前提现场从源码核
+（`membershipEnabled:false` 默认 / `showcase.ts` 置 true / `vip/index.vue` 守卫读它）
+＋"旧行确实落回 `pages/profile/index`"，并且**只作废弹回的那些行**
+（同一 manifest 里另外 44 行不是档位问题——本来就是 EXECUTED，或欠的是交互动词/requiresReal）：
+`SUPERSEDE_SCOPE 旧行=34（FAILED 17 + SKIPPED 17）→ 新件 EXECUTED 17 + SKIPPED 17，UNMATCHED 0`，
+写进 `reports/audit/round-7/flag-band-supersede.json`。
+⇒ 执行轮里"到不了的那一页"这一类，至此只剩交互腿与 requiresReal 两种named原因。
+
+顺手修掉一个**假不可判**：可判性闸的 `isBareSelector` 把 `.chat-list.chat-list--empty`
+这种合法的链式 class 当成散文挡掉（第二个 `.` 前没空格）。改判点后加了一条 11 case 自检
+（`FRA_SELTEST 通过=11/11`，判错方向就直接 exit 2）——这类"只会少落账、不会让谁失败"的判点
+最容易悄悄烂掉，所以必须带自检。本轮这一改没改变任何行的去留（那几条还有别的问题），
+但挡掉了下一轮凭空多出来的 held。
+
+
 
 

@@ -1,0 +1,590 @@
+{
+ "generatedAt": "2026-09-26T17:05:05.533Z",
+ "manifest": "次要22",
+ "oldFile": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json",
+ "oldGitSha": "af66c4ed",
+ "newFile": "reports/undefined",
+ "newGitSha": "a66e8380",
+ "newBand": "real@ed1cd82c",
+ "probe": "apps/client/src/config/feature-flags.ts:membershipEnabled=false × config/showcase.ts 置 true × 页面守卫读它（三件事由本脚本现场核）",
+ "rows": [
+  {
+   "id": "VI01",
+   "page": "subpackages/vip/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VI02",
+   "page": "subpackages/vip/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/index | dom: .nav-bar__back:present(1) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VI03",
+   "page": "subpackages/vip/index",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VI04",
+   "page": "subpackages/vip/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VI05",
+   "page": "subpackages/vip/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/index | dom: .footer__price:present(1) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VI06",
+   "page": "subpackages/vip/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/index | dom: .footer__btn:present(1) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VI07",
+   "page": "subpackages/vip/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/index | dom: .footer__btn:present(1) .nav-bar__back:present(1) | observe-only | routeRetry=ok（首探取空/报",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VI08",
+   "page": "subpackages/vip/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/index | dom: .footer__btn:present(1) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VI09",
+   "page": "subpackages/vip/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/index | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VI10",
+   "page": "subpackages/vip/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/index | dom: .agreement__link:present(2) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VI11",
+   "page": "subpackages/vip/index",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "requiresReal ⇒ 本切片只跑 mock 产物；真实模式要换 --project 到 mp-weixin-real 且后端在跑",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/index | dom: .footer__btn:present(1) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VI12",
+   "page": "subpackages/vip/index",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/index | dom: .nav-bar__back:present(1) .agreement__link:present(2) .footer__btn:present(1) | observe",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "PC01",
+   "page": "subpackages/vip/promo-code",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/promo-code | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "PC02",
+   "page": "subpackages/vip/promo-code",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/promo-code | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "PC03",
+   "page": "subpackages/vip/promo-code",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/promo-code | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "PC04",
+   "page": "subpackages/vip/promo-code",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/promo-code | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "PC05",
+   "page": "subpackages/vip/promo-code",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/promo-code | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "PC06",
+   "page": "subpackages/vip/promo-code",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "requiresReal ⇒ 本切片只跑 mock 产物；真实模式要换 --project 到 mp-weixin-real 且后端在跑",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/promo-code | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "PC07",
+   "page": "subpackages/vip/promo-code",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "requiresReal ⇒ 本切片只跑 mock 产物；真实模式要换 --project 到 mp-weixin-real 且后端在跑",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/promo-code | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "PC08",
+   "page": "subpackages/vip/promo-code",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "requiresReal ⇒ 本切片只跑 mock 产物；真实模式要换 --project 到 mp-weixin-real 且后端在跑",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/promo-code | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "PC09",
+   "page": "subpackages/vip/promo-code",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "requiresReal ⇒ 本切片只跑 mock 产物；真实模式要换 --project 到 mp-weixin-real 且后端在跑",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/promo-code | dom: .footer__btn:absent | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "PC10",
+   "page": "subpackages/vip/promo-code",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/promo-code | dom: .action-btn--ghost:present(1) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "PC11",
+   "page": "subpackages/vip/promo-code",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/promo-code | dom: .nav-bar__back:present(1) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "PC12",
+   "page": "subpackages/vip/promo-code",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/promo-code | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VB01",
+   "page": "subpackages/vip/bills",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/bills | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VB02",
+   "page": "subpackages/vip/bills",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/bills | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VB03",
+   "page": "subpackages/vip/bills",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "requiresReal ⇒ 本切片只跑 mock 产物；真实模式要换 --project 到 mp-weixin-real 且后端在跑",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/bills | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VB04",
+   "page": "subpackages/vip/bills",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/bills | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VB05",
+   "page": "subpackages/vip/bills",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/bills | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VB06",
+   "page": "subpackages/vip/bills",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "requiresReal ⇒ 本切片只跑 mock 产物；真实模式要换 --project 到 mp-weixin-real 且后端在跑",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/bills | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VB07",
+   "page": "subpackages/vip/bills",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "requiresReal ⇒ 本切片只跑 mock 产物；真实模式要换 --project 到 mp-weixin-real 且后端在跑",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/bills | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VB08",
+   "page": "subpackages/vip/bills",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/bills | dom: .nav-bar__back:present(1) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VB09",
+   "page": "subpackages/vip/bills",
+   "old": {
+    "status": "FAILED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "落在别的页（页内守卫或路由重定向），须人判",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "EXECUTED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/bills | dom: .empty-state__icon:absent | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  },
+  {
+   "id": "VB10",
+   "page": "subpackages/vip/bills",
+   "old": {
+    "status": "SKIPPED",
+    "band": "mock@未知（这一批早于档位字段）",
+    "reason": "requiresReal ⇒ 本切片只跑 mock 产物；真实模式要换 --project 到 mp-weixin-real 且后端在跑",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-b\\exec-results.json"
+   },
+   "new": {
+    "status": "SKIPPED",
+    "band": "real@ed1cd82c",
+    "observed": "top=subpackages/vip/bills | dom: (本条没点名类名) | observe-only | routeRetry=ok（首探取空/报错）",
+    "file": "D:\\6\\恋爱小程序\\reports\\audit\\round-7\\interact-showcase\\exec-results.json"
+   },
+   "why": "默认档位上 membershipEnabled=false，页面守卫按设计弹回「我的」⇒ 旧行不是产品判红，是载体档位没量到（showcase 档重测见 new）"
+  }
+ ]
+}
