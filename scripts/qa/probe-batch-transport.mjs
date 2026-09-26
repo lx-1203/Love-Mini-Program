@@ -46,6 +46,18 @@ sleep(SETTLE);
 const t0 = Date.now(); let B = null, bErr = "";
 try { B = batched(selectors); } catch (e) { bErr = String(e.message).slice(0, 140); }
 const tB = Date.now() - t0;
+
+/* 对照：同样一次调用、同样 K 条断言，但 **不返回 Promise**（同步算得出值）。
+   这一档用来把"bridge 不等 Promise"和"通道坏了"分开——
+   少了它，K=3/K=20 的 timeout 只能记成"没测出来"。 */
+let S2 = null, s2Err = "";
+const t2 = Date.now();
+try {
+  S2 = JSON.parse(String(evaluate(
+    "() => JSON.stringify(" + JSON.stringify(selectors) + ".map(function (s) { return typeof s === 'string' && s.length > 3 ? 'S' : 'N'; }))",
+    { project: PROJECT })));
+} catch (e) { s2Err = String(e.message).slice(0, 140); }
+const tS2 = Date.now() - t2;
 const t1 = Date.now(); const S = sequential(selectors); const tS = Date.now() - t1;
 
 const ok = Array.isArray(B) && B.length === K;
@@ -54,6 +66,11 @@ console.log(`BATCH K=${K} page=${PAGE} login=${v}`);
 console.log(`BATCH_CALLS=1 seconds=${(tB / 1000).toFixed(1)} shape_ok=${ok ? "yes" : "no"}${bErr ? " err=" + bErr : ""}`);
 console.log(`SEQ_CALLS=${K} seconds=${(tS / 1000).toFixed(1)} per-call=${(tS / K / 1000).toFixed(2)}s`);
 console.log(`BATCH_FIDELITY=${agree}/${K} 批量=${JSON.stringify(B).slice(0, 120)} 单发=${JSON.stringify(S).slice(0, 120)}`);
+console.log(`SYNC_BATCH_CALLS=1 seconds=${(tS2 / 1000).toFixed(1)} shape_ok=${Array.isArray(S2) && S2.length === K ? "yes" : "no"}${s2Err ? " err=" + s2Err : ""} 值=${JSON.stringify(S2).slice(0, 80)}`);
+if (Array.isArray(S2) && S2.length === K) {
+  console.log("BATCH_VERDICT=同一通道、同一次调用、不返回 Promise 时能带回 K 条结果 ⇒ 坏在 Promise 形态，不是通道坏了。" +
+    "折叠只对\"同步算得出\"的状态型断言可用；节点/文本断言必须异步查询，批量不了。");
+}
 if (ok && agree === K) {
   const perCase = (tB / 1000) / K;
   console.log(`BATCH_EXTRAPOLATION_1107=${(perCase * 1107 / 60).toFixed(1)} 分钟（按每屏一次批量调用、截图另计）`);
