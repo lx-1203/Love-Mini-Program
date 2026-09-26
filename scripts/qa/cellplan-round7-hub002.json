@@ -1,0 +1,17 @@
+{
+  "note": "HUB-002 落地后的状态升级计划。**必须等重建产物证明两个类名都不再出现之后才 --apply**，否则就是把『已修』写在证据之前。验证命令见 col9 文本自带的 grep。",
+  "patches": [
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002",
+      "col": 6,
+      "why": "判据是删除型（两个类名不得出现在 hub.wxml/hub.wxss），工作树已删，产物待重建验证",
+      "new": "已修复待复验（工作树已删页头重复认证入口与两条样式规则；产物验证＝node 脚本在 apps/client/dist/build/mp-weixin/subpackages/campus/campus/hub.wxml 与 hub.wxss 里 grep campus-hub__cert-btn 必须 0 命中，未过之前不得升为已验证）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002",
+      "col": 9,
+      "why": "把可复算的证据与判点写进 statusEvidence（判据台从这一列抠判点）",
+      "new": "判点（删除型）：hub.wxml 与 hub.wxss 内不得出现 campus-hub__cert-btn 与 campus-hub__cert-btn-text。工作树证据：apps/client/src/subpackages/campus/campus/hub.vue 内该类名 0 命中（原模板 2 处＋样式 2 处已删）。功能守恒证据：goCertification 仍有 2 处引用（引导横幅那处入口保留），campusHub.goCertify 文案键仍有 2 处消费者 ⇒ 未造孤儿处理器与孤儿文案键。判据原句『页头只留标题与搜索图标』与该页实物不符（实际为返回钮＋标题＋副标题，无搜索图标），照字面删会删掉返回入口，故只执行可证伪的一半，措辞问题另记（round7-NOTES §20）。"
+    }
+  ]
+}
