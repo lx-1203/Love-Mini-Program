@@ -1,0 +1,236 @@
+{
+  "lane": "subpackages/village/village/publish",
+  "sourceFile": "apps/client/src/subpackages/village/village/publish.vue",
+  "generatedAt": "2026-09-27T01:43:00+08:00",
+  "cases": [
+    {
+      "id": "PUB02",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "观察卡片名称/副标题与「谁可以看」行 → tap 该行（应为只读、无弹层）→ tap 卡片打开弹层选「校园圈」再关闭 → evaluate 回读 targetType/visibility",
+      "selector": ".publish-to__card",
+      "newAction": "观察卡片 .publish-to__card 的名称/副标题与「谁可以看」行 → tap「谁可以看」该行（应为只读、无弹层）→ tap .publish-to__card 打开弹层选「校园圈」再关闭 → evaluate 回读 targetType/visibility",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 749,
+      "how": "「发布到」卡片 view class=\"publish-to__card press-feedback\" @tap=\"targetOpen = !targetOpen\"（:749，全页唯一实例）是弹层的唯一开合入口，卡片名称/副标题就在它内部的 .publish-to__name（:757）与 .publish-to__subtitle（:760）。「谁可以看」只读行（:841-845，确认无 @tap、无 press-feedback、无 chevron）只有与另外三行共用的 publish-row（:806/:818/:833/:841 四处），first-match 会落到话题行并真弹出弹层，把「只读无弹层」判成假红，所以那半截不写进 action、继续靠 DOM/路由快照人判。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB06",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "① 输入 30 字 → ② 全清 → ③ 输入 600 字 → ④ 逐步输入到 449/450/451 字观察计数颜色 → ⑤ 输入含换行/制表/emoji/HTML 片段/首尾空格的文本后提交一次，回读 body",
+      "selector": ".publish-content__input",
+      "newAction": "① 在 .publish-content__input 输入 30 字 → ② 全清 → ③ 输入 600 字 → ④ 逐步输入到 449/450/451 字观察计数颜色 → ⑤ 输入含换行/制表/emoji/HTML 片段/首尾空格的文本后提交一次，回读 body",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 771,
+      "how": "四态全部作用在 textarea class=\"publish-content__input\"（:771，v-model=content，:maxlength=MAX_CONTENT_LENGTH 见 :773）。被观察的计数节点是 .publish-content__count（:779）与警示态 .publish-content__count--warning（:780），刻意不写进 action：含「输入」的用例执行器会把 action 里点名的类名一律按 input 处理（scripts/qa/r-exec-cli.mjs:291），点名计数只会多一次无效交互。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB08",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "A：tap 发布 → 观察 Toast → 补到 8 字再发一次；B：tap 发布 → 观察 Toast、Loading 与 network",
+      "selector": ".publish-header__submit",
+      "newAction": "A：正文预置 2 字 → tap .publish-header__submit → 观察 Toast → 补到 8 字再 tap .publish-header__submit 一次；B：正文预置 600 字 → tap .publish-header__submit → 观察 Toast、Loading 与 network",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 740,
+      "how": "提交钮 view class=\"publish-header__submit\" @tap=\"submitPublish\"（:740；空文/在途只挂 --disabled 修饰、不摘 @tap），最短 5 字闸在 :628-631。本条 action 刻意不出现「输入/input/填写」，否则执行器会把点名的类名当输入框灌固定串 \"123456\"（r-exec-cli.mjs:291-293），6 字直接过 5 字闸、A 分支就测不到；3 字/600 字正文需 evaluate 或人工预置。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB10",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "① tap 行一次 → 观察 meta 计数；② 再 tap 一次（取消）；③ evaluate 把 topics 置为 5 项后再 tap 行，观察是否有任何反馈；④ 在正文里直接手打「#周末去哪 校园美景 #」后提交一次，回读 tags",
+      "selector": ".publish-row__arrow",
+      "newAction": "① tap 添加话题行的 .publish-row__arrow 一次（四行里只有这行带箭头）→ 观察 meta 计数 → 在弹层 tap .publish-sheet__chip（首个热门话题 校园日常）→ ② 再 tap .publish-sheet__chip 一次（取消）；③ evaluate 把 topics 置为 5 项后再 tap .publish-row__arrow，观察是否有任何反馈；④ 在正文里直接手打「#周末去哪 校园美景 #」后提交一次，回读 tags",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 815,
+      "how": "话题行的 @tap 挂在共用类 publish-row 上（:804-816，四行同类不可分），行内只有 .publish-row__arrow（:815）全页唯一，点它按冒泡触发行上的 @tap=\"topicSheetOpen = true\"（:810）；弹层里首个 .publish-sheet__chip（:953，v-for HOT_TOPICS :304）正是「#校园日常」，承接原判据的开关话题。行内计数是 .publish-row__meta（:814，非唯一）只作观察不写进 action。另：判据原文「该行只 toggle 固定话题」已与当前源码不符——W2-PUBLISH-TOPIC（:288-297 说明、:810、:943-988 弹层）把该行改成打开话题弹层，本条只把点击落到真实节点、不改动判点，判据文案过期需另处回填。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB14",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "① tap「＋」块（:680-682 → chooseImage :226-254）在未授权态；② 授权后选 4 张 → tap 删除（:676-678 removeImage :256-258）；③ 选满 9 张后再触达上限分支；④ 制造 chooseImages 抛 errno 112；⑤ 制造其它失败（如取消选图）",
+      "selector": ".publish-image--add",
+      "newAction": "① tap「＋」块 .publish-image--add（:680-682 → chooseImage :226-254）在未授权态；② 授权后选 4 张 → tap 删除角标 .publish-image__remove（:676-678 removeImage :256-258）；③ 选满 9 张后再 tap .publish-image--add 触达上限分支；④ 制造 chooseImages 抛 errno 112；⑤ 制造其它失败（如取消选图）",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 792,
+      "how": "「＋」块 view class=\"publish-image publish-image--add\" @tap=\"chooseImage\"（:792，v-if images.length < POST_MAX_IMAGES）不依赖后端即在页，是未授权/隐私分支（:253-263）的落点。删除角标 .publish-image__remove（:788，@tap=\"removeImage(idx)\"）在 v-for images 内、必须先真选到图才渲染，满 9 张时「＋」块又被 v-if 摘掉：②③④ 各腿缺的前置是相册授权 + 真图（requiresReal=true），这里只把它们在源码里的真名逐字登记（见 :788/:792），不主张能在 mock 载体上点出来。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB17",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "第一次发布 → 等返回（≥2s）→ 重进本页填相同正文 → tap 发布 → 等 ≥2s 观察 Toast 与停留态 → 再改 1 字发第三次",
+      "selector": ".publish-header__submit",
+      "newAction": "第一次发布 → 等返回（≥2s）→ 重进本页填相同正文 → tap .publish-header__submit → 等 ≥2s 观察 Toast 与停留态 → 再改 1 字发第三次",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 740,
+      "how": "三次提交都走同一个出口 view class=\"publish-header__submit\" @tap=\"submitPublish\"（:740）；submitting 防重在 :620，稳定幂等键与 409 的说明在 :704-709 注释。409/IDEMPOTENT_CONFLICT 的判定要真实 POST /posts（REAL_ONLY），但被点的元素无条件在页面上，点击归属成立。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB18",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "tap 发布 → 看到「发布成功」Toast 后 200ms 内再 tap 顶部一次 → 返回村口后重新进入本页观察正文是否残留 → 若残留则直接再点一次发布",
+      "selector": ".publish-header__submit",
+      "newAction": "tap .publish-header__submit → 看到「发布成功」Toast 后 200ms 内再 tap .publish-header__submit 一次 → 返回村口后重新进入本页观察正文是否残留 → 若残留则直接再点一次 .publish-header__submit",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 740,
+      "how": "原 action 说的「再 tap 顶部一次」在源码里就是右上角发布钮 view class=\"publish-header__submit\"（:740）：成功 Toast 在 :714、navigateAway 延时 400ms 在 :717-721、submitting 已在 :690 复位，这段窄窗口点的就是它。落库条数与路由栈两列属 REAL_ONLY，元素无条件存在。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB19",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "① 输入正文后 200ms 读 storage、1s 再读、3.5s 再读（防抖 500ms + 后端双写 2000ms 窗口）；② evaluate 把本地草稿 updatedAt 改为过去时间、后端保留新草稿 → 重进观察取哪份；③ 反向（本地新、后端旧）再测；④ 输入内容后 tap X，在 modal 点「保留」→ 退出后 100ms 内立即重进",
+      "selector": ".publish-content__input",
+      "newAction": "① 在 .publish-content__input 输入正文后 200ms 读 storage、1s 再读、3.5s 再读（防抖 500ms + 后端双写 2000ms 窗口）；② evaluate 把本地草稿 updatedAt 改为过去时间、后端保留新草稿 → 重进观察取哪份；③ 反向（本地新、后端旧）再测；④ 输入内容后点 header 的 X（关闭钮，类名见 PUB20），在 modal 点「保留」→ 退出后 100ms 内立即重进",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 771,
+      "how": "挂上 500ms 防抖与 2s 后端双写的就是 v-model=content 的 textarea class=\"publish-content__input\"（:771 → watch :567 → scheduleDraftSave :455-474）。④ 的「保留」按钮来自 uni.showModal（:587-598），系统弹窗、页内无类名可归属；且 action 含「输入」时执行器会把所有点名类名一律按 input 灌串（r-exec-cli.mjs:291），所以本条只点名输入框、不把关闭钮写进 action（X 用文字指代）。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB20",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "① 输入内容 → tap header X（:576 → requestLeave :452-468）→ modal 点「丢弃」（:465）；② 重进输入内容 → X → modal 点「保留」（:464）；③ 重进输入内容 → X → modal 用系统返回关闭；④ 全新无改动状态 tap X；⑤ 只选 1 张图不打字后 tap X",
+      "selector": ".publish-header__close",
+      "newAction": "① 正文预置内容 → tap header 关闭钮 .publish-header__close（:576 → requestLeave :452-468）→ modal 点「丢弃」（:465）；② 重进后正文已有内容 → tap .publish-header__close → modal 点「保留」（:464）；③ 重进后正文已有内容 → tap .publish-header__close → modal 用系统返回关闭；④ 全新无改动状态 tap .publish-header__close；⑤ 只选 1 张图不打字后 tap .publish-header__close",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 736,
+      "how": "退出保护入口是 view class=\"publish-header__close press-feedback\" @tap=\"requestLeave\"（:736 → :577-599，dirty 判定 :585 含 content/images/topics）。modal 的「保留」/「丢弃」两枚按钮是 uni.showModal 原生弹窗（:587-598，confirmText/cancelText 走 i18n），页内没有对应类名，那两分支仍只能靠帧/evaluate 取证；⑤「只选 1 张图」需真相册（REAL_ONLY）。本条 action 刻意避开「输入/input/填写」（原「输入内容」改为「正文预置内容」），保证执行器走点击腿而不是往关闭钮里灌字符串。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB21",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "tap 发布 → 连拍（0/200/400/700/1200ms）观察 Toast 与返回 → 返回后 evaluate 读本地草稿键 + REAL_ONLY 用 GET /drafts/current 回读 → 重进本页观察表单 → 离开时观察是否弹「保留草稿」",
+      "selector": ".publish-header__submit",
+      "newAction": "tap .publish-header__submit → 连拍（0/200/400/700/1200ms）观察 Toast 与返回 → 返回后 evaluate 读本地草稿键 + REAL_ONLY 用 GET /drafts/current 回读 → 重进本页观察表单 → 离开时观察是否弹「保留草稿」",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 740,
+      "how": "清理链路的唯一入口是发布钮 .publish-header__submit（:740 → submitPublish）：clearDraft :553-562（先撤定时器再删本地键 + deleteDraft）、allowLeave 置位 :699、navigateAway 单一出口 :717-721 都在它之后。后端 /drafts/current 回读与重进表单是判点（REAL_ONLY），本页可归属的点击就是这一下。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB22",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "① 前端输入 5 字提交；② 用 curl/evaluate 直连 POST /api/v1/posts 分别发 title=4 字与 title=31 字（三条 content 各不同以避开相同幂等键）；③ 回读列表并记录三条响应",
+      "selector": ".publish-header__submit",
+      "newAction": "① 前端正文预置 5 字后 tap .publish-header__submit 提交；② 用 curl/evaluate 直连 POST /api/v1/posts 分别发 title=4 字与 title=31 字（三条 content 各不同以避开相同幂等键）；③ 回读列表并记录三条响应",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 740,
+      "how": "前端最短 5 字闸在 submitPublish（:628-631，POST_TITLE_MIN_LENGTH），触发点是 .publish-header__submit（:740）。② 的直连 curl/evaluate 不落在本页任何元素上，与后端 @Size(min=5,max=30) 的对照属 REAL_ONLY。原句「前端输入 5 字提交」改成「正文预置 5 字」：留着「输入」二字会让执行器把点名的类名当输入框处理。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB23",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "输入 20 字正文 → 依次切目标 general → circle → campus → 每种目标各提交一次（每次给正文追加唯一后缀），并每步读草稿快照；再用 evaluate 置 friends 复现第四种目标提交一次",
+      "selector": ".publish-to__card",
+      "newAction": "正文预置 20 字 → tap .publish-to__card 打开「发布到」弹层 → 依次切目标 general → circle → campus → 每种目标各提交一次（每次给正文追加唯一后缀），并每步读草稿快照；再用 evaluate 置 friends 复现第四种目标提交一次",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 749,
+      "how": "弹层唯一入口是「发布到」卡片 view class=\"publish-to__card press-feedback\" @tap=\"targetOpen = !targetOpen\"（:749），类名全页唯一。弹层内渠道项共用 .publish-target-sheet__option（:896 general / :902 campus / :913 重试 / :922 圈子 v-for），first-match 只会命中「个人动态」，「校园圈」与圈名没有可区分的修饰类，圈子分组还要真实已加入才渲染（:917-933）⇒ 逐步切目标那三步仍点不准，本条只归属「打开弹层」这一下；action 亦刻意不出现「输入」，以保证走点击腿。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB24",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "从深链进入本页 → 填唯一正文 → tap 发布 → 观察 Toast/network → 后台恢复开关后重进本页确认能正常发布",
+      "selector": ".publish-header__submit",
+      "newAction": "从深链进入本页 → 填唯一正文 → tap .publish-header__submit → 观察 Toast/network → 后台恢复开关后重进本页确认能正常发布",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 740,
+      "how": "本页可归属的点击只有提交钮 .publish-header__submit（:740）；catch 分支 :680-693 优先把后端 message 当 Toast，正是 403「发帖已关闭」的呈现落点。缺的前置：真实后端 + post_publish_open=false（REAL_ONLY）；判据里「入口隐藏」那半在村口页 index.vue，不属于本页元素。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB27",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "① 进入后 200ms 内输入正文（挂上 500ms 防抖与 2s 后端双写）→ 立即触发系统返回销毁本页 → 等 3.5s 读 storage 与 POST /drafts 时刻；② 循环 3 次：进入 → 打开弹层 → 不发布直接返回（modal 选丢弃），每轮观察字段与请求",
+      "selector": ".publish-content__input",
+      "newAction": "① 进入后 200ms 内在 .publish-content__input 输入正文（挂上 500ms 防抖与 2s 后端双写）→ 立即触发系统返回销毁本页 → 等 3.5s 读 storage 与 POST /drafts 时刻；② 循环 3 次：进入 → 打开弹层（入口类名见 PUB23 的发布到卡片，本条不重复点名）→ 不发布直接返回（modal 选丢弃），每轮观察字段与请求",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 771,
+      "how": "会泄漏的两个定时器只由 content/images/topics 的 watch 挂上（:567 → scheduleDraftSave :455-474，onUnmounted :724-729 清理），所以点名 v-model=content 的 textarea .publish-content__input（:771）。② 的「丢弃」是 uni.showModal 原生弹窗（:587-598）无类名；本条含「输入」，执行器会把所有点名类名一律按 input 灌（r-exec-cli.mjs:291），故弹层入口只在文字里指代、不写成类名。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB28",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "① .publish-body scroll-view（:585）滚到底 → 回顶；② 聚焦正文输入 3 行观察键盘；③ 关闭小贴士后观察布局回收；④ 检视最后一行「谁可以看」是否被 safe-area 或弹层残留遮挡；⑤ 检查是否出现整页双滚动条",
+      "selector": ".publish-content__input",
+      "newAction": "① .publish-body scroll-view（:585）滚到底 → 回顶；② 聚焦 .publish-content__input 正文输入 3 行观察键盘；③ 关闭小贴士后观察布局回收；④ 检视最后一行「谁可以看」是否被 safe-area 或弹层残留遮挡；⑤ 检查是否出现整页双滚动条",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 771,
+      "how": "键盘腿的真实目标是 textarea class=\"publish-content__input\"（:771，cursor-spacing=20 :769、:show-confirm-bar=false :774，样式 min-height 220rpx 在 :1068）。滚动容器 scroll-view class=\"publish-body\"（:745）不含 __/--，执行器与普查共用的类名正则抠不出来（r-exec-cli.mjs:93 = census-tap-targets.mjs:24），且 --tap 腿没有滚动动作 ⇒ ① 那腿仍无归属；底部占位 .publish-body__bottom-space（:884）与小贴士关闭钮 .publish-tip__close（:879）虽各自唯一，但本条 action 已含「输入」，点名它们会被当输入框灌串，故只留文字描述；「谁可以看」行同 PUB02（只有共用的 publish-row，不唯一）。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB31",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "① 填唯一正文 → tap 发布 → 在途连点发布钮 3 次；② 观察在途是否出现全程 loading（带 mask）；③ 成功后观察 Toast 是否被随后的 hideLoading 顶掉；④ 用 evaluate 制造一次失败（直连改坏 payload）观察失败 Toast 是否同样不被吞",
+      "selector": ".publish-header__submit",
+      "newAction": "① 填唯一正文 → tap .publish-header__submit → 在途连点 .publish-header__submit 3 次；② 观察在途是否出现全程 loading（带 mask）；③ 成功后观察 Toast 是否被随后的 hideLoading 顶掉；④ 用 evaluate 制造一次失败（直连改坏 payload）观察失败 Toast 是否同样不被吞",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 740,
+      "how": "防重守卫在 submitPublish 首行 if (submitting.value) return（:620），钮是 .publish-header__submit（:740；--disabled 只是修饰类 :740/:1030，不摘 @tap）；showLoading mask:true 在 :637，「出口唯一、先 hideLoading 再 toast」在 :689-693。在途请求条数与落库那两列属 REAL_ONLY，点击目标无条件在页。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB33",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "① 进入本页什么都不输入，等 3.5s 读 storage['village:publish-draft'] 与 POST /drafts 条数；② 只输 1 个空格再等 3.5s；③ 先由 post 页/后台留一条后端草稿，然后在本页空表单触发退出保护（若有）与 flush 路径；④ evaluate 直接调 flushDraftSave（:338-345）在空快照下观察是否落盘/落库",
+      "selector": ".publish-header__close",
+      "newAction": "① 进入本页表单保持全空（什么都不敲），等 3.5s 读 storage['village:publish-draft'] 与 POST /drafts 条数；② 只在正文敲 1 个空格再等 3.5s；③ 先由 post 页/后台留一条后端草稿，然后在本页空表单 tap .publish-header__close 触发退出保护（若有）与 flush 路径；④ evaluate 直接调 flushDraftSave（:338-345）在空快照下观察是否落盘/落库",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 736,
+      "how": "空表单下的退出保护与 flush 闸都由关闭钮触发：.publish-header__close @tap requestLeave（:736 → :577-599，dirty 判定 :585 → 无改动直接 leave、不弹窗），flushDraftSave 的 hasDraftContent 闸在 :443-453/:422-436、scheduleDraftSave 同闸 :459-460。原 action 的「什么都不输入/只输 1 个空格」改写为「不敲/敲」：留着「输入」二字会让执行器把点名类名当输入框灌 \"123456\"（r-exec-cli.mjs:291），恰好把「空快照不落盘」测成非空快照。",
+      "status": "ok"
+    },
+    {
+      "id": "PUB34",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+      "oldAction": "① 正文 3 字 → 发布；② 正文 6 字 → 发布；③ 正文首行 60 字 → 发布并回读 body.title 长度；④ 标题留空但正文首行含 30+ 字长句 → 观察截断；⑤ 与 post 页 VP40 同输入做数值对照",
+      "selector": ".publish-header__submit",
+      "newAction": "① 正文预置 3 字 → tap .publish-header__submit；② 正文预置 6 字 → tap .publish-header__submit；③ 正文首行 60 字 → tap .publish-header__submit 并回读 body.title 长度；④ 标题留空但正文首行含 30+ 字长句 → 观察截断；⑤ 与 post 页 VP40 同文本做数值对照",
+      "file": "apps/client/src/subpackages/village/village/publish.vue",
+      "line": 740,
+      "how": "阈值与截断都在 submitPublish（:628-632：t('village.contentMinLength',{n:POST_TITLE_MIN_LENGTH}) 与 titleFromContent=content.trim().slice(0, POST_TITLE_MAX_LENGTH)，常量取自 constants/village，本页无标题输入口），触发点是 .publish-header__submit（:740）。落库 title 实值与 post 页数值对照属 REAL_ONLY/跨页。原句「同输入」改成「同文本」，避免执行器把本条所有点名类名当输入框。",
+      "status": "ok"
+    }
+  ],
+  "unverifiable": [
+    {
+      "id": "PUB11",
+      "reason": "「提及好友」的 @tap=\"openMentionPicker\"（:833 → :347-349）挂在共用类 <view class=\"publish-row\"> 上：全页 4 处同类（:806 话题 / :818 位置 / :833 提及 / :841 谁可以看）且没有修饰类可分，first-match 只会命中话题行（点了真会开弹层，把 Toast 判据点成假红）；行内子节点 .publish-row__icon（:834）与 .publish-row__label（:835）同样共用、首位也在话题行。原 action 已写的 .publish-row 还不含 __/--，执行器与普查共用的类名正则（r-exec-cli.mjs:93 = census-tap-targets.mjs:24）抠不出来 ⇒ 判据看着像点了名，机器仍算「没点名」。要修只能由产品侧给该行加唯一修饰类，否则本条继续人判。"
+    },
+    {
+      "id": "PUB12",
+      "reason": "「添加位置」只读行（:818-824，确认无 @tap）同样只有共用类 publish-row，行内 .publish-row__icon（:819）/.publish-row__label（:820）/.publish-row__meta（:823）都不是唯一匹配、首位全落在话题行（:812-814），而话题行是有真 @tap 的：拿任一共用类去「验证点击无反馈」都会假红。城市两态文案（currentCity :64-72、渲染在 :823）是只读文本、没有可归属的类名 ⇒ 不硬凑。"
+    },
+    {
+      "id": "PUB13",
+      "reason": "承载三态判据的两个元素都无法无条件归属：「重试加载」项只在 circlesLoadFailed=true 时渲染（:911-916 的 v-else-if），要先有一次真实失败的 GET /circles；它的类名 .publish-target-sheet__option 与公域/校园/圈子选项共用（:896/:902/:913/:922），first-match 只会点到「个人动态」。加载中/失败/空态文案共用 .publish-target-sheet__hint（:908/:912/:935）同理不可区分。本页无条件可点的只有开弹层的 .publish-to__card（:749），但它不承载这三个状态。缺的前置：真实后端 + 可制造失败与「已加入圈子」集合的圈子列表通道（本条 requiresReal=true）。"
+    },
+    {
+      "id": "PUB15",
+      "reason": "判据是「带图发布时 body.images 全为已上传 URL、零 http://tmp / http://usr / wxfile://tmp 死链」，前置是真机相册选到图 + POST /media/upload 走通（:644-658，本地/已上传判定走 isUploadedMediaUrl）。mock 或无相册载体下 images 恒空，九宫格 .publish-image/.publish-image__img（:786-787）与删除角标 .publish-image__remove（:788）根本不渲染，本页没有任何承载该判据的元素可归属；唯一无条件可点的 .publish-header__submit（:740）落下去只是一条无图帖，测不到本判据。缺的前置：相册授权 + 图片上传通道（requiresReal=true）。"
+    },
+    {
+      "id": "PUB25",
+      "reason": "发帖回流的判点全在村口列表页（新帖是否首条、「审核中」徽标、按 id 去重），那些物件定义在 apps/client/src/subpackages/village/village/index.vue，不在本页源码里，也不是本页的子组件；本页唯一可点的 .publish-header__submit（:740）一按就在 400ms 后 navigateAway（:717-721），执行器会按「交互后已离开本页」记 LEFT_PAGE 而不再量本页物件（r-exec-cli.mjs:303-311），所以把 selector 写在本页任何元素上都不成立。另需真实发帖落库（requiresReal=true）。"
+    },
+    {
+      "id": "PUB26",
+      "reason": "判据是「双发布页并存的完整差异清单」——逐项对照本页 publish.vue 与 subpackages/village/village/post.vue（顺带：台账里的行号如 :655-670/:690/:713-717 相对当前 publish.vue 已漂移，本页模板现从 :732 起），承载物件分属两页两条 lane，没有任何单一元素承载「对照」这件事；③ 的交叉写草稿键靠 evaluate + 服务端回读（requiresReal=true）。本页能点到的仍然只是 .publish-to__card / .publish-content__input / .publish-header__submit，点它们不产出本判据证据 ⇒ 不硬凑。"
+    }
+  ],
+  "counts": {
+    "planned": 24,
+    "ok": 18,
+    "unverifiable": 6
+  }
+}

@@ -1,0 +1,275 @@
+{
+  "lane": "subpackages/village/village/index",
+  "sourceFile": "apps/client/src/subpackages/village/village/index.vue",
+  "generatedAt": "2026-09-26T17:40:33Z",
+  "cases": [
+    {
+      "id": "VI01",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "观察首屏是 LockScreen 还是频道内容 → 数一次网络请求 → tap LockScreen 上的引导按钮",
+      "selector": ".lock-screen__btn",
+      "newAction": "观察首屏是 LockScreen 还是频道内容 → 数一次网络请求 → tap LockScreen 主引导按钮 .lock-screen__btn（「立即完善」，同层次级入口 .lock-screen__btn-link 不点）",
+      "file": "apps/client/src/components/common/LockScreen.vue",
+      "line": 216,
+      "how": "index.vue:582-585 在 !isUnlocked 时整页只渲染 <LockScreen>，其主按钮就是 LockScreen.vue:215-221 上 @tap=onPrimary 的 .lock-screen__btn，对应 case 里「LockScreen 上的引导按钮」。",
+      "status": "ok"
+    },
+    {
+      "id": "VI03",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "tap .village-search（index.vue:594-604 → openAppPath(ROUTES.SEARCH) :600）",
+      "selector": ".village-search__placeholder",
+      "newAction": "tap 搜索入口的占位文本 .village-search__placeholder（落在 @tap=openAppPath(ROUTES.SEARCH) 的 .village-search 容器热区内，index.vue:596-607）",
+      "file": "apps/client/src/subpackages/village/village/index.vue",
+      "line": 606,
+      "how": "点击本体是 index.vue:597-604 的 .village-search，但它是裸类名（执行器 classesOf 只认带 __/-- 的形态），故点名同一热区内真实的子节点 .village-search__placeholder；落点仍在搜索容器里，点击照常冒泡到 @tap。",
+      "status": "ok"
+    },
+    {
+      "id": "VI04",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "依次 tap ChannelTabs 的 **6 个**频道项（含新增「关注」follow；components/village/ChannelTabs.vue:40-50 → index.vue onChannelChange :200-202 → selectChannel :185-198），每个停留并观察；再切",
+      "selector": ".channel-tab__label",
+      "newAction": "依次 tap ChannelTabs 的 **6 个**频道项（每项点其文案节点 .channel-tab__label，按 configs 顺序取第 1~6 个匹配；含新增「关注」follow；components/village/ChannelTabs.vue:40-50 → index.vue onChannelChange :200-202 → selectChannel :185-198），每个停留并观察；再切",
+      "file": "apps/client/src/components/village/ChannelTabs.vue",
+      "line": 59,
+      "how": "频道项本体是 ChannelTabs.vue:36-47 的 .channel-tab（@tap=select(cfg.id)），index.vue:610-615 引用它时没给 class；.channel-tab__label 是每个 Tab 唯一对应的文案子节点，6 个 Tab 共用该类⇒需按序号取匹配。",
+      "status": "ok"
+    },
+    {
+      "id": "VI06",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "观察频道内容区与底部输入条 → 横滑频道 Tab 观察「学校圈」项是否带小锁标（channelLockedIds index.vue:134）→ tap 输入条",
+      "selector": ".composer-bar__lock",
+      "newAction": "观察频道内容区与底部输入条 → 横滑频道 Tab 观察「学校圈」项是否带小锁标 .channel-tab__lock（channelLockedIds index.vue:134）→ tap 锁定态输入条上的锁形图标 .composer-bar__lock",
+      "file": "apps/client/src/components/village/ChannelComposerBar.vue",
+      "line": 50,
+      "how": "未认证时 index.vue:850-856 传 :locked=「isSchoolChannel && !isCampusVerified」，而 .composer-bar__lock 只在 locked 为真时渲染（ChannelComposerBar.vue:48-54），点它等于点 .composer-bar__input（父层 @tap=handleTap）→ index.vue handleComposerUnlock；小锁标本体在 ChannelTabs.vue:51-57。",
+      "status": "ok"
+    },
+    {
+      "id": "VI07",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "tap 模拟认证按钮（SchoolCircleGate.vue:77 → index.vue simulateVerify :298-313）→ 观察 Toast 与页面态 → 再 tap 一次",
+      "selector": ".school-gate__simulate",
+      "newAction": "tap 认证门的模拟认证按钮 .school-gate__simulate（SchoolCircleGate.vue:77 → index.vue simulateVerify :298-313）→ 观察 Toast 与页面态 → 再 tap .school-gate__simulate 一次",
+      "file": "apps/client/src/components/village/SchoolCircleGate.vue",
+      "line": 72,
+      "how": "认证门里唯一 @tap=emit('simulate-verify') 的就是 .school-gate__simulate（v-if=isDev && showSimulate⇒仅 mock+开发包渲染）；「去认证」是另一个元素 .school-gate__btn（:59）。",
+      "status": "ok"
+    },
+    {
+      "id": "VI09",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "① tap .village-daily-entry（index.vue:640-646 → openAppPath(ROUTES.DAILY_QUESTION) :646）→ 返回；② tap .discover-banner（:664-670 → goToDiscover :415-417 → ROUTES.TAB",
+      "selector": ".village-daily-entry__title",
+      "newAction": "① tap 每日一问入口的标题文本 .village-daily-entry__title（.village-daily-entry 热区内，index.vue:640-646 → openAppPath(ROUTES.DAILY_QUESTION) :646）→ 返回；② tap 附近的人横幅标题文本 .discover-banner__title（.discover-banner 热区内，:664-670 → goToDiscover :415-417 → ROUTES.TAB",
+      "file": "apps/client/src/subpackages/village/village/index.vue",
+      "line": 654,
+      "how": "两个入口都是 index.vue 内带 @tap 的 view（每日一问 :643-665、附近的人 :667-685）；类名本体 .village-daily-entry/.discover-banner 属裸类名，故点名各自热区内的标题子节点，落点仍触发同一 @tap。",
+      "status": "ok"
+    },
+    {
+      "id": "VI11",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "① tap HotTopicsSection 主话题（components/village/HotTopicsSection.vue:133）与次话题（:152）各一次 → 返回；② tap 一个 .topic-item（index.vue:732-741 → goToTopicDetail :284-286）",
+      "selector": ".topic-item__title",
+      "newAction": "① tap HotTopicsSection 主话题卡内的标签文本 .hot-topics__main-title（components/village/HotTopicsSection.vue:133）与次话题（:152 的小卡文案）各一次 → 返回；② tap 一个精选话题项的标题 .topic-item__title（.topic-item 热区内，index.vue:732-741 → goToTopicDetail :284-286）",
+      "file": "apps/client/src/subpackages/village/village/index.vue",
+      "line": 746,
+      "how": "② 的目标是 index.vue:735-744 的 .topic-item（@tap=goToTopicDetail），其标题子节点 .topic-item__title 是该卡唯一文案实体；① 主话题卡在 HotTopicsSection.vue:127-141，标签文本 .hot-topics__main-title 与卡同热区。",
+      "status": "ok"
+    },
+    {
+      "id": "VI12",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "① tap 一张 ActivityCard 本体（components/village/ActivityCard.vue:79 → index.vue openActivityDetail :316-318）→ 返回；② tap 卡内「报名」（ActivityCard.vue:129 → handleEnrollAct",
+      "selector": ".activity-card__title",
+      "newAction": "① tap 一张 ActivityCard 本体的标题 .activity-card__title（卡片 @tap 区，components/village/ActivityCard.vue:79 → index.vue openActivityDetail :316-318）→ 返回；② tap 卡内「报名」按钮文案 .activity-card__enroll-text（ActivityCard.vue:129 → handleEnrollAct",
+      "file": "apps/client/src/components/village/ActivityCard.vue",
+      "line": 95,
+      "how": "卡片本体 .activity-card（:73-80 @tap=openDetail）与报名按钮 .activity-card__enroll（:122-130 @tap.stop=enroll）都是无 __/-- 后缀的形态，故点名两张热区内的文案子节点；index.vue:695-704 只给了列表容器 .activity-list。",
+      "status": "ok"
+    },
+    {
+      "id": "VI13",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "① tap .post-card 本体（components/village/PostCard.vue:122 → index.vue goToDetail :362-367）→ 返回；② tap 卡内评论预览行（PostCard.vue:240）→ 返回",
+      "selector": ".post-card__content",
+      "newAction": "① tap .post-card 本体里的正文文本 .post-card__content（卡片 @tap 区，components/village/PostCard.vue:122 → index.vue goToDetail :362-367）→ 返回；② tap 卡内评论预览行的正文 .comment-preview__content（PostCard.vue:240）→ 返回",
+      "file": "apps/client/src/components/village/PostCard.vue",
+      "line": 174,
+      "how": "整卡 @tap=emit('open-detail') 挂在 .post-card（:116-122）上，正文节点 .post-card__content 位于该热区；评论预览行 .comment-preview（:241-246）自带 @tap=open-detail，其文案子节点是 .comment-preview__content（:257）。",
+      "status": "ok"
+    },
+    {
+      "id": "VI14",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "tap 卡内作者区（PostCard.vue:130 → index.vue goToAuthorProfile :369-373 → openUserProfile）；再找一条 author.userId 为空的卡 tap 作者区",
+      "selector": ".post-card__user",
+      "newAction": "tap 卡内作者区 .post-card__user（PostCard.vue:130 → index.vue goToAuthorProfile :369-373 → openUserProfile）；再找一条 author.userId 为空的卡 tap 它的 .post-card__user",
+      "file": "apps/client/src/components/village/PostCard.vue",
+      "line": 127,
+      "how": "作者区就是 PostCard.vue:126-131 上 @tap.stop=emit('open-author', post.author.userId) 的 .post-card__user，类名本身即 BEM 形态可直接点名；同层右侧的关注胶囊是另一元素 .follow-chip。",
+      "status": "ok"
+    },
+    {
+      "id": "VI15",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "① tap 标签 chip（PostCard.vue:230 → index.vue goToTagPosts :375-378）；② tap 活动子卡（PostCard.vue:217-226 → openActivityFromPost :380-382）",
+      "selector": ".post-card__tag",
+      "newAction": "① tap 标签 chip .post-card__tag（PostCard.vue:230 → index.vue goToTagPosts :375-378）；② tap 活动子卡容器 .post-card__activity（内嵌 ActivityCard 的 open-detail，PostCard.vue:217-226 → openActivityFromPost :380-382）",
+      "file": "apps/client/src/components/village/PostCard.vue",
+      "line": 232,
+      "how": "① 的 chip 是 PostCard.vue:229-236 上 @tap.stop=emit('open-tag', tag) 的 .post-card__tag；② 的活动子卡外层是 :217 的 .post-card__activity（内嵌 ActivityCard 转 open-activity）。",
+      "status": "ok"
+    },
+    {
+      "id": "VI16",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "tap 卡片图片区（PostCard.vue:182 @tap.stop=\"noop\"）与评论预览容器（:235）各一次，等 ≥800ms",
+      "selector": ".post-card__images",
+      "newAction": "tap 卡片图片区 .post-card__images（PostCard.vue:182 @tap.stop=\"noop\"）与评论预览容器 .post-card__comments（:235/:240）各一次，等 ≥800ms，确认两者都不产生跳转",
+      "file": "apps/client/src/components/village/PostCard.vue",
+      "line": 180,
+      "how": "这两处正是 @tap.stop=noop 的阻断容器：图片区 PostCard.vue:178-183（class 行 180）、评论预览容器 :240；点击它们不应跳转，与卡片本体 .post-card 的 open-detail 形成对照。",
+      "status": "ok"
+    },
+    {
+      "id": "VI19",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "① tap 收藏按钮（PostCard.vue:284 → handleFavorite :343-350 → toggleFavorite）→ 再 tap 取消；② tap「关注」按钮（PostCard.vue:164 → handleFollow :352-359 → followUser）→ 再 tap 取关",
+      "selector": ".follow-chip__text",
+      "newAction": "① tap 收藏按钮（PostCard.vue:284 → handleFavorite :343-350 → toggleFavorite；它与评论/分享同枚同类名 .action-btn，见本页 unverifiable 说明）→ 再 tap 取消；② tap「关注」按钮文案 .follow-chip__text（PostCard.vue:164 → handleFollow :352-359 → followUser）→ 再 tap 取关",
+      "file": "apps/client/src/components/village/PostCard.vue",
+      "line": 166,
+      "how": "「关注」按钮是 PostCard.vue:159-169 上 @tap.stop=emit('follow') 的 .follow-chip，其文案子节点 .follow-chip__text 全卡唯一；收藏按钮无专属类名，本条只点名可唯一定位的那一半。",
+      "status": "ok"
+    },
+    {
+      "id": "VI20",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "① 观察折叠条默认态与条数；② tap 折叠条标题行（PinnedPostsBar.vue:46 toggle）展开 → 再 tap 收起；③ tap 展开后的某条（:63 → index.vue goToDetail :362-367）",
+      "selector": ".pinned-bar__summary",
+      "newAction": "① 观察折叠条标题行 .pinned-bar__summary 的默认态与条数；② tap .pinned-bar__summary（PinnedPostsBar.vue:46 toggle）展开 → 再 tap 收起；③ tap 展开后的某条的标题 .pinned-item__title（:63 → index.vue goToDetail :362-367）",
+      "file": "apps/client/src/components/village/PinnedPostsBar.vue",
+      "line": 40,
+      "how": "折叠条标题行 = PinnedPostsBar.vue:39-47 上 @tap=toggle 的 .pinned-bar__summary；展开列表每项 = :55-64 上 @tap=open(post.id) 的 .pinned-item，其标题子节点 .pinned-item__title（:67）。",
+      "status": "ok"
+    },
+    {
+      "id": "VI21",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "在 .channel-feed 内下拉（触发 @refresherrefresh index.vue:625 → onRefresh :423-432）→ 观察刷新指示与请求；10s 内重复下拉 3 次",
+      "selector": ".channel-feed",
+      "newAction": "在 scroll-view .channel-feed 内下拉（触发 @refresherrefresh index.vue:625 → onRefresh :423-432）→ 观察刷新指示与请求；10s 内重复下拉 .channel-feed 3 次",
+      "file": "apps/client/src/subpackages/village/village/index.vue",
+      "line": 620,
+      "how": "下拉刷新的载体就是 index.vue:619-631 这个带 refresher-enabled/@refresherrefresh 的 scroll-view，类名 .channel-feed；注意它是裸类名，执行器从 action 文本扫类名（要求 __/--）认不出，只能靠合并脚本写进 case.tapTarget 的选择器使用。",
+      "status": "ok"
+    },
+    {
+      "id": "VI22",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "观察错误槽 → tap ErrorState 重试按钮（components/common/ErrorState.vue:50 @retry → index.vue onRefresh :423-432）→ 恢复拦截后再 tap 一次",
+      "selector": ".error-btn",
+      "newAction": "观察错误槽 → tap ErrorState 的重试按钮 .error-btn（components/common/ErrorState.vue:50 @retry → index.vue onRefresh :423-432）→ 恢复拦截后再 tap .error-btn 一次",
+      "file": "apps/client/src/components/common/ErrorState.vue",
+      "line": 49,
+      "how": "重试按钮就是 ErrorState.vue:48-55 上 @tap=emit('retry') 的 .error-btn（其内部文案只有同样裸类名的 .error-btn-text）；该页错误槽在 index.vue:780-782 的 .village-state 里渲染 ErrorState。同 VI21 属裸类名，需走 tapTarget 字段。",
+      "status": "ok"
+    },
+    {
+      "id": "VI24",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "在频道列表滚动找到该帖（分类 cat-sincere → 需在能显示它的频道，回填实际可见频道）→ 检视配图与 evaluate 读取 images[0] 最终 src",
+      "selector": ".post-card__image",
+      "newAction": "在频道列表滚动找到该帖（分类 cat-sincere → 需在能显示它的频道，回填实际可见频道）→ 检视配图节点 .post-card__image 并用 evaluate 读取 images[0] 最终 src",
+      "file": "apps/client/src/components/village/PostCard.vue",
+      "line": 191,
+      "how": "post-16 的配图渲染在 PostCard.vue:184-197 的 .post-card__image-wrap > .post-card__image（:src=resolveMediaUrl(img)）上，这正是判据要检视的那张图；mock 数据在 stores/village/mock-data.ts。",
+      "status": "ok"
+    },
+    {
+      "id": "VI25",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "发布成功后返回本页 → 观察列表首条是否带「审核中」徽标 → 下拉刷新两次并数同 id 帖出现次数",
+      "selector": ".post-card__audit",
+      "newAction": "发布成功后返回本页 → 观察列表首条是否带「审核中」徽标 .post-card__audit → 在 .channel-feed 内下拉刷新两次并数同 id 帖出现次数",
+      "file": "apps/client/src/components/village/PostCard.vue",
+      "line": 265,
+      "how": "审核徽标是 PostCard.vue:265 上 v-if=post.auditStatus==='pending' 的 .post-card__audit，仅在「自己刚发布的待审核帖」那张卡上出现（mock 无 pending 数据，本条 requiresReal 已标注）；下拉动作的载体仍是 index.vue:620 的 .channel-feed。",
+      "status": "ok"
+    },
+    {
+      "id": "VI26",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "tap ChannelComposerBar（:847-853 → @publish → handlePublish :385-390）；未认证变体重复一次并观察弹窗三路关闭",
+      "selector": ".composer-bar__publish-text",
+      "newAction": "tap 底部发帖输入条的发布文案 .composer-bar__publish-text（index.vue:847-853 → @publish → handlePublish :385-390）；未认证变体重复一次 tap .composer-bar__publish-text 并观察弹窗三路关闭",
+      "file": "apps/client/src/components/village/ChannelComposerBar.vue",
+      "line": 66,
+      "how": "输入条两个可点区都走 handleTap→emit('publish')：占位文案 .composer-bar__placeholder（:40-46）与发布按钮 .composer-bar__publish（:57-67，@tap=handleTap），后者文案节点即 .composer-bar__publish-text；未认证时 index.vue handlePublish 先过 ensureCertified 门禁。",
+      "status": "ok"
+    },
+    {
+      "id": "VI30",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "① 今日广场滚到 scrollTop>600 观察 .back-to-top 出现（index.vue:856-866 + SCROLL_TOP_THRESHOLD :451）；② tap .back-to-top（handleBackToTop :464-467）；③ 滚到中部后切到活动频道再切回，观察恢复位；④ 滚",
+      "selector": ".back-to-top__icon",
+      "newAction": "① 今日广场滚到 scrollTop>600 观察 .back-to-top 出现（index.vue:856-866 + SCROLL_TOP_THRESHOLD :451）其内的箭头 .back-to-top__icon；② tap .back-to-top__icon（.back-to-top 热区，handleBackToTop :464-467）；③ 滚到中部后切到活动频道再切回，观察恢复位；④ 滚",
+      "file": "apps/client/src/subpackages/village/village/index.vue",
+      "line": 868,
+      "how": "按钮本体是 index.vue:859-867 的 .back-to-top（v-if=showBackToTop，@tap=handleBackToTop），属裸类名，其唯一子节点 .back-to-top__icon（:868）在同一点击热区内。",
+      "status": "ok"
+    },
+    {
+      "id": "VI34",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "对今日广场逐项采：① 冷启动 Loading 骨架（index.vue:772-774 Skeleton variant=list）；② 成功态；③ 空态（VI27）；④ 错误态（VI22）；⑤ 下拉中 Refreshing（VI21）；⑥ 发帖开关关闭时的 Disabled 形态（VI28）；⑦ Idle（停止滚动 ",
+      "selector": ".skeleton-line--w60",
+      "newAction": "对今日广场逐项采：① 冷启动 Loading 骨架（index.vue:772-774 Skeleton variant=list，骨架行的线条 .skeleton-line--w60）；② 成功态；③ 空态（VI27）；④ 错误态（VI22）；⑤ 下拉中 Refreshing（VI21）；⑥ 发帖开关关闭时的 Disabled 形态（VI28）；⑦ Idle（停止滚动 ",
+      "file": "apps/client/src/components/common/Skeleton.vue",
+      "line": 31,
+      "how": "这条是七态演练，唯一在源码里能对上的实体是①的加载骨架：index.vue:775-777 的 .village-state 槽里渲染 <Skeleton variant=list>，list 分支画出的就是 Skeleton.vue:28-33 的 .skeleton-line--w60（其余态各自另有点名：错误态 VI22、刷新 VI21）。",
+      "status": "ok"
+    },
+    {
+      "id": "VI37",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "① 500ms 内对 .village-search 快速 tap×5 → 回退；② 500ms 内对同一个频道 Tab 快速 tap×5（首次为切换、后续同值）",
+      "selector": ".village-search__icon",
+      "newAction": "① 500ms 内对搜索入口图标 .village-search__icon（.village-search 热区内）快速 tap×5 → 回退；② 500ms 内对同一个频道 Tab 的文案 .channel-tab__label 快速 tap×5（首次为切换、后续同值）",
+      "file": "apps/client/src/subpackages/village/village/index.vue",
+      "line": 605,
+      "how": "① 的点击热区是 index.vue:597-604 的 .village-search（裸类名），其图标子节点 .village-search__icon 同热区；② 的 Tab 本体是 ChannelTabs.vue:36-47 的 .channel-tab（@tap=select），逐项文案为 .channel-tab__label（:59）。",
+      "status": "ok"
+    },
+    {
+      "id": "VI42",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "oldAction": "① 进入本页 → tap 新增的「关注」频道 Tab（ChannelTabs.vue:40-50，labelKey=village.channelFollow）；② 观察请求 URL 的 category 实参；③ 滚到底触发分页；④ 重进页面验证频道记忆；⑤ 未登录/无关注关系两变体各看一次空态",
+      "selector": ".channel-tab__label",
+      "newAction": "① 进入本页 → tap 新增的「关注」频道 Tab 的文案 .channel-tab__label（按 configs 顺序的第 6 个匹配；ChannelTabs.vue:40-50，labelKey=village.channelFollow）；② 观察请求 URL 的 category 实参；③ 在 .channel-feed 滚到底触发分页；④ 重进页面验证频道记忆；⑤ 未登录/无关注关系两变体各看一次空态",
+      "file": "apps/client/src/components/village/ChannelTabs.vue",
+      "line": 59,
+      "how": "「关注」Tab 与另外 5 项同为 ChannelTabs.vue 的 .channel-tab（@tap=select），没有按频道区分的类名，只有逐项渲染的文案 .channel-tab__label 可按顺序定位（第 6 个）；③ 的分页滚动载体是 index.vue:620 的 .channel-feed（@scrolltolower）。",
+      "status": "ok"
+    }
+  ],
+  "unverifiable": [
+    {
+      "id": "VI17",
+      "reason": "点赞按钮没有专属类名：它与评论/分享/收藏同为 .action-btn（PostCard.vue:268/274/282/287），内部图标也同为 .action-btn__icon，唯一点名只能靠已点赞后才出现的条件类 action-btn--liked（:275），首次点击时该元素还不存在 ⇒ 按第一个匹配点会打到评论按钮（跳详情），产生假红；需产品侧给这枚按钮补专属类名后才能点名。"
+    },
+    {
+      "id": "VI18",
+      "reason": "同 VI17：这条要求的正是「对同一枚点赞按钮快速 tap×5」，而 .action-btn 在四枚互动按钮间不唯一（原 action 里写的 .action-btn 还属裸类名、不含 __/--，执行器的类名扫描也不会认）；没有可唯一定位点赞按钮的真实类名，给不出选择器。"
+    },
+    {
+      "id": "VI28",
+      "reason": "本条的交互前提就是「发帖入口被隐藏」：底部输入条 ChannelComposerBar 整体被 v-if=isPostPublishOpen 摘掉（index.vue:850-851，隐藏后 .composer-bar__input/.composer-bar__publish 均不存在），空态里的发帖按钮 .village-empty__action 同样被 v-if 摘掉（index.vue:802-812）；剩下的 .village-empty（:796）/EmptyState 的 .empty-msg 只是文案、不可点，强行发帖要靠 deep link 而非本页点击 ⇒ 页内无可点目标。"
+    }
+  ],
+  "counts": { "planned": 26, "ok": 23, "unverifiable": 3 }
+}

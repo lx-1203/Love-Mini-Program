@@ -74,6 +74,17 @@ for (const lf of found) {
       if (!lines.join("\n").includes(String(c.selector).replace(/^\./, ""))) why.push("整份文件里没有这个类名");
     }
     if (!c.newAction || !String(c.newAction).includes(String(c.selector || "@@none@@"))) why.push("newAction 没点名 selector");
+    /* 语义守恒：补目标不许顺手换动词。实测有 lane 为了让执行器走点击腿，
+       把「输入 xxx」改写成「预置/敲 xxx」——那等于把一条输入框判据改成了按钮判据，
+       通过率低是因为测错了东西，而不是东西没做。动词必须逐字保留。 */
+    const VERBS = ["点击", "输入", "长按", "双击", "滚动", "滑动", "拖动", "下拉", "勾选", "聚焦", "失焦"];
+    const oldVerbs = VERBS.filter((v) => String(c.oldAction || "").includes(v));
+    const newVerbs = VERBS.filter((v) => String(c.newAction || "").includes(v));
+    const lost = oldVerbs.filter((v) => !newVerbs.includes(v));
+    const added = newVerbs.filter((v) => !oldVerbs.includes(v));
+    if (lost.length || added.length) {
+      why.push("改写换了交互动词（丢了：" + (lost.join("/") || "无") + "；多了：" + (added.join("/") || "无") + "）⇒ 判据测的东西被换了，不接受");
+    }
     if (why.length) rejected.push({ lane: tag, id: c.id, why: why.join(" / "), selector: c.selector, file: c.file, line: c.line });
     else accepted.push({ lane: tag, id: c.id, manifest: c.manifest, page: lane.lane, selector: c.selector, oldAction: c.oldAction, newAction: c.newAction, file: c.file, line: c.line, needsIdentity: c.needsIdentity || "" });
   }

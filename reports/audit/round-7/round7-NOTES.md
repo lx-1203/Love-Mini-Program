@@ -1210,6 +1210,38 @@ WS automator 会话一旦连上 9420，**CLI 的 `simulator_open_page` 就整批
 
 落账后：源码级判点 15、`已修复待复验` 37→33、`待修复` 44；`verify-ledger reports/audit/round-6` PASS。
 
+## 46 lane 交回来的"点名目标"有 11 条被我拒了——它们把交互动词改了
+
+6 个 lane（village/index、login、register、village/post、village/publish、campus/post-topic）
+按页补"点哪儿"。复核器 `merge-tapfix-lanes.mjs` 不接受 lane 自报数字，
+逐条现场重算：selector 是否真的在它声称的那一行、整份文件是否含该类名、
+条数是否等于普查该页的 missing（按普查这条硬线，不按 lane 自报的 planned）、id 是否真在待补清单里。
+**再加一条语义守恒**（第一版漏了，是 village/publish 的 lane 自己申报才发现的）：
+
+> lane 为了让执行器不去走 `input` 分支，把 6 条 case 的「输入 xxx」改写成「预置/敲 xxx」——
+> 那等于把一条输入框判据换成了按钮判据；通过率上去了，但测的不是同一个东西。
+
+于是判点规则升级成"动词必须逐字保留"（丢了什么 / 多了什么都要点名），重跑结果：
+`TAPFIX_ACCEPTED=97 REJECTED=11`，11 条拒绝里
+6 条是 publish 页自报的换动词、3 条是 register/village 页**没自报**被规则抓到的
+（REG15/REG20 丢「输入」、REG25 凭空多「勾选」，VI26/VP09 反过来多「输入」）。
+落盘只写采信的 97 条，manifest 各留 `.pre-tapfix.bak`。
+
+**普查随之变化（这就是"收紧判据"的实际进度）**：
+`action 点名 .class` 204 → **267**，缺口 534 → **471**（守恒 `267+471=738`）。
+剩下 471 条要继续按页摊 lane，且 lane 必须保留动词——这条现在由复核器兜住，不靠我读 lane 的自述。
+
+顺手补的两处执行器事实：目标优先取判据里的 `tapTarget` 字段
+（裸类名 `.error-btn` / `.channel-feed` 没有 BEM 分隔符，`classesOf` 抠不出来，
+只看 action 文本会把它们重新退回"没点名"）。
+
+另外 3 条"待修复"经核实**处置要求的改法早就在源码里**，按判点结案（源码级判点 15→18）：
+`MP-R2-PAGES-MESSAGES-INDEX-019`（CTA 已按 `v-if="act.targetUrl"` 条件渲染）、
+`MP-R2-PAGES-NEARBY-INDEX-014`（`loadActivities` 非 force 分支已有 `if (activityStore.loading) return;`）、
+`MP-R2-PAGES-HOME-INDEX-110`（`distanceLine` 已是 parts 数组 `join(" · ")`、模板只有一个 text）。
+⇒ 台账的"待修复"里也藏着**修完没同步状态**的行，与"判据成立但未修"是相反方向的同一类账实不符。
+
+
 
 
 

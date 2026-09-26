@@ -160,6 +160,33 @@ const SPEC = [
       { kind: "fileExists", path: "apps/client/src/static/assets/icons/common/planet.svg" },
     ],
   },
+  /* 下面三条都是台账写"待修复"、但**处置要求的改法其实已在源码里**的行。
+     判点按处置原文逐字核，不为凑绿而放宽；帧侧拿不到的（要特定夹具）在证据里写清楚。 */
+  {
+    id: "MP-R2-PAGES-MESSAGES-INDEX-019", file: "apps/client/src/pages/messages/index.vue",
+    claim: "活动推荐卡的 CTA 按 act.targetUrl 条件渲染（无跳转目标就不出「查看详情」）",
+    checks: [
+      { kind: "present", re: /<view v-if="act\.targetUrl" class="activity-rec-card__cta">/ },
+      { kind: "present", re: /function openActivity\(targetUrl\?: string\) \{\s*\n\s*if \(targetUrl\)/ },
+    ],
+  },
+  {
+    id: "MP-R2-PAGES-NEARBY-INDEX-014", file: "apps/client/src/pages/nearby/index.vue",
+    claim: "loadActivities 非 force 分支前置在途守卫（activityStore.loading 时直接 return），force 分支仍强制拉",
+    checks: [
+      { kind: "present", re: /if \(activityStore\.loading\) return;/ },
+      { kind: "present", re: /async function loadActivities\(force = false\)[\s\S]{0,220}fetchActivities\(true\)/ },
+    ],
+  },
+  {
+    id: "MP-R2-PAGES-HOME-INDEX-110", file: "apps/client/src/components/home/TodayRecommendationCard.vue",
+    claim: "distance 行与 metaLine 同口径：computed 里 parts 数组 join(' · ')，模板只输出一个 text",
+    checks: [
+      { kind: "present", re: /const parts: string\[\] = \[\];/ },
+      { kind: "present", re: /return parts\.join\(" · "\);/ },
+      { kind: "countEq", re: /class="today-card__distance"/g, n: 1 },
+    ],
+  },
 ];
 
 /* 剥注释：禁用的写法只出现在注释里（说明"这里原来是怎么写的"）不算违反。

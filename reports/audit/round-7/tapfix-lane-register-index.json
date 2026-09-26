@@ -1,0 +1,236 @@
+{
+  "lane": "pages/register/index",
+  "sourceFile": "apps/client/src/pages/register/index.vue",
+  "generatedAt": "2026-09-26T17:42:27.000Z",
+  "cases": [
+    {
+      "id": "REG03",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "focus 手机号 input（index.vue:494-506）→ 逐位输入 13888888888",
+      "selector": ".field__input",
+      "newAction": "tap 第 1 个 .field__input（第 524 行，手机号框）使其聚焦 → 逐位输入 13888888888",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 524,
+      "how": "手机号输入框节点在 523-535 行，类名只有 .field__input（另有 @input=onPhoneInput、@focus 置 focusField 为 phone、maxlength=13）；全模板 .field__input 共 5 处，按 DOM 顺序第 1 个就是手机号（其后依次是 557 验证码、601 密码、654 确认密码、697 昵称）。action 原引的 494-506 行现已是 .hero__back-hit 返回热区，属过期行号。",
+      "status": "ok"
+    },
+    {
+      "id": "REG04",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "一次性 input 值 '1388888888823456789012345678'（28 位）到手机号 input",
+      "selector": ".field__input",
+      "newAction": "一次性 input 值 '1388888888823456789012345678'（28 位）到第 1 个 .field__input（第 524 行，手机号框，maxlength=13）",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 524,
+      "how": "截断语义就挂在这个节点上：529 行 maxlength=13、532 行 @input=onPhoneInput（函数体 163-173 行先剥非数字再 slice 到 11 位）。手机号是 DOM 第 1 个 .field__input，需按序号取。",
+      "status": "ok"
+    },
+    {
+      "id": "REG05",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "input 值 '１３８a<b>img onerror=alert(1)</b>8888 8888' 到手机号 input；随后 input '138' 三位非法短号并 blur",
+      "selector": ".field__input",
+      "newAction": "input 值 '１３８a<b>img onerror=alert(1)</b>8888 8888' 到第 1 个 .field__input（第 524 行，手机号框）；随后对同一节点 input '138' 并 blur",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 524,
+      "how": "两次输入都落在手机号框（523-535 行）：type=number + onPhoneInput 的非数字剥离即本 case 的白名单口径；blur 走同节点的 @blur（534 行，focusField 复位）。该类名 5 处同名，按 DOM 顺序第 1 个定位。",
+      "status": "ok"
+    },
+    {
+      "id": "REG08",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "tap .sms-btn 一次（index.vue:545-558 @tap=handleSendSms index.vue:255-291）",
+      "selector": ".sms-btn",
+      "newAction": "tap .sms-btn（第 571 行，@tap=handleSendSms）一次",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 571,
+      "how": "570-583 行的 .sms-btn 是全模板唯一绑 @tap=handleSendSms 的节点，四态修饰类（sms-btn--sending / --cd / --disabled）挂在同一节点的 :class 上（572-576 行），倒计时文案在 581 行；原引的 545-558 / 255-291 是过期行号，现在节点在 570-583、handleSendSms 在 277-316。",
+      "status": "ok"
+    },
+    {
+      "id": "REG09",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "tap .sms-btn；完整抄录 Toast 文案原文；随后对照 pages/login/index 同操作（login/index.vue:247-253）的 Toast 文案与 i18n 键来源（login.smsSentMock），并在 en-US 下重复两页",
+      "selector": ".sms-btn",
+      "newAction": "tap .sms-btn（第 571 行）一次；完整抄录 Toast 文案原文；随后对照 pages/login/index 同操作的 Toast 文案与 i18n 键来源（login.smsSentMock），并在 en-US 下重复两页",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 571,
+      "how": "点击目标是常驻的 .sms-btn（571 行）；mockCode 是否明文由 296-300 行的 showMockCode 门决定，产出的是 uni.showToast 文案（272-274 行）而不是新 DOM 元素，所以点击归属与构建档位无关，只有文案观测受档位影响。",
+      "status": "ok"
+    },
+    {
+      "id": "REG10",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "tap .sms-btn；抄录 Toast 文案并检索是否出现 6 位数字码本体或「模拟」字样",
+      "selector": ".sms-btn",
+      "newAction": "tap .sms-btn（第 571 行）一次；抄录 Toast 文案并检索是否出现 6 位数字码本体或「模拟」字样",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 571,
+      "how": "目标同样是常驻 .sms-btn（571 行）。本 case 缺的前置是 apiMode=real 构建带（296 行的 isDev || isMockMode() 门），不是元素缺失：按钮与 Toast 都在，只是真实构建分支在当前 mock 产物里进不去，属执行前置问题而非点击归属问题，故 selector 照给。",
+      "status": "ok"
+    },
+    {
+      "id": "REG13",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "tap .sms-btn",
+      "selector": ".sms-btn",
+      "newAction": "手机号填 13888（非法）后 tap .sms-btn（第 571 行）一次",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 571,
+      "how": "非法号码路径不需要后端：handleSendSms 在 279-284 行早退（写 errors.phone + shake + toast，零请求），.sms-btn 节点常驻；行内错误落在 541 行 .field-error、抖动是 519 行的 shake 修饰类，均为观测项。",
+      "status": "ok"
+    },
+    {
+      "id": "REG14",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "① input 'abcd12345678' 到验证码 input；② 清空后再 input '１２３４５６'（全角数字）；③ 输入 7 位以上纯数字",
+      "selector": ".field__input",
+      "newAction": "① input 'abcd12345678' 到第 2 个 .field__input（第 557 行，验证码框）；② 清空后再 input '１２３４５６'（全角数字）；③ 同一节点输入 7 位以上纯数字",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 557,
+      "how": "验证码框在 556-568 行，类名只有 .field__input（562 行 maxlength=6、565 行 @input=onSmsInput，函数体 176 行剥非数字并 slice 到 6 位）；该类名 5 处同名，按 DOM 顺序取第 2 个，无专属修饰类可用来消歧。",
+      "status": "ok"
+    },
+    {
+      "id": "REG15",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "依次输入到密码 input：'abcd123'（7 位）、'ab cd 1234'（含空格）、'１２３４５６７８ａｂ'（全角）、'Abcdef12!@#$%^&*12345'（21 位，maxlength=20）、'Abc12345'（合法中强）",
+      "selector": ".field__input",
+      "newAction": "依次 input 到第 3 个 .field__input（第 601 行，设置密码框）：'abcd123'（7 位）、'ab cd 1234'（含空格）、'１２３４５６７８ａｂ'（全角）、'Abcdef12!@#$%^&*12345'（21 位，节点 maxlength=20）、'Abc12345'（合法中强）",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 601,
+      "how": "密码框在 600-612 行：606 行 maxlength=20、609 行 @input=onPasswordInput（181 行剔除空白字符）、602 行 :password=!showPassword；强度条 624-637 行的 .strength 只在 password 非空时出现，属观测项。同类名 5 处，按 DOM 顺序取第 3 个。",
+      "status": "ok"
+    },
+    {
+      "id": "REG18",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "① 确认密码输入 'Abc1234'（少一位）→ blur；② 改为 'Abc12345' → blur；③ 清空确认密码",
+      "selector": ".field__input--confirm",
+      "newAction": "① 对 .field__input--confirm（第 654 行，确认密码框）输入 'Abc1234'（少一位）→ blur；② 改为 'Abc12345' → blur；③ 清空该节点",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 654,
+      "how": "654 行的 class 属性逐字写作 field__input field__input--confirm，是 6 个字段里唯一带专属修饰类的输入框（样式块里没有同名规则，该类只作为节点标记存在），因此选择器无歧义；比对时机确实在 @blur=onConfirmBlur（664 行，函数体 196-203 行做一致性判定），行内错误渲染在 676 行 .field-error。",
+      "status": "ok"
+    },
+    {
+      "id": "REG19",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "① 昵称输入 6 个空格 → tap .submit-btn；② 输入 25 个汉字（maxlength=20 :673）；③ 输入恰好 20 字并继续提交；④ 输入 1 字「张三」",
+      "selector": ".field__input",
+      "newAction": "① 对第 5 个 .field__input（第 697 行，昵称框）输入 6 个空格 → tap .submit-btn（第 748 行）；② 输入 25 个汉字（该节点 702 行 maxlength=20）；③ 输入恰好 20 字并继续点 .submit-btn；④ 输入 1 字「张三」",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 697,
+      "how": "昵称框在 696-708 行（705 行 @input=onNicknameInput，205-208 行函数体无任何过滤与 trim，只清行内错误；trim 判空在 155 行 formComplete 与校验函数里）。主点击目标取昵称框，末句提交点是 748 行 .submit-btn。原引 :673 行号已过期。",
+      "status": "ok"
+    },
+    {
+      "id": "REG20",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "依次输入 '<img src=x onerror=alert(1)>'、\"'\\\";-- \"、'😀🏵️'（代理对 emoji）、'   空格包边   '，读取每次 nickname.value",
+      "selector": ".field__input",
+      "newAction": "依次 input 到第 5 个 .field__input（第 697 行，昵称框）：'<img src=x onerror=alert(1)>'、\"'\\\";-- \"、'😀🏵️'（代理对 emoji）、'   空格包边   '，每次读取 nickname.value",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 697,
+      "how": "与 REG19 同一节点（696-708 行，type=text、maxlength=20、@input=onNicknameInput）；205-208 行的 onNicknameInput 原样赋值 nickname.value，正是「不得被静默改写」的源码依据。nickname 是脚本内 ref（61 行），非 DOM 属性，读值需走组件状态而非 selector。",
+      "status": "ok"
+    },
+    {
+      "id": "REG24",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "tap .submit-btn（置灰态仍可点，index.vue:717-727），间隔 3s 再点一次共 2 次",
+      "selector": ".submit-btn",
+      "newAction": "tap .submit-btn（第 748 行；置灰只是修饰类，仍可点）一次，间隔 3s 再点同一节点一次",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 748,
+      "how": "747-756 行的 .submit-btn 是唯一绑 @tap=onSubmitGuarded 的节点（481 行 createButtonGuard(handleSubmit, 2000)）；749 行的 submit-btn--disabled 只是 :class 修饰类、没有 disabled 属性，所以置灰态仍可点，与判据一致。原引 717-727 为过期行号。",
+      "status": "ok"
+    },
+    {
+      "id": "REG25",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "tap .submit-btn 一次；随后依次制造：验证码 5 位、密码缺数字（'Abcdefgh'）、生日留空，每改一次点一次（间隔 >2s 避开守卫）",
+      "selector": ".submit-btn",
+      "newAction": "协议未勾选状态下 tap .submit-btn（第 748 行）一次；随后依次把第 2 个 .field__input（557 行）改成 5 位、第 3 个 .field__input（601 行）填 'Abcdefgh'、生日 picker（724 行 .field__picker）留空，每改一次点一次 .submit-btn（间隔 >2s）",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 748,
+      "how": "错误定位顺序由 validateFirstError 决定，触发入口始终是 748 行 .submit-btn；「协议未勾」专用路径的勾选热区是 769 行 .agree__hit（@tap 切 agreed），抖动样式在 765 行 .agree 的 agree--error 修饰类，属观测项。生日字段无输入框，只有 724 行 .field__picker。",
+      "status": "ok"
+    },
+    {
+      "id": "REG27",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "tap .submit-btn 一次并观察至跳转完成",
+      "selector": ".submit-btn",
+      "newAction": "在游客（未登录）态、表单合法且已收到真验证码后 tap .submit-btn（第 748 行）一次并观察至跳转完成",
+      "needsIdentity": "guest",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 748,
+      "how": "点击目标是常驻的 .submit-btn（748 行，handleSubmit 成功分支 379-388 行签发会话后 redirectTo 成功页），元素本身不依赖后端；但 expected 断言的是 isLoggedIn 由 false 变 true 且栈中不含注册页，必须先处于未登录态才有可观测的会话跃迁，已登录态进本页会让该断言失去意义，故标 needsIdentity=guest。真码 + 后端可用是 REG26 的前置，不影响点击归属。",
+      "status": "ok"
+    },
+    {
+      "id": "REG29",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "三态各 tap .submit-btn 一次，间隔 >2s",
+      "selector": ".submit-btn",
+      "newAction": "三态（验证码错误 / 断网 / 后端 5xx）各 tap .submit-btn（第 748 行）一次，间隔 >2s",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 748,
+      "how": "三态都点同一个常驻 .submit-btn（748 行）；差异化文案来自 handleRegisterError（399-458 行）的 message 分支，不新增可点元素，loading 态是 749 行的 submit-btn--loading 修饰类与 754 行 submit-btn__spinner。5xx/断网需环境配合，与点击归属无关。",
+      "status": "ok"
+    },
+    {
+      "id": "REG30",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "① focus 最下方「生日」上方最近的昵称 input（:667-679）使键盘弹起；② focus 手机号 input；③ 在键盘弹起状态 tap .submit-btn；④ 收起键盘（点空白/blur）",
+      "selector": ".field__input",
+      "newAction": "① tap 第 5 个 .field__input（第 697 行，紧邻生日字段上方的昵称框）使键盘弹起；② tap 第 1 个 .field__input（第 524 行，手机号框）；③ 键盘弹起状态 tap .submit-btn（第 748 行）；④ blur 收起键盘",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 697,
+      "how": "生日字段是 715-740 行的 .field 包 .field__picker（724 行），其上方最近的 input 正是 696-708 行的昵称框（704 行 cursor-spacing=120 即判据依据）；被遮挡观察对象是 765 行 .agree 协议行与 748 行 .submit-btn。原引 :667-679 行号已过期（现为确认密码的 eye 热区）。",
+      "status": "ok"
+    },
+    {
+      "id": "REG36",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "reLaunch '/pages/register/index?phone=13900002222&nickname=%E5%83%8F%E5%A1%AB&redirect=%2Fpages%2Fhome%2Findex&code=123456'，等 1s 读取 6 个字段值与 getCurrentPages()[末位",
+      "selector": ".submit-btn",
+      "newAction": "reLaunch '/pages/register/index?phone=13900002222&nickname=%E5%83%8F%E5%A1%AB&redirect=%2Fpages%2Fhome%2Findex&code=123456'，等 1s 读取 6 个字段值与 getCurrentPages() 末位 options；随后 tap .submit-btn（第 748 行）",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 748,
+      "how": "reLaunch 与读字段值都不是元素点击，本 case 唯一可归属的交互是 ops 原文末句的 tap .submit-btn（748 行）；空表单下应报「请输入手机号」而非消费 query 里的 code，源码依据是本页只 import onShow（26 行）、无 onLoad，模板里 6 个字段一律绑定组件内 ref（56-63 行）。",
+      "status": "ok"
+    },
+    {
+      "id": "REG37",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "oldAction": "两档 viewport 下：① 截图全表单；② 复核 .field 高度（声明 96rpx :898）/ .sms-btn 宽 176rpx（:1009）实际渲染值；③ 逐个 tap 6 个字段与主按钮确认热区未随缩放丢失；④ 对照 pages/login 同类控件（输入框/获取验证码/主按钮）尺寸与色值",
+      "selector": ".field",
+      "newAction": "两档 viewport 下：① 截图全表单；② 复核 6 个 .field（首个在第 515 行，样式声明 932-935 行 height: 96rpx）与 .sms-btn（第 571 行，样式 1064-1068 行 min-width: 176rpx）实际渲染值；③ 逐个 tap 6 个 .field 内的输入框与 .field__picker（第 724 行）及 .submit-btn（第 748 行）确认热区未随缩放丢失；④ 对照 pages/login 同类控件尺寸与色值",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 515,
+      "how": "模板里 6 个字段 wrapper 全用同一个类 .field（515、548、592、645、688、716 行），正好对应 case 说的「6 个字段」，其高度声明在样式 932-935 行；.sms-btn 宽度声明在 1064-1068 行（action 原引的 :898 / :1009 是过期行号）。本条是多目标 case，主点击面按 .field 归属，按钮另有 .submit-btn。",
+      "status": "ok"
+    }
+  ],
+  "unverifiable": [
+    {
+      "id": "REG28",
+      "reason": "本 case 的落点 .ghost-btn（759 行 @tap=goLogin）挂在 v-if=phoneRegistered 上，而 phoneRegistered 只在 registerUser 抛出的错误文案含「已注册」时才置 true（405-407 行），复位在 172/218 行——即必须由真实后端对该手机号返回已注册拒绝，元素才会进入 DOM；case 的 pre 也自述 mock 构建下若后端不返该文案则前置不可构造。类名在源码里确实存在（759 行），但点击目标只在后端可用时才出现，硬给 selector 会让执行器在元素缺席时误判为点击失败，故整条按缺前置标 unverifiable：缺「后端可用 + 一个已注册号码（如 13800000001）返回已注册拒绝」。"
+    },
+    {
+      "id": "REG31",
+      "reason": "动作是页面级 scrollTop 滚到顶/滚到底，不对应任何元素点击：被观察的 .safety-note（785 行）与 .to-login（788 行）都是纯展示节点、模板上没有任何 @tap（整个协议/底部区里只有 790 行 .to-login__link 绑了 goLogin，而本 case 并不点它）。页面根 .register-page（485 行）也无滚动绑定（无 scroll-view）。给任何类名都等于替执行器造一个不存在的手势目标并篡改判据，故标 unverifiable。"
+    },
+    {
+      "id": "REG32",
+      "reason": "判据本身就是「本页未配 enablePullDownRefresh，不得出现伪刷新」（pages.json:46 的注册页条目无 style 配置，脚本里也没有 onPullDownRefresh，只 import 了 onShow，见 26 行）。动作是在页面顶部执行 300px 下拉手势并松手，属于无主手势，无法归属到任何 class；而且任何真实 tap 都会引入新副作用、改变「零请求零变化」的判据语义，故不给 selector，标 unverifiable。"
+    }
+  ],
+  "counts": {
+    "planned": 22,
+    "ok": 19,
+    "unverifiable": 3
+  }
+}

@@ -1,0 +1,278 @@
+{
+  "lane": "subpackages/village/village/post",
+  "sourceFile": "apps/client/src/subpackages/village/village/post.vue",
+  "generatedAt": "2026-09-27T01:37:15+08:00",
+  "cases": [
+    {
+      "id": "VP02",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "观察发布到卡片与「谁可以看」行文案 → evaluate 读取 visibility/targetType → tap 发布到卡片再关闭弹层",
+      "selector": ".post-to__card",
+      "newAction": "观察发布到卡片文案（.post-to__name :771、.post-to__subtitle :774）与「谁可以看」行文案（.post-row__meta :976）→ evaluate 读取 visibility/targetType → tap .post-to__card（:746，@tap 切换 targetOpen）打开弹层 → tap .post-target-sheet（:780 遮罩节点，@tap targetOpen = false）关闭弹层",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 746,
+      "how": "「发布到」卡片在 :745-777 整块里唯一挂 @tap 的类名节点是 .post-to__card（:746），关闭弹层的遮罩是同文件 :780 的 .post-target-sheet，两者均为逐字可见类。",
+      "status": "ok"
+    },
+    {
+      "id": "VP06",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "① 输入 12 字 → ② 全清 → ③ 输入 40 字 → ④ 输入「%22'<>&@#\\n😀English」，每步 evaluate 回读 title 长度与计数文本",
+      "selector": ".post-title__input",
+      "newAction": "① tap .post-title__input（:872）输入 12 字 → ② 全清 → ③ 输入 40 字（截断闸 :maxlength=TITLE_MAX_LENGTH :873，常量 20 见 :56）→ ④ 输入「%22'<>&@#\\n😀English」；每步 evaluate 回读 title 长度，并读 .post-title__count（:878）计数文本",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 872,
+      "how": "标题 <input> 的唯一类名是 .post-title__input（:872），计数节点 .post-title__count 在 :878；该类只在标题块出现，可直接作 --tap/--type 目标。",
+      "status": "ok"
+    },
+    {
+      "id": "VP07",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "① 30 字 → ② 清空（标题保留）→ 观察发布钮 → ③ 输入 600 字 → ④ 输入首尾含大量空格 + 换行 + 特殊字符的文本；② 之后 tap 一次发布观察 payload",
+      "selector": ".post-content__input",
+      "newAction": "① tap .post-content__input（:888）输入 30 字 → ② 清空（标题保留）→ 观察发布钮 .post-header__submit（:731，禁用态修饰类 .post-header__submit--disabled :732）→ ③ 输入 600 字（:maxlength=POST_MAX_LENGTH :890，常量 500）→ ④ 输入首尾空格 + 换行 + 特殊字符；② 之后 tap .post-header__submit（:731）一次发布观察 payload；计数读 .post-content__count（:894，超限态 :894 的 --over 修饰）",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 888,
+      "how": "正文 <textarea> 唯一类名 .post-content__input（:888）；该 case 的两次点击分别是正文输入与 header 发布胶囊（:731），类名逐字可见。",
+      "status": "ok"
+    },
+    {
+      "id": "VP09",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "tap 发布 → 观察 Toast / 网络响应 → 把正文补到 8 字再发一次",
+      "selector": ".post-header__submit",
+      "newAction": "tap .post-content__input（:888）输入 1-4 字正文 → tap .post-header__submit（:731，@tap submitPublish :735）发布 → 观察 Toast / 网络响应 → 把正文补到 8 字再 tap .post-header__submit 发一次",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 731,
+      "how": "本页唯一提交入口是 header 胶囊 .post-header__submit（:731）；按钮在 mock 也恒渲染，短正文与后端 title 5-30 校验冲突的断言才需要 real 后端（闸在 :596-599，POST_TITLE_MIN_LENGTH=5）。",
+      "status": "ok"
+    },
+    {
+      "id": "VP10",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "tap 发布 → 连拍（0/300/600/900/1500ms）观察 Toast 与返回 → 返回后 evaluate 读 storage['village:post-draft'] 与本页表单态 → 重新进入本页观察是否空白",
+      "selector": ".post-header__submit",
+      "newAction": "先 tap .post-content__input（:888）填有效正文 → tap .post-header__submit（:731）发布 → 连拍（0/300/600/900/1500ms）观察 Toast 与返回（返回延时 POST_SUBMIT_NAVIGATE_BACK_MS=800，:698-709）→ 返回后 evaluate 读 storage['village:post-draft'] 与本页表单态 → 重新进入本页观察是否空白",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 731,
+      "how": "点击目标是 header 发布胶囊 .post-header__submit（:731），正文预填点是 .post-content__input（:888）；草稿键与清空逻辑在 :680-696。",
+      "status": "ok"
+    },
+    {
+      "id": "VP12",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "tap 一个圈子项（:734-752 → selectTarget :260-267）→ 观察卡片三处文案与行区变化 → 再打开弹层选另一个圈子 → 再切回「个人动态」",
+      "selector": ".post-target-sheet__option",
+      "newAction": "tap .post-to__card（:746）打开弹层 → 在「兴趣圈子 · 圈内成员可见」分组（分组标题 :835）内 tap 第 1 个 .post-target-sheet__option（:843，v-for joinedCircles :841，@tap selectTarget :847，desc 形如「已加入 · N 成员」:850）→ 观察卡片 .post-to__name（:771）/ .post-to__tag（:772）/ .post-to__subtitle（:774）三处变化与话题行 .post-row（:932 v-if=!isCircleTarget）消失 → 再 tap .post-to__card 打开弹层选另一个 .post-target-sheet__option → 再 tap 公域分组第 1 个 .post-target-sheet__option（:788，@tap chooseGeneral :792）切回「个人动态」",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 843,
+      "how": "圈子项与公域/校园项共用同一个类名 .post-target-sheet__option（:788/:807/:843），机器侧须按分组内序号或 .post-target-sheet__desc（:850「已加入 ·」）消歧；mock 种子有 2 个 isJoined 圈子，列表分支 :834-858 可渲染。",
+      "status": "ok"
+    },
+    {
+      "id": "VP13",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "三种目标下各 tap .post-row（:858-869 → visibilitySheetOpen=true）→ 观察选项条数 → general 下 tap「学校圈可见」项（:1057-1078）→ 回弹层用遮罩关闭",
+      "selector": ".post-sheet__option",
+      "newAction": "三种目标下各 tap 含 label「谁可以看」（.post-row__label :975）的那一行 .post-row（:968，@tap visibilitySheetOpen = true :972）→ 观察选项条数（v-for visibilityOptions 写在 :1174，产出 .post-sheet__option 单元格，块范围 :1173-1194；条数按目标为 2/1/1）→ general 下 tap 第 2 个 .post-sheet__option（名称在 .post-sheet__option-name :1184「学校圈可见」）→ 回弹层 tap 遮罩 .post-sheet（:1168）关闭",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 1176,
+      "how": ".post-sheet__option 只出现在可见范围弹层（:1176），比原写法的 .post-row（4 行共用，:932/:944/:956/:968）更可定位；选中勾标类 .post-sheet__check 在 :1189。",
+      "status": "ok"
+    },
+    {
+      "id": "VP15",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "第一次发布 → 等返回（≥2s）→ 重进本页填相同内容 → tap 发布 → 等 ≥2s 观察 Toast 与停留态",
+      "selector": ".post-header__submit",
+      "newAction": "第一次 tap .post-header__submit（:731）发布 → 等返回（≥2s）→ 重进本页 tap .post-content__input（:888）与 .post-title__input（:872）填相同内容 → tap .post-header__submit 再发 → 等 ≥2s 观察 Toast 与停留态（失败提示取 store.errorMessage，:661-669）",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 731,
+      "how": "两次点击目标都是 header 发布胶囊 .post-header__submit（:731）；元素恒渲染，幂等 409 的可区分失败提示这一断言才依赖 real 后端。",
+      "status": "ok"
+    },
+    {
+      "id": "VP16",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "tap 发布 → 看到「发布成功」Toast 后 300ms 内再 tap 顶部一次、底部工具栏图片以外的位置对照一次",
+      "selector": ".post-header__submit",
+      "newAction": "tap .post-header__submit（:731）发布 → 看到「发布成功」Toast 后 300ms 内再 tap 顶部 .post-header__submit 一次（此时应处于 .post-header__submit--disabled :732 态）→ 对照 tap 底部工具栏图片以外的 .post-tool 一次（排除 :1022「图片」，取 :1043 位置 / :1053 提及 / :1063 更多任一）",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 731,
+      "how": "顶部二次点击目标 .post-header__submit（:731），底部对照点 .post-tool（:1022/:1033/:1043/:1053/:1063 五个同名单元格，按 label .post-tool__label 文本排除「图片」）；防重闸在 :579 与 800ms 返回窗口 :698-709。",
+      "status": "ok"
+    },
+    {
+      "id": "VP17",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "观察卡片圈名是否解析成功（无图草稿也必须解析）→ 直接 tap 发布 → evaluate 回读实际请求通道与 payload → 发布后检查草稿键与重新进入的表单态",
+      "selector": ".post-header__submit",
+      "newAction": "观察卡片圈名（.post-to__name :771，圈子目标解析失败时应显示「兴趣圈帖子」:214，并带 .post-to__tag :772）是否解析成功（无图草稿也必须解析）→ 直接 tap .post-header__submit（:731）→ evaluate 回读实际请求通道与 payload（circle 分支 createTopic :632 / village 分支 createPost :639）→ 发布后检查草稿键与重新进入的表单态",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 731,
+      "how": "唯一点击动词「tap 发布」对应 header 胶囊 .post-header__submit（:731）；圈名回显观测点 .post-to__name（:771）同为逐字可见类。",
+      "status": "ok"
+    },
+    {
+      "id": "VP18",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "tap .post-row「添加话题」（:821-833）→ ① 点热门 chips 若干（:965-978 toggleTopic :334-339）→ ② 自定义输入依次：留空点「添加」、输入「   」、「#」开头串、16 字 + 第 17 字、重复已有话题 → ③ 加满 5 个后再加第 6 个 → ④ 遮罩关闭 / 选项关闭 / 系统返回",
+      "selector": ".post-sheet__chip",
+      "newAction": "tap 含 label「添加话题」（.post-row__label :939）的那一行 .post-row（:932，@tap topicSheetOpen = true :936）→ ① 在 .post-sheet__chips（:1081）内 tap 热门 chips 若干个 .post-sheet__chip（:1085，@tap toggleTopic :1090，命中态修饰类 .post-sheet__chip--on :1086）→ ② tap .post-sheet__input（:1099，maxlength=16 :1100）自定义输入依次：留空点「添加」（.post-sheet__confirm :1107）、输入「   」、「#」开头串、16 字 + 第 17 字、重复已有话题 → ③ 加满 5 个（POST_MAX_CUSTOM_TAGS=5）后再加第 6 个 → ④ 遮罩关闭 tap .post-sheet（:1075）/ 加成功自动关（:148）/ 系统返回",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 1085,
+      "how": "热门话题点选目标 .post-sheet__chip（:1085，10 个 HOT_TOPICS v-for）与「添加」按钮 .post-sheet__confirm（:1107）都是逐字可见类；入口行仍是含糊的 .post-row，需按 .post-row__label（:939）文本「添加话题」消歧（话题行在圈子目标下 v-if 隐藏 :931）。",
+      "status": "ok"
+    },
+    {
+      "id": "VP19",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "tap「添加位置」行（post.vue:834-845 → customLocation=location; locationSheetOpen=true）→ ① 点常用位置「校园·食堂」（:1010-1023 pickLocation :143-146）→ ② 重开观察「当前：…」回显（:1008）→ ③ 自定义输入：空点「使用」/纯空格/30 字 + 第 31 字/特殊字符 → ④ tap「清除当前位置」（:1045-1047）",
+      "selector": ".post-sheet__chip",
+      "newAction": "tap 含 label「添加位置」（.post-row__label :951）的那一行 .post-row（:944，@tap customLocation = location; locationSheetOpen = true :948）→ ① tap 常用位置第 3 个 .post-sheet__chip（:1130，v-for COMMON_LOCATIONS :1128，@tap pickLocation :1135；「校园·食堂」见 :118 第 3 项，可用 .post-sheet__chip-text :1137 文本校验）→ ② 重开观察 .post-sheet__sub（:1124）「当前：…」回显 → ③ tap .post-sheet__input（:1144，maxlength=30 :1145）自定义输入：空点「使用」/纯空格/30 字 + 第 31 字/特殊字符，提交点 .post-sheet__confirm（:1152）→ ④ tap「清除当前位置」.post-sheet__clear（:1162，@tap location = ''）",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 1130,
+      "how": "位置弹层的常用位置单元格类名 .post-sheet__chip（:1130，6 个，按分组内序号 3 取「校园·食堂」）、「使用」按钮 .post-sheet__confirm（:1152）与清除行 .post-sheet__clear（:1162，仅 location 非空时随 .post-sheet__clear-row :1161 渲染）均为文件内逐字可见类。",
+      "status": "ok"
+    },
+    {
+      "id": "VP20",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "① tap 行内「提及好友」（:846-857 → insertMention :157-160）；② 再 tap 底部工具栏「提及」（:936-945 同 handler）各一次；③ 观察正文值、光标位与计数",
+      "selector": ".post-row",
+      "newAction": "① tap 行内「提及好友」：取 .post-row__label（:963）文本为「提及好友」的那一行 .post-row（:956，@tap insertMention :960）→ ② 再 tap 底部工具栏「提及」：.post-tool__label（:1060）文本为「提及」的 .post-tool（:1053，同 handler @tap insertMention :1057）各一次 → ③ 观察正文值（.post-content__input :888）、光标位与 .post-content__count（:894）计数",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 956,
+      "how": "两处入口都只有共用类：行侧 .post-row（:932/:944/:956/:968 四行同名单元格）、底栏侧 .post-tool（5 个同名），文件里没有给「提及」行任何专属类，故只能按行内标签文本 .post-row__label（:963）/ .post-tool__label（:1060）消歧后再点所在单元格。",
+      "status": "ok"
+    },
+    {
+      "id": "VP21",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "① tap「＋」块（:804-813 → chooseImage :288-314）在未授权态 → ② 授权后选 4 张 → ③ 逐张点删除（:794-802 removeImage :329-331）→ ④ 选满 9 张后再触达上限分支",
+      "selector": ".post-image--add",
+      "newAction": "① tap「＋」块 .post-image--add（:915，@tap chooseImage :919；chooseImage 现在 :342-376）在未授权态（隐私闸 ensurePrivacyAuthorized :348）→ ② 授权后在原生选图器选 4 张（渲染为 .post-image :901 + .post-image__img :902）→ ③ 逐张点删除 .post-image__remove（:904，@tap removeImage(idx) :908）→ ④ 选满 9 张后再触达上限分支：此时 .post-image--add 被 v-if（:914）移除，改 tap 底栏「图片」单元 .post-tool（:1022，同 chooseImage :1026）",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 915,
+      "how": "「＋」块类名 .post-image--add（:915，与基类 .post-image 同挂）与删除角标 .post-image__remove（:904）都逐字可见；选图器本身是原生 UI，不在本页 DOM 内。",
+      "status": "ok"
+    },
+    {
+      "id": "VP22",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "选 2 张图 → 补齐表单 → tap 发布 → 观察两次上传请求与创建 payload 的 images 数组 → 返回村口看该帖配图",
+      "selector": ".post-image--add",
+      "newAction": "tap .post-image--add（:915）两次选入 2 张本地临时图（.post-image__remove :904 可核张数）→ tap .post-title__input（:872）/.post-content__input（:888）补齐表单 → tap .post-header__submit（:731）发布 → 观察两次 clientApi.uploadPostImage 请求（:614-628 上传分支，isUploadedMediaUrl 判定 :614）与创建 payload 的 images 数组 → 返回村口看该帖配图",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 915,
+      "how": "带图发布链路的页内点击目标只有「＋」块 .post-image--add（:915）与发布胶囊 .post-header__submit（:731），均为文件内逐字类；上传换 URL 的断言需 real 后端与真机相册。",
+      "status": "ok"
+    },
+    {
+      "id": "VP23",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "① 输入正文后 200ms 内立即读 storage（防抖未触发）→ ② 1s 后再读 → ③ 选入本地临时图 + evaluate 追加一条已上传形态 URL 到 images → ④ 2s 后读草稿的 images → ⑤ 退出并把该临时路径写回 storage 后重进",
+      "selector": ".post-content__input",
+      "newAction": "① tap .post-content__input（:888）输入正文后 200ms 内立即读 storage['village:post-draft']（防抖 POST_DRAFT_SAVE_DEBOUNCE_MS=500，:408-425 未触发）→ ② 1s 后再读 → ③ tap .post-image--add（:915）选入本地临时图 + evaluate 追加一条已上传形态 URL 到 images → ④ 2s 后读草稿的 images（snapshotDraft 过滤 :395）→ ⑤ tap .post-header__close（:720）退出并把该临时路径写回 storage 后重进",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 888,
+      "how": "该 case 的三个页内点击点分别是正文输入 .post-content__input（:888）、加图块 .post-image--add（:915）、离页 X .post-header__close（:720），全部在模板里逐字出现。",
+      "status": "ok"
+    },
+    {
+      "id": "VP27",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "① tap header X（post.vue:614-623 → requestLeave :457-489）→ modal 出现 → tap 取消（丢弃分支 :483-486）；② 重新进入输入内容 → 再触发 modal → tap 确认（保留分支 :469-482）；③ 第三次触发 modal 后用系统返回关闭；④ 全新无改动状态下 tap X",
+      "selector": ".post-header__close",
+      "newAction": "① tap header X：.post-header__close（:720，@tap requestLeave :725；现函数在 :525-563）→ uni.showModal 出现 → tap 系统弹窗取消按钮（丢弃分支 :557-560，clearDraft + leave）→ ② 重新进入 tap .post-content__input（:888）输入内容 → 再触发 modal → tap 确认按钮（保留分支 :544-556，同步落盘 :552）→ ③ 第三次触发 modal 后用系统返回关闭 → ④ 全新无改动状态下再 tap .post-header__close（:720，dirty 为空应直接 leave :534-537）",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 720,
+      "how": "触发器 X 的类名 .post-header__close（:720）逐字可见；但「保留草稿/丢弃」两分支是 uni.showModal 的系统按钮（:538-543 confirmText/cancelText），本文件里没有对应 DOM/class，那两步只能按弹窗按钮文本点击。",
+      "status": "ok"
+    },
+    {
+      "id": "VP29",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "进入后 200ms 内输入正文（挂上 500ms 草稿防抖）→ 立即触发系统返回使页面销毁 → 等 1.5s 读 storage → 再次进入观察",
+      "selector": ".post-content__input",
+      "newAction": "进入后 200ms 内 tap .post-content__input（:888）输入正文（v-model :887，挂上 500ms 草稿防抖 :408-425）→ 立即触发系统返回（或 tap .post-header__close :720）使页面销毁（onUnmounted 清定时器 :265-276）→ 等 1.5s 读 storage['village:post-draft'] → 再次进入观察",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 888,
+      "how": "唯一页内交互是正文输入框 .post-content__input（:888），离页动作用系统返回或 X（.post-header__close :720）；两者类名都在模板里逐字可见。",
+      "status": "ok"
+    },
+    {
+      "id": "VP30",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "循环 3 次：进入 → 打开目标弹层选圈子 + 选 2 话题 + 选 1 图 + 改可见范围 → 直接返回（不发布，处理 modal 时选丢弃）→ 再进入观察",
+      "selector": ".post-to__card",
+      "newAction": "循环 3 次：进入 → tap .post-to__card（:746）打开目标弹层，在兴趣圈子分组内 tap 一个 .post-target-sheet__option（:843）选圈子 + tap「添加话题」行 .post-row（.post-row__label :939）后点 2 个 .post-sheet__chip（:1085）+ tap .post-image--add（:915）选 1 图 + tap「谁可以看」行 .post-row（:968）后点一个 .post-sheet__option（:1176）改可见范围 → tap .post-header__close（:720）直接返回（不发布，modal 选丢弃）→ 再进入观察",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 746,
+      "how": "本 case 是复合流程，起始点击锚在 .post-to__card（:746），后续目标弹层项/话题 chip/可见范围项/加图块/离页 X 的类名（:843/:1085/:1176/:915/:720）均逐字取自模板。",
+      "status": "ok"
+    },
+    {
+      "id": "VP32",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "① .post-body scroll-view（:636）滚到底 → 回顶；② 聚焦正文输入 3 行观察键盘；③ 检视小贴士关闭按钮与底部工具栏是否互遮",
+      "selector": ".post-tip__close",
+      "newAction": "① .post-body scroll-view（:741，class 见同一行）滚到底 → 回顶（底部留白 .post-body__bottom-space :1016）→ ② tap .post-content__input（:888）聚焦正文输入 3 行观察键盘（cursor-spacing=20 :886）→ ③ tap .post-tip__close（:1006，@tap tipVisible = false :1010）验证关闭按钮与 fixed 底栏 .post-toolbar（:1020）是否互遮",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 1006,
+      "how": "小贴士关闭按钮类名 .post-tip__close（:1006，v-if tipVisible :997 默认 true 故首屏可见）是本案唯一的真点击目标；滚动容器与底栏分别是 .post-body（:741）与 .post-toolbar（:1020）。",
+      "status": "ok"
+    },
+    {
+      "id": "VP33",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "两页各输入同一唯一标识串 → 等 3s → 观察是否有 POST /drafts 请求 → 完全退出小程序后重进该页，对比恢复结果",
+      "selector": ".post-content__input",
+      "newAction": "在本页 tap .post-content__input（:888）输入唯一标识串（另一侧 publish 页的输入框不在本 lane 文件内）→ 等 3s → 观察是否有 POST /drafts 请求（本页草稿只走本地 storage：写入在 :420、清除在 :517；全文件的 clientApi 调用只剩 :620 的 uploadPostImage，无任何 /drafts 请求）→ 完全退出小程序后 tap .post-header__close（:720）路径重进该页，对比恢复结果",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 888,
+      "how": "本页可命名的输入目标只有 .post-content__input（:888，正文）与 .post-title__input（:872，标题）；跨页比对的另一半在 apps/client/src/subpackages/village/village/publish.vue，不属本 lane。",
+      "status": "ok"
+    },
+    {
+      "id": "VP38",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "① 进入本页什么都不输入，等 3s 读 storage['village:post-draft']；② 只输 1 个空格再等 3s 读；③ 先由 publish 页写一条后端草稿，然后在本页输入内容→返回→选「丢弃」→ 观察 network；④ 重进 publish 页看该后端草稿是否仍在",
+      "selector": ".post-content__input",
+      "newAction": "① 进入本页什么都不输入，等 3s 读 storage['village:post-draft']（空快照不落盘闸 hasDraftContent :418/:428-442）→ ② tap .post-content__input（:888）只输 1 个空格再等 3s 读 → ③ 先由 publish 页写一条后端草稿，然后在本页 tap .post-content__input 输入内容 → tap .post-header__close（:720）返回 → 在 uni.showModal（:538）选「丢弃」按钮 → 观察 network（成功路径已无 clientApi.deleteDraft，见 :673-681）→ ④ 重进 publish 页看该后端草稿是否仍在",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 888,
+      "how": "本页两个点击点是正文输入 .post-content__input（:888）与离页 X .post-header__close（:720）；「丢弃」是系统 modal 按钮（confirmText/cancelText :541-542）本文件无类名，publish 页属另一 lane。",
+      "status": "ok"
+    },
+    {
+      "id": "VP39",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "① tap「＋」（**当前锚点** post.vue:353-360 走 utils/media 的 chooseImages，import 见 :27）选 1 张 >10MB；② 选 3 张正常图；③ 打开选图器后点「取消」；④ 制造 errno 112；⑤ 未授权态 tap「＋」",
+      "selector": ".post-image--add",
+      "newAction": "① tap「＋」.post-image--add（:915，@tap chooseImage :919；当前锚点 chooseImage :342-376，其中 :358 走 utils/media 的 chooseImages，import 见 :27）选 1 张 >10MB（超限应被剔除）→ ② 再 tap 同一个 .post-image--add 选 3 张正常图，核对已渲染的 .post-image 单元格数应为 3（该 v-for 在 :901）→ ③ 打开原生选图器后点「取消」（须静默，:354-357 注释口径）→ ④ 制造 errno 112（:368 分支应提示「请在微信后台隐私指引声明相册/相机权限」:370）→ ⑤ 未授权态 tap .post-image--add（隐私闸 ensurePrivacyAuthorized 在 :348，失败 Toast 见 :350）",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 915,
+      "how": "页内唯一点击目标是加图块 .post-image--add（:915）；原生选图器的「取消」与 >10MB/errno 112 属微信侧弹窗与账号隐私态，本页 DOM 内没有可点类名，须靠真机/DevTools 相册弹窗配合。",
+      "status": "ok"
+    },
+    {
+      "id": "VP40",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+      "oldAction": "① 标题留空、正文 3 字 → 发布；② 标题留空、正文 6 字 → 发布；③ 标题留空、正文首行 60 字 → 发布并回读 body.title 长度；④ 标题输入 25 字（观察 input maxlength=TITLE_MAX_LENGTH=20，post.vue:56/:872）；⑤ 正文首行为空行、次行有字的组合",
+      "selector": ".post-header__submit",
+      "newAction": "① 标题留空（.post-title__input :872 不填）、tap .post-content__input（:888）输入正文 3 字 → tap .post-header__submit（:731）发布（应被 POST_TITLE_MIN_LENGTH=5 闸拦下，:596-599）→ ② 正文 6 字 → tap .post-header__submit 发布 → ③ 正文首行 60 字 → 发布并回读 body.title 长度（回退截断用 POST_TITLE_MAX_LENGTH=30，:593-594）→ ④ tap .post-title__input 输入 25 字（观察 :maxlength=TITLE_MAX_LENGTH :873，TITLE_MAX_LENGTH=20 见 :56）→ ⑤ 正文首行为空行、次行有字的组合再发布一次",
+      "file": "apps/client/src/subpackages/village/village/post.vue",
+      "line": 731,
+      "how": "反复出现的动词「发布」对应 header 胶囊 .post-header__submit（:731），配套输入点是 .post-content__input（:888）与 .post-title__input（:872），三个类名均逐字可见；阈值 5/30 来自 constants/village.ts，20 来自本文件 :56。",
+      "status": "ok"
+    }
+  ],
+  "unverifiable": [
+    {
+      "id": "VP24",
+      "reason": "本案要点的两个节点都是状态闸渲染、本 lane 源码里给不出可稳定点击的类：①「重试加载」是 :830 的 .post-target-sheet__option，但整块被 v-else-if=circlesLoadFailed（:828）包住，需 circleStore.fetchCircles 抛错并写 errorMessage（:95）才会出现——mock 分支（stores/circle.ts:307-309）恒返回 14 条种子圈子且从不进 catch，census 亦标 requiresReal=true；② 空态分支 :860-862（.post-target-sheet__hint）需「已登录但 joinedCircles 为空」的特定账号，mock 种子有 2 个 isJoined 圈子（stores/circle/mock-data.ts:82/:100）不可达；③ 加载中文案 :826 只在 :825 v-if=circlesLoading 的 500ms 窗口内渲染。剩下唯一恒渲染的点击目标是开弹层的 .post-to__card（:746），但用它替「重试加载」定位属硬凑，故整条判 unverifiable，缺的前置是：可控的 fetchCircles 失败注入（或断网/500 真实后端）+ 一个无已加入圈子的账号。"
+    }
+  ],
+  "counts": { "planned": 25, "ok": 24, "unverifiable": 1 }
+}

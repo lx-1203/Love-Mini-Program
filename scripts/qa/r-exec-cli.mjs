@@ -280,7 +280,10 @@ for (const name of files) {
           rows.push(row(name, page, c, "SKIPPED", route, "交互禁触（注销/解绑/清空这类不可逆动作会打掉后面几百条共用的会话）⇒ 显式记 DENY，不混进已跑", observed0(c, route, routeOk, dom, "")));
           continue;
         }
-        const targets = classesOf(String(c.action || ""));
+        /* 目标优先取判据里显式写下的 tapTarget（merge-tapfix-lanes 落进去的字段）：
+           裸类名（.error-btn / .channel-feed）没有 BEM 分隔符，classesOf 抠不出来，
+           只靠 action 文本就会把这些用例重新变成"没点名"。 */
+        const targets = (c.tapTarget ? [String(c.tapTarget)] : []).concat(classesOf(String(c.action || "")));
         if (!targets.length) {
           stats.tapNoTarget++;
           rows.push(row(name, page, c, "SKIPPED", route, "action 含交互动词但没点名可交互元素 ⇒ 没法把这次点击归属到某个东西，待把判据收紧", observed0(c, route, routeOk, dom, "")));
