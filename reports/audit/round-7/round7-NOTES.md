@@ -1187,6 +1187,30 @@ WS automator 会话一旦连上 9420，**CLI 的 `simulator_open_page` 就整批
 所以混合传输的对照门槛（`FIDELITY=PASS` 才允许把 WS 当默认）目前**拿不到样本**，
 `FIDELITY=TOO_FEW_SAMPLES … 别拿它当通过` 是对的判读，不是把失败说成跳过。
 
+## 45 又有 4 条"待复验"是靠谓词结案的，另有 1 条我**拒绝**结案
+
+`verify-source-shape.mjs` 加了两种判点能力后，判点总数 11→15：
+
+- `files: [{file, checks}]`——一条判据横跨几个文件时逐文件核，任一不过整条不过
+  （`MP-R6-F1-NEARBY-IP-CITY-001` 要的是"home 与 nearby 都标注 IP 推断城市 + 不写进 NEARBY_CITY"，
+  只核 home 就给绿灯是错的）。实测：home:74-77 与 nearby:117-120 都有 `citySource === "ip"` +
+  `locationPage.serverCityTag`，nearby:128 的 `if (!ipSourced)` 才写缓存 ⇒ 三处齐了才落这条绿。
+- `fileExists`——图标这类"引用了但文件在不在"的判据本来就是存在性命题
+  （`MP-R2VIS-CONFIG-IMAGES-001`：先核 `config/images.ts:581-583` 确实引用这三枚，再核
+  `src/static/assets/icons/common/{paw,cat,planet}.svg` 在盘上且非 0 字节）。
+- `MP-R2-PROFILE-035`（两处空 catch 改上报）与 `MP-R2-CIRCLES-INDEX-009`（删函数内重复 store 实例化）
+  用 countEq 结案：前者要求 `source: "profile.fetchLikes"` 的 captureException **正好 2 处**、
+  空 catch 0 处；后者要求 `const sessionStore = useSessionStore()` **正好 1 处**。
+  这种"正好几次"的判点才有判别力——只写 present 的话，回退了也不会报警。
+
+**拒绝结案的那条**：`MP-R2-PAGES-LOGIN-INDEX-016`（WCAG 2.5.3：`aria-label` 与可见文本不能取自不同键）。
+台账给的行号（:733 / :736）在现在的源码里已经对不上，而 `:aria-label="t('login.phoneLogin')"`
+在 :643、:665 仍然出现——要证伪它得逐对比较"这个按钮的 aria-label 键 vs 它的可见文本键"，
+那是一个配对判点，不是单文件正则能诚实表达的。**没有现成谓词就不给绿**，它继续挂 `已修复待复验`。
+
+落账后：源码级判点 15、`已修复待复验` 37→33、`待修复` 44；`verify-ledger reports/audit/round-6` PASS。
+
+
 
 
 

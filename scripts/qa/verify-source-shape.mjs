@@ -16,7 +16,7 @@
 
  用法：node scripts/qa/verify-source-shape.mjs [--out reports/audit/round-7/cellplan-source-shape.json] [--dry]
 */
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
@@ -106,6 +106,60 @@ const SPEC = [
       { kind: "present", re: /stack:\s*(?:o\.stack\|\[\]|out)/ },
     ],
   },
+  {
+    /* 判据是"两处 void fetchLikes 的空 catch 要接上上报"——纯代码结构命题，
+       帧里既看不见 catch 也看不见 captureException，所以按谓词结案。 */
+    id: "MP-R2-PROFILE-035", file: "apps/client/src/pages/profile/index.vue",
+    claim: "两处 likesStore.fetchLikes() 的 .catch(() => {}) 空兜底改为 captureException 上报",
+    checks: [
+      { kind: "absent", re: /fetchLikes\(\)\.catch\(\(\)\s*=>\s*\{\s*\}\)/g },
+      { kind: "countEq", re: /captureException\(error,\s*\{\s*source:\s*"profile\.fetchLikes"/g, n: 2 },
+    ],
+  },
+  {
+    /* 遮蔽（shadowing）这一类：函数内再取一次同名 store 会让外层那个永远不生效。
+       判点只问"整份文件里这样的实例化还剩几次"——应当只剩 setup 顶层那一次。 */
+    id: "MP-R2-CIRCLES-INDEX-009", file: "apps/client/src/subpackages/circles/circles/index.vue",
+    claim: "删除函数内重复的 useSessionStore 实例化，只保留 setup 顶层一处",
+    checks: [{ kind: "countEq", re: /const sessionStore = useSessionStore\(\)/g, n: 1 }],
+  },
+  {
+    /* 这条横跨两个页面 + 一处缓存写入守卫，所以用 files 逐文件核；
+       任一文件不过，整条不过——不能因为 home 标注了就给整条绿灯。 */
+    id: "MP-R6-F1-NEARBY-IP-CITY-001",
+    claim: "citySource=ip 时城市只用于标注：home/nearby 副标题带「按服务器位置推断」，且不写进 NEARBY_CITY 缓存",
+    files: [
+      {
+        file: "apps/client/src/pages/home/index.vue",
+        checks: [
+          { kind: "present", re: /loc\.citySource === "ip"/ },
+          { kind: "present", re: /locationPage\.serverCityTag/ },
+        ],
+      },
+      {
+        file: "apps/client/src/pages/nearby/index.vue",
+        checks: [
+          { kind: "present", re: /const ipSourced = loc\.citySource === "ip";/ },
+          { kind: "present", re: /locationPage\.serverCityTag/ },
+          { kind: "present", re: /if \(!ipSourced\) \{[\s\S]{0,400}setStorageSync\(STORAGE_KEYS\.NEARBY_CITY/ },
+        ],
+      },
+    ],
+  },
+  {
+    /* 图标引用"在不在盘上"是存在性命题，不是文本命题：
+       判点直接要求三个被引用的 svg 文件真的存在且非 0 字节。 */
+    id: "MP-R2VIS-CONFIG-IMAGES-001", file: "apps/client/src/config/images.ts",
+    claim: "config/images.ts 引用的 paw/cat/planet 三枚图标文件确实在盘上（非 0 字节）",
+    checks: [
+      { kind: "present", re: /CIRCLE_PET:\s*ICONS_BASE \+ '\/common\/paw\.svg'/ },
+      { kind: "present", re: /CIRCLE_CAT:\s*ICONS_BASE \+ '\/common\/cat\.svg'/ },
+      { kind: "present", re: /CIRCLE_PLANET:\s*ICONS_BASE \+ '\/common\/planet\.svg'/ },
+      { kind: "fileExists", path: "apps/client/src/static/assets/icons/common/paw.svg" },
+      { kind: "fileExists", path: "apps/client/src/static/assets/icons/common/cat.svg" },
+      { kind: "fileExists", path: "apps/client/src/static/assets/icons/common/planet.svg" },
+    ],
+  },
 ];
 
 /* 剥注释：禁用的写法只出现在注释里（说明"这里原来是怎么写的"）不算违反。
@@ -124,28 +178,47 @@ function templateOf(src) {
 }
 
 const results = [];
-for (const s of SPEC) {
-  const f = resolve(REPO, s.file);
-  if (!existsSync(f)) { results.push({ id: s.id, ok: false, why: "承载文件不存在 " + s.file }); continue; }
+/** 一条谓词跑一个文件。fileExists 是唯一不看内容、只看"在不在盘上"的判点类型
+    （图标/素材这类"引用了但不存在"的判据本来就是存在性命题，不是文本命题）。 */
+function runChecks(fileRel, checks) {
+  const f = resolve(REPO, fileRel);
+  if (!existsSync(f)) return "承载文件不存在 " + fileRel;
   const raw = readFileSync(f, "utf8");
   const src = stripComments(raw);
   const tpl = templateOf(raw);
   const lines = src.split("\n");
   let importHeadLine = -1;
-  for (let i = 0; i < lines.length; i++) { const m = lines[i].match(s.checks.find((c) => c.kind === "importHead")?.re || /$^/); if (m) { importHeadLine = i + 1; break; } }
-  let bad = null;
-  for (const c of s.checks) {
-    if (c.kind === "absent") { const m = src.match(c.re); if (m) { bad = "禁用写法仍在：" + String(m[0]).slice(0, 40); break; } }
-    else if (c.kind === "present") { if (!c.re.test(src)) { bad = "要求的写法查不到：" + String(c.re).slice(0, 46); break; } }
-    else if (c.kind === "countEq") { const n = (src.match(c.re) || []).length; if (n !== c.n) { bad = "计数应为 " + c.n + "，实测 " + n + "（" + String(c.re).slice(0, 40) + "）"; break; } }
-    else if (c.kind === "countTemplateEq") { const n = (tpl.match(c.re) || []).length; if (n !== c.n) { bad = "<template> 内计数应为 " + c.n + "，实测 " + n; break; } }
+  for (let i = 0; i < lines.length; i++) { const m = lines[i].match(checks.find((c) => c.kind === "importHead")?.re || /$^/); if (m) { importHeadLine = i + 1; break; } }
+  for (const c of checks) {
+    if (c.kind === "fileExists") {
+      const p = resolve(REPO, c.path);
+      if (!existsSync(p)) return "要求的文件不在盘上：" + c.path;
+      if (!statSyncSize(p)) return "文件在盘上但是 0 字节：" + c.path;
+    } else if (c.kind === "absent") { const m = src.match(c.re); if (m) return "禁用写法仍在：" + String(m[0]).slice(0, 40); }
+    else if (c.kind === "present") { if (!c.re.test(src)) return "要求的写法查不到：" + String(c.re).slice(0, 46); }
+    else if (c.kind === "countEq") { const n = (src.match(c.re) || []).length; if (n !== c.n) return "计数应为 " + c.n + "，实测 " + n + "（" + String(c.re).slice(0, 40) + "）"; }
+    else if (c.kind === "countTemplateEq") { const n = (tpl.match(c.re) || []).length; if (n !== c.n) return "<template> 内计数应为 " + c.n + "，实测 " + n; }
     else if (c.kind === "importHead") {
       const firstCode = lines.findIndex((l) => l.trim() && !/^\s*(\/\/|\/\*|\*)/.test(l)) + 1;
-      if (importHeadLine < 0) { bad = "找不到该 import"; break; }
-      if (importHeadLine > firstCode + 40) { bad = "import 仍在脚本中段（行 " + importHeadLine + "）"; break; }
-    }
+      if (importHeadLine < 0) return "找不到该 import";
+      if (importHeadLine > firstCode + 40) return "import 仍在脚本中段（行 " + importHeadLine + "）";
+    } else return "未知的判点类型 " + c.kind + "（写错了不许当通过）";
   }
-  results.push({ id: s.id, file: s.file, ok: !bad, why: bad || "", claim: s.claim });
+  return null;
+}
+function statSyncSize(p) { try { return statSync(p).size > 0; } catch { return false; } }
+
+for (const s of SPEC) {
+  /* 一条判据可以横跨几个文件（"home 与 nearby 都要标注 IP 推断城市"）。
+     这种情况写成 files: [{file, checks}]，逐文件跑，任一不过整条不过——
+     不能只核一个文件就给整条绿灯。 */
+  const targets = s.files ? s.files : [{ file: s.file, checks: s.checks }];
+  let bad = null, where = s.file;
+  for (const t of targets) {
+    const r = runChecks(t.file, t.checks);
+    if (r) { bad = t.file + " :: " + r; where = t.file; break; }
+  }
+  results.push({ id: s.id, file: where, ok: !bad, why: bad || "", claim: s.claim });
 }
 
 const pass = results.filter((r) => r.ok);

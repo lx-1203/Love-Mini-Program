@@ -1,7 +1,7 @@
 {
- "generatedAt": "2026-09-26T17:34:11.258Z",
+ "generatedAt": "2026-09-26T17:38:05.500Z",
  "source": "verify-source-shape.mjs",
- "passed": 11,
+ "passed": 15,
  "failed": 0,
  "patches": [
   {
@@ -71,6 +71,30 @@
    "why": "不借帧的名义给绿，也不再挂着待修复"
   },
   {
+   "id": "MP-R2-PROFILE-035",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-009",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R6-F1-NEARBY-IP-CITY-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-CONFIG-IMAGES-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
    "id": "MP-R2-CAMPUS-HUB-012",
    "col": 9,
    "new": "源码判点：成员数/动态数每卡只计算一次（模板不得反复调 statsOf） ｜承载 apps/client/src/subpackages/campus/campus/hub.vue",
@@ -134,6 +158,30 @@
    "id": "MP-R2VIS-TMP-TOUR-R2-003",
    "col": 9,
    "new": "源码判点：probeRoute 不能只取栈顶：必须同时把整条页面栈（top/depth/stack）带回来 ｜承载 scripts/qa/tour-r6.mjs",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PROFILE-035",
+   "col": 9,
+   "new": "源码判点：两处 likesStore.fetchLikes() 的 .catch(() => {}) 空兜底改为 captureException 上报 ｜承载 apps/client/src/pages/profile/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-009",
+   "col": 9,
+   "new": "源码判点：删除函数内重复的 useSessionStore 实例化，只保留 setup 顶层一处 ｜承载 apps/client/src/subpackages/circles/circles/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R6-F1-NEARBY-IP-CITY-001",
+   "col": 9,
+   "new": "源码判点：citySource=ip 时城市只用于标注：home/nearby 副标题带「按服务器位置推断」，且不写进 NEARBY_CITY 缓存 ｜承载 undefined",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-CONFIG-IMAGES-001",
+   "col": 9,
+   "new": "源码判点：config/images.ts 引用的 paw/cat/planet 三枚图标文件确实在盘上（非 0 字节） ｜承载 apps/client/src/config/images.ts",
    "why": "写明这条是靠哪个谓词成立的"
   }
  ]
