@@ -115,6 +115,9 @@ const iconSrc = {
   chevronRight: IMAGE_PATHS.ICONS_COMMON.CHEVRON_RIGHT_SVG,
   /* 2026-08-09 微信 1:1 重构：表情按钮（smile.svg）/ 图片占位（camera.png） */
   smile: IMAGE_PATHS.ICONS_EMOJI.SMILE,
+  /* MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006：附件「+」按钮去文本 glyph，
+     改用与 smile 同族（ICONS_EMOJI）的 plus.svg，走 IMAGE_PATHS 键 */
+  plus: IMAGE_PATHS.ICONS_EMOJI.PLUS,
   camera: IMAGE_PATHS.ICONS_COMMON.CAMERA,
 } as const;
 
@@ -2048,7 +2051,15 @@ defineExpose({ noop });
         <SkeletonBlock variant="chat" :rows="4" :label="t('chat.loadingSessionDetail')" />
       </view>
       <view v-else-if="messagesStore.errorMessage" class="meta-copy meta-copy--padded">{{ friendlyPageError }}</view>
-      <view v-else class="chat-list" role="list">
+      <!-- MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007：空态分支加 --empty 撑满滚动区并垂直居中
+           （判空条件与下方 .chat-empty-hint 的 v-if 同一表达式，避免两处漂移）。
+           仅在空态挂此类：有消息时不生效，既有贴底/滚底行为零变化。 -->
+      <view
+        v-else
+        class="chat-list"
+        :class="{ 'chat-list--empty': !messagesStore.currentMessages.length }"
+        role="list"
+      >
         <!-- 2026-08-09 微信化重构：聊天首条固定破冰提示（会话无任何用户消息时展示，点击直发） -->
         <MatchGreetingTip
           v-if="showMatchGreeting"
@@ -2166,11 +2177,12 @@ defineExpose({ noop });
           @send="handleBreakQuestionSend"
         />
 
-        <!-- 微信风格输入栏（2026-08-09 微信 1:1：表情按钮 + "+" + 输入框 + 常显发送按钮） -->
-        <view
-          class="wechat-input-bar"
-          :class="{ 'wechat-input-bar--keyboard-up': keyboardHeight > 0 }"
-        >
+        <!-- 微信风格输入栏（2026-08-09 微信 1:1：表情按钮 + "+" + 输入框 + 常显发送按钮）
+             MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02：原 :class="{ 'wechat-input-bar--keyboard-up':
+             keyboardHeight > 0 }" 是死分支（该修饰类的 padding-bottom 与基线 .wechat-input-bar 同为
+             var(--sp-3)，键盘态与常态渲染逐字相同），已删；键盘贴边由外层
+             .chat-input-area--keyboard-up（唯一真有差异的一层）承担。 -->
+        <view class="wechat-input-bar">
           <!-- 表情按钮：点击展开表情面板（键盘收起；微信行为：表情面板与键盘互斥） -->
           <view
             class="wechat-input-bar__icon-btn wechat-input-bar__icon-btn--emoji press-feedback"
@@ -2183,14 +2195,19 @@ defineExpose({ noop });
             <image class="wechat-input-bar__icon-img" :src="iconSrc.smile" mode="aspectFit" alt="" />
           </view>
 
-          <!-- "+" 附件按钮：展开更多菜单（视频通话 / 图片占位） -->
+          <!-- "+" 附件按钮：展开更多菜单（视频通话 / 图片占位）
+               MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006：「+」由文本 glyph 改为与表情
+               键同族的 <image>（IMAGE_PATHS.ICONS_EMOJI.PLUS）；文本 glyph 去掉后隐式可访问名
+               随之消失，故按左侧表情按钮的写法补 role + aria-label（复用既有 chat.moreMenuTitle）。 -->
           <view
             class="wechat-input-bar__icon-btn wechat-input-bar__icon-btn--more press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="120"
             @tap="openMoreMenu"
+            role="button"
+            :aria-label="t('chat.moreMenuTitle')"
           >
-            <text class="wechat-input-bar__icon-text">+</text>
+            <image class="wechat-input-bar__icon-img" :src="iconSrc.plus" mode="aspectFit" alt="" />
           </view>
 
           <!-- 输入框（单行 input，微信视觉一致；多行能力二期 textarea 再议） -->
@@ -2710,6 +2727,16 @@ defineExpose({ noop });
   padding: 48rpx 32rpx;
 }
 
+/* MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007：空态分支原本只有 text-align:center
+   （横向居中），竖向仍贴顶。此类由模板在空态时挂到 .chat-list（display:flex/column）上，
+   先撑满滚动区再靠 justify-content 落到竖向中心。
+   用 min-height 而非 height：scroll-view 直接子节点定高会在内容超出时裁掉尾部消息；
+   且此类只在 currentMessages 为空时挂载，非空态完全不进这条分支。 */
+.chat-list--empty {
+  min-height: 100%;
+  justify-content: center;
+}
+
 .meta-copy--warning {
   color: var(--c-error);
   font-weight: 600;
@@ -2870,11 +2897,11 @@ defineExpose({ noop });
   box-sizing: border-box;
 }
 
-/* 本栏不再承担安全区，键盘弹起态与常态底部间距同为 var(--sp-3)（与基线一致，
-   保留此类仅作语义占位；键盘贴边由外层 .chat-input-area--keyboard-up 负责）。 */
-.wechat-input-bar--keyboard-up {
-  padding-bottom: var(--sp-3);
-}
+/* MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02：原 .wechat-input-bar--keyboard-up
+   { padding-bottom: var(--sp-3) } 与上方基线 .wechat-input-bar 的 padding 下半值完全相同，
+   模板条件类 + 这条规则构成一个不产生任何渲染差异的死分支，按台账「只删不猜」整块删除。
+   本栏不承担安全区、也不承担键盘态差异：键盘贴边由唯一有实际差异的外层
+   .chat-input-area--keyboard-up 负责。 */
 
 .wechat-input-bar__icon-btn {
   width: 64rpx;
@@ -2891,10 +2918,8 @@ defineExpose({ noop });
   font-weight: 700;
 }
 
-.wechat-input-bar__icon-text {
-  font-size: var(--fs-lg);
-  line-height: 1;
-}
+/* MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006：原 .wechat-input-bar__icon-text
+   （给文本 glyph「+」用的字号/行高）随 glyph 改 <image> 一并删除，模板已 0 引用。 */
 
 .wechat-input-bar__icon-img {
   width: 44rpx;

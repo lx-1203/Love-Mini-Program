@@ -476,150 +476,10 @@ defineExpose({ toggleJoin });
 </template>
 
 <style scoped lang="scss">
-/* ========== 加载/错误/空状态 ========== */
-.circles-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-6);
-  padding: 80rpx 40rpx;
-}
-
-.loading-spinner {
-  width: 48rpx;
-  height: 48rpx;
-  border: 4rpx solid var(--c-border-default);
-  border-top-color: var(--c-brand-500);
-  border-radius: var(--r-circle, 50%);
-  animation: spin var(--d-loop, 1000ms) linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.error-icon {
-  font-size: var(--fs-3xl);
-  opacity: 0.6;
-  color: var(--c-text-tertiary);
-}
-
-.circles-state__text {
-  font-size: var(--fs-lg);
-  color: var(--c-text-tertiary);
-  text-align: center;
-}
-
-.circles-state__btn {
-  padding: var(--sp-4) 48rpx;
-  border-radius: var(--r-full);
-  background: var(--c-gradient-float-btn);
-  box-shadow: var(--s-brand-md);
-}
-
-.circles-state__btn-text {
-  font-size: var(--fs-lg);
-  color: var(--c-neutral-0);
-  font-weight: 600;
-}
-
-.circles-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-5);
-  padding: 120rpx 40rpx;
-}
-
-.circles-empty__icon {
-  width: 88rpx;
-  height: 88rpx;
-  opacity: 0.6;
-  color: var(--c-text-tertiary);
-}
-
-.circles-empty__title {
-  font-size: var(--fs-2xl);
-  font-weight: 600;
-  color: var(--c-text-primary);
-}
-
-.circles-empty__desc {
-  font-size: var(--fs-base);
-  color: var(--c-text-tertiary);
-}
-
-/* ========== 附近的人快捷入口（Task F1 / M-08 · F1.4 补充样式） ========== */
-.discover-entry {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: var(--sp-5) var(--sp-6) 0;
-  padding: var(--sp-5) var(--sp-6);
-  background: var(--c-gradient-brand);
-  border-radius: var(--r-xl);
-  box-shadow: var(--s-brand);
-  animation: card-slide-up var(--d-bounce, 400ms) cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-.discover-entry__left {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-4);
-  flex: 1;
-  min-width: 0;
-}
-
-.discover-entry__icon-wrap {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: var(--r-md);
-  background: var(--c-overlay-bg-light, var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2)));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.discover-entry__icon {
-  width: 48rpx;
-  height: 48rpx;
-  color: var(--c-neutral-0);
-}
-
-.discover-entry__text-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
-  flex: 1;
-  min-width: 0;
-}
-
-.discover-entry__title {
-  font-size: var(--fs-lg);
-  font-weight: 700;
-  color: var(--c-neutral-0);
-}
-
-.discover-entry__desc {
-  font-size: var(--fs-sm);
-  color: var(--c-overlay-text-secondary, var(--c-overlay-text-secondary, rgba(255, 255, 255, 0.85)));
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.discover-entry__arrow {
-  font-size: var(--fs-4xl);
-  color: var(--c-neutral-0);
-  font-weight: 300;
-  line-height: 1;
-  flex-shrink: 0;
-  margin-left: var(--sp-2);
-}
+/* MP-R2-CIRCLES-INDEX-008：原 .circles-state 族、.loading-spinner、.error-icon、
+   .circles-empty 族、.discover-entry 族五段死样式已删（模板 0 命中；加载/错误/空三态
+   由 PageStateContainer 自带样式渲染，「附近的人」头部卡已于 2026-08-25 P1 移除）。
+   .circle-card__badge 认证徽标族按台账条件保留——是否接通属未决项。 */
 
 /* ========== 推荐副标题（对齐理想图"找到与你志趣相投的人"） ========== */
 /* MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001（页内侧）：本页根节点是 AppShell，
@@ -628,7 +488,7 @@ defineExpose({ toggleJoin });
    同页双基线。台账口径「水平内边距单一来源：由 AppShell 承担，页内层水平 padding 归零」，
    故 banner / card-list / tabs 三处活的横向内缩一并归零（纵向值不动）。
    理想图 素材/理想效果图/兴趣圈列表.png 实测卡框左缘约 25rpx、副标题与首枚 chip 约 37rpx，
-   与 28rpx 单源一致（原 52rpx 两处都偏宽）。.discover-entry 一族是死样式（模板 0 命中），不动。 */
+   与 28rpx 单源一致（原 52rpx 两处都偏宽）。 */
 .circles-banner {
   display: flex;
   align-items: center;
@@ -691,8 +551,11 @@ defineExpose({ toggleJoin });
 .circle-card__cover-wrap {
   position: relative;
   /* 2026-08-27：封面改为 1:1 定比容器（理想图正方形缩略），overflow 裁剪 + aspectFill 填满 */
-  width: 200rpx;
-  height: 200rpx;
+  /* 贴合 素材/理想效果图/兴趣圈列表.png 的缩略图实测宽（PIL 量得 142.6rpx → 取 144rpx = 2×72）。
+     注意这条不是布局修复：卡片是 align-items:center，正文高 ≈202rpx 已 ≥ 旧封面 200rpx，
+     缩到 144 不带来任何行高收益，唯一效果是缩略图变小 —— 只为对参考图。 */
+  width: 144rpx;
+  height: 144rpx;
   border-radius: var(--r-md);
   overflow: hidden;
   flex-shrink: 0;

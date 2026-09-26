@@ -1,0 +1,35 @@
+{
+  "note": "round-7 第二版：把 ⟨⟩ 说明壳用进刚改写的 5 个证据格。起因是第一版改写把「原判点」的标识名直接写进单元格，判据台的 reId 又把它抠成硬判点，产物侧恒 0 命中 ⇒ 一条已经改好的判据被自己新写的说明文字打回 NOT_IN_EITHER（实测 3 条：TodayRecommendationView / metaLine / toggleSessionPin）。⟨⟩ 内的内容按约定一律不抽判点。",
+  "patches": [
+    {
+      "id": "MP-R2-PAGES-HOME-INDEX-106",
+      "col": 8,
+      "why": "说明壳：原判点标识名不该再被抽成判点",
+      "new": "apps/client/src/stores/home-dashboard.ts:5（视图模型实际用词）。⟨原判点 TodayRecommendationView 与 likeSent 都是编译期擦除的标识：接口名不进产物、局部量名被 minifier 改名，dist 侧恒 0 命中 ⇒ 原判据不可判，属判据缺陷而非缺陷未修⟩本轮可判事实：该页不再持有「今日推荐已送达」死状态位，字段以 home-dashboard store 的声明为准"
+    },
+    {
+      "id": "MP-R2-PAGES-HOME-INDEX-110",
+      "col": 8,
+      "why": "结构判点前置、被参照物入壳",
+      "new": "结构判点：产物 pages/home/index.wxml 里 .today-card__distance 节点数==1 且节点内无分隔符字面量；源码侧 apps/client/src/components/home/TodayRecommendationCard.vue:41-49（修后物件定义）、:103（唯一消费点）。⟨原判点 metaLine 是修前后都在的参照物，两个标识名都会被 minifier 改名 ⇒ 字符串命中式判据一律无效⟩"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-HOME-INDEX-003",
+      "col": 8,
+      "why": "真类名做判点，不存在的旧类名入壳",
+      "new": "apps/client/src/components/home/NearbyPeople.vue:57-63 + :132-140：产物侧判点 .nearby-item__avatar 的 1:1 圆裁。⟨原判点 .nearby-avatar 全仓 0 命中，是一个不存在的类名⟩共同兴趣节点的删除已在基线落地（同文件整节点删除处）；剩余半项是 88rpx 中心圆裁，需要渲染帧或半身素材池才能判"
+    },
+    {
+      "id": "MP-R2-PAGES-HOME-INDEX-112",
+      "col": 8,
+      "why": "行号与 commit 号只是定位说明，入壳避免被抽成判点",
+      "new": "apps/client/src/services/mocks/fixtures.ts:1155-1163。实测嵌套：:1156 双层，:1160 与 :1162 各单层。⟨原判写「三处嵌套」与行号有出入；:1163 属 communityPosts 行；收敛动作发生在上一轮提交里，commit 号是定位说明不是判点⟩"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A03",
+      "col": 8,
+      "why": "二选一前提作废的部分入壳，只留 0 命中判点",
+      "new": "apps/client/src/subpackages/chat/chat-session/index.vue:3309（删除注释）。判据：本页 .chat-session-back 在产物 subpackages/chat/chat-session/index.wxss 与 .wxml 的命中数均为 0。返回钮由 apps/client/src/components/chat/ChatHeader.vue:53-54 提供、本页 :1950 已挂载。⟨原判「要么删样式要么补节点」的二选一不成立：补节点会变双返回钮，且 ChatHeader 是另一个文件、不在本页判点射程⟩"
+    }
+  ]
+}

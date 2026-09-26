@@ -935,7 +935,7 @@ async function submitPublish() {
           role="button"
           @tap="topicSheetOpen = true"
         >
-          <text class="post-row__icon">#</text>
+          <text class="post-row__icon post-row__icon--glyph">#</text>
           <text class="post-row__label">添加话题</text>
           <text class="post-row__meta">已选 {{ topics.length }}/{{ POST_MAX_CUSTOM_TAGS }}</text>
           <text class="post-row__arrow">›</text>
@@ -959,7 +959,7 @@ async function submitPublish() {
           role="button"
           @tap="insertMention"
         >
-          <text class="post-row__icon">@</text>
+          <text class="post-row__icon post-row__icon--glyph">@</text>
           <text class="post-row__label">提及好友</text>
           <text class="post-row__meta">插入 @ 到正文</text>
           <text class="post-row__arrow">›</text>
@@ -982,7 +982,14 @@ async function submitPublish() {
       <view v-if="topics.length > 0" class="post-topics">
         <view v-for="(tag, idx) in topics" :key="`${tag}-${idx}`" class="post-topic-chip">
           <text class="post-topic-chip__text">{{ tag }}</text>
-          <text class="post-topic-chip__remove" @tap="topics.splice(idx, 1)">×</text>
+          <!-- MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005（同族点，证据列点名本行）：
+               <text> 上挂 hover-class 是死属性（mp-weixin 仅 view/button 生效）→ 先换型为 <view> 再补 -->
+          <view
+            class="post-topic-chip__remove press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            @tap="topics.splice(idx, 1)"
+          >×</view>
         </view>
       </view>
 
@@ -1029,7 +1036,7 @@ async function submitPublish() {
         role="button"
         @tap="topicSheetOpen = true"
       >
-        <text class="post-tool__icon">#</text>
+        <text class="post-tool__icon post-tool__icon--glyph">#</text>
         <text class="post-tool__label">话题</text>
       </view>
       <view
@@ -1049,7 +1056,7 @@ async function submitPublish() {
         role="button"
         @tap="insertMention"
       >
-        <text class="post-tool__icon">@</text>
+        <text class="post-tool__icon post-tool__icon--glyph">@</text>
         <text class="post-tool__label">提及</text>
       </view>
       <view
@@ -1296,7 +1303,8 @@ async function submitPublish() {
 .post-to__avatar-emoji {
   width: 44rpx;
   height: 44rpx;
-  color: var(--c-brand, #36C99A);
+  /* MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-002：本类只被 <image> 消费（:762/:767 两分支），
+     原 color: var(--c-brand) 是死声明，已删 */
 }
 .post-to__info {
   flex: 1;
@@ -1514,10 +1522,14 @@ async function submitPublish() {
 .post-row__icon {
   width: 44rpx;
   height: 44rpx;
-  color: var(--c-brand, #36C99A);
   text-align: center;
   font-size: var(--fs-lg, 28rpx);
   flex-shrink: 0;
+}
+/* MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-002：color 对 <image> 是死声明，
+   只有 #/@ 两枚文本 glyph 吃得到 → 从共用类移到 glyph 修饰类，<image> 侧不再挂无效属性 */
+.post-row__icon--glyph {
+  color: var(--c-brand, #36C99A);
 }
 .post-row__label {
   font-size: var(--fs-lg, 28rpx);
@@ -1606,7 +1618,10 @@ async function submitPublish() {
 
 .post-body__bottom-space {
   /* 2026-09-05 R17：底部工具栏改 fixed 后预留其高度 + 安全区，避免滚动到底被遮挡 */
-  height: calc(200rpx + env(safe-area-inset-bottom));
+  /* MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-005：原 200rpx 比 .post-toolbar 实高多留约
+     97rpx（内容 40+6+≈28、上下内距 16+12、描边 1 ≈103rpx + env），滚动到底是一段无主白区；
+     按台账口径改 120rpx（≈实高 + 17rpx 呼吸位） */
+  height: calc(120rpx + env(safe-area-inset-bottom));
 }
 
 /* ========== 底部工具栏（2026-09-05 R17 改 fixed：滚动时始终吸底） ========== */
@@ -1632,10 +1647,14 @@ async function submitPublish() {
 .post-tool__icon {
   width: 40rpx;
   height: 40rpx;
-  color: var(--c-text-secondary, #6B7571);
   font-size: var(--fs-xl, 30rpx);
   text-align: center;
   line-height: 40rpx;
+}
+/* MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-002：同上，底栏图标列同病——
+   color 只作用于 #/@ 文本 glyph，移到 glyph 修饰类，不再挂在 <image> 上 */
+.post-tool__icon--glyph {
+  color: var(--c-text-secondary, #6B7571);
 }
 .post-tool__label {
   font-size: var(--fs-xs, 20rpx);

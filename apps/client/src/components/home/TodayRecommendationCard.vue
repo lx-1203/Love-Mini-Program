@@ -55,7 +55,14 @@ const distanceLine = computed(() => {
       <view class="today-card__titles">
         <text class="today-card__title">今日推荐</text>
       </view>
-      <text class="today-card__rotate" @tap="$emit('rotate')">↻ 换一位</text>
+      <!-- MP-R2VIS-PAGES-HOME-INDEX-004：「↻」字形在部分字体栈渲染成彩色 emoji 且违反
+           R11 附录 B「业务组件禁 emoji」——按本组件 today-card__btn--love 的「♥ 字符→图片资源」
+           既有改法换同族线性刷新 SVG（ICONS_COMMON.REFRESH_SVG；同页定位弹窗已消费同一路径，
+           real 模式不引入新资产），图标与本行 22rpx 文字同字号、行色统一走 --c-text-tertiary。 -->
+      <view class="today-card__rotate" @tap="$emit('rotate')">
+        <image class="today-card__rotate-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.REFRESH_SVG)" mode="aspectFit" alt="" />
+        <text class="today-card__rotate-text">换一位</text>
+      </view>
     </view>
 
     <view v-if="loading" class="today-card__skeleton">正在为你挑选心动的人…</view>
@@ -65,7 +72,7 @@ const distanceLine = computed(() => {
       <view class="today-card__photo-wrap press-feedback" hover-class="press-feedback--active" @tap="$emit('view')" role="button" :aria-label="item.name || '查看推荐人主页'">
         <image
           class="today-card__photo"
-          :src="photoFailed || !item.photoUrl ? IMAGE_PATHS.POST_PLACEHOLDER : resolveMediaUrl(item.photoUrl)"
+          :src="photoFailed || !item.photoUrl ? resolveMediaUrl(IMAGE_PATHS.POST_PLACEHOLDER) : resolveMediaUrl(item.photoUrl)"
           mode="aspectFill"
           lazy-load
           alt=""
@@ -151,8 +158,23 @@ const distanceLine = computed(() => {
 }
 
 .today-card__rotate {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
   font-size: 22rpx;
-  color: #999999;
+  color: var(--c-text-tertiary, #999999);
+}
+
+/* MP-R2VIS-PAGES-HOME-INDEX-004：刷新 SVG 与本行 22rpx 文字同字号（linear icon 24×24 viewBox） */
+.today-card__rotate-icon {
+  width: 22rpx;
+  height: 22rpx;
+  flex-shrink: 0;
+}
+
+.today-card__rotate-text {
+  font-size: 22rpx;
+  line-height: 1.4;
 }
 
 .today-card__skeleton,

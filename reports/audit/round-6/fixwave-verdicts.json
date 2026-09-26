@@ -1,37 +1,37 @@
 {
- "copiedFrom": ".zcode/tmp/fixverify/verdicts.json",
- "copiedAt": "2026-09-26T01:55:03.173Z",
+ "copiedFrom": ".zcode/tmp/fixverify-r7f/verdicts.json",
+ "copiedAt": "2026-09-26T04:06:20.282Z",
  "meta": {
   "tool": "scripts/qa/verify-fixes-against-artifact.cjs",
-  "writtenAt": "2026-09-26T01:50:32.940Z",
+  "writtenAt": "2026-09-26T04:03:48.522Z",
   "offline": true,
-  "baselineRef": "874ff52f",
-  "baselineSha": "874ff52f",
-  "headSha": "f9a60925",
+  "baselineRef": "094f7239",
+  "baselineSha": "094f7239",
+  "headSha": "094f7239",
   "dist": "apps/client/dist/build/mp-weixin",
   "src": "apps/client/src",
   "ledger": "reports/audit/round-6/issue-matrix.md",
   "lanes": ".zcode/tmp/admission/fix-lanes.json",
   "lanesNote": "fix-lanes.json 实测顶层键 = stillOpen,bySeverity,hotspots,singles,crossLaneIds（hotspots[].{file,ids[]} + singles[].{file,id}，没有 severity/status/what-to-fix —— 判据文本一律回台账取）；fix-lanes.stillOpen=116，实际展开 116 条",
-  "ledgerSec1": 228,
+  "ledgerSec1": 229,
   "ledgerSec2": 0,
   "ledgerSec3": 0,
   "ledgerAlias": 61,
   "items": 116,
   "conserved": true,
-  "staticDecidable": 25,
+  "staticDecidable": 17,
   "stillOpenDeclared": 116,
-  "artifactBuildMtime": "2026-09-26T01:47:39.306Z",
+  "artifactBuildMtime": "2026-09-26T02:48:50.692Z",
   "sabotage": 0,
-  "localeIndexDist": 4116,
-  "localeIndexSrc": 4116,
+  "localeIndexDist": 4108,
+  "localeIndexSrc": 4108,
   "fatal": []
  },
  "summary": {
-  "ARTIFACT_VERIFIED": 18,
+  "ARTIFACT_VERIFIED": 14,
   "SOURCE_ONLY": 1,
-  "NEEDS_UI_FRAME": 54,
-  "NOT_IN_EITHER": 6,
+  "NEEDS_UI_FRAME": 62,
+  "NOT_IN_EITHER": 2,
   "UNDECIDABLE": 37
  },
  "items": [
@@ -57,7 +57,7 @@
     "page": "subpackages/campus/campus/hub",
     "category": "Consistency",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：两处 --c-bg-page 兜底值统一（同文件 :372 用 #EEF7F2、:818 .campus-search 用 #F0F4F2）；择一真值并让另一处复用同一 fallback。",
     "statusEvidence": "—（未修，无需）"
@@ -82,7 +82,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/campus/campus/hub.wxml",
-     "artifactExcerpt": "data-v-bf7fd403\">{{v}}</text></view></view><view class=\"campus-search data-v-bf7fd403\"><view class=\"campus-search__icon…",
+     "artifactExcerpt": "data-v-420fe180\">{{v}}</text></view></view><view class=\"campus-search data-v-420fe180\"><view class=\"campus-search__icon…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -142,7 +142,7 @@
    "closerAction": null,
    "artifactEvidence": {
     "file": "subpackages/campus/campus/hub.wxml",
-    "excerpt": "data-v-bf7fd403\">{{v}}</text></view></view><view class=\"campus-search data-v-bf7fd403\"><view class=\"campus-search__icon…",
+    "excerpt": "data-v-420fe180\">{{v}}</text></view></view><view class=\"campus-search data-v-420fe180\"><view class=\"campus-search__icon…",
     "kind": "class",
     "token": "campus-search"
    },
@@ -186,7 +186,7 @@
     "page": "subpackages/campus/campus/hub",
     "category": "Architecture",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：若确立「无专属封面也展示兜底封面」为产品意图，则删掉 :296 v-else 死分支与 :21 失实注释；否则去掉末端兜底，让浅绿分支可达。",
     "statusEvidence": "—（未修，无需）"
@@ -228,7 +228,7 @@
     "page": "subpackages/campus/campus/hub",
     "category": "Performance",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：key 改回 school.id（稳定值），tab 切换不再整列重建。",
     "statusEvidence": "—（未修，无需）"
@@ -309,7 +309,7 @@
     "page": "subpackages/campus/campus/hub",
     "category": "Performance",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：模板层每卡调一次，或在 filteredSchools computed 里预计算 stats 附到对象上。",
     "statusEvidence": "—（未修，无需）"
@@ -381,7 +381,7 @@
     "page": "subpackages/campus/campus/index",
     "category": "Function",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=P4延后出本轮；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：store 拆 certificationError 独立字段，index.vue 在认证拉取失败时给轻量重试/toast（对齐 hub.vue:180-186 的 certLoadFailed 错误条），或失败时保留上次 certi…",
     "statusEvidence": "—（未修，无需）"
@@ -511,14 +511,14 @@
     "page": "subpackages/campus/campus/index",
     "category": "Performance",
     "severity": "P4",
-    "status": "已修复待复验",
+    "status": "已修复待复验（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "已修复待复验",
-    "action": "修：去掉 onMounted 内的 fetchCertificationStatus（首取交给 onShow），或加 certFetchedOnce 标志去重。；关联（非同一缺陷）MP-R2-CAMPUSINDEX-006——上遍修复建议…",
+    "action": "修：去掉 onMounted 内的 ⟨fetchCertificationStatus⟩（首取交给 onShow），或加 ⟨certFetchedOnce⟩ 标志去重。；关联（非同一缺陷）MP-R2-CAMPUSINDEX-006——上遍…",
     "statusEvidence": "〔§71 静态判据自相矛盾〕本条被 verify-fixes-against-artifact 判为 PROBE_CONFLICTS（同一标识既要求可见又要求不可见＝台账写的是「二选一」处置），因此工具给的 SOURCE_ONLY / A…"
    },
-   "verdict": "UNDECIDABLE",
-   "verdictWhy": "判据自相矛盾：同一标识（fetchCertificationStatus）既被要求存在于产物、又被要求从产物里消失 —— 台账这条是「二选一」的处置，需人先选定唯一改点再判；在此之前任何一侧命中都不构成已修",
-   "frame": false,
+   "verdict": "NEEDS_UI_FRAME",
+   "verdictWhy": "台账自述需要帧/人工复验；授予绿用的判点在修复前的 HEAD 里就已存在（onLoad, Promise.resolve, Promise.allSettled）——命中不能证明改动落地",
+   "frame": true,
    "uiMarkers": [
     "runtime",
     "visual"
@@ -546,24 +546,6 @@
      "srcExcerpt": "port { resolveMediaUrl } from \"@/utils/media\"; import { onLoad, onShow } from \"@dcloudio/uni-app\"; import { storeToRefs…",
      "grantsGreen": true,
      "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "certFetchedOnce",
-     "carrier": "js+wxml",
-     "polarity": "absent",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": "点名的标识符在两个载体里都不存在：可能是未落地，也可能只是台账里的提案名（压缩构建会改局部名，不能反推）",
-     "hard": true,
-     "usable": false,
-     "orphanName": true,
-     "artifact": {
-      "hit": false
-     },
-     "src": {
-      "hit": false
-     }
     },
     {
      "kind": "identifier",
@@ -639,29 +621,6 @@
      "kind": "identifier",
      "token": "fetchCertificationStatus",
      "carrier": "js+wxml",
-     "polarity": "absent",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "subpackages/campus/campus/index.js",
-     "artifactExcerpt": "hub\"})});let O=!1;return e.onShow(()=>{C.value||(O=!0,r.fetchCertificationStatus())}),e.onMounted(async()=>{C.value||aw…",
-     "artifactScope": "page",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "subpackages/campus/campus/index.vue",
-     "srcExcerpt": "return; certFetchedByShow = true; void campusStore.fetchCertificationStatus(); }); onMounted(async () => { if (redirect…",
-     "grantsGreen": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "fetchCertificationStatus",
-     "carrier": "js+wxml",
      "polarity": "present",
      "origin": "ledger-statusEvidence",
      "anchored": true,
@@ -680,32 +639,10 @@
      "srcExcerpt": "return; certFetchedByShow = true; void campusStore.fetchCertificationStatus(); }); onMounted(async () => { if (redirect…",
      "grantsGreen": true,
      "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "PROBE_CONFLICTS",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-statusEvidence",
-     "anchored": false,
-     "note": "点名的标识符在两个载体里都不存在：可能是未落地，也可能只是台账里的提案名（压缩构建会改局部名，不能反推）",
-     "hard": false,
-     "usable": false,
-     "orphanName": true,
-     "artifact": {
-      "hit": false
-     },
-     "src": {
-      "hit": false
-     }
     }
    ],
-   "probeCount": 8,
-   "notes": [
-    "判据点名的标识符 certFetchedOnce 在源码树与产物里都搜不到（疑似未落地的提案名），不据此判生死",
-    "判据点名的标识符 PROBE_CONFLICTS 在源码树与产物里都搜不到（疑似未落地的提案名），不据此判生死",
-    "判据自相矛盾（同一标识既要求可见又要求不可见）：fetchCertificationStatus"
-   ],
+   "probeCount": 5,
+   "notes": [],
    "closerAction": null,
    "artifactEvidence": {
     "file": "subpackages/campus/campus/index.js",
@@ -721,13 +658,10 @@
    },
    "searched": [
     "identifier onLoad",
-    "ABSENT:identifier certFetchedOnce",
     "identifier Promise.resolve",
     "identifier certFetchedByShow",
     "identifier Promise.allSettled",
-    "ABSENT:identifier fetchCertificationStatus",
-    "identifier fetchCertificationStatus",
-    "identifier PROBE_CONFLICTS"
+    "identifier fetchCertificationStatus"
    ],
    "weakestCheck": {
     "kind": "identifier",
@@ -758,8 +692,8 @@
     "page": "subpackages/campus/campus/index",
     "category": "UI",
     "severity": "P4",
-    "status": "已修复待复验",
-    "statusHead": "已修复待复验",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：__label 补 right:8rpx;overflow:hidden;text-overflow:ellipsis;white-space:nowrap，或 grid 改 flex-wrap 两行四列加宽单瓷片。",
     "statusEvidence": "verify-fixes-against-artifact 逐项判定 SOURCE_ONLY：判点「overflow:hidden」命中于 subpackages/campus/campus/index.wxss；修后状态已在源码树且 H…"
    },
@@ -811,6 +745,29 @@
     },
     {
      "kind": "css-decl",
+     "token": "right:8rpx〕",
+     "carrier": "wxss",
+     "polarity": "present",
+     "origin": "ledger-statusEvidence",
+     "anchored": false,
+     "note": null,
+     "hard": false,
+     "artifact": {
+      "hit": false
+     },
+     "artifactFile": null,
+     "artifactExcerpt": null,
+     "artifactScope": null,
+     "src": {
+      "hit": false
+     },
+     "srcFile": null,
+     "srcExcerpt": null,
+     "grantsGreen": false,
+     "usable": true
+    },
+    {
+     "kind": "css-decl",
      "token": "overflow:hidden",
      "carrier": "wxss",
      "polarity": "present",
@@ -856,9 +813,10 @@
      "usable": true
     }
    ],
-   "probeCount": 4,
+   "probeCount": 5,
    "notes": [
-    "判据点名的标识符 __label 在源码树与产物里都搜不到（疑似未落地的提案名），不据此判生死"
+    "判据点名的标识符 __label 在源码树与产物里都搜不到（疑似未落地的提案名），不据此判生死",
+    "soft 判点未确认（不影响本判决，仅备查）：right:8rpx〕"
    ],
    "closerAction": null,
    "artifactEvidence": {
@@ -876,6 +834,7 @@
    "searched": [
     "css-decl right:8rpx",
     "identifier __label",
+    "css-decl right:8rpx〕",
     "css-decl overflow:hidden",
     "css-decl text-overflow:ellipsis"
    ],
@@ -908,13 +867,13 @@
     "page": "subpackages/campus/campus/post-topic",
     "category": "Consistency",
     "severity": "P3",
-    "status": "已修复待复验",
-    "statusHead": "已修复待复验",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：zh-CN.ts/en-US.ts 的 campus.postTopic 块各补 chooseImageFailed 键，:262 改 t(campus.postTopic.chooseImageFailed)。；关联（非同一缺陷）M…",
     "statusEvidence": "verify-fixes-against-artifact 逐项判定 ARTIFACT_VERIFIED：判点「campus.postTopic.chooseImageFailed」命中于 i18n/locales/zh-CN.js；修后…"
    },
-   "verdict": "ARTIFACT_VERIFIED",
-   "verdictWhy": "hard 判点全部在该页产物作用域内命中（2/2）",
+   "verdict": "UNDECIDABLE",
+   "verdictWhy": "授予绿用的判点在修复前的 HEAD 里就已存在（campus.postTopic.chooseImageFailed, chooseImageFailed）——命中不能证明改动落地",
    "frame": false,
    "uiMarkers": [],
    "probes": [
@@ -1221,7 +1180,7 @@
     "page": "subpackages/circles/circles/index",
     "category": "Consistency",
     "severity": "P3",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：QUICK_TABS label 走 i18n key；:417/:346 改 t() 插值。",
     "statusEvidence": "—（未修，无需）"
@@ -1324,7 +1283,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/circles/circles/index.wxss",
-     "artifactExcerpt": "hrink:0}.circle-card__cover.data-v-56284b57{width:100%;height:100%;display:block}.circle-card__hot-badge.data-v-56284b5…",
+     "artifactExcerpt": "hrink:0}.circle-card__cover.data-v-85666a04{width:100%;height:100%;display:block}.circle-card__hot-badge.data-v-85666a0…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -1393,7 +1352,7 @@
    "closerAction": "needs_ruling",
    "artifactEvidence": {
     "file": "subpackages/circles/circles/index.wxss",
-    "excerpt": "hrink:0}.circle-card__cover.data-v-56284b57{width:100%;height:100%;display:block}.circle-card__hot-badge.data-v-56284b5…",
+    "excerpt": "hrink:0}.circle-card__cover.data-v-85666a04{width:100%;height:100%;display:block}.circle-card__hot-badge.data-v-85666a0…",
     "kind": "css-decl",
     "token": "height:100%"
    },
@@ -1633,46 +1592,107 @@
     "page": "subpackages/circles/circles/index",
     "category": "Architecture",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
-    "action": "修：删除四族死样式；若 -003 选择接通认证徽标则保留 __badge 族并接线。；关联 MP-R2-CIRCLES-INDEX-003（徽标族死样式的来源）",
+    "action": "修：删除 .circles-state、.circles-empty、.discover-entry 三族死样式（模板零引用、产物 wxss 零残留）。⟨同批下线的兄弟段 .loading-spinner 与 .error-icon 以及…",
     "statusEvidence": "—（未修，无需）"
    },
-   "verdict": "UNDECIDABLE",
-   "verdictWhy": "判据只点到两载体都不存在的名字 __badge",
+   "verdict": "ARTIFACT_VERIFIED",
+   "verdictWhy": "删除型判点在该页产物作用域内已不可见（circles-state, circles-empty, discover-entry）",
    "frame": false,
    "uiMarkers": [],
    "probes": [
     {
-     "kind": "identifier",
-     "token": "__badge",
-     "carrier": "js+wxml",
-     "polarity": "present",
+     "kind": "class",
+     "token": "circles-state",
+     "carrier": "wxml+wxss",
+     "polarity": "absent",
      "origin": "ledger-action",
-     "anchored": false,
-     "note": "点名的标识符在两个载体里都不存在：可能是未落地，也可能只是台账里的提案名（压缩构建会改局部名，不能反推）",
-     "hard": false,
-     "usable": false,
-     "orphanName": true,
+     "anchored": true,
+     "note": null,
+     "hard": true,
      "artifact": {
       "hit": false
      },
+     "artifactFile": null,
+     "artifactExcerpt": null,
+     "artifactScope": null,
      "src": {
+      "hit": true
+     },
+     "srcFile": "subpackages/circles/circles/index.vue",
+     "srcExcerpt": "style scoped lang=\"scss\"> /* MP-R2-CIRCLES-INDEX-008：原 .circles-state 族、.loading-spinner、.error-icon、 .circles-empty 族、…",
+     "grantsGreen": false,
+     "usable": true
+    },
+    {
+     "kind": "class",
+     "token": "circles-empty",
+     "carrier": "wxml+wxss",
+     "polarity": "absent",
+     "origin": "ledger-action",
+     "anchored": true,
+     "note": null,
+     "hard": true,
+     "artifact": {
       "hit": false
-     }
+     },
+     "artifactFile": null,
+     "artifactExcerpt": null,
+     "artifactScope": null,
+     "src": {
+      "hit": true
+     },
+     "srcFile": "subpackages/circles/circles/index.vue",
+     "srcExcerpt": "08：原 .circles-state 族、.loading-spinner、.error-icon、 .circles-empty 族、.discover-entry 族五段死样式已删（模板 0 命中；加载/错误/空三态 由 PageS…",
+     "grantsGreen": false,
+     "usable": true
+    },
+    {
+     "kind": "class",
+     "token": "discover-entry",
+     "carrier": "wxml+wxss",
+     "polarity": "absent",
+     "origin": "ledger-action",
+     "anchored": true,
+     "note": null,
+     "hard": true,
+     "artifact": {
+      "hit": false
+     },
+     "artifactFile": null,
+     "artifactExcerpt": null,
+     "artifactScope": null,
+     "src": {
+      "hit": true
+     },
+     "srcFile": "subpackages/circles/circles/index.vue",
+     "srcExcerpt": "te 族、.loading-spinner、.error-icon、 .circles-empty 族、.discover-entry 族五段死样式已删（模板 0 命中；加载/错误/空三态 由 PageStateContainer 自带样…",
+     "grantsGreen": false,
+     "usable": true
     }
    ],
-   "probeCount": 1,
-   "notes": [
-    "判据点名的标识符 __badge 在源码树与产物里都搜不到（疑似未落地的提案名），不据此判生死"
-   ],
+   "probeCount": 3,
+   "notes": [],
    "closerAction": null,
    "artifactEvidence": null,
-   "srcEvidence": null,
+   "srcEvidence": {
+    "file": "subpackages/circles/circles/index.vue",
+    "excerpt": "style scoped lang=\"scss\"> /* MP-R2-CIRCLES-INDEX-008：原 .circles-state 族、.loading-spinner、.error-icon、 .circles-empty 族、…",
+    "kind": "class",
+    "token": "circles-state"
+   },
    "searched": [
-    "identifier __badge"
+    "ABSENT:class circles-state",
+    "ABSENT:class circles-empty",
+    "ABSENT:class discover-entry"
    ],
-   "weakestCheck": null
+   "weakestCheck": {
+    "kind": "class",
+    "specificity": 3,
+    "token": "circles-state",
+    "n": 3
+   }
   },
   {
    "id": "MP-R2-MATCHING-014",
@@ -1696,7 +1716,7 @@
     "page": "matching",
     "category": "Regression",
     "severity": "P2",
-    "status": "待修复",
+    "status": "待修复（去向：closer=判据本已满足；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：onUnload 改部分复位：status/pendingCardId/pendingAction/animationDone/lastError 清，matchedUser 仅在 status!=='matched' 时清（或 re…",
     "statusEvidence": "—（未修，无需）"
@@ -1877,8 +1897,8 @@
     "action": "修：runMatchCheck 支持 callerSnapshot 透传（把 loadPartnerProfile 结果 mapToDiscoverCard 后传入），直达分支自持卡片；:177 补 isSuperLike 〔§82 注释…",
     "statusEvidence": "—（未修，无需） 〔§82 注释清扫落定：ID 锚点在工作树 5 处命中、HEAD 0 命中、承载文件 dirty=2；判据台桶=NOT_IN_EITHER ⇒ 判据台落点清单不全（真实改点在 stores/match.ts），补 src…"
    },
-   "verdict": "NOT_IN_EITHER",
-   "verdictWhy": "判点 callerSnapshot 在两个载体里都查不到（同项其余判点已可见）",
+   "verdict": "NEEDS_UI_FRAME",
+   "verdictWhy": "判据是行为/观感（visual），静态无判点；授予绿用的判点在修复前的 HEAD 里就已存在（onLoad, swipeRight, runMatchCheck）——命中不能证明改动落地",
    "frame": false,
    "uiMarkers": [
     "visual"
@@ -1906,24 +1926,6 @@
      "srcExcerpt": "\"> import { computed, ref, watch } from \"vue\"; import { onLoad, onUnload } from \"@dcloudio/uni-app\"; import { useI18n }…",
      "grantsGreen": true,
      "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "srcRels",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": "点名的标识符在两个载体里都不存在：可能是未落地，也可能只是台账里的提案名（压缩构建会改局部名，不能反推）",
-     "hard": true,
-     "usable": false,
-     "orphanName": true,
-     "artifact": {
-      "hit": false
-     },
-     "src": {
-      "hit": false
-     }
     },
     {
      "kind": "identifier",
@@ -2016,29 +2018,6 @@
      "srcFile": "subpackages/discover-extra/discover/matching.vue",
      "srcExcerpt": "** * MP-R2-MATCHING-016：URL 直达分支的自持卡片快照与「资料拉取完成」信号。 * runMatchCheck 需要快照才能消费这张不在 deck 里的卡，故状态机必须等资料到位后启动； * 常规导航分支不写快照（…",
      "grantsGreen": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "callerSnapshot",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "closer-diff",
-     "anchored": false,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": false
-     },
-     "srcFile": null,
-     "srcExcerpt": null,
-     "grantsGreen": false,
      "usable": true
     },
     {
@@ -2161,10 +2140,8 @@
      "usable": true
     }
    ],
-   "probeCount": 12,
-   "notes": [
-    "判据点名的标识符 srcRels 在源码树与产物里都搜不到（疑似未落地的提案名），不据此判生死"
-   ],
+   "probeCount": 10,
+   "notes": [],
    "closerAction": "patched",
    "artifactEvidence": {
     "file": "subpackages/discover-extra/discover/matching.js",
@@ -2180,12 +2157,10 @@
    },
    "searched": [
     "identifier onLoad",
-    "identifier srcRels",
     "identifier swipeRight",
     "identifier isSuperLike",
     "identifier DiscoverCard",
     "identifier runMatchCheck",
-    "identifier callerSnapshot",
     "identifier mapToDiscoverCard",
     "identifier loadPartnerProfile",
     "identifier directCardSnapshot",
@@ -2237,7 +2212,7 @@
     "statusEvidence": "apps/client/src/components/match/MatchInfo.vue:28-33（工作树：:28 t(\"matchV1.online\")、:29 t(\"discover.activeToday\")、:31 t(\"d…"
    },
    "verdict": "NEEDS_UI_FRAME",
-   "verdictWhy": "判据是行为/观感（runtime+backend），静态无判点；有 1 个硬判点是标识符，压缩构建改名后在产物里不可读（activeLabel）；其余命中不足以证明这条改动落地 → 需帧或读源码人工判",
+   "verdictWhy": "判据是行为/观感（runtime+backend），静态无判点；授予绿用的判点在修复前的 HEAD 里就已存在（matchV1.online, discover.activeToday, discover.activeDaysAgo）——命中不能证明改动落地",
    "frame": false,
    "uiMarkers": [
     "runtime",
@@ -2783,13 +2758,13 @@
     "page": "pages/discover/index",
     "category": "UI",
     "severity": "P4",
-    "status": "已修复待复验",
-    "statusHead": "已修复待复验",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：design-variables.scss 增补 --tab-bar-total-h: calc(184rpx + 2*env(safe-area-inset-bottom)) 并派生页面避让 token（或把 custom-tab-…",
     "statusEvidence": "避让高度已改为 token 单点定义：design-variables.scss 新增 --tab-bar-total-h（184rpx 加两段 env 安全区，源头是 custom-tab-bar/index.wxss:14-19 的 …"
    },
-   "verdict": "ARTIFACT_VERIFIED",
-   "verdictWhy": "hard 判点全部在该页产物作用域内命中（1/2）",
+   "verdict": "NEEDS_UI_FRAME",
+   "verdictWhy": "判据是行为/观感（visual），静态无判点；授予绿用的判点在修复前的 HEAD 里就已存在（--tab-bar-total-h）——命中不能证明改动落地",
    "frame": false,
    "uiMarkers": [
     "visual"
@@ -2887,7 +2862,7 @@
    ],
    "ledger": {
     "sec": 1,
-    "line": 198,
+    "line": 199,
     "viaAlias": null,
     "page": "STILL_OPEN",
     "category": "待修复（并 MP-R3-PAGES-HOME-INDEX-002）",
@@ -2960,16 +2935,17 @@
     "page": "pages/home/index",
     "category": "Interaction",
     "severity": "P3",
-    "status": "已修复待复验",
+    "status": "已修复待复验（去向：closer=已改工作树；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "已修复待复验",
-    "action": "修：错误态重试按钮 :156 改 @tap=\"handleRefresh\"；watch(() => props.items) 变化时清 failedKeys；删除 :43-45 avatarSrc 的 isFailed(`avatar-$…",
+    "action": "修：错误态重试按钮 :156 改 @tap=\"⟨handleRefresh⟩\"；watch(() => ⟨props.items⟩) 变化时清 ⟨failedKeys⟩；删除 :43-45 ⟨avatarSrc⟩ 的 ⟨isFailed⟩…",
     "statusEvidence": "verify-fixes-against-artifact 逐项判定 SOURCE_ONLY：判点「post.id」命中于 components/social/PostReportDialog.js；修后状态已在源码树且 HEAD 里没有…"
    },
-   "verdict": "UNDECIDABLE",
-   "verdictWhy": "判据自相矛盾：同一标识（post.id）既被要求存在于产物、又被要求从产物里消失 —— 台账这条是「二选一」的处置，需人先选定唯一改点再判；在此之前任何一侧命中都不构成已修",
-   "frame": false,
+   "verdict": "NEEDS_UI_FRAME",
+   "verdictWhy": "台账自述需要帧/人工复验；只在源码树命中的判点（handleRefresh）在修复前的 HEAD 里就已存在，不能算本轮落地",
+   "frame": true,
    "uiMarkers": [
-    "runtime"
+    "runtime",
+    "visual"
    ],
    "probes": [
     {
@@ -2978,7 +2954,7 @@
      "carrier": "js",
      "polarity": "present",
      "origin": "closer-diff",
-     "anchored": true,
+     "anchored": false,
      "note": null,
      "hard": true,
      "artifact": {
@@ -2992,29 +2968,6 @@
      },
      "srcFile": "components/home/CommunityFeed.vue",
      "srcExcerpt": "g | null; }>(); /** * 2026-09-02 R5：emit 改 const 形式以便在 handleRefresh 中引用 */ const emit = defineEmits<{ (e: \"more\"): voi…",
-     "grantsGreen": false,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "post.id",
-     "carrier": "js+wxml",
-     "polarity": "absent",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": "命中不在该页作用域文件里，而在 components/social/PostReportDialog.js（该 token 全局唯一性足够，按产物可见处理）",
-     "hard": true,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "components/social/PostReportDialog.js",
-     "artifactExcerpt": "__name:\"PostReportDialog\",props:{visible:{type:Boolean},postId:{}},emits:[\"update:visible\",\"close\",\"submitted\"],setup(m…",
-     "artifactScope": "global",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "components/home/CommunityFeed.vue",
-     "srcExcerpt": "/** * MP-R2-PAGES-HOME-INDEX-105：删掉 isFailed(`avatar-${post.id}`) 分支——失败 key 的写入 * 格式只有 `img-${post.id}-${idx}`（见 :216 …",
      "grantsGreen": false,
      "usable": true
     },
@@ -3039,30 +2992,6 @@
      "srcFile": "components/home/CommunityFeed.vue",
      "srcExcerpt": "/** * MP-R2-PAGES-HOME-INDEX-105：删掉 isFailed(`avatar-${post.id}`) 分支——失败 key 的写入 * 格式只有 `img-${post.id}-${idx}`（见 :216 …",
      "grantsGreen": false,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "isFailed",
-     "carrier": "js+wxml",
-     "polarity": "absent",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": "标识符 isFailed 在压缩产物里搜不到：该名字可能从未进过构建（minifier 改局部名），「删掉了」在产物侧不可观测",
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": true
-     },
-     "srcFile": "components/home/CommunityFeed.vue",
-     "srcExcerpt": ".value = new Set(failedKeys.value).add(key); } function isFailed(key: string): boolean { return failedKeys.value.has(ke…",
-     "grantsGreen": false,
-     "inconclusive": true,
      "usable": true
     },
     {
@@ -3085,30 +3014,6 @@
      },
      "srcFile": "components/home/CommunityFeed.vue",
      "srcExcerpt": ".value = new Set(failedKeys.value).add(key); } function isFailed(key: string): boolean { return failedKeys.value.has(ke…",
-     "grantsGreen": false,
-     "inconclusive": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "avatarSrc",
-     "carrier": "js+wxml",
-     "polarity": "absent",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": "标识符 avatarSrc 在压缩产物里搜不到：该名字可能从未进过构建（minifier 改局部名），「删掉了」在产物侧不可观测",
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": true
-     },
-     "srcFile": "components/home/CommunityFeed.vue",
-     "srcExcerpt": "底已由模板上的 SafeImage :fallback 承担，这里只需回退默认头像。 */ function avatarSrc(post: CommunityPostViewModel): string { return post.au…",
      "grantsGreen": false,
      "inconclusive": true,
      "usable": true
@@ -3163,29 +3068,6 @@
     },
     {
      "kind": "identifier",
-     "token": "props.items",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "closer-diff",
-     "anchored": false,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "components/home/CommunityFeed.js",
-     "artifactExcerpt": "feImage.js\",F=n.defineComponent({__name:\"CommunityFeed\",props:{items:{},loading:{type:Boolean},error:{}},emits:[\"more\",…",
-     "artifactScope": "page",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "components/home/CommunityFeed.vue",
-     "srcExcerpt": "{id}-${idx}` 会随 key 复用继续显示占位（重试/换源都不生效）。 watch( () => props.items, () => { failedKeys.value = new Set(); } ); const { t…",
-     "grantsGreen": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
      "token": "defineProps",
      "carrier": "js+wxml",
      "polarity": "present",
@@ -3207,12 +3089,33 @@
      "grantsGreen": false,
      "inconclusive": true,
      "usable": true
+    },
+    {
+     "kind": "identifier",
+     "token": "props.items",
+     "carrier": "js+wxml",
+     "polarity": "present",
+     "origin": "closer-diff",
+     "anchored": false,
+     "note": null,
+     "hard": true,
+     "artifact": {
+      "hit": true
+     },
+     "artifactFile": "components/home/CommunityFeed.js",
+     "artifactExcerpt": "feImage.js\",F=n.defineComponent({__name:\"CommunityFeed\",props:{items:{},loading:{type:Boolean},error:{}},emits:[\"more\",…",
+     "artifactScope": "page",
+     "src": {
+      "hit": true
+     },
+     "srcFile": "components/home/CommunityFeed.vue",
+     "srcExcerpt": "{id}-${idx}` 会随 key 复用继续显示占位（重试/换源都不生效）。 watch( () => props.items, () => { failedKeys.value = new Set(); } ); const { t…",
+     "grantsGreen": true,
+     "usable": true
     }
    ],
-   "probeCount": 10,
-   "notes": [
-    "判据自相矛盾（同一标识既要求可见又要求不可见）：post.id"
-   ],
+   "probeCount": 7,
+   "notes": [],
    "closerAction": "patched",
    "artifactEvidence": {
     "file": "components/social/PostReportDialog.js",
@@ -3228,21 +3131,18 @@
    },
    "searched": [
     "string-lit handleRefresh",
-    "ABSENT:identifier post.id",
     "identifier post.id",
-    "ABSENT:identifier isFailed",
     "identifier isFailed",
-    "ABSENT:identifier avatarSrc",
     "identifier avatarSrc",
     "identifier failedKeys",
-    "identifier props.items",
-    "identifier defineProps"
+    "identifier defineProps",
+    "identifier props.items"
    ],
    "weakestCheck": {
     "kind": "identifier",
     "specificity": 2,
     "token": "post.id",
-    "n": 4
+    "n": 2
    }
   },
   {
@@ -3269,12 +3169,12 @@
     "severity": "P3",
     "status": "判据不成立（主编排层裁决：持久化属增强项，非本缺陷）",
     "statusHead": "判据不成立",
-    "action": "修：**两案待主编排层拍板，收口不代拍**。（A）后端在 /home/dashboard 与 rotate 响应回 `liked`、前端单源消费——代价：要改 apps/api 并重启 8080（本轮明令越权）、要重生成 TodayRec…",
+    "action": "修：**两案待主编排层拍板，收口不代拍**。（A）后端在 /home/dashboard 与 rotate 响应回 `liked`、前端单源消费——代价：要改 apps/api 并重启 8080（本轮明令越权）、要重生成 ⟨TodayRe…",
     "statusEvidence": "裁决记录（2026-09-26，主编排层）：本条的可缺陷半——首页 TodayRecommendation 里那个永远渲染不出来的「已喜欢」死状态——已由 Lane 7 删除而消解，工作树实证；剩下的「liked 单源持久化」不是缺陷而是…"
    },
-   "verdict": "NOT_IN_EITHER",
-   "verdictWhy": "判点 TodayRecommendationView 在两个载体里都查不到（同项其余判点已可见）",
-   "frame": false,
+   "verdict": "NEEDS_UI_FRAME",
+   "verdictWhy": "台账自述需要帧/人工复验；授予绿用的判点在修复前的 HEAD 里就已存在（discover.likeSent, userId, TodayRecommendationCard）——命中不能证明改动落地",
+   "frame": true,
    "uiMarkers": [
     "runtime",
     "visual",
@@ -3375,29 +3275,6 @@
     },
     {
      "kind": "identifier",
-     "token": "TodayRecommendationView",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": false
-     },
-     "srcFile": null,
-     "srcExcerpt": null,
-     "grantsGreen": false,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
      "token": "TodayRecommendationCard",
      "carrier": "js+wxml",
      "polarity": "present",
@@ -3420,7 +3297,7 @@
      "usable": true
     }
    ],
-   "probeCount": 6,
+   "probeCount": 5,
    "notes": [
     "closer 记为 needs_ruling（需裁决）"
    ],
@@ -3442,7 +3319,6 @@
     "string-lit liked",
     "literal 已喜欢",
     "identifier userId",
-    "identifier TodayRecommendationView",
     "identifier TodayRecommendationCard"
    ],
    "weakestCheck": {
@@ -3583,7 +3459,7 @@
     "page": "pages/home/index",
     "category": "UX",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=P4延后出本轮；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：两组件在骨架分支后补 v-else-if=\"items.length === 0\" 空态块，复用 CommunityFeed.vue:161 的文案/样式口径。",
     "statusEvidence": "—（未修，无需）"
@@ -3665,7 +3541,7 @@
     "page": "pages/home/index",
     "category": "Consistency",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：去掉嵌套，与同数组其余条目对齐为单层（数据层不预解析，交给模板层单次消费）。",
     "statusEvidence": "—（未修，无需）"
@@ -3705,24 +3581,24 @@
     "page": "pages/login/index",
     "category": "Architecture",
     "severity": "P3",
-    "status": "待修复",
+    "status": "待修复（去向：closer=P4延后出本轮；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
-    "action": "修：删除 phoneRegisterMode 及注册模式模板(:798-870)/样式/分支(:424-440)、onSendSmsCode(:235-268)、canPhoneRegister(:143)、birthDateMax(:7…",
+    "action": "修：删除 .sms-send-btn、.picker-field 两族注册模式样式（内联注册模式整删后模板零引用、产物 wxss 零残留）。⟨作废原判点 phoneRegisterMode onSendSmsCode canPhoneRe…",
     "statusEvidence": "—（未修，无需）"
    },
-   "verdict": "UNDECIDABLE",
-   "verdictWhy": "唯一抠到的判点是标识符 birthDateMax, onSendSmsCode, canPhoneRegister，压缩构建会改名",
+   "verdict": "ARTIFACT_VERIFIED",
+   "verdictWhy": "删除型判点在该页产物作用域内已不可见（sms-send-btn, picker-field）",
    "frame": false,
    "uiMarkers": [],
    "probes": [
     {
-     "kind": "identifier",
-     "token": "birthDateMax",
-     "carrier": "js+wxml",
+     "kind": "class",
+     "token": "sms-send-btn",
+     "carrier": "wxml+wxss",
      "polarity": "absent",
      "origin": "ledger-action",
      "anchored": true,
-     "note": "标识符 birthDateMax 在压缩产物里搜不到：该名字可能从未进过构建（minifier 改局部名），「删掉了」在产物侧不可观测",
+     "note": null,
      "hard": true,
      "artifact": {
       "hit": false
@@ -3734,19 +3610,18 @@
       "hit": true
      },
      "srcFile": "pages/login/index.vue",
-     "srcExcerpt": "); /** 出生日期 picker 的最大可选日期（今天），未满 18 岁注册被后端拒绝 */ const birthDateMax = new Date().toISOString().slice(0, 10); /** 登录成功跳转…",
+     "srcExcerpt": "(--c-text-tertiary); } /* MP-R2-PAGES-LOGIN-INDEX-015：.sms-send-btn* 死样式已删（模板零引用，注册模式整删） */ .input-field { flex: 1; hei…",
      "grantsGreen": false,
-     "inconclusive": true,
      "usable": true
     },
     {
-     "kind": "identifier",
-     "token": "onSendSmsCode",
-     "carrier": "js+wxml",
+     "kind": "class",
+     "token": "picker-field",
+     "carrier": "wxml+wxss",
      "polarity": "absent",
      "origin": "ledger-action",
      "anchored": true,
-     "note": "标识符 onSendSmsCode 在压缩产物里搜不到：该名字可能从未进过构建（minifier 改局部名），「删掉了」在产物侧不可观测",
+     "note": null,
      "hard": true,
      "artifact": {
       "hit": false
@@ -3758,85 +3633,12 @@
       "hit": true
      },
      "srcFile": "pages/login/index.vue",
-     "srcExcerpt": "→ POST /v1/sms/send-code → 60s 倒计时。 */ async function onSendSmsCode() { if (smsCountdown.value > 0) return; if (!isPhon…",
+     "srcExcerpt": "-size: var(--fs-md); } /* MP-R2-PAGES-LOGIN-INDEX-015：.picker-field* （3-N 注册出生日期 picker）死样式已删 */ .input-divider { heigh…",
      "grantsGreen": false,
-     "inconclusive": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "canPhoneRegister",
-     "carrier": "js+wxml",
-     "polarity": "absent",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": "标识符 canPhoneRegister 在压缩产物里搜不到：该名字可能从未进过构建（minifier 改局部名），「删掉了」在产物侧不可观测",
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": true
-     },
-     "srcFile": "pages/login/index.vue",
-     "srcExcerpt": "&& agreed.value); // 注册模式额外要求昵称 + 出生日期 + 短信验证码非空 const canPhoneRegister = computed(() => isPhoneValid.value && isCodeVa…",
-     "grantsGreen": false,
-     "inconclusive": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "phoneRegisterMode",
-     "carrier": "js+wxml",
-     "polarity": "absent",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": "标识符 phoneRegisterMode 在压缩产物里搜不到：该名字可能从未进过构建（minifier 改局部名），「删掉了」在产物侧不可观测",
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": true
-     },
-     "srcFile": "pages/login/index.vue",
-     "srcExcerpt": "er: ReturnType<typeof setInterval> | null = null; const phoneRegisterMode = ref(false); /* MP-R1-PAGES-LOGIN-INDEX-102：…",
-     "grantsGreen": false,
-     "inconclusive": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "onBirthDateChange",
-     "carrier": "js+wxml",
-     "polarity": "absent",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": "标识符 onBirthDateChange 在压缩产物里搜不到：该名字可能从未进过构建（minifier 改局部名），「删掉了」在产物侧不可观测",
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": true
-     },
-     "srcFile": "pages/login/index.vue",
-     "srcExcerpt": "r change 事件（detail.value 为 yyyy-MM-dd 日期串） */ function onBirthDateChange(event: { detail: { value: string } }) { birthD…",
-     "grantsGreen": false,
-     "inconclusive": true,
      "usable": true
     }
    ],
-   "probeCount": 5,
+   "probeCount": 2,
    "notes": [
     "closer 记为 deferred_p4（本轮未动手）"
    ],
@@ -3844,22 +3646,19 @@
    "artifactEvidence": null,
    "srcEvidence": {
     "file": "pages/login/index.vue",
-    "excerpt": "); /** 出生日期 picker 的最大可选日期（今天），未满 18 岁注册被后端拒绝 */ const birthDateMax = new Date().toISOString().slice(0, 10); /** 登录成功跳转…",
-    "kind": "identifier",
-    "token": "birthDateMax"
+    "excerpt": "(--c-text-tertiary); } /* MP-R2-PAGES-LOGIN-INDEX-015：.sms-send-btn* 死样式已删（模板零引用，注册模式整删） */ .input-field { flex: 1; hei…",
+    "kind": "class",
+    "token": "sms-send-btn"
    },
    "searched": [
-    "ABSENT:identifier birthDateMax",
-    "ABSENT:identifier onSendSmsCode",
-    "ABSENT:identifier canPhoneRegister",
-    "ABSENT:identifier phoneRegisterMode",
-    "ABSENT:identifier onBirthDateChange"
+    "ABSENT:class sms-send-btn",
+    "ABSENT:class picker-field"
    ],
    "weakestCheck": {
-    "kind": "identifier",
-    "specificity": 2,
-    "token": "birthDateMax",
-    "n": 5
+    "kind": "class",
+    "specificity": 3,
+    "token": "sms-send-btn",
+    "n": 2
    }
   },
   {
@@ -3996,21 +3795,16 @@
      "polarity": "present",
      "origin": "closer-diff",
      "anchored": false,
-     "note": "命中不在该页作用域文件里，而在 stores/messages.js（该 token 全局唯一性足够，按产物可见处理）",
+     "note": "点名的标识符在两个载体里都不存在：可能是未落地，也可能只是台账里的提案名（压缩构建会改局部名，不能反推）",
      "hard": true,
+     "usable": false,
+     "orphanName": true,
      "artifact": {
-      "hit": true
-     },
-     "artifactFile": "stores/messages.js",
-     "artifactExcerpt": ".setSessionPinned(e,!s.pinned).catch(t=>{console.warn(\"[messages.toggleSessionPin] 置顶切换失败:\",t)})},async setSessionMuted…",
-     "artifactScope": "global",
-     "src": {
       "hit": false
      },
-     "srcFile": null,
-     "srcExcerpt": null,
-     "grantsGreen": false,
-     "usable": true
+     "src": {
+      "hit": false
+     }
     },
     {
      "kind": "identifier",
@@ -4037,7 +3831,9 @@
     }
    ],
    "probeCount": 6,
-   "notes": [],
+   "notes": [
+    "判据点名的标识符 messages.toggleSessionPin 在源码树与产物里都搜不到（疑似未落地的提案名），不据此判生死"
+   ],
    "closerAction": "patched",
    "artifactEvidence": {
     "file": "pages/messages/index.js",
@@ -4063,7 +3859,7 @@
     "kind": "identifier",
     "specificity": 2,
     "token": "console.warn",
-    "n": 6
+    "n": 5
    }
   },
   {
@@ -4088,7 +3884,7 @@
     "page": "pages/messages/index",
     "category": "Interaction",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：模板按 act.targetUrl 条件渲染 CTA（:599 v-if），或 openActivity 空值分支给轻提示；亦可在 :88-97 映射层过滤掉无 targetUrl 的项。",
     "statusEvidence": "—（未修，无需）"
@@ -4336,7 +4132,7 @@
     "page": "pages/messages/index",
     "category": "Interaction",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：loadPage await 完成后 `avatarFailedIds.value = new Set()`（或按 session.id 精细清除）。",
     "statusEvidence": "—（未修，无需）"
@@ -4383,7 +4179,7 @@
       "hit": true
      },
      "artifactFile": "pages/messages/index.js",
-     "artifactExcerpt": ")}function H(t){u.openAppPath(`${p.ROUTES.CHAT.SESSION}?sessionId=${encodeURIComponent(t.id)}`)}function oe(t){t&&u.ope…",
+     "artifactExcerpt": ")}function H(t){i.openAppPath(`${p.ROUTES.CHAT.SESSION}?sessionId=${encodeURIComponent(t.id)}`)}function oe(t){t&&i.ope…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -4425,7 +4221,7 @@
    "closerAction": null,
    "artifactEvidence": {
     "file": "pages/messages/index.js",
-    "excerpt": ")}function H(t){u.openAppPath(`${p.ROUTES.CHAT.SESSION}?sessionId=${encodeURIComponent(t.id)}`)}function oe(t){t&&u.ope…",
+    "excerpt": ")}function H(t){i.openAppPath(`${p.ROUTES.CHAT.SESSION}?sessionId=${encodeURIComponent(t.id)}`)}function oe(t){t&&i.ope…",
     "kind": "identifier",
     "token": "session.id"
    },
@@ -4471,13 +4267,13 @@
     "page": "pages/messages/index",
     "category": "Architecture",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=P4延后出本轮；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
-    "action": "修：二选一：删除 toggleSessionPin 并同步删 tests/stores/messages.spec.ts:41-49；或长按菜单 :268 改调 toggleSessionPin 并把 :1266-1268 空 catch…",
+    "action": "修：删除型单判点：store 侧无调用方的 action 本轮已删除，修后判据为页作用域产物（stores/messages.js 与消息页编译文件）内不再保留字符串判点 \"toggleSessionPin\"，源码侧注释残留不在被测载体内…",
     "statusEvidence": "〔§71 静态判据自相矛盾〕本条被 verify-fixes-against-artifact 判为 PROBE_CONFLICTS（同一标识既要求可见又要求不可见＝台账写的是「二选一」处置），因此工具给的 SOURCE_ONLY / A…"
    },
    "verdict": "UNDECIDABLE",
-   "verdictWhy": "判据自相矛盾：同一标识（toggleSessionPin）既被要求存在于产物、又被要求从产物里消失 —— 台账这条是「二选一」的处置，需人先选定唯一改点再判；在此之前任何一侧命中都不构成已修",
+   "verdictWhy": "判据自相矛盾：同一标识（console.warn）既被要求存在于产物、又被要求从产物里消失 —— 台账这条是「二选一」的处置，需人先选定唯一改点再判；在此之前任何一侧命中都不构成已修",
    "frame": false,
    "uiMarkers": [
     "runtime",
@@ -4485,11 +4281,34 @@
    ],
    "probes": [
     {
+     "kind": "string-lit",
+     "token": "toggleSessionPin",
+     "carrier": "js",
+     "polarity": "absent",
+     "origin": "ledger-action",
+     "anchored": true,
+     "note": null,
+     "hard": true,
+     "artifact": {
+      "hit": false
+     },
+     "artifactFile": null,
+     "artifactExcerpt": null,
+     "artifactScope": null,
+     "src": {
+      "hit": false
+     },
+     "srcFile": null,
+     "srcExcerpt": null,
+     "grantsGreen": false,
+     "usable": true
+    },
+    {
      "kind": "identifier",
      "token": "console.warn",
      "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "closer-diff",
+     "polarity": "absent",
+     "origin": "ledger-action",
      "anchored": true,
      "note": null,
      "hard": true,
@@ -4509,74 +4328,32 @@
     },
     {
      "kind": "identifier",
-     "token": "toggleSessionPin",
-     "carrier": "js+wxml",
-     "polarity": "absent",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "stores/messages.js",
-     "artifactExcerpt": "essage:i.t(\"storeErrors.messages.pinSessionFailed\"),t}},toggleSessionPin(e){const s=this.sessions.find(t=>t.id===e);s&&…",
-     "artifactScope": "page",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "stores/messages.ts",
-     "srcExcerpt": "4.3 验收 · 置顶/取消置顶会话（委托 setSessionPinned，真实模式同步后端） */ toggleSessionPin(sessionId: string) { const session = this.sessions…",
-     "grantsGreen": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "toggleSessionPin",
+     "token": "console.warn",
      "carrier": "js+wxml",
      "polarity": "present",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "stores/messages.js",
-     "artifactExcerpt": "essage:i.t(\"storeErrors.messages.pinSessionFailed\"),t}},toggleSessionPin(e){const s=this.sessions.find(t=>t.id===e);s&&…",
-     "artifactScope": "page",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "stores/messages.ts",
-     "srcExcerpt": "4.3 验收 · 置顶/取消置顶会话（委托 setSessionPinned，真实模式同步后端） */ toggleSessionPin(sessionId: string) { const session = this.sessions…",
-     "grantsGreen": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "PROBE_CONFLICTS",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-statusEvidence",
+     "origin": "closer-diff",
      "anchored": false,
-     "note": "点名的标识符在两个载体里都不存在：可能是未落地，也可能只是台账里的提案名（压缩构建会改局部名，不能反推）",
-     "hard": false,
-     "usable": false,
-     "orphanName": true,
+     "note": null,
+     "hard": true,
      "artifact": {
-      "hit": false
+      "hit": true
      },
+     "artifactFile": "stores/messages.js",
+     "artifactExcerpt": "ageSentAt?Date.parse(r.lastMessageSentAt):0))}}catch(e){console.warn(\"[messages] fetchRelationshipDashboard failed\",e)}…",
+     "artifactScope": "page",
      "src": {
-      "hit": false
-     }
+      "hit": true
+     },
+     "srcFile": "stores/messages.ts",
+     "srcExcerpt": "(error) { // dashboard 失败不阻塞会话列表，保留已有数据 console.warn(\"[messages] fetchRelationshipDashboard failed\", error); } },",
+     "grantsGreen": true,
+     "usable": true
     }
    ],
-   "probeCount": 4,
+   "probeCount": 3,
    "notes": [
     "closer 记为 deferred_p4（本轮未动手）",
-    "判据点名的标识符 PROBE_CONFLICTS 在源码树与产物里都搜不到（疑似未落地的提案名），不据此判生死",
-    "判据自相矛盾（同一标识既要求可见又要求不可见）：toggleSessionPin"
+    "判据自相矛盾（同一标识既要求可见又要求不可见）：console.warn"
    ],
    "closerAction": "deferred_p4",
    "artifactEvidence": {
@@ -4592,10 +4369,9 @@
     "token": "console.warn"
    },
    "searched": [
-    "identifier console.warn",
-    "ABSENT:identifier toggleSessionPin",
-    "identifier toggleSessionPin",
-    "identifier PROBE_CONFLICTS"
+    "ABSENT:string-lit toggleSessionPin",
+    "ABSENT:identifier console.warn",
+    "identifier console.warn"
    ],
    "weakestCheck": {
     "kind": "identifier",
@@ -4621,7 +4397,7 @@
    ],
    "ledger": {
     "sec": 1,
-    "line": 191,
+    "line": 192,
     "viaAlias": null,
     "page": "STILL_OPEN",
     "category": "待修复（并 MP-R1-PAGES-NEARBY-INDEX-016）",
@@ -4681,7 +4457,7 @@
    ],
    "ledger": {
     "sec": 1,
-    "line": 192,
+    "line": 193,
     "viaAlias": null,
     "page": "STILL_OPEN",
     "category": "待修复（并 MP-R1-PAGES-NEARBY-INDEX-017）",
@@ -4785,7 +4561,7 @@
    ],
    "ledger": {
     "sec": 1,
-    "line": 193,
+    "line": 194,
     "viaAlias": null,
     "page": "STILL_OPEN",
     "category": "待修复（并 MP-R1-PAGES-NEARBY-INDEX-018）",
@@ -4892,7 +4668,7 @@
     "page": "pages/nearby/index",
     "category": "Function",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：loadActivities 非 force 分支前置 `if (activityStore.loading) return;`（force 除外），或 store 侧在途 fetch 去重共享同一 Promise。",
     "statusEvidence": "—（未修，无需）"
@@ -4991,7 +4767,7 @@
     "page": "pages/register/index",
     "category": "Function",
     "severity": "P3",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：改本地时区构造：const [y,m,d]=dateStr.split('-').map(Number); new Date(y,m-1,d) 与 new Date(now.getFullYear()-18, now.getMonth…",
     "statusEvidence": "—（未修，无需）"
@@ -5143,13 +4919,13 @@
     "page": "pages/register/index",
     "category": "Consistency",
     "severity": "P4",
-    "status": "已修复待复验",
-    "statusHead": "已修复待复验",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：utils 导出 maskPhone(phone) 单一实现，两页改调用。",
     "statusEvidence": "verify-fixes-against-artifact 逐项判定 ARTIFACT_VERIFIED：判点「maskPhone」命中于 pages/register/index.js；修后状态在被测产物里可见，且工具 HEAD 对照未…"
    },
-   "verdict": "ARTIFACT_VERIFIED",
-   "verdictWhy": "hard 判点全部在该页产物作用域内命中（1/1）",
+   "verdict": "UNDECIDABLE",
+   "verdictWhy": "授予绿用的判点在修复前的 HEAD 里就已存在（maskPhone）——命中不能证明改动落地",
    "frame": false,
    "uiMarkers": [],
    "probes": [
@@ -5166,7 +4942,7 @@
       "hit": true
      },
      "artifactFile": "pages/register/index.js",
-     "artifactExcerpt": "uccess)===!1&&a.message){l(a.message);return}const t=Se.maskPhone(I.value),r=!!(a!=null&&a.mockCode)&&(U.isDev||U.isMoc…",
+     "artifactExcerpt": "uccess)===!1&&a.message){l(a.message);return}const t=we.maskPhone(I.value),r=!!(a!=null&&a.mockCode)&&(U.isDev||U.isMoc…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -5182,7 +4958,7 @@
    "closerAction": "patched",
    "artifactEvidence": {
     "file": "pages/register/index.js",
-    "excerpt": "uccess)===!1&&a.message){l(a.message);return}const t=Se.maskPhone(I.value),r=!!(a!=null&&a.mockCode)&&(U.isDev||U.isMoc…",
+    "excerpt": "uccess)===!1&&a.message){l(a.message);return}const t=we.maskPhone(I.value),r=!!(a!=null&&a.mockCode)&&(U.isDev||U.isMoc…",
     "kind": "identifier",
     "token": "maskPhone"
    },
@@ -5224,7 +5000,7 @@
     "page": "pages/register/index",
     "category": "Interaction",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：视觉尺寸不动，@tap 移到外包 88rpx 透明 view（或 padding 扩展 + 等量负 margin）。",
     "statusEvidence": "—（未修，无需）"
@@ -5267,13 +5043,13 @@
     "page": "pages/register/index",
     "category": "UX",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：比对迁到确认框 @blur（新增 onConfirmBlur），@input 只保留「已有错误时清除」；同步改 :175 注释。",
     "statusEvidence": "—（未修，无需）"
    },
    "verdict": "NEEDS_UI_FRAME",
-   "verdictWhy": "判据是行为/观感（runtime），静态无判点；判据只点到两载体都不存在的名字 onConfirmBlur",
+   "verdictWhy": "判据是行为/观感（runtime），静态无判点；唯一抠到的判点是标识符 onConfirmBlur，压缩构建会改名",
    "frame": false,
    "uiMarkers": [
     "runtime"
@@ -5286,25 +5062,34 @@
      "polarity": "present",
      "origin": "ledger-action",
      "anchored": true,
-     "note": "点名的标识符在两个载体里都不存在：可能是未落地，也可能只是台账里的提案名（压缩构建会改局部名，不能反推）",
+     "note": "标识符 onConfirmBlur 在压缩产物里搜不到：minifier 会改局部名，静态无从分辨「没进构建」与「改名了」",
      "hard": true,
-     "usable": false,
-     "orphanName": true,
      "artifact": {
       "hit": false
      },
+     "artifactFile": null,
+     "artifactExcerpt": null,
+     "artifactScope": null,
      "src": {
-      "hit": false
-     }
+      "hit": true
+     },
+     "srcFile": "pages/register/index.vue",
+     "srcExcerpt": "失焦后比对」），并在此复位 focusField（原模板 @blur 为内联赋值）。 */ function onConfirmBlur() { focusField.value = \"\"; if (password.value && c…",
+     "grantsGreen": false,
+     "inconclusive": true,
+     "usable": true
     }
    ],
    "probeCount": 1,
-   "notes": [
-    "判据点名的标识符 onConfirmBlur 在源码树与产物里都搜不到（疑似未落地的提案名），不据此判生死"
-   ],
+   "notes": [],
    "closerAction": null,
    "artifactEvidence": null,
-   "srcEvidence": null,
+   "srcEvidence": {
+    "file": "pages/register/index.vue",
+    "excerpt": "失焦后比对」），并在此复位 focusField（原模板 @blur 为内联赋值）。 */ function onConfirmBlur() { focusField.value = \"\"; if (password.value && c…",
+    "kind": "identifier",
+    "token": "onConfirmBlur"
+   },
    "searched": [
     "identifier onConfirmBlur"
    ],
@@ -5382,7 +5167,7 @@
     "page": "pages/register/index",
     "category": "UI",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：**拆两类映射，不得合并成一句**。（A）彩色底上的白色**前景**（:1036 .sms-btn__text、:1119 .submit-btn__text、:1136 .submit-btn__spinner 的 border-t…",
     "statusEvidence": "—（未修，无需）"
@@ -5430,13 +5215,13 @@
       "hit": true
      },
      "artifactFile": "pages/register/index.wxss",
-     "artifactExcerpt": ",201,154,.12)}.field--error.data-v-c2633888{background:#fef5f6;border-color:var(--c-error, #e5454d);border-width:3rpx;p…",
+     "artifactExcerpt": "ror.data-v-e896f3a5{background:var(--c-error-bg-solid, #fef5f6);border-color:var(--c-error, #e5454d);border-width:3rpx;…",
      "artifactScope": "page",
      "src": {
       "hit": true
      },
      "srcFile": "pages/register/index.vue",
-     "srcExcerpt": "(54, 201, 154, 0.12); } .field--error { background: #fef5f6; border-color: var(--c-error, #e5454d); border-width: 3rpx;…",
+     "srcExcerpt": ".field--error { background: var(--c-error-bg-solid, #fef5f6); border-color: var(--c-error, #e5454d); border-width: 3rpx…",
      "grantsGreen": true,
      "usable": true
     },
@@ -5453,7 +5238,7 @@
       "hit": true
      },
      "artifactFile": "pages/register/index.wxml",
-     "artifactExcerpt": "633888\">{{aU}}</text></view><view wx:if=\"{{aY}}\" class=\"ghost-btn data-v-c2633888\" bindtap=\"{{aZ}}\"><text class=\"ghost-…",
+     "artifactExcerpt": "96f3a5\">{{aU}}</text></view><view wx:if=\"{{aY}}\" class=\"ghost-btn data-v-e896f3a5\" bindtap=\"{{aZ}}\"><text class=\"ghost-…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -5476,13 +5261,13 @@
       "hit": true
      },
      "artifactFile": "pages/register/index.wxml",
-     "artifactExcerpt": "-v-c2633888', bi && 'agree--error']}}\"><view class=\"{{['agree__chk', 'data-v-c2633888', bc && 'agree__chk--on', bd && '…",
+     "artifactExcerpt": "_hit data-v-e896f3a5\" bindtap=\"{{be}}\"><view class=\"{{['agree__chk', 'data-v-e896f3a5', bc && 'agree__chk--on', bd && '…",
      "artifactScope": "page",
      "src": {
       "hit": true
      },
      "srcFile": "pages/register/index.vue",
-     "srcExcerpt": "gree--error': agreeShake }\"> <view class=\"agree__chk\" :class=\"{ 'agree__chk--on': agreed, 'agree__chk--shake': agreeSh",
+     "srcExcerpt": "rpx 方框不动；padding 28rpx + 等量负 margin 抵消位移， 原 .agree__chk 的 margin-top: 2rpx 一并上移到热区层） --> <view class=\"agree__hit\" @tap=…",
      "grantsGreen": true,
      "usable": true
     },
@@ -5499,7 +5284,7 @@
       "hit": true
      },
      "artifactFile": "pages/register/index.wxml",
-     "artifactExcerpt": "/view><view class=\"{{['field', 'data-v-c2633888', m && 'field--focus', n && 'field--error', o && 'shake']}}\"><image cla…",
+     "artifactExcerpt": "/view><view class=\"{{['field', 'data-v-e896f3a5', m && 'field--focus', n && 'field--error', o && 'shake']}}\"><image cla…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -5564,7 +5349,7 @@
     "page": "pages/register/success",
     "category": "Interaction",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：.reg-success__alt 加 min-height:88rpx + flex 居中，或 padding:20rpx 24rpx 并以等量负 margin 抵消视觉位移。",
     "statusEvidence": "—（未修，无需）"
@@ -5731,7 +5516,7 @@
     "page": "subpackages/village/village/post",
     "category": "UI",
     "severity": "P3→P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：targetSubtitle 首行补 `if (isCircleTarget.value && !targetCircle.value) return \"圈子成员可见\";`，与 :214 标题兜底和 :771 标签同语义。；同族残余 …",
     "statusEvidence": "—（未修，无需）"
@@ -5855,22 +5640,45 @@
     "page": "subpackages/village/village/post",
     "category": "UI",
     "severity": "P4",
-    "status": "已修复待复验（本文件半边落**工作树**，HEAD 874ff52f 未含；同族两处仍开放）",
-    "statusHead": "已修复待复验",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：改 background: var(--c-neutral-0, #FFFFFF)（post.vue 已落，见 statusEvidence）；与 publish.vue:1119-1121、village/index.vue:137…",
     "statusEvidence": "apps/client/src/subpackages/village/village/post.vue:1773-1774（工作树：`page { background: var(--c-neutral-0, #FFFFFF); }`）…"
    },
    "verdict": "ARTIFACT_VERIFIED",
-   "verdictWhy": "hard 判点全部在该页产物作用域内命中（2/2）",
+   "verdictWhy": "hard 判点全部在该页产物作用域内命中（3/3）",
    "frame": false,
    "uiMarkers": [],
    "probes": [
     {
      "kind": "css-decl",
-     "token": "background:var(--c-neutral-0, #FFFFFF)",
+     "token": "gap:6rpx",
      "carrier": "wxss",
      "polarity": "present",
      "origin": "src-anchor",
+     "anchored": false,
+     "note": null,
+     "hard": true,
+     "artifact": {
+      "hit": true
+     },
+     "artifactFile": "subpackages/village/village/post.wxss",
+     "artifactExcerpt": "a-v-ef1fb74b{flex:1;display:flex;flex-direction:column;gap:6rpx}.post-tip__title.data-v-ef1fb74b{font-size:var(--fs-md,…",
+     "artifactScope": "page",
+     "src": {
+      "hit": true
+     },
+     "srcFile": "subpackages/village/village/post.vue",
+     "srcExcerpt": "flex: 1; display: flex; flex-direction: column; gap: 6rpx; } .post-tip__title { font-size: var(--fs-md, 26rpx); font-we…",
+     "grantsGreen": true,
+     "usable": true
+    },
+    {
+     "kind": "css-decl",
+     "token": "background:var(--c-neutral-0, #FFFFFF)",
+     "carrier": "wxss",
+     "polarity": "present",
+     "origin": "ledger-action",
      "anchored": true,
      "note": null,
      "hard": true,
@@ -5878,7 +5686,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/village/village/post.wxss",
-     "artifactExcerpt": "--c-brand, #36C99A);flex-shrink:0}page.data-v-c61c4a01{background:var(--c-neutral-0, #FFFFFF)}",
+     "artifactExcerpt": "--c-brand, #36C99A);flex-shrink:0}page.data-v-ef1fb74b{background:var(--c-neutral-0, #FFFFFF)}",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -5893,7 +5701,7 @@
      "token": "FFFFFF",
      "carrier": "js+wxml",
      "polarity": "present",
-     "origin": "src-anchor",
+     "origin": "ledger-action",
      "anchored": true,
      "note": null,
      "hard": true,
@@ -5930,7 +5738,7 @@
      }
     }
    ],
-   "probeCount": 3,
+   "probeCount": 4,
    "notes": [
     "丢判为「修前值」的探针：--c-neutral-0（同时出现在证据/修前列）",
     "判据点名的标识符 statusEvidence 在源码树与产物里都搜不到（疑似未落地的提案名），不据此判生死"
@@ -5938,17 +5746,18 @@
    "closerAction": null,
    "artifactEvidence": {
     "file": "subpackages/village/village/post.wxss",
-    "excerpt": "--c-brand, #36C99A);flex-shrink:0}page.data-v-c61c4a01{background:var(--c-neutral-0, #FFFFFF)}",
+    "excerpt": "a-v-ef1fb74b{flex:1;display:flex;flex-direction:column;gap:6rpx}.post-tip__title.data-v-ef1fb74b{font-size:var(--fs-md,…",
     "kind": "css-decl",
-    "token": "background:var(--c-neutral-0, #FFFFFF)"
+    "token": "gap:6rpx"
    },
    "srcEvidence": {
     "file": "subpackages/village/village/post.vue",
-    "excerpt": "R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */ page { background: var(--c-neutral-0, #FFFFFF); } </style>",
+    "excerpt": "flex: 1; display: flex; flex-direction: column; gap: 6rpx; } .post-tip__title { font-size: var(--fs-md, 26rpx); font-we…",
     "kind": "css-decl",
-    "token": "background:var(--c-neutral-0, #FFFFFF)"
+    "token": "gap:6rpx"
    },
    "searched": [
+    "css-decl gap:6rpx",
     "css-decl background:var(--c-neutral-0, #FFFFFF)",
     "identifier FFFFFF",
     "identifier statusEvidence"
@@ -5957,7 +5766,7 @@
     "kind": "identifier",
     "specificity": 2,
     "token": "FFFFFF",
-    "n": 2
+    "n": 3
    }
   },
   {
@@ -5982,7 +5791,7 @@
     "page": "subpackages/village/village/post",
     "category": "UI",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：删除 :1451 的 height 声明（宽度由 :1450 calc 决定、方形由 :1452 aspect-ratio 决定）；若要兼容极旧内核改 padding-top 百分比撑高。",
     "statusEvidence": "—（未修，无需）"
@@ -6022,13 +5831,13 @@
     "page": "subpackages/circles/circles/post-topic",
     "category": "Data",
     "severity": "P3",
-    "status": "已修复待复验",
-    "statusHead": "已修复待复验",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：448-449 改用报名语义 key（新增 postTopicActivityEnrollHint，zh/en 各一条），或给 ActivityCard 传 hideEnroll 在发帖选择场景隐藏报名钮",
     "statusEvidence": "verify-fixes-against-artifact 逐项判定 ARTIFACT_VERIFIED：判点「ActivityCard」命中于 subpackages/circles/circles/post-topic.js；修后状态…"
    },
-   "verdict": "ARTIFACT_VERIFIED",
-   "verdictWhy": "hard 判点全部在该页产物作用域内命中（2/2）",
+   "verdict": "UNDECIDABLE",
+   "verdictWhy": "授予绿用的判点在修复前的 HEAD 里就已存在（ActivityCard, postTopicActivityEnrollHint）——命中不能证明改动落地",
    "frame": false,
    "uiMarkers": [],
    "probes": [
@@ -6148,7 +5957,7 @@
     "page": "subpackages/circles/circles/post-topic",
     "category": "UI",
     "severity": "P3",
-    "status": "待修复",
+    "status": "待修复（去向：closer=判据本已满足；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：遮罩改已定义的 --c-bg-overlay（design-variables.scss:123 + :368）；--c-bg-brand-soft 在主题层补亮/暗双值定义（页面代码不动即生效）。",
     "statusEvidence": "—（未修，无需）"
@@ -6452,7 +6261,7 @@
     "page": "subpackages/circles/circles/post-topic",
     "category": "Interaction",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：490/697 禁用条件并入 '// isSubmitting'，提交中切 loading 文案/图标，使防重在途有视觉反馈",
     "statusEvidence": "—（未修，无需）"
@@ -6705,7 +6514,7 @@
     "page": "pages/profile/index",
     "category": "Data",
     "severity": "P3",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：interactionItems 的 visitors 项改 likesStore.visitors.length // profileStore.profileStats?.visitorsCount // 0，与 :694 min…",
     "statusEvidence": "—（未修，无需）"
@@ -6857,7 +6666,7 @@
     "page": "pages/profile/index",
     "category": "Function",
     "severity": "P4",
-    "status": "已修复待复验",
+    "status": "已修复待复验（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "已修复待复验",
     "action": "修：删除 socialProgressStore 实例化与 onShow 的 fetchProgress()（或等进度 UI 回归时一并恢复）。",
     "statusEvidence": "本轮删除：profile/index.vue 的 useSocialProgressStore 导入与实例化（原 :27/:124）、onShow 里的 socialProgressStore.fetchProgress() 调用（原 :…"
@@ -7213,13 +7022,13 @@
     "page": "subpackages/village/village/index",
     "category": "UI",
     "severity": "P3",
-    "status": "已修复待复验",
-    "statusHead": "已修复待复验",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：改 var(--c-neutral-50, #F7FAF9)（design-variables.scss:90/:344 已定义，与帖子频道输入条同口径），或在 design-variables.scss 的 page 块补 --c-…",
     "statusEvidence": "verify-fixes-against-artifact 逐项判定 ARTIFACT_VERIFIED：判点「--c-neutral-50」命中于 subpackages/village/village/index.wxss；修后状态在…"
    },
-   "verdict": "ARTIFACT_VERIFIED",
-   "verdictWhy": "hard 判点全部在该页产物作用域内命中（2/2）",
+   "verdict": "UNDECIDABLE",
+   "verdictWhy": "授予绿用的判点在修复前的 HEAD 里就已存在（--c-neutral-50, F7FAF9）——命中不能证明改动落地",
    "frame": false,
    "uiMarkers": [],
    "probes": [
@@ -7397,7 +7206,7 @@
     "page": "subpackages/village/village/index",
     "category": "Architecture",
     "severity": "P4",
-    "status": "已修复待复验",
+    "status": "已修复待复验（去向：closer=closer 无记录；判据台=产物已见；缺的载体=UI 帧；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "已修复待复验",
     "action": "修：删除 ChannelTabs.vue 的 update:modelValue emit（声明+调用），或在 emits/select 处加注释声明本组件禁用 v-model 以防线回归（MP-R1-VILLAGE-INDEX-101 …",
     "statusEvidence": "update:modelValue 的声明与调用两处都已删除：HEAD 版 ChannelTabs.vue 该串计 2 处，工作树计 0 处，被测产物 components/village/ChannelTabs.js 也计 0 处——三…"
@@ -7473,7 +7282,7 @@
     "page": "subpackages/village/village/index",
     "category": "Consistency",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：兴趣圈精选话题失败时按 circleStore.errorMessage 渲染提示条 + 重试（重跑 loadChannelData(id,true)）；活动列表补 v-else EmptyState『暂无活动』。",
     "statusEvidence": "—（未修，无需）"
@@ -7811,7 +7620,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/circles/circles/index.wxml",
-     "artifactExcerpt": "wx:for=\"{{g}}\" wx:for-item=\"tab\" wx:key=\"d\" class=\"{{['circles-tab', 'data-v-56284b57', tab.e && 'circles-tab--active']…",
+     "artifactExcerpt": "wx:for=\"{{g}}\" wx:for-item=\"tab\" wx:key=\"d\" class=\"{{['circles-tab', 'data-v-85666a04', tab.e && 'circles-tab--active']…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -7834,7 +7643,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/circles/circles/index.wxml",
-     "artifactExcerpt": "data-v-56284b57\">{{f}}</text></view><scroll-view class=\"circles-tabs data-v-56284b57\" scroll-x show-scrollbar=\"{{false}…",
+     "artifactExcerpt": "data-v-85666a04\">{{f}}</text></view><scroll-view class=\"circles-tabs data-v-85666a04\" scroll-x show-scrollbar=\"{{false}…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -7901,7 +7710,7 @@
     "page": "pages/home/index",
     "category": "UI",
     "severity": "P2→P3",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：删除 :68 共同兴趣行（或按既成事实回写规范，属 SPECDOC 裁决）；头像改用 person-* 半身池或顶部锚定裁切保证脸部入画。",
     "statusEvidence": "—（未修，无需）"
@@ -7971,7 +7780,7 @@
     "page": "pages/home/index",
     "category": "UI",
     "severity": "P3→P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：换同族线性刷新 SVG（IMAGE_PATHS 取径 + resolveMediaUrl），色 --c-text-tertiary、与 22rpx 文字同字号；参照同文件 :85-87 的「♥ 字符→图片资源」既有改法。",
     "statusEvidence": "—（未修，无需）"
@@ -7996,7 +7805,7 @@
       "hit": true
      },
      "artifactFile": "components/home/TodayRecommendationCard.js",
-     "artifactExcerpt": "ng?{}:e.item?i.e({d:a.value||!e.item.photoUrl?i.unref(m.IMAGE_PATHS).POST_PLACEHOLDER:i.unref(r.resolveMediaUrl)(e.item…",
+     "artifactExcerpt": "eturn(e,t)=>i.e({a:i.unref(o.resolveMediaUrl)(i.unref(m.IMAGE_PATHS).ICONS_COMMON.REFRESH_SVG),b:i.o(n=>e.$emit(\"rotate…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -8019,7 +7828,7 @@
       "hit": true
      },
      "artifactFile": "components/home/TodayRecommendationCard.js",
-     "artifactExcerpt": "toUrl?i.unref(m.IMAGE_PATHS).POST_PLACEHOLDER:i.unref(r.resolveMediaUrl)(e.item.photoUrl),e:i.o(n=>a.value=!0,\"c6\"),f:e…",
+     "artifactExcerpt": "ellation),t.join(\" · \")});return(e,t)=>i.e({a:i.unref(o.resolveMediaUrl)(i.unref(m.IMAGE_PATHS).ICONS_COMMON.REFRESH_SV…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -8037,7 +7846,7 @@
    "closerAction": null,
    "artifactEvidence": {
     "file": "components/home/TodayRecommendationCard.js",
-    "excerpt": "ng?{}:e.item?i.e({d:a.value||!e.item.photoUrl?i.unref(m.IMAGE_PATHS).POST_PLACEHOLDER:i.unref(r.resolveMediaUrl)(e.item…",
+    "excerpt": "eturn(e,t)=>i.e({a:i.unref(o.resolveMediaUrl)(i.unref(m.IMAGE_PATHS).ICONS_COMMON.REFRESH_SVG),b:i.o(n=>e.$emit(\"rotate…",
     "kind": "identifier",
     "token": "IMAGE_PATHS"
    },
@@ -8090,7 +7899,7 @@
     "page": "pages/home/index",
     "category": "UI",
     "severity": "P4",
-    "status": "已修复待复验",
+    "status": "已修复待复验（去向：closer=待人裁决；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "已修复待复验",
     "action": "修：HomeHeader 左内距改 var(--page-padding)；须同批处理 InviteBanner.vue:35 的 40rpx，否则只是换一处漂移。裁决结果（本轮）：左基线判成 **32rpx**——按 素材/理想效果图/…",
     "statusEvidence": "verify-fixes-against-artifact 逐项判定 ARTIFACT_VERIFIED：判点「104px) 16rpx var(--page-padding)」命中于 components/home/HomeHeader…"
@@ -8200,7 +8009,7 @@
     "page": "pages/login/index",
     "category": "UI",
     "severity": "P1",
-    "status": "已修复待复验",
+    "status": "已修复待复验（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "已修复待复验",
     "action": "修：三枚按钮 border-radius 改 var(--r-full)（9999rpx）。",
     "statusEvidence": "三载体同向已实证：HEAD 版 pages/login/index.vue 里 border-radius var(--r-full) 计 1 处、var(--r-xl) 计 4 处；工作树反过来是 r-full 计 4 处、r-xl 计…"
@@ -8249,7 +8058,7 @@
       "hit": true
      },
      "artifactFile": "pages/login/index.wxss",
-     "artifactExcerpt": "data-v-7a7a915f{width:100%;height:var(--btn-height-md);border-radius:var(--r-full);background:var(--c-brand);display:fl…",
+     "artifactExcerpt": "data-v-dda862f8{width:100%;height:var(--btn-height-md);border-radius:var(--r-full);background:var(--c-brand);display:fl…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -8272,7 +8081,7 @@
       "hit": true
      },
      "artifactFile": "pages/login/index.wxml",
-     "artifactExcerpt": "}\" class=\"login-quick data-v-7a7a915f\"><view class=\"{{['btn-primary', 'press-feedback', 'data-v-7a7a915f', n && 'btn--l…",
+     "artifactExcerpt": "}\" class=\"login-quick data-v-dda862f8\"><view class=\"{{['btn-primary', 'press-feedback', 'data-v-dda862f8', n && 'btn--l…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -8334,13 +8143,13 @@
     "page": "pages/login/index",
     "category": "Consistency",
     "severity": "P2",
-    "status": "已修复待复验",
-    "statusHead": "已修复待复验",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：.btn-guest 去描边、底色改浅灰填充（var(--c-bg-surface) 或 --c-neutral-100），两枚白按钮按理想图补柔影（var(--s-float-btn)/--card-shadow）。",
     "statusEvidence": "verify-fixes-against-artifact 逐项判定 ARTIFACT_VERIFIED：判点「--s-float-btn」命中于 pages/login/index.wxss；修后状态在被测产物里可见，且工具 HEAD …"
    },
-   "verdict": "ARTIFACT_VERIFIED",
-   "verdictWhy": "hard 判点全部在该页产物作用域内命中（2/2）",
+   "verdict": "UNDECIDABLE",
+   "verdictWhy": "授予绿用的判点在修复前的 HEAD 里就已存在（--s-float-btn, --c-bg-surface）——命中不能证明改动落地",
    "frame": false,
    "uiMarkers": [],
    "probes": [
@@ -8357,7 +8166,7 @@
       "hit": true
      },
      "artifactFile": "pages/login/index.wxss",
-     "artifactExcerpt": ";justify-content:center;gap:var(--sp-3);box-shadow:var(--s-float-btn)}.btn--loading.data-v-7a7a915f{opacity:.65}.btn-ic…",
+     "artifactExcerpt": ";justify-content:center;gap:var(--sp-3);box-shadow:var(--s-float-btn)}.btn--loading.data-v-dda862f8{opacity:.65}.btn-ic…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -8396,7 +8205,7 @@
    "closerAction": null,
    "artifactEvidence": {
     "file": "pages/login/index.wxss",
-    "excerpt": ";justify-content:center;gap:var(--sp-3);box-shadow:var(--s-float-btn)}.btn--loading.data-v-7a7a915f{opacity:.65}.btn-ic…",
+    "excerpt": ";justify-content:center;gap:var(--sp-3);box-shadow:var(--s-float-btn)}.btn--loading.data-v-dda862f8{opacity:.65}.btn-ic…",
     "kind": "css-var",
     "token": "--s-float-btn"
    },
@@ -8439,7 +8248,7 @@
     "page": "pages/login/index",
     "category": "UX",
     "severity": "P2",
-    "status": "待修复",
+    "status": "待修复（去向：closer=P4延后出本轮；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：两键值分开命名（如「手机号快捷登录」/「使用验证码或密码登录」）并弱化兜底样式，zh-CN/en-US 同批提交。",
     "statusEvidence": "—（未修，无需）"
@@ -8503,8 +8312,8 @@
     "page": "pages/messages/index",
     "category": "UI",
     "severity": "P2→P4",
-    "status": "已修复待复验",
-    "statusHead": "已修复待复验",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：background: var(--c-bg-page)；素材 等待页面.png 另出浅绿底或透明底版本。",
     "statusEvidence": "—（未修，无需） 22:40Z 回源+回产物核：源码 `components/discover/NotLoggedWaiting.vue:134-139` 现为 `background: var(--c-bg-page)`；全仓 `gre…"
    },
@@ -8598,7 +8407,7 @@
       "hit": true
      },
      "artifactFile": "pages/messages/index.js",
-     "artifactExcerpt": "ge.useMenuButtonRect(),T=e.computed(()=>I.isLoggedIn||U.useMock());function V(){u.openAppPath(\"/pages/login/index\")}fun…",
+     "artifactExcerpt": "ge.useMenuButtonRect(),I=e.computed(()=>T.isLoggedIn||L.useMock());function V(){i.openAppPath(\"/pages/login/index\")}fun…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -8690,7 +8499,7 @@
       "hit": true
      },
      "artifactFile": "pages/messages/index.wxss",
-     "artifactExcerpt": "-right, 7px) + 104px);background:var(--c-bg-container, #FFFFFF)}.header__left.data-v-053634b7{display:flex;flex-directi…",
+     "artifactExcerpt": "-right, 7px) + 104px);background:var(--c-bg-container, #FFFFFF)}.header__left.data-v-93c8baed{display:flex;flex-directi…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -8833,8 +8642,8 @@
     "page": "pages/messages/index",
     "category": "UI",
     "severity": "P2→P3",
-    "status": "已修复待复验",
-    "statusHead": "已修复待复验",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：标题升 56rpx、主按钮高度取规范档并改 background: var(--c-brand) + --s-brand；幽灵按钮去底色改「文字 + 左右 hairline」。",
     "statusEvidence": "—（未修，无需） 22:40Z 回产物核：`NotLoggedWaiting.wxss` 内 `.not-logged__title{font-size:56rpx}`（原 40rpx）、`.not-logged__btn{height:…"
    },
@@ -9074,10 +8883,35 @@
      "srcExcerpt": "</view> <view class=\"not-logged__btn not-logged__btn--ghost press-feedback\" hover-class=\"press-feedback--active",
      "grantsGreen": true,
      "usable": true
+    },
+    {
+     "kind": "css-decl",
+     "token": "background:transparent〕",
+     "carrier": "wxss",
+     "polarity": "present",
+     "origin": "ledger-statusEvidence",
+     "anchored": false,
+     "note": null,
+     "hard": false,
+     "artifact": {
+      "hit": false
+     },
+     "artifactFile": null,
+     "artifactExcerpt": null,
+     "artifactScope": null,
+     "src": {
+      "hit": false
+     },
+     "srcFile": null,
+     "srcExcerpt": null,
+     "grantsGreen": false,
+     "usable": true
     }
    ],
-   "probeCount": 10,
-   "notes": [],
+   "probeCount": 11,
+   "notes": [
+    "soft 判点未确认（不影响本判决，仅备查）：background:transparent〕"
+   ],
    "closerAction": null,
    "artifactEvidence": {
     "file": "app.wxss",
@@ -9101,7 +8935,8 @@
     "css-var --btn-height-md",
     "class not-logged__btn",
     "class not-logged__title",
-    "class not-logged__btn--ghost"
+    "class not-logged__btn--ghost",
+    "css-decl background:transparent〕"
    ],
    "weakestCheck": {
     "kind": "class",
@@ -9139,7 +8974,7 @@
     "page": "pages/messages/index",
     "category": "MiniProgram",
     "severity": "P3",
-    "status": "待修复",
+    "status": "待修复（去向：closer=P4延后出本轮；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：拆为 XunmiMascot + CSS 虚线轨道 + 真实头像池（assets/images/people/person-*）循环，删除烘焙图；补 UnlockGuideOverlay 入口。",
     "statusEvidence": "—（未修，无需）"
@@ -9219,13 +9054,13 @@
     "page": "pages/messages/index",
     "category": "Function",
     "severity": "P1→P4",
-    "status": "已修复待复验",
+    "status": "已修复待复验（去向：closer=P4延后出本轮；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "已修复待复验",
-    "action": "修：**删掉原句「在 mock 种子补 warmPeople≥4、assistant≥1（只加种子，不碰 store 逻辑）」——字面不可行**：dashboard 是单一 MessageDashboardView、五块全必填（api-t…",
+    "action": "修：**删掉原句「在 mock 种子补 ⟨warmPeople⟩≥4、assistant≥1（只加种子，不碰 store 逻辑）」——字面不可行**：dashboard 是单一 ⟨MessageDashboardView⟩、五块全必填（a…",
     "statusEvidence": "〔§71 静态判据自相矛盾〕本条被 verify-fixes-against-artifact 判为 PROBE_CONFLICTS（同一标识既要求可见又要求不可见＝台账写的是「二选一」处置），因此工具给的 SOURCE_ONLY / A…"
    },
-   "verdict": "UNDECIDABLE",
-   "verdictWhy": "判据自相矛盾：同一标识（warmPeople）既被要求存在于产物、又被要求从产物里消失 —— 台账这条是「二选一」的处置，需人先选定唯一改点再判；在此之前任何一侧命中都不构成已修",
+   "verdict": "NEEDS_UI_FRAME",
+   "verdictWhy": "台账自述需要帧/人工复验；判据没点名可核验的修后物件（无 closer 差异串/源码锚点/显式「改→新值」）",
    "frame": true,
    "uiMarkers": [
     "visual",
@@ -9233,133 +9068,33 @@
    ],
    "probes": [
     {
-     "kind": "backend",
-     "token": "MockMessageDashboardController",
-     "carrier": "backend",
-     "polarity": "present",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": "后端类名不属于客户端产物载体（apps/client/dist 里没有服务端 class）",
-     "hard": true,
-     "usable": false
-    },
-    {
      "kind": "identifier",
      "token": "warmPeople",
-     "carrier": "js+wxml",
-     "polarity": "absent",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "pages/messages/index.js",
-     "artifactExcerpt": "mputed(()=>{var t,o;return(o=(t=v.value)==null?void 0:t.warmPeople)!=null?o:[]}),d=e.computed(()=>a.sessions.filter(t=>…",
-     "artifactScope": "page",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "pages/messages/index.vue",
-     "srcExcerpt": "03（真实数据要求）：移除硬编码假用户回退（小林/小雨/小周/阿杰）—— * 仅展示后端 dashboard.warmPeople 真实数据；后端为空时区块隐藏 * （模板 v-if=\"warmPeople.length > 0\"），不再…",
-     "grantsGreen": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "warmPeople",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "pages/messages/index.js",
-     "artifactExcerpt": "mputed(()=>{var t,o;return(o=(t=v.value)==null?void 0:t.warmPeople)!=null?o:[]}),d=e.computed(()=>a.sessions.filter(t=>…",
-     "artifactScope": "page",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "pages/messages/index.vue",
-     "srcExcerpt": "03（真实数据要求）：移除硬编码假用户回退（小林/小雨/小周/阿杰）—— * 仅展示后端 dashboard.warmPeople 真实数据；后端为空时区块隐藏 * （模板 v-if=\"warmPeople.length > 0\"），不再…",
-     "grantsGreen": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "recentChats",
-     "carrier": "js+wxml",
-     "polarity": "absent",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": true
-     },
-     "artifactFile": "stores/messages.js",
-     "artifactExcerpt": "ard\",method:\"GET\"});if(this.dashboard=e,Array.isArray(e.recentChats)){const s=new Map(this.sessions.map(r=>[r.id,r])),t…",
-     "artifactScope": "page",
-     "src": {
-      "hit": true
-     },
-     "srcFile": "stores/messages.ts",
-     "srcExcerpt": "——原实现 // this.sessions=merged 整表覆盖，dashboard（后端 recentChats 不含官方号） // 后到时会丢弃 fetchSessions 刚写入的 official-*/temp_anonymo…",
-     "grantsGreen": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "MessageDashboardView",
-     "carrier": "js+wxml",
-     "polarity": "absent",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": "标识符 MessageDashboardView 在压缩产物里搜不到：该名字可能从未进过构建（minifier 改局部名），「删掉了」在产物侧不可观测",
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": true
-     },
-     "srcFile": "stores/messages.ts",
-     "srcExcerpt": "type { InteractionEventView, OfficialAccountView, MessageDashboardView, RelationshipInfoView, OfficialMessageView, } fr…",
-     "grantsGreen": false,
-     "inconclusive": true,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "PROBE_CONFLICTS",
      "carrier": "js+wxml",
      "polarity": "present",
      "origin": "ledger-statusEvidence",
      "anchored": false,
-     "note": "点名的标识符在两个载体里都不存在：可能是未落地，也可能只是台账里的提案名（压缩构建会改局部名，不能反推）",
+     "note": null,
      "hard": false,
-     "usable": false,
-     "orphanName": true,
      "artifact": {
-      "hit": false
+      "hit": true
      },
+     "artifactFile": "pages/messages/index.js",
+     "artifactExcerpt": "mputed(()=>{var t,o;return(o=(t=v.value)==null?void 0:t.warmPeople)!=null?o:[]}),d=e.computed(()=>a.sessions.filter(t=>…",
+     "artifactScope": "page",
      "src": {
-      "hit": false
-     }
+      "hit": true
+     },
+     "srcFile": "pages/messages/index.vue",
+     "srcExcerpt": "03（真实数据要求）：移除硬编码假用户回退（小林/小雨/小周/阿杰）—— * 仅展示后端 dashboard.warmPeople 真实数据；后端为空时区块隐藏 * （模板 v-if=\"warmPeople.length > 0\"），不再…",
+     "grantsGreen": true,
+     "usable": true
     }
    ],
-   "probeCount": 6,
+   "probeCount": 1,
    "notes": [
     "closer 记为 deferred_p4（本轮未动手）",
-    "判据点名的标识符 PROBE_CONFLICTS 在源码树与产物里都搜不到（疑似未落地的提案名），不据此判生死",
-    "判据自相矛盾（同一标识既要求可见又要求不可见）：warmPeople"
+    "只抠到 soft 级顺手词（identifier warmPeople），不足以授予绿"
    ],
    "closerAction": "deferred_p4",
    "artifactEvidence": {
@@ -9375,18 +9110,13 @@
     "token": "warmPeople"
    },
    "searched": [
-    "backend MockMessageDashboardController",
-    "ABSENT:identifier warmPeople",
-    "identifier warmPeople",
-    "ABSENT:identifier recentChats",
-    "ABSENT:identifier MessageDashboardView",
-    "identifier PROBE_CONFLICTS"
+    "identifier warmPeople"
    ],
    "weakestCheck": {
     "kind": "identifier",
     "specificity": 2,
     "token": "warmPeople",
-    "n": 2
+    "n": 1
    }
   },
   {
@@ -9411,7 +9141,7 @@
     "page": "pages/messages/index",
     "category": "UI",
     "severity": "P2→P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：交换两个 view 的 DOM 顺序即可（勿改点击语义）。",
     "statusEvidence": "—（未修，无需）"
@@ -9453,8 +9183,8 @@
     "page": "pages/messages/index",
     "category": "UI",
     "severity": "P2→P4",
-    "status": "已修复待复验",
-    "statusHead": "已修复待复验",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：CTA 半：.quick-card__btn 改 align-self:flex-end（无争议、与理想图一致）。容器半：先裁决「两张独立白卡」是否按既成事实回写规范，再决定是否合并容器底色（勿盲改，见 note）。",
     "statusEvidence": "verify-fixes-against-artifact 逐项判定 ARTIFACT_VERIFIED：判点「align-self:flex-end」命中于 pages/messages/index.wxss；修后状态在被测产物里可见，…"
    },
@@ -9476,7 +9206,7 @@
       "hit": true
      },
      "artifactFile": "pages/messages/index.wxss",
-     "artifactExcerpt": "t-secondary, #6B7571)}.quick-card__btn.data-v-053634b7{align-self:flex-end;padding:12rpx 32rpx;border-radius:999rpx;bac…",
+     "artifactExcerpt": "t-secondary, #6B7571)}.quick-card__btn.data-v-93c8baed{align-self:flex-end;padding:12rpx 32rpx;border-radius:999rpx;bac…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -9485,14 +9215,39 @@
      "srcExcerpt": "r(--c-text-secondary, #6B7571); } .quick-card__btn { align-self: flex-end; padding: 12rpx 32rpx; border-radius: 999rpx;…",
      "grantsGreen": true,
      "usable": true
+    },
+    {
+     "kind": "css-decl",
+     "token": "align-self:flex-end〕",
+     "carrier": "wxss",
+     "polarity": "present",
+     "origin": "ledger-statusEvidence",
+     "anchored": false,
+     "note": null,
+     "hard": false,
+     "artifact": {
+      "hit": false
+     },
+     "artifactFile": null,
+     "artifactExcerpt": null,
+     "artifactScope": null,
+     "src": {
+      "hit": false
+     },
+     "srcFile": null,
+     "srcExcerpt": null,
+     "grantsGreen": false,
+     "usable": true
     }
    ],
-   "probeCount": 1,
-   "notes": [],
+   "probeCount": 2,
+   "notes": [
+    "soft 判点未确认（不影响本判决，仅备查）：align-self:flex-end〕"
+   ],
    "closerAction": null,
    "artifactEvidence": {
     "file": "pages/messages/index.wxss",
-    "excerpt": "t-secondary, #6B7571)}.quick-card__btn.data-v-053634b7{align-self:flex-end;padding:12rpx 32rpx;border-radius:999rpx;bac…",
+    "excerpt": "t-secondary, #6B7571)}.quick-card__btn.data-v-93c8baed{align-self:flex-end;padding:12rpx 32rpx;border-radius:999rpx;bac…",
     "kind": "css-decl",
     "token": "align-self:flex-end"
    },
@@ -9503,7 +9258,8 @@
     "token": "align-self:flex-end"
    },
    "searched": [
-    "css-decl align-self:flex-end"
+    "css-decl align-self:flex-end",
+    "css-decl align-self:flex-end〕"
    ],
    "weakestCheck": {
     "kind": "css-decl",
@@ -9534,7 +9290,7 @@
     "page": "pages/messages/index",
     "category": "UI",
     "severity": "P3→P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：静音图标移至 :536-546 昵称行尾（与「聊天中/暧昧中」标签同排），:557 时间行只保留数字。；修法约束：图标本体是 MP-R1-PAGES-MESSAGES-INDEX-003 的用户要求修复，不得判成「图标多余」",
     "statusEvidence": "—（未修，无需）"
@@ -9579,7 +9335,7 @@
     "page": "pages/profile/index",
     "category": "UI",
     "severity": "P2",
-    "status": "待修复",
+    "status": "待修复（去向：closer=已改工作树；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：__cert-dot-icon 的 src 换 IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG（config/images.ts:245）；顺手把 :187 #36C99A、:188 #ffffff …",
     "statusEvidence": "—（未修，无需）"
@@ -9783,13 +9539,13 @@
     "page": "pages/profile/index",
     "category": "UI",
     "severity": "P2",
-    "status": "待修复",
-    "statusHead": "待修复",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：四组件横向 gutter 统一 margin: var(--page-padding)（=32rpx，theme/design-variables.scss:528），禁组件自带 24rpx/20rpx 字面量。",
     "statusEvidence": "—（未修，无需） 〔§97 判据台给绿但我**不抬状态**：工具唯一硬判点是 MyInteraction.wxss 里的 var(--page-padding)（1/1 命中），而本条处置写的是「四组件横向 gutter 统一、禁 24r…"
    },
-   "verdict": "ARTIFACT_VERIFIED",
-   "verdictWhy": "hard 判点全部在该页产物作用域内命中（1/2）",
+   "verdict": "NEEDS_UI_FRAME",
+   "verdictWhy": "判据是行为/观感（runtime），静态无判点；授予绿用的判点在修复前的 HEAD 里就已存在（--page-padding）——命中不能证明改动落地",
    "frame": false,
    "uiMarkers": [
     "runtime"
@@ -10017,7 +9773,7 @@
     "page": "pages/profile/index",
     "category": "Consistency",
     "severity": "P2",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：拍板「故事/日常」术语后组件内文案与 :183/:256 注释统一（理想图为「添加故事」则回改文案，否则改注释）；卡片数量不属修复范围。",
     "statusEvidence": "—（未修，无需）"
@@ -10497,7 +10253,7 @@
     "page": "subpackages/campus/campus/hub",
     "category": "Function",
     "severity": "P2",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：按理想图把统计行放回独立一行（badge 回校名行），或去掉 nowrap 允许两行；亦可给 CTA 列限宽。",
     "statusEvidence": "—（未修，无需）"
@@ -10537,7 +10293,7 @@
     "page": "subpackages/campus/campus/hub",
     "category": "UX",
     "severity": "P2→P3",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：删掉 header 内的重复 CTA（理想图 header 只有标题+搜索图标），或降为文字链，保留横幅单一认证入口。",
     "statusEvidence": "—（未修，无需）"
@@ -10577,7 +10333,7 @@
     "page": "subpackages/campus/campus/hub",
     "category": "UI",
     "severity": "P3",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：封面改近正方形(如 160×160rpx)对齐参考，并为统计行让出宽度",
     "statusEvidence": "—（未修，无需）"
@@ -10617,8 +10373,8 @@
     "page": "subpackages/campus/campus/hub",
     "category": "UX",
     "severity": "P2→P3",
-    "status": "已修复待复验",
-    "statusHead": "已修复待复验",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：只改 :548 → color: var(--c-brand, #36C99A)，与 :551-560 的绿下划线同族；默认 tab 不动。",
     "statusEvidence": "verify-fixes-against-artifact 逐项判定 ARTIFACT_VERIFIED：判点「color:var(--c-brand, #36C99A)」命中于 subpackages/campus/campus/hub…"
    },
@@ -10640,7 +10396,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/campus/campus/hub.wxss",
-     "artifactExcerpt": "n-text.data-v-bf7fd403{font-size:24rpx;font-weight:600;color:var(--c-brand, #36C99A)}.campus-hub__cert-badge.data-v-bf7…",
+     "artifactExcerpt": "n-text.data-v-420fe180{font-size:24rpx;font-weight:600;color:var(--c-brand, #36C99A)}.campus-hub__cert-badge.data-v-420…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -10663,7 +10419,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/campus/campus/hub.wxss",
-     "artifactExcerpt": "padding:8rpx 24rpx;border-radius:999rpx;background:var(--c-brand, #36C99A)}.campus-hub__cert-error-retry-text.data-v-bf…",
+     "artifactExcerpt": "padding:8rpx 24rpx;border-radius:999rpx;background:var(--c-brand, #36C99A)}.campus-hub__cert-error-retry-text.data-v-42…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -10679,7 +10435,7 @@
    "closerAction": null,
    "artifactEvidence": {
     "file": "subpackages/campus/campus/hub.wxss",
-    "excerpt": "n-text.data-v-bf7fd403{font-size:24rpx;font-weight:600;color:var(--c-brand, #36C99A)}.campus-hub__cert-badge.data-v-bf7…",
+    "excerpt": "n-text.data-v-420fe180{font-size:24rpx;font-weight:600;color:var(--c-brand, #36C99A)}.campus-hub__cert-badge.data-v-420…",
     "kind": "css-decl",
     "token": "color:var(--c-brand, #36C99A)"
    },
@@ -10727,7 +10483,7 @@
     "page": "subpackages/campus/campus/hub",
     "category": "Architecture",
     "severity": "P3→P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=P4延后出本轮；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：统一到 campus.hub / campus.index 两级（zh/en 同批迁移）",
     "statusEvidence": "—（未修，无需）"
@@ -10773,7 +10529,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/campus/campus/hub.wxml",
-     "artifactExcerpt": "<view class=\"campus-hub data-v-bf7fd403\" style=\"{{Z}}\"><view wx:if=\"{{a}}\" class=\"campus-hub__cer",
+     "artifactExcerpt": "<view class=\"campus-hub data-v-420fe180\" style=\"{{Z}}\"><view wx:if=\"{{a}}\" class=\"campus-hub__cer",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -10835,7 +10591,7 @@
     "page": "subpackages/chat/chat-session/index",
     "category": "Function",
     "severity": "P3",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：先按 deletedMessageIds 过滤消息再调 buildChatMessageRows；或过滤后二次遍历丢弃后继不是 message 的 timebar 行",
     "statusEvidence": "—（未修，无需） 〔§97 已取景但帧不判：round-6-tour-chat 新得 A/B 各 3 帧（默认/交互后/弹层态，2026-09-26 08:09，gitSha 874ff52f）。本条是「按 deletedMessageI…"
@@ -10903,7 +10659,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/chat/chat-session/index.js",
-     "artifactExcerpt": "x.getStorageSync(Fe))!=null?Re:[])),vt=e.computed(()=>b.buildChatMessageRows(ut.value.filter(t=>!he.value.has(t.id)))),…",
+     "artifactExcerpt": "x.getStorageSync(Fe))!=null?Ee:[])),vt=e.computed(()=>b.buildChatMessageRows(ut.value.filter(t=>!fe.value.has(t.id)))),…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -10922,7 +10678,7 @@
    "closerAction": null,
    "artifactEvidence": {
     "file": "subpackages/chat/chat-session/index.js",
-    "excerpt": "x.getStorageSync(Fe))!=null?Re:[])),vt=e.computed(()=>b.buildChatMessageRows(ut.value.filter(t=>!he.value.has(t.id)))),…",
+    "excerpt": "x.getStorageSync(Fe))!=null?Ee:[])),vt=e.computed(()=>b.buildChatMessageRows(ut.value.filter(t=>!fe.value.has(t.id)))),…",
     "kind": "identifier",
     "token": "buildChatMessageRows"
    },
@@ -10966,13 +10722,13 @@
     "page": "subpackages/chat/chat-session/index",
     "category": "UI",
     "severity": "P2",
-    "status": "已修复待复验",
-    "statusHead": "已修复待复验",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：禁用态 background 改 var(--c-status-disabled)、文字改 --c-text-tertiary、删 opacity（整块降透明度会连带洗掉文字），并把 --c-neutral-300 的 fallbac…",
     "statusEvidence": "verify-fixes-against-artifact 逐项判定 ARTIFACT_VERIFIED：判点「--c-status-disabled」命中于 subpackages/chat/chat-session/index.wxs…"
    },
-   "verdict": "ARTIFACT_VERIFIED",
-   "verdictWhy": "hard 判点全部在该页产物作用域内命中（1/1）",
+   "verdict": "UNDECIDABLE",
+   "verdictWhy": "授予绿用的判点在修复前的 HEAD 里就已存在（--c-status-disabled）——命中不能证明改动落地",
    "frame": false,
    "uiMarkers": [],
    "probes": [
@@ -10989,7 +10745,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/chat/chat-session/index.wxss",
-     "artifactExcerpt": "put-bar__send--disabled.data-v-6ccd3d86{background:var(--c-status-disabled, #dce5e2);box-shadow:none}.wechat-input-bar_…",
+     "artifactExcerpt": "put-bar__send--disabled.data-v-4f629b72{background:var(--c-status-disabled, #dce5e2);box-shadow:none}.wechat-input-bar_…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -11005,7 +10761,7 @@
    "closerAction": null,
    "artifactEvidence": {
     "file": "subpackages/chat/chat-session/index.wxss",
-    "excerpt": "put-bar__send--disabled.data-v-6ccd3d86{background:var(--c-status-disabled, #dce5e2);box-shadow:none}.wechat-input-bar_…",
+    "excerpt": "put-bar__send--disabled.data-v-4f629b72{background:var(--c-status-disabled, #dce5e2);box-shadow:none}.wechat-input-bar_…",
     "kind": "css-var",
     "token": "--c-status-disabled"
    },
@@ -11203,7 +10959,7 @@
     "page": "subpackages/chat/chat-session/index",
     "category": "MiniProgram",
     "severity": "P2",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：外层容器加 min-height + 浅色骨架底，image 补 @error 切「图片加载失败」占位文案（或统一改走 components/common/SafeImage.vue）",
     "statusEvidence": "—（未修，无需） 〔§97 已取景但载体不可达：本条要 image @error 的失败占位，而 mock 下 IMAGE_PATHS 全部可达、没有失败态可拍（新帧只有正常态）。要实证需一条「让某张图 404」的取景路径（下一轮可执行项…"
@@ -11311,9 +11067,9 @@
     "page": "subpackages/chat/chat-session/index",
     "category": "Function",
     "severity": "P3→P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
-    "action": "修：「+」改与表情键同族的 <image> 资源（走 IMAGE_PATHS 键）；面板高度保持内容自适应",
+    "action": "修：附件「+」由文本 glyph 改 <image>，随之从该页删掉文本 glyph 类 .wechat-input-bar__icon-text（⟨新增 <image> 键 IMAGE_PATHS.ICONS_EMOJI.PLUS 与 …",
     "statusEvidence": "—（未修，无需） 〔§97 静态实测未修：chat-session/index.vue:2193 仍是 <text class=wechat-input-bar__icon-text>+</text>（文本 glyph），而本条要求改走 …"
    },
    "verdict": "UNDECIDABLE",
@@ -11321,6 +11077,29 @@
    "frame": false,
    "uiMarkers": [],
    "probes": [
+    {
+     "kind": "class",
+     "token": "wechat-input-bar__icon-text",
+     "carrier": "wxml+wxss",
+     "polarity": "absent",
+     "origin": "ledger-action",
+     "anchored": true,
+     "note": null,
+     "hard": true,
+     "artifact": {
+      "hit": false
+     },
+     "artifactFile": null,
+     "artifactExcerpt": null,
+     "artifactScope": null,
+     "src": {
+      "hit": true
+     },
+     "srcFile": "subpackages/chat/chat-session/index.vue",
+     "srcExcerpt": "/* MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006：原 .wechat-input-bar__icon-text （给文本 glyph「+」用的字号/行高）随 glyph 改 <imag…",
+     "grantsGreen": false,
+     "usable": true
+    },
     {
      "kind": "identifier",
      "token": "CAMERA",
@@ -11334,13 +11113,13 @@
       "hit": true
      },
      "artifactFile": "subpackages/chat/chat-session/index.js",
-     "artifactExcerpt": "CHEVRON_RIGHT_SVG,smile:h.IMAGE_PATHS.ICONS_EMOJI.SMILE,camera:h.IMAGE_PATHS.ICONS_COMMON.CAMERA},v=e.ref(\"\"),r=e.ref(n…",
+     "artifactExcerpt": "S.ICONS_EMOJI.SMILE,plus:h.IMAGE_PATHS.ICONS_EMOJI.PLUS,camera:h.IMAGE_PATHS.ICONS_COMMON.CAMERA},v=e.ref(\"\"),r=e.ref(n…",
      "artifactScope": "page",
      "src": {
       "hit": true
      },
      "srcFile": "subpackages/chat/chat-session/index.vue",
-     "srcExcerpt": "HT_SVG, /* 2026-08-09 微信 1:1 重构：表情按钮（smile.svg）/ 图片占位（camera.png） */ smile: IMAGE_PATHS.ICONS_EMOJI.SMILE, camera: IMAG…",
+     "srcExcerpt": "HT_SVG, /* 2026-08-09 微信 1:1 重构：表情按钮（smile.svg）/ 图片占位（camera.png） */ smile: IMAGE_PATHS.ICONS_EMOJI.SMILE, /* MP-R2VIS-…",
      "grantsGreen": true,
      "usable": true
     },
@@ -11372,7 +11151,7 @@
      "token": "IMAGE_PATHS",
      "carrier": "js+wxml",
      "polarity": "present",
-     "origin": "ledger-action",
+     "origin": "ledger-statusEvidence",
      "anchored": true,
      "note": null,
      "hard": true,
@@ -11380,7 +11159,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/chat/chat-session/index.js",
-     "artifactExcerpt": "截|冲突/i.test(t)?a(\"chat.loadFailed\"):t:\"\"}),L={message:h.IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,check:h.IMAGE_PATHS.ICONS_COMM…",
+     "artifactExcerpt": "截|冲突/i.test(t)?a(\"chat.loadFailed\"):t:\"\"}),x={message:h.IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,check:h.IMAGE_PATHS.ICONS_COMM…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -11426,7 +11205,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/chat/chat-session/index.js",
-     "artifactExcerpt": "OMMON.CLOSE_SVG,chevronRight:h.IMAGE_PATHS.ICONS_COMMON.CHEVRON_RIGHT_SVG,smile:h.IMAGE_PATHS.ICONS_EMOJI.SMILE,camera:…",
+     "artifactExcerpt": "OMMON.CLOSE_SVG,chevronRight:h.IMAGE_PATHS.ICONS_COMMON.CHEVRON_RIGHT_SVG,smile:h.IMAGE_PATHS.ICONS_EMOJI.SMILE,plus:h.…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -11437,22 +11216,23 @@
      "usable": true
     }
    ],
-   "probeCount": 5,
+   "probeCount": 6,
    "notes": [],
    "closerAction": null,
    "artifactEvidence": {
     "file": "subpackages/chat/chat-session/index.js",
-    "excerpt": "CHEVRON_RIGHT_SVG,smile:h.IMAGE_PATHS.ICONS_EMOJI.SMILE,camera:h.IMAGE_PATHS.ICONS_COMMON.CAMERA},v=e.ref(\"\"),r=e.ref(n…",
+    "excerpt": "S.ICONS_EMOJI.SMILE,plus:h.IMAGE_PATHS.ICONS_EMOJI.PLUS,camera:h.IMAGE_PATHS.ICONS_COMMON.CAMERA},v=e.ref(\"\"),r=e.ref(n…",
     "kind": "identifier",
     "token": "CAMERA"
    },
    "srcEvidence": {
     "file": "subpackages/chat/chat-session/index.vue",
-    "excerpt": "HT_SVG, /* 2026-08-09 微信 1:1 重构：表情按钮（smile.svg）/ 图片占位（camera.png） */ smile: IMAGE_PATHS.ICONS_EMOJI.SMILE, camera: IMAG…",
-    "kind": "identifier",
-    "token": "CAMERA"
+    "excerpt": "/* MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006：原 .wechat-input-bar__icon-text （给文本 glyph「+」用的字号/行高）随 glyph 改 <imag…",
+    "kind": "class",
+    "token": "wechat-input-bar__icon-text"
    },
    "searched": [
+    "ABSENT:class wechat-input-bar__icon-text",
     "identifier CAMERA",
     "identifier CHECK_SVG",
     "identifier IMAGE_PATHS",
@@ -11463,7 +11243,7 @@
     "kind": "identifier",
     "specificity": 2,
     "token": "CAMERA",
-    "n": 5
+    "n": 6
    }
   },
   {
@@ -11488,7 +11268,7 @@
     "page": "subpackages/chat/chat-session/index",
     "category": "UI",
     "severity": "P3→P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：空态容器 flex:1 + align-items/justify-content center（或在 .chat-list 上对空态分支加 justify-content:center）",
     "statusEvidence": "—（未修，无需） 〔§97 已取景但判不了：两身份直开该页拿到的都是有内容的会话，空态分支未出现 —— 新 manifest 里「空态」帧与「默认」逐字节相同、已被去重器记为 state-not-applied（P3×2，A/B 各一条）…"
@@ -11514,7 +11294,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/chat/chat-session/index.wxss",
-     "artifactExcerpt": "-bg-page);overflow:hidden}.chat-scroll.data-v-6ccd3d86{flex:1;min-height:0;padding:0 var(--sp-3);box-sizing:border-box}…",
+     "artifactExcerpt": "-bg-page);overflow:hidden}.chat-scroll.data-v-4f629b72{flex:1;min-height:0;padding:0 var(--sp-3);box-sizing:border-box}…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -11537,13 +11317,13 @@
       "hit": true
      },
      "artifactFile": "subpackages/chat/chat-session/index.wxss",
-     "artifactExcerpt": "var(--c-border-light);display:flex;align-items:center;justify-content:center;font-size:var(--fs-xs);color:var(--c-text-…",
+     "artifactExcerpt": "2rpx}.chat-list--empty.data-v-4f629b72{min-height:100%;justify-content:center}.meta-copy--warning.data-v-4f629b72{color…",
      "artifactScope": "page",
      "src": {
       "hit": true
      },
      "srcFile": "subpackages/chat/chat-session/index.vue",
-     "srcExcerpt": "rder-light); display: flex; align-items: center; justify-content: center; font-size: var(--fs-xs); color: var(--c-text-…",
+     "srcExcerpt": "完全不进这条分支。 */ .chat-list--empty { min-height: 100%; justify-content: center; } .meta-copy--warning { color: var(--c-erro…",
      "grantsGreen": true,
      "usable": true
     },
@@ -11583,13 +11363,13 @@
       "hit": true
      },
      "artifactFile": "subpackages/chat/chat-session/index.wxml",
-     "artifactExcerpt": "added data-v-6ccd3d86\">{{L}}</view><view wx:else class=\"chat-list data-v-6ccd3d86\" role=\"list\"><match-greeting-tip wx:i…",
+     "artifactExcerpt": "d data-v-4f629b72\">{{L}}</view><view wx:else class=\"{{['chat-list', 'data-v-4f629b72', U && 'chat-list--empty']}}\" role…",
      "artifactScope": "page",
      "src": {
       "hit": true
      },
      "srcFile": "subpackages/chat/chat-session/index.vue",
-     "srcExcerpt": "{ friendlyPageError }}</view> <view v-else class=\"chat-list\" role=\"list\"> <!-- 2026-08-09 微信化重构：聊天首条固定破冰提示（会话无任何用户消息时展示…",
+     "srcExcerpt": "/滚底行为零变化。 --> <view v-else class=\"chat-list\" :class=\"{ 'chat-list--empty': !messagesStore.currentMessages.leng",
      "grantsGreen": true,
      "usable": true
     }
@@ -11601,7 +11381,7 @@
    "closerAction": null,
    "artifactEvidence": {
     "file": "subpackages/chat/chat-session/index.wxss",
-    "excerpt": "-bg-page);overflow:hidden}.chat-scroll.data-v-6ccd3d86{flex:1;min-height:0;padding:0 var(--sp-3);box-sizing:border-box}…",
+    "excerpt": "-bg-page);overflow:hidden}.chat-scroll.data-v-4f629b72{flex:1;min-height:0;padding:0 var(--sp-3);box-sizing:border-box}…",
     "kind": "css-decl",
     "token": "flex:1"
    },
@@ -11646,7 +11426,7 @@
     "page": "subpackages/chat/chat-session/index",
     "category": "Architecture",
     "severity": "P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：删该死分支（样式 + :2173 绑定），或恢复键盘态差异化间距；键盘态量测需真机，故只删不猜",
     "statusEvidence": "—（未修，无需） 〔§97 静态实测未删：chat-session/index.vue:195-196 的 keyboardHeight 仍在（注释仍写「动态调整输入栏 padding-bottom」），本条要求的「删死分支」或「恢复差异…"
@@ -11703,13 +11483,18 @@
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A03",
    "laneFile": "index.vue",
    "srcRels": [
-    "subpackages/chat/chat-session/index.vue"
+    "subpackages/chat/chat-session/index.vue",
+    "components/chat/ChatHeader.vue"
    ],
    "distScope": [
     "subpackages/chat/chat-session/index.wxml",
     "subpackages/chat/chat-session/index.wxss",
     "subpackages/chat/chat-session/index.js",
     "subpackages/chat/chat-session/index.json",
+    "components/chat/ChatHeader.wxml",
+    "components/chat/ChatHeader.wxss",
+    "components/chat/ChatHeader.js",
+    "components/chat/ChatHeader.json",
     "i18n/locales/zh-CN.js",
     "app.wxss",
     "common/vendor.js"
@@ -11721,9 +11506,9 @@
     "page": "subpackages/chat/chat-session/index",
     "category": "Architecture",
     "severity": "P4",
-    "status": "已修复待复验",
+    "status": "已修复待复验（去向：closer=closer 无记录；判据台=两载体都没有；缺的载体=两载体里都找不到预期修后状态，需收紧判据；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "已修复待复验",
-    "action": "修：删除 .chat-session-back 整块死样式（顶部避让由 ChatHeader/AppShell 承担），或接线到实际返回钮",
+    "action": "修：删除 .chat-session-back 整块死样式（⟨顶部避让由 ChatHeader/AppShell 承担⟩），或接线到实际返回钮 唯一改点是删除本页样式，返回钮由另一文件的头部组件提供（该组件名入壳，不作判点）；本页判点只剩…",
     "statusEvidence": "死样式三条规则已整块删除：HEAD 版该文件里 `chat-session-back` 计 3 处（`git show HEAD:apps/client/src/subpackages/chat/chat-session/index.vu…"
    },
    "verdict": "NOT_IN_EITHER",
@@ -11782,7 +11567,7 @@
      "token": "ChatHeader",
      "carrier": "js+wxml",
      "polarity": "absent",
-     "origin": "ledger-action",
+     "origin": "ledger-statusEvidence",
      "anchored": true,
      "note": null,
      "hard": true,
@@ -11898,41 +11683,18 @@
     "page": "subpackages/chat/official-chat/index",
     "category": "Consistency",
     "severity": "P3",
-    "status": "已修复待复验",
+    "status": "已修复待复验（去向：closer=P4延后出本轮；判据台=两载体都没有；缺的载体=两载体里都找不到预期修后状态，需收紧判据；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "已修复待复验",
-    "action": "修：四处助手文案迁 i18n 键并去 emoji（zh/en 同批），确需表情的位置改 <image> 或补 EMOJI_SVG_MAP 映射；关联 MP-R2-OFFICIALCHAT-004",
+    "action": "修：四处助手文案迁 i18n 键并去 emoji（zh/en 同批），确需表情的位置改 <image> 或补 ⟨EMOJI_SVG_MAP⟩ 映射；关联 MP-R2-OFFICIALCHAT-004 该锚点两载体都不存在，属采集侧笔误，不…",
     "statusEvidence": "四处助手文案已迁 i18n 并被本页消费：zh-CN.ts 的 messages.officialChatAssistantGreeting / officialChatCardHint / officialChatMockReply /…"
    },
-   "verdict": "NOT_IN_EITHER",
-   "verdictWhy": "两个载体都查不到预期修后状态",
+   "verdict": "NEEDS_UI_FRAME",
+   "verdictWhy": "判据是行为/观感（visual），静态无判点；判据没点名可核验的修后物件（无 closer 差异串/源码锚点/显式「改→新值」）",
    "frame": false,
    "uiMarkers": [
     "visual"
    ],
    "probes": [
-    {
-     "kind": "identifier",
-     "token": "EMOJI_SVG_MAP",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": false
-     },
-     "srcFile": null,
-     "srcExcerpt": null,
-     "grantsGreen": false,
-     "usable": true
-    },
     {
      "kind": "i18n-key",
      "token": "messages.officialChatAssistantGreeting",
@@ -11978,6 +11740,29 @@
      "srcFile": "subpackages/chat/official-chat/index.vue",
      "srcExcerpt": "Text 渲染为 SVG，按 Lane 2 裁决留在拼接位。 content: `${t(\"messages.officialChatAssistantGreeting\")}✨`, cardTitle: null, cardDesc: nu",
      "grantsGreen": true,
+     "usable": true
+    },
+    {
+     "kind": "identifier",
+     "token": "EMOJI_SVG_MAP",
+     "carrier": "js+wxml",
+     "polarity": "present",
+     "origin": "ledger-statusEvidence",
+     "anchored": false,
+     "note": null,
+     "hard": false,
+     "artifact": {
+      "hit": false
+     },
+     "artifactFile": null,
+     "artifactExcerpt": null,
+     "artifactScope": null,
+     "src": {
+      "hit": false
+     },
+     "srcFile": null,
+     "srcExcerpt": null,
+     "grantsGreen": false,
      "usable": true
     },
     {
@@ -12052,7 +11837,8 @@
    ],
    "probeCount": 6,
    "notes": [
-    "closer 记为 deferred_p4（本轮未动手）"
+    "closer 记为 deferred_p4（本轮未动手）",
+    "只抠到 soft 级顺手词（i18n-key messages.officialChatAssistantGreeting, string-lit messages.officialChatAssistantGreeting, identifier EMOJI_SVG_MAP, identifier officialChatCardHint），不足以授予绿"
    ],
    "closerAction": "deferred_p4",
    "artifactEvidence": {
@@ -12068,9 +11854,9 @@
     "token": "messages.officialChatAssistantGreeting"
    },
    "searched": [
-    "identifier EMOJI_SVG_MAP",
     "i18n-key messages.officialChatAssistantGreeting",
     "string-lit messages.officialChatAssistantGreeting",
+    "identifier EMOJI_SVG_MAP",
     "identifier officialChatCardHint",
     "identifier officialChatMockReply",
     "identifier officialChatUserDecline"
@@ -12104,7 +11890,7 @@
     "page": "subpackages/circles/circles/circle-home",
     "category": "Function",
     "severity": "P1→P2",
-    "status": "已修复待复验",
+    "status": "已修复待复验（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "已修复待复验",
     "action": "修：给 .hero-actions-right 加 margin/padding-right:calc(var(--capsule-right,7px)+104px) 避让胶囊；补「更多⋯」复用 IMAGE_PATHS.ICONS_V2.…",
     "statusEvidence": "避让胶囊半边已落：工作树 :711 `.hero-actions-right{…padding-right:calc(var(--capsule-right, 7px) + 104px)}`，且 00:16 重建的产物 `apps/cli…"
@@ -12331,7 +12117,7 @@
     "page": "subpackages/circles/circles/circle-home",
     "category": "Consistency",
     "severity": "P3→P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：「规约」改「圈规」对齐理想图；若要可译再连同 mock 夹具一起入 i18n（zh/en 同批）。",
     "statusEvidence": "—（未修，无需）"
@@ -12371,7 +12157,7 @@
     "page": "subpackages/circles/circles/index",
     "category": "UI",
     "severity": "P1→P2",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：background: var(--c-brand, #36C99A) + .circles-tab--active .circles-tab__text{color: var(--c-neutral-0,#FFFFFF)}，按压态走…",
     "statusEvidence": "—（未修，无需）"
@@ -12452,23 +12238,90 @@
     "page": "subpackages/circles/circles/index",
     "category": "UI",
     "severity": "P1→P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
-    "action": "修：若要贴理想图，封面降至 ~144rpx（理想图实测 143×146rpx）；但先复核收益：卡高主要由 :746-754 的两行 desc 钳制决定，单降封面只能收回约 10% 行高。",
+    "action": "修：圆角封面收方为近正方形缩略以贴合兴趣圈列表理想图，可判物件为改后定值 width:144rpx + height:144rpx（⟨选择器 .circle-card__cover-wrap HEAD 两处原为 200rpx 本项仅缩缩略…",
     "statusEvidence": "—（未修，无需）"
    },
-   "verdict": "UNDECIDABLE",
-   "verdictWhy": "台账判据里抠不出任何可比对的具体物件（文件/选择器/值/键/文案）",
+   "verdict": "ARTIFACT_VERIFIED",
+   "verdictWhy": "hard 判点全部在该页产物作用域内命中（2/2）",
    "frame": false,
-   "uiMarkers": [],
-   "probes": [],
-   "probeCount": 0,
+   "uiMarkers": [
+    "visual"
+   ],
+   "probes": [
+    {
+     "kind": "css-decl",
+     "token": "width:144rpx",
+     "carrier": "wxss",
+     "polarity": "present",
+     "origin": "ledger-action",
+     "anchored": true,
+     "note": null,
+     "hard": true,
+     "artifact": {
+      "hit": true
+     },
+     "artifactFile": "subpackages/circles/circles/index.wxss",
+     "artifactExcerpt": "cle-card__cover-wrap.data-v-85666a04{position:relative;width:144rpx;height:144rpx;border-radius:var(--r-md);overflow:hi…",
+     "artifactScope": "page",
+     "src": {
+      "hit": true
+     },
+     "srcFile": "subpackages/circles/circles/index.vue",
+     "srcExcerpt": "0rpx， 缩到 144 不带来任何行高收益，唯一效果是缩略图变小 —— 只为对参考图。 */ width: 144rpx; height: 144rpx; border-radius: var(--r-md); overflow: hi…",
+     "grantsGreen": true,
+     "usable": true
+    },
+    {
+     "kind": "css-decl",
+     "token": "height:144rpx",
+     "carrier": "wxss",
+     "polarity": "present",
+     "origin": "ledger-action",
+     "anchored": true,
+     "note": null,
+     "hard": true,
+     "artifact": {
+      "hit": true
+     },
+     "artifactFile": "subpackages/circles/circles/index.wxss",
+     "artifactExcerpt": "er-wrap.data-v-85666a04{position:relative;width:144rpx;height:144rpx;border-radius:var(--r-md);overflow:hidden;flex-shr…",
+     "artifactScope": "page",
+     "src": {
+      "hit": true
+     },
+     "srcFile": "subpackages/circles/circles/index.vue",
+     "srcExcerpt": "不带来任何行高收益，唯一效果是缩略图变小 —— 只为对参考图。 */ width: 144rpx; height: 144rpx; border-radius: var(--r-md); overflow: hidden; flex-sh…",
+     "grantsGreen": true,
+     "usable": true
+    }
+   ],
+   "probeCount": 2,
    "notes": [],
    "closerAction": null,
-   "artifactEvidence": null,
-   "srcEvidence": null,
-   "searched": [],
-   "weakestCheck": null
+   "artifactEvidence": {
+    "file": "subpackages/circles/circles/index.wxss",
+    "excerpt": "cle-card__cover-wrap.data-v-85666a04{position:relative;width:144rpx;height:144rpx;border-radius:var(--r-md);overflow:hi…",
+    "kind": "css-decl",
+    "token": "width:144rpx"
+   },
+   "srcEvidence": {
+    "file": "subpackages/circles/circles/index.vue",
+    "excerpt": "0rpx， 缩到 144 不带来任何行高收益，唯一效果是缩略图变小 —— 只为对参考图。 */ width: 144rpx; height: 144rpx; border-radius: var(--r-md); overflow: hi…",
+    "kind": "css-decl",
+    "token": "width:144rpx"
+   },
+   "searched": [
+    "css-decl width:144rpx",
+    "css-decl height:144rpx"
+   ],
+   "weakestCheck": {
+    "kind": "css-decl",
+    "specificity": 5,
+    "token": "width:144rpx",
+    "n": 2
+   }
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-004",
@@ -12492,13 +12345,13 @@
     "page": "subpackages/circles/circles/index",
     "category": "Consistency",
     "severity": "P2→P4",
-    "status": "已修复待复验",
-    "statusHead": "已修复待复验",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：fallback 字面量改 #F3FAF6（或直接用 --c-bg-container 白底 + 1rpx --c-border-light 描边）。",
     "statusEvidence": "verify-fixes-against-artifact 逐项判定 ARTIFACT_VERIFIED：判点「F3FAF6」命中于 subpackages/circles/circles/index.wxss；修后状态在被测产物里可见，…"
    },
-   "verdict": "ARTIFACT_VERIFIED",
-   "verdictWhy": "hard 判点全部在该页产物作用域内命中（1/1）",
+   "verdict": "UNDECIDABLE",
+   "verdictWhy": "授予绿用的判点在修复前的 HEAD 里就已存在（F3FAF6）——命中不能证明改动落地",
    "frame": false,
    "uiMarkers": [],
    "probes": [
@@ -12578,7 +12431,7 @@
     "page": "subpackages/discover-extra/discover/matching",
     "category": "UI",
     "severity": "P2",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：跳过钮改白底绿字（走 --c-brand 文字 + --c-bg-container 底）、位置上移到标题行之上独立成行，标题行右侧留安全距",
     "statusEvidence": "—（未修，无需）"
@@ -12624,8 +12477,8 @@
     "page": "subpackages/discover-extra/discover/matching",
     "category": "UI",
     "severity": "P3",
-    "status": "已修复待复验",
-    "statusHead": "已修复待复验",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：三处底渐变统一改 var(--c-gradient-match)（并在 styles/tokens.scss 补语义别名），顺带清 matching.vue:239 裸 #f4fbf8；互补不重复记账：MP-R2-MATCHING-0…",
     "statusEvidence": "verify-fixes-against-artifact 逐项判定 ARTIFACT_VERIFIED：判点「background:var(--c-gradient-match)」命中于 subpackages/discover-ext…"
    },
@@ -13165,7 +13018,7 @@
     "page": "subpackages/profile-extra/profile/location",
     "category": "UI",
     "severity": "P2",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：改指仓内已在盘的无字版 pin：apps/client/src/static/assets/icons/common/location.svg（images.ts:477 已有 LOCATION 键）或 素材/组件库/理想效果图-sv…",
     "statusEvidence": "—（未修，无需）"
@@ -13253,13 +13106,13 @@
     "page": "subpackages/profile-extra/profile/other",
     "category": "UI",
     "severity": "P2",
-    "status": "已修复待复验",
+    "status": "已修复待复验（去向：closer=已改工作树；判据台=两载体都没有；缺的载体=两载体里都找不到预期修后状态，需收紧判据；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "已修复待复验",
-    "action": "修：PublicIdentity 的 meta 拼接改 age · school · city，与我的页 MyHeader 的 metaLine 共用同一 formatter。**删掉原句「把 loc 解构顺序对调」**——字面不可执行：…",
+    "action": "修：PublicIdentity 的 meta 拼接改 age · school · city，与我的页 MyHeader 的 ⟨metaLine⟩ 共用同一 formatter。**删掉原句「⟨把 loc 解构顺序对调⟩」**——字面不…",
     "statusEvidence": "顺序半已落且有 HEAD 直接对照，不必等 HEAD 快照：HEAD 版 PublicIdentity.vue 是 `const [city, school] = loc.split(\"·\")…; if (city) push(city)…"
    },
-   "verdict": "NOT_IN_EITHER",
-   "verdictWhy": "判点 metaLine 在两个载体里都查不到（同项其余判点已可见）",
+   "verdict": "NEEDS_UI_FRAME",
+   "verdictWhy": "判据是行为/观感（visual+backend），静态无判点；有 3 个硬判点是标识符，压缩构建改名后在产物里不可读（cityPart, loc.split, schoolPart）；其余命中不足以证明这条改动落地 → 需帧或读源码人工判",
    "frame": false,
    "uiMarkers": [
     "visual",
@@ -13290,29 +13143,6 @@
      "usable": true
     },
     {
-     "kind": "literal",
-     "token": "把 loc 解构顺序对调",
-     "carrier": "locale+wxml",
-     "polarity": "absent",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
-     "src": {
-      "hit": false
-     },
-     "srcFile": null,
-     "srcExcerpt": null,
-     "grantsGreen": false,
-     "usable": true
-    },
-    {
      "kind": "identifier",
      "token": "MyHeader",
      "carrier": "js+wxml",
@@ -13327,29 +13157,6 @@
      "artifactFile": "components/profile/mine/MyHeader.js",
      "artifactExcerpt": "./../../config/images.js\"),u=i.defineComponent({__name:\"MyHeader\",props:{profile:{},editLabel:{default:\"编辑资料\"}},emits:[…",
      "artifactScope": "global",
-     "src": {
-      "hit": false
-     },
-     "srcFile": null,
-     "srcExcerpt": null,
-     "grantsGreen": false,
-     "usable": true
-    },
-    {
-     "kind": "identifier",
-     "token": "metaLine",
-     "carrier": "js+wxml",
-     "polarity": "present",
-     "origin": "ledger-action",
-     "anchored": true,
-     "note": null,
-     "hard": true,
-     "artifact": {
-      "hit": false
-     },
-     "artifactFile": null,
-     "artifactExcerpt": null,
-     "artifactScope": null,
      "src": {
       "hit": false
      },
@@ -13407,6 +13214,29 @@
     },
     {
      "kind": "identifier",
+     "token": "metaLine",
+     "carrier": "js+wxml",
+     "polarity": "present",
+     "origin": "ledger-statusEvidence",
+     "anchored": false,
+     "note": null,
+     "hard": false,
+     "artifact": {
+      "hit": false
+     },
+     "artifactFile": null,
+     "artifactExcerpt": null,
+     "artifactScope": null,
+     "src": {
+      "hit": false
+     },
+     "srcFile": null,
+     "srcExcerpt": null,
+     "grantsGreen": false,
+     "usable": true
+    },
+    {
+     "kind": "identifier",
      "token": "loc.split",
      "carrier": "js+wxml",
      "polarity": "present",
@@ -13454,8 +13284,10 @@
      "usable": true
     }
    ],
-   "probeCount": 8,
-   "notes": [],
+   "probeCount": 7,
+   "notes": [
+    "soft 判点未确认（不影响本判决，仅备查）：metaLine"
+   ],
    "closerAction": "patched",
    "artifactEvidence": {
     "file": "components/profile/mine/MyHeader.js",
@@ -13471,11 +13303,10 @@
    },
    "searched": [
     "ABSENT:literal 城市 · 学校",
-    "ABSENT:literal 把 loc 解构顺序对调",
     "identifier MyHeader",
-    "identifier metaLine",
     "identifier cityPart",
     "identifier PublicIdentity",
+    "identifier metaLine",
     "identifier loc.split",
     "identifier schoolPart"
    ],
@@ -13483,7 +13314,7 @@
     "kind": "literal",
     "specificity": 1,
     "token": "城市 · 学校",
-    "n": 4
+    "n": 3
    }
   },
   {
@@ -13513,13 +13344,13 @@
     "page": "subpackages/profile-extra/profile/other",
     "category": "UI",
     "severity": "P3",
-    "status": "已修复待复验",
-    "statusHead": "已修复待复验",
+    "status": "已修复（产物侧已见，静态判据可判；判据台基线 874ff52f）",
+    "statusHead": "已修复",
     "action": "修：把 :88 改为与 :84-87 同构的 <image>，评论图标取 ICONS_EMOJI/ICONS_SOCIAL 的 message/comment 系（与我的页帖子卡同键）",
     "statusEvidence": "verify-fixes-against-artifact 逐项判定 ARTIFACT_VERIFIED：判点「public-moment__stat」命中于 components/profile/public/PublicMoment.…"
    },
-   "verdict": "ARTIFACT_VERIFIED",
-   "verdictWhy": "hard 判点全部在该页产物作用域内命中（6/7）",
+   "verdict": "UNDECIDABLE",
+   "verdictWhy": "授予绿用的判点在修复前的 HEAD 里就已存在（public-moment__stat, public-moment__stat-icon, public-moment__stat）——命中不能证明改动落地",
    "frame": false,
    "uiMarkers": [],
    "probes": [
@@ -13738,7 +13569,7 @@
     "page": "subpackages/village/village/detail",
     "category": "MiniProgram",
     "severity": "P2→P3",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：回复/挂图态给 .detail-body 追加预留（动态 class，或实测栏高写进 CSS 变量供 padding-bottom 引用）；最低成本方案是两态下把预留提到 calc(320rpx + safe)。",
     "statusEvidence": "—（未修，无需）"
@@ -13821,7 +13652,7 @@
     "page": "subpackages/village/village/detail",
     "category": "UI",
     "severity": "P3→P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：2 图特判 50/50（或首图亦 2/3）；无图态按需补占位或明确不补",
     "statusEvidence": "—（未修，无需）"
@@ -13912,25 +13743,90 @@
     "page": "subpackages/village/village/post",
     "category": "UI",
     "severity": "P2",
-    "status": "待修复",
+    "status": "待修复（去向：closer=P4延后出本轮；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
-    "action": "修：图标列统一为同一渲染族：把 #/@ 也换成同族 SVG（描边色对齐 --c-brand），或全用文本 glyph；删掉对 <image> 无效的 color 声明。",
+    "action": "修：把 <image> 上失效的 color 死声明移到仅文本 glyph 消费的修饰类，可判物件为新增类 .post-row__icon--glyph 与 .post-tool__icon--glyph（⟨原共用类 .post-row_…",
     "statusEvidence": "—（未修，无需）"
    },
-   "verdict": "UNDECIDABLE",
-   "verdictWhy": "台账判据里抠不出任何可比对的具体物件（文件/选择器/值/键/文案）",
+   "verdict": "ARTIFACT_VERIFIED",
+   "verdictWhy": "hard 判点全部在该页产物作用域内命中（2/2）",
    "frame": false,
    "uiMarkers": [],
-   "probes": [],
-   "probeCount": 0,
+   "probes": [
+    {
+     "kind": "class",
+     "token": "post-row__icon--glyph",
+     "carrier": "wxml+wxss",
+     "polarity": "present",
+     "origin": "ledger-action",
+     "anchored": true,
+     "note": null,
+     "hard": true,
+     "artifact": {
+      "hit": true
+     },
+     "artifactFile": "subpackages/village/village/post.wxml",
+     "artifactExcerpt": "e=\"button\" bindtap=\"{{ac}}\"><text class=\"post-row__icon post-row__icon--glyph data-v-ef1fb74b\">#</text><text class=\"pos…",
+     "artifactScope": "page",
+     "src": {
+      "hit": true
+     },
+     "srcFile": "subpackages/village/village/post.vue",
+     "srcExcerpt": "= true\" > <text class=\"post-row__icon post-row__icon--glyph\">#</text> <text class=\"post-row__label\">添加话题</text>",
+     "grantsGreen": true,
+     "usable": true
+    },
+    {
+     "kind": "class",
+     "token": "post-tool__icon--glyph",
+     "carrier": "wxml+wxss",
+     "polarity": "present",
+     "origin": "ledger-action",
+     "anchored": true,
+     "note": null,
+     "hard": true,
+     "artifact": {
+      "hit": true
+     },
+     "artifactFile": "subpackages/village/village/post.wxml",
+     "artifactExcerpt": "=\"button\" bindtap=\"{{at}}\"><text class=\"post-tool__icon post-tool__icon--glyph data-v-ef1fb74b\">#</text><text class=\"po…",
+     "artifactScope": "page",
+     "src": {
+      "hit": true
+     },
+     "srcFile": "subpackages/village/village/post.vue",
+     "srcExcerpt": "en = true\" > <text class=\"post-tool__icon post-tool__icon--glyph\">#</text> <text class=\"post-tool__label\">话题</text>",
+     "grantsGreen": true,
+     "usable": true
+    }
+   ],
+   "probeCount": 2,
    "notes": [
     "closer 记为 deferred_p4（本轮未动手）"
    ],
    "closerAction": "deferred_p4",
-   "artifactEvidence": null,
-   "srcEvidence": null,
-   "searched": [],
-   "weakestCheck": null
+   "artifactEvidence": {
+    "file": "subpackages/village/village/post.wxml",
+    "excerpt": "e=\"button\" bindtap=\"{{ac}}\"><text class=\"post-row__icon post-row__icon--glyph data-v-ef1fb74b\">#</text><text class=\"pos…",
+    "kind": "class",
+    "token": "post-row__icon--glyph"
+   },
+   "srcEvidence": {
+    "file": "subpackages/village/village/post.vue",
+    "excerpt": "= true\" > <text class=\"post-row__icon post-row__icon--glyph\">#</text> <text class=\"post-row__label\">添加话题</text>",
+    "kind": "class",
+    "token": "post-row__icon--glyph"
+   },
+   "searched": [
+    "class post-row__icon--glyph",
+    "class post-tool__icon--glyph"
+   ],
+   "weakestCheck": {
+    "kind": "class",
+    "specificity": 3,
+    "token": "post-row__icon--glyph",
+    "n": 2
+   }
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004",
@@ -14085,25 +13981,66 @@
     "page": "subpackages/village/village/post",
     "category": "UI",
     "severity": "P3→P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=P4延后出本轮；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
-    "action": "修：预留高度改 calc(120rpx + env(safe-area-inset-bottom))，或按底栏实高单一来源化。",
+    "action": "修：底栏预留高度按单一来源化贴住 fixed 底栏实高，判点为改后定值 height:calc(120rpx、⟨余下 + env(safe-area-inset-bottom) 与 HEAD 原值 calc(200rpx + env(sa…",
     "statusEvidence": "—（未修，无需）"
    },
-   "verdict": "UNDECIDABLE",
-   "verdictWhy": "台账判据里抠不出任何可比对的具体物件（文件/选择器/值/键/文案）",
+   "verdict": "ARTIFACT_VERIFIED",
+   "verdictWhy": "hard 判点全部在该页产物作用域内命中（1/1）",
    "frame": false,
    "uiMarkers": [],
-   "probes": [],
-   "probeCount": 0,
+   "probes": [
+    {
+     "kind": "css-decl",
+     "token": "height:calc(120rpx",
+     "carrier": "wxss",
+     "polarity": "present",
+     "origin": "ledger-action",
+     "anchored": true,
+     "note": null,
+     "hard": true,
+     "artifact": {
+      "hit": true
+     },
+     "artifactFile": "subpackages/village/village/post.wxss",
+     "artifactExcerpt": "ary, #9AA39F)}.post-body__bottom-space.data-v-ef1fb74b{height:calc(120rpx + env(safe-area-inset-bottom))}.post-toolbar.…",
+     "artifactScope": "page",
+     "src": {
+      "hit": true
+     },
+     "srcFile": "subpackages/village/village/post.vue",
+     "srcExcerpt": "，滚动到底是一段无主白区； 按台账口径改 120rpx（≈实高 + 17rpx 呼吸位） */ height: calc(120rpx + env(safe-area-inset-bottom)); } /* ========== 底部工…",
+     "grantsGreen": true,
+     "usable": true
+    }
+   ],
+   "probeCount": 1,
    "notes": [
     "closer 记为 deferred_p4（本轮未动手）"
    ],
    "closerAction": "deferred_p4",
-   "artifactEvidence": null,
-   "srcEvidence": null,
-   "searched": [],
-   "weakestCheck": null
+   "artifactEvidence": {
+    "file": "subpackages/village/village/post.wxss",
+    "excerpt": "ary, #9AA39F)}.post-body__bottom-space.data-v-ef1fb74b{height:calc(120rpx + env(safe-area-inset-bottom))}.post-toolbar.…",
+    "kind": "css-decl",
+    "token": "height:calc(120rpx"
+   },
+   "srcEvidence": {
+    "file": "subpackages/village/village/post.vue",
+    "excerpt": "，滚动到底是一段无主白区； 按台账口径改 120rpx（≈实高 + 17rpx 呼吸位） */ height: calc(120rpx + env(safe-area-inset-bottom)); } /* ========== 底部工…",
+    "kind": "css-decl",
+    "token": "height:calc(120rpx"
+   },
+   "searched": [
+    "css-decl height:calc(120rpx"
+   ],
+   "weakestCheck": {
+    "kind": "css-decl",
+    "specificity": 5,
+    "token": "height:calc(120rpx",
+    "n": 1
+   }
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
@@ -14132,7 +14069,7 @@
     "page": "subpackages/village/village/post",
     "category": "Consistency",
     "severity": "P3→P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=P4延后出本轮；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：两页圈子列表行内结构统一（建议 post.vue 补 __joined 胶囊类并拆出成员数，样式对齐 publish.vue:1030-1033），或反向取 post 的单行式。",
     "statusEvidence": "—（未修，无需）"
@@ -14198,7 +14135,7 @@
     "page": "subpackages/village/village/publish",
     "category": "UI",
     "severity": "P3→P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=P4延后出本轮；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：两页图格补常驻上限提示；字数告警取同一阈值实现（或都 pre-warn 或都 over-warn）",
     "statusEvidence": "—（未修，无需）"
@@ -14240,13 +14177,13 @@
     "page": "subpackages/village/village/publish",
     "category": "UI",
     "severity": "P3→P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=台账锚点写错；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：分两档，不得一刀切。①24rpx 两处（HEAD :1010 .publish-to__card / :1054 .publish-rows）走**等值**令牌 var(--r-xl)（theme/design-variables.s…",
     "statusEvidence": "—（未修，无需）"
    },
-   "verdict": "NEEDS_UI_FRAME",
-   "verdictWhy": "判据是行为/观感（visual），静态无判点；只在共享载体（语言包/主题/别页）里命中，未证明该页消费了它：--r-xl, --card-radius",
+   "verdict": "ARTIFACT_VERIFIED",
+   "verdictWhy": "hard 判点全部在该页产物作用域内命中（1/2）",
    "frame": false,
    "uiMarkers": [
     "visual"
@@ -14259,20 +14196,20 @@
      "polarity": "present",
      "origin": "ledger-action",
      "anchored": true,
-     "note": "命中落在 app.wxss（不在本条判据的载体上），只记为观测、不授予绿",
+     "note": null,
      "hard": true,
      "artifact": {
       "hit": true
      },
-     "artifactFile": "app.wxss",
-     "artifactExcerpt": "a-v-a2cdf753{width:100%;height:84rpx;border-radius:var(--r-xl, 42rpx);background:linear-gradient(135deg,var(--c-brand-5…",
+     "artifactFile": "subpackages/village/village/publish.wxss",
+     "artifactExcerpt": ":20rpx;padding:24rpx;background:#fff;border-radius:var(--r-xl, 24rpx);border:1rpx solid #EEF2F0}.publish-to__avatar.dat…",
      "artifactScope": "page",
      "src": {
       "hit": true
      },
-     "srcFile": "theme/design-variables.scss",
-     "srcExcerpt": "}; --r-md: #{$radius-md}; --r-lg: #{$radius-lg}; --r-xl: #{$radius-xl}; --r-xxl: #{$radius-xxl}; --r-full: #{$radius-fu…",
-     "grantsGreen": false,
+     "srcFile": "subpackages/village/village/publish.vue",
+     "srcExcerpt": "; padding: 24rpx; background: #fff; border-radius: var(--r-xl, 24rpx); border: 1rpx solid #EEF2F0; } .publish-to__avata…",
+     "grantsGreen": true,
      "usable": true
     },
     {
@@ -14305,14 +14242,14 @@
    ],
    "closerAction": "ledger_anchor_error",
    "artifactEvidence": {
-    "file": "app.wxss",
-    "excerpt": "a-v-a2cdf753{width:100%;height:84rpx;border-radius:var(--r-xl, 42rpx);background:linear-gradient(135deg,var(--c-brand-5…",
+    "file": "subpackages/village/village/publish.wxss",
+    "excerpt": ":20rpx;padding:24rpx;background:#fff;border-radius:var(--r-xl, 24rpx);border:1rpx solid #EEF2F0}.publish-to__avatar.dat…",
     "kind": "css-var",
     "token": "--r-xl"
    },
    "srcEvidence": {
-    "file": "theme/design-variables.scss",
-    "excerpt": "}; --r-md: #{$radius-md}; --r-lg: #{$radius-lg}; --r-xl: #{$radius-xl}; --r-xxl: #{$radius-xxl}; --r-full: #{$radius-fu…",
+    "file": "subpackages/village/village/publish.vue",
+    "excerpt": "; padding: 24rpx; background: #fff; border-radius: var(--r-xl, 24rpx); border: 1rpx solid #EEF2F0; } .publish-to__avata…",
     "kind": "css-var",
     "token": "--r-xl"
    },
@@ -14349,7 +14286,7 @@
     "page": "subpackages/village/village/publish",
     "category": "Interaction",
     "severity": "P3",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：**判据更正为「view/button 节点补 hover-class；<text> 节点须先换型为 <view> 再补」**——mp-weixin 的 hover-class 只对 view/button 生效，给上述 <text>…",
     "statusEvidence": "—（未修，无需）"
@@ -14398,7 +14335,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/village/village/publish.wxml",
-     "artifactExcerpt": "der__close press-feedback data-v-147e615c\" hover-class=\"press-feedback--active\" role=\"button\" aria-label=\"{{b}}\" bindta…",
+     "artifactExcerpt": "der__close press-feedback data-v-5acc3bfd\" hover-class=\"press-feedback--active\" role=\"button\" aria-label=\"{{b}}\" bindta…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -14421,7 +14358,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/village/village/publish.wxml",
-     "artifactExcerpt": "src=\"{{img.a}}\" mode=\"aspectFill\" alt=\"\"/><view class=\"publish-image__remove press-feedback data-v-147e615c\" hover-clas…",
+     "artifactExcerpt": "src=\"{{img.a}}\" mode=\"aspectFill\" alt=\"\"/><view class=\"publish-image__remove press-feedback data-v-5acc3bfd\" hover-clas…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -14444,7 +14381,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/village/village/publish.wxml",
-     "artifactExcerpt": "der__close press-feedback data-v-147e615c\" hover-class=\"press-feedback--active\" role=\"button\" aria-label=\"{{b}}\" bindta…",
+     "artifactExcerpt": "der__close press-feedback data-v-5acc3bfd\" hover-class=\"press-feedback--active\" role=\"button\" aria-label=\"{{b}}\" bindta…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -14579,7 +14516,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/village/village/publish.wxml",
-     "artifactExcerpt": "der__close press-feedback data-v-147e615c\" hover-class=\"press-feedback--active\" role=\"button\" aria-label=\"{{b}}\" bindta…",
+     "artifactExcerpt": "der__close press-feedback data-v-5acc3bfd\" hover-class=\"press-feedback--active\" role=\"button\" aria-label=\"{{b}}\" bindta…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -14602,7 +14539,7 @@
       "hit": true
      },
      "artifactFile": "subpackages/village/village/publish.wxml",
-     "artifactExcerpt": "der__close press-feedback data-v-147e615c\" hover-class=\"press-feedback--active\" role=\"button\" aria-label=\"{{b}}\" bindta…",
+     "artifactExcerpt": "der__close press-feedback data-v-5acc3bfd\" hover-class=\"press-feedback--active\" role=\"button\" aria-label=\"{{b}}\" bindta…",
      "artifactScope": "page",
      "src": {
       "hit": true
@@ -14725,7 +14662,7 @@
     "page": "tmp/tour-R2",
     "category": "Architecture",
     "severity": "P1→P4",
-    "status": "待修复",
+    "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
     "statusHead": "待修复",
     "action": "修：真解在 harness 之外：把 DevTools 模拟器切到高 dpr 机型档后重跑（脚本无权改），或在报告口径上把「字级判定」标注为需人工 zoomFrames 辅助帧背书",
     "statusEvidence": "—（未修，无需）"

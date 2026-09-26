@@ -1,0 +1,18 @@
+{
+  "note": "round-7 配对语言包批次：删除随 MP-R2-PAGES-LOGIN-INDEX-015（登录页内联注册模式删除）失去消费方的 9 个键，并把两个同值键改成不同文案（MP-R2VIS-PAGES-LOGIN-INDEX-007）。删除项由 scripts/qa/land-locale-batch.mjs 在落盘前逐个数消费方，>0 就整批拒绝。",
+  "deleteKeys": [
+    { "key": "login.nicknamePlaceholder" },
+    { "key": "login.birthDatePlaceholder" },
+    { "key": "login.registerButton" },
+    { "key": "login.backToLogin" },
+    { "key": "login.phoneInvalid" },
+    { "key": "login.smsCodePlaceholder" },
+    { "key": "login.getSmsCode" },
+    { "key": "login.smsSent" },
+    { "key": "login.smsSentMock" }
+  ],
+  "setValueKeys": [
+    { "key": "login.phoneQuickLogin", "zh": "手机号快捷登录", "en": "Quick sign-in with phone number" },
+    { "key": "login.phoneLogin", "zh": "验证码或密码登录", "en": "Sign in with code or password" }
+  ]
+}

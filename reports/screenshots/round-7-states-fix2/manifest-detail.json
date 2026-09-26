@@ -1,0 +1,173 @@
+{
+ "gitSha": "unknown",
+ "workflowVersion": "3.7-cli-states",
+ "generatedAt": "2026-09-26T04:00:47.912Z",
+ "project": "apps/client/dist/build/mp-weixin",
+ "harness": "wechatide CLI: simulator_open_page + automation_element_action(offset/tap) + automation_evaluate + simulator_screenshot",
+ "verdictLegend": {
+  "APPEARED": "弹层节点动作后出现且像素变化",
+  "APPEARED_NOPIXEL": "节点出现但前后帧逐字节相同（截图不含该层）",
+  "NOCHANGE": "节点没出现且像素没变（交互未生效）",
+  "CHANGED_BUT_NO_NODE": "像素变了但期望节点没出现（换了别的状态）",
+  "WAS_THERE": "动作前节点就在（默认态不干净）",
+  "PROBE_ERR": "测量失败，不是产品结论",
+  "HARNESS_MISS": "取景器点错控件（tap 命中的文本不含 expectTapText），本行结论作废"
+ },
+ "captureLimitations": [
+  "出图尺寸由 IDE 决定，禁止与 WS 巡检帧跨 harness 比像素",
+  "每行拍前后两帧：判据是「动作改变了什么」，不是「看起来对」"
+ ],
+ "shots": [
+  {
+   "identity": "A",
+   "page": "subpackages/village/village/post",
+   "state": "话题弹层态",
+   "query": "id=1",
+   "route": "ERR:automation_evaluate 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.e",
+   "routeDrift": null,
+   "tapSelector": ".post-tool__icon--glyph|.post-toolbar .post-tool",
+   "tapResolved": ".post-tool__icon--glyph|.post-toolbar .post-tool",
+   "expectSelector": ".post-sheet",
+   "tapText": "NOMATCH(tried=图片,图片,图片,图片,图片,图片,图片,图片,图片)",
+   "expectTapText": "#",
+   "tapMismatch": true,
+   "nodeBefore": "0",
+   "nodeAfter": "0",
+   "tapResult": "ok",
+   "verdict": "HARNESS_MISS",
+   "preFrame": "reports/screenshots/round-7-states-fix2/A/subpackages_village_village_post__pre.png",
+   "preBytes": 8584,
+   "preHash": "df5996d221be5802",
+   "path": "reports/screenshots/round-7-states-fix2/A/subpackages_village_village_post__话题弹层态.png",
+   "bytes": 8575,
+   "contentHash": "adcf7f0fcb74fe0c",
+   "at": "2026-09-26T03:58:50.591Z"
+  },
+  {
+   "identity": "B",
+   "page": "subpackages/village/village/post",
+   "state": "话题弹层态",
+   "query": "id=1",
+   "route": "ERR:automation_evaluate 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.e",
+   "routeDrift": null,
+   "tapSelector": ".post-tool__icon--glyph|.post-toolbar .post-tool",
+   "tapResolved": ".post-tool__icon--glyph|.post-toolbar .post-tool",
+   "expectSelector": ".post-sheet",
+   "tapText": "NOMATCH(tried=图片,图片,图片,图片,图片,图片,图片,图片,图片)",
+   "expectTapText": "#",
+   "tapMismatch": true,
+   "nodeBefore": "0",
+   "nodeAfter": "0",
+   "tapResult": "ok",
+   "verdict": "HARNESS_MISS",
+   "preFrame": "reports/screenshots/round-7-states-fix2/B/subpackages_village_village_post__pre.png",
+   "preBytes": 8575,
+   "preHash": "adcf7f0fcb74fe0c",
+   "path": "reports/screenshots/round-7-states-fix2/B/subpackages_village_village_post__话题弹层态.png",
+   "bytes": 8584,
+   "contentHash": "b1b297f54d6c6c80",
+   "at": "2026-09-26T03:59:42.893Z"
+  },
+  {
+   "identity": "A",
+   "page": "pages/register/index",
+   "state": "协议勾选态",
+   "query": null,
+   "route": "ERR:automation_evaluate 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.e",
+   "routeDrift": null,
+   "tapSelector": ".agree__hit|.agree .agree__hit",
+   "tapResolved": ".agree__hit",
+   "expectSelector": ".agree__chk-icon",
+   "tapText": "",
+   "expectTapText": null,
+   "tapMismatch": false,
+   "nodeBefore": "0",
+   "nodeAfter": "0",
+   "tapResult": "TAP_ERR automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=",
+   "verdict": "PROBE_ERR",
+   "preFrame": "reports/screenshots/round-7-states-fix2/A/pages_register_index__pre.png",
+   "preBytes": 11333,
+   "preHash": "9b8cdc705575225e",
+   "path": "reports/screenshots/round-7-states-fix2/A/pages_register_index__协议勾选态.png",
+   "bytes": 11333,
+   "contentHash": "9b8cdc705575225e",
+   "at": "2026-09-26T04:00:20.993Z"
+  },
+  {
+   "identity": "B",
+   "page": "pages/register/index",
+   "state": "协议勾选态",
+   "query": null,
+   "route": "pages/register/index",
+   "routeDrift": false,
+   "tapSelector": ".agree__hit|.agree .agree__hit",
+   "tapResolved": ".agree__hit",
+   "expectSelector": ".agree__chk-icon",
+   "tapText": "",
+   "expectTapText": null,
+   "tapMismatch": false,
+   "nodeBefore": "0",
+   "nodeAfter": "0",
+   "tapResult": "TAP_ERR automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=",
+   "verdict": "PROBE_ERR",
+   "preFrame": "reports/screenshots/round-7-states-fix2/B/pages_register_index__pre.png",
+   "preBytes": 11333,
+   "preHash": "9b8cdc705575225e",
+   "path": "reports/screenshots/round-7-states-fix2/B/pages_register_index__协议勾选态.png",
+   "bytes": 11345,
+   "contentHash": "16c1ded2eac97d74",
+   "at": "2026-09-26T04:00:47.912Z"
+  }
+ ],
+ "failures": [
+  {
+   "identity": "A",
+   "page": "subpackages/village/village/post",
+   "state": "话题弹层态",
+   "severity": "P2",
+   "reason": "落点探针没给出可用路由（两次结果 \"ERR:automation_evaluate 调用失败：Command failed: D:\\\\微信开发者\\\\微信web开发者工具\\\\微信开发者工具.e\"）⇒ 该行落点未取证（不得据此说页面没到达）"
+  },
+  {
+   "identity": "A",
+   "page": "subpackages/village/village/post",
+   "state": "话题弹层态",
+   "severity": "P1",
+   "reason": "取景器点错控件：tap 命中的文本是 \"NOMATCH(tried=图片,图片,图片,图片,图片,图片,图片,图片,图片)\"，不含期望 \"#\" ⇒ 本行不得当产品结论，选择器要重定"
+  },
+  {
+   "identity": "B",
+   "page": "subpackages/village/village/post",
+   "state": "话题弹层态",
+   "severity": "P2",
+   "reason": "落点探针没给出可用路由（两次结果 \"ERR:automation_evaluate 调用失败：Command failed: D:\\\\微信开发者\\\\微信web开发者工具\\\\微信开发者工具.e\"）⇒ 该行落点未取证（不得据此说页面没到达）"
+  },
+  {
+   "identity": "B",
+   "page": "subpackages/village/village/post",
+   "state": "话题弹层态",
+   "severity": "P1",
+   "reason": "取景器点错控件：tap 命中的文本是 \"NOMATCH(tried=图片,图片,图片,图片,图片,图片,图片,图片,图片)\"，不含期望 \"#\" ⇒ 本行不得当产品结论，选择器要重定"
+  },
+  {
+   "identity": "A",
+   "page": "pages/register/index",
+   "state": "协议勾选态",
+   "severity": "P2",
+   "reason": "落点探针没给出可用路由（两次结果 \"ERR:automation_evaluate 调用失败：Command failed: D:\\\\微信开发者\\\\微信web开发者工具\\\\微信开发者工具.e\"）⇒ 该行落点未取证（不得据此说页面没到达）"
+  },
+  {
+   "identity": "A",
+   "page": "pages/register/index",
+   "state": "协议勾选态",
+   "severity": "P1",
+   "reason": "测量本身失败（不是产品结论）：pre=0 post=0 tap=TAP_ERR automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e= shotPre=ok shotPost=ok"
+  },
+  {
+   "identity": "B",
+   "page": "pages/register/index",
+   "state": "协议勾选态",
+   "severity": "P1",
+   "reason": "测量本身失败（不是产品结论）：pre=0 post=0 tap=TAP_ERR automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e= shotPre=ok shotPost=ok"
+  }
+ ]
+}

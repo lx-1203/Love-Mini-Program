@@ -1,0 +1,35 @@
+{
+  "note": "round-7：把 lane 复核中确认「判据本身写错」的证据格改成可判物件。原文里出现的旧判点一律保留在句内说明为「原判点」，这样下一轮看得见我们改了什么、为什么改。",
+  "patches": [
+    {
+      "id": "MP-R2-PAGES-HOME-INDEX-106",
+      "col": 8,
+      "why": "原判点是编译期被擦除的 TS 接口名 ⇒ 产物侧永远查不到，判据台因此报「两载体都没有」；这是判据缺陷不是缺陷未修",
+      "new": "apps/client/src/stores/home-dashboard.ts:5（视图模型实际用词）；apps/client/src/types/api-types-supplement.ts:283（原判点 TodayRecommendationView 只是编译期擦除的接口名，dist 里 0 命中 ⇒ 原判据不可判）。剩余可判事实：死状态位已随 HEAD 消失，likeSent 只剩两份语言包与两处 toast"
+    },
+    {
+      "id": "MP-R2-PAGES-HOME-INDEX-110",
+      "col": 8,
+      "why": "原判点 metaLine 是被参照物（修前后都在 ⇒ 必假绿），修后物件另有其名且都被压缩改名",
+      "new": "apps/client/src/components/home/TodayRecommendationCard.vue:41-49（修后物件 distanceLine 的定义）、:103（唯一消费点）。可判形式必须走结构判点：产物 pages/home/index.wxml 里 today-card__distance 节点数==1 且节点内无分隔符字面量。原判点 metaLine 是参照物（修前后都在），两个标识符都会被 minifier 改名 ⇒ 字符串命中式判据一律无效"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-HOME-INDEX-003",
+      "col": 8,
+      "why": "原判点类名全仓 0 命中，真名另有所在",
+      "new": "apps/client/src/components/home/NearbyPeople.vue:57-63 + :132-140（真名 .nearby-item__avatar；原判点 .nearby-avatar 全仓 0 命中）。共同兴趣节点的删除已在基线落地（同文件整节点删除处）；剩余半项是 88rpx 1:1 aspectFill 的中心圆裁，需要渲染帧或半身素材池才能判"
+    },
+    {
+      "id": "MP-R2-PAGES-HOME-INDEX-112",
+      "col": 8,
+      "why": "证据行号与嵌套层数实测对不上，按现状改写",
+      "new": "apps/client/src/services/mocks/fixtures.ts:1155-1163。实测：:1156 是双层嵌套，:1160/:1162 各单层，:1163 属于 communityPosts 行（原证据写「三处嵌套」与行号有出入）。裸路径已在 f9a60925 收敛（git diff 874ff52f..HEAD 恰 3 行）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A03",
+      "col": 8,
+      "why": "原判点指向 ChatHeader（另一文件），本页真判点是该选择器 0 命中；「二选一」的前提不成立",
+      "new": "apps/client/src/subpackages/chat/chat-session/index.vue:3309（删除注释，HEAD 该文件命中数 1）；产物 subpackages/chat/chat-session/index.wxss 与 .wxml 各 0 命中（09:47 构建已含删除）。返回钮由 apps/client/src/components/chat/ChatHeader.vue:53-54 提供、本页 :1950 已挂载 ⇒ 原判「要么删样式要么补节点」二选一不成立，补节点会变双返回钮。判据改为：本页 .chat-session-back 在两个产物文件里命中数均为 0"
+    }
+  ]
+}

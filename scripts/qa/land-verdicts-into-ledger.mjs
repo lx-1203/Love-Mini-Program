@@ -46,7 +46,7 @@ const byId = new Map();
 for (const it of items) if (it && it.id) byId.set(String(it.id), it);
 
 const lines = readFileSync(lPath, "utf8").split(/\r?\n/);
-let promoted = 0, annotated = 0, untouched = 0;
+let promoted = 0, annotated = 0, untouched = 0, conflictMarked = 0;
 const promotedRows = [], annotatedRows = [], conflicts = [], skippedNoRow = [], malformed = [];
 const seenIds = new Set();
 
@@ -102,7 +102,16 @@ for (let i = 0; i < lines.length; i++) {
   } else {
     untouched++;
     const whyTxt = String(it.verdictWhy || "").replace(/\s+/g, " ").slice(0, 120);
-    if (head === "已修复待复验" && it.verdict === "NOT_IN_EITHER") conflicts.push(id + " 状态=已修复待复验 但判据台=两载体都没有 :: " + whyTxt);
+    if (head === "已修复待复验" && it.verdict === "NOT_IN_EITHER") {
+      conflicts.push(id + " 状态=已修复待复验 但判据台=两载体都没有 :: " + whyTxt);
+      /* "已写进台账正文"是一句承诺，只有真的改了这一格才算兑现：上一版只在终端打印冲突、
+         rowsTouched 仍为 0 ⇒ 退出码 2、一个字都没写，而提示语却说自己写过了。 */
+      if (status.indexOf("与判据台冲突") < 0) {
+        next = `${status}（与判据台冲突：${whyTxt}——不自动降级，待人判；${REF}）`;
+        conflictMarked++;
+        untouched--;
+      }
+    }
   }
   if (next === status && !evAdd) continue;
   c[COL_STATUS] = next;
@@ -115,11 +124,11 @@ for (let i = 0; i < lines.length; i++) {
   lines[i] = rebuilt;
 }
 
-console.log(`LAND_ITEMS=${items.length} 台账行匹配=${seenIds.size} 未匹配到判据台的矩阵行=${skippedNoRow.length} 推进=${promoted} 仅记去向=${annotated} 不动=${untouched}`);
+console.log(`LAND_ITEMS=${items.length} 台账行匹配=${seenIds.size} 未匹配到判据台的矩阵行=${skippedNoRow.length} 推进=${promoted} 仅记去向=${annotated} 标冲突=${conflictMarked} 不动=${untouched}`);
 promotedRows.forEach((r) => console.log("  PROMOTE " + r));
 conflicts.forEach((r) => console.log("  CONFLICT " + r));
-if (conflicts.length) console.log(`  〔冲突 ${conflicts.length} 条：状态说已修、判据台两个载体都找不到修后态 —— 不自动降级，交人判，已写进台账正文〕`);
-const rowsTouched = promoted + annotated;
+if (conflicts.length) console.log(`  〔冲突 ${conflicts.length} 条：状态说已修、判据台两个载体都找不到修后态 —— 不自动降级，只在本格里标注待人判；本轮实际写入 ${conflictMarked} 条${APPLY ? "（随 --apply 落盘）" : "（DRY：加 --apply 才落盘）"}〕`);
+const rowsTouched = promoted + annotated + conflictMarked;
 if (malformed.length) {
   console.log(`LAND_RESULT=FAIL reason=${malformed.length} 行重拼后列数发生变化，一个字都不写`);
   malformed.slice(0, 6).forEach((m) => console.log("  MALFORMED " + m));

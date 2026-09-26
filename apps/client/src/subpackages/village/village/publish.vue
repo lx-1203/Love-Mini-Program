@@ -853,7 +853,17 @@ onUnmounted(() => {
         <text v-if="isCircleTarget" class="publish-topics__hint">兴趣圈子发帖暂不支持话题，所选话题不会随本条发布</text>
         <view v-for="(tag, idx) in topics" :key="`${tag}-${idx}`" class="publish-topic-chip">
           <text class="publish-topic-chip__text">{{ tag }}</text>
-          <text class="publish-topic-chip__remove" role="button" :aria-label="'移除话题 ' + tag" @tap="removeTopic(idx)">×</text>
+          <!-- MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005：原判据「给 × 移除钮补 hover-class」
+               在本节点上是死属性——mp-weixin 的 hover-class 只对 view/button 生效，本节点原为 <text>。
+               按台账更正后的判据先换型为 <view>，再套本页既有范式（见 :788 .publish-image__remove） -->
+          <view
+            class="publish-topic-chip__remove press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="'移除话题 ' + tag"
+            @tap="removeTopic(idx)"
+          >×</view>
         </view>
       </view>
 
@@ -1015,7 +1025,7 @@ onUnmounted(() => {
   flex: 1;
   text-align: center;
 }
-.publish-header__submit { padding: 12rpx 36rpx; border-radius: 999rpx; background: var(--c-brand, #36C99A); flex-shrink: 0; }
+.publish-header__submit { padding: 12rpx 36rpx; border-radius: var(--r-full, 999rpx); background: var(--c-brand, #36C99A); flex-shrink: 0; }
 /* R3：禁用态白字对浅绿底对比度仅 1.36:1（judged 证据），文字改深绿保证可辨认 */
 .publish-header__submit--disabled { background: #C7E9DC; }
 .publish-header__submit--disabled .publish-header__submit-text { color: #2A7A5E; }
@@ -1025,7 +1035,7 @@ onUnmounted(() => {
 
 .publish-to { padding: 32rpx 32rpx 8rpx; }
 .publish-to__label { font-size: 26rpx; color: var(--c-text-secondary, #6B7571); margin-bottom: 16rpx; }
-.publish-to__card { display: flex; align-items: center; gap: 20rpx; padding: 24rpx; background: #fff; border-radius: 24rpx; border: 1rpx solid #EEF2F0; }
+.publish-to__card { display: flex; align-items: center; gap: 20rpx; padding: 24rpx; background: #fff; border-radius: var(--r-xl, 24rpx); border: 1rpx solid #EEF2F0; }
 .publish-to__avatar { width: 88rpx; height: 88rpx; border-radius: 50%; background: #E8FBF2; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 .publish-to__avatar-img {
   border-radius: var(--r-full);
@@ -1034,13 +1044,13 @@ onUnmounted(() => {
 .publish-to__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8rpx; }
 .publish-to__name-row { display: flex; align-items: center; gap: 10rpx; }
 .publish-to__name { font-size: 30rpx; font-weight: 700; color: var(--c-text-primary, #1A1E1C); }
-.publish-to__tag { padding: 2rpx 12rpx; border-radius: 8rpx; background: #E8FBF2; color: var(--c-brand, #36C99A); font-size: 20rpx; }
+.publish-to__tag { padding: 2rpx 12rpx; border-radius: var(--r-sm, 8rpx); background: #E8FBF2; color: var(--c-brand, #36C99A); font-size: 20rpx; }
 .publish-to__subtitle { font-size: 24rpx; color: var(--c-text-tertiary, #9AA39F); }
 .publish-to__arrow { font-size: 36rpx; color: var(--c-text-quaternary, #C2CAC6); }
 
 .publish-target-sheet { position: fixed; inset: 0; z-index: 1100; background: rgba(0,0,0,0.45); display:flex; align-items:flex-end; }
 /* R21：弹层加高到 78vh（兴趣圈子分组此前在 70vh 下不可见）+ 底部安全区，末行不再贴屏裁切 */
-.publish-target-sheet__panel { width: 100%; background: #fff; border-radius: 32rpx 32rpx 0 0; padding: 24rpx 32rpx calc(32rpx + env(safe-area-inset-bottom)); max-height: 78vh; overflow-y: auto; box-sizing: border-box; }
+.publish-target-sheet__panel { width: 100%; background: #fff; border-radius: var(--r-xxl, 32rpx) var(--r-xxl, 32rpx) 0 0; padding: 24rpx 32rpx calc(32rpx + env(safe-area-inset-bottom)); max-height: 78vh; overflow-y: auto; box-sizing: border-box; }
 .publish-target-sheet__head { padding: 16rpx 0 24rpx; }
 .publish-target-sheet__title { font-size: 30rpx; font-weight: 700; color: var(--c-text-primary, #1A1E1C); }
 /* R20：渠道分组标题（公域 / 校园私域 / 兴趣圈子） */
@@ -1069,7 +1079,7 @@ onUnmounted(() => {
 .publish-image--add { display: flex; align-items: center; justify-content: center; background: #ffffff; border: 2rpx dashed #C7D8D2; box-sizing: border-box; }
 .publish-image__plus { font-size: 56rpx; color: var(--c-text-tertiary, #9AA39F); }
 
-.publish-rows { margin: 16rpx 32rpx; background: #fff; border-radius: 24rpx; border: 1rpx solid #EEF2F0; }
+.publish-rows { margin: 16rpx 32rpx; background: #fff; border-radius: var(--r-xl, 24rpx); border: 1rpx solid #EEF2F0; }
 .publish-row { display: flex; align-items: center; gap: 16rpx; padding: 26rpx 24rpx; border-bottom: 1rpx solid #F2F5F3; }
 .publish-row__icon { width: 44rpx; height: 44rpx; color: var(--c-brand, #36C99A); text-align: center; }
 .publish-row__label { font-size: 28rpx; color: var(--c-text-primary, #1A1E1C); }
@@ -1100,7 +1110,12 @@ onUnmounted(() => {
 .publish-sheet__confirm { padding: 16rpx 36rpx; border-radius: var(--r-full, 999rpx); background: var(--c-brand, #36C99A); flex-shrink: 0; }
 .publish-sheet__confirm-text { font-size: var(--fs-base, 24rpx); font-weight: 700; color: var(--c-neutral-0, #FFFFFF); }
 
-.publish-tip { margin: 24rpx 32rpx; padding: 24rpx; background: #EAF9F3; border-radius: 20rpx; display: flex; align-items: flex-start; gap: 16rpx; }
+/* MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-004：圆角字面量按「等值才换」收口——
+   本行 20rpx = --r-lg（design-variables.scss:194）等值，已令牌化；
+   .publish-target-sheet__joined 的 6rpx 与 .publish-image 的 16rpx 全表无等值档
+   （--r-sm=8rpx / --r-lg=20rpx，台账处置列举例的「16→--r-lg」实为 16→20rpx 视觉变更，不采纳），
+   按 nit 保留字面量 */
+.publish-tip { margin: 24rpx 32rpx; padding: 24rpx; background: #EAF9F3; border-radius: var(--r-lg, 20rpx); display: flex; align-items: flex-start; gap: 16rpx; }
 .publish-tip__text-wrap { flex: 1; display: flex; flex-direction: column; gap: 6rpx; }
 .publish-tip__title { font-size: 26rpx; font-weight: 700; color: var(--c-brand, #36C99A); display: flex; align-items: center; gap: 8rpx; }
 .publish-tip__title-icon { width: 28rpx; height: 28rpx; color: var(--c-brand, #36C99A); }

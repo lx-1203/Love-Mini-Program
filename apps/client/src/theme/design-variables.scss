@@ -800,6 +800,9 @@ page {
   --c-warning-border-tint: rgba(245, 158, 11, 0.2);
   /* 错误色 tint */
   --c-error-bg-tint: rgba(229, 69, 77, 0.1);
+  /* 不透明一档：注册页错误输入框底色原为裸 #FEF5F6（MP-R2-PAGES-REGISTER-INDEX-014(C)）。
+     不复用 --c-error-bg-tint 是因为那是半透明值，叠在卡片白底上会偏色——这里要的是逐字同色。 */
+  --c-error-bg-solid: #fef5f6;
   --c-error-border-tint: rgba(229, 69, 77, 0.2);
   /* 错误色（红 #EF4444）tint（用于 Toast/Tag 等组件，与 --c-error 略有差异） */
   --c-red-bg-tint: rgba(239, 68, 68, 0.1);

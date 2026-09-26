@@ -1,0 +1,106 @@
+{
+  "note": "判据台 cellplan（und-b，20 条）。逐条读台账 col8/col11 + verdicts.json 的 probes/verdictWhy/searched/weakestCheck + 真源码 + 真产物后定桶。所有判点均实测：artifact=该页产物作用域（apps/client/dist/build/mp-weixin 内该页 wxml/wxss）命中数（并注全局 dist 计数），baseline=git show 094f7239:<源文件> 命中数。基线 094f7239 即当前 HEAD，故只有未提交的工作树改动有可测方向；已进 HEAD 的修复不可被该基线重新记功，一律归 alreadyClosedInBaseline 且不给判点。patch 只提未提交且方向唯一（baseline=0）的判点；说明性/编译期擦除内容用 ⟨⟩ 包裹不参与抽点，⟨⟩ 内不含 。；以免子句切分泄漏。全表单元格不含竖线。本轮未跑判据台/未构建/未碰 wechatide。",
+  "patches": [
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-002",
+      "col": 11,
+      "why": "未提交（circles/index.vue 工作树 dirty 且 10:48 构建已并入产物）：封面 .circle-card__cover-wrap 由 200rpx 收方到 144rpx。判点 width:144rpx 在 circles/index.wxss=1（全局 dist=5）、baseline(HEAD circles/index.vue)=0（HEAD 两处均 200rpx）；判点 height:144rpx 在 circles/index.wxss=1（全局 dist=4）、baseline=0。方向唯一来自本轮未提交改动。",
+      "new": "修：圆角封面收方为近正方形缩略以贴合兴趣圈列表理想图，可判物件为改后定值 width:144rpx + height:144rpx（⟨选择器 .circle-card__cover-wrap，HEAD 两处原为 200rpx，本项仅缩缩略图不改卡片行高、属观感对齐非布局修复⟩）。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006",
+      "col": 11,
+      "why": "未提交（chat-session/index.vue 工作树 dirty）：附件「+」由文本 glyph 改 <image>，其文本 glyph 样式类随模板引用一并从该页删除。删除型判点 wechat-input-bar__icon-text 在该页产物 index.wxml+index.wxss=0（全局 dist 亦=0，类名不被压缩改名故删除可观测），baseline(HEAD index.vue)=2（类定义加模板引用各一处）。工作树仅余一处注释提及旧名、不进产物。",
+      "new": "修：附件「+」由文本 glyph 改 <image>，随之从该页删掉文本 glyph 类 .wechat-input-bar__icon-text（⟨新增 <image> 键 IMAGE_PATHS.ICONS_EMOJI.PLUS 与 role aria-label 属编译期擦除标识、不作判点⟩）。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-002",
+      "col": 11,
+      "why": "未提交（post.vue 工作树 dirty、构建已并入）：把只被 <image> 消费的失效 color 死声明移到仅文本 glyph 消费的修饰类，新增两个类。判点 post-row__icon--glyph 在 post.wxss+post.wxml=3（全局 dist 亦=3、页面唯一）、baseline(HEAD post.vue)=0；判点 post-tool__icon--glyph 同为 3 与 0。",
+      "new": "修：把 <image> 上失效的 color 死声明移到仅文本 glyph 消费的修饰类，可判物件为新增类 .post-row__icon--glyph 与 .post-tool__icon--glyph（⟨原共用类 .post-row__icon 与 .post-tool__icon 及其中被删的 color 为修前状态、不作判点，#/@ 仍是文本 glyph⟩）。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-005",
+      "col": 11,
+      "why": "未提交（post.vue 工作树 dirty）：.post-body__bottom-space 预留由 calc(200rpx…) 收到 calc(120rpx…)。判点 css-decl height:calc(120rpx 在该页产物 post.wxss（去空白）=1（全局 dist calc(120rpx=3）、baseline(HEAD post.vue)=0（HEAD 为 200rpx 版）。判点止于 、，把 + env(...) 余值封进 ⟨⟩ 以免抽取器按 + 拆串泄漏 env 残片。",
+      "new": "修：底栏预留高度按单一来源化贴住 fixed 底栏实高，判点为改后定值 height:calc(120rpx、⟨余下 + env(safe-area-inset-bottom) 与 HEAD 原值 calc(200rpx + env(safe-area-inset-bottom)) 仅数字档不同⟩）。"
+    }
+  ],
+  "needsFrame": [
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001",
+      "assert": "校园 hub 在推荐/已加入 tab 有已填充学校卡时，统计行（成员数·帖子数 .campus-school-card__stats）应整行完整可见：不被 white-space:nowrap 省略号截断、也不与右侧 CTA 列叠压（理想图把统计放回独立一行）。本轮 .campus-school-card__stats 的 nowrap 规则未改动（HEAD=工作树），无未提交判点。round-7 交互态批次 campus/hub 仅一帧 已加入Tab空态=APPEARED，属空列表态、不含已填充学校卡，未覆盖本断言。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002",
+      "assert": "校园 hub 头部（任一有内容态）只应出现一个认证入口：横幅 .campus-guide__btn 的「去认证」；头部 .campus-hub__cert-btn 那枚重复 CTA 应已删、头部只剩标题加搜索图标（理想图口径）。现两枚均走 t(campusHub.goCertify)，源码各一处共两处、本轮未提交删除。批次里 campus/hub 仅 已加入Tab空态=APPEARED，未就 CTA 计数取证。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-002",
+      "assert": "profile-extra location 页定位针图标 .location-card__icon 应渲染为仓内已在盘的无字版（static/assets/icons/common/location.svg），针体上不得再带烘焙进去的字母；当前 :151 用 resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.LOCATION) 取远端带字图，location.vue 本轮工作树干净、无未提交判点。该页不在 round-7 批次内。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
+      "assert": "discover/matching 匹配加载页（MatchLoading）跳过钮 .match-loading__skip 应为白底绿字、独立成行上移到标题行之上，标题行右侧留安全距、二者不叠压；现以 top:calc(var(--statusbar)+20px+240rpx) 悬浮压在标题上。MatchLoading.vue 本轮工作树干净、无未提交判点。该页不在 round-7 批次内。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
+      "assert": "village/detail 帖子详情在「回复态」与「挂图态」下 fixed 输入栏不应盖住最后一条内容：滚到底时 .detail-body 预留需≥输入栏实高（最低成本两态提到 calc(320rpx + safe)）。属交互态运行时观感，detail.vue 本轮工作树干净、无未提交判点，且该页不在 round-7 批次内。"
+    }
+  ],
+  "alreadyClosedInBaseline": [
+    {
+      "id": "MP-R2VIS-PAGES-PROFILE-INDEX-001",
+      "note": "MyHeader.vue 工作树干净（==HEAD 094f7239），__cert-dot-icon 已用 IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG 且配色已走 var(--c-brand)/var(--c-bg-container)，全在 baseline 内、命中不能反证本轮改动。建议按 HEAD 直接推进已修复待复验/关闭，观感随全站重截帧复验，不写判点。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003",
+      "note": "hub.vue 的 .campus-school-card__cover 在 HEAD 已是 160rpx×160rpx（证据列的 200×150 是旧值、已被后续提交取代），baseline 命中不能重新记功；本轮未提交的只是 cover-name 死分支清理（归属他项、非 -003 判点）。建议按 HEAD 关闭本项。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002",
+      "note": "chat-session 的 .wechat-input-bar__send--disabled 走 --c-status-disabled 已在 HEAD（该规则本轮未改动、status 已记已修复）。建议维持已修复，观感仅需真机帧，不写判点。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
+      "note": "circle-home.vue 已用「圈规」且全仓无「规约」（HEAD 即如此、文件本轮干净），文案半边已在 baseline 关闭；若要连 mock 夹具入 i18n 属可选尾项、无判点。建议按 HEAD 关闭。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
+      "note": "circles/index.vue 的 .circles-tab--active 已是 background:var(--c-brand,#36C99A) 且 active 文字 var(--c-neutral-0,#FFFFFF)，HEAD 三处命中、本轮该规则未改动（修前值 c-bg-brand/E8F8F1 在 HEAD 已为 0）。建议按 HEAD 关闭，不写判点。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-004",
+      "note": ".circles-header__search 的 fallback #F3FAF6 已在 HEAD（F3FAF6 HEAD=1、本轮未改动），status 已记已修复。建议维持已修复，不写判点。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-003",
+      "note": "PublicMoment.vue 评论行已用 <image> + public-moment__stat-icon + ICONS_SOCIAL.MESSAGE，均在 HEAD（文件本轮干净、status 已修复）。建议按 HEAD 关闭，观感随帧，不写判点。"
+    }
+  ],
+  "needsRuling": [
+    {
+      "id": "MP-R2VIS-PAGES-PROFILE-INDEX-003",
+      "reason": "需先拍板「故事/日常」术语口径（col11 明写拍板后统一）。MyStory.vue 本轮工作树干净、可见文案已全为「添加故事」（5 处、无「添加日常」），残余只是代码注释一致性——注释不进产物、无判点也无帧面。建议产品定词后按 HEAD 关闭或降为非缺陷。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
+      "reason": "campusHub.* 到 campus.index.* 的 locale key 归并本轮未执行，且 col11 给了两个候选目标（campus.hub 与 campus.index 两级）需先择一。纯键名重构无产物行为面可判（且 mock 构建仅出 zh-CN.js、en-US 被剥）。建议定归并方向与 zh/en 同批迁移方案后再判。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
+      "reason": "col11 是二选一设计裁决：post.vue 补 __joined 胶囊向 publish.vue 三段行对齐、还是反向取 post 的单行式。__joined 在两载体均不存在（orphan）、本轮未提交，需先定哪套行内结构为 canonical 才谈得上判点。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001",
+      "reason": "含二选一阈值裁决：字数告警统一 pre-warn 还是 over-warn；并需决定两页图格常驻上限提示（POST_MAX_IMAGES=9）的文案口径。本轮未执行、constants/village.ts 与工作树均未动该逻辑，阈值语义属产品口径决定。"
+    }
+  ],
+  "counts": {
+    "assigned": 20,
+    "patched": 4,
+    "needsFrame": 5,
+    "alreadyClosedInBaseline": 7,
+    "needsRuling": 4
+  }
+}

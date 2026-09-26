@@ -1259,18 +1259,6 @@ export const useMessagesStore = defineStore("messages", {
      *
      * @param sessionId 待删除的会话 ID
      */
-    /** Phase 4.3 验收 · 置顶/取消置顶会话（委托 setSessionPinned，真实模式同步后端） */
-    toggleSessionPin(sessionId: string) {
-      const session = this.sessions.find((s) => s.id === sessionId);
-      if (session) {
-        void this.setSessionPinned(sessionId, !session.pinned).catch((error) => {
-          // 失败时由 setSessionPinned 设置 errorMessage，此处不再重复处理；
-          // MP-R2-PAGES-MESSAGES-INDEX-018(c)：留痕对齐 R4-00165（原为注释型空 catch）
-          console.warn("[messages.toggleSessionPin] 置顶切换失败:", error);
-        });
-      }
-    },
-
     /**
      * 2026-08-07 消息页重构：设置会话免打扰（左滑操作）。
      * 免打扰仅影响新消息通知提醒，未读红点仍正常展示。

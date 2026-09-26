@@ -16,7 +16,9 @@ import { createButtonGuard } from "../../utils/debounce";
 import { lightHaptic } from "../../utils/haptic";
 // Sentry 监控：登录失败上报异常，页面切换 / 关键按钮点击记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
-import { loginWithPhone, registerUser, loginAsGuest, sendSmsCode, bindPhoneViaWechat } from "../../services/auth";
+// MP-R2-PAGES-LOGIN-INDEX-015：内联注册模式已删（注册唯一入口 = 独立注册页 pages/register/index），
+// 故本页不再调用 registerUser / sendSmsCode
+import { loginWithPhone, loginAsGuest, bindPhoneViaWechat } from "../../services/auth";
 // 统一 API 错误模型：区分「预期业务拒绝」（入口关闭 403）与真实异常
 import { AppApiError } from "../../services/api-error";
 // 展示模式（全功能展示版）：登录页「以演示者身份进入」入口
@@ -44,17 +46,10 @@ const appConfigStore = useAppConfigStore();
 const { isLoginOpen, isRegisterOpen } = storeToRefs(appConfigStore);
 
 // 表单响应式数据（必须初始化，避免模板渲染时访问 undefined）
+// MP-R2-PAGES-LOGIN-INDEX-015：内联注册模式所需 nickname / birthDate / smsCode /
+// 短信倒计时 / phoneRegisterMode 已全部删除（注册唯一入口 = 独立注册页）
 const phone = ref("");
 const password = ref("");
-const nickname = ref("");
-// 3-N 未成年人保护：注册模式必填出生日期（picker mode="date"，end 为今天）
-const birthDate = ref("");
-// 短信验证码（注册模式：POST /v1/sms/send-code 发送后回填）
-const smsCode = ref("");
-// 获取验证码倒计时（秒，>0 时按钮禁用）
-const smsCountdown = ref(0);
-let smsCountdownTimer: ReturnType<typeof setInterval> | null = null;
-const phoneRegisterMode = ref(false);
 /* MP-R1-PAGES-LOGIN-INDEX-102：微信审核口径要求用户主动勾选协议（默认勾选属
    「默认同意」违规拒审项），冷启动默认未勾选；未勾选点任意登录入口被 agreeFirst
    守卫拦截，用户主动勾选后方可登录。 */
@@ -70,9 +65,6 @@ const showPhoneLogin = ref(false);
  */
 const showDevUserEntry = computed(() => isDev || isMockMode());
 
-/** 出生日期 picker 的最大可选日期（今天），未满 18 岁注册被后端拒绝 */
-const birthDateMax = new Date().toISOString().slice(0, 10);
-
 /** 登录成功跳转定时器引用，用于卸载时清理 */
 let loginNavTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -83,11 +75,8 @@ let loginNavTimer: ReturnType<typeof setTimeout> | null = null;
 onShow(() => {
   // 记录页面进入面包屑，便于在异常发生时回溯用户跳转路径
   addBreadcrumb("navigation", "page_enter", { url: "/pages/login/index" });
-  // B6：注册功能被后台关闭（register_open=false）时强制回到登录模式，
-  // 防止切换开关前残留的注册表单仍可提交
-  if (!isRegisterOpen.value) {
-    phoneRegisterMode.value = false;
-  }
+  // B6：原「register_open=false 时强制退出内联注册模式」的复位已随 MP-R2-PAGES-LOGIN-INDEX-015
+  // 删除内联注册模式一并消失；register_open 现在只用于隐藏「去注册」入口（模板）。
   // 2026-08-31 修复（录屏 06:42-06:51）：应用重启/崩溃恢复后 storage 里的 token
   // 仍有效并被 bootstrap 静默登录（toast「登录成功」），但登录页不自动前进，
   // 用户必须再手动点一次「稍后再看」。此处检测已登录即自动进入主界面。
@@ -139,8 +128,8 @@ stopSessionForwardWatch = watch(
 const isPhoneValid = computed(() => /^1[3-9]\d{9}$/.test(phone.value));
 const isCodeValid = computed(() => password.value.length >= 6 && password.value.length <= 64);
 const canPhoneLogin = computed(() => isPhoneValid.value && isCodeValid.value && agreed.value);
-// 注册模式额外要求昵称 + 出生日期 + 短信验证码非空
-const canPhoneRegister = computed(() => isPhoneValid.value && isCodeValid.value && nickname.value.trim().length > 0 && birthDate.value.length > 0 && smsCode.value.trim().length === 6 && agreed.value);
+// MP-R2-PAGES-LOGIN-INDEX-015：canPhoneRegister（注册模式额外要求昵称/出生日期/短信验证码）
+// 已随内联注册模式删除
 
 /**
  * 安全读取登录页 Hero 文案。
@@ -165,12 +154,8 @@ onUnmounted(() => {
     clearTimeout(loginNavTimer);
     loginNavTimer = null;
   }
-  // MP-R2-PAGES-LOGIN-INDEX-006：补清短信倒计时定时器（原注释宣称清理所有定时器，
-  // 实际遗漏本项——发送验证码后离开页面 interval 空转最长 60s）
-  if (smsCountdownTimer) {
-    clearInterval(smsCountdownTimer);
-    smsCountdownTimer = null;
-  }
+  // MP-R2-PAGES-LOGIN-INDEX-015：短信倒计时定时器（MP-R2-PAGES-LOGIN-INDEX-006 的清理载体）
+  // 随内联注册模式一并删除——本页已无 setInterval
   stopSessionForwardWatch();
 });
 
@@ -215,56 +200,14 @@ function loginSuccessNavigate(delayMs = 1500) {
   }
 }
 
-function toggleRegisterMode() {
-  phoneRegisterMode.value = !phoneRegisterMode.value;
-}
-
 /**
  * 2026-09-12 注册页落地：「去注册」入口改跳独立注册页（pages/register/index，
- * 设计包 deliverables/注册页）；内联注册模式保留为降级路径（仅当残留 register
- * 模式时显示「返回登录」），新用户一律进新注册页。
+ * 设计包 deliverables/注册页）。
+ * MP-R2-PAGES-LOGIN-INDEX-015：内联注册模式（toggleRegisterMode / phoneRegisterMode /
+ * onSendSmsCode 短信链路）已整删——本页注册唯一入口即本函数。
  */
 function goRegisterPage() {
   uni.navigateTo({ url: ROUTES.REGISTER });
-}
-
-/**
- * 发送短信验证码（模拟短信：默认发送成功，返回 mockCode 供联调输入）。
- * 注册模式：校验手机号 → POST /v1/sms/send-code → 60s 倒计时。
- */
-async function onSendSmsCode() {
-  if (smsCountdown.value > 0) return;
-  if (!isPhoneValid.value) {
-    uni.showToast({ title: t("login.phoneInvalid"), icon: "none" });
-    return;
-  }
-  try {
-    const res = await sendSmsCode(phone.value.trim());
-    if (res?.success === false && res.message) {
-      uni.showToast({ title: res.message, icon: "none" });
-      return;
-    }
-    // 模拟短信：提示 mockCode。MP-R2-PAGES-LOGIN-INDEX-005：文案走 i18n（原硬编码中文
-    // 绕过 vue-i18n，en-US 用户收到中文）；且 mockCode 仅 dev/mock 构建展示，
-    // 真实后端返回 mockCode 时不再向用户暴露「模拟」字样。
-    const showMockCode = Boolean(res?.mockCode) && (isDev || isMockMode());
-    const hint = showMockCode
-      ? t("login.smsSentMock", { code: res?.mockCode })
-      : t("login.smsSent");
-    uni.showToast({ title: hint, icon: "none" });
-    smsCountdown.value = 60;
-    if (smsCountdownTimer) clearInterval(smsCountdownTimer);
-    smsCountdownTimer = setInterval(() => {
-      smsCountdown.value -= 1;
-      if (smsCountdown.value <= 0 && smsCountdownTimer) {
-        clearInterval(smsCountdownTimer);
-        smsCountdownTimer = null;
-      }
-    }, 1000);
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : t("apiErrors.operationFailed");
-    uni.showToast({ title: msg, icon: "none" });
-  }
 }
 
 /**
@@ -416,32 +359,23 @@ async function onPhoneLogin() {
     uni.showToast({ title: t("login.agreeFirst"), icon: "none" });
     return;
   }
-  // B6：登录/注册功能被后台关闭时拒绝提交（对应入口按钮已隐藏/禁用，此处兜底）
+  // B6：登录功能被后台关闭时拒绝提交（对应入口按钮已隐藏/禁用，此处兜底）
+  // MP-R2-PAGES-LOGIN-INDEX-015：原「注册模式 + register_open=false」兜底分支随内联注册模式删除
   if (!isLoginOpen.value) {
     uni.showToast({ title: t("login.closedTitle"), icon: "none" });
     return;
   }
-  if (phoneRegisterMode.value && !isRegisterOpen.value) {
-    uni.showToast({ title: t("login.closedTitle"), icon: "none" });
-    return;
-  }
-  const canSubmit = phoneRegisterMode.value ? canPhoneRegister.value : canPhoneLogin.value;
-  if (!canSubmit) {
+  if (!canPhoneLogin.value) {
     uni.showToast({ title: t("login.phoneAndCodeInvalid"), icon: "none" });
     return;
   }
   // infra R2 联调改进:真实调用后端(参考 eladmin 账号体系)。
-  // 登录 POST /v1/auth/phone-login;注册 POST /v1/auth/register,成功即签发 JWT。
+  // 登录 POST /v1/auth/phone-login（注册已迁 pages/register/index → POST /v1/auth/register）
   // MP-R1-LOGIN-002：请求在途期间压制 watch(isLoggedIn) 的补偿跳转
   loginFlowActive.value = true;
   try {
-    if (phoneRegisterMode.value) {
-      await registerUser(phone.value.trim(), password.value, nickname.value.trim(), birthDate.value, smsCode.value.trim());
-      addBreadcrumb("ui", "button_click", { id: "login.register" });
-    } else {
-      await loginWithPhone(phone.value.trim(), password.value);
-      addBreadcrumb("ui", "button_click", { id: "login.phone" });
-    }
+    await loginWithPhone(phone.value.trim(), password.value);
+    addBreadcrumb("ui", "button_click", { id: "login.phone" });
     uni.showToast({ title: t("login.loginSuccess"), icon: "success" });
     // P0-32 修复（2026-08-08）：手机号/注册登录只 setToken 不更新 userSession，
     // 登录后首个受保护页面会走守卫 refreshSession 产生空会话窗口；此处主动同步，
@@ -461,7 +395,7 @@ async function onPhoneLogin() {
     const isExpectedBusiness =
       error instanceof AppApiError && (error as AppApiError).status < 500;
     if (!isExpectedBusiness) {
-      captureException(error, { source: phoneRegisterMode.value ? "login.register" : "login.phone" });
+      captureException(error, { source: "login.phone" });
     }
     // 3-N 未成年人保护：后端 403 MINOR_NOT_ALLOWED → 明确提示未满 18 岁
     const isMinor = error instanceof AppApiError && error.error === "MINOR_NOT_ALLOWED";
@@ -593,13 +527,7 @@ function onAgreeTap() {
   agreed.value = !agreed.value;
 }
 
-/**
- * 出生日期 picker 选择回调（3-N）。
- * @param event picker change 事件（detail.value 为 yyyy-MM-dd 日期串）
- */
-function onBirthDateChange(event: { detail: { value: string } }) {
-  birthDate.value = event.detail.value;
-}
+// MP-R2-PAGES-LOGIN-INDEX-015：onBirthDateChange（内联注册模式的出生日期 picker 回调）已删
 
 /**
  * 跳转到协议/隐私法律页面（微信小程序提审合规必备）。
@@ -724,16 +652,20 @@ function openPrivacyPolicy() {
                MP-R2-PAGES-LOGIN-INDEX-002：该自动展开依赖 getPhoneNumber（仅微信端存在），
                H5 构建下手机号登录/注册入口不可达成死路——非微信端恢复手动入口按钮。 -->
           <!-- #ifndef MP-WEIXIN -->
+          <!-- MP-R2VIS-PAGES-LOGIN-INDEX-007：非微信端本按钮是「展开验证码/密码表单」的手动入口，
+               不是微信 getPhoneNumber 快捷授权，故取 login.phoneLogin（表单入口键），
+               把 login.phoneQuickLogin 独占给上方微信端快捷按钮。
+               aria-label 与可见文本仍同键（保持 MP-R2-PAGES-LOGIN-INDEX-016 的 WCAG 2.5.3 口径）。 -->
           <view
             class="btn-phone-quick press-feedback"
             :class="{ 'btn--loading': loginFlowActive }"
             hover-class="press-feedback--active"
             hover-stay-time="40"
             role="button"
-            :aria-label="t('login.phoneQuickLogin')"
+            :aria-label="t('login.phoneLogin')"
             @tap="togglePhoneLogin"
           >
-            <text class="btn-phone-quick-text">{{ t('login.phoneQuickLogin') }}</text>
+            <text class="btn-phone-quick-text">{{ t('login.phoneLogin') }}</text>
           </view>
           <!-- #endif -->
 
@@ -795,105 +727,27 @@ function openPrivacyPolicy() {
               />
             </view>
 
-            <view v-if="phoneRegisterMode" class="input-divider" />
-
-            <view v-if="phoneRegisterMode" class="input-item">
-              <view class="input-icon" aria-hidden="true">
-                <image class="input-icon-text" :src="loginIcons.mobile" mode="aspectFit" alt="" />
-              </view>
-              <label class="sr-only" for="login-nickname">{{ t('login.nicknamePlaceholder') }}</label>
-              <input
-  cursor-spacing="20"
-                id="login-nickname"
-                class="input-field"
-                type="text"
-                maxlength="20"
-                :placeholder="t('login.nicknamePlaceholder')"
-                placeholder-class="input-placeholder"
-                v-model="nickname"
-                :aria-label="t('login.nicknamePlaceholder')"
-                aria-required="true"
-              />
-            </view>
-
-            <!-- 3-N 未成年人保护：注册必填出生日期（picker mode="date"，end 为今天） -->
-            <view v-if="phoneRegisterMode" class="input-divider" />
-
-            <view v-if="phoneRegisterMode" class="input-item">
-              <view class="input-icon" aria-hidden="true">
-                <image class="input-icon-text" :src="IMAGE_PATHS.ICONS_EMOJI.CAKE" mode="aspectFit" alt="" />
-              </view>
-              <label class="sr-only" for="login-birth-date">{{ t('login.birthDatePlaceholder') }}</label>
-              <picker
-                mode="date"
-                :end="birthDateMax"
-                :value="birthDate"
-                @change="onBirthDateChange"
-              >
-                <view class="picker-field" :class="{ 'picker-field--placeholder': !birthDate }">
-                  <text>{{ birthDate || t('login.birthDatePlaceholder') }}</text>
-                </view>
-              </picker>
-            </view>
-
-            <!-- 短信验证码（注册模式必填；模拟短信：获取后输入返回的 mockCode 即视为已收到） -->
-            <view v-if="phoneRegisterMode" class="input-divider" />
-            <view v-if="phoneRegisterMode" class="input-item">
-              <view class="input-icon" aria-hidden="true">
-                <image class="input-icon-text" :src="loginIcons.mobile" mode="aspectFit" alt="" />
-              </view>
-              <label class="sr-only" for="login-sms-code">{{ t('login.smsCodePlaceholder') }}</label>
-              <input
-  cursor-spacing="20"
-                id="login-sms-code"
-                class="input-field"
-                type="number"
-                maxlength="6"
-                :placeholder="t('login.smsCodePlaceholder')"
-                placeholder-class="input-placeholder"
-                v-model="smsCode"
-                :aria-label="t('login.smsCodePlaceholder')"
-                aria-required="true"
-                inputmode="numeric"
-              />
-              <view
-                class="sms-send-btn"
-                :class="{ 'sms-send-btn--disabled': smsCountdown > 0 }"
-                hover-class="press-feedback--active"
-                hover-stay-time="40"
-                role="button"
-                :aria-label="t('login.getSmsCode')"
-                @tap="onSendSmsCode"
-              >
-                <text class="sms-send-btn-text">{{ smsCountdown > 0 ? `${smsCountdown}s` : t('login.getSmsCode') }}</text>
-              </view>
-            </view>
+            <!-- MP-R2-PAGES-LOGIN-INDEX-015：内联注册模式的昵称 / 出生日期 / 短信验证码
+                 三组输入（原 v-if="phoneRegisterMode" 节点）已整删，
+                 注册唯一入口 = 下方「去注册」→ pages/register/index -->
           </view>
 
           <view class="form-btns">
             <view class="btn-primary press-feedback" :class="{ 'btn--loading': loginFlowActive }" hover-class="press-feedback--active" hover-stay-time="40" @tap="onPhoneLoginGuarded">
-              <text class="btn-primary-text">{{ phoneRegisterMode ? t('login.registerButton') : t('login.loginButton') }}</text>
+              <text class="btn-primary-text">{{ t('login.loginButton') }}</text>
             </view>
 
-            <!-- B6：注册功能被后台关闭（register_open=false）→ 隐藏注册模式切换入口。
-                 2026-09-12：入口改跳独立注册页；内联注册模式残留时仍可返回登录 -->
+            <!-- B6：注册功能被后台关闭（register_open=false）→ 隐藏「去注册」入口。
+                 2026-09-12：入口改跳独立注册页；MP-R2-PAGES-LOGIN-INDEX-015 删内联注册模式后
+                 原「返回登录」切换按钮（仅在注册模式下出现）一并删除 -->
             <view
-              v-if="isRegisterOpen && !phoneRegisterMode"
+              v-if="isRegisterOpen"
               class="btn-text press-feedback"
               hover-class="press-feedback--active"
               hover-stay-time="40"
               @tap="goRegisterPage"
             >
               <text class="btn-text-link">{{ t('login.goRegister') }}</text>
-            </view>
-            <view
-              v-if="isRegisterOpen && phoneRegisterMode"
-              class="btn-text press-feedback"
-              hover-class="press-feedback--active"
-              hover-stay-time="40"
-              @tap="toggleRegisterMode"
-            >
-              <text class="btn-text-link">{{ t('login.backToLogin') }}</text>
             </view>
 
             <view class="btn-text press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="togglePhoneLogin">
@@ -1315,25 +1169,7 @@ function openPrivacyPolicy() {
   color: var(--c-text-tertiary);
 }
 
-/* 短信验证码发送按钮（注册模式） */
-.sms-send-btn {
-  flex-shrink: 0;
-  margin-left: var(--sp-2);
-  padding: 14rpx 24rpx;
-  border-radius: var(--r-full);
-  background: var(--c-brand, #36C99A);
-}
-.sms-send-btn--disabled {
-  background: var(--c-neutral-200, #E8ECEA);
-}
-.sms-send-btn-text {
-  font-size: 24rpx;
-  font-weight: 600;
-  color: var(--c-text-inverse, #ffffff);
-}
-.sms-send-btn--disabled .sms-send-btn-text {
-  color: var(--c-text-tertiary, #999999);
-}
+/* MP-R2-PAGES-LOGIN-INDEX-015：.sms-send-btn* 死样式已删（模板零引用，注册模式整删） */
 
 .input-field {
   flex: 1;
@@ -1348,20 +1184,7 @@ function openPrivacyPolicy() {
   font-size: var(--fs-md);
 }
 
-/* 3-N 注册出生日期 picker 字段（与 input 高度对齐） */
-.picker-field {
-  flex: 1;
-  height: 100rpx;
-  display: flex;
-  align-items: center;
-  font-size: var(--fs-lg);
-  color: var(--c-text-primary);
-}
-
-.picker-field--placeholder {
-  color: var(--c-text-quaternary);
-  font-size: var(--fs-md);
-}
+/* MP-R2-PAGES-LOGIN-INDEX-015：.picker-field* （3-N 注册出生日期 picker）死样式已删 */
 
 .input-divider {
   height: 2rpx;

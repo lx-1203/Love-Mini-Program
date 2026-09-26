@@ -267,7 +267,11 @@ function onSessionLongpress(session: MessageSession) {
       if (tapIndex === 0) {
         void messagesStore.setSessionPinned(session.id, !session.pinned).catch(toastOpError);
       }
-      if (tapIndex === 1) messagesStore.markSessionUnread(session.id);
+      if (tapIndex === 1) {
+        messagesStore.markSessionUnread(session.id);
+        // 未读位只活在本地 store（后端没有这个字段），不说就等于假装它持久化
+        uni.showToast({ title: t("messages.unreadLocalHint"), icon: "none" });
+      }
       if (tapIndex === 2) {
         void messagesStore.setSessionMuted(session.id, !session.muted).then((ok) => {
           if (!ok) uni.showToast({ title: t("apiErrors.operationFailed"), icon: "none" });
@@ -545,6 +549,14 @@ function onAvatarError(session: MessageSession): void {
                   <view v-if="session.relationship?.status" class="chat-item__status" :class="getStatusClass(session.relationship.status)">
                     <text class="chat-item__status-text">{{ getStatusLabel(session.relationship.status) }}</text>
                   </view>
+                  <!-- MP-R2VIS-PAGES-MESSAGES-INDEX-009：免打扰是「会话属性」，与置顶/关系标签同属昵称行
+                       状态标识带；原挂在时间列会让时间行混入非时间语义（消息.png 时间列只有时间数字） -->
+                  <image
+                    v-if="session.muted"
+                    class="chat-item__muted-icon"
+                    :src="IMAGE_PATHS.ICONS_EMOJI.VOLUME_X"
+                    mode="aspectFit"
+                  />
                 </view>
                 <EmojiText
                   v-if="session.lastMessagePreview"
@@ -556,12 +568,6 @@ function onAvatarError(session: MessageSession): void {
               </view>
               <view class="chat-item__right">
                 <view class="chat-item__time-row">
-                  <image
-                    v-if="session.muted"
-                    class="chat-item__muted-icon"
-                    :src="IMAGE_PATHS.ICONS_EMOJI.VOLUME_X"
-                    mode="aspectFit"
-                  />
                   <text class="chat-item__time">{{ formatTime(session.lastMessageSentAt) }}</text>
                 </view>
                 <view v-if="session.unreadCount > 0" class="chat-item__unread-badge">
@@ -1182,7 +1188,8 @@ function onAvatarError(session: MessageSession): void {
   flex-shrink: 0;
   min-width: 80rpx;
 }
-/* 2026-09-20（MP-R1-PAGES-MESSAGES-INDEX-003）：时间行容纳免打扰图标 */
+/* 2026-09-20（MP-R1-PAGES-MESSAGES-INDEX-003）：时间行容器；MP-R2VIS-PAGES-MESSAGES-INDEX-009
+   起免打扰图标已移至昵称行，本行只承载时间 */
 .chat-item__time-row {
   display: flex;
   align-items: center;

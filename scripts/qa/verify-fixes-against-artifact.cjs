@@ -501,10 +501,42 @@ var VISUAL_MARK = /(遮挡|泛绿|泛色|偏色|错位|偏移|塌陷|溢出|裁�
 var FRAME_MARK = /(需帧|要帧|状态帧|复验帧|真机帧|下轮帧|配对复验|需人|人工裁决|待裁决)/;
 var BACKEND_MARK = /(后端|服务端|Controller|Repository|mvnw|数据库|SQL|migration|接口对方)/;
 
+/** 说明性文字的专用外壳：⟨…⟩ 里的内容一律**不**当判点。
+ *  起因（本轮实测）：把判据从"编译期擦除的 TS 接口名"改成可判物件时，单元格里必须同时写下
+ *  「原判点是谁、为什么作废」，否则下一轮看不见改判轨迹。但 reId 分不清"要搜的词"和"被作废的词"，
+ *  它把我刚写进去的 TodayRecommendationView / metaLine / toggleSessionPin 又抠成硬判点，
+ *  产物里当然 0 命中 ⇒ 一条已经改好的判据被自己的说明文字打回 NOT_IN_EITHER。
+ *  未闭合的 ⟨ 按"到句尾都算说明"处理（宁可少抽也不造假指控），并在 PROSE_BRACKET_UNBALANCED 里现形。 */
+var PROSE_BRACKET = { spans: 0, tokens: 0, unbalanced: 0, samples: [] };
+var BRACKET_BASE = { spans: 0, tokens: 0, unbalanced: 0 };
+function stripProseBrackets(text) {
+  var s = String(text);
+  var open = (s.match(/⟨/g) || []).length;
+  var close = (s.match(/⟩/g) || []).length;
+  if (open !== close) PROSE_BRACKET.unbalanced += Math.abs(open - close);
+  var hits = 0;
+  s = s.replace(/⟨[^⟩]*(?:⟩|$)/g, function (m) {
+    hits++;
+    /* 计的是"被壳吃掉的候选判点"，所以必须在替换前从 m 里数；
+       数替换后的整句会把这条轴反过来（写错过一次，自检的 SUPPRESSED=0 才暴露）。 */
+    PROSE_BRACKET.tokens += (m.match(/[A-Za-z_$][A-Za-z0-9_$]{3,}/g) || []).length;
+    return " ";
+  });
+  PROSE_BRACKET.spans += hits;
+  /* 跨子句的 ⟨ 会被 clausesOf 劈成"只有开壳的前半 + 只有闭壳的后半"，
+     后果是整段真判点被静默吃掉（比造假指控更糟）。这里把现场留出来，
+     约定因此可以验收：一个壳里只装一个 token，就不可能被劈。 */
+  if (open !== close && PROSE_BRACKET.samples.length < 6) {
+    PROSE_BRACKET.samples.push(String(text).slice(0, 90));
+  }
+  return s;
+}
+
 /** 从一段「修后」文本里抠出可静态比对的探针 */
 function probesFrom(text, origin, polarity, anchored) {
   var out = [];
   if (!text) return out;
+  text = stripProseBrackets(text);
   var seen = {};
   /* `add` 是判点的唯一入口，所以"能不能当判点"也在这里定。
      台账正文里点名的常常是文件名或整句中文说明（如 `match.ts`、`align-self:flex-end（`、
@@ -519,7 +551,11 @@ function probesFrom(text, origin, polarity, anchored) {
      抽取器真造出了 identifier=HEAD 这条硬判点，两个载体里当然都没有 "HEAD" 这个词，
      于是 CIRCLE-HOME-001 / CHAT-SESSION-A03 从"判点命中"被打成 NOT_IN_EITHER。
      也就是说：**我的取证散文在给自己造假指控**，必须在这一层拦掉。 */
-  var JUNK_PROSE = /^(HEAD|HEAD[:：]?$|git|grep|awk|sed|commit|sha1?|sha16|diff|merge|rebase|NOT_IN_EITHER|ARTIFACT_VERIFIED|SOURCE_ONLY|NEEDS_UI_FRAME|UNDECIDABLE|verdict|台账|证据|产物|工作树|源码|构建|重建|复验|待复验|已修复|未修|对照|实测|直算|口径|判据)$/i;
+  var JUNK_PROSE = /^(HEAD|HEAD[:：]?$|git|grep|awk|sed|commit|sha1?|sha16|sha16|diff|merge|rebase|NOT_IN_EITHER|ARTIFACT_VERIFIED|SOURCE_ONLY|NEEDS_UI_FRAME|UNDECIDABLE|verdict|verdicts|verdictWhy|台账|证据|产物|工作树|源码|构建|重建|复验|待复验|已修复|未修|对照|实测|直算|口径|判据)$/i;
+/* 判据台自己的字段名也不是"修后物件"：我在处置格里写"srcRels 全仓也没有"是在描述工具查了哪里，
+   结果 reId 把 srcRels / callerSnapshot 本身抠成硬判点，制造出第二条假指控。
+   这一档和 HEAD 同性质：**工具的词汇表不能当被检内容**。 */
+var JUNK_TOOLVOCAB = /^(srcRels|distScope|callerSnapshot|weakestCheck|artifactEvidence|srcEvidence|laneFile|ledgerStatus|ledgerNote|searched|probeCount|probes|contentHash|stateNotApplied|requiresReal|captureLimitations|verdictLegend|PROBE_CONFLICTS|PROBE_ERR|HARNESS_MISS|ARTIFACT_VERIFIED|SOURCE_ONLY|NEEDS_UI_FRAME|NOT_IN_EITHER|UNDECIDABLE|FIXVERIFY_RESULT|BRACKETNORM|CELLPATCH)$/;
   function refine(tok) {
     var t = String(tok || "").trim().replace(/^[`「『[]+/, "").trim();
     var cut = t.search(/[（）、「】；：]/);
@@ -540,6 +576,7 @@ function probesFrom(text, origin, polarity, anchored) {
       if (JUNK_FILE.test(tok.split(/\s/)[0])) continue;
       if (JUNK_CMD.test(tok)) continue;
       if (JUNK_PROSE.test(tok.trim())) continue;
+      if (JUNK_TOOLVOCAB.test(tok.trim())) continue;
       var key = kind + "|" + tok + "|" + polarity;
       if (seen[key]) continue;
       seen[key] = 1;
@@ -650,6 +687,44 @@ var IDENT_NOISE = {};
   "data slot slots emit refs ref nextTick defineComponent uniapp typescript javascript vue script template style scoped important " +
   "TODO FIXME conststa width height color flex grid block none auto hidden visible absolute relative fixed static center left right").split(/\s+/)
   .forEach(function (w) { IDENT_NOISE[w] = 1; IDENT_NOISE[w.toLowerCase()] = 1; });
+
+/* 抽取规则自检：每次正式跑之前先证明 ⟨⟩ 这条规则"既拦得住、也没把手"。
+   两个方向都要非零 —— 只证明"拦住了"会把规则写成一个吞掉全文的黑洞而照样绿。 */
+function probeExtractSelfcheck() {
+  var CASES = [
+    { t: "⟨原判点 TodayRecommendationView 是编译期擦除的接口名⟩ distanceLine 定义处", mustHave: ["distanceLine"], mustNot: ["TodayRecommendationView"] },
+    { t: "TodayRecommendationView 定义处", mustHave: ["TodayRecommendationView"], mustNot: [] },
+    { t: "⟨作废：metaLine 是参照物⟩ .today-card__distance 结构判点", mustHave: ["today-card__distance"], mustNot: ["metaLine"] },
+    { t: "⟨未闭合的说明一直写到句尾 toggleSessionPin 已经删掉了", mustHave: [], mustNot: ["toggleSessionPin"] },
+    { t: "注册页用 var(--c-error-bg-solid) 取色", mustHave: ["--c-error-bg-solid"], mustNot: [] },
+    { t: "结构判点 .location-sheet 挂载，srcRels 与 callerSnapshot 只是工具查过哪里", mustHave: ["location-sheet"], mustNot: ["srcRels", "callerSnapshot"] },
+  ];
+  var errs = [], suppressed = 0, kept = 0;
+  for (var i = 0; i < CASES.length; i++) {
+    var cs = CASES[i];
+    var got = {};
+    probesFrom(cs.t, "selfcheck", "present", false).forEach(function (p) { got[p.token] = 1; });
+    cs.mustHave.forEach(function (k) { if (!got[k]) errs.push("case" + (i + 1) + " 漏抽 " + k); kept++; });
+    cs.mustNot.forEach(function (k) { if (got[k]) errs.push("case" + (i + 1) + " 造出说明词 " + k); else suppressed++; });
+  }
+  if (!suppressed) errs.push("⟨⟩ 抑制判据数为 0：规则形同虚设");
+  if (!kept) errs.push("正常判据抽取数为 0：规则过宽，正在吞掉真判点");
+  /* 约定的完整性也要在这一趟里验：台账里只要有一个 ⟨ 找不到配对 ⟩，
+     它后面所有真判点都会被静默吃掉 —— 那是"门禁替我改了考卷"，必须当场红。 */
+  try {
+    var lt = require("fs").readFileSync(P.ledger, "utf8");
+    var lo = (lt.match(/⟨/g) || []).length, lc = (lt.match(/⟩/g) || []).length;
+    var delims = (lt.match(/⟨[^⟩]*[。；，、：][^⟩]*⟩/g) || []).length;
+    console.log("LEDGER_BRACKET spans=" + lo + " pairs=" + lo + "/" + lc + " straddling-clause-delimiter=" + delims);
+    if (lo !== lc) errs.push("台账 ⟨/⟩ 不等（" + lo + "/" + lc + "）：有壳未闭合，其后的真判点会被吃掉");
+    if (delims) errs.push("有 " + delims + " 个壳跨子句分隔符：会被 clausesOf 劈开 ⇒ 跑 scripts/qa/normalize-bracket-spans.mjs --apply");
+  } catch (e) { errs.push("台账读不到，无法验说明壳：" + String(e.message).slice(0, 60)); }
+  console.log("PROSE_BRACKET_SELFCHECK spans=" + PROSE_BRACKET.spans + " unbalanced=" + PROSE_BRACKET.unbalanced);
+  BRACKET_BASE = { spans: PROSE_BRACKET.spans, tokens: PROSE_BRACKET.tokens, unbalanced: PROSE_BRACKET.unbalanced };
+  console.log("PROBE_SELFCHECK_CASES=" + CASES.length + " SUPPRESSED=" + suppressed + " KEPT=" + kept +
+    (errs.length ? " PROBE_SELFCHECK_RESULT=FAIL " + errs.join(" / ") : " PROBE_SELFCHECK_RESULT=OK"));
+  return errs.length;
+}
 
 function indexOfWord(text, needle, from) {
   var i = text.indexOf(needle, from || 0);
@@ -1344,6 +1419,12 @@ var BUCKETS = ["ARTIFACT_VERIFIED", "SOURCE_ONLY", "NEEDS_UI_FRAME", "NOT_IN_EIT
 
 function main() {
   ensureOut();
+  /* 抽取器先自证：这条规则改了判点的来源，它红了就不该继续跑（判据台全体失真比不跑更糟） */
+  if (probeExtractSelfcheck()) {
+    console.log("FIXVERIFY_RESULT=FAIL reason=判据抽取自检不通过（⟨⟩ 抑制规则失效或过宽），本轮判据台不可信");
+    process.exitCode = 2;
+    return;
+  }
   var loaded = loadLaneItems();
   var items = loaded.items;
 
@@ -1539,6 +1620,13 @@ function main() {
   if (FATAL.length) for (var fi = 0; fi < FATAL.length; fi++) console.log("FATAL " + FATAL[fi]);
   if (!conserved) console.log("CONSERVATION FAIL 五桶之和 " + sum + " ≠ 条目数 " + records.length + "；漏网条目：" + (fellThrough.length ? fellThrough.join(", ") : "(无点名，存在重复计桶)"));
   console.log("状态打脸 " + dis.length + " 条｜次级来源与台账不一致 " + srcDis.length + " 条｜静态可判 " + staticDecidable + " 条｜需排 UI 帧 " + counts.NEEDS_UI_FRAME + " 条");
+  /* 说明壳在生产数据上到底吞掉了多少候选判点 —— 一条为 agent 写的规则也是一道门禁，
+     只报"拦下了什么"不报"丢弃了什么"就无法判断它是变严了还是失效了。 */
+  console.log("PROSE_BRACKET_REAL spans=" + (PROSE_BRACKET.spans - BRACKET_BASE.spans) +
+    " suppressed-ident-tokens=" + (PROSE_BRACKET.tokens - BRACKET_BASE.tokens) +
+    " unbalanced=" + (PROSE_BRACKET.unbalanced - BRACKET_BASE.unbalanced) +
+    (PROSE_BRACKET.unbalanced > BRACKET_BASE.unbalanced ? "  PROSE_BRACKET_UNBALANCED_WARN=有 ⟨ 未闭合，其后的内容按说明处理（不再抽判点）" : ""));
+  PROSE_BRACKET.samples.forEach(function (t) { console.log("  BRACKET_UNBALANCED_SAMPLE=" + t); });
   console.log("输出：" + path.relative(ROOT, path.join(P.out, "verdicts.json")).split(path.sep).join("/") + " / " + path.relative(ROOT, path.join(P.out, "verdicts.md")).split(path.sep).join("/") + " / verdicts.jsonl（逐条追加，崩溃可续）");
   console.log(tail);
 

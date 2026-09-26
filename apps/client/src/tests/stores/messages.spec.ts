@@ -37,18 +37,8 @@ describe("messages store", () => {
     }
   });
 
-  // Phase 4.3 验收：长按置顶/取消置顶
-  it("toggleSessionPin toggles pinned state", async () => {
-    const store = useMessagesStore();
-    await store.fetchSessions();
-
-    const target = store.sessions[0]!;
-    const before = target.pinned;
-    store.toggleSessionPin(target.id);
-    expect(target.pinned).toBe(!before);
-    store.toggleSessionPin(target.id);
-    expect(target.pinned).toBe(before);
-  });
+  // Phase 4.3 的 toggleSessionPin 已随 MP-R2-PAGES-MESSAGES-INDEX-022 一并删除（无生产调用方，
+  // 长按置顶直接走 setSessionPinned），故这里不再有对应用例。
 
   // ------------------------------------------------------------------
   // sendMessage – success

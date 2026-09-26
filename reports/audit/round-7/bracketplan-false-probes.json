@@ -1,0 +1,59 @@
+{
+  "note": "round-7：把「两载体都查不到」与「同 token 双向判点」这两类判据缺陷按 token 粒度入壳。依据是 .zcode/tmp/fixverify-r7e/verdicts.json 里每条实测的 art/src 命中数（写在各项 why 里），不是凭印象改判。入壳只让判据台对这些标识闭嘴，不改动状态列、不改动级别，也不产生任何绿色结论：被判点耗尽的条目会落到 UNDECIDABLE 或 NEEDS_UI_FRAME，由帧或人来定。",
+  "patches": [
+    {
+      "id": "MP-R2-PAGES-HOME-INDEX-106",
+      "tokens": ["TodayRecommendationView"],
+      "why": "art=0 src=0：编译期 TS 接口名不进产物，同项其余判点（discover.likeSent / liked / 已喜欢 / TodayRecommendationCard）art=src=1，指控完全由这一个标识撑起",
+      "append": "该标识是编译期擦除的接口名，两载体恒 0 命中，不作判点；本条静态侧到此为止，余下结论以状态帧为准（需帧）"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A03",
+      "tokens": ["顶部避让由 ChatHeader/AppShell 承担", "ChatHeader"],
+      "why": "absent 侧 ChatHeader art=1 违反（本页确实挂载它，这是裁决后的正确设计），present 侧同一标识 art=1 ⇒ 二选一自相矛盾；被引为判点的整句说明 art=0 src=0",
+      "append": "唯一改点是删除本页样式，返回钮由另一文件的头部组件提供（该组件名入壳，不作判点）；本页判点只剩「被删的选择器不在产物里」"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001",
+      "tokens": ["EMOJI_SVG_MAP"],
+      "why": "art=0 src=0：这个标识全仓两个载体都没有，是采集侧写错的锚点；同项其余判点 art=src=1",
+      "append": "该锚点两载体都不存在，属采集侧笔误，不作判点"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001",
+      "tokens": ["城市 · 服务器所在城市", "LocationService", "LocationCityView.java", "cityFromIp", "displayText", "LocationResult"],
+      "why": "运行期拼接文案 art=0 src=0；两个后端名本判据台不扫后端产物（art=0 src=0）；三个局部标识 art=0 src=1＝压缩改名后必查不到",
+      "append": "上述标识分别是运行期拼接文案、后端类名与编译期擦除标识，一律不作静态判点；本条余下结论需帧"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+      "tokens": ["metaLine", "cityPart", "schoolPart", "loc.split", "把 loc 解构顺序对调"],
+      "why": "metaLine art=0 src=0（参照物名）；cityPart/schoolPart/loc.split art=0 src=1（压缩改名）；整句说明被 reCn 抽成字面量判点 art=0 src=0。保留的两个 absent/present 组件名判点 art=1 不动",
+      "append": "被入壳的都是压缩改名标识与整句说明；本条静态判点只剩两个组件名与一条删除型文案判点"
+    },
+    {
+      "id": "MP-R2-CAMPUSINDEX-011",
+      "tokens": ["fetchCertificationStatus", "certFetchedOnce", "certFetchedByShow"],
+      "why": "同一标识同时被要求存在于产物(art=1)与从产物消失(art=1) ⇒ 判据自相矛盾；另两个幂等位标识 art=0（一个 src=0 一个 src=1）",
+      "append": "唯一改点选定为「进页面时取一次认证态」，作废分支的标识入壳；本条静态侧不再双向矛盾，余下观感部分需帧"
+    },
+    {
+      "id": "MP-R2-PAGES-HOME-INDEX-105",
+      "tokens": ["post.id", "isFailed", "avatarSrc", "failedKeys", "handleRefresh", "defineProps", "props.items"],
+      "why": "post.id 双向命中 art=1 造成矛盾；其余六个 art=0（src=1 的是压缩改名标识，src=0 的是锚点写错）",
+      "append": "上述标识为压缩改名或参照物，静态侧不作判点；失败态与刷新态是否可见需帧"
+    },
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-022",
+      "tokens": ["console.warn"],
+      "why": "art=1 双向：采纳的分支是删除死函数，未采纳的分支要求补留痕，两个分支的标识留在同一格里 ⇒ 自相矛盾；删除侧判点（入壳外的字符串判点）art=0 已满足",
+      "append": "长按菜单分支未采纳，其留痕标识入壳；本条判点只剩「被删的死函数不在产物里」"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
+      "tokens": ["MockMessageDashboardController", "warmPeople", "recentChats", "MessageDashboardView"],
+      "why": "warmPeople/recentChats 双向 art=1 ⇒ 二选一未裁决；后端控制器名与视图类名 art=0（本判据台不扫后端产物）",
+      "append": "二选一尚未裁决，两个方向的标识一并入壳，静态侧不给结论；待产品裁决后再立判点"
+    }
+  ]
+}

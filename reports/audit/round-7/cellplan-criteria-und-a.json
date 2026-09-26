@@ -1,0 +1,102 @@
+{
+  "note": "round-7 判据格改写计划（lane criteria-und-a，20 条，col 11 专属）。方法：先读 verify-fixes-against-artifact.cjs 的 probesFrom/stripProseBrackets/clausesOf/decide/grantingPredatesFix，再逐条比对判据台 r7c 判词、工作树 dirty diff（git status --porcelain 与 git diff --stat 094f7239 -- <path>）与两个载体。被测产物 apps/client/dist/build/mp-weixin 的 mtime 是 2026-09-26 10:48:50，晚于全部源码改动（最晚 10:47:18），即产物确实是从当前工作树构建的，所以「产物有、基线源码无」是本轮唯一可测方向。两条 patch 的判点不是推算出来的：把候选格写进台账副本后用 --ledger .zcode/tmp/cand-matrix.md 实跑判据台，两支均落 ARTIFACT_VERIFIED（删除型判点在该页产物作用域内已不可见），且 PROSE_BRACKET unbalanced=0（说明壳没漏抽也没吞掉判点）。其余 18 条不造静态判点：14 条修复已在基线 094f7239 之内（对应改点在 git show 里逐字可查到），任何 present 判点两载体同值、写出来就是任务红线禁止的假绿；2 条试过 present 判点但被判据台的 HEAD 对照当场否决（实测返回 NEEDS_UI_FRAME），归 needsFrame；2 条修复本身未落地且方向取决于产品口径，归 needsRuling。所有 new 文本不含竖线，不触碰状态列与严重级（候选格跑出的「状态打脸」正是待主编排层按新判词推进的既有流程，不在本计划内改）。",
+  "patches": [
+    {
+      "id": "MP-R2-CIRCLES-INDEX-008",
+      "col": 11,
+      "why": "删除型判点，且修复只在工作树（apps/client/src/subpackages/circles/circles/index.vue 相对 094f7239 未提交，本轮删掉 427-569 五段死样式），方向可测。逐支实测 dist=对 apps/client/dist/build/mp-weixin 全树递归 grep、baseline=git show 094f7239:apps/client/src/subpackages/circles/circles/index.vue 命中数：circles-state artifact=0 baseline=4；circles-empty artifact=0 baseline=4；discover-entry artifact=0 baseline=9（工作树三族各只剩注释 1 处、零条规则）。判据台实跑本格得 ARTIFACT_VERIFIED（三支 absent 硬判点全部在该页产物作用域不可见）。刻意不入判点：loading-spinner（dist 全树仍有 38 处别页命中）、error-icon（dist 5 处）、认证徽标族 circle-card__badge（本页产物 wxss 仍 3 处，按 -003 未决项有意保留，写成 present 判点会被 HEAD 对照否决、写成 absent 就是假指控），三者一律装进说明壳。",
+      "new": "修：删除 .circles-state、.circles-empty、.discover-entry 三族死样式（模板零引用、产物 wxss 零残留）。⟨同批下线的兄弟段 .loading-spinner 与 .error-icon，以及按 MP-R2-CIRCLES-INDEX-003 未决项原样保留、不作判点的认证徽标族 .circle-card__badge，均见本行证据列，三态渲染由页面态容器自带样式承担⟩"
+    },
+    {
+      "id": "MP-R2-PAGES-LOGIN-INDEX-015",
+      "col": 11,
+      "why": "删除型判点，修复只在工作树（apps/client/src/pages/login/index.vue 相对 094f7239 未提交，内联注册模式 253 行改动整删注册态与其样式），方向可测。逐支实测：sms-send-btn artifact=0 baseline=8；picker-field artifact=0 baseline=4（baseline=git show 094f7239:apps/client/src/pages/login/index.vue 命中数，工作树两族各只剩注释 1 处、零条规则）。判据台实跑本格得 ARTIFACT_VERIFIED。原判点的五个标识名（注册态 ref、短信发送函数、注册可用性 computed、出生日期上限与其 change 回调）与随之下线的语言包键在压缩产物里被改名或编译期擦除，r7c 判词逐条标注 inconclusive、正是本条 UNDECIDABLE 的成因，故整体装进说明壳留迹，不再当判点。",
+      "new": "修：删除 .sms-send-btn、.picker-field 两族注册模式样式（内联注册模式整删后模板零引用、产物 wxss 零残留）。⟨作废原判点：phoneRegisterMode、onSendSmsCode、canPhoneRegister、birthDateMax、onBirthDateChange 与 login.smsCodePlaceholder 等键，均为压缩构建会重命名的裸标识符⟩"
+    }
+  ],
+  "needsFrame": [
+    {
+      "id": "MP-R2-CAMPUS-HUB-012",
+      "assert": "已试并否决的静态判点：stats.members / stats.posts / stats.peers 三支 identifier 在产物 subpackages/campus/campus/hub.js 里确实命中（预计算字段编译成 u.stats.members 形态），但 baseline 同样=1（git show 094f7239 的 hub.vue:82 statsOf 函数体内已是同一串），判据台 HEAD 对照当场否决，实跑返回 NEEDS_UI_FRAME——同卡少调用两次是渲染期调用次数，两个载体都没有可 grep 的签名。要帧验：校园 hub 页两枚身份各出一张有数据的卡态帧（不是 r7c 那批 18 行里的 B/已加入Tab空态 APPEARED 行，那行 expectSelector 是 .campus-hub__empty、只覆盖零卡分支），断言 .campus-school-card__stats 文本仍是「成员数 · 动态数」两段且 .campus-school-card__peers 文本非空——即预计算把三枚值原样搬到了卡上、没把 undefined 渲染进模板；再配一张切换 已加入/推荐 Tab 后的同卡帧，断言两帧该三处文本逐字相同（预计算不随分支换值）。"
+    },
+    {
+      "id": "MP-R2-PAGES-HOME-INDEX-102",
+      "assert": "已试并否决的静态判点：IMAGE_PATHS.POST_PLACEHOLDER（symbol）与 resolveMediaUrl（identifier）两支都在产物 components/home/TodayRecommendationCard.js 命中且 grantsGreen，但两支在 baseline（git show 094f7239 同文件）里同值存在——HEAD 的模板就是「占位图裸值 + 另一分支已用 resolveMediaUrl」，判据台 HEAD 对照否决，实跑返回 NEEDS_UI_FRAME。要帧验必须是 real 模式首页 今日推荐卡（mock 下占位路径本来就是包内 /static 路径，两版逐像素相同、帧也看不出差别）：item.photoUrl 为空或后端相对路径的那张卡，断言 .today-card__photo 渲染出本地占位图且有非零绘制面积（不是破图裂图标、不是塌陷成 0 高）。r7c 那批 18 行的首页两行是 A/B 位置弹层态 HARNESS_MISS（取景器点错控件，failures[] 已记「tap NOMATCH(tried=) 不含期望 附近」），与本状态无关，不能拿来代答。"
+    }
+  ],
+  "needsRuling": [
+    {
+      "id": "MP-R2-PAGES-NEARBY-INDEX-013",
+      "reason": "修复未落地且方向取决于产品口径。apps/client/src/pages/nearby/index.vue 相对基线 094f7239 零改动，schoolEntries 仍由 config/schools.ts 的静态 SCHOOLS 派生后 slice(0,4)，全页从不 import 也从不调用 loadSchools()。判据台上唯一抠得出的物件 SCHOOLS 在两载体同值（r7c 判词：授予绿用的判点在修复前的 HEAD 里就已存在），所以既不能写 present 也不能写 absent。本行是并案行（并入 MP-R1-PAGES-NEARBY-INDEX-016 之外另指 round-1:173 的本尊行），该本尊行的修法本身就是二选一：方案 A 在 onLoad/onShow 静默 void loadSchools() 存进本地 ref 再派生入口（失败保持静态表），等于承认附近页是校园 browse 的主入口、要跟后端 /api/v1/config/campuses 同源；方案 B 认定入口有意只摆静态 11 所、补注释留档并撤案。A 会引入一次真实请求与首屏后重排（还要 real 模式复验），B 直接改判据不成立——先要主编排层拍这条到底属不属于同源收编范围。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-004",
+      "reason": "修复未落地，且落不下来的原因是缺素材而非漏改，属产品/资产裁定。apps/client/src/components/discover/NotLoggedWaiting.vue 相对基线零改动，模板首节点仍是整张烘焙 PNG（IMAGE_PATHS.POSTERS.NOT_LOGGED_WAITING，编译后 config/images.js 里该 asset 路径 artifact=1、baseline=1），组件头注释自陈「缺素材：理想图吉祥物插画（带 6 人围成圈 + 散落爱心）→ 暂用现有 notlogged-waiting.png」。处置格要求的拆图（XunmiMascot 吉祥物 + CSS 虚线轨道 + assets/images/people/person-* 真人头像池循环，并删掉烘焙图、补 UnlockGuideOverlay 入口）在没决定投入这套重组件与头像池之前无法落地，也就永远没有可判方向——静态侧只能看到「asset 还在」，那既是未修也是有意保留。需要裁定：是按理想图重做这枚登录墙插画并承受新增资产体积，还是接受烘焙图并把本条改判为「保留-判据不成立」（同时撤掉 UnlockGuideOverlay 那半个入口要求）。帧只能验观感（游客态消息页整屏是否仍是一张位图铺满、有无虚线轨道与真人头像），不能替这个决定。"
+    }
+  ],
+  "alreadyClosedInBaseline": [
+    {
+      "id": "MP-R2-CAMPUS-HUB-011",
+      "note": "判点 :key=\"school.id\" 在 git show 094f7239 的 hub.vue:291 就是当前写法（工作树本轮改的是同页别处），基线无法再次记功。建议：把台账状态推到已修复并挂 HEAD 内 file:line 证据，判据台侧改记为基线内已闭合、出本轮 116 条复验队列，不再索要判点。"
+    },
+    {
+      "id": "MP-R2-CAMPUSPOST-011",
+      "note": "campus.postTopic.chooseImageFailed 与消费点 t(...) 在基线源码里各 2 处、1 处俱在（台账 col9 本就记着在基线 874ff52f 已 ARTIFACT_VERIFIED），r7c 判词即「判点在修复前的 HEAD 里就已存在」。建议：沿用 col9 的旧判据台结论收口为已修复，本轮不重复记功。"
+    },
+    {
+      "id": "MP-R2-CIRCLES-INDEX-004",
+      "note": "QUICK_TABS 在基线就已是 labelKey 形态（circle.tabAll/catPhoto…/common.more），人数与统计插值也已在 t(\"circle.cardStats\", {members,posts}) 上，工作树该段零改动。建议：状态改已修复并附基线 file:line，出复验队列。"
+    },
+    {
+      "id": "MP-R2-MATCHING-014",
+      "note": "onUnload 的部分复位（redirectingToSuccess 标志位 + keepMatchedUser 回填）在基线 matching.vue:238-242 逐字已在，closer 也记「无（未改）」。建议：按基线内已闭合收口；跨页状态契约与 MP-R2-MATCHING-007 的冲突另案跟，不在本条记功。"
+    },
+    {
+      "id": "MP-R2-PAGES-HOME-INDEX-112",
+      "note": "fixtures.ts 相对基线零改动，:1155-1163 的 commonInterests 在基线里已是单层数组，且证据列自己写明「收敛动作发生在上一轮提交里」。建议：状态推已修复（修在上一轮提交）、出复验队列，判据台对本条留 UNDECIDABLE 属正确行为（无判点而非未修）。"
+    },
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
+      "note": "loadPage 里 await Promise.all(...) 之后紧接 avatarFailedIds.value = new Set() 已在基线 index.vue:288-298，正是处置格给的修法。建议：按基线内已闭合收口，并给该行补 statusEvidence（修在哪的 file:line）。"
+    },
+    {
+      "id": "MP-R2-PAGES-NEARBY-INDEX-011",
+      "note": "顶部避让已是单一机制：基线 nearby/index.vue:659 的 .nearby-home 就是 padding: 24rpx 32rpx 0，CSS 侧 --statusbar 死值与死注释已不在，只剩模板 :375 的 JS 内联 paddingTop（=本行所并 round-1:171 本尊行的方案 A）。建议：状态推已修复、出队列；本行是并案行，改判点在 canonical 侧记即可。"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-INDEX-009",
+      "note": "isAdult 在基线 register/index.vue:113-121 已是本地时区构造（new Date(year, month-1, day) 对 new Date(now.getFullYear()-18, now.getMonth(), now.getDate())），处置格要的就是这个写法。建议：状态推已修复并附基线 file:line，不再索要判点。"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-INDEX-010",
+      "note": "maskPhone 单一实现已在基线 utils/form-validator.ts:101，两页 import 齐备（index.vue:40 与 success.vue:16），closer 差异串记的正是这次收口但已入库。建议：按基线内已闭合收口；本条判点（裸标识符 maskPhone）在压缩产物侧不可读，不要再试图补静态判点。"
+    },
+    {
+      "id": "MP-R2-POST-016",
+      "note": "基线 post.vue 的 .post-image 已是 width: calc((100% - 3 * 16rpx) / 4) + aspect-ratio: 1、无 height 声明，产物 subpackages/village/village/post.wxss 同形，工作树本轮改的是同页别处。建议：状态推已修复、出队列；若要坐实方形不塌陷另在带图帖子帧上核一眼。"
+    },
+    {
+      "id": "MP-R2-POSTTOPIC-010",
+      "note": "报名语义键 circle.postTopicActivityEnrollHint 及其消费点已在基线 circles/post-topic.vue:449（本条是二选一处置，选定的一半已入库，另一半 hideEnroll 未做）。建议：按已入库那一半收口并显式记下 hideEnroll 分支作废，避免下轮又抠出第二支判点造成自相矛盾。"
+    },
+    {
+      "id": "MP-R2-PROFILE-025",
+      "note": "interactionItems 的 visitors 项在基线 profile/index.vue:758 已是 likesStore.visitors.length || profileStore.profileStats?.visitorsCount || 0，与 :694 同口径。建议：状态推已修复并附基线 file:line；本条四个物件全是压缩改名标识符，永久不可静态判，别再改写判点。"
+    },
+    {
+      "id": "MP-R2-VILLAGE-INDEX-009",
+      "note": ".village-search 的 background 在基线 village/index.vue:945 已是 var(--c-neutral-50, #F7FAF9)，--c-bg-input 那条无定义引用已不在，台账 col9 亦记着在基线 874ff52f 就 ARTIFACT_VERIFIED。建议：沿用旧结论收口，出复验队列。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-LOGIN-INDEX-006",
+      "note": ".btn-guest 在基线就已是无描边 + background: var(--c-bg-surface)，产物 pages/login/index.wxss 同值；柔影一半 .btn-phone-quick 的 box-shadow: var(--card-shadow) 也在基线。两支判点（--s-float-btn/--c-bg-surface）r7c 已判「在修复前的 HEAD 里就已存在」。建议：按基线内已闭合收口，残余的只有「两枚白按钮阴影强度是否合理想图」这一纯观感问题，交给 素材/理想效果图/登录页.png 的下一轮理想图比对，不占判据台。"
+    }
+  ],
+  "counts": {
+    "assigned": 20,
+    "patched": 2,
+    "needsFrame": 2,
+    "alreadyClosedInBaseline": 14,
+    "needsRuling": 2
+  }
+}

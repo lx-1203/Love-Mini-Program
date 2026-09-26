@@ -133,8 +133,10 @@ const activeTab = ref<"joined" | "recommend">("recommend");
 const filteredSchools = computed(() => {
   const base = activeTab.value === "joined" ? joinedSchools.value : recommendedSchools.value;
   const kw = searchKeyword.value.trim();
-  if (!kw) return base;
-  return base.filter((sc) => sc.name.includes(kw) || sc.id.includes(kw.toLowerCase()));
+  const list = kw
+    ? base.filter((sc) => sc.name.includes(kw) || sc.id.includes(kw.toLowerCase()))
+    : base;
+  return list.map((sc) => ({ ...sc, stats: statsOf(sc) }));
 });
 
 // MP-R2-CAMPUS-HUB-003：onLoad 原读取 ?school= 写入 selectedSchool 死状态（全页零消费），
@@ -296,11 +298,10 @@ function goBack() {
       :aria-label="school.name"
       @tap="goSchool(school.name)"
     >
-      <!-- 封面区：浅绿背景 + 学校名字（第五轮：移除校园风景插图与首字徽标，统一浅绿风格） -->
-      <!-- 保留上传能力：coverUrl 非空时渲染图片，为空时渲染浅绿背景 + 学校名字 -->
-      <view class="campus-school-card__cover" :class="{ 'campus-school-card__cover--img': school.coverUrl }">
-        <image v-if="school.coverUrl" class="campus-school-card__cover-img" :src="school.coverUrl" mode="aspectFill" alt="" />
-        <text v-else class="campus-school-card__cover-name">{{ school.name }}</text>
+      <!-- 封面恒有兜底 URL（script 里 schools 的第三层兜底是常量），所以「无封面」分支永远进不去；
+           原来的 v-else 校名文本 + 那条条件类一起删掉，渲染结果与删前逐像素相同（--img 类此前恒为真）。 -->
+      <view class="campus-school-card__cover campus-school-card__cover--img">
+        <image class="campus-school-card__cover-img" :src="school.coverUrl" mode="aspectFill" alt="" />
       </view>
 
       <!-- 内容 -->
@@ -314,7 +315,7 @@ function goBack() {
             <text class="campus-school-card__badge-text">{{ joinedBadge.text }}</text>
           </view>
         </view>
-        <text class="campus-school-card__stats">{{ statsOf(school).members }} · {{ statsOf(school).posts }}</text>
+        <text class="campus-school-card__stats">{{ school.stats.members }} · {{ school.stats.posts }}</text>
         <!-- 成员头像预览 -->
         <view class="campus-school-card__members">
           <view class="campus-school-card__avatar-stack">
@@ -322,7 +323,7 @@ function goBack() {
             <image class="campus-school-card__avatar campus-school-card__avatar--2" :src="IMAGE_PATHS.AVATARS.AVATAR_2" mode="aspectFill" />
             <image class="campus-school-card__avatar campus-school-card__avatar--3" :src="IMAGE_PATHS.AVATARS.AVATAR_3" mode="aspectFill" />
           </view>
-          <text class="campus-school-card__peers">{{ statsOf(school).peers }}</text>
+          <text class="campus-school-card__peers">{{ school.stats.peers }}</text>
         </view>
       </view>
 
@@ -615,19 +616,6 @@ function goBack() {
 .campus-school-card__cover-img {
   width: 100%;
   height: 100%;
-}
-
-.campus-school-card__cover-name {
-  font-size: 26rpx;
-  font-weight: 700;
-  color: var(--c-brand-600, #1F9A75);
-  line-height: 1.3;
-  text-align: center;
-  padding: 0 8rpx;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
 }
 
 .campus-school-card__body {

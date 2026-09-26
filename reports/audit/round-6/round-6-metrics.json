@@ -1,13 +1,13 @@
 {
   "schemaVersion": "round-report-metrics-1",
-  "generatedAt": "2026-09-26T01:58:52.328Z",
-  "startedAt": "2026-09-26T01:58:28.876Z",
+  "generatedAt": "2026-09-26T04:07:29.309Z",
+  "startedAt": "2026-09-26T04:06:29.155Z",
   "roundDir": "reports/audit/round-6",
   "reportFile": "reports/audit/round-6/round-6-report.md",
   "identity": {
-    "head": "f9a60925",
-    "porcelain": 12,
-    "porcelainApps": 1,
+    "head": "094f7239",
+    "porcelain": 39,
+    "porcelainApps": 15,
     "jvmPid": "29536",
     "jvmStartedAt": "2026-09-26 03:12:29",
     "backendRestartVerdict": "PASS JVM 晚于全部 java 源码改动与 HEAD 提交，可作前后端联通取证的前提",
@@ -422,10 +422,10 @@
     },
     "unclassified": 79,
     "fourCell": {
-      "两载皆有且就在目标页：构建里有却定位不到 → 状态没到/时机太早/作用域找错（harness 或产品状态机）": 154,
-      "两载皆无：本构建确无此文案/类，用例断言的目标不存在（产品缺或规格臆造）": 73,
+      "两载皆有且就在目标页：构建里有却定位不到 → 状态没到/时机太早/作用域找错（harness 或产品状态机）": 151,
+      "两载皆无：本构建确无此文案/类，用例断言的目标不存在（产品缺或规格臆造）": 74,
       "不在目标页：前置导航没到位（用例前置/harness 通道），元素存在性无从判断": 31,
-      "仅源码有：修复波补上了它 → 本轮失败作废，重建后必须复验": 1
+      "仅源码有：修复波补上了它 → 本轮失败作废，重建后必须复验": 3
     },
     "suspect": 27,
     "tokenLost": 79,
@@ -514,25 +514,25 @@
           "n": 2,
           "name": "客户端写库 POST /posts",
           "ok": true,
-          "detail": "HTTP 200，返回 id=254"
+          "detail": "HTTP 200，返回 id=255"
         },
         {
           "n": 3,
           "name": "后台按 id 读到该帖",
           "ok": true,
-          "detail": "GET admin/village-posts/254 -> 200；title 字段可见=是（值 \"G8取证2609260158号\"）"
+          "detail": "GET admin/village-posts/255 -> 200；title 字段可见=是（值 \"G8取证2609260407号\"）"
         },
         {
           "n": 4,
           "name": "审核驱动前端可见性",
           "ok": true,
-          "detail": "审核前在列表=false(total=202) / audit HTTP 200 / 审核后在列表=false(total=203) / 可见性以 total 增量为准=true；实测确认：新帖默认 audit_status=pending 且前端列表不可见，审核通过后 total +1 → v32 G8(4) 的假设成立（我一度因 javadoc 写「默认 approved」而怀疑它，那是注释与实现不一致）"
+          "detail": "审核前在列表=false(total=203) / audit HTTP 200 / 审核后在列表=false(total=204) / 可见性以 total 增量为准=true；实测确认：新帖默认 audit_status=pending 且前端列表不可见，审核通过后 total +1 → v32 G8(4) 的假设成立（我一度因 javadoc 写「默认 approved」而怀疑它，那是注释与实现不一致）"
         },
         {
           "n": 5,
           "name": "同 Idempotency-Key 重放",
           "ok": true,
-          "detail": "重放 HTTP 409（期望 409）；重放后 total=203 vs 审核后 203 → 未新增行 ✔"
+          "detail": "重放 HTTP 409（期望 409）；重放后 total=204 vs 审核后 204 → 未新增行 ✔"
         },
         {
           "n": 6,
@@ -550,22 +550,22 @@
           "n": 8,
           "name": "创建响应回主键 data.id",
           "ok": true,
-          "detail": "HTTP 200，data.id=283 → 主键已回，客户端可直接定位新行（#27 的 save(topic) 返回值接生的实测证；此前该字段为 null，见台账 §22）"
+          "detail": "HTTP 200，data.id=284 → 主键已回，客户端可直接定位新行（#27 的 save(topic) 返回值接生的实测证；此前该字段为 null，见台账 §22）"
         },
         {
           "n": 9,
           "name": "读回 images 落库 + 匿名标记",
           "ok": true,
-          "detail": "GET /campus/topics/283 -> 200；images 字段=\"[\"http://127.0.0.1:8080/api/v1/media/app-assets/assets/default-avatar.jpg\"]\"（含所发 URL=true）；isAnonymous=true；authorId=null authorName=\"匿名校友\" → 匿名若为真，作者字段应被遮蔽"
+          "detail": "GET /campus/topics/284 -> 200；images 字段=\"[\"http://127.0.0.1:8080/api/v1/media/app-assets/assets/default-avatar.jpg\"]\"（含所发 URL=true）；isAnonymous=true；authorId=null authorName=\"匿名校友\" → 匿名若为真，作者字段应被遮蔽"
         },
         {
           "n": 10,
           "name": "匿名回复透传并可读回",
           "ok": true,
-          "detail": "POST replies -> 200 id=15；列表 200 命中本条=true；isAnonymous=true；authorName=\"匿名校友\""
+          "detail": "POST replies -> 200 id=16；列表 200 命中本条=true；isAnonymous=true；authorName=\"匿名校友\""
         }
       ],
-      "artifacts": "posts.id=254 ; comments.id=1222 ; campus_topics.id=283 ; campus_replies.id=15  ← 本轮写入的真实数据，未删除，交你决定去留"
+      "artifacts": "posts.id=255 ; comments.id=1223 ; campus_topics.id=284 ; campus_replies.id=16  ← 本轮写入的真实数据，未删除，交你决定去留"
     },
     "g9": {
       "exit": 0,
@@ -597,7 +597,7 @@
     "verify-ledger": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-ledger.mjs reports/audit/round-6",
       "exitCode": 0,
-      "stdoutSha8": "54c02319"
+      "stdoutSha8": "05961212"
     },
     "verify-state-truth": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-state-truth.mjs reports/audit/round-6",
@@ -612,12 +612,12 @@
     "verify-evidence-corpus（本轮 scope）": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-6,reports/screenshots/round-6-interact,reports/screenshots/round-6-real-tour,reports/screenshots/round-6-tour,reports/screenshots/round-6-tour-chat,reports/screenshots/round-6-tour-dupfix,reports/screenshots/round-6-tour-reshoot",
       "exitCode": 0,
-      "stdoutSha8": "a7698084"
+      "stdoutSha8": "9436b3d0"
     },
     "verify-provenance-all（本轮 scope）": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-6,reports/screenshots/round-6-interact,reports/screenshots/round-6-real-tour,reports/screenshots/round-6-tour,reports/screenshots/round-6-tour-chat,reports/screenshots/round-6-tour-dupfix,reports/screenshots/round-6-tour-reshoot",
       "exitCode": 0,
-      "stdoutSha8": "ba0bf349"
+      "stdoutSha8": "c24766a4"
     },
     "verify-queue-reconcile": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/verify-queue-reconcile.mjs reports/audit/round-6",
@@ -627,12 +627,12 @@
     "verify-backend-restarted": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-backend-restarted.mjs --port 8080",
       "exitCode": 0,
-      "stdoutSha8": "a3b6d910"
+      "stdoutSha8": "a4c2235a"
     },
     "verify-i18n-orphan": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-i18n-orphan.mjs",
       "exitCode": 0,
-      "stdoutSha8": "2e773de8"
+      "stdoutSha8": "8ed204f4"
     },
     "probe-real-env": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/probe-real-env.mjs",
@@ -685,9 +685,9 @@
       },
       {
         "path": ".zcode/tmp/round6-LEDGER.md",
-        "mtime": "2026-09-26T01:55:48.109Z",
-        "size": 322366,
-        "sha8": "7dea302e"
+        "mtime": "2026-09-26T02:35:50.253Z",
+        "size": 327926,
+        "sha8": "46fb9e7b"
       },
       {
         "path": "reports/audit/round-6/ops/",
@@ -703,63 +703,63 @@
       },
       {
         "path": "apps/client/dist/build/mp-weixin/app.json",
-        "mtime": "2026-09-26T01:47:39.261Z",
+        "mtime": "2026-09-26T02:48:50.613Z",
         "size": 5264,
         "sha8": "207f7136"
       },
       {
         "path": "apps/client/dist/build/mp-weixin/config/env.js",
-        "mtime": "2026-09-26T01:47:39.140Z",
+        "mtime": "2026-09-26T02:48:50.472Z",
         "size": 2402,
         "sha8": "f1c7b96b"
       },
       {
         "path": "apps/client/dist/build/mp-weixin/config/showcase.js",
-        "mtime": "2026-09-26T01:47:39.209Z",
+        "mtime": "2026-09-26T02:48:50.577Z",
         "size": 920,
         "sha8": "59e2a9c9"
       },
       {
         "path": "apps/client/dist/build/mp-weixin/config/feature-flags.js",
-        "mtime": "2026-09-26T01:47:39.209Z",
+        "mtime": "2026-09-26T02:48:50.576Z",
         "size": 134,
         "sha8": "08a7cff6"
       },
       {
         "path": "apps/client/dist/build/mp-weixin-real/app.json",
-        "mtime": "2026-09-25T23:46:43.438Z",
+        "mtime": "2026-09-26T02:55:56.272Z",
         "size": 5264,
         "sha8": "207f7136"
       },
       {
         "path": "apps/client/dist/build/mp-weixin-real/config/env.js",
-        "mtime": "2026-09-25T23:46:43.292Z",
+        "mtime": "2026-09-26T02:55:56.163Z",
         "size": 2392,
         "sha8": "f0677920"
       },
       {
         "path": "apps/client/dist/build/mp-weixin-real/config/showcase.js",
-        "mtime": "2026-09-25T23:46:43.381Z",
+        "mtime": "2026-09-26T02:55:56.225Z",
         "size": 910,
         "sha8": "3039fc25"
       },
       {
         "path": "apps/client/dist/build/mp-weixin-real/config/feature-flags.js",
-        "mtime": "2026-09-25T23:46:43.381Z",
+        "mtime": "2026-09-26T02:55:56.223Z",
         "size": 134,
         "sha8": "08a7cff6"
       },
       {
         "path": ".zcode/tmp/report-emitter/triage-r6-at-report.json",
-        "mtime": "2026-09-26T01:58:33.666Z",
-        "size": 250456,
-        "sha8": "d4319cc0"
+        "mtime": "2026-09-26T04:06:35.770Z",
+        "size": 250314,
+        "sha8": "189ce354"
       },
       {
         "path": ".zcode/tmp/fixverify/verdicts.json",
-        "mtime": "2026-09-26T01:55:21.276Z",
-        "size": 530933,
-        "sha8": "57a0a80d"
+        "mtime": "2026-09-26T02:34:06.524Z",
+        "size": 532854,
+        "sha8": "7cb0b143"
       }
     ],
     "commands": [
@@ -768,7 +768,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-backend-restarted.mjs --port 8080",
         "exitCode": 0,
         "stdoutBytes": 590,
-        "sha8": "a3b6d910",
+        "sha8": "a4c2235a",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -777,7 +777,7 @@
         "cmd": "git rev-parse --short HEAD",
         "exitCode": 0,
         "stdoutBytes": 9,
-        "sha8": "254dcfc7",
+        "sha8": "de0fb773",
         "note": "",
         "runner": "git"
       },
@@ -785,8 +785,8 @@
         "name": "git worktree 脏项",
         "cmd": "git status --porcelain",
         "exitCode": 0,
-        "stdoutBytes": 522,
-        "sha8": "8234e8d8",
+        "stdoutBytes": 1721,
+        "sha8": "ca4725f3",
         "note": "",
         "runner": "git"
       },
@@ -794,8 +794,8 @@
         "name": "git worktree 脏项(apps/)",
         "cmd": "git status --porcelain -- apps/",
         "exitCode": 0,
-        "stdoutBytes": 49,
-        "sha8": "3c3b5285",
+        "stdoutBytes": 741,
+        "sha8": "4c6deac8",
         "note": "",
         "runner": "git"
       },
@@ -840,7 +840,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-ledger.mjs reports/audit/round-6",
         "exitCode": 0,
         "stdoutBytes": 6009,
-        "sha8": "54c02319",
+        "sha8": "05961212",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -857,8 +857,8 @@
         "name": "verify-evidence-corpus（全域）",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs",
         "exitCode": 1,
-        "stdoutBytes": 2039,
-        "sha8": "2e562eba",
+        "stdoutBytes": 2985,
+        "sha8": "76870526",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -866,8 +866,8 @@
         "name": "verify-provenance-all（全域）",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs",
         "exitCode": 1,
-        "stdoutBytes": 2642,
-        "sha8": "bbdbba58",
+        "stdoutBytes": 4225,
+        "sha8": "6f21febe",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -876,7 +876,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-6,reports/screenshots/round-6-interact,reports/screenshots/round-6-real-tour,reports/screenshots/round-6-tour,reports/screenshots/round-6-tour-chat,reports/screenshots/round-6-tour-dupfix,reports/screenshots/round-6-tour-reshoot",
         "exitCode": 0,
         "stdoutBytes": 1721,
-        "sha8": "a7698084",
+        "sha8": "9436b3d0",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -885,7 +885,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-6,reports/screenshots/round-6-interact,reports/screenshots/round-6-real-tour,reports/screenshots/round-6-tour,reports/screenshots/round-6-tour-chat,reports/screenshots/round-6-tour-dupfix,reports/screenshots/round-6-tour-reshoot",
         "exitCode": 0,
         "stdoutBytes": 2222,
-        "sha8": "ba0bf349",
+        "sha8": "c24766a4",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -939,7 +939,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-i18n-orphan.mjs",
         "exitCode": 0,
         "stdoutBytes": 1851,
-        "sha8": "2e773de8",
+        "sha8": "8ed204f4",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -957,7 +957,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/g8-e2e.cjs",
         "exitCode": 0,
         "stdoutBytes": 2510,
-        "sha8": "204cff03",
+        "sha8": "f3c98557",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1090,10 +1090,10 @@
     {
       "what": "四格合计 vs 有查找目标的定位失败",
       "parts": [
-        154,
-        73,
+        151,
+        74,
         31,
-        1
+        3
       ],
       "sum": 259,
       "whole": 259,

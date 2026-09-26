@@ -184,7 +184,17 @@ function onPasswordInput(e: Event & { detail?: { value?: string } }) {
 
 function onConfirmInput(e: Event & { detail?: { value?: string } }) {
   confirmPassword.value = String(e.detail?.value ?? "").replace(/\s/g, "");
-  // 密码框失焦后实时比对（设计规范 §6.1）
+  // MP-R2-PAGES-REGISTER-INDEX-012：@input 只负责「已有错误时清除」，不再即时比对置错
+  // （原实现边打字边红框，用户还没打完第二遍密码就被判错）
+  if (errors.value.confirm) errors.value.confirm = "";
+}
+
+/**
+ * MP-R2-PAGES-REGISTER-INDEX-012：密码一致性比对时机从 @input 迁到 @blur
+ * （设计规范 §6.1「失焦后比对」），并在此复位 focusField（原模板 @blur 为内联赋值）。
+ */
+function onConfirmBlur() {
+  focusField.value = "";
   if (password.value && confirmPassword.value) {
     errors.value.confirm = confirmPassword.value === password.value ? "" : t("register.errPasswordMismatch");
   } else if (errors.value.confirm) {
@@ -478,8 +488,12 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
       <image class="hero__img" :src="IMAGE_PATHS.REGISTER.HERO" mode="aspectFill" alt="" />
       <view class="hero__fade" />
       <!-- 返回：白底 78% 圆形 + 背景模糊 -->
-      <view class="hero__back press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="goLogin">
-        <image class="hero__back-icon" :src="ICONS.BACK" mode="aspectFit" alt="" />
+      <!-- MP-R2-PAGES-REGISTER-INDEX-011：@tap 移到外包 88rpx 透明热区（视觉 68rpx 圆钮不动，
+           hover-class 仍挂在圆钮上，点在钮上时按压反馈不破） -->
+      <view class="hero__back-hit" @tap="goLogin">
+        <view class="hero__back press-feedback" hover-class="press-feedback--active" hover-stay-time="40">
+          <image class="hero__back-icon" :src="ICONS.BACK" mode="aspectFit" alt="" />
+        </view>
       </view>
       <!-- 标题组：插图左上留白区 -->
       <view class="hero__txt">
@@ -519,14 +533,10 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
           @focus="focusField = 'phone'"
           @blur="focusField = ''"
         />
-        <image
-          v-if="phone"
-          class="field__clear"
-          :src="ICONS.CLEAR"
-          mode="aspectFit"
-          alt=""
-          @tap="clearPhone"
-        />
+        <!-- MP-R2-PAGES-REGISTER-INDEX-011：@tap 移到外包 88rpx 透明热区（视觉 32rpx 图标不动） -->
+        <view v-if="phone" class="field__tap field__tap--32" @tap="clearPhone">
+          <image class="field__clear" :src="ICONS.CLEAR" mode="aspectFit" alt="" />
+        </view>
       </view>
       <view v-if="errors.phone" class="field-error">
         <image class="field-error__icon" :src="ICONS.ALERT" mode="aspectFit" alt="" />
@@ -600,13 +610,15 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
           @focus="focusField = 'password'"
           @blur="focusField = ''"
         />
-        <image
-          class="field__eye"
-          :src="showPassword ? ICONS.EYE : ICONS.EYE_OFF"
-          mode="aspectFit"
-          alt=""
-          @tap="showPassword = !showPassword"
-        />
+        <!-- MP-R2-PAGES-REGISTER-INDEX-011：@tap 移到外包 88rpx 透明热区（视觉 40rpx 图标不动） -->
+        <view class="field__tap field__tap--40" @tap="showPassword = !showPassword">
+          <image
+            class="field__eye"
+            :src="showPassword ? ICONS.EYE : ICONS.EYE_OFF"
+            mode="aspectFit"
+            alt=""
+          />
+        </view>
       </view>
       <!-- 密码强度条（3 格，实时刷新） -->
       <view v-if="password" class="strength">
@@ -649,15 +661,17 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
           cursor-spacing="120"
           @input="onConfirmInput"
           @focus="focusField = 'confirm'"
-          @blur="focusField = ''"
+          @blur="onConfirmBlur"
         />
-        <image
-          class="field__eye"
-          :src="showConfirmPassword ? ICONS.EYE : ICONS.EYE_OFF"
-          mode="aspectFit"
-          alt=""
-          @tap="showConfirmPassword = !showConfirmPassword"
-        />
+        <!-- MP-R2-PAGES-REGISTER-INDEX-011：@tap 移到外包 88rpx 透明热区（视觉 40rpx 图标不动） -->
+        <view class="field__tap field__tap--40" @tap="showConfirmPassword = !showConfirmPassword">
+          <image
+            class="field__eye"
+            :src="showConfirmPassword ? ICONS.EYE : ICONS.EYE_OFF"
+            mode="aspectFit"
+            alt=""
+          />
+        </view>
       </view>
       <view v-if="errors.confirm" class="field-error">
         <image class="field-error__icon" :src="ICONS.ALERT" mode="aspectFit" alt="" />
@@ -749,12 +763,13 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 
     <!-- 协议行：必须完整可见，不得被键盘完全遮住 -->
     <view class="agree" :class="{ 'agree--error': agreeShake }">
-      <view
-        class="agree__chk"
-        :class="{ 'agree__chk--on': agreed, 'agree__chk--shake': agreeShake }"
-        @tap="agreed = !agreed"
-      >
-        <image v-if="agreed" class="agree__chk-icon" :src="ICONS.CHECK" mode="aspectFit" alt="" />
+      <!-- MP-R2-PAGES-REGISTER-INDEX-011：@tap 移到外包 88rpx 透明热区
+           （视觉 32rpx 方框不动；padding 28rpx + 等量负 margin 抵消位移，
+           原 .agree__chk 的 margin-top: 2rpx 一并上移到热区层） -->
+      <view class="agree__hit" @tap="agreed = !agreed">
+        <view class="agree__chk" :class="{ 'agree__chk--on': agreed, 'agree__chk--shake': agreeShake }">
+          <image v-if="agreed" class="agree__chk-icon" :src="ICONS.CHECK" mode="aspectFit" alt="" />
+        </view>
       </view>
       <view class="agree__text-wrap">
         <text class="agree__text" :class="{ 'agree__text--error': agreeShake }">
@@ -813,12 +828,20 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
   pointer-events: none;
 }
 
-.hero__back {
+/* MP-R2-PAGES-REGISTER-INDEX-011：88rpx 透明热区层（abspos 定位从圆钮上移到本层，
+   padding 10rpx + 等量负 margin ⇒ 圆钮视觉位置/尺寸逐像素不变，热区 68→88rpx） */
+.hero__back-hit {
   position: absolute;
   left: 32rpx;
   /* MP-R2-PAGES-REGISTER-INDEX-002：状态栏高度补偿（与 login/success 同模式）——
      navigationStyle:custom 下页面自 y=0 布局，固定 88rpx 在 >44px 状态栏机型压入系统区域 */
   top: calc(var(--statusbar, env(safe-area-inset-top)) + 88rpx);
+  padding: 10rpx;
+  margin: -10rpx;
+  z-index: 3;
+}
+
+.hero__back {
   width: 68rpx;
   height: 68rpx;
   border-radius: 50%;
@@ -830,7 +853,6 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
   align-items: center;
   justify-content: center;
   box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.08);
-  z-index: 3;
 }
 
 .hero__back-icon {
@@ -920,7 +942,8 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 }
 
 .field--focus {
-  background: #ffffff;
+  /* MP-R2-PAGES-REGISTER-INDEX-014(B)：容器/填充底 → --c-bg-container 语义域 */
+  background: var(--c-bg-container, #ffffff);
   border-color: var(--c-brand, #36c99a);
   border-width: 3rpx;
   /* 边框加粗 1rpx 视觉补偿，避免内容抖动 */
@@ -929,7 +952,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 }
 
 .field--error {
-  background: #fef5f6;
+  background: var(--c-error-bg-solid, #fef5f6);
   border-color: var(--c-error, #e5454d);
   border-width: 3rpx;
   padding-left: 27rpx;
@@ -954,6 +977,27 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 .field__ph {
   color: var(--c-text-placeholder, #9aa39f);
   font-weight: 400;
+}
+
+/* MP-R2-PAGES-REGISTER-INDEX-011：小控件的 88rpx 透明热区层——
+   padding + 等量负 margin（R11 §5 铁律：视觉尺寸不动、热区扩到 88rpx；
+   同 components/home/CommunityFeed.vue .post-card__author-tap 口径）。
+   负 margin 使 flex 主轴占位仍等于图标原宽，交叉轴由 .field 的 96rpx 高度吸收。 */
+.field__tap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.field__tap--32 {
+  padding: 28rpx;
+  margin: -28rpx;
+}
+
+.field__tap--40 {
+  padding: 24rpx;
+  margin: -24rpx;
 }
 
 .field__clear {
@@ -1033,7 +1077,9 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 .sms-btn__text {
   font-size: 24rpx;
   font-weight: 700;
-  color: #ffffff;
+  /* MP-R2-PAGES-REGISTER-INDEX-014(A)：彩色底上的白色前景 → --c-text-inverse
+     （禁映射到 --c-bg-container：其暗色态为近黑，会把白字刷成黑字） */
+  color: var(--c-text-inverse, #ffffff);
   white-space: nowrap;
 }
 
@@ -1116,7 +1162,8 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
   font-size: 30rpx;
   font-weight: 700;
   letter-spacing: 0.8rpx;
-  color: #ffffff;
+  /* MP-R2-PAGES-REGISTER-INDEX-014(A)：品牌渐变底上的白色前景 → --c-text-inverse */
+  color: var(--c-text-inverse, #ffffff);
 }
 
 .submit-btn--disabled {
@@ -1133,7 +1180,9 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
   height: 30rpx;
   border-radius: 50%;
   border: 4rpx solid rgba(255, 255, 255, 0.35);
-  border-top-color: #ffffff;
+  /* MP-R2-PAGES-REGISTER-INDEX-014(A)：彩色底上的白色前景 → --c-text-inverse
+     （半透环 rgba 不属本判据，台账只点名 border-top-color 一处） */
+  border-top-color: var(--c-text-inverse, #ffffff);
   animation: spin 0.8s linear infinite;
 }
 
@@ -1146,7 +1195,8 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
   margin-top: 20rpx;
   border-radius: 24rpx;
   border: 2rpx solid var(--c-border-default, #dde3e0);
-  background: #ffffff;
+  /* MP-R2-PAGES-REGISTER-INDEX-014(B)：容器/填充底 → --c-bg-container 语义域 */
+  background: var(--c-bg-container, #ffffff);
 }
 
 .ghost-btn__text {
@@ -1163,17 +1213,32 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
   margin: 30rpx 48rpx 0;
 }
 
+/* MP-R2-PAGES-REGISTER-INDEX-011：协议勾选 88rpx 透明热区层。
+   padding 28rpx + 等量负 margin ⇒ 32rpx 方框视觉不动、占位不变；
+   顶边 -26rpx = -28rpx 位移补偿 + 原 .agree__chk 的 margin-top: 2rpx（已上移到本层）。
+   position: relative + z-index 让热区压在右侧文本之上（.agree__text-wrap 后置兄弟节点
+   默认盖住热区右溢的 14rpx，会使热区实宽掉到 74rpx） */
+.agree__hit {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 28rpx;
+  margin: -26rpx -28rpx -28rpx;
+}
+
 .agree__chk {
   width: 32rpx;
   height: 32rpx;
   border-radius: 8rpx;
   border: 3rpx solid var(--c-border-default, #dde3e0);
-  background: #ffffff;
+  background: var(--c-bg-container, #ffffff);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-top: 2rpx;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 

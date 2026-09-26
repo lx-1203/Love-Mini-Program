@@ -1,0 +1,56 @@
+{
+  "note": "round-7 判据格改写计划（col 11 专属，判据台只从处置列抠判点；此前只动 col 8 证据格的修订一律到不了判据台）。本轮对 11 条 NOT_IN_EITHER 族 ID 逐条比对了判据台 r7c 判词（probes/origin）、工作树 dirty diff 与 094f7239 基线：只有 1 条存在对本基线有方向性的判点（MP-R2-PAGES-MESSAGES-INDEX-022，toggleSessionPin 本轮实删，产物 0 命中、基线源码 2 命中），其新格把二选一叙述整体装进 ⟨⟩ 说明壳（壳内内容按约定不抽判点），壳外只剩一个 absent 极性的字符串判点。其余 10 条按缺陷性质分流：多数行的修复其实在基线 094f7239 之前就已入库（对应源文件相对基线零改动），任何 present 判点在两载体同值、任何 absent 判点仅剩注释支撑，写出来就是任务红线禁止的假绿，故一律不造静态判点——行为/观感可帧验的 6 条进 needsFrame（含帧上断言），需主编排层收口或修复本身未落地的 4 条进 needsRuling。所有 new 文本不含竖线，不触碰状态列与严重级。",
+  "patches": [
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-022",
+      "col": 11,
+      "why": "删除型判点实测：artifact=0（grep -r 全 apps/client/dist/build/mp-weixin 命中 0，含本条 distScope 的 stores/messages.js 与 pages/messages/index.*）；baseline=2（git show 094f7239:apps/client/src/stores/messages.ts 命中 2 行＝action 定义＋store 对外导出，Pinia action 名是对象属性、不被 minifier 改名，基线构建产物必可见）。本轮工作树对 stores/messages.ts 的 dirty diff 实删 12 行，方向正确（基线有、现产物无）。当前源码全域唯一残留是 src/tests/stores/messages.spec.ts:40 的注释，不在本条 srcScope 也不在被测产物，不构成命中。新格壳外只剩 string-lit「toggleSessionPin」（absent 极性，来自删除动词子句），旧二选一叙述（含 console.warn、长按菜单改调等词）全部入 ⟨⟩ 壳，抽取器不会再抠出与它打架的 present 判点。遗留提醒（非 col11 可控）：closer.json 本条仍是 deferred_p4 且 diff 写着「console.warn 留痕已落」，closer-diff 源的 present 判点 console.warn 在产物 stores/messages.js 命中 1 处、在基线 blob 命中 10 处，判据台会以 HEAD 先在否绿（UNDECIDABLE）——需编排层把本条 closer 记录改成本轮实删，桶才会翻成 ARTIFACT_VERIFIED。",
+      "new": "修：删除型单判点：store 侧无调用方的 action 本轮已删除，修后判据为页作用域产物（stores/messages.js 与消息页编译文件）内不再保留字符串判点 \"toggleSessionPin\"，源码侧注释残留不在被测载体内不计。⟨原二选一处置（删除并同步删测试用例；或长按菜单改调并补 console.warn 留痕）把同一 token 抽成 present 与 absent 两支互斥硬判点，判据自相矛盾永不可判，本轮收紧为删除单判点；测试注释见 spec 文件 line 40，属非载体残留⟩"
+    }
+  ],
+  "needsFrame": [
+    {
+      "id": "MP-R2-MATCHING-016",
+      "assert": "matching.vue 与 stores/match.ts 相对基线零改动（callerSnapshot 透传与直连消费已在基线内），判点全是被 minifier 改名的局部标识，静态侧无方向性。帧上断言：从喜欢记录/历史以直达参数进 matching 并对不在 deck 的卡片点超级喜欢，匹配结果遮罩应展示对方资料快照并正常结算（不再走兜底 failed），观感与 §82 落点口径一致。"
+    },
+    {
+      "id": "MP-R2-PAGES-HOME-INDEX-105",
+      "assert": "CommunityFeed.vue 相对基线零改动（@tap 绑 handleRefresh 已在 :169、watch 清 failedKeys 与 avatar 永假分支删除均已入库），无 present/absent 判点能与此基线区分。帧上断言：错误态下点重试，骨架重载且失败头像从占位恢复成图（failedKeys 确被清空、无头像永久卡在占位）。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-PROFILE-INDEX-004",
+      "assert": "MyHeader.vue 相对基线零改动：.my-header__bio 的 clamp 声明块源码与基线同值（产物侧 color 被压缩器短写为 #555 才落 SOURCE_ONLY，属构建噪声非缺陷）。视觉断言给帧：我的页长简介恰好折到第 2 行并以省略号收尾，不再三行溢出压住头部。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+      "assert": "PublicIdentity.vue 相对基线零改动（schoolPart 先 push 的输出序已在基线 :23-28），解构变量名编译期擦除、分隔符「·」两载体恒在，任何判点无方向。帧上断言：他人主页 meta 行按 年龄·学校·城市 顺序渲染（如 22岁 · 北京大学 · 北京），与素材/理想效果图/他人显示主页.png 对齐。"
+    },
+    {
+      "id": "MP-R2-CAMPUSINDEX-011",
+      "assert": "campus/index.vue 相对基线零改动：certFetchedByShow 首取让位守卫已在基线 :210-221 落地，局部标志名会被改名、fetchCertificationStatus 属性名两边都在，静态二值判点必假绿。运行时断言：首次进入校园页 certification-status 只发 1 次（automator 网络/控制台取证），从他页返回时 onShow 仍无条件重取（006 不变式）。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
+      "assert": "本条已被处置列自述重定性为取证覆盖项：warmPeople 五块合并走 store 逻辑（本轮未动）、所需状态帧尚未拍。帧上断言：warmPeople≥4、assistant≥1 的种子态消息页帧，供 -002/-003/-004 的排版判据配对复验（升温区四卡位、助手块非空不破版）。"
+    }
+  ],
+  "needsRuling": [
+    {
+      "id": "MP-R2-PAGES-HOME-INDEX-106",
+      "reason": "主编排层已裁（col6/col9：liked 单源持久化属增强项非本缺陷；死状态半项已消解），但消解也发生在基线之前（现产物与 094f7239 的 home 文件里「已送达/已喜欢」死状态位同为 0），col11 却仍挂两案待拍叙述。需要的不是判点而是收口：撤掉待拍叙事并按裁决把行关掉，或若坚持 (B) 案再另立增强项卡。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001",
+      "reason": "official-chat/index.vue 相对基线零改动，i18n 迁移是基线前事实（四键 zh/en 与页面消费两边同值，判点必假绿），而「去 emoji」未落地（:122 :229 仍在 t() 结果外拼 😊/✨，emoji 字形也不是抽取器可抠的 token）。先裁决四处哪些确需表情（改 <image> 或补映射），再重立卡。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001",
+      "reason": "标注半项（locationPage.serverCityTag、addressUnavailable，基线 zh-CN.ts 已含 2 命中、产物 locale 已可见）无本轮方向性；剩余半项「/cityCenter 与 coords 距离>100km 即丢弃 city」的守卫从未落地（utils/location.ts 与 location.vue 相对基线零改动、全仓无 cityCenter 逻辑），且残差已由子行 MP-R6-F1-NEARBY-IP-CITY-001 接走。需裁决：父行随子行合并收口，还是补写守卫后重判。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A03",
+      "reason": "死样式 .chat-session-back 的整块删除发生在基线 094f7239 之前（基线文件 :3284 即删除注释，现产物全库 0 命中），基线侧唯一 token 命中是一条永不进构建的注释——absent 判点对本基线不可反驳，写出来即假绿。closer 又无记录。需裁决：按基线前已修直接关行（r6 已把「补节点」伪选项入壳），或改更早对照点后重判。"
+    }
+  ],
+  "counts": { "assigned": 11, "patched": 1, "needsFrame": 6, "needsRuling": 4 }
+}
