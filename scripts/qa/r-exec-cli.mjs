@@ -41,18 +41,27 @@ const FRAME_RE = /截图|全帧|出帧|特写|帧/;
 
 function git(a) { try { return execFileSync("git", a.split(" "), { cwd: REPO, encoding: "utf8" }).trim(); } catch { return ""; } }
 const GIT_SHA = git("rev-parse --short HEAD") || "unknown";
+const BOOT_T = Date.now();
 
 /* 这条通道的超时有时不是从 execFileSync 抛回来的，而是之后以未捕获的 socket 事件冒出来
    （本轮实测两次，第一次直接把整批取景带走）。执行轮是按小时算的，一条噪声不能吞掉已跑的行：
    记数 + 继续跑，末尾把次数打出来。 */
 let transportErrs = 0;
+/* 但这个 handler 不能把"启动阶段就炸了"也吞掉：实测它把一次 boot 期的 evaluate 失败
+   变成"打印一行 TRANSPORT_ERR 然后事件循环空了 ⇒ 退出码 0"，一次什么都没跑的死法被记成通过。
+   所以：boot 之前抛 = 致命，退 2；boot 之后抛 = 计一次并请求收尾（让守恒检查有机会跑）。 */
+const RUN = { booted: false, abort: () => {} };
 process.on("uncaughtException", (e) => {
   transportErrs++;
   console.log("TRANSPORT_ERR " + String((e && (e.stack || e.message)) || e).split("\n")[0].slice(0, 140));
+  if (!RUN.booted) { console.log("RUNNER_RESULT=FAIL reason=启动阶段（登录票据/开页）就抛了，一行都没跑 ⇒ 这不是跑完，退 2"); process.exit(2); }
+  RUN.abort();
 });
 process.on("unhandledRejection", (e) => {
   transportErrs++;
   console.log("TRANSPORT_REJECT " + String((e && e.message) || e).slice(0, 140));
+  if (!RUN.booted) { console.log("RUNNER_RESULT=FAIL reason=启动阶段就出现未处理拒绝 ⇒ 退 2"); process.exit(2); }
+  RUN.abort();
 });
 
 function row(manifest, page, c, status, route, reason, observed, evid, miss) {
@@ -95,11 +104,23 @@ const files = (ONLY.length ? ONLY : readdirSync(OPS).filter((f) => f.endsWith(".
 if (!files.length) { console.log("RUNNER_RESULT=FAIL reason=没有要跑的 manifest（空扫描集不得占设备）"); process.exit(2); }
 
 const prior = existsSync(RES) ? JSON.parse(readFileSync(RES, "utf8")) : { results: [] };
+/* 记账口径：一条 EXECUTED 必须要么有帧、要么至少有一个探针答案。旧结果里不满足的那些
+   （实测 4 条：DC37/H13/H29/H44）是"没有证据的绿"。--redo-holes 把它们**作废重测**，
+   状态由重跑重新产生 —— 这不是改判洗色，是把没测过的东西重新测一遍。 */
+function evidenceHole(r) {
+  return r.status === "EXECUTED" && !r.evidence && !/present\(|absent/.test(String(r.observed || ""));
+}
+if (process.argv.includes("--redo-holes")) {
+  const before = (prior.results || []).length;
+  prior.results = (prior.results || []).filter((r) => !evidenceHole(r));
+  console.log("RUNNER_VOIDED " + (before - prior.results.length) + " 条 EXECUTED-无证据 的行作废重测");
+}
 const done = new Set((prior.results || []).map((r) => r.manifest + "|" + r.id));
 mkdirSync(OUT_DIR, { recursive: true });
 mkdirSync(SHOT_DIR, { recursive: true });
 
 console.log("[boot] " + bootSession(String(mintToken({ project: PROJECT })), { project: PROJECT }) + " / verify=" + verifyLogin({ project: PROJECT }));
+RUN.booted = true;
 
 /* 每跑完一个页组就落一次盘：这条通道会偶发把进程带走（实测两次未捕获 socket 超时），
    跑了 40 分钟的成果不能跟着一起没了。最终那次写盘仍走下面的守恒检查。 */
@@ -111,9 +132,10 @@ function flush() {
 }
 
 const rows = [];
-const stats = { executed: 0, failed: 0, skipTap: 0, skipReal: 0, skipProbe: 0, pages: 0, probes: 0, shots: 0, noClass: 0 };
+const stats = { executed: 0, failed: 0, skipTap: 0, skipReal: 0, skipProbe: 0, skipNoCrit: 0, skipMiss: 0, pages: 0, probes: 0, shots: 0, noClass: 0 };
 let budget = LIMIT > 0 ? LIMIT : Infinity;
 let stopped = false;
+RUN.abort = () => { stopped = true; };
 
 for (const name of files) {
   if (stopped) break;
@@ -125,6 +147,7 @@ for (const name of files) {
     const todo = byPage[page].filter((c) => !done.has(name + "|" + c.id));
     if (!todo.length) continue;
     stats.pages++;
+    console.log("RUNNER_GROUP_START page=" + page + " 待跑=" + todo.length + " 累计=" + ((Date.now() - BOOT_T) / 60000).toFixed(1) + "min");
     try { openPage(page, "", { project: PROJECT }); } catch (e) {
       for (const c of todo) rows.push(row(name, page, c, "FAILED", "", "open_page 失败：" + String(e.message).slice(0, 70), ""));
       stats.failed += todo.length;
@@ -154,11 +177,21 @@ for (const name of files) {
       } else if (routeOk === false) {
         stats.failed++;
         rows.push(row(name, page, c, "FAILED", route, "落在别的页（页内守卫或路由重定向），须人判", observed));
+      } else if (!cls.length && !FRAME_RE.test(String(c.evidence || ""))) {
+        /* 判据里既没点名类名也不要求出帧 ⇒ 这条压根没断言任何可观测物件。
+           之前它会掉进最后的 else 记成 EXECUTED（实测 4 条：DC37/H13/H29/H44），
+           那是"没有证据的绿"，正是不许出现的东西。改记 SKIPPED 并写明要收紧判据。 */
+        stats.skipNoCrit++;
+        rows.push(row(name, page, c, "SKIPPED", route, "判据未点名可观测物件（既无类名也不要求出帧）⇒ 没有可判的东西，不能记 EXECUTED；要么补判据要么人工看帧", observed));
       } else if (routeOk === null && dom.__err) {
         /* 落点与 DOM 两条探针同时没给结果 ⇒ 这一条什么都没测到。既不记 EXECUTED（没证据），
            也不记 FAILED（没测到不等于测出问题），记 SKIPPED 并写明要重跑。 */
         stats.skipProbe++;
         rows.push(row(name, page, c, "SKIPPED", route, "落点与折叠探针都没给出结果（通道未就绪）⇒ 本条没测到，不记 EXECUTED 也不记 FAILED，待重跑", observed));
+      } else if (routeOk === null) {
+        /* 有 DOM 答案但不知道在不在目标页 ⇒ 答案没法归属，记 EXECUTED 等于把"未知"写成"通过"。 */
+        stats.skipProbe++;
+        rows.push(row(name, page, c, "SKIPPED", route, "落点探针没给结果（routeStack 取空/超时）⇒ 不知是否已在 " + page + "，答案无法归属，待重跑", observed));
       } else {
         const miss = [];
         let evid = "";
@@ -170,6 +203,14 @@ for (const name of files) {
             if (sz > 3000) { evid = relOf(f) + "(" + sz + "B)"; stats.shots++; } else miss.push(relOf(f) + "(仅 " + sz + "B，不当证据)");
           } catch (e) { miss.push(relOf(f) + "(未写出:" + String(e.message).slice(0, 60) + ")"); }
         }
+        const answered = cls.filter((s) => dom[s] && dom[s] !== "no-answer" && !String(dom[s]).startsWith("ERR"));
+        if (!evid && !answered.length) {
+          /* 帧没拿到、探针也没答案 ⇒ 这一条仍然没有任何可交的证据 */
+          stats.skipMiss++;
+          rows.push(row(name, page, c, "SKIPPED", route, "出帧失败且探针无有效答案（miss=" + miss.join(";") + "）⇒ 不记 EXECUTED，待重跑", observed, "", miss));
+          if (--budget <= 0) { stopped = true; break; }
+          continue;
+        }
         if (!cls.length) stats.noClass++;
         stats.executed++;
         rows.push(row(name, page, c, "EXECUTED", route, "", observed, evid, miss));
@@ -177,6 +218,9 @@ for (const name of files) {
       if (--budget <= 0) { stopped = true; break; }
     }
     flush();
+    console.log("RUNNER_GROUP page=" + page + " 本次新行=" + rows.length + " executed=" + stats.executed +
+      " failed=" + stats.failed + " skipped=" + (stats.skipTap + stats.skipReal + stats.skipProbe + stats.skipNoCrit + stats.skipMiss) +
+      " 出帧=" + stats.shots + " 通道异常=" + transportErrs + " 已跑=" + ((Date.now() - BOOT_T) / 60000).toFixed(1) + "min");
   }
 }
 
@@ -188,14 +232,19 @@ const all = [...merged.values()];
 const dupNew = rows.length - new Set(rows.map((r) => r.manifest + "|" + r.id)).size;
 const bad = all.filter((r) => !["EXECUTED", "FAILED", "SKIPPED"].includes(r.status));
 console.log("RUNNER_ROWS new=" + rows.length + " merged=" + all.length + " 之前已有=" + (prior.results || []).length + " 重复新行=" + dupNew);
-console.log("RUNNER_STATS executed=" + stats.executed + " failed=" + stats.failed + " skipped=" + (stats.skipTap + stats.skipReal + stats.skipProbe) +
-  "(交互动词=" + stats.skipTap + " requiresReal=" + stats.skipReal + " 探针无结果=" + stats.skipProbe + ") 页组=" + stats.pages +
+console.log("RUNNER_STATS executed=" + stats.executed + " failed=" + stats.failed +
+  " skipped=" + (stats.skipTap + stats.skipReal + stats.skipProbe + stats.skipNoCrit + stats.skipMiss) +
+  "(交互动词=" + stats.skipTap + " requiresReal=" + stats.skipReal + " 探针无结果=" + stats.skipProbe +
+  " 判据无可判物件=" + stats.skipNoCrit + " 出帧失败=" + stats.skipMiss + ") 页组=" + stats.pages +
   " 折叠探针类名次数=" + stats.probes + " 出帧=" + stats.shots + " 未点名类名=" + stats.noClass + " 通道异常次数=" + transportErrs);
 const statusOf = {};
 for (const r of all) statusOf[r.status] = (statusOf[r.status] || 0) + 1;
 console.log("RUNNER_STATUS_ALL " + Object.keys(statusOf).sort().map((k) => k + "=" + statusOf[k]).join(" "));
+const holes = all.filter(evidenceHole);
+console.log("RUNNER_EVIDENCE_HOLE " + holes.length + (holes.length ? " 条 EXECUTED 既无帧也无探针答案：" + holes.slice(0, 8).map((r) => r.manifest + "/" + r.id).join(",") : ""));
 const fails = [];
 if (!rows.length) fails.push("一行都没产生（要么全跑过了，要么筛选把用例全挡住了 ⇒ 这不叫跑完）");
+if (holes.length) fails.push(holes.length + " 条 EXECUTED 没有任何证据（无帧且无探针答案）⇒ 没有证据的绿不许入账，用 --redo-holes 重测或补判据");
 if (dupNew) fails.push("同一次跑里出现重复 manifest|id " + dupNew + " 条");
 if (bad.length) fails.push("出现非法状态 " + bad.length + " 条");
 if (all.length !== (prior.results || []).length + rows.length - dupNew) fails.push("合并后总数对不上");

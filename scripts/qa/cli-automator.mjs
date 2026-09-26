@@ -1,13 +1,16 @@
 /* IDE CLI 自动化通道的共用驱动（round-7 起替代 miniprogram-automator 的 WS 端口）。
  *
- * 为什么走这条路（都是本轮实测出来的，别再猜第二遍）：
- *   · `cli auto --project P --auto-port N` 会打印 `✔ auto`，但**不会**在 N 上开 WS 端口：
- *     9430 是 IDE 的 HTTP 服务桥（Express，WS upgrade 直接 404），automator 的 WS 只在
- *     "以自动化模式打开的项目窗口"里才有，且本机 IDE 版本不再暴露它。
- *   · 但 `skill-index.js` 的 automation_* 工具族**就是**同一条自动化通道（走 9430 的 HTTP 桥），
- *     而且比 WS 版更全：automation_element_action 支持
+ * 为什么走这条路（2026-09-26 修正过一次，别照旧结论再猜第二遍）：
+ *   · 旧结论"`cli auto --auto-port` 不开 WS 端口、本机 IDE 版本不再暴露 automator WS"是**错的**：
+ *     它确实开，只是端口挂在**另一个 IDE 实例**上（自动化实例），不是主窗口进程；
+ *     实测 ws://127.0.0.1:9420 能 connect，currentPage / page.$ / page.data / callWxMethod /
+ *     evaluate 全部有答案，单条元素查询 6.6~8.1ms（本桥折叠探针是 210ms/条）。
+ *     拉起 + 自检见 scripts/qa/ws-channel-up.mjs。
+ *   · 但本桥不该被换掉：WS 的 screenshot 实测 61s/张（还 2/5 超时），本桥 simulator_screenshot
+ *     是 2.6s/张 ⇒ 出帧留在本桥，查询类若要提速才走 WS。
+ *     本桥 automation_* 工具族仍是最全的交互面：automation_element_action 支持
  *     tap/longpress/trigger/input/size/offset/text/attribute/value/property/wxml/outerWxml/style/
- *     scrollTo/touchstart/touchmove/touchend，还带 --wait 与 --wait-for-selector。
+ *     scrollTo/touchstart/touchmove/touchend，还带 --wait 与 --wait-for-selector（WS 版没有 trigger）。
  *   · 坑：automation_element_action 启动时会去找 skill 文档目录，按 dev 布局只看
  *     `<IDE>/dist/wechatide-skill` 与 `<IDE>/src/skill/wechatide-skill`；两者都没有时报
  *     "Skill directory not found"（**不是**参数错误）。修法是把已安装的 skill 拷到

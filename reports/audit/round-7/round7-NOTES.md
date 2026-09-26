@@ -288,3 +288,47 @@ lanes 里最值钱的一条反驳：**HEAD 就是本轮基线**，所以只有�
 4. 异常隔离（§11 的未捕获 socket 超时）。
 `needs-backend` 第一版判成 456 条（41%）是分类器过火——它只看"提到接口/响应"却没看 `pre` 写着 mock 构建；
 收紧后是 11 条。**两版数字都留在这里**，因为"我第一版量错了"本身就是这一节要交的东西。
+
+## 15 ① 结案：WS 采集通道是能被按需拉起来的，而它的成本结构和 CLI 桥正好相反
+
+`cli-automator.mjs` 开头那段"本机 IDE 版本不再暴露 automator WS"的结论是**我上一轮写错的**，
+今天被自己的测量推翻并已就地改正。载体是 `scripts/qa/ws-channel-up.mjs`（可重跑，退出码即结论）：
+
+```
+WS_UP=ALREADY_UP port=9420 connectMs=89 page=pages/discover/index hits=11000010 单条查询=8.1ms
+```
+
+拉起形态照 `cli.bat` 抄：Electron 主程序 + `ELECTRON_RUN_AS_NODE=1` + `cwd=安装目录` +
+`['-e', BOOTSTRAP, '<install>/resources/app.asar.unpacked/js/common/cli/index.js', 'auto',
+'--project', <产物目录>, '--auto-port', '9420']`，然后轮询 `netstat`。
+两种错形态都以**误导性**的方式失败：把脚本路径塞在 `-e` 后面 ⇒ exe 把路径当代码求值（`[eval]:1 SyntaxError`）；
+直接用顶层 `cli.js` ⇒ `MODULE_NOT_FOUND`。监听端口挂在**另一个 IDE 实例**上（9420=自动化实例，
+9430=主窗口的 HTTP 桥），这正好对上"per-port 锁不等于机器级独占"那条既有结论。
+
+单价实测（`ws-automator-bench.cjs` / `ws-signature-probe.cjs`）：
+
+| 动作 | WS | CLI 桥 |
+|---|---|---|
+| 单条元素查询 `page.$` | **6.6–8.1 ms** | 210 ms（折叠探针，每次 spawn 子进程） |
+| `page.$$` / `page.data` / `callWxMethod` | 92 / 160 / 186 ms | — |
+| **出帧** | **61 s/张，5 次里 2 次超时** | 2.6 s/张 |
+
+⇒ 结论不是"换成 WS"，而是**查询走 WS、出帧留在 CLI 桥**。§14 的量级摆在这：断言只占执行轮 6%，
+截图占 64%，把一个只影响 6% 的腿提速 30 倍并不能救这一轮；而且 `close()` 会把整个自动化 IDE 实例关掉
+（本轮我亲手关掉过一次，端口随之从监听表消失，下一次 connect 直接报
+"check if target project window is opened with automation enabled"，看着像传输坏了其实是我自己按的）。
+这个版本的会话对象没有 `disconnect`，收尾只能 `process.exit(0)`——顺带一条通用坑：
+**socket 开着不退出，脚本打印完也像卡着**。
+
+同页签名稳定性（`ws-signature-probe.cjs`，discover 页 6 轮 × 2.5 s 间隔）：
+`page.data()` 签名 **6/6 全同**、元素存在性签名 **6/6 全同**，
+而同一页连拍 12 帧只有 2 个唯一 sha256（§13 的旧实测）。
+⇒ 数据/DOM 层没漂，像素层在漂（CSS 动画/自动轮播一类）。
+所以"同态复用一帧"这条策略的复用键只能是**状态签名**，写进证据时必须注明它保证的是
+"同一渲染态"而不是"字节相同"，否则就是在用弱断言冒充强断言。
+
+执行轮这一头：观察态切片跑到 **93 行 / 2 个页组**（EXECUTED 69、SKIPPED 24）我就动手停了它——
+按 2 页组/10 min 的速度全量 24 组要 4 小时，而我要先验证传输与截图策略，
+没必要让一个已被判定为慢的通道继续占着模拟器。已 flush 的行留在
+`reports/audit/round-7/interact/exec-results.json`，`RUNNER_SCOPE=observe-only` 那句话仍然成立：
+**这不是一轮完整的执行轮**。它同时也是 §7 那条"跑完再报"的未完成项。

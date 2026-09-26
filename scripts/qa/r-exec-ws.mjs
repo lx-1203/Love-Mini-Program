@@ -1,0 +1,326 @@
+/* round-7 执行轮 · 混合传输版（WS 取证据 + CLI 桥出帧）。
+ *
+ * 为什么混合，全是这一小时里量出来的（notes §15 + diag-two-windows 的实测表）：
+ *   · 桥的 routeStack（走 automation_evaluate）刚才 4 个页里 0 个给出答案（两个"空"、两个 ERR），
+ *     而同一段时间里 WS 的 currentPage() 3/4 给了正确答案 ⇒ 落点探针换 WS。
+ *   · WS 单条 page.$ 6.6–8.1ms，12 条并发 31ms；桥的折叠探针 210ms/条 ⇒ 判点换 WS。
+ *   · 出帧不许换：WS 的 screenshot 实测 61s/张且 5 次里 2 次超时，桥是 2.6s/张。
+ *
+ * 记账口径与 r-exec-cli.mjs 保持一致：一条 EXECUTED 必须要么有帧、要么至少有一个探针答案；
+ * 判据里既没点名类名也不要求出帧的记 SKIPPED（不是 EXECUTED）。
+ *
+ * 用法：
+ *   node scripts/qa/r-exec-ws.mjs --fidelity <MANIFEST>   # 先做保真对照，不一致就别当默认
+ *   node scripts/qa/r-exec-ws.mjs [--only M1,M2] [--limit N] [--redo-holes]
+ */
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, statSync, rmSync } from "node:fs";
+import { join, dirname, relative } from "node:path";
+import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
+import { execFileSync } from "node:child_process";
+
+const require = createRequire(import.meta.url);
+const HERE = dirname(fileURLToPath(import.meta.url));
+const REPO = join(HERE, "..", "..");
+const { openPage, shot, evaluate } = await import("./cli-automator.mjs");
+
+const argv = process.argv.slice(2);
+function opt(n, d) { const i = argv.indexOf("--" + n); return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[i + 1] : d; }
+function flag(n) { return argv.includes("--" + n); }
+const PROJECT = opt("project", join(REPO, "apps/client/dist/build/mp-weixin"));
+const LABEL = opt("round", "round-7");
+const OPS = opt("ops", join(REPO, "reports/audit/round-6/ops"));
+const OUT_DIR = opt("out", join(REPO, "reports/audit", LABEL, "interact"));
+const RES = join(OUT_DIR, "exec-results.json");
+const SHOT_DIR = opt("shots", join(REPO, "reports/screenshots", LABEL + "-exec"));
+const ONLY = (opt("only", "") || "").split(",").filter(Boolean);
+const LIMIT = Number(opt("limit", "0"));
+const FIDELITY = opt("fidelity", "");
+const FRAME_RE = /截图|全帧|出帧|特写|帧/;
+const TAP_RE = /点击|输入|滑动|滚动|长按|拖|tap|click|input|scroll|swipe|trigger/;
+const BOOT_T = Date.now();
+
+function relOf(p) { return relative(REPO, p).split("\\").join("/"); }
+function git(a) { try { return execFileSync("git", a.split(" "), { cwd: REPO, encoding: "utf8" }).trim(); } catch { return ""; } }
+const GIT_SHA = git("rev-parse --short HEAD") || "unknown";
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function automator() {
+  try { return require("miniprogram-automator"); } catch { /* fallthrough */ }
+  const store = join(REPO, "node_modules", ".pnpm");
+  const hit = readdirSync(store).filter((d) => d.startsWith("miniprogram-automator@")).sort()[0];
+  return hit ? require(join(store, hit, "node_modules", "miniprogram-automator")) : null;
+}
+const A = automator();
+if (!A) { console.log("WSX_RESULT=FAIL reason=找不到 miniprogram-automator"); process.exit(2); }
+
+let mini = null, conns = 0, wsErrs = 0;
+async function sess() {
+  if (mini) return mini;
+  mini = await Promise.race([A.connect({ wsEndpoint: "ws://127.0.0.1:" + (process.env.WSX_PORT || "9420") }),
+    new Promise((_, rj) => setTimeout(() => rj(new Error("CONNECT_TIMEOUT_8S")), 8000))]);
+  conns++;
+  return mini;
+}
+/* WS 会话是单点的：一次断线不能把整轮带走，也不能把已跑的行丢掉（每页组落盘见 flush）。
+   注意：绝不 close()——实测 close 会把 9420 那个 IDE 子进程整个带走。 */
+async function withRetry(label, fn) {
+  for (let a = 0; a < 2; a++) {
+    try { const m = await sess(); return await fn(m); }
+    catch (e) {
+      wsErrs++;
+      mini = null;
+      if (a === 1) { console.log("WSX_RETRY_FAIL " + label + " :: " + String(e && e.message).slice(0, 80)); return undefined; }
+      console.log("WSX_RETRY " + label + " :: " + String(e && e.message).slice(0, 80));
+      await sleep(1200);
+    }
+  }
+  return undefined;
+}
+async function wsRoute() {
+  return await withRetry("currentPage", async (m) => { const p = await m.currentPage(); return (p && p.path) || ""; });
+}
+/* 一个页组只取一次 page 句柄，别每条选择器都重新 currentPage()。
+   实测反面教材：把 12 条选择器并发打出去（=24 条并发命令 + 失败重试风暴），
+   IDE 的自动化服务直接全线 "timeout waiting for automator response"，12/12 全灭；
+   而串行版实测 6.6–8.1ms/条。并发在这条通道上没有收益，只有把通道打死的代价。 */
+async function wsPage() {
+  return await withRetry("page", async (m) => await m.currentPage());
+}
+function classesOf(text) {
+  const seen = new Set();
+  for (const m of String(text || "").matchAll(/\.([a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:__|--)[a-z0-9_-]+)/g)) seen.add("." + m[1]);
+  return [...seen];
+}
+/* 判点：串行问一遍；连续 3 条拿不到答案就判整组探针失效（不逐条重试，避免重试风暴） */
+async function probeSet(pageObj, selectors) {
+  const out = {};
+  if (!pageObj) { selectors.forEach((s) => { out[s] = "no-answer"; }); return { map: out, broken: true }; }
+  let consecErr = 0;
+  for (const s of selectors) {
+    try {
+      const list = await pageObj.$$(s);
+      const n = Array.isArray(list) ? list.length : (list ? 1 : 0);
+      out[s] = n > 0 ? "present(" + n + ")" : "absent";
+      consecErr = 0;
+    } catch (e) {
+      out[s] = "ERR:" + String(e && e.message).slice(0, 30);
+      if (++consecErr >= 3) { selectors.slice(selectors.indexOf(s) + 1).forEach((x) => { out[x] = "no-answer"; }); return { map: out, broken: true }; }
+    }
+  }
+  return { map: out, broken: false };
+}
+/* 桥的折叠探针（与 r-exec-cli.mjs 同一形态）：只为保真对照而存在，跑完这轮就该退役 */
+function cliProbe(selectors) {
+  if (!selectors.length) return {};
+  const start = "() => { const app = getApp(); const bag = {}; app.__probeBag = bag; " +
+    "const sels = " + JSON.stringify(selectors) + "; " +
+    "sels.forEach(function (s, i) { try { const q = wx.createSelectorQuery(); " +
+    "q.selectAll(s).fields({ size: true }, function (res) { bag[i] = (Array.isArray(res) ? res.length : (res ? 1 : 0)); }); q.exec(); } " +
+    "catch (e) { bag[i] = 'ERR'; } }); return 'started:' + sels.length; }";
+  const read = "() => JSON.stringify(getApp().__probeBag || {})";
+  try { evaluate(start, { project: PROJECT }); } catch (e) { return { __err: String(e.message).slice(0, 60) }; }
+  /* 桥不会 await 返回 Promise 的 fn-source，只能先把回调写进袋、再同步等一会儿去读 */
+  const t0 = Date.now();
+  while (Date.now() - t0 < 1500) { /* 忙等：这条只在保真对照里跑，一轮一次 */ }
+  let bag = {};
+  try { bag = JSON.parse(String(evaluate(read, { project: PROJECT }))); } catch (e) { return { __err: "read:" + String(e.message).slice(0, 40) }; }
+  const out = {};
+  selectors.forEach((s, i) => {
+    out[s] = typeof bag[i] === "number" ? (bag[i] > 0 ? "present(" + bag[i] + ")" : "absent") : String(bag[i] === undefined ? "no-answer" : bag[i]);
+  });
+  return out;
+}
+function verdictOf(ans) {
+  const s = String(ans);
+  if (s.startsWith("present(")) return "present";
+  if (s === "absent") return "absent";
+  return "no-answer";
+}
+
+function row(manifest, page, c, status, route, reason, observed, evid, miss) {
+  return {
+    suite: "C-" + manifest, manifest, id: c.id, page, tier: c.tier || "normal",
+    requiresReal: c.requiresReal === true, title: String(c.title || "").slice(0, 160),
+    status, observed: observed || "", missingEvidence: miss || [], failureReason: reason || "",
+    route: route || "", toast: "", console: "", evidence: evid || "", durationMs: 0, transport: "ws+cli-shot",
+  };
+}
+function evidenceHole(r) {
+  return r.status === "EXECUTED" && !r.evidence && !/present\(|absent/.test(String(r.observed || ""));
+}
+
+if (!existsSync(join(PROJECT, "app.json"))) { console.log("WSX_RESULT=FAIL reason=--project 不是已编译产物：" + PROJECT); process.exit(2); }
+mkdirSync(OUT_DIR, { recursive: true });
+mkdirSync(SHOT_DIR, { recursive: true });
+const prior = existsSync(RES) ? JSON.parse(readFileSync(RES, "utf8")) : { results: [] };
+if (flag("redo-holes")) {
+  const before = (prior.results || []).length;
+  prior.results = (prior.results || []).filter((r) => !evidenceHole(r));
+  console.log("WSX_VOIDED " + (before - prior.results.length) + " 条 EXECUTED-无证据");
+}
+const done = new Set((prior.results || []).map((r) => r.manifest + "|" + r.id));
+const rows = [];
+const stats = { executed: 0, failed: 0, skipTap: 0, skipReal: 0, skipRoute: 0, skipNoCrit: 0, skipMiss: 0, pages: 0, probes: 0, shots: 0 };
+
+function flush(final) {
+  const m2 = new Map();
+  for (const r of [...(prior.results || []), ...rows]) m2.set(r.manifest + "|" + r.id, r);
+  try {
+    writeFileSync(RES, JSON.stringify({ round: LABEL, gitSha: GIT_SHA, updatedAt: new Date().toISOString(),
+      runner: "scripts/qa/r-exec-ws.mjs（WS 取证 + 桥出帧" + (final ? "，完整跑完" : "，增量落盘") + "）", results: [...m2.values()] }, null, 1));
+  } catch (e) { console.log("WSX_FLUSH_ERR " + String(e.message).slice(0, 80)); }
+  return [...m2.values()];
+}
+
+async function main() {
+  const files = (ONLY.length ? ONLY : readdirSync(OPS).filter((f) => f.endsWith(".json")).map((f) => f.replace(/\.json$/, ""))).sort();
+  if (!files.length) { console.log("WSX_RESULT=FAIL reason=没有要跑的 manifest（空扫描集不得占设备）"); process.exit(2); }
+  console.log("[boot] sha=" + GIT_SHA + " project=" + relOf(PROJECT) + " transport=ws-route+ws-probe+cli-shot");
+  const r0 = await wsRoute();
+  if (r0 === undefined) { console.log("WSX_RESULT=FAIL reason=WS 通道连不上；先跑 node scripts/qa/ws-channel-up.mjs（别用 close()）"); process.exit(2); }
+  console.log("[boot] ws 当前页=" + r0);
+
+  if (FIDELITY) {
+    /* 保真对照：同一时刻同一页，WS 并发 $$ 与桥折叠探针必须给出同样的 present/absent 结论。
+       不一致 ⇒ 不许把 WS 当默认传输（这一条是 #36 定的规矩，不能因为 WS 快就绕过）。 */
+    const mf = JSON.parse(readFileSync(join(OPS, FIDELITY + ".json"), "utf8"));
+    const byPage = {};
+    for (const c of (mf.cases || [])) (byPage[c.page] = byPage[c.page] || []).push(c);
+    let cmp = 0, diff = 0, bothNoAnswer = 0;
+    const diffs = [];
+    for (const page of Object.keys(byPage).slice(0, Number(opt("fidelityPages", "2")))) {
+      try { openPage(page, "", { project: PROJECT }); } catch (e) { console.log("FIDELITY_OPEN_ERR " + String(e.message).slice(0, 60)); continue; }
+      await sleep(2500);
+      const sels = [...new Set(byPage[page].flatMap((c) => classesOf(c.action + " " + c.expected)))].slice(0, 24);
+      if (!sels.length) { console.log("FIDELITY_SKIP page=" + page + " 没有点名类名"); continue; }
+      const wsObj = await probeSet(await wsPage(), sels);
+      const ws = wsObj.map;
+      const cl = cliProbe(sels);
+      const top = await wsRoute();
+      console.log("FIDELITY page=" + page + " sels=" + sels.length + " route=" + top + " routeOk=" + (String(top || "").includes(page)) +
+        " ws探针组失效=" + (wsObj.broken ? "yes" : "no"));
+      for (const s of sels) {
+        const a = verdictOf(ws[s]), b = verdictOf(cl[s]);
+        if (a === "no-answer" && b === "no-answer") { bothNoAnswer++; continue; }
+        cmp++;
+        if (a !== b) { diff++; if (diffs.length < 12) diffs.push(page + " " + s + " ws=" + a + " cli=" + b); }
+      }
+    }
+    console.log("FIDELITY_TOTAL 可比=" + cmp + " 不一致=" + diff + " 两边都无答案=" + bothNoAnswer);
+    diffs.forEach((d) => console.log("FIDELITY_DIFF " + d));
+    console.log(cmp < 8 ? "FIDELITY=TOO_FEW_SAMPLES 可比样本 <8，这次对照不算数（别拿它当通过）"
+      : (diff === 0 ? "FIDELITY=PASS 逐例结论一致 ⇒ 允许把 WS 当取证默认传输" : "FIDELITY=FAIL 有 " + diff + " 条不一致 ⇒ WS 不许当默认，先解释每一条"));
+    process.exitCode = cmp >= 8 && diff > 0 ? 2 : 0;
+    return;
+  }
+
+  let budget = LIMIT > 0 ? LIMIT : Infinity;
+  let stopped = false;
+  for (const name of files) {
+    if (stopped) break;
+    let mf;
+    try { mf = JSON.parse(readFileSync(join(OPS, name + ".json"), "utf8")); } catch { console.log("SKIP-MANIFEST unreadable " + name); continue; }
+    const byPage = {};
+    for (const c of (mf.cases || [])) (byPage[c.page] = byPage[c.page] || []).push(c);
+    for (const page of Object.keys(byPage)) {
+      if (stopped) break;
+      const todo = byPage[page].filter((c) => !done.has(name + "|" + c.id));
+      if (!todo.length) continue;
+      stats.pages++;
+      console.log("WSX_GROUP_START page=" + page + " 待跑=" + todo.length + " 累计=" + ((Date.now() - BOOT_T) / 60000).toFixed(1) + "min");
+      try { openPage(page, "", { project: PROJECT }); } catch (e) {
+        for (const c of todo) rows.push(row(name, page, c, "FAILED", "", "open_page 失败：" + String(e.message).slice(0, 70), ""));
+        stats.failed += todo.length;
+        flush();
+        continue;
+      }
+      await sleep(Number(opt("settle", "2200")));
+      const route = String((await wsRoute()) || "");
+      const routeKnown = !!route;
+      const routeOk = routeKnown ? route.includes(page) : null;
+      const allCls = [...new Set(todo.flatMap((c) => classesOf(c.action + " " + c.expected)))];
+      stats.probes += allCls.length;
+      const pr = allCls.length ? await probeSet(await wsPage(), allCls) : { map: {}, broken: false };
+      const dom = pr.map;
+      if (pr.broken) console.log("WSX_PROBE_BROKEN page=" + page + " ⇒ 该组探针不采信");
+      for (const c of todo) {
+        const cls = classesOf(c.action + " " + c.expected);
+        const observed = "top=" + (route || (routeKnown ? "?" : "(落点未取证)")) + (routeOk === false ? " ≠ " + page : "") +
+          " | dom: " + (cls.length ? cls.map((s) => s + ":" + (dom[s] || "no-answer")).join(" ") : "(本条没点名类名)") +
+          " | ws-route+ws-probe" + (pr.broken ? " | probe-broken" : "");
+        if (c.requiresReal === true) {
+          stats.skipReal++;
+          rows.push(row(name, page, c, "SKIPPED", route, "requiresReal ⇒ 本切片只跑 mock 产物", observed));
+        } else if (TAP_RE.test(String(c.action || ""))) {
+          stats.skipTap++;
+          rows.push(row(name, page, c, "SKIPPED", route, "action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接", observed));
+        } else if (routeOk === false) {
+          stats.failed++;
+          rows.push(row(name, page, c, "FAILED", route, "落在别的页（页内守卫或路由重定向），须人判", observed));
+        } else if (!cls.length && !FRAME_RE.test(String(c.evidence || ""))) {
+          stats.skipNoCrit++;
+          rows.push(row(name, page, c, "SKIPPED", route, "判据未点名可观测物件（既无类名也不要求出帧）⇒ 没有可判的东西，不能记 EXECUTED", observed));
+        } else if (!routeKnown) {
+          stats.skipRoute++;
+          rows.push(row(name, page, c, "SKIPPED", route, "WS currentPage() 没给结果 ⇒ 不知是否已在 " + page + "，答案无法归属，待重跑", observed));
+        } else {
+          const miss = [];
+          let evid = "";
+          if (FRAME_RE.test(String(c.evidence || "")) || cls.length) {
+            const f = join(SHOT_DIR, name + "-" + c.id + "-after.png");
+            try {
+              rmSync(f, { force: true });
+              shot(f, { project: PROJECT });
+              const sz = existsSync(f) ? statSync(f).size : 0;
+              if (sz > 3000) { evid = relOf(f) + "(" + sz + "B)"; stats.shots++; } else miss.push(relOf(f) + "(仅 " + sz + "B，不当证据)");
+            } catch (e) { miss.push(relOf(f) + "(未写出:" + String(e.message).slice(0, 50) + ")"); }
+          }
+          const answered = cls.filter((s) => verdictOf(dom[s]) !== "no-answer");
+          if (!evid && !answered.length) {
+            stats.skipMiss++;
+            rows.push(row(name, page, c, "SKIPPED", route, "出帧失败且探针无有效答案（miss=" + miss.join(";") + "）⇒ 不记 EXECUTED", observed, "", miss));
+          } else {
+            stats.executed++;
+            rows.push(row(name, page, c, "EXECUTED", route, "", observed, evid, miss));
+          }
+        }
+        if (--budget <= 0) { stopped = true; break; }
+      }
+      flush();
+      console.log("WSX_GROUP page=" + page + " 本次新行=" + rows.length + " executed=" + stats.executed + " failed=" + stats.failed +
+        " skipped=" + (stats.skipTap + stats.skipReal + stats.skipRoute + stats.skipNoCrit + stats.skipMiss) +
+        " 出帧=" + stats.shots + " ws重试=" + wsErrs + " 连接次数=" + conns + " 已跑=" + ((Date.now() - BOOT_T) / 60000).toFixed(1) + "min");
+    }
+  }
+
+  const all = flush(true);
+  const dupNew = rows.length - new Set(rows.map((r) => r.manifest + "|" + r.id)).size;
+  const bad = all.filter((r) => !["EXECUTED", "FAILED", "SKIPPED"].includes(r.status));
+  const holes = all.filter(evidenceHole);
+  console.log("WSX_ROWS new=" + rows.length + " merged=" + all.length + " 之前已有=" + (prior.results || []).length + " 重复新行=" + dupNew);
+  console.log("WSX_STATS executed=" + stats.executed + " failed=" + stats.failed + " skipped=" +
+    (stats.skipTap + stats.skipReal + stats.skipRoute + stats.skipNoCrit + stats.skipMiss) +
+    "(交互动词=" + stats.skipTap + " requiresReal=" + stats.skipReal + " 落点未取证=" + stats.skipRoute +
+    " 无可判物件=" + stats.skipNoCrit + " 出帧失败=" + stats.skipMiss + ") 页组=" + stats.pages +
+    " 探针条数=" + stats.probes + " 出帧=" + stats.shots + " ws重试=" + wsErrs + " 连接次数=" + conns);
+  const st = {};
+  for (const r of all) st[r.status] = (st[r.status] || 0) + 1;
+  console.log("WSX_STATUS_ALL " + Object.keys(st).sort().map((k) => k + "=" + st[k]).join(" "));
+  console.log("WSX_EVIDENCE_HOLE " + holes.length + (holes.length ? " 条：" + holes.slice(0, 8).map((r) => r.manifest + "/" + r.id).join(",") : ""));
+  const fails = [];
+  if (!rows.length) fails.push("一行都没产生（要么全跑过了，要么筛选把用例全挡住了 ⇒ 这不叫跑完）");
+  if (dupNew) fails.push("重复 manifest|id " + dupNew + " 条");
+  if (bad.length) fails.push("非法状态 " + bad.length + " 条");
+  if (holes.length) fails.push(holes.length + " 条 EXECUTED 没有任何证据 ⇒ 没有证据的绿不许入账");
+  if (all.length !== (prior.results || []).length + rows.length - dupNew) fails.push("合并后总数对不上");
+  if (fails.length) { console.log("WSX_RESULT=FAIL reason=" + fails.join(" / ") + " ⇒ 结论不落盘"); process.exit(2); }
+  console.log("WSX_WRITTEN=" + relOf(RES) + " results=" + all.length);
+  console.log("WSX_SCOPE=observe-only（交互型与 requiresReal 未跑；这不是一轮完整的执行轮）");
+  console.log("WSX_RESULT=OK");
+}
+main().catch((e) => {
+  console.log("WSX_RESULT=FAIL stage=uncaught msg=" + String((e && e.stack) || e).split("\n")[0].slice(0, 180));
+  flush();
+  process.exit(2);
+});

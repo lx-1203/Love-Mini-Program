@@ -510,7 +510,7 @@ var BACKEND_MARK = /(后端|服务端|Controller|Repository|mvnw|数据库|SQL|m
 var PROSE_BRACKET = { spans: 0, tokens: 0, unbalanced: 0, samples: [] };
 /** 台账壳否决掉的"别的载体混进来的同名判点"，逐条留名——否决必须可清点，否则就等于"规则悄悄改了考卷" */
 var RETIRED_VETO = { probes: 0, items: {} };
-var BRACKET_BASE = { spans: 0, tokens: 0, unbalanced: 0 };
+var BRACKET_BASE = { spans: 0, tokens: 0, unbalanced: 0, samples: 0 };
 function stripProseBrackets(text) {
   var s = String(text);
   var open = (s.match(/⟨/g) || []).length;
@@ -722,7 +722,7 @@ function probeExtractSelfcheck() {
     if (delims) errs.push("有 " + delims + " 个壳跨子句分隔符：会被 clausesOf 劈开 ⇒ 跑 scripts/qa/normalize-bracket-spans.mjs --apply");
   } catch (e) { errs.push("台账读不到，无法验说明壳：" + String(e.message).slice(0, 60)); }
   console.log("PROSE_BRACKET_SELFCHECK spans=" + PROSE_BRACKET.spans + " unbalanced=" + PROSE_BRACKET.unbalanced);
-  BRACKET_BASE = { spans: PROSE_BRACKET.spans, tokens: PROSE_BRACKET.tokens, unbalanced: PROSE_BRACKET.unbalanced };
+  BRACKET_BASE = { spans: PROSE_BRACKET.spans, tokens: PROSE_BRACKET.tokens, unbalanced: PROSE_BRACKET.unbalanced, samples: PROSE_BRACKET.samples.length };
   console.log("PROBE_SELFCHECK_CASES=" + CASES.length + " SUPPRESSED=" + suppressed + " KEPT=" + kept +
     (errs.length ? " PROBE_SELFCHECK_RESULT=FAIL " + errs.join(" / ") : " PROBE_SELFCHECK_RESULT=OK"));
   return errs.length;
@@ -1663,7 +1663,7 @@ function main() {
     " suppressed-ident-tokens=" + (PROSE_BRACKET.tokens - BRACKET_BASE.tokens) +
     " unbalanced=" + (PROSE_BRACKET.unbalanced - BRACKET_BASE.unbalanced) +
     (PROSE_BRACKET.unbalanced > BRACKET_BASE.unbalanced ? "  PROSE_BRACKET_UNBALANCED_WARN=有 ⟨ 未闭合，其后的内容按说明处理（不再抽判点）" : ""));
-  PROSE_BRACKET.samples.forEach(function (t) { console.log("  BRACKET_UNBALANCED_SAMPLE=" + t); });
+  PROSE_BRACKET.samples.slice(BRACKET_BASE.samples).forEach(function (t) { console.log("  BRACKET_UNBALANCED_SAMPLE=" + t); });
   console.log("PROBE_VETOED_BY_LEDGER_SHELL=" + RETIRED_VETO.probes + " 涉及条目=" + Object.keys(RETIRED_VETO.items).length +
     "（被否决的都是非台账来源的同名判点；逐条名字见各 item.notes）");
   Object.keys(RETIRED_VETO.items).slice(0, 8).forEach(function (id) {
