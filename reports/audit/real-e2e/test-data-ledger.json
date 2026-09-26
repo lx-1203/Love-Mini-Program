@@ -1,0 +1,65 @@
+{
+ "updatedAt": "2026-09-26T14:11:07.371Z",
+ "entries": [
+  {
+   "kind": "post",
+   "key": "236",
+   "note": "G8 环内按 id 写入/回读过的行",
+   "file": "g8-rings.txt",
+   "firstSeen": "2026-09-26T14:11:07.370Z"
+  },
+  {
+   "kind": "comment",
+   "key": "1205",
+   "note": "同一行原文：G8_ARTIFACTS=posts.id=236 ; comments.",
+   "file": "g8-rings.txt",
+   "firstSeen": "2026-09-26T14:11:07.370Z"
+  },
+  {
+   "kind": "title",
+   "key": "G8取证2609250743号",
+   "note": "按命名前缀可反查的测试数据",
+   "file": "g8-rings.txt",
+   "firstSeen": "2026-09-26T14:11:07.370Z"
+  },
+  {
+   "kind": "user",
+   "key": "100151",
+   "note": "同一行原文：- 身份账号：`users.",
+   "file": "summary.md",
+   "firstSeen": "2026-09-26T14:11:07.370Z"
+  },
+  {
+   "kind": "posts",
+   "key": "270",
+   "note": "只在报告文字里出现（原始取证日志已被后一次 G8 覆盖，不可机器复核）",
+   "file": "reports/audit/round-7/round7-final-report.md",
+   "firstSeen": "2026-09-26T14:11:07.371Z",
+   "weak": true
+  },
+  {
+   "kind": "comments",
+   "key": "1238",
+   "note": "只在报告文字里出现（原始取证日志已被后一次 G8 覆盖，不可机器复核）",
+   "file": "reports/audit/round-7/round7-final-report.md",
+   "firstSeen": "2026-09-26T14:11:07.371Z",
+   "weak": true
+  },
+  {
+   "kind": "campus_topics",
+   "key": "299",
+   "note": "只在报告文字里出现（原始取证日志已被后一次 G8 覆盖，不可机器复核）",
+   "file": "reports/audit/round-7/round7-final-report.md",
+   "firstSeen": "2026-09-26T14:11:07.371Z",
+   "weak": true
+  },
+  {
+   "kind": "campus_replies",
+   "key": "31",
+   "note": "只在报告文字里出现（原始取证日志已被后一次 G8 覆盖，不可机器复核）",
+   "file": "reports/audit/round-7/round7-final-report.md",
+   "firstSeen": "2026-09-26T14:11:07.371Z",
+   "weak": true
+  }
+ ]
+}
