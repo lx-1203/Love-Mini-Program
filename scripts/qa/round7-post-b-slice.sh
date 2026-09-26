@@ -23,7 +23,7 @@ echo "== 1) 前置补齐后的重测（游客档 / 带 URL 参数的两个路由
   --out reports/audit/round-7/interact-b2 --identity guest --manifests PAGES-LOGIN-INDEX
 "$NODE" scripts/qa/r-exec-cli.mjs --project apps/client/dist/build/mp-weixin \
   --out reports/audit/round-7/interact-b2 \
-  --manifests SUBPACKAGES-CAMPUS-CAMPUS-INDEX,SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING
+  --manifests SUBPACKAGES-CAMPUS-CAMPUS-INDEX,SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING,次要18
 
 echo "== 2) 与冻结快照对账：迁移必须逐条有归因，不许把"未测变已测"报成修好"
 "$NODE" scripts/qa/verify-exec-delta.mjs \
