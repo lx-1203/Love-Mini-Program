@@ -34,7 +34,7 @@ const RDIR = join(REPO, "reports", "audit", ROUND);
 /* 步骤表：write=true 的步骤默认不跑（要 --allow-write）；device=true 的还要设备空着。 */
 const STEPS = [
   { id: "queue-tally", kind: "check", note: "读排队器状态：守恒 OK+FAIL+NOT_RUN==腿数，红腿逐条点名" },
-  { id: "exec-frames-to-corpus", file: "scripts/qa/exec-frames-to-corpus.mjs", kind: "gate", write: true, args: ["--round", ROUND], note: "执行轮出的帧登记进语料库（#52）" },
+  { id: "exec-frames-to-corpus", file: "scripts/qa/exec-frames-to-corpus.mjs", kind: "gate", write: true, eachExecResults: true, args: [], note: "执行轮出的帧登记进语料库（#52）：按盘上真实存在的 exec-results.json 一条一步，identity 从结果文件里读" },
   { id: "verify-evidence-corpus", file: "scripts/qa/verify-evidence-corpus.mjs", kind: "gate", args: ["--round", ROUND], note: "证据索引与盘上一致：路径存在、哈希一致（帧入账后必须复量）" },
   { id: "verdict-from-frames", file: "scripts/qa/verdict-from-frames.mjs", kind: "gate", write: true, args: ["--round", ROUND], note: "把帧级判决从证据里读出来（① 要的帧级终态）" },
   { id: "audit-frame-verdicts", file: "scripts/qa/audit-frame-verdicts.mjs", kind: "gate", args: ["--round", ROUND], note: "帧判决的审计：有没有拿没背书的判决落账" },
@@ -54,6 +54,31 @@ const STEPS = [
   { id: "emit-round-report", file: "scripts/qa/emit-round-report.mjs", kind: "gate", write: true, needs: "--with-report", args: [], note: "带溯源终报（面板含本轮所有新门）" },
   { id: "make-commit-list", file: "scripts/qa/make-commit-list.mjs", kind: "gate", write: false, needs: "--with-report", args: [], note: "显式路径提交清单（帧目录仍 HOLDBACK，交给人点名）" },
 ];
+/* 手工列一条 exec 索引步骤覆盖不了本轮真实存在的多条执行腿（A-mock / A-real / guest-real / r8 补腿），
+   而且现量发现过一个接线洞：这一步原先传 --round，而索引器只认 --results/--corpus ⇒ 一跑到这里就红。
+   改成按盘上实际存在的 exec-* 结果目录展开，一条腿一步，identity 从结果文件里读而不是我手填。 */
+{
+  const roundRel = "reports/audit/" + ROUND;
+  const roundAbs = join(REPO, roundRel);
+  const tplIdx = STEPS.findIndex((s) => s.eachExecResults);
+  if (tplIdx >= 0) {
+    const tpl = STEPS[tplIdx];
+    const made = [];
+    const legs = existsSync(roundAbs) ? readdirSync(roundAbs).filter((d) => /^exec-/.test(d)).sort() : [];
+    for (const d of legs) {
+      const rel = roundRel + "/" + d + "/exec-results.json";
+      if (!existsSync(join(REPO, rel))) continue;
+      let ident = "?";
+      try { ident = String(JSON.parse(readFileSync(join(REPO, rel), "utf8")).identity || "?"); } catch { continue; }
+      made.push({ ...tpl, id: tpl.id + ":" + d, args: ["--results", rel, "--corpus", roundRel + "/" + d, "--identity", ident], note: tpl.note + "（这一腿 identity=" + ident + "）" });
+    }
+    /* 一条都没找到不能读成"没有东西要索引 ⇒ 过"：留一条空参调用，
+       让索引器自己的「不许拿空输入产出一个看起来完整的索引」把这轮掐红。 */
+    if (!made.length) made.push({ ...tpl, id: tpl.id + ":EMPTY", args: [], note: tpl.note + "（盘上没有 exec-* 结果目录 ⇒ 这一步必然红，而红是对的）" });
+    STEPS.splice(tplIdx, 1, ...made);
+    console.log("CLOSEOUT_EXPANDED " + tpl.id + " → " + made.length + " 步（按 " + roundRel + "/exec-* 现量展开）");
+  }
+}
 {
   const missing = STEPS.filter((s) => s.file && !existsSync(join(REPO, s.file)));
   if (missing.length) { console.log("CLOSEOUT_RESULT=FAIL reason=步骤表里这些脚本不存在（写错一个文件名就会静默少跑一步）：" + missing.map((m) => m.id + "→" + m.file).join(", ")); process.exit(2); }
