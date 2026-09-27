@@ -4002,6 +4002,37 @@ DISCOVER-014 的处置列原本写着"二选一，收口时给去向"。**不采
 3. 队列 11:50 重新起跑（`tmp/qa/stage7-queue-3.log`），起跑 4 条腿全绿、tab-bar 门 `TABBARSRC_RESULT=PASS` 在内。
 **这条记录存在的意义**：凡是"只读地看一眼"的工具，只要它碰设备或碰库，就必须像写工具一样被问一句"dry 时你占不占资源"。以后新写门禁类工具，`--dry` 的前置动作（租约、G8 类写库前置、--write 型副作用）要一起被 `--dry` 关掉，而不是只关掉最后那次 `writeFileSync`。
 
+## 127 两笔登记把"去向"补满，面板接线，两次显式路径提交（2026-09-27 11:54-11:58，#60/#72/#76/#77/#40）
+- **判据台欠帧轴**：`verify-criteria-frame-debt` 的 `无去向=4`（MP-R2-PAGES-MESSAGES-INDEX-019、CIRCLES-INDEX-001、VILLAGE-POST-006、HOME-INDEX-003）逐条登记去向 —— 共同形状是"判据讲的是行为/观感，没点名帧上要看见什么物件"，所以欠的是**一次判据收紧**而不是一张帧（点名之前出帧只会得到一张没人能判的图）。登记后 `CRITFRAME 欠帧=68 有去向=68 无去向=0 → PASS`，并且把终报面板里这条门**升级成 --strict**（68/68 是真的，升级后"以后掉了去向"会当场红）。
+- **台账源码级判点轴**：`--strict-src-only` 报 `欠帧且无声明=13` —— 这 13 行状态列写着 `已修复（源码级判点…）`，声明在**人话里**但没有机器可读的去向（正是"限定语态词表藏债"那一族）。新建派生器 `scripts/qa/emit-srconly-register-classify.mjs`：ids 现取门的 `FRAMECOV_SRC_OWED` 行，reason 取该行**状态列括号里自己那句声明** + 证据列 + statusEvidence，nextCarrier 取处置列原文（里面本来就写着"可重跑 verify-source-shape.mjs 复现"）⇒ 我不另写一句"帧判不了"。落登记 `条目 68 → 81`，复量 `C登记=54 欠帧且无声明=0 → FRAMECOV_RESULT=PASS`。#77 结案。
+- 顺手把 SRCONLY 的打印上限从 10 抬到 40：卡在 10 会让人拿着"另有 3 行"去猜名单，而登记必须逐条点名（猜不得）。
+- 面板接线：`G.tabBar` 进 `emit-round-report`（新门不接线=下一轮没人知道它存在）。同一次改动里我把注入代码放到了一条多行模板串的**中间**，结果门把自己的源码当读数打印了出来 —— 症状很荒谬但一眼能认出，撤掉后改成直接抬打印上限。教训：按"行"插入多行语句内部会插进字符串里，结构插入要找语句结束点而不是 `\n`。
+- 两次提交（都是逐条点名，`git add --pathspec-from-file`，未用 `-A`）：
+  `34b6fb3d` = 收口波机械层 127 个路径（scripts/qa 100 + 判据台/台账/notes 27；`.bak` 与敏感件经 grep 核验为 0）；
+  `fe3338d2` = 产品侧 53 个路径（client_src + admin_src 两组，来自 commit-manifest；pre-commit 的 mp-image strict lint 通过）。
+  `reports/screenshots/**` 9 个帧目录仍是 HOLDBACK（二进制大图，默认不进清单），队列正在写的 evidence 组（177 路径）留到 stage-7 跑完按同一份清单再收一次 —— 那时才是 ⑤ 的终报与终版提交。
+
+## 128 现场交接：stage-7 正在跑，跑完之后按这个顺序收（2026-09-27 12:03）
+**正在跑**：`scripts/qa/run-ui-queue.mjs --legs scripts/qa/ui-queue.round7-stage7.json`（25 条腿，串行，独占设备）。
+日志 `tmp/qa/stage7-queue-3.log`，每条腿自己的日志在 `reports/audit/round-7/ui-queue/<腿名>.log`，状态 `reports/audit/round-7/queue-state.json`。
+截至本节：腿 1-9 全绿（stamp --write、refreeze、--copy、选择器门、tab-bar 门、三档重建、band-freshness `PASS bands=3`、开窗），腿 10 `exec-A-mock-stage7`（1107 例）11:56:07 起跑。
+中途我提交过两次（`34b6fb3d`、`fe3338d2`）⇒ 起跑前后 HEAD 不同，各条腿的 `gitSha` 会分两批；提交没有改文件字节，所以档位与判据的内容对应关系不变，但终报里 `verify-provenance-all` 若把"gitSha 是否等于当前 HEAD"当判点，需要按**每条腿自己的 SHA** 读，不要拿单一 HEAD 去套（这是本文件 §101 那一族的读法约束）。
+
+**跑完之后依次做（每条都有现成载具，不用重写）**：
+1. 读 `QUEUE_TALLY` / `QUEUE_RESULT` 并把 `OK+FAIL+NOT_RUN == 25` 的守恒核对抄进报告；红腿逐条读它自己的 log，不许用"重跑一次绿了"顶替（advisory 腿会记成 `ADVISORY_RED` 且后面的腿照跑）。
+2. 取景腿出的帧 → `exec-frames-to-corpus` 登记 → 重建权威证据索引（#52），再跑 `audit-frame-verdicts` / `verdict-from-frames` 把 ① 的 68 条欠帧推到帧级终态（#37/#41/#66）。
+3. `triage-exec-failures --results <新语料> --dist <对应档>`：先看 `TRIAGE_VOCAB`（空转桶必须为 0），再看新增的 `SKIPPED-identity-scope` 桶量到的数（游客腿按裁定不再认领 420 条），最后确认 `unclassified=0`。
+4. `verify-real-coverage`：这一轮起 `REALCOV_IDENTITY_SCOPED 游客轴豁免=` 会报一个不小的数，那不是覆盖退化 —— 双身份轴已由 c.identities 折算，判点仍在"登录侧 + （未被豁免的）游客侧"。
+5. G8 十环 + RING6 严格化、后台列表「评论」列真机帧（#64）；G9 素材复量。
+6. `emit-round-report`（面板已接 `G.tabBar` 且 `critFrame` 走 `--strict`）→ 终报 §10 写"本轮范围内还剩什么"，再按 `.zcode/tmp/round6-exec/commit-manifest.json` 的 evidence 组做终版提交（帧目录仍 HOLDBACK，要归档需人显式点名）。
+
+**这一节里没被任何门覆盖、必须由人判的三件**（objective ④/② 的尾巴，写清楚免得下一轮当"已收口"读）：
+- `.tab-bar` 本体仍是两处字面量（单点化按 (b) 口径成立 + 静态门拦漂移）；要走到 (a) 需要先把 token 注入 custom-tab-bar 作用域并验证真机生效，再配改前/改后对拍帧。
+- ChatInput 的"删除后不破版"复验：帧已进 mock 配方（`chat-session-inputbar-after-chatinput-delete`），但判点要求产物 gitSha 不早于删除提交 —— 看 `exec-A-mock-stage7` 的 gitSha 是否满足，不满足就重拍，不许拿旧帧结案。
+- 台账里 4 行 `DISPO` 刻意留给人判（1 行标记「本轮未动」无映射规则 + 3 行 `并入-不另立案`，它们的欠款应挂在并案目标行上）。
+
+
+
 
 
 

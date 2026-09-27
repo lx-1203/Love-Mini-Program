@@ -180,8 +180,11 @@ for (const x of c.plannedButNotShoot) console.log("  非SHOOT " + x);
 for (const n of r.naked) console.log(`  FRAMECOV_NAKED ${n.id} [${n.status}] page=${String(n.page).slice(0, 60)} —— 这一行既不会被拍帧，也没有归置/登记去向`);
 const st = r.src || { n: 0, plan: [], triage: [], extra: [], owed: [] };
 console.log(`FRAMECOV_SRCONLY 行数=${st.n}（状态词"已修复（源码级判点…"打头的） A配方SHOOT=${st.plan.length} B归置=${st.triage.length} C登记=${st.extra.length} 欠帧且无声明=${st.owed.length}`);
-for (const x of st.owed.slice(0, 10)) console.log(`  FRAMECOV_SRC_OWED ${x.id} [${x.status}] page=${String(x.page).slice(0, 52)}`);
-if (st.owed.length > 10) console.log(`  …另有 ${st.owed.length - 10} 行同类（列在 FRAMECOV_SRCONLY 的计数里，一个都没漏算）`);
+
+/* 打印上限从 10 抬到 40：这一桶最多就 13 行，卡在 10 会让人拿着"另有 3 行"去猜名单
+   （登记去向要逐条点名，猜不得）。 */
+for (const x of st.owed.slice(0, 40)) console.log(`  FRAMECOV_SRC_OWED ${x.id} [${x.status}] page=${String(x.page).slice(0, 52)}`);
+if (st.owed.length > 40) console.log(`  …另有 ${st.owed.length - 40} 行同类（列在 FRAMECOV_SRCONLY 的计数里，一个都没漏算）`);
 const total = c.shoot.length + c.triage.length + c.extra.length + c.plannedButNotShoot.length + r.naked.length;
 console.log(`FRAMECOV_CONSERVATION in=${r.rows.length} out=${total} ${total === r.rows.length ? "OK" : "MISMATCH（有行没落到任何去向桶）"}`);
 if (total !== r.rows.length) { console.log("FRAMECOV_RESULT=FAIL reason=分桶不守恒"); process.exit(2); }

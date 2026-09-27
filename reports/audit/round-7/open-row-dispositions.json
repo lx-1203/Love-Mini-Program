@@ -1,0 +1,612 @@
+{
+ "$comment": "台账里那些「不是欠一张帧」的行，逐条写清欠的是什么、由哪个载具去还。verify-frame-debt-coverage.mjs 的 C 类去向就读这个文件的 dispositions[]。",
+ "$rule": "只有确实无法由帧判、或需要先拍板/换载体的行才登记在这里。能被帧判的行必须去取景配方（否则这条登记表就成了把帧债洗成『已归置』的后门）。",
+ "$sources": [
+  "reports/audit/round-7/rulings-evidence.json（6 行逐条机器可核证据：54 条 machineCheckable / 22 条 notCheckable / 41 条复核命令）",
+  "scripts/qa/verify-status-vs-disposition.mjs（状态列与处置列矛盾 10 行）"
+ ],
+ "dispositions": [
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-014",
+   "kind": "carrier_missing",
+   "reason": "代码半已可静态判（mapToMessageSession 原样透传预览字段，store:272 在 HEAD 可重跑），数据半不可判：执行器的折叠探针只返回节点计数（r-exec-cli.mjs:141-160），而该字符串在全部代码与种子中零命中 ⇒ 没有任何现有载具能读出「真实数据里预览字段是什么」。",
+   "nextCarrier": "真实模式一次带后端的取景 + 后端读数（需要 apps/api/restart-backend.ps1 里的凭据，运行时读取、不上命令行），或把这条改成只主张代码半的静态判点",
+   "also": "同一行的『15 消费页』表述经核对是 13 页，落账时一并更正"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
+   "kind": "becomes_defect",
+   "reason": "原判『需人复验』其实可以静态判，而且算出来是重叠：底部固定栏基础留白 23rpx、挂图态 67rpx，但表情面板再加 313rpx 且不在 :781 的条件里 ⇒ 该态正文末条被压住是可从代码推定的结论，不是只能靠眼睛。",
+   "nextCarrier": "收口波：给 verify-source-shape.mjs 加一条 SPEC（:781 条件未包含表情面板那支 + 313rpx 量），状态从『人判』改回『待修复』并按判点修",
+   "note": "唯一仍需真机确认的是末条卡片在滚动到底帧里是否可见（要读图），以及 reply+thumb 并发时那 5rpx 余量（行高未显式声明）"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-005",
+   "kind": "static_decidable_option_B",
+   "reason": "定高链这一说在本页不成立：AppShell.wxss:1 的 .shell 没有 display、.shell__body 没有 height ⇒ 配方里那三个 scroll-view 属性是惰性的；而 滚动-底部 帧已在盘上且与 默认 帧哈希不同 ⇒ 『滚到底看不到』这个断言已被现成帧否证一半。",
+   "nextCarrier": "收口波：把本行改写成可判静态命题（AppShell 定高链缺失 = 结构事实）＋引用已在盘的滚动帧，不再挂『需裁决』"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001",
+   "kind": "premise_partly_false",
+   "reason": "字数阈值分歧的前提不成立：客户端各处都是 500（constants/village.ts:18、store :445），limits.ts:47 那个 1000 是没人读的死值，服务端 5000；post.vue 的 --over 分支因 maxlength=500 根本到不了 ⇒ 两页语义并不分歧，分歧在『文档常量与真实上限不同源』。",
+   "nextCarrier": "收口波：SPEC 断言 500 单一来源 + 删掉或接上 limits.ts:47 的死值（后者属设计决策，见 MP-R7CLIENT-LIMITS-GIF-001）"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
+   "kind": "unsatisfiable_in_mock",
+   "reason": "原判据要求 mock 种子补 warmPeople>=4 / assistant>=1：实测 mock 构建根本不请求 dashboard（store:642），服务端种子恰好 3 条会话，而 assistant>=1 这个条件在现有数据上是空真（vacuous）⇒ 不是没做，是这一半在 mock 档里无法被满足。",
+   "nextCarrier": "真实档一条带 dashboard 数据的腿（与 requiresReal 那 236 例同一批），或把断言改写成不依赖种子的形式"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-004",
+   "kind": "harness_limit",
+   "reason": "字级判定的根因是设备像素比：仓里没有任何 dpr 阈值常量，巡检记录 devicePixelRatio=3 但出图约为 1x；静态 px/字形算术（0.504 px/rpx）能算出该不该看得清，脚本无权改模拟器档位。",
+   "nextCarrier": "把这条从『帧』改成静态算术判点，并在终报口径里注明字级判定需人工辅助帧背书（这是载体限界，不是产品缺陷）"
+  },
+  {
+   "id": "MP-R6EVID-STATE-DUPBYTES-001",
+   "kind": "needs_ruling",
+   "reason": "采集层已收口（权威索引把后到的同字节帧移出 shots[]，原始 corpus 不动）；产品侧仍未定：同页同身份两个『不同状态』出同一张图，可能是状态本身无视觉差异（正常），也可能是状态没施加（缺陷）。这两者要用一次带别名的取景对照才能分。",
+   "nextCarrier": "stage-7 的取景腿按别名重拍这几对，逐对判『无视觉差异』或『未施加』，不许合并成一格"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002",
+   "kind": "static_predicate",
+   "reason": "这一行的判据本来就是删除型（hub 模板与样式里不得再出现 campus-hub__cert-btn / -text），帧这一侧看不到「不存在」这种量，硬拍一张页头帧只会把删除型判点换成主观看图。",
+   "nextCarrier": "已落：verify-source-shape.mjs SPEC 该 id 一条 absent 判点（total=88 成立=88 不成立=0 的 dry 复跑在案）",
+   "bandCheck": "两档产物 grep 均为 0，已记在 measured 里；面板复跑时若变非 0 就是回潮",
+   "measured": "基线 094f7239：hub.vue 命中 4 处 → HEAD：0 → 两档产物 hub.wxml/hub.wxss：0（本轮实测，见 NOTES §103.1）⇒ 删除确实是本轮落的，判点也能红（把它加回去立刻不成立）"
+  },
+  {
+   "id": "MP-R2-VILLAGE-INDEX-011",
+   "kind": "attribution_wrong_in_ledger",
+   "reason": "台账那句「HEAD 版 ChannelTabs.vue 该串计 2 处，工作树计 0 处」本轮复核为**错**：update:modelValue 在基线 094f7239、HEAD、两档产物里都是 0 次（裸 modelValue 才有 4 次，那是合法 props 名）。⇒ 这个删除早于本轮基线，本行不该挂在「已修复待复验」，应记「本轮前落地/保留」，否则下一轮会以为还欠一次复验。",
+   "nextCarrier": "收口波改第 6 列为「保留-本轮前落地」并在 statusEvidence 写明上述四组计数；SPEC 该 id 已改成两半都核（absent update:modelValue + present modelValue），只核一半就是空判点",
+   "bandCheck": "复跑判据台时若仍报 NOT_IN_EITHER，就是劈断问题未修好，要去改抽取器而不是改本行",
+   "measured": "git show 094f7239|HEAD 计数=0/0；两档 ChannelTabs.js grep -F update:modelValue=0/0；裸 modelValue=4（HEAD 与工作树同）",
+   "notWashing": "这是把行从『等复验』改成『本轮前落地』，方向是更严格的事实核对，不是把红洗成绿——判点仍然在跑，回潮会红"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-105",
+   "kind": "needs_error_state_carrier",
+   "reason": "配方里它是 NOT_SHOOTABLE：错误态要点「重试」才有东西可看，而取景腿现在没有让列表请求失败的前置。帧不是不能判，是缺一把失败注入。",
+   "nextCarrier": "stage-7：给这一行补 precondition（把列表接口打失败或用离线开关），或改成 SPEC 静态判点（CommunityFeed 的 catch 里确实清空 failedKeys + 重试按钮绑定 handleRefresh）；两者任选其一，但必须留下可重跑判据",
+   "measured": "本轮未量到该态 ⇒ 不许用『帧拍不到』当作免罪理由收口，这正是不许洗红的那一类"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-018",
+   "kind": "console_channel_not_frame",
+   "reason": "本行要的是「catch 分支补了 console.warn 留痕」，那是 console 通道读数量，不是像素；配方里 REWRITE 是对的（判据没点名可拍的物件）。",
+   "nextCarrier": "SPEC 静态判点（fetchVisitors/markInteractionRead 的 catch 里 console.warn 计数）+ 真实模式一次带 console 采集的腿；两者都登记进 stage-7 清单",
+   "measured": "执行器行有 console 字段，本轮 A-mock/real 两把的 console 采集是否为空需要在收口时按 id 复查（不在本行下结论）"
+  },
+  {
+   "id": "MP-R7CLIENT-UPLOAD-EXT-001",
+   "kind": "not_frame_observable_declared",
+   "reason": "Two quantities no frame carries: which module owns the list (single source) and set-equality with the backend whitelist. A frame can only show the outcome of one chosen file, never that the other four call sites read the same array.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:1005 (carriers apps/client/src/utils/media.ts + services/api.ts + services/voice-upload.ts) + a backend assertion on apps/api limits; the 处置's own owed items (toast frame for a bad extension) are a separate sub-claim, not this 判据",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 共享上传路径有客户端扩展名闸门，白名单是单一来源且与后端同集合）"
+  },
+  {
+   "id": "MP-R2-POST-009",
+   "kind": "judged_elsewhere",
+   "reason": "Already judged by an EXECUTED case that names this id: ops case VP36 pins 「当前锚点 post.vue:199 joinedCircles=circleStore.joinedCircles.slice(0,8)」 and asserts 「只列已加入圈（≤8）」; it ran with status=EXECUTED, failureReason empty.",
+   "nextCarrier": "reports/audit/round-7/ops/SUBPACKAGES-VILLAGE-VILLAGE-POST.json (VP36) executed in reports/audit/round-7/exec-A-real-r7final/exec-results.json, evidence reports/screenshots/round-7-final-A-real/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP36-after.png",
+   "basis": "只读复判 MISLABELLED_ALREADY_JUDGED_ELSEWHERE（tmp/qa/srconly-owed-plan.json；引文 发布页圈子选择不再铺 store 全量，而是消费截断后的 joinedCircles）"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-009",
+   "kind": "not_frame_observable_declared",
+   "reason": "Date-parsing strategy inside one function; the rendered result is identical for every input the two strategies agree on, and the row's 处置 states the病灶 never existed in any reachable version (「改判：保留-判据不成立」).",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:341",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 isAdult 用分段年月日构造本地 Date 并与本地满 18 界点比较，不做整串 UTC 解析）"
+  },
+  {
+   "id": "MP-R2-POST-012",
+   "kind": "not_frame_observable_declared",
+   "reason": "The quantity is an argument handed to a native picker (wx.chooseImage count) — the native sheet is not part of the page frame and the page itself renders nothing different. The ops case that names this id (VP39) asserts cancel-silence and size limits, not the cap value, so it is not a substitute carrier.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:59 (re: /count:\\s*POST_MAX_IMAGES/)",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 选图一次可选项上限取 POST_MAX_IMAGES，不再写死小于上限的数）"
+  },
+  {
+   "id": "MP-R2-PUB-113",
+   "kind": "judged_elsewhere",
+   "reason": "PUB33 names this id, enumerates the same three gates (:381/:393/:439) and asserts the observable consequence 「空快照必须既不写本地也不发 POST /drafts」 with request counting; it is EXECUTED with empty failureReason.",
+   "nextCarrier": "reports/audit/round-7/ops/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json (PUB33) executed in reports/audit/round-7/exec-A-real-r7final/exec-results.json (evidence …/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB33-after.png); structure half stays at SPEC:65",
+   "basis": "只读复判 MISLABELLED_ALREADY_JUDGED_ELSEWHERE（tmp/qa/srconly-owed-plan.json；引文 草稿写入前一律过 hasDraftContent 守卫（本地/后端/入口回设三处），空态不再落草稿）"
+  },
+  {
+   "id": "MP-R2VIS-CONFIG-IMAGES-001",
+   "kind": "not_frame_observable_declared",
+   "reason": "File existence and byte size on three separate carriers (src/static, built static/assets, backend uploads) — a frame shows at most one render site and a broken image there is indistinguishable from a missing src attribute.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:548 (its checks are fs.statSync-based, not regex)",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 config/images.ts 引用的 paw/cat/planet 三枚图标文件确实在盘上（非 0 字节））"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-112",
+   "kind": "not_frame_observable_declared",
+   "reason": "resolveMediaUrl is idempotent on its own output (apps/client/src/utils/media.ts:159-176 returns an already-http/absolute path unchanged, and appendTokenIfMissing guards the token), so a double wrap and a single wrap render the same pixels -- no frame, before or after, can show the difference.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:292 (two absent-regexes, measured 1 hit before / 0 after)",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 数据层不得把 resolveMediaUrl 套在自己的输出上，photoUrl 交原始终路径由模板层单次消费）"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-002",
+   "kind": "not_frame_observable_declared",
+   "reason": "The claim is about which file the declaration sits in; both forms render the same pixels and a tap-through outcome would pass under the WRONG form only if the WXSS one is also present. If an interactive carrier is wanted later it is a tap-result row, not a frame.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:83 (countTemplateEq pointer-events=\"none\" == 0 in WXML + present in WXSS)",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 装饰层不吃点击：pointer-events 走 WXSS，不用 WXML 属性形式（属性形式不改渲染层 hit-test））"
+  },
+  {
+   "id": "MP-R2-PAGES-LOGIN-INDEX-016",
+   "kind": "not_frame_observable_declared",
+   "reason": "The element is inside #ifndef MP-WEIXIN, so it never compiles into the mini program at all: t('login.phoneQuickLogin') occurs twice in the .vue source but only once in the built pages/login/index.js. No mini-program frame can contain a node the band does not build.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:92 (countEq n=2 on source); the H5 band would need a browser carrier that this project does not run",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 H5 手机号入口的 aria-label 与可见文本同取一个 i18n 键（WCAG 2.5.3 名称同源））"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-022",
+   "kind": "not_frame_observable_declared",
+   "reason": "A deleted symbol's absence from source is the whole claim; the page renders exactly as before. The row's own 判据 says absence can only be judged by absent.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:330 (page-scoped product grep for \"toggleSessionPin\")",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 无调用方的 setSessionPinned 旧 action 必须从 store 源码里消失（缺席量只能按 absent 判））"
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-014",
+   "kind": "not_frame_observable_declared",
+   "reason": "Call ordering and in-flight dedupe; the list looks the same either way, and a duplicate request is only visible on the network leg.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:570; the positive carrier is a request-count assertion (kind \"request-count\" already exists in the merged plan)",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 loadActivities 非 force 分支前置在途守卫（activityStore.loading 时直接 return），force 分支仍强制拉）"
+  },
+  {
+   "id": "MP-R2-PROFILE-034",
+   "kind": "not_frame_observable_declared",
+   "reason": "Deletion-only claim about a store instantiation and a lifecycle call; no rendered quantity changes. Note this id has TWO SPEC entries (a duplicate that inflates total=88 over 85 unique ids) and no progress UI exists to point a frame at.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:189 and :447 (duplicate)",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 删除 socialProgressStore 实例化与 onShow 里的 fetchProgress()）"
+  },
+  {
+   "id": "MP-R2-PROFILE-035",
+   "kind": "not_frame_observable_declared",
+   "reason": "Which sink an error goes to is invisible on screen -- a swallowed and a reported failure render the same page.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:508",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 两处 likesStore.fetchLikes() 的 .catch(() => {}) 空兜底改为 captureException 上报）"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-014",
+   "kind": "not_frame_observable_declared",
+   "reason": "The forbidden substitution is pixel-indistinguishable from the required one: --c-text-inverse and --c-bg-container resolve to #FFFFFF in light and to the SAME #1A1F26 in dark (styles/tokens.scss:235, design-variables.scss:235), so no frame in either theme can tell them apart. Only the (C) #fef5f6 sub-item would change pixels and it is explicitly deferred to a colour ruling.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:453",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 三处彩色底上的白色前景改用 var(--c-text-inverse)，并明令禁改 var(--c-bg-container)）"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-009",
+   "kind": "not_frame_observable_declared",
+   "reason": "A var() fallback only takes effect when the token is undefined, and --c-bg-page is defined globally (theme/design-variables.scss:365), so before and after render identically. The merged plan already says this in prose 「这条在帧上永远判不出红绿」 but as a REWRITE row, which the new bucket (correctly) does not accept as a declaration.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:458; corroborating prose: reports/audit/round-7/frameplan-merged.json row MP-R2-CAMPUS-HUB-009 (disposition REWRITE, non-SHOOT)",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 同文件两处 --c-bg-page 兜底值统一：:372 用 #EEF7F2，另一处不得再留 #F0F4F2）"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-011",
+   "kind": "not_frame_observable_declared",
+   "reason": "A v-for key is a Vue reconciliation strategy that never reaches the render tree. The row's own 处置 says 「一帧像素区分不出 key 策略，追加帧只是多一个不可判的欠项」 and the existing plan entry reaches the same conclusion (node-identity would need handle comparison, 「纯截图判不了」).",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:352; also reports/audit/round-7/frameplan-round7-final.json row MP-R2-CAMPUS-HUB-011 (NOT_SHOOTABLE)",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 学校卡列表 key 只能是稳定值 school.id，任何 tab 值不得参与拼接）"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-012",
+   "kind": "not_frame_observable_declared",
+   "reason": "Render-time call count; the plan entry already rules it: 「这是渲染期调用次数，帧与像素两侧都取不到该量」 and explicitly forbids the degenerate text assertion from granting green.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:427; reports/audit/round-7/frameplan-round7-final.json row MP-R2-CAMPUS-HUB-012 (NOT_SHOOTABLE); real carrier would be a render-count instrument that does not exist",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 成员数/动态数每卡只计算一次（模板不得反复调 statsOf））"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
+   "kind": "not_frame_observable_declared",
+   "reason": "Key-namespace shape across two locale files. Both namespaces resolve to the same strings, so every frame is byte-identical before and after.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:953 plus the i18n pairing/orphan gate scripts/qa/verify-i18n-orphan.mjs (棘轮上界 1257 named in the 处置)",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 校园域两级键命名空间已统一：hub 页不再用顶层扁平 campusHub.*，而是与同域其余四页一样的 campus.hub.*）"
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-014",
+   "kind": "not_frame_observable_declared",
+   "reason": "Key provenance again; the observable consequence (wrong thumbnail after deleting a middle image) needs a multi-image picker run, and Vue's reuse happens below the render tree so the frame only shows the end state. NOTE: this row's 处置 self-declares 判据台桶=UNDECIDABLE, so SPEC:226 is a weak carrier and should be re-pointed.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:226 (flag: UNDECIDABLE per the row's own §82 sweep note)",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 配图列表的 v-for key 用图片临时路径而不是下标（删除中间一张时不会让 Vue 复用错节点））"
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-016",
+   "kind": "not_frame_observable_declared",
+   "reason": "Source-file layout; imports are hoisted by the compiler so the shipped module is byte-equivalent in behaviour. NOTE: carrier file listed in SPEC is subpackages/circles/circles/post-topic.vue while the ledger row's 页面 says campus/campus/post-topic -- the two artifacts disagree; flagging rather than resolving. 处置 also self-declares UNDECIDABLE.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:437",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 onLoad 的 import 必须在文件头 import 区，不得夹在脚本中段）"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-009",
+   "kind": "not_frame_observable_declared",
+   "reason": "Shadowed-local removal; both versions render identically (and the same id was retired together with MP-R2-CIRCLES-INDEX-003's dead branch).",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:518",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 删除函数内重复的 useSessionStore 实例化，只保留 setup 顶层一处）"
+  },
+  {
+   "id": "MP-R2-VILLAGE-INDEX-010",
+   "kind": "not_frame_observable_declared",
+   "reason": "Absence of an error-swallowing lambda; the page renders the same on the success path and the row's own §82 sweep says 判据台桶=UNDECIDABLE.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:442",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 删掉 `.catch(() => {})` 这种吞异常的空兜底）"
+  },
+  {
+   "id": "MP-R2-POST-010",
+   "kind": "judged_elsewhere",
+   "reason": "VP37 names this id, asserts the mechanism by row anchor (「异步回调必须因 pageDestroyed 提前 return（成功 Toast 前 :683）」) and the consequence 「不得在已销毁页面弹 Toast」; status=EXECUTED with empty failureReason.",
+   "nextCarrier": "reports/audit/round-7/ops/SUBPACKAGES-VILLAGE-VILLAGE-POST.json (VP37) executed in reports/audit/round-7/exec-A-real-r7final/exec-results.json. Divergence to flag: the sibling PUB32 row for the same mechanism is FAILED in exec-guest-real-only and SKIPPED in exec-A-real-r7final.",
+   "basis": "只读复判 MISLABELLED_ALREADY_JUDGED_ELSEWHERE（tmp/qa/srconly-owed-plan.json；引文 页面销毁标志与卸载钩子在位，成功回调不再在离页后清表单/弹 toast）"
+  },
+  {
+   "id": "MP-R2-POST-011",
+   "kind": "judged_elsewhere",
+   "reason": "VP38 names this id and judges exactly the three call types observably: 「客户端 DELETE /drafts/current 计数=0（出现即 P2/Data 越权）」 + server read-back that the other page's draft survives; status=EXECUTED.",
+   "nextCarrier": "reports/audit/round-7/ops/SUBPACKAGES-VILLAGE-VILLAGE-POST.json (VP38) executed in reports/audit/round-7/exec-A-real-r7final/exec-results.json; the absence-in-source half stays at SPEC:148",
+   "basis": "只读复判 MISLABELLED_ALREADY_JUDGED_ELSEWHERE（tmp/qa/srconly-owed-plan.json；引文 发布页不再触碰后端草稿单例（get/save/deleteDraft 三类调用全部移除，草稿只读本地））"
+  },
+  {
+   "id": "MP-R2-POST-014",
+   "kind": "not_frame_observable_declared",
+   "reason": "Lambda-body shape plus comment presence; nothing rendered changes.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:154 (absent /\\.catch\\(\\(\\)\\s*=>\\s*\\{\\}\\)/) —— the behavioural half is already covered by VP38 (see MP-R2-POST-011)",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 本页不留空兜底 catch（越权调用已整段删除，其余 catch 均带 _e 注释））"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-004",
+   "kind": "not_frame_observable_declared",
+   "reason": "An equal-value token substitution renders identically, so the frame cannot prove WHICH token was used. A rect-radius assertion would catch a 24->40 regression but cannot distinguish var(--r-xl) from a literal 24rpx, which is what the claim asks.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:886",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 24rpx 两处走等值令牌 var(--r-xl, 24rpx)；本文件一次都不许出现 --card-radius）"
+  },
+  {
+   "id": "MP-R2VIS-THEME-DESIGN-VARIABLES-001",
+   "kind": "not_frame_observable_declared",
+   "reason": "Number of declaration sites in a SCSS file. Duplicate definitions that resolve to the same value are invisible; the 处置 further concludes the sp-7/sp-8 double mapping is not a defect.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:175",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 圆角令牌只有唯一一组 $radius-* 声明（双映射收敛为 7 档，不再有第二处定义源））"
+  },
+  {
+   "id": "MP-R2VIS-THEME-DESIGN-VARIABLES-002",
+   "kind": "not_frame_observable_declared",
+   "reason": "Where a custom property is declared (inside @mixin dark-theme-vars under @media prefers-color-scheme) is a token-graph question; both shapes resolve to the same colour. The 处置 overturns the framing outright (「推翻本条的判据框架」).",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:181",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 图上徽标的底色/前景走图片遮罩令牌，不再在暗色变量块里重复定义 --c-text-inverse）"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-001",
+   "kind": "not_frame_observable_declared",
+   "reason": "About the取证 harness itself (scripts/qa/tour-r6.mjs), not the app: no app frame can contain a decision made in the driver. The 处置 also re-triages the row as HARNESS_CALL_DEFECT (「原 P0 不成立：被弹走的不是应用而是取证脚本」).",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:479 (file scripts/qa/tour-r6.mjs)",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 权限抑制点在 wx.* JS 桥那层，且注册型 API（wx.onNeedPrivacyAuthorization）故意不 mock）"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-002",
+   "kind": "not_frame_observable_declared",
+   "reason": "A property of the evidence pipeline's own hashing code (scripts/qa/tour-r6.mjs); it is meta to frames and cannot be an assertion about one.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:488; companion carrier scripts/qa/test-frame-dedupe.cjs",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 帧去重要有整帧内容哈希（sha256 前 16 位），且判等口径是字节全等而非感知哈希）"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-003",
+   "kind": "not_frame_observable_declared",
+   "reason": "Return-value shape of a harness probe function; the consumer is other ledger rows' route evidence, not a picture.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:497; downstream consumer is screenshot-manifest.json's route field",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 probeRoute 不能只取栈顶：必须同时把整条页面栈（top/depth/stack）带回来）"
+  },
+  {
+   "id": "MP-R7-ADMIN-I18N-MISSING-COMMON-001",
+   "kind": "judged_elsewhere",
+   "reason": "This row DOES have a live machine-readable carrier, executed and wired into the report panel (KEYS=1424 BAD=0 after BAD=2), so it is not one of the 'undeclared' cases in substance -- only in format. FLAG: its exemption wording is factually wrong. The row's own evidence says an unresolved key is PAINTED as literal text (「操作列会显示字符串 common.view」), so 「帧这一侧取不到该量」 is false; what is actually missing is a band that can reach apps/admin.",
+   "nextCarrier": "scripts/qa/probe-admin-i18n-keys.mjs --all (per the row's statusEvidence, 2026-09-27 03:12 BAD=0) and its panel wiring G.adminI18n in scripts/qa/emit-round-report.mjs; see reports/audit/round-7/round7-gatepanel.md / round7-final-report.md",
+   "basis": "只读复判 MISLABELLED_ALREADY_JUDGED_ELSEWHERE（tmp/qa/srconly-owed-plan.json；引文 源码级判点＋运行时键解析判点：判据是「页面用到的每个 i18n 键在两份语言包里都解析得到」）"
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-013",
+   "kind": "not_frame_observable_declared",
+   "reason": "Provenance of a derivation source plus the number of refresh call sites; with the backend list mirroring the static one no frame differs. ROW HEALTH: this row's 处置 column is a transcript of prior-round plumbing (STILL_OPEN, §79 状态列归位, §23 转置修复) rather than a decision, and its severity is recorded as 未评 -- the declaration written from it should say so.",
+   "nextCarrier": "SPEC scripts/qa/verify-source-shape.mjs:213",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 校园圈入口的派生源从静态 SCHOOLS 换成后端列表 ref，且 onLoad/onShow/下拉各刷一次）"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-002",
+   "kind": "criteria_needs_tightening",
+   "reason": "REWRITE：原判据要什么：subtitle 改成带插值的「附近有 {n} 位同频的你」，n 取游客可用的 /recommendations/people 计数，无数据时回退现有静态串。源码实际是什么：这条已被一轮已生效裁定正面否掉，不是待修。NotLoggedWaiting.vue:16-32 整段裁定写明本页副标不设计数位、不加 subtitleWithCount 键，模板在 NotLoggedWaiting.vue:72 恒渲染 t('notLoggedWaiting.subtitle')；词条值在 apps/client/src/i18n/locales/zh-CN.ts:686 为「发现更多同频的人」，zh-CN.ts:681-685 又独立记了一次同口径裁定并引 MP-R2-CIRCLES-INDEX-002 的取不到真值就不渲染。判据与该裁定直接冲突，故不能立为帧判点。附带一个路由事实：本组件在 pages/messages/index 的挂载条件是 !sessionStore.isLoggedIn && !useMock()（apps/client/src/pages/messages/index.vue:373），本轮被测产物是 mock 构建，useMock 即 config/env 的 isMockMode（apps/client/src/stores/helpers/use-mock.ts:23），所以这张帧在该 route 上永远取不到。建议改成什么判据：改判为已裁定不修；若仍要留一条可复验判点，写 kind 为 text-equals、target",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=pages/messages/index / frameName=A-MP-R2VIS-PAGES-MESSAGES-INDEX-002）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=REWRITE 与其自己的 why"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-004",
+   "kind": "criteria_needs_tightening",
+   "reason": "NOT_SHOOTABLE：台账自陈本条按未修处理，逐条对源码核对为真，缺的是实现刀加可达性夹具两样。一、判据要求拆掉首节点整图海报：NotLoggedWaiting.vue:62 至 66 至今仍是单张整图 image，src 绑 IMAGE_PATHS.POSTERS.NOT_LOGGED_WAITING（声明在 NotLoggedWaiting.vue:64）。二、要求补 mascot 组件节点与虚线轨道、各格真实头像：组件模板全文只有 NotLoggedWaiting.vue:60-130 的整图加标题副标、四个 icon 行、三枚按钮，无 mascot、无轨道、无头像池任何节点。三、要求补 person-01 到 person-08 头像池循环：零命中。四、要求该页产物注册表补引导弹层组件并在模板引用：零命中。现在拍这张帧只能拍到修前态，判点无从附着。补上实现与夹具后的断言应当长这样：kind 为 selector-absent、target 为 .not-logged__bg（海报整图节点须消失）；kind 为 selector-present、target 为虚线轨道节点与引导弹层节点（两者类名以实现落地为准，本 lane 不预拟不存在的类名）；kind 为 selector-count、expected 为 8，target 为头像池节点，且每个节点 src 互不相同。路由侧还须先解决 mock 不可达：本组件在 pages/messages/index 的挂载条件含 !useMock()（apps/client/src/pages/messages/index",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=pages/messages/index / frameName=A-MP-R2VIS-PAGES-MESSAGES-INDEX-004）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=NOT_SHOOTABLE 与其自己的 why"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-106",
+   "kind": "criteria_needs_tightening",
+   "reason": "NOT_SHOOTABLE：判据自身未收口（原句写明两案待主编排层拍板、收口不代拍），且两案的前置这轮都拿不到。源码实况核对：今日推荐卡的挂载只传 item、loading、like-loading 三个 prop 与 view、like、rotate 三个事件（pages/home/index.vue:337-344），全页对 liked 的检索零命中，即案 B 的前端会话集合未落；点喜欢的处理在 home/index.vue:149-161（只有 likeLoading 重入守卫，无已喜欢集合），换人在 home/index.vue:169-184 走 homeStore.rotateTodayRecommendation。缺的夹具与前置：案 A 需 apps/api 在 /home/dashboard 与 rotate 响应回 liked 字段并重启 8080，本轮明令越权不做；案 B 需先拍板再在 home/index.vue 落一个本会话已喜欢 userId 集合并加 prop 传给卡组件（组件文件不在本 lane，其 prop 名与已喜欢态类名须由该 lane 供锚点，本 lane 拒绝代拟）。补上任一前置后的断言应当长这样：kind 为 class-or-text-change、target 为今日推荐卡的喜欢按钮，步骤为点一次喜欢后记录按钮态、再点 rotate 换人、再 rotate 回来看是否重复推荐同一人，期望点过之后按钮进入已喜欢态且同一 userId 不再以可再点状态复现；案 A 还额外要求刷新页面后该态仍在（需重进页面二次取景），案 B 明确判不了刷",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=pages/home/index / frameName=A-MP-R2-PAGES-HOME-INDEX-106）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=NOT_SHOOTABLE 与其自己的 why"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
+   "kind": "criteria_needs_tightening",
+   "reason": "NOT_SHOOTABLE：缺的夹具：一枚可稳定 404 的 partnerAvatar（例如 fixture 里写一个 /uploads/not-exist-<随机>.jpg），外加台账第 11 列明写的两帧路径（先让该头像命中占位图、再下拉重载）。已核实的源码事实：重置点确在 apps/client/src/pages/messages/index.vue:302（loadPage 里 await Promise.all 之后整表重建为空集），三元兜底读该集的位置在 :534（avatarFailedIds.has(session.id) 命中即用 DEFAULT_AVATAR），@error 绑在 :536。另有一处结构性障碍：partnerAvatar 为空串的会话（mock 官方号与临时匿名会话）走的是 :534 的第二个条件，压根不产生失败态，不能拿来替这个夹具。如果补上夹具，断言应该长这样：帧一 kind=attr-equals，target=.chat-item（该会话行）内 .chat-item__avatar 的 src，expected=等于包内默认头像路径（命中兜底）；帧二在下拉重载完成后立刻读同一节点，expected=src 回到那条 404 地址（说明集合被清空），sourceAnchor=apps/client/src/pages/messages/index.vue:302 与 :534。这条断言带明确时序窗口（清集与第二次 @error 之间），自动化取件要 poll-after-refresh，否则量到的仍是兜底图；本轮不能把它当可立判点。",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=pages/messages/index / frameName=B-MP-R2-PAGES-MESSAGES-INDEX-021）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=NOT_SHOOTABLE 与其自己的 why"
+  },
+  {
+   "id": "MP-R2-POST-013",
+   "kind": "criteria_needs_tightening",
+   "reason": "REWRITE：原判据要什么：targetSubtitle 首行补一句 isCircleTarget 且 targetCircle 为空时返回字面文案「圈子成员可见」，与 :214 标题兜底和 :771 标签同语义。源码实际是什么：兜底分支已在位但不是字面量——apps/client/src/subpackages/village/village/post.vue:225 返回 t 取的 village.post.visibilityCircleMembers，语言包 apps/client/src/i18n/locales/zh-CN.ts:2014 的值是「圈内成员可见」，不是原判据写的「圈子成员可见」；同一键还被 :772 的 .post-to__tag 消费（所以帧里同屏会出现两遍这个短语，标签与副标题各一次）。更硬的一条：判据点名的头号触发场景已被 MP-R2-POST-009 的解析闸吸收，apps/client/src/subpackages/village/village/post.vue:286-308 在 targetCircle 解析不到或未加入时直接把 targetType 打回 general（:297），catch 分支（:302-307）同样打回，所以 isCircleTarget 且 targetCircle 为 null 在 :189 与 :310-321 的正常路径下不再是可稳定停留的状态。建议改成什么判据：两个方向择一。方向一（推荐）：本条合入 MP-R2-POST-009 关闭，改判点为深链 circleId 指向未加入或不存在的圈子时，",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=subpackages/village/village/post / frameName=B-MP-R2-POST-013）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=REWRITE 与其自己的 why"
+  },
+  {
+   "id": "MP-R2-POST-016",
+   "kind": "criteria_needs_tightening",
+   "reason": "REWRITE：原判据要什么：删掉图块规则里那条写死的高度声明（台账第 8 列旧行号 1341-1349 指向 width calc / height calc / aspect-ratio 三条）。源码实际是什么：apps/client/src/subpackages/village/village/post.vue:1461-1468 的 .post-image 规则只有宽度 calc（:1462）与 aspect-ratio: 1（:1463）两条尺寸声明，外加圆角、overflow、position 与浅底背景（:1464-:1467），没有任何 height 声明；容器 .post-images（:1455-:1460）也只有 flex/wrap/gap/padding，无固定高。也就是判据点名的物件在本仓不存在，且台账第 11 列自己已核到该状态早于本轮基线 094f7239 就是如此（属修复早于本轮、status 未同步）。建议改成什么判据：先由人改判为已修复（本轮前落地），本条不再排帧；若产品另拍「要不要为不支持 aspect-ratio 的极旧内核改百分比撑高」，那是独立需求，判据应写成该内核下 .post-image 盒高大于 0（帧判据需要一台把 aspect-ratio 关掉的渲染内核，本轮没有该夹具，属未开立案而非本条残账）。",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=subpackages/village/village/post / frameName=B-MP-R2-POST-016）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=REWRITE 与其自己的 why"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004",
+   "kind": "criteria_needs_tightening",
+   "reason": "NOT_SHOOTABLE：缺的夹具两条，都不在本轮能力内。其一：一条 kind=image 且 src 必失败的消息——apps/client/src/components/chat/ChatBubble.vue:214 的分支要求 kind==='image' 且 body 非空且未置 error，:221 的 @error 才会把 imageError 置真并切到 :226 的 .bubble__image-failed；而 mock 数据里没有任何 image 消息（台账第 9 列同判：mock 下 IMAGE_PATHS 全部可达、没有失败态可拍）。其二：可达性通道——本条要判的类名全部声明在 ChatBubble.vue 组件自己的模板里（:226、:429-432、:433-443），按 round7-NOTES §1.1 实测，页级查询够不到自定义组件内部节点，恒 0 命中，会被判成 HARNESS_MISS 而不是产品结论。补上夹具后的断言形状：帧一（正常态未加载完）kind=box-min-height 指向 .bubble__image.bubble__image--skeleton，expected=高度不小于 160rpx 且底色为浅骨架色（锚点 apps/client/src/components/chat/ChatBubble.vue:429-432 的 min-height 与 background）；帧二（加载失败）kind=text-equals 指向 .bubble__image-failed，expected=语言包 chat.image",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=subpackages/chat/chat-session/index / frameName=B-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=NOT_SHOOTABLE 与其自己的 why"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-111",
+   "kind": "criteria_needs_tightening",
+   "reason": "NOT_SHOOTABLE：缺的是修本身加数据态两样。源码事实：apps/client/src/components/home/InterestRecommendation.vue:73 是 loading 分支的骨架，:76 是 v-else 的 scroll-view，两支之间没有判据要求的 v-else-if 空态块（items 长度为 0 时 :79 的 v-for 渲出空列表，整块只剩标题与一条横滑轨），台账第 8 列说 NearbyPeople.vue 同构、第 11 列要复用 CommunityFeed.vue:161 的文案与样式口径——CommunityFeed.vue 与 NearbyPeople.vue 都不在本 lane 的可读清单内，其文案与类名本轮未证，不编。另有一道通道障碍：该组件内部类名（.interest-recommend、.interest-list 等）声明在组件自身模板里，页级查询够不到（round7-NOTES §1.1）。补上实现后的断言形状：kind=element-exists 指向组件内新增的空态节点（类名待实现方定，须与被改那页产物同名命中），expected=items 为空且 loading 为 false 时空态文案挂载且与 CommunityFeed 口径逐字相同；反向一条 kind=element-absent 指向 .interest-card，expected=该态下卡片数 0。在实现落地前，本条建议从 NEEDS_UI_FRAME 改挂 未修（判据点名的物件在源码不存在）。",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=pages/home/index / frameName=B-MP-R2-PAGES-HOME-INDEX-111）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=NOT_SHOOTABLE 与其自己的 why"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-PROFILE-INDEX-003",
+   "kind": "criteria_needs_tightening",
+   "reason": "REWRITE：原判据要什么：认为术语已在基线前统一为同一个词（卡片文案、无障碍标签、两处注释同向），要人拍的只是这个词是 故事 还是 日常；若拍 日常 则反向回改后重开。源码实际是什么：判据点名的四处确实同向——apps/client/src/components/profile/mine/MyStory.vue:85 无障碍标签为 添加故事、:89 文案为 添加故事、:183 注释写 我的故事卡…添加故事虚线卡、:256 注释写 添加故事：虚线加号卡；但同屏还有它没看的一处不同向：:57 区块标题渲染 我的故事，而 :93 的可见范围提示渲染 日常仅互相喜欢或你关注的人可见（:3 与 :37 的注释同样两词混用）。也就是 术语已统一为同一词 这个前提对渲染出来的可见文案不成立，帧判据若照原判据写会永远判绿。建议改成什么判据：把判据从 拍哪个词 改成 同一区块内不得混用两个词——断言 kind=text-terms-consistent，target 为 .my-story__title 与 .story-cards__hint 两条渲染文案，expected=两者对同一物件只出现 故事 或只出现 日常 中的一个（锚点 apps/client/src/components/profile/mine/MyStory.vue:57 与 :93）；该断言在当前源码下应判红，从而把这条从 人判术语 转成 可判缺陷 或 明确裁决。另注：台账第 8 列说 :85 与 :89 渲染 添加日常，与工作树现值（添加故事）不符，那一列是旧行内容，别拿它当修后判点。",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=pages/profile/index / frameName=B-MP-R2VIS-PAGES-PROFILE-INDEX-003）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=REWRITE 与其自己的 why"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-012",
+   "kind": "criteria_needs_tightening",
+   "reason": "NOT_SHOOTABLE_ON_THIS_BAND：台账原文写「同步改 :175 注释」，工作树该注释已随新增 onConfirmBlur 漂到 :187-188，行号引用失效但语义已落地，不影响本帧判点。",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=pages/register/index / frameName=C-MP-R2-PAGES-REGISTER-INDEX-012）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=NOT_SHOOTABLE_ON_THIS_BAND 与其自己的 why"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-013",
+   "kind": "criteria_needs_tightening",
+   "reason": "NOT_SHOOTABLE_ON_THIS_BAND：判据的 zh 与 en 同步半项在小程序端不可帧判：apps/client/src/i18n/index.ts:22 自述全代码库无 setLocale 或 locale 运行时切换调用、:49 locale 恒为 zh-CN，因此拿不到 en-US 帧；en 侧只能静态读 apps/client/src/i18n/locales/en-US.ts:2182（Invalid phone number. Enter an 11-digit mobile number.）。本帧只承担「键已接上消费方且渲染出 zh-CN 值、无键路径字面量」这一半。",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=pages/register/index / frameName=C-MP-R2-PAGES-REGISTER-INDEX-013）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=NOT_SHOOTABLE_ON_THIS_BAND 与其自己的 why"
+  },
+  {
+   "id": "MP-R2-CAMPUSINDEX-010",
+   "kind": "criteria_needs_tightening",
+   "reason": "NOT_SHOOTABLE：缺哪个夹具：让 campusStore.fetchCertificationStatus 失败一次的非 404 故障（5xx 或超时）。本轮客户端不存在任何故障注入钩子（对 apps/client/src 全量 grep forceError、mockFail、failNext、scenario 均 0 命中），mock 下该请求不会失败，页面进不到「认证拉取失败」态。源码实际是什么：apps/client/src/subpackages/campus/campus/index.vue 里与认证失败相关的物件为 0——页面只有话题列表专属错误槽（:309-315 绑 topicsError，属 MP-R1-CAMPUSINDEX-003），认证徽章恒按 store 的 certificationStatus 渲染（:246-248），失败即走 certStatusClass 的 default 分支 cert-badge--unverified（:146-148）与 certStatusText 的 default 文案（:163），既无重试入口也无 toast。补上夹具后断言应长这样：(a) kind element-present, target 认证失败提示条或重试按钮（本页目前不存在该节点）, expected 失败时出现一个可点重试或轻量 toast, sourceAnchor apps/client/src/subpackages/campus/campus/index.vue:246-248；(b) kind text-not-cont",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=subpackages/campus/campus/index / frameName=C-MP-R2-CAMPUSINDEX-010）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=NOT_SHOOTABLE 与其自己的 why"
+  },
+  {
+   "id": "MP-R2-PROFILE-024",
+   "kind": "criteria_needs_tightening",
+   "reason": "NOT_SHOOTABLE_ON_THIS_BAND：判据的本人态半项（MyProfile.vue 的 padding-bottom 应为 296rpx+2env、浮层为 GlobalPublishFab）不在本 lane 的 files 清单内，需另开一帧；本帧只结未登录态这一档。",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=pages/profile/index / frameName=C-MP-R2-PROFILE-024）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=NOT_SHOOTABLE_ON_THIS_BAND 与其自己的 why"
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-012",
+   "kind": "criteria_needs_tightening",
+   "reason": "REWRITE：原判据要什么：criterion 列里根本没有「改→新值」物件——本行是并案行（reports/audit/round-6/issue-matrix.md:193，状态列 STILL_OPEN、处置列 待修复（并 MP-R1-PAGES-NEARBY-INDEX-017）），整格装的是形状归一 §61 后的原始行文本，唯一可读的诉求来自其引用句：reportLocation 的节流时间戳应「请求前置写入」。源码实际是什么：apps/client/src/utils/location.ts:163-177 仍是先 await request（:168-172）后写 lastReportAt = now（:173），节流判定在 :166（now - lastReportAt < REPORT_THROTTLE_MS，常量 :28），即未修，与台账 STILL_OPEN 一致；台账原引的 :156-158 是收口前行号。为什么帧不可判：串行调用下「await 前写」与「await 后写」的界面表现逐字相同（都只发一次 POST、都无提示），只有同一时间窗内并发两次上报才会露出差异，而进入附近页与下拉刷新在正常取景里是串行的。建议改成什么判据：退回源码级静态判点——判点 = lastReportAt 的赋值语句位于 await request(...) 之前（现 :173 在 :168-172 之后，直接可判且无需帧）；若坚持运行时判，判据必须点名夹具「同一 tick 内并发触发两次 reportLocation」，断言 = POST /location/report ",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=pages/nearby/index / frameName=C-MP-R2-PAGES-NEARBY-INDEX-012）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=REWRITE 与其自己的 why"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-006",
+   "kind": "criteria_needs_tightening",
+   "reason": "NOT_SHOOTABLE：缺哪个夹具：游客态且非 mock 的构建。源码事实：isGuest = !sessionStore.isLoggedIn && !useMock()（apps/client/src/subpackages/circles/circles/index.vue:148），本轮取景载体是 mock 构建（同页 :83-85 在 mock 下直出本地 8 圈），于是 mock 里 isGuest 恒 false、列表恒非空，pageState 永远进不到 empty 分支（:131-136），空态在帧上不可达；另有既有取景裁定 identity 一律 A、不给游客拍（scripts/qa/gen-states-from-debt.mjs:57）。补上夹具后断言应该长什么样：(1) kind text-contains，target 空态文案节点，expected 「登录后可查看全部兴趣圈」（circle.circlesEmptyLogin，apps/client/src/i18n/locales/zh-CN.ts:3737，经 :150 传进 PageStateContainer 的 :378）；(2) kind text-contains，expected 「去登录」（discover.card.goLogin，zh-CN.ts:1038，经 :152 传进 :379）；(3) kind route-after-tap，target 空态引导按钮，expected 落到 ROUTES.LOGIN（goLogin 实现 :314-316）。另须记一笔：判据后",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=subpackages/circles/circles/index / frameName=D-MP-R2-CIRCLES-INDEX-006）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=NOT_SHOOTABLE 与其自己的 why"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-007",
+   "kind": "criteria_needs_tightening",
+   "reason": "REWRITE：原判据要什么：前半称「:911 换 var(--c-brand,#36C99A)」已落（工作树），后半三案（新增 --c-hot-badge-bg/-text 或收编 --c-badge-on-image-*）待主编排层拍板。源码实际是什么：承载文件 apps/client/src/subpackages/circles/circles/index.vue 全文只有 900 行（style 段以 :900 收尾），:911 不存在；热门徽标本体仍是裸色值——background: rgba(255, 77, 92, 0.92) 在 :574、文字 color: #FFFFFF 在 :580、徽标节点类名 .circle-card__hot-badge 在 :571；而 var(--c-brand, #36C99A) 在本文件只出现在标题下划线 :774 与激活 chip :836-837，跟徽标无关，即「换 var(--c-brand)」这笔账在本文件无对应改动。建议改成什么判据：锚到真实物件——徽标阈值 HOT_THRESHOLD = 8000（:230）+ 渲染条件 :427，断言「memberCount ≥ 8000 的圈卡上 .circle-card__hot-badge 出红底白字徽标且文字完整可读」，暗色半边在令牌裁决前不建 token、不拍暗帧（自创暗值正是本轮反复判罚的行为）。",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=subpackages/circles/circles/index / frameName=D-MP-R2-CIRCLES-INDEX-007）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=REWRITE 与其自己的 why"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-013",
+   "kind": "criteria_needs_tightening",
+   "reason": "REWRITE：原判据要什么：490/697 两处禁用条件并入 isSubmitting，提交中切 loading 文案/图标，使防重在途有视觉反馈。源码实际是什么：前半已落但行号漂移——顶栏钮条件含 isSubmitting 在 apps/client/src/subpackages/circles/circles/post-topic.vue:498、底部钮在 :705，灰态样式分别在同文件 :838-841（底色转 var(--c-overlay-white-bg-stronger) + box-shadow:none，常态底色是 :824 的 var(--c-overlay-bg-pure)）与 :1241-1243；后半不存在——顶栏钮文案恒为 t(circle.postTopicSubmit)=「发布」（:503，值见 zh-CN.ts:3748）、底部钮文案恒为 t(circle.postTopicNavTitle)=「发布话题」（:710，值见 :3746），全文件无任何提交中态文案、无 spinner 类（唯一 loading 物件是活动弹层的列表加载态 :723-724，与提交无关）。建议改成什么判据：拆两条——(a) 本帧判「在途提交时两个提交钮渲染 disabled 灰态」，但这需要一个能把 createTopic 拖慢的后端延迟桩（mock 下提交即时完成，帧抓不到在途窗口），且灰态与「未填内容」的 disabled 形态完全同名同值，必须靠延迟桩区分；(b) 另立源码条目补「发布中…」文案与图标，物件写出来之后再拍。",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=subpackages/circles/circles/post-topic / frameName=D-MP-R2-POSTTOPIC-013）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=REWRITE 与其自己的 why"
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-011",
+   "kind": "criteria_needs_tightening",
+   "reason": "REWRITE：原判据要什么：断言并案目标 MP-R1-PAGES-NEARBY-INDEX-016 的病灶已消——称 apps/client/src/pages/nearby/index.vue:375 的行内顶距加上「同页样式段里页根容器的上内边距取零」，两条机制已不再抢同一个属性。源码实际是什么：根容器 .nearby-home 的样式规则里上内边距并未取零——apps/client/src/pages/nearby/index.vue:659 为 padding: 24rpx 32rpx 0（顶值 24rpx），只是被 :375 的行内 paddingTop（statusBarHeightPx + 12 px）覆盖；两条机制至今仍在写同一个 padding-top，行内层赢、CSS 顶值变成不可达死值，判据把「被行内覆盖」写成了「已取零」。建议改成什么判据：帧侧断言「.nearby-home__header（:676 的规则，自身只有 margin-bottom 与 padding-right）顶边 y 恰等于 statusBarHeight + 12px，不含 24rpx 叠加」；源码侧另立一条把 :659 的顶值改写为 0（padding: 0 32rpx）以真正消除双机制，改完再谈本条状态。",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=pages/nearby/index / frameName=D-MP-R2-PAGES-NEARBY-INDEX-011）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=REWRITE 与其自己的 why"
+  },
+  {
+   "id": "MP-R2-VILLAGE-INDEX-012",
+   "kind": "criteria_needs_tightening",
+   "reason": "NOT_SHOOTABLE：缺的夹具：(a) 让 circleStore.fetchFeaturedTopics 失败的后端 500 或网络错误注入；(b) activityStore.activities 为空数组的态。更硬的阻塞是承载物件不存在：apps/client/src/subpackages/village/village/index.vue:730 的精选话题块只有 v-if=「currentTopics.length > 0」、无 v-else 错误提示条与重试；:695 的 .activity-list 也无 v-else EmptyState（现有 :796 的 .village-empty EmptyState 判的是帖子流，其活动频道文案为 zh-CN.ts:2151 的「还没有活动相关帖子」，与判据点名的『暂无活动』不同源）。所以本条需先补码再补帧。补上后断言应为：(1) kind=text-contains 兴趣圈失败态提示条文本 = circleStore.errorMessage 归一文串 + 存在一枚含「重试」的按钮，点击后重跑 loadChannelData(id,true)（锚点 apps/client/src/subpackages/village/village/index.vue:730 与 :210）；(2) kind=count target=.activity-list 下活动卡 = 0 时页面出现一枚 EmptyState，其文本命中 zh 键值「还没有活动相关帖子」（锚点 apps/client/src/subpackage",
+   "nextCarrier": "重写这条判据到帧上可核验的物件（配方行自带 route=subpackages/village/village/index / frameName=E-MP-R2-VILLAGE-INDEX-012）；在判据收紧之前拍它只会得到一张没有判点的帧",
+   "basis": "取景配方 reports/audit/round-7/frameplan-merged.json 里该行的 disposition=NOT_SHOOTABLE 与其自己的 why"
+  },
+  {
+   "id": "MP-R2-PAGES-DISCOVER-INDEX-014",
+   "kind": "not_frame_observable_declared",
+   "reason": "台账处置列原话：「二选一并在收口时给出去向：(a) 让 .tab-bar 高度与内边距从同一处派生（拆 --tab-bar-face-h 与 --tab-bar-safe-h 两个令牌相加，保持 content-box 实高 184rpx+2env 不变），改完必须重建三档并出改前/改后对拍帧——高度不一致就是视觉回归，不许默默合；(b) 把这一行的主张收窄为『消费侧不再各抄高度』」。帧判不了的原因：这是一条**常量一致性**主张，页面截图像素里 184rpx 与 160+24rpx 长得一模一样，出多少帧都判不出漂移；而 (a) 需要先把 token 注入组件作用域（事实核过：token 定义在 design-variables.scss:251 起的 page{} 里、经 App.vue:301 引入，custom-tab-bar/ 目录对该主题文件 0 引用），这一步本轮没做也没验证真机是否生效 ⇒ 单点化只能靠静态核对，不能靠帧，也不能靠把 .tab-bar 改成 var() 后指望它生效。",
+   "nextCarrier": "静态核对门 + 主张收窄（见 nextCarrier）",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/discover014-register-classify.json；引文 二选一并在收口时给出去向：(a) 让 .tab-bar 高度与内边距从同一处派生 …… (b) 把这一行的主张收窄为「消费侧不再各抄高度」）"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-019",
+   "kind": "not_frame_observable_declared",
+   "reason": "门的现量判词：「判据是行为/观感（runtime），静态无判点；判据没点名可核验的修后物件」。这条现在断言的是运行期行为（列表重载后的兜底集合变化），帧只能给一瞬的像素，看不出「清空过」这个动作。",
+   "nextCarrier": "判据收紧（runtime → 可数物件）后再进取景配方",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/critframe-unplanned-classify.json；引文 判据是行为/观感（runtime），静态无判点；判据没点名可核验的修后物件）"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
+   "kind": "not_frame_observable_declared",
+   "reason": "门的现量判词：「判据是行为/观感（runtime+visual），静态无判点」。观感类主张（视觉一致性）现在既没有理想图基线也没有帧上的点名物件，出帧只能得到一张没人能判的图。",
+   "nextCarrier": "基线 + 判据点名（两件事都欠）",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/critframe-unplanned-classify.json；引文 判据是行为/观感（runtime+visual），静态无判点）"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
+   "kind": "not_frame_observable_declared",
+   "reason": "门的现量判词：「判据是行为/观感（runtime+visual），静态无判点」。同 CIRCLES-001：修后要在帧上看见什么，判据没说。",
+   "nextCarrier": "判据点名后进取景配方",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/critframe-unplanned-classify.json；引文 判据是行为/观感（runtime+visual），静态无判点）"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-003",
+   "kind": "not_frame_observable_declared",
+   "reason": "门的现量判词：「判据是行为/观感（visual），静态无判点；判据只点到两载体都没法核验的东西」。组件侧 NearbyPeople.vue 的量在产物里既没有可数物件也没有可对比基线。",
+   "nextCarrier": "判据改写成 (a) 或 (b) 之一",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/critframe-unplanned-classify.json；引文 判据是行为/观感（visual），静态无判点；判据只点到两载体都）"
+  },
+  {
+   "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002",
+   "kind": "not_frame_observable_declared",
+   "reason": "状态列自己的声明：「源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现」 ｜ 证据列（判点所在）：apps/client/src/stores/messages.ts:1081-1088（私信随体发 quoteRef，空白或超 64 字符不发）、:365-386 parsePrivateQuoteContext、:234-249 BackendMessageView 新增 quoteContext；apps/client/src/stores/chat/actions/messaging.ts ｜ statusEvidence：源码判点：引用回复端到端接通：私信与临时两条发送链路都把 quoteRef 发出去，读回侧把 quoteContext 解析成行模型字段（后端早就有字段，缺的是客户端） ｜承载 apps/client/src/stores/messages.ts ＋ apps/client/src/stores/chat/actions/messaging.ts ＋ apps/client/src/subpackages/chat/chat-sessi",
+   "nextCarrier": "round-1 立案时的判词是「引用回复在私信与临时两条发送链路均被静默丢弃，端到端不可用」。本轮 ③ 补齐客户端半段（后端半段此前已单独提交）。**诚实记录两处未做**：临时链路的 WS form-B 仍不带引用（本轮未动），端到端真实腿未跑 ⇒ 状态停在 已修复待复验，不写「已验证」",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）"
+  },
+  {
+   "id": "MP-R2-PROFILE-023",
+   "kind": "not_frame_observable_declared",
+   "reason": "状态列自己的声明：「源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现」 ｜ 证据列（判点所在）：apps/client/src/pages/profile/index.vue:2015-2024/2054-2061（死块删除注释）、768-770（growth 链删除记载）、2027-2029（他人态 Tab 移除记载）、1806-… ｜ statusEvidence：源码判点：growth 整链（数据与卡片）已从本人主页移除，只留解释性注释 ｜承载 apps/client/src/pages/profile/index.vue",
+   "nextCarrier": "HEAD 已修，待下轮真机帧复验。依据：逐项复核 HEAD 成立：growth 链整链删除（:769-771 注释 + 全文件 grep growthItems/MyGrowth 仅命中注释）、他人态 ProfileTabs 移除且资料常显（:2033）、VIP 卡迁本人态并 appConfig.…；本轮用例 PFI3",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）"
+  },
+  {
+   "id": "MP-R2-PROFILE-022",
+   "kind": "not_frame_observable_declared",
+   "reason": "状态列自己的声明：「源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现」 ｜ 证据列（判点所在）：components/profile/NotLoggedProfile.vue:153-160（padding-top calc(var(--statusbar,...)+32rpx)，注释引用 R12-IND-PROFILE-INDEX… ｜ statusEvidence：源码判点：未登录态顶距改为让开状态栏（走 --statusbar 注入），不再是固定 32rpx 顶距 ｜承载 apps/client/src/components/profile/NotLoggedProfile.vue",
+   "nextCarrier": "HEAD 已修，待下轮真机帧复验。依据：锚点即本缺陷编号：:156-158 注释明写「R12-IND-PROFILE-INDEX-001/MP-R1-PAGES-PROFILE-INDEX-002：未登录态此前固定 32rpx 顶距，顶部三枚 64rpx 圆钮直接顶入状态栏/胶囊带」，:159 p…",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-001",
+   "kind": "not_frame_observable_declared",
+   "reason": "状态列自己的声明：「源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现」 ｜ 证据列（判点所在）：apps/client/src/components/home/RelationActivity.vue:120-121 .relation-cell{border-radius:24rpx; background:#EEF7F2}（=§… ｜ statusEvidence：源码判点：关系动态卡底色改用容器令牌，不再硬编码与页面底色同值的 #EEF7F2 ｜承载 apps/client/src/components/home/RelationActivity.vue",
+   "nextCarrier": "HEAD 已修，待下轮真机帧复验。依据：锚点=源码注释逐字引用本 ID（:121 `MP-R2VIS-PAGES-HOME-INDEX-001 / V1-25(a)`）并说明原 #EEF7F2 与 --c-bg-page 同值。token 双源均已 grep：--c-bg-container 见 …",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006",
+   "kind": "not_frame_observable_declared",
+   "reason": "状态列自己的声明：「源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现」 ｜ 证据列（判点所在）：帧 .zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_chat-session_index__弹层态.png（面板仅绿色圆形相机「发送图片」+ 取消，右侧 6/7 … ｜ statusEvidence：源码判点：附件「+」是 <image> 节点而不是文本 glyph，且本页不再留 .wechat-input-bar__icon-text 样式 ｜承载 apps/client/src/subpackages/chat/chat-session/index.vue",
+   "nextCarrier": "修：附件「+」由文本 glyph 改 <image>，随之从该页删掉文本 glyph 类 .wechat-input-bar__icon-text（⟨新增 <image> 键 IMAGE_PATHS.ICONS_EMOJI.PLUS 与 role aria-label 属编译期擦除标识 不作判点⟩）。",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003",
+   "kind": "not_frame_observable_declared",
+   "reason": "状态列自己的声明：「源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现」 ｜ 证据列（判点所在）：apps/client/src/stores/circle/mock-data.ts:58-64（列表页源，无 friendJoinedCount → aefd8a72 版 index.vue:248-252 无条件 5+seed%8=6… ｜ statusEvidence：源码判点：朋友加入数在列表页与圈主页按同一规则派生（真实字段优先、非 mock 直接 0、mock 才用 5+(seed%8)） ｜承载 apps/client/src/subpackages/circles/circles/index.vue ＋ apps/client/src/subpackages/circles/circles/circle-home.vue",
+   "nextCarrier": "HEAD 已修，待下轮真机帧复验。依据：原 P2 的五处不一致(圈名/简介/动态数/朋友数/文案)：动态数/圈名/简介现同源(store)，朋友数派生规则对齐，文案走共享 i18n 键 → 判据的可见不一致被 HEAD 否证。FALLBACK_CIRCLE(:64-73) 仅作 mock 未知圈骨…",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002",
+   "kind": "not_frame_observable_declared",
+   "reason": "状态列自己的声明：「源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现」 ｜ 证据列（判点所在）：帧 reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__默认.png 3x 裁切 .zcode/tmp/v3/O-other-hero.p… ｜ statusEvidence：源码判点：他人主页顶部只保留一条压暗渐变层用于文字可读性，模板里就这一个节点（不引入深色状态栏层） ｜承载 apps/client/src/components/profile/public/PublicHero.vue",
+   "nextCarrier": "HEAD 已修，待下轮真机帧复验。依据：推翻原判据的附加要求：实读理想图 素材/理想效果图/他人显示主页.png 顶部并无深色压暗层，状态栏「9:41」与返回「‹」在亮天上是**深色**字形 ⇒ finding 依 §3.9 说明正文提出的「返回箭头应为白」不成立，不得据此再立一条；本条只按「顶部…",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-001",
+   "kind": "not_frame_observable_declared",
+   "reason": "状态列自己的声明：「源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现」 ｜ 证据列（判点所在）：apps/client/src/subpackages/village/village/post.vue:1506-1511 .post-row__label{color:#9AA39F; height:28rpx} vs apps/cl… ｜ statusEvidence：源码判点：.post-row__label 与 publish 对齐：色走主文本令牌，且不再用等于字号的 height 撑高 ｜承载 apps/client/src/subpackages/village/village/post.vue",
+   "nextCarrier": "HEAD 已修，待下轮真机帧复验。依据：原 P2 两半均在 HEAD 消除：(1) 色由三级 #9AA39F→--c-text-primary 与 publish 对齐；(2) 等于字号的 height 已删(现无 height 属性)。按裁定 #7 已 grep theme/ 与 styles/…",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-003",
+   "kind": "not_frame_observable_declared",
+   "reason": "状态列自己的声明：「源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现」 ｜ 证据列（判点所在）：apps/client/src/subpackages/village/village/post.vue:1341-1349（目标弹层 max-height:78vh + 底部 calc(32rpx + safe-area)）vs :16… ｜ statusEvidence：源码判点：publish 侧存在与 post 页同形的通用弹层（70vh + 安全区），两页弹层高度口径可对账 ｜承载 apps/client/src/subpackages/village/village/publish.vue",
+   "nextCarrier": "HEAD 已修，待下轮真机帧复验。依据：锚点=判据的事实前提在 HEAD 已不成立。R2 切片记「publish 只有 78vh 一种」（当时 publish.vue:893），而 publish.vue 的 70vh 通用弹层由 HEAD 提交 874ff52f 新增（git log -S pu…",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）"
+  },
+  {
+   "id": "MP-R7-GUEST-LANDING-REGENTRY-001",
+   "kind": "not_frame_observable_declared",
+   "reason": "状态列自己的声明：「源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现」 ｜ 证据列（判点所在）：apps/client/src/pages/login/index.vue:604（默认分支 class=\"login-quick\" 内不含任何注册入口）与 :688/:745-752（「去注册」实体在 v-else 的 login-form 分支里，且再受 isRegisterOpen 开关控制） ｜ statusEvidence：源码判点：默认态（未展开手机号表单的 .login-quick 分支）就有可见的注册入口，且仍受 isRegisterOpen 开关控制、与表单内那处共用同一跳转函数 ｜承载 apps/client/src/pages/login/index.vue",
+   "nextCarrier": "修法（本轮落地）：在 .login-quick 默认分支加注册入口，复用已有文案键 login.goRegister（zh-CN.ts:2197 / en-US.ts:2140，不新增文案），类名 .login-register-entry；判据载体 scripts/qa/verify-guest-landing.mj",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）"
+  },
+  {
+   "id": "MP-R7-GUEST-MATCHING-REDIRECT-RACE-001",
+   "kind": "not_frame_observable_declared",
+   "reason": "状态列自己的声明：「源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现」 ｜ 证据列（判点所在）：apps/client/src/subpackages/discover-extra/discover/matching.vue:56-69（无卡片可展示时的兜底：navigateBack 不成 ⇒ uni.switchTab(ROUTES.TAB.DISCOVER)，把游客送进「寻觅」Tab）与 apps/client/src/services/http.ts:493-494（401 兜底 un ｜ statusEvidence：源码判点：goBack 在无 token 时先走登录引导，不再把落点定在内容 Tab；switchTab 只可能是已登录路径的兜底 ｜承载 apps/client/src/subpackages/discover-extra/discover/matching.vue",
+   "nextCarrier": "按既定游客裁定（游客不得浏览内容页、未登录须引导到登录/注册）收口两条重定向的优先级：matching 的无卡片兜底分支在**未登录**时不得 switchTab 到内容 Tab，必须与 401 兜底一致走登录引导（具体改法：兜底前先判 isLoggedIn/getToken，未登录直接 replaceAppPath(",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）"
+  },
+  {
+   "id": "MP-R7-ADMIN-VILLAGE-COMMENTSCOLUMN-001",
+   "kind": "not_frame_observable_declared",
+   "reason": "状态列自己的声明：「源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现」 ｜ 证据列（判点所在）：apps/admin/src/views/forum/VillagePosts.vue:457-461（stats-cell 三枚 span 原本只有 statsLikes／statsFavorites／statsViews）、apps/admin/src/i18n/locales/zh-CN.ts:1137 起的 villagePosts 段（1172-1174 只有赞／藏／看，没有 stats ｜ statusEvidence：源码判点：后台内容管理列表必须渲染评论数（与赞／藏／看同栏），且两个语言包的 villagePosts 段都有 statsComments 文案 ｜承载 apps/admin/src/views/forum/VillagePosts.vue ＋ apps/admin/src/i18n/locales/zh-CN.ts ＋ apps/admin/src/i18n/locales/en-US.ts",
+   "nextCarrier": "结案条件：apps/admin 起服后在内容管理列表页取一帧，肉眼确认「评论 n」与赞／藏／看同栏且数值与该帖真实评论数一致；或由人裁定后台列表不需要这一列（那要同时把本轮新加的两个 locale 键与那枚 span 撤掉，别留半截）。",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）"
+  },
+  {
+   "id": "MP-R6-F1-NEARBY-IP-CITY-001",
+   "kind": "not_frame_observable_declared",
+   "reason": "状态列自己的声明：「源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现」 ｜ 证据列（判点所在）：utils/location.ts:44-56（IP 兜底与 gps/ip 标记）；pages/home/index.vue:68-72（副标题经 buildLocationText 直出城市）；pages/nearby/index.vue:113（副标题）、:120-121（currentCity）、:125（写 STORAGE_KEYS.NEARBY_CITY）、:232（该 currentC ｜ statusEvidence：源码判点：citySource=ip 时城市只用于标注：home/nearby 副标题带「按服务器位置推断」，且不写进 NEARBY_CITY 缓存 ｜承载 apps/client/src/pages/home/index.vue ＋ apps/client/src/pages/nearby/index.vue",
+   "nextCarrier": "修：让 citySource=ip 在 home/nearby 也可分辨——nearby 侧要么在副标题与同城过滤处标注「按服务器位置推断」或降级为不过滤，要么在 IP 来源时只做展示不做城市过滤；publish 的 NEARBY_CITY 缓存不应把 IP 城市当用户所在城市写入。彻底解需后端 LocationCit",
+   "basis": "只读复判 NOT_FRAME_JUDGEABLE（tmp/qa/srconly-owed-plan.json；引文 源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）"
+  }
+ ],
+ "statusTextContradictions": {
+  "$comment": "verify-status-vs-disposition.mjs 实测 10 行：第 6 列说已到终态、处置/证据列仍写欠款。收口波必须逐条二选一：把欠款挂进取景配方/登记表的真实载具，或把第 6 列改成与之一致的状态。禁止反过来改措辞让门变绿。",
+  "rows": [
+   "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002",
+   "MP-R7CLIENT-UPLOAD-EXT-001",
+   "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+   "MP-R2-CAMPUSPOST-010",
+   "MP-R2-CIRCLES-INDEX-004",
+   "MP-R2-PAGES-MESSAGES-INDEX-021",
+   "MP-R2VIS-PAGES-MESSAGES-INDEX-001",
+   "MP-R2-CAMPUS-HUB-012",
+   "MP-R2-PAGES-HOME-INDEX-102",
+   "MP-R2-PAGES-HOME-INDEX-103"
+  ]
+ },
+ "$added": [
+  {
+   "at": "2026-09-27T12:02:16.747Z",
+   "from": "tmp/qa/srconly-owed-plan.json",
+   "count": 13,
+   "ids": [
+    "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002",
+    "MP-R2-PROFILE-023",
+    "MP-R2-PROFILE-022",
+    "MP-R2VIS-PAGES-HOME-INDEX-001",
+    "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006",
+    "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003",
+    "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002",
+    "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-001",
+    "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-003",
+    "MP-R7-GUEST-LANDING-REGENTRY-001",
+    "MP-R7-GUEST-MATCHING-REDIRECT-RACE-001",
+    "MP-R7-ADMIN-VILLAGE-COMMENTSCOLUMN-001",
+    "MP-R6-F1-NEARBY-IP-CITY-001"
+   ]
+  }
+ ]
+}

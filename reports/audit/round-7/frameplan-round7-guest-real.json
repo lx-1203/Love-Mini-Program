@@ -1,0 +1,406 @@
+{
+ "generatedAt": "2026-09-27T03:54:38.627Z",
+ "from": "frameplan-round7-final.json + uidebt-shoot/shoot-results.json 的 6 条 NO_EVIDENCE 行",
+ "reason": "这 6 条的前置身份是游客：mock 档的 bootstrap 会无条件造出会话，档位表达不了游客 ⇒ 换 real 档重拍，而不是记成产品没做到",
+ "rows": [
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-011",
+   "lane": "C",
+   "disposition": "SHOOT",
+   "route": "pages/register/index",
+   "assertions": 8,
+   "assertionList": [
+    {
+     "kind": "bounding-box-min",
+     "target": ".field__tap--40",
+     "expected": "宽与高均 ≥ 88rpx（375px 视口 ≥ 44px）：40rpx 图标 加 上下左右 24rpx padding",
+     "sourceAnchor": "apps/client/src/pages/register/index.vue:998-1001"
+    },
+    {
+     "kind": "bounding-box-equals",
+     "target": ".field__eye",
+     "expected": "40rpx × 40rpx，视觉尺寸未被改动",
+     "sourceAnchor": "apps/client/src/pages/register/index.vue:1009-1013"
+    },
+    {
+     "kind": "bounding-box-min",
+     "target": ".field__tap--32",
+     "expected": "宽与高均 ≥ 88rpx：32rpx 图标 加 28rpx padding",
+     "sourceAnchor": "apps/client/src/pages/register/index.vue:993-996"
+    },
+    {
+     "kind": "bounding-box-equals",
+     "target": ".field__clear",
+     "expected": "32rpx × 32rpx 不变",
+     "sourceAnchor": "apps/client/src/pages/register/index.vue:1003-1007"
+    },
+    {
+     "kind": "bounding-box-min",
+     "target": ".hero__back-hit",
+     "expected": "宽与高均 ≥ 88rpx：68rpx 圆钮 加 10rpx padding（负 margin 抵消占位）",
+     "sourceAnchor": "apps/client/src/pages/register/index.vue:833-842"
+    },
+    {
+     "kind": "bounding-box-equals",
+     "target": ".hero__back",
+     "expected": "68rpx × 68rpx 不变",
+     "sourceAnchor": "apps/client/src/pages/register/index.vue:844-846"
+    },
+    {
+     "kind": "bounding-box-min",
+     "target": ".agree__hit",
+     "expected": "宽与高均 ≥ 88rpx：32rpx 方框 加 28rpx padding",
+     "sourceAnchor": "apps/client/src/pages/register/index.vue:1221-1230"
+    },
+    {
+     "kind": "attribute-changed",
+     "target": ".field__eye",
+     "expected": "点热区内边距区后 src 在 eye-off.svg 与 eye.svg 之间切换（证明扩出来的热区真的可点，而非只有图标可点）",
+     "sourceAnchor": "apps/client/src/pages/register/index.vue:616",
+     "anchorFixed": "apps/client/src/pages/register/index.vue:614-620 ⇒ apps/client/src/pages/register/index.vue:616（对象实名 field__eye）"
+    }
+   ],
+   "steps": [
+    {
+     "action": "input",
+     "selector": ".field__input",
+     "note": "第一个 .field__input（手机号，模板 :523-535）输入 13800000000"
+    },
+    {
+     "action": "measure",
+     "selector": ".field__tap--40",
+     "note": "密码行眼睛控件的透明热区（模板 :614，样式 :998-1001）"
+    },
+    {
+     "action": "measure",
+     "selector": ".field__tap--32",
+     "note": "手机号行清除图标的热区（模板 :537，样式 :993-996）"
+    },
+    {
+     "action": "measure",
+     "selector": ".hero__back-hit",
+     "note": "左上返回钮的热区（模板 :493，样式 :833-842）"
+    },
+    {
+     "action": "tap",
+     "selector": ".field__tap--40",
+     "note": "点热区内边距区（离 .field__eye 视觉图标边缘约 20rpx 的角落），不是点图标本身"
+    }
+   ],
+   "precondition": {
+    "identity": "未登录",
+    "theme": "light",
+    "fixture": "mock 默认（app-config 的 register_open 不为 false，否则 :332-339 会 toast 后跳登录页）；手机号输入框先填 11 位号码，使 :537 的清除热区随 v-if 渲染"
+   },
+   "crop": "密码行右侧眼睛控件（含透明热区）、手机号行清除控件、左上返回圆钮",
+   "frameName": "C-MP-R2-PAGES-REGISTER-INDEX-011",
+   "unresolved": ""
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-012",
+   "lane": "C",
+   "disposition": "SHOOT",
+   "route": "pages/register/index",
+   "assertions": 4,
+   "assertionList": [
+    {
+     "kind": "text-not-contains",
+     "target": ".field-error__text",
+     "expected": "失焦前全页不得出现文案「两次输入的密码不一致」（边打字边判错即本条缺陷）",
+     "sourceAnchor": "apps/client/src/pages/register/index.vue:543",
+     "anchorFixed": "apps/client/src/pages/register/index.vue:185-190 ⇒ apps/client/src/pages/register/index.vue:543（对象实名 field-error__text）"
+    },
+    {
+     "kind": "text-contains",
+     "target": ".field-error__text",
+     "expected": "失焦后出现「两次输入的密码不一致」，取自 register.errPasswordMismatch",
+     "sourceAnchor": "apps/client/src/pages/register/index.vue:543",
+     "anchorFixed": "apps/client/src/pages/register/index.vue:196-203 ⇒ apps/client/src/pages/register/index.vue:543（对象实名 field-error__text）"
+    },
+    {
+     "kind": "text-contains",
+     "target": ".field-error__text",
+     "expected": "错误文案节点为确认密码行下方 .field-error 内的 {{ errors.confirm }}",
+     "sourceAnchor": "apps/client/src/pages/register/index.vue:543",
+     "anchorFixed": "apps/client/src/pages/register/index.vue:676-679 ⇒ apps/client/src/pages/register/index.vue:543（对象实名 field-error__text）"
+    },
+    {
+     "kind": "text-not-contains",
+     "target": ".field-error__text",
+     "expected": "再次在确认框输入任意字符后该文案消失（@input 只负责已有错误时清除）",
+     "sourceAnchor": "apps/client/src/pages/register/index.vue:543",
+     "anchorFixed": "apps/client/src/pages/register/index.vue:187-189 ⇒ apps/client/src/pages/register/index.vue:543（对象实名 field-error__text）"
+    }
+   ],
+   "steps": [
+    {
+     "action": "input",
+     "selector": ".field__input",
+     "note": "密码行 .field__input（模板 :600-612）输入 Abcd1234"
+    },
+    {
+     "action": "input",
+     "selector": ".field__input--confirm",
+     "note": "确认密码行（模板 :653-665）输入 Abcd1235，输入过程中不失焦"
+    },
+    {
+     "action": "capture",
+     "selector": ".field-error__text",
+     "note": "第一次取景：仍在确认密码框内、未失焦"
+    },
+    {
+     "action": "tap",
+     "selector": ".field__input",
+     "note": "点昵称行 .field__input（模板 :696-708）使确认框触发 @blur（:664 绑 onConfirmBlur）"
+    },
+    {
+     "action": "capture",
+     "selector": ".field-error__text",
+     "note": "第二次取景：失焦后"
+    }
+   ],
+   "precondition": {
+    "identity": "未登录",
+    "theme": "light",
+    "fixture": "mock 默认，注册页表单为空即可开始"
+   },
+   "crop": "确认密码行与其下方行内错误位",
+   "frameName": "C-MP-R2-PAGES-REGISTER-INDEX-012",
+   "unresolved": "台账原文写「同步改 :175 注释」，工作树该注释已随新增 onConfirmBlur 漂到 :187-188，行号引用失效但语义已落地，不影响本帧判点。"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-013",
+   "lane": "C",
+   "disposition": "SHOOT",
+   "route": "pages/register/index",
+   "assertions": 3,
+   "assertionList": [
+    {
+     "kind": "text-contains",
+     "target": ".field-error__text",
+     "expected": "「手机号格式不正确，请输入 11 位手机号」，即 register.errPhoneFormat 的 zh-CN 值",
+     "sourceAnchor": "apps/client/src/pages/register/index.vue:543",
+     "anchorFixed": "apps/client/src/pages/register/index.vue:280 ⇒ apps/client/src/pages/register/index.vue:543（对象实名 field-error__text）"
+    },
+    {
+     "kind": "text-not-contains",
+     "target": ".field-error__text",
+     "expected": "不得出现键路径字面量 register.errPhoneFormat（键缺失时 vue-i18n 会原样渲染键名）",
+     "sourceAnchor": "apps/client/src/pages/register/index.vue:543",
+     "anchorFixed": "apps/client/src/pages/register/index.vue:541-544 ⇒ apps/client/src/pages/register/index.vue:543（对象实名 field-error__text）"
+    },
+    {
+     "kind": "text-contains",
+     "target": "toast 浮层",
+     "expected": "「请先输入正确的手机号」，即 register.toastPhoneRequired 的 zh-CN 值，证明 toast() 已走 t()",
+     "sourceAnchor": "apps/client/src/pages/register/index.vue:282"
+    }
+   ],
+   "steps": [
+    {
+     "action": "input",
+     "selector": ".field__input",
+     "note": "手机号行输入 123（非 11 位，制造格式错）"
+    },
+    {
+     "action": "tap",
+     "selector": ".sms-btn",
+     "note": "点获取验证码（模板 :570-583），走 handleSendSms 的 !phoneValid 分支"
+    },
+    {
+     "action": "capture",
+     "selector": ".field-error__text",
+     "note": "同帧含 toast 浮层"
+    }
+   ],
+   "precondition": {
+    "identity": "未登录",
+    "theme": "light",
+    "fixture": "mock 默认；locale 恒为 zh-CN（i18n/index.ts:49），帧判的是键是否真接到消费方"
+   },
+   "crop": "手机号行、其下方行内错误位与验证码 toast",
+   "frameName": "C-MP-R2-PAGES-REGISTER-INDEX-013",
+   "unresolved": "判据的 zh 与 en 同步半项在小程序端不可帧判：apps/client/src/i18n/index.ts:22 自述全代码库无 setLocale 或 locale 运行时切换调用、:49 locale 恒为 zh-CN，因此拿不到 en-US 帧；en 侧只能静态读 apps/client/src/i18n/locales/en-US.ts:2182（Invalid phone number. Enter an 11-digit mobile number.）。本帧只承担「键已接上消费方且渲染出 zh-CN 值、无键路径字面量」这一半。"
+  },
+  {
+   "id": "MP-R2-PROFILE-024",
+   "lane": "C",
+   "disposition": "SHOOT",
+   "route": "pages/profile/index",
+   "assertions": 4,
+   "assertionList": [
+    {
+     "kind": "computed-style",
+     "target": "..not-logged-profile",
+     "expected": "padding-bottom 实测 = 184rpx 加 2×env(safe-area-inset-bottom)（台账判定的现状值）",
+     "sourceAnchor": "apps/client/src/components/profile/NotLoggedProfile.vue:153",
+     "anchorFixed": "apps/client/src/components/profile/NotLoggedProfile.vue:161 ⇒ apps/client/src/components/profile/NotLoggedProfile.vue:34（对象实名 not-logged-profile）",
+     "laneFixed": ".not-logged-profile @ apps/client/src/components/profile/NotLoggedProfile.vue:34 ⇒ .not-logged-profile @ apps/client/src/components/profile/NotLoggedProfile.vue:153"
+    },
+    {
+     "kind": "bounding-box-from-bottom",
+     "target": ".nlp-footer-btn",
+     "expected": "顶缘距视口底 = 292rpx 加 2×env（bottom 200rpx+2env 加 height 92rpx）",
+     "sourceAnchor": "apps/client/src/components/profile/NotLoggedProfile.vue:146",
+     "anchorFixed": "apps/client/src/components/profile/NotLoggedProfile.vue:451-452 ⇒ apps/client/src/components/profile/NotLoggedProfile.vue:146（对象实名 nlp-footer-btn）"
+    },
+    {
+     "kind": "bounding-box-gap",
+     "target": ".nlp-interaction--last 底缘 到 .nlp-footer-btn 顶缘",
+     "expected": "垂直间距 ≥ 24rpx；按现状 padding-bottom 184rpx+2env 小于浮层顶缘 292rpx+2env，滚动到底时最后一行会被固定 CTA 压住，判红",
+     "sourceAnchor": "apps/client/src/components/profile/NotLoggedProfile.vue:133",
+     "anchorFixed": "apps/client/src/components/profile/NotLoggedProfile.vue:161 ⇒ apps/client/src/components/profile/NotLoggedProfile.vue:133（对象实名 nlp-interaction--last）"
+    },
+    {
+     "kind": "bounding-box-from-bottom",
+     "target": ".nlp-footer-btn",
+     "expected": "底缘距视口底 ≥ 184rpx 加 2×env（custom-tab-bar 面板顶缘），即 CTA 本身不被 tabBar 面板盖住",
+     "sourceAnchor": "apps/client/src/components/profile/NotLoggedProfile.vue:146",
+     "anchorFixed": "apps/client/src/components/profile/NotLoggedProfile.vue:451 ⇒ apps/client/src/components/profile/NotLoggedProfile.vue:146（对象实名 nlp-footer-btn）"
+    }
+   ],
+   "steps": [
+    {
+     "action": "navigate",
+     "selector": "",
+     "note": "以访客身份进 /pages/profile/index"
+    },
+    {
+     "action": "scroll",
+     "selector": ".nlp-interaction--last",
+     "note": "把内容流滚到底，使「我的互动」最后一行与固定登录 CTA 同屏"
+    },
+    {
+     "action": "measure",
+     "selector": ".nlp-footer-btn",
+     "note": "量固定 CTA 顶缘距视口底的距离"
+    },
+    {
+     "action": "measure",
+     "selector": ".not-logged-profile",
+     "note": "量容器 padding-bottom 实测值"
+    }
+   ],
+   "precondition": {
+    "identity": "未登录访客（isUnlocked 为 false 时挂载 NotLoggedProfile，见 apps/client/src/pages/profile/index.vue:1647）",
+    "theme": "light",
+    "fixture": "带底部安全区的机型档（iPhone X 及以上，使 env(safe-area-inset-bottom) 非 0）；custom-tab-bar 可见"
+   },
+   "crop": "未登录个人主页底部：我的互动卡最后一行、固定登录 CTA、custom-tab-bar 面板顶缘",
+   "frameName": "C-MP-R2-PROFILE-024",
+   "unresolved": "判据的本人态半项（MyProfile.vue 的 padding-bottom 应为 296rpx+2env、浮层为 GlobalPublishFab）不在本 lane 的 files 清单内，需另开一帧；本帧只结未登录态这一档。"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-LOGIN-INDEX-001",
+   "lane": "E",
+   "disposition": "SHOOT",
+   "route": "pages/login/index",
+   "assertions": 3,
+   "assertionList": [
+    {
+     "kind": "computed-style",
+     "target": ".btn-primary",
+     "expected": "border-radius 取 var(--r-full)，计算值不小于该按钮高度的一半（视觉为胶囊，非 24rpx 档小圆角）",
+     "sourceAnchor": "apps/client/src/pages/login/index.vue:607",
+     "anchorFixed": "apps/client/src/pages/login/index.vue:1020 ⇒ apps/client/src/pages/login/index.vue:607（对象实名 btn-primary）"
+    },
+    {
+     "kind": "computed-style",
+     "target": ".btn-phone-quick",
+     "expected": "border-radius 取 var(--r-full)，计算值为胶囊档",
+     "sourceAnchor": "apps/client/src/pages/login/index.vue:627",
+     "anchorFixed": "apps/client/src/pages/login/index.vue:1066 ⇒ apps/client/src/pages/login/index.vue:627（对象实名 btn-phone-quick）"
+    },
+    {
+     "kind": "computed-style",
+     "target": ".btn-guest",
+     "expected": "border-radius 取 var(--r-full)，计算值为胶囊档，且与上两枚同档",
+     "sourceAnchor": "apps/client/src/pages/login/index.vue:673",
+     "anchorFixed": "apps/client/src/pages/login/index.vue:1116 ⇒ apps/client/src/pages/login/index.vue:673（对象实名 btn-guest）"
+    }
+   ],
+   "steps": [
+    {
+     "action": "none",
+     "selector": "",
+     "note": "打开即可。核验台警告过 --r-full 在修复前 HEAD 已存在，故本帧证明的是终态观感（三枚同档胶囊），diff 侧证据是 :1020 :1066 :1116 三行均取 var(--r-full)"
+    }
+   ],
+   "precondition": {
+    "identity": "guest 身份（实测：已登录会话开 pages/login/index 会被重定向到 pages/discover/index，见 uidebt-shoot-wsl2 落点证据）",
+    "theme": "light",
+    "fixture": "mp-weixin 构建、未展开手机号表单态（showPhoneLogin=false），此时三枚按钮同帧可见：.btn-primary / .btn-phone-quick / .btn-guest"
+   },
+   "crop": "登录页底部按钮区（微信一键登录 / 手机号快捷登录 / 稍后再看三枚）",
+   "frameName": "E-MP-R2VIS-PAGES-LOGIN-INDEX-001",
+   "unresolved": "",
+   "preconditionFixed": "身份 A → guest：取景实测被守卫重定向，A 身份下这一页根本渲染不出来"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-LOGIN-INDEX-007",
+   "lane": "E",
+   "disposition": "SHOOT",
+   "route": "pages/login/index",
+   "assertions": 3,
+   "assertionList": [
+    {
+     "kind": "text-contains",
+     "target": ".btn-phone-quick-text",
+     "expected": "手机号快捷登录",
+     "sourceAnchor": "apps/client/src/pages/login/index.vue:633"
+    },
+    {
+     "kind": "text-contains",
+     "target": ".login-sms-fallback-text",
+     "expected": "验证码或密码登录（与上一枚文本必须不同，不再同键同名）",
+     "sourceAnchor": "apps/client/src/pages/login/index.vue:646"
+    },
+    {
+     "kind": "computed-style",
+     "target": ".login-sms-fallback-text",
+     "expected": "字号为 var(--fs-sm) 档且颜色为 var(--c-text-tertiary)——兜底入口弱于快捷按钮，不与之争视觉权重",
+     "sourceAnchor": "apps/client/src/pages/login/index.vue:646",
+     "anchorFixed": "apps/client/src/pages/login/index.vue:1107 ⇒ apps/client/src/pages/login/index.vue:646（对象实名 login-sms-fallback-text）"
+    }
+   ],
+   "steps": [
+    {
+     "action": "none",
+     "selector": "",
+     "note": "打开即可。两键值已分开命名：login.phoneQuickLogin=「手机号快捷登录」(zh-CN.ts:2215)、login.phoneLogin=「验证码或密码登录」(zh-CN.ts:2189)，en-US 同批为 en-US.ts:2159 与 en-US.ts:2131"
+    }
+   ],
+   "precondition": {
+    "identity": "guest 身份（实测：已登录会话开 pages/login/index 会被重定向到 pages/discover/index，见 uidebt-shoot-wsl2 落点证据）",
+    "theme": "light",
+    "fixture": "mp-weixin 构建、zh-CN 语料、未展开手机号表单态；两枚按钮同帧（快捷授权按钮 + 其下方的文字兜底入口）"
+   },
+   "crop": "登录页手机号快捷授权按钮 + 其下「验证码或密码登录」文字入口",
+   "frameName": "E-MP-R2VIS-PAGES-LOGIN-INDEX-007",
+   "unresolved": "",
+   "preconditionFixed": "身份 A → guest：取景实测被守卫重定向，A 身份下这一页根本渲染不出来"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-001",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "pages/messages/index",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": "登出态（游客）取景：台账原话「复验要的是**登出态取景**（tour 已有 LOGOUT_LANDING 通道），不是再拍一张登录态帧」⇒ identity=guest 且必须跑 real 档（游客×mock 是结构不可满足组合，见 §117）",
+   "frameName": "messages-logout-bg-page-token",
+   "assertions": 1,
+   "assertionList": [
+    "apps/client/src/components/discover/NotLoggedWaiting.vue .not-logged{background:#f6fbfc}；对照帧 .zcode/tmp/backup-round-2-…"
+   ],
+   "steps": [
+    "apps/client/src/components/discover/NotLoggedWaiting.vue .not-logged{background:#f6fbfc}；对照帧 .zcode/tmp/backup-round-2-…"
+   ],
+   "crop": "full",
+   "unresolved": ""
+  }
+ ],
+ "addedByStage7": [
+  "MP-R2VIS-PAGES-MESSAGES-INDEX-001"
+ ]
+}

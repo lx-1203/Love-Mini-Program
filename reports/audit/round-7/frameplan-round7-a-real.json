@@ -1,0 +1,31 @@
+{
+ "generatedAt": "2026-09-27T03:54:38.627Z",
+ "from": "frameplan-round7-final.json + uidebt-shoot/shoot-results.json 的 6 条 NO_EVIDENCE 行",
+ "reason": "这 6 条的前置身份是游客：mock 档的 bootstrap 会无条件造出会话，档位表达不了游客 ⇒ 换 real 档重拍，而不是记成产品没做到",
+ "rows": [
+  {
+   "id": "MP-R2-CAMPUSPOST-010",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "subpackages/campus/campus/post-topic",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": "真实模式 + 故意提交一张非法扩展名/断网的配图（台账原话：仍欠的是真机一次被拦下的观感帧）⇒ requiresReal，产物须为 real 档且 8080 在跑",
+   "frameName": "campuspost-upload-rejected-notice",
+   "assertions": 1,
+   "assertionList": [
+    "post-topic.vue:257-262 `catch (_e) { uni.showToast({ title: campusStore.errorMessage // t(\"campus.postTopic.publishFail…"
+   ],
+   "steps": [
+    "post-topic.vue:257-262 `catch (_e) { uni.showToast({ title: campusStore.errorMessage // t(\"campus.postTopic.publishFail…"
+   ],
+   "crop": "full",
+   "unresolved": ""
+  }
+ ],
+ "addedByStage7": [
+  "MP-R2VIS-PAGES-MESSAGES-INDEX-001",
+  "MP-R2-CAMPUSPOST-010"
+ ],
+ "$comment": "登录态（identity=A）真实档取景配方：2026-09-27 收口波新建。为什么单独一档：requiresReal 的复验帧（如配图上传被服务端拦下）既不能在 mock 档量到，也不该由游客腿代拍 ⇒ stage-7 需要一条 reshoot-A-real 腿，产物=mp-weixin-real 且 8080 在跑。"
+}
