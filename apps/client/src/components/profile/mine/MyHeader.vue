@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import type { UserProfileDTO } from "../../../types/profile";
 import { IMAGE_PATHS } from "../../../config/images";
+import { profileMetaLine } from "../../../utils/profile-meta";
 
 const props = withDefaults(defineProps<{
   profile: UserProfileDTO;
@@ -19,12 +20,7 @@ function handleSettings() {
   uni.navigateTo({ url: "/subpackages/profile-extra/settings/index" });
 }
 
-const metaLine = computed(() => {
-  const parts: string[] = [];
-  if (props.profile.basic.age) parts.push(`${props.profile.basic.age}岁`);
-  if (props.profile.basic.location) parts.push(props.profile.basic.location);
-  return parts.join(" · ");
-});
+const metaLine = computed(() => profileMetaLine(props.profile.basic));
 
 const certLabel = computed(() => {
   if (!props.profile.identity.verified) return "";

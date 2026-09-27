@@ -55,7 +55,8 @@ let messageIdSeq = 0;
 export async function sendText(
   this: ChatStoreThis,
   body: string,
-  kind: SendMessageRequest["kind"] = "text"
+  kind: SendMessageRequest["kind"] = "text",
+  quoteRef?: string | null
 ): Promise<boolean> {
   // MP-R2-CHAT-CHAT-SESSION-INDEX-001：返回成功/失败布尔替代页面「errorMessage 文案差分」
   // 检测——差分在连续两次相同错误文案时误判为成功（页面随后清空草稿，消息正文丢失）
@@ -75,6 +76,11 @@ export async function sendText(
       kind,
       body,
       durationSeconds: null,
+      // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002：临时会话这条链路此前把页面传来的
+      // 引用目标丢掉（SendMessageRequest 早有 quoteRef 字段，只是没人赋），私信链路同批修。
+      // 空白与超长（>64，后端 @Size(max=64) 同口径）不发——引用是可选语义，
+      // 不能因为一个非法引用 ID 把整条消息拖进 400。
+      quoteRef: quoteRef && quoteRef.trim() && quoteRef.trim().length <= 64 ? quoteRef.trim() : null,
     };
 
     // 使用 withMockMode 统一处理 Mock/Real 切换、activeSession 更新、概览刷新

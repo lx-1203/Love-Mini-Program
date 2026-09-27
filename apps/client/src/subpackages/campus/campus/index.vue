@@ -51,6 +51,9 @@ const {
   // errorMessage 由认证/活动等共享消费，本页错误槽已改绑 topicsError
   // （MP-R1-CAMPUSINDEX-003：错误展示/重试与认证状态解耦）
   topicsError,
+  // MP-R2-CAMPUSINDEX-010：认证拉取错误独立字段（原塌缩进共享 errorMessage → 本页无感，
+  // 非 404 失败静默按「未认证」渲染）
+  certificationError,
   certificationStatus,
   certificationInfo,
   isVerified,
@@ -93,6 +96,11 @@ function switchCategory(category: CampusTopicCategory) {
 /** 错误态重试（MP-R1-CAMPUSINDEX-002：与首屏同口径透传 viewSchool） */
 function retryCampusTopics() {
   void campusStore.fetchCampusTopics(activeCategory.value, 1, viewSchool.value || undefined);
+}
+
+/** MP-R2-CAMPUSINDEX-010：认证状态拉取失败的重试入口（对齐 hub.vue:186 的 refreshCertification） */
+function retryCertification() {
+  void campusStore.fetchCertificationStatus();
 }
 
 /**
@@ -247,6 +255,21 @@ onMounted(async () => {
             <text class="cert-badge__text">{{ certStatusText(certificationStatus) }}</text>
           </view>
         </view>
+      </view>
+    </view>
+
+    <!-- MP-R2-CAMPUSINDEX-010：认证状态拉取失败（非 404）不再塌缩成「未认证」——
+         与 hub.vue:184-189 同族口径的错误条 + 重试入口 -->
+    <view v-if="certificationError" class="cert-error-bar" role="alert" aria-live="assertive">
+      <text class="cert-error-bar__text">{{ certificationError }}</text>
+      <view
+        class="cert-error-bar__btn press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        @tap="retryCertification"
+      >
+        <text class="cert-error-bar__btn-text">{{ t('campus.index.retry') }}</text>
       </view>
     </view>
 
@@ -475,6 +498,46 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-inverse);
   font-weight: 600;
+}
+
+/* ========== 认证状态拉取失败错误条（MP-R2-CAMPUSINDEX-010）========== */
+.cert-error-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin: 20rpx 24rpx 0;
+  padding: 16rpx 24rpx;
+  border-radius: var(--r-lg, 20rpx);
+  background: var(--c-error-bg-tint, rgba(229, 69, 77, 0.1));
+}
+
+.cert-error-bar__text {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-md, 26rpx);
+  color: var(--c-error, #E5454D);
+  line-height: 1.5;
+}
+
+.cert-error-bar__btn {
+  padding: 8rpx 24rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
+  flex-shrink: 0;
+}
+
+/* #ifdef H5 */
+.cert-error-bar__btn:active {
+  transform: scale(0.96);
+}
+/* #endif */
+
+.cert-error-bar__btn-text {
+  font-size: var(--fs-md, 26rpx);
+  color: var(--c-text-inverse);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* ========== 认证引导卡片 ========== */

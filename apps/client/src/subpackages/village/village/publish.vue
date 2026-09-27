@@ -733,11 +733,13 @@ onUnmounted(() => {
   <view class="publish-page" :style="menuStyleVars">
     <!-- 顶部导航（R20：padding-top 注入状态栏高度，标题不再与系统时间叠印） -->
     <view class="publish-header" :style="{ paddingTop: statusBarHeightPx + 10 + 'px' }">
-      <view class="publish-header__close press-feedback" hover-class="press-feedback--active" role="button" :aria-label="t('common.closeAria')" @tap="requestLeave">
+      <view class="publish-header__close press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.closeAria')" @tap="requestLeave">
         <image class="publish-header__x" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
       </view>
       <text class="publish-header__title">发布动态</text>
-      <view class="publish-header__submit" :class="{ 'publish-header__submit--disabled': !canSubmit }" role="button" :aria-label="t('common.publish')" @tap="submitPublish">
+      <!-- MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005：页内唯一无按压反馈的 @tap view
+           （同页其余 @tap 节点均已按 .publish-image__remove 范式补齐） -->
+      <view class="publish-header__submit press-feedback" :class="{ 'publish-header__submit--disabled': !canSubmit }" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.publish')" @tap="submitPublish">
         <text class="publish-header__submit-text">发布</text>
       </view>
     </view>
@@ -916,6 +918,12 @@ onUnmounted(() => {
         </template>
         <template v-else-if="joinedCircles.length > 0">
           <text class="publish-target-sheet__group">兴趣圈子 · 圈内成员可见</text>
+          <!-- MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006：两个发布入口的圈子候选行统一为
+               「圈名 + 一条描述（已加入 · N 成员）」两段结构，与 post.vue:849-850 同构。
+               裁决取多数侧：本域 6 个目标行里 5 个（本页 :900/:906 与 post.vue :795/:814/:850）
+               均为 name+desc 两段，三段（圈名 + 绿色已加入胶囊 + 成员数）全仓仅此 1 处，故删少数侧。
+               被删胶囊同时是语义/样式越界点：独立 text 在 role="button" 行内被读作孤立片段，
+               且其墨绿字色、浅绿底色与 6rpx 圆角全表无等值 token（见本文件 PUBLISH-004 备注）。 -->
           <view
             v-for="circle in joinedCircles"
             :key="circle.id"
@@ -926,8 +934,7 @@ onUnmounted(() => {
             @tap="selectTarget(circle)"
           >
             <text class="publish-target-sheet__name">{{ circle.name }}</text>
-            <text class="publish-target-sheet__joined">已加入</text>
-            <text class="publish-target-sheet__desc">{{ formatMemberShort(circle.memberCount) }} 成员</text>
+            <text class="publish-target-sheet__desc">已加入 · {{ formatMemberShort(circle.memberCount) }} 成员</text>
             <image v-if="isCircleTarget && targetId === Number(circle.id)" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
           </view>
         </template>
@@ -1058,7 +1065,8 @@ onUnmounted(() => {
 .publish-target-sheet__option { display: flex; align-items: center; justify-content: space-between; padding: 24rpx 8rpx; border-bottom: 1rpx solid #F2F5F3; }
 .publish-target-sheet__name { font-size: 28rpx; color: var(--c-text-primary, #1A1E1C); }
 .publish-target-sheet__circle-opt { display: flex; align-items: center; }
-.publish-target-sheet__joined { font-size: 20rpx; color: #2FA366; background: #E8F6EE; border-radius: 6rpx; padding: 2rpx 10rpx; margin-left: 12rpx; }
+/* MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006：绿色「已加入」胶囊的样式规则随三段结构一并删除，
+   圈子候选行改回 name + 单条 desc（已加入 · N 成员），与 post.vue 同构 */
 .publish-target-sheet__desc { font-size: 24rpx; color: var(--c-text-tertiary, #9AA39F); margin-left: 12rpx; /* R21：desc 弹性占位（与 post 版一致），选项行结构跨版统一 */ flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .publish-target-sheet__check { width: 32rpx; height: 32rpx; color: var(--c-brand, #36C99A); }
 /* MP-R1-PUB-017：弹层「兴趣圈子」分组加载中/空态提示 */
@@ -1112,9 +1120,9 @@ onUnmounted(() => {
 
 /* MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-004：圆角字面量按「等值才换」收口——
    本行 20rpx = --r-lg（design-variables.scss:194）等值，已令牌化；
-   .publish-target-sheet__joined 的 6rpx 与 .publish-image 的 16rpx 全表无等值档
-   （--r-sm=8rpx / --r-lg=20rpx，台账处置列举例的「16→--r-lg」实为 16→20rpx 视觉变更，不采纳），
-   按 nit 保留字面量 */
+   .publish-image 的 16rpx 全表无等值档（--r-sm=8rpx / --r-lg=20rpx，台账处置列举例的
+   「16→--r-lg」实为 16→20rpx 视觉变更，不采纳），按 nit 保留字面量。
+   （原同批备注里那条 6rpx 圆角例外，属已删除的「已加入」胶囊规则，现已无对应样式） */
 .publish-tip { margin: 24rpx 32rpx; padding: 24rpx; background: #EAF9F3; border-radius: var(--r-lg, 20rpx); display: flex; align-items: flex-start; gap: 16rpx; }
 .publish-tip__text-wrap { flex: 1; display: flex; flex-direction: column; gap: 6rpx; }
 .publish-tip__title { font-size: 26rpx; font-weight: 700; color: var(--c-brand, #36C99A); display: flex; align-items: center; gap: 8rpx; }

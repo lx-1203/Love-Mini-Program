@@ -98,7 +98,7 @@ onMounted(fetchList);
           </tr>
         </tbody>
       </table>
-      <div v-if="!loading && items.length === 0" class="empty">{{ t('common.empty') }}</div>
+      <div v-if="!loading && items.length === 0" class="empty">{{ t('common.noData') }}</div>
       <div class="pager">
         <button class="btn btn--sm" :disabled="page <= 1" @click="page--; fetchList()">‹</button>
         <span>{{ page }} / {{ Math.max(1, Math.ceil(total / pageSize)) }}</span>

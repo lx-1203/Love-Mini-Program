@@ -22,6 +22,12 @@ import { appEnv, isDev, isMockMode } from "./env";
 import { getToken, request, setToken, setRefreshToken, clearTokens, withTimeout, normalizeApiPath, hashString } from "./http";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES } from "../constants/routes";
+// 2026-09-27（上传扩展名门禁）：白名单唯一真源在 utils/media.ts（镜像后端
+// LocalMediaStorageService），此处只在发起上传前拦截，不另立第二份清单。
+import { isAllowedMediaExt, describeAllowedMediaExts, type UploadMediaKind } from "../utils/media";
+// 违例文案走 i18n（与 services/voice-upload.ts 的上传前置守卫同机制：抛 Error，
+// 由调用方既有的 catch → uni.showToast(error.message) 呈现，不在服务层自造 toast）
+import { t } from "@/i18n";
 // B3 恋爱小纸条：悄悄话解锁视图类型（后端 WhisperUnlockView 镜像）
 import type { WhisperUnlockView } from "../stores/discover/types";
 
@@ -157,6 +163,22 @@ function buildRecommendationsQuery(filter: RecommendationFilter): string {
 }
 
 /**
+ * 由上传端点的 formData.type 判定媒体类型。
+ *
+ * 后端 `/media/upload` 以 formData 字段 `type`（image|audio|video）选择校验分支；
+ * 资料类端点（/profile/avatar、/profile/photos、/profile/background、/profile/half-body、
+ * /feedback/images）只收图片、不带 type → 缺省按 image 处理。
+ *
+ * @param typeValue extraFields.type 原始值（大小写不敏感）
+ */
+function resolveUploadMediaKind(typeValue: string | undefined): UploadMediaKind {
+  const normalized = (typeValue ?? "").trim().toLowerCase();
+  if (normalized === "audio") return "audio";
+  if (normalized === "video") return "video";
+  return "image";
+}
+
+/**
  * 通过 uni.uploadFile 上传文件到指定端点。
  *
  * 兼容 H5 与 mp-weixin：
@@ -167,9 +189,16 @@ function buildRecommendationsQuery(filter: RecommendationFilter): string {
  * Task 31：使用 withTimeout 包装，默认 30s 超时（文件上传耗时较长）。
  * 超时后请求被 abort，调用方收到 EnhancedApiError（category=network）。
  *
+ * 2026-09-27（上传扩展名门禁）：发起上传**之前**先按媒体类型校验扩展名
+ * （白名单真源 utils/media.ts ALLOWED_MEDIA_EXTS，镜像后端 LocalMediaStorageService）。
+ * 违例以 rejected Error 抛出，与既有上传失败同机制——调用方（pages/profile 头像、
+ * subpackages/profile-extra/profile/album、village 发帖、chat 发图、stores/profile 语音）
+ * 已有的 catch → toast error.message 会把它呈现给用户，服务层不自行弹 toast。
+ * 扩展名取不到（H5 blob: URL 等）时放行，由服务端判定，避免误杀合法上传。
+ *
  * @param file - 文件对象（H5 标准 File 或 uni-app 扩展的带 path 字段对象）
  * @param endpoint - 上传端点路径（不含 apiBaseUrl 前缀）
- * @param extraFields - 附带到 FormData 的额外字段（如 index）
+ * @param extraFields - 附带到 FormData 的额外字段（如 index、media/upload 的 type）
  * @returns 解析后的服务端响应体
  */
 function uploadFileViaUni<TResponse>(
@@ -181,6 +210,16 @@ function uploadFileViaUni<TResponse>(
   // 对象时需挂 path 字段；H5 端 File 没有 path，回退到 name。
   // 参数类型已收敛为 UniUploadFileLike，无需 `as unknown as UniUploadFileLike` 断言。
   const filePath = file.path ?? file.name;
+
+  // 扩展名门禁：优先按真实临时路径判定（调用方自造的 name 可能是写死的 `.jpg`，
+  // 如 chat-session 的 `chat-<ts>-<n>.jpg`），路径无扩展名时才回退 name。
+  const mediaKind = resolveUploadMediaKind(extraFields?.type);
+  const extSource = (file.path ?? "").length > 0 ? file.path : file.name;
+  if (!isAllowedMediaExt(extSource, mediaKind)) {
+    return Promise.reject(
+      new Error(t("storeErrors.media.uploadExtNotAllowed", { exts: describeAllowedMediaExts(mediaKind) }))
+    );
+  }
 
   // Task 31：使用 AbortController 实现超时控制
   const controller = new AbortController();

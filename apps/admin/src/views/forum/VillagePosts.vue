@@ -456,6 +456,7 @@ onMounted(() => {
             <td>{{ categoryLabel(post.category) }}</td>
             <td class="stats-cell">
               <span class="stats-item">{{ t("villagePosts.statsLikes", { n: post.likesCount ?? 0 }) }}</span>
+              <span class="stats-item">{{ t("villagePosts.statsComments", { n: post.commentsCount ?? 0 }) }}</span>
               <span class="stats-item">{{ t("villagePosts.statsFavorites", { n: post.favoriteCount ?? 0 }) }}</span>
               <span class="stats-item">{{ t("villagePosts.statsViews", { n: post.viewCount ?? 0 }) }}</span>
             </td>

@@ -1457,7 +1457,7 @@ export const mockFixtures = {
       certified: true,
       online: true,
       matchScore: 90,
-      photoUrl: resolveMediaUrl(resolveMediaUrl("/static/assets/images/people/person-02.png")),
+      photoUrl: "/static/assets/images/people/person-02.png",
       constellation: "双子座",
     });
   },

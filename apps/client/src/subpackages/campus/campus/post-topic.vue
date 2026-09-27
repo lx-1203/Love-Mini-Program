@@ -322,22 +322,34 @@ async function submitTopic() {
       images.value.some((img) => !isUploadedMediaUrl(img))
     ) {
       const uploaded: string[] = [];
-      for (const img of images.value) {
-        if (isUploadedMediaUrl(img)) {
-          uploaded.push(img);
-          continue;
+      try {
+        for (const img of images.value) {
+          if (isUploadedMediaUrl(img)) {
+            uploaded.push(img);
+            continue;
+          }
+          // MP-R1-CAMPUSPOST-002：文件名含每图唯一量（时间戳+序号，对齐 village/post.vue 惯例）
+          // ——Idempotency-Key 按「endpoint|file.name」纯 FNV-1a 哈希，恒定 "campus-topic.jpg"
+          // 使同帖多图第 2 张起 key 完全相同 → 409「重复请求已被拦截」→ 整个发布失败；
+          // 且 key 与内容无关，4h TTL 内本页任何再次带图发帖都被同一 key 拦截
+          const result = await clientApi.uploadPostImage({
+            name: `campus-topic-${Date.now()}-${uploaded.length}.jpg`,
+            path: img,
+          });
+          uploaded.push(result?.url ?? img);
         }
-        // MP-R1-CAMPUSPOST-002：文件名含每图唯一量（时间戳+序号，对齐 village/post.vue 惯例）
-        // ——Idempotency-Key 按「endpoint|file.name」纯 FNV-1a 哈希，恒定 "campus-topic.jpg"
-        // 使同帖多图第 2 张起 key 完全相同 → 409「重复请求已被拦截」→ 整个发布失败；
-        // 且 key 与内容无关，4h TTL 内本页任何再次带图发帖都被同一 key 拦截
-        const result = await clientApi.uploadPostImage({
-          name: `campus-topic-${Date.now()}-${uploaded.length}.jpg`,
-          path: img,
-        });
-        uploaded.push(result?.url ?? img);
+        submitImages = uploaded;
+      } catch (uploadErr) {
+        /* MP-R2-CAMPUSPOST-010：上传失败必须在「配图上传」这一层报出去，不许落进发布的 catch。
+           createCampusTopic 是在下面才被调用的，而 errorMessage 只在它入口清空 ——
+           所以此刻 campusStore.errorMessage 里躺着的是上一次动作（拉话题 / 拉认证）留下的文案，
+           真上传失败会让用户看到一句与刚才那件事毫无关系的错误。
+           复位 isSubmitting 沿用本函数既有约定（没有 finally，catch 自己复位）。 */
+        console.error("配图上传失败:", uploadErr);
+        isSubmitting.value = false;
+        uni.showToast({ title: t("campus.postTopic.uploadFailed"), icon: "none" });
+        return;
       }
-      submitImages = uploaded;
     }
 
     // 实际提交给服务端的正文（mock 走「内容末尾拼 #话题」，real 走 tags 字段），

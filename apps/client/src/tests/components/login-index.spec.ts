@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { reactive, ref } from "vue";
-import { i18n } from "../../i18n";
+import { i18n, t } from "../../i18n";
+import zhCN from "../../i18n/locales/zh-CN";
+import enUS from "../../i18n/locales/en-US";
 
 /**
  * 登录页协议可见性回归测试（2026-08-14 缺陷修复）：
@@ -150,5 +152,54 @@ describe("登录页协议可见性（2026-08-14）", () => {
   it("协议区仅渲染一次（无重复勾选区）", () => {
     const wrapper = mountLogin();
     expect(wrapper.findAll(".terms-wrap").length).toBe(1);
+  });
+});
+
+/**
+ * MP-R2VIS-PAGES-LOGIN-INDEX-007：快捷授权按钮与「验证码/密码」兜底入口曾取同值文案
+ * （两键值都是「手机号登录」/ "Phone Login"），同屏两枚按钮无法区分。
+ * 修法 = 两键分开命名（zh-CN / en-US 同批）+ 兜底入口样式弱化，不再复用快捷按钮样式。
+ */
+describe("手机号快捷登录与兜底入口的文案/样式区分（MP-R2VIS-PAGES-LOGIN-INDEX-007）", () => {
+  function loginLocale(messages: unknown) {
+    return (messages as { login: Record<string, string> }).login;
+  }
+
+  it("zh-CN 与 en-US 两键文案分开命名（配对同批）", () => {
+    const zh = loginLocale(zhCN);
+    const en = loginLocale(enUS);
+
+    expect(zh.phoneQuickLogin).toContain("快捷");
+    expect(zh.phoneLogin).toContain("验证码");
+    expect(zh.phoneLogin).toContain("密码");
+    expect(zh.phoneQuickLogin).not.toBe(zh.phoneLogin);
+
+    expect(en.phoneQuickLogin.toLowerCase()).toContain("quick");
+    expect(en.phoneLogin.toLowerCase()).toContain("code");
+    expect(en.phoneLogin.toLowerCase()).toContain("password");
+    expect(en.phoneQuickLogin).not.toBe(en.phoneLogin);
+  });
+
+  it("两枚按钮渲染不同文案，且 aria-label 与可见文本同键", () => {
+    const wrapper = mountLogin();
+    const quick = wrapper.find(".btn-phone-quick");
+    const fallback = wrapper.find(".login-sms-fallback");
+    const formEntry = wrapper.find(".login-phone-entry");
+
+    expect(quick.text()).toBe(t("login.phoneQuickLogin"));
+    expect(quick.attributes("aria-label")).toBe(t("login.phoneQuickLogin"));
+    expect(fallback.text()).toBe(t("login.phoneLogin"));
+    expect(fallback.attributes("aria-label")).toBe(t("login.phoneLogin"));
+    expect(formEntry.text()).toBe(t("login.phoneLogin"));
+    expect(formEntry.attributes("aria-label")).toBe(t("login.phoneLogin"));
+    expect(quick.text()).not.toBe(fallback.text());
+  });
+
+  it("兜底入口不复用快捷登录按钮样式（.btn-phone-quick 仅快捷授权一枚）", () => {
+    const wrapper = mountLogin();
+    expect(wrapper.findAll(".btn-phone-quick").length).toBe(1);
+    expect(wrapper.find(".btn-phone-quick").attributes("open-type")).toBe("getPhoneNumber");
+    expect(wrapper.find(".login-sms-fallback").classes()).not.toContain("btn-phone-quick");
+    expect(wrapper.find(".login-phone-entry").classes()).not.toContain("btn-phone-quick");
   });
 });

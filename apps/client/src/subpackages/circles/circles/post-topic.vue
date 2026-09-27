@@ -500,7 +500,7 @@ onLoad((query) => {
         hover-stay-time="120"
         @tap="submitTopic"
       >
-        <text class="submit-text">{{ t("circle.postTopicSubmit") }}</text>
+        <text class="submit-text">{{ isSubmitting ? t("common.submitting") : t("circle.postTopicSubmit") }}</text>
       </view>
     </view>
 
@@ -707,7 +707,7 @@ onLoad((query) => {
           hover-stay-time="120"
           @tap="submitTopic"
         >
-          <text class="bottom-submit__text">{{ t("circle.postTopicNavTitle") }}</text>
+          <text class="bottom-submit__text">{{ isSubmitting ? t("common.submitting") : t("circle.postTopicNavTitle") }}</text>
         </view>
       </view>
     </scroll-view>

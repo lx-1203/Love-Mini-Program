@@ -73,6 +73,8 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
     <view v-if="loading" role="status" aria-live="polite">
       <SkeletonBlock variant="list" :rows="2" label="加载中" />
     </view>
+    <!-- MP-R2-PAGES-HOME-INDEX-111：骨架 → 空态 → 列表三分支，空态口径对齐 CommunityFeed -->
+    <view v-else-if="items.length === 0" class="interest-recommend__empty">暂无兴趣圈</view>
     <scroll-view v-else scroll-x class="interest-scroll" :show-scrollbar="false">
       <view class="interest-list">
         <view
@@ -130,6 +132,16 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
 .section-head__more {
   font-size: 22rpx;
   color: var(--c-text-secondary, #666666);
+}
+
+.interest-recommend__empty {
+  padding: 32rpx;
+  border-radius: 20rpx;
+  background: #ffffff;
+  border: 1rpx solid var(--c-line, #EEF2F0);
+  color: var(--c-text-secondary, #999999);
+  font-size: 22rpx;
+  text-align: center;
 }
 
 .interest-scroll {

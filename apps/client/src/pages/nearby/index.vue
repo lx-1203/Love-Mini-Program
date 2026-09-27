@@ -26,7 +26,7 @@ import { showErrorToast } from "../../utils/error-toast";
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
 // MP-R1-PUBLISH-006：定位成功解析的城市持久化（publish 页「添加位置」读取展示）
 import { STORAGE_KEYS } from "../../constants/storage-keys";
-import { SCHOOLS, type School } from "../../config/schools";
+import { SCHOOLS, loadSchools, type School } from "../../config/schools";
 // 第五轮：校园圈卡片统一浅绿背景 + 名字（coverUrl 上传后显示图片），不再使用渐变底色
 import { useTabBar } from "../../composables/useTabBar";
 import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
@@ -67,12 +67,24 @@ function canFetchProtected(): boolean {
   return useMock() || getToken().length > 0;
 }
 
+/** MP-R1-PAGES-NEARBY-INDEX-018：校园圈入口此前恒用静态 SCHOOLS，本页一次都没调用过
+ *  config/schools.ts 的 loadSchools()（契约是「后端 /config/campuses 动态列表 + 本地静态只作初始渲染兜底」）。
+ *  现在按该契约把列表放进 ref：静态表只当首帧兜底，onLoad/onShow 静默重拉，
+ *  拉回空表或失败都保持现有值（loadSchools 内部已回退 SCHOOLS，这里再挡一层"空列表把入口打掉"）。 */
+const schoolPool = ref<School[]>(SCHOOLS);
+function refreshSchools(): void {
+  void loadSchools().then((list) => {
+    if (list.length > 0) schoolPool.value = list;
+  });
+}
+
 /** 校园入口（前 4 所）。R3：用户本校置顶（原固定取前 4 所，本校不在首屏，与定位文案自相矛盾） */
 const schoolEntries = computed(() => {
+  const pool = schoolPool.value;
   const myCampus = sessionStore.userSession?.campusName?.trim();
-  if (!myCampus) return SCHOOLS.slice(0, 4);
-  const mine = SCHOOLS.find((s) => s.name === myCampus);
-  const rest = SCHOOLS.filter((s) => s.name !== myCampus);
+  if (!myCampus) return pool.slice(0, 4);
+  const mine = pool.find((s) => s.name === myCampus);
+  const rest = pool.filter((s) => s.name !== myCampus);
   const mineEntry: School = mine ?? { id: `session-${myCampus}`, name: myCampus };
   return [mineEntry, ...rest].slice(0, 4);
 });
@@ -143,12 +155,15 @@ async function initLocation() {
 onLoad(() => {
   loadNearbyData();
   void initLocation();
+  // MP-R1-PAGES-NEARBY-INDEX-018：校区列表走后端，静态表只作首帧兜底
+  refreshSchools();
 });
 
 onShow(() => {
   // MP-R1-PAGES-NEARBY-INDEX-002/004：原 onShow 仅刷新本页从不渲染的 peoplePreview
   // 死链；现按 TTL 刷新页面真实可见数据源（附近动态 30s / 活动 store 内 30s TTL），
   // 未登录（real）不发受保护请求，登录后由 watch(isLoggedIn) 补拉。
+  refreshSchools();
   if (canFetchProtected()) {
     void loadCirclePosts();
     void loadActivities();
@@ -158,6 +173,9 @@ onShow(() => {
 onPullDownRefresh(() => {
   // MP-R1-PAGES-NEARBY-INDEX-003：下拉刷新并行重拉全部可见数据源（force 绕过
   // 「空列表才拉取」与 30s TTL 短路），完成后才停止下拉动画。
+  // MP-R1-PAGES-NEARBY-INDEX-018：校区列表是公开端点、不进 canFetchProtected 那一组，
+  // 但它同样是本页可见数据源 ⇒ 下拉也要重拉（失败由 loadSchools 内部回退静态表，不阻塞下拉动画）。
+  refreshSchools();
   // MP-R2-PAGES-NEARBY-INDEX-002：三个 store 的 fetch 内部吞错不 rethrow，
   // Promise.catch 是死路径——改为完成后统一检查各 store 错误字段给 toast。
   const tasks: Promise<unknown>[] = [];

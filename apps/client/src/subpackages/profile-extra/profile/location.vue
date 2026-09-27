@@ -111,6 +111,11 @@ async function pickFromMap() {
     if (res?.latitude && res?.longitude) {
       coords.value = { latitude: res.latitude, longitude: res.longitude };
       city.value = res.address || res.name || "";
+      /* 选点返回的地址就是这对坐标逆解析出来的，天然同源：上一次定位留下的 ip 来源/超距
+         丢弃标记必须一并清掉，否则刚选出的位置要么被冠上「服务器所在城市」的错误出处，
+         要么被 cityDistant 整个吞掉、只剩「地址解析不可用」。 */
+      cityFromIp.value = false;
+      cityDistant.value = false;
       addressText.value = res.address || res.name || "";
       void reportLocation(res.latitude, res.longitude, true);
     }

@@ -157,6 +157,19 @@ export interface MessageItem {
   body: string;
   sentAt: string;
   durationSeconds?: number | null;
+  /**
+   * 2026-09-27 私信引用回复链路：引用目标消息 ID / 正文快照 / 发送方。
+   *
+   * 形状与临时会话完全一致（subpackages/chat/chat-session/dto.ts 的
+   * MessageLike / ChatMessageView 同名字段），故渲染层零分支复用：
+   * messagesStore.currentMessages → toChatMessageViewList → ChatBubble
+   * 的 quote-ref/quote-body/quote-sender props（quoteRef && quoteBody 时显示引用条）。
+   * 私信来源＝后端 MessageView.quoteContext 快照（见 parsePrivateQuoteContext）；
+   * 临时会话来源＝chatStore → setCurrentMessages 的 ChatMessageView。
+   */
+  quoteRef?: string;
+  quoteBody?: string;
+  quoteSender?: "self" | "peer" | "system";
 }
 
 /**
@@ -228,6 +241,14 @@ export interface BackendMessageView {
   createdAt: string;
   /** 语音消息时长（秒），非语音消息为 null（录音修复：后端 MessageView 已支持） */
   durationSeconds?: number | null;
+  /**
+   * 引用回复快照 JSON（2026-09-27 私信引用链路：后端 MessageView.java:17 quoteContext）。
+   * 仅当该消息是引用回复时非空，形如
+   * `{"id":"<被引用消息 ID>","body":"<被引用正文>","sender":<发送方 userId>}`；
+   * 此时 messageKind 被服务端规范化为 "quote"（不在前端 kind 联合类型内 → 回退 "text"，
+   * 引用信息改由 quoteRef/quoteBody/quoteSender 承载，与临时会话渲染口径一致）。
+   */
+  quoteContext?: string | null;
 }
 
 /**
@@ -327,6 +348,43 @@ function resolveCurrentUserIdFromToken(): string | null {
   }
 }
 
+/**
+ * 解析后端私信的引用回复快照（MessageView.quoteContext）。
+ *
+ * 快照由 apps/api RealPrivateMessageService.buildQuoteSnapshot 构造，形如
+ * `{"id":"123","body":"原文","sender":45}`。
+ * ⚠️ 与临时会话链路的差异：私信快照的 `sender` 是**用户 ID（数字）**，
+ * 而临时会话 ChatMessage.quoteSender 直接给 "self"/"peer"——故这里按当前登录用户 ID
+ * 归一化为 self/peer，交给 ChatBubble 的 quoteSender（"我"/"对方"文案）。
+ * 同时兼容 sender 已是 self/peer/system 字面量的情形（后端形状漂移时不至于误标）。
+ *
+ * @param raw quoteContext 原始 JSON 字符串（无引用时为 null/空串）
+ * @param currentUserId 当前登录用户 ID（字符串形态，取不到时为空串）
+ * @returns 引用三元组；无引用/解析失败返回 null（消息按普通气泡渲染）
+ */
+export function parsePrivateQuoteContext(
+  raw: string | null | undefined,
+  currentUserId: string
+): { quoteRef: string; quoteBody: string; quoteSender: "self" | "peer" | "system" } | null {
+  if (!raw || raw.trim().length === 0) return null;
+  try {
+    const parsed = JSON.parse(raw) as { id?: string | number; body?: string; sender?: string | number };
+    const quoteRef = parsed.id == null ? "" : String(parsed.id);
+    if (quoteRef.length === 0) return null;
+    const rawSender = parsed.sender == null ? "" : String(parsed.sender);
+    const quoteSender: "self" | "peer" | "system" =
+      rawSender === "self" || rawSender === "peer" || rawSender === "system"
+        ? rawSender
+        : rawSender.length > 0 && rawSender === currentUserId
+          ? "self"
+          : "peer";
+    return { quoteRef, quoteBody: parsed.body ?? "", quoteSender };
+  } catch (_e) {
+    // 非 JSON（历史脏数据）→ 视为无引用
+    return null;
+  }
+}
+
 function mapToMessageItem(raw: BackendMessageView): MessageItem {
   const sessionStore = useSessionStore();
   // R16：userSession 未就绪（深链直达/getSession 未完成）时 currentUserId 为空串，
@@ -336,6 +394,8 @@ function mapToMessageItem(raw: BackendMessageView): MessageItem {
   if (!currentUserId) {
     currentUserId = resolveCurrentUserIdFromToken() ?? "";
   }
+  // 2026-09-27 私信引用链路：被引用消息的 self/peer 也按同一 currentUserId 判定
+  const quote = parsePrivateQuoteContext(raw.quoteContext, currentUserId);
   return {
     id: String(raw.id),
     sessionId: String(raw.conversationId),
@@ -343,6 +403,8 @@ function mapToMessageItem(raw: BackendMessageView): MessageItem {
     // 2026-08-08 活动卡片：kind=activity（content 为 JSON）；未知 kind 回退 text 容错旧数据
     // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004：补 image 分支——后端透传小写 "image"，
     // 原映射无该分支使 real 模式图片消息全部降级为 URL 文本气泡
+    // 2026-09-27：引用回复的 messageKind="quote" 故意不加分支——前端没有独立的「引用气泡」，
+    // 回退 text 后由 quoteRef/quoteBody/quoteSender 复用临时会话那套引用渲染（ChatBubble）
     kind: raw.messageKind === "voice" ? "voice"
       : raw.messageKind === "emoji" ? "emoji"
       : raw.messageKind === "activity" ? "activity"
@@ -352,6 +414,11 @@ function mapToMessageItem(raw: BackendMessageView): MessageItem {
     sentAt: raw.createdAt,
     // 录音修复：语音时长透传（后端 MessageView.durationSeconds）
     durationSeconds: raw.durationSeconds ?? null,
+    // 2026-09-27 私信引用链路：MessageView.quoteContext 快照 → 引用三元组，
+    // 由 toChatMessageView 透传给 ChatBubble（与临时会话同一套引用气泡渲染）。
+    quoteRef: quote?.quoteRef,
+    quoteBody: quote?.quoteBody,
+    quoteSender: quote?.quoteSender,
   };
 }
 
@@ -946,23 +1013,21 @@ export const useMessagesStore = defineStore("messages", {
       this.currentMessages = [...messages];
     },
 
-    // 修复（严格模式 noUnusedLocals）：原 quoteRef 参数未在函数体内使用，
-    // 加 _ 前缀标识为有意未使用（保留签名以维持调用方兼容性）。
+    // 2026-09-27 结案 MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002：后端私信契约已补引用字段，
+    // quoteRef 正式接入（此前该参数带下划线前缀标识「有意未用」，理由已随契约补齐而失效）。
+    //   apps/api PrivateMessageController.java:219 SendMessageRequest 已声明
+    //     `@Size(max = 64) String quoteRef`；
+    //   RealPrivateMessageService.java:241-251 buildQuoteSnapshot 命中同一会话消息时写
+    //     entity PrivateMessage.quote_context 快照，并把 messageKind 规范化为 "quote"
+    //     （kind 白名单仍不含 QUOTE，由服务端内部改写，前端照发 text/image/voice 即可）；
+    //   MessageView.java:17 回包 quoteContext（读侧解析见本文件 parsePrivateQuoteContext）。
+    // 引用目标不存在/跨会话时服务端按未引用处理、消息照常发出；前端另按 @Size 上限
+    // 丢弃超长（>64）引用 ID，避免整条消息被 400 拒绝。
+    // （对照组：临时匿名会话链路 TempChatController.java ChatMessageRequest 早已支持 quoteRef，
+    //   接线点在 stores/chat/**，本泳道不动。）
     //
-    // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002 复核结论（本轮实读后端，未改后端）：
-    // 该参数**当前无法接入私信请求契约**，非前端漏配 ——
-    //   apps/api PrivateMessageController.java:209-215 record SendMessageRequest(
-    //     content, kind, durationSeconds) 无引用字段，且 kind 白名单
-    //     "(?i)TEXT|IMAGE|VOICE|VIDEO|EMOJI|ACTIVITY" 明确不含 QUOTE；
-    //   RealPrivateMessageService.java:239-246 建消息实体时从不调
-    //     setQuoteContext(...)，故 entity PrivateMessage.quoteContext（DB 列 quote_context）
-    //     在私信发送链路恒为 null，MessageView.quoteContext 回包亦为空。
-    // 前端若把 quoteRef 塞进 content 或改发 kind=quote，前者污染正文、后者被 @Pattern 直接
-    // 400 —— 属"半截逻辑"，故按契约缺口保持参数未用。结案需后端先加引用字段/放开 QUOTE 白名单。
-    // （对照组：临时匿名会话链路 TempChatController.java:150-158 ChatMessageRequest 已有
-    //   quoteRef 且 TempChatMessageService 已实现快照构造，但接线点在 stores/chat/**，
-    //   不在本泳道独占写集内。）
-    async sendMessage(sessionId: string, content: string, _quoteRef?: string, kind: MessageItem["kind"] = "text") {
+    // @param quoteRef 被引用消息 ID（后端 MessageView.id 的字符串形态），无引用时省略
+    async sendMessage(sessionId: string, content: string, quoteRef?: string, kind: MessageItem["kind"] = "text") {
       this.errorMessage = null;
       try {
         if (!content || content.trim().length === 0) { this.errorMessage = t("storeErrors.messages.contentEmpty"); throw new Error(t("storeErrors.messages.contentEmpty")); }
@@ -970,7 +1035,20 @@ export const useMessagesStore = defineStore("messages", {
         if (!sessionId || sessionId.trim().length === 0) { this.errorMessage = t("storeErrors.messages.sessionIdInvalid"); throw new Error(t("storeErrors.messages.sessionIdInvalid")); }
         await withTimeout((async () => {
           if (useMock()) {
-            const nm: MessageItem = { id: `msg-${Date.now()}`, sessionId, sender: "self", kind, body: content, sentAt: new Date().toISOString() };
+            // 2026-09-27 私信引用链路：mock 档本地从当前消息流补齐引用快照（real 档由后端
+            // MessageView.quoteContext 回包），两档渲染形状一致 → ChatBubble 引用条均可显示
+            const quoted = quoteRef ? this.currentMessages.find((m) => m.id === quoteRef) : undefined;
+            const nm: MessageItem = {
+              id: `msg-${Date.now()}`,
+              sessionId,
+              sender: "self",
+              kind,
+              body: content,
+              sentAt: new Date().toISOString(),
+              quoteRef: quoted?.id,
+              quoteBody: quoted?.body,
+              quoteSender: quoted?.sender,
+            };
             // 2026-09-20 修复（MP-R1-CHAT-CHAT-SESSION-INDEX-001）：长按「转发」到其他会话时
             // 目标会话是 sessionId 而非当前打开会话，此时不得写入当前消息流（否则被转发
             // 消息错误出现在当前会话视图，用户误以为发错对象），仅更新目标会话元数据与
@@ -993,14 +1071,21 @@ export const useMessagesStore = defineStore("messages", {
             return nm;
           }
           // 修复（P0-12）：后端 SendMessageRequest 不含 senderId（从 JWT 取当前用户），
-          // 请求体仅发送内容与类型，删除多余字段避免后端契约不匹配
+          // 请求体发送内容/类型/引用 ID，多余字段（如 senderId）不发以免契约不匹配
           // 2026-09-03 修复（发送撞幂等锁）：http 拦截器默认按「URL+body」生成稳定幂等键，
           // 相同文案二次发送/失败重发会被后端幂等去重并整页报「重复请求已被拦截」。
           // 消息发送是"每次独立意图"，改由前端 sending 锁防重，幂等键每次随机。
-          const result = await request<BackendMessageView, { content: string; kind: string }>({
+          // 2026-09-27 私信引用链路（MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002 结案）：
+          // quoteRef 随体发送（后端 PrivateMessageController.SendMessageRequest.quoteRef，
+          // @Size(max=64)）。空白或超 64 字符一律不发——引用是可选语义，
+          // 不能因为引用 ID 非法把整条消息一起拖进 400。
+          const trimmedQuoteRef = quoteRef?.trim() ?? "";
+          const quoteRefPayload =
+            trimmedQuoteRef.length > 0 && trimmedQuoteRef.length <= 64 ? trimmedQuoteRef : undefined;
+          const result = await request<BackendMessageView, { content: string; kind: string; quoteRef?: string }>({
             url: `/messages/conversations/${encodeURIComponent(sessionId)}/messages`,
             method: "POST",
-            data: { content, kind },
+            data: quoteRefPayload ? { content, kind, quoteRef: quoteRefPayload } : { content, kind },
             // [PRODUCT-FIX] 键名修正 `header`→`headers`（RequestOptions 实际字段），
             // 此前随机幂等键未随请求发出，同文案重发仍会被稳定键幂等去重拦截。
             headers: { "Idempotency-Key": `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}` },

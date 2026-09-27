@@ -2238,6 +2238,19 @@ export default {
     "errPasswordMismatch": "两次输入的密码不一致",
     "errNicknameLength": "昵称需为 1-20 字",
     "errBirthMinor": "出生日期需已满 18 周岁",
+    "errPasswordRequired": "请设置登录密码",
+    "errPasswordMax": "密码最多 20 位",
+    "errPasswordNoSpace": "密码不能包含空格或全角字符",
+    "errPasswordLetterDigit": "密码需同时包含字母和数字",
+    "errPhoneRequired": "请输入手机号",
+    "errSmsRequired": "请输入短信验证码",
+    "errSmsLength": "验证码为 6 位数字",
+    "errConfirmRequired": "请再次输入密码",
+    "errNicknameRequired": "请输入昵称",
+    "errNicknameMax": "昵称最多 20 字",
+    "errBirthRequired": "请选择出生日期",
+    "errMinorBlocked": "未满 18 岁暂无法注册",
+    "errAgreeRequired": "请先阅读并勾选同意《用户协议》和《隐私政策》",
     "toastPhoneRequired": "请先输入正确的手机号",
     "toastPhoneRegistered": "该手机号已注册，可直接登录",
     "smsSent": "验证码已发送至 {phone}",
@@ -3474,33 +3487,7 @@ export default {
     "submitFailed": "提交失败，请重试",
     "privacyNote": "身份证信息仅用于身份核验，后端加密存储，审核人员仅能看到脱敏号码"
   },
-  "campusHub": {
-    "title": "校园圈",
-    "searchPlaceholder": "搜索学校或校园圈",
-    "emptyJoined": "暂未加入任何校园圈",
-    "emptyRecommend": "暂无推荐圈子",
-    "moreHint": "更多校园圈持续接入中",
-    "searchAria": "搜索校园圈",
-    "clearAria": "清除",
-    "subtitle": "发现和加入你的校园圈子",
-    "joinedTitle": "我加入的",
-    "recommendTitle2": "推荐圈子",
-    "enter": "进入",
-    "join": "申请加入",
-    "unverified": "未认证",
-    "guideTitle": "加入校园圈，发现更多同校的 TA",
-    "guideDesc": "完成学校认证，即可加入该校专属校园圈",
-    "goCertify": "去认证",
-    "viewProgress": "查看进度",
-    "certified": "已认证",
-    "schoolListTitle": "校园列表",
-    "schoolListDesc": "未认证可浏览公开内容，认证后可加入",
-    "recommendTitle": "校园圈推荐",
-    "recommendDesc": "只有认证后才能加入私域成员与发圈",
-    "statusVerified": "已认证",
-    "statusPending": "认证中",
-    "statusPublic": "公开浏览"
-  },
+  
   "campus": {
     "certification": {
       "navTitle": "学生认证",
@@ -3609,7 +3596,8 @@ export default {
       "imagesUnsupported": "校园话题暂未开放配图，图片不会随话题保存",
       "anonymousUnsupported": "校园话题暂未开放匿名发布，内容将以你的昵称公开",
       "contentMasked": "内容含敏感词，部分文字已被自动屏蔽",
-      "chooseImageFailed": "选择图片失败，请检查相册/相机权限"
+      "chooseImageFailed": "选择图片失败，请检查相册/相机权限",
+      "uploadFailed": "配图上传失败，请检查网络后重试"
     },
     "topicDetail": {
       "replySuccess": "回复成功",
@@ -3631,6 +3619,33 @@ export default {
       "sendSend": "发送",
       "replyAtLimit": "已达 {n} 字上限，无法继续输入",
       "replyMasked": "回复含敏感词，部分文字已被自动屏蔽",
+    },
+    "hub": {
+      "title": "校园圈",
+      "searchPlaceholder": "搜索学校或校园圈",
+      "emptyJoined": "暂未加入任何校园圈",
+      "emptyRecommend": "暂无推荐圈子",
+      "moreHint": "更多校园圈持续接入中",
+      "searchAria": "搜索校园圈",
+      "clearAria": "清除",
+      "subtitle": "发现和加入你的校园圈子",
+      "joinedTitle": "我加入的",
+      "recommendTitle2": "推荐圈子",
+      "enter": "进入",
+      "join": "申请加入",
+      "unverified": "未认证",
+      "guideTitle": "加入校园圈，发现更多同校的 TA",
+      "guideDesc": "完成学校认证，即可加入该校专属校园圈",
+      "goCertify": "去认证",
+      "viewProgress": "查看进度",
+      "certified": "已认证",
+      "schoolListTitle": "校园列表",
+      "schoolListDesc": "未认证可浏览公开内容，认证后可加入",
+      "recommendTitle": "校园圈推荐",
+      "recommendDesc": "只有认证后才能加入私域成员与发圈",
+      "statusVerified": "已认证",
+      "statusPending": "认证中",
+      "statusPublic": "公开浏览"
     }
   },
   "heartSignals": {
@@ -3726,6 +3741,7 @@ export default {
     "home": {
       "joinCta": "加入圈子",
       "pinnedBadge": "置顶",
+      "pinnedNotice": "【圈规】友善交流，尊重原创，分享美好瞬间",
       "viewAllTopics": "查看全部话题",
       "postInCircle": "在圈内发帖",
       "emptyTab": "该板块暂无内容，敬请期待"
@@ -4018,6 +4034,10 @@ export default {
       "submitIssueFailed": "提交问题反馈失败",
       "submitSuggestionFailed": "提交建议失败",
       "submitActivityProposalFailed": "提交活动提案失败"
+    },
+    /* 2026-09-27 round-7 ③：共享上传路径的扩展名闸门（白名单与后端 LocalMediaStorageService 同集合） */
+    "media": {
+      "uploadExtNotAllowed": "不支持的文件格式，仅允许：{exts}"
     },
     "chat": {
       "voiceFilePathEmpty": "录音文件路径为空，无法上传语音消息",

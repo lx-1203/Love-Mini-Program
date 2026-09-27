@@ -336,6 +336,80 @@ export function resolveMediaUrls(paths: Array<string | null | undefined> | null 
   return result;
 }
 
+/* ========== 上传扩展名白名单（客户端唯一真源） ========== */
+
+/**
+ * 客户端上传的媒体类型（与后端 LocalMediaStorageService 的校验分支一致）。
+ * 注：当前产品无视频上传入口（pages/profile/index.vue:182 注释），
+ * video 档仍按后端白名单登记，供后续接入直接复用。
+ */
+export type UploadMediaKind = "image" | "video" | "audio";
+
+/**
+ * 上传扩展名白名单——客户端唯一真源（single source of truth）。
+ *
+ * 镜像后端 apps/api `.../media/LocalMediaStorageService.java:79-87`：
+ *   image → jpg/jpeg/png/webp；video → mp4/mov；audio → aac/mp3/m4a/wav。
+ * 消费点（发起上传**之前**拦截，服务端仍会二次校验）：
+ *   - services/api.ts uploadFileViaUni（头像/背景/照片墙/半身照/帖子图/语音状态/反馈图）
+ *   - services/voice-upload.ts uploadVoiceFile（私信与临时会话的语音消息）
+ *
+ * ⚠️ subpackages/support/feedback/index.vue:63 另有一份页面自用副本 ALLOWED_EXTS
+ * （与它自己的 5MB / 最多 3 张限制绑定，本次不动）；修改本表时请同步该处。
+ * ⚠️ constants/limits.ts:88-91 的 MEDIA_LIMITS.IMAGE_MIME_TYPES / VIDEO_MIME_TYPES
+ * 是一份**全仓 0 消费方**的历史清单（含后端拒收的 gif/webm，见台账
+ * MP-R7CLIENT-LIMITS-GIF-001），本次未接线、也未改动它——扩展名判定一律走本表。
+ */
+export const ALLOWED_MEDIA_EXTS: Record<UploadMediaKind, readonly string[]> = {
+  image: ["jpg", "jpeg", "png", "webp"],
+  video: ["mp4", "mov"],
+  audio: ["aac", "mp3", "m4a", "wav"],
+};
+
+/**
+ * 取文件路径/文件名的扩展名（小写、不含点号）。
+ *
+ * 先去查询串与 hash（模拟器临时路径可能形如 `http://tmp/a.jpeg?x=1`），
+ * 再取最后一段路径的后缀；无扩展名（如 H5 的 `blob:` URL）返回空串。
+ *
+ * @param pathOrName 本地临时路径或文件名
+ * @returns 小写扩展名（不含点），取不到时为空串
+ */
+export function getMediaFileExt(pathOrName: string | null | undefined): string {
+  if (!pathOrName) return "";
+  const clean = pathOrName.split(/[?#]/)[0] ?? "";
+  const tail = clean.split(/[/\\]/).pop() ?? "";
+  const dot = tail.lastIndexOf(".");
+  if (dot < 0 || dot === tail.length - 1) return "";
+  return tail.slice(dot + 1).toLowerCase();
+}
+
+/**
+ * 上传扩展名白名单校验（保守放行）。
+ *
+ * 判定口径：能取到扩展名且不在对应媒体类型白名单内 → 拒绝；
+ * 取不到扩展名（H5 `blob:` 上传、无后缀临时路径）→ 放行交由服务端判定，
+ * 避免把合法上传误杀成「格式不支持」。
+ *
+ * @param pathOrName 本地临时路径或文件名
+ * @param kind 媒体类型
+ * @returns true 表示允许上传
+ */
+export function isAllowedMediaExt(pathOrName: string | null | undefined, kind: UploadMediaKind): boolean {
+  const ext = getMediaFileExt(pathOrName);
+  if (ext.length === 0) return true;
+  return ALLOWED_MEDIA_EXTS[kind].some((allowed) => allowed === ext);
+}
+
+/**
+ * 白名单的可读列表（用于用户可见错误文案，如 "jpg / jpeg / png / webp"）。
+ *
+ * @param kind 媒体类型
+ */
+export function describeAllowedMediaExts(kind: UploadMediaKind): string {
+  return ALLOWED_MEDIA_EXTS[kind].join(" / ");
+}
+
 /* ========== 统一图片选择封装（infra R2-00131） ========== */
 
 /**

@@ -316,8 +316,9 @@ onLoad((query) => {
 });
 onShow(() => {
   void loadPage();
-  // 2026-08-31 待办：进入消息页标记全部会话已读（红点闭环：badge→进入→清除）
-  void messagesStore.markAllSessionsRead();
+  /* MP-R2-PAGES-MESSAGES-INDEX-020：这里原来还无条件调一次 markAllSessionsRead。
+     loadPage 在锁定态会 early return（本文件 :294）⇒ onShow 这次成了「内容没看到就把未读清掉」的那一半，
+     与 :304 的「数据加载完成后清」构成双重置且语义互相冲突。现只保留 :304 一处（红点闭环仍是 badge→进入→清除）。 */
 });
 onPullDownRefresh(async () => {
   // MP-R1-PAGES-MESSAGES-INDEX-009：loadPage 已 async 且 force 穿透 TTL，

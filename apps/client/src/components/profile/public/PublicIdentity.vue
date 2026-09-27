@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import type { UserProfileDTO } from "../../../types/profile";
 import { IMAGE_PATHS } from "../../../config/images";
+import { profileMetaParts } from "../../../utils/profile-meta";
 
 const props = defineProps<{ profile: UserProfileDTO; online?: boolean }>();
 const emit = defineEmits<{ (e: "like"): void; (e: "message"): void }>();
@@ -15,19 +16,9 @@ const distanceLine = computed(() => {
   return d ? `${d} · 在线` : "在线";
 });
 
-/** 基本信息行（理想图 他人显示主页.png 口径）：年龄 · 学校 · 城市；
- *  MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001：后端 location 串本身是
- *  「城市 · 学校」（如 "北京 · 北京大学"，见 api/profile.ts:21），原实现按串内顺序
- *  直出 → 渲染成「年龄 · 城市 · 学校」，与理想图反序。解析位序不变，仅改输出顺序。 */
-const basicInfo = computed(() => {
-  const parts: string[] = [];
-  if (props.profile.basic.age) parts.push(`${props.profile.basic.age}岁`);
-  const loc = props.profile.basic.location || "";
-  const [cityPart, schoolPart] = loc.split("·").map((s) => s.trim());
-  if (schoolPart) parts.push(schoolPart);
-  if (cityPart) parts.push(cityPart);
-  return parts;
-});
+/** 基本信息行：年龄 · 学校 · 城市，与「我的页」MyHeader 共用 utils/profile-meta 的同一份口径
+ *  （MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001：两页原先同一份数据渲染成两种顺序）。 */
+const basicInfo = computed(() => profileMetaParts(props.profile.basic));
 
 const genderIconSrc = computed(() => {
   if (props.profile.basic.gender === "female") return IMAGE_PATHS.ICONS_EMOJI.GENDER_FEMALE;

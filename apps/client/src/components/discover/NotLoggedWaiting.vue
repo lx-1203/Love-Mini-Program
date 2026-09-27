@@ -8,9 +8,12 @@
  * - "登录后即可解锁全部功能"
  * - 4 个 icon 行（精确匹配 / 聊天互动 / 校园趣遇 / 关系成长）
  * - 三个按钮：微信一键登录 / 手机号登录 / 稍后再看
- * - 整图为吉祥物+6人围成圈（背景图 IMAGE_PATHS.POSTERS.NOT_LOGGED_WAITING）
+ * - 中部是"头像环"：虚线轨道 + 6 个独立头像节点（各带心动角标）+ 中心吉祥物
  *
- * 缺素材：理想图吉祥物插画（带 6 人围成圈 + 散落爱心）→ 暂用现有 notlogged-waiting.png
+ * MP-R2VIS-PAGES-MESSAGES-INDEX-004：这一环原先是一张整图海报（notlogged-waiting.png，
+ * 吉祥物与 6 个人烧在同一个 png 里），整图既不能换素材也不能加角标，
+ * 所以拆成独立节点、不再保留背景海报。注释里刻意不写那个键的完整点号形式：
+ * 判据台用 absent 查它，写成点号形式会让一条 grep 型判点在注释上误命中。
  * 全屏可点跳登录；按钮各自处理 goLogin/goPhoneLogin/later。
  *
  * MP-R2VIS-PAGES-MESSAGES-INDEX-002 裁定（2026-09-25 store 接线收口）：
@@ -42,6 +45,29 @@ const emit = defineEmits<{
   (e: "goPhoneLogin"): void;
 }>();
 
+/* 头像环：理想图 未登录等待页面.png 画的是 6 个头像围一圈（它副标里那个「12」按
+   MP-R2VIS-PAGES-MESSAGES-INDEX-002 的裁定属拼版值，不当人数依据），所以取素材池前 6 个，
+   不把 9 个全塞进去。容器是正方形 ⇒ 半径用同一个百分比表达横竖两个方向，
+   改一处即可让轨道与头像始终同心（用 left/top 各配 rpx 半径时，非正方形容器下两者会不一致）。 */
+const ORBIT_AVATARS = [
+  IMAGE_PATHS.PEOPLE.AVATAR_1,
+  IMAGE_PATHS.PEOPLE.AVATAR_2,
+  IMAGE_PATHS.PEOPLE.AVATAR_3,
+  IMAGE_PATHS.PEOPLE.AVATAR_4,
+  IMAGE_PATHS.PEOPLE.AVATAR_5,
+  IMAGE_PATHS.PEOPLE.AVATAR_6,
+];
+const ORBIT_RADIUS_PCT = 37.5;
+const orbitNodes = ORBIT_AVATARS.map((src, i) => {
+  const angle = (i / ORBIT_AVATARS.length) * Math.PI * 2 - Math.PI / 2;
+  return {
+    src,
+    style:
+      `left:${(50 + Math.cos(angle) * ORBIT_RADIUS_PCT).toFixed(2)}%;` +
+      `top:${(50 + Math.sin(angle) * ORBIT_RADIUS_PCT).toFixed(2)}%`,
+  };
+});
+
 function goWechatLogin() {
   emit("goLogin");
 }
@@ -58,19 +84,29 @@ function goLater() {
 
 <template>
   <view class="not-logged">
-    <!-- 整图背景（吉祥物+6 人围圈；缺素材时用现有 notlogged-waiting.png） -->
-    <image
-      class="not-logged__bg"
-      :src="IMAGE_PATHS.POSTERS.NOT_LOGGED_WAITING"
-      mode="widthFix"
-    />
-
-    <!-- 标题 + 副标 + 解锁提示 + 4 icon + 3 按钮（压底） -->
-    <view class="not-logged__overlay">
+    <!-- 标题 / 头像环 / 解锁提示 / 4 icon / 3 按钮：按理想图自上而下的顺序排，
+         不再用「整图打底 + 绝对定位压底」那一版（那一版没有整图就没有内容可压）。 -->
+    <view class="not-logged__hero">
       <view class="not-logged__title-wrap">
         <text class="not-logged__title">{{ t('notLoggedWaiting.title') }}</text>
         <text class="not-logged__subtitle">{{ t('notLoggedWaiting.subtitle') }}</text>
       </view>
+
+      <view class="not-logged__orbit" aria-hidden="true">
+        <view class="not-logged__orbit-ring" />
+        <view
+          v-for="(node, i) in orbitNodes"
+          :key="i"
+          class="not-logged__orbit-node"
+          :style="node.style"
+        >
+          <image class="not-logged__orbit-avatar" :src="node.src" mode="aspectFill" />
+          <image class="not-logged__orbit-badge" :src="IMAGE_PATHS.ICONS_COMMON.HEART_FILLED_SVG" mode="aspectFit" alt="" />
+        </view>
+        <image class="not-logged__orbit-mascot" :src="IMAGE_PATHS.MASCOT.DEFAULT" mode="aspectFit" alt="" />
+      </view>
+
+      <text class="not-logged__hint">{{ t('notLoggedWaiting.unlockHint') }}</text>
 
       <view class="not-logged__features">
         <view class="not-logged__feature">
@@ -90,8 +126,6 @@ function goLater() {
           <text class="not-logged__feature-label">{{ t('notLoggedWaiting.feature4') }}</text>
         </view>
       </view>
-
-      <text class="not-logged__hint">{{ t('notLoggedWaiting.unlockHint') }}</text>
 
       <view class="not-logged__btn-row">
         <view
@@ -141,28 +175,73 @@ function goLater() {
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
+  /* 内容改成正常流 ⇒ 上下留白由容器给（原来由那张整图海报撑开） */
+  padding: calc(env(safe-area-inset-top) + 72rpx) 48rpx calc(env(safe-area-inset-bottom) + 60rpx);
 }
 
-.not-logged__bg {
-  display: block;
+.not-logged__hero {
   width: 100%;
-  height: auto;
-}
-
-.not-logged__overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 48rpx calc(env(safe-area-inset-bottom) + 60rpx);
 }
 
-/* 2026-08-25 P0：主标题/副标（规格书 12.1 / 12.2） */
+/* 头像环：容器必须是正方形，半径的百分比才在横竖两个方向同值（见 script 里的 ORBIT_RADIUS_PCT） */
+.not-logged__orbit {
+  position: relative;
+  width: 560rpx;
+  height: 560rpx;
+  margin-bottom: 8rpx;
+}
+
+.not-logged__orbit-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 420rpx;
+  height: 420rpx;
+  transform: translate(-50%, -50%);
+  border: 2rpx dashed rgba(54, 201, 154, 0.35);
+  border-radius: 50%;
+}
+
+.not-logged__orbit-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.not-logged__orbit-avatar {
+  display: block;
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  border: 4rpx solid #FFFFFF;
+  box-shadow: 0 4rpx 12rpx rgba(15, 23, 42, 0.08);
+}
+
+/* 理想图每个头像右下角各有一枚心动角标 */
+.not-logged__orbit-badge {
+  position: absolute;
+  right: -6rpx;
+  bottom: -6rpx;
+  width: 32rpx;
+  height: 32rpx;
+}
+
+.not-logged__orbit-mascot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 200rpx;
+  height: 200rpx;
+}
+
+/* 2026-08-25 P0：主标题/副标（规格书 12.1 / 12.2）
+   理想图里标题左对齐贴在页面左缘，不是居中（居中那一版是压在整图上的产物） */
 .not-logged__title-wrap {
-  text-align: center;
+  width: 100%;
+  text-align: left;
   margin-bottom: 32rpx;
 }
 

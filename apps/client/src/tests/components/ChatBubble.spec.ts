@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { i18n } from "../../i18n";
 
 // Stub global uni to avoid mp-weixin runtime references in tests
@@ -200,5 +202,36 @@ describe("ChatBubble component - 聊天气泡组件", () => {
   it("kind=text 时不添加 emoji 大号渲染 class", () => {
     const wrapper = mountBubble({ sender: "peer", kind: "text", body: "普通文本" });
     expect(wrapper.find(".bubble__body").classes()).not.toContain("bubble__body--emoji");
+  });
+
+  // ------------------------------------------------------------------
+  // MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004：图片消息占位与失败终态
+  // （widthFix 加载前高度 0 会塌陷气泡；破图需切「图片加载失败」占位文案）
+  // ------------------------------------------------------------------
+  it("kind=image 加载前带骨架 class，加载成功后移除", async () => {
+    const wrapper = mountBubble({ kind: "image" as "text", body: "https://cdn.example.com/a.png" });
+    const img = wrapper.find(".bubble__image");
+    expect(img.exists()).toBe(true);
+    expect(img.classes()).toContain("bubble__image--skeleton");
+    await img.trigger("load");
+    expect(wrapper.find(".bubble__image").classes()).not.toContain("bubble__image--skeleton");
+  });
+
+  it("kind=image @error 后不渲染破图，改切「图片加载失败」占位文案", async () => {
+    const wrapper = mountBubble({ kind: "image" as "text", body: "https://cdn.example.com/broken.png" });
+    await wrapper.find(".bubble__image").trigger("error");
+    expect(wrapper.find(".bubble__image").exists()).toBe(false);
+    const failed = wrapper.find(".bubble__image-failed");
+    expect(failed.exists()).toBe(true);
+    expect(failed.text()).toBe("图片加载失败");
+  });
+
+  it("图片骨架态与失败占位均带 min-height + 浅色底（不塌陷气泡）", () => {
+    const source = readFileSync(
+      resolve(__dirname, "../../components/chat/ChatBubble.vue"),
+      "utf-8"
+    );
+    expect(source).toMatch(/\.bubble__image--skeleton\s*\{[^}]*min-height:[^}]*background:/);
+    expect(source).toMatch(/\.bubble__image-failed\s*\{[^}]*min-height:[^}]*background:/);
   });
 });

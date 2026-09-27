@@ -655,9 +655,11 @@ function openPrivacyPolicy() {
           <!-- MP-R2VIS-PAGES-LOGIN-INDEX-007：非微信端本按钮是「展开验证码/密码表单」的手动入口，
                不是微信 getPhoneNumber 快捷授权，故取 login.phoneLogin（表单入口键），
                把 login.phoneQuickLogin 独占给上方微信端快捷按钮。
-               aria-label 与可见文本仍同键（保持 MP-R2-PAGES-LOGIN-INDEX-016 的 WCAG 2.5.3 口径）。 -->
+               aria-label 与可见文本仍同键（保持 MP-R2-PAGES-LOGIN-INDEX-016 的 WCAG 2.5.3 口径）。
+               样式同步弱化：.login-phone-entry 取代 .btn-phone-quick（快捷授权按钮专用样式），
+               与本分支的兜底定位一致，不再与快捷登录按钮同权。 -->
           <view
-            class="btn-phone-quick press-feedback"
+            class="login-phone-entry press-feedback"
             :class="{ 'btn--loading': loginFlowActive }"
             hover-class="press-feedback--active"
             hover-stay-time="40"
@@ -665,7 +667,7 @@ function openPrivacyPolicy() {
             :aria-label="t('login.phoneLogin')"
             @tap="togglePhoneLogin"
           >
-            <text class="btn-phone-quick-text">{{ t('login.phoneLogin') }}</text>
+            <text class="login-phone-entry-text">{{ t('login.phoneLogin') }}</text>
           </view>
           <!-- #endif -->
 
@@ -680,6 +682,22 @@ function openPrivacyPolicy() {
           >
             <text class="btn-guest-text">{{ t('login.guestLogin') }}</text>
             <text class="btn-guest-desc">{{ t('login.guestLoginDesc') }}</text>
+          </view>
+          <!-- MP-R7-GUEST-LANDING-REGENTRY-001：游客是被 HTTP 401 兜底弹到本页的（services/http.ts:493-494），
+               而「去注册」原先只在下面 v-else 的手机号表单分支里（本文件 login-form 段的 form-btns）⇒
+               没有账号的新用户落地后在默认态看不见任何注册路径，与裁定「未登录须引导到注册」不符。
+               这里复用同一 goRegisterPage、同一 isRegisterOpen 开关、同一文案键（zh/en 早已配对），
+               并直接挂现有 .btn-text 样式（不新增 CSS、不新增文案）。 -->
+          <view
+            v-if="isRegisterOpen"
+            class="btn-text login-register-entry press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
+            role="button"
+            :aria-label="t('login.goRegister')"
+            @tap="goRegisterPage"
+          >
+            <text class="btn-text-link">{{ t('login.goRegister') }}</text>
           </view>
         </view>
 
@@ -1059,7 +1077,7 @@ function openPrivacyPolicy() {
   letter-spacing: 2rpx;
 }
 
-/* 手机号快捷登录按钮（getPhoneNumber）：与次按钮同风格 */
+/* 手机号快捷登录按钮（getPhoneNumber）：微信端专用，主按钮之下的描边次按钮 */
 .btn-phone-quick {
   width: 100%;
   height: var(--btn-height-md);
@@ -1105,6 +1123,37 @@ function openPrivacyPolicy() {
 .login-sms-fallback-text {
   font-size: var(--fs-sm, 26rpx);
   color: var(--c-text-tertiary, #9AA39F);
+}
+
+/* MP-R2VIS-PAGES-LOGIN-INDEX-007：非微信端「验证码或密码登录」表单入口同为兜底路径，
+   弱化样式（浅描边 / 无阴影 / 次级字色 / 矮于主按钮），与微信端 .login-sms-fallback 同级，
+   不再复用 .btn-phone-quick（快捷授权按钮）的同权外观 */
+.login-phone-entry {
+  width: 100%;
+  min-height: var(--btn-height-sm);
+  border-radius: var(--r-lg);
+  background: transparent;
+  border: 1rpx solid var(--c-border-default, #DDE3E0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 var(--sp-4);
+  box-sizing: border-box;
+}
+
+/* #ifdef H5 */
+.login-phone-entry:active {
+  transform: scale(0.96);
+  background: var(--c-neutral-50);
+}
+/* #endif */
+
+.login-phone-entry-text {
+  font-size: var(--fs-md);
+  font-weight: 500;
+  color: var(--c-text-secondary);
+  letter-spacing: 2rpx;
 }
 
 /* MP-R2-PAGES-LOGIN-INDEX-008：.btn-secondary* 死样式已删（模板零引用） */

@@ -74,7 +74,8 @@ const { isPostPublishOpen } = storeToRefs(appConfigStore);
 // Phase 4 任务 20：接入页面访问守卫
 usePageAccess(villagePageRequirements);
 const { loading, errorMessage, hasMore } = storeToRefs(villageStore);
-const { currentTopics } = storeToRefs(circleStore);
+// MP-R2-VILLAGE-INDEX-012：精选话题失败态取自 circle store（villageStore.errorMessage 不覆盖该链路）
+const { currentTopics, errorMessage: circleErrorMessage } = storeToRefs(circleStore);
 const { activities } = storeToRefs(activityStore);
 
 // 同步自定义 TabBar 选中状态（圈子 = 索引 2）
@@ -692,7 +693,7 @@ onShareAppMessage(() => ({
                 <text class="channel-section__title">{{ t('village.activityChannelTitle') }}</text>
                 <text class="channel-section__sub">{{ t('village.activityChannelSub') }}</text>
               </view>
-              <view class="activity-list">
+              <view v-if="activities.length > 0" class="activity-list">
                 <ActivityCard
                   v-for="act in activities"
                   :key="act.id"
@@ -702,6 +703,13 @@ onShareAppMessage(() => ({
                   @enroll="handleEnrollActivity"
                 />
               </view>
+              <!-- MP-R2-VILLAGE-INDEX-012：原空列表整块留白；加载失败仍不得伪装成空态
+                   （同 MP-R2-PAGES-NEARBY-INDEX-003 口径） -->
+              <EmptyState
+                v-else-if="!activityStore.loading && !activityStore.errorMessage"
+                type="no-data"
+                :message="t('nearby.activitiesEmpty')"
+              />
             </view>
           </template>
 
@@ -765,6 +773,28 @@ onShareAppMessage(() => ({
                     </view>
                   </view>
                 </view>
+              </view>
+            </view>
+
+            <!-- MP-R2-VILLAGE-INDEX-012：精选话题拉取失败此前无任何反馈（宫格 + 热门话题
+                 照常渲染、精选区整块消失）；现按 circleStore.errorMessage 渲染提示条，
+                 重试走 onRefresh → loadChannelData(id, true) 穿透 30s TTL -->
+            <view
+              v-else-if="circleErrorMessage"
+              class="featured-error"
+              role="alert"
+              aria-live="assertive"
+            >
+              <text class="featured-error__text">{{ circleErrorMessage }}</text>
+              <view
+                class="featured-error__retry press-feedback"
+                hover-class="press-feedback--active"
+                hover-stay-time="120"
+                role="button"
+                :aria-label="t('common.retry')"
+                @tap="onRefresh"
+              >
+                <text class="featured-error__retry-text">{{ t('common.retry') }}</text>
               </view>
             </view>
           </template>
@@ -1309,6 +1339,39 @@ onShareAppMessage(() => ({
   font-size: var(--fs-lg);
   color: var(--c-neutral-0);
   font-weight: 600;
+}
+
+/* MP-R2-VILLAGE-INDEX-012：兴趣圈精选话题失败提示条（非整屏错误态，宫格/热门话题仍可用） */
+.featured-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin: var(--sp-6) var(--sp-6) 0;
+  padding: var(--sp-5);
+  background: var(--c-error-bg-solid);
+  border: 1rpx solid var(--c-error-border-tint);
+  border-radius: var(--r-lg);
+}
+
+.featured-error__text {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-secondary);
+}
+
+.featured-error__retry {
+  flex-shrink: 0;
+  padding: var(--sp-2) var(--sp-6);
+  border-radius: var(--r-full);
+  background: var(--c-brand-400);
+}
+
+.featured-error__retry-text {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-neutral-0);
 }
 
 /* ================================================================

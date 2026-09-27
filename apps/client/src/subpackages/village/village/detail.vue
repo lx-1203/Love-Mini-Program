@@ -835,7 +835,11 @@ onShareTimeline(() => {
                无法命中本页 scoped 样式（.post-image.data-v-xxx 永不匹配），
                导致图片无尺寸约束而塌陷不显示。改为「包裹 view 定尺寸 +
                SafeImage 100% 填充」（与 PostCard/MatchCard 同模式）。 -->
-          <view v-if="currentPost.images.length > 0" class="post-images">
+          <view
+            v-if="currentPost.images.length > 0"
+            class="post-images"
+            :class="{ 'post-images--two': currentPost.images.length === 2 }"
+          >
             <view
               v-for="(img, idx) in currentPost.images"
               :key="img || idx"
@@ -2011,6 +2015,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .post-image-wrap--first {
   width: 100%;
   height: 400rpx;
+}
+
+/* MP-R2VIS-VILLAGE-DETAIL-002：2 图特判——首图不再独占整行，两图等宽 50/50
+   （与 PostCard .post-card__images--2 同口径：1 个间距后二等分） */
+.post-images--two .post-image-wrap,
+.post-images--two .post-image-wrap--first {
+  width: calc((100% - 12rpx) / 2);
+  height: 220rpx;
 }
 
 /* 话题标签 */

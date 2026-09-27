@@ -111,9 +111,12 @@ const circleTags = computed<string[]>(() =>
 );
 
 /** 置顶公告（本地 mock —— TODO(后端): 圈公告接口）。
- *  MP-R1-CIRCLEHOME-001：real 模式不渲染写死演示公告 */
+ *  MP-R1-CIRCLEHOME-001：real 模式不渲染写死演示公告
+ *  MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002（2026-09-27）：演示文案不再
+ *  写死中文字面量，改走本页其余文案同一套 useI18n().t()（circle.home.* 命名，
+ *  与相邻 circle.home.pinnedBadge 成对）；文案内容原样入词条，视觉零变化。 */
 const pinnedNotice = computed<string>(() =>
-  useMock() ? "【圈规】友善交流，尊重原创，分享美好瞬间" : ""
+  useMock() ? t("circle.home.pinnedNotice") : ""
 );
 
 /** 动态 feed 项（2026-09-12：真实数据来自 circleStore.fetchTopics，mock 仅兜底） */

@@ -23,6 +23,9 @@
 import { t } from "@/i18n";
 import { appEnv } from "./env";
 import { getToken, normalizeApiPath, withTimeout } from "./http";
+// 2026-09-27（上传扩展名门禁）：白名单唯一真源 utils/media.ts，与 services/api.ts
+// uploadFileViaUni 同一口径（镜像后端 LocalMediaStorageService 的 aac/mp3/m4a/wav）。
+import { isAllowedMediaExt, describeAllowedMediaExts } from "../utils/media";
 
 /** 语音上传默认超时时间（30s，语音文件较大） */
 const VOICE_UPLOAD_TIMEOUT_MS = 30000;
@@ -49,6 +52,16 @@ export async function uploadVoiceFile(
 ): Promise<string> {
   if (!tempFilePath) {
     throw new Error(t("storeErrors.chat.voiceFilePathEmpty"));
+  }
+
+  // 2026-09-27（上传扩展名门禁）：录音产物扩展名不在后端音频白名单（aac/mp3/m4a/wav）时
+  // 直接拒绝，不再发起必然被 400 的上传。错误呈现沿用本文件既有机制——抛出 Error，
+  // 由调用方（stores/chat 语音发送、stores/profile.uploadVoice、messagesStore.sendVoiceMessage）
+  // 既有的 catch → toast/store errorMessage 显示，服务层不自行弹 toast。
+  if (!isAllowedMediaExt(tempFilePath, "audio")) {
+    throw new Error(
+      t("storeErrors.media.uploadExtNotAllowed", { exts: describeAllowedMediaExts("audio") })
+    );
   }
 
   // 超时控制：30s 后 abort 底层上传任务

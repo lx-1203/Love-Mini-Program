@@ -18,7 +18,11 @@
  * - 形态 C（mock 模拟）：已接近 MessageItem 形状，透传
  */
 
-import type { MessageItem } from "../../stores/messages";
+// 2026-09-27 私信引用链路：复用 stores/messages 的 quoteContext 解析（与 GET 回包同一口径），
+// 避免两处各写一份 JSON 解析。函数声明提升 + 仅在函数体内调用，不引入新的模块初始化时序问题
+// （services/websocket <-> stores 的循环引用链早已存在：store-dispatch 即 value-import stores/messages）。
+// no-duplicate-imports：value 与 type 合并到单一 import 语句（与 store-dispatch.ts 同模式）。
+import { parsePrivateQuoteContext, type MessageItem } from "../../stores/messages";
 import { useSessionStore } from "../../stores/session";
 import { useChatStore } from "../../stores/chat";
 import { isRecord } from "../../types/guards";
@@ -53,6 +57,12 @@ export function fromWsPayload(data: unknown, destination: string): MessageItem |
   if ("conversationId" in data && "senderId" in data && "messageKind" in data) {
     const sessionStore = useSessionStore();
     const currentUserId = sessionStore.userSession?.userId ?? "";
+    // 2026-09-27 私信引用链路：WS 推送与 GET 回包同为 MessageView，必须同样解析 quoteContext，
+    // 否则对方发出的引用回复要等重进会话（fetchSessionMessages）才显示引用条。
+    const quote = parsePrivateQuoteContext(
+      typeof data.quoteContext === "string" ? data.quoteContext : null,
+      currentUserId
+    );
     return {
       id: String(data.id ?? ""),
       sessionId: String(data.conversationId ?? ""),
@@ -61,6 +71,9 @@ export function fromWsPayload(data: unknown, destination: string): MessageItem |
       body: String(data.content ?? ""),
       sentAt: String(data.createdAt ?? ""),
       durationSeconds: data.durationSeconds != null ? Number(data.durationSeconds) : null,
+      quoteRef: quote?.quoteRef,
+      quoteBody: quote?.quoteBody,
+      quoteSender: quote?.quoteSender,
     };
   }
 

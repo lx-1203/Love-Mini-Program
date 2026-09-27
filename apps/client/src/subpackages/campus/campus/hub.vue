@@ -108,15 +108,15 @@ const ownSchool = computed(() => certificationInfo.value?.schoolName || sessionS
  */
 const joinedBadge = computed<{ text: string; class: string }>(() => {
   if (activeTab.value === "recommend") {
-    return { text: t("campusHub.unverified"), class: "campus-school-card__badge--unverified" };
+    return { text: t("campus.hub.unverified"), class: "campus-school-card__badge--unverified" };
   }
   if (isVerified.value) {
-    return { text: t("campusHub.certified"), class: "campus-school-card__badge--verified" };
+    return { text: t("campus.hub.certified"), class: "campus-school-card__badge--verified" };
   }
   if (isPending.value) {
-    return { text: t("campusHub.statusPending"), class: "campus-school-card__badge--pending" };
+    return { text: t("campus.hub.statusPending"), class: "campus-school-card__badge--pending" };
   }
-  return { text: t("campusHub.unverified"), class: "campus-school-card__badge--unverified" };
+  return { text: t("campus.hub.unverified"), class: "campus-school-card__badge--unverified" };
 });
 
 /** 当前选中的 Tab：joined = 我加入的，recommend = 推荐圈子
@@ -192,13 +192,13 @@ function goBack() {
         <text class="campus-hub__back-text">&#x2039;</text>
       </view>
       <view class="campus-hub__title-col">
-        <text class="campus-hub__title">{{ t('campusHub.title') }}</text>
-        <text class="campus-hub__subtitle">{{ t('campusHub.subtitle') }}</text>
+        <text class="campus-hub__title">{{ t('campus.hub.title') }}</text>
+        <text class="campus-hub__subtitle">{{ t('campus.hub.subtitle') }}</text>
       </view>
       <!-- 页头不再放重复的认证入口（MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002）：
            认证动作只保留下方引导横幅那一处；这里只在已认证时挂状态标记。 -->
       <view v-if="isVerified" class="campus-hub__cert-badge">
-        <text class="campus-hub__cert-badge-text">{{ t('campusHub.certified') }}</text>
+        <text class="campus-hub__cert-badge-text">{{ t('campus.hub.certified') }}</text>
       </view>
     </view>
 
@@ -208,8 +208,8 @@ function goBack() {
         <image class="campus-guide__icon-img" :src="IMAGE_PATHS.ICONS_COMMON.GRADUATION_CAP_SVG" mode="aspectFit" alt="" />
       </view>
       <view class="campus-guide__body">
-        <text class="campus-guide__title">{{ t('campusHub.guideTitle') }}</text>
-        <text class="campus-guide__desc">{{ t('campusHub.guideDesc') }}</text>
+        <text class="campus-guide__title">{{ t('campus.hub.guideTitle') }}</text>
+        <text class="campus-guide__desc">{{ t('campus.hub.guideDesc') }}</text>
       </view>
       <view
         v-if="!isVerified"
@@ -217,13 +217,13 @@ function goBack() {
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
-        :aria-label="t('campusHub.goCertify')"
+        :aria-label="t('campus.hub.goCertify')"
         @tap="goCertification"
       >
-        <text class="campus-guide__btn-text">{{ isPending ? t('campusHub.viewProgress') : t('campusHub.goCertify') }}</text>
+        <text class="campus-guide__btn-text">{{ isPending ? t('campus.hub.viewProgress') : t('campus.hub.goCertify') }}</text>
       </view>
       <view v-else class="campus-guide__badge">
-        <text class="campus-guide__badge-text">{{ t('campusHub.certified') }}</text>
+        <text class="campus-guide__badge-text">{{ t('campus.hub.certified') }}</text>
       </view>
     </view>
 
@@ -236,12 +236,12 @@ function goBack() {
   cursor-spacing="20"
         v-model="searchKeyword"
         class="campus-search__input"
-        :placeholder="t('campusHub.searchPlaceholder')"
+        :placeholder="t('campus.hub.searchPlaceholder')"
         placeholder-class="campus-search__placeholder"
         confirm-type="search"
-        :aria-label="t('campusHub.searchAria')"
+        :aria-label="t('campus.hub.searchAria')"
       />
-      <text v-if="searchKeyword" class="campus-search__clear" role="button" :aria-label="t('campusHub.clearAria')" @tap="searchKeyword = ''">×</text>
+      <text v-if="searchKeyword" class="campus-search__clear" role="button" :aria-label="t('campus.hub.clearAria')" @tap="searchKeyword = ''">×</text>
     </view>
 
     <!-- Tab 切换 -->
@@ -252,7 +252,7 @@ function goBack() {
         :aria-selected="activeTab === 'joined'"
         @tap="activeTab = 'joined'"
       >
-        <text class="campus-hub__tab-text" :class="{ 'campus-hub__tab-text--active': activeTab === 'joined' }">{{ t('campusHub.joinedTitle') }}</text>
+        <text class="campus-hub__tab-text" :class="{ 'campus-hub__tab-text--active': activeTab === 'joined' }">{{ t('campus.hub.joinedTitle') }}</text>
         <view v-if="activeTab === 'joined'" class="campus-hub__tab-indicator" />
       </view>
       <view
@@ -261,7 +261,7 @@ function goBack() {
         :aria-selected="activeTab === 'recommend'"
         @tap="activeTab = 'recommend'"
       >
-        <text class="campus-hub__tab-text" :class="{ 'campus-hub__tab-text--active': activeTab === 'recommend' }">{{ t('campusHub.recommendTitle2') }}</text>
+        <text class="campus-hub__tab-text" :class="{ 'campus-hub__tab-text--active': activeTab === 'recommend' }">{{ t('campus.hub.recommendTitle2') }}</text>
         <view v-if="activeTab === 'recommend'" class="campus-hub__tab-indicator" />
       </view>
     </view>
@@ -275,7 +275,7 @@ function goBack() {
     >
     <!-- 空状态 -->
     <view v-if="filteredSchools.length === 0" class="campus-hub__empty">
-      <text class="campus-hub__empty-text">{{ activeTab === 'joined' ? t('campusHub.emptyJoined') : t('campusHub.emptyRecommend') }}</text>
+      <text class="campus-hub__empty-text">{{ activeTab === 'joined' ? t('campus.hub.emptyJoined') : t('campus.hub.emptyRecommend') }}</text>
     </view>
 
     <!-- 圈子卡片列表 -->
@@ -320,7 +320,7 @@ function goBack() {
 
       <!-- 操作按钮（描边样式） -->
       <view class="campus-school-card__cta" :class="{ 'campus-school-card__cta--outline': activeTab !== 'joined' }">
-        <text class="campus-school-card__cta-text">{{ activeTab === 'joined' ? t('campusHub.enter') : t('campusHub.join') }}</text>
+        <text class="campus-school-card__cta-text">{{ activeTab === 'joined' ? t('campus.hub.enter') : t('campus.hub.join') }}</text>
       </view>
     </view>
 
@@ -328,7 +328,7 @@ function goBack() {
          MP-R1-CAMPUS-HUB-003：原「查看更多校园圈 ⌄」是无可绑动作的死元素（箭头暗示可展开但点击无响应），
          按审计建议移除箭头改为静态说明文案 -->
     <view class="campus-hub__more">
-      <text class="campus-hub__more-text">{{ t('campusHub.moreHint') }}</text>
+      <text class="campus-hub__more-text">{{ t('campus.hub.moreHint') }}</text>
     </view>
     <view class="campus-hub__footer" />
     </scroll-view>

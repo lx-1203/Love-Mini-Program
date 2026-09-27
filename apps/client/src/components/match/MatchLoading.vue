@@ -176,7 +176,14 @@ const PROGRESS = [
   right: 140rpx;
   padding: 14rpx 30rpx;
   border-radius: 999rpx;
-  background: rgba(54, 201, 154, 0.85);
+  /* MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001：
+     原为裸 rgba(54, 201, 154, 0.85)（半透明品牌绿，无令牌）→ 改容器面令牌。
+     深色模式由 styles/tokens.scss:235 dark-theme-vars 自动反色（--c-bg-container: #1A1F26）。 */
+  background: var(--c-bg-container, #FFFFFF);
+  /* 本组件根底是浅渐变 --c-gradient-match（#E8FAF3→#FDF2F8），白胶囊与其几乎同色；
+     补一条品牌绿浅描边确保胶囊边缘可读（沿用 .circles-tab / R13 的「容器底 + 发丝边」既有范式，
+     令牌 --c-brand-border-tint 见 theme/design-variables.scss:830）。 */
+  border: 1rpx solid var(--c-brand-border-tint, rgba(61, 201, 148, 0.2));
   z-index: 10;
 }
 
@@ -187,7 +194,10 @@ const PROGRESS = [
 .match-loading__skip-text {
   font-size: 26rpx;
   font-weight: 700;
-  color: #ffffff;
+  /* 同判据：原为裸 #ffffff → 改品牌绿文字令牌（白底绿字）。
+     刻意不用 --c-brand：本组件 :277 / :384 已在用该令牌，按台账护栏它对本行「作废不作判点」，
+     故取同值（#36C99A）的文本语义令牌 --c-text-brand（theme/design-variables.scss:360）。 */
+  color: var(--c-text-brand, #36C99A);
 }
 
 /* ========== 头像区域 ========== */

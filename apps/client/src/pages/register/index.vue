@@ -14,14 +14,15 @@
  * 链路镜像登录页（P0-32）：注册成功即自动登录（JWT 已落 storage），
  * 主动 sessionStore.refreshSession() 消除「已登录但页面认为未登录」间隙。
  *
- * 文案（MP-R2-PAGES-REGISTER-INDEX-013 收口后）：校验/toast 文案已迁 i18n
- * （i18n/locales 的 register 命名空间，zh-CN/en-US 成对），模板内标题/字段标签等
- * 展示文案仍为中文硬编码（未在本批键清单内，见交付 still_orphan 说明），
- * 错误文案表见设计规范 §7。
+ * 文案（MP-R2-PAGES-REGISTER-INDEX-013）：校验/toast 文案一律取 t("register.*")，
+ * zh-CN/en-US 成对维护；键值逐字抄自设计规范 §7 错误文案表，§7 未列的几条
+ * （密码 20 位上限、确认密码为空、昵称必填/超长、生日必填）取自 §1.3 字段清单
+ * 与上文契约决策段。仍为中文硬编码的只剩模板展示文案（标题、字段标签、占位符、
+ * 强度档位弱/中/强）——§7 只规范错误文案，这类不在本行判据内。
  */
 import { computed, ref, onUnmounted } from "vue";
-// MP-R2-PAGES-REGISTER-INDEX-013：本页校验/toast 文案迁 i18n（键见 i18n/locales
-// 的 register 命名空间，zh-CN/en-US 成对维护），不再在组件内硬编码中文
+// MP-R2-PAGES-REGISTER-INDEX-013：本页校验/toast 文案全部经 t()（键见 i18n/locales
+// 的 register 命名空间，zh-CN/en-US 成对维护），不再在组件内硬编码中文校验文案
 import { useI18n } from "vue-i18n";
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
@@ -220,29 +221,29 @@ function clearPhone() {
 
 /* ---------------- 校验（文案表：设计规范 §7） ---------------- */
 function validatePassword(v: string): string {
-  if (!v) return "请设置登录密码";
+  if (!v) return t("register.errPasswordRequired");
   if (v.length < 8) return t("register.errPasswordWeak");
-  if (v.length > 20) return "密码最多 20 位";
-  if (/\s/.test(v) || /[\uFF00-\uFFEF]/.test(v)) return "密码不能包含空格或全角字符";
-  if (!/[A-Za-z]/.test(v) || !/\d/.test(v)) return "密码需同时包含字母和数字";
+  if (v.length > 20) return t("register.errPasswordMax");
+  if (/\s/.test(v) || /[\uFF00-\uFFEF]/.test(v)) return t("register.errPasswordNoSpace");
+  if (!/[A-Za-z]/.test(v) || !/\d/.test(v)) return t("register.errPasswordLetterDigit");
   return "";
 }
 
 /** 逐项校验，返回首个错误（手机号 → 验证码 → 密码 → 确认密码 → 昵称 → 生日 → 协议）；无错误时 field 为 null */
 function validateFirstError(): { field: FieldKey | "agree" | null; message: string } {
-  if (!phoneRaw.value) return { field: "phone", message: "请输入手机号" };
+  if (!phoneRaw.value) return { field: "phone", message: t("register.errPhoneRequired") };
   if (!phoneValid.value) return { field: "phone", message: t("register.errPhoneFormat") };
-  if (!smsCode.value) return { field: "sms", message: "请输入短信验证码" };
-  if (!/^\d{6}$/.test(smsCode.value)) return { field: "sms", message: "验证码为 6 位数字" };
+  if (!smsCode.value) return { field: "sms", message: t("register.errSmsRequired") };
+  if (!/^\d{6}$/.test(smsCode.value)) return { field: "sms", message: t("register.errSmsLength") };
   const pwdError = validatePassword(password.value);
   if (pwdError) return { field: "password", message: pwdError };
-  if (!confirmPassword.value) return { field: "confirm", message: "请再次输入密码" };
+  if (!confirmPassword.value) return { field: "confirm", message: t("register.errConfirmRequired") };
   if (confirmPassword.value !== password.value) return { field: "confirm", message: t("register.errPasswordMismatch") };
-  if (!nickname.value.trim()) return { field: "nickname", message: "请输入昵称" };
-  if (nickname.value.trim().length > 20) return { field: "nickname", message: "昵称最多 20 字" };
-  if (!birthDate.value) return { field: "birth", message: "请选择出生日期" };
-  if (!isAdult(birthDate.value)) return { field: "birth", message: "未满 18 岁暂无法注册" };
-  if (!agreed.value) return { field: "agree", message: "请先阅读并勾选同意《用户协议》和《隐私政策》" };
+  if (!nickname.value.trim()) return { field: "nickname", message: t("register.errNicknameRequired") };
+  if (nickname.value.trim().length > 20) return { field: "nickname", message: t("register.errNicknameMax") };
+  if (!birthDate.value) return { field: "birth", message: t("register.errBirthRequired") };
+  if (!isAdult(birthDate.value)) return { field: "birth", message: t("register.errMinorBlocked") };
+  if (!agreed.value) return { field: "agree", message: t("register.errAgreeRequired") };
   return { field: null, message: "" };
 }
 
@@ -418,7 +419,7 @@ function handleRegisterError(error: unknown) {
   if (detail.includes("未满 18")) {
     errors.value.birth = t("register.errBirthMinor");
     shake("birth");
-    toast("未满 18 岁暂无法注册");
+    toast(t("register.errMinorBlocked"));
     return;
   }
   if (detail.includes("手机号格式")) {

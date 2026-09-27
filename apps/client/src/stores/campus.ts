@@ -266,6 +266,8 @@ export interface CampusState {
   errorMessage: string | null;
   /** MP-R2-CAMPUSINDEX-007：话题列表加载错误（独立字段） */
   topicsError: string | null;
+  /** MP-R2-CAMPUSINDEX-010：认证状态拉取错误（独立字段，页面据此给重试入口） */
+  certificationError: string | null;
   /** 话题列表当前页码 */
   topicPage: number;
   /** 话题列表是否还有更多 */
@@ -365,6 +367,8 @@ export const useCampusStore = defineStore("campus", {
     errorMessage: null,
     /** MP-R2-CAMPUSINDEX-007：话题列表加载错误（独立于认证/活动的共享 errorMessage） */
     topicsError: null as string | null,
+    /** MP-R2-CAMPUSINDEX-010：认证状态拉取错误（独立字段；errorMessage 同步写，hub.vue 错误条读它） */
+    certificationError: null as string | null,
     topicPage: 1,
     topicHasMore: true,
     certificationStatus: "unverified",
@@ -927,6 +931,7 @@ export const useCampusStore = defineStore("campus", {
      */
     async fetchCertificationStatus() {
       this.errorMessage = null;
+      this.certificationError = null;
 
       try {
         if (useMock()) {
@@ -962,7 +967,14 @@ export const useCampusStore = defineStore("campus", {
           this.certificationStatus = "unverified";
           return;
         }
-        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.campus.loadCertificationStatusFailed");
+        // MP-R2-CAMPUSINDEX-010：非 404 失败原先只落共享 errorMessage，而 campus/index.vue
+        // 的错误槽绑 topicsError（003/007 的解耦结果），认证拉取失败于是被静默渲染成
+        // 「未认证」+ 认证引导卡。独立字段 certificationError 供本页渲染重试条；
+        // errorMessage 同步保留——hub.vue:156/185 的 certLoadFailed 错误条读的就是它。
+        const message =
+          error instanceof Error ? error.message : t("storeErrors.campus.loadCertificationStatusFailed");
+        this.certificationError = message;
+        this.errorMessage = message;
       }
     },
 

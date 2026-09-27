@@ -46,6 +46,8 @@ function onNearbyAvatarError(event: Event) {
         </view>
       </view>
     </scroll-view>
+    <!-- MP-R2-PAGES-HOME-INDEX-111：加载完成仍无人 → 空态块（口径对齐 CommunityFeed），替代此前的空白横滑区 -->
+    <view v-else-if="items.length === 0" class="nearby-people__empty">附近暂时没有可匹配的人，去看看推荐吧</view>
     <scroll-view v-else scroll-x class="nearby-scroll" :show-scrollbar="false">
       <view class="nearby-list">
         <view v-for="item in items" :key="item.userId" class="nearby-item press-feedback" hover-class="press-feedback--active" role="button" :aria-label="`查看 ${item.name} 主页`" @tap="$emit('select', item.userId)">
@@ -54,13 +56,21 @@ function onNearbyAvatarError(event: Event) {
                  通过 dataset.fallbackApplied 标记避免重复降级（uni-app 编译器对
                  @error="func($event)" 在 setup 中不支持，必须用 dataset 在
                  function 内检测防止无限回退循环）。 -->
-            <image
-              class="nearby-item__avatar"
-              :src="resolveMediaUrl(item.avatarUrl) || defaultAvatar"
-              :data-fallback-applied="'0'"
-              mode="aspectFill"
-              @error="onNearbyAvatarError"
-            />
+            <!-- MP-R2VIS-PAGES-HOME-INDEX-003：头像原先是 mode="aspectFill" 直接铺满 88rpx 圆，
+                 aspectFill 的裁切锚点在**中心**，而这里的数据源是半身人像（person-01..09 那一池），
+                 中心裁切正好把脸切掉 ⇒ 改成"外层固定圆 + 内层按宽缩放、顶部对齐"，
+                 可见区恒为图片上沿，人像的脸因此在画内。
+                 已知代价：源图若是横构图（宽>高），widthFix 会让图高小于 88rpx 而在下沿留白；
+                 本仓头像素材全部是竖构图，且留白比"没有脸"是可接受得多的失败，故采此形。 -->
+            <view class="nearby-item__avatar-clip">
+              <image
+                class="nearby-item__avatar"
+                :src="resolveMediaUrl(item.avatarUrl) || defaultAvatar"
+                :data-fallback-applied="'0'"
+                mode="widthFix"
+                @error="onNearbyAvatarError"
+              />
+            </view>
             <view v-if="item.online" class="nearby-item__online"></view>
           </view>
           <text class="nearby-item__name">{{ item.name }}</text>
@@ -100,6 +110,17 @@ function onNearbyAvatarError(event: Event) {
   color: var(--c-text-secondary, #666666);
 }
 
+.nearby-people__empty {
+  margin: 0 32rpx;
+  padding: 32rpx;
+  border-radius: 20rpx;
+  background: #ffffff;
+  border: 1rpx solid #EEF2F0;
+  color: #999999;
+  font-size: 22rpx;
+  text-align: center;
+}
+
 .nearby-scroll {
   width: 100%;
 }
@@ -129,23 +150,36 @@ function onNearbyAvatarError(event: Event) {
   height: 88rpx;
 }
 
-.nearby-item__avatar {
-  /* 2026-09-03 R11 终极修：直接 <image> 必须显式尺寸（不再依赖 SafeImage 父容器） */
-  display: block;
+.nearby-item__avatar-clip {
+  /* MP-R2VIS-PAGES-HOME-INDEX-003：圆形裁切与底色放在这一层，
+     里面的 <image> 只按宽缩放并贴顶 ⇒ 可见区恒为图片上沿（人像的脸所在处）。 */
   width: 88rpx;
   height: 88rpx;
   border-radius: 50%;
+  overflow: hidden;
   background: var(--c-neutral-100, #F0F2F5);
   flex-shrink: 0;
 }
 
+.nearby-item__avatar {
+  /* 2026-09-03 R11 终极修：直接 <image> 必须有显式宽度（不再依赖 SafeImage 父容器）。
+     高度不再写死 88rpx：那等于把竖构图人像二次压扁，脸照样出不了画；
+     高度交给 mode="widthFix" 按比例算，裁切由外层 .nearby-item__avatar-clip 负责。 */
+  display: block;
+  width: 88rpx;
+}
+
 .nearby-item__avatar--placeholder {
-  /* 占位态：浅灰背景更明显，提示头像缺失 */
+  /* 占位态：浅灰背景更明显，提示头像缺失（这一态没有 clip 包着，尺寸要自己给全） */
+  height: 88rpx;
+  border-radius: 50%;
   background: #E5EFEA;
 }
 
 .nearby-item__avatar--skeleton {
-  /* 2026-09-02 R12：加载骨架（与头像同尺寸，脉冲动画） */
+  /* 2026-09-02 R12：加载骨架（与头像同尺寸，脉冲动画）；同样不靠 clip，自带圆形 */
+  height: 88rpx;
+  border-radius: 50%;
   background: #E5EFEA;
   animation: nearby-skeleton-pulse 1.2s ease-in-out infinite;
 }

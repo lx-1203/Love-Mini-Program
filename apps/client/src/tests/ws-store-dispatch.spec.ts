@@ -22,8 +22,16 @@ const storeMock = vi.hoisted(() => ({
   activeSessionId: null,
 }));
 
+/* 这份 mock 原先只导出 useMessagesStore：私信引用回复接线后 ws-message-adapter 会去调
+   parsePrivateQuoteContext，桩里没这个导出 ⇒ 转换层在 handleNewMessage 里抛异常，
+   onNewMessage 一次都没被调到（"Number of calls: 0"），看起来像产品坏了，其实是桩比模块表面窄。
+   这里只补一个返回 null 的桩：本 spec 量的是分发，不是引用解析；
+   解析真函数的行为覆盖在 src/tests/upload-quote-guards.spec.ts（它 import 的是真模块，不经过桩）。
+   不打算用 importOriginal 透传——那会把真 store 的整条依赖链（config/env 等）拖进来，
+   而本文件对 env 是部分 mock，一试就炸。 */
 vi.mock("../stores/messages", () => ({
   useMessagesStore: () => storeMock,
+  parsePrivateQuoteContext: () => null,
 }));
 
 vi.mock("../stores/likes", () => ({

@@ -15,6 +15,9 @@ import { isDev } from "../../../config/env";
 // MP-R2-MATCHING-002：统一媒体出口
 import { resolveMediaUrl } from "../../../utils/media";
 import { ROUTES } from "../../../constants/routes";
+// MP-R7-GUEST-MATCHING-REDIRECT-RACE-001：未登录的落点必须是登录引导，需要先判 token 再决定导航
+import { getToken } from "../../../services/http";
+import { replaceAppPath } from "../../../utils/navigation";
 
 import MatchLoading from "../../../components/match/MatchLoading.vue";
 // R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
@@ -62,6 +65,14 @@ function redirectToSuccess() {
 }
 
 function goBack() {
+  /* MP-R7-GUEST-MATCHING-REDIRECT-RACE-001：未登录时落点不能由计时器投票决定。
+     本页失败分支会 setTimeout(goBack, 600)，而 http.ts:493-494 的 401 兜底在 500ms 后 reLaunch 登录页；
+     原实现在这里 switchTab 到「寻觅」内容 Tab，等于让游客的落点取决于谁先跑完，
+     也与既定裁定（游客不得浏览内容页、未登录须引导到登录/注册）相反。现明确让位给登录引导。 */
+  if (!getToken()) {
+    replaceAppPath(ROUTES.LOGIN);
+    return;
+  }
   const pages = getCurrentPages();
   if (pages.length > 1) {
     uni.navigateBack({ delta: 1 });

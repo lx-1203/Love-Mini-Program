@@ -1263,7 +1263,7 @@ async function sendText() {
       // 真实失败：保留草稿 + toast，不再走成功路径清空草稿（原失败时消息正文丢失且无反馈）
       // MP-R2-CHAT-CHAT-SESSION-INDEX-001：sendText 返回布尔（原「errorMessage 文案
       // 差分」在连续两次相同错误时误判成功 → 清空草稿丢失正文）
-      const ok = await chatStore.sendText(messageToSend);
+      const ok = await chatStore.sendText(messageToSend, "text", quoteRef?.messageId ?? null);
       if (!ok) {
         uni.showToast({
           title: chatStore.errorMessage || t("chat.sendFailed"),

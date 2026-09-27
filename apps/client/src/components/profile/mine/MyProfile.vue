@@ -66,9 +66,11 @@ const emit = defineEmits<{
 .my-profile {
   min-height: 100vh;
   background: #EEF7F2;
-  /* MP-R2-PROFILE-024：本人态底部留白与未登录态同口径——custom-tab-bar 实占
-     （height 160rpx+env 加 padding-bottom env+24rpx，content-box）= 184rpx + 2×env，
-     原固定 120rpx 会被 tabBar 压住末卡底缘（对齐 NotLoggedProfile.vue:161 / GlobalPublishFab） */
-  padding-bottom: calc(184rpx + env(safe-area-inset-bottom) * 2);
+  /* MP-R2-PROFILE-024：底部留白分两档，此为「本人档」——按本态浮层钮顶缘核算：
+     custom-tab-bar 面板顶缘 --tab-bar-total-h（184rpx+2env）+ GlobalPublishFab.vue:112
+     抬升余量 16rpx + :114 钮高 96rpx = 钮顶缘 296rpx+2env；原固定 120rpx 会被 tabBar 压住
+     末卡底缘，上一轮落的 184rpx+2env 只清到面板顶缘、清不到发帖 FAB。
+     未登录档在 NotLoggedProfile.vue（292rpx+2env）。 */
+  padding-bottom: calc(var(--tab-bar-total-h, 184rpx + env(safe-area-inset-bottom) + env(safe-area-inset-bottom)) + 112rpx);
 }
 </style>

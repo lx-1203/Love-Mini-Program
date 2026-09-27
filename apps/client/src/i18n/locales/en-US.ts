@@ -2186,6 +2186,19 @@ export default {
     errPasswordMismatch: "Passwords do not match",
     errNicknameLength: "Nickname must be 1-20 characters",
     errBirthMinor: "You must be at least 18 to register",
+    errPasswordRequired: "Set a login password",
+    errPasswordMax: "Passwords are up to 20 characters",
+    errPasswordNoSpace: "Password can't contain spaces or full-width characters",
+    errPasswordLetterDigit: "Password needs both letters and numbers",
+    errPhoneRequired: "Enter your phone number",
+    errSmsRequired: "Enter the SMS code",
+    errSmsLength: "The code is 6 digits",
+    errConfirmRequired: "Re-enter your password",
+    errNicknameRequired: "Enter a nickname",
+    errNicknameMax: "Nicknames are up to 20 characters",
+    errBirthRequired: "Select your birth date",
+    errMinorBlocked: "You can't register until you're 18",
+    errAgreeRequired: "Read and accept the User Agreement and Privacy Policy first",
     toastPhoneRequired: "Enter a valid phone number first",
     toastPhoneRegistered: "Already registered — sign in directly",
     smsSent: "Code sent to {phone}",
@@ -3386,33 +3399,7 @@ export default {
   },
 
   /* ========== Campus Hub (v3 Nearby) ========== */
-  campusHub: {
-    title: "Campus Circles",
-    searchPlaceholder: "Search school or circle",
-    emptyJoined: "No campus circles joined yet",
-    emptyRecommend: "No recommended circles",
-    moreHint: "More campus circles coming soon",
-    searchAria: "Search campus circles",
-    clearAria: "Clear",
-    subtitle: "Discover and join your campus circles",
-    joinedTitle: "Joined",
-    recommendTitle2: "Recommended",
-    enter: "Enter",
-    join: "Apply to join",
-    unverified: "Unverified",
-    guideTitle: "Join a campus circle and meet schoolmates",
-    guideDesc: "Verify your school first to enter the private circle",
-    goCertify: "Verify",
-    viewProgress: "View progress",
-    certified: "Verified",
-    schoolListTitle: "Schools",
-    schoolListDesc: "Browse public content without verification; join after verifying",
-    recommendTitle: "Recommended Campus Circles",
-    recommendDesc: "Only verified students can join private circles and post",
-    statusVerified: "Verified",
-    statusPending: "Pending",
-    statusPublic: "Public",
-  },
+  
 
   /* ========== Campus certification (Task 28) ========== */
   campus: {
@@ -3531,7 +3518,8 @@ export default {
       imagesUnsupported: "Campus topics don't support images yet, so photos won't be saved with the topic.",
       anonymousUnsupported: "Anonymous publishing isn't available for campus topics yet; your post will show your nickname.",
       contentMasked: "Your content contains restricted words; part of it was automatically masked.",
-      chooseImageFailed: "Failed to select images. Please check album/camera permission."
+      chooseImageFailed: "Failed to select images. Please check album/camera permission.",
+      uploadFailed: "Failed to upload the images. Please check your network and try again."
     },
     /* topic-detail.vue */
     topicDetail: {
@@ -3555,6 +3543,33 @@ export default {
       replyAtLimit: "Reached the {n}-character limit; you can't type more.",
       replyMasked: "Your reply contains restricted words; part of it was automatically masked.",
     },
+    hub: {
+      title: "Campus Circles",
+      searchPlaceholder: "Search school or circle",
+      emptyJoined: "No campus circles joined yet",
+      emptyRecommend: "No recommended circles",
+      moreHint: "More campus circles coming soon",
+      searchAria: "Search campus circles",
+      clearAria: "Clear",
+      subtitle: "Discover and join your campus circles",
+      joinedTitle: "Joined",
+      recommendTitle2: "Recommended",
+      enter: "Enter",
+      join: "Apply to join",
+      unverified: "Unverified",
+      guideTitle: "Join a campus circle and meet schoolmates",
+      guideDesc: "Verify your school first to enter the private circle",
+      goCertify: "Verify",
+      viewProgress: "View progress",
+      certified: "Verified",
+      schoolListTitle: "Schools",
+      schoolListDesc: "Browse public content without verification; join after verifying",
+      recommendTitle: "Recommended Campus Circles",
+      recommendDesc: "Only verified students can join private circles and post",
+      statusVerified: "Verified",
+      statusPending: "Pending",
+      statusPublic: "Public",
+    }
   },
 
   /* ========== Heart signals (Task 28) ========== */
@@ -3651,6 +3666,7 @@ export default {
     home: {
       joinCta: "Join Circle",
       pinnedBadge: "Pinned",
+      pinnedNotice: "[Rules] Be kind, respect original work, share good moments",
       viewAllTopics: "View all topics",
       postInCircle: "Post in circle",
       emptyTab: "Nothing here yet, stay tuned",
@@ -4003,6 +4019,10 @@ export default {
       submitIssueFailed: "Failed to submit issue feedback",
       submitSuggestionFailed: "Failed to submit suggestion",
       submitActivityProposalFailed: "Failed to submit activity proposal",
+    },
+    /* 2026-09-27 round-7 (3): shared upload extension gate (whitelist mirrors LocalMediaStorageService) */
+    media: {
+      uploadExtNotAllowed: "Unsupported file format. Only {exts} are allowed.",
     },
     /* Chat store */
     chat: {
