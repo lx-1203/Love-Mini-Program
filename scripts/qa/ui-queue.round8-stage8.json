@@ -242,6 +242,16 @@
    "why": "真实档的游客登录行（requiresReal 子集）是④裁定的另一半证据：mock 档过了不代表真实档过了。"
   },
   {
+   "name": "ws-channel-up-r8",
+   "file": "scripts/qa/ws-channel-up.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin"
+   ],
+   "timeoutMin": 12,
+   "why": "WS 腿的前置：r-exec-ws 自己的失败口径就写着「WS 通道连不上 ⇒ 先跑 ws-channel-up.mjs，且绝不 close()（close 会把 IDE 的 9420 子进程整个带走）」。不先把通道架起来，145 条那一腿只会交出一屏 transport 超时——上一轮就是这么折掉一次队列启动的。"
+  },
+  {
    "name": "ws-component-scoped-r8",
    "file": "scripts/qa/r-exec-ws.mjs",
    "args": [

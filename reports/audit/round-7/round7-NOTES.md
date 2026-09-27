@@ -4126,3 +4126,27 @@ DISCOVER-014 的处置列原本写着"二选一，收口时给去向"。**不采
 - **必须披露的副作用**：这两处源码改动让三档产物全部落后于工作树（`verify-band-freshness` 现量：mock/real/showcase 各列这两个脏项）。
   正在跑的 stage-7 腿 12/13（exec-A-real、exec-guest-real）**量的仍是改动前的产物** ⇒ 那两腿对 MyStory 文案与徽标变量不作证；已在 §133 的计划里补进 `rebuild-showcase-r8 → rebuild-mock-r8 → rebuild-real-r8 → gate-band-freshness-r8`（showcase 最先，因为它写 mock 目录），并把选择器门挪到重建之后 ⇒ 计划体检现量 `legs=22 非advisory=19 设备腿=6 PLAN=OK`。
   体检器顺手抓了我自己一条 `THIN_WHY rebuild-real-r8`（why 只写了 6 个字）⇒ 补成"两档必须同源于同一次工作树"的理由。
+
+## §135 两处"接线洞"：步骤存在，但它读的东西从来不存在
+这一段是等设备释放期间做的静态活，收获不在新功能，而在把两个**从来没真判过**的收尾步骤挖出来。两处同一个形状：我按记忆写了输入路径/参数名，而生产者从来不那么写。
+
+1. `exec-frames-to-corpus` 那一步原来传 `--round round-7`，而索引器只认 `--results/--corpus/--identity`，
+   并且自带「缺 --results 就 FAIL，不许拿空输入产出一个看起来完整的索引」的守卫
+   ⇒ 收尾真跑到这里必红（我用一条已完成执行腿 `--dry` 复现了正例：`frames=105 uniqueHash=46 可省=59 证据异常=0 RESULT=OK`，
+   也复现了空输入的 FAIL）。修法不是补一个路径，而是改成 `eachExecResults` 按盘上 `exec-*` 结果目录**现量展开**
+   （`CLOSEOUT_EXPANDED → 14 步`），identity 从结果文件里读而不是我手填；一条都没有时留一步空参调用，
+   让索引器自己掐红——"没有东西要索引"绝不能读成"索引过了"。
+2. 收尾第一步 `queue-tally` 读的是 `reports/audit/round-7/queue-state.json`，而排队器把状态写在
+   **它自己的 --out 目录**里：实测存在的是 `…/ui-queue/queue-state.json`（内容 25 腿 `OK=10 QUEUED=15`）。
+   ⇒ 这一步历史上每次都只是打印 `MISSING <路径>` 然后继续往下跑完所有门禁，"本轮有没有红腿、有没有被截停的 NOT_RUN 腿"**从来没被断言过**。
+   修法：两个位置都试；读不到就 `fail=true` 计入退出码（读空腿账 ≠ 没有红腿）；并把 `NOT_RUN` 的腿逐条点名——
+   以前只点 FAIL，被截停的腿反而是隐形的。
+3. 顺带把 stage-8 计划补全：`ws-channel-up-r8`（WS 腿的前置，r-exec-ws 的失败口径自己就这么要求，且明令不许 `close()`）、
+   以及 §134 那两处源码改动带来的 `rebuild-showcase→mock→real + 新鲜度复量`。计划体检现量 `legs=23 非advisory=20 设备腿=6 PLAN=OK`。
+4. 又量了两条我自己写的旧任务标题，都是过大的：
+   - #70 的三件里两件已经满足（594 行 `at` 全有；非 EXECUTED 无原因的 0 行），真剩下的只有 FAILED 行不写 durationMs（11 条里 10 条空）与 SKIPPED 两样都有（207 有/197 无）；
+   - #72 的「6 行欠裁定」按"状态未收口 且 处置列真写着要人拍板"的口径测得 **0 行**，剩下的是 待修复 3 / 未取证 3 / 欠帧复验 ~12（去向账 FRAMECOV `in=19 out=19` 仍 PASS）。
+   两条描述已按现量改写，避免下一轮又拿旧数字当欠款清单。
+
+**这一段的元教训**（不是新增记忆，是执行既有的）：一个步骤只要"输入路径是我凭记忆写的"，它就可能永远不红也永远不判；
+所以新步骤落盘时必须同刻跑一次它的正例与它的空输入反例，看到两边的读数不一样才算接上。
