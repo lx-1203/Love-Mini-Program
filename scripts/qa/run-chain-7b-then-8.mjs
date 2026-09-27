@@ -9,7 +9,7 @@
      · 7b 全绿才串行起 stage-8（同一台设备，绝不并发）。
    用法：node scripts/qa/run-chain-7b-then-8.mjs [--dry] [--timeout-min 240] */
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync, readdirSync } from "node:fs";
 import { resolve, join } from "node:path";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
@@ -44,7 +44,24 @@ for (;;) {
   const m = t.split(/\r?\n/).filter((x) => /QUEUE_RESULT|QUEUE_TALLY/.test(x));
   if (m.length >= 2) { line7b = m.join("\n"); break; }
   if (!existsSync(LOG7B)) { console.log("CHAIN_RESULT=FAIL reason=7b 日志中途消失"); process.exit(2); }
-  try { if (Date.now() - statSync(LOG7B).mtime > 45 * 60 * 1000) { console.log("CHAIN_RESULT=FAIL reason=7b 日志 45 分钟没动 ⇒ 像挂住了，不自动接下一轮（挂了还往下跑会把两轮的噪声拼成一份读数）"); process.exit(2); } } catch { /* 正要读就被换掉：下一轮再看 */ }
+  /* 活性信号换掉：排队器只在**腿结束**时往日志里写一行，一条 45+ 分钟的执行腿期间日志可以整段不动
+     （现量：本脚本就这样把还在正常出行的 7b 判成"挂住"并拒接下一轮）。
+     三路信号任一在窗口内动过就算活着：排队器日志、执行腿结果文件、租约续期。 */
+  const marks = [];
+  try { marks.push(statSync(LOG7B).mtimeMs); } catch { /* 日志被换行写时可能瞬间读不到 */ }
+  try {
+    const rd = join(REPO, "reports/audit/round-7");
+    for (const d of readdirSync(rd)) {
+      if (!/^exec-/.test(d)) continue;
+      try { marks.push(statSync(join(rd, d, "exec-results.json")).mtimeMs); } catch { }
+    }
+  } catch { }
+  try {
+    const lk = JSON.parse(readFileSync(join(REPO, "tmp/qa/locks/wechat-automation-cli.lock"), "utf8"));
+    if (Date.parse(lk.leaseUntil || 0) > Date.now()) marks.push(Date.now());
+  } catch { }
+  const quietMin = marks.length ? (Date.now() - Math.max(...marks)) / 60000 : 1e9;
+  if (quietMin > 45) { console.log("CHAIN_RESULT=FAIL reason=排队器日志、执行腿结果文件、租约续期三路都 45 分钟没动 ⇒ 像真挂住了，不自动接下一轮（挂了还往下跑会把两轮的噪声拼成一份读数）"); process.exit(2); }
   if ((Date.now() - T0) / 60000 > TIMEOUT_MIN) { console.log("CHAIN_RESULT=FAIL reason=等 7b 超过 " + TIMEOUT_MIN + " 分钟"); process.exit(2); }
   await sleep(30000);
 }
