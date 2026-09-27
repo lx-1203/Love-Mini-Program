@@ -35,6 +35,13 @@
  *   --dup-axis-selftest        离线渲染/判决「逐 corpus 同字节状态组」这一条否决轴：只按同一条取集规则
  *                              spawn 只读的 scripts/verify-evidence-integrity.mjs，打印该轴在报告里
  *                              将要落下的**逐字文本**后按该轴判决退出。不启动任何会写盘的门、不取租约。
+ *   --queue-dispo-selftest     同上一条的形状，量的是本轮修的两条轴：① 队列计划选择集（只读
+ *                              readdirSync(scripts/qa) + 只读的 verify-ops-corpus-stamp --queue 腿），
+ *                              ② 台账状态列 vs 处置列的自相矛盾条数（只读 verify-status-vs-disposition）。
+ *                              打印两轴在报告里落下的逐字文本 + 面板判决后退出，不写盘、不取租约。
+ *   --dispo-matrix <file>      只改②那条轴读的台账矩阵（默认由该门自己定 round-6/issue-matrix.md）。
+ *                              存在的理由：这条轴要能当场演示红与绿，而唯一"零矛盾"的输入是一份夹具；
+ *                              它**不是**生产默认值 —— 报告路径不传它，判的还是权威台账。
  *   实时门还受 UI 租约自动保护：有别的驱动在跑时，等价于 --skip-live-gates 并在报告里写明原因。
  */
 import { execFileSync, spawnSync } from "node:child_process";
@@ -207,6 +214,107 @@ function rawDupAxisRecord(agg) {
   return { name: "verify-evidence-integrity（逐 corpus 同字节状态组=否决轴）", cmd: "派生自 " + agg.legs + " 条 verify-evidence-integrity 原始 corpus leg 的 DUP_STATE_GROUPS 之和", exitCode: agg.dupTotal > 0 ? 1 : 0, note: "", body, sha8: sha8(body) };
 }
 
+/* ============ 两条新轴：本轮队列计划选择集 / 台账状态列 vs 处置列的矛盾条数 ============
+ * 两条都是"数字在、口径静默"这一类，实测形状：
+ *  S3 旧选择式 `^ui-queue\.round-<N>-.*\.json$` 在盘上 20 份 `scripts/qa/ui-queue.*.json` 上
+ *     **零命中**（真实命名轮号后没有 dash：`round7-stage4`、`round7b-stage7`、`round8-stage8tail3`），
+ *     于是 H 节那条"队列计划语料同源"轴汇总了 0 份东西却长得像跑过了一遍；
+ *  S4 `verify-status-vs-disposition` 量到 11 行自相矛盾，但它按设计是 advisory（退出码 0），
+ *     而报告侧既没给它 `--strict`、也没把它列进 gatePanel ⇒ 那个 11 永远进不了「本次仍判红 N/M」。
+ * 两条共用同一条修法：**取集/取数的规则只留一份实现，零命中与条数都必须自己喊出来**。 */
+
+/** 队列计划的选择式（一份口径一份实现）：本轮名下 = `ui-queue.round<N><可选批次字母>-*.json`。
+ *  刻意**不含**别的轮次的计划（round-7 的报告不读 round8*），也不含没有轮次号的
+ *  `default / post-legs / real-legs` —— 跨轮混算违反本仓的同质性规则。轮号后允许字母是给
+ *  `round7b-stage7` / `round8b-tour` 这种同轮批次件留的；允许 `round-7` 是防以后有人补上 dash。 */
+const queuePlanSelector = (no) => "^ui-queue\\.round-?" + no + "[a-z]*-.*\\.json$";
+
+/** 量选择集。`carrier` 是"本轮该不该有队列计划"的**在盘**期望信号（不是猜测）：
+ *  本轮目录里由 run-ui-queue.mjs --out 写出的 `ui-queue*` 执行载体。 */
+function measureQueuePlanAxis(no, carrier) {
+  const selector = queuePlanSelector(no);
+  let names = [];
+  let readErr = "";
+  try { names = readdirSync(join(ROOT, "scripts", "qa")); } catch (e) { readErr = String(e.message).slice(0, 60); }
+  const plans = names.filter((f) => /^ui-queue\..*\.json$/.test(f)).sort();
+  const digit = /^\d+$/.test(String(no));
+  let re = null;
+  try { re = new RegExp(selector); } catch { re = null; }
+  const matched = re && digit ? plans.filter((f) => re.test(f)).sort() : [];
+  const census = {};
+  for (const f of plans) {
+    const mm = f.match(/^ui-queue\.round-?(\d+)[a-z]*-/);
+    const k = mm ? "round-" + mm[1] : "(无轮次号)";
+    census[k] = (census[k] || 0) + 1;
+  }
+  return { round: no, selector, digit, readErr, plansOnDisk: plans.length, matched,
+    census: Object.entries(census).map(([k, v]) => `${k}=${v}`).join(" ") || "(盘上没有 ui-queue.*.json)",
+    carriers: carrier.n, carriersHow: carrier.how, expected: carrier.n > 0 };
+}
+/** 面板成员：这条轴只判"选择集有没有对上文件名"，逐份的语料同源性由它 spawn 的那些腿自己记账。 */
+function queuePlanAxisRecord(m) {
+  const body = `QUEUE_PLAN_AXIS round=${m.round} 选择式=${m.selector} 命中=${m.matched.length} 盘上队列计划=${m.plansOnDisk} 本轮执行载体=${m.carriers} 轮号分布[${m.census}]`;
+  return { name: "本轮队列计划选择集（scripts/qa/ui-queue.*.json 按轮号取集=否决轴）",
+    cmd: `派生自 readdirSync(scripts/qa) 的选择式 ${m.selector} + ${m.matched.length} 条 verify-ops-corpus-stamp --queue 腿`,
+    exitCode: m.matched.length ? 0 : 1, note: "", body, sha8: sha8(body) };
+}
+/** 报告正文与 --queue-dispo-selftest 共用这一份渲染（自检显示的和报告落的是同一次测量）。 */
+function queuePlanAxisCountLine(m) {
+  const head = `- **本轮队列计划（ops 语料同源性轴）：命中 ${m.matched.length} / 盘上 ${m.plansOnDisk} 份 \`scripts/qa/ui-queue.*.json\`** —— 选择式 \`${m.selector}\`，按轮号分布 ${m.census}`;
+  if (m.readErr) return head + ` —— ⚠ \`scripts/qa\` 目录读不出（${m.readErr}）⇒ 本轴**未量**，不得读成"0 份计划"。`;
+  if (!m.digit) return head + ` —— ⚠ 轮次号从 \`--round-dir\` 派生成 \`${m.round}\`（不是数字）⇒ 选择式无意义，本轴**未量**。`;
+  if (m.matched.length) return head + `；逐份点名：${m.matched.map((f) => `\`${f}\``).join(" ")}（每份各起一条 \`verify-ops-corpus-stamp --queue\` 腿，见 H 节）`;
+  if (m.expected) return head + ` —— **零命中，而本轮名下有 ${m.carriers} 份队列执行载体**（${m.carriersHow}）：` +
+    `这不是"本轮没有队列计划"，这是**选择式没对上文件名** ⇒ 判红（旧版正是在这里静默汇总了 0 份东西）。`;
+  return head + ` —— 本轮名下没有队列执行载体（${m.carriersHow}）⇒ 本轴**未量**，不进否决集，` +
+    `也不得读成"队列计划已核过"（本轮确实没跑设备队列时才成立）。`;
+}
+
+/** 矛盾条数只取门自己打印的具名字段 `DISPO rows=<n> 矛盾=<n>`：不靠数 `DISPO_HIT` 行 ——
+ *  报告侧按既有纪律只留前 12 行明细（同 FRAMECOV_NAKED），数行得到的是明细数、不是条数。 */
+function measureDispoAxis(rec) {
+  const mm = rec.body.match(/^DISPO rows=(\d+) 矛盾=(\d+)/m);
+  const rows = mm ? Number(mm[1]) : null;
+  const clashes = mm ? Number(mm[2]) : null;
+  return { rows, clashes, measured: rows !== null && clashes !== null && rows > 0,
+    mode: /模式=strict/.test(rec.body) ? "strict" : (/模式=advisory/.test(rec.body) ? "advisory" : "门没自报模式"),
+    gateVerdict: (rec.body.match(/^DISPO_RESULT=(\S+)/m) || [])[1] || null, gateExit: rec.exitCode, cmd: rec.cmd };
+}
+/** 判决由条数派生；门**读不到任何行**时按缺证据判红，不给它一个默认 PASS 的位置。 */
+function dispoAxisRecord(d) {
+  const body = `DISPO_AXIS rows=${d.rows} clashes=${d.clashes} 门模式=${d.mode} 门自身判决=${d.gateVerdict}(退出码 ${d.gateExit})`;
+  return { name: "台账状态列 vs 处置列自相矛盾条数（verify-status-vs-disposition 的 矛盾= 字段=否决轴）",
+    cmd: `派生自 ${d.cmd} 的 DISPO rows= / 矛盾= 两个具名字段`,
+    exitCode: !d.measured ? 1 : (d.clashes > 0 ? 1 : 0),
+    note: d.measured ? "" : "门没量到任何台账行（前置失败），按缺证据判红",
+    body, sha8: sha8(body) };
+}
+function dispoAxisCountLine(d) {
+  if (!d.measured) return `- **台账状态列/处置列自相矛盾条数（否决轴）：未量** —— 门一行台账都没读到（退出码 ${d.gateExit}、判决 ${d.gateVerdict || "无"}）` +
+    `⇒ 按缺证据判红，不得读成"没有矛盾"。`;
+  const rec = dispoAxisRecord(d);
+  return `- **台账状态列/处置列自相矛盾条数（否决轴）：${d.clashes} 行 / 台账 ${d.rows} 行**（第 6 列已到终态、处置/证据列仍写欠款）` +
+    ` —— ${d.clashes ? `本轴非零 ⇒ 已计入「本次仍判红」分母（面板成员 \`${rec.name}\`，退出码 ${rec.exitCode}）。` +
+      `归置只有两条路：把欠款挂进取景配方/登记表，或把第 6 列改成真实状态（现成载具 \`scripts/qa/emit-dispo-open-cellplan.mjs\` → \`merge-cellplans --apply\`）；` +
+      `**条数归零才算结案**，"给洞起了名字"不算（BOOKED≠DONE，与 verify-evidence-holes 同一条纪律）` +
+      `；这几行确实在等裁定，所以本轴的用途是让裁定欠账留在分母里，而不是让收尾 abort —— 它进面板、不进 ERRORS` :
+      `本轴为 0 ⇒ **绿**（该门的 PASS 分支），不进否决集`}` +
+    `；门自身模式=${d.mode}，其退出码 ${d.gateExit} **不进取决集**（advisory 的 0 与 strict 的 1 表达的是它对散文列的否决意愿，不是条数）`;
+}
+/** 该门的入参：默认保持其 advisory（不传 --strict —— 见 dispoAxisCountLine 的判决理由），
+ *  只在自检演示红/绿时允许把台账矩阵指到别处。 */
+const DISPO_MATRIX = flag("dispo-matrix") ? toRel(flag("dispo-matrix")) : null;
+const dispoGateArgs = () => (DISPO_MATRIX ? ["--matrix", DISPO_MATRIX] : []);
+const DISPO_GATE_FILE = "scripts/qa/verify-status-vs-disposition.mjs";
+/** 本轮执行载体数（期望信号）：目录不可读时返回 0 并把原因带进文案，不冒充"量过了"。 */
+function queueCarrierSignal(roundDir) {
+  try {
+    const ns = readdirSync(resolve(ROOT, roundDir));
+    const hits = ns.filter((f) => /^ui-queue/.test(f));
+    return { n: hits.length, how: `由 \`readdirSync(${roundDir})\` 数出的 \`ui-queue*\` 执行载体（run-ui-queue.mjs --out 写的）${hits.length ? "" : "，本轮目录下 0 份"}` };
+  } catch (e) { return { n: 0, how: `${roundDir}/ 不可读（${String(e.message).slice(0, 50)}）⇒ 期望信号未量` }; }
+}
+
 /* --dup-axis-selftest：只跑只读门禁、只渲染这一条轴，用来在**不启动任何会写盘的门**（verify-evidence-holes /
    verify-guest-landing / verify-source-shape 的默认输出都落在 reports/ 里）的前提下看到该轴的逐字渲染。 */
 if (has("dup-axis-selftest")) {
@@ -375,6 +483,32 @@ function nonEmpty(what, n, whySuspicious) {
   if (typeof n !== "number" || Number.isNaN(n)) { ERRORS.push(`${what} 取不到数（是"没读到"，不是 0）：${whySuspicious}`); return false; }
   if (n === 0) { ERRORS.push(`空集判红：${what} = 0 —— ${whySuspicious}`); return false; }
   return true;
+}
+
+/* --queue-dispo-selftest：只 spawn 只读门（`verify-ops-corpus-stamp --queue` 与
+   `verify-status-vs-disposition` 两条分支实测都只 console.log 后 process.exit，无一次写盘调用），
+   不取 UI 租约、不写任何文件，用来在设备队列正在跑的时候演示这两条轴的**逐字渲染**与红/绿两个方向。 */
+if (has("queue-dispo-selftest")) {
+  const m = measureQueuePlanAxis(ROUND_NO, queueCarrierSignal(ROUND_DIR));
+  console.log(`QUEUE_DISPO_SELFTEST round=${ROUND_NO} round-dir=${ROUND_DIR}（只 spawn 只读门，不取租约、不写文件）`);
+  const legs = m.matched.map((n) => runGate("verify-ops-corpus-stamp --queue " + n, "scripts/qa/verify-ops-corpus-stamp.mjs", ["--queue", "scripts/qa/" + n], { timeoutMs: 60000 }));
+  console.log(queuePlanAxisCountLine(m));
+  for (const leg of legs) console.log(`| \`${leg.name}\` | **${leg.exitCode}** | ${(leg.body.match(/^STAMP_QUEUE=.*$/m) || ["(没打出 STAMP_QUEUE 行)"])[0]} → ${(leg.body.match(/^STAMP_RESULT=.*$/m) || [null])[0]} | --queue-dispo-selftest：不查台账基线 |`);
+  const qrec = queuePlanAxisRecord(m);
+  const qMeasurable = m.matched.length > 0 || m.expected;
+  console.log(`| \`${qrec.name}\` | **${qMeasurable ? qrec.exitCode : "null（不进面板）"}** | ${qrec.body} → ${qMeasurable ? (m.matched.length ? "QUEUE_PLAN_AXIS=PASS" : "QUEUE_PLAN_AXIS=FAIL（零命中而本轮有执行载体）") : "未量（不进面板）"} |`);
+  for (const f of m.matched) console.log(`  - 命中的计划文件：\`${f}\``);
+  console.log("");
+  const drec = runGate("verify-status-vs-disposition", DISPO_GATE_FILE, dispoGateArgs(), { timeoutMs: 120000 });
+  const dd = measureDispoAxis(drec);
+  const daxis = dispoAxisRecord(dd);
+  console.log(dispoAxisCountLine(dd));
+  console.log(`| \`${daxis.name}\` | **${daxis.exitCode}** | ${daxis.body} → ${daxis.exitCode ? "DISPO_AXIS=FAIL（进取决集）" : "DISPO_AXIS=PASS"} |`);
+  for (const l of (drec.body.match(/^\s*DISPO_HIT .*$/gm) || []).slice(0, 12)) console.log(`  - 措辞与状态不一致：\`${l.trim().replace(/^DISPO_HIT /, "").replace(/ ::.*$/, "").trim()}\``);
+  console.log(`DISPO_AXIS_RESULT=${dd.measured ? (dd.clashes > 0 ? "FAIL" : "PASS") : "UNMEASURED"} clashes=${dd.clashes === null ? "未量" : dd.clashes} rows=${dd.rows === null ? "未量" : dd.rows} matrix=${DISPO_MATRIX || "门的默认矩阵"}`);
+  console.log(`QUEUE_PLAN_AXIS_RESULT=${qMeasurable ? (m.matched.length ? "PASS" : "FAIL") : "UNMEASURED"} matched=${m.matched.length} plans_on_disk=${m.plansOnDisk} carriers=${m.carriers} legs=${legs.length}`);
+  const red = (qMeasurable && !m.matched.length) || daxis.exitCode !== 0;
+  process.exit(red ? 1 : 0);
 }
 
 /* ============================================================== 前置体检 */
@@ -564,16 +698,17 @@ G.opsStamp = runGate("verify-ops-corpus-stamp --check", "scripts/qa/verify-ops-c
 G.selExistMock = runGate("verify-case-selectors-exist（mock 档）", "scripts/qa/verify-case-selectors-exist.mjs", ["--band", "apps/client/dist/build/mp-weixin"], { timeoutMs: 300000 });
 G.selExistReal = runGate("verify-case-selectors-exist（real 档）", "scripts/qa/verify-case-selectors-exist.mjs", ["--band", "apps/client/dist/build/mp-weixin-real"], { timeoutMs: 300000 });
 G.opsCopy = runGate("verify-ops-corpus-stamp --copy " + OPS_COPY_DIR, "scripts/qa/verify-ops-corpus-stamp.mjs", ["--copy", OPS_COPY_DIR, "--stamp", OPS_STAMP], { timeoutMs: 120000 });
-G.opsQueueList = [];
-{
-  const qre = new RegExp("^ui-queue\\.round-" + ROUND_NO + "-.*\\.json$");
-  let names = [];
-  try { names = readdirSync(join(ROOT, "scripts", "qa")); } catch { names = []; }
-  for (const n of names.filter((x) => qre.test(x)).sort()) {
-    G.opsQueueList.push(runGate("verify-ops-corpus-stamp --queue " + n, "scripts/qa/verify-ops-corpus-stamp.mjs", ["--queue", "scripts/qa/" + n], { timeoutMs: 60000 }));
-  }
-  if (!G.opsQueueList.length) G.opsQueueMissing = true;
-}
+/* 选择集与期望信号都由 measureQueuePlanAxis() 一份实现给出（--queue-dispo-selftest 取的是同一批）。
+   旧版在这里写 `^ui-queue\.round-<N>-.*\.json$`：盘上真实命名轮号后没有 dash，于是一整条轴
+   静默汇总 0 份计划、还长得像跑过 —— 现在零命中必须自己喊（下面 nonEmpty + H 节的具名条）。 */
+G.queuePlans = measureQueuePlanAxis(ROUND_NO, queueCarrierSignal(ROUND_DIR));
+G.opsQueueList = G.queuePlans.matched.map((n) =>
+  runGate("verify-ops-corpus-stamp --queue " + n, "scripts/qa/verify-ops-corpus-stamp.mjs", ["--queue", "scripts/qa/" + n], { timeoutMs: 60000 }));
+if (G.queuePlans.expected && !G.queuePlans.matched.length)
+  nonEmpty("本轮队列计划份数（选择集命中）", 0,
+    `选择式 ${G.queuePlans.selector} 在盘上 ${G.queuePlans.plansOnDisk} 份 ui-queue.*.json 上零命中，而 ${ROUND_DIR} 里有 ${G.queuePlans.carriers} 份队列执行载体 ⇒ 是选择式没对上文件名，不是本轮没有计划`);
+G.queuePlanAxis = (G.queuePlans.matched.length || G.queuePlans.expected) ? queuePlanAxisRecord(G.queuePlans) : null;
+if (!G.queuePlanAxis) OPEN.push({ item: "本轮队列计划的语料同源性（ops 版本戳）", why: "选择集零命中且本轮名下没有队列执行载体 ⇒ 未量，不得读成已核过" });
 /* 原始 corpus 逐个量一遍。这条轴**混着两种否决权**，措辞不许再笼统写"信息轴"：
    · 同字节组数（DUP_STATE_GROUPS/DUP_STATE_FRAMES）= 否决轴 —— 汇总成面板成员 G.rawDup，
      非零就进「本次仍判红」分母（理由与实测数字见文件头 RAW_DUP_AXIS 那一段）；
@@ -1117,12 +1252,20 @@ gateRow(G.provenanceScoped, "verify-provenance-all --scope " + EVIDENCE_SCOPE, `
 gateRow(G.opsStamp, "verify-ops-corpus-stamp --check（1107 例所绑判据版本有无中途漂移）", `${(G.opsStamp.body.match(/^STAMP_OPS=.*$/m) || ["(没打出 STAMP_OPS 行)"])[0]} → ${(G.opsStamp.body.match(/^STAMP_RESULT=.*$/m) || [null])[0]}`);
 for (const rec of [G.selExistMock, G.selExistReal]) gateRow(rec, rec.name, `${(rec.body.match(/^SEL cases=.*$/m) || ["(没打出 SEL 统计行)"])[0]} → ${(rec.body.match(/^SEL_RESULT=.*$/m) || [null])[0]}`);
 gateRow(G.opsCopy, "verify-ops-corpus-stamp --copy " + OPS_COPY_DIR + "（冻结副本能否当本轮语料引用）", `${(G.opsCopy.body.match(/^STAMP_COPY=.*$/m) || ["(没打出 STAMP_COPY 行)"])[0]} 差异行=${(G.opsCopy.body.match(/^  COPY_DIFF /gm) || []).length} → ${(G.opsCopy.body.match(/^STAMP_RESULT=.*$/m) || [null])[0]}`);
-if (G.opsQueueMissing) P(`> ⚠ 本轮（round-${ROUND_NO}）名下没有 \`scripts/qa/ui-queue.round-${ROUND_NO}-*.json\` ⇒ 队列语料同源性**未量**，不得读成"已核过"。`);
 for (const leg of G.opsQueueList) gateRow(leg, leg.name, `${(leg.body.match(/^STAMP_QUEUE=.*$/m) || ["(没打出 STAMP_QUEUE 行)"])[0]} → ${(leg.body.match(/^STAMP_RESULT=.*$/m) || [null])[0]}`);
-/* 状态列与处置列自相矛盾的行（第 6 列说完成、处置列说还欠）。默认 advisory：措辞列是散文，
-   误报率还没量够之前不许它否决收尾；但必须印出来，否则下一轮只读第 6 列就会把这些行当结案。 */
-G.dispoClash = runGate("verify-status-vs-disposition", "scripts/qa/verify-status-vs-disposition.mjs", [], { timeoutMs: 120000 });
-gateRow(G.dispoClash, "verify-status-vs-disposition（④⑤ 的行内自相矛盾，advisory）", `${(G.dispoClash.body.match(/^DISPO rows=.*$/m) || ["(没打出 DISPO 统计行)"])[0]} → ${(G.dispoClash.body.match(/^DISPO_RESULT=.*$/m) || [null])[0]}`);
+/* 这条面板成员管的是"选择集到底有没有对上文件名"：命中数为 0 而本轮名下有队列执行载体 ⇒ 红。
+   旧版此处是一条 `> ⚠` 提示，且提示里写的文件名模式（`ui-queue.round-N-*.json`）本身就是那个错正则，
+   于是"零命中"被写成了一条读起来像合理默认值的句子。 */
+if (G.queuePlanAxis) gateRow(G.queuePlanAxis, "QUEUE_PLAN_AXIS", `${G.queuePlanAxis.body} → ${G.queuePlans.matched.length ? "QUEUE_PLAN_AXIS=PASS（命中>0 ⇒ 上面那些 --queue 腿确实扫的是本轮计划）" : "QUEUE_PLAN_AXIS=FAIL（零命中而本轮有队列执行载体 ⇒ 选择式失配，这一轴没看过任何一份计划）"}`);
+else P(`| \`本轮队列计划选择集（scripts/qa/ui-queue.*.json 按轮号取集=否决轴）\` | 未量 | ${G.queuePlans.selector} 命中 0，且 ${ROUND_DIR} 名下无 ui-queue* 执行载体 | 队列语料同源性未量，不得读成"已核过"（面板里不给它一个默认 PASS 的位置） |`);
+/* 状态列与处置列自相矛盾的行（第 6 列说完成、处置列说还欠）。门按设计是 advisory：措辞列是散文，
+   它的**退出码**不代表条数，所以不进取决集；代表条数的是它打印的具名字段 `矛盾=`，
+   那一条由下面的 DISPO_AXIS 握着否决权（旧版只有 gateRow 一行、门又不红 ⇒ 11 行永远不可见）。 */
+G.dispoClash = runGate("verify-status-vs-disposition", DISPO_GATE_FILE, dispoGateArgs(), { timeoutMs: 120000 });
+G.dispo = measureDispoAxis(G.dispoClash);
+G.dispoAxis = dispoAxisRecord(G.dispo);
+gateRow(G.dispoClash, `verify-status-vs-disposition（④⑤ 的行内自相矛盾，门的模式=${G.dispo.mode}：其退出码不进取决集，条数由 DISPO_AXIS 否决）`, `${(G.dispoClash.body.match(/^DISPO rows=.*$/m) || ["(没打出 DISPO 统计行)"])[0]} → ${(G.dispoClash.body.match(/^DISPO_RESULT=.*$/m) || [null])[0]}`);
+gateRow(G.dispoAxis, "DISPO_AXIS", `${G.dispoAxis.body} → ${G.dispoAxis.exitCode ? "DISPO_AXIS=FAIL（" + (G.dispo.measured ? G.dispo.clashes + " 行未归置 ⇒ 计入「本次仍判红」" : "门没量到台账行 ⇒ 缺证据") + "）" : "DISPO_AXIS=PASS（矛盾条数=0）"}`);
 for (const l of (G.dispoClash.body.match(/^\s*DISPO_HIT .*$/gm) || []).slice(0, 12)) P(`- 措辞与状态不一致：\`${l.trim().replace(/^DISPO_HIT /, "").replace(/ ::.*$/, "").trim()}\``);
 gateRow(G.critFrame, "verify-criteria-frame-debt（判据台欠帧的去向账；默认只量不否决）", `${(G.critFrame.body.match(/^CRITFRAME items=.*$/m) || ["(没打出判决分布行)"])[0]} ${(G.critFrame.body.match(/^CRITFRAME 欠帧=.*$/m) || ["(没打出欠帧统计行)"])[0]} ${(G.critFrame.body.match(/^CRITFRAME_CONSERVATION.*$/m) || ["(没打出守恒行)"])[0]} → ${(G.critFrame.body.match(/^CRITFRAME_RESULT=.*$/m) || [null])[0]}`);
 gateRow(G.tabBar, "verify-tab-bar-single-source（.tab-bar 两处字面量相加是否等于 token）", `${(G.tabBar.body.match(/^TABBARSRC token=.*$/m) || ["(没读到 token 行)"])[0]} ${(G.tabBar.body.match(/^TABBARSRC face=.*$/m) || ["(没读到面板行)"])[0]} → ${(G.tabBar.body.match(/^TABBARSRC_RESULT=.*$/m) || [null])[0]}`);
@@ -1161,14 +1304,33 @@ nonEmpty("provenance 扫到的生产者数", G.provenance.re(/PROV_PRODUCERS=(\d
    ③ 第二条只取组数：corpus leg 自己的断链/哈希/孤儿不进面板（与索引轴重复计同一个洞），
       只逐条进"一条不藏"；
    ④ 本轮名下没有 corpus 时 G.rawDup 是 null，filter 掉，**不给它一个默认 PASS 的位置**
-      （H 节会另印一行"未跑…不得当成已核过"）。 */
-const gatePanel = [G.ledger, G.stateTruth, G.integrity, G.rawDup, G.corpusScoped, G.provenanceScoped, G.opsStamp, G.opsCopy, G.selExistMock, G.selExistReal, G.frameCoverage, G.rulings, ...G.opsQueueList, G.queue, G.restarted, G.i18n, G.fresh, G.anchors, G.parse, G.debtTriage].filter(Boolean);
+      （H 节会另印一行"未跑…不得当成已核过"）；
+   ⑤ 队列计划同理：G.queuePlanAxis 带的是**命中数**（选择式失配 ⇒ 红），本轮既没计划载体又零命中时它是
+      null（未量，不是 PASS）；
+   ⑥ 台账状态/处置矛盾：进门的是 G.dispoAxis（由 `矛盾=` 条数派生），**不是**那条门自己的退出码 ——
+      它在 advisory 下恒为 0、在 strict 下恒为 1，两个都不代表"几行"，也都不代表该不该收尾。 */
+const gatePanel = [G.ledger, G.stateTruth, G.integrity, G.rawDup, G.corpusScoped, G.provenanceScoped, G.opsStamp, G.opsCopy, G.selExistMock, G.selExistReal, G.frameCoverage, G.rulings, ...G.opsQueueList, G.queuePlanAxis, G.dispoAxis, G.queue, G.restarted, G.i18n, G.fresh, G.anchors, G.parse, G.debtTriage].filter(Boolean);
 const redNow = gatePanel.filter((r) => r.exitCode !== 0);
 const redBase = baseSection.filter((l) => /^\|\s*[^-|]/.test(l) && /^\|[^|]*\|\s*1\s*\|/.test(l)).length;
 /* 分母从面板数组算出来，不写死：写死过一次 "/ 7"，加第 8 道门时会静默少报总数 */
 P(`- **本次仍判红：${redNow.length} / ${gatePanel.length}** —— ${redNow.map((r) => `\`${r.name}\`(${r.exitCode})`).join(" ") || "全绿"}`);
 P(dupAxisCountLine(RAW_DUP_AGG));
 M.sources.rawDupAxis = RAW_DUP_AGG;
+P(queuePlanAxisCountLine(G.queuePlans));
+M.sources.queuePlans = {
+  round: ROUND_NO, selector: G.queuePlans.selector, matched: G.queuePlans.matched.length,
+  files: G.queuePlans.matched, plansOnDisk: G.queuePlans.plansOnDisk, byRound: G.queuePlans.census,
+  carrierSignal: G.queuePlans.carriers, carriersHow: G.queuePlans.carriersHow,
+  expectedToHavePlans: G.queuePlans.expected, axisExit: G.queuePlanAxis ? G.queuePlanAxis.exitCode : null,
+  legs: G.opsQueueList.map((r) => ({ cmd: r.cmd, exitCode: r.exitCode, queue: (r.body.match(/^STAMP_QUEUE=(\S+)/m) || [null, null])[1], corpusDirs: (r.body.match(/^  OPS_DIR=(\S+)/gm) || []).length })),
+};
+P(dispoAxisCountLine(G.dispo));
+M.sources.dispoAxis = {
+  gateCmd: G.dispo.cmd, gateMode: G.dispo.mode, gateVerdict: G.dispo.gateVerdict, gateExit: G.dispo.gateExit,
+  ledgerRows: G.dispo.rows, clashes: G.dispo.clashes, measured: G.dispo.measured,
+  axisExit: G.dispoAxis.exitCode, matrix: DISPO_MATRIX,
+  hits: (G.dispoClash.body.match(/^\s*DISPO_HIT \S+/gm) || []).map((l) => l.trim().replace(/^DISPO_HIT /, "")),
+};
 for (const d of RAW_DUP_AGG.details.slice(0, 12)) P(`  - 同字节组明细：\`${d}\``);
 if (RAW_DUP_AGG.details.length > 12) P(`  - …明细另有 ${RAW_DUP_AGG.details.length - 12} 行未打印（报告侧上限 12 行）`);
 if (RAW_DUP_AGG.hiddenDetails) P(`  - 另有 ${RAW_DUP_AGG.hiddenDetails} 组连门禁自己都没打出来（它每条 leg 只打前 6 组）⇒ 本报告的明细**不是全量**，组数/帧数才是全量；取全量对该 leg 加 \`--json <out>\` 读 \`dupState[]\``);
@@ -1347,6 +1509,10 @@ function metricsDoc() {
     gates: M.sources.gates || null,
     /** 逐 corpus 同字节轴的原始汇总（legs/组数/帧数/明细数），让这条否决轴的数在机器可读件里也在盘上。 */
     rawDupAxis: M.sources.rawDupAxis || null,
+    /** 本轮队列计划选择集（选择式 + 命中文件清单 + 零命中的期望信号），S3 修的就是这个数。 */
+    queuePlans: M.sources.queuePlans || null,
+    /** 台账状态列 vs 处置列的矛盾条数（机器可读，红绿都由它派生），S4 修的就是这个数。 */
+    dispoAxis: M.sources.dispoAxis || null,
     provenance: { files: PROV.files, commands: PROV.cmds },
     conservation: CONSERVE,
     failures: ERRORS,
@@ -1358,6 +1524,10 @@ writeFileSync(resolve(ROOT, OUT_REPORT), L.join("\n") + "\n", "utf8");
 console.log(`REPORT_WRITTEN=${OUT_REPORT} lines=${L.length}`);
 console.log(`METRICS_WRITTEN=${OUT_METRICS}`);
 console.log(`EMIT_HEAD=${HEAD || "?"} execRows=${execRows ? execRows.length : "?"}` + (sideA && sideB ? ` sideA=${sideA.length} sideB=${sideB.length} sum=${sideA.length + sideB.length}` : ""));
+/* 两条本轮修过的轴在 stdout 也要有具名计数行：编排层以前只在这里看到 EMIT_HEAD，
+   于是"队列计划命中 0 份"与"台账矛盾 11 行"这两件事在终端输出里都不存在。 */
+console.log(`EMIT_QUEUE_PLANS round=${ROUND_NO} matched=${G.queuePlans.matched.length} plans_on_disk=${G.queuePlans.plansOnDisk} carriers=${G.queuePlans.carriers} legs=${G.opsQueueList.length} axis_exit=${G.queuePlanAxis ? G.queuePlanAxis.exitCode : "null(未量)"}`);
+console.log(`EMIT_DISPO rows=${G.dispo.rows === null ? "未量" : G.dispo.rows} clashes=${G.dispo.clashes === null ? "未量" : G.dispo.clashes} gate_mode=${G.dispo.mode} axis_exit=${G.dispoAxis.exitCode}`);
 for (const c of CONSERVE) console.log(`CONSERVE ${c.ok ? "OK" : "FAIL"} ${c.what} ${c.parts.join("+")}=${c.sum} vs ${c.whole}`);
 if (ERRORS.length) {
   console.log(`EMIT_RESULT=FAIL 自判失败 ${ERRORS.length} 条：`);

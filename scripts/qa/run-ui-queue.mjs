@@ -14,6 +14,10 @@
  *     此时状态记成 ADVISORY_RED、后面的腿照跑，但结尾仍然是 QUEUE_RESULT=FAIL（红不会被放行变成绿）。
  *     超时永不让路：超时说明租约/模拟器本身出事了。
  *  3) 全程增量落盘（每 60s 一行心跳），被杀掉也留得下"跑到哪一步"的现场。
+ *  4) 计划先过体检（check-queue-plan.mjs）再碰租约：非 0 直接 QUEUE_RESULT=FAIL 退 2，
+ *     一条腿都不跑、一把锁都不碰、一份 queue-state 都不写 ——
+ *     体检器过去只靠人想起来才跑（全仓零调用点），而每条"腿数"结论都挂在它身上，
+ *     没接上的闸等于没有闸，所以这里把它焊死在启动路径上。
  *
  * 用法：PATH=<node22>:$PATH node scripts/qa/run-ui-queue.mjs --out reports/audit/round-7/ui-queue
  *   --legs <file>   腿清单 JSON（默认 scripts/qa/ui-queue.default.json）
@@ -43,6 +47,36 @@ const now = () => new Date().toISOString();
 const relOf = (p) => String(p).split("\\").join("/").replace(String(REPO).split("\\").join("/") + "/", "");
 const say = (s) => { const line = `[${now()}] ${s}`; console.log(line); appendFileSync(LOG, line + "\n"); };
 
+/* 体检脚本与排队器同目录：用它自己的位置而不是 cwd 推，从任何地方启动都是同一个文件。 */
+const PLAN_CHECKER = join(HERE, "check-queue-plan.mjs");
+
+/** 开跑前的计划体检闸。独立成函数 = 能被单独调用/审读，也让"拒绝发生在取租约之前"写在调用点上。
+ *  以子进程跑 check-queue-plan.mjs（它按 process.cwd() 解析 leg.file，故 cwd 必须=REPO，
+ *  与后面跑每条腿时的 cwd 同一口径），计划路径用 relOf 归一 ⇒ 日志里不留机器名/绝对路径。
+ *  判决：非 0（含被信号杀死、status=null）一律 fatal；stdout 逐行进 queue.log，
+ *  这样"为什么没过"和"本轮 FAIL"落在同一个文件里。体检器自己缺失也停 ——
+ *  一个会降级成警告的闸和没有闸是同一种故障（本条 finding 的成因正是"只在人想起来时才跑"）。
+ *  @returns {boolean} true=计划通过，可继续；false=已打印判决，调用方应立刻 exit(2)。 */
+function preflightPlanCheck() {
+  if (!existsSync(PLAN_CHECKER)) {
+    say(`QUEUE_RESULT=FAIL reason=计划体检没过_体检脚本缺失 ${relOf(PLAN_CHECKER)} ⇒ 这份计划无人验过，拒绝开跑（未取租约、未写 queue-state）`);
+    return false;
+  }
+  const r = spawnSync(process.execPath, [PLAN_CHECKER, relOf(LEGS_FILE)], {
+    cwd: REPO, encoding: "utf8", maxBuffer: 1 << 28, windowsHide: true,
+  });
+  const code = r.error ? -1 : r.status;
+  const body = String(r.stdout || "") + (r.stderr ? "\n--- stderr ---\n" + r.stderr : "");
+  say(`PLAN_CHECK cmd=node ${relOf(PLAN_CHECKER)} ${relOf(LEGS_FILE)} exit=${code}${r.error ? " error=" + r.error.code : ""}`);
+  for (const l of body.split(/\r?\n/).filter((x) => x.trim() !== "")) say("  | " + l);
+  if (code === 0) return true;
+  /* 把体检器自己那行汇总（PLANCHK … PLAN=FAIL / PLANCHK_RESULT=FAIL）抬进 reason，
+     这样 grep 一行 QUEUE_RESULT 就能看到是几条不过。 */
+  const verdict = body.split(/\r?\n/).filter((l) => /PLANCHK/.test(l)).pop() || "（体检器没打印 PLANCHK 判决行）";
+  say(`QUEUE_RESULT=FAIL reason=计划体检没过 exit=${code} ${verdict} ⇒ 一条腿都不跑：先修上面这几条（未取租约、未写 queue-state）`);
+  return false;
+}
+
 if (!existsSync(LEGS_FILE)) { say(`QUEUE_RESULT=FAIL reason=腿清单不存在 ${LEGS_FILE}`); process.exit(2); }
 const rawLegs = JSON.parse(readFileSync(LEGS_FILE, "utf8"));
 /* 两种形状都收：顶层数组（round-7 及以前就是这么写的）或 {legs:[…], $schema/$why:…}
@@ -50,6 +84,9 @@ const rawLegs = JSON.parse(readFileSync(LEGS_FILE, "utf8"));
    空清单仍然直接 FAIL：空扫描集不得判绿。 */
 const legs = Array.isArray(rawLegs) ? rawLegs : (Array.isArray(rawLegs && rawLegs.legs) ? rawLegs.legs : []);
 if (!legs.length) { say("QUEUE_RESULT=FAIL reason=腿清单为空（空扫描集不得判绿；形状认顶层数组或 {legs:[…]}）"); process.exit(2); }
+/* 闸在 QUEUE_START 之前、在 waitForFree() 之前：这一步失败时既没有"本轮开始"的记录，
+   也不会有 queue-state.json —— 免得一份体检都没过的计划在现场留下"跑过一轮"的错觉。 */
+if (!preflightPlanCheck()) process.exit(2);
 say(`QUEUE_START legs=${legs.length} 清单=${relOf(LEGS_FILE)} 并发上限=${legs.length === 1 ? "单腿" : "串行"}`);
 
 const state = { startedAt: now(), legs: legs.map((l) => ({ name: l.name, status: "QUEUED" })) };
