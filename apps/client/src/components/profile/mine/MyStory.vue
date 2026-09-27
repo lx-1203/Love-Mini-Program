@@ -90,7 +90,7 @@ function openPost(postId: string): void {
           </view>
         </view>
       </scroll-view>
-      <text class="story-cards__hint">日常仅互相喜欢或你关注的人可见</text>
+      <text class="story-cards__hint">这些内容仅互相喜欢或你关注的人可见</text>
     </view>
 
     <!-- ===== 我的相册：横排 3 张缩略图 ===== -->

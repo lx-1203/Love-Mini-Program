@@ -4,19 +4,43 @@
   "markers": [
     {
       "symbol": "isAllowedMediaExt",
-      "bands": ["mock", "real", "showcase"],
-      "covers": ["apps/client/src/utils/media.ts", "apps/client/src/services/voice-upload.ts"],
+      "bands": [
+        "mock",
+        "real",
+        "showcase"
+      ],
+      "covers": [
+        "apps/client/src/utils/media.ts",
+        "apps/client/src/services/voice-upload.ts"
+      ],
       "from": "③ 上传扩展名两侧都不校验（客户端侧门禁，services/api.ts）"
     },
     {
       "symbol": "parsePrivateQuoteContext",
-      "bands": ["mock", "real", "showcase"],
+      "bands": [
+        "mock",
+        "real",
+        "showcase"
+      ],
       "from": "③ 私聊路径缺引用回复字段（stores/messages.ts）"
     },
     {
       "symbol": "pinnedNotice",
-      "bands": ["mock", "real", "showcase"],
+      "bands": [
+        "mock",
+        "real",
+        "showcase"
+      ],
       "from": "② circle-home 置顶提示改为走 i18n（t(\"circle.home.pinnedNotice\")）"
+    },
+    {
+      "symbol": "--hot-badge-bg",
+      "bands": [
+        "mock",
+        "real",
+        "showcase"
+      ],
+      "from": "MP-R2-CIRCLES-INDEX-007（徽标底/字就近成对声明；纯样式改动没有字符串字面量可搜 ⇒ 登记可搜符号，避免判点长期停在无法定罪也无法洗清）"
     }
   ]
 }

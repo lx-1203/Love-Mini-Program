@@ -64,6 +64,47 @@
    "why": "身份收窄会改变落地对的名册成员（36 行现在只由游客腿认领）⇒ 记账门必须重算一次守恒，否则 27 组的行数账是从上一版语料抄来的。"
   },
   {
+   "name": "rebuild-showcase-r8",
+   "file": "apps/client/scripts/build-showcase-isolated.mjs",
+   "args": [],
+   "timeoutMin": 20,
+   "why": "本轮有两处源码改动（MyStory 提示文案、circles 徽标就近变量）⇒ 三档产物全部落后于工作树（verify-band-freshness 现量：每档都列这两个脏项）。showcase 必须最先，因为它写进 mock 目录。"
+  },
+  {
+   "name": "rebuild-mock-r8",
+   "file": "scripts/qa/run-npm-script.mjs",
+   "args": [
+    "--cwd",
+    "apps/client",
+    "--script",
+    "build:mp-weixin:mock"
+   ],
+   "timeoutMin": 20,
+   "why": "mock 档重建（在 showcase 之后，否则被覆盖）。"
+  },
+  {
+   "name": "rebuild-real-r8",
+   "file": "scripts/qa/run-npm-script.mjs",
+   "args": [
+    "--cwd",
+    "apps/client",
+    "--script",
+    "build:mp-weixin:real:isolated"
+   ],
+   "timeoutMin": 20,
+   "why": "real 档重建：④/③ 的真实模式判点与 ⑤ 的双身份巡检都在这一档上量，只重建 mock 会让两档不同版本（同轮两档必须同源于同一次工作树）。"
+  },
+  {
+   "name": "gate-band-freshness-r8",
+   "file": "scripts/qa/verify-band-freshness.mjs",
+   "args": [
+    "--out",
+    "reports/audit/round-7/band-freshness-r8"
+   ],
+   "timeoutMin": 8,
+   "why": "重建后必须复量新鲜度并把徽标符号的可搜性用进判定：这条红就停，后面所有设备腿量的才是改后产物（本轮两条判点就是靠它兜底的）。"
+  },
+  {
    "name": "gate-selectors-exist-mock-r8",
    "file": "scripts/qa/verify-case-selectors-exist.mjs",
    "args": [],

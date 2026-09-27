@@ -569,15 +569,18 @@ defineExpose({ toggleJoin });
 }
 
 .circle-card__hot-badge {
+  /* 就近成对声明（裁决 MP-R2-CIRCLES-INDEX-007）：不收编语义不同的 --c-badge-on-image-*，也不自造暗色令牌 */
+  --hot-badge-bg: rgba(255, 77, 92, 0.92);
+  --hot-badge-text: #FFFFFF;
   padding: 2rpx 14rpx;
   border-radius: 999rpx;
-  background: rgba(255, 77, 92, 0.92);
+  background: var(--hot-badge-bg);
   flex-shrink: 0;
 }
 
 .circle-card__hot-text {
   font-size: var(--fs-xs, 22rpx);
-  color: #FFFFFF;
+  color: var(--hot-badge-text);
   font-weight: 600;
 }
 

@@ -1087,6 +1087,30 @@ const SPEC = [
       },
     ],
   },
+  /* ── round-7 追加：两条原来挂着「待主编排层拍板」的台账行。裁决按"能写成谓词就别留人判"落，
+     谓词先落盘再改源码 ⇒ 改之前这两条必须红（这才叫判点，不叫事后描述）。 ── */
+  {
+    id: "MP-R2-CIRCLES-INDEX-007",
+    file: "apps/client/src/subpackages/circles/circles/index.vue",
+    claim: "裁决：热门徽标底/字就近成对声明为页面局部变量并原值保留；不收编语义不同的 --c-badge-on-image-*（那是图上角标的深色底，收编会改观感），也不自造暗色令牌",
+    checks: [
+      { kind: "present", re: /--hot-badge-bg:\s*rgba\(255, 77, 92, 0\.92\)/ },
+      { kind: "present", re: /--hot-badge-text:\s*#FFFFFF/ },
+      { kind: "present", re: /background: var\(--hot-badge-bg\)/ },
+      { kind: "present", re: /color: var\(--hot-badge-text\)/ },
+      { kind: "absent", re: /background: rgba\(255, 77, 92/ },
+    ],
+  },
+  {
+    id: "MP-R2VIS-PAGES-PROFILE-INDEX-003",
+    file: "apps/client/src/components/profile/mine/MyStory.vue",
+    claim: "裁决：区块名保留「我的故事」，可见范围提示不再用第二个术语称呼同一批内容 ⇒ 同一区块内不得混用 故事/日常（原判据问『拍哪个词』是判不了的，改判『不许混用』）",
+    checks: [
+      { kind: "absent", re: /日常仅互相喜欢/ },
+      { kind: "absent", re: /添加日常|我的日常/ },
+      { kind: "present", re: /这些内容仅互相喜欢或你关注的人可见/ },
+    ],
+  },
 ];
 
 /* 剥注释：禁用的写法只出现在注释里（说明"这里原来是怎么写的"）不算违反。

@@ -4107,3 +4107,22 @@ DISCOVER-014 的处置列原本写着"二选一，收口时给去向"。**不采
 2. 体检器自己也拿已跑过的 stage-7 反证了一次：它对 stage-7 报 1 条 THIN_WHY ⇒ 说明它能红，不是恒绿装置。
 现量：`PLANCHK legs=18 非advisory=15 设备腿=6 bad=0 PLAN=OK`。
 另外把 `--dry 不许抢租约` 的同一把尺子用在计划上：**静态腿（选择器/分诊/戳）排在一起，占设备的腿成组排在换档之后**，这样任何一条静态红都不会浪费一次开窗。
+
+## §134 三条挂着「待主编排层拍板」的台账行落判点，判点先红后绿
+④ 点名的四项裁定此前已全部落地（登录页落点 §131、GATES.json 载体、遗留测试数据、ChatInput 去留）。这一段清的是台账里另外三条同样写着「待主编排层拍板」的行——我就是主编排层，"不代裁"不能变成永久挂账。
+
+- **谓词先落盘，再改源码**（这才叫判点而不是事后描述）：`verify-source-shape.mjs` 加两条 ⇒ 现量 `SHAPE_FAIL MP-R2-CIRCLES-INDEX-007` + `SHAPE_FAIL MP-R2VIS-PAGES-PROFILE-INDEX-003`，改完源码后 `total=90 成立=90 不成立=0 守恒=yes`。
+  中途我自己把 `location.vue` 那条规则用一次不对称 Edit 删坏（多出一个 `{` ⇒ `--check` 直接语法错），当场修回并复量条目数 88→90、`LOCATION-001` 仍在 ⇒ 没有静默丢规则。
+- **PROFILE-003**：原判据问「拍 故事 还是 日常」——这是问不出答案的问题。改判成可判命题「同一区块内不得混用两个词」，锚 `MyStory.vue:57`（渲染 我的故事）与 `:93`（渲染 日常仅互相喜欢…）。
+  裁决 = 区块名保留「我的故事」，提示语不再用第二个术语称呼同一批内容 ⇒ 文案改成「这些内容仅互相喜欢或你关注的人可见」。
+  两处都是模板字面量（不是 i18n 键）⇒ 不牵动语言对；且刻意不改成「帖子与相册…」，因为那会新加一层我没验过的内容类型断言。
+- **CIRCLES-007**：`--c-badge-on-image-*` 确实存在（`design-variables.scss:706` 声明、`activities/detail.vue:508/515` 消费），但语义是"图上角标"的深色底 `rgba(15,23,42,.7)` ⇒ 收编会把热门徽标从红底改成深色底，是改观感的回归，不是修 bug。
+  裁决 = 不收编、不自造暗色令牌；把底/字就近成对声明为 `.circle-card__hot-badge` 上的 `--hot-badge-bg/--hot-badge-text`，**渲染值逐字节不变**（`rgba(255,77,92,0.92)` / `#FFFFFF`），文字节点是徽标节点的子节点 ⇒ 自定义属性能继承（先核了 `:427-428` 的嵌套再动手）。
+  纯样式改动没有可搜字符串字面量 ⇒ 在 `band-freshness-markers.json` 登记 `--hot-badge-bg`（条目 3→4），否则这一档永远停在"无法定罪也无法洗清"。
+- **CAMPUS-HUB-001（截断取舍）**：裁决 = **接受省略号截断**，不采纳"允许两行"（卡片高度会随统计文本浮动，正是理想图要避免的）与"操作列限宽"（判定面扩大到无判点承载的布局）。理由写进台账处置列，不再留"需人拍板"。
+- **HOME-106** 复核发现早已裁定（台账 status 现值：`判据不成立（主编排层裁决：持久化属增强项，非本缺陷）`）⇒ 这一条我没有再动，只是把"它还挂着"这个印象纠正掉。
+- 台账落账：`patch-ledger-cells.mjs --apply` 写 180 条计划补丁、实到 16 行变更（其余是同值幂等），备份 `.pre-cellpatch.bak`；`verify-ledger=PASS`（236 行 / 11 列 / 词表 0 违例），`FRAMECOV_CONSERVATION in=19 out=19 OK`，且 diff 里 `CHATINPUT` 命中 0 ⇒ 没把 §132 刚更正的证据格冲掉。
+  另：`SRC_SHAPE_DUP` 现量报出谓词表内部 3 个重复 id（`MP-R2-PROFILE-034×2`、`…PROFILE-LOCATION-001×2`、`MP-R2VIS-PAGES-HOME-INDEX-004×2`）⇒ 记进 #76 那笔"重复 id"的账。
+- **必须披露的副作用**：这两处源码改动让三档产物全部落后于工作树（`verify-band-freshness` 现量：mock/real/showcase 各列这两个脏项）。
+  正在跑的 stage-7 腿 12/13（exec-A-real、exec-guest-real）**量的仍是改动前的产物** ⇒ 那两腿对 MyStory 文案与徽标变量不作证；已在 §133 的计划里补进 `rebuild-showcase-r8 → rebuild-mock-r8 → rebuild-real-r8 → gate-band-freshness-r8`（showcase 最先，因为它写 mock 目录），并把选择器门挪到重建之后 ⇒ 计划体检现量 `legs=22 非advisory=19 设备腿=6 PLAN=OK`。
+  体检器顺手抓了我自己一条 `THIN_WHY rebuild-real-r8`（why 只写了 6 个字）⇒ 补成"两档必须同源于同一次工作树"的理由。
