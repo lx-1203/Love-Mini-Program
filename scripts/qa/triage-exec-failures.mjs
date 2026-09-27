@@ -14,7 +14,7 @@
  * 用法：node scripts/qa/triage-exec-failures.mjs \
  *         [--results reports/audit/round-6/interact/exec-results.json] \
  *         [--dist apps/client/dist/build/mp-weixin] [--src apps/client/src] \
- *         [--out .zcode/tmp/triage-r6]
+ *         [--out .zcode/tmp/triage-r6] [--ops reports/audit/round-6/ops]
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -37,7 +37,7 @@ const OUT = OUT_RAW || ".zcode/tmp/triage-" + path.basename(String(RESULTS)).rep
 if (!OUT_RAW) console.log("TRIAGE_OUT_DERIVED out=" + OUT + "（没给 --out ⇒ 按语料名派生，避免把新轮次写进旧轮次的文件名）");
 
 {
-  const KNOWN = ["results", "dist", "src", "out", "guest-book", "guest-measured"];
+  const KNOWN = ["results", "dist", "src", "out", "guest-book", "guest-measured", "ops"];
   const bad = process.argv.slice(2).filter((a) => a.startsWith("--") && !KNOWN.includes(a.slice(2)));
   if (bad.length) { console.log("TRIAGE_RESULT=FAIL reason=不认识的旗标 " + bad.join(",") + " ⇒ 会被静默忽略而回落到默认输入（实测：--corpus 拼错会让分诊悄悄读 round-6 的旧语料，红的是别人家的账）"); process.exit(2); }
 }
@@ -120,9 +120,13 @@ const RE_OBS_FAIL = /act-FAIL:(\w+)\((.*?)\)\s+([^|]*)$/;
 const RE_REASON = /^action (\S+) (\S+) failed: (.*)$/;
 const RE_NOT_FOUND = /^element not found:\s*(.*)$/;
 const RE_OBS_SKIP = /^action-not-automatable:\s*(.*)$/;
+/* 执行器引用判据台盖章的那句话（round-7 第三轮口径：章在 failureReason 里，不在 observed 尾注里）。
+   只认这个开头 ⇒ 不做词表泛化，别的 action-not-automatable 变体照旧走原路。 */
+const RE_STAMP_REASON = /^action-not-automatable:\s*判据台已盖章「本通道不可自动化」/;
 
 const BUCKET = {
   "SKIPPED-not-automatable": "用例要求的动作本通道做不了（拖动/连点/量 rect 等），只能人工驱动 —— 覆盖缺口，不是产品失败",
+  "SKIPPED-not-automatable-stamped": "判据台在 ops 上声明 automatable===false（与 verify-real-coverage 的免检轴、r-exec-ws 的拒跑名单同一个字段、同一条 ===false 严格判等），且执行器 reason 正是引用该章的那句话 ⇒ 不发交互是预期结果：逐条点名、单独计数，不算缺陷、不算覆盖，不消灭欠账的可见性",
   "SKIPPED-real-band": "判据要真实后端：本条由 real 带腿（--project mp-weixin-real + 8080 在跑）复测",
   "SKIPPED-vague-action": "action 写了交互动词却没点名可交互元素 —— 判据含糊，缺的是判据不是产品缺陷",
   "SKIPPED-vague-criterion": "判据既无类名也不要求出帧 —— 没有可观测物件，不能记 EXECUTED",
@@ -212,6 +216,28 @@ function matchRe7(reason, obs) {
   if (orphans.length) { console.log("TRIAGE_RESULT=FAIL reason=词表里有空转桶 ⇒ 先对齐执行器口径再判"); process.exit(2); }
 }
 
+/* 判据台盖章登记册：读 ops 语料里**声明的** c.automatable === false ——
+   与 verify-real-coverage.mjs 的 REALCOV_AUTOMATABLE_EXEMPT 免检轴、r-exec-ws.mjs:341 的
+   WSX_IDS_NOT_AUTOMATABLE 拒跑名单是同一个字段、同一条严格判等（"false" 字符串/0/null 都不算），
+   键的派生也照抄 verify-real-coverage 的 manifest=j.suite||文件名去.json、id=c.id||c.caseId。
+   这样三家用的是同一把尺：判据台盖章 ⇒ 执行腿拒跑 ⇒ 覆盖门免检 ⇒ 分诊台认预期，
+   而不是让分诊台只信执行器自报的那句 prose（prose 可以写错、可以造假章）。 */
+const OPS = arg("ops", "reports/audit/round-6/ops");
+const STAMP_KEYS = new Map(); // "manifest|id" → notAutomatableFrom（出处只用于打印，不参与判定）
+if (!fs.existsSync(OPS)) {
+  console.log(`TRIAGE_STAMP warn=判据台目录不存在（${OPS}）⇒ 声明字段无从核对，盖章口径的行照旧落「口径不在词表内」判红（fail-closed：没读到账就不豁免）`);
+} else {
+  for (const f of fs.readdirSync(OPS).filter((x) => x.endsWith(".json"))) {
+    let j; try { j = JSON.parse(fs.readFileSync(path.join(OPS, f), "utf8")); } catch { continue; }
+    const manifest = j.suite || f.replace(/\.json$/, "");
+    for (const c of (j.cases || j.items || [])) {
+      const id = String((c && (c.id || c.caseId)) || "");
+      if (c && id && c.automatable === false) STAMP_KEYS.set(manifest + "|" + id, typeof c.notAutomatableFrom === "string" ? c.notAutomatableFrom : "");
+    }
+  }
+  console.log(`TRIAGE_STAMP_SOURCE ops=${OPS} 判据台盖章 automatable===false=${STAMP_KEYS.size} 条（与 verify-real-coverage / r-exec-ws 同一个字段同一条 ===false 判等）`);
+}
+
 const LANDING_DISPOSITION = {
   "pages/login/index → pages/discover/index": "身份带不匹配：mock 带自动登录，已登录态进登录页被守卫送到广场。由 guest 真实带腿复测（exec-guest-real）。",
   "subpackages/vip/index → pages/profile/index": "权益重定向：未持有会员时 VIP 页被送回我的页。由 showcase 带腿复测。",
@@ -255,6 +281,7 @@ const items = [];
 let unclassified = 0;
 const unclassifiedRows = [];
 const evidenceHoles = [];   // 有名字也不许结案的证据缺口：命名只是让它从"没人看见"变成"人人看见"
+const stampedRows = [];     // 判据台盖章 automatable===false 且 reason 引用该章的 SKIPPED 行：预期结果，逐条点名，既不计缺陷也不冒充覆盖
 const gateProblems = [];
 /* 每条"落进兜底桶"的行都单独记一句人可读的原因：门禁变红时必须自带证据，
    否则下一次跑这个脚本的人只能看到一个数字，还得重跑一遍才知道是哪几条。 */
@@ -295,7 +322,20 @@ for (const r of rows) {
   if (r.status === "SKIPPED") {
     const m = obs.match(RE_OBS_SKIP);
     if (!m) {
-      push(r, "other-fail", { want: null, note: `SKIPPED 但既不在 round-7 词表里、observed 也没有 action-not-automatable 尾注：reason="${reason.slice(0, 120)}"` });
+      /* 盖章免检要**两把尺同时**才放行（本仓的成对契约规矩）：
+         ① 判据台 ops 声明 c.automatable === false（与覆盖门免检轴/WS 拒跑名单同源同判等），
+         ② 执行器 reason 正是引用该章的那句话。
+         两边不一致就维持原样红 —— 执行器单方面喊盖章（查无此章）、或盖了章的行说的却是别的口径，
+         都还落「口径不在词表内」，一个都不许被豁免桶悄悄吸走。 */
+      const stampKey = `${r.manifest}|${r.id}`;
+      const declared = STAMP_KEYS.has(stampKey);
+      const wording = RE_STAMP_REASON.test(reason);
+      if (declared && wording) {
+        push(r, "SKIPPED-not-automatable-stamped", { want: null, stampFrom: STAMP_KEYS.get(stampKey) || null, from: "ops-declared+reason-stamp" });
+        stampedRows.push(`${r.id} @ ${r.page ?? "?"}（盖章出处 ${STAMP_KEYS.get(stampKey) || "未记"}）`);
+        continue;
+      }
+      push(r, "other-fail", { want: null, note: `SKIPPED 但既不在 round-7 词表里、observed 也没有 action-not-automatable 尾注：reason="${reason.slice(0, 120)}"${declared ? "（判据台盖过章 automatable=false，但执行器口径不是引用该章的那句话 ⇒ 两把尺不同源，不豁免）" : wording ? `（执行器引用了盖章句，但判据台 ${stampKey} 没有 automatable===false 的声明 ⇒ 查无此章，不豁免）` : ""}` });
       markUnclassified(r, "SKIPPED 口径不在词表内");
       continue;
     }
@@ -448,6 +488,9 @@ lines.push("|---|---|---|");
 for (const b of order) if (buckets[b]) lines.push(`| ${b} | ${buckets[b]} | ${BUCKET[b] || "已通过的行，不参与分诊"} |`);
 lines.push("");
 lines.push(`判据形态未能归类的行数（归在兜底桶里，逐条列在下文）：**${unclassified}**`);
+lines.push(`判据台盖章不可自动化（声明 automatable===false 且 reason 引用该章，两尺一致才计入）：**${stampedRows.length} 行** —— 预期结果：不计缺陷、不计覆盖、不计入上行 unclassified，逐条点名如下`);
+lines.push("");
+for (const s of stampedRows) lines.push(`- STAMPED ${s}`);
 lines.push("");
 for (const s of unclassifiedRows.slice(0, 60)) lines.push(`- ${s}`);
 if (unclassifiedRows.length > 60) lines.push(`- …另 ${unclassifiedRows.length - 60} 行见同名 .json 的 unclassifiedRows`);
@@ -477,7 +520,7 @@ for (const b of order) {
   if (!list.length || b === "EXECUTED") continue;
   lines.push(`## ${b}（${list.length} 条）`);
   lines.push("");
-  if (b === "SKIPPED-not-automatable" || NO_TARGET.has(b)) {
+  if (b === "SKIPPED-not-automatable" || b === "SKIPPED-not-automatable-stamped" || NO_TARGET.has(b)) {
     const byPage = {};
     for (const it of list) (byPage[it.page] = byPage[it.page] || []).push(it);
     for (const [p, l] of Object.entries(byPage).sort((a, b) => b[1].length - a[1].length)) {
@@ -502,9 +545,13 @@ for (const b of order) {
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT + ".md", lines.join("\n"));
-fs.writeFileSync(OUT + ".json", JSON.stringify({ results: RESULTS, updatedAt: doc.updatedAt ?? null, total, buckets, bucketNames: Object.keys(BUCKET), unclassified, unclassifiedRows, evidenceHoles, landingGroups, landingMissing, items }, null, 1));
+fs.writeFileSync(OUT + ".json", JSON.stringify({ results: RESULTS, updatedAt: doc.updatedAt ?? null, total, buckets, bucketNames: Object.keys(BUCKET), unclassified, unclassifiedRows, stampedCount: stampedRows.length, stampedRows, evidenceHoles, landingGroups, landingMissing, items }, null, 1));
 console.log(`TRIAGE_SUMMARY rows=${total} unclassified=${unclassified}`);
 for (const b of order) if (buckets[b]) console.log(`  ${String(buckets[b]).padStart(4)} ${b}`);
+/* 盖章行必须**这一腿自己数给读者看**：它是免掉缺陷计数的唯一新增口径，
+   不在 stdout 报数报名单，就等于把「没跑的行」悄悄抹出账本（同 REALCOV_AUTOMATABLE_EXEMPT 的规矩）。 */
+console.log(`NOT_AUTOMATABLE_STAMPED=${stampedRows.length}（判据台声明 automatable===false + 执行器 reason 引用该章 ⇒ 预期未执行：单独计数、逐条点名，不算缺陷也不算覆盖）`);
+for (const s of stampedRows) console.log("  STAMPED " + s);
 console.log(`out=${OUT}.md / ${OUT}.json`);
 
 /* 两条"发现级"断言放在**写盘之后**，且先收集再一次性退出：
