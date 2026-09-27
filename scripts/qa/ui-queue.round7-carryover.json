@@ -1,0 +1,40 @@
+[
+  {
+    "name": "rebuild-showcase",
+    "file": "apps/client/scripts/build-showcase-isolated.mjs",
+    "args": [],
+    "timeoutMin": 40,
+    "why": "档位新鲜度门实测：showcase 包停在 16:52，缺 isAllowedMediaExt / parsePrivateQuoteContext / pinnedNotice 三个本轮修复 ⇒ 拿它补 VIP 那 17 条等于用旧源码测新档位。注意：必须走这个 isolated 脚本，不能用 npm 的 build:mp-weixin:showcase —— 后者没有 --outDir，会把 uni-app 默认输出目录 dist/build/mp-weixin（也就是 mock 档）覆盖掉。本轮实测踩过：22:23 那次跑它，mock 档的 config/env.js 当场变成 VITE_API_MODE=real。"
+  },
+  {
+    "name": "gate-band-freshness-all",
+    "file": "scripts/qa/verify-band-freshness.mjs",
+    "args": ["--out", "reports/audit/round-7/band-freshness-after-showcase.json"],
+    "timeoutMin": 20,
+    "why": "重建之后立刻复量三档。这一腿红就停：后面每一腿都假设「三档都绑得住本轮源码」，不成立时不许继续往下花模拟器时间"
+  },
+  {
+    "name": "exec-A-mock-on-rebuilt-band",
+    "file": "scripts/qa/r-exec-cli.mjs",
+    "args": [
+      "--project", "apps/client/dist/build/mp-weixin",
+      "--out", "reports/audit/round-7/exec-tap-rebuilt",
+      "--tap",
+      "--identity", "A",
+      "--label", "round-7-tap4"
+    ],
+    "timeoutMin": 300,
+    "why": "A 刀 1107 例跑在 20:25→22:14，mock 包 22:22 才重建 ⇒ 那一轮的行绑的是一份已被替换的构建。⑤ 要的是「执行轮对着最终产物」，不是「对着当时手边那份」"
+  },
+  {
+    "name": "shoot-frameplan-mock",
+    "file": "scripts/qa/shoot-frameplan.mjs",
+    "args": [
+      "--plan", "reports/audit/round-7/frameplan-merged.json",
+      "--project", "apps/client/dist/build/mp-weixin",
+      "--label", "round-7-uidebt-rebuilt"
+    ],
+    "timeoutMin": 240,
+    "why": "① 的帧债（plan 里 SHOOT=42 / REWRITE=16 / NOT_SHOOTABLE=21，合计 79=expected 已守恒）。注意：这份 plan 生成于 10:19，早于最后一波修复，出帧前应按当前台账重生成一次 —— 见 round7-NOTES §75.4"
+  }
+]

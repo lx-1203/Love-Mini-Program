@@ -43,6 +43,37 @@ const rings = [];
 const artifacts = [];
 const record = (n, name, ok, evidence) => { rings.push({ n, name, ok, evidence }); console.log(`RING${n} [${ok ? "OK  " : "MISS"}] ${name} :: ${evidence}`); };
 
+/* RING6 的判点抽成纯函数，是为了能在**不碰 8080、不写库**的情况下自测它能不能变红。
+   第一轮我把断言直接写在环里，没法喂假数据，等于交了一条"永远不会红"的环 ——
+   而这条环原本就是靠"只判 HTTP 状态"混过去的（台账 24 行那条假账就是这么来的）。 */
+const sameCount = (x, y) => String(x) === String(y);
+const numOf = (o, names) => { for (const k of names) if (o && typeof o[k] === "number") return { k, v: o[k] }; return null; };
+const COUNT_PAIRS = [["点赞", ["likeCount", "likesCount"]], ["评论", ["commentCount", "commentsCount"]]];
+function countsParity(clientCounts, aRow) {
+  const read = COUNT_PAIRS.map(([zh, names]) => ({ zh, c: numOf(clientCounts, names), a: numOf(aRow, names) }));
+  const unreadable = read.filter((r) => !r.c || !r.a).map((r) => `${r.zh}（客户端${r.c ? "有" : "无"}／后台${r.a ? "有" : "无"}）`);
+  const unequal = read.filter((r) => r.c && r.a && !sameCount(r.c.v, r.a.v)).map((r) => `${r.zh} 客户端 ${r.c.k}=${r.c.v} vs 后台 ${r.a.k}=${r.a.v}`);
+  return { read, unreadable, unequal, ok: !unreadable.length && !unequal.length };
+}
+function selftestG8() {
+  const cases = [
+    { n: "两侧同名同值", c: { likeCount: 1, commentCount: 2 }, a: { likesCount: 1, commentsCount: 2 }, want: true },
+    { n: "后台缺评论计数（就是台账 24 行那种形状）", c: { likeCount: 1, commentCount: 2 }, a: { likesCount: 1 }, want: false },
+    { n: "数值不一致", c: { likeCount: 1, commentCount: 2 }, a: { likesCount: 5, commentsCount: 2 }, want: false },
+    { n: "客户端 0 而后台缺字段 ⇒ 不得当一致", c: { likeCount: 0, commentCount: 0 }, a: { likesCount: 0 }, want: false },
+    { n: "后台整体为空（没登录成功）⇒ 不可判", c: { likeCount: 1, commentCount: 1 }, a: {}, want: false },
+    { n: "客户端字段是字符串⇒ 不可判（不拿 ?? 0 蒙过去）", c: { likeCount: "1", commentCount: 1 }, a: { likesCount: 1, commentsCount: 1 }, want: false },
+  ];
+  let bad = 0;
+  for (const x of cases) {
+    const got = countsParity(x.c, x.a).ok;
+    if (got !== x.want) { bad++; console.log(`  G8_SAMPLE_BAD ${x.n} got=${got} want=${x.want}`); }
+  }
+  console.log(`G8_SELFTEST=${bad === 0 ? "PASS" : "FAIL"} cases=${cases.length} bad=${bad}`);
+  process.exit(bad === 0 ? 0 : 1);
+}
+if (process.argv.includes("--selftest")) selftestG8();
+
 (async () => {
   // ---- Ring 1 身份：guest 可证；wx.login 只能记未取证 ----
   const g = await req("POST", "/auth/guest-login", { body: {} , idem: crypto.randomUUID() });
@@ -110,9 +141,20 @@ const record = (n, name, ok, evidence) => { rings.push({ n, name, ok, evidence }
   const clientCounts = (cl.json && cl.json.data) || {};
   const admRow2 = aToken ? await req("GET", `/admin/forum/village-posts/${postId}`, { token: aToken }) : { json: {} };
   const aRow = (admRow2.json && (admRow2.json.data || admRow2.json)) || {};  // 管理端是扁平返回体
-  const same = (x, y) => String(x ?? 0) === String(y ?? 0);
-  record(6, "计数客户端↔后台一致", cm.status < 300 && lk.status < 300,
-    `评论 HTTP ${cm.status} / 点赞 HTTP ${lk.status}；客户端(comment=${clientCounts.commentCount ?? clientCounts.commentsCount ?? "?"}, like=${clientCounts.likeCount ?? clientCounts.likesCount ?? clientCounts.likes ?? "?"}) vs 后台字段集=${Object.keys(aRow).slice(0, 14).join(",") || "(空)"} → 若后台视图根本没有计数字段，这是**后台字段对账缺口**，不是数值不一致`);
+  /* RING6 原来是「名字叫一致、判点却只看两条 HTTP 是否 <300」，而且它打印的「后台字段集」用了
+     Object.keys(aRow).slice(0, 14) —— 详情视图有 27 个分量，likesCount/commentsCount 排在第 18、19 位，
+     被这个截断切掉之后，读数长得就像"后台根本没有计数字段"，于是立了一条 requires_backend 的账（台账 24 行）。
+     2026-09-27 用只读探针 scripts/qa/probe-admin-post-counts.mjs 实测 posts 270/236：HTTP 200、字段数=27、
+     计数字段存在且值=1/1 ⇒ 那条账的判据不成立，成因是我自己的截断。这里改成真断言（判点见 countsParity）：
+     两侧都取到数值且同名同值才算 OK；任一侧取不到数值 ⇒ 判点不可判，按不通过处理（不许拿「HTTP 200」顶包）。 */
+  const parity = countsParity(clientCounts, aRow);
+  const ok6 = cm.status < 300 && lk.status < 300 && parity.ok;
+  record(6, "计数客户端↔后台一致", ok6,
+    `评论 HTTP ${cm.status} / 点赞 HTTP ${lk.status}；` + parity.read.map((r) => `${r.zh}＝客户端 ${r.c ? r.c.k + "=" + r.c.v : "?"} vs 后台 ${r.a ? r.a.k + "=" + r.a.v : "?"}`).join("；")
+      + (parity.unequal.length ? ` ⇒ 数值不一致：${parity.unequal.join(" / ")}`
+        : parity.unreadable.length ? ` ⇒ 判点不可判（读数失败，不记成通过）：${parity.unreadable.join(" / ")}`
+        : " ⇒ 两侧同名同值")
+      + `；后台字段总数=${Object.keys(aRow).length}（不再截断到 14，截断正是上一条假账的来源）`);
 
   // ---- Ring 7/8：校园话题写侧「配图 + 匿名」链路（后端 4 处契约修复里推广出来的那条，必须实测，
   //      不能沿用 stores/campus.ts:712-720 里"后端会静默丢弃"的旧结论——那条注释写于重启之前）----

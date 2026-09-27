@@ -124,10 +124,13 @@
    "title": "正文 1-4 字提交（圈子/帖子两通道）：短正文与后端 title 5-30 校验的实测冲突",
    "tier": "critical",
    "pre": "身份A mock 登录 → reLaunch 默认（general 目标）；标题留空、正文只填「好」（1 字）。REAL_ONLY 轮另用 ?circleId=<数字> 变体重复一次",
-   "action": "tap 发布 → 观察 Toast / 网络响应 → 把正文补到 8 字再发一次",
+   "action": "tap 发布按钮 .post-header__submit（:731，@tap=submitPublish :735，钮内文案节点 .post-header__submit-text :737，禁用态修饰类 .post-header__submit--disabled :732）→ 观察 Toast / 网络响应 → 把正文补到 8 字再 tap .post-header__submit 发一次",
    "expected": "本页无最短长度校验（:502-513 仅判空与超长），titleText 回退正文首行 → 1 字标题直发后端；REAL_ONLY 轮：POST /api/v1/posts 应因 @Size(min=5,max=30) title 返回 400（CreatePostRequest.java:17）→ 页面 catch 必须把后端原文呈现（:593-604 按分支读 villageStore.errorMessage，MP-R1-POST-102）→ **回填实际 Toast 全文**，出现泛化「发布失败」即判 FAILED；第二次 8 字应成功；断言两列：① 两次请求条数=2（无幂等吞并，状态码 400/200，400 后幂等键被释放 IdempotentInterceptor.java:197-217 使重试可行）、第二次 Key 与第一次不同（body 变了）；② 服务端回读条数=1（仅 8 字那条）；mock 轮本地无长度校验会直接成功 → 必须显式标注「mock 掩盖后端拒绝」，服务端列记 N/A；console 无未捕获 rejection",
    "evidence": "critical：短文本 before + 失败 Toast after + 修正后成功 after 截图 + 路由 + 两次 Toast 文案逐字 + console + network 两条明细（状态码/Key/error.message）+ 服务端回读条数",
-   "requiresReal": true
+   "requiresReal": true,
+   "actionPreTapfix": "tap 发布 → 观察 Toast / 网络响应 → 把正文补到 8 字再发一次",
+   "tapTarget": ".post-header__submit",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/post.vue:731"
   },
   {
    "id": "VP10",

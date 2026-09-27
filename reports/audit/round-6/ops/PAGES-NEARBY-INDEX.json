@@ -9,7 +9,13 @@
       "action": "等待 ≥500ms，DOM 探测：.nearby-home__title-group（含 .nearby-home__pin，index.vue:373-376）、.nearby-home__actions 内 .nearby-home__search-btn（:378-380）与 .nearby-home__publish（:381-383）、.nearby-home__subtitle-row（:386-389）、5 圆形入口（:393-428）、分区①-⑤（:430/457/514/544/592）",
       "expected": "头部为「标题 + 放大镜 + 发动态 + 带定位针的副标题」四件套，**不得**再存在整行搜索输入框（本轮 MP-R1-PAGES-NEARBY-INDEX-904 已移除 <input>/searchKeyword，:92-94 注释）→ 出现残留输入框判与源码不符；分区顺序严格为「附近的人→热门兴趣圈→校园圈→活动→附近动态」（v3 冻结 :5-8）；「发动态」与放大镜不与状态栏/系统时间/胶囊叠压（paddingTop=statusBarHeightPx+12 :355→现约 :364-366，useStatusBarHeight）；console error=0",
       "evidence": "normal：after 截图（头部特写 + 全帧）+ 路由断言 + console + DOM 断言（.nearby-home__search-input 不存在）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N02",
@@ -20,7 +26,13 @@
       "action": "在列表顶部执行下拉手势 ≥500ms，观察刷新指示器与 onPullDownRefresh（index.vue:149）是否进入",
       "expected": "必须真正触发页面级 onPullDownRefresh 并出现动画→完成→uni.stopPullDownRefresh（:167 finally）；若因全部内容位于 .nearby-home__scroll（:367）导致页面无可滚内容、下拉完全无响应，判「配置已开但交互不可达」P2（配置与实现不一致），须给明确结论不得跳过",
       "evidence": "normal：after 截图（下拉进行中）+ console + 执行日志（回调是否进入）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N03",
@@ -31,7 +43,13 @@
       "action": "触发一次下拉刷新，统计 circles / nearbyPosts / activities 三类拉取",
       "expected": "三路并发重拉：circleStore.fetchCircles() + loadCirclePosts(true) + loadActivities(true)（index.vue:154-157，force 绕过「空列表才拉」与 30s TTL，MP-R1-PAGES-NEARBY-INDEX-003）；动画在三路完成后才停（:167）；每类 ≥1 次真实拉取，不得因刚拉过而空转",
       "evidence": "normal：after 截图 + console + 执行日志（三类请求计数与起止时间）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N04",
@@ -42,7 +60,13 @@
       "action": "触发下拉刷新",
       "expected": "完成后 toast nearby.loadFailed（index.vue:158-166 统一检查三 store 错误字段，MP-R2-PAGES-NEARBY-INDEX-002：store 内部吞错使原 Promise.catch 成死路径）；失败分区显示真实错误文案而非「暂无…」（见 N19/N22）；不得静默成功",
       "evidence": "normal：after 截图 + Toast 文案 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N05",
@@ -97,7 +121,13 @@
       "action": "点 .nearby-home__search-btn（index.vue:378-380 @tap=goSearch）",
       "expected": "goSearch 现仅 openAppPath(ROUTES.SEARCH)（index.vue:244-246）→ 落 /subpackages/tools/search/index 且 options **不含 keyword**（本轮已删除 `kw ? ...?keyword=...` 拼接，:92-94 注释说明关键词由搜索页自持）；500ms 内必有路由变化；若仍拼 keyword 或页面存在可输入框，判与源码不符（旧行为残留）；搜索页应能自持输入（跨页仅记录落点）",
       "evidence": "critical：before + after 截图 + 路由链断言（options 必须无 keyword）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N10",
@@ -108,7 +138,13 @@
       "action": "DOM 扫描本页全部 <input>/<textarea>（含搜索区、五入口、四分区）；对扫描结果做结论记录",
       "expected": "结论必须写明：**附近页无任何输入框**（本轮移除后模板内无 <input>，:362-643 全量核对）→ 「全部输入框（正常+清空+超长+特殊字符）」在本页记为不适用，不得凭空造输入用例；同时以源码引用形式核对搜索按钮 aria-label 仍复用 nearby.searchPlaceholder（:378）→ 若该文案语义仍为「搜索附近内容」但已不可输入，记录文案/交互一致性观察（不夸大）",
       "evidence": "noop：执行日志（DOM 扫描清单 + 结论）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N11",
@@ -130,7 +166,13 @@
       "action": "进入本页 → 读 .nearby-home__subtitle（index.vue:386-389）文本 → 回读 storage 的 NEARBY_CITY",
       "expected": "副标题为「城市 · 校区」形式（buildLocationText）；定位成功写 uni.setStorageSync(STORAGE_KEYS.NEARBY_CITY, loc.city)（:125）真实城市；城市变化 force 重拉 nearbyPosts（:127-129）；定位失败回退默认文案不崩、不留空串",
       "evidence": "normal：after 截图 + 执行日志（storage 读数 + 副标题文本）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N13",
@@ -152,7 +194,13 @@
       "action": "读 .nearby-home__search-btn、.nearby-home__publish、5 个 .nearby-entry、2 个 .people-entry 的 rect 并换算 rpx；对放大镜做图标本体与文字区两次边缘点击",
       "expected": "逐个给出 rect 读数：<88rpx 的元素按铁律判 FAILED 并列出（不得以「能点中」替代尺寸铁律）；边缘点击仍须触发跳转；图标类可点元素须带 role=button + aria-label（:378、:381 均在位，缺一记一致性缺陷）",
       "evidence": "noop：执行日志（元素 rect 与 rpx 换算 + 命中结果）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N15",
@@ -160,10 +208,19 @@
       "title": "5 个圆形入口逐一落点（含「我的人脉」语义回归）",
       "tier": "navigation",
       "pre": "接 N01",
-      "action": "逐一点击 .nearby-entry：附近的人（index.vue:393）、热门兴趣圈（:400）、校园圈（:406）、活动（:412）、我的人脉（:418）",
+      "action": "逐一点击 .nearby-entry：附近的人（index.vue:393）、热门兴趣圈（:400）、校园圈（:406）、活动（:412）、我的人脉（:418） ⇒ 点名 tapTarget .nearby-entry（apps/client/src/pages/nearby/index.vue:422）",
       "expected": "落点：goPeople('nearby') :249-251 → /subpackages/discover-extra/nearby/people?scope=nearby；goCircleList :257-259 → /subpackages/circles/circles/index；goCampusHub() :262-264 → /subpackages/campus/campus/hub（无 school）；goActivityList :267-269；goConnections :331-333 → /subpackages/discover-extra/likes-visitors/index；第 5 项**不得**再落村口帖子列表（MP-R1-PAGES-NEARBY-INDEX-901 语义欺骗修复的回归项）；每入口 500ms 内有路由变化",
       "evidence": "navigation：路由链断言 ×5（含 options 读数）+ 返回落点断言",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "逐一点击 .nearby-entry：附近的人（index.vue:393）、热门兴趣圈（:400）、校园圈（:406）、活动（:412）、我的人脉（:418）",
+      "tapTarget": ".nearby-entry",
+      "tapTargetEvidence": "apps/client/src/pages/nearby/index.vue:422",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N16",
@@ -174,7 +231,13 @@
       "action": "分别点 .people-entry（index.vue:433 scope=nearby、:443 scope=city）",
       "expected": "同页不同参数：options.scope 分别为 nearby / city（:249-251），两入口不得完全等价；返回后分区①仍可点、无状态污染",
       "evidence": "navigation：路由链断言 ×2（必须读出 scope 差异）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N17",
@@ -185,7 +248,13 @@
       "action": "读前 5 张 .circle-mini 的 rect（左右缘）与视口宽；再横滑一次确认第 5 卡可完整露出",
       "expected": "修复后应有的表现：.circle-mini 现为 160rpx 宽（index.vue:835-847）+ .circle-scroll__list padding 归零、gap 12rpx（:823-833）→ 4×160+3×12=676 ≤ 可用宽 686rpx（.nearby-home 左右 32rpx padding，:646 起）→ **前 4 卡右缘必须完整落在静止视口内**（基线验证点 nearby-interest-circle-4th-card-fully-visible；MP-R2-PAGES-NEARBY-INDEX-003 本轮修复），第 5 卡左缘在 688rpx > 686 → 不得有「半张卡残影」压在视口右缘；竖版 3:4 比例（160×256）保持；被裁或有残影即判 P1 复发，须附 5 张卡 rect 数值",
       "evidence": "normal：after 截图（静止视口整行）+ 执行日志（前 5 卡 rect 与视口宽读数）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N18",
@@ -193,10 +262,19 @@
       "title": "兴趣圈卡点击 → circle-home?circleId=；横滑手势不误触点击；封面单一真相源",
       "tier": "navigation",
       "pre": "接 N01",
-      "action": "① 点 .circle-mini（index.vue:483-491 → goCircleDetail :254-256）；② 在该行执行横向滑动；③ 与圈子列表页/首页同圈封面并排比对",
+      "action": "① 点 .circle-mini（index.vue:483-491 → goCircleDetail :254-256）；② 在该行执行横向滑动；③ 与圈子列表页/首页同圈封面并排比对 ⇒ 点名 tapTarget .circle-mini（apps/client/src/pages/nearby/index.vue:514）",
       "expected": "① 落 /subpackages/circles/circles/circle-home 且 options.circleId 为该卡真实 id（:255；2026-09-12 起不再落旧 topics 列表）；② 横滑不得触发跳转；③ 封面必须来自 circleCoverFor 单一真相源（:495 + :346-351 注释，收编自本地副本）→ 同圈在不同页出现不同封面判一致性 P2",
       "evidence": "navigation：路由链断言 + 执行日志（横滑后路由不变）+ 一张跨页封面对照截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "① 点 .circle-mini（index.vue:483-491 → goCircleDetail :254-256）；② 在该行执行横向滑动；③ 与圈子列表页/首页同圈封面并排比对",
+      "tapTarget": ".circle-mini",
+      "tapTargetEvidence": "apps/client/src/pages/nearby/index.vue:514",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N19",
@@ -218,7 +296,13 @@
       "action": "读 .campus-entry 四卡布局（index.vue:516-541）、次行 .campus-entry__desc（:533）与状态 chip（:534-537）；滚到该行测量卡宽/高",
       "expected": "布局：4 联竖版卡（flex:1 等分，:920-930 样式；MP-R1-PAGES-NEARBY-INDEX-906 由整宽横排行改竖版）→ 4 卡完整落视口、无第 5 卡残影、卡内文字不被裁切（min-width:0 + 省略号）；次行必须显示 **school.city**（:533），**不得**出现「N 位同学」等编造数字（该注释明确：全站无成员数真相源，campus/hub 的 schoolStats 为硬编码演示表，复制过来即第二真相源）→ 出现假数字判 P1 数据合规；本校置顶仍生效（schoolEntries :71-78）",
       "evidence": "normal：after 截图（4 联卡整行 + 文字特写）+ 执行日志（四卡 rect 与文本读数）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N21",
@@ -251,7 +335,13 @@
       "action": "① 点 .activity-entry（index.vue:553 → goActivityDetail :270-272）；② 点分区④ more「查看全部」（:544 → goActivityList :267-269）",
       "expected": "① 落 ROUTES.ACTIVITY_DETAIL=/subpackages/tools/activities/detail 且 options.id 为真实 id（String()+encodeURIComponent，非数字 id 不破 URL）；② 落活动列表页；两者 500ms 内路由变化；返回后列表不丢（store 30s TTL）",
       "evidence": "navigation：路由链断言 ×2（含 options 读数）+ 返回落点断言",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N24",
@@ -262,7 +352,13 @@
       "action": "① 统计 .nearby-post-item 数量（index.vue:620-638）；② 点分区⑤ more（:592 → goAllPosts :325-327）；③ 与「我的」页帖子并排比对",
       "expected": "① 首屏渲染 3 条（slice(0,3)），与 nearbyPosts slice(0,6)（:88）关系须如实记录（可见 3 条是否为设计意图）；② 落 /subpackages/village/village/index；③ 数据源必须是 nearbyPosts 独立维度而非全局 posts（:87 注释），与村口/我的页不串数据",
       "evidence": "navigation：路由链断言 + 执行日志（条目计数）+ 一张列表截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N25",
@@ -273,7 +369,13 @@
       "action": "① 点 PostCard 点赞（index.vue:623 @like → onPostLike :285-292）一次；② 500ms 内连点同帖 5 次；③ 构造失败再点一次",
       "expected": "① 成功后计数 +1 且态翻转；失败 toast village.likeFailed（:289 showErrorToast）；② **两个口径分别写**：客户端 network 计数 POST like =1；服务端回读该 (me,post) 点赞行数 =1 且 like 计数只 +1。不得以「服务端只落 1 条」判通过——services/http.ts:254-278 给写请求注入按 method+URL+body 哈希的稳定 Idempotency-Key，会把客户端防连点失效完全掩盖；network ≥2 即判 FAILED（category=Interaction）；③ 失败态回滚、无未处理 Promise 拒绝",
       "evidence": "critical：before + after 截图 + Toast 文案 + console + network 计数（含每请求 Idempotency-Key 头值）+ 回读点赞行数/计数",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N26",
@@ -284,7 +386,13 @@
       "action": "① 点收藏（index.vue:624 @favorite → onPostFavorite :293-299）；② 连点 5 次；③ 构造失败",
       "expected": "① 收藏态即时可观测（villageStore.toggleFavorite 同步 nearbyPosts 与全局列表，:272-274 注释同村口口径）；失败 toast village.favoriteFailed 且态回滚；② 客户端 network 计数 =1 与服务端收藏行数 =1 分列判定（同 N25 理由，Idempotency-Key 不参与判客户端）；③ Loading 不永驻",
       "evidence": "critical：before + after 截图 + Toast + console + network 计数 + 回读收藏行数",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N27",
@@ -306,7 +414,13 @@
       "action": "① 点帖子卡片打开详情（index.vue:626 @open-detail → onPostDetail :275-277）；② 点头像/昵称（:627 @open-author → onPostAuthor :278-280）",
       "expected": "① 落 /subpackages/village/village/detail?id=<postId>（:276 encodeURIComponent）；② 落他人主页（openUserProfile 统一口径，:283-295 注释禁止帖子场景直接 like/建会话）；两路不得同时触发（双跳判 P2）；返回后列表条目与滚动位不丢",
       "evidence": "navigation：路由链断言 ×2 + 执行日志（是否双跳）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N29",
@@ -317,7 +431,13 @@
       "action": "① 点标签（index.vue:629 @open-tag → onPostTag :312-314）；② 点内嵌活动卡「报名」（:630 @open-activity 与 :631 @enroll 两条监听）",
       "expected": "① 落 /subpackages/village/village/tag-posts?tagName=<encode 标签>；② 必须真实跳 /subpackages/tools/activities/detail?id=（MP-R1-PAGES-NEARBY-INDEX-012 死按钮修复的 UI 终验，走 :630 @open-activity 链路）；③ 同时核对残留死监听：PostCard 的 defineEmits 未声明 enroll（components/village/PostCard.vue:35-43）→ :631 永不触发，属误导性冗余接线（MP-R2-PAGES-NEARBY-INDEX-015 建议清理）；若「报名」点击零反馈判 P2 复发",
       "evidence": "navigation：路由链断言 ×2 + 执行日志（哪条监听被触发）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N30",
@@ -339,7 +459,13 @@
       "action": "① 切走 <30s 后切回；② 切走 >30s 后切回；③ 在村口发一条新动态后回本页；④ 制造一次失败后立刻再下拉刷新",
       "expected": "① 0 次重拉（NEARBY_POSTS_TTL_MS=30_000 :213 + 短路 :222-229）；② 1 次重拉；③ TTL 内不刷新须如实记录（与首页 30s 阈值同口径，MP-R1-PAGES-NEARBY-INDEX-004）；④ 失败不更新时间戳（:230-232）→ 重试应立即可用",
       "evidence": "normal：after 截图（③ 新帖可见性）+ 执行日志（四档请求计数）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N32",
@@ -361,7 +487,13 @@
       "action": "把 .nearby-home__scroll（index.vue:367）滑到分区④ → 切首页 Tab → 切回，重复 3 次",
       "expected": "铁律「Tab 切换滚动位与数据不丢」：切回后滚动位置保留、列表不被重置为骨架/空；TabBar 选中态为第 2 项（useTabBar(1) :44）；TTL 内无重复请求",
       "evidence": "navigation：路由链断言 + 执行日志（scroll 位置前后读数）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N34",
@@ -372,7 +504,13 @@
       "action": "滑到底 → 读最后一条帖子与 .nearby-home__footer-space（index.vue:640）rect → 回顶",
       "expected": "最后一条完整可见、不被自定义 tabBar（实高 184rpx+2×safe）覆盖；footer-space 撑开净空生效（样式 :1170 起）；回顶 scrollTop=0 且头部不叠印状态栏（N01 复核）；无回弹报错",
       "evidence": "noop：执行日志（scrollTop 序列 + 最后元素 rect vs tabBar rect）+ console；遮挡成立时补截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N35",
@@ -383,7 +521,13 @@
       "action": "switchTab 到附近页 → 立即切走，重复 3 次；统计各轮请求",
       "expected": "onLoad 仅首轮拉数据（index.vue:134-137 → loadNearbyData :179-185 + initLocation :110）；后续走 onShow TTL 短路（:139-147）→ 3 轮内受保护请求叠加 ≤1；console error=0、无 routeDone 错误；本页无 onLoad 参数消费（见 N37）",
       "evidence": "normal：after 截图 + console + 执行日志（每轮请求计数）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N36",
@@ -394,7 +538,13 @@
       "action": "从附近页依次进入：人列表 / 圈子主页 / 校园 hub / 活动详情 / 帖子详情 / 搜索页，各执行「返回一次 + 点 TabBar 一次」",
       "expected": "每条链路 2 步内回到任一 Tab 页；返回落点=附近页且分区状态恢复；页面栈不超 10 层（openAppPath 栈满 redirectTo 兜底 utils/navigation.ts）；无「返回后需再滑两次才见内容」",
       "evidence": "navigation：路由链断言（6 条链路 ×2 步）+ 返回落点断言",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N37",
@@ -405,7 +555,13 @@
       "action": "分别进入，检查城市/关键词/分区是否生效；回读 storage 桥接 key",
       "expected": "本页 onLoad 回调不带参数（index.vue:134 `onLoad(() => {...})`）且全文件无 consumeTabQuery / options 读取 → city/keyword/tab 一律不被消费，属**幽灵参数**（本轮搜索输入框移除后连 keyword 生成点都不再存在，N09/N10 互证）；不得照抄旧固化表（scripts/r11-param-map.json 本轮禁读，以源码为准）；dev-user=1 由 App.onLaunch 与全局导航拦截器消费（utils/dev-user.ts:80-132）；未被消费的桥接 key 不得残留污染后续页",
       "evidence": "noop：执行日志（两种方式的路由/城市/列表结论 + storage 读数）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N38",
@@ -416,7 +572,13 @@
       "action": "读 .circle-mini__count（index.vue:499）与各分区标题/入口 label",
       "expected": "formatMemberCount（:354-359）：≥10000 → 1.2w；1000-9999 → 千分位 8,932（R21 口径，不再用英文 k）；<1000 精确数字；不得 NaN/undefined；全部文案走 t('nearby.*')（标题/副标/入口/空态，:361 起）→ en-US 下无中文残留、无键名字面量；新增的 nearby.loginToView 双语在位（zh-CN.ts:396 / en-US.ts:280）",
       "evidence": "normal：after 截图（两语言各一张）+ 执行日志（5 档计数文本 + 文案清单）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N39",
@@ -427,7 +589,13 @@
       "action": "读附近页全部 image 的实际 src 与渲染结果；统计 console 图片加载错误",
       "expected": "全部头像/封面可见且失败落默认兜底，不得破图/空白；本条专证 utils/media.ts 新增分支（:211-229 把 /static/assets/images/avatars/** 与 people/** 改写为 apiRoot+/api/v1/media/app-assets/... 的 **http** 地址）与同文件既有策略冲突（:169-185：基础库 3.16.2 强制 https，app-assets 一律反向本地化回 /static）→ 若 mock 构建下相关头像因此变 http 外链并加载失败/被拦截，判 **P1 新增回归**（附 src 值与 console 协议限制日志）；若这些图实际不经 resolveMediaUrl（circleCoverFor / 包内常量），如实记「本页不受该分支影响」并写明依据",
       "evidence": "normal：after 截图（头像/封面区）+ console（图片错误与协议限制）+ 执行日志（src 清单）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N40",
@@ -435,10 +603,19 @@
       "title": "死按钮普查：本页全部可点元素 500ms 内可观测反馈",
       "tier": "normal",
       "pre": "接 N01（登录态、全分区有数据）",
-      "action": "逐个点击：放大镜、发动态、5 入口、分区① 2 入口、② 圈卡 + 查看全部、③ 4 张校卡 + 查看全部、④ 活动条 + 查看全部、⑤ 帖子/标签/点赞/收藏/关注/作者/查看全部、各分区标题区（应不可点），逐一计时",
+      "action": "逐个点击：放大镜 .nearby-home__search-btn（@tap=goSearch）、发动态、5 入口、分区① 2 入口、② 圈卡 + 查看全部、③ 4 张校卡 + 查看全部、④ 活动条 + 查看全部、⑤ 帖子/标签/点赞/收藏/关注/作者/查看全部、各分区标题区（应不可点），逐一计时",
       "expected": "每个可点元素点击后 500ms 内必有路由/DOM/Toast/震动之一，否则「死按钮」FAILED（G4 死按钮=0）；不可点的装饰元素（定位针 :374/:387、标题文本、封面 image）须逐个标注「无 @tap，非死按钮」，不得凭空造缺陷；hover-class 必须作为独立属性写在 class 之外（模板已按该规范书写，实测按下反馈不生效记 P3）",
       "evidence": "normal：after 截图（普查清单 + 失败元素特写）+ 路由断言 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "逐个点击：放大镜、发动态、5 入口、分区① 2 入口、② 圈卡 + 查看全部、③ 4 张校卡 + 查看全部、④ 活动条 + 查看全部、⑤ 帖子/标签/点赞/收藏/关注/作者/查看全部、各分区标题区（应不可点），逐一计时",
+      "tapTarget": ".nearby-home__search-btn",
+      "tapTargetEvidence": "apps/client/src/pages/nearby/index.vue:388",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（pages/nearby/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "N41",

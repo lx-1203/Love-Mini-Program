@@ -1,0 +1,25 @@
+{
+ "note": "把一条写糊了的台账行改精确：半修就是半修。判据台侧的证据（判点在基线里就已存在）我原来读成\"这条没修\"，实测是**修在基线之前**（token 由提交 f9a60925 引入，而 f9a60925 是本轮基线 094f7239 的祖先）⇒ 本轮无法差分证明，但不能反过来说它没做。真正的欠账是 .tab-bar 本体仍写字面量，所以状态降到未收口并登记去向。",
+ "patches": [
+  {
+   "id": "MP-R2-PAGES-DISCOVER-INDEX-014",
+   "col": 6,
+   "why": "半修必须写半修：消费侧三处的单点化确实落地（提交 f9a60925），但 .tab-bar 本体仍是字面量 ⇒ 「token 单点定义」只做到一半，行不能算收口",
+   "new": "待修复（半成：消费侧三处已改用 --tab-bar-total-h，该 token 由提交 f9a60925 引入并已并入本轮基线；但 .tab-bar 本体仍写死字面量高度 ⇒ 单点化未竟，去向见登记表）"
+  },
+  {
+   "id": "MP-R2-PAGES-DISCOVER-INDEX-014",
+   "col": 9,
+   "why": "证据要同时写清\"哪一半有提交背书\"和\"哪一半没有\"，并把可重跑的差分判点留下；同时纠正判据台那句\"命中不能证明改动落地\"的成因——不是没改，是改在基线之前",
+   "new": "两边证据（2026-09-27 现量）：已做半边 = token 由提交 f9a60925（2026-09-26）引入，git merge-base --is-ancestor f9a60925 094f7239 为真 ⇒ 本轮基线里已存在，故判据台按 baseline 差分抠判点时必然报\"判点在修复前就已存在\"，这条报的是**证据窗口**问题而非未修；未做半边 = apps/client/src/custom-tab-bar/index.wxss:17-19 至今为 height calc(160rpx + env(safe-area-inset-bottom)) 与 padding-bottom calc(env(safe-area-inset-bottom) + 24rpx) 两段字面量，git diff 094f7239..HEAD 不含该文件。可重跑差分判点：在 custom-tab-bar/index.wxss 里 grep var\\(--tab-bar-total-h\\) 需 ≥1 命中且 .tab-bar 规则内不再出现 160rpx 字面量（当前两项均不成立）；消费者三处 MyProfile.vue / NotLoggedProfile.vue / pages/discover/index.vue 用 token 已成立"
+  },
+  {
+   "id": "MP-R2-PAGES-DISCOVER-INDEX-014",
+   "col": 11,
+   "why": [
+    "处置要留下两条可辩护路线和\"此刻不做重构\"的理由，别让下一轮照抄\"已改为 token 单点定义\""
+   ],
+   "new": "二选一并在收口时给出去向：(a) 让 .tab-bar 高度与内边距从同一处派生（拆 --tab-bar-face-h 与 --tab-bar-safe-h 两个令牌相加，保持 content-box 实高 184rpx+2env 不变），改完必须重建三档并出改前/改后对拍帧——高度不一致就是视觉回归，不许默默合；(b) 把这一行的主张收窄为\"消费侧不再各抄高度\"（判点=三处 countEq 用 token），另立一行追 .tab-bar 本体的派生。此刻不做 (a)：拆令牌要同改 wxss 与三处消费者，在没有帧预算的窗口里做等于把视觉回归推给下一轮"
+  }
+ ]
+}

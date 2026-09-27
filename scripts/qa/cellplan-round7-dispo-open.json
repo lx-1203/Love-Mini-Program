@@ -1,0 +1,61 @@
+{
+  "note": "由 scripts/qa/emit-dispo-open-cellplan.mjs 从 verify-status-vs-disposition 的现场输出派生（不是手抄名单）。方向是**开账**不是销账：把裸「已修复」改成 已修复待复验，让下一轮还能认领这些复验债。",
+  "source": "node scripts/qa/verify-status-vs-disposition.mjs",
+  "generatedAt": "2026-09-27T11:08:13.595Z",
+  "patches": [
+    {
+      "id": "MP-R7CLIENT-UPLOAD-EXT-001",
+      "col": 6,
+      "new": "已修复待复验",
+      "why": "门 verify-status-vs-disposition 现量：标记=仍欠（在处置列）⇒ 原状态「已修复」与处置自相矛盾。处置/证据列自己写着还欠复验 ⇒ 第 6 列不能停在裸「已修复」（那会被下一轮当结案读）。改成 已修复待复验，欠款由取景配方与复验腿认领。"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+      "col": 6,
+      "new": "已修复待复验",
+      "why": "门 verify-status-vs-disposition 现量：标记=状态停在（在处置列）⇒ 原状态「已修复」与处置自相矛盾。处置/证据列自己写着还欠复验 ⇒ 第 6 列不能停在裸「已修复」（那会被下一轮当结案读）。改成 已修复待复验，欠款由取景配方与复验腿认领。"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-INDEX-009",
+      "col": 6,
+      "new": "已修复待复验",
+      "why": "门 verify-status-vs-disposition 现量：标记=需人复验（在处置列）⇒ 原状态「已修复」与处置自相矛盾。处置/证据列自己写着还欠复验 ⇒ 第 6 列不能停在裸「已修复」（那会被下一轮当结案读）。改成 已修复待复验，欠款由取景配方与复验腿认领。"
+    },
+    {
+      "id": "MP-R2-CAMPUSPOST-010",
+      "col": 6,
+      "new": "已修复待复验",
+      "why": "门 verify-status-vs-disposition 现量：标记=待复验（在处置列）⇒ 原状态「已修复」与处置自相矛盾。处置/证据列自己写着还欠复验 ⇒ 第 6 列不能停在裸「已修复」（那会被下一轮当结案读）。改成 已修复待复验，欠款由取景配方与复验腿认领。"
+    },
+    {
+      "id": "MP-R2-CIRCLES-INDEX-004",
+      "col": 6,
+      "new": "已修复待复验",
+      "why": "门 verify-status-vs-disposition 现量：标记=需人复验（在处置列）⇒ 原状态「已修复」与处置自相矛盾。处置/证据列自己写着还欠复验 ⇒ 第 6 列不能停在裸「已修复」（那会被下一轮当结案读）。改成 已修复待复验，欠款由取景配方与复验腿认领。"
+    },
+    {
+      "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
+      "col": 6,
+      "new": "已修复待复验",
+      "why": "门 verify-status-vs-disposition 现量：标记=需人复验（在处置列）⇒ 原状态「已修复」与处置自相矛盾。处置/证据列自己写着还欠复验 ⇒ 第 6 列不能停在裸「已修复」（那会被下一轮当结案读）。改成 已修复待复验，欠款由取景配方与复验腿认领。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-001",
+      "col": 6,
+      "new": "已修复待复验",
+      "why": "门 verify-status-vs-disposition 现量：标记=待复验（在statusEvidence列）⇒ 原状态「已修复」与处置自相矛盾。处置/证据列自己写着还欠复验 ⇒ 第 6 列不能停在裸「已修复」（那会被下一轮当结案读）。改成 已修复待复验，欠款由取景配方与复验腿认领。"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
+      "col": 6,
+      "new": "已修复待复验",
+      "why": "门 verify-status-vs-disposition 现量：标记=待复验（在statusEvidence列）⇒ 原状态「已修复」与处置自相矛盾。处置/证据列自己写着还欠复验 ⇒ 第 6 列不能停在裸「已修复」（那会被下一轮当结案读）。改成 已修复待复验，欠款由取景配方与复验腿认领。"
+    },
+    {
+      "id": "MP-R2-CAMPUS-HUB-012",
+      "col": 6,
+      "new": "已修复待复验",
+      "why": "门 verify-status-vs-disposition 现量：标记=需人复验（在处置列）⇒ 原状态「已修复」与处置自相矛盾。处置/证据列自己写着还欠复验 ⇒ 第 6 列不能停在裸「已修复」（那会被下一轮当结案读）。改成 已修复待复验，欠款由取景配方与复验腿认领。"
+    }
+  ]
+}

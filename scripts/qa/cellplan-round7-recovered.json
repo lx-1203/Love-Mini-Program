@@ -1,0 +1,122 @@
+{
+ "$comment": "由两条只读复判腿的 SELECTOR_MISSED 行派生（脚本现算 id→manifest，名字来自腿给的 token 字段），交 scripts/qa/apply-ops-cellplans.mjs 核两档产物后落 ops。COMPOSED_OR_SCOPED 不在这张表里：那些不是换个名字就能点，欠的是组件内查询/第 N 子元素（#70⑤⑥）。",
+ "A-add-tapTarget": [
+  {
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "id": "CX20",
+   "page": "subpackages/campus/campus/index",
+   "tapTarget": ".topic-card",
+   "tapTargetEvidence": "",
+   "confirmedAt": "2026-09-27 只读复判（recheck-1/2，逐条 file:line + 两档 wxml 真 token）",
+   "note": "候选名 .topic-card"
+  },
+  {
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "id": "CI17",
+   "page": "subpackages/circles/circles/index",
+   "tapTarget": ".circle-card__count",
+   "tapTargetEvidence": "",
+   "confirmedAt": "2026-09-27 只读复判（recheck-1/2，逐条 file:line + 两档 wxml 真 token）",
+   "note": "候选名 .circle-card__count / .circle-card__hot-badge；主目标取第一个，其余是同判据里的并列元素"
+  },
+  {
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "id": "CI18",
+   "page": "subpackages/circles/circles/index",
+   "tapTarget": ".circle-card__cover",
+   "tapTargetEvidence": "",
+   "confirmedAt": "2026-09-27 只读复判（recheck-1/2，逐条 file:line + 两档 wxml 真 token）",
+   "note": "候选名 .circle-card__cover"
+  },
+  {
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "id": "CS07",
+   "page": "subpackages/chat/chat-session/index",
+   "tapTarget": ".temp-banner",
+   "tapTargetEvidence": "",
+   "confirmedAt": "2026-09-27 只读复判（recheck-1/2，逐条 file:line + 两档 wxml 真 token）",
+   "note": "候选名 .temp-banner / .temp-action-row；主目标取第一个，其余是同判据里的并列元素"
+  },
+  {
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "id": "CS20",
+   "page": "subpackages/chat/chat-session/index",
+   "tapTarget": ".quote-reply-bar",
+   "tapTargetEvidence": "",
+   "confirmedAt": "2026-09-27 只读复判（recheck-1/2，逐条 file:line + 两档 wxml 真 token）",
+   "note": "候选名 .quote-reply-bar"
+  },
+  {
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "id": "CS24",
+   "page": "subpackages/chat/chat-session/index",
+   "tapTarget": ".unread-hint",
+   "tapTargetEvidence": "",
+   "confirmedAt": "2026-09-27 只读复判（recheck-1/2，逐条 file:line + 两档 wxml 真 token）",
+   "note": "候选名 .unread-hint"
+  },
+  {
+   "manifest": "次要18",
+   "id": "VD01",
+   "page": "subpackages/village/village/detail",
+   "tapTarget": ".detail-page",
+   "tapTargetEvidence": "",
+   "confirmedAt": "2026-09-27 只读复判（recheck-1/2，逐条 file:line + 两档 wxml 真 token）",
+   "note": "候选名 .detail-page / .comments-loading；主目标取第一个，其余是同判据里的并列元素"
+  },
+  {
+   "manifest": "次要18",
+   "id": "VD08",
+   "page": "subpackages/village/village/detail",
+   "tapTarget": ".post-tag",
+   "tapTargetEvidence": "",
+   "confirmedAt": "2026-09-27 只读复判（recheck-1/2，逐条 file:line + 两档 wxml 真 token）",
+   "note": "候选名 .post-tag"
+  },
+  {
+   "manifest": "次要18",
+   "id": "VD09",
+   "page": "subpackages/village/village/detail",
+   "tapTarget": ".comments-sort",
+   "tapTargetEvidence": "",
+   "confirmedAt": "2026-09-27 只读复判（recheck-1/2，逐条 file:line + 两档 wxml 真 token）",
+   "note": "候选名 .comments-sort / .comments-more；主目标取第一个，其余是同判据里的并列元素"
+  },
+  {
+   "manifest": "次要18",
+   "id": "VD15",
+   "page": "subpackages/village/village/detail",
+   "tapTarget": ".post-body",
+   "tapTargetEvidence": "",
+   "confirmedAt": "2026-09-27 只读复判（recheck-1/2，逐条 file:line + 两档 wxml 真 token）",
+   "note": "候选名 .post-body / .post-content；主目标取第一个，其余是同判据里的并列元素"
+  },
+  {
+   "manifest": "次要18",
+   "id": "VD16",
+   "page": "subpackages/village/village/detail",
+   "tapTarget": ".similar-author-avatar",
+   "tapTargetEvidence": "",
+   "confirmedAt": "2026-09-27 只读复判（recheck-1/2，逐条 file:line + 两档 wxml 真 token）",
+   "note": "候选名 .similar-author-avatar / .action-btn--message / .action-btn--follow；主目标取第一个，其余是同判据里的并列元素"
+  },
+  {
+   "manifest": "次要18",
+   "id": "VD20",
+   "page": "subpackages/village/village/detail",
+   "tapTarget": ".comment-time",
+   "tapTargetEvidence": "",
+   "confirmedAt": "2026-09-27 只读复判（recheck-1/2，逐条 file:line + 两档 wxml 真 token）",
+   "note": "候选名 .comment-time / .similar-authors-title；主目标取第一个，其余是同判据里的并列元素"
+  },
+  {
+   "manifest": "次要18",
+   "id": "CH11",
+   "page": "subpackages/circles/circles/circle-home",
+   "tapTarget": ".bottom-fab",
+   "tapTargetEvidence": "",
+   "confirmedAt": "2026-09-27 只读复判（recheck-1/2，逐条 file:line + 两档 wxml 真 token）",
+   "note": "候选名 .bottom-fab / .topics-link；主目标取第一个，其余是同判据里的并列元素"
+  }
+ ]
+}

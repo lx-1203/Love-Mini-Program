@@ -130,8 +130,26 @@ if (!srcCommits.length) {
   process.exit(2);
 }
 
+/* 「manifest 顶层必须带 gitSha」这条约定本身有生效日期：早于该日期生成的清单不可能带上当时还不存在的
+   字段，把它们算成本轮的红，等于要求历史产物服从未来的规矩（round-1 的 144 帧就是这一类：磁盘上
+   一张不缺、字节数与清单逐张对得上，只是 generatedAt=2026-09-19）。
+   约定起点由 git 派生，不落一张手维护的豁免名单——名单迟早变成永久的假红/假绿，本仓已吃过一次。
+   取 scripts/qa/ 下最早一次改动 "gitSha" 这个字符串的提交：这是约定存在的**下界**，所以只会偏严不会偏松
+   （任何晚于该时刻生成的无戳清单仍然判红）。 */
+const STAMP_CONVENTION = (() => {
+  const raw = git(["log", "--reverse", "--format=%cI", "-S", "gitSha", "--", "scripts/qa"]);
+  const first = (raw || "").split("\n")[0] || "";
+  const d = first ? new Date(first) : null;
+  return d && !isNaN(d.getTime()) ? d : null;
+})();
+if (!STAMP_CONVENTION) {
+  console.log("PROVENANCE_RESULT=FAIL reason=派生不出「gitSha 约定」的生效时间（git log -S 在 scripts/qa 无结果），无戳豁免不成立，不得默认放行");
+  process.exit(2);
+}
+
 let frames = 0, noStamp = 0, badStamp = 0, unresolvable = 0;
-let fabricated = 0, staleStamp = 0, consistent = 0, undated = 0, absoluteDialect = 0;
+let fabricated = 0, staleStamp = 0, consistent = 0, undated = 0, absoluteDialect = 0, unknownBand = 0;
+let noStampLegacy = 0, legacyFrames = 0;
 const samples = [];
 const missingSamples = [];
 const perManifest = [];
@@ -143,7 +161,19 @@ for (const mPath of manifests) {
   if (!Array.isArray(shots) || !shots.length) continue;   // 无帧的清单（如 ops manifest）不在本轴职责内
   const stamp = j.gitSha || "";
   const stampDate = commitDate(stamp);
-  if (!stamp) noStamp++;
+  let legacy = false;
+  if (!stamp) {
+    const genRaw = j.generatedAt || j.generated_at || "";
+    const gen = genRaw ? new Date(genRaw) : null;
+    const genOk = gen && !isNaN(gen.getTime());
+    if (genOk && gen < STAMP_CONVENTION) {
+      legacy = true; noStampLegacy++;
+      console.log(`PROV_MANIFEST_LEGACY ${rel(mPath)} generatedAt=${genRaw} 早于打戳约定 ${STAMP_CONVENTION.toISOString()}（约定尚未存在，不判红；但其帧一律不参与时间轴判决，本轮终报不得引用它作「产物级」证据）`);
+    } else {
+      noStamp++;
+      console.log(`PROV_MANIFEST_NO_SHA ${rel(mPath)} generatedAt=${genRaw || "(无)"} 约定起点=${STAMP_CONVENTION.toISOString()}（约定之后生成的清单必须带 gitSha）`);
+    }
+  }
   else if (!stampDate) { badStamp++; console.log(`PROV_UNKNOWN_COMMIT ${rel(mPath)} gitSha=${stamp}（不是本仓任何提交）`); }
   let mf = 0, mFab = 0, mStale = 0, mCons = 0;
   for (const s of shots) {
@@ -158,16 +188,27 @@ for (const mPath of manifests) {
     }
     let mt = 0;
     try { mt = statSync(abs).mtimeMs; } catch { unresolvable++; continue; }
-    if (!stampDate) { undated++; continue; }
+    if (!stampDate && !s.bandSha) { if (legacy) legacyFrames++; else undated++; continue; }
+    /* 权威索引是多带并集：顶层 gitSha 只代表"主带"，跨带进来的帧不能拿主带的提交去比，
+       否则一批本来诚实的帧会被读成"回填戳记"（round-7 实测 325 张帧的目录名写着
+       round-7-mock-tour-1a1df78b，而权威件顶层记的是 e4495d67 ⇒ 帧比主带提交早 6 小时）。
+       生产者现在给每行都写了 bandSha；有 bandSha 就按它自己那一带判，没有才退回顶层。 */
+    const rowStamp = s.bandSha || stamp;
+    const rowStampDate = s.bandSha ? commitDate(s.bandSha) : stampDate;
+    if (!rowStampDate) {
+      unknownBand++;
+      if (samples.length < SAMPLES) samples.push(`PROV_UNKNOWN_BAND ${rel(mPath)} 帧=${rel(abs)} 所记带 ${rowStamp} 不是本仓任何提交`);
+      continue;
+    }
     const attributed = commitAtTime(mt);
-    if (mt < stampDate.getTime() - TOLERANCE_MS) {
+    if (mt < rowStampDate.getTime() - TOLERANCE_MS) {
       // 帧比它声称所属的提交还早 → 那次提交当时不存在，戳记是回填出来的
       fabricated++; mFab++;
-      if (samples.length < SAMPLES) samples.push(`PROV_PRE_STAMP ${rel(mPath)} 帧=${rel(abs)} mtime=${new Date(mt).toISOString()} 所记提交 ${stamp}@${stampDate.toISOString()}`);
-    } else if (attributed && attributed.sha !== stamp && commitDate(attributed.sha) && commitDate(attributed.sha).getTime() > stampDate.getTime()) {
+      if (samples.length < SAMPLES) samples.push(`PROV_PRE_STAMP ${rel(mPath)} 帧=${rel(abs)} mtime=${new Date(mt).toISOString()} 所记提交 ${rowStamp}@${rowStampDate.toISOString()}${s.bandSha && s.bandSha !== stamp ? "（行内带，顶层是 " + stamp + "）" : ""}`);
+    } else if (attributed && attributed.sha !== rowStamp && commitDate(attributed.sha) && commitDate(attributed.sha).getTime() > rowStampDate.getTime()) {
       // 帧拍摄时，src 已有比所记提交更新的提交 → 证据测的不是被审代码
       staleStamp++; mStale++;
-      if (samples.length < SAMPLES) samples.push(`PROV_STALE_STAMP ${rel(mPath)} 帧=${rel(abs)} mtime=${new Date(mt).toISOString()} 实际对应 ${attributed.sha}，戳记却是 ${stamp}`);
+      if (samples.length < SAMPLES) samples.push(`PROV_STALE_STAMP ${rel(mPath)} 帧=${rel(abs)} mtime=${new Date(mt).toISOString()} 实际对应 ${attributed.sha}，戳记却是 ${rowStamp}`);
     } else { consistent++; mCons++; }
   }
   perManifest.push({ file: rel(mPath), shots: mf, stamp: stamp || "-", fabricated: mFab, stale: mStale, consistent: mCons });
@@ -199,6 +240,19 @@ function stampsOwnValue(code) {
 for (const p of producers) {
   let text = "";
   try { text = readFileSync(p, "utf8"); } catch { continue; }
+  /* 两类文件不参与"生产者必须运行时派生"的判定，但**必须逐条打出来**——
+     "没人看"和"没问题"不能共用一个输出，这是本门自己的规矩：
+       · 自测夹具（test-*、_mutant-*）：它写的假戳正是这条门的负例来源，
+         把它算成"未派生的生产者"会让门永远红，而红到没人读就等于门不存在；
+       · tmp/ 下的一次性脚本：它们产出的索引早被 rebuild-frozen-manifest 取代，
+         不是本轮产物侧的生产者；但历史 scratch 留在盘上，点名比静默跳过诚实。 */
+  const relP = rel(p);
+  const isFixture = /(^|[\/\\])(test-|_mutant-)/.test(relP);
+  const isScratch = relP.split(/[\/\\]/)[0] === "tmp";
+  if (isFixture || isScratch) {
+    console.log(`PROV_PRODUCER_EXEMPT ${relP} ${isFixture ? "自测夹具（它写的假戳就是本门的负例）" : "tmp/ 一次性脚本（非本轮生产者）"}`);
+    continue;
+  }
   const code = text.split("\n").filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join("\n");  // 注释里记录"曾经写错过"不算埋坑
   if (!/writeFileSync|writeFile\(|execFileSync\(\s*["']git/.test(code)) continue;
   if (!stampsOwnValue(code)) continue;
@@ -224,15 +278,22 @@ console.log(`PROVENANCE_HEAD=${HEAD || "?"} SRC_COMMITS=${srcCommits.length} SCO
 for (const x of perManifest) console.log(`PROV_MANIFEST ${x.file} shots=${x.shots} gitSha=${x.stamp} pre_stamp=${x.fabricated} stale_stamp=${x.stale} consistent=${x.consistent}`);
 samples.forEach((s) => console.log(s));
 missingSamples.forEach((s) => console.log(s));
-console.log(`PROV_FRAMES_CONSISTENT=${consistent} PROV_FRAMES_STALE=${staleStamp} PROV_FRAMES_PRE_STAMP=${fabricated} PROV_FRAMES_UNRESOLVABLE=${unresolvable} PROV_FRAMES_UNDATED=${undated}`);
+console.log(`PROV_FRAMES_CONSISTENT=${consistent} PROV_FRAMES_STALE=${staleStamp} PROV_FRAMES_PRE_STAMP=${fabricated} PROV_FRAMES_UNRESOLVABLE=${unresolvable} PROV_FRAMES_UNDATED=${undated} PROV_FRAMES_UNKNOWN_BAND=${unknownBand} PROV_FRAMES_LEGACY=${legacyFrames}`);
 console.log(`PROV_FRAMES_ABSOLUTE=${absoluteDialect}（方言提示：manifest 规范写法是「仓库相对+正斜杠」；绝对路径能解析、不计红，但会跨机器失效，应由生产者 selfcheck 拦下）`);
-console.log(`PROV_MANIFESTS_NO_SHA=${noStamp} PROV_MANIFESTS_BAD_SHA=${badStamp}`);
+console.log(`PROV_MANIFESTS_NO_SHA=${noStamp} PROV_MANIFESTS_NO_SHA_LEGACY=${noStampLegacy} PROV_MANIFESTS_BAD_SHA=${badStamp} 打戳约定起点=${STAMP_CONVENTION.toISOString()}（由 git log -S gitSha -- scripts/qa 派生）`);
+/* 守恒断言：加了新桶（本次的 LEGACY）之后，最怕的不是判错而是漏记——漏掉的帧会让两个桶同时变小而
+   看起来"更干净"。逐帧的结局互斥且穷尽（缺文件/无日期/历史件/未知带/回填/过期/一致），所以总数必须相等。 */
+const accounted = consistent + staleStamp + fabricated + unresolvable + undated + legacyFrames + unknownBand;
+const conserved = accounted === frames;
+console.log(`PROV_FRAME_ACCOUNTING in=${frames} out=${accounted} ${conserved ? "OK" : "MISMATCH（有帧没落到任何桶，本门的统计不可信）"}`);
 console.log(`PROV_PRODUCERS=${producerCount} DERIVED_OK=${producerOk} LITERAL_SHA=${producerLiteral} NO_DERIVE=${producerNoDerive}${scoped ? "（限定 scope，生产者侧只报不计）" : ""}`);
 const frameFail = fabricated || staleStamp || unresolvable || noStamp || badStamp;
-const fail = frameFail || (!scoped && (producerLiteral || producerNoDerive));
+const fail = frameFail || !conserved || (!scoped && (producerLiteral || producerNoDerive));
 console.log(fail
-  ? (frameFail
-      ? "PROVENANCE_RESULT=FAIL（本轮产物侧存在回填/过期戳记/断链帧/无戳，禁止据此下结论）"
-      : "PROVENANCE_RESULT=FAIL（生产者侧有字面量 SHA 或未派生，下一轮证据必然不可信）")
+  ? (!conserved
+      ? "PROVENANCE_RESULT=FAIL（帧数不守恒：统计口径漏帧，先看本行上面的 in/out 再看别的结论）"
+      : frameFail
+        ? "PROVENANCE_RESULT=FAIL（本轮产物侧存在回填/过期戳记/断链帧/无戳，禁止据此下结论）"
+        : "PROVENANCE_RESULT=FAIL（生产者侧有字面量 SHA 或未派生，下一轮证据必然不可信）")
   : "PROVENANCE_RESULT=PASS");
 process.exit(fail ? 1 : 0);

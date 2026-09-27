@@ -1,0 +1,25 @@
+{
+  "$comment": "16 条被执行器标成「action 含交互动词但没点名可交互元素」的 requiresReal 用例的逐条归置。分两类：A 类=判据里其实点了名，只是裸类名没有 BEM 分隔符、classesOf() 抠不出来 ⇒ 补 tapTarget；B 类=本通道做不了（原生 ActionSheet/showModal、断网、跨页复核、纯观察）⇒ 该记 SKIPPED-not-automatable，不该挂着「判据含糊」。每条 selector 都在 apps/client/src 里 grep 过 class=\"…\" 原文确认存在；没确认的一律留在 B 类并写明未确认，不当作 A 类凑数。",
+  "A-add-tapTarget": [
+    { "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX", "id": "CX15", "page": "subpackages/campus/campus/index", "tapTarget": ".topic-scroll", "confirmedAt": "apps/client/src/subpackages/campus/campus/index.vue class=\"topic-scroll\"", "note": "滚动容器已点名；@scrolltolower 在内滚容器上" },
+    { "manifest": "次要18", "id": "TD06", "page": "subpackages/circles/circles/topic-detail", "tapTarget": ".topic-content", "confirmedAt": "topic-detail.vue class=\"topic-content\"", "note": "同上：长按可驱动，原生弹层不可" },
+    { "manifest": "次要21", "id": "FHT05", "page": "subpackages/profile-extra/feedback/history", "tapTarget": ".attachment-img", "confirmedAt": "history.vue class=\"attachment-img\"", "note": "tap 第 2 张可驱动；左右滑动/关闭预览属 uni.previewImage 原生层" },
+    { "manifest": "次要21", "id": "OC09", "page": "subpackages/chat/official-chat/index", "tapTarget": ".retry-btn", "confirmedAt": "official-chat/index.vue class=\"retry-btn press-feedback\"", "note": "重试按钮可驱动；「断网再点一次」那半段不可驱动" },
+    { "manifest": "次要22", "id": "AC10", "page": "subpackages/discover/activities/index", "tapTarget": ".retry-btn", "confirmedAt": "activities/index.vue class=\"retry-btn press-feedback\"", "note": "同上" },
+    { "manifest": "次要22", "id": "MD09", "page": "subpackages/market/detail/index", "tapTarget": ".product-scroll", "confirmedAt": "market/detail/index.vue class=\"product-scroll\"", "note": "滚动容器已点名；末行是否被 .product-footer 遮住要量 rect，属 B 类的「量不了」" }
+  ],
+  "D-adjudicated-superseded": [
+    {"manifest":"次要18","id":"VD15","droppedTapTarget":".post-content","winnerTapTarget":".post-body","adjudicatedAt":"2026-09-27","why":"本计划写于 recheck-1/2 逐条复判之前：长按事件的宿主是 apps/client/src/subpackages/village/village/detail.vue:830 的 <view class=\"post-body\" @longpress=\"handlePostLongpress\">，:831 的 .post-content 只是其内部 <text> 文本节点，不带事件；纯图帖子 content 为空时该节点不渲染，目标会消失。cellplan-round7-recovered.json 已按两档 wxml 逐字命中把 tapTarget 落成 .post-body（ops 正文 tapTargetFrom 可查）。留着这行等于两份计划对同一 id 点名不同元素，所以从 A 组撤下、原样存档在这里，不删证据。","evidence":"grep detail.vue: 830(view .post-body @longpress) / 831(text .post-content) / 1979+1983 两条样式各自存在；mock 与 real 两档 village/detail.wxml 均各命中 1 处 class=\"post-body data-v-d0b36fc6\"","originalNote":"只有「长按内容区」这一步可自动化；后续 ActionSheet 选取消/填描述属 B 类","confirmedAtWas":"detail.vue class=\"post-content\""}],
+  "B-not-automatable": [
+    { "manifest": "PAGES-MESSAGES-INDEX", "id": "MSG24", "why": "长按 → 原生 ActionSheet 选「免打扰」+ 断网执行，通道驱动不了原生弹层与网络状态；免打扰图标本身可由探针量（已在判据里），交互半段记 not-automatable" },
+    { "manifest": "PAGES-MESSAGES-INDEX", "id": "MSG26", "why": "删除会话要走 showModal 确认，取消/确定两条都要真点；原生 Modal 不在页面 DOM 里" },
+    { "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX", "id": "VI28", "why": "要「后台恢复开关」+ 断网 + deep link 强行发帖，跨系统配置，不是本页可驱动动作" },
+    { "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH", "id": "PUB25", "why": "发布成功自动返回 + 下拉刷新 2 次 + 等 5s：下拉刷新是原生手势，CLI 通道不驱动" },
+    { "manifest": "次要20", "id": "VRN11", "why": "纯观察 + 全页截图（无点击），被 TAP_RE 误判为交互型 ⇒ 该修的是分类，不是判据" },
+    { "manifest": "次要20", "id": "AB09", "why": "长按相册图 → 原生 ActionSheet「设为头像」；且要跨页到「我的」复核，单页通道做不到" },
+    { "manifest": "次要20", "id": "AB10", "why": "删除走 showModal 确认 + 系统返回键，均非页面 DOM 动作" },
+    { "manifest": "次要20", "id": "TK10", "why": "要改服务端签到态（换身份/改后端），执行轮无权改后端数据" },
+    { "manifest": "次要21", "id": "FB13", "why": "纯观察 + 与另一身份对照 + 下拉一次；对照需要第三个会话，非本页可驱动" }
+  ],
+  "$apply-note": "A 类落到 reports/audit/round-6/ops/<manifest>.json 的对应 case 上加 tapTarget 字段（执行器已优先读 c.tapTarget）；B 类加 notAutomatable:true 并让执行器把它记成 SKIPPED-not-automatable（桶已存在于 triage-exec-failures）。排队器 stage-6 的执行腿正在逐组读这些文件，必须等它跑完再改，否则同一轮里前半用旧判据、后半用新判据。"
+}

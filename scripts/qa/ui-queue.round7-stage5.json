@@ -1,0 +1,52 @@
+[
+ {
+  "name": "probe-runtime-holes-real",
+  "file": "scripts/qa/verify-evidence-holes.mjs",
+  "args": ["--mode", "measure", "--project", "apps/client/dist/build/mp-weixin-real"],
+  "timeoutMin": 25,
+  "why": "DC33 的运行时半段（进出 3 次后栈是否累积）。源码只能证 onUnload 里调了 dispose，证不了不泄漏 ⇒ 必须量。跑 real 档：那 2958B 的洞就是 real 档量出来的，换档去量等于换个东西判。这一腿是 EVIDENCE_HOLES_RESULT=FAIL 里唯一剩下的红。"
+ },
+ {
+  "name": "open-window-mock-for-ws",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": ["--project", "apps/client/dist/build/mp-weixin", "--settle", "24"],
+  "timeoutMin": 14,
+  "why": "WS 补拍要在 mock 档（9 条 WS 交互未成的行都出自 mock 档那把取景腿），且重建之后必须先把窗口落到被测档位上再接设备腿。"
+ },
+ {
+  "name": "reshoot-mock-with-ws-taps",
+  "file": "scripts/qa/shoot-frameplan.mjs",
+  "args": ["--plan", "reports/audit/round-7/frameplan-round7-final.json", "--project", "apps/client/dist/build/mp-weixin", "--label", "round-7-ws-taps", "--out", "reports/audit/round-7/uidebt-shoot-wstaps-final", "--ws-taps"],
+  "timeoutMin": 75,
+  "why": "同时办两件事：①把上一把取景腿里 9 条「WS 交互未成」的行用真的 WS 通道重做一遍；②当场重测 #47 那条我没证明过的因果——我原先写的是「WS 与 CLI 天生互斥」。查代码后的真相是：这条腿根本没带 --ws-taps（未启用），而且端口写死 9420 而本轮 DevTools 在 9430/9431 ⇒ 就算带了也连不上。现在旗标要显式带、端口改成发现，日志会打 ws-connected port=<n> source=discover 或 ws-connect-err 试过哪些端口。两种结果都可信：连上并做完交互 ⇒ 那条互斥结论作废（成因是配置）；仍连不上 ⇒ 才算真的互斥，且这次有端口清单可查。"
+ },
+ {
+  "name": "open-window-mock-for-tour",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": ["--project", "apps/client/dist/build/mp-weixin", "--settle", "24"],
+  "timeoutMin": 14,
+  "why": "巡检跑在 mock 档；WS 那把腿用完窗口之后必须重新落位，否则巡检第一条 evaluate 会撞在旧上下文上。"
+ },
+ {
+  "name": "tour-round7-final",
+  "file": "scripts/qa/tour-r6.mjs",
+  "args": [],
+  "env": { "TOUR_PROJECT": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin", "TOUR_LABEL": "round-7-tour-final", "TOUR_AUDIT_SUB": "round-7", "TOUR_CKPT_NAME": "tour-R7-final.json", "TOUR_LOG_NAME": "tour-R7-final.log", "IDENTITIES": "A,B" },
+  "timeoutMin": 120,
+  "why": "⑤ 要的巡检：62+ 页 × 双身份，绑最终重建后的 mock 档。之前那把 tour 拍的是重建前的产物，不能拿来结这一轮的账。"
+ },
+ {
+  "name": "gate-state-truth",
+  "file": "scripts/qa/verify-state-truth.mjs",
+  "args": ["reports/audit/round-7"],
+  "timeoutMin": 8,
+  "why": "四态一致性核对：巡检与取景落完之后再看一次，避免「帧拍了但状态没对上」。"
+ },
+ {
+  "name": "gate-evidence-holes",
+  "file": "scripts/qa/verify-evidence-holes.mjs",
+  "args": [],
+  "timeoutMin": 8,
+  "why": "复核 DC33 那条洞是否已从 BOOKED 变成 DECIDED；仍 BOOKED 就继续红着，不算结案。"
+ }
+]

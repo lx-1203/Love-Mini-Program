@@ -9,9 +9,29 @@
  *
  * 用法：node scripts/qa/freeze-ops-copy.mjs --from reports/audit/round-6/ops --to reports/audit/round-7/ops [--check-only]
  * 退出码：0=写出（或 --check-only 且逐文件校验和一致）；2=拒写/校验不过。 */
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync, renameSync, unlinkSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { resolve, join, basename } from "node:path";
+
+/* Windows 上写/拷一个刚被别的进程读过的文件会撞 sharing violation（errno -4094）：
+   先落同目录临时文件再 rename（同目录 rename 是原子替换），并带 5 次退避重试。 */
+function retryIo(what, fn) {
+  let last = null;
+  for (let i = 0; i < 5; i++) {
+    try { fn(); return; }
+    catch (e) { last = e; const until = Date.now() + 200 * (i + 1); while (Date.now() < until) { /* 同步退避：这脚本本来就是同步跑的 */ } }
+  }
+  console.log("FREEZEOPS_IOFAIL " + what + " ⇒ 重试 5 次仍失败：" + String(last && last.message).slice(0, 140));
+  throw last;
+}
+function writeRobust(to, text) {
+  const tmp = to + "." + process.pid + ".tmp";
+  retryIo("write " + to, () => { writeFileSync(tmp, text); try { renameSync(tmp, to); } catch (e) { unlinkSync(tmp); throw e; } });
+}
+function copyRobust(from, to) {
+  const tmp = to + "." + process.pid + ".tmp";
+  retryIo("copy " + to, () => { copyFileSync(from, tmp); try { renameSync(tmp, to); } catch (e) { try { unlinkSync(tmp); } catch (e2) { /* 留着临时文件比改错判决好 */ } throw e; } });
+}
 
 const REPO = resolve(import.meta.dirname, "..", "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
@@ -32,12 +52,12 @@ if (CHECK_ONLY) {
   process.exit(bad.length ? 2 : 0);
 }
 mkdirSync(TO, { recursive: true });
-for (const f of src) copyFileSync(join(FROM, f), join(TO, f));
+for (const f of src) copyRobust(join(FROM, f), join(TO, f));
 const after = files.filter((x) => sha(join(TO, x.name)) !== x.sha256_16);
 if (after.length) { console.log("FREEZEOPS_RESULT=FAIL reason=拷贝后 " + after.length + " 个文件校验和不一致，不写出处文件"); process.exit(2); }
 /* 出处文件必须放在 ops/ **外面**：ops 目录是按"每个 .json 都是一份用例计划"来扫的，
    把元数据塞进去会被当成一份空计划（实测 QUEUE_BAD_MANIFEST PROVENANCE: 无 cases[] ⇒ 整轮判红）。 */
-writeFileSync(join(TO, "..", basename(TO) + "-provenance.json"), JSON.stringify({
+writeRobust(join(TO, "..", basename(TO) + "-provenance.json"), JSON.stringify({
   frozenFrom: (FROM + "").split("\\").join("/").replace(REPO.split("\\").join("/") + "/", ""), frozenAt: new Date().toISOString(),
   note: "本轮沿用上一轮的 1107 例计划；这里是**冻结拷贝**而不是活引用，逐文件 sha256 见 files[]。PROVENANCE.json 自身不在 files[] 里。",
   planFiles: files.length, totalCases, files,

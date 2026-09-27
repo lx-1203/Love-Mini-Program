@@ -120,7 +120,15 @@ function walk(dir, exts, out) {
   return out;
 }
 
-function squash(text) { var s = "", i = 0; while (i < text.length) { var c = text[i]; if (!/\s/.test(c)) s += c; i++; } return s; }
+function squash(text) {
+  var s = "", i = 0;
+  while (i < text.length) { var c = text[i]; if (!/\s/.test(c)) s += c; i++; }
+  /* 压缩器会把 #rrggbb 缩成 #rgb（实测 MyHeader.wxss 里是 color:#555，源码写的是 #555555）。
+     探针 token 若保持六位，这条判点在产物里**永远不可能命中**，于是已落地的修法被读成
+     SOURCE_ONLY——是 token 形态的问题，不是产品的。两侧都过 squash，所以在这里归一一次即可。
+     八位带 alpha 的写法不能折（后面还有十六进制位），用否定预查挡住。 */
+  return s.replace(/#([0-9a-f])\1([0-9a-f])\2([0-9a-f])\3(?![0-9a-f])/gi, "#$1$2$3");
+}
 
 /** 把压掉空白后的下标还原回原文下标（只为截取摘录做，单次线性扫描） */
 function sqToOrig(text, sqIdx) {
@@ -692,6 +700,15 @@ var IDENT_NOISE = {};
 
 /* 抽取规则自检：每次正式跑之前先证明 ⟨⟩ 这条规则"既拦得住、也没把手"。
    两个方向都要非零 —— 只证明"拦住了"会把规则写成一个吞掉全文的黑洞而照样绿。 */
+/** 载体自检：hex 缩写归一必须让两种写法互相命中（这条判点破过一次 SOURCE_ONLY 假红）。 */
+function hexSquashSelfcheck() {
+  var errs = [];
+  if (squash("color: #555555;") !== squash("color:#555;")) errs.push("六位/三位 hex 归一失败");
+  if (squash("rgba(0,0,0,.15)") !== squash("rgba(0, 0, 0, .15)")) errs.push("rgba 空白归一失败");
+  if (squash("#00000080") === squash("#0080")) errs.push("八位带 alpha 的 hex 被误折");
+  return errs;
+}
+
 function probeExtractSelfcheck() {
   var CASES = [
     { t: "⟨原判点 TodayRecommendationView 是编译期擦除的接口名⟩ distanceLine 定义处", mustHave: ["distanceLine"], mustNot: ["TodayRecommendationView"] },
@@ -709,6 +726,7 @@ function probeExtractSelfcheck() {
     cs.mustHave.forEach(function (k) { if (!got[k]) errs.push("case" + (i + 1) + " 漏抽 " + k); kept++; });
     cs.mustNot.forEach(function (k) { if (got[k]) errs.push("case" + (i + 1) + " 造出说明词 " + k); else suppressed++; });
   }
+  errs = errs.concat(hexSquashSelfcheck());
   if (!suppressed) errs.push("⟨⟩ 抑制判据数为 0：规则形同虚设");
   if (!kept) errs.push("正常判据抽取数为 0：规则过宽，正在吞掉真判点");
   /* 约定的完整性也要在这一趟里验：台账里只要有一个 ⟨ 找不到配对 ⟩，
@@ -1074,6 +1092,11 @@ function decide(item, results) {
        这句话什么都证明不了（实测拦下 MP-R2-PAGES-MESSAGES-INDEX-022 的 console.warn 与
        MP-R2VIS-…-PUBLISH-A01 的 village.post.mentionHint 两条假推进）。 */
     if (grantingPredatesFix(item, srcOnly)) return noJudge("只在源码树命中的判点（" + srcOnly.map(function (r) { return r.token; }).slice(0, 3).join(", ") + "）在修复前的 HEAD 里就已存在，不能算本轮落地");
+    /* 只剩"可改名的成员访问"没在产物里出现 ⇒ 产物侧问不出这个问题，记 UNDECIDABLE 而不是 SOURCE_ONLY。
+       这不是把红洗成绿：两者都不是已验，区别只在于**不许把载体的无能为力写成一条关于产品的判断**。
+       真要在产物里证明它，得换成压缩后仍在的载体（类名、字符串值、图片路径）。 */
+    var byRename = srcOnly.filter(function (r) { return renameableMember(item, r.token); });
+    if (byRename.length === srcOnly.length) return noJudge("只在源码树命中的判点（" + byRename.map(function (r) { return r.token; }).join(", ") + "）是对局部量的成员访问，压缩构建会改名/内联 ⇒ 产物侧无从判定，须换成压缩后仍存的载体");
     return { verdict: "SOURCE_ONLY", why: (aOk.length ? "部分判点已在产物可见、但 " : "") + srcOnly.map(function (r) { return r.token; }).join(", ") + " 只在源码树里 —— 00:16 之后才改的，不得算已验" };
   }
   if (absentBad.length) return { verdict: "SOURCE_ONLY", why: "待删项 " + absentBad.map(function (r) { return r.token; }).join(", ") + " 源码侧已不可见、产物里却还在（删除只落在工作树）" };
@@ -1453,6 +1476,26 @@ function writeMd(bundle) {
 /* ------------------------------------------------------------- 守恒 */
 
 var BUCKETS = ["ARTIFACT_VERIFIED", "SOURCE_ONLY", "NEEDS_UI_FRAME", "NOT_IN_EITHER", "UNDECIDABLE"];
+
+/** 点号 token 到底是"字符串值"还是"局部对象的成员访问"？两者在产物里的命运完全不同：
+ *   · i18n 键 / 资源路径这类字符串值会被原样保留 ⇒ 产物查不到就是真没落地；
+ *   · `iconSrc.plus` 这类对局部对象的成员访问，压缩后局部名会被改/内联 ⇒ 产物查不到说明不了任何事。
+ * 抽取器把两者都当成 string-lit（因为它们在台账里都写作反引号包裹），于是第二类被误判成
+ * SOURCE_ONLY（实测 MP-R2VIS-…-CHAT-SESSION-INDEX-006）。
+ * 判据：token 的头段在该项的源码文件里是被 const/let/var 声明的局部量 ⇒ 它按"可改名"处理。 */
+function renameableMember(item, tok) {
+  var m = /^([A-Za-z_$][\w$]*)\.[A-Za-z_$]/.exec(String(tok || ""));
+  if (!m) return false;
+  var head = m[1];
+  var rels = (item && item.srcRels) || [];
+  for (var i = 0; i < rels.length; i++) {
+    var abs = path.join(P.src, rels[i]);
+    var txt = "";
+    try { txt = fs.readFileSync(abs, "utf8"); } catch (e) { continue; }
+    if (new RegExp("(const|let|var)\\s+" + head + "\\b").test(txt)) return true;
+  }
+  return false;
+}
 
 function main() {
   ensureOut();

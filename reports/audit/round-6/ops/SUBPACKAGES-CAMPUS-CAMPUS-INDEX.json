@@ -44,7 +44,13 @@
       "action": "等待 ≤500ms 观察落点",
       "expected": "redirectedToHub=true 并 uni.redirectTo('/subpackages/campus/campus/hub')（index.vue:201-202）→ 栈长度=1、栈顶 route=subpackages/campus/campus/hub（不是 index）；本页 onShow/onMounted 因重定向标志早退（:207-219）→ network 面板 GET /campus/topics 与 GET /campus/certification 由本页发起的条数=0（hub 自身的 onShow 拉取另计）；不闪现本页空态/骨架；console 无报错",
       "evidence": "navigation：路由链（栈+route）+ console + network 请求归属计数",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX03",
@@ -55,7 +61,13 @@
       "action": "分别 reLaunch '/subpackages/campus/campus/index?school=' 与 '?school=%20%20'（纯空格）",
       "expected": "两种输入均走 q.school.trim() 为假分支 → redirectTo hub（index.vue:186,201-202）；栈顶=subpackages/campus/campus/hub；不出现「校名为空的空白页头」（:240 兜底 defaultSchool 不应被渲染到 index 页）；console 无报错",
       "evidence": "navigation：两次路由链断言 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX04",
@@ -66,7 +78,13 @@
       "action": "等待首屏 → 观察页头校名与话题请求参数",
       "expected": "try/catch 包裹 decodeURIComponent，异常时回退原始串（index.vue:191-197）→ 页头显示回退值（可读、不为空、不抛 URIError）；话题请求以回退值透传 fetchCampusTopics 第三参（:215-218 / campus.ts:455）→ mock 下非「北京大学」→ 空态文案「该分类下还没有话题，快来发布第一个吧」（index.vue:313-316，zh-CN.ts:3535）；无未捕获异常；console 允许 warn 但不得有 Uncaught URIError",
       "evidence": "normal：after 截图 + 路由 options 快照 + console + network（GET /campus/topics 的 school 实参）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX05",
@@ -77,7 +95,13 @@
       "action": "fullPage 截图逐格读取 8 个 .cert-recommend__label（index.vue:268-270）；同时 evaluate 取 8 项实际文本与 index.vue:33-40 的 nameKey 字面量逐一比对",
       "expected": "上轮修复（MP-R1-CAMPUSINDEX-001）把 hotCirclesTitle/viewMore/circleNames 从 postTopic 块移入 campus.index 块——修复后应有表现：区块标题渲染「热门兴趣圈」、右上「查看更多 ›」（index.vue:263-264 ← zh-CN.ts:3537-3538）；8 个标签依次为 摄影/旅行/音乐/运动/美食/游戏/阅读/宠物（t(item.nameKey) 动态取值 index.vue:269 ← RECOMMEND_CIRCLES nameKey :33-40 ← zh-CN.ts:3539-3548 circleNames 8 键）；DOM 文本中不得出现任何以「campus.index.」或「campus.postTopic.」开头的字符串；若仍见裸 key → 判 FAILED 并回填出现裸 key 的格位与对应 key 名（证伪点：命名空间是否真的落在 campus.index 下）",
       "evidence": "normal：after 截图（含 8 格放大）+ 8 个标签实际文本列表 + 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX06",
@@ -99,7 +123,13 @@
       "action": "在四种状态下收集页面上全部文本节点，与 index.vue 中出现的 t('campus.index.*') 键清单逐一比对（statusVerified/Pending/Rejected/Unverified、defaultSchool、certGuideTitle/Desc/Btn、publicBrowseTitle/Desc、loadingAria、loadingTopics、retry、emptyTopics、anonymousAuthor、loadingMore、noMore + circleNames.8）",
       "expected": "每个键在两种语言下都渲染出非空、且 ≠ key 字面量 的文案（zh-CN.ts:3519-3549 / en-US.ts:3438-3470）；加载态出现「正在加载话题...」/「Loading topics...」，「重试」按钮文案走 campus.index.retry（index.vue:307-309）而非 common.retry；空态匿名作者走 anonymousAuthor（:342）；发现任一裸 key 即视为上轮命名空间修复未完全生效，按 P2/Function 立回归项；publicBrowse 双行文案仅在已认证+非本校时出现（REAL_ONLY，见 CX11）",
       "evidence": "normal：四状态 × 两语言 after 截图 + 键→文本对照表 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX08",
@@ -110,7 +140,13 @@
       "action": "tap .cert-recommend__more（index.vue:264）→ 返回；再依次 tap 8 个 .cert-recommend__item（:267）各一次",
       "expected": "9 个点击全部走 goCircles（index.vue:43-45）→ navigateTo /subpackages/circles/circles/index（栈+1）；每次返回后仍在 campus/index 且 viewSchool 不丢（页面内 ref，:61）；8 格 :key=item.id 稳定（:267）不出现错位；无死按钮（铁律 500ms 内必须有路由变化）；console 无报错",
       "evidence": "navigation：9 次路由链断言（落点均 /subpackages/circles/circles/index）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX09",
@@ -129,10 +165,19 @@
       "title": "栈中返回：由 hub 进入时返回落回 hub 且 hub 状态恢复",
       "tier": "navigation",
       "pre": "身份A mock 登录 → reLaunch hub → 搜索「北京」→ tap 北京大学卡（hub.vue:290 → index.vue 栈=2）",
-      "action": "tap .campus-back（index.vue:228-237 → goBack :102-106）",
+      "action": "tap .campus-back（index.vue:228-237 → goBack :102-106） ⇒ 点名 tapTarget .campus-back（apps/client/src/subpackages/campus/campus/index.vue:242）",
       "expected": "uni.navigateBack 落回 subpackages/campus/campus/hub（栈>1 分支 :104-106）；hub 的 searchKeyword/activeTab 因 hub.vue 无跨实例持久化而回到默认（推荐 Tab + 11 卡，属预期行为，如实记录不判缺陷）；栈顶 route=hub；console 无报错",
       "evidence": "navigation：路由链断言 + 落点页首屏截图 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "tap .campus-back（index.vue:228-237 → goBack :102-106）",
+      "tapTarget": ".campus-back",
+      "tapTargetEvidence": "apps/client/src/subpackages/campus/campus/index.vue:242",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX11",
@@ -165,7 +210,13 @@
       "action": "在 .topic-scroll 内向下滑动一次模拟下拉（touch 手势）；再 evaluate 检查 window.scrollY 与 .topic-scroll.scrollTop",
       "expected": "pages.json 无 enablePullDownRefresh（campus/index 条目无 style 段）、scroll-view 未开 refresher-enabled（index.vue:319-359）→ 下拉手势不应触发任何 GET /campus/topics 重拉（network 计数 0 增量）、不出现原生下拉 loading 三点；window 不产生外层滚动（容器 height:100% + overflow:hidden :385-396）；如实记录「本页无下拉刷新能力」这一事实供 A4 需求对照裁量，不判死按钮",
       "evidence": "noop：执行日志（手势前后 scrollTop/window.scrollY、network 增量）+ console；可免截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX14",
@@ -173,10 +224,19 @@
       "title": "REAL_ONLY 分类 Tab 切换 6 次：请求按 school 透传、旧分类列表被清空（MP-R1-CAMPUSINDEX-002 / MP-R2-CAMPUSINDEX-002(b)）",
       "tier": "normal",
       "pre": "REAL_ONLY：真实后端 + 已认证本校视角（CX12 前置），保证 6 个分类均有可区分数据量。mock 轮 mockTopics 仅按 category 过滤且非北京大学恒空（campus.ts:435-442），无法验证 school 透传 → 记 UNVERIFIED",
-      "action": "依次 tap 6 个 .category-tab（课程交流/社团招新/校园活动/学习互助/生活服务/校友动态，index.vue:283-292），每次等 ≤500ms 观察",
+      "action": "依次 tap 6 个 .category-tab（课程交流/社团招新/校园活动/学习互助/生活服务/校友动态，index.vue:283-292），每次等 ≤500ms 观察 ⇒ 点名 tapTarget .category-tab（apps/client/src/subpackages/campus/campus/index.vue:314）",
       "expected": "每次 tap → setActiveCategory(category, viewSchool)（index.vue:86-91）→ store 先清空 topics/topicPage=1/topicHasMore=false（campus.ts:403-410）再 fetch；network 面板 GET /campus/topics 请求数=6，且每条 URL 均含 category=<对应值> 且含 school=<本校URL编码>（campus.ts:455）；每条返回前页面先短暂出现空态/加载态而非旧分类内容残留；高亮 Tab 的 --active 样式与列表内容一致；:key=tab.key 稳定",
       "evidence": "normal：6 张 after 截图（每 Tab 一张）+ 6 条请求 URL 清单 + 路由 + console",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "依次 tap 6 个 .category-tab（课程交流/社团招新/校园活动/学习互助/生活服务/校友动态，index.vue:283-292），每次等 ≤500ms 观察",
+      "tapTarget": ".category-tab",
+      "tapTargetEvidence": "apps/client/src/subpackages/campus/campus/index.vue:314",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX15",
@@ -187,7 +247,17 @@
       "action": "在 .topic-scroll 内滚动到底 → 等 ≤1s 观察 → 重复滚动到底 3 次",
       "expected": "滚动发生在 .topic-scroll 内部（index.vue:643-645 内滚 + :319 @scrolltolower，MP-R2-CAMPUSINDEX-001 修复生效证据）；第 1 次到底 → onLoadMoreTopic（:172-181）发 GET /campus/topics?page=2&size=10（campus.ts:455，page-1 换算）；加载中显示「加载中...」+ spinner（index.vue:351-354 ← campus.index.loadingMore）；列表条数从 10 → 20 且不重不漏（按 topic.id 去重校验：无重复 id）；最后 topicHasMore=false → 底部出现「没有更多了」（:355-357 ← campus.index.noMore）；后续再滚到底不得再发请求",
       "evidence": "normal：分页前/后 + 到底态 3 张 after 截图 + network URL 清单（含 page 参数）+ 列表 id 去重校验结果 + console",
-      "requiresReal": true
+      "requiresReal": true,
+      "tapTarget": ".topic-scroll",
+      "tapTargetFrom": "cellplan-round7-taptarget.json",
+      "tapTargetEvidence": "产物逐字命中：D:/6/恋爱小程序/apps/client/dist/build/mp-weixin，D:/6/恋爱小程序/apps/client/dist/build/mp-weixin-real",
+      "tapTargetConfirmedAt": "apps/client/src/subpackages/campus/campus/index.vue class=\"topic-scroll\"",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX16",
@@ -198,7 +268,13 @@
       "action": "tap 第一张 .topic-card（index.vue:320-324 → goToTopicDetail :115-117）→ 进入 topic-detail → 读 .reply-input 的 maxlength 属性值与 computed 样式；随后在输入框连打 600 个可输入字符",
       "expected": "路由到 /subpackages/campus/campus/topic-detail?topicId=<id>（index.vue:116）；.reply-input 的 maxlength 实测值必须等于 500（**当前工作树**锚点：topic-detail.vue:337 绑定 MAX_REPLY_LENGTH ← stores/campus.ts:307 导出，注释明确「客户端 500 / 后端 2000」的取舍见同文件 :300-306）；连打 600 字后输入框实际文本长度必须 ≤500（原生截断），计数区/滚动不得溢出；回填实测值三元组：前端 maxlength / 后端 @Size / 实际可输入长度——若实测 maxlength≠500 或 =140（uni input 默认值，说明 :337 绑定未生效）即判 FAILED",
       "evidence": "normal：topic-detail 回复区 after 截图 + maxlength 属性实测值 + 实际字符长度 + 路由链 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX17",
@@ -209,7 +285,13 @@
       "action": "用 automation evaluate 直接把组件 replyContent 置为 501 个字符（绕过原生 maxlength；记录所用注入方式与最终取回的 replyContent.length），再 tap .reply-btn（topic-detail.vue:306-315 → submitReply :46-58）",
       "expected": "store 命中长度守卫（**当前工作树**锚点：stores/campus.ts:774-776，位于 useMock 分支之前 → mock/real 两模式都拦得住）→ errorMessage=storeErrors.campus.replyContentTooLong → 页面 catch 弹 Toast「回复内容不能超过500字」（**当前** topic-detail.vue:63-80 submitReply 的 catch 读 campusStore.errorMessage；zh-CN.ts:3932，en 环境为对应英文键）；Toast 中 {n} 必须被替换为 500（出现字面 {n} 即插值缺陷）；network 面板 POST /campus/topics/{id}/replies 计数=0（守卫在请求之前）；本页回复条数与 replyCount 不变；isSubmitting 复位可再次提交；console 无未捕获异常",
       "evidence": "critical：before（501 字注入后输入态）+ after（Toast 文案）截图 + 路由 + Toast 文案逐字 + console + network 写请求计数（应为 0）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX18",
@@ -220,7 +302,13 @@
       "action": "对 POST /api/v1/campus/topics/{id}/replies 分别发 content 长度=501、=2000、=2001 三条请求（三条 content 各不相同，避免幂等键互吞）；再回读 GET /campus/topics/{id}/replies",
       "expected": "实测并回填三组 {status, error.code, message}：501 与 2000 应被后端接受（@Size(max=2000) 通过，CampusController.java:461-463）→ 证明「前端 500 严于后端 2000」的契约差真实存在（本轮新增常量的取舍是否合理的证据）；2001 应返回 400 且 message 为后端校验文案（回填原文，不得只写「失败」）；GET 回读条数必须与成功写入条数一致（2 条，非 3 条）；同时断言前端 UI 若走同一 501 字内容应零请求（与 CX17 对照，不得把「后端能收」当成「前端可发」）",
       "evidence": "critical：三条请求的响应报文截图/文本 + 回读列表 before/after 截图 + 路由 + Toast（本用例走直连通道，UI 应无 Toast）+ console + network 三条状态码",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX19",
@@ -231,7 +319,13 @@
       "action": "观察错误槽 → tap .campus-state__btn 重试（index.vue:307-309 → retryCampusTopics :94-96）→ 恢复拦截后再 tap 一次",
       "expected": "失败时话题槽显示后端/兜底错误文案 + 「重试」按钮（index.vue:304-310 ← campus.index.retry，zh-CN.ts:3532）；断言错误槽文案来自 topicsError 而非共享 errorMessage（:50-53 解绑 + campus.ts:469-472 只写 topicsError）：认证拉取失败不得串进本槽；tap 重试 → 只重发 GET /campus/topics（network 面板 POST/其他 URL 增量=0）且 URL 含 school=<viewSchool>（index.vue:95）；恢复后列表正常渲染、错误槽消失（topicsError 在 fetch 起始置 null，campus.ts:426）；console 允许请求失败日志、不得有未捕获 rejection",
       "evidence": "critical：错误态 before + 重试中 + 恢复后 after 截图 + 路由 + Toast（应为无）+ console + network 增量明细",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX20",
@@ -242,7 +336,17 @@
       "action": "滚动列表到中部 → tap 第 3 张 .topic-card → 在详情页 tap 返回 → 观察落点与滚动位",
       "expected": "tap → openAppPath('/subpackages/campus/campus/topic-detail?topicId='+id)（index.vue:115-117，未 encodeURIComponent，如实回填 id 形态：mock 为 campus-topic-… 含连字符可用；若为真实数字 id 亦成立）；详情页按 query.topicId 取参（topic-detail.vue:96-105）不报「话题 ID 无效」；返回后栈顶=subpackages/campus/campus/index，:key=topic.id 列表不丢条目；无重复压栈",
       "evidence": "navigation：往返两段路由链（含 options.topicId 实值）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "tapTarget": ".topic-card",
+      "tapTargetFrom": "cellplan-round7-recovered.json",
+      "tapTargetEvidence": "产物逐字命中：D:/6/恋爱小程序/apps/client/dist/build/mp-weixin，D:/6/恋爱小程序/apps/client/dist/build/mp-weixin-real",
+      "tapTargetConfirmedAt": "2026-09-27 只读复判（recheck-1/2，逐条 file:line + 两档 wxml 真 token）",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX21",
@@ -250,10 +354,19 @@
       "title": "连点分类 Tab×5：竞态 token 只让最新请求落地、列表不串类",
       "tier": "normal",
       "pre": "REAL_ONLY 优先（需 6 分类均有可区分数据）；mock 轮若列表恒空则降级为「无重复请求 + 不崩溃」断言并注明",
-      "action": "500ms 内对第 1 个 Tab 与第 4 个 Tab 交替快速 tap 共 5 次，停在第 4 个 Tab",
+      "action": "500ms 内对第 1 个 .category-tab（index.vue:291，v-for 六个 Tab 共用该类名、@tap=switchCategory :293）与第 4 个 .category-tab 交替快速 tap 共 5 次，停在第 4 个 .category-tab（选中态由同行的 :class='category-tab--active' :292 判定）",
       "expected": "5 次 tap 各触发 setActiveCategory（index.vue:86-91）→ 5 次 fetch（campus.ts:421-423 每次递增 token）；断言两列分别回填：① 客户端请求计数=5（无请求合并，源码未去抖，如实记录）；② 最终列表内容只允许来自最后一次请求的 category（fetchCampusTopicsToken 丢弃旧响应 campus.ts:434,459,471）→ 不得出现第 1 个分类的内容挂到第 4 个 Tab 名下；列表无重复 id、无 loading 永驻（finally 仅最新 token 清 loading campus.ts:477-479）；console 无报错",
       "evidence": "normal：落点 after 截图 + 5 条请求 URL/category 清单 + 列表 category 一致性校验 + console",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "500ms 内对第 1 个 Tab 与第 4 个 Tab 交替快速 tap 共 5 次，停在第 4 个 Tab",
+      "tapTarget": ".category-tab",
+      "tapTargetEvidence": "apps/client/src/subpackages/campus/campus/index.vue:291",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX22",
@@ -264,7 +377,13 @@
       "action": "500ms 内对 .campus-fab 快速 tap×5",
       "expected": "goToPostTopic 无防连点标志（index.vue:122-126）→ 断言两列：① getCurrentPages 最终栈内容（期望仅 1 层 post-topic；出现 ≥2 层 post-topic 即判缺陷并回填完整栈）；② navigateTo:fail/webview limit 告警条数（openAppPath 栈满兜底 redirectTo，utils/navigation.ts:99-115）；本用例为纯导航、无写请求，不涉及服务端落库计数；console 无未捕获异常",
       "evidence": "normal：落点 after 截图 + 完整路由栈快照 + console",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX23",
@@ -272,10 +391,19 @@
       "title": "打开即返回（≤500ms）：onMounted 两个并发请求不产生未捕获 Promise、无骨架永驻",
       "tier": "normal",
       "pre": "同 CX01（栈=1）",
-      "action": "进入后 300ms 内 tap .campus-back（抢在 Promise.allSettled 完成前，index.vue:212-219）→ 观察 → 再次进入",
+      "action": "进入后 300ms 内 tap .campus-back（抢在 Promise.allSettled 完成前，index.vue:212-219）→ 观察 → 再次进入 ⇒ 点名 tapTarget .campus-back（apps/client/src/subpackages/campus/campus/index.vue:242）",
       "expected": "返回成功、无 JS 崩溃；两个请求（fetchCertificationStatus + fetchCampusTopics）由 Promise.allSettled 聚合（:215-218）→ console 不得出现 Unhandled promise rejection / Cannot read properties of null (reading …)；实例销毁后 store 状态更新不得报错；再次进入首屏正常（同 CX01）；无 Loading 骨架/「正在加载话题...」永驻",
       "evidence": "normal：落点截图 + 二次进入 after 截图 + 路由 + console 全量",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "进入后 300ms 内 tap .campus-back（抢在 Promise.allSettled 完成前，index.vue:212-219）→ 观察 → 再次进入",
+      "tapTarget": ".campus-back",
+      "tapTargetEvidence": "apps/client/src/subpackages/campus/campus/index.vue:242",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX24",
@@ -283,10 +411,19 @@
       "title": "重复进出 index×3：onShow 每次重取认证状态（MP-R2-CAMPUSINDEX-006），不重复堆叠话题列表",
       "tier": "normal",
       "pre": "同 CX01",
-      "action": "循环 3 次：tap .campus-back 回 hub → tap 同一校卡再进 index → 每次等待并断言",
+      "action": "循环 3 次：tap .campus-back 回 hub → tap 同一校卡再进 index → 每次等待并断言 ⇒ 点名 tapTarget .campus-back（apps/client/src/subpackages/campus/campus/index.vue:242）",
       "expected": "每轮 onShow 触发 fetchCertificationStatus（index.vue:207-210，非仅 onMounted 一次）+ onMounted 各触发 1 次认证与 1 次话题请求；断言两列：① 每轮 GET /campus/certification 计数=1（real 轮）；② 话题列表条数每轮稳定（page===1 走覆盖赋值 this.topics=mapped，campus.ts:461-465，不得因重进而翻倍或出现重复 id）；每轮 viewSchool 与 activeCategory 均回到默认（course_exchange，:295-301 初值），如出现「第二次进入停在上一分类」需回填并说明来源；console 无累积错误",
       "evidence": "normal：每轮 after 截图（3）+ 每轮路由 + 每轮请求计数表 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "循环 3 次：tap .campus-back 回 hub → tap 同一校卡再进 index → 每次等待并断言",
+      "tapTarget": ".campus-back",
+      "tapTargetEvidence": "apps/client/src/subpackages/campus/campus/index.vue:242",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX25",
@@ -319,7 +456,13 @@
       "action": "对 .campus-back、.category-tab、.topic-card、.campus-state__btn、.campus-fab 逐个 boundingClientRect 量测",
       "expected": "如实回填 rpx 值并对照 88rpx：源码 campus-back 64×64rpx（index.vue:413-423）低于铁律；category-tab padding 18×28rpx + 26rpx 文字（:546-561）实测高度回填；topic-card 整卡高（:647-655）应远超铁律；FAB 104×104rpx（:795-809）达标；不可量的元素记 UNVERIFIED 而不省略；执行员不得因源码预判省略实测数值",
       "evidence": "noop：执行日志（各元素 width/height 数值表）；可免截图",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX28",
@@ -330,7 +473,13 @@
       "action": "检视列表各卡头像区（index.vue:335-343）与作者名",
       "expected": "isAnonymous 或非本人 → 不渲染 image、作者名走「匿名校友」（:341-343 ← campus.index.anonymousAuthor，zh-CN.ts:3533）；非匿名且有 avatar → SafeImage 渲染并经 resolveMediaUrl 重写 /uploads 相对路径为鉴权代理 URL（:332-340，MP-R1-CAMPUSINDEX-003：不得出现裸 <image src=/uploads/…> 直连）；无 avatar 的非匿名项不出现破图占位/布局塌陷；console 无图片 404/「请求失败」",
       "evidence": "normal：含匿名与真实作者条目的 after 截图（放大头像区）+ 头像最终 src 实测值 + console",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX29",
@@ -338,10 +487,19 @@
       "title": "【重点回归③+②交叉·当前源码】同内容二次回复的 409 文案归一：必须是「刚才已发送成功」而不是失败或脱敏串",
       "tier": "critical",
       "pre": "REAL_ONLY：真实后端(8080) + 已认证本校身份，由本页 tap 话题卡进入 topic-detail（index.vue:115-117）。回复端点 POST /campus/topics/{id}/replies 亦带 @Idempotent（CampusController.java:231-236）→ 第二次发**逐字符相同**的回复必被判重。mock 轮不发真实请求 → 记 UNVERIFIED",
-      "action": "① 输入一条唯一回复「R2-CX29-唯一串」发送 → 等 Toast；② 不退出小程序，输入完全相同内容再发一次 → 回填第二次 Toast 全文；③ 末尾加 1 个字符再发第三次；④ 每次都 GET /campus/topics/{id}/replies 回读条数",
+      "action": "① 在本页话题列表 tap .topic-card（index.vue:327，@tap=goToTopicDetail :328）进话题详情，对第 334 行 .reply-input（campus/topic-detail.vue 的 <input>，v-model=replyContent :333 + @confirm=submitReply :338）输入一条唯一回复「R2-CX29-唯一串」，再 tap 第 354 行 .reply-btn（@tap=submitReply :358）发送 → 等 Toast；② 不退出小程序，在同一个 .reply-input 输入完全相同内容再 tap .reply-btn 发一次 → 回填第二次 Toast 全文；③ 在 .reply-input 末尾加 1 个字符再 tap .reply-btn 发第三次；④ 每次都 GET /campus/topics/{id}/replies 回读条数",
       "expected": "第二次命中 store 归一化 describeCampusWriteFailure（stores/campus.ts:325-335，status===409 → t(conflictKey)），replyToCampusTopic 的 catch 传入 storeErrors.campus.duplicateReplySubmit（campus.ts:831-835 调用点）→ Toast 必须是「这条回复刚才已发送成功，请勿重复提交」（zh-CN.ts:3946）：① 判据同 ②：文案必须表达「首条已发送成功」而非失败，且**不得**是后端被脱敏的「请求参数错误」或泛化「发送失败」；② 与 CX17 的超长文案、与 PT38 的话题 400 文案三者两两不同 → 回填三段原文对比表；③ 第三次（改 1 字 → 新幂等键）必须 200 且回复落库；断言两列：① 客户端三次请求的状态码与 Idempotency-Key 实值（第二次与第一次必须同 key、第三次不同）；② 服务端回读该话题回复条数=2（不是 3、不是 1）；④ 第二/三次失败不得清空输入框、不得永驻 Loading、isSubmitting 复位；console 无未捕获 rejection",
       "evidence": "critical：三次发送各 before/after 截图 + 路由 + 三段 Toast 文案逐字 + 与 CX17/PT38 的文案差异对照表 + console + network 三条明细（URL/Key/状态码/error.code/message）+ 服务端回读回复条数",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① 输入一条唯一回复「R2-CX29-唯一串」发送 → 等 Toast；② 不退出小程序，输入完全相同内容再发一次 → 回填第二次 Toast 全文；③ 末尾加 1 个字符再发第三次；④ 每次都 GET /campus/topics/{id}/replies 回读条数",
+      "tapTarget": ".reply-input",
+      "tapTargetEvidence": "apps/client/src/subpackages/campus/campus/topic-detail.vue:334",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CX30",
@@ -352,7 +510,13 @@
       "action": "① 在 .reply-input 连打至恰好 500 字 → 观察输入框下方是否出现提示行；② 删到 499 字 → 观察提示是否消失；③ 继续输入第 501 个字符，观察是否有「打不进字」的静默感；④ 切 en-US 重复 ①",
       "expected": "isReplyAtLimit = replyContent.length >= MAX_REPLY_LENGTH（topic-detail.vue:58）→ 触顶时渲染 .reply-counter 提示「已达 500 字上限，无法继续输入」（:342-344 ← campus.topicDetail.replyAtLimit，zh-CN.ts:3600，{n} 必须被替换为 500）；499 字时提示必须消失（v-if 严格）；第 501 字符被 maxlength 硬截断（:337）→ 有提示即满足「超长态可观测」，无提示即判 P2/Interaction（本轮 ③ 的可观测半边修复证据）；en-US 下提示为英文非裸 key；提示行不得挤压回复按钮或溢出 safe-area（样式 topic-detail.vue:766 起）；零写请求；console 无报错",
       "evidence": "normal：500 字触顶 + 499 字 + en-US 三张 after 截图 + 提示行实际文本与 {n} 替换结果 + maxlength 实测值 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     }
   ]
 }

@@ -44,7 +44,13 @@
       "action": "tap .campus-hub__back（hub.vue:189-191 → goBack :170-176）",
       "expected": "500ms 内路由离开：栈长度=1 且栈顶 route=pages/nearby/index（getCurrentPages().length>1 为假 → uni.switchTab 分支 hub.vue:173-175，MP-R2-CAMPUS-HUB-006 兜底）；附近页正常渲染；console 无报错、无 navigateBack:fail",
       "evidence": "navigation：getCurrentPages 路由链断言（栈长 + 栈顶 route）+ console；可免截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH03",
@@ -55,7 +61,13 @@
       "action": "tap .campus-hub__back",
       "expected": "500ms 内 uni.navigateBack 落回 pages/nearby/index（栈>1 分支 hub.vue:171-172）；附近页 Tab 选中态与滚动位恢复；hub 实例销毁（再次进入时 searchKeyword/activeTab 回到默认，属页面内 ref 不跨实例保留 :30/:124）；console 无报错",
       "evidence": "navigation：getCurrentPages 路由链断言（栈长度 -1、栈顶=pages/nearby/index）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH04",
@@ -66,7 +78,13 @@
       "action": "tap 第一个 .campus-hub__tab（joined，hub.vue:256-264）",
       "expected": "500ms 内指示条移到 joined（v-if=activeTab==='joined' hub.vue:263）、joined 文字加粗变主色（:262）；joinedSchools=[] → 空态文案「暂未加入任何校园圈」（hub.vue:89-91 + :277-279，zh-CN.ts:3445）；零卡片渲染；无写请求；console 无报错",
       "evidence": "normal：after 截图 + 路由（仍在 hub）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH05",
@@ -77,7 +95,13 @@
       "action": "tap 第二个 .campus-hub__tab（recommend，hub.vue:265-273）",
       "expected": "500ms 内指示条回到 recommend；11 张卡全部恢复（静态 schools 数组，切换不丢数据 hub.vue:54-57,133-138）；badge 恒「未认证」灰胶囊（activeTab==='recommend' 分支 hub.vue:110-112）；CTA 恢复描边「申请加入」（:328-330，activeTab!=='joined' → --outline）；console 无报错",
       "evidence": "normal：after 截图 + 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH06",
@@ -88,7 +112,13 @@
       "action": "向 .campus-search__input（hub.vue:242-250）输入「北京」→ 等 100ms 观察；清空后改输「pku」再观察",
       "expected": "输入即过滤（v-model → filteredSchools computed，hub.vue:133-138）：「北京」→ 仅剩北京大学（name.includes 分支 :137）；「pku」→ 仅剩北京大学（id.includes(kw.toLowerCase()) 分支 :137）；每次仅剩 1 卡时 :key=activeTab+'-'+school.id 稳定（:284）；无 300ms 防抖实现（源码零 debounce），如实回填实测过滤延迟（应 <100ms）；console 无报错",
       "evidence": "normal：两次过滤后 after 截图各 1 + 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH07",
@@ -99,7 +129,13 @@
       "action": "tap .campus-search__clear（hub.vue:251）",
       "expected": "500ms 内 searchKeyword='' → 输入框空（hub.vue:251 @tap=\"searchKeyword = ''\"）；× 消失（v-if=searchKeyword :251）；列表恢复 11 张卡；console 无报错",
       "evidence": "normal：after 截图 + 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH08",
@@ -110,7 +146,13 @@
       "action": "向 .campus-search__input 输入 200 字符长串（「超长输入测试」×20，源码未设 maxlength → 应可全量输入，如实回填实际字符数）",
       "expected": "输入框定高不撑破、不出现横向溢出（.campus-search hub.vue 样式段）；列表转空态（200 字串不匹配任何校名）；× 可见可点并一次清空恢复 11 卡；无 console error/TypeError",
       "evidence": "normal：输入后 + 清空后 after 截图各 1 + 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH09",
@@ -118,10 +160,19 @@
       "title": "搜索特殊字符：%22 ' < > @ # 与空格混排不崩溃、不误命中",
       "tier": "normal",
       "pre": "同 CH01",
-      "action": "依次输入「%22'<>&@#」、「   」（纯空格）、「PKU」（大写 id）并各观察一次",
+      "action": "依次输入到搜索框 .campus-search__input（v-model=searchKeyword :237）「%22'<>&@#」、「   」（纯空格）、「PKU」（大写 id）并各观察一次",
       "expected": "特殊字符 → 纯字符串 includes 匹配（hub.vue:137）→ 空态「暂无推荐圈子」（activeTab==='recommend' 文案分支 :278，zh-CN.ts:3446），无脚本错误、无布局破坏；纯空格 → searchKeyword.value.trim() 为空（:135）→ 视为无关键词、恢复 11 卡（不得显示空态）；「PKU」→ id.includes(kw.toLowerCase()) 归一后命中北京大学（:137）；console 无 TypeError",
       "evidence": "normal：三态 after 截图 + 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "依次输入「%22'<>&@#」、「   」（纯空格）、「PKU」（大写 id）并各观察一次",
+      "tapTarget": ".campus-search__input",
+      "tapTargetEvidence": "apps/client/src/subpackages/campus/campus/hub.vue:238",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH10",
@@ -129,10 +180,19 @@
       "title": "点学校卡片（未认证）：navigateTo campus/index?school=<URL编码校名> 公开浏览视角",
       "tier": "normal",
       "pre": "同 CH01（未认证，推荐 Tab）",
-      "action": "tap 第一张 .campus-school-card（北京大学，hub.vue:282-291 → goSchool :160-162）",
+      "action": "tap 第一张 .campus-school-card（北京大学，hub.vue:282-291 → goSchool :160-162，本条把目标逐字点名为 .campus-school-card 这张卡）",
       "expected": "500ms 内路由到 /subpackages/campus/campus/index?school=%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6（encodeURIComponent hub.vue:161）；目标页 onLoad 解码后 viewSchool=北京大学（index.vue:186-199）→ 页头校名显示「北京大学」而非 URL 编码串（MP-R1-CAMPUSINDEX-001 回归）；返回 hub 后落点为 hub 本身（栈>1，navigateBack）；console 无报错",
       "evidence": "normal：after（目标页）截图 + 路由链（hub→campus/index，栈=2）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "tap 第一张 .campus-school-card（北京大学，hub.vue:282-291 → goSchool :160-162）",
+      "tapTarget": ".campus-school-card",
+      "tapTargetEvidence": "apps/client/src/subpackages/campus/campus/hub.vue:285",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH11",
@@ -143,7 +203,13 @@
       "action": "tap 推荐卡右下 .campus-school-card__cta（hub.vue:328-330）",
       "expected": "500ms 内路由与 CH10 完全一致（campus/index?school=北京大学）：CTA 无独立 @tap，事件冒泡到卡片根 @tap=\"goSchool(school.name)\"（hub.vue:290）→ 非死按钮；console 无报错",
       "evidence": "normal：after 截图 + 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH12",
@@ -151,10 +217,27 @@
       "title": "header「去认证」→ 认证页（路由常量口径）",
       "tier": "navigation",
       "pre": "同 CH01（未认证 → header 右侧为按钮态 hub.vue:196-206）",
-      "action": "tap .campus-hub__cert-btn（goCertification hub.vue:164-166）",
+      "action": "tap .campus-guide__btn（goCertification hub.vue:164-166）",
       "expected": "500ms 内 navigateTo /subpackages/campus/campus/certification（ROUTES.CAMPUS.CERTIFICATION，constants/routes.ts:144-153）；栈长度 1→2；console 无报错",
       "evidence": "navigation：getCurrentPages 路由链断言 + console；可免截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreCellplan": "tap .campus-hub__cert-btn（goCertification hub.vue:164-166）",
+      "cellplanRename": {
+        "from": ".campus-hub__cert-btn",
+        "to": ".campus-guide__btn",
+        "source": "apps/client/src/subpackages/campus/campus/hub.vue:216",
+        "evidence": "该节点 :221 挂 @tap=goCertification、:220 aria-label=t('campus.hub.goCertify')；两档 wxml 都有 class=campus-guide__btn（mock 命中，real 命中 1 处）",
+        "plan": "cellplan-round7-deadselectors.json"
+      },
+      "tapTarget": ".campus-guide__btn",
+      "tapTargetFrom": "cellplan-round7-deadselectors.json",
+      "tapTargetEvidence": "apps/client/src/subpackages/campus/campus/hub.vue:216",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH13",
@@ -184,10 +267,13 @@
       "title": "REAL_ONLY 本校卡「进入」→ campus/index 私域视角（分类 Tab + 发布 FAB，无公开浏览 banner）",
       "tier": "critical",
       "pre": "REAL_ONLY：同 CH14（verified 且本校在 SCHOOLS 表内，本校名以实际认证校名为准）；由 nearby → hub 正常链路进入（栈≥2），不得用 reLaunch 直达替代权限判定路径",
-      "action": "我加入的 Tab tap 本校卡（goSchool hub.vue:160-162）",
+      "action": "我加入的 Tab（先 tap .campus-hub__tab 里的第一个「我加入的」，因为默认 activeTab 是 recommend :124） tap 本校卡 .campus-school-card（goSchool hub.vue:160-162）",
       "expected": "500ms 内路由到 /subpackages/campus/campus/index?school=<本校URL编码>；isOwnCertifiedView=true（isVerified && (无 viewSchool 或 viewSchool===本校)，index.vue:65-67）→ 渲染 6 分类话题 Tab（index.vue:283-292）+ 话题列表（:319-359）+ 右下发布 FAB（:363-365）；不出现「公开浏览」banner（v-else-if=!isOwnCertifiedView index.vue:275-278）；不出现未认证引导卡（v-if=!isVerified :249）；无 Toast；console 无报错",
       "evidence": "critical：before（hub 本校卡）+ after（私域页含 FAB 与分类 Tab）截图 + 路由链 + Toast 文案（应为无）+ console",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "我加入的 Tab tap 本校卡（goSchool hub.vue:160-162）",
+      "tapTarget": ".campus-school-card",
+      "tapTargetEvidence": "apps/client/src/subpackages/campus/campus/hub.vue:285"
     },
     {
       "id": "CH16",
@@ -209,7 +295,13 @@
       "action": "循环 3 次：nearby 点「校园圈」进 hub → 首屏断言 → tap .campus-hub__back 返回",
       "expected": "每轮首屏完整且与 CH01 断言一致（默认 recommend Tab、11 卡）；每轮 onShow 各触发 1 次 GET /campus/certification（hub.vue:156-158；mock 模式该调用为本地早退，network 面板应 0 条真实请求——按构建模式分别回填计数）；每轮返回均落 pages/nearby/index；3 轮后 console 无累积错误、无错误条残留（certLoadFailed 每轮起始复位 :147）",
       "evidence": "normal：每轮 after 截图（共 3）+ 每轮路由断言 + console 全量 + network 计数",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH18",
@@ -220,7 +312,13 @@
       "action": "进入后 300ms 内立即 tap .campus-hub__back（抢在 onShow 的认证拉取 resolve 之前）",
       "expected": "回到 pages/nearby/index；hub 实例销毁后其 onShow 挂起的 refreshCertification promise 不产生未捕获 rejection（refreshCertification 内部 try/catch hub.vue:148-154）；无 Toast、无错误条闪现残影；再次进入 hub 首屏正常（同 CH01）；console 无 unhandled rejection / Cannot read property of undefined",
       "evidence": "normal：落点 after 截图 + 路由链 + console 全量",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH19",
@@ -231,7 +329,13 @@
       "action": "500ms 内对第一张 .campus-school-card 快速 tap×5（rapidTap，记录每次 tap 落点）",
       "expected": "goSchool 每次都会调 openAppPath→uni.navigateTo（hub.vue:160-162，源码无防连点/无 in-flight 标志，如实回填）；断言分两列记录：① getCurrentPages 最终栈长度与各栈帧 route（期望=2，仅 1 层 campus/index；若出现栈>2 即多层压栈，按铁律记缺陷）；② navigateTo:fail / webview count limit 告警条数（应为 0；若 openAppPath 栈满兜底 redirectTo 触发则按 utils/navigation.ts:99-108 记实际行为）；本用例为纯导航，无写请求，不涉及服务端回读",
       "evidence": "normal：落点 after 截图 + 路由链（完整栈快照，含每帧 route+options）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH20",
@@ -242,7 +346,13 @@
       "action": "500ms 内对 .campus-hub__back 快速 tap×5",
       "expected": "仅第 1 次生效（uni.navigateBack hub.vue:171-172）；其余 tap 落在已切换的 nearby 页、该 selector 不存在（无幽灵命中）；最终栈长度=1、栈顶=pages/nearby/index（不得出现回退 2 层 / 落到 home / navigateBack:fail 连报）；console 无报错",
       "evidence": "normal：落点 after 截图 + 路由链断言 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH21",
@@ -253,7 +363,13 @@
       "action": "fullPage 截图逐卡检视封面图与头像 stack",
       "expected": "每张卡封面为校园实景图片（CAMPUS_COVER 11 键与 SCHOOLS 11 校 id 一一对应 hub.vue:36-49 vs config/schools.ts:33-43）；不出现 v-else 校名文字兜底（hub.vue:296，2026-09-12 素材补齐后不应命中）；3 张头像 stack 正常渲染（:319-321）；console 无 image 404/「请求失败」/「图片加载失败」",
       "evidence": "normal：fullPage after 截图 + 路由 + console（含图片加载失败日志过滤）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH22",
@@ -275,7 +391,13 @@
       "action": "对 .campus-hub__back、.campus-search__clear、.campus-hub__cert-error-retry 逐个 boundingClientRect 量测并回填",
       "expected": "如实回填 rpx 实测值并逐条对照铁律 88rpx：源码 back=64×64rpx（hub.vue:392-399）、clear ×为文本节点（:251，量测其可点包围盒）、错误重试 padding 8×24rpx + 24rpx 字号（:360-368）；低于 88rpx 的交由判定员按 R11 §5 裁量，执行员不得因「源码已预判」而省略实测数值",
       "evidence": "noop：执行日志（各元素 width/height/left/top 数值表）；可免截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH24",
@@ -286,7 +408,13 @@
       "action": "wx.reLaunch('/subpackages/campus/campus/hub?school=%E6%B8%85%E5%8D%8E%E5%A4%A7%E5%AD%A6&foo=1&topicId=99')",
       "expected": "渲染结果与无参 CH01 逐像素等价：默认 recommend Tab、11 校全量（不得按「清华大学」过滤或预选）、header 文案不变； getCurrentPages 栈顶 route=subpackages/campus/campus/hub 且 options 含 school/foo/topicId 三参但源码零消费（hub.vue 全文无 onLoad，死 ref 已删 :140-141）；若出现任何按参数过滤/选中/请求拼装即为回归缺陷（MP-R2-CAMPUS-HUB-003）；console 无报错",
       "evidence": "navigation：路由链 + options 快照断言 + console；可与 CH01 首屏截图比对",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH25",
@@ -297,7 +425,13 @@
       "action": "聚焦 .campus-search__input 输入「北京」→ 触发键盘「搜索」确认键",
       "expected": "input 声明 confirm-type=\"search\" 但未绑 @confirm（hub.vue:242-250）→ 键盘确认键为无动作 no-op：不路由、不弹层、列表维持实时过滤结果（仅北京大学 1 卡）；键盘收起后布局恢复；console 无报错",
       "evidence": "noop：执行日志（路由不变 + 卡片数不变 + console）；可免截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/hub → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "CH26",
@@ -316,10 +450,14 @@
       "title": "REAL_ONLY 未登录（无 token）视角：hub 不弹登录拦截、内容正常渲染",
       "tier": "normal",
       "pre": "REAL_ONLY：清除 storage token（wx.clearStorageSync 后不注入 JWT）→ reLaunch 进 hub；guest-login 前身份。mock 轮该视角与已登录 mock 视角不可区分（campus.ts:853-855 早退），必须记 UNVERIFIED 并说明缺 real 未登录态",
-      "action": "观察首屏 → tap 一张校卡 → 返回 → tap「去认证」",
+      "action": "观察首屏 → tap 一张校卡 .campus-school-card → 返回 → tap「去认证」 .campus-guide__btn",
       "expected": "hub.vue 自身无 token 守卫（全页无 getToken/usePageAccess 调用）：不得出现 LockScreen/401 跳登录/白屏；GET /campus/certification 无 token 时按 real 后端返回 401 处理——断言错误条是否出现（hub.vue:182-187，certLoadFailed 由 :146-155 置位）；未登录视角下认证态应渲染为「未认证」；tap 校卡仍能进 campus/index 公开浏览（index.vue:186-199 无权限闸）；「去认证」正常进 certification 页；console 允许 401 日志但不得有未捕获异常雪崩",
       "evidence": "normal：未登录首屏 after 截图 + 路由链 + console + network（/campus/certification 状态码）；不可构造时记 UNVERIFIED",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "观察首屏 → tap 一张校卡 → 返回 → tap「去认证」",
+      "tapTarget": ".campus-school-card",
+      "tapTargetEvidence": "apps/client/src/subpackages/campus/campus/hub.vue:285",
+      "needsIdentity": "guest"
     }
   ]
 }

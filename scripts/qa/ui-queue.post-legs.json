@@ -1,0 +1,50 @@
+[
+  {
+    "name": "rebuild-mock",
+    "file": "scripts/qa/run-npm-script.mjs",
+    "args": ["--cwd", "apps/client", "--script", "build:mp-weixin:mock"],
+    "timeoutMin": 40
+  },
+  {
+    "name": "gates-source-shape",
+    "file": "scripts/qa/verify-source-shape.mjs",
+    "args": [],
+    "timeoutMin": 10
+  },
+  {
+    "name": "gates-i18n",
+    "file": "scripts/qa/verify-i18n-orphan.mjs",
+    "args": [],
+    "timeoutMin": 10
+  },
+  {
+    "name": "rebuild-real",
+    "file": "apps/client/scripts/build-real-isolated.mjs",
+    "args": [],
+    "timeoutMin": 35
+  },
+  {
+    "name": "exec-guest-real",
+    "file": "scripts/qa/r-exec-cli.mjs",
+    "args": [
+      "--project", "apps/client/dist/build/mp-weixin-real",
+      "--out", "reports/audit/round-7/exec-guest-real",
+      "--tap",
+      "--identity", "guest",
+      "--label", "round-7-guest-real"
+    ],
+    "timeoutMin": 260
+  },
+  {
+    "name": "exec-A-real",
+    "file": "scripts/qa/r-exec-cli.mjs",
+    "args": [
+      "--project", "apps/client/dist/build/mp-weixin-real",
+      "--out", "reports/audit/round-7/exec-A-real",
+      "--tap", "--real",
+      "--identity", "A",
+      "--label", "round-7-A-real"
+    ],
+    "timeoutMin": 260
+  }
+]

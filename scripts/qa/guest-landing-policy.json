@@ -1,0 +1,61 @@
+{
+ "$schema": "一页一条游客落点裁定。page=用例声明的页；landing=游客身份实测落点；family=落点机制类别；landingMarker=落点页必须 present 的类名；registerEntry=按既定裁定该落地页在默认态必须可见的注册入口类名（null=不适用）。",
+ "$ruling": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。",
+ "anchors": [
+  { "claim": "游客被弹到登录页的动作出自 HTTP 401 兜底，不是路由守卫", "file": "apps/client/src/services/http.ts", "line": 493, "needle": "uni.reLaunch" },
+  { "claim": "跳转前有 LOGIN_REDIRECT_DELAY_MS 的延迟 ⇒ 判定窗必须等它", "file": "apps/client/src/services/http.ts", "line": 494, "needle": "LOGIN_REDIRECT_DELAY_MS" },
+  { "claim": "延迟常量实测 500ms", "file": "apps/client/src/constants/app.ts", "line": 40, "needle": "LOGIN_REDIRECT_DELAY_MS = 500" },
+  { "claim": "路由守卫对「无 token 的游客」一律放行 ⇒ 它不可能是这批落点的来源（挡住没有证据的归因）", "file": "apps/client/src/composables/usePageAccess.ts", "line": 79, "needle": "!getToken()" },
+  { "claim": "登录页落地判定用的类名锚点", "file": "apps/client/src/pages/login/index.vue", "line": 569, "needle": "login-page__brand" },
+  { "claim": "登录页默认态（未展开手机号表单）是 .login-quick 分支 ⇒ 注册入口要加就加在这里", "file": "apps/client/src/pages/login/index.vue", "line": 604, "needle": "login-quick" },
+  { "claim": "「去注册」在 v-else 的 login-form 分支里 ⇒ 游客落地时默认看不见它（产品缺口的落点）", "file": "apps/client/src/pages/login/index.vue", "line": 704, "needle": "class=\"login-form\"" },
+  { "claim": "注册入口本身受 isRegisterOpen 开关控制（后台 register_open=false 时连表单里都不露）", "file": "apps/client/src/pages/login/index.vue", "line": 762, "needle": "isRegisterOpen" },
+  { "claim": "VIP 三页落「我的」页是功能开关弹回，与身份无关", "file": "apps/client/src/subpackages/vip/index.vue", "line": 50, "needle": "featureFlags.membershipEnabled" },
+  { "claim": "开关为假时的落点 = switchTab 到我的页", "file": "apps/client/src/subpackages/vip/index.vue", "line": 63, "needle": "ROUTES.TAB.PROFILE" },
+  { "claim": "我的页落地判定用的类名锚点", "file": "apps/client/src/pages/profile/index.vue", "line": 1643, "needle": "class=\"profile-page" }
+ ],
+ "$basisKeys": {
+  "http401": "apps/client/src/services/http.ts:494 uni.reLaunch(ROUTES.LOGIN)（游客无 token 分支文案走 apiErrors.loginRequired，见同文件 473-482）",
+  "guardPassthrough": "apps/client/src/composables/usePageAccess.ts:79 未登录且无 token ⇒ 直接 return 放行 ⇒ 路由守卫不是这批落点的来源（这条锚点用来挡住「守卫弹的」这种没证据的说法）",
+  "delay": "apps/client/src/constants/app.ts:40 LOGIN_REDIRECT_DELAY_MS = 500 ⇒ 判定窗取 500+900ms",
+  "loginMarker": "apps/client/src/pages/login/index.vue:569 class=\"login-page__brand\"",
+  "profileMarker": "apps/client/src/pages/profile/index.vue:1643 class=\"profile-page\"",
+  "vipFlag": "apps/client/src/subpackages/vip/index.vue:50 membershipEnabled 为假 ⇒ switchTab 到我的页（:63），与身份无关"
+ },
+ "rows": [
+  { "page": "subpackages/campus/campus/hub", "landing": "pages/login/index", "family": "guide-401", "entry": "内容浏览" },
+  { "page": "subpackages/campus/campus/index", "landing": "pages/login/index", "family": "guide-401", "entry": "内容浏览" },
+  { "page": "subpackages/campus/campus/certification", "landing": "pages/login/index", "family": "guide-401", "entry": "账号内动作" },
+  { "page": "subpackages/circles/circles/circle-home", "landing": "pages/login/index", "family": "guide-401", "entry": "内容浏览" },
+  { "page": "subpackages/discover-extra/discover/matching", "landing": "pages/login/index", "family": "guide-401", "entry": "内容浏览" },
+  { "page": "subpackages/discover-extra/discover/match-success", "landing": "pages/login/index", "family": "guide-401", "entry": "登录后态" },
+  { "page": "subpackages/discover/activities/index", "landing": "pages/login/index", "family": "guide-401", "entry": "内容浏览" },
+  { "page": "subpackages/profile-extra/feedback/history", "landing": "pages/login/index", "family": "guide-401", "entry": "个人数据" },
+  { "page": "subpackages/profile-extra/profile/album", "landing": "pages/login/index", "family": "guide-401", "entry": "个人数据" },
+  { "page": "subpackages/profile-extra/profile/favorites", "landing": "pages/login/index", "family": "guide-401", "entry": "个人数据" },
+  { "page": "subpackages/profile-extra/profile/tasks", "landing": "pages/login/index", "family": "guide-401", "entry": "个人数据" },
+  { "page": "subpackages/profile-extra/settings/dnd", "landing": "pages/login/index", "family": "guide-401", "entry": "会话设置" },
+  { "page": "subpackages/profile-extra/verification/index", "landing": "pages/login/index", "family": "guide-401", "entry": "账号内动作" },
+  { "page": "subpackages/profile-extra/verification/real-name", "landing": "pages/login/index", "family": "guide-401", "entry": "账号内动作" },
+  { "page": "subpackages/setup/campus/index", "landing": "pages/login/index", "family": "guide-401", "entry": "账号内动作" },
+  { "page": "subpackages/setup/interest/index", "landing": "pages/login/index", "family": "guide-401", "entry": "账号内动作" },
+  { "page": "subpackages/setup/schedule/index", "landing": "pages/login/index", "family": "guide-401", "entry": "账号内动作" },
+  { "page": "subpackages/support/feedback/index", "landing": "pages/login/index", "family": "guide-401", "entry": "账号内动作" },
+  { "page": "subpackages/tools/search/index", "landing": "pages/login/index", "family": "guide-401", "entry": "内容浏览" },
+  { "page": "subpackages/village/village/history", "landing": "pages/login/index", "family": "guide-401", "entry": "个人数据" },
+  { "page": "subpackages/village/village/index", "landing": "pages/login/index", "family": "guide-401", "entry": "内容浏览" },
+  { "page": "subpackages/village/village/publish", "landing": "pages/login/index", "family": "guide-401", "entry": "写侧动作" },
+  { "page": "subpackages/village/village/tag-posts", "landing": "pages/login/index", "family": "guide-401", "entry": "内容浏览" },
+  { "page": "subpackages/vip/index", "landing": "pages/profile/index", "family": "flag-bounce", "entry": "功能开关" },
+  { "page": "subpackages/vip/bills", "landing": "pages/profile/index", "family": "flag-bounce", "entry": "功能开关" },
+  { "page": "subpackages/vip/promo-code", "landing": "pages/profile/index", "family": "flag-bounce", "entry": "功能开关" },
+  { "page": "pages/nearby/index", "landing": "pages/login/index", "family": "guide-401", "entry": "附近的人（个人数据/距离列表）", "basis": "2026-09-27 由 exec-guest-real-r7final 实测补进：游客档该页 57 行里 42 行实测栈顶=pages/login/index（3 条 FAILED 是 N25/N26/N27 交互腿，39 条 SKIPPED-interact-off-page），机制同源 apps/client/src/pages/nearby/index.vue:63/204「未登录发起必 401 → http 层 redirectToLogin 强踢登录页」+ anchors 里的 services/http.ts:493。该页另有页内引导 .nearby-login-guide（:622），所以「没被踢」时页内引导才是判点 —— 本行只声明「被踢时落点应为登录页」，不把页内引导判成缺陷。" }
+ ],
+ "markers": {
+  "guide-401": { "landingMarker": ".login-page__brand", "markerSource": "apps/client/src/pages/login/index.vue:569", "registerEntry": ".login-register-entry", "registerEntrySource": "apps/client/src/pages/login/index.vue:604（.login-quick 默认分支；MP-R7-GUEST-LANDING-REGENTRY-001 修复后该分支内已有 .login-register-entry，见 :692-698）" },
+  "flag-bounce": { "landingMarker": ".profile-page", "markerSource": "apps/client/src/pages/profile/index.vue:1643", "registerEntry": null, "registerEntrySource": null }
+ },
+ "notFrameObservable": {
+  "toast": "本轮 1107 行 exec 记录里 toast 字段全为空 ⇒ 这个载具量不到 toast，任何判据都不得断言 toast 文案（写进去就是一条永远不会成功的判据，而不是合规要求）"
+ }
+}

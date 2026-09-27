@@ -1,0 +1,14 @@
+[
+  {
+    "name": "exec-guest-tap",
+    "file": "scripts/qa/r-exec-cli.mjs",
+    "args": [
+      "--project", "apps/client/dist/build/mp-weixin",
+      "--out", "reports/audit/round-7/exec-guest-tap",
+      "--tap",
+      "--identity", "guest",
+      "--label", "round-7-guest1"
+    ],
+    "timeoutMin": 240
+  }
+]

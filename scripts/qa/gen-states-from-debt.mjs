@@ -10,8 +10,10 @@
  *
  * 用法：node scripts/qa/gen-states-from-debt.mjs [--verdicts …] [--out-tsv .zcode/tmp/…] [--out-json …]
  */
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
+/* 输出目录不存在时先建：写不出产物的"可重跑载具"等于没有载具（本轮实测 ENOENT 直接崩）。 */
+const ensureParent = (p) => { try { mkdirSync(dirname(p), { recursive: true }); } catch (e) { /* 已存在 */ } };
 import { fileURLToPath } from "node:url";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -57,7 +59,9 @@ const lines = [
   "# identity 一律 A：游客按既有裁定不能浏览广场，欠帧条目里没有一条能给游客拍",
 ];
 for (const s of buckets.SHOOTABLE) lines.push(["A", s.route, "", s.state.slice(0, 20), s.tap, s.expect].join("\t"));
+ensureParent(join(REPO, TSV));
 writeFileSync(join(REPO, TSV), lines.join("\n") + "\n");
+ensureParent(join(REPO, OUTJSON));
 writeFileSync(join(REPO, OUTJSON), JSON.stringify({
   generatedAt: new Date().toISOString(), verdicts: VERDICTS, note:
     "只有 SHOOTABLE 能进取景清单；NEEDS_CRITERIA/NO_ROUTE 是要先补判据或页名对不上，不许硬凑一行去拍",

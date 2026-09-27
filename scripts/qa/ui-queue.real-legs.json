@@ -1,0 +1,38 @@
+[
+  {
+    "name": "open-window-real",
+    "file": "scripts/qa/open-project-window.mjs",
+    "args": ["--project", "apps/client/dist/build/mp-weixin-real", "--settle", "18"],
+    "timeoutMin": 12
+  },
+  {
+    "name": "exec-guest-real",
+    "file": "scripts/qa/r-exec-cli.mjs",
+    "args": [
+      "--project", "apps/client/dist/build/mp-weixin-real",
+      "--out", "reports/audit/round-7/exec-guest-real",
+      "--tap",
+      "--identity", "guest",
+      "--label", "round-7-guest-real"
+    ],
+    "timeoutMin": 260
+  },
+  {
+    "name": "exec-A-real",
+    "file": "scripts/qa/r-exec-cli.mjs",
+    "args": [
+      "--project", "apps/client/dist/build/mp-weixin-real",
+      "--out", "reports/audit/round-7/exec-A-real",
+      "--tap", "--real",
+      "--identity", "A",
+      "--label", "round-7-A-real"
+    ],
+    "timeoutMin": 300
+  },
+  {
+    "name": "close-out-open-window-mock",
+    "file": "scripts/qa/open-project-window.mjs",
+    "args": ["--project", "apps/client/dist/build/mp-weixin", "--settle", "18"],
+    "timeoutMin": 12
+  }
+]

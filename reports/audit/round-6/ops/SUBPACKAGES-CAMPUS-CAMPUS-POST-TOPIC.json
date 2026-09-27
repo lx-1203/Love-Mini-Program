@@ -463,10 +463,13 @@
    "title": "【并发修复·当前源码】未认证/审核中/驳回视角：页顶常驻 cert-banner + 提交被本地门禁拒且零必败请求",
    "tier": "critical",
    "pre": "REAL_ONLY：真实后端(8080) + guest-login **未校园认证**身份 → reLaunch '/subpackages/campus/campus/post-topic?category=course_exchange'（深链直达，绕开 index 的 FAB 权限闸）。第二变体：pending 身份；第三变体：已认证（banner 必须不出现）。mock 轮 resolveCertGate 恒 allowed（post-topic.vue:114-115）→ 无法构造，记 UNVERIFIED",
-   "action": "① 进入后观察页顶是否出现横幅与其按钮；② 填合法标题正文 → tap 发布 → 观察 Toast 与 network；③ tap 横幅「去认证」；④ 已认证变体重复 ①②；⑤ evaluate 在深链进入瞬间读 certGate 值（未取到状态应为 unknown 而非 denied）",
+   "action": "① 进入后观察页顶是否出现横幅 .cert-banner（post-topic.vue:450，v-if=certGate==='denied'）与其按钮 .cert-banner__btn（:452）；② 补齐标题与正文两处表单字段（:487 与 :499 的表单项）→ tap .post-header__submit（:437，@tap=submitTopic :441）发布 → 观察 Toast 与 network；③ tap 横幅「去认证」.cert-banner__btn（:452，@tap=goCertification）；④ 已认证变体重复 ①②（此时 .cert-banner 不渲染）；⑤ evaluate 在深链进入瞬间读 certGate 值（未取到状态应为 unknown 而非 denied）",
    "expected": "① certGate='denied' 时渲染 .cert-banner（post-topic.vue:446-451），文案=campus.postTopic.certRequired「校园话题仅限本校已认证同学发布，请先完成校园认证」（zh-CN.ts:3576 / en-US.ts:3498）+ 「去认证」按钮；② 提交必须被本地拦截：submitTopic 在 isSubmitting/标题/正文/超长之后判 certGate==='denied' → Toast 同文案并 return（:302-305）→ **断言两列：① 客户端 POST /campus/topics 计数必须=0（不发必败请求，MP-R1-CAMPUSPOSTTOPIC-202）；② 服务端回读落库条数=0**；③ 「去认证」→ openAppPath(ROUTES.CAMPUS.CERTIFICATION)（:123-125），栈+1；④ 已认证时 banner 不渲染（v-if='denied'）、提交正常放行；⑤ 深链瞬间 certGate 先置 unknown 不拦（:135），仅当 getToken() 非空才补发 GET /campus/certification（:140-145，未登录不得被 401 劫持进登录流程 → 回填该请求条数=0）；pending/rejected 同样落 denied（resolveCertGate 只认 verified，:118-119）；取状态本身失败（errorMessage 非空）→ unknown 不拦（:117），须单独构造一次断网取证；console 无报错",
    "evidence": "critical：banner 态 before + 被拒 Toast + 跳认证页 + 已认证对照 共 4 组截图 + 路由链 + 全部 Toast 文案 + certGate 实测值 + console + network（POST 计数必须 0、GET /campus/certification 条数）",
-   "requiresReal": true
+   "requiresReal": true,
+   "actionPreTapfix": "① 进入后观察页顶是否出现横幅与其按钮；② 填合法标题正文 → tap 发布 → 观察 Toast 与 network；③ tap 横幅「去认证」；④ 已认证变体重复 ①②；⑤ evaluate 在深链进入瞬间读 certGate 值（未取到状态应为 unknown 而非 denied）",
+   "tapTarget": ".cert-banner__btn",
+   "tapTargetEvidence": "apps/client/src/subpackages/campus/campus/post-topic.vue:452"
   },
   {
    "id": "PT38",
@@ -485,10 +488,13 @@
    "title": "【并发修复·当前源码】real 构建下配图整条链路关闭：图片区常驻说明 + 点「+」直接提示，不再产生上传请求与孤儿文件",
    "tier": "critical",
    "pre": "REAL_ONLY：真实后端 + 已认证本校身份（先满足 PT37 的 allowed）→ 由 campus/index FAB 进入本页。mock 构建下 imagesAccepted 恒真（post-topic.vue:70）→ 本用例在 mock 轮反向执行（必须仍能正常选图，即 PT20/PT21/PT22 的旧断言），real 轮执行下列断言",
-   "action": "① 观察图片区是否有常驻说明行；② tap「+」块（:524-535 → chooseImage :231-243）；③ 若仍想验证提交体：evaluate 向 images 塞入一个 URL 后填表发布一次 → 回读 body 与响应",
+   "action": "① 观察图片区是否有常驻说明行 .images-section__warn（post-topic.vue:520，v-if=!imagesAccepted）；② tap「+」块 .image-upload（:531，@tap=chooseImage :536，原 :524-535 区段 → chooseImage :231-243）；③ 若仍想验证提交体：evaluate 向 images 塞入一个 URL 后填表发布一次（tap .post-header__submit :437）→ 回读 body 与响应",
    "expected": "① imagesAccepted=false 时图片区渲染常驻警示 .images-section__warn（:514-516）文案=campus.postTopic.imagesUnsupported「校园话题暂未开放配图，图片不会随话题保存」（zh-CN.ts:3578 / en-US.ts:3500）→ 必须**常驻可见**，不是只在点击时闪一个 Toast；② tap「+」→ 先命中 !imagesAccepted 分支 Toast 同文案并 return（:235-238）→ **不弹隐私授权、不弹系统选图器**；③ 断言两列：① 客户端 POST /media/upload 计数=0（整条上传链路由 CAMPUS_TOPIC_IMAGES_SUPPORTED 单点关闭，:64 + :315-319）、创建请求 body 是否仍带 images 字段须回填原文（后端 CreateCampusTopicRequest 无 images，CampusController.java:452-457 → 多传只被 Jackson 静默丢弃，见 :48-63 注释）；② 服务端回读该话题：无配图（与 UI 承诺一致），且**服务端不残留孤儿上传文件**（可用管理员只读核对或回填不可验证说明）；④ 发布成功仍是「发布成功」Toast 而非 PT38 的 contentMasked 分支；mock 轮反向断言：警示行不渲染、选图正常、PT22 的多图唯一文件名断言仍适用；console 无报错",
    "evidence": "critical：图片区常驻警示 before + 点「+」Toast after + 发布后话题态 共 3 张截图 + 路由 + Toast 文案逐字（zh/en）+ console + network（/media/upload 计数与创建 body 原文）+ 服务端回读",
-   "requiresReal": true
+   "requiresReal": true,
+   "actionPreTapfix": "① 观察图片区是否有常驻说明行；② tap「+」块（:524-535 → chooseImage :231-243）；③ 若仍想验证提交体：evaluate 向 images 塞入一个 URL 后填表发布一次 → 回读 body 与响应",
+   "tapTarget": ".image-upload",
+   "tapTargetEvidence": "apps/client/src/subpackages/campus/campus/post-topic.vue:531"
   },
   {
    "id": "PT40",

@@ -106,6 +106,7 @@ if (!manifests.length) {
   process.exit(2);
 }
 let fail = 0, expired = 0, scanned = 0;
+const failReasons = [];
 for (const m of manifests) {
   let j; try { j = JSON.parse(readFileSync(m, "utf8")); } catch { console.log(`  UNPARSEABLE ${m}`); fail++; continue; }
   const shots = j.shots ?? j.frames ?? [];
@@ -130,7 +131,12 @@ for (const m of manifests) {
   const same = sha && sha === HEAD;
   const verdict = !sha ? "无gitSha" : (!real ? "gitSha不存在" : (same ? "对应当前HEAD" : "非当前HEAD→按契约过期"));
   if (!same) expired++;
-  if (missing || mismatch || noHash || !real || bytesBad) fail++;
+  if (missing || mismatch || noHash || !real || bytesBad) {
+    fail++;
+    const why = [missing && `帧不存在=${missing}`, mismatch && `哈希不符=${mismatch}`, noHash && `无 contentHash=${noHash}`,
+      bytesBad && `字节数不符=${bytesBad}`, !real && `gitSha 不可核实(${sha || "空"} ⇒ ${verdict})`].filter(Boolean).join(" ");
+    failReasons.push(`${toRelPosix(m)} 共 ${shots.length} 帧 :: ${why}`);
+  }
   // 只改打印，不改判定：原写法 m.replace(repo + "/")，Windows 下 m 与 repo 都是反斜杠路径，
   // "D:\…\reports" 里插个正斜杠前缀永远剥不掉 → 日志打出全量绝对路径。走同一条归一化流水线拿相对路径。
   console.log(`  ${toRelPosix(m)}  shots=${shots.length} matched=${matched} noHash=${noHash} missing=${missing} bytesOk=${bytesOk} bytesBad=${bytesBad} gitSha=${sha || "-"} → ${verdict}`);
@@ -161,5 +167,8 @@ for (const h of hard) console.log((scoped ? "  INFO_HARDCODED_SHA " : "  HARDCOD
 const hardBlocking = scoped ? [] : hard;
 
 console.log(`CORPUS_SCANNED=${scanned} CORPUS_EXPIRED_GITSHA=${expired} CORPUS_PROBLEMS=${fail}${scoped ? "（限定 scope=" + scopeArg.join("+") + "，生产者侧降级 INFO）" : ""}`);
+/* 判红必须当场说清是哪几份、缺什么。原来只有一个 CORPUS_PROBLEMS=N 的计数，
+   读的人得自己在几十行里逐行对数字找原因 —— 一个不指名道姓的红和没有证据一样没用。 */
+for (const r of failReasons) console.log("  CORPUS_PROBLEM " + r);
 console.log(fail || hardBlocking.some((h) => h.includes("≠ HEAD")) ? "CORPUS_RESULT=FAIL（存在不可背书证据或硬编码 SHA）" : "CORPUS_RESULT=PASS");
 process.exit(fail || hardBlocking.some((h) => h.includes("≠ HEAD")) ? 1 : 0);

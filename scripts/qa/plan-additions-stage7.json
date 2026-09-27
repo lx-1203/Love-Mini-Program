@@ -1,0 +1,30 @@
+{
+ "$comment": "收口波要追加进 reports/audit/round-7/frameplan-merged.json 的行（reconcile 对行数中性、只降不升，所以追加 SHOOT 会被原样接受）。这 3 行是真的能被帧判的，不能进登记表——进表就是把帧债洗成已归置。",
+ "$apply": "node scripts/qa/apply-plan-additions.mjs（待写）或人工合并后跑 reconcile --apply 再 reshoot",
+ "rows": [
+  {
+   "id": "MP-R2VIS-PAGES-PROFILE-INDEX-004",
+   "route": "pages/profile/index",
+   "identity": "A",
+   "frameName": "PROFILE_BIO_CLAMP_2行",
+   "precondition": "个人简介文本长度 > 2 行的账号（MyHeader.vue:265-273 的 -webkit-line-clamp:2 要有多行才看得出截断）",
+   "assertion": "简介块渲染为两行并以省略号收尾：DOM 上 .my-header__bio 的 clientHeight 约等于两行行高，且文本末尾含省略号；超过两行的原文不得顶开卡片"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-006",
+   "route": "pages/home/index",
+   "identity": "A",
+   "frameName": "HOME_TODAYLOVE_LEFTBASELINE",
+   "precondition": "首页有今日进度卡（TodayLoveProgress 可见）",
+   "assertion": "卡片左边缘与页面其它站点同基线：量 x 偏移 == var(--page-padding) 折算像素，且与 MP-R2VIS-PAGES-HOME-INDEX-005 的两枚站点数值一致（同批收口才算闭环）"
+  },
+  {
+   "id": "MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01",
+   "route": "subpackages/chat/chat-session/index",
+   "identity": "A",
+   "frameName": "CHATSESSION_AFTER_CHATINPUT_DELETE",
+   "precondition": "产物必须出自不早于删除提交的构建（gitSha 校验），进入一段已有会话",
+   "assertion": "页面自带输入栏可用且无 ChatInput 残留：发送框、表情/附件入口在位，正文不被输入栏压住；同时产物里 grep ChatInput 组件为 0 命中"
+  }
+ ]
+}

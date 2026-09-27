@@ -1,0 +1,10 @@
+{
+  "$comment": "IDE「设置 → 安全设置 → 服务端口」这一档在本仓的**本地镜像**。为什么要镜像而不每次现问 IDE：微信开发者工具的 CLI 全表里没有任何 settings/enable/port 开关（round6-LEDGER §101 实测：关窗、quit 重开、连 mock 项目对照都不再出现 automator 端口 ⇒ 这一档只能人在 UI 里开），所以脚本既改不了也不该假装能改。目标 ① 要的是『端口走配置文件而非命令行』，这里就是那个配置文件；真实性由 ide-service-port.mjs 每次拿监听表当场验，验不过就拒绝继续，不拿一个旧数字硬连。",
+  "wsAutomatorPort": 9420,
+  "httpBridgePorts": [9430],
+  "notes": {
+    "wsAutomatorPort": "miniprogram-automator 的 WS 端口；`cli.js auto --auto-port` 不指定时的实测落点。",
+    "httpBridgePorts": "wechatide CLI/HTTP 桥（IDE 服务端口那一档）；同一台模拟器可以同时被两条通道驱动，实测互不报错、只互相换页 ⇒ 独占要靠 tmp/qa/locks 那把租约，不是靠端口。",
+    "history": "2026-09-26 曾出现 9431（automator）消失、9430 仍在；端口会随 IDE 重启漂移，所以本文件的值必须被监听表复核后才算数。"
+  }
+}

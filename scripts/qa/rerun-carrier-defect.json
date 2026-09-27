@@ -1,0 +1,1973 @@
+{
+ "generatedAt": "2026-09-27T09:45:44.037Z",
+ "carrier": "scripts/qa/r-exec-cli.mjs:408（input 腿按 action 文本路由，不看元素）",
+ "rule": "行里下发过 input: 且目标类名不含任何输入框词根；词根刻意放宽 ⇒ 宁可多跑几个页",
+ "wordRoots": "/(input|field|editor|textarea|search|entry|box|code|phone|msg|message|content|text|nick|title|keyword|amount|comment|desc|remark|url|mail|pwd|password|otp|captcha)/i",
+ "corpusDirs": [
+  "exec-A-mock-final",
+  "exec-A-mock-r7final",
+  "exec-A-real",
+  "exec-A-real-only",
+  "exec-A-real-only.partial-second-exit-bug",
+  "exec-A-real-r7final",
+  "exec-guest-real",
+  "exec-guest-real-final",
+  "exec-guest-real-only",
+  "exec-tap-final",
+  "exec-tap-final2",
+  "exec-tap-final3"
+ ],
+ "polluted": [
+  {
+   "dir": "exec-A-mock-final",
+   "manifest": "PAGES-MESSAGES-INDEX",
+   "id": "MSG08",
+   "page": "pages/messages/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".header__icon-btn"
+   ],
+   "badTargets": [
+    ".header__icon-btn"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-final",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG01",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".hero__back",
+    ".hero__txt",
+    ".agree__chk"
+   ],
+   "badTargets": [
+    ".hero__back",
+    ".hero__txt",
+    ".agree__chk"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-final",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG07",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".field__clear",
+    ".hero__back",
+    ".field__eye",
+    ".agree__chk"
+   ],
+   "badTargets": [
+    ".hero__back",
+    ".agree__chk"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-final",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG35",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".hero__back"
+   ],
+   "badTargets": [
+    ".hero__back"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-final",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT26",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-final",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT28",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-final",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT31",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-header__back"
+   ],
+   "badTargets": [
+    ".post-header__back"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP18",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chips",
+    ".post-sheet__chip"
+   ],
+   "badTargets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chips",
+    ".post-sheet__chip"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP19",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chip",
+    ".post-sheet__chip-text"
+   ],
+   "badTargets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chip"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP23",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-image--add",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-image--add",
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP27",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-header__close",
+    ".post-header__close",
+    ".post-content__input"
+   ],
+   "badTargets": [
+    ".post-header__close",
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP29",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP32",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-tip__close",
+    ".post-body__bottom-space",
+    ".post-content__input",
+    ".post-tip__close"
+   ],
+   "badTargets": [
+    ".post-tip__close",
+    ".post-body__bottom-space",
+    ".post-tip__close"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB23",
+   "page": "subpackages/village/village/publish",
+   "status": "EXECUTED",
+   "targets": [
+    ".publish-content__input",
+    ".publish-content__input",
+    ".publish-to__card"
+   ],
+   "badTargets": [
+    ".publish-to__card"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-final",
+   "manifest": "次要18",
+   "id": "TD09",
+   "page": "subpackages/circles/circles/topic-detail",
+   "status": "EXECUTED",
+   "targets": [
+    ".detail-header__back"
+   ],
+   "badTargets": [
+    ".detail-header__back"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-final",
+   "manifest": "次要19",
+   "id": "HP05",
+   "page": "subpackages/tools/help/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".help-contact__copy",
+    ".help-contact__copy"
+   ],
+   "badTargets": [
+    ".help-contact__copy",
+    ".help-contact__copy"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "manifest": "PAGES-MESSAGES-INDEX",
+   "id": "MSG08",
+   "page": "pages/messages/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".header__icon-btn"
+   ],
+   "badTargets": [
+    ".header__icon-btn"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG01",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".hero__back",
+    ".hero__txt",
+    ".agree__chk"
+   ],
+   "badTargets": [
+    ".hero__back",
+    ".hero__txt",
+    ".agree__chk"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG07",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".field__clear",
+    ".hero__back",
+    ".field__eye",
+    ".agree__chk"
+   ],
+   "badTargets": [
+    ".hero__back",
+    ".agree__chk"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG35",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".hero__back"
+   ],
+   "badTargets": [
+    ".hero__back"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT26",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT28",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT31",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-header__back"
+   ],
+   "badTargets": [
+    ".post-header__back"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP18",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chips",
+    ".post-sheet__chip"
+   ],
+   "badTargets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chips",
+    ".post-sheet__chip"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP19",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chip",
+    ".post-sheet__chip-text"
+   ],
+   "badTargets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chip"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP23",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-image--add",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-image--add",
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP27",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-header__close",
+    ".post-header__close",
+    ".post-content__input"
+   ],
+   "badTargets": [
+    ".post-header__close",
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP29",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP32",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-tip__close",
+    ".post-body__bottom-space",
+    ".post-content__input",
+    ".post-tip__close"
+   ],
+   "badTargets": [
+    ".post-tip__close",
+    ".post-body__bottom-space",
+    ".post-tip__close"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB23",
+   "page": "subpackages/village/village/publish",
+   "status": "EXECUTED",
+   "targets": [
+    ".publish-content__input",
+    ".publish-content__input",
+    ".publish-to__card"
+   ],
+   "badTargets": [
+    ".publish-to__card"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "manifest": "次要18",
+   "id": "TD09",
+   "page": "subpackages/circles/circles/topic-detail",
+   "status": "EXECUTED",
+   "targets": [
+    ".detail-header__back"
+   ],
+   "badTargets": [
+    ".detail-header__back"
+   ]
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "manifest": "次要19",
+   "id": "HP05",
+   "page": "subpackages/tools/help/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".help-contact__copy",
+    ".help-contact__copy"
+   ],
+   "badTargets": [
+    ".help-contact__copy",
+    ".help-contact__copy"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "PAGES-MESSAGES-INDEX",
+   "id": "MSG08",
+   "page": "pages/messages/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".header__icon-btn"
+   ],
+   "badTargets": [
+    ".header__icon-btn"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG01",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".hero__back",
+    ".hero__txt",
+    ".agree__chk"
+   ],
+   "badTargets": [
+    ".hero__back",
+    ".hero__txt",
+    ".agree__chk"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG07",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".field__clear",
+    ".hero__back",
+    ".field__eye",
+    ".agree__chk"
+   ],
+   "badTargets": [
+    ".hero__back",
+    ".agree__chk"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT26",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT28",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT31",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-header__back"
+   ],
+   "badTargets": [
+    ".post-header__back"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP18",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chips",
+    ".post-sheet__chip"
+   ],
+   "badTargets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chips",
+    ".post-sheet__chip"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP19",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chip",
+    ".post-sheet__chip-text"
+   ],
+   "badTargets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chip"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP23",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-image--add",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-image--add",
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP27",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-header__close",
+    ".post-header__close",
+    ".post-content__input"
+   ],
+   "badTargets": [
+    ".post-header__close",
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP29",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP32",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-tip__close",
+    ".post-body__bottom-space",
+    ".post-content__input",
+    ".post-tip__close"
+   ],
+   "badTargets": [
+    ".post-tip__close",
+    ".post-body__bottom-space",
+    ".post-tip__close"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP33",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP38",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP40",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-header__submit",
+    ".post-title__input",
+    ".post-content__input",
+    ".post-header__submit"
+   ],
+   "badTargets": [
+    ".post-header__submit",
+    ".post-header__submit"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB20",
+   "page": "subpackages/village/village/publish",
+   "status": "EXECUTED",
+   "targets": [
+    ".publish-content__input",
+    ".publish-content__input",
+    ".publish-header__close",
+    ".publish-image--add"
+   ],
+   "badTargets": [
+    ".publish-header__close",
+    ".publish-image--add"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB22",
+   "page": "subpackages/village/village/publish",
+   "status": "EXECUTED",
+   "targets": [
+    ".publish-content__input",
+    ".publish-content__input",
+    ".publish-header__submit"
+   ],
+   "badTargets": [
+    ".publish-header__submit"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB23",
+   "page": "subpackages/village/village/publish",
+   "status": "EXECUTED",
+   "targets": [
+    ".publish-content__input",
+    ".publish-content__input",
+    ".publish-to__card"
+   ],
+   "badTargets": [
+    ".publish-to__card"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB26",
+   "page": "subpackages/village/village/publish",
+   "status": "EXECUTED",
+   "targets": [
+    ".publish-content__input",
+    ".publish-content__input",
+    ".publish-header__submit"
+   ],
+   "badTargets": [
+    ".publish-header__submit"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB34",
+   "page": "subpackages/village/village/publish",
+   "status": "EXECUTED",
+   "targets": [
+    ".publish-content__input",
+    ".publish-content__input",
+    ".publish-header__submit"
+   ],
+   "badTargets": [
+    ".publish-header__submit"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "次要18",
+   "id": "TD09",
+   "page": "subpackages/circles/circles/topic-detail",
+   "status": "EXECUTED",
+   "targets": [
+    ".detail-header__back"
+   ],
+   "badTargets": [
+    ".detail-header__back"
+   ]
+  },
+  {
+   "dir": "exec-A-real",
+   "manifest": "次要19",
+   "id": "HP05",
+   "page": "subpackages/tools/help/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".help-contact__copy",
+    ".help-contact__copy"
+   ],
+   "badTargets": [
+    ".help-contact__copy",
+    ".help-contact__copy"
+   ]
+  },
+  {
+   "dir": "exec-A-real-only",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT26",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-A-real-only",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT28",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-A-real-only",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP33",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-A-real-only",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP38",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-A-real-only",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP40",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-header__submit",
+    ".post-title__input",
+    ".post-content__input",
+    ".post-header__submit"
+   ],
+   "badTargets": [
+    ".post-header__submit",
+    ".post-header__submit"
+   ]
+  },
+  {
+   "dir": "exec-A-real-only",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB20",
+   "page": "subpackages/village/village/publish",
+   "status": "EXECUTED",
+   "targets": [
+    ".publish-content__input",
+    ".publish-content__input",
+    ".publish-header__close",
+    ".publish-image--add"
+   ],
+   "badTargets": [
+    ".publish-header__close",
+    ".publish-image--add"
+   ]
+  },
+  {
+   "dir": "exec-A-real-only",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB22",
+   "page": "subpackages/village/village/publish",
+   "status": "EXECUTED",
+   "targets": [
+    ".publish-content__input",
+    ".publish-content__input",
+    ".publish-header__submit"
+   ],
+   "badTargets": [
+    ".publish-header__submit"
+   ]
+  },
+  {
+   "dir": "exec-A-real-only",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB26",
+   "page": "subpackages/village/village/publish",
+   "status": "EXECUTED",
+   "targets": [
+    ".publish-content__input",
+    ".publish-content__input",
+    ".publish-header__submit"
+   ],
+   "badTargets": [
+    ".publish-header__submit"
+   ]
+  },
+  {
+   "dir": "exec-A-real-only",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB34",
+   "page": "subpackages/village/village/publish",
+   "status": "EXECUTED",
+   "targets": [
+    ".publish-content__input",
+    ".publish-content__input",
+    ".publish-header__submit"
+   ],
+   "badTargets": [
+    ".publish-header__submit"
+   ]
+  },
+  {
+   "dir": "exec-A-real-only.partial-second-exit-bug",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT26",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-A-real-only.partial-second-exit-bug",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT28",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-A-real-r7final",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT26",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-A-real-r7final",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT28",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-A-real-r7final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP33",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-A-real-r7final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP38",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-A-real-r7final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP40",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-header__submit",
+    ".post-title__input",
+    ".post-content__input",
+    ".post-header__submit"
+   ],
+   "badTargets": [
+    ".post-header__submit",
+    ".post-header__submit"
+   ]
+  },
+  {
+   "dir": "exec-A-real-r7final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB20",
+   "page": "subpackages/village/village/publish",
+   "status": "EXECUTED",
+   "targets": [
+    ".publish-content__input",
+    ".publish-content__input",
+    ".publish-header__close",
+    ".publish-image--add"
+   ],
+   "badTargets": [
+    ".publish-header__close",
+    ".publish-image--add"
+   ]
+  },
+  {
+   "dir": "exec-A-real-r7final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB22",
+   "page": "subpackages/village/village/publish",
+   "status": "EXECUTED",
+   "targets": [
+    ".publish-content__input",
+    ".publish-content__input",
+    ".publish-header__submit"
+   ],
+   "badTargets": [
+    ".publish-header__submit"
+   ]
+  },
+  {
+   "dir": "exec-A-real-r7final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB26",
+   "page": "subpackages/village/village/publish",
+   "status": "EXECUTED",
+   "targets": [
+    ".publish-content__input",
+    ".publish-content__input",
+    ".publish-header__submit"
+   ],
+   "badTargets": [
+    ".publish-header__submit"
+   ]
+  },
+  {
+   "dir": "exec-A-real-r7final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB34",
+   "page": "subpackages/village/village/publish",
+   "status": "EXECUTED",
+   "targets": [
+    ".publish-content__input",
+    ".publish-content__input",
+    ".publish-header__submit"
+   ],
+   "badTargets": [
+    ".publish-header__submit"
+   ]
+  },
+  {
+   "dir": "exec-guest-real",
+   "manifest": "PAGES-LOGIN-INDEX",
+   "id": "LG19",
+   "page": "pages/login/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".btn-primary"
+   ],
+   "badTargets": [
+    ".btn-primary"
+   ]
+  },
+  {
+   "dir": "exec-guest-real",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG01",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".hero__back",
+    ".hero__txt",
+    ".agree__chk"
+   ],
+   "badTargets": [
+    ".hero__back",
+    ".hero__txt",
+    ".agree__chk"
+   ]
+  },
+  {
+   "dir": "exec-guest-real",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG07",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".field__clear",
+    ".hero__back",
+    ".field__eye",
+    ".agree__chk"
+   ],
+   "badTargets": [
+    ".hero__back",
+    ".agree__chk"
+   ]
+  },
+  {
+   "dir": "exec-guest-real",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG35",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".hero__back"
+   ],
+   "badTargets": [
+    ".hero__back"
+   ]
+  },
+  {
+   "dir": "exec-guest-real",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT26",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-guest-real",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT28",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-guest-real",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT31",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-header__back"
+   ],
+   "badTargets": [
+    ".post-header__back"
+   ]
+  },
+  {
+   "dir": "exec-guest-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP18",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chips",
+    ".post-sheet__chip"
+   ],
+   "badTargets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chips",
+    ".post-sheet__chip"
+   ]
+  },
+  {
+   "dir": "exec-guest-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP19",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chip",
+    ".post-sheet__chip-text"
+   ],
+   "badTargets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chip"
+   ]
+  },
+  {
+   "dir": "exec-guest-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP23",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-image--add",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-image--add",
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-guest-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP27",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-header__close",
+    ".post-header__close",
+    ".post-content__input"
+   ],
+   "badTargets": [
+    ".post-header__close",
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-guest-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP29",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-guest-real",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP32",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-tip__close",
+    ".post-body__bottom-space",
+    ".post-content__input",
+    ".post-tip__close"
+   ],
+   "badTargets": [
+    ".post-tip__close",
+    ".post-body__bottom-space",
+    ".post-tip__close"
+   ]
+  },
+  {
+   "dir": "exec-guest-real",
+   "manifest": "次要18",
+   "id": "TD09",
+   "page": "subpackages/circles/circles/topic-detail",
+   "status": "EXECUTED",
+   "targets": [
+    ".detail-header__back"
+   ],
+   "badTargets": [
+    ".detail-header__back"
+   ]
+  },
+  {
+   "dir": "exec-guest-real",
+   "manifest": "次要19",
+   "id": "HP05",
+   "page": "subpackages/tools/help/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".help-contact__copy",
+    ".help-contact__copy"
+   ],
+   "badTargets": [
+    ".help-contact__copy",
+    ".help-contact__copy"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-final",
+   "manifest": "PAGES-LOGIN-INDEX",
+   "id": "LG19",
+   "page": "pages/login/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".btn-primary"
+   ],
+   "badTargets": [
+    ".btn-primary"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-final",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG01",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".hero__back",
+    ".hero__txt",
+    ".agree__chk"
+   ],
+   "badTargets": [
+    ".hero__back",
+    ".hero__txt",
+    ".agree__chk"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-final",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG07",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".field__clear",
+    ".hero__back",
+    ".field__eye",
+    ".agree__chk"
+   ],
+   "badTargets": [
+    ".hero__back",
+    ".agree__chk"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-final",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG35",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".hero__back"
+   ],
+   "badTargets": [
+    ".hero__back"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-final",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT26",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-final",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT28",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-final",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT31",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-header__back"
+   ],
+   "badTargets": [
+    ".post-header__back"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP18",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chips",
+    ".post-sheet__chip"
+   ],
+   "badTargets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chips",
+    ".post-sheet__chip"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP19",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chip",
+    ".post-sheet__chip-text"
+   ],
+   "badTargets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chip"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP23",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-image--add",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-image--add",
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP27",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-header__close",
+    ".post-header__close",
+    ".post-content__input"
+   ],
+   "badTargets": [
+    ".post-header__close",
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP29",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-final",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP32",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-tip__close",
+    ".post-body__bottom-space",
+    ".post-content__input",
+    ".post-tip__close"
+   ],
+   "badTargets": [
+    ".post-tip__close",
+    ".post-body__bottom-space",
+    ".post-tip__close"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-final",
+   "manifest": "次要18",
+   "id": "TD09",
+   "page": "subpackages/circles/circles/topic-detail",
+   "status": "EXECUTED",
+   "targets": [
+    ".detail-header__back"
+   ],
+   "badTargets": [
+    ".detail-header__back"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-final",
+   "manifest": "次要19",
+   "id": "HP05",
+   "page": "subpackages/tools/help/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".help-contact__copy",
+    ".help-contact__copy"
+   ],
+   "badTargets": [
+    ".help-contact__copy",
+    ".help-contact__copy"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-only",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT26",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-only",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT28",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-only",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP33",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-only",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP38",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-guest-real-only",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP40",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-header__submit",
+    ".post-title__input",
+    ".post-content__input",
+    ".post-header__submit"
+   ],
+   "badTargets": [
+    ".post-header__submit",
+    ".post-header__submit"
+   ]
+  },
+  {
+   "dir": "exec-tap-final3",
+   "manifest": "PAGES-MESSAGES-INDEX",
+   "id": "MSG08",
+   "page": "pages/messages/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".header__icon-btn"
+   ],
+   "badTargets": [
+    ".header__icon-btn"
+   ]
+  },
+  {
+   "dir": "exec-tap-final3",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG01",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".hero__back",
+    ".hero__txt",
+    ".agree__chk"
+   ],
+   "badTargets": [
+    ".hero__back",
+    ".hero__txt",
+    ".agree__chk"
+   ]
+  },
+  {
+   "dir": "exec-tap-final3",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG07",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".field__clear",
+    ".hero__back",
+    ".field__eye",
+    ".agree__chk"
+   ],
+   "badTargets": [
+    ".hero__back",
+    ".agree__chk"
+   ]
+  },
+  {
+   "dir": "exec-tap-final3",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG35",
+   "page": "pages/register/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".hero__back"
+   ],
+   "badTargets": [
+    ".hero__back"
+   ]
+  },
+  {
+   "dir": "exec-tap-final3",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT26",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-tap-final3",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT28",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "SKIPPED",
+   "targets": [],
+   "badTargets": [
+    "(该行发过 input: 但没记下目标名 ⇒ 保守算进来)"
+   ]
+  },
+  {
+   "dir": "exec-tap-final3",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT31",
+   "page": "subpackages/campus/campus/post-topic",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-header__back"
+   ],
+   "badTargets": [
+    ".post-header__back"
+   ]
+  },
+  {
+   "dir": "exec-tap-final3",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP18",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chips",
+    ".post-sheet__chip"
+   ],
+   "badTargets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chips",
+    ".post-sheet__chip"
+   ]
+  },
+  {
+   "dir": "exec-tap-final3",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP19",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chip",
+    ".post-sheet__chip-text"
+   ],
+   "badTargets": [
+    ".post-row__label",
+    ".post-sheet__chip",
+    ".post-sheet__chip"
+   ]
+  },
+  {
+   "dir": "exec-tap-final3",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP23",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-image--add",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-image--add",
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-tap-final3",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP27",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-header__close",
+    ".post-header__close",
+    ".post-content__input"
+   ],
+   "badTargets": [
+    ".post-header__close",
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-tap-final3",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP29",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-content__input",
+    ".post-content__input",
+    ".post-header__close"
+   ],
+   "badTargets": [
+    ".post-header__close"
+   ]
+  },
+  {
+   "dir": "exec-tap-final3",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "id": "VP32",
+   "page": "subpackages/village/village/post",
+   "status": "EXECUTED",
+   "targets": [
+    ".post-tip__close",
+    ".post-body__bottom-space",
+    ".post-content__input",
+    ".post-tip__close"
+   ],
+   "badTargets": [
+    ".post-tip__close",
+    ".post-body__bottom-space",
+    ".post-tip__close"
+   ]
+  },
+  {
+   "dir": "exec-tap-final3",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB23",
+   "page": "subpackages/village/village/publish",
+   "status": "EXECUTED",
+   "targets": [
+    ".publish-content__input",
+    ".publish-content__input",
+    ".publish-to__card"
+   ],
+   "badTargets": [
+    ".publish-to__card"
+   ]
+  },
+  {
+   "dir": "exec-tap-final3",
+   "manifest": "次要18",
+   "id": "TD09",
+   "page": "subpackages/circles/circles/topic-detail",
+   "status": "EXECUTED",
+   "targets": [
+    ".detail-header__back"
+   ],
+   "badTargets": [
+    ".detail-header__back"
+   ]
+  },
+  {
+   "dir": "exec-tap-final3",
+   "manifest": "次要19",
+   "id": "HP05",
+   "page": "subpackages/tools/help/index",
+   "status": "EXECUTED",
+   "targets": [
+    ".help-contact__copy",
+    ".help-contact__copy"
+   ],
+   "badTargets": [
+    ".help-contact__copy",
+    ".help-contact__copy"
+   ]
+  }
+ ],
+ "manifestList": [
+  "PAGES-LOGIN-INDEX",
+  "PAGES-MESSAGES-INDEX",
+  "PAGES-REGISTER-INDEX",
+  "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+  "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+  "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+  "次要18",
+  "次要19"
+ ],
+ "caseIds": [
+  "PAGES-LOGIN-INDEX/LG19",
+  "PAGES-MESSAGES-INDEX/MSG08",
+  "PAGES-REGISTER-INDEX/REG01",
+  "PAGES-REGISTER-INDEX/REG07",
+  "PAGES-REGISTER-INDEX/REG35",
+  "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT26",
+  "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT28",
+  "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC/PT31",
+  "SUBPACKAGES-VILLAGE-VILLAGE-POST/VP18",
+  "SUBPACKAGES-VILLAGE-VILLAGE-POST/VP19",
+  "SUBPACKAGES-VILLAGE-VILLAGE-POST/VP23",
+  "SUBPACKAGES-VILLAGE-VILLAGE-POST/VP27",
+  "SUBPACKAGES-VILLAGE-VILLAGE-POST/VP29",
+  "SUBPACKAGES-VILLAGE-VILLAGE-POST/VP32",
+  "SUBPACKAGES-VILLAGE-VILLAGE-POST/VP33",
+  "SUBPACKAGES-VILLAGE-VILLAGE-POST/VP38",
+  "SUBPACKAGES-VILLAGE-VILLAGE-POST/VP40",
+  "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH/PUB20",
+  "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH/PUB22",
+  "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH/PUB23",
+  "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH/PUB26",
+  "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH/PUB34",
+  "次要18/TD09",
+  "次要19/HP05"
+ ],
+ "sourceMtimes": [
+  {
+   "dir": "exec-A-mock-final",
+   "mtime": "2026-09-27T02:43:12.094Z"
+  },
+  {
+   "dir": "exec-A-mock-r7final",
+   "mtime": "2026-09-27T08:39:16.231Z"
+  },
+  {
+   "dir": "exec-A-real",
+   "mtime": "2026-09-27T01:16:39.765Z"
+  },
+  {
+   "dir": "exec-A-real-only",
+   "mtime": "2026-09-27T05:06:49.565Z"
+  },
+  {
+   "dir": "exec-A-real-only.partial-second-exit-bug",
+   "mtime": "2026-09-27T04:07:50.017Z"
+  },
+  {
+   "dir": "exec-A-real-r7final",
+   "mtime": "2026-09-27T09:45:24.531Z"
+  },
+  {
+   "dir": "exec-guest-real",
+   "mtime": "2026-09-26T23:57:29.875Z"
+  },
+  {
+   "dir": "exec-guest-real-final",
+   "mtime": "2026-09-27T03:29:09.607Z"
+  },
+  {
+   "dir": "exec-guest-real-only",
+   "mtime": "2026-09-27T06:03:43.992Z"
+  },
+  {
+   "dir": "exec-tap-final",
+   "mtime": "2026-09-26T20:12:26.561Z"
+  },
+  {
+   "dir": "exec-tap-final2",
+   "mtime": "2026-09-26T20:20:25.403Z"
+  },
+  {
+   "dir": "exec-tap-final3",
+   "mtime": "2026-09-26T22:14:11.700Z"
+  }
+ ]
+}

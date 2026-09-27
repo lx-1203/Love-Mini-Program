@@ -1,0 +1,166 @@
+{
+ "$comment": "由 emit-frameplan-additions.mjs 从复判产物派生（identity 来自腿给的 lane，assertion 退到台账证据列；缺件的行在 NOTES 里点名丢弃，不塞没判点的帧）",
+ "$verdict": "FRAME_JUDGEABLE_NOW",
+ "rows": [
+  {
+   "id": "MP-R2-PROFILE-023",
+   "route": "pages/profile/index",
+   "identity": "A",
+   "frameName": "A-MP-R2-PROFILE-023",
+   "precondition": "[object Object]",
+   "assertion": "apps/client/src/pages/profile/index.vue:2015-2024/2054-2061（死块删除注释）、768-770（growth 链删除记载）、2027-2029（他人态 Tab 移除记载）、1806-…",
+   "band": "mock and real both express it (pure presence/absence, no data dependency)",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（）+ 台账证据列"
+  },
+  {
+   "id": "MP-R2-PROFILE-022",
+   "route": "pages/profile/index",
+   "identity": "C",
+   "frameName": "C-MP-R2-PROFILE-022",
+   "precondition": "[object Object]",
+   "assertion": "components/profile/NotLoggedProfile.vue:153-160（padding-top calc(var(--statusbar,...)+32rpx)，注释引用 R12-IND-PROFILE-INDEX…",
+   "band": "mock 档即可表达（游客态本地组件，无需后端）",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（）+ 台账证据列"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
+   "route": "subpackages/circles/circles/index",
+   "identity": "A",
+   "frameName": "A-MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
+   "precondition": "[object Object]",
+   "assertion": "apps/client/src/subpackages/circles/circles/index.vue:944-947 .circles-tab--active{background: var(--c-bg-brand,#E8F8F1…",
+   "band": "mock 档即可（页签来自 mock 频道表，激活态是默认态）",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（）+ 台账证据列"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-003",
+   "route": "pages/home/index",
+   "identity": "A",
+   "frameName": "A-MP-R2VIS-PAGES-HOME-INDEX-003",
+   "precondition": "[object Object]",
+   "assertion": "apps/client/src/components/home/NearbyPeople.vue:57-63 + :132-140：产物侧判点 .nearby-item__avatar 的 1:1 圆裁。⟨原判点 .nearby-avatar 全仓 0 命中 是一个不存在的类名⟩共同兴趣节点的删除已在基线落地（同文件整节点删除处）；剩余半项是 88rpx 中心圆裁，需要渲染帧或半身素材池才能判",
+   "band": "mock（头像是包内 static 素材，real 档走鉴权代理 URL 反而不稳定）",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（）+ 台账证据列"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-001",
+   "route": "pages/home/index",
+   "identity": "A",
+   "frameName": "A-MP-R2VIS-PAGES-HOME-INDEX-001",
+   "precondition": "[object Object]",
+   "assertion": "apps/client/src/components/home/RelationActivity.vue:120-121 .relation-cell{border-radius:24rpx; background:#EEF7F2}（=§…",
+   "band": "mock（暗色档另拍一帧可另判 #1A1F26，但本判据只需亮色一档）",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（）+ 台账证据列"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-019",
+   "route": "pages/messages/index",
+   "identity": "A",
+   "frameName": "A-MP-R2-PAGES-MESSAGES-INDEX-019",
+   "precondition": "[object Object]",
+   "assertion": "pages/messages/index.vue:88-97（activityRecommendations 映射 targetUrl: a.targetUrl // \"\"，空值不剔除项）、257-259（openActivity：if …",
+   "band": "mock 档表达负半段；正半段（有 targetUrl 时 CTA 必须出）需播种，另立一行，不混进这帧",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（）+ 台账证据列"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006",
+   "route": "subpackages/chat/chat-session/index",
+   "identity": "A",
+   "frameName": "A-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006",
+   "precondition": "[object Object]",
+   "assertion": "帧 .zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_chat-session_index__弹层态.png（面板仅绿色圆形相机「发送图片」+ 取消，右侧 6/7 …",
+   "band": "mock（plus.svg 走 IMAGE_PATHS.ICONS_EMOJI，包内素材即渲染）",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（）+ 台账证据列"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003",
+   "route": "subpackages/circles/circles/index",
+   "identity": "A",
+   "frameName": "A-MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003",
+   "precondition": "[object Object]",
+   "assertion": "apps/client/src/stores/circle/mock-data.ts:58-64（列表页源，无 friendJoinedCount → aefd8a72 版 index.vue:248-252 无条件 5+seed%8=6…",
+   "band": "mock ONLY —— real/showcase 档 !useMock() 直接 return 0，两页都空，判不出一致性（这是本项目被咬过的『档位表达不了前提』）",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（）+ 台账证据列"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002",
+   "route": "subpackages/profile-extra/profile/other",
+   "identity": "A",
+   "frameName": "A-MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002",
+   "precondition": "[object Object]",
+   "assertion": "帧 reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__默认.png 3x 裁切 .zcode/tmp/v3/O-other-hero.p…",
+   "band": "mock 即可表达他人态路由；亮封面素材是前提，若 mock 封面为暗色需换 seed",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（）+ 台账证据列"
+  },
+  {
+   "id": "MP-R2-POST-013",
+   "route": "subpackages/village/village/post",
+   "identity": "A",
+   "frameName": "A-MP-R2-POST-013",
+   "precondition": "[object Object]",
+   "assertion": "post.vue:176-184（targetTitle 兜底）、:187-194（targetSubtitle 无圈子兜底分支）、:667（tag 渲染条件仅 isCircleTarget）",
+   "band": "mock 可表达，但这是一个时序窗口：若解析在首帧前完成则副标题已是圈名。若取景台抓不到该窗口，本行应降级为 FRAME_JUDGEABLE_BUT_STATE_MISSING 并改由 vitest 断言背书",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（）+ 台账证据列"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-001",
+   "route": "subpackages/village/village/post",
+   "identity": "A",
+   "frameName": "A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-001",
+   "precondition": "[object Object]",
+   "assertion": "apps/client/src/subpackages/village/village/post.vue:1506-1511 .post-row__label{color:#9AA39F; height:28rpx} vs apps/cl…",
+   "band": "mock（两页同档即可对拍；暗色档另拍可判令牌语义是否用错）",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（）+ 台账证据列"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-003",
+   "route": "subpackages/village/village/publish",
+   "identity": "A",
+   "frameName": "A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-003",
+   "precondition": "[object Object]",
+   "assertion": "apps/client/src/subpackages/village/village/post.vue:1341-1349（目标弹层 max-height:78vh + 底部 calc(32rpx + safe-area)）vs :16…",
+   "band": "mock（弹层高度不依赖数据）",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（）+ 台账证据列"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
+   "route": "subpackages/village/village/publish",
+   "identity": "A",
+   "frameName": "A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
+   "precondition": "[object Object]",
+   "assertion": "apps/client/src/subpackages/village/village/publish.vue:734-736「圈名 + 绿色『已加入』胶囊 + 成员数」三段 vs apps/client/src/subpackages/…",
+   "band": "mock（两入口同页档可对拍；real 档加入数受后端影响，行形一致但仍可判，优先 mock）",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（）+ 台账证据列"
+  },
+  {
+   "id": "MP-R7-GUEST-LANDING-REGENTRY-001",
+   "route": "pages/login/index",
+   "identity": "E",
+   "frameName": "E-MP-R7-GUEST-LANDING-REGENTRY-001",
+   "precondition": "[object Object]",
+   "assertion": "apps/client/src/pages/login/index.vue:604（默认分支 class=\"login-quick\" 内不含任何注册入口）与 :688/:745-752（「去注册」实体在 v-else 的 login-form 分支里，且再受 isRegisterOpen 开关控制）",
+   "band": "real + guest —— 采样时身份必须是 not-logged-in，这是 mock 档表达不了的（游客 mock 会直接被守卫放行）；与 reports/audit/round-7/guest-landing-booked.jso",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（）+ 台账证据列"
+  },
+  {
+   "id": "MP-R7-GUEST-MATCHING-REDIRECT-RACE-001",
+   "route": "subpackages/discover-extra/discover/matching",
+   "identity": "E",
+   "frameName": "E-MP-R7-GUEST-MATCHING-REDIRECT-RACE-001",
+   "precondition": "[object Object]",
+   "assertion": "apps/client/src/subpackages/discover-extra/discover/matching.vue:56-69（无卡片可展示时的兜底：navigateBack 不成 ⇒ uni.switchTab(ROUTES.TAB.DISCOVER)，把游客送进「寻觅」Tab）与 apps/client/src/services/http.ts:493-494（401 兜底 uni.reLaunch(ROUTES.LOGIN)）",
+   "band": "real + guest only（mock 档守卫放行，落点语义不同）",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（）+ 台账证据列"
+  },
+  {
+   "id": "MP-R6-F1-NEARBY-IP-CITY-001",
+   "route": "pages/nearby/index",
+   "identity": "A",
+   "frameName": "A-MP-R6-F1-NEARBY-IP-CITY-001",
+   "precondition": "[object Object]",
+   "assertion": "utils/location.ts:44-56（IP 兜底与 gps/ip 标记）；pages/home/index.vue:68-72（副标题经 buildLocationText 直出城市）；pages/nearby/index.vue:113（副标题）、:120-121（currentCity）、:125（写 STORAGE_KEYS.NEARBY_CITY）、:232（该 currentCity 直接喂 fetchNearbyPosts 做城市过滤）；下游 subpackages/village/village/publish.vue:64-72（无缓存时硬编码北京市）",
+   "band": "real ONLY；风险是授权：getLocation 被拒时 initLocation 返回 null、副标题整条不渲染，这属于档位可表达但权限前提要写死",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（）+ 台账证据列"
+  }
+ ]
+}

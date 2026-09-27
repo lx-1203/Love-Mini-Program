@@ -23,8 +23,14 @@ const REPO = join(fileURLToPath(import.meta.url), "..", "..", "..");
 
 const argv = process.argv.slice(2);
 function opt(n, d) { const i = argv.indexOf("--" + n); return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[i + 1] : d; }
+import { readIdePort } from "./ide-port-config.mjs";
 const IDE_DIR = opt('ide', process.env.WECHATIDE_DIR || "D:/微信开发者/微信web开发者工具");
-const PORT = Number(opt('port', '9420'));
+/* 目标 ① 要的是「端口走配置文件而非命令行」：缺省端口从 scripts/qa/ide-port.json 取。
+   读法已抽到 ide-port-config.mjs 做唯一实现——此前这里有一份 configPort()，
+   而两个真正的消费者（shoot-frameplan --ws-taps、r-exec-ws）各读各的，
+   等于"配置文件存在、消费者不认它"。现在三处同源，回落照样留痕打印。
+   仍可用 --port 手工覆盖（做对照实验用），或 WSX_PORT 环境变量临时指端口。 */
+const PORT = Number(opt('port', String(readIdePort().port)));
 const WAIT = Number(opt('wait', '90'));
 const PROJECT = opt('project', join(REPO, "apps/client/dist/build/mp-weixin"));
 

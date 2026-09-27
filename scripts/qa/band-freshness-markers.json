@@ -1,0 +1,22 @@
+{
+  "$comment": "档位新鲜度门的符号级深检清单。挑的必须是「跨 chunk 导出名」这类真会留在产物里的标识符。",
+  "$lesson": "ALLOWED_MEDIA_EXTS 这条判点在三档产物里都是 0 命中 —— 不是修复没进包，是模块内常量被 minify 内联/改名了。所以这里只登记 isAllowedMediaExt（函数名，跨文件导出，实测三档中两档在包）。拿常量名做产物判点会得到一个永远缺失的假红。",
+  "markers": [
+    {
+      "symbol": "isAllowedMediaExt",
+      "bands": ["mock", "real", "showcase"],
+      "covers": ["apps/client/src/utils/media.ts", "apps/client/src/services/voice-upload.ts"],
+      "from": "③ 上传扩展名两侧都不校验（客户端侧门禁，services/api.ts）"
+    },
+    {
+      "symbol": "parsePrivateQuoteContext",
+      "bands": ["mock", "real", "showcase"],
+      "from": "③ 私聊路径缺引用回复字段（stores/messages.ts）"
+    },
+    {
+      "symbol": "pinnedNotice",
+      "bands": ["mock", "real", "showcase"],
+      "from": "② circle-home 置顶提示改为走 i18n（t(\"circle.home.pinnedNotice\")）"
+    }
+  ]
+}

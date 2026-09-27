@@ -1,0 +1,56 @@
+{
+ "$comment": "由 emit-frameplan-additions.mjs 从复判产物派生（identity 来自腿给的 lane，assertion 退到台账证据列；缺件的行在 NOTES 里点名丢弃，不塞没判点的帧）",
+ "$verdict": "FRAME_JUDGEABLE_NOW",
+ "rows": [
+  {
+   "id": "MP-R2VIS-PAGES-PROFILE-INDEX-004",
+   "route": "pages/profile/index",
+   "identity": "A",
+   "frameName": "profile-my-header-bio-clamp2",
+   "precondition": "登录态 A 账号进「我的」页，且 MyHeader 的签名（.my-header__bio）为超过两行的长文本 —— 修法出自台账处置列：.my-header__bio 加 -webkit-line-clamp:2 + display:-webkit-box + overflow:hidden + text-overflow:ellipsis（工作树已落，HEAD 874ff52f 未含 ⇒ 帧必须出自本轮重建后的产物）",
+   "assertion": "帧 .zcode/tmp/backup-round-2-tour-pre-capture/A/pages_profile_index__默认.png 签名带 y≈195–245 三行「热爱生活，喜欢图书馆的下午 / 和操场晚风。想认识有趣…；样式块按内容重锚＝MyHeader.vue `.my-header__bio` HEAD :265-269（仅 font-size/color/line-height 三行，无 clamp）+ 模板 :77 `<text v-if=\"props.profile.intro.bio\" class=\"my-header__bio\">`",
+   "band": "修：.my-header__bio 加 -webkit-line-clamp:2 + display:-webkit-box + overflow:hidden + text-overflow:ellipsis —— 已按此落地（工作树），",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（tmp/qa/naked-frame-rows-classify.json）+ 台账证据列"
+  },
+  {
+   "id": "MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01",
+   "route": "subpackages/chat/chat-session/index",
+   "identity": "A",
+   "frameName": "chat-session-inputbar-after-chatinput-delete",
+   "precondition": "登录后进入任一聊天会话页；产物 gitSha 不得早于 ChatInput 整件删除的那次提交（台账裁决 2026-09-26 采 (A)：删除保留，欠的是「删除后不破版」的帧级确认，旧产物已被重建覆盖无从回查）",
+   "assertion": "HEAD 874ff52f 仍含 apps/client/src/components/chat/ChatInput.vue（blob 132 行 / 2909B，:83 = `.chat-input__bar` 的 padding 行）；死代码判据本轮复测＝`grep -rn ChatInput apps/client/src` **0 命中**（改前唯一命中是 pages/register/index.vue 的一行注释，该注释已由 i18n 收口批摘除并在 i18n-wired.json handoff_5 自陈「现 grep 全库 0 命中」）；聊天页输入栏实现在 chat-session/index.vue 内联 `.wechat-input-bar__*`",
+   "band": "已落地 (A)：整件删除保留（不采纳 (B) 重构 3532 行页面输入栏去复用死组件——那是不必要的改动面）。复验载体：reports/audit/round-7/interact/exec-results.json 内对应 subpac",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（tmp/qa/naked-frame-rows-classify.json）+ 台账证据列"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-006",
+   "route": "pages/home/index",
+   "identity": "A",
+   "frameName": "home-today-love-progress-page-padding",
+   "precondition": "登录态进首页；TodayLoveProgress.vue:105 的左右 margin 已改 var(--page-padding)（工作树，未进 HEAD）⇒ 复验=重建后首页帧对 素材/理想效果图/首页.png 左基线 29.0rpx 量测",
+   "assertion": "apps/client/src/components/home/TodayLoveProgress.vue:105 `margin: 0 40rpx 20rpx;`（HEAD 874ff52f 与工作树同行，本轮 51 文件编辑未触及该件）——同页其余五枚横向基线在收口后全部落在 32rpx 档：HomeHeader.vue:90 与 InviteBanner.vue:35 走 var(--page-padding)、TodayRecommendationCard.vue:113 `margin: 0 32rpx 16rpx`、RelationActivity.vue:85 `margin: 0 32rpx 16rpx`、CommunityFeed.vue:260 `padding: 8rpx 32rpx 16rpx` → 本枚成为首页**唯一** 40rpx 消费者，左右各偏 8rpx(",
+   "band": "修：TodayLoveProgress.vue:105 的左右 margin 改 `var(--page-padding)`，与 -005 的两枚站点同批收口（-005 的判据原话即「须同批处理否则只是换一处漂移」——本轮 -005 落了 ",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（tmp/qa/naked-frame-rows-classify.json）+ 台账证据列"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-001",
+   "route": "pages/messages/index",
+   "identity": "guest",
+   "frameName": "messages-logout-bg-page-token",
+   "precondition": "登出态（游客）取景：台账原话「复验要的是**登出态取景**（tour 已有 LOGOUT_LANDING 通道），不是再拍一张登录态帧」⇒ identity=guest 且必须跑 real 档（游客×mock 是结构不可满足组合，见 §117）",
+   "assertion": "apps/client/src/components/discover/NotLoggedWaiting.vue .not-logged{background:#f6fbfc}；对照帧 .zcode/tmp/backup-round-2-…",
+   "band": "real",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（tmp/qa/naked-frame-rows-classify.json）+ 台账证据列"
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-010",
+   "route": "subpackages/campus/campus/post-topic",
+   "identity": "A",
+   "frameName": "campuspost-upload-rejected-notice",
+   "precondition": "真实模式 + 故意提交一张非法扩展名/断网的配图（台账原话：仍欠的是真机一次被拦下的观感帧）⇒ requiresReal，产物须为 real 档且 8080 在跑",
+   "assertion": "post-topic.vue:257-262 `catch (_e) { uni.showToast({ title: campusStore.errorMessage // t(\"campus.postTopic.publishFail…",
+   "band": "real",
+   "source": "只读复判 FRAME_JUDGEABLE_NOW（tmp/qa/naked-frame-rows-classify.json）+ 台账证据列"
+  }
+ ]
+}

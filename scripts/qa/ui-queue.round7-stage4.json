@@ -1,0 +1,146 @@
+[
+ {
+  "name": "rebuild-mock-stage4",
+  "file": "scripts/qa/run-npm-script.mjs",
+  "args": [
+   "--cwd",
+   "apps/client",
+   "--script",
+   "build:mp-weixin:mock"
+  ],
+  "timeoutMin": 60,
+  "why": "取景腿（round7-final2 的 shoot-frameplan-final）跑完之后才允许换产物：本轮工作树里还有三处没进任何档位的修复（matching 游客重定向守卫、profile-meta 共用 formatter、fixtures 双解包）。判点台与所有帧复验都必须绑在重建后的档位上。"
+ },
+ {
+  "name": "rebuild-real-stage4",
+  "file": "scripts/qa/run-npm-script.mjs",
+  "args": [
+   "--cwd",
+   "apps/client",
+   "--script",
+   "build:mp-weixin:real:isolated"
+  ],
+  "timeoutMin": 60,
+  "why": "真实档必须走 isolated 载具：build:mp-weixin:real 里那一步 verify-env-release 是**发布面守卫**（要求 VITE_API_BASE_URL 为 HTTPS 且不得指向本机），而本地真实模式量的就是 http://127.0.0.1:8080，用它必红（本轮实测：腿在 13 秒内失败，报的就是这两条）。build-real-isolated.mjs 才是本地 real 档的既有载具：UNI_OUTPUT_DIR 改道到 mp-weixin-real、prepare-static --dev、--mode real，并且拒绝写进 mock 共享目录。守卫本身不改——它守的是上线包，不是本地取证包。"
+ },
+ {
+  "name": "gate-band-freshness-stage4",
+  "file": "scripts/qa/verify-band-freshness.mjs",
+  "args": [
+   "--out",
+   "reports/audit/round-7/band-freshness-stage4"
+  ],
+  "timeoutMin": 15,
+  "why": "档位新鲜度门：mtime 只是筛子，内容才是证据。重建是否真的把这三处改动带进产物，由它判，不靠我相信构建脚本。"
+ },
+ {
+  "name": "open-window-real-for-cases",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--settle",
+   "24"
+  ],
+  "timeoutMin": 14,
+  "why": "每次重建之后都必须重新把窗口落到被测档位上，再让设备腿接上去 —— 本轮实测过一次：重建后直接跑 measure 腿，automation_evaluate 传输超时，白烧一趟。"
+ },
+ {
+  "name": "exec-A-real-only",
+  "file": "scripts/qa/r-exec-cli.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--out",
+   "reports/audit/round-7/exec-A-real-only",
+   "--tap",
+   "--real-cases-only",
+   "--identity",
+   "A",
+   "--label",
+   "round-7-A-real-only"
+  ],
+  "timeoutMin": 90,
+  "why": "本轮最大的口径漏洞：236 条 requiresReal 用例在两条执行腿里都被跳过了 —— 因为跑不跑由 --real 旗标决定，而两条腿只带了 --project 到 real 档。现在档位自己说了算（BAND.mode===real ⇒ 真实用例必须跑），这一腿把那 236 条在登录身份下真跑一遍。"
+ },
+ {
+  "name": "exec-guest-real-only",
+  "file": "scripts/qa/r-exec-cli.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--out",
+   "reports/audit/round-7/exec-guest-real-only",
+   "--tap",
+   "--real-cases-only",
+   "--identity",
+   "guest",
+   "--label",
+   "round-7-guest-real-only"
+  ],
+  "timeoutMin": 90,
+  "why": "⑤ 要的是双身份 × 全量：真实用例那一批也必须两把身份都过，否则「真实模式补满」只对半个身份成立。"
+ },
+ {
+  "name": "measure-matching-drift",
+  "file": "scripts/qa/verify-guest-landing.mjs",
+  "args": [
+   "--mode",
+   "measure",
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--only",
+   "GG-discover-extra-discover-matching",
+   "--repeat",
+   "3"
+  ],
+  "timeoutMin": 25,
+  "why": "MP-R7-GUEST-MATCHING-REDIRECT-RACE-001 的结案判点：游客进 matching 的落点必须稳定为 pages/login/index，连测 3 次一致才算 CLOSED。此前它是 MEASURED-DRIFT（落 pages/discover/index），守卫改完必须在重建后的档位上重新量。"
+ },
+ {
+  "name": "gate-guest-landing-book",
+  "file": "scripts/qa/verify-guest-landing.mjs",
+  "args": [
+   "--mode",
+   "book"
+  ],
+  "timeoutMin": 6,
+  "why": "26 组裁定与实测落地对的双向守恒；measure 腿改完账之后要立刻复核一次，避免「只更新了那一组、别组被顺手抹平」。"
+ },
+ {
+  "name": "judge-stand-stage4",
+  "file": "scripts/qa/verify-fixes-against-artifact.cjs",
+  "args": [
+   "--baseline",
+   "094f7239"
+  ],
+  "timeoutMin": 25,
+  "why": "判据台绑本轮开跑 SHA：每条「已修复」都要在被测产物里量得到，基线对照用来区分「本轮修的」与「本轮之前就在的」。"
+ },
+ {
+  "name": "open-window-mock-for-reshoot",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin",
+   "--settle",
+   "24"
+  ],
+  "timeoutMin": 14,
+  "why": "定向补帧要回到 mock 档（取景配方里的多数行是 mock 可证的），窗口必须先落在被测档位上。"
+ },
+ {
+  "name": "reshoot-stage4",
+  "file": "scripts/qa/shoot-frameplan.mjs",
+  "args": [
+   "--plan",
+   "reports/audit/round-7/frameplan-round7-stage4.json",
+   "--project",
+   "apps/client/dist/build/mp-weixin",
+   "--label",
+   "round-7-stage4-reshoot"
+  ],
+  "timeoutMin": 60,
+  "why": "只补三类被本轮改动影响的帧：matching（重定向守卫）、我的页与他人主页（meta 共用 formatter）。配方文件在启动前由 frameplan 生成器按当前台账重出，不手抄行号。"
+ }
+]

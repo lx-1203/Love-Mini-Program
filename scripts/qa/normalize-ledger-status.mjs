@@ -19,7 +19,15 @@ const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const FILE = join(REPO, "reports/audit/round-6/issue-matrix.md");
 const APPLY = process.argv.includes("--apply");
 
-const VOCAB = ["待修复（需产品裁决", "已修复待复验", "保留-判据不成立", "判据不成立", "未取证/需裁决", "未取证", "需裁决", "撤销", "回归核对", "并入-不另立案", "待复验", "待修复", "不立账"];
+/* 「已修复」这一档 2026-09-27 才补进词表：判点台（verify-source-shape）往 status 列写的就是
+   `已修复（源码级判点：…）`，台账里有 85 行是这个形状，而 verify-ledger 的正则一直认它、这份数组却不认 ——
+   两份词表各写各的，后果是 admit 把合法写法判成越界（还先把行插进台账再报 FAIL），
+   而 normalizer 把这 85 行当成"待归一"的坏值往 需裁决 那一类里塞。
+   ⚠ 注释必须写在数组**外面**：admit-ledger-row.mjs 是用正则截出这段数组再 JSON.parse 的，
+     数组里塞注释会让它当场解析失败（本轮踩过）。
+   ⚠ 顺序也必须排在「已修复待复验」之后：startsWith 取第一个命中项，
+     让「已修复」在前会把"待复验"的行读成结案，正好把欠的复验洗掉。 */
+const VOCAB = ["待修复（需产品裁决", "已修复待复验", "保留-判据不成立", "判据不成立", "未取证/需裁决", "未取证", "需裁决", "撤销", "回归核对", "并入-不另立案", "待复验", "待修复", "不立账", "已修复"];
 const HDR_COLS = 11;
 
 const C = { id: 1, alias: 2, page: 3, category: 4, severity: 5, status: 6, conf: 7, evidence: 8, statusEvidence: 9, idealRef: 10, action: 11 };

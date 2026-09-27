@@ -1633,6 +1633,7 @@ async function runTour() {
   let consecutiveZero = 0;
   let sceneCount = 0;
 
+  const IDENTITY_SKIPPED = [];
   for (const ident of idents) {
     // 身份起点：refresh + 重连 + 铸 token + boot
     await refreshSimulator();
@@ -1648,6 +1649,22 @@ async function runTour() {
     touchLock();
     const bootOk = await bootIdentity(mp, ident, sess.token);
     if (!bootOk) log('[identity ' + ident + '] 警告：boot 未通过，按实际页面继续');
+
+    /* 帧前身份复核（判据与 shoot-frameplan 的 identityAtFrame 同一件事，不在那里另立一份规则）：
+       "清完会话那一刻是游客"不等于"这一批帧是游客画面"。mock 包的 bootstrap 无条件把会话造回来
+       （stores/session.ts 的 useMock() 分支；probe-guest-band.mjs 实测 cold/warm 两腿都是 AUTOLOGIN_ON_OPEN），
+       所以在这档上跑 B 身份会产出 62 页"标签是游客、画面是已登录"的帧 —— 上一轮 uidebt-shoot-guest
+       就是这么标错的。量到不符 ⇒ 这个身份一帧都不拍（不是拍完再打折），并打印可 grep 的拒绝行。 */
+    let identAtFrame = '';
+    try { identAtFrame = String(await mp.evaluate(makeVerifyFn()) || ''); } catch (e) { identAtFrame = 'ERR ' + e.message; }
+    const identOk = ident === 'A' ? /^logged-in/.test(identAtFrame) : /^not-logged-in/.test(identAtFrame);
+    log('[identity ' + ident + '] 帧前复核=' + identAtFrame + ' 相符=' + (identOk ? 'yes' : 'NO'));
+    if (!identOk) {
+      IDENTITY_SKIPPED.push({ ident, atFrame: identAtFrame, band: BUILD.mode || '?', project: PROJECT_PATH });
+      console.log('TOUR_IDENTITY_SKIPPED ident=' + ident + ' band=' + (BUILD.mode || '?') + ' 帧前=' + identAtFrame.slice(0, 40) +
+        ' ⇒ 这个身份 0 帧（该档表达不了这个身份，换档跑，不看画面就别记成双身份巡检）');
+      continue;
+    }
 
     const orderedSuites = SUITES.slice().sort((a, b) => a.order - b.order);
     for (const suite of orderedSuites) {

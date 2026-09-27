@@ -56,7 +56,16 @@ for (const r of debt) {
   else if (RE_STATE.test(text)) k = "NEEDS_STATE";
   else if (RE_RUNTIME.test(text)) k = "NEEDS_RUNTIME";
   cls[k] = (cls[k] || 0) + 1;
-  const markers = (r.uiMarkers || []).filter((m) => /--|-/.test(m) && !/^(runtime|visual|static|behavior|behavioral|text|style|layout|tap|input)$/.test(m));
+  /* 「有没有点名 selector」必须从 probes 里 kind=class 的 token 取 ——
+     uiMarkers 装的是类别标签（runtime/visual/static…），正好被下面那个过滤器全部丢掉。
+     上一版只从 uiMarkers 里挑，结果 namedSelectors 对 72/72 行恒为空，
+     于是"需交互或状态但没点名 selector=27"变成一句**永远为真**的话：
+     它数的是"我从不读的那个字段是空的"，不是判据点名没点名。 */
+  const classTokens = (r.probes || []).filter((p) => p && p.kind === "class").map((p) => p.token);
+  const markers = [...new Set([
+    ...(r.uiMarkers || []).filter((m) => /--|-/.test(m) && !/^(runtime|visual|static|behavior|behavioral|text|style|layout|tap|input)$/.test(m)),
+    ...classTokens,
+  ])].filter((m) => typeof m === "string" && m.length > 1);
   /* 取景要的是**路由**，而台账「页面」列可能是源文件（组件/store 级条目就是这样）。
      源文件那种从 id 里抠路由（…-PAGES-HOME-INDEX-… ⇒ pages/home/index），抠不出来的交给 lane 去查引用方。 */
   let route = /^pages\/|^subpackages\//.test(rec.page || "") ? rec.page : "";
@@ -75,6 +84,13 @@ const sum = Object.values(cls).reduce((a, b) => a + b, 0);
 if (sum !== debt.length) { console.log("UIDEBT_RESULT=FAIL reason=分类没覆盖全部欠款 " + sum + "≠" + debt.length); process.exit(2); }
 const noRoute = rows.filter((r) => !r.route).length;
 const noSel = rows.filter((r) => r.cls !== "STATIC_SHOOTABLE" && !r.namedSelectors.length).length;
+/* 反空转自检：如果**每一行**的点名列都是空的，那几乎一定是上游字段形状又变了（本项目已发生两次：
+   字段名不对、过滤器把有效值全丢）。这时"没点名=N"这种话毫无信息量，必须报错而不是继续打印。 */
+const anySel = rows.filter((r) => r.namedSelectors.length).length;
+if (rows.length && !anySel) {
+  console.log("UIDEBT_RESULT=FAIL reason=" + rows.length + " 行的点名列全为空 ⇒ 这是提取器坏了，不是判据全都没点名（先核对 verdicts 的 probes 形状）");
+  process.exit(2);
+}
 
 mkdirSync(resolve(REPO, OUT), { recursive: true });
 writeFileSync(resolve(REPO, OUT, "ui-frame-debt-classes.json"), JSON.stringify({ generatedAt: new Date().toISOString(), verdictSource: VERD, ledger: LEDGER, total: debt.length, classes: cls, rows }, null, 1));

@@ -18,6 +18,12 @@ import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
+import { guardUiLease } from "./ui-lease.mjs";
+/* 端口来源与 ws-channel-up / shoot-frameplan 同一份实现（配置文件 scripts/qa/ide-port.json 优先，
+   env 只做显式覆盖，读不到才回落且留痕）。此前这里是 `process.env.WSX_PORT || "9420"`，
+   即"配置文件存在但这个消费者不认它"。 */
+import { readIdePort } from "./ide-port-config.mjs";
+const IDE_WS_PORT = readIdePort().port;
 
 const require = createRequire(import.meta.url);
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -70,7 +76,7 @@ if (!A) { console.log("WSX_RESULT=FAIL reason=找不到 miniprogram-automator");
 let mini = null, conns = 0, wsErrs = 0;
 async function sess() {
   if (mini) return mini;
-  mini = await Promise.race([A.connect({ wsEndpoint: "ws://127.0.0.1:" + (process.env.WSX_PORT || "9420") }),
+  mini = await Promise.race([A.connect({ wsEndpoint: "ws://127.0.0.1:" + IDE_WS_PORT }),
     new Promise((_, rj) => setTimeout(() => rj(new Error("CONNECT_TIMEOUT_8S")), 8000))]);
   conns++;
   return mini;
@@ -285,6 +291,8 @@ function flush(final) {
 async function main() {
   const files = (ONLY.length ? ONLY : readdirSync(OPS).filter((f) => f.endsWith(".json")).map((f) => f.replace(/\.json$/, ""))).sort();
   if (!files.length) { console.log("WSX_RESULT=FAIL reason=没有要跑的 manifest（空扫描集不得占设备）"); process.exit(2); }
+  /* WS 通道与 CLI 桥驱动的是同一台模拟器：并发不报错，只互相换页 ⇒ 排队用同一把租约。 */
+  guardUiLease({ owner: "r-exec-ws-" + LABEL, tag: "WSX_LEASE", failTag: "WSX" });
   console.log("[boot] sha=" + GIT_SHA + " project=" + relOf(PROJECT) + " transport=ws-route+ws-probe+cli-shot");
   const r0 = await wsRoute();
   if (r0 === undefined) { console.log("WSX_RESULT=FAIL reason=WS 通道连不上；先跑 node scripts/qa/ws-channel-up.mjs（别用 close()）"); process.exit(2); }

@@ -49,7 +49,7 @@ const fr = { plan: String(plan.generatedAt || "?"), srcs };
 const planItems = plan.rows || [];
 if (!planItems.length || !byId.size) { console.log("FV_RESULT=FAIL reason=输入为空集，空集不得出判决"); process.exit(2); }
 
-const patches = [], bucket = { NO_LANDING: 0, IDENTITY_MISMATCH: 0, STATE_NOT_APPLIED: 0, LEFT_PAGE: 0, FIXED_FRAME: 0, REGRESSION: 0, NEEDS_EYE: 0, NO_FRAME: 0, NOT_SHOOTABLE: 0, REWRITE: 0 };
+const patches = [], bucket = { NO_LANDING: 0, IDENTITY_MISMATCH: 0, LOCK_SCREEN_BLOCKED: 0, STATE_NOT_APPLIED: 0, LEFT_PAGE: 0, FIXED_FRAME: 0, REGRESSION: 0, NEEDS_EYE: 0, NO_FRAME: 0, NOT_SHOOTABLE: 0, REWRITE: 0 };
 const md = ["# round-7 · 帧级判决（取景来源 " + fr.srcs.length + " 份）", "",
   ...fr.srcs.map((s) => "- 来源 `" + s.tag + "` sha=" + s.gitSha + " 行=" + s.rows + " 身份=" + s.identitySeen + "/" + s.verifyLast), "",
   "| id | 判决 | 机器判点 | 帧 |", "|---|---|---|---|"];
@@ -92,6 +92,16 @@ for (const it of planItems) {
     bucket.IDENTITY_MISMATCH++;
     patches.push({ id: it.id, col: 9, new: ("帧已拍但身份错位：请求 " + (r.identity || "?") + "，出帧时是 " + String(r.identityAtFrame || "(没量到)").slice(0, 40) + " ⇒ 该档产物表达不了这个身份，换 mp-weixin-real 重拍；帧 " + r.frame).replace(/\|/g, "／"), why: "带着错身份章的帧进账就是造假证据" });
     md.push("| " + it.id + " | IDENTITY_MISMATCH | 不作判 | " + r.frame + " |");
+    continue;
+  }
+  /* 帧里站着整页锁屏，而判点点名的不是锁屏自己的物件 ⇒ 这一帧问不出这条问题。
+     与 IDENTITY_MISMATCH 同一规矩：既不判红也不判绿，欠的是"过门槛的账号夹具"。 */
+  const lockSel = /\.lock-screen|__lock\b|LockScreen/;
+  const allLock = checks.length > 0 && checks.every((k) => lockSel.test(String(k.sel || k.selector || "")));
+  if (r.lockHit === true && !allLock) {
+    bucket.LOCK_SCREEN_BLOCKED++;
+    patches.push({ id: it.id, col: 9, new: ("帧已拍但整页锁屏在（" + String(r.lockAtFrame || "present").slice(0, 24) + "），被锁内容不在渲染树上 ⇒ 本条不作判；欠过完善度门槛的账号夹具，换档重拍；帧 " + r.frame).replace(/\|/g, "／"), why: "锁屏帧量出来的 absent 不是产品判红" });
+    md.push("| " + it.id + " | LOCK_SCREEN_BLOCKED | 不作判 | " + r.frame + " |");
     continue;
   }
   if (!landingOk) {

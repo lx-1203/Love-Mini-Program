@@ -1,0 +1,316 @@
+[
+ {
+  "name": "stamp-rewrite-v2",
+  "file": "scripts/qa/verify-ops-corpus-stamp.mjs",
+  "args": [
+   "--write",
+   "--ops",
+   "reports/audit/round-6/ops",
+   "--out",
+   "reports/audit/round-7/ops-corpus-stamp-v2.json"
+  ],
+  "timeoutMin": 3,
+  "why": "改完判据正文先重记内容戳：没有这一条，stage-7 的执行腿与 stage-6 的执行腿就无法区分是哪一版语料。"
+ },
+ {
+  "name": "refreeze-ops-copy",
+  "file": "scripts/qa/freeze-ops-copy.mjs",
+  "args": [
+   "--from",
+   "reports/audit/round-6/ops",
+   "--to",
+   "reports/audit/round-7/ops"
+  ],
+  "timeoutMin": 3,
+  "why": "重造冻结副本：现副本停在 2026-09-25，--copy 实测 11+ 文件与本轮所读不同。"
+ },
+ {
+  "name": "stamp-verify-copy",
+  "file": "scripts/qa/verify-ops-corpus-stamp.mjs",
+  "args": [
+   "--copy",
+   "reports/audit/round-7/ops",
+   "--stamp",
+   "reports/audit/round-7/ops-corpus-stamp-v2.json"
+  ],
+  "timeoutMin": 3,
+  "why": "副本必须与戳逐文件同内容，否则它不能当本轮语料引用（这一条红了就别继续往下跑）。"
+ },
+ {
+  "name": "gate-selectors-exist-mock",
+  "file": "scripts/qa/verify-case-selectors-exist.mjs",
+  "args": [],
+  "timeoutMin": 5,
+  "why": "改完名字再量一次点不到的还有几条：判红轴=动词紧邻类名或显式 tapTarget。",
+  "advisory": true
+ },
+ {
+  "name": "gate-tab-bar-single-source-stage7",
+  "file": "scripts/qa/verify-tab-bar-single-source.mjs",
+  "args": [],
+  "timeoutMin": 3,
+  "advisory": true,
+  "why": "只读静态核对（MP-R2-PAGES-DISCOVER-INDEX-014 的判点载体）⇒ advisory：红了不带走后面的腿，但终报仍是 FAIL。"
+ },
+ {
+  "name": "rebuild-showcase-stage7",
+  "file": "apps/client/scripts/build-showcase-isolated.mjs",
+  "args": [],
+  "timeoutMin": 25,
+  "why": "showcase 档只被 VIP 开关类用例需要，重建保持一致性。"
+ },
+ {
+  "name": "rebuild-mock-stage7",
+  "file": "scripts/qa/run-npm-script.mjs",
+  "args": [
+   "--cwd",
+   "apps/client",
+   "--script",
+   "build:mp-weixin:mock"
+  ],
+  "timeoutMin": 25,
+  "why": "改了判据指向的类名不算改代码，但 #70 的执行器修复与任何 src 改动都要重建三档才能复跑判据台。"
+ },
+ {
+  "name": "rebuild-real-stage7",
+  "file": "scripts/qa/run-npm-script.mjs",
+  "args": [
+   "--cwd",
+   "apps/client",
+   "--script",
+   "build:mp-weixin:real:isolated"
+  ],
+  "timeoutMin": 25,
+  "why": "真实档单独 isolated 脚本，不用会写进 mock 目录的那个 npm 脚本。"
+ },
+ {
+  "name": "gate-band-freshness-stage7",
+  "file": "scripts/qa/verify-band-freshness.mjs",
+  "args": [
+   "--out",
+   "reports/audit/round-7/band-freshness-stage7"
+  ],
+  "timeoutMin": 5,
+  "why": "三档产物不得晚于任何未提交改动，且符号级深检要命中。"
+ },
+ {
+  "name": "open-window-mock-stage7",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin",
+   "--settle",
+   "24"
+  ],
+  "timeoutMin": 14,
+  "why": "重建会打掉模拟器连接 ⇒ 每条执行腿前重新开窗接回设备。"
+ },
+ {
+  "name": "exec-A-mock-stage7",
+  "file": "scripts/qa/r-exec-cli.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin",
+   "--out",
+   "reports/audit/round-7/exec-A-mock-stage7",
+   "--tap",
+   "--identity",
+   "A",
+   "--label",
+   "round-7-stage7-A-mock",
+   "--manifests",
+   "PAGES-HOME-INDEX,PAGES-LOGIN-INDEX,PAGES-MESSAGES-INDEX,PAGES-NEARBY-INDEX,PAGES-REGISTER-INDEX,SUBPACKAGES-CAMPUS-CAMPUS-HUB,SUBPACKAGES-CAMPUS-CAMPUS-INDEX,SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC,SUBPACKAGES-CHAT-CHAT-SESSION-INDEX,SUBPACKAGES-CIRCLES-CIRCLES-INDEX,SUBPACKAGES-VILLAGE-VILLAGE-POST,SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH,次要18,次要19,次要20,次要21,次要22"
+  ],
+  "timeoutMin": 240,
+  "why": "只重跑被改过的页（清单见下）；全量清单为空时退化为整轮。"
+ },
+ {
+  "name": "open-window-real-stage7",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--settle",
+   "24"
+  ],
+  "timeoutMin": 14,
+  "why": "真实档开窗。"
+ },
+ {
+  "name": "exec-A-real-stage7",
+  "file": "scripts/qa/r-exec-cli.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--out",
+   "reports/audit/round-7/exec-A-real-stage7",
+   "--tap",
+   "--real-cases-only",
+   "--identity",
+   "A",
+   "--label",
+   "round-7-stage7-A-real",
+   "--manifests",
+   "PAGES-HOME-INDEX,PAGES-LOGIN-INDEX,PAGES-MESSAGES-INDEX,PAGES-NEARBY-INDEX,PAGES-REGISTER-INDEX,SUBPACKAGES-CAMPUS-CAMPUS-HUB,SUBPACKAGES-CAMPUS-CAMPUS-INDEX,SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC,SUBPACKAGES-CHAT-CHAT-SESSION-INDEX,SUBPACKAGES-CIRCLES-CIRCLES-INDEX,SUBPACKAGES-VILLAGE-VILLAGE-POST,SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH,次要18,次要19,次要20,次要21,次要22"
+  ],
+  "timeoutMin": 180,
+  "why": "真实档 requiresReal 用例（A 身份）。"
+ },
+ {
+  "name": "exec-guest-real-stage7",
+  "file": "scripts/qa/r-exec-cli.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--out",
+   "reports/audit/round-7/exec-guest-real-stage7",
+   "--tap",
+   "--real-cases-only",
+   "--identity",
+   "guest",
+   "--label",
+   "round-7-stage7-guest-real",
+   "--manifests",
+   "PAGES-HOME-INDEX,PAGES-LOGIN-INDEX,PAGES-MESSAGES-INDEX,PAGES-NEARBY-INDEX,PAGES-REGISTER-INDEX,SUBPACKAGES-CAMPUS-CAMPUS-HUB,SUBPACKAGES-CAMPUS-CAMPUS-INDEX,SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC,SUBPACKAGES-CHAT-CHAT-SESSION-INDEX,SUBPACKAGES-CIRCLES-CIRCLES-INDEX,SUBPACKAGES-VILLAGE-VILLAGE-POST,SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH,次要18,次要19,次要20,次要21,次要22"
+  ],
+  "timeoutMin": 180,
+  "why": "真实档 requiresReal 用例（游客身份）。"
+ },
+ {
+  "name": "gate-real-coverage-stage7",
+  "file": "scripts/qa/verify-real-coverage.mjs",
+  "args": [],
+  "timeoutMin": 5,
+  "why": "requiresReal × 双身份的覆盖债必须归零才算这一轮跑完。",
+  "advisory": true
+ },
+ {
+  "name": "stamp-check-stage7",
+  "file": "scripts/qa/verify-ops-corpus-stamp.mjs",
+  "args": [
+   "--check",
+   "--ops",
+   "reports/audit/round-6/ops",
+   "--stamp",
+   "reports/audit/round-7/ops-corpus-stamp-v2.json"
+  ],
+  "timeoutMin": 3,
+  "why": "跑完之后复算：执行过程中语料又被改过的话，这一条会红，那些腿的判决就不能整体引用。",
+  "advisory": true
+ },
+ {
+  "name": "queue-homogeneity-stage7",
+  "file": "scripts/qa/verify-ops-corpus-stamp.mjs",
+  "args": [
+   "--queue",
+   "scripts/qa/ui-queue.round7-stage7.json"
+  ],
+  "timeoutMin": 3,
+  "why": "本队列自己的 4 条执行腿必须读同一份语料（同轮不同判据 = 结论不可拼）。",
+  "advisory": true
+ },
+ {
+  "name": "reconcile-frameplan-stage7",
+  "file": "scripts/qa/reconcile-frameplan.mjs",
+  "args": [
+   "--apply"
+  ],
+  "timeoutMin": 3,
+  "why": "重建产物之前先把配方重算一遍（收口波追加的 12 行 + 放行的 3 行升级要进 final，否则 reshoot 腿看不见它们）。"
+ },
+ {
+  "name": "open-window-mock-for-reshoot-stage7",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin",
+   "--settle",
+   "24"
+  ],
+  "timeoutMin": 14,
+  "why": "重建之后必须重新把模拟器接到 mock 档，reshoot 拍的才是新产物。"
+ },
+ {
+  "name": "reshoot-mock-stage7",
+  "file": "scripts/qa/shoot-frameplan.mjs",
+  "args": [
+   "--plan",
+   "reports/audit/round-7/frameplan-round7-final.json",
+   "--project",
+   "apps/client/dist/build/mp-weixin",
+   "--label",
+   "round-7-stage7-mock",
+   "--ws-taps"
+  ],
+  "timeoutMin": 180,
+  "why": "① 的帧级终态：重建后的 mock 档重拍配方里的 SHOOT 行（stage-6b 那批帧出自比 src 旧约 1 小时的产物，不能当结案证据）。"
+ },
+ {
+  "name": "open-window-real-for-frames-stage7",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--settle",
+   "24"
+  ],
+  "timeoutMin": 14,
+  "why": "游客/真实态的帧要在 real 档拍，先接回 real 窗口。"
+ },
+ {
+  "name": "reshoot-guest-real-stage7",
+  "file": "scripts/qa/shoot-frameplan.mjs",
+  "args": [
+   "--plan",
+   "reports/audit/round-7/frameplan-round7-guest-real.json",
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--label",
+   "round-7-stage7-guest-real-frames"
+  ],
+  "timeoutMin": 120,
+  "why": "mock 档表达不了的那批（游客态/真实数据）在 real 档出帧。"
+ },
+ {
+  "name": "reshoot-A-real-stage7",
+  "file": "scripts/qa/shoot-frameplan.mjs",
+  "args": [
+   "--plan",
+   "reports/audit/round-7/frameplan-round7-a-real.json",
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--label",
+   "round-7-stage7-a-real-frames"
+  ],
+  "timeoutMin": 30,
+  "why": "真实档登录态（A 身份）取景：requiresReal 的复验帧（MP-R2-CAMPUSPOST-010 等）既不能在 mock 档量到，也不该由游客腿代拍。配方=frameplan-round7-a-real.json。",
+  "advisory": false
+ },
+ {
+  "name": "open-window-real-for-tour-b",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--settle",
+   "24"
+  ],
+  "timeoutMin": 14,
+  "why": "巡检 B 身份前要先把模拟器接到 real 档窗口。"
+ },
+ {
+  "name": "tour-B-real-stage7",
+  "file": "scripts/qa/tour-r6.mjs",
+  "args": [],
+  "timeoutMin": 180,
+  "env": {
+   "TOUR_PROJECT": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+   "TOUR_LABEL": "round-7-stage7-tour-B-real",
+   "TOUR_AUDIT_SUB": "round-7",
+   "TOUR_CKPT_NAME": "tour-R7-stage7-B.json",
+   "TOUR_LOG_NAME": "tour-R7-stage7-B.log",
+   "IDENTITIES": "B"
+  },
+  "why": "游客身份巡检（real 档）：IDENTITIES=B 只跑第二把身份，与 stage-6b 的 mock 档 A 身份合起来才是「62+ 页 × 双身份」。"
+ }
+]

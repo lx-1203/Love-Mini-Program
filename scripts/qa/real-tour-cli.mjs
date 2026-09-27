@@ -25,6 +25,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync, rmSync, r
 import http from "node:http";
 import { dirname, join, resolve, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { guardUiLease } from "./ui-lease.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 /* manifest 里的 path 必须是「仓库相对 + 正斜杠」，与 tour-r6.mjs 同方言 ——
@@ -154,6 +155,8 @@ function routeNow() {
   const rows = readFileSync(TSV, "utf8").split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))
     .map((l) => { const a = l.split("\t"); return a.length >= 2 ? { ident: a[0].trim(), route: a[1].trim() } : { ident: "A", route: a[0].trim() }; });
   if (!rows.length) { console.log("REALTOUR_RESULT=FAIL reason=清单为空（空扫描集不得占设备）"); process.exit(1); }
+  /* 会开页 ⇒ 先排队（与 r-exec-cli / shoot-frameplan 同一把租约，跨通道互斥）。 */
+  guardUiLease({ owner: "real-tour-" + LABEL, tag: "REALTOUR_LEASE", failTag: "REALTOUR", exitCode: 1 });
   mkdirSync(OUT_DIR, { recursive: true });
 
   const idents = [...new Set(rows.map((r) => r.ident))];

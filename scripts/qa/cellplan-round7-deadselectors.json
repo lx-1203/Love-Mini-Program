@@ -1,0 +1,47 @@
+{
+  "$comment": "11 条死选择器的逐条处置（由 scripts/qa/verify-case-selectors-exist.mjs 打印的门红/门提示派生，名字不是手抄）。等 stage-6 的 5 条执行腿跑完再落进 reports/audit/round-6/ops/*.json，落完必须重新 --write 语料戳（#69）并按点名到的页定向复测。",
+  "$source": "node scripts/qa/verify-case-selectors-exist.mjs --max-samples 40",
+  "$measured": "mock 与 real 两档同数：selectors=1870 页内精确=1302 页内文本=327 别处 wxml=230 只在样式=1 全无=10；其中判红 3 条、只提示 8 条",
+  "A-rename-to-real-name": [
+    {
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+      "id": "CH12",
+      "dead": ".campus-hub__cert-btn",
+      "proposed": ".campus-guide__btn",
+      "file": "apps/client/src/subpackages/campus/campus/hub.vue",
+      "line": 216,
+      "evidence": "该节点 :221 挂 @tap=goCertification、:220 aria-label=t('campus.hub.goCertify')；两档 wxml 都有 class=campus-guide__btn（mock 命中，real 命中 1 处）",
+      "prestate": "节点在 v-if=!isVerified 里（:215）⇒ 必须在未认证身份下才渲染，复测腿要带未认证夹具，否则会点空",
+      "blocking": true
+    }
+  ],
+  "B-criterion-targets-a-removed-feature": [
+    {
+      "manifest": "PAGES-LOGIN-INDEX",
+      "ids": ["LG29", "LG30"],
+      "dead": ".sms-send-btn",
+      "finding": "登录页的短信发码链路是**整删**而不是改名：apps/client/src/pages/login/index.vue:207 写着「onSendSmsCode 短信链路已整删——本页注册唯一入口即本函数」，:1221 写着「MP-R2-PAGES-LOGIN-INDEX-015：.sms-send-btn* 死样式已删（模板零引用，注册模式整删）」；发码按钮现在住在 pages/register/index（两档 wxml 均有 .sms-btn__spinner / .sms-btn__text）",
+      "disposition": "不许删这两条。拆成两件事落：① LG29/LG30 在登录页改写成幽灵入口断言（登录页不得再出现发码入口与倒计时：普查 .sms-btn / .sms-send-btn 两档均零命中 ⇒ 判点成立且可证伪）；② 它们真正想验的行为（非法手机号不发码、连点只发一次、倒计时禁用态）挪到 PAGES-REGISTER-INDEX 上以 .sms-btn 为目标重出一条，命名 MP-R7-REGISTER-SMS-*，并在台账里挂历史别名指回 LG29/LG30",
+      "why-not-just-rename": "直接把 .sms-send-btn 改成 .sms-btn 会把「登录页」的判据悄悄变成「注册页」的判据——测的东西换了页，却沿用旧号，下一轮没人能看出这条曾经判的是登录页",
+      "blocking": true
+    },
+    {
+      "manifest": "PAGES-LOGIN-INDEX",
+      "id": "LG38",
+      "dead": ".sms-send-btn（出现在可点元素普查枚举串里）",
+      "disposition": "枚举串按两档实测重写：登录页现存入口为 .btn-primary、.btn-phone-quick、.btn-guest、.dev-user-entry、.login-sms-fallback、.terms-wrap .checkbox（本轮 grep 自 apps/client/dist/build/mp-weixin/pages/login/index.wxml）；删掉枚举里已不存在的名字，死按钮判定逻辑与「每态必须变化一次」的判点不变",
+      "blocking": false
+    }
+  ],
+  "C-advisory-not-blocking": {
+    "count": 7,
+    "rows": [
+      "PAGES-HOME-INDEX#H13 .header-search —— 这条本来就是「首页无搜索入口」的幽灵断言，名字不该存在；判红它等于把断言判反",
+      "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX#CS04 #CS31 .chat-session —— 名字只在组件样式里，判据问的是 sessionId/网络条数，不需要点它",
+      "PAGES-LOGIN-INDEX#LG32 .picker-field —— 名字来自 expected 文案（选中后文本变化），执行器不点它；但文案引用了不存在的类名，属陈旧引用，随 B 组一起修订文案",
+      "SUBPACKAGES-VILLAGE-VILLAGE-INDEX#VI35 .village-back、SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH#PUB01 .publish-toolbar（只在 wxss）、次要20#OT12 .length-1 —— 同为文案提及；PUB01 是样式残留，OT12 像是运行期拼名（词根 length 在该页 wxml 里没命中，故没进 runtimeComposed，需复核员确认是不是动态拼接）"
+    ],
+    "rule": "只提示不否决的口径：动词紧邻类名（点/点击/按下/tap…后面只允许空白或冒号）或显式 tapTarget 才算执行器真要点的目标。整句扫动词表会误伤——实测两个方向都错过：searchTap 里的 tap 让 H13 被判红，而「留空点 .sms-send-btn」因词表只写「点击」被漏掉"
+  },
+  "$apply-note": "落地顺序：#69 重造冻结副本前先做本表 A/B 两组（它们要改 ops 正文与 tapTarget），改完 merge-tapfix-lanes 之后统一重新 --write 戳、重建三档产物、按改动页定向复测，再跑终报面板"
+}

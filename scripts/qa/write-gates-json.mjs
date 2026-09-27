@@ -10,6 +10,7 @@
      - 环数与判据台期望不一致 ⇒ 照样如实写进去，只在 caveat 里点名。
    用法：PATH=<node22 目录>:$PATH node scripts/qa/write-gates-json.mjs [--out <path>] [--dry] */
 import { execFileSync, execSync } from "node:child_process";
+import { acquireUi, releaseUi, renewUi } from "./ui-lease.mjs";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { resolve, join } from "node:path";
 
@@ -61,7 +62,30 @@ function readLog(n) {
   return { code: 0, out: readFileSync(f, "utf8") };
 }
 
-const pre = REUSE ? readLog("pre") : run(process.execPath, ["scripts/qa/verify-backend-restarted.mjs"], { timeout: 120000 });
+/* 模拟器独占租约（round-7 补）：本机两条通道驱动同一个 DevTools 模拟器，
+   并发不会报错，只会互相换页——实测一批测量因此作废（58 行落点探针取空）。
+   拿不到租约就一行都不跑，而不是"跑完再解释为什么到处是 ERR"。 */
+const DRY_NO_SIDE_EFFECTS = process.argv.includes("--dry");
+const SRC_REUSE = REUSE || DRY_NO_SIDE_EFFECTS;
+const UI_LEASE_OWNER = "gates-writer-" + process.pid;
+if (DRY_NO_SIDE_EFFECTS) {
+  /* --dry 只做两件事：算出将要落盘的内容 + 校验解析。不占设备、不复跑会写库的前置件。 */
+  console.log("GATESJSON_LEASE=SKIPPED_DRY（--dry 不许抢租约，也不许跑 G7/G8/G9 —— G8 每跑一次真写 4 行库）");
+} else if (process.env.QA_SKIP_UI_LEASE === "1") {
+  console.log("GATESJSON_LEASE=SKIPPED（QA_SKIP_UI_LEASE=1，明知有别的驱动时会污染测量）");
+} else {
+  const gotLease = acquireUi({ owner: UI_LEASE_OWNER, batch: "R7" });
+  if (!gotLease.ok) {
+    console.log("GATESJSON_RESULT=FAIL reason=模拟器已被占用（" + gotLease.holders.map((h) => h.owner + "@pid" + h.pid + " 租期到 " + h.leaseUntil).join("；") +
+      "）⇒ 一行都不跑；确要并发请显式设 QA_SKIP_UI_LEASE=1");
+    process.exit(2);
+  }
+  console.log("GATESJSON_LEASE=ACQUIRED " + String(gotLease.file).replace(process.cwd() + "/", "") + " owner=" + UI_LEASE_OWNER);
+  const releaseLease = () => { try { releaseUi({ owner: UI_LEASE_OWNER }); } catch (e) { /* 退出路径上的释放失败不该改判决 */ } };
+  process.on("exit", releaseLease);
+  for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => { releaseLease(); process.exit(sig === "SIGINT" ? 130 : 143); });
+}
+const pre = SRC_REUSE ? readLog("pre") : run(process.execPath, ["scripts/qa/verify-backend-restarted.mjs"], { timeout: 120000 });
 /* 前置件把结论与说明印在同一行（RESTARTED_RESULT=PASS JVM 晚于…），所以判定要看**词**而不是整行相等。
    写错这行会怎样：整趟被判成"前置件未 PASS"⇒ 三道 Gate 全记 BLOCKED。故障方向是安全的
    （宁可拒发 PASS 也不伪造），但确实是假阴性——本轮第一次跑就中过。 */
@@ -77,9 +101,9 @@ const preNote = String(pre.out).split(/\r?\n/).filter((l) => /RESTARTED_(NEWEST_
 
 let g7 = { code: 0, out: "" }, g8 = { code: 0, out: "" }, g9 = { code: 0, out: "" };
 if (preResult === "PASS") {
-  g7 = REUSE ? readLog("G7") : run(process.execPath, ["apps/client/scripts/build-real-isolated.mjs", "--check-only"]);
-  g8 = REUSE ? readLog("G8") : run(process.execPath, ["scripts/qa/g8-e2e.cjs"]);
-  g9 = REUSE ? readLog("G9") : run(process.execPath, ["scripts/qa/g9-probe.cjs"]);
+  g7 = SRC_REUSE ? readLog("G7") : run(process.execPath, ["apps/client/scripts/build-real-isolated.mjs", "--check-only"]);
+  g8 = SRC_REUSE ? readLog("G8") : run(process.execPath, ["scripts/qa/g8-e2e.cjs"]);
+  g9 = SRC_REUSE ? readLog("G9") : run(process.execPath, ["scripts/qa/g9-probe.cjs"]);
 } else {
   console.log("GATESJSON_note=前置件未 PASS ⇒ G7/G8/G9 一律记 BLOCKED（不沿用上一版载体的值）");
 }
@@ -147,6 +171,6 @@ doc.overall = ring;
 console.log(`GATESJSON precondition=${preResult} G7=${doc.G7_RESULT} G8=${doc.G8_RESULT}(${G8rings}) G9=${doc.G9_RESULT}(${G9ok}/${G9probed}) overall=${ring}`);
 console.log(`GATESJSON newDbKeys=${JSON.stringify(artifactIds)} missing-keys=${BAD.length}`);
 if (BAD.length) { console.log("GATESJSON_RESULT=FAIL reason=有机器的 KEY 取不到，写出来的载体就是假账"); process.exit(2); }
-if (!process.argv.includes("--write")) { console.log("GATESJSON_RESULT=DRY 加 --write 才落盘（防手滑覆盖历史载体）"); process.exit(0); }
+if (!process.argv.includes("--write")) { console.log("GATESJSON_RESULT=DRY 加 --write 才落盘（防手滑覆盖历史载体）；且上面那行 G7/G8/G9 读数出自上一次留档（dry 不复跑会写库的前置件）⇒ 别把它当本轮复验凭据"); process.exit(0); }
 writeFileSync(OUT, JSON.stringify(doc, null, 2) + "\n");
 console.log(`GATESJSON_RESULT=OK written=${OUT.replace(ROOT + "/", "")} gitSha=${doc.gitSha}`);

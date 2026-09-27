@@ -28,10 +28,13 @@
    "title": "手机号输入正常 11 位：自动 3-4-4 格式化且聚焦态生效",
    "tier": "normal",
    "pre": "同上进入注册页，键盘收起、字段 Idle",
-   "action": "focus 手机号 input（index.vue:494-506）→ 逐位输入 13888888888",
+   "action": "focus 手机号 input .field__input（index.vue:494-506）→ 逐位输入 13888888888",
    "expected": "显示值变为「138 8888 8888」（onPhoneInput 正则格式化 index.vue:152-156）；.field--focus 生效（focusField='phone'，index.vue:488,504）；无行内错误；phoneRegistered=false",
    "evidence": "normal：after 截图 + 输入框 value 断言 + console",
-   "requiresReal": false
+   "requiresReal": false,
+   "actionPreTapfix": "focus 手机号 input（index.vue:494-506）→ 逐位输入 13888888888",
+   "tapTarget": ".field__input",
+   "tapTargetEvidence": "apps/client/src/pages/register/index.vue:524"
   },
   {
    "id": "REG04",
@@ -137,10 +140,13 @@
    "title": "倒计时期间再次点击获取验证码：必须无请求、无 Toast、按钮维持禁用态",
    "tier": "normal",
    "pre": "承接 REG08 成功后（smsCountdown>0、按钮带 .sms-btn--cd，index.vue:549,556；倒计时由 :276-285 的 smsEndTime + setInterval 500ms 维护）",
-   "action": "tap .sms-btn ×1",
+   "action": "tap .sms-btn（index.vue:572 的 class=sms-btn 节点，:578 @tap=handleSendSms）×1",
    "expected": "500ms 内**不得**新增 send-code 请求、不得再弹 Toast（handleSendSms 首行守卫 smsSending||smsCountdown>0||submitting 直接 return，index.vue:256）；按钮文案继续倒计时、不重置为 60s、不闪回「获取验证码」（:556）；「点击后无反馈」是设计内行为，但须在 observed 记录「倒计时未跳号」的前后数值证据，不得只写「无反应」",
    "evidence": "normal：after 截图（前后倒计时数值）+ network 面板零新增断言 + console",
-   "requiresReal": false
+   "requiresReal": false,
+   "actionPreTapfix": "tap .sms-btn ×1",
+   "tapTarget": ".sms-btn",
+   "tapTargetEvidence": "apps/client/src/pages/register/index.vue:572"
   },
   {
    "id": "REG13",
@@ -174,10 +180,13 @@
    "title": "密码输入：空格自动剔除、全角字符校验文案、8/20 位边界",
    "tier": "normal",
    "pre": "手机号/验证码已就绪（不强制）",
-   "action": "依次输入到密码 input：'abcd123'（7 位）、'ab cd 1234'（含空格）、'１２３４５６７８ａｂ'（全角）、'Abcdef12!@#$%^&*12345'（21 位，maxlength=20）、'Abc12345'（合法中强）",
+   "action": "依次输入到密码 input .field__input：'abcd123'（7 位）、'ab cd 1234'（含空格）、'１２３４５６７８ａｂ'（全角）、'Abcdef12!@#$%^&*12345'（21 位，maxlength=20）、'Abc12345'（合法中强）",
    "expected": "含空格输入被 replace(/\\s/g,'') 去除（index.vue:169）；点注册时校验按 validatePassword 顺序给文案：7 位→「密码至少 8 位，需包含字母和数字」；含全角→「密码不能包含空格或全角字符」（:204）；>20 位→「密码最多 20 位」（:203，且 maxlength=20 已在输入侧截断 :581）；'Abc12345' → 无错误；每次错误均为行内 + 抖动 + Toast 三反馈（:339-349）",
    "evidence": "normal：逐档 after 截图（行内错误文案可读）+ 校验返回值断言 + console",
-   "requiresReal": false
+   "requiresReal": false,
+   "actionPreTapfix": "依次输入到密码 input：'abcd123'（7 位）、'ab cd 1234'（含空格）、'１２３４５６７８ａｂ'（全角）、'Abcdef12!@#$%^&*12345'（21 位，maxlength=20）、'Abc12345'（合法中强）",
+   "tapTarget": ".field__input",
+   "tapTargetEvidence": "apps/client/src/pages/register/index.vue:601"
   },
   {
    "id": "REG16",
@@ -233,10 +242,13 @@
    "title": "昵称特殊字符与 emoji：不得被静默改写，不得破坏布局",
    "tier": "normal",
    "pre": "wx.reLaunch('/pages/register/index') 进入后昵称字段空态（onNicknameInput 无任何过滤与截断逻辑，仅清行内错误，index.vue:183-186）",
-   "action": "依次输入 '<img src=x onerror=alert(1)>'、\"'\\\";-- \"、'😀🏵️'（代理对 emoji）、'   空格包边   '，读取每次 nickname.value",
+   "action": "依次输入到昵称框 .field__input '<img src=x onerror=alert(1)>'、\"'\\\";-- \"、'😀🏵️'（代理对 emoji）、'   空格包边   '，读取每次 nickname.value",
    "expected": "onNicknameInput 无任何过滤（index.vue:183-186，与手机号/验证码的白名单口径不同）→ 原样保留；页面必须以纯文本渲染、不解析任何标签/不触发弹窗（mp <input> 值不回写富文本）；emoji 不得导致长度统计异常（.length 计数含代理对，须记录 length 与 trim 后 length）；无 console error",
    "evidence": "normal：after 截图 + DOM/wxml 快照（无 img 节点）+ nickname.value 逐次抄录",
-   "requiresReal": false
+   "requiresReal": false,
+   "actionPreTapfix": "依次输入 '<img src=x onerror=alert(1)>'、\"'\\\";-- \"、'😀🏵️'（代理对 emoji）、'   空格包边   '，读取每次 nickname.value",
+   "tapTarget": ".field__input",
+   "tapTargetEvidence": "apps/client/src/pages/register/index.vue:697"
   },
   {
    "id": "REG21",
@@ -244,10 +256,13 @@
    "title": "出生日期 picker：默认值/未来日期上限/未成年拦截/清空四路",
    "tier": "normal",
    "pre": "生日字段空态（.field__pick-text 显示占位「出生日期」，index.vue:705-707）",
-   "action": "① tap picker 空白区确认弹层；② 选择明天（:end=today 应拒绝/不可选，:698）；③ 选择 16 年前日期（如 2010-01-01）后 tap .submit-btn；④ 选择 20 年前合法日期；⑤ 记录 picker 未选时 :value 回退值",
+   "action": "① tap picker 空白区（mode=date 的 picker 节点 .field__picker，index.vue:725，:731 @change=onBirthChange）确认弹层；② 选择明天（:end=today 应拒绝/不可选，:698，现号 :728）；③ 选择 16 年前日期（如 2010-01-01）后 tap .submit-btn（现号 :749，@tap=onSubmitGuarded :753）；④ 选择 20 年前合法日期；⑤ 记录 picker 未选时 :value 回退值（:727 的回退值是 2005-01-01）",
    "expected": "①picker 弹层正常打开（原生日期选择器，500ms 内可见）；②不可选/被 end 拦截止于今天；③isAdult 判否（:103-109）→ 行内「未满 18 岁暂无法注册」+ 抖动 + Toast，且**不发**注册请求；④合法日期写入 birthDate、文案色转 --filled 深色（:705-707,972-975）；⑤未选时弹层默认定位 2005-01-01（:697），但页面显示仍为占位文案 —— 二者不得混淆成「已填」",
    "evidence": "normal：弹层态 + 各步 after 截图 + birthDate 值与 errors.birth 求值 + network 零请求断言（③）",
-   "requiresReal": false
+   "requiresReal": false,
+   "actionPreTapfix": "① tap picker 空白区确认弹层；② 选择明天（:end=today 应拒绝/不可选，:698）；③ 选择 16 年前日期（如 2010-01-01）后 tap .submit-btn；④ 选择 20 年前合法日期；⑤ 记录 picker 未选时 :value 回退值",
+   "tapTarget": ".field__picker",
+   "tapTargetEvidence": "apps/client/src/pages/register/index.vue:725"
   },
   {
    "id": "REG22",
@@ -290,10 +305,13 @@
    "title": "逐字段非法提交：错误定位顺序与「协议未勾」专用路径",
    "tier": "normal",
    "pre": "其余字段全部填合法值（手机号/6 位码/合法密码/一致确认码/昵称/成年生日），协议未勾选",
-   "action": "tap .submit-btn 一次；随后依次制造：验证码 5 位、密码缺数字（'Abcdefgh'）、生日留空，每改一次点一次（间隔 >2s 避开守卫）",
+   "action": "tap .submit-btn（index.vue:749，:753 @tap=onSubmitGuarded；未同意协议时走 :340-343 专用分支，复选框热区 :770 的 agree__hit 不属本条目标）一次；随后依次制造：验证码 5 位、密码缺数字（'Abcdefgh'）、生日留空，每改一次点一次（间隔 >2s 避开守卫）",
    "expected": "协议未勾时走专用分支：复选框抖动 + Toast「请先阅读并勾选同意《用户协议》和《隐私政策》」，且**不写任何行内字段错误**（:340-343）；其余三例分别精确落 sms/password/birth 字段行内错误与对应文案（:213-222），零注册请求；同屏最多 1 条行内错误，不得多字段同时飘红造成定位失焦",
    "evidence": "normal：逐例 after 截图 + errors 全量求值 + network 零请求断言",
-   "requiresReal": false
+   "requiresReal": false,
+   "actionPreTapfix": "tap .submit-btn 一次；随后依次制造：验证码 5 位、密码缺数字（'Abcdefgh'）、生日留空，每改一次点一次（间隔 >2s 避开守卫）",
+   "tapTarget": ".submit-btn",
+   "tapTargetEvidence": "apps/client/src/pages/register/index.vue:749"
   },
   {
    "id": "REG26",
@@ -326,10 +344,13 @@
    "title": "业务失败分支：「该手机号已注册」→ 行内错误 + 次级登录出口出现且可用",
    "tier": "normal",
    "pre": "用已注册号码 13800000001（或真实后端已存在的号码）填完整合法表单；mock 构建下若后端不返「已注册」文案则该前置不可构造 → 如实记 unverifiable，禁止改用其它错误冒充",
-   "action": "tap .submit-btn；观察后 tap .ghost-btn「用这个手机号登录」（index.vue:730-732 @tap=goLogin）",
+   "action": "tap .submit-btn（index.vue:749，:753 @tap=onSubmitGuarded；判据后半段的 .ghost-btn 在现号 :760 的 v-if=phoneRegistered 里，静息不渲染，只有先由提交钮拿到「已注册」失败响应才会出现，故本条点名的是把这个态带出来的入口物件）；观察后 tap .ghost-btn「用这个手机号登录」（index.vue:730-732 @tap=goLogin，现号 :760）",
    "expected": "错误映射按 detail.includes('已注册')：行内「该手机号已注册，试试直接登录」+ 手机号抖动 + Toast「该手机号已注册，可直接登录」（:380-385）；.ghost-btn 出现（phoneRegistered=true）；tap 后 500ms 内路由变化（navigateBack 回登录页，栈深=1 时 reLaunch，:437-444）；已填内容不得被清空（:368 注释「失败不清空已填内容」）、密码回到密文；错误不得进 Sentry 上报噪音（:421-427 仅非 AppApiError/5xx 上报）",
    "evidence": "normal：after 截图（行内错误 + ghost-btn + Toast）+ 路由链 + console（须无 captureException 噪音）",
-   "requiresReal": false
+   "requiresReal": false,
+   "actionPreTapfix": "tap .submit-btn；观察后 tap .ghost-btn「用这个手机号登录」（index.vue:730-732 @tap=goLogin）",
+   "tapTarget": ".submit-btn",
+   "tapTargetEvidence": "apps/client/src/pages/register/index.vue:749"
   },
   {
    "id": "REG29",

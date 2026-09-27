@@ -103,7 +103,7 @@ for (const c of corpora) {
     }
     seen.push({ state: s.state, contentHash: s.contentHash });
     pool.set(key, seen);
-    shots.push(Object.assign({}, s, { corpus: c.name, sourceManifest: c.manifest }));
+    shots.push(Object.assign({}, s, { corpus: c.name, sourceManifest: c.manifest, bandSha: c.j.gitSha }));
     kept[c.name]++;
     byIdentity[s.identity || "?"] = (byIdentity[s.identity || "?"] || 0) + 1;
   }

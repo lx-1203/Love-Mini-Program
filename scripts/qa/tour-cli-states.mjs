@@ -23,6 +23,7 @@ import { join, dirname, relative, sep, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { evaluate, openPage, shot, element, routeStack, nodeCount, mintToken, bootSession, verifyLogin } from "./cli-automator.mjs";
 import { classifyStateVerdict } from "./states-verdict.mjs";
+import { guardUiLease } from "./ui-lease.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
@@ -43,6 +44,8 @@ const rows = readFileSync(TSV, "utf8").split(/\r?\n/).map((l) => l.replace(/\r$/
 if (!rows.length) { console.log("STATES_RESULT=FAIL reason=清单为空（空扫描集不得占设备、不得判绿）"); process.exit(2); }
 const badRows = rows.filter((r) => !r.expect || !r.tap);
 if (badRows.length) { console.log(`STATES_RESULT=FAIL reason=${badRows.length} 行缺 tap/expect 选择器 —— 没有元素级判据的行拍了帧也判不了，先从清单里去掉`); badRows.slice(0, 5).forEach((r) => console.log("  BADROW " + [r.identity, r.page, r.state].join("/"))); process.exit(2); }
+/* 会开页 ⇒ 先排队。并发不报错、只互相换页，实测一整批测量作废（见 ui-lease.mjs 头注）。 */
+guardUiLease({ owner: "tour-cli-states-" + LABEL, tag: "STATES_LEASE", failTag: "STATES" });
 
 const GIT_SHA = (() => { try { return require("node:child_process").execSync("git rev-parse --short HEAD", { cwd: REPO, encoding: "utf8" }).trim(); } catch { return "unknown"; } })();
 mkdirSync(OUT_DIR, { recursive: true });

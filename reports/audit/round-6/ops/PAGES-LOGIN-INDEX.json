@@ -143,7 +143,12 @@
    "requiresReal": false,
    "tapTarget": ".input-field",
    "tapTargetEvidence": "apps/client/src/pages/login/index.vue:697",
-   "needsIdentity": "guest"
+   "needsIdentity": "guest",
+   "automatable": false,
+   "notAutomatableReason": "机制=执行器没有输入值读数腿，且输入腿值是写死的。r-exec-cli.mjs:408-410 把输入腿固定成 --value 123456（6 个字符），产不出判据要的 11 位合法手机号；行结构（:126-132）里只有类名条数与一张帧，没有 input 的 value 字段，probeMany（:141-153）只回 selectAll 的条数不回几何不回属性，所以「回显 11 位」和「canPhoneLogin=true」两样都量不到。附带一条判据缺陷：「提交按钮无禁用样式」是永真条款——编译产物里表单主按钮只有 btn--loading 一个条件类（两档 wxml 的 form-btns 节点，源码 :754），根本没有禁用态类名，这条永远不会红，不该算判到东西。",
+   "notAutomatableCarrier": "载体在，但当时不渲染：apps/client/src/pages/login/index.vue:714-717 是 id=login-phone + class=input-field + type=number + maxlength=11；两档 login wxml 各命中 id=login-phone 1 处、input-field 2 处；整棵 .login-form 在 v-else 分支（:704），静息态未展开（LG09-after.png 帧内无输入框）⇒ 现有 tapTarget=.input-field 的失败是「没展开表单」，不是「没点名类名」。",
+   "notAutomatablePage": "pages/login/index",
+   "notAutomatableFrom": "cellplan-round7-login-skips.json"
   },
   {
    "id": "LG12",
@@ -157,7 +162,12 @@
    "requiresReal": false,
    "tapTarget": ".input-field",
    "tapTargetEvidence": "apps/client/src/pages/login/index.vue:697",
-   "needsIdentity": "guest"
+   "needsIdentity": "guest",
+   "automatable": false,
+   "notAutomatableReason": "机制=输入腿固定 6 字符 + 无 value 读数 + 无 rect 读数。判据是「灌 20 位后实际值长度 ≤11」，本通道只能灌 123456（r-exec-cli.mjs:408-410），截断这件事在数学上就无从判；「不出现横向溢出/换行/遮挡」要输入框 rect，probeMany 只取 size 条数（:141-153），行里也没有几何字段。",
+   "notAutomatableCarrier": "同 LG11：apps/client/src/pages/login/index.vue:714-717（maxlength=11 在 :717），两档 login wxml 各命中 id=login-phone 1 处；节点藏在 v-else 的 .login-form（:704）里，静息态不渲染。",
+   "notAutomatablePage": "pages/login/index",
+   "notAutomatableFrom": "cellplan-round7-login-skips.json"
   },
   {
    "id": "LG13",
@@ -171,7 +181,12 @@
    "requiresReal": false,
    "tapTarget": ".input-field",
    "tapTargetEvidence": "apps/client/src/pages/login/index.vue:697",
-   "needsIdentity": "guest"
+   "needsIdentity": "guest",
+   "automatable": false,
+   "notAutomatableReason": "机制=脏字符注入 + toast 读数 + network 计数三样腿都没有。判据要灌「全角 + 中文 + 空格 + emoji」组合再看是否被 canPhoneLogin 拦成 toast login.phoneAndCodeInvalid 且不发带脏字符的 POST：输入腿固定灌 123456（r-exec-cli.mjs:410），行里 toast 与 console 字段是写死的空串（:131），也没有 network 腿，一条内更发不出「输入后点提交」的两步（targets 只到 tapTarget 加 classesOf(action)，而 .btn-primary 抠不出来）。",
+   "notAutomatableCarrier": "手机号框与提交钮两档都在：apps/client/src/pages/login/index.vue:714-717 与 :754；两档 wxml 里 btn-primary 类名各 2 处（快捷面板主按钮在前、表单主按钮在后），执行器只点第一个匹配（r-exec-cli.mjs:405-412）⇒ 静息态会点到快捷面板那个微信登录按钮上，判的就不是本条。表单整棵在 :704 的 v-else 分支，静息态不渲染。",
+   "notAutomatablePage": "pages/login/index",
+   "notAutomatableFrom": "cellplan-round7-login-skips.json"
   },
   {
    "id": "LG14",
@@ -199,7 +214,12 @@
    "requiresReal": false,
    "tapTarget": ".input-field",
    "tapTargetEvidence": "apps/client/src/pages/login/index.vue:697",
-   "needsIdentity": "guest"
+   "needsIdentity": "guest",
+   "automatable": false,
+   "notAutomatableReason": "机制=一条内要 3 轮不同输入值 + toast 文案 + 请求计数。判据要求依次灌 12345678901、2380013800、1380013800 并各点一次提交，看三种都判非法并 0 请求；输入腿只有一个写死值（r-exec-cli.mjs:410），一条 case 也只发一轮交互（:405-414 的循环是「依次点不同选择器」，不是「同一选择器灌不同值」），toast 与 network 两个观测量本通道不落账（:131）。",
+   "notAutomatableCarrier": "同 LG11：apps/client/src/pages/login/index.vue:714-717 与 :754 在两档 wxml 均命中（id=login-phone 各 1 处，btn-primary 各 4 处），静息态表单未展开。",
+   "notAutomatablePage": "pages/login/index",
+   "notAutomatableFrom": "cellplan-round7-login-skips.json"
   },
   {
    "id": "LG16",
@@ -225,9 +245,12 @@
    "expected": "输入后视觉为密文圆点而非明文；实现必须为 mp 合法属性组合 type=\"text\" + :password=\"true\"（index.vue:784-795，MP-R2-PAGES-LOGIN-INDEX-001 代码层与编译产物双复核标「已修复待终验」，本条即其 UI 终验环节）；出现明文即判 P1 复发；label.sr-only 与 aria-label 关联存在（模板 :779）",
    "evidence": "normal：after 截图（密文可见性为判定核心，必须截图）+ console + DOM 属性读数（type/password）",
    "requiresReal": false,
-   "tapTarget": ".input-field",
-   "tapTargetEvidence": "apps/client/src/pages/login/index.vue:719",
-   "needsIdentity": "guest"
+   "tapTarget": "#login-password",
+   "tapTargetEvidence": "源码 apps/client/src/pages/login/index.vue:736-739，同一个 input 节点上带 id=login-password、class=input-field、type=text、password 绑定为 true，:735 另有 label class=sr-only 且 for=login-password（判据要求的 a11y 关联在位）。编译产物两档均命中且各 1 处：apps/client/dist/build/mp-weixin/pages/login/index.wxml 与 apps/client/dist/build/mp-weixin-real/pages/login/index.wxml（这两份 wxml md5 相同，ae0e923986558f7b0fb2368c831fef4b），id=login-password 1 处、password 属性 1 处、sr-only 标签 2 处。注意 manifest 里旧的 tapTargetEvidence 写的是 index.vue:719，那是重构前的行号，现源码该行是别的东西，行号已按当前源码改到 :736-739。",
+   "needsIdentity": "guest",
+   "tapTargetFrom": "cellplan-round7-login-skips.json",
+   "tapTargetConfirmedAt": "两档 wxml 内 id=login-password 唯一。消歧是必须的：.input-field 在编译产物里有 2 个节点（手机号框与密码框），执行器只点第一个匹配（r-exec-cli.mjs:405-412 逐个下发 targets），用 .input-field 会点到手机号框上，出来的帧再判密文就是假绿。同页没有能区分这两框的类名（两框同为 .input-item 下的 .input-field，父级类名也相同），所以唯一可用的精确载具是 id。",
+   "tapTargetQuote": "「输入后视觉为密文圆点而非明文；实现必须为 mp 合法属性组合 type=text + password=true」"
   },
   {
    "id": "LG18",
@@ -241,7 +264,12 @@
    "requiresReal": false,
    "tapTarget": ".input-field",
    "tapTargetEvidence": "apps/client/src/pages/login/index.vue:719",
-   "needsIdentity": "guest"
+   "needsIdentity": "guest",
+   "automatable": false,
+   "notAutomatableReason": "机制=固定 6 字符输入腿 + 无 network body 快照。判据核心是「65 位超上限被拦」与「特殊字符提交体原样且 JSON 序列化不破」，前者要灌 65 个字符（:410 只灌 123456），后者要看请求体，通道没有 network 腿；「页面不出现溢出/换行错乱」还要 rect。",
+   "notAutomatableCarrier": "密码框两档在：apps/client/src/pages/login/index.vue:736-739（id=login-password，无 maxlength），两档 wxml 各命中 1 处；主按钮 :754 在位；表单整棵在 :704 的 v-else 分支，静息态不渲染。",
+   "notAutomatablePage": "pages/login/index",
+   "notAutomatableFrom": "cellplan-round7-login-skips.json"
   },
   {
    "id": "LG19",
@@ -319,7 +347,12 @@
    "requiresReal": false,
    "tapTarget": ".input-field",
    "tapTargetEvidence": "apps/client/src/pages/login/index.vue:697",
-   "needsIdentity": "guest"
+   "needsIdentity": "guest",
+   "automatable": false,
+   "notAutomatableReason": "机制=判据要点火一个已从被测产物里删掉的状态位（要 automation_evaluate 置 phoneRegisterMode=true），补 tapTarget 无从谈起。apps/client/src/pages/login/index.vue:49-50 明写「短信倒计时 / phoneRegisterMode 已全部删除（注册唯一入口=独立注册页）」，:749 注明原 v-if=phoneRegisterMode 的三组输入节点已整删，:131 与 :207 与 :530 分别记录 canPhoneRegister、onSendSmsCode、onBirthDateChange 已删。两档 login wxml 里 phoneRegisterMode、login-nickname、login-sms-code 命中数均为 0，本页也没有子组件可藏（apps/client/dist/build/mp-weixin/pages/login/index.json 的 usingComponents 是空对象）。所以判据后半段（置 true 后三控件出现、文案变 registerButton、出现「返回登录」）在这份产物上永远不会成立，它不是红也不是绿，是题目过期。前半段（数 .input-field 应为 2 个节点）也不是点击能判的，且 .input-field 无 BEM",
+   "notAutomatableCarrier": "已核两档：apps/client/dist/build/mp-weixin/pages/login/index.wxml 与 apps/client/dist/build/mp-weixin-real/pages/login/index.wxml（md5 同为 ae0e923986558f7b0fb2368c831fef4b）中 input-field 2 处、sms-send-btn 0 处、login-sms-code 0 处、login-nickname 0 处、picker 0 处。现存的两框在 :714-717 与 :736-739。",
+   "notAutomatablePage": "pages/login/index",
+   "notAutomatableFrom": "cellplan-round7-login-skips.json"
   },
   {
    "id": "LG25",
@@ -347,7 +380,12 @@
    "requiresReal": false,
    "tapTarget": ".input-field",
    "tapTargetEvidence": "apps/client/src/pages/login/index.vue:697",
-   "needsIdentity": "guest"
+   "needsIdentity": "guest",
+   "automatable": false,
+   "notAutomatableReason": "机制=原生键盘态 + 输入框 rect 读数，通道两样都拿不到。判据是「键盘弹起时被聚焦输入框完整可见、协议行与登录按钮不被永久顶出屏幕」，要的是聚焦输入框与安全区的几何比较；probeMany 只回 selectAll 条数（r-exec-cli.mjs:141-153，fields 只要 size 且只取 length），行里没有 rect 字段，键盘本身是原生层不在页面 DOM 里。可自动化的只有半步（聚焦 #login-phone 确实会把键盘顶起来，再点 .login-page 根节点收起；点 .login-page 这半步已被证明发得出去——同 corpus 里 LG27 的 observed 带 tap[tap:.login-page]，且两档 wxml 里 login-page 类名各只在根 view 上 1 处），但那两步做完判据仍然没被任何读数决定。",
+   "notAutomatableCarrier": "手机号框 apps/client/src/pages/login/index.vue:714-717（cursor-spacing=20 在 :713），密码框 :736-739，根节点 .login-page :567；三者两档 wxml 均命中（id=login-phone 各 1 处，login-page 在根 view 上）。表单整棵在 :704 的 v-else 分支，静息态不渲染，所以现有 tapTarget=.input-field 报 no such element。",
+   "notAutomatablePage": "pages/login/index",
+   "notAutomatableFrom": "cellplan-round7-login-skips.json"
   },
   {
    "id": "LG27",
@@ -383,7 +421,11 @@
    "action": "手机号留空点 .sms-send-btn；再填 1380013800（10 位）点一次",
    "expected": "两次均 toast login.phoneInvalid（onSendSmsCode index.vue:237-240），倒计时不启动（smsCountdown 保持 0、按钮文案不变），0 条 POST /v1/sms/send-code",
    "evidence": "normal：after 截图 + console + network 计数=0",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "不许删这两条。拆成两件事落：① LG29/LG30 在登录页改写成幽灵入口断言（登录页不得再出现发码入口与倒计时：普查 .sms-btn / .sms-send-btn 两档均零命中 ⇒ 判点成立且可证伪）；② 它们真正想验的行为（非法手机号不发码、连点只发一次、倒计时禁用态）挪到 PAGES-REGISTER-INDEX 上以 .sms-btn 为目标重出一条，命名 MP-R7-REGISTER-SMS-*，并在台账里挂历史别名指回 LG29/LG30",
+   "notAutomatableDeadName": ".sms-send-btn",
+   "notAutomatableFrom": "cellplan-round7-deadselectors.json"
   },
   {
    "id": "LG30",
@@ -394,7 +436,16 @@
    "action": "点 .sms-send-btn 一次；随后 1s 内再连点 4 次",
    "expected": "toast「login.smsSentMock」文案且仅在 dev/mock 构建内嵌 mockCode（index.vue:250-254，MP-R2-PAGES-LOGIN-INDEX-005 文案 i18n 化：en-US 语言下不得吐中文）；按钮进入禁用态 sms-send-btn--disabled 并显示 `${n}s` 逐秒递减（:255-263）；连点 4 次因 smsCountdown>0 首行短路（:236）→ network 面板 POST /v1/sms/send-code 计数必须 =1（同时服务端 60s 窗口内该手机号验证码记录只 1 条，回读口径独立写）；倒计时归零后按钮恢复可点",
    "evidence": "critical：before + after 截图 + Toast 文案（含 mockCode 可见性）+ console + network 计数（4 次点击 → 1 条请求）",
-   "requiresReal": true
+   "requiresReal": true,
+   "automatable": false,
+   "notAutomatableReason": "机制三重叠加，且第一重就致命：载体 .sms-send-btn 已从本页整删——apps/client/src/pages/login/index.vue:1221 注明「.sms-send-btn 死样式已删（模板零引用，注册模式整删）」，:207 注明 onSendSmsCode 已删，两档 login wxml 命中 0。获取验证码现在只在 pages/register/index（源码 :572-576 的 .sms-btn 与 sms-btn--sending/--cd/--disabled，两档 register wxml 各命中 6 处，md5 同为 19873e63fc04a0c50700775afad1eaff），跨页了，而本页 manifest 的 case 只会被开在 pages/login/index。第二重：判据要 60 秒挂钟逐秒递减并归零恢复，执行器只有固定 sleep（SETTLE 与 :413-414 的 700ms），没有定时器腿。第三重：要 POST /v1/sms/send-code 计数=1，通道无 network 腿。另外它 requiresReal=true，而判据同时要求 mockCode 提示只出现在 dev/mock 构建里——real 档与 mockCode 天然互斥（mockCode 现只在 apps/client/src/p",
+   "notAutomatableDeadName": ".sms-send-btn",
+   "notAutomatableFrom": "cellplan-round7-login-skips.json",
+   "notAutomatableCarrier": "两档 login wxml：sms-send-btn 0 处、sms-send-btn--disabled 0 处、login-sms-code 0 处；两档 register wxml：sms-btn 6 处、field__input 6 处。",
+   "notAutomatablePage": "pages/login/index",
+   "notAutomatableAlso": [
+    "cellplan-round7-deadselectors.json"
+   ]
   },
   {
    "id": "LG31",
@@ -405,7 +456,12 @@
    "action": "#login-sms-code 依次输入 5 位、7 位（观察截断）、6 位，各点一次「注册/登录」主按钮",
    "expected": "7 位被截为 6 位（maxlength=6，模板 :857）；5 位时 canPhoneRegister=false → toast phoneAndCodeInvalid、0 请求（index.vue:143 要求长度恰为 6）；6 位且其余项合法才放行；截断逻辑不得把值污染成非数字",
    "evidence": "normal：after 截图 + console + network 计数 + 输入框 value 读数",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "机制=目标节点根本不在这份产物里（不是没点名，是点名的东西已删）。判据要点 #login-sms-code 与「注册/登录」主按钮，但内联注册的三输入框与验证码链路已整删（apps/client/src/pages/login/index.vue:49-50 与 :207 与 :749），两档 login wxml 中 login-sms-code 命中 0。注册验证码框现在是 pages/register/index 的 .field__input（源码 :558-563，maxlength=6，两档 register wxml 各命中），要测得把这条挂到 PAGES-REGISTER-INDEX 的 manifest 上。即便搬过去，判据仍要 5 位/7 位/6 位三种长度与 toast/请求计数，固定值输入腿（r-exec-cli.mjs:410）与无 toast/network 读数这两关还在。本行是唯一一条真·没点名的：failureReason 就是「action 含交互动词但没点名可交互元素」，因为 # 开头的 id 选择器 classesOf 抠不出来（:134-137 只认 . 开头带 BEM 分隔符的类名）。",
+   "notAutomatableCarrier": "两档 login wxml：login-sms-code 0 处、sms-send-btn 0 处；两档 register wxml：field__input 6 处、maxlength=6 1 处。",
+   "notAutomatablePage": "pages/login/index",
+   "notAutomatableFrom": "cellplan-round7-login-skips.json"
   },
   {
    "id": "LG32",
@@ -477,7 +533,12 @@
    "action": "reLaunch 到上述带参 URL，观察是否按 redirect 落地、是否被注入 dev-user 会话，并读取 storage 的 pending-login-redirect",
    "expected": "登录页只注册 onShow（index.vue:83），**不存在 onLoad/query 读取**（全文件 grep 无 onLoad）→ redirect/from 等参数为幽灵参数，实际登录后落点只由 storage 桥接 key 决定（utils/navigation.ts:185-215 + index.vue:188-190）；dev-user=1 由 App.onLaunch 的 applyDevUserFromLaunch 与全局导航拦截器消费（utils/dev-user.ts:80-132），非本页；若实测 redirect 参数直接生效或 scripts/r11-param-map.json 类固化表把 redirect/from 记为「已消费」，判文档与代码不符（本轮以源码为准，不读该固化表）",
    "evidence": "noop：执行日志（终路由 + storage 回读 + 参数生效性结论）+ console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "机制=这是一条代码审计题，运行时半段还额外要带 query 的开页与 storage 回读，三样都不是点击。判据主体「登录页只注册 onShow，不存在 onLoad/query 读取」我已按源码核过：apps/client/src/pages/login/index.vue 全文 onLoad 命中 0 次，:3 只 import 了 onShow，:75 是唯一页面钩子——这是静态断言，补任何 tapTarget 都判不了它。运行时那半段要 reLaunch 到带 redirect 与 dev-user 的 URL 并回读 storage 的 pending-login-redirect：执行器开页是在组边界按 manifest 声明的 page 固定开的（r-exec-cli.mjs:308 起，openPage 不带 query），行结构里也没有 storage 读数腿（:126-132 只有 route 与类名条数）。tier=noop 也说明它本来不该被算成交互用例。所以它记「判据未点名可观测物件」是对的处置，要补的是判据里的可观测物件（例如把结论改成量登录后落点路由，那才有条数可判），不是 tapTarget。",
+   "notAutomatableCarrier": "本页可用来判「幽灵参数」的运行时观测量只有 routeStack（r-exec-cli.mjs:431-432 已在读），但它回答不了「参数是否被消费」；两档 login wxml 里与参数消费相关的可点节点只有 .dev-user-entry（源码另有 DEV 入口，两档命中 3 处），点它判的是 dev 入口本身，不是 query 消费，属另一条 case 的范围。",
+   "notAutomatablePage": "pages/login/index",
+   "notAutomatableFrom": "cellplan-round7-login-skips.json"
   },
   {
    "id": "LG38",
@@ -488,7 +549,11 @@
    "action": "逐态截图并普查页内全部可点元素（.btn-primary ×2、.btn-phone-quick、.login-sms-fallback、.btn-guest、.checkbox、.terms-link ×2、.dev-user-entry、.sms-send-btn、.btn-text ×3、picker 触发区）在 500ms 内是否产生可观测反馈（路由/DOM/Toast 之一）",
    "expected": "每个可点元素点击后 500ms 内必须有路由变化、DOM 变化或 Toast 之一，否则判「死按钮」FAILED（G4 死按钮=0）；Loading 态不得永驻（任何请求终态后 .btn--loading 必须消失，finally 分支 index.vue:312-314、:404-406、:473-475）；Error 态 toast 必须展示后端具体 message 或 login.loginFailed（:466-472），不得静默；Empty/Refreshing 明确记「本页无列表与下拉刷新语义，不适用」（配合 LG27 的未开刷新断言）；未构造成功的态如实标 UNVERIFIED 并写明缺哪种前置",
    "evidence": "normal：after 截图（每态一张 + 死按钮普查清单）+ 路由断言 + console；关键失败态另需 Toast 文案",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "枚举串按两档实测重写：登录页现存入口为 .btn-primary、.btn-phone-quick、.btn-guest、.dev-user-entry、.login-sms-fallback、.terms-wrap .checkbox（本轮 grep 自 apps/client/dist/build/mp-weixin/pages/login/index.wxml）；删掉枚举里已不存在的名字，死按钮判定逻辑与「每态必须变化一次」的判点不变",
+   "notAutomatableDeadName": ".sms-send-btn（出现在可点元素普查枚举串里）",
+   "notAutomatableFrom": "cellplan-round7-deadselectors.json"
   }
  ]
 }

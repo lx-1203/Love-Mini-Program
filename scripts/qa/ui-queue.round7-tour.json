@@ -1,0 +1,69 @@
+[
+ {
+  "name": "probe-runtime-holes-real",
+  "file": "scripts/qa/verify-evidence-holes.mjs",
+  "args": [
+   "--mode",
+   "measure",
+   "--project",
+   "apps/client/dist/build/mp-weixin-real"
+  ],
+  "timeoutMin": 20,
+  "why": "DC33 的运行时半段（进出 3 次后栈是否累积）——源码只能证 onUnload 里调了 dispose，证不了不泄漏，所以单独量一次。跑在 real 档：那 2958B 的洞就是 real 档游客刀量出来的，换档去量等于换个东西判。身份这一腿不锁：本探针只问栈长与残留，不问登录态。"
+ },
+ {
+  "name": "open-window-mock-for-tour",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin",
+   "--settle",
+   "24"
+  ],
+  "timeoutMin": 14,
+  "why": "巡检跑在 mock 档（B 身份的登录页/游客态由页面自身守卫表达）。产物刚被取景腿用过，窗口必须重新落在 mock 包上。"
+ },
+ {
+  "name": "tour-round7-final",
+  "file": "scripts/qa/tour-r6.mjs",
+  "args": [],
+  "env": {
+   "TOUR_PROJECT": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin",
+   "TOUR_LABEL": "round-7-tour-final",
+   "TOUR_AUDIT_SUB": "round-7",
+   "TOUR_CKPT_NAME": "tour-R7-final.json",
+   "TOUR_LOG_NAME": "tour-R7-final.log",
+   "IDENTITIES": "A,B"
+  },
+  "timeoutMin": 260,
+  "why": "⑤ 要求「巡检 62+ 页 × 双身份」绑本轮最终产物。round-6 那一轮巡检绑的是 874ff52f 时代的包，按契约已过期，不能拿来充当 round-7 的巡检证据。IDENTITIES=A,B 即已登录 + 游客两把身份。"
+ },
+ {
+  "name": "gate-state-truth",
+  "file": "scripts/qa/verify-state-truth.mjs",
+  "args": [
+   "reports/audit/round-7"
+  ],
+  "timeoutMin": 15,
+  "why": "巡检跑完立刻查四态账（1107/巡检/取景/冻结快照 的口径一致性），把「同一状态两帧逐字节相同」这类采集侧问题当场量出来，而不是留到终报。"
+ },
+ {
+  "name": "close-out-open-window-mock",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin",
+   "--settle",
+   "18"
+  ],
+  "timeoutMin": 12,
+  "why": "收口：窗口留在 mock 档，下一轮开局不会跨档位残留。"
+ },
+ {
+  "name": "gate-evidence-holes",
+  "file": "scripts/qa/verify-evidence-holes.mjs",
+  "args": [],
+  "timeoutMin": 10,
+  "why": "三洞全要 DECIDED 才算过；DC33 若停在 BOOKED 就是探针没跑成，红得正确。"
+ }
+]

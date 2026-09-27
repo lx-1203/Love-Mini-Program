@@ -61,8 +61,11 @@ export function ideCall(tool, extra = [], opts = {}) {
     });
   } catch (e) {
     // 只看 "Command failed: <exe> -e const e=p" 等于没有信息：把 stderr 尾巴带出来（本轮已经吃过太多次）
-    const errTail = String((e && e.stderr) || "").replace(/\s+/g, " ").slice(0, 260);
-    const outTail = String((e && e.stdout) || "").replace(/\s+/g, " ").slice(0, 260);
+    // 取**尾巴**而不是头部：那条 bootstrap 的 -e 串本身就有 200+ 字，
+    // 头部截断会把真正的 MCP 报错（"timeout waiting for automator response" 之类）整个挤掉——
+    // 今天 real 档 guest 腿连挂两次都因此查不到原因。
+    const errTail = String((e && e.stderr) || "").replace(/\s+/g, " ").slice(0, 200);
+    const outTail = String((e && e.stdout) || "").replace(/\s+/g, " ").slice(-460);
     throw new Error(tool + " 调用失败：" + String(e && e.message || "").slice(0, 90) + (outTail ? " | stdout=" + outTail : "") + (errTail ? " | stderr=" + errTail : ""));
   }
   const i = out.indexOf("{");
@@ -72,9 +75,30 @@ export function ideCall(tool, extra = [], opts = {}) {
   return j.result ?? j;
 }
 
-export function evaluate(fnSource, opts) {
-  const r = ideCall("automation_evaluate", ["--fn-source", fnSource], opts);
-  return r && r.result && typeof r.result.result === "string" ? r.result.result : JSON.stringify(r);
+/* 只重试**传输层超时**这一种错：`simulator_open_page` 之后那一下，IDE 的 automator 通道会忙不过来，
+   实测报 "timeout waiting for automator response"（real-tour-cli.mjs:189 早就记过同一处、并重试了；
+   今天 guest 腿在 real 档一开局就死在这里，而窗口明明是活的——clearSession/verifyLogin 都正常）。
+   判据本身出错会**有答案**（absent / no-answer / ERR 字符串），不会走到这条，所以这里不放水：
+   产品失败照旧上抛，只有"没送达"才重发。 */
+const TRANSPORT_RETRY_RE = /timeout waiting for automator response|automator.*EBUSY|通道忙/i;
+export function evaluate(fnSource, opts = {}) {
+  const attempts = Number(opts.attempts || 3);
+  const waits = [1500, 3000, 6000];
+  let lastErr = null;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const r = ideCall("automation_evaluate", ["--fn-source", fnSource], opts);
+      return r && r.result && typeof r.result.result === "string" ? r.result.result : JSON.stringify(r);
+    } catch (e) {
+      lastErr = e;
+      if (!TRANSPORT_RETRY_RE.test(String(e && e.message || ""))) throw e;
+      if (i + 1 < attempts) {
+        const t = Date.now() + (waits[i] || 6000);
+        while (Date.now() < t) { /* 等 IDE 的 automator 通道空出来 */ }
+      }
+    }
+  }
+  throw new Error("automation_evaluate 重试 " + attempts + " 次仍是传输层超时：" + String(lastErr && lastErr.message || "").slice(0, 220));
 }
 export function openPage(route, query, opts) {
   const extra = ["--page", route.startsWith("/") ? route : "/" + route];

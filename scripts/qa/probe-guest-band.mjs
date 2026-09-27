@@ -21,6 +21,7 @@ import { createHash } from "node:crypto";
 import { join, resolve } from "node:path";
 import { openPage, routeStack, clearSession, verifyLogin } from "./cli-automator.mjs";
 import { assertGuestCapable } from "./artifact-band.mjs";
+import { guardUiLease } from "./ui-lease.mjs";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
 const argv = process.argv.slice(2);
@@ -48,6 +49,8 @@ line("VITE_API_MODE", band.band.mode || "?");
 line("VITE_MODE", band.band.viteMode || "?");
 line("envSha8", band.band.sha8 || "?");
 line("sourcePredicate", JSON.stringify(band.src || "非 mock 档，无需该判点"));
+/* 静态腿读盘不占设备；从这里开始要开页，所以先把队排上。 */
+guardUiLease({ owner: "probe-guest-band-" + PAGE, tag: "GUESTBAND_LEASE", failTag: "GUEST_BAND" });
 
 /** 一条腿：清会话 → 验证 → 开页 → 再验证 → 再看落点。返回 null 表示这条腿没量成。 */
 function leg(tag, warm) {

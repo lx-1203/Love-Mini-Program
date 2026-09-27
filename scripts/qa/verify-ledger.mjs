@@ -22,7 +22,22 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const AUDIT_ROOT = join(REPO_ROOT, "reports", "audit");
 const VERBOSE = process.env.LEDGER_VERBOSE === "1";
 
-const roundDir = resolve(REPO_ROOT, process.argv[2] || join("reports", "audit", "round-2"));
+/* 默认轮次不许写死成 round-2。那是本脚本最早年代的参数：权威台账后来一路搬到 round-6，
+   默认值却没跟着走 ⇒ 不带参数跑这条门，审的是 round-2 那份 9 列历史表，
+   而**权威台账的形状与 status 词表从来没被这条门查过**（实测：默认调用打出的 DATA_ROWS=294 全是 round-2 的行）。
+   现在默认取"最新的、带 issue-matrix.md 的 round-N"，并把选了谁、为什么打在输出里；显式传参仍然优先。 */
+function newestLedgerRoundName() {
+  try {
+    return readdirSync(AUDIT_ROOT)
+      .filter((d) => /^round-\d+$/.test(d) && existsSync(join(AUDIT_ROOT, d, "issue-matrix.md")))
+      .map((d) => ({ d, n: Number(d.replace("round-", "")) }))
+      .sort((a, b) => b.n - a.n)[0]?.d || "";
+  } catch { return ""; }
+}
+const EXPLICIT_ROUND = process.argv[2];
+const roundDir = resolve(REPO_ROOT, EXPLICIT_ROUND || join("reports", "audit", newestLedgerRoundName() || "round-2"));
+console.log("LEDGER_TARGET=" + relative(REPO_ROOT, roundDir).replace(/\\/g, "/") +
+  " source=" + (EXPLICIT_ROUND ? "argv（显式传参）" : "自动选取最新的 round-N/issue-matrix.md"));
 if (!existsSync(roundDir)) { console.log(`LEDGER_RESULT=FAIL reason=目录不存在 ${roundDir}`); process.exit(1); }
 const rel = (p) => relative(REPO_ROOT, p).split("\\").join("/");
 
@@ -288,7 +303,7 @@ let shapeRows = 0, shapeOff = [], shapeDecl = 0, shapeNoHeader = [];
 let rotated = [];
 for (const f of currentMatrixFiles.filter((x) => /issue-matrix\.md$/.test(x))) {
   const ls = txt(f).split("\n");
-  const hdr = ls.find((l) => /^\|/.test(l) && /\|\s*status\s*\|/i.test(l));
+  const hdr = ls.find((l) => /^\|/.test(l) && /\|\s*(?:status|状态)\s*\|/i.test(l));
   const want = hdr ? hdr.split("|").length - 2 : 0;
   if (!want) { shapeNoHeader.push(rel(f)); continue; }
   shapeDecl = want;
@@ -314,13 +329,27 @@ for (const f of currentMatrixFiles.filter((x) => /issue-matrix\.md$/.test(x))) {
    注意允许"词 + 括注"（`已修复待复验（本轮收口落工作树…）` 是合法写法），只要求以受控词开头。 */
 let badStatus = [];
 {
-  const VOCAB = /^(待修复|已修复待复验|待复验|已修复|保留-判据不成立|判据不成立|未取证|需裁决|撤销|并入|不另立案|噪声|非新缺陷|回归核对|不立账)/;
+  /* 词表只有一个来源：normalize-ledger-status.mjs 里那份数组。
+     这里原先自己写了一条正则（含 `已修复`，而那份数组没有），两份各写各的 ⇒
+     同一行 status 这边算合法、那边算越界，立账工具当场被绊倒（详见 round7-NOTES §90.2）。
+     读不到来源就判红，不退回旧正则 —— 退回等于把漂移留着还盖上"门是绿的"。 */
+  let VOCAB_RE = null;
+  try {
+    const src = txt(join(REPO_ROOT, "scripts/qa/normalize-ledger-status.mjs"));
+    const VOCAB = JSON.parse("[" + (src.match(/const VOCAB = \[([\s\S]*?)\];/) || [])[1].trim() + "]");
+    if (!Array.isArray(VOCAB) || VOCAB.length < 5) throw new Error("词表太小或形状不对：" + JSON.stringify(VOCAB).slice(0, 60));
+    VOCAB_RE = new RegExp("^(?:" + VOCAB.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")");
+    console.log(`LEDGER_VOCAB_SOURCE=normalize-ledger-status.mjs 档数=${VOCAB.length}`);
+  } catch (e) {
+    badStatus.push(["(词表来源)", "读不到 scripts/qa/normalize-ledger-status.mjs 的 VOCAB：" + e.message]);
+    console.log("LEDGER_VOCAB_SOURCE=UNREADABLE（不退回旧正则，值域核对整体判红）");
+  }
   for (const f of currentMatrixFiles.filter((x) => /issue-matrix\.md$/.test(x))) {
     const ls = txt(f).split("\n");
-    const hdr = ls.find((l) => /^\|/.test(l) && /\|\s*status\s*\|/i.test(l));
+    const hdr = ls.find((l) => /^\|/.test(l) && /\|\s*(?:status|状态)\s*\|/i.test(l));
     if (!hdr) continue;
     const cols = hdr.split("|").map((s) => s.trim());
-    const si = cols.findIndex((c) => /^status$/i.test(c));
+    const si = cols.findIndex((c) => /^(?:status|状态)$/i.test(c));
     if (si < 0) continue;
     /* 「不立账」只在「NOISE 不予立账」那一节里合法：那一节登记的是"没有缺陷实体的串"（正则截断产物、
        幽灵锚点），不是被追踪的缺陷。若允许它出现在第一节，就成了把真缺陷改成"不立账"即可脱离追踪的后门，
@@ -338,7 +367,7 @@ let badStatus = [];
       if (c.length - 2 !== cols.length - 2) continue; // 错位行由 SHAPE 报，这里不重复报
       const v = String(c[si] || "").trim();
       const id = (c[1] || "").trim();
-      if (!VOCAB.test(v)) badStatus.push([id, v]);
+      if (!VOCAB_RE || !VOCAB_RE.test(v)) badStatus.push([id, v]);
       else if (/^不立账/.test(v) && !(li > nFrom && li < nTo)) badStatus.push([id, v + "〔不立账只允许出现在「不予立账」小节，L" + (nFrom + 1) + ".." + nTo + "〕"]);
     }
   }

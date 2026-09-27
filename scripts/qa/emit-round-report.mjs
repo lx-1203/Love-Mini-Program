@@ -31,12 +31,15 @@
  *   --sidecar-dir <dir>        分诊台 --out 落点（reports/ 之外），默认 .zcode/tmp/report-emitter
  *   --node22 <path>            默认 D:/codex-tools/node-v22.17.0-win-x64/node.exe
  *   --skip-live-gates          不复跑 G7/G8/G9/probe；记为一条 FAIL，不出绿报告
+ *   --lease-probe-only         只看有没有人持有模拟器租约后退出（不取锁、不跑任何门）
+ *   实时门还受 UI 租约自动保护：有别的驱动在跑时，等价于 --skip-live-gates 并在报告里写明原因。
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync, existsSync, statSync, mkdirSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname, join, resolve, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { acquireUi, renewUi, releaseUi, heldLeases } from "./ui-lease.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const relPosix = (p) => String(p).split(sep).join("/");
@@ -73,7 +76,20 @@ const OUT_REPORT = toRel(flag("report", join(ROUND_DIR, "round-6-report.md")));
 const OUT_METRICS = toRel(flag("metrics", join(ROUND_DIR, "round-6-metrics.json")));
 const SIDE_DIR = toRel(flag("sidecar-dir", ".zcode/tmp/report-emitter"));
 const NODE22 = flag("node22", "D:/codex-tools/node-v22.17.0-win-x64/node.exe");
-const SKIP_LIVE = has("skip-live-gates");
+let SKIP_LIVE = has("skip-live-gates");
+let LIVE_SKIP_WHY = "--skip-live-gates 生效";
+/* 只读探针：回答「现在跑我会不会去碰模拟器」，不取租约、不写任何锁文件。
+   为什么要有 —— 这个工具的实时分支会开页、会重建产物，它的守卫不能在真跑一轮的时候才第一次被检验；
+   拿 --skip-live-gates 验又会直接跳过守卫那段代码。探针只看，绝不落下自己的锁。 */
+if (has("lease-probe-only")) {
+  const hs = heldLeases();
+  for (const h of hs) console.log(`  holder ${h.resource} owner=${h.owner} pid=${h.pid} leaseUntil=${h.leaseUntil}`);
+  console.log(`LEASE_PROBE holders=${hs.length}`);
+  console.log(hs.length
+    ? "LEASE_PROBE_RESULT=BUSY ⇒ 实时门(G7/G8/G9/probe)会被跳过并记为缺证据"
+    : "LEASE_PROBE_RESULT=FREE ⇒ 实时门会跑（会开页，先确认没有别的驱动）");
+  process.exit(0);
+}
 
 function readJsonOrNull(p) { try { return JSON.parse(readFileSync(resolve(ROOT, p), "utf8")); } catch { return null; } }
 
@@ -325,6 +341,64 @@ G.dirty = runCmd("git worktree 脏项", "git", ["status", "--porcelain"]);
 G.dirtyApps = runCmd("git worktree 脏项(apps/)", "git", ["status", "--porcelain", "--", "apps/"]);
 G.queue = runGate("verify-queue-reconcile", "scripts/verify-queue-reconcile.mjs", [ROUND_DIR], { timeoutMs: 300000 });
 G.triage = runGate("triage-exec-failures", "scripts/qa/triage-exec-failures.mjs", ["--results", EXEC, "--out", TRIAGE_BASE], { timeoutMs: 900000 });
+/* 档位新鲜度：本轮实测到「执行轮跑在 22:14 之前那一份产物上，而 mock 包 22:22 才重建」，
+   以及「showcase 包缺三条本轮修复」。这两件事在没有这道门之前，只有我去翻 mtime 才会发现。 */
+const FRESH_BASE = pj(SIDE_DIR, "band-freshness-r" + ROUND_TAG);
+G.fresh = runGate("verify-band-freshness", "scripts/qa/verify-band-freshness.mjs", ["--out", FRESH_BASE + ".json"], { timeoutMs: 900000 });
+/* 免罪锚点新鲜度：台账里「这条判据不成立，因为某常量=false」这类理由，会被同一轮的修复悄悄作废。
+   本轮实测抓到一次（MP-R2-CAMPUSPOST-010 的免罪理由被 ③ 第①项反掉，缺陷原地复活且无人报警）。 */
+G.anchors = runGate("verify-disproof-anchors", "scripts/qa/verify-disproof-anchors.mjs", []);
+/* 语法体检放在面板里，是因为一次重建要 40 分钟，而"少一个 }"这类错误本来可以在 2 秒内发现。 */
+G.parse = runGate("parse-check-sfc", "scripts/qa/parse-check-sfc.mjs", ["--from-git", "apps/client"], { timeoutMs: 300000 });
+/* 帧债归置门：拦的是"照着旧配方去拍那些帧证明不了的行"——拍了不但白烧模拟器，
+   还会给每行留下一个"有帧即已验"的假结案。本轮实测到配方里有 5 行属于这一类。 */
+G.debtTriage = runGate("verify-frame-debt-triage", "scripts/qa/verify-frame-debt-triage.mjs", []);
+/* 台账里每一条"还欠判决"的行都必须有去向；取景配方是从 merged 输入派生的、**不读台账状态列**，
+   所以台账新增的欠账行可以完全不在配方里而没有任何门会喊（本轮实测 19 行里 12 行是这样）。 */
+G.frameCoverage = runGate("verify-frame-debt-coverage", "scripts/qa/verify-frame-debt-coverage.mjs", [], { timeoutMs: 120000 });
+/* 三份手写计划（死选择器改名 / 登录页身份 / 补点名目标）落判据台用的载体。这里按 dry 跑：
+   它红了有两种意思 —— 要么计划与正文已经漂移（有人在计划之外改了 ops），要么某条新名字在产物里其实不存在。
+   两种都必须被看见，不能等收口波 --apply 时才发现。 */
+G.opsCellPlan = runGate("apply-ops-cellplans --dry（手写计划还能不能落进判据台）", "scripts/qa/apply-ops-cellplans.mjs", [], { timeoutMs: 180000 });
+
+/* 判点本体（88 条 SPEC）此前只在两条旧队列里跑过，终报面板根本没读它 ⇒ "判据成立"这句话没有门在管。
+   这条把它接进门：条数与唯一 id 一起打印，重复 id 不否决（多条同 id 是刻意保留的两个判点，合并会改强度），
+   但措辞必须用唯一 id 数，不然 total 会被读成"88 个不同判决"。 */
+G.sourceShape = runGate("verify-source-shape（判点本体是否还在盘上成立）", "scripts/qa/verify-source-shape.mjs", [], { timeoutMs: 300000 });/* ④ 的"按可辩护默认落地"以前只有我写的段落背书；这条门把它变成会红的判据（四项各绑一个载体）。 */
+
+/* WS 通道与 CLI 通道是否互斥：机制层用空白锁目录跑探针（不碰 IDE、不碰真锁），
+   真 IDE 那一半只能在开窗口时量 —— 这里报的是前者，措辞里不许混成"已验完"。 */
+G.wsExcl = runGate("probe-ws-cli-exclusion（租约层的 WS⊥CLI 探针，空白锁目录）", "scripts/qa/probe-ws-cli-exclusion.mjs", [], { timeoutMs: 120000 });G.rulings = runGate("verify-rulings-landed", "scripts/qa/verify-rulings-landed.mjs", []);
+
+/* 判据台侧的帧债：① 说的"54 条 NEEDS_UI_FRAME"其实是判据台条目，不是台账行，
+   两批 id 有交集但不相等 ⇒ 只看台账会把「台账收口了、判据还欠帧」读成没问题。 */
+G.critFrame = runGate("verify-criteria-frame-debt（判据台每一条欠帧有没有会被拍的去处 + frame 路径是否真在盘上）", "scripts/qa/verify-criteria-frame-debt.mjs", ["--strict"], { timeoutMs: 120000 });/* G8 RING6 的"计数字段两侧一致"这半段在 g8-e2e 里只是打印、不会因不一致而红，
+G.tabBar = runGate("verify-tab-bar-single-source（④：面板字面量相加 == --tab-bar-total-h 的静态核对）", "scripts/qa/verify-tab-bar-single-source.mjs", [], { timeoutMs: 120000 });
+   判得动的是这条只读探针（GET only，任何时刻可跑，凭据运行时解析不上命令行）。 */
+G.adminCounts = runGate("probe-admin-post-counts（RING6 计数字段两侧一致）", "scripts/qa/probe-admin-post-counts.mjs", ["--limit", "5"], { timeoutMs: 240000 });
+/* 游客落点：26 组裁定与本轮实测落地对必须双向守恒，且每组都要有具名复测腿。
+   结案与否由 triage 门读 booked+measured 后报 OPEN_RULING，这条门管的是"裁定还成立吗"。 */
+G.guestLanding = runGate("verify-guest-landing（book）", "scripts/qa/verify-guest-landing.mjs", ["--mode", "book"]);
+/* 证据缺口（要求出帧却没拿到帧）逐洞换成了可重跑判据；停在 BOOKED 说明运行时探针没跑成，红得正确，
+   绝不允许把"洞起了名字"当成"洞已结案"。 */
+G.holes = runGate("verify-evidence-holes", "scripts/qa/verify-evidence-holes.mjs", []);
+/* 载具自身的自检：一条"名字叫一致却只判 HTTP"的环（G8 RING6）能骗过我一整轮，
+   而骗过它的正是我自己那句打印截断 —— 所以凡是本轮新写/新改的判点函数，都必须在面板里跑一次它的负例样本。
+   跑红不代表产品坏，代表那条判点**已经没能力变红**（样本会先骂出来）。 */
+G.g8Selftest = runGate("g8-e2e --selftest（RING6 计数字段判点）", "scripts/qa/g8-e2e.cjs", ["--selftest"], { timeoutMs: 60000 });
+G.npmScriptSelftest = runGate("run-npm-script --selftest（构建/静默两档成功判据）", "scripts/qa/run-npm-script.mjs", ["--selftest"], { timeoutMs: 60000 });
+/* 后台（apps/admin）不在 DevTools 自动化载具的覆盖里，它的文案缺失只能这样判：
+   把两份 locale 真编译成对象、按 47 个视图里 t("…") 用到的 1424 个键逐个解析。
+   本轮这条门第一次跑就抓到 2 个两侧都缺的键（Whispers 页），修完复跑 BAD=0。 */
+G.adminI18n = runGate("probe-admin-i18n-keys --all", "scripts/qa/probe-admin-i18n-keys.mjs", ["--all"], { timeoutMs: 180000 });
+/* 真实模式覆盖守恒：requiresReal 那批必须"在 real 档被判过"，且 A 与 guest 各一条。
+   本轮实测到 queue-reconcile 数"有没有一行"会把 SKIPPED 也算成覆盖，于是真实模式量为零
+   而账面全绿（round7-NOTES §92）。这条门认状态、认档位、认身份，不认执行器自己写的理由。 */
+G.realCoverage = runGate("verify-real-coverage", "scripts/qa/verify-real-coverage.mjs", [], { timeoutMs: 300000 });
+/* 后端新鲜度守恒：③ 写着"重建 + 重启 8080"。这条门用四个时间戳判"运行中的那份是不是 HEAD 那份"，
+   成立就不必再重启一次共享实例（重启会打断正在跑的真实模式腿），不成立就当场红。
+   判点：apps/api 工作树干净 + 每个 .java 都有不早于它的 .class + 监听 8080 的进程启动时间 ≥ 最新 class。 */
+G.backendFresh = runGate("verify-backend-fresh", "scripts/qa/verify-backend-fresh.mjs", [], { timeoutMs: 300000 });
 G.readj = runGate("readjudicate-evidence", "scripts/qa/readjudicate-evidence.mjs", [EXEC, "--ops", OPS_DIR, "--no-lines", "--samples", "1"], { timeoutMs: 300000 });
 G.stateTruth = runGate("verify-state-truth", "scripts/qa/verify-state-truth.mjs", [ROUND_DIR], { timeoutMs: 180000 });
 G.ledger = runGate("verify-ledger", "scripts/qa/verify-ledger.mjs", [LEDGER_DIR], { timeoutMs: 600000 });
@@ -356,6 +430,30 @@ const roundCorpusDirs = (() => {
 const EVIDENCE_SCOPE = [ROUND_DIR, ...roundCorpusDirs].join(",");
 G.corpusScoped = runGate("verify-evidence-corpus（本轮 scope）", "scripts/qa/verify-evidence-corpus.mjs", ["--scope", EVIDENCE_SCOPE], { timeoutMs: 600000 });
 G.provenanceScoped = runGate("verify-provenance-all（本轮 scope）", "scripts/qa/verify-provenance-all.mjs", ["--scope", EVIDENCE_SCOPE], { timeoutMs: 600000 });
+/* 用例语料版本戳：回答"这一轮 1107 例判的是哪一版正文"。执行腿开跑前 --write 记一次，收尾 --check 复算：
+   跑的过程中正文被改过就红 —— 早跑的腿与晚跑的腿判的不是同一版，整体通过率不可整体引用。
+   --copy 用的是同一把戳去核对 freeze-ops-copy 造的副本：这份副本此前被引用次数为 0、内容停在 2026-09-25，
+   读它的人会以为自己读的是本轮语料（本轮我自己就差点读错一次）。
+   --queue 按本轮号动态收集队列文件，不写死清单（写死 = 新起的队列静默落在判据之外）。 */
+const OPS_STAMP = ROUND_DIR + "/ops-corpus-stamp.json";
+const OPS_COPY_DIR = ROUND_DIR + "/ops";
+G.opsStamp = runGate("verify-ops-corpus-stamp --check", "scripts/qa/verify-ops-corpus-stamp.mjs", ["--check", "--stamp", OPS_STAMP], { timeoutMs: 120000 });
+/* 判据点名的选择器是否在**被测产物**里真有其物：普查只问"正文里有没有写类名"，
+   这条问"写的那个名字点得到吗"。本轮实测 1870 个选择器里 11 个在 mock 与 real 两档都找不到
+   （.sms-send-btn 已被改名、.header-search/.publish-toolbar 之类只在样式里或根本没有）。 */
+G.selExistMock = runGate("verify-case-selectors-exist（mock 档）", "scripts/qa/verify-case-selectors-exist.mjs", ["--band", "apps/client/dist/build/mp-weixin"], { timeoutMs: 300000 });
+G.selExistReal = runGate("verify-case-selectors-exist（real 档）", "scripts/qa/verify-case-selectors-exist.mjs", ["--band", "apps/client/dist/build/mp-weixin-real"], { timeoutMs: 300000 });
+G.opsCopy = runGate("verify-ops-corpus-stamp --copy " + OPS_COPY_DIR, "scripts/qa/verify-ops-corpus-stamp.mjs", ["--copy", OPS_COPY_DIR, "--stamp", OPS_STAMP], { timeoutMs: 120000 });
+G.opsQueueList = [];
+{
+  const qre = new RegExp("^ui-queue\\.round-" + ROUND_NO + "-.*\\.json$");
+  let names = [];
+  try { names = readdirSync(join(ROOT, "scripts", "qa")); } catch { names = []; }
+  for (const n of names.filter((x) => qre.test(x)).sort()) {
+    G.opsQueueList.push(runGate("verify-ops-corpus-stamp --queue " + n, "scripts/qa/verify-ops-corpus-stamp.mjs", ["--queue", "scripts/qa/" + n], { timeoutMs: 60000 }));
+  }
+  if (!G.opsQueueList.length) G.opsQueueMissing = true;
+}
 /* 原始 corpus 逐个量一遍（**信息轴，不否决收尾**）。
    为什么不再是否决轴：本轮把「同页同身份却同字节」的帧按现行采集规则从 shots[] 改判进
    stateNotApplied[]，承接者是权威索引 `reports/audit/<round>/screenshot-manifest.json`（否决轴那条）。
@@ -372,15 +470,38 @@ G.integrityRawList = roundCorpusDirs
    不可重跑也不会有人复核 —— 接进报告门禁，让它变成每轮都跑的检查。
    配对差异一律判红；孤儿键走棘轮（基线与理由见该文件顶部注释与台账 §74）。 */
 G.i18n = runGate("verify-i18n-orphan", "scripts/qa/verify-i18n-orphan.mjs", [], { timeoutMs: 300000 });
+/* UI 独占租约（本轮补的机制）。G7（build-real-isolated --check-only 会开页）与 G9（素材探针会开页）
+   撞上任何 r-exec / shoot / tour 驱动时，双方都不报错，只是互相把对方正在量的页换掉：
+   实测代价是与全量交互轮并发后 214 行里 58 行落点探针取空、41 行交互下发「no such element」，
+   一整批测量作废。所以实时门跑之前必须先拿到租约；拿不到就**不跑**，
+   并把它按「缺证据」记进失败清单 —— 宁可报告缺一块，也不交出一块看着完整、实际被污染的结论。
+   --skip-live-gates 是人工声明的同一条路，两路的差别只在报告里写明的原因。 */
+let leaseHolders = [];
+if (!SKIP_LIVE) {
+  const LEASE_OWNER = "emit-round-report-" + process.pid;
+  const acc = acquireUi({ owner: LEASE_OWNER, batch: "R" + ROUND_TAG });
+  if (!acc.ok) {
+    leaseHolders = acc.holders;
+    SKIP_LIVE = true;
+    LIVE_SKIP_WHY = "UI 租约被占用（" + leaseHolders.map((h) => h.owner + "@pid" + h.pid).join(", ") + "），实时门未复跑";
+  }
+}
 if (!SKIP_LIVE) {
   // G7 必须 node22：实测 PATH 上的 v16 让它自报 G7_RESULT=FAIL（环境噪声，不是产品缺陷）
+  // 每一件跑之前续一次租约：单件上限 600s，而租期是 1200s，不续会在长门中间被别人判为失效。
+  renewUi({ owner: "emit-round-report-" + process.pid, batch: "R" + ROUND_TAG });
   G.g7 = runGate("G7 产物自证", "apps/client/scripts/build-real-isolated.mjs", ["--check-only"], { timeoutMs: 600000, needNode22: true });
+  renewUi({ owner: "emit-round-report-" + process.pid, batch: "R" + ROUND_TAG });
   G.g8 = runGate("G8 十环", "scripts/qa/g8-e2e.cjs", [], { timeoutMs: 600000 });
+  renewUi({ owner: "emit-round-report-" + process.pid, batch: "R" + ROUND_TAG });
   G.g9 = runGate("G9 素材探针", "scripts/qa/g9-probe.cjs", [], { timeoutMs: 600000 });
+  renewUi({ owner: "emit-round-report-" + process.pid, batch: "R" + ROUND_TAG });
   G.probe = runGate("probe-real-env", "scripts/probe-real-env.mjs", [], { timeoutMs: 300000 });
+  const rel = releaseUi({ owner: "emit-round-report-" + process.pid });
+  console.log(`UI_LEASE=released ${rel.released ? "ok" : "skipped：" + rel.why}`);
 } else {
-  ERRORS.push("--skip-live-gates 生效：G7/G8/G9/probe 未复跑 —— 本报告不得宣称『真实模式当前结论』，按缺证据处理");
-  OPEN.push({ item: "G7/G8/G9/probe 当前结论", why: "--skip-live-gates，未复跑" });
+  ERRORS.push(`${LIVE_SKIP_WHY}：G7/G8/G9/probe 未复跑 —— 本报告不得宣称『真实模式当前结论』，按缺证据处理`);
+  OPEN.push({ item: "G7/G8/G9/probe 当前结论", why: LIVE_SKIP_WHY });
 }
 
 /* ================================================================ 报告体 */
@@ -588,27 +709,43 @@ if (G.triage.exitCode === 0 && triRaw) {
   }
 }
 if (!tri) {
-  const legacy = readJsonSrc(".zcode/tmp/triage-r6.json", { optional: true, label: "分诊台旧 sidecar" });
-  if (legacy) {
-    tri = legacy.json; triHow = "旧 sidecar（本次新跑未成功，退而读它）";
-    P(`- **用的是旧 sidecar** \`${legacy.path}\`（updatedAt=${legacy.json.updatedAt}，sha8=\`${legacy.sha8}\`）；新跑分诊台退出码=${n(G.triage.exitCode)}。`);
-    OPEN.push({ item: "分诊数据新鲜度", why: "本次分诊台未跑通，读的是旧 sidecar" });
-  } else {
-    P("- 分诊台本次没跑成、也没有可读 sidecar —— 本节不印任何数字。");
-    ERRORS.push("triage-exec-failures 无可用输出：D 节没有数字来源");
+  /* 分诊台判红时**也**已经写了本轮 sidecar（红之前先把证据落盘是它的契约）。
+     此时读旧轮次文件会把上一轮的数字印在这一轮的报告里 —— 先读本轮的，标清楚它是"判红的那一份"。 */
+  if (triRaw) {
+    try { tri = JSON.parse(triRaw); triHow = `本次 sidecar，但**分诊台判红**（退出码 ${n(G.triage.exitCode)}），其数字不可用于通过率`; } catch { tri = null; }
+    if (tri) {
+      registerFile(TRIAGE_BASE + ".json", triRaw, statSync(resolve(ROOT, TRIAGE_BASE + ".json")));
+      P(`- **本轮 sidecar（判红那份）**：\`${TRIAGE_BASE}.md/.json\`，退出码 ${n(G.triage.exitCode)} —— 未归类行逐条列在文末失败清单。`);
+      ERRORS.push(`triage-exec-failures 判红（退出码 ${n(G.triage.exitCode)}）：词表漂移或落地对无处置，unclassified=${tri.unclassified}`);
+    }
+  }
+  if (!tri) {
+    const legacy = readJsonSrc(".zcode/tmp/triage-r6.json", { optional: true, label: "分诊台旧 sidecar" });
+    if (legacy) {
+      tri = legacy.json; triHow = "旧 sidecar（本次新跑未成功，退而读它）";
+      P(`- **用的是旧 sidecar** \`${legacy.path}\`（updatedAt=${legacy.json.updatedAt}，sha8=\`${legacy.sha8}\`）；新跑分诊台退出码=${n(G.triage.exitCode)}。`);
+      OPEN.push({ item: "分诊数据新鲜度", why: "本次分诊台未跑通，读的是旧 sidecar" });
+    } else {
+      P("- 分诊台本次没跑成、也没有可读 sidecar —— 本节不印任何数字。");
+      ERRORS.push("triage-exec-failures 无可用输出：D 节没有数字来源");
+    }
   }
 }
 if (tri) {
   const bs = tri.buckets || {}, items = tri.items || [], rows = tri.total;
-  P(`- 来源：${triHow}；权威件 \`${tri.results}\` updatedAt=${tri.updatedAt} 行数=${rows} ${sg(G.triage, "TRIAGE_RESULT")}`);
-  const order = ["EXECUTED", "SKIPPED-not-automatable", "locate-label", "locate-label-token-lost", "locate-selector", "harness-api", "timeout", "auth-precondition", "other-fail", "EXECUTED(pass-through)"];
-  const keys = [...new Set([...order.filter((k) => bs[k] !== undefined), ...Object.keys(bs)])].filter((k) => k !== "EXECUTED(pass-through)");
+  P(`- 来源：${triHow}；权威件 \`${tri.results}\` updatedAt=${tri.updatedAt} 行数=${rows} ${sg(G.triage, "TRIAGE_GATE")}`);
+  /* 桶名不能在这里写死：写死 round-6 那 8 个名字，round-7 执行器换了失败口径后，
+     报告会一边印一堆"本次为 0"的旧桶（读起来像"这类问题清零了"，其实只是本轮没这种口径），
+     一边对新桶只字不提。词表由分诊台自己在 bucketNames 里带出来。 */
+  const declared = Array.isArray(tri.bucketNames) && tri.bucketNames.length ? tri.bucketNames : ["SKIPPED-not-automatable", "locate-label", "locate-label-token-lost", "locate-selector", "harness-api", "timeout", "auth-precondition", "other-fail"];
+  const order = ["EXECUTED", ...declared];
+  const keys = [...new Set([...order.filter((k) => bs[k] !== undefined), ...Object.keys(bs)])];
   P("");
   P("| 桶 | 条数 |");
   P("|---|---|");
   for (const b of keys) P(`| \`${b}\` | ${bs[b]} |`);
-  const zero = ["SKIPPED-not-automatable", "locate-label", "locate-label-token-lost", "locate-selector", "harness-api", "timeout", "auth-precondition", "other-fail"].filter((b) => !bs[b]);
-  if (zero.length) P(`| （本次为 0、故未列出的桶） | ${zero.join(", ")} |`);
+  const zero = declared.filter((b) => !bs[b]);
+  if (zero.length) P(`| （本轮词表内没有这种口径，故为 0 —— **不代表该类问题不存在**） | ${zero.join(", ")} |`);
   P(`- ${conserve("分诊桶合计 vs 行数", keys.map((b) => bs[b]), rows)}`);
   const fb = (bs["other-fail"] || 0) + (tri.unclassified || 0);
   P(`- ⚠ **兜底/未归类合计 = ${fb}**（other-fail ${bs["other-fail"] || 0}、工具自报 unclassified ${n(tri.unclassified)}）：这些行的判据形态没被任何规则接住，必须逐条读原文，不许并进任何通过率。`);
@@ -799,7 +936,7 @@ P("");
 P("| 件 | 命令行 | 退出码 | 关键计数（逐字取自其 stdout） |");
 P("|---|---|---|---|");
 if (SKIP_LIVE) {
-  P(`| — | \`--skip-live-gates\`，未复跑 | — | 无当前结论可记 |`);
+  P(`| — | ${LIVE_SKIP_WHY} | — | 无当前结论可记 |`);
 } else {
   const g8rings = [...G.g8.body.matchAll(/^RING(\d+)\s*\[(OK|MISS)\s*\]\s*(.*?)\s*::\s*(.*)$/gm)].map((m) => ({ n: Number(m[1]), name: m[3], ok: m[2] === "OK", detail: m[4] }));
   P(`| G7 产物自证 | \`${G.g7.cmd}\` | ${n(G.g7.exitCode)} | G7_RESULT=${n(G.g7.kv("G7_RESULT"))}；${(G.g7.body.match(/\[g7\] 产物自证 .*/) || [""])[0].trim()}；${(G.g7.body.match(/\[g7\] outDir=.*/) || [""])[0].trim()} ｜**必须 node22**：v16 上它自报假 FAIL（实测） |`);
@@ -852,10 +989,33 @@ gateRow(G.ledger, `verify-ledger（台账目录=${LEDGER_DIR}${LEDGER_DIR !== RO
 gateRow(G.stateTruth, "verify-state-truth", `CASE_SPREAD=${n(G.stateTruth.num("STATE_CASE_SPREAD"))} FAIL_SPREAD=${n(G.stateTruth.num("STATE_FAIL_SPREAD"))} → ${(G.stateTruth.body.match(/^STATE_RESULT=.*/m) || [null])[0]}`);
 gateRow(G.integrity, "verify-evidence-integrity", `SHOTS=${n(G.integrity.re(/EVIDENCE_SHOTS=(\d+)/))} MATCHED=${n(G.integrity.re(/MATCHED=(\d+)/))} MISSING=${n(G.integrity.re(/MISSING=(\d+)/))} HASH_MISMATCH=${n(G.integrity.re(/HASH_MISMATCH=(\d+)/))} ORPHANS=${n(G.integrity.re(/ORPHANS=(\d+)/))} DUP_STATE=${n(G.integrity.re(/DUP_STATE_GROUPS=(\d+)/))} SNA改判=${n(G.integrity.re(/EVIDENCE_SNA_RECLASSIFIED=(\d+)/))} 盘上仅算非证据=${n(G.integrity.re(/EVIDENCE_FRAMES_ON_DISK_ONLY_AS_NON_EVIDENCE=(\d+)/))}；exec: ${n(G.integrity.re(/EXEC_EVIDENCE_ENTRIES=(\d+)/))} 条 WITH_ERROR=${n(G.integrity.re(/WITH_ERROR=(\d+)/))} 伪造引用=${n(G.integrity.re(/EXEC_CLEAN_BUT_MISSING=(\d+)/))} → ${(G.integrity.body.match(/^EVIDENCE_RESULT=.*/m) || [null])[0]}`);
 gateRow(G.corpus, "verify-evidence-corpus", `MANIFESTS=${n(G.corpus.num("CORPUS_MANIFESTS"))} SCANNED=${n(G.corpus.num("CORPUS_SCANNED"))} EXPIRED_GITSHA=${n(G.corpus.num("CORPUS_EXPIRED_GITSHA"))} PROBLEMS=${n(G.corpus.num("CORPUS_PROBLEMS"))} → ${(G.corpus.body.match(/^CORPUS_RESULT=.*/m) || [null])[0]}`);
-gateRow(G.provenance, "verify-provenance-all", `FRAMES_CONSISTENT=${n(G.provenance.re(/PROV_FRAMES_CONSISTENT=(\d+)/))} PRE_STAMP=${n(G.provenance.re(/PROV_FRAMES_PRE_STAMP=(\d+)/))} STALE=${n(G.provenance.re(/PROV_FRAMES_STALE=(\d+)/))} UNDATED=${n(G.provenance.re(/PROV_FRAMES_UNDATED=(\d+)/))} PRODUCERS=${n(G.provenance.re(/PROV_PRODUCERS=(\d+)/))} LITERAL_SHA=${n(G.provenance.re(/LITERAL_SHA=(\d+)/))} → ${(G.provenance.body.match(/^PROVENANCE_RESULT=.*/m) || [null])[0]}`);
+gateRow(G.provenance, "verify-provenance-all", `FRAMES_CONSISTENT=${n(G.provenance.re(/PROV_FRAMES_CONSISTENT=(\d+)/))} PRE_STAMP=${n(G.provenance.re(/PROV_FRAMES_PRE_STAMP=(\d+)/))} STALE=${n(G.provenance.re(/PROV_FRAMES_STALE=(\d+)/))} UNDATED=${n(G.provenance.re(/PROV_FRAMES_UNDATED=(\d+)/))} 无戳=${n(G.provenance.re(/PROV_MANIFESTS_NO_SHA=(\d+)/))} 约定前历史清单=${n(G.provenance.re(/PROV_MANIFESTS_NO_SHA_LEGACY=(\d+)/))}（其帧不计入时间轴判决：LEGACY_FRAMES=${n(G.provenance.re(/PROV_FRAMES_LEGACY=(\d+)/))}） ${(G.provenance.body.match(/^PROV_FRAME_ACCOUNTING.*/m) || ["(没打出守恒行)"])[0]} PRODUCERS=${n(G.provenance.re(/PROV_PRODUCERS=(\d+)/))} LITERAL_SHA=${n(G.provenance.re(/LITERAL_SHA=(\d+)/))} → ${(G.provenance.body.match(/^PROVENANCE_RESULT=.*/m) || [null])[0]}`);
 /* 本轮 scope 的两把才是"本轮证据"的判据；全域那两把在上面照实打印，只作为历史记录进 J 节。 */
 gateRow(G.corpusScoped, "verify-evidence-corpus --scope " + EVIDENCE_SCOPE, `MANIFESTS=${n(G.corpusScoped.num("CORPUS_MANIFESTS"))} SCANNED=${n(G.corpusScoped.num("CORPUS_SCANNED"))} PROBLEMS=${n(G.corpusScoped.num("CORPUS_PROBLEMS"))} → ${(G.corpusScoped.body.match(/^CORPUS_RESULT=.*/m) || [null])[0]}`);
-gateRow(G.provenanceScoped, "verify-provenance-all --scope " + EVIDENCE_SCOPE, `FRAMES_CONSISTENT=${n(G.provenanceScoped.re(/PROV_FRAMES_CONSISTENT=(\d+)/))} UNDATED=${n(G.provenanceScoped.re(/PROV_FRAMES_UNDATED=(\d+)/))} → ${(G.provenanceScoped.body.match(/^PROVENANCE_RESULT=.*/m) || [null])[0]}`);
+gateRow(G.provenanceScoped, "verify-provenance-all --scope " + EVIDENCE_SCOPE, `FRAMES_CONSISTENT=${n(G.provenanceScoped.re(/PROV_FRAMES_CONSISTENT=(\d+)/))} UNDATED=${n(G.provenanceScoped.re(/PROV_FRAMES_UNDATED=(\d+)/))} 约定前历史清单=${n(G.provenanceScoped.re(/PROV_MANIFESTS_NO_SHA_LEGACY=(\d+)/))} LEGACY_FRAMES=${n(G.provenanceScoped.re(/PROV_FRAMES_LEGACY=(\d+)/))} ${(G.provenanceScoped.body.match(/^PROV_FRAME_ACCOUNTING.*/m) || ["(没打出守恒行)"])[0]} → ${(G.provenanceScoped.body.match(/^PROVENANCE_RESULT=.*/m) || [null])[0]}`);
+/* 语料版本戳三把：同一版正文（check）、副本即那一版（copy）、每条队列腿读同一份语料（queue）。 */
+gateRow(G.opsStamp, "verify-ops-corpus-stamp --check（1107 例所绑判据版本有无中途漂移）", `${(G.opsStamp.body.match(/^STAMP_OPS=.*$/m) || ["(没打出 STAMP_OPS 行)"])[0]} → ${(G.opsStamp.body.match(/^STAMP_RESULT=.*$/m) || [null])[0]}`);
+for (const rec of [G.selExistMock, G.selExistReal]) gateRow(rec, rec.name, `${(rec.body.match(/^SEL cases=.*$/m) || ["(没打出 SEL 统计行)"])[0]} → ${(rec.body.match(/^SEL_RESULT=.*$/m) || [null])[0]}`);
+gateRow(G.opsCopy, "verify-ops-corpus-stamp --copy " + OPS_COPY_DIR + "（冻结副本能否当本轮语料引用）", `${(G.opsCopy.body.match(/^STAMP_COPY=.*$/m) || ["(没打出 STAMP_COPY 行)"])[0]} 差异行=${(G.opsCopy.body.match(/^  COPY_DIFF /gm) || []).length} → ${(G.opsCopy.body.match(/^STAMP_RESULT=.*$/m) || [null])[0]}`);
+if (G.opsQueueMissing) P(`> ⚠ 本轮（round-${ROUND_NO}）名下没有 \`scripts/qa/ui-queue.round-${ROUND_NO}-*.json\` ⇒ 队列语料同源性**未量**，不得读成"已核过"。`);
+for (const leg of G.opsQueueList) gateRow(leg, leg.name, `${(leg.body.match(/^STAMP_QUEUE=.*$/m) || ["(没打出 STAMP_QUEUE 行)"])[0]} → ${(leg.body.match(/^STAMP_RESULT=.*$/m) || [null])[0]}`);
+/* 状态列与处置列自相矛盾的行（第 6 列说完成、处置列说还欠）。默认 advisory：措辞列是散文，
+   误报率还没量够之前不许它否决收尾；但必须印出来，否则下一轮只读第 6 列就会把这些行当结案。 */
+G.dispoClash = runGate("verify-status-vs-disposition", "scripts/qa/verify-status-vs-disposition.mjs", [], { timeoutMs: 120000 });
+gateRow(G.dispoClash, "verify-status-vs-disposition（④⑤ 的行内自相矛盾，advisory）", `${(G.dispoClash.body.match(/^DISPO rows=.*$/m) || ["(没打出 DISPO 统计行)"])[0]} → ${(G.dispoClash.body.match(/^DISPO_RESULT=.*$/m) || [null])[0]}`);
+for (const l of (G.dispoClash.body.match(/^\s*DISPO_HIT .*$/gm) || []).slice(0, 12)) P(`- 措辞与状态不一致：\`${l.trim().replace(/^DISPO_HIT /, "").replace(/ ::.*$/, "").trim()}\``);
+gateRow(G.critFrame, "verify-criteria-frame-debt（判据台欠帧的去向账；默认只量不否决）", `${(G.critFrame.body.match(/^CRITFRAME items=.*$/m) || ["(没打出判决分布行)"])[0]} ${(G.critFrame.body.match(/^CRITFRAME 欠帧=.*$/m) || ["(没打出欠帧统计行)"])[0]} ${(G.critFrame.body.match(/^CRITFRAME_CONSERVATION.*$/m) || ["(没打出守恒行)"])[0]} → ${(G.critFrame.body.match(/^CRITFRAME_RESULT=.*$/m) || [null])[0]}`);
+gateRow(G.tabBar, "verify-tab-bar-single-source（.tab-bar 两处字面量相加是否等于 token）", `${(G.tabBar.body.match(/^TABBARSRC token=.*$/m) || ["(没读到 token 行)"])[0]} ${(G.tabBar.body.match(/^TABBARSRC face=.*$/m) || ["(没读到面板行)"])[0]} → ${(G.tabBar.body.match(/^TABBARSRC_RESULT=.*$/m) || [null])[0]}`);
+gateRow(G.wsExcl, "probe-ws-cli-exclusion（两把驱动能不能同时占一个模拟器：机制层）", `${(G.wsExcl.body.match(/^EXCL_PROBE .*$/m) || ["(没打出断言行 ⇒ 探针根本没跑完)"])[0]} → ${(G.wsExcl.body.match(/^WSX_EXCL_RESULT=.*$/m) || [null])[0]}`);
+gateRow(G.sourceShape, "verify-source-shape（② 收紧出来的判点本体；条数与唯一 id 一起报）", `${(G.sourceShape.body.match(/^SRC_SHAPE total=.*$/m) || ["(没打出 SRC_SHAPE 统计行)"])[0]} ${(G.sourceShape.body.match(/^SRC_SHAPE_DUP.*$/m) || ["(没打出重复计数行 ⇒ 去重检查是空跑)"])[0]} → ${(G.sourceShape.body.match(/^SRC_SHAPE_RESULT=.*$/m) || [null])[0]}`);
+gateRow(G.opsCellPlan, "apply-ops-cellplans --dry（死选择器/身份/补点名三份手写计划与判据台正文是否还对得上）",
+  `${(G.opsCellPlan.body.match(/^OPSCELL 计划=.*$/m) || ["(没打出 OPSCELL 统计行)"])[0]} ${(G.opsCellPlan.body.match(/^OPSCELL_CONSERVATION.*$/m) || ["(没有守恒行 ⇒ 多半是全部幂等跳过)"])[0]} → ${(G.opsCellPlan.body.match(/^OPSCELL_RESULT=.*$/m) || [null])[0]}`);
+gateRow(G.frameCoverage, "verify-frame-debt-coverage（台账每条欠账行是否都有去向）", `${(G.frameCoverage.body.match(/^FRAMECOV open=.*$/m) || ["(没打出 FRAMECOV 统计行)"])[0]} ${(G.frameCoverage.body.match(/^FRAMECOV_CONSERVATION.*$/m) || ["(没打出守恒行)"])[0]} → ${(G.frameCoverage.body.match(/^FRAMECOV_RESULT=.*$/m) || [null])[0]}`);
+for (const l of (G.frameCoverage.body.match(/^\s*FRAMECOV_NAKED .*$/gm) || []).slice(0, 12)) P(`- 裸行：\`${l.trim().replace(/^FRAMECOV_NAKED /, "").replace(/ ——.*$/, "")}\``);
+/* ④ 四项待裁决的落地背书。它此前只被"跑"不被"计"：红了这个字不进"仍判红 N/M"那组，
+   于是四项里有一项退回未落地时，面板照样报全绿 —— 面板里的成员必须同时有一行可核对的数。 */
+gateRow(G.adminCounts, "probe-admin-post-counts（G8 RING6 的后台计数字段是否真在运行态；探针按设计只答\"有没有\"，不否决收尾）", `${(G.adminCounts.body.match(/^PROBE_ADMISIBLE=.*$/m) || ["(没打出 ADMISIBLE 行)"])[0]} ${(G.adminCounts.body.match(/^PROBE_VERDICT=.*$/m) || ["(没打出 VERDICT 行)"])[0]} → ${(G.adminCounts.body.match(/^PROBE_RESULT=.*$/m) || [null])[0]}`);
+gateRow(G.rulings, "verify-rulings-landed（④ 四项待裁决是否各自有可重跑判据）", `四项=${n(G.rulings.re(/四项=(\d+)/))} 已落地=${n(G.rulings.re(/已落地=(\d+)/))} 未落地=${n(G.rulings.re(/未落地=(\d+)/))}（数取自门自己的统计行，不数打印行数——它的未落地标记是 ✗ 而不是 miss，数行会永远得 0） → ${(G.rulings.body.match(/^RULINGS_RESULT=.*$/m) || [null])[0]}`);
 if (!G.integrityRawList.length) P(`| \`verify-evidence-integrity（原始 corpus）\` | 未跑 | 无 | 盘上没有任何 \`reports/screenshots/round-${ROUND_NO}-*/manifest-detail.json\` —— 逐 corpus 原始记录未量，不得当成"已核过" |`);
 for (const leg of G.integrityRawList) {
   gateRow(leg, "verify-evidence-integrity（重拍 corpus）", `SHOTS=${n(leg.re(/EVIDENCE_SHOTS=(\d+)/))} DUP_STATE=${n(leg.re(/DUP_STATE_GROUPS=(\d+)/))} SNA改判=${n(leg.re(/EVIDENCE_SNA_RECLASSIFIED=(\d+)/))} MISSING=${n(leg.re(/MISSING=(\d+)/))} ORPHANS=${n(leg.re(/ORPHANS=(\d+)/))} → ${(leg.body.match(/^EVIDENCE_RESULT=.*/m) || [null])[0]}`);
@@ -879,7 +1039,7 @@ nonEmpty("provenance 扫到的生产者数", G.provenance.re(/PROV_PRODUCERS=(\d
    ② integrity 的**冻结 corpus 与重拍 corpus 各算一条**：那 6 组同字节状态对只有在新 corpus 里
       真的字节不同才算结案，旧 corpus 不会自己变干净 —— 两条并排，谁红一目了然，不做合并；
    ③ 重拍 corpus 那条在没跑定向补拍时是 null，filter 掉，**不给它一个默认 PASS 的位置**。 */
-const gatePanel = [G.ledger, G.stateTruth, G.integrity, G.corpusScoped, G.provenanceScoped, G.queue, G.restarted, G.i18n].filter(Boolean);
+const gatePanel = [G.ledger, G.stateTruth, G.integrity, G.corpusScoped, G.provenanceScoped, G.opsStamp, G.opsCopy, G.selExistMock, G.selExistReal, G.frameCoverage, G.rulings, ...G.opsQueueList, G.queue, G.restarted, G.i18n, G.fresh, G.anchors, G.parse, G.debtTriage].filter(Boolean);
 const redNow = gatePanel.filter((r) => r.exitCode !== 0);
 const redBase = baseSection.filter((l) => /^\|\s*[^-|]/.test(l) && /^\|[^|]*\|\s*1\s*\|/.test(l)).length;
 /* 分母从面板数组算出来，不写死：写死过一次 "/ 7"，加第 8 道门时会静默少报总数 */
@@ -895,6 +1055,17 @@ P(`- 口径注：门禁面板里的 corpus/provenance 是**本轮 scope** 版（
   `这条改动有配对自检 scripts/qa/test-evidence-fabrication.cjs（含反向对照）；` +
   `ledger/state-truth 限定 \`${ROUND_DIR}\`；i18n 的孤儿走棘轮（配对差异一律判红，基线与理由见 scripts/qa/verify-i18n-orphan.mjs 顶部与台账 §74）。`);
 for (const r of redNow) OPEN.push({ item: `门禁 ${r.name}`, why: `本次退出码 ${r.exitCode}（禁止静默收尾）` });
+/* 档位新鲜度的两类结论不进面板也要进"一条不藏"：
+   一类是"这一档绑的是旧构建"（判决作废），一类是"这个文件在该档上根本不可观测"（判据表达不了）。
+   后者不是缺陷、也不该被算成已结案 —— 本轮的英文语料就是这一类（命中率 18%）。 */
+const freshJ = readJsonSrc(FRESH_BASE + ".json", { optional: true, label: "档位新鲜度 sidecar" });
+if (freshJ && freshJ.json) {
+  for (const s of freshJ.json.stale || [])
+    OPEN.push({ item: `档位过期：${s.band}`, why: `${s.rel} 相对 HEAD 新增的 ${s.needles} 个字面量里有 ${s.missing} 个不在该档产物里 ⇒ 这一档上的判决绑的是旧构建，须重建后复跑` });
+  for (const o of freshJ.json.notObservable || [])
+    OPEN.push({ item: `载具不可观测：${o.band} 不承载 ${o.rel}`, why: `该档只找得到该文件既有内容的 ${(o.baseRate * 100).toFixed(0)}%（${o.added} 条新增里命中 ${o.addedHit}）⇒ 这个文件的改动无法在产物级结案，只能靠源码判点或单测` });
+  registerFile(FRESH_BASE + ".json", freshJ.text, statSync(resolve(ROOT, FRESH_BASE + ".json")));
+}
 /* 全域版判红不进面板（不该让 round-1 没打戳的历史否决本轮收尾），但必须进"一条不藏"那一节，
    否则下一轮又会把过期证据当可复用件。 */
 for (const r of [G.corpus, G.provenance]) {

@@ -15,6 +15,8 @@
  *   --project apps/client/dist/build/mp-weixin --label round-7-uidebt [--limit N]
  * 干跑（只打印计划不出帧不写盘）：--dry */
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync, rmSync, readdirSync } from "node:fs";
+import { acquireUi, releaseUi, renewUi } from "./ui-lease.mjs";
+import { readIdePort, portIsListening, FALLBACK_PORT } from "./ide-port-config.mjs";
 import { resolve, join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { evaluate, openPage, shot, mintToken, bootSession, verifyLogin, routeStack, clearSession } from "./cli-automator.mjs";
@@ -23,6 +25,24 @@ import { readApiMode, assertGuestCapable } from "./artifact-band.mjs";
 const REPO = resolve(import.meta.dirname, "..", "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
 const flag = (k) => process.argv.includes("--" + k);
+/* 模拟器独占租约（round-7 补）：本机两条通道驱动同一个 DevTools 模拟器，
+   并发不会报错，只会互相换页——实测一批测量因此作废（58 行落点探针取空）。
+   拿不到租约就一行都不跑，而不是"跑完再解释为什么到处是 ERR"。 */
+const UI_LEASE_OWNER = "r7-shooter-" + process.pid;
+if (process.env.QA_SKIP_UI_LEASE === "1") {
+  console.log("SHOOT_LEASE=SKIPPED（QA_SKIP_UI_LEASE=1，明知有别的驱动时会污染测量）");
+} else {
+  const gotLease = acquireUi({ owner: UI_LEASE_OWNER, batch: "R7" });
+  if (!gotLease.ok) {
+    console.log("SHOOT_RESULT=FAIL reason=模拟器已被占用（" + gotLease.holders.map((h) => h.owner + "@pid" + h.pid + " 租期到 " + h.leaseUntil).join("；") +
+      "）⇒ 一行都不跑；确要并发请显式设 QA_SKIP_UI_LEASE=1");
+    process.exit(2);
+  }
+  console.log("SHOOT_LEASE=ACQUIRED " + String(gotLease.file).replace(process.cwd() + "/", "") + " owner=" + UI_LEASE_OWNER);
+  const releaseLease = () => { try { releaseUi({ owner: UI_LEASE_OWNER }); } catch (e) { /* 退出路径上的释放失败不该改判决 */ } };
+  process.on("exit", releaseLease);
+  for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => { releaseLease(); process.exit(sig === "SIGINT" ? 130 : 143); });
+}
 const PROJECT = resolve(REPO, arg("project", "apps/client/dist/build/mp-weixin"));
 const PLAN = resolve(REPO, arg("plan", "reports/audit/round-7/frameplan-merged.json"));
 const LABEL = arg("label", "round-7-uidebt");
@@ -151,9 +171,44 @@ let wsMini = null, wsErrs = 0;
 /* miniprogram-automator 在这个仓里不在 scripts/qa 的解析路径上（pnpm 布局），
    直接 require 会 MODULE_NOT_FOUND，必须回落到 .pnpm 存储里那份真实路径——同 r-exec-ws 的装载法。
    绝不 close()：实测 close 会把 9420 那个 IDE 子进程整个带走；退出靠 process.exit。 */
+/* 端口要**发现**，不能写死 9420：DevTools 的 NodeService 每轮换端口（本轮实测在 9430/9431），
+   写死会让这条腿一整轮都拿不到 WS 证据，而它报回来的却是一句含糊的「WS 未启用或连不上」——
+   把"没带旗标"和"连不上"混成同一条，正是本轮 #47 要重测的那条"WS 与 CLI 天生互斥"的成因。
+   现在三件事分开：①没带 --ws-taps ⇒ 明说"未启用"；②带了就连，候选端口逐个试；
+   ③连上/连不上都打端口与来源（env | discover），禁止静默。 */
+function portOf(s) {
+  const t = String(s || "").trim();
+  if (!t) return "";
+  try { const p = new URL(t).port; if (p) return p; } catch { /* 不是完整 URL */ }
+  const m = t.match(/:(\d{2,5})(?:\D|$)/);
+  return m ? m[1] : "";
+}
+function listeningWsPorts() {
+  try {
+    const out = execFileSync("powershell", ["-NoProfile", "-Command",
+      "(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -ge 9400 -and $_.LocalPort -lt 9500 } | Select-Object -ExpandProperty LocalPort) -join ','"],
+      { encoding: "utf8", timeout: 60000 });
+    return (out || "").split(/[,\s]+/).map((x) => Number(x)).filter((n) => Number.isInteger(n));
+  } catch { return []; }
+}
 async function wsSession() {
   if (wsMini) return wsMini;
-  if (!flag("ws-taps")) return null;
+  if (!flag("ws-taps")) { console.log("  ws-off 未启用（这条腿没带 --ws-taps；不是连不上）"); return null; }
+  /* 端口来源按目标 ① 的口径排：配置文件 → （配置文件漂移时）监听表发现 → 回落。
+     env 只在显式覆盖时优先（做对照实验用），平时不参与。
+     配置文件里的端口没在监听表上时**不静默换端口**：先把漂移打出来，再把发现到的端口当候选，
+     这样这一腿的端口来源是否仍等于配置文件，读者看得见。 */
+  const cfg = readIdePort({ quiet: false });
+  const listening = listeningWsPorts();
+  const seenPort = new Set();
+  const cands = [];
+  const push = (p, src) => { if (Number.isInteger(p) && !seenPort.has(p)) { seenPort.add(p); cands.push({ p, src }); } };
+  push(cfg.port, cfg.source === "env" ? "env" : "config");
+  if (cfg.source !== "env" && !portIsListening(cfg.port, listening)) {
+    console.log("  ws-drift 配置文件说 " + cfg.port + " 不在监听表（实测 " + (listening.join(",") || "无") + "）⇒ 端口随 IDE 重启漂移；补发现候选继续连，但这一腿的端口来源已不完全是配置文件");
+    for (const p of listening) push(p, "discover");
+  }
+  push(FALLBACK_PORT, "fallback");
   try {
     const { createRequire } = await import("node:module");
     const req = createRequire(import.meta.url);
@@ -164,11 +219,17 @@ async function wsSession() {
       if (hit) A = req(join(store, hit, "node_modules", "miniprogram-automator"));
     }
     if (!A) throw new Error("找不到 miniprogram-automator");
-    wsMini = await Promise.race([A.connect({ wsEndpoint: "ws://127.0.0.1:" + (process.env.WSX_PORT || "9420") }),
-      new Promise((_, rj) => setTimeout(() => rj(new Error("CONNECT_TIMEOUT_8S")), 12000))]);
-    console.log("  ws-connected 9420");
-    return wsMini;
-  } catch (e) { wsErrs++; console.log("  ws-connect-err " + String(e.message).slice(0, 60) + " ⇒ 本轮交互步骤退回 unmet"); return null; }
+    const tried = [];
+    for (const c of cands) {
+      try {
+        wsMini = await Promise.race([A.connect({ wsEndpoint: "ws://127.0.0.1:" + c.p }),
+          new Promise((_, rj) => setTimeout(() => rj(new Error("timeout")), 8000))]);
+        console.log("  ws-connected port=" + c.p + " source=" + c.src + " 试过=" + (tried.join(",") || "首个"));
+        return wsMini;
+      } catch (e) { tried.push(c.p + ":" + String(e.message).slice(0, 18)); }
+    }
+    throw new Error("候选端口全部连不上 " + tried.join(" / "));
+  } catch (e) { wsErrs++; console.log("  ws-connect-err " + String(e.message).slice(0, 90) + " ⇒ 本轮交互步骤退回 unmet"); return null; }
 }
 const WS_ACTS = new Set(["tap", "longpress", "input", "swipe", "swipe-card", "press-hold", "re-enter-tab"]);
 const DENY_TAP = /注销|解绑|清空|删除账号|删除帐号|退出登录|登出/;
@@ -180,7 +241,7 @@ const DENY_TAP = /注销|解绑|清空|删除账号|删除帐号|退出登录|�
    这里补第二载具：用 WS 那条腿逐个锚点读 element.text() / element.size()。 */
 async function wsMeasure(anchors) {
   const m = await wsSession();
-  if (!m) return { __err: "WS 未启用或连不上" };
+  if (!m) return { __err: "WS 不可用（具体原因见本腿日志里的 ws-off / ws-connect-err 行：没带 --ws-taps 是「未启用」，带了但连不上才是「连不上」）" };
   const out = {};
   try {
     const page = await m.currentPage();
@@ -230,7 +291,7 @@ async function doWsStep(st) {
   /* 不可逆动作一律不碰：这些 recipe 若真点进注销/删除流程，留下的不是证据而是被毁掉的账号。 */
   if (DENY_TAP.test(String((st.note || "") + " " + (st.selector || "")))) return { ok: false, why: "禁触动作（不可逆）" };
   const m = await wsSession();
-  if (!m) return { ok: false, why: "WS 未启用或连不上" };
+  if (!m) return { ok: false, why: "WS 不可用（具体原因见本腿日志里的 ws-off / ws-connect-err 行：没带 --ws-taps 是「未启用」，带了但连不上才是「连不上」）" };
   const sel = cleanSel(st.selector);
   try {
     const page = await m.currentPage();
@@ -463,9 +524,16 @@ for (const [key, grp] of byRoute) {
     done++;
     if (LIMIT && done >= LIMIT) break;
   }
-  for (const r of rows.slice(grpStart)) { r.identityAtFrame = atFrame; r.identityOk = identityOk; }
+  /* 整页锁屏探针：LockScreen 在帧里 ⇒ 被锁内容压根不在渲染树上。这一帧能证明
+     "锁屏出现了"，不能证明"被锁的东西没做"（真实档实测：完善度 30% 的账号在
+     village/index 只有锁屏，.channel-tab/.post-card 连元素级探针都答 no such element，
+     那一轮 33 条 EXECUTED 全是在锁屏帧上量的）。 */
+  const lockProbe = probeMany([".lock-screen"]);
+  const lockAtFrame = String(lockProbe[".lock-screen"] || "no-answer");
+  const lockHit = lockAtFrame.startsWith("present");
+  for (const r of rows.slice(grpStart)) { r.identityAtFrame = atFrame; r.identityOk = identityOk; r.lockAtFrame = lockAtFrame; r.lockHit = lockHit; }
   lastAtFrame = route + "=" + (atFrame || "(空)") + (identityOk ? "" : "（与请求身份不符）");
-  console.log("SHOOT_GROUP route=" + route + " ident=" + ident + " 条目=" + grp.length + " 落点=" + (landed ? "确认" : "未确认(" + (landing || "空").slice(0, 40) + ")") + " 身份@帧=" + atFrame.slice(0, 26) + (identityOk ? "" : " ⇒不可当该身份证据") + " 累计=" + done);
+  console.log("SHOOT_GROUP route=" + route + " ident=" + ident + " 条目=" + grp.length + " 落点=" + (landed ? "确认" : "未确认(" + (landing || "空").slice(0, 40) + ")") + " 身份@帧=" + atFrame.slice(0, 26) + (identityOk ? "" : " ⇒不可当该身份证据") + " 锁屏@帧=" + lockAtFrame + (lockHit ? " ⇒被锁内容的判点不作判" : "") + " 累计=" + done);
 }
 
 const shotRows = rows.filter((r) => r.status === "SHOT");
@@ -482,6 +550,7 @@ if (!DRY) {
        mock 包会在开页那次把会话造回来 ⇒ 只有 identityAtFrame 能证明帧是谁的帧。 */
     identityAtFrameLast: lastAtFrame,
     identityMismatch: rows.filter((r) => r.identityOk === false).map((r) => r.id),
+    lockHitAtFrame: rows.filter((r) => r.lockHit).map((r) => r.id),
     artifactBand: readApiMode(PROJECT),
     counts: { SHOT: shotRows.length, EVIDENCE_HOLE: holes, FAILED: rows.filter((r) => r.status === "FAILED").length, NO_EVIDENCE: noEvidence.length },
     machinePassAllChecks: machinePass,

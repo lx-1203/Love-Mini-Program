@@ -1,0 +1,114 @@
+[
+ {
+  "name": "open-window-real-for-driftcheck",
+  "file": "scripts/qa/verify-guest-landing.mjs",
+  "args": [
+   "--mode",
+   "measure",
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--only",
+   "GG-discover-extra-discover-matching",
+   "--measured",
+   "reports/audit/round-7/guest-landing-drift-recheck.json",
+   "--repeat",
+   "3"
+  ],
+  "timeoutMin": 12,
+  "why": "matching 页落点从登录页变成 pages/discover/index（session-guard 的 featureFlag 分支会把人送到寻觅 Tab）—— 同一判据连测两次不一致 ⇒ 先复测这一组定性（稳定漂移还是竞态），再重开裁定"
+ },
+ {
+  "name": "open-window-mock-for-exec",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin",
+   "--settle",
+   "24"
+  ],
+  "timeoutMin": 14,
+  "why": "同理：A 刀跑 mock 档，窗口必须先落在 mock 产物上（上一腿结束时窗口停在 real 档）。缺这一步会把整条 1107 行的腿开成传输层超时。"
+ },
+ {
+  "name": "exec-A-mock-final",
+  "file": "scripts/qa/r-exec-cli.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin",
+   "--out",
+   "reports/audit/round-7/exec-A-mock-final",
+   "--tap",
+   "--identity",
+   "A",
+   "--label",
+   "round-7-A-mock-final"
+  ],
+  "timeoutMin": 320,
+  "why": "⑤ 的执行轮必须对着最终产物。上一轮 A 刀跑在 20:25→22:14，之后 mock 包被换过两次（§82 的误覆盖 + 恢复重建），绑的不是同一份字节。"
+ },
+ {
+  "name": "open-window-real-for-guest",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--settle",
+   "24"
+  ],
+  "timeoutMin": 14,
+  "why": "A 刀跑完时窗口停在 mock 档；guest 刀的被测物是 real 档，不换窗口就会重演上面那条传输层超时。"
+ },
+ {
+  "name": "exec-guest-real-final",
+  "file": "scripts/qa/r-exec-cli.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--out",
+   "reports/audit/round-7/exec-guest-real-final",
+   "--tap",
+   "--identity",
+   "guest",
+   "--label",
+   "round-7-guest-real-final"
+  ],
+  "timeoutMin": 300,
+  "why": "双身份的另一把刀同样要绑最终 real 档。跑完后把 triage 的 --results 指向它，239 行落点债的处置才能与 measure-guest-landing 的实测对上（成员不一致时 triage 会按 coverMismatch 判红，不会让旧账本替新债说话）。"
+ },
+ {
+  "name": "gate-frame-debt-triage",
+  "file": "scripts/qa/verify-frame-debt-triage.mjs",
+  "args": [
+   "--plan",
+   "reports/audit/round-7/frameplan-round7-final.json"
+  ],
+  "timeoutMin": 10,
+  "why": "出帧前的闸：配方里不许留「帧证明不了却被排成 SHOOT」的行（对账脚本 reconcile-frameplan.mjs 已把 7 行降级，这一腿是防它以后又长回来）。红就停：后面那腿花的是模拟器时间。"
+ },
+ {
+  "name": "shoot-frameplan-final",
+  "file": "scripts/qa/shoot-frameplan.mjs",
+  "args": [
+   "--plan",
+   "reports/audit/round-7/frameplan-round7-final.json",
+   "--project",
+   "apps/client/dist/build/mp-weixin",
+   "--label",
+   "round-7-uidebt-final"
+  ],
+  "timeoutMin": 240,
+  "why": "① 的帧债：对账后配方剩 SHOOT=35 / REWRITE=17 / NOT_SHOOTABLE=27（合计 79=expected 守恒）。跑在 exec-A-mock-final 之后，这样帧绑的是最终 mock 档；两条 UNPLANNED_NONFRAME（LOCATION-001 欠 >100km 状态夹具、PAGES-PROFILE-INDEX-002 判据旧值要删）本来就不是一页帧能还的，已随配方文件一起入账。"
+ },
+ {
+  "name": "close-out-open-window-mock",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin",
+   "--settle",
+   "18"
+  ],
+  "timeoutMin": 12,
+  "why": "收口：把模拟器窗口留在 mock 档，避免下一轮开局撞 §58 那类跨档位残留。"
+ }
+]

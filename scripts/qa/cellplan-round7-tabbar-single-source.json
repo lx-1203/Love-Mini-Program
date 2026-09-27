@@ -1,0 +1,17 @@
+{
+  "note": "④ 待裁决第 5 项（.tab-bar 高度单点化）按可辩护默认落地：采 (b) 收窄主张 + 新建静态核对门拦住 (a) 想防的那个漂移。方向不是把红洗成绿 —— 原来这行写的是「已修复」（过绿，§79 已证伪），本轮先降成 待修复（半成…），现在升到 已修复（源码级判点）的依据是新载体 verify-tab-bar-single-source.mjs 能红（自测 6 例含 3 例变异必须红），而不是我改了措辞。(a) 未采纳的机制原因写在证据列。",
+  "patches": [
+    {
+      "id": "MP-R2-PAGES-DISCOVER-INDEX-014",
+      "col": 6,
+      "why": "半成的那半边现在有了可重跑的判点：面板侧 height+padding-bottom（content-box）相加 == --tab-bar-total-h 的常量与 env 个数，消费侧三处走 var()。三件事由门核对，任何一项漂移即红 ⇒ 「单点化」按 (b) 口径成立，不再是一句主张。",
+      "new": "已修复（源码级判点：单点化按 (b) 口径落地——消费侧三处走 var(--tab-bar-total-h…)，面板侧两处字面量相加恒等于该 token，由 scripts/qa/verify-tab-bar-single-source.mjs 静态核对并把漂移判红。.tab-bar 本体仍是字面量这一事实保留在证据列，不写成「已合并为单一来源」）"
+    },
+    {
+      "id": "MP-R2-PAGES-DISCOVER-INDEX-014",
+      "col": 9,
+      "why": "证据要同时留下：量到的两个数、门的名字与它的变异自测、以及 (a) 为什么在 mp-weixin 里不成立（否则下一轮会有人再提一次改 var 然后发现不生效）。",
+      "new": "2026-09-27 现量（node scripts/qa/verify-tab-bar-single-source.mjs）：token=184rpx+2env（design-variables.scss:452 calc(184rpx + env(safe-area-inset-bottom) + env(safe-area-inset-bottom))）；面板=184rpx+2env（custom-tab-bar/index.wxss height calc(160rpx + env(…)) + padding-bottom calc(env(…) + 24rpx)，box-sizing:content-box 已核）；消费侧 3 个文件均出现 var(--tab-bar-total-h…：discover/index.vue:377、MyProfile.vue:74、NotLoggedProfile.vue:164。载具自测 6 例 PASS，其中 3 例是变异负例（面板单独改 200rpx / token 多加一个 env / 消费侧退回字面量）⇒ 这条判点会红，不是摆设。为何本轮不采 (a)（让 .tab-bar 本体改读 var）：已核事实是 token 定义在 page{} 里（design-variables.scss:251 起，经 App.vue:301 引入），而 apps/client/src/custom-tab-bar/ 下的样式不 import 主题文件（该目录对 design-variables 的 grep 命中 0）⇒ 面板本体要用这个 var 得先把 token 注入组件作用域，而「注入后在真机上是否生效」本轮既没做也没验证；(a) 的完整形态还要求重建三档 + 改前/改后对拍帧（高度差 1rpx 就是视觉回归）。故按 (b) 收窄主张，漂移风险改由上面这把静态门拦——它判的就是「两处字面量相加 == token」这一等价关系。（半边事实照写：面板侧仍是两处字面量，靠门保证它们一旦不相等就报红。）"
+    }
+  ]
+}

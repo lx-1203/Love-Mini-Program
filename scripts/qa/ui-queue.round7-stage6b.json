@@ -1,0 +1,201 @@
+[
+ {
+  "name": "open-window-real-r7final",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--settle",
+   "24"
+  ],
+  "timeoutMin": 14,
+  "why": "换档必须重新开窗。"
+ },
+ {
+  "name": "exec-A-real-r7final",
+  "file": "scripts/qa/r-exec-cli.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--out",
+   "reports/audit/round-7/exec-A-real-r7final",
+   "--tap",
+   "--real-cases-only",
+   "--identity",
+   "A",
+   "--label",
+   "round-7-final-A-real"
+  ],
+  "timeoutMin": 120,
+  "why": "③ 的「真实模式 UI 帧补满」：requiresReal 那 236 条在真实档由 A 身份量一遍。",
+  "env": {
+   "EXEC_STOP_FLAG": "tmp/qa/r7final-A-real.stop"
+  }
+ },
+ {
+  "name": "exec-guest-real-r7final",
+  "file": "scripts/qa/r-exec-cli.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--out",
+   "reports/audit/round-7/exec-guest-real-r7final",
+   "--tap",
+   "--real-cases-only",
+   "--identity",
+   "guest",
+   "--label",
+   "round-7-final-guest-real"
+  ],
+  "timeoutMin": 120,
+  "why": "同一批真实用例的第二把身份；REALCOV 门禁要的是两把身份都判过，单身份不算守恒。｜真实档不加 --guest-warmup：守卫要挡的是 mock 包 bootstrap 注入（session.ts:617），real 档会话来自后端，历史上不带预热已成功跑过；换身份改流程会让两把身份的口径不一致。",
+  "env": {
+   "EXEC_STOP_FLAG": "tmp/qa/r7final-guest-real.stop"
+  }
+ },
+ {
+  "name": "gate-real-coverage-r7final",
+  "file": "scripts/qa/verify-real-coverage.mjs",
+  "args": [],
+  "timeoutMin": 10,
+  "why": "真实档覆盖守恒门：跳过不算量到、单身份不算双身份。这一腿必须绿，否则③没完成。"
+ },
+ {
+  "name": "measure-matching-drift-r7final",
+  "file": "scripts/qa/verify-guest-landing.mjs",
+  "args": [
+   "--mode",
+   "measure",
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--only",
+   "GG-discover-extra-discover-matching",
+   "--repeat",
+   "3"
+  ],
+  "timeoutMin": 25,
+  "why": "② 里 MP-R2-MATCHING-016 那条冲突：游客在寻觅域的重定向落点量三次，看是否稳定。"
+ },
+ {
+  "name": "gate-guest-landing-book-r7final",
+  "file": "scripts/qa/verify-guest-landing.mjs",
+  "args": [
+   "--mode",
+   "book"
+  ],
+  "timeoutMin": 6,
+  "why": "把上面量到的落点写回台账，判据与观测同源。"
+ },
+ {
+  "name": "judge-stand-r7final",
+  "file": "scripts/qa/verify-fixes-against-artifact.cjs",
+  "args": [
+   "--baseline",
+   "094f7239"
+  ],
+  "timeoutMin": 30,
+  "why": "② 要求用本轮开跑 SHA 复跑判据台：ARTIFACT_VERIFIED / SOURCE_ONLY / NEEDS_UI_FRAME / NOT_IN_EITHER 的分布以这一腿为准。"
+ },
+ {
+  "name": "reconcile-frameplan-r7final",
+  "file": "scripts/qa/reconcile-frameplan.mjs",
+  "args": [
+   "--apply"
+  ],
+  "timeoutMin": 15,
+  "why": "① 的取景欠款按**当前台账**重算配方：判据改了、状态改了，配方不能继续用开跑那一版。"
+ },
+ {
+  "name": "open-window-mock-for-reshoot",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin",
+   "--settle",
+   "24"
+  ],
+  "timeoutMin": 14,
+  "why": "出帧腿绑 mock 档，先接回设备。"
+ },
+ {
+  "name": "reshoot-mock-r7final",
+  "file": "scripts/qa/shoot-frameplan.mjs",
+  "args": [
+   "--plan",
+   "reports/audit/round-7/frameplan-round7-final.json",
+   "--project",
+   "apps/client/dist/build/mp-weixin",
+   "--label",
+   "round-7-final-mock",
+   "--ws-taps"
+  ],
+  "timeoutMin": 90,
+  "why": "① 的帧债主腿：带 --ws-taps，顺带把「WS 与 CLI 是否互斥」这条未证的说法变成量出来的结论（#47）。"
+ },
+ {
+  "name": "open-window-real-for-guest-reshoot",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--settle",
+   "24"
+  ],
+  "timeoutMin": 14,
+  "why": "游客真实档出帧前重新开窗。"
+ },
+ {
+  "name": "reshoot-guest-real-r7final",
+  "file": "scripts/qa/shoot-frameplan.mjs",
+  "args": [
+   "--plan",
+   "reports/audit/round-7/frameplan-round7-guest-real.json",
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--label",
+   "round-7-final-guest-real-frames"
+  ],
+  "timeoutMin": 60,
+  "why": "只在真实档游客身份才渲染的那几张卡（含未登录等待卡的新头像环），mock 帧判它一律无效。"
+ },
+ {
+  "name": "tour-dual-r7final",
+  "file": "scripts/qa/tour-r6.mjs",
+  "args": [],
+  "timeoutMin": 180,
+  "why": "⑤ 的巡检腿：62+ 页 × 双身份，绑终轮产物。",
+  "env": {
+   "TOUR_PROJECT": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin",
+   "TOUR_LABEL": "round-7-tour-r7final",
+   "TOUR_AUDIT_SUB": "round-7",
+   "TOUR_CKPT_NAME": "tour-R7-final2.json",
+   "TOUR_LOG_NAME": "tour-R7-final2.log",
+   "IDENTITIES": "A,B"
+  }
+ },
+ {
+  "name": "gate-state-truth-r7final",
+  "file": "scripts/qa/verify-state-truth.mjs",
+  "args": [
+   "reports/audit/round-7"
+  ],
+  "timeoutMin": 15,
+  "why": "同页同身份两帧逐字节相同的「假状态」必须被抓出来。"
+ },
+ {
+  "name": "gate-evidence-holes-r7final",
+  "file": "scripts/qa/verify-evidence-holes.mjs",
+  "args": [],
+  "timeoutMin": 15,
+  "why": "证据缺口清点：终轮不允许留着「判据成立但没有帧也没有判点」的条目。"
+ },
+ {
+  "name": "gates-json-r7final",
+  "file": "scripts/qa/write-gates-json.mjs",
+  "args": [
+   "--write"
+  ],
+  "timeoutMin": 30,
+  "why": "④ 第 3 项的载体：GATES.json 由代码重生成，gitSha 取运行期 HEAD，不许手写。"
+ }
+]

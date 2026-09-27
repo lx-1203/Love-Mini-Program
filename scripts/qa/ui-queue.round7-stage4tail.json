@@ -1,0 +1,160 @@
+[
+ {
+  "name": "note-bands-already-rebuilt",
+  "file": "scripts/qa/verify-band-freshness.mjs",
+  "args": [
+   "--out",
+   "reports/audit/round-7/band-freshness-stage4tail"
+  ],
+  "timeoutMin": 15,
+  "why": "三档已在 03:52–04:01 由排队器与 isolated 载具重建过（mock/real 在 stage4c，showcase 手工 isolated），这一腿重新证明一次再往下跑，省掉两次重建但不省掉判据。"
+ },
+ {
+  "name": "gate-band-freshness-stage4",
+  "file": "scripts/qa/verify-band-freshness.mjs",
+  "args": [
+   "--out",
+   "reports/audit/round-7/band-freshness-stage4"
+  ],
+  "timeoutMin": 15,
+  "why": "档位新鲜度门：mtime 只是筛子，内容才是证据。重建是否真的把这三处改动带进产物，由它判，不靠我相信构建脚本。"
+ },
+ {
+  "name": "open-window-real-for-cases",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--settle",
+   "24"
+  ],
+  "timeoutMin": 14,
+  "why": "每次重建之后都必须重新把窗口落到被测档位上，再让设备腿接上去 —— 本轮实测过一次：重建后直接跑 measure 腿，automation_evaluate 传输超时，白烧一趟。"
+ },
+ {
+  "name": "exec-A-real-only",
+  "file": "scripts/qa/r-exec-cli.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--out",
+   "reports/audit/round-7/exec-A-real-only",
+   "--tap",
+   "--real-cases-only",
+   "--identity",
+   "A",
+   "--label",
+   "round-7-A-real-only"
+  ],
+  "timeoutMin": 90,
+  "why": "本轮最大的口径漏洞：236 条 requiresReal 用例在两条执行腿里都被跳过了 —— 因为跑不跑由 --real 旗标决定，而两条腿只带了 --project 到 real 档。现在档位自己说了算（BAND.mode===real ⇒ 真实用例必须跑），这一腿把那 236 条在登录身份下真跑一遍。"
+ },
+ {
+  "name": "exec-guest-real-only",
+  "file": "scripts/qa/r-exec-cli.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--out",
+   "reports/audit/round-7/exec-guest-real-only",
+   "--tap",
+   "--real-cases-only",
+   "--identity",
+   "guest",
+   "--label",
+   "round-7-guest-real-only"
+  ],
+  "timeoutMin": 90,
+  "why": "⑤ 要的是双身份 × 全量：真实用例那一批也必须两把身份都过，否则「真实模式补满」只对半个身份成立。"
+ },
+ {
+  "name": "measure-matching-drift",
+  "file": "scripts/qa/verify-guest-landing.mjs",
+  "args": [
+   "--mode",
+   "measure",
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--only",
+   "GG-discover-extra-discover-matching",
+   "--repeat",
+   "3"
+  ],
+  "timeoutMin": 25,
+  "why": "MP-R7-GUEST-MATCHING-REDIRECT-RACE-001 的结案判点：游客进 matching 的落点必须稳定为 pages/login/index，连测 3 次一致才算 CLOSED。此前它是 MEASURED-DRIFT（落 pages/discover/index），守卫改完必须在重建后的档位上重新量。"
+ },
+ {
+  "name": "gate-guest-landing-book",
+  "file": "scripts/qa/verify-guest-landing.mjs",
+  "args": [
+   "--mode",
+   "book"
+  ],
+  "timeoutMin": 6,
+  "why": "26 组裁定与实测落地对的双向守恒；measure 腿改完账之后要立刻复核一次，避免「只更新了那一组、别组被顺手抹平」。"
+ },
+ {
+  "name": "judge-stand-stage4",
+  "file": "scripts/qa/verify-fixes-against-artifact.cjs",
+  "args": [
+   "--baseline",
+   "094f7239"
+  ],
+  "timeoutMin": 25,
+  "why": "判据台绑本轮开跑 SHA：每条「已修复」都要在被测产物里量得到，基线对照用来区分「本轮修的」与「本轮之前就在的」。"
+ },
+ {
+  "name": "open-window-mock-for-reshoot",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin",
+   "--settle",
+   "24"
+  ],
+  "timeoutMin": 14,
+  "why": "定向补帧要回到 mock 档（取景配方里的多数行是 mock 可证的），窗口必须先落在被测档位上。"
+ },
+ {
+  "name": "reshoot-stage4",
+  "file": "scripts/qa/shoot-frameplan.mjs",
+  "args": [
+   "--plan",
+   "reports/audit/round-7/frameplan-round7-stage4.json",
+   "--project",
+   "apps/client/dist/build/mp-weixin",
+   "--label",
+   "round-7-stage4-reshoot"
+  ],
+  "timeoutMin": 60,
+  "why": "只补三类被本轮改动影响的帧：matching（重定向守卫）、我的页与他人主页（meta 共用 formatter）。配方文件在启动前由 frameplan 生成器按当前台账重出，不手抄行号。"
+ },
+ {
+  "name": "open-window-real-for-guest-reshoot",
+  "file": "scripts/qa/open-project-window.mjs",
+  "args": [
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--settle",
+   "24"
+  ],
+  "timeoutMin": 14,
+  "why": "取景腿剩下的 6 条 NO_EVIDENCE 全部是游客前置（mock 档的 bootstrap 会无条件造会话 ⇒ 档位表达不了游客）。换 real 档重拍，而不是把它们记成产品没做到。"
+ },
+ {
+  "name": "reshoot-guest-real",
+  "file": "scripts/qa/shoot-frameplan.mjs",
+  "args": [
+   "--plan",
+   "reports/audit/round-7/frameplan-round7-guest-real.json",
+   "--project",
+   "apps/client/dist/build/mp-weixin-real",
+   "--label",
+   "round-7-guest-real-reshoot",
+   "--out",
+   "reports/audit/round-7/uidebt-shoot-guest-real-stage4"
+  ],
+  "timeoutMin": 40,
+  "why": "配方文件由 uidebt-shoot/shoot-results.json 里 6 条 NO_EVIDENCE 的 id 反查生成（不手抄）；取景器按每行的前置身份自取，real 档上游客才立得住。"
+ }
+]

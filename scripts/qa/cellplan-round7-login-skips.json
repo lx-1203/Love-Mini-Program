@@ -1,0 +1,98 @@
+{
+  "$comment": "PAGES-LOGIN-INDEX 在 corpus reports/audit/round-7/exec-guest-real-final/exec-results.json（identity=guest，band=real@f0677920，gitSha=e4495d67，runner=r-exec-cli.mjs tap 切片，loginVerify=not-logged-in）里 38 条中 11 条 SKIPPED 的逐条归置：LG11 LG12 LG13 LG15 LG17 LG18 LG24 LG26 LG30 LG31 LG37。先纠一处前提：observed 里的「(本条没点名类名)」不等于「载具没选择器」。它只说明 classesOf() 从 action+expected 里抠不出类名——那个正则（r-exec-cli.mjs:134-137）要求类名里带 __ 或 -- 分隔符，而本页所有关键类名（.input-field .btn-primary .login-form .terms-link .sms-send-btn）都是裸连字符，永远抠不出来。11 条里有 8 条（LG11 LG12 LG13 LG15 LG17 LG18 LG24 LG26）其实早就带 tapTarget=.input-field，failureReason 写的是「input:.input-field …no such element」，即点击/输入腿真发出去了但目标节点当时不在渲染树里。真正没点名的是 LG31，判据没类名的是 LG37，档位挡道的是 LG30。两类原因（缺选择器 / 缺渲染态）不能混成一条台词。归置结论：1 条 A，10 条 B。",
+  "A-add-tapTarget": [
+    {
+      "manifest": "PAGES-LOGIN-INDEX",
+      "id": "LG17",
+      "page": "pages/login/index",
+      "tapTarget": "#login-password",
+      "tapTargetEvidence": "源码 apps/client/src/pages/login/index.vue:736-739，同一个 input 节点上带 id=login-password、class=input-field、type=text、password 绑定为 true，:735 另有 label class=sr-only 且 for=login-password（判据要求的 a11y 关联在位）。编译产物两档均命中且各 1 处：apps/client/dist/build/mp-weixin/pages/login/index.wxml 与 apps/client/dist/build/mp-weixin-real/pages/login/index.wxml（这两份 wxml md5 相同，ae0e923986558f7b0fb2368c831fef4b），id=login-password 1 处、password 属性 1 处、sr-only 标签 2 处。注意 manifest 里旧的 tapTargetEvidence 写的是 index.vue:719，那是重构前的行号，现源码该行是别的东西，行号已按当前源码改到 :736-739。",
+      "confirmedAt": "两档 wxml 内 id=login-password 唯一。消歧是必须的：.input-field 在编译产物里有 2 个节点（手机号框与密码框），执行器只点第一个匹配（r-exec-cli.mjs:405-412 逐个下发 targets），用 .input-field 会点到手机号框上，出来的帧再判密文就是假绿。同页没有能区分这两框的类名（两框同为 .input-item 下的 .input-field，父级类名也相同），所以唯一可用的精确载具是 id。",
+      "expectedQuote": "「输入后视觉为密文圆点而非明文；实现必须为 mp 合法属性组合 type=text + password=true」",
+      "note": "判据的视觉半段可由本通道判：输入腿灌进任意非空文本后，:499-505 会出 after 帧（这条 evidence 里有「截图」二字，FRAME_RE 命中，:98），圆点还是明文在帧里可读；属性半段（type=text 且 password=true 同节点）已在两档 wxml 静态核过，不必再要读数。前置（本条真正的第一决定点）：本页静息态是快捷面板，表单在 v-else 分支里不渲染——apps/client/src/pages/login/index.vue:57 是 showPhoneLogin=ref(false)，:704 的 .login-form 才挂两个 .input-field；已出的帧 reports/screenshots/round-7-guest-real-final/PAGES-LOGIN-INDEX-LG09-after.png 里一个输入框都没有，只有「微信一键登录」「手机号快捷登录」「使用手机号登录」「稍后再看」，这就是那 8 条 input:.input-field 报 no such element 的原因。所以本条要两步：先点 .login-sms-fallback（源码 :639，@tap=togglePhoneLogin 在 :644，两档 wxml 各命中 1 处）展开表单，再对 #login-password 下发输入。一条 case 只有一个 tapTarget 字段，两步链要么靠 LG09 先跑成它的点击（LG09 现在跑不成：它的 action 写的是「点 .login-sms-fallback」，TAP_RE（:97）要的是「点击」这类词，所以它至今没发出过交互，只被判了 EXECUTED 且无 tap 段），要么给执行器加一个前置动作字段。落地前还需单验一次 id 选择器：本仓历史 tapTarget 全是类选择器（reports/audit/round-6/ops 里 27 条 .post-header__submit 之类，无一条用 #），automation_element_action 对 #login-password 是否解析未实测，可用 node scripts/qa/cli-automator.mjs --project apps/client/dist/build/mp-weixin-real raw offset --selector '#login-password' 单探一次；若 id 不解析则本条退回 B 类（没有第三个能唯一定位密码框的载具），不要退回 .input-field 凑一个错的 A。"
+    }
+  ],
+  "B-not-automatable": [
+    {
+      "manifest": "PAGES-LOGIN-INDEX",
+      "id": "LG11",
+      "page": "pages/login/index",
+      "why": "机制=执行器没有输入值读数腿，且输入腿值是写死的。r-exec-cli.mjs:408-410 把输入腿固定成 --value 123456（6 个字符），产不出判据要的 11 位合法手机号；行结构（:126-132）里只有类名条数与一张帧，没有 input 的 value 字段，probeMany（:141-153）只回 selectAll 的条数不回几何不回属性，所以「回显 11 位」和「canPhoneLogin=true」两样都量不到。附带一条判据缺陷：「提交按钮无禁用样式」是永真条款——编译产物里表单主按钮只有 btn--loading 一个条件类（两档 wxml 的 form-btns 节点，源码 :754），根本没有禁用态类名，这条永远不会红，不该算判到东西。",
+      "carrierChecked": "载体在，但当时不渲染：apps/client/src/pages/login/index.vue:714-717 是 id=login-phone + class=input-field + type=number + maxlength=11；两档 login wxml 各命中 id=login-phone 1 处、input-field 2 处；整棵 .login-form 在 v-else 分支（:704），静息态未展开（LG09-after.png 帧内无输入框）⇒ 现有 tapTarget=.input-field 的失败是「没展开表单」，不是「没点名类名」。",
+      "expectedQuote": "「value 完整回显 11 位；正则通过（1 开头第二位 3 到 9 共 11 位）；配合密码 6 位 + agreed=true 时 canPhoneLogin=true」"
+    },
+    {
+      "manifest": "PAGES-LOGIN-INDEX",
+      "id": "LG12",
+      "page": "pages/login/index",
+      "why": "机制=输入腿固定 6 字符 + 无 value 读数 + 无 rect 读数。判据是「灌 20 位后实际值长度 ≤11」，本通道只能灌 123456（r-exec-cli.mjs:408-410），截断这件事在数学上就无从判；「不出现横向溢出/换行/遮挡」要输入框 rect，probeMany 只取 size 条数（:141-153），行里也没有几何字段。",
+      "carrierChecked": "同 LG11：apps/client/src/pages/login/index.vue:714-717（maxlength=11 在 :717），两档 login wxml 各命中 id=login-phone 1 处；节点藏在 v-else 的 .login-form（:704）里，静息态不渲染。",
+      "expectedQuote": "「实际值长度 ≤11（maxlength=11 生效）；不出现横向溢出/换行/遮挡」"
+    },
+    {
+      "manifest": "PAGES-LOGIN-INDEX",
+      "id": "LG13",
+      "page": "pages/login/index",
+      "why": "机制=脏字符注入 + toast 读数 + network 计数三样腿都没有。判据要灌「全角 + 中文 + 空格 + emoji」组合再看是否被 canPhoneLogin 拦成 toast login.phoneAndCodeInvalid 且不发带脏字符的 POST：输入腿固定灌 123456（r-exec-cli.mjs:410），行里 toast 与 console 字段是写死的空串（:131），也没有 network 腿，一条内更发不出「输入后点提交」的两步（targets 只到 tapTarget 加 classesOf(action)，而 .btn-primary 抠不出来）。",
+      "carrierChecked": "手机号框与提交钮两档都在：apps/client/src/pages/login/index.vue:714-717 与 :754；两档 wxml 里 btn-primary 类名各 2 处（快捷面板主按钮在前、表单主按钮在后），执行器只点第一个匹配（r-exec-cli.mjs:405-412）⇒ 静息态会点到快捷面板那个微信登录按钮上，判的就不是本条。表单整棵在 :704 的 v-else 分支，静息态不渲染。",
+      "expectedQuote": "「提交必须被 canPhoneLogin 拦为 toast login.phoneAndCodeInvalid，不得发出带脏字符的 POST」"
+    },
+    {
+      "manifest": "PAGES-LOGIN-INDEX",
+      "id": "LG15",
+      "page": "pages/login/index",
+      "why": "机制=一条内要 3 轮不同输入值 + toast 文案 + 请求计数。判据要求依次灌 12345678901、2380013800、1380013800 并各点一次提交，看三种都判非法并 0 请求；输入腿只有一个写死值（r-exec-cli.mjs:410），一条 case 也只发一轮交互（:405-414 的循环是「依次点不同选择器」，不是「同一选择器灌不同值」），toast 与 network 两个观测量本通道不落账（:131）。",
+      "carrierChecked": "同 LG11：apps/client/src/pages/login/index.vue:714-717 与 :754 在两档 wxml 均命中（id=login-phone 各 1 处，btn-primary 各 4 处），静息态表单未展开。",
+      "expectedQuote": "「三种均判 isPhoneValid=false → toast phoneAndCodeInvalid、0 请求；不得出现前端放过、后端 400 的组合」"
+    },
+    {
+      "manifest": "PAGES-LOGIN-INDEX",
+      "id": "LG18",
+      "page": "pages/login/index",
+      "why": "机制=固定 6 字符输入腿 + 无 network body 快照。判据核心是「65 位超上限被拦」与「特殊字符提交体原样且 JSON 序列化不破」，前者要灌 65 个字符（:410 只灌 123456），后者要看请求体，通道没有 network 腿；「页面不出现溢出/换行错乱」还要 rect。",
+      "carrierChecked": "密码框两档在：apps/client/src/pages/login/index.vue:736-739（id=login-password，无 maxlength），两档 wxml 各命中 1 处；主按钮 :754 在位；表单整棵在 :704 的 v-else 分支，静息态不渲染。",
+      "expectedQuote": "「65 位超出 isCodeValid 上限 64 → 拦为 toast，不发请求；提交体必须原样且 JSON 序列化不破」"
+    },
+    {
+      "manifest": "PAGES-LOGIN-INDEX",
+      "id": "LG24",
+      "page": "pages/login/index",
+      "why": "机制=判据要点火一个已从被测产物里删掉的状态位（要 automation_evaluate 置 phoneRegisterMode=true），补 tapTarget 无从谈起。apps/client/src/pages/login/index.vue:49-50 明写「短信倒计时 / phoneRegisterMode 已全部删除（注册唯一入口=独立注册页）」，:749 注明原 v-if=phoneRegisterMode 的三组输入节点已整删，:131 与 :207 与 :530 分别记录 canPhoneRegister、onSendSmsCode、onBirthDateChange 已删。两档 login wxml 里 phoneRegisterMode、login-nickname、login-sms-code 命中数均为 0，本页也没有子组件可藏（apps/client/dist/build/mp-weixin/pages/login/index.json 的 usingComponents 是空对象）。所以判据后半段（置 true 后三控件出现、文案变 registerButton、出现「返回登录」）在这份产物上永远不会成立，它不是红也不是绿，是题目过期。前半段（数 .input-field 应为 2 个节点）也不是点击能判的，且 .input-field 无 BEM 分隔符进不了探针（:134-137）。正确处置：把这条改写到 pages/register/index 或按代码层结案。",
+      "carrierChecked": "已核两档：apps/client/dist/build/mp-weixin/pages/login/index.wxml 与 apps/client/dist/build/mp-weixin-real/pages/login/index.wxml（md5 同为 ae0e923986558f7b0fb2368c831fef4b）中 input-field 2 处、sms-send-btn 0 处、login-sms-code 0 处、login-nickname 0 处、picker 0 处。现存的两框在 :714-717 与 :736-739。",
+      "expectedQuote": "「默认态：#login-nickname / 出生日期 picker / #login-sms-code 三个注册专属控件均不存在……置 true 后三控件出现」"
+    },
+    {
+      "manifest": "PAGES-LOGIN-INDEX",
+      "id": "LG26",
+      "page": "pages/login/index",
+      "why": "机制=原生键盘态 + 输入框 rect 读数，通道两样都拿不到。判据是「键盘弹起时被聚焦输入框完整可见、协议行与登录按钮不被永久顶出屏幕」，要的是聚焦输入框与安全区的几何比较；probeMany 只回 selectAll 条数（r-exec-cli.mjs:141-153，fields 只要 size 且只取 length），行里没有 rect 字段，键盘本身是原生层不在页面 DOM 里。可自动化的只有半步（聚焦 #login-phone 确实会把键盘顶起来，再点 .login-page 根节点收起；点 .login-page 这半步已被证明发得出去——同 corpus 里 LG27 的 observed 带 tap[tap:.login-page]，且两档 wxml 里 login-page 类名各只在根 view 上 1 处），但那两步做完判据仍然没被任何读数决定。",
+      "carrierChecked": "手机号框 apps/client/src/pages/login/index.vue:714-717（cursor-spacing=20 在 :713），密码框 :736-739，根节点 .login-page :567；三者两档 wxml 均命中（id=login-phone 各 1 处，login-page 在根 view 上）。表单整棵在 :704 的 v-else 分支，静息态不渲染，所以现有 tapTarget=.input-field 报 no such element。",
+      "expectedQuote": "「键盘弹起时被聚焦输入框完整可见（不被键盘覆盖，页面整体上移而非裁切）」"
+    },
+    {
+      "manifest": "PAGES-LOGIN-INDEX",
+      "id": "LG30",
+      "page": "pages/login/index",
+      "why": "机制三重叠加，且第一重就致命：载体 .sms-send-btn 已从本页整删——apps/client/src/pages/login/index.vue:1221 注明「.sms-send-btn 死样式已删（模板零引用，注册模式整删）」，:207 注明 onSendSmsCode 已删，两档 login wxml 命中 0。获取验证码现在只在 pages/register/index（源码 :572-576 的 .sms-btn 与 sms-btn--sending/--cd/--disabled，两档 register wxml 各命中 6 处，md5 同为 19873e63fc04a0c50700775afad1eaff），跨页了，而本页 manifest 的 case 只会被开在 pages/login/index。第二重：判据要 60 秒挂钟逐秒递减并归零恢复，执行器只有固定 sleep（SETTLE 与 :413-414 的 700ms），没有定时器腿。第三重：要 POST /v1/sms/send-code 计数=1，通道无 network 腿。另外它 requiresReal=true，而判据同时要求 mockCode 提示只出现在 dev/mock 构建里——real 档与 mockCode 天然互斥（mockCode 现只在 apps/client/src/pages/register/index.vue 与 services/auth.ts，登录页源码与登录页编译产物均 0 命中）。本行 corpus 里它的跳过原因串还写着「本切片只跑 mock 产物」，而这份 corpus 的 band 明明是 real@f0677920，那句台词在它自己里也不成立（r-exec-cli.mjs:450-455 的注释已在说同一族谎），别拿它当结论。",
+      "carrierChecked": "两档 login wxml：sms-send-btn 0 处、sms-send-btn--disabled 0 处、login-sms-code 0 处；两档 register wxml：sms-btn 6 处、field__input 6 处。",
+      "expectedQuote": "「按钮进入禁用态 sms-send-btn--disabled 并显示逐秒递减的秒数；连点 4 次 → network 面板 POST /v1/sms/send-code 计数必须 =1」"
+    },
+    {
+      "manifest": "PAGES-LOGIN-INDEX",
+      "id": "LG31",
+      "page": "pages/login/index",
+      "why": "机制=目标节点根本不在这份产物里（不是没点名，是点名的东西已删）。判据要点 #login-sms-code 与「注册/登录」主按钮，但内联注册的三输入框与验证码链路已整删（apps/client/src/pages/login/index.vue:49-50 与 :207 与 :749），两档 login wxml 中 login-sms-code 命中 0。注册验证码框现在是 pages/register/index 的 .field__input（源码 :558-563，maxlength=6，两档 register wxml 各命中），要测得把这条挂到 PAGES-REGISTER-INDEX 的 manifest 上。即便搬过去，判据仍要 5 位/7 位/6 位三种长度与 toast/请求计数，固定值输入腿（r-exec-cli.mjs:410）与无 toast/network 读数这两关还在。本行是唯一一条真·没点名的：failureReason 就是「action 含交互动词但没点名可交互元素」，因为 # 开头的 id 选择器 classesOf 抠不出来（:134-137 只认 . 开头带 BEM 分隔符的类名）。",
+      "carrierChecked": "两档 login wxml：login-sms-code 0 处、sms-send-btn 0 处；两档 register wxml：field__input 6 处、maxlength=6 1 处。",
+      "expectedQuote": "「7 位被截为 6 位（maxlength=6）；5 位时 canPhoneRegister=false → toast phoneAndCodeInvalid、0 请求」"
+    },
+    {
+      "manifest": "PAGES-LOGIN-INDEX",
+      "id": "LG37",
+      "page": "pages/login/index",
+      "why": "机制=这是一条代码审计题，运行时半段还额外要带 query 的开页与 storage 回读，三样都不是点击。判据主体「登录页只注册 onShow，不存在 onLoad/query 读取」我已按源码核过：apps/client/src/pages/login/index.vue 全文 onLoad 命中 0 次，:3 只 import 了 onShow，:75 是唯一页面钩子——这是静态断言，补任何 tapTarget 都判不了它。运行时那半段要 reLaunch 到带 redirect 与 dev-user 的 URL 并回读 storage 的 pending-login-redirect：执行器开页是在组边界按 manifest 声明的 page 固定开的（r-exec-cli.mjs:308 起，openPage 不带 query），行结构里也没有 storage 读数腿（:126-132 只有 route 与类名条数）。tier=noop 也说明它本来不该被算成交互用例。所以它记「判据未点名可观测物件」是对的处置，要补的是判据里的可观测物件（例如把结论改成量登录后落点路由，那才有条数可判），不是 tapTarget。",
+      "carrierChecked": "本页可用来判「幽灵参数」的运行时观测量只有 routeStack（r-exec-cli.mjs:431-432 已在读），但它回答不了「参数是否被消费」；两档 login wxml 里与参数消费相关的可点节点只有 .dev-user-entry（源码另有 DEV 入口，两档命中 3 处），点它判的是 dev 入口本身，不是 query 消费，属另一条 case 的范围。",
+      "expectedQuote": "「登录页只注册 onShow，不存在 onLoad/query 读取 → redirect/from 等参数为幽灵参数」"
+    }
+  ],
+  "$apply-note": "A 类那 1 条（LG17）落到 reports/audit/round-6/ops/PAGES-LOGIN-INDEX.json 的对应 case 上改 tapTarget 并把 tapTargetEvidence 换成上面这段（旧值 index.vue:719 是重构前的行号，已失效）；B 类那 10 条加 notAutomatable:true 并写明机制，让执行器把它记成 SKIPPED-not-automatable（桶已存在于 triage-exec-failures），不要再挂着「判据含糊」。两件前置：其一，LG17 之前必须先把 LG09 的 action 动词改成「点击」，否则表单永远不展开，LG11 LG12 LG13 LG15 LG17 LG18 LG24 LG26 这 8 条会继续报 input:.input-field no such element（这是同一族问题，不是 8 个独立缺陷）；其二，落地前单探一次 id 选择器是否被 automation_element_action 解析（本仓历史 tapTarget 无一使用 #）。排队器 stage-6 的执行腿正在逐组读这些文件，必须等它跑完再改，否则同一轮里前半用旧判据、后半用新判据。本轮只做规划，未改任何 ops 文件，也未跑执行器。"
+}
