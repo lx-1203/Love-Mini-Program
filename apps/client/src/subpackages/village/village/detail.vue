@@ -778,7 +778,7 @@ onShareTimeline(() => {
     </view>
 
     <!-- 帖子内容 -->
-    <scroll-view v-if="currentPost" class="detail-body" :class="{ 'detail-body--bar-expanded': !!replyingTo || commentImages.length > 0 }" scroll-y>
+    <scroll-view v-if="currentPost" class="detail-body" :class="{ 'detail-body--bar-expanded': !!replyingTo || commentImages.length > 0, 'detail-body--emoji-open': emojiPanelVisible }" scroll-y>
       <!-- ===== 作者交互卡片 ===== -->
       <!-- 理想图：扁平行内作者行（头像 + 名字 + 校徽 + 关注按钮） -->
       <view class="author-inline">
@@ -1620,6 +1620,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .detail-body--bar-expanded {
   padding-bottom: calc(320rpx + env(safe-area-inset-bottom));
+}
+
+/* MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001：表情面板不在 bar-expanded 的条件里，
+   开面板时正文末条会被压住。预留不另立魔数＝吸底栏 140rpx + .emoji-panel 的 max-height 360rpx
+   + 其上下内距（16+8）24rpx；本条必须声明在 bar-expanded 之后（同属性后声明者胜出）。 */
+.detail-body--emoji-open {
+  padding-bottom: calc(140rpx + 360rpx + 24rpx + env(safe-area-inset-bottom));
 }
 
 /* 2026-08-26 R4：详情加载骨架屏 */

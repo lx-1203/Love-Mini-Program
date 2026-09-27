@@ -1111,6 +1111,16 @@ const SPEC = [
       { kind: "present", re: /这些内容仅互相喜欢或你关注的人可见/ },
     ],
   },
+  {
+    id: "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
+    file: "apps/client/src/subpackages/village/village/detail.vue",
+    claim: "表情面板在场时正文底部预留必须把面板自身高度也算进去：吸底栏 140rpx + 面板 max-height 360rpx + 面板上下内距 24rpx，且该修饰类必须在 bar-expanded 之后声明（同属性后声明者胜出）",
+    checks: [
+      { kind: "present", re: /'detail-body--emoji-open':\s*emojiPanelVisible/ },
+      { kind: "present", re: /padding-bottom: calc\(140rpx \+ 360rpx \+ 24rpx \+ env\(safe-area-inset-bottom\)\)/ },
+      { kind: "countEq", re: /detail-body--emoji-open/g, n: 2 },
+    ],
+  },
 ];
 
 /* 剥注释：禁用的写法只出现在注释里（说明"这里原来是怎么写的"）不算违反。
