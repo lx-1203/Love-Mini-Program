@@ -1,0 +1,233 @@
+{
+ "$schema": "run-ui-queue.mjs --legs <本文件>；腿按顺序串行，第一条非 advisory 红就停并把剩下的记成 NOT_RUN",
+ "$why": "stage-7 的语料戳在腿 0/1 已封，身份收窄与后续 cellplan 只能排在队尾之后落地（中途改写会让后面的腿量到与前一腿不同的语料，腿 16 queue-homogeneity 就是查这个）。这一份把'落盘→重戳→重冻→只补受影响的腿→第二把刀(WS)'绑成一次可重跑的序列，省得每步现场决定顺序。",
+ "$hold": "开跑前必须确认 stage-7 队列已经退出并且 heldLeases() 为空；所有窗腿都排在重建/换档之后（窗口停在 A 档量不了 B 档）。",
+ "legs": [
+  {
+   "name": "apply-identity-scope-r8",
+   "file": "scripts/qa/tag-ops-identity-scope.mjs",
+   "args": [
+    "--apply"
+   ],
+   "timeoutMin": 4,
+   "why": "④ 第 1 项裁定的反向半边落盘：pages/login/index 上 36 条前置是未登录的判据收进游客腿，LG02/LG03 点名留在登录腿。落盘工具自带复读断言（目录用例数 1107 不变、已标数与计划数相等），所以这一条红就是写坏了语料，不是噪声。"
+  },
+  {
+   "name": "identity-scope-idempotent-r8",
+   "file": "scripts/qa/tag-ops-identity-scope.mjs",
+   "args": [],
+   "timeoutMin": 4,
+   "why": "落完立刻复跑 dry 证幂等：期望 改写文件=0、撤销误标=0。幂等没证过，'已落地'就只是一次写入而不是一个可重跑的载体。"
+  },
+  {
+   "name": "stamp-rewrite-r8",
+   "file": "scripts/qa/verify-ops-corpus-stamp.mjs",
+   "args": [
+    "--write",
+    "--ops",
+    "reports/audit/round-6/ops",
+    "--out",
+    "reports/audit/round-7/ops-corpus-stamp-r8.json"
+   ],
+   "timeoutMin": 3,
+   "why": "语料变了必须重记内容戳：没有这一条，r8 的腿与 stage-7 的腿就无法区分量的是哪一版判据台（戳是把'改判'和'复测'分开的唯一凭据）。"
+  },
+  {
+   "name": "refreeze-ops-copy-r8",
+   "file": "scripts/qa/freeze-ops-copy.mjs",
+   "args": [
+    "--from",
+    "reports/audit/round-6/ops",
+    "--to",
+    "reports/audit/round-7/ops"
+   ],
+   "timeoutMin": 4,
+   "why": "冻结副本要跟上新语料，否则复判读的是旧正文而执行腿读的是新正文——同一个断言两个版本。"
+  },
+  {
+   "name": "stamp-verify-copy-r8",
+   "file": "scripts/qa/verify-ops-corpus-stamp.mjs",
+   "args": [
+    "--copy",
+    "reports/audit/round-7/ops",
+    "--stamp",
+    "reports/audit/round-7/ops-corpus-stamp-r8.json"
+   ],
+   "timeoutMin": 3,
+   "why": "副本与戳双向对上（不是只写不读）：这一步红说明冻结或戳有一个没落上。"
+  },
+  {
+   "name": "guest-landing-book-r8",
+   "file": "scripts/qa/verify-guest-landing.mjs",
+   "args": [],
+   "timeoutMin": 5,
+   "why": "身份收窄会改变落地对的名册成员（36 行现在只由游客腿认领）⇒ 记账门必须重算一次守恒，否则 27 组的行数账是从上一版语料抄来的。"
+  },
+  {
+   "name": "gate-selectors-exist-mock-r8",
+   "file": "scripts/qa/verify-case-selectors-exist.mjs",
+   "args": [],
+   "timeoutMin": 6,
+   "why": "静态门、不占设备：收窄之后仍要在两档产物里核点名物件存不存在。",
+   "advisory": true
+  },
+  {
+   "name": "gate-selectors-exist-real-r8",
+   "file": "scripts/qa/verify-case-selectors-exist.mjs",
+   "args": [
+    "--band",
+    "apps/client/dist/build/mp-weixin-real"
+   ],
+   "timeoutMin": 6,
+   "why": "同上，real 档（同一批名字在两档里不一定同名）。",
+   "advisory": true
+  },
+  {
+   "name": "open-window-mock-r8",
+   "file": "scripts/qa/open-project-window.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin",
+    "--settle",
+    "24"
+   ],
+   "timeoutMin": 14,
+   "why": "换档必须先重新开窗接回设备：窗口停在 real 档时 mock 腿的第一次调用就会 transport 超时，看起来像'通道坏了'。"
+  },
+  {
+   "name": "exec-A-login-r8",
+   "file": "scripts/qa/r-exec-cli.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin",
+    "--out",
+    "reports/audit/round-7/exec-A-login-r8",
+    "--tap",
+    "--identity",
+    "A",
+    "--label",
+    "round-7-r8-A-login",
+    "--manifests",
+    "PAGES-LOGIN-INDEX"
+   ],
+   "timeoutMin": 25,
+   "why": "只补受影响的那一刀：A 腿在这一页应得到 36 条 identity-scope 的 SKIPPED（摘掉的是认领，不是判据）+ LG02/LG03 继续真跑。读数必须是'跳过有原因、留下有结果'，不许两边都零。"
+  },
+  {
+   "name": "exec-guest-login-r8",
+   "file": "scripts/qa/r-exec-cli.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin",
+    "--out",
+    "reports/audit/round-7/exec-guest-login-r8",
+    "--tap",
+    "--identity",
+    "guest",
+    "--label",
+    "round-7-r8-guest-login",
+    "--manifests",
+    "PAGES-LOGIN-INDEX"
+   ],
+   "timeoutMin": 25,
+   "why": "收窄的另一半要有人真量：36 条改由游客腿认领 ⇒ 这一腿必须产出这 36 条的结果。只有 A 腿的 SKIPPED 而没有游客腿的 EXECUTED，就是把噪声搬走而没把判据补上。"
+  },
+  {
+   "name": "verify-logged-in-landing-r8",
+   "file": "scripts/qa/verify-logged-in-landing.mjs",
+   "args": [
+    "--exec",
+    "reports/audit/round-7/exec-A-login-r8",
+    "--exec",
+    "reports/audit/round-7/exec-A-mock-stage7"
+   ],
+   "timeoutMin": 4,
+   "why": "④ 第 1 项裁定的落点半在收窄之后再判一次（点名载体行没在场就红）。导航计数半本载具不判，输出里明说。"
+  },
+  {
+   "name": "triage-exec-r8",
+   "file": "scripts/qa/triage-exec-failures.mjs",
+   "args": [
+    "--results",
+    "reports/audit/round-7/exec-A-login-r8/exec-results.json",
+    "--dist",
+    "apps/client/dist/build/mp-weixin"
+   ],
+   "timeoutMin": 8,
+   "why": "词表守恒：SKIPPED-identity-scope 这一族要有桶、要有去向；出现没登记的失败口径就红（不许把新口径读成'还没裁定'）。"
+  },
+  {
+   "name": "triage-guest-login-r8",
+   "file": "scripts/qa/triage-exec-failures.mjs",
+   "args": [
+    "--results",
+    "reports/audit/round-7/exec-guest-login-r8/exec-results.json",
+    "--dist",
+    "apps/client/dist/build/mp-weixin"
+   ],
+   "timeoutMin": 8,
+   "why": "游客腿那 36 条的分诊：它们现在只有 A 腿的'不认领'，必须在这条腿上给出真结果或真原因，否则就是把噪声搬走而不是把判据补上。"
+  },
+  {
+   "name": "open-window-real-r8",
+   "file": "scripts/qa/open-project-window.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin-real",
+    "--settle",
+    "24"
+   ],
+   "timeoutMin": 14,
+   "why": "WS 腿与真实档腿都要接回设备，且窗口停在 mock 档量不了 real 档。"
+  },
+  {
+   "name": "exec-guest-real-login-r8",
+   "file": "scripts/qa/r-exec-cli.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin-real",
+    "--out",
+    "reports/audit/round-7/exec-guest-real-login-r8",
+    "--tap",
+    "--real-cases-only",
+    "--identity",
+    "guest",
+    "--label",
+    "round-7-r8-guest-real-login",
+    "--manifests",
+    "PAGES-LOGIN-INDEX"
+   ],
+   "timeoutMin": 25,
+   "why": "真实档的游客登录行（requiresReal 子集）是④裁定的另一半证据：mock 档过了不代表真实档过了。"
+  },
+  {
+   "name": "ws-component-scoped-r8",
+   "file": "scripts/qa/r-exec-ws.mjs",
+   "args": [
+    "--ids-file",
+    "reports/audit/round-7/ids-component-scoped.json",
+    "--project",
+    "apps/client/dist/build/mp-weixin",
+    "--out",
+    "reports/audit/round-7/ws-component-scoped-r8",
+    "--identity",
+    "A",
+    "--round",
+    "round-7"
+   ],
+   "timeoutMin": 120,
+   "why": "第二把刀：145 条判据的元素只在组件自己的 wxml 里，CLI 腿实测 90.6% 点不动 ⇒ 只有 WS 腿能点。名单守恒由这一腿自断言（名单=遇上=盘上有行），被截停会另打 WSX_IDS_PARTIAL 而不是假装跑完。开跑前用 --help/读码确认是否有 --tap 口径，不猜旗标。"
+  },
+  {
+   "name": "queue-homogeneity-r8",
+   "file": "scripts/qa/verify-ops-corpus-stamp.mjs",
+   "args": [
+    "--queue",
+    "scripts/qa/ui-queue.round8-stage8.json"
+   ],
+   "timeoutMin": 3,
+   "advisory": true,
+   "why": "本队列自己的执行腿必须读同一版语料（同轮不同判据=结论不可拼）。文件与旗标是照抄 stage-7 腿 16 的真实调用，不是新发明的名字。"
+  }
+ ]
+}
