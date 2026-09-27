@@ -311,9 +311,12 @@ async function main() {
        （负例实测 PAGES-HOME-INDEX H13 被拼成 PAGES-HOME-INDEXH13，好名单也会被判成找不到）。 */
     IDS = new Set(list.map((x) => String(x).trim().split(/[/#\s]+/).filter(Boolean).join("|").toUpperCase()).filter(Boolean));
     if (!IDS.size) { console.log("WSX_RESULT=FAIL reason=--ids-file 解析出 0 条 ⇒ 空名单不许占设备"); process.exit(2); }
-    const corpus = new Set();
+    const corpus = new Map();
     for (const name of files) {
-      try { const mf = JSON.parse(readFileSync(join(OPS, name + ".json"), "utf8")); for (const c of (mf.cases || [])) corpus.add((name + "|" + c.id).toUpperCase()); } catch { console.log("WSX_IDS_SKIP_FILE " + name + "（语料读不到，名单核对不到它）"); }
+      try {
+        const mf = JSON.parse(readFileSync(join(OPS, name + ".json"), "utf8"));
+        for (const c of (mf.cases || [])) corpus.set((name + "|" + c.id).toUpperCase(), c);
+      } catch { console.log("WSX_IDS_SKIP_FILE " + name + "（语料读不到，名单核对不到它）"); }
     }
     const missing = [...IDS].filter((k) => !corpus.has(k));
     console.log("WSX_IDS_FILE " + IDS_FILE + " 名单=" + IDS.size + " 在语料=" + (IDS.size - missing.length) + " 找不到=" + missing.length);
@@ -323,6 +326,25 @@ async function main() {
       console.log("WSX_RESULT=FAIL reason=名单里 " + missing.length + " 条不在本轮语料里（判据改号或名单拼错）⇒ 静默少跑就是假覆盖");
       process.exit(2);
     }
+    /* 名单腿必须尊重判据台上已经存在的两种口径，否则这一把 WS 腿会把"别人家身份的判点"和
+       "已经盖章说这条通道做不了的判点"一起认领成自己的结果——那是把噪声重新包装成证据。
+       这里选择整批拒绝而不是逐行静默跳过：名单是人写的，写错了要让人当场知道。 */
+    const wrongId = [...IDS].filter((k) => {
+      const c = corpus.get(k); const ids = Array.isArray(c && c.identities) ? c.identities.map(String) : [];
+      return ids.length > 0 && !ids.includes(String(IDENTITY));
+    });
+    if (wrongId.length) {
+      for (const k of wrongId.slice(0, 12)) console.log("  WSX_IDS_WRONG_IDENTITY " + k + " 标=" + JSON.stringify((corpus.get(k) || {}).identities) + " 本腿=" + IDENTITY);
+      console.log("WSX_RESULT=FAIL reason=名单里 " + wrongId.length + " 条的身份适用范围不含本腿 identity=" + IDENTITY + " ⇒ 这一腿不能替它们作证（载具：tag-ops-identity-scope.mjs 标的 identities）");
+      process.exit(2);
+    }
+    const stamped = [...IDS].filter((k) => { const c = corpus.get(k) || {}; return c.automatable === false; });
+    if (stamped.length) {
+      for (const k of stamped.slice(0, 12)) console.log("  WSX_IDS_NOT_AUTOMATABLE " + k + " :: " + String((corpus.get(k) || {}).notAutomatableFrom || "(没记出处)").slice(0, 60));
+      console.log("WSX_RESULT=FAIL reason=名单里 " + stamped.length + " 条已被判据台盖章「不可自动化」⇒ 再发一次交互只会把已有裁定重新包装成失败证据");
+      process.exit(2);
+    }
+    console.log("WSX_IDS_GUARD=OK 身份口径与不可自动化盖章都对上（名单 " + IDS.size + " 条都能由 identity=" + IDENTITY + " 这一腿认领）");
   }
   /* WS 通道与 CLI 桥驱动的是同一台模拟器：并发不报错，只互相换页 ⇒ 排队用同一把租约。 */
   guardUiLease({ owner: "r-exec-ws-" + LABEL, tag: "WSX_LEASE", failTag: "WSX" });
