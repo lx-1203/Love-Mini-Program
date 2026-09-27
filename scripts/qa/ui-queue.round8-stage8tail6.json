@@ -1,0 +1,49 @@
+{
+ "$schema": "run-ui-queue.mjs --legs <本文件>；由 .zcode/tmp/emit-tail.mjs 从 scripts/qa/ui-queue.round8-stage8.json 第 22 条起机械切片生成，勿手改",
+ "$why": "续跑：前一程在 ws-component-scoped-r8 上红，其前的腿已 OK 且证据留在各自的 queue-state.json 里；重跑重建腿会让后面所有执行腿量到另一版产物，等于换一轮，所以只切尾巴。",
+ "$hold": "开跑前确认前一份账本里 ws-component-scoped-r8 之前的腿全是 OK，并且 heldLeases() 为空。",
+ "$source": "scripts/qa/ui-queue.round8-stage8.json",
+ "$fromLeg": "ws-component-scoped-r8",
+ "legs": [
+  {
+   "name": "ws-component-scoped-r8",
+   "file": "scripts/qa/r-exec-ws.mjs",
+   "args": [
+    "--ids-file",
+    "reports/audit/round-7/ids-component-scoped.json",
+    "--project",
+    "apps/client/dist/build/mp-weixin",
+    "--out",
+    "reports/audit/round-7/ws-component-scoped-r8",
+    "--identity",
+    "A",
+    "--round",
+    "round-7"
+   ],
+   "timeoutMin": 120,
+   "why": "第二把刀：145 条判据的元素只在组件自己的 wxml 里，CLI 腿实测 90.6% 点不动 ⇒ 只有 WS 腿能点。名单守恒由这一腿自断言（名单=遇上=盘上有行），被截停会另打 WSX_IDS_PARTIAL 而不是假装跑完。开跑前用 --help/读码确认是否有 --tap 口径，不猜旗标。"
+  },
+  {
+   "name": "queue-homogeneity-r8",
+   "file": "scripts/qa/verify-ops-corpus-stamp.mjs",
+   "args": [
+    "--queue",
+    "scripts/qa/ui-queue.round8-stage8.json"
+   ],
+   "timeoutMin": 3,
+   "advisory": true,
+   "why": "本队列自己的执行腿必须读同一版语料（同轮不同判据=结论不可拼）。文件与旗标是照抄 stage-7 腿 16 的真实调用，不是新发明的名字。"
+  },
+  {
+   "name": "queue-homogeneity-tail6",
+   "file": "scripts/qa/verify-ops-corpus-stamp.mjs",
+   "args": [
+    "--queue",
+    "scripts/qa/ui-queue.round8-stage8tail6.json"
+   ],
+   "advisory": true,
+   "timeoutMin": 3,
+   "why": "这份续跑计划自己的戳同构检查：它的参数与前一程分两段记账，只查旧计划等于没查过这一程。"
+  }
+ ]
+}

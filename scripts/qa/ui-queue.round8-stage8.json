@@ -233,6 +233,18 @@
    "why": "WS 腿的前置：r-exec-ws 自己的失败口径就写着「WS 通道连不上 ⇒ 先跑 ws-channel-up.mjs，且绝不 close()（close 会把 IDE 的 9420 子进程整个带走）」。不先把通道架起来，145 条那一腿只会交出一屏 transport 超时——上一轮就是这么折掉一次队列启动的。"
   },
   {
+   "name": "open-window-mock-before-ws-r8",
+   "file": "scripts/qa/open-project-window.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin",
+    "--settle",
+    "24"
+   ],
+   "timeoutMin": 14,
+   "why": "把窗口接回 mock 档再跑 WS 腿：ws-channel-up 自己会 cli auto --project <mock> 重启一次窗口，紧接着开跑的 WS 腿量到的是还在 boot 的窗口，实测 145 行全记 open_page 失败且零证据（route/observed/evidence 全空、durationMs=0）。窗腿的 live() 是本仓唯一的窗口活着判据，换档必须先接回设备这条规矩在本文件 real 窗腿的 why 里早就写过了。"
+  },
+  {
    "name": "ws-component-scoped-r8",
    "file": "scripts/qa/r-exec-ws.mjs",
    "args": [
