@@ -1,0 +1,140 @@
+{
+ "$schema": "run-ui-queue.mjs --legs <本文件> --out reports/audit/round-7/ui-queue-round8b-tour；腿按顺序串行，第一条非 advisory 红就停并把剩下的记成 NOT_RUN；每腿的 file/args 都照目标脚本自己的 arg 解析核对过（读码，不猜旗标）。--out 必须显式给并且必须是**新目录**：run-ui-queue.mjs:33 的缺省 OUT 就是 reports/audit/round-7/ui-queue，那正是 round-7b 的账本（含那条红腿的判决），不带 --out 的 8b 会把刚判决那轮的 queue-state.json 覆掉——同一件事本轮已在 run-chain-7b-then-8.mjs:30-33 为 stage-8 修过一次（OUT8=…/ui-queue-stage8），8b 不能再踩第三遍。",
+ "$why": "round-7b 唯一的那条红腿是 tour-B-real-stage7：`TOUR_PORT=9420 source=default` ⇒ `TOUR_RESULT=FAIL reason=端口 9420 来自 default 退路而非 env，且探测未在听（94xx 在听=[9430]）`。真实档巡检没出帧 ⇒ 台账里『已修复待复验』那一行族拿不到帧级终态，收不了口。根因不是『少了 env』，而是端口有两个来源：巡检腿自己写死 9420（tour-r6.mjs 原 :79 的字面量），架通道那条腿却从 scripts/qa/ide-port.json 读（readIdePort）。现已并成同一个实现 ⇒ 这一份把『架通道 → 当场复核端口 → 接 real 档窗 → 补测运行时证据洞 → 预检 → 巡检 → 帧进 corpus → 分诊门』绑成一次可重跑的序列，红只可能发生在开头，不再发生在队尾。",
+ "$hold": "开跑前必须确认 stage-8 那条 23 腿队列已经**跑完并且全绿**、heldLeases() 为空（本计划第 3/4/6/12 条腿要占租约：第 3、12 条与第 4 条占 wechat-automation-cli.lock（open-project-window.mjs:32 / verify-evidence-holes.mjs:85），第 6 条占 wechat-automation-<port>.lock；第 5 条预检腿刻意不占）。现量事实（2026-09-28 00:55）：stage-8 现在不是全绿，而是 QUEUE_TALLY OK=9 FAIL=1 NOT_RUN=13 ⇒ QUEUE_RESULT=FAIL，红在 leg 10 gate-band-freshness-r8（verify-band-freshness.mjs:339 TypeError，见下面那条禁止事项）⇒ **8b 不得在其前驱变绿前开跑**，否则这一份是在给一条断掉的链补帧。本计划**不重建任何产物**：如果 stage-8 之后 apps/ 又变了，先跑那三条 rebuild 腿再回到这里，并且保留『每条重建腿后面必须跟一条重新接窗的腿』这条规矩（腿 3 就是那一条）。禁止给本计划加 verify-band-freshness.mjs 那条门：它在盘上现状必崩（scripts/qa/band-freshness-markers.json 第 4 条标记符号 \"--hot-badge-bg\" 过不了 verify-band-freshness.mjs:314 的标识符判据 ⇒ mk.hits 未赋值 ⇒ :339 的打印 Object.entries(undefined) 抛 TypeError），修好之前它既不能出绿也不能出判决。用 Node 22 起（PATH 上的缺省 node 是 DevTools 的 v16，automator SDK 会挂）。",
+ "legs": [
+  {
+   "name": "ws-channel-up-real-r8b",
+   "file": "scripts/qa/ws-channel-up.mjs",
+   "args": [
+    "--project",
+    "D:/6/恋爱小程序/apps/client/dist/build/mp-weixin-real",
+    "--wait",
+    "150"
+   ],
+   "timeoutMin": 8,
+   "why": "顺序 (a)：把 automator 的 WS 采集通道架起来。这一条与巡检腿共用 readIdePort()（ws-channel-up.mjs:33 = ide-port-config.mjs:17），所以『架起来的端口』和『巡检连的端口』不可能再是两个数——round-7b 那次红就是因为巡检自带一个与配置文件无关的 9420 字面量。--project 指 real 档：巡检跑在真实档上。这里必须给**绝对路径**：opt() 把值原样塞进 spawn 的命令行（:25/:35），而那个 spawn 的 cwd 是 IDE 安装目录（:109-:112），相对路径会解到 IDE 目录里去；open-project-window 那类腿能吃相对路径是因为它自己 resolve(REPO, …)。绝不 --port 覆盖、绝不 close()（close 会把整个自动化 IDE 实例带走，9420 随之消失——脚本头里写明的那条实测教训）。"
+  },
+  {
+   "name": "gate-ide-port-listening-r8b",
+   "file": "scripts/qa/ide-service-port.mjs",
+   "args": [],
+   "timeoutMin": 2,
+   "why": "顺序 (a) 的后半：配置值要**当场被监听表复核**才算数（scripts/qa/ide-port.json 的 notes.history 原话：端口随 IDE 重启漂移，9431 就消失过）。这一条打印 ws/bridge 两个端口的在听状态与持有 pid，巡检腿 [port 预检] 量的是同一张表 ⇒ 两边对不上就停在这里，而不是让一条 3 小时的巡检腿去撞。非 advisory：它红的时候后面的设备腿全都会红。端口若真漂移，改的是 scripts/qa/ide-port.json（唯一来源），不是这份计划里的字面量。"
+  },
+  {
+   "name": "open-window-real-r8b",
+   "file": "scripts/qa/open-project-window.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin-real",
+    "--settle",
+    "24"
+   ],
+   "timeoutMin": 14,
+   "why": "顺序 (b)：打开/接上真实档项目窗口。本仓规矩——每条重建腿后面必须跟一条重新接窗的腿，而 stage-8 刚排了 showcase/mock/real 三条重建，窗口要么停在别的档位、要么对着已被覆写的产物；执行/巡检类腿只往『当前打开的那个模拟器』里注入，它自己不开窗。验收口径是路由非空（open-project-window.mjs:51 的 live()），不是『命令返回 ok』：7b 那次 OPENWIN call={success:true,type:reuse} 而 probe={route:空,pages:0} 被判 no-live-route 才是对的。--project 这里可以写相对路径：arg() 之后走 resolve(REPO, …)（:20）。"
+  },
+  {
+   "name": "measure-runtime-holes-r8b",
+   "file": "scripts/qa/verify-evidence-holes.mjs",
+   "args": [
+    "--mode",
+    "measure",
+    "--project",
+    "apps/client/dist/build/mp-weixin-real"
+   ],
+   "timeoutMin": 12,
+   "why": "顺序 (b2)：这一条是**补上来的依赖腿**，不是可选探针。最后那条 gate-evidence-holes 跑的是缺省 judge 模式，它对每一洞都要求 status=DECIDED，而 DC33 的判据是运行时探针（verify-evidence-holes.mjs:22 的 MEASURED=reports/audit/round-7/runtime-holes-measured.json；:74 拿不到那一行就记 PROBE_NOT_RUN；:78 据此把状态判成 BOOKED）；本轮实测该文件**盘上根本没有**（find 全盘 0 命中，git 也不认识它），所以 judge 一条腿现在必红：现量输出 `EVIDENCE_HOLES 洞=3 已判定=2 / ✗ DC33 未判定（BOOKED）：PROBE_NOT_RUN / EVIDENCE_HOLES_RESULT=FAIL problems=1`，exit=2。红计入 QUEUE_RESULT=FAIL（run-ui-queue.mjs:117 的 okAll 也看 advisoryFail），于是这一轮又会以一条与巡检无关的红收口——正是要避免的那件事。载体照抄 ui-queue.round7-tour.json 腿 1 的真实调用（--mode measure --project <real 档>）；measure 模式自己 acquireUi（:85）且开始前查 heldLeases（:113）⇒ 它必须排在接 real 窗之后（腿 3）、巡检之前（巡检会自己 reLaunch，先跑不污染它的账）。--project 给相对路径即可：PROJECT = resolve(REPO, arg('project', …))（:24）。"
+  },
+  {
+   "name": "tour-precheck-real-r8b",
+   "file": "scripts/qa/tour-r6.mjs",
+   "args": [],
+   "env": {
+    "TOUR_PRECHECK_ONLY": "1",
+    "TOUR_PROJECT": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "TOUR_LABEL": "round-7-stage8b-tour-B-real",
+    "TOUR_AUDIT_SUB": "round-7",
+    "TOUR_CKPT_NAME": "tour-R7-stage8b-B.json",
+    "TOUR_LOG_NAME": "tour-R7-stage8b-B.log",
+    "IDENTITIES": "B"
+   },
+   "timeoutMin": 4,
+   "why": "顺序 (c) 的前置：巡检的三条预检（落点面、RESHOOT 清单、端口可达）全在 acquireLock 之前——main() 里 precheckReshootPlan() 是 :1626、await precheckPortReachable() 是 :1627、TOUR_PRECHECK_ONLY 的退点是 :1631，而 acquireLock 直到 :1632 才被叫，所以这一条跑完就退、不占租约、不落文件（本轮现量：`TOUR_RESULT=FAIL reason=端口 9420 由 config…且探测未在听（94xx 在听=[]）`，exit=1；随后锁目录/检查点目录/日志三处与跑前逐字节一致）。台账 :2172 记着这个模式存在的理由就是为了能在真实清单上验一次『通过』分支。把它单列一条，是为了让这一轮的红发生在第 5 条腿而不是第 6 条腿。注意这里**不带 WS_ENDPOINT**：端口来源应当是配置文件而不是命令行，带了就把这一腿又变回对照实验（并且现量证明 env 档可以拿一个跟 automator 无关的监听端口过判据：WS_ENDPOINT=ws://127.0.0.1:3306 打印 `[port 预检] 3306 在听 source=env` 并 exit=0）。落点三件套仍要显式给，但**给的理由要说准**：脚本那四个默认值全指向 round-2，而『用着 round-2 默认落点就直接拒跑』那一条只在开了 RESHOOT 时才响（tour-r6.mjs:1525 的 `if (RESHOOT_FILE && defaultsUsed.length)`），本计划两条巡检腿都不开 RESHOOT ⇒ 真正拦住覆写的是不分 RESHOOT 的跨轮闸门（tour-r6.mjs:1530-1547：目标目录已有另一轮 gitSha 的 manifest 就 FAIL）。显式给 env 是第二道保险，不是唯一那道门。"
+  },
+  {
+   "name": "tour-B-real-r8b",
+   "file": "scripts/qa/tour-r6.mjs",
+   "args": [],
+   "env": {
+    "TOUR_PROJECT": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "TOUR_LABEL": "round-7-stage8b-tour-B-real",
+    "TOUR_AUDIT_SUB": "round-7",
+    "TOUR_CKPT_NAME": "tour-R7-stage8b-B.json",
+    "TOUR_LOG_NAME": "tour-R7-stage8b-B.log",
+    "IDENTITIES": "B"
+   },
+   "timeoutMin": 180,
+   "why": "顺序 (c)：真实档巡检本体，也就是这份计划的存在理由——补上 round-7b 欠的那批帧。TOUR_LABEL 必须以 round-7- 开头，因为帧→corpus 那一步（rebuild-frozen-manifest.mjs:45）按 `reports/screenshots/round-7-*` 前缀收 corpus，这是腿 7 能吃到这批帧的唯一前提；ckpt/log 名跟着标签走，免得续到别人的进度上。IDENTITIES=B 只跑第二把身份（tour-r6.mjs:166 只认 A/B），与 stage-6b 的 mock 档 A 身份合起来才是『62+ 页 × 双身份』。端口不在这个 env 里：readIdePort 从 scripts/qa/ide-port.json 取，锁名与 ws 端点都由同一个 TOUR_PORT 派生（tour-r6.mjs:99-101 现量：不带 env 时 `TOUR_PORT=9420 source=config … lock=…wechat-automation-9420.lock ws=ws://127.0.0.1:9420`，带 WS_ENDPOINT=…:9431 时两处一起变成 9431 ⇒ 不存在『连着 9431 却在续 9420 的锁』）。本轮另补一道跨通道的门（fork 改动 3，tour-r6.mjs:741 foreignLiveLease）：起锁前按 ui-lease.heldLeases 的同一口径扫锁目录，别的资源名的活租约在 ⇒ 拒绝起锁（现量：目录里摆一把 wechat-automation-cli.lock/LEASED/租期 2099 时 exit=3、acquired=false，同一份代码在干净目录仍 acquired=true）——这一条把 round-7b 那类『两个驱动各自认为独占同一 UI 会话』的形状从巡检这边也堵上。"
+  },
+  {
+   "name": "corpus-union-r8b",
+   "file": "scripts/qa/rebuild-frozen-manifest.mjs",
+   "args": [
+    "--round",
+    "7",
+    "--allow-bands"
+   ],
+   "timeoutMin": 8,
+   "why": "顺序 (d) 的帧→corpus：巡检自己只写 corpus 目录里的 manifest-detail.json，本轮**权威**索引 reports/audit/round-7/screenshot-manifest.json 必须由各家 corpus 派生（:44-:51 只认带 manifest-detail.json 且 shots 非空的目录，缺一个就整批 SKIP = 这批帧在账上不存在）。--allow-bands 不是放宽判据而是本轮实测过的必要项：round7-NOTES:1964/:2562 记着不加它时 gitSha 不一致直接判红（一轮里 HEAD 前进过、本来就有多条构建带），硬凑单带就得给旧帧补新 SHA，那是伪造溯源。落盘前它还逐条 statSync + 重算 sha256，自证不过就一个字节都不写。"
+  },
+  {
+   "name": "gate-state-truth-r8b",
+   "file": "scripts/qa/verify-state-truth.mjs",
+   "args": [
+    "reports/audit/round-7"
+   ],
+   "timeoutMin": 15,
+   "why": "顺序 (d) 的分诊第一门：巡检跑完立刻查四态账（计划 ops / 权威 results / checkpoint / 终止快照四列并排，任何不一致判 FAIL，禁止『挑一份好看的』收尾）。调用形态照抄 ui-queue.round7-tour.json 的 gate-state-truth：只给位置参数，**不跟 --ckpt**——checkpoint 是『最后一个写入者的窗口』，把巡检窗口塞进执行账的极差比较里会假红（verify-state-truth.mjs 头部那条范围例外说的就是这件事）。非 advisory：四态账对不上说明这一轮的数不可拼，后面的门白跑。"
+  },
+  {
+   "name": "gate-frame-debt-coverage-r8b",
+   "file": "scripts/qa/verify-frame-debt-coverage.mjs",
+   "args": [],
+   "timeoutMin": 6,
+   "advisory": true,
+   "why": "顺序 (d) 的分诊第二门，也是 round-7b 后果的直接量具：台账里『已修复待复验 / 未取证 / 需裁决』这一族的每一行都必须有**明确去向**（配方里 disposition=SHOOT、帧债归置表带 kind+carrier、或 open-row-dispositions.json 显式登记 reason+nextCarrier），三条都没有就是裸行。它抓的正是巡检没出帧时最坏的那件事：行既不在配方里也没有归置，所有已存在的门全绿而 ① 到底做完没有是瞎的。默认输入 reports/audit/round-6/issue-matrix.md + round-7 的 frameplan-round7-{final,guest-real,a-real}.json、frame-debt-triage.json、open-row-dispositions.json 都在盘上（:160-:166）。advisory：红=发现缺陷不是设备坏了，但红仍计入 QUEUE_RESULT=FAIL。"
+  },
+  {
+   "name": "gate-frame-debt-triage-r8b",
+   "file": "scripts/qa/verify-frame-debt-triage.mjs",
+   "args": [
+    "--plan",
+    "reports/audit/round-7/frameplan-round7-final.json"
+   ],
+   "timeoutMin": 5,
+   "advisory": true,
+   "why": "顺序 (d) 的分诊第三门：帧债归置门的四道检查（C1 行集守恒 / C2 去向可跑 / C3 别去拍帧根本证明不了的行 / C4 标了 resolved 必须写明可重跑载体）。巡检帧是这些行的候选载体，这一条要说清『这一行被安排上了吗』而不只是『拍到了吗』。--plan 的值照抄 ui-queue.round7-final2.json 腿 6 的真实调用（对账后的那份配方，不是 10:19 的 frameplan-merged.json）；旗标名与默认路径读码核对过（verify-frame-debt-triage.mjs:37 `arg(\"plan\", …)`，本轮不带 --plan 时也指向同一个文件，现量 `TRIAGEGATE_RESULT=PASS 18 行全部有去向` exit=0）。同为 advisory。"
+  },
+  {
+   "name": "gate-evidence-holes-r8b",
+   "file": "scripts/qa/verify-evidence-holes.mjs",
+   "args": [],
+   "timeoutMin": 10,
+   "advisory": true,
+   "why": "顺序 (d) 的分诊第四门：『要求出帧但帧没成立』的证据缺口不能靠重判洗掉，也不能只起个名字就算数——缺省 judge 模式是离线的（读源码断言 + 已量的 runtime-holes-measured.json，出 DECIDED/BOOKED/*_FAIL 三态），占租约的是 --mode measure（本计划腿 4），这一条不带。照 ui-queue.round7-tour.json 最后一条 gate-evidence-holes 的原样调用。**BOOKED 在本计划里不是可接受的终态**：本轮实测这份计划没有腿 4 时这一条必红（`✗ DC33 未判定（BOOKED）：PROBE_NOT_RUN`、`EVIDENCE_HOLES_RESULT=FAIL problems=1`、exit=2，因为 reports/audit/round-7/runtime-holes-measured.json 盘上不存在），而 advisory 的红照样把队列结尾判成 QUEUE_RESULT=FAIL ⇒ 这一条红的载体是腿 4，不是『反正它是 advisory』。"
+  },
+  {
+   "name": "close-out-open-window-mock-r8b",
+   "file": "scripts/qa/open-project-window.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin",
+    "--settle",
+    "18"
+   ],
+   "timeoutMin": 12,
+   "why": "收口：把设备窗口留在 mock 档，下一轮开局不会跨档位残留（照 ui-queue.round7-tour.json 的 close-out-open-window-mock 腿）。巡检把窗口留在 real 档时，下一轮第一条 mock 腿会往旧窗口里注入新产物——stage-7 那次『reuse 回来的窗口里没有活页面、整队 13 条腿 NOT_RUN』就是跨档残留的账单。排在所有门禁之后：它的红不该掩盖帧已经落进 corpus 这个事实。"
+  }
+ ]
+}

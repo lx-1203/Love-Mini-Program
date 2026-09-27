@@ -8,6 +8,17 @@
  *  在它自己那次运行里都不成立（它开的就是 real 档），更没人去核。
  *  这条门只认一个事实：**行上的 band 是不是 real，状态是不是"没被跳过"**。
  *
+ *  执行通道免检轴（2026-09-28 补）：判据台自己盖过章「这条本通道做不了」的行
+ *  （ops 用例上的声明字段 c.automatable === false），执行腿是被**禁止**去跑它们的——
+ *  dc9f7297 让 r-exec-ws.mjs 对含这些行的名单整批拒跑（WSX_IDS_NOT_AUTOMATABLE）。
+ *  一条门不能一边禁跑、一边又索要"你为什么不跑"的红：那样这些行永远凑不齐证据，
+ *  门就永久红，永久红的门最后会被绕过去。所以这里给它们一个**单独的、计数的、点名的**
+ *  桶：REALCOV_AUTOMATABLE_EXEMPT=n + 逐条 EXEMPT 明细。
+ *  三条硬口径：① 只读判据台声明的 automatable 字段（与 r-exec-ws.mjs:341 同一个字段、
+ *  同一个严格判等 === false），不从 prose、id 模式或硬编码名单反推；
+ *  ② 豁免 ≠ 覆盖，免检行绝不并进 covered；
+ *  ③ 剩余非免检的欠账照旧按原阈值（uncovered === 0 才绿）判红，一条不减。
+ *
  *  用法：node scripts/qa/verify-real-coverage.mjs [--round round-7]
  *       [--ops reports/audit/round-6/ops] [--dir reports/audit/round-7] [--selftest]
  */
@@ -36,7 +47,17 @@ function requiredCases() {
            判据说"这条的前置是登录态"，那 guest 这一腿就无权认领 ⇒ 门不能再替它记账。
            口径只减不增：没标的照旧要求双身份，标了的按标的那几腿各要一条。 */
         const ids = Array.isArray(c.identities) ? c.identities.map(String).filter(Boolean) : [];
-        out.push({ manifest: (j.suite || f.replace(/\.json$/, "")), id: String(c.id || c.caseId || ""), page: j.page || c.page || "", identities: ids });
+        /* 免检轴的唯一来源=判据台上声明的 c.automatable（原样带出，判等留在 judge 里做，
+           这样"读的是声明字段"这件事在判定点上就可读）。notAutomatableFrom 是它的出处，
+           只用于打印，不参与判定。 */
+        out.push({
+          manifest: (j.suite || f.replace(/\.json$/, "")),
+          id: String(c.id || c.caseId || ""),
+          page: j.page || c.page || "",
+          identities: ids,
+          automatable: c.automatable,
+          notAutomatableFrom: typeof c.notAutomatableFrom === "string" ? c.notAutomatableFrom : "",
+        });
       }
     }
   }
@@ -80,19 +101,37 @@ function judge(rows, req, ids) {
     }
     byId.set(r.key, rec);
   }
-  const missing = { neverOnReal: [], skippedOnly: {}, noGuest: [], noA: [], scopedGuestExempt: 0, scopedLoginExempt: 0 };
+  const missing = {
+    neverOnReal: [], skippedOnly: {}, noGuest: [], noA: [], scopedGuestExempt: 0, scopedLoginExempt: 0,
+    /* 免检桶与覆盖桶都是新增的、互斥的格子；下面三个旧判点（neverOnReal / noA / noGuest）
+       以及 skippedOnly 的判据一个字没改，只是免检行不再进它们的路径。 */
+    automatableExempt: [], covered: [],
+  };
   for (const c of req) {
     const key = c.manifest + "|" + c.id;
     const ax = axesOf(c.identities);
     if (!ax.guest) missing.scopedGuestExempt++;
     if (!ax.login) missing.scopedLoginExempt++;
+    /* 执行通道免检：判据台声明字段 c.automatable === false（严格判等，跟 r-exec-ws.mjs:341
+       拒跑名单用的是同一个字段同一个条件；写成 "false" 字符串、0、null 都不算豁免）。
+       放在身份轴读数之后，是为了让 REALCOV_IDENTITY_SCOPED 的两个数与加轴前完全可比。
+       免检行单独点名，不进 covered ⇒ "本门不追"绝不被读成"量到了"。 */
+    if (c.automatable === false) {
+      const rec = byId.get(key);
+      const hadRealRow = !!(rec && rec.real.size > 0);
+      const judged = !!(rec && rec.realJudged.size > 0);
+      missing.automatableExempt.push({ key, from: c.notAutomatableFrom || "", hadRealRow, judged, allSkipped: hadRealRow && !judged });
+      continue;
+    }
     const rec = byId.get(key);
     if (!rec || rec.real.size === 0) { missing.neverOnReal.push(key); continue; }
     const judgedLogin = rec.realJudged.has("A") || rec.realJudged.has("B");
     const judgedGuest = rec.realJudged.has("guest") || rec.realJudged.has("not-logged-in");
-    if (ax.login && !judgedLogin) missing.noA.push(key);
-    if (ax.guest && !judgedGuest) missing.noGuest.push(key);
+    let deficient = false;
+    if (ax.login && !judgedLogin) { missing.noA.push(key); deficient = true; }
+    if (ax.guest && !judgedGuest) { missing.noGuest.push(key); deficient = true; }
     if (rec.realJudged.size === 0) missing.skippedOnly[key] = [...rec.real];
+    if (!deficient) missing.covered.push(key);
   }
   return missing;
 }
@@ -116,12 +155,33 @@ function selftest() {
     { n: "标了 A/B 且全被 SKIPPED ⇒ 欠", req: extraReq, ids: extraIds, rows: [{ key: "M|1", band: "real@abc", identity: "A", status: "SKIPPED" }], wantMissing: 1 },
     { n: "没标 identities 的同款行 ⇒ 维持双身份口径，游客缺就算欠", req: [{ manifest: "M", id: "1" }], ids: new Set(["M|1"]), rows: [{ key: "M|1", band: "real@abc", identity: "A", status: "EXECUTED" }], wantMissing: 1 },
   ]);
-  for (const c of cases2) {
-    const m = judge(c.rows, reqOf(c), c.ids || ids);
+  /* 免检轴自己的样本：方向必须两头都锁死——盖章的进免检桶且不许进 covered，
+     没盖章的（含把 automatable 写成字符串的）照旧算欠。 */
+  const ax3 = [
+    { manifest: "M", id: "1", automatable: false, notAutomatableFrom: "cellplan-x.json" },
+    { manifest: "M", id: "2", automatable: false },
+    { manifest: "M", id: "3", automatable: false },
+  ];
+  const ax3Ids = new Set(ax3.map((c) => c.manifest + "|" + c.id));
+  const cases3 = [
+    { n: "盖章 automatable=false 且真档一行都没有⇒ 进免检桶，不算欠、也不算覆盖", req: ax3, ids: ax3Ids, rows: [{ key: "M|2", band: "real@abc", identity: "A", status: "EXECUTED" }, { key: "M|2", band: "real@abc", identity: "guest", status: "EXECUTED" }, { key: "M|3", band: "real@abc", identity: "A", status: "EXECUTED" }, { key: "M|3", band: "real@abc", identity: "guest", status: "EXECUTED" }], wantMissing: 0, wantExempt: 3, wantCovered: 0 },
+    { n: "盖章但这条真档其实被判过⇒ 仍只进免检桶（豁免≠覆盖，不许给门添量）", req: [{ manifest: "M", id: "1", automatable: false }], ids: new Set(["M|1"]), rows: [{ key: "M|1", band: "real@abc", identity: "A", status: "EXECUTED" }, { key: "M|1", band: "real@abc", identity: "guest", status: "EXECUTED" }], wantMissing: 0, wantExempt: 1, wantCovered: 0 },
+    { n: "没盖章（automatable:true）⇒ 完全照旧，双身份缺 guest 就算欠", req: [{ manifest: "M", id: "1", automatable: true }], ids: new Set(["M|1"]), rows: [{ key: "M|1", band: "real@abc", identity: "A", status: "EXECUTED" }], wantMissing: 1, wantExempt: 0, wantCovered: 0 },
+    { n: "automatable 写成字符串 \"false\"⇒ 不算豁免（只认声明的布尔 false，防 prose 混进来）", req: [{ manifest: "M", id: "1", automatable: "false" }], ids: new Set(["M|1"]), rows: [{ key: "M|1", band: "real@abc", identity: "A", status: "SKIPPED" }], wantMissing: 1, wantExempt: 0, wantCovered: 0 },
+    { n: "盖章一条 + 没盖章两条全欠⇒ 免检 1 欠 2，两桶互斥", req: [{ manifest: "M", id: "1", automatable: false }, { manifest: "M", id: "2" }, { manifest: "M", id: "3" }], ids: new Set(["M|1", "M|2", "M|3"]), rows: [], wantMissing: 2, wantExempt: 1, wantCovered: 0 },
+  ];
+  for (const c of cases2.concat(cases3)) {
+    const R = reqOf(c);
+    const m = judge(c.rows, R, c.ids || ids);
     const got = new Set([...m.neverOnReal, ...m.noA, ...m.noGuest]).size;
     if (got !== c.wantMissing) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} got=${got} want=${c.wantMissing}`); }
+    const ge = m.automatableExempt.length, gc = m.covered.length;
+    if (c.wantExempt !== undefined && ge !== c.wantExempt) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} exempt=${ge} want=${c.wantExempt}`); }
+    if (c.wantCovered !== undefined && gc !== c.wantCovered) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} covered=${gc} want=${c.wantCovered}`); }
+    /* 守恒在每个样本上都得成立：免检 + 覆盖 + 欠账 = 用例条数，一个都不许凭空消失或重复计。 */
+    if (ge + gc + got !== R.length) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 守恒 ${ge}+${gc}+${got}≠${R.length}`); }
   }
-  console.log(`REALCOV_SELFTEST=${bad === 0 ? "PASS" : "FAIL"} cases=${cases2.length} bad=${bad}`);
+  console.log(`REALCOV_SELFTEST=${bad === 0 ? "PASS" : "FAIL"} cases=${cases2.length + cases3.length} bad=${bad}`);
   process.exit(bad === 0 ? 0 : 1);
 }
 if (process.argv.includes("--selftest")) selftest();
@@ -134,10 +194,25 @@ const m = judge(rows, req, ids);
 console.log(`REALCOV_CASES=${req.length} EXEC_ROWS=${rows.length} 结果目录=${DIR.replace(REPO + "/", "")}`);
 console.log(`REALCOV_NEVER_ON_REAL=${m.neverOnReal.length} REAL_BAND_BUT_ALL_SKIPPED=${Object.keys(m.skippedOnly).length} JUDGED_MISSING_A=${m.noA.length} JUDGED_MISSING_GUEST=${m.noGuest.length}`);
 console.log(`REALCOV_IDENTITY_SCOPED 游客轴豁免=${m.scopedGuestExempt} 登录轴豁免=${m.scopedLoginExempt}（来源=ops 用例上的 c.identities，载体 tag-ops-identity-scope.mjs；豁免只减认领者，不减判据）`);
+const exemptN = m.automatableExempt.length;
+const exemptSkipped = m.automatableExempt.filter((e) => e.allSkipped).length;
+console.log(`REALCOV_AUTOMATABLE_EXEMPT=${exemptN}（其中 real 档有行但全被 SKIPPED=${exemptSkipped}）来源=ops 用例声明字段 c.automatable===false（严格判等，与 r-exec-ws.mjs:341 拒跑名单同一字段同一条件；载具 dc9f7297 WSX_IDS_NOT_AUTOMATABLE）⇒ 执行腿被禁止跑的行，本门不再索要"跑过"的证据；豁免≠覆盖，REALCOV_COVERED 不含它们。`);
+const EXEMPT_PRINT = 40;
+for (const e of m.automatableExempt.slice(0, EXEMPT_PRINT)) {
+  console.log(`  EXEMPT ${e.key} 出处=${e.from || "(判据台未记 notAutomatableFrom)"} real档=${e.hadRealRow ? (e.judged ? "有行且判过" : "有行但全 SKIPPED") : "无行"}`);
+}
+if (exemptN > EXEMPT_PRINT) console.log(`  EXEMPT …另 ${exemptN - EXEMPT_PRINT} 条未逐条点名（总数已计入上面 ${"REALCOV_AUTOMATABLE_EXEMPT"}）`);
 for (const k of m.neverOnReal.slice(0, 6)) console.log("  NEVER_ON_REAL " + k);
 for (const k of m.noA.slice(0, 6)) console.log("  NO_A_JUDGED " + k);
 for (const k of m.noGuest.slice(0, 6)) console.log("  NO_GUEST_JUDGED " + k);
 const uncovered = new Set([...m.neverOnReal, ...m.noA, ...m.noGuest]).size;
-console.log(`REALCOV_UNCOVERED=${uncovered}／${req.length}`);
-console.log(`REALCOV_RESULT=${uncovered === 0 ? "PASS" : "FAIL"}（真实模式覆盖守恒：跳过不算量到，单身份不算双身份）`);
-process.exit(uncovered === 0 ? 0 : 1);
+const coveredN = m.covered.length;
+console.log(`REALCOV_COVERED=${coveredN}`);
+console.log(`REALCOV_UNCOVERED=${uncovered}／${req.length}（阈值同旧：非免检欠账 =0 才绿）`);
+const sum = exemptN + coveredN + uncovered;
+const conserved = sum === req.length;
+console.log(`REALCOV_CONSERVATION=${conserved ? "OK" : "FAIL"} 免检=${exemptN} + 覆盖=${coveredN} + 欠账=${uncovered} = ${sum}／${req.length}`);
+if (!conserved) console.log(`  CONSERVATION_FAIL 差=${req.length - sum} ⇒ 有用例没被「免检/覆盖/欠账」任一格接住（或有重复计），这笔账不可信，门直接判红`);
+const ok = uncovered === 0 && conserved;
+console.log(`REALCOV_RESULT=${ok ? "PASS" : "FAIL"}（真实模式覆盖守恒：跳过不算量到，单身份不算双身份；免检只免"本门不追"，不降阈值）`);
+process.exit(ok ? 0 : 1);

@@ -2869,6 +2869,9 @@ rebuild-real → rebuild-mock → rebuild-showcase → gate-band-freshness-all �
 ### 台账当前口径（每次动完都复跑 `verify-ledger.mjs reports/audit/round-6`）
 
 `DATA_ROWS=234`（本轮新增 2 行：REGENTRY-001 与 MATCHING-REDIRECT-RACE-001）、`OFF_SCHEMA_ROWS=0`、`STATUS_VOCAB_BAD=0`、`LEDGER_RESULT=PASS`。
+这里的 **234 只有工作树对得上，已提交的台账里没有这一格**：`283b6d4f` 复算为 229 行且那两行都还没进去，两行随 `34b6fb3d` 入账时文件已经是 236 行
+（前后各节自己记的阶梯 230→232→233（§85）→**234**（本节）→235（§89）→236（§90）是自洽的，只是中间态从未单独提交）。所以引用它只能写成"§86 当时工作树 234 行"，
+不能写成"台账曾整体是 234 行"——提交侧的刻度只有 229 与 236 两个数，现量也是 236（`DATA_ROWS=236`、`LEDGER_RESULT=PASS`、列数与词表三项全 0）。
 
 ### 正在跑
 
@@ -2914,6 +2917,9 @@ rebuild-real → rebuild-mock → rebuild-showcase → gate-band-freshness-all �
 台账未结案从 **19 降到 14**。做法是逐行回到源码，而不是回到旧结论。两个只读研究 lane 先量，
 我再独立复核每条关键行（`fixtures.ts:1460/:1131`、`register/index.vue:114-122`、`hub.vue:283-284` 对基线 291、
 `NotLoggedWaiting.vue:62-66`、`profile/index.vue:694/:758`、`messages/index.vue:542/555-561/571-573`）。
+这两个数要按"② 那条尾巴的口径"读，不是台账全量未收口：同一晚（`6a3527af`→`283b6d4f`）台账全量按现在这套状态词表复算读到 78–88 行。
+而 **14 这个刻度今天在已提交台账上找不到**——覆盖率门在提交侧只读到过 open=19（`33af4ad4`）/ 18（`055cbcbf`）/ 17（`f1bf8d74`），
+从未 14，中间的工作树态又无法复现。2026-09-28 02:50 现量 ② 尾巴 = `FRAMECOV open=17`（守恒 `in=17 out=17 OK`）⇒ 引用"19 降到 14"只能带本节日期。
 
 判点全部进 `verify-source-shape.mjs`：`total=59 成立=58 不成立=1`（红的只有 `MP-R2VIS-PAGES-MESSAGES-INDEX-004`，
 它红是**正确状态**——整图海报还没拆，判据不放宽）。收紧结果分四类：
@@ -3714,7 +3720,11 @@ A/real 档 27 FAILED + 11 SKIPPED ⇒ 26 这个数只是单次运行的成员切
 - **`.sms-send-btn` 不是改名问题**：`apps/client/src/pages/login/index.vue:207` 写明短信链路整删、`:1221` 写明死样式已删，发码按钮现在在 `pages/register/index`（两档 wxml 有 `.sms-btn__spinner/__text`）。
   处置写在 `scripts/qa/cellplan-round7-deadselectors.json`：登录页两条改判成"入口不应存在"的幽灵断言（两档零命中即判点成立且可证伪），真行为在注册页重出 `MP-R7-REGISTER-SMS-*` 并在台账挂历史别名指回 LG29/LG30 —— 不删行、不把登录页判据悄悄搬成注册页判据。
 - **目标 ⑤ 末句的可核对清单**（按 status 列取词、剥括注后统计 236 行）：未收口 **19 行** = 已修复待复验 12 + 待修复 3 + 未取证/需裁决 2 + 未取证 1 + 待复验 1。
+  这是 §101.7 当时的快照；2026-09-28 02:50 现量为 **17 行** = 已修复待复验 12 + 待修复 2 + 未取证/需裁决 1 + 未取证 1 + 待复验 1，
+  与覆盖率门自己读到的 `FRAMECOV open=17` 同数。
   分两层：13 行欠渲染帧（stage-6 的 frameplan/reshoot/tour 三条腿负责；现配方 rows=79、lanes=5、stillBad=0、demotions=7，15 个页名都在配方里）；6 行欠裁定或换载体（已派证据 lane 出 `reports/audit/round-7/rulings-evidence.json`，处置由我逐条落）。
+  "13 + 6"这个两分法也是当时的口径，它加出来是 19，跟门的三档去向账不是一套：现量 17 行按 `verify-frame-debt-coverage` 分成
+  A 配方 SHOOT 9 + B 归置表 2 + C 显式登记 6 ⇒ 欠渲染帧那一层从 13 收到 9，"欠裁定"那一层 6 行至今没变。
   台账正文与 ops 正文一样，要等 exec 腿跑完才动 —— `judge-stand-r7final` 腿正在读台账。
 
 ### 101.8 第四把新门：台账欠账行有没有人管；以及"组件作用域点不动"被量化
@@ -3772,6 +3782,8 @@ A/real 档 27 FAILED + 11 SKIPPED ⇒ 26 这个数只是单次运行的成员切
   另外 2 行（`CAMPUS-HUB-002`、`VILLAGE-PUBLISH-001`）本来就在配方的 SHOOT 集里，所以"故意不登记"的 5 行现在全部走帧这条路，登记表 `C=9` 里没有它们。
 - **拍 CHATINPUT-A01 前先探它的前提**（不是"配方里有就一定能拍"）：三档产物 `grep -rl ChatInput` 命中文件数都是 0，源码 `components/chat/ChatInput.vue` 也确实不存在 ⇒ 这张"删除后"的帧现在拍出来是真证据，不是一张会指错方向的帧。
 - **验证没跑脏腿**：把 reconcile 的 `--out` 指到 `tmp/qa/planprobe/` 干跑一遍（不动 `frameplan-round7-final.json`，那是腿 9 的输入），配方 SHOOT 29→32、档位分布 `REWRITE=17 SHOOT=32 NOT_SHOOTABLE=27 NOT_SHOOTABLE_ON_THIS_BAND=6`；同一份探针配方喂给 `verify-frame-debt-coverage` ⇒ `FRAMECOV open=19 A=8 B=2 C=9 裸行=0 … RESULT=PASS`。权威 final 配方仍由队列腿 7 自己 `--apply` 写，权威与探针的差别只是"谁按那个按钮"。
+  上面那三个分桶数出自**探针配方**，从来不在权威路径上，不能拿来对今天的账；权威配方 + 现台账在 2026-09-28 02:50 的读数是
+  `FRAMECOV open=17 A配方SHOOT=9 B归置表=2 C显式登记=6 在配方但非SHOOT=0 裸行=0`、`FRAMECOV_CONSERVATION in=17 out=17 OK`、`FRAMECOV_RESULT=PASS`。
 - **一把自己咬过我的门补了旗标校验**：上面那次 coverage 我先用 `--plan`（单数）跑，`arg()` 把它当没传、回落默认两份配方，于是刚追加的 3 行仍报"裸行 3"—— 看起来像"追加没生效"。真实旗标是 `--plans`。给 `verify-frame-debt-coverage` / `verify-ops-corpus-stamp` / `verify-case-selectors-exist` 各加一条"未知 `--旗标` ⇒ exit 2 并打印本门认的集合"：拼错模式名的后果是**一个模式都不跑**（stamp 门尤其明显，它四种模式全靠旗标选），静默绿比红坏。三把门 `--selftest` 加旗后仍 PASS，负例三把都 `exit=2`（用 `out=$(...)` 取码，不用管道 —— 管道后 `$?` 是 `tail` 的）。
 - **执行腿实况（别拿腿日志当进度）**：`exec-A-real-r7final` 到 699 行 = `EXECUTED 115 / SKIPPED 583 / FAILED 1`，档位 `real@f0677920`，租约心跳与 `exec-results.json` mtime 同步在 09:11:20；进程枚举 `r-exec-cli` 命中数=1。顺带记一次探针口径错误：`CommandLine -match 'run-ui-queue'` 数出 4 个"队列"，其实只有 1 个 node 编排进程，另 3 个是它的 bash 包装（命令行里含同一个字符串）⇒ 数驱动进程要按 `解释器+脚本` 过滤，不能只按脚本名。
 - **`--real-cases-only` 的真实语义需要重新判**（#70① 的说法要改）：这条腿里 583 行 `requiresReal:false` 的用例并没有被挡在计划外，而是照样写行并标 SKIPPED；且行里**没有** `skipReason` 字段，跳过原因被塞进 `failureReason`（样本首字"真…"）。这是否让下游把 band 跳过当失败，交给只读分析腿 `tmp/qa/exec-defects-analysis.md` 逐条引 `file:line` 判，判完再动 `r-exec-cli.mjs` —— 腿还在跑，不改它自己。
@@ -3902,6 +3914,8 @@ A/real 档 27 FAILED + 11 SKIPPED ⇒ 26 这个数只是单次运行的成员切
 - 再补一类出处 `--include-plan-nonshoot`：把"配方里有行但不是 SHOOT"的 19 条登记成 `criteria_needs_tightening` —— 它们不是欠一帧，是欠一次判据收紧（②的原话），理由用配方行自己的 why。
 - 台账状态列一个字没改：登记表只是"欠哪个载体"的声明，不等于结案（这正是 `SRCONLY` 桶要把它和 A/B 分开数的原因）。
 账目：`FRAMECOV_SRCONLY 行数=83 → A配方SHOOT=31 B归置=4 C登记=42 欠帧且无声明=6`，`裸行=0`，两组守恒都 OK。剩下 6 条逐条列给 #77，不并入"已完成"。
+  这是 §114（10:18）的快照，那 6 条不是今天的欠款：现量同一行是 `FRAMECOV_SRCONLY 行数=90 … A配方SHOOT=35 B归置=11 C登记=44 欠帧且无声明=0`、
+  `裸行=0`，两组守恒仍 OK ⇒ #77 那 6 条已逐条登记完去向，"欠帧且无声明"这一桶今天量出来是 0。
 一个自己踩到的口径教训：第一次算"欠帧集合"时我把 plan 输入混了（一次指 `frameplan-merged.json`，一次指 `frameplan-round7-final.json`），得出"57→15 但有 10 条不在复判那 57 里"的糊涂账 —— 差集其实是**换了 plan 文件**。往后凡"前后对比"必须先证明两次跑吃的是同一组输入。
 腿 2（guest×real）同步在跑：`rows=783 executed=68 FAILED=49` —— 失败率异常高，等它收尾后离线归置（多半是游客闸门把落地页换掉的 landing-guard 一族，但那要按数说话，不能猜）。
 
@@ -4111,7 +4125,7 @@ DISCOVER-014 的处置列原本写着"二选一，收口时给去向"。**不采
 ## §134 三条挂着「待主编排层拍板」的台账行落判点，判点先红后绿
 ④ 点名的四项裁定此前已全部落地（登录页落点 §131、GATES.json 载体、遗留测试数据、ChatInput 去留）。这一段清的是台账里另外三条同样写着「待主编排层拍板」的行——我就是主编排层，"不代裁"不能变成永久挂账。
 
-- **谓词先落盘，再改源码**（这才叫判点而不是事后描述）：`verify-source-shape.mjs` 加两条 ⇒ 现量 `SHAPE_FAIL MP-R2-CIRCLES-INDEX-007` + `SHAPE_FAIL MP-R2VIS-PAGES-PROFILE-INDEX-003`，改完源码后 `total=90 成立=90 不成立=0 守恒=yes`。
+- **谓词先落盘，再改源码**（这才叫判点而不是事后描述）：`verify-source-shape.mjs` 加两条 ⇒ 现量 `SHAPE_FAIL MP-R2-CIRCLES-INDEX-007` + `SHAPE_FAIL MP-R2VIS-PAGES-PROFILE-INDEX-003`，改完源码后 `total=90 成立=90 不成立=0 守恒=yes`（§134 快照；现量 91/91，§137 又加了一条，`2026-09-28 02:50` 复跑 `--dry` 读到 `total=91 成立=91 不成立=0 补丁=182（守恒：yes）`）。
   中途我自己把 `location.vue` 那条规则用一次不对称 Edit 删坏（多出一个 `{` ⇒ `--check` 直接语法错），当场修回并复量条目数 88→90、`LOCATION-001` 仍在 ⇒ 没有静默丢规则。
 - **PROFILE-003**：原判据问「拍 故事 还是 日常」——这是问不出答案的问题。改判成可判命题「同一区块内不得混用两个词」，锚 `MyStory.vue:57`（渲染 我的故事）与 `:93`（渲染 日常仅互相喜欢…）。
   裁决 = 区块名保留「我的故事」，提示语不再用第二个术语称呼同一批内容 ⇒ 文案改成「这些内容仅互相喜欢或你关注的人可见」。
@@ -4122,6 +4136,8 @@ DISCOVER-014 的处置列原本写着"二选一，收口时给去向"。**不采
 - **CAMPUS-HUB-001（截断取舍）**：裁决 = **接受省略号截断**，不采纳"允许两行"（卡片高度会随统计文本浮动，正是理想图要避免的）与"操作列限宽"（判定面扩大到无判点承载的布局）。理由写进台账处置列，不再留"需人拍板"。
 - **HOME-106** 复核发现早已裁定（台账 status 现值：`判据不成立（主编排层裁决：持久化属增强项，非本缺陷）`）⇒ 这一条我没有再动，只是把"它还挂着"这个印象纠正掉。
 - 台账落账：`patch-ledger-cells.mjs --apply` 写 180 条计划补丁、实到 16 行变更（其余是同值幂等），备份 `.pre-cellpatch.bak`；`verify-ledger=PASS`（236 行 / 11 列 / 词表 0 违例），`FRAMECOV_CONSERVATION in=19 out=19 OK`，且 diff 里 `CHATINPUT` 命中 0 ⇒ 没把 §132 刚更正的证据格冲掉。
+  那句 `in=19 out=19` 是 §134 落账那一刻的量（台账在 `33af4ad4` 确实读到 open=19），同日晚上的 `055cbcbf`、`f1bf8d74` 又各搬走一行；
+  2026-09-28 02:50 复量为 `in=17 out=17 OK`，`verify-ledger` 的三项（236 行 / 11 列 / 词表 0 违例）与 `LEDGER_RESULT=PASS` 不变 ⇒ 守恒没破，是尾巴变短了。
   另：`SRC_SHAPE_DUP` 现量报出谓词表内部 3 个重复 id（`MP-R2-PROFILE-034×2`、`…PROFILE-LOCATION-001×2`、`MP-R2VIS-PAGES-HOME-INDEX-004×2`）⇒ 记进 #76 那笔"重复 id"的账。
 - **必须披露的副作用**：这两处源码改动让三档产物全部落后于工作树（`verify-band-freshness` 现量：mock/real/showcase 各列这两个脏项）。
   正在跑的 stage-7 腿 12/13（exec-A-real、exec-guest-real）**量的仍是改动前的产物** ⇒ 那两腿对 MyStory 文案与徽标变量不作证；已在 §133 的计划里补进 `rebuild-showcase-r8 → rebuild-mock-r8 → rebuild-real-r8 → gate-band-freshness-r8`（showcase 最先，因为它写 mock 目录），并把选择器门挪到重建之后 ⇒ 计划体检现量 `legs=22 非advisory=19 设备腿=6 PLAN=OK`。
@@ -4208,7 +4224,39 @@ DISCOVER-014 的处置列原本写着"二选一，收口时给去向"。**不采
 4. 又量了两条我自己写的旧任务标题，都是过大的：
    - #70 的三件里两件已经满足（594 行 `at` 全有；非 EXECUTED 无原因的 0 行），真剩下的只有 FAILED 行不写 durationMs（11 条里 10 条空）与 SKIPPED 两样都有（207 有/197 无）；
    - #72 的「6 行欠裁定」按"状态未收口 且 处置列真写着要人拍板"的口径测得 **0 行**，剩下的是 待修复 3 / 未取证 3 / 欠帧复验 ~12（去向账 FRAMECOV `in=19 out=19` 仍 PASS）。
+     这一串数是 §135 当时态，不是今天的欠款单：2026-09-28 02:50 复量为 待修复 **2**（台账 `:106`、`:179`）/ 未取证族 **2**（`未取证` 1 + `未取证/需裁决` 1）/
+     已修复待复验 **12** / `FRAMECOV open=17`、`in=17 out=17 OK`。上一轮那句"已按现量改写"里的"现量"过一夜也会变成旧数 ⇒ 引用这四个数必须带日期。
    两条描述已按现量改写，避免下一轮又拿旧数字当欠款清单。
 
 **这一段的元教训**（不是新增记忆，是执行既有的）：一个步骤只要"输入路径是我凭记忆写的"，它就可能永远不红也永远不判；
 所以新步骤落盘时必须同刻跑一次它的正例与它的空输入反例，看到两边的读数不一样才算接上。
+
+## §139 stage-8 崩在"打印证据"那一行，账面数字全部复量一遍（2026-09-28 00:46–02:55）
+
+这一段只碰了两类东西：纸上（两份正文 + `.zcode/tmp/gap-prose/`）与只读门（`verify-ledger`、`verify-frame-debt-coverage`、`verify-criteria-frame-debt` 的默认无写路径，加 `verify-source-shape --dry`、`run-round7-closeout --list`），设备一路没动、台账一个字没改。
+先记发生的事。stage-8（`scripts/qa/ui-queue.round8-stage8.json`，23 腿，`startedAt=2026-09-27T16:46:38Z`）前 9 条腿全绿：
+`apply-identity-scope-r8` → `identity-scope-idempotent-r8` → `stamp-rewrite-r8` → `refreeze-ops-copy-r8` → `stamp-verify-copy-r8` → `guest-landing-book-r8` → `rebuild-showcase-r8` → `rebuild-mock-r8` → `rebuild-real-r8`；
+第 10 条 `gate-band-freshness-r8` 不是判红而是**崩**：`verify-band-freshness.mjs:339` 打印每个标记的命中数时读 `mk.hits`，而 `--hot-badge-bg`
+（`scripts/qa/band-freshness-markers.json` 第 4 条，§134 为 CIRCLES-007 登记的那条纯样式改动）过不了 `:314` 的标识符判据、走"拒绝"分支时 `mk.hits` 从未被赋值
+⇒ `TypeError: Cannot convert undefined or null to object`、`exit=1`，fail-fast 把 11–23 共 13 条腿全拖成 `NOT_RUN`
+（账在 `reports/audit/round-7/ui-queue-stage8/queue-state.json`：`QUEUE_TALLY OK=9 FAIL=1 NOT_RUN=13 sum=23/23 CONSERVED`、`QUEUE_RESULT=FAIL`）。
+修法是三件事一起做，缺一件都只是把下一次崩推迟：CSS 变量形态的符号被承认（`isCssVar`，`:318`）、搜标记的集合补上 `.wxss`（`:329` 加 `--include=*.wxss`，
+样式改动的落点本来就是它，只搜 js/wxml 会得到一个永远缺失的假红）、以及**拒绝一种形态时也必须把账记成"未检"**（`:319` `mk.hits = {}`）。
+同一处毛病本轮第三次应验：把"只是在打印证据"的那一行当成不会伤人的行。重跑另起一份 `scripts/qa/ui-queue.round8-stage8tail.json`（账本落 `reports/audit/round-7/ui-queue-stage8tail/`），
+它的第 1 条就是那条新鲜度门且已出绿；02:49:51Z 读到 `OK=5 FAIL=1 NOT_RUN=9 sum=15/15 CONSERVED`，红的是第 6 条 `exec-guest-login-r8`（`exit=2`，与这条门无关，留给执行腿那条线判）。
+round-7b 唯一那条红腿 `tour-B-real-stage7` 的根因也不是"忘了写 env"，而是端口有两个来源：巡检脚本自己把 9420 写成字面量，架通道那条腿却从 `scripts/qa/ide-port.json` 读
+（`readIdePort`）⇒ 判决行 `TOUR_RESULT=FAIL reason=端口 9420 来自 default 退路而非 env，且探测未在听（94xx 在听=[9430]）`（`reports/audit/round-7/ui-queue/tour-B-real-stage7.log`）。
+现在两端同源了：`tour-r6.mjs:53` 引 `readIdePort, FALLBACK_PORT`（`scripts/qa/ide-port-config.mjs`）、`:94` 现取 `TOUR_PORT_INFO`，与 `ws-channel-up.mjs`/`r-exec-ws.mjs` 走同一个解析器。
+补帧序列另立 `scripts/qa/ui-queue.round8b-tour.json`（架通道 → 当场复核端口 → 接 real 档窗 → 补运行时证据洞 → 预检 → 巡检 → 帧进 corpus → 分诊门），它自己的 `$hold` 写明不得在前驱全绿之前开跑 ⇒ 本轮没跑（盘上没有 `ui-queue-round8b-tour/` 这个账本目录）。
+收尾驱动 `scripts/qa/run-round7-closeout.mjs` 补的是同一族"假接线"：`verify-evidence-corpus`、`verdict-from-frames`、`audit-frame-verdicts` 三步转发的 `--round` 与
+`land-verdicts-into-ledger` 的 `--dry` 都是消费者源码里根本不读的旗标（不读 ⇒ 静默忽略 ⇒ 那一步"绿着"量的却是它自己的默认目录），已全部去掉；
+`emit-round-report` 反向补上 `--round-dir reports/round-7`（不传时它整套默认值指 round-6，本轮终报会被写进上一轮的文件里）、`make-commit-list` 从 `write:false` 改判 `true`（它无条件落 `commit-manifest.json`）；
+并给启动检查加一条旗标版——每步转发的旗标必须在消费者源码里真被读到，否则 `exit 2`，现量 `CLOSEOUT_FLAGS=OK 每一步转发的旗标都在消费者源码里核过（核了 9 个消费者）`。
+链条驱动 `run-chain-7b-then-8.mjs` 给 stage-8 显式 `--out reports/audit/round-7/ui-queue-stage8`：不带 `--out` 时排队器缺省写进 `…/ui-queue`，那正是 7b 自己的判决账本目录。
+再记复量的结果，因为正文里散着上一夜的数：台账 `DATA_ROWS=236`、`LEDGER_RESULT=PASS`、11 列、词表 0 违例，十一桶现量 **已修复 118 / 保留-判据不成立 36 / 并入-不另立案 26 / 回归核对 19 / 不立账 17 /
+已修复待复验 12 / 判据不成立 3 / 待修复 2 / 未取证 1 / 未取证/需裁决 1 / 待复验 1**（相加 236）；`FRAMECOV open=17 A配方SHOOT=9 B归置表=2 C显式登记=6 裸行=0`、`in=17 out=17 OK`；
+`CRITFRAME need=68 = 有去向 68 + 无去向 0 OK`；`SRC_SHAPE total=91 成立=91 不成立=0 补丁=182（守恒：yes）`。据此改掉或就地标注为"带日期的快照"的位点是终报 §9.7、本节以上 §86 的 `DATA_ROWS=234`、§88 的"19 降到 14"、
+§101.7 的"未收口 19 行 / 13+6 两分"、§104 的 `open=19 A=8 B=2 C=9`（那本来就是探针配方）、§114 的 `SRCONLY 行数=83 欠帧且无声明=6`、§134 的 `in=19 out=19` 与 90 条判点、§135 的 `待修复 3 / 未取证 3`；
+逐条改动清单在 `.zcode/tmp/gap-prose/REPORT.md`。两个数本轮**没有**复量、不许当现值引用：终报 §8.5 的"未结案 51 条"（要跑 `emit-open-items`，会写盘）与 §9.7 里的 `ADMIN_I18N`/`BACKEND_FRESH`/`G8_RINGS_OK`/`REALCOV`
+（设备被在跑的队列占着，G8 与后端新鲜度还要写库，不能插进腿中间重跑）。最后一件是分类上的，不是算术上的：`234` 与 `19→14` 在**已提交**台账上都不存在（提交侧刻度只有 229 与 236，覆盖率门只读到过 open=19/18/17），
+但 `234` 落在 §85→§90 自己记的 233→234→235→236 阶梯里，所以它是"从没单独提交过的工作树快照"；`14` 落不进任何一条阶梯，只能按"复现不出来的口径"记，两者不能混成同一句话。

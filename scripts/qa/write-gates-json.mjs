@@ -156,7 +156,19 @@ const doc = {
   },
   newDbKeysThisRound: artifactIds,
   dbWriteDisclosure: "G8 每跑一次都会真写库（发帖/评论/点赞/校园话题/匿名回复），按既定裁定这些行保留不删；本载体的 newDbKeysThisRound 就是本轮新增主键的清单。",
-  notEvidenced: ["wx.login 真机链路（本机无 secret，POST 必 502）"],
+  /* 形状由消费端定：终报 G 节那一句（emit-round-report.mjs 里 `for (const ne of g.notEvidenced || [])`，
+     实测读的是 ne.item / ne.status / ne.reason 三个键）。
+     之前这里写成一条 string[] 字面量 ⇒ 字符串上取不到这三个属性 ⇒ 报告渲染成
+     "  - undefined：**undefined** —— undefined"，而 OPEN 里也只剩「真实模式：undefined」，
+     wx.login 真机这条设备债在终报上等于没记（内容是真的，只是没人看得见）。
+     status 会被 String() 进 OPEN 的 why ⇒ 必须是给人读的词，不能是布尔。键名不许自己加。 */
+  notEvidenced: [
+    {
+      item: "wx.login 真机链路",
+      status: "未证",
+      reason: "本机无 secret，POST 必 502",
+    },
+  ],
   caveat: [],
 };
 if (ringCount && ringCount !== "6") doc.caveat.push(`G8 环数已是 ${ringCount}（历史载体记 6），载体与报告都必须按当前环数读`);

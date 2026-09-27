@@ -9,6 +9,8 @@
  *
  * 用法：node scripts/verify-evidence-integrity.mjs <manifest.json> [--dir <截图根>] [--json out.json]
  * contentHash 算法为实测：sha256(文件字节) 的前 16 位十六进制。
+ * 帧的「页/路」两个字段在盘上有两代写法（page|route、path|file|framePath），一律经
+ * framePathOf()/framePageOf() 取值 —— 见下面那段的实测记录，别处不要再手写 `s.path`。
  */
 import { readFileSync, existsSync, readdirSync, lstatSync, writeFileSync } from "node:fs";
 const evList = (r) => (Array.isArray(r.evidence) ? r.evidence : (r.evidence ? [String(r.evidence)] : []));
@@ -32,21 +34,38 @@ const shots = m.shots ?? [];
 const norm = (p) => resolve(p).split(sep).join("/");
 const hash16 = (p) => createHash("sha256").update(readFileSync(p)).digest("hex").slice(0, 16);
 
+/**
+ * 帧的两个身份字段在盘上有**两代写法**，这是 24 份 manifest 全普查实测的
+ * （.zcode/tmp/gap-integrity/field-census.txt）：
+ *  - 新（round-2 起的 corpus 与全部权威索引）：`page` + `path`；
+ *  - 旧（reports/screenshots/round-1/manifest.json 全部 144 帧）：`route` + `file`；
+ *  - `routeDrifts[]` 的帧路径是第三种写法 `framePath`。
+ * 所以「取一帧的路」「取一帧的页」各只允许有一个入口（framePathOf / framePageOf），
+ * shots[]、zoomFrames[]、stateNotApplied[]、routeDrifts[]、孤儿白名单、dup 键、缺字段提示全走它。
+ * 把 `s.path || s.file` 抄在四处，下次改名字就只会有其中几处跟着改，其余静默把在盘帧读成
+ * MISSING + 孤儿（round-1 实测：MISSING=144、ORPHANS=144 两个数**全是幻影**，MATCHED=0 意味着
+ * 那 144 条 contentHash 一条都没校过 —— 门禁的「每帧都在盘上」当年是取错字段的产物，不是测量）。
+ */
+const firstStr = (...vs) => { for (const v of vs) if (typeof v === "string" && v.trim()) return v.trim(); return null; };
+const framePathOf = (f) => (typeof f === "string" ? f : firstStr(f?.path, f?.file, f?.framePath));
+const framePageOf = (f) => firstStr(f?.page, f?.route);
+
 let missing = [], mismatch = [], matched = 0, noHash = 0;
 for (const s of shots) {
-  if (!s.path) { missing.push(`<无 path 字段> ${s.page}/${s.state}`); continue; }
-  if (!existsSync(s.path)) { missing.push(s.path); continue; }
+  const p = framePathOf(s);
+  if (!p) { missing.push(`<无 path/file/framePath 字段> ${framePageOf(s) ?? "?"}/${s.state ?? "?"}`); continue; }
+  if (!existsSync(p)) { missing.push(p); continue; }
   if (!s.contentHash) { noHash++; continue; }  // 未记哈希 ≠ 哈希不符：round-1 的 305 帧整批没有该字段
-  const actual = hash16(s.path);
+  const actual = hash16(p);
   if (actual === s.contentHash) matched++;
-  else mismatch.push(`${s.path} -> manifest=${s.contentHash} 盘上=${actual}`);
+  else mismatch.push(`${p} -> manifest=${s.contentHash} 盘上=${actual}`);
 }
 
 // 孤儿帧：扫描根目录下存在、但 manifest 未引用的图片文件
 const scanRoot = optFlag("dir") || dirname(manifestPath);
-const refPaths = (arr) => (arr ?? []).map((z) => (typeof z === "string" ? z : z?.path || "")).filter(Boolean).map(norm);
+const refPaths = (arr) => (arr ?? []).map((z) => framePathOf(z) || "").filter(Boolean).map(norm);
 const listedMain = new Set([
-  ...shots.map((s) => norm(s.path || "")),
+  ...shots.map((s) => norm(framePathOf(s) || "")),
   ...refPaths(m.zoomFrames),
 ]);
 /* stateNotApplied[] / routeDrifts[] 里的帧也是**合法登记**的：它们确实拍出来了，只是被判定
@@ -105,13 +124,21 @@ let walkSkipped = 0;
 const byPage = new Map();
 for (const s of shots) {
   if (!s.contentHash) continue;
-  const k = `${s.identity || "?"}::${s.page}::${s.contentHash}`;
+  /* 页字段必须走 framePageOf()：旧 corpus 只有 `route`，硬读 `s.page` 会让键塌成
+     `identity::undefined::hash` —— 组数看着对（round-1 仍是 2），打印出来却是 `A|undefined`，
+     谁也没法归因到具体页；同一份键化错误在别处还会把「跨页同字节」并成一组而虚增组数。 */
+  const k = `${s.identity || "?"}::${framePageOf(s) ?? "<无 page/route 字段>"}::${s.contentHash}`;
   const arr = byPage.get(k) ?? [];
   arr.push(s.state ?? "<无 state>");
   byPage.set(k, arr);
 }
-const dupState = [...byPage.entries()].filter(([, states]) => new Set(states).size > 1)
+const dupGroups = [...byPage.entries()].filter(([, states]) => new Set(states).size > 1);
+const dupState = dupGroups
   .map(([k, states]) => `${k.split("::")[0]}|${k.split("::")[1]} 的 ${new Set(states).size} 个“不同状态”字节完全相同：${[...new Set(states)].join(",")}`);
+/* 组数之外还数**卷入的帧数**：报告侧要把这条轴做成否决轴并给一个可核对的数，只有组数的话
+   「228 组」既可以读成 456 帧也可以读成 1200 帧，而对账总体规模（.zcode/tmp/gap-dupframes）需要的正是帧数。
+   本工具自己数，调用方就不必再复制一遍键化规则（复制 = 第二份口径，必然漂移）。 */
+const dupStateFrames = dupGroups.reduce((a, [, st]) => a + st.length, 0);
 /* 采集器自己改判出去的「状态未生效」帧数（stateNotApplied[]）。
    必须与 DUP_STATE_GROUPS 并排打印：新采集规则会把与本页已落盘帧同字节的帧**从 shots[] 里挪走**，
    所以 DUP_STATE_GROUPS=0 完全可能是"分母换了载体"，不是"两个状态现在有区别了"。
@@ -122,12 +149,12 @@ const out = {
   manifest: manifestPath,
   gitSha: m.gitSha ?? "(未记)",
   workflowVersion: m.workflowVersion ?? "(未记)",
-  shots: shots.length, matched, missing, mismatch: mismatch.slice(0, 40), orphans, dupState,
+  shots: shots.length, matched, missing, mismatch: mismatch.slice(0, 40), orphans, dupState, dupStateFrames,
 };
 if (optFlag("json")) writeFileSync(optFlag("json"), JSON.stringify(out, null, 2));
 
 console.log(`EVIDENCE_MANIFEST=${manifestPath} gitSha=${out.gitSha} wf=${out.workflowVersion}`);
-console.log(`EVIDENCE_SHOTS=${shots.length} MATCHED=${matched} NO_HASH=${noHash} MISSING=${missing.length} HASH_MISMATCH=${mismatch.length} ORPHANS=${orphans.length} DUP_STATE_GROUPS=${dupState.length} WALK_SKIPPED=${walkSkipped}`);
+console.log(`EVIDENCE_SHOTS=${shots.length} MATCHED=${matched} NO_HASH=${noHash} MISSING=${missing.length} HASH_MISMATCH=${mismatch.length} ORPHANS=${orphans.length} DUP_STATE_GROUPS=${dupState.length} DUP_STATE_FRAMES=${dupStateFrames} WALK_SKIPPED=${walkSkipped}`);
 console.log(`EVIDENCE_SNA_RECLASSIFIED=${snaReclassified}（采集器改判出去的「状态未生效」帧：与本页已落盘帧同字节、已从 shots[] 移到 stateNotApplied[]；DUP_STATE_GROUPS=0 且本数>0 时读作「换载体」，不得读作「状态已有区别」）`);
 console.log(`EVIDENCE_FRAMES_ON_DISK_ONLY_AS_NON_EVIDENCE=${onlyAsNonEvidence}（盘上确有此图，但只被 stateNotApplied[]/routeDrifts[] 引用，不算状态帧、也不算孤儿帧）`);
 missing.slice(0, 8).forEach(p => console.log(`EVIDENCE_MISSING ${p}`));

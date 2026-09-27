@@ -22,9 +22,12 @@
   },
   {
    "id": "MP-R2-CIRCLES-INDEX-005",
-   "kind": "static_decidable_option_B",
-   "reason": "定高链这一说在本页不成立：AppShell.wxss:1 的 .shell 没有 display、.shell__body 没有 height ⇒ 配方里那三个 scroll-view 属性是惰性的；而 滚动-底部 帧已在盘上且与 默认 帧哈希不同 ⇒ 『滚到底看不到』这个断言已被现成帧否证一半。",
-   "nextCarrier": "收口波：把本行改写成可判静态命题（AppShell 定高链缺失 = 结构事实）＋引用已在盘的滚动帧，不再挂『需裁决』"
+   "kind": "carrier_missing",
+   "reason": "裁定已采 B（commit f1bf8d74／NOTES §138），判据的『让 scroll-y/:enhanced/:bounces 生效』半边已撤销，剩一笔布局面删除：apps/client/src/subpackages/circles/circles/index.vue:386 那三个属性恒惰性（成因 AppShell.vue:368-374 的 .shell__body 无 height ⇒ 本页 :504-507 的 flex:1 不成立、内滚容器根本不生成）。删它需一张能判『随窗口滚动 + 吸顶仍有效』的帧，而两台取景载具都取不到该量：shoot-frameplan.mjs 有 scroll 步骤（:150-157）但 capture/measure 只记不量（:144）、wsMeasure 只读 text()/size()（:247-265）、boxVerdict 只比宽高（:282-292）；全仓 5 处 createSelectorQuery 探针一律 fields({size:true})，0 处带 location ⇒ y/滚动量读不到。吸顶半边另撞组件作用域（.is-fixed .shell__header 声明在 AppShell.vue:306-314，页级查询够不到）。⇒ 不是不能判，是判点没建。",
+   "nextCarrier": "先建载具再删属性，顺序不许反：①给 shoot-frameplan.mjs 探针补 fields({size:true,location:true}) 并把 top 接进 boxVerdict（或 wsMeasure 加 element.location()）；②本行配方落滚动前/后两次读数对照，steps 加 {action:\"scroll\",to:600,selector:\".circles-list\"}，断言首张 .circle-card（模板 :416）top 变小且 .is-fixed .shell__header top 恒为 0（后者经 emit-component-scoped-ids.mjs 的组件作用域名单走 r-exec-ws --ids-file），同批补『底部不出现 AppShell.vue:251-253 露底色断层』；③判点先能红（把 scroll-y 加回去必须变红）才算载具建成，之后才删 :386 三属性（:show-scrollbar 不在撤销面内，保留）并重建 mock+real 两档。载具没建成前本行停在 保留-判据不成立，不写已修复。",
+   "basis": "reports/audit/round-7/round7-NOTES.md §138（:4171-4190）＋commit f1bf8d74；reports/audit/round-7/frameplan-merged.json:1846-1862 本行自写的『建议改成什么判据』三件，本条是其后两件没落地的那部分变成载具工单",
+   "measured": "2026-09-28 只读实测：circles/index.vue 工作树 903 行、git status 干净 ⇒ HEAD 与工作树同行同文；:386 逐字 <scroll-view class=\"circles-list\" scroll-y :enhanced=\"true\" :bounces=\"true\" :show-scrollbar=\"false\">；现档产物 mp-weixin 同页 index.wxml 仍带 scroll-y enhanced=\"{{true}}\" bounces=\"{{true}}\"（旧构建，只证删除要重建两档，不据此声称已验）；配方本行 disposition=REWRITE/assertions=0/steps=[] ⇒ 在配方里但不出一帧",
+   "note": "两处路径失真按盘上事实纠正：①简报所指 apps/client/src/packageCircles/pages/circles/index.vue 本仓不存在（全仓 0 个 packageCircles 目录），实为 subpackages/circles/circles/index.vue，行号 :386 本身成立；②旧 reason 引的 AppShell.wxss 非文件（外壳样式在 .vue 的 <style scoped> 段），成因锚点改指 AppShell.vue:368-374。本条就地改写既有行、非新增：dispositions[] 在 verify-frame-debt-coverage.mjs:91 按 id 建 Map，同 id 追加会被后写覆盖 ⇒ 账面 82 条、门上仍算 1 条。"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001",

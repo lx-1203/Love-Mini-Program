@@ -84,17 +84,40 @@ const conserved = rows.length > 0 && !missing.length;
    campus_replies.id=31 在现在的 g8-rings.txt 里已经找不到了（被后一次 G8 覆盖），
    所以清单必须落到一份**只增不换**的 JSON 台账里，并允许从报告文字里回捞历史指纹。 */
 const LEDGER = resolve(REPO, arg("ledger", "reports/audit/real-e2e/test-data-ledger.json"));
+/* 身份比较要先归一：md 派生用的是**库表名**（posts/comments/users，复数），
+   日志派生用的是**单数类别**（post/comment/user/like/id-unclassified）。
+   两边直接拼 kind+"|"+key 比，复数永远碰不上单数，实测后果两条（SCRATCH 复现过）：
+     · 报告文字里的 comments.id=1205 会在台账里另起一条弱指纹，而强证据 comment|1205 早就在台账里；
+     · 下一轮取证日志真认出 270 之后（kind=post），那条 posts|270 的弱行永远升不上去 ⇒
+       台账里长期并存"一条强 + 一条自称不可复核的弱"，同一行记两次，弱指纹计数虚高。
+   归一**只用于认身份**：显示、删除骨架里的 <TABLE:xxx> 仍用各自原始 kind（表名比类别更有用）。 */
+const KIND_CANON = { posts: "post", comments: "comment", users: "user", campus_topics: "campus_topic", campus_replies: "campus_reply" };
+const rowSig = (e) => (KIND_CANON[e.kind] || e.kind) + "|" + e.key;
 const led = existsSync(LEDGER) ? JSON.parse(readFileSync(LEDGER, "utf8")) : { entries: [] };
 const before = led.entries.length;
-const known = new Set(led.entries.map((e) => e.kind + "|" + e.key));
-for (const r of rows) if (!known.has(r.kind + "|" + r.key)) led.entries.push({ ...r, firstSeen: new Date().toISOString() });
+const known = new Set(led.entries.map(rowSig));
+let promoted = 0;
+for (const r of rows) {
+  const s = rowSig(r);
+  if (!known.has(s)) { known.add(s); led.entries.push({ ...r, firstSeen: new Date().toISOString() }); continue; }
+  /* 台账里已有同一身份、而它当初只是从报告文字里回捞来的弱指纹 ⇒ 日志现在真认出它了：
+     就地升级，不再另记一条。firstSeen 留最早那次（"这行何时入账"是事实，不该被覆盖），
+     note/file 换成日志侧（那才是当前强度依据的来源）。 */
+  const ex = led.entries.find((e) => rowSig(e) === s);
+  if (ex && ex.weak) {
+    ex.weak = false; ex.note = r.note; ex.file = r.file;
+    ex.promotedFrom = "报告文字→取证日志"; ex.promotedAt = new Date().toISOString();
+    promoted++;
+  }
+}
 for (const mf of String(arg("from-md", "")).split(",").filter(Boolean)) {
   const f = resolve(REPO, mf);
   if (!existsSync(f)) { console.log("TDI_WARN --from-md 不存在 " + mf); continue; }
   const t = readFileSync(f, "utf8");
   for (const m of t.matchAll(/(posts|comments|campus_topics|campus_replies|users)\.id\s*=\s*(\d+)/g)) {
-    const sig = m[1] + "|" + m[2];
-    if (known.has(sig) || led.entries.some((e) => e.kind + "|" + e.key === sig)) continue;
+    const s = (KIND_CANON[m[1]] || m[1]) + "|" + m[2];
+    if (known.has(s)) continue;
+    known.add(s);
     led.entries.push({ kind: m[1], key: m[2], note: "只在报告文字里出现（原始取证日志已被后一次 G8 覆盖，不可机器复核）", file: mf, firstSeen: new Date().toISOString(), weak: true });
   }
 }
@@ -120,13 +143,14 @@ writeFileSync(OUT_MD, [
   "",
   `- 台账文件 \`test-data-ledger.json\`：本轮之前 ${before} 条 → 现在 ${led.entries.length} 条（新增 ${led.entries.length - before}）。`,
   `- 其中 ${weakOnly.length} 条是**弱指纹**：只在报告文字里出现，原始取证日志已被后一次 G8 覆盖，机器不可复核 ⇒ 这些行不许进删除脚本，只能作为"库里可能有"的提示。`,
+  `- 本轮由弱升强 ${promoted} 条（取证日志重新认出了这些主键 ⇒ 就地升级，不另记一条；台账里同一身份只留一条）。`,
   "",
   "| 类型 | 主键 | 强度 | 首次入册 | 依据 |",
   "|---|---|---|---|---|",
   ...led.entries.map((e) => "| " + e.kind + " | `" + e.key + "` | " + (e.weak ? "弱（报告文字）" : "强（取证日志）") + " | " + String(e.firstSeen).slice(0, 10) + " | " + String(e.note).slice(0, 70) + " |"),
   "",
 ].join("\n"));
-console.log("TDI_ROWS=" + rows.length + " 台账=" + led.entries.length + "（新增 " + (led.entries.length - before) + "，弱指纹 " + weakOnly.length + "）");
+console.log("TDI_ROWS=" + rows.length + " 台账=" + led.entries.length + "（新增 " + (led.entries.length - before) + "，弱指纹 " + weakOnly.length + "，本轮升级 " + promoted + "）");
 
 if (flag("emit-sql")) {
   const APPLY = flag("apply");

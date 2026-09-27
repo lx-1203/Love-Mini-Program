@@ -26,15 +26,18 @@
  *   --checkpoint <file>        默认 tmp/qa/checkpoints/exec-R<n>.json（按轮次名派生）
  *   --manifest-detail <file>   默认 reports/screenshots/round-6-tour/manifest-detail.json
  *   --screenshot-manifest <f>  默认 <round-dir>/screenshot-manifest.json
- *   --report <file>            默认 <round-dir>/round-6-report.md
- *   --metrics <file>           默认 <round-dir>/round-6-metrics.json
+ *   --report <file>            默认 <round-dir>/round-<n>-report.md（<n> 从 --round-dir 里派生）
+ *   --metrics <file>           默认 <round-dir>/round-<n>-metrics.json（同上）
  *   --sidecar-dir <dir>        分诊台 --out 落点（reports/ 之外），默认 .zcode/tmp/report-emitter
  *   --node22 <path>            默认 D:/codex-tools/node-v22.17.0-win-x64/node.exe
  *   --skip-live-gates          不复跑 G7/G8/G9/probe；记为一条 FAIL，不出绿报告
  *   --lease-probe-only         只看有没有人持有模拟器租约后退出（不取锁、不跑任何门）
+ *   --dup-axis-selftest        离线渲染/判决「逐 corpus 同字节状态组」这一条否决轴：只按同一条取集规则
+ *                              spawn 只读的 scripts/verify-evidence-integrity.mjs，打印该轴在报告里
+ *                              将要落下的**逐字文本**后按该轴判决退出。不启动任何会写盘的门、不取租约。
  *   实时门还受 UI 租约自动保护：有别的驱动在跑时，等价于 --skip-live-gates 并在报告里写明原因。
  */
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { readFileSync, readdirSync, existsSync, statSync, mkdirSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname, join, resolve, relative, sep } from "node:path";
@@ -72,8 +75,12 @@ const LEDGER_MD = toRel(flag("ledger", ".zcode/tmp/round6-LEDGER.md"));
 /* 计划清单可以指到别轮的目录：round-7 沿用 round-6 的 ops（同一份 1107 例计划），
    复制一份到本轮目录只会造成两份计划互相漂移。 */
 const OPS_DIR = flag("ops-dir") ? pj(...toRel(flag("ops-dir")).split("/")) : pj(ROUND_DIR, "ops");
-const OUT_REPORT = toRel(flag("report", join(ROUND_DIR, "round-6-report.md")));
-const OUT_METRICS = toRel(flag("metrics", join(ROUND_DIR, "round-6-metrics.json")));
+/* 报告与指标的文件名跟着 --round-dir 走，理由与顶部快照目录同一条：写死 round-6 会让收尾
+   把"本轮终报"落进 round-6-report.md —— 名字撒谎、还把上一轮那份真报告覆盖掉。
+   --round-dir 里认不出轮次号时退回旧字面量，保持既有调用方（只传 round-6 目录）逐字不变。 */
+const RTAG = (ROUND_DIR.match(/round-(\d+)/) || [])[1];
+const OUT_REPORT = toRel(flag("report", join(ROUND_DIR, RTAG ? `round-${RTAG}-report.md` : "round-6-report.md")));
+const OUT_METRICS = toRel(flag("metrics", join(ROUND_DIR, RTAG ? `round-${RTAG}-metrics.json` : "round-6-metrics.json")));
 const SIDE_DIR = toRel(flag("sidecar-dir", ".zcode/tmp/report-emitter"));
 const NODE22 = flag("node22", "D:/codex-tools/node-v22.17.0-win-x64/node.exe");
 let SKIP_LIVE = has("skip-live-gates");
@@ -122,6 +129,113 @@ function locateSnapshot() {
 }
 const SNAP = locateSnapshot();
 const ROUND_NO = (ROUND_DIR.match(/round-(\d+)/) || [])[1] || String(readJsonOrNull(EXEC)?.round || "").replace(/^R/i, "") || "N";
+
+/* ============ 逐 corpus 原始记录轴：取集规则 / 渲染 / 判决（一条口径只留一份实现） ============
+ * 为什么这条轴现在必须有否决权：`EVIDENCE_DUP_STATE`（同一 identity+同一页却**字节完全相同**的
+ * 两个"不同状态"）是采集层拿同帧凑状态配额。权威索引那条（`G.integrity`）在这一项上恒为 0 ——
+ * 不是现象消失了，是 rebuild-frozen-manifest.mjs 把同字节帧从 shots[] 搬进了 stateNotApplied[]
+ * （本轮实测：索引 642 帧 MATCHED=642、DUP_STATE_GROUPS=0、SNA_RECLASSIFIED=848）。
+ * 而 09-27 把逐 corpus 那条降级成「信息轴不否决」后（旧 :1028-1031 只 OPEN.push、
+ * 旧 :1046 的面板只收索引那条），这一类洞**没有任何路径**能让终报的「本次仍判红 N/M」变红。
+ * 现在：组数/帧数汇总成一条独立的面板成员 `G.rawDup`，非零即计入否决集。
+ * 措辞纪律：corpus leg **整条**退出码仍然不进取决集（它混了断链/孤儿，那些由权威索引轴与
+ * corpus/provenance 两把门各自记账），进取决集的只有它的同字节组数 —— 下面的文案逐字写清这点。 */
+function collectRoundCorpusDirs(no) {
+  const base = join(ROOT, "reports", "screenshots");
+  let names = [];
+  try { names = readdirSync(base); } catch { return []; }
+  return names.filter((nm) => nm.startsWith("round-" + no) && !nm.endsWith("-smoke"))
+    .map((nm) => "reports/screenshots/" + nm);
+}
+/** leg 描述子：正常路径用它拼 runGate，--dup-axis-selftest 用它拼 spawn 命令行，两处同一批。 */
+function rawCorpusLegSpecs(no) {
+  return collectRoundCorpusDirs(no)
+    .map((dir) => ({
+      dir, man: dir + "/manifest-detail.json",
+      name: "verify-evidence-integrity（原始 corpus：" + dir.split("/").pop() + "，其同字节组=否决轴）",
+      args: [dir + "/manifest-detail.json", "--dir", dir],
+    }))
+    .filter((x) => existsSync(join(ROOT, x.man)));
+}
+/** 表格里那一行两个路径共用的渲染（headline 文本必须逐字一致，否则自检显示的和报告落的不是一回事）。 */
+function rawCorpusLegHeadline(leg) {
+  const g = (re) => { const m = leg.body.match(re); return m ? m[1] : "?"; };
+  return `SHOTS=${g(/EVIDENCE_SHOTS=(\d+)/)} DUP_STATE=${g(/DUP_STATE_GROUPS=(\d+)/)} DUP帧=${g(/DUP_STATE_FRAMES=(\d+)/)} SNA改判=${g(/EVIDENCE_SNA_RECLASSIFIED=(\d+)/)} MISSING=${g(/MISSING=(\d+)/)} ORPHANS=${g(/ORPHANS=(\d+)/)} → ${(leg.body.match(/^EVIDENCE_RESULT=.*/m) || ["(没打印判决行)"])[0]}`;
+}
+/** 汇总这条轴的三个计数 + 落「一条不藏」条目；emitRow 由调用方给（报告=表格行，自检=stdout）。 */
+function renderRawCorpusDupAxis(legs, { emitRow, open }) {
+  const agg = { legs: legs.length, dupTotal: 0, dupFramesTotal: 0, dupLegs: 0, otherTotal: 0, details: [], hiddenDetails: 0 };
+  for (const leg of legs) {
+    emitRow(leg, rawCorpusLegHeadline(leg));
+    const dup = Number(leg.body.match(/DUP_STATE_GROUPS=(\d+)/)?.[1] || 0);
+    const dupFrames = Number(leg.body.match(/DUP_STATE_FRAMES=(\d+)/)?.[1] || 0);
+    const other = Number(leg.body.match(/MISSING=(\d+)/)?.[1] || 0)
+      + Number(leg.body.match(/HASH_MISMATCH=(\d+)/)?.[1] || 0)
+      + Number(leg.body.match(/ORPHANS=(\d+)/)?.[1] || 0);
+    agg.dupTotal += dup; agg.dupFramesTotal += dupFrames; agg.otherTotal += other;
+    /* 门禁每条 leg 只打前 6 组明细，被它咽掉的数量必须自己数出来并声明，
+       否则读者会拿"报告列了 12 行"当成"总共就 12 组"。 */
+    agg.hiddenDetails += Number(leg.body.match(/EVIDENCE_DUP_STATE 另有 (\d+) 组未打印/)?.[1] || 0);
+    /* 组明细（哪一页、哪几个状态标签同字节）逐条收下，供报告点名。门禁自己只打前 6 组，
+       取全量要走它的 --json；这里不冒充全量，所以下面打印时会声明可能是截断件。 */
+    if (dup) agg.details.push(...(leg.body.match(/^EVIDENCE_DUP_STATE .*$/gm) || []).map((l) => `${leg.name.replace(/^verify-evidence-integrity（原始 corpus：/, "").replace(/，其同字节组=否决轴）$/, "")} ${l.replace(/^EVIDENCE_DUP_STATE /, "")}`));
+    if (dup) {
+      agg.dupLegs++;
+      open({ item: `${leg.name} —— 同页同身份却同字节的帧仍在原始记录里：${dup} 组 / ${dupFrames} 帧`,
+        why: `这 ${dup} 组的**组数已进取决集**（汇总成面板成员 \`verify-evidence-integrity（逐 corpus 同字节状态组=否决轴）\`，非零就让「本次仍判红」+1）；` +
+          `这条 leg 的整条退出码仍不进取决集（它还混着断链/孤儿，那两项由权威索引轴与 corpus/provenance 两把门记账）。` +
+          `结案条件：该 corpus 重拍到组数归零 —— 由权威索引把同字节帧搬进 stateNotApplied[] **不算结案**（换载体≠两个状态真有了区别）` });
+    }
+    if (other) open({ item: `${leg.name} —— 原始 corpus 有 ${other} 条断链/哈希不符/孤儿`, why: "信息轴不否决，但必须先确认权威索引没漏掉同一批帧" });
+  }
+  return agg;
+}
+/** 报告正文里那条可核对的数（否决轴没有数 = 又造一个 can-never-fail checker）。 */
+function dupAxisCountLine(agg) {
+  if (!agg.legs) return `- **同字节状态组（逐 corpus 原始记录·否决轴）：未量** —— 本轮名下没有任何带 \`manifest-detail.json\` 的 corpus（\`reports/screenshots/round-${ROUND_NO}-*\`），这条轴**没有看过一份原始记录**，不得读成 0 组。`;
+  const rec = rawDupAxisRecord(agg);
+  return `- **同字节状态组（逐 corpus 原始记录·否决轴）：${agg.dupTotal} 组 / ${agg.dupFramesTotal} 帧，分布在 ${agg.dupLegs}/${agg.legs} 份 corpus**` +
+    ` —— ${agg.dupTotal ? `本轴非零 ⇒ 已计入「本次仍判红」分母（面板成员 \`${rec.name}\`，退出码 ${rec.exitCode}；本轮 G6 不得记 PASS）` : "本轴为 0，不进否决集"}；` +
+    `口径（也是这条轴的**可见边界**，别读成全域）：组键 = identity|页(page 或 route)|contentHash，` +
+    `只在\`reports/screenshots/round-${ROUND_NO}-*\` 里**有 \`manifest-detail.json\` 的 corpus**上量（本轮 ${agg.legs} 份），逐 corpus 各算各的、跨 corpus 同字节不并组；` +
+    `同名但没有 manifest-detail.json 的 corpus、以及历史轮与权威索引之外的帧**不在本轴视野内** —— ` +
+    `按帧去重的全树普查口径要另跑（.zcode/tmp/gap-dupframes/dup-dedup.mjs），两个口径不可直接相减`;
+}
+/** 面板成员：把汇总数包成一条有退出码的门（gatePanel 只需要 name/exitCode/cmd/note/sha8）。 */
+function rawDupAxisRecord(agg) {
+  const body = `RAW_DUP_AXIS legs=${agg.legs} legs_with_dup=${agg.dupLegs} DUP_STATE_GROUPS=${agg.dupTotal} DUP_STATE_FRAMES=${agg.dupFramesTotal} 其它(断链+哈希+孤儿,仅打印)=${agg.otherTotal}`;
+  return { name: "verify-evidence-integrity（逐 corpus 同字节状态组=否决轴）", cmd: "派生自 " + agg.legs + " 条 verify-evidence-integrity 原始 corpus leg 的 DUP_STATE_GROUPS 之和", exitCode: agg.dupTotal > 0 ? 1 : 0, note: "", body, sha8: sha8(body) };
+}
+
+/* --dup-axis-selftest：只跑只读门禁、只渲染这一条轴，用来在**不启动任何会写盘的门**（verify-evidence-holes /
+   verify-guest-landing / verify-source-shape 的默认输出都落在 reports/ 里）的前提下看到该轴的逐字渲染。 */
+if (has("dup-axis-selftest")) {
+  const specs = rawCorpusLegSpecs(ROUND_NO);
+  console.log(`DUP_AXIS_SELFTEST round=${ROUND_NO} legs=${specs.length}（只 spawn 只读的 scripts/verify-evidence-integrity.mjs，不取 UI 租约、不写任何文件）`);
+  const legs = specs.map((x) => {
+    const r = spawnSync(process.execPath, ["scripts/verify-evidence-integrity.mjs", ...x.args], { cwd: ROOT, encoding: "utf8", maxBuffer: 1 << 26, timeout: 600000, windowsHide: true });
+    const body = String(r.stdout || "").split("\n").filter((l) => !l.startsWith("#")).join("\n"); // 与 runGate 同一条剥头注释规则
+    return { name: x.name, body, exitCode: r.status, cmd: `${relPosix(process.execPath)} scripts/verify-evidence-integrity.mjs ${x.args.join(" ")}` };
+  });
+  const open = [];
+  const agg = renderRawCorpusDupAxis(legs, { emitRow: (leg, h) => console.log(`| \`${leg.name}\` | **${leg.exitCode}**（leg 整条退出码不计入否决集） | ${h} | --dup-axis-selftest：不查台账基线 |`), open: (o) => open.push(o) });
+  console.log("");
+  console.log(dupAxisCountLine(agg));
+  /* legs=0 时报告路径里这条面板成员是 null（filter 掉，不给它一个默认 PASS 的位置），自检措辞必须一致，
+     否则"0 份记录"会被读成"量过了、干净"—— 正是这个仓反复修的 can-never-fail checker。 */
+  const rec = rawDupAxisRecord(agg);
+  const verdict = agg.legs === 0 ? "未量（0 份 corpus ⇒ 报告路径里这条成员是 null，不进取决集，也不得读成 PASS）"
+    : (agg.dupTotal ? "RAW_DUP_AXIS=FAIL（进取决集）" : "RAW_DUP_AXIS=PASS");
+  console.log(`| \`${rec.name}\` | **${agg.legs === 0 ? "null（不进面板）" : rec.exitCode}** | ${rec.body} → ${verdict} | 自检不落台账 |`);
+  for (const d of agg.details.slice(0, 12)) console.log(`  - 同字节组明细：\`${d}\``);
+  if (agg.details.length > 12) console.log(`  - …明细另有 ${agg.details.length - 12} 行未打印（报告侧上限 12 行）`);
+  if (agg.hiddenDetails) console.log(`  - 另有 ${agg.hiddenDetails} 组连门禁自己都没打出来（它每条 leg 只打前 6 组）⇒ 本报告的明细**不是全量**，组数/帧数才是全量；取全量对该 leg 加 \`--json <out>\` 读 \`dupState[]\``);
+  console.log("");
+  for (const o of open) console.log(`- 一条不藏：${o.item} —— ${o.why}`);
+  console.log(`DUP_AXIS_RESULT=${agg.legs === 0 ? "UNMEASURED" : (agg.dupTotal > 0 ? "FAIL" : "PASS")} groups=${agg.dupTotal} frames=${agg.dupFramesTotal} legs=${agg.legs} legs_with_dup=${agg.dupLegs}`);
+  process.exit(agg.dupTotal > 0 ? 1 : 0);
+}
+
 
 /* ------------------------------------------------ 溯源 / 失败 / 未判定登记 */
 const PROV = { files: [], cmds: [], notes: [] };
@@ -372,8 +486,18 @@ G.wsExcl = runGate("probe-ws-cli-exclusion（租约层的 WS⊥CLI 探针，空�
 
 /* 判据台侧的帧债：① 说的"54 条 NEEDS_UI_FRAME"其实是判据台条目，不是台账行，
    两批 id 有交集但不相等 ⇒ 只看台账会把「台账收口了、判据还欠帧」读成没问题。 */
-G.critFrame = runGate("verify-criteria-frame-debt（判据台每一条欠帧有没有会被拍的去处 + frame 路径是否真在盘上）", "scripts/qa/verify-criteria-frame-debt.mjs", ["--strict"], { timeoutMs: 120000 });/* G8 RING6 的"计数字段两侧一致"这半段在 g8-e2e 里只是打印、不会因不一致而红，
+G.critFrame = runGate("verify-criteria-frame-debt（判据台每一条欠帧有没有会被拍的去处 + frame 路径是否真在盘上）", "scripts/qa/verify-criteria-frame-debt.mjs", ["--strict"], { timeoutMs: 120000 });
+/* 【实测修：这一行以前被吞在注释里】HEAD 版把上一条门的调用行尾直接接了一个块注释起始标记，
+   注释正文讲的其实是下面 probe-admin-post-counts 的事、却一直开到两行之后的结束标记，于是
+   **夹在中间那行 `G.tabBar = runGate(…)` 整条成了注释文本**（本注释故意不复现那对块注释标记，
+   免得自己也把下一行吃掉 —— 这就是这类缺陷的形状）。
+   后果不是"少跑一道门"而是**终报根本出不出来**：H 节的 `gateRow(G.tabBar, …)` 在
+   `G.tabBar === undefined` 上抛 `TypeError: Cannot read properties of undefined (reading 'body')`，
+   进程在渲染到本次改动的那条否决轴之前就死掉（本次用子进程墙跑通才撞出来，命令与堆栈见
+   .zcode/tmp/gap-integrity/REPORT.md）。tabBar 这条是只读静态核对（该门全文 0 次写盘调用），
+   恢复它不引入任何写盘副作用。 */
 G.tabBar = runGate("verify-tab-bar-single-source（④：面板字面量相加 == --tab-bar-total-h 的静态核对）", "scripts/qa/verify-tab-bar-single-source.mjs", [], { timeoutMs: 120000 });
+/* G8 RING6 的"计数字段两侧一致"这半段在 g8-e2e 里只是打印、不会因不一致而红，
    判得动的是这条只读探针（GET only，任何时刻可跑，凭据运行时解析不上命令行）。 */
 G.adminCounts = runGate("probe-admin-post-counts（RING6 计数字段两侧一致）", "scripts/qa/probe-admin-post-counts.mjs", ["--limit", "5"], { timeoutMs: 240000 });
 /* 游客落点：26 组裁定与本轮实测落地对必须双向守恒，且每组都要有具名复测腿。
@@ -419,14 +543,10 @@ const RESHOOT_MANIFEST = "reports/screenshots/round-6-tour-reshoot/manifest-deta
    写死列表 = 新拍的帧悄悄落在 corpus/provenance 两把门的扫描集之外
    （这正是本轮反复修的"扫描集静默变小却照样判绿"）。
    规则：reports/screenshots 下名字以本轮号开头的目录都算，但 `*-smoke` 排除 ——
-   冒烟 corpus 是被丢弃的一次性产物，让它进判据会把"试过"写成"验过"。 */
-const roundCorpusDirs = (() => {
-  const base = join(ROOT, "reports", "screenshots");
-  let names = [];
-  try { names = readdirSync(base); } catch { return []; }
-  return names.filter((n) => n.startsWith("round-" + ROUND_NO) && !n.endsWith("-smoke"))
-    .map((n) => "reports/screenshots/" + n);
-})();
+   冒烟 corpus 是被丢弃的一次性产物，让它进判据会把"试过"写成"验过"。
+   取集规则现在只有 collectRoundCorpusDirs() 一份实现：--dup-axis-selftest 必须取到同一批 corpus，
+   否则自检渲染的数与报告落盘的数不是同一个测量。 */
+const roundCorpusDirs = collectRoundCorpusDirs(ROUND_NO);
 const EVIDENCE_SCOPE = [ROUND_DIR, ...roundCorpusDirs].join(",");
 G.corpusScoped = runGate("verify-evidence-corpus（本轮 scope）", "scripts/qa/verify-evidence-corpus.mjs", ["--scope", EVIDENCE_SCOPE], { timeoutMs: 600000 });
 G.provenanceScoped = runGate("verify-provenance-all（本轮 scope）", "scripts/qa/verify-provenance-all.mjs", ["--scope", EVIDENCE_SCOPE], { timeoutMs: 600000 });
@@ -454,18 +574,18 @@ G.opsQueueList = [];
   }
   if (!G.opsQueueList.length) G.opsQueueMissing = true;
 }
-/* 原始 corpus 逐个量一遍（**信息轴，不否决收尾**）。
-   为什么不再是否决轴：本轮把「同页同身份却同字节」的帧按现行采集规则从 shots[] 改判进
-   stateNotApplied[]，承接者是权威索引 `reports/audit/<round>/screenshot-manifest.json`（否决轴那条）。
-   原始 corpus 是采集时刻的原始记录，不改它、也不拿它的旧数去否定新帧 ——
-   但如果这里**根本不跑**，"同字节事实一条没少"就没人看得见，所以逐 corpus 照打数字。
+/* 原始 corpus 逐个量一遍。这条轴**混着两种否决权**，措辞不许再笼统写"信息轴"：
+   · 同字节组数（DUP_STATE_GROUPS/DUP_STATE_FRAMES）= 否决轴 —— 汇总成面板成员 G.rawDup，
+     非零就进「本次仍判红」分母（理由与实测数字见文件头 RAW_DUP_AXIS 那一段）；
+   · 同一批 leg 的断链/哈希不符/孤儿 = 仍然只打印 —— 权威索引那条已经为这三项握着否决权，
+     让原始记录再否决一次就是把同一个洞数两遍；它只在「一条不藏」里点名。
+   为什么不能干脆不跑：本轮把「同页同身份却同字节」的帧按现行采集规则从 shots[] 改判进
+   stateNotApplied[]，承接者是权威索引 `reports/audit/<round>/screenshot-manifest.json` ——
+   索引那条 DUP_STATE_GROUPS 因此恒为 0（换载体），同字节的事实只有在这里才看得见。
    旧规则只量重拍 corpus 一个目录，等于默认"新 corpus 一定存在"；本轮名下一共长出 5 个 corpus，
    写死一个 = 另外四个落在扫描集之外（本轮反复修的同一类静默缩集）。 */
-G.integrityRawList = roundCorpusDirs
-  .map((d) => ({ dir: d, man: d + "/manifest-detail.json" }))
-  .filter((x) => existsSync(join(ROOT, x.man)))
-  .map((x) => runGate("verify-evidence-integrity（原始 corpus：" + x.dir.split("/").pop() + "，信息轴）",
-    "scripts/verify-evidence-integrity.mjs", [x.man, "--dir", x.dir], { timeoutMs: 600000 }));
+G.integrityRawList = rawCorpusLegSpecs(ROUND_NO)
+  .map((x) => runGate(x.name, "scripts/verify-evidence-integrity.mjs", x.args, { timeoutMs: 600000 }));
 /* i18n 门禁（只读）：本轮的 i18n 收口此前只有一次人工审计，证据落在被 gitignore 的 .zcode/tmp 里，
    不可重跑也不会有人复核 —— 接进报告门禁，让它变成每轮都跑的检查。
    配对差异一律判红；孤儿键走棘轮（基线与理由见该文件顶部注释与台账 §74）。 */
@@ -1016,16 +1136,15 @@ for (const l of (G.frameCoverage.body.match(/^\s*FRAMECOV_NAKED .*$/gm) || []).s
    于是四项里有一项退回未落地时，面板照样报全绿 —— 面板里的成员必须同时有一行可核对的数。 */
 gateRow(G.adminCounts, "probe-admin-post-counts（G8 RING6 的后台计数字段是否真在运行态；探针按设计只答\"有没有\"，不否决收尾）", `${(G.adminCounts.body.match(/^PROBE_ADMISIBLE=.*$/m) || ["(没打出 ADMISIBLE 行)"])[0]} ${(G.adminCounts.body.match(/^PROBE_VERDICT=.*$/m) || ["(没打出 VERDICT 行)"])[0]} → ${(G.adminCounts.body.match(/^PROBE_RESULT=.*$/m) || [null])[0]}`);
 gateRow(G.rulings, "verify-rulings-landed（④ 四项待裁决是否各自有可重跑判据）", `四项=${n(G.rulings.re(/四项=(\d+)/))} 已落地=${n(G.rulings.re(/已落地=(\d+)/))} 未落地=${n(G.rulings.re(/未落地=(\d+)/))}（数取自门自己的统计行，不数打印行数——它的未落地标记是 ✗ 而不是 miss，数行会永远得 0） → ${(G.rulings.body.match(/^RULINGS_RESULT=.*$/m) || [null])[0]}`);
+/* 逐 corpus 原始记录轴：渲染与判决都走 renderRawCorpusDupAxis()（与 --dup-axis-selftest 同一份实现）。
+   leg **整条**退出码不进否决集，它的**同字节组数**在这里汇总成面板成员 G.rawDup。 */
+const RAW_DUP_AGG = renderRawCorpusDupAxis(G.integrityRawList, {
+  emitRow: (leg, headline) => gateRow(leg, "verify-evidence-integrity（重拍 corpus）", headline),
+  open: (o) => OPEN.push(o),
+});
+G.rawDup = G.integrityRawList.length ? rawDupAxisRecord(RAW_DUP_AGG) : null;
 if (!G.integrityRawList.length) P(`| \`verify-evidence-integrity（原始 corpus）\` | 未跑 | 无 | 盘上没有任何 \`reports/screenshots/round-${ROUND_NO}-*/manifest-detail.json\` —— 逐 corpus 原始记录未量，不得当成"已核过" |`);
-for (const leg of G.integrityRawList) {
-  gateRow(leg, "verify-evidence-integrity（重拍 corpus）", `SHOTS=${n(leg.re(/EVIDENCE_SHOTS=(\d+)/))} DUP_STATE=${n(leg.re(/DUP_STATE_GROUPS=(\d+)/))} SNA改判=${n(leg.re(/EVIDENCE_SNA_RECLASSIFIED=(\d+)/))} MISSING=${n(leg.re(/MISSING=(\d+)/))} ORPHANS=${n(leg.re(/ORPHANS=(\d+)/))} → ${(leg.body.match(/^EVIDENCE_RESULT=.*/m) || [null])[0]}`);
-  /* 信息轴退出码非零**不进"本次仍判红"的分母**，但每条都要在"一条不藏"里点名：
-     它测的是采集当时的原始记录，那些同字节帧已由权威索引改判承接（换载体≠已修复）。 */
-  const dup = Number(leg.re(/DUP_STATE_GROUPS=(\d+)/) || 0);
-  const other = Number(leg.re(/MISSING=(\d+)/) || 0) + Number(leg.re(/HASH_MISMATCH=(\d+)/) || 0) + Number(leg.re(/ORPHANS=(\d+)/) || 0);
-  if (dup) OPEN.push({ item: `${leg.name} —— 同页同身份却同字节的帧仍在原始记录里：${dup} 组`, why: `信息轴不否决；这 ${dup} 组已由权威索引 stateNotApplied[] 承接（retroactive 改判），产品侧「该状态是否真的不改变画面」仍是待复验项，下一轮需要元素级交互断言而不是像素比对` });
-  if (other) OPEN.push({ item: `${leg.name} —— 原始 corpus 有 ${other} 条断链/哈希不符/孤儿`, why: "信息轴不否决，但必须先确认权威索引没漏掉同一批帧" });
-}
+else gateRow(G.rawDup, "RAW_DUP_AXIS", `${G.rawDup.body} → ${RAW_DUP_AGG.dupTotal ? "RAW_DUP_AXIS=FAIL（组数非零 ⇒ 这条进取决集）" : "RAW_DUP_AXIS=PASS（只说明本轮 scope 的 corpus 内为 0；未索引的 corpus 与历史轮 corpus 不在本轴覆盖里，见正文汇总那条的口径注）"}`);
 gateRow(G.queue, "verify-queue-reconcile", `GAP=${n(q.tok("QUEUE_GAP"))} NEVER_RAN=${n(q.tok("QUEUE_NEVER_RAN_SUITES"))}套/${n(q.tok("QUEUE_NEVER_RAN_CASES"))}例 ERR_TAINTED=${n(q.tok("QUEUE_ERR_TAINTED_CASES"))} → ${(q.body.match(/^QUEUE_RESULT=.*/m) || [null])[0]}`);
 gateRow(G.restarted, "verify-backend-restarted", `JVM pid=${n(jvmPid)} startedAt=${n(jvmStartedAt)} STALE_SOURCE=${n(G.restarted.kv("RESTARTED_STALE_SOURCE"))} → ${n(restartedVerdict)}`);
 if (G.probe) gateRow(G.probe, "probe-real-env", `BACKEND=${n(G.probe.tok("PROBE_BACKEND"))} REACHABLE=${n(G.probe.tok("PROBE_ASSETS_REACHABLE"))} → ${n(G.probe.tok("PROBE_VERDICT"))}`);
@@ -1033,23 +1152,34 @@ else P(`| \`probe-real-env\` | 未复跑 | 无 | ${baseRow("probe-real-env") ? "
 gateRow(G.i18n, "verify-i18n-orphan", `ZH=${n(G.i18n.tok("I18N_ZH_KEYS"))} EN=${n(G.i18n.tok("I18N_EN_KEYS"))} PAIR_DIFF=${n(G.i18n.tok("I18N_ZH_ONLY"))}+${n(G.i18n.tok("I18N_EN_ONLY"))} ORPHANS=${n(G.i18n.tok("I18N_ORPHANS"))}/允许${n(G.i18n.tok("I18N_ORPHANS_ALLOWED"))} → ${(G.i18n.body.match(/^I18N_RESULT=.*/m) || [null])[0]}`);
 nonEmpty("corpus 扫到的 manifest 数", G.corpus.num("CORPUS_MANIFESTS"), "全域 0 份 manifest = 扫描集为空，corpus 的绿没有意义（该门自身也按此判红）");
 nonEmpty("provenance 扫到的生产者数", G.provenance.re(/PROV_PRODUCERS=(\d+)/) === null ? null : Number(G.provenance.re(/PROV_PRODUCERS=(\d+)/)), "0 个 stamp 生产者 = 生产者侧审计静默 0 命中");
-/* 门禁面板 = 决定"本次仍判红 N/M"的那一组。规则上有三点不像常识，写在这：
+/* 门禁面板 = 决定"本次仍判红 N/M"的那一组。规则上有四点不像常识，写在这：
    ① corpus/provenance 收 **本轮 scope 版**（全域版红在 round-1 无 gitSha / 144 无日期戳这类历史上，
       那是"历史证据不可复用"的正确答案，但不该否决本轮收尾）；两版都仍在 H 节逐行打印；
-   ② integrity 的**冻结 corpus 与重拍 corpus 各算一条**：那 6 组同字节状态对只有在新 corpus 里
-      真的字节不同才算结案，旧 corpus 不会自己变干净 —— 两条并排，谁红一目了然，不做合并；
-   ③ 重拍 corpus 那条在没跑定向补拍时是 null，filter 掉，**不给它一个默认 PASS 的位置**。 */
-const gatePanel = [G.ledger, G.stateTruth, G.integrity, G.corpusScoped, G.provenanceScoped, G.opsStamp, G.opsCopy, G.selExistMock, G.selExistReal, G.frameCoverage, G.rulings, ...G.opsQueueList, G.queue, G.restarted, G.i18n, G.fresh, G.anchors, G.parse, G.debtTriage].filter(Boolean);
+   ② integrity 分两条并列：**权威索引轴**（G.integrity）与**逐 corpus 同字节组汇总轴**（G.rawDup）。
+      索引那条的 DUP_STATE_GROUPS 恒为 0 不是"状态有区别了"，是同字节帧被搬进 stateNotApplied[]
+      （换载体），所以同字节这类洞只有第二条能红 —— 上一版只留第一条，等于把整类证据洞写免；
+   ③ 第二条只取组数：corpus leg 自己的断链/哈希/孤儿不进面板（与索引轴重复计同一个洞），
+      只逐条进"一条不藏"；
+   ④ 本轮名下没有 corpus 时 G.rawDup 是 null，filter 掉，**不给它一个默认 PASS 的位置**
+      （H 节会另印一行"未跑…不得当成已核过"）。 */
+const gatePanel = [G.ledger, G.stateTruth, G.integrity, G.rawDup, G.corpusScoped, G.provenanceScoped, G.opsStamp, G.opsCopy, G.selExistMock, G.selExistReal, G.frameCoverage, G.rulings, ...G.opsQueueList, G.queue, G.restarted, G.i18n, G.fresh, G.anchors, G.parse, G.debtTriage].filter(Boolean);
 const redNow = gatePanel.filter((r) => r.exitCode !== 0);
 const redBase = baseSection.filter((l) => /^\|\s*[^-|]/.test(l) && /^\|[^|]*\|\s*1\s*\|/.test(l)).length;
 /* 分母从面板数组算出来，不写死：写死过一次 "/ 7"，加第 8 道门时会静默少报总数 */
 P(`- **本次仍判红：${redNow.length} / ${gatePanel.length}** —— ${redNow.map((r) => `\`${r.name}\`(${r.exitCode})`).join(" ") || "全绿"}`);
+P(dupAxisCountLine(RAW_DUP_AGG));
+M.sources.rawDupAxis = RAW_DUP_AGG;
+for (const d of RAW_DUP_AGG.details.slice(0, 12)) P(`  - 同字节组明细：\`${d}\``);
+if (RAW_DUP_AGG.details.length > 12) P(`  - …明细另有 ${RAW_DUP_AGG.details.length - 12} 行未打印（报告侧上限 12 行）`);
+if (RAW_DUP_AGG.hiddenDetails) P(`  - 另有 ${RAW_DUP_AGG.hiddenDetails} 组连门禁自己都没打出来（它每条 leg 只打前 6 组）⇒ 本报告的明细**不是全量**，组数/帧数才是全量；取全量对该 leg 加 \`--json <out>\` 读 \`dupState[]\``);
 P(`- 轮初基线里退出码=1 的行数（从台账 §1 原文**数出来**的，不是记忆）：**${redBase}** ${LEDGER_SRC ? srcFile(LEDGER_SRC.path, "§1 退出码列") : "（基线文件读不到）"}`);
 P(`- 口径注：门禁面板里的 corpus/provenance 是**本轮 scope** 版（${EVIDENCE_SCOPE}）；` +
   `全域版同表打印但只作历史口径（与轮初基线可比的是全域版，能否决本轮收尾的是 scope 版）。` +
   `integrity 分两类：**权威索引轴**（\`${SCREEN_MANIFEST}\`，由 scripts/qa/rebuild-frozen-manifest.mjs 从各 corpus 派生）进取决集，` +
-  `逐 corpus 的**原始记录轴**只打印数字、不进取决集（同字节帧已被权威索引改判进 stateNotApplied[]，` +
-  `原始 corpus 是采集时刻的原始记录、不改写也不删；它们的组数逐条进"一条不藏"那一节）；` +
+  `逐 corpus 的**原始记录轴**里只有「同字节状态组数」这一项被提到否决轴（汇总成面板成员 \`verify-evidence-integrity（逐 corpus 同字节状态组=否决轴）\`：` +
+  `非零 ⇒ 「本次仍判红」+1 ⇒ 收尾不得记 G6 PASS；本轮实测它挡住的正是索引那条因 stateNotApplied[] 搬运而恒为 0 的那一类洞）；` +
+  `同一条 leg 的断链/哈希不符/孤儿**仍是信息轴**（权威索引轴已为这三项握着否决权，重复计同一个洞只会让面板数字失真），` +
+  `它们与每组明细一起进"一条不藏"那一节；原始 corpus 是采集时刻的原始记录、不改写也不删；` +
   `\`--exec\` 分支的否决权本轮收窄为「只否决伪造」=证据里写了图片路径、既无 ERROR/timeout 注记、盘上又不存在，` +
   `自报失败的注记条目不再计红（tier 交不齐由 readjudicate-evidence/verify-queue-reconcile 记账），` +
   `这条改动有配对自检 scripts/qa/test-evidence-fabrication.cjs（含反向对照）；` +
@@ -1215,6 +1345,8 @@ function metricsDoc() {
     live: M.sources.live || null,
     defects: M.sources.defects || null,
     gates: M.sources.gates || null,
+    /** 逐 corpus 同字节轴的原始汇总（legs/组数/帧数/明细数），让这条否决轴的数在机器可读件里也在盘上。 */
+    rawDupAxis: M.sources.rawDupAxis || null,
     provenance: { files: PROV.files, commands: PROV.cmds },
     conservation: CONSERVE,
     failures: ERRORS,

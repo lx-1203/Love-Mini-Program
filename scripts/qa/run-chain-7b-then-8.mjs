@@ -27,11 +27,15 @@ for (const a of argv) {
 }
 const LOG7B = join(REPO, "tmp/qa/stage7b-queue.log");
 const LEGS8 = "scripts/qa/ui-queue.round8-stage8.json";
+/* --out 必须显式给：run-ui-queue.mjs 的缺省 OUT 是 reports/audit/round-7/ui-queue，
+   那正是 7b 自己的账本目录 ⇒ 不带 --out 的 stage-8 会把 7b 的 queue-state.json 覆盖掉，
+   把刚判决的那轮（含红腿）从盘上抹了。判决要留在它自己的目录里。 */
+const OUT8 = "reports/audit/round-7/ui-queue-stage8";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const say = (m) => console.log("[" + new Date().toISOString() + "] " + m);
 
 if (DRY) {
-  console.log("CHAIN_DRY 会等 " + resolve(LOG7B).replace(REPO + "\\", "") + " 出现 QUEUE_RESULT；全绿则串行跑 " + LEGS8 + "；有红腿就停");
+  console.log("CHAIN_DRY 会等 " + resolve(LOG7B).replace(REPO + "\\", "") + " 出现 QUEUE_RESULT；全绿则串行跑 " + LEGS8 + " 并落 " + OUT8 + "；有红腿就停");
   console.log("CHAIN_RESULT=DRY");
   process.exit(0);
 }
@@ -70,7 +74,7 @@ const red = /QUEUE_RESULT=FAIL|FAIL=[1-9]/.test(line7b);
 if (red) { console.log("CHAIN_RESULT=STOP reason=7b 有红腿 ⇒ 停在这里等人判，绝不自动接 stage-8（把红腿接进下一轮就是用它盖判决）"); process.exit(2); }
 
 say("7b 全绿，串行起 stage-8（语料落盘 → 重戳 → 重建三档 → 执行腿 → WS 腿）");
-const r = spawnSync(NODE, ["scripts/qa/run-ui-queue.mjs", "--legs", LEGS8], { cwd: REPO, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, timeout: 6 * 60 * 60 * 1000 });
+const r = spawnSync(NODE, ["scripts/qa/run-ui-queue.mjs", "--legs", LEGS8, "--out", OUT8], { cwd: REPO, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, timeout: 6 * 60 * 60 * 1000 });
 const out = String(r.stdout || "") + String(r.stderr || "");
 const tail = out.split(/\r?\n/).filter((x) => /LEG_END|QUEUE_RESULT|QUEUE_TALLY|RESULT=/.test(x)).slice(-40);
 console.log("CHAIN_STAGE8 退出码=" + r.status + " 关键行：");

@@ -155,25 +155,6 @@
    "why": "只补受影响的那一刀：A 腿在这一页应得到 36 条 identity-scope 的 SKIPPED（摘掉的是认领，不是判据）+ LG02/LG03 继续真跑。读数必须是'跳过有原因、留下有结果'，不许两边都零。"
   },
   {
-   "name": "exec-guest-login-r8",
-   "file": "scripts/qa/r-exec-cli.mjs",
-   "args": [
-    "--project",
-    "apps/client/dist/build/mp-weixin",
-    "--out",
-    "reports/audit/round-7/exec-guest-login-r8",
-    "--tap",
-    "--identity",
-    "guest",
-    "--label",
-    "round-7-r8-guest-login",
-    "--manifests",
-    "PAGES-LOGIN-INDEX"
-   ],
-   "timeoutMin": 25,
-   "why": "收窄的另一半要有人真量：36 条改由游客腿认领 ⇒ 这一腿必须产出这 36 条的结果。只有 A 腿的 SKIPPED 而没有游客腿的 EXECUTED，就是把噪声搬走而没把判据补上。"
-  },
-  {
    "name": "verify-logged-in-landing-r8",
    "file": "scripts/qa/verify-logged-in-landing.mjs",
    "args": [
@@ -196,18 +177,6 @@
    ],
    "timeoutMin": 8,
    "why": "词表守恒：SKIPPED-identity-scope 这一族要有桶、要有去向；出现没登记的失败口径就红（不许把新口径读成'还没裁定'）。"
-  },
-  {
-   "name": "triage-guest-login-r8",
-   "file": "scripts/qa/triage-exec-failures.mjs",
-   "args": [
-    "--results",
-    "reports/audit/round-7/exec-guest-login-r8/exec-results.json",
-    "--dist",
-    "apps/client/dist/build/mp-weixin"
-   ],
-   "timeoutMin": 8,
-   "why": "游客腿那 36 条的分诊：它们现在只有 A 腿的'不认领'，必须在这条腿上给出真结果或真原因，否则就是把噪声搬走而不是把判据补上。"
   },
   {
    "name": "open-window-real-r8",
@@ -240,6 +209,18 @@
    ],
    "timeoutMin": 25,
    "why": "真实档的游客登录行（requiresReal 子集）是④裁定的另一半证据：mock 档过了不代表真实档过了。"
+  },
+  {
+   "name": "triage-guest-login-r8",
+   "file": "scripts/qa/triage-exec-failures.mjs",
+   "args": [
+    "--results",
+    "reports/audit/round-7/exec-guest-real-login-r8/exec-results.json",
+    "--dist",
+    "apps/client/dist/build/mp-weixin"
+   ],
+   "timeoutMin": 8,
+   "why": "分诊的对象改由腿 exec-guest-real-login-r8 承接：游客刀在 real 档跑（mock 档的 游客×mock 由执行器判为不可满足组合）。游客腿那 36 条的分诊：它们现在只有 A 腿的'不认领'，必须在这条腿上给出真结果或真原因，否则就是把噪声搬走而不是把判据补上。"
   },
   {
    "name": "ws-channel-up-r8",
@@ -279,6 +260,18 @@
    "timeoutMin": 3,
    "advisory": true,
    "why": "本队列自己的执行腿必须读同一版语料（同轮不同判据=结论不可拼）。文件与旗标是照抄 stage-7 腿 16 的真实调用，不是新发明的名字。"
+  }
+ ],
+ "$dropped": [
+  {
+   "name": "exec-guest-login-r8",
+   "band": "mock",
+   "identity": "guest",
+   "disposition": "NOT_SHOOTABLE",
+   "reason": "执行器两把前置门一致判定：mock 包的启动链路无条件种会话（session.ts:617 mock 分支），游客身份在 mock 档不可满足；补 --guest-warmup 后第二把门仍在第一批行开跑前拒跑，并声明该组合跑出的落点红不可采信。",
+   "covered_by": "exec-guest-real-login-r8",
+   "remedy_considered": "--allow-guest-mock（执行器给的显式豁免）——未采：硬跑产出的红按门禁口径不许进账，等于用不可采证据换一个绿",
+   "debt": "mock 档上的游客落点这一格本轮无证据；要补它得先让 mock 档能起游客态（改 session 引导链），那是产品侧改动，不在 QA 轮次里顺手做"
   }
  ]
 }

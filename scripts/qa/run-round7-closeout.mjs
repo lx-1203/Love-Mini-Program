@@ -8,7 +8,9 @@
  *   1) 设备正在被用（heldLeases 非空）⇒ 拒绝启动。本轮我已经两次用"只读预览"顶掉正在跑的腿；
  *   2) 默认只跑**只读门**；会写盘/写库的步骤（帧入语料、判决落台账、G8、G9、终报）要显式点名
  *      --allow-write / --with-g8 / --with-report，且每一步都打印它自己的读数，不参与"看起来绿了"；
- *   3) 步骤清单在启动时逐个核 `existsSync`，写错一个文件名就直接 FAIL，绝不静默跳过一步。
+ *   3) 步骤清单在启动时逐个核 `existsSync`，写错一个文件名就直接 FAIL，绝不静默跳过一步；
+ *      每一步转发的旗标也逐个对着消费者自己的 argv 解析核一遍 —— 消费者不读的旗标不报错、只被静默忽略
+ *      （0f82b4c1 那一族：--round 传给不认它的消费者，门"绿着"量的却是它的默认目录）。
  *
  *  用法：node scripts/qa/run-round7-closeout.mjs [--list] [--allow-write] [--with-g8] [--with-report]
  *                                             [--round round-7] [--only a,b] [--strict-triage]
@@ -36,9 +38,9 @@ const STEPS = [
   { id: "queue-tally", kind: "check", note: "读排队器状态：守恒 OK+FAIL+NOT_RUN==腿数，红腿逐条点名" },
   { id: "exec-frames-to-corpus", file: "scripts/qa/exec-frames-to-corpus.mjs", kind: "gate", write: true, eachExecResults: true, args: [], note: "执行轮出的帧登记进语料库（#52）：按盘上真实存在的 exec-results.json 一条一步，identity 从结果文件里读" },
   { id: "client-unit-tests", file: "scripts/qa/run-client-tests.mjs", kind: "gate", write: true, args: [], note: "⑤ 的「全部门禁」含客户端单测：上一轮只在我手动 npx 时跑过一次、证据落在 tmp/（等于没交出去）；这个载具用同一颗 node 跑并把汇总与完整输出留档到 reports/，且要求 files/tests 汇总行齐全 + failed=0 + 退出码 0 三者同时成立才算过" },
-  { id: "verify-evidence-corpus", file: "scripts/qa/verify-evidence-corpus.mjs", kind: "gate", args: ["--round", ROUND], note: "证据索引与盘上一致：路径存在、哈希一致（帧入账后必须复量）" },
-  { id: "verdict-from-frames", file: "scripts/qa/verdict-from-frames.mjs", kind: "gate", write: true, args: ["--round", ROUND], note: "把帧级判决从证据里读出来（① 要的帧级终态）" },
-  { id: "audit-frame-verdicts", file: "scripts/qa/audit-frame-verdicts.mjs", kind: "gate", args: ["--round", ROUND], note: "帧判决的审计：有没有拿没背书的判决落账" },
+  { id: "verify-evidence-corpus", file: "scripts/qa/verify-evidence-corpus.mjs", kind: "gate", args: [], note: "证据索引与盘上一致：路径存在、哈希一致（帧入账后必须复量）。消费者只读 --root/--scope/--short，压根没有轮次轴 ⇒ 原先转发的 --round 被静默忽略（同 0f82b4c1 那一族），现按它的真实口径收全量 reports/" },
+  { id: "verdict-from-frames", file: "scripts/qa/verdict-from-frames.mjs", kind: "gate", write: true, args: [], note: "把帧级判决从证据里读出来（① 要的帧级终态）。消费者只读 --plan/--frames，两个默认值本身就落在本轮目录 ⇒ 传 --round 是假接线，去掉后量的东西一模一样" },
+  { id: "audit-frame-verdicts", file: "scripts/qa/audit-frame-verdicts.mjs", kind: "gate", write: true, args: [], note: "帧判决的审计：有没有拿没背书的判决落账。它无条件写 frame-red-audit.md + cellplan-round7-frames-admissible.json（L210/L228）⇒ 必须 --allow-write 才允许跑；消费者只读 --frames/--project/--plan/--cellplan/--restore-from ⇒ 去掉假接线的 --round" },
   { id: "triage-exec-A-mock", file: "scripts/qa/triage-exec-failures.mjs", kind: "gate", args: ["--results", `reports/audit/${ROUND}/exec-A-mock-stage7/exec-results.json`, "--dist", "apps/client/dist/build/mp-weixin"], note: "A 刀语料分诊（词表可达 + unclassified=0 + 落地对）" },
   { id: "triage-exec-A-real", file: "scripts/qa/triage-exec-failures.mjs", kind: "gate", args: ["--results", `reports/audit/${ROUND}/exec-A-real-stage7/exec-results.json`, "--dist", "apps/client/dist/build/mp-weixin-real"], note: "真实刀 A 身份语料分诊：这一腿现量 875 行里有 1 条 FAILED 与 98 条非守恒跳过（欠前置配方 50 / 通道或选择器 5 / 没点名物件 6 / 禁触 4 / 盖章不可自动化 20），以前收尾只分诊 A-mock 与 guest-real ⇒ 这一腿的红和跳过从来没进过词表账" },
   { id: "triage-exec-guest-real", file: "scripts/qa/triage-exec-failures.mjs", kind: "gate", args: ["--results", `reports/audit/${ROUND}/exec-guest-real-stage7/exec-results.json`, "--dist", "apps/client/dist/build/mp-weixin-real"], note: "游客刀语料分诊（真实档）" },
@@ -52,9 +54,9 @@ const STEPS = [
   { id: "verify-case-selectors-real", file: "scripts/qa/verify-case-selectors-exist.mjs", kind: "gate", args: ["--band", "apps/client/dist/build/mp-weixin-real"], note: "同上，real 档" },
   { id: "g8-e2e", file: "scripts/qa/g8-e2e.cjs", kind: "gate", write: true, device: false, needs: "--with-g8", args: [], note: "十环真后端复跑（会写库：G8 产生的行按既定裁定保留并披露）" },
   { id: "g9-probe", file: "scripts/qa/g9-probe.cjs", kind: "gate", write: true, needs: "--with-g8", args: [], note: "素材普查复量" },
-  { id: "land-verdicts-into-ledger", file: "scripts/qa/land-verdicts-into-ledger.mjs", kind: "gate", write: true, args: ["--dry"], note: "帧级判决落台账（默认 --dry，看清单再 --apply）" },
-  { id: "emit-round-report", file: "scripts/qa/emit-round-report.mjs", kind: "gate", write: true, needs: "--with-report", args: [], note: "带溯源终报（面板含本轮所有新门）" },
-  { id: "make-commit-list", file: "scripts/qa/make-commit-list.mjs", kind: "gate", write: false, needs: "--with-report", args: [], note: "显式路径提交清单（帧目录仍 HOLDBACK，交给人点名）" },
+  { id: "land-verdicts-into-ledger", file: "scripts/qa/land-verdicts-into-ledger.mjs", kind: "gate", write: true, args: [], note: "帧级判决落台账：消费者只有 --apply（不传即 DRY，只打将改清单、落盘前自动备份）⇒ 原先的 --dry 没人读，是假接线；收尾里这一步出的就是那份 DRY 清单" },
+  { id: "emit-round-report", file: "scripts/qa/emit-round-report.mjs", kind: "gate", write: true, needs: "--with-report", args: ["--round-dir", "reports/audit/" + ROUND], note: "带溯源终报（面板含本轮所有新门）。必须点名本轮 --round-dir：不传时消费者整套默认值都指 round-6（exec 权威件、报告文件名），本轮终报会被写进上一轮的文件里。台账/ops 仍走它自己的 round-6 默认值，那是它顶部注释里写明的跨轮权威件" },
+  { id: "make-commit-list", file: "scripts/qa/make-commit-list.mjs", kind: "gate", write: true, needs: "--with-report", args: [], note: "显式路径提交清单（帧目录仍 HOLDBACK，交给人点名）。它 L140 无条件 writeFileSync 落 commit-manifest.json ⇒ 标 write:true，要 --allow-write 放行" },
 ];
 /* 手工列一条 exec 索引步骤覆盖不了本轮真实存在的多条执行腿（A-mock / A-real / guest-real / r8 补腿），
    而且现量发现过一个接线洞：这一步原先传 --round，而索引器只认 --results/--corpus ⇒ 一跑到这里就红。
@@ -111,6 +113,31 @@ const STEPS = [
 {
   const missing = STEPS.filter((s) => s.file && !existsSync(join(REPO, s.file)));
   if (missing.length) { console.log("CLOSEOUT_RESULT=FAIL reason=步骤表里这些脚本不存在（写错一个文件名就会静默少跑一步）：" + missing.map((m) => m.id + "→" + m.file).join(", ")); process.exit(2); }
+}
+/* 同一条硬规矩的旗标版：每一步转发的旗标必须在它自己消费者的 argv 解析里真被读取。
+   消费者拿不到的旗标不会报错、只会**静默忽略**，于是那一步"绿着"量的却是它自己的默认目录 ——
+   0f82b4c1（--round 传给只认 --results/--corpus 的索引器）就是这一族，本轮又实测复发三处。
+   抽法故意放宽（把消费者源码里出现过的 --名字 都算它认的），宁可漏杀不可误杀真接线。 */
+{
+  const readFlags = (src) => {
+    const set = new Set();
+    for (const m of src.matchAll(/(?:indexOf|includes|startsWith|endsWith|match|test)\(\s*["'`]--([A-Za-z0-9][A-Za-z0-9-]*)/g)) set.add("--" + m[1]);
+    for (const m of src.matchAll(/\b(?:arg|flag|has|opt|getArg|hasFlag|readFlag)\(\s*["'`]([A-Za-z0-9][A-Za-z0-9-]*)["'`]/g)) set.add("--" + m[1]);
+    for (const m of src.matchAll(/["'`]--([A-Za-z0-9][A-Za-z0-9-]*)["'`]/g)) set.add("--" + m[1]);
+    return set;
+  };
+  const cache = new Map();
+  const unreads = [];
+  for (const s of STEPS) {
+    if (!s.file || !(s.args || []).length) continue;
+    let acc = cache.get(s.file);
+    if (!acc) { acc = readFlags(readFileSync(join(REPO, s.file), "utf8")); cache.set(s.file, acc); }
+    for (const a of s.args.filter((x) => String(x).startsWith("--"))) {
+      if (!acc.has(a)) unreads.push(s.id + " 转发 " + a + "，而 " + s.file + " 根本不读它");
+    }
+  }
+  if (unreads.length) { console.log("CLOSEOUT_RESULT=FAIL reason=旗标消费者不认 ⇒ 会被静默忽略、这一步量的是默认目录：" + unreads.join("；")); process.exit(2); }
+  console.log("CLOSEOUT_FLAGS=OK 每一步转发的旗标都在消费者源码里核过（核了 " + cache.size + " 个消费者）");
 }
 const enabled = STEPS.filter((s) => {
   if (s.id === "queue-tally") return true;

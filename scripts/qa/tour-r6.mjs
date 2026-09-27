@@ -1,11 +1,13 @@
 /**
  * R2 轮截图巡检（单会话、Suite 化）— tmp/tour-R2.mjs（64 页，由 tour-R1.mjs 派生）
- * 基于 tmp/capture-R1.mjs 的已验证机制（automator SDK / 9420 / rebind / blankGuard），
+ * 基于 tmp/capture-R1.mjs 的已验证机制（automator SDK / 实测端口 / rebind / blankGuard），
  * 按 R11 §3 扩展状态覆盖：普通页≥1、滚动页≥3（顶/中/底）、核心页≥6、表单页+2。
  *
  * Suite/Checkpoint：13 个 Suite（每 Suite ≤8 页），段间写 tmp/qa/checkpoints/tour-R1.json。
- * UI Lock：tmp/qa/locks/wechat-automation-<port>.lock（port 由 WS_ENDPOINT 实测解析，见 :66 起 fork 改动 1），
- *   本进程 acquire 起锁 / 心跳 4s 续租 / 每页每段 touchLock，退出经 finally+SIGINT/SIGTERM+exit 钩子
+ * UI Lock：tmp/qa/locks/wechat-automation-<port>.lock（port 由 readIdePort() 解析，见 :66 起 fork 改动 1，
+ *   与连接的 ws://127.0.0.1:<port> 同源同名 ⇒ 不存在"连着 9431 却在续 9420 的锁"），
+ *   本进程 acquire 起锁（起锁前先按 ui-lease.heldLeases 的口径扫全锁目录，别的通道的活租约在 ⇒ 拒起，
+ *   见 fork 改动 3）/ 心跳 4s 续租 / 每页每段 touchLock，退出经 finally+SIGINT/SIGTERM+exit 钩子
  *   release 成 status=released 墓碑（不删文件）——语义照 scripts/qa/r1-exec.cjs:116-157，见 UI Lock 块。
  * 三级重置：用例间 LEVEL 0（回顶/恢复 mock/清输入）；LEVEL 1 = 重进当前页；LEVEL 2 = 整机
  *   恢复（simulator_refresh+reconnect+reLaunch），每 Suite ≤1 次（maxReLaunchPerSuite）。
@@ -47,6 +49,11 @@ import path from 'path';
 import http from 'http';
 import { createHash } from 'crypto';
 import { execFile, exec, execSync, spawn, spawnSync } from 'child_process';
+// 端口的唯一读法（与 ws-channel-up.mjs / r-exec-ws.mjs / shoot-frameplan.mjs 同一个实现）
+import { readIdePort, FALLBACK_PORT } from './ide-port-config.mjs';
+// 租约可见性的唯一读法（scripts/qa/ui-lease.mjs 的 heldLeases：扫整目录看有没有"活租约"）。
+// 只 import 判定函数，本脚本不因此占任何租约。
+import { heldLeases } from './ui-lease.mjs';
 
 // automator SDK 从"跑本脚本的那个 node"的安装目录取：本文件必须用 Node 22 起（PATH 上的 v16 会挂），
 // 于是 process.execPath 的同级 node_modules 就是正确答案，不必再写死 D:\codex-tools\...。
@@ -73,27 +80,23 @@ const CONSOLE_LOG = path.join(AUDIT_DIR, 'console-evidence.log');
 const CKPT_FILE = path.join(PROJECT_PATH, 'tmp', 'qa', 'checkpoints', process.env.TOUR_CKPT_NAME || 'tour-R2.json');
 // 【fork 改动 1｜锁名跟着端口走】原 :66 把锁名写死成 wechat-automation-9420.lock，而 WS_ENDPOINT
 // 可 env 覆盖 ⇒ 连着 9430 却在续一把 9420 的锁，两个驱动各自认为独占同一 UI 会话。
-// v3.2 口径：端口要发现（从 WS_ENDPOINT 解析），锁名 = wechat-automation-<port>.lock；
-// 解析不出来退回 9420，但必打一行 TOUR_PORT=<n> source=env|default，禁止静默。
+// v3.2 口径：端口要发现，锁名 = wechat-automation-<port>.lock；端口拿不到就退回 FALLBACK_PORT，
+// 但必打一行 TOUR_PORT=<n> source=env|config|default，禁止静默。
+// round-7b 的实测教训：本脚本自带一份 `process.env.WS_ENDPOINT || 'ws://127.0.0.1:9420'`，那个 9420
+// 是**字面量**、与 scripts/qa/ide-port.json 无关 ⇒ 队列腿不写 env 时它去连一个没人开的端口
+// （tour-B-real-stage7 就是这么红的）。现在端口只从 readIdePort() 取（env WSX_PORT/WS_ENDPOINT
+// → scripts/qa/ide-port.json → FALLBACK_PORT），与 ws-channel-up.mjs / r-exec-ws.mjs /
+// shoot-frameplan.mjs --ws-taps 同一个实现：架通道的那条腿和巡检这条腿不可能再指向两个端口。
 // TOUR_LOCK_DIR 仅给离线锁探针用（默认仍是 tmp/qa/locks，与真实巡检同路）。
-const WS_ENDPOINT = process.env.WS_ENDPOINT || 'ws://127.0.0.1:9420';
-const WS_ENDPOINT_FROM_ENV = String(process.env.WS_ENDPOINT || '').trim();
 const LOCK_DIR = path.resolve(process.env.TOUR_LOCK_DIR || path.join(PROJECT_PATH, 'tmp', 'qa', 'locks'));
 // 离线锁探针（TOUR_LOCK_PROBE / TOUR_LOCK_SUB）一律用 *-probe.lock，绝不与真实墓碑同名
 const LOCK_PROBE_MODE = process.env.TOUR_LOCK_PROBE === '1' || !!process.env.TOUR_LOCK_SUB;
-function resolveTourPort() {
-  if (WS_ENDPOINT_FROM_ENV) {
-    let p = '';
-    try { p = new URL(WS_ENDPOINT_FROM_ENV).port; } catch (_) { p = ''; }
-    if (!p) { const m = WS_ENDPOINT_FROM_ENV.match(/:(\d{1,5})(?:\D|$)/); if (m) p = m[1]; }
-    const n = Number(p);
-    if (Number.isInteger(n) && n > 0 && n < 65536) return { port: n, source: 'env' };
-  }
-  return { port: 9420, source: 'default' };
-}
-const TOUR_PORT_INFO = resolveTourPort();
+const TOUR_PORT_INFO = readIdePort();
 const TOUR_PORT = TOUR_PORT_INFO.port;
-const TOUR_PORT_SOURCE = TOUR_PORT_INFO.source;
+// readIdePort 把「连配置文件也读不到」记作 fallback；本脚本对这一档的既有词表是 default ⇒ 只改名，不加逻辑
+const TOUR_PORT_SOURCE = TOUR_PORT_INFO.source === 'fallback' ? 'default' : TOUR_PORT_INFO.source;
+// 连接端点与锁名同源（host 一律 127.0.0.1，与 r-exec-ws.mjs:86 同形；env 指定的端口已由 readIdePort 解析进 TOUR_PORT）
+const WS_ENDPOINT = 'ws://127.0.0.1:' + TOUR_PORT;
 const LOCK_RESOURCE = 'wechat-automation-' + TOUR_PORT + (LOCK_PROBE_MODE ? '-probe' : '');
 const LOCK_FILE = path.join(LOCK_DIR, LOCK_RESOURCE + '.lock');
 console.log('TOUR_PORT=' + TOUR_PORT + ' source=' + TOUR_PORT_SOURCE); // 禁止静默：真实巡检/自检查/探针三条路径都会打
@@ -725,7 +728,32 @@ function writeLock(patch) {
 function pidAlive(pid) {
   try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; }
 }
+/* 【fork 改动 3｜跨通道互斥】锁名跟着端口走之后，只剩一个方向的门是开的：
+   按端口命名的老工具（r-exec.cjs / poll-reshoot）与 ui-lease 的 CLI 档工具（r-exec-cli /
+   shoot-frameplan / open-project-window 写的 wechat-automation-cli.lock）**都**会扫全目录看见我的锁，
+   但我原来只看自己那一个文件（LOCK_FILE）⇒ 另一个驱动正占着 UI 时，我照样 acquire 成功，
+   两边各自认为独占同一会话——正是 §58 的形状（一次并发把 214 行测量打成 58+41 行作废）。
+   现在补齐另一个方向：起锁前用同一个判据（ui-lease.heldLeases，"活租约"口径与排队器等 UI 空闲同一条）
+   扫一遍锁目录，凡资源名不是本进程这把（LOCK_RESOURCE，含 -probe 后缀）的活租约 ⇒ 拒绝起锁。
+   按资源名排除而不是按"探针模式"排除：锁探针摆的"别人的锁"用的就是同一个 resource（tour-r6.mjs 的
+   runLockProbe 三处 writeProbeLock 都写 resource: LOCK_RESOURCE），那些用例交给 acquireLock
+   原有的"同文件 owner/pid/存活"分支去判，本道门不改变它们的结论。 */
+function foreignLiveLease() {
+  let hs = [];
+  try { hs = heldLeases({ dir: LOCK_DIR }); } catch (e) {
+    console.log('[lock] 扫锁目录失败（' + e.message + '）⇒ 按"可能有人在用"处理，拒绝起锁');
+    return { file: '(扫描失败)', owner: '?', pid: 0, resource: '?', leaseUntil: '?' };
+  }
+  const foreign = hs.filter((h) => h.resource !== LOCK_RESOURCE);
+  return foreign.length ? foreign[0] : null;
+}
 function acquireLock() {
+  const busy = foreignLiveLease();
+  if (busy) {
+    console.error('[lock] BUS by 别的驱动：' + JSON.stringify(busy)
+      + '（本进程要占的是 ' + LOCK_RESOURCE + '；两条通道驱动同一个模拟器，后到的那个不报错、只换页）');
+    return false;
+  }
   const l = readLock();
   const t = Date.now();
   if (l && l.status === 'LEASED' && l.leaseUntil && new Date(l.leaseUntil).getTime() + 30000 > t) {
@@ -782,11 +810,22 @@ function touchLock() {
   } catch (e) { log('[lock] touch 失败: ' + e.message); }
 }
 
-function netstat9420() {
+/* 连接数体检：跟着**实测端口**走。原样写死 ':9420' 时，一旦 readIdePort 给出的是别的端口，
+   这两次取样就恒为 0 行 —— 那不是"没泄漏"，那是没量到。
+   匹配口径也一并收紧：`line.includes(':' + port)` 会把 94201/94200 这类"同前缀的别的端口"
+   一起算进来（量到的是别人的连接），且会把 UDP 行、协议列外的行都算上。现在按列取端口号整值比对，
+   两个方向都看：服务端行（本地列=:port）与我们自己当客户端的行（对端列=:port）。 */
+function netstatTourPort() {
+  const portStr = String(TOUR_PORT);
+  const portOf = (addr) => { const m = /:(\d+)$/.exec(addr || ''); return m ? m[1] : ''; };
   return new Promise((resolve) => {
     exec('netstat -ano', { timeout: 15000 }, (err, stdout) => {
       if (err) return resolve([]);
-      const rows = String(stdout).split('\n').filter((l) => l.includes(':9420')).map((l) => l.trim().replace(/\s+/g, ' '));
+      const rows = String(stdout).split('\n').map((l) => l.trim().replace(/\s+/g, ' ')).filter((l) => {
+        const f = l.split(' ');
+        if (f.length < 4 || !/^TCP/i.test(f[0])) return false;
+        return portOf(f[1]) === portStr || portOf(f[2]) === portStr;
+      });
       resolve(rows);
     });
   });
@@ -1523,13 +1562,14 @@ function precheckReshootPlan() {
   if (unmatch.length) { console.log('TOUR_RESULT=FAIL reason=' + unmatch.length + ' 条计划路由本 tour 无法满足，先补 PAGES 或改清单（现在退出还没占租约，不浪费会话）'); process.exit(1); }
 }
 /* 端口可达预检（同样在 acquireLock 之前）。
-   resolveTourPort() 在 env 缺省时退回 9420，并且刻意打一行 TOUR_PORT=… source=default——
-   "大声"不等于"拦住"。本仓自动化端口实测一天内 9430→9431 漂移，而**不带 env 的随手一跑**
-   就会去连 9420（那儿只剩一把历史墓碑锁）：本会话 20:29 已因一次无 env 的 `node tour-r6.mjs`
-   覆写过 9420 墓碑（台账 :1773 与 §58 记录），端口这条腿必须自己站得住。
-   注：§55 手册的 T5/T6 命令是带 WS_ENDPOINT 的（我一度记成没带，已纠正）——
-   这个预检防的是手册之外的手跑，不是手册本身。
-   规则：**没人在 env 里明确指定端口时，退路必须自己证明端口活着**；
+   TOUR_PORT 现在只从 readIdePort() 来（env WSX_PORT/WS_ENDPOINT → scripts/qa/ide-port.json →
+   FALLBACK_PORT），并且刻意打一行 TOUR_PORT=<n> source=env|config|default——"大声"不等于"拦住"。
+   本仓自动化端口实测一天内 9430→9431 漂移，round-7b 的 tour-B-real-stage7 又实测了另一种失效：
+   配置文件说 9420、监听表上只有 9430（那一档的 WS 通道根本没人架起来），拿 9420 去 connect
+   只会交出一屏 "check if target project window is opened with automation enabled"。
+   再早一次（台账 :1773 与 §58）是无 env 的手跑连着 9420 覆写了那把历史墓碑——端口这条腿必须自己站得住。
+   规则（与 ide-port.json 的"值必须被监听表复核后才算数"同一条）：
+   **端口不是操作者在 env 里明确指定的，就必须自己证明端口活着**；config/default 来源量不到 ⇒ 拒绝，
    env 明确指定的端口即使探测不到也放行（探测失败不该盖过操作者的显式意图）。 */
 function listeningPorts() {
   return new Promise((resolve) => {
@@ -1537,9 +1577,18 @@ function listeningPorts() {
       if (err) return resolve(null);
       const set = new Set();
       for (const line of String(stdout).split('\n')) {
-        if (!/LISTENING/i.test(line)) continue;
-        const m = line.match(/(\d{1,3}(?:\.\d{1,3}){3}|\[[0-9a-f:]+\]|):(\d{1,5})\s/i);
-        if (m) set.add(Number(m[2]));
+        /* 状态字随语言环境变（中文 Windows 未必打 "LISTENING"，ide-service-port.mjs:41-42 就是为此
+           刻意不按状态字匹配）。上一版只认 /LISTENING/i：一旦状态词本地化，这里返回的是**空集合**
+           而不是 null ⇒ "端口没在听"被当成量出来的事实，config 来源直接判红，一条 3 小时的腿在
+           预检上撞死。现在两条判据任一成立即算监听：①状态字认得；②没有对端（对端列以 :0 结尾，
+           这就是监听行的定义，与语言无关）。仍然只看本地地址列的端口整值，ESTABLISHED 行不算。 */
+        const f = line.trim().split(/\s+/);
+        if (f.length < 5 || !/^TCP/i.test(f[0])) continue;
+        const m = /:(\d{1,5})$/.exec(f[1] || '');
+        if (!m) continue;
+        const stateOk = /LISTENING|监听|侦听/i.test(f[3] || '');
+        const noPeer = /:0$/.test(f[2] || '');
+        if (stateOk || noPeer) set.add(Number(m[1]));
       }
       resolve(set);
     });
@@ -1549,16 +1598,28 @@ async function precheckPortReachable() {
   const ports = await listeningPorts();
   const near = ports ? [...ports].filter((p) => p >= 9400 && p <= 9500).sort((a, b) => a - b) : [];
   if (ports && ports.has(TOUR_PORT)) {
-    console.log('[port 预检] ' + TOUR_PORT + ' 在听（94xx 在听集合=' + JSON.stringify(near) + '）');
+    console.log('[port 预检] ' + TOUR_PORT + ' 在听 source=' + TOUR_PORT_SOURCE + '（94xx 在听集合=' + JSON.stringify(near) + '）');
+    /* 监听表只能证明"那个端口上有人 TCP 监听"，不能证明那是 automator 的 WS —— 实测把
+       WS_ENDPOINT 指到 3306（MySQL）也会通过这条判据（本轮 AUDIT.md 的 D2 量测）。
+       env 是操作者的显式意图 ⇒ 不拦，但"量的到底是什么"必须写在同一行附近。 */
+    if (TOUR_PORT_SOURCE === 'env' && !(TOUR_PORT >= 9400 && TOUR_PORT <= 9500)) {
+      console.log('[port 预检] 提醒：env 指定的 ' + TOUR_PORT + ' 不在 94xx 自动化段内 ⇒ "在听"只说明有人占着这个端口，'
+        + '不说明它是 automator 的 WS（HTTP 桥 / MySQL 之类的服务都会通过这条判据而 connect 必挂）。'
+        + '端口漂移请改 scripts/qa/ide-port.json 这个唯一来源，不是在这里指一个别的端口。');
+    }
     return;
   }
   const seen = ports ? '94xx 在听=' + JSON.stringify(near) : 'netstat 不可用';
   if (TOUR_PORT_SOURCE === 'env') {
-    console.log('[port 预检] 警告：WS_ENDPOINT 指定的 ' + TOUR_PORT + ' 探测不在听，但这是显式意图，放行继续由 connect 自己报错。' + seen);
+    console.log('[port 预检] 警告：env 指定的 ' + TOUR_PORT + ' 探测不在听，但这是显式意图，放行继续由 connect 自己报错。' + seen);
     return;
   }
-  console.log('TOUR_RESULT=FAIL reason=端口 ' + TOUR_PORT + ' 来自 default 退路而非 env，且探测未在听（' + seen
-    + '）——多半是命令少了 WS_ENDPOINT=ws://127.0.0.1:<实测端口>。现在退出还没占租约。');
+  /* config / default 来源都不是操作者的显式意图 ⇒ 没当场验到在听就不许连（ide-port.json 的口径：
+     "本文件的值必须被监听表复核后才算数"）。红话要说清下一步载体，不能只说"少了 env"。 */
+  console.log('TOUR_RESULT=FAIL reason=端口 ' + TOUR_PORT + ' 由 ' + TOUR_PORT_SOURCE
+    + '（env WSX_PORT/WS_ENDPOINT → scripts/qa/ide-port.json → 回落）给出，且探测未在听（' + seen
+    + '）——automator 的 WS 通道没架起来：先跑 node scripts/qa/ws-channel-up.mjs --project <本轮产物目录>，'
+    + '端口若已漂移就更新 scripts/qa/ide-port.json（或这一腿显式带 WS_ENDPOINT=ws://127.0.0.1:<实测端口>）。现在退出还没占租约。');
   process.exit(1);
 }
 async function main() {
@@ -1674,7 +1735,7 @@ async function runTour() {
       const ckKey = ident + ':' + suite.id;
       const suiteStart = { relaunchUsed: 0, shots: 0 };
       log('[suite] ==== ' + ident + ' ' + suite.id + ' ' + suite.name + ' (' + suitePages.length + ' 页) ====');
-      const nsBefore = await netstat9420();
+      const nsBefore = await netstatTourPort();
 
       for (const pageDef of suitePages) {
         sceneCount += 1;
@@ -1731,7 +1792,7 @@ async function runTour() {
         await sleep(400);
       }
 
-      const nsAfter = await netstat9420();
+      const nsAfter = await netstatTourPort();
       markSuite(checkpoint, ident, suite.id, {
         status: 'done', name: suite.name, pages: suitePages.map((p) => p.route),
         shots: suiteStart.shots, level2Used: suiteStart.relaunchUsed,
@@ -1880,7 +1941,8 @@ function runSelfCheck() {
     + ' ws=' + WS_ENDPOINT + ' port=' + TOUR_PORT);
   console.log('TOUR_PAGES=' + totalPages + ' TOUR_STATES=' + totalStates + ' PARAM_MAP_ENTRIES=' + paramEntries);
   console.log('SELFCHECK_NOTE port_source=' + TOUR_PORT_SOURCE
-    + '（env WS_ENDPOINT 解析 / 退回默认 9420）；state_rule=默认 + core(交互后/弹层态) + FORM_PAGES(校验错误/键盘弹起-输入后)，'
+    + '（readIdePort：env WSX_PORT/WS_ENDPOINT → scripts/qa/ide-port.json → 回落 ' + FALLBACK_PORT
+    + '；本轮实际取值 ' + TOUR_PORT + '）；state_rule=默认 + core(交互后/弹层态) + FORM_PAGES(校验错误/键盘弹起-输入后)，'
     + '滚动与数据态/空态需运行时探测故离线不计数');
   console.log('SELFCHECK_NOTE 本模式未调用 automator.connect、未截图、未写 reports/ 与 tmp/qa/locks；'
     + '可用 netstat 复核 ' + TOUR_PORT + ' 端口连接数无新增');

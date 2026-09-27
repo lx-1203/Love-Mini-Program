@@ -1,0 +1,206 @@
+{
+ "$schema": "run-ui-queue.mjs --legs <本文件> --out reports/audit/round-7/ui-queue-stage8tail；由 .zcode/tmp/emit-stage8tail.mjs 从 ui-queue.round8-stage8.json 机械切片生成，勿手改",
+ "$why": "stage-8 腿 1-9 已 OK（语料身份收窄 + 重戳 + 三档重建，账本在 ui-queue-stage8/queue-state.json），腿 10 gate-band-freshness-r8 因门禁自身 TypeError 崩掉并把腿 11-23 全拖成 NOT_RUN。修完崩点从腿 10 续跑，不重跑重建腿。",
+ "$hold": "开跑前必须确认 ui-queue-stage8 那条队列已退出且 heldLeases() 为空；本文件是 ui-queue.round8-stage8.json 的第 10 条起切片，名字与参数与原件逐字相同。",
+ "$source": "scripts/qa/ui-queue.round8-stage8.json",
+ "$fromLeg": "gate-band-freshness-r8",
+ "legs": [
+  {
+   "name": "gate-band-freshness-r8",
+   "file": "scripts/qa/verify-band-freshness.mjs",
+   "args": [
+    "--out",
+    "reports/audit/round-7/band-freshness-r8"
+   ],
+   "timeoutMin": 8,
+   "why": "重建后必须复量新鲜度并把徽标符号的可搜性用进判定：这条红就停，后面所有设备腿量的才是改后产物（本轮两条判点就是靠它兜底的）。"
+  },
+  {
+   "name": "gate-selectors-exist-mock-r8",
+   "file": "scripts/qa/verify-case-selectors-exist.mjs",
+   "args": [],
+   "timeoutMin": 6,
+   "why": "静态门、不占设备：收窄之后仍要在两档产物里核点名物件存不存在。",
+   "advisory": true
+  },
+  {
+   "name": "gate-selectors-exist-real-r8",
+   "file": "scripts/qa/verify-case-selectors-exist.mjs",
+   "args": [
+    "--band",
+    "apps/client/dist/build/mp-weixin-real"
+   ],
+   "timeoutMin": 6,
+   "why": "同上，real 档（同一批名字在两档里不一定同名）。",
+   "advisory": true
+  },
+  {
+   "name": "open-window-mock-r8",
+   "file": "scripts/qa/open-project-window.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin",
+    "--settle",
+    "24"
+   ],
+   "timeoutMin": 14,
+   "why": "换档必须先重新开窗接回设备：窗口停在 real 档时 mock 腿的第一次调用就会 transport 超时，看起来像'通道坏了'。"
+  },
+  {
+   "name": "exec-A-login-r8",
+   "file": "scripts/qa/r-exec-cli.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin",
+    "--out",
+    "reports/audit/round-7/exec-A-login-r8",
+    "--tap",
+    "--identity",
+    "A",
+    "--label",
+    "round-7-r8-A-login",
+    "--manifests",
+    "PAGES-LOGIN-INDEX"
+   ],
+   "timeoutMin": 25,
+   "why": "只补受影响的那一刀：A 腿在这一页应得到 36 条 identity-scope 的 SKIPPED（摘掉的是认领，不是判据）+ LG02/LG03 继续真跑。读数必须是'跳过有原因、留下有结果'，不许两边都零。"
+  },
+  {
+   "name": "exec-guest-login-r8",
+   "file": "scripts/qa/r-exec-cli.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin",
+    "--out",
+    "reports/audit/round-7/exec-guest-login-r8",
+    "--tap",
+    "--identity",
+    "guest",
+    "--label",
+    "round-7-r8-guest-login",
+    "--manifests",
+    "PAGES-LOGIN-INDEX"
+   ],
+   "timeoutMin": 25,
+   "why": "收窄的另一半要有人真量：36 条改由游客腿认领 ⇒ 这一腿必须产出这 36 条的结果。只有 A 腿的 SKIPPED 而没有游客腿的 EXECUTED，就是把噪声搬走而没把判据补上。"
+  },
+  {
+   "name": "verify-logged-in-landing-r8",
+   "file": "scripts/qa/verify-logged-in-landing.mjs",
+   "args": [
+    "--exec",
+    "reports/audit/round-7/exec-A-login-r8",
+    "--exec",
+    "reports/audit/round-7/exec-A-mock-stage7"
+   ],
+   "timeoutMin": 4,
+   "why": "④ 第 1 项裁定的落点半在收窄之后再判一次（点名载体行没在场就红）。导航计数半本载具不判，输出里明说。"
+  },
+  {
+   "name": "triage-exec-r8",
+   "file": "scripts/qa/triage-exec-failures.mjs",
+   "args": [
+    "--results",
+    "reports/audit/round-7/exec-A-login-r8/exec-results.json",
+    "--dist",
+    "apps/client/dist/build/mp-weixin"
+   ],
+   "timeoutMin": 8,
+   "why": "词表守恒：SKIPPED-identity-scope 这一族要有桶、要有去向；出现没登记的失败口径就红（不许把新口径读成'还没裁定'）。"
+  },
+  {
+   "name": "triage-guest-login-r8",
+   "file": "scripts/qa/triage-exec-failures.mjs",
+   "args": [
+    "--results",
+    "reports/audit/round-7/exec-guest-login-r8/exec-results.json",
+    "--dist",
+    "apps/client/dist/build/mp-weixin"
+   ],
+   "timeoutMin": 8,
+   "why": "游客腿那 36 条的分诊：它们现在只有 A 腿的'不认领'，必须在这条腿上给出真结果或真原因，否则就是把噪声搬走而不是把判据补上。"
+  },
+  {
+   "name": "open-window-real-r8",
+   "file": "scripts/qa/open-project-window.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin-real",
+    "--settle",
+    "24"
+   ],
+   "timeoutMin": 14,
+   "why": "WS 腿与真实档腿都要接回设备，且窗口停在 mock 档量不了 real 档。"
+  },
+  {
+   "name": "exec-guest-real-login-r8",
+   "file": "scripts/qa/r-exec-cli.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin-real",
+    "--out",
+    "reports/audit/round-7/exec-guest-real-login-r8",
+    "--tap",
+    "--real-cases-only",
+    "--identity",
+    "guest",
+    "--label",
+    "round-7-r8-guest-real-login",
+    "--manifests",
+    "PAGES-LOGIN-INDEX"
+   ],
+   "timeoutMin": 25,
+   "why": "真实档的游客登录行（requiresReal 子集）是④裁定的另一半证据：mock 档过了不代表真实档过了。"
+  },
+  {
+   "name": "ws-channel-up-r8",
+   "file": "scripts/qa/ws-channel-up.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin"
+   ],
+   "timeoutMin": 12,
+   "why": "WS 腿的前置：r-exec-ws 自己的失败口径就写着「WS 通道连不上 ⇒ 先跑 ws-channel-up.mjs，且绝不 close()（close 会把 IDE 的 9420 子进程整个带走）」。不先把通道架起来，145 条那一腿只会交出一屏 transport 超时——上一轮就是这么折掉一次队列启动的。"
+  },
+  {
+   "name": "ws-component-scoped-r8",
+   "file": "scripts/qa/r-exec-ws.mjs",
+   "args": [
+    "--ids-file",
+    "reports/audit/round-7/ids-component-scoped.json",
+    "--project",
+    "apps/client/dist/build/mp-weixin",
+    "--out",
+    "reports/audit/round-7/ws-component-scoped-r8",
+    "--identity",
+    "A",
+    "--round",
+    "round-7"
+   ],
+   "timeoutMin": 120,
+   "why": "第二把刀：145 条判据的元素只在组件自己的 wxml 里，CLI 腿实测 90.6% 点不动 ⇒ 只有 WS 腿能点。名单守恒由这一腿自断言（名单=遇上=盘上有行），被截停会另打 WSX_IDS_PARTIAL 而不是假装跑完。开跑前用 --help/读码确认是否有 --tap 口径，不猜旗标。"
+  },
+  {
+   "name": "queue-homogeneity-r8",
+   "file": "scripts/qa/verify-ops-corpus-stamp.mjs",
+   "args": [
+    "--queue",
+    "scripts/qa/ui-queue.round8-stage8.json"
+   ],
+   "timeoutMin": 3,
+   "advisory": true,
+   "why": "本队列自己的执行腿必须读同一版语料（同轮不同判据=结论不可拼）。文件与旗标是照抄 stage-7 腿 16 的真实调用，不是新发明的名字。"
+  },
+  {
+   "name": "queue-homogeneity-r8tail",
+   "file": "scripts/qa/verify-ops-corpus-stamp.mjs",
+   "args": [
+    "--queue",
+    "scripts/qa/ui-queue.round8-stage8tail.json"
+   ],
+   "advisory": true,
+   "timeoutMin": 3,
+   "why": "尾巴这份计划自己的戳同构检查：腿 1-9 在上一份计划里，腿 10+ 在这份里，只查原计划就等于没查过这一程。"
+  }
+ ]
+}

@@ -32,7 +32,11 @@ const IDE_DIR = opt('ide', process.env.WECHATIDE_DIR || "D:/微信开发者/微�
    仍可用 --port 手工覆盖（做对照实验用），或 WSX_PORT 环境变量临时指端口。 */
 const PORT = Number(opt('port', String(readIdePort().port)));
 const WAIT = Number(opt('wait', '90'));
-const PROJECT = opt('project', join(REPO, "apps/client/dist/build/mp-weixin"));
+/* --project 一定要按仓库根解析：下面 spawn 的 cwd 是 IDE_DIR，传相对路径（腿清单里就是这么写的）
+   会让 IDE 收到一个它脚下不存在的项目路径，端口永远起不来。缺省值本来就是绝对的，
+   所以这个洞只在"显式传相对路径"时暴露。 */
+const PROJECT_ARG = opt('project', join(REPO, "apps/client/dist/build/mp-weixin"));
+const PROJECT = PROJECT_ARG.startsWith("/") || /^[A-Za-z]:[\\/]/.test(PROJECT_ARG) ? PROJECT_ARG : join(REPO, PROJECT_ARG);
 
 function listeningPorts() {
   let out = "";

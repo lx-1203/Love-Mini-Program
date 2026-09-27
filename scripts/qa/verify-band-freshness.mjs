@@ -311,7 +311,12 @@ for (const r of rows) {
 }
 for (const s of stale) problems.push(`档位 ${s.band} 的产物里找不到 ${s.rel} 新增内容里的 ${s.missing}/${s.needles} 个${s.viaExports ? "导出符号" : "字面量"} ⇒ 真过期，这一档上的判决作废（首个缺失：${JSON.stringify(s.sample[0])}）`);
 for (const mk of markers) {
-  if (!mk.symbol || !/^[A-Za-z_$][\w$]*$/.test(mk.symbol)) { problems.push(`标记符号不成形，拒绝当作已检：${JSON.stringify(mk.symbol)}`); continue; }
+  /* 符号形态两类都收：JS 标识符，或 CSS 自定义属性（`--x-y` 这种带连字符的名字不是标识符，
+     但它正是纯样式改动在产物里唯一留下的可搜串 —— 判点不许因为形态而被丢成"无法定罪也无法洗清"）。
+     拒绝一种形态时也必须把 hits 记账成"未检"：下一段打印要读它，读到 undefined 会让整门 TypeError 崩掉，
+     把"这条标记写坏了"报成"这门跑不了"（stage-8 腿 10 实测就是这样带走后面 13 条腿的）。 */
+  const isCssVar = /^--[A-Za-z_$][\w$-]*$/.test(String(mk.symbol || ""));
+  if (!mk.symbol || (!/^[A-Za-z_$][\w$]*$/.test(mk.symbol) && !isCssVar)) { problems.push(`标记符号不成形，拒绝当作已检：${JSON.stringify(mk.symbol)}`); mk.hits = {}; continue; }
   const want = mk.bands || Object.keys(byName);
   const per = {};
   for (const bn of want) {
@@ -320,7 +325,8 @@ for (const mk of markers) {
     let hit = 0;
     try {
       // 只 grep 该档产物，且用一个固定串（不是正则）以免符号里的 $ 被解释
-      const out = execFileSync("grep", ["-rl", "--include=*.js", "--include=*.wxml", "-e", mk.symbol, dir],
+      // .wxss 必须在搜的集合里：样式改动的落点就是它，只搜 js/wxml 会得到一个永远缺失的假红
+      const out = execFileSync("grep", ["-rl", "--include=*.js", "--include=*.wxml", "--include=*.wxss", "-e", mk.symbol, dir],
         { encoding: "utf8", maxBuffer: 1 << 24 }).trim();
       hit = out ? out.split(/\r?\n/).length : 0;
     } catch { hit = 0; }

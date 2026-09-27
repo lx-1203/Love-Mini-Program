@@ -9,11 +9,18 @@
  *   · selector 型断言：机器判 present(N)/absent，探测失败就是"没测到"，不记成 absent；
  *   · text/观感型断言：机器读不到渲染文本，帧就是它的载体 ⇒ 记 FRAME_ONLY，交人读帧；
  *   · 一条 SHOOT 项没有产出可用帧 ⇒ 记 EVIDENCE_HOLE 并 exit 非 0，绝不写"已完成"。
+ *   · 帧内容守恒（本次补的）：每张过地板的帧立刻算 contentHash（sha256(字节) 前 16 位，与
+ *     scripts/qa/verify-evidence-corpus.mjs:28 逐字同源），再与同 (身份,页) 组内已入账的帧比内容；
+ *     "在早先状态上多做了几步、像素却逐字节相同"的帧判 UNCHANGED_AFTER_INTERACTION ——
+ *     帧照写、账照记（不销毁证据），但摘掉 stateFrame/countsTowardStateQuota，并让整轮 exit=3。
+ *     确属"这个状态本来就不改画面"的（开关拨回原值这类），要 --allow-unchanged-state 逐条 id 点名，
+ *     判决仍在账上只多一个 stateGateWaived 标记；没有整轮关闭开关。
  *
  * 用法：PATH=<node22> node scripts/qa/shoot-frameplan.mjs \
  *   --plan reports/audit/round-7/frameplan-merged.json \
  *   --project apps/client/dist/build/mp-weixin --label round-7-uidebt [--limit N]
- * 干跑（只打印计划不出帧不写盘）：--dry */
+ * 干跑（只打印计划不出帧不写盘）：--dry
+ * 退出码：0=全过；2=有 SHOOT 项没拿到可用帧；3=帧都拿到了但有帧证明不了自己挂的那个状态。 */
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync, rmSync, readdirSync } from "node:fs";
 import { acquireUi, releaseUi, renewUi } from "./ui-lease.mjs";
 import { readIdePort, portIsListening, FALLBACK_PORT } from "./ide-port-config.mjs";
@@ -56,8 +63,127 @@ const OUT = resolve(REPO, arg("out", "reports/audit/round-7/uidebt-shoot"));
 const SETTLE = Number(arg("settle", "2400"));
 const LIMIT = Number(arg("limit", "0"));
 const DRY = flag("dry");
+/* 状态守恒豁免：只有"这个状态本来就不该改变画面"（开关拨回原值、点了个只改内部数据的按钮）
+   才该用，而且必须逐条 id 点名 —— 故意不给 --no-state-gate 这种整轮开关：一旦能一键关，
+   那 899 个冗余状态标签就又安静过账了，判据就退化成本轮一直在骂的那种"没人看的告警"。
+   豁免不删判决：帧上仍写 stateChange=UNCHANGED_AFTER_INTERACTION，只多一个 stateGateWaived 标记。 */
+const WAIVED_RAW = arg("allow-unchanged-state", "");
+const WAIVED_IDS = new Set(WAIVED_RAW.split(/[,\s]+/).filter(Boolean));
+const WAIVE_REASON = arg("allow-unchanged-reason", "调用方声明该状态视觉上不变（逐条 id 点名才生效）");
 const sleep = (ms) => { const t = Date.now() + ms; while (Date.now() < t) {} };
 const relOf = (p) => p.split("\\").join("/").replace(REPO.split("\\").join("/") + "/", "");
+
+/* ========================= 帧内容守恒（内容 hash + 状态变化判决）=========================
+ * 为什么必须在这里加：出帧到今天只有一张地板 —— 字节 > 3000（本文件 :515/:524/:527），
+ * 而 doWsStep 的 {ok:true} 只代表"派发成功"（:309 `if (act === "tap") { await el.tap(); return { ok: true }; }`），
+ * stateApplied 也只是"这一步没被记成 unmet"（:502）。三件事没有一件能证明画面真的变了。
+ * 全语料实测（.zcode/tmp/gap-shooter/census-all.mjs，只读盘不碰设备）：
+ *   DUP_GROUPS=280 FRAMES_IN_DUPS=1179 REDUNDANT_STATE_LABELS=899，40% 的 (identity|page) 对中招；
+ *   「交互后」帧与同页「默认」基线逐字节全等的组 20 组，其中就有 pages/register/index 的 A、B 两份
+ *   （reports/screenshots/round-1/A/PAGES_REGISTER_INDEX-{默认,交互后}.png，sha256:d7248197ae452770）。
+ *   成因能在源码里指出：register 页那个"点击目标" .card 是
+ *   apps/client/src/pages/register/index.vue:508 的裸 <view class="card">，整页 @tap 只挂在
+ *   :494/:538/:615/:668/:760/:770/:791 上，卡片本身没有处理器 ⇒ 点它必然是空动作，
+ *   而空动作照样被 :309 记成 ok:true、被 3000B 地板放行。
+ * 判据不许另造一套：语料门禁 scripts/qa/verify-evidence-corpus.mjs:28 与追溯改判
+ * scripts/qa/rebuild-frozen-manifest.mjs:37 用的都是
+ *   createHash("sha256").update(readFileSync(文件)).digest("hex").slice(0, 16)
+ * 字段名沿用既有 shot 记录里的 contentHash / stateFrame / countsTowardStateQuota / dupOf / identity / page，
+ * 组键沿用 rebuild-frozen-manifest.mjs:89 的 `${identity}::${page}` 写法。
+ * 与 rebuild-frozen-manifest.mjs:156 的差别是这件事的关键：那边把同字节帧**改判**进
+ * stateNotApplied[]（换个载体继续过账，DUP_STATE_GROUPS 于是"归零"），这边在采集当场
+ * 打判决并计数（UNCHANGED_AFTER_INTERACTION=n，可判红）。追溯改判只能事后清账，
+ * 当场不记 hash 就永远没人知道那两张帧是同一张图。
+ * 本区不读任何模块级状态（自带两个 import），所以除了 --dry（它连帧都不拍）之外，
+ * .zcode/tmp/gap-shooter/ 的离线夹具能把这段字节原样 import 起来跑正反对照。
+ */
+/* GATE-BEGIN */
+import { createHash } from "node:crypto";
+import { readFileSync as gateReadFileSync } from "node:fs";
+
+export const GATE_HASH_ALGO = "sha256(文件字节)→hex 前 16 位（同源 verify-evidence-corpus.mjs:28 / rebuild-frozen-manifest.mjs:37）";
+export const BASELINE_SIG = "基线";
+/* 签名里 token 的分隔符用 U+241F（␟）而不是 "+"：CSS 选择器里 "+"（相邻兄弟）、"|"（属性选择器）、
+   ","（并列）都是合法字符，拿它们当分隔符会把一个 token 劈成两个，两个不同状态就可能被拼成同一个签名。 */
+export const SIG_SEP = "␟";
+/* 帧落盘后唯一有效的身份证：内容 hash。算不出就等于这张帧没进守恒账。 */
+export const hash16 = (absPath) => createHash("sha256").update(gateReadFileSync(absPath)).digest("hex").slice(0, 16);
+export const frameGroupKey = (identity, page) => `${identity || "?"}::${page || "?"}`;
+export const sigTokensOf = (sig) => (!sig || sig === BASELINE_SIG ? [] : String(sig).split(SIG_SEP).filter(Boolean));
+/* 状态签名 = 采集这一帧之前**真的做出来**的改状态步骤（open-page/wait/capture/measure 不算，它们不改变状态；
+   被记成 unmet 的步骤也不算——"我没做"不能伪装成"做了一个不变的状态"）。 */
+export function sigOf(tokens) {
+  const t = (tokens || []).map((x) => String(x).trim()).filter(Boolean);
+  return t.length ? t.slice().sort().join(SIG_SEP) : BASELINE_SIG;
+}
+function multiset(tokens) { const m = new Map(); for (const t of tokens) m.set(t, (m.get(t) || 0) + 1); return m; }
+function msContains(a, b) { return [...b.entries()].every(([k, n]) => (a.get(k) || 0) >= n); }
+/* 两帧状态之间只有四种关系：同一状态 / 本帧是那一帧再往前多走几步 / 本帧是那一帧的上游 / 无从比较。
+   只有"多走几步"和"同一状态"这两种关系能问"那画面到底变没变"。 */
+export function sigRelation(curSig, prevSig) {
+  const a = sigTokensOf(curSig), b = sigTokensOf(prevSig);
+  if (a.length === b.length && sigOf(a) === sigOf(b)) return "equal";
+  const ca = multiset(a), cb = multiset(b);
+  if (a.length > b.length && msContains(ca, cb)) return "curSuperset";
+  if (b.length > a.length && msContains(cb, ca)) return "curSubset";
+  return "distinct";
+}
+/* 判决表（越靠前越优先；只有 UNCHANGED_AFTER_INTERACTION 能判红）：
+ *   NO_COMPARATOR                  组内还没有可比的帧 ⇒ 不奖不罚
+ *   UNCHANGED_AFTER_INTERACTION    本帧在组内某帧的状态上多做了几步，像素却逐字节相同
+ *                                  ⇒ 多做的步骤没被证明发生过；这张帧不能当那个状态的证据（可判红）
+ *   BASELINE_MATCHES_RICHER_PRIOR  本帧是上游/基线状态，却与组内"更晚状态"的帧全等
+ *                                  ⇒ 说谎的是那一帧，调用方按 richerPriorsSameBytes 当场追溯摘它的资格
+ *   SAME_STATE_SAME_BYTES          同一状态重拍、像素相同 ⇒ 诚实，只是没有新增证据，不判红
+ *   DISTINCT_STATE_SAME_BYTES      两个互不含糊不同的声明状态像素全等 ⇒ 状态标签冗余（就是语料那 899 个
+ *                                  的形状），让它在账上可见，但不判红：两个不同状态本来就可能长得一样
+ *   CHANGED_AFTER_INTERACTION      多做了几步且像素确实不同 ⇒ 这才是"交互后"该有的样子
+ *   SAME_STATE_DIFF_BYTES          同一状态重拍、像素不同 ⇒ 采集不稳定（动画/toast/倒计时），只记录不判红
+ *   UNRELATED_STATE                与组内早先帧没有可比关系 ⇒ 不奖不罚 */
+export function judgeFrame({ stateSig, contentHash, priors }) {
+  const list = (priors || []).filter((p) => p && p.contentHash);
+  if (!contentHash) return { verdict: "NO_HASH", dupOf: "", against: "", richerPriorsSameBytes: [], stateFrame: false, countsTowardStateQuota: false, note: "没算出 contentHash ⇒ 这张帧不进守恒账" };
+  if (!list.length) return { verdict: "NO_COMPARATOR", dupOf: "", against: "", richerPriorsSameBytes: [], stateFrame: true, countsTowardStateQuota: true, note: "组内第一帧，还没有可比对象" };
+  let unchanged = null, changed = null, same = null, unstable = null, distinctSame = null;
+  const richerSame = [];
+  for (const p of list) {
+    const rel = sigRelation(stateSig, p.stateSig);
+    const sameBytes = p.contentHash === contentHash;
+    if (rel === "curSuperset" && sameBytes) unchanged = unchanged || p;
+    else if (rel === "curSubset" && sameBytes) richerSame.push(p);
+    else if (rel === "equal" && sameBytes) same = same || p;
+    else if (rel === "distinct" && sameBytes) distinctSame = distinctSame || p;
+    else if (rel === "equal") unstable = unstable || p;
+    else if (rel === "curSuperset") changed = changed || p;
+  }
+  if (unchanged) return { verdict: "UNCHANGED_AFTER_INTERACTION", dupOf: unchanged.id, against: unchanged.stateSig, richerPriorsSameBytes: richerSame, stateFrame: false, countsTowardStateQuota: false, note: `与同组帧「${unchanged.id}」(状态=${unchanged.stateSig}) 字节全等 sha256:${contentHash} ⇒ 本帧多做的步骤(${stateSig}) 没被证明改变过画面` };
+  if (richerSame.length) return { verdict: "BASELINE_MATCHES_RICHER_PRIOR", dupOf: richerSame[0].id, against: richerSame[0].stateSig, richerPriorsSameBytes: richerSame, stateFrame: true, countsTowardStateQuota: true, note: `本帧状态(${stateSig}) 是「${richerSame[0].id}」的上游，两者字节全等 sha256:${contentHash} ⇒ 该追溯改判那一帧` };
+  if (same) return { verdict: "SAME_STATE_SAME_BYTES", dupOf: same.id, against: same.stateSig, richerPriorsSameBytes: [], stateFrame: false, countsTowardStateQuota: false, note: `同一状态(${stateSig}) 重拍，像素与「${same.id}」全等 ⇒ 诚实但没有新增证据（不算缺陷，也不给两份状态额度）` };
+  if (distinctSame) return { verdict: "DISTINCT_STATE_SAME_BYTES", dupOf: distinctSame.id, against: distinctSame.stateSig, richerPriorsSameBytes: [], stateFrame: true, countsTowardStateQuota: false, note: `声明的状态(${stateSig}) 与「${distinctSame.id}」(状态=${distinctSame.stateSig}) 无从比较，但像素全等 sha256:${contentHash} ⇒ 状态标签冗余，这张帧只是又盖了一个章` };
+  if (changed) return { verdict: "CHANGED_AFTER_INTERACTION", dupOf: "", against: changed.id, richerPriorsSameBytes: [], stateFrame: true, countsTowardStateQuota: true, note: `相对同组帧「${changed.id}」画面确有变化（sha256:${contentHash} ≠ ${changed.contentHash}）` + (unstable ? `；注意同状态帧「${unstable.id}」字节却不同 ⇒ 本组采集有抖动` : "") };
+  if (unstable) return { verdict: "SAME_STATE_DIFF_BYTES", dupOf: unstable.id, against: unstable.stateSig, richerPriorsSameBytes: [], stateFrame: false, countsTowardStateQuota: false, note: `同一状态(${stateSig}) 重拍像素却不同（与「${unstable.id}」sha256 不等）⇒ 采集不稳定，别拿差值当判决` };
+  return { verdict: "UNRELATED_STATE", dupOf: "", against: "", richerPriorsSameBytes: [], stateFrame: true, countsTowardStateQuota: true, note: "与组内早先帧没有可比的状态关系（各自独立的状态），不奖不罚" };
+}
+/* 只有这一种判决能把整轮判红；豁免必须逐条 id 点名（见 --allow-unchanged-state），没有整轮开关。 */
+export const isStateGateBlocker = (row) => !!row && row.stateChange === "UNCHANGED_AFTER_INTERACTION" && row.stateGateWaived !== true;
+/* 收尾账目：把判决汇总成"调用方一眼能数出来的"那几行，并给出这一腿该带什么退出码。
+   它是纯函数，所以红/绿两个方向都能在离线夹具里真跑一遍（.zcode/tmp/gap-shooter/gate-harness.mjs），
+   而不是只在真机上"希望它会红"。exit：0=守恒通过，3=有帧证明不了自己挂的状态。 */
+export function stateGateAudit(rows) {
+  const shotRows = (rows || []).filter((r) => r && r.status === "SHOT");
+  const verdictCount = {};
+  for (const r of shotRows) { const k = r.stateChange || "(无判决)"; verdictCount[k] = (verdictCount[k] || 0) + 1; }
+  const unchangedRows = shotRows.filter((r) => r.stateChange === "UNCHANGED_AFTER_INTERACTION");
+  const blockers = unchangedRows.filter((r) => isStateGateBlocker(r));
+  const lines = [];
+  lines.push("SHOOT_FRAME_HASHES recorded=" + shotRows.filter((r) => r.contentHash).length + "/" + shotRows.length + " algo=" + GATE_HASH_ALGO);
+  for (const [k, n] of Object.entries(verdictCount)) lines.push("  SHOOT_STATE_VERDICT " + k + "=" + n);
+  lines.push("UNCHANGED_AFTER_INTERACTION=" + blockers.length + (blockers.length ? " ids=" + blockers.map((r) => r.id).join(",") : "") +
+    " 其中追溯改判=" + unchangedRows.filter((r) => r.retroactive).length + " 已豁免=" + (unchangedRows.length - blockers.length));
+  for (const r of blockers) lines.push("  UNCHANGED " + r.id + " 组=" + frameGroupKey(r.identity, r.route) + " 状态=" + r.stateSig + " == " + r.dupOf + " sha256:" + r.contentHash);
+  return { shotRows, verdictCount, unchangedRows, blockers, lines, exit: blockers.length ? 3 : 0 };
+}
+/* GATE-END */
 
 function git(a) { try { return execFileSync("git", a.split(" "), { cwd: REPO, encoding: "utf8" }).trim(); } catch { return ""; } }
 const GIT_SHA = git("rev-parse --short HEAD") || "unknown";
@@ -135,7 +261,7 @@ function cleanSel(s) {
   return t.startsWith(".") ? t : "." + t;
 }
 async function runSteps(steps, ident) {
-  const unmet = [], did = [], wsDid = [], wsFailed = [];
+  const unmet = [], did = [], wsDid = [], wsFailed = [], sig = [];
   for (const st of steps || []) {
     const a = String(st.action || "none").trim();
     if (a === "open-page" || a === "navigate" || a === "open-url") { did.push(a); continue; }   // 页已由外层打开
@@ -143,7 +269,7 @@ async function runSteps(steps, ident) {
     if (a === "wait") { sleep(Number(st.ms || 1200) || 1200); did.push("wait"); continue; }
     if (a === "capture" || a === "measure") { did.push(a); continue; }                            // 出帧/量算由本执行器的帧承担
     if (a === "set-theme") {
-      try { evaluate("() => { try { getApp().__theme='" + String(st.value || "light").replace(/'/g, "") + "'; return 'ok'; } catch(e){ return 'ERR '+e.message; } }", { project: PROJECT }); did.push("set-theme"); }
+      try { evaluate("() => { try { getApp().__theme='" + String(st.value || "light").replace(/'/g, "") + "'; return 'ok'; } catch(e){ return 'ERR '+e.message; } }", { project: PROJECT }); did.push("set-theme"); sig.push("theme=" + String(st.value || "light").replace(/'/g, "")); }
       catch (e) { unmet.push(a + ":" + String(e.message).slice(0, 40)); }
       continue;
     }
@@ -151,22 +277,29 @@ async function runSteps(steps, ident) {
       const sel = cleanSel(st.selector);
       try {
         evaluate("() => { try { wx.pageScrollTo({ scrollTop: " + (Number(st.to) || 600) + ", duration: 200 }); return 'ok'; } catch(e){ return 'ERR '+e.message; } }", { project: PROJECT });
-        sleep(900); did.push(sel ? "scroll→" + sel : "scroll");
+        sleep(900); did.push(sel ? "scroll→" + sel : "scroll"); sig.push("scroll:" + (sel || "页") + "@" + (Number(st.to) || 600));
       } catch (e) { unmet.push(a + ":" + String(e.message).slice(0, 40)); }
       continue;
     }
     /* 交互动作走 WS 那条腿。关键记账：WS 没启用/连不上 ⇒ 记 unmet（我没做），
        WS 做了但选择器查不到 ⇒ 也记 unmet 并写明原因——同样是"状态没施加"，不是产品判红。
-       只有真做出动作才算 applied；绝不把"试过"当成"做到了"。 */
+       只有真做出动作才算 applied；绝不把"试过"当成"做到了"。
+       :309 的 {ok:true} 只代表 el.tap() 派发成功，不代表画面变了 ⇒ 派发过的步骤进 sig（状态签名），
+       由帧内容守恒去比像素；没做成（unmet）的步骤一律不进 sig，"我没做"不许伪装成"一个不变的状态"。 */
     if (WS_ACTS.has(a)) {
       const r = await doWsStep(st);
-      if (r.ok) { wsDid.push(a + (r.note ? "(" + r.note + ")" : "")); did.push(a); sleep(Number(st.settle || 900) || 900); }
+      if (r.ok) {
+        wsDid.push(a + (r.note ? "(" + r.note + ")" : "")); did.push(a);
+        const s2 = cleanSel(st.selector);
+        sig.push(a + ":" + (s2 || "无选择器") + (a === "input" ? "=" + String(st.value || st.text || "测试").slice(0, 40) : ""));
+        sleep(Number(st.settle || 900) || 900);
+      }
       else { unmet.push(a + ":" + r.why); wsFailed.push(a + ":" + r.why); }
       continue;
     }
     unmet.push(a);
   }
-  return { unmet, did, wsDid, wsFailed };
+  return { unmet, did, wsDid, wsFailed, sig };
 }
 
 /* WS 那条腿只用来做 CLI 做不到的动作（tap/input/longpress/swipe）。
@@ -405,6 +538,35 @@ const queryFor = (it, route) => String((it && it.precondition && it.precondition
 
 const rows = [];
 let holes = 0, done = 0, transportErrs = 0;
+/* 帧内容守恒的接线处：rows 本身就是对照池（同 (identity,route) 组内已入账、已算 hash 的帧），
+   不另建一份平行账本 —— 建了就会有两套事实，本仓已经栽过太多次。
+   每帧落盘立刻：算 hash → 判状态变化 → 记账；BASELINE_MATCHES_RICHER_PRIOR 那种
+   "后来那张基线帧揭穿了前面那张交互帧"的情形，当场把前面那行追溯改判（只改内存里的账，
+   像素文件一个都不动；与 rebuild-frozen-manifest.mjs:93 的 retroactive 记录口径一致）。 */
+function stateFieldsFor(it, ident, route, sp, contentHash) {
+  const stateSig = sigOf(sp.sig);
+  const priors = rows
+    .filter((r) => r.status === "SHOT" && r.identity === ident && r.route === route && r.contentHash && r.id !== it.id)
+    .map((r) => ({ id: r.id, stateSig: r.stateSig, contentHash: r.contentHash }));
+  const j = judgeFrame({ stateSig, contentHash, priors });
+  for (const p of j.richerPriorsSameBytes || []) {
+    const prev = rows.find((r) => r.id === p.id);
+    if (!prev || prev.stateChange === "UNCHANGED_AFTER_INTERACTION") continue;
+    Object.assign(prev, {
+      stateChange: "UNCHANGED_AFTER_INTERACTION", dupOf: it.id, stateFrame: false, countsTowardStateQuota: false, retroactive: true,
+      stateChangeNote: `采集后当场追溯：与同组上游状态帧「${it.id}」(状态=${stateSig}) 字节全等 sha256:${p.contentHash} ⇒ 它多做的步骤(${prev.stateSig}) 没被证明改变过画面`,
+    });
+    if (WAIVED_IDS.has(prev.id)) prev.stateGateWaived = true;
+    console.log("  状态追溯 " + prev.id + " ⇒ UNCHANGED_AFTER_INTERACTION（被同字节的上游帧 " + it.id + " 揭穿）");
+  }
+  const rec = {
+    stateSig, contentHash, stateChange: j.verdict, dupOf: j.dupOf || "",
+    stateFrame: j.stateFrame, countsTowardStateQuota: j.countsTowardStateQuota, stateChangeNote: j.note,
+  };
+  if (WAIVED_IDS.has(it.id)) { rec.stateGateWaived = true; rec.stateGateWaiveReason = WAIVE_REASON; }
+  console.log("  帧守恒 " + it.id + " sha256=" + (contentHash || "-") + " 状态=" + stateSig + " ⇒ " + j.verdict + (rec.stateGateWaived ? "（已豁免，仍记录）" : ""));
+  return rec;
+}
 for (const [key, grp] of byRoute) {
   const [route, ident] = key.split("|");
   if (LIMIT && done >= LIMIT) break;
@@ -499,14 +661,23 @@ for (const [key, grp] of byRoute) {
       const wantAbsent = /absent|not-|hidden|不出现/i.test(String(a.kind || ""));
       per.push({ kind: a.kind, target: a.target, count: n, check: wantAbsent ? (n === 0 ? "ABSENT_OK" : "PRESENT_UNEXPECTED(" + n + ")") : (n > 0 ? "PRESENT(" + n + ")" : "ABSENT_UNEXPECTED"), anchors: ss });
     }
-    const stepRec = { stepsApplied: sp.did, stepsUnmet: sp.unmet, wsApplied: sp.wsDid, wsFailed: sp.wsFailed, landingVia, landingAfter, stateApplied: sp.unmet.length === 0 };
+    const stepRec = {
+      stepsApplied: sp.did, stepsUnmet: sp.unmet, wsApplied: sp.wsDid, wsFailed: sp.wsFailed, landingVia, landingAfter,
+      stateApplied: sp.unmet.length === 0,
+      /* 这两个键必须说清各自管什么，否则 stateApplied 又会冒充"画面变了"：
+         stateApplied = 配方要求的步骤没被记成 unmet（我做没做）；
+         stateChange  = 这张帧的像素与同组上游状态帧是否真的不同（画面变没变）。
+         :309 的 {ok:true} 只代表 el.tap() 派发成功，永远证明不了后者。 */
+      interactionProof: sp.wsDid.length ? "WS 仅证明派发（doWsStep:309），画面是否变看 stateChange" : (sp.sig.length ? "CLI 改状态步骤已施加" : "无改状态步骤（基线帧）"),
+    };
     if (sp.wsDid.length || sp.wsFailed.length) console.log("  ws " + it.id + " 已做=[" + sp.wsDid.join(",") + "] 未成=[" + sp.wsFailed.join(",") + "]");
-    let frame = "", bytes = 0;
+    let frame = "", bytes = 0, contentHash = "";
     if (!DRY) {
       const name = (it.frameName || it.id) + ".png";
       /* --reuse-frames：像素可以从上一轮同一构建的帧里拿（本轮只是修了极性判断，
          重新拍一遍会覆盖同名帧 —— §19 就是被"同名覆盖毁掉溯源"坑过的）。
-         复用必须写明 frameFrom，读账的人能看出这张帧是哪一次拍的。 */
+         复用必须写明 frameFrom，读账的人能看出这张帧是哪一次拍的。
+         复用帧同样是"这一轮交出去的证"，所以它一样要算 hash、一样进守恒比对。 */
       const reuseDir = flag("reuse-frames") ? resolve(REPO, arg("reuse-frames", "")) : null;
       /* 只能复用上一次的落点已经确认过的帧：落点没确认那一拍，像素可能是隔壁页的，
          复用等于把一次测量错固化成证据。 */
@@ -515,16 +686,20 @@ for (const [key, grp] of byRoute) {
       if (rp && existsSync(rp) && statSync(rp).size > 3000) {
         bytes = statSync(rp).size;
         frame = relOf(rp);
-        rows.push({ id: it.id, route, landing, status: "SHOT", frame, bytes, checks: per, identity: ident, crop: it.crop || "", ...stepRec, frameFrom: "reused@" + relOf(rp).split("/").slice(0, -1).join("/") });
+        contentHash = hash16(rp);
+        rows.push({ id: it.id, route, landing, status: "SHOT", frame, bytes, contentHash, checks: per, identity: ident, crop: it.crop || "", ...stepRec, ...stateFieldsFor(it, ident, route, sp, contentHash), frameFrom: "reused@" + relOf(rp).split("/").slice(0, -1).join("/") });
         done++;
         if (LIMIT && done >= LIMIT) break;
         continue;
       }
       const f = join(SHOT_DIR, name);
-      try { rmSync(f, { force: true }); shot(f, { project: PROJECT }); bytes = statSync(f).size; if (bytes > 3000) frame = relOf(f); }
+      /* 地板（bytes > 3000）留原样：它管"这张图是不是废帧"，管不了"画面变没变"，两件事不能互相顶替。
+         过了地板就立刻算 contentHash —— 没有 hash 的帧在语料门禁那边只会被记成 noHash=无 contentHash，
+         等于这一轮亲手交出一张不可核实的证据。 */
+      try { rmSync(f, { force: true }); shot(f, { project: PROJECT }); bytes = statSync(f).size; if (bytes > 3000) { frame = relOf(f); contentHash = hash16(f); } }
       catch (e) { rows.push({ id: it.id, route, status: "FAILED", reason: "出帧失败：" + String(e.message).slice(0, 70) }); continue; }
     }
-    if (DRY || bytes > 3000) { rows.push({ id: it.id, route, landing, status: "SHOT", frame, bytes, checks: per, identity: ident, crop: it.crop || "", ...stepRec }); }
+    if (DRY || bytes > 3000) { rows.push({ id: it.id, route, landing, status: "SHOT", frame, bytes, contentHash, checks: per, identity: ident, crop: it.crop || "", ...stepRec, ...stateFieldsFor(it, ident, route, sp, contentHash) }); }
     else { holes++; rows.push({ id: it.id, route, landing, status: "EVIDENCE_HOLE", reason: "帧只有 " + bytes + "B，不当证据", checks: per, identity: ident }); }
     done++;
     if (LIMIT && done >= LIMIT) break;
@@ -547,6 +722,15 @@ const shotRows = rows.filter((r) => r.status === "SHOT");
    门禁说绿而账上有洞，是本轮最不该出现的那类错。 */
 const noEvidence = rows.filter((r) => r.status !== "SHOT");
 const machinePass = shotRows.filter((r) => (r.checks || []).every((c) => c.check === "PRESENT" || c.check.startsWith("PRESENT(") || c.check === "ABSENT_OK" || c.check === "FRAME_ONLY")).length;
+/* ---- 帧内容守恒的账（当场记，不等事后 rebuild 改判）----
+   汇总与退出码都由 stateGateAudit 算（GATE 区里的纯函数），所以这一段的红/绿两个方向
+   在离线夹具里跑的就是真代码，不是另抄一遍。 */
+const gateAudit = stateGateAudit(rows);
+const verdictCount = gateAudit.verdictCount;
+const unchangedRows = gateAudit.unchangedRows;
+const stateBlockers = gateAudit.blockers;
+const framesHashed = gateAudit.shotRows.filter((r) => r.contentHash).length;
+const waivedRows = gateAudit.shotRows.filter((r) => r.stateGateWaived === true);
 if (!DRY) {
   writeFileSync(join(OUT, "shoot-results.json"), JSON.stringify({
     round: LABEL, gitSha: GIT_SHA, updatedAt: new Date().toISOString(), plan: relOf(PLAN), project: relOf(PROJECT),
@@ -557,16 +741,32 @@ if (!DRY) {
     identityMismatch: rows.filter((r) => r.identityOk === false).map((r) => r.id),
     lockHitAtFrame: rows.filter((r) => r.lockHit).map((r) => r.id),
     artifactBand: readApiMode(PROJECT),
-    counts: { SHOT: shotRows.length, EVIDENCE_HOLE: holes, FAILED: rows.filter((r) => r.status === "FAILED").length, NO_EVIDENCE: noEvidence.length },
+    /* 内容守恒：hashAlgo 与语料门禁同源，读者可自己复算（verify-evidence-corpus.mjs:28）。
+       帧上的键沿用 shot 记录的既有名字：contentHash / stateFrame / countsTowardStateQuota / dupOf。 */
+    hashAlgo: GATE_HASH_ALGO, framesHashed,
+    stateChangeVerdicts: verdictCount,
+    unchangedAfterInteraction: unchangedRows.map((r) => ({ id: r.id, group: frameGroupKey(r.identity, r.route), dupOf: r.dupOf, contentHash: r.contentHash, waived: r.stateGateWaived === true, note: r.stateChangeNote })),
+    unchangedStateWaived: { ids: [...WAIVED_IDS], reason: WAIVE_REASON, hit: waivedRows.map((r) => r.id) },
+    counts: {
+      SHOT: shotRows.length, EVIDENCE_HOLE: holes, FAILED: rows.filter((r) => r.status === "FAILED").length, NO_EVIDENCE: noEvidence.length,
+      UNCHANGED_AFTER_INTERACTION: unchangedRows.length, UNCHANGED_AFTER_INTERACTION_BLOCKING: stateBlockers.length,
+      SAME_STATE_SAME_BYTES: verdictCount.SAME_STATE_SAME_BYTES || 0, SAME_STATE_DIFF_BYTES: verdictCount.SAME_STATE_DIFF_BYTES || 0,
+    },
     machinePassAllChecks: machinePass,
   }, null, 1));
 }
 console.log("SHOOT_SUMMARY planned=" + items.length + " 出帧=" + shotRows.length + " 无证据=" + noEvidence.length + " 证据洞=" + holes + " 失败=" + rows.filter((r) => r.status === "FAILED").length +
   " 通道异常=" + transportErrs + " WS交互成功=" + rows.reduce((n, r) => n + ((r.wsApplied || []).length), 0) + " WS交互未成=" + rows.reduce((n, r) => n + ((r.wsFailed || []).length), 0) + " WS通道异常=" + wsErrs +
   " 全部判点通过的条目=" + machinePass);
+for (const l of gateAudit.lines) console.log(l);
+if (waivedRows.length) console.log("  已豁免（判决仍在账上，只是不判红）：" + waivedRows.map((r) => r.id + "@" + r.contentHash).join(",") + " 理由=" + WAIVE_REASON);
+if (WAIVED_IDS.size && !waivedRows.length) console.log("  豁免名单空转：--allow-unchanged-state 点了 " + [...WAIVED_IDS].join(",") + " 但这一轮没有任何帧被判 UNCHANGED_AFTER_INTERACTION（点了不存在的条目就是给自己找台阶）");
 const conserved = rows.length === items.length || (LIMIT && done >= LIMIT);
 console.log("SHOOT_CONSERVED=" + (conserved ? "yes" : "NO（rows=" + rows.length + " ≠ planned=" + items.length + "）"));
 if (DRY) { console.log("SHOOT_RESULT=DRY"); process.exit(0); }
-/* 退出码只看一件事：每一条 SHOOT 项都有可用帧。判点过没过不是这里的事（那是 verdict-from-frames 的账）。 */
-console.log("SHOOT_RESULT=" + (!conserved || noEvidence.length ? "FAIL（" + noEvidence.length + " 条没拿到可用帧）" : "OK"));
-process.exit(!conserved || noEvidence.length ? 2 : 0);
+/* 退出码：2 = 有 SHOOT 项没拿到可用帧（原口径）；3 = 帧都拿到了，但有帧证明不了自己挂的那个状态
+   （内容守恒判决不通过，见 stateGateAudit）。分开是因为两者的修法完全不同：前者补拍，
+   后者要么承认这一步是空动作、要么逐条 id 声明"这个状态本来就不改画面"。 */
+console.log("SHOOT_RESULT=" + (!conserved || noEvidence.length ? "FAIL（" + noEvidence.length + " 条没拿到可用帧）"
+  : (stateBlockers.length ? "FAIL（UNCHANGED_AFTER_INTERACTION=" + stateBlockers.length + "：帧与同组上游状态逐字节相同，不能当该状态的文字证据）" : "OK")));
+process.exit(!conserved || noEvidence.length ? 2 : gateAudit.exit);

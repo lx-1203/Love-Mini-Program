@@ -8,7 +8,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/PAGES_DISCOVER_INDEX-默认.png",
       "bytes": 220871,
-      "name": "寻觅（tabBar）"
+      "name": "寻觅（tabBar）",
+      "contentHash": "870fef2c09174a86"
     },
     {
       "identity": "A",
@@ -16,7 +17,8 @@
       "state": "滚动后",
       "file": "reports/screenshots/round-1/A/PAGES_HOME_INDEX-滚动后.png",
       "bytes": 115841,
-      "name": "首页（tabBar）"
+      "name": "首页（tabBar）",
+      "contentHash": "0c1dd9d613fc90ab"
     },
     {
       "identity": "A",
@@ -24,7 +26,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/PAGES_HOME_INDEX-默认.png",
       "bytes": 158478,
-      "name": "首页（tabBar）"
+      "name": "首页（tabBar）",
+      "contentHash": "92f24727f2e35f66"
     },
     {
       "identity": "A",
@@ -33,7 +36,8 @@
       "file": "reports/screenshots/round-1/A/PAGES_LOGIN_INDEX-交互后.png",
       "bytes": 105428,
       "name": "登录页",
-      "variant": "未登录态（logout 后直连）"
+      "variant": "未登录态（logout 后直连）",
+      "contentHash": "c1951f638d35fb82"
     },
     {
       "identity": "A",
@@ -42,7 +46,8 @@
       "file": "reports/screenshots/round-1/A/PAGES_LOGIN_INDEX-默认.png",
       "bytes": 166791,
       "name": "登录页",
-      "variant": "未登录态（logout 后直连）"
+      "variant": "未登录态（logout 后直连）",
+      "contentHash": "a14e9c2136ce2c23"
     },
     {
       "identity": "A",
@@ -50,7 +55,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/PAGES_MESSAGES_INDEX-默认.png",
       "bytes": 111848,
-      "name": "消息（tabBar）"
+      "name": "消息（tabBar）",
+      "contentHash": "18276999d9bd1a74"
     },
     {
       "identity": "A",
@@ -58,7 +64,8 @@
       "state": "滚动后",
       "file": "reports/screenshots/round-1/A/PAGES_NEARBY_INDEX-滚动后.png",
       "bytes": 201816,
-      "name": "附近（tabBar）"
+      "name": "附近（tabBar）",
+      "contentHash": "99c5e4ee79861083"
     },
     {
       "identity": "A",
@@ -66,7 +73,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/PAGES_NEARBY_INDEX-默认.png",
       "bytes": 129262,
-      "name": "附近（tabBar）"
+      "name": "附近（tabBar）",
+      "contentHash": "8bd6a17cb9552e52"
     },
     {
       "identity": "A",
@@ -74,7 +82,8 @@
       "state": "滚动后",
       "file": "reports/screenshots/round-1/A/PAGES_PROFILE_INDEX-滚动后.png",
       "bytes": 95964,
-      "name": "我的（tabBar）"
+      "name": "我的（tabBar）",
+      "contentHash": "7c54e88dfb283d1a"
     },
     {
       "identity": "A",
@@ -82,7 +91,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/PAGES_PROFILE_INDEX-默认.png",
       "bytes": 123357,
-      "name": "我的（tabBar）"
+      "name": "我的（tabBar）",
+      "contentHash": "b50720cb6be46708"
     },
     {
       "identity": "A",
@@ -91,7 +101,8 @@
       "file": "reports/screenshots/round-1/A/PAGES_REGISTER_SUCCESS-默认.png",
       "bytes": 76375,
       "name": "注册成功页",
-      "variant": "未登录态（logout 后直连）"
+      "variant": "未登录态（logout 后直连）",
+      "contentHash": "dd57c9099ef8ac7c"
     },
     {
       "identity": "A",
@@ -99,7 +110,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_CAMPUS_CAMPUS_CERTIFICATION-默认.png",
       "bytes": 78688,
-      "name": "校园认证"
+      "name": "校园认证",
+      "contentHash": "ca74190b91e337c6"
     },
     {
       "identity": "A",
@@ -107,7 +119,8 @@
       "state": "滚动后",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_CAMPUS_CAMPUS_HUB-滚动后.png",
       "bytes": 221727,
-      "name": "校园圈 hub"
+      "name": "校园圈 hub",
+      "contentHash": "72828e6ef8f95045"
     },
     {
       "identity": "A",
@@ -115,7 +128,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_CAMPUS_CAMPUS_HUB-默认.png",
       "bytes": 174667,
-      "name": "校园圈 hub"
+      "name": "校园圈 hub",
+      "contentHash": "d25104e8bd479a11"
     },
     {
       "identity": "A",
@@ -123,7 +137,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_CAMPUS_CAMPUS_POST-TOPIC-默认.png",
       "bytes": 68451,
-      "name": "校圈发帖"
+      "name": "校圈发帖",
+      "contentHash": "c1ccbf0224fdc87a"
     },
     {
       "identity": "A",
@@ -131,7 +146,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_CAMPUS_CAMPUS_TOPIC-DETAIL-默认.png",
       "bytes": 39604,
-      "name": "校圈话题详情"
+      "name": "校圈话题详情",
+      "contentHash": "5da2d8f08220a4fc"
     },
     {
       "identity": "A",
@@ -139,7 +155,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_CHAT_CHAT-SESSION_INDEX-默认.png",
       "bytes": 43047,
-      "name": "聊天会话页（聊天主链路）"
+      "name": "聊天会话页（聊天主链路）",
+      "contentHash": "e7d63025bb21173a"
     },
     {
       "identity": "A",
@@ -147,7 +164,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_CHAT_OFFICIAL-CHAT_INDEX-默认.png",
       "bytes": 143522,
-      "name": "官方号会话页（寻觅助手）"
+      "name": "官方号会话页（寻觅助手）",
+      "contentHash": "31abbdf77a85c94e"
     },
     {
       "identity": "A",
@@ -155,7 +173,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_CIRCLES_CIRCLES_CIRCLE-HOME-默认.png",
       "bytes": 194651,
-      "name": "圈子主页"
+      "name": "圈子主页",
+      "contentHash": "0db8a41b804642b3"
     },
     {
       "identity": "A",
@@ -163,7 +182,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_CIRCLES_CIRCLES_INDEX-默认.png",
       "bytes": 174784,
-      "name": "兴趣圈列表"
+      "name": "兴趣圈列表",
+      "contentHash": "fecf8fedb4bb12e3"
     },
     {
       "identity": "A",
@@ -171,7 +191,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_CIRCLES_CIRCLES_POST-TOPIC-默认.png",
       "bytes": 66339,
-      "name": "圈内发话题"
+      "name": "圈内发话题",
+      "contentHash": "6057b763195193bd"
     },
     {
       "identity": "A",
@@ -179,7 +200,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_CIRCLES_CIRCLES_TOPIC-DETAIL-默认.png",
       "bytes": 40143,
-      "name": "话题详情"
+      "name": "话题详情",
+      "contentHash": "b2f51801c22cd554"
     },
     {
       "identity": "A",
@@ -187,7 +209,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_CIRCLES_CIRCLES_TOPICS-默认.png",
       "bytes": 54691,
-      "name": "圈内话题列表"
+      "name": "圈内话题列表",
+      "contentHash": "1bbea1b15dc3b8d7"
     },
     {
       "identity": "A",
@@ -195,7 +218,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_DISCOVER-EXTRA_DISCOVER_HISTORY-默认.png",
       "bytes": 39703,
-      "name": "寻觅历史"
+      "name": "寻觅历史",
+      "contentHash": "8ef075db22b0980e"
     },
     {
       "identity": "A",
@@ -203,7 +227,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_DISCOVER-EXTRA_DISCOVER_MATCH-SUCCESS-默认.png",
       "bytes": 129188,
-      "name": "匹配成功（寻觅主链路）"
+      "name": "匹配成功（寻觅主链路）",
+      "contentHash": "77d7b4082f293b5f"
     },
     {
       "identity": "A",
@@ -211,7 +236,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_DISCOVER-EXTRA_HOME_SEGMENT-默认.png",
       "bytes": 92511,
-      "name": "首页分区页"
+      "name": "首页分区页",
+      "contentHash": "babb7d752a79eaf5"
     },
     {
       "identity": "A",
@@ -219,7 +245,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_DISCOVER-EXTRA_LIKES-VISITORS_INDEX-默认.png",
       "bytes": 121457,
-      "name": "喜欢我的/我的访客"
+      "name": "喜欢我的/我的访客",
+      "contentHash": "221e420b598fa59e"
     },
     {
       "identity": "A",
@@ -227,7 +254,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_DISCOVER-EXTRA_LIKES_INDEX-默认.png",
       "bytes": 135129,
-      "name": "喜欢页（互相喜欢列表）"
+      "name": "喜欢页（互相喜欢列表）",
+      "contentHash": "16e59ffbd9194acd"
     },
     {
       "identity": "A",
@@ -235,7 +263,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_DISCOVER-EXTRA_NEARBY_PEOPLE-默认.png",
       "bytes": 70692,
-      "name": "附近的人列表"
+      "name": "附近的人列表",
+      "contentHash": "9b190e0372bcdcb4"
     },
     {
       "identity": "A",
@@ -243,7 +272,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_DISCOVER_ACTIVITIES_INDEX-默认.png",
       "bytes": 101071,
-      "name": "活动列表"
+      "name": "活动列表",
+      "contentHash": "36103640f539af3e"
     },
     {
       "identity": "A",
@@ -251,7 +281,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_DISCOVER_DISCUSSIONS_INDEX-默认.png",
       "bytes": 81981,
-      "name": "讨论圈列表"
+      "name": "讨论圈列表",
+      "contentHash": "6e01bd257d6c3a20"
     },
     {
       "identity": "A",
@@ -259,7 +290,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_LEGAL_AGREEMENT_INDEX-默认.png",
       "bytes": 183430,
-      "name": "用户协议"
+      "name": "用户协议",
+      "contentHash": "c76f0f3671cdda45"
     },
     {
       "identity": "A",
@@ -267,7 +299,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_LEGAL_PRIVACY_INDEX-默认.png",
       "bytes": 199901,
-      "name": "隐私政策"
+      "name": "隐私政策",
+      "contentHash": "ffafe06b174361cc"
     },
     {
       "identity": "A",
@@ -275,7 +308,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_MARKET_DETAIL_INDEX-默认.png",
       "bytes": 23150,
-      "name": "商品详情"
+      "name": "商品详情",
+      "contentHash": "6c9d1ad9920fdbfa"
     },
     {
       "identity": "A",
@@ -283,7 +317,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_MARKET_SHOP_INDEX-默认.png",
       "bytes": 29339,
-      "name": "商城"
+      "name": "商城",
+      "contentHash": "c564201a4163fed4"
     },
     {
       "identity": "A",
@@ -291,7 +326,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_MARKET_WALLET_INDEX-默认.png",
       "bytes": 29927,
-      "name": "钱包"
+      "name": "钱包",
+      "contentHash": "b396c3dc79e4d21b"
     },
     {
       "identity": "A",
@@ -299,7 +335,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_FEEDBACK_HISTORY-默认.png",
       "bytes": 66342,
-      "name": "反馈历史"
+      "name": "反馈历史",
+      "contentHash": "97ea152ab94b81cd"
     },
     {
       "identity": "A",
@@ -307,7 +344,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_PROFILE_ALBUM-默认.png",
       "bytes": 138480,
-      "name": "我的相册"
+      "name": "我的相册",
+      "contentHash": "5f3acd15a6969183"
     },
     {
       "identity": "A",
@@ -315,7 +353,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_PROFILE_FAVORITES-默认.png",
       "bytes": 82020,
-      "name": "我的收藏"
+      "name": "我的收藏",
+      "contentHash": "1e580f24b94741ba"
     },
     {
       "identity": "A",
@@ -323,7 +362,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_PROFILE_LOCATION-默认.png",
       "bytes": 110350,
-      "name": "位置设置"
+      "name": "位置设置",
+      "contentHash": "c71633a78b5a4e86"
     },
     {
       "identity": "A",
@@ -331,7 +371,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_PROFILE_OTHER-默认.png",
       "bytes": 281735,
-      "name": "他人主页"
+      "name": "他人主页",
+      "contentHash": "7e1e658068d4b8d9"
     },
     {
       "identity": "A",
@@ -339,7 +380,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_PROFILE_PRIVACY-默认.png",
       "bytes": 40802,
-      "name": "隐私设置"
+      "name": "隐私设置",
+      "contentHash": "515b0ad2b758b4f5"
     },
     {
       "identity": "A",
@@ -347,7 +389,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_PROFILE_TASKS-默认.png",
       "bytes": 79102,
-      "name": "任务中心"
+      "name": "任务中心",
+      "contentHash": "e6ef773f0706b508"
     },
     {
       "identity": "A",
@@ -355,7 +398,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_PROFILE_VISITORS-默认.png",
       "bytes": 123590,
-      "name": "主页访客"
+      "name": "主页访客",
+      "contentHash": "59836b58fd37ea33"
     },
     {
       "identity": "A",
@@ -363,7 +407,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_SETTINGS_DND-默认.png",
       "bytes": 75249,
-      "name": "勿扰模式"
+      "name": "勿扰模式",
+      "contentHash": "56a5f47be2e09236"
     },
     {
       "identity": "A",
@@ -371,7 +416,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_SETTINGS_INDEX-默认.png",
       "bytes": 63930,
-      "name": "设置"
+      "name": "设置",
+      "contentHash": "9ba4c17713e8eece"
     },
     {
       "identity": "A",
@@ -379,7 +425,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_VERIFICATION_INDEX-默认.png",
       "bytes": 87608,
-      "name": "认证中心"
+      "name": "认证中心",
+      "contentHash": "3954dc4844cc6ba9"
     },
     {
       "identity": "A",
@@ -387,7 +434,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_PROFILE-EXTRA_VERIFICATION_REAL-NAME-默认.png",
       "bytes": 85953,
-      "name": "实名认证"
+      "name": "实名认证",
+      "contentHash": "c1ba2f27449261a1"
     },
     {
       "identity": "A",
@@ -395,7 +443,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_SETUP_CAMPUS_INDEX-默认.png",
       "bytes": 78718,
-      "name": "学校设置"
+      "name": "学校设置",
+      "contentHash": "6fc1d3cac5d1c311"
     },
     {
       "identity": "A",
@@ -403,7 +452,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_SETUP_INTEREST_INDEX-默认.png",
       "bytes": 101154,
-      "name": "兴趣选择"
+      "name": "兴趣选择",
+      "contentHash": "45c86075f24b0ffd"
     },
     {
       "identity": "A",
@@ -411,7 +461,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_SETUP_PROFILE_INDEX-默认.png",
       "bytes": 191504,
-      "name": "资料完善"
+      "name": "资料完善",
+      "contentHash": "c9196eac12ffaf52"
     },
     {
       "identity": "A",
@@ -419,7 +470,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_SETUP_RECOMMEND-PREF_INDEX-默认.png",
       "bytes": 81812,
-      "name": "推荐偏好"
+      "name": "推荐偏好",
+      "contentHash": "3715508676753e10"
     },
     {
       "identity": "A",
@@ -427,7 +479,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_SETUP_SCHEDULE_INDEX-默认.png",
       "bytes": 51990,
-      "name": "作息设置"
+      "name": "作息设置",
+      "contentHash": "33fdbb3066c4a82b"
     },
     {
       "identity": "A",
@@ -435,7 +488,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_SUPPORT_FEEDBACK_INDEX-默认.png",
       "bytes": 63475,
-      "name": "意见反馈"
+      "name": "意见反馈",
+      "contentHash": "fecfd36a70a0f2b3"
     },
     {
       "identity": "A",
@@ -443,7 +497,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_ACTIVITIES_DETAIL-默认.png",
       "bytes": 213068,
-      "name": "活动详情"
+      "name": "活动详情",
+      "contentHash": "7dfc21e558546298"
     },
     {
       "identity": "A",
@@ -451,7 +506,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_DAILY-QUESTION_INDEX-默认.png",
       "bytes": 42684,
-      "name": "每日一问"
+      "name": "每日一问",
+      "contentHash": "7214e8d8013f3953"
     },
     {
       "identity": "A",
@@ -459,7 +515,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_HEART-SIGNALS_INDEX-默认.png",
       "bytes": 94514,
-      "name": "心动信号"
+      "name": "心动信号",
+      "contentHash": "2c538224f4b0874a"
     },
     {
       "identity": "A",
@@ -467,7 +524,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_HELP_INDEX-默认.png",
       "bytes": 95528,
-      "name": "帮助中心"
+      "name": "帮助中心",
+      "contentHash": "b3e2f86d78224ed2"
     },
     {
       "identity": "A",
@@ -475,7 +533,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_LOVE-CENTER_CONSULTING-默认.png",
       "bytes": 29612,
-      "name": "恋爱咨询"
+      "name": "恋爱咨询",
+      "contentHash": "48e697ccb2a6b3c2"
     },
     {
       "identity": "A",
@@ -483,7 +542,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_LOVE-CENTER_INDEX-默认.png",
       "bytes": 30184,
-      "name": "恋爱中心"
+      "name": "恋爱中心",
+      "contentHash": "77c6e3254c6520c2"
     },
     {
       "identity": "A",
@@ -491,7 +551,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_LOVE-CENTER_MBTI-默认.png",
       "bytes": 113405,
-      "name": "MBTI 性格"
+      "name": "MBTI 性格",
+      "contentHash": "f87be90ba649537d"
     },
     {
       "identity": "A",
@@ -499,7 +560,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_LOVE-CENTER_NEARBY-默认.png",
       "bytes": 214374,
-      "name": "恋爱中心·附近缘分"
+      "name": "恋爱中心·附近缘分",
+      "contentHash": "d8257f6049861bd1"
     },
     {
       "identity": "A",
@@ -507,7 +569,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_SEARCH_INDEX-默认.png",
       "bytes": 33161,
-      "name": "搜索"
+      "name": "搜索",
+      "contentHash": "416d23efafa1895e"
     },
     {
       "identity": "A",
@@ -515,7 +578,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_TOOLS_SECURITY_INDEX-默认.png",
       "bytes": 79072,
-      "name": "安全中心"
+      "name": "安全中心",
+      "contentHash": "65e450f27ff543f3"
     },
     {
       "identity": "A",
@@ -523,7 +587,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_DETAIL-默认.png",
       "bytes": 177140,
-      "name": "帖子详情页"
+      "name": "帖子详情页",
+      "contentHash": "77884106cc1e6569"
     },
     {
       "identity": "A",
@@ -531,7 +596,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_HISTORY-默认.png",
       "bytes": 164538,
-      "name": "浏览记录页"
+      "name": "浏览记录页",
+      "contentHash": "f8d4b516367bc4cd"
     },
     {
       "identity": "A",
@@ -539,7 +605,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_INDEX-默认.png",
       "bytes": 160763,
-      "name": "村口社区主页（频道Tab）"
+      "name": "村口社区主页（频道Tab）",
+      "contentHash": "87b657ed8751c5a8"
     },
     {
       "identity": "A",
@@ -547,7 +614,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_POST-默认.png",
       "bytes": 68291,
-      "name": "发帖页（旧，保留兼容）"
+      "name": "发帖页（旧，保留兼容）",
+      "contentHash": "846bc5fdbe323af7"
     },
     {
       "identity": "A",
@@ -555,7 +623,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_PUBLISH-默认.png",
       "bytes": 60043,
-      "name": "统一发布动态页（发布主入口）"
+      "name": "统一发布动态页（发布主入口）",
+      "contentHash": "223cc3dc698890df"
     },
     {
       "identity": "A",
@@ -563,7 +632,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/A/SUBPACKAGES_VILLAGE_VILLAGE_TAG-POSTS-默认.png",
       "bytes": 29178,
-      "name": "标签帖子列表页"
+      "name": "标签帖子列表页",
+      "contentHash": "3672f33d2f54088a"
     },
     {
       "identity": "B",
@@ -571,7 +641,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/PAGES_DISCOVER_INDEX-默认.png",
       "bytes": 220876,
-      "name": "寻觅（tabBar）"
+      "name": "寻觅（tabBar）",
+      "contentHash": "2991a37b9345871b"
     },
     {
       "identity": "B",
@@ -579,7 +650,8 @@
       "state": "滚动后",
       "file": "reports/screenshots/round-1/B/PAGES_HOME_INDEX-滚动后.png",
       "bytes": 115878,
-      "name": "首页（tabBar）"
+      "name": "首页（tabBar）",
+      "contentHash": "83b13e9d81e28c8a"
     },
     {
       "identity": "B",
@@ -587,7 +659,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/PAGES_HOME_INDEX-默认.png",
       "bytes": 158446,
-      "name": "首页（tabBar）"
+      "name": "首页（tabBar）",
+      "contentHash": "0b5648b40e49f930"
     },
     {
       "identity": "B",
@@ -595,7 +668,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/PAGES_MESSAGES_INDEX-默认.png",
       "bytes": 111829,
-      "name": "消息（tabBar）"
+      "name": "消息（tabBar）",
+      "contentHash": "68546435d183a6af"
     },
     {
       "identity": "B",
@@ -603,7 +677,8 @@
       "state": "滚动后",
       "file": "reports/screenshots/round-1/B/PAGES_NEARBY_INDEX-滚动后.png",
       "bytes": 201782,
-      "name": "附近（tabBar）"
+      "name": "附近（tabBar）",
+      "contentHash": "47cce6b455baab31"
     },
     {
       "identity": "B",
@@ -611,7 +686,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/PAGES_NEARBY_INDEX-默认.png",
       "bytes": 129249,
-      "name": "附近（tabBar）"
+      "name": "附近（tabBar）",
+      "contentHash": "25c2b16a839a55f5"
     },
     {
       "identity": "B",
@@ -619,7 +695,8 @@
       "state": "滚动后",
       "file": "reports/screenshots/round-1/B/PAGES_PROFILE_INDEX-滚动后.png",
       "bytes": 95919,
-      "name": "我的（tabBar）"
+      "name": "我的（tabBar）",
+      "contentHash": "961d497506100b6b"
     },
     {
       "identity": "B",
@@ -627,7 +704,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/PAGES_PROFILE_INDEX-默认.png",
       "bytes": 123359,
-      "name": "我的（tabBar）"
+      "name": "我的（tabBar）",
+      "contentHash": "39eaa744715acc63"
     },
     {
       "identity": "B",
@@ -635,7 +713,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_CAMPUS_CAMPUS_CERTIFICATION-默认.png",
       "bytes": 78514,
-      "name": "校园认证"
+      "name": "校园认证",
+      "contentHash": "19d637dc2bf9d210"
     },
     {
       "identity": "B",
@@ -643,7 +722,8 @@
       "state": "滚动后",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_CAMPUS_CAMPUS_HUB-滚动后.png",
       "bytes": 221738,
-      "name": "校园圈 hub"
+      "name": "校园圈 hub",
+      "contentHash": "95536378a56d037a"
     },
     {
       "identity": "B",
@@ -651,7 +731,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_CAMPUS_CAMPUS_HUB-默认.png",
       "bytes": 174614,
-      "name": "校园圈 hub"
+      "name": "校园圈 hub",
+      "contentHash": "5c0e1a2564df0305"
     },
     {
       "identity": "B",
@@ -659,7 +740,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_CAMPUS_CAMPUS_POST-TOPIC-默认.png",
       "bytes": 68324,
-      "name": "校圈发帖"
+      "name": "校圈发帖",
+      "contentHash": "695485879b6431e4"
     },
     {
       "identity": "B",
@@ -667,7 +749,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_CAMPUS_CAMPUS_TOPIC-DETAIL-默认.png",
       "bytes": 39492,
-      "name": "校圈话题详情"
+      "name": "校圈话题详情",
+      "contentHash": "caa5bf7da5df466f"
     },
     {
       "identity": "B",
@@ -675,7 +758,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_CIRCLES_CIRCLES_CIRCLE-HOME-默认.png",
       "bytes": 194651,
-      "name": "圈子主页"
+      "name": "圈子主页",
+      "contentHash": "74881e34a9fb7446"
     },
     {
       "identity": "B",
@@ -683,7 +767,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_CIRCLES_CIRCLES_INDEX-默认.png",
       "bytes": 174723,
-      "name": "兴趣圈列表"
+      "name": "兴趣圈列表",
+      "contentHash": "b8501f39c67a2c16"
     },
     {
       "identity": "B",
@@ -691,7 +776,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_CIRCLES_CIRCLES_POST-TOPIC-默认.png",
       "bytes": 66262,
-      "name": "圈内发话题"
+      "name": "圈内发话题",
+      "contentHash": "c08ad45b7ab6e38f"
     },
     {
       "identity": "B",
@@ -699,7 +785,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_CIRCLES_CIRCLES_TOPIC-DETAIL-默认.png",
       "bytes": 40007,
-      "name": "话题详情"
+      "name": "话题详情",
+      "contentHash": "c16d31008a4b48d9"
     },
     {
       "identity": "B",
@@ -707,7 +794,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_CIRCLES_CIRCLES_TOPICS-默认.png",
       "bytes": 54632,
-      "name": "圈内话题列表"
+      "name": "圈内话题列表",
+      "contentHash": "16f2bba925d753ac"
     },
     {
       "identity": "B",
@@ -715,7 +803,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_DISCOVER-EXTRA_DISCOVER_HISTORY-默认.png",
       "bytes": 39534,
-      "name": "寻觅历史"
+      "name": "寻觅历史",
+      "contentHash": "3ed49543274eaa9f"
     },
     {
       "identity": "B",
@@ -723,7 +812,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_DISCOVER-EXTRA_DISCOVER_MATCH-SUCCESS-默认.png",
       "bytes": 126629,
-      "name": "匹配成功（寻觅主链路）"
+      "name": "匹配成功（寻觅主链路）",
+      "contentHash": "af1d53fde8b29164"
     },
     {
       "identity": "B",
@@ -731,7 +821,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_DISCOVER-EXTRA_HOME_SEGMENT-默认.png",
       "bytes": 92383,
-      "name": "首页分区页"
+      "name": "首页分区页",
+      "contentHash": "e8064ef5b7a6e77c"
     },
     {
       "identity": "B",
@@ -739,7 +830,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_DISCOVER-EXTRA_LIKES-VISITORS_INDEX-默认.png",
       "bytes": 121257,
-      "name": "喜欢我的/我的访客"
+      "name": "喜欢我的/我的访客",
+      "contentHash": "3a986773c1212780"
     },
     {
       "identity": "B",
@@ -747,7 +839,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_DISCOVER-EXTRA_LIKES_INDEX-默认.png",
       "bytes": 134951,
-      "name": "喜欢页（互相喜欢列表）"
+      "name": "喜欢页（互相喜欢列表）",
+      "contentHash": "e879f06c4f32b430"
     },
     {
       "identity": "B",
@@ -755,7 +848,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_DISCOVER-EXTRA_NEARBY_PEOPLE-默认.png",
       "bytes": 70575,
-      "name": "附近的人列表"
+      "name": "附近的人列表",
+      "contentHash": "89b06b83ef8ee102"
     },
     {
       "identity": "B",
@@ -763,7 +857,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_DISCOVER_DISCUSSIONS_INDEX-默认.png",
       "bytes": 81852,
-      "name": "讨论圈列表"
+      "name": "讨论圈列表",
+      "contentHash": "a3da6670d200a5d1"
     },
     {
       "identity": "B",
@@ -771,7 +866,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_LEGAL_AGREEMENT_INDEX-默认.png",
       "bytes": 183256,
-      "name": "用户协议"
+      "name": "用户协议",
+      "contentHash": "837efad8a96d8b9a"
     },
     {
       "identity": "B",
@@ -779,7 +875,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_LEGAL_PRIVACY_INDEX-默认.png",
       "bytes": 199736,
-      "name": "隐私政策"
+      "name": "隐私政策",
+      "contentHash": "fbc89f4b070d39af"
     },
     {
       "identity": "B",
@@ -787,7 +884,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_MARKET_DETAIL_INDEX-默认.png",
       "bytes": 23189,
-      "name": "商品详情"
+      "name": "商品详情",
+      "contentHash": "2aeeeff51a4bf372"
     },
     {
       "identity": "B",
@@ -795,7 +893,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_FEEDBACK_HISTORY-默认.png",
       "bytes": 66100,
-      "name": "反馈历史"
+      "name": "反馈历史",
+      "contentHash": "b0781bb18abab6ad"
     },
     {
       "identity": "B",
@@ -803,7 +902,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_PROFILE_ALBUM-默认.png",
       "bytes": 138347,
-      "name": "我的相册"
+      "name": "我的相册",
+      "contentHash": "7371d763c0ff31ad"
     },
     {
       "identity": "B",
@@ -811,7 +911,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_PROFILE_FAVORITES-默认.png",
       "bytes": 81801,
-      "name": "我的收藏"
+      "name": "我的收藏",
+      "contentHash": "e0937cb7c079ec6a"
     },
     {
       "identity": "B",
@@ -819,7 +920,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_PROFILE_LOCATION-默认.png",
       "bytes": 110096,
-      "name": "位置设置"
+      "name": "位置设置",
+      "contentHash": "7cbf48a6c2c688a1"
     },
     {
       "identity": "B",
@@ -827,7 +929,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_PROFILE_OTHER-默认.png",
       "bytes": 281661,
-      "name": "他人主页"
+      "name": "他人主页",
+      "contentHash": "7a1f31eb7b0fc2f6"
     },
     {
       "identity": "B",
@@ -835,7 +938,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_PROFILE_PRIVACY-默认.png",
       "bytes": 40749,
-      "name": "隐私设置"
+      "name": "隐私设置",
+      "contentHash": "dd5d2842d36c8cff"
     },
     {
       "identity": "B",
@@ -843,7 +947,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_PROFILE_TASKS-默认.png",
       "bytes": 78960,
-      "name": "任务中心"
+      "name": "任务中心",
+      "contentHash": "920f74177b9a6907"
     },
     {
       "identity": "B",
@@ -851,7 +956,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_PROFILE_VISITORS-默认.png",
       "bytes": 123376,
-      "name": "主页访客"
+      "name": "主页访客",
+      "contentHash": "4a7a625d75b3c537"
     },
     {
       "identity": "B",
@@ -859,7 +965,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_SETTINGS_DND-默认.png",
       "bytes": 75169,
-      "name": "勿扰模式"
+      "name": "勿扰模式",
+      "contentHash": "e3776bcca2b9b2f5"
     },
     {
       "identity": "B",
@@ -867,7 +974,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_SETTINGS_INDEX-默认.png",
       "bytes": 63809,
-      "name": "设置"
+      "name": "设置",
+      "contentHash": "f03d9c0a517b57d6"
     },
     {
       "identity": "B",
@@ -875,7 +983,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_VERIFICATION_INDEX-默认.png",
       "bytes": 87523,
-      "name": "认证中心"
+      "name": "认证中心",
+      "contentHash": "d507cf41a14d2d3e"
     },
     {
       "identity": "B",
@@ -883,7 +992,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_PROFILE-EXTRA_VERIFICATION_REAL-NAME-默认.png",
       "bytes": 85774,
-      "name": "实名认证"
+      "name": "实名认证",
+      "contentHash": "26d53a57085d8135"
     },
     {
       "identity": "B",
@@ -891,7 +1001,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_SETUP_INTEREST_INDEX-默认.png",
       "bytes": 100918,
-      "name": "兴趣选择"
+      "name": "兴趣选择",
+      "contentHash": "84c73b69e6a38b1e"
     },
     {
       "identity": "B",
@@ -899,7 +1010,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_SETUP_PROFILE_INDEX-默认.png",
       "bytes": 191444,
-      "name": "资料完善"
+      "name": "资料完善",
+      "contentHash": "a6aedb59e4d2342a"
     },
     {
       "identity": "B",
@@ -907,7 +1019,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_SETUP_RECOMMEND-PREF_INDEX-默认.png",
       "bytes": 81332,
-      "name": "推荐偏好"
+      "name": "推荐偏好",
+      "contentHash": "32773e281d63d9de"
     },
     {
       "identity": "B",
@@ -915,7 +1028,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_SETUP_SCHEDULE_INDEX-默认.png",
       "bytes": 51782,
-      "name": "作息设置"
+      "name": "作息设置",
+      "contentHash": "b9c06240e12fc1ad"
     },
     {
       "identity": "B",
@@ -923,7 +1037,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_SUPPORT_FEEDBACK_INDEX-默认.png",
       "bytes": 63368,
-      "name": "意见反馈"
+      "name": "意见反馈",
+      "contentHash": "acabc5a5b184af6a"
     },
     {
       "identity": "B",
@@ -931,7 +1046,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_ACTIVITIES_DETAIL-默认.png",
       "bytes": 212881,
-      "name": "活动详情"
+      "name": "活动详情",
+      "contentHash": "bd6a81fa4c13c4b6"
     },
     {
       "identity": "B",
@@ -939,7 +1055,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_DAILY-QUESTION_INDEX-默认.png",
       "bytes": 42548,
-      "name": "每日一问"
+      "name": "每日一问",
+      "contentHash": "f314ec31553d4f8f"
     },
     {
       "identity": "B",
@@ -947,7 +1064,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_HEART-SIGNALS_INDEX-默认.png",
       "bytes": 96697,
-      "name": "心动信号"
+      "name": "心动信号",
+      "contentHash": "66e739bc9cf7833b"
     },
     {
       "identity": "B",
@@ -955,7 +1073,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_HELP_INDEX-默认.png",
       "bytes": 95399,
-      "name": "帮助中心"
+      "name": "帮助中心",
+      "contentHash": "e52e18b42acddc53"
     },
     {
       "identity": "B",
@@ -963,7 +1082,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_LOVE-CENTER_CONSULTING-默认.png",
       "bytes": 29498,
-      "name": "恋爱咨询"
+      "name": "恋爱咨询",
+      "contentHash": "2e7ff13318779242"
     },
     {
       "identity": "B",
@@ -971,7 +1091,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_LOVE-CENTER_INDEX-默认.png",
       "bytes": 30126,
-      "name": "恋爱中心"
+      "name": "恋爱中心",
+      "contentHash": "61ce56ff9fc48bb5"
     },
     {
       "identity": "B",
@@ -979,7 +1100,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_LOVE-CENTER_MBTI-默认.png",
       "bytes": 113253,
-      "name": "MBTI 性格"
+      "name": "MBTI 性格",
+      "contentHash": "49d47be38284d7c6"
     },
     {
       "identity": "B",
@@ -987,7 +1109,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_LOVE-CENTER_NEARBY-默认.png",
       "bytes": 214130,
-      "name": "恋爱中心·附近缘分"
+      "name": "恋爱中心·附近缘分",
+      "contentHash": "ad35d810abba9485"
     },
     {
       "identity": "B",
@@ -995,7 +1118,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_SEARCH_INDEX-默认.png",
       "bytes": 33160,
-      "name": "搜索"
+      "name": "搜索",
+      "contentHash": "9adc448c898c7ea0"
     },
     {
       "identity": "B",
@@ -1003,7 +1127,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_TOOLS_SECURITY_INDEX-默认.png",
       "bytes": 78914,
-      "name": "安全中心"
+      "name": "安全中心",
+      "contentHash": "6de5d9e1db6c3e29"
     },
     {
       "identity": "B",
@@ -1011,7 +1136,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_VILLAGE_VILLAGE_DETAIL-默认.png",
       "bytes": 177068,
-      "name": "帖子详情页"
+      "name": "帖子详情页",
+      "contentHash": "127e6d1a2751e0dc"
     },
     {
       "identity": "B",
@@ -1019,7 +1145,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_VILLAGE_VILLAGE_HISTORY-默认.png",
       "bytes": 164517,
-      "name": "浏览记录页"
+      "name": "浏览记录页",
+      "contentHash": "79e6cc0f7f069b40"
     },
     {
       "identity": "B",
@@ -1027,7 +1154,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_VILLAGE_VILLAGE_INDEX-默认.png",
       "bytes": 160697,
-      "name": "村口社区主页（频道Tab）"
+      "name": "村口社区主页（频道Tab）",
+      "contentHash": "f1a8530d3eebbe9c"
     },
     {
       "identity": "B",
@@ -1035,7 +1163,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_VILLAGE_VILLAGE_POST-默认.png",
       "bytes": 68250,
-      "name": "发帖页（旧，保留兼容）"
+      "name": "发帖页（旧，保留兼容）",
+      "contentHash": "f3ddb60245695cf0"
     },
     {
       "identity": "B",
@@ -1043,7 +1172,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_VILLAGE_VILLAGE_PUBLISH-默认.png",
       "bytes": 59887,
-      "name": "统一发布动态页（发布主入口）"
+      "name": "统一发布动态页（发布主入口）",
+      "contentHash": "2fb92f6ff4a45ac9"
     },
     {
       "identity": "B",
@@ -1051,7 +1181,8 @@
       "state": "默认",
       "file": "reports/screenshots/round-1/B/SUBPACKAGES_VILLAGE_VILLAGE_TAG-POSTS-默认.png",
       "bytes": 29260,
-      "name": "标签帖子列表页"
+      "name": "标签帖子列表页",
+      "contentHash": "4313c0f18c03a928"
     },
     {
       "identity": "A",
@@ -1060,7 +1191,8 @@
       "file": "reports\\screenshots\\round-1\\A\\PAGES_REGISTER_INDEX-默认.png",
       "bytes": 118649,
       "name": "注册页",
-      "variant": "未登录态（logout 后直连）"
+      "variant": "未登录态（logout 后直连）",
+      "contentHash": "d7248197ae452770"
     },
     {
       "identity": "A",
@@ -1070,7 +1202,8 @@
       "bytes": 118649,
       "name": "注册页",
       "interaction": ".card",
-      "modalMocked": true
+      "modalMocked": true,
+      "contentHash": "d7248197ae452770"
     },
     {
       "identity": "B",
@@ -1078,7 +1211,8 @@
       "state": "默认",
       "file": "reports\\screenshots\\round-1\\B\\SUBPACKAGES_CHAT_CHAT-SESSION_INDEX-默认.png",
       "bytes": 42985,
-      "name": "聊天会话页（聊天主链路）"
+      "name": "聊天会话页（聊天主链路）",
+      "contentHash": "4f6739a9e2965a72"
     },
     {
       "identity": "B",
@@ -1086,7 +1220,8 @@
       "state": "默认",
       "file": "reports\\screenshots\\round-1\\B\\SUBPACKAGES_CHAT_OFFICIAL-CHAT_INDEX-默认.png",
       "bytes": 143362,
-      "name": "官方号会话页（寻觅助手）"
+      "name": "官方号会话页（寻觅助手）",
+      "contentHash": "4d92290f14eb6ce1"
     },
     {
       "identity": "B",
@@ -1094,7 +1229,8 @@
       "state": "默认",
       "file": "reports\\screenshots\\round-1\\B\\SUBPACKAGES_SETUP_CAMPUS_INDEX-默认.png",
       "bytes": 78544,
-      "name": "学校设置"
+      "name": "学校设置",
+      "contentHash": "cdc5134ba50a2b5e"
     },
     {
       "identity": "B",
@@ -1102,7 +1238,8 @@
       "state": "默认",
       "file": "reports\\screenshots\\round-1\\B\\SUBPACKAGES_DISCOVER_ACTIVITIES_INDEX-默认.png",
       "bytes": 101070,
-      "name": "活动列表"
+      "name": "活动列表",
+      "contentHash": "5e531b0d7a19558d"
     },
     {
       "identity": "B",
@@ -1110,7 +1247,8 @@
       "state": "默认",
       "file": "reports\\screenshots\\round-1\\B\\SUBPACKAGES_MARKET_SHOP_INDEX-默认.png",
       "bytes": 29229,
-      "name": "商城"
+      "name": "商城",
+      "contentHash": "ae5cd47006e33646"
     },
     {
       "identity": "B",
@@ -1118,7 +1256,8 @@
       "state": "默认",
       "file": "reports\\screenshots\\round-1\\B\\SUBPACKAGES_MARKET_WALLET_INDEX-默认.png",
       "bytes": 29811,
-      "name": "钱包"
+      "name": "钱包",
+      "contentHash": "8a3411109e677fd9"
     },
     {
       "identity": "B",
@@ -1127,7 +1266,8 @@
       "file": "reports\\screenshots\\round-1\\B\\PAGES_LOGIN_INDEX-默认.png",
       "bytes": 166717,
       "name": "登录页",
-      "variant": "未登录态（logout 后直连）"
+      "variant": "未登录态（logout 后直连）",
+      "contentHash": "e77c54cd4da3e944"
     },
     {
       "identity": "B",
@@ -1137,7 +1277,8 @@
       "bytes": 105373,
       "name": "登录页",
       "interaction": "button",
-      "modalMocked": true
+      "modalMocked": true,
+      "contentHash": "697a8abc800b42ad"
     },
     {
       "identity": "B",
@@ -1146,7 +1287,8 @@
       "file": "reports\\screenshots\\round-1\\B\\PAGES_REGISTER_INDEX-默认.png",
       "bytes": 96166,
       "name": "注册页",
-      "variant": "未登录态（logout 后直连）"
+      "variant": "未登录态（logout 后直连）",
+      "contentHash": "f2463cc923243169"
     },
     {
       "identity": "B",
@@ -1156,7 +1298,8 @@
       "bytes": 96166,
       "name": "注册页",
       "interaction": ".card",
-      "modalMocked": true
+      "modalMocked": true,
+      "contentHash": "f2463cc923243169"
     },
     {
       "identity": "B",
@@ -1165,7 +1308,8 @@
       "file": "reports\\screenshots\\round-1\\B\\PAGES_REGISTER_SUCCESS-默认.png",
       "bytes": 76335,
       "name": "注册成功页",
-      "variant": "未登录态（logout 后直连）"
+      "variant": "未登录态（logout 后直连）",
+      "contentHash": "8ad09245ea9f5a7b"
     }
   ],
   "failures": [
