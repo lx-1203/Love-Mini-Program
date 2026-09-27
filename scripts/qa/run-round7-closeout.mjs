@@ -103,21 +103,30 @@ const leases = heldLeases({});
 if (leases.length) { console.log("CLOSEOUT_RESULT=FAIL reason=设备正在被用（" + leases.map((h) => h.owner + "@pid" + h.pid).join("；") + "）⇒ 收尾里有取景/分诊步骤，不跟执行腿抢通道；等队列跑完再来"); process.exit(2); }
 
 const tally = (() => {
-  const f = join(RDIR, "queue-state.json");
-  if (!existsSync(f)) return "MISSING " + f;
+  /* 现量：排队器把状态写在它自己的 --out 目录（reports/audit/round-7/ui-queue/queue-state.json），
+     不在轮目录根下 ⇒ 这一步以前只会打印 MISSING 然后照常往下跑，等于收尾的第一步从没真判过。
+     两个位置都试；都读不到就是把本轮腿账读空，必须算失败，不许读成"没有红腿"。 */
+  const rel = (x) => String(x).replace(REPO + "/", "").replace(REPO + "\\", "");
+  const cands = [join(RDIR, "queue-state.json"), join(RDIR, "ui-queue", "queue-state.json")];
+  const f = cands.find((x) => existsSync(x));
+  if (!f) return { line: "CLOSEOUT_TALLY=FAIL reason=读不到 queue-state.json（试过：" + cands.map(rel).join(" , ") + "）⇒ 本轮腿账是空的，不许当成没有红腿", fail: true };
   const j = JSON.parse(readFileSync(f, "utf8"));
   const legs = (j.legs || []);
   const c = {};
   for (const l of legs) c[l.status] = (c[l.status] || 0) + 1;
   const sum = Object.values(c).reduce((a, b) => a + b, 0);
   const ok = sum === legs.length;
-  return "腿=" + legs.length + " 分布=" + JSON.stringify(c) + " 合计=" + sum + (ok ? " CONSERVED" : " MISMATCH") +
-    " 红腿=" + legs.filter((l) => l.status === "FAIL").map((l) => l.name || l.id || "?").join(",") +
-    " ADVISORY_RED=" + legs.filter((l) => l.status === "ADVISORY_RED").length;
+  return { line: "CLOSEOUT_STEP queue-tally（" + rel(f) + "） :: 腿=" + legs.length + " 分布=" + JSON.stringify(c) + " 合计=" + sum + (ok ? " CONSERVED" : " MISMATCH") +
+      " 红腿=" + legs.filter((l) => l.status === "FAIL").map((l) => l.name || l.id || "?").join(",") +
+      " 未跑=" + legs.filter((l) => l.status === "NOT_RUN").map((l) => l.name || l.id || "?").join(",") +
+      " ADVISORY_RED=" + legs.filter((l) => l.status === "ADVISORY_RED").length,
+    fail: !ok,
+    notRun: legs.filter((l) => l.status === "NOT_RUN").length };
 })();
-console.log("CLOSEOUT_STEP queue-tally :: " + tally);
+console.log(tally.line);
 
-let fails = 0, ran = 0;
+let fails = tally.fail ? 1 : 0, ran = 0;
+if (tally.fail) console.log("CLOSEOUT_TALLY counted as a failing step（守恒破了或状态读空）");
 for (const s of chosen) {
   if (!s.file) continue;
   const r = spawnSync(process.execPath, [join(REPO, s.file)].concat(s.args), { cwd: REPO, encoding: "utf8", maxBuffer: 96 * 1024 * 1024, timeout: 30 * 60 * 1000 });
