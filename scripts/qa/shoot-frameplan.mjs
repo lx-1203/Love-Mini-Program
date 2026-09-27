@@ -29,7 +29,12 @@ const flag = (k) => process.argv.includes("--" + k);
    并发不会报错，只会互相换页——实测一批测量因此作废（58 行落点探针取空）。
    拿不到租约就一行都不跑，而不是"跑完再解释为什么到处是 ERR"。 */
 const UI_LEASE_OWNER = "r7-shooter-" + process.pid;
-if (process.env.QA_SKIP_UI_LEASE === "1") {
+if (process.argv.includes("--dry")) {
+  /* dry 是"我就看一眼配方会拍什么"，恰恰最容易在别的驱动正在跑的时候被按下 ——
+     以前它无条件 acquireUi()，于是"预览"把正在跑的取景腿顶掉（与 write-gates-json 的 --dry 同一族）。
+     dry 分支不碰设备、不写盘，后面的 DRY 分支自己会停在打印处。 */
+  console.log("SHOOT_LEASE=SKIPPED_DRY（--dry 不抢租约：预览配方不该把正在跑的测量腿顶掉）");
+} else if (process.env.QA_SKIP_UI_LEASE === "1") {
   console.log("SHOOT_LEASE=SKIPPED（QA_SKIP_UI_LEASE=1，明知有别的驱动时会污染测量）");
 } else {
   const gotLease = acquireUi({ owner: UI_LEASE_OWNER, batch: "R7" });

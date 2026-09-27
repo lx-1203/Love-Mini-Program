@@ -6,8 +6,8 @@
    判决口径：booked 不等于结案。三态由 landingStatus() 统一给（triage 门禁 import 它），
    所以「写了腿没跑」「跑了不过」「跑过且符合裁定」在报告里长得不一样。
    Node：PATH 上的 node 是 DevTools 的 v16，本文件要 v22（见 D:/codex-tools/node-v22.17.0-win-x64）。 */
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
+import { resolve, join } from "node:path";
 import { acquireUi, releaseUi, renewUi, heldLeases } from "./ui-lease.mjs";
 import { openPage, routeStack, nodeCount, clearSession, verifyLogin } from "./cli-automator.mjs";
 import { readApiMode, assertGuestCapable } from "./artifact-band.mjs";
@@ -44,6 +44,40 @@ function checkAnchor(a) {
   return null;
 }
 
+/* ---------- #67：账本成员改由判据台（ops）派生，不再只吃某一次跑的落地对 ----------
+   为什么必须改：2026-09-27 起游客腿按 c.identities 不再认领 420 条"前置是登录态"的用例
+   （那是 #51 要的语义），于是"这一组在本轮 triage 里出现过的行"会成批消失。
+   继续拿它当唯一名册，就会出现两种错：① 把"游客不该跑"误判成"裁定过期/落点已变"而判红；
+   ② 更坏 —— 某组真的没人复验了，却因为名册空而被当成"没有债"。
+   名册的**成员**因此改由 ops 派生（该页上被收窄成登录态腿的每一条 case），
+   跑测观察到的落地对只作为"第二证人"参与守恒，不再单独决定谁在账上。 */
+const OPS_DIR = resolve(REPO, arg("ops", "reports/audit/round-6/ops"));
+
+/** 这条 case 是否已被收窄成"只有登录态腿认领"（游客腿不再作证 ⇒ 需要 GG-* 复测腿替它记账）。 */
+export function guestNoLongerClaims(c) {
+  const ids = (Array.isArray(c && c.identities) ? c.identities : []).map(String).filter(Boolean);
+  if (!ids.length) return false;
+  return !ids.some((x) => x === "guest" || x === "none");
+}
+
+/** page → 该页被收窄的 case id 列表（来自 ops 判据台，与跑了哪一份语料无关）。 */
+function opsRosterByPage() {
+  const out = new Map();
+  if (!existsSync(OPS_DIR)) { markProblem("ops 判据台目录不存在：" + OPS_DIR + " ⇒ 名册无法由判据台派生（不退回单份语料）"); return out; }
+  for (const f of readdirSync(OPS_DIR).filter((x) => x.endsWith(".json")).sort()) {
+    let j; try { j = JSON.parse(readFileSync(join(OPS_DIR, f), "utf8")); } catch (e) { markProblem("ops 文件读不动 " + f + "：" + String(e.message).slice(0, 50)); continue; }
+    for (const c of j.cases || []) {
+      if (!guestNoLongerClaims(c)) continue;
+      const page = String(c.page || "").trim();
+      if (!page) continue;
+      const set = out.get(page) || new Set();
+      set.add(String(c.id || ""));
+      out.set(page, set);
+    }
+  }
+  return out;
+}
+
 /* ---------- 共用：把 policy + triage 合成组集，并做双向守恒 ---------- */
 function buildPlan() {
   const pol = JSON.parse(readFileSync(POLICY, "utf8"));
@@ -71,46 +105,69 @@ function buildPlan() {
   console.log("GUEST_LAND_SOURCES=" + (perFile.join(" ; ") || "(无)") + " ⇒ 并集组数=" + Object.keys(groups).length +
     " 并集行数=" + Object.values(groups).reduce((a, v) => a + v.length, 0));
   const gkeys = Object.keys(groups);
-  if (!gkeys.length) markProblem("triage 里一组落地对都没有 ⇒ 要么上游没跑，要么吃进错了文件（空集不能当成「全部已裁定」）");
   const pkeys = pol.rows.map((r) => key(r.page, r.landing));
   const byKey = Object.fromEntries(pol.rows.map((r) => [key(r.page, r.landing), r]));
+  const opsRoster = opsRosterByPage();
   const gset = new Set(gkeys), pset = new Set(pkeys);
   const onlyTriage = gkeys.filter((k) => !pset.has(k));
-  const onlyPolicy = pkeys.filter((k) => !gset.has(k));
-  /* 双向都要红：只查一个方向时，policy 多出来的组会伪装成"已覆盖"，
-     triage 多出来的组会被当成"还没裁定"，两边都能凑出守恒数字。 */
+  /* 双向守恒按新方向查：
+     - 跑测里出现 policy 没有的落点 ⇒ 仍然红（新落点必须当场裁定，不许落进兜底）；
+     - policy 有而本轮跑测没出现 ⇒ 先问 ops 有没有成员：有 ⇒ 只是"游客腿按裁定不再认领这些行"，
+       记一条具名读数；ops 也没有 ⇒ 红，这一组既没人跑也没人记账，才是真缺口。
+     旧的"policy 多出来的组一律判红"就是"裁定过期或落点已变"那句话，在 #51 之后会天天假红。 */
+  const noRunWitness = [], trulyEmpty = [];
+  for (const k of pkeys) {
+    if (gset.has(k)) continue;
+    const [page] = k.split(" → ");
+    if ((opsRoster.get(page) || new Set()).size) noRunWitness.push(k); else trulyEmpty.push(k);
+  }
   if (onlyTriage.length) markProblem("policy 缺这几组落地对（新落点必须当场裁定，不许落进兜底）：\n  " + onlyTriage.join("\n  "));
-  if (onlyPolicy.length) markProblem("policy 里这几组在本轮 triage 没有对应落地对（裁定过期或落点已变）：\n  " + onlyPolicy.join("\n  "));
+  if (trulyEmpty.length) markProblem("policy 里这几组既不在本轮跑测的落地对里、ops 也没有任何被收窄出游客腿的用例 ⇒ 这一组没有任何证人：\n  " + trulyEmpty.join("\n  "));
+  if (noRunWitness.length) console.log("GUEST_LAND_NO_RUN_WITNESS=" + noRunWitness.length + " 组（游客腿按 c.identities 不再认领这些页 ⇒ 跑测里不再出现落地对；成员账改由 ops 派生，不是裁定过期）");
   const dup = pkeys.filter((k, i) => pkeys.indexOf(k) !== i);
   if (dup.length) markProblem("policy 键重复：" + dup.join(" / "));
 
   const rows = [];
-  let debt = 0;
-  for (const k of gkeys.sort()) {
-    const ids = groups[k];
-    debt += ids.length;
+  let debt = 0, opsSourced = 0, observedOnly = 0;
+  /* 名册遍历 policy 而不是跑测观察到的组：一组会不会从账上"消失"，过去取决于那次跑有没有撞上它。 */
+  for (const k of pkeys.slice().sort()) {
     const r = byKey[k];
     if (!r) continue;
+    const [page, landing] = k.split(" → ");
+    const observed = groups[k] || [];
+    const fromOps = [...(opsRoster.get(page) || [])].filter(Boolean);
+    const ids = [...new Set([...fromOps, ...observed])];
+    if (!ids.length) { markProblem(`组 ${k} 一名成员都没有 ⇒ 有裁定却没有账本成员，不能出 GG-* 腿`); continue; }
+    debt += ids.length;
+    if (fromOps.length) opsSourced++; else observedOnly++;
     const mk = pol.markers[r.family];
     if (!mk) { markProblem(`组 ${k} 的 family=${r.family} 在 markers 里没有口径`); continue; }
-    const [page, landing] = k.split(" → ");
     rows.push({
       groupKey: k, page, landing, family: r.family, entry: r.entry,
       /* 复测腿绑身份：游客档量到的落点成员不能替 A 档的同一组落地对说话
          （A 档在 VIP 三页上也会落到 pages/profile/index，但那是另一批行）。 */
       identity: "guest",
       caseIds: ids, debtRows: ids.length,
+      memberSource: { fromOps: fromOps.length, fromRun: observed.length },
       landingMarker: mk.landingMarker, registerEntry: mk.registerEntry ?? null,
       guardCaseId: "GG-" + page.replace(/^subpackages\//, "").replace(/\//g, "-"),
       criterion: `游客（verifyLogin=not-logged-in）reLaunch('/${page}') 后 ${WINDOWS[0]}ms 内（复采 ${WINDOWS[1]}ms）栈顶 route === ${landing}`
-        + `；${mk.landingMarker}:present（证明落的是真页而不是空壳）`
-        + (mk.registerEntry ? `；${mk.registerEntry}:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）` : "")
+        + `${mk.landingMarker}:present（证明落的是真页而不是空壳）`
+        + (mk.registerEntry ? `${mk.registerEntry}:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）` : "")
         + `；采样时身份不是游客的落点不作证`,
       why: pol.$ruling,
     });
   }
-  const sum = rows.reduce((a, r) => a + r.debtRows, 0);
-  if (sum !== debt) markProblem(`守恒破：出例覆盖 ${sum} 行 ≠ triage 落地行 ${debt} 行`);
+  console.log("GUEST_LAND_ROSTER 组=" + rows.length + "（成员来自 ops 的=" + opsSourced + " 只来自跑测的=" + observedOnly + "）成员行次合计=" + debt + "｜跑测观察并集组数=" + gkeys.length);
+  /* 守恒独立复算一遍"应有的成员数"：循环里任何一次 continue（缺 markers 口径、成员为空）
+     都会把该组的成员从 debt 里丢掉 ⇒ 复算与累加不等就报红。恒等式（sum==累加）永远绿，不写那种。 */
+  let expect = 0;
+  for (const k of pkeys) {
+    const [page] = k.split(" → ");
+    expect += new Set([...(opsRoster.get(page) || []), ...(groups[k] || [])].filter(Boolean)).size;
+  }
+  const sum = expect;
+  if (sum !== debt) markProblem(`名册漏记：按 policy 应覆盖 ${sum} 行，实际进了 ${debt} 行 ⇒ 有组被跳过（缺 markers 口径或成员为空），那些行的债从账上掉了`);
   const ids = rows.map((r) => r.guardCaseId);
   if (new Set(ids).size !== ids.length) markProblem("guardCaseId 撞号（一页两号会让复测腿归属不清）");
   /* 载具能不能量这条判据：exec 语料里 toast 从来没被采到过 ⇒ 任何 criterion 提 toast 都是永不会成功的一条。 */
