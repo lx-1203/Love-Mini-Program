@@ -1,0 +1,168 @@
+{
+ "startedAt": "2026-09-27T16:46:38.497Z",
+ "legs": [
+  {
+   "name": "apply-identity-scope-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8/apply-identity-scope-r8.log",
+   "bytes": 2254,
+   "resultLines": [
+    "IDSCOPE_RESULT=APPLIED"
+   ]
+  },
+  {
+   "name": "identity-scope-idempotent-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8/identity-scope-idempotent-r8.log",
+   "bytes": 2210,
+   "resultLines": [
+    "IDSCOPE_RESULT=DRY（加 --apply 才落盘）"
+   ]
+  },
+  {
+   "name": "stamp-rewrite-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8/stamp-rewrite-r8.log",
+   "bytes": 165,
+   "resultLines": [
+    "STAMP_RESULT=PASS"
+   ]
+  },
+  {
+   "name": "refreeze-ops-copy-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8/refreeze-ops-copy-r8.log",
+   "bytes": 144,
+   "resultLines": [
+    "FREEZEOPS_RESULT=OK 校验和全部一致，出处写入 PROVENANCE.json"
+   ]
+  },
+  {
+   "name": "stamp-verify-copy-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8/stamp-verify-copy-r8.log",
+   "bytes": 223,
+   "resultLines": [
+    "STAMP_RESULT=PASS 副本即戳里那一版（cases=1107，与本轮执行腿所读语料逐文件同内容）"
+   ]
+  },
+  {
+   "name": "guest-landing-book-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8/guest-landing-book-r8.log",
+   "bytes": 887,
+   "resultLines": [
+    "GUEST_LANDING_RESULT=OK（每组都有具名复测腿；BOOKED/MEASURED-* 非 CLOSED 一律不算结案）"
+   ]
+  },
+  {
+   "name": "rebuild-showcase-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8/rebuild-showcase-r8.log",
+   "bytes": 30664,
+   "resultLines": [
+    "SHOWCASE_RESULT=PASS"
+   ]
+  },
+  {
+   "name": "rebuild-mock-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8/rebuild-mock-r8.log",
+   "bytes": 643,
+   "resultLines": [
+    "NPMSCRIPT_RESULT=OK（命中 1/2 个「mp-build」标记）"
+   ]
+  },
+  {
+   "name": "rebuild-real-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8/rebuild-real-r8.log",
+   "bytes": 625,
+   "resultLines": [
+    "NPMSCRIPT_RESULT=OK（命中 1/2 个「mp-build」标记）"
+   ]
+  },
+  {
+   "name": "gate-band-freshness-r8",
+   "status": "FAIL",
+   "exitCode": 1,
+   "log": "reports/audit/round-7/ui-queue-stage8/gate-band-freshness-r8.log",
+   "bytes": 1500,
+   "resultLines": []
+  },
+  {
+   "name": "gate-selectors-exist-mock-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-selectors-exist-real-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "open-window-mock-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "exec-A-login-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "exec-guest-login-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "verify-logged-in-landing-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "triage-exec-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "triage-guest-login-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "open-window-real-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "exec-guest-real-login-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "ws-channel-up-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "ws-component-scoped-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "queue-homogeneity-r8",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "advisoryFail": 0,
+ "finishedAt": "2026-09-27T16:55:36.576Z",
+ "conservation": {
+  "legsTotal": 23,
+  "legsOk": 9,
+  "tally": {
+   "OK": 9,
+   "FAIL": 1,
+   "NOT_RUN": 13
+  },
+  "ok": true
+ }
+}

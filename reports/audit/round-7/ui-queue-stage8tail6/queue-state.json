@@ -1,0 +1,36 @@
+{
+ "startedAt": "2026-09-27T22:40:04.887Z",
+ "legs": [
+  {
+   "name": "ws-component-scoped-r8",
+   "status": "FAIL",
+   "exitCode": 2,
+   "log": "reports/audit/round-7/ui-queue-stage8tail6/ws-component-scoped-r8.log",
+   "bytes": 6974,
+   "resultLines": [
+    "WSX_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r-exec-ws-round-7",
+    "WSX_RESULT=FAIL reason=名单里 95 条在本腿扫到的 manifest 里根本没出现（manifest 没进扫描集或判据被改了号）：SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX16,SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX17,SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX29,SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX30,SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT26,SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT27,SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT28,SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT29 / 本批无可采信测量（class=unmeasurable，50 行落点/探针/帧全空，已在连续 3 个同因开页失败组上早停）⇒ 记 NOT_SHOOTABLE/重跑，不许记成产品 FAILED ⇒ 结论不落盘"
+   ]
+  },
+  {
+   "name": "queue-homogeneity-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "queue-homogeneity-tail6",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "advisoryFail": 0,
+ "finishedAt": "2026-09-27T22:41:17.437Z",
+ "conservation": {
+  "legsTotal": 3,
+  "legsOk": 0,
+  "tally": {
+   "FAIL": 1,
+   "NOT_RUN": 2
+  },
+  "ok": true
+ }
+}

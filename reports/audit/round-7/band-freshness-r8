@@ -1,0 +1,111 @@
+{
+ "generatedAt": "2026-09-27T18:48:19.692Z",
+ "srcDirtyFiles": 0,
+ "bands": [
+  {
+   "name": "mock",
+   "dir": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin",
+   "files": 2153,
+   "newestArtifact": "2026-09-27T16:52:07.936Z",
+   "newestArtifactMs": 1790527927936.943,
+   "srcDirtyNewest": null,
+   "restoredTouch": 8,
+   "lateDirty": 0,
+   "apiMode": "mock",
+   "viteMode": "mp-weixin-mock"
+  },
+  {
+   "name": "real",
+   "dir": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+   "files": 2152,
+   "newestArtifact": "2026-09-27T16:54:50.113Z",
+   "newestArtifactMs": 1790528090113.5188,
+   "srcDirtyNewest": null,
+   "restoredTouch": 8,
+   "lateDirty": 0,
+   "apiMode": "real",
+   "viteMode": "real"
+  },
+  {
+   "name": "showcase",
+   "dir": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-showcase",
+   "files": 2154,
+   "newestArtifact": "2026-09-27T16:49:36.572Z",
+   "newestArtifactMs": 1790527776572.7178,
+   "srcDirtyNewest": null,
+   "restoredTouch": 8,
+   "lateDirty": 0,
+   "apiMode": "real",
+   "viteMode": "mp-weixin-showcase"
+  }
+ ],
+ "stale": [],
+ "mtimeOnly": [],
+ "undecidable": [],
+ "notObservable": [],
+ "skippedTests": 0,
+ "skippedAfterConviction": 0,
+ "markers": [
+  {
+   "symbol": "isAllowedMediaExt",
+   "bands": [
+    "mock",
+    "real",
+    "showcase"
+   ],
+   "covers": [
+    "apps/client/src/utils/media.ts",
+    "apps/client/src/services/voice-upload.ts"
+   ],
+   "from": "③ 上传扩展名两侧都不校验（客户端侧门禁，services/api.ts）",
+   "hits": {
+    "mock": 3,
+    "real": 3,
+    "showcase": 3
+   }
+  },
+  {
+   "symbol": "parsePrivateQuoteContext",
+   "bands": [
+    "mock",
+    "real",
+    "showcase"
+   ],
+   "from": "③ 私聊路径缺引用回复字段（stores/messages.ts）",
+   "hits": {
+    "mock": 2,
+    "real": 2,
+    "showcase": 2
+   }
+  },
+  {
+   "symbol": "pinnedNotice",
+   "bands": [
+    "mock",
+    "real",
+    "showcase"
+   ],
+   "from": "② circle-home 置顶提示改为走 i18n（t(\"circle.home.pinnedNotice\")）",
+   "hits": {
+    "mock": 2,
+    "real": 2,
+    "showcase": 2
+   }
+  },
+  {
+   "symbol": "--hot-badge-bg",
+   "bands": [
+    "mock",
+    "real",
+    "showcase"
+   ],
+   "from": "MP-R2-CIRCLES-INDEX-007（徽标底/字就近成对声明；纯样式改动没有字符串字面量可搜 ⇒ 登记可搜符号，避免判点长期停在无法定罪也无法洗清）",
+   "hits": {
+    "mock": 1,
+    "real": 1,
+    "showcase": 1
+   }
+  }
+ ],
+ "problems": []
+}

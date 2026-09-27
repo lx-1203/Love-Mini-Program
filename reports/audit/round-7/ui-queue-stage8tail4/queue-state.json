@@ -1,0 +1,53 @@
+{
+ "startedAt": "2026-09-27T21:27:22.232Z",
+ "legs": [
+  {
+   "name": "triage-guest-login-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8tail4/triage-guest-login-r8.log",
+   "bytes": 2476,
+   "resultLines": []
+  },
+  {
+   "name": "ws-channel-up-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8tail4/ws-channel-up-r8.log",
+   "bytes": 1197,
+   "resultLines": []
+  },
+  {
+   "name": "ws-component-scoped-r8",
+   "status": "FAIL",
+   "exitCode": 1,
+   "log": "reports/audit/round-7/ui-queue-stage8tail4/ws-component-scoped-r8.log",
+   "bytes": 4881,
+   "resultLines": [
+    "WSX_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r-exec-ws-round-7",
+    "WSX_RESULT=OK"
+   ]
+  },
+  {
+   "name": "queue-homogeneity-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "queue-homogeneity-tail4",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "advisoryFail": 0,
+ "finishedAt": "2026-09-27T21:53:23.715Z",
+ "conservation": {
+  "legsTotal": 5,
+  "legsOk": 2,
+  "tally": {
+   "OK": 2,
+   "FAIL": 1,
+   "NOT_RUN": 2
+  },
+  "ok": true
+ }
+}

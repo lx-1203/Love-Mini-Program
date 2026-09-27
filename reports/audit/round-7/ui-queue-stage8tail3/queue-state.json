@@ -1,0 +1,85 @@
+{
+ "startedAt": "2026-09-27T21:02:11.347Z",
+ "legs": [
+  {
+   "name": "verify-logged-in-landing-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8tail3/verify-logged-in-landing-r8.log",
+   "bytes": 735,
+   "resultLines": [
+    "LOGINLAND_RESULT=PASS —— 落点半与裁定一致；导航计数半本载具不判（见上面 LOGINLAND_NOT_JUDGED）"
+   ]
+  },
+  {
+   "name": "triage-exec-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8tail3/triage-exec-r8.log",
+   "bytes": 863,
+   "resultLines": []
+  },
+  {
+   "name": "open-window-real-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8tail3/open-window-real-r8.log",
+   "bytes": 791,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-guest-real-login-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8tail3/exec-guest-real-login-r8.log",
+   "bytes": 2456,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-r8-guest-real-login",
+    "RUNNER_STATS identity=guest loginVerify=not-logged-in executed=0 failed=0 skipped=38(交互动词=0 requiresReal=0 非真实用例=26 探针无结果=0 判据无可判物件=0 出帧失败=0 交互禁触=0 交互没点名=0 交互后离页=0 锁屏挡住=0 交互下发失败=0 身份适用范围外=0 盖章不可自动化=12) 页组=1 真做过的交互=0 折叠探针类名次数=23 出帧=0 未点名类名=0 通道异常次数=0",
+    "RUNNER_RESULT=OK"
+   ]
+  },
+  {
+   "name": "triage-guest-login-r8",
+   "status": "FAIL",
+   "exitCode": 2,
+   "log": "reports/audit/round-7/ui-queue-stage8tail3/triage-guest-login-r8.log",
+   "bytes": 4691,
+   "resultLines": [
+    "TRIAGE_RESULT=FAIL problems=1"
+   ]
+  },
+  {
+   "name": "ws-channel-up-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "ws-component-scoped-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "queue-homogeneity-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "queue-homogeneity-tail3",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "advisoryFail": 0,
+ "finishedAt": "2026-09-27T21:05:04.956Z",
+ "conservation": {
+  "legsTotal": 9,
+  "legsOk": 4,
+  "tally": {
+   "OK": 4,
+   "FAIL": 1,
+   "NOT_RUN": 4
+  },
+  "ok": true
+ }
+}

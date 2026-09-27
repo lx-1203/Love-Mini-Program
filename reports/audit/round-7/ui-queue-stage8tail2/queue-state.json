@@ -1,0 +1,64 @@
+{
+ "startedAt": "2026-09-27T19:29:33.692Z",
+ "legs": [
+  {
+   "name": "exec-guest-login-r8",
+   "status": "FAIL",
+   "exitCode": 2,
+   "log": "reports/audit/round-7/ui-queue-stage8tail2/exec-guest-login-r8.log",
+   "bytes": 1483,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-r8-guest-login",
+    "RUNNER_RESULT=FAIL reason=游客身份 × mock 档是不可满足的组合（mock 引导会种会话）⇒ 一行都不跑，别占设备；游客刀请跑 real 档，或显式加 --allow-guest-mock"
+   ]
+  },
+  {
+   "name": "verify-logged-in-landing-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "triage-exec-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "triage-guest-login-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "open-window-real-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "exec-guest-real-login-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "ws-channel-up-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "ws-component-scoped-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "queue-homogeneity-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "queue-homogeneity-tail2",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "advisoryFail": 0,
+ "finishedAt": "2026-09-27T19:30:24.581Z",
+ "conservation": {
+  "legsTotal": 10,
+  "legsOk": 0,
+  "tally": {
+   "FAIL": 1,
+   "NOT_RUN": 9
+  },
+  "ok": true
+ }
+}

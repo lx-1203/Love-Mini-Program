@@ -1,0 +1,48 @@
+{
+ "startedAt": "2026-09-27T22:37:27.998Z",
+ "legs": [
+  {
+   "name": "open-window-mock-before-ws-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8tail5/open-window-mock-before-ws-r8.log",
+   "bytes": 533,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "ws-component-scoped-r8",
+   "status": "FAIL",
+   "exitCode": 2,
+   "log": "reports/audit/round-7/ui-queue-stage8tail5/ws-component-scoped-r8.log",
+   "bytes": 1421,
+   "resultLines": [
+    "WSX_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r-exec-ws-round-7",
+    "WSX_RESULT=FAIL reason=一行都没产生（要么全跑过了，要么筛选把用例全挡住了 ⇒ 这不叫跑完） ⇒ 结论不落盘"
+   ]
+  },
+  {
+   "name": "queue-homogeneity-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "queue-homogeneity-tail5",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "advisoryFail": 0,
+ "finishedAt": "2026-09-27T22:37:41.308Z",
+ "conservation": {
+  "legsTotal": 4,
+  "legsOk": 1,
+  "tally": {
+   "OK": 1,
+   "FAIL": 1,
+   "NOT_RUN": 2
+  },
+  "ok": true
+ }
+}

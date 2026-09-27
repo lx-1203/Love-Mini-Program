@@ -1,0 +1,118 @@
+{
+ "startedAt": "2026-09-27T18:48:11.403Z",
+ "legs": [
+  {
+   "name": "gate-band-freshness-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8tail/gate-band-freshness-r8.log",
+   "bytes": 1075,
+   "resultLines": [
+    "FRESH_RESULT=PASS bands=3 markers=4 —— 每档产物都不晚于任何未提交改动，且符号级深检全部命中"
+   ]
+  },
+  {
+   "name": "gate-selectors-exist-mock-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8tail/gate-selectors-exist-mock-r8.log",
+   "bytes": 3044,
+   "resultLines": [
+    "SEL_RESULT=PASS 执行器要点的选择器全部在被测档里有对应元素（另有 7 条只提示：文案提及或幽灵入口断言，不构成点不动）"
+   ]
+  },
+  {
+   "name": "gate-selectors-exist-real-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8tail/gate-selectors-exist-real-r8.log",
+   "bytes": 3044,
+   "resultLines": [
+    "SEL_RESULT=PASS 执行器要点的选择器全部在被测档里有对应元素（另有 7 条只提示：文案提及或幽灵入口断言，不构成点不动）"
+   ]
+  },
+  {
+   "name": "open-window-mock-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8tail/open-window-mock-r8.log",
+   "bytes": 888,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-A-login-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8tail/exec-A-login-r8.log",
+   "bytes": 2436,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-r8-A-login",
+    "RUNNER_STATS identity=A loginVerify=logged-in userId=user-1001 executed=0 failed=2 skipped=36(交互动词=0 requiresReal=0 非真实用例=0 探针无结果=0 判据无可判物件=0 出帧失败=0 交互禁触=0 交互没点名=0 交互后离页=0 锁屏挡住=0 交互下发失败=0 身份适用范围外=36 盖章不可自动化=0) 页组=1 真做过的交互=0 折叠探针类名次数=23 出帧=0 未点名类名=0 通道异常次数=0",
+    "RUNNER_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-guest-login-r8",
+   "status": "FAIL",
+   "exitCode": 2,
+   "log": "reports/audit/round-7/ui-queue-stage8tail/exec-guest-login-r8.log",
+   "bytes": 946,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-r8-guest-login",
+    "RUNNER_RESULT=FAIL reason=mock 包会把游客吃掉：D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin\\config\\env.js 的 VITE_API_MODE=\"mock\"，而 D:\\6\\恋爱小程序\\apps\\client\\src\\stores\\session.ts:617 mock 分支无条件把 userSession 赋成 mockUserSession ⇒ 只要启动链路重跑一次（冷启动那次开页就会），store 就又变 logged-in，登录页按设计 switchTab 到寻觅（pages/login/index.vue:87-89）。这不是产品缺陷，是载体次序：跑游客批次前先预热一次开页并复查 not-logged-in（见 scripts/qa/probe-guest-band.mjs），或换 --project apps/client/dist/build/mp-weixin-real 跑；两处都不做就只能记 NOT_SHOOTABLE，不许记成产品 FAILED。 ⇒ 一行都不跑（跑出来的落点红不可采信）"
+   ]
+  },
+  {
+   "name": "verify-logged-in-landing-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "triage-exec-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "triage-guest-login-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "open-window-real-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "exec-guest-real-login-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "ws-channel-up-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "ws-component-scoped-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "queue-homogeneity-r8",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "queue-homogeneity-r8tail",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "advisoryFail": 0,
+ "finishedAt": "2026-09-27T18:49:51.086Z",
+ "conservation": {
+  "legsTotal": 15,
+  "legsOk": 5,
+  "tally": {
+   "OK": 5,
+   "FAIL": 1,
+   "NOT_RUN": 9
+  },
+  "ok": true
+ }
+}
