@@ -41,6 +41,13 @@ const IDENTITY = opt("identity", "A");
 let LOGIN_VERIFY = "(未前置)";
 const LABEL = opt("round", "round-7");
 const OPS = opt("ops", join(REPO, "reports/audit/round-6/ops"));
+/* --ids-file：只跑名单里的 case（一行一个 `MANIFEST#ID` 或 `MANIFEST/ID`，也收 {"cases":[...]}）。
+   为什么要有它：SEL_COMPONENT_SCOPE 那批（本轮实测 193 条）元素躲在自定义组件里，CLI 腿按该门
+   自己的实测有 90.6% 点不动 ⇒ 只有 WS 腿能点；但在 WS 腿上重跑整轮 1107 例不叫"补这一刀"，叫重来一轮。
+   名单必须给守恒读数：没在语料里找到的逐条点名，静默少跑就等于假覆盖。 */
+const IDS_FILE = opt("ids-file", "");
+let IDS = null;
+const idsSeen = new Set();
 const OUT_DIR = opt("out", join(REPO, "reports/audit", LABEL, "interact"));
 const RES = join(OUT_DIR, "exec-results.json");
 function git(a) { try { return execFileSync("git", a.split(" "), { cwd: REPO, encoding: "utf8" }).trim(); } catch { return ""; } }
@@ -291,6 +298,32 @@ function flush(final) {
 async function main() {
   const files = (ONLY.length ? ONLY : readdirSync(OPS).filter((f) => f.endsWith(".json")).map((f) => f.replace(/\.json$/, ""))).sort();
   if (!files.length) { console.log("WSX_RESULT=FAIL reason=没有要跑的 manifest（空扫描集不得占设备）"); process.exit(2); }
+  /* 名单先对语料核一遍，再占设备：名单里的 id 全都不在语料 ⇒ 这一腿会交出 0 行却"看起来成功了"。 */
+  if (IDS_FILE) {
+    const p = (/^\w:[\\/]/.test(IDS_FILE) || IDS_FILE.startsWith("/")) ? IDS_FILE : join(REPO, IDS_FILE);
+    if (!existsSync(p)) { console.log("WSX_RESULT=FAIL reason=--ids-file 读不到 " + IDS_FILE + "（路径写错不许当成「全跑」）"); process.exit(2); }
+    const raw = readFileSync(p, "utf8").trim();
+    let list = [];
+    try { const j = JSON.parse(raw); list = Array.isArray(j) ? j : (j.cases || j.ids || []); }
+    catch { list = raw.split(/\r?\n/).map((x) => x.trim()).filter((x) => x && !x.startsWith("#")); }
+    /* 名单行允许三种写法：MANIFEST#ID、MANIFEST/ID、MANIFEST ID。
+       分隔符按"切开再拼 |"处理，不能直接把空白删掉——那是上一版在这里犯的错
+       （负例实测 PAGES-HOME-INDEX H13 被拼成 PAGES-HOME-INDEXH13，好名单也会被判成找不到）。 */
+    IDS = new Set(list.map((x) => String(x).trim().split(/[/#\s]+/).filter(Boolean).join("|").toUpperCase()).filter(Boolean));
+    if (!IDS.size) { console.log("WSX_RESULT=FAIL reason=--ids-file 解析出 0 条 ⇒ 空名单不许占设备"); process.exit(2); }
+    const corpus = new Set();
+    for (const name of files) {
+      try { const mf = JSON.parse(readFileSync(join(OPS, name + ".json"), "utf8")); for (const c of (mf.cases || [])) corpus.add((name + "|" + c.id).toUpperCase()); } catch { console.log("WSX_IDS_SKIP_FILE " + name + "（语料读不到，名单核对不到它）"); }
+    }
+    const missing = [...IDS].filter((k) => !corpus.has(k));
+    console.log("WSX_IDS_FILE " + IDS_FILE + " 名单=" + IDS.size + " 在语料=" + (IDS.size - missing.length) + " 找不到=" + missing.length);
+    if (missing.length) {
+      for (const k of missing.slice(0, 12)) console.log("  WSX_IDS_MISSING " + k);
+      if (missing.length > 12) console.log("  WSX_IDS_MISSING …另 " + (missing.length - 12) + " 条未逐条点名");
+      console.log("WSX_RESULT=FAIL reason=名单里 " + missing.length + " 条不在本轮语料里（判据改号或名单拼错）⇒ 静默少跑就是假覆盖");
+      process.exit(2);
+    }
+  }
   /* WS 通道与 CLI 桥驱动的是同一台模拟器：并发不报错，只互相换页 ⇒ 排队用同一把租约。 */
   guardUiLease({ owner: "r-exec-ws-" + LABEL, tag: "WSX_LEASE", failTag: "WSX" });
   console.log("[boot] sha=" + GIT_SHA + " project=" + relOf(PROJECT) + " transport=ws-route+ws-probe+cli-shot");
@@ -371,7 +404,17 @@ async function main() {
     for (const c of (mf.cases || [])) (byPage[c.page] = byPage[c.page] || []).push(c);
     for (const page of Object.keys(byPage)) {
       if (stopped) break;
-      const todo = byPage[page].filter((c) => !done.has(name + "|" + c.id));
+      let todo = byPage[page].filter((c) => !done.has(name + "|" + c.id));
+      if (IDS) {
+        /* 名单之外的一条都不跑：换页成本省下来，而且"这一腿补的是哪一刀"说不说得清取决于此。
+           idsSeen 记"名单里有哪些在本轮语料中真的遇上了"（不管此前跑没跑过），
+           末尾用它核对守恒 ⇒ 静默少跑会变成一条红而不是一次成功。 */
+        for (const c of byPage[page]) {
+          const k = (name + "|" + c.id).toUpperCase();
+          if (IDS.has(k)) idsSeen.add(k);
+        }
+        todo = todo.filter((c) => IDS.has((name + "|" + c.id).toUpperCase()));
+      }
       if (!todo.length) continue;
       stats.pages++;
       console.log("WSX_GROUP_START page=" + page + " 待跑=" + todo.length + " 累计=" + ((Date.now() - BOOT_T) / 60000).toFixed(1) + "min");
@@ -463,6 +506,16 @@ async function main() {
   const fails = [];
   if (!rows.length) fails.push("一行都没产生（要么全跑过了，要么筛选把用例全挡住了 ⇒ 这不叫跑完）");
   if (dupNew) fails.push("重复 manifest|id " + dupNew + " 条");
+  if (IDS) {
+    /* 名单腿的守恒：名单里每一条都必须在"扫到的语料"里出现、且在盘上有行。
+       两个方向分开报：没遇上＝manifest 没进扫描集或判据被改名；有行少＝静默少跑。 */
+    const covered = new Set(all.filter((r) => IDS.has((r.manifest + "|" + r.id).toUpperCase())).map((r) => (r.manifest + "|" + r.id).toUpperCase()));
+    const notSeen = [...IDS].filter((k) => !idsSeen.has(k));
+    console.log("WSX_IDS 名单=" + IDS.size + " 语料里遇上=" + idsSeen.size + " 盘上有行=" + covered.size + " 名单里没遇上=" + notSeen.length);
+    if (notSeen.length) fails.push("名单里 " + notSeen.length + " 条在本腿扫到的 manifest 里根本没出现（manifest 没进扫描集或判据被改了号）：" + notSeen.slice(0, 8).join(","));
+    if (stopped) console.log("WSX_IDS_PARTIAL 本腿被预算/limit 截停 ⇒ 名单只落 " + covered.size + "/" + IDS.size + " 行，不许按跑完记账");
+    else if (covered.size !== IDS.size) fails.push("守恒破：名单 " + IDS.size + " ≠ 盘上有行 " + covered.size + " ⇒ 有条目被静默跳过（既没 EXECUTED 也没 FAILED/SKIPPED 行）");
+  }
   if (bad.length) fails.push("非法状态 " + bad.length + " 条");
   if (holes.length) fails.push(holes.length + " 条 EXECUTED 没有任何证据 ⇒ 没有证据的绿不许入账");
   if (all.length !== (prior.results || []).length + rows.length - dupNew) fails.push("合并后总数对不上");

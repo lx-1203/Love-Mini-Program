@@ -1,0 +1,1029 @@
+{
+ "$source": "scripts/qa/verify-case-selectors-exist.mjs（默认 mock 档） 的 SEL_COMPONENT_SCOPE 轴",
+ "$why": "元素在被测产物里存在，但只在组件自己的 wxml 里 ⇒ 页面作用域的元素查询进不去（该门实测 90.6% 点不动）。换 WS 腿点，不改判据、不降格成源码判点。",
+ "$use": "node scripts/qa/r-exec-ws.mjs --ids-file reports\\audit\\round-7\\ids-component-scoped.json —— WS 腿会自断言 名单==盘上有行",
+ "band": "apps/client/dist/build/mp-weixin",
+ "count": 145,
+ "gateRows": 200,
+ "gateReported": 200,
+ "manifests": 16,
+ "cases": [
+  "PAGES-DISCOVER-INDEX|DC01",
+  "PAGES-DISCOVER-INDEX|DC05",
+  "PAGES-DISCOVER-INDEX|DC06",
+  "PAGES-DISCOVER-INDEX|DC07",
+  "PAGES-DISCOVER-INDEX|DC10",
+  "PAGES-DISCOVER-INDEX|DC20",
+  "PAGES-DISCOVER-INDEX|DC25",
+  "PAGES-DISCOVER-INDEX|DC27",
+  "PAGES-DISCOVER-INDEX|DC28",
+  "PAGES-DISCOVER-INDEX|DC31",
+  "PAGES-DISCOVER-INDEX|DC36",
+  "PAGES-DISCOVER-INDEX|DC38",
+  "PAGES-DISCOVER-INDEX|DC40",
+  "PAGES-DISCOVER-INDEX|DC42",
+  "PAGES-HOME-INDEX|H06",
+  "PAGES-HOME-INDEX|H07",
+  "PAGES-HOME-INDEX|H08",
+  "PAGES-HOME-INDEX|H11",
+  "PAGES-HOME-INDEX|H12",
+  "PAGES-HOME-INDEX|H13",
+  "PAGES-HOME-INDEX|H14",
+  "PAGES-HOME-INDEX|H15",
+  "PAGES-HOME-INDEX|H16",
+  "PAGES-HOME-INDEX|H17",
+  "PAGES-HOME-INDEX|H18",
+  "PAGES-HOME-INDEX|H19",
+  "PAGES-HOME-INDEX|H21",
+  "PAGES-HOME-INDEX|H23",
+  "PAGES-HOME-INDEX|H24",
+  "PAGES-HOME-INDEX|H25",
+  "PAGES-HOME-INDEX|H26",
+  "PAGES-HOME-INDEX|H28",
+  "PAGES-HOME-INDEX|H29",
+  "PAGES-HOME-INDEX|H30",
+  "PAGES-HOME-INDEX|H33",
+  "PAGES-HOME-INDEX|H34",
+  "PAGES-HOME-INDEX|H36",
+  "PAGES-HOME-INDEX|H37",
+  "PAGES-HOME-INDEX|H40",
+  "PAGES-HOME-INDEX|H42",
+  "PAGES-HOME-INDEX|H45",
+  "PAGES-PROFILE-INDEX|PFI05",
+  "PAGES-PROFILE-INDEX|PFI06",
+  "PAGES-PROFILE-INDEX|PFI09",
+  "PAGES-PROFILE-INDEX|PFI17",
+  "PAGES-PROFILE-INDEX|PFI18",
+  "PAGES-PROFILE-INDEX|PFI19",
+  "PAGES-PROFILE-INDEX|PFI20",
+  "PAGES-PROFILE-INDEX|PFI35",
+  "PAGES-PROFILE-INDEX|PFI42",
+  "SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX16",
+  "SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX17",
+  "SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX29",
+  "SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX30",
+  "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT26",
+  "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT27",
+  "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT28",
+  "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT29",
+  "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS01",
+  "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS02",
+  "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS21",
+  "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS22",
+  "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS32",
+  "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS34",
+  "SUBPACKAGES-CIRCLES-CIRCLES-INDEX|CI03",
+  "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC|CPT34",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS01",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS03",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS04",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS05",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS06",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS07",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS09",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS10",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS12",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS13",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS18",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS20",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT04",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT07",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT08",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT12",
+  "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT15",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI01",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI04",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI06",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI07",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI11",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI12",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI13",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI14",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI15",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI16",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI18",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI19",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI20",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI22",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI24",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI26",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI37",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI40",
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI42",
+  "次要18|CI08",
+  "次要18|CT10",
+  "次要19|LK01",
+  "次要19|LK10",
+  "次要19|HP01",
+  "次要19|SE08",
+  "次要19|LN03",
+  "次要19|LN04",
+  "次要19|LN05",
+  "次要19|LN06",
+  "次要20|OT02",
+  "次要20|OT05",
+  "次要20|OT06",
+  "次要20|OT07",
+  "次要20|OT08",
+  "次要20|OT09",
+  "次要20|OT10",
+  "次要20|OT12",
+  "次要20|OT13",
+  "次要21|FHT08",
+  "次要21|FHT12",
+  "次要21|SCU06",
+  "次要21|SCU07",
+  "次要21|SCU10",
+  "次要21|SCU11",
+  "次要21|SCH03",
+  "次要21|SCH04",
+  "次要21|SCH10",
+  "次要21|SCH11",
+  "次要21|RP05",
+  "次要21|RP06",
+  "次要21|RP07",
+  "次要21|INT03",
+  "次要21|INT09",
+  "次要21|FB05",
+  "次要21|FB06",
+  "次要21|FB07",
+  "次要21|FB08",
+  "次要22|AC09",
+  "次要22|VB09",
+  "次要22|VB10"
+ ],
+ "detail": [
+  {
+   "key": "PAGES-DISCOVER-INDEX|DC01",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC01",
+   "selector": ".match-card-swipe"
+  },
+  {
+   "key": "PAGES-DISCOVER-INDEX|DC05",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC05",
+   "selector": ".match-card__distance"
+  },
+  {
+   "key": "PAGES-DISCOVER-INDEX|DC06",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC06",
+   "selector": ".match-info__intro,.match-info__intro-quote"
+  },
+  {
+   "key": "PAGES-DISCOVER-INDEX|DC07",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC07",
+   "selector": ".swipe-container"
+  },
+  {
+   "key": "PAGES-DISCOVER-INDEX|DC10",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC10",
+   "selector": ".match-actions__item--like"
+  },
+  {
+   "key": "PAGES-DISCOVER-INDEX|DC20",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC20",
+   "selector": ".filter-drawer__close,.filter-drawer__btn--confirm"
+  },
+  {
+   "key": "PAGES-DISCOVER-INDEX|DC25",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC25",
+   "selector": ".keyword-input__field,.keyword-input__clear"
+  },
+  {
+   "key": "PAGES-DISCOVER-INDEX|DC27",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC27",
+   "selector": ".filter-drawer__body,.swipe-container"
+  },
+  {
+   "key": "PAGES-DISCOVER-INDEX|DC28",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC28",
+   "selector": ".match-actions__item"
+  },
+  {
+   "key": "PAGES-DISCOVER-INDEX|DC31",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC31",
+   "selector": ".match-actions__label"
+  },
+  {
+   "key": "PAGES-DISCOVER-INDEX|DC36",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC36",
+   "selector": ".match-card__photo"
+  },
+  {
+   "key": "PAGES-DISCOVER-INDEX|DC38",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC38",
+   "selector": ".match-actions__item,.swipe-container"
+  },
+  {
+   "key": "PAGES-DISCOVER-INDEX|DC40",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC40",
+   "selector": ".keyword-input__field,.height-slider,.picker-trigger"
+  },
+  {
+   "key": "PAGES-DISCOVER-INDEX|DC42",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC42",
+   "selector": ".match-count-chip"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H06",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H06",
+   "selector": ".header-me"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H07",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H07",
+   "selector": ".header-location"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H08",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H08",
+   "selector": ".bottom-sheet-mask,.header-location,.bottom-sheet-root"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H11",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H11",
+   "selector": ".bottom-sheet-body"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H12",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H12",
+   "selector": ".header-badge,.header-icon"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H13",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H13",
+   "selector": ".header-me,.header-location,.header-icon"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H14",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H14",
+   "selector": ".today-card__photo-wrap,.today-card__btn--outline"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H15",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H15",
+   "selector": ".today-card__btn--love"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H16",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H16",
+   "selector": ".today-card__btn--love,.today-card__rotate"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H17",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H17",
+   "selector": ".today-card__btn--love,.btn--loading"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H18",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H18",
+   "selector": ".today-card__btn--love,.btn--loading"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H19",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H19",
+   "selector": ".today-card__rotate"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H21",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H21",
+   "selector": ".today-card__skeleton,.today-card__empty"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H23",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H23",
+   "selector": ".today-card__meta"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H24",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H24",
+   "selector": ".love-step"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H25",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H25",
+   "selector": ".relation-cell"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H26",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H26",
+   "selector": ".relation-activity__all"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H28",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H28",
+   "selector": ".section-head__more"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H29",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H29",
+   "selector": ".interest-card"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H30",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H30",
+   "selector": ".interest-card__join"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H33",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H33",
+   "selector": ".interest-card__cover"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H34",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H34",
+   "selector": ".nearby-people__bar,.nearby-item"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H36",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H36",
+   "selector": ".post-card__author-tap,.post-card__author,.post-card"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H37",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H37",
+   "selector": ".post-card__follow"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H40",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H40",
+   "selector": ".section-head__more"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H42",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H42",
+   "selector": ".post-card__img"
+  },
+  {
+   "key": "PAGES-HOME-INDEX|H45",
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H45",
+   "selector": ".header-location"
+  },
+  {
+   "key": "PAGES-PROFILE-INDEX|PFI05",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "id": "PFI05",
+   "selector": ".nlp-footer-btn"
+  },
+  {
+   "key": "PAGES-PROFILE-INDEX|PFI06",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "id": "PFI06",
+   "selector": ".my-header__icon--share"
+  },
+  {
+   "key": "PAGES-PROFILE-INDEX|PFI09",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "id": "PFI09",
+   "selector": ".my-header__avatar"
+  },
+  {
+   "key": "PAGES-PROFILE-INDEX|PFI17",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "id": "PFI17",
+   "selector": ".my-stats__col"
+  },
+  {
+   "key": "PAGES-PROFILE-INDEX|PFI18",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "id": "PFI18",
+   "selector": ".my-interaction__row"
+  },
+  {
+   "key": "PAGES-PROFILE-INDEX|PFI19",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "id": "PFI19",
+   "selector": ".my-more__cell"
+  },
+  {
+   "key": "PAGES-PROFILE-INDEX|PFI20",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "id": "PFI20",
+   "selector": ".story-card,.album-thumb"
+  },
+  {
+   "key": "PAGES-PROFILE-INDEX|PFI35",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "id": "PFI35",
+   "selector": ".cert-sheet__close"
+  },
+  {
+   "key": "PAGES-PROFILE-INDEX|PFI42",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "id": "PFI42",
+   "selector": ".my-header__icon,.my-header__edit,.my-stats__col"
+  },
+  {
+   "key": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX16",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "id": "CX16",
+   "selector": ".reply-input"
+  },
+  {
+   "key": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX17",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "id": "CX17",
+   "selector": ".reply-btn"
+  },
+  {
+   "key": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX29",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "id": "CX29",
+   "selector": ".reply-input,.reply-btn"
+  },
+  {
+   "key": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX30",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "id": "CX30",
+   "selector": ".reply-input,.reply-counter"
+  },
+  {
+   "key": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT26",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT26",
+   "selector": ".topic-selector__search-input"
+  },
+  {
+   "key": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT27",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT27",
+   "selector": ".topic-selector__clear,.topic-chip"
+  },
+  {
+   "key": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT28",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT28",
+   "selector": ".topic-selector__create-input"
+  },
+  {
+   "key": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT29",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "id": "PT29",
+   "selector": ".topic-chip"
+  },
+  {
+   "key": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS01",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "id": "CS01",
+   "selector": ".lock-screen__btn,.lock-screen__btn-link,.lock-screen__close"
+  },
+  {
+   "key": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS02",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "id": "CS02",
+   "selector": ".lock-screen__btn,.lock-screen__btn-link,.lock-screen__close"
+  },
+  {
+   "key": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS21",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "id": "CS21",
+   "selector": ".chat-header__more"
+  },
+  {
+   "key": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS22",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "id": "CS22",
+   "selector": ".chat-header__avatar-wrap"
+  },
+  {
+   "key": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS32",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "id": "CS32",
+   "selector": ".chat-header__back"
+  },
+  {
+   "key": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS34",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "id": "CS34",
+   "selector": ".chat-header__avatar-wrap"
+  },
+  {
+   "key": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX|CI03",
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "id": "CI03",
+   "selector": ".state-error"
+  },
+  {
+   "key": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC|CPT34",
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+   "id": "CPT34",
+   "selector": ".activity-card__enroll"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS01",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+   "id": "MS01",
+   "selector": ".match-success__score-card,.match-loading"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS03",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+   "id": "MS03",
+   "selector": ".match-success__primary"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS04",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+   "id": "MS04",
+   "selector": ".match-success__primary"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS05",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+   "id": "MS05",
+   "selector": ".match-success__primary"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS06",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+   "id": "MS06",
+   "selector": ".match-success__primary"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS07",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+   "id": "MS07",
+   "selector": ".match-success__secondary"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS09",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+   "id": "MS09",
+   "selector": ".match-success__share"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS10",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+   "id": "MS10",
+   "selector": ".match-success__score-card"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS12",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+   "id": "MS12",
+   "selector": ".match-success__primary,.match-success__secondary,.match-success__share"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS13",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+   "id": "MS13",
+   "selector": ".match-success__primary"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS18",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+   "id": "MS18",
+   "selector": ".match-success__primary"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS|MS20",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+   "id": "MS20",
+   "selector": ".match-success__secondary,.match-success__primary"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT04",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "id": "MT04",
+   "selector": ".match-success__primary"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT07",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "id": "MT07",
+   "selector": ".match-loading__skip"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT08",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "id": "MT08",
+   "selector": ".match-loading__skip"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT12",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "id": "MT12",
+   "selector": ".match-loading__skip"
+  },
+  {
+   "key": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT15",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "id": "MT15",
+   "selector": ".match-loading__avatar"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI01",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI01",
+   "selector": ".lock-screen__btn,.lock-screen__btn-link"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI04",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI04",
+   "selector": ".channel-tab__label"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI06",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI06",
+   "selector": ".channel-tab__lock,.composer-bar__lock"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI07",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI07",
+   "selector": ".school-gate__simulate"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI11",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI11",
+   "selector": ".hot-topics__main-title"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI12",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI12",
+   "selector": ".activity-card__title,.activity-card__enroll-text"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI13",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI13",
+   "selector": ".post-card__content,.comment-preview__content"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI14",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI14",
+   "selector": ".post-card__user"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI15",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI15",
+   "selector": ".post-card__tag,.post-card__activity"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI16",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI16",
+   "selector": ".post-card__images,.post-card__comments"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI18",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI18",
+   "selector": ".action-btn"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI19",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI19",
+   "selector": ".follow-chip__text,.action-btn"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI20",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI20",
+   "selector": ".pinned-bar__summary,.pinned-item__title"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI22",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI22",
+   "selector": ".error-btn"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI24",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI24",
+   "selector": ".post-card__image"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI25",
+   "selector": ".post-card__audit"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI26",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI26",
+   "selector": ".composer-bar__publish"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI34",
+   "selector": ".skeleton-line--w60"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI37",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI37",
+   "selector": ".channel-tab__label"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI40",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI40",
+   "selector": ".action-btn"
+  },
+  {
+   "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI42",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI42",
+   "selector": ".channel-tab__label"
+  },
+  {
+   "key": "次要18|CI08",
+   "manifest": "次要18",
+   "id": "CI08",
+   "selector": ".error-btn"
+  },
+  {
+   "key": "次要18|CT10",
+   "manifest": "次要18",
+   "id": "CT10",
+   "selector": ".empty-action"
+  },
+  {
+   "key": "次要19|LK01",
+   "manifest": "次要19",
+   "id": "LK01",
+   "selector": ".not-logged__btn--primary"
+  },
+  {
+   "key": "次要19|LK10",
+   "manifest": "次要19",
+   "id": "LK10",
+   "selector": ".error-btn"
+  },
+  {
+   "key": "次要19|HP01",
+   "manifest": "次要19",
+   "id": "HP01",
+   "selector": ".shell__back"
+  },
+  {
+   "key": "次要19|SE08",
+   "manifest": "次要19",
+   "id": "SE08",
+   "selector": ".post-card__user,.post-card__tag,.action-btn,.follow-chip"
+  },
+  {
+   "key": "次要19|LN03",
+   "manifest": "次要19",
+   "id": "LN03",
+   "selector": ".card-action--like,.card-action--super,.detail-action-bar__btn--msg,.card-action--skip"
+  },
+  {
+   "key": "次要19|LN04",
+   "manifest": "次要19",
+   "id": "LN04",
+   "selector": ".card-action--like"
+  },
+  {
+   "key": "次要19|LN05",
+   "manifest": "次要19",
+   "id": "LN05",
+   "selector": ".card-action--super,.detail-action-bar__btn--msg"
+  },
+  {
+   "key": "次要19|LN06",
+   "manifest": "次要19",
+   "id": "LN06",
+   "selector": ".card--current"
+  },
+  {
+   "key": "次要20|OT02",
+   "manifest": "次要20",
+   "id": "OT02",
+   "selector": ".profile-shell__text,.profile-shell__retry"
+  },
+  {
+   "key": "次要20|OT05",
+   "manifest": "次要20",
+   "id": "OT05",
+   "selector": ".relationship-cta__btn--like"
+  },
+  {
+   "key": "次要20|OT06",
+   "manifest": "次要20",
+   "id": "OT06",
+   "selector": ".relationship-cta__btn--like,.relationship-cta__btn--hello"
+  },
+  {
+   "key": "次要20|OT07",
+   "manifest": "次要20",
+   "id": "OT07",
+   "selector": ".relationship-cta__btn--like"
+  },
+  {
+   "key": "次要20|OT08",
+   "manifest": "次要20",
+   "id": "OT08",
+   "selector": ".relationship-cta__btn--hello,.relationship-cta__btn--whisper"
+  },
+  {
+   "key": "次要20|OT09",
+   "manifest": "次要20",
+   "id": "OT09",
+   "selector": ".whisper-sheet__input"
+  },
+  {
+   "key": "次要20|OT10",
+   "manifest": "次要20",
+   "id": "OT10",
+   "selector": ".relationship-cta__btn--follow"
+  },
+  {
+   "key": "次要20|OT12",
+   "manifest": "次要20",
+   "id": "OT12",
+   "selector": ".public-hero__avatar"
+  },
+  {
+   "key": "次要20|OT13",
+   "manifest": "次要20",
+   "id": "OT13",
+   "selector": ".public-moment__card"
+  },
+  {
+   "key": "次要21|FHT08",
+   "manifest": "次要21",
+   "id": "FHT08",
+   "selector": ".shell__back"
+  },
+  {
+   "key": "次要21|FHT12",
+   "manifest": "次要21",
+   "id": "FHT12",
+   "selector": ".shell__back"
+  },
+  {
+   "key": "次要21|SCU06",
+   "manifest": "次要21",
+   "id": "SCU06",
+   "selector": ".bar__primary"
+  },
+  {
+   "key": "次要21|SCU07",
+   "manifest": "次要21",
+   "id": "SCU07",
+   "selector": ".bar__primary,.shell__back"
+  },
+  {
+   "key": "次要21|SCU10",
+   "manifest": "次要21",
+   "id": "SCU10",
+   "selector": ".bar__primary"
+  },
+  {
+   "key": "次要21|SCU11",
+   "manifest": "次要21",
+   "id": "SCU11",
+   "selector": ".bar__primary"
+  },
+  {
+   "key": "次要21|SCH03",
+   "manifest": "次要21",
+   "id": "SCH03",
+   "selector": ".bar__primary"
+  },
+  {
+   "key": "次要21|SCH04",
+   "manifest": "次要21",
+   "id": "SCH04",
+   "selector": ".bar__primary"
+  },
+  {
+   "key": "次要21|SCH10",
+   "manifest": "次要21",
+   "id": "SCH10",
+   "selector": ".bar__primary"
+  },
+  {
+   "key": "次要21|SCH11",
+   "manifest": "次要21",
+   "id": "SCH11",
+   "selector": ".bar__primary"
+  },
+  {
+   "key": "次要21|RP05",
+   "manifest": "次要21",
+   "id": "RP05",
+   "selector": ".bar__primary"
+  },
+  {
+   "key": "次要21|RP06",
+   "manifest": "次要21",
+   "id": "RP06",
+   "selector": ".bar__primary"
+  },
+  {
+   "key": "次要21|RP07",
+   "manifest": "次要21",
+   "id": "RP07",
+   "selector": ".bar__primary"
+  },
+  {
+   "key": "次要21|INT03",
+   "manifest": "次要21",
+   "id": "INT03",
+   "selector": ".tag-chip"
+  },
+  {
+   "key": "次要21|INT09",
+   "manifest": "次要21",
+   "id": "INT09",
+   "selector": ".tag-chip"
+  },
+  {
+   "key": "次要21|FB05",
+   "manifest": "次要21",
+   "id": "FB05",
+   "selector": ".bar__primary"
+  },
+  {
+   "key": "次要21|FB06",
+   "manifest": "次要21",
+   "id": "FB06",
+   "selector": ".bar__primary"
+  },
+  {
+   "key": "次要21|FB07",
+   "manifest": "次要21",
+   "id": "FB07",
+   "selector": ".bar__primary"
+  },
+  {
+   "key": "次要21|FB08",
+   "manifest": "次要21",
+   "id": "FB08",
+   "selector": ".bar__primary"
+  },
+  {
+   "key": "次要22|AC09",
+   "manifest": "次要22",
+   "id": "AC09",
+   "selector": ".bar__primary,.bar__secondary,.shell__back"
+  },
+  {
+   "key": "次要22|VB09",
+   "manifest": "次要22",
+   "id": "VB09",
+   "selector": ".empty-state__icon"
+  },
+  {
+   "key": "次要22|VB10",
+   "manifest": "次要22",
+   "id": "VB10",
+   "selector": ".empty-msg"
+  }
+ ]
+}
