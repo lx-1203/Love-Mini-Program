@@ -42,6 +42,7 @@ const STEPS = [
   { id: "triage-exec-guest-real", file: "scripts/qa/triage-exec-failures.mjs", kind: "gate", args: ["--results", `reports/audit/${ROUND}/exec-guest-real-stage7/exec-results.json`, "--dist", "apps/client/dist/build/mp-weixin-real"], note: "游客刀语料分诊（真实档）" },
   { id: "guest-landing-recheck", file: "scripts/qa/verify-guest-landing.mjs", kind: "gate", write: true, args: ["--mode", "measure", "--project", "apps/client/dist/build/mp-weixin-real"], note: "27 组游客落点逐页实测（GG-* 复测腿）：BOOKED/MEASURED-* 不算结案，只有这一条跑出 CLOSED，triage 的「未结案」才会归零" },
   { id: "verify-real-coverage", file: "scripts/qa/verify-real-coverage.mjs", kind: "gate", args: ["--round", ROUND], note: "真实模式覆盖守恒（含身份轴豁免读数）" },
+  { id: "verify-logged-in-landing", file: "scripts/qa/verify-logged-in-landing.mjs", kind: "gate", args: ["--exec", "reports/audit/" + ROUND + "/exec-A-mock-stage7", "--exec", "reports/audit/" + ROUND + "/exec-A-real-stage7"], note: "④ 第 1 项裁定的机器载具：登录腿进登录页的落点按 loggedInLandings 判（导航计数那一半明说不判，不算过）" },
   { id: "verify-criteria-frame-debt", file: "scripts/qa/verify-criteria-frame-debt.mjs", kind: "gate", args: ["--strict"], note: "判据台欠帧的去向账（--strict：掉了去向就红）" },
   { id: "verify-frame-debt-coverage", file: "scripts/qa/verify-frame-debt-coverage.mjs", kind: "gate", args: ["--strict-src-only"], note: "台账未收口行的去向账（含源码级判点轴）" },
   { id: "verify-tab-bar-single-source", file: "scripts/qa/verify-tab-bar-single-source.mjs", kind: "gate", args: [], note: "④ 第 5 项的判点：面板字面量相加 == token" },

@@ -4053,3 +4053,29 @@ DISCOVER-014 的处置列原本写着"二选一，收口时给去向"。**不采
 - queue-tally 步骤自己核对 OK+FAIL+NOT_RUN==腿数，并逐条点名红腿与 ADVISORY_RED；
 - 含 guest-landing-recheck（--mode measure --project mp-weixin-real）：27 组游客落点没有这条就永远停在 BOOKED，triage 的"未结案"归不了零 —— 这一条是 ⑤"没有证据缺口"的最后一环。
 负例现验：--only guest-landing-recheck 在未加 --allow-write 时报 FAIL（"有没被启用的步骤"），而不是静默什么也不做。
+
+## §131 ④ 第 1 项裁定终于有了载具；#51 的反向收窄踩了两次自己的坑
+队尾腿 10（exec-A-mock-stage7）在跑，这一段全部是不占设备的活。
+
+### 现量先把我的说法改掉
+`PAGES-LOGIN-INDEX` 38 行在 A 腿跑完后是：15 行 SKIPPED「action 含交互动词但本页没落在声明页（栈顶=pages/discover/index）」+ 9 行 FAILED「落在别的页…须人判」+ 12 行已盖章「本通道不可自动化」+ 2 行（LG02/LG03）FAILED。
+⇒ A 腿在这一页**一条正向证据都没产出**，而我在 policy 里先写的"15 行 SKIPPED"只是腿跑到一半的读数。已按现量改正（`guest-landing-policy.json` 的 evidence 字段）。
+
+### 反向收窄：两版规则都被证伪，最后落在"点名 + 文本兜底 + 幽灵检查"
+- 第一版按"文本提没提 自动前进/redirect/switchTab"放行 ⇒ `tmp/qa/probe-login-kept.mjs` 逐行列出保留的 8 条，其中 6 条（LG01/LG08/LG10/LG21/LG22/LG37）的前置其实都是未登录，`redirect` 字样来自 storage 键名 `pending-login-redirect` 或"不消费 redirect 参数"这类断言。关键词把噪声留下了。
+- 第二版只认「已登录 / isLoggedIn=true」⇒ 结果 LG03「重复进出登录页每次仍单跳前进」被误收进游客腿。它的前置真是已登录，但正文只写"新实例/自动前进"⇒ 纯关键词又会自己造一条假红。
+- 终版：`keepOnLoginLegIds` 点名（LG02/LG03）优先，文本规则只兜底，另加"点名 id 本轮必须真在登录腿出现"的幽灵断言（判据改号时名单不会静默失效）。dry 读数：`收窄为游客腿(guest)=36`、`仍由登录腿跑=2`、`点名=2 实际留下=2 幽灵=无`、总数守恒 `36+2=38`、全库 `1107` 未动。
+- #51 原任务名里的"26 例"是按早期读数写的，现量为 36 ⇒ 以现量为准。
+
+### 新载具：`scripts/qa/verify-logged-in-landing.mjs`
+"已登录进登录页应落寻觅"这件事以前只能人判：执行器只有**游客**落点口径（`guestGateVerdict` 读 `POL.rows`），登录态落点没口径 ⇒ 裁定每轮重新变成一条 FAILED 红。
+本工具不占设备，直接把本轮 exec-results.json 里已经记着的 `route` 按 `policy.loggedInLandings` 判一次。现量：`本页行=38 在范围=38 采到落点=38 一致=38 相反=0` ⇒ `LOGINLAND_RESULT=PASS`。
+两条限制写死在输出里，不许被读成整条判据过了：
+1. 「全程只 1 次导航 / 两条前进路径无双跳竞争」这一半**不判**（执行器没有导航事件计数器）；
+2. 只有点名载体行（LG02/LG03）没量到落点才算缺口，盖章不可自动化的行不计（那是噪声不是缺口）。
+自测 9 例全过，其中 4 例是负例（量到第三页、一行都没有、route 全空、点名行缺席）——都验证过能红。
+接线：`run-round7-closeout.mjs` 新增 `verify-logged-in-landing` 步骤（--exec 同时喂 mock 与 real 两轮，缺 real 就红），步骤数 19→20 已复核。
+
+### 顺手记两条
+- `SEL_RESULT=PASS`，但 `SEL_COMPONENT_SCOPE` 有 193 条：元素存在、只是躲在自定义组件里，页面作用域查询进不去（该门自己标注的实测点不动率 90.6%）。⇒ #71 那批"点不到名"不是语料的活，是 **WS 腿**的活（① 那条通道），别拿改判据去"修"它。
+- 语料 `--apply` 仍然不能现在做：戳在腿 0/1 已封，中途改写会让腿 12/13 量到与腿 10 不同的语料（腿 16 `queue-homogeneity` 就是查这个）。排在队尾之后，落完立刻复跑 dry 证幂等，再补一条只跑 `PAGES-LOGIN-INDEX` 的小队列。

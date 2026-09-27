@@ -51,6 +51,23 @@
   { "page": "subpackages/vip/promo-code", "landing": "pages/profile/index", "family": "flag-bounce", "entry": "功能开关" },
   { "page": "pages/nearby/index", "landing": "pages/login/index", "family": "guide-401", "entry": "附近的人（个人数据/距离列表）", "basis": "2026-09-27 由 exec-guest-real-r7final 实测补进：游客档该页 57 行里 42 行实测栈顶=pages/login/index（3 条 FAILED 是 N25/N26/N27 交互腿，39 条 SKIPPED-interact-off-page），机制同源 apps/client/src/pages/nearby/index.vue:63/204「未登录发起必 401 → http 层 redirectToLogin 强踢登录页」+ anchors 里的 services/http.ts:493。该页另有页内引导 .nearby-login-guide（:622），所以「没被踢」时页内引导才是判点 —— 本行只声明「被踢时落点应为登录页」，不把页内引导判成缺陷。" }
  ],
+ "loggedOutOnly": [
+  { "page": "pages/login/index",
+    "reason": "已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。",
+    "evidence": "2026-09-27 exec-A-mock-stage7 现量（PAGES-LOGIN-INDEX 38 行全采完）：15 行 SKIPPED「action 含交互动词但本页没落在声明页（栈顶=pages/discover/index）」+ 9 行 FAILED「落在别的页…须人判」+ 12 行已盖章不可自动化 ⇒ A 腿在这一页一条正向证据都没产出。逐行复核 38 条后只有 2 条（LG02/LG03）的前置真是「已登录」。",
+    "keepOnLoginLeg": "只有**前置写明已登录**的行留在登录腿：① 名单里点名的 id；② 判据文本含 已登录 或 isLoggedIn=true。不按「提没提 redirect/自动前进」放行：实测那会把 LG01 清登录态冷启动、LG08 协议链接、LG10 401 兜底、LG21/LG22 登录成功导航、LG37 幽灵参数共 6 条未登录前置的行伪装成 A 侧判点（它们的 redirect 字样来自 storage 键名 pending-login-redirect 或「不消费 redirect 参数」这类断言）。反向也要防：LG03 讲「重复进出登录页每次仍自动前进」，前置真是已登录，但正文只写「新实例/自动前进」⇒ 纯关键词会把它误收进游客腿，游客腿必然得到「停在登录页不动」，那是我自己造的假红 ⇒ 点名列出来。",
+    "keepOnLoginLegIds": ["LG02", "LG03"],
+    "keepOnLoginLegIdsReason": "LG02=已登录进登录页单跳前进（④ 裁定的直接载体）；LG03=重复进出每次仍单跳前进（同一条裁定的回归面）。这两条在 A 腿才有意义，游客腿跑它们只会得到「本就该停在登录页」的反证。",
+    "carriesRuling": "④ 登录页已登录落地页" }
+ ],
+ "loggedInLandings": [
+  { "page": "pages/login/index", "landing": "pages/discover/index", "identity": ["A", "B"],
+    "source": "apps/client/src/pages/login/index.vue:98-101（onShow 检到已登录即前进）与 :122-136（watch(!loading && isLoggedIn)）",
+    "carrierRows": ["LG02", "LG03"],
+    "judges": "落地页这一半：A/B 腿 reLaunch('/pages/login/index') 后记录到的栈顶 route === landing ⇒ 与裁定一致",
+    "doesNotJudge": "「全程只 1 次导航 / 两条前进路径无双跳竞争」这一半执行器没有导航事件计数器，量不到 ⇒ 不许算成已被落点绿色顺便作证（要判它得先给执行器加导航计数或把这一半拆成独立判点）",
+    "carriesRuling": "④ 登录页已登录落地页" }
+ ],
  "markers": {
   "guide-401": { "landingMarker": ".login-page__brand", "markerSource": "apps/client/src/pages/login/index.vue:569", "registerEntry": ".login-register-entry", "registerEntrySource": "apps/client/src/pages/login/index.vue:604（.login-quick 默认分支；MP-R7-GUEST-LANDING-REGENTRY-001 修复后该分支内已有 .login-register-entry，见 :692-698）" },
   "flag-bounce": { "landingMarker": ".profile-page", "markerSource": "apps/client/src/pages/profile/index.vue:1643", "registerEntry": null, "registerEntrySource": null }
