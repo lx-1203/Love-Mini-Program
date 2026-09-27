@@ -43,15 +43,21 @@ const sleep = (ms) => { const t = Date.now() + ms; while (Date.now() < t) { /* �
    我第一版就是这么写的，两个项目同时报同一个错，差点被读成"real 档窗口起不来"的结论。 */
 const ROUTE_FN = "() => JSON.stringify({route:(getCurrentPages().slice(-1)[0]||{}).route||'', pages:getCurrentPages().length})";
 let last = "";
+/* 判"活"的唯一口径：路由非空。以前循环的跳出条件是"probe 有回话且不含 ERR"，
+   而刚开完的档位首帧就是 {"route":"","pages":0} —— 有回话但还没启动完，
+   于是 5 秒就 break、判 no-live-route 退出（实测 13:50:19 起、13:50:30 就 FAIL 交卷，
+   SETTLE=24 的 120s 预算一秒都没用），整条队列剩下 13 条腿全被记成 NOT_RUN。
+   跳出条件必须和验收条件是同一个谓词，否则"等它起来"这句话是假的。 */
+const live = (s) => /"route":\s*"[^"]+"/.test(String(s));
 for (let i = 0; i < SETTLE; i++) {
   sleep(5000);
   try {
     last = evaluate(ROUTE_FN, { project: PROJECT });
-    if (last && !/no-answer|ERR|undefined/.test(String(last))) break;
+    if (live(last)) break;
   } catch (e) { last = "ERR " + String(e.message).slice(0, 300); }
 }
 say("probe", String(last).slice(0, 200));
-const ok = /"route":\s*"[^"]+"/.test(String(last));
+const ok = live(last);
 say("verify", ok ? "window-live" : "no-live-route");
 lease.release();
 console.log(`OPENWIN_RESULT=${ok ? "OK" : "FAIL"}` + (ok ? "" : " ⇒ 窗口没起来或里面不是这个产物；不要接着往下跑执行腿"));
