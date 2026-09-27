@@ -40,6 +40,7 @@ const STEPS = [
   { id: "verdict-from-frames", file: "scripts/qa/verdict-from-frames.mjs", kind: "gate", write: true, args: ["--round", ROUND], note: "把帧级判决从证据里读出来（① 要的帧级终态）" },
   { id: "audit-frame-verdicts", file: "scripts/qa/audit-frame-verdicts.mjs", kind: "gate", args: ["--round", ROUND], note: "帧判决的审计：有没有拿没背书的判决落账" },
   { id: "triage-exec-A-mock", file: "scripts/qa/triage-exec-failures.mjs", kind: "gate", args: ["--results", `reports/audit/${ROUND}/exec-A-mock-stage7/exec-results.json`, "--dist", "apps/client/dist/build/mp-weixin"], note: "A 刀语料分诊（词表可达 + unclassified=0 + 落地对）" },
+  { id: "triage-exec-A-real", file: "scripts/qa/triage-exec-failures.mjs", kind: "gate", args: ["--results", `reports/audit/${ROUND}/exec-A-real-stage7/exec-results.json`, "--dist", "apps/client/dist/build/mp-weixin-real"], note: "真实刀 A 身份语料分诊：这一腿现量 875 行里有 1 条 FAILED 与 98 条非守恒跳过（欠前置配方 50 / 通道或选择器 5 / 没点名物件 6 / 禁触 4 / 盖章不可自动化 20），以前收尾只分诊 A-mock 与 guest-real ⇒ 这一腿的红和跳过从来没进过词表账" },
   { id: "triage-exec-guest-real", file: "scripts/qa/triage-exec-failures.mjs", kind: "gate", args: ["--results", `reports/audit/${ROUND}/exec-guest-real-stage7/exec-results.json`, "--dist", "apps/client/dist/build/mp-weixin-real"], note: "游客刀语料分诊（真实档）" },
   { id: "guest-landing-recheck", file: "scripts/qa/verify-guest-landing.mjs", kind: "gate", write: true, args: ["--mode", "measure", "--project", "apps/client/dist/build/mp-weixin-real"], note: "27 组游客落点逐页实测（GG-* 复测腿）：BOOKED/MEASURED-* 不算结案，只有这一条跑出 CLOSED，triage 的「未结案」才会归零" },
   { id: "verify-real-coverage", file: "scripts/qa/verify-real-coverage.mjs", kind: "gate", args: ["--round", ROUND], note: "真实模式覆盖守恒（含身份轴豁免读数）" },
@@ -78,6 +79,33 @@ const STEPS = [
     if (!made.length) made.push({ ...tpl, id: tpl.id + ":EMPTY", args: [], note: tpl.note + "（盘上没有 exec-* 结果目录 ⇒ 这一步必然红，而红是对的）" });
     STEPS.splice(tplIdx, 1, ...made);
     console.log("CLOSEOUT_EXPANDED " + tpl.id + " → " + made.length + " 步（按 " + roundRel + "/exec-* 现量展开）");
+  }
+}
+/* 分诊腿以前是手工列的三个名字 ⇒ 同一族"手工列必然漏"的洞：现量盘上已经有
+   exec-A-real-stage7、r8 补腿、ws-* 等结果目录从来没被分诊过，它们的红和跳过永远不会进词表账。
+   这里按盘上 exec 与 ws 前缀的结果目录补齐缺的分诊步骤（已手工列过的不重复做），并打印补了哪几条。 */
+{
+  const tpl = STEPS.find((s) => s.file === "scripts/qa/triage-exec-failures.mjs");
+  if (tpl) {
+    const covered = new Set();
+    for (const s of STEPS) {
+      if (s.file !== "scripts/qa/triage-exec-failures.mjs") continue;
+      const m = (s.args || []).join(" ").match(/([A-Za-z0-9_-]+)\/exec-results\.json/);
+      if (m) covered.add(m[1]);
+    }
+    const baseAbs = join(REPO, "reports/audit", ROUND);
+    const added = [];
+    for (const d of (existsSync(baseAbs) ? readdirSync(baseAbs) : []).sort()) {
+      if (!/^(exec|ws)-/.test(d) || covered.has(d)) continue;
+      /* 只补"这一波"的腿：更早的 exec-A-real-only / -final 等目录在它们自己的波次里已经分诊过、
+         判决也落进了语料与台账，再补一遍只是把历史红重新端上来。判定按名字里的波次标记走。 */
+      if (!/stage7|stage7b|-r8|^ws-/.test(d)) continue;
+      if (!existsSync(join(baseAbs, d, "exec-results.json"))) continue;
+      const dist = /real/.test(d) ? "apps/client/dist/build/mp-weixin-real" : "apps/client/dist/build/mp-weixin";
+      STEPS.push({ id: "triage-" + d, file: "scripts/qa/triage-exec-failures.mjs", kind: "gate", args: ["--results", `reports/audit/${ROUND}/${d}/exec-results.json`, "--dist", dist], note: "自动补的分诊腿（盘上有这一腿的结果但收尾没分诊它）；档位按目录名里的 real 推：" + dist });
+      added.push(d);
+    }
+    console.log("CLOSEOUT_TRIAGE_COVER 手工列=" + covered.size + " 自动补=" + added.length + (added.length ? "（" + added.join(", ") + "）" : "") + "｜分诊口径：每一个 exec-*/ws-* 结果腿都必须有人分诊，漏一条就是本轮留一条没有去向的红");
   }
 }
 {
