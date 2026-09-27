@@ -44,8 +44,12 @@ const relOf = (p) => String(p).split("\\").join("/").replace(String(REPO).split(
 const say = (s) => { const line = `[${now()}] ${s}`; console.log(line); appendFileSync(LOG, line + "\n"); };
 
 if (!existsSync(LEGS_FILE)) { say(`QUEUE_RESULT=FAIL reason=腿清单不存在 ${LEGS_FILE}`); process.exit(2); }
-const legs = JSON.parse(readFileSync(LEGS_FILE, "utf8"));
-if (!Array.isArray(legs) || !legs.length) { say("QUEUE_RESULT=FAIL reason=腿清单为空（空扫描集不得判绿）"); process.exit(2); }
+const rawLegs = JSON.parse(readFileSync(LEGS_FILE, "utf8"));
+/* 两种形状都收：顶层数组（round-7 及以前就是这么写的）或 {legs:[…], $schema/$why:…}
+   —— 带元数据的清单更好读，但元数据不该以"整条队列拒跑"为代价。
+   空清单仍然直接 FAIL：空扫描集不得判绿。 */
+const legs = Array.isArray(rawLegs) ? rawLegs : (Array.isArray(rawLegs && rawLegs.legs) ? rawLegs.legs : []);
+if (!legs.length) { say("QUEUE_RESULT=FAIL reason=腿清单为空（空扫描集不得判绿；形状认顶层数组或 {legs:[…]}）"); process.exit(2); }
 say(`QUEUE_START legs=${legs.length} 清单=${relOf(LEGS_FILE)} 并发上限=${legs.length === 1 ? "单腿" : "串行"}`);
 
 const state = { startedAt: now(), legs: legs.map((l) => ({ name: l.name, status: "QUEUED" })) };

@@ -1,0 +1,194 @@
+{
+ "startedAt": "2026-09-27T11:50:21.422Z",
+ "legs": [
+  {
+   "name": "stamp-rewrite-v2",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/stamp-rewrite-v2.log",
+   "bytes": 165,
+   "resultLines": [
+    "STAMP_RESULT=PASS"
+   ]
+  },
+  {
+   "name": "refreeze-ops-copy",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/refreeze-ops-copy.log",
+   "bytes": 144,
+   "resultLines": [
+    "FREEZEOPS_RESULT=OK 校验和全部一致，出处写入 PROVENANCE.json"
+   ]
+  },
+  {
+   "name": "stamp-verify-copy",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/stamp-verify-copy.log",
+   "bytes": 223,
+   "resultLines": [
+    "STAMP_RESULT=PASS 副本即戳里那一版（cases=1107，与本轮执行腿所读语料逐文件同内容）"
+   ]
+  },
+  {
+   "name": "gate-selectors-exist-mock",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/gate-selectors-exist-mock.log",
+   "bytes": 3044,
+   "resultLines": [
+    "SEL_RESULT=PASS 执行器要点的选择器全部在被测档里有对应元素（另有 7 条只提示：文案提及或幽灵入口断言，不构成点不动）"
+   ]
+  },
+  {
+   "name": "gate-tab-bar-single-source-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/gate-tab-bar-single-source-stage7.log",
+   "bytes": 409,
+   "resultLines": [
+    "TABBARSRC_RESULT=PASS 面板字面量相加==token ⇒ 单点化按 (b) 口径成立"
+   ]
+  },
+  {
+   "name": "rebuild-showcase-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/rebuild-showcase-stage7.log",
+   "bytes": 30664,
+   "resultLines": [
+    "SHOWCASE_RESULT=PASS"
+   ]
+  },
+  {
+   "name": "rebuild-mock-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/rebuild-mock-stage7.log",
+   "bytes": 643,
+   "resultLines": [
+    "NPMSCRIPT_RESULT=OK（命中 1/2 个「mp-build」标记）"
+   ]
+  },
+  {
+   "name": "rebuild-real-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/rebuild-real-stage7.log",
+   "bytes": 625,
+   "resultLines": [
+    "NPMSCRIPT_RESULT=OK（命中 1/2 个「mp-build」标记）"
+   ]
+  },
+  {
+   "name": "gate-band-freshness-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/gate-band-freshness-stage7.log",
+   "bytes": 3815,
+   "resultLines": [
+    "FRESH_RESULT=PASS bands=3 markers=3 —— 每档产物都不晚于任何未提交改动，且符号级深检全部命中"
+   ]
+  },
+  {
+   "name": "open-window-mock-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/open-window-mock-stage7.log",
+   "bytes": 531,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-A-mock-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/exec-A-mock-stage7.log",
+   "bytes": 106375,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-stage7-A-mock",
+    "RUNNER_STATS identity=A loginVerify=logged-in userId=100158 executed=275 failed=11 skipped=589(交互动词=15 requiresReal=186 非真实用例=0 探针无结果=0 判据无可判物件=14 出帧失败=0 交互禁触=22 交互没点名=61 交互后离页=31 锁屏挡住=0 交互下发失败=240 身份适用范围外=0 盖章不可自动化=20) 页组=51 真做过的交互=134 折叠探针类名次数=609 出帧=275 未点名类名=105 通道异常次数=0",
+    "RUNNER_RESULT=OK"
+   ]
+  },
+  {
+   "name": "open-window-real-stage7",
+   "status": "FAIL",
+   "exitCode": 1,
+   "log": "reports/audit/round-7/ui-queue/open-window-real-stage7.log",
+   "bytes": 608,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "OPENWIN_RESULT=FAIL ⇒ 窗口没起来或里面不是这个产物；不要接着往下跑执行腿"
+   ]
+  },
+  {
+   "name": "exec-A-real-stage7",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "exec-guest-real-stage7",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-real-coverage-stage7",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "stamp-check-stage7",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "queue-homogeneity-stage7",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "reconcile-frameplan-stage7",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "open-window-mock-for-reshoot-stage7",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "reshoot-mock-stage7",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "open-window-real-for-frames-stage7",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "reshoot-guest-real-stage7",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "reshoot-A-real-stage7",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "open-window-real-for-tour-b",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "tour-B-real-stage7",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "advisoryFail": 0,
+ "finishedAt": "2026-09-27T13:50:30.216Z",
+ "conservation": {
+  "legsTotal": 25,
+  "legsOk": 11,
+  "tally": {
+   "OK": 11,
+   "FAIL": 1,
+   "NOT_RUN": 13
+  },
+  "ok": true
+ }
+}
