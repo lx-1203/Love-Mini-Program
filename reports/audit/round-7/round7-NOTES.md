@@ -4045,3 +4045,11 @@ DISCOVER-014 的处置列原本写着"二选一，收口时给去向"。**不采
 顺带又抓到一只 dry 抢设备：`shoot-frameplan.mjs --dry` 无条件 `acquireUi()`（`DRY` 旗标在租约段之后才解析），于是"我就看一眼配方会拍什么"会把正在跑的取景腿顶掉 —— 与 §126 那起事故同族，一小时内第二次。现在 dry 分支不抢租约，并且**当场用真实现场验过**：`exec-A-mock` 正持有租约时跑 `--dry` ⇒ `SHOOT_LEASE=SKIPPED_DRY` + 照常打出 `items=38 组(路由×身份)=22`。
 
 **下一轮防再犯的硬规则**：任何带 `--dry`/`--check`/"只读预览"字样的工具，`--dry` 必须在**解析参数的那一刻**就同时关掉三类副作用 —— 设备租约、会写库的前置件、落盘。判据是：dry 模式下 `heldLeases()` 前后不变、库行数不变、目标文件 mtime 不变。
+## 130 收尾也做成载具：run-round7-closeout.mjs（19 步、设备占用就拒跑）（2026-09-27 12:16）
+§128 那份"跑完之后做什么"如果只写在纸上，就是又一次"结论没有载具"。现在收进一个脚本：
+- 19 个步骤启动前逐个核 existsSync（文件名写错 ⇒ 直接 FAIL，绝不静默少跑一步）；
+- 默认只跑只读门；写盘步骤要 --allow-write，G8/G9 要 --with-g8，终报与提交清单要 --with-report；
+- 启动前查 heldLeases()，设备被占用就拒绝 —— 本轮我已经两次用"只读预览"顶掉正在跑的腿（§126、§129），这条守卫把教训变成结构；
+- queue-tally 步骤自己核对 OK+FAIL+NOT_RUN==腿数，并逐条点名红腿与 ADVISORY_RED；
+- 含 guest-landing-recheck（--mode measure --project mp-weixin-real）：27 组游客落点没有这条就永远停在 BOOKED，triage 的"未结案"归不了零 —— 这一条是 ⑤"没有证据缺口"的最后一环。
+负例现验：--only guest-landing-recheck 在未加 --allow-write 时报 FAIL（"有没被启用的步骤"），而不是静默什么也不做。
