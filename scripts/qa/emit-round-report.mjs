@@ -50,6 +50,7 @@ import { createHash } from "node:crypto";
 import { dirname, join, resolve, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { acquireUi, renewUi, releaseUi, heldLeases } from "./ui-lease.mjs";
+import { fourGridEmptySetVerdict } from "./fourgrid-axis.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const relPosix = (p) => String(p).split(sep).join("/");
@@ -1007,8 +1008,9 @@ if (tri) {
   const four = {};
   for (const it of items) if (it.verdict) four[it.verdict] = (four[it.verdict] || 0) + 1;
   const indexed = items.filter((it) => it.recoverable && it.token).length;
+  const domRecoveredN = items.filter((it) => it.tokenFrom === "observe-only-dom").length;
   P("");
-  P(`### dist/src 四格（只对能恢复出查找目标的定位失败做双载体检；n=${indexed}）${srcFile(TRIAGE_BASE + ".json", "items[].verdict")}`);
+  P(`### dist/src 四格（只对能恢复出查找目标的定位失败做双载体检；n=${indexed}，其中 ${domRecoveredN} 条目标来自 round-7 observe-only 的 dom 结论 \`.x:absent\`）${srcFile(TRIAGE_BASE + ".json", "items[].verdict")}`);
   P("");
   P("| 结论 | 条数 |");
   P("|---|---|");
@@ -1019,14 +1021,20 @@ if (tri) {
        (a) 这一轮的失败里根本没有定位类失败 ⇒ 四格没有输入，是"无可检"，不是"检了没事"；
        (b) 有定位类失败却一条 token 都没恢复出来 ⇒ 提取器坏了，此时印 0 就是假绿。
        旧版把两种都判红，于是本轮（12 条失败里没有一条是定位失败）永远出不了报告；
-       这里改成按桶计数分流：(a) 记 NOT_APPLICABLE 并显式声明不计入通过率，(b) 保持 FAIL。 */
-    const locateBuckets = (bs["locate-label"] || 0) + (bs["locate-label-token-lost"] || 0) + (bs["locate-selector"] || 0);
-    if (locateBuckets > 0) {
+       这里改成按桶计数分流：(a) 记 NOT_APPLICABLE 并显式声明不计入通过率，(b) 保持 FAIL。
+       【本次补全】"定位类失败的声称"不止 round-6 那三个桶：round-7 的 mock 刀是 observe-only，
+       不再写 `element not found`，同一声称换了词汇——observed 的 dom 结论 `.x:absent`。
+       只认旧词表的话，"有 absent 声称却恢复不出目标"（提取失灵的真形态）会躲进 NOT_APPLICABLE 静默。
+       判据本身不放宽：分流逻辑整体搬进 fourgrid-axis.mjs（与生产者 triage、行为测试同一份实现），
+       claims 覆盖两套词汇，仍可判红；红句原文保留"token 提取失灵，不能当作没有失败"。 */
+    const decision = fourGridEmptySetVerdict({ fourCellTotal: 0, buckets: bs, items });
+    if (decision.red) {
       P(`| ⚠ 一格都没有 | 0 |`);
-      ERRORS.push(`空集判红：有 ${locateBuckets} 条定位类失败，但 dist/src 四格 0 条 —— token 提取失灵，不能当作没有失败`);
+      ERRORS.push(decision.error);
     } else {
-      P(`| （无可检对象：本轮定位类失败 ${locateBuckets} 条，四格无输入） | 0 |`);
+      P(`| （无可检对象：round-6 词表定位类失败 ${decision.locateBuckets} 条、round-7 observe-only dom absent 声称 ${decision.domAbsent} 行，四格无输入） | 0 |`);
       P(`- 四格判据本轮记 **NOT_APPLICABLE**（不是 PASS）：分诊桶里 locate-label / locate-selector / locate-label-token-lost 全为 0，`
+        + `且没有任何一行的 observe-only dom 结论声称 absent，`
         + `即没有任何一条失败属于"找物件失败"这一类，双载体检没有可检输入。`);
       P(`- ⚠ 这条声明的作用是防止"四格空"被下游读成"体检通过"——它没有通过，它没跑。`);
     }

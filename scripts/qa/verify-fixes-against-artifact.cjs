@@ -59,6 +59,7 @@ function parseArgs(argv) {
     else if (a === "--out") out.out = next(), i++;
     else if (a === "--baseline") out.baseline = next(), i++;
     else if (a === "--quiet") out.quiet = true;
+    else if (a === "--strict-verb-shells") out.strictVerbShells = true;
   }
   return out;
 }
@@ -738,6 +739,18 @@ function probeExtractSelfcheck() {
     console.log("LEDGER_BRACKET spans=" + lo + " pairs=" + lo + "/" + lc + " straddling-clause-delimiter=" + delims);
     if (lo !== lc) errs.push("台账 ⟨/⟩ 不等（" + lo + "/" + lc + "）：有壳未闭合，其后的真判点会被吃掉");
     if (delims) errs.push("有 " + delims + " 个壳跨子句分隔符：会被 clausesOf 劈开 ⇒ 跑 scripts/qa/normalize-bracket-spans.mjs --apply");
+    /* §96.2 待办的载体：壳内含"切句器会剪的变更动词"（同一份 change-verbs.cjs 数组，不是新立的词表）
+       就会被从动词处剪成半只壳，未闭合那半按"到句尾都算说明"吞掉后面的真判点——normalize 的
+       分隔符模型检不出它（实测 spans-with-delimiter=0 却照样被剪）。从今往后靠显式告警，不靠人肉换词。
+       默认 WARN（这条轴刚建，假阳性率没量过——判据词表里有"补/改/走/应/需"这类单字高频词，
+       纯名词壳撞上它们的概率要先量）；--strict-verb-shells 升级为否决。 */
+    var verbSpans = [];
+    lt.split(/\r?\n/).forEach(function (L) {
+      CHV.verbStraddlingSpans(L).forEach(function (h) { verbSpans.push(h.inner.slice(0, 60)); });
+    });
+    console.log("PROSE_BRACKET_VERB spans-with-change-verb=" + verbSpans.length + "（壳内含变更动词 ⇒ 会被 clausesOf 在动词处剪成半只壳，判点被吞；处置=把壳改成纯名词短语，或量过假阳性后开 --strict-verb-shells 让它否决）");
+    for (var vs = 0; vs < Math.min(verbSpans.length, 6); vs++) console.log("  VERB_SHELL " + verbSpans[vs]);
+    if (verbSpans.length && ARG.strictVerbShells) errs.push("有 " + verbSpans.length + " 个壳内含变更动词（--strict-verb-shells 生效）：切句器会在动词处剪断，半只壳会吞掉其后的真判点");
   } catch (e) { errs.push("台账读不到，无法验说明壳：" + String(e.message).slice(0, 60)); }
   console.log("PROSE_BRACKET_SELFCHECK spans=" + PROSE_BRACKET.spans + " unbalanced=" + PROSE_BRACKET.unbalanced);
   BRACKET_BASE = { spans: PROSE_BRACKET.spans, tokens: PROSE_BRACKET.tokens, unbalanced: PROSE_BRACKET.unbalanced, samples: PROSE_BRACKET.samples.length };
@@ -798,22 +811,11 @@ function clausesOf(text, origin) {
   return out;
 }
 
-function firstVerbIndex(s) {
-  var verbs = ["改为", "改成", "改用", "改走", "统一走", "统一为", "替换为", "替换成", "换为", "换成", "补上", "补", "新增", "加上", "删掉", "删除", "移除", "去掉", "下掉", "不再使用", "不再保留", "使用", "应", "需", "走", "改"];
-  var best = null;
-  for (var i = 0; i < verbs.length; i++) {
-    var v = verbs[i], from = 0;
-    while (true) {
-      var k = s.indexOf(v, from);
-      if (k < 0) break;
-      var before = k === 0 ? "" : s.charAt(k - 1);
-      if (!/[A-Za-z]/.test(before)) { if (!best || k < best.at) best = { at: k, head: k, verb: v }; break; }
-      from = k + 1;
-    }
-  }
-  if (!best) return null;
-  return { at: best.at + best.verb.length, head: best.head };
-}
+/* 变更动词词表与剪断点定位搬进 change-verbs.cjs（唯一来源）：
+   切句器和"壳内含变更动词"告警必须共用同一份数组，否则 §96.2 那类"建模不一致"会靠
+   人肉同步维持——两边各自的副本正是当年那条缺陷的形状。 */
+var CHV = require("./change-verbs.cjs");
+function firstVerbIndex(s) { return CHV.firstVerbIndex(s); }
 
 /* ----------------------------------------------- closer.json 的差异串 */
 
@@ -1546,6 +1548,11 @@ function main() {
   }
   var sum = counts.ARTIFACT_VERIFIED + counts.SOURCE_ONLY + counts.NEEDS_UI_FRAME + counts.NOT_IN_EITHER + counts.UNDECIDABLE;
   var conserved = sum === records.length && !fellThrough.length;
+  /* 两条守恒规则共用 conserved 一个旗标，打印时必须分开：旧版无论哪条破的都印"五桶之和 ≠ 条目数"，
+     于是 items=[] 空跑（真实原因＝上游 stillOpen 对账不过）会打出一行自相矛盾的红句
+     "CONSERVATION FAIL 五桶之和 0 ≠ 条目数 0"，把读者引向根本不存在的计桶 bug（实测 2026-09-29）。
+     只改措辞与归因，判决与退出码逐字不变。 */
+  var bucketRuleBroke = !conserved;
 
   /* 状态打脸表（规则 6） */
   var dis = [];
@@ -1698,7 +1705,8 @@ function main() {
 
   console.log("");
   if (FATAL.length) for (var fi = 0; fi < FATAL.length; fi++) console.log("FATAL " + FATAL[fi]);
-  if (!conserved) console.log("CONSERVATION FAIL 五桶之和 " + sum + " ≠ 条目数 " + records.length + "；漏网条目：" + (fellThrough.length ? fellThrough.join(", ") : "(无点名，存在重复计桶)"));
+  if (bucketRuleBroke) console.log("CONSERVATION FAIL 五桶之和 " + sum + " ≠ 条目数 " + records.length + "；漏网条目：" + (fellThrough.length ? fellThrough.join(", ") : "(无点名，存在重复计桶)"));
+  else if (!conserved) console.log("CONSERVATION FAIL 分桶本身守恒（五桶之和 " + sum + " = 条目数 " + records.length + "），破的是上游来源数对账：枚举 " + records.length + " 条 vs fix-lanes.stillOpen=" + stillOpenDeclared + "（逐条点名见上方 FAIL 行）");
   console.log("状态打脸 " + dis.length + " 条｜次级来源与台账不一致 " + srcDis.length + " 条｜静态可判 " + staticDecidable + " 条｜需排 UI 帧 " + counts.NEEDS_UI_FRAME + " 条");
   /* 说明壳在生产数据上到底吞掉了多少候选判点 —— 一条为 agent 写的规则也是一道门禁，
      只报"拦下了什么"不报"丢弃了什么"就无法判断它是变严了还是失效了。 */
