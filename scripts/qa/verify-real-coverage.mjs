@@ -14,7 +14,7 @@
  *  一条门不能一边禁跑、一边又索要"你为什么不跑"的红：那样这些行永远凑不齐证据，
  *  门就永久红，永久红的门最后会被绕过去。所以这里给它们一个**单独的、计数的、点名的**
  *  桶：REALCOV_AUTOMATABLE_EXEMPT=n + 逐条 EXEMPT 明细。
- *  三条硬口径：① 只读判据台声明的 automatable 字段（与 r-exec-ws.mjs:341 同一个字段、
+ *  三条硬口径：① 只读判据台声明的 automatable 字段（与 r-exec-ws.mjs:585 同一个字段、
  *  同一个严格判等 === false），不从 prose、id 模式或硬编码名单反推；
  *  ② 豁免 ≠ 覆盖，免检行绝不并进 covered；
  *  ③ 剩余非免检的欠账照旧按原阈值（uncovered === 0 才绿）判红，一条不减。
@@ -30,6 +30,13 @@
  *  ② 计数与点名**不改判红阈值**（ok 仍只看 uncovered 与守恒）——今天已有 4586 条合法 mock 行，
  *  把漏盖做成新的常红判点，正撞上面那句"永久红的门最后会被绕过去"。它是一条看得见的漏，
  *  不是一根新的狼牙棒。
+ *
+ *  认领的第二步（2026-09-28 补）：band 只是入场券，**分账按 identity 走两条轴**（:170-171）。
+ *  一条 real 档、没带 identity 的行两边都不认，而旧门同样对此一声不吭——实测：round-8 那条 WS 波次
+ *  加上 band 之后 COVERED 仍是 202→202，只有连 identity 一起加才 +5（.zcode/tmp/gap-band2/REPORT.md F1）。
+ *  这一格与漏盖那格同构、不同轴：REALCOV_IDENTITYLESS_ROWS / _CASES / _SCANNED / _ON_REAL + 出处 + 点名，
+ *  同样**不进 ok 的判据**。生产者一侧的对账读数在 r-exec-ws.mjs 的 WSX_IDENT_STAMP / WSX_FILE_IDENT /
+ *  WSX_IDENT_UNSTAMPED / WSX_MIXED_IDENT / WSX_IDENT_DISAGREE。
  *
  *  用法：node scripts/qa/verify-real-coverage.mjs [--round round-7]
  *       [--ops reports/audit/round-6/ops] [--dir reports/audit/round-7] [--selftest]
@@ -93,6 +100,10 @@ function execRows() {
    把 SKIPPED 记成覆盖，正是本轮 236 条被吞掉的那条路径。 */
 const JUDGED = /^(EXECUTED|FAILED|PASS)$/;
 const REAL_BAND = /^real(@|$)/;
+/* "这一行没声明身份"的判点：execRows 把缺失/空串统一读成 "?"（:87，与 r-exec-cli.mjs:652 的哨兵同一个数），
+   所以这里同时收 absent、""、"?" 三种写法。反过来**不收**"声明了但门不认"的值（none、logged-in…）：
+   那种行是"词表外的身份"，不是"没有身份"——两件事分开数，才不会把生产者的字段缺失与旗标写错混成同一格。 */
+const isIdentityless = (v) => v === "" || v === "?" || v === undefined || v === null;
 
 /* 一条判据"该由谁来判"，按 ops 的 identities 折算成两条轴（本门只有这两条轴）：
    登录侧 = A 或 B（这条门不区分账号，区分账号是台账的事）；游客侧 = guest/none。
@@ -108,12 +119,22 @@ function judge(rows, req, ids) {
   /* 漏盖计数（行轴，不是用例轴）：本门会去看、却读不出档位的行。
      只数 key 命中 requiresReal 判据的行——其它判据本来就不归这本账，数进来只会稀释信号。 */
   const bandless = { rows: 0, cases: new Map() };
+  /* 身份漏盖（与 bandless 同一类、另一个轴）：档位只是入场券，认领按 identity 分两条轴做（:170-171）。
+     行上没 identity ⇒ real 档也 +0（gap-band2 的 F1 实测：COVERED 202→202，补身份才 +5）。
+     onReal 单列，因为"有档位、没身份"正是那条 145 行 WS 波次**修好 band 之后**的新形状：
+     它看着像真实覆盖，实际两条轴都领不到钱，而旧门对此一声不吭。 */
+  const identityless = { rows: 0, cases: new Map(), onReal: 0 };
   for (const r of rows) {
     if (!ids.has(r.key)) continue;
     const rec = byId.get(r.key) || { real: new Set(), realJudged: new Set() };
     if (!r.band) {
       bandless.rows++;
       bandless.cases.set(r.key, (bandless.cases.get(r.key) || 0) + 1);
+    }
+    if (isIdentityless(r.identity)) {
+      identityless.rows++;
+      identityless.cases.set(r.key, (identityless.cases.get(r.key) || 0) + 1);
+      if (REAL_BAND.test(r.band)) identityless.onReal++;
     }
     if (REAL_BAND.test(r.band)) {
       rec.real.add(r.identity);
@@ -126,14 +147,14 @@ function judge(rows, req, ids) {
     /* 免检桶与覆盖桶都是新增的、互斥的格子；下面三个旧判点（neverOnReal / noA / noGuest）
        以及 skippedOnly 的判据一个字没改，只是免检行不再进它们的路径。 */
     automatableExempt: [], covered: [],
-    bandless,
+    bandless, identityless,
   };
   for (const c of req) {
     const key = c.manifest + "|" + c.id;
     const ax = axesOf(c.identities);
     if (!ax.guest) missing.scopedGuestExempt++;
     if (!ax.login) missing.scopedLoginExempt++;
-    /* 执行通道免检：判据台声明字段 c.automatable === false（严格判等，跟 r-exec-ws.mjs:341
+    /* 执行通道免检：判据台声明字段 c.automatable === false（严格判等，跟 r-exec-ws.mjs:585
        拒跑名单用的是同一个字段同一个条件；写成 "false" 字符串、0、null 都不算豁免）。
        放在身份轴读数之后，是为了让 REALCOV_IDENTITY_SCOPED 的两个数与加轴前完全可比。
        免检行单独点名，不进 covered ⇒ "本门不追"绝不被读成"量到了"。 */
@@ -214,9 +235,37 @@ function selftest() {
     { n: "real 档但身份不是 A/B/guest（缺 identity 字段的形状）⇒ 仍不算覆盖",
       rows: [{ key: "M|1", band: "real@deadbeef", identity: "?", status: "EXECUTED" }, { key: "M|2", band: "real@deadbeef", identity: "?", status: "EXECUTED" },
              { key: "M|3", band: "real@deadbeef", identity: "?", status: "EXECUTED" }],
-      wantMissing: 3, wantExempt: 0, wantCovered: 0, wantBandlessRows: 0, wantBandlessCases: 0 },
+      wantMissing: 3, wantExempt: 0, wantCovered: 0, wantBandlessRows: 0, wantBandlessCases: 0,
+      /* 这一例的形状就是"有档位、没身份"（本轮 WS 腿修好 band 之后的样子）：
+         它不但领不到钱，还得被数出来——否则这条门又回到"扫到了但一声不吭"。 */
+      wantIdentlessRows: 3, wantIdentlessCases: 3, wantIdentlessOnReal: 3 },
   ];
-  for (const c of cases2.concat(cases3, blCases)) {
+  /* 认领第二步（身份漏盖）自己的样本：四个方向都要锁死——
+     · real 档 + 没身份 ⇒ 两条轴都领不到，且逐行数出来（gap-band2 F1 的原形状，实测 +0）；
+     · 同一批行只补身份 ⇒ 整批转覆盖、漏身份归零（证明"隐身"的另一个唯一致盲原因就是缺这个字段）；
+     · 补了 A 但游客轴缺 ⇒ 照旧算欠，可这**不是**漏身份（声明了只是不够，两格不许混）；
+     · 词表外的声明值（none / logged-in）⇒ 不认领、也不算漏身份；mock 档没身份 ⇒ 仍算漏身份。 */
+  const rl = (key, identity, band) => ({ key, band: band || "real@deadbeef", identity, status: "EXECUTED" });
+  const idCases = [
+    { n: "real 档但整批没身份⇒ 两条轴都领不到（判据全欠），漏身份被逐条数出来",
+      rows: [rl("M|1", "?"), rl("M|1", ""), rl("M|2", "?"), rl("M|2", ""), rl("M|3", "?"), rl("M|3", "")],
+      wantMissing: 3, wantExempt: 0, wantCovered: 0, wantIdentlessRows: 6, wantIdentlessCases: 3, wantIdentlessOnReal: 6 },
+    { n: "同一批行只补上身份 A+guest⇒ 三条全转覆盖、漏身份归零（缺字段是第二个唯一致盲原因）",
+      rows: [rl("M|1", "A"), rl("M|1", "guest"), rl("M|2", "A"), rl("M|2", "guest"), rl("M|3", "A"), rl("M|3", "guest")],
+      wantMissing: 0, wantExempt: 0, wantCovered: 3, wantIdentlessRows: 0, wantIdentlessCases: 0 },
+    { n: "补了 A 但游客轴缺⇒ 双身份口径下照旧欠 3，可这不算漏身份（声明了只是不够，两格不混）",
+      rows: [rl("M|1", "A"), rl("M|2", "A"), rl("M|3", "A")],
+      wantMissing: 3, wantExempt: 0, wantCovered: 0, wantIdentlessRows: 0, wantIdentlessCases: 0 },
+    { n: "声明了门不认的值（none/logged-in）⇒ 不认领，但也不数成漏身份（词表外≠没字段）",
+      rows: [rl("M|1", "none"), rl("M|1", "logged-in"), rl("M|2", "none"), rl("M|2", "logged-in"), rl("M|3", "none"), rl("M|3", "logged-in")],
+      wantMissing: 3, wantExempt: 0, wantCovered: 0, wantIdentlessRows: 0, wantIdentlessCases: 0 },
+    { n: "mock 档且没身份⇒ 欠账来自档位，漏身份仍如实数出来（字段缺失与档位无关，不许藏）",
+      rows: [{ key: "M|1", band: "mock@f1c7b96b", identity: "?", status: "EXECUTED" }, { key: "M|2", band: "mock@f1c7b96b", identity: "?", status: "EXECUTED" }, { key: "M|3", band: "mock@f1c7b96b", identity: "?", status: "EXECUTED" }],
+      wantMissing: 3, wantExempt: 0, wantCovered: 0, wantIdentlessRows: 3, wantIdentlessCases: 3, wantIdentlessOnReal: 0 },
+    { n: "标了 A/B 的判据 + B 身份判过⇒ 登录轴认（B 与 A 等量齐观），漏身份=0", req: extraReq, ids: extraIds,
+      rows: [rl("M|1", "B")], wantMissing: 0, wantExempt: 0, wantCovered: 1, wantIdentlessRows: 0, wantIdentlessCases: 0 },
+  ];
+  for (const c of cases2.concat(cases3, blCases, idCases)) {
     const R = reqOf(c);
     const m = judge(c.rows, R, c.ids || ids);
     const got = new Set([...m.neverOnReal, ...m.noA, ...m.noGuest]).size;
@@ -227,11 +276,15 @@ function selftest() {
     /* 漏盖计数：行数与命中判据数两头都要对上，缺一项就报不出来。 */
     if (c.wantBandlessRows !== undefined && m.bandless.rows !== c.wantBandlessRows) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 漏盖行=${m.bandless.rows} want=${c.wantBandlessRows}`); }
     if (c.wantBandlessCases !== undefined && m.bandless.cases.size !== c.wantBandlessCases) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 漏盖判据=${m.bandless.cases.size} want=${c.wantBandlessCases}`); }
+    /* 漏身份计数：与漏盖同构（行数 / 命中判据数 / 其中档位已是 real 的条数）。 */
+    if (c.wantIdentlessRows !== undefined && m.identityless.rows !== c.wantIdentlessRows) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 漏身份行=${m.identityless.rows} want=${c.wantIdentlessRows}`); }
+    if (c.wantIdentlessCases !== undefined && m.identityless.cases.size !== c.wantIdentlessCases) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 漏身份判据=${m.identityless.cases.size} want=${c.wantIdentlessCases}`); }
+    if (c.wantIdentlessOnReal !== undefined && m.identityless.onReal !== c.wantIdentlessOnReal) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 其中 real 档=${m.identityless.onReal} want=${c.wantIdentlessOnReal}`); }
     /* 守恒在每个样本上都得成立：免检 + 覆盖 + 欠账 = 用例条数，一个都不许凭空消失或重复计。
-       漏盖是**行轴**的读数，不参与这条等式（同一行既可能被认领也可能同时被数成漏盖）。 */
+       漏盖与漏身份都是**行轴**的读数，不参与这条等式（同一行既可能被认领也可能同时被数成漏盖/漏身份）。 */
     if (ge + gc + got !== R.length) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 守恒 ${ge}+${gc}+${got}≠${R.length}`); }
   }
-  console.log(`REALCOV_SELFTEST=${bad === 0 ? "PASS" : "FAIL"} cases=${cases2.length + cases3.length + blCases.length} bad=${bad}`);
+  console.log(`REALCOV_SELFTEST=${bad === 0 ? "PASS" : "FAIL"} cases=${cases2.length + cases3.length + blCases.length + idCases.length} bad=${bad}`);
   process.exit(bad === 0 ? 0 : 1);
 }
 if (process.argv.includes("--selftest")) selftest();
@@ -246,7 +299,7 @@ console.log(`REALCOV_NEVER_ON_REAL=${m.neverOnReal.length} REAL_BAND_BUT_ALL_SKI
 console.log(`REALCOV_IDENTITY_SCOPED 游客轴豁免=${m.scopedGuestExempt} 登录轴豁免=${m.scopedLoginExempt}（来源=ops 用例上的 c.identities，载体 tag-ops-identity-scope.mjs；豁免只减认领者，不减判据）`);
 const exemptN = m.automatableExempt.length;
 const exemptSkipped = m.automatableExempt.filter((e) => e.allSkipped).length;
-console.log(`REALCOV_AUTOMATABLE_EXEMPT=${exemptN}（其中 real 档有行但全被 SKIPPED=${exemptSkipped}）来源=ops 用例声明字段 c.automatable===false（严格判等，与 r-exec-ws.mjs:341 拒跑名单同一字段同一条件；载具 dc9f7297 WSX_IDS_NOT_AUTOMATABLE）⇒ 执行腿被禁止跑的行，本门不再索要"跑过"的证据；豁免≠覆盖，REALCOV_COVERED 不含它们。`);
+console.log(`REALCOV_AUTOMATABLE_EXEMPT=${exemptN}（其中 real 档有行但全被 SKIPPED=${exemptSkipped}）来源=ops 用例声明字段 c.automatable===false（严格判等，与 r-exec-ws.mjs:585 拒跑名单同一字段同一条件；载具 dc9f7297 WSX_IDS_NOT_AUTOMATABLE）⇒ 执行腿被禁止跑的行，本门不再索要"跑过"的证据；豁免≠覆盖，REALCOV_COVERED 不含它们。`);
 const EXEMPT_PRINT = 40;
 for (const e of m.automatableExempt.slice(0, EXEMPT_PRINT)) {
   console.log(`  EXEMPT ${e.key} 出处=${e.from || "(判据台未记 notAutomatableFrom)"} real档=${e.hadRealRow ? (e.judged ? "有行且判过" : "有行但全 SKIPPED") : "无行"}`);
@@ -274,6 +327,26 @@ if (bandlessAll.length) {
   for (const [k, n] of [...bl.cases].sort((a, b) => b[1] - a[1]).slice(0, BL_PRINT)) console.log(`  BANDLESS ${k} 漏盖行=${n}`);
   if (bl.cases.size > BL_PRINT) console.log(`  BANDLESS …另 ${bl.cases.size - BL_PRINT} 条判据未逐条点名（总数已计入 REALCOV_BANDLESS_CASES）`);
   console.log(`  BANDLESS_HINT 这不是欠账新增（欠账仍按 real 档的行算），是生产者的字段缺失；修法是让那条腿盖上 band 再重跑，别把 mock 行改成 real 来"补数"`);
+}
+/* 身份这一侧的账（2026-09-28 补，与上面漏盖 band 同构、不同轴）：
+   认领分两步——先用 band 认出"这是真档跑的"，再用 identity 分到"哪条身份轴"（:170-171）。
+   第一步的漏盖已经被上面那格接住了，第二步的漏盖以前还是暗面：一条 real 档、没有 identity 的行
+   会进 rec.real（集合里多个 "?"），两条轴都不认，于是"扫到了、判过了、一条钱也领不到"与
+   "根本没跑"在读数上 again 长得一样。gap-band2 的 F1 就是这么量出来的：同一批行加 band +0、
+   再加 identity 才 +5。口径与漏盖那格逐条对齐：只数本门会看的行、给出处、逐条点名、
+   **不进 ok 的判据**（盘上今天有 145 行没身份，把它做成常红判点就重犯"永久红的门会被绕过去"）。 */
+const idlessAll = rows.filter((r) => isIdentityless(r.identity));
+const idl = m.identityless;
+const idlDir = new Map();
+for (const r of idlessAll) idlDir.set(r.dir, (idlDir.get(r.dir) || 0) + 1);
+console.log(`REALCOV_IDENTITYLESS_ROWS=${idl.rows}（在本门会看的 ${inIdsRows.length} 行里）REALCOV_IDENTITYLESS_CASES=${idl.cases.size} REALCOV_IDENTITYLESS_ON_REAL=${idl.onReal}（其中档位已是 real、只差身份的）REALCOV_IDENTITYLESS_SCANNED=${idlessAll.length}／${rows.length} 全扫描行`);
+if (idlessAll.length) {
+  console.log(`  IDENTITYLESS 出处 ${[...idlDir].map(([d, n]) => d + "=" + n).join(" ")}（这些行的 identity 字段缺失或读成 "?" ⇒ 门的登录轴 A/B 与游客轴 guest/not-logged-in 都不认它，哪怕 band=real@…；盖法见 r-exec-cli.mjs:176 与 r-exec-ws.mjs 的 mkRow/IDENTITY，判点即上面的 :170-171）`);
+  const IL_PRINT = 12;
+  for (const [k, n] of [...idl.cases].sort((a, b) => b[1] - a[1]).slice(0, IL_PRINT)) console.log(`  IDENTITYLESS ${k} 漏身份行=${n}`);
+  if (idl.cases.size > IL_PRINT) console.log(`  IDENTITYLESS …另 ${idl.cases.size - IL_PRINT} 条判据未逐条点名（总数已计入 REALCOV_IDENTITYLESS_CASES）`);
+  console.log(`  IDENTITYLESS_HINT 这也不是欠账新增（欠账仍按 real 档+身份的行算），是生产者的字段缺失；修法是让那条腿带上 --identity 再重跑。` +
+    (idl.onReal ? ` 注意别用"把 identity 随手改成 A"来补数：游客腿的行盖成 A 会去领登录轴的钱，那是伪造。` : ""));
 }
 console.log(`REALCOV_COVERED=${coveredN}`);
 console.log(`REALCOV_UNCOVERED=${uncovered}／${req.length}（阈值同旧：非免检欠账 =0 才绿）`);
