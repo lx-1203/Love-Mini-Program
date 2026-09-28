@@ -1207,7 +1207,13 @@
       "requiresReal": true,
       "actionPreTapfix": "（a）进入空账单页观察 EmptyState → tap 空态区域（无可点动作则记 noop 反馈缺失）；（b）进入后快速切换筛选两次并滚动到底，逐卡核对 id 与内容对应",
       "tapTarget": ".filter-chip",
-      "tapTargetEvidence": "apps/client/src/subpackages/vip/bills.vue:195"
+      "tapTargetEvidence": "apps/client/src/subpackages/vip/bills.vue:195",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "gap-carriers/identities-tagging.json",
+      "identitiesWhy": "本 patch 的唯一根据=该行自己的前置逐字含「展示版 + 身份A 登录」（gap-carriers 规则：按前置收窄认领，不按页名/关键词猜）。摘掉的是认领，不是判据。"
     }
   ]
 }

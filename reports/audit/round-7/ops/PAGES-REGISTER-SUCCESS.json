@@ -1,180 +1,189 @@
 {
-  "cases": [
-    {
-      "id": "RS01",
-      "page": "pages/register/success",
-      "title": "冷启动进入成功页：插图/标题/3 行清单/双出口完整渲染 + 状态栏注入",
-      "tier": "normal",
-      "pre": "身份 A mock 登录态可用（成功页无登录锁，本页源码无 usePageAccess/onShow 鉴权判断，仅 success.vue:25-30 onLoad 读参）→ 两种进入方式各测一次：①从注册页 redirectTo 进入；②wx.reLaunch('/pages/register/success?phone=13800001111') 冷启动直开",
-      "action": "不操作，等 ≥500ms；探测 .reg-success / .reg-success__img / .reg-success__title / .reg-success__sub-line ×2 / .reg-success__list / .reg-success__row ×3 / .reg-success__btn / .reg-success__alt",
-      "expected": "路由末位 pages/register/success；标题「注册成功」+ 两行副标（数组分行渲染，success.vue:23,55）+ 3 行清单（rows computed :33-37）+ 主按钮「完善我的资料 →」+ 次级「稍后再说，先随便逛逛」全部可见；根节点 padding-top 生效且 --statusbar 由 JS 注入非 0（success.vue:13-15,86，自定义导航 pages.json:36 下不得与状态栏叠印）；冷启动直开同样完整渲染，不得闪现错误态/空态（冷启动深链铁律）；console 无 error",
-      "evidence": "normal：after 截图（顶/底各一张）+ 路由断言 + console",
-      "requiresReal": false
-    },
-    {
-      "id": "RS02",
-      "page": "pages/register/success",
-      "title": "phone 入参正常 11 位 → 首行右侧标签脱敏为 138****8888",
-      "tier": "normal",
-      "pre": "reLaunch '/pages/register/success?phone=13800001111'",
-      "action": "读取第 1 个 .reg-success__row-tag 文本（rows[0].tag = maskedPhone || '完成'，success.vue:34）",
-      "expected": "首行 tag 显示「138****8888」，中间四位为 * 号（正则脱敏 success.vue:26-29）；页面任何位置不得出现完整 11 位手机号原文（含 aria/hidden 节点）；另两行 tag 为「已解锁」「建议」",
-      "evidence": "normal：after 截图 + 三行 tag 文本逐条抄录 + 全页文本快照检索完整号码",
-      "requiresReal": false
-    },
-    {
-      "id": "RS03",
-      "page": "pages/register/success",
-      "title": "phone 入参非法/缺失：一律回退「完成」，不得渲染原始入参",
-      "tier": "critical",
-      "pre": "依次 reLaunch 五种：①无 phone；②phone=（空值）；③phone=1380000111（10 位）；④phone=138000011112222（超长）；⑤phone=abc-def-ghij（非数字）",
-      "action": "每种读取首行 tag 与整页文本；④⑤另检查是否被截断展示",
-      "expected": "五种的 raw.replace(/\\D/g,'') 后长度均 ≠11 → maskedPhone 保持 ''（success.vue:26-29 严格 11 位判定）→ 首行 tag 全部回退「完成」；页面**绝不**回显任何未脱敏的原始入参片段（防手机号/任意字符串泄漏与反射式渲染）；无 JS 报错、无布局塌陷；⑤不得出现 'abcdefghij' 之类被剥离后的字符",
-      "evidence": "critical：五态 before/after 截图 + 首行 tag 抄录 + console；关键为整页文本检索入参原文",
-      "requiresReal": false
-    },
-    {
-      "id": "RS04",
-      "page": "pages/register/success",
-      "title": "phone 参数注入与编码：HTML/换行/中文/超长 500 字不得被解析或撑破布局",
-      "tier": "critical",
-      "pre": "reLaunch 三种：①phone=<img src=x onerror=alert(1)>（URL 编码后）；②phone=138%0A00001111（含编码换行）；③phone= 后接 500 个「汉」+11 位数字混排",
-      "action": "每种读取首行 tag、整页文本与 DOM/wxml 节点树；随后 tap 主按钮确认可用",
-      "expected": "①②③首行 tag 均为「完成」（非法长度，脱敏判定见 success.vue:26-29）或脱敏串（若混排后恰 11 位数字则须显示 138****1111 形态），且**页面不存在 <image>/富文本注入节点**（mp <text> 纯文本渲染，:60-64 清单行同为 text）；无 alert 执行、无 console error；③布局不溢出、清单卡不换行错位；主按钮仍可正常点击（不被异常参数致为死按钮，:69-71）",
-      "evidence": "critical：三态 before/after 截图 + wxml 快照（证明无注入节点）+ console",
-      "requiresReal": false
-    },
-    {
-      "id": "RS05",
-      "page": "pages/register/success",
-      "title": "主按钮「完善我的资料」→ navigateTo 资料完善 12 步首步",
-      "tier": "critical",
-      "pre": "身份 A 已登录并 reLaunch 至成功页（带合法 phone）；SUBPACKAGE_ROUTES.SETUP_PROGRESS.PROFILE 常量可解析（success.vue:40-42）",
-      "action": "tap .reg-success__btn 一次，观察 500ms 内反馈与路由链",
-      "expected": "500ms 内路由变化到 setup-progress 资料完善分包页（navigateTo，栈 +1，成功页仍在栈中→ 从资料页返回应落回成功页且首行 tag 仍为脱敏号）；无 Toast 报错、无 404/navigateTo fail；页面标题/步骤与「12 步流程首步（基础资料）」一致（success.vue:39-41 注释口径）",
-      "evidence": "critical：before/after 截图 + 完整路由链 + 返回落点断言 + console",
-      "requiresReal": false
-    },
-    {
-      "id": "RS06",
-      "page": "pages/register/success",
-      "title": "主按钮连点×5：navigateTo 无守卫，页面栈不得叠加多个资料页实例",
-      "tier": "critical",
-      "pre": "同 RS05；goSetupProfile（success.vue:40-42）为裸 uni.navigateTo，源码**无** createButtonGuard / submitting 标志（对照注册页 index.vue:456 有守卫）→ 本用例是客户端防连点缺口的证伪用例",
-      "action": "对 .reg-success__btn 以 <200ms 间隔连点 5 次",
-      "expected": "分栏判定：【路由/客户端层】navigateTo 被调用次数与最终 getCurrentPages 栈深必须只 +1（≤10 层上限，utils/navigation.ts:100-104 仅对 openAppPath 生效、本页裸 navigateTo 不经该兜底）；若栈中出现 ≥2 个 setup-progress 实例 → 判 FAILED（连点无守卫缺陷，Category=Interaction/Function），即使页面看起来只有一层也不得判通过；【数据层】若跳转触发资料页拉取/写请求，network 面板请求条数与后端资料记录条数分别记录（稳定 Idempotency-Key 会让服务端去重，services/http.ts:262-274，不得用服务端结果顶替客户端计数）",
-      "evidence": "critical：before/after 截图 + 逐跳 getCurrentPages 栈数组（含每层 route）+ network 面板计数 + console",
-      "requiresReal": false
-    },
-    {
-      "id": "RS07",
-      "page": "pages/register/success",
-      "title": "次级出口「稍后再说，先随便逛逛」→ switchTab 首页且清空栈",
-      "tier": "navigation",
-      "pre": "reLaunch 进入成功页（栈深 1）；再补一轮从注册链路 redirectTo 进入的场景",
-      "action": "tap .reg-success__alt 一次（goBrowse success.vue:45-47 → uni.switchTab ROUTES.TAB.HOME）",
-      "expected": "500ms 内 switchTab 成功，getCurrentPages 末位=pages/home/index 且栈中不含 success 页（switchTab 清空非 tab 栈）；首页正常渲染（数据/定位可加载）；不得报「can not navigateTo a tabbar page」；连点×3 时不得出现二次 switchTab 抖动或页面栈异常",
-      "evidence": "navigation：路由链断言（两次场景各一组）+ console，可免截图；连点补充 normal 级 after 截图",
-      "requiresReal": false
-    },
-    {
-      "id": "RS08",
-      "page": "pages/register/success",
-      "title": "主按钮热区与点击死区回归：@tap 在 view 上，96rpx 全高可点（MP-R2-PAGES-REGISTER-SUCCESS-002 修复后表现）",
-      "tier": "normal",
-      "pre": "成功页渲染完成；主按钮声明 height:96rpx（success.vue:163）、@tap 绑在 .reg-success__btn 而非内层 text（:67-71 注释明言原实现在 text 上、上下各约 27rpx 为死区）",
-      "action": "先读取 .reg-success__btn 与 .reg-success__btn-text 的 boundingClientRect；再分别 tap：①按钮上边缘内 6rpx；②下边缘内 6rpx；③左右两端 8rpx 处；④中心；每次观察 500ms 内路由",
-      "expected": "四个边缘点全部跳转成功（热区=按钮实体全高，无死区）；按钮高度实测 ≥88rpx（96rpx 达标）；text 宽度 100%/居中（:170-177）不得造成文字外区域不可点；若任一点无反馈 → 判死按钮 FAILED 并记坐标",
-      "evidence": "normal：after 截图（跳转成功）+ boundingClientRect 尺寸与点击坐标表 + console",
-      "requiresReal": false
-    },
-    {
-      "id": "RS09",
-      "page": "pages/register/success",
-      "title": "返回路径：本页无自定义返回钮，依赖手势/物理返回，落点与状态必须正确",
-      "tier": "navigation",
-      "pre": "分支A：注册页提交 → redirectTo 成功页（success.vue 全文无返回按钮，:50-75 模板无 back 元素）；分支B：reLaunch 直开成功页（栈深=1）",
-      "action": "①分支A：Android 风格返回/miniProgram navigateBack delta1；②分支B：同样执行返回",
-      "expected": "分支A：由于注册页是 redirectTo 而来（pages/register/index.vue:363），返回**不得**回到注册页 —— 实际栈为 [登录页?, success] 或 [success]，返回应落到来源页（登录页）或触发退出小程序；若返回后出现注册页实例 → 判 redirectTo 语义失效 FAILED；分支B（栈=1）：返回按微信语义退出到小程序外/首页，不得白屏、不得卡死；两分支均需 500ms 内可观测（路由变化或退出），无 JS 报错",
-      "evidence": "navigation：返回前后 getCurrentPages 全栈断言 + console，可免截图（白屏例外须补截图）",
-      "requiresReal": false
-    },
-    {
-      "id": "RS10",
-      "page": "pages/register/success",
-      "title": "清单三行状态标签文案与「已解锁」语义的数据真实性",
-      "tier": "normal",
-      "pre": "身份 A 注册后进入（token 已落库，注册页 index.vue:359-362 已 refreshSession）；另备一路「冷启动直开且未登录」（清 token 后 reLaunch）",
-      "action": "逐行抄录 .reg-success__row-text 与 .reg-success__row-tag；未登录路核对首行是否仍显示「账号已创建并自动登录 / 完成」；随后 tap 主按钮验证是否真能进入资料完善",
-      "expected": "已登录路：三行文案与 rows 定义严格一致（「账号已创建并自动登录」「可开始匹配、加兴趣圈、发消息」「下一步：完善资料，遇见更准的同频」，success.vue:33-37），首行 tag 为脱敏号；未登录直开路：清单文案为**无条件硬编码承诺**（源码无 isLoggedIn 判定）→ 必须如实记录「未登录仍宣称已创建并自动登录」的口径矛盾，且 tap 主按钮若被路由守卫/门槛拦截必须给出可见反馈（Toast/跳登录），不得静默停留 —— 静默即判死按钮；两路均不得出现裸 i18n key",
-      "evidence": "normal：两路 after 截图 + 三行文案抄录 + 登录态求值 + 点击后路由/Toast 记录",
-      "requiresReal": false
-    },
-    {
-      "id": "RS11",
-      "page": "pages/register/success",
-      "title": "打开即返回 / 重复进出×3：无计时器泄漏、无重复渲染与叠加 Toast",
-      "tier": "noop",
-      "pre": "身份 A 登录，wx.reLaunch('/pages/register/success?phone=13800001111') 进入成功页（本页源码仅 onLoad 读参，success.vue:25-30，无任何 setTimeout/setInterval）",
-      "action": "①进入后 <500ms 立即返回（打开即返回）；②重复「进入→tap 主按钮→返回」3 轮；③第 4 次进入后停留 5s 观察",
-      "expected": "全程无自动跳转、无 Toast 风暴、无重复页面实例（每轮 getCurrentPages 栈深一致）；第 4 次停留 5s 页面保持 Idle（success.vue:9-48 仅 onLoad/computed/两个跳转函数，无副作用源）→ 若出现自发动效之外的跳转或计时器报错须记 ISSUE；返回后再进脱敏号仍为 138****8888（入参重放一致，:26-29）",
-      "evidence": "noop：执行日志（每轮路由链 + 栈深 + Toast 计数）",
-      "requiresReal": false
-    },
-    {
-      "id": "RS12",
-      "page": "pages/register/success",
-      "title": "滚动到顶/底与小屏可达性（插图 472rpx 挤占首屏风险）",
-      "tier": "noop",
-      "pre": "iPhone SE（小屏）与 iPad/大屏各一轮；键盘无关（本页无输入框）",
-      "action": "①滚到最顶；②滚到底（.reg-success__alt 可见）；③在小屏下检查主按钮与次级出口是否首屏可见、是否被底部 safe-area 压住",
-      "expected": "小屏下即使需滚动，主按钮最终必须完整可达可点（不得被 safe-area/home 指示条遮挡，根容器 padding-bottom calc(env(safe-area-inset-bottom)+48rpx) success.vue:86）；插图（472rpx :90-92）不得把按钮推出不可达区域或造成空白；底部无回弹异常、无内容裁切",
-      "evidence": "noop：执行日志（scrollTop 极值 + 按钮 rect 与 safe-area 关系）+ 小屏 after 截图一张",
-      "requiresReal": false
-    },
-    {
-      "id": "RS13",
-      "page": "pages/register/success",
-      "title": "下拉刷新：未配置 enablePullDownRefresh，不得触发刷新或重复跳转",
-      "tier": "noop",
-      "pre": "pages.json:49 成功页条目无 style 配置（对照 :54-64 有配的页面）",
-      "action": "顶部下拉 300px 松手 ×2；观察 console/network 与页面状态",
-      "expected": "无刷新动画、无 onPullDownRefresh、无 stopPullDownRefresh；清单与脱敏号不变；无新增请求；页面不得因下拉被重新加载（loading 重放导致 3 行清单闪回）",
-      "evidence": "noop：执行日志（手势 + network 零新增 + 首行 tag 前后一致）",
-      "requiresReal": false
-    },
-    {
-      "id": "RS14",
-      "page": "pages/register/success",
-      "title": "注册→成功页跨页链路完整性：redirectTo 后登录态与资料完成度一致",
-      "tier": "critical",
-      "pre": "全新未占用手机号走完注册页合法表单；准备在成功页之后进入资料完善/首页回读",
-      "action": "注册页提交 → 成功页 → tap 主按钮进资料完善 → 返回成功页 → tap「稍后再说」进首页；每步抄录路由链与 isLoggedIn/profileCompletion",
-      "expected": "全链无断点：注册后 token 落库、sessionStore.isLoggedIn=true（注册页 index.vue:360-362 主动 refreshSession，不得出现「已登录但页面认为未登录」间隙）；成功页→资料页→返回成功页→首页三步路由语义正确（navigateTo/Back/switchTab），最终栈为 [pages/home/index]；首页可正常渲染（不因新账号资料未完成而崩/白屏，允许引导态）；任一步 500ms 内必有可观测反馈",
-      "evidence": "critical：链路每步 after 截图 + 完整路由链数组 + 登录态/完成度求值 + console",
-      "requiresReal": false
-    },
-    {
-      "id": "RS15",
-      "page": "pages/register/success",
-      "title": "成功页参数面：仅消费 phone，其余参数为幽灵参数且不得影响行为",
-      "tier": "normal",
-      "pre": "源码依据：success.vue:25-30 onLoad 仅读 query?.phone，无其它字段消费、无重定向逻辑",
-      "action": "reLaunch '/pages/register/success?phone=13800001111&redirect=%2Fpages%2Fhome%2Findex&userId=100158&token=fake.jwt.value&from=circles'；停留 3s 后读取路由链、整页文本与 storage token",
-      "expected": "首行 tag 仍为「138****8888」；redirect/userId/from 必须被忽略：3s 内无任何自动跳转（不得据 redirect 自动 navigateTo/switchTab，防开放重定向）；token 参数不得覆盖 storage 中真实 token（读 storage 前后一致）；userId 不得出现在页面文本中；页面完整渲染无报错 —— 并把 redirect/userId/token/from 记为幽灵参数",
-      "evidence": "normal：after 截图 + 路由链 + wx.getStorageSync('token') 前后对照 + console",
-      "requiresReal": false
-    },
-    {
-      "id": "RS16",
-      "page": "pages/register/success",
-      "title": "插图资源与头像兜底：IMAGE_PATHS.REGISTER.SUCCESS 缺失/加载失败的降级表现",
-      "tier": "normal",
-      "pre": "正常 mock 构建一轮；另备一轮通过 DevTools 阻断该图片资源（或改走资源不存在路径）以观察 fallback",
-      "action": "①正常态核对插图渲染（.reg-success__img mode=aspectFit，success.vue:52）；②资源失败态核对标题/清单/两按钮是否仍完整可用；③对照设计稿资源路径常量 IMAGE_PATHS.REGISTER.SUCCESS 实际指向的文件是否存在于包内",
-      "expected": "①图片正常显示、无变形/无白块；②资源失败时页面文本信息与两个出口按钮仍完整可见可点（不得因图片失败连带塌陷或永驻白屏），即图片非内容必需依赖；③若常量指向的文件在包内不存在 → 判 P1 Function/Resource 缺陷并给具体路径；两态均无 console error 之外的未处理异常",
-      "evidence": "normal：两态 after 截图 + 资源请求状态（network/面板）+ 常量指向路径的存在性核查结果",
-      "requiresReal": false
-    }
-  ]
+ "cases": [
+  {
+   "id": "RS01",
+   "page": "pages/register/success",
+   "title": "冷启动进入成功页：插图/标题/3 行清单/双出口完整渲染 + 状态栏注入",
+   "tier": "normal",
+   "pre": "身份 A mock 登录态可用（成功页无登录锁，本页源码无 usePageAccess/onShow 鉴权判断，仅 success.vue:25-30 onLoad 读参）→ 两种进入方式各测一次：①从注册页 redirectTo 进入；②wx.reLaunch('/pages/register/success?phone=13800001111') 冷启动直开",
+   "action": "不操作，等 ≥500ms；探测 .reg-success / .reg-success__img / .reg-success__title / .reg-success__sub-line ×2 / .reg-success__list / .reg-success__row ×3 / .reg-success__btn / .reg-success__alt",
+   "expected": "路由末位 pages/register/success；标题「注册成功」+ 两行副标（数组分行渲染，success.vue:23,55）+ 3 行清单（rows computed :33-37）+ 主按钮「完善我的资料 →」+ 次级「稍后再说，先随便逛逛」全部可见；根节点 padding-top 生效且 --statusbar 由 JS 注入非 0（success.vue:13-15,86，自定义导航 pages.json:36 下不得与状态栏叠印）；冷启动直开同样完整渲染，不得闪现错误态/空态（冷启动深链铁律）；console 无 error",
+   "evidence": "normal：after 截图（顶/底各一张）+ 路由断言 + console",
+   "requiresReal": false
+  },
+  {
+   "id": "RS02",
+   "page": "pages/register/success",
+   "title": "phone 入参正常 11 位 → 首行右侧标签脱敏为 138****8888",
+   "tier": "normal",
+   "pre": "reLaunch '/pages/register/success?phone=13800001111'",
+   "action": "读取第 1 个 .reg-success__row-tag 文本（rows[0].tag = maskedPhone || '完成'，success.vue:34）",
+   "expected": "首行 tag 显示「138****8888」，中间四位为 * 号（正则脱敏 success.vue:26-29）；页面任何位置不得出现完整 11 位手机号原文（含 aria/hidden 节点）；另两行 tag 为「已解锁」「建议」",
+   "evidence": "normal：after 截图 + 三行 tag 文本逐条抄录 + 全页文本快照检索完整号码",
+   "requiresReal": false
+  },
+  {
+   "id": "RS03",
+   "page": "pages/register/success",
+   "title": "phone 入参非法/缺失：一律回退「完成」，不得渲染原始入参",
+   "tier": "critical",
+   "pre": "依次 reLaunch 五种：①无 phone；②phone=（空值）；③phone=1380000111（10 位）；④phone=138000011112222（超长）；⑤phone=abc-def-ghij（非数字）",
+   "action": "每种读取首行 tag 与整页文本；④⑤另检查是否被截断展示",
+   "expected": "五种的 raw.replace(/\\D/g,'') 后长度均 ≠11 → maskedPhone 保持 ''（success.vue:26-29 严格 11 位判定）→ 首行 tag 全部回退「完成」；页面**绝不**回显任何未脱敏的原始入参片段（防手机号/任意字符串泄漏与反射式渲染）；无 JS 报错、无布局塌陷；⑤不得出现 'abcdefghij' 之类被剥离后的字符",
+   "evidence": "critical：五态 before/after 截图 + 首行 tag 抄录 + console；关键为整页文本检索入参原文",
+   "requiresReal": false
+  },
+  {
+   "id": "RS04",
+   "page": "pages/register/success",
+   "title": "phone 参数注入与编码：HTML/换行/中文/超长 500 字不得被解析或撑破布局",
+   "tier": "critical",
+   "pre": "reLaunch 三种：①phone=<img src=x onerror=alert(1)>（URL 编码后）；②phone=138%0A00001111（含编码换行）；③phone= 后接 500 个「汉」+11 位数字混排",
+   "action": "每种读取首行 tag、整页文本与 DOM/wxml 节点树；随后 tap 主按钮 .reg-success__btn 确认可用",
+   "expected": "①②③首行 tag 均为「完成」（非法长度，脱敏判定见 success.vue:26-29）或脱敏串（若混排后恰 11 位数字则须显示 138****1111 形态），且**页面不存在 <image>/富文本注入节点**（mp <text> 纯文本渲染，:60-64 清单行同为 text）；无 alert 执行、无 console error；③布局不溢出、清单卡不换行错位；主按钮仍可正常点击（不被异常参数致为死按钮，:69-71）",
+   "evidence": "critical：三态 before/after 截图 + wxml 快照（证明无注入节点）+ console",
+   "requiresReal": false,
+   "actionPreTapfix": "每种读取首行 tag、整页文本与 DOM/wxml 节点树；随后 tap 主按钮确认可用",
+   "tapTarget": ".reg-success__btn",
+   "tapTargetEvidence": "apps/client/src/pages/register/success.vue:71"
+  },
+  {
+   "id": "RS05",
+   "page": "pages/register/success",
+   "title": "主按钮「完善我的资料」→ navigateTo 资料完善 12 步首步",
+   "tier": "critical",
+   "pre": "身份 A 已登录并 reLaunch 至成功页（带合法 phone）；SUBPACKAGE_ROUTES.SETUP_PROGRESS.PROFILE 常量可解析（success.vue:40-42）",
+   "action": "tap .reg-success__btn 一次，观察 500ms 内反馈与路由链",
+   "expected": "500ms 内路由变化到 setup-progress 资料完善分包页（navigateTo，栈 +1，成功页仍在栈中→ 从资料页返回应落回成功页且首行 tag 仍为脱敏号）；无 Toast 报错、无 404/navigateTo fail；页面标题/步骤与「12 步流程首步（基础资料）」一致（success.vue:39-41 注释口径）",
+   "evidence": "critical：before/after 截图 + 完整路由链 + 返回落点断言 + console",
+   "requiresReal": false
+  },
+  {
+   "id": "RS06",
+   "page": "pages/register/success",
+   "title": "主按钮连点×5：navigateTo 无守卫，页面栈不得叠加多个资料页实例",
+   "tier": "critical",
+   "pre": "同 RS05；goSetupProfile（success.vue:40-42）为裸 uni.navigateTo，源码**无** createButtonGuard / submitting 标志（对照注册页 index.vue:456 有守卫）→ 本用例是客户端防连点缺口的证伪用例",
+   "action": "对 .reg-success__btn 以 <200ms 间隔连点 5 次",
+   "expected": "分栏判定：【路由/客户端层】navigateTo 被调用次数与最终 getCurrentPages 栈深必须只 +1（≤10 层上限，utils/navigation.ts:100-104 仅对 openAppPath 生效、本页裸 navigateTo 不经该兜底）；若栈中出现 ≥2 个 setup-progress 实例 → 判 FAILED（连点无守卫缺陷，Category=Interaction/Function），即使页面看起来只有一层也不得判通过；【数据层】若跳转触发资料页拉取/写请求，network 面板请求条数与后端资料记录条数分别记录（稳定 Idempotency-Key 会让服务端去重，services/http.ts:262-274，不得用服务端结果顶替客户端计数）",
+   "evidence": "critical：before/after 截图 + 逐跳 getCurrentPages 栈数组（含每层 route）+ network 面板计数 + console",
+   "requiresReal": false
+  },
+  {
+   "id": "RS07",
+   "page": "pages/register/success",
+   "title": "次级出口「稍后再说，先随便逛逛」→ switchTab 首页且清空栈",
+   "tier": "navigation",
+   "pre": "reLaunch 进入成功页（栈深 1）；再补一轮从注册链路 redirectTo 进入的场景",
+   "action": "tap .reg-success__alt 一次（goBrowse success.vue:45-47 → uni.switchTab ROUTES.TAB.HOME）",
+   "expected": "500ms 内 switchTab 成功，getCurrentPages 末位=pages/home/index 且栈中不含 success 页（switchTab 清空非 tab 栈）；首页正常渲染（数据/定位可加载）；不得报「can not navigateTo a tabbar page」；连点×3 时不得出现二次 switchTab 抖动或页面栈异常",
+   "evidence": "navigation：路由链断言（两次场景各一组）+ console，可免截图；连点补充 normal 级 after 截图",
+   "requiresReal": false
+  },
+  {
+   "id": "RS08",
+   "page": "pages/register/success",
+   "title": "主按钮热区与点击死区回归：@tap 在 view 上，96rpx 全高可点（MP-R2-PAGES-REGISTER-SUCCESS-002 修复后表现）",
+   "tier": "normal",
+   "pre": "成功页渲染完成；主按钮声明 height:96rpx（success.vue:163）、@tap 绑在 .reg-success__btn 而非内层 text（:67-71 注释明言原实现在 text 上、上下各约 27rpx 为死区）",
+   "action": "先读取 .reg-success__btn 与 .reg-success__btn-text 的 boundingClientRect；再分别 tap：①按钮上边缘内 6rpx；②下边缘内 6rpx；③左右两端 8rpx 处；④中心；每次观察 500ms 内路由",
+   "expected": "四个边缘点全部跳转成功（热区=按钮实体全高，无死区）；按钮高度实测 ≥88rpx（96rpx 达标）；text 宽度 100%/居中（:170-177）不得造成文字外区域不可点；若任一点无反馈 → 判死按钮 FAILED 并记坐标",
+   "evidence": "normal：after 截图（跳转成功）+ boundingClientRect 尺寸与点击坐标表 + console",
+   "requiresReal": false
+  },
+  {
+   "id": "RS09",
+   "page": "pages/register/success",
+   "title": "返回路径：本页无自定义返回钮，依赖手势/物理返回，落点与状态必须正确",
+   "tier": "navigation",
+   "pre": "分支A：注册页提交 → redirectTo 成功页（success.vue 全文无返回按钮，:50-75 模板无 back 元素）；分支B：reLaunch 直开成功页（栈深=1）",
+   "action": "①分支A：Android 风格返回/miniProgram navigateBack delta1；②分支B：同样执行返回",
+   "expected": "分支A：由于注册页是 redirectTo 而来（pages/register/index.vue:363），返回**不得**回到注册页 —— 实际栈为 [登录页?, success] 或 [success]，返回应落到来源页（登录页）或触发退出小程序；若返回后出现注册页实例 → 判 redirectTo 语义失效 FAILED；分支B（栈=1）：返回按微信语义退出到小程序外/首页，不得白屏、不得卡死；两分支均需 500ms 内可观测（路由变化或退出），无 JS 报错",
+   "evidence": "navigation：返回前后 getCurrentPages 全栈断言 + console，可免截图（白屏例外须补截图）",
+   "requiresReal": false
+  },
+  {
+   "id": "RS10",
+   "page": "pages/register/success",
+   "title": "清单三行状态标签文案与「已解锁」语义的数据真实性",
+   "tier": "normal",
+   "pre": "身份 A 注册后进入（token 已落库，注册页 index.vue:359-362 已 refreshSession）；另备一路「冷启动直开且未登录」（清 token 后 reLaunch）",
+   "action": "逐行抄录 .reg-success__row-text 与 .reg-success__row-tag；未登录路核对首行是否仍显示「账号已创建并自动登录 / 完成」；随后 tap 主按钮验证是否真能进入资料完善",
+   "expected": "已登录路：三行文案与 rows 定义严格一致（「账号已创建并自动登录」「可开始匹配、加兴趣圈、发消息」「下一步：完善资料，遇见更准的同频」，success.vue:33-37），首行 tag 为脱敏号；未登录直开路：清单文案为**无条件硬编码承诺**（源码无 isLoggedIn 判定）→ 必须如实记录「未登录仍宣称已创建并自动登录」的口径矛盾，且 tap 主按钮若被路由守卫/门槛拦截必须给出可见反馈（Toast/跳登录），不得静默停留 —— 静默即判死按钮；两路均不得出现裸 i18n key",
+   "evidence": "normal：两路 after 截图 + 三行文案抄录 + 登录态求值 + 点击后路由/Toast 记录",
+   "requiresReal": false
+  },
+  {
+   "id": "RS11",
+   "page": "pages/register/success",
+   "title": "打开即返回 / 重复进出×3：无计时器泄漏、无重复渲染与叠加 Toast",
+   "tier": "noop",
+   "pre": "身份 A 登录，wx.reLaunch('/pages/register/success?phone=13800001111') 进入成功页（本页源码仅 onLoad 读参，success.vue:25-30，无任何 setTimeout/setInterval）",
+   "action": "①进入后 <500ms 立即返回（打开即返回）；②重复「进入→tap 主按钮 .reg-success__btn→返回」3 轮；③第 4 次进入后停留 5s 观察",
+   "expected": "全程无自动跳转、无 Toast 风暴、无重复页面实例（每轮 getCurrentPages 栈深一致）；第 4 次停留 5s 页面保持 Idle（success.vue:9-48 仅 onLoad/computed/两个跳转函数，无副作用源）→ 若出现自发动效之外的跳转或计时器报错须记 ISSUE；返回后再进脱敏号仍为 138****8888（入参重放一致，:26-29）",
+   "evidence": "noop：执行日志（每轮路由链 + 栈深 + Toast 计数）",
+   "requiresReal": false,
+   "actionPreTapfix": "①进入后 <500ms 立即返回（打开即返回）；②重复「进入→tap 主按钮→返回」3 轮；③第 4 次进入后停留 5s 观察",
+   "tapTarget": ".reg-success__btn",
+   "tapTargetEvidence": "apps/client/src/pages/register/success.vue:71"
+  },
+  {
+   "id": "RS12",
+   "page": "pages/register/success",
+   "title": "滚动到顶/底与小屏可达性（插图 472rpx 挤占首屏风险）",
+   "tier": "noop",
+   "pre": "iPhone SE（小屏）与 iPad/大屏各一轮；键盘无关（本页无输入框）",
+   "action": "①滚到最顶；②滚到底（.reg-success__alt 可见）；③在小屏下检查主按钮与次级出口是否首屏可见、是否被底部 safe-area 压住",
+   "expected": "小屏下即使需滚动，主按钮最终必须完整可达可点（不得被 safe-area/home 指示条遮挡，根容器 padding-bottom calc(env(safe-area-inset-bottom)+48rpx) success.vue:86）；插图（472rpx :90-92）不得把按钮推出不可达区域或造成空白；底部无回弹异常、无内容裁切",
+   "evidence": "noop：执行日志（scrollTop 极值 + 按钮 rect 与 safe-area 关系）+ 小屏 after 截图一张",
+   "requiresReal": false
+  },
+  {
+   "id": "RS13",
+   "page": "pages/register/success",
+   "title": "下拉刷新：未配置 enablePullDownRefresh，不得触发刷新或重复跳转",
+   "tier": "noop",
+   "pre": "pages.json:49 成功页条目无 style 配置（对照 :54-64 有配的页面）",
+   "action": "顶部下拉 300px 松手 ×2；观察 console/network 与页面状态",
+   "expected": "无刷新动画、无 onPullDownRefresh、无 stopPullDownRefresh；清单与脱敏号不变；无新增请求；页面不得因下拉被重新加载（loading 重放导致 3 行清单闪回）",
+   "evidence": "noop：执行日志（手势 + network 零新增 + 首行 tag 前后一致）",
+   "requiresReal": false
+  },
+  {
+   "id": "RS14",
+   "page": "pages/register/success",
+   "title": "注册→成功页跨页链路完整性：redirectTo 后登录态与资料完成度一致",
+   "tier": "critical",
+   "pre": "全新未占用手机号走完注册页合法表单；准备在成功页之后进入资料完善/首页回读",
+   "action": "注册页提交 → 成功页 → tap 主按钮 .reg-success__btn 进资料完善 → 返回成功页 → tap「稍后再说」 .reg-success__alt 进首页；每步抄录路由链与 isLoggedIn/profileCompletion",
+   "expected": "全链无断点：注册后 token 落库、sessionStore.isLoggedIn=true（注册页 index.vue:360-362 主动 refreshSession，不得出现「已登录但页面认为未登录」间隙）；成功页→资料页→返回成功页→首页三步路由语义正确（navigateTo/Back/switchTab），最终栈为 [pages/home/index]；首页可正常渲染（不因新账号资料未完成而崩/白屏，允许引导态）；任一步 500ms 内必有可观测反馈",
+   "evidence": "critical：链路每步 after 截图 + 完整路由链数组 + 登录态/完成度求值 + console",
+   "requiresReal": false,
+   "actionPreTapfix": "注册页提交 → 成功页 → tap 主按钮进资料完善 → 返回成功页 → tap「稍后再说」进首页；每步抄录路由链与 isLoggedIn/profileCompletion",
+   "tapTarget": ".reg-success__btn",
+   "tapTargetEvidence": "apps/client/src/pages/register/success.vue:71"
+  },
+  {
+   "id": "RS15",
+   "page": "pages/register/success",
+   "title": "成功页参数面：仅消费 phone，其余参数为幽灵参数且不得影响行为",
+   "tier": "normal",
+   "pre": "源码依据：success.vue:25-30 onLoad 仅读 query?.phone，无其它字段消费、无重定向逻辑",
+   "action": "reLaunch '/pages/register/success?phone=13800001111&redirect=%2Fpages%2Fhome%2Findex&userId=100158&token=fake.jwt.value&from=circles'；停留 3s 后读取路由链、整页文本与 storage token",
+   "expected": "首行 tag 仍为「138****8888」；redirect/userId/from 必须被忽略：3s 内无任何自动跳转（不得据 redirect 自动 navigateTo/switchTab，防开放重定向）；token 参数不得覆盖 storage 中真实 token（读 storage 前后一致）；userId 不得出现在页面文本中；页面完整渲染无报错 —— 并把 redirect/userId/token/from 记为幽灵参数",
+   "evidence": "normal：after 截图 + 路由链 + wx.getStorageSync('token') 前后对照 + console",
+   "requiresReal": false
+  },
+  {
+   "id": "RS16",
+   "page": "pages/register/success",
+   "title": "插图资源与头像兜底：IMAGE_PATHS.REGISTER.SUCCESS 缺失/加载失败的降级表现",
+   "tier": "normal",
+   "pre": "正常 mock 构建一轮；另备一轮通过 DevTools 阻断该图片资源（或改走资源不存在路径）以观察 fallback",
+   "action": "①正常态核对插图渲染（.reg-success__img mode=aspectFit，success.vue:52）；②资源失败态核对标题/清单/两按钮是否仍完整可用；③对照设计稿资源路径常量 IMAGE_PATHS.REGISTER.SUCCESS 实际指向的文件是否存在于包内",
+   "expected": "①图片正常显示、无变形/无白块；②资源失败时页面文本信息与两个出口按钮仍完整可见可点（不得因图片失败连带塌陷或永驻白屏），即图片非内容必需依赖；③若常量指向的文件在包内不存在 → 判 P1 Function/Resource 缺陷并给具体路径；两态均无 console error 之外的未处理异常",
+   "evidence": "normal：两态 after 截图 + 资源请求状态（network/面板）+ 常量指向路径的存在性核查结果",
+   "requiresReal": false
+  }
+ ]
 }

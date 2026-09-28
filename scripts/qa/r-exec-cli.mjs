@@ -267,6 +267,13 @@ const ROUTE_QUERY = {
   /* tag-posts 的 onLoad：无 ?tagName= 时提示并返回（P1-36），所以裸直达必然被弹走。
      取值用 fixture 里真实存在的标签（含 # 前缀，须 URL 编码）。 */
   "subpackages/village/village/tag-posts": "tagName=" + encodeURIComponent("#校园日常"),
+  /* CS10/CS29 的 pre 自己点名要一个私聊会话。onLoad 只有 sessionId / userId 两条认会话的支路
+     （chat-session/index.vue:736 / :743），都不带时走到 :790 pageErrorMessage=chat.missingSessionId，
+     而输入条整块住在 :2150 v-if=pageErrorMessage 的 :2151 v-else 里（:2185 .wechat-input-bar、:2217 输入节点）
+     ⇒ 裸直达必然量不到 .wechat-input-bar__input，那是缺参数不是产品没做。
+     取值 = 身份 B（100159）：A 腿的本人是 100158（scripts/qa/r-exec.cjs:494），自己不能当自己的聊天对象；
+     同页判据 CS04 的 pre 已按 userId=100159 跑通过（reports/audit/round-6/ops/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json:41-42）。 */
+  "subpackages/chat/chat-session/index": "userId=100159",
 };
 /* 模拟器独占租约（round-7 补）：本机两条通道驱动同一个 DevTools 模拟器，
    并发不会报错，只会互相换页——实测一批测量因此作废（58 行落点探针取空）。

@@ -115,7 +115,17 @@
    "action": "tap .wechat-input-bar__input → 输入「你好，测试消息」→ tap .wechat-input-bar__send（:2079-2087 @tap=onSend→sendText :1129-1192）",
    "expected": "500ms 内可观测：新气泡上屏（右侧 self）、视口自动滚底（:466 scrollToBottom）、草稿清空（:1177）、持久化草稿被清（clearPersistedDraft :1180）；回读消息条数 M1=M0+1；【客户端层】sendMessage 写请求恰 1 条（含稳定 Idempotency-Key，services/http.ts:262-274）；【数据层】重进会话后仍为 M0+1 条（不得本地补偿出第二条，:1167-1170 注释口径）；无失败 Toast",
    "evidence": "critical：before/after 截图（发送前后各一张 + 重进后一张）+ 气泡文本与条数 + network 逐条 + Toast 数组 + console",
-   "requiresReal": true
+   "requiresReal": true,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "gap-carriers/identities-tagging.json",
+   "identitiesWhy": "本 patch 的唯一根据=该行自己的前置逐字含「身份 A」（gap-carriers 规则：按前置收窄认领，不按页名/关键词猜）。摘掉的是认领，不是判据。",
+   "tapTarget": ".wechat-input-bar__input",
+   "tapTargetFrom": "cellplan-draft.json",
+   "tapTargetEvidence": "apps/client/src/subpackages/chat/chat-session/index.vue:2217",
+   "tapTargetConfirmedAt": "2026-09-28 只读核档：tokenIn 3/3 档；同页 CS29 早已把同名钉成 tapTarget，本行只是把 CS10 补齐"
   },
   {
    "id": "CS11",
@@ -344,7 +354,13 @@
    "requiresReal": true,
    "actionPreTapfix": "①进入后 <500ms 立即返回（打开即返回）；②「进入→发一条→立即退出」重复 3 轮，最后一轮退出后在别的页面停留 8s；③观察退出后是否仍出现「对方正在输入」提示或 Toast；④回读三轮的消息条数",
    "tapTarget": ".wechat-input-bar__input",
-   "tapTargetEvidence": "apps/client/src/subpackages/chat/chat-session/index.vue:2217"
+   "tapTargetEvidence": "apps/client/src/subpackages/chat/chat-session/index.vue:2217",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "gap-carriers/identities-tagging.json",
+   "identitiesWhy": "本 patch 的唯一根据=该行自己的前置逐字含「身份 A 已登录」（gap-carriers 规则：按前置收窄认领，不按页名/关键词猜）。摘掉的是认领，不是判据。"
   },
   {
    "id": "CS30",

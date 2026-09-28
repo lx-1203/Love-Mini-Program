@@ -63,7 +63,13 @@
       "action": "在列表 scroll-view 内下拉到 refresher 触发（activities/index.vue:390-397 refresher-enabled + @refresherrefresh），松手后等待动画结束；重复下拉 3 次，每次间隔 2s",
       "expected": "每次下拉都发出 1 次列表请求：real 模式 GET /recommendations/activities?page=1&pageSize=20 条数 = 3（fetchActivities 传 force=true 绕过 activity.ts:171 的 !force && activities.length>0 && isCacheFresh 短路；锚点 activities/index.vue:86-87 注释与调用）；若 3 次下拉的网络请求数为 0 → 即 MP-R2-次要22-005 复发，判 FAILED；mock 模式该请求为本地分支（activity.ts:178 直接赋 mockActivities），network 面板应 0 条真实请求，此时以「refresherTriggered 由 true 复位为 false（:84/:89）+ 动画结束 + 列表仍 4 卡」判定，并在 actual 注明按 buildMode 选了 mock 支路；refresher 不永驻（下拉指示器必须在 fetch 结束后收起，finally 复位 :88-90）；数据不闪空、console 无报错",
       "evidence": "critical：before（下拉前列表）+ 每次下拉中 + after 截图 + 路由 + Toast（应为无）+ console + network 面板逐次请求计数（3 次下拉对应 3 条列表请求）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover/activities/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AC03",
@@ -74,7 +80,13 @@
       "action": "tap .view-toggle__btn 第 2 个（日历，activities/index.vue:377-385 switchView('calendar')）→ 观察 → tap 第 1 个（列表，:368-376）",
       "expected": "切到日历 500ms 内 DOM 变化：月份标题「{年}年{月}月」（:500，zh-CN.ts:712）+ 星期标题行按周一起始 一~日（:152-160/:508-514）+ 网格格数 7 的倍数（:249-258）；今日格子高亮（isToday && isCurrentMonth 分支 :524）且有活动的日期显示品牌色圆点（:535-538）与首条活动标题（10 字内截断 :544-547）与「{n}人」（:550-557）；switchView 内部再调 fetchActivities()（非 force，:63-65）→ real 模式 30s 内应命中缓存不发请求（如实回填请求数，0 条为预期，不算死按钮）；切回列表后仍是原 4 张卡、quickFilter 选中态保持（Tab 切换数据不丢铁律）；console 无报错",
       "evidence": "normal：日历态 + 列表态 after 截图各 1 + 路由（仍在 activities 页）+ console + network 计数",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover/activities/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AC04",
@@ -85,7 +97,13 @@
       "action": "依次 tap .quick-filter 三个 chip：今天（:400-410）→ 周末 → 全部，每步等待渲染",
       "expected": "「今天」→ 命中 scheduleText 含 今天/今晚/今日 的条目（:51 判定），mock 四条均不含 → 列表 0 卡 + 出现「当前筛选下暂无活动，换个时间看看吧」（:463-465，zh-CN.ts:700），chip 选中态迁移（quick-filter--active :402）；「周末」→ 命中 周六/周日 两条（电影社轻松线下碰面 + 周末篮球友谊赛，:52 判定）；「全部」→ 恢复 4 卡；全程零网络请求（纯客户端过滤 :46-57）；aria-selected 随选中变化（:406）；console 无报错",
       "evidence": "normal：三个筛选态 after 截图（共 3）+ 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover/activities/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AC05",
@@ -96,7 +114,13 @@
       "action": "tap .month-nav__btn 第 1 个（‹ 上月）→ tap 第 2 个（› 下月）×2（跨年验证）→ tap 一个有活动的本月格子 → 再 tap 同一格子 → 最后 tap 一个非本月格子",
       "expected": "‹/› 生效后月份标题随之变化且跨年进位正确（goToPrevMonth :279-287 / goToNextMonth :290-298，1 月→上一年 12 月、12 月→次年 1 月），并清空 selectedDate（:286/:297）；tap 本月格子 → 出现选中日面板（:562-622），标题「{月}月{日}日」（:316-328）+「{n}个活动」（:568）；同格再 tap 取消选中（:306 三态切换）→ 面板消失；tap 非本月格子 → 无反应（:305 if(!cell.isCurrentMonth) return），属既定禁用而非死按钮，需在 actual 注明元素带 calendar-cell--disabled（:527）；console 无报错",
       "evidence": "normal：翻页后 + 选中后 + 取消后 三张 after 截图 + 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover/activities/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AC06",
@@ -104,10 +128,19 @@
       "title": "点活动卡跳详情带 id 参数，返回落点=活动列表且 Tab/筛选状态恢复",
       "tier": "navigation",
       "pre": "身份A 登录 → 由「寻觅」侧真实入口进入 activities（components/social/SocialProgressIndicator.vue:128 或 subpackages/chat/official-chat/index.vue:160 的 openAppPath），使页面栈≥2；列表视图",
-      "action": "tap 第 1 张 .activity-row（:414-423 → goToActivityDetail :143-145）→ 在详情页用返回键回到列表",
+      "action": "tap 第 1 张 .activity-row（activities/index.vue:417，:422 @tap=goToActivityDetail(item.id)；日历视图里的同名节点 :574 只在 viewMode=calendar 渲染，默认 list（:41）故文档序第 1 枚就是 mock 首条 a-1）→ 在详情页用返回键回到列表",
       "expected": "500ms 内路由到 /subpackages/tools/activities/detail?id=a-1（encodeURIComponent 后原样，:144；id 与 mock 数据 activity.ts:62 对应）；返回后落点为 subpackages/discover/activities/index 本身、栈长度 -1（openAppPath 的 navigateTo/栈满 redirectTo 语义按 utils/navigation.ts 实测回填）；回列表后 viewMode 与 quickFilter 选中态保持（Vue 实例未销毁 → 页面内 ref 保留 :41/:45）；滚动位不强制归零（如实回填 scrollTop 实测差值）；console 无报错",
       "evidence": "navigation：getCurrentPages 完整栈链（含每帧 route+options）断言 + console；可免截图（目标页渲染异常时补 1 张 after）",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "tap 第 1 张 .activity-row（:414-423 → goToActivityDetail :143-145）→ 在详情页用返回键回到列表",
+      "tapTarget": ".activity-row",
+      "tapTargetEvidence": "apps/client/src/subpackages/discover/activities/index.vue:417",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover/activities/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AC07",
@@ -115,10 +148,19 @@
       "title": "点「感兴趣」报名：乐观文案 toast、按钮态翻转、计数 +1，取消回滚",
       "tier": "critical",
       "pre": "同 AC01（列表视图）。目标卡 a-1（isEnrolled=false，enrollCount=12，stores/activity.ts:64-66）",
-      "action": "tap 第 1 张卡的 .enroll-btn（activities/index.vue:451-459，@tap.stop）→ 等 toast → 再 tap 一次（取消报名）",
+      "action": "tap 第 1 张卡的 .enroll-btn（activities/index.vue:452，:455 @tap.stop=toggleEnroll(item.id) 编译为 catchtap，:454 :disabled=activityStore.enrolling 或 submittingId=item.id）→ 等 toast → 再 tap 一次（取消报名）",
       "expected": "首次点击 500ms 内：按钮内文案切到「已感兴趣」（isEnrolled 翻转后 :458 三元）+ toast「报名成功」（:122-125，zh-CN.ts:739 enrolledToast）+ 人数标记 12→13（mock 分支同步 enrollCount 与 enrollmentCount，activity.ts:268-276）；@tap.stop 编译为 catchtap，点击不得冒泡触发卡片跳转（:450 注释；路由必须仍停在 activities 页，若跳到 activities/detail 即判事件阻断失效）；再次 tap → toast「已取消报名」（zh-CN.ts:740）+ 人数回 12；报名在途期间按钮 disabled（:454 :disabled=activityStore.enrolling || submittingId===item.id）；real 模式请求：POST /activities/a-1/enroll 1 条 + DELETE 1 条（activity.ts:301-306 POST、:290-294 DELETE），服务端幂等 key 带 opSeq 随机后缀故不去重（:280-286 注释）→ 客户端请求数=2、服务端报名态回读为未报名，两列分开记；失败路径（errorMessage 非空）应 toast 后端文案而非「已取消报名」（:117-120，MP-R1-DISCOVERACTIVITIES-002 回归），构造不了时标 REAL_ONLY",
       "evidence": "critical：before（未报名态卡）+ 报名后 + 取消后 三张截图 + 路由（不应变化）+ Toast 文案逐字 + console + network 请求计数与方法",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "tap 第 1 张卡的 .enroll-btn（activities/index.vue:451-459，@tap.stop）→ 等 toast → 再 tap 一次（取消报名）",
+      "tapTarget": ".enroll-btn",
+      "tapTargetEvidence": "apps/client/src/subpackages/discover/activities/index.vue:452",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover/activities/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AC08",
@@ -126,10 +168,19 @@
       "title": "连点报名按钮×5：客户端并发守卫只提交 1 次（防假通过：拆客户端请求数与服务端回读）",
       "tier": "critical",
       "pre": "同 AC01。目标卡 a-2（isEnrolled=false，enrollCount=8）",
-      "action": "500ms 内对 a-2 的 .enroll-btn 快速 tap×5（rapidTap，记录每击落点），随后静置 3s 观察",
+      "action": "500ms 内对 a-2 的 .enroll-btn 快速 tap×5（rapidTap，记录每击落点；.enroll-btn 每卡一枚且同名，class 定位按文档序命中第 1 张 a-1，handler 与在途守卫完全同一份代码，回填时 POST /activities/<id>/enroll 的 id 按实测写并注明不是原判据的 a-2），随后静置 3s 观察",
       "expected": "分两列判定：① 客户端多余请求数 —— real 模式 POST /activities/a-2/enroll 必须恰为 1 条（enrollingActivityIds 在途守卫 activity.ts:254-257 + submittingId 本地锁 :110-111 + 按钮 :disabled），若为 2~5 条即判 FAILED（该接口幂等 key 含 Date.now()+随机后缀，服务端不会兜住重复，见 :286 起（POST :305 / DELETE :293 各带该后缀）；mock 模式无网络请求，改判 toast 条数恰为 1 且最终态为「已感兴趣」（5 次同步 toggle 若产生奇偶错位会停在未报名态 → 立即暴露为状态错乱，此时记 FAILED）；② 服务端回读 —— 报名态 isEnrolled=true、enrollmentCount=9（+1 而非 +5），GET 回读一次核对；按钮在途文案为「...」占位（:457）且不得永驻（finally 复位 submittingId='' :129）",
       "evidence": "critical：before + after 截图 + 路由 + Toast 条数与文案 + console + network（POST 计数=1，方法/URL 列表）+ 服务端回读断言（real 轮）",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "500ms 内对 a-2 的 .enroll-btn 快速 tap×5（rapidTap，记录每击落点），随后静置 3s 观察",
+      "tapTarget": ".enroll-btn",
+      "tapTargetEvidence": "apps/client/src/subpackages/discover/activities/index.vue:452",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover/activities/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AC09",
@@ -137,10 +188,19 @@
       "title": "底部「去寻觅 / 提交活动提案」两按钮路由 + AppShell 返回键落点（含栈=1 兜底）",
       "tier": "navigation",
       "pre": "两个前置各跑一次：(a) 由上游 navigateTo 进入（栈≥2）；(b) wx.reLaunch 冷启动（栈=1）",
-      "action": "tap SectionCard 内 BottomActionBar 的 primary「去寻觅」与 secondary「提交活动提案」（activities/index.vue:475-485）→ 各自返回；再 tap AppShell 的返回键（:340 show-back）两种栈深各一次",
+      "action": "tap SectionCard（activities/index.vue:475-485）内 BottomActionBar 的 primary「去寻觅」.bar__primary（components/common/BottomActionBar.vue:39，@tap=emit('primary') :44 → activities/index.vue:482 openAppPath('/pages/discover/index')）与 secondary「提交活动提案」.bar__secondary（同文件 :32，@tap=emit('secondary') :33 → activities/index.vue:483 openAppPath('/subpackages/support/feedback/index')）→ 各自返回；再 tap AppShell 的返回键 .shell__back（components/layout/AppShell.vue:202，@tap=handleBack :205；本页 :340 传 show-back）两种栈深各一次",
       "expected": "primary → openAppPath('/pages/discover/index')（:482）：tab 页走 switchTab，最终栈长度=1、栈顶=pages/discover/index；secondary → openAppPath('/subpackages/support/feedback/index')（:483）：非 tab 页 navigateTo 栈+1（utils/navigation.ts 语义），返回后回 activities 页；AppShell 返回：栈>1 时 navigateBack 回来源页；栈=1 时不得静默失败，须走 fail 兜底 switchTab（components/layout/AppShell.vue:120-133 的 navigateBack success/fail 链，含再兜底 reLaunch）；三处 500ms 内均要有路由变化；console 无 navigateBack:fail 未处理告警",
       "evidence": "navigation：每次动作后 getCurrentPages 完整栈链断言 + console；可免截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "tap SectionCard 内 BottomActionBar 的 primary「去寻觅」与 secondary「提交活动提案」（activities/index.vue:475-485）→ 各自返回；再 tap AppShell 的返回键（:340 show-back）两种栈深各一次",
+      "tapTarget": ".bar__primary",
+      "tapTargetEvidence": "apps/client/src/components/common/BottomActionBar.vue:39",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover/activities/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AC10",
@@ -151,7 +211,17 @@
       "action": "（a）断网冷启动进页面观察错误盒 → tap .retry-btn；（b）网络正常滚动列表 scroll-view 到底触发 @scrolltolower，200ms 内再触发一次；（c）正常态到底观察末尾提示",
       "expected": "错误态：显示 activityStore.errorMessage 原文 + 「重试」按钮（:349-355，common.retry），点重试必须真的重发请求（fetchActivities() 非 force 但 activities.length===0 → 不命中 TTL 短路，activity.ts:171 条件含 length>0，且缓存时间戳只在成功时写入 :194）；恢复网络后重试 → 渲染 4 卡；加载态：有数据时的底部「加载中...」与「没有更多活动了」（:468-473，zh-CN.ts:704 noMore）互斥出现，mock 模式 hasMore=false → 应显示 noMore 而非永驻加载中；上拉分页：两次快速 scrolltolower 只产生 1 次 fetchMoreActivities（debounce 300ms，:93-98；mock 模式 hasMore=false 直接 return 也算合规，需在 actual 注明支路）；页面卸载时挂起防抖被取消（onUnload debouncedLoadMore.cancel() :77-81）→ 离开后不得再有请求；console 不得出现未捕获异常",
       "evidence": "normal：错误态/重试后/底部提示 三张 after 截图 + 路由 + console + network 请求计数（重试=1 条、双触发=1 条）；不可构造支路标 UNVERIFIED/REAL_ONLY",
-      "requiresReal": true
+      "requiresReal": true,
+      "tapTarget": ".retry-btn",
+      "tapTargetFrom": "cellplan-round7-taptarget.json",
+      "tapTargetEvidence": "产物逐字命中：D:/6/恋爱小程序/apps/client/dist/build/mp-weixin，D:/6/恋爱小程序/apps/client/dist/build/mp-weixin-real",
+      "tapTargetConfirmedAt": "activities/index.vue class=\"retry-btn press-feedback\"",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover/activities/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AC11",
@@ -162,7 +232,13 @@
       "action": "（a）mock 轮确认卡片无分类标签、无样式异常；（b）REAL_ONLY 轮：观察标签文字色与底色，并把 .row-category-tag 的计算样式（color/background-color）与主题 token 值对照",
       "expected": "标签样式源码为 color: var(--c-primary, #36C99A) + background: color-mix(in srgb, var(--c-primary,#36C99A) 12%, transparent)（activities/index.vue:784-785），而全项目 design token 无 --c-primary 定义 → 计算值必须落在硬编码回退 #36C99A；若微信基座不支持 color-mix，整条 background 声明被丢弃 → 标签失去 12% 底色（仅剩文字色，与 Toast.vue 已确立的「用 rgba 替代 color-mix」决策不一致）→ 实测计算样式并回填：底色缺失即按开放缺陷记（不得因 mock 无 category 就判 pass）；标签文案走 activities.category.{key}（:428，zh-CN.ts:724-732 八类：联谊/运动/桌游/学习/志愿/美食/音乐/综合），未知 key 时不得渲染裸 key；console 无 CSS 解析告警",
       "evidence": "normal：mock 轮 1 张卡片区放大截图 + computed style 转储（color/background-color 实际值）+ REAL_ONLY 轮标签截图；路由 + console",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover/activities/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AC12",
@@ -173,7 +249,13 @@
       "action": "（a）带参冷启动 → 与无参首屏逐元素比对；（b）boundingClientRect 量测 .view-toggle__btn、.quick-filter、.enroll-btn、.activity-row、.month-nav__btn 的可点包围盒；（c）getComputedStyle 回填 .row-title/.calendar-cell__day/.filtered-empty__text 等实际渲染字号",
       "expected": "(a) 带参渲染结果与无参完全等价：默认 viewMode=list（源码 :41 常量，不得被 mode=calendar 影响）、4 张卡、日期不预选、无按 id/date 的过滤或请求拼装；栈顶 options 含三参但零消费即判幻影参数；(b) 铁律热区 ≥88rpx：逐元素回填实测宽高（rpx），低于 88rpx 的元素（尤其 .enroll-btn 与 .quick-filter）交由判定员按 R11 §5 裁量，执行员不得因源码预判而省略数值；(c) 字号采证：activities/index.vue:916/1032/1054/1136/1153 五处 font-size 为硬编码 34/18/16/24/24rpx（未走 var(--fs-*) token），回填其实际渲染 px 值供 A3 视觉复核，本条不判 pass/fail；全程 console 无报错",
       "evidence": "noop：执行日志（路由 options 快照、各元素 width/height rpx 数值表、计算字号表）+ 与 AC01 首屏截图比对；可免独立截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover/activities/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "MD01",
@@ -192,10 +274,13 @@
       "title": "封存支路：commerce.enabled 缺省时首屏必须只出封存卡且不泄露价格/商品请求（G5 数据合规）",
       "tier": "critical",
       "pre": "身份A 登录 → wx.reLaunch('/subpackages/market/detail/index?id=1')；确认 GET /app-config 响应中 commerce.enabled 缺失或 !== true（app-config.ts:23 初始 switches={} 亦同）→ commerceSealed 为真",
-      "action": "观察首屏 → tap 封存卡内的「返回」按钮（market/detail/index.vue:310-319）→ 再回本页验证一致性",
+      "action": "观察首屏 → tap 封存卡内的「返回」按钮 .product-state__btn（market/detail/index.vue:310-319，类名在 :311，@tap=goBack 在 :316，钮内文案节点 .product-state__btn-text :318）→ 再回本页验证一致性",
       "expected": "只渲染封存卡：LOCK_SVG 锁图标 + 「功能封存中」+「该功能暂未开放，开放时间将另行通知」（:306-309，zh-CN.ts:796-798）；页面上不得出现任何价格数字、商品名、库存/销量、立即购买按钮（v-if commerceSealed 优先级最高，:306 早于 :359 的 product 分支）；不发 GET /products/{id} 请求（onLoad 在 :267 早退）——network 面板该 URL 计数=0 是本用例的服务端侧断言；返回按钮可用（500ms 内路由变化，栈=1 时 switchTab /pages/home/index，:242-249）；console 无报错",
       "evidence": "critical：before（封存卡）+ 返回后 截图 + 路由链 + Toast（应为无）+ console + network（GET /products/* 计数=0）",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "观察首屏 → tap 封存卡内的「返回」按钮（market/detail/index.vue:310-319）→ 再回本页验证一致性",
+      "tapTarget": ".product-state__btn",
+      "tapTargetEvidence": "apps/client/src/subpackages/market/detail/index.vue:311"
     },
     {
       "id": "MD03",
@@ -247,10 +332,13 @@
       "title": "非法/缺失 id 深链：notFound 空态 + 「返回逛逛」按钮；404 与网络错误分流正确",
       "tier": "normal",
       "pre": "三个前置各跑一次：(a) wx.reLaunch('/subpackages/market/detail/index')（无 id）；(b) ?id=999999（mock 目录只有 1~6，:102-169）；(c) REAL_ONLY：real 模式下 GET /products/999999 返回 404，以及用 DevTools 拦截返回 500/超时制造 error 支",
-      "action": "分别进入三态 → 观察状态区 → (a)(b) tap 空态内按钮；(c) 错误态点「重试」，恢复网络后再点一次",
+      "action": "分别进入三态 → 观察状态区 → (a)(b) tap 空态内按钮 .product-state__btn（:347，@tap=goBack :352，钮内文案 .product-state__btn-text :354）；(c) 错误态点「重试」同一类名节点 .product-state__btn（:332，@tap=loadProduct(productId) :337，文案 :339），恢复网络后再点一次",
       "expected": "(a) 无 id → productId 为空、直接 notFound（:271）→ 渲染 EmptyState(shop.detailNotFound + detailNotFoundDesc) + 返回按钮（:344-356）；(b) 未知 id → mock 分支 find 未命中同样 notFound（:213-215）、real 分支按 404 走 notFound（:231-232）；(c) 非 404 错误 → error 态：shop.loadFailed 文案 + 「重试」按钮（:329-341）→ 点重试调 loadProduct(productId)（:337），恢复网络后重试必须渲染商品（loading→success 链完整）；不得把 404 判成 error、也不得把 500 判成 notFound；三态按钮均 500ms 内有可观测变化（空态按钮为返回，错误态为重新渲染）；console 允许请求失败日志但不得有未捕获 TypeError",
       "evidence": "normal：三态 after 截图（各 1）+ 路由 + console + network（状态码 404/500 与请求计数逐条回填）；(c) 不可注入时标 REAL_ONLY/UNVERIFIED",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "分别进入三态 → 观察状态区 → (a)(b) tap 空态内按钮；(c) 错误态点「重试」，恢复网络后再点一次",
+      "tapTarget": ".product-state__btn",
+      "tapTargetEvidence": "apps/client/src/subpackages/market/detail/index.vue:347"
     },
     {
       "id": "MD08",
@@ -272,7 +360,11 @@
       "action": "scroll-view/页面滚动到底 → 静置观察 → 回顶；回填 scrollTop/scrollHeight/windowHeight 三元组",
       "expected": "滚到底时商品介绍正文末行完整可见、不被 position:fixed 的购买栏遮住（.product-footer 160rpx 留白，:387/:630-632）；.product-scroll 为 flex:1 + overflow:hidden 而父级 .product-page 仅 min-height:100%（:409-415 / :540-543）→ 本页高度链不闭合（MP-R2-次要22-019 仍开放）：必须回填「滚动实际由 scroll-view 承担还是由页面级原生滚动承担」（观察 scroll-view 的 scroll 事件与页面 scrollTop 哪个变化），若为页面原生滚动兜底则记结构隐患 observation；回顶后 nav-bar 与大图完整、无白屏；无滚动穿透/回弹异常；console 无报错",
       "evidence": "noop：执行日志（scrollTop/scrollHeight/windowHeight + 滚动承载体判定）+ 底部 1 张截图（遮挡判定属视觉结论，需要图）",
-      "requiresReal": true
+      "requiresReal": true,
+      "tapTarget": ".product-scroll",
+      "tapTargetFrom": "cellplan-round7-taptarget.json",
+      "tapTargetEvidence": "产物逐字命中：D:/6/恋爱小程序/apps/client/dist/build/mp-weixin，D:/6/恋爱小程序/apps/client/dist/build/mp-weixin-real",
+      "tapTargetConfirmedAt": "market/detail/index.vue class=\"product-scroll\""
     },
     {
       "id": "MD10",
@@ -536,7 +628,13 @@
       "action": "仅观察进入瞬间（≤500ms 连拍 2 帧）→ 记录 toast 与最终落点；重复 2 次",
       "expected": "500ms 内出现 toast「会员功能暂未开放」（:51，zh-CN.ts:2511 vip.membershipDisabled，icon=none）→ 栈=1 故走 uni.switchTab(ROUTES.TAB.PROFILE)（:60-64）→ 最终栈=1、栈顶=pages/profile/index；不得把用户停在 VIP 页（自定义导航无系统返回键）；network：GET 自动续费状态请求计数=0（onMounted 内显式 featureFlags 守卫 :397-402，MP-R2-次要22-009 同族正确范式）；两次行为一致；console 无报错、无 navigateBack:fail；同时回填「VIP 页内容是否在离开前被完整渲染过一帧」（模板无页面级 v-if 屏蔽 → 会闪现整页权益/价格，属观感 observation，须在 actual 记为可付费信息提前暴露的风险供判定员裁量）",
       "evidence": "normal：连拍 2 帧 + 落点截图 + Toast 文案逐字 + 路由链 + console + network（自动续费接口计数=0）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/index → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VI02",
@@ -547,7 +645,13 @@
       "action": "（a）tap .nav-bar__back（:417 goBack :259-267）；（b）tap 同一返回键；（c）(a) 链路返回后再从「我的」进入 3 次观察面包屑",
       "expected": "（a）getCurrentPages().length>1 → uni.navigateBack({delta:1})（:262-263）→ 落点必须是来源页本身（pages/profile/index 或 likes-visitors）且其 Tab 选中态/滚动位/列表数据恢复；（b）栈=1 → uni.switchTab('/pages/profile/index')（:264-266）→ 栈=1、栈顶=pages/profile/index，绝不出现「点了没反应」（原实现无栈守卫即 -008 缺陷，本条即其证伪）；（c）每次进入都记 1 条 navigation 面包屑 page_enter（:399，services/sentry 通道），返回无残留 loading/toast；三次一致；console 无报错",
       "evidence": "navigation：三次动作的完整路由栈断言（每帧 route+options）+ console；落点状态恢复补 1 张 after",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/index → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VI03",
@@ -558,7 +662,13 @@
       "action": "观察首屏（≤500ms）→ boundingClientRect 量测 .safe-top 与 .nav-bar 的 DOM 顺序与几何 → 滚动全页采集权益 6 项图标与套餐区",
       "expected": "模板顺序必须为 safe-top（:414，height:calc(var(--statusbar,env(safe-area-inset-top)))，样式 :649-653）→ nav-bar（:416）；nav-bar 顶边不得与系统时间/前置摄像头/胶囊区叠印，且 nav-bar 上方留白恰为 1 个状态栏高度（全局 page padding-top 已移除，App.vue:340-343 → 出现双份高度即回归）；标题「开通 VIP」（:420，zh-CN.ts:2508）+ header「校园恋爱 VIP」（:429，zh-CN.ts:2509）；权益 6 项（:110-117，标题/描述成对：查看谁喜欢我/无限喜欢/专属标识/匹配加权/专属主题/超级喜欢）每项图标为 IMAGE_PATHS.ICONS_EMOJI.* SVG（不得出现 emoji 字符或破图）；「会员权益」「选择套餐」小节标题（zh-CN.ts:2504-2505）；协议行 2 个可点链接；自动续费小节；底部固定按钮 + 应付价；console 无报错",
       "evidence": "normal：首屏 fullPage 截图 + 顶部放大截图 + 量测数值表（safe-top/nav-bar 的 top/height 与 DOM 顺序）+ 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/index → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VI04",
@@ -566,10 +676,19 @@
       "title": "权益卡片点击 → 详情弹层三路关闭（确认 / 系统返回手势 / 再次点击外部）",
       "tier": "normal",
       "pre": "VI03 结束态（展示版 VIP 首屏）",
-      "action": "tap 第 1 个 .benefit-item（:439-457 viewBenefitDetail :248-256）→ 弹层出现后分别验证：① tap 确认按钮；② 用系统返回手势/物理返回关闭；③ 关闭后再 tap 第 4 个权益项",
+      "action": "tap 第 1 个 .benefit-item（:439-457 viewBenefitDetail :248-256）→ 弹层出现后分别验证：① tap 确认按钮；② 用系统返回手势/物理返回关闭；③ 关闭后再 tap 第 4 个权益项（权益卡点名：.benefit-item，类名在 apps/client/src/subpackages/vip/index.vue:441、同节点 @tap 在 :442 且回调是 viewBenefitDetail(item)，编译产物 subpackages/vip/index.wxml 内该类按 v-for 渲染六项、不带 wx:if，静息态即可命中；第 1 项即 expected 要吃的那颗；②步的弹层是 uni.showModal 原生层，它的确认按钮不在 wxml 树里，只能由帧与路由采证，③步再点第 4 项需要同名节点的序号定位载具）",
       "expected": "tap 后 500ms 内出现 uni.showModal，title=该权益标题、content=对应描述、showCancel:false 故只有单按钮「知道了」（profile.gotIt）（:250-255）；① 确认后弹层关闭且页面仍在 VIP、无路由变化、无写请求；② 系统返回关闭不得触发页面 navigateBack（若返回手势把页面一起弹走即为弹层与导航冲突缺陷，回填实测）；③ 二次点击另一权益必须弹出新内容（弹层可重复开启，非一次性）；轻震动反馈（:249 lightHaptic）；console 无报错、无 showModal:fail",
       "evidence": "normal：弹层态截图（两次不同权益）+ 关闭后 after + 路由 + Toast 文案（应为无 toast，只有 modal）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "tap 第 1 个 .benefit-item（:439-457 viewBenefitDetail :248-256）→ 弹层出现后分别验证：① tap 确认按钮；② 用系统返回手势/物理返回关闭；③ 关闭后再 tap 第 4 个权益项",
+      "tapTarget": ".benefit-item",
+      "tapTargetEvidence": "apps/client/src/subpackages/vip/index.vue:441",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/index → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VI05",
@@ -580,7 +699,13 @@
       "action": "观察默认选中项 → 依次 tap 三张 .plan-card（:467-506）各一次，每次核对底部 .footer__price → 连点同一卡 3 次",
       "expected": "默认选中 DEFAULT_PLAN_ID=VIP_PLANS[0].id（:126-129 → monthly），底部「应付：¥18」（:570-574，zh-CN.ts:2515 payableLabel）；点季卡 → 该卡 plan-card--selected 类 + 右上勾选图标（:485-487）+ 应付 ¥48 + 角标「超值」与 popular 样式（:480-482/:472）；点年卡 → 应付 ¥158；文案走 config.vipPlans.* i18n key（planText :72-74，key 优先、中文兜底），en-US 下不得出现裸 key；再次 tap 同一卡无抖动/无重复渲染异常（选中态幂等）；三卡价格数字不得因选中态变化而错位；console 无报错",
       "evidence": "normal：三张选中态截图 + 底部应付价数值转储 + 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/index → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VI06",
@@ -591,7 +716,13 @@
       "action": "（a）tap 底部 .footer__btn「立即开通」→ 500ms 内拍 loading → 1.5s 后拍弹层 → tap 确认；（b）重复同样步骤，重点观察确认后的落点",
       "expected": "点击后 500ms 内出现 uni.showLoading 标题「处理中...」（:183，zh-CN.ts:2490 processing）+ 按钮进入 processing 态（:578 --disabled 类 + :583 文案不变为「处理中...」，回填实际）；1.2s 后 hideLoading（:198）→ 出现 uni.showModal「开通成功」，content 含所选套餐名与周期并带「（mock 模式演示，未实际支付）」尾注（:217-225，zh-CN.ts:2492-2493）；loading 必须消失（不得永驻遮罩）；（a）确认后 success 回调调 uni.navigateBack({delta:1})（:223）→ 落回「我的」页；（b）栈=1 时该 navigateBack 无页可退且源码此处无栈守卫（对照 goBack 的 :262-266 有守卫）→ 必须回填实际表现：若静默失败、用户被留在 VIP 页（弹层关闭后仍在本页），按「返回落点不符合成功语义」记缺陷（本条为证伪型采证，不得因「不崩溃」判 pass）；两链路均：processing 复位 false（:199）、无写请求（mock 分支不发支付接口）、console 无报错",
       "evidence": "critical：before + loading 中 + 弹层态 + 确认后落点 四张截图 + 路由链 + Toast/Modal 文案逐字 + console + network（写请求计数=0）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/index → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VI07",
@@ -602,7 +733,13 @@
       "action": "tap .footer__btn（进入 showLoading）→ 500ms 内 tap .nav-bar__back 返回「我的」→ 观察 5s（不操作）→ 再观察 10s（确认 Promise 被 clearTimeout 后不再有回调）",
       "expected": "返回后 onUnmounted 分支必须 clearTimeout + 置空 timer + 调 uni.hideLoading()（:94-102，MP-R2-次要22-007 修复锚点）→ 「我的」页在 500ms 内可自由触点、无遮罩、无「处理中...」残留、无转圈永驻（Loading 不永驻铁律）；判定动作：返回后立刻 tap 「我的」页任一入口，必须正常响应（被遮罩挡住即判 FAILED，即原缺陷「上一页被永久转圈覆盖」复发）；10s 内不得再出现任何 toast/modal（定时器已清、Promise 永不 resolve，then/catch 不执行，:196-236）；processing 状态随实例销毁无残留；console 不得出现 unhandled rejection / setStorage on destroyed page 类告警；network：0 条支付写请求",
       "evidence": "critical：before（VIP loading 中）+ 返回后落点（立即）+ 5s 后 + 10s 后 四张截图 + 路由链 + Toast/Modal 文案（应为无）+ console + network（写请求=0）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/index → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VI08",
@@ -613,7 +750,13 @@
       "action": "500ms 内对 .footer__btn 快速 tap×5，随后每 500ms 连拍至 4s，记录 loading 次数、弹层次数与路由",
       "expected": "① 客户端轮次数：只允许 1 轮支付流程 —— showLoading 出现 1 次、成功弹层 1 个（不得叠加两层 modal，也不得 hideLoading 早于第二层弹层造成假死）；依据 :163 if(processing) return + :245 1500ms guard；② 服务端回读：mock 轮写请求计数必须=0（:177 封堵，VIP 状态不落库）；REAL_ONLY 支：真实后端下若未来接入支付，须回读会员订单条数=1；③ 视觉：按钮在 in-flight 期显示 processing 文案且加 --disabled 类（:578/:583），5 次点击中至少 4 次被短路（回填 handler 实际调用次数，不得以「只看到 1 个弹层」直接判客户端已防连点）；④ 返回后无重复 navigateBack（:223 只执行 1 次）；console 无报错",
       "evidence": "critical：连拍 3 张（loading / 弹层 / 关闭后）+ 路由链 + Toast/Modal 计数与文案 + console + network（写请求=0）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/index → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VI09",
@@ -624,7 +767,13 @@
       "action": "① 把 switch 拨到开 → 弹「开启自动续费」确认层 → tap 确认；② 拨到关 → 弹关闭确认 → tap 取消；③ 拨到开 → tap 取消；④ 在请求在途时再拨 2 次；⑤ 每次操作后读 switch 视觉态与 store 值（evaluate 取 useAutoRenewStore().status.enabled）",
       "expected": "每次拨动都必须以事件 e.detail.value 为用户意图（:315，非 store 取反）；① 确认后调 autoRenewStore.setEnabled({enabled:true, planId:所选套餐})（:358-362）→ toast「已开启自动续费」（:363-368，zh-CN.ts:2525）+ 描述行变「下次扣费 {date}」文案（:526-530，nextBillingDate 由 ISO 转 YYYY-MM-DD :275-288）；② /③ 取消 → revertAutoRenewSwitch() 递增 :key 强制重建 switch（:296-299/:336-339/:352-355）→ 视觉必须回到真实 store 值（原生 switch 自行翻转后 store 未变的错位即 MP-R1-VIP-001 复发，判 FAILED：以「视觉=store」为唯一判定，不得只看 store）；④ 在途重复拨动 → if(autoRenewStore.updating) 回弹不发第 2 条请求（:309-312），network 写请求计数=点击轮次 1；⑤ 失败路径（REAL_ONLY：拦截 POST 自动续费接口返回 500）→ toast 后端 message 或「操作失败」类文案 + 视觉回弹（:369-373）；console 无报错",
       "evidence": "critical：每路操作前后截图（视觉态）+ evaluate 的 store 值转储 + 路由 + Toast 文案逐字 + console + network（写请求计数与方法、请求体 planId）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/index → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VI10",
@@ -635,7 +784,13 @@
       "action": "tap .agreement__link 第 1 个（服务协议）→ 返回 → tap 第 2 个（自动续费协议）→ 返回 → 在协议页确认内容非空",
       "expected": "两次 tap 都在 500ms 内 navigateTo 协议页（:391-394 openServiceAgreement，两条链接同目标即 MP-R1-C26REQ-003 记述的已知状态：自动续费协议暂无独立承载页）→ 回填实际落点 route 与 options（若协议页需 type 参数区分而此处不传，须记「两条链接指向同页、内容不区分」的 observation，并核对协议页是否出现错误空态）；协议页正文完整可见、返回键可回 VIP；两条链接热区实测值回填（纯 text 节点，:516/:518，低于 88rpx 交判定员裁量）；console 无报错",
       "evidence": "navigation：两次路由链断言（含 options）+ 协议页 after 截图 1 张 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/index → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VI11",
@@ -646,7 +801,13 @@
       "action": "tap .footer__btn → 观察 toast；再连点 3 次；随后进入账单页回读 VIP 订单条数",
       "expected": "toast 必须为「支付功能建设中，敬请期待」（:177-180，zh-CN.ts:2491 vip.paymentNotReady，icon=none）并直接 return：不得出现 uni.showLoading（:183 之后代码不可达）、不得出现「开通成功」弹层（:217-225 不可达）—— 这是 infra R2-00021 的核心断言：真实模式点开通却显示「开通成功」= 未扣款却宣称成功，资金与体验双失控（:172-176 注释）；network：0 条支付/订单写请求；服务端回读：VIP 订单/账单条数无变化（GET /vip/bills 计数与内容一致）；连点 3 次仍只 3 条同类 toast 且无请求；console 无报错",
       "evidence": "critical：before + toast 后 截图 + 路由 + Toast 文案逐字 + console + network（写请求=0）+ 服务端账单回读条数；不可得时标 UNVERIFIED",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/index → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VI12",
@@ -657,7 +818,13 @@
       "action": "（a）带参冷启动与无参对照逐元素比对；（b）展示版下 boundingClientRect 量测 .nav-bar__back、.benefit-item、.plan-card、switch、.agreement__link、.footer__btn 六类元素可点包围盒",
       "expected": "(a) 与无参完全等价：选中套餐仍为默认 monthly（:126-129，?plan=yearly 不得预选）、底部应付 ¥18；autoRenew=1 不得把开关拨到开（enabled 只来自 store :272）；orderId/from 不得进入任何请求或面包屑之外的路径；栈顶 options 携 4 参但源码零消费 → 判幻影参数；(b) 热区实测数值全部回填并逐条对照铁律 88rpx：源码 nav-bar__back=64×64rpx（:616-622）、agreement__link 为 text 节点、footer 按钮与 plan-card 尺寸回填；任一低于 88rpx 者按 R11 §5 交判定员裁量，执行员不得省略数值；(c) 全页无 emoji 字符、无图片 404（权益/入口图标走 IMAGE_PATHS SVG）；console 无报错",
       "evidence": "noop：执行日志（options 快照 + 六类元素 width/height/left/top rpx 数值表）+ 与 VI03 截图比对说明",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/index → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "PC01",
@@ -679,7 +846,13 @@
       "action": "观察首屏（≤500ms）→ 读两个输入框初值与 placeholder → 量测 .safe-top 与 .nav-bar 顺序几何 → 滚动到底",
       "expected": "safe-top（:193）先于 nav-bar（:196），标题「优惠码」（:200，zh-CN.ts:2528）无叠印、无双份状态栏高度（本页样式 var(--statusbar, env(...))，:25-27 注入说明）；主视觉 TICKET SVG + hero 标题/副标题（:205-211）；优惠码输入框 placeholder（vip.promoCodeInputPlaceholder，回填字面值）、初值空、maxlength=32（:224）；订单金额输入框初值=VIP_PLANS 中 quarterly.price=48（:69，R4-00117 从配置取默认，不得再硬编码 48 字面量）、type=digit（:240）；两个按钮：校验（:249-259，空码时带 action-btn--disabled 类 :251）与重置（:260-267，文案「重置」zh-CN.ts:2536）；此时不得出现校验结果卡（:271 v-if validationResult）与兑换按钮（:308 v-if available）；console 无报错",
       "evidence": "normal：首屏 fullPage 截图 + 输入框初值/placeholder 转储 + 量测数值表 + 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/promo-code → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "PC03",
@@ -687,10 +860,19 @@
       "title": "优惠码输入空态与非法态：空 → 「请输入优惠码」；格式非法 → 「优惠码格式不正确（4-24 位字母/数字/-）」",
       "tier": "critical",
       "pre": "展示版 + PC02 结束态。轻校验正则 /^[A-Za-z0-9-]{4,24}$/（:105，infra R2-00060，最终以服务端为准）；订单金额保持默认 48",
-      "action": "依次执行并各观察 toast：① 空输入 tap 校验；② 只输入空格 tap 校验；③ 输 ABC（3 位）；④ 输 ABCD（4 位合法边界）；⑤ 输 25 位字符串；⑥ 输 AB_CD（含下划线）；⑦ 输「优惠码」（中文）；⑧ 粘贴带首尾空格的「  LOVE2026  」",
+      "action": "对 .code-input（优惠码输入框，promo-code.vue:221，@input 在 :225）依次执行并各观察 toast：① 空输入 tap 校验键 .action-btn（保持 .code-input 为空）；② 只输入空格 tap 校验键 .action-btn（值落 .code-input）；③ 输 ABC（3 位）；④ 输 ABCD（4 位合法边界）；⑤ 输 25 位字符串；⑥ 输 AB_CD（含下划线）；⑦ 输「优惠码」（中文）；⑧ 粘贴带首尾空格的「  LOVE2026  」进 .code-input",
       "expected": "① /② → toast「请输入优惠码」（:100-102，zh-CN.ts:2547 promoCodeEmpty，trim 后判空）且不发任何请求、不进入 validating；③⑥⑦ → toast「优惠码格式不正确（4-24 位字母/数字/-）」（:105-107，zh-CN.ts:2548）；⑤ 25 位 → 同样格式非法（注意输入框 maxlength=32，故 25 位可完整输入，回填实际字符数）；④ 4 位合法边界 → 走正常校验流程（mock 下返回可用结果，见 PC06）；⑧ 首尾空格被 trim 后为 LOVE2026（10 位，:100/:105/:117 三处 trim）→ 通过格式且 store 收到的 code 不含空格（回填实际提交值）；所有非法态下结果卡必须保持不出现（:271）；console 无报错",
       "evidence": "critical：⑧-① 各态 toast 截图（至少 4 张）+ Toast 文案逐字 + 路由（不变）+ console + network（非法态请求计数=0）",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "依次执行并各观察 toast：① 空输入 tap 校验；② 只输入空格 tap 校验；③ 输 ABC（3 位）；④ 输 ABCD（4 位合法边界）；⑤ 输 25 位字符串；⑥ 输 AB_CD（含下划线）；⑦ 输「优惠码」（中文）；⑧ 粘贴带首尾空格的「  LOVE2026  」",
+      "tapTarget": ".code-input",
+      "tapTargetEvidence": "apps/client/src/subpackages/vip/promo-code.vue:221",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/promo-code → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "PC04",
@@ -698,10 +880,19 @@
       "title": "订单金额输入四态：空 / 0 / 负数 / 非数字 / 三位小数 / 超长 → 「订单金额无效」与分转换取整",
       "tier": "normal",
       "pre": "展示版 + PC02 结束态；优惠码固定输入合法值 LOVE2026（先填码再改金额）",
-      "action": "把订单金额依次改为：① 清空；② 0；③ -50；④ abc（type=digit 下若不可输入则回填实际行为）；⑤ 48.999；⑥ 999999999999999；⑦ 0.01，每态 tap 校验一次",
+      "action": "把订单金额输入框 .amount-input（promo-code.vue:239，@input 在 :242）依次改为：① 清空；② 0；③ -50；④ abc（type=digit 下若不可输入则回填实际行为）；⑤ 48.999；⑥ 999999999999999；⑦ 0.01，每态 tap 校验键 .action-btn（:250 @tap=handleValidate）一次",
       "expected": "orderAmountCents 由 parseFloat(yuan)*100 再 Math.round（:72-76）：① ② ③ ④（NaN）→ <=0 → toast「订单金额无效」（:109-112，zh-CN.ts:2549 promoCodeAmountInvalid）且不发请求；⑤ 48.999 → 4900 分（四舍五入到分）→ 请求体 baseAmount=4900（回填实际 body）；⑥ 超长数值 → 仍走 Math.round，无 Infinity/NaN 渲染崩溃，结果卡金额展示用 toFixed(2)（:85/:92）不出现 '¥NaN' 或科学计数法；⑦ 0.01 → 1 分；满减 1000 分时 payableAmount 不得为负（mock 分支 discountAmount=Math.min(1000,baseAmount)，stores/promo-code.ts:117/:124 → 1 分时 discount=1、payable=0）；键盘弹起时输入框不被遮挡（cursor-spacing=20，:220/:238）；console 无报错/无 NaN 警告",
       "evidence": "normal：①⑤⑥⑦ 四张截图 + Toast 文案 + 结果卡金额文本 + 路由 + console + network（POST body baseAmount 逐值转储）",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "把订单金额依次改为：① 清空；② 0；③ -50；④ abc（type=digit 下若不可输入则回填实际行为）；⑤ 48.999；⑥ 999999999999999；⑦ 0.01，每态 tap 校验一次",
+      "tapTarget": ".amount-input",
+      "tapTargetEvidence": "apps/client/src/subpackages/vip/promo-code.vue:239",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/promo-code → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "PC05",
@@ -709,10 +900,19 @@
       "title": "校验成功链路：结果卡五行字段完整 + toast「优惠码可用」+ 兑换按钮出现",
       "tier": "critical",
       "pre": "展示版构建（mock 分支恒可用，stores/promo-code.ts:116-128：任意合法码 → AMOUNT 优惠 1000 分、描述「立减 10 元」）。订单金额保持 48",
-      "action": "输入 LOVE2026 → tap 校验 → 观察按钮文案变化与结果卡 → tap 兑换按钮区域（先不点，仅确认其存在与文案）",
+      "action": "在 .code-input（:221，@input :225）输入 LOVE2026 → tap 校验键 .action-btn → 观察按钮文案变化与结果卡 .result-card → tap 兑换按钮区域 .footer__btn（先不点，仅确认其存在与文案）",
       "expected": "点击后 500ms 内出现可观测反馈：结果卡（:271-305）逐行渲染 优惠码 LOVE2026（大写归一 :103）、类型「满减」（discountType==='AMOUNT' 三元 :283）、描述「立减 10 元」、优惠金额 ¥10.00、应付 ¥38.00（分→元 toFixed(2) :85/:92，不得出现 ¥0.1 之类错位）；toast 为 vip.promoCodeValid 带 {discount} 插值（:120-124，回填实际文案与小数位）icon=success；兑换按钮出现（:308 v-if available）文案「兑换」/redeeming 时「兑换中」（:317）；结果卡不得出现不可用样式的 result-card--invalid（:275 类互斥）；real 模式另需 validating 期间按钮文案为「校验中...」（:257，zh-CN.ts:2535）——mock 轮该文案不可达（见 PC08 的 -018）；console 无报错",
       "evidence": "critical：before（空结果区）+ 结果卡 after 截图 + Toast 文案逐字 + 路由 + console + network（real 轮记 POST /vip/promo-codes/validate 计数与请求体）",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "输入 LOVE2026 → tap 校验 → 观察按钮文案变化与结果卡 → tap 兑换按钮区域（先不点，仅确认其存在与文案）",
+      "tapTarget": ".code-input",
+      "tapTargetEvidence": "apps/client/src/subpackages/vip/promo-code.vue:221",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/promo-code → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "PC06",
@@ -720,10 +920,19 @@
       "title": "校验返回不可用（available=false）：展示原因、兑换按钮不得出现、结果卡走 invalid 样式",
       "tier": "critical",
       "pre": "展示版构建，mock 数据规则：输入 INVALID 或 EXPIRED → available:false、reason「优惠码已过期或不可用」（stores/promo-code.ts:104-114）。REAL_ONLY 对照：真实后端下过期/已用尽码的 reason 文案由服务端下发",
-      "action": "输入 INVALID → tap 校验 → 观察结果卡与兑换区；再改输入 EXPIRED 重复一次；再改回合法码 LOVE2026 重复一次",
+      "action": "在 .code-input（:221，@input :225）输入 INVALID → tap 校验键 .action-btn → 观察结果卡 .result-card 与兑换区 .footer__btn；再在 .code-input 改输入 EXPIRED 重复一次；再在 .code-input 改回合法码 LOVE2026 重复一次",
       "expected": "500ms 内出现结果卡且带 result-card--invalid 类（:275）、含「不可用原因」行 reason 文案（:298-303，兜底 vip.promoCodeInvalid）；优惠金额/应付金额两行不得出现（两处 v-if=available :290/:294）；兑换按钮不出现（:308）→ 无从发起兑换；toast 为 reason 原文、icon=none（:126-129）；随后输入合法码重校验 → 结果卡切换为可用态、兑换按钮出现（状态可正确翻转，无残留）；三次操作后 store.lastValidation 与界面一致；console 无报错",
       "evidence": "critical：INVALID / EXPIRED / 合法码 三态截图 + Toast 文案逐字 + 路由 + console + network（mock 轮=0，real 轮逐次计数）",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "输入 INVALID → tap 校验 → 观察结果卡与兑换区；再改输入 EXPIRED 重复一次；再改回合法码 LOVE2026 重复一次",
+      "tapTarget": ".code-input",
+      "tapTargetEvidence": "apps/client/src/subpackages/vip/promo-code.vue:221",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/promo-code → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "PC07",
@@ -731,10 +940,19 @@
       "title": "MP-R2-次要22-006 证伪：改码后校验失败必须清空陈旧结果卡与兑换按钮（门槛不得被绕过）",
       "tier": "critical",
       "pre": "REAL_ONLY：需真实后端 + DevTools 在第二次校验时拦截 POST /vip/promo-codes/validate 返回 500/超时。步骤：先用有效优惠码 A 校验通过 → 把输入框改为 B（另一个码）→ 断网/拦截后 tap 校验使请求失败。mock 轮无法构造（mock 分支不 reject，stores/promo-code.ts:101-129）→ 不可得时本条标 UNVERIFIED 并写明缺什么",
-      "action": "按前置时序执行 A 通过 → 改 B → 让 B 校验失败 → 观察结果卡与兑换按钮 → 若在失败态下强点兑换区（若按钮仍在）观察提交的 code 值",
+      "action": "按前置时序执行 A 通过（tap .action-btn）→ 改 B → 再 tap .action-btn 让 B 校验失败 → 观察结果卡 .result-card 与兑换按钮 .footer__btn → 若在失败态下强点兑换区 .footer__btn（若按钮仍在）观察提交的 code 值",
       "expected": "修复后表现：store.validateCode 的 catch 必须把 lastValidation 置 null 后再 rethrow（stores/promo-code.ts:140-144，与兑换侧 infra R2-00059 对称）→ 失败瞬间结果卡整体消失（:271 v-if 为假）、兑换按钮随之消失（:308）；关键反证：若结果卡仍显示 A 的可用明细（code=A、¥10.00）而兑换按钮仍可点 → 用户可用输入框现值 B 直接发起兑换（:146-148 handleRedeem 用 codeInput 现值），即「先校验通过才能兑换」门槛被陈旧状态绕过，判 FAILED 并按资金安全语义定级；toast 为错误 message 原文（:131-134）；失败后重新联网校验 B → 正常返回并渲染 B 的结果（无残留）；console 允许失败日志、不得有未捕获 rejection；network：两次校验请求计数=2（第一次成功、第二次失败），无第三次多余请求",
       "evidence": "critical：A 通过态 + 改 B 失败态 + 恢复后 三张截图 + Toast 文案逐字 + 路由 + console + network（逐条方法/URL/body/状态码）；不可构造时标 UNVERIFIED",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "按前置时序执行 A 通过 → 改 B → 让 B 校验失败 → 观察结果卡与兑换按钮 → 若在失败态下强点兑换区（若按钮仍在）观察提交的 code 值",
+      "tapTarget": ".action-btn",
+      "tapTargetEvidence": "apps/client/src/subpackages/vip/promo-code.vue:250",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/promo-code → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "PC08",
@@ -745,7 +963,13 @@
       "action": "500ms 内对 .action-btn（校验）快速 tap×5，连拍 3s 记录 toast 条数与结果卡变化；real 轮同步骤另记 network",
       "expected": "分两支明确记录：① mock 轮（-018 复现证据）：5 次点击全部执行（无在途锁）→ toast 条数=5（同文案连续覆盖，回填实际观测条数）、结果卡被重复赋值 5 次（数据不变）、按钮文案从未出现「校验中...」→ 判为 mock/real 状态机不一致的开放项（记 observation + 关联 -018，无资金风险）；② real 轮：客户端多余请求数必须=0 —— 第 2~5 次点击被 :113 的 validating 守卫拦掉，POST /vip/promo-codes/validate 计数恰为 1；服务端回读：即使因竞态漏出 2 条，其 Idempotency-Key 同为 idem-POST-<hash('/vip/promo-codes/validate|{\"code\":\"LOVE2026\",\"baseAmount\":4800}')>（services/http.ts:254-275 稳定哈希）会被后端 @Idempotent 去重 → 严禁把「服务端只有 1 条记录」当作客户端防连点通过的证据，两列必须分开写；③ 按钮 disabled 视觉类在 mock 轮不出现（:251 条件含 store.validating）→ 回填；④ 无崩溃、无重复弹层、console 无报错",
       "evidence": "critical：连拍 3 张 + Toast 条数与文案 + 路由 + console + network（请求计数 + 每条的 Idempotency-Key 头值逐条转储）+ 服务端回读（real 轮）",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/promo-code → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "PC09",
@@ -756,7 +980,13 @@
       "action": "（a）tap .footer__btn（兑换）→ 观察弹层与结果卡 → tap 确认；（b）重置后重新校验，再 500ms 内连点兑换×5，记录 toast/弹层/结果卡条数与 network",
       "expected": "（a）500ms 内出 uni.showModal：title=vip.promoCodeRedeemSuccessTitle、content 含「优惠 ¥10.00 / 应付 ¥38.00」两位小数（:151-159，result.discountAmount/payableAmount 各 /100 toFixed(2)）、showCancel:false、确认按钮 common.confirm → 关闭后兑换结果卡出现（:323+ 分支，状态行 success 走 accent 色 :329-330）；无写请求以外的额外副作用（mock 轮 network 写请求=0，real 轮记 POST 计数）；（b）连点 5 次：① 客户端多余请求数 —— real 轮必须恰为 1 条 POST /vip/promo-codes/redeem（:143 + store :161-167 双锁：在途时直接 return 上次结果）；② 服务端回读 —— 兑换记录/优惠核销条数=1（该接口的 Idempotency-Key 为 URL+body 稳定哈希，服务端会去重，故不得用②替代①判定，两列分别记）；③ 弹层只 1 个、不得叠加 5 层 modal；④ 按钮 redeeming 文案「兑换中」出现与复位（:317/:311 类）；console 无报错、无未捕获 rejection",
       "evidence": "critical：before + 弹层态 + 结果卡 + 连点后 四张截图 + Modal/Toast 文案逐字 + 路由 + console + network（POST 计数与 Idempotency-Key 值）+ 服务端核销条数回读（real 轮）",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/promo-code → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "PC10",
@@ -767,7 +997,13 @@
       "action": "tap .action-btn--ghost「重置」（:260-267 handleReset :173-177）→ 观察四个区域 → 立刻再 tap 一次重置（空态下的二次点击）",
       "expected": "500ms 内：优惠码输入框清空（codeInput='' :175）、校验结果卡消失（store.reset 把 lastValidation 置 null :207-212）、兑换按钮消失（:308）、兑换结果卡消失（lastRedeemResult=null）；订单金额输入不被清空（handleReset 只清 codeInput，属既定行为，须回填实际是否保留 48 以确认口径）；二次点击不报错、不出现异常 toast（:174 lightHaptic 仍震动，无 DOM 变化即记 noop 反馈来源）；haptic 反馈存在（铁律的可观测反馈之一）；console 无报错",
       "evidence": "normal：重置前后 2 张截图 + 路由（不变）+ Toast 文案（应为无）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/promo-code → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "PC11",
@@ -778,7 +1014,13 @@
       "action": "（a）校验通过（结果卡可见）→ tap .nav-bar__back → 回 VIP 页后核对状态；（b）栈=1 时 tap 返回键；（c）兑换成功弹层存在时 tap 系统返回手势一次",
       "expected": "（a）navigateBack({delta:1}) 生效（:183-184）→ 落点=VIP 页本身且其套餐选中态/滚动位保持；promo 页实例销毁（再次进入时输入与结果全空，属页面内 ref 不跨实例，:63/:89）；（b）栈=1 → uni.switchTab('/pages/profile/index')（:185-187，MP-R2-次要22-008 栈守卫锚点，同文件 :36-40 的 onLoad 兜底写法一致）→ 不得静默失败停在无系统返回栏的页面；（c）系统返回优先关掉 modal 还是连页面一起弹走须回填实测（若一起弹走即弹层与导航冲突，记 FAILED）；三处 500ms 内均有可观测路由/弹层变化；console 无 navigateBack:fail",
       "evidence": "navigation：三次动作的完整路由栈断言 + console + 落点 1 张 after（状态恢复判定需图）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/promo-code → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "PC12",
@@ -786,10 +1028,19 @@
       "title": "超长/特殊字符输入与键盘态：maxlength=32 边界、特殊字符不被当作合法码、键盘收起不残留遮挡",
       "tier": "noop",
       "pre": "展示版 + 优惠码页（PC02 结束态）。源码输入框 maxlength=\"32\"（:224）为静态字符串属性（原生 input 属性，非绑定），须回填实际生效性",
-      "action": "① 粘贴 200 字符长串（「LOVE2026」×25）→ 读实际入框字符数；② 输入含空格/引号/尖括号的 \"A'<>&2\"；③ 输入纯空格 3 个后 tap 校验；④ 聚焦后触发键盘确认键（未设 confirm-type）；⑤ 收起键盘后截图整页布局",
+      "action": "① 向 .code-input 粘贴 200 字符长串（「LOVE2026」×25）→ 读实际入框字符数；② 在 .code-input 输入含空格/引号/尖括号的 \"A'<>&2\"；③ 在 .code-input 输入纯空格 3 个后 tap 校验键 .action-btn；④ 聚焦 .code-input（:221，maxlength=32 在 :224，无 confirm-type）后触发键盘确认键（未设 confirm-type）；⑤ 收起键盘后截图整页布局",
       "expected": "① 入框字符数应为 32（maxlength 生效）或如实回填实际值；tap 校验 → 33+ 长度不匹配 {4,24} → toast「优惠码格式不正确（4-24 位字母/数字/-）」，不得发起请求、不得截断后静默提交（:105 用 trim 后的原值判格式）；② 特殊字符含 ' < > & 与空格 → 正则不命中（空格不在字符集内）→ 同格式非法 toast；结果卡不得出现任何注入式渲染（文本节点转义，DOM 无 script 残留）；③ 纯空格 → trim 后为空 → toast「请输入优惠码」（:100）；④ 键盘确认键无绑 @confirm → no-op：不路由、不提交、结果区不变；⑤ 键盘收起后 hero/输入区/按钮完整不被裁切、无空白残留（cursor-spacing=20，:220）；全程 console 无报错、无 TypeError",
       "evidence": "noop：执行日志（实际字符数、toast 文案、路由不变断言）+ 布局 after 截图 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "① 粘贴 200 字符长串（「LOVE2026」×25）→ 读实际入框字符数；② 输入含空格/引号/尖括号的 \"A'<>&2\"；③ 输入纯空格 3 个后 tap 校验；④ 聚焦后触发键盘确认键（未设 confirm-type）；⑤ 收起键盘后截图整页布局",
+      "tapTarget": ".code-input",
+      "tapTargetEvidence": "apps/client/src/subpackages/vip/promo-code.vue:221",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/promo-code → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VB01",
@@ -800,7 +1051,13 @@
       "action": "仅观察进入瞬间（连拍 2 帧）→ 记 toast/落点 → 读 network 面板中 /vip/bills 相关请求",
       "expected": "toast「会员功能暂未开放」（:38）+ 栈=1 → switchTab('/pages/profile/index')（:39-43）→ 栈=1、栈顶=pages/profile/index；network：GET /vip/bills?page=0&size=20 计数必须=0 —— 修复后表现：拉取已移入 setup 顶层 onShow 且带开关守卫（:97-99 if(featureFlags.membershipEnabled) void loadBills()），原缺陷为 setup 顶层无条件 loadBills（MP-R2-次要22-009）；若出现该请求即判 FAILED（拦截页仍外发会员数据请求，属数据合规缺口）；页面不得渲染账单列表内容（回填是否闪现一帧骨架/空态）；console 无报错",
       "evidence": "critical：连拍 + 落点截图 + Toast 文案 + 路由链 + Toast（同文案）+ console + network（GET /vip/bills 计数=0）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/bills → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VB02",
@@ -811,7 +1068,13 @@
       "action": "观察首屏过渡（≤500ms 连拍）→ 静置 2s 复拍 → fullPage 截图逐卡检视 → 滚到底再回顶",
       "expected": "过渡：首帧若 isLoading && isEmpty → 显示「加载中...」（:209-211，common.loading）→ 落地后切为账单卡片列表（:221+）；不得闪现「暂无账单记录」假空态（:214-218 的 EmptyState 分支必须在 loading 之后判定，两分支互斥）；每张卡四项齐全：类型标签（订阅/续费/退款，typeLabel :140-145 + 类型配色 class :124-129）、状态标签（成功/失败/已退款，statusLabel :148-153 + statusColor :132-137）、金额（formatAmount 两位小数 :102-104）、时间（formatDate 'YYYY-MM-DD HH:mm' :107-121）；hero 图标为 CLIPBOARD SVG（:32，禁 emoji）、标题「账单记录」（:177，zh-CN.ts:2561）；滚动到顶/底无白屏、末条完整可见；console 无 TypeError/NaN 渲染",
       "evidence": "normal：连拍 + after（fullPage）截图 + 量测/文案转储（逐卡四字段）+ 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/bills → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VB03",
@@ -822,7 +1085,13 @@
       "action": "（a）进入账单页 → 记 network 与列表条数；（b）返回 VIP → 再进入账单页（同一 app 会话内 store 未销毁）→ 记请求数与条数；（c）在 (b) 的态上下拉刷新一次 → 记请求数与条数",
       "expected": "（a）首次进入 onShow → loadBills()（:97-99，forceRefresh 默认 false）→ store 内 loaded=false → 必发 GET /vip/bills?page=0&size=20（stores/vip-billing.ts:168-178 之外）→ 1 条请求；（b）二次进入 loaded=true 且分页未变 → 命中缓存短路返回旧数据（stores/vip-billing.ts:168-178）→ 请求数=0、条数与上次一致：若此间 VIP 已产生新账单，则界面显示陈旧数据（MP-R2-次要22-010 仍开放的判定点），必须两列分开记：① 客户端多余请求数=0（缓存策略所致，非守卫缺陷）；② 服务端回读条数（GET /vip/bills 直查）与界面条数差值 → 有差即记「进入页未强制刷新导致资金记录陈旧」缺陷；（c）下拉刷新 force=true → 请求数=1 且条数与服务端回读一致（陈旧被纠正）；全程无「暂无账单记录」误显示；console 无报错",
       "evidence": "critical：三个时刻的列表截图 + 路由链 + Toast（应为无）+ console + network（逐时刻计数与 query 参数）+ 服务端回读条数",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/bills → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VB04",
@@ -833,7 +1102,13 @@
       "action": "页面原生下拉刷新 3 次，每次间隔 2s；期间每 500ms 连拍；第 3 次后立即离开页面再回来",
       "expected": "每次下拉都必须发出 1 条带 force 语义的 GET /vip/bills（loadBills(true) → store.listBills(forceRefresh=true) 不命中 :168-178 缓存短路）→ network 计数=3；uni.stopPullDownRefresh() 必须在 await 之后调用（:90-91）→ 原生下拉指示器 1.5s 内收起，不得永驻转圈（Loading 不永驻铁律）；刷新期间列表数据保持可见（不清空、不闪「暂无账单记录」）；失败路径（REAL_ONLY：拦截返回 500）→ toast 后端 message 或 vip.billsLoadFailed（:82-85）且指示器仍要收起（finally 缺失即为缺陷，回填实际：stopPullDownRefresh 在 await 后同序执行，若 catch 抛回来是否执行需实测）；离开再回来时不重复触发刷新；console 无报错",
       "evidence": "critical：下拉中 + 刷新完成 + 离开返回 三张截图 + 路由 + Toast 文案 + console + network（3 条请求与 query 参数逐条转储）+ 指示器收起时间实测",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/bills → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VB05",
@@ -844,7 +1119,13 @@
       "action": "依次 tap .filter-chip：订阅 → 续费 → 退款 → 全部，每步回填卡数与选中态；再把筛选栏横向滑到最右滑回",
       "expected": "每个 chip tap 后 500ms 内：选中态类 filter-chip--active 迁移（:196）+ 列表按类型过滤（:63 b.type===filterType）+ 轻震动反馈（:73-76 lightHaptic）；「续费」「退款」在 mock 无对应数据时必须显示 EmptyState「暂无账单记录」（zh-CN.ts:2574）而非保留旧列表（空态判定 isEmpty 走 filteredBills :70，须确认不是用 store.bills 判空）；切回「全部」→ 恢复原条数（数据不丢，Tab 切换铁律；且不得因过滤后为空而误发新请求 —— 4 步筛选的 network 计数必须=0）；筛选栏 scroll-x 可把第 4 个 chip 滑入视野且完整可点（:191-204）；类型标签配色随类型区分（:124-129）；console 无报错",
       "evidence": "normal：四态截图（各 1）+ 每态卡数与选中态转储 + 路由 + console + network（计数=0）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/bills → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VB06",
@@ -855,7 +1136,13 @@
       "action": "逐卡读取金额与时间文本；real 极值数据下核对：1→¥0.01、990→¥9.90、createdAt=null、非法日期串、未知状态各一条",
       "expected": "金额一律两位小数（formatAmount (cents/100).toFixed(2) :102-104，与 wallet/promo-code 口径一致，不得出现 ¥0.1 / ¥10 这类失真，对照 MP-R2-次要22-012 的修复口径）；时间走 formatDate → 'YYYY-MM-DD HH:mm'（:107-121），缺失值返回 '' 不显示 'NaN-NaN-NaN'（:108 早退），非法日期 isNaN 时原样返回入参字符串（:111）且不得抛异常；未知类型/状态原样回显后端值（typeLabel :144 / statusLabel :152 的 default 分支）→ 回填是否出现裸英文枚举（如 REFUND_PENDING）作为国际化缺口 observation；长文案不撑破卡片、不重叠时间戳；console 无 Invalid Date 警告/无 TypeError",
       "evidence": "normal：列表区截图 + 逐字段文本转储（金额/时间/类型/状态四列）+ 路由 + console；real 极值不可得时标 UNVERIFIED 并写明缺哪几条数据",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/bills → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VB07",
@@ -866,7 +1153,13 @@
       "action": "冷启动进入账单页（拦截生效）→ 观察 toast 与列表区 → 恢复网络后下拉刷新一次",
       "expected": "失败时：toast 显示后端 message 原文或兜底 vip.billsLoadFailed（:82-85，loadBills catch）；界面不得把失败渲染成「暂无账单记录」假空态 —— 源码目前 loading=false 后 isEmpty 即走 EmptyState（:70/:214-218），本条即该缺口的证伪：若出现空态而 toast 同时报失败，记「错误态与空态不可区分」缺陷（与 wallet 的 loadFailed 条 :183-188 形成跨页一致性对照，供判定员裁量）；恢复网络后下拉刷新 → 请求 1 条、列表渲染真实账单、空态消失；stopPullDownRefresh 必须执行；console 允许失败日志、不得有未捕获 rejection",
       "evidence": "critical：错误态截图 + toast 文案逐字 + 恢复后截图 + 路由 + console + network（状态码与计数）；不可注入时标 UNVERIFIED",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/bills → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VB08",
@@ -877,7 +1170,13 @@
       "action": "（a）tap .nav-bar__back（bills.vue:174 goBack :156-164）→ 回 VIP 后再进账单；（b）tap 返回键；（c）筛选态（选「订阅」）下进入 (a) 链路后返回再进",
       "expected": "（a）getCurrentPages().length>1 → navigateBack({delta:1})（:159-161）→ 落点必须是来源页 VIP 本身（不是「我的」），且 VIP 页套餐选中态、滚动位、自动续费开关视觉态全部恢复；（b）栈=1 → switchTab('/pages/profile/index')（:162-163）→ 栈=1、栈顶=pages/profile/index，无「返回键点了没反应」；（c）二次进入账单时 filterType 回到「全部」（组件内 ref 不跨实例保留 :48）→ 回填实际（若保留了「订阅」筛选，说明 store 级状态残留或实例未销毁，记 observation）；三处 500ms 内均有路由变化；console 无 navigateBack:fail",
       "evidence": "navigation：三次动作的完整路由栈断言 + console + 落点状态恢复截图 1 张",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/bills → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VB09",
@@ -888,7 +1187,13 @@
       "action": "（a）带参冷启动与无参对照逐元素比对 + 读栈顶 options + 记请求 query；（b）量测 .safe-top 与 .nav-bar 顺序几何、chip 与卡片热区；（c）DOM 检索是否存在 .empty-state__icon 节点",
       "expected": "(a) 与无参完全等价：filterType='ALL'（:48，不得被 ?type=REFUND 预选）、分页参数恒 page=0/size=20（:168-170 附近 store 入参，不得被 page=2/size=1 改写）、不得出现按 status 过滤的结果；栈顶 options 携 4 参但源码零消费 → 判幻影参数；(b) safe-top（:170）先于 nav-bar（:173）→ 标题「账单记录」不与系统时间叠印、上方留白恰 1 个状态栏高度（全局 page padding 已移除，App.vue:340-343）；chip/卡片热区实测数值全部回填；(c) 源码样式段存在 .empty-state__icon{font-size:96rpx}（bills.vue:422-423）而模板零对应节点（空态由 EmptyState 组件接管 :214-218）→ DOM 检索应查不到该节点，作为 -017（死 CSS + 未走 token 的硬编码字号）仍开放的证据；console 无报错",
       "evidence": "noop：执行日志（options 快照 + 请求 query 转储 + 元素量测表 + DOM 检索结果）+ 与 VB02 截图比对说明",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/bills → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VB10",
@@ -896,10 +1201,19 @@
       "title": "空账单与长列表结构：EmptyState 文案/类型正确、无重复卡片、key 稳定不串数据",
       "tier": "normal",
       "pre": "展示版 + 身份A 登录。两种数据前置各跑：(a) 后端/内存账单为空（REAL_ONLY：新注册游客账号无账单，或管理员清空该演示账号账单——禁止删既有业务数据）；(b) 有 ≥10 条账单（mock buildMockBills 条数，回填实测）",
-      "action": "（a）进入空账单页观察 EmptyState → tap 空态区域（无可点动作则记 noop 反馈缺失）；（b）进入后快速切换筛选两次并滚动到底，逐卡核对 id 与内容对应",
+      "action": "（a）进入空账单页观察 EmptyState（bills.vue:214-218 的 :title=暂无账单记录 / type=no-data 两 prop，组件内文案节点 .empty-msg）→ tap 空态区域（无可点动作则记 noop 反馈缺失）；（b）进入后快速 tap 第 195 行 .filter-chip（bills.vue，@tap=selectFilter :197，四条 ALL/SUBSCRIBE/RENEW/REFUND 同一类名）切换筛选两次并滚动到底，逐卡核对第 222 行 :key=bill.id 渲染出的 .bill-card（:223）id 与内容对应",
       "expected": "（a）空态为 EmptyState 组件、title=「暂无账单记录」（zh-CN.ts:2574）、type=\"no-data\"（:214-218，须确认该 prop 为组件合法声明）；不得出现残留骨架「加载中...」（两分支互斥 :209/:214）；空态内无可点元素时不得伪装可点（无 hover 反馈即符合预期）；（b）列表 :key=bill.id 稳定（:222）→ 快速切筛选后不得出现「卡片内容与其 id 错位」或重复渲染（回填前后条数与首条 id）；无重复 id；单卡不溢出、时间戳与金额不错位；列表底部无固定栏遮挡（本页无 fixed 底栏，须回填实际）；console 无报错",
       "evidence": "normal：空态截图 + 长列表（顶部/底部）截图 + 条数与首末条 id 转储 + 路由 + console；(a) 不可得时标 UNVERIFIED/REAL_ONLY",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "（a）进入空账单页观察 EmptyState → tap 空态区域（无可点动作则记 noop 反馈缺失）；（b）进入后快速切换筛选两次并滚动到底，逐卡核对 id 与内容对应",
+      "tapTarget": ".filter-chip",
+      "tapTargetEvidence": "apps/client/src/subpackages/vip/bills.vue:195",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "gap-carriers/identities-tagging.json",
+      "identitiesWhy": "本 patch 的唯一根据=该行自己的前置逐字含「展示版 + 身份A 登录」（gap-carriers 规则：按前置收窄认领，不按页名/关键词猜）。摘掉的是认领，不是判据。"
     }
   ]
 }

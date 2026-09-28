@@ -1,0 +1,181 @@
+{
+ "kind": "ops-corpus-stamp",
+ "at": "2026-09-28T03:57:10.375Z",
+ "gitSha": "8ce72c21",
+ "opsDir": "reports/audit/round-6/ops",
+ "files": 24,
+ "cases": 1107,
+ "canonSha": "4aa657b3d073628bbb02a057f5794ff9dc8828b202097f869435ec508fde464b",
+ "byteSha": "9cd011936c5b77926cf39f86f86d7a580ef75c7730eb1534aa785b28c0d0ddad",
+ "perFile": [
+  {
+   "file": "PAGES-DISCOVER-INDEX.json",
+   "n": 45,
+   "canon": "6b3c8d5741c5778d46a885bac710ec91a5805def67941d120c4c6f4d5af84b0f",
+   "bytes": "e7cb906e17d1c8408b44d791b093b130e7fa5a53f795982ea556314db48f506a",
+   "ids": "38a3e2c62357d3aee22788dd5434359c097a21eda6b4edaeca2a28c60084de44"
+  },
+  {
+   "file": "PAGES-HOME-INDEX.json",
+   "n": 48,
+   "canon": "2a533630f143ce52808890f4cc0feb6609e22fb1ad06958a46252a6cad5eef84",
+   "bytes": "44a84768166fabe4f00e7562676ad305b991df78c44cbffd1594003749061fe0",
+   "ids": "2325f3e7c8e17296585424c7435ea2283c5f1d6ea3f5dc8dc74a6e547c8e1ccc"
+  },
+  {
+   "file": "PAGES-LOGIN-INDEX.json",
+   "n": 38,
+   "canon": "186dc361231f2e6e734ef50ef3288eb7629c92ec55fd5c878e9022fcc811a36f",
+   "bytes": "cacfa498c928411cee0e7d1af9c4f42310809d2290aa7a2fc32447fffe3520e3",
+   "ids": "23350faef8ac267e952360c510be8e6ff352ad3a73598c76466422b867f4d0cf"
+  },
+  {
+   "file": "PAGES-MESSAGES-INDEX.json",
+   "n": 41,
+   "canon": "76a917d2c33a49e7b42778eb44a478b5296d4eb70fa9984d2729cca34889476f",
+   "bytes": "b5ee9d7bb4acbc2a997dc8fa68ddd76160cb740af3c91b235f23e28e522f2369",
+   "ids": "9ef723d1e0266dc60f665e885f83cd0035fd98df1f3883da5e534e9c6e5eadd3"
+  },
+  {
+   "file": "PAGES-NEARBY-INDEX.json",
+   "n": 42,
+   "canon": "0c57cb864c232da14cf88af8701bd272f34e01d06a85935348d9cba6a2d10168",
+   "bytes": "baaa32e4a0daa7b319d5955dad35fba18ae5494cee0c1fc9af471406da53cfde",
+   "ids": "55e1c9d405bd8ba56725ada94fb2762b2ef6b53d4211dcfcaf90d66188f7b2eb"
+  },
+  {
+   "file": "PAGES-PROFILE-INDEX.json",
+   "n": 45,
+   "canon": "f8b2c0a6b8ace0a2097aba09082ecd60b43cb045ab5459718e1854188f5637ee",
+   "bytes": "6eb90c94adb697ec8c3392f8dfd0258fbc961a3b6cddb901256ad7898dd45387",
+   "ids": "b9aa33782bf1c923c55ec61842072eed3fc9e02b72f48379bb927748ce1c6aa5"
+  },
+  {
+   "file": "PAGES-REGISTER-INDEX.json",
+   "n": 37,
+   "canon": "37bfce86db3171ce95ba3929d5e658c0eefa293e971a507e05a1a3e2f4420c76",
+   "bytes": "5653f9506af064497361e5f1e613afc1e18678a1b6dd244bee574d3927d91428",
+   "ids": "2dfef1c149412102a67421b9c2dfff1a4db3d3d0db966ffefedff1d03e6df4fa"
+  },
+  {
+   "file": "PAGES-REGISTER-SUCCESS.json",
+   "n": 16,
+   "canon": "d8b53b4d7adbe011ae5f325305e2dc50b70bafedbca0927b7e4671043b6f9ee0",
+   "bytes": "6416e38ca852f4f774a958bef908ba573242e920efaf499cdd5480a1644f70cc",
+   "ids": "2567479792b918f702cded8cabc80454638706f9f0e91b6c11d10e2fc986088b"
+  },
+  {
+   "file": "SUBPACKAGES-CAMPUS-CAMPUS-HUB.json",
+   "n": 27,
+   "canon": "21156c84635786a8acb5cf7025ed63f6d8d5e07e9d061ed428e0d2a14422f12e",
+   "bytes": "03bd1bb4c0cfd71b81ddf232bc76c2a521906bf12bbf1e260e694a5f88a36d7f",
+   "ids": "bacbe3a2305b81e9615f158fbf7a9c1fa35bb5566b7bd2ea56b632c386702d9e"
+  },
+  {
+   "file": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json",
+   "n": 30,
+   "canon": "91c257c602ba2ceb430d973d45dc8b0eefdc95711617c3b3ad6d6fec860b99c6",
+   "bytes": "2b5487f77b13f5aacd95d26e2e943d5641efe58fdaedde35af3fc6d4e158f453",
+   "ids": "e1b22c52fee4ca8ba5e2641a15b1b2927f9e2668bfa81cd375b6730b2ddd69c6"
+  },
+  {
+   "file": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC.json",
+   "n": 41,
+   "canon": "5da2e711387d0a5c838cb869d1a13dd88f58c476702bf0fa32cc09b25753f7dd",
+   "bytes": "2471333bd970fa017d41b505fb4aa22848a2b3ed5257d3cf3f930bb0cf45e393",
+   "ids": "055d05fc9134cece13c079cbe8bcb7197e312396f4fbf84330ffe35de0be37ba"
+  },
+  {
+   "file": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json",
+   "n": 34,
+   "canon": "1c72d9f0e9a4b10bdfb2cae3691a607ba0a213ed76a3f177c8e50a51d3d2a471",
+   "bytes": "44d5cf12b822c10eaa72af78ad69e1b97c79de8a66b959ac2449df45083d7e87",
+   "ids": "9e95235fcfa26f07278982d1836a7ff302b3a5db46a4b9fcd3425f8492704793"
+  },
+  {
+   "file": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json",
+   "n": 25,
+   "canon": "d3429b1ad9649f4906c8f6a55cb8d293475dc8259ed394fdc6e4bdd3552fe20c",
+   "bytes": "9b8e3c020af8c43e46f01b7907f0fa6a6e0c3cbc4e4c5b57caca76ed9ed5b4c0",
+   "ids": "2748f31bce20332b78f92fe31cb14c853a0126302bf491a9147cf4b6688e8e8d"
+  },
+  {
+   "file": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.json",
+   "n": 40,
+   "canon": "2a88ca1947f208d9b770c3068ff49c11119ecd4dfdf093df3f6f8b3e7897e01d",
+   "bytes": "3319904c2365c92cfa78ab939bf48d46b922bad0a4e77208b74703fe15340efe",
+   "ids": "06c0eaf989393e3431096849b918c726676bc8cd977f8ac30d9b6da9d71b3c2f"
+  },
+  {
+   "file": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json",
+   "n": 20,
+   "canon": "6e05b5b2a4f1db099d726e37b1c6db8539becaaf9768e1da31b7c283f0e47afb",
+   "bytes": "270373525df9bb3b4d2d19561e84252f357c0d0131d7ad4c43f73d886ea4eec8",
+   "ids": "1a25fc1e86758a46c6325e0d545c2b4029cbc4afb5ca7feb71ff4ddb2c9efabc"
+  },
+  {
+   "file": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json",
+   "n": 24,
+   "canon": "4bfc57213b0511b2a95473bca284c490a27c095501eb02229e1777da672c8c4c",
+   "bytes": "7168a00d97b2ed7761a3c48b2c05f93f6b47fb5dfaaf4bd92db1a1c57c215440",
+   "ids": "65d8aea8018b04c59b1c1a2f9654c9a1cc38ba4cd1ca563ff3e672d4047b2d7c"
+  },
+  {
+   "file": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX.json",
+   "n": 42,
+   "canon": "d2727176c03aa2c8944cdb4dd5faa5b1246835450c2fce6ce8f9e09d7370a760",
+   "bytes": "5d92d19618aff3dc217dbd6de5898c6ba45c9245d0dab7bf54778feb9640baae",
+   "ids": "143563f8764298744dcd60104c91f5689c1c9aa47963d0e87b753842742221f7"
+  },
+  {
+   "file": "SUBPACKAGES-VILLAGE-VILLAGE-POST.json",
+   "n": 40,
+   "canon": "11e28d1f2ec883621502a72947ad8d700aa02690eb027cc9aad7f2a3cec7215a",
+   "bytes": "3326324202f462941182995024dff9b5c6afbc536bcb278dff706145ea819843",
+   "ids": "985d90152fba917a28c5fa20e091f8a639f9833d17e3a0520d516222f5dde292"
+  },
+  {
+   "file": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json",
+   "n": 34,
+   "canon": "cc71aa850f3817e9be233ce34188cfb929a068b7bdb0331c2a2c8cc4f9194fd3",
+   "bytes": "f95b420e773eb9a8ce2984d65dbae7b095cfbbb102f2c34c5af79cd0594bd5be",
+   "ids": "90eed3f0e8cd118bc5d4585231fc45cbc1e5f234161f9a4007421ef0ee044389"
+  },
+  {
+   "file": "次要18.json",
+   "n": 88,
+   "canon": "21c65841b1abfd9f0970772af30a444da8a59105c3f4cd515d1a747256f13af9",
+   "bytes": "9f966c09cccd460f00594700356d380ecfdfa63dfc54b639ebaa3ebff29700ac",
+   "ids": "536aa22bad1936bc5f6415914da3f57723ceea8821b639d56ab8d2bcd0558839"
+  },
+  {
+   "file": "次要19.json",
+   "n": 69,
+   "canon": "3842b6e87f0613a146f2864df8d3566988d01ad4ab825d10f0cbe20a5a54b1a9",
+   "bytes": "34f338c5e695193a60cd30f92e076594c5513af8c11fb92d417973a56631389c",
+   "ids": "fb393bc49cc00176b489fffa756219a081bddfd12cb0d2b1b299493498bcb6b5"
+  },
+  {
+   "file": "次要20.json",
+   "n": 101,
+   "canon": "907a60a9249f9aab0221017c5ec719eee48ba3ea1d49a90a47554bdc1f703834",
+   "bytes": "1b45277d9501c3063a86a252b5c7d0488ec537a5751557095dc6b9d8542f5575",
+   "ids": "554c4e2bd1a1bf5859058e5bf20c7d279e559ec35d16ff191098a9a5a0047d3e"
+  },
+  {
+   "file": "次要21.json",
+   "n": 102,
+   "canon": "b49b2deea2e7d2de0371ff539be8ee93b9d9b751d04eb1583b0d99a0e798cd91",
+   "bytes": "0eab237064dffc1ff0e905a9ea1451e7a2747e49cdbf1f7ce6523052a0804faa",
+   "ids": "4b9f66afc21765429427020b93e4d24406f2be316297676535dff7c7824fafcc"
+  },
+  {
+   "file": "次要22.json",
+   "n": 78,
+   "canon": "a387e8ee4085cd9d0f73510d75c594517c2cf9d740045b9f1da530a041bb0480",
+   "bytes": "55e275661cb561041e1de0a3658edb337b5f8fc39f7f4175c8e14ae18eb7aae2",
+   "ids": "c6ac0a3c6460bde9cbd186a4c44b57ec098030da8fa47c38abaee0200f9aaf57"
+  }
+ ],
+ "note": "本轮 1107 例执行轮所绑判据版本的内容戳；--check 复算不一致即视为跑的过程中语料被改过。"
+}

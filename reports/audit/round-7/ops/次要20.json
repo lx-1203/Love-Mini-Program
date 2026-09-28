@@ -58,7 +58,13 @@
       "action": "仅等待首屏渲染（无交互）；≤500ms 首拍 + 2s 复拍（骨架/卡死检测）",
       "expected": "500ms 内完成渲染且复拍与首拍一致（无「未认证→审核中」状态跳变、无 SkeletonBlock 永驻：statusLoading 仅 real 首拉期为 true，index.vue:475-477）；顶部 safe-top 占位先于 nav-bar（:462-472，R10-P2-012 顺序守卫，标题「恋爱认证」不与状态栏叠印）；状态卡=未认证语义（GRAD_CAP 图标 + statusUnverified 标题/描述，:107-114/:478-485）；未认证门禁横幅可见（v-if status==='unverified' :490-493，WARNING 图标为原生 image 非 SafeImage，MP-R1-VERIFY-INDEX-102 回归守卫）；权益 5 项（benefits :119-125：徽章/信任/匹配/特权/互动资格）；流程 3 步卡（:128-132）；表单 3 个 input（:596/:612/:628）；上传卡空态文案 + 提交按钮「提交认证」；console 无 TypeError/NAV_FAIL/is not defined",
       "evidence": "normal：after 截图（fullPage，含首拍/复拍两张）+ getCurrentPages 栈顶 route=subpackages/profile-extra/verification/index + console 全量",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VCI02",
@@ -69,7 +75,13 @@
       "action": "tap .nav-bar__back（index.vue:467 → goBack :442-449）",
       "expected": "500ms 内路由变化：getCurrentPages().length===1 走 else 分支 uni.switchTab('/pages/profile/index')（index.vue:444-448）→ 最终栈长度=1、栈顶 route=pages/profile/index；不得出现 navigateBack:fail 或停留原页；console 无报错",
       "evidence": "navigation：getCurrentPages 路由链断言（栈长度 + 栈顶 route）+ console；可免截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VCI03",
@@ -80,7 +92,13 @@
       "action": "tap .nav-bar__back → 回设置页后再次 tap 同一列表项进入本页",
       "expected": "第一次返回走 navigateBack（栈>1 分支 index.vue:443-445）→ 栈顶=pages 设置页 subpackages/profile-extra/settings/index、栈长度 2→1；再次进入时页面实例重建，status 回到初始 unverified（ref 不跨实例，:55）、三个输入框与上传卡为空态（studentName/studentId/schoolName/uploadedImagePath 初值 :60-66），不残留上次输入；console 无报错",
       "evidence": "navigation：三段路由链断言（来源页 → 本页 → 来源页 → 本页）+ 每次栈长度 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VCI04",
@@ -91,7 +109,13 @@
       "action": "① 全空 tap .action-btn（提交，index.vue:675-683）→ 记录 toast；② 只填姓名再提交；③ 补学号再提交；④ 补学校再提交；⑤ 最后不选图直接提交",
       "expected": "① toast=verification.errStudentName（index.vue:187-190）且不发请求、不进入 submitting 态（守卫在校验之前 :184）；② toast=verification.errStudentId（:191-194）；③ toast=verification.errSchoolName（:195-198）；④ toast=verification.errImageRequired（:199-202）；每步 500ms 内出现 Toast（死按钮判据）；每次提交后状态卡仍 unverified、页面无 showLoading 残留（校验分支在 showLoading :206 之前返回）；console 无报错",
       "evidence": "normal：四步各 1 张 after 截图（须含 Toast 文本）+ 路由（仍在本页）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VCI05",
@@ -99,10 +123,19 @@
       "title": "学生姓名输入框四态 + 键盘弹起避让：正常/清空/超长(maxlength=20)/特殊字符",
       "tier": "normal",
       "pre": "同 VCI01（未认证表单态）",
-      "action": "对 #verification-student-name（index.vue:596-607）依次：① 输入「张三」；② 全选清空；③ 输入 40 字符长串（源码 maxlength=\"20\" :603 → 断言实际截断长度）；④ 输入「<script>alert(1)</script>『😀 空格』」混排",
+      "action": "对 #verification-student-name 的输入框 .form-item__input（index.vue:596-607）依次：① 输入「张三」；② 全选清空；③ 输入 40 字符长串（源码 maxlength=\"20\" :603 → 断言实际截断长度）；④ 输入「<script>alert(1)</script>『😀 空格』」混排",
       "expected": "① 输入即回显、光标不被遮挡（cursor-spacing=\"20\" :597），键盘弹起时输入框与提交按钮不被键盘盖住、页面不上滚错位，收起后布局恢复；② 清空后提交 → errStudentName toast（trim 判空 :187）；③ 超长输入实际写入长度 ≤20（如实回填 maxlength 生效值），不撑破 .form-item__input、不出现横向溢出；④ 特殊字符按纯文本入库显示，无脚本执行、无 XSS 渲染、无崩溃；blur 时触发轻振动（@blur=\"onBlur\" :604/:451-454，回填 haptic 调用与否）；aria-label 与 placeholder 一致（:601/:605）；console 无报错",
       "evidence": "normal：四态 after 截图各 1（键盘弹起态额外一张）+ 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "对 #verification-student-name（index.vue:596-607）依次：① 输入「张三」；② 全选清空；③ 输入 40 字符长串（源码 maxlength=\"20\" :603 → 断言实际截断长度）；④ 输入「<script>alert(1)</script>『😀 空格』」混排",
+      "tapTarget": ".form-item__input",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/verification/index.vue:600",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VCI06",
@@ -113,7 +146,13 @@
       "action": "对 #verification-student-id（index.vue:612-623，maxlength=\"20\"）依次：①「20210001」；② 5 个空格；③ 40 字符数字串；④「2021-0001#/😀%22」",
       "expected": "① 正常回显；② 纯空格提交 → 走 trim() 判空分支（index.vue:191）出 errStudentId toast，不得通过校验（空格不算有效输入）；③ 超长被 maxlength=20 截断（回填实际长度），布局不破；④ 特殊字符原样作字符串显示、无脚本执行；提交时以 .trim() 后值入 body（:252）→ mock 轮不产真实请求，real 轮 network POST /verification 的 studentId 字段应为 trim 后值；console 无报错",
       "evidence": "normal：四态 after 截图 + 路由 + console（real 轮加 network 请求体字段）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VCI07",
@@ -124,7 +163,13 @@
       "action": "对 #verification-school-name（index.vue:628-639，maxlength=\"30\"）依次：①「北京大学」；② 清空；③ 30+ 字符超长校名；④ 不存在于 config/schools.ts 的自造校名「XX职业技术学院」+ 特殊字符",
       "expected": "① 正常回显；② 清空提交 → errSchoolName toast（:195-198）；③ 超长截断至 30 字符、输入行不换行不撑破表单卡；④ 自造/特殊字符校名：恋爱认证（本页）不做校名白名单校验（源码零 SCHOOLS 比对，:195-202 仅判空）→ mock 分支照样进入 pending（:209-222），real 分支由后端裁决（可能 400/422）→ 断言前端把后端 message 原样 toast（:270-278），不得白屏、不得永驻 Loading；console 无 TypeError",
       "evidence": "normal：四态 after 截图 + 路由 + console + network（real 轮记录提交响应码与 toast 文案）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VCI08",
@@ -135,7 +180,13 @@
       "action": "① tap .upload-card（index.vue:649-656 → chooseImage :138-172）→ 在选图面板选一张图确认；② 再 tap 上传卡的「更换」态（:667-669）→ 取消选择；③ 未授权分支：把隐私授权置为未同意后重进页面再 tap",
       "expected": "① 成功后 uploadedImagePath 写入 tempFilePath（:157）→ 上传卡从空态切预览态（v-if/v-else :657/:661）+ toast=verification.imageUploaded（duration 1200ms :31/:158-162），500ms 内可见；预览 <image :src=\"resolvedUploadedImage\">（:662-666）必须出图不破图（解析链 resolveMediaUrl，:174-178）；② 取消走 fail 分支 → toast=verification.imageChooseCancelled（:164-170，1000ms），原预览图保持不变（不清空）；③ 未授权/隐私未同意 → toast=verification.privacyRequiredImage（:142-148）且不调起 chooseImage、不改状态；三种反馈均为 Toast 可观测（无死按钮）；console 无 unhandledRejection",
       "evidence": "critical：before（空态）+ after（预览态/取消后/未授权）截图 + 路由 + Toast 文案逐条 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VCI09",
@@ -146,7 +197,13 @@
       "action": "① tap .action-btn 提交一次，分别在 200ms/800ms/1500ms/3000ms 采样 Loading 与状态卡；② 复位后（退出重进）500ms 内 rapidTap .action-btn ×5",
       "expected": "① 点击后 500ms 内出现 uni.showLoading(mask:true)（index.vue:205-206，mask 必须为 true——MP-R1-VERIFY-INDEX-002 双保险守卫）；1000ms 后 hideLoading（:213）→ Loading 不永驻（3000ms/4000ms 采样不得仍有 Loading）；状态卡转 pending（:214）+ toast=verification.submitSuccess（:215-219）+ 页面切至「审核中」分支（:532-545）；② rapidTap×5 断言分两列：客户端层=submitting 守卫（:184）使第 2-5 次点击在 submitting=true 期间直接 return → setTimeout 只注册 1 次（mock 提交成功 Toast 条数=1，观察 1s 内 toast 计数）；服务端层=real 轮 network POST /verification 条数与 GET /verification 回读的申请条数（防 Idempotency-Key 假通过：若客户端发出多条而服务端仅 1 条记录，客户端缺陷仍成立）；③ 提交按钮在 submitting 期间文案转「提交中」（:682）+ disabled 类（:677）",
       "evidence": "critical：before（填齐待提交）+ after（pending 态）截图 + 路由 + Toast 文案与条数 + console + network 请求计数（real 轮）",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VCI10",
@@ -157,7 +214,13 @@
       "action": "① pending 态检视页面结构；② mock 下 tap .action-btn--secondary「模拟审核通过」（index.vue:542-544）；③ 停留本页 ≥65s 记录 GET /verification 轮询节拍；④ 离开页面（返回）后再等 35s 观察是否仍有轮询请求",
       "expected": "① 显示 pending 卡（pendingTitle/pendingDesc :534-537，状态卡图标 PENDING + 橙色 :88-95），表单与提交按钮不得同时出现（v-else-if 分支互斥 :532/:548）；② mock 下点击 → status=verified + toast=verification.approvedTitle（:387-401）；real 模式下该按钮必须不存在（v-if=\"isMockMode()\" :542 + 函数内 isMockMode() 二次守卫 :390-393）→ 断言真机 real 轮 DOM 查不到该按钮、且 evaluate 直接调用不改变状态（伪造认证防护，infra R2-00029/MP-R1-VERIFY-INDEX-004）；③ pending 期间每 30s 重拉一次 GET /verification（VERIFICATION_POLL_MS=30_000 :335/:343-356），mock 轮 startVerificationPolling 早退（:344）应 0 请求，按构建模式分别回填；④ 卸载后定时器被 clearTimeout（onUnmounted :371-380）→ 离开页面 35s 内不得再出现轮询请求（内存泄漏判据）",
       "evidence": "critical：pending/verified 两张 after 截图 + 路由 + Toast 文案 + console + network 轮询时间戳序列",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VCI11",
@@ -165,10 +228,19 @@
       "title": "verified 态：权益列表 + 「重新认证」/「删除认证」两个原生 modal 的 confirm/cancel/超时三路关闭（仅 mock 提供）",
       "tier": "critical",
       "pre": "mock：VCI10 ② 之后（verified）。real 轮 verified 需 GET /verification status=APPROVED → 记 REAL_ONLY（real 下两按钮应不存在，:521/:526 v-if=\"useMock()\"）",
-      "action": "① 检视 verified 结构；② tap「重新认证」（index.vue:521）→ 在 modal 上点「取消」；再 tap → 点「确定」；③ tap「删除认证」（:526，红色危险态）→ modal 点确定；④ 每次 modal 出现后不操作等其自然关闭（若可）",
+      "action": "① 检视 verified 结构；② tap「重新认证」 .action-btn（index.vue:521）→ 在 modal 上点「取消」（uni.showModal 是原生弹层、不在本页 wxml 树里，桥没有可归属的 modal 节点，那两跳只如实记为未操作）；再 tap → 点「确定」；③ tap「删除认证」 .action-btn--danger（:526，红色危险态）→ modal 点确定；④ 每次 modal 出现后不操作等其自然关闭（若可）",
       "expected": "① verified 卡（statusVerified 文案 + 绿色 :80-87）+ 权益 5 项网格（:498-515）+ 表单/提交按钮不得出现；② 取消 → status 保持 verified、四字段不清空（:409-417 仅 confirm 分支写值）；确定 → status=unverified 且 studentName/studentId/schoolName/uploadedImagePath 全部清空（:411-415）、页面回到表单态；③ 删除确认 modal confirmColor=#E5454D（:427）+ 确定后 toast=verification.removedToast（:435）；④ 弹层三路（确认/取消/遮罩或系统返回）关闭后均不得残留蒙层、不得出现双弹层叠加；⑤ real 模式断言：两按钮不可见，且服务端仍为 approved 时页面重进仍显示已认证（MP-R1-VERIFY-INDEX-003 前后矛盾守卫）",
       "evidence": "critical：before（verified 态）+ 各 modal 弹出 + after（unverified 态）截图 + 路由 + Toast 文案 + console",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① 检视 verified 结构；② tap「重新认证」（index.vue:521）→ 在 modal 上点「取消」；再 tap → 点「确定」；③ tap「删除认证」（:526，红色危险态）→ modal 点确定；④ 每次 modal 出现后不操作等其自然关闭（若可）",
+      "tapTarget": ".action-btn",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/verification/index.vue:521",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VCI12",
@@ -176,10 +248,19 @@
       "title": "REAL_ONLY 驳回（rejected）回显：证件图必须经 resolveMediaUrl 出图 + 重新提交不再重复上传 + 409 冲突文案（MP-R2-VERIFICATION-001 / media.ts 未提交改动证伪）",
       "tier": "critical",
       "pre": "REAL_ONLY：真实后端(8080) + 已登录身份，GET /verification 返回 status=rejected 且 studentIdCardUrl 为 /api/v1/media/… 相对路径（后端落库即该前缀，LocalMediaStorageService.java:308）；需预置或 mock 图片域名白名单，否则按不可判定处理。修复后表现基准=工作树 index.vue:174-178/:240/:305-309（该问题在 HEAD 已修，本用例为复验守卫）",
-      "action": "① reLaunch 进本页 → 观察状态卡与上传卡预览；② 不改任何字段直接 tap 提交；③ 打开 Network 面板统计 POST /media/upload（uploadPostImage）与 POST /verification 条数；④ 对已存在 pending 的申请再提交一次",
+      "action": "① reLaunch 进本页 → 观察状态卡与上传卡预览；② 不改任何字段直接 tap 提交按钮 .action-btn（:676，@tap=submitVerification :678）；③ 打开 Network 面板统计 POST /media/upload（uploadPostImage）与 POST /verification 条数；④ 对已存在 pending 的申请再提交一次",
       "expected": "① 状态卡=驳回（CHECK_FAIL + 红色 :96-106），描述行追加「驳回原因：<rejectReason>」（:101-103 拼接 verification.rejectReasonLabel）；上传卡预览图必须正常出图（<image :src=\"resolvedUploadedImage\"> :662-666，computed 走 resolveMediaUrl utils/media.ts:129-233，不得为 /api/v1/media/… 裸相对路径被当包内文件而破图/转圈）；② 三字段回显为服务端值（:302-304）；提交时因 uploadedImagePath 保持服务端原始路径（:306-308）且 isUploadedMediaUrl 判 true（utils/media.ts:88-103）→ 客户端多余请求数=0（不得再调 uploadPostImage 上传一个服务端路径）；服务端回读=仅 1 条新申请、图片可访问；③ 若 network 出现 POST /media/upload 携带 filePath=/api/v1/media/… 即为回归（必然失败）；④ 已有 pending/approved 申请时后端 409 → toast=verification.alreadyPending（:274-278），不得出现「提交成功」误报、不得永驻 Loading（finally :279-282）",
       "evidence": "critical：before（驳回态首屏）+ after（预览图 + 重提结果）截图 + 路由 + Toast 文案 + console + network 逐条（含 upload 与 POST /verification 计数）",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① reLaunch 进本页 → 观察状态卡与上传卡预览；② 不改任何字段直接 tap 提交；③ 打开 Network 面板统计 POST /media/upload（uploadPostImage）与 POST /verification 条数；④ 对已存在 pending 的申请再提交一次",
+      "tapTarget": ".action-btn",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/verification/index.vue:676",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VCI13",
@@ -190,7 +271,13 @@
       "action": "页面 scrollTo 到底 → 回顶 → 中途停一次；全程记录 scrollTop/scrollHeight/windowHeight",
       "expected": "滚到底时提交按钮完整可见且可点（.safe-bottom 占位 :687 生效，按钮不被 iPhone 底部安全区/自定义 TabBar 盖住——本批 8 页 navigationStyle=custom 均无原生导航栏）；回顶后 nav-bar 标题与返回键不与状态栏叠印（safe-top :462 前置于 nav-bar :466，R10-P2-012 顺序）；滚动过程无白屏、无吸顶抖动、无固定元素错位；数值如实回填",
       "evidence": "noop：执行日志（scrollTop/scrollHeight/windowHeight + 按钮 boundingClientRect.bottom 与 windowHeight 比较）+ console；可免截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VCI14",
@@ -201,7 +288,13 @@
       "action": "① wx.reLaunch('/subpackages/profile-extra/verification/index?status=pending&userId=999&school=%E6%B8%85%E5%8D%8E%E5%A4%A7%E5%AD%A6&from=r11')；② 对 .nav-bar__back、.upload-card、.action-btn、三个 input 逐个 boundingClientRect 量测",
       "expected": "① 渲染结果与无参 VCI01 逐元素等价：仍为未认证表单态（不得因 ?status=pending 直接进审核中、不得 ?userId= 切换查看对象、不得 ?school= 预填校名）——源码依据：onLoad 回调不读取任何 query（index.vue:330-332 只调 loadVerification()）→ 上述参数全为幻影参数，出现任何消费即记回归缺陷；getCurrentPages 栈顶 options 含 4 参但零消费；② 热区实测数值逐条回填对照铁律 88rpx（返回键/upload-card/提交按钮/输入框高度），低于 88rpx 的按 R11 §5 交判定员裁量，执行员不得因源码预判而省略实测值",
       "evidence": "noop：路由 options 快照 + 各元素 width/height/left/top 数值表 + console；可免截图（可与 VCI01 首屏截图比对）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VRN01",
@@ -212,7 +305,13 @@
       "action": "仅等待首屏渲染；≤500ms 首拍 + 2s 复拍（骨架卡死检测）",
       "expected": "500ms 内完成：safe-top 前置于 nav-bar（:412-414 顺序守卫，标题「实名认证」不与状态栏时间叠印）；状态卡=未认证（icon=CHECK_CIRCLE + statusUnverified 文案 :111-118，A2 已留档的「未认证态图标语义小瑕疵」按 observation 采证不得判缺陷）；statusLoading 骨架仅在 real 首拉出现且必须收起（:423-425，finally :320-322）→ 复拍不得仍为骨架；表单两 input（#real-name-user-name :478-490 / #real-name-id-card-no :495-507）；上传卡两张（正面 :518-540 / 背面 :542-564）均为空态文案；隐私说明 privacyNote（:569-573）；提交按钮「提交认证」（:576-584）；console 无 TypeError/NAV_FAIL",
       "evidence": "normal：after 截图（fullPage，首拍+复拍）+ getCurrentPages 栈顶 route + console 全量",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/real-name → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VRN02",
@@ -223,7 +322,13 @@
       "action": "tap .nav-bar__back（real-name.vue:415 → goBack :394-401）",
       "expected": "500ms 内路由变化：栈长=1 走 else → uni.navigateTo('/subpackages/profile-extra/verification/index')（:399）→ 最终栈长度=2、栈顶 route=subpackages/profile-extra/verification/index、前一帧为本页（MP-R1-REAL-NAME-001 兜底设计：保持认证流程闭环，不得判为缺陷，但必须如实回填栈长度 2）；认证中心页正常渲染未认证表单；console 无 navigateTo:fail",
       "evidence": "navigation：getCurrentPages 完整栈快照（每帧 route+options）+ console；可免截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/real-name → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VRN03",
@@ -242,10 +347,19 @@
       "title": "真实姓名输入框四态 + 键盘弹起避让（正常/清空/超长 40 字/特殊字符）",
       "tier": "normal",
       "pre": "同 VRN01（未认证可编辑态，isAdult=true）",
-      "action": "对 #real-name-user-name（real-name.vue:478-490，maxlength=\"20\"）依次：①「张三」；② 清空；③ 40 字符（回填截断值）；④「<b>张</b>『😀』 空格」；每步后 tap 提交观察反馈；键盘弹起时截屏一次",
+      "action": "对 #real-name-user-name（real-name.vue:478-490，maxlength=\"20\"）依次：①「张三」；② 清空；③ 40 字符（回填截断值）；④「<b>张</b>『😀』 空格」；每步后 tap 提交按钮 .action-btn 观察反馈；键盘弹起时截屏一次",
       "expected": "① 回显正常、光标避让（cursor-spacing=\"20\" :479），输入框+提交按钮不被键盘遮挡（:576-584 按钮在表单下方，须实测）；② 清空提交 → toast=realName.errUserName（:184-187）；③ 超长截断至 20 字符（如实回填），不破版；④ 特殊字符按纯文本存储显示、提交时 .trim()（:248），无脚本执行、无崩溃；每次点击提交 500ms 内必有 Toast 或 Loading 之一（死按钮判据）；console 无报错",
       "evidence": "normal：四态 + 键盘弹起 共 5 张 after 截图 + 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "对 #real-name-user-name（real-name.vue:478-490，maxlength=\"20\"）依次：①「张三」；② 清空；③ 40 字符（回填截断值）；④「<b>张</b>『😀』 空格」；每步后 tap 提交观察反馈；键盘弹起时截屏一次",
+      "tapTarget": ".action-btn",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/verification/real-name.vue:577",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/real-name → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VRN05",
@@ -253,10 +367,19 @@
       "title": "身份证号输入框：15 位/18 位/末位 X·x 合法，空格/17 位/含字母/超长 30 位/特殊字符全非法且文案正确",
       "tier": "normal",
       "pre": "同 VRN01，姓名已填合法值",
-      "action": "对 #real-name-id-card-no（real-name.vue:495-507，maxlength=\"18\"）依次输入并各提交一次：①「11010119900307123X」；②「110101199003071234」（18 位纯数字）；③ 15 位「110101900307123」；④ 末位小写 x；⑤ 纯空格；⑥ 17 位；⑦「110101-1990-0307-1」；⑧ 30 字符长数字串；⑨「%22\\'<>😀」",
+      "action": "对 #real-name-id-card-no（real-name.vue:495-507，maxlength=\"18\"）依次输入并各提交一次：①「11010119900307123X」；②「110101199003071234」（18 位纯数字）；③ 15 位「110101900307123」；④ 末位小写 x；⑤ 纯空格；⑥ 17 位；⑦「110101-1990-0307-1」；⑧ 30 字符长数字串；⑨「%22\\'<>😀」（本条点名的交互目标 .form-item__input，证据 apps/client/src/subpackages/profile-extra/verification/real-name.vue:499）",
       "expected": "正则 ID_CARD_PATTERN=/^\\d{15}$|^\\d{17}[\\dXx]$/（real-name.vue:172）为唯一判据：① ② ③ ④ 合法 → 进入下一校验（应出 errFrontRequired toast :192-195）；⑤⑥⑦⑧⑨ 非法 → toast=realName.errIdCardNo（:188-191）且不发任何请求；⑧ 超长被 maxlength=18 截断（回填实际长度）且截断后若恰为 18 位数字则判合法，须如实记录截断值与判定结果；⑨ 特殊字符不得崩溃；键盘类型与输入框高度不破版；console 无报错",
       "evidence": "normal：九态 after 截图（含 Toast 文本）+ 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "对 #real-name-id-card-no（real-name.vue:495-507，maxlength=\"18\"）依次输入并各提交一次：①「11010119900307123X」；②「110101199003071234」（18 位纯数字）；③ 15 位「110101900307123」；④ 末位小写 x；⑤ 纯空格；⑥ 17 位；⑦「110101-1990-0307-1」；⑧ 30 字符长数字串；⑨「%22\\'<>😀」",
+      "tapTarget": ".form-item__input",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/verification/real-name.vue:499",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/real-name → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VRN06",
@@ -264,10 +387,19 @@
       "title": "身份证正/反面上传卡：隐私授权前置 + 选图成功/取消/超限三路反馈 + 预览出图",
       "tier": "critical",
       "pre": "需预置隐私协议已同意 + 相册权限（chooseImages 内部封装含隐私守卫，real-name.vue:149 → utils/media.ts），否则本用例不可判定；同 VRN01；DevTools 预置可选图片与一张 >5MB 大图",
-      "action": "① tap 正面卡 .upload-card（:518-525 → chooseIdCardImage('front') :146-169）选图确认；② 再 tap 预览态「更换」→ 取消选择；③ tap 背面卡选一张 >5MB 图（count:1, maxSizeMB:5 :149）；④ 未授权分支重跑",
+      "action": "① tap 正面卡 .upload-card（real-name.vue:519，:520 @tap=chooseIdCardImage 传 front，:146-169 内含隐私前置、成功写 idCardFrontPath 与失败 Toast）选图确认；② 再 tap 预览态「更换」（同一个 .upload-card 节点的 v-else 预览子块 :536）→ 取消选择；③ tap 背面卡选一张 >5MB 图（count:1, maxSizeMB:5 :149；背面卡是同名的第二枚 :543 @tap=chooseIdCardImage 传 back）；④ 未授权分支重跑",
       "expected": "① 成功后 idCardFrontPath=tempPath（:152-156）+ toast=realName.imageUploaded（1200ms :30/:157-161），预览 <image :src=\"resolveMediaUrl(idCardFrontPath)\">（:530-535）必须出图、无破图占位（未提交改动 utils/media.ts:222-232 影响 /static/assets/images/avatars|people 前缀解析，须记录解析后的最终 URL 形态）；② 取消 → paths[0] 为空 → 直接 return（:150-151）→ 原预览保持不变、无错误 toast（不得误报隐私错误）；③ 超限/异常 → 走 catch → toast=realName.privacyRequiredImage（:162-168）——注意源码把「隐私未授权」与「文件超限」合并为同一文案，如实采证为 observation（文案不精确），不得据此判功能缺失；④ 未授权 → 同 toast 且不调起系统选图；三面（成功/取消/拒绝）均有 500ms 内可观测反馈；console 无 unhandledRejection",
       "evidence": "critical：before（空态）+ 正/反面预览成功 + 取消后 + 拒绝后 共 5 张截图 + 路由 + Toast 文案逐条 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "① tap 正面卡 .upload-card（:518-525 → chooseIdCardImage('front') :146-169）选图确认；② 再 tap 预览态「更换」→ 取消选择；③ tap 背面卡选一张 >5MB 图（count:1, maxSizeMB:5 :149）；④ 未授权分支重跑",
+      "tapTarget": ".upload-card",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/verification/real-name.vue:519",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/real-name → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VRN07",
@@ -275,10 +407,19 @@
       "title": "REAL_ONLY 未成年门禁：banner 出现 + 两输入框 disabled + 提交拦截；401 时门禁不得由 mock 假资料决定（MP-R2-REALNAME-001 证伪）",
       "tier": "critical",
       "pre": "REAL_ONLY：真实后端 + 出生日期未满 18 岁（或资料缺 birthDate）的登录身份（loadAdultGate real-name.vue:329-339：birthDate 缺失按未成年从严 :334-335）；无该身份时本用例记 UNVERIFIED。对照态：已成年身份。需 token 有效；另构造「token 过期」子态观察 401 行为",
-      "action": "① 未成年身份 reLaunch 进本页观察首屏；② 尝试聚焦两输入框并输入；③ tap 提交；④ token 置为过期（或过期后）重进本页，读取 isAdult 实际取值与来源（evaluate 读组件状态或观察 DOM 分支）",
+      "action": "① 未成年身份 reLaunch 进本页观察首屏；② 尝试聚焦两输入框（.form-item__input）并输入；③ tap 提交；④ token 置为过期（或过期后）重进本页，读取 isAdult 实际取值与来源（evaluate 读组件状态或观察 DOM 分支）",
       "expected": "① 出现 minor-banner（v-if=\"!isAdult\" real-name.vue:436-438，文案 realName.minorNotice）+ 表单卡加 form-card--disabled（:474）+ 提交按钮 action-btn--disabled（:578）；② 两 input :disabled=\"!isAdult\"（:486/:503）→ 不可聚焦/不可输入；③ 提交 → toast=realName.errMinorNotAllowed（:180-183），零请求发出、不进入 Loading；④ 修复后应有的表现：门禁判定不得消费 mockFixtures 假资料——现状 getBasicProfile 在 real 模式 401 时静默返回 mock 资料（services/api.ts:330-332）→ 过期 token 的真实未成年用户会拿到 mock 出生日期并被放行（表单可用、提交才被后端 AgePolicy 拒），断言点=出现 401 时页面走「从严 + 重新登录引导」（isAdult=false 或提示重登），若实测为放行即为该 P3 问题在 UI 层的可观测后果（记 FAILED 并关联 MP-R2-REALNAME-001）",
       "evidence": "critical：before（成年）+ after（未成年 banner/disabled 态 + 提交 toast + 401 子态）截图 + 路由 + Toast 文案 + console + network（GET /profile/basic 状态码）",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① 未成年身份 reLaunch 进本页观察首屏；② 尝试聚焦两输入框并输入；③ tap 提交；④ token 置为过期（或过期后）重进本页，读取 isAdult 实际取值与来源（evaluate 读组件状态或观察 DOM 分支）",
+      "tapTarget": ".form-item__input",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/verification/real-name.vue:482",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "gap-carriers/identities-tagging.json",
+      "identitiesWhy": "本 patch 的唯一根据=该行自己的前置逐字含「的登录身份」（gap-carriers 规则：按前置收窄认领，不按页名/关键词猜）。摘掉的是认领，不是判据。"
     },
     {
       "id": "VRN08",
@@ -286,10 +427,19 @@
       "title": "提交实名认证（mock 全合法）：Loading mask 不永驻 + 1s 转 pending + 成功 Toast；连点提交×5 只走一次",
       "tier": "critical",
       "pre": "VRN04+VRN05①+VRN06① 齐备（姓名合法、身份证 18 位合法、正反面均已选图），mock 模式",
-      "action": "① tap .action-btn 一次，在 200ms/800ms/1500ms/3000ms 采样；② 退出重进复位后 rapidTap .action-btn ×5（500ms 内）",
+      "action": "① tap 提交按钮 .action-btn（real-name.vue:577，:579 @tap=submitRealName，:177 submitting 守卫、:201-202 showLoading 带 mask true、:209 hideLoading、:210 转 pending、:583 文案随 submitting 变化）一次，在 200ms/800ms/1500ms/3000ms 采样；② 退出重进复位后 rapidTap .action-btn ×5（500ms 内）",
       "expected": "① 500ms 内出现 showLoading(title=realName.submitting, mask:true)（:201-202，mask 必须为 true）；1000ms 后 hideLoading（:209）+ status=pending（:210）+ toast=realName.submitSuccess（:211-215）→ 页面转「审核中」分支（:458-465）且表单/上传卡/提交按钮全部消失（分支互斥）；3000ms 采样不得仍有 Loading（不永驻）；② 客户端层=submitting 守卫（:177）使第 2-5 次点击 return → mock 成功 Toast 条数=1、setTimeout 注册 1 次；服务端层（real 轮）=POST /real-name-certification 条数与 GET 回读申请条数（防 Idempotency-Key 稳定哈希假通过：多条客户端请求 + 服务端 1 条记录 → 仍判客户端缺陷）；③ 按钮 submitting 期间文案「提交中」（:583）；console 无报错",
       "evidence": "critical：before（填齐）+ after（pending 态）截图 + 路由 + Toast 文案与条数 + console + network 计数（real 轮）",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① tap .action-btn 一次，在 200ms/800ms/1500ms/3000ms 采样；② 退出重进复位后 rapidTap .action-btn ×5（500ms 内）",
+      "tapTarget": ".action-btn",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/verification/real-name.vue:577",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/real-name → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VRN09",
@@ -297,10 +447,20 @@
       "title": "REAL_ONLY real 提交链路：两图各上传 1 次 + POST 提交 + 状态刷新为 PENDING；重复提交 409 文案",
       "tier": "critical",
       "pre": "REAL_ONLY：真实后端(8080) + 有效 token + 已成年 + 未提交过实名；DevTools 预置图片与网络监听",
-      "action": "① 填齐并选图后 tap 提交；② Network 统计 /media/upload 与 /real-name-certification 请求条数与 body 字段；③ 成功后立即再提交一次（若表单仍在）；④ 观察最终状态",
+      "action": "① 填齐并选图后 tap 提交按钮 .action-btn；② Network 统计 /media/upload 与 /real-name-certification 请求条数与 body 字段；③ 成功后立即再提交一次（若表单仍在）；④ 观察最终状态",
       "expected": "① 客户端请求序列=2 条图片上传（front/back，isUploadedMediaUrl 判本地临时路径为 false 才上传，:234-240）+ 1 条 POST /real-name-certification + 1 条 GET 刷新（:255）；body 中 idCardFrontUrl/idCardBackUrl 为上传返回的可访问 URL（:250-251），非 http://tmp/ 之类本地路径；② 提交成功 toast=realName.submitSuccess、状态转 pending（:291-292）；③ 再次提交（已有 pending）→ 后端 409 → toast=realName.alreadyPending（:272），不得出现成功 toast、不得永驻 Loading（finally :276-279）；④ 服务端回读：GET /real-name-certification 仅 1 条申请、idCardNo 为脱敏形态（前 6 后 4，:45-46 契约注释）；console 无未捕获异常",
       "evidence": "critical：before + after 截图 + 路由 + Toast 文案 + console + network 全量（逐条 method/url/status/body 摘要）",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① 填齐并选图后 tap 提交；② Network 统计 /media/upload 与 /real-name-certification 请求条数与 body 字段；③ 成功后立即再提交一次（若表单仍在）；④ 观察最终状态",
+      "tapTarget": ".action-btn",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/verification/real-name.vue:577",
+      "needsIdentity": "A",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/real-name → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VRN10",
@@ -308,10 +468,19 @@
       "title": "pending 态 30s 轮询与卸载后定时器清理（内存泄漏守卫）",
       "tier": "normal",
       "pre": "REAL_ONLY：状态为 PENDING（mock 轮 startRealNamePolling 早退 :357，应 0 请求，两种模式分别执行）",
-      "action": "① 停留本页 ≥65s 记录 GET 请求时间戳；② 在等待第 2 次轮询前 tap 返回离开页面，再等 35s 观察是否仍有请求；③ 期间切后台 10s 再回前台",
+      "action": "① 停留本页 ≥65s 记录 GET 请求时间戳；② 在等待第 2 次轮询前 tap 返回键 .nav-bar__back 离开页面，再等 35s 观察是否仍有请求；③ 期间切后台 10s 再回前台",
       "expected": "① pending 期间每 30s±2s 一条 GET /real-name-certification（REAL_NAME_POLL_MS=30_000 :348/:356-369），审核结果变化后自动反映（状态转 verified/rejected 后停止轮询 :365-367）；② 离开页面后 35s 内不得再有轮询请求（onUnmounted clearTimeout :382-391）；③ 回前台 onShow 立即补拉一次并保持轮询续接（:372-377，无重复定时器叠加——重入前 clearTimeout :358-361）；console 无报错、无未捕获 rejection",
       "evidence": "normal：after 截图 + 路由 + console + network 请求时间戳序列",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① 停留本页 ≥65s 记录 GET 请求时间戳；② 在等待第 2 次轮询前 tap 返回离开页面，再等 35s 观察是否仍有请求；③ 期间切后台 10s 再回前台",
+      "tapTarget": ".nav-bar__back",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/verification/real-name.vue:415",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/real-name → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VRN11",
@@ -322,7 +491,16 @@
       "action": "reLaunch 进本页 → 观察状态卡与已认证卡两行 → 全页截图并检查是否残留输入框/上传卡/提交按钮",
       "expected": "状态卡=已认证（statusVerified 绿 :85-92）+ verified-card 两行：真实姓名 = userName、身份证号 = maskedIdCardNo（applyRealNameView :290 写入，模板 :445-452 渲染）→ 必须为脱敏形态（前 6 后 4 掩码 :45-46），不得出现完整 18 位号码（合规硬判据）；表单区/上传卡/提交按钮均不存在（template v-if 分支 :441-455 与 v-else :468）；无隐私说明卡？如实回填（privacyNote 仅在未认证分支内 :569-573）；console 无报错",
       "evidence": "normal：after 截图（含脱敏号可读）+ 路由 + console；前置不满足标 UNVERIFIED 并写明缺什么",
-      "requiresReal": true
+      "requiresReal": true,
+      "automatable": false,
+      "notAutomatableReason": "纯观察 + 全页截图（无点击），被 TAP_RE 误判为交互型 ⇒ 该修的是分类，不是判据",
+      "notAutomatableFrom": "cellplan-round7-taptarget.json",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/real-name → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VRN12",
@@ -333,7 +511,13 @@
       "action": "① reLaunch 进本页观察驳回态与两预览图；② 不改字段直接提交；③ Network 统计上传请求条数",
       "expected": "① 状态卡=驳回（红色 + realName.statusRejected :101-110），描述行追加「驳回原因：<reviewComment>」（:105-107 拼接 realName.rejectReasonLabel）；两张上传卡均为预览态（v-else :530/:554）且 <image :src=\"resolveMediaUrl(idCardFrontPath|idCardBackPath)\">（:532/:556）真实出图，network 面板可见 2 条图片请求（含 token 的鉴权代理 URL），不得为裸 /api/v1/media/… 被当包内文件而破图；② userName/idCardFrontPath/idCardBackPath 回显服务端值（:300-302）；③ 提交时 isUploadedMediaUrl 对服务端 URL 判 true（utils/media.ts:88-103）→ 客户端多余上传请求数=0（不再对服务端路径调 uploadPostImage，必然失败的那条老路径不得复现）；服务端回读=1 条新申请且两图可访问；console 无 TypeError/未捕获 rejection",
       "evidence": "critical：before（驳回态首屏）+ after（提交结果）截图 + 路由 + Toast 文案 + console + network（图片请求与上传请求逐条）",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/real-name → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VRN13",
@@ -344,7 +528,13 @@
       "action": "scrollTo 底 → 中 → 顶，记录 scrollTop/scrollHeight/windowHeight 与提交按钮 boundingClientRect",
       "expected": "滚到底提交按钮完整可见可点（safe-bottom 占位 :588 生效，不被 home indicator 盖住）；背面上传卡 :542-564 不被裁切；回顶 nav-bar 不与状态栏叠印（safe-top :412 前置）；滚动中无白屏/无内容跳变（statusLoading 骨架不得因滚动重复出现）；数值如实回填",
       "evidence": "noop：执行日志（三段滚动数值 + 按钮 rect）+ console；可免截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/real-name → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "VRN14",
@@ -355,7 +545,13 @@
       "action": "① wx.reLaunch('/subpackages/profile-extra/verification/real-name?status=APPROVED&userId=999&entry=r11&school=%E6%B8%85%E5%8D%8E%E5%A4%A7%E5%AD%A6')；② 对 .nav-bar__back、两张 .upload-card、两 input、.action-btn 量测 boundingClientRect",
       "expected": "① 渲染与无参 VRN01 等价：仍为未认证表单态（不得因 ?status=APPROVED 直接显示已认证、不得 ?userId= 切换查看对象）——源码依据 onLoad(:342-345) 仅调 loadAdultGate/loadRealNameStatus，不读取任何 query → 四参全为幻影参数；出现任何消费即记回归缺陷；② 热区数值逐条回填对照 88rpx（返回键/上传卡/提交按钮/输入框），低于者交判定员按 R11 §5 裁量，不得省略实测值",
       "evidence": "noop：路由 options 快照 + 元素尺寸数值表 + console；可免截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/verification/real-name → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "OT01",
@@ -374,10 +570,13 @@
       "title": "深链缺 userId：明确参数错误态且「不可重试」，互动 FAB 与 more 按钮同时隐藏",
       "tier": "normal",
       "pre": "身份A mock 登录 → wx.reLaunch('/subpackages/profile-extra/profile/other')（不带任何 query）",
-      "action": "观察首屏 → 尝试 tap 错误卡上的重试元素 → tap 右上「···」区域与右下 FAB 区域（若存在）",
+      "action": "观察首屏（错误文案节点 .profile-shell__text :75）→ 尝试 tap 错误卡上的重试元素 .profile-shell__retry（ProfileShell.vue:76，同一行 @tap=emit('retry')，经 other.vue:425 @retry=loadProfile；retryable=!missingParam 由 other.vue:422 置 false 时该行整体 v-if 不渲染，点不到即为通过）→ tap 右上「···」区域 .other-header__more（other.vue:405，@tap=openGovernanceMenu :410，v-if=targetUserId :404 故缺参时不渲染）与右下 FAB 区域 .other-more-fab（other.vue:447，@tap=moreSheetVisible=true 同行，v-if=!errorMessage && !loading）（若存在）",
       "expected": "errorMessage=profile.missingUserParam 文案（other.vue:382-386，非笼统「暂无数据」）、missingParam=true → ProfileShell :retryable=false（:422）→ 不得出现可点的「重试」按钮（点空白处不得触发 loadProfile，loadProfile 对空 targetUserId 亦早退 :133）；右上 more 按钮不渲染（v-if=\"targetUserId\" :404）而由 placeholder 占位（:414）；右下更多操作 FAB 不渲染（v-if=\"!errorMessage && !loading\" :447）；零网络请求发出；不闪现资料卡；console 无未捕获异常",
       "evidence": "normal：after 截图 + 路由 + console + network（应为 0 条业务请求）",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "观察首屏 → 尝试 tap 错误卡上的重试元素 → tap 右上「···」区域与右下 FAB 区域（若存在）",
+      "tapTarget": ".profile-shell__retry",
+      "tapTargetEvidence": "apps/client/src/components/profile/ProfileShell.vue:76"
     },
     {
       "id": "OT03",
@@ -407,10 +606,19 @@
       "title": "喜欢（mock，未喜欢）：500ms 内反馈 + 匹配成功 modal 双按钮行为；连点×5 客户端层守卫生效",
       "tier": "critical",
       "pre": "身份A mock 登录；目标用户须为「未喜欢过」的演示用户（likesStore.likes 不含该 id，other.vue:62-64 判定）。互喜/matched 用户为另一预置态（REAL_ONLY 或 mock 双身份数据）",
-      "action": "① tap RelationshipCTA 喜欢键（RelationshipCTA.vue:43-46 emit('like') → other.vue:426 handleLike）一次，200ms/800ms 各采样；② 若弹「匹配成功」modal：点「再看看」→ 再点一次喜欢 → 点「去聊天」；③ 退出重进复位后 rapidTap 喜欢键 ×5；④ 观察按钮文案与勾选态",
+      "action": "① tap RelationshipCTA 喜欢键（RelationshipCTA.vue:43-46 emit('like') → other.vue:426 handleLike）一次，200ms/800ms 各采样；② 若弹「匹配成功」modal：点「再看看」→ 再点一次喜欢 → 点「去聊天」；③ 退出重进复位后 rapidTap 喜欢键 ×5；④ 观察按钮文案与勾选态（本条点名的交互目标 .relationship-cta__btn--like，证据 apps/client/src/components/profile/public/RelationshipCTA.vue:43）",
       "expected": "① 500ms 内出现反馈：未匹配 → toast=profile.other.likeWaiting（other.vue:205，icon:success）；命中互喜 → showModal（title/content/confirmText/cancelText 走 profile.other.matchTitle/matchContent/matchGoChat/matchKeepBrowsing，:193-203）+ 成功振动；② 「再看看」→ 仅关闭 modal、停留本页；「去聊天」→ openAppPath(ROUTES.CHAT.SESSION?userId=…)（:200）路由到聊天页；③ 客户端层：liking 防抖（:172）+ alreadyLiked 守卫（:174）→ 第 2-5 次点击不得产生新 Toast/新 modal/新请求（mock 轮 likesStore.likeUser 调用计数=1，toast 条数=1）；服务端层（real 轮另见 OT07）；④ 喜欢后按钮态转为「已喜欢」（RelationshipCTA liked prop，:36-46）；console 无报错",
       "evidence": "critical：before（未喜欢）+ after（已喜欢/modal/聊天页）截图 + 路由 + Toast 文案与条数 + console + network 计数",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① tap RelationshipCTA 喜欢键（RelationshipCTA.vue:43-46 emit('like') → other.vue:426 handleLike）一次，200ms/800ms 各采样；② 若弹「匹配成功」modal：点「再看看」→ 再点一次喜欢 → 点「去聊天」；③ 退出重进复位后 rapidTap 喜欢键 ×5；④ 观察按钮文案与勾选态",
+      "tapTarget": ".relationship-cta__btn--like",
+      "tapTargetEvidence": "apps/client/src/components/profile/public/RelationshipCTA.vue:43",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "gap-carriers/identities-tagging.json",
+      "identitiesWhy": "本 patch 的唯一根据=该行自己的前置逐字含「身份A mock 登录」（gap-carriers 规则：按前置收窄认领，不按页名/关键词猜）。摘掉的是认领，不是判据。"
     },
     {
       "id": "OT06",
@@ -418,10 +626,13 @@
       "title": "已喜欢 / 互喜（matched）态重复点喜欢：零请求、零「匹配成功」modal，仅一条等待 Toast（MP-R2-OTHER-002 修复守卫）",
       "tier": "critical",
       "pre": "预置两态分别执行：态1=已喜欢未匹配（likes 含该 id、mutualLikes 不含）；态2=已互喜 matched（mutualLikes 含该 id，other.vue:66-68）。态2 的 real 构造需服务端互喜数据 → REAL_ONLY",
-      "action": "两态各 rapidTap 喜欢键 ×5，记录每次点击后的 toast/modal 序列与 handler 调用计数；随后 tap 打招呼键一次对照",
+      "action": "两态各 rapidTap 喜欢键 .relationship-cta__btn--like（RelationshipCTA.vue:43，@tap=emit('like') :46 → other.vue:171 handleLike 的 liking :172 / alreadyLiked :174 守卫）×5，记录每次点击后的 toast/modal 序列与 handler 调用计数；随后 tap 打招呼键 .relationship-cta__btn--hello（:52，同行 @tap=emit('message')）一次对照",
       "expected": "修复后应有的表现：① 态1 → 每次点击命中 alreadyLiked 早退（other.vue:174-180），isMatched=false → 不弹任何 modal、不发任何请求（toast 允许出现 likeWaiting，但不得出现「已喜欢过该用户」错误 toast——原 likes store throw 路径已被页面守卫拦截，likes.ts:553-557 不应被触达）；② 态2 → matched 分支仅 toast=profile.other.likeWaiting（:176-178），严禁再弹「匹配成功」modal（code-findings MP-R2-OTHER-002 的残余缺口，工作树 :175-179 已修，本用例为复验）；③ 服务端回读（real）：喜欢记录条数不因重复点击增加；④ 客户端多余请求数=0（network 面板在 5 次点击窗口内应无新增 POST /matches/like）；console 无报错；采证项：other.vue:181-185 存在 `if (false)` 死代码块（不得据此判功能缺陷，仅作 observation）",
       "evidence": "critical：before（两态首屏）+ after（点击 5 次后）截图 + 路由 + Toast 文案/条数 + modal 出现次数 + console + network 计数",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "两态各 rapidTap 喜欢键 ×5，记录每次点击后的 toast/modal 序列与 handler 调用计数；随后 tap 打招呼键一次对照",
+      "tapTarget": ".relationship-cta__btn--like",
+      "tapTargetEvidence": "apps/client/src/components/profile/public/RelationshipCTA.vue:43"
     },
     {
       "id": "OT07",
@@ -429,10 +640,13 @@
       "title": "REAL_ONLY real 喜欢链路：POST /matches/like 一次 + 喜欢列表刷新 + signal.id 决定 modal；幂等假通过双判定",
       "tier": "critical",
       "pre": "REAL_ONLY：真实后端(8080) + 有效 token + 目标用户未喜欢过（GET /matches/likes 回读确认）。后端 @Idempotent 对 /matches/like 生效（MatchController.java:156），且客户端会对同 URL+body 注入同一稳定 Idempotency-Key（services/http.ts:254-274）→ 必须分两列判读，不得只看服务端结果",
-      "action": "① tap 喜欢一次，观察 network 与回读；② 复位后 rapidTap ×5 并逐条记录 network POST 计数（含 Idempotency-Key 是否同值）；③ 匹配态用户重复点喜欢一次",
+      "action": "① tap 喜欢键 .relationship-cta__btn--like（RelationshipCTA.vue:43，@tap=emit('like') :46）一次，观察 network 与回读；② 复位后对同一个 .relationship-cta__btn--like rapidTap ×5 并逐条记录 network POST 计数（含 Idempotency-Key 是否同值）；③ 匹配态用户重复点喜欢一次（仍是 .relationship-cta__btn--like，命中 other.vue:174 早退分支）",
       "expected": "① 客户端=1 条 POST /matches/like（body {targetUserId}，other.vue:210-214）+ 1 条 GET 喜欢列表刷新（:215 void likesStore.fetchLikes()）；服务端回读=喜欢记录恰好 1 条；signal.id 非空 → 弹「匹配成功」modal（:216-229），signal 为空 → toast「已喜欢，等待回应」（:231）；② 连点窗口：客户端多余请求数必须=0（守卫 :172/:174 拦截）；若实测出现 2-5 条 POST（即便因同一 Idempotency-Key 被服务端去重、服务端仍只有 1 条记录）→ 判「服务端幂等兜住的假通过」，客户端缺陷 FAILED；③ modal 文案为硬编码中文（:219-222）→ 同时采证 MP-R2-OTHER-003（en 语言环境下仍中文）；console 无未捕获 rejection（fetchLikes 的 .catch(()=>{}) 属既定兜底 :215）",
       "evidence": "critical：before + after 截图 + 路由 + Toast/modal 文案 + console + network 逐条（method/url/Idempotency-Key/body）+ 服务端回读（GET /matches/likes 计数）",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① tap 喜欢一次，观察 network 与回读；② 复位后 rapidTap ×5 并逐条记录 network POST 计数（含 Idempotency-Key 是否同值）；③ 匹配态用户重复点喜欢一次",
+      "tapTarget": ".relationship-cta__btn--like",
+      "tapTargetEvidence": "apps/client/src/components/profile/public/RelationshipCTA.vue:43"
     },
     {
       "id": "OT08",
@@ -440,10 +654,13 @@
       "title": "打招呼 / 悄悄话门禁：未实名 → 认证引导 modal（confirm 跳实名认证页 / cancel 停留），未登录 → 登录提示 Toast（权限类副作用）",
       "tier": "critical",
       "pre": "预置三态：态1=未通过实名认证的登录身份（isRealNameVerified=false，guards/campus-gate.ts:73）；态2=已实名身份；态3=未登录（清 token，REAL_ONLY 才有真实差异，mock 轮与态2 不可区分须记 UNVERIFIED）",
-      "action": "① 态1 tap 打招呼键（RelationshipCTA.vue:52 emit('message') → other.vue:243-248）→ modal 分别点「取消」「确定」；② 态1 tap 悄悄话键（:58 → openWhisperSheet :250-258）；③ 态3 重复 ①②；④ 态2 重复 ① 对照",
+      "action": "① 态1 tap 打招呼键 .relationship-cta__btn--hello（RelationshipCTA.vue:52 emit('message') → other.vue:243-248）→ modal 分别点「取消」「确定」（认证引导 Modal 在 campus-gate.ts:85-96，原生按钮无类名）；② 态1 tap 悄悄话键 .relationship-cta__btn--whisper（:58，同行 @tap=emit('whisper') → openWhisperSheet :250-258）；③ 态3 重复 ①②；④ 态2 重复 ①",
       "expected": "① 未实名 → showModal 认证引导（campus-gate.ts:85-96，title=campus.gateTitle/content=campus.gateHint/confirm=campus.gateGoCertify/cancel=common.cancel）并返回 false → 不得跳转聊天页；点确定 → openAppPath(ROUTES.REAL_NAME_CERTIFICATION)（:92）落到本批实名认证页（栈+1）；点取消 → 停留本页、无路由变化；② 悄悄话同样被实名门禁拦截（other.vue:256）→ sheet 不得弹出（whisperVisible 保持 false）；③ 未登录 → toast=apiErrors.loginRequired（:252-255），sheet 不弹；④ 已实名 → 打招呼直接进 /subpackages/chat/chat-session/index?userId=…（:247）、悄悄话 sheet 弹出（:257）；所有分支 500ms 内必有 modal/toast/路由之一；console 无报错",
       "evidence": "critical：before（三态首屏）+ modal 弹出 + confirm 落点页 + 未登录 toast 截图 + 路由链 + Toast/modal 文案 + console",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① 态1 tap 打招呼键（RelationshipCTA.vue:52 emit('message') → other.vue:243-248）→ modal 分别点「取消」「确定」；② 态1 tap 悄悄话键（:58 → openWhisperSheet :250-258）；③ 态3 重复 ①②；④ 态2 重复 ① 对照",
+      "tapTarget": ".relationship-cta__btn--hello",
+      "tapTargetEvidence": "apps/client/src/components/profile/public/RelationshipCTA.vue:52"
     },
     {
       "id": "OT09",
@@ -451,10 +668,19 @@
       "title": "悄悄话弹层（WhisperComposeSheet）：输入框四态（maxlength=60）+ 三路关闭 + 发送成功/失败副作用",
       "tier": "critical",
       "pre": "态2（已实名登录）下 tap 悄悄话键使 sheet 弹出（other.vue:438-444 挂载，组件 components/discover/WhisperComposeSheet.vue）。发送为写请求（clientApi.sendWhisper，WhisperComposeSheet.vue:53）→ real 轮需后端；mock 轮按组件内 mock 分支如实回填",
-      "action": "① textarea（:83-88）依次：空内容直接点发送 → 输入正常短句 → 输入 80 字符（回填 maxlength 截断值）→ 输入「<img src=x onerror=1>『😀 空格』」特殊字符；② 关闭三路：点遮罩（:70）/ 点右上 ×（:74-75）/ 发送成功后自动关；③ 每路关闭后重新打开检查内容是否清空；④ 已填内容 rapidTap 发送 ×5",
+      "action": "① textarea（:83-88）依次：空内容直接点发送 → 输入正常短句 → 输入 80 字符（回填 maxlength 截断值）→ 输入「<img src=x onerror=1>『😀 空格』」特殊字符；② 关闭三路：点遮罩（:70）/ 点右上 ×（:74-75）/ 发送成功后自动关；③ 每路关闭后重新打开检查内容是否清空；④ 已填内容 rapidTap 发送 ×5（本条点名的交互目标 .whisper-sheet__input，证据 apps/client/src/components/discover/WhisperComposeSheet.vue:85）",
       "expected": "① 空内容点发送 → 组件内拦截（不得发出请求）且 500ms 内有可观测反馈（toast 或按钮禁用态，回填实测形态）；超长被截断至 60 字符（WhisperComposeSheet.vue:87）且不撑破 sheet；特殊字符按纯文本处理、无脚本执行；② 三路关闭后均无蒙层残留、无 TabBar 消失未恢复（BottomSheet 同族隐藏 TabBar 逻辑须复核）、other.vue:442-443 的 @close/@sent 均把 whisperVisible 置 false；③ 重开后 textarea 为空（visible watch 重置 sending，:30-35）；④ 客户端层=sending 期间不得再发第二条（:50 sending 置位 + :97-98 按钮文案转 common.loading）→ 连点窗口多余请求数=0；服务端层=GET 悄悄话/通知回读条数仅 1（防 Idempotency-Key 假通过）；发送失败 → showErrorToast(whisper.sendFailed)（:62）且 sheet 不关闭、内容不丢；console 无报错",
       "evidence": "critical：before（sheet 打开）+ 四输入态 + 三路关闭 + 发送后 截图 + 路由 + Toast 文案 + console + network 逐条 + 服务端回读条数",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① textarea（:83-88）依次：空内容直接点发送 → 输入正常短句 → 输入 80 字符（回填 maxlength 截断值）→ 输入「<img src=x onerror=1>『😀 空格』」特殊字符；② 关闭三路：点遮罩（:70）/ 点右上 ×（:74-75）/ 发送成功后自动关；③ 每路关闭后重新打开检查内容是否清空；④ 已填内容 rapidTap 发送 ×5",
+      "tapTarget": ".whisper-sheet__input",
+      "tapTargetEvidence": "apps/client/src/components/discover/WhisperComposeSheet.vue:85",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "gap-carriers/identities-tagging.json",
+      "identitiesWhy": "本 patch 的唯一根据=该行自己的前置逐字含「已实名登录」（gap-carriers 规则：按前置收窄认领，不按页名/关键词猜）。摘掉的是认领，不是判据。"
     },
     {
       "id": "OT10",
@@ -462,10 +688,13 @@
       "title": "关注 / 取消关注：关注态必须真实回填（MP-R2-OTHER-005 未修，按修复后表现断言）+ 失败 Toast + 连点×5 双判定",
       "tier": "critical",
       "pre": "身份A 已登录。预置「已关注该用户」的账号关系（服务端 follow 表有记录）→ REAL_ONLY；mock 轮无法构造真实关注关系，须记 UNVERIFIED。工作树 other.vue:71 仍为本地 ref(false)，未回填",
-      "action": "① 首次进入 tap 关注键（RelationshipCTA.vue:64-67 emit('follow') → other.vue:432 handleFollowToggle）；② 返回来源页再次进入本页 → 观察按钮文案；③ 已关注态 tap → 应走取关；④ rapidTap 关注键 ×5；⑤ 断网/500 构造失败态 tap 一次（REAL_ONLY）",
+      "action": "① 首次进入 tap 关注键（RelationshipCTA.vue:64-67 emit('follow') → other.vue:432 handleFollowToggle）；② 返回来源页再次进入本页 → 观察按钮文案；③ 已关注态 tap → 应走取关；④ rapidTap 关注键 ×5；⑤ 断网/500 构造失败态 tap 一次（REAL_ONLY）（本条点名的交互目标 .relationship-cta__btn--follow，证据 apps/client/src/components/profile/public/RelationshipCTA.vue:64）",
       "expected": "修复后应有的表现：① 点击后 successHaptic + toast=「已关注」（other.vue:271-274）+ 按钮转「已关注」态（following=true → :424 prop → RelationshipCTA.vue:65）；② 重进页面必须显示真实关注态「已关注」而非「关注」——当前源码 following 恒初始化 false（:70-71 注释自认后端无查询字段、UserProfileController.java:136 Relation 不含 following）→ 实测若回到「关注」即该问题在 UI 层的可观测后果，判 FAILED 并关联 MP-R2-OTHER-005；③ 取关 → toast=「已取消关注」（:269）；④ 客户端层=followBusy 守卫（:262/:264）使连点窗口多余请求数=0（followBusy=true 期间第 2-5 次直接 return）；服务端层=GET 关注列表回读关注关系恰好 1 条（防稳定 Idempotency-Key 假通过）；⑤ 失败 → toast=profile.otherFollowFailed（:276-277）、按钮态回滚不得停留在错误态；console 无 unhandledRejection",
       "evidence": "critical：before + 关注后 + 重进后 + 取关后 + 失败态 截图 + 路由 + Toast 文案 + console + network 逐条 + 服务端关注列表回读",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① 首次进入 tap 关注键（RelationshipCTA.vue:64-67 emit('follow') → other.vue:432 handleFollowToggle）；② 返回来源页再次进入本页 → 观察按钮文案；③ 已关注态 tap → 应走取关；④ rapidTap 关注键 ×5；⑤ 断网/500 构造失败态 tap 一次（REAL_ONLY）",
+      "tapTarget": ".relationship-cta__btn--follow",
+      "tapTargetEvidence": "apps/client/src/components/profile/public/RelationshipCTA.vue:64"
     },
     {
       "id": "OT11",
@@ -484,10 +713,13 @@
       "title": "头像大图与「生活瞬间」全屏查看层：索引钳制 + 遮罩关闭 + resolveMediaUrl 出图（未提交 media.ts 改动证伪）",
       "tier": "normal",
       "pre": "同 OT01。目标用户须有 ≥2 张生活瞬间与有效头像（真实媒体 URL 形态需 REAL_ONLY；mock 用包内 /static 素材）",
-      "action": "① tap PublicHero 大头像（PublicHero.vue:27 emit('tapAvatar') → ProfileShell.vue:97 → other.vue:435 previewAvatar）；② 在查看层上 tap 遮罩关闭；③ tap 第 1/第 4/（越界）第 9 张照片（PublicGallery.vue:19 emit('tapPhoto', index) → other.vue:434 previewPhoto）；④ 逐张记录解析后的 src 值与图片请求状态",
+      "action": "① tap PublicHero 大头像（PublicHero.vue:27 emit('tapAvatar') → ProfileShell.vue:97 → other.vue:435 previewAvatar）；② 在查看层上 tap 遮罩关闭；③ tap 第 1/第 4/（越界）第 9 张照片（PublicGallery.vue:19 emit('tapPhoto', index) → other.vue:434 previewPhoto）；④ 逐张记录解析后的 src 值与图片请求状态（本条点名的交互目标 .public-hero__avatar，证据 apps/client/src/components/profile/public/PublicHero.vue:27）",
       "expected": "① 500ms 内出现全屏查看层（photoViewerVisible :452-458，:src=photoViewerSrc）；头像 previewAvatar 取 basic.avatar 并 resolveMediaUrl（:102-107）→ 不得为裸相对路径（MP-R2-OTHER-001 同类问题在 HEAD 已修，本用例复验）；② 点遮罩即关闭（:457 @tap=\"closePhotoViewer\"）且 photoViewerSrc 清空（:95-98），二次打开不闪旧图；③ 索引钳制生效：photos[Math.min(Math.max(index,0),photos.length-1)]（:89）→ 越界 index=9 仍渲染最后一张而非 undefined/黑屏；photos 为空时 previewPhoto/previewAvatar 直接 return（:90/:104）→ 不得弹出黑屏层；④ 缩略图链路：PublicGallery.vue:20 与 PublicMoment.vue:60/:78 均走 resolveMediaUrl（工作树已修）→ 断言 network 有图片请求且无 404/破图占位；未提交改动（utils/media.ts:222-232 将 /static/assets/images/avatars|people 前缀改写到 apiRoot+/api/v1/media/app-assets/）→ 回填每个头像/图片最终 URL 形态与该请求状态码：mock 构建（apiBaseUrl 指向本地）与 real 构建需分别采证，若解析后请求 404/被当包内文件即记回归；console 无 image 加载失败",
       "evidence": "normal：头像大图 + 三张照片 + 关闭后 截图 + 路由 + console + network（图片请求 URL/状态码清单）",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① tap PublicHero 大头像（PublicHero.vue:27 emit('tapAvatar') → ProfileShell.vue:97 → other.vue:435 previewAvatar）；② 在查看层上 tap 遮罩关闭；③ tap 第 1/第 4/（越界）第 9 张照片（PublicGallery.vue:19 emit('tapPhoto', index) → other.vue:434 previewPhoto）；④ 逐张记录解析后的 src 值与图片请求状态",
+      "tapTarget": ".public-hero__avatar",
+      "tapTargetEvidence": "apps/client/src/components/profile/public/PublicHero.vue:27"
     },
     {
       "id": "OT13",
@@ -495,10 +727,13 @@
       "title": "「最近动态」帖子卡跳转与冒泡隔离 + 头像/图片兜底链 + en-US 硬编码中文采证（MP-R2-OTHER-003）",
       "tier": "normal",
       "pre": "同 OT01（目标用户有 ≥1 条最近动态）。另跑一轮 en-US 语言环境（evaluate 切 i18n.locale='en-US'）",
-      "action": "① tap 动态卡空白/标题区（PublicMoment → ProfileShell → other.vue:433 @open-post → goPostDetail :75-79）；② 卡内若有子可点元素逐个 tap 验证 @tap.stop 不双触发；③ 构造无头像/无图/缺字段用户（REAL_ONLY 数据或 mock 变体）观察兜底；④ en 环境全页截图逐元素检视文案",
+      "action": "① tap 动态卡空白/标题区（PublicMoment → ProfileShell → other.vue:433 @open-post → goPostDetail :75-79）；② 卡内若有子可点元素逐个 tap 验证 @tap.stop 不双触发；③ 构造无头像/无图/缺字段用户（REAL_ONLY 数据或 mock 变体）观察兜底；④ en 环境全页截图逐元素检视文案（本条点名的交互目标 .public-moment__card，证据 apps/client/src/components/profile/public/PublicMoment.vue:49）",
       "expected": "① 500ms 内 openAppPath('/subpackages/village/village/detail?id=' + encodeURIComponent(postId))（:76-79）→ 落到帖子详情且 id 正确解码；返回后落点仍为本页、资料态保留（页面实例未销毁）；② 一次点击只产生 1 条路由（不得双层 navigateTo 叠栈）；postId 为空时早退（:76）不得跳 ?id=undefined；③ 兜底链：作者无头像时按 halfBodyPhotoUrl→photoGallery[0]→avatarUrl→默认头像（R11 §5 头像兜底链，PublicMoment.vue:58 v-if=\"authorAvatar\" + :60 解析）渲染默认头像而非破图；posts=[] / photos=[] 时对应区块整体不渲染（PublicGallery.vue:10 v-if）而非空壳；④ en 环境下 real 分支与组件族大量中文（other.vue:219-222/231「匹配成功/已喜欢，等待回应」、:269/:274「已关注/已取消关注」、:286-297「取消匹配…」、:308「取消关注」、:49「分享入口待接入」、PublicGallery.vue:11「生活瞬间」、PublicMoment.vue:42「最近动态」、RelationshipCTA.vue:27-32）必须被记录为 MP-R2-OTHER-003（HEAD 未修）的可观测证据：mock 分支走 t() 的同一文案在 en 下应显示英文 → 两分支表现不一致即成立；不得据此判死按钮",
       "evidence": "normal：跳转后详情页 + 兜底态 + zh/en 两张 fullPage 截图 + 路由链 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "① tap 动态卡空白/标题区（PublicMoment → ProfileShell → other.vue:433 @open-post → goPostDetail :75-79）；② 卡内若有子可点元素逐个 tap 验证 @tap.stop 不双触发；③ 构造无头像/无图/缺字段用户（REAL_ONLY 数据或 mock 变体）观察兜底；④ en 环境全页截图逐元素检视文案",
+      "tapTarget": ".public-moment__card",
+      "tapTargetEvidence": "apps/client/src/components/profile/public/PublicMoment.vue:49"
     },
     {
       "id": "OT14",
@@ -528,10 +763,13 @@
       "title": "定位失败/用户拒绝授权态：页面不得卡死、坐标行为空、无错误弹窗雪崩（fetchCurrentLocation 内部消化）",
       "tier": "critical",
       "pre": "需预置拒绝定位授权（wx.authorize 返回 fail 或 mock wx.getLocation 走 fail 回调），否则本用例不可判定；身份A 登录 → reLaunch 进本页。权限类前置 → 按 critical 采集",
-      "action": "① 拒绝授权态下 reLaunch 进本页，500ms/2s 各采样一次；② tap「重新定位」再次触发；③ evaluate 读取页面是否残留 loading 态；④ 检查 network 是否有 /location/report 上报",
+      "action": "① 拒绝授权态下 reLaunch 进本页，500ms/2s 各采样一次；② tap「重新定位」.location-btn--primary（:205，@tap=loadLocation，钮内文案节点 .location-btn__text :206，即 locating 时的「定位中...」读数）再次触发；③ evaluate 读取页面是否残留 loading 态（读 .location-btn__text :206 文案与坐标行 .location-card__coords :162）；④ 检查 network 是否有 /location/report 上报",
       "expected": "① 拒绝授权 → fetchCurrentLocation catch 后 return null（utils/location.ts:51-54）→ city/coords 保持空（:64-68 的 if(loc) 不进入）→ 页面渲染位置卡（displayText 走兜底文案 buildLocationText :131-）+ 坐标行不出现（v-if=coords）+ 地图落默认中心北京（DEFAULT_CENTER :38/:39）+ marker callout 仍显示；不得出现白屏/永久「定位中...」（finally :69-71 locating=false 必达）；② 再次点击同样不得卡死、不得重复弹系统授权弹窗（回填实测弹窗次数与文案）；③ 无错误 Toast 雪崩（本页零 uni.showToast 于 loadLocation 路径，:60-72）；④ 客户端零 POST /location/report（reportLocation 在无坐标时根本不被调用 :67）；console 允许 getLocation:fail 日志但无未捕获异常",
       "evidence": "critical：before（拒绝授权首屏）+ 重新定位后 截图 + 路由 + Toast 文案（应为无）+ console + network（/location/report 计数=0）",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "① 拒绝授权态下 reLaunch 进本页，500ms/2s 各采样一次；② tap「重新定位」再次触发；③ evaluate 读取页面是否残留 loading 态；④ 检查 network 是否有 /location/report 上报",
+      "tapTarget": ".location-btn--primary",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/profile/location.vue:205"
     },
     {
       "id": "PL03",
@@ -729,7 +967,13 @@
       "action": "仅等待首屏渲染；≤500ms 首拍 + 2s 复拍；同时数一次首屏发出的 fetchProfile/GET /profile/basic 调用条数（mock 轮以 console/store 调用计数为准，real 轮以 network 为准）",
       "expected": "500ms 内渲染：页头返回键 + 标题「我的相册」（t profile.albumTitle :417）+ 计数「photoCount / 6」（v-if=photoCount>0 :418-420，PHOTO_GALLERY_MAX=6 :34）+ 恒 6 格网格（photoCells 始终产 6 项 :73-80，已填格显图、空格显「+」:482-484）+ 底部「添加照片」按钮（photoCount>0 && hasEmptySlot && !isUploading :490）+ 长按提示（:500-502）；无错误卡（errorMessage 初值 null :52/:115）、无骨架永驻；页头 --statusbar 注入生效（useMenuButtonRect :41 + 样式 calc :520 起）不叠印；修复后应有的表现=首展只加载一次：当前 onMounted(:393-395) 与 onShow(:397-400) 在 uni-app 首展时先后各调一次 loadAlbum() → 实测 GET /profile/basic（或 fetchProfile 调用计数）出现 2 条即为 MP-R2-ALBUM-001 的 UI 层可观测后果，判 FAILED 并关联该 Issue（去重方案见 code-findings 建议：删 onMounted 或加首展标志）；console 无 TypeError",
       "evidence": "normal：after 截图（首拍+复拍）+ 路由 + console + loadAlbum 调用/network 计数（按构建模式分别回填）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/album → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AB02",
@@ -740,7 +984,13 @@
       "action": "A/B 各 tap .album-header__back（:407-416 → goBack :58-65）；B 路返回后检查「我的」页与再次进入相册页的数据",
       "expected": "A：栈长=1 → uni.switchTab('/pages/home/index')（:60-64，兜底落点是首页不是「我的」页，如实回填并对照心智：从 profile 进来的用户期望回 profile，冷启动兜底回 home 属既定行为）；B：navigateBack → 栈 2→1、栈顶 pages/profile/index，「我的」页 Tab 选中项与滚动位保留；二次进入相册页时重新 onShow 拉取（:397-400）→ 照片墙反映最新值、不残留上次实例状态；两路均无 navigateBack:fail；console 无报错",
       "evidence": "navigation：两条完整栈快照（每帧 route+options）+ 来源页状态采集 + console；可免截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/album → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AB03",
@@ -748,10 +998,19 @@
       "title": "零照片空态：空态卡（图标+标题+副标题+添加按钮）与网格/错误卡三者互斥，不得同时出现",
       "tier": "normal",
       "pre": "构造 photoGallery=[] 的身份（mock：evaluate 将 profileStore.photoGallery 置空并隐藏 loading 态；real 轮需无照片账号 → REAL_ONLY，否则本条记 UNVERIFIED）→ reLaunch 进本页",
-      "action": "观察首屏结构 → tap 空态卡里的「添加照片」按钮（:442-449）→ 取消选图",
+      "action": "观察首屏结构 → tap 空态卡里的「添加照片」按钮（:442-449；节点 .album-empty__btn，apps/client/src/subpackages/profile-extra/profile/album.vue:443，:446 @tap=handleAddPhoto()）→ 取消选图",
       "expected": "photoCount===0 && !isUploading → 渲染 .album-empty（v-else-if :432-450：HEART_SIGNAL 图标为原生 image（MP-R1-PROFILE-EXTRA-001 塌陷回归守卫，须实测非 0×0）+ albumEmpty 标题 + albumEmptyDesc 副标题 + 添加按钮），且不得同时渲染 6 格网格（v-else :453）与错误卡（v-if errorMessage&&photoCount===0 :424 优先级更高，若 errorMessage 非空则整卡替换——记录三者互斥关系）；页头计数「n / 6」不出现（v-if=photoCount>0 :418）；底部添加按钮不出现（:490）；tap 添加 → 走 handleAddPhoto()（index 未传 → targetIndex=length :147）；取消选图后仍为空态、无错误 toast（fail 分支含 cancel 判定 :184-190）；console 无报错",
       "evidence": "normal：空态 after 截图 + 取消后截图 + 路由 + Toast 文案（应为无）+ console",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "观察首屏结构 → tap 空态卡里的「添加照片」按钮（:442-449）→ 取消选图",
+      "tapTarget": ".album-empty__btn",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/profile/album.vue:443",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/album → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AB04",
@@ -762,7 +1021,13 @@
       "action": "① tap 第一个空格子 .album-cell--empty（:465 @tap=\"handleAddPhoto(cell.index)\"）→ 选图确认；② 在 200ms/1s/3s 采样蒙层与「上传中」文案；③ 成功后读计数与格子；④ 复位后对同空格子 rapidTap ×5（含选图面板重复调起的实际行为）",
       "expected": "① 500ms 内必有反馈：选图面板弹出（系统层，自动化下如实记录）或蒙层出现；② uploadingIndex 命中该格 → 该格蒙层 + spinner + profile.uploading 文案（:477-480），其他格不受影响；上传完成后蒙层消失（finally :215-218 isUploading=false/uploadingIndex=-1）→ Loading 不永驻（3s 采样不得仍转）；③ toast=profile.albumUploadSuccess（:207）+ photoCount+1 + 页头计数刷新（:418-420）+ 格子由「+」变图片（服务端回读：GET 资料后该索引位置为同一张图）；④ 双判定：客户端层=isUploading 防重复（:140）仅在 uploading 期间拦截 → 若 5 次点击在上传 promise 未 resolve 前重复调起 chooseImage/upload，记录实际条数；服务端层=photoGallery 中新增图条目数（期望恰好 +1，重复上传至多多张则记缺陷），且须写明「相同 body 的重复 POST 可能被稳定 Idempotency-Key 去重（services/http.ts:254-274）→ 服务端仅 1 条不等于客户端无重复触发」；⑤ 失败注入（选图后断网）→ toast 为错误 message（:208-214）且照片墙不整卡替换（MP-R1-ALBUM-002 守卫：errorMessage 不被写值 :210-212）；console 无 unhandledRejection",
       "evidence": "critical：before（空格子）+ 蒙层中 + 成功后 + 失败态 截图 + 路由 + Toast 文案 + console + network 逐条（上传请求计数）+ 服务端回读 photoGallery",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/album → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AB05",
@@ -770,10 +1035,19 @@
       "title": "上传前置三路：隐私未授权 / 用户取消 / 文件超 10MB，各路 Toast 文案不同且均不改数据",
       "tier": "critical",
       "pre": "权限类前置：三种系统态需可分别构造——①隐私协议未同意（ensurePrivacyAuthorized reject，album.vue:150-159）；②选图面板取消；③预置一张 >10MB 原图（PHOTO_SIZE_LIMIT :37）。无法构造的分支显式记 UNVERIFIED 并说明缺什么，禁止合并判定",
-      "action": "依次在三种前置下 tap 同一空格子并各观察 500ms 内反馈与最终数据",
+      "action": "依次在三种前置下 tap 同一空格子（.album-cell，apps/client/src/subpackages/profile-extra/profile/album.vue:457，:465 @tap=cell.filled ? handlePhotoTap(cell.index) : handleAddPhoto(cell.index)，空格子那支即 handleAddPhoto）并各观察 500ms 内反馈与最终数据",
       "expected": "① 隐私未授权 → errorHaptic + toast=profile.privacyRequiredImage（:152-158）且不调起 uni.chooseImage（不得出现系统选图面板/权限弹窗雪崩）、photoGallery 不变；② 取消 → fail 回调 errMsg 含 cancel 时静默 return（:184-188），无错误 Toast（不得把用户取消当失败上报）；③ >10MB → toast=profile.photoSizeLimit（:177-180）且不发起上传（network 应 0 条上传请求）、格子保持空态；④ tempPath 为空的异常返回 → toast=profile.noPhotoSelected（:172-175）；⑤ 三路均无蒙层残留（uploadingIndex 保持 -1）；console 无未捕获异常",
       "evidence": "critical：三路各 before/after 截图 + Toast 文案逐条 + 路由 + console + network（上传请求计数=0）",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "依次在三种前置下 tap 同一空格子并各观察 500ms 内反馈与最终数据",
+      "tapTarget": ".album-cell",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/profile/album.vue:457",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/album → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AB06",
@@ -781,10 +1055,19 @@
       "title": "满 6 张上限：再点空位/底部按钮必出 albumFull Toast，且底部按钮与空格子隐藏态正确",
       "tier": "normal",
       "pre": "构造 photoGallery 恰好 6 张（mock：evaluate 写满 6 项；真实 6 张上传为 REAL_ONLY）→ reLaunch 进本页",
-      "action": "① 检查格子数与页头计数；② 检查底部「添加照片」按钮是否存在；③ 若空格子已不存在则改点任一已填格子；④ evaluate 直接把 index 传满调用路径（若可）或长按已填格选「设为头像」后再看数据",
+      "action": "① 检查格子数与页头计数；② 检查底部「添加照片」按钮是否存在；③ 若空格子已不存在则改点任一已填格子（.album-cell，apps/client/src/subpackages/profile-extra/profile/album.vue:457，:465 @tap=handlePhotoTap）；④ evaluate 直接把 index 传满调用路径（若可）或长按已填格（同一 .album-cell，同文件 :466 @longpress=handleLongPress）选「设为头像」后再看数据",
       "expected": "① 6 格全 filled、计数显示「6 / 6」（:418-420）；② 底部添加按钮不渲染（hasEmptySlot=false :83/:490）；③ 若通过任何路径触发 handleAddPhoto（空态按钮已不可见）→ 必出 toast=profile.albumFull（含 n=6 插值 :142-145）且零上传请求、零数据变化；④ 长按/预览等其他动作在满 6 张下仍正常（不因上限而禁用交互）；「+」占位不再出现（v-if=!cell.filled :482）；console 无报错",
       "evidence": "normal：after 截图（满 6 张整屏）+ 路由 + Toast 文案 + console",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① 检查格子数与页头计数；② 检查底部「添加照片」按钮是否存在；③ 若空格子已不存在则改点任一已填格子；④ evaluate 直接把 index 传满调用路径（若可）或长按已填格选「设为头像」后再看数据",
+      "tapTarget": ".album-cell",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/profile/album.vue:457",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/album → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AB07",
@@ -792,10 +1075,19 @@
       "title": "点击已填格子预览：包内 /static 走自建查看层、其他 URL 走 uni.previewImage；查看层圆点切换 + 遮罩关闭",
       "tier": "normal",
       "pre": "同 AB01（≥2 张照片）。mock 数据多为包内 /static 素材（命中 :365 分支），real 数据为 /api/v1/media 相对路径（命中 :371 分支）→ 两分支分别采证，real 分支为 REAL_ONLY",
-      "action": "① tap 第 1 张已填格（:465 → handlePhotoTap :361-375）；② 在自建查看层 tap 非当前圆点（:507-515 @tap.stop）；③ tap 图片本体/遮罩关闭（:505 @tap=closeViewer）；④ 关闭后再点第 2 张确认初始页正确；⑤ 对 /static 分支记录是否曾出现「永久转圈」",
+      "action": "① tap 第 1 张已填格（:465 → handlePhotoTap :361-375）；② 在自建查看层 tap 非当前圆点（:507-515 @tap.stop）；③ tap 图片本体/遮罩关闭（:505 @tap=closeViewer）；④ 关闭后再点第 2 张确认初始页正确；⑤ 对 /static 分支记录是否曾出现「永久转圈」（本条点名的交互目标 .album-cell，证据 apps/client/src/subpackages/profile-extra/profile/album.vue:457）",
       "expected": "① /static 前缀 → 不得调 uni.previewImage（微信预览器不支持包内路径，会永久加载转圈——MP-R1-ALBUM-001 根因），必须走页面内查看层：viewerVisible=true + viewerUrls=全量 resolveMediaUrl 映射 + viewerCurrent=index（:365-369）；非 /static → 走 uni.previewImage(urls,current 均为解析后 URL，:371-374），500ms 内预览界面出现；② 圆点切换生效（:511-513 active 态随 viewerCurrent 变化）且 @tap.stop 不冒泡到遮罩关闭（点圆点不得连带关层）；③ 点遮罩即关（:505 closeViewer :381-383），二次进入不闪旧图；④ url 为空（越界/数据缺项）→ 直接 return 不弹层（:362-363）；⑤ 查看层图片 src 必须为解析后的可加载 URL（回填最终值与网络状态码），无破图；console 无报错",
       "evidence": "normal：预览层 + 切换后 + 关闭后 截图（real 轮另记 previewImage 系统层，无法截图时以路由/console 证据 + UNVERIFIED 说明）+ console",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① tap 第 1 张已填格（:465 → handlePhotoTap :361-375）；② 在自建查看层 tap 非当前圆点（:507-515 @tap.stop）；③ tap 图片本体/遮罩关闭（:505 @tap=closeViewer）；④ 关闭后再点第 2 张确认初始页正确；⑤ 对 /static 分支记录是否曾出现「永久转圈」",
+      "tapTarget": ".album-cell",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/profile/album.vue:457",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/album → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AB08",
@@ -806,7 +1098,13 @@
       "action": "① 长按第 1 张已填格 → ActionSheet 出现；② 选「取消」/下滑关闭（第一路）；③ 重开选「删除」（不确认 modal，只看第二层）；④ 重开选「设为头像」；⑤ 长按空格子",
       "expected": "① 500ms 内 ActionSheet 弹出，itemList 恰两项 = [profile.albumSetAvatar, profile.albumDelete]（:231-233，zh 文案「设为头像 / 删除」）+ 轻振动 :230；② 取消走 fail 分支 → 静默无副作用（:240-242）：photoGallery 顺序与内容不变、无 Toast、无路由变化；③ 选「删除」→ 必须再出现二次确认 showModal（confirmDelete :318-331），不得直接删（危险操作守卫）；④ 选「设为头像」→ 进入 setAsAvatar 链路（见 AB09）；⑤ 长按空格子 → @longpress 传 undefined（:466）→ 无任何弹层（不得对空位弹操作菜单）；越界索引保护（:229）；console 无报错",
       "evidence": "normal：ActionSheet + 取消后 + 二次确认层 截图 + 路由 + Toast（应为无）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/album → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AB09",
@@ -817,7 +1115,16 @@
       "action": "① 长按第 2 张 → 选「设为头像」；② 检查头像/顺序/Toast；③ 到「我的」页复核头像是否同步（跨页状态）；④ 复位后同路径 rapidTap 菜单项×5（能驱动则做，不能则记 UNVERIFIED）；⑤ 断网/让 downloadFile 返 4xx 再走一次",
       "expected": "① mock：photoGallery 重排（选中项移到 [0]，:306-311）+ 无网络请求（不得调 uploadAvatar）+ Toast 表现如实回填（mock 分支 return 前无 toast/无 haptic——若界面无任何可观测反馈即为「死按钮」级缺陷，须记录实际观测）；② real：isUploading=true 蒙层（:263）→ downloadToTemp(resolveMediaUrl(url))（:265/:287-301，URL 必须带鉴权代理且解析遵循工作树 utils/media.ts:222-233 规则，回填最终 URL）→ profileStore.uploadAvatar → 成功 toast=profile.albumSetAvatarSuccess（:269）+ successHaptic；③ 跨页一致：「我的」页头像（pages/profile/index.vue，未提交改动中）必须与本操作结果一致，若 mock 分支仅本地重排而 real 失败回退仅本地生效，须写明「服务端未变更」（MP-R1-ALBUM 系列留档的既定兜底，属 observation）；④ 双判定：客户端层=isUploading 守卫下多余请求数（downloadFile/uploadAvatar 调用计数）；服务端层=GET /profile/basic 回读 avatarUrl 条数与值；相同 body 的重复 POST 会被稳定 Idempotency-Key 去重（services/http.ts:254-274）→「服务端只有 1 条变更」不得单独作为客户端无重复的结论；⑤ 失败 → 回退本地重排 + errorHaptic + toast=错误 message 或 profile.albumSetAvatarFailed（:270-275），Loading 必须收起（finally :276-278）；console 无 unhandledRejection",
       "evidence": "critical：before（长按前）+ 菜单 + 执行中蒙层 + 成功后（本页 + 我的页头像）+ 失败态 截图 + 路由 + Toast 文案 + console + network 逐条 + 服务端回读 avatarUrl",
-      "requiresReal": true
+      "requiresReal": true,
+      "automatable": false,
+      "notAutomatableReason": "长按相册图 → 原生 ActionSheet「设为头像」；且要跨页到「我的」复核，单页通道做不到",
+      "notAutomatableFrom": "cellplan-round7-taptarget.json",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/album → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AB10",
@@ -828,7 +1135,16 @@
       "action": "① 长按第 2 张 → 选「删除」→ modal 点「取消」；② 重复后点「确定」；③ 连续删除第 1 张两次（观察索引）；④ 断网走一次确定；⑤ modal 出现后按系统返回键",
       "expected": "① modal 文案=title profile.albumDelete / content profile.albumDeleteConfirm / confirmText common.confirm / cancelText common.cancel（album.vue:320-324）；取消 → 零数据变化（res.confirm 判定 :325-329）、无 Toast；② 确定 → 该格移出、photoCount-1、格子重排无空洞（:306-311 同款语义 + store :866）+ toast=profile.albumDeleteSuccess（:342）+ successHaptic；服务端回读=photoGallery 少 1 项且顺序正确；③ 连续删除时 index 必须与当前渲染态一致（photoCells 由 photoGallery 派生 :73-80）→ 不得删错照片（越界保护 :319 生效）；④ 失败 → toast=错误 message 或 profile.albumDeleteFailed（:343-347）+ 列表不得半更新；⑤ 系统返回关闭 modal 等同取消（不得静默执行删除）；console 无报错",
       "evidence": "critical：before（删除前网格）+ modal 两路 + 删除后 + 失败态 截图 + 路由 + Toast 文案 + console + network + 服务端回读 photoGallery",
-      "requiresReal": true
+      "requiresReal": true,
+      "automatable": false,
+      "notAutomatableReason": "删除走 showModal 确认 + 系统返回键，均非页面 DOM 动作",
+      "notAutomatableFrom": "cellplan-round7-taptarget.json",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/album → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AB11",
@@ -839,7 +1155,13 @@
       "action": "① 断网/故障下 reLaunch 进本页（photoGallery 为空场景）；② tap .album-error__retry（:426-428）两次（一次故障中、一次恢复后）；③ 恢复网络且有照片后，另注入一次上传失败",
       "expected": "① errorMessage 非空且 photoCount===0 → 渲染 .album-error 整卡（v-if :424，role=alert）+ 错误文案（error.message 或 common.networkError :119）+ 绿色「重试」按钮（common.retry）；无照片时不得同时出现 6 格网格或空态卡；Loading 不永驻（loadAlbum 无 isUploading 参与，:432 空态需 !isUploading）；② 客户端层=每次点重试新增 1 条 GET（重试计数=点击次数，不吞点击）；错误条在故障中保持存在（loadAlbum 每次先清 errorMessage :115 再置回 → 允许短暂闪现，须记录）；恢复后点重试 → 错误卡消失、照片墙正常渲染；③ 有照片时上传失败 → 只出 Toast，整卡错误态不得出现（v-if 要求 photoCount===0 :424 + uploadPhoto 不写 errorMessage :210-214）→ 若已加载照片被瞬时失败全部顶掉即为 MP-R1-ALBUM-002 回归，判 FAILED；console 允许请求失败日志但无未捕获 TypeError",
       "evidence": "critical：错误卡 + 重试失败中 + 恢复后 + 上传失败态 截图 + 路由 + Toast 文案 + console + network（GET 计数与状态码逐条）",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/album → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AB12",
@@ -850,7 +1172,13 @@
       "action": "① fullPage 截图逐格检视 6 格渲染；② 抓取每个 .album-cell__img 的 src 最终值（evaluate 或 DOM 快照）；③ Network 过滤图片请求记录 URL/状态码；④ 快速滚动一次触发 lazy-load",
       "expected": "① 已填格全部出图（无灰块、无「+」占位残留），空格显「+」（:482-484）；② src 必须为 resolveMediaUrl(cell.url) 的结果（:472，与预览层 :366/:372 同源解析——MP-R1-ALBUM-001 一致性要求：网格与预览同一张图）；对 /static/assets/images/avatars|people 前缀项 → 期望被改写为 apiRoot+/api/v1/media/app-assets/…（utils/media.ts:222-232），对其余 /static/ 装饰资产 → 仍走本地包内路径（:234-236 注释规则）；两者形态若互换（装饰资产被发到 8080、内容头像仍走本地）即为该未提交改动的回归，判 FAILED；③ 图片请求 200，无 404/无「请求失败」console 日志（real 构建下若 app-assets 端点不可达导致头像全空，须记录为该改动的直接后果）；④ lazy-load（:474）滚动时不出现整屏空白再跳变；⑤ 头像兜底链采证：本页 photoGallery 空项 → 该格为空格而非破图（filled=false :77）；console 无 image 加载失败",
       "evidence": "normal：fullPage 截图 + 每格 src 值清单 + network 图片请求逐条（URL/状态码）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/album → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AB13",
@@ -861,7 +1189,13 @@
       "action": "① wx.reLaunch('/subpackages/profile-extra/profile/album?index=2&preview=1&userId=999&entry=r11')；② scrollTo 底→顶（记录数值）；③ boundingClientRect 量测 .album-header__back、.album-cell、.album-add-btn、.album-error__retry（有错误态时）、查看层圆点 .album-viewer__dot",
       "expected": "① 渲染与无参 AB01 等价：不得因 ?index=2 自动打开第 2 张预览、不得 ?preview=1 直接进查看层、不得 ?userId= 切换查看他人相册（源码零 onLoad，生命周期只有 onMounted :393 / onShow :397）→ 四参全为幻影参数，出现任何消费即记回归；getCurrentPages options 快照记录四参；② 底部「添加照片」按钮与长按提示完整可见，不被 home indicator 盖住（:520 起样式含 safe-area）；回顶页头不叠印；③ 热区实测逐条对照 88rpx：.album-cell（三列 flex 尺寸，实测值）、返回键、底部按钮、查看层圆点（源码 dot 尺寸偏小 → 重点量测）；不得因源码预判省略实测值；console 无报错",
       "evidence": "noop：路由 options 快照 + 滚动数值 + 元素尺寸数值表 + console；可免截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/album → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "AB14",
@@ -872,7 +1206,13 @@
       "action": "① fullPage 截图检视页头标题/计数/长按提示/空态/添加按钮/上传中文案；② 触发长按 → 检视 ActionSheet 两项文案；③ 触发删除 → 检视 modal 四段文案；④ 触发一次上传成功/失败 Toast",
       "expected": "全部面向用户文案走 t()：profile.albumTitle/albumEmpty/albumEmptyDesc/albumAddPhoto/albumSetAvatar/albumDelete/albumDeleteConfirm/albumDeleteSuccess/albumDeleteFailed/albumUploadSuccess/albumUploadFailed/albumSetAvatarSuccess/albumSetAvatarFailed/albumFull/albumPreviewLongPress/uploading（album.vue:143/207/209/232/269/273/321-324/342/344/388/417/427/440-448/479/496/501）→ en 环境须全部为英文，不得出现裸 key（形如 \"profile.albumXxx\"）或 zh/en 混排；i18n key 缺失（en-US.ts 未同步）→ 记录为可观测缺陷（页面会显示 key 原文），关联本批 i18n 未提交改动（en-US.ts 在 diff 清单中）；原生 modal/ActionSheet 的 confirmColor 类原生属性不受 i18n 影响，但文案必须由 t() 提供；布局：en 长文案不得溢出/裁切（按钮/提示行）；console 无 [intlify] 缺 key 告警",
       "evidence": "normal：en 与 zh 各 fullPage 截图 + 动态弹层/Toast 截图各 1 + 路由 + console（i18n 告警过滤）",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/album → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "FV01",
@@ -883,7 +1223,13 @@
       "action": "仅等待首屏渲染；≤500ms 首拍 + 2s 复拍（骨架永驻检测）；数一次卡片条数与标题里的 n",
       "expected": "500ms 内渲染：页头返回键 + 标题 profile.favoritesTitle 含 {n} 插值（:14，n 必须等于列表卡片条数，不得出现「标题 3 / 实际 2」）；三态互斥：v-if=loading 骨架（:17-19 SkeletonBlock rows=3）、v-else-if 空态卡（:21-25 BOOKMARK 图标 + favoritesEmpty 标题 + favoritesEmptyDesc 副标题）、v-else scroll-view 列表（:27-54）；复拍时骨架必须已收起（loading 来自 villageStore.loading，onShow 会重拉 :101-106 → 记录一次真实的「骨架→内容」节拍，不得闪回）；页头 --statusbar 注入生效（useMenuButtonRect styleVars :2/:70，DevTools env 恒 0 → 实测标题不与状态栏叠印）；console 无 TypeError/NAV_FAIL",
       "evidence": "normal：after 截图（首拍+复拍，含标题计数）+ 路由 + console",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/favorites → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "FV02",
@@ -894,7 +1240,13 @@
       "action": "A/B 各 tap .favorites-header__back（:4-13 → goBack :79-81）；B 路返回后检查「我的」页状态与再次进入本页的数据",
       "expected": "本页 goBack 为 uni.navigateBack({delta:1, fail:reLaunch('/pages/profile/index')})（:79-81，与其他 7 页「显式判栈长」的写法不同源，属一致性采证项：栈=1 时依赖 fail 回调兜底）；A：最终栈=1、栈顶 pages/profile/index，无未处理的 navigateBack:fail 报错进 console（fail 被回调消化即为正常路径，须回填实际 errMsg）；B：navigateBack 成功 → 栈 2→1、栈顶 pages/profile/index 且其 Tab/滚动位保留；二次进入本页重新 onShow 拉取（:101-106）→ 收藏列表反映最新态；两路均不得白屏；console 无未捕获异常",
       "evidence": "navigation：两条完整栈快照 + navigateBack errMsg/console 记录 + console；可免截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/favorites → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "FV03",
@@ -905,7 +1257,13 @@
       "action": "① tap 第 1 张 .favorite-card（:28-33 @tap=\"openPost(post.id)\"）；② 在详情页返回；③ 再 tap 第 2 张；④ 记录两次跳转的 options.id 与卡片 post.id 对应关系",
       "expected": "① 500ms 内路由到 /subpackages/village/village/detail?id=<该卡 post.id>（:83-86，openAppPath→navigateTo，栈+1）且 villageStore.setCurrentPost(id) 已写入（详情页展示的正文必须与所点卡片一致，不得错位——高频缺陷：列表与 currentPost 不同源）；② 返回落点=本页（收藏列表），滚动位与卡片顺序保持（列表数据来自 store 派生 :77，页面未销毁则不重置）；③ 二次跳转正确携带第 2 条 id；④ 若 post.id 为空/异常 → 不得跳 ?id=undefined（如实回填）；console 无报错、详情页无 NAV_FAIL",
       "evidence": "normal：详情页 after 截图（正文与卡片一致）+ 完整路由链（含 options.id）+ console",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/favorites → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "FV04",
@@ -916,7 +1274,13 @@
       "action": "① tap 第 1 张卡的 .favorite-card__unfav（:47-49 → unfavorite(post.id) :88-99）；② 200ms/800ms 采样列表与 Toast；③ 复位后对同一张卡 rapidTap ×5（500ms 内），逐条记录 network POST 与 Toast 条数；④ 服务端回读该帖收藏状态（real）",
       "expected": "① 500ms 内可观测反馈：该卡从列表消失（favorites computed 立即重算 :77）+ 标题计数 n 同步 -1（:14）+ toast=profile.unfavoriteDone（favorites.vue:92）；real 轮另有乐观更新先行（applyOptimisticFavorite stores/village/index.ts:657）→ 后端权威校正（applyServerFavoriteResult :663-669）后卡片状态不得二次跳变（先消失又出现的闪回即缺陷）；② 客户端层=多余请求数必须 0：并发幂等守卫 favoritingPostIds（stores/village/index.ts:627-630）在 in-flight 期间直接 return，rapidTap×5 应只产生 1 条 POST；③ 服务端层=GET 回读该帖 favorited=false 且收藏数只减 1；④ 假通过防线：相同 URL+body 的重复请求会被注入同一稳定 Idempotency-Key（services/http.ts:254-274）而被服务端去重 → 「服务端只少 1 条」不得单独作为客户端无重复的证据，两列必须分别回填；⑤ 列表最后一条被取消后必须切到空态卡（:21-25）而非残留空滚动区；console 无 unhandledRejection",
       "evidence": "critical：before（列表）+ 取消后 + 空态 + 连点后 截图 + 路由 + Toast 文案与条数 + console + network 逐条（POST 计数与 Idempotency-Key 是否同值）+ 服务端回读收藏状态",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/favorites → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "FV05",
@@ -924,10 +1288,19 @@
       "title": "REAL_ONLY 取消收藏失败：必出错误 Toast + 回滚到原状态 + 无未处理 Promise 拒绝（MP-R2-FAVORITES-001 修复守卫）",
       "tier": "critical",
       "pre": "REAL_ONLY：真实后端在跑，用 DevTools 拦截/Offline 或让 POST /posts/{id}/favorite 返回 500 制造失败。工作树 favorites.vue:88-99 已含 try/catch + 失败 toast（HEAD 已修），本条为修复生效复验；无法注入故障时记 UNVERIFIED",
-      "action": "① 故障态下 tap 某卡「取消收藏」；② 采样 200ms（乐观更新是否先移除）/1s（回滚后）/3s（Toast 是否已消失）三帧；③ 恢复网络后再点一次；④ 全程监听 console 的 unhandledRejection",
+      "action": "① 故障态下 tap 某卡「取消收藏」.favorite-card__unfav（:47，@tap.stop=unfavorite(post.id)，钮内文案节点 .favorite-card__unfav-text :48，所在卡 .favorite-card :31）；② 采样 200ms（乐观更新是否先移除）/1s（回滚后）/3s（Toast 是否已消失）三帧；③ 恢复网络后再点一次同一个 .favorite-card__unfav；④ 全程监听 console 的 unhandledRejection",
       "expected": "修复后应有的表现：① 客户端先乐观移除该卡（stores/village/index.ts:657）→ 请求失败进入 catch → rollbackFavorite 还原（:670-673）并 rethrow；② 页面必须弹出错误 Toast（favorites.vue:93-98，文案=error.message 或 common.operationFailed），不得静默还原——「卡片消失又自己回来且无任何提示」即 MP-R2-FAVORITES-001 的原始缺陷形态，判 FAILED；③ 回滚后该卡仍在列表且收藏计数与失败前一致（snapshot 还原，含 currentPost 同步 :650-655）；④ 恢复网络后再点 → 成功移除 + unfavoriteDone toast（前后不粘连、无重复请求）；⑤ console 不得出现 unhandledRejection / \"Cannot read property\" 类错误（模板 :47 直接挂 async 函数，靠页面 try/catch 收口）；⑥ 失败后重试的客户端请求数=点击数（不吞点击），服务端回读最终仍为已收藏",
       "evidence": "critical：before + 乐观移除中 + 回滚后（含错误 Toast）+ 重试成功 截图 + 路由 + Toast 文案 + console（unhandledRejection 过滤）+ network 逐条 + 服务端回读",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① 故障态下 tap 某卡「取消收藏」；② 采样 200ms（乐观更新是否先移除）/1s（回滚后）/3s（Toast 是否已消失）三帧；③ 恢复网络后再点一次；④ 全程监听 console 的 unhandledRejection",
+      "tapTarget": ".favorite-card__unfav",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/profile/favorites.vue:47",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/favorites → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "FV06",
@@ -938,7 +1311,13 @@
       "action": "① 精确 tap .favorite-card__unfav 文本中心；② tap 卡片其他区域（封面/标题/作者行）；③ 对比 getCurrentPages 栈深变化与列表条数变化",
       "expected": "① 只触发 unfavorite（favorites.vue:47 @tap.stop）→ 列表少 1 张、栈深不变（未跳详情）；若栈 +1 说明 stop 失效（MP 端 catchtap/@tap.stop 冒泡回归），判 FAILED；② tap 卡片其他区域 → 只触发 openPost 跳详情、收藏态不变；③ 两种点击的 Toast/网络各归各路（不得一次点击既发 POST 又发 navigateTo）；④ 取消收藏按钮的可点包围盒须与量测一致（见 FV11，padding 6rpx 20rpx + 22rpx 字号，:178-184，热区明显偏小 → 记录实际命中难度：点按钮边缘是否误触发卡片跳转）；console 无报错",
       "evidence": "normal：两次点击后各 1 张截图（列表态 / 详情页）+ 路由链（栈深断言）+ console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/favorites → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "FV07",
@@ -949,7 +1328,13 @@
       "action": "① 在 .favorites-list（:27 scroll-view scroll-y）内 scrollTo 底 → 顶，记录 scrollTop/scrollHeight/clientHeight；② 同时记录页面级 scroll 位置；③ 量测最后一张卡与 .list-bottom-spacer（:53/:186）的 rect 与屏幕底边关系；④ 真机高状态栏机型（或改 --statusbar 注入值）复测一次",
       "expected": "修复后应有的表现：① 列表容器高度随页头自适应（工作树 favorites.vue:148 为 flex:1; min-height:0，注释标明 MP-R2-FAVORITES-002 已改；原硬编码 calc(100vh - 120rpx) 不得回归——页头实际高度是 calc(var(--statusbar)+16rpx) 起（:120），随机型变化）；② 滚到底最后一张卡片完整可见、不被屏幕底边/home indicator 裁切，且 .list-bottom-spacer 60rpx 生效；③ 页面级不得出现第二条滚动条（双滚动即高度错误证据，须记录 pageScrollTop 是否始终为 0）；④ 高状态栏机型下列表不被推出屏幕（scrollHeight 与 clientHeight 差值合理）；⑤ 滚动过程无白屏、无内容跳变（loading 不参与滚动重拉）；数值全部如实回填",
       "evidence": "noop：三段滚动数值 + 容器/卡片 rect 表 + 双滚动检测记录 + console；可免截图",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/favorites → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "FV08",
@@ -960,7 +1345,13 @@
       "action": "① fullPage 截图逐卡检视封面与头像；② evaluate 抓取每个封面/头像的最终 src；③ Network 过滤图片请求记录 URL/状态码；④ 检视无图卡与长文本卡布局",
       "expected": "① 封面走 SafeImage :src=resolveMediaUrl(post.images[0])（:34-36，v-if=images.length>0 → 无图帖子整块不出现，布局不得留空位）+ 头像 <image :src=resolveMediaUrl(post.author.avatar)>（:39）→ 必须出图、无破图占位、无 404；SafeImage 的 fallback 链（组件内置兜底）在无图/加载失败时须显形为默认图而非空白；② /static/assets/images/avatars|people 前缀项按工作树 utils/media.ts:222-232 改写为 apiRoot+/api/v1/media/app-assets/…（回填最终 URL 与状态码；mock 构建下 apiBaseUrl 指向本地时不得发出打不到 8080 的失败请求）；装饰性 /static/ 路径仍走包内（:234-236）→ 形态互换即回归；③ 作者名/校名兜底：author.campusName 缺失时整块不渲染（v-if :41）；④ 长标题/长正文单行 ellipsis（:171/:172-175）不得撑破卡片或换行错位；无 author 字段（undefined）不得崩溃（模板直取 post.author.avatar → 数据缺项即 TypeError，须重点观察 console）；console 无 image 失败与 TypeError",
       "evidence": "normal：fullPage 截图 + 每卡最终 src 清单 + network 图片请求逐条 + console",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/favorites → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "FV09",
@@ -968,10 +1359,19 @@
       "title": "onShow 重拉与「打开即返回 / 重复进出×3」：无重复请求堆积、无半途状态、无未捕获 Promise",
       "tier": "normal",
       "pre": "身份A 登录，位于 pages/profile/index。REAL_ONLY 轮另跑（fetchPosts 真实发请求；mock 轮该调用为本地水合，network 计数应为 0，按构建模式分别回填）",
-      "action": "① 循环 3 次：「我的」页点收藏进本页 → 首屏断言 → 返回；② 第 4 次进入后 300ms 内立即 tap 返回（抢在 fetchPosts resolve 之前）；③ 记录每轮 GET 请求条数与时间戳；④ 再次进入检查列表完整性",
+      "action": "① 循环 3 次：「我的」页点收藏进本页 → 首屏断言（列表 .favorites-list :27、卡单元 .favorite-card :31）→ tap 返回 .favorites-header__back（:5，@tap=goBack :10）；② 第 4 次进入后 300ms 内立即 tap .favorites-header__back 返回（抢在 fetchPosts resolve 之前）；③ 记录每轮 GET 请求条数与时间戳；④ 再次进入检查列表完整性",
       "expected": "① 每轮 onShow 各触发 1 次 fetchPosts({}, true)（favorites.vue:101-106，force=true 绕过 load-once）→ 每轮请求计数=1（不得因重复进出叠加多条并发请求）；② 快速返回后 promise 落地不得产生未捕获 rejection（页面已销毁仍写 store 属可接受，但 console 必须无 unhandledRejection）、无错误 Toast 闪现残影；③ 每轮首屏与 FV01 断言一致（计数与条数一致、无骨架残留）；④ 列表数据在重拉后不得丢收藏态（isFavorite 由 store 权威值决定，跨页 toggle 后回本页须反映——从详情页收藏按钮改状态再返回是同一判据）；⑤ 三轮后 console 无累积错误；无内存泄漏征兆（定时器为零，本页零 timer）",
       "evidence": "normal：每轮 after 截图（共 4）+ 每轮路由断言 + console 全量 + network 计数与时间戳",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① 循环 3 次：「我的」页点收藏进本页 → 首屏断言 → 返回；② 第 4 次进入后 300ms 内立即 tap 返回（抢在 fetchPosts resolve 之前）；③ 记录每轮 GET 请求条数与时间戳；④ 再次进入检查列表完整性",
+      "tapTarget": ".favorites-header__back",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/profile/favorites.vue:5",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/favorites → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "FV10",
@@ -982,7 +1382,13 @@
       "action": "wx.reLaunch('/subpackages/profile-extra/profile/favorites?id=123&type=video&from=r11&keyword=%E6%B5%8B%E8%AF%95') → 观察首屏与是否自动跳转",
       "expected": "渲染与无参 FV01 等价：不得因 ?id=123 自动打开该帖详情、不得 ?type=video/keyword 过滤列表（源码：列表只按 isFavorite 过滤 :77，onLoad 不存在，生命周期仅 onShow :101）→ 四参全为幻影参数；getCurrentPages 栈顶 options 须含四参且零消费，出现任何消费即记回归缺陷；网络侧不得出现带这些参数的请求；console 无报错",
       "evidence": "navigation：路由 + options 快照 + 首屏条数/内容对照 + console；可与 FV01 截图比对",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/favorites → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "FV11",
@@ -993,7 +1399,13 @@
       "action": "boundingClientRect 量测 .favorites-header__back、.favorite-card__unfav（含内部文字 .favorite-card__unfav-text）、整卡 .favorite-card、空态卡；统计模板内 input/textarea 数量",
       "expected": "① 回填实测值并逐条对照铁律 88rpx：.favorites-header__back=64×64rpx（:123-131，低于铁律）、.favorite-card__unfav padding 6rpx 20rpx + font-size 22rpx（:178-184 → 估算高度远小于 88rpx，为本批最小热区，必须给出精确数值与实际命中测试结果：点其边缘 ±5px 是否误触发卡片跳转，联动 FV06）；② 空态下无 unfav 按钮 → 该元素量测记「不适用」而非跳过整条；③ 整卡可点区域充足（列表卡 padding 20rpx :150-156）；④ 本页零 input/textarea（模板 :1-56）→ 输入框四态/键盘避让/300ms 防抖搜索用例不适用，须显式记 SKIPPED + 原因；⑤ 数值不得因源码预判而省略",
       "evidence": "noop：元素尺寸数值表 + 边缘命中测试记录 + SKIPPED 说明 + console；可免截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/favorites → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "FV12",
@@ -1004,7 +1416,13 @@
       "action": "① fullPage 截图检视页头标题/计数/卡片「收藏数」文案/取消收藏按钮/空态标题与副标题/骨架 aria 文案；② 触发一次取消收藏 → 记录 Toast 文案；③ 与 zh 环境逐元素对照",
       "expected": "全部文案走 t()：profile.favoritesTitle({n}) / favoritesEmpty / favoritesEmptyDesc / favoritesCount({n}) / unfavorite / common.loading / common.back（favorites.vue:9/:14/:18/:23/:24/:46/:48/:92）→ en 下须渲染英文且 {n} 插值数字正确（不得出现字面量 \"{n}\" 或裸 key \"profile.favoritesTitle\"）；en-US.ts 未同步的 key（本批 en-US.ts 在未提交改动清单中）→ 页面显示 key 原文即记可观测缺陷；Toast 文案在 en 下同样必须为英文（unfavoriteDone / common.operationFailed 两分支各采一次）；布局：en 长文案不得把「取消收藏」按钮挤出卡片或换行破版（:176-184 flex 行内元素）；console 无 [intlify] 缺 key 告警",
       "evidence": "normal：en 与 zh 两张 fullPage 截图 + 两语言 Toast 截图各 1 + 路由 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/favorites → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "TK01",
@@ -1015,7 +1433,13 @@
       "action": "仅等待首屏渲染；≤500ms 首拍 + 2s 复拍；核对进度条宽度与百分比、已完成计数文案与卡片勾选态是否同源",
       "expected": "500ms 内渲染：页头返回键 + 标题 profile.taskCenter + 已完成计数 profile.tasksCompletedCount{done,total}（:380-381，total 必须=4=localTasks 长度，done 与勾选态卡数一致）；积分卡「已获得 X 积分」+ 百分比 + 进度条填充宽度=earnedPoints/totalPoints（:385-393，width 与 percent 必须同源 progressPercent :234-236，不得出现数字与条形不一致）；4 张任务卡（profile/checkin/first-post/verify :114-147）每张含图标（原生 image 直引，:412-416 MP-R1-TASKS-007 塌陷回归守卫 → 实测非 0×0）、标题+积分+描述+状态位（领取/已完成/去完成 :426-438）；骨架（v-if=loadingRealTasks && realTasks===null :398-400）在 mock 轮不得出现；页头 paddingTop 由 statusBarHeightPx 内联注入（:367/:98）→ 实测不与状态栏叠印；console 无 TypeError",
       "evidence": "normal：after 截图（首拍+复拍）+ 路由 + 进度条宽度/百分比/计数三者数值 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/tasks → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "TK02",
@@ -1026,7 +1450,13 @@
       "action": "A/B 各 tap .tasks-header__back（:370-379 → goBack :225-232）；B 路签到后再返回，检查「我的」页是否需要手动刷新才同步积分",
       "expected": "A：栈=1 → uni.switchTab('/pages/home/index')（:229-231）→ 栈=1、栈顶 pages/home/index（兜底落点为首页而非「我的」页，属既定行为，如实回填）；B：navigateBack → 栈 2→1、栈顶 pages/profile/index 且滚动/Tab 保留；跨页一致性附判：签到积分变化后「我的」页积分展示是否随之更新（本页 onShow 才重拉 :337，来源页不会自动感知 → 若来源页积分陈旧须记录为一致性 observation，不判死按钮）；两路均无 navigateBack:fail；console 无报错",
       "evidence": "navigation：两条完整栈快照 + 积分数值前后对照 + console；可免截图",
-      "requiresReal": false
+      "requiresReal": false,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/tasks → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "TK03",
@@ -1037,7 +1467,13 @@
       "action": "tap 已完成那张 .task-item（:402-411 @tap=\"handleTaskTap(task)\"）一次，500ms 内采样 Toast 与路由",
       "expected": "500ms 内 toast=profile.taskDone（mock 分支 :264-267；real 分支 :296-299）+ 轻振动 :260；路由不变（不得跳转）、无请求发出（real 分支同样早退）；勾选图标与「已完成」态视觉不因点击翻转（幂等只读）；对照：未完成带 path 的任务点击必走跳转（TK06）、可领取任务点击必走 claim（TK09）——三态分支互斥不得串台；console 无报错",
       "evidence": "normal：after 截图（含 Toast）+ 路由（不变）+ Toast 文案 + console",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/tasks → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "TK04",
@@ -1045,10 +1481,19 @@
       "title": "每日签到（mock 分支走真实 /check-in 封装）：积分/进度/勾选三处当页更新 + 成功 Toast 文案含积分数（MP-R1-TASKS-001/002 守卫）",
       "tier": "critical",
       "pre": "身份A mock 登录且当日未签到（checkinDone=false，:108；onShow 拉 getCheckInStatus :344，mock 下为 mockFixtures）。真实服务端签到状态与积分账变为 REAL_ONLY",
-      "action": "① 记录首屏三项数值（已完成计数 / 已获得积分 / 进度条宽度）→ tap「每日签到」卡；② 200ms/1s/2s 采样；③ 复核三处数值是否当页更新（不退出重进）；④ Toast 文案数字与任务 points 对照；⑤ 重进页面观察是否仍为已完成",
+      "action": "① 记录首屏三项数值（已完成计数 / 已获得积分 / 进度条宽度）→ tap「每日签到」卡 .task-item；② 200ms/1s/2s 采样；③ 复核三处数值是否当页更新（不退出重进）；④ Toast 文案数字与任务 points 对照；⑤ 重进页面观察是否仍为已完成",
       "expected": "① 500ms 内有反馈：clientApi.checkIn()（:271）resolve 后 successHaptic + toast=profile.taskCheckinSuccess 且 {n}=task.points=5（:278，严禁显示连续天数——MP-R1-TASKS-002 回归守卫）；② checkinDone=true（:274）驱动 localTasks 重算 → 该卡勾选态、已完成计数 +1、已获得积分 +5、进度条宽度同步变化，必须在同一帧内全部更新（MP-R1-TASKS-001 根因是改 computed 派生的临时对象，当页不更新 → 实测任一未更新即 FAILED）；③ 重进页面仍显示已签到（onShow 从 getCheckInStatus.checkedInToday 回读 :344-348，而非仅靠内存 ref）；④ 失败注入（断网/mock 抛错）→ toast=错误 message（:279-282）且 checkinDone 不得被置 true（不得假完成）；⑤ real 轮服务端回读=签到记录 1 条、积分余额增加 = rewardPoints（客户端积分与服务端账一致）；console 无 unhandledRejection",
       "evidence": "critical：before（含三项数值）+ 签到后 + 重进后 + 失败态 截图 + 路由 + Toast 文案 + console + network（POST /check-in 与 Idempotency-Key 值）+ 服务端积分/签到回读",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① 记录首屏三项数值（已完成计数 / 已获得积分 / 进度条宽度）→ tap「每日签到」卡；② 200ms/1s/2s 采样；③ 复核三处数值是否当页更新（不退出重进）；④ Toast 文案数字与任务 points 对照；⑤ 重进页面观察是否仍为已完成",
+      "tapTarget": ".task-item",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/profile/tasks.vue:405",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/tasks → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "TK05",
@@ -1056,10 +1501,19 @@
       "title": "连点签到×5：客户端层必现重复调用（handleTaskTap 无 in-flight 守卫），服务端「同日仅 1 条」是幂等键兜底而非客户端功劳（假通过防线）",
       "tier": "critical",
       "pre": "同 TK04（当日未签到）。关键事实：services/api.ts:628-638 对 POST /check-in 手动设置以日期为值的幂等键 `checkin-${localDateKey(date)}`（http.ts:234 规定调用方已设键不覆盖）→ 同一天内任意次重复请求都会命中后端 @Idempotent 去重（IdempotentInterceptor，Redis key 按 {key}:{userId} 隔离，api.ts:632-633 注释自证），服务端永远只有 1 条签到记录，与客户端有没有防连点完全无关",
-      "action": "① 复位后 500ms 内 rapidTap「每日签到」卡 ×5；② 统计客户端指标：handleTaskTap 调用次数、Toast 条数、（real 轮）network POST /check-in 条数与其 Idempotency-Key 是否同值；③ 服务端回读签到记录条数与积分余额；④ 领取类任务（real claimable）同样 rapidTap ×5 作对照（见 TK09）",
+      "action": "① 复位后 500ms 内 rapidTap「每日签到」卡 ×5；② 统计客户端指标：handleTaskTap 调用次数、Toast 条数、（real 轮）network POST /check-in 条数与其 Idempotency-Key 是否同值；③ 服务端回读签到记录条数与积分余额；④ 领取类任务（real claimable）同样 rapidTap ×5 作对照（见 TK09）（本条点名的交互目标 .task-item，证据 apps/client/src/subpackages/profile-extra/profile/tasks.vue:405）",
       "expected": "① 客户端层：tasks.vue 的 handleTaskTap 对签到分支没有任何 in-flight/防抖守卫（:259-303 全段仅 lightHaptic，claim 的 claimingCode 守卫只覆盖 claimTask :310）→ 期望实测为「5 次调用、最多 5 条 Toast 叠加」；按铁律「主按钮防连点（快击 5 次只提交 1 次）」这属于客户端缺陷，必须记 FAILED 级证据（多余请求数=4、Toast 条数>1）；② 服务端层：签到记录恰好 1 条、积分只加 1 次（这是日期幂等键兜底的结果）；③ 判读规则显式写进 observed：禁止以 ② 的「仅 1 条」推出「客户端防抖通过」——两列分别记录、以 ① 为准判客户端缺陷，否则即命中本项目已知假通过陷阱（code-findings §6.2 同类）；④ mock 轮 network 无真实请求 → 客户端层改用 handler 调用计数/Toast 条数取证（evaluate 计数或 console 日志），不得记「不适用」；⑤ UI 不得因重复响应而错乱（重复 +5 积分显示、进度条 >100%、双 Toast 叠影均记缺陷）；console 无 unhandledRejection",
       "evidence": "critical：连点前 + 连点后 截图 + Toast 条数与文案 + handler 调用计数 + console + network 逐条（含 Idempotency-Key 值）+ 服务端回读（签到条数/积分余额），两列分别记录",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① 复位后 500ms 内 rapidTap「每日签到」卡 ×5；② 统计客户端指标：handleTaskTap 调用次数、Toast 条数、（real 轮）network POST /check-in 条数与其 Idempotency-Key 是否同值；③ 服务端回读签到记录条数与积分余额；④ 领取类任务（real claimable）同样 rapidTap ×5 作对照（见 TK09）",
+      "tapTarget": ".task-item",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/profile/tasks.vue:405",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/tasks → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "TK06",
@@ -1067,10 +1521,19 @@
       "title": "未完成任务「去完成」三路跳转（mock 带 path）：完善资料/首条动态/校园认证各自落点与返回恢复",
       "tier": "navigation",
       "pre": "身份A mock 登录，构造三项未完成（profileTaskDone=false 需资料未完善身份；first-post/verify 在 mock 恒 done=false :136/:144）",
-      "action": "① 依次 tap「完善个人资料」「发布首条动态」「完成校园认证」三张未完成卡；② 每次从目标页返回；③ 记录每次路由与 options",
+      "action": "① 依次 tap「完善个人资料」「发布首条动态」「完成校园认证」三张未完成卡（.task-item）；② 每次从目标页返回；③ 记录每次路由与 options",
       "expected": "① 三次点击各 500ms 内发生路由（死按钮判据）：profile → /subpackages/setup/profile/index?entry=edit（:122，MP-R1-TASKS-003 修复守卫：原无 path 点击无响应）；first-post → /subpackages/village/village/index（:137）；verify → /subpackages/campus/campus/certification（:145）；均经 openAppPath（:286）→ 非 tab 页 navigateTo、tab 页 switchTab（utils/navigation.ts:95-116），如实回填各自最终栈深；② 每次返回落点=任务中心页且列表状态保留（签到完成态不因跳出丢失，checkinDone 为页面实例 ref，返回不销毁）；③ 资料完善后回到本页该卡应转已完成（onShow 重新 refreshSession → isProfileComplete 驱动 :337-347，MP-R1-TASKS-005 的 await 语义守卫：不得出现仍显示未完成）；console 无 navigateTo:fail",
       "evidence": "navigation：三条完整路由链（含每帧 route+options 与栈深）+ 返回后本页截图 + console",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "① 依次 tap「完善个人资料」「发布首条动态」「完成校园认证」三张未完成卡；② 每次从目标页返回；③ 记录每次路由与 options",
+      "tapTarget": ".task-item",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/profile/tasks.vue:405",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/tasks → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "TK07",
@@ -1078,10 +1541,19 @@
       "title": "REAL_ONLY 任务列表首拉：骨架屏出现且必收起；GET /tasks 失败不得静默回退本地 mock 任务（MP-R2-TASKS-001 未修，按修复后表现断言）",
       "tier": "normal",
       "pre": "REAL_ONLY：真实后端(8080) + 有效 token（GET /tasks，:189）。故障分支需 Network 拦截/Offline 制造 5xx/超时。mock 轮无法构造（mock 分支根本不发 GET /tasks，:338 早退）→ mock 轮本条记 UNVERIFIED",
-      "action": "① 正常网络 reLaunch 进本页，记录骨架出现与收起时点、列表条目数与来源；② 断网/5xx 下 reLaunch 进本页，对比列表内容与「每日签到」卡的可点击结果（联动 TK08）；③ 恢复网络后重进",
+      "action": "① 正常网络 reLaunch 进本页，记录骨架出现与收起时点、列表条目数与来源；② 断网/5xx 下 reLaunch 进本页，对比列表内容与「每日签到」卡（.task-item）的可点击结果（联动 TK08）；③ 恢复网络后重进",
       "expected": "修复后应有的表现：① 首拉期间显示 SkeletonBlock（v-if=loadingRealTasks && realTasks===null :398-400）且必须在网络响应后收起（finally :193-195）→ 复拍不得仍为骨架（Loading 不永驻）；列表来自后端（toRealTask 映射 :163-178，标题=后端 name）；② GET /tasks 失败时当前实现为静默回退本地 mock 任务（catch 仅注释 :191-195，realTasks 保持 null → tasks=localTasks :199）→ 用户看到的是「假任务列表」（后端真实进度/积分不可见且无从知晓）：判定点=页面必须出现可辨识的错误/重试态（或至少明确提示为演示任务），不得与真实数据同形呈现；实测若显示 4 条本地任务且无任何错误提示，即为 MP-R2-TASKS-001 的 UI 层可观测后果，记 FAILED 并关联该 Issue；③ 恢复网络重进后必须显示后端任务（不与回退态混淆）；console 允许请求失败日志但无未捕获 TypeError",
       "evidence": "normal：骨架帧 + 成功列表 + 故障态 + 恢复后 截图 + 路由 + console + network（GET /tasks 状态码与响应摘要）",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① 正常网络 reLaunch 进本页，记录骨架出现与收起时点、列表条目数与来源；② 断网/5xx 下 reLaunch 进本页，对比列表内容与「每日签到」卡的可点击结果（联动 TK08）；③ 恢复网络后重进",
+      "tapTarget": ".task-item",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/profile/tasks.vue:405",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/tasks → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "TK08",
@@ -1089,10 +1561,19 @@
       "title": "REAL_ONLY real 死按钮取证：回退本地列表下点「每日签到」完全无反馈（500ms 无 Toast/路由/DOM 变化 = 死按钮）",
       "tier": "normal",
       "pre": "REAL_ONLY：真实后端 + GET /tasks 失败（断网或 5xx）→ 列表回退为 localTasks（TK07 前置）。mock 轮不适用（mock 分支签到可用）",
-      "action": "① tap「每日签到」卡，500ms 内采样 Toast/DOM/路由；② 2s 复拍；③ 其余三张卡（profile/first-post/verify）各 tap 一次对照；④ 记录每次点击的 handler 调用与网络请求",
+      "action": "① tap「每日签到」卡 .task-item，500ms 内采样 Toast/DOM/路由；② 2s 复拍；③ 其余三张卡（profile/first-post/verify）各 tap 一次对照；④ 记录每次点击的 handler 调用与网络请求",
       "expected": "死按钮判据实测：real 分支下 handleTaskTap 顺序为 claimable? → claimed/done? → path?（:292-302），回退的本地 checkin 任务既无 claimable 也无 path（:124-130）→ 三次判定全部落空、函数静默 return → 500ms 内 Toast/DOM 变化/路由三者全无，即命中铁律「点击后 500ms 内必须有可观测反馈，否则即死按钮」；② 对照三张本地任务卡均有 path → 必须发生跳转（:300-302）→ 证明「只有签到卡是死按钮」，属数据源混用后果而非全局失效；③ 修复后应有的表现：签到卡在 real/回退态下要么给出错误/重试提示，要么走真实签到（不得静默）；执行员必须把「无反馈」原样写入 observed（不得因源码已预判而改判）；console 无报错（静默失败不留痕，这正是本用例存在的理由）",
       "evidence": "normal：点击前 + 500ms 后 + 2s 后 三帧截图（须与点击前完全一致，作为死按钮直证）+ 路由（不变）+ Toast（应为无）+ console + network（应为无签到请求）",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① tap「每日签到」卡，500ms 内采样 Toast/DOM/路由；② 2s 复拍；③ 其余三张卡（profile/first-post/verify）各 tap 一次对照；④ 记录每次点击的 handler 调用与网络请求",
+      "tapTarget": ".task-item",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/profile/tasks.vue:405",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/tasks → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "TK09",
@@ -1100,10 +1581,19 @@
       "title": "REAL_ONLY 领取任务奖励：POST /tasks/{code}/claim 一次 + claimingCode 守卫 + 刷新必须绕过 load-once（MP-R1-TASKS-004 守卫）；连点双判定",
       "tier": "critical",
       "pre": "REAL_ONLY：真实后端 + 存在 claimable=true 的任务（GET /tasks 返回，:189/:292）。mock 轮无该态（localTasks 无 claimable 字段）→ 记 UNVERIFIED",
-      "action": "① tap 状态位为「领取」（profile.taskClaim，:208）的任务卡；② 采样按钮态/Toast/列表刷新；③ 复位后同卡 rapidTap ×5；④ 逐条记录 network POST 计数与 Idempotency-Key（相同 body → 同键，services/http.ts:254-274）；⑤ 服务端回读积分余额与任务 claimed 状态",
+      "action": "① tap 状态位为「领取」（profile.taskClaim，:208）的任务卡；② 采样按钮态/Toast/列表刷新；③ 复位后同卡 rapidTap ×5；④ 逐条记录 network POST 计数与 Idempotency-Key（相同 body → 同键，services/http.ts:254-274）；⑤ 服务端回读积分余额与任务 claimed 状态（本条点名的交互目标 .task-item，证据 apps/client/src/subpackages/profile-extra/profile/tasks.vue:405）",
       "expected": "① 500ms 内反馈：successHaptic + toast=profile.taskClaimSuccess{n=rewardPoints}（:317-321）+ 卡面状态从「领取」转「已完成」；② 刷新必须绕过 load-once 守卫（loadRealTasks(true) :323；MP-R1-TASKS-004：原 force=false 使领取后进度/积分不更新、用户再点触发重复 POST 被后端报错）→ 实测列表内 claimed/claimable 与进度条/积分卡当页更新；③ 客户端层：claimingCode 非空期间直接 return（:310-311）→ 连点窗口多余请求数必须=0、Toast 条数=1；④ 服务端层：GET 回读积分余额只增加一次、该任务 claimed=true；两列分别记录，禁止用 ④ 的「只加一次」证明 ③ 生效（同 body 的稳定 Idempotency-Key 会让后端兜住）；⑤ 失败注入（已领取/后端业务错误）→ toast=错误 message 或 profile.taskClaimFailed（:324-327），claimingCode 必须复位（finally :327-329）→ 须二次点击验证可恢复（否则后续永久失效）；console 无 unhandledRejection",
       "evidence": "critical：before（可领取态）+ 领取后 + 连点后 + 失败态 截图 + 路由 + Toast 文案与条数 + console + network 逐条（POST/claim 与 Idempotency-Key）+ 服务端回读（积分/claimed）",
-      "requiresReal": true
+      "requiresReal": true,
+      "actionPreTapfix": "① tap 状态位为「领取」（profile.taskClaim，:208）的任务卡；② 采样按钮态/Toast/列表刷新；③ 复位后同卡 rapidTap ×5；④ 逐条记录 network POST 计数与 Idempotency-Key（相同 body → 同键，services/http.ts:254-274）；⑤ 服务端回读积分余额与任务 claimed 状态",
+      "tapTarget": ".task-item",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/profile/tasks.vue:405",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/tasks → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "TK10",
@@ -1114,7 +1604,16 @@
       "action": "① 服务端为已签到时 reLaunch 进本页 → 读勾选态；② 把服务端状态改回未签到（或换未签到身份）→ 退出重进本页；③ 观察勾选态/积分卡是否仍显示已完成；④ evaluate 读 store/页面值对照",
       "expected": "修复后应有的表现：onShow 同步应为双向赋值（checkinDone.value = status?.checkedInToday === true）；当前实现只在 true 时置 true、无 else 复位（:346-348）→ 步骤② 若页面仍显示「已完成」且积分/进度条按已完成计算，即为 MP-R2-TASKS-001 后半段单向锁存在 UI 上的可观测后果，记 FAILED 并关联该 Issue；③ 同页实例内（不退出重进）观察是否更严重（ref 常驻实例）；④ real 轮任务列表由后端 claimed 驱动（:164/:172-174）不受该 ref 影响 → 必须分别记录「回退列表」与「后端列表」两种来源下的表现，不得混判；console 无报错",
       "evidence": "normal：①已签到帧 + ②服务端未签到重进帧 截图 + 勾选/积分/进度三处数值 + 路由 + console + network（GET /check-in/status 响应值）",
-      "requiresReal": true
+      "requiresReal": true,
+      "automatable": false,
+      "notAutomatableReason": "要改服务端签到态（换身份/改后端），执行轮无权改后端数据",
+      "notAutomatableFrom": "cellplan-round7-taptarget.json",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/tasks → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "TK11",
@@ -1125,7 +1624,13 @@
       "action": "① 抓取每张 .task-item 的 aria-label 实际字符串；② 抓取 role=list 结构（:396）与每卡 role=button（:408）；③ 与可见标题文本对照；④ real 列表与 mock 列表各跑一次",
       "expected": "mock 轮：aria-label = t('profile.taskItemAria',{label:t(task.titleKey)}) 渲染为「任务：完善个人资料」类完整语义（:409 + :117-118）；REAL_ONLY 轮修复后应有的表现：aria-label 必须携带后端任务名（应为 task.title || t(task.titleKey)，与显示层 :420/:423 同兜底）→ 当前实测为「任务：」空标签即 MP-R2-TASKS-002 的可观测证据，判 FAILED；同时回填：图标 <image> 无 alt 时的读屏表现（:416/:430-436，装饰图未标 aria-hidden 属 observation）、状态位文本可读（:437）、积分与进度百分比是否可通过读屏获得（:387-388 仅视觉数字）；console 无报错",
       "evidence": "noop：逐卡 aria-label 字符串清单（mock 与 real 两列）+ role 结构快照 + console；可免截图",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/tasks → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "TK12",
@@ -1136,7 +1641,13 @@
       "action": "① scrollTo 底→顶（记录 scrollTop/scrollHeight/windowHeight）；② boundingClientRect 量测 .tasks-header__back、.task-item 整卡、.task-item__status 状态位、积分卡；③ 统计模板 input/textarea 数量；④ 检查底部留白与安全区",
       "expected": "① 本页为页级滚动（无 scroll-view）→ 最后一条任务卡与底部留白完整可见、不被 home indicator 裁切（模板 :365-443 底部无显式 env(safe-area-inset-bottom) 声明 → 重点回填实测是否被遮挡）；回顶页头不叠印（:367 内联 statusBar px）；② 热区实测对照 88rpx：.tasks-header__back（图标尺寸实测）、.task-item 整卡（应远大于 88rpx）、.task-item__status 状态位（仅文字+图标、源码无独立 @tap → 记录「整卡唯一可点」的一致性，不得出现状态位独立不可点区）；数值不得因源码预判而省略；③ 本页零 input/textarea → 输入框四态/键盘避让/防抖搜索用例不适用，显式记 SKIPPED+原因；④ 非 tab 页无 TabBar 遮挡；console 无报错",
       "evidence": "noop：滚动数值 + 元素尺寸数值表 + SKIPPED 说明 + console；可免截图",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/tasks → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "TK13",
@@ -1144,10 +1655,19 @@
       "title": "幻影参数守卫：本页零 onLoad（仅 onShow），任何 query 必须无效（含副作用参数）",
       "tier": "navigation",
       "pre": "同 TK01",
-      "action": "wx.reLaunch('/subpackages/profile-extra/profile/tasks?tab=checkin&claim=all&from=r11&code=daily-checkin') → 再对每个卡做一次 tap 复核",
+      "action": "wx.reLaunch('/subpackages/profile-extra/profile/tasks?tab=checkin&claim=all&from=r11&code=daily-checkin') → 再对每个卡 .task-item 做一次 tap 复核",
       "expected": "渲染与无参 TK01 等价：不得因 ?tab=checkin 定位/过滤任务、不得 ?claim=all 自动批量领取（副作用参数被消费属最高危：必须零 POST /tasks/*/claim 发出）、不得 ?code=daily-checkin 自动签到（联动 TK04 判据）——源码 tasks.vue:21-22 只 import onShow，全文件无 onLoad，故四参全为幻影参数；getCurrentPages 栈顶 options 须含四参且零消费；出现任何消费即记回归缺陷；console 无报错",
       "evidence": "navigation：路由 + options 快照 + 写请求计数（必须为 0 条）+ console；可与 TK01 截图比对",
-      "requiresReal": false
+      "requiresReal": false,
+      "actionPreTapfix": "wx.reLaunch('/subpackages/profile-extra/profile/tasks?tab=checkin&claim=all&from=r11&code=daily-checkin') → 再对每个卡做一次 tap 复核",
+      "tapTarget": ".task-item",
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/profile/tasks.vue:405",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/tasks → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "TK14",
@@ -1158,7 +1678,13 @@
       "action": "① fullPage 截图检视页头/计数/积分卡/四张卡的标题+描述+状态位；② 触发签到 → 记录成功 Toast；③ 触发已完成卡 → taskDone Toast；④ real 轮记录后端文案与英文 UI 的混排程度",
       "expected": "全部 UI 文案走 t()：profile.taskCenter/tasksCompletedCount/tasksPointsEarned/taskProfile(Desc)/taskCheckin(Desc)/taskFirstPost(Desc)/taskVerify(Desc)/taskPoints/taskClaim/taskDone/taskGo/taskClaimSuccess/taskClaimFailed/taskCheckinSuccess/taskItemAria + common.loading/back（:375-381/:387/:409/:417-423/:207-210/:265/:278/:297/:319/:325-326）→ en 下须为英文、插值数字正确，不得出现裸 key（形如 \"profile.taskProfile\"）或字面量 \"{n}\"（i18n 未同步即记缺陷，本批 en-US.ts/zh-CN.ts 均在未提交改动清单中）；④ REAL_ONLY 轮：后端任务名/描述为中文而其余 UI 为英文 → 双语混排作为 observation 记录（属数据层文案，不判 i18n 裸 key）；布局：en 长文案不得把状态位挤出卡片或换行破版（:426-438 flex 行）；console 无 [intlify] 缺 key 告警",
       "evidence": "normal：en 与 zh 两张 fullPage 截图 + 两语言 Toast 截图 + real 轮混排帧 + 路由 + console",
-      "requiresReal": true
+      "requiresReal": true,
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/profile/tasks → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     }
   ],
   "selfCheck": {
@@ -1174,7 +1700,12 @@
       "subpackages/profile-extra/profile/favorites": 12,
       "subpackages/profile-extra/profile/tasks": 14
     },
-    "tierCounts": { "critical": 34, "normal": 39, "navigation": 16, "noop": 12 },
+    "tierCounts": {
+      "critical": 34,
+      "normal": 39,
+      "navigation": 16,
+      "noop": 12
+    },
     "realOnlyCasesPre": 41,
     "realOnlyMentions": 41,
     "authPreconditionCases": "需授权预置的用例共 9 条：定位类 5 条（PL01/PL02/PL03/PL04/PL07，须预置 scope.userLocation 或 mock wx.getLocation/wx.authorize，否则系统「获取你的位置信息」弹窗会盖住帧、多个状态帧实为同一张图 → 本用例不可判定）+ 隐私协议/相册相机类 4 条（VCI08/VRN06/AB04/AB05，须预置 ensurePrivacyAuthorized 放行与 scope.album/camera）；另有 VCI12/VRN12/AB12 依赖真实媒体 URL 与图片域名白名单可加载（属 REAL_ONLY 而非授权弹窗）。未预置一律判不可判定，不得记 VERIFIED",

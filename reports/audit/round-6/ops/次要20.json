@@ -413,7 +413,13 @@
       "requiresReal": true,
       "actionPreTapfix": "① 未成年身份 reLaunch 进本页观察首屏；② 尝试聚焦两输入框并输入；③ tap 提交；④ token 置为过期（或过期后）重进本页，读取 isAdult 实际取值与来源（evaluate 读组件状态或观察 DOM 分支）",
       "tapTarget": ".form-item__input",
-      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/verification/real-name.vue:482"
+      "tapTargetEvidence": "apps/client/src/subpackages/profile-extra/verification/real-name.vue:482",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "gap-carriers/identities-tagging.json",
+      "identitiesWhy": "本 patch 的唯一根据=该行自己的前置逐字含「的登录身份」（gap-carriers 规则：按前置收窄认领，不按页名/关键词猜）。摘掉的是认领，不是判据。"
     },
     {
       "id": "VRN08",
@@ -606,7 +612,13 @@
       "requiresReal": true,
       "actionPreTapfix": "① tap RelationshipCTA 喜欢键（RelationshipCTA.vue:43-46 emit('like') → other.vue:426 handleLike）一次，200ms/800ms 各采样；② 若弹「匹配成功」modal：点「再看看」→ 再点一次喜欢 → 点「去聊天」；③ 退出重进复位后 rapidTap 喜欢键 ×5；④ 观察按钮文案与勾选态",
       "tapTarget": ".relationship-cta__btn--like",
-      "tapTargetEvidence": "apps/client/src/components/profile/public/RelationshipCTA.vue:43"
+      "tapTargetEvidence": "apps/client/src/components/profile/public/RelationshipCTA.vue:43",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "gap-carriers/identities-tagging.json",
+      "identitiesWhy": "本 patch 的唯一根据=该行自己的前置逐字含「身份A mock 登录」（gap-carriers 规则：按前置收窄认领，不按页名/关键词猜）。摘掉的是认领，不是判据。"
     },
     {
       "id": "OT06",
@@ -662,7 +674,13 @@
       "requiresReal": true,
       "actionPreTapfix": "① textarea（:83-88）依次：空内容直接点发送 → 输入正常短句 → 输入 80 字符（回填 maxlength 截断值）→ 输入「<img src=x onerror=1>『😀 空格』」特殊字符；② 关闭三路：点遮罩（:70）/ 点右上 ×（:74-75）/ 发送成功后自动关；③ 每路关闭后重新打开检查内容是否清空；④ 已填内容 rapidTap 发送 ×5",
       "tapTarget": ".whisper-sheet__input",
-      "tapTargetEvidence": "apps/client/src/components/discover/WhisperComposeSheet.vue:85"
+      "tapTargetEvidence": "apps/client/src/components/discover/WhisperComposeSheet.vue:85",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "gap-carriers/identities-tagging.json",
+      "identitiesWhy": "本 patch 的唯一根据=该行自己的前置逐字含「已实名登录」（gap-carriers 规则：按前置收窄认领，不按页名/关键词猜）。摘掉的是认领，不是判据。"
     },
     {
       "id": "OT10",

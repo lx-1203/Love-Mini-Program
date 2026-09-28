@@ -533,6 +533,10 @@ const ROUTE_QUERY = {
   /* tag-posts 的 onLoad：无 ?tagName= 时提示并返回（P1-36），所以裸直达必然被弹走。
      取值用 fixture 里真实存在的标签（含 # 前缀，须 URL 编码）。 */
   "subpackages/village/village/tag-posts": "tagName=" + encodeURIComponent("#校园日常"),
+  /* 与 r-exec-cli.mjs 的 ROUTE_QUERY（:264 起）同一行，保持一致（CS10/CS29 的输入条只在带 userId/sessionId 时才渲染）。
+     取景侧也可以逐条目走 it.precondition.query（:537），但表里没有这一页时，
+     只写了 route 没写 precondition.query 的条目仍会裸直达 ⇒ 这里补同一行兜底。 */
+  "subpackages/chat/chat-session/index": "userId=100159",
 };
 const queryFor = (it, route) => String((it && it.precondition && it.precondition.query) || ROUTE_QUERY[route] || "");
 

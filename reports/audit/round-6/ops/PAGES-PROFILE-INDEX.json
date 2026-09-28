@@ -271,7 +271,13 @@
    "actionPreTapfix": "① 点录制 CTA 开始（handleRecordVoice :1285-1322），录 3s 后再点同一 CTA 停止；② 录制中观察文案与秒数 tick；③ 长按至 60s 观察自动停止；④ <1s 短按一次",
    "tapTarget": ".video-cta",
    "tapTargetEvidence": "apps/client/src/pages/profile/index.vue:1694",
-   "needsIdentity": "A"
+   "needsIdentity": "A",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "gap-carriers/identities-tagging.json",
+   "identitiesWhy": "本 patch 的唯一根据=该行自己的前置逐字含「接 PFI22」（gap-carriers 规则：按前置收窄认领，不按页名/关键词猜）。摘掉的是认领，不是判据。"
   },
   {
    "id": "PFI24",
@@ -297,7 +303,13 @@
    "actionPreTapfix": "① 点「删除」（index.vue:1750-1759 → handleRemoveVoice :1395-1418）在确认弹窗点取消；② 再次执行点确定，观察 toast 与卡片；③ 切走 Tab 再回本页（触发 onShow/fetchProfile）观察语音条是否复现；④ 下拉/重进冷启动一次",
    "tapTarget": ".voice-preview__delete",
    "tapTargetEvidence": "apps/client/src/pages/profile/index.vue:1747",
-   "needsIdentity": "A"
+   "needsIdentity": "A",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "gap-carriers/identities-tagging.json",
+   "identitiesWhy": "本 patch 的唯一根据=该行自己的前置逐字含「接 PFI23」（gap-carriers 规则：按前置收窄认领，不按页名/关键词猜）。摘掉的是认领，不是判据。"
   },
   {
    "id": "PFI26",

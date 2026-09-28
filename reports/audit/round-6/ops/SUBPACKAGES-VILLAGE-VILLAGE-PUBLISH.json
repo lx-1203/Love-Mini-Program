@@ -1,661 +1,672 @@
 {
-  "chunkKey": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
-  "round": "R2",
-  "page": "subpackages/village/village/publish",
-  "route": "/subpackages/village/village/publish",
-  "core": true,
-  "sourceOfTruth": [
-    "apps/client/src/subpackages/village/village/publish.vue",
-    "apps/client/src/constants/village.ts",
-    "apps/client/src/constants/storage-keys.ts",
-    "apps/client/src/stores/village/index.ts",
-    "apps/client/src/stores/village/constants.ts",
-    "apps/client/src/stores/circle.ts",
-    "apps/client/src/services/api.ts",
-    "apps/client/src/services/http.ts",
-    "apps/api/src/main/java/com/campuslove/api/village/VillageController.java",
-    "apps/api/src/main/java/com/campuslove/api/village/CreatePostRequest.java",
-    "apps/api/src/main/java/com/campuslove/api/draft/DraftController.java"
-  ],
-  "pageNotes": {
-    "execConvention": "PRE 中「身份A mock 登录」= tmp_r11_login.json JWT → wx.setStorageSync('token') → session.bootstrap()，资料与实名认证通过（否则上游入口被 guards/campus-gate.ts:72-97 拦截）。「REAL_ONLY」= 只有真实后端(8080)才能构造的前置（服务端幂等、落库/回读、/drafts 后端双写、媒体上传、真实 URL 解析、审核流、未登录视角），必须排进 real 构建轮；mock 轮如实记 UNVERIFIED，禁止用 mock 结果判 VERIFIED。",
-    "idempotencyTrap": "【假通过防线】http.ts:254-276 对写请求兜底注入稳定哈希幂等键（:273）。本页写通道：POST /api/v1/posts 带 @Idempotent（VillageController.java:152-157，Redis SETNX TTL=4h，IdempotentInterceptor.java:147-160；≥400 时释放键 :197-217）；话题通道 POST /api/v1/circles/{id}/topics 同样 @Idempotent（CircleController.java:108-118）；而草稿通道 POST /drafts、DELETE /drafts/current **无 @Idempotent**（DraftController.java:23-49）→ 草稿双写不会被幂等吞，可反复写。PUB16-PUB21 一律要求把 ① 客户端多余请求计数（network 命中条数 + 每条 Idempotency-Key 实值）与 ② 服务端实际落库/回读条数 分列回填，缺任一列记 UNVERIFIED；「Toast 只出现 1 次」不构成去重证据。",
-    "paramsConsumed": "onLoad 只读两个参数：query.circleId（转 Number，publish.vue:154,:162-165）与 query.target（仅识别 'campus' :156 与 'friends' :158-161）；二者优先级高于旧草稿（restoreDraft 入参强制回设 :420-433，MP-R1-PUBLISH-005）。其余参数（?channel= / ?categoryId= / ?topicId= / ?id= / ?school=）为幽灵参数（PUB05 守卫）。草稿键为独立键 PUBLISH_DRAFT_STORAGE_KEY='village:publish-draft'（constants/village.ts:49；MP-R1-PUBLISH-004：原与 post.vue 共用 'village:post-draft' 会互相污染 → 必须交叉验证两页键互不覆盖）。",
-    "withPostPageDiff": "本页与 village/post 是两套并存的发布页，差异必须逐项实测（不得凭代码推断，见 PUB26）：无独立标题输入（草稿 title 恒 '' :299，标题取正文前 30 字 :497）；正文上限 500 与 store 同源（MAX_CONTENT_LENGTH，:19,:661 ← stores/village/constants.ts:12）；有最短 5 字校验（:493-496，post.vue 无）；「添加话题」行只 toggle 固定话题「#校园日常」（:690）而 post.vue 是热门+自定义弹层；「添加位置」与「谁可以看」为只读信息行（:697-703,:713-717，MP-R1-VILLAGE-PUBLISH-103）而 post.vue 可选；目标弹层只列已加入圈子 joinedCircles（:82,:632-646）而 post.vue 列全部（post.vue:735）；friends 目标只能靠 ?target=friends 进入（弹层无该项 :610-649）；无底部工具栏（:737 注释已移除，样式 .publish-toolbar :841-844 为死样式）；草稿前后端双写（:338-345/:347-364）而 post.vue 只本地。",
-    "sideEffects": "发布、草稿后端写入/删除、目标切换引发的圈子读请求、图片上传均按写/半写路径处理：所有提交路径（含空提交、短文本、501 字注入）一律 tier=critical；纯导航 navigation；滚动/量测 noop；其余 normal。",
-    "concurrentEditsWarning": "【必读·源码在动】本清单落盘期间另有修复泳道在并发改写 apps/client/src/subpackages/village/village/publish.vue（工作树 diff +201 行：MP-R1-PUBLISH-108/109、MP-R2-PUB-112/113 等）。PUB01-PUB30 的锚点取自我读取时的版本，执行前必须按当轮 gitSha 复核。**已失效前提**：PUB26 对照表里「post 页会越权删后端草稿单例」一项已被 MP-R2-POST-011 移除（以 post 片 VP38 为准）。当前源码的新增可观测点由 PUB31-PUB34 覆盖（锚点标为「当前」）。"
+ "chunkKey": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+ "round": "R2",
+ "page": "subpackages/village/village/publish",
+ "route": "/subpackages/village/village/publish",
+ "core": true,
+ "sourceOfTruth": [
+  "apps/client/src/subpackages/village/village/publish.vue",
+  "apps/client/src/constants/village.ts",
+  "apps/client/src/constants/storage-keys.ts",
+  "apps/client/src/stores/village/index.ts",
+  "apps/client/src/stores/village/constants.ts",
+  "apps/client/src/stores/circle.ts",
+  "apps/client/src/services/api.ts",
+  "apps/client/src/services/http.ts",
+  "apps/api/src/main/java/com/campuslove/api/village/VillageController.java",
+  "apps/api/src/main/java/com/campuslove/api/village/CreatePostRequest.java",
+  "apps/api/src/main/java/com/campuslove/api/draft/DraftController.java"
+ ],
+ "pageNotes": {
+  "execConvention": "PRE 中「身份A mock 登录」= tmp_r11_login.json JWT → wx.setStorageSync('token') → session.bootstrap()，资料与实名认证通过（否则上游入口被 guards/campus-gate.ts:72-97 拦截）。「REAL_ONLY」= 只有真实后端(8080)才能构造的前置（服务端幂等、落库/回读、/drafts 后端双写、媒体上传、真实 URL 解析、审核流、未登录视角），必须排进 real 构建轮；mock 轮如实记 UNVERIFIED，禁止用 mock 结果判 VERIFIED。",
+  "idempotencyTrap": "【假通过防线】http.ts:254-276 对写请求兜底注入稳定哈希幂等键（:273）。本页写通道：POST /api/v1/posts 带 @Idempotent（VillageController.java:152-157，Redis SETNX TTL=4h，IdempotentInterceptor.java:147-160；≥400 时释放键 :197-217）；话题通道 POST /api/v1/circles/{id}/topics 同样 @Idempotent（CircleController.java:108-118）；而草稿通道 POST /drafts、DELETE /drafts/current **无 @Idempotent**（DraftController.java:23-49）→ 草稿双写不会被幂等吞，可反复写。PUB16-PUB21 一律要求把 ① 客户端多余请求计数（network 命中条数 + 每条 Idempotency-Key 实值）与 ② 服务端实际落库/回读条数 分列回填，缺任一列记 UNVERIFIED；「Toast 只出现 1 次」不构成去重证据。",
+  "paramsConsumed": "onLoad 只读两个参数：query.circleId（转 Number，publish.vue:154,:162-165）与 query.target（仅识别 'campus' :156 与 'friends' :158-161）；二者优先级高于旧草稿（restoreDraft 入参强制回设 :420-433，MP-R1-PUBLISH-005）。其余参数（?channel= / ?categoryId= / ?topicId= / ?id= / ?school=）为幽灵参数（PUB05 守卫）。草稿键为独立键 PUBLISH_DRAFT_STORAGE_KEY='village:publish-draft'（constants/village.ts:49；MP-R1-PUBLISH-004：原与 post.vue 共用 'village:post-draft' 会互相污染 → 必须交叉验证两页键互不覆盖）。",
+  "withPostPageDiff": "本页与 village/post 是两套并存的发布页，差异必须逐项实测（不得凭代码推断，见 PUB26）：无独立标题输入（草稿 title 恒 '' :299，标题取正文前 30 字 :497）；正文上限 500 与 store 同源（MAX_CONTENT_LENGTH，:19,:661 ← stores/village/constants.ts:12）；有最短 5 字校验（:493-496，post.vue 无）；「添加话题」行只 toggle 固定话题「#校园日常」（:690）而 post.vue 是热门+自定义弹层；「添加位置」与「谁可以看」为只读信息行（:697-703,:713-717，MP-R1-VILLAGE-PUBLISH-103）而 post.vue 可选；目标弹层只列已加入圈子 joinedCircles（:82,:632-646）而 post.vue 列全部（post.vue:735）；friends 目标只能靠 ?target=friends 进入（弹层无该项 :610-649）；无底部工具栏（:737 注释已移除，样式 .publish-toolbar :841-844 为死样式）；草稿前后端双写（:338-345/:347-364）而 post.vue 只本地。",
+  "sideEffects": "发布、草稿后端写入/删除、目标切换引发的圈子读请求、图片上传均按写/半写路径处理：所有提交路径（含空提交、短文本、501 字注入）一律 tier=critical；纯导航 navigation；滚动/量测 noop；其余 normal。",
+  "concurrentEditsWarning": "【必读·源码在动】本清单落盘期间另有修复泳道在并发改写 apps/client/src/subpackages/village/village/publish.vue（工作树 diff +201 行：MP-R1-PUBLISH-108/109、MP-R2-PUB-112/113 等）。PUB01-PUB30 的锚点取自我读取时的版本，执行前必须按当轮 gitSha 复核。**已失效前提**：PUB26 对照表里「post 页会越权删后端草稿单例」一项已被 MP-R2-POST-011 移除（以 post 片 VP38 为准）。当前源码的新增可观测点由 PUB31-PUB34 覆盖（锚点标为「当前」）。"
+ },
+ "cases": [
+  {
+   "id": "PUB01",
+   "page": "subpackages/village/village/publish",
+   "title": "无参深链冷启动首屏（目标=个人动态、位置/谁可以看为只读行、无底部工具栏）",
+   "tier": "normal",
+   "pre": "身份A mock 登录 + 已实名 → 清 storage['village:publish-draft'] 与 storage['village:post-draft'] → wx.reLaunch('/subpackages/village/village/publish')（栈=1）",
+   "action": "仅等待首屏渲染；≤500ms 首拍 + 2s 复拍；evaluate 读取 targetType/visibility/content",
+   "expected": "500ms 内渲染：header X 关闭 + 「发布动态」标题 + 「发布」胶囊（publish.vue:575-583，两处文案为**硬编码中文** :579,:581 → en-US 下仍中文，如实采证）；头部 padding 右侧固定预留 210rpx 避让胶囊（:749-760，R4 从 200→210）；「发布到」卡片 targetType=general 语义：名称「个人动态」、副标题「默认公开 · 所有人可见」、校园图标头像（:589-603 ← :115-132,:593）；正文 textarea + 「0/500」计数（:655-670 ← MAX_CONTENT_LENGTH，stores/village/constants.ts:12）；单个「＋」加图块（:680-682，POST_MAX_IMAGES=9 constants/village.ts:27）；四行：添加话题（meta「已选 0/5」）/ 添加位置（meta='选择位置'，因无定位缓存）/ 提及好友 / 谁可以看（meta=「所有人可见」）（:686-718）；发帖小贴士可关（:721-732）；**不得出现**底部工具栏（:737 注释已移除，样式 .publish-toolbar :841-844 为死样式，如实记录）；发布钮 --disabled 且文字为深绿（canSubmit=false :78,:580 + :771-775，R3 对比度修复）；padding-top 由 useStatusBarHeight 注入、标题不与系统时间叠印（:34-36,:575，R20）；console 无报错",
+   "evidence": "normal：after 截图（fullPage）+ 栈顶 route + options 快照（应为空）+ targetType/visibility 实测值 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
   },
-  "cases": [
-    {
-      "id": "PUB01",
-      "page": "subpackages/village/village/publish",
-      "title": "无参深链冷启动首屏（目标=个人动态、位置/谁可以看为只读行、无底部工具栏）",
-      "tier": "normal",
-      "pre": "身份A mock 登录 + 已实名 → 清 storage['village:publish-draft'] 与 storage['village:post-draft'] → wx.reLaunch('/subpackages/village/village/publish')（栈=1）",
-      "action": "仅等待首屏渲染；≤500ms 首拍 + 2s 复拍；evaluate 读取 targetType/visibility/content",
-      "expected": "500ms 内渲染：header X 关闭 + 「发布动态」标题 + 「发布」胶囊（publish.vue:575-583，两处文案为**硬编码中文** :579,:581 → en-US 下仍中文，如实采证）；头部 padding 右侧固定预留 210rpx 避让胶囊（:749-760，R4 从 200→210）；「发布到」卡片 targetType=general 语义：名称「个人动态」、副标题「默认公开 · 所有人可见」、校园图标头像（:589-603 ← :115-132,:593）；正文 textarea + 「0/500」计数（:655-670 ← MAX_CONTENT_LENGTH，stores/village/constants.ts:12）；单个「＋」加图块（:680-682，POST_MAX_IMAGES=9 constants/village.ts:27）；四行：添加话题（meta「已选 0/5」）/ 添加位置（meta='选择位置'，因无定位缓存）/ 提及好友 / 谁可以看（meta=「所有人可见」）（:686-718）；发帖小贴士可关（:721-732）；**不得出现**底部工具栏（:737 注释已移除，样式 .publish-toolbar :841-844 为死样式，如实记录）；发布钮 --disabled 且文字为深绿（canSubmit=false :78,:580 + :771-775，R3 对比度修复）；padding-top 由 useStatusBarHeight 注入、标题不与系统时间叠印（:34-36,:575，R20）；console 无报错",
-      "evidence": "normal：after 截图（fullPage）+ 栈顶 route + options 快照（应为空）+ targetType/visibility 实测值 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB02",
-      "page": "subpackages/village/village/publish",
-      "title": "?target=campus：目标锁定校园圈；「谁可以看/添加位置」两行为只读（不得有可点假象）",
-      "tier": "normal",
-      "pre": "身份A mock 登录 → reLaunch '/subpackages/village/village/publish?target=campus'",
-      "action": "观察卡片 .publish-to__card 的名称/副标题与「谁可以看」行 → tap「谁可以看」该行（应为只读、无弹层）→ tap .publish-to__card 打开弹层选「校园圈」再关闭 → evaluate 回读 targetType/visibility",
-      "expected": "onLoad 置 targetType='campus'（:156）→ 卡片名称=「校园圈」（:117 ← circle.postTopicTargetCampus）、副标题「校园圈 · 所有校园成员可见」（:128）；visibility 初值仍 'public'（:63），legalVisibility 重算只出现在 restoreDraft 路径（:412-418）与 chooseCampus（:216-223）→ **入口直设 campus 时是否出现「目标卡=校园圈 + 谁可以看=所有人可见」的同屏矛盾必须实测回填**（MP-R2-PUB-101 的同族缺口，若成立按 P1/Consistency 立案并给截图）；「谁可以看」行为只读（:713-717 无 @tap、无 press-feedback、无 chevron）→ tap 必须无反馈且不弹层（MP-R1-VILLAGE-PUBLISH-103 回归：原可轮换列表均为单值构成可点假象，已降级为只读）；「添加位置」行同样只读（:697-703）；无写请求；console 无报错",
-      "evidence": "normal：首屏 + 两次只读点击后 + 弹层选校园圈后 共 3 张截图 + targetType/visibility 逐次实测值 + console（两次只读点击应无路由/DOM 变化）",
-      "requiresReal": false,
-      "tapTarget": ".publish-to__card",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:749",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB03",
-      "page": "subpackages/village/village/publish",
-      "title": "?target=friends：日常目标专属文案与 visibility=friends（弹层无该入口、改选后不可回退）",
-      "tier": "normal",
-      "pre": "身份A mock 登录 → reLaunch '/subpackages/village/village/publish?target=friends'（我的故事「添加日常」入口等价参数，:157-161 R16）",
-      "action": "观察卡片两行文案与「谁可以看」→ 打开目标弹层确认是否存在「个人日常」选项 → 依次改选「个人动态」「校园圈」并各回读 visibility → evaluate 重新置 friends 后提交一次",
-      "expected": "targetType='friends'、visibility='friends'（:158-161）→ 卡片名称「个人日常」、副标题「日常 · 仅互相喜欢或关注我的人可见」（:119-120,:130）、「谁可以看」=「仅喜欢/关注的人可见」（:148）；弹层内**只有** 个人动态 / 校园圈 / 已加入圈子 三类（:610-649）→ 无 friends 项 → 一旦改选其它目标就无法再从 UI 回到日常（chooseGeneral/chooseCampus/selectTarget 均不写 friends :198-223）→ 回填「入口独占、UI 内不可恢复」证据；friends 目标下「添加话题」行仍可见（:690 仅 isCircleTarget 隐藏）→ 回填 tags 是否随 createPost 落库；断言两列：① friends 提交请求 1 条且 body.visibility='friends'/targetType='friends'；② 服务端回读该帖可见性与 UI 承诺一致；mock 轮服务端列记 N/A；console 无报错",
-      "evidence": "normal：friends 首屏 + 弹层展开 + 两次改选后 共 4 张截图 + visibility/targetType 逐次实测值 + body 快照 + console + 服务端回读（real）",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB04",
-      "page": "subpackages/village/village/publish",
-      "title": "?circleId= 入口：圈名解析成功锁定圈子；未加入/不存在则强制回退个人动态并复位可见范围",
-      "tier": "critical",
-      "pre": "身份A mock 登录；三个变体各跑：(a) ?circleId=<已加入圈 id>，(b) ?circleId=<存在但未加入的圈 id>，(c) ?circleId=999999（不存在）。REAL_ONLY 轮需真实存在这三种圈子",
-      "action": "每变体进入后观察卡片名称/「圈内成员可见」标签/「谁可以看」行 → evaluate 回读 targetType/targetId/visibility → 各提交一次唯一正文（≥5 字）",
-      "expected": "(a) circle 目标 + targetCircle 命中 → 卡片显示真实圈名（:116）+「圈内成员可见」标签（:598）+ visibility=interest（:427-432 入口回设）；提交走 circleStore.createTopic（:525-531）；「添加话题」行隐藏（v-if=!isCircleTarget :690，MP-R2-PUB-104：后端 CreateTopicRequest 无 tags 字段，选了即丢）；(b)/(c) loadTarget 判定 !selected||!selected.isJoined → **强制回退 general** 并同步复位 visibility=public（:179-188，MP-R1-PUBLISH-101/MP-R1-PUB-018：禁止 UI 承诺窄、落库宽）→ 回填三变体的最终 targetType/visibility 与实际请求 URL；断言两列：① 每变体请求条数=1 且 URL 与目标一致（circle → /circles/{id}/topics，其余 → /posts）；② 服务端回读落库位置与 visibility 字段与 UI 一致（(b)/(c) 必须落公开广场、不得带 interest/school）；mock 轮服务端列记 N/A 并注明；console 无报错",
-      "evidence": "critical：三变体首屏 + 提交后 Toast + 回流列表 截图 + 路由 + 三处 Toast 文案 + targetType/visibility/payload.visibility 实测表 + console + network（URL/Idempotency-Key/状态码）+ 服务端回读落库位置与可见性",
-      "requiresReal": true,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB05",
-      "page": "subpackages/village/village/publish",
-      "title": "幽灵参数守卫：?channel= / ?categoryId= / ?topicId= / ?id= / ?school= / ?target=xyz 零消费",
-      "tier": "navigation",
-      "pre": "身份A mock 登录 → reLaunch '/subpackages/village/village/publish?channel=today&categoryId=cat-sincere&topicId=9&id=post-16&school=%E6%B8%85%E5%8D%8E%E5%A4%A7%E5%AD%A6&target=xyz'",
-      "action": "观察首屏（正文/目标/位置/话题是否被预置）→ 提交一次并 evaluate 回读 payload",
-      "expected": "onLoad 只读 circleId 与 target（仅 'campus'/'friends' 生效，publish.vue:153-170）→ 六个参数一律无效果：不预填正文、不改目标、不预设分类、不定位到 post-16、不填位置；target=xyz 不改变默认 general；提交 payload 的 categoryId 恒为 'interest'（:535）且不含 channel/topicId/id/school（回填 body 证明）；渲染与 PUB01 等价；出现任何消费即判幽灵参数回归；console 无报错",
-      "evidence": "navigation：路由 options 快照 + 提交 body 快照 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB06",
-      "page": "subpackages/village/village/publish",
-      "title": "正文 textarea 四态：正常 / 清空 / 超长（maxlength=500 截断）/ 特殊字符 + 计数与警示色阈值",
-      "tier": "critical",
-      "pre": "身份A mock 登录 → 清草稿 → reLaunch 本页",
-      "action": "① 在 .publish-content__input 输入 30 字 → ② 全清 → ③ 输入 600 字 → ④ 逐步输入到 449/450/451 字观察计数颜色 → ⑤ 输入含换行/制表/emoji/HTML 片段/首尾空格的文本后提交一次，回读 body",
-      "expected": "计数「n/500」实时（:73,:666-669）；isNearLimit 在剩余 ≤50 字时计数变警示色（:43 CONTENT_LENGTH_WARN_THRESHOLD=50，:75-77，样式 --c-warning :813-814）→ 回填实际变色的字符数（预期 450，边界 449/451 各采一次）；③ textarea 实际长度必须=500（:661 :maxlength=MAX_CONTENT_LENGTH）→ 计数永不到 501，故 store 层「内容不能超过500字」校验（village/index.ts:445-448）在正常输入路径**不可达**（可达性由 PUB08-B 变体证明）；② 清空后 canSubmit=false、发布钮 --disabled（:78,:580）；⑤ 提交时 content.value.trim()（:528,:536）→ body 不得带首尾空白；标题 titleFromContent=content.trim().slice(0,30)（:497）→ 回填 body.title 长度 ≤30；后端 content @Size(max=5000)、title @Size(min=5,max=30)（CreatePostRequest.java:17-18）→ 双端阈值差异采证；console 无报错",
-      "evidence": "critical：五态 before/after 截图 + 每步 content.length 与计数文本/颜色实测 + 提交 body（title/content）+ Toast 文案 + console + network 写请求计数",
-      "requiresReal": false,
-      "tapTarget": ".publish-content__input",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB07",
-      "page": "subpackages/village/village/publish",
-      "title": "空提交：Toast「请添加内容」且零请求；发布钮禁用态仍可点出反馈、无 Loading 永驻",
-      "tier": "critical",
-      "pre": "身份A mock 登录 → 清草稿 → reLaunch 本页（正文空）",
-      "action": "tap 顶部 .publish-header__submit（publish.vue:580-582 → submitPublish :486-490）；再用 evaluate 把 content 置为「   」（纯空格）后重复一次",
-      "expected": "两次都命中 if(!content.value.trim()) → Toast=t('village.contentRequired')（:487-490）→ 500ms 内可观测反馈，不得因 --disabled 视觉态变成死按钮（铁律）；纯空格同样被 trim 判空 → 同上；断言两列：① POST /posts 与 /circles/*/topics 计数=0；② 服务端回读新增条数=0；停留本页；showLoading 在 :503 才调用 → 早退路径不得出现 Loading 遮罩残留（:561 的 finally 不在早退路径内，须实拍确认）；console 无报错",
-      "evidence": "critical：空态 before + 两次 Toast after 截图 + Loading 残留检查截图 + 路由 + Toast 文案逐字 + console + network 写请求计数",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB08",
-      "page": "subpackages/village/village/publish",
-      "title": "短文本提交（1-4 字）与 501 字注入：最短 5 字前端校验、store 层 500 字守卫可达性",
-      "tier": "critical",
-      "pre": "身份A mock 登录 → reLaunch 本页。变体A：正文输入「好」；变体B：evaluate 把 content 置 501 字（绕过 :661 原生截断）",
-      "action": "A：正文预置 2 字 → tap .publish-header__submit → 观察 Toast → 补到 8 字再 tap .publish-header__submit 一次；B：正文预置 600 字 → tap .publish-header__submit → 观察 Toast、Loading 与 network",
-      "expected": "A 第一次命中 if(length<5) → Toast=village.contentMinLength 且 {n} 被替换为 5（:493-496，出现字面 {n} 即插值缺陷）→ 请求条数=0；补到 8 字后成功（body.title=前 30 字截断 :497）；B 前端无长度拦截（:486-499 只判空与最短）→ 请求发出后由 store 校验拒绝（village/index.ts:445-448 storeErrors.village.postContentTooLong「内容不能超过500字」）→ catch 必须把该原文作为 Toast（publish.vue:554-559 优先 e.message）并 hideLoading（:561），不得显示泛化「发布失败」（:558 末项兜底）；断言两列：① 三条请求的状态码与 Idempotency-Key（B 的 POST 条数必须=1 才能证明「前端放行、store 拦截」；若 B 零请求说明 store 校验在请求之前，回填实际位置）；② 服务端回读新增条数：仅 A 第二次 +1；mock 轮注明无落库通道；③ B 失败后不得自动返回、不得清表单/清草稿；console 无未捕获 rejection",
-      "evidence": "critical：短文本 before + 最短提示 Toast + 8 字成功 + 501 字注入态 + 501 字失败 Toast 共 5 张截图 + 路由 + 三段 Toast 文案逐字 + Loading 残留检查 + console + network 明细（URL/Key/状态码/error.message）+ 服务端回读条数",
-      "requiresReal": false,
-      "tapTarget": ".publish-header__submit",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:740",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB09",
-      "page": "subpackages/village/village/publish",
-      "title": "「发布到」弹层：打开 + 三级分组 + 三路关闭（遮罩 / 选单项 / 系统返回）",
-      "tier": "normal",
-      "pre": "身份A mock 登录 → 清草稿 → reLaunch 本页；circleStore 已有已加入圈子数据（懒加载见 PUB13）",
-      "action": "① tap .publish-to__card（:589 → targetOpen=!targetOpen）→ tap 遮罩空白（.publish-target-sheet :605）；② 重开 → tap「个人动态」（:611-615 chooseGeneral）；③ 重开 → tap「校园圈」（:616-621 chooseCampus）；④ 重开 → tap 某个已加入圈子项（:634-645 selectTarget）；⑤ 重开 → 系统返回手势",
-      "expected": "弹层为底部抽屉、max-height 78vh + safe-area 底距（:794-796，R21：原 70vh 使兴趣圈分组不可见 → 必须实测末项完整可见）；分组标题「公域 · 所有人可见」「校园私域 · 同校可见」「兴趣圈子 · 圈内成员可见」（:610,:616,:633）；选中项右侧 CHECK 图标随 targetType 出现（:614,:620,:644）；路径②→ general/public（:207-214）、③→ campus/school（:216-223）、④→ circle/interest 且 targetId=Number(circle.id)（:198-205）；每次选择后弹层自动关闭且卡片三处文案同步（:115-132）；圈子项「已加入」绿标与成员数短格式（:642-643 + formatMemberShort :135-139，≥10000 显示 x.xw）；⑤ 系统返回关闭后遮罩不残留；点击面板内部不得误关（@tap.stop :606）；无写请求；console 无报错",
-      "evidence": "normal：弹层展开 + 五路径落点 共 6 张截图 + 每次 targetType/targetId/visibility 实测值 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB10",
-      "page": "subpackages/village/village/publish",
-      "title": "「添加话题」行只 toggle 固定话题「#校园日常」：已选 n/5 计数与二次点击取消、满 5 静默",
-      "tier": "critical",
-      "pre": "身份A mock 登录 → reLaunch 本页；先保持 general 或切 campus 目标（circle 目标下该行隐藏 :690）",
-      "action": "① tap 添加话题行的 .publish-row__arrow 一次（四行里只有这行带箭头）→ 观察 meta 计数 → 在弹层 tap .publish-sheet__chip（首个热门话题 校园日常）→ ② 再 tap .publish-sheet__chip 一次（取消）；③ evaluate 把 topics 置为 5 项后再 tap .publish-row__arrow，观察是否有任何反馈；④ 在正文里直接手打「#周末去哪 校园美景 #」后提交一次，回读 tags",
-      "expected": "该行 @tap 直调 toggleTopic('#校园日常')（:690）→ 首次加入 '#校园日常'、再次点击移除（:261-266 idx>=0 splice 分支）→ meta「已选 n/5」随 0→1→0（:693）；**该行无法添加其它话题**（无弹层、无输入口）→ 与 post.vue 话题弹层（热门 10 项 + 自定义 16 字，post.vue:959-1001）的能力差距必须并列截图取证（功能/一致性维，是否立案交判定员）；③ topics 已满 5 时被 else if 长度闸拒绝（:265）→ 必须回填「点击后无任何 Toast/DOM 变化」这一静默死点击证据（铁律风险）；④ 正文内 #话题被 buildMergedTopics 正则 /#([^\\s#··]+)/g 自动并入且总数截到 5（:284-290）→ 回填 body.tags 数组原文（含 '#周末去哪'，纯 '#' 不得产出空标签）；断言两列：① 提交请求条数=1；② 服务端回读 tags 实值（mock 轮记 N/A 并注明）；console 无报错",
-      "evidence": "critical：①②③ 计数态截图（③须含点击前后对比）+ ④ 提交前后截图 + 路由 + Toast 文案 + topics/body.tags 实测值 + console + network + 服务端回读（real）",
-      "requiresReal": false,
-      "tapTarget": ".publish-row__arrow",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:815",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB11",
-      "page": "subpackages/village/village/publish",
-      "title": "「提及好友」只弹 Toast、不插入 @（与 post.vue 行为分叉的交叉取证）",
-      "tier": "normal",
-      "pre": "身份A mock 登录 → reLaunch 本页，正文输入「周末」",
-      "action": "tap .publish-row「提及好友」（:704-708 → openMentionPicker :268-270）；再连点 3 次观察 Toast 队列；随后 evaluate 回读 content",
-      "expected": "只弹 Toast=village.post.mentionHint（:269）→ **content 实值仍为「周末」不被修改**（与 post.vue:157-160 的「向正文末尾插入 @」分叉）→ 须与 post.vue 的 VP20 证据并列（同功能两页不同实现）；有 Toast 即满足 500ms 反馈铁律，不得判死按钮；连点 3 次 Toast 是叠加还是覆盖须回填条数；无 @提及选择器/好友列表 → 功能完成度观察项；无写请求；console 无报错",
-      "evidence": "normal：点击后 Toast 截图 + content 实测值文本 + 连点 3 次后的 Toast 条数 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB12",
-      "page": "subpackages/village/village/publish",
-      "title": "「添加位置」只读行：城市缓存有/无两态文案，点击无动作（不得有可点假象）",
-      "tier": "noop",
-      "pre": "身份A mock 登录；变体A：清 storage 中 STORAGE_KEYS.NEARBY_CITY（constants/storage-keys.ts）→ reLaunch 本页；变体B：evaluate 写入 NEARBY_CITY='杭州' 后 reLaunch（缓存来源为 nearby 定位链路 utils/location.ts，MP-R1-PUBLISH-006）",
-      "action": "两态各检视位置行文案与是否带箭头/press-feedback → 各 tap 一次该行观察反馈 → 提交一次并回读 body",
-      "expected": "A：meta='选择位置'（:702，currentCity 为空时不再宣称「自动定位」，MP-R1-PUBLISH-006 回归：原恒显「北京市 · 自动定位」）；B：meta='杭州 · 自动定位'（:61 currentCityLabel 拼接）；该行**无 @tap、无 press-feedback、无 chevron**（:697-703）→ tap 必须无任何反馈且不弹层不跳页（属既定只读信息行，不得按死按钮立案，但须回填无变化的 DOM/路由快照）；location 字段恒为空串（:49，本页无位置输入口）→ 提交 body 不含 location（回填 body 证明；与 post.vue 可选位置形成能力差异）；console 无报错",
-      "evidence": "noop：两态截图 + 点击前后 DOM/路由快照 + storage 键值 + body 快照 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB13",
-      "page": "subpackages/village/village/publish",
-      "title": "圈子列表懒加载三态：加载中 / 失败+重试 / 空态（MP-R1-PUB-017 / MP-R2-PUB-103），失败与空态必须可区分",
-      "tier": "critical",
-      "pre": "REAL_ONLY 轮用 DevTools 拦截 GET /circles 返回 5xx 构造失败态；mock 轮用无圈子身份构造空态。身份A 登录 → 确保 circleStore.circles 为空（冷启动不预加载）→ reLaunch 本页",
-      "action": "① tap .publish-to__card 发布到卡片（watch targetOpen 触发 ensureCirclesLoaded，:108-112）→ 观察加载态；② 失败态下 tap「重试加载」（:626-631 retryLoadCircles :105-107）；③ 断网后重开弹层再恢复网络后 tap 重试；④ 空态变体（已登录但无已加入圈子）",
-      "expected": "三态互斥且文案独立：加载中「兴趣圈子加载中…」（:622-624）；失败「圈子列表加载失败，请稍后重试」+ 可点「重试加载」项（:626-631）→ **核心断言：失败态不得被渲染成「尚未加入兴趣圈子」空态**（MP-R2-PUB-103：fetchCircles 内部吞错不 rethrow，原 .catch(toast) 永不可达，现读 circleStore.errorMessage 区分 :100-103）；空态「尚未加入兴趣圈子，可先在『附近 - 热门兴趣圈』加入」（:647-649）；懒加载只发 1 次请求（circlesLoading 并发闸 :92-95）→ 回填 GET /circles 条数；重试成功后渲染 joinedCircles（:632-646）；断言两列：① 客户端读请求条数=重试次数；② 服务端回读圈子集合；Toast 应为无（错误以弹层内文案呈现）→ 回填实际 Toast 数组；console 无未捕获 rejection",
-      "evidence": "critical：加载态 + 失败态 + 重试后 + 空态 共 4 张截图 + 路由 + GET /circles 条数与状态码 + Toast（应为无）+ console + 服务端回读",
-      "requiresReal": true,
-      "actionPreTapfix": "① tap 发布到卡片（watch targetOpen 触发 ensureCirclesLoaded，:108-112）→ 观察加载态；② 失败态下 tap「重试加载」（:626-631 retryLoadCircles :105-107）；③ 断网后重开弹层再恢复网络后 tap 重试；④ 空态变体（已登录但无已加入圈子）",
-      "tapTarget": ".publish-to__card",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:749",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB14",
-      "page": "subpackages/village/village/publish",
-      "title": "配图：选图 / 压缩 / 九宫格与删除 / 满 9 张上限提示 / 隐私 errno 112 与其它失败的反馈分叉",
-      "tier": "normal",
-      "pre": "身份A mock 登录 → reLaunch 本页；三变体：隐私未授权、相册含 ≥9 张图、REAL_ONLY 下未声明相册 scope 的 errno 112 场景",
-      "action": "① tap「＋」块 .publish-image--add（:680-682 → chooseImage :226-254）在未授权态；② 授权后选 4 张 → tap 删除角标 .publish-image__remove（:676-678 removeImage :256-258）；③ 选满 9 张后再 tap .publish-image--add 触达上限分支；④ 制造 chooseImages 抛 errno 112；⑤ 制造其它失败（如取消选图）",
-      "expected": "未授权 → ensurePrivacyAuthorized reject → Toast=village.post.privacyRequiredImage（:231-236）；正常路径 chooseImages({count:9-已有}) → compressImages（:237-241 ← utils/media.ts + utils/compress-image.ts）→ 九宫格数量与 images 长度一致、'＋'块随 v-if 出现/隐藏（:680）；删除后「＋」重现；满 9 张时上限 Toast 的 {n} 必须替换为 9（:227-230 ← village.post.maxImagesError）；errMsg 含 '112' 或 'privacy agreement' → Toast「请在微信后台隐私指引声明相册/相机权限」+ console.error（:242-250，硬编码中文须采证）；**其它失败只 console.error、不弹 Toast**（:250-252）→ 必须回填「取消/其它失败无可见反馈」证据（与 post.vue:309-312 有 Toast 的口径差异，铁律风险项）；mock 轮零真实上传请求（不得当幂等证据）；console 无未捕获异常",
-      "evidence": "normal：未授权 Toast / 4 张 / 删除后 / 满 9 张 / 112 分支 / 其它失败 共 6 组截图 + 每次 images 长度与首元素路径形态 + Toast 文案逐字 + errMsg 原文 + console",
-      "requiresReal": true,
-      "tapTarget": ".publish-image--add",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:792",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB15",
-      "page": "subpackages/village/village/publish",
-      "title": "REAL_ONLY 带图发布：临时路径判定走 isUploadedMediaUrl，禁止 http://tmp 死链落库（MP-R2-PUB-102）",
-      "tier": "critical",
-      "pre": "REAL_ONLY：真实后端 + 相册 2 张不同图 → 本页 general 目标 + 唯一正文（≥5 字）。mock 轮 :510 被 !useMock() 短路 → 记 UNVERIFIED",
-      "action": "选 2 张图 .publish-image--add → 补正文 .publish-content__input → tap 发布 .publish-header__submit → 观察两次上传请求与创建 payload.images → 返回村口看该帖配图 → 变体：上传中途制造第 2 张失败",
-      "expected": "本地/已上传判定必须走 isUploadedMediaUrl（:507-509 ← utils/media.ts；裸 /^https?:/ 会把 DevTools 的 http://tmp/* 误判为已上传）→ POST /media/upload 两次（文件名 post-image-<ts>.jpg :515 含时间戳避免多图撞同一幂等键）+ showLoading uploadingImages（:511）；创建 body.images 全为可访问 URL、**零** http://tmp / http://usr / wxfile://tmp 形态（回填数组原文，这是本用例唯一硬判据）；上传失败 → hideLoading + Toast imageUploadFailed + return（:519-523）→ 不得带死链发帖，且不得残留外层 showLoading（:503 与 :511 两层 loading 的 hide 配对须实拍）；断言两列：① 2 条上传 + 1 条创建的状态码与 Idempotency-Key；② 服务端回读帖子 images 长度=2 且两 URL 可 GET、列表不裂图；console 无未捕获异常",
-      "evidence": "critical：选图后 before + 发布后列表配图 after + 上传失败态 截图 + 路由 + Toast 文案 + Loading 残留检查截图 + console + network（2 上传 + 1 创建，含 Key）+ body.images 原文 + URL 可达性验证",
-      "requiresReal": true,
-      "actionPreTapfix": "选 2 张图 → 补正文 → tap 发布 → 观察两次上传请求与创建 payload.images → 返回村口看该帖配图 → 变体：上传中途制造第 2 张失败",
-      "tapTarget": ".publish-image--add",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:792",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB16",
-      "page": "subpackages/village/village/publish",
-      "title": "连点顶部「发布」×5：客户端多余请求计数与服务端落库条数分列（防幂等假通过）",
-      "tier": "critical",
-      "pre": "REAL_ONLY 优先（只有 real 轮能区分客户端 submitting 守卫与服务端幂等去重）；mock 轮同跑并标注「仅验证客户端守卫」。唯一正文串，与 PUB17-PUB21 互不重复。注意本页 submitting 判定在空/最短校验之后（:487-498）且 finally **无条件复位**（:560-563）",
-      "action": "500ms 内对 .publish-header__submit（:580-582）快速 tap×5，逐次记录 tap 时刻；等 ≥2s 后回读",
-      "expected": "两列必须分开回填，禁止合并成「只提交 1 次」：① 【客户端层】回填实际进入函数主体的次数、network 命中 /posts 或 /circles/*/topics 的条数、各条 Idempotency-Key 是否同值；条数=1 → 客户端守卫生效（此时服务端去重不可判定，须在报告注明）；条数>1 → 守卫失效，回填每条状态码，其中 409 条数即幂等兜底次数（IdempotentInterceptor.java:152-160），且**必须**逐条给出对应 Toast 原文（不得静默）；② 【服务端层】重新 GET /posts 按该唯一正文串回读，落库条数必须=1（=2 即重复发帖 P0/P1，回填两条 id/createdAt 并指出本页缺 post.vue/campus 页的「成功不复位」保护，MP-R1-CAMPUSPOST-004 / MP-R2-POSTTOPIC-004 同族）；③ Toast「发布成功」条数=1；④ showLoading/hideLoading 配对（:503/:511 → :523/:561）→ 不得 Loading 永驻；⑤ navigateAway 只发生一次（:553 的 setTimeout **无 clearTimeout 保护**，与 post.vue:586 的 postSubmitNavTimer 口径不同 → 须回填完整路由栈是否多退一层）；console 无报错",
-      "evidence": "critical：before（填好正文）+ after（返回列表）截图 + 完整路由链（含栈快照）+ 全部 Toast 文案与条数 + Loading 残留检查截图 + console + network 请求明细表（URL/Idempotency-Key/状态码）+ 服务端回读条数",
-      "requiresReal": true,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB17",
-      "page": "subpackages/village/village/publish",
-      "title": "【重点回归②相关】REAL_ONLY 同内容二次提交：POST /posts 幂等冲突必须给出可区分失败提示，不得静默",
-      "tier": "critical",
-      "pre": "REAL_ONLY：真实后端(8080) + guest-login 已实名身份 → 由村口正常链路进入本页（栈=2）。第一次发布成功后不重启小程序，用**逐字符相同**的正文（无图）再发一次；两次内容与其他用例不重复",
-      "action": "第一次发布 → 等返回（≥2s）→ 重进本页填相同正文 → tap .publish-header__submit → 等 ≥2s 观察 Toast 与停留态 → 再改 1 字发第三次",
-      "expected": "第二次 body 相同 → 幂等键相同（http.ts:262-274）→ @Idempotent 拦截（VillageController.java:152-157）→ HTTP 409 / error=IDEMPOTENT_CONFLICT / message=「重复请求已被拦截，请勿使用相同的 Idempotency-Key」（IdempotencyException.java:22,29-30）。catch 分支（:554-559）**优先取 e.message**（EnhancedApiError.message=后端 message，http.ts:594-604）→ Toast 必须是该后端原文；判定要点：① 出现「发布失败」泛化兜底（:558 末项）或无 Toast 即判 FAILED（静默，违反本轮 ② 要求）；② finally 复位 submitting（:562）→ 第三次（改 1 字 → 新 key）必须成功，回填第三次状态码=200；③ 第二次不得触发 navigateAway、不得清草稿（成功专属 :546-553 不执行）→ 回填 storage 草稿键与后端 GET /drafts/current 是否仍在；④ 服务端回读该正文串落库条数=1（Toast 条数不可替代）；⑤ 报告须注明这是「客户端稳定哈希幂等键 + 后端 4h TTL」的必然结果，不得写成偶发缺陷；⑥ 若第三次仍 409 → 说明 key 生成掺入/漏掉字段，回填三次 Key 实值对比；console 无未捕获 rejection",
-      "evidence": "critical：第一次成功 before/after + 第二次失败 before/after + 第三次改字成功 after 共 5 张截图 + 路由链（第二次应仍在本页）+ 三次 Toast 文案逐字 + storage/后端草稿键快照 + console + network 三条明细（URL/Idempotency-Key 实值/状态码/error.code/message 原文）+ 服务端回读条数",
-      "requiresReal": true,
-      "tapTarget": ".publish-header__submit",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:740",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB18",
-      "page": "subpackages/village/village/publish",
-      "title": "成功 Toast 与 400ms 返回窗口内的二次点击（本页特有窄窗口）+ 成功不清表单的重复发布风险",
-      "tier": "critical",
-      "pre": "REAL_ONLY 优先；唯一正文串（与 PUB16/PUB17 不同）。本页返回延时 400ms（:553）短于 post.vue 的 800ms（constants/village.ts:52），且成功路径**不显式清空表单**（仅 clearDraft :549，对照 post.vue:577-584）",
-      "action": "tap .publish-header__submit → 看到「发布成功」Toast 后 200ms 内再 tap .publish-header__submit 一次 → 返回村口后重新进入本页观察正文是否残留 → 若残留则直接再点一次 .publish-header__submit",
-      "expected": "断言两列：① 客户端：窗口内请求增量与每条状态码（finally 复位 :560-563 → 第二次点击若发生在请求 resolve 后、navigateAway 之前会真的再发一条同 body 请求，须回填其状态码 200/409）；② 服务端回读该正文串落库条数必须=1；若=2 → 判 P1 重复发帖并与 post.vue 的 VP16 证据并列（同族缺口），回填两条 id/createdAt；③ **重进本页后正文必须为空**：若恢复出已发布内容（allowLeave=true :550 + 本地与后端草稿已删 :546-549，理论上应为空）→ 判 P2/Data 并回填实际 content 与 storage 键值；④ 第 4 步「残留内容再点发布」若产生第 2 条落库即为重复发布闭环，必须逐列取证；⑤ 是否出现两次 navigateAway（:553 无 clearTimeout）→ 回填路由栈是否多退一层或重复 reLaunch 到村口；console 无报错",
-      "evidence": "critical：Toast 时刻 before + 二次点击后 after + 重进本页首屏 + 第四次提交后列表 共 4 张截图 + 路由链（含栈快照）+ Toast 文案与条数 + content/storage 实测值 + console + network 明细（含 409 与 Key 对比）+ 服务端回读条数",
-      "requiresReal": true,
-      "tapTarget": ".publish-header__submit",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:740",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB19",
-      "page": "subpackages/village/village/publish",
-      "title": "草稿双写与取新：本地 500ms 防抖 + 2s 后端写、按 updatedAt 取新、「保留」路径同步 flush（MP-R1-PUBLISH-003/004）",
-      "tier": "critical",
-      "pre": "REAL_ONLY 轮验证后端通道（POST /drafts、DELETE /drafts/current **无 @Idempotent**，DraftController.java:23-49 → 可反复写不撞 409）；mock 轮 clientApi.saveDraft/getDraft 走本地 fixture（services/api.ts:1210-1229）→ 后端列记 N/A。身份A 登录 → 清本地草稿键",
-      "action": "① 在 .publish-content__input 输入正文后 200ms 读 storage、1s 再读、3.5s 再读（防抖 500ms + 后端双写 2000ms 窗口）；② evaluate 把本地草稿 updatedAt 改为过去时间、后端保留新草稿 → 重进观察取哪份；③ 反向（本地新、后端旧）再测；④ 输入内容后点 header 的 X（关闭钮，类名见 PUB20），在 modal 点「保留」→ 退出后 100ms 内立即重进",
-      "expected": "① 三个时刻的 storage['village:publish-draft'] 快照与 POST /drafts 请求时刻全部回填（防抖 POST_DRAFT_SAVE_DEBOUNCE_MS=500 constants/chat.ts:51；后端双写再延 2000ms，publish.vue:347-364）；快照必须含 updatedAt 时间戳与 title:''（:292-309）；②/③ restoreDraft 用 draftTimeMs 归一后比较、取较新（:312-319,:387-391，MP-R1-PUBLISH-004：原后端无条件压过本地）→ 回填最终恢复正文以证明取新生效；④ 「保留」必须 cancelDraftTimers + **同步** flushDraftSave（:452-467 → :338-345，MP-R1-PUBLISH-003：原挂 500ms 定时器后 onUnmounted 即清、最后 ≤500ms 编辑必丢）→ 立即重进必须完整恢复刚才内容（唯一可观测证据）；断言两列：① 客户端 POST /drafts 条数与时刻；② 服务端 GET /drafts/current 回读内容与 updatedAt；③ 恢复时 visibility 按 legalVisibility 重算而非直取草稿值（:410-418，MP-R2-PUB-101）→ 回填「草稿 visibility vs 恢复后 visibility vs targetType」；console 无报错",
-      "evidence": "critical：三时刻 storage 快照 + 两次取新对照 + 保留后重进首屏 截图 + 路由 + POST/GET /drafts 请求时刻与内容 + console + 服务端回读草稿 + Toast（应为无）",
-      "requiresReal": true,
-      "tapTarget": ".publish-content__input",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB20",
-      "page": "subpackages/village/village/publish",
-      "title": "退出脏数据保护：「保留」/「丢弃」两分支 + modal 三路关闭 + 无改动不弹 + 只加图也算脏",
-      "tier": "critical",
-      "pre": "REAL_ONLY 轮同时核对后端草稿是否被删（DELETE /drafts/current，clearDraft :439-443 内 clientApi.deleteDraft）；mock 轮后端列记 N/A。身份A 登录 → 清本地与后端草稿",
-      "action": "① 输入内容（输入 .publish-content__input）→ tap header X（.publish-header__close，:576 → requestLeave :452-468）→ modal 点「丢弃」（:465）；② 重进输入内容 → X → modal 点「保留」（:464）；③ 重进输入内容 → X → modal 用系统返回关闭；④ 全新无改动状态 tap X；⑤ 只选 1 张图 .publish-image--add 不打字后 tap X",
-      "expected": "modal 标题/内容/按钮文案走 i18n（village.post.draftModalTitle/Content/draftKeep/draftDiscard :456-460）非裸 key；dirty 判定含 content/images/topics（:454）→ ④ 无改动时**不弹 modal** 直接 leave（回填无 modal 证据）；⑤ 只加图也必须判脏（images.length 参与；数组摊平 watch :448，MP-R1-PUBLISH-002 同源）；「丢弃」→ cancelDraftTimers + removeStorageSync + DELETE /drafts/current（:439-443，先取消定时器再删防止写回）→ 重进必须为空，回填本地键与后端 GET /drafts/current 均为空；「保留」→ flushDraftSave 同步落盘（本地 + POST /drafts）→ 重进必须完整恢复；③ 系统返回关闭 modal 后不得离开页面也不得落盘（回填 storage 快照）；leave 在栈=1 时 reLaunch 村口（:471-478，MP-R2-PUB-108 与成功路径共用出口）；断言两列：① 各 POST/DELETE /drafts 条数与状态码（该通道无幂等闸，重复删不得出现 409，若出现即判契约异常并回填）；② 服务端回读草稿存在性；console 无报错",
-      "evidence": "critical：modal + 三分支落点 + 重进恢复/清空态 + 只加图态 共 7 张截图 + 路由链 + storage 与后端草稿逐时刻快照 + console + network（/drafts 各请求状态码）",
-      "requiresReal": true,
-      "actionPreTapfix": "① 输入内容 → tap header X（:576 → requestLeave :452-468）→ modal 点「丢弃」（:465）；② 重进输入内容 → X → modal 点「保留」（:464）；③ 重进输入内容 → X → modal 用系统返回关闭；④ 全新无改动状态 tap X；⑤ 只选 1 张图不打字后 tap X",
-      "tapTarget": ".publish-content__input",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB21",
-      "page": "subpackages/village/village/publish",
-      "title": "发布成功清理链路：本地 + 后端草稿双删、allowLeave 置位、navigateAway 单一出口、无二次退出弹窗",
-      "tier": "critical",
-      "pre": "REAL_ONLY 轮核对后端 DELETE /drafts/current；身份A 登录 → 由村口进入本页（栈=2）→ 填唯一正文（≥5 字）",
-      "action": "tap .publish-header__submit → 连拍（0/200/400/700/1200ms）观察 Toast 与返回 → 返回后 evaluate 读本地草稿键 + REAL_ONLY 用 GET /drafts/current 回读 → 重进本页观察表单 → 离开时观察是否弹「保留草稿」",
-      "expected": "Toast「发布成功」icon=success（:532 circle 分支 或 :544 village 分支 ← village.postSuccess）；400ms 后 navigateAway（:553）→ 栈>1 navigateBack、栈=1 reLaunch 村口（:471-478）；本地 removeStorageSync + 后端 deleteDraft 双删（:546-549，MP-R8-DRAFT-001：只清本地会让下次恢复已发布内容造成重复发布）→ 重进必须是全新空表单（回填 content 实值，该修复唯一硬判据）；allowLeave=true（:550）→ 离开时不得再弹「保留草稿」modal（回填是否弹出，若弹出即为守卫缺口）；hideLoading 在 finally（:561）→ 无 Loading 永驻；断言两列：① 创建 1 条 + DELETE /drafts/current 1 条的时刻与状态码；② 服务端回读：帖子落库 1 条、草稿为 null；Toast 条数=1；console 无报错",
-      "evidence": "critical：填好表单 before + Toast + 返回列表 + 重进空表单 + 离开无 modal 证据 共 5 张截图 + 完整路由链 + Toast 文案与条数 + Loading 残留检查截图 + storage/后端草稿回读 + console + network 明细 + 服务端回读条数",
-      "requiresReal": true,
-      "tapTarget": ".publish-header__submit",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:740",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB22",
-      "page": "subpackages/village/village/publish",
-      "title": "REAL_ONLY 正文最短 5 字与后端 title @Size(min=5,max=30) 的契约一致性（直连对照）",
-      "tier": "critical",
-      "pre": "REAL_ONLY：真实后端。前端把正文截 30 字当 title（:497）并要求正文 ≥5 字（:493-496）→ 与 CreatePostRequest.java:17 @Size(min=5,max=30) 应等价，需用直连通道证明后端确实按此拒绝",
-      "action": "① 前端输入 5 字提交（输入 .publish-content__input，发布钮 .publish-header__submit）；② 用 curl/evaluate 直连 POST /api/v1/posts 分别发 title=4 字与 title=31 字（三条 content 各不同以避开相同幂等键）；③ 回读列表并记录三条响应",
-      "expected": "① 前端成功（200/201）→ 回填 body.title 实值与长度=5；② 后端两次均应 400 且 message 为校验文案（回填 {status, error.code, message} 原文，不得只记「失败」）→ 证明前端最短校验非多余；③ 服务端回读：仅 ① 落库（1 条）；断言两列：① 三条请求的状态码与 Idempotency-Key（三条 body 不同 → key 不同，须验证互不吞掉；这同时是本轮 ② 的正向对照：**不同内容必须放行**）；② 回读条数；若后端对 4 字放行而前端拒绝 → 记录「前端更严」并回填两端阈值来源；若前端 5 字仍被后端拒（category/visibility 组合校验）→ 判 P1 契约不一致并回填原文；console 允许 4xx 日志、不得有未捕获 rejection",
-      "evidence": "critical：前端成功态 before/after + 两次直连响应报文截图 + 回读列表 after 截图 + 路由 + Toast 文案 + console + network 三条明细 + 服务端回读条数",
-      "requiresReal": true,
-      "actionPreTapfix": "① 前端输入 5 字提交；② 用 curl/evaluate 直连 POST /api/v1/posts 分别发 title=4 字与 title=31 字（三条 content 各不同以避开相同幂等键）；③ 回读列表并记录三条响应",
-      "tapTarget": ".publish-content__input",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB23",
-      "page": "subpackages/village/village/publish",
-      "title": "目标切换：正文不丢、草稿随目标重写、提交通道与可见性三字段随之切换",
-      "tier": "critical",
-      "pre": "身份A mock 登录 → reLaunch 本页；circleStore 有已加入圈子（无则先看 PUB13）",
-      "action": "输入 20 字正文（输入 .publish-content__input）→ 依次切目标 .publish-to__card：general → circle → campus → 每种目标各提交一次（每次给正文追加唯一后缀），并每步读草稿快照；再用 evaluate 置 friends 复现第四种目标提交一次",
-      "expected": "切目标**不得清空正文**（watch :448 只触发 scheduleDraftSave）；每次切换 snapshotDraft 中 targetType/targetId/visibility 同步更新（:292-309）→ 回填四份草稿快照；提交通道随目标切换：circle → createTopic（:525-531）、其余 → createPost 且 visibility/targetType/targetId 三字段透传（:533-544）→ 回填四次 body 实值；friends/campus 的 visibility 必须是 friends/school、不得被 public 覆盖（MP-R2-PUB-101 反向断言）；circle 目标下「添加话题」行隐藏且 tags 不入库（MP-R2-PUB-104）→ 回填该次 body 是否含 tags；断言两列：① 4 条写请求的 URL/状态码/Key；② 服务端回读每条落库位置与可见性与 UI 承诺一致；mock 轮服务端列记 N/A 并注明；console 无报错",
-      "evidence": "critical：四次提交的 before/after 截图 + 四份草稿快照 + 四次 body 对照表 + 路由 + Toast 文案 + console + network 明细 + 服务端回读",
-      "requiresReal": false,
-      "actionPreTapfix": "输入 20 字正文 → 依次切目标 general → circle → campus → 每种目标各提交一次（每次给正文追加唯一后缀），并每步读草稿快照；再用 evaluate 置 friends 复现第四种目标提交一次",
-      "tapTarget": ".publish-content__input",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB24",
-      "page": "subpackages/village/village/publish",
-      "title": "REAL_ONLY 后台发帖开关（post_publish_open=false）对本页的影响：入口隐藏 + 深链强发 403 可区分提示",
-      "tier": "critical",
-      "pre": "REAL_ONLY + 管理后台（SUPER_ADMIN）把 app_switch.post_publish_open 置 false，仅操作演示数据、禁止删除既有业务数据 → 分别验：① 村口输入条被隐藏（village/index.vue:847-848）；② 深链直达本页强发。mock 轮 store 未加载时默认开放（village/index.vue:70-72）→ 记 UNVERIFIED",
-      "action": "从深链进入本页 → 填唯一正文 → tap .publish-header__submit → 观察 Toast/network → 后台恢复开关后重进本页确认能正常发布",
-      "expected": "深链绕过入口时后端应 403 且 message 为发帖功能已关闭类原文（VillageController.java:158-161 OperationForbiddenException(ErrorMessages.POST_PUBLISH_CLOSED)）→ 本页 catch 必须把该原因呈现（:554-559 取 e.message）：出现泛化「发布失败」或无 Toast 即判 FAILED（本轮 ② 「不得静默」同族判据）；断言两列：① 请求条数=1、状态码 403；② 服务端回读落库条数=0；恢复开关后同内容应成功（回填该条 200 与落库 1 条；注意同 body 重试因 403 已被释放幂等键，IdempotentInterceptor.java:197-217 → 若第二次仍 409 即键未释放，判 P1）；页面不得自动返回、不得清表单/清草稿（成功路径不执行）；console 允许 403 日志、不得有未捕获 rejection",
-      "evidence": "critical：关闭态 before + 403 Toast after + 恢复后成功 after 截图 + 路由 + Toast 文案逐字 + console + network 两条明细（状态码/error.message/Idempotency-Key）+ 服务端回读条数",
-      "requiresReal": true,
-      "tapTarget": ".publish-header__submit",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:740",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB25",
-      "page": "subpackages/village/village/publish",
-      "title": "发帖回流村口：新帖出现在公开广场且按 id 去重（不双份、不「发完就消失」）",
-      "tier": "critical",
-      "pre": "REAL_ONLY 优先（真实审核流：新帖 audit_status=pending 置顶，village/index.ts:505-516 + village/index.vue:152-165）。身份A 登录 → 由村口今日广场进入本页 → 唯一正文（≥5 字，无图）→ 发布",
-      "action": "发布成功自动返回村口 → 观察列表首条与「审核中」徽标 → 下拉刷新 2 次并数该标题出现次数 → 再等 5s 后刷新一次",
-      "expected": "回流后列表首条为该新帖（force 刷新穿透 30s TTL，village/index.vue:257-260）→ 徽标与 auditStatus=pending 一致；同标题在列表中条数必须=1（selfPendingPosts 与服务端列表按 id 去重 :152-165，出现双份即判 P2/Data）；断言两列：① 客户端：创建 1 条 + 刷新读请求条数（含是否被本页 onUnmounted/请求 abort 影响；publish.vue 不调 villageStore.dispose，对照 post.vue:243-248 的 MP-R2-POST-002 结论）；② 服务端回读：GET /posts 与自己帖子列表中该标题各 1 条、无重复；Toast 条数=1；无 Loading/骨架永驻；console 无报错",
-      "evidence": "critical：发布前 before + 回流后列表首条 + 两次刷新后 共 3 张截图 + 完整路由链 + Toast 文案与条数 + console + network 明细 + 服务端回读条数与 id 去重结果",
-      "requiresReal": true,
-      "automatable": false,
-      "notAutomatableReason": "发布成功自动返回 + 下拉刷新 2 次 + 等 5s：下拉刷新是原生手势，CLI 通道不驱动",
-      "notAutomatableFrom": "cellplan-round7-taptarget.json",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB26",
-      "page": "subpackages/village/village/publish",
-      "title": "双发布页并存的完整差异清单实测（同内容两页各发一次的对照 + 草稿键互不污染）",
-      "tier": "critical",
-      "pre": "身份A mock 登录；REAL_ONLY 轮另跑一次取服务端证据。两页各自清草稿键（'village:publish-draft' 与 'village:post-draft'，constants/village.ts:43,:49）",
-      "action": "① 两页分别输入同一唯一正文串（输入 .publish-content__input）并各提交一次 .publish-header__submit（第二页对正文追加后缀以避开相同幂等键）；② 逐项对照并回填两表：标题入口有无、最短校验、话题能力、位置能力、可见范围能力、圈子可选集合、目标文案、草稿键、草稿是否双写后端、成功复位策略与返回延时、工具栏有无；③ evaluate 交叉写入对方草稿键后重进两页，验证互不恢复",
-      "expected": "差异逐项必须有实测证据（不接受代码推断）：标题（publish 无输入框 :655-670 vs post 有 20 字标题 post.vue:759-772）；最短 5 字（publish :493-496 有 vs post 无）；话题（publish 固定单话题 toggle :690 vs post 热门+自定义弹层 post.vue:959-1001）；位置（publish 只读 :697-703 vs post 可选可清 post.vue:1004-1049）；可见范围（publish 只读 :713-717 vs post 弹层可选 post.vue:1052-1080）；圈子集合（publish 仅已加入 :82 vs post 全部 post.vue:735）；草稿键与双写（publish 独立键 + 后端双写 :338-364 vs post 仅本地 post.vue:358-369）；成功路径（publish 不清表单 :546-553 vs post 显式清空 post.vue:577-584）；返回延时（400ms :553 vs 800ms constants/village.ts:52）；工具栏（publish 无 :737 vs post 5 项 post.vue:904-956）；③ 交叉写入后两页各自**不得**恢复对方快照（MP-R1-PUBLISH-004 回归：原共用键导致 post 的 title 被丢弃、publish 的空 title 反向覆盖）；断言两列：① 两次写请求 URL/状态码/Key（必须不同，body 不同）；② 服务端回读两帖均在公开广场且各 1 条；console 无报错",
-      "evidence": "critical：两页首屏与提交后截图（≥6 张）+ 差异对照表（每项标 文件:行号）+ 两页 storage 键交叉快照 + 路由 + 两次 Toast 文案 + console + network 明细 + 服务端回读条数",
-      "requiresReal": true,
-      "actionPreTapfix": "① 两页分别输入同一唯一正文串并各提交一次（第二页对正文追加后缀以避开相同幂等键）；② 逐项对照并回填两表：标题入口有无、最短校验、话题能力、位置能力、可见范围能力、圈子可选集合、目标文案、草稿键、草稿是否双写后端、成功复位策略与返回延时、工具栏有无；③ evaluate 交叉写入对方草稿键后重进两页，验证互不恢复",
-      "tapTarget": ".publish-content__input",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB27",
-      "page": "subpackages/village/village/publish",
-      "title": "打开即返回（≤500ms）与重复进出×3：定时器/请求不泄漏、状态不跨实例残留",
-      "tier": "normal",
-      "pre": "身份A mock 登录 → 清两个草稿键；由村口进入（栈=2）",
-      "action": "① 进入后 200ms 内在 .publish-content__input 输入正文（挂上 500ms 防抖与 2s 后端双写）→ 立即触发系统返回销毁本页 → 等 3.5s 读 storage 与 POST /drafts 时刻；② 循环 3 次：进入 → 打开弹层（入口类名见 PUB23 的发布到卡片，本条不重复点名）→ 不发布直接返回（modal 选丢弃），每轮观察字段与请求",
-      "expected": "① onUnmounted 清 draftSaveTimer/draftSyncTimer（:566-569）→ 销毁后不得再写本地草稿或发 POST /drafts（回填 3.5s 时两个通道的实际增量；仍有写入即泄漏，按 P2/Data 立案并给出时刻与内容）；销毁后触发 flush 不得抛错；② 每轮所有字段回默认（content=''、images=[]、topics=[]、location=''、targetType=general、visibility=public、tipVisible=true、targetOpen=false）；每轮 GET /circles 只在弹层需要且 circles 空时发（懒加载闸 :92-95,:108-112）→ 回填 3 轮累计条数；每轮弹层用系统返回关闭后遮罩不残留；栈长稳定；console 无累积错误、无 Unhandled rejection",
-      "evidence": "normal：每轮 after 截图（4 张）+ storage 键与 /drafts 请求时刻表 + 每轮请求计数 + console",
-      "requiresReal": false,
-      "tapTarget": ".publish-content__input",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB28",
-      "page": "subpackages/village/village/publish",
-      "title": "表单滚动与键盘：100vh 容器实测、内滚边界、header 常驻、正文末行与键盘间距",
-      "tier": "noop",
-      "pre": "身份A mock 登录 → reLaunch 本页；正文填 400 字使内容超屏；另用小屏机型复测一次",
-      "action": "① .publish-body scroll-view（:585）滚到底 → 回顶；② 聚焦 .publish-content__input 正文输入 3 行观察键盘；③ 关闭小贴士后观察布局回收；④ 检视最后一行「谁可以看」是否被 safe-area 或弹层残留遮挡；⑤ 检查是否出现整页双滚动条",
-      "expected": "滚动只发生在 .publish-body；容器 height:100vh（:742-747）+ header flex-shrink:0（:749-760）→ **必须实测是否出现整页双滚动条 / header 随页滚出 / 正文被键盘顶飞**（同族校园圈页与圈子发布页已改为 100%+overflow:hidden 并注释「mp-weixin 不支持 100vh」，campus/post-topic.vue:429-441、circles/post-topic.vue:759-771 → 若本页异常即为同族未收敛，判 P2/MiniProgram）；滚到底时底部占位 24rpx（:734,:839）足够、最后一行完整可见；cursor-spacing=20（:657）生效、:show-confirm-bar=false（:662）无确认条；textarea min-height 220rpx（:811）多行扩展不破布局；数值回填 scrollTop/scrollHeight/header rect/键盘高度；console 无报错",
-      "evidence": "noop：执行日志（滚动数值、header/末行 rect、键盘高度、是否存在双层滚动）+ 滚到底与键盘弹起 2 张截图",
-      "requiresReal": false,
-      "tapTarget": ".publish-content__input",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB29",
-      "page": "subpackages/village/village/publish",
-      "title": "热区量测：X 关闭 / 发布胶囊 / 发布到卡片 / 四行 / 图片删除 × / 加图块 / 弹层选项（铁律 ≥88rpx）",
-      "tier": "noop",
-      "pre": "同 PUB01；量测图片删除 × 需先选 1 图；量测弹层选项需打开弹层",
-      "action": "对 .publish-header__close、.publish-header__submit、.publish-to__card、四行 .publish-row、.publish-image__remove、.publish-image--add、.publish-target-sheet__option 逐个 boundingClientRect 量测并标注可点/只读",
-      "expected": "如实回填 rpx 并对照 88rpx：X 64×64rpx（:761）、发布胶囊 padding 12×36rpx（:771）、图片删除 × 40×40rpx（:819）、「＋」块 200×200rpx（:817,:822）、弹层选项 padding 24×8rpx（:801）、四行 padding 26×24rpx（:826）；其中「添加位置」「谁可以看」为只读行（:697-717）→ 量测值仅作参考、不得按热区缺陷立案，须显式标注只读；不可量者记 UNVERIFIED；执行员不得以源码结论代替实测数值；无写请求；console 无报错",
-      "evidence": "noop：执行日志（各元素 width/height 数值表 + 可点/只读标注）；可免截图",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB30",
-      "page": "subpackages/village/village/publish",
-      "title": "本页 i18n 裸 key 与硬编码中文混排采证（zh/en 双跑全流程）",
-      "tier": "normal",
-      "pre": "身份A mock 登录；分别在 i18n.locale=zh-CN 与 en-US 下跑完整流程（四目标、弹层三态、话题/位置/提及行、草稿 modal、成功与失败 Toast）",
-      "action": "对每一屏做全文本节点扫描裸 key（形如 a.b.c）；并清单式记录源码中硬编码中文位置",
-      "expected": "零裸 key：本页消费的 village.contentRequired/contentMinLength/postSuccess、village.post.*（privacyRequiredImage/maxImagesError/uploadingImages/imageUploadFailed/publishing/publishFailed/draftModal*/visibilityPublic/contentPlaceholder/mentionHint）、circle.postTopicTargetCampus、common.closeAria/publish、error.* 在两 locale 均须为译文（缺失按 P2/Function 立案并回填 key 与出现位置；本轮 ① 的同族检查，命名空间错放会在此同样暴露）；同时逐条记录硬编码中文作为一致性证据：header 标题「发布动态」（:579）、发布按钮「发布」（:581）、「发布到」标签（:588）、「圈内成员可见」标签（:598）、弹层标题与三分组（:608,:610,:616,:633）、「个人动态/默认公开，所有人可见/校园圈/仅认证同校同学可见」（:612-613,:618-619）、圈子「已加入」标（:642）、三态提示文案（:623,:627,:629,:630,:648）、正文 placeholder（:660）、四行标签与占位（:692,:699,:702,:706,:715-716）、小贴士全文（:726-727）、「个人日常/日常 · 仅互相喜欢或关注我的人可见/仅喜欢/关注的人可见」（:119-120,:130,:148）→ en-US 下这些仍为中文，属同族「未入 i18n」问题，须逐条给位置与出现语言；全部以截图与文本为准，禁止凭推测立案；console 无 i18n 缺 key 告警",
-      "evidence": "normal：两语言全流程截图集（≥8 张）+ 裸 key 扫描结论 + 硬编码中文位置清单（文件:行号）+ console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB31",
-      "page": "subpackages/village/village/publish",
-      "title": "【并发修复·当前源码】提交出口唯一、「先 hideLoading 再 toast」、二次点按被吞（MP-R1-PUBLISH-109）",
-      "tier": "critical",
-      "pre": "REAL_ONLY 优先：真实后端 + 把 POST /posts 响应延迟抬到 ≥3s（限速/代理），使 hideLoading/toast 次序与在途窗口可观测。mock 轮同步成功、窗口不可观测 → 记 UNVERIFIED。清两个草稿键",
-      "action": "① 填唯一正文 → tap .publish-header__submit → 在途连点 .publish-header__submit 3 次；② 观察在途是否出现全程 loading（带 mask）；③ 成功后观察 Toast 是否被随后的 hideLoading 顶掉；④ 用 evaluate 制造一次失败（直连改坏 payload）观察失败 Toast 是否同样不被吞",
-      "expected": "**当前锚点** publish.vue:553 首行 submitting 守卫 + :570 showLoading({title:village.post.publishing, mask:true})（上传再套一层 :579，mask:true）+ :619-623「出口唯一、先 hideLoading 再 showToast」重排（原结构 showToast 在 try 内、finally 再 hideLoading，小程序端 hideLoading 会把刚弹出的 Toast 一起关掉）→ 断言三列：① 客户端 POST /posts 条数=1（在途 3 次点按不多发）；② **成功/失败的 Toast 必须可见并存活**：截图须拍到 Toast 文本，若只见 loading 收起无 Toast 即判 P1/Interaction（该修复的反证）；③ 服务端回读该正文串落库条数=1；失败变体必须同样给出可读原因（:624-628 取 e.message/两 store errorMessage，兜底 publishFailed）；submitting 在出口统一复位（:623）→ 允许改字重试；console 无未捕获 rejection",
-      "evidence": "critical：在途 loading 实拍 + 成功 Toast 存活截图 + 失败 Toast 存活截图 + 返回列表 + 路由 + 全部 Toast 文案与条数 + console + network 明细（URL/Key/状态码）+ 服务端回读条数",
-      "requiresReal": true,
-      "tapTarget": ".publish-header__submit",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:740",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB32",
-      "page": "subpackages/village/village/publish",
-      "title": "【并发修复·当前源码】提交在途不得离页、已销毁页面不做 UI 副作用、离页提示 publishing（MP-R2-POST-010 两页一致）",
-      "tier": "critical",
-      "pre": "REAL_ONLY：真实后端 + POST /posts 响应延迟 ≥3s。身份A 登录 → 由村口进入本页（栈=2）。mock 轮记 UNVERIFIED",
-      "action": "① 填正文 → 发布 → 在途 1s 内连点 header X 三次；② 在途用系统返回硬退 → 等响应落地观察；③ 正常成功后于 400ms 窗口内再点一次发布；④ 每次记录路由栈",
-      "expected": "**当前锚点** publish.vue:509 pageDestroyed 标志 + :513-517 requestLeave 在 submitting 时不放行离页并弹 Toast=village.post.publishing + :634 成功回调在 pageDestroyed 时提前 return（存储清理仍执行、不留幽灵草稿）→ 断言：① X 三次点按都不得离页（回填栈快照），Toast 文案为 publishing 而非「发布中…」裸 key；② 若被硬退，异步成功回调不得在已销毁页面弹 Toast/再触发 navigateAway（回填 console 与最终落点）；③ 第三步二次点按被 :553 守卫吞掉，且 :553 的 setTimeout(navigateAway,400) **无 clearTimeout 保护** → 必须实测是否出现双重返回/多退一层；断言两列：① 客户端 POST /posts 条数=1；② 服务端回读落库=1；console 无报错",
-      "evidence": "critical：在途点 X 态 + Loading/mask 实拍 + 硬退后落点 + 成功返回后路由栈快照 + 路由链 + Toast 文案与条数 + console + network 明细 + 服务端回读",
-      "requiresReal": true,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB33",
-      "page": "subpackages/village/village/publish",
-      "title": "【并发修复·当前源码】空快照不落盘 + 后端草稿单例不得被无意义覆盖删（MP-R2-PUB-113 / MP-R1-PUBLISH-108）",
-      "tier": "critical",
-      "pre": "REAL_ONLY 轮核对 /drafts 通道（DraftController.java:23-49 无 @Idempotent → 可反复写、重复删不撞 409）；mock 轮 getDraft/saveDraft/deleteDraft 走本地 fixture（services/api.ts:1210-1229）→ 后端列记 N/A。身份A 登录 → 清本地键与后端草稿",
-      "action": "① 进入本页什么都不输入，等 3.5s 读 storage['village:publish-draft'] 与 POST /drafts 条数；② 在 .publish-content__input 只输 1 个空格再等 3.5s；③ 先由 post 页/后台留一条后端草稿，然后在本页空表单触发退出保护（若有）与 flush 路径；④ evaluate 直接调 flushDraftSave（:338-345）在空快照下观察是否落盘/落库",
-      "expected": "**当前锚点** publish.vue:355-365 hasDraftContent 定义 + 写盘前三处闸 :381（scheduleDraftSave 本地写）/:393（后端双写）/:439（restoreDraft 恢复闸）+ :489 附近 MP-R1-PUBLISH-108 注释（本端点为全用户单例，禁重复/越权删）→ ①② 空快照必须**既不写本地也不发 POST /drafts**（回填两个时刻的键值与请求条数）；④ 程序化 flush 也必须被闸挡住（否则即「为下一条草稿预设空值」，判 P2/Data）；断言两列：① 客户端 POST /drafts、DELETE /drafts/current 条数=0；② 服务端 GET /drafts/current 回读：他人/前序草稿内容未被清空或覆盖；③ 与 post 页 VP38 交叉：两页均不得越权删后端单例草稿；console 无报错",
-      "evidence": "critical：各时刻 storage 快照 + /drafts 请求计数截图 + 后端草稿内容前后对照截图 + 路由 + console + network（POST/DELETE/GET /drafts 明细）+ 服务端回读",
-      "requiresReal": true,
-      "actionPreTapfix": "① 进入本页什么都不输入，等 3.5s 读 storage['village:publish-draft'] 与 POST /drafts 条数；② 只输 1 个空格再等 3.5s；③ 先由 post 页/后台留一条后端草稿，然后在本页空表单触发退出保护（若有）与 flush 路径；④ evaluate 直接调 flushDraftSave（:338-345）在空快照下观察是否落盘/落库",
-      "tapTarget": ".publish-content__input",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "PUB34",
-      "page": "subpackages/village/village/publish",
-      "title": "【并发修复·当前源码】标题按 POST_TITLE_MAX_LENGTH 截断 + 最短 POST_TITLE_MIN_LENGTH 校验是否已补齐（与 post 页 VP40 对照）",
-      "tier": "critical",
-      "pre": "REAL_ONLY 轮以真实后端 title @Size(min=5,max=30)（CreatePostRequest.java:17）作对照。执行时**先读** constants/village.ts 中 POST_TITLE_MIN_LENGTH / POST_TITLE_MAX_LENGTH 当前实值并回填，不得沿用旧记数值。身份A 登录 → 清草稿 → reLaunch 本页",
-      "action": "① 正文 3 字（输入 .publish-content__input，发布钮 .publish-header__submit）→ 发布；② 正文 6 字 → 发布；③ 正文首行 60 字 → 发布并回读 body.title 长度；④ 标题留空但正文首行含 30+ 字长句 → 观察截断；⑤ 与 post 页 VP40 同输入做数值对照",
-      "expected": "**当前锚点** publish.vue:560-566：最短校验用 t('village.contentMinLength',{n:POST_TITLE_MIN_LENGTH})、titleFromContent=content.trim().slice(0, POST_TITLE_MAX_LENGTH)（旧版为硬编码 5 与 30，现应同源常量）；① 被拦且请求 0 条、{n} 被替换为实际阈值；② 放行；③ body.title 长度必须=POST_TITLE_MAX_LENGTH 实值；④ 截断不得截在 emoji 代理对中间产生乱码（回填截断结果原文）；⑤ 两页阈值必须一致，不一致即判 P2/Consistency 并列两页数值与来源行号；断言两列：① 每次点击请求条数与状态码；② 服务端回读落库条数与落库 title 实值；若前端阈值与后端 min=5/max=30 有差 → 并列两侧数值（本轮 ③ 号「客户端严于/松于后端」的同族证据）；console 无报错",
-      "evidence": "critical：五组输入 before + Toast after 截图 + 每组 body.title 实测长度与阈值来源（文件:行号）+ 两页阈值对照表 + 路由 + Toast 文案逐字 + console + network 明细 + 服务端回读",
-      "requiresReal": true,
-      "actionPreTapfix": "① 正文 3 字 → 发布；② 正文 6 字 → 发布；③ 正文首行 60 字 → 发布并回读 body.title 长度；④ 标题留空但正文首行含 30+ 字长句 → 观察截断；⑤ 与 post 页 VP40 同输入做数值对照",
-      "tapTarget": ".publish-content__input",
-      "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    }
-  ]
+  {
+   "id": "PUB02",
+   "page": "subpackages/village/village/publish",
+   "title": "?target=campus：目标锁定校园圈；「谁可以看/添加位置」两行为只读（不得有可点假象）",
+   "tier": "normal",
+   "pre": "身份A mock 登录 → reLaunch '/subpackages/village/village/publish?target=campus'",
+   "action": "观察卡片 .publish-to__card 的名称/副标题与「谁可以看」行 → tap「谁可以看」该行（应为只读、无弹层）→ tap .publish-to__card 打开弹层选「校园圈」再关闭 → evaluate 回读 targetType/visibility",
+   "expected": "onLoad 置 targetType='campus'（:156）→ 卡片名称=「校园圈」（:117 ← circle.postTopicTargetCampus）、副标题「校园圈 · 所有校园成员可见」（:128）；visibility 初值仍 'public'（:63），legalVisibility 重算只出现在 restoreDraft 路径（:412-418）与 chooseCampus（:216-223）→ **入口直设 campus 时是否出现「目标卡=校园圈 + 谁可以看=所有人可见」的同屏矛盾必须实测回填**（MP-R2-PUB-101 的同族缺口，若成立按 P1/Consistency 立案并给截图）；「谁可以看」行为只读（:713-717 无 @tap、无 press-feedback、无 chevron）→ tap 必须无反馈且不弹层（MP-R1-VILLAGE-PUBLISH-103 回归：原可轮换列表均为单值构成可点假象，已降级为只读）；「添加位置」行同样只读（:697-703）；无写请求；console 无报错",
+   "evidence": "normal：首屏 + 两次只读点击后 + 弹层选校园圈后 共 3 张截图 + targetType/visibility 逐次实测值 + console（两次只读点击应无路由/DOM 变化）",
+   "requiresReal": false,
+   "tapTarget": ".publish-to__card",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:749",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB03",
+   "page": "subpackages/village/village/publish",
+   "title": "?target=friends：日常目标专属文案与 visibility=friends（弹层无该入口、改选后不可回退）",
+   "tier": "normal",
+   "pre": "身份A mock 登录 → reLaunch '/subpackages/village/village/publish?target=friends'（我的故事「添加日常」入口等价参数，:157-161 R16）",
+   "action": "观察卡片两行文案与「谁可以看」→ 打开目标弹层确认是否存在「个人日常」选项 → 依次改选「个人动态」「校园圈」并各回读 visibility → evaluate 重新置 friends 后提交一次",
+   "expected": "targetType='friends'、visibility='friends'（:158-161）→ 卡片名称「个人日常」、副标题「日常 · 仅互相喜欢或关注我的人可见」（:119-120,:130）、「谁可以看」=「仅喜欢/关注的人可见」（:148）；弹层内**只有** 个人动态 / 校园圈 / 已加入圈子 三类（:610-649）→ 无 friends 项 → 一旦改选其它目标就无法再从 UI 回到日常（chooseGeneral/chooseCampus/selectTarget 均不写 friends :198-223）→ 回填「入口独占、UI 内不可恢复」证据；friends 目标下「添加话题」行仍可见（:690 仅 isCircleTarget 隐藏）→ 回填 tags 是否随 createPost 落库；断言两列：① friends 提交请求 1 条且 body.visibility='friends'/targetType='friends'；② 服务端回读该帖可见性与 UI 承诺一致；mock 轮服务端列记 N/A；console 无报错",
+   "evidence": "normal：friends 首屏 + 弹层展开 + 两次改选后 共 4 张截图 + visibility/targetType 逐次实测值 + body 快照 + console + 服务端回读（real）",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB04",
+   "page": "subpackages/village/village/publish",
+   "title": "?circleId= 入口：圈名解析成功锁定圈子；未加入/不存在则强制回退个人动态并复位可见范围",
+   "tier": "critical",
+   "pre": "身份A mock 登录；三个变体各跑：(a) ?circleId=<已加入圈 id>，(b) ?circleId=<存在但未加入的圈 id>，(c) ?circleId=999999（不存在）。REAL_ONLY 轮需真实存在这三种圈子",
+   "action": "每变体进入后观察卡片名称/「圈内成员可见」标签/「谁可以看」行 → evaluate 回读 targetType/targetId/visibility → 各提交一次唯一正文（≥5 字）",
+   "expected": "(a) circle 目标 + targetCircle 命中 → 卡片显示真实圈名（:116）+「圈内成员可见」标签（:598）+ visibility=interest（:427-432 入口回设）；提交走 circleStore.createTopic（:525-531）；「添加话题」行隐藏（v-if=!isCircleTarget :690，MP-R2-PUB-104：后端 CreateTopicRequest 无 tags 字段，选了即丢）；(b)/(c) loadTarget 判定 !selected||!selected.isJoined → **强制回退 general** 并同步复位 visibility=public（:179-188，MP-R1-PUBLISH-101/MP-R1-PUB-018：禁止 UI 承诺窄、落库宽）→ 回填三变体的最终 targetType/visibility 与实际请求 URL；断言两列：① 每变体请求条数=1 且 URL 与目标一致（circle → /circles/{id}/topics，其余 → /posts）；② 服务端回读落库位置与 visibility 字段与 UI 一致（(b)/(c) 必须落公开广场、不得带 interest/school）；mock 轮服务端列记 N/A 并注明；console 无报错",
+   "evidence": "critical：三变体首屏 + 提交后 Toast + 回流列表 截图 + 路由 + 三处 Toast 文案 + targetType/visibility/payload.visibility 实测表 + console + network（URL/Idempotency-Key/状态码）+ 服务端回读落库位置与可见性",
+   "requiresReal": true,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB05",
+   "page": "subpackages/village/village/publish",
+   "title": "幽灵参数守卫：?channel= / ?categoryId= / ?topicId= / ?id= / ?school= / ?target=xyz 零消费",
+   "tier": "navigation",
+   "pre": "身份A mock 登录 → reLaunch '/subpackages/village/village/publish?channel=today&categoryId=cat-sincere&topicId=9&id=post-16&school=%E6%B8%85%E5%8D%8E%E5%A4%A7%E5%AD%A6&target=xyz'",
+   "action": "观察首屏（正文/目标/位置/话题是否被预置）→ 提交一次并 evaluate 回读 payload",
+   "expected": "onLoad 只读 circleId 与 target（仅 'campus'/'friends' 生效，publish.vue:153-170）→ 六个参数一律无效果：不预填正文、不改目标、不预设分类、不定位到 post-16、不填位置；target=xyz 不改变默认 general；提交 payload 的 categoryId 恒为 'interest'（:535）且不含 channel/topicId/id/school（回填 body 证明）；渲染与 PUB01 等价；出现任何消费即判幽灵参数回归；console 无报错",
+   "evidence": "navigation：路由 options 快照 + 提交 body 快照 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB06",
+   "page": "subpackages/village/village/publish",
+   "title": "正文 textarea 四态：正常 / 清空 / 超长（maxlength=500 截断）/ 特殊字符 + 计数与警示色阈值",
+   "tier": "critical",
+   "pre": "身份A mock 登录 → 清草稿 → reLaunch 本页",
+   "action": "① 在 .publish-content__input 输入 30 字 → ② 全清 → ③ 输入 600 字 → ④ 逐步输入到 449/450/451 字观察计数颜色 → ⑤ 输入含换行/制表/emoji/HTML 片段/首尾空格的文本后提交一次，回读 body",
+   "expected": "计数「n/500」实时（:73,:666-669）；isNearLimit 在剩余 ≤50 字时计数变警示色（:43 CONTENT_LENGTH_WARN_THRESHOLD=50，:75-77，样式 --c-warning :813-814）→ 回填实际变色的字符数（预期 450，边界 449/451 各采一次）；③ textarea 实际长度必须=500（:661 :maxlength=MAX_CONTENT_LENGTH）→ 计数永不到 501，故 store 层「内容不能超过500字」校验（village/index.ts:445-448）在正常输入路径**不可达**（可达性由 PUB08-B 变体证明）；② 清空后 canSubmit=false、发布钮 --disabled（:78,:580）；⑤ 提交时 content.value.trim()（:528,:536）→ body 不得带首尾空白；标题 titleFromContent=content.trim().slice(0,30)（:497）→ 回填 body.title 长度 ≤30；后端 content @Size(max=5000)、title @Size(min=5,max=30)（CreatePostRequest.java:17-18）→ 双端阈值差异采证；console 无报错",
+   "evidence": "critical：五态 before/after 截图 + 每步 content.length 与计数文本/颜色实测 + 提交 body（title/content）+ Toast 文案 + console + network 写请求计数",
+   "requiresReal": false,
+   "tapTarget": ".publish-content__input",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB07",
+   "page": "subpackages/village/village/publish",
+   "title": "空提交：Toast「请添加内容」且零请求；发布钮禁用态仍可点出反馈、无 Loading 永驻",
+   "tier": "critical",
+   "pre": "身份A mock 登录 → 清草稿 → reLaunch 本页（正文空）",
+   "action": "tap 顶部 .publish-header__submit（publish.vue:580-582 → submitPublish :486-490）；再用 evaluate 把 content 置为「   」（纯空格）后重复一次",
+   "expected": "两次都命中 if(!content.value.trim()) → Toast=t('village.contentRequired')（:487-490）→ 500ms 内可观测反馈，不得因 --disabled 视觉态变成死按钮（铁律）；纯空格同样被 trim 判空 → 同上；断言两列：① POST /posts 与 /circles/*/topics 计数=0；② 服务端回读新增条数=0；停留本页；showLoading 在 :503 才调用 → 早退路径不得出现 Loading 遮罩残留（:561 的 finally 不在早退路径内，须实拍确认）；console 无报错",
+   "evidence": "critical：空态 before + 两次 Toast after 截图 + Loading 残留检查截图 + 路由 + Toast 文案逐字 + console + network 写请求计数",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB08",
+   "page": "subpackages/village/village/publish",
+   "title": "短文本提交（1-4 字）与 501 字注入：最短 5 字前端校验、store 层 500 字守卫可达性",
+   "tier": "critical",
+   "pre": "身份A mock 登录 → reLaunch 本页。变体A：正文输入「好」；变体B：evaluate 把 content 置 501 字（绕过 :661 原生截断）",
+   "action": "A：正文预置 2 字 → tap .publish-header__submit → 观察 Toast → 补到 8 字再 tap .publish-header__submit 一次；B：正文预置 600 字 → tap .publish-header__submit → 观察 Toast、Loading 与 network",
+   "expected": "A 第一次命中 if(length<5) → Toast=village.contentMinLength 且 {n} 被替换为 5（:493-496，出现字面 {n} 即插值缺陷）→ 请求条数=0；补到 8 字后成功（body.title=前 30 字截断 :497）；B 前端无长度拦截（:486-499 只判空与最短）→ 请求发出后由 store 校验拒绝（village/index.ts:445-448 storeErrors.village.postContentTooLong「内容不能超过500字」）→ catch 必须把该原文作为 Toast（publish.vue:554-559 优先 e.message）并 hideLoading（:561），不得显示泛化「发布失败」（:558 末项兜底）；断言两列：① 三条请求的状态码与 Idempotency-Key（B 的 POST 条数必须=1 才能证明「前端放行、store 拦截」；若 B 零请求说明 store 校验在请求之前，回填实际位置）；② 服务端回读新增条数：仅 A 第二次 +1；mock 轮注明无落库通道；③ B 失败后不得自动返回、不得清表单/清草稿；console 无未捕获 rejection",
+   "evidence": "critical：短文本 before + 最短提示 Toast + 8 字成功 + 501 字注入态 + 501 字失败 Toast 共 5 张截图 + 路由 + 三段 Toast 文案逐字 + Loading 残留检查 + console + network 明细（URL/Key/状态码/error.message）+ 服务端回读条数",
+   "requiresReal": false,
+   "tapTarget": ".publish-header__submit",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:740",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB09",
+   "page": "subpackages/village/village/publish",
+   "title": "「发布到」弹层：打开 + 三级分组 + 三路关闭（遮罩 / 选单项 / 系统返回）",
+   "tier": "normal",
+   "pre": "身份A mock 登录 → 清草稿 → reLaunch 本页；circleStore 已有已加入圈子数据（懒加载见 PUB13）",
+   "action": "① tap .publish-to__card（:589 → targetOpen=!targetOpen）→ tap 遮罩空白（.publish-target-sheet :605）；② 重开 → tap「个人动态」（:611-615 chooseGeneral）；③ 重开 → tap「校园圈」（:616-621 chooseCampus）；④ 重开 → tap 某个已加入圈子项（:634-645 selectTarget）；⑤ 重开 → 系统返回手势",
+   "expected": "弹层为底部抽屉、max-height 78vh + safe-area 底距（:794-796，R21：原 70vh 使兴趣圈分组不可见 → 必须实测末项完整可见）；分组标题「公域 · 所有人可见」「校园私域 · 同校可见」「兴趣圈子 · 圈内成员可见」（:610,:616,:633）；选中项右侧 CHECK 图标随 targetType 出现（:614,:620,:644）；路径②→ general/public（:207-214）、③→ campus/school（:216-223）、④→ circle/interest 且 targetId=Number(circle.id)（:198-205）；每次选择后弹层自动关闭且卡片三处文案同步（:115-132）；圈子项「已加入」绿标与成员数短格式（:642-643 + formatMemberShort :135-139，≥10000 显示 x.xw）；⑤ 系统返回关闭后遮罩不残留；点击面板内部不得误关（@tap.stop :606）；无写请求；console 无报错",
+   "evidence": "normal：弹层展开 + 五路径落点 共 6 张截图 + 每次 targetType/targetId/visibility 实测值 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB10",
+   "page": "subpackages/village/village/publish",
+   "title": "「添加话题」行只 toggle 固定话题「#校园日常」：已选 n/5 计数与二次点击取消、满 5 静默",
+   "tier": "critical",
+   "pre": "身份A mock 登录 → reLaunch 本页；先保持 general 或切 campus 目标（circle 目标下该行隐藏 :690）",
+   "action": "① tap 添加话题行的 .publish-row__arrow 一次（四行里只有这行带箭头）→ 观察 meta 计数 → 在弹层 tap .publish-sheet__chip（首个热门话题 校园日常）→ ② 再 tap .publish-sheet__chip 一次（取消）；③ evaluate 把 topics 置为 5 项后再 tap .publish-row__arrow，观察是否有任何反馈；④ 在正文里直接手打「#周末去哪 校园美景 #」后提交一次，回读 tags",
+   "expected": "该行 @tap 直调 toggleTopic('#校园日常')（:690）→ 首次加入 '#校园日常'、再次点击移除（:261-266 idx>=0 splice 分支）→ meta「已选 n/5」随 0→1→0（:693）；**该行无法添加其它话题**（无弹层、无输入口）→ 与 post.vue 话题弹层（热门 10 项 + 自定义 16 字，post.vue:959-1001）的能力差距必须并列截图取证（功能/一致性维，是否立案交判定员）；③ topics 已满 5 时被 else if 长度闸拒绝（:265）→ 必须回填「点击后无任何 Toast/DOM 变化」这一静默死点击证据（铁律风险）；④ 正文内 #话题被 buildMergedTopics 正则 /#([^\\s#··]+)/g 自动并入且总数截到 5（:284-290）→ 回填 body.tags 数组原文（含 '#周末去哪'，纯 '#' 不得产出空标签）；断言两列：① 提交请求条数=1；② 服务端回读 tags 实值（mock 轮记 N/A 并注明）；console 无报错",
+   "evidence": "critical：①②③ 计数态截图（③须含点击前后对比）+ ④ 提交前后截图 + 路由 + Toast 文案 + topics/body.tags 实测值 + console + network + 服务端回读（real）",
+   "requiresReal": false,
+   "tapTarget": ".publish-row__arrow",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:815",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB11",
+   "page": "subpackages/village/village/publish",
+   "title": "「提及好友」只弹 Toast、不插入 @（与 post.vue 行为分叉的交叉取证）",
+   "tier": "normal",
+   "pre": "身份A mock 登录 → reLaunch 本页，正文输入「周末」",
+   "action": "tap .publish-row「提及好友」（:704-708 → openMentionPicker :268-270）；再连点 3 次观察 Toast 队列；随后 evaluate 回读 content",
+   "expected": "只弹 Toast=village.post.mentionHint（:269）→ **content 实值仍为「周末」不被修改**（与 post.vue:157-160 的「向正文末尾插入 @」分叉）→ 须与 post.vue 的 VP20 证据并列（同功能两页不同实现）；有 Toast 即满足 500ms 反馈铁律，不得判死按钮；连点 3 次 Toast 是叠加还是覆盖须回填条数；无 @提及选择器/好友列表 → 功能完成度观察项；无写请求；console 无报错",
+   "evidence": "normal：点击后 Toast 截图 + content 实测值文本 + 连点 3 次后的 Toast 条数 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB12",
+   "page": "subpackages/village/village/publish",
+   "title": "「添加位置」只读行：城市缓存有/无两态文案，点击无动作（不得有可点假象）",
+   "tier": "noop",
+   "pre": "身份A mock 登录；变体A：清 storage 中 STORAGE_KEYS.NEARBY_CITY（constants/storage-keys.ts）→ reLaunch 本页；变体B：evaluate 写入 NEARBY_CITY='杭州' 后 reLaunch（缓存来源为 nearby 定位链路 utils/location.ts，MP-R1-PUBLISH-006）",
+   "action": "两态各检视位置行文案与是否带箭头/press-feedback → 各 tap 一次该行观察反馈 → 提交一次并回读 body",
+   "expected": "A：meta='选择位置'（:702，currentCity 为空时不再宣称「自动定位」，MP-R1-PUBLISH-006 回归：原恒显「北京市 · 自动定位」）；B：meta='杭州 · 自动定位'（:61 currentCityLabel 拼接）；该行**无 @tap、无 press-feedback、无 chevron**（:697-703）→ tap 必须无任何反馈且不弹层不跳页（属既定只读信息行，不得按死按钮立案，但须回填无变化的 DOM/路由快照）；location 字段恒为空串（:49，本页无位置输入口）→ 提交 body 不含 location（回填 body 证明；与 post.vue 可选位置形成能力差异）；console 无报错",
+   "evidence": "noop：两态截图 + 点击前后 DOM/路由快照 + storage 键值 + body 快照 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB13",
+   "page": "subpackages/village/village/publish",
+   "title": "圈子列表懒加载三态：加载中 / 失败+重试 / 空态（MP-R1-PUB-017 / MP-R2-PUB-103），失败与空态必须可区分",
+   "tier": "critical",
+   "pre": "REAL_ONLY 轮用 DevTools 拦截 GET /circles 返回 5xx 构造失败态；mock 轮用无圈子身份构造空态。身份A 登录 → 确保 circleStore.circles 为空（冷启动不预加载）→ reLaunch 本页",
+   "action": "① tap .publish-to__card 发布到卡片（watch targetOpen 触发 ensureCirclesLoaded，:108-112）→ 观察加载态；② 失败态下 tap「重试加载」（:626-631 retryLoadCircles :105-107）；③ 断网后重开弹层再恢复网络后 tap 重试；④ 空态变体（已登录但无已加入圈子）",
+   "expected": "三态互斥且文案独立：加载中「兴趣圈子加载中…」（:622-624）；失败「圈子列表加载失败，请稍后重试」+ 可点「重试加载」项（:626-631）→ **核心断言：失败态不得被渲染成「尚未加入兴趣圈子」空态**（MP-R2-PUB-103：fetchCircles 内部吞错不 rethrow，原 .catch(toast) 永不可达，现读 circleStore.errorMessage 区分 :100-103）；空态「尚未加入兴趣圈子，可先在『附近 - 热门兴趣圈』加入」（:647-649）；懒加载只发 1 次请求（circlesLoading 并发闸 :92-95）→ 回填 GET /circles 条数；重试成功后渲染 joinedCircles（:632-646）；断言两列：① 客户端读请求条数=重试次数；② 服务端回读圈子集合；Toast 应为无（错误以弹层内文案呈现）→ 回填实际 Toast 数组；console 无未捕获 rejection",
+   "evidence": "critical：加载态 + 失败态 + 重试后 + 空态 共 4 张截图 + 路由 + GET /circles 条数与状态码 + Toast（应为无）+ console + 服务端回读",
+   "requiresReal": true,
+   "actionPreTapfix": "① tap 发布到卡片（watch targetOpen 触发 ensureCirclesLoaded，:108-112）→ 观察加载态；② 失败态下 tap「重试加载」（:626-631 retryLoadCircles :105-107）；③ 断网后重开弹层再恢复网络后 tap 重试；④ 空态变体（已登录但无已加入圈子）",
+   "tapTarget": ".publish-to__card",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:749",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB14",
+   "page": "subpackages/village/village/publish",
+   "title": "配图：选图 / 压缩 / 九宫格与删除 / 满 9 张上限提示 / 隐私 errno 112 与其它失败的反馈分叉",
+   "tier": "normal",
+   "pre": "身份A mock 登录 → reLaunch 本页；三变体：隐私未授权、相册含 ≥9 张图、REAL_ONLY 下未声明相册 scope 的 errno 112 场景",
+   "action": "① tap「＋」块 .publish-image--add（:680-682 → chooseImage :226-254）在未授权态；② 授权后选 4 张 → tap 删除角标 .publish-image__remove（:676-678 removeImage :256-258）；③ 选满 9 张后再 tap .publish-image--add 触达上限分支；④ 制造 chooseImages 抛 errno 112；⑤ 制造其它失败（如取消选图）",
+   "expected": "未授权 → ensurePrivacyAuthorized reject → Toast=village.post.privacyRequiredImage（:231-236）；正常路径 chooseImages({count:9-已有}) → compressImages（:237-241 ← utils/media.ts + utils/compress-image.ts）→ 九宫格数量与 images 长度一致、'＋'块随 v-if 出现/隐藏（:680）；删除后「＋」重现；满 9 张时上限 Toast 的 {n} 必须替换为 9（:227-230 ← village.post.maxImagesError）；errMsg 含 '112' 或 'privacy agreement' → Toast「请在微信后台隐私指引声明相册/相机权限」+ console.error（:242-250，硬编码中文须采证）；**其它失败只 console.error、不弹 Toast**（:250-252）→ 必须回填「取消/其它失败无可见反馈」证据（与 post.vue:309-312 有 Toast 的口径差异，铁律风险项）；mock 轮零真实上传请求（不得当幂等证据）；console 无未捕获异常",
+   "evidence": "normal：未授权 Toast / 4 张 / 删除后 / 满 9 张 / 112 分支 / 其它失败 共 6 组截图 + 每次 images 长度与首元素路径形态 + Toast 文案逐字 + errMsg 原文 + console",
+   "requiresReal": true,
+   "tapTarget": ".publish-image--add",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:792",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB15",
+   "page": "subpackages/village/village/publish",
+   "title": "REAL_ONLY 带图发布：临时路径判定走 isUploadedMediaUrl，禁止 http://tmp 死链落库（MP-R2-PUB-102）",
+   "tier": "critical",
+   "pre": "REAL_ONLY：真实后端 + 相册 2 张不同图 → 本页 general 目标 + 唯一正文（≥5 字）。mock 轮 :510 被 !useMock() 短路 → 记 UNVERIFIED",
+   "action": "选 2 张图 .publish-image--add → 补正文 .publish-content__input → tap 发布 .publish-header__submit → 观察两次上传请求与创建 payload.images → 返回村口看该帖配图 → 变体：上传中途制造第 2 张失败",
+   "expected": "本地/已上传判定必须走 isUploadedMediaUrl（:507-509 ← utils/media.ts；裸 /^https?:/ 会把 DevTools 的 http://tmp/* 误判为已上传）→ POST /media/upload 两次（文件名 post-image-<ts>.jpg :515 含时间戳避免多图撞同一幂等键）+ showLoading uploadingImages（:511）；创建 body.images 全为可访问 URL、**零** http://tmp / http://usr / wxfile://tmp 形态（回填数组原文，这是本用例唯一硬判据）；上传失败 → hideLoading + Toast imageUploadFailed + return（:519-523）→ 不得带死链发帖，且不得残留外层 showLoading（:503 与 :511 两层 loading 的 hide 配对须实拍）；断言两列：① 2 条上传 + 1 条创建的状态码与 Idempotency-Key；② 服务端回读帖子 images 长度=2 且两 URL 可 GET、列表不裂图；console 无未捕获异常",
+   "evidence": "critical：选图后 before + 发布后列表配图 after + 上传失败态 截图 + 路由 + Toast 文案 + Loading 残留检查截图 + console + network（2 上传 + 1 创建，含 Key）+ body.images 原文 + URL 可达性验证",
+   "requiresReal": true,
+   "actionPreTapfix": "选 2 张图 → 补正文 → tap 发布 → 观察两次上传请求与创建 payload.images → 返回村口看该帖配图 → 变体：上传中途制造第 2 张失败",
+   "tapTarget": ".publish-image--add",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:792",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB16",
+   "page": "subpackages/village/village/publish",
+   "title": "连点顶部「发布」×5：客户端多余请求计数与服务端落库条数分列（防幂等假通过）",
+   "tier": "critical",
+   "pre": "REAL_ONLY 优先（只有 real 轮能区分客户端 submitting 守卫与服务端幂等去重）；mock 轮同跑并标注「仅验证客户端守卫」。唯一正文串，与 PUB17-PUB21 互不重复。注意本页 submitting 判定在空/最短校验之后（:487-498）且 finally **无条件复位**（:560-563）",
+   "action": "500ms 内对 .publish-header__submit（:580-582）快速 tap×5，逐次记录 tap 时刻；等 ≥2s 后回读",
+   "expected": "两列必须分开回填，禁止合并成「只提交 1 次」：① 【客户端层】回填实际进入函数主体的次数、network 命中 /posts 或 /circles/*/topics 的条数、各条 Idempotency-Key 是否同值；条数=1 → 客户端守卫生效（此时服务端去重不可判定，须在报告注明）；条数>1 → 守卫失效，回填每条状态码，其中 409 条数即幂等兜底次数（IdempotentInterceptor.java:152-160），且**必须**逐条给出对应 Toast 原文（不得静默）；② 【服务端层】重新 GET /posts 按该唯一正文串回读，落库条数必须=1（=2 即重复发帖 P0/P1，回填两条 id/createdAt 并指出本页缺 post.vue/campus 页的「成功不复位」保护，MP-R1-CAMPUSPOST-004 / MP-R2-POSTTOPIC-004 同族）；③ Toast「发布成功」条数=1；④ showLoading/hideLoading 配对（:503/:511 → :523/:561）→ 不得 Loading 永驻；⑤ navigateAway 只发生一次（:553 的 setTimeout **无 clearTimeout 保护**，与 post.vue:586 的 postSubmitNavTimer 口径不同 → 须回填完整路由栈是否多退一层）；console 无报错",
+   "evidence": "critical：before（填好正文）+ after（返回列表）截图 + 完整路由链（含栈快照）+ 全部 Toast 文案与条数 + Loading 残留检查截图 + console + network 请求明细表（URL/Idempotency-Key/状态码）+ 服务端回读条数",
+   "requiresReal": true,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB17",
+   "page": "subpackages/village/village/publish",
+   "title": "【重点回归②相关】REAL_ONLY 同内容二次提交：POST /posts 幂等冲突必须给出可区分失败提示，不得静默",
+   "tier": "critical",
+   "pre": "REAL_ONLY：真实后端(8080) + guest-login 已实名身份 → 由村口正常链路进入本页（栈=2）。第一次发布成功后不重启小程序，用**逐字符相同**的正文（无图）再发一次；两次内容与其他用例不重复",
+   "action": "第一次发布 → 等返回（≥2s）→ 重进本页填相同正文 → tap .publish-header__submit → 等 ≥2s 观察 Toast 与停留态 → 再改 1 字发第三次",
+   "expected": "第二次 body 相同 → 幂等键相同（http.ts:262-274）→ @Idempotent 拦截（VillageController.java:152-157）→ HTTP 409 / error=IDEMPOTENT_CONFLICT / message=「重复请求已被拦截，请勿使用相同的 Idempotency-Key」（IdempotencyException.java:22,29-30）。catch 分支（:554-559）**优先取 e.message**（EnhancedApiError.message=后端 message，http.ts:594-604）→ Toast 必须是该后端原文；判定要点：① 出现「发布失败」泛化兜底（:558 末项）或无 Toast 即判 FAILED（静默，违反本轮 ② 要求）；② finally 复位 submitting（:562）→ 第三次（改 1 字 → 新 key）必须成功，回填第三次状态码=200；③ 第二次不得触发 navigateAway、不得清草稿（成功专属 :546-553 不执行）→ 回填 storage 草稿键与后端 GET /drafts/current 是否仍在；④ 服务端回读该正文串落库条数=1（Toast 条数不可替代）；⑤ 报告须注明这是「客户端稳定哈希幂等键 + 后端 4h TTL」的必然结果，不得写成偶发缺陷；⑥ 若第三次仍 409 → 说明 key 生成掺入/漏掉字段，回填三次 Key 实值对比；console 无未捕获 rejection",
+   "evidence": "critical：第一次成功 before/after + 第二次失败 before/after + 第三次改字成功 after 共 5 张截图 + 路由链（第二次应仍在本页）+ 三次 Toast 文案逐字 + storage/后端草稿键快照 + console + network 三条明细（URL/Idempotency-Key 实值/状态码/error.code/message 原文）+ 服务端回读条数",
+   "requiresReal": true,
+   "tapTarget": ".publish-header__submit",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:740",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB18",
+   "page": "subpackages/village/village/publish",
+   "title": "成功 Toast 与 400ms 返回窗口内的二次点击（本页特有窄窗口）+ 成功不清表单的重复发布风险",
+   "tier": "critical",
+   "pre": "REAL_ONLY 优先；唯一正文串（与 PUB16/PUB17 不同）。本页返回延时 400ms（:553）短于 post.vue 的 800ms（constants/village.ts:52），且成功路径**不显式清空表单**（仅 clearDraft :549，对照 post.vue:577-584）",
+   "action": "tap .publish-header__submit → 看到「发布成功」Toast 后 200ms 内再 tap .publish-header__submit 一次 → 返回村口后重新进入本页观察正文是否残留 → 若残留则直接再点一次 .publish-header__submit",
+   "expected": "断言两列：① 客户端：窗口内请求增量与每条状态码（finally 复位 :560-563 → 第二次点击若发生在请求 resolve 后、navigateAway 之前会真的再发一条同 body 请求，须回填其状态码 200/409）；② 服务端回读该正文串落库条数必须=1；若=2 → 判 P1 重复发帖并与 post.vue 的 VP16 证据并列（同族缺口），回填两条 id/createdAt；③ **重进本页后正文必须为空**：若恢复出已发布内容（allowLeave=true :550 + 本地与后端草稿已删 :546-549，理论上应为空）→ 判 P2/Data 并回填实际 content 与 storage 键值；④ 第 4 步「残留内容再点发布」若产生第 2 条落库即为重复发布闭环，必须逐列取证；⑤ 是否出现两次 navigateAway（:553 无 clearTimeout）→ 回填路由栈是否多退一层或重复 reLaunch 到村口；console 无报错",
+   "evidence": "critical：Toast 时刻 before + 二次点击后 after + 重进本页首屏 + 第四次提交后列表 共 4 张截图 + 路由链（含栈快照）+ Toast 文案与条数 + content/storage 实测值 + console + network 明细（含 409 与 Key 对比）+ 服务端回读条数",
+   "requiresReal": true,
+   "tapTarget": ".publish-header__submit",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:740",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB19",
+   "page": "subpackages/village/village/publish",
+   "title": "草稿双写与取新：本地 500ms 防抖 + 2s 后端写、按 updatedAt 取新、「保留」路径同步 flush（MP-R1-PUBLISH-003/004）",
+   "tier": "critical",
+   "pre": "REAL_ONLY 轮验证后端通道（POST /drafts、DELETE /drafts/current **无 @Idempotent**，DraftController.java:23-49 → 可反复写不撞 409）；mock 轮 clientApi.saveDraft/getDraft 走本地 fixture（services/api.ts:1210-1229）→ 后端列记 N/A。身份A 登录 → 清本地草稿键",
+   "action": "① 在 .publish-content__input 输入正文后 200ms 读 storage、1s 再读、3.5s 再读（防抖 500ms + 后端双写 2000ms 窗口）；② evaluate 把本地草稿 updatedAt 改为过去时间、后端保留新草稿 → 重进观察取哪份；③ 反向（本地新、后端旧）再测；④ 输入内容后点 header 的 X（关闭钮，类名见 PUB20），在 modal 点「保留」→ 退出后 100ms 内立即重进",
+   "expected": "① 三个时刻的 storage['village:publish-draft'] 快照与 POST /drafts 请求时刻全部回填（防抖 POST_DRAFT_SAVE_DEBOUNCE_MS=500 constants/chat.ts:51；后端双写再延 2000ms，publish.vue:347-364）；快照必须含 updatedAt 时间戳与 title:''（:292-309）；②/③ restoreDraft 用 draftTimeMs 归一后比较、取较新（:312-319,:387-391，MP-R1-PUBLISH-004：原后端无条件压过本地）→ 回填最终恢复正文以证明取新生效；④ 「保留」必须 cancelDraftTimers + **同步** flushDraftSave（:452-467 → :338-345，MP-R1-PUBLISH-003：原挂 500ms 定时器后 onUnmounted 即清、最后 ≤500ms 编辑必丢）→ 立即重进必须完整恢复刚才内容（唯一可观测证据）；断言两列：① 客户端 POST /drafts 条数与时刻；② 服务端 GET /drafts/current 回读内容与 updatedAt；③ 恢复时 visibility 按 legalVisibility 重算而非直取草稿值（:410-418，MP-R2-PUB-101）→ 回填「草稿 visibility vs 恢复后 visibility vs targetType」；console 无报错",
+   "evidence": "critical：三时刻 storage 快照 + 两次取新对照 + 保留后重进首屏 截图 + 路由 + POST/GET /drafts 请求时刻与内容 + console + 服务端回读草稿 + Toast（应为无）",
+   "requiresReal": true,
+   "tapTarget": ".publish-content__input",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB20",
+   "page": "subpackages/village/village/publish",
+   "title": "退出脏数据保护：「保留」/「丢弃」两分支 + modal 三路关闭 + 无改动不弹 + 只加图也算脏",
+   "tier": "critical",
+   "pre": "REAL_ONLY 轮同时核对后端草稿是否被删（DELETE /drafts/current，clearDraft :439-443 内 clientApi.deleteDraft）；mock 轮后端列记 N/A。身份A 登录 → 清本地与后端草稿",
+   "action": "① 输入内容（输入 .publish-content__input）→ tap header X（.publish-header__close，:576 → requestLeave :452-468）→ modal 点「丢弃」（:465）；② 重进输入内容 → X → modal 点「保留」（:464）；③ 重进输入内容 → X → modal 用系统返回关闭；④ 全新无改动状态 tap X；⑤ 只选 1 张图 .publish-image--add 不打字后 tap X",
+   "expected": "modal 标题/内容/按钮文案走 i18n（village.post.draftModalTitle/Content/draftKeep/draftDiscard :456-460）非裸 key；dirty 判定含 content/images/topics（:454）→ ④ 无改动时**不弹 modal** 直接 leave（回填无 modal 证据）；⑤ 只加图也必须判脏（images.length 参与；数组摊平 watch :448，MP-R1-PUBLISH-002 同源）；「丢弃」→ cancelDraftTimers + removeStorageSync + DELETE /drafts/current（:439-443，先取消定时器再删防止写回）→ 重进必须为空，回填本地键与后端 GET /drafts/current 均为空；「保留」→ flushDraftSave 同步落盘（本地 + POST /drafts）→ 重进必须完整恢复；③ 系统返回关闭 modal 后不得离开页面也不得落盘（回填 storage 快照）；leave 在栈=1 时 reLaunch 村口（:471-478，MP-R2-PUB-108 与成功路径共用出口）；断言两列：① 各 POST/DELETE /drafts 条数与状态码（该通道无幂等闸，重复删不得出现 409，若出现即判契约异常并回填）；② 服务端回读草稿存在性；console 无报错",
+   "evidence": "critical：modal + 三分支落点 + 重进恢复/清空态 + 只加图态 共 7 张截图 + 路由链 + storage 与后端草稿逐时刻快照 + console + network（/drafts 各请求状态码）",
+   "requiresReal": true,
+   "actionPreTapfix": "① 输入内容 → tap header X（:576 → requestLeave :452-468）→ modal 点「丢弃」（:465）；② 重进输入内容 → X → modal 点「保留」（:464）；③ 重进输入内容 → X → modal 用系统返回关闭；④ 全新无改动状态 tap X；⑤ 只选 1 张图不打字后 tap X",
+   "tapTarget": ".publish-content__input",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB21",
+   "page": "subpackages/village/village/publish",
+   "title": "发布成功清理链路：本地 + 后端草稿双删、allowLeave 置位、navigateAway 单一出口、无二次退出弹窗",
+   "tier": "critical",
+   "pre": "REAL_ONLY 轮核对后端 DELETE /drafts/current；身份A 登录 → 由村口进入本页（栈=2）→ 填唯一正文（≥5 字）",
+   "action": "tap .publish-header__submit → 连拍（0/200/400/700/1200ms）观察 Toast 与返回 → 返回后 evaluate 读本地草稿键 + REAL_ONLY 用 GET /drafts/current 回读 → 重进本页观察表单 → 离开时观察是否弹「保留草稿」",
+   "expected": "Toast「发布成功」icon=success（:532 circle 分支 或 :544 village 分支 ← village.postSuccess）；400ms 后 navigateAway（:553）→ 栈>1 navigateBack、栈=1 reLaunch 村口（:471-478）；本地 removeStorageSync + 后端 deleteDraft 双删（:546-549，MP-R8-DRAFT-001：只清本地会让下次恢复已发布内容造成重复发布）→ 重进必须是全新空表单（回填 content 实值，该修复唯一硬判据）；allowLeave=true（:550）→ 离开时不得再弹「保留草稿」modal（回填是否弹出，若弹出即为守卫缺口）；hideLoading 在 finally（:561）→ 无 Loading 永驻；断言两列：① 创建 1 条 + DELETE /drafts/current 1 条的时刻与状态码；② 服务端回读：帖子落库 1 条、草稿为 null；Toast 条数=1；console 无报错",
+   "evidence": "critical：填好表单 before + Toast + 返回列表 + 重进空表单 + 离开无 modal 证据 共 5 张截图 + 完整路由链 + Toast 文案与条数 + Loading 残留检查截图 + storage/后端草稿回读 + console + network 明细 + 服务端回读条数",
+   "requiresReal": true,
+   "tapTarget": ".publish-header__submit",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:740",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB22",
+   "page": "subpackages/village/village/publish",
+   "title": "REAL_ONLY 正文最短 5 字与后端 title @Size(min=5,max=30) 的契约一致性（直连对照）",
+   "tier": "critical",
+   "pre": "REAL_ONLY：真实后端。前端把正文截 30 字当 title（:497）并要求正文 ≥5 字（:493-496）→ 与 CreatePostRequest.java:17 @Size(min=5,max=30) 应等价，需用直连通道证明后端确实按此拒绝",
+   "action": "① 前端输入 5 字提交（输入 .publish-content__input，发布钮 .publish-header__submit）；② 用 curl/evaluate 直连 POST /api/v1/posts 分别发 title=4 字与 title=31 字（三条 content 各不同以避开相同幂等键）；③ 回读列表并记录三条响应",
+   "expected": "① 前端成功（200/201）→ 回填 body.title 实值与长度=5；② 后端两次均应 400 且 message 为校验文案（回填 {status, error.code, message} 原文，不得只记「失败」）→ 证明前端最短校验非多余；③ 服务端回读：仅 ① 落库（1 条）；断言两列：① 三条请求的状态码与 Idempotency-Key（三条 body 不同 → key 不同，须验证互不吞掉；这同时是本轮 ② 的正向对照：**不同内容必须放行**）；② 回读条数；若后端对 4 字放行而前端拒绝 → 记录「前端更严」并回填两端阈值来源；若前端 5 字仍被后端拒（category/visibility 组合校验）→ 判 P1 契约不一致并回填原文；console 允许 4xx 日志、不得有未捕获 rejection",
+   "evidence": "critical：前端成功态 before/after + 两次直连响应报文截图 + 回读列表 after 截图 + 路由 + Toast 文案 + console + network 三条明细 + 服务端回读条数",
+   "requiresReal": true,
+   "actionPreTapfix": "① 前端输入 5 字提交；② 用 curl/evaluate 直连 POST /api/v1/posts 分别发 title=4 字与 title=31 字（三条 content 各不同以避开相同幂等键）；③ 回读列表并记录三条响应",
+   "tapTarget": ".publish-content__input",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB23",
+   "page": "subpackages/village/village/publish",
+   "title": "目标切换：正文不丢、草稿随目标重写、提交通道与可见性三字段随之切换",
+   "tier": "critical",
+   "pre": "身份A mock 登录 → reLaunch 本页；circleStore 有已加入圈子（无则先看 PUB13）",
+   "action": "输入 20 字正文（输入 .publish-content__input）→ 依次切目标 .publish-to__card：general → circle → campus → 每种目标各提交一次（每次给正文追加唯一后缀），并每步读草稿快照；再用 evaluate 置 friends 复现第四种目标提交一次",
+   "expected": "切目标**不得清空正文**（watch :448 只触发 scheduleDraftSave）；每次切换 snapshotDraft 中 targetType/targetId/visibility 同步更新（:292-309）→ 回填四份草稿快照；提交通道随目标切换：circle → createTopic（:525-531）、其余 → createPost 且 visibility/targetType/targetId 三字段透传（:533-544）→ 回填四次 body 实值；friends/campus 的 visibility 必须是 friends/school、不得被 public 覆盖（MP-R2-PUB-101 反向断言）；circle 目标下「添加话题」行隐藏且 tags 不入库（MP-R2-PUB-104）→ 回填该次 body 是否含 tags；断言两列：① 4 条写请求的 URL/状态码/Key；② 服务端回读每条落库位置与可见性与 UI 承诺一致；mock 轮服务端列记 N/A 并注明；console 无报错",
+   "evidence": "critical：四次提交的 before/after 截图 + 四份草稿快照 + 四次 body 对照表 + 路由 + Toast 文案 + console + network 明细 + 服务端回读",
+   "requiresReal": false,
+   "actionPreTapfix": "输入 20 字正文 → 依次切目标 general → circle → campus → 每种目标各提交一次（每次给正文追加唯一后缀），并每步读草稿快照；再用 evaluate 置 friends 复现第四种目标提交一次",
+   "tapTarget": ".publish-content__input",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB24",
+   "page": "subpackages/village/village/publish",
+   "title": "REAL_ONLY 后台发帖开关（post_publish_open=false）对本页的影响：入口隐藏 + 深链强发 403 可区分提示",
+   "tier": "critical",
+   "pre": "REAL_ONLY + 管理后台（SUPER_ADMIN）把 app_switch.post_publish_open 置 false，仅操作演示数据、禁止删除既有业务数据 → 分别验：① 村口输入条被隐藏（village/index.vue:847-848）；② 深链直达本页强发。mock 轮 store 未加载时默认开放（village/index.vue:70-72）→ 记 UNVERIFIED",
+   "action": "从深链进入本页 → 填唯一正文 → tap .publish-header__submit → 观察 Toast/network → 后台恢复开关后重进本页确认能正常发布",
+   "expected": "深链绕过入口时后端应 403 且 message 为发帖功能已关闭类原文（VillageController.java:158-161 OperationForbiddenException(ErrorMessages.POST_PUBLISH_CLOSED)）→ 本页 catch 必须把该原因呈现（:554-559 取 e.message）：出现泛化「发布失败」或无 Toast 即判 FAILED（本轮 ② 「不得静默」同族判据）；断言两列：① 请求条数=1、状态码 403；② 服务端回读落库条数=0；恢复开关后同内容应成功（回填该条 200 与落库 1 条；注意同 body 重试因 403 已被释放幂等键，IdempotentInterceptor.java:197-217 → 若第二次仍 409 即键未释放，判 P1）；页面不得自动返回、不得清表单/清草稿（成功路径不执行）；console 允许 403 日志、不得有未捕获 rejection",
+   "evidence": "critical：关闭态 before + 403 Toast after + 恢复后成功 after 截图 + 路由 + Toast 文案逐字 + console + network 两条明细（状态码/error.message/Idempotency-Key）+ 服务端回读条数",
+   "requiresReal": true,
+   "tapTarget": ".publish-header__submit",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:740",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB25",
+   "page": "subpackages/village/village/publish",
+   "title": "发帖回流村口：新帖出现在公开广场且按 id 去重（不双份、不「发完就消失」）",
+   "tier": "critical",
+   "pre": "REAL_ONLY 优先（真实审核流：新帖 audit_status=pending 置顶，village/index.ts:505-516 + village/index.vue:152-165）。身份A 登录 → 由村口今日广场进入本页 → 唯一正文（≥5 字，无图）→ 发布",
+   "action": "发布成功自动返回村口 → 观察列表首条与「审核中」徽标 → 下拉刷新 2 次并数该标题出现次数 → 再等 5s 后刷新一次",
+   "expected": "回流后列表首条为该新帖（force 刷新穿透 30s TTL，village/index.vue:257-260）→ 徽标与 auditStatus=pending 一致；同标题在列表中条数必须=1（selfPendingPosts 与服务端列表按 id 去重 :152-165，出现双份即判 P2/Data）；断言两列：① 客户端：创建 1 条 + 刷新读请求条数（含是否被本页 onUnmounted/请求 abort 影响；publish.vue 不调 villageStore.dispose，对照 post.vue:243-248 的 MP-R2-POST-002 结论）；② 服务端回读：GET /posts 与自己帖子列表中该标题各 1 条、无重复；Toast 条数=1；无 Loading/骨架永驻；console 无报错",
+   "evidence": "critical：发布前 before + 回流后列表首条 + 两次刷新后 共 3 张截图 + 完整路由链 + Toast 文案与条数 + console + network 明细 + 服务端回读条数与 id 去重结果",
+   "requiresReal": true,
+   "automatable": false,
+   "notAutomatableReason": "发布成功自动返回 + 下拉刷新 2 次 + 等 5s：下拉刷新是原生手势，CLI 通道不驱动",
+   "notAutomatableFrom": "cellplan-round7-taptarget.json",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB26",
+   "page": "subpackages/village/village/publish",
+   "title": "双发布页并存的完整差异清单实测（同内容两页各发一次的对照 + 草稿键互不污染）",
+   "tier": "critical",
+   "pre": "身份A mock 登录；REAL_ONLY 轮另跑一次取服务端证据。两页各自清草稿键（'village:publish-draft' 与 'village:post-draft'，constants/village.ts:43,:49）",
+   "action": "① 两页分别输入同一唯一正文串（输入 .publish-content__input）并各提交一次 .publish-header__submit（第二页对正文追加后缀以避开相同幂等键）；② 逐项对照并回填两表：标题入口有无、最短校验、话题能力、位置能力、可见范围能力、圈子可选集合、目标文案、草稿键、草稿是否双写后端、成功复位策略与返回延时、工具栏有无；③ evaluate 交叉写入对方草稿键后重进两页，验证互不恢复",
+   "expected": "差异逐项必须有实测证据（不接受代码推断）：标题（publish 无输入框 :655-670 vs post 有 20 字标题 post.vue:759-772）；最短 5 字（publish :493-496 有 vs post 无）；话题（publish 固定单话题 toggle :690 vs post 热门+自定义弹层 post.vue:959-1001）；位置（publish 只读 :697-703 vs post 可选可清 post.vue:1004-1049）；可见范围（publish 只读 :713-717 vs post 弹层可选 post.vue:1052-1080）；圈子集合（publish 仅已加入 :82 vs post 全部 post.vue:735）；草稿键与双写（publish 独立键 + 后端双写 :338-364 vs post 仅本地 post.vue:358-369）；成功路径（publish 不清表单 :546-553 vs post 显式清空 post.vue:577-584）；返回延时（400ms :553 vs 800ms constants/village.ts:52）；工具栏（publish 无 :737 vs post 5 项 post.vue:904-956）；③ 交叉写入后两页各自**不得**恢复对方快照（MP-R1-PUBLISH-004 回归：原共用键导致 post 的 title 被丢弃、publish 的空 title 反向覆盖）；断言两列：① 两次写请求 URL/状态码/Key（必须不同，body 不同）；② 服务端回读两帖均在公开广场且各 1 条；console 无报错",
+   "evidence": "critical：两页首屏与提交后截图（≥6 张）+ 差异对照表（每项标 文件:行号）+ 两页 storage 键交叉快照 + 路由 + 两次 Toast 文案 + console + network 明细 + 服务端回读条数",
+   "requiresReal": true,
+   "actionPreTapfix": "① 两页分别输入同一唯一正文串并各提交一次（第二页对正文追加后缀以避开相同幂等键）；② 逐项对照并回填两表：标题入口有无、最短校验、话题能力、位置能力、可见范围能力、圈子可选集合、目标文案、草稿键、草稿是否双写后端、成功复位策略与返回延时、工具栏有无；③ evaluate 交叉写入对方草稿键后重进两页，验证互不恢复",
+   "tapTarget": ".publish-content__input",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB27",
+   "page": "subpackages/village/village/publish",
+   "title": "打开即返回（≤500ms）与重复进出×3：定时器/请求不泄漏、状态不跨实例残留",
+   "tier": "normal",
+   "pre": "身份A mock 登录 → 清两个草稿键；由村口进入（栈=2）",
+   "action": "① 进入后 200ms 内在 .publish-content__input 输入正文（挂上 500ms 防抖与 2s 后端双写）→ 立即触发系统返回销毁本页 → 等 3.5s 读 storage 与 POST /drafts 时刻；② 循环 3 次：进入 → 打开弹层（入口类名见 PUB23 的发布到卡片，本条不重复点名）→ 不发布直接返回（modal 选丢弃），每轮观察字段与请求",
+   "expected": "① onUnmounted 清 draftSaveTimer/draftSyncTimer（:566-569）→ 销毁后不得再写本地草稿或发 POST /drafts（回填 3.5s 时两个通道的实际增量；仍有写入即泄漏，按 P2/Data 立案并给出时刻与内容）；销毁后触发 flush 不得抛错；② 每轮所有字段回默认（content=''、images=[]、topics=[]、location=''、targetType=general、visibility=public、tipVisible=true、targetOpen=false）；每轮 GET /circles 只在弹层需要且 circles 空时发（懒加载闸 :92-95,:108-112）→ 回填 3 轮累计条数；每轮弹层用系统返回关闭后遮罩不残留；栈长稳定；console 无累积错误、无 Unhandled rejection",
+   "evidence": "normal：每轮 after 截图（4 张）+ storage 键与 /drafts 请求时刻表 + 每轮请求计数 + console",
+   "requiresReal": false,
+   "tapTarget": ".publish-content__input",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB28",
+   "page": "subpackages/village/village/publish",
+   "title": "表单滚动与键盘：100vh 容器实测、内滚边界、header 常驻、正文末行与键盘间距",
+   "tier": "noop",
+   "pre": "身份A mock 登录 → reLaunch 本页；正文填 400 字使内容超屏；另用小屏机型复测一次",
+   "action": "① .publish-body scroll-view（:585）滚到底 → 回顶；② 聚焦 .publish-content__input 正文输入 3 行观察键盘；③ 关闭小贴士后观察布局回收；④ 检视最后一行「谁可以看」是否被 safe-area 或弹层残留遮挡；⑤ 检查是否出现整页双滚动条",
+   "expected": "滚动只发生在 .publish-body；容器 height:100vh（:742-747）+ header flex-shrink:0（:749-760）→ **必须实测是否出现整页双滚动条 / header 随页滚出 / 正文被键盘顶飞**（同族校园圈页与圈子发布页已改为 100%+overflow:hidden 并注释「mp-weixin 不支持 100vh」，campus/post-topic.vue:429-441、circles/post-topic.vue:759-771 → 若本页异常即为同族未收敛，判 P2/MiniProgram）；滚到底时底部占位 24rpx（:734,:839）足够、最后一行完整可见；cursor-spacing=20（:657）生效、:show-confirm-bar=false（:662）无确认条；textarea min-height 220rpx（:811）多行扩展不破布局；数值回填 scrollTop/scrollHeight/header rect/键盘高度；console 无报错",
+   "evidence": "noop：执行日志（滚动数值、header/末行 rect、键盘高度、是否存在双层滚动）+ 滚到底与键盘弹起 2 张截图",
+   "requiresReal": false,
+   "tapTarget": ".publish-content__input",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB29",
+   "page": "subpackages/village/village/publish",
+   "title": "热区量测：X 关闭 / 发布胶囊 / 发布到卡片 / 四行 / 图片删除 × / 加图块 / 弹层选项（铁律 ≥88rpx）",
+   "tier": "noop",
+   "pre": "同 PUB01；量测图片删除 × 需先选 1 图；量测弹层选项需打开弹层",
+   "action": "对 .publish-header__close、.publish-header__submit、.publish-to__card、四行 .publish-row、.publish-image__remove、.publish-image--add、.publish-target-sheet__option 逐个 boundingClientRect 量测并标注可点/只读",
+   "expected": "如实回填 rpx 并对照 88rpx：X 64×64rpx（:761）、发布胶囊 padding 12×36rpx（:771）、图片删除 × 40×40rpx（:819）、「＋」块 200×200rpx（:817,:822）、弹层选项 padding 24×8rpx（:801）、四行 padding 26×24rpx（:826）；其中「添加位置」「谁可以看」为只读行（:697-717）→ 量测值仅作参考、不得按热区缺陷立案，须显式标注只读；不可量者记 UNVERIFIED；执行员不得以源码结论代替实测数值；无写请求；console 无报错",
+   "evidence": "noop：执行日志（各元素 width/height 数值表 + 可点/只读标注）；可免截图",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB30",
+   "page": "subpackages/village/village/publish",
+   "title": "本页 i18n 裸 key 与硬编码中文混排采证（zh/en 双跑全流程）",
+   "tier": "normal",
+   "pre": "身份A mock 登录；分别在 i18n.locale=zh-CN 与 en-US 下跑完整流程（四目标、弹层三态、话题/位置/提及行、草稿 modal、成功与失败 Toast）",
+   "action": "对每一屏做全文本节点扫描裸 key（形如 a.b.c）；并清单式记录源码中硬编码中文位置",
+   "expected": "零裸 key：本页消费的 village.contentRequired/contentMinLength/postSuccess、village.post.*（privacyRequiredImage/maxImagesError/uploadingImages/imageUploadFailed/publishing/publishFailed/draftModal*/visibilityPublic/contentPlaceholder/mentionHint）、circle.postTopicTargetCampus、common.closeAria/publish、error.* 在两 locale 均须为译文（缺失按 P2/Function 立案并回填 key 与出现位置；本轮 ① 的同族检查，命名空间错放会在此同样暴露）；同时逐条记录硬编码中文作为一致性证据：header 标题「发布动态」（:579）、发布按钮「发布」（:581）、「发布到」标签（:588）、「圈内成员可见」标签（:598）、弹层标题与三分组（:608,:610,:616,:633）、「个人动态/默认公开，所有人可见/校园圈/仅认证同校同学可见」（:612-613,:618-619）、圈子「已加入」标（:642）、三态提示文案（:623,:627,:629,:630,:648）、正文 placeholder（:660）、四行标签与占位（:692,:699,:702,:706,:715-716）、小贴士全文（:726-727）、「个人日常/日常 · 仅互相喜欢或关注我的人可见/仅喜欢/关注的人可见」（:119-120,:130,:148）→ en-US 下这些仍为中文，属同族「未入 i18n」问题，须逐条给位置与出现语言；全部以截图与文本为准，禁止凭推测立案；console 无 i18n 缺 key 告警",
+   "evidence": "normal：两语言全流程截图集（≥8 张）+ 裸 key 扫描结论 + 硬编码中文位置清单（文件:行号）+ console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB31",
+   "page": "subpackages/village/village/publish",
+   "title": "【并发修复·当前源码】提交出口唯一、「先 hideLoading 再 toast」、二次点按被吞（MP-R1-PUBLISH-109）",
+   "tier": "critical",
+   "pre": "REAL_ONLY 优先：真实后端 + 把 POST /posts 响应延迟抬到 ≥3s（限速/代理），使 hideLoading/toast 次序与在途窗口可观测。mock 轮同步成功、窗口不可观测 → 记 UNVERIFIED。清两个草稿键",
+   "action": "① 填唯一正文 → tap .publish-header__submit → 在途连点 .publish-header__submit 3 次；② 观察在途是否出现全程 loading（带 mask）；③ 成功后观察 Toast 是否被随后的 hideLoading 顶掉；④ 用 evaluate 制造一次失败（直连改坏 payload）观察失败 Toast 是否同样不被吞",
+   "expected": "**当前锚点** publish.vue:553 首行 submitting 守卫 + :570 showLoading({title:village.post.publishing, mask:true})（上传再套一层 :579，mask:true）+ :619-623「出口唯一、先 hideLoading 再 showToast」重排（原结构 showToast 在 try 内、finally 再 hideLoading，小程序端 hideLoading 会把刚弹出的 Toast 一起关掉）→ 断言三列：① 客户端 POST /posts 条数=1（在途 3 次点按不多发）；② **成功/失败的 Toast 必须可见并存活**：截图须拍到 Toast 文本，若只见 loading 收起无 Toast 即判 P1/Interaction（该修复的反证）；③ 服务端回读该正文串落库条数=1；失败变体必须同样给出可读原因（:624-628 取 e.message/两 store errorMessage，兜底 publishFailed）；submitting 在出口统一复位（:623）→ 允许改字重试；console 无未捕获 rejection",
+   "evidence": "critical：在途 loading 实拍 + 成功 Toast 存活截图 + 失败 Toast 存活截图 + 返回列表 + 路由 + 全部 Toast 文案与条数 + console + network 明细（URL/Key/状态码）+ 服务端回读条数",
+   "requiresReal": true,
+   "tapTarget": ".publish-header__submit",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:740",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB32",
+   "page": "subpackages/village/village/publish",
+   "title": "【并发修复·当前源码】提交在途不得离页、已销毁页面不做 UI 副作用、离页提示 publishing（MP-R2-POST-010 两页一致）",
+   "tier": "critical",
+   "pre": "REAL_ONLY：真实后端 + POST /posts 响应延迟 ≥3s。身份A 登录 → 由村口进入本页（栈=2）。mock 轮记 UNVERIFIED",
+   "action": "① 填正文 → 发布 → 在途 1s 内连点 .publish-header__close 三次；② 在途用系统返回硬退 → 等响应落地观察；③ 正常成功后于 400ms 窗口内再点一次发布；④ 每次记录路由栈",
+   "expected": "**当前锚点** publish.vue:509 pageDestroyed 标志 + :513-517 requestLeave 在 submitting 时不放行离页并弹 Toast=village.post.publishing + :634 成功回调在 pageDestroyed 时提前 return（存储清理仍执行、不留幽灵草稿）→ 断言：① X 三次点按都不得离页（回填栈快照），Toast 文案为 publishing 而非「发布中…」裸 key；② 若被硬退，异步成功回调不得在已销毁页面弹 Toast/再触发 navigateAway（回填 console 与最终落点）；③ 第三步二次点按被 :553 守卫吞掉，且 :553 的 setTimeout(navigateAway,400) **无 clearTimeout 保护** → 必须实测是否出现双重返回/多退一层；断言两列：① 客户端 POST /posts 条数=1；② 服务端回读落库=1；console 无报错",
+   "evidence": "critical：在途点 X 态 + Loading/mask 实拍 + 硬退后落点 + 成功返回后路由栈快照 + 路由链 + Toast 文案与条数 + console + network 明细 + 服务端回读",
+   "requiresReal": true,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "actionPreCellplan": "① 填正文 → 发布 → 在途 1s 内连点 header X 三次；② 在途用系统返回硬退 → 等响应落地观察；③ 正常成功后于 400ms 窗口内再点一次发布；④ 每次记录路由栈",
+   "cellplanRename": {
+    "from": "header X",
+    "to": ".publish-header__close",
+    "source": "apps/client/src/subpackages/village/village/publish.vue:736",
+    "evidence": ":736 <view class=\"publish-header__close press-feedback\" role=\"button\" :aria-label=\"t('common.closeAria')\" @tap=\"requestLeave\"> —— 判据 expected 自己引的锚点就是 :513-517 requestLeave 在 submitting 时不放行离页；tokenIn 3/3 档；模板无条件渲染（链：publish-page > publish-header > publish-header__close），real 腿 observed 量到 present(8)",
+    "plan": "cellplan-waivers.json"
+   },
+   "tapTarget": ".publish-header__close",
+   "tapTargetFrom": "cellplan-waivers.json",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:736"
+  },
+  {
+   "id": "PUB33",
+   "page": "subpackages/village/village/publish",
+   "title": "【并发修复·当前源码】空快照不落盘 + 后端草稿单例不得被无意义覆盖删（MP-R2-PUB-113 / MP-R1-PUBLISH-108）",
+   "tier": "critical",
+   "pre": "REAL_ONLY 轮核对 /drafts 通道（DraftController.java:23-49 无 @Idempotent → 可反复写、重复删不撞 409）；mock 轮 getDraft/saveDraft/deleteDraft 走本地 fixture（services/api.ts:1210-1229）→ 后端列记 N/A。身份A 登录 → 清本地键与后端草稿",
+   "action": "① 进入本页什么都不输入，等 3.5s 读 storage['village:publish-draft'] 与 POST /drafts 条数；② 在 .publish-content__input 只输 1 个空格再等 3.5s；③ 先由 post 页/后台留一条后端草稿，然后在本页空表单触发退出保护（若有）与 flush 路径；④ evaluate 直接调 flushDraftSave（:338-345）在空快照下观察是否落盘/落库",
+   "expected": "**当前锚点** publish.vue:355-365 hasDraftContent 定义 + 写盘前三处闸 :381（scheduleDraftSave 本地写）/:393（后端双写）/:439（restoreDraft 恢复闸）+ :489 附近 MP-R1-PUBLISH-108 注释（本端点为全用户单例，禁重复/越权删）→ ①② 空快照必须**既不写本地也不发 POST /drafts**（回填两个时刻的键值与请求条数）；④ 程序化 flush 也必须被闸挡住（否则即「为下一条草稿预设空值」，判 P2/Data）；断言两列：① 客户端 POST /drafts、DELETE /drafts/current 条数=0；② 服务端 GET /drafts/current 回读：他人/前序草稿内容未被清空或覆盖；③ 与 post 页 VP38 交叉：两页均不得越权删后端单例草稿；console 无报错",
+   "evidence": "critical：各时刻 storage 快照 + /drafts 请求计数截图 + 后端草稿内容前后对照截图 + 路由 + console + network（POST/DELETE/GET /drafts 明细）+ 服务端回读",
+   "requiresReal": true,
+   "actionPreTapfix": "① 进入本页什么都不输入，等 3.5s 读 storage['village:publish-draft'] 与 POST /drafts 条数；② 只输 1 个空格再等 3.5s；③ 先由 post 页/后台留一条后端草稿，然后在本页空表单触发退出保护（若有）与 flush 路径；④ evaluate 直接调 flushDraftSave（:338-345）在空快照下观察是否落盘/落库",
+   "tapTarget": ".publish-content__input",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "PUB34",
+   "page": "subpackages/village/village/publish",
+   "title": "【并发修复·当前源码】标题按 POST_TITLE_MAX_LENGTH 截断 + 最短 POST_TITLE_MIN_LENGTH 校验是否已补齐（与 post 页 VP40 对照）",
+   "tier": "critical",
+   "pre": "REAL_ONLY 轮以真实后端 title @Size(min=5,max=30)（CreatePostRequest.java:17）作对照。执行时**先读** constants/village.ts 中 POST_TITLE_MIN_LENGTH / POST_TITLE_MAX_LENGTH 当前实值并回填，不得沿用旧记数值。身份A 登录 → 清草稿 → reLaunch 本页",
+   "action": "① 正文 3 字（输入 .publish-content__input，发布钮 .publish-header__submit）→ 发布；② 正文 6 字 → 发布；③ 正文首行 60 字 → 发布并回读 body.title 长度；④ 标题留空但正文首行含 30+ 字长句 → 观察截断；⑤ 与 post 页 VP40 同输入做数值对照",
+   "expected": "**当前锚点** publish.vue:560-566：最短校验用 t('village.contentMinLength',{n:POST_TITLE_MIN_LENGTH})、titleFromContent=content.trim().slice(0, POST_TITLE_MAX_LENGTH)（旧版为硬编码 5 与 30，现应同源常量）；① 被拦且请求 0 条、{n} 被替换为实际阈值；② 放行；③ body.title 长度必须=POST_TITLE_MAX_LENGTH 实值；④ 截断不得截在 emoji 代理对中间产生乱码（回填截断结果原文）；⑤ 两页阈值必须一致，不一致即判 P2/Consistency 并列两页数值与来源行号；断言两列：① 每次点击请求条数与状态码；② 服务端回读落库条数与落库 title 实值；若前端阈值与后端 min=5/max=30 有差 → 并列两侧数值（本轮 ③ 号「客户端严于/松于后端」的同族证据）；console 无报错",
+   "evidence": "critical：五组输入 before + Toast after 截图 + 每组 body.title 实测长度与阈值来源（文件:行号）+ 两页阈值对照表 + 路由 + Toast 文案逐字 + console + network 明细 + 服务端回读",
+   "requiresReal": true,
+   "actionPreTapfix": "① 正文 3 字 → 发布；② 正文 6 字 → 发布；③ 正文首行 60 字 → 发布并回读 body.title 长度；④ 标题留空但正文首行含 30+ 字长句 → 观察截断；⑤ 与 post 页 VP40 同输入做数值对照",
+   "tapTarget": ".publish-content__input",
+   "tapTargetEvidence": "apps/client/src/subpackages/village/village/publish.vue:771",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  }
+ ]
 }
