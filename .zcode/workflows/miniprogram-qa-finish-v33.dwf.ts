@@ -453,6 +453,26 @@ if (addList.length > 0) {
   log("没有可提交的改动，跳过提交");
 }
 
+// —— 提交会推 HEAD，sha 敏感门的"绿"可能只是提交前的快照 ——
+// 实测吃过：本轮边跑边提了十次，戳记车道读到 band gitSha=a4c8f995 时，那已经是"11 个提交前的历史"，
+// 同一条门在同一轮里的读数会因 HEAD 移动而变。所以提交后必须复量这几条，两次读数都留档。
+const shaSensitive = GATE_SUITE.filter(g => /corpus|provenance|band-freshness|real-coverage/.test(g.name));
+const postCommit: GateOut[] = commit === "" ? [] : await Promise.all(shaSensitive.map(async (g) => {
+  const o = await runGate(g);
+  gateToBoard(o);
+  return o;
+}));
+if (postCommit.length > 0) {
+  const headAfter = (await gitTry(["rev-parse", "--short", "HEAD"])).out.trim() || "unknown";
+  const flipped = postCommit.filter(o => {
+    const b = gateOuts2.find(x => x.name === o.name);
+    return !!b && b.exitCode === 0 && o.exitCode !== 0;
+  });
+  log(`提交后 HEAD=${headAfter}，sha 敏感门复量 ${postCommit.length} 条，其中由绿转红 ${flipped.length} 条`);
+  for (const o of flipped) blockers.push(`提交后转红（HEAD 被本轮提交推进所致，不是被测物退化）：${o.name}（${o.resultLine}）`);
+  await persistJson("reports/audit/round-7/post-commit-gates-v33.json", { headBefore: head, headAfter, gates: postCommit, flipped: flipped.map(o => o.name) });
+}
+
 const verified: string[] = [
   "十项机器门禁两轮实测（开账单 + 终验复量），判读以退出码与 *_RESULT 机器行为准",
   "门禁可变红自检 prove-gates-can-fail：值域外/空扫描集/缺计划清单/状态真值 四类变异各自咬红，绿不是恒绿",

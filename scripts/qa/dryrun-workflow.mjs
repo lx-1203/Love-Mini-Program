@@ -34,10 +34,26 @@ if ((out.diagnostics || []).length > 0) {
   process.exit(2);
 }
 const AF = Object.getPrototypeOf(async function () {}).constructor;
-const permissive = new Proxy({}, { get: () => [] });
+// permissive 不能一律返 []：那样 addList 恒空，提交阶段与"提交后 sha 敏感门复量"那段永远走不到，
+// 干跑就成了"只测了happy path的前半"。这里给几个关键字段真实的非空值，把后面几条分支也压过去。
+const permissive = new Proxy({}, {
+  get: (_t, prop) => {
+    if (prop === "filesChanged") return ["reports/audit/round-7/stub-file.json"];
+    if (prop === "appliedPatches") return 3;
+    if (prop === "attempted") return true;
+    if (prop === "rows") return [{ id: "MP-STUB-1", status: "EXECUTED" }, { id: "MP-STUB-2", status: "NOT_SHOOTABLE", reason: "stub" }];
+    if (prop === "executable") return [{ id: "MP-STUB-E", area: "实现刀", how: "stub", source: "stub" }];
+    if (prop === "needsUser") return [{ id: "MP-STUB-U", why: "stub 判据冲突", options: "A/B" }];
+    if (prop === "fixedIds") return ["MP-STUB-1"];
+    if (prop === "skipped") return [{ id: "MP-STUB-2", reason: "stub 未收口" }];
+    if (prop === "lane") return "stub 车道";
+    if (prop === "ledgerPass" || prop === "truthPass" || prop === "ok") return true;
+    return [];
+  },
+});
 
 async function once(PROFILE) {
-  const calls = { phases: [], reports: 0, artifacts: 0 };
+  const calls = { phases: [], reports: 0, artifacts: 0, logs: [] };
   const mkAgent = () => ({
     ask: async () => {
       if (PROFILE === "reject") throw new Error("stub: 模型拒绝/超时/JSON 解析失败");
@@ -62,14 +78,15 @@ async function once(PROFILE) {
   try {
     const r = await fn(
       () => mkAgent(),
-      () => {},
+      (m) => { calls.logs.push(String(m)); },
       (m) => { calls.phases.push(String(m)); },
       () => { calls.reports++; },
       { board: () => { calls.artifacts++; }, file: async () => "file://stub", markdown: async () => { calls.artifacts++; return "md://stub"; } },
       git,
       world,
     );
-    return { PROFILE, ok: true, phases: calls.phases, reports: calls.reports, artifacts: calls.artifacts, conclusion: r && r.conclusion ? String(r.conclusion).slice(0, 160) : "(无 conclusion)" };
+    const covered = ["提交后 HEAD", "可变红自检", "车道划分", "门禁复量"].filter(t => calls.logs.some(l => l.indexOf(t) >= 0));
+    return { PROFILE, ok: true, phases: calls.phases, reports: calls.reports, artifacts: calls.artifacts, covered, conclusion: r && r.conclusion ? String(r.conclusion).slice(0, 160) : "(无 conclusion)" };
   } catch (e) {
     return { PROFILE, ok: false, phases: calls.phases, err: (e && e.message) || String(e), stack: String((e && e.stack) || "").split(/\r?\n/).slice(1, 3).join(" | ") };
   }
@@ -79,7 +96,7 @@ const profiles = PROFILE_ARG === "all" ? ["empty", "reject", "permissive"] : [PR
 let bad = 0;
 for (const p of profiles) {
   const r = await once(p);
-  if (r.ok) console.log(`[${p}] SURVIVED → 末 phase=${r.phases[r.phases.length - 1]} | report=${r.reports} artifact=${r.artifacts}`);
+  if (r.ok) console.log(`[${p}] SURVIVED → 末 phase=${r.phases[r.phases.length - 1]} | report=${r.reports} artifact=${r.artifacts} | 压过的分支=${(r.covered || []).join("、") || "(无标记命中)"}`);
   else { bad++; console.log(`[${p}] CRASHED BEFORE REPORT → 停在 ${r.phases[r.phases.length - 1]} 之后 :: ${r.err}`); console.log(`        ${r.stack}`); }
 }
 console.log(`DRYRUN_RESULT=${bad === 0 ? "PASS" : "FAIL"}（${profiles.length - bad}/${profiles.length} 画像跑到底并产出总报告）`);
