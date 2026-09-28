@@ -1,0 +1,53 @@
+{
+ "startedAt": "2026-09-28T09:28:21.340Z",
+ "legs": [
+  {
+   "name": "open-window-mock-r8f",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8f-reshoot/open-window-mock-r8f.log",
+   "bytes": 531,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "reshoot-attributed-r8f",
+   "status": "FAIL",
+   "exitCode": 2,
+   "log": "reports/audit/round-7/ui-queue-round8f-reshoot/reshoot-attributed-r8f.log",
+   "bytes": 6451,
+   "resultLines": [
+    "SHOOT_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-shooter-38396",
+    "SHOOT_CONSERVED=yes",
+    "SHOOT_RESULT=FAIL（4 条没拿到可用帧）"
+   ]
+  },
+  {
+   "name": "gate-frame-debt-coverage-r8f",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-verdict-from-frames-r8f",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "queue-homogeneity-r8f",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "advisoryFail": 0,
+ "finishedAt": "2026-09-28T09:32:24.640Z",
+ "conservation": {
+  "legsTotal": 5,
+  "legsOk": 1,
+  "tally": {
+   "OK": 1,
+   "FAIL": 1,
+   "NOT_RUN": 3
+  },
+  "ok": true
+ }
+}

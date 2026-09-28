@@ -1,0 +1,60 @@
+{
+ "startedAt": "2026-09-28T09:34:27.874Z",
+ "legs": [
+  {
+   "name": "open-window-real-r8g",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8g-guestreshoot/open-window-real-r8g.log",
+   "bytes": 541,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "reshoot-guest-real-r8g",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8g-guestreshoot/reshoot-guest-real-r8g.log",
+   "bytes": 4252,
+   "resultLines": [
+    "SHOOT_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-shooter-9108",
+    "SHOOT_CONSERVED=yes",
+    "SHOOT_RESULT=OK"
+   ]
+  },
+  {
+   "name": "gate-frame-debt-coverage-r8g",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8g-guestreshoot/gate-frame-debt-coverage-r8g.log",
+   "bytes": 325,
+   "resultLines": [
+    "FRAMECOV_RESULT=PASS 每条未收口行都有去向"
+   ]
+  },
+  {
+   "name": "queue-homogeneity-r8g",
+   "status": "ADVISORY_RED",
+   "exitCode": 2,
+   "log": "reports/audit/round-7/ui-queue-round8g-guestreshoot/queue-homogeneity-r8g.log",
+   "bytes": 189,
+   "resultLines": [
+    "STAMP_RESULT=FAIL reason=队列里一条执行腿都没识别出来，识别口径本身要先查"
+   ]
+  }
+ ],
+ "result": "FAIL",
+ "advisoryFail": 1,
+ "finishedAt": "2026-09-28T09:37:48.628Z",
+ "conservation": {
+  "legsTotal": 4,
+  "legsOk": 3,
+  "tally": {
+   "OK": 3,
+   "ADVISORY_RED": 1
+  },
+  "ok": true
+ }
+}

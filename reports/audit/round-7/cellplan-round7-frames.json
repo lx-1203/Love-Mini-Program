@@ -1,7 +1,7 @@
 {
- "generatedAt": "2026-09-28T01:14:15.836Z",
+ "generatedAt": "2026-09-28T09:39:24.794Z",
  "source": "verdict-from-frames.mjs",
- "frames": 38,
+ "frames": 41,
  "frameSources": [
   {
    "tag": "reports/screenshots/round-7-guest-real/manifest-detail.json",
@@ -133,19 +133,19 @@
    "tag": "reports/audit/round-7/uidebt-shoot/shoot-results.json",
    "kind": "源C·旧默认取景结果（带机器判点 ⇒ 必须排最后）",
    "shape": "rows(带判点)",
-   "gitSha": "60832cd2",
-   "identitySeen": "A",
-   "verifyLast": "logged-in userId=100158",
-   "rows": 1
+   "gitSha": "db88dfef",
+   "identitySeen": "guest",
+   "verifyLast": "not-logged-in",
+   "rows": 4
   }
  ],
  "scanSet": {
   "mode": "派生（源A 权威索引 derivation.corpora + 源B screenshot-manifest.<label>.json + 源C 旧默认）",
   "files": 15,
-  "rowsBefore": 1,
-  "rowsAfter": 38,
-  "framePathsBefore": 1,
-  "framePathsAfter": 38,
+  "rowsBefore": 4,
+  "rowsAfter": 41,
+  "framePathsBefore": 4,
+  "framePathsAfter": 41,
   "droppedRows": [],
   "droppedFramePaths": [],
   "corpusShotsOffPlan": 1249,
@@ -155,19 +155,19 @@
   "indexFile": "reports/audit/round-7/screenshot-manifest.json"
  },
  "buckets": {
-  "NO_LANDING": 0,
+  "NO_LANDING": 1,
   "IDENTITY_MISMATCH": 0,
   "LOCK_SCREEN_BLOCKED": 0,
   "STATE_NOT_APPLIED": 0,
   "LEFT_PAGE": 0,
   "FIXED_FRAME": 0,
   "REGRESSION": 0,
-  "NEEDS_EYE": 1,
+  "NEEDS_EYE": 3,
   "NO_FRAME": 0,
   "NOT_SHOOTABLE": 19,
   "REWRITE": 15,
   "CARRIER_NO_PROBE": 37,
-  "TOUR_ROUTE_ONLY": 24
+  "TOUR_ROUTE_ONLY": 21
  },
  "patchIds": 96,
  "patches": [
@@ -672,8 +672,8 @@
   {
    "id": "MP-R2-PROFILE-022",
    "col": 9,
-   "new": "本轮巡检在路由 pages/profile/index 出过 74 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
-   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+   "new": "帧已拍：reports/screenshots/round-7-r8g-guestreshoot/C-MP-R2-PROFILE-022.png(8630B 取自 uidebt-shoot) 判点 0 条；本条判点全部是 FRAME_ONLY（只能人读帧）",
+   "why": "欠的是人眼，不是证据"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
@@ -720,14 +720,14 @@
   {
    "id": "MP-R7-GUEST-LANDING-REGENTRY-001",
    "col": 9,
-   "new": "本轮巡检在路由 pages/login/index 出过 28 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
-   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+   "new": "帧已拍：reports/screenshots/round-7-r8g-guestreshoot/E-MP-R7-GUEST-LANDING-REGENTRY-001.png(12608B 取自 uidebt-shoot) 判点 0 条；本条判点全部是 FRAME_ONLY（只能人读帧）",
+   "why": "欠的是人眼，不是证据"
   },
   {
    "id": "MP-R7-GUEST-MATCHING-REDIRECT-RACE-001",
    "col": 9,
-   "new": "本轮巡检在路由 subpackages/discover-extra/discover/matching 出过 22 张帧（reports/screenshots/round-7-mock-tour-1a1df78b/manifest-deta），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-",
-   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+   "new": "帧已拍但落点未确认（实落 pages/login/index），本帧不作判据；帧 reports/screenshots/round-7-r8g-guestreshoot/E-MP-R7-GUEST-MATCHING-REDIRECT-RACE-001.png",
+   "why": "落点不明的判决不能进账"
   },
   {
    "id": "MP-R6-F1-NEARBY-IP-CITY-001",
@@ -738,14 +738,14 @@
   {
    "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-001",
    "col": 9,
-   "new": "本轮巡检在路由 pages/messages/index 出过 64 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
-   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+   "new": "帧已拍：reports/screenshots/round-7-r8g-guestreshoot/messages-logout-bg-page-token.png(12258B 取自 uidebt-shoot) 判点 0 条；本条判点全部是 FRAME_ONLY（只能人读帧）",
+   "why": "欠的是人眼，不是证据"
   },
   {
    "id": "MP-R2-CAMPUSPOST-010",
    "col": 9,
-   "new": "帧已拍：reports/screenshots/round-7-stage7-a-real-frames/campuspost-upload-rejected-notice.png(23082B 取自 uidebt-shoot) 判点 0 条；本条判点全部是 FRAME_ONLY（只能人读帧）",
-   "why": "欠的是人眼，不是证据"
+   "new": "本轮巡检在路由 subpackages/campus/campus/post-topic 出过 61 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
   }
  ]
 }

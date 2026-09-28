@@ -1,0 +1,45 @@
+{
+ "$schema": "run-ui-queue.mjs --legs <本文件> --out reports/audit/round-7/ui-queue-round8f-reshoot；串行，第一条非 advisory 红就停并把剩下的记成 NOT_RUN",
+ "$why": "身份回填刚把配方里 11 行的身份从'认不出'变成'有出处'（20→9 不可归因、拒拍组 12→8），而取景器现在的规矩是认不出就拒拍并且整腿 exit 2 —— 也就是说这 11 行第一次既被允许拍、又不会被盖成错身份帧。其中 4 行（MP-R2-CAMPUSPOST-010 / PAGES-PROFILE-INDEX-004 / PAGES-HOME-INDEX-006 / COMPONENTS-CHAT-CHATINPUT-A01）旧代码已经出过 identity:A 且 identityOk 恒真的帧，那属于假证据，必须在新规矩下重拍；另外 7 行是第一次合法可拍。",
+ "$hold": "开跑前：(1) heldLeases() 必须为空；(2) 本轮没有任何重建腿，产物没动过，所以不需要重开窗口之外的补救；(3) 只有身份来自配方 precondition.identity 的行可拍 —— 剩下 9 行仍不可归因，本波刻意不带它们（带一条就会让整腿 exit 2 并带走后面的量测腿）；(4) 拍完必须让 verify-frame-debt-coverage 复量，但那一门的口径是'有没有去向'，不会因为拍到帧就下调 open=17，不许拿它当结案。",
+ "legs": [
+  {
+   "name": "open-window-mock-r8f",
+   "file": "scripts/qa/open-project-window.mjs",
+   "args": ["--project", "apps/client/dist/build/mp-weixin", "--settle", "24"],
+   "timeoutMin": 14,
+   "why": "上一波 8e 的收尾停在 real 档窗口，本波的取景腿打的是 mock 档产物 —— 换档必须先重新开窗接回设备，否则每条开页都会报成通道坏了（这条规矩在本仓 stage-8 计划的 real 窗腿 why 里写着，今天也真的因此废过一批行）。"
+  },
+  {
+   "name": "reshoot-attributed-r8f",
+   "file": "scripts/qa/shoot-frameplan.mjs",
+   "args": ["--plan", "reports/audit/round-7/frameplan-round7-final.json", "--project", "apps/client/dist/build/mp-weixin", "--label", "round-7-r8f-reshoot", "--only-ids", "MP-R2-CAMPUSPOST-010,MP-R2VIS-PAGES-PROFILE-INDEX-004,MP-R2VIS-PAGES-HOME-INDEX-006,MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01,MP-R2VIS-PAGES-MESSAGES-INDEX-001,MP-R2-PROFILE-022,MP-R7-GUEST-LANDING-REGENTRY-001,MP-R7-GUEST-MATCHING-REDIRECT-RACE-001,MP-R2-PAGES-MESSAGES-INDEX-019,MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006,MP-R2VIS-PAGES-HOME-INDEX-003"],
+   "timeoutMin": 45,
+   "why": "11 行逐条点名：4 行是旧口径下盖错身份的帧（要在新规矩下重出），7 行是回填后第一次合法可拍（含 3 行游客语义 —— 它们的身份来自台账单元格逐字文本，不是从散文猜的）。不给任何豁免旗标：状态没变的帧现在会被 capture 时的 contentHash 与状态变更判据当场判红，那正是要的效果。"
+  },
+  {
+   "name": "gate-frame-debt-coverage-r8f",
+   "file": "scripts/qa/verify-frame-debt-coverage.mjs",
+   "args": [],
+   "advisory": true,
+   "timeoutMin": 6,
+   "why": "复量未收口行的去向账（现量 open=17 / A配方SHOOT=9 / 守恒 in=17 out=17）。它数的是去向不是归属，所以拍到帧不会让 open 下调 —— 把它留在波尾是为了证明这一门没被这波悄悄改口径，不是为了好看。"
+  },
+  {
+   "name": "gate-verdict-from-frames-r8f",
+   "file": "scripts/qa/verdict-from-frames.mjs",
+   "args": [],
+   "advisory": true,
+   "timeoutMin": 8,
+   "why": "帧级判决今天第一次有了真实扫描集（从 1 帧对 96 行计划改成按声明派生：sources 1→15、rows 1→38）。这一条把新帧并入判决集，看 NEEDS_EYE / FIXED_FRAME / REGRESSION 各多少 —— 红是发现欠账，不是 UI 坏了，所以 advisory。"
+  },
+  {
+   "name": "queue-homogeneity-r8f",
+   "file": "scripts/qa/verify-ops-corpus-stamp.mjs",
+   "args": ["--queue", "scripts/qa/ui-queue.round8f-reshoot.json"],
+   "advisory": true,
+   "timeoutMin": 3,
+   "why": "本波执行腿必须读同一版语料戳：配方刚被回填写过（96→96 行、11 行内容有变），戳没变就意味着判据台没动、动的只是配方的身份字段 —— 这条把两件事分开钉住。"
+  }
+ ]
+}

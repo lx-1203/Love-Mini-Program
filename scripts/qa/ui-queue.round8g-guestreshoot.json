@@ -1,0 +1,37 @@
+{
+ "$schema": "run-ui-queue.mjs --legs <本文件> --out reports/audit/round-7/ui-queue-round8g-guestreshoot；串行，第一条非 advisory 红就停并把剩下的记成 NOT_RUN",
+ "$why": "8f 那波我把 11 行一起丢进 mock 档取景腿 —— 设计错在腿上，不是门错：取景器对 4 条游客行照实拒拍（identity-err guest :: mock 包会把游客吃掉…），一条错身份帧都没出（出帧=7 全部带 contentHash，无证据=4 就是那 4 条游客行）。这与 stage-8 撤下 exec-guest-login-r8 是同一道载体前置：游客身份在 mock 档不可满足，因为 mock 包的启动链路无条件把会话造回来。所以这 4 行换 real 档重拍，别的一律不动。",
+ "$hold": "开跑前 (1) heldLeases() 必须为空（8f 的取景腿已退出并释放）；(2) 窗口腿必须先于取景腿 —— 8f 的收尾把窗口停在 mock 档，这一档不能拍游客；(3) 这 4 行里 MP-R7-GUEST-MATCHING-REDIRECT-RACE-001 与 matching→寻觅 那条落地违例同族，出帧不等于结案；(4) 8f 已经拿到帧的 7 行不重复拍，避免同一行留下两份不同时间的帧却没人说明哪份作废。",
+ "legs": [
+  {
+   "name": "open-window-real-r8g",
+   "file": "scripts/qa/open-project-window.mjs",
+   "args": ["--project", "apps/client/dist/build/mp-weixin-real", "--settle", "24"],
+   "timeoutMin": 14,
+   "why": "换档必须先把窗口接回 real 档：取景器要的是「这一档上有一条活着的、属于本腿的窗口」，而上一波的收尾停在 mock 档。这条规矩本仓已经用两次事故换回来（stage-8 腿 15 的红与 8f 的 4 条无证据）。"
+  },
+  {
+   "name": "reshoot-guest-real-r8g",
+   "file": "scripts/qa/shoot-frameplan.mjs",
+   "args": ["--plan", "reports/audit/round-7/frameplan-round7-final.json", "--project", "apps/client/dist/build/mp-weixin-real", "--label", "round-7-r8g-guestreshoot", "--only-ids", "MP-R2VIS-PAGES-MESSAGES-INDEX-001,MP-R2-PROFILE-022,MP-R7-GUEST-LANDING-REGENTRY-001,MP-R7-GUEST-MATCHING-REDIRECT-RACE-001"],
+   "timeoutMin": 30,
+   "why": "4 条游客语义行在真实档重拍：它们的身份来自台账单元格逐字文本（issue-matrix.md:40/188/189），不是从散文猜的；在 mock 档取景器已按 assertGuestCapable 的同一口径拒过一遍。不给任何豁免旗标 —— 出帧时带 contentHash 与状态变更判据，静息态没变的帧会被当场判红而不是被归档成「交互后」。"
+  },
+  {
+   "name": "gate-frame-debt-coverage-r8g",
+   "file": "scripts/qa/verify-frame-debt-coverage.mjs",
+   "args": [],
+   "advisory": true,
+   "timeoutMin": 6,
+   "why": "复量去向账（现量 open=17 / A配方SHOOT=9 / in=17 out=17）。这一门数去向不数归属，拍到帧不会让它下调 open —— 留它在波尾是为了证明口径没被这波悄悄改动。"
+  },
+  {
+   "name": "queue-homogeneity-r8g",
+   "file": "scripts/qa/verify-ops-corpus-stamp.mjs",
+   "args": ["--queue", "scripts/qa/ui-queue.round8g-guestreshoot.json"],
+   "advisory": true,
+   "timeoutMin": 3,
+   "why": "钉住本波执行腿读的是同一版判据台：配方今天被回填写过 11 行身份，但语料一个字节没动（canon 4c37cb2e56c2 照旧），这条把「改的是配方身份」与「改的是判据」分开。"
+  }
+ ]
+}
