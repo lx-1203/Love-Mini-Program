@@ -50,7 +50,7 @@
 - 在册陷阱：`mp-weixin-real` 窗口已死却过地板——`open_project_window` 回 success/type:reuse、截图 11290B，画面实为「模拟器启动失败」。过字节数不等于可采。
 - 载具误挡：按载具口径复算 `DENY` 只命中 2/49（TD03、OT09），不是整批拦路虎；本轮未擅自改载具，待授权。
 
-## 6. 需你拍板 14 项（本轮一律未自裁）
+## 6. 需你拍板 20 项（本轮一律未自裁）
 
 - 1. `--r-lg` 令牌值与判据正面冲突
 - 2. `--c-text-inverse` 与 `--c-bg-container` 浅色值完全相同
@@ -66,17 +66,45 @@
 - 12. round-1 那 144 帧没有 gitSha，要不要给个显式豁免
 - 13. 18 份在途 exec-* 清单要不要授权代跑
 - 14. 一枚生产者退出溯源集合，要不要把它拉回来
+- 15. verify-openqueue-lanes.mjs：修成真的门，还是归档
+- 16. run-round7-closeout.mjs：唯一能答"stage-8 过了吗"的载具，现在没人跑
+- 17. 面板每跑一次就重打一份权威判决件
+- 18. 分诊台的判据台目录是从结果路径反推的
+- 19. 那 5 组落地对仍是真欠账（与第 11 项同源，这里补一条新证据）
+- 20. 提交前自我纠一处我自己造成的文件损伤
 
 全文与每条的可选方向见 `reports/audit/round-7/decisions-v33.md`。判据冲突、令牌值、测试数据去留、证据入库方式都是政策选择，我不替你写。
 
 ## 7. 终局复量读数
 
-**（未跑，故此处不留结论。）** 全清单门禁终局复量（条数以 GATE_SUITE 为准，不写死数字）、反 vacuous-green 自检、QA 自测汇总器、不跳实时门的全量面板，统一由 `scripts/qa/run-final-verify-v33.sh` 产出（汇总写成 `.zcode/tmp/final-verify/summary.json`，本生成器直接读它）。跑完再执行 `node22 scripts/qa/gen-round8-report.mjs`，本节自动填真实读数，不手抄数字。
+```
+dryrun-workflow exit=0
+emit-round-report exit=1
+prove-gates-can-fail exit=0
+run-qa-selftests exit=0
+verify-backend-fresh exit=0
+verify-band-freshness exit=0
+verify-case-automatable exit=0
+verify-dry-no-lease exit=0
+verify-evidence-corpus exit=1
+verify-evidence-holes exit=0
+verify-ledger-after-panel exit=0
+verify-ledger exit=0
+verify-provenance-all exit=1
+verify-queue-reconcile exit=0
+verify-real-coverage exit=1
+verify-source-shape exit=0
+verify-state-truth-after-panel exit=0
+verify-state-truth exit=0
+```
+红项：emit-round-report、verify-evidence-corpus、verify-provenance-all、verify-real-coverage
 
-## 8. 排在车道之后做、且有明确因由的三项
+## 8. 本轮把「排在后面做」的账收掉了多少（含纠出的文档错）
 
-- `#51`（26 条登录页用例挂 guest-only 前置）与 `#67`（复测腿成员改由 ops 清单派生）：`round7-NOTES.md:1897/:3503` 写明在跑的腿正逐组读 ops 文件，中途改会让前半用旧判据、后半用新判据。
-- `CH12`：欠一条带 prestate 的 `--tap` 复跑（节点在 `hub.vue:215` 的 `v-if=!isVerified`，未认证身份才点得动）。命名不等于结案。
-- 四条孤儿门禁的接线（`verify-dry-no-lease` / `verify-openqueue-lanes` / `verify-case-automatable` / `run-round7-closeout` 此前无人 spawn）。
-- 还能干的活、每条的命令与验收口径、以及 167 条重判里 45 条可回收的分布，写在 `reports/audit/round-7/followups-v33.md`。
+- `#51` / `#67`：**本程之前就已落盘入库**（commit `34b6fb3d`，备份 `.pre-ops-cellplan.bak` Sep 27 18:39）。ops 车道干跑实测 `A 组=8｜B 组=22｜已落地=30｜待改=0｜拒绝=0 → OPSCELL_RESULT=PASS exit 0`。`round7-NOTES.md` §104.3 记的 `A=9 / 31 行` 与盘上不符（那是旧态），所以本轮**没有重复 --apply**——拿旧文档重落一遍不是补完，是造假进度。
+- 我自己在交接文档里写的「默认吃三份计划」是错的：`:33` 的默认表有**四份**（漏了 `cellplan-round7-recovered.json` 13 行）。已在 `followups-v33.md` 1.1 节逐字纠正。
+- 167 行重判里的 `SELECTOR_MISSED=45` 只收进 **10** 条（9 条 add-tapTarget + 1 条 rename `TD07 .say-hello→.reply-say-hello`），守恒 286→286、全目录 1107 不变，幂等复跑 `已落地=10 待改=0`。拒 20 条分类点名：判据无点击步 12、两档静态不命中 2、多命中歧义 3、节点不挂事件 2、有 tap 无点击步 1。**方法论收获：四道闸本身会放行 28/30 —— 过闸是必要条件，不是充分条件。**
+- `CH12` 判成 **EXECUTED**：prestate 三样同向实测（`isVerified=false`、目标 btn `present(1)`、两支徽章 absent），tap 回 `{success:true}`，600ms 内路由 `hub|certification`、栈深 1→2、落地页 `.cert-page/.cert-header/.cert-body` present，7 帧哈希且人眼确认不是「模拟器启动失败」页。未量到的写明：500ms 子句、console、身份 B 腿。
+- 孤儿门禁接线：`verify-dry-no-lease` 与 `verify-case-automatable` 已接进 `GATE_SUITE`（唯一必然经过的调用点）并实跑为绿；`verify-openqueue-lanes` 判为**不该接**（打印 `OPENQ_RESULT=PARTIAL` 却 `exit=0`、写死 round-7、无条件覆写判决件），已留防再试注释，处置开成第 15 项。
+- 仍然存在的红与风险：`verify-ops-corpus-stamp --check` 仍 exit 1（10 个漂移文件里只有 4 个是本程改的，另 6 个先于本程就不符，车道按边界没有越权重打别人的戳）；`tmp/qa/unverifiable-recheck-*.json` 三份已复制进 `reports/audit/round-7/` 脱离不可携状态。
 
