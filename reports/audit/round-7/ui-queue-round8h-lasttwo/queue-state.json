@@ -1,0 +1,50 @@
+{
+ "startedAt": "2026-09-28T10:07:41.118Z",
+ "legs": [
+  {
+   "name": "open-window-mock-r8h",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8h-lasttwo/open-window-mock-r8h.log",
+   "bytes": 531,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "shoot-lasttwo-r8h",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8h-lasttwo/shoot-lasttwo-r8h.log",
+   "bytes": 2368,
+   "resultLines": [
+    "SHOOT_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-shooter-17316",
+    "SHOOT_CONSERVED=yes",
+    "SHOOT_RESULT=OK"
+   ]
+  },
+  {
+   "name": "gate-shoot-refuse-count-r8h",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8h-lasttwo/gate-shoot-refuse-count-r8h.log",
+   "bytes": 5745,
+   "resultLines": [
+    "SHOOT_LEASE=SKIPPED_DRY（--dry 不抢租约：预览配方不该把正在跑的测量腿顶掉）",
+    "SHOOT_RESULT=DRY 未碰设备、未写盘"
+   ]
+  }
+ ],
+ "result": "OK",
+ "advisoryFail": 0,
+ "finishedAt": "2026-09-28T10:08:56.804Z",
+ "conservation": {
+  "legsTotal": 3,
+  "legsOk": 3,
+  "tally": {
+   "OK": 3
+  },
+  "ok": true
+ }
+}

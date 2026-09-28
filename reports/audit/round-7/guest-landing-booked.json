@@ -1,9 +1,9 @@
 {
- "generatedAt": "2026-09-28T01:27:45.955Z",
+ "generatedAt": "2026-09-28T10:26:35.719Z",
  "source": "undefined + undefined",
  "ruling": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。",
  "groups": 26,
- "debtRows": 432,
+ "debtRows": 434,
  "anchorsOk": 11,
  "anchorsBad": 0,
  "carrier": "scripts/qa/verify-guest-landing.mjs --mode measure --project undefined",
@@ -537,6 +537,7 @@
     "VRN04",
     "VRN05",
     "VRN06",
+    "VRN07",
     "VRN08",
     "VRN09",
     "VRN10",
@@ -546,9 +547,9 @@
     "VRN14",
     "VRN03"
    ],
-   "debtRows": 13,
+   "debtRows": 14,
    "memberSource": {
-    "fromOps": 12,
+    "fromOps": 13,
     "fromRun": 7
    },
    "landingMarker": ".login-page__brand",
@@ -904,11 +905,12 @@
     "VB06",
     "VB07",
     "VB08",
-    "VB09"
+    "VB09",
+    "VB10"
    ],
-   "debtRows": 9,
+   "debtRows": 10,
    "memberSource": {
-    "fromOps": 9,
+    "fromOps": 10,
     "fromRun": 5
    },
    "landingMarker": ".profile-page",

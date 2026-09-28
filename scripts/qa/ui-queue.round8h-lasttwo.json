@@ -1,0 +1,29 @@
+{
+ "$schema": "run-ui-queue.mjs --legs <本文件> --out reports/audit/round-7/ui-queue-round8h-lasttwo；串行",
+ "$why": "9 条不可归因里最后 2 条刚拿到有出处的身份（tmp/qa/srconly-owed-plan.md:92/:159 的 identity 行，与 frameName 的 lane 字母会互相矛盾，所以它是身份而不是 lane 记号）。这两行都是 A 档、mock 载体可拍（A 在 mock 档没有游客那种不可满足组合）。剩下 7 行没有权威来源，已在归置表里逐条落成 carrier_missing，不进本波。",
+ "$hold": "开跑前 heldLeases() 必须为空；上一波 8g 的窗口停在 real 档，本波拍的是 mock 档 A 档帧，所以窗腿必须在取景腿之前。",
+ "legs": [
+  {
+   "name": "open-window-mock-r8h",
+   "file": "scripts/qa/open-project-window.mjs",
+   "args": ["--project", "apps/client/dist/build/mp-weixin", "--settle", "24"],
+   "timeoutMin": 14,
+   "why": "8g 收尾把窗口停在 real 档，这一档不能出 mock 档 A 档帧 —— 换档先接回窗口是本仓用两次事故换来的规矩（stage-8 腿 15 与 8f 的 4 条无证据）。"
+  },
+  {
+   "name": "shoot-lasttwo-r8h",
+   "file": "scripts/qa/shoot-frameplan.mjs",
+   "args": ["--plan", "reports/audit/round-7/frameplan-round7-final.json", "--project", "apps/client/dist/build/mp-weixin", "--label", "round-7-r8h-lasttwo", "--only-ids", "MP-R2-PROFILE-023,MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002"],
+   "timeoutMin": 20,
+   "why": "两条刚归因完的行首次合法出帧：不带任何豁免旗标，帧带 contentHash 与状态变更判据；配方里仍不可归因的 7 行不在名单里，所以这一腿不会因拒拍而 exit 2。"
+  },
+  {
+   "name": "gate-shoot-refuse-count-r8h",
+   "file": "scripts/qa/shoot-frameplan.mjs",
+   "args": ["--plan", "reports/audit/round-7/frameplan-round7-final.json", "--dry"],
+   "advisory": true,
+   "timeoutMin": 6,
+   "why": "把拒拍账复量一遍留在同一波里：现量应为 SHOOT_IDENTITY_UNATTRIBUTED=7、拒拍组=6（回填前是 9/8）。这一条是量测不是取证，dry 不占租约也不写盘，红=配方又退化到有人从散文猜身份了。"
+  }
+ ]
+}

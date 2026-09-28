@@ -14,9 +14,9 @@
 - 来源 `reports/screenshots/round-7-tap3/manifest-detail.json`（源A·权威索引登记的 corpus，shots(corpus 索引)）sha=e4495d67 行=646 身份=?/?
 - 来源 `reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json`（源A·权威索引登记的 corpus，shots(corpus 索引)）sha=1a1df78b 行=37 身份=?/?
 - 来源 `reports/audit/round-7/screenshot-manifest.round-7-stage8b-tour-B-real.json`（源B·巡检 subset 冻帧（union 腿之前就在盘上），shots(corpus 索引)）sha=6857049b 行=0 身份=?/?
-- 来源 `reports/audit/round-7/uidebt-shoot/shoot-results.json`（源C·旧默认取景结果（带机器判点 ⇒ 必须排最后），rows(带判点)）sha=db88dfef 行=4 身份=guest/not-logged-in
+- 来源 `reports/audit/round-7/uidebt-shoot/shoot-results.json`（源C·旧默认取景结果（带机器判点 ⇒ 必须排最后），rows(带判点)）sha=6fd15178 行=2 身份=A/logged-in userId=user-1001
 
-分桶：{"NO_LANDING":1,"IDENTITY_MISMATCH":0,"LOCK_SCREEN_BLOCKED":0,"STATE_NOT_APPLIED":0,"LEFT_PAGE":0,"FIXED_FRAME":0,"REGRESSION":0,"NEEDS_EYE":3,"NO_FRAME":0,"NOT_SHOOTABLE":19,"REWRITE":15,"CARRIER_NO_PROBE":37,"TOUR_ROUTE_ONLY":21}
+分桶：{"NO_LANDING":0,"IDENTITY_MISMATCH":0,"LOCK_SCREEN_BLOCKED":0,"STATE_NOT_APPLIED":0,"LEFT_PAGE":0,"FIXED_FRAME":0,"REGRESSION":0,"NEEDS_EYE":2,"NO_FRAME":0,"NOT_SHOOTABLE":19,"REWRITE":15,"CARRIER_NO_PROBE":37,"TOUR_ROUTE_ONLY":23}
 
 | id | 判决 | 机器判点 | 帧 |
 |---|---|---|---|
@@ -102,17 +102,17 @@
 | MP-R2VIS-PAGES-PROFILE-INDEX-004 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-guest-real/PAGES-PROFILE-INDEX-PFI01-after.png |
 | MP-R2VIS-PAGES-HOME-INDEX-006 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-guest-real/PAGES-HOME-INDEX-H01-after.png |
 | MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-guest-real/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS01-after.png |
-| MP-R2-PROFILE-023 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-guest-real/PAGES-PROFILE-INDEX-PFI01-after.png |
-| MP-R2-PROFILE-022 | 待人读帧 | 0/1 | reports/screenshots/round-7-r8g-guestreshoot/C-MP-R2-PROFILE-022.png |
+| MP-R2-PROFILE-023 | 待人读帧 | 0/1 | reports/screenshots/round-7-r8h-lasttwo/A-MP-R2-PROFILE-023.png |
+| MP-R2-PROFILE-022 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-guest-real/PAGES-PROFILE-INDEX-PFI01-after.png |
 | MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-guest-real/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI01-after.png |
 | MP-R2VIS-PAGES-HOME-INDEX-001 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-guest-real/PAGES-HOME-INDEX-H01-after.png |
 | MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-guest-real/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS01-after.png |
 | MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-guest-real/SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI01-after.png |
-| MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-guest-real/次要20-OT02-after.png |
+| MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002 | 待人读帧 | 0/1 | reports/screenshots/round-7-r8h-lasttwo/A-MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002.png |
 | MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-001 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-guest-real/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP01-after.png |
 | MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-003 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-mock-tour-1a1df78b/A/subpackages_village_village_publish__默认.png |
-| MP-R7-GUEST-LANDING-REGENTRY-001 | 待人读帧 | 0/1 | reports/screenshots/round-7-r8g-guestreshoot/E-MP-R7-GUEST-LANDING-REGENTRY-001.png |
-| MP-R7-GUEST-MATCHING-REDIRECT-RACE-001 | NO_LANDING | 不作判 | reports/screenshots/round-7-r8g-guestreshoot/E-MP-R7-GUEST-MATCHING-REDIRECT-RACE-001.png |
+| MP-R7-GUEST-LANDING-REGENTRY-001 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-guest-real/PAGES-LOGIN-INDEX-LG01-after.png |
+| MP-R7-GUEST-MATCHING-REDIRECT-RACE-001 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-mock-tour-1a1df78b/A/subpackages_discover-extra_discover_matching__默认.png |
 | MP-R6-F1-NEARBY-IP-CITY-001 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-guest-real/PAGES-NEARBY-INDEX-N01-after.png |
-| MP-R2VIS-PAGES-MESSAGES-INDEX-001 | 待人读帧 | 0/1 | reports/screenshots/round-7-r8g-guestreshoot/messages-logout-bg-page-token.png |
+| MP-R2VIS-PAGES-MESSAGES-INDEX-001 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-guest-real/PAGES-MESSAGES-INDEX-MSG01-after.png |
 | MP-R2-CAMPUSPOST-010 | 巡检帧仅到路由 | 0/1 | reports/screenshots/round-7-guest-real/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT02-after.png |
