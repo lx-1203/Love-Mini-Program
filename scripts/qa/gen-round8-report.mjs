@@ -85,7 +85,7 @@ if (g.final) {
   L.push("```");
   L.push(`红项：${(g.final.reds || []).join("、") || "无"}`);
 } else {
-  L.push("**（未跑，故此处不留结论。）** 十项门禁终局复量、反 vacuous-green 自检、QA 自测汇总器、不跳实时门的全量面板，由 `.zcode/tmp/final-verify.sh` 产出；跑完重跑本生成器（`.zcode/tmp/gen-report.mjs`）即自动填入，不手抄数字。");
+  L.push("**（未跑，故此处不留结论。）** 十项门禁终局复量、反 vacuous-green 自检、QA 自测汇总器、不跳实时门的全量面板，统一由 `scripts/qa/run-final-verify-v33.sh` 产出（汇总写成 `.zcode/tmp/final-verify/summary.json`，本生成器直接读它）。跑完再执行 `node22 scripts/qa/gen-round8-report.mjs`，本节自动填真实读数，不手抄数字。");
 }
 L.push("");
 L.push("## 8. 排在车道之后做、且有明确因由的三项", "");
