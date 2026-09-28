@@ -460,7 +460,10 @@ const verified: string[] = [
 ];
 const notCovered: string[] = [];
 // 两条已核实的"绿不自证"范围，写进报告免得被读成全覆盖（数字与归因以 sizegate 车道产出为准）：
-notCovered.push("verify-package-size 对 dev/mock 档体积走自我豁免分支仍 exit 0：构建绿≠体积合规，读数见 .zcode/tmp/lane-sizegate/findings.json");
+// 注意措辞：这条不是"dev 档豁免"。实测 apps/client/dist/build/mp-weixin 的 env.js 自证
+// DEV:!1、PROD:!0、MODE:"mp-weixin-mock"，是 mock 料的**生产编译**；豁免只是调用方挂了 --allow-mock 旗号。
+notCovered.push("verify-package-size 靠调用方 --allow-mock 旗号放行体积（去旗即红，实测同字节 exit 0 vs exit 1）：发布形态主包估 2.59MB，仍超微信 2.00MB 上限约 0.59MB——构建绿不等于体积合规");
+notCovered.push("同一脚本在打印两条 ⚠ 之后仍输出「✓ 验收通过：主包/总包体积合规」，是矛盾命名，判读只认 PACKAGE_SIZE ⚠ 行与退出码，不认那句 ✓");
 notCovered.push("typecheck 不覆盖测试代码：apps/client/tsconfig.json 的 exclude 里有 src/tests/**/*（实测 117 个 spec 不在 vue-tsc 范围内）");
 if (!backendUp) notCovered.push("后端 8080 不可达：真实档相关验证只能 BLOCKED");
 if (uiPorts.length === 0) notCovered.push("DevTools 自动化端口无监听：UI 帧级复验受限，相关行如实 UNVERIFIED-TOOLING");
