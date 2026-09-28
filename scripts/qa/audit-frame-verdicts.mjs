@@ -13,19 +13,63 @@
  *   3. 探针必须真给了数字答案（PROBE_NO_ANSWER / 'ERR' 一律不算"没出现"）。
  *
  * 产出：reports/audit/round-7/frame-red-audit.md + cellplan-round7-frames-admissible.json
- * 用法：node scripts/qa/audit-frame-verdicts.mjs [--frames <shoot-results.json>] [--project <编译产物目录>]
+ * 用法：node scripts/qa/audit-frame-verdicts.mjs [--frames <shoot-results.json>[,…]]
+ *       [--frames-index <本轮权威索引>] [--project <编译产物目录>] [--cellplan <f>] [--out <落盘目录>]
  */
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve, join, dirname } from "node:path";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
-const FRAME_LIST = arg("frames", "reports/audit/round-7/uidebt-shoot-ws/shoot-results.json").split(",").map((s) => resolve(REPO, s.trim())).filter(Boolean);
+const relOf = (p) => String(p).split("\\").join("/").replace(REPO.split("\\").join("/") + "/", "");
+/* 自测专用 --out（默认值与改前逐字一致）：设备队列正在写 reports/audit/round-7/，离线证明不能再落进去
+   （同 verify-evidence-corpus.mjs:35 的 --root）。只改落点，不改判据与退出码。 */
+const OUT = resolve(REPO, arg("out", "reports/audit/round-7"));
+/* H1 同族洞：本工具的取景默认值同样钉死在一个目录上（旧 :23），而 :61 自己写着
+   「与 verdict-from-frames 同一口径，否则两边看到的『这一行的帧』会不一致」。
+   现在两边都按本轮声明索引派生（源A derivation.corpora / 源B screenshot-manifest.<label>.json /
+   源C 旧默认排最后），理由与逐条注释见 verdict-from-frames.mjs:29-44。
+   注意两个工具的"旧默认"本来就是两个不同文件（verdict=uidebt-shoot、本工具=uidebt-shoot-ws，
+   这是改之前就存在的分叉），这里只把**各自那份**留在最后以保证各自零绿损；
+   合并成同一份 legacy 会改变判决归属，那是另一笔账，已记进 gap-framewire 的后续件。 */
+const INDEX = resolve(REPO, arg("frames-index", "reports/audit/round-7/screenshot-manifest.json"));
+const LEGACY_FRAMES = "reports/audit/round-7/uidebt-shoot-ws/shoot-results.json";
+
+function derivedSources() {
+  const out = [], seen = new Set();
+  const push = (rel, kind) => {
+    const abs = resolve(REPO, rel);
+    if (seen.has(abs)) return;
+    seen.add(abs);
+    out.push({ abs, rel: relOf(abs), kind, missing: !existsSync(abs) });
+  };
+  let idx = null;
+  if (existsSync(INDEX)) { try { idx = JSON.parse(readFileSync(INDEX, "utf8")); } catch { idx = null; } }
+  for (const c of ((idx || {}).derivation || {}).corpora || []) if (c && c.manifest) push(c.manifest, "源A·权威索引登记的 corpus");
+  const idir = dirname(INDEX);
+  if (existsSync(idir)) {
+    for (const n of readdirSync(idir).sort()) {
+      if (!/^screenshot-manifest\..+\.json$/.test(n)) continue;
+      push(relOf(join(idir, n)), "源B·巡检 subset 冻帧（union 腿之前就在盘上）");
+    }
+  }
+  push(LEGACY_FRAMES, "源C·旧默认取景结果（带判点 ⇒ 必须排最后）");
+  return out;
+}
+const EXPLICIT = process.argv.indexOf("--frames") >= 0;
+const SOURCES = EXPLICIT
+  ? arg("frames", "").split(",").map((s) => s.trim()).filter(Boolean).map((f) => ({ abs: resolve(REPO, f), rel: relOf(resolve(REPO, f)), kind: "显式点名", missing: !existsSync(resolve(REPO, f)) }))
+  : derivedSources();
+const FRAME_SRC = SOURCES.filter((s) => !s.missing);
+if (!FRAME_SRC.length) { console.log("FRA_RESULT=FAIL reason=取景集是空的（默认派生与显式 --frames 都没落到盘上文件）；空扫描集不得出判决"); process.exit(2); }
+if (!EXPLICIT && !FRAME_SRC.some((s) => s.abs === resolve(REPO, LEGACY_FRAMES))) {
+  console.log("FRA_RESULT=FAIL reason=派生集里没有旧默认的 " + LEGACY_FRAMES + " ⇒ 原先被审的帧会整批离开审计集，宁可红"); process.exit(2);
+}
+const FRAME_LIST = FRAME_SRC.map((s) => s.abs);
 const PROJECT_LIST = arg("project", "apps/client/dist/build/mp-weixin").split(",").map((s) => resolve(REPO, s.trim())).filter(Boolean);
 const FRAMES = FRAME_LIST[0], PROJECT = PROJECT_LIST[0];
 const PLAN = resolve(REPO, arg("plan", "reports/audit/round-7/frameplan-merged.json"));
-const CELLPLAN = resolve(REPO, arg("cellplan", "reports/audit/round-7/cellplan-round7-frames.json"));
-const OUT = resolve(REPO, "reports/audit/round-7");
+const CELLPLAN = resolve(REPO, arg("cellplan", join(OUT, "cellplan-round7-frames.json")));
 
 for (const f of [...FRAME_LIST, PLAN, CELLPLAN]) {
   if (!existsSync(f)) { console.log("FRA_RESULT=FAIL reason=输入不存在 " + f); process.exit(2); }
@@ -33,6 +77,12 @@ for (const f of [...FRAME_LIST, PLAN, CELLPLAN]) {
 for (const p of PROJECT_LIST) {
   if (!existsSync(join(p, "app.json"))) { console.log("FRA_RESULT=FAIL reason=--project 不是编译产物目录 " + p); process.exit(2); }
 }
+
+/* corpus 型来源的 caseId 是各 suite 自己的编号（DC01/CI07/H17…），跨 corpus 会撞名、
+   而且绝大多数不是配方行 id ⇒ 只有对得上配方 id 的 corpus 行才进行级归属。
+   旧默认那份（rows 型）不受这条限制：原本被审的证据一条都不能被筛选器筛掉。 */
+const planIdSet = new Set(((JSON.parse(readFileSync(PLAN, "utf8")).rows) || []).map((r) => r.id));
+let offPlan = 0;
 
 /* 产物里的 class 名片段全集：一次性扫完，后面只做集合判断。
    扫的是 js 渲染函数里的 class 字符串，所以既含 static class 也含模板拼出来的片段。 */
@@ -58,26 +108,66 @@ const ARTIFACT = (() => {
 })();
 
 /* 多份帧文件按传入顺序合并，后传的赢（档内自我复跑同理）。
-   与 verdict-from-frames 同一口径，否则两边看到的"这一行的帧"会不一致。 */
+   与 verdict-from-frames 同一口径，否则两边看到的"这一行的帧"会不一致。
+   corpus 型来源只有 shots[]（巡检/执行 corpus 的 manifest-detail.json），归一化成行后打 probeRan=false；
+   本工具只审"已经判红的那条探针问得对不对"，corpus 行没有 checks ⇒ 不参与判红集合，
+   收进来只是为了让两边的扫描集是同一份账，不为了多判任何东西。 */
+function shotsToRows(j, tag) {
+  const rows = [];
+  for (const s of j.shots || []) {
+    const p = String(s.path || "");
+    if (!p) continue;
+    rows.push({ id: String(s.caseId || ""), route: String(s.route || s.page || ""), landing: String(s.route || s.page || ""),
+      status: "SHOT", frame: p, bytes: Number(s.bytes || 0), checks: [], probeRan: false,
+      carrier: (s.corpus || tag) + "@" + String(j.gitSha || "?"), identity: s.identity || "?" });
+  }
+  return rows;
+}
 const fr = { rows: [], gitSha: "", project: PROJECT_LIST.join(",") };
 const seenIdx = new Map();
 const srcLog = [];
-let gitShaFirst = "";
-for (const f of FRAME_LIST) {
+let gitShaFirst = "", corpusRows = 0, upgrades = 0;
+for (let i = 0; i < FRAME_LIST.length; i++) {
+  const f = FRAME_LIST[i];
+  const tag = FRAME_SRC[i].rel;
   const one = JSON.parse(readFileSync(f, "utf8"));
   if (!gitShaFirst) gitShaFirst = one.gitSha || "";
-  for (const r of (one.rows || [])) {
+  const rows = (one.rows && one.rows.length) ? one.rows : shotsToRows(one, tag);
+  const isShots = !(one.rows && one.rows.length);
+  if (isShots) corpusRows += rows.length;
+  for (const r of rows) {
+    if (!r.id) continue;                          // 巡检帧不带配方行 id ⇒ 不做行级归属，免得冒充
+    if (isShots && !planIdSet.has(r.id)) { offPlan++; continue; }
     const k = r.id;
     if (seenIdx.has(k)) {
       const old = fr.rows[seenIdx.get(k)];
-      console.log("FRA_WARN 同一 id 后传帧覆盖先传：" + k + " " + (old.frameFrom || old.frame || "?") + " → " + (r.frame || "?"));
+      /* 只有"把带判点的证据覆盖成没有判点的 corpus 帧"才是要吼的降级；
+         反方向（corpus 帧 → 带判点的取景行）是本设计故意的优先级（源C 排最后），
+         每次都吼一遍会把 15 个来源刷成 37 行噪声，真降级反而看不见。 */
+      if (old.probeRan !== false && r.probeRan === false) console.log("FRA_WARN 同一 id 后传帧把带判点的证据覆盖成无判点的 corpus 帧：" + k + " " + (old.frame || "?") + " → " + (r.frame || "?"));
+      else upgrades++;
       fr.rows[seenIdx.get(k)] = r;
     } else { seenIdx.set(k, fr.rows.length); fr.rows.push(r); }
   }
-  srcLog.push((f.split("reports/audit/round-7/")[1] || f) + "@" + (one.gitSha || "?") + "/ident=" + (one.identitySeen || "?") + "/rows=" + (one.rows || []).length);
+  srcLog.push(tag + "@" + (one.gitSha || "?") + "/ident=" + (one.identitySeen || "?") + "/rows=" + rows.length + "/" + (one.rows && one.rows.length ? "带判点" : "corpus"));
 }
 fr.gitSha = gitShaFirst;
 console.log("FRA_SOURCES " + srcLog.join(" ｜ "));
+/* 收紧扫描集要当场审"原本被审的帧有没有掉出去"（同 verdict-from-frames 的 FV_GREENLOSS）。 */
+{
+  const legacyAbs = resolve(REPO, LEGACY_FRAMES);
+  const legacy = FRAME_LIST.includes(legacyAbs) ? JSON.parse(readFileSync(legacyAbs, "utf8")) : null;
+  const lrows = (legacy && legacy.rows) || [];
+  const keep = lrows.filter((r) => r.id && seenIdx.has(r.id)).length;
+  const sameFrame = lrows.filter((r) => r.id && seenIdx.has(r.id) && fr.rows[seenIdx.get(r.id)].frame === r.frame).length;
+  console.log("FRA_SCANSET 来源=" + FRAME_LIST.length + " 份（corpus 帧=" + corpusRows + "，其中对不上配方 id 的=" + offPlan + "） 取景行=" + fr.rows.length + " 后传升级(corpus→带判点)=" + upgrades +
+    " ｜旧默认(" + (EXPLICIT ? "显式点名，不适用" : LEGACY_FRAMES) + ")行=" + lrows.length + " 仍在集内=" + keep + " 同一帧=" + sameFrame +
+    (lrows.length === keep && lrows.length === sameFrame ? " ⇒ 一条都没掉、原判不受影响" : (EXPLICIT ? "" : " ⇒ 有原有证据掉出审计集")));
+  if (!EXPLICIT && (lrows.length !== keep || lrows.length !== sameFrame)) {
+    console.log("FRA_RESULT=FAIL reason=派生扫描集把旧默认那 " + lrows.length + " 条带判点的证据挤出/降级了（在集内=" + keep + " 同一帧=" + sameFrame + "）⇒ 宁可红，不能悄悄少审");
+    process.exit(2);
+  }
+}
 const plan = JSON.parse(readFileSync(PLAN, "utf8"));
 const cp = JSON.parse(readFileSync(CELLPLAN, "utf8"));
 const byId = new Map((fr.rows || []).map((r) => [r.id, r]));
@@ -209,7 +299,9 @@ const dropped = (cp.patches || []).filter((p) => p.col === 6 && /^待修复/.tes
   patches.filter((p) => p.col === 6 && /^待修复/.test(String(p.new || ""))).length;
 writeFileSync(join(OUT, "cellplan-round7-frames-admissible.json"), JSON.stringify({
   generatedAt: new Date().toISOString(), source: "audit-frame-verdicts.mjs",
-  frames: FRAMES.split("reports/")[1], project: PROJECT.split("apps/")[1],
+  frames: FRAME_SRC.map((s) => s.rel).join(","), framesCount: FRAME_LIST.length, firstFrameSource: relOf(FRAMES),
+  scanSetMode: EXPLICIT ? "--frames 显式点名" : "派生（源A 权威索引 + 源B subset + 源C 旧默认）",
+  project: PROJECT_LIST.map(relOf).join(","),
   artifactClassTokens: ARTIFACT.size, redRows: rows.length, admissible: ok.length, held: held.length,
   patches,
 }, null, 1));

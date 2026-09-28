@@ -48,6 +48,29 @@ const arg = (k, d) => { const i = argv.indexOf("--" + k); return i >= 0 && argv[
 }
 const ROUND = arg("round", "round-7");
 const ROUND_REL = "reports/audit/" + ROUND;   // 本轮台账根：queue-tally 在这里按前缀现量发现 ledger，不写死子目录名
+const RTAG = String(ROUND).replace(/^round-/, "");
+
+/* 本轮 scope 现量收集，不手写目录名：目录集的规则取自 emit-round-report.mjs 的 collectRoundCorpusDirs()
+   （reports/screenshots 下名字属于本轮的目录全收，但 `*-smoke` 排除 —— 冒烟 corpus 是被丢弃的一次性产物，
+   让它进判据就是把「试过」写成「验过」），写死两个目录 = 本轮新长的 corpus 悄悄落在门外，
+   那正是这条门反复修的「扫描集静默变小却照样判绿」。两点比 emit-round-report 那一版更紧：
+     · 归属判据用 round-<N> 全等或 round-<N>- 前缀，不用裸 startsWith("round-<N>")，
+       否则将来真有了 round-70 会被 round-7 的 scope 连坐；
+     · 每个目录都带尾斜杠 ⇒ 走 verify-evidence-corpus.mjs:70 的「显式子树」语义。
+       不带斜杠时 :78 的 <name>-* 兄弟连带会让 round-7-guest-real 把 round-7-guest-real-smoke 也拽进来，
+       那就等于上面的 smoke 排除白写。
+   轮目录轴 reports/audit/round-<N>/ 同样带尾斜杠，只收本轮审计目录的后代，不被 round-<N>b 串档。 */
+function roundEvidenceScope() {
+  const base = join(REPO, "reports", "screenshots");
+  let names = [];
+  try { names = readdirSync(base); } catch { names = []; }
+  const corpora = names.filter((n) => n.startsWith("round-" + RTAG + "-") || n === "round-" + RTAG)
+    .filter((n) => !n.endsWith("-smoke"))
+    .sort()
+    .map((n) => "reports/screenshots/" + n + "/");
+  return ["reports/audit/round-" + RTAG + "/"].concat(corpora).join(",");
+}
+const ROUND_SCOPE = roundEvidenceScope();   // 轮号轴：scope / 报告文件名都从它派生，不再各自 slice 字符串
 
 /* ────────────────────────────────────────────────────────────────────────────────
    queue-tally：跨多条 queue-state 台账的真对账（导出 = 能被单独跑、单独审）
@@ -291,10 +314,12 @@ export function reconcileQueueTally(o = {}) {
 const STEPS = [
   { id: "queue-tally", kind: "check", note: "跨多条 queue-state 台账按腿名对账：解析表 + 对权威计划的腿名守恒（OK/红/MISSING/DROPPED 逐条点名）+ 每腿重跑历史；读空/读坏/有红/有未跑 ⇒ 这一步红" },
   { id: "exec-frames-to-corpus", file: "scripts/qa/exec-frames-to-corpus.mjs", kind: "gate", write: true, eachExecResults: true, args: [], note: "执行轮出的帧登记进语料库（#52）：按盘上真实存在的 exec-results.json 一条一步，identity 从结果文件里读" },
+  { id: "tour-frames-vs-exec-corpus", kind: "check", note: "巡检/取景 corpus 与 exec-* 消费链的关系：逐 corpus 点名『为什么 exec-frames-to-corpus:* 与 triage-exec-* 不吃这批帧』，别让 18 条 exec 步骤的沉默冒充成『巡检帧已经处理过』；读数在 main() 里出，理由全文见那段注释与 .zcode/tmp/gap-framewire/FOLLOWUP-tour-frames-bridge.md" },
   { id: "client-unit-tests", file: "scripts/qa/run-client-tests.mjs", kind: "gate", write: true, args: [], note: "⑤ 的「全部门禁」含客户端单测：上一轮只在我手动 npx 时跑过一次、证据落在 tmp/（等于没交出去）；这个载具用同一颗 node 跑并把汇总与完整输出留档到 reports/，且要求 files/tests 汇总行齐全 + failed=0 + 退出码 0 三者同时成立才算过" },
-  { id: "verify-evidence-corpus", file: "scripts/qa/verify-evidence-corpus.mjs", kind: "gate", args: [], note: "证据索引与盘上一致：路径存在、哈希一致（帧入账后必须复量）。消费者只读 --root/--scope/--short，压根没有轮次轴 ⇒ 原先转发的 --round 被静默忽略（同 0f82b4c1 那一族），现按它的真实口径收全量 reports/" },
-  { id: "verdict-from-frames", file: "scripts/qa/verdict-from-frames.mjs", kind: "gate", write: true, args: [], note: "把帧级判决从证据里读出来（① 要的帧级终态）。消费者只读 --plan/--frames，两个默认值本身就落在本轮目录 ⇒ 传 --round 是假接线，去掉后量的东西一模一样" },
-  { id: "audit-frame-verdicts", file: "scripts/qa/audit-frame-verdicts.mjs", kind: "gate", write: true, args: [], note: "帧判决的审计：有没有拿没背书的判决落账。它无条件写 frame-red-audit.md + cellplan-round7-frames-admissible.json（L210/L228）⇒ 必须 --allow-write 才允许跑；消费者只读 --frames/--project/--plan/--cellplan/--restore-from ⇒ 去掉假接线的 --round" },
+  { id: "verify-evidence-corpus-round7", file: "scripts/qa/verify-evidence-corpus.mjs", kind: "gate", args: ["--scope", ROUND_SCOPE], note: "证据索引与盘上一致 · 本轮轴：按消费者自己的 --scope 档位（:41）把扫描集收到本轮 corpus（段边界匹配 segMatch :69 认 round-N 自身与 round-N-* 兄弟，不会串到 round-N0），这一条红＝本轮证据不可背书。以前这一步 args:[] 走全域，一轮的红和历史口径的红混成同一个 CORPUS_PROBLEMS 数字，读的人分不清「本轮坏了」还是「历史欠账」，于是这一门从来没被当真看过" },
+  { id: "verify-evidence-corpus-history", file: "scripts/qa/verify-evidence-corpus.mjs", kind: "gate", args: [], note: "同一把门的**历史口径轴**，单独一条、单独一个读数：全域 reports/ 扫。现量已知红 = reports/screenshots/round-1/manifest.json 的 144 帧走的是早期 schema（只有 file、没有 gitSha/contentHash），verify-evidence-corpus.mjs:130 的 isRealCommit(空串)=false ⇒ real=false ⇒ exit 1。这条红是 pre-existing 的口径差，**必须继续可见**，也不许用给旧帧补当天 SHA 的方式洗绿（exec-frames-to-corpus.mjs:8-10 与 dir-to-manifest-detail.mjs:9-12 写死的规矩：gitSha 只能从结果文件读，补一个当天的进去叫伪造溯源）" },
+  { id: "verdict-from-frames", file: "scripts/qa/verdict-from-frames.mjs", kind: "gate", write: true, args: [], note: "把帧级判决从证据里读出来（① 要的帧级终态）。取景集不再钉死单个目录：默认按本轮声明索引派生（源A 权威索引 derivation.corpora ＋ 源B screenshot-manifest.<label>.json 巡检 subset ＋ 源C 旧默认那份排最后保证零绿损），巡检 corpus 的帧由此进入判决扫描集（H1）；读数 FV_SCANSET/FV_GREENLOSS 自己报收了几份、掉了几条。消费者只读 --plan/--frames/--frames-index/--out ⇒ 传 --round 仍是假接线" },
+  { id: "audit-frame-verdicts", file: "scripts/qa/audit-frame-verdicts.mjs", kind: "gate", write: true, args: [], note: "帧判决的审计：有没有拿没背书的判决落账。它无条件写 frame-red-audit.md ＋ cellplan-round7-frames-admissible.json ⇒ 必须 --allow-write 才允许跑；取景集与 verdict-from-frames 同一套派生规则（本文件 :61 自己要求的口径），现量对同一批配方行的判决逐字未变（FRA_SCANSET 报 升级/降级/离集条数）。消费者只读 --frames/--frames-index/--project/--plan/--cellplan/--restore-from/--out ⇒ 去掉假接线的 --round" },
   { id: "triage-exec-A-mock", file: "scripts/qa/triage-exec-failures.mjs", kind: "gate", args: ["--results", `reports/audit/${ROUND}/exec-A-mock-stage7/exec-results.json`, "--dist", "apps/client/dist/build/mp-weixin"], note: "A 刀语料分诊（词表可达 + unclassified=0 + 落地对）" },
   { id: "triage-exec-A-real", file: "scripts/qa/triage-exec-failures.mjs", kind: "gate", args: ["--results", `reports/audit/${ROUND}/exec-A-real-stage7/exec-results.json`, "--dist", "apps/client/dist/build/mp-weixin-real"], note: "真实刀 A 身份语料分诊：这一腿现量 875 行里有 1 条 FAILED 与 98 条非守恒跳过（欠前置配方 50 / 通道或选择器 5 / 没点名物件 6 / 禁触 4 / 盖章不可自动化 20），以前收尾只分诊 A-mock 与 guest-real ⇒ 这一腿的红和跳过从来没进过词表账" },
   { id: "triage-exec-guest-real", file: "scripts/qa/triage-exec-failures.mjs", kind: "gate", args: ["--results", `reports/audit/${ROUND}/exec-guest-real-stage7/exec-results.json`, "--dist", "apps/client/dist/build/mp-weixin-real"], note: "游客刀语料分诊（真实档）" },
@@ -409,6 +434,73 @@ const enabled = STEPS.filter((s) => {
 });
 const only = String(arg("only", "")).split(",").map((x) => x.trim()).filter(Boolean);
 const chosen = only.length ? enabled.filter((s) => only.includes(s.id)) : enabled;
+/* ── H2：巡检帧 vs exec-* 消费链 —— 把「不适用」写成读数，而不是留成沉默 ──────────
+   上面两族步骤都是按盘上的 exec-* 与 ws-* 结果目录展开的：
+     · exec-frames-to-corpus:<leg> —— 消费者 exec-frames-to-corpus.mjs:30 只吃 results[] 里
+       status===EXECUTED 且 evidence 形如 path(bytes) 的行，产出恰好是一份 manifest-detail.json；
+     · triage-exec-* —— 消费者 triage-exec-failures.mjs:52 硬要求 doc.results[]，
+       词表那二十多个 SKIPPED-* 与 FAILED-* 桶全是从执行器的 status/observed/failureReason 三件套推出来的。
+   巡检不产 exec-results.json：tour-r6.mjs:1828 写的是 reports/screenshots/<label>/manifest-detail.json，
+   它的 failures[] 只有 {identity,page,suite,reason,severity}（tour-r6.mjs:1225/1475/1498），没有探针语义。
+   ⇒ 这两族步骤一条都不会吃巡检帧，而这件事以前在收尾读数里是一个字都没有的。
+
+   这里选 (a)（逐 corpus 点名不适用），不选 (b)（补一座 manifest→exec-results 的桥），理由：
+     · 桥过去要给从未跑过的探针**编出** status 与 failureReason ⇒ 那是造行，不是补桥；
+     · exec-frames-to-corpus 的产出就是巡检已经自己写的那份 manifest-detail.json，
+       桥一遍只会把富 provenance（contentHash/width/height/routeDrift/permSuppressed）换成薄 provenance；
+     · 巡检帧「入账」另有正确载体：corpus-union 腿（rebuild-frozen-manifest.mjs:44-51 按 round-N- 前缀收）；
+       「入账之后有没有人判它」由 verdict-from-frames / audit-frame-verdicts 负责 —— 这两把门的扫描集
+       已在 H1 改成从同一份声明索引派生，巡检 corpus 现在在集内。
+   (b) 真要做需要的那几件已记在 .zcode/tmp/gap-framewire/FOLLOWUP-tour-frames-bridge.md。 */
+{
+  console.log("CLOSEOUT_SCOPE verify-evidence-corpus-round7 :: 目录=" + (ROUND_SCOPE.split(",").length) + " 其中 corpus=" + (ROUND_SCOPE.split(",").length - 1) +
+    "（规则与 emit-round-report.mjs collectRoundCorpusDirs 同源：round-" + RTAG + " 名下全收、*-smoke 排除；尾斜杠=显式子树）" +
+    " 全域轴不带 scope ⇒ 另一条 verify-evidence-corpus-history");
+  const tourStep = "tour-frames-vs-exec-corpus";
+  if (!chosen.some((s) => s.id === tourStep)) { console.log("CLOSEOUT_STEP " + tourStep + " 本次没被启用（--only 没点它）⇒ 不适用读数不出，但也不许据此认为巡检帧已被消费"); }
+  else {
+    /* corpus 清单走声明索引，不猜目录名：权威索引 derivation.corpora（rebuild-frozen-manifest 逐条登记）
+       + 本轮目录里的 screenshot-manifest.<label>.json（巡检在 union 腿之前自己冻的那批，tour-r6.mjs:1885）。 */
+    const idxRel = ROUND_REL + "/screenshot-manifest.json";
+    const corpora = new Map();
+    const addCorpus = (name, manifest, shots, harness) => { if (name && !corpora.has(manifest)) corpora.set(manifest, { name, manifest, shots, harness }); };
+    let idxBad = "";
+    if (!existsSync(join(REPO, idxRel))) idxBad = "本轮权威索引读不到：" + idxRel + "（corpus-union 腿还没跑，或本轮还没写出索引）";
+    else {
+      try {
+        const idx = JSON.parse(readFileSync(join(REPO, idxRel), "utf8"));
+        for (const c of ((idx.derivation || {}).corpora || [])) addCorpus(c.name, c.manifest, Number(c.shotsAtCapture || 0), c.harness || "?");
+      } catch (e) { idxBad = "权威索引不是合法 JSON：" + String(e.message).slice(0, 90); }
+    }
+    const roundAbs2 = join(REPO, ROUND_REL);
+    if (existsSync(roundAbs2)) {
+      for (const n of readdirSync(roundAbs2).sort()) {
+        if (!/^screenshot-manifest\..+\.json$/.test(n)) continue;
+        const rel2 = ROUND_REL + "/" + n;
+        let j2 = null; try { j2 = JSON.parse(readFileSync(join(REPO, rel2), "utf8")); } catch { j2 = null; }
+        const label = n.replace(/^screenshot-manifest\./, "").replace(/\.json$/, "");
+        addCorpus(label, rel2, j2 ? (j2.shots || []).length : -1, "巡检 subset 冻帧（tour-r6.mjs:1885）");
+      }
+    }
+    /* 已经被 exec-* 步骤认领的 corpus（--corpus 指过去的那份 manifest-detail.json）不算巡检孤儿。 */
+    const claimed = new Set();
+    for (const s of STEPS) {
+      const a = s.args || [];
+      const i = a.indexOf("--corpus");
+      if (i >= 0) claimed.add(a[i + 1] + "/manifest-detail.json");
+    }
+    const notFed = [...corpora.values()].filter((c) => !claimed.has(c.manifest));
+    const frames = notFed.reduce((a, c) => a + Math.max(0, c.shots), 0);
+    console.log("CLOSEOUT_STEP " + tourStep + " :: corpus=" + notFed.length + " 帧=" + frames +
+      " 被 exec-frames-to-corpus:* 认领=" + claimed.size + " 条（本轮 exec 腿数）");
+    console.log("CLOSEOUT_TOUR_NA reason=巡检/取景 corpus 不产 exec-results.json ⇒ exec-frames-to-corpus.mjs:30 与 triage-exec-failures.mjs:52 的输入形状（results[] + status/observed/failureReason）它们都给不出来；"
+      + "给它们编行＝造证据。巡检帧入账=corpus-union 腿（rebuild-frozen-manifest.mjs:44-51），帧级判决=verdict-from-frames/audit-frame-verdicts（扫描集已按声明索引收巡检 corpus）。后续件：.zcode/tmp/gap-framewire/FOLLOWUP-tour-frames-bridge.md");
+    if (idxBad) console.log("CLOSEOUT_TOUR_NA_WARN 索引轴不可知：" + idxBad + " ⇒ 上面这份 corpus 清单只来自 subset 冻帧，可能少报");
+    for (const c of notFed.slice(0, 20)) console.log("  CLOSEOUT_TOUR_NA_CORPUS " + c.name + " :: 帧=" + c.shots + " 载体=" + c.manifest + " harness=" + String(c.harness).slice(0, 46));
+    if (notFed.length > 20) console.log("  CLOSEOUT_TOUR_NA_CORPUS …其余 " + (notFed.length - 20) + " 份见同一读数的计数行");
+  }
+}
+
 
 console.log(`CLOSEOUT_PLAN 总步骤=${STEPS.length} 本次启用=${chosen.length}（只读门为主；写盘步骤要 --allow-write，G8/G9 要 --with-g8，终报要 --with-report）`);
 for (const s of chosen) console.log("  " + s.id + (s.write ? " [写盘]" : "") + " :: " + s.note);
