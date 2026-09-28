@@ -1,0 +1,42 @@
+{
+ "auditedAt": "2026-09-28T19:41:39.309Z",
+ "auditor": "主会话独立复算（不信车道自报）",
+ "source": ".zcode/tmp/lane-ui2/rows.jsonl",
+ "rows": 49,
+ "outcomeDistribution": {
+  "NOT_SHOOTABLE": 22,
+  "EXECUTED": 13,
+  "UNCHANGED_AFTER_INTERACTION": 11,
+  "LEFT_PAGE": 1,
+  "VEHICLE_DENY": 2
+ },
+ "planVsResult": {
+  "planned": 49,
+  "answered": 49,
+  "planMissing": 0,
+  "resultExtra": 0
+ },
+ "checks": [
+  {
+   "name": "每条都有具名原因",
+   "fail": 0
+  },
+  {
+   "name": "引用的帧文件存在",
+   "fail": 0
+  },
+  {
+   "name": "标注 sha256 与重算一致",
+   "fail": 0
+  },
+  {
+   "name": "EXECUTED 前后帧不同字节",
+   "fail": 0
+  },
+  {
+   "name": "UNCHANGED 前后帧确实相同",
+   "fail": 0
+  }
+ ],
+ "verdict": "内部自洽 5/5"
+}
