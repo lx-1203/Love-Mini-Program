@@ -104,7 +104,15 @@ function buildPlan() {
   }
   console.log("GUEST_LAND_SOURCES=" + (perFile.join(" ; ") || "(无)") + " ⇒ 并集组数=" + Object.keys(groups).length +
     " 并集行数=" + Object.values(groups).reduce((a, v) => a + v.length, 0));
+  /* 空并集一律判红（2026-09-29 复位）。这条 guard 本来就在，是在 #67 那次改写（commit d480461c
+     "GG-* 成员账改由判据台派生"）里被连带删掉的，而 buildPlan() 里那段讲多源的注释一直还写着
+     "并集为空仍判红" —— 判据与注释相反，注释成了谎话。删掉之后的实测后果（test-guest-landing.mjs
+     的第 4 条负例抓到）：喂进 {landingGroups:{}} 也 exit 0 判绿，因为成员账改由 ops 派生之后
+     账本仍然有 27 组 434 行，于是"这一轮没有任何跑测证人"被读成"欠款都记着、门通过"。
+     这不是新增判据、是恢复既有判据，且比 #67 之前更窄：ops 派生只改"谁在账上"，不改"没有跑测证人
+     就不能出复测腿"这一条 —— 载具量不到的东西不许变成 GG-* 腿。 */
   const gkeys = Object.keys(groups);
+  if (!gkeys.length) markProblem("所有 --triage 源的落地对并集为空 ⇒ 要么上游没跑，要么吃进错了文件（空集不能当成「全部已裁定」，也不能当成「没有欠款」）");
   const pkeys = pol.rows.map((r) => key(r.page, r.landing));
   const byKey = Object.fromEntries(pol.rows.map((r) => [key(r.page, r.landing), r]));
   const opsRoster = opsRosterByPage();

@@ -972,7 +972,39 @@ if (!tri) {
     if (tri) {
       registerFile(TRIAGE_BASE + ".json", triRaw, statSync(resolve(ROOT, TRIAGE_BASE + ".json")));
       P(`- **本轮 sidecar（判红那份）**：\`${TRIAGE_BASE}.md/.json\`，退出码 ${n(G.triage.exitCode)} —— 未归类行逐条列在文末失败清单。`);
-      ERRORS.push(`triage-exec-failures 判红（退出码 ${n(G.triage.exitCode)}）：词表漂移或落地对无处置，unclassified=${tri.unclassified}`);
+      /* 一个归因一个字段（2026-09-29 本车道改）。旧版这里只 push 一句
+         「triage-exec-failures 判红（退出码 X）：词表漂移或落地对无处置，unclassified=N」，
+         把分诊台里两条互不相干的否决并成了一句"或"。实测后果：词表漂移已于 62b894f8 修到 0、
+         落地对仍有 5 组没处置时，面板印的是「…词表漂移或落地对无处置，unclassified=0」——
+         归因指着一条已经 0 的规则，读起来像门自己坏了。
+         现在按分诊台**自己写进 sidecar 的具名字段** gateFires 逐条 push（哪条规则在火上由生产者声明，
+         报告器不猜：见 scripts/qa/triage-exec-failures.mjs 写盘的 gateFires，与
+         scripts/qa/test-triage-dead-selector.mjs:162 的 C4c「gateFires 没记全」那条断言）。
+         改的只有归因表达：进入本分支的条件（G.triage.exitCode 与 triRaw 的可读性）、退出码表达式
+         n(G.triage.exitCode)、判据本身逐字未动；ERRORS 条数只增不减 —— 字段读不到数或全为 0
+         却仍判红时另外压一条具名的"复算不出归因"红，绝不静默少报。 */
+      const FIRE_SPECS = [
+        { f: "unclassified", v: tri.gateFires ? tri.gateFires.unclassified : tri.unclassified, list: "unclassifiedRows",
+          why: "词表漂移/取证缺陷：有行没落进任何具名桶（执行器说了分诊台没学过的话），须补分类而不是接受兜底桶" },
+        { f: "landingMissing", v: tri.gateFires ? tri.gateFires.landingMissing : (Array.isArray(tri.landingMissing) ? tri.landingMissing.length : undefined), list: "landingMissing",
+          why: "落地对无处置：本轮跑测出现的落点没有 booked 复测腿/裁决，须进 guest-landing-policy.json 或补 LANDING_DISPOSITION" },
+        { f: "coverMismatch", v: tri.gateFires ? tri.gateFires.coverMismatch : undefined, list: null,
+          why: "复测腿与债不同源：账本腿认领的成员与本轮该组实测成员不一致，那条腿量的是另一笔债，不能替这批行结案" },
+        { f: "openPageMeasuredDefect", v: tri.gateFires ? tri.gateFires.openPageMeasuredDefect : (tri.openPageMeasuredDefectCount !== undefined ? tri.openPageMeasuredDefectCount : undefined), list: "openPageMeasuredRows",
+          why: "开页重试耗尽却带取证：不是「通道没起来」，须按页面级缺陷/执行器自相矛盾逐条人判" },
+        { f: "evidenceHoles", v: tri.gateFires ? tri.gateFires.evidenceHoles : (Array.isArray(tri.evidenceHoles) ? tri.evidenceHoles.length : undefined), list: "evidenceHoles",
+          why: "证据缺口：要求出帧却没拿到可用帧、探针也没给出有效答案，命名不等于结案" },
+      ];
+      const fires = FIRE_SPECS.filter((x) => typeof x.v === "number" && x.v > 0);
+      const unreadable = FIRE_SPECS.filter((x) => typeof x.v !== "number").map((x) => x.f);
+      for (const [i, x] of fires.entries()) {
+        ERRORS.push(`triage-exec-failures 判红（退出码 ${n(G.triage.exitCode)}）｜归因 ${i + 1}/${fires.length}·字段 ${x.f}=${x.v}：${x.why}${x.list ? `（逐条名单：sidecar ${TRIAGE_BASE}.json 的 ${x.list}）` : `（sidecar 只在 gateFires.${x.f} 记了条数，明细须读 ${TRIAGE_BASE}.md 的对应段）`}`);
+        P(`- ✗ 判红归因 ${i + 1}/${fires.length}：\`${x.f}=${x.v}\` —— ${x.why}`);
+      }
+      if (!fires.length || unreadable.length) {
+        ERRORS.push(`triage-exec-failures 判红（退出码 ${n(G.triage.exitCode)}）｜兜底：${unreadable.length ? `有 ${unreadable.length} 个具名否决字段在 sidecar 里读不到数（${unreadable.join(", ")} —— 是"没读到"，不是 0）` : "五个具名否决字段全部为 0"}，${fires.length ? `除上面点名的 ${fires.length} 条外还不能排除别的因` : "一条在火的规则都指不出来"}（当前复算到在火的：${fires.map((x) => x.f + "=" + x.v).join("、") || "无"}）⇒ 判红原因与 sidecar 的具名字段对不上（sidecar 与本次分诊不同源，或该门新增了没写字段的否决），必须读分诊台 stdout 的 ✗ 行逐条人判，不许当作没有原因`);
+        P(`- ✗ 判红归因复算不全：见文末失败清单的兜底条（不许把"字段读不到"当 0）。`);
+      }
     }
   }
   if (!tri) {

@@ -3,8 +3,8 @@
    每条一个"必须红"的注入 + 一条真数据的"必须绿"，全部离线（不开模拟器、不抢租约）。
    Node 要 v22：PATH 上的缺省 node 是 DevTools 的 v16。 */
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { resolve, dirname } from "node:path";
+import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
+import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { landingStatus, LANDING_UNCLOSED } from "./guest-landing-status.mjs";
 
@@ -12,9 +12,13 @@ const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const TMP = resolve(REPO, ".zcode/tmp/guest-landing-selftest");
 mkdirSync(TMP, { recursive: true });
 const SCRIPT = resolve(REPO, "scripts/qa/verify-guest-landing.mjs");
+const POLICY = resolve(REPO, "scripts/qa/guest-landing-policy.json");
+const TRIAGE = resolve(REPO, ".zcode/tmp/triage-r7-guest.json");
+const OPS_DIR = resolve(REPO, "reports/audit/round-6/ops");
 const NODE = process.execPath;
-const realTriage = JSON.parse(readFileSync(resolve(REPO, ".zcode/tmp/triage-r7-guest.json"), "utf8"));
-const realPolicy = readFileSync(resolve(REPO, "scripts/qa/guest-landing-policy.json"), "utf8");
+const realTriage = JSON.parse(readFileSync(TRIAGE, "utf8"));
+const realPolicy = readFileSync(POLICY, "utf8");
+const polObj = JSON.parse(realPolicy);
 
 let checks = 0, fail = 0;
 const t = (name, cond, got) => {
@@ -27,37 +31,124 @@ function run(label, args) {
   return { code: r.status, out: (r.stdout || "") + (r.stderr || "") };
 }
 function writeJson(p, o) { writeFileSync(p, JSON.stringify(o)); return p; }
+/** 按前缀挑出载具的那一行判决；挑不到就把"没有这一行"本身交回给断言去红（不许静默当 0）。 */
+const lineWith = (out, prefix) => out.split(/\r?\n/).find((l) => l.startsWith(prefix)) || "(输出里没有以 " + prefix + " 开头的行)";
+let realOut = ""; // 块 1 存一份真数据 stdout，块 3 的守恒可见性要用它做基线
 
-/* 1) 真数据必须绿，且数字不能是空集凑出来的 */
+/* 1) 真数据必须绿，且数字不能是空集凑出来的
+   2026-09-29 改期望（口径搬家 = 真数据/真设计变了，不是门坏）：这里原来只有一条
+     /groups=26 覆盖欠款行=239/
+   —— 把**两条互不相同的轴**钉在同一个数上。#67（commit d480461c "fix(qa): #67 GG-* 成员账改由
+   判据台派生"，2026-09-28）之后载具印的是两行两个数：
+     GUEST_LAND_SOURCES=…（组=26，行次=239） ⇒ 并集组数=26 并集行数=239  ← 跑测观察到的落地对（在册实测：26 组 / 239 落点）
+     GUEST_LANDING groups=26 覆盖欠款行=434 …                             ← 成员账，改由 ops 判据台派生
+   处理：26/239 按字面继续钉住，但钉回它所属的那条轴（SOURCES 行）；434 这个随 ops 挪动的数
+   **不再钉死快照值**，改成"载具印的数 == 载具自己写的账本头 == 账本逐组相加"三方互算，任一不一致就红。
+   这是收紧不是放宽：原写法只能发现"数字变了"，新写法能发现"哪两条腿对不上"，而且 ops 一动不会假红。 */
 {
-  const r = run("real", ["--policy", resolve(REPO, "scripts/qa/guest-landing-policy.json"), "--triage", resolve(REPO, ".zcode/tmp/triage-r7-guest.json")]);
+  const r = run("real", ["--policy", POLICY, "--triage", TRIAGE]);
+  realOut = r.out;
   t("真数据 exit 0", r.code === 0, "exit=" + r.code + "\n" + r.out);
-  t("真数据覆盖 26 组 / 239 行", /groups=26 覆盖欠款行=239/.test(r.out), r.out.split("\n")[0]);
-  t("真数据锚点全可核", /锚点可核=11（不可核 0）/.test(r.out), r.out.split("\n")[0]);
+  const srcLine = lineWith(r.out, "GUEST_LAND_SOURCES=");
+  t("跑测观察轴 = 在册实测值 26 组 / 239 行次（载具须逐字复述）",
+    /（组=26，行次=239） ⇒ 并集组数=26 并集行数=239/.test(srcLine), srcLine);
+  const finalLine = lineWith(r.out, "GUEST_LANDING groups=");
+  const mDebt = /groups=(\d+) 覆盖欠款行=(\d+)/.exec(finalLine);
+  t("成员账轴：groups=26 且覆盖欠款行为正数（不许是空集凑出来的绿）",
+    !!mDebt && mDebt[1] === "26" && Number(mDebt[2]) > 0, finalLine);
   const booked = JSON.parse(readFileSync(resolve(TMP, "real-booked.json"), "utf8"));
-  t("出例数 = 组数", booked.rows.length === 26, booked.rows.length);
+  const sumDebt = booked.rows.reduce((a, x) => a + (x.debtRows || 0), 0);
+  t("成员账三方互算：载具印的数 == 账本头 == 账本逐组相加",
+    !!mDebt && Number(mDebt[2]) === booked.debtRows && booked.debtRows === sumDebt,
+    "印=" + (mDebt ? mDebt[2] : "(读不到)") + " 账本头=" + booked.debtRows + " 逐组相加=" + sumDebt);
+  t("真数据锚点全可核", /锚点可核=11（不可核 0）/.test(r.out), finalLine);
+  /* 「出例数 = 组数」这条 2026-09-29 换判法：#67 之前名册遍历**跑测观察到的组**（那时两个数同为 26），
+     之后名册遍历 **policy 裁定条数**（27），旧断言 rows.length===26 于是变成设计搬家的假红
+     （实跑 rows=27、groups=26，两者本就不是一个东西）。现在两轴各钉一条，并补一条真正要守的东西：
+     每条裁定恰好一条腿、groupKey 不重不漏 —— 载具里那两个 `continue`（成员为空 / family 无 markers 口径）
+     会静默吞掉整组的腿，旧写法只比总数，吞一组与多一组相互抵掉时看不见。 */
+  t("出例数 = policy 裁定条数（#67 后名册遍历 policy；实跑 27）",
+    booked.rows.length === polObj.rows.length && booked.rows.length === 27,
+    "rows=" + booked.rows.length + " policy.rows=" + polObj.rows.length);
+  const polKeys = new Set(polObj.rows.map((x) => x.page + " → " + x.landing));
+  const gotKeys = booked.rows.map((x) => x.groupKey);
+  t("每条裁定恰好一条腿（groupKey 不重、不漏、不多）",
+    new Set(gotKeys).size === gotKeys.length && polKeys.size === booked.rows.length &&
+      gotKeys.every((k) => polKeys.has(k)) && [...polKeys].every((k) => gotKeys.includes(k)),
+    "腿=" + gotKeys.length + " 唯一=" + new Set(gotKeys).size + " policy 组=" + polKeys.size);
   t("每组都带 caseIds（欠款可归属）", booked.rows.every((x) => Array.isArray(x.caseIds) && x.caseIds.length), "有空 caseIds");
+  t("跑测组数与裁定条数不相等时必须说得出为什么（NO_RUN_WITNESS 具名读数存在）",
+    /GUEST_LAND_NO_RUN_WITNESS=(\d+)/.test(r.out) && Number(/GUEST_LAND_NO_RUN_WITNESS=(\d+)/.exec(r.out)[1]) === polObj.rows.length - 26,
+    lineWith(r.out, "GUEST_LAND_NO_RUN_WITNESS="));
 }
 /* 2) triage 多出一组（新落点没裁定）必须红 */
 {
   const tri = JSON.parse(JSON.stringify(realTriage));
   tri.landingGroups["subpackages/ghost/page → pages/login/index"] = ["GH01"];
   const p = writeJson(resolve(TMP, "extra-triage.json"), tri);
-  const r = run("extra", ["--policy", resolve(REPO, "scripts/qa/guest-landing-policy.json"), "--triage", p]);
+  const r = run("extra", ["--policy", POLICY, "--triage", p]);
   t("新落点无裁定 ⇒ 红", r.code === 2 && /policy 缺这几组/.test(r.out), "exit=" + r.code + "\n" + r.out.slice(0, 300));
 }
-/* 3) triage 少一组（裁定还在跑但落点已经变了）必须红 */
+/* 3) 失效裁定 ⇒ 红：2026-09-29 重新武装（先证明旧注入【没有能力】变红，再改注入，不改判据）
+   旧写法只做一件事：从 triage 里删掉一组落地对，指望载具喊「policy 里这几组……没有对应落地对」。
+   那句话随 #67（commit d480461c）整条换成了双向守恒：
+     跑测少一组 + ops 判据台有"被收窄出游客腿"的成员 ⇒ 只记 GUEST_LAND_NO_RUN_WITNESS 具名读数（不判红）
+     跑测少一组 + ops 也没有成员                    ⇒ 红（"这一组没有任何证人"）
+   实测 policy 的 27 个页在 reports/audit/round-6/ops 里【全部】有被收窄的成员（27/27 非零；
+   派生口径同载具 guestNoLongerClaims）⇒ 旧注入结构上只可能落在"不判红"那一支，
+   所以它 exit=0 是**负例失去红能力**，不是门坏（门的红分支还在，只是换了触发条件）。
+   重新武装 = 按载具现在认定的"裁定失效"形态把两把尺一起撤：
+     ① 从 triage 删掉这一组（跑测证人没了）
+     ② 在 ops 的 scratch 副本里把这一页的用例改回"游客腿也认领"（判据台证人也没了）
+   并且先跑一条"只换 ops 目录、内容逐条相同"的控制腿：红必须只由 ② 引起，不许是搬目录造成的。
+   注入的落点自己打印（mutated=N），N=0 视为负例空转。 */
 {
+  const TARGET = "subpackages/tools/search/index → pages/login/index";
+  const TARGET_PAGE = "subpackages/tools/search/index";
+  const copyOps = (dir, regrantGuest) => {
+    mkdirSync(dir, { recursive: true });
+    let mutated = 0, copied = 0;
+    for (const f of readdirSync(OPS_DIR).filter((x) => x.endsWith(".json"))) {
+      const j = JSON.parse(readFileSync(join(OPS_DIR, f), "utf8"));
+      for (const c of j.cases || []) {
+        if (String(c.page || "").trim() !== TARGET_PAGE) continue;
+        if (regrantGuest) { c.identities = ["guest"]; mutated++; } // 游客腿重新认领 ⇒ 该页在 ops 里不再记账
+      }
+      writeFileSync(join(dir, f), JSON.stringify(j));
+      copied++;
+    }
+    return { mutated, copied };
+  };
+  const ctl = copyOps(resolve(TMP, "ops-pristine"), false);
+  const tam = copyOps(resolve(TMP, "ops-stripped"), true);
   const tri = JSON.parse(JSON.stringify(realTriage));
-  delete tri.landingGroups["subpackages/tools/search/index → pages/login/index"];
-  const p = writeJson(resolve(TMP, "less-triage.json"), tri);
-  const r = run("less", ["--policy", resolve(REPO, "scripts/qa/guest-landing-policy.json"), "--triage", p]);
-  t("失效裁定 ⇒ 红", r.code === 2 && /没有对应落地对/.test(r.out), "exit=" + r.code + "\n" + r.out.slice(0, 300));
+  const keyWasThere = TARGET in tri.landingGroups;
+  delete tri.landingGroups[TARGET];
+  const pLess = writeJson(resolve(TMP, "less-triage.json"), tri);
+  t("注入本身落在被检的那一行上（triage 里本来有这一组、ops 里本来有这一页的成员）",
+    keyWasThere && tam.mutated > 0 && ctl.copied > 0,
+    "triage 命中=" + keyWasThere + " ops 改写条数=" + tam.mutated + " ops 文件拷贝=" + ctl.copied + "（N=0 = 负例空转）");
+  /* 3a 控制腿：换 ops 目录（内容与权威目录逐条相同）+ 删掉跑测那一组 ⇒ 按 #67 口径不判红，
+        但必须把这一组记成具名读数（读数比基线多 1，不许静默） */
+  const rc = run("less-control", ["--policy", POLICY, "--triage", pLess, "--ops", resolve(TMP, "ops-pristine")]);
+  const rwOf = (out) => { const m = /GUEST_LAND_NO_RUN_WITNESS=(\d+)/.exec(out); return m ? Number(m[1]) : null; };
+  const rwBase = rwOf(realOut);
+  t("跑测少一组而判据台仍认账 ⇒ 具名读数 +1（不许静默吞掉失效裁定）",
+    rwBase !== null && rwOf(rc.out) === rwBase + 1, "基线=" + rwBase + " 删一组后=" + rwOf(rc.out) + "\n" + rc.out.slice(0, 300));
+  /* 3b 重武装后的负例：两把尺同时撤 ⇒ 必须红，且红句点名这一组 */
+  const rr = run("less-stripped", ["--policy", POLICY, "--triage", pLess, "--ops", resolve(TMP, "ops-stripped")]);
+  t("失效裁定 ⇒ 红（跑测证人 + 判据台证人同时撤）",
+    rr.code === 2 && /这一组没有任何证人/.test(rr.out) && rr.out.includes(TARGET),
+    "exit=" + rr.code + "\n" + rr.out.slice(0, 400));
 }
-/* 4) 空集不许判绿：一个"没有欠款"的读法会把整门变成永真 */
+/* 4) 空集不许判绿：一个"没有欠款"的读法会把整门变成永真
+   2026-09-29：这条此前 exit=0 是**载具真的坏了** —— 空并集判红那条 guard 本来就在
+   （verify-guest-landing.mjs 的多源注释也还写着"并集为空仍判红"），却在 #67 改写（commit d480461c）
+   里被连带删掉；成员账改由 ops 派生之后，喂进 {landingGroups:{}} 仍能凑出 27 条腿 / 422 行成员而判绿。
+   处置 = 恢复载具那条 guard（收紧，不是放宽），本断言一字未改。 */
 {
   const p = writeJson(resolve(TMP, "empty-triage.json"), { landingGroups: {} });
-  const r = run("empty", ["--policy", resolve(REPO, "scripts/qa/guest-landing-policy.json"), "--triage", p]);
+  const r = run("empty", ["--policy", POLICY, "--triage", p]);
   t("空集 ⇒ 红", r.code === 2 && /空集/.test(r.out), "exit=" + r.code + "\n" + r.out.slice(0, 300));
 }
 /* 5) 锚点行漂移必须红（改了代码没改依据） */
