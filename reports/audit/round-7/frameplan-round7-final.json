@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-09-27T00:58:54.431Z",
+ "generatedAt": "2026-09-27T15:22:10.350Z",
  "expected": 79,
  "lanes": [
   "A",
@@ -9,9 +9,10 @@
   "E"
  ],
  "counts": {
-  "REWRITE": 17,
-  "SHOOT": 35,
-  "NOT_SHOOTABLE": 27
+  "REWRITE": 16,
+  "SHOOT": 49,
+  "NOT_SHOOTABLE": 25,
+  "NOT_SHOOTABLE_ON_THIS_BAND": 6
  },
  "conserved": true,
  "problems": {
@@ -610,25 +611,30 @@
   {
    "id": "MP-R2-PAGES-MESSAGES-INDEX-019",
    "lane": "B",
-   "disposition": "NOT_SHOOTABLE",
+   "disposition": "SHOOT",
    "route": "pages/messages/index",
-   "assertions": 0,
-   "assertionList": [],
+   "assertions": 1,
+   "assertionList": [
+    "pages/messages/index.vue:88-97（activityRecommendations 映射 targetUrl: a.targetUrl // \"\"，空值不剔除项）、257-259（openActivity：if …"
+   ],
    "steps": [
-    {
-     "action": "open-page",
-     "selector": "pages/messages/index",
-     "note": "mock 构建里 stores/messages.ts:575-577 的 useMock 分支直接 return，dashboard 恒 null，index.vue:588 的 v-if 把整个活动推荐块隐藏，帧里没有可判对象"
-    }
+    "pages/messages/index.vue:88-97（activityRecommendations 映射 targetUrl: a.targetUrl // \"\"，空值不剔除项）、257-259（openActivity：if …"
    ],
    "precondition": {
     "identity": "A",
-    "theme": "light",
     "fixture": "需要 real 构建 + 后端 dashboard.assistant 至少一条 targetUrl 为空；mock 构建下本块结构性不渲染"
    },
    "crop": "活动推荐卡的正文区（activity-rec-card 的 cta 行）",
-   "frameName": "B-MP-R2-PAGES-MESSAGES-INDEX-019",
-   "unresolved": "缺的夹具：一条 targetUrl 为空的 assistant 数据（real 模式下由后端 /messages/relationship-dashboard 下发，见 apps/client/src/stores/messages.ts:579）。已核实的源码事实：判据点名的条件渲染在位——apps/client/src/pages/messages/index.vue:606 就是 v-if=act.targetUrl 包住 .activity-rec-card__cta（台账写的 :599 是旧行号，已漂移约 7 行），而 openActivity 的空值分支（apps/client/src/pages/messages/index.vue:257-259）仍然静默不响应、映射层（:88-97）也没有过滤，三个改法只落了第一个。如果补上夹具，断言应该长这样：kind=descendant-absent，target=活动卡内 .activity-rec-card__cta（该卡数据 targetUrl 为空），expected=0 命中；kind=descendant-count，target=.activity-rec-card__cta，expected=数量等于 dashboard.assistant 中 targetUrl 非空且 title 非空的项数，sourceAnchor=apps/client/src/pages/messages/index.vue:606；另需一条 kind=tap-then-no-change 验无 targetUrl 的卡点按后路由栈不变（对应 openActivity 静默分支，锚点 :258），并配一条轻提示文案判点才能把「静默不响应算不算缺陷」定死。"
+   "frameName": "A-MP-R2-PAGES-MESSAGES-INDEX-019",
+   "unresolved": "缺的夹具：一条 targetUrl 为空的 assistant 数据（real 模式下由后端 /messages/relationship-dashboard 下发，见 apps/client/src/stores/messages.ts:579）。已核实的源码事实：判据点名的条件渲染在位——apps/client/src/pages/messages/index.vue:606 就是 v-if=act.targetUrl 包住 .activity-rec-card__cta（台账写的 :599 是旧行号，已漂移约 7 行），而 openActivity 的空值分支（apps/client/src/pages/messages/index.vue:257-259）仍然静默不响应、映射层（:88-97）也没有过滤，三个改法只落了第一个。如果补上夹具，断言应该长这样：kind=descendant-absent，target=活动卡内 .activity-rec-card__cta（该卡数据 targetUrl 为空），expected=0 命中；kind=descendant-count，target=.activity-rec-card__cta，expected=数量等于 dashboard.assistant 中 targetUrl 非空且 title 非空的项数，sourceAnchor=apps/client/src/pages/messages/index.vue:606；另需一条 kind=tap-then-no-change 验无 targetUrl 的卡点按后路由栈不变（对应 openActivity 静默分支，锚点 :258），并配一条轻提示文案判点才能把「静默不响应算不算缺陷」定死。",
+   "upgradedFrom": "NOT_SHOOTABLE",
+   "upgradeBasis": "只读复判 FRAME_JUDGEABLE_NOW（tmp/qa/srconly-owed-plan.json）+ --allow-upgrade 人放行",
+   "identity": "A",
+   "identityBackfill": {
+    "from": "\"[object Object]\"",
+    "authority": "reports/audit/round-7/frameplan-lane-B.json item id=MP-R2-PAGES-MESSAGES-INDEX-019 precondition.identity（lane B 交回的原始对象，未经 String() 洗）",
+    "by": "scripts/qa/apply-plan-additions.mjs --backfill-identity"
+   }
   },
   {
    "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
@@ -806,30 +812,30 @@
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
    "lane": "B",
-   "disposition": "NOT_SHOOTABLE",
-   "route": "subpackages/village/village/post",
-   "assertions": 0,
-   "assertionList": [],
+   "disposition": "SHOOT",
+   "route": "subpackages/village/village/publish",
+   "assertions": 1,
+   "assertionList": [
+    "apps/client/src/subpackages/village/village/publish.vue:734-736「圈名 + 绿色『已加入』胶囊 + 成员数」三段 vs apps/client/src/subpackages/…"
+   ],
    "steps": [
-    {
-     "action": "open-page",
-     "selector": "subpackages/village/village/post",
-     "note": "本页可达且弹层可开"
-    },
-    {
-     "action": "tap",
-     "selector": ".post-to__card",
-     "note": "打开选择发布到弹层（@tap 绑在 post.vue:750），兴趣圈子分组在 post.vue:834-858"
-    }
+    "apps/client/src/subpackages/village/village/publish.vue:734-736「圈名 + 绿色『已加入』胶囊 + 成员数」三段 vs apps/client/src/subpackages/…"
    ],
    "precondition": {
     "identity": "A",
-    "theme": "light",
     "fixture": "mock 默认有已加入圈子（joinedCircles 走 circleStore getter，见 post.vue:199）；缺的不是数据而是 两入口取哪一种行结构 的裁决"
    },
    "crop": "选择发布到弹层的兴趣圈子分组候选行",
-   "frameName": "B-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
-   "unresolved": "缺的夹具＝产品裁决，不是数据：判据本身是二选一（post 页把已加入与成员数合成一条描述，还是 publish 页拆成圈名、已加入胶囊、成员数三段），未拍板前任何断言都是替未定方案押注。已核实的本 lane 一侧源码事实：apps/client/src/subpackages/village/village/post.vue:849 是圈名 .post-target-sheet__name，:850 把 已加入 与成员数并成一条 .post-target-sheet__desc 文案。越界未证：另一侧 apps/client/src/subpackages/village/village/publish.vue:928-930 属别的 lane 的文件，本轮未打开，其对侧结构只引台账原文。补上裁决后的断言形状：若取 post 侧三段式，则在被改那页新增一个已加入胶囊类名（本仓现无此类名，台账点名的 publish-target-sheet__joined 在 post 页源码与产物均零命中），断言 kind=element-exists 指向新胶囊 + kind=descendant-count 要求该行内出现 3 个并列文本节点、且 .post-target-sheet__desc 不再包含 已加入 字样；若取 publish 侧合行式，则断言 publish 页候选行只剩一条描述文案、胶囊类名反为零命中。两种写法都必须等被改那页的类名落进源码后才可立。"
+   "frameName": "A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
+   "unresolved": "缺的夹具＝产品裁决，不是数据：判据本身是二选一（post 页把已加入与成员数合成一条描述，还是 publish 页拆成圈名、已加入胶囊、成员数三段），未拍板前任何断言都是替未定方案押注。已核实的本 lane 一侧源码事实：apps/client/src/subpackages/village/village/post.vue:849 是圈名 .post-target-sheet__name，:850 把 已加入 与成员数并成一条 .post-target-sheet__desc 文案。越界未证：另一侧 apps/client/src/subpackages/village/village/publish.vue:928-930 属别的 lane 的文件，本轮未打开，其对侧结构只引台账原文。补上裁决后的断言形状：若取 post 侧三段式，则在被改那页新增一个已加入胶囊类名（本仓现无此类名，台账点名的 publish-target-sheet__joined 在 post 页源码与产物均零命中），断言 kind=element-exists 指向新胶囊 + kind=descendant-count 要求该行内出现 3 个并列文本节点、且 .post-target-sheet__desc 不再包含 已加入 字样；若取 publish 侧合行式，则断言 publish 页候选行只剩一条描述文案、胶囊类名反为零命中。两种写法都必须等被改那页的类名落进源码后才可立。",
+   "upgradedFrom": "NOT_SHOOTABLE",
+   "upgradeBasis": "只读复判 FRAME_JUDGEABLE_NOW（tmp/qa/srconly-owed-plan.json）+ --allow-upgrade 人放行",
+   "identity": "A",
+   "identityBackfill": {
+    "from": "\"[object Object]\"",
+    "authority": "reports/audit/round-7/frameplan-lane-B.json item id=MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006 precondition.identity（lane B 交回的原始对象，未经 String() 洗）",
+    "by": "scripts/qa/apply-plan-additions.mjs --backfill-identity"
+   }
   },
   {
    "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
@@ -1133,7 +1139,7 @@
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-011",
    "lane": "C",
-   "disposition": "SHOOT",
+   "disposition": "NOT_SHOOTABLE_ON_THIS_BAND",
    "route": "pages/register/index",
    "assertions": 8,
    "assertionList": [
@@ -1221,12 +1227,13 @@
    },
    "crop": "密码行右侧眼睛控件（含透明热区）、手机号行清除控件、左上返回圆钮",
    "frameName": "C-MP-R2-PAGES-REGISTER-INDEX-011",
-   "unresolved": ""
+   "unresolved": "",
+   "bandNote": "mock 档表达不了游客身份（probe-guest-band 实测 cold/warm 两腿都是 AUTOLOGIN_ON_OPEN，session.ts:617 无条件注入 mockUserSession）⇒ 这一行的帧由 reshoot-guest-real 腿在同 id 上出，两边不重复计，也不是把判决降级"
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-012",
    "lane": "C",
-   "disposition": "SHOOT",
+   "disposition": "NOT_SHOOTABLE_ON_THIS_BAND",
    "route": "pages/register/index",
    "assertions": 4,
    "assertionList": [
@@ -1293,12 +1300,13 @@
    },
    "crop": "确认密码行与其下方行内错误位",
    "frameName": "C-MP-R2-PAGES-REGISTER-INDEX-012",
-   "unresolved": "台账原文写「同步改 :175 注释」，工作树该注释已随新增 onConfirmBlur 漂到 :187-188，行号引用失效但语义已落地，不影响本帧判点。"
+   "unresolved": "台账原文写「同步改 :175 注释」，工作树该注释已随新增 onConfirmBlur 漂到 :187-188，行号引用失效但语义已落地，不影响本帧判点。",
+   "bandNote": "mock 档表达不了游客身份（probe-guest-band 实测 cold/warm 两腿都是 AUTOLOGIN_ON_OPEN，session.ts:617 无条件注入 mockUserSession）⇒ 这一行的帧由 reshoot-guest-real 腿在同 id 上出，两边不重复计，也不是把判决降级"
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-013",
    "lane": "C",
-   "disposition": "SHOOT",
+   "disposition": "NOT_SHOOTABLE_ON_THIS_BAND",
    "route": "pages/register/index",
    "assertions": 3,
    "assertionList": [
@@ -1347,7 +1355,8 @@
    },
    "crop": "手机号行、其下方行内错误位与验证码 toast",
    "frameName": "C-MP-R2-PAGES-REGISTER-INDEX-013",
-   "unresolved": "判据的 zh 与 en 同步半项在小程序端不可帧判：apps/client/src/i18n/index.ts:22 自述全代码库无 setLocale 或 locale 运行时切换调用、:49 locale 恒为 zh-CN，因此拿不到 en-US 帧；en 侧只能静态读 apps/client/src/i18n/locales/en-US.ts:2182（Invalid phone number. Enter an 11-digit mobile number.）。本帧只承担「键已接上消费方且渲染出 zh-CN 值、无键路径字面量」这一半。"
+   "unresolved": "判据的 zh 与 en 同步半项在小程序端不可帧判：apps/client/src/i18n/index.ts:22 自述全代码库无 setLocale 或 locale 运行时切换调用、:49 locale 恒为 zh-CN，因此拿不到 en-US 帧；en 侧只能静态读 apps/client/src/i18n/locales/en-US.ts:2182（Invalid phone number. Enter an 11-digit mobile number.）。本帧只承担「键已接上消费方且渲染出 zh-CN 值、无键路径字面量」这一半。",
+   "bandNote": "mock 档表达不了游客身份（probe-guest-band 实测 cold/warm 两腿都是 AUTOLOGIN_ON_OPEN，session.ts:617 无条件注入 mockUserSession）⇒ 这一行的帧由 reshoot-guest-real 腿在同 id 上出，两边不重复计，也不是把判决降级"
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-014",
@@ -1638,24 +1647,35 @@
   {
    "id": "MP-R2VIS-PAGES-HOME-INDEX-003",
    "lane": "C",
-   "disposition": "REWRITE",
+   "disposition": "SHOOT",
    "route": "pages/home/index",
-   "assertions": 0,
-   "assertionList": [],
-   "steps": [],
+   "assertions": 1,
+   "assertionList": [
+    "apps/client/src/components/home/NearbyPeople.vue:57-63 + :132-140：产物侧判点 .nearby-item__avatar 的 1:1 圆裁。⟨原判点 .nearby-avatar 全仓 0 命中 是一个不存在的类名⟩共同兴趣节点的删除已在基线落地（同文件整节点删除处）；剩余半项是 88rpx 中心圆裁，需要渲染帧或半身素材池才能判"
+   ],
+   "steps": [
+    "apps/client/src/components/home/NearbyPeople.vue:57-63 + :132-140：产物侧判点 .nearby-item__avatar 的 1:1 圆裁。⟨原判点 .nearby-avatar 全仓 0 命中 是一个不存在的类名⟩共同兴趣节点的删除已在基线落地（同文件整节点删除处）；剩余半项是 88rpx 中心圆裁，需要渲染帧或半身素材池才能判"
+   ],
    "precondition": {
     "identity": "已登录 mock 用户",
-    "theme": "light",
     "fixture": "mock 首页看板，附近的人 9 条（apps/client/src/services/mocks/fixtures.ts:1154-1163）"
    },
    "crop": "首页「附近的人」横排头像",
-   "frameName": "C-MP-R2VIS-PAGES-HOME-INDEX-003",
-   "unresolved": "原判据两半。半 1（删除 :68 共同兴趣行）已在基线落地且可帧判，不必改写：apps/client/src/components/home/NearbyPeople.vue 模板 :66-67 只剩 name 与 distance 两个 text 节点，组件内无任何兴趣标签节点（数据侧 commonInterests 仍在 apps/client/src/services/mocks/fixtures.ts:1155-1163 但不被消费）。半 2（头像改用 person-* 半身池或顶部锚定裁切保证脸部入画）写错了，两处硬伤：其一，person-* 池不是半身池——apps/client/src/config/images.ts:60-69 的 PEOPLE.CARD_1..9 就是 /static/assets/images/people/person-01..09.png，本轮实读 person-01.png 与 person-06.png 的 PNG IHDR 均为 200×200，画面为全身坐姿或全身街拍，人脸高约占 18%；连 apps/client/src/config/images.ts:70-72 的 PEOPLE.AVATAR_*（/static/assets/images/avatars/person-01-avatar.png）也是同一张全身构图，素材树里根本不存在名为 person-* 的半身池。其二，「顶部锚定裁切」在方图进方框时等价于不裁切——.nearby-item__avatar 是 88rpx × 88rpx 正方（apps/client/src/components/home/NearbyPeople.vue:132-140）配 mode=aspectFill（同文件 :61），源图 1:1 与容器 1:1 时 aspectFill 不产生任何位移或裁切，改锚定方向不会改变成像。建议改成什么判据：把可判物件换成头像源池归属——kind attribute-regex, target .nearby-item__avatar, expected 渲染 src 必须命中近景人脸池 /static/assets/images/avatars/avatar-13..61.jpg（128×128 脸部特写，本轮实读 avatar-13.jpg 为头肩特写，且该池已被 apps/client/src/stores/village/mock-data.ts:130 起的社区作者头像在用），不得命中 /static/assets/images/people/；当前 fixtures.ts:1155-1163 的 nearbyPeople.avatarUrl 正是 people 全身图，按此判点会判红，属真缺陷。若坚持「脸部占位比例」这种像素判点，需要人脸检测，不该以帧判据形式挂着。"
+   "frameName": "A-MP-R2VIS-PAGES-HOME-INDEX-003",
+   "unresolved": "原判据两半。半 1（删除 :68 共同兴趣行）已在基线落地且可帧判，不必改写：apps/client/src/components/home/NearbyPeople.vue 模板 :66-67 只剩 name 与 distance 两个 text 节点，组件内无任何兴趣标签节点（数据侧 commonInterests 仍在 apps/client/src/services/mocks/fixtures.ts:1155-1163 但不被消费）。半 2（头像改用 person-* 半身池或顶部锚定裁切保证脸部入画）写错了，两处硬伤：其一，person-* 池不是半身池——apps/client/src/config/images.ts:60-69 的 PEOPLE.CARD_1..9 就是 /static/assets/images/people/person-01..09.png，本轮实读 person-01.png 与 person-06.png 的 PNG IHDR 均为 200×200，画面为全身坐姿或全身街拍，人脸高约占 18%；连 apps/client/src/config/images.ts:70-72 的 PEOPLE.AVATAR_*（/static/assets/images/avatars/person-01-avatar.png）也是同一张全身构图，素材树里根本不存在名为 person-* 的半身池。其二，「顶部锚定裁切」在方图进方框时等价于不裁切——.nearby-item__avatar 是 88rpx × 88rpx 正方（apps/client/src/components/home/NearbyPeople.vue:132-140）配 mode=aspectFill（同文件 :61），源图 1:1 与容器 1:1 时 aspectFill 不产生任何位移或裁切，改锚定方向不会改变成像。建议改成什么判据：把可判物件换成头像源池归属——kind attribute-regex, target .nearby-item__avatar, expected 渲染 src 必须命中近景人脸池 /static/assets/images/avatars/avatar-13..61.jpg（128×128 脸部特写，本轮实读 avatar-13.jpg 为头肩特写，且该池已被 apps/client/src/stores/village/mock-data.ts:130 起的社区作者头像在用），不得命中 /static/assets/images/people/；当前 fixtures.ts:1155-1163 的 nearbyPeople.avatarUrl 正是 people 全身图，按此判点会判红，属真缺陷。若坚持「脸部占位比例」这种像素判点，需要人脸检测，不该以帧判据形式挂着。",
+   "upgradedFrom": "REWRITE",
+   "upgradeBasis": "只读复判 FRAME_JUDGEABLE_NOW（tmp/qa/srconly-owed-plan.json）+ --allow-upgrade 人放行",
+   "identity": "已登录 mock 用户",
+   "identityBackfill": {
+    "from": "\"[object Object]\"",
+    "authority": "reports/audit/round-7/frameplan-lane-C.json item id=MP-R2VIS-PAGES-HOME-INDEX-003 precondition.identity（lane C 交回的原始对象，未经 String() 洗）",
+    "by": "scripts/qa/apply-plan-additions.mjs --backfill-identity"
+   }
   },
   {
    "id": "MP-R2-PROFILE-024",
    "lane": "C",
-   "disposition": "SHOOT",
+   "disposition": "NOT_SHOOTABLE_ON_THIS_BAND",
    "route": "pages/profile/index",
    "assertions": 4,
    "assertionList": [
@@ -1718,7 +1738,8 @@
    },
    "crop": "未登录个人主页底部：我的互动卡最后一行、固定登录 CTA、custom-tab-bar 面板顶缘",
    "frameName": "C-MP-R2-PROFILE-024",
-   "unresolved": "判据的本人态半项（MyProfile.vue 的 padding-bottom 应为 296rpx+2env、浮层为 GlobalPublishFab）不在本 lane 的 files 清单内，需另开一帧；本帧只结未登录态这一档。"
+   "unresolved": "判据的本人态半项（MyProfile.vue 的 padding-bottom 应为 296rpx+2env、浮层为 GlobalPublishFab）不在本 lane 的 files 清单内，需另开一帧；本帧只结未登录态这一档。",
+   "bandNote": "mock 档表达不了游客身份（probe-guest-band 实测 cold/warm 两腿都是 AUTOLOGIN_ON_OPEN，session.ts:617 无条件注入 mockUserSession）⇒ 这一行的帧由 reshoot-guest-real 腿在同 id 上出，两边不重复计，也不是把判决降级"
   },
   {
    "id": "MP-R2-PAGES-HOME-INDEX-112",
@@ -2610,7 +2631,7 @@
   {
    "id": "MP-R2VIS-PAGES-LOGIN-INDEX-001",
    "lane": "E",
-   "disposition": "SHOOT",
+   "disposition": "NOT_SHOOTABLE_ON_THIS_BAND",
    "route": "pages/login/index",
    "assertions": 3,
    "assertionList": [
@@ -2651,12 +2672,13 @@
    "crop": "登录页底部按钮区（微信一键登录 / 手机号快捷登录 / 稍后再看三枚）",
    "frameName": "E-MP-R2VIS-PAGES-LOGIN-INDEX-001",
    "unresolved": "",
-   "preconditionFixed": "身份 A → guest：取景实测被守卫重定向，A 身份下这一页根本渲染不出来"
+   "preconditionFixed": "身份 A → guest：取景实测被守卫重定向，A 身份下这一页根本渲染不出来",
+   "bandNote": "mock 档表达不了游客身份（probe-guest-band 实测 cold/warm 两腿都是 AUTOLOGIN_ON_OPEN，session.ts:617 无条件注入 mockUserSession）⇒ 这一行的帧由 reshoot-guest-real 腿在同 id 上出，两边不重复计，也不是把判决降级"
   },
   {
    "id": "MP-R2VIS-PAGES-LOGIN-INDEX-007",
    "lane": "E",
-   "disposition": "SHOOT",
+   "disposition": "NOT_SHOOTABLE_ON_THIS_BAND",
    "route": "pages/login/index",
    "assertions": 3,
    "assertionList": [
@@ -2695,7 +2717,8 @@
    "crop": "登录页手机号快捷授权按钮 + 其下「验证码或密码登录」文字入口",
    "frameName": "E-MP-R2VIS-PAGES-LOGIN-INDEX-007",
    "unresolved": "",
-   "preconditionFixed": "身份 A → guest：取景实测被守卫重定向，A 身份下这一页根本渲染不出来"
+   "preconditionFixed": "身份 A → guest：取景实测被守卫重定向，A 身份下这一页根本渲染不出来",
+   "bandNote": "mock 档表达不了游客身份（probe-guest-band 实测 cold/warm 两腿都是 AUTOLOGIN_ON_OPEN，session.ts:617 无条件注入 mockUserSession）⇒ 这一行的帧由 reshoot-guest-real 腿在同 id 上出，两边不重复计，也不是把判决降级"
   },
   {
    "id": "MP-R2-VILLAGE-INDEX-010",
@@ -2950,36 +2973,26 @@
    "route": "pages/profile/index",
    "disposition": "SHOOT",
    "addedBy": "scripts/qa/apply-plan-additions.mjs",
-   "precondition": "登录态 A 账号进「我的」页，且 MyHeader 的签名（.my-header__bio）为超过两行的长文本 —— 修法出自台账处置列：.my-header__bio 加 -webkit-line-clamp:2 + display:-webkit-box + overflow:hidden + text-overflow:ellipsis（工作树已落，HEAD 874ff52f 未含 ⇒ 帧必须出自本轮重建后的产物）",
-   "frameName": "profile-my-header-bio-clamp2",
+   "precondition": {
+    "identity": "A",
+    "fixture": "登录态 A 账号进「我的」页，且 MyHeader 的签名（.my-header__bio）为超过两行的长文本 —— 修法出自台账处置列：.my-header__bio 加 -webkit-line-clamp:2 + display:-webkit-box + overflow:hidden + text-overflow:ellipsis（工作树已落，HEAD 874ff52f 未含 ⇒ 帧必须出自本轮重建后的产物）"
+   },
+   "frameName": "PROFILE_BIO_CLAMP_2行",
    "assertions": 1,
    "assertionList": [
-    "帧 .zcode/tmp/backup-round-2-tour-pre-capture/A/pages_profile_index__默认.png 签名带 y≈195–245 三行「热爱生活，喜欢图书馆的下午 / 和操场晚风。想认识有趣…；样式块按内容重锚＝MyHeader.vue `.my-header__bio` HEAD :265-269（仅 font-size/color/line-height 三行，无 clamp）+ 模板 :77 `<text v-if=\"props.profile.intro.bio\" class=\"my-header__bio\">`"
+    "简介块渲染为两行并以省略号收尾：DOM 上 .my-header__bio 的 clientHeight 约等于两行行高，且文本末尾含省略号；超过两行的原文不得顶开卡片"
    ],
    "steps": [
-    "帧 .zcode/tmp/backup-round-2-tour-pre-capture/A/pages_profile_index__默认.png 签名带 y≈195–245 三行「热爱生活，喜欢图书馆的下午 / 和操场晚风。想认识有趣…；样式块按内容重锚＝MyHeader.vue `.my-header__bio` HEAD :265-269（仅 font-size/color/line-height 三行，无 clamp）+ 模板 :77 `<text v-if=\"props.profile.intro.bio\" class=\"my-header__bio\">`"
+    "简介块渲染为两行并以省略号收尾：DOM 上 .my-header__bio 的 clientHeight 约等于两行行高，且文本末尾含省略号；超过两行的原文不得顶开卡片"
    ],
    "crop": "full",
-   "unresolved": ""
-  },
-  {
-   "id": "MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01",
-   "lane": "ADDED-stage7",
-   "manifest": "ADDED",
-   "route": "subpackages/chat/chat-session/index",
-   "disposition": "SHOOT",
-   "addedBy": "scripts/qa/apply-plan-additions.mjs",
-   "precondition": "登录后进入任一聊天会话页；产物 gitSha 不得早于 ChatInput 整件删除的那次提交（台账裁决 2026-09-26 采 (A)：删除保留，欠的是「删除后不破版」的帧级确认，旧产物已被重建覆盖无从回查）",
-   "frameName": "chat-session-inputbar-after-chatinput-delete",
-   "assertions": 1,
-   "assertionList": [
-    "HEAD 874ff52f 仍含 apps/client/src/components/chat/ChatInput.vue（blob 132 行 / 2909B，:83 = `.chat-input__bar` 的 padding 行）；死代码判据本轮复测＝`grep -rn ChatInput apps/client/src` **0 命中**（改前唯一命中是 pages/register/index.vue 的一行注释，该注释已由 i18n 收口批摘除并在 i18n-wired.json handoff_5 自陈「现 grep 全库 0 命中」）；聊天页输入栏实现在 chat-session/index.vue 内联 `.wechat-input-bar__*`"
-   ],
-   "steps": [
-    "HEAD 874ff52f 仍含 apps/client/src/components/chat/ChatInput.vue（blob 132 行 / 2909B，:83 = `.chat-input__bar` 的 padding 行）；死代码判据本轮复测＝`grep -rn ChatInput apps/client/src` **0 命中**（改前唯一命中是 pages/register/index.vue 的一行注释，该注释已由 i18n 收口批摘除并在 i18n-wired.json handoff_5 自陈「现 grep 全库 0 命中」）；聊天页输入栏实现在 chat-session/index.vue 内联 `.wechat-input-bar__*`"
-   ],
-   "crop": "full",
-   "unresolved": ""
+   "unresolved": "",
+   "identity": "A",
+   "identityBackfill": {
+    "from": "\"个人简介文本长度 > 2 行的账号（MyHeader.vue:265-273 的 -webkit-line-clamp",
+    "authority": "tmp/qa/naked-frame-rows-classify.json carrierOrPlanRow.identity（收口波第 6 步复判产物；由 scripts/qa/emit-frameplan-additions.mjs 现产 MP-R2VIS-PAGES-PROFILE-INDEX-004）",
+    "by": "scripts/qa/apply-plan-additions.mjs --backfill-identity"
+   }
   },
   {
    "id": "MP-R2VIS-PAGES-HOME-INDEX-006",
@@ -2988,18 +3001,385 @@
    "route": "pages/home/index",
    "disposition": "SHOOT",
    "addedBy": "scripts/qa/apply-plan-additions.mjs",
-   "precondition": "登录态进首页；TodayLoveProgress.vue:105 的左右 margin 已改 var(--page-padding)（工作树，未进 HEAD）⇒ 复验=重建后首页帧对 素材/理想效果图/首页.png 左基线 29.0rpx 量测",
-   "frameName": "home-today-love-progress-page-padding",
+   "precondition": {
+    "identity": "A",
+    "fixture": "登录态进首页；TodayLoveProgress.vue:105 的左右 margin 已改 var(--page-padding)（工作树，未进 HEAD）⇒ 复验=重建后首页帧对 素材/理想效果图/首页.png 左基线 29.0rpx 量测"
+   },
+   "frameName": "HOME_TODAYLOVE_LEFTBASELINE",
    "assertions": 1,
    "assertionList": [
-    "apps/client/src/components/home/TodayLoveProgress.vue:105 `margin: 0 40rpx 20rpx;`（HEAD 874ff52f 与工作树同行，本轮 51 文件编辑未触及该件）——同页其余五枚横向基线在收口后全部落在 32rpx 档：HomeHeader.vue:90 与 InviteBanner.vue:35 走 var(--page-padding)、TodayRecommendationCard.vue:113 `margin: 0 32rpx 16rpx`、RelationActivity.vue:85 `margin: 0 32rpx 16rpx`、CommunityFeed.vue:260 `padding: 8rpx 32rpx 16rpx` → 本枚成为首页**唯一** 40rpx 消费者，左右各偏 8rpx("
+    "卡片左边缘与页面其它站点同基线：量 x 偏移 == var(--page-padding) 折算像素，且与 MP-R2VIS-PAGES-HOME-INDEX-005 的两枚站点数值一致（同批收口才算闭环）"
    ],
    "steps": [
-    "apps/client/src/components/home/TodayLoveProgress.vue:105 `margin: 0 40rpx 20rpx;`（HEAD 874ff52f 与工作树同行，本轮 51 文件编辑未触及该件）——同页其余五枚横向基线在收口后全部落在 32rpx 档：HomeHeader.vue:90 与 InviteBanner.vue:35 走 var(--page-padding)、TodayRecommendationCard.vue:113 `margin: 0 32rpx 16rpx`、RelationActivity.vue:85 `margin: 0 32rpx 16rpx`、CommunityFeed.vue:260 `padding: 8rpx 32rpx 16rpx` → 本枚成为首页**唯一** 40rpx 消费者，左右各偏 8rpx("
+    "卡片左边缘与页面其它站点同基线：量 x 偏移 == var(--page-padding) 折算像素，且与 MP-R2VIS-PAGES-HOME-INDEX-005 的两枚站点数值一致（同批收口才算闭环）"
+   ],
+   "crop": "full",
+   "unresolved": "",
+   "identity": "A",
+   "identityBackfill": {
+    "from": "\"首页有今日进度卡（TodayLoveProgress 可见）\"",
+    "authority": "tmp/qa/naked-frame-rows-classify.json carrierOrPlanRow.identity（收口波第 6 步复判产物；由 scripts/qa/emit-frameplan-additions.mjs 现产 MP-R2VIS-PAGES-HOME-INDEX-006）",
+    "by": "scripts/qa/apply-plan-additions.mjs --backfill-identity"
+   }
+  },
+  {
+   "id": "MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "subpackages/chat/chat-session/index",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": {
+    "identity": "A",
+    "fixture": "登录后进入任一聊天会话页；产物 gitSha 不得早于 ChatInput 整件删除的那次提交（台账裁决 2026-09-26 采 (A)：删除保留，欠的是「删除后不破版」的帧级确认，旧产物已被重建覆盖无从回查）"
+   },
+   "frameName": "CHATSESSION_AFTER_CHATINPUT_DELETE",
+   "assertions": 1,
+   "assertionList": [
+    "页面自带输入栏可用且无 ChatInput 残留：发送框、表情/附件入口在位，正文不被输入栏压住；同时产物里 grep ChatInput 组件为 0 命中"
+   ],
+   "steps": [
+    "页面自带输入栏可用且无 ChatInput 残留：发送框、表情/附件入口在位，正文不被输入栏压住；同时产物里 grep ChatInput 组件为 0 命中"
+   ],
+   "crop": "full",
+   "unresolved": "",
+   "identity": "A",
+   "identityBackfill": {
+    "from": "\"产物必须出自不早于删除提交的构建（gitSha 校验），进入一段已有会话\"",
+    "authority": "tmp/qa/naked-frame-rows-classify.json carrierOrPlanRow.identity（收口波第 6 步复判产物；由 scripts/qa/emit-frameplan-additions.mjs 现产 MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01）",
+    "by": "scripts/qa/apply-plan-additions.mjs --backfill-identity"
+   }
+  },
+  {
+   "id": "MP-R2-PROFILE-023",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "pages/profile/index",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": "[object Object]",
+   "frameName": "A-MP-R2-PROFILE-023",
+   "assertions": 1,
+   "assertionList": [
+    "apps/client/src/pages/profile/index.vue:2015-2024/2054-2061（死块删除注释）、768-770（growth 链删除记载）、2027-2029（他人态 Tab 移除记载）、1806-…"
+   ],
+   "steps": [
+    "apps/client/src/pages/profile/index.vue:2015-2024/2054-2061（死块删除注释）、768-770（growth 链删除记载）、2027-2029（他人态 Tab 移除记载）、1806-…"
    ],
    "crop": "full",
    "unresolved": ""
+  },
+  {
+   "id": "MP-R2-PROFILE-022",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "pages/profile/index",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": {
+    "identity": "guest",
+    "fixture": "台账原文 页面列=pages/profile/index（未登录态）｜处置列=HEAD 已修，待下轮真机帧复验。依据：锚点即本缺陷编号：:156-158 注释明写「R12-IND-PROFILE-INDEX-001/MP-R1-PAGES-PROFILE-INDEX-002：未登录态此前固定 32rpx 顶距，顶部三枚 64rpx 圆钮直接顶入状态栏/胶囊带」，:159 p…"
+   },
+   "frameName": "C-MP-R2-PROFILE-022",
+   "assertions": 1,
+   "assertionList": [
+    "components/profile/NotLoggedProfile.vue:153-160（padding-top calc(var(--statusbar,...)+32rpx)，注释引用 R12-IND-PROFILE-INDEX…"
+   ],
+   "steps": [
+    "components/profile/NotLoggedProfile.vue:153-160（padding-top calc(var(--statusbar,...)+32rpx)，注释引用 R12-IND-PROFILE-INDEX…"
+   ],
+   "crop": "full",
+   "unresolved": "",
+   "identity": "guest",
+   "identityBackfill": {
+    "from": "\"[object Object]\"",
+    "authority": "reports/audit/round-6/issue-matrix.md:40 页面列/处置列（含 未登录态／游客／not-logged-in 字样，逐字）",
+    "by": "scripts/qa/apply-plan-additions.mjs --backfill-identity"
+   }
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "subpackages/circles/circles/index",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": "[object Object]",
+   "frameName": "A-MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
+   "assertions": 1,
+   "assertionList": [
+    "apps/client/src/subpackages/circles/circles/index.vue:944-947 .circles-tab--active{background: var(--c-bg-brand,#E8F8F1…"
+   ],
+   "steps": [
+    "apps/client/src/subpackages/circles/circles/index.vue:944-947 .circles-tab--active{background: var(--c-bg-brand,#E8F8F1…"
+   ],
+   "crop": "full",
+   "unresolved": ""
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-001",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "pages/home/index",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": "[object Object]",
+   "frameName": "A-MP-R2VIS-PAGES-HOME-INDEX-001",
+   "assertions": 1,
+   "assertionList": [
+    "apps/client/src/components/home/RelationActivity.vue:120-121 .relation-cell{border-radius:24rpx; background:#EEF7F2}（=§…"
+   ],
+   "steps": [
+    "apps/client/src/components/home/RelationActivity.vue:120-121 .relation-cell{border-radius:24rpx; background:#EEF7F2}（=§…"
+   ],
+   "crop": "full",
+   "unresolved": ""
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "subpackages/chat/chat-session/index",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": "[object Object]",
+   "frameName": "A-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006",
+   "assertions": 1,
+   "assertionList": [
+    "帧 .zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_chat-session_index__弹层态.png（面板仅绿色圆形相机「发送图片」+ 取消，右侧 6/7 …"
+   ],
+   "steps": [
+    "帧 .zcode/tmp/backup-round-2-tour-pre-capture/B/subpackages_chat_chat-session_index__弹层态.png（面板仅绿色圆形相机「发送图片」+ 取消，右侧 6/7 …"
+   ],
+   "crop": "full",
+   "unresolved": ""
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "subpackages/circles/circles/index",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": "[object Object]",
+   "frameName": "A-MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003",
+   "assertions": 1,
+   "assertionList": [
+    "apps/client/src/stores/circle/mock-data.ts:58-64（列表页源，无 friendJoinedCount → aefd8a72 版 index.vue:248-252 无条件 5+seed%8=6…"
+   ],
+   "steps": [
+    "apps/client/src/stores/circle/mock-data.ts:58-64（列表页源，无 friendJoinedCount → aefd8a72 版 index.vue:248-252 无条件 5+seed%8=6…"
+   ],
+   "crop": "full",
+   "unresolved": ""
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "subpackages/profile-extra/profile/other",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": "[object Object]",
+   "frameName": "A-MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002",
+   "assertions": 1,
+   "assertionList": [
+    "帧 reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__默认.png 3x 裁切 .zcode/tmp/v3/O-other-hero.p…"
+   ],
+   "steps": [
+    "帧 reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__默认.png 3x 裁切 .zcode/tmp/v3/O-other-hero.p…"
+   ],
+   "crop": "full",
+   "unresolved": ""
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-001",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "subpackages/village/village/post",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": "[object Object]",
+   "frameName": "A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-001",
+   "assertions": 1,
+   "assertionList": [
+    "apps/client/src/subpackages/village/village/post.vue:1506-1511 .post-row__label{color:#9AA39F; height:28rpx} vs apps/cl…"
+   ],
+   "steps": [
+    "apps/client/src/subpackages/village/village/post.vue:1506-1511 .post-row__label{color:#9AA39F; height:28rpx} vs apps/cl…"
+   ],
+   "crop": "full",
+   "unresolved": ""
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-003",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "subpackages/village/village/publish",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": "[object Object]",
+   "frameName": "A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-003",
+   "assertions": 1,
+   "assertionList": [
+    "apps/client/src/subpackages/village/village/post.vue:1341-1349（目标弹层 max-height:78vh + 底部 calc(32rpx + safe-area)）vs :16…"
+   ],
+   "steps": [
+    "apps/client/src/subpackages/village/village/post.vue:1341-1349（目标弹层 max-height:78vh + 底部 calc(32rpx + safe-area)）vs :16…"
+   ],
+   "crop": "full",
+   "unresolved": ""
+  },
+  {
+   "id": "MP-R7-GUEST-LANDING-REGENTRY-001",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "pages/login/index",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": {
+    "identity": "guest",
+    "fixture": "台账原文 页面列=pages/login/index（游客被弹到此页；来源页 23 个，逐页清单见 reports/audit/round-7/guest-landing-booked.json）｜处置列=修法（本轮落地）：在 .login-quick 默认分支加注册入口，复用已有文案键 login.goRegister（zh-CN.ts:2197 / en-US.ts:2140，不新增文案），类名 .login-register-entry；判据载体 scripts/qa/verify-guest-landing.mjs --mode measure（26 页逐页量：落地 route + .login-page__brand:present + .login-register-entry:present，且采样时 "
+   },
+   "frameName": "E-MP-R7-GUEST-LANDING-REGENTRY-001",
+   "assertions": 1,
+   "assertionList": [
+    "apps/client/src/pages/login/index.vue:604（默认分支 class=\"login-quick\" 内不含任何注册入口）与 :688/:745-752（「去注册」实体在 v-else 的 login-form 分支里，且再受 isRegisterOpen 开关控制）"
+   ],
+   "steps": [
+    "apps/client/src/pages/login/index.vue:604（默认分支 class=\"login-quick\" 内不含任何注册入口）与 :688/:745-752（「去注册」实体在 v-else 的 login-form 分支里，且再受 isRegisterOpen 开关控制）"
+   ],
+   "crop": "full",
+   "unresolved": "",
+   "identity": "guest",
+   "identityBackfill": {
+    "from": "\"[object Object]\"",
+    "authority": "reports/audit/round-6/issue-matrix.md:188 页面列/处置列（含 未登录态／游客／not-logged-in 字样，逐字）",
+    "by": "scripts/qa/apply-plan-additions.mjs --backfill-identity"
+   }
+  },
+  {
+   "id": "MP-R7-GUEST-MATCHING-REDIRECT-RACE-001",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "subpackages/discover-extra/discover/matching",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": {
+    "identity": "guest",
+    "fixture": "台账原文 页面列=subpackages/discover-extra/discover/matching｜处置列=按既定游客裁定（游客不得浏览内容页、未登录须引导到登录/注册）收口两条重定向的优先级：matching 的无卡片兜底分支在**未登录**时不得 switchTab 到内容 Tab，必须与 401 兜底一致走登录引导（具体改法：兜底前先判 isLoggedIn/getToken，未登录直接 replaceAppPath(ROUTES.LOGIN)）。结案条件：measure 腿该组从 MEASURED-DRIFT 转 CLOSED，且连测 3 次落点一致。"
+   },
+   "frameName": "E-MP-R7-GUEST-MATCHING-REDIRECT-RACE-001",
+   "assertions": 1,
+   "assertionList": [
+    "apps/client/src/subpackages/discover-extra/discover/matching.vue:56-69（无卡片可展示时的兜底：navigateBack 不成 ⇒ uni.switchTab(ROUTES.TAB.DISCOVER)，把游客送进「寻觅」Tab）与 apps/client/src/services/http.ts:493-494（401 兜底 uni.reLaunch(ROUTES.LOGIN)）"
+   ],
+   "steps": [
+    "apps/client/src/subpackages/discover-extra/discover/matching.vue:56-69（无卡片可展示时的兜底：navigateBack 不成 ⇒ uni.switchTab(ROUTES.TAB.DISCOVER)，把游客送进「寻觅」Tab）与 apps/client/src/services/http.ts:493-494（401 兜底 uni.reLaunch(ROUTES.LOGIN)）"
+   ],
+   "crop": "full",
+   "unresolved": "",
+   "identity": "guest",
+   "identityBackfill": {
+    "from": "\"[object Object]\"",
+    "authority": "reports/audit/round-6/issue-matrix.md:189 页面列/处置列（含 未登录态／游客／not-logged-in 字样，逐字）",
+    "by": "scripts/qa/apply-plan-additions.mjs --backfill-identity"
+   }
+  },
+  {
+   "id": "MP-R6-F1-NEARBY-IP-CITY-001",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "pages/nearby/index",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": "[object Object]",
+   "frameName": "A-MP-R6-F1-NEARBY-IP-CITY-001",
+   "assertions": 1,
+   "assertionList": [
+    "utils/location.ts:44-56（IP 兜底与 gps/ip 标记）；pages/home/index.vue:68-72（副标题经 buildLocationText 直出城市）；pages/nearby/index.vue:113（副标题）、:120-121（currentCity）、:125（写 STORAGE_KEYS.NEARBY_CITY）、:232（该 currentCity 直接喂 fetchNearbyPosts 做城市过滤）；下游 subpackages/village/village/publish.vue:64-72（无缓存时硬编码北京市）"
+   ],
+   "steps": [
+    "utils/location.ts:44-56（IP 兜底与 gps/ip 标记）；pages/home/index.vue:68-72（副标题经 buildLocationText 直出城市）；pages/nearby/index.vue:113（副标题）、:120-121（currentCity）、:125（写 STORAGE_KEYS.NEARBY_CITY）、:232（该 currentCity 直接喂 fetchNearbyPosts 做城市过滤）；下游 subpackages/village/village/publish.vue:64-72（无缓存时硬编码北京市）"
+   ],
+   "crop": "full",
+   "unresolved": ""
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-001",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "pages/messages/index",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": {
+    "identity": "guest",
+    "fixture": "登出态（游客）取景：台账原话「复验要的是**登出态取景**（tour 已有 LOGOUT_LANDING 通道），不是再拍一张登录态帧」⇒ identity=guest 且必须跑 real 档（游客×mock 是结构不可满足组合，见 §117）"
+   },
+   "frameName": "messages-logout-bg-page-token",
+   "assertions": 1,
+   "assertionList": [
+    "apps/client/src/components/discover/NotLoggedWaiting.vue .not-logged{background:#f6fbfc}；对照帧 .zcode/tmp/backup-round-2-…"
+   ],
+   "steps": [
+    "apps/client/src/components/discover/NotLoggedWaiting.vue .not-logged{background:#f6fbfc}；对照帧 .zcode/tmp/backup-round-2-…"
+   ],
+   "crop": "full",
+   "unresolved": "",
+   "identity": "guest",
+   "identityBackfill": {
+    "from": "\"登出态（游客）取景：台账原话「复验要的是**登出态取景**（tour 已有 LOGOUT_LANDING 通道），不是",
+    "authority": "tmp/qa/naked-frame-rows-classify.json carrierOrPlanRow.identity（收口波第 6 步复判产物；由 scripts/qa/emit-frameplan-additions.mjs 现产 MP-R2VIS-PAGES-MESSAGES-INDEX-001）",
+    "by": "scripts/qa/apply-plan-additions.mjs --backfill-identity"
+   }
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-010",
+   "lane": "ADDED-stage7",
+   "manifest": "ADDED",
+   "route": "subpackages/campus/campus/post-topic",
+   "disposition": "SHOOT",
+   "addedBy": "scripts/qa/apply-plan-additions.mjs",
+   "precondition": {
+    "identity": "A",
+    "fixture": "真实模式 + 故意提交一张非法扩展名/断网的配图（台账原话：仍欠的是真机一次被拦下的观感帧）⇒ requiresReal，产物须为 real 档且 8080 在跑"
+   },
+   "frameName": "campuspost-upload-rejected-notice",
+   "assertions": 1,
+   "assertionList": [
+    "post-topic.vue:257-262 `catch (_e) { uni.showToast({ title: campusStore.errorMessage // t(\"campus.postTopic.publishFail…"
+   ],
+   "steps": [
+    "post-topic.vue:257-262 `catch (_e) { uni.showToast({ title: campusStore.errorMessage // t(\"campus.postTopic.publishFail…"
+   ],
+   "crop": "full",
+   "unresolved": "",
+   "identity": "A",
+   "identityBackfill": {
+    "from": "\"真实模式 + 故意提交一张非法扩展名/断网的配图（台账原话：仍欠的是真机一次被拦下的观感帧）⇒ requiresRea",
+    "authority": "tmp/qa/naked-frame-rows-classify.json carrierOrPlanRow.identity（收口波第 6 步复判产物；由 scripts/qa/emit-frameplan-additions.mjs 现产 MP-R2-CAMPUSPOST-010）",
+    "by": "scripts/qa/apply-plan-additions.mjs --backfill-identity"
+   }
   }
+ ],
+ "addedByStage7": [
+  "MP-R2VIS-PAGES-PROFILE-INDEX-004",
+  "MP-R2VIS-PAGES-HOME-INDEX-006",
+  "MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01",
+  "MP-R2-PROFILE-023",
+  "MP-R2-PROFILE-022",
+  "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
+  "MP-R2VIS-PAGES-HOME-INDEX-001",
+  "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006",
+  "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003",
+  "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002",
+  "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-001",
+  "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-003",
+  "MP-R7-GUEST-LANDING-REGENTRY-001",
+  "MP-R7-GUEST-MATCHING-REDIRECT-RACE-001",
+  "MP-R6-F1-NEARBY-IP-CITY-001",
+  "MP-R2VIS-PAGES-MESSAGES-INDEX-001",
+  "MP-R2-CAMPUSPOST-010"
  ],
  "reconciledBy": "scripts/qa/reconcile-frameplan.mjs（只允许 SHOOT→NOT_SHOOTABLE/REWRITE 的单向棘轮）",
  "demotions": [
@@ -3073,10 +3453,5 @@
    "resolved": false,
    "owedCarrier": "按「本轮前落地」提请改判；判据里那句 24rpx 旧值要删掉，否则下轮又照抄"
   }
- ],
- "addedByStage7": [
-  "MP-R2VIS-PAGES-PROFILE-INDEX-004",
-  "MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01",
-  "MP-R2VIS-PAGES-HOME-INDEX-006"
  ]
 }
