@@ -79,3 +79,21 @@
 - 选 C：只裁 setup 两组允许，其余三组按违例开实现刀。
 
 顺带一条同域但不用你决定的：`selectorsOf()` 丢非 BEM 选择器，把 `.btn-primary` 这类降级成 `FRAME_ONLY`（记在 `reports/audit/round-7/register-fieldinput-diagnosis.json`），属载具缺陷，待授权后单独修。另有一条 `CH12` 欠一次带 prestate 的 `--tap` 复跑（节点在 `hub.vue:215` 的 `v-if=!isVerified`，未认证身份才点得动），命名不等于结案。
+
+## 12. round-1 那 144 帧没有 gitSha，要不要给个显式豁免
+`reports/screenshots/round-1/manifest.json` 顶层没有 gitSha，144 帧无从核实 —— 这是 corpus 门现在唯一剩下的具名红。车道查遍六处出处都不给实名：自身字段无、`audit-report.md:5` 写的 `aefd8a72` 比这批帧晚三天（属冒充带，不能用）、同目录日志无、引用扫描 0 命中、`ops-provenance` 只覆盖 round-7；只剩"用 mtime 对 gitlog 推"这一条，推出来是 `281de531`，但那是推断，按铁律不许当成出处写进证据件。
+- 选 A：给 corpus 门加一条 `LEGACY` 显式豁免（provenance 门已经有这个轴，实测读数 `PROV_FRAMES_LEGACY=144`），把"无从核实"从暗红变成有名有据的豁免类。
+- 选 B：重跑这一批取证，用今天的带子重新出帧并打上真 sha（代价是 round-1 的原始状态早就不在了，重跑出来的不是当时那一轮）。
+- 选 C：接受它长期红，写明"round-1 证据不可背书"，并把 round-1 的结论降级为不可引用。
+
+## 13. 18 份在途 exec-* 清单要不要授权代跑
+provenance 门剩下的红主要是 `PROV_FRAMES_PRE_STAMP=4867`，成因已定位：生产者 `exec-frames-to-corpus.mjs:67-68` 打的是"转换时刻 HEAD"而不是采集带（同一份文件里的 `resultsGitSha` 早记着真带 `e4495d67`；帧未入库，`at` 与 mtime 逐毫秒互证，不是 mtime 噪声）。生产者已修好并配了夹具（剥带 ⇒ 650 帧 FAIL；带在 ⇒ 650 consistent PASS），但这 18 份 `reports/audit/round-7/exec-*` 是别的车道正在写的未提交产物，戳记车道按边界没代跑，也没有任何 `reports/**` 被它改过。
+- 选 A：授权对那 18 份代跑修好的生产者 ⇒ `PRE_STAMP` 归零、provenance 门有可能转绿（改的是产物清单里的戳字段，不改判决值）。
+- 选 B：留给 exec/帧车道，由它们重拍或重建清单 ⇒ 慢，但每份清单由产出者自己背书。
+- 现在盘上事实：`corpus --scope 本轮` exit 0；全量 corpus 仍 exit 1（只因第 12 项那一处断链）；provenance 仍 exit 1。
+
+## 14. 一枚生产者退出溯源集合，要不要把它拉回来
+`verify-rulings-landed.mjs:170` 那枚写死的 `deadbeef` 其实是它内嵌自检的负例夹具、并不往盘上写戳。车道把它改成运行时 sha1 派生后 `LITERAL_SHA 1→0`，代价是这条脚本退出了生产者集合（`PROV_PRODUCERS` 12→11）—— 门只统计"会写盘戳"的生产者。
+- 选 A：就这样（它确实不产盘上戳，11 是诚实数）。
+- 选 B：想让门继续盯着它，就把那个派生常量命名为 `GIT_SHA`（一行），它会重新进集合。
+- 盘上按 A 落定；"能变红"已用临时探针证明过（真写死时门报 `PROV_PRODUCER_LITERAL` 且 exit 1，探针已删）。要 B 说一声就改。
