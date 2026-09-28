@@ -1,42 +1,23 @@
 {
- "auditedAt": "2026-09-28T19:41:39.309Z",
- "auditor": "主会话独立复算（不信车道自报）",
- "source": ".zcode/tmp/lane-ui2/rows.jsonl",
- "rows": 49,
+ "auditedAt": "2026-09-28T19:46:03.044Z",
+ "auditor": "主会话独立复算（终版 53 行，非中途 49 行快照）",
+ "source": ".zcode/tmp/lane-ui2/result.json",
+ "rows": 53,
  "outcomeDistribution": {
-  "NOT_SHOOTABLE": 22,
-  "EXECUTED": 13,
-  "UNCHANGED_AFTER_INTERACTION": 11,
+  "NOT_SHOOTABLE": 25,
+  "EXECUTED": 19,
+  "UNCHANGED_AFTER_INTERACTION": 6,
   "LEFT_PAGE": 1,
   "VEHICLE_DENY": 2
  },
- "planVsResult": {
-  "planned": 49,
-  "answered": 49,
-  "planMissing": 0,
-  "resultExtra": 0
+ "frameRefs": 0,
+ "checks": {
+  "noNamedReason": 0,
+  "frameMissing": 0,
+  "shaMismatch": 0,
+  "executedButIdentical": 0,
+  "unchangedButDifferent": 0
  },
- "checks": [
-  {
-   "name": "每条都有具名原因",
-   "fail": 0
-  },
-  {
-   "name": "引用的帧文件存在",
-   "fail": 0
-  },
-  {
-   "name": "标注 sha256 与重算一致",
-   "fail": 0
-  },
-  {
-   "name": "EXECUTED 前后帧不同字节",
-   "fail": 0
-  },
-  {
-   "name": "UNCHANGED 前后帧确实相同",
-   "fail": 0
-  }
- ],
- "verdict": "内部自洽 5/5"
+ "verdict": "内部自洽 5/5",
+ "gateRerun": "REALCOV_CASES=236 EXEC_ROWS=15206 结果目录=D:\\6\\恋爱小程序\\reports\\audit\\round-7\nREALCOV_NEVER_ON_REAL=0 REAL_BAND_BUT_ALL_SKIPPED=14 JUDGED_MISSING_A=14 JUDGED_MISSING_GUEST=3\nREALCOV_IDENTITY_SCOPED 游客轴豁免=122 登录轴豁免=1（来源=ops 用例上的 c.identities，载体 tag-ops-identity-scope.mjs；豁免只减认领者，不减判据）\nREALCOV_AUTOMATABLE_E"
 }
