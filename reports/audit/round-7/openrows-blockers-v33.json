@@ -1,0 +1,84 @@
+{
+ "generatedAt": "2026-09-28T19:37:17.778Z",
+ "generatedBy": "主会话机械派生（台账第 6 列 + UI 交互腿 rows.jsonl 现算，不手填数）",
+ "openRowCount": 8,
+ "landableNow": 0,
+ "pageLevelMatchesButNotAdmissible": [
+  "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001"
+ ],
+ "note": "页面级帧命中不等于判据级可落：VILLAGE-PUBLISH-001 的缺项是\"提示元素与文案没有设计依据、两页字数阈值语义分歧\"，任何渲染帧都答不了这一问，故按 admissibleToLand=false 处理。",
+ "rows": [
+  {
+   "id": "MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001",
+   "page": "components/layout/AppShell",
+   "statusVerbatim": "已修复待复验（需帧复验（T5 定向巡检覆盖本页））",
+   "pageLevelFrameMatch": false,
+   "admissibleToLand": false,
+   "klass": "需拍板",
+   "blockedOn": "判据/设计依据/令牌值或 DB 主键读取，帧与源码都不答这个问题"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-005",
+   "page": "pages/home/index",
+   "statusVerbatim": "已修复待复验（去向：closer=待人裁决；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
+   "pageLevelFrameMatch": false,
+   "admissibleToLand": false,
+   "klass": "需环境",
+   "blockedOn": "高 dpr 机型档巡检帧（现有档最大 378×814）"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-014",
+   "page": "pages/messages/index",
+   "statusVerbatim": "未取证",
+   "pageLevelFrameMatch": false,
+   "admissibleToLand": false,
+   "klass": "需拍板",
+   "blockedOn": "判据/设计依据/令牌值或 DB 主键读取，帧与源码都不答这个问题"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-001",
+   "page": "pages/messages/index",
+   "statusVerbatim": "已修复待复验",
+   "pageLevelFrameMatch": false,
+   "admissibleToLand": false,
+   "klass": "需拍板",
+   "blockedOn": "判据/设计依据/令牌值或 DB 主键读取，帧与源码都不答这个问题"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
+   "page": "pages/messages/index",
+   "statusVerbatim": "待修复（去向：needs_backend，本轮不改后端夹具；客户端侧不可行半段已按裁定删除，见处置与 MessageDashboardService.java:44 的派生链）",
+   "pageLevelFrameMatch": false,
+   "admissibleToLand": false,
+   "klass": "需环境",
+   "blockedOn": "后端夹具（needs_backend）"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001",
+   "page": "subpackages/village/village/publish",
+   "statusVerbatim": "未取证/需裁决（口径未定：提示元素与文案没有设计依据，两页字数阈值语义分歧属产品选择；行内已核的部分见处置）",
+   "pageLevelFrameMatch": true,
+   "admissibleToLand": false,
+   "klass": "需拍板",
+   "blockedOn": "判据/设计依据/令牌值或 DB 主键读取，帧与源码都不答这个问题"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-004",
+   "page": "tmp/tour-R2",
+   "statusVerbatim": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
+   "pageLevelFrameMatch": false,
+   "admissibleToLand": false,
+   "klass": "需环境",
+   "blockedOn": "高 dpr 机型档巡检帧（现有档最大 378×814）"
+  },
+  {
+   "id": "MP-R6EVID-STATE-DUPBYTES-001",
+   "page": "pages/nearby/index（聚类另含 village/publish、village/post、campus/hub）",
+   "statusVerbatim": "待复验（同页同身份的两个「不同状态」帧逐字节相同；采集侧已改判承接，产品侧未定）",
+   "pageLevelFrameMatch": false,
+   "admissibleToLand": false,
+   "klass": "需环境",
+   "blockedOn": "产品侧未定：需裁同页同身份重复帧的承接口径"
+  }
+ ]
+}
