@@ -19,6 +19,18 @@
  *  ② 豁免 ≠ 覆盖，免检行绝不并进 covered；
  *  ③ 剩余非免检的欠账照旧按原阈值（uncovered === 0 才绿）判红，一条不减。
  *
+ *  合同的下半场（2026-09-28 补）：**没有 band 的行**过去落在这条门的暗面里——
+ *  认领靠 /^real(@|$)/ 匹配 band，band 缺省成空串就永远匹配不上，于是"扫到了、一行也没认领"
+ *  与"根本没扫到"两种形状在读数上一模一样。实测：round-8 那条 145 行、admissible=yes、
+ *  outcome=measured 的 WS 波次（reports/audit/round-7/exec-ws-tap-r8，r-exec-ws.mjs 产的，
+ *  行里根本没有 band 字段）进了 EXEC_ROWS=14678，却没让 COVERED 与 UNCOVERED 动过任何一格。
+ *  漏字段的生产者不是"少了一格覆盖"，是**一整类证据对门不可见**，而门对此一声不吭。
+ *  现在这一侧也闭环：REALCOV_BANDLESS_ROWS / _CASES 数出来、逐条点名、写清是哪几个目录。
+ *  两条边界：① 只数"本门会去看的那些行"（key 命中 requiresReal 判据），其余目录的行不归这本账；
+ *  ② 计数与点名**不改判红阈值**（ok 仍只看 uncovered 与守恒）——今天已有 4586 条合法 mock 行，
+ *  把漏盖做成新的常红判点，正撞上面那句"永久红的门最后会被绕过去"。它是一条看得见的漏，
+ *  不是一根新的狼牙棒。
+ *
  *  用法：node scripts/qa/verify-real-coverage.mjs [--round round-7]
  *       [--ops reports/audit/round-6/ops] [--dir reports/audit/round-7] [--selftest]
  */
@@ -71,7 +83,8 @@ function execRows() {
     const p = join(DIR, d, "exec-results.json");
     if (!d.startsWith("exec-") || !existsSync(p)) continue;
     let j; try { j = JSON.parse(readFileSync(p, "utf8")); } catch { console.log("REALCOV_SKIP_UNPARSEABLE " + d); continue; }
-    for (const r of j.results || []) rows.push({ key: r.manifest + "|" + r.id, band: String(r.band || ""), identity: String(r.identity || "?"), status: String(r.status || "") });
+    /* dir 带着走：漏盖这件事必须能报到"是哪一条腿/哪个目录没盖"，否则计数没有下一步。 */
+    for (const r of j.results || []) rows.push({ key: r.manifest + "|" + r.id, band: String(r.band || ""), identity: String(r.identity || "?"), status: String(r.status || ""), dir: d });
   }
   return rows;
 }
@@ -92,9 +105,16 @@ function axesOf(identities) {
 
 function judge(rows, req, ids) {
   const byId = new Map();
+  /* 漏盖计数（行轴，不是用例轴）：本门会去看、却读不出档位的行。
+     只数 key 命中 requiresReal 判据的行——其它判据本来就不归这本账，数进来只会稀释信号。 */
+  const bandless = { rows: 0, cases: new Map() };
   for (const r of rows) {
     if (!ids.has(r.key)) continue;
     const rec = byId.get(r.key) || { real: new Set(), realJudged: new Set() };
+    if (!r.band) {
+      bandless.rows++;
+      bandless.cases.set(r.key, (bandless.cases.get(r.key) || 0) + 1);
+    }
     if (REAL_BAND.test(r.band)) {
       rec.real.add(r.identity);
       if (JUDGED.test(r.status)) rec.realJudged.add(r.identity);
@@ -106,6 +126,7 @@ function judge(rows, req, ids) {
     /* 免检桶与覆盖桶都是新增的、互斥的格子；下面三个旧判点（neverOnReal / noA / noGuest）
        以及 skippedOnly 的判据一个字没改，只是免检行不再进它们的路径。 */
     automatableExempt: [], covered: [],
+    bandless,
   };
   for (const c of req) {
     const key = c.manifest + "|" + c.id;
@@ -170,7 +191,32 @@ function selftest() {
     { n: "automatable 写成字符串 \"false\"⇒ 不算豁免（只认声明的布尔 false，防 prose 混进来）", req: [{ manifest: "M", id: "1", automatable: "false" }], ids: new Set(["M|1"]), rows: [{ key: "M|1", band: "real@abc", identity: "A", status: "SKIPPED" }], wantMissing: 1, wantExempt: 0, wantCovered: 0 },
     { n: "盖章一条 + 没盖章两条全欠⇒ 免检 1 欠 2，两桶互斥", req: [{ manifest: "M", id: "1", automatable: false }, { manifest: "M", id: "2" }, { manifest: "M", id: "3" }], ids: new Set(["M|1", "M|2", "M|3"]), rows: [], wantMissing: 2, wantExempt: 1, wantCovered: 0 },
   ];
-  for (const c of cases2.concat(cases3)) {
+  /* 下半场（漏盖 band）自己的样本：三个方向必须同时锁死——
+     · 没 band 的行一条也不认领，且被数出来（这是 exec-ws-tap-r8 那 145 行的原形状）；
+     · 同一批行盖上 real@ 就整批转成覆盖、漏盖归零（证明"隐身"的唯一成因就是缺字段）；
+     · 合法 mock@ 行既不认领也不算漏盖（不许把 4586 条 mock 行报成新红）。 */
+  const blCases = [
+    { n: "行缺 band⇒ 一条不认领（判据全欠），且漏盖被逐条数出来",
+      rows: [{ key: "M|1", band: "", identity: "A", status: "EXECUTED" }, { key: "M|1", band: "", identity: "guest", status: "EXECUTED" },
+             { key: "M|2", band: "", identity: "A", status: "EXECUTED" }, { key: "M|2", band: "", identity: "guest", status: "EXECUTED" },
+             { key: "M|3", band: "", identity: "guest", status: "FAILED" }, { key: "M|3", band: "", identity: "not-logged-in", status: "FAILED" }],
+      wantMissing: 3, wantExempt: 0, wantCovered: 0, wantBandlessRows: 6, wantBandlessCases: 3 },
+    { n: "同一批行只补上 real@⇒ 三条全转覆盖、漏盖归零（缺字段是唯一致盲原因）",
+      rows: [{ key: "M|1", band: "real@deadbeef", identity: "A", status: "EXECUTED" }, { key: "M|1", band: "real@deadbeef", identity: "guest", status: "EXECUTED" },
+             { key: "M|2", band: "real@deadbeef", identity: "A", status: "EXECUTED" }, { key: "M|2", band: "real@deadbeef", identity: "guest", status: "EXECUTED" },
+             { key: "M|3", band: "real@deadbeef", identity: "A", status: "FAILED" }, { key: "M|3", band: "real@deadbeef", identity: "not-logged-in", status: "FAILED" }],
+      wantMissing: 0, wantExempt: 0, wantCovered: 3, wantBandlessRows: 0, wantBandlessCases: 0 },
+    { n: "合法 mock@ 行⇒ 不算 real 覆盖、也不算漏盖（不许把 mock 波次报成新红）",
+      rows: [{ key: "M|1", band: "mock@f1c7b96b", identity: "A", status: "EXECUTED" }, { key: "M|1", band: "mock@f1c7b96b", identity: "guest", status: "EXECUTED" },
+             { key: "M|2", band: "mock@f1c7b96b", identity: "A", status: "EXECUTED" }, { key: "M|2", band: "mock@f1c7b96b", identity: "guest", status: "EXECUTED" },
+             { key: "M|3", band: "mock@f1c7b96b", identity: "A", status: "EXECUTED" }, { key: "M|3", band: "mock@f1c7b96b", identity: "guest", status: "EXECUTED" }],
+      wantMissing: 3, wantExempt: 0, wantCovered: 0, wantBandlessRows: 0, wantBandlessCases: 0 },
+    { n: "real 档但身份不是 A/B/guest（缺 identity 字段的形状）⇒ 仍不算覆盖",
+      rows: [{ key: "M|1", band: "real@deadbeef", identity: "?", status: "EXECUTED" }, { key: "M|2", band: "real@deadbeef", identity: "?", status: "EXECUTED" },
+             { key: "M|3", band: "real@deadbeef", identity: "?", status: "EXECUTED" }],
+      wantMissing: 3, wantExempt: 0, wantCovered: 0, wantBandlessRows: 0, wantBandlessCases: 0 },
+  ];
+  for (const c of cases2.concat(cases3, blCases)) {
     const R = reqOf(c);
     const m = judge(c.rows, R, c.ids || ids);
     const got = new Set([...m.neverOnReal, ...m.noA, ...m.noGuest]).size;
@@ -178,10 +224,14 @@ function selftest() {
     const ge = m.automatableExempt.length, gc = m.covered.length;
     if (c.wantExempt !== undefined && ge !== c.wantExempt) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} exempt=${ge} want=${c.wantExempt}`); }
     if (c.wantCovered !== undefined && gc !== c.wantCovered) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} covered=${gc} want=${c.wantCovered}`); }
-    /* 守恒在每个样本上都得成立：免检 + 覆盖 + 欠账 = 用例条数，一个都不许凭空消失或重复计。 */
+    /* 漏盖计数：行数与命中判据数两头都要对上，缺一项就报不出来。 */
+    if (c.wantBandlessRows !== undefined && m.bandless.rows !== c.wantBandlessRows) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 漏盖行=${m.bandless.rows} want=${c.wantBandlessRows}`); }
+    if (c.wantBandlessCases !== undefined && m.bandless.cases.size !== c.wantBandlessCases) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 漏盖判据=${m.bandless.cases.size} want=${c.wantBandlessCases}`); }
+    /* 守恒在每个样本上都得成立：免检 + 覆盖 + 欠账 = 用例条数，一个都不许凭空消失或重复计。
+       漏盖是**行轴**的读数，不参与这条等式（同一行既可能被认领也可能同时被数成漏盖）。 */
     if (ge + gc + got !== R.length) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 守恒 ${ge}+${gc}+${got}≠${R.length}`); }
   }
-  console.log(`REALCOV_SELFTEST=${bad === 0 ? "PASS" : "FAIL"} cases=${cases2.length + cases3.length} bad=${bad}`);
+  console.log(`REALCOV_SELFTEST=${bad === 0 ? "PASS" : "FAIL"} cases=${cases2.length + cases3.length + blCases.length} bad=${bad}`);
   process.exit(bad === 0 ? 0 : 1);
 }
 if (process.argv.includes("--selftest")) selftest();
@@ -207,6 +257,24 @@ for (const k of m.noA.slice(0, 6)) console.log("  NO_A_JUDGED " + k);
 for (const k of m.noGuest.slice(0, 6)) console.log("  NO_GUEST_JUDGED " + k);
 const uncovered = new Set([...m.neverOnReal, ...m.noA, ...m.noGuest]).size;
 const coveredN = m.covered.length;
+/* 下半场（漏盖 band 的行）：认领靠 band，读不出 band 的行就是"扫到了但一条也认领不了"。
+   以前这一格是空的——门不吭声，整类证据（backend 字段没有门对应物那一类）就此隐身。
+   口径：① rows 数的是本门真会去看的那些行（key 命中 requiresReal），② 同时给全扫描的漏盖数与
+   所属目录，③ **不进 ok 的判据**（今天 4586 条合法 mock 行都带 band，漏盖只可能来自忘盖的生产者；
+   把它做成常红判点，就重犯了上面注释里"永久红的门最后会被绕过去"那条错）。 */
+const bandlessAll = rows.filter((r) => !r.band);
+const inIdsRows = rows.filter((r) => ids.has(r.key));
+const bl = m.bandless;
+const blDir = new Map();
+for (const r of bandlessAll) blDir.set(r.dir, (blDir.get(r.dir) || 0) + 1);
+console.log(`REALCOV_BANDLESS_ROWS=${bl.rows}（在本门会看的 ${inIdsRows.length} 行里）REALCOV_BANDLESS_CASES=${bl.cases.size} REALCOV_BANDLESS_SCANNED=${bandlessAll.length}／${rows.length} 全扫描行`);
+if (bandlessAll.length) {
+  console.log(`  BANDLESS 出处 ${[...blDir].map(([d, n]) => d + "=" + n).join(" ")}（这些行的 band 字段缺失 ⇒ 无论档位是 mock 还是 real，本门一律无法认领；盖法见 r-exec-cli.mjs:176 与 r-exec-ws.mjs 的 mkRow/BAND_STR，格式 mode@sha8，判点即上面的 REAL_BAND）`);
+  const BL_PRINT = 12;
+  for (const [k, n] of [...bl.cases].sort((a, b) => b[1] - a[1]).slice(0, BL_PRINT)) console.log(`  BANDLESS ${k} 漏盖行=${n}`);
+  if (bl.cases.size > BL_PRINT) console.log(`  BANDLESS …另 ${bl.cases.size - BL_PRINT} 条判据未逐条点名（总数已计入 REALCOV_BANDLESS_CASES）`);
+  console.log(`  BANDLESS_HINT 这不是欠账新增（欠账仍按 real 档的行算），是生产者的字段缺失；修法是让那条腿盖上 band 再重跑，别把 mock 行改成 real 来"补数"`);
+}
 console.log(`REALCOV_COVERED=${coveredN}`);
 console.log(`REALCOV_UNCOVERED=${uncovered}／${req.length}（阈值同旧：非免检欠账 =0 才绿）`);
 const sum = exemptN + coveredN + uncovered;

@@ -26,7 +26,7 @@
  *   #   --abort-after 3                        连续 N 个页组同因开页失败就早停（0=关掉早停）
  */
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, statSync, rmSync } from "node:fs";
-import { join, dirname, relative } from "node:path";
+import { join, dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
@@ -36,6 +36,14 @@ import { guardUiLease } from "./ui-lease.mjs";
    即"配置文件存在但这个消费者不认它"。 */
 import { readIdePort } from "./ide-port-config.mjs";
 const IDE_WS_PORT = readIdePort().port;
+/* 档位读法与 r-exec-cli.mjs:26/35、ws-channel-up.mjs:33、artifact-band.mjs 自己是同一份实现：
+   问的都是 "--project 那包在盘的 config/env.js 声明了哪一档"。
+   为什么这条腿也必须问（2026-09-28 实测）：本腿产出的行此前一个 band 字段都没有，
+   于是 round-8 那条完整且可采信的 145 行 WS 波次（exec-ws-tap-r8，admissible=yes、
+   outcome=measured）被 verify-real-coverage.mjs 扫到（EXEC_ROWS 计入）却一条也认领不了
+   ——门只认 /^real(@|$)/ 的 band，没有 band 的行落在"既不算覆盖、也不算欠账"的暗面。
+   "backend 字段没有门那边对应物"这一整类证据就这样隐身。 */
+import { readApiMode } from "./artifact-band.mjs";
 
 const require = createRequire(import.meta.url);
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -95,10 +103,16 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
    口径沿用仓里已有的两句话：artifact-band.mjs:70「就只能记 NOT_SHOOTABLE，不许记成产品 FAILED」
    / r-exec-cli.mjs:302「一行都不跑（跑出来的落点红不可采信）」。 */
 
-/* 行形状（本腿唯一的生产者）：字段名与 r-exec-cli 对齐，落账的就是这些。 */
-export function row(manifest, page, c, status, route, reason, observed, evid, miss) {
+/* 行形状（本腿唯一的生产者）：字段名与 r-exec-cli.mjs:173-182 对齐，落账的就是这些。
+   band 是第 10 个**入参**而不是在函数里读模块级常量：这个函数住在 WSX-GATE 区，
+   离线夹具（.zcode/tmp/gap-wsx/gate-harness.mjs:24-26）把该区原文字节切出来按 data-URL import，
+   读一次模块级 BAND 就会让那段自成一个模块、直接 ReferenceError（:88 的"纯函数"约束就断了）。
+   缺省成空串而不是某个"看起来对"的档位：忘了传就等于没盖，门那边会把它数成漏盖（见
+   verify-real-coverage.mjs 的 REALCOV_BANDLESS_ROWS），不给一个假的 real。 */
+export function row(manifest, page, c, status, route, reason, observed, evid, miss, band) {
   return {
     suite: "C-" + manifest, manifest, id: c.id, page, tier: c.tier || "normal",
+    band: band || "",
     requiresReal: c.requiresReal === true, title: String(c.title || "").slice(0, 160),
     status, observed: observed || "", missingEvidence: miss || [], failureReason: reason || "",
     route: route || "", toast: "", console: "", evidence: evid || "", durationMs: 0, transport: "ws+cli-shot",
@@ -207,7 +221,43 @@ export function failReasonOf(err, budget = REASON_BUDGET) {
    最坏静置 45+2×8=61s，占这条腿 120min 预算（ui-queue.round8-stage8.json 的 timeoutMin）的 0.85%，
    换来的是不再把 145 行同一条不可采信 reason 落进账本。 */
 export const OPEN_POLICY = { firstAttempts: 6, firstWaitMs: 9000, attempts: 3, waitMs: 4000, abortAfterGroups: 3 };
+/* 盘上行级 band 的清点（纯函数，只描述事实、不判档位好坏）：
+   "哪一档"的判定权只留给门（verify-real-coverage.mjs:82 的 REAL_BAND）与执行旗标，
+   这里若再写一份 /^real/ 就出现两个说了算的地方，口径迟早分家。
+   rows 里可能含上一腿 merge 进来的旧行 ⇒ 统计的是盘面事实，不是本腿产量。 */
+export function bandCensus(rows) {
+  const byBand = {};
+  let missing = 0;
+  for (const r of rows || []) {
+    const b = String((r && r.band) || "");
+    if (!b) { missing++; continue; }
+    byBand[b] = (byBand[b] || 0) + 1;
+  }
+  const kinds = Object.keys(byBand).sort();
+  return { byBand, kinds, missing };
+}
 /* WSX-GATE-END */
+
+/* 载体指纹（本腿的行级 band 从这来）：与 r-exec-cli.mjs:35/176 同一份读法、同一个格式
+   `(BAND.mode || "?") + "@" + (BAND.sha8 || "?")`，读的也是同一个 artifact-band.mjs:14。
+   两个数要说清楚：mode = --project 那包在盘 config/env.js 的 VITE_API_MODE；
+   sha8 = artifact-band.mjs:22 对那份 env.js **字节的 sha256 前 8 位**（产物配置的内容哈希），
+   它不是 git sha——本文件上面的 GIT_SHA 才是仓库 sha，两个数各管各的，不许混。
+   档位只从 --project 读，绝不按旗标猜：`--real` 决定的是跑不跑 requiresReal 那批，
+   它改不了在盘的是哪一档。把旗标当档位写进账，就是门那边最坏的一种数据——
+   一行声称 real、实际跑在 mock 载体上（ws-channel-up.mjs:96-100 的 round-8b 事故
+   就是这个形状：real 标签 × mock 画面）。 */
+const BAND = readApiMode(resolve(PROJECT));
+const BAND_STR = (BAND.mode || "?") + "@" + (BAND.sha8 || "?");
+/* row() 住在 GATE 区、必须保持纯（见那里的注释），所以档位由这里注入。
+   本腿生产行的唯一入口就是这个包装；再出现裸 row(...) 调用就是漏盖，会被门数出来。 */
+const mkRow = (...a) => row(...a, BAND_STR);
+/* 旗标 ↔ 档位的两种错配，都只报不改（改执行语义是设备腿的事，离线不许动）：
+   · --real 而产物声明非 real ⇒ 这一腿跑的是 mock 载体上的"真实用例"，行仍按 real=false 的档位入账；
+   · 产物声明 real 而没带 --real ⇒ requiresReal 整批会被记 SKIPPED
+     （r-exec-cli.mjs:686 对同款形状直接判红）。 */
+const BAND_FLAG_CONFLICT = REAL_MODE && BAND.mode !== "real";
+const BAND_FLAG_UNSERVED = !REAL_MODE && BAND.mode === "real";
 
 /* 就绪/重试/早停的 argv 口径：默认值直接取自 GATE 区的 OPEN_POLICY（同一份数，不另立一套），
    数值理由见那里的注释。桥侧开页在窗口启动期间必然 "timeout waiting for automator response"，
@@ -370,22 +420,22 @@ async function runTapCase(name, page, c, route, cls) {
   const actionText = String(c.action || "");
   const targets = classesOf(actionText);
   if (DENY_TAP.test(actionText)) {
-    return { bucket: "tapDeny", row: row(name, page, c, "SKIPPED", route, "动作命中不可逆清单（注销/解绑/清空/登出）⇒ 禁触，否则后面几百条共用的会话会被打掉", "top=" + route + " | deny-tap | action=" + actionText.slice(0, 60)) };
+    return { bucket: "tapDeny", row: mkRow(name, page, c, "SKIPPED", route, "动作命中不可逆清单（注销/解绑/清空/登出）⇒ 禁触，否则后面几百条共用的会话会被打掉", "top=" + route + " | deny-tap | action=" + actionText.slice(0, 60)) };
   }
   if (!targets.length) {
-    return { bucket: "tapNoTarget", row: row(name, page, c, "SKIPPED", route, "交互动词但 action 里没点名可点元素（没有 selector 就没法把这次点击归属到某个东西）⇒ 待把判据收紧", "top=" + route + " | dom: (action 无类名) | tap-skipped") };
+    return { bucket: "tapNoTarget", row: mkRow(name, page, c, "SKIPPED", route, "交互动词但 action 里没点名可点元素（没有 selector 就没法把这次点击归属到某个东西）⇒ 待把判据收紧", "top=" + route + " | dom: (action 无类名) | tap-skipped") };
   }
   const sel = targets[0];
   const pre = await probeSet(await wsPage(), [sel]);
   if (pre.map[sel] !== "absent" && String(pre.map[sel]).startsWith("present") === false) {
-    return { bucket: "tapNoTarget", row: row(name, page, c, "SKIPPED", route, "目标元素探针无答案（" + pre.map[sel] + "）⇒ 通道没准备好，不盲点", "top=" + route + " | pre: " + sel + ":" + pre.map[sel] + " | tap-skipped") };
+    return { bucket: "tapNoTarget", row: mkRow(name, page, c, "SKIPPED", route, "目标元素探针无答案（" + pre.map[sel] + "）⇒ 通道没准备好，不盲点", "top=" + route + " | pre: " + sel + ":" + pre.map[sel] + " | tap-skipped") };
   }
   if (pre.map[sel] === "absent") {
-    return { bucket: "tapNoTarget", row: row(name, page, c, "SKIPPED", route, "目标元素 " + sel + " 当前不在页上（可能要先展开/滚动/登录态）⇒ 不盲点，待补前置态", "top=" + route + " | pre: " + sel + ":absent | tap-skipped") };
+    return { bucket: "tapNoTarget", row: mkRow(name, page, c, "SKIPPED", route, "目标元素 " + sel + " 当前不在页上（可能要先展开/滚动/登录态）⇒ 不盲点，待补前置态", "top=" + route + " | pre: " + sel + ":absent | tap-skipped") };
   }
   const t = await wsTap(sel);
   if (t !== "tapped") {
-    return { bucket: "tapFail", row: row(name, page, c, "SKIPPED", route, "tap 未成功：" + String(t) + " ⇒ 通道/元素问题，不算交互失败也不算通过", "top=" + route + " | tap=" + String(t) + " | tap-skipped") };
+    return { bucket: "tapFail", row: mkRow(name, page, c, "SKIPPED", route, "tap 未成功：" + String(t) + " ⇒ 通道/元素问题，不算交互失败也不算通过", "top=" + route + " | tap=" + String(t) + " | tap-skipped") };
   }
   await sleep(TAP_SETTLE);
   const routeAfter = String((await wsRoute()) || "");
@@ -395,9 +445,9 @@ async function runTapCase(name, page, c, route, cls) {
   const observed = "top=" + routeAfter + (routeAfter !== route ? "（点击后从 " + route + " 变了）" : "") +
     " | tap=" + sel + " | dom: " + all.map((s) => s + ":" + (post.map[s] || "no-answer")).join(" ") + " | post-tap";
   if (!evid) {
-    return { bucket: "tapNoFrame", row: row(name, page, c, "SKIPPED", routeAfter, "点击后出帧失败（miss=" + miss.join(";") + "）⇒ 交互型没有帧就不算证据", observed, "", miss) };
+    return { bucket: "tapNoFrame", row: mkRow(name, page, c, "SKIPPED", routeAfter, "点击后出帧失败（miss=" + miss.join(";") + "）⇒ 交互型没有帧就不算证据", observed, "", miss) };
   }
-  return { bucket: "executed", row: row(name, page, c, "EXECUTED", routeAfter, "", observed, evid, miss) };
+  return { bucket: "executed", row: mkRow(name, page, c, "EXECUTED", routeAfter, "", observed, evid, miss) };
 }
 
 if (!existsSync(join(PROJECT, "app.json"))) { console.log("WSX_RESULT=FAIL reason=--project 不是已编译产物：" + PROJECT); process.exit(2); }
@@ -430,7 +480,13 @@ function flush(cls) {
      没有分类结果（增量落盘/异常收尾）就绝不自称跑完。 */
   const note = cls ? cls.runnerNote : "，增量落盘";
   try {
-    writeFileSync(RES, JSON.stringify({ round: LABEL, gitSha: GIT_SHA, identity: IDENTITY, loginVerify: LOGIN_VERIFY, updatedAt: new Date().toISOString(),
+    writeFileSync(RES, JSON.stringify({ round: LABEL, gitSha: GIT_SHA, identity: IDENTITY,
+      /* 文件级也留一份档位与出处（口径同 r-exec-cli.mjs:347/699）：行级 band 是门的认领依据，
+         文件级 project 让事后的人能拿 sha8 回到那包 env.js 复核——不然这个数只是一个猜不透的哈希。
+         注意 merge 进来的上一腿旧行**不会被这里改写**：band 只在 row() 生产那一刻盖，
+         补跑/续跑把历史行的档位刷成本腿的档位，就等于伪造证据。 */
+      project: relOf(resolve(PROJECT)), band: BAND_STR,
+      loginVerify: LOGIN_VERIFY, updatedAt: new Date().toISOString(),
       admissible: cls ? cls.admissible : null, outcome: cls ? cls.outcome : null,
       runner: "scripts/qa/r-exec-ws.mjs（WS 取证 + 桥出帧" + note + "）", results: [...m2.values()] }, null, 1));
   } catch (e) { console.log("WSX_FLUSH_ERR " + String(e.message).slice(0, 80)); }
@@ -491,6 +547,19 @@ async function main() {
   /* WS 通道与 CLI 桥驱动的是同一台模拟器：并发不报错，只互相换页 ⇒ 排队用同一把租约。 */
   guardUiLease({ owner: "r-exec-ws-" + LABEL, tag: "WSX_LEASE", failTag: "WSX" });
   console.log("[boot] sha=" + GIT_SHA + " project=" + relOf(PROJECT) + " transport=ws-route+ws-probe+cli-shot");
+  /* 档位自证：开跑前就把"这一腿的每一行会盖成什么 band、这个数是从哪个文件读的"打出来。
+     门那边按 band 认领覆盖（verify-real-coverage.mjs:82 /^real(@|$)/），所以这行字就是
+     本腿能不能入账的预告，不等跑完 90 分钟才发现 145 行全是白跑的（exec-ws-tap-r8 的形状）。 */
+  console.log("WSX_BAND_STAMP band=" + BAND_STR + " 读自=" + relOf(BAND.envFile) +
+    " 声明档位=" + (BAND.mode || "(env.js 读不到)") + " viteMode=" + (BAND.viteMode || "(读不到)") +
+    " 旗标--real=" + (REAL_MODE ? "on" : "off") + "（sha8 是这份 env.js 的内容哈希，不是 git sha=" + GIT_SHA + "）");
+  if (!BAND.mode) console.log("WSX_BAND_WARN 读不到 VITE_API_MODE ⇒ 每行盖成 " + BAND_STR +
+    "，门的 real 认领与 mock 认领都不会算它（宁可无档位，不猜档位；artifact-band.mjs:13 同口径）");
+  if (BAND_FLAG_CONFLICT) console.log("WSX_BAND_WARN 旗标与载体不符：--real 承诺跑 requiresReal 那批，" +
+    "而 --project 那包声明的是 " + (BAND.mode || "读不到") + " 档 ⇒ 行仍按 " + BAND_STR + " 入账（以载体为准），" +
+    "这一腿量到的不是真实模式，门不会认它；要真实模式的证据只能换 --project apps/client/dist/build/mp-weixin-real 重跑");
+  if (BAND_FLAG_UNSERVED) console.log("WSX_BAND_WARN 载体是 real 档（" + BAND_STR + "）但没带 --real ⇒ requiresReal 整批记 SKIPPED；" +
+    "那条跳过原因写的「本切片只跑 mock 产物」在这条腿上不成立（同款事故见 r-exec-cli.mjs:36-41），别拿这句当结论");
   const r0 = await wsRoute();
   if (r0 === undefined) { console.log("WSX_RESULT=FAIL reason=WS 通道连不上；先跑 node scripts/qa/ws-channel-up.mjs（别用 close()）"); process.exit(2); }
   console.log("[boot] ws 当前页=" + r0);
@@ -615,7 +684,7 @@ async function main() {
         /* 原因保尾（缺陷②）：failReasonOf 掐掉命令回显、把 stdout/stderr 里的真原因留住，
            不再 slice(0,70) 把 145 行的 reason 截在半条 exe 路径上。 */
         const reason = "open_page 失败（重试 " + attempts + " 次仍失败）：" + failReasonOf(openErr);
-        for (const c of todo) rows.push(row(name, page, c, "FAILED", "", reason, ""));
+        for (const c of todo) rows.push(mkRow(name, page, c, "FAILED", "", reason, ""));
         stats.failed += todo.length;
         flush();
         if (v.abort) {
@@ -644,14 +713,14 @@ async function main() {
           " | ws-route+ws-probe" + (pr.broken ? " | probe-broken" : "");
         if (c.requiresReal === true && !REAL_MODE) {
           stats.skipReal++;
-          rows.push(row(name, page, c, "SKIPPED", route, "requiresReal ⇒ 本切片只跑 mock 产物", observed));
+          rows.push(mkRow(name, page, c, "SKIPPED", route, "requiresReal ⇒ 本切片只跑 mock 产物", observed));
         } else if (routeOk === false) {
           stats.failed++;
-          rows.push(row(name, page, c, "FAILED", route, "落在别的页（页内守卫或路由重定向），须人判（跑 scripts/qa/triage-cold-entry.mjs 可定位到具体守卫行）", observed));
+          rows.push(mkRow(name, page, c, "FAILED", route, "落在别的页（页内守卫或路由重定向），须人判（跑 scripts/qa/triage-cold-entry.mjs 可定位到具体守卫行）", observed));
         } else if (TAP_RE.test(String(c.action || ""))) {
           if (!TAP_MODE) {
             stats.skipTap++;
-            rows.push(row(name, page, c, "SKIPPED", route, "action 含交互动词 ⇒ 未开 --tap，交互型留待下一刀", observed));
+            rows.push(mkRow(name, page, c, "SKIPPED", route, "action 含交互动词 ⇒ 未开 --tap，交互型留待下一刀", observed));
           } else {
             const r = await runTapCase(name, page, c, route, cls);
             if (r.bucket !== "executed") stats[r.bucket]++; else stats.executed++;
@@ -659,10 +728,10 @@ async function main() {
           }
         } else if (!cls.length && !FRAME_RE.test(String(c.evidence || ""))) {
           stats.skipNoCrit++;
-          rows.push(row(name, page, c, "SKIPPED", route, "判据未点名可观测物件（既无类名也不要求出帧）⇒ 没有可判的东西，不能记 EXECUTED", observed));
+          rows.push(mkRow(name, page, c, "SKIPPED", route, "判据未点名可观测物件（既无类名也不要求出帧）⇒ 没有可判的东西，不能记 EXECUTED", observed));
         } else if (!routeKnown) {
           stats.skipRoute++;
-          rows.push(row(name, page, c, "SKIPPED", route, "WS currentPage() 没给结果 ⇒ 不知是否已在 " + page + "，答案无法归属，待重跑", observed));
+          rows.push(mkRow(name, page, c, "SKIPPED", route, "WS currentPage() 没给结果 ⇒ 不知是否已在 " + page + "，答案无法归属，待重跑", observed));
         } else {
           const miss = [];
           let evid = "";
@@ -678,10 +747,10 @@ async function main() {
           const answered = cls.filter((s) => verdictOf(dom[s]) !== "no-answer");
           if (!evid && !answered.length) {
             stats.skipMiss++;
-            rows.push(row(name, page, c, "SKIPPED", route, "出帧失败且探针无有效答案（miss=" + miss.join(";") + "）⇒ 不记 EXECUTED", observed, "", miss));
+            rows.push(mkRow(name, page, c, "SKIPPED", route, "出帧失败且探针无有效答案（miss=" + miss.join(";") + "）⇒ 不记 EXECUTED", observed, "", miss));
           } else {
             stats.executed++;
-            rows.push(row(name, page, c, "EXECUTED", route, "", observed, evid, miss));
+            rows.push(mkRow(name, page, c, "EXECUTED", route, "", observed, evid, miss));
           }
         }
         if (--budget <= 0) { stopped = true; break; }
@@ -709,6 +778,15 @@ async function main() {
   const st = {};
   for (const r of all) st[r.status] = (st[r.status] || 0) + 1;
   console.log("WSX_STATUS_ALL " + Object.keys(st).sort().map((k) => k + "=" + st[k]).join(" "));
+  /* 档位清点（与 r-exec-cli.mjs:653-659 的 RUNNER_FILE_BANDS/RUNNER_MIXED 同一件事）：
+     本腿新行必须 100% 盖上带；漏盖（missing>0）就是上面那条注释说的"裸 row() 调用"，
+     门那边会把同样的行数计进 REALCOV_BANDLESS_ROWS，所以这里不能装看不见。 */
+  const cNew = bandCensus(rows), cAll = bandCensus(all);
+  console.log("WSX_FILE_BANDS 本腿新行=" + rows.length + " 已盖=" + (rows.length - cNew.missing) + " 漏盖=" + cNew.missing +
+    " 本腿档位=" + (cNew.kinds.map((b) => b + "=" + cNew.byBand[b]).join(" ") || "(全无)") +
+    " 盘上全部档位=" + (cAll.kinds.map((b) => b + "=" + cAll.byBand[b]).join(" ") || "(全无)") + " 盘上漏盖=" + cAll.missing);
+  if (cNew.missing) console.log("WSX_BAND_UNSTAMPED " + cNew.missing + " 条新行没有 band ⇒ 这一腿对档位门完全不可见（本轮 145 行的原案），先修生产者再谈结论");
+  if (cNew.kinds.length > 1) console.log("WSX_MIXED_BAND 本腿新行跨 " + cNew.kinds.join(",") + " 两档以上 ⇒ 同一腿里换过产物，档位不同的行不能互相复验，须按档位分别重跑");
   console.log("WSX_EVIDENCE_HOLE " + holes.length + (holes.length ? " 条：" + holes.slice(0, 8).map((r) => r.manifest + "/" + r.id).join(",") : ""));
   batch.lines.forEach((l) => console.log(l));
   if (!batch.admissible) {
