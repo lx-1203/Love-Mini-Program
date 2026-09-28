@@ -1,0 +1,48 @@
+{
+ "$schema": "run-ui-queue.mjs --legs <本文件>；腿按顺序串行，第一条非 advisory 红就停并把剩下的记成 NOT_RUN。这是 round-8 stage-8 的补刀队列（wstap），只补 ws-component-scoped-r8 那一刀没点的交互半边，不重建产物、不换档、不动语料。",
+ "$why": "stage-8 的 ws-component-scoped-r8 是 observe-only 跑的：那条腿没带 --tap，于是 145 条组件作用域判据里的交互型用例（实测 75 条 reason='action 含交互动词 ⇒ 未开 --tap，交互型留待下一刀'）一条都没真点，收尾门 triage-ws-component-scoped-r8 因此 exit 2（分诊实测 unclassified=76，全来自这批'含交互动词但这一刀不点'的行 + 1 条落点探针无答案）。执行器自己也把这一批自描述成 WSX_SCOPE=observe-only（交互型与 requiresReal 未跑；这不是一轮完整的执行轮）。本队列把缺的那把 tap 刀补上：同一 --ids-file、同一 identity A、同一 round-7，只加 --tap，输出落到新的 exec-ws-tap-r8 目录（不复用 observe-only 那一刀的账，也不写回任何旧腿目录）。",
+ "$hold": "开跑前确认 heldLeases() 为空（本机当前唯一允许使用微信开发者工具的进程就是这一队列）；确认 WS 采集通道（自动化端口）已经架在 mock 档实例上；不重建三档产物、不改 ops 语料与戳（另两个在途 agent 今天不许把语料戳改动，本队列也不得触发 stamp --write）。",
+ "legs": [
+  {
+   "name": "ws-channel-up-wstap-r8",
+   "file": "scripts/qa/ws-channel-up.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin"
+   ],
+   "timeoutMin": 12,
+   "why": "r-exec-ws 自己的失败口径就写着「WS 通道连不上 ⇒ 先跑 ws-channel-up.mjs，且绝不 close()（close 会把自动化端口的 IDE 子进程整个带走）」。这条只 connect+只读自检（currentPage + $$ 探针），不开页、不出帧、不取租约。FU-8b-3 之后它的 ALREADY_UP 分支会用 bandVerdict 断言端口上活着的实例是不是本腿要的档位：本机实测端口上的 mock 实例经应用内 require(config/env.js) 自报 apiMode=mock，与本 --project 的期望档一致 ⇒ 判 match、exit 0。不加 WSX_ALLOW_UNVERIFIED_BAND 兜底旗标（证据既然 match，放行旗标只会把这条断言重新变哑）。"
+  },
+  {
+   "name": "open-window-mock-wstap-r8",
+   "file": "scripts/qa/open-project-window.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin",
+    "--settle",
+    "24"
+   ],
+   "timeoutMin": 14,
+   "why": "换/接回设备档位必须先开窗并验它真活了：窗口停在别的档时 WS 腿第一次 simulator_open_page 就会 transport 超时，看着像'通道坏了'。open-project-window 的 live()（路由非空）是本仓唯一的窗口活着判据，--settle 24 给足冷启动时间，紧接着的 WS 腿量的才是改后 mock 产物。"
+  },
+  {
+   "name": "exec-ws-tap-r8",
+   "file": "scripts/qa/r-exec-ws.mjs",
+   "args": [
+    "--ids-file",
+    "reports/audit/round-7/ids-component-scoped.json",
+    "--project",
+    "apps/client/dist/build/mp-weixin",
+    "--out",
+    "reports/audit/round-7/exec-ws-tap-r8",
+    "--identity",
+    "A",
+    "--round",
+    "round-7",
+    "--tap"
+   ],
+   "timeoutMin": 120,
+   "why": "这就是缺失的那把 tap 刀：与 observe-only 那一刀同 --ids-file（145 条组件作用域名单）、同 identity A、同 round-7，唯一差别是加了 --tap（r-exec-ws.mjs 的旗标名是 flag('tap')，读码确认；--tap-settle 有默认 1400ms 非必需，--real 不采——本刀跑 mock 档，requiresReal 那 31 条仍按 skipReal 记账，留待真实档腿）。加了 --tap 后交互型走 runTapCase：真点目标元素、等稳定、重问判点、必出一帧，能点的落 EXECUTED、点不动的落 tapNoTarget/tapFail/tapNoFrame 并写清原因；那句只在 !TAP_MODE 才产生的 '未开 --tap' observe-only 口径从此不可能再现。--out 指到全新的 exec-ws-tap-r8（exec- 前缀让 verify-real-coverage.mjs 的目录扫描认得到这一程，而不是把它当非执行目录忽略）。名单守恒由这条腿自断言（名单=遇上=盘上有行），被截停会另打 WSX_IDS_PARTIAL 而不是假装跑完。"
+  }
+ ]
+}

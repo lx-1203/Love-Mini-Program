@@ -14,9 +14,11 @@
  * 反向保护：状态格里已有去向括注（含「」）的行不重复追加；桶=两载体都没有 且状态=已修复待复验 的行
  * 只记冲突不降级（降级是另一件事，交人判）。扫描集为空一律 exit 2。
  * 用法：node scripts/qa/land-verdicts-into-ledger.mjs [--apply] [--verdicts <f>] [--ledger <f>]
+ * 沙箱：--ledger 即沙箱锚点。传 --ledger 指向副本时，备份与发布件 fixwave-verdicts.json 一并收进
+ *   该副本所在目录；不传 --apply 则任何地方都不落盘；落盘前逐条断言路径在沙箱内，越界即拒写（exit 2）。
  */
 import { readFileSync, writeFileSync, existsSync, copyFileSync } from "node:fs";
-import { join, resolve, dirname, relative, sep } from "node:path";
+import { join, resolve, dirname, relative, sep, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -38,6 +40,23 @@ const COL_STATUS = 6, COL_EVID = 8, COL_STAT_EVID = 9;
 
 const vPath = resolve(REPO, VERDICTS), lPath = resolve(REPO, LEDGER);
 if (!existsSync(vPath) || !existsSync(lPath)) { console.log(`LAND_RESULT=FAIL reason=读不到输入（${VERDICTS} / ${LEDGER}）`); process.exit(2); }
+/* 沙箱诚实性（round-6 实测踩过的坑）：所有落盘都必须收进「--ledger 所在目录」这一沙箱里。
+   台账被 --ledger 指到副本时，备份与发布件 fixwave-verdicts.json 也必须跟着进沙箱目录，
+   否则「对副本 dry-run/apply」会偷偷覆盖 reports/ 里已发布的证据（原实现把 PUB 硬编码到 live reports/，
+   完全不受 --ledger 约束 ⇒ 一次号称安全的排练毁掉了一份真证据）。
+   不传 --ledger 时 SANDBOX_DIR 就是权威台账所在目录（reports/audit/round-6），
+   PUB 逐字等于历史硬编码值 ⇒ 真 --apply 写的还是那三个真文件，行为不变。 */
+const SANDBOX_DIR = dirname(lPath);
+const PUB = join(SANDBOX_DIR, "fixwave-verdicts.json");
+const BACKUP = lPath + ".pre-verdictland.bak";
+const isInside = (root, target) => { const relp = relative(resolve(root), resolve(target)); return relp === "" || (!relp.startsWith("..") && !isAbsolute(relp)); };
+function assertInSandbox(target, label) {
+  if (!isInside(SANDBOX_DIR, target)) {
+    console.log(`LAND_RESULT=FAIL reason=这一路径不受 --ledger 约束，拒写：${label}=${rel(resolve(target))} 落在沙箱目录 ${rel(SANDBOX_DIR)} 之外（请用 --ledger 指向沙箱内台账，所有落盘须随之收进沙箱）`);
+    process.exit(2);
+  }
+}
+console.log(`LAND_TARGETS ledger=${rel(lPath)} publish=${rel(PUB)} backup=${rel(BACKUP)}${process.argv.includes("--ledger") ? " [沙箱=--ledger 所在目录]" : " [默认 live 路径]"}`);
 const vj = JSON.parse(readFileSync(vPath, "utf8"));
 const items = Array.isArray(vj.items) ? vj.items : [];
 if (!items.length) { console.log("LAND_RESULT=FAIL reason=判据台条目为 0（扫描集为空不得改台账）"); process.exit(2); }
@@ -149,13 +168,17 @@ if (malformed.length) {
    判据用 seenIds——只有真匹配到台账行才算"看过了"。 */
 if (!seenIds.size) { console.log(`LAND_RESULT=FAIL reason=判据台 ${items.length} 条里一条都没匹配到台账行（扫描集/规则不匹配，不得空过）`); process.exit(2); }
 if (!rowsTouched) { console.log(`LAND_RESULT=PASS-NOOP 已核 ${seenIds.size} 行、无需改动（推进/去向/冲突标注都为 0）`); process.exit(0); }
-if (!APPLY) { console.log(`LAND_RESULT=DRY 将改 ${rowsTouched} 行（加 --apply 落盘，落盘前自动备份 .pre-verdictland.bak）`); process.exit(0); }
-copyFileSync(lPath, lPath + ".pre-verdictland.bak");
+if (!APPLY) { console.log(`LAND_RESULT=DRY 将改 ${rowsTouched} 行（加 --apply 落盘，落盘前自动备份 ${rel(BACKUP)}）`); process.exit(0); }
+/* 落盘前逐条断言：任何不受 --ledger 沙箱约束的路径一律拒写，绝不"顺手写到 reports/"。 */
+assertInSandbox(lPath, "ledger");
+assertInSandbox(BACKUP, "backup");
+assertInSandbox(PUB, "publish");
+copyFileSync(lPath, BACKUP);
 writeFileSync(lPath, lines.join("\n"));
 /* 台账格子里指向的那个文件必须在仓库里能打开：判据台的原始输出落在被 gitignore 的 .zcode/tmp，
-   "证据写在没人能重跑的地方"是本轮公开批评过的同一类失败，所以顺手拷一份到 reports/ 下。 */
-const PUB = join(REPO, "reports", "audit", "round-6", "fixwave-verdicts.json");
+   "证据写在没人能重跑的地方"是本轮公开批评过的同一类失败，所以顺手拷一份——
+   但拷进沙箱目录（跟随 --ledger），不再硬编码到 live reports/。 */
 writeFileSync(PUB, JSON.stringify({ copiedFrom: rel(vPath), copiedAt: new Date().toISOString(), meta, summary: vj.summary || null, items }, null, 1));
 console.log(`LAND_COPY_WRITTEN=${rel(PUB)} items=${items.length}`);
-console.log(`LAND_WRITTEN=${rel(lPath)} rows=${rowsTouched} backup=${rel(lPath)}.pre-verdictland.bak`);
+console.log(`LAND_WRITTEN=${rel(lPath)} rows=${rowsTouched} backup=${rel(BACKUP)}`);
 console.log("LAND_RESULT=OK");

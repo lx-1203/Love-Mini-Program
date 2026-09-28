@@ -1,0 +1,48 @@
+{
+ "startedAt": "2026-09-28T02:31:48.701Z",
+ "legs": [
+  {
+   "name": "ws-channel-up-wstap-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8c-wstap/ws-channel-up-wstap-r8.log",
+   "bytes": 926,
+   "resultLines": [
+    "WS_UP_BAND_RESULT=match exit=0"
+   ]
+  },
+  {
+   "name": "open-window-mock-wstap-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8c-wstap/open-window-mock-wstap-r8.log",
+   "bytes": 533,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-ws-tap-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8c-wstap/exec-ws-tap-r8.log",
+   "bytes": 13575,
+   "resultLines": [
+    "WSX_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r-exec-ws-round-7",
+    "WSX_RESULT=OK"
+   ]
+  }
+ ],
+ "result": "OK",
+ "advisoryFail": 0,
+ "finishedAt": "2026-09-28T02:40:38.379Z",
+ "conservation": {
+  "legsTotal": 3,
+  "legsOk": 3,
+  "tally": {
+   "OK": 3
+  },
+  "ok": true
+ }
+}
