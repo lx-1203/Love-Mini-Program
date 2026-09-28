@@ -14,7 +14,8 @@
  * 用法：node scripts/qa/triage-exec-failures.mjs \
  *         [--results reports/audit/round-6/interact/exec-results.json] \
  *         [--dist apps/client/dist/build/mp-weixin] [--src apps/client/src] \
- *         [--out .zcode/tmp/triage-r6] [--ops reports/audit/round-6/ops]
+ *         [--out .zcode/tmp/triage-r6] [--ops reports/audit/round-6/ops] \
+ *         [--dead-selectors scripts/qa/cellplan-round7-deadselectors.json]
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -37,7 +38,7 @@ const OUT = OUT_RAW || ".zcode/tmp/triage-" + path.basename(String(RESULTS)).rep
 if (!OUT_RAW) console.log("TRIAGE_OUT_DERIVED out=" + OUT + "（没给 --out ⇒ 按语料名派生，避免把新轮次写进旧轮次的文件名）");
 
 {
-  const KNOWN = ["results", "dist", "src", "out", "guest-book", "guest-measured", "ops"];
+  const KNOWN = ["results", "dist", "src", "out", "guest-book", "guest-measured", "ops", "dead-selectors"];
   const bad = process.argv.slice(2).filter((a) => a.startsWith("--") && !KNOWN.includes(a.slice(2)));
   if (bad.length) { console.log("TRIAGE_RESULT=FAIL reason=不认识的旗标 " + bad.join(",") + " ⇒ 会被静默忽略而回落到默认输入（实测：--corpus 拼错会让分诊悄悄读 round-6 的旧语料，红的是别人家的账）"); process.exit(2); }
 }
@@ -217,6 +218,32 @@ function tapDeferredReading(obs) {
   if (absent) return { kind: "absent", tag: `absent×${absent}（静息态没带这些类）` };
   return { kind: "probe-answered-nothing", tag: "探针一条都没答" };
 }
+/* ---- observe-only dom 结论的"查找目标恢复"（round7 终报 §4 第 5 项的处方）----
+   旧口径下"按目标查找且失败"只有 `element not found: …` 一种写法；round-7 的 mock 刀不改写
+   failureReason、只在 observed 的 dom 段留结论（r-exec-ws.mjs:821 拼的 `.x:present(N)|absent`），
+   于是四格（dist/src 双载体检）对这批腿完全饥饿：要么 NOT_APPLICABLE（机制不完整），
+   要么在旧词表还残留时假红在"提取失灵"上。`.x:absent` 与旧口径的"找不到"是同一笔债，
+   换腿不换名——把它算作"能恢复出查找目标的定位失败"。
+   判据必须严（这是"没放宽"的另一半）：
+   · 只认 `.`/`#` + 字母开头 + [\w-]* 的完整类名形态（与 RE_TAP_ABSENT 同一形状），
+     `(本条没点名类名)`、`(action 无类名)`、`:no-answer`、`:ERR:…` 一律不产 token——从说明文字里
+     抠词填四格等于伪造体检输入（本项目踩过"负例永远不变红"的同类返工）；
+   · `present(N)` 是"找到了"，不是定位失败，不进四格；
+   · 行自己已有可复核 token（reason 里带选择器）时不覆盖，dom 恢复只补空缺。
+   domAbsent（本行声称 absent 了几次）与 token 提取分开标记：提取坏掉时四格为空而 domAbsent>0，
+   fourgrid-axis 会按"提取失灵"判红——这条红在 round-7 词汇下也保有否决能力。 */
+const RE_DOM_ABSENT_SEL = /([.#][A-Za-z][A-Za-z0-9_-]*):absent/g;
+function domObserveConclusion(obs) {
+  const dom = (String(obs).match(/dom: ([^|]*)/) || [])[1] || "";
+  let absentSel = null, absentCount = 0;
+  let m;
+  RE_DOM_ABSENT_SEL.lastIndex = 0;
+  while ((m = RE_DOM_ABSENT_SEL.exec(dom))) {
+    absentCount++;
+    if (!absentSel) absentSel = m[1];
+  }
+  return { absentSel, absentCount };
+}
 
 /* "这一行量到东西没有"必须用**声明的**判据，不能用"reason 里有没有重试"：开页重试耗尽既可能是
    窗口/通道没起来（这一行压根没测），也可能是页面真的开不起来（产品缺陷）—— 把两者分开的唯一凭据
@@ -251,6 +278,22 @@ const BUCKET = {
      （r-exec-ws.mjs:383-385），observed 里的 tap-skipped 是这一条自己的声明。分桶不分口径 = 把两笔债记成一笔。 */
   "SKIPPED-tap-target-absent-reststate": "交互按判据下发前，静息态探针答 absent，且这一腿对该选择器有正向对照/它就在本页编译文件里 ⇒ 量到的结果就是「静息态没有这个部件」：不算缺陷、不算通道问题、不算覆盖，欠的是判据的前置配方（先展开/先滚动/先登录），须落台账去向",
   "SKIPPED-tap-target-absent-unattributed": "同样是下发前答 absent，但那个类名只在组件自己的编译文件里、本腿对它从来没有一次 present ⇒ 无法在「静息态确实没有」与「page.$$() 进不到组件作用域」之间归因：命名不等于结案，欠的是一次正向对照（先证明载具看得见组件内部，再谈前置配方）",
+  /* 「下发前答 absent」的第三支（absentAttribution 的 kind=unknown，两载皆无）。旧口径只有两支，
+     第三支一律回 {reject} ⇒ 落 unclassified 红，红句写「臆造选择器，须人判」。
+     盘上活样本 = reports/audit/round-7/interact/exec-results.json 的 CH12 @ subpackages/campus/campus/hub：
+       observed `top=subpackages/campus/campus/hub | pre: .campus-hub__cert-btn:absent | tap-skipped`
+       reason  「目标元素 .campus-hub__cert-btn 当前不在页上（可能要先展开/滚动/登录态）⇒ 不盲点，待补前置态」
+     .campus-hub__cert-btn 在 dist 与 src 都查不到是真的，但"没人认领"不是真的：
+       ① scripts/qa/cellplan-round7-deadselectors.json 的 A-rename-to-real-name 逐条点了它的名
+          （manifest+id+dead → proposed=.campus-guide__btn，并写明 prestate「节点在 v-if=!isVerified 里
+          ⇒ 必须在未认证身份下才渲染，复测腿要带未认证夹具」）；
+       ② 判据台 reports/audit/round-7/ops/SUBPACKAGES-CAMPUS-CAMPUS-HUB.json 的 CH12 已把改名落地
+          （cellplanRename={from:.campus-hub__cert-btn,to:.campus-guide__btn} + tapTarget=.campus-guide__btn，
+          由 scripts/qa/apply-ops-cellplans.mjs 落的，判决文件本身是被 apply-ops-cellplans 消费的）；
+       ③ 新目标在两载查得到（dist 命中 hub.wxml、src 命中 hub.vue:216）⇒ 复跑有载具。
+     ⇒ 真正的结论是第四种：**这一行从没按当前判据的目标被测过**（语料早于改名），既不是产品缺陷也不是规格臆造。
+     四把尺（表点名 / 判据台落地 / 新目标有载具 / 本行名与表一致）全过才命名；任一不过照旧落红，见 deadSelectorDisposition。 */
+  "SKIPPED-tap-target-dead-selector-renamed": "下发前答 absent，且该类名在冻结构建与源码里都查不到 —— 但这一条 manifest+id 在死选择器判决表（cellplan-round7-deadselectors.json 的 A-rename-to-real-name）里有逐条处置、判据台已把该条的 tapTarget 从这个名字改到判决表给的真实名字（cellplanRename.from/to 与 tapTarget 两把尺都对上）、且新目标在 dist 或 src 里查得到 ⇒ 本轮读的是改名前的旧目标：读数对当前判据作废，不算产品缺陷、不算覆盖、也不算「臆造选择器」；命名不等于结案，欠的是按新目标（带判决表的 prestate 前置）复跑一次，逐条点名",
   "SKIPPED-tap-probe-no-answer": "交互下发前的元素探针没给答案（r-exec-ws.mjs:381）⇒ 通道未就绪，这一行的静息态根本没量到，欠的是重跑这一批，不是产品判红",
   "SKIPPED-conservation-filler": "真实刀切片为守住 1107 行总数而记的占位行（本切片只跑 requiresReal，其余在别的档位/身份腿已判过）⇒ 既不是缺口也不是覆盖",
   "SKIPPED-identity-scope": "这条判据的身份适用范围被 ops 标成了别的腿（tag-ops-identity-scope.mjs 依 guest-landing-policy 的落点裁定）⇒ 本腿不认领，缺口记在标它的那次裁定上，不算产品失败也不算覆盖",
@@ -342,10 +385,32 @@ function matchRe7(reason, obs, r) {
       op: "tap", sel, token: sel.replace(/^[.#]/, ""), tokenKind: "selector", recoverable: true,
       attribution: at.why, scope: at.scope || null, control: CONTROL_SEL.has(sel),
     };
-    /* 两支各自把桶名写成字面量：文末的词表自核（:234 produced()）认的就是 bucket: "X" 这个字面，
-       用三元式拼桶名会让两条规则"看着在、其实没产出"，反而把空转桶的红送给别人。 */
+    /* 三支各自把桶名写成字面量（含下面 kind=unknown 那一支）：文末的词表自核（produced()）认的就是 bucket: "X" 这个字面，
+       用三元式拼桶名会让规则"看着在、其实没产出"，反而把空转桶的红送给别人。 */
     if (at.kind === "outcome") return { bucket: "SKIPPED-tap-target-absent-reststate", ...common };
     if (at.kind === "unattributed") return { bucket: "SKIPPED-tap-target-absent-unattributed", ...common };
+    /* 第三支（kind=unknown，两载皆无）：先查有没有"机器可读的认领"，查不到才落红。
+       分支顺序不许前移：这两支（outcome/unattributed）在它前面，静息态/组件作用域的行不会被新桶抢走。 */
+    if (at.kind === "unknown") {
+      const ds = deadSelectorDisposition(sel, r);
+      if (ds && ds.ok) {
+        return {
+          bucket: "SKIPPED-tap-target-dead-selector-renamed",
+          tapShape: "dead-selector-renamed",
+          op: "tap", sel, token: sel.replace(/^[.#]/, ""), tokenKind: "selector", recoverable: true,
+          scope: at.scope, control: false, deadSelector: true,
+          deadSel: {
+            manifest: ds.d.manifest, id: ds.d.id, group: ds.d.group, dead: ds.d.dead, proposed: ds.d.proposed,
+            prestate: ds.d.prestate, tableFile: ds.d.file, tableLine: ds.d.line,
+            opsFrom: ds.o.from, opsTo: ds.o.to, opsTapTarget: ds.o.tapTarget, opsSource: ds.o.source,
+            proposedDist: ds.hits.dist, proposedSrc: ds.hits.src, proposedPageOwn: ds.hits.pageOwn,
+          },
+          attribution: `两载皆无（dist ${at.scope.dist} / src ${at.scope.src}）已由死选择器判决表认领：${ds.d.group} 记 ${ds.d.dead} → ${ds.d.proposed}（${ds.d.file || "?"}:${ds.d.line ?? "?"}），判据台该条（改名出处=${ds.o.source || "未记 source"}）已把 cellplanRename.from=${ds.o.from} 改成 to=${ds.o.to}、tapTarget=${ds.o.tapTarget}；新目标载具命中 dist ${ds.hits.dist}/src ${ds.hits.src} ⇒ 本行测的是改名前的旧目标，读数作废、欠按新目标复跑（前置：${ds.d.prestate || "判决表未写"}）`,
+          note: `改名已落地、本轮读的是旧名 ⇒ 命名不等于结案，欠按 ${ds.d.proposed} 复跑${ds.d.prestate ? "（带判决表写的前置）" : ""}`,
+        };
+      }
+      if (ds && ds.reject) return { reject: `下发前答 absent，且 ${ds.reject} ⇒ 仍按「臆造选择器，须人判」落红（${at.why}）` };
+    }
     return { reject: `下发前答 absent，但 ${at.why} ⇒ 「静息态读数」与「组件作用域未归因」两支都不认这条，落红` };
   }
   if (RE_TAP_DISPATCH.test(reason)) {
@@ -430,6 +495,84 @@ if (!fs.existsSync(OPS)) {
   console.log(`TRIAGE_STAMP_SOURCE ops=${OPS} 判据台盖章 automatable===false=${STAMP_KEYS.size} 条（与 verify-real-coverage / r-exec-ws 同一个字段同一条 ===false 判等）`);
 }
 
+/* ---- 「两载皆无」那一支需要什么才敢命名：死选择器判决表 + 判据台改名落地 ----
+   见 BUCKET["SKIPPED-tap-target-dead-selector-renamed"] 的注释（CH12 活样本、三条来源逐字）。
+   【不放宽】四把尺全过才进桶，任一不过照旧落「臆造选择器，须人判」红；
+   表/判据台读不到 ⇒ 一条都不认（fail-closed，同上面 TRIAGE_STAMP warn 的规矩：没读到账就不豁免）。
+   【无泛化】判决表条目必须 manifest+id 精确等于本行、dead 精确等于本行测的那个类名；
+   没有 proposed 的条目（整删/改文案那一族，如 B-criterion-targets-a-removed-feature）一律忽略并计数 ——
+   它们给不出可复跑的目标，认了就是把"没有载具"当"已结案"。 */
+const DEAD_SEL_TABLE = arg("dead-selectors", "scripts/qa/cellplan-round7-deadselectors.json");
+const RE_SELECTOR_SHAPE = /^\.[A-Za-z][A-Za-z0-9_-]*$/;
+const OPS_EXPLICIT = argv.indexOf("--ops") >= 0;
+/* 改名判决要核对的是"这一轮"的判据台。报告器 spawn 本脚本时不传 --ops（emit-round-report.mjs:592），
+   于是上面的 OPS 回落到 round-6 默认值；拿 round-6 的 ops 核对 round-7 语料的改名会永远对不上 ⇒
+   显式 --ops 优先，没给就按语料自己所在轮次派生，并把来源打印出来（不静默换目录）。 */
+const RENAME_OPS = OPS_EXPLICIT ? OPS : path.join(path.dirname(path.dirname(String(RESULTS).replace(/[\\/]+$/, ""))), "ops");
+const DEAD_SEL = new Map();   // "manifest|id" → { group, manifest, id, dead, proposed, prestate, file, line }
+let deadSelIgnored = 0;       // 表里被忽略的条目数（没有 proposed 的那一族）—— 忽略了什么必须可查
+{
+  let t = null;
+  try { t = JSON.parse(fs.readFileSync(DEAD_SEL_TABLE, "utf8")); }
+  catch (e) { console.log(`TRIAGE_DEADSEL warn=判决表读不到（${DEAD_SEL_TABLE}：${String(e.message).slice(0, 60)}）⇒ 「两载皆无」一条都不认，全部照旧落「臆造选择器，须人判」红（fail-closed）`); }
+  if (t) {
+    for (const [g, arr] of Object.entries(t)) {
+      if (g.startsWith("$") || !Array.isArray(arr)) continue;
+      for (const e of arr) {
+        const ids = [e && e.id, ...(Array.isArray(e && e.ids) ? e.ids : [])].filter(Boolean).map(String);
+        if (!e || !e.manifest || !ids.length) { deadSelIgnored++; continue; }
+        if (!(RE_SELECTOR_SHAPE.test(String(e.dead)) && RE_SELECTOR_SHAPE.test(String(e.proposed)))) { deadSelIgnored++; continue; }
+        for (const id of ids) DEAD_SEL.set(`${e.manifest}|${id}`, {
+          group: g, manifest: String(e.manifest), id, dead: String(e.dead), proposed: String(e.proposed),
+          prestate: typeof e.prestate === "string" ? e.prestate : null,
+          file: e.file || null, line: e.line ?? null,
+        });
+      }
+    }
+  }
+}
+const OPS_RENAME = new Map(); // "manifest|id" → { from, to, tapTarget, source }
+let opsRenameLanded = 0;      // 判据台里 cellplanRename.from 真的写了名字的那几条（其余只是被索引到）
+if (!fs.existsSync(RENAME_OPS)) {
+  console.log(`TRIAGE_DEADSEL warn=判据台目录不存在（${RENAME_OPS}）⇒ 改名是否落地无从核对，「两载皆无」照旧判红（fail-closed）`);
+} else {
+  for (const f of fs.readdirSync(RENAME_OPS).filter((x) => x.endsWith(".json"))) {
+    let j; try { j = JSON.parse(fs.readFileSync(path.join(RENAME_OPS, f), "utf8")); } catch { continue; }
+    const manifest = j.suite || f.replace(/\.json$/, "");
+    for (const c of (j.cases || j.items || [])) {
+      const id = String((c && (c.id || c.caseId)) || "");
+      if (!c || !id) continue;
+      const cr = c.cellplanRename && typeof c.cellplanRename === "object" ? c.cellplanRename : null;
+      if (c.cellplanRename && typeof c.cellplanRename === "object" && typeof c.cellplanRename.from === "string" && c.cellplanRename.from) opsRenameLanded++;
+      OPS_RENAME.set(`${manifest}|${id}`, {
+        from: cr && typeof cr.from === "string" ? cr.from : null,
+        to: cr && typeof cr.to === "string" ? cr.to : null,
+        tapTarget: typeof c.tapTarget === "string" ? c.tapTarget : null,
+        source: (cr && cr.source) || c.tapTargetFrom || null,
+      });
+    }
+  }
+}
+/* 四把尺：① 表里点名这一条 manifest+id ② 表里的 dead 精确等于本行测的类名（不是"表里有同名条目就行"）
+   ③ 判据台该条的 cellplanRename 真的从这个名字改走了，且 to/tapTarget 就是表里的 proposed（两份账同源）
+   ④ proposed 在两载里查得到（复跑有载具）。
+   返回 null = 表里根本没有这一条 ⇒ 交回原红句「臆造选择器，须人判」，那是真缺口，不许硬造分类。 */
+function deadSelectorDisposition(sel, row) {
+  const manifest = String((row && (row.manifest || row.suite)) || "");
+  const id = String((row && row.id) || "");
+  const key = `${manifest}|${id}`;
+  const d = DEAD_SEL.get(key);
+  if (!d) return null;
+  if (d.dead !== sel) return { reject: `判决表给 ${key} 记的死选择器是 ${d.dead}，与本行实际测的 ${sel} 不是同一个名 ⇒ 不能借这张表豁免（按表认领就等于按散文认领）` };
+  const o = OPS_RENAME.get(key);
+  if (!o) return { reject: `判决表认了名，判据台（${RENAME_OPS}）里却读不到 ${key} 的条目 ⇒ 改名是否落地无从核对，不认` };
+  if (o.from !== sel) return { reject: `判决表说 ${key} 的 ${sel} 是死名，判据台该条却没有 cellplanRename.from=${sel}（现值 ${JSON.stringify(o.from)}）⇒ 改名没落进判据，不认` };
+  if (o.to !== d.proposed && o.tapTarget !== d.proposed) return { reject: `判据台的改名去向 cellplanRename.to=${JSON.stringify(o.to)} / tapTarget=${JSON.stringify(o.tapTarget)}，与判决表的 proposed=${d.proposed} 都对不上 ⇒ 两份账不同源，不认` };
+  const ph = selScope(d.proposed, row && row.page);
+  if (!ph.dist && !ph.src) return { reject: `proposed=${d.proposed} 在冻结构建与源码里同样查不到 ⇒ 改名改到了第二个幽灵名，没有任何载具能判这一行，须人判` };
+  return { ok: true, d, o, hits: ph };
+}
+
 const LANDING_DISPOSITION = {
   "pages/login/index → pages/discover/index": "身份带不匹配：mock 带自动登录，已登录态进登录页被守卫送到广场。由 guest 真实带腿复测（exec-guest-real）。",
   "subpackages/vip/index → pages/profile/index": "权益重定向：未持有会员时 VIP 页被送回我的页。由 showcase 带腿复测。",
@@ -483,6 +626,7 @@ const openPageMeasuredRows = [];
    并桶就是把"这一腿没测到/测到了但归因不了/按规矩不该测"三种完全不同的债洗成一种。 */
 const tapShapeRows = {
   deny: [], "no-class": [], "probe-no-answer": [], "absent-outcome": [], "absent-unattributed": [],
+  "dead-selector-renamed": [],
   "dispatch-fail": [], "no-frame": [], "ws-route-no-answer": [],
 };
 /* 没带 --tap 那一刀的交互行（r-exec-ws.mjs:832，句式 RE_WS_TAP_DEFERRED）：逐条点名 + 逐条读数，
@@ -527,9 +671,20 @@ for (const r of rows) {
       continue;
     }
     if (re7) {
-      const { bucket, op, token, tokenKind, recoverable, sel, note, landed, evidenceHole, miss, bytes, unclassified: uc, ucNote, tapShape, attribution, scope, control, tapDeferred, reading, readingKind } = re7;
-      push(r, bucket, { want: token ? sel : (miss ? miss : (note ? String(note).slice(0, 120) : null)), op, token, tokenKind, recoverable, sel, landed, evidenceHole, frameBytes: bytes, tapShape, attribution, scope, control, tapDeferred, reading, readingKind, from: "reason-re7" });
-      if (tapShape && tapShapeRows[tapShape]) tapShapeRows[tapShape].push(`${r.id} @ ${r.page}${sel ? " " + sel : ""}${miss ? "（miss=" + String(miss).slice(0, 60) + "）" : ""}${attribution ? " ｜ " + attribution : ""}`);
+      const { bucket, op, token: re7Token, tokenKind, recoverable, sel: re7Sel, note, landed, evidenceHole, miss, bytes, unclassified: uc, ucNote, tapShape, attribution, scope, control, tapDeferred, reading, readingKind, deadSelector, deadSel } = re7;
+      /* observe-only dom 恢复只对"这一行确实在找目标且量到没找到"的桶生效（allowlist，泛化=放宽）：
+         FAILED-landing-guard（探针答了 absent 却没落在声明页）与 SKIPPED-observe-only-slice（mock 刀本尊）。
+         absent 声称（domAbsent）与 token 补位分开标：提取坏掉时四格为空而 domAbsent>0，
+         fourgrid-axis 仍按"提取失灵"判红。deny/vague/no-answer 这些"没找或没法找"的桶不借道进四格。 */
+      const domEligible = bucket === "FAILED-landing-guard" || bucket === "SKIPPED-observe-only-slice";
+      const domc = domEligible ? domObserveConclusion(obs) : { absentSel: null, absentCount: 0 };
+      const domRecovered = !!(domc.absentSel && !re7Token);
+      const token = re7Token || (domRecovered ? domc.absentSel.replace(/^[.#]/, "") : re7Token);
+      const sel = re7Token ? re7Sel : (domRecovered ? domc.absentSel : re7Sel);
+      const tokKind = re7Token ? tokenKind : (domRecovered ? "selector" : tokenKind);
+      const rec = re7Token != null && re7Token !== undefined ? recoverable : (domRecovered ? true : recoverable);
+      push(r, bucket, { want: token ? sel : (miss ? miss : (note ? String(note).slice(0, 120) : null)), op, token, tokenKind: tokKind, recoverable: rec, sel, landed, evidenceHole, frameBytes: bytes, tapShape, attribution, scope, control, tapDeferred, reading, readingKind, deadSelector: deadSelector || undefined, deadSel: deadSel || undefined, domAbsent: domc.absentCount > 0 || undefined, tokenFrom: domRecovered ? "observe-only-dom" : undefined, from: "reason-re7" });
+      if (tapShape && tapShapeRows[tapShape]) tapShapeRows[tapShape].push(`${r.id} @ ${r.page}${sel ? " " + sel : ""}${deadSel ? " → " + deadSel.proposed : ""}${miss ? "（miss=" + String(miss).slice(0, 60) + "）" : ""}${attribution ? " ｜ " + attribution : ""}`);
       if (tapDeferred) { tapDeferredRows.push(`${r.id} @ ${r.page}（读数：${reading}）`); tapDeferredReadings[readingKind] = (tapDeferredReadings[readingKind] || 0) + 1; }
       if (evidenceHole) evidenceHoles.push(`${r.id} @ ${r.page} 要求出帧但帧未成立（${miss || "无 miss 路径"}${bytes ? `，仅 ${bytes}B` : ""}）`);
       if (uc) markUnclassified(r, ucNote || "交互腿下发失败但没留下可复核的选择器");
@@ -713,6 +868,7 @@ const TAP_SHAPES = [
   ["probe-no-answer", "r-exec-ws.mjs:381", "SKIPPED-tap-probe-no-answer", "元素探针无答案 ⇒ 通道未就绪，欠重跑"],
   ["absent-outcome", "r-exec-ws.mjs:384", "SKIPPED-tap-target-absent-reststate", "量到的读数=静息态 absent，且载具对该选择器有正向对照 ⇒ 测量结果，欠判据前置配方"],
   ["absent-unattributed", "r-exec-ws.mjs:384", "SKIPPED-tap-target-absent-unattributed", "同一个 absent 读数，但类名只在组件自己的文件里且本腿对它零次 present ⇒ 归因未定，欠一次正向对照"],
+  ["dead-selector-renamed", "r-exec-ws.mjs:384 读数 + 分诊侧归因第三叉", "SKIPPED-tap-target-dead-selector-renamed", "同一个 absent 读数，但该类名在两载皆无，且这一条 manifest+id 已被死选择器判决表点名、判据台已把 tapTarget 改到真实存在的名字 ⇒ 本行读的是改名前的旧目标，读数作废，欠按新目标复跑（不是产品缺陷、不是臆造）"],
   ["dispatch-fail", "r-exec-ws.mjs:388", "SKIPPED-interact-channel", "探针说在、tap 没确认 ⇒ 通道/选择器问题，须人判"],
   ["no-frame", "r-exec-ws.mjs:398", "SKIPPED-frame-evidence-hole", "点下去了却没帧 ⇒ 证据缺口（连同 evidenceHole 否决一起复用）"],
   ["ws-route-no-answer", "r-exec-ws.mjs:665", "SKIPPED-route-probe-no-answer", "WS currentPage() 没给结果且该行零取证 ⇒ 从未被测，欠重跑（不在那六行里，是真数据里多出来的第七种形状）"],
@@ -739,7 +895,7 @@ if (openPageUnmeasuredRows.length || openPageMeasuredRows.length) {
   lines.push(`- 该批执行器自报：admissible=${doc.admissible === undefined ? "?" : (doc.admissible ? "yes" : "no")} outcome=${doc.outcome ?? "?"}（批次级口径见 r-exec-ws.mjs:137/141 的 WSX_OUTCOME / WSX_ADMISSIBLE；逐行分叉只按 rowMeasured 判，不按批次旗标豁免）`);
 }
 if (tapShapesTotal) {
-  lines.push(`- WS 交互腿（--tap）口径普查：\`r-exec-ws.mjs\` 的 runTapCase ${TAP_SHAPES.filter(([k]) => tapShapeRows[k].length).length} 种形状命中 **${tapShapesTotal}** 行（含本腿没有的形状，逐条见文末名册）；其中「下发前探针答 absent」共 **${tapAbsentTotal}** 行 = 静息态读数（可归因）**${tapShapeRows["absent-outcome"].length}** + 归因未定（组件作用域无正向对照）**${tapShapeRows["absent-unattributed"].length}**`);
+  lines.push(`- WS 交互腿（--tap）口径普查：\`r-exec-ws.mjs\` 的 runTapCase ${TAP_SHAPES.filter(([k]) => tapShapeRows[k].length).length} 种形状命中 **${tapShapesTotal}** 行（含本腿没有的形状，逐条见文末名册）；其中「下发前探针答 absent」共 **${tapAbsentTotal}** 行 = 静息态读数（可归因）**${tapShapeRows["absent-outcome"].length}** + 归因未定（组件作用域无正向对照）**${tapShapeRows["absent-unattributed"].length}**；同一条 :384 读数另有第三支归因叉（两载皆无但已被死选择器判决表认领、判据台改名已落地）**${tapShapeRows["dead-selector-renamed"].length}** 行，它不在上面那个数里 —— 那两支出的是「前置配方/正向对照」的债，这一支出的是「按新目标复跑」的债`);
   lines.push(`- 交互型一律 \`durationMs=0\`（r-exec-ws.mjs:104 的 row() 写死），所以耗时不能用来判断"这一刀有没有下发"；判据是 observed 里的 \`tap-skipped\`/\`tap=<sel>\`，本工具就是按它交叉核对的`);
 }
 if (tapDeferredRows.length) {
@@ -779,10 +935,11 @@ if (tapShapesTotal) {
   lines.push("|---|---|---|---|---|");
   for (const [k, from, bucket, claim] of TAP_SHAPES) lines.push(`| ${k} | ${from} | ${bucket} | ${tapShapeRows[k].length} | ${claim} |`);
   lines.push("");
-  lines.push(`「下发前答 absent」的两支分叉（分叉判据 = 本语料内的正向对照 + 类名所在编译文件，不是措辞）：`);
+  lines.push(`「下发前答 absent」的三支分叉（分叉判据 = 本语料内的正向对照 + 类名所在编译文件 + 两载检索 + 盘上的死选择器判决，不是措辞）：`);
   lines.push("");
   for (const [k, head] of [["absent-outcome", "TAP_OUTCOME（测量结果：静息态确实没有 ⇒ 判据欠前置配方，不算缺陷/不算通道问题/不算覆盖）"],
-    ["absent-unattributed", "TAP_UNATTRIBUTED（归因未定：本腿对该类名零次 present，与「查询进不到组件作用域」分不开 ⇒ 命名不等于结案，欠一次正向对照）"]]) {
+    ["absent-unattributed", "TAP_UNATTRIBUTED（归因未定：本腿对该类名零次 present，与「查询进不到组件作用域」分不开 ⇒ 命名不等于结案，欠一次正向对照）"],
+    ["dead-selector-renamed", "TAP_DEAD_SEL_RENAMED（两载皆无 + 判决表点名这一条 manifest+id + 判据台改名已落地 + 新目标在两载查得到 ⇒ 本行读的是改名前的旧目标，命名不等于结案，欠按新目标复跑；四把尺任一不过照旧落「臆造选择器，须人判」红）"]]) {
     lines.push(`- ${head}：**${tapShapeRows[k].length} 行**`);
     for (const s of tapShapeRows[k]) lines.push(`  - ${s}`);
     lines.push("");
@@ -807,7 +964,7 @@ if (tapDeferredRows.length) {
 
 const four = {};
 for (const it of NEEDS_INDEX) four[it.verdict] = (four[it.verdict] || 0) + 1;
-lines.push("## 存在性四格（只统计能恢复出查找目标的定位失败）");
+lines.push("## 存在性四格（只统计能恢复出查找目标的定位失败；含 round-7 observe-only dom 结论 `.x:absent` 恢复出的目标）");
 lines.push("");
 lines.push("| 结论 | 条数 |");
 lines.push("|---|---|");
@@ -854,7 +1011,7 @@ for (const b of order) {
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT + ".md", lines.join("\n"));
-fs.writeFileSync(OUT + ".json", JSON.stringify({ results: RESULTS, updatedAt: doc.updatedAt ?? null, total, buckets, bucketNames: Object.keys(BUCKET), unclassified, unclassifiedRows, stampedCount: stampedRows.length, stampedRows, openPageUnmeasuredCount: openPageUnmeasuredRows.length, openPageUnmeasuredRows, openPageMeasuredDefectCount: openPageMeasuredRows.length, openPageMeasuredRows, tapShapeCounts: Object.fromEntries(Object.entries(tapShapeRows).map(([k, v]) => [k, v.length])), tapShapeRows, tapAbsentTotal, tapDeferredCount: tapDeferredRows.length, tapDeferredReadings, tapDeferredRows, controlSelectors: [...CONTROL_SEL].sort(), batchSelfReport: { admissible: doc.admissible ?? null, outcome: doc.outcome ?? null, runner: doc.runner ?? null }, evidenceHoles, landingGroups, landingMissing, items }, null, 1));
+fs.writeFileSync(OUT + ".json", JSON.stringify({ results: RESULTS, updatedAt: doc.updatedAt ?? null, total, buckets, bucketNames: Object.keys(BUCKET), unclassified, unclassifiedRows, stampedCount: stampedRows.length, stampedRows, openPageUnmeasuredCount: openPageUnmeasuredRows.length, openPageUnmeasuredRows, openPageMeasuredDefectCount: openPageMeasuredRows.length, openPageMeasuredRows, tapShapeCounts: Object.fromEntries(Object.entries(tapShapeRows).map(([k, v]) => [k, v.length])), tapShapeRows, tapAbsentTotal, deadSelectorRenamed: tapShapeRows["dead-selector-renamed"].length, deadSelectorRows: tapShapeRows["dead-selector-renamed"], deadSelectorSources: { table: DEAD_SEL_TABLE, tableEntries: DEAD_SEL.size, tableIgnored: deadSelIgnored, ops: RENAME_OPS, opsFromCorpus: !OPS_EXPLICIT, opsRenameEntries: OPS_RENAME.size }, gateFires: { unclassified, landingMissing: landingMissing.length, coverMismatch: coverMismatch.length, openPageMeasuredDefect: openPageMeasuredRows.length, evidenceHoles: evidenceHoles.length }, tapDeferredCount: tapDeferredRows.length, tapDeferredReadings, tapDeferredRows, controlSelectors: [...CONTROL_SEL].sort(), batchSelfReport: { admissible: doc.admissible ?? null, outcome: doc.outcome ?? null, runner: doc.runner ?? null }, evidenceHoles, landingGroups, landingMissing, items }, null, 1));
 console.log(`TRIAGE_SUMMARY rows=${total} unclassified=${unclassified}`);
 for (const b of order) if (buckets[b]) console.log(`  ${String(buckets[b]).padStart(4)} ${b}`);
 /* 盖章行必须**这一腿自己数给读者看**：它是免掉缺陷计数的唯一新增口径，
@@ -903,6 +1060,23 @@ if (tapDeferredRows.length) {
   console.log(`TRIAGE_TAP_NOT_ENABLED_READINGS ` + ["no-target-named", "absent", "present", "present+absent", "probe-no-answer", "probe-answered-nothing"].map((k) => `${k}=${tapDeferredReadings[k] || 0}`).join(" ") + `（合计 ${Object.values(tapDeferredReadings).reduce((a, b) => a + b, 0)}/${tapDeferredRows.length}；这些是本行自己带回来的落点+探针读数，只用来排复跑顺序：absent/present+absent 复跑 --tap 时会落到 SKIPPED-tap-target-absent-*，no-target-named 会落到 SKIPPED-vague-action，present 那批静息态就在页上、复跑能立刻点。读数不参与归类，也不构成结案）`);
   for (const s of tapDeferredRows) console.log("  TAP_NOT_ENABLED " + s);
 }
+/* observe-only dom 恢复必须**这一腿自己数给读者看**（同 NOT_AUTOMATABLE_STAMPED / OPEN_PAGE_* 的规矩）：
+   把 dom 结论算进"能恢复出查找目标"是四格取数口径的变更，不点名就是把"体检输入从哪来"藏起来。
+   domAbsent 行有声称而四格为 0 时，报告器端由 fourgrid-axis 判"提取失灵"红，不静默。 */
+{
+  const domAbsentRows = items.filter((it) => it.domAbsent === true);
+  const domTokRows = items.filter((it) => it.tokenFrom === "observe-only-dom");
+  console.log(`TRIAGE_DOM_OBSERVE_ONLY=absent声称行=${domAbsentRows.length} 由dom结论恢复出查找目标并进双载体检=${domTokRows.length}（口径=round-7 observe-only 刀：dom 段的 .x:absent 与 round-6「element not found」同一笔债，换腿不换名；只认带类名的结论，括号注释 / no-answer / ERR 不产 token；声称 absent 而四格 0 条 ⇒ 报告器按"提取失灵"判红）`);
+  for (const it of domTokRows.slice(0, 8)) console.log(`  DOM_OBS_RECOVERED ${it.id} @ ${it.page} ${it.sel}（四格：${String(it.verdict || "未判").slice(0, 40)}…）`);
+  if (domTokRows.length > 8) console.log(`  DOM_OBS_RECOVERED …另 ${domTokRows.length - 8} 行见 ${OUT}.json`);
+}
+/* 「两载皆无但已被判决表认领」必须**这一腿自己数给读者看**，而且**不受 tapShapesTotal 的门限制**：
+   它是本门新增的免缺陷口径（把原来必红的一支改成具名桶），只在命中时才报数就等于
+   让"这条通道今天没生效"与"今天没有这种行"两种状态读起来一样（同 NOT_AUTOMATABLE_STAMPED 的规矩）。
+   来源件（判决表 / 判据台目录 + 它是显式给的还是按语料派生的）也一起打出来，
+   否则下一个跑的人无从判断"没认"是表里真没有，还是表根本没读到。 */
+console.log(`TRIAGE_DEAD_SELECTOR_RENAMED=${tapShapeRows["dead-selector-renamed"].length}（表=${DEAD_SEL_TABLE} 认领条目=${DEAD_SEL.size} 无 proposed 被忽略=${deadSelIgnored}｜判据台=${RENAME_OPS}${OPS_EXPLICIT ? "（显式 --ops）" : "（按语料所在轮次派生）"} 判据台条目=${OPS_RENAME.size}（其中 cellplanRename 已落地=${opsRenameLanded}）：「两载皆无」只有四把尺全过才命名 —— 表点名这一条 manifest+id、表里的 dead==本行测的类名、判据台 cellplanRename 真从这个名字改走且 to/tapTarget==表里的 proposed、proposed 在 dist 或 src 查得到；任一不过照旧落「臆造选择器，须人判」红。命名不等于结案：欠按 proposed 复跑）`);
+for (const s of tapShapeRows["dead-selector-renamed"]) console.log("  TAP_DEAD_SEL_RENAMED " + s);
 console.log(`out=${OUT}.md / ${OUT}.json`);
 
 /* 两条"发现级"断言放在**写盘之后**，且先收集再一次性退出：
@@ -948,6 +1122,7 @@ if (gateProblems.length) {
 const notClosedClauses = [];
 if (openPageUnmeasuredRows.length) notClosedClauses.push(`${openPageUnmeasuredRows.length} 行开页重试耗尽且零取证（OPEN_PAGE_UNMEASURED，欠一次重跑）`);
 if (tapDeferredRows.length) notClosedClauses.push(`${tapDeferredRows.length} 行交互判点未开 --tap（TRIAGE_TAP_NOT_ENABLED，欠一条 --tap 复测腿逐行认领）`);
+if (tapShapeRows["dead-selector-renamed"].length) notClosedClauses.push(`${tapShapeRows["dead-selector-renamed"].length} 行按改名前的死选择器测（TRIAGE_DEAD_SELECTOR_RENAMED，欠按判决表的 proposed 目标、带它写的 prestate 前置复跑一次；本轮读数对当前判据无效）`);
 const openPageClause = notClosedClauses.length
   ? `、${notClosedClauses.join("、")} —— 这些都不计入结案`
   : " —— 这两类不计入结案";
