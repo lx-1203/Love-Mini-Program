@@ -48,3 +48,12 @@
 ## 5. 面板还剩一条没人补的读数轴
 
 `emit-round-report.mjs` 目前只印 `CORPUS_EXPIRED_GITSHA` 这个合并数，而语料门已经能分三类（`CORPUS_SHA_CLASS resolvableOlder/unresolvable/empty`）。HEAD 每前进一次，那个合并数就涨一次，读的人分不清"历史轮本应定格"和"真断链"。补法在面板侧，本程面板车道正在改另一句红词，未越界代做。
+
+## 0. 续跑前先做的三件事（2026-09-29 03:52 停点，本轮预算耗尽）
+
+本文件第 1/3 节的命令**不能在车道还在跑的时候执行**，否则拿到的是撕裂读数（本轮实测：同一条命令在重建窗口内会读 dist 0 vs dist 2；边跑边提交会把 corpus 的 resolvableOlder 从 42 抬到 45）。
+1. 确认三条在途车道都已收工：`ls -lat --time-style=%H:%M .zcode/tmp/lane-wiring/ .zcode/tmp/lane-panelword/ .zcode/tmp/lane-ops/` 全部停止增长；它们未提交的改动分别落在 `run-qa-selftests.mjs`、`run-round7-closeout.mjs`、`emit-round-report.mjs`、`test-guest-landing.mjs`、`verify-guest-landing.mjs`、`.zcode/workflows/miniprogram-qa-finish-v33.dwf.ts`（GATE_SUITE 已由 10 条接到 12 条）。
+2. 确认 UI 租约没人持有：`node22 -e "import('./scripts/qa/ui-lease.mjs').then(m=>m.heldLeases().then(h=>console.log(h)))"` 应为空；端口 9420/9430 与后端 8080 此刻都是活的（零点击冷启配方见第 3 节）。
+3. 跑 `bash scripts/qa/run-final-verify-v33.sh`（12 条门禁 + 可变红自检 + 自测汇总 + 工作流干跑 + 不跳实时门的全量面板 + 面板后复量），再跑 `node22 scripts/qa/gen-round8-report.mjs` —— 总报告 §7 会从 summary.json 自动填真实读数。**在那之前 §7 保持"未跑"字样，不要手填。**
+
+本轮已入库 25 条提交；工作树约 160 项脏，其中绝大多数属于上述三条在途车道，**不属于我、也不该由我代为提交**。
