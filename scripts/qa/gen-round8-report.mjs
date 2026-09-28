@@ -78,7 +78,8 @@ L.push("");
 L.push("## 8. 排在车道之后做、且有明确因由的三项", "");
 L.push("- `#51`（26 条登录页用例挂 guest-only 前置）与 `#67`（复测腿成员改由 ops 清单派生）：`round7-NOTES.md:1897/:3503` 写明在跑的腿正逐组读 ops 文件，中途改会让前半用旧判据、后半用新判据。");
 L.push("- `CH12`：欠一条带 prestate 的 `--tap` 复跑（节点在 `hub.vue:215` 的 `v-if=!isVerified`，未认证身份才点得动）。命名不等于结案。");
-L.push("- 四条孤儿门禁的接线（`verify-dry-no-lease` / `verify-openqueue-lanes` / `verify-case-automatable` / `run-round7-closeout` 此前无人 spawn）。", "");
+L.push("- 四条孤儿门禁的接线（`verify-dry-no-lease` / `verify-openqueue-lanes` / `verify-case-automatable` / `run-round7-closeout` 此前无人 spawn）。");
+L.push("- 还能干的活、每条的命令与验收口径、以及 167 条重判里 45 条可回收的分布，写在 `reports/audit/round-7/followups-v33.md`。", "");
 
 writeFileSync(join(REPO, "reports/audit/round-7/round8-final-report.md"), L.join("\n") + "\n");
 console.log("WROTE reports/audit/round-7/round8-final-report.md");
