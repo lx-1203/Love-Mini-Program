@@ -25,11 +25,19 @@
 - 选 B：推翻 -005，保留 28rpx，并改 -005 的判据。
 - 我停在原地：没落账也没改码，等你选。
 
-## 5. 帧像素要不要长期可查
+## 5. 帧像素与清单路径要不要长期可查
 `.gitignore:68` 是 `*.png`，所以所有报告里写的帧路径只在采集机可解析，干净 clone 一条都打不开。本轮新出帧还有个具体坑：**DevTools 的截图通道回来的字节是 JPEG，却挂在 `.png` 文件名上**，任何 sniff PNG magic 的检查都会被骗。出处：round7-final-report §3.2、`.zcode/tmp/lane-devtools/status.json`。
-- 选 A：进 Git LFS。
-- 选 B：包外归档（报告里留 hash 指纹，不留图）。
-- 选 C：明确接受"证据绑定采集机"，并在报告模板里写死这句话。
+
+**同一条病还有第二个轴（本轮新查出来的）**：`reports/audit/round-7/tapfix-merged.json` 的 `lanes` 存的是**绝对路径**（`D:/6/恋爱小程序/reports/…/tapfix-briefs/09/tapfix-lane-PAGES-LOGIN-INDEX.json.json`），文件名还带 `.json.json` 双后缀。我实测这份件里 56 条 lanes 路径 56 条存在、0 缺失，所以本机自洽；但换一个 clone 根目录，这 56 条引用全部指空。也就是说"证据可携"现在坏在两处：像素被 ignore 规则挡住，路径被绝对写法挡住。
+- 选 A：进 Git LFS，同时把清单里的绝对路径改成仓内相对路径（一次收掉两个轴）。
+- 选 B：包外归档（报告里只留 hash 指纹，不留图也不留本机路径）。
+- 选 C：明确接受"证据绑定采集机"，在报告模板里写死这句，别再让清单长得像可携引用。
+
+顺带记一笔本轮查实的账（不需要你决定，只是把归因写清）：工作树里有 6 个被删的跟踪文件
+（`tapfix-lane-{login,register}-index.json`、`tapfix-lane-village-{index,post,publish}.json`、
+`tapfix-lane-campus-post-topic.json`），我核过它们**不是丢证据**：新布局
+`tapfix-briefs/NN/tapfix-lane-*.json.json` 里六页都有对应件，merged 的 56 条引用零缺失，
+且原件在 HEAD 里仍可取回（18692 / 28333 字节）。属旧扁平布局被合并，不是有人删了证据。
 
 ## 6. 各轮写进库的测试数据要不要清
 `posts=270 / comments=1238`，其中本轮 G8 又自增了 `posts.id=270`、`comments.id=1238`、`campus_topics.id=299`、`campus_replies.id=31`；每跑一次 G8 就 +1。默认"保留"已按你的授权落地（`inventory-g8-test-data.mjs` + `test-data-cleanup.sql`，后者默认 ROLLBACK 且表名未实名替换前删不动）。出处：round7-final-report §3.1。
