@@ -34,6 +34,15 @@ const outPath = corpusDir ? join(REPO, corpusDir, "manifest-detail.json") : "";
 function sha16(abs) { return crypto.createHash("sha256").update(readFileSync(abs)).digest("hex").slice(0, 16); }
 function rel(p) { return relative(REPO, p).split(sep).join("/"); }
 
+/* 这批帧的**采集带** = 源结果文件自己记的 gitSha（盘上出处，不是推断出来的）。
+   顶层 gitSha 按 L67-68 取的是「转换那一刻的 HEAD」，两者跨天重建 corpus 时必然不同：
+   round-7 的 18 份 exec-* 索引就是这么被 verify-provenance-all.mjs:204 判成 4867 帧「回填戳记」
+   —— 帧的 mtime 和行内 at 都是 2026-09-26~27，顶层戳记却是 2026-09-28 的提交。
+   门禁其实早就支持逐行带（:196 `const rowStamp = s.bandSha || stamp`），只是生产者一直没写它，
+   于是「诚实的转换时间」把「诚实的采集带」顶掉了，跨带进来的帧被读成造假。
+   补 bandSha：每帧按自己那一带受审，顶层 gitSha 仍然如实记转换环境的 HEAD。 */
+const capturedBand = j.gitSha || "";
+
 const shots = [];
 const missing = [];
 for (const r of rows) {
@@ -58,6 +67,7 @@ for (const r of rows) {
     bytes: st.size,
     contentHash: sha16(abs),
     at: new Date(st.mtimeMs).toISOString(),
+    ...(capturedBand ? { bandSha: capturedBand } : {}),
   });
 }
 const dupHash = {};
@@ -70,6 +80,9 @@ try { headSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: REPO, encoding
 const manifest = {
   gitSha: headSha,
   resultsGitSha: j.gitSha || "(结果文件没记)",
+  bandShaSource: capturedBand
+    ? "行内 bandSha 逐字取自 " + RESULTS + " 顶层记的那一枚（采集带）；顶层 gitSha 仍是转换时刻的 HEAD，两者不同是事实，不是造假"
+    : "(结果文件没记 ⇒ 行内不写 bandSha，由门禁退回顶层，按转换带受审)",
   workflowVersion: "round-7 exec slice（WS 取证 + 桥出帧）",
   generatedAt: new Date().toISOString(),
   project: "apps/client/dist/build/mp-weixin",

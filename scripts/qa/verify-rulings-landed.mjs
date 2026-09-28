@@ -5,6 +5,7 @@
      · 两项是载体文件（要求 schema 版本、运行期 SHA、以及各自那件"必须写下来"的字段）
    缺省判四项；--selftest 会把每条判据各破坏一次，确认门禁真的会红（一条永不会红的门禁就是装饰）。 */
 import { readFileSync, existsSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 
@@ -167,7 +168,15 @@ if (SELFTEST) {
     try { return GIT("rev-parse", "--short", GIT("log", "-1", "--format=%H", "--", "apps/api") + "^"); } catch { return ""; }
   })();
   const side = (() => { try { return GIT("rev-list", "--max-count=1", "--all", "--not", "HEAD").slice(0, 8); } catch { return ""; } })();
-  breaks.push(["载体 SHA 解析不到（形状合法）必须红", !ITEMS[2].check({ ...gates, gitSha: "deadbeef" }), shaState("deadbeef").msg]);
+  /* 「解析不到」这条负例的 SHA 也现取，不写死。原来这里放的是字面量 "deadbeef"：
+     它确实让本条负例成立，却同时把本文件送上 verify-provenance-all 的生产者轴（L230-239
+     stampsOwnValue 把 `gitSha: '<7-40hex>'` 认成写戳，L224 literalRe 再把它记成 LITERAL_SHA），
+     于是一条真断链的负例被读成「生产者写死戳记」。改成对固定盐做 sha1：
+     形状仍合法（40 位小写十六进制，过 /^[0-9a-f]{7,40}$/），而它必然不是本仓对象；
+     万一它解析成了对象，说明负例自己失效，当场 exit 2 —— 这条自检也不许恒真。 */
+  const unresolvable = createHash("sha1").update("lane-stamps:sha-unresolvable-negative-fixture").digest("hex");
+  if (GITOK("cat-file", "-e", unresolvable + "^{commit}")) { console.log("  ✗    NEG 夹具派生的 SHA 竟是本仓对象 ⇒ 「解析不到」这条负例等于没测"); process.exit(2); }
+  breaks.push(["载体 SHA 解析不到（形状合法）必须红", !ITEMS[2].check({ ...gates, gitSha: unresolvable }), shaState(unresolvable).msg]);
   breaks.push(["载体不是 HEAD 的祖先（旁支提交）必须红", side ? !ITEMS[2].check({ ...gates, gitSha: side }) : false, side ? shaState(side).msg : "本仓没有旁支提交可取 ⇒ 这条负例等于没测"]);
   breaks.push(["载体落后且其间 apps/api 改动过必须红", apiStale ? !ITEMS[2].check({ ...gates, gitSha: apiStale }) : false, apiStale ? shaState(apiStale).msg : "取不到动过后端的祖先提交 ⇒ 这条负例等于没测"]);
   breaks.push(["载体 SHA = HEAD 必须绿（新鲜载体不误伤）", ITEMS[2].check({ ...gates, gitSha: HEAD_SHORT }), shaState(HEAD_SHORT).msg, "POS"]);

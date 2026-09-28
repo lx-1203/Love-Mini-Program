@@ -4,6 +4,12 @@
  * 并额外检查每份 manifest 记的 gitSha **是不是真提交**、**是不是当轮 HEAD**
  * （R1 的 305 帧就栽在这上面：manifest 记 aefd8a72，HEAD 实为 18c91ccf → 按契约整批过期）。
  * 只读。用法：node scripts/qa/verify-evidence-corpus.mjs
+ *
+ * 2026-09-29 口径修订（lane-stamps）：CORPUS_EXPIRED_GITSHA 原先把三种完全不同的事实并成一个数
+ * ——「可解析、只是比 HEAD 旧的历史轮戳记」「写了个本仓解析不到的字符串（真断链）」
+ * 「顶层没有 gitSha（无从核实）」。前一类是证据定格在当时的正常状态，后两类才不可背书。
+ * 现在拆成 CORPUS_SHA_CLASS 三个类各自计数；**判红条件一字未放宽**（仍然是 !real ⇒ 红），
+ * 并且 HEAD 比对从「短写字符串相等」改成「经 git 归一到 40 位」，免得同一枚提交的全写被读成过期。
  */
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -27,6 +33,14 @@ function walk(dir, out = []) {
 }
 const hash16 = (p) => createHash("sha256").update(readFileSync(p)).digest("hex").slice(0, 16);
 const isRealCommit = (sha) => { try { execFileSync("git", ["cat-file", "-e", sha + "^{commit}"], { cwd: repo, stdio: "ignore" }); return true; } catch { return false; } };
+/* 把「是不是 HEAD」比成字符串相等是错的：HEAD 取的是 --short（8 位），而生产者在 2026-09-28
+   起的 exec-* 清单里写的是 40 位全写（实测 reports/audit/round-7/exec-A-mock-final 那一枚）。
+   同一枚提交用两种方言写，短写比不中的那份就会被记进"过期"堆里 —— 于是这个计数器数的不再是
+   "证据与盘不符"，而是"戳记少写了几个字符"。一律经 git 归一到 40 位再比。
+   这只修**分类**，不动判红：红仍然由 isRealCommit 决定（见下面 real/fail 那一段）。 */
+const HEAD40 = (() => { try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: repo, encoding: "utf8" }).trim(); } catch { return ""; } })();
+const fullCommit = (sha) => { try { return execFileSync("git", ["rev-parse", sha + "^{commit}"], { cwd: repo, encoding: "utf8" }).trim(); } catch { return ""; } };
+const behindCount = (sha) => { try { return Number(execFileSync("git", ["rev-list", "--count", sha + "^{commit}..HEAD"], { cwd: repo, encoding: "utf8" }).trim()); } catch { return -1; } };
 
 // 自测专用 --root（默认 reports，生产不传 → 行为与逐字改前一致）：本工具只扫 reports/，
 // 而门禁小修的段边界自证需要在 reports/ 之外放一次性夹具（见 .zcode/tmp/scope-fixtures/），
@@ -106,6 +120,15 @@ if (!manifests.length) {
   process.exit(2);
 }
 let fail = 0, expired = 0, scanned = 0;
+/* 「过期」不是一个类，是三个类，而它们的历史含义完全不同：
+     · resolvableOlder —— 戳记指向一枚真实存在、只是比 HEAD 旧的提交。历史轮的证据本就该定格在
+       当时那枚提交上（round-1 记 aefd8a72、round-6 记 874ff52f…），把它和真断链并成一个数，
+       面板上就是"43 处坏"，而真正不可核实的只有 1 处 —— 门的读数与它声称查的东西不是同一件事。
+     · unresolvable   —— 写了个形状像 SHA 的字符串，本仓解析不到 ⇒ 真断链，判红。
+     · empty          —— 顶层根本没有 gitSha ⇒ 无从核实，判红。
+   计数拆开只改**可见性**；判红条件仍是 !real（见下面 fail 那一段），一类都没被放行。 */
+let expiredResolvableOlder = 0, expiredUnresolvable = 0, expiredEmpty = 0;
+let framesResolvableOlder = 0, framesUnresolvable = 0, framesEmpty = 0;
 const failReasons = [];
 for (const m of manifests) {
   let j; try { j = JSON.parse(readFileSync(m, "utf8")); } catch { console.log(`  UNPARSEABLE ${m}`); fail++; continue; }
@@ -128,13 +151,24 @@ for (const m of manifests) {
   }
   const sha = j.gitSha || "";
   const real = sha ? isRealCommit(sha) : false;
-  const same = sha && sha === HEAD;
-  const verdict = !sha ? "无gitSha" : (!real ? "gitSha不存在" : (same ? "对应当前HEAD" : "非当前HEAD→按契约过期"));
-  if (!same) expired++;
+  const full = real ? fullCommit(sha) : "";
+  // 归一到 40 位再比：同一枚提交的短写/全写是同一个事实，不是两种事实。
+  const same = !!full && full === HEAD40;
+  const behind = real && !same ? behindCount(sha) : 0;
+  const verdict = !sha ? "无gitSha(空 ⇒ 不可核实，判红)"
+    : (!real ? "gitSha不存在(形状合法但本仓解析不到 ⇒ 真断链，判红)"
+      : (same ? "对应当前HEAD"
+        : `非当前HEAD→按契约过期(可解析=${behind < 0 ? "?" : behind}个提交前的历史 ⇒ 不判红，历史轮证据本应定格在当时那枚提交)`));
+  if (!same) {
+    expired++;
+    if (!sha) { expiredEmpty++; framesEmpty += shots.length; }
+    else if (!real) { expiredUnresolvable++; framesUnresolvable += shots.length; }
+    else { expiredResolvableOlder++; framesResolvableOlder += shots.length; }
+  }
   if (missing || mismatch || noHash || !real || bytesBad) {
     fail++;
     const why = [missing && `帧不存在=${missing}`, mismatch && `哈希不符=${mismatch}`, noHash && `无 contentHash=${noHash}`,
-      bytesBad && `字节数不符=${bytesBad}`, !real && `gitSha 不可核实(${sha || "空"} ⇒ ${verdict})`].filter(Boolean).join(" ");
+      bytesBad && `字节数不符=${bytesBad}`, !real && `gitSha 不可核实(${sha ? sha + " ⇒ 本仓解析不到（真断链）" : "空 ⇒ 顶层无 gitSha（无从核实）"})`].filter(Boolean).join(" ");
     failReasons.push(`${toRelPosix(m)} 共 ${shots.length} 帧 :: ${why}`);
   }
   // 只改打印，不改判定：原写法 m.replace(repo + "/")，Windows 下 m 与 repo 都是反斜杠路径，
@@ -167,6 +201,10 @@ for (const h of hard) console.log((scoped ? "  INFO_HARDCODED_SHA " : "  HARDCOD
 const hardBlocking = scoped ? [] : hard;
 
 console.log(`CORPUS_SCANNED=${scanned} CORPUS_EXPIRED_GITSHA=${expired} CORPUS_PROBLEMS=${fail}${scoped ? "（限定 scope=" + scopeArg.join("+") + "，生产者侧降级 INFO）" : ""}`);
+/* 新增行、不改上面那行一个字节（emit-round-report.mjs:1254 用 num("CORPUS_EXPIRED_GITSHA") 取数，
+   动了它的形状就是跨车道改契约）。这一行把那个合并数拆成三个类，谁该红一目了然：
+   可解析的旧是历史轮定格的正常状态，不可解析/空才是断链。 */
+console.log(`CORPUS_SHA_CLASS resolvableOlder=${expiredResolvableOlder} unresolvable=${expiredUnresolvable} empty=${expiredEmpty} :: frames resolvableOlder=${framesResolvableOlder} unresolvable=${framesUnresolvable} empty=${framesEmpty}`);
 /* 判红必须当场说清是哪几份、缺什么。原来只有一个 CORPUS_PROBLEMS=N 的计数，
    读的人得自己在几十行里逐行对数字找原因 —— 一个不指名道姓的红和没有证据一样没用。 */
 for (const r of failReasons) console.log("  CORPUS_PROBLEM " + r);
