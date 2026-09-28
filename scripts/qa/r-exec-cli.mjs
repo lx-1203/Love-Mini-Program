@@ -297,6 +297,56 @@ const ROUTE_QUERY = {
      取值 = 身份 B（100159）：A 腿的本人是 100158（scripts/qa/r-exec.cjs:494），自己不能当自己的聊天对象；
      同页判据 CS04 的 pre 已按 userId=100159 跑通过（reports/audit/round-6/ops/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json:41-42）。 */
   "subpackages/chat/chat-session/index": "userId=100159",
+  /* VD10/VD15 的 pre 分别是「身份A 进入帖子详情，底部输入栏可见；记录 .comments-count 当前值 N」与
+     「身份A 进入他人帖子详情（不得是本人帖）」（reports/audit/round-6/ops/次要18.json VD10/VD15.pre）。
+     本页唯一被消费的深链参数是 query.id（detail.vue:681），不带它 :709-714 直接 clearCurrentPost + toast
+     帖子不存在，而正文 :781 scroll-view 与底部 :1262 detail-input-bar 都是 v-if="currentPost"
+     ⇒ .post-body(:830)/.post-content(:831)/.input-bar__input(:1284) 在裸直达下必然 absent，那是缺参数不是产品没做。
+     取值 16 同时钉住两档两轴：
+       · 真实档 = 在册行 posts.id=16（status='active' + audit_status='approved' + visibility='public'）。
+         getPost 的两道门（VillageQueryService:411 只放 active、:427 对非作者挡 pending）都过；
+         实测只读列表 GET /api/v1/posts?page=3 里 id=16 在（total=231=DB active+approved 计数），
+         author.userId=10016（谢知意）≠ 本人 100158 ⇒ VD15 的「他人帖」成立；commentCount=8 ⇒ VD10 有基数 N。
+       · mock 档 = stores/village/index.ts:1086 的 "N → post-N" 兼容映射把 16 解成 mock-data.ts:605 的 post-16，
+         正是 VD01/VD02/VD19 三条判据自己点名的号 ⇒ 同一行让 mock 腿也落在有帖子的画面上。
+     不是抄夹具号段：禁区是 posts 9000-9029 / users 20000-20049（database/flyway/sql/V2026.08.09.0002__seed_post_likes_favorites_and_views.sql:13），
+     16 是 posts 自增序列里的种子帖，两档各自可证存在。 */
+  "subpackages/village/village/detail": "id=16",
+  /* TD03/TD06 的 pre 分别要「身份A 进入话题详情（回复栏 :412-428）」与「身份A 进入他人话题详情（不得长按自己的内容）」。
+     onLoad 只认 topicId/id（topic-detail.vue:217），缺它 :226 toast storeErrors.circle.topicIdInvalid 且 currentTopic 恒空，
+     而 :271 正文 scroll-view 与 :410 detail-footer 都是 v-if="currentTopic" ⇒ .topic-content(:294)/.reply-input(:415) 必然 absent。
+     取值 37 = 在册行 circle_topics.id=37：audit_status='approved'（30 行全是 approved，且无一行 author=100158）、
+     author_id=10014 ≠ 本人 ⇒ TD06 的「他人」成立；reply_count=12 且 circle_replies 实际就是 12 行 ⇒ TD03 的
+     「服务端回读回复条数只能 +1」有基数可回读。实测 GET /api/v1/circles/topics/37 = 200
+     {id:37,title:"猫咪名字征集",authorId:10014,replyCount:12,circleId:15}、
+     GET /api/v1/circles/topics/37/replies = 200 totalElements=12；对照 GET /circles/topics/999999 = 400 请求参数错误
+     ⇒ 这条路只认在册行，抄一个演示号（topicId=9/99）会被当场打回。 */
+  "subpackages/circles/circles/topic-detail": "topicId=37",
+  /* 下面两页**故意不落行**，缺的不是"值"而是别的载具，写进去只会把另一条判据的落点换掉（表是页粒度的，
+     同页所有 case 共用一行 ⇒ 一行只能钉一种落点）：
+   · subpackages/market/detail/index（MD09）三重挡：
+       ① 商业化封存：app_switch 'commerce.enabled'=0（后台闸，DB 实测），GET /api/v1/app-config 现答
+          "commerce.enabled":false ⇒ commerceSealed 为真，onLoad :267 在 loadProduct 之前早退，
+          只渲染 :306 封存卡，`.product-scroll`(:360) 拿任何 id 都到不了；
+       ② 商品接口本身现在是坏的：GET /api/v1/products/1|3|列表 全部 HTTP=500
+          NullPointerException at CommerceGuardAspect.java:49（apps/api/logs/campus-love-api-error.log 2026-09-28 15:43）
+          ⇒ 没有任何商品 id 能在此刻解析；
+       ③ 就算通了也不满足 MD09 的前置「介绍超长的商品」：products 全表 6 行、status 全=1（在架），
+          MAX(CHAR_LENGTH(description))=17（id=1 校园音乐节早鸟票），离"500 字超长"差两个数量级，
+          而本道授权是只读库，不许我补一条长描述夹具。
+     另外 MD07（requiresReal=true）与 MD09 同页而落点相反（它要 (a) 无 id / (b) ?id=999999 的 notFound 空态），
+     页粒度表里落一行就吃掉另一行 ⇒ 这页要的是「逐条目 precondition.query」或后端夹具，不是 ROUTE_QUERY。
+   · subpackages/profile-extra/profile/other（OT05/OT06/OT09）两重挡：
+       ① 前置互相矛盾，页粒度一行装不下：OT05 要「未喜欢过」的目标、OT06 要「已喜欢/互喜」的目标。
+          以本人为 A=100158 实测 likes：user_id=100158 只有 target=10003(active) 与 target=100155(active)，
+          而 target_user_id=100158 只有 10003 ⇒ 10003=互喜(OT06 态2)、100155=已喜欢未匹配(OT06 态1)、
+          10001=未喜欢(OT05，实测 GET /api/v1/profile/10001 = 200 basic.name=远山/age=25/location=北京)。
+          三个不同 id 才凑得齐三条判据，写死任意一个都让另一条当场失真；
+       ② OT02/OT03（同页）的落点就是「不带 userId ⇒ missingParam」，钉了值就把它们从"参数缺失错误态"改成渲染资料卡。
+     加上这两行的点名物件是组件作用域名（.relationship-cta__btn--like / .whisper-sheet__input 只活在
+     components/profile/public/RelationshipCTA.vue、components/discover/WhisperComposeSheet.vue 里），
+     CLI 通道的元素级动作进不了组件子树 ⇒ 补 query 至多让它"可判"，闭不上，归 WS 腿（r-exec-ws.mjs）。
+     证据来源：reports/audit/round-6/ops/次要20.json 与 次要22.json 的 pre 字段、reports/audit/round-6/ops/次要18.json TD02.pre。 */
 };
 /* 模拟器独占租约（round-7 补）：本机两条通道驱动同一个 DevTools 模拟器，
    并发不会报错，只会互相换页——实测一批测量因此作废（58 行落点探针取空）。

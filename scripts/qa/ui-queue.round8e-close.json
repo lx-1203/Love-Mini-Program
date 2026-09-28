@@ -1,0 +1,203 @@
+{
+ "$schema": "run-ui-queue.mjs --legs scripts/qa/ui-queue.round8e-close.json --out reports/audit/round-7/ui-queue-round8e-close；串行，第一条非 advisory 红就停并把剩下的记成 NOT_RUN（判决口径见 run-ui-queue.mjs:127-151，advisory 红只放行后面的腿、结尾仍计入 QUEUE_RESULT=FAIL）",
+ "$why": "round-8 走到现在，剩下的可量缺口全是设备腿，而且每一把都欠在同一个形状上：档位或身份没对上，于是从来没在被测的那一档上量过。(a) vip 那 4 行 PC06/VB03/VB07/VB10 在 mock 与 real 档都进不去那两页——feature-flags.ts:29 是 membershipEnabled:false，全仓唯一把它翻成 true 的是 showcase.ts:69（由 main.ts:89 在 mount 前调 applyShowcaseMode），而 vip/bills.vue:37 与 vip/promo-code.vue:34 的 onLoad 在 false 时 toast + navigateBack/switchTab 弹回 profile；能进那两页的只有 showcase 档，而 showcase 产物自己的 config/env.js 仍写着 VITE_API_MODE 为 real（本波开跑前逐档复量：mock=mock@f1c7b96b、real=real@f0677920、showcase=real@ed1cd82c），执行器按档位盖章（r-exec-cli.mjs:176 band=mode@sha8 + identity=IDENTITY），门的认档判据是 verify-real-coverage.mjs:123 的 /^real(@|$)/ ⇒ 在 showcase 档量到的这 4 行记的是真实覆盖，不是第三档的旁证。(b) 门的游客轴还点名 5 行 LK04/OT06/OC09/OC11/MD09（.zcode/tmp/gap-identity/REPORT.md 第③条 + NO_GUEST_JUDGED 输出），这 5 行的登录侧已有账、只欠 guest 轴；游客×mock 被执行器判成结构不可满足（r-exec-cli.mjs:549 硬停），real 档的 WS automator 通道又已被 scripts/qa/ui-queue.round8d-realws.json 的 $status 记成 NOT_SHOOTABLE（三次同形状：端口在听但 currentPage() 420 s 内 136 次取不到页），今天唯一真跑绿的载具是 real 档的 CLI 腿（stage-8 的 exec-guest-real-login-r8）⇒ 这一把只有换档这一条路。(c) ② 帧债现量 open=17、A 配方 SHOOT=9，那 9 行有取景配方而盘上没帧 ⇒ 要一条配方驱动的取景腿。这份计划就是按档位顺序把这三把刀排成一串无人看守的队，并在结尾用两把只读门把效果量出来。",
+ "$hold": "本波没有任何重建腿（一条 run-npm-script.mjs / build-showcase-isolated.mjs 都没有）⇒ 队列中途不会换产物字节，也就不需要「重建之后把窗口接回来」的补丁腿；三档产物此刻都在盘上、各自 config/env.js 可读（指纹见 $why）。开跑前这些条件由人确认：(1) heldLeases() 必须为空——腿 1/5/7 走 open-project-window.mjs:32 的 guardUiLease，腿 3/8 取 r-exec-cli 的 wechat-automation-cli.lock，腿 6 取 shoot-frameplan 自己的 r7-shooter-<pid>，本机两条通道驱动同一个模拟器，并发不报错、只会互相换页（本仓为这件事折过一整批测量）。(2) 后端 8080 必须在听且未鉴权路由回 401：腿 3 与腿 8 都要向真实后端铸票（showcase 档的 VITE_API_MODE 同样是 real），mintToken 或 verifyLogin 不成立时执行器整批不跑并退 2。(3) apps/** 现在 git 干净（本波开跑前实测 git status --porcelain -- apps 为 0 行）：band 只锁 config/env.js 不锁构建字节，若上游又落了 apps/ 改动，必须先跑重建三腿 + 每档一条接窗腿再回本文件，否则三档量的是三个版本。(4) showcase 那个工程必须仍在开发者工具的项目列表里（它入库过一次，见 reports/audit/round-7/round7-NOTES.md §43 的 project_import + open_project_window）；open-project-window.mjs:24 找不到该目录的 app.json 就直接 exit 2。(5) 另一个会话正在改 r-exec-cli.mjs 与 shoot-frameplan.mjs 的深链参数：腿 3/6/8 跑的就是这两个文件，开跑前先各自 node --check 并确认没有并发写；本文件里不写任何 query 参数值，深链参数由那两处 ROUTE_QUERY 表自己决定，计划只排序腿。(6) PATH 上给 Node 22（默认 node 是 DevTools 带的 v16，automator SDK 会挂）。(7) 全程不带任何 --allow-* 豁免旗标：--allow-gate、--allow-guest-mock、--allow-mock-guest、--allow-unchanged-state 一个都不给——被载体门挡住就按口径记 NOT_SHOOTABLE，不硬跑换绿。",
+ "legs": [
+  {
+   "name": "open-window-showcase-r8e",
+   "file": "scripts/qa/open-project-window.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin-showcase",
+    "--settle",
+    "24"
+   ],
+   "timeoutMin": 14,
+   "why": "本波第一条腿先把窗口接到 showcase 档，这是本仓唯一的窗口活着判据：r-exec-cli 只往当前打开的那个模拟器里注入、自己不开窗，换档不接窗的话腿 3 第一次 automation_evaluate 就抛错、一行不跑。旗标只有两个且都在该文件里读码确认过（:20 的 --project、:21 的 --settle），判活口径是 :51 的 live()（读得到非空 route 才算起来），settle=24 是为躲开刚开完档位首帧 {route:空,pages:0} 那次早退。超时依据：ideCall 自带 180 s 超时 + 24×5 s 等待 ≈ 5 min，14 min 留一倍余量；stage-8/8c 同参数腿实测 9–74 s。"
+  },
+  {
+   "name": "gate-selectors-exist-showcase-r8e",
+   "file": "scripts/qa/verify-case-selectors-exist.mjs",
+   "args": [
+    "--band",
+    "apps/client/dist/build/mp-weixin-showcase"
+   ],
+   "advisory": true,
+   "timeoutMin": 6,
+   "why": "只读静态门、不占设备：开跑前先按 showcase 产物核对判据点名的类名在不在——--band 在 :224，默认值指向 mock 档，不显式指档就会拿另一档的结论当被测档（该文件 :43 的未知旗标白名单也说明它只认 ops/band/max-samples/selftest）。这一条红=发现缺陷（判据点了产物里没有的物件），不是 UI 坏了，所以标 advisory；它能在一条 25 min 的设备腿之前先给出可读答案。超时依据：只 grep 一个产物目录，沿用 stage-8 同型腿的 6 min。"
+  },
+  {
+   "name": "exec-A-showcase-r8e",
+   "file": "scripts/qa/r-exec-cli.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin-showcase",
+    "--out",
+    "reports/audit/round-7/exec-A-showcase-r8e",
+    "--tap",
+    "--identity",
+    "A",
+    "--label",
+    "round-7-r8e-A-showcase",
+    "--manifests",
+    "次要22"
+   ],
+   "timeoutMin": 25,
+   "why": "第一把刀：PC06/VB03/VB07/VB10 只在 showcase 档可达（会员开关链条见 $why：feature-flags.ts:29 → showcase.ts:69 → main.ts:89 → vip/bills.vue:37 / vip/promo-code.vue:34 的 onLoad 弹回）。上一轮同一 manifest 在同一档跑出的这 4 行全是 SKIPPED，理由写的是 requiresReal ⇒ 本切片只跑 mock 产物——那句话在它自己那次运行里就不成立（r-exec-cli.mjs:41 现在从档位本身推 REAL_BAND，showcase 的 mode=real ⇒ 这一批不再因档位被跳过），所以这 4 行今天第一次可能真被判决。旗标逐条读码：--project :30、--out :42（本波专用新目录，与盘上 22 个 exec-* 目录名都不重）、--tap :54（这 4 行的 action 是点击/兑换那一类，不带就把它们记成不点）、--identity :264（这 4 行在判据台上的 identities 是 A/B ⇒ A 腿有权认领，见 :81 的 identityScopeSkip）、--label :44、--manifests :45（次要22=78 行/7 个页组，PC06 在 vip/promo-code、VB03/VB07/VB10 在 vip/bills，逐条 grep 过）。刻意不带 --real（:41 已从档位推出，留着只是人工强制开关）、不带 --allow-gate（:64：整页锁屏在就照判会把 absent 写成产品没做，那是被门挡住的载体欠账，该记不该硬跑）。超时依据：同一份清单在 exec-A-mock-stage7 里以 --tap 实测量到行时合计 6.4 min（78 行），加 7 个页组的开页与沉降、真实后端铸票与 boot 核对 ⇒ 约 12 min，25 min 留一倍余量。"
+  },
+  {
+   "name": "triage-A-showcase-r8e",
+   "file": "scripts/qa/triage-exec-failures.mjs",
+   "args": [
+    "--results",
+    "reports/audit/round-7/exec-A-showcase-r8e/exec-results.json",
+    "--dist",
+    "apps/client/dist/build/mp-weixin-showcase"
+   ],
+   "timeoutMin": 8,
+   "why": "执行腿后面必须紧跟指向它那一份输出的分诊腿：--results 在 :29（这里逐字对上腿 3 的 --out 目录，不能抄上一轮的目录名，否则分诊的是别人的行），--dist 在 :30 指被测的那一档产物——指回 mock 档就会把 showcase 档才有的物件报成产物里没有。该文件 :40 有旗标白名单（results/dist/src/out/guest-book/guest-measured/ops），多给一个就 exit 2，所以只带这两个，其余按默认（guest 落点裁定两份都在盘上）。红=这一批行的失败口径没进已登记的桶，属发现缺陷而不是设备坏了，但它决定后面的腿能不能被读懂 ⇒ 不标 advisory。超时依据：同型腿实测 30–41 s，8 min 沿用 stage-8。"
+  },
+  {
+   "name": "open-window-mock-r8e",
+   "file": "scripts/qa/open-project-window.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin",
+    "--settle",
+    "24"
+   ],
+   "timeoutMin": 14,
+   "why": "第一次换档（showcase → mock）之后、任何驱动模拟器的腿之前必须重新接窗：窗口停在 showcase 档时取景腿的第一次调用就是 transport 超时，看起来像通道坏了（本仓为这个形状写过整段教训，见 open-project-window.mjs 文件头）。取景腿要的是 mock 档——这 8 条配方经 shoot-frameplan.mjs:506 的 normIdent 归出来全是 identity=A，而 mock 包能表达 A。旗标同上（:20/:21）。超时依据同腿 1。"
+  },
+  {
+   "name": "shoot-framedebt8-r8e",
+   "file": "scripts/qa/shoot-frameplan.mjs",
+   "args": [
+    "--plan",
+    "reports/audit/round-7/frameplan-round7-final.json",
+    "--project",
+    "apps/client/dist/build/mp-weixin",
+    "--label",
+    "round-7-r8e-framedebt",
+    "--out",
+    "reports/audit/round-7/uidebt-shoot-r8e-framedebt",
+    "--only-ids",
+    "MP-R2-CAMPUSINDEX-011,MP-R2-CIRCLES-INDEX-004,MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001,MP-R2VIS-PAGES-HOME-INDEX-005,MP-R2-PAGES-DISCOVER-INDEX-013,MP-R2VIS-PAGES-PROFILE-INDEX-004,MP-R2VIS-PAGES-HOME-INDEX-006,MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01",
+    "--ws-taps"
+   ],
+   "timeoutMin": 35,
+   "why": "② 帧债里 A 配方 SHOOT 而盘上没帧的 9 条，本腿拍其中 8 条（第 9 条 MP-R2VIS-PAGES-MESSAGES-INDEX-001 载具不成立，理由与出路都写在 $dropped）。载具读码：这是配方驱动不是用例驱动，--plan 在 :59、--only-ids 在 :197（子集开关，不是新判据：请求里有配方不认识的 id 会当场 :204 判子集不闭合并退 2，所以这 8 个 id 已逐条核过在该配方里 disposition=SHOOT 且带 route；整份配方 49 条 SHOOT，本腿只交这 8 条，守恒只在子集内成立）；--label :60 决定帧落去 reports/screenshots/round-7-r8e-framedebt（盘上无同名目录，不覆盖旧帧——同名覆盖是 §19 付过学费的那件事），--out :62 是新目录且不以 exec- 开头（不会混进 verify-real-coverage.mjs:104 的执行轮扫描集）。--ws-taps 必须带：:655 的第二次载具只在带它时才测 text/computed-style/geometry 这类判点，而这 8 条正是这一类；不带时 :334 会明说是没带旗标而不是连不上，两者分开打印是这条腿的诚实之处。刻意不带 --allow-unchanged-state（:70）也不带 --reuse-frames（:699）：采集期 contentHash + 状态变化判决是今天才立的（文件头 GATE 区 :100-186 与收尾 stateGateAudit），交互后帧若与同组上游帧逐字节相同就该让这一轮以 exit 3 红掉，而不是被豁免或复用悄悄归档；红了就承认那一步是空动作，这是这一腿要回答的问题。前置已核：该配方 stillBad=0（:207 会因子集外查无此物的依据直接退 2），49 条 SHOOT 全带 route（:194 的过滤器），配方文件与 mock 产物的 app.json 都在盘上（:191/:192 两道前置）。超时依据：同一份配方 49 条在 stage-7 给 180 min（≈3.7 min/条），8 条 ≈ 30 min，再加 WS 端口发现与三次落点重试的退避 ⇒ 35。"
+  },
+  {
+   "name": "open-window-real-r8e",
+   "file": "scripts/qa/open-project-window.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin-real",
+    "--settle",
+    "24"
+   ],
+   "timeoutMin": 14,
+   "why": "第二次换档（mock → real）之后必须先接窗再跑游客腿：真实档的窗口停在 mock 产物上时，游客批次的落点全部量在隔壁页，而腿 8 的身份核对（clearSession 之后必须量到 not-logged-in）在这种现场毫无意义。判活口径 :51；这一腿也是后面两条设备腿唯一的窗口活着证明。超时依据同腿 1（同参数在 stage-8 腿 17 实测 74 s）。"
+  },
+  {
+   "name": "exec-guest-real-close-r8e",
+   "file": "scripts/qa/r-exec-cli.mjs",
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin-real",
+    "--out",
+    "reports/audit/round-7/exec-guest-real-close-r8e",
+    "--tap",
+    "--real-cases-only",
+    "--identity",
+    "guest",
+    "--label",
+    "round-7-r8e-guest-real-close",
+    "--manifests",
+    "次要19,次要20,次要21,次要22"
+   ],
+   "timeoutMin": 30,
+   "why": "第二把刀，也是 ⑤ 双身份现在唯一还欠的半把：门的游客轴点名 5 行 LK04(次要19)/OT06(次要20)/OC09+OC11(次要21)/MD09(次要22)，这 5 行都不带 identities 标记 ⇒ verify-real-coverage.mjs:166 的 axesOf 要求登录与游客两条轴各一条，:251 的 judgedGuest 只认 real 档上 identity 为 guest/not-logged-in 且判过（:122 的 JUDGED）的行 ⇒ 只有这一形状能消掉它们的账。载具用今天真跑绿的那条而不是 WS：exec-guest-real-login-r8 是同档位同旗标形状在 queue.log 里退 0 的先例，而 real 档的 WS 通道在 round8d-realws 的 $status 里是 NOT_SHOOTABLE。读码确认的旗标：--project :30、--out :42（新目录，不与盘上任何 exec-* 重名）、--tap :54（这 5 行的 action 全是点击/输入那一类，不带就把它们整批记成不点）、--real-cases-only :58/:553（把范围收到 requiresReal 那 98 行：门只数 requiresReal 用例（:77），多跑的 mock 用例不给任何一本账加名，只会把 timeout 撑大并稀释读数）、--identity :264、--label :44、--manifests :45（这 4 份清单共 350 行/31 个页组，其中 requiresReal 98 行/27 个页组，5 个目标 id 逐份 grep 定位）。刻意不带 --guest-warmup（:50：real 档的 assertGuestCapable 直接放行，预热是给 mock 档准备的）、不带 --allow-guest-mock（:549 的豁免——游客×mock 跑出来的落点红按门禁口径不许进账，等于用不可采证据换一个绿）。超时依据：同一批 4 份清单在 exec-guest-real-stage7（同形状 --tap --real-cases-only --identity guest）实测行时合计 3.8 min，加 27 个页组的开页与沉降、清会话与 verifyLogin 复核 ⇒ 约 15 min，30 min 留一倍余量。"
+  },
+  {
+   "name": "triage-guest-real-r8e",
+   "file": "scripts/qa/triage-exec-failures.mjs",
+   "args": [
+    "--results",
+    "reports/audit/round-7/exec-guest-real-close-r8e/exec-results.json",
+    "--dist",
+    "apps/client/dist/build/mp-weixin-real"
+   ],
+   "timeoutMin": 8,
+   "why": "腿 8 的分诊，--results 逐字指它那份输出（:29），--dist 指真实档产物（:30）。这一腿要看的是三种读数分得很清：5 个目标行里真被判的、被闸门落点裁定解释掉的（guest-landing-policy 那 26 组，r-exec-cli.mjs:69 起的 guestGateVerdict 会把落在裁定页的行写成身份适用范围问题而不是产品缺陷）、以及 OT06 这类判据物件住在组件作用域里、CLI 页面作用域查询点不到的行——后者上一波已被点名，分诊必须把它单独报出来而不是混进 absent。红=出现了没登记的失败口径 ⇒ 非 advisory。超时依据：同型腿 30–41 s，8 min 沿用 stage-8。"
+  },
+  {
+   "name": "gate-real-coverage-r8e",
+   "file": "scripts/qa/verify-real-coverage.mjs",
+   "args": [
+    "--round",
+    "round-7"
+   ],
+   "advisory": true,
+   "timeoutMin": 6,
+   "why": "本波加名的直接验收，排在两把刀之后：--round 在 :64，:66 据此把扫描目录定在 reports/audit/round-7，:104 只收 exec- 前缀目录 ⇒ 腿 3 与腿 8 的两个新目录天然进扫描集（取景腿的 uidebt-shoot-* 前缀不同，不会污染这本账）。要看的是三条守恒读数而不是一个数：免检+覆盖+欠账=236、NO_GUEST 应从 5 往下走（:254 那条桶）、vip 那 4 行要从 noA 进 covered（认的是 :123 的 band 判据与 :250/:251 的两条身份轴，showcase 档行盖的是 real@ed1cd82c ⇒ 计入真实覆盖）。advisory 的理由是它红=还欠账这个事实被读出来，不是设备坏了；但结尾仍计入 QUEUE_RESULT=FAIL（run-ui-queue.mjs:146-151），红不会被洗成绿。超时依据：只读扫 22 个 exec 目录的 JSON（本波开跑后是 24 个），沿用 stage-8/8d 同腿的 6 min。"
+  },
+  {
+   "name": "gate-frame-debt-coverage-r8e",
+   "file": "scripts/qa/verify-frame-debt-coverage.mjs",
+   "args": [],
+   "advisory": true,
+   "timeoutMin": 5,
+   "why": "② 帧债那本账的复读门，刻意一个旗标都不带：该文件 :39 的白名单只有 matrix/plans/triage/extra/selftest/strict-src-only，把 --round 抄给它会被 :44 判成未知旗标 exit 2 —— 而它 :38 的注释写的正是这件事（拼错的旗标回落默认路径 = 静默假结果，宁可退 2）。它量的是 open 行数与三条去向（:178 那一行 FRAMECOV），腿 6 之后这 8 行应当从只有配方变成配方加帧。只读、不改任何权威件 ⇒ advisory。现量基线（本波开跑前只跑过一次它自己）：open=17、A配方SHOOT=9、B归置表=2、C显式登记=6、裸行=0、守恒 17/17。超时依据：读一份台账加三份配方，5 min。"
+  },
+  {
+   "name": "queue-homogeneity-r8e",
+   "file": "scripts/qa/verify-ops-corpus-stamp.mjs",
+   "args": [
+    "--queue",
+    "scripts/qa/ui-queue.round8e-close.json"
+   ],
+   "advisory": true,
+   "timeoutMin": 3,
+   "why": "同轮同质性检查，指向本文件自己：--queue 在 :122（:35 的白名单只认 write/check/copy/queue/selftest/ops/out/stamp），识别口径是 leg.file 含 r-exec-(cli|ws)（:134）⇒ 本波应识别出 2 条执行腿；两条都不带 --ops ⇒ 落回同一个默认目录 reports/audit/round-6/ops（r-exec-cli.mjs:43 与 verify-real-coverage.mjs:65 是同一个默认），不同语料目录=1 才 PASS。红=腿 3 与腿 8 判的不是同一版判据正文，两波的读数不可拼在一起引用；属发现缺陷 ⇒ advisory，且这条旗标与文件是照抄 stage-8/8d 已跑过的真实调用，不是新发明的名字。超时依据：只算内容哈希，3 min。"
+  }
+ ],
+ "$dropped": [
+  {
+   "name": "MP-R2VIS-PAGES-MESSAGES-INDEX-001（② 帧债 9 条里的第 9 条，登出态取景）",
+   "disposition": "NOT_SHOOTABLE（载体级，不是产品红）",
+   "reason": "这一条的前置写的是 identity=guest 且必须跑 real 档，但取景器认不出它：shoot-frameplan.mjs:506 的分身份键取的是 it.precondition.identity，而这条在 frameplan-round7-final.json 与 frameplan-round7-guest-real.json 里的 precondition 都是一句字符串（没有 .identity 字段）⇒ :503 的 normIdent 收到 undefined 一律归成 A ⇒ 这一腿会用已登录会话给一条要求登出态的行出帧，而且 identityOk（:635）此时反而为真，帧盖着 A 的章、台账要的是游客的章。同一份 guest-real 配方里另外 6 条的 precondition.identity 是 未登录 所以被正确归成 guest —— 这正好证明坏的是字段形状不是载具本身。",
+   "remedy_considered": "把它挪进 frameplan-round7-guest-real.json 并重排配方字段——未采：本任务禁改 reports/** 与既有脚本，且那是给配方动手术而不是给腿排序；正解是给这一条补 precondition.identity 对象形状，再另开一条 real 档取景腿。",
+   "debt": "② 帧债里这一行本轮仍只有配方没有帧；去向仍由 frame-debt-coverage 的 A 路承担，所以腿 11 不会因此变裸行。",
+   "also_note": "游客×mock 这一组合本身就不可满足（r-exec-cli.mjs:549 与 artifact-band.mjs:59-72 的 assertGuestCapable（NOT_SHOOTABLE 那句口径写在 :70）；§117），所以它没有 mock 档退路。"
+  },
+  {
+   "name": "real 档 WS automator 通道那一波（组件作用域 145 条名册，含 VI25/VI34/OT05）",
+   "disposition": "NOT_SHOOTABLE（沿用 round8d 的记账）",
+   "reason": "scripts/qa/ui-queue.round8d-realws.json 的 $status：三次实跑同一形状——端口在听、connect 成功，但 currentPage() 420 s 内抛 136 次取不到页，且 8d3 是清到只剩一个干净实例之后重跑的，双实例抢通道已被排除。本波不重复撞这堵墙。",
+   "covered_by": "exec-guest-real-close-r8e 用 CLI 载具把 OT06 这一行按游客轴判一次；组件作用域那一类（元素只住在组件自己的 wxml 里）仍挂账，分诊腿会把它报出来而不是混进 absent。"
+  },
+  {
+   "name": "exec-guest-mock（游客刀跑在 mock 档）",
+   "disposition": "NOT_SHOOTABLE",
+   "reason": "r-exec-cli.mjs:549 在第一批行开跑前硬停并声明该组合的落点红不可采信（mock 包的启动链路无条件种会话）；stage-8 已经按同一口径 drop 过一次，本轮没有新事实推翻它。",
+   "covered_by": "exec-guest-real-close-r8e"
+  },
+  {
+   "name": "identity=B 的任何腿",
+   "disposition": "不在本波",
+   "reason": "登录轴 verify-real-coverage.mjs:250 把 A 与 B 等量齐观，而 mintToken 历史上给 B 铸到的是游客票（.zcode/tmp/gap-identity/REPORT.md 的 F1），门的会话核对（:139 的 sessionVerdict）会把这种行判成矛盾并撤认领 ⇒ 补 B 轴现在只会产出 REALCOV_SESSION_CONTRADICT，不会加名。补 B 的凭据来源是产品/夹具侧的活。"
+  },
+  {
+   "name": "verify-band-freshness.mjs 作为一条腿",
+   "disposition": "不在本波（改由 $hold 第 3 项人工前置）",
+   "reason": "本波不重建，所以这条门红了也没有可修的腿（它一红就意味着三档里至少一档的判决作废，而那只能靠重建腿解）；把它排进来只会让队列在开跑第一分钟带走后面所有腿。它过去就是这样崩掉的——8b 的 $hold 记着腿 10 的 TypeError 带走 13 条腿，现在该崩溃点已在 verify-band-freshness.mjs:314-318 修成记账不崩，但顺序结论不变：先重建、后复量。"
+  },
+  {
+   "name": "取景帧进语料的登记腿（rebuild-frozen-manifest.mjs / exec-frames-to-corpus.mjs）",
+   "disposition": "不在本波",
+   "reason": "任务要的是把欠的测量补上，而 ② 帧债的收口判据（verify-frame-debt-coverage.mjs）读的是配方去向不是语料戳；把整份冻结清单重写会顺带把别的轮次的帧并进来，与这一波要证明的东西无关。帧与 contentHash 落在 shoot-results.json 与 reports/screenshots/round-7-r8e-framedebt 里，登记是下一波的事。"
+  }
+ ]
+}

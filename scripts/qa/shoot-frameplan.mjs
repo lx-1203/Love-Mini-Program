@@ -537,6 +537,20 @@ const ROUTE_QUERY = {
      取景侧也可以逐条目走 it.precondition.query（:537），但表里没有这一页时，
      只写了 route 没写 precondition.query 的条目仍会裸直达 ⇒ 这里补同一行兜底。 */
   "subpackages/chat/chat-session/index": "userId=100159",
+  /* 与 r-exec-cli.mjs 的 ROUTE_QUERY 同一行，逐字照抄（一致性规则见 r-exec-cli.mjs:286）。
+     完整论证（判据 pre 原文、两档取值来源、接口实测）写在 r-exec-cli.mjs 那份表里，这里不重复一遍免得两份说明跑偏。
+     取景侧也能逐条目走 it.precondition.query（:541），但配方里这四页一条 precondition.query 都没写
+     （reports/audit/round-7/frameplan-merged.json 里 precondition.query 命中数=0），
+     只写了 route 的条目仍会裸直达 ⇒ 表里补兜底行。 */
+  "subpackages/village/village/detail": "id=16",
+  "subpackages/circles/circles/topic-detail": "topicId=37",
+  /* 故意不落行的两页（原因逐条记在 r-exec-cli.mjs 的 ROUTE_QUERY 注释里，摘要）：
+     market/detail（MD09）= app_switch commerce.enabled=0 ⇒ commerceSealed 在 onLoad:267 早退，
+     且 GET /api/v1/products/* 现下全部 500（CommerceGuardAspect:49 NPE），
+     且 products 全表最长 description=17 字（无"超长介绍"商品可钉，只读库不许补夹具）；同页 MD07 要的是 notFound 落点。
+     profile-extra/profile/other（OT05/OT06/OT09）= 页粒度一行装不下三个互斥目标态
+     （A=100158 的 likes：10001 未喜欢 / 100155 已喜欢未匹配 / 10003 互喜），
+     同页 OT02/OT03 的落点又是「不带 userId 的参数缺失态」；点名物件还住在组件子树里（要 WS 腿）。 */
 };
 const queryFor = (it, route) => String((it && it.precondition && it.precondition.query) || ROUTE_QUERY[route] || "");
 
