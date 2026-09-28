@@ -3057,7 +3057,11 @@
    "route": "pages/profile/index",
    "disposition": "SHOOT",
    "addedBy": "scripts/qa/apply-plan-additions.mjs",
-   "precondition": "[object Object]",
+   "precondition": {
+    "identity": "A",
+    "theme": "light",
+    "fixture": "mock 默认已登录本人态；不需要任何播种"
+   },
    "frameName": "A-MP-R2-PROFILE-023",
    "assertions": 1,
    "assertionList": [
@@ -3067,7 +3071,13 @@
     "apps/client/src/pages/profile/index.vue:2015-2024/2054-2061（死块删除注释）、768-770（growth 链删除记载）、2027-2029（他人态 Tab 移除记载）、1806-…"
    ],
    "crop": "full",
-   "unresolved": ""
+   "unresolved": "",
+   "identity": "A",
+   "identityBackfill": {
+    "from": "\"[object Object]\"",
+    "authority": "tmp/qa/srconly-owed-plan.md:92 逐字「- identity: A；theme: light」＋ :93 逐字「- precondition(fixture): mock 默认已登录本人态；不需要任何播种」（§4 提案 MP-R2-PROFILE-023 → A-MP-R2-PROFILE-023，:90）",
+    "by": "scripts/qa/apply-plan-additions.mjs --backfill-identity"
+   }
   },
   {
    "id": "MP-R2-PROFILE-022",
@@ -3180,7 +3190,11 @@
    "route": "subpackages/profile-extra/profile/other",
    "disposition": "SHOOT",
    "addedBy": "scripts/qa/apply-plan-additions.mjs",
-   "precondition": "[object Object]",
+   "precondition": {
+    "identity": "A（已登录看他人主页）",
+    "theme": "light",
+    "fixture": "mock 默认他人态，PublicHero 封面为亮色素材"
+   },
    "frameName": "A-MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002",
    "assertions": 1,
    "assertionList": [
@@ -3190,7 +3204,13 @@
     "帧 reports/screenshots/round-1-tour/A/subpackages_profile-extra_profile_other__默认.png 3x 裁切 .zcode/tmp/v3/O-other-hero.p…"
    ],
    "crop": "full",
-   "unresolved": ""
+   "unresolved": "",
+   "identity": "A（已登录看他人主页）",
+   "identityBackfill": {
+    "from": "\"[object Object]\"",
+    "authority": "tmp/qa/srconly-owed-plan.md:159 逐字「- identity: A（已登录看他人主页）；theme: light」＋ :160 逐字「- precondition(fixture): mock 默认他人态，PublicHero 封面为亮色素材」（§4 提案 :157）",
+    "by": "scripts/qa/apply-plan-additions.mjs --backfill-identity"
+   }
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-001",

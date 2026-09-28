@@ -14,11 +14,22 @@
  *   node scripts/qa/verify-ops-corpus-stamp.mjs --write [--ops 目录] [--out 戳文件]
  *   node scripts/qa/verify-ops-corpus-stamp.mjs --check [--ops 目录] [--stamp 戳文件]
  *   node scripts/qa/verify-ops-corpus-stamp.mjs --queue scripts/qa/ui-queue.round7-stage6.json
- *   node scripts/qa/verify-ops-corpus-stamp.mjs --selftest
- * 退出码：0=一致 / 1=语料漂移或队列腿读的不是同一份 / 2=扫描集为空、戳读不到等前置失败（宁可红也不空过）。
+ *   node scripts/qa/verify-ops-corpus-stamp.mjs --selftest   （素材写在 os.tmpdir()，不落在仓里）
+ * 退出码：0=一致 / 1=语料漂移、队列腿读的不是同一份、或有读语料的腿定不出目录 / 2=扫描集为空、戳读不到、
+ * 队列里有认不出来历的腿、以及 NA（本波压根没有读语料的腿）等前置失败（宁可红也不空过）。
+ *
+ * --queue 的三种判决（v3.3 补的口径，此前只有 PASS/FAIL 两种，于是纯取景波次只能撞在"一条执行腿都没识别出来"上）：
+ *   PASS  队列里所有读语料的腿指向同一个目录
+ *   FAIL  指向不止一个目录 / 有读语料的腿定不出目录 / 有腿认不出脚本来历（识别口径自己先有问题）
+ *   NA    队列的腿全都点名识别了，但这一波没有任何一条读判据台（纯开窗口 + 取景 + 门腿）
+ *         ⇒ 判据版本不由这一波决定，本门无话可说。NA 既不印 PASS 也不印 FAIL，退出码走 2：
+ *           run-ui-queue.mjs:146-150 只在 leg.advisory 时放行"后面的腿"，而 :154 把任何非 0 计入
+ *           QUEUE_RESULT=FAIL，所以这条波尾门照旧带 advisory:true —— 2 不会让别的腿 NOT_RUN（不挡波），
+ *           而 0 会把"这一问没答过"记成 OK，正是本仓「没跑的门不算通过」要防的那件事。
  */
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, rmSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { tmpdir } from "node:os";
 import { join, resolve, dirname, relative, sep } from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -88,9 +99,170 @@ function gitSha() {
   catch { return ""; }
 }
 
+/* ---------------- 队列腿「读不读判据台」的识别口径 ----------------
+   为什么要这张表（本轮实测）：--queue 此前只认 /r-exec-(cli|ws)\.mjs/，于是纯取景波次
+   （ui-queue.round8g-guestreshoot.json：开窗口 + shoot-frameplan + 量门口）永远量出 执行腿=0，
+   门答不出自己那个问题，只能报"识别口径本身要先查"。查下去的结论不是"表太窄"这么简单：
+   表太窄会漏，表乱放宽会把"根本没读语料的腿"算成语料腿、拿一个我替它猜的默认目录去盖章 ——
+   后者比 0 更坏。所以每一行都得带 file:line 证据，认不出的走 FAIL 而不是默认不读。
+
+   legacy:true 的是本门一开始就认的两类；其余是本轮逐脚本读参数补进来的。 */
+const DEF_OPS = "reports/audit/round-6/ops";
+const CORPUS_READERS = [
+  { script: "r-exec-cli.mjs", flag: "ops", legacy: true,
+    why: "r-exec-cli.mjs:43 arg(\"ops\", 默认 round-6/ops) ⇒ :240 readdirSync(OPS) / :469 readFileSync(join(OPS,name+\".json\"))" },
+  { script: "r-exec-ws.mjs", flag: "ops", legacy: true,
+    why: "r-exec-ws.mjs:63 opt(\"ops\", …/round-6/ops) ⇒ :569 readdirSync(OPS) / :587、:749 readFileSync(join(OPS,…))" },
+  { script: "triage-exec-failures.mjs", flag: "ops",
+    why: "triage-exec-failures.mjs:375 arg(\"ops\", 默认 round-6/ops) ⇒ :380 readdirSync(OPS) / :381 readFileSync(path.join(OPS,f))（判据台盖章字段是它的豁免依据）" },
+  { script: "verify-case-selectors-exist.mjs", flag: "ops",
+    why: "verify-case-selectors-exist.mjs:223 arg(\"ops\", 默认 round-6/ops) ⇒ :106 readdirSync(OPS) / :111 readFileSync(join(OPS,f))" },
+  { script: "verify-guest-landing.mjs", flag: "ops",
+    why: "verify-guest-landing.mjs:54 arg(\"ops\", 默认 round-6/ops) ⇒ :67 readdirSync(OPS_DIR) / :68 readFileSync(join(OPS_DIR,f))（名册由判据台派生）" },
+  { script: "verify-real-coverage.mjs", flag: "ops",
+    why: "verify-real-coverage.mjs:65 arg(\"ops\", 默认 round-6/ops) ⇒ :73 readdirSync(OPS) / :74 readFileSync(join(OPS,f))" },
+  { script: "tag-ops-identity-scope.mjs", flag: "ops",
+    why: "tag-ops-identity-scope.mjs:30 arg(\"ops\", 默认 round-6/ops) ⇒ :115 readdirSync(OPS) / :181 readFileSync(join(OPS,f))；--apply 还会改写它 ⇒ 改写腿更要判进同一版" },
+  { script: "freeze-ops-copy.mjs", flag: "from",
+    why: "freeze-ops-copy.mjs:39 arg(\"from\", 默认 round-6/ops) ⇒ :42 readdirSync(FROM) / :45 sha(join(FROM,f))；--to 是副本落点不是判据来源，故目录只取 --from" },
+];
+
+/* 点名不读语料的腿（同样要给 file:line，否则"不读"是我说的而不是我读的）。
+   verify-ops-corpus-stamp 自己也必须在这一栏：--queue 分支只解析队列 JSON，而 --copy 读的是
+   round-7/ops 冻结副本 —— 它与 round-6/ops 不同目录是设计使然，把盖章动作当成执行腿会让每一波都假红。 */
+const NONCORPUS_LEGS = [
+  { script: "shoot-frameplan.mjs",
+    why: "只读 --plan 取景配方（shoot-frameplan.mjs:68 默认 reports/audit/round-7/frameplan-merged.json）与 --project 产物(:67/:298)；全文不取 ops 目录，配方是帧清单不是判据正文" },
+  { script: "tour-r6.mjs",
+    why: "配置全靠 TOUR_* 环境变量（tour-r6.mjs:82-100）与 scripts/r11-param-map.json(:112)，无 --ops/--corpus 旗标，不读判据台" },
+  { script: "emit-frameplan-additions.mjs",
+    why: "读 --classify 复判产物(:37) 与 --matrix 台账(:39)，参数表里没有 ops/corpus 目录" },
+  { script: "verify-ops-corpus-stamp.mjs",
+    why: "本门自身：has(\"queue\") 分支只读队列 JSON，不碰 OPS；--write/--check 是「盖章」这个动作，--copy 读的是冻结副本 ⇒ 计入会造成每波假红" },
+];
+
+/* 没点名的脚本先扫它自己的源码：沾了判据台目录却没登记 ⇒ 认不出 = FAIL（宁可红，
+   不能把"这张表还没写到它"读成"它不读语料"）。 */
+const CORPUS_TRACE = /(arg|opt|flag)\(\s*["'](?:ops|corpus|from)["']|["']corpus["']|readdirSync\(\s*(OPS|OPS_DIR|FROM)\b|audit[/\\]round-\d+[/\\]ops/;
+const traceCache = new Map();
+function sourceTakesCorpus(scriptPath) {
+  if (traceCache.has(scriptPath)) return traceCache.get(scriptPath);
+  let r;
+  try { r = CORPUS_TRACE.test(readFileSync(resolve(repo, scriptPath), "utf8")) ? "unregistered" : "clean"; }
+  catch { r = "missing"; }
+  traceCache.set(scriptPath, r);
+  return r;
+}
+
+function legCmd(l) {
+  return [l.file || l.script || l.cmd || ""].concat(
+    Array.isArray(l.args) ? l.args : String(l.args || "").split(/\s+/)).join(" ");
+}
+function legScriptPath(l) { return String(l.file || l.script || l.cmd || "").trim(); }
+
+/* 目录归一：反斜杠折成 /、去引号；仓库内的绝对路径折回相对路径，免得同一个目录被算成两份。 */
+function normalizeDir(v) {
+  let s = String(v).replace(/^["']+|["']+$/g, "").split(sep).join("/");
+  if (/^[A-Za-z]:\//.test(s) || s.startsWith("/")) {
+    const rr = rel(resolve(repo, s));
+    if (!rr.startsWith("..")) s = rr;
+  }
+  return s.replace(/\/+$/, "");
+}
+
+/* 一条读语料的腿，它的判据台目录：旗标带值 ⇒ 用值；没带旗标 ⇒ 用该脚本的真实默认；
+   带旗标却没带值（--ops 结尾，或后面紧跟下一个旗标）⇒ undetermined，由调用方判红，绝不替它猜。 */
+function legCorpusDir(cmd, flag) {
+  const m = cmd.match(new RegExp("--" + flag + "[= ](\\S+)"));
+  if (m) return m[1].startsWith("--") ? { undetermined: true } : { dir: normalizeDir(m[1]) };
+  if (new RegExp("--" + flag + "(=|$|\\s)").test(cmd)) return { undetermined: true };
+  return { dir: DEF_OPS, viaDefault: true };
+}
+
+function findReader(scriptPath, cmd) {
+  const base = scriptPath.split(/[/\\]/).pop();
+  const byName = CORPUS_READERS.find((r) => r.script === base)
+    || CORPUS_READERS.find((r) => new RegExp("[/\\\\]" + r.script.replace(/\./g, "\\.") + "$").test(scriptPath));
+  if (byName) return byName;
+  if (!NONCORPUS_LEGS.some((r) => r.script === base)) {
+    /* 旧口径就是整条 cmd 里出现脚本名就算（l.cmd 写成一条命令串的形状）；保留它，
+       免得放宽识别的同时把原来认得出的腿反而认丢了。 */
+    const loose = CORPUS_READERS.find((r) => cmd.includes(r.script));
+    if (loose) return loose;
+  }
+  return null;
+}
+
+function classifyQueue(legs) {
+  const out = { corpus: [], noncorpus: [], unknown: [], undetermined: [], dirs: new Map() };
+  for (const l of legs) {
+    const cmd = legCmd(l);
+    const sp = legScriptPath(l);
+    const name = l.name || cmd.slice(0, 40);
+    const script = sp.split(/[/\\]/).pop() || sp;
+    const reader = findReader(sp, cmd);
+    if (reader) {
+      const d = legCorpusDir(cmd, reader.flag);
+      const rec = { name, script: reader.script, kind: reader.script.replace(/\.mjs$/, ""), legacy: !!reader.legacy, viaDefault: !!d.viaDefault };
+      if (d.undetermined) { out.undetermined.push(rec); out.corpus.push({ ...rec, undetermined: true }); continue; }
+      rec.dir = d.dir;
+      out.corpus.push(rec);
+      if (!out.dirs.has(d.dir)) out.dirs.set(d.dir, []);
+      out.dirs.get(d.dir).push(name);
+      continue;
+    }
+    const proven = NONCORPUS_LEGS.find((r) => r.script === sp.split(/[/\\]/).pop());
+    if (proven) { out.noncorpus.push({ name, script: proven.script, why: proven.why }); continue; }
+    const trace = sourceTakesCorpus(sp);
+    if (trace === "unregistered") out.unknown.push({ name, script, why: "源码里取判据台目录（CORPUS_TRACE 命中）却不在识别表内 ⇒ 先登记它读哪一份，再让本门盖章" });
+    else if (trace === "missing") out.unknown.push({ name, script, why: "脚本文件读不到 ⇒ 无从证明它读不读判据台" });
+    else out.noncorpus.push({ name, script, why: "源码不沾判据台目录（CORPUS_TRACE 未命中）" });
+  }
+  return out;
+}
+
+function queueVerdict(c, totalLegs) {
+  if (c.unknown.length) {
+    return { token: "FAIL", code: 2, reason: `有 ${c.unknown.length} 条腿认不出脚本来历（${c.unknown.map((x) => x.name + ":" + x.script).join(",")}），识别口径本身要先查` };
+  }
+  if (!totalLegs) return { token: "FAIL", code: 2, reason: "队列里一条腿都没有 ⇒ 没有可认证的波次（不是「没有读语料的腿」）" };
+  if (c.undetermined.length) {
+    return { token: "FAIL", code: 1, reason: `读语料的腿里 ${c.undetermined.length} 条定不出判据台目录（${c.undetermined.map((x) => x.name + ":" + x.script).join(",")} 带旗标却没带值）⇒ 不能替它猜一份目录再盖章` };
+  }
+  if (!c.corpus.length) {
+    return { token: "NA", code: 2, reason: `本波无读语料的腿（${c.noncorpus.length} 条腿已逐条点名，判据版本不由这一波决定 ⇒ 不记 PASS）` };
+  }
+  if (c.dirs.size > 1) {
+    return { token: "FAIL", code: 1, reason: "同一轮执行腿读了不止一份语料 ⇒ 这一轮的判据版本不一致，1107 例不可整体引用" };
+  }
+  return { token: "PASS", code: 0 };
+}
+
+/* 渲染与判决分家：--queue 打印它，--selftest 拿旧队列的原文比对它（回归就长在这儿）。 */
+function queueReport(qfRel, c, totalLegs) {
+  const v = queueVerdict(c, totalLegs);
+  const lines = [`STAMP_QUEUE=${qfRel} 执行腿=${c.corpus.length} 不同语料目录=${c.dirs.size}`];
+  for (const [d, names] of c.dirs) lines.push(`  OPS_DIR=${d} 腿数=${names.length} 默认值=${d === DEF_OPS ? "是（未带 --ops）" : "否（显式）"} 腿=${names.join(",")}`);
+  const grown = c.corpus.filter((x) => !x.legacy);
+  if (grown.length || c.unknown.length || c.undetermined.length || v.token === "NA") {
+    const kinds = {};
+    for (const x of c.corpus) kinds[x.kind] = (kinds[x.kind] || 0) + 1;
+    lines.push(`  识别口径=语料腿${c.corpus.length}[${Object.entries(kinds).map(([k, n]) => k + "×" + n).join(",")}] 其中本轮新增识别=${grown.length} 非语料腿=${c.noncorpus.length} 认不出=${c.unknown.length} 定不出目录=${c.undetermined.length}`);
+  }
+  for (const x of c.undetermined) lines.push(`  语料定不出=${x.name} 脚本=${x.script}（--${(CORPUS_READERS.find((r) => r.script === x.script) || {}).flag} 旗标在、值不在）`);
+  for (const x of c.unknown) lines.push(`  认不出腿=${x.name} 脚本=${x.script} 因=${x.why}`);
+  if (v.token === "NA") for (const x of c.noncorpus) lines.push(`  点名腿=${x.name} 脚本=${x.script} 读语料=否（${x.why}）`);
+  if (v.token === "PASS") lines.push("STAMP_RESULT=PASS 队列执行腿语料目录唯一");
+  else if (v.token === "NA") lines.push(`STAMP_RESULT=${v.token} reason=${v.reason}`);
+  else lines.push(`STAMP_RESULT=FAIL reason=${v.reason}`);
+  return { lines, verdict: v };
+}
+
 /* ---------------- selftest：负例必须真的能红 ---------------- */
 if (has("selftest")) {
-  const T = join(repo, "tmp", "qa", "ops-stamp-selftest");
+  /* 素材写在 os.tmpdir()，不落进仓：此前它写 repo/tmp/qa/ops-stamp-selftest，
+     而本仓的规矩是 tmp/qa/ 与 reports/ 由排队器独占（自测素材混进去会被账当证据读）。 */
+  const T = join(tmpdir(), "qoder-ops-stamp-selftest");
   rmSync(T, { recursive: true, force: true });
   const A = join(T, "a"), B = join(T, "b"), C = join(T, "c");
   mkdirSync(A, { recursive: true }); mkdirSync(B, { recursive: true }); mkdirSync(C, { recursive: true });
@@ -111,8 +283,57 @@ if (has("selftest")) {
   // 空目录必须红（不允许"没扫到"等于"没问题"）
   const E = join(T, "empty"); mkdirSync(E, { recursive: true });
   if (!fingerprint(E).err) bad.push("空语料目录被当成合法（必须前置失败）");
+
+  /* ---- 队列识别口径的负例：每一条都得能真的落到那个判决上 ---- */
+  const L = (name, file, args) => ({ name, file: "scripts/qa/" + file, args: args || [] });
+  const Q = [];
+  let qc = 0;
+  const V = (legs) => queueReport("x.json", classifyQueue(legs), legs.length);
+  const qcase = (label, legs, want, mustInclude) => {
+    qc++;
+    const { lines, verdict } = V(legs);
+    const got = verdict.token + "/" + verdict.code;
+    if (got !== want) Q.push(label + " 判决=" + got + " 应为 " + want + " ⇒ " + lines.join(" ⏎ "));
+    else if (mustInclude && !lines.join("\n").includes(mustInclude)) Q.push(label + " 输出里没有「" + mustInclude + "」：" + lines.join(" ⏎ "));
+    return lines;
+  };
+
+  // 1) 回归：只由 r-exec-* 组成的队列，输出必须与放宽口径之前逐字节相同
+  const legacy = qcase("旧口径回归", [L("exec-A", "r-exec-cli.mjs"), L("exec-ws", "r-exec-ws.mjs")], "PASS/0");
+  const legacyWant = [
+    "STAMP_QUEUE=x.json 执行腿=2 不同语料目录=1",
+    "  OPS_DIR=reports/audit/round-6/ops 腿数=2 默认值=是（未带 --ops） 腿=exec-A,exec-ws",
+    "STAMP_RESULT=PASS 队列执行腿语料目录唯一",
+  ];
+  if (legacy.join("⏎") !== legacyWant.join("⏎")) Q.push("旧口径回归：逐字节不同 ⇒ 放宽识别把 r-exec-only 的输出改了\n  现=" + legacy.join(" ⏎ ") + "\n  原=" + legacyWant.join(" ⏎ "));
+  // 显式 --ops 一份：仍 PASS，且默认值口径要跟着翻成"否（显式）"
+  qcase("显式同目录", [L("exec-A", "r-exec-cli.mjs", ["--ops", "reports/audit/round-7/ops"]), L("exec-B", "r-exec-ws.mjs", ["--ops=reports/audit/round-7/ops"])], "PASS/0", "默认值=否（显式）");
+  // 2) 新增识别的腿与 r-exec 读同一份 ⇒ 仍一份（round8-stage8 的真实形状）
+  qcase("exec+triage 同目录", [L("exec-A", "r-exec-cli.mjs"), L("triage-A", "triage-exec-failures.mjs"), L("realcov", "verify-real-coverage.mjs", ["--round", "round-7"])], "PASS/0", "识别口径=语料腿3[");
+  // 3) 两条读语料的腿指向不同目录 ⇒ 必须红（本门存在的意义就是能红）
+  qcase("两份语料", [L("exec-A", "r-exec-cli.mjs", ["--ops", "reports/audit/round-6/ops"]), L("exec-B", "r-exec-ws.mjs", ["--ops", "reports/audit/round-7/ops"])], "FAIL/1", "不止一份语料");
+  // 4) 读语料的腿 --ops 带了旗标没带值 ⇒ 不能替它猜，必须红（"无法盖章"要响）
+  qcase("目录定不出", [L("exec-A", "r-exec-cli.mjs"), L("exec-B", "r-exec-ws.mjs", ["--ops", "--tap"])], "FAIL/1", "定不出判据台目录");
+  // 5) 纯取景波次：腿都点名识别了，但没有一条读判据台 ⇒ NA（不 PASS、不冒充缺陷红）
+  qcase("取景波次NA", [L("open-window", "open-project-window.mjs", ["--project", "apps/client/dist/build/mp-weixin"]), L("reshoot", "shoot-frameplan.mjs", ["--plan", "reports/audit/round-7/frameplan-round7-final.json"]), L("gate", "verify-frame-debt-coverage.mjs"), L("stamp", "verify-ops-corpus-stamp.mjs", ["--queue", "scripts/qa/x.json"])], "NA/2", "点名腿=reshoot");
+  // 6) 真的读判据台却没登记的腿（拿仓里现成的 verify-case-automatable.mjs:30 当活样本）⇒ 红，不许当"不读"
+  qcase("未登记语料腿", [L("exec-A", "r-exec-cli.mjs"), L("automatable", "verify-case-automatable.mjs")], "FAIL/2", "认不出");
+  // 7) 脚本文件读不到 ⇒ 无从证明它读不读 ⇒ 红
+  qcase("脚本缺失", [L("ghost", "no-such-leg.mjs")], "FAIL/2", "认不出");
+  // 8) 空队列 ≠ 没有读语料的腿：前者是坏队列（FAIL），后者才是 NA
+  qcase("空队列", [], "FAIL/2", "一条腿都没有");
+  // 9) 表本身不许漂移：本轮逐脚本读参数读出来的结论要留在表里
+  for (const s of ["r-exec-cli.mjs", "r-exec-ws.mjs", "triage-exec-failures.mjs"]) {
+    if (!CORPUS_READERS.some((r) => r.script === s)) Q.push("识别表少了确实读语料的腿 " + s);
+  }
+  for (const s of ["shoot-frameplan.mjs", "tour-r6.mjs", "emit-frameplan-additions.mjs"]) {
+    if (!NONCORPUS_LEGS.some((r) => r.script === s)) Q.push("识别表没有点名「确实不读语料」的腿 " + s);
+    if (CORPUS_READERS.some((r) => r.script === s)) Q.push("把不读语料的腿错登成语料腿 " + s + "（会拿我替它猜的默认目录盖章）");
+  }
+  bad.push(...Q.map((x) => "队列口径：" + x));
   rmSync(T, { recursive: true, force: true });
-  console.log(`STAMP_SELFTEST 负例=3 结果=${bad.length ? "FAIL" : "PASS"}`);
+  console.log(`STAMP_SELFTEST_DIR=${T}（仓外临时目录，rmSync 收尾）`);
+  console.log(`STAMP_SELFTEST 负例=3 队列口径=${qc} 表内语料腿=${CORPUS_READERS.length} 表内非语料腿=${NONCORPUS_LEGS.length} 结果=${bad.length ? "FAIL" : "PASS"}`);
   for (const b of bad) console.log("  BAD " + b);
   process.exit(bad.length ? 1 : 0);
 }
@@ -123,27 +344,12 @@ if (has("queue")) {
   if (!existsSync(qf)) { console.log("STAMP_RESULT=FAIL reason=队列文件读不到 " + qf); process.exit(2); }
   const q = JSON.parse(readFileSync(qf, "utf8"));
   const legs = q.legs || q || [];
-  const DEF = "reports/audit/round-6/ops";
-  const eff = new Map();
-  let execLegs = 0;
-  for (const l of legs) {
-    /* 队列腿的真实形状（本轮实测）：顶层是数组，每条腿是 {name, file, args[], timeoutMin, why}，
-       脚本路径在 file 里、不在 args 里；早期写法只看 l.cmd，于是 24 条腿识别出 0 条执行腿。
-       识别失败没有静默放过，而是走 execLegs=0 的前置红——但一个永远识别不出来的判据等于没有判据。 */
-    const cmd = [l.file || l.script || l.cmd || ""].concat(Array.isArray(l.args) ? l.args : String(l.args || "").split(/\s+/)).join(" ");
-    if (!/r-exec-(cli|ws)\.mjs/.test(cmd)) continue;
-    execLegs++;
-    const m = cmd.match(/--ops[= ](\S+)/);
-    const dir = (m ? m[1] : DEF).split(sep).join("/");
-    if (!eff.has(dir)) eff.set(dir, []);
-    eff.get(dir).push(l.name || cmd.slice(0, 40));
-  }
-  console.log(`STAMP_QUEUE=${rel(qf)} 执行腿=${execLegs} 不同语料目录=${eff.size}`);
-  for (const [d, names] of eff) console.log(`  OPS_DIR=${d} 腿数=${names.length} 默认值=${d === DEF ? "是（未带 --ops）" : "否（显式）"} 腿=${names.join(",")}`);
-  if (!execLegs) { console.log("STAMP_RESULT=FAIL reason=队列里一条执行腿都没识别出来，识别口径本身要先查"); process.exit(2); }
-  if (eff.size > 1) { console.log("STAMP_RESULT=FAIL reason=同一轮执行腿读了不止一份语料 ⇒ 这一轮的判据版本不一致，1107 例不可整体引用"); process.exit(1); }
-  console.log("STAMP_RESULT=PASS 队列执行腿语料目录唯一");
-  process.exit(0);
+  /* 队列腿的真实形状（本轮实测）：顶层是数组，每条腿是 {name, file, args[], timeoutMin, why}，
+     脚本路径在 file 里、不在 args 里。识别交给 classifyQueue —— 认不出的腿走 FAIL，不静默算"不读语料"。 */
+  const c = classifyQueue(Array.isArray(legs) ? legs : []);
+  const { lines, verdict } = queueReport(rel(qf), c, (Array.isArray(legs) ? legs : []).length);
+  for (const l of lines) console.log(l);
+  process.exit(verdict.code);
 }
 
 /* ---------------- write / check ---------------- */
