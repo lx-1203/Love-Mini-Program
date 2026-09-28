@@ -884,7 +884,11 @@
    "action": "① 连续 tap .replies-more（:371-386 → loadMoreReplies :54-65）至按钮消失；② 造失败（断网/500）后 tap；③ 采样加载中文案与 spinner",
    "expected": "① 每点一次追加下一页且 repliesHasMore 以服务端 replyCount 为准（:47-49）；已加载数==replyCount 时按钮不再渲染（不得出现「永远有更多」幻影）；② 失败 Toast t('circle.topicDetailLoadMoreFailed')（:61）且 isLoadingMoreReplies 在 finally 复位（:63）不永驻「加载中」；③ 加载中按钮文案切 t('circle.topicDetailLoadingMoreReplies')",
    "evidence": "normal：分页前/后/到底/失败四帧截图 + network 分页 page 参数序列 + Toast 文案",
-   "requiresReal": false
+   "requiresReal": false,
+   "tapTarget": ".replies-more",
+   "tapTargetFrom": "cellplan-round7-selector45-admissible.json",
+   "tapTargetEvidence": "apps/client/src/subpackages/circles/circles/topic-detail.vue:374-381（@tap=loadMoreReplies，role=button，aria-label=topicDetailLoadMoreReplies，文案位 :381）｜两档产物逐字命中且整词唯一：mp-weixin class 命中 1 处/带 tap 1 处，mp-weixin-real class 命中 1 处/带 tap 1 处｜来源 reports/audit/round-7/unverifiable-recheck-3.json",
+   "tapTargetConfirmedAt": "2026-09-29"
   },
   {
    "id": "TD06",
@@ -913,10 +917,22 @@
    "title": "「打招呼」认证门槛与私信参数（写链路前置）",
    "tier": "critical",
    "pre": "身份A 进入有多个回复的话题；门槛前置需 real 后端 + 未实名账号（ensureCertified('realname')，:110）；不可构造时记 UNVERIFIED 并说明所需构建变体/账号",
-   "action": "① 未实名态 tap .say-hello（回复项 :358 @tap.stop sayHello :107-130）；② 已实名态重复；③ 检查去程路由 query 三项（userId / prefillMessage / quoteContext，:127-129）",
+   "action": "① 未实名态 tap .reply-say-hello（回复项 :358 @tap.stop sayHello :107-130）；② 已实名态重复；③ 检查去程路由 query 三项（userId / prefillMessage / quoteContext，:127-129）",
    "expected": "① 被门槛拦下：跳实名认证引导或 Toast，不得静默；② 落点=subpackages/chat/chat-session/index，且 prefillMessage 为话题上下文破冰文案（t('circle.topicDetailSayHelloPrefill')）、quoteContext 为可解析 JSON（含 topicId/replyId/replyAuthorName）；③ 会话页收到预填内容（回读会话输入框）；userId 缺失时不得跳空会话（:108 守卫）",
    "evidence": "critical：拦截态与放行态截图 + 路由链（含 query 解码后原文）+ console",
-   "requiresReal": false
+   "requiresReal": false,
+   "actionPreCellplan": "① 未实名态 tap .say-hello（回复项 :358 @tap.stop sayHello :107-130）；② 已实名态重复；③ 检查去程路由 query 三项（userId / prefillMessage / quoteContext，:127-129）",
+   "cellplanRename": {
+    "from": ".say-hello",
+    "to": ".reply-say-hello",
+    "source": "apps/client/src/subpackages/circles/circles/topic-detail.vue:357",
+    "evidence": "页面上叫 reply-say-hello，不叫 say-hello；两档 wxml 里 class=\"reply-say-hello data-v-2c543109\" 与 reply-say-hello__text 都在。危险点：verify 门的 pageWxmlText 轴用 lower.includes(name) 判，.say-hello 会因为它是 reply-say-hello 的子串而被判成「页内文本存在」⇒ 这是一处假绿，见报告 hazard 段。",
+    "plan": "cellplan-round7-selector45-admissible.json"
+   },
+   "tapTarget": ".reply-say-hello",
+   "tapTargetFrom": "cellplan-round7-selector45-admissible.json",
+   "tapTargetEvidence": "apps/client/src/subpackages/circles/circles/topic-detail.vue:357",
+   "tapTargetConfirmedAt": "2026-09-29"
   },
   {
    "id": "TD08",

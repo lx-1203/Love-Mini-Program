@@ -1,0 +1,41 @@
+{
+ "round": "round-8-ch12-knife",
+ "gitSha": "722a5a63",
+ "identity": "A",
+ "identities": [
+  "A"
+ ],
+ "project": "apps/client/dist/build/mp-weixin-showcase",
+ "band": "real@ed1cd82c",
+ "fileBands": {
+  "real@ed1cd82c": 1
+ },
+ "loginVerify": "logged-in userId=100158",
+ "updatedAt": "2026-09-28T20:04:56.887Z",
+ "runner": "scripts/qa/r-exec-cli.mjs（tap+real 切片）",
+ "results": [
+  {
+   "suite": "C-SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+   "id": "CH12",
+   "page": "subpackages/campus/campus/hub",
+   "tier": "navigation",
+   "identity": "A",
+   "band": "real@ed1cd82c",
+   "loginVerify": "logged-in userId=100158",
+   "sessionSource": "phone-login",
+   "requiresReal": false,
+   "title": "header「去认证」→ 认证页（路由常量口径）",
+   "status": "EXECUTED",
+   "observed": "top=subpackages/campus/campus/certification | dom: .campus-guide__btn:absent | tap-腿 | tap[tap:.campus-guide__btn]",
+   "missingEvidence": [],
+   "failureReason": "",
+   "route": "subpackages/campus/campus/hub",
+   "toast": "",
+   "console": "",
+   "evidence": "reports/screenshots/round-8-ch12-knife/SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH12-after.png(9616B)",
+   "durationMs": 10549,
+   "at": "2026-09-28T20:04:56.885Z"
+  }
+ ]
+}

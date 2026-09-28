@@ -64,7 +64,11 @@
    "action": "① 触发失败态读文案，tap .segment-retry（:131-133 → load）；② 空数据前置下读空态文案；③ 尝试整页下拉并记录是否出现刷新指示器与新增请求",
    "expected": "① 失败必须同时给出可见文案与可点重试（showErrorToast + errorMessage，:70-75），重试回骨架后成功渲染，不得把失败当空态；② 空态显示 t('home.segmentEmpty')（:136）且与错误态可区分；③ 实测无刷新指示器、请求条数不变 → 判「前置未构造/功能未开启」，修复后应有表现为开启 enablePullDownRefresh 后下拉可重拉并 stopPullDownRefresh 收起（:48）",
    "evidence": "normal：错误态/空态/下拉尝试三帧截图 + Toast 文案 + network（下拉前后条数差）",
-   "requiresReal": false
+   "requiresReal": false,
+   "tapTarget": ".segment-retry",
+   "tapTargetFrom": "cellplan-round7-selector45-admissible.json",
+   "tapTargetEvidence": "apps/client/src/subpackages/discover-extra/home/segment.vue:131-133（@tap=load，role=button，aria-label=common.retry，文案「重试」）｜两档产物逐字命中且整词唯一：mp-weixin class 命中 1 处/带 tap 1 处，mp-weixin-real class 命中 1 处/带 tap 1 处｜来源 reports/audit/round-7/unverifiable-recheck-3.json",
+   "tapTargetConfirmedAt": "2026-09-29"
   },
   {
    "id": "SG07",
@@ -509,7 +513,11 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/search/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/search/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "tapTarget": ".user-row",
+   "tapTargetFrom": "cellplan-round7-selector45-admissible.json",
+   "tapTargetEvidence": "apps/client/src/subpackages/tools/search/index.vue:343/350｜两档产物逐字命中且整词唯一：mp-weixin class 命中 1 处/带 tap 1 处，mp-weixin-real class 命中 1 处/带 tap 1 处｜来源 reports/audit/round-7/unverifiable-recheck-3.json",
+   "tapTargetConfirmedAt": "2026-09-29"
   },
   {
    "id": "SE07",
@@ -600,7 +608,11 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/search/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/search/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "tapTarget": ".search-back",
+   "tapTargetFrom": "cellplan-round7-selector45-admissible.json",
+   "tapTargetEvidence": "apps/client/src/subpackages/tools/search/index.vue:238-239（@tap=goBack）/:263（text role=button @tap=goBack）｜两档产物逐字命中且整词唯一：mp-weixin class 命中 1 处/带 tap 1 处，mp-weixin-real class 命中 1 处/带 tap 1 处｜来源 reports/audit/round-7/unverifiable-recheck-3.json",
+   "tapTargetConfirmedAt": "2026-09-29"
   },
   {
    "id": "LN01",

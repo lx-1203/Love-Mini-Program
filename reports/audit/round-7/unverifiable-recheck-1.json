@@ -1,0 +1,538 @@
+{
+ "slice": [
+  "01",
+  "02",
+  "03"
+ ],
+ "casesEnumerated": 52,
+ "classified": 52,
+ "counts": {
+  "NO_ELEMENT_NO_FIX": 16,
+  "WRONG_BAND": 7,
+  "CRITERIA_NAMES_NOTHING": 5,
+  "COMPOSED_OR_SCOPED": 12,
+  "SELECTOR_MISSED": 12
+ },
+ "rows": [
+  {
+   "id": "H02",
+   "page": "pages/home/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-PAGES-HOME-INDEX.json.json",
+   "verdict": "NO_ELEMENT_NO_FIX",
+   "token": "",
+   "bandAxis": "not-named",
+   "citation": "apps/client/src/pages/home/index.vue:122 (onPullDownRefresh 注册) + apps/client/src/pages.json:55-56 (home 条目 enablePullDownRefresh:true)",
+   "note": "下拉是页面级系统手势，首页模板里没有任何承载节点（axis 脚本对本条 action+expected 抠出 0 个类名）；判点是请求计数与动画起止时刻，换任何 tapTarget 都测不到。"
+  },
+  {
+   "id": "H03",
+   "page": "pages/home/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-PAGES-HOME-INDEX.json.json",
+   "verdict": "WRONG_BAND",
+   "token": "",
+   "bandAxis": "not-named",
+   "citation": "case.pre 自述「需 real 构建 + 无 token，本轮构建模式恒 mock」+ apps/client/src/pages/home/index.vue:122",
+   "note": "与 H02 同载体，另需「未登录 + real 档」身份；能表达它的是 mp-weixin-real 档的游客位（执行器 --real-cases-only 那条腿），mock 档连门都不同。"
+  },
+  {
+   "id": "H13",
+   "page": "pages/home/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-PAGES-HOME-INDEX.json.json",
+   "verdict": "CRITERIA_NAMES_NOTHING",
+   "token": ".header-search（不存在）/ 替代锚 .header-me",
+   "bandAxis": "absent（判点名）；替代锚 bandWxmlOther",
+   "citation": "命令：node tmp/qa/tok.mjs header-search → SRC(0)、两档 wxml/wxss 全 0；门自跑 SEL_ABSENT_ROW PAGES-HOME-INDEX#H13 .header-search 只提示。真实页头三件：apps/client/src/components/home/HomeHeader.vue:60/63/67，死接线：HomeHeader.vue:17 defineEmits searchTap vs apps/client/src/pages/home/index.vue:333 @searchTap=openNearbyList",
+   "note": "本条判的是「首页无搜索入口」这一缺席事实，产品确实没有该入口 ⇒ 不是漏选择器。紧致替代物只有组件作用域的 .header-me/.header-location/.header-icon（证明页头只渲染这三件）；「触发 emit('searchTap')」那半属事件注入，应改为非帧判（源码级死接线断言）。"
+  },
+  {
+   "id": "H47",
+   "page": "pages/home/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-PAGES-HOME-INDEX.json.json",
+   "verdict": "NO_ELEMENT_NO_FIX",
+   "token": "",
+   "bandAxis": "not-named",
+   "citation": "命令：node tmp/qa/axis.mjs apps/client/dist/build/mp-weixin → H47「判据正文里一个类名都没点名」；apps/client/dist/build/mp-weixin/pages/home/index.wxml 自有 class token 仅 home-page/home-page__top-scrim/home-section-gap/location-sheet__*（grep -o 'class=\"[^\"]*\"' 计数）",
+   "note": "判据两腿都是导航进入 + 路由 options/storage 读数，页面上没有承载深链参数的元素；首页源码无 onLoad ⇒ 断言本身就是「参数不被消费」，无物件可点。"
+  },
+  {
+   "id": "H48",
+   "page": "pages/home/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-PAGES-HOME-INDEX.json.json",
+   "verdict": "COMPOSED_OR_SCOPED",
+   "token": ".love-step / .relation-cell / .interest-card / .nearby-item / .post-card / .invite-banner",
+   "bandAxis": "bandWxmlOther（全在 components/home/*.wxml，页作用域进不去）",
+   "citation": "apps/client/src/components/home/TodayLoveProgress.vue:79、RelationActivity.vue:34/45/56/67、InterestRecommendation.vue:83、NearbyPeople.vue:53、CommunityFeed.vue:177、InviteBanner.vue:15（每个都带 @tap）；命令：grep -o '<[a-z][a-z0-9-]*' apps/client/dist/build/mp-weixin/pages/home/index.wxml → 页里只有 <home-header/<today-love-progress/… 这些自定义组件标签",
+   "note": "首页 9 区块的可点件一个都不在页自己的 wxml 里，全住在子组件模板 ⇒ 机制是组件作用域，不是「元素不存在」。且本条是逐元素 rect/反馈普查（4 件事一条），单个 tapTarget 表达不了，须先拆条再逐条给组件作用域腿。"
+  },
+  {
+   "id": "CX11",
+   "page": "subpackages/campus/campus/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json.json",
+   "verdict": "WRONG_BAND",
+   "token": ".public-browse-banner",
+   "bandAxis": "pageWxmlExact（两档都在本页 index.wxml 的 class token 里）",
+   "citation": "apps/client/src/subpackages/campus/campus/index.vue:303 (v-else-if=\"!isOwnCertifiedView\")，其 v-if 链前一项是 :289 (v-if=\"!isVerified\")；apps/client/src/stores/campus.ts:938-939 mock 分支直接 return ⇒ certificationStatus 恒 unverified（:388 isVerified getter）",
+   "note": "banner 的类名是真的、也进了两档产物，但那条 v-else-if 在 mock 档永不被求值；能表达它的是 mp-weixin-real + 「已认证 A 校看 B 校」身份夹具。到位后仍无物件可点（banner 无 bindtap，expected 自认「点击无反馈属预期」）⇒ 文案腿要的是文本读数。"
+  },
+  {
+   "id": "CX12",
+   "page": "subpackages/campus/campus/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json.json",
+   "verdict": "WRONG_BAND",
+   "token": ".campus-fab",
+   "bandAxis": "pageWxmlExact",
+   "citation": "apps/client/src/subpackages/campus/campus/index.vue:391 (v-if=\"isOwnCertifiedView\" … @tap=\"goToPostTopic\") + :68-70 计算属性 + stores/campus.ts:938-939",
+   "note": "FAB 类名在两档 index.wxml 里都是真 token，但页内没有任何元素能把视角切到 isOwnCertifiedView（只由服务端认证结果与 ?school= 决定）⇒ mock 档不可表达，real 档 + 已认证本校夹具才行。"
+  },
+  {
+   "id": "CX13",
+   "page": "subpackages/campus/campus/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json.json",
+   "verdict": "NO_ELEMENT_NO_FIX",
+   "token": ".topic-scroll（真名，但非可点件）",
+   "bandAxis": "pageWxmlExact",
+   "citation": "apps/client/src/subpackages/campus/campus/index.vue:347（scroll-view 只有 scroll-y/enhanced/bounces/@scrolltolower，无 bindtap）；命令：grep -n -A4 '\"path\": \"campus/index\"' apps/client/src/pages.json → 条目无 style 段 ⇒ 无 enablePullDownRefresh",
+   "note": "名字不是缺的（判据正文就写着 .topic-scroll，只因它没有 __/-- 而不被执行器 classesOf 抠到）；缺的是下拉触摸腿与 scrollY/scrollTop 读数，以及 network 计数。判点本身是「无下拉刷新能力」这一配置事实。"
+  },
+  {
+   "id": "CX15",
+   "page": "subpackages/campus/campus/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json.json",
+   "verdict": "WRONG_BAND",
+   "token": ".topic-scroll",
+   "bandAxis": "pageWxmlExact",
+   "citation": "case 标 requiresReal=true；apps/client/src/stores/campus.ts:476-481（mock 下非「北京大学」直接返回空列表）+ :442-450（mock page>1 整批重复 push）；apps/client/src/pages/home/… 无关，入口锚 index.vue:347 @scrolltolower",
+   "note": "真实分页语义（10→20 不重不漏、没有更多了）只有 mp-weixin-real 能表达；mock 档既空又重复，判出来必假。执行器固定带 ?school=南京大学（scripts/qa/r-exec-cli.mjs:192）⇒ 连容器都不渲染。"
+  },
+  {
+   "id": "CX16",
+   "page": "subpackages/campus/campus/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json.json",
+   "verdict": "COMPOSED_OR_SCOPED",
+   "token": ".topic-card（本页入口）/ .reply-input（兄弟页）",
+   "bandAxis": "gate=pageWxmlExact（目录口径误判）；按页文件精确=otherFileToken",
+   "citation": "入口 apps/client/src/subpackages/campus/campus/index.vue:350（class=\"topic-card\" @tap=goToTopicDetail，两档 index.wxml 真 token）；被点名物在 apps/client/src/subpackages/campus/campus/topic-detail.vue:334 + :335 :maxlength，编译产物是 subpackages/campus/campus/topic-detail.wxml 的 class token（非 index.wxml）",
+   "note": "机制：本条归页是 campus/index，而 .reply-input 住在同目录的另一页 topic-detail.wxml —— 本门按「同目录」而非「本页文件」判页内（verify-case-selectors-exist.mjs:107 pageDir 前缀），所以把它算成 pageWxmlExact，属门的口径漏洞。跨页两步骤 + 读 maxlength 属性都超出 tap 腿。"
+  },
+  {
+   "id": "CX17",
+   "page": "subpackages/campus/campus/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json.json",
+   "verdict": "COMPOSED_OR_SCOPED",
+   "token": ".reply-btn",
+   "bandAxis": "pageWxmlText（字面名不在任何 class token 里，只作为字符串出现在模板）",
+   "citation": "apps/client/src/subpackages/campus/campus/topic-detail.vue:354 class=\"reply-btn press-feedback\" + :356 :class 绑定 + :358 @tap=submitReply；命令：grep -o 'class=\"[^\"]*reply[^\"]*\"' apps/client/dist/build/mp-weixin/subpackages/campus/campus/topic-detail.wxml → class=\"{{['reply-btn', 'press-feedback', 'data-v-3281090c', U && 'reply-btn--disabled']}}\"",
+   "note": "两层机制叠加：静态名 reply-btn 因为节点带 :class 对象绑定而被编译成运行期数组 ⇒ 产物里不成 class token；且它在兄弟页 topic-detail.wxml 而非本条归页。另需 evaluate 注入 501 字绕过 maxlength。"
+  },
+  {
+   "id": "CX20",
+   "page": "subpackages/campus/campus/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json.json",
+   "verdict": "SELECTOR_MISSED",
+   "token": ".topic-card",
+   "bandAxis": "pageWxmlExact（两档一致）",
+   "citation": "apps/client/src/subpackages/campus/campus/index.vue:350（class=\"topic-card\" @tap=\"goToTopicDetail(topic.id)\"），同卡标签 :355 <text class=\"topic-card__title\">；命令：node tmp/qa/axis.mjs … → CX20 .topic-card axis=pageWxmlExact strict=ownPageExact",
+   "note": "可点节点与事件绑定都在本页产物里 ⇒ 应进 tapTarget。残留两件事：执行器只会点选择器首匹配（点不到「第 3 张」），且固定 ?school=南京大学 时 mock 列表恒空（stores/campus.ts:476-481）⇒ 需把入参换成北京大学才有节点。"
+  },
+  {
+   "id": "CX22",
+   "page": "subpackages/campus/campus/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json.json",
+   "verdict": "WRONG_BAND",
+   "token": ".campus-fab",
+   "bandAxis": "pageWxmlExact",
+   "citation": "apps/client/src/subpackages/campus/campus/index.vue:391 v-if=\"isOwnCertifiedView\" + stores/campus.ts:938-939（mock 不置 verified）；case 标 requiresReal=true",
+   "note": "与 CX12 同一档内不可表达；real 档 + 已认证本校夹具才出 FAB。「500ms 内连点 5 次 + 全路由栈」另属频率与时序读数。"
+  },
+  {
+   "id": "CX26",
+   "page": "subpackages/campus/campus/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json.json",
+   "verdict": "NO_ELEMENT_NO_FIX",
+   "token": ".topic-scroll / .category-tabs（真名，皆非可点件）",
+   "bandAxis": "pageWxmlExact ×2",
+   "citation": "apps/client/src/subpackages/campus/campus/index.vue:347（@scrolltolower）与 :311（scroll-view scroll-x，只有 :scroll-left/:show-scrollbar）；命令：node tmp/qa/axis.mjs apps/client/dist/build/mp-weixin → CX26 两个名都 ownPageExact",
+   "note": "本条三条腿全是滚动几何（到底/回顶/横滑到底 + scrollTop/scrollHeight/scrollWidth 回填），两个 scroll-view 都没有 bindtap ⇒ 补 tapTarget 也测不到，缺的是滚动通道与 rect/滚动数值读数。"
+  },
+  {
+   "id": "CX30",
+   "page": "subpackages/campus/campus/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json.json",
+   "verdict": "COMPOSED_OR_SCOPED",
+   "token": ".reply-input / .reply-counter（兄弟页）",
+   "bandAxis": "gate=pageWxmlExact（目录口径）；按页文件精确=otherFileToken",
+   "citation": "apps/client/src/subpackages/campus/campus/topic-detail.vue:334-335（.reply-input + :maxlength）与 :342（<text v-if=\"isReplyAtLimit\" class=\"reply-counter\">）；产物里两者都是 topic-detail.wxml 的 class token，不在 index.wxml",
+   "note": "作用域问题不是「元素没有」：名字都是真 token，但住在同目录的另一页；本门的 pageDir 前缀判定掩盖了这点。另需 ≥500 字可控输入腿（CLI 固定写 123456）与 locale 切换载具。"
+  },
+  {
+   "id": "N02",
+   "page": "pages/nearby/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/02/tapfix-lane-PAGES-NEARBY-INDEX.json.json",
+   "verdict": "NO_ELEMENT_NO_FIX",
+   "token": ".nearby-home__scroll（真名但无事件绑定）",
+   "bandAxis": "pageWxmlExact",
+   "citation": "apps/client/src/pages/nearby/index.vue:395（<scroll-view scroll-y class=\"nearby-home__scroll\" :show-scrollbar=\"false\">，无 bindtap/无 refresher-enabled）+ :173 页面级 onPullDownRefresh + pages.json:59-60 enablePullDownRefresh:true",
+   "note": "配置与钩子都在，缺的是「页面级下拉手势」这条腿；容器名是真的（判据 expected 里就写着 .nearby-home__scroll，只是行号 :367 已漂到 :395），点它不产生任何可判反馈。"
+  },
+  {
+   "id": "N03",
+   "page": "pages/nearby/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/02/tapfix-lane-PAGES-NEARBY-INDEX.json.json",
+   "verdict": "NO_ELEMENT_NO_FIX",
+   "token": "",
+   "bandAxis": "not-named",
+   "citation": "apps/client/src/pages/nearby/index.vue:173-194（下拉里并行三路重拉、force 绕 TTL）；命令：node tmp/qa/axis.mjs … → N03「判据正文里一个类名都没点名」",
+   "note": "判点是三类请求的拉取次数与动画停止时机，页面上没有下拉承载节点 ⇒ 无物件可锚，属手势+计数条。"
+  },
+  {
+   "id": "N04",
+   "page": "pages/nearby/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/02/tapfix-lane-PAGES-NEARBY-INDEX.json.json",
+   "verdict": "NO_ELEMENT_NO_FIX",
+   "token": "",
+   "bandAxis": "not-named",
+   "citation": "apps/client/src/pages/nearby/index.vue:188/192（下拉完成后读三 store 错误槽并 uni.showToast）",
+   "note": "判点是原生层 Toast 文案（不在渲染树，探针取不到）+ 需要制造一路数据源失败；另欠 N02 的下拉通道 ⇒ 没有可点的等价物件。"
+  },
+  {
+   "id": "N05",
+   "page": "pages/nearby/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/02/tapfix-lane-PAGES-NEARBY-INDEX.json.json",
+   "verdict": "WRONG_BAND",
+   "token": "",
+   "bandAxis": "not-named",
+   "citation": "case.pre 自述「需 real 构建 + 无 token；mock 下 useMock() 使门恒放行」+ apps/client/src/pages/nearby/index.vue:66-68（canFetchProtected）/:153/:179-185 四路门",
+   "note": "能表达它的是 mp-weixin-real 档的未登录位（执行器游客位 + --real-cases-only）；mock 档四路门恒放行 ⇒ 本条在 mock 只能验「不发真请求」这一半。"
+  },
+  {
+   "id": "N10",
+   "page": "pages/nearby/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/02/tapfix-lane-PAGES-NEARBY-INDEX.json.json",
+   "verdict": "CRITERIA_NAMES_NOTHING",
+   "token": "输入框（本页确无）/ 替代锚 .nearby-home__search-btn",
+   "bandAxis": "not-named（缺席事实）；替代锚 pageWxmlExact",
+   "citation": "命令：grep -c \"<input\\|<textarea\" apps/client/src/pages/nearby/index.vue → 0；grep -o \"<input\\|<textarea\" apps/client/dist/build/mp-weixin/pages/nearby/index.wxml → 无输出。替代锚 apps/client/src/pages/nearby/index.vue:406（class=\"nearby-home__search-btn\" role=\"button\" :aria-label=\"t('nearby.searchPlaceholder')\" @tap=goSearch）",
+   "note": "「附近页无任何输入框」是真的缺席事实（源码与两档产物都是 0 个 input），不能硬造点击目标。紧致替代物只有 .nearby-home__search-btn 的 aria-label ⇒ 那是文本读数，四组输入用例应记「非帧判 + 源码依据」。"
+  },
+  {
+   "id": "N30",
+   "page": "pages/nearby/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/02/tapfix-lane-PAGES-NEARBY-INDEX.json.json",
+   "verdict": "NO_ELEMENT_NO_FIX",
+   "token": "",
+   "bandAxis": "not-named",
+   "citation": "apps/client/src/pages/nearby/index.vue:622-629（未登录分支引导卡 .nearby-login-guide / __btn，两档 pages/nearby/index.wxml 真 token）；villageStore.nearbyPosts 无登出清空路径",
+   "note": "三条腿是「登出 A → 滚到分区⑤ → 登录 B」：两腿是会话切换、一腿是滚动到位，判点是渲染归属与内存残留 ⇒ 引导卡虽是物件但不是本条要判的东西（冒充它即换判据）。"
+  },
+  {
+   "id": "N31",
+   "page": "pages/nearby/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/02/tapfix-lane-PAGES-NEARBY-INDEX.json.json",
+   "verdict": "NO_ELEMENT_NO_FIX",
+   "token": "",
+   "bandAxis": "not-named",
+   "citation": "apps/client/src/pages/nearby/index.vue:241（NEARBY_POSTS_TTL_MS=30_000）/:255 短路/:261-263 失败不更新时间戳；命令：node tmp/qa/axis.mjs … → N31「一个类名都没点名」",
+   "note": "四档全在时间窗口与请求计数上（切走<30s/>30s、发一条新动态、失败后再下拉），零页面元素；最后一档另需下拉通道与故障注入。"
+  },
+  {
+   "id": "CI03",
+   "page": "subpackages/circles/circles/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/02/tapfix-lane-SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json.json",
+   "verdict": "COMPOSED_OR_SCOPED",
+   "token": ".state-error / .error-btn",
+   "bandAxis": "bandWxmlOther（门自跑亦列 SEL_COMPONENT_SCOPE）",
+   "citation": "apps/client/src/components/common/PageStateContainer.vue:24 (v-else-if=\"state === 'error'\" class=\"state-slot state-error\") 与 apps/client/src/components/common/ErrorState.vue:49-50 (class=\"error-btn\" @tap=\"emit('retry')\")；产物 class token 只在 components/common/PageStateContainer.wxml 与 components/common/ErrorState.wxml（命令：node tmp/qa/tok.mjs state-error error-btn）",
+   "note": "重试钮是真元素、真事件绑定，但整块编在组件自己的 wxml 里 ⇒ 页作用域查询进不去（本门实测该轴 90.6% 点不动）。另需真实档把 GET /circles 弄失败才有 error 态；mock-empty 那半按判据自述就该记不可构造。"
+  },
+  {
+   "id": "CI06",
+   "page": "subpackages/circles/circles/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/02/tapfix-lane-SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json.json",
+   "verdict": "COMPOSED_OR_SCOPED",
+   "token": ".circles-tab",
+   "bandAxis": "pageWxmlText（产物里不是 class token）",
+   "citation": "apps/client/src/subpackages/circles/circles/index.vue:400 class=\"circles-tab\" + :401 :class=\"{ 'circles-tab--active': … }\" + :404 @tap；命令：grep -o 'class=\"[^\"]*circles-tab[^\"]*\"' apps/client/dist/build/mp-weixin/subpackages/circles/circles/index.wxml → class=\"{{['circles-tab', 'data-v-85666a04', tab.e && 'circles-tab--active']}}\"",
+   "note": "机制：节点带 :class 对象绑定后，连静态类名都被编译成运行期数组 ⇒ 字面 .circles-tab 在产物 class token 里查不到（门落 pageWxmlText）。且判据要的是「第 4 个 tab」，现通道只点首匹配；本条真正的判点（滚动位是否丢）另需 scrollTop 读数。"
+  },
+  {
+   "id": "CI17",
+   "page": "subpackages/circles/circles/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/02/tapfix-lane-SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json.json",
+   "verdict": "SELECTOR_MISSED",
+   "token": ".circle-card__count（+ .circle-card__hot-badge）",
+   "bandAxis": "pageWxmlExact（两档一致）",
+   "citation": "apps/client/src/subpackages/circles/circles/index.vue:435 <text class=\"circle-card__count\">{{ t(\"circle.cardStats\", { members: formatMemberCount(circle.memberCount), … }) }}</text>；:427 <view v-if=\"circle.memberCount >= HOT_THRESHOLD\" class=\"circle-card__hot-badge\">",
+   "note": "判据正文只写「统计行/热门徽标」没给类名 ⇒ 是可补的名字，两档产物里都是本页真 class token，且中文文案就在 .circle-card__count 这个 <text> 上（可直接读出 999/1,000/8,932/1.0w）。残留：逐卡文本读数与 7999/8000 边界夹具。"
+  },
+  {
+   "id": "CI18",
+   "page": "subpackages/circles/circles/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/02/tapfix-lane-SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json.json",
+   "verdict": "SELECTOR_MISSED",
+   "token": ".circle-card__cover",
+   "bandAxis": "pageWxmlExact",
+   "citation": "apps/client/src/subpackages/circles/circles/index.vue:421 <image class=\"circle-card__cover\" :src=\"circleCover(circle.name)\" mode=\"aspectFill\" lazy-load>（外层 :420 .circle-card__cover-wrap），两档 index.wxml 均为真 class token",
+   "note": "「封面」有名字也有节点，属可补锚点；但出图/破图/懒加载补齐要的是 src 与图像尺寸读数（现探针 fields({size:true}) 取了 size 却只回计数，scripts/qa/r-exec-cli.mjs:145-146），资源阻断另属 DevTools 载具。"
+  },
+  {
+   "id": "CI20",
+   "page": "subpackages/circles/circles/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/02/tapfix-lane-SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json.json",
+   "verdict": "COMPOSED_OR_SCOPED",
+   "token": ".circle-card__action（加入钮）/ .circles-header__back（在册）",
+   "bandAxis": "pageWxmlText（加入钮）；返回钮 pageWxmlExact",
+   "citation": "apps/client/src/subpackages/circles/circles/index.vue:458-459 class=\"circle-card__action\" + :class=\"{ 'circle-card__action--joined': … }\" + :462 @tap.stop，编译为 class=\"{{['circle-card__action', 'data-v-85666a04', circle.k && 'circle-card__action--joined']}}\"（命令同 CI06 的 grep，见 :455-470 区块）；返回钮 :350 class=\"circles-header__back press-feedback\" 为真 token",
+   "note": "加入钮与 CI06 的 tab 同一种「静态名被 :class 拖进运行期数组」机制；返回钮/tab/卡片名字都查得到。真正卡住本条的是「按边缘 4rpx 坐标点击」——现通道只按选择器点节点，落不到边界。"
+  },
+  {
+   "id": "CI21",
+   "page": "subpackages/circles/circles/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/02/tapfix-lane-SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json.json",
+   "verdict": "NO_ELEMENT_NO_FIX",
+   "token": ".circles-tabs（真名，非可点件）",
+   "bandAxis": "pageWxmlExact",
+   "citation": "apps/client/src/subpackages/circles/circles/index.vue:395 <scroll-view class=\"circles-tabs\" scroll-x :show-scrollbar=\"false\">（无任何事件绑定）；命令：node tmp/qa/axis.mjs … → CI21 .circles-tabs axis=pageWxmlExact strict=ownPageExact",
+   "note": "四条腿是纵/横滚动极值 + 双指回弹 + 多机型 rect 遮挡判定，名字虽在但点它零反馈 ⇒ 缺滚动通道与 rect/scroll 读数，不属选择器缺口。"
+  },
+  {
+   "id": "CI22",
+   "page": "subpackages/circles/circles/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/02/tapfix-lane-SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json.json",
+   "verdict": "CRITERIA_NAMES_NOTHING",
+   "token": "",
+   "bandAxis": "not-named",
+   "citation": "命令：grep -n -A4 '\"path\": \"circles/index\"' apps/client/src/pages.json → 条目（pages.json:100）无 style 段 ⇒ 未开 enablePullDownRefresh；apps/client/src/subpackages/circles/circles/index.vue:386/:395 两个 scroll-view 也无 refresher-enabled",
+   "note": "本条判的正是「刷新入口缺失」，产品在这页没有该 affordance ⇒ 没有可点名物件。紧致替代物是配置事实（pages.json:100 无 style）+ onShow 补拉条件（index.vue:83 要求列表为空）⇒ 该转非帧判（源码/配置级断言 + network 计数），别硬造点击目标。"
+  },
+  {
+   "id": "CS07",
+   "page": "subpackages/chat/chat-session/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json.json",
+   "verdict": "SELECTOR_MISSED",
+   "token": ".temp-banner / .temp-action-row",
+   "bandAxis": "pageWxmlExact（两档一致，strict=ownPageExact）",
+   "citation": "apps/client/src/subpackages/chat/chat-session/index.vue:1987 <view v-if=\"isTempSession || tempLoadFailed\" class=\"temp-banner\">（内文 :1988 __text、:1991 __countdown）与 :2246 class=\"temp-action-row\"；夹具在 mock 档就有：apps/client/src/stores/chat/mock-data.ts:212 id: \"session-temp-1\"",
+   "note": "lane 的「静息态零节点」是真的，但那是执行器按裸路径直开造成（r-exec-cli.mjs:191-193 的 ROUTE_QUERY 不含本页）——补 tapTarget + 给本页带 sessionId=session-temp-1 深链即可判，mock 档就能表达，不必换档。倒计时逐秒递减另需两次采样。"
+  },
+  {
+   "id": "CS08",
+   "page": "subpackages/chat/chat-session/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json.json",
+   "verdict": "COMPOSED_OR_SCOPED",
+   "token": ".temp-action-btn--disabled（条件类）",
+   "bandAxis": "pageWxmlText",
+   "citation": "apps/client/src/subpackages/chat/chat-session/index.vue:2248-2249 与 :2257-2258：class=\"temp-action-btn temp-action-btn--secondary press-feedback\" + :class=\"{ 'temp-action-btn--disabled': tempSessionUnavailable }\"；命令：node tmp/qa/tok.mjs temp-action-btn temp-action-btn--disabled → 两档 BAND classToken=- 只在 wxml 文本里",
+   "note": "机制：条件类走 :class 对象绑定，产物是运行期数组 ⇒ temp-action-btn 连父名都不成 class token，判据要「读按钮 class 是否含 --disabled」在静态产物里无从命中。另需 temp 失效深链才有该态，Toast 走 uni.showToast 属原生层。"
+  },
+  {
+   "id": "CS19",
+   "page": "subpackages/chat/chat-session/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json.json",
+   "verdict": "COMPOSED_OR_SCOPED",
+   "token": "入口气泡（组件作用域）/ 菜单 .longpress-overlay .longpress-menu__item（在册）",
+   "bandAxis": "入口 bandWxmlOther；菜单 pageWxmlExact",
+   "citation": "apps/client/src/subpackages/chat/chat-session/index.vue:2104 @longpress=\"handleMessageLongpress(…)\" 挂在 <ChatBubble> 上，命令：grep -o '<[a-z][a-z0-9-]*' apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml → 含 <chat-bubble（气泡类名住在 components/chat/ChatBubble.wxml）；菜单：index.vue:2277 v-if=\"longPressMenu.visible\" class=\"longpress-overlay\"、:2289 起 .longpress-menu__item 各带 @tap",
+   "note": "弹层里六个菜单项都是本页真 token（可补），但唯一置真入口是子组件气泡上的 longpress，而本通道只有 tap/input 两条腿（r-exec-cli.mjs:402-412）⇒ 组件作用域 + 无长按腿双挡。把 tap 打在气泡上是换判据，不是补选择器。"
+  },
+  {
+   "id": "CS20",
+   "page": "subpackages/chat/chat-session/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json.json",
+   "verdict": "SELECTOR_MISSED",
+   "token": ".quote-reply-bar",
+   "bandAxis": "pageWxmlExact（strict=ownPageExact）",
+   "citation": "apps/client/src/subpackages/chat/chat-session/index.vue:2163 <view v-if=\"quoteReply\" class=\"quote-reply-bar press-feedback\" … @tap=\"cancelQuoteReply\">，内文 :2165 __label / :2168 __body；两档 chat-session/index.wxml 均为真 class token",
+   "note": "判据正文已经把这个裸名写在 action 里， census 只因它没有 __/-- 没抠到 ⇒ 补 tapTarget 即成可点元素。前置链（长按气泡 → 点菜单「引用」）与第 ④ 腿的 .bubble__quote（在 components/chat/ChatBubble.wxml，实测真 token）仍分别欠长按腿与组件作用域。"
+  },
+  {
+   "id": "CS23",
+   "page": "subpackages/chat/chat-session/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json.json",
+   "verdict": "NO_ELEMENT_NO_FIX",
+   "token": ".chat-scroll（真名，非可点件）",
+   "bandAxis": "pageWxmlExact",
+   "citation": "apps/client/src/subpackages/chat/chat-session/index.vue:2040 class=\"chat-scroll\" + :2046 @scrolltoupper=\"onScrollToUpper\"（scroll-view，无 bindtap）；命令：node tmp/qa/axis.mjs → CS23 strict=ownPageExact，另见 chat/official-chat/index.wxml 同名",
+   "note": "动作是「下拉到顶」连续手势，点这个 scroll-view 不会产生滚动事件，页内也没有「到顶」等价按钮 ⇒ 保留原动词就点不了任何东西；判点（视口不跳位、temp 会话零分页请求）要 scrollTop/scrollHeight 与 network 读数。"
+  },
+  {
+   "id": "CS24",
+   "page": "subpackages/chat/chat-session/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json.json",
+   "verdict": "SELECTOR_MISSED",
+   "token": ".unread-hint",
+   "bandAxis": "pageWxmlExact",
+   "citation": "apps/client/src/subpackages/chat/chat-session/index.vue:2139 class=\"unread-hint press-feedback\" + :2142 @tap=\"jumpToLatest\" + :2146 <text class=\"unread-hint__text\">{{ t('chat.newMessageHint') }} ↓</text>（中文标签就在类名旁边），两档产物均真 token",
+   "note": "「新消息浮层」确有名字与真事件绑定 ⇒ 可补。它整块在 v-if=\"unreadHintVisible\" 里，要先滚到中部且窗口内来新消息才渲染，所以补完 tapTarget 还欠滚动通道与对端推消息夹具。"
+  },
+  {
+   "id": "CS26",
+   "page": "subpackages/chat/chat-session/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json.json",
+   "verdict": "CRITERIA_NAMES_NOTHING",
+   "token": "输入栏（该态确不渲染）/ 替代锚 .meta-copy--padded",
+   "bandAxis": "替代锚 pageWxmlExact",
+   "citation": "apps/client/src/subpackages/chat/chat-session/index.vue:2150 <view v-if=\"pageErrorMessage\" class=\"meta-copy meta-copy--padded\">{{ pageErrorMessage }}</view> 与紧随的 :2151 <template v-else>（整条微信输入栏在它里面；消息区同类错误节点在 :2048/:2053）——命令：node tmp/qa/tok.mjs meta-copy--padded → 两档 chat-session/index.wxml 真 class token（.wechat-input-bar__input :2217 亦是真 token，只是该态不渲染）",
+   "note": "本条定义的状态（未知 sessionId 失败门 :660-663）里「入口存在」这一支恒假 ⇒ 输入+发送那条腿在本页该态没有物件（判据自己写了「若入口存在」）。紧致替代判点 = .meta-copy--padded 的错误文案 <text>，加「.wechat-input-bar__input 缺席」的负向断言。"
+  },
+  {
+   "id": "CS31",
+   "page": "subpackages/chat/chat-session/index",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json.json",
+   "verdict": "NO_ELEMENT_NO_FIX",
+   "token": "",
+   "bandAxis": "absent（正文里的 .chat-session 是 URL 残片，门自跑 SEL_ABSENT_ROW …#CS31 只提示）",
+   "citation": "命令：node scripts/qa/verify-case-selectors-exist.mjs --band apps/client/dist/build/mp-weixin --max-samples 300 → SEL_ABSENT_ROW SUBPACKAGES-CHAT-CHAT-SESSION-INDEX#CS31 .chat-session 只提示（该串来自 action 里的 reLaunch '...chat-session/index?…'）；判据断言项 apps/client/src/subpackages/chat/chat-session/index.vue:896-907 标题取 store 真名",
+   "note": "五个判点全是「参数没被读」的求值/网络事实，DOM 里无从表达；唯一动作腿要 input+tap 串接（本通道一条 case 只发一种动作）。补深链 query 才有会话可发，但那不属选择器缺口。"
+  },
+  {
+   "id": "MT02",
+   "page": "subpackages/discover-extra/discover/matching",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json.json",
+   "verdict": "COMPOSED_OR_SCOPED",
+   "token": ".match-actions__label（组件作用域，且父页不是本页）",
+   "bandAxis": "bandWxmlOther",
+   "citation": "apps/client/src/components/match/MatchActions.vue:41/55/69 <text class=\"match-actions__label\">{{ t('discover.like'…) }}（中文标签在类名里）；命令：grep -rln MatchActions apps/client/src --include=*.vue → 只有 apps/client/src/pages/discover/index.vue 用它，本页 apps/client/src/subpackages/discover-extra/discover/matching.vue:257-270 模板只渲染 .matching-page__back 与 <MatchLoading>",
+   "note": "「喜欢/超赞」两枚按钮在产品里存在，但既在子组件又在另一页 ⇒ 本页作用域查不到（门实测该轴 90.6% 点不动）；左右滑另属连续手势。本页唯一在册可点件 .matching-page__back（matching.vue:259 @tap=goBack）点即离页，冒充它等于换判据。"
+  },
+  {
+   "id": "MT03",
+   "page": "subpackages/discover-extra/discover/matching",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json.json",
+   "verdict": "WRONG_BAND",
+   "token": "",
+   "bandAxis": "not-named",
+   "citation": "apps/client/src/subpackages/discover-extra/discover/matching.vue:87 if (!checked.value || !animated || previewMode.value) return; 与 scripts/qa/r-exec-cli.mjs:193 给本页固定带 dev-preview=1；case.pre 自述 mock 下 lastSwipeResult.matched 恒假",
+   "note": "matched → redirectTo 那一条链在 mock 档不可构造（且执行器自加的 dev-preview=1 让 watch 早退，需按 case 定制 query），能表达它的是 real 档 + 真命中夹具；判点本身还是路由栈数组读数，非元素。"
+  },
+  {
+   "id": "MT05",
+   "page": "subpackages/discover-extra/discover/matching",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json.json",
+   "verdict": "NO_ELEMENT_NO_FIX",
+   "token": "",
+   "bandAxis": "not-named",
+   "citation": "apps/client/src/subpackages/discover-extra/discover/matching.vue:94（uni.showToast，原生层不入渲染树）+ 400ms 自动返回时序；命令：node tmp/qa/axis.mjs → MT05「判据正文里一个类名都没点名」",
+   "note": "三个观测面（Toast 文案、自动返回耗时、寻觅页 cards 长度 -1）都不是本页元素；本页静息可点件只有 .matching-page__back（matching.vue:259），点它是主动返回，与判据的自动返回语义相反。"
+  },
+  {
+   "id": "MT06",
+   "page": "subpackages/discover-extra/discover/matching",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json.json",
+   "verdict": "NO_ELEMENT_NO_FIX",
+   "token": "",
+   "bandAxis": "not-named",
+   "citation": "apps/client/src/subpackages/discover-extra/discover/matching.vue:97-101（失败路 Toast 与 600ms 返回）；case.pre 两路都要求断网/后端非 2xx",
+   "note": "与 MT05 同型：判点是原生 Toast 原文 + 耗时 + 跨页 cards 差异，且前置要故障注入 ⇒ 本档本页无物件可点。"
+  },
+  {
+   "id": "MT14",
+   "page": "subpackages/discover-extra/discover/matching",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json.json",
+   "verdict": "NO_ELEMENT_NO_FIX",
+   "token": "",
+   "bandAxis": "not-named",
+   "citation": "apps/client/src/subpackages/discover-extra/discover/matching.vue:106 onLoad 的 cardId/action/userId 分支（需 ?userId=…&cardId=…&action=like 深链，而 scripts/qa/r-exec-cli.mjs:193 只给 dev-preview=1）；命令：node tmp/qa/axis.mjs → MT14 未点名任何类名",
+   "note": "两栏判点（写请求 URL + Idempotency-Key 逐条、后端记录数 R1=R0+1）零 DOM 目标；缺的是按 case 定制的 query 深链与 network/后端回读通道，不属选择器缺口。"
+  },
+  {
+   "id": "MT20",
+   "page": "subpackages/discover-extra/discover/matching",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json.json",
+   "verdict": "NO_ELEMENT_NO_FIX",
+   "token": "候选替代 .match-loading__skip（组件作用域，但改了判据语义）",
+   "bandAxis": "not-named；替代物 bandWxmlOther",
+   "citation": "apps/client/src/components/match/MatchLoading.vue:73 <view class=\"match-loading__skip\" … @tap=\"emit('skip')\">（token 只在 components/match/MatchLoading.wxml，命令 node tmp/qa/tok.mjs match-loading__skip）；本页 apps/client/src/subpackages/discover-extra/discover/matching.vue:257-270 无 scroll-view、模板上无 @touch 绑定",
+   "note": "判据是「上下滑 300px 后零副作用」的无主手势普查：没有任何节点承载它，点返回钮或点组件里的跳过区都会引入本条要排除的副作用 ⇒ 诚实结论是换不了物件，只能转 WS 手势通道 + 路由/animationDone 采样。"
+  },
+  {
+   "id": "MT21",
+   "page": "subpackages/discover-extra/discover/matching",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json.json",
+   "verdict": "CRITERIA_NAMES_NOTHING",
+   "token": "",
+   "bandAxis": "not-named",
+   "citation": "命令：grep -n -B2 -A4 '\"path\": \"discover/matching\"' apps/client/src/pages.json → 条目（pages.json:140）无 style 段 ⇒ 无 enablePullDownRefresh；grep -n onPullDownRefresh apps/client/src/subpackages/discover-extra/discover/matching.vue → 0 命中",
+   "note": "本页从来没有下拉刷新这个 affordance（配置与钩子两样都没有），所以「下拉不产生伪刷新」只能按配置事实 + 零新增请求来判 ⇒ 必须转非帧判；给它硬配一个 tapTarget 只会新增一次真实点击、破坏「零副作用」判据。"
+  },
+  {
+   "id": "VD01",
+   "page": "subpackages/village/village/detail",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-次要18.json.json",
+   "verdict": "SELECTOR_MISSED",
+   "token": ".detail-page（+ .comments-loading）",
+   "bandAxis": "pageWxmlExact ×2（strict=ownPageExact）",
+   "citation": "apps/client/src/subpackages/village/village/detail.vue:760 <view class=\"detail-page\" :style=\"menuStyleVars\">（根节点，恒渲染）与 :959 <view v-if=\"loading\" class=\"comments-loading\" role=\"status\" aria-live=\"polite\">；两档 village/detail.wxml 均为真 class token",
+   "note": "本条自述「不打点」，它要的是三次 DOM 采样：.detail-page 就是那个稳定锚（补进 anchor/observed 选择器即可判 0s 存在性），.comments-loading 需 ?id=post-16 深链才进渲染树；同帧三刻采样另属载具。"
+  },
+  {
+   "id": "VD07",
+   "page": "subpackages/village/village/detail",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-次要18.json.json",
+   "verdict": "COMPOSED_OR_SCOPED",
+   "token": ".post-image（陈旧）⇒ 真名 .post-image-wrap（运行期拼类）",
+   "bandAxis": "字面名 otherFileToken（兄弟页 village/post.wxml）；真名 pageWxmlText",
+   "citation": "apps/client/src/subpackages/village/village/detail.vue:846-847 class=\"post-image-wrap press-feedback\" + :class=\"{ 'post-image-wrap--first': idx === 0 }\"；命令：grep -o 'class=\"[^\"]*{{\\[[^\"]*\"' apps/client/dist/build/mp-weixin/subpackages/village/village/detail.wxml → class=\"{{['post-image-wrap', 'press-feedback', 'data-v-d0b36fc6', img.d && 'post-image-wrap--first']}}\"；字面 .post-image 的真 token 在兄弟页 apps/client/src/subpackages/village/village/post.vue:901（发布页九宫格）",
+   "note": "两层机制：判据点的是改名前的旧名，而现名因带 :class 绑定在产物里不成 class token（运行期才拼出）；.image-viewer 那半倒还是真 token（detail.vue:1333，v-if imageViewerVisible）。裸直达无 ?id= ⇒ currentPost 空、整块 .detail-body 不渲染。"
+  },
+  {
+   "id": "VD08",
+   "page": "subpackages/village/village/detail",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-次要18.json.json",
+   "verdict": "SELECTOR_MISSED",
+   "token": ".post-tag",
+   "bandAxis": "pageWxmlExact",
+   "citation": "apps/client/src/subpackages/village/village/detail.vue:875-881：<view v-if=\"currentPost.tags.length > 0\" class=\"post-tags\"> 内 <text … class=\"post-tag press-feedback\" … @tap=\"goToTagPosts(tag)\">{{ tag }}</text>（标签文本本身即内容）；两档 village/detail.wxml 均为 class=\"post-tag press-feedback data-v-d0b36fc6\" 真 token",
+   "note": "标签是真元素 + 真事件绑定 ⇒ 可直接进 tapTarget；残留是前置（需 ?id= 深链让 currentPost 非空，整块在 :781 的 .detail-body 里）与回程的系统返回键 + 滚动位读数。"
+  },
+  {
+   "id": "VD09",
+   "page": "subpackages/village/village/detail",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-次要18.json.json",
+   "verdict": "SELECTOR_MISSED",
+   "token": ".comments-sort / .comments-more",
+   "bandAxis": "pageWxmlExact ×2（.detail-body 为 pageWxmlText）",
+   "citation": "apps/client/src/subpackages/village/village/detail.vue:946-951（class=\"comments-sort press-feedback\" … @tap=\"toggleCommentSort\"，文案 :953「最热/最新」）与 :1131-1138（v-if=\"commentHasMore\" class=\"comments-more\" role=button :aria-label=… @tap=\"loadMoreComments\"）；两档产物都是真 class token",
+   "note": "两个控件都有名字有绑定，属可补；.detail-body（第③腿的滚动对象）与 :1202 的 action-btn--follow 一样被 :class 拖成运行期数组 ⇒ 名字查不到 token。前置仍欠 ?id= 深链 + 该帖有跨页评论 + 滚动通道。"
+  },
+  {
+   "id": "VD15",
+   "page": "subpackages/village/village/detail",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-次要18.json.json",
+   "verdict": "SELECTOR_MISSED",
+   "token": ".post-body（真正的长按宿主；判据写的 .post-content 只是它内部 <text>）",
+   "bandAxis": "pageWxmlExact（.post-body 与 .post-content 都是本页真 token）",
+   "citation": "apps/client/src/subpackages/village/village/detail.vue:830 <view class=\"post-body\" @longpress=\"handlePostLongpress\"> 包住 :831 <text class=\"post-content\">{{ currentPost.content }}</text>；同 handler 的页内 tap 入口 :769-774 class=\"detail-header__menu\" @tap=\"handlePostLongpress\"（实测该节点 present(1)）",
+   "note": "lane 只说「.post-content 在 v-if 里」，没说长按宿主其实是 .post-body —— 这是被漏掉的真名字。但本条后半（uni.showActionSheet :309/:341、uni.showModal :353、子组件 PostReportDialog :1419）都在原生层/组件层，且 case 标 requiresReal=true ⇒ 补完选择器仍欠长按腿与原生弹层命中。"
+  },
+  {
+   "id": "VD16",
+   "page": "subpackages/village/village/detail",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-次要18.json.json",
+   "verdict": "SELECTOR_MISSED",
+   "token": ".similar-author-avatar / .action-btn--message（.action-btn--follow 属条件类）",
+   "bandAxis": "pageWxmlExact ×2 + pageWxmlText（关注钮）",
+   "citation": "apps/client/src/subpackages/village/village/detail.vue:1161 class=\"similar-author-avatar press-feedback\"（@tap 进个人页）、:1215 class=\"action-btn action-btn--message press-feedback\"（真 token，两档 detail.wxml 里是 class=\"action-btn action-btn--message press-feedback data-v-d0b36fc6\"）、:1202-1203 关注钮带 :class=\"{ 'action-btn--follow-active': … }\" ⇒ 编译为 class=\"{{['action-btn','action-btn--follow','press-feedback','data-v-d0b36fc6',author.s && 'action-btn--follow-active']}}\"",
+   "note": "判据正文一个类名都没写，其实三个入口里两个是本页真 token（可补），关注钮是运行期拼类（同 CI06 机制）。前置另欠 ?id= 深链、similarAuthors.length>0（:1147）与把关注接口打失败（case 自己要求 500/断网）。"
+  },
+  {
+   "id": "VD19",
+   "page": "subpackages/village/village/detail",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-次要18.json.json",
+   "verdict": "COMPOSED_OR_SCOPED",
+   "token": ".post-image（陈旧）⇒ 真名 .post-image-wrap（运行期拼类）",
+   "bandAxis": "字面名 otherFileToken；真名 pageWxmlText",
+   "citation": "同 VD07 的命令输出（apps/client/dist/build/mp-weixin/subpackages/village/village/detail.wxml 里 post-image-wrap 只出现在 {{[…], …}} 数组里；字面 post-image 的 class token 在 subpackages/village/village/post.wxml）；源码 apps/client/src/subpackages/village/village/detail.vue:846-847",
+   "note": "本条判点是图像 naturalWidth/src 与「杯/饮品特写」语义比对：探针只回节点条数，虽然 r-exec-cli.mjs:145-146 已 fields({size:true}) 取了 size 却没往外报；另需 ?id= 深链让图片进渲染树。名字层面属「真名被 :class 拼掉」，不是无元素。"
+  },
+  {
+   "id": "VD20",
+   "page": "subpackages/village/village/detail",
+   "briefFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-次要18.json.json",
+   "verdict": "SELECTOR_MISSED",
+   "token": ".comment-time / .similar-authors-title（「说点什么」不是节点）",
+   "bandAxis": "pageWxmlExact ×2；占位那半无轴（placeholder 属性）",
+   "citation": "apps/client/src/subpackages/village/village/detail.vue:1010 <text class=\"comment-time\">{{ formatRelativeTime(comment.createdAt) }}</text>、:1149 <text class=\"similar-authors-title\">{{ t(\"village.detail.similarTitle\") }}</text>（两档 village/detail.wxml 均真 class token）；「说点什么」是 :1284 <input class=\"input-bar__input\" :placeholder=\"replyPlaceholder\"> 的属性，不是渲染节点",
+   "note": "三处「零反馈」普查对象里两处有真名字真节点（可补成 noop 锚点），第三处判据把输入框占位文案当成了节点 —— 该半是判据写错，须改成读 .input-bar__input 的 placeholder。noop 判定还要逐点后的路由/loading 计数。"
+  }
+ ]
+}

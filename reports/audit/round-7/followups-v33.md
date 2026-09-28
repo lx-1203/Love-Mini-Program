@@ -8,14 +8,35 @@
 - 当时的实测读数（§104.3 留档）：`dry A=9 B=22 拒绝=0，涉及 10 个 manifest 的用例数=581（改前=581）OK`；负例三条（假类名 / 不存在的 id / 无 why 的盖章）全部被点名并 `exit=1`。
 - 要落盘的是三份手写计划合计 31 行：`scripts/qa/cellplan-round7-deadselectors.json`、`-login-skips.json`、`-taptarget.json`。
 - **为什么现在没跑**：`round7-NOTES.md:1897` 与 `:3503` 写明在跑的腿是逐组读 ops 文件的，中途改会让同一轮前半用旧判据、后半用新判据。本程的交互腿（`.zcode/tmp/lane-ui2/`）03:42 仍在写。
-- 命令（腿停干净之后；**本工具没有 `--dry` 旗标**，不给 `--apply` 就是干跑，乱给旗标会被 `KNOWN=["plan","bands","apply"]` 那两道闸挡下并 `exit 2`）：
+- 命令（腿停干净之后；**本工具没有 `--dry` 旗标**，不给 `--apply` 就是干跑，乱给旗标会被 `KNOWN=["plan","bands","apply"]` 挡下并 `exit 2`）：
   ```
   N=/d/codex-tools/node-v22.17.0-win-x64/node.exe
-  "$N" scripts/qa/apply-ops-cellplans.mjs          # 干跑（默认吃三份计划，见 :33 的 PLANS 默认表）
+  "$N" scripts/qa/apply-ops-cellplans.mjs          # 干跑
   "$N" scripts/qa/apply-ops-cellplans.mjs --apply  # 核对无误再落盘
   ```
+  **纠正我先前写的一处错**：这里原本写"默认吃三份计划"，看 `:33` 的默认表其实有**四份** ——
+  `deadselectors / login-skips / taptarget / recovered.json`（第四份 13 行我原先漏看）。
   单份指定用 `--plan a.json --plan b.json`，两档比对的产物目录用 `--bands p1,p2`（用法原文在 `:13`）。
-  验收：看它自报的那行 `OPSCELL 计划=… A 组=… B 组=… 其中已落地=… 待改=… 拒绝=…`，拒绝必须逐条有名有因；落盘前后用例总数守恒（§104.3 当时是 581→581），落完后 `verify-source-shape --dry` 与 `verify-ledger` 仍 exit 0。
+  验收：看自报行 `OPSCELL 计划=… A 组=… B 组=… 其中已落地=… 待改=… 拒绝=…`；
+  拒绝必须逐条有名有因，落盘前后用例总数守恒。
+
+### 1.1 本节的状态已在 03:52 由 ops 车道查实，两条与文档原说法不符（留档）
+- **`#51`/`#67` 早在本程之前就落盘入库了**：干跑真实读数 `A 组=8 行｜B 组=22 行｜已落地=30｜待改=0｜拒绝=0 → OPSCELL_RESULT=PASS exit 0`；
+  备份 `.pre-ops-cellplan.bak` 时间 Sep 27 18:39，入库提交 `34b6fb3d`。
+  `round7-NOTES.md` §104.3 记的 `A=9 / 31 行` 与盘上不符（那是旧态），所以我**没有再 `--apply`**（`applied=false`）——
+  重复落同一批计划不是"补完"，是拿旧文档冒充新事实。
+- **45 条 `SELECTOR_MISSED` 只收进 10 条**（9 条 add-tapTarget + 1 条 rename `TD07 .say-hello→.reply-say-hello`），
+  涉及 4 个 manifest，守恒 286→286、全目录 1107 不变，幂等复跑 `已落地=10 待改=0`。
+  拒 20 条并归类：两档静态不命中 2、判据无点击步 12、节点不挂事件 2、多命中歧义 3、有 tap 无点击步 1；另 15 条上一批已落。
+  **最要紧的一条方法论**：四道闸本身会放行 28/30 —— 也就是"过了闸"不等于"可落"，
+  判据里根本没有点击步的 12 条照样能过名字核对。闸是必要条件，不是充分条件。
+- 三条门在写盘前后各跑一遍：`verify-source-shape --dry`=0、`verify-ledger`=0、`verify-state-truth`=0，另 `SEL_RESULT=PASS`。
+  但 `verify-ops-corpus-stamp --check`=**1**：10 个漂移文件里只有 4 个是 ops 车道改的，
+  另 6 个在它动手之前就不符，它按边界**没有越权重打别人的戳**——这条红留给终局复量如实报。
+- **`CH12` 已判成 `EXECUTED`**（原判点本体从未验过）：载体 showcase `real@ed1cd82c`，
+  prestate 三样同向实测（`isVerified=false`、目标 btn `present(1)`、两支徽章 absent），
+  tap 回 `{success:true}`，600ms 内路由 `hub|certification`、栈 1→2、落地页 `.cert-page/.cert-header/.cert-body` present，
+  7 帧哈希且人眼复核不是"模拟器启动失败"页。未量的也写明：500ms 子句、console、身份 B 腿未测。
 
 ## 2. 167 条"不可核"里，45 条其实可以回收
 

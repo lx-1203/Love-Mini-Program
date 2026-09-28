@@ -828,7 +828,11 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/setup/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/setup/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "tapTarget": ".skip-bar",
+   "tapTargetFrom": "cellplan-round7-selector45-admissible.json",
+   "tapTargetEvidence": "apps/client/src/subpackages/setup/campus/index.vue:277-279（role=button，:aria-label=skipLabel，@tap=skip）｜两档产物逐字命中且整词唯一：mp-weixin class 命中 1 处/带 tap 1 处，mp-weixin-real class 命中 1 处/带 tap 1 处｜来源 reports/audit/round-7/unverifiable-recheck-3.json",
+   "tapTargetConfirmedAt": "2026-09-29"
   },
   {
    "id": "SCU09",
@@ -1050,7 +1054,11 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/setup/schedule/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/setup/schedule/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "tapTarget": ".time-window-add",
+   "tapTargetFrom": "cellplan-round7-selector45-admissible.json",
+   "tapTargetEvidence": "apps/client/src/subpackages/setup/schedule/index.vue:117-124（role=button，:aria-label=addTimeWindow，@tap=addTimeWindow，文案 :124）｜两档产物逐字命中且整词唯一：mp-weixin class 命中 1 处/带 tap 1 处，mp-weixin-real class 命中 1 处/带 tap 1 处｜来源 reports/audit/round-7/unverifiable-recheck-3.json",
+   "tapTargetConfirmedAt": "2026-09-29"
   },
   {
    "id": "SCH08",
@@ -1067,7 +1075,11 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/setup/schedule/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/setup/schedule/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "tapTarget": ".time-window-remove",
+   "tapTargetFrom": "cellplan-round7-selector45-admissible.json",
+   "tapTargetEvidence": "apps/client/src/subpackages/setup/schedule/index.vue:106-112（@tap=removeTimeWindow(idx)，role=button，aria-label=removeTimeWindow）｜两档产物逐字命中且整词唯一：mp-weixin class 命中 1 处/带 tap 1 处，mp-weixin-real class 命中 1 处/带 tap 1 处｜来源 reports/audit/round-7/unverifiable-recheck-3.json",
+   "tapTargetConfirmedAt": "2026-09-29"
   },
   {
    "id": "SCH09",
@@ -1248,7 +1260,11 @@
    "action": "进页观察错误态文案与按钮 → tap .retry-btn → 恢复网络再 tap 一次；期间记录客户端 GET 条数",
    "expected": "catch 必须置 error=true（:97-101，修复注释自证原实现从不置位、错误分支为死代码）→ 渲染 SectionCard recommendPref.errorTitle + errorText + 「重试」按钮（:170-175）；tap 重试 → 新增 1 条 GET（客户端条数=点击次数，不吞点击）且 error 先复位 false、loading 置 true（:76-77）→ 短暂回到 loading 卡而非直接内容；恢复网络后 → content 正常渲染、错误卡消失；Loading 不永驻；另采证 retry 为原生 <button>（:173）→ 小程序 button 默认 ::after 边框未被清除（样式段 :256-266 无 ::after 覆写）→ 按钮边缘是否残留细线须以截图特写佐证（MP-R2-RECOMMEND-001）；console 允许失败日志、不得有未捕获异常",
    "evidence": "critical：错误态 before + 重试中 + 恢复后 三张截图（含 retry 按钮特写）+ 路由 + Toast（应为 0）+ console + network 逐条状态码",
-   "requiresReal": true
+   "requiresReal": true,
+   "tapTarget": ".retry-btn",
+   "tapTargetFrom": "cellplan-round7-selector45-admissible.json",
+   "tapTargetEvidence": "apps/client/src/subpackages/setup/recommend-pref/index.vue:173（原生 <button class=\"retry-btn press-feedback\" @tap=retry>）｜两档产物逐字命中且整词唯一：mp-weixin class 命中 1 处/带 tap 1 处，mp-weixin-real class 命中 1 处/带 tap 1 处｜来源 reports/audit/round-7/unverifiable-recheck-3.json",
+   "tapTargetConfirmedAt": "2026-09-29"
   },
   {
    "id": "RP09",
