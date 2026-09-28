@@ -1,12 +1,12 @@
 {
   "schemaVersion": "round-report-metrics-1",
-  "generatedAt": "2026-09-28T01:29:43.342Z",
-  "startedAt": "2026-09-28T01:26:32.441Z",
+  "generatedAt": "2026-09-28T06:56:13.448Z",
+  "startedAt": "2026-09-28T06:52:32.597Z",
   "roundDir": "reports/audit/round-7",
   "reportFile": "reports/audit/round-7/round-7-report.md",
   "identity": {
-    "head": "1a0225bd",
-    "porcelain": 174,
+    "head": "fcdd8fc1",
+    "porcelain": 152,
     "porcelainApps": 0,
     "jvmPid": "32156",
     "jvmStartedAt": "2026-09-26 21:32:46",
@@ -563,16 +563,22 @@
       "SKIPPED-real-band": 236,
       "SKIPPED-vague-criterion": 29,
       "FAILED-landing-guard": 134,
-      "other-fail": 382
+      "SKIPPED-vague-action": 275,
+      "SKIPPED-tap-target-absent-unattributed": 14,
+      "SKIPPED-tap-target-absent-reststate": 71,
+      "SKIPPED-deny-irreversible": 21,
+      "other-fail": 1
     },
-    "unclassified": 382,
-    "fourCell": {},
+    "unclassified": 1,
+    "fourCell": {
+      "两载皆有且就在目标页：构建里有却定位不到 → 状态没到/时机太早/作用域找错（harness 或产品状态机）": 85
+    },
     "suspect": 0,
     "tokenLost": 0,
     "offTarget": 160,
     "cannotTellOnTarget": 0,
     "mismatch": 0,
-    "fallbackTotal": 764
+    "fallbackTotal": 2
   },
   "evidence": {
     "readjudicate": {
@@ -633,103 +639,7 @@
     "zoomCropsSumFromShots": 336,
     "carrierWorktreeDirty": 12
   },
-  "live": {
-    "g7": {
-      "exit": 0,
-      "result": "PASS",
-      "runner": "node22"
-    },
-    "g8": {
-      "exit": 0,
-      "result": "PASS",
-      "ringsOk": "10/10",
-      "rings": [
-        {
-          "n": 1,
-          "name": "客户端身份（体验账号）",
-          "ok": true,
-          "detail": "POST /auth/guest-login -> 200，已取到 JWT"
-        },
-        {
-          "n": 2,
-          "name": "客户端写库 POST /posts",
-          "ok": true,
-          "detail": "HTTP 200，返回 id=283"
-        },
-        {
-          "n": 3,
-          "name": "后台按 id 读到该帖",
-          "ok": true,
-          "detail": "GET admin/village-posts/283 -> 200；title 字段可见=是（值 \"G8取证2609280129号\"）"
-        },
-        {
-          "n": 4,
-          "name": "审核驱动前端可见性",
-          "ok": true,
-          "detail": "审核前在列表=false(total=229) / audit HTTP 200 / 审核后在列表=false(total=230) / 可见性以 total 增量为准=true；实测确认：新帖默认 audit_status=pending 且前端列表不可见，审核通过后 total +1 → v32 G8(4) 的假设成立（我一度因 javadoc 写「默认 approved」而怀疑它，那是注释与实现不一致）"
-        },
-        {
-          "n": 5,
-          "name": "同 Idempotency-Key 重放",
-          "ok": true,
-          "detail": "重放 HTTP 409（期望 409）；重放后 total=230 vs 审核后 230 → 未新增行 ✔"
-        },
-        {
-          "n": 6,
-          "name": "计数客户端↔后台一致",
-          "ok": true,
-          "detail": "评论 HTTP 200 / 点赞 HTTP 200；点赞＝客户端 likeCount=1 vs 后台 likesCount=1；评论＝客户端 commentCount=1 vs 后台 commentsCount=1 ⇒ 两侧同名同值；后台字段总数=27（不再截断到 14，截断正是上一条假账的来源）"
-        },
-        {
-          "n": 7,
-          "name": "校园话题写侧收 images/isAnonymous",
-          "ok": true,
-          "detail": "POST /campus/topics -> HTTP 200；响应体 images=\"[\\\"http://127.0.0.1:8080/api/v1/media/app-assets/assets/default-avatar.jpg\\\"]\"（含所发 URL=true）isAnonymous=true（=true）authorName=\"匿名校友\""
-        },
-        {
-          "n": 8,
-          "name": "创建响应回主键 data.id",
-          "ok": true,
-          "detail": "HTTP 200，data.id=310 → 主键已回，客户端可直接定位新行（#27 的 save(topic) 返回值接生的实测证；此前该字段为 null，见台账 §22）"
-        },
-        {
-          "n": 9,
-          "name": "读回 images 落库 + 匿名标记",
-          "ok": true,
-          "detail": "GET /campus/topics/310 -> 200；images 字段=\"[\"http://127.0.0.1:8080/api/v1/media/app-assets/assets/default-avatar.jpg\"]\"（含所发 URL=true）；isAnonymous=true；authorId=null authorName=\"匿名校友\" → 匿名若为真，作者字段应被遮蔽"
-        },
-        {
-          "n": 10,
-          "name": "匿名回复透传并可读回",
-          "ok": true,
-          "detail": "POST replies -> 200 id=42；列表 200 命中本条=true；isAnonymous=true；authorName=\"匿名校友\""
-        }
-      ],
-      "artifacts": "posts.id=283 ; comments.id=1249 ; campus_topics.id=310 ; campus_replies.id=42  ← 本轮写入的真实数据，未删除，交你决定去留"
-    },
-    "g9": {
-      "exit": 0,
-      "result": "PASS",
-      "extracted": 455,
-      "probed": 455,
-      "ok": 455,
-      "skipped": 0,
-      "fail": 0,
-      "control": {
-        "在盘且200": 455,
-        "在盘但失败": 0,
-        "不在盘但200": 0,
-        "不在盘且失败": 0
-      }
-    },
-    "probe": {
-      "exit": 0,
-      "backend": "UP",
-      "verdict": "READY",
-      "reachable": "8/8",
-      "onDisk": 1440
-    }
-  },
+  "live": null,
   "defects": {
     "derivedCount": 1
   },
@@ -755,34 +665,34 @@
       "stdoutSha8": "838114c2"
     },
     "verify-evidence-corpus（本轮 scope）": {
-      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-7,reports/screenshots/round-7-A-mock-final,reports/screenshots/round-7-A-real,reports/screenshots/round-7-A-real-only,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-04e00747,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-exec-271310bc,reports/screenshots/round-7-exec-a1cbb0cb,reports/screenshots/round-7-exec-d77813f8,reports/screenshots/round-7-exec-fc13948f,reports/screenshots/round-7-final-A-mock,reports/screenshots/round-7-final-A-real,reports/screenshots/round-7-final-guest-mock,reports/screenshots/round-7-final-guest-real,reports/screenshots/round-7-guest-real,reports/screenshots/round-7-guest-real-final,reports/screenshots/round-7-guest-real-only,reports/screenshots/round-7-guest1,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-probe-quiet,reports/screenshots/round-7-r8-A-login,reports/screenshots/round-7-r8-guest-login,reports/screenshots/round-7-r8-guest-real-login,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-guest,reports/screenshots/round-7-real-taps,reports/screenshots/round-7-real-taps2,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-realguest,reports/screenshots/round-7-realtaps,reports/screenshots/round-7-showcase,reports/screenshots/round-7-stage7-A-mock,reports/screenshots/round-7-stage7-A-real,reports/screenshots/round-7-stage7-a-real-frames,reports/screenshots/round-7-stage7-guest-real,reports/screenshots/round-7-stage7-guest-real-frames,reports/screenshots/round-7-stage7-mock,reports/screenshots/round-7-stage8b-tour-B-real,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-tap-final,reports/screenshots/round-7-tap-mock,reports/screenshots/round-7-tap-mock2,reports/screenshots/round-7-tap2,reports/screenshots/round-7-tap3,reports/screenshots/round-7-taps,reports/screenshots/round-7-uidebt-1a1df78b,reports/screenshots/round-7-uidebt-final,reports/screenshots/round-7-uidebt-guest-8df4de49,reports/screenshots/round-7-uidebt-guest2-8df4de49,reports/screenshots/round-7-uidebt-txt-d99f3a1f,reports/screenshots/round-7-uidebt-ws-8df4de49,reports/screenshots/round-7-uidebt-wsl2-8df4de49,reports/screenshots/round-7-uidebt-wsl3-8df4de49",
+      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-7,reports/screenshots/round-7-A-mock-final,reports/screenshots/round-7-A-real,reports/screenshots/round-7-A-real-only,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-04e00747,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-exec-1f8331b0,reports/screenshots/round-7-exec-271310bc,reports/screenshots/round-7-exec-6d3f71f5,reports/screenshots/round-7-exec-a1cbb0cb,reports/screenshots/round-7-exec-d77813f8,reports/screenshots/round-7-exec-fc13948f,reports/screenshots/round-7-final-A-mock,reports/screenshots/round-7-final-A-real,reports/screenshots/round-7-final-guest-mock,reports/screenshots/round-7-final-guest-real,reports/screenshots/round-7-guest-real,reports/screenshots/round-7-guest-real-final,reports/screenshots/round-7-guest-real-only,reports/screenshots/round-7-guest1,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-probe-quiet,reports/screenshots/round-7-r8-A-login,reports/screenshots/round-7-r8-guest-login,reports/screenshots/round-7-r8-guest-real-login,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-guest,reports/screenshots/round-7-real-taps,reports/screenshots/round-7-real-taps2,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-realguest,reports/screenshots/round-7-realtaps,reports/screenshots/round-7-showcase,reports/screenshots/round-7-stage7-A-mock,reports/screenshots/round-7-stage7-A-real,reports/screenshots/round-7-stage7-a-real-frames,reports/screenshots/round-7-stage7-guest-real,reports/screenshots/round-7-stage7-guest-real-frames,reports/screenshots/round-7-stage7-mock,reports/screenshots/round-7-stage8b-tour-B-real,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-tap-final,reports/screenshots/round-7-tap-mock,reports/screenshots/round-7-tap-mock2,reports/screenshots/round-7-tap2,reports/screenshots/round-7-tap3,reports/screenshots/round-7-taps,reports/screenshots/round-7-uidebt-1a1df78b,reports/screenshots/round-7-uidebt-final,reports/screenshots/round-7-uidebt-guest-8df4de49,reports/screenshots/round-7-uidebt-guest2-8df4de49,reports/screenshots/round-7-uidebt-txt-d99f3a1f,reports/screenshots/round-7-uidebt-ws-8df4de49,reports/screenshots/round-7-uidebt-wsl2-8df4de49,reports/screenshots/round-7-uidebt-wsl3-8df4de49",
       "exitCode": 0,
-      "stdoutSha8": "ab8a1aea"
+      "stdoutSha8": "ce2534b0"
     },
     "verify-provenance-all（本轮 scope）": {
-      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-7,reports/screenshots/round-7-A-mock-final,reports/screenshots/round-7-A-real,reports/screenshots/round-7-A-real-only,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-04e00747,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-exec-271310bc,reports/screenshots/round-7-exec-a1cbb0cb,reports/screenshots/round-7-exec-d77813f8,reports/screenshots/round-7-exec-fc13948f,reports/screenshots/round-7-final-A-mock,reports/screenshots/round-7-final-A-real,reports/screenshots/round-7-final-guest-mock,reports/screenshots/round-7-final-guest-real,reports/screenshots/round-7-guest-real,reports/screenshots/round-7-guest-real-final,reports/screenshots/round-7-guest-real-only,reports/screenshots/round-7-guest1,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-probe-quiet,reports/screenshots/round-7-r8-A-login,reports/screenshots/round-7-r8-guest-login,reports/screenshots/round-7-r8-guest-real-login,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-guest,reports/screenshots/round-7-real-taps,reports/screenshots/round-7-real-taps2,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-realguest,reports/screenshots/round-7-realtaps,reports/screenshots/round-7-showcase,reports/screenshots/round-7-stage7-A-mock,reports/screenshots/round-7-stage7-A-real,reports/screenshots/round-7-stage7-a-real-frames,reports/screenshots/round-7-stage7-guest-real,reports/screenshots/round-7-stage7-guest-real-frames,reports/screenshots/round-7-stage7-mock,reports/screenshots/round-7-stage8b-tour-B-real,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-tap-final,reports/screenshots/round-7-tap-mock,reports/screenshots/round-7-tap-mock2,reports/screenshots/round-7-tap2,reports/screenshots/round-7-tap3,reports/screenshots/round-7-taps,reports/screenshots/round-7-uidebt-1a1df78b,reports/screenshots/round-7-uidebt-final,reports/screenshots/round-7-uidebt-guest-8df4de49,reports/screenshots/round-7-uidebt-guest2-8df4de49,reports/screenshots/round-7-uidebt-txt-d99f3a1f,reports/screenshots/round-7-uidebt-ws-8df4de49,reports/screenshots/round-7-uidebt-wsl2-8df4de49,reports/screenshots/round-7-uidebt-wsl3-8df4de49",
+      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-7,reports/screenshots/round-7-A-mock-final,reports/screenshots/round-7-A-real,reports/screenshots/round-7-A-real-only,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-04e00747,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-exec-1f8331b0,reports/screenshots/round-7-exec-271310bc,reports/screenshots/round-7-exec-6d3f71f5,reports/screenshots/round-7-exec-a1cbb0cb,reports/screenshots/round-7-exec-d77813f8,reports/screenshots/round-7-exec-fc13948f,reports/screenshots/round-7-final-A-mock,reports/screenshots/round-7-final-A-real,reports/screenshots/round-7-final-guest-mock,reports/screenshots/round-7-final-guest-real,reports/screenshots/round-7-guest-real,reports/screenshots/round-7-guest-real-final,reports/screenshots/round-7-guest-real-only,reports/screenshots/round-7-guest1,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-probe-quiet,reports/screenshots/round-7-r8-A-login,reports/screenshots/round-7-r8-guest-login,reports/screenshots/round-7-r8-guest-real-login,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-guest,reports/screenshots/round-7-real-taps,reports/screenshots/round-7-real-taps2,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-realguest,reports/screenshots/round-7-realtaps,reports/screenshots/round-7-showcase,reports/screenshots/round-7-stage7-A-mock,reports/screenshots/round-7-stage7-A-real,reports/screenshots/round-7-stage7-a-real-frames,reports/screenshots/round-7-stage7-guest-real,reports/screenshots/round-7-stage7-guest-real-frames,reports/screenshots/round-7-stage7-mock,reports/screenshots/round-7-stage8b-tour-B-real,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-tap-final,reports/screenshots/round-7-tap-mock,reports/screenshots/round-7-tap-mock2,reports/screenshots/round-7-tap2,reports/screenshots/round-7-tap3,reports/screenshots/round-7-taps,reports/screenshots/round-7-uidebt-1a1df78b,reports/screenshots/round-7-uidebt-final,reports/screenshots/round-7-uidebt-guest-8df4de49,reports/screenshots/round-7-uidebt-guest2-8df4de49,reports/screenshots/round-7-uidebt-txt-d99f3a1f,reports/screenshots/round-7-uidebt-ws-8df4de49,reports/screenshots/round-7-uidebt-wsl2-8df4de49,reports/screenshots/round-7-uidebt-wsl3-8df4de49",
       "exitCode": 1,
-      "stdoutSha8": "5f4b55b9"
+      "stdoutSha8": "1c753f03"
     },
     "verify-ops-corpus-stamp --check": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-ops-corpus-stamp.mjs --check --stamp reports/audit/round-7/ops-corpus-stamp.json",
       "exitCode": 1,
-      "stdoutSha8": "14e20f1b"
+      "stdoutSha8": "d01f802e"
     },
     "verify-ops-corpus-stamp --copy reports/audit/round-7/ops": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-ops-corpus-stamp.mjs --copy reports/audit/round-7/ops --stamp reports/audit/round-7/ops-corpus-stamp.json",
       "exitCode": 1,
-      "stdoutSha8": "62c0bef9"
+      "stdoutSha8": "61b469fa"
     },
     "verify-case-selectors-exist（mock 档）": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-case-selectors-exist.mjs --band apps/client/dist/build/mp-weixin",
       "exitCode": 0,
-      "stdoutSha8": "a89b6d9a"
+      "stdoutSha8": "ebc7aaf8"
     },
     "verify-case-selectors-exist（real 档）": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-case-selectors-exist.mjs --band apps/client/dist/build/mp-weixin-real",
       "exitCode": 0,
-      "stdoutSha8": "a89b6d9a"
+      "stdoutSha8": "ebc7aaf8"
     },
     "verify-frame-debt-coverage": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-frame-debt-coverage.mjs",
@@ -792,7 +702,7 @@
     "verify-rulings-landed": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-rulings-landed.mjs",
       "exitCode": 0,
-      "stdoutSha8": "bbf6d1df"
+      "stdoutSha8": "c21492f1"
     },
     "verify-ops-corpus-stamp --queue ui-queue.round7-carryover.json": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-ops-corpus-stamp.mjs --queue scripts/qa/ui-queue.round7-carryover.json",
@@ -857,7 +767,7 @@
     "本轮队列计划选择集（scripts/qa/ui-queue.*.json 按轮号取集=否决轴）": {
       "cmd": "派生自 readdirSync(scripts/qa) 的选择式 ^ui-queue\\.round-?7[a-z]*-.*\\.json$ + 12 条 verify-ops-corpus-stamp --queue 腿",
       "exitCode": 0,
-      "stdoutSha8": "eb245d34"
+      "stdoutSha8": "f1d6acae"
     },
     "台账状态列 vs 处置列自相矛盾条数（verify-status-vs-disposition 的 矛盾= 字段=否决轴）": {
       "cmd": "派生自 D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-status-vs-disposition.mjs 的 DISPO rows= / 矛盾= 两个具名字段",
@@ -872,7 +782,7 @@
     "verify-backend-restarted": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-backend-restarted.mjs --port 8080",
       "exitCode": 0,
-      "stdoutSha8": "ab756b48"
+      "stdoutSha8": "2559e827"
     },
     "verify-i18n-orphan": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-i18n-orphan.mjs",
@@ -882,7 +792,7 @@
     "verify-band-freshness": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-band-freshness.mjs --out .zcode/tmp/report-emitter/band-freshness-r7.json",
       "exitCode": 0,
-      "stdoutSha8": "e182c88a"
+      "stdoutSha8": "0bc77939"
     },
     "verify-disproof-anchors": {
       "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-disproof-anchors.mjs",
@@ -900,9 +810,9 @@
       "stdoutSha8": "4eae09be"
     },
     "probe-real-env": {
-      "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/probe-real-env.mjs",
-      "exitCode": 0,
-      "stdoutSha8": "9e008813"
+      "cmd": null,
+      "exitCode": null,
+      "stdoutSha8": null
     },
     "baseline": {
       "file": ".zcode/tmp/round6-LEDGER.md",
@@ -971,9 +881,9 @@
       "ui-queue.round7-tour.json",
       "ui-queue.round7b-stage7.json"
     ],
-    "plansOnDisk": 24,
-    "byRound": "(无轮次号)=3 round-7=12 round-8=9",
-    "carrierSignal": 21,
+    "plansOnDisk": 27,
+    "byRound": "(无轮次号)=3 round-7=12 round-8=12",
+    "carrierSignal": 26,
     "carriersHow": "由 `readdirSync(reports/audit/round-7)` 数出的 `ui-queue*` 执行载体（run-ui-queue.mjs --out 写的）",
     "expectedToHavePlans": true,
     "axisExit": 0,
@@ -1182,15 +1092,15 @@
       },
       {
         "path": ".zcode/tmp/report-emitter/triage-r7-at-report.json",
-        "mtime": "2026-09-28T01:27:12.117Z",
-        "size": 379559,
-        "sha8": "be7c5735"
+        "mtime": "2026-09-28T06:52:52.764Z",
+        "size": 311652,
+        "sha8": "d22ee507"
       },
       {
         "path": ".zcode/tmp/report-emitter/band-freshness-r7.json",
-        "mtime": "2026-09-28T01:27:37.340Z",
+        "mtime": "2026-09-28T06:53:04.446Z",
         "size": 2497,
-        "sha8": "a618b7a8"
+        "sha8": "e0b860b0"
       },
       {
         "path": ".zcode/tmp/fixverify/verdicts.json",
@@ -1205,7 +1115,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-backend-restarted.mjs --port 8080",
         "exitCode": 0,
         "stdoutBytes": 593,
-        "sha8": "ab756b48",
+        "sha8": "2559e827",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1214,7 +1124,7 @@
         "cmd": "git rev-parse --short HEAD",
         "exitCode": 0,
         "stdoutBytes": 9,
-        "sha8": "a4e4821f",
+        "sha8": "e5877722",
         "note": "",
         "runner": "git"
       },
@@ -1222,8 +1132,8 @@
         "name": "git worktree 脏项",
         "cmd": "git status --porcelain",
         "exitCode": 0,
-        "stdoutBytes": 9037,
-        "sha8": "a321731c",
+        "stdoutBytes": 7604,
+        "sha8": "76f1a133",
         "note": "",
         "runner": "git"
       },
@@ -1249,8 +1159,8 @@
         "name": "triage-exec-failures",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/triage-exec-failures.mjs --results reports/audit/round-7/interact/exec-results.json --out .zcode/tmp/report-emitter/triage-r7-at-report",
         "exitCode": 2,
-        "stdoutBytes": 7514,
-        "sha8": "19aba15c",
+        "stdoutBytes": 45070,
+        "sha8": "c05a28d6",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1259,7 +1169,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-band-freshness.mjs --out .zcode/tmp/report-emitter/band-freshness-r7.json",
         "exitCode": 0,
         "stdoutBytes": 1084,
-        "sha8": "e182c88a",
+        "sha8": "0bc77939",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1322,7 +1232,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/probe-ws-cli-exclusion.mjs",
         "exitCode": 0,
         "stdoutBytes": 1865,
-        "sha8": "73f9234e",
+        "sha8": "04879f27",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1331,7 +1241,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-rulings-landed.mjs",
         "exitCode": 0,
         "stdoutBytes": 641,
-        "sha8": "bbf6d1df",
+        "sha8": "c21492f1",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1366,8 +1276,8 @@
         "name": "verify-guest-landing（book）",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-guest-landing.mjs --mode book",
         "exitCode": 0,
-        "stdoutBytes": 870,
-        "sha8": "dd314d16",
+        "stdoutBytes": 896,
+        "sha8": "04740d97",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1411,8 +1321,8 @@
         "name": "verify-real-coverage",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-real-coverage.mjs",
         "exitCode": 1,
-        "stdoutBytes": 2609,
-        "sha8": "c0f67af8",
+        "stdoutBytes": 6490,
+        "sha8": "63d2fe20",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1465,8 +1375,8 @@
         "name": "verify-evidence-corpus（全域）",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs",
         "exitCode": 1,
-        "stdoutBytes": 7752,
-        "sha8": "7e604199",
+        "stdoutBytes": 7957,
+        "sha8": "85ff76e0",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1474,26 +1384,26 @@
         "name": "verify-provenance-all（全域）",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs",
         "exitCode": 1,
-        "stdoutBytes": 208500,
-        "sha8": "6b3b2a93",
+        "stdoutBytes": 208669,
+        "sha8": "f35993f8",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
       {
         "name": "verify-evidence-corpus（本轮 scope）",
-        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-7,reports/screenshots/round-7-A-mock-final,reports/screenshots/round-7-A-real,reports/screenshots/round-7-A-real-only,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-04e00747,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-exec-271310bc,reports/screenshots/round-7-exec-a1cbb0cb,reports/screenshots/round-7-exec-d77813f8,reports/screenshots/round-7-exec-fc13948f,reports/screenshots/round-7-final-A-mock,reports/screenshots/round-7-final-A-real,reports/screenshots/round-7-final-guest-mock,reports/screenshots/round-7-final-guest-real,reports/screenshots/round-7-guest-real,reports/screenshots/round-7-guest-real-final,reports/screenshots/round-7-guest-real-only,reports/screenshots/round-7-guest1,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-probe-quiet,reports/screenshots/round-7-r8-A-login,reports/screenshots/round-7-r8-guest-login,reports/screenshots/round-7-r8-guest-real-login,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-guest,reports/screenshots/round-7-real-taps,reports/screenshots/round-7-real-taps2,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-realguest,reports/screenshots/round-7-realtaps,reports/screenshots/round-7-showcase,reports/screenshots/round-7-stage7-A-mock,reports/screenshots/round-7-stage7-A-real,reports/screenshots/round-7-stage7-a-real-frames,reports/screenshots/round-7-stage7-guest-real,reports/screenshots/round-7-stage7-guest-real-frames,reports/screenshots/round-7-stage7-mock,reports/screenshots/round-7-stage8b-tour-B-real,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-tap-final,reports/screenshots/round-7-tap-mock,reports/screenshots/round-7-tap-mock2,reports/screenshots/round-7-tap2,reports/screenshots/round-7-tap3,reports/screenshots/round-7-taps,reports/screenshots/round-7-uidebt-1a1df78b,reports/screenshots/round-7-uidebt-final,reports/screenshots/round-7-uidebt-guest-8df4de49,reports/screenshots/round-7-uidebt-guest2-8df4de49,reports/screenshots/round-7-uidebt-txt-d99f3a1f,reports/screenshots/round-7-uidebt-ws-8df4de49,reports/screenshots/round-7-uidebt-wsl2-8df4de49,reports/screenshots/round-7-uidebt-wsl3-8df4de49",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-evidence-corpus.mjs --scope reports/audit/round-7,reports/screenshots/round-7-A-mock-final,reports/screenshots/round-7-A-real,reports/screenshots/round-7-A-real-only,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-04e00747,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-exec-1f8331b0,reports/screenshots/round-7-exec-271310bc,reports/screenshots/round-7-exec-6d3f71f5,reports/screenshots/round-7-exec-a1cbb0cb,reports/screenshots/round-7-exec-d77813f8,reports/screenshots/round-7-exec-fc13948f,reports/screenshots/round-7-final-A-mock,reports/screenshots/round-7-final-A-real,reports/screenshots/round-7-final-guest-mock,reports/screenshots/round-7-final-guest-real,reports/screenshots/round-7-guest-real,reports/screenshots/round-7-guest-real-final,reports/screenshots/round-7-guest-real-only,reports/screenshots/round-7-guest1,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-probe-quiet,reports/screenshots/round-7-r8-A-login,reports/screenshots/round-7-r8-guest-login,reports/screenshots/round-7-r8-guest-real-login,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-guest,reports/screenshots/round-7-real-taps,reports/screenshots/round-7-real-taps2,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-realguest,reports/screenshots/round-7-realtaps,reports/screenshots/round-7-showcase,reports/screenshots/round-7-stage7-A-mock,reports/screenshots/round-7-stage7-A-real,reports/screenshots/round-7-stage7-a-real-frames,reports/screenshots/round-7-stage7-guest-real,reports/screenshots/round-7-stage7-guest-real-frames,reports/screenshots/round-7-stage7-mock,reports/screenshots/round-7-stage8b-tour-B-real,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-tap-final,reports/screenshots/round-7-tap-mock,reports/screenshots/round-7-tap-mock2,reports/screenshots/round-7-tap2,reports/screenshots/round-7-tap3,reports/screenshots/round-7-taps,reports/screenshots/round-7-uidebt-1a1df78b,reports/screenshots/round-7-uidebt-final,reports/screenshots/round-7-uidebt-guest-8df4de49,reports/screenshots/round-7-uidebt-guest2-8df4de49,reports/screenshots/round-7-uidebt-txt-d99f3a1f,reports/screenshots/round-7-uidebt-ws-8df4de49,reports/screenshots/round-7-uidebt-wsl2-8df4de49,reports/screenshots/round-7-uidebt-wsl3-8df4de49",
         "exitCode": 0,
-        "stdoutBytes": 10824,
-        "sha8": "ab8a1aea",
+        "stdoutBytes": 11197,
+        "sha8": "ce2534b0",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
       {
         "name": "verify-provenance-all（本轮 scope）",
-        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-7,reports/screenshots/round-7-A-mock-final,reports/screenshots/round-7-A-real,reports/screenshots/round-7-A-real-only,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-04e00747,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-exec-271310bc,reports/screenshots/round-7-exec-a1cbb0cb,reports/screenshots/round-7-exec-d77813f8,reports/screenshots/round-7-exec-fc13948f,reports/screenshots/round-7-final-A-mock,reports/screenshots/round-7-final-A-real,reports/screenshots/round-7-final-guest-mock,reports/screenshots/round-7-final-guest-real,reports/screenshots/round-7-guest-real,reports/screenshots/round-7-guest-real-final,reports/screenshots/round-7-guest-real-only,reports/screenshots/round-7-guest1,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-probe-quiet,reports/screenshots/round-7-r8-A-login,reports/screenshots/round-7-r8-guest-login,reports/screenshots/round-7-r8-guest-real-login,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-guest,reports/screenshots/round-7-real-taps,reports/screenshots/round-7-real-taps2,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-realguest,reports/screenshots/round-7-realtaps,reports/screenshots/round-7-showcase,reports/screenshots/round-7-stage7-A-mock,reports/screenshots/round-7-stage7-A-real,reports/screenshots/round-7-stage7-a-real-frames,reports/screenshots/round-7-stage7-guest-real,reports/screenshots/round-7-stage7-guest-real-frames,reports/screenshots/round-7-stage7-mock,reports/screenshots/round-7-stage8b-tour-B-real,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-tap-final,reports/screenshots/round-7-tap-mock,reports/screenshots/round-7-tap-mock2,reports/screenshots/round-7-tap2,reports/screenshots/round-7-tap3,reports/screenshots/round-7-taps,reports/screenshots/round-7-uidebt-1a1df78b,reports/screenshots/round-7-uidebt-final,reports/screenshots/round-7-uidebt-guest-8df4de49,reports/screenshots/round-7-uidebt-guest2-8df4de49,reports/screenshots/round-7-uidebt-txt-d99f3a1f,reports/screenshots/round-7-uidebt-ws-8df4de49,reports/screenshots/round-7-uidebt-wsl2-8df4de49,reports/screenshots/round-7-uidebt-wsl3-8df4de49",
+        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-provenance-all.mjs --scope reports/audit/round-7,reports/screenshots/round-7-A-mock-final,reports/screenshots/round-7-A-real,reports/screenshots/round-7-A-real-only,reports/screenshots/round-7-exec,reports/screenshots/round-7-exec-04e00747,reports/screenshots/round-7-exec-086b54f8,reports/screenshots/round-7-exec-1f8331b0,reports/screenshots/round-7-exec-271310bc,reports/screenshots/round-7-exec-6d3f71f5,reports/screenshots/round-7-exec-a1cbb0cb,reports/screenshots/round-7-exec-d77813f8,reports/screenshots/round-7-exec-fc13948f,reports/screenshots/round-7-final-A-mock,reports/screenshots/round-7-final-A-real,reports/screenshots/round-7-final-guest-mock,reports/screenshots/round-7-final-guest-real,reports/screenshots/round-7-guest-real,reports/screenshots/round-7-guest-real-final,reports/screenshots/round-7-guest-real-only,reports/screenshots/round-7-guest1,reports/screenshots/round-7-mock-tour-1a1df78b,reports/screenshots/round-7-probe-quiet,reports/screenshots/round-7-r8-A-login,reports/screenshots/round-7-r8-guest-login,reports/screenshots/round-7-r8-guest-real-login,reports/screenshots/round-7-real-exec,reports/screenshots/round-7-real-guest,reports/screenshots/round-7-real-taps,reports/screenshots/round-7-real-taps2,reports/screenshots/round-7-real-tour,reports/screenshots/round-7-real-tour-full,reports/screenshots/round-7-realguest,reports/screenshots/round-7-realtaps,reports/screenshots/round-7-showcase,reports/screenshots/round-7-stage7-A-mock,reports/screenshots/round-7-stage7-A-real,reports/screenshots/round-7-stage7-a-real-frames,reports/screenshots/round-7-stage7-guest-real,reports/screenshots/round-7-stage7-guest-real-frames,reports/screenshots/round-7-stage7-mock,reports/screenshots/round-7-stage8b-tour-B-real,reports/screenshots/round-7-states,reports/screenshots/round-7-states-fix1,reports/screenshots/round-7-states-fix2,reports/screenshots/round-7-states-pilot,reports/screenshots/round-7-states-pilot2,reports/screenshots/round-7-states-pilot3,reports/screenshots/round-7-states-pilot4,reports/screenshots/round-7-tap-final,reports/screenshots/round-7-tap-mock,reports/screenshots/round-7-tap-mock2,reports/screenshots/round-7-tap2,reports/screenshots/round-7-tap3,reports/screenshots/round-7-taps,reports/screenshots/round-7-uidebt-1a1df78b,reports/screenshots/round-7-uidebt-final,reports/screenshots/round-7-uidebt-guest-8df4de49,reports/screenshots/round-7-uidebt-guest2-8df4de49,reports/screenshots/round-7-uidebt-txt-d99f3a1f,reports/screenshots/round-7-uidebt-ws-8df4de49,reports/screenshots/round-7-uidebt-wsl2-8df4de49,reports/screenshots/round-7-uidebt-wsl3-8df4de49",
         "exitCode": 1,
-        "stdoutBytes": 209320,
-        "sha8": "5f4b55b9",
+        "stdoutBytes": 209573,
+        "sha8": "1c753f03",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1501,8 +1411,8 @@
         "name": "verify-ops-corpus-stamp --check",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-ops-corpus-stamp.mjs --check --stamp reports/audit/round-7/ops-corpus-stamp.json",
         "exitCode": 1,
-        "stdoutBytes": 467,
-        "sha8": "14e20f1b",
+        "stdoutBytes": 1588,
+        "sha8": "d01f802e",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1511,7 +1421,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-case-selectors-exist.mjs --band apps/client/dist/build/mp-weixin",
         "exitCode": 0,
         "stdoutBytes": 3044,
-        "sha8": "a89b6d9a",
+        "sha8": "ebc7aaf8",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1520,7 +1430,7 @@
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-case-selectors-exist.mjs --band apps/client/dist/build/mp-weixin-real",
         "exitCode": 0,
         "stdoutBytes": 3044,
-        "sha8": "a89b6d9a",
+        "sha8": "ebc7aaf8",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1528,8 +1438,8 @@
         "name": "verify-ops-corpus-stamp --copy reports/audit/round-7/ops",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-ops-corpus-stamp.mjs --copy reports/audit/round-7/ops --stamp reports/audit/round-7/ops-corpus-stamp.json",
         "exitCode": 1,
-        "stdoutBytes": 287,
-        "sha8": "62c0bef9",
+        "stdoutBytes": 952,
+        "sha8": "61b469fa",
         "note": "",
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
@@ -1777,42 +1687,6 @@
         "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
       },
       {
-        "name": "G7 产物自证",
-        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe apps/client/scripts/build-real-isolated.mjs --check-only",
-        "exitCode": 0,
-        "stdoutBytes": 200,
-        "sha8": "265f3f57",
-        "note": "",
-        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
-      },
-      {
-        "name": "G8 十环",
-        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/g8-e2e.cjs",
-        "exitCode": 0,
-        "stdoutBytes": 2457,
-        "sha8": "5ccca46e",
-        "note": "",
-        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
-      },
-      {
-        "name": "G9 素材探针",
-        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/g9-probe.cjs",
-        "exitCode": 0,
-        "stdoutBytes": 402,
-        "sha8": "96ec2406",
-        "note": "",
-        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
-      },
-      {
-        "name": "probe-real-env",
-        "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/probe-real-env.mjs",
-        "exitCode": 0,
-        "stdoutBytes": 1093,
-        "sha8": "9e008813",
-        "note": "",
-        "runner": "D:/codex-tools/node-v22.17.0-win-x64/node.exe v22.17.0"
-      },
-      {
         "name": "verify-status-vs-disposition",
         "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-status-vs-disposition.mjs",
         "exitCode": 0,
@@ -1919,9 +1793,13 @@
       "parts": [
         326,
         236,
+        275,
         29,
+        21,
+        71,
+        14,
         134,
-        382
+        1
       ],
       "sum": 1107,
       "whole": 1107,
@@ -1929,9 +1807,11 @@
     },
     {
       "what": "四格合计 vs 有查找目标的定位失败",
-      "parts": [],
-      "sum": 0,
-      "whole": 0,
+      "parts": [
+        85
+      ],
+      "sum": 85,
+      "whole": 85,
       "ok": true
     },
     {
@@ -2008,45 +1888,17 @@
       "sum": 336,
       "whole": 336,
       "ok": true
-    },
-    {
-      "what": "G9 ok+skipped+fail vs PROBED",
-      "parts": [
-        455,
-        0,
-        0
-      ],
-      "sum": 455,
-      "whole": 455,
-      "ok": true
-    },
-    {
-      "what": "G9 对照表四格 vs PROBED",
-      "parts": [
-        455,
-        0,
-        0,
-        0
-      ],
-      "sum": 455,
-      "whole": 455,
-      "ok": true
-    },
-    {
-      "what": "G8 OK 环 + MISS 环 vs 环总数",
-      "parts": [
-        10,
-        0
-      ],
-      "sum": 10,
-      "whole": 10,
-      "ok": true
     }
   ],
   "failures": [
-    "triage-exec-failures 判红（退出码 2）：词表漂移或落地对无处置，unclassified=382"
+    "UI 租约被占用（r7-guest-landing@pid45960），实时门未复跑：G7/G8/G9/probe 未复跑 —— 本报告不得宣称『真实模式当前结论』，按缺证据处理",
+    "triage-exec-failures 判红（退出码 2）：词表漂移或落地对无处置，unclassified=1"
   ],
   "openItems": [
+    {
+      "item": "G7/G8/G9/probe 当前结论",
+      "why": "UI 租约被占用（r7-guest-landing@pid45960），实时门未复跑"
+    },
     {
       "item": "205 行跨边界被就地改写",
       "why": "同一用例在两个被测物上各记一次，后写覆盖前写，A 侧该项已非冻结构建产物"

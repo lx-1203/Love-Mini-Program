@@ -1,0 +1,49 @@
+{
+ "startedAt": "2026-09-28T06:16:47.859Z",
+ "legs": [
+  {
+   "name": "ws-channel-up-real-r8d",
+   "status": "FAIL",
+   "exitCode": 2,
+   "log": "reports/audit/round-7/ui-queue-round8d2-realws/ws-channel-up-real-r8d.log",
+   "bytes": 10126,
+   "resultLines": []
+  },
+  {
+   "name": "open-window-real-r8d",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-selectors-exist-real-r8d",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "exec-ws-tap-real-r8d",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "triage-ws-tap-real-r8d",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-real-coverage-r8d",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "queue-homogeneity-r8d",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "advisoryFail": 0,
+ "finishedAt": "2026-09-28T06:23:56.773Z",
+ "conservation": {
+  "legsTotal": 7,
+  "legsOk": 0,
+  "tally": {
+   "FAIL": 1,
+   "NOT_RUN": 6
+  },
+  "ok": true
+ }
+}

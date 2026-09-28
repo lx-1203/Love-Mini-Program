@@ -283,12 +283,18 @@ async function finish(v, verdict, okLine) {
 
   const t0 = Date.now();
   let last = "";
+  /* 端口在听 ≠ 自动化会话就绪：IDE 冷启动要先 preparing / 取 AppID 权限，这段时间 connect 会成功而
+     currentPage() 抛（本次实测每次都是 "reading 'split' of undefined"）。两种情况必须分开报，
+     否则"端口 9420 始终没监听"这句话就是在撒谎——它就差在听，只是那条腿没等到会话可用。 */
+  let sawPortAt = 0;
+  let verifyThrows = 0;
   while (Date.now() - t0 < WAIT * 1000) {
     await new Promise((r) => setTimeout(r, 3000));
     const { map, err } = listeningPorts();
     if (err) { console.log("WS_UP=FAIL reason=" + err + "（拿不到监听表就别声称端口没开）"); process.exit(2); }
     if (map[PORT]) {
       const owner = map[PORT];
+      if (!sawPortAt) sawPortAt = Date.now();
       const again = await verify(A).catch((e) => ({ err: String(e && e.message).slice(0, 120) }));
       if (!again.err) {
         /* spawn 那条 --project 也不是"已经生效"的证明：端口可能本来就属于另一个更早的实例
@@ -302,13 +308,22 @@ async function finish(v, verdict, okLine) {
         await finish(again, verdict, up);
       }
       last = again.err;
+      verifyThrows++;
     } else {
       const others = Object.keys(map).filter((p) => Number(p) > 9000 && Number(p) < 10000).join(",");
       last = "端口 " + PORT + " 未监听；9000-9999 段在听的是 " + (others || "无");
     }
     process.stdout.write("  · " + ((Date.now() - t0) / 1000).toFixed(0) + "s " + last + "\n");
   }
-  console.log("WS_UP=FAIL reason=" + WAIT + "s 内 " + PORT + " 始终没监听，最后一次观测：" + last);
+  /* 收尾这句话必须说真话：两种失败形状要的东西完全不同——
+     端口没起来 ⇒ 去看 IDE 实例/命令行形态；端口起了但会话没就绪 ⇒ 是等得不够，不是通道坏了。 */
+  if (sawPortAt) {
+    console.log("WS_UP=FAIL reason=端口 " + PORT + " 在 " + ((sawPortAt - t0) / 1000).toFixed(0) + "s 起就在听，"
+      + "但自动化会话在 " + WAIT + "s 内没准备好（connect 后取页失败 " + verifyThrows + " 次，最后一次观测：" + last + "）"
+      + "⇒ 这不是「没监听」，是 IDE 冷启动还没进可驱动状态；加大 --wait 或先开一次窗口再接通道");
+  } else {
+    console.log("WS_UP=FAIL reason=" + WAIT + "s 内 " + PORT + " 始终没监听，最后一次观测：" + last);
+  }
   console.log("WS_UP_CHILD exitCode=" + childExit + "（非 null 表示子进程自己退了，多半是命令行形态错了）");
   try {
     const tail = readFileSync(logPath, "utf8").replace(/\r/g, "").split("\n").slice(-8).join(" ⏎ ");

@@ -6,21 +6,34 @@
   {
    "name": "ws-channel-up-real-r8d",
    "file": "scripts/qa/ws-channel-up.mjs",
-   "args": ["--project", "apps/client/dist/build/mp-weixin-real", "--wait", "150"],
-   "timeoutMin": 12,
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin-real",
+    "--wait",
+    "420"
+   ],
+   "timeoutMin": 16,
    "why": "把 automator 通道起在真实档产物上。今天新增的档位断言会拿只读取证（Tool.getInfo 的键与路径、应用内 config/env.js 的 apiMode、落点页只作旁证）核对端口上那个实例是不是 real 档，核不上就 exit 2，不再出现『已在』一支把 mock 实例放行。"
   },
   {
    "name": "open-window-real-r8d",
    "file": "scripts/qa/open-project-window.mjs",
-   "args": ["--project", "apps/client/dist/build/mp-weixin-real", "--settle", "24"],
+   "args": [
+    "--project",
+    "apps/client/dist/build/mp-weixin-real",
+    "--settle",
+    "24"
+   ],
    "timeoutMin": 14,
    "why": "换档必须把窗口接回来：通道端口起来了不等于有一条活着且属于这一档的窗口，本仓唯一的窗口活着判据就是这条腿的 live()。8b 那一波正是只证了 9420 在听、没证窗口归谁，巡检才在 mock 会话上跑空。"
   },
   {
    "name": "gate-selectors-exist-real-r8d",
    "file": "scripts/qa/verify-case-selectors-exist.mjs",
-   "args": ["--band", "apps/client/dist/build/mp-weixin-real"],
+   "args": [
+    "--band",
+    "apps/client/dist/build/mp-weixin-real"
+   ],
    "advisory": true,
    "timeoutMin": 6,
    "why": "开跑前先量一次这份名册在选择器层面到底够不够得着真档产物：这一条红是发现缺陷（判据点了产物里没有的物件），不是 UI 坏了，所以标 advisory，红不让路但照样计入本轮 FAIL。"
@@ -28,21 +41,42 @@
   {
    "name": "exec-ws-tap-real-r8d",
    "file": "scripts/qa/r-exec-ws.mjs",
-   "args": ["--ids-file", "reports/audit/round-7/ids-component-scoped.json", "--project", "apps/client/dist/build/mp-weixin-real", "--out", "reports/audit/round-7/exec-ws-tap-real-r8d", "--identity", "A", "--round", "round-7", "--tap", "--real"],
+   "args": [
+    "--ids-file",
+    "reports/audit/round-7/ids-component-scoped.json",
+    "--project",
+    "apps/client/dist/build/mp-weixin-real",
+    "--out",
+    "reports/audit/round-7/exec-ws-tap-real-r8d",
+    "--identity",
+    "A",
+    "--round",
+    "round-7",
+    "--tap",
+    "--real"
+   ],
    "timeoutMin": 120,
    "why": "这一波的主刀：同一份 145 条组件作用域名册，带 --tap（8c 证实不带会把 75 行留成『这一刀不点』）且带 --real（31 行 requiresReal 在不带时全被 SKIPPED），产物在 exec- 前缀目录里、每行带 band=real@sha8 与 identity=A ⇒ 前两刀修好之后这是第一条可能真的给真实覆盖加名的腿。零证据批次会被 WSX_ADMISSIBLE=no 判不可采，不再自称完整跑完。"
   },
   {
    "name": "triage-ws-tap-real-r8d",
    "file": "scripts/qa/triage-exec-failures.mjs",
-   "args": ["--results", "reports/audit/round-7/exec-ws-tap-real-r8d/exec-results.json", "--dist", "apps/client/dist/build/mp-weixin-real"],
+   "args": [
+    "--results",
+    "reports/audit/round-7/exec-ws-tap-real-r8d/exec-results.json",
+    "--dist",
+    "apps/client/dist/build/mp-weixin-real"
+   ],
    "timeoutMin": 8,
    "why": "每个执行腿都必须有人分诊：这一条排在本腿结果之后，读的是同一批行。分诊今天已经认得盖章不可自动化、开页重试到尽、六种 --tap 原文，并把不能归因的 absent 与可归因的 absent 分成两支各自计数。"
   },
   {
    "name": "gate-real-coverage-r8d",
    "file": "scripts/qa/verify-real-coverage.mjs",
-   "args": ["--round", "round-7"],
+   "args": [
+    "--round",
+    "round-7"
+   ],
    "advisory": true,
    "timeoutMin": 6,
    "why": "把本轮的真实覆盖当场再量一遍，并且要看见守恒：免检+覆盖+欠账=236。这一条是本轮加名的直接验收 —— 若 COVERED 不动，原因必须是能读出来的（band/identity 缺失会被点名，不再是静默不给分），不许靠猜。"
@@ -50,10 +84,20 @@
   {
    "name": "queue-homogeneity-r8d",
    "file": "scripts/qa/verify-ops-corpus-stamp.mjs",
-   "args": ["--queue", "scripts/qa/ui-queue.round8d-realws.json"],
+   "args": [
+    "--queue",
+    "scripts/qa/ui-queue.round8d-realws.json"
+   ],
    "advisory": true,
    "timeoutMin": 3,
    "why": "本波所有执行腿必须读同一版语料戳：r8e 之后语料又动过（身份轴 12 行、一条钉死的深链），没有这一条就没法把这波的判决与上一波的读数分开。"
   }
+ ],
+ "$status": "本波 2026-09-28 实跑三次（ui-queue-round8d-realws / 8d2 / 8d3），腿 1 ws-channel-up-real-r8d 三次同一形状：端口约 9s 起就在听、connect 成功，但 currentPage() 在 420s 里抛 136 次 Cannot read properties of undefined (reading split) ⇒ 腿 1 红、其余 6 条 NOT_RUN。8d3 是杀掉全部自动化实例、只留一个干净实例之后重跑的，所以两个实例抢通道这个解释已被排除。同一套 verify() 在 mock 档今天能正常取页（8c 实测 page=pages/discover/index），只在 real 档产物上取不到页 ⇒ 这一档的 automator 载具今天不可用，本波记 NOT_SHOOTABLE。要补它得先弄清真实档应用启动后为什么没有可附的页（真实后端在启动期改掉首屏，还是编译期就报错），那是产品/载体侧的活，不是加大 --wait 能解决的。",
+ "$carrier_workaround": "真实档要出账，今天唯一跑通过的载具是 CLI 那条：r-exec-cli.mjs --project apps/client/dist/build/mp-weixin-real（stage-8 腿 exec-guest-real-login-r8 就是这么绿的）。组件作用域那 4 条（VI25/VI34/OT05/OT06）走不了 CLI 的页面作用域查询，随本波一起挂着，去向已在 .zcode/tmp/gap-realcov 与 .zcode/tmp/gap-carriers 点名。",
+ "$attempts": [
+  "ui-queue-round8d-realws(腿1 exit 2, wait 150)",
+  "ui-queue-round8d2-realws(腿1 exit 2, wait 420, 双实例)",
+  "ui-queue-round8d3-realws(腿1 exit 2, wait 420, 清到单实例)"
  ]
 }
