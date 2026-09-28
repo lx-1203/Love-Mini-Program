@@ -332,6 +332,8 @@ const uiLanePromise = (async (): Promise<UiLaneOut> => {
       `1) 交互行复测候选：分拣员线索「${(sortRes.notes ?? "").slice(0, 400)}」+ 台账/门禁里标记为交互腿欠复测的行（真实档交互动词、register 页 .field__input 三条 STATE_NOT_APPLIED 的成因调查——先查因再判）。从 ${WORKFLOW.finalReport} §7.2/§9.8 与 ${WORKFLOW.notes} 里把行号找全。`,
       `2) 只有在上面两条零点击冷启都留下失败原文之后，才允许记 UNVERIFIED-TOOLING；notes 里必须写清是哪一条命令、退出码与报错原文，不要笼统说"需用户手动开开发者工具"（实测本机冷启可通，那样说是假的）。`,
       `执行纪律：L0 软重置为主；单操作 30 秒超时跳过记 failure；证据预算分级（critical 前后帧、normal 后帧、navigation 仅路由断言）；结果行必须带 band 与 identity，混身份打 RUNNER_MIXED；禁止写库（真实档交互只读或按既有 guest-landing-policy 裁定判读）。`,
+      `WS 腿开跑前必须过一次阳性对照：挑一个盘上已知 present 的选择器（实测可用 register 页 .field__input，real 档产物 wxml 里出现 5 次；同帧 CLI 腿读到 .field__eye=2），确认 WS 真能选中并下发；`,
+      `若那一轮的 wsApplied 全为 []，说明是取景器载具的尺子不对，本轮所有 WS 派生的 STATE_NOT_APPLIED 一律记 UNVERIFIED-INSTRUMENT，绝不许记成产品失败——实测吃过：3 行 REGISTER-INDEX-011/012/013 就是这样被误判的，物件与类名在源码和产物里都在。`,
       `增量落盘是硬要求：车道 agent 有轮次上限（实测 150 轮会被截断），所以先把 result 骨架写盘，之后每完成一行立刻更新落盘；行数多时按每批不超过 15 行分块，绝不允许攒到最后一次写。`,
       `返回 rows（逐行 {id,status,reason}）、attempted、port、filesChanged（若查因后落了代码修复）、evidence（帧/日志路径）、notes。`,
     ].join("\n"),

@@ -1,0 +1,66 @@
+{
+  "lane": "register-fieldinput",
+  "status": "DONE-static-diagnosis-complete",
+  "rowsFound": [
+    {
+      "id": "MP-R2-PAGES-REGISTER-INDEX-011",
+      "criteriaVerbatim": "台账 col9（判据）：「源码判点：小目标点的热区外扩到命中层（hero 返回 / 同意勾选 / 三个字段前缀都走包一层 hit view），视觉尺寸不动」｜配方 assertionList.expected：「宽与高均 ≥ 88rpx（375px 视口 ≥ 44px）：40rpx 图标 加 上下左右 24rpx padding」、「40rpx × 40rpx，视觉尺寸未被改动」、「点热区内边距区后 src 在 eye-off.svg 与 eye.svg 之间切换（证明扩出来的热区真的可点，而非只有图标可点）」｜fixture：「mock 默认（app-config 的 register_open 不为 false，否则 :332-339 会 toast 后跳登录页）；手机号输入框先填 11 位号码，使 :537 的清除热区随 v-if 渲染」",
+      "observedVerbatim": "stepsUnmet/wsFailed = [\"input:选择器在当前页查不到 .field__input\",\"tap:选择器在当前页查不到 .field__tap--40\"]；同帧 WS 载具读数 .field__tap--40=0 / .field__eye=0 / .field__tap--32=0 / .field__clear=0 / .hero__back-hit=0 / .hero__back=0 / .agree__hit=0 全部 check=PROBE_NO_ANSWER note=没有尺寸；同帧 CLI 载具读数 .field__eye count=2 check=PRESENT(2)；stateApplied=false wsApplied=[] landing=pages/register/index landingVia=cli identityAtFrame=not-logged-in identityOk=true"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-INDEX-012",
+      "criteriaVerbatim": "台账 col9（判据）：「源码判点：两次密码比对挪到确认框 @blur（onConfirmBlur），且这条 blur 绑定全页只有一处」｜fixture：「mock 默认，注册页表单为空即可开始」",
+      "observedVerbatim": "stepsUnmet/wsFailed = [\"input:选择器在当前页查不到 .field__input\",\"input:选择器在当前页查不到 .field__input--confirm\",\"tap:选择器在当前页查不到 .field__input\"]；同帧 WS 载具 .field-error__text=0（TEXT_CLEAN/TEXT_MISS/PROBE_NO_ANSWER「expected 里没有可核对的字面量」）；stateApplied=false wsApplied=[] landing=pages/register/index landingVia=cli"
+    },
+    {
+      "id": "MP-R2-PAGES-REGISTER-INDEX-013",
+      "criteriaVerbatim": "台账 col9（判据）：「源码判点：注册页提示语改走 t(register.*)，zh/en 同批配对（举两条为锚，不留裸中文）」｜fixture：「mock 默认；locale 恒为 zh-CN（i18n/index.ts:49），帧判的是键是否真接到消费方」",
+      "observedVerbatim": "stepsUnmet/wsFailed = [\"input:选择器在当前页查不到 .field__input\",\"tap:选择器在当前页查不到 .sms-btn\"]；同帧 WS 载具 .field-error__text=0，toast 浮层=FRAME_ONLY（「没有可机器查的选择器，帧是它的载体」）；stateApplied=false wsApplied=[] landing=pages/register/index landingVia=cli"
+    }
+  ],
+  "rowCount": {
+    "found": 3,
+    "reportClaimed": 3,
+    "match": true,
+    "howEnumerated": "穷尽普查：递归 reports/audit + .zcode/tmp（跳过 screenshots/node_modules/.git）里所有 shoot-results*/exec-results*/verdicts*.json(l)，取 route|page 含 pages/register/index 且（stateApplied===false 或 JSON 含 STATE_NOT_APPLIED）——命中恰为 3 行，全部来自同一份 reports/audit/round-7/uidebt-shoot-real-guest/shoot-results.json（round-7-realguest，gitSha d99f3a1f，updatedAt 2026-09-26T16:36:21.815Z，project=apps/client/dist/build/mp-weixin-real，band real@f0677920，identitySeen=guest，planned=6，counts SHOT=6/EVIDENCE_HOLE=0）。旁证 NOTES §41:1088「STATE_NOT_APPLIED=9（6 条里 3 条 register 落到这桶）」。注意：判决桶字面量 STATE_NOT_APPLIED 在盘上只出现在 4 个文件（frame-verdicts.md / cellplan-round7-frames.json / round7-NOTES.md / round7-final-report.md），exec 记录里从不落该字面量——它是 scripts/qa/verdict-from-frames.mjs 由 stateApplied===false 派生的。"
+  },
+  "selectorOrigin": "reports/audit/round-7/frameplan-merged.json rows[].steps[].selector —— 由 lane C 手写进配方（steps[0].note 自证：「第一个 .field__input（手机号，模板 :523-535）输入 13800000000」），既不是台账判据原文里的字面量（col9 判据全文无 field__input），也不是 selectorsOf() 从 assertion.target 派生的。消费处：scripts/qa/shoot-frameplan.mjs:539 `const sel = cleanSel(st.selector)` → :541 `const page = await m.currentPage()` → :546 `const el = await page.$(sel)` → :547 `if (!el) return { ok:false, why: \"选择器在当前页查不到 \" + sel }`。它查的是**运行时页面**（miniprogram-automator over WS :469 `A.connect({wsEndpoint:'ws://127.0.0.1:'+c.p})`），**不是构建产物文本**。同一轮里另一条载具 wsMeasure(:486-503) 用 page.$$(sel) 也只按运行时回答。产物文本侧的锚点校验只发生在配方装配期（frameplan 的 sourceAnchor/ANCHOR_TOKEN 那条腿），与本判点无关。",
+  "sourceClass": {
+    "file": "apps/client/src/pages/register/index.vue",
+    "line": 525,
+    "actualClassName": "field__input",
+    "allOccurrences": "模板 class 处 5 个：:525（手机号 input）、:558（验证码 input）、:602（密码 input）、:655（`field__input field__input--confirm` 确认密码）、:698（昵称 input）；样式定义 :970。相邻被同轮查不到的物件也全部在册：.field__tap--40 :615/:668、.field__eye :617/:670、.field__tap--32 :538、.field__clear :539、.hero__back-hit :494、.hero__back :495、.agree__hit :770、.sms-btn :572、.field-error__text :544。⇒ 判据点名的类名与源码实名逐字一致，无一拼错。"
+  },
+  "artifactCheck": {
+    "path": "apps/client/dist/build/mp-weixin-real/pages/register/index.wxml（real 档，产物 sha8=f0677920；untracked，`git ls-files --error-unmatch` 报 did not match，两档 dist/build 均不在版本控制里 ⇒ 产物侧结论只能就地复核，不可从干净克隆复现）",
+    "hit": true,
+    "note": "按 class token 精确切分数得：field__input=5、field__input--confirm=1、field__eye=2、field__tap=3、field__tap--40=2、field__tap--32=1、field__clear=1、hero__back-hit=1、sms-btn=1、agree__hit=1、field-error__text=6。产物原文形态为 `class=\"field__input data-v-4a303e82\"`（uni-app 追加 scoped 属性类，不影响 .field__input 单类选择器命中）；`.field__input--confirm` 写作 `class=\"field__input field__input--confirm data-v-4a303e82\"`。⇒ 类名在产物里在、且数量与源码一致。locale 切词假设排除：这些类名不经 i18n（zh-CN/en-US 词典里没有、也不可能改写 class 属性），本项目「产物不承载 en-US」的已知现象与本缺口无因果关系。"
+  },
+  "bandDifference": "实测三组四档，注册页物件的存在性在 mock/real、A/guest 之间**没有任何差异**（r-exec-cli.mjs 自己的折叠探针 probeMany :217-234，输出 `dom: .x:present(N)|absent|no-answer`）：mock@f1c7b96b+A（exec-A-mock-final / -r7final / -stage7）REG03 `.field__input:present(5)`；real@f0677920+A（exec-A-real / -real-only / -real-r7final / -real-stage7）REG03 `.field__input:present(5)`；real@f0677920+guest（exec-guest-real / -final / -only / -r7final）REG03/04/05/14/15/19/20/30 全部 `.field__input:present(5)`，REG07/17 `.field__eye:present(2)`，REG18 `.field__input--confirm:present(1)`，REG37 `.field__picker:present(1)`。条件渲染点也如实记账：.field__clear 在未填号码时 absent（v-if=\"phone\"，源码 :538），.field--error/.field-error 静息 absent（v-if=errors.*）——这些是判据保证外的态，不是 real 档特有。真正唯一有差异的是**载具**：取景器 shoot-frameplan.mjs 的 WS 腿整轮 6 行 wsApplied 全为 []、page.$$ 全为 0（连登录页/个人页也没查到过任何物件），而它在 mock 档同一支腿历史上给过正读数（uidebt-shoot-ws / -txt，project=apps/client/dist/build/mp-weixin，identity=A：同一行 011 记 .field__tap--40=2/BOX_OK(44x44)、.field__eye=2/BOX_OK(20x20)、.hero__back-hit=1/BOX_OK(45x45)，wsDid=[\"input\",\"tap\"]、unmet=[]）。⇒ 「real 档查不到」是这份 realguest 记录的表象，档位不是自变量。",
+  "guestRedirectCheck": "「real 档打开注册页」这个前置**站得住**，重定向假设**证伪**（三条独立证据）：(1) 取景器自己的落点记录 3 行均为 landing=pages/register/index、landingVia=cli、identityAtFrame=not-logged-in、identityOk=true，且 identityMismatch=[]、counts NO_EVIDENCE=0；(2) 帧是注册页自己的像素：3 张帧各 11183B，与同轮登录页帧 12094B/12171B、个人页帧 8380B 字节互不相同（reports/screenshots/round-7-realguest/C-MP-R2-PAGES-REGISTER-INDEX-01{1,2,3}.png），且同帧 CLI selectAll 读到 .field__eye=2 —— 而 `field__eye` 全库 *.vue 只在 apps/client/src/pages/register/index.vue:617/:670 出现（apps/client/src/pages/login/** 零命中），登录页不可能贡献这个计数；(3) B6 跳转机制查实为「关不掉」：apps/client/src/stores/app-config.ts:37 `isRegisterOpen: (state) => state.switches[\"register_open\"] !== false`（缺键也判 true），数据库种子 database/flyway/sql/V2026.06.25.0005__create_admin_configs.sql:102 `('register_open', TRUE, '注册功能开关')`，mock 侧 apps/client/src/services/api.ts:311 `register_open: true` ⇒ 注册页 index.vue:333-340 那段 `if (!isRegisterOpen) toast + setTimeout(goLogin, 800)` 在两档都不触发。顺带排除整页锁屏：LockScreen 门槛只作用于受保护页（r-exec-cli.mjs:61/:504-515），注册页三行没有 gateNote 记录。⇒ 「游客在真实档被引导去登录（posts 401 是对的）」这条已知事实不适用于注册页，不能拿来解释这 3 行。",
+  "classification": "c",
+  "classificationReasoning": "四类逐个过：(a) 判据侧类名不存在 —— 否，源码 :525 与 real 产物都逐字承载 field__input（见 sourceClass/artifactCheck），无需改判据；(b) 客户端真缺物件 —— 否，real+guest 档下 r-exec 的 DOM 探针记 .field__input:present(5)，且它的元素动作腿（cli-automator.mjs:162 element() → ideCall('automation_element_action')）在同一档同一身份上对 .field__input **下发成功**：exec-guest-real REG03 observed 尾部为 `| tap[input:.field__input,input:.field__input]`，按 r-exec-cli.mjs:612 只有 try 内成功才 push、:634 失败必打 `未成[...]`，该串无「未成」⇒ 两次 input 都真做到了；(d) 需要一帧才能定案 —— 成因不需要帧就已定案（三条运行时读数 + 源码 + 产物 + 开关种子全齐）；(c) 探针/载具尺子不对 —— 成立：故障只在 shoot-frameplan.mjs 这条 WS 腿上，且是**整轮系统性**失效，不是这一页查不到。",
+  "carrierDefectDetail": "两处，都在 scripts/qa/shoot-frameplan.mjs（本轮禁改）：① :546-547 `await page.$(sel)` 返回空即写「选择器在当前页查不到 <sel>」—— 这个措辞把「WS 这条腿在它当前认得的那个页面上查不到」表达成「该物件在页面上不存在」，读者无法区分，下游 verdict-from-frames.mjs 直接把 stateApplied=false 折成 STATE_NOT_APPLIED；wsMeasure(:493) 同理，`page.$$` 回空数组记 n=0，boxVerdict(:522) 给出「没有尺寸」，实测本记录里 count=0 确实存在（已核 shoot-results.json 原文，排除 rec===undefined 那条分支），所以是「查了、答 0」而不是「没连上」。② :751-757 落点确认循环只要 CLI 那条腿先答出 route 就 break，`wsLanding()`(:559-570) 根本不调用；:782 的 landingAfter 又只在 `sp.wsDid.length` 非空时才算 —— 三行都是 wsDid=[] ⇒ landingAfter=\"\"，于是**这份记录里没有任何一行写着 WS 腿当时自认为在哪一页**。这正是缺口「具名但从未查因」的载体：WS 腿与 CLI 腿对同一页给出相反答案（0 vs 2）时，账上没有能归因的第二次读数。同轮 6 行 wsApplied 全为 []，说明该 WS 会话从头到尾没选中过任何物件（登录页/个人页也一样），失效在会话/页面实例层，而非注册页层。",
+  "codeChanged": [],
+  "testsRun": "未改码 ⇒ 按 brief 归 (b) 才要求的单测未触发。为交接留命令（已读 package.json scripts，node 一律用 /d/codex-tools/node-v22.17.0-win-x64/node.exe）：注册页单测走 client 工作区 —— `npm --workspace apps/client run test:unit`（= `vitest run --config vitest.config.ts`，在 apps/client 下执行）或定向 `... run test:unit -- src/pages/register`；注意 apps/client/src/pages/register/ 目录下只有 index.vue/success.vue，**没有同页测试文件**，tests 全库按 *register* 文件名也零命中 ⇒ 即便归 (b) 也没有现成单测可跑，只能挂 `pnpm --filter client typecheck`（vue-tsc --noEmit）。本轮唯一实跑的验证是静态取证本身：跨 43 份 shoot/exec 记录的逐行普查（脚本见 rowCount.howEnumerated），产物 class token 计数、类名全库归属、开关种子三处逐条对过原文。",
+  "handoffToFrameLane": {
+    "needed": true,
+    "why": "成因已定案（载具层，无需帧），但这 3 行的 6 个 bounding-box / attribute-changed 判点仍然欠一张「WS 交互腿真做到了」的帧 —— 且**在载具补出自检之前重拍只会再拿回一批 0**，所以顺序是先修尺子、再重拍。",
+    "prerequisiteAuth": "需授权修改 scripts/qa/shoot-frameplan.mjs（本车道禁改，且该文件属另一条 UI 车道独占）：最小改动两条 —— (i) :751-757 之后无条件调一次 wsLanding() 并落 wsLandingPage/wsPageStack 字段；(ii) :547 与 :522 的措辞按证据分叉：当同一行 CLI probeMany 对同页任一无条件锚点答 >0 而 WS 全 0 时，记 CARRIER_EMPTY（而不是 stateApplied=false ⇒ STATE_NOT_APPLIED），并显式欠给 automation_element_action 那条腿。",
+    "spec": {
+      "page": "pages/register/index",
+      "identity": "guest（not-logged-in，走 clearSession 而非铸 B token；确保 assertGuestCapable 过闸）",
+      "band": "real —— project=apps/client/dist/build/mp-weixin-real，artifactBand mode=real/viteMode=real/sha8=f0677920（mock 档表达不了游客：其 session.ts 无条件注入 mockUserSession，probe-guest-band 实测 AUTOLOGIN_ON_OPEN，故本帧必须 real）",
+      "selector": "steps 先 `input .field__input = 13800000000`（使 :538 的 v-if=\"phone\" 清除热区渲染出来）→ 再 `tap .field__tap--40` 的**内边距角落**（离 .field__eye 视觉边缘约 20rpx，不打图标本体）；判点 anchors：.field__tap--40 / .field__eye / .field__tap--32 / .field__clear / .hero__back-hit / .hero__back / .agree__hit；.field-error__text 与 toast 浮层留给 012/013 两行同帧",
+      "expect": "6 个可机器读的量：.field__tap--40 与 .field__tap--32 与 .hero__back-hit 与 .agree__hit 宽高均 ≥ 88rpx（375px 视口折算 ≥ 44px）；.field__eye 40rpx（≈20px）与 .field__clear 32rpx（≈16px）视觉尺寸未被改动（即热区外扩没把图标撑大）；点 .field__tap--40 后 .field__eye 的 src 在 eye.svg ↔ eye-off.svg 之间切换（attribute-changed，证热区真可点）。**同帧必须同时留 WS 与 CLI 两条载具的物件计数**，两者不一致即本行不作判据、记 CARRIER_EMPTY —— 上一版就是靠单条载具把这件事读成产品缺陷。预期读数（源码/产物已锁）：WS 腿 .field__eye 应 =2、.field__input 应 =5；若仍 =0 则坐实 WS 会话挂在错页/错项目窗口，属载具回归而非产品。"
+    }
+  },
+  "impactOnLedger": "不改这 3 行的当前状态：apps/client/src/pages/register/index.vue 承载的三条判据在 issue-matrix.md:116-118 均已记 `已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量…）`，其可重跑载体是 verify-source-shape.mjs，帧判决只是它们的第二复验通道。本缺口的正确登记去向是：把 round-7 终报 §7.2「交互腿 7+11」那格里的「register 页在 real 档查不到 .field__input（3 条落到 STATE_NOT_APPLIED），成因未查」改写为**已查因 = 取景器 WS 载具整轮空答（CARRIER_EMPTY），非产品缺陷、非判据缺陷、非档位/重定向前置问题**，并把这 3 行从「欠交互刀」改标为「欠载具自检」。禁写清单（issue-matrix.md / LEDGER / round-7/exec-interact-* / screenshots/round-8-interact）本车道一概未动。",
+  "caveats": [
+    "本诊断全程静态（源码 + 在盘产物 + 盘上执行记录），未碰 DevTools/端口 9420-9430、未截图、未起自动化 —— 符合单写者约束。",
+    "「WS 腿当时自认为在哪一页」这一步**没有**盘上读数（landingAfter=\"\"、wsLanding 未被调用），所以我给出的是排除法结论（物件确实存在且可驱动，故障只在载具）而非对 WS 内部错态的正向描述。要把 WS 失效的具体形态钉死（挂错项目窗口 / 页实例陈旧 / element tree 未同步），必须靠 handoff 里那条 wsLandingPage 自检跑一腿，那一跑会占端口，故交后续帧腿。",
+    "两档 dist/build 产物均未被 git 跟踪，产物侧读数不可从干净克隆复现（与 round-7 终报 §7.2「帧文件本身」那格同源）。",
+    "顺带发现另一条具名缺口，非本任务范围不动：selectorsOf()(shoot-frameplan.mjs:315-322) 只收带 __ / -- 的 BEM 类名，于是 .btn-primary / .btn-phone-quick / .btn-guest / .login-sms-fallback-text 这类合法选择器被丢掉、判点退化成 FRAME_ONLY（同轮登录页 2 行即如此，计数记 undefined）。它同样能把「我读不出选择器」伪装成「帧才有答案」。",
+    "我自己差点判错的一次：用 `new RegExp('\\\\b'+c)` 数产物 class 命中时，`--`/边界转义把 11 个类名全数成 0，一度得出「产物不承载这些类名」的假结论；改用 class token 精确切分才拿到上面的真实计数。"
+  ]
+}
