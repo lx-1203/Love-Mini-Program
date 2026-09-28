@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-09-26T14:11:07.371Z",
+ "updatedAt": "2026-09-28T07:25:49.546Z",
  "entries": [
   {
    "kind": "post",
@@ -60,6 +60,76 @@
    "file": "reports/audit/round-7/round7-final-report.md",
    "firstSeen": "2026-09-26T14:11:07.371Z",
    "weak": true
+  },
+  {
+   "kind": "post",
+   "key": "277",
+   "note": "G8 环内按 id 写入/回读过的行",
+   "file": "g8-rings-20260927-0520.log",
+   "firstSeen": "2026-09-27T05:22:36.659Z"
+  },
+  {
+   "kind": "id-unclassified",
+   "key": "306",
+   "note": "同一行原文：RING8 [OK ] 创建响应回主键 data.id :: HTTP 200，data.",
+   "file": "g8-rings-20260927-0520.log",
+   "firstSeen": "2026-09-27T05:22:36.660Z"
+  },
+  {
+   "kind": "id-unclassified",
+   "key": "38",
+   "note": "同一行原文：NG10 [OK ] 匿名回复透传并可读回 :: POST replies -> 200 ",
+   "file": "g8-rings-20260927-0520.log",
+   "firstSeen": "2026-09-27T05:22:36.660Z"
+  },
+  {
+   "kind": "comment",
+   "key": "1245",
+   "note": "同一行原文：G8_ARTIFACTS=posts.id=277 ; comments.",
+   "file": "g8-rings-20260927-0520.log",
+   "firstSeen": "2026-09-27T05:22:36.660Z"
+  },
+  {
+   "kind": "title",
+   "key": "G8取证2609270520号",
+   "note": "按命名前缀可反查的测试数据",
+   "file": "g8-rings-20260927-0520.log",
+   "firstSeen": "2026-09-27T05:22:36.660Z"
+  },
+  {
+   "kind": "post",
+   "key": "284",
+   "note": "G8 环内按 id 写入/回读过的行",
+   "file": "g8-rings.txt",
+   "firstSeen": "2026-09-28T07:25:49.544Z"
+  },
+  {
+   "kind": "id-unclassified",
+   "key": "311",
+   "note": "同一行原文：RING8 [OK ] 创建响应回主键 data.id :: HTTP 200，data.",
+   "file": "g8-rings.txt",
+   "firstSeen": "2026-09-28T07:25:49.546Z"
+  },
+  {
+   "kind": "id-unclassified",
+   "key": "43",
+   "note": "同一行原文：NG10 [OK ] 匿名回复透传并可读回 :: POST replies -> 200 ",
+   "file": "g8-rings.txt",
+   "firstSeen": "2026-09-28T07:25:49.546Z"
+  },
+  {
+   "kind": "comment",
+   "key": "1250",
+   "note": "同一行原文：G8_ARTIFACTS=posts.id=284 ; comments.",
+   "file": "g8-rings.txt",
+   "firstSeen": "2026-09-28T07:25:49.546Z"
+  },
+  {
+   "kind": "title",
+   "key": "G8取证2609280724号",
+   "note": "按命名前缀可反查的测试数据",
+   "file": "g8-rings.txt",
+   "firstSeen": "2026-09-28T07:25:49.546Z"
   }
  ]
 }
