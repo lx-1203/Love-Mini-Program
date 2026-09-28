@@ -188,6 +188,36 @@ const RE_TAP_DISPATCH = /^tap 未成功：(.*?) ⇒ 通道\/元素问题，不�
 const RE_TAP_NO_FRAME = /^点击后出帧失败（miss=([\s\S]*)）⇒ 交互型没有帧就不算证据$/;
 const RE_WS_ROUTE_NO_ANSWER = /^WS currentPage\(\) 没给结果 ⇒ 不知是否已在 \S+，答案无法归属，待重跑$/;
 
+/* ---- WS 取证腿**没带 --tap** 那一刀的交互口径（2026-09-28 词表同步，本轮唯一没进词表的形状）----
+   唯一出处：r-exec-ws.mjs:832
+     rows.push(mkRow(name, page, c, "SKIPPED", route, "action 含交互动词 ⇒ 未开 --tap，交互型留待下一刀", observed));
+   分支顺序（重新数过，本文件今天被好几个 lane 改过，旧报告里的 :654/:665 一类行号已漂；
+   句子本身没漂 ⇒ 下面这些**打印出来的**旧行号我保留原样，只在此登记漂移，避免把别人的计数行改成我的措辞抖动）：
+     r-exec-ws.mjs 现状 —— row() :122 / rowMeasured :141 / runTapCase :470-502（六行 = :474 禁触、:477 没点名、
+     :482 探针无答案、:485 absent、:489 tap 未成功、:499 没帧）/ 页组主循环 :810-854
+     （:823 requiresReal → :826 routeOk===false → :829 TAP_RE && !TAP_MODE → :832 本口径 → :838 无判点 → :841 落点未取证）。
+   走到 :832 ⇒ 该腿 TAP_MODE 关着（切片配置），三条承诺都由分支顺序给出：
+   ① 交互一个都没下发（:834 的 runTapCase 才是下发口）；② 落点/探针已经量过（:810-816 的 wsRoute+probeSet，
+   observed 尾部 :822 固定写 `ws-route+ws-probe`）；③ 这一行没被判成"落在别的页"（那是 :826，在它前面）。
+   所以这一类是**预期未执行**（一条规则叫停了它），不是测量结果，也不是缺陷；但它也不是"已覆盖" ——
+   判点本身从没被任何一次点击验证过，欠的是一条 --tap 复测腿的认领。名字只负责把这 75 行从"没人看见"
+   变成"逐条点名"，结案权不在本门（同 SKIPPED-tap-target-absent-unattributed 的规矩：命名 ≠ 结案）。 */
+const RE_WS_TAP_DEFERRED = /^action 含交互动词 ⇒ 未开 --tap，交互型留待下一刀$/;
+/* 这一行自己带回来的探针读数（只用来给读者分诊"复跑这一批能立刻拿到什么"，不参与归类）：
+   observed 的 dom 段由 r-exec-ws.mjs:821 拼：点名了就是 `<sel>:present(N)|absent|no-answer`，没点名就是 `(本条没点名类名)`。 */
+function tapDeferredReading(obs) {
+  const dom = (obs.match(/dom: ([^|]*)/) || [])[1] || "";
+  if (/\(本条没点名类名\)/.test(obs)) return { kind: "no-target-named", tag: "本条没点名类名（复跑这一刀也归属不到物件）" };
+  const present = (dom.match(/:present\(/g) || []).length;
+  const absent = (dom.match(/:absent/g) || []).length;
+  const noAnswer = (dom.match(/:no-answer/g) || []).length;
+  if (noAnswer) return { kind: "probe-no-answer", tag: `no-answer×${noAnswer}${present ? ` present×${present}` : ""}${absent ? ` absent×${absent}` : ""}（通道未就绪）` };
+  if (present && absent) return { kind: "present+absent", tag: `present×${present} absent×${absent}` };
+  if (present) return { kind: "present", tag: `present×${present}（静息态就在页上，复跑能立刻点）` };
+  if (absent) return { kind: "absent", tag: `absent×${absent}（静息态没带这些类）` };
+  return { kind: "probe-answered-nothing", tag: "探针一条都没答" };
+}
+
 /* "这一行量到东西没有"必须用**声明的**判据，不能用"reason 里有没有重试"：开页重试耗尽既可能是
    窗口/通道没起来（这一行压根没测），也可能是页面真的开不起来（产品缺陷）—— 把两者分开的唯一凭据
    是这一行有没有留取证。执行器自己就是这么判批次结局的：classifyBatch 在 r-exec-ws.mjs:128 用
@@ -212,7 +242,7 @@ const BUCKET = {
   "SKIPPED-real-band": "判据要真实后端：本条由 real 带腿（--project mp-weixin-real + 8080 在跑）复测",
   "SKIPPED-vague-action": "action 写了交互动词却没点名可交互元素 —— 判据含糊，缺的是判据不是产品缺陷",
   "SKIPPED-vague-criterion": "判据既无类名也不要求出帧 —— 没有可观测物件，不能记 EXECUTED",
-  "SKIPPED-observe-only-slice": "交互型动作落在 observe-only 切片里 —— 切片配置所致，非覆盖缺口",
+  "SKIPPED-observe-only-slice": "交互型判点落进一个按配置就不下发交互的切片（r-exec-cli 的「本切片只跑 observe-only」/ r-exec-ws.mjs:832 的「未开 --tap，交互型留待下一刀」）—— 切片配置所致、非产品失败、也非覆盖结论：判点从没被点击验证过，欠的是一条 --tap 复测腿逐行认领（同一条债换腿不换名，故复用本桶不另立）",
   "SKIPPED-deny-irreversible": "注销/解绑/清空类不可逆动作显式 DENY，为的是保住后面几百条共用的会话",
   "SKIPPED-interact-reststate-absent": "交互腿下发失败，且同帧探针说类名本就不在静息态 ⇒ 欠前置配方（先展开/先切态）",
   "SKIPPED-interact-channel": "交互腿下发失败，但探针说物件在、元素级动作仍点不动 ⇒ 通道或选择器问题，须人工判",
@@ -340,6 +370,18 @@ function matchRe7(reason, obs, r) {
     if (rowMeasured(r)) return { reject: `reason 说 WS currentPage() 没给结果，可这一行带着取证（route/evidence/present 之一非空）⇒ 自相矛盾，不能按"从未被测"结案` };
     return { bucket: "SKIPPED-route-probe-no-answer", tapShape: "ws-route-no-answer", note: "落点探针（WS currentPage）没给答案 ⇒ 这一行从未被测，欠重跑" };
   }
+  if (RE_WS_TAP_DEFERRED.test(reason)) {
+    /* 五把交叉核对都只用量得到的东西，不信 reason 单方面宣布（学 RE_TAP_DENY / RE_TAP_NO_CLASS /
+       RE_TAP_ABSENT / RE_WS_ROUTE_NO_ANSWER 那几支的规矩）：句子和这一行自己的取证必须同源，
+       否则"学过的口径"就变成免检通道。 */
+    if (row0.status !== "SKIPPED") return { reject: `未开 --tap 这句话只配 SKIPPED 状态（r-exec-ws.mjs:832 就写死 SKIPPED），本行是 ${row0.status} ⇒ 句子与本行不同源` };
+    if (!/\|\s*ws-route\+ws-probe/.test(obs)) return { reject: `reason 说未开 --tap，observed 里却没有 r-exec-ws.mjs:822 那句 ws-route+ws-probe ⇒ 这一行不是 WS 取证腿页组循环写的，句子不再描述它` };
+    if (/\btap=|post-tap/.test(obs)) return { reject: `reason 说"交互型留待下一刀"，observed 里却有 tap=/post-tap ⇒ 交互其实下发了，须重看口径` };
+    if (/≠/.test(obs)) return { reject: `reason 说未开 --tap，observed 里却写着 top=… ≠ 声明页 ⇒ 这一行同时欠"落在别的页"那笔债（:826 在 :829 之前，不该走到 :832），落红人判` };
+    if (!rowMeasured(row0)) return { reject: `reason 说未开 --tap，可这一行零取证（route/evidence/observed 的 present|absent 三皆空，判据 = r-exec-ws.mjs:141 rowMeasured 的镜像）⇒ 连落点都没量到，欠的是"探针没给答案/重跑"那一族，不由本桶吸收` };
+    const rd = tapDeferredReading(obs);
+    return { bucket: "SKIPPED-observe-only-slice", tapDeferred: true, reading: rd.tag, readingKind: rd.kind, op: "tap", note: `未开 --tap(:832)｜读数：${rd.tag}` };
+  }
   if (/^落在别的页/.test(reason)) {
     const landed = (obs.match(/top=(\S+)/) || [])[1] || null;
     return { bucket: "FAILED-landing-guard", landed };
@@ -443,6 +485,11 @@ const tapShapeRows = {
   deny: [], "no-class": [], "probe-no-answer": [], "absent-outcome": [], "absent-unattributed": [],
   "dispatch-fail": [], "no-frame": [], "ws-route-no-answer": [],
 };
+/* 没带 --tap 那一刀的交互行（r-exec-ws.mjs:832，句式 RE_WS_TAP_DEFERRED）：逐条点名 + 逐条读数，
+   理由同 tapShapeRows —— 一个数字回答不了"这 75 行里哪些复跑时能立刻拿到 present、哪些连类名都没点名"。
+   读数只用于分诊排序，不参与归类（归类只看句子 + 这一行自己带回来的取证）。 */
+const tapDeferredRows = [];
+const tapDeferredReadings = {};
 const gateProblems = [];
 /* 每条"落进兜底桶"的行都单独记一句人可读的原因：门禁变红时必须自带证据，
    否则下一次跑这个脚本的人只能看到一个数字，还得重跑一遍才知道是哪几条。 */
@@ -480,9 +527,10 @@ for (const r of rows) {
       continue;
     }
     if (re7) {
-      const { bucket, op, token, tokenKind, recoverable, sel, note, landed, evidenceHole, miss, bytes, unclassified: uc, ucNote, tapShape, attribution, scope, control } = re7;
-      push(r, bucket, { want: token ? sel : (miss ? miss : (note ? String(note).slice(0, 120) : null)), op, token, tokenKind, recoverable, sel, landed, evidenceHole, frameBytes: bytes, tapShape, attribution, scope, control, from: "reason-re7" });
+      const { bucket, op, token, tokenKind, recoverable, sel, note, landed, evidenceHole, miss, bytes, unclassified: uc, ucNote, tapShape, attribution, scope, control, tapDeferred, reading, readingKind } = re7;
+      push(r, bucket, { want: token ? sel : (miss ? miss : (note ? String(note).slice(0, 120) : null)), op, token, tokenKind, recoverable, sel, landed, evidenceHole, frameBytes: bytes, tapShape, attribution, scope, control, tapDeferred, reading, readingKind, from: "reason-re7" });
       if (tapShape && tapShapeRows[tapShape]) tapShapeRows[tapShape].push(`${r.id} @ ${r.page}${sel ? " " + sel : ""}${miss ? "（miss=" + String(miss).slice(0, 60) + "）" : ""}${attribution ? " ｜ " + attribution : ""}`);
+      if (tapDeferred) { tapDeferredRows.push(`${r.id} @ ${r.page}（读数：${reading}）`); tapDeferredReadings[readingKind] = (tapDeferredReadings[readingKind] || 0) + 1; }
       if (evidenceHole) evidenceHoles.push(`${r.id} @ ${r.page} 要求出帧但帧未成立（${miss || "无 miss 路径"}${bytes ? `，仅 ${bytes}B` : ""}）`);
       if (uc) markUnclassified(r, ucNote || "交互腿下发失败但没留下可复核的选择器");
       continue;
@@ -694,6 +742,9 @@ if (tapShapesTotal) {
   lines.push(`- WS 交互腿（--tap）口径普查：\`r-exec-ws.mjs\` 的 runTapCase ${TAP_SHAPES.filter(([k]) => tapShapeRows[k].length).length} 种形状命中 **${tapShapesTotal}** 行（含本腿没有的形状，逐条见文末名册）；其中「下发前探针答 absent」共 **${tapAbsentTotal}** 行 = 静息态读数（可归因）**${tapShapeRows["absent-outcome"].length}** + 归因未定（组件作用域无正向对照）**${tapShapeRows["absent-unattributed"].length}**`);
   lines.push(`- 交互型一律 \`durationMs=0\`（r-exec-ws.mjs:104 的 row() 写死），所以耗时不能用来判断"这一刀有没有下发"；判据是 observed 里的 \`tap-skipped\`/\`tap=<sel>\`，本工具就是按它交叉核对的`);
 }
+if (tapDeferredRows.length) {
+  lines.push(`- 未开 --tap 的交互判点（句式 r-exec-ws.mjs:832）：**${tapDeferredRows.length}** 行 ⇒ 这一刀按切片配置一个交互都没下发（预期未执行：不算缺陷、不算覆盖、也不算"判点已被验证"），但每行仍带回落点+探针读数：${Object.entries(tapDeferredReadings).map(([k, v]) => `${k}=${v}`).join(" ")}（逐条见文末名册）`);
+}
 lines.push("");
 lines.push("| 桶 | 条数 | 含义 |");
 lines.push("|---|---|---|");
@@ -736,6 +787,22 @@ if (tapShapesTotal) {
     for (const s of tapShapeRows[k]) lines.push(`  - ${s}`);
     lines.push("");
   }
+}
+
+/* 未开 --tap 那一刀的交互行名册：与 runTapCase 那六行不是一张表 —— 那六行是"这一刀真下了发"的分支，
+   本表是"这一刀按配置没下发"的分支（r-exec-ws.mjs:829-832）。分开列，读者才不会把 75 行
+   "没点"和 68 行"点了但没成"读成同一笔债。 */
+if (tapDeferredRows.length) {
+  lines.push("## 未开 --tap 的交互行名册（出处 r-exec-ws.mjs:832 ｜ 分类＝预期未执行 ｜ 桶 SKIPPED-observe-only-slice）");
+  lines.push("");
+  lines.push(`进桶要五把尺全过：status===SKIPPED、observed 带 \`| ws-route+ws-probe\`（:822 那条本行自报）、observed 不带 \`tap=\`/\`post-tap\`（没下发）、observed 不带 \`≠\`（没落在别的页）、\`rowMeasured===true\`（落点或探针至少量到一样，:141 的镜像）。任一把不过 ⇒ 落「具名口径与本行取证冲突」红，不吸收。`);
+  lines.push("");
+  lines.push(`读数分布（复跑 --tap 时各自欠什么）：${Object.entries(tapDeferredReadings).map(([k, v]) => `${k}=${v}`).join(" ")}`);
+  lines.push("");
+  lines.push(`本桶不核对有没有 --tap 复测腿来认领这批行（没有这个旗标，也不许拿"应该有人跑过"当免检）：${tapDeferredRows.length} 行逐条点名如下，认领与否由持有那条腿的人判。`);
+  lines.push("");
+  for (const s of tapDeferredRows) lines.push(`- TAP_NOT_ENABLED ${s}`);
+  lines.push("");
 }
 
 const four = {};
@@ -787,7 +854,7 @@ for (const b of order) {
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT + ".md", lines.join("\n"));
-fs.writeFileSync(OUT + ".json", JSON.stringify({ results: RESULTS, updatedAt: doc.updatedAt ?? null, total, buckets, bucketNames: Object.keys(BUCKET), unclassified, unclassifiedRows, stampedCount: stampedRows.length, stampedRows, openPageUnmeasuredCount: openPageUnmeasuredRows.length, openPageUnmeasuredRows, openPageMeasuredDefectCount: openPageMeasuredRows.length, openPageMeasuredRows, tapShapeCounts: Object.fromEntries(Object.entries(tapShapeRows).map(([k, v]) => [k, v.length])), tapShapeRows, tapAbsentTotal, controlSelectors: [...CONTROL_SEL].sort(), batchSelfReport: { admissible: doc.admissible ?? null, outcome: doc.outcome ?? null, runner: doc.runner ?? null }, evidenceHoles, landingGroups, landingMissing, items }, null, 1));
+fs.writeFileSync(OUT + ".json", JSON.stringify({ results: RESULTS, updatedAt: doc.updatedAt ?? null, total, buckets, bucketNames: Object.keys(BUCKET), unclassified, unclassifiedRows, stampedCount: stampedRows.length, stampedRows, openPageUnmeasuredCount: openPageUnmeasuredRows.length, openPageUnmeasuredRows, openPageMeasuredDefectCount: openPageMeasuredRows.length, openPageMeasuredRows, tapShapeCounts: Object.fromEntries(Object.entries(tapShapeRows).map(([k, v]) => [k, v.length])), tapShapeRows, tapAbsentTotal, tapDeferredCount: tapDeferredRows.length, tapDeferredReadings, tapDeferredRows, controlSelectors: [...CONTROL_SEL].sort(), batchSelfReport: { admissible: doc.admissible ?? null, outcome: doc.outcome ?? null, runner: doc.runner ?? null }, evidenceHoles, landingGroups, landingMissing, items }, null, 1));
 console.log(`TRIAGE_SUMMARY rows=${total} unclassified=${unclassified}`);
 for (const b of order) if (buckets[b]) console.log(`  ${String(buckets[b]).padStart(4)} ${b}`);
 /* 盖章行必须**这一腿自己数给读者看**：它是免掉缺陷计数的唯一新增口径，
@@ -827,6 +894,14 @@ if (tapShapesTotal) {
   for (const s of tapShapeRows["ws-route-no-answer"]) console.log("  WS_ROUTE_NO_ANSWER " + s);
   console.log(`TRIAGE_TAP_CONTROL_SELECTORS=${CONTROL_SEL.size}（本语料里答过 present(N) 或被成功 tap= 下发过的选择器，就是上面归因用的正向对照名单）`);
   console.log(`TRIAGE_TAP_LEDGER_FINDINGS=${tapAbsentTotal + tapShapeRows["no-class"].length}（这两种"判据欠前置/欠点名物件"的行不在本门结案：去向应记 reports/audit/round-7/open-row-dispositions.json 的 dispositions[]〔kind=criteria_needs_tightening〕，与那 25 条真实覆盖欠账同族）`);
+}
+/* 未开 --tap 的交互行必须**这一腿自己数给读者看**（同 NOT_AUTOMATABLE_STAMPED / OPEN_PAGE_UNMEASURED 的规矩）：
+   "切片没开 --tap ⇒ 交互没下发"是本门新增的免缺陷口径，不点名就是把一批从没被点击验证过的判点抹出账本。
+   只在语料真出现这一口径时打印（别的腿判词一字不改，收尾 diff 里多出来的行必须是真信息）。 */
+if (tapDeferredRows.length) {
+  console.log(`TRIAGE_TAP_NOT_ENABLED=${tapDeferredRows.length}（r-exec-ws.mjs:832「action 含交互动词 ⇒ 未开 --tap，交互型留待下一刀」：本腿 TAP_MODE 关着，一条切片规则叫停了交互 ⇒ 预期未执行 —— 既不是测量结果（判点没被验证过）也不是缺陷；落 SKIPPED-observe-only-slice（与 r-exec-cli 的 observe-only 切片同一笔债，换腿不换名）。单独计数、逐条点名，不算缺陷、不算覆盖、也不写成"已由 --tap 腿认领"——本门没有核对复测腿的旗标，认领由那条腿的持有者判）`);
+  console.log(`TRIAGE_TAP_NOT_ENABLED_READINGS ` + ["no-target-named", "absent", "present", "present+absent", "probe-no-answer", "probe-answered-nothing"].map((k) => `${k}=${tapDeferredReadings[k] || 0}`).join(" ") + `（合计 ${Object.values(tapDeferredReadings).reduce((a, b) => a + b, 0)}/${tapDeferredRows.length}；这些是本行自己带回来的落点+探针读数，只用来排复跑顺序：absent/present+absent 复跑 --tap 时会落到 SKIPPED-tap-target-absent-*，no-target-named 会落到 SKIPPED-vague-action，present 那批静息态就在页上、复跑能立刻点。读数不参与归类，也不构成结案）`);
+  for (const s of tapDeferredRows) console.log("  TAP_NOT_ENABLED " + s);
 }
 console.log(`out=${OUT}.md / ${OUT}.json`);
 
@@ -868,9 +943,12 @@ if (gateProblems.length) {
   for (const p of gateProblems) console.log("  ✗ " + p);
   process.exit(2);
 }
-/* 结案口径那句：只有本腿真出现"开页零取证"行时才追加第三类，别的语料判词一字不改
+/* 结案口径那句：只有本腿真出现这些"命名了但不结案"的口径时才追加，别的语料判词一字不改
    （收尾 diff 里多出来的行必须是真信息，不是措辞抖动）。 */
-const openPageClause = openPageUnmeasuredRows.length
-  ? `、${openPageUnmeasuredRows.length} 行开页重试耗尽且零取证（OPEN_PAGE_UNMEASURED，欠一次重跑）—— 这三类不计入结案`
+const notClosedClauses = [];
+if (openPageUnmeasuredRows.length) notClosedClauses.push(`${openPageUnmeasuredRows.length} 行开页重试耗尽且零取证（OPEN_PAGE_UNMEASURED，欠一次重跑）`);
+if (tapDeferredRows.length) notClosedClauses.push(`${tapDeferredRows.length} 行交互判点未开 --tap（TRIAGE_TAP_NOT_ENABLED，欠一条 --tap 复测腿逐行认领）`);
+const openPageClause = notClosedClauses.length
+  ? `、${notClosedClauses.join("、")} —— 这些都不计入结案`
   : " —— 这两类不计入结案";
 console.log(`TRIAGE_GATE=PASS unclassified=0 landingGroups=${landingKeys.length} 全部有处置；但其中 ${openRulings.length} 组处置本身写着"未结案"、${evidenceHoles.length} 条证据缺口${openPageClause}`);
