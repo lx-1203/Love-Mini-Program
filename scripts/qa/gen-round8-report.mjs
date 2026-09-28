@@ -59,7 +59,20 @@ if (g.open) L.push(`- 剩余未结 ${g.open.openRowCount} 行，机械归置：�
 L.push("- 关键易误读点：交互腿那 49 个是「用例号」而非台账 `MP-*` 行号，两套命名空间，所以帧覆盖度不等于台账结案依据；页面级唯一命中的 `VILLAGE-PUBLISH-001` 缺的是设计依据与阈值语义，任何帧都答不了，故按不可落处理。", "");
 
 L.push("## 5. 真实模式交互腿（§4.1 的账）", "");
-L.push("计划 49 条、结果 49 条、双向差集为 0（计划缺结果 0、结果多出 0）。结果分布取自 `.zcode/tmp/lane-ui2/rows.jsonl`，逐条带前后帧路径与 sha256；前后帧逐字节相同的按 `UNCHANGED_AFTER_INTERACTION` 标注，不当作状态已生效的证据。", "");
+const il = rd("reports/audit/round-7/interact-leg-result-v33.json", null);
+const iaudit = rd("reports/audit/round-7/interact-leg-audit-v33.json", null);
+if (il) {
+  const d = il.rows.reduce((a, r) => ((a[r.outcome || r.status] = (a[r.outcome || r.status] || 0) + 1), a), {});
+  L.push(`结果行数 ${il.rows.length}（计划 49 条真实模式交互用例全部试过，另补游客轴与对照行），分布：${Object.entries(d).map(([k, v]) => `${k} ${v}`).join(" / ")}。`);
+  L.push(`门复跑：${String((il.gateRerun && il.gateRerun.out) || "").split(/\r?\n/)[0] || "读数缺失"}；exit=${il.gateRerun ? il.gateRerun.exit : "?"}。`);
+  if (iaudit) L.push(`独立复核：${iaudit.verdict}（帧存在性、sha 一致、EXECUTED 前后必不同、UNCHANGED 前后必相同、每条有具名原因，均由主会话重算，不信车道自报）。`);
+  L.push("- WS 腿不通且根因被纠正：不是取页也不是等不够，而是 `connect()` 里 `MiniProgram.checkVersion()` 把 `(await send(\"Tool.getInfo\")).SDKVersion` 喂给 `licia/cmpVersion.js:4` 的 `v1.split('.')`；9421 只回 `{version}` 没有 SDKVersion ⇒ 握手当场抛。");
+  L.push("- CLI 桥腿可用：showcase 载体 band `real@ed1cd82c`（门 `REAL_BAND=/^real(@|$)/` 只看 mode），四步全绿并出帧。");
+  L.push("- 在册陷阱：`mp-weixin-real` 窗口已死却过地板——`open_project_window` 回 success/type:reuse、截图 11290B，画面实为「模拟器启动失败」。过字节数不等于可采。");
+  L.push("- 载具误挡：按载具口径复算 `DENY` 只命中 2/49（TD03、OT09），不是整批拦路虎；本轮未擅自改载具，待授权。", "");
+} else {
+  L.push("**（交互腿产物文件尚未落盘，此处不留结论。）**", "");
+}
 
 L.push("## 6. 需你拍板 " + decisions.length + " 项（本轮一律未自裁）", "");
 for (const d of decisions) L.push("- " + d);

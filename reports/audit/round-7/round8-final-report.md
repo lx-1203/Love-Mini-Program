@@ -42,7 +42,13 @@
 
 ## 5. 真实模式交互腿（§4.1 的账）
 
-计划 49 条、结果 49 条、双向差集为 0（计划缺结果 0、结果多出 0）。结果分布取自 `.zcode/tmp/lane-ui2/rows.jsonl`，逐条带前后帧路径与 sha256；前后帧逐字节相同的按 `UNCHANGED_AFTER_INTERACTION` 标注，不当作状态已生效的证据。
+结果行数 53（计划 49 条真实模式交互用例全部试过，另补游客轴与对照行），分布：NOT_SHOOTABLE 25 / EXECUTED 19 / UNCHANGED_AFTER_INTERACTION 6 / LEFT_PAGE 1 / VEHICLE_DENY 2。
+门复跑：REALCOV_CASES=236 EXEC_ROWS=15206 结果目录=D:\6\恋爱小程序\reports\audit\round-7；exit=1。
+独立复核：内部自洽 5/5（帧存在性、sha 一致、EXECUTED 前后必不同、UNCHANGED 前后必相同、每条有具名原因，均由主会话重算，不信车道自报）。
+- WS 腿不通且根因被纠正：不是取页也不是等不够，而是 `connect()` 里 `MiniProgram.checkVersion()` 把 `(await send("Tool.getInfo")).SDKVersion` 喂给 `licia/cmpVersion.js:4` 的 `v1.split('.')`；9421 只回 `{version}` 没有 SDKVersion ⇒ 握手当场抛。
+- CLI 桥腿可用：showcase 载体 band `real@ed1cd82c`（门 `REAL_BAND=/^real(@|$)/` 只看 mode），四步全绿并出帧。
+- 在册陷阱：`mp-weixin-real` 窗口已死却过地板——`open_project_window` 回 success/type:reuse、截图 11290B，画面实为「模拟器启动失败」。过字节数不等于可采。
+- 载具误挡：按载具口径复算 `DENY` 只命中 2/49（TD03、OT09），不是整批拦路虎；本轮未擅自改载具，待授权。
 
 ## 6. 需你拍板 14 项（本轮一律未自裁）
 
