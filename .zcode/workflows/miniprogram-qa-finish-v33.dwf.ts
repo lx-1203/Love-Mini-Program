@@ -475,7 +475,7 @@ for (const b of blockers.slice(0, 40)) {
 }
 
 const md = [
-  "# round-8 收官闭环总报告（v3.3 续作工作流）",
+  `# round-8 收官闭环总报告（v${WORKFLOW.version} 续作工作流）`,
   "",
   `- 起点：HEAD ${head}（branch ${branch}），工作树脏 ${dirty} 文件；后端${backendUp ? "UP" : "DOWN"}；自动化端口 [${uiPorts.join(", ") || "无"}]`,
   `- 收口车道：${laneResults.map(l => `${l.lane}（证实 ${(l.fixedIds ?? []).length} / 未收 ${(l.skipped ?? []).length}）`).join("、") || "无"}`,
