@@ -123,6 +123,30 @@ const RE_OBS_SKIP = /^action-not-automatable:\s*(.*)$/;
 /* 执行器引用判据台盖章的那句话（round-7 第三轮口径：章在 failureReason 里，不在 observed 尾注里）。
    只认这个开头 ⇒ 不做词表泛化，别的 action-not-automatable 变体照旧走原路。 */
 const RE_STAMP_REASON = /^action-not-automatable:\s*判据台已盖章「本通道不可自动化」/;
+/* 第三种失败口径（round-7 stage-8 的开页就绪重试）：执行器只在这一处写这句话、且只配 FAILED 状态
+   （r-exec-ws.mjs:617 拼句 + r-exec-ws.mjs:618 push(..., "FAILED", "", reason, "")：route/observed 全传空串）。
+   锚死「重试 N 次仍失败」这个句式，不拿"重试"两个字泛匹配：今天以前那批 145 行说的是
+   `open_page 失败：simulator_open_page 调用失败：Command failed:…`（旧口径，见 .zcode/tmp/gap-openpage/rows-summary.txt），
+   旧句、别的新句、以及"重试"出现在 detail 里的任何句子，都照旧落「两种失败原文形态都对不上」红。 */
+const RE_OPEN_RETRY = /^open_page 失败（重试 (\d+) 次仍失败）：([\s\S]*)$/;
+
+/* "这一行量到东西没有"必须用**声明的**判据，不能用"reason 里有没有重试"：开页重试耗尽既可能是
+   窗口/通道没起来（这一行压根没测），也可能是页面真的开不起来（产品缺陷）—— 把两者分开的唯一凭据
+   是这一行有没有留取证。执行器自己就是这么判批次结局的：classifyBatch 在 r-exec-ws.mjs:128 用
+   rowMeasured 数"可测量行"，一个都没有才打 WSX_OUTCOME class=unmeasurable + WSX_ADMISSIBLE=no
+   （r-exec-ws.mjs:133 / :141）。下面这份是 r-exec-ws.mjs:113-118 rowMeasured 的逐字镜像
+   （route 非空 / 有帧 evidence / observed 里有 present( 或 absent），三个全空才是"没测到"。
+   不 import 那个模块：r-exec-ws.mjs:227 顶层 require miniprogram-automator、:748 顶层跑 main()，
+   请它进来等于叫醒模拟器 —— 本工具的红绿不许依赖开设备。
+   fail-closed 一侧：exec-* 腿的 route 是数组，String(数组) 非空 ⇒ 判"有取证" ⇒ 落缺陷桶要人判，
+   绝不会反过来把该红的行吸进免检桶。 */
+const MEASURE_TOKEN_RE = /present\(|absent/;
+function rowMeasured(r) {
+  if (!r) return false;
+  if (String(r.route || "").trim()) return true;
+  if (String(r.evidence || "").trim()) return true;
+  return MEASURE_TOKEN_RE.test(String(r.observed || ""));
+}
 
 const BUCKET = {
   "SKIPPED-not-automatable": "用例要求的动作本通道做不了（拖动/连点/量 rect 等），只能人工驱动 —— 覆盖缺口，不是产品失败",
@@ -142,6 +166,11 @@ const BUCKET = {
   "SKIPPED-interact-off-page": "交互动词 + 本页没落在声明页（栈顶是别的页）⇒ 交互根本没发出，点了是替别人的页做事；含游客闸门弹回",
   "SKIPPED-interact-not-issued": "交互动词 + 落点没问题但这一条没发出交互 ⇒ 读 observed 的 tap 段定位，欠的是配方",
   "FAILED-guest-gate-by-ruling": "游客落到 guest-landing-policy 裁定的那一页 ⇒ 闸门行为符合裁定，FAILED 是因为该条判据前置为登录态（身份适用范围问题，不是产品缺陷）",
+  /* 开页重试耗尽的两个分叉（判据 = 上面 rowMeasured 的镜像，与执行器批次级 WSX_ADMISSIBLE 同一把尺）。
+     两个桶都不并进 other-fail/unclassified：给口径起名字是分诊台的本职，但"起完名字就绿"必须是
+     零取证那一支（它欠的是一次重跑，不是一个人的判决）；带取证那一支自己否决门禁（见 OPEN_PAGE_MEASURED_DEFECT）。 */
+  "FAILED-open-page-unmeasured": "open_page 重试 N 次仍失败，且这一行零取证（route/evidence/observed 三个皆空，判据 r-exec-ws.mjs:113 rowMeasured）⇒ 与批次级 WSX_ADMISSIBLE=no 同一把尺的逐行版：通道/窗口状态，不是产品判决。不算缺陷、不算覆盖、欠的是把这一批重跑；逐条点名，绝不当已通过",
+  "FAILED-open-page-measured-defect": "open_page 重试 N 次仍失败，可这一行量到了落点/探针/帧 ⇒ 桥说页面没开起来、行里却留着页面的答案 ⇒ 不自证清白的空间：按候选产品级页面缺陷逐条人判，>0 就否决门禁",
   "SKIPPED-route-probe-no-answer": "落点探针本身没给答案（routeStack 取空/超时）⇒ 连「在不在这一页」都无从归属，欠的是重跑这一批，不是产品判红",
   "SKIPPED-frame-evidence-hole": "要求出帧但帧没成立（帧太小被拒且探针无有效答案）⇒ **证据缺口**，命名了也不许结案",
   "FAILED-landing-guard": "导航落在了别的页（页内守卫或路由重定向），元素存在性无从判 —— 每一组落地对须有 booked 复测腿或裁决",
@@ -282,6 +311,10 @@ let unclassified = 0;
 const unclassifiedRows = [];
 const evidenceHoles = [];   // 有名字也不许结案的证据缺口：命名只是让它从"没人看见"变成"人人看见"
 const stampedRows = [];     // 判据台盖章 automatable===false 且 reason 引用该章的 SKIPPED 行：预期结果，逐条点名，既不计缺陷也不冒充覆盖
+/* 开页重试耗尽的两本账（句式见 RE_OPEN_RETRY，分叉判据见 rowMeasured）：
+   零取证 ⇒ 逐行不可采信，点名 + 单独计数，欠一次重跑；带取证 ⇒ 候选产品缺陷，额外否决门禁。 */
+const openPageUnmeasuredRows = [];
+const openPageMeasuredRows = [];
 const gateProblems = [];
 /* 每条"落进兜底桶"的行都单独记一句人可读的原因：门禁变红时必须自带证据，
    否则下一次跑这个脚本的人只能看到一个数字，还得重跑一遍才知道是哪几条。 */
@@ -316,6 +349,26 @@ for (const r of rows) {
       push(r, bucket, { want: token ? sel : (miss ? miss : (note ? String(note).slice(0, 120) : null)), op, token, tokenKind, recoverable, sel, landed, evidenceHole, frameBytes: bytes, from: "reason-re7" });
       if (evidenceHole) evidenceHoles.push(`${r.id} @ ${r.page} 要求出帧但帧未成立（${miss || "无 miss 路径"}${bytes ? `，仅 ${bytes}B` : ""}）`);
       if (uc) markUnclassified(r, "交互腿下发失败但没留下可复核的选择器");
+      continue;
+    }
+  }
+  /* 开页重试耗尽：必须在下面 RE_REASON / RE_OBS_FAIL 那两种旧形态之前判。
+     理由是执行器把这句话写成"原因 + | stdout={…}"，RE_REASON 要的是 `action X Y failed: …`、
+     RE_OBS_FAIL 要的是 observed 尾注 `act-FAIL:…`，而零取证行的 observed 是空串 ——
+     放到后面只会把一句本工具已经认得的句子重新判成"两种形态都对不上"。
+     分叉只用声明的取证判据（rowMeasured），不用"重试"这个词。 */
+  if (r.status === "FAILED") {
+    const orm = reason.match(RE_OPEN_RETRY);
+    if (orm) {
+      const attempts = Number(orm[1]);
+      const detail = String(orm[2] || "").trim();
+      if (rowMeasured(r)) {
+        push(r, "FAILED-open-page-measured-defect", { want: detail.slice(0, 160), op: "open_page", attempts, from: "reason-open-retry" });
+        openPageMeasuredRows.push(`${r.id} @ ${r.page ?? "?"}（重试 ${attempts} 次仍失败，可该行有取证：route=${JSON.stringify(String(r.route ?? "").slice(0, 60))} evidence=${String(r.evidence || "").trim() ? "有帧" : "无"} observed="${String(r.observed || "").slice(0, 90)}"）:: reason="${detail.slice(0, 190)}"`);
+        continue;
+      }
+      push(r, "FAILED-open-page-unmeasured", { want: detail.slice(0, 160), op: "open_page", attempts, from: "reason-open-retry" });
+      openPageUnmeasuredRows.push(`${r.id} @ ${r.page ?? "?"}（重试 ${attempts} 次，零取证：route/evidence/observed 全空 ⇒ 这一行从未被测）:: openErr="${detail.slice(0, 190)}"`);
       continue;
     }
   }
@@ -469,7 +522,7 @@ const mism = items.filter((it) => it.mismatch).length;
 
 // ---------- 输出 ----------
 const order = ["EXECUTED", ...Object.keys(BUCKET)];
-const NO_TARGET = new Set(["SKIPPED-real-band", "SKIPPED-vague-action", "SKIPPED-vague-criterion", "SKIPPED-observe-only-slice", "SKIPPED-deny-irreversible", "SKIPPED-left-page", "SKIPPED-frame-evidence-hole", "FAILED-landing-guard"]);
+const NO_TARGET = new Set(["SKIPPED-real-band", "SKIPPED-vague-action", "SKIPPED-vague-criterion", "SKIPPED-observe-only-slice", "SKIPPED-deny-irreversible", "SKIPPED-left-page", "SKIPPED-frame-evidence-hole", "FAILED-landing-guard", "FAILED-open-page-unmeasured", "FAILED-open-page-measured-defect"]);
 const lines = [];
 lines.push(`# 执行轮失败分诊（round 权威件：${RESULTS}）`);
 lines.push("");
@@ -482,6 +535,10 @@ lines.push(`- 解析来源：failureReason ${items.filter((i) => i.from === "rea
 lines.push(`- 单字标签（从用例散文里抠出来的残字，几乎必是规格噪声而不是产品缺陷）：${suspect} 条`);
 lines.push(`- 动作发生时不在用例声明的页面上：${offTarget} 条；observed 里读不到 top= 也读不到 route[]（判不了）：${noTop} 条`);
 lines.push(`- observed 带 \`MISMATCH!\`（执行器自报前置身份/状态不符）：${mism} 条`);
+if (openPageUnmeasuredRows.length || openPageMeasuredRows.length) {
+  lines.push(`- 开页重试耗尽（句式 r-exec-ws.mjs:617）：零取证 **${openPageUnmeasuredRows.length}** 行（这一行从未被测 ⇒ 通道/窗口状态，不算缺陷也不算覆盖，欠一次重跑）｜带取证 **${openPageMeasuredRows.length}** 行（量到了还说开不起来 ⇒ 候选产品级页面缺陷，否决门禁）`);
+  lines.push(`- 该批执行器自报：admissible=${doc.admissible === undefined ? "?" : (doc.admissible ? "yes" : "no")} outcome=${doc.outcome ?? "?"}（批次级口径见 r-exec-ws.mjs:137/141 的 WSX_OUTCOME / WSX_ADMISSIBLE；逐行分叉只按 rowMeasured 判，不按批次旗标豁免）`);
+}
 lines.push("");
 lines.push("| 桶 | 条数 | 含义 |");
 lines.push("|---|---|---|");
@@ -491,6 +548,16 @@ lines.push(`判据形态未能归类的行数（归在兜底桶里，逐条列�
 lines.push(`判据台盖章不可自动化（声明 automatable===false 且 reason 引用该章，两尺一致才计入）：**${stampedRows.length} 行** —— 预期结果：不计缺陷、不计覆盖、不计入上行 unclassified，逐条点名如下`);
 lines.push("");
 for (const s of stampedRows) lines.push(`- STAMPED ${s}`);
+/* 开页重试耗尽：两本账都要**逐条点名**（同 STAMPED 的规矩）。零取证那一支不计入 unclassified，
+   但它是"从没被测过"的名单，读者必须能一条一条数；带取证那一支同时是门禁红，见文末 markProblem。 */
+if (openPageUnmeasuredRows.length || openPageMeasuredRows.length) {
+  lines.push("");
+  lines.push(`开页重试耗尽且该行零取证（OPEN_PAGE_UNMEASURED：**${openPageUnmeasuredRows.length} 行** —— 不算缺陷、不算覆盖、不计入上行 unclassified，欠的是重跑这一批，逐条点名如下）`);
+  for (const s of openPageUnmeasuredRows) lines.push(`- OPEN_PAGE_UNMEASURED ${s}`);
+  lines.push("");
+  lines.push(`开页重试耗尽但该行有取证（OPEN_PAGE_MEASURED_DEFECT：**${openPageMeasuredRows.length} 行** —— 候选产品级页面缺陷，逐条人判，>0 即门禁红）`);
+  for (const s of openPageMeasuredRows) lines.push(`- OPEN_PAGE_MEASURED_DEFECT ${s}`);
+}
 lines.push("");
 for (const s of unclassifiedRows.slice(0, 60)) lines.push(`- ${s}`);
 if (unclassifiedRows.length > 60) lines.push(`- …另 ${unclassifiedRows.length - 60} 行见同名 .json 的 unclassifiedRows`);
@@ -545,13 +612,22 @@ for (const b of order) {
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT + ".md", lines.join("\n"));
-fs.writeFileSync(OUT + ".json", JSON.stringify({ results: RESULTS, updatedAt: doc.updatedAt ?? null, total, buckets, bucketNames: Object.keys(BUCKET), unclassified, unclassifiedRows, stampedCount: stampedRows.length, stampedRows, evidenceHoles, landingGroups, landingMissing, items }, null, 1));
+fs.writeFileSync(OUT + ".json", JSON.stringify({ results: RESULTS, updatedAt: doc.updatedAt ?? null, total, buckets, bucketNames: Object.keys(BUCKET), unclassified, unclassifiedRows, stampedCount: stampedRows.length, stampedRows, openPageUnmeasuredCount: openPageUnmeasuredRows.length, openPageUnmeasuredRows, openPageMeasuredDefectCount: openPageMeasuredRows.length, openPageMeasuredRows, batchSelfReport: { admissible: doc.admissible ?? null, outcome: doc.outcome ?? null, runner: doc.runner ?? null }, evidenceHoles, landingGroups, landingMissing, items }, null, 1));
 console.log(`TRIAGE_SUMMARY rows=${total} unclassified=${unclassified}`);
 for (const b of order) if (buckets[b]) console.log(`  ${String(buckets[b]).padStart(4)} ${b}`);
 /* 盖章行必须**这一腿自己数给读者看**：它是免掉缺陷计数的唯一新增口径，
    不在 stdout 报数报名单，就等于把「没跑的行」悄悄抹出账本（同 REALCOV_AUTOMATABLE_EXEMPT 的规矩）。 */
 console.log(`NOT_AUTOMATABLE_STAMPED=${stampedRows.length}（判据台声明 automatable===false + 执行器 reason 引用该章 ⇒ 预期未执行：单独计数、逐条点名，不算缺陷也不算覆盖）`);
 for (const s of stampedRows) console.log("  STAMPED " + s);
+/* 开页重试耗尽必须**这一腿自己数给读者看**（同 NOT_AUTOMATABLE_STAMPED 的规矩）：
+   "零取证 ⇒ 不可采信"是本门新增的免检口径，不点名就是把从没被测过的行抹出账本。
+   两支分开报数，读者一眼看得出"这一行没测"和"这一行测到了却开不起来"不是一回事。 */
+if (openPageUnmeasuredRows.length || openPageMeasuredRows.length) {
+  console.log(`OPEN_PAGE_UNMEASURED=${openPageUnmeasuredRows.length}（open_page 重试耗尽 + 该行零取证，判据 = r-exec-ws.mjs:113 rowMeasured 的逐字镜像 ⇒ 这一行从未被测：单独计数、逐条点名，不算缺陷也不算覆盖，欠的是重跑这一批；批次自报 admissible=${doc.admissible === undefined ? "?" : (doc.admissible ? "yes" : "no")} outcome=${doc.outcome ?? "?"}）`);
+  for (const s of openPageUnmeasuredRows) console.log("  OPEN_PAGE_UNMEASURED " + s);
+  console.log(`OPEN_PAGE_MEASURED_DEFECT=${openPageMeasuredRows.length}（同一句重试耗尽但该行的 rowMeasured===true ⇒ 量到了落点/探针/帧还开不起来 ⇒ 候选产品级页面缺陷，不并入上行，>0 即门禁红）`);
+  for (const s of openPageMeasuredRows) console.log("  OPEN_PAGE_MEASURED_DEFECT " + s);
+}
 console.log(`out=${OUT}.md / ${OUT}.json`);
 
 /* 两条"发现级"断言放在**写盘之后**，且先收集再一次性退出：
@@ -567,6 +643,13 @@ if (landingMissing.length) {
    而本轮该组实测成员变了（用例增删/落点变了）时，那条腿量的是另一笔债，不能替这批行结案。 */
 if (coverMismatch.length) {
   markProblem(`复测腿与债不同源（${coverMismatch.length} 组）：\n  ${coverMismatch.join("\n  ")}`);
+}
+/* 开页重试耗尽的"带取证"那一支自己否决：给它起个桶名只是为了不和零取证那一支混在同一个数里，
+   绝不是让它过门 —— 一行量到了落点/探针/帧却又报"页面开不起来"，要么是真页面缺陷、要么是执行器自相矛盾，
+   两种都必须有人来看。零取证那一支不在这里否决（它欠的是一次重跑；整批都零取证时批次级 WSX_ADMISSIBLE=no
+   那道门会自己红），但它的名单在上面的 OPEN_PAGE_UNMEASURED 里逐条公开、在 .json 里逐条可查。 */
+if (openPageMeasuredRows.length) {
+  markProblem(`有 ${openPageMeasuredRows.length} 行 open_page 重试耗尽却带取证（rowMeasured===true）⇒ 不能算"通道没起来"，须按页面级缺陷/执行器自相矛盾逐条人判：\n  ${openPageMeasuredRows.slice(0, 25).join("\n  ")}${openPageMeasuredRows.length > 25 ? `\n  …另 ${openPageMeasuredRows.length - 25} 行见 ${OUT}.json` : ""}`);
 }
 /* 证据缺口单独否决：这些行已经"有名字"了，如果命名就算归类成功，那给每个洞起个名字就能把门刷绿。 */
 if (evidenceHoles.length) {
@@ -585,4 +668,9 @@ if (gateProblems.length) {
   for (const p of gateProblems) console.log("  ✗ " + p);
   process.exit(2);
 }
-console.log(`TRIAGE_GATE=PASS unclassified=0 landingGroups=${landingKeys.length} 全部有处置；但其中 ${openRulings.length} 组处置本身写着"未结案"、${evidenceHoles.length} 条证据缺口 —— 这两类不计入结案`);
+/* 结案口径那句：只有本腿真出现"开页零取证"行时才追加第三类，别的语料判词一字不改
+   （收尾 diff 里多出来的行必须是真信息，不是措辞抖动）。 */
+const openPageClause = openPageUnmeasuredRows.length
+  ? `、${openPageUnmeasuredRows.length} 行开页重试耗尽且零取证（OPEN_PAGE_UNMEASURED，欠一次重跑）—— 这三类不计入结案`
+  : " —— 这两类不计入结案";
+console.log(`TRIAGE_GATE=PASS unclassified=0 landingGroups=${landingKeys.length} 全部有处置；但其中 ${openRulings.length} 组处置本身写着"未结案"、${evidenceHoles.length} 条证据缺口${openPageClause}`);
