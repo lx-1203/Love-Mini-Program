@@ -22,6 +22,15 @@
  *       IDENTITIES=A node tmp/tour-R2.mjs   仅 A
  *       SMOKE=1 node tmp/tour-R2.mjs        冒烟（A、2 页）
  *       RESHOOT=tmp/r2-reshoot.tsv node tmp/tour-R2.mjs  定向补拍（TSV: 身份\t路由）
+ *       离线路径（都不连端口、不出帧、不写 reports/）：
+ *       TOUR_SELFCHECK=1 / TOUR_PRECHECK_ONLY=1 / TOUR_LOCK_PROBE=1 见文件末尾的模式分发；
+ *       TOUR_TEARDOWN_PROBE=1 只测「收尾 disconnect + 本轮判决 + 退出码」这一条路径
+ *         （FU-8b 验收用；跑它时务必把 TOUR_LOG_NAME 指到 scratch 目录，见该函数注释）。
+ *
+ * 本轮退出码口径（FU-8b-1/2 之后写死在这里，免得下游猜）：
+ *       0 正常出帧且身份相符（TOUR_ADMISSIBLE=yes） 1 预检/落点/致命异常
+ *       2 本轮不可采信：0 帧或身份全部被跳过 ⇒ 记 NOT_SHOOTABLE/换载体，不记成跑完
+ *       3 LOCK_BUSY
  *
  * 本轮（视觉评审 A-1…A-4）新增开关：
  *       ZOOM=0                 关闭「裁切放大辅助帧」（默认开：核心页 + ZOOM_ROUTES 追加页的每张落盘帧出 3 带）
@@ -131,6 +140,15 @@ const MODE_TO_SCRIPT = {
   'mp-weixin': 'build:mp-weixin',
   'real': 'build:mp-weixin:real',
 };
+// 【FU-8b-4｜标签必须跟着真正读过的那条路径走】原实现在 read() 里把
+// 'apps/client/dist/build/mp-weixin/' 写死两份，于是 real 档读出来的指纹在 manifest 里
+// 被标成 mock 档的路径（.zcode/tmp/gap-tourhang/REPORT.md §1 已核对：读的是 CLI_PROJECT 的
+// 对文件、标的是错门牌 ⇒ 纯 provenance 标签 bug，不是"读错档"）。这里只换标签，不换读法。
+function fingerprintLabel(abs) {
+  const rel = path.relative(PROJECT_PATH, abs);
+  if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) return rel.split('\\').join('/');
+  return abs.split('\\').join('/'); // 仓库外的产物：留绝对路径，宁可长也不能标错
+}
 function readBuildFingerprint() {
   const fp = {
     buildMode: 'unknown', mode: 'unknown', apiMode: 'unknown',
@@ -138,11 +156,12 @@ function readBuildFingerprint() {
   };
   const read = (rel) => {
     const abs = path.join(CLI_PROJECT, rel);
+    const label = fingerprintLabel(abs);
     try {
       const s = fs.readFileSync(abs, 'utf8');
-      fp.readFrom.push('apps/client/dist/build/mp-weixin/' + rel);
+      fp.readFrom.push(label);
       return s;
-    } catch (_) { fp.readFrom.push('apps/client/dist/build/mp-weixin/' + rel + ' (读取失败)'); return ''; }
+    } catch (_) { fp.readFrom.push(label + ' (读取失败)'); return ''; }
   };
   const grab = (s, re) => { const m = s.match(re); return m ? m[1] : null; };
   const envSrc = read('config/env.js');
@@ -978,6 +997,55 @@ async function rebindFast() {
   await connectDevTools(true);
 }
 
+/* ============================== TOUR-TEARDOWN-BEGIN ==============================
+ * 这两个函数是被离线夹具真跑过的：.zcode/tmp/gap-fu8b/teardown-harness.mjs 按下面这对
+ * 标记把本区原文字节切出来、拼上 `let mp = null; const log = …` 的前导再 import，
+ * 然后用**真的 miniprogram-automator 套接字**量"断开前 / 断开后"的退出行为。
+ * 切法照仓里既有先例：r-exec-ws.mjs 的 WSX-GATE-BEGIN/END + .zcode/tmp/gap-wsx/gate-harness.mjs。
+ * 依赖只有模块级的 mp / log 两个名字，别的一律走参数。
+ */
+/* 【FU-8b-2｜收尾】把"还连着的 ws 客户端"断干净，是让进程能自己退的那半步。
+ * 为什么必须显式做：automator 的套接字是 **ref 住的** —— miniprogram-automator@0.12.1
+ * out/Connection.js `static create(e){ new ws(e) … }`（没有 unref），out/Transport.js
+ * `close(){this.ws.close()}`，out/MiniProgram.js `disconnect(){this.connection.dispose()}`。
+ * 于是只要 mp 还连着，事件循环就不会空 ⇒ round-8b 那条腿在 [lock] released 之后又挂了 47 分钟
+ * （.zcode/tmp/gap-tourhang/REPORT.md §2），最后是排队器被人手杀才收的口。
+ * ⚠ 只调 disconnect()，**绝不调 close()**：MiniProgram.close() 发的是 App.exit + Tool.close，
+ * 那会把整个自动化 IDE 实例带走、9420 随之消失（ws-channel-up.mjs:6-9 写的那条实测教训；
+ * 本轮读 SDK 源码复核过：close 与 disconnect 是两个东西，之前"这个版本 disconnect 是 undefined"
+ * 的说法不成立，见 ws-channel-up.mjs 头注释的更正）。
+ * 幂等：mp 为 null 时只留一行痕，异常一律吞掉继续（收尾失败不该盖掉本轮判决）。 */
+async function disconnectForExit(tag) {
+  if (!mp) { log('[teardown] ' + tag + '：本进程当前没有连接可断'); return false; }
+  const m = mp;
+  mp = null;
+  try {
+    await m.disconnect();
+    log('[teardown] ' + tag + '：mp.disconnect() 已调用（只关本进程的 ws 客户端，不发 App.exit/Tool.close）');
+    return true;
+  } catch (e) {
+    log('[teardown] ' + tag + '：mp.disconnect() 抛错（忽略，交给退出看门狗）：' + String(e && e.message || e).slice(0, 120));
+    return false;
+  }
+}
+/* 显式退出 + 看门狗。为什么两条都要：
+ *   · 正常路径只要 disconnectForExit 把最后一个 ref 摘掉，事件循环就自然空了 ⇒ 用
+ *     process.exitCode 交码，**不**硬 process.exit，这样 stdout 上没写完的判决行不会被截
+ *     （排队器是按管道收本脚本输出的，硬退有截尾风险）。
+ *   · 但若还有别的东西 ref 着（新出现的持有所在），自然退出就又会变成那 47 分钟 ⇒ 一个
+ *     **unref 的** 3s 看门狗到点硬退并大声说是哪一处，unref 保证它自己不延长进程。 */
+function exitNow(code, tag) {
+  process.exitCode = code;
+  const t = setTimeout(() => {
+    console.log('TOUR_EXIT_WATCHDOG ' + tag + '：收尾已 disconnect+releaseLock，但事件循环 3s 后仍未空'
+      + '（还有本次没摘掉的 ref 住持有物）⇒ 硬退 exit=' + code + '，请把这一行记进缺陷台账');
+    process.exit(code);
+  }, 3000);
+  if (t.unref) t.unref();
+  console.log('TOUR_EXIT code=' + code + ' path=' + tag + '（自然退出为主，3s 看门狗兜底；不硬退是为了不把判决行截在管道里）');
+}
+/* =============================== TOUR-TEARDOWN-END =============================== */
+
 // ---- App 上下文注入 ----
 function makeBootFn(token) {
   return new Function(
@@ -1502,6 +1570,47 @@ async function formStates(ident, pageDef, tag, save, failures) {
   return got;
 }
 
+/* ============================ TOUR-ADMISSIBLE-BEGIN ============================
+ * 这一区回答的是"这一腿的账能不能入"，不是"产品对不对"。词表与判据照抄本仓已有的同一条门
+ * （r-exec-ws.mjs:119-152 的 WSX-GATE 区 classifyBatch()）：
+ *   (a) admissible   至少出一帧、且不是所有身份都被跳过 ⇒ TOUR_ADMISSIBLE=yes / exit 0
+ *   (c) inadmissible 本轮 0 帧 或 身份全部被跳过 ⇒ TOUR_ADMISSIBLE=no、TOUR_RESULT=FAIL、exit≠0，
+ *                    并明写"记 NOT_SHOOTABLE / 换载体，不许记成跑完"
+ *                    （口径同 artifact-band.mjs:70「就只能记 NOT_SHOOTABLE，不许记成产品 FAILED」）。
+ * 为什么必须有它（round-8b 实测，.zcode/tmp/gap-tourhang/REPORT.md §0）：tour-B-real-r8b 那条腿
+ * 在 :1727 的 `continue` 上把唯一那个身份跳过了 ⇒ 0 帧，而当时的 main() 跑完 runTour() 既不写
+ * 退出码也不打印结论行 ⇒ 这样一跑**会以 exit=0 收口**，队列把它记成 OK，帧债反而看着像还上了。
+ * 判决行一律带 `_RESULT=`，因为消费方 run-ui-queue.mjs:136 只把匹配
+ * /_RESULT=|RUNNER_STATS|CONSERVE|LEASE=/ 的行抬进 queue-state.json。
+ * 纯函数：输入全靠参数，不读模块级状态、不碰设备 ⇒ 能在 .zcode/tmp/gap-fu8b/ 的离线夹具里
+ * 把本区原文字节切出来 import 后正反两向都跑一遍（先例：.zcode/tmp/gap-wsx/gate-harness.mjs）。
+ */
+export const TOUR_EXIT_INADMISSIBLE = 2; // 与 r-exec-ws.mjs:152 classifyBatch().exit 同一个数
+export function tourAdmissibility({ shots = 0, identities = [], skipped = [], band = 'unknown', project = '', label = '' } = {}) {
+  const identCount = (identities || []).length;
+  const skipList = (skipped || []).map((s) => (s && s.ident) || String(s));
+  const skippedAll = identCount > 0 && skipList.length >= identCount;
+  const noFrames = !(shots > 0);
+  const admissible = !noFrames && !skippedAll;
+  const lines = [];
+  lines.push('TOUR_STATS 身份=' + identCount + (identCount ? '(' + identities.join(',') + ')' : '')
+    + ' 被跳过=' + skipList.length + (skipList.length ? '(' + skipList.join(',') + ')' : '')
+    + ' 帧=' + shots + ' band=' + band + ' label=' + label);
+  const who = skipList.length ? '身份 ' + skipList.join(',') + ' 在帧前复核处被跳过' : '没有身份被跳过';
+  const why = noFrames && skippedAll
+    ? who + '，本轮 0 帧：这一腿什么都没量到'
+    : noFrames ? '所有身份都跑到了帧前复核之后，仍然 0 帧' : who + ' ⇒ 帧数不足以冒充' + (identCount > 1 ? '双' : '') + '身份巡检';
+  lines.push('TOUR_ADMISSIBLE=' + (admissible ? 'yes' : 'no') + ' '
+    + (admissible
+      ? (skipList.length ? '有帧入账，但缺的身份不许按双身份读（产物目录 ' + project + '）' : '有帧且身份相符 ⇒ 可入账（产物目录 ' + project + '）')
+      : '本轮没产出任何可采信的帧 ⇒ 记 NOT_SHOOTABLE/换载体，不许记成跑完，更不许记成产品 FAILED'
+        + '（口径同 r-exec-ws.mjs:141 WSX_ADMISSIBLE=no / artifact-band.mjs:70；产物档=' + band + ' 目录=' + project + '）'));
+  lines.push('TOUR_RESULT=' + (admissible ? 'OK' : 'FAIL') + ' reason=' + why
+    + ' ⇒ TOUR_ADMISSIBLE=' + (admissible ? 'yes' : 'no') + '（exit=' + (admissible ? 0 : TOUR_EXIT_INADMISSIBLE) + '）');
+  return { admissible, noFrames, skippedAll, shots, skipped: skipList, exit: admissible ? 0 : TOUR_EXIT_INADMISSIBLE, lines };
+}
+/* ============================= TOUR-ADMISSIBLE-END ============================ */
+
 // ---- 主流程 ----
 // fork 改动 2：真实巡检先 acquire 再起流程（r1-exec:1569 同法：拿不到锁即 LOCK_BUSY + exit 3）、
 // startLockHeartbeat 每 4s 续租（r1-exec:1570）、释锁挂 finally（r1-exec:1592）。
@@ -1631,11 +1740,18 @@ async function main() {
   if (process.env.TOUR_PRECHECK_ONLY) { console.log('TOUR_PRECHECK_ONLY=OK（未占用租约）'); process.exit(0); }
   if (!acquireLock()) { console.error('LOCK_BUSY'); process.exit(3); }
   startLockHeartbeat();
+  let verdict = null;
   try {
-    await runTour();
+    verdict = await runTour();
   } finally {
     releaseLock();
   }
+  /* 【FU-8b-2｜显式收尾】原来这里只有 `finally { releaseLock(); }`：锁是放了（日志里那行
+     `[lock] released` 就是它打的），但 automator 的 ws 客户端还连着、又是 ref 住的，
+     main() 从不给退出码，于是进程在活干完之后挂了 47 分钟才被手杀（REPORT.md §0/§2）。
+     现在：断掉一切还连着的 → 按本轮判决取退出码 → 交码 + 3s 看门狗兜底。 */
+  await disconnectForExit('main 收尾');
+  exitNow(verdict && Number.isInteger(verdict.exit) ? verdict.exit : 0, 'main');
 }
 async function runTour() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
@@ -1721,9 +1837,14 @@ async function runTour() {
     const identOk = ident === 'A' ? /^logged-in/.test(identAtFrame) : /^not-logged-in/.test(identAtFrame);
     log('[identity ' + ident + '] 帧前复核=' + identAtFrame + ' 相符=' + (identOk ? 'yes' : 'NO'));
     if (!identOk) {
-      IDENTITY_SKIPPED.push({ ident, atFrame: identAtFrame, band: BUILD.mode || '?', project: PROJECT_PATH });
+      IDENTITY_SKIPPED.push({ ident, atFrame: identAtFrame, band: BUILD.mode || '?', project: CLI_PROJECT });
       console.log('TOUR_IDENTITY_SKIPPED ident=' + ident + ' band=' + (BUILD.mode || '?') + ' 帧前=' + identAtFrame.slice(0, 40) +
         ' ⇒ 这个身份 0 帧（该档表达不了这个身份，换档跑，不看画面就别记成双身份巡检）');
+      /* 【FU-8b-1】这条 continue 曾经就是"假 OK"的现场：它跳过的身份一个帧都不拍，而当时
+         没人把"本轮 0 帧"当回事 ⇒ 进程以 exit=0 收口。现在 skip 会进 IDENTITY_SKIPPED，
+         runTour 末尾的 tourAdmissibility() 据它 + 帧数给出 TOUR_ADMISSIBLE=no 并 exit≠0。
+         收尾的 disconnect 不在这儿做：还有下一个身份时它自己的 connectDevTools(true) 会先断（:942），
+         是最后一个身份时由循环后的「身份循环结束」那一刀断。 */
       continue;
     }
 
@@ -1802,12 +1923,15 @@ async function runTour() {
       touchLock();
     }
     log('[identity ' + ident + '] 巡检完成');
-    if (ident === 'A' && idents.length > 1) {
-      try { await mp.disconnect(); } catch (_) { /* ignore */ }
-      mp = null;
-      await sleep(5000);
-    }
+    /* 【FU-8b-2】这里原来是 `if (ident === 'A' && idents.length > 1)` 才断开 ⇒ 两个方向都会漏：
+       IDENTITIES=B（8b 那条腿的唯一身份）永远不满足；身份被 continue 跳过时也绕过了它。
+       现在每个身份收尾都断一次（下一个身份开头 connectDevTools(true) 本来也会在 :942 断一次，
+       语义不变），只在"后面还有身份要重连"时留那 5s 喘息。 */
+    await disconnectForExit('身份 ' + ident + ' 收尾');
+    if (idents.indexOf(ident) < idents.length - 1) await sleep(5000);
   }
+  // 身份循环的兜底：最后一刀若是跳过的（走了 continue），到这里也必须已经断开
+  await disconnectForExit('身份循环结束');
 
   // 收尾：详细 manifest + 审计 manifest
   detail.generatedAt = new Date().toISOString();
@@ -1900,6 +2024,21 @@ async function runTour() {
   log('[done][A-4] 出图尺寸分布 ' + JSON.stringify(frameSizeHistogram) + '；截图 API 不支持 dpr='
     + (CAPTURE_LIMITATIONS.screenshotDprSupported ? '支持' : '不支持') + '，替代方案=裁切放大辅助帧');
   for (const f of detail.failures) log('[failure] ' + f.identity + ' ' + f.page + (f.severity ? ' [' + f.severity + ']' : '') + ': ' + f.reason);
+
+  /* 【FU-8b-1｜本轮的账能不能入】必须在两份 manifest 落盘之后再判：判据读的就是刚写下去的
+     detail.shots 与 IDENTITY_SKIPPED。判决行用 console.log 而不是 log()：排队器收的是 stdout，
+     且 run-ui-queue.mjs:136 只把带 `_RESULT=` 的行抬进 queue-state.json。
+     返回给 main() 的 verdict.exit 就是本轮的退出码（缺陷①：0 帧/全跳过以前会以 exit=0 收口）。 */
+  const verdict = tourAdmissibility({
+    shots: detail.shots.length, identities: idents, skipped: IDENTITY_SKIPPED,
+    band: BUILD.mode || 'unknown', project: CLI_PROJECT, label: TOUR_LABEL,
+  });
+  if (IDENTITY_SKIPPED.length) {
+    console.log('TOUR_IDENTITY_SKIPPED_SUMMARY 被跳过的身份 ' + IDENTITY_SKIPPED.map((s) => s.ident + '(帧前=' + String(s.atFrame || '').slice(0, 24) + ' band=' + s.band + ')').join(' ')
+      + ' —— 每个 skip 处已各打一行 TOUR_IDENTITY_SKIPPED；本轮不是双身份巡检');
+  }
+  verdict.lines.forEach((l) => console.log(l));
+  return verdict;
 }
 
 /* ============================================================================
@@ -1940,6 +2079,9 @@ function runSelfCheck() {
     + ' outDir=' + OUT_DIR + ' auditDir=' + AUDIT_DIR + ' ckpt=' + CKPT_FILE + ' lock=' + LOCK_FILE
     + ' ws=' + WS_ENDPOINT + ' port=' + TOUR_PORT);
   console.log('TOUR_PAGES=' + totalPages + ' TOUR_STATES=' + totalStates + ' PARAM_MAP_ENTRIES=' + paramEntries);
+  // FU-8b-4：产物指纹读的是哪几条路径必须在离线模式里也看得见（原来 real 档也标成 mock 路径）
+  console.log('TOUR_BUILD mode=' + BUILD.mode + ' apiMode=' + BUILD.apiMode + ' buildMode=' + BUILD_MODE
+    + ' CLI_PROJECT=' + CLI_PROJECT + ' readFrom=' + JSON.stringify(BUILD.readFrom));
   console.log('SELFCHECK_NOTE port_source=' + TOUR_PORT_SOURCE
     + '（readIdePort：env WSX_PORT/WS_ENDPOINT → scripts/qa/ide-port.json → 回落 ' + FALLBACK_PORT
     + '；本轮实际取值 ' + TOUR_PORT + '）；state_rule=默认 + core(交互后/弹层态) + FORM_PAGES(校验错误/键盘弹起-输入后)，'
@@ -1949,7 +2091,59 @@ function runSelfCheck() {
   process.exit(0);
 }
 
-// ---- 锁探针 ----
+/* 【FU-8b 验收用的离线模式】TOUR_TEARDOWN_PROBE=1 —— 不 connect 端口、不开模拟器、不写 reports/、
+ * 不碰 tmp/qa/locks：只把"收尾两刀 + 本轮判决"这条路径单独跑一遍并交出退出码。
+ *   · disconnectForExit() 挂一个假句柄，验证它真的被 disconnect 且 mp 已被置 null（幂等二次调用不再动它）；
+ *   · tourAdmissibility() 正反两判：0 帧/全跳过 ⇒ no + exit 2，有帧 ⇒ yes + exit 0；
+ *   · 收尾用 exitNow() 交码，于是**这一模式自己的退出码就是可测量的**（对照旧行为：没有码可测、
+ *     而且 ws 客户端还连着就不退）。
+ * 另开 TOUR_TEARDOWN_PROBE_HOLD=1 时，本模式故意留一个 **ref 住** 的定时器当"没摘干净的持有物"，
+ * 用来量 3s 看门狗那条兜底路：旧形态在这种局面下是永久挂着（round-8b 实测 47 分钟），
+ * 现在最多 3 秒后硬退并打 TOUR_EXIT_WATCHDOG。
+ * ⚠ log() 会追加写 LOG_FILE，所以跑这一模式必须把 TOUR_LOG_NAME 指到 scratch 目录里，
+ *   否则会给 tmp/tour-R2.log 留下一段探针日志。 */
+async function runTeardownProbe() {
+  const fails = [];
+  const say = (name, ok, evidence) => {
+    console.log('TEARDOWN_PROBE_' + name + '=' + (ok ? 'PASS' : 'FAIL') + ' ' + evidence);
+    if (!ok) fails.push(name);
+  };
+  // (1) disconnectForExit 真的断开"还连着"的那个，并且幂等
+  let hits = 0;
+  mp = { disconnect: async () => { hits += 1; } };
+  const d1 = await disconnectForExit('探针第一次');
+  const d2 = await disconnectForExit('探针第二次');
+  say('DISCONNECT_CALLED', hits === 1 && d1 === true && d2 === false && mp === null,
+    '假句柄 disconnect 次数=' + hits + ' 第一次=' + d1 + ' 第二次(已无连接)=' + d2 + ' mp=' + (mp === null ? 'null' : '仍连着'));
+  // (2) 抛错的 disconnect 也不能拦住收尾
+  mp = { disconnect: async () => { throw new Error('探针故意抛'); } };
+  const d3 = await disconnectForExit('探针抛错');
+  say('DISCONNECT_THROWS_SWALLOWED', d3 === false && mp === null, 'disconnect 抛错时=' + d3 + '（吞掉并继续，mp 已置 null）');
+  // (3) 判决正反两向 + 与 round-8b 那条腿一模一样的形状（唯一身份 B 被跳过 ⇒ 0 帧）
+  const bad = tourAdmissibility({ shots: 0, identities: ['B'], skipped: [{ ident: 'B', atFrame: 'logged-in userId=user-1001', band: 'real' }], band: 'real', label: 'round-7-stage8b-tour-B-real' });
+  const good = tourAdmissibility({ shots: 7, identities: ['A', 'B'], skipped: [], band: 'real', label: 'x' });
+  const partial = tourAdmissibility({ shots: 7, identities: ['A', 'B'], skipped: [{ ident: 'B' }], band: 'real', label: 'x' });
+  say('VERDICT_INADMISSIBLE', bad.admissible === false && bad.exit === TOUR_EXIT_INADMISSIBLE
+    && bad.lines.some((l) => /^TOUR_ADMISSIBLE=no/.test(l)) && bad.lines.some((l) => /TOUR_RESULT=FAIL/.test(l)),
+    '0 帧/全跳过 ⇒ exit=' + bad.exit + ' 行数=' + bad.lines.length);
+  say('VERDICT_ADMISSIBLE', good.admissible === true && good.exit === 0
+    && good.lines.some((l) => /^TOUR_ADMISSIBLE=yes/.test(l)) && good.lines.some((l) => /TOUR_RESULT=OK/.test(l)),
+    '有帧 ⇒ exit=' + good.exit);
+  say('VERDICT_PARTIAL_STAYS_LOUD', partial.admissible === true && partial.lines.some((l) => /缺的身份不许按双身份读|帧数不足以冒充/.test(l))
+    && partial.exit === 0, '跑了一半身份且有帧 ⇒ exit=' + partial.exit + '（可入账，但明写不是双身份）');
+  console.log('TEARDOWN_PROBE_判决行(本轮该腿会打印) ↓');
+  bad.lines.forEach((l) => console.log('  | ' + l));
+  const hold = process.env.TOUR_TEARDOWN_PROBE_HOLD === '1';
+  console.log('TEARDOWN_PROBE_HOLD ' + (hold
+    ? '开：留一个 ref 住的 setInterval 当"没摘干净的持有物"⇒ 应当由 3s 看门狗硬退（旧形态在这里永久挂着）'
+    : '关：无 ref 住的持有物 ⇒ 事件循环自然空，进程按 exitCode 自己退'));
+  if (hold) setInterval(() => { /* 故意不 unref：模拟还没摘掉的 ref */ }, 1000);
+  console.log('TEARDOWN_PROBE_RESULT=' + (fails.length ? 'FAIL' : 'OK') + ' 失败步骤=' + (fails.length ? fails.join(',') : '无'));
+  // 探针自己的判决优先：步骤失败 ⇒ 1；否则按 hold 场景交 INADMISSIBLE(2)，量它是不是真能带着这个码退出去
+  exitNow(fails.length ? 1 : TOUR_EXIT_INADMISSIBLE, 'teardown-probe');
+}
+
+
 const PROBE_FAILURES = [];
 function probeVerdict(name, ok, evidence) {
   console.log('PROBE_' + name + '=' + (ok ? 'PASS' : 'FAIL') + ' ' + evidence);
@@ -2132,18 +2326,22 @@ function finishProbe() {
   process.exit(PROBE_FAILURES.length ? 1 : 0);
 }
 
-// 模式分发：三种离线路径都在 connectDevTools()/截图 之前 exit，不碰 reports/
+// 模式分发：四条离线路径都在 connectDevTools()/截图 之前退，不碰 reports/
 if (process.env.TOUR_SELFCHECK === '1') {
   runSelfCheck();
+} else if (process.env.TOUR_TEARDOWN_PROBE === '1') {
+  await runTeardownProbe();
 } else if (process.env.TOUR_LOCK_PROBE === '1') {
   runLockProbe();
 } else if (process.env.TOUR_LOCK_SUB) {
   runLockSub(process.env.TOUR_LOCK_SUB);
 } else {
-  main().catch((e) => {
+  main().catch(async (e) => {
     log('[fatal] ' + (e && e.stack ? e.stack : e.message));
     releaseLock(); // fork 改动 2：r1-exec:1596 同法，异常路径也必须释锁
-    process.exit(1);
+    // 【FU-8b-2】异常路径同样不能把 ws 客户端留给进程当"续命的 ref"：先断再交码
+    await disconnectForExit('main().catch 收尾');
+    exitNow(1, 'fatal');
   });
 }
 
