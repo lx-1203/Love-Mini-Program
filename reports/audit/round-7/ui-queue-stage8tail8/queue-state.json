@@ -1,0 +1,47 @@
+{
+ "startedAt": "2026-09-28T02:17:44.027Z",
+ "legs": [
+  {
+   "name": "ws-component-scoped-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8tail8/ws-component-scoped-r8.log",
+   "bytes": 4093,
+   "resultLines": [
+    "WSX_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r-exec-ws-round-7",
+    "WSX_RESULT=OK"
+   ]
+  },
+  {
+   "name": "queue-homogeneity-r8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8tail8/queue-homogeneity-r8.log",
+   "bytes": 281,
+   "resultLines": [
+    "STAMP_RESULT=PASS 队列执行腿语料目录唯一"
+   ]
+  },
+  {
+   "name": "queue-homogeneity-tail8",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage8tail8/queue-homogeneity-tail8.log",
+   "bytes": 245,
+   "resultLines": [
+    "STAMP_RESULT=PASS 队列执行腿语料目录唯一"
+   ]
+  }
+ ],
+ "result": "OK",
+ "advisoryFail": 0,
+ "finishedAt": "2026-09-28T02:19:37.801Z",
+ "conservation": {
+  "legsTotal": 3,
+  "legsOk": 3,
+  "tally": {
+   "OK": 3
+  },
+  "ok": true
+ }
+}
