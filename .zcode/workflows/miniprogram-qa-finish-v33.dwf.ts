@@ -15,8 +15,11 @@ args: {}
 //       world.run 沙箱起不了 pnpm/uni（构建链走「收口守门员」子代理，PATH 前置 Node22）；
 //       9420/9430 单写者（锁协议，UI 车道独占）；数值判读一律以工具退出码/机器行为准；
 //       需用户拍板的事项只列不做（本项目铁律：不替写政策）。
-// 改完本文件必须先自检语法再提交运行（实测可用，零依赖成本）：
-//   /d/codex-tools/node-v22.17.0-win-x64/node.exe -e "const ts=require('./apps/client/node_modules/typescript'),fs=require('fs');const p='.zcode/workflows/miniprogram-qa-finish-v33.dwf.ts';const sf=ts.createSourceFile(p,fs.readFileSync(p,'utf8'),ts.ScriptTarget.ES2022,true,ts.ScriptKind.TS);console.log('syntax diagnostics:',(sf.parseDiagnostics||[]).length)"
+// 改完本文件必须先自检再提交运行，两条都要跑（Node>=20.11；PATH 的 node 是 v16 会崩）：
+// 1) 语法：node -e "const ts=require('./apps/client/node_modules/typescript'),fs=require('fs');const p='.zcode/workflows/miniprogram-qa-finish-v33.dwf.ts';const sf=ts.createSourceFile(p,fs.readFileSync(p,'utf8'),ts.ScriptTarget.ES2022,true,ts.ScriptKind.TS);console.log('syntax diagnostics:',(sf.parseDiagnostics||[]).length)"
+// 2) 干跑（真跑之前把整场 DSL 用 stub 宿主过一遍，抓 F2 同型的"炸在终报之前"）：
+//    node scripts/qa/dryrun-workflow.mjs --profile all     → 期望 DRYRUN_RESULT=PASS（3/3 画像）
+//    对照证据：同一工具跑 v3.2 会在「盘点项目结构与页面清单」之后 CRASHED BEFORE REPORT（exit 1）。
 // =====================================================================
 
 // ===== 配置（数值只进这里）=====
@@ -273,17 +276,23 @@ const sortRes = await sorter.ask<SortOut>(
     `【纪律】台账状态改动不归你；宁多列 needsUser 也不许把拍板项混进 executable；每条 executable 必须能指到报告/台账出处。`,
   ].join("\n"),
 ).then((v) => v, (e) => askFail<SortOut>("缺口分拣员", e, { executable: [], needsUser: [], notes: "分拣员调用失败，本轮只能出账单不能收口" }));
-const uiNamed = (sortRes.notes ?? "").length > 0;
-log(`分拣完成：可执行 ${sortRes.executable.length} 项（非 UI），需拍板 ${sortRes.needsUser.length} 项，交互腿线索 ${uiNamed ? "有" : "无"}`);
+/** 形状守卫（对齐 WF-RUNTIME-GAPS.md 对 v3.2 致命项 F2 的判词）：代理返回缺字段是常态，不是异常。
+ *  实测本文件在分拣员返回 {} 时，整场在「分拣与拍板清单」phase 就 TypeError 死掉，
+ *  终报、看板、artifact 全部不产——与上一程"跑一半整场消失"是同型风险。
+ *  下游所有 .map / .length / for..of 一律走归一化后的数组，不再直接摸代理对象。 */
+const executableRows = Array.isArray(sortRes.executable) ? sortRes.executable : [];
+const needsUserRows = Array.isArray(sortRes.needsUser) ? sortRes.needsUser : [];
+const uiNamed = typeof sortRes.notes === "string" && sortRes.notes.length > 0;
+log(`分拣完成：可执行 ${executableRows.length} 项（非 UI），需拍板 ${needsUserRows.length} 项，交互腿线索 ${uiNamed ? "有" : "无"}`);
 
 // =====================================================================
 phase("并行收口各车道");
 // —— 按域并行；每车道内部 修复→独立复验 链式；UI 交互腿单独一条串行车（9420 单写者）——
-const areas = [...new Set(sortRes.executable.map(i => i.area).filter(a => a !== ""))];
+const areas = [...new Set(executableRows.map(i => (i && typeof i.area === "string" ? i.area : "")).filter(a => a !== ""))];
 log(`车道划分：${areas.join("、") || "（无非 UI 可执行项）"} + 交互腿(UI 串行，无论分拣是否点名都会尝试)`);
 
 const lanePromises = areas.map((area) => {
-  const items = sortRes.executable.filter(i => i.area === area);
+  const items = executableRows.filter(i => i && i.area === area);
   return (async (): Promise<LaneOut> => {
     const fixer = await agent(`收口车道-${area}`, "你按终报指定的补法实现修复：只动本车道事项涉及的源码/夹具/脚本，不碰台账（reports/audit/**/issue-matrix.md）、不做 git 提交、不跑别的车道的事。修完必须跑能变红的自测/判点验证，evidence 里给出 文件:行 级证据。若实现前提不成立（比如判据本身待拍板），如实写进 skipped 不硬修。").ask<LaneOut>(
       [
@@ -458,8 +467,8 @@ if (uiPorts.length === 0) notCovered.push("DevTools 自动化端口无监听：U
 notCovered.push("需用户拍板事项（判据冲突/政策/数据去留）只列不做，见 findings 与总报告");
 
 const findings: Finding[] = [];
-for (const u of sortRes.needsUser) {
-  findings.push({ where: u.id, what: "需用户拍板：" + u.why, evidence: u.options, status: "verified", severity: "medium" });
+for (const u of needsUserRows) {
+  findings.push({ where: u?.id ?? "(缺 id)", what: "需用户拍板：" + (u?.why ?? "(分拣员未填 why)"), evidence: u?.options ?? "", status: "verified", severity: "medium" });
 }
 for (const b of blockers.slice(0, 40)) {
   findings.push({ where: "本轮 blockers", what: b, evidence: "见对应车道/门禁输出", status: "verified", severity: "medium" });
@@ -470,13 +479,14 @@ const md = [
   "",
   `- 起点：HEAD ${head}（branch ${branch}），工作树脏 ${dirty} 文件；后端${backendUp ? "UP" : "DOWN"}；自动化端口 [${uiPorts.join(", ") || "无"}]`,
   `- 收口车道：${laneResults.map(l => `${l.lane}（证实 ${(l.fixedIds ?? []).length} / 未收 ${(l.skipped ?? []).length}）`).join("、") || "无"}`,
-  `- 台账：落账 ${ledgerman.appliedPatches} 处补丁，verify-ledger=${ledgerman.ledgerPass ? "PASS" : "FAIL"}，verify-state-truth=${ledgerman.truthPass ? "PASS" : "FAIL"}`,
+  // appliedPatches 用 typeof 而不是 ||0：合法的 0 不能被 or 表达式抹成别的数
+  `- 台账：落账 ${typeof ledgerman.appliedPatches === "number" ? ledgerman.appliedPatches : 0} 处补丁，verify-ledger=${ledgerman.ledgerPass ? "PASS" : "FAIL"}，verify-state-truth=${ledgerman.truthPass ? "PASS" : "FAIL"}`,
   `- 构建/类型/单测：${buildOk ? "PASS" : "FAIL"} / ${tcOk ? "PASS" : "FAIL"} / ${testOk ? "PASS" : "FAIL"}`,
   `- 门禁复量：新转绿 ${improved.length}（${improved.join("、") || "无"}）；仍红 ${stillRed.length}（${stillRed.join("、") || "无"}）`,
   `- 提交：${commit === "" ? "（无可提交改动或提交失败，见 blockers）" : commit}`,
   "",
   "## 需你拍板（未替你决定）",
-  ...(sortRes.needsUser.length > 0 ? sortRes.needsUser.map(u => `- ${u.id}：${u.why}（可选：${u.options}）`) : ["- （无）"]),
+  ...(needsUserRows.length > 0 ? needsUserRows.map(u => `- ${u?.id ?? "(缺 id)"}：${u?.why ?? "(未填)"}（可选：${u?.options ?? "(未填)"}）`) : ["- （无）"]),
   "",
   "## 仍未收口（每条带原因）",
   ...(blockers.length > 0 ? blockers.map(b => `- ${b}`) : ["- （无）"]),
@@ -488,7 +498,7 @@ try {
 }
 
 return {
-  conclusion: `收官续作完成：${sortRes.executable.length} 项可执行缺口分 ${areas.length + 1} 车道并行收口，证实 ${laneResults.reduce((n, l) => n + (l.fixedIds?.length ?? 0), 0)} 条；构建/类型/单测 ${buildOk && tcOk && testOk ? "全绿" : "存在红项"}；门禁新转绿 ${improved.length}、仍红 ${stillRed.length}；需你拍板 ${sortRes.needsUser.length} 项已原样列出，未替你决定。`,
+  conclusion: `收官续作完成：${executableRows.length} 项可执行缺口分 ${areas.length + 1} 车道并行收口，证实 ${laneResults.reduce((n, l) => n + (l.fixedIds?.length ?? 0), 0)} 条；构建/类型/单测 ${buildOk && tcOk && testOk ? "全绿" : "存在红项"}；门禁新转绿 ${improved.length}、仍红 ${stillRed.length}；需你拍板 ${needsUserRows.length} 项已原样列出，未替你决定。`,
   findings,
   verified,
   notCovered,
