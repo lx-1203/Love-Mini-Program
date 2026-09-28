@@ -61,3 +61,21 @@
 - 选 C：接受"这套产物不能直接上传"，把体积门的目标改成告警而非门禁，并在发布流程里写明必须另出发布档。
 
 我没动这条门（按 (c) 类纪律），也没替你选。另建议（待授权，非本轮范围）：把那句在两条 ⚠ 之后仍打印的"✓ 验收通过：主包/总包体积合规"改成 `PACKAGE_SIZE_RESULT=WAIVED_MOCK|PASS|FAIL` 三态，免得人和面板都把它读成合规。
+
+## 11. 五组游客落地对没有裁定，分诊台因此一直 exit 2
+分诊台（`scripts/qa/triage-exec-failures.mjs:1089`）给的合法出路只有两条：进 `scripts/qa/guest-landing-policy.json` 的 `rows`，或补脚本里手写的 `LANDING_DISPOSITION`（:576，读取顺序在 :845 —— booked 复测腿优先于手写表）。往手写表里塞一句"放行"就是放宽判据，本轮没做。
+
+缺裁定的五组（page → 游客实测 landing）：
+1. `subpackages/campus/campus/index` → `subpackages/campus/campus/hub`
+2. `subpackages/discover-extra/discover/matching` → `pages/discover/index`
+3. `subpackages/village/village/tag-posts` → `subpackages/village/village/index`
+4. `subpackages/setup/campus/index` → `pages/discover/index`
+5. `subpackages/setup/recommend-pref/index` → `pages/discover/index`
+
+**为什么这是你的决定而不是我的**：在册裁定是"游客不得浏览广场/内容流，未登录必须被引导到注册"，而 policy 里已有的行 family 都记 `guide-401`、landing 一律是 `pages/login/index`。上面五组**全部落在非登录页**，按字面读就是违例；但第 4、5 组是 setup 引导流程，很可能是"设计上就允许游客走完再注册"，那就是裁定范围要收窄，不是产品缺陷。这两条路我都能走，但都不该我选。
+
+- 选 A：认定违例 ⇒ 开实现刀，把这五组在游客档改成引导到登录/注册（改的是产品行为，会影响现有 26 组/239 落点的实测数）。
+- 选 B：逐组裁定"允许" ⇒ 我给 policy 补行，`family` 要写清机制（例如 `setup-flow-allowed`，与 `guide-401` 区分），并把在册裁定的文字收窄到"内容页与个人数据页"。
+- 选 C：只裁 setup 两组允许，其余三组按违例开实现刀。
+
+顺带一条同域但不用你决定的：`selectorsOf()` 丢非 BEM 选择器，把 `.btn-primary` 这类降级成 `FRAME_ONLY`（记在 `reports/audit/round-7/register-fieldinput-diagnosis.json`），属载具缺陷，待授权后单独修。另有一条 `CH12` 欠一次带 prestate 的 `--tap` 复跑（节点在 `hub.vue:215` 的 `v-if=!isVerified`，未认证身份才点得动），命名不等于结案。
