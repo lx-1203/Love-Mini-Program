@@ -1,0 +1,106 @@
+{
+ "gitSha": "93650335",
+ "updatedAt": "2026-09-28T19:44:27.851Z",
+ "runner": "scripts/qa/cli-automator.mjs 原语 + ui-lease 显式包裹（.zcode/tmp/lane-ui2/interact-pair.mjs）",
+ "results": [
+  {
+   "suite": "C-undefined",
+   "page": "subpackages/profile-extra/profile/other",
+   "band": "real@ed1cd82c",
+   "identity": "guest",
+   "loginVerify": "logged-in userId=100158",
+   "sessionSource": "phone-login",
+   "requiresReal": true,
+   "title": "",
+   "status": "SKIPPED",
+   "observed": "top=subpackages/profile-extra/profile/other | {\"targets\":[],\"unmet\":[\"tap:.relationship-cta__btn--like :: automation_element_action 调用失败：Command failed: D:\\\\微信开发者\\\\微信web开发者工具\\\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \\\"ok\\\": false, \\\"errorType\\\": \\\"MCP_TOOL_ERROR\\\", \\\"me\",\"tap:.relationship-cta__btn--hello :: automation_element_action 调用失败：Command failed: D:\\\\微信开发者\\\\微信web开发者工具\\\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \\\"ok\\\": false, \\\"errorType\\\": \\\"MCP_TOOL_ERROR\\\", \\\"me\"]}",
+   "missingEvidence": [],
+   "failureReason": "NOT_SHOOTABLE :: 交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: tap:.relationship-cta__btn--like :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me ; tap:.relationship-cta",
+   "route": "subpackages/profile-extra/profile/other",
+   "toast": "",
+   "console": "",
+   "evidence": "",
+   "durationMs": 0,
+   "transport": "cli-bridge(shot+element)",
+   "framesPair": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-guest/次要20-OT06-before.png",
+     "bytes": 3368,
+     "sha256_12": "c6ec9cea9433",
+     "magic": "JPEG",
+     "pixels": "192x413"
+    }
+   ]
+  },
+  {
+   "suite": "C-undefined",
+   "page": "subpackages/chat/official-chat/index",
+   "band": "real@ed1cd82c",
+   "identity": "guest",
+   "loginVerify": "logged-in userId=100158",
+   "sessionSource": "phone-login",
+   "requiresReal": true,
+   "title": "",
+   "status": "SKIPPED",
+   "observed": "top=subpackages/chat/official-chat/index | {\"targets\":[],\"unmet\":[\"tap:.retry-btn :: automation_element_action 调用失败：Command failed: D:\\\\微信开发者\\\\微信web开发者工具\\\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \\\"ok\\\": false, \\\"errorType\\\": \\\"MCP_TOOL_ERROR\\\", \\\"me\"]}",
+   "missingEvidence": [],
+   "failureReason": "NOT_SHOOTABLE :: 交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: tap:.retry-btn :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+   "route": "subpackages/chat/official-chat/index",
+   "toast": "",
+   "console": "",
+   "evidence": "",
+   "durationMs": 0,
+   "transport": "cli-bridge(shot+element)",
+   "framesPair": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-guest/次要21-OC09-before.png",
+     "bytes": 12837,
+     "sha256_12": "1f6f23049988",
+     "magic": "JPEG",
+     "pixels": "192x413"
+    }
+   ]
+  },
+  {
+   "suite": "C-undefined",
+   "page": "subpackages/market/detail/index",
+   "band": "real@ed1cd82c",
+   "identity": "guest",
+   "loginVerify": "logged-in userId=100158",
+   "sessionSource": "phone-login",
+   "requiresReal": true,
+   "title": "",
+   "status": "SKIPPED",
+   "observed": "top=subpackages/market/detail/index | {\"targets\":[],\"unmet\":[\"tap:.product-scroll :: automation_element_action 调用失败：Command failed: D:\\\\微信开发者\\\\微信web开发者工具\\\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \\\"ok\\\": false, \\\"errorType\\\": \\\"MCP_TOOL_ERROR\\\", \\\"me\"]}",
+   "missingEvidence": [],
+   "failureReason": "NOT_SHOOTABLE :: 交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: tap:.product-scroll :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+   "route": "subpackages/market/detail/index",
+   "toast": "",
+   "console": "",
+   "evidence": "",
+   "durationMs": 0,
+   "transport": "cli-bridge(shot+element)",
+   "framesPair": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-guest/次要22-MD09-before.png",
+     "bytes": 4302,
+     "sha256_12": "f987b0ca4a79",
+     "magic": "JPEG",
+     "pixels": "192x413"
+    }
+   ]
+  }
+ ],
+ "round": "round-8-interact-real-sc-guest",
+ "identity": "guest",
+ "identities": [
+  "guest"
+ ],
+ "project": "apps/client/dist/build/mp-weixin-showcase",
+ "band": "real@ed1cd82c",
+ "loginVerify": "not-logged-in",
+ "note": "游客 × 真实档（showcase 载体）三条 NO_GUEST_JUDGED 的实测腿；clearSession 后 verifyLogin 量到 not-logged-in 才开跑。"
+}

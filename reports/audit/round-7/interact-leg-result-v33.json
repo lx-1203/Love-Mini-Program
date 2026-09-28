@@ -1,0 +1,1635 @@
+{
+ "lane": "ui2",
+ "generatedAt": "2026-09-28T19:44:54.802Z",
+ "gitShaAtClose": "93650335",
+ "channelProbe": {
+  "summary": "两条通道分别量过，结论不同：**WS(automator) 腿在 real 档取不到会话**（根因已钉到具体一行代码）；**CLI 桥腿在 real 档可以跑交互**，但只在 showcase 载体（real@ed1cd82c）上——mp-weixin-real 那台窗口此刻模拟器启动失败。",
+  "wsRealMode": {
+   "cmd": "\"D:/codex-tools/node-v22.17.0-win-x64/node.exe\" scripts/qa/ws-channel-up.mjs --project apps/client/dist/build/mp-weixin-real --port 9420 --wait 45",
+   "exit": 2,
+   "out": "IDE_PORT_SOURCE=config D:/6/恋爱小程序/scripts/qa/ide-port.json → 9420\nWS_UP=ALREADY_UP_BUT_WRONG_OR_UNKNOWN_BAND port=9420 connectMs=207 page=pages/discover/index hits=11000010 单条查询=17.4ms\nWS_UP_BAND=mismatch port=9420 本腿要的档位 project=D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real VITE_API_MODE=real MODE=real envSha8=f0677920 / 端口上活着的实例自报 apiMode=mock 项目路径=(无) 落点=pages/discover/index（两条独立证据：路径比对=na，env 档位比对=mismatch）\nWS_UP_BAND_证据 Tool.getInfo 键名=[version,SDKVersion] Tool.getInfo 异常=无 应用内 require(config/env.js)=OK|mock|config/env.js 应用内异常=无\nWS_UP_BAND_HINT 通道换不了档位：automator.connect() 只吃端口，没有 --project 之类的旗标（端口上活着的那个实例就是它，spawn 那条 --project 在 ALREADY_UP 分支里根本不会被执行）\nWS_UP_BAND_HINT 下一步只有两条路：① 出帧改走 CLI 桥（node scripts/qa/r-exec-cli.mjs --project <该档产物目录>，--project 是每次调用生效的；round-8 stage-8 就是这么跑绿的）；② 这一腿按 NOT_SHOOTABLE 记账并换载体——口径同 artifact-band.mjs:70，不许记成产品 FAILED，更不许记成「这一档已经测过」\nWS_UP_BAND_FAIL 量出来的档位与 --project 不符 ⇒ 这条腿连着的是**别人那一档**的实例，拿它出帧会得到标签与画面不一致的证据（round-8b 的 real 标签 × mock 画面就是这么来的）。\nWS_UP_NOTE 收尾不要调 close()——它会关掉整个自动化 IDE 实例（本轮踩过）；本次已 disconnect 本进程的 ws 客户端\nWS_UP_BAND_RESULT=mismatch exit=2\n",
+   "usable": false,
+   "why": "9420 上活着的自动化实例自报 apiMode=mock（应用内 require('config/env.js') 答 OK|mock），与本腿 --project 的 real 档不符 ⇒ 脚本按 bandVerdict 判 mismatch 并拒绝交码（exit 2）。automator.connect() 没有任何换档旗标，端口上活着的就是它。拿它出帧会得到 real 标签 × mock 画面的错配证据。"
+  },
+  "wsRealModeSecondPort": {
+   "cmd": "\"D:/codex-tools/node-v22.17.0-win-x64/node.exe\" scripts/qa/ws-channel-up.mjs --project apps/client/dist/build/mp-weixin-real --port 9421 --wait 45",
+   "exit": 2,
+   "out": "IDE_PORT_SOURCE=config D:/6/恋爱小程序/scripts/qa/ide-port.json → 9420\nWS_DOWN_REASON Cannot read properties of undefined (reading 'split')\nWS_UP_SPAWNED pid=1392 cli=auto --auto-port 9421 project=D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real log=.zcode/tmp/ws-channel-up.log\n  · 3s Cannot read properties of undefined (reading 'split')\n  · 6s Cannot read properties of undefined (reading 'split')\n  · 10s Cannot read properties of undefined (reading 'split')\n  · 15s Cannot read properties of undefined (reading 'split')\n  · 19s Cannot read properties of undefined (reading 'split')\n  · 22s Cannot read properties of undefined (reading 'split')\n  · 25s Cannot read properties of undefined (reading 'split')\n  · 29s Cannot read properties of undefined (reading 'split')\n  · 33s Cannot read properties of undefined (reading 'split')\n  · 37s Cannot read properties of undefined (reading 'split')\n  · 40s Cannot read properties of undefined (reading 'split')\n  · 44s Cannot read properties of undefined (reading 'split')\n  · 47s Cannot read properties of undefined (reading 'split')\nWS_UP=FAIL reason=端口 9421 在 3s 起就在听，但自动化会话在 45s 内没准备好（connect 后取页失败 13 次，最后一次观测：Cannot read properties of undefined (reading 'split')）⇒ 这不是「没监听」，是 IDE 冷启动还没进可驱动状态；加大 --wait 或先开一次窗口再接通道\nWS_UP_CHILD exitCode=0（非 null 表示子进程自己退了，多半是命令行形态错了）\nWS_UP_LOGTAIL (node:1392) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead. ⏎ (Use `微信开发者工具 --trace-deprecation ...` to show where the warning was created) ⏎ ✔ IDE server has started, listening on http://127.0.0.1:9430 ⏎ - preparing ⏎ - Fetching AppID () permissions ⏎ ✔ Using AppID: wxc67cd233d72388d0 ⏎ ✔ auto ⏎ \nWS_UP_HINT cli auto 打印 ✔ auto 只代表命令被接受；真端口由那个新起的 IDE 实例绑。检查是否弹了授权/是否 IDE 版本把自动化端口换成了别的档位\n",
+   "usable": false,
+   "why": "9421 在听（本 lane 又自己 spawn 了一次 cli auto --auto-port 9421，子进程 exitCode=0），但自动化会话取页 13 次全报同一句 Cannot read properties of undefined (reading 'split') ⇒ 与前一车道 91 次的读数同一形状。"
+  },
+  "wsRootCause": {
+   "found": "miniprogram-automator@0.12.1 out/MiniProgram.js checkVersion(): t=(await this.send(\"Tool.getInfo\")).SDKVersion; if(\"dev\"!==t&&cmpVersion(t,\"2.7.3\")<0) throw …",
+   "crashSite": "node_modules/.pnpm/licia@1.41.1/node_modules/licia/cmpVersion.js:4  exports=function(v1,v2){ v1=v1.split('.'); … }",
+   "stack": "DIAG_PORT=9421\nDIAG_STEP connect = THROW Cannot read properties of undefined (reading 'split')\nDIAG_STEP connect = STACK TypeError: Cannot read properties of undefined (reading 'split') ⏎     at Object.exports [as default] (D:\\6\\恋爱小程序\\node_modules\\.pnpm\\licia@1.41.1\\node_modules\\licia\\cmpVersion.js:4:13) ⏎     at MiniProgram.checkVersion (D:\\6\\恋爱小程序\\node_modules\\.pnpm\\miniprogram-automator@0.12.1_supports-color@10.2.2\\node_modules\\miniprogram-automator\\out\\MiniProgram.js:1:3725) ⏎     at process.processTicksAndRejections (node:internal/process/task_queues:105:5) ⏎     at async Launcher.connect (D:\\6\\恋爱小程序\\node_modules\\.pnpm\\miniprogram-automator@0.12.1_supports-color@10.2.2\\node_modules\\miniprogram-automator\\out\\Launcher.js:1:2633) ⏎     at async Automator.connect (D:\\6\\恋爱小程序\\node_modules\\.pnpm\\miniprogram-aut\n",
+   "rawProbeCmds": [
+    "\"D:/codex-tools/node-v22.17.0-win-x64/node.exe\" .zcode/tmp/lane-ui2/ws-raw-probe.mjs 9421",
+    "\"D:/codex-tools/node-v22.17.0-win-x64/node.exe\" .zcode/tmp/lane-ui2/ws-raw-probe.mjs 9420"
+   ],
+   "rawProbe9421": "RAWWS_PORT=9421\nRAWWS=OPEN\nRAWWS_STEP Tool.getInfo = RESULT {\"version\":\"2.02.2608040\"}\nRAWWS_EVENT {\"id\":\"r-0qw5m63s09l9mulm0iwy\",\"result\":{\"version\":\"2.02.2608040\"}}\nRAWWS_STEP Tool.getStatus = ERR {\"message\":\"unimplemented\"}\nRAWWS_EVENT {\"id\":\"r-t39wwgzm67bmulm0ix3\",\"error\":{\"message\":\"unimplemented\"}}\nRAWWS_STEP Page.currentWindow = ERR {\"message\":\"appservice Page.currentWindow unimplemented\"}\nRAWWS_EVENT {\"id\":\"r-fcxck3mv2snmulm0ix6\",\"error\":{\"message\":\"appservice Page.currentWindow unimplemented\"}}\nRAWWS_STEP App.mpType = ERR {\"message\":\"appservice App.mpType unimplemented\"}\nRAWWS_FRAMES_SEEN=7\n  frame[0] {\"id\":\"r-0qw5m63s09l9mulm0iwy\",\"result\":{\"version\":\"2.02.2608040\"}}\n  frame[1] {\"id\":\"r-0qw5m63s09l9mulm0iwy\",\"result\":{\"version\":\"2.02.2608040\"}}\n  frame[2] {\"id\":\"r-t39wwgzm67bmulm0ix3\",\"error\":{\"message\":\"unimplemented\"}}\n  frame[3] {\"id\":\"r-t39wwgzm67bmulm0ix3\",\"error\":{\"message\":\"unimplemented\"}}\n  frame[4] {\"id\":\"r-fcxck3mv2snmulm0ix6\",\"error\":{\"message\":\"appservice Page.currentWindow unimplemented\"}}\n  frame[5] {\"id\":\"r-fcxck3mv2snmulm0ix6\",\"error\":{\"message\":\"appservice Page.currentWindow unimplemented\"}}\nRAWWS_CLOSED_LOCAL_SOCKET=OK（只关本进程客户端，未发 App.exit/Tool.close）\nRAWWS_EVENT {\"id\":\"r-cm9f03fai5pmulm0ixv\",\"error\":{\"message\":\"appservice App.mpType unimplemented\"}}\nRAWWS_SOCK_CLOSE code=1000\n",
+   "rawProbe9420": "RAWWS_PORT=9420\nRAWWS=OPEN\nRAWWS_STEP Tool.getInfo = RESULT {\"version\":\"2.02.2608040\",\"SDKVersion\":\"3.17.3\"}\nRAWWS_EVENT {\"id\":\"r-7qzar7rbh59mulm0vnj\",\"result\":{\"version\":\"2.02.2608040\",\"SDKVersion\":\"3.17.3\"}}\nRAWWS_STEP Tool.getStatus = ERR {\"message\":\"unimplemented\"}\nRAWWS_EVENT {\"id\":\"r-9qhqe30v9u6mulm0vno\",\"error\":{\"message\":\"unimplemented\"}}\nRAWWS_STEP Page.currentWindow = ERR {\"message\":\"appservice Page.currentWindow unimplemented\"}\nRAWWS_EVENT {\"id\":\"r-3xz97ysxnplmulm0vns\",\"error\":{\"message\":\"appservice Page.currentWindow unimplemented\"}}\nRAWWS_STEP App.mpType = ERR {\"message\":\"appservice App.mpType unimplemented\"}\nRAWWS_FRAMES_SEEN=7\n  frame[0] {\"id\":\"r-7qzar7rbh59mulm0vnj\",\"result\":{\"version\":\"2.02.2608040\",\"SDKVersion\":\"3.17.3\"}}\n  frame[1] {\"id\":\"r-7qzar7rbh59mulm0vnj\",\"result\":{\"version\":\"2.02.2608040\",\"SDKVersion\":\"3.17.3\"}}\n  frame[2] {\"id\":\"r-9qhqe30v9u6mulm0vno\",\"error\":{\"message\":\"unimplemented\"}}\n  frame[3] {\"id\":\"r-9qhqe30v9u6mulm0vno\",\"error\":{\"message\":\"unimplemented\"}}\n  frame[4] {\"id\":\"r-3xz97ysxnplmulm0vns\",\"error\":{\"message\":\"appservice Page.currentWindow unimplemented\"}}\n  frame[5] {\"id\":\"r-3xz97ysxnplmulm0vns\",\"error\":{\"message\":\"appservice Page.currentWindow unimplemented\"}}\nRAWWS_CLOSED_LOCAL_SOCKET=OK（只关本进程客户端，未发 App.exit/Tool.close）\nRAWWS_EVENT {\"id\":\"r-37olrd93uovmulm0vnw\",\"error\":{\"message\":\"appservice App.mpType unimplemented\"}}\nRAWWS_SOCK_CLOSE code=1000\n",
+   "reading": "对照量出来的差别只在一个键：9420 回 {\"version\":\"2.02.2608040\",\"SDKVersion\":\"3.17.3\"}（有 appservice ⇒ 握手过），9421 只回 {\"version\":\"2.02.2608040\"}（**没有 SDKVersion** ⇒ cmpVersion(undefined) 当场抛）。两台都回 appservice Page.currentWindow unimplemented / App.mpType unimplemented，说明 9421 那个端口上根本没有可驱动的 appservice。",
+   "conclusion": "WS 腿在 real 档不可用的准确说法是：唯一有 appservice 的那台（9420）绑的是 mock 档，换不了档；为 real 档新起的实例（9421）连版本握手都过不去（Tool.getInfo 不回 SDKVersion），connect() 直接抛 ⇒ 一个 WS 命令都发不出去。这不是「等得不够」：--wait 45 与前一车道 --wait 180 两次读数同一句错。"
+  },
+  "cliBridgeRealMode": {
+   "cmdOnRealCarrier": "\"D:/codex-tools/node-v22.17.0-win-x64/node.exe\" .zcode/tmp/lane-ui2/channel-usability.mjs --project apps/client/dist/build/mp-weixin-real --page pages/home/index --selector .tabbar__item",
+   "out": "CH_PROJECT=D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real\nCH_DISK_BAND mode=real viteMode=real sha8=f0677920\nCH_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock\nCH_STEP ① simulator_open_page pages/home/index=OK {\"success\":true,\"page\":\"/pages/home/index\",\"query\":\"\",\"scene\":1001}\nCH_STEP ② routeStack=OK \"ERR:automation_evaluate 调用失败：Command failed: D:\\\\微信开发者\\\\微信web开发者工具\\\\微信开发者工具.e\"\nCH_STEP ②b 应用内档位 require(config/env.js)=FAIL automation_evaluate 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout=: \"MCP_TOOL_ERROR\", \"message\": \"cant find runtimeid by projectpath D:\\\\6\\\\恋爱小程序\\\\apps\\\\client\\\\dist\\\\build\\\\mp-weixin-real\", \"source\": \nCH_STEP ③ automation_element_action tap .tabbar__item=FAIL automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout=untimeid by projectpath D:\\\\6\\\\恋爱小程序\\\\apps\\\\client\\\\dist\\\\build\\\\mp-weixin-real\", \"source\": \"mcp_business\", \"detail\": { \"rawResul\nCH_STEP ④ simulator_screenshot=OK {\"success\":true,\"path\":\"D:\\\\6\\\\恋爱小程序\\\\.zcode\\\\tmp\\\\lane-ui2\\\\shot-probe\\\\probe.png\",\"imageWidth\":378,\"imageHeight\":814}\nCH_USABLE_FOR_REAL_INTERACTION=no (open=true route=true tap=false shot=true)\nCH_LEASE=RELEASED {\"released\":true,\"file\":\"D:\\\\6\\\\恋爱小程序\\\\tmp\\\\qa\\\\locks\\\\wechat-automation-cli.lock\"}\nCH_HELD_AFTER=[]\n",
+   "usable": false,
+   "why": "mp-weixin-real 此刻量不到 runtime：open-project-window 两次都回 {\"success\":true,\"type\":\"reuse\",\"winId\":\"s2\"} 之后 automation_evaluate / automation_element_action 报 \"cant find runtimeid by projectpath …mp-weixin-real\"。⚠ 这一支最容易骗人：同一次探测里 simulator_open_page 回 success:true、simulator_screenshot 也回了一张 11290B 的帧（远高于 3000B 证据地板），但那张帧的画面是「模拟器启动失败 / Timeout / 请查看构建日志或调试器日志获取更多信息」（留档 reports/screenshots/round-8-interact/REAL-CARRIER-boot-fail-evidence.png）。⇒ 现在拿 --project mp-weixin-real 出帧，得到的是启动失败页披着 real 标签，载具的两道成功判据都会放行它。",
+   "bootFailEvidenceFrame": "reports/screenshots/round-8-interact/REAL-CARRIER-boot-fail-evidence.png"
+  },
+  "cliBridgeRealModeOnShowcase": {
+   "cmd": "\"D:/codex-tools/node-v22.17.0-win-x64/node.exe\" .zcode/tmp/lane-ui2/channel-usability.mjs --project apps/client/dist/build/mp-weixin-showcase --page subpackages/village/village/detail --query \"id=16\" --selector .input-bar__input",
+   "exit": 0,
+   "out": "CH_PROJECT=D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-showcase\nCH_DISK_BAND mode=real viteMode=mp-weixin-showcase sha8=ed1cd82c\nCH_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock\nCH_STEP ① simulator_open_page subpackages/village/village/detail=OK {\"success\":true,\"page\":\"/subpackages/village/village/detail\",\"query\":\"id=16\",\"scene\":1001}\nCH_STEP ② routeStack=OK \"subpackages/village/village/detail\"\nCH_STEP ②b 应用内档位 require(config/env.js)=OK \"apiMode=real showcase=undefined\"\nCH_STEP ③ automation_element_action tap .input-bar__input=OK {\"success\":true}\nCH_STEP ④ simulator_screenshot=OK {\"success\":true,\"path\":\"D:\\\\6\\\\恋爱小程序\\\\.zcode\\\\tmp\\\\lane-ui2\\\\shot-probe\\\\probe.png\",\"imageWidth\":192,\"imageHeight\":413}\nCH_USABLE_FOR_REAL_INTERACTION=yes (open=true route=true tap=true shot=true)\nCH_LEASE=RELEASED {\"released\":true,\"file\":\"D:\\\\6\\\\恋爱小程序\\\\tmp\\\\qa\\\\locks\\\\wechat-automation-cli.lock\"}\nCH_HELD_AFTER=[]\n",
+   "usable": true,
+   "why": "四步全通：simulator_open_page success:true → routeStack 答 subpackages/village/village/detail（落点在声明页）→ 应用内 require('config/env.js') 答 apiMode=real → automation_element_action tap 回 {\"success\":true} → simulator_screenshot 出帧 192x413。showcase 在真实模式覆盖这条门上就是 real 档（verify-real-coverage.mjs:123 的 REAL_BAND=/^real(@|$)/ 只看 mode，不看旗标；盘的 config/env.js 实测 VITE_API_MODE=\"real\" + VITE_SHOWCASE_MODE=\"true\" ⇒ band=real@ed1cd82c）。"
+  },
+  "minimalInteractionProof": {
+   "cmd": "\"D:/codex-tools/node-v22.17.0-win-x64/node.exe\" .zcode/tmp/lane-ui2/interact-pair.mjs --project apps/client/dist/build/mp-weixin-showcase --identity A --band real-sc --jobs .zcode/tmp/lane-ui2/jobs-probe.json --shots reports/screenshots/round-8-interact/real-sc-A --rows .zcode/tmp/lane-ui2/rows-probe-sc.jsonl --settle 2600",
+   "exit": 0,
+   "out": "LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=lane-ui2-interact-real-sc-A band=real@ed1cd82c project=apps/client/dist/build/mp-weixin-showcase\nMINT kind=A source=phone-login userId=100158\nBOOT=boot-ok\nLOGIN_VERIFY=logged-in userId=100158\nROW 次要18|VD10 outcome=EXECUTED sha=[321ce8074403,7940e9869f9a] 交互已下发（input:.input-bar__input）且前后帧 sha256 不同（321ce8074403 → 7940e9869f9a）\nLEASE=RELEASED {\"released\":true,\"file\":\"D:\\\\6\\\\恋爱小程序\\\\tmp\\\\qa\\\\locks\\\\wechat-automation-cli.lock\"}\nHELD_AFTER=[]\nPAIR_RESULT rows=1 band=real@ed1cd82c identity=A\n",
+   "verdict": "真实模式 + 交互（一次 open + 一次 input + 前后成对帧）在 showcase 载体上跑得通：MINT kind=A source=phone-login userId=100158 → BOOT=boot-ok → LOGIN_VERIFY=logged-in userId=100158 → ROW 次要18|VD10 outcome=EXECUTED sha=[321ce8074403,7940e9869f9a]。前后帧字节不同，且交互后那张肉眼可读到底部输入框里是 「QA自检-lane-ui2」（reports/screenshots/round-8-interact/real-sc-A/次要18-VD10-after.png）。"
+  }
+ },
+ "attempted": 53,
+ "attemptedBreakdown": {
+  "§4 第 1 项点名的 49 条（requiresReal 且 action 含交互动词、被桥版执行器记 SKIPPED）": 49,
+  "门剩下的 3 条 NO_GUEST_JUDGED（游客轴补测）": 3,
+  "DENY 误挡对照行（不是判决行）": 1,
+  "49 条的取法": "reports/audit/round-7/interact-real/exec-results.json 里 requiresReal===true 且 failureReason 逐字为「action 含交互动词 ⇒ 本切片只跑 observe-only，交互型下一步再接」的行，数出来正好 49 条（脚本 .zcode/tmp/_ui2_49.json 留档）。"
+ },
+ "outcomeTally": {
+  "NOT_SHOOTABLE": 25,
+  "EXECUTED": 19,
+  "UNCHANGED_AFTER_INTERACTION": 6,
+  "LEFT_PAGE": 1,
+  "VEHICLE_DENY": 2
+ },
+ "frames": {
+  "total": 80,
+  "byDir": {
+   "reports/screenshots/round-8-interact/real-sc-A": 62,
+   "reports/screenshots/round-8-interact/real-sc-A-reshoot": 12,
+   "reports/screenshots/round-8-interact/real-sc-A-denyexp": 2,
+   "reports/screenshots/round-8-interact/real-sc-guest": 3,
+   "reports/screenshots/round-8-interact/REAL-CARRIER-boot-fail-evidence.png": 1
+  },
+  "index": [
+   "reports/screenshots/round-8-interact/pairs.json（每条一对象，before/after + sha256 全值 + 魔法字节 + 像素）",
+   "reports/screenshots/round-8-interact/manifest-detail.json（由 scripts/qa/exec-frames-to-corpus.mjs 从盘上字节现算，frames=19 uniqueHash=18 证据异常=0）"
+  ],
+  "caveat": "全部 80 张帧的魔法字节都是 ffd8ff（JPEG）挂在 .png 名下，像素 192x413 ⇒ 按扩展名 sniff PNG 的盖章会误盖。",
+  "sharedBytesGroups": 18,
+  "sharedBytesLegend": "18 组共用字节的帧里，4 组是**两条不同判据的「交互后」帧逐字节相同**（VP33/VP38 一族、PUB20/PUB22、PUB26/PUB33、TK07/TK08），其余 14 组是「下一条的交互前 == 上一条的交互后」即同页状态延续。共用帧只能证明「该页在该时刻渲染成这个样子」，不能各自证明自己那条判点的状态变化（口径同前一车道 lane-uicov 的 frameCaveats）。"
+ },
+ "rows": [
+  {
+   "id": "PAGES-MESSAGES-INDEX|MSG24",
+   "page": "pages/messages/index",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap",
+   "framesBefore": "",
+   "framesAfter": "",
+   "sha256_12": [],
+   "frameBytes": [],
+   "frameMagic": "",
+   "framePixels": "",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [],
+   "why": "判据台已盖章 automatable:false ⇒ 本通道不发交互（载具口径 r-exec-cli.mjs:90 notAutomatableSkip） :: 长按 → 原生 ActionSheet 选「免打扰」+ 断网执行，通道驱动不了原生弹层与网络状态；免打扰图标本身可由探针量（已在判据里），交互半段记 not-automatable",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "PAGES-MESSAGES-INDEX|MSG26",
+   "page": "pages/messages/index",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap",
+   "framesBefore": "",
+   "framesAfter": "",
+   "sha256_12": [],
+   "frameBytes": [],
+   "frameMagic": "",
+   "framePixels": "",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [],
+   "why": "判据台已盖章 automatable:false ⇒ 本通道不发交互（载具口径 r-exec-cli.mjs:90 notAutomatableSkip） :: 删除会话要走 showModal 确认，取消/确定两条都要真点；原生 Modal 不在页面 DOM 里",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "PAGES-PROFILE-INDEX|PFI23",
+   "page": "pages/profile/index",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.video-cta",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/PAGES-PROFILE-INDEX-PFI23-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/PAGES-PROFILE-INDEX-PFI23-after.png",
+   "sha256_12": [
+    "07acc410241b",
+    "e63f9b17ac93"
+   ],
+   "frameBytes": [
+    9764,
+    9456
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "routeBefore": "pages/profile/index",
+   "routeAfter": "pages/profile/index",
+   "dispatched": [
+    "tap:.video-cta"
+   ],
+   "unmet": [],
+   "why": "交互已下发（tap:.video-cta）且前后帧 sha256 不同（07acc410241b → e63f9b17ac93）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "PAGES-PROFILE-INDEX|PFI25",
+   "page": "pages/profile/index",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.voice-preview__delete",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/PAGES-PROFILE-INDEX-PFI25-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "07acc410241b"
+   ],
+   "frameBytes": [
+    9764
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "pages/profile/index",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [
+    "tap:.voice-preview__delete :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: tap:.voice-preview__delete :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX15",
+   "page": "subpackages/campus/campus/index",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.topic-scroll",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX15-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX15-after.png",
+   "sha256_12": [
+    "161c073b6068",
+    "161c073b6068"
+   ],
+   "frameBytes": [
+    11852,
+    11852
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/campus/campus/index",
+   "routeAfter": "subpackages/campus/campus/index",
+   "dispatched": [
+    "tap:.topic-scroll"
+   ],
+   "unmet": [],
+   "why": "前后帧逐字节相同 sha256:161c073b6068 ⇒ tap:.topic-scroll 这一步没被证明改变过画面，不许当「状态已生效」的证据（判决名照 shoot-frameplan.mjs:168）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX29",
+   "page": "subpackages/campus/campus/index",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.reply-input",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX29-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "161c073b6068"
+   ],
+   "frameBytes": [
+    11852
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/campus/campus/index",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [
+    "input:.reply-input :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: input:.reply-input :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT19",
+   "page": "subpackages/campus/campus/post-topic",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT19-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT19-after.png",
+   "sha256_12": [
+    "56504836031a",
+    "58eabe6f4a44"
+   ],
+   "frameBytes": [
+    9060,
+    9058
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/campus/campus/post-topic",
+   "routeAfter": "subpackages/campus/campus/post-topic",
+   "dispatched": [
+    "tap:.bottom-submit__btn"
+   ],
+   "unmet": [],
+   "why": "交互已下发（tap:.bottom-submit__btn）且前后帧 sha256 不同（56504836031a → 58eabe6f4a44）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS10",
+   "page": "subpackages/chat/chat-session/index",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.wechat-input-bar__input",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS10-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS10-after.png",
+   "sha256_12": [
+    "c5ceb3b0ba48",
+    "111b94899ee7"
+   ],
+   "frameBytes": [
+    6435,
+    6721
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/chat/chat-session/index",
+   "routeAfter": "subpackages/chat/chat-session/index",
+   "dispatched": [
+    "input:.wechat-input-bar__input",
+    "input:.wechat-input-bar__send"
+   ],
+   "unmet": [],
+   "why": "交互已下发（input:.wechat-input-bar__input,input:.wechat-input-bar__send）且前后帧 sha256 不同（c5ceb3b0ba48 → 111b94899ee7）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS29",
+   "page": "subpackages/chat/chat-session/index",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.wechat-input-bar__input",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS29-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS29-after.png",
+   "sha256_12": [
+    "c5ceb3b0ba48",
+    "906e3febb37a"
+   ],
+   "frameBytes": [
+    6435,
+    6719
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/chat/chat-session/index",
+   "routeAfter": "subpackages/chat/chat-session/index",
+   "dispatched": [
+    "input:.wechat-input-bar__input"
+   ],
+   "unmet": [],
+   "why": "交互已下发（input:.wechat-input-bar__input）且前后帧 sha256 不同（c5ceb3b0ba48 → 906e3febb37a）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC|CPT22",
+   "page": "subpackages/circles/circles/post-topic",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-CPT22-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-CPT22-after.png",
+   "sha256_12": [
+    "f9b397f65c17",
+    "f9b397f65c17"
+   ],
+   "frameBytes": [
+    7543,
+    7543
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/circles/circles/post-topic",
+   "routeAfter": "subpackages/circles/circles/post-topic",
+   "dispatched": [
+    "tap:.bottom-submit__btn",
+    "tap:.post-header__submit"
+   ],
+   "unmet": [],
+   "why": "前后帧逐字节相同 sha256:f9b397f65c17 ⇒ tap:.bottom-submit__btn,tap:.post-header__submit 这一步没被证明改变过画面，不许当「状态已生效」的证据（判决名照 shoot-frameplan.mjs:168）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC|CPT35",
+   "page": "subpackages/circles/circles/post-topic",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.post-header__submit",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-CPT35-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-CPT35-after.png",
+   "sha256_12": [
+    "f9b397f65c17",
+    "c82cf6df31f5"
+   ],
+   "frameBytes": [
+    7543,
+    7548
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/circles/circles/post-topic",
+   "routeAfter": "subpackages/circles/circles/post-topic",
+   "dispatched": [
+    "tap:.post-header__submit"
+   ],
+   "unmet": [],
+   "why": "交互已下发（tap:.post-header__submit）且前后帧 sha256 不同（f9b397f65c17 → c82cf6df31f5）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+   "page": "subpackages/village/village/index",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.post-card__audit",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI25-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "46d8cce9c62c"
+   ],
+   "frameBytes": [
+    9603
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/village/village/index",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [
+    "tap:.post-card__audit :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: tap:.post-card__audit :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI28",
+   "page": "subpackages/village/village/index",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap",
+   "framesBefore": "",
+   "framesAfter": "",
+   "sha256_12": [],
+   "frameBytes": [],
+   "frameMagic": "",
+   "framePixels": "",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [],
+   "why": "判据台已盖章 automatable:false ⇒ 本通道不发交互（载具口径 r-exec-cli.mjs:90 notAutomatableSkip） :: 要「后台恢复开关」+ 断网 + deep link 强行发帖，跨系统配置，不是本页可驱动动作",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+   "page": "subpackages/village/village/index",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.skeleton-line--w60",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI34-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "6af42085da03"
+   ],
+   "frameBytes": [
+    9616
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/village/village/index",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [
+    "tap:.skeleton-line--w60 :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: tap:.skeleton-line--w60 :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-POST|VP33",
+   "page": "subpackages/village/village/post",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.post-content__input",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP33-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP33-after.png",
+   "sha256_12": [
+    "3500b158f755",
+    "403b3c32877c"
+   ],
+   "frameBytes": [
+    8104,
+    8219
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/village/village/post",
+   "routeAfter": "subpackages/village/village/post",
+   "dispatched": [
+    "input:.post-content__input",
+    "input:.post-header__close"
+   ],
+   "unmet": [],
+   "why": "交互已下发（input:.post-content__input,input:.post-header__close）且前后帧 sha256 不同（3500b158f755 → 403b3c32877c）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-POST|VP38",
+   "page": "subpackages/village/village/post",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.post-content__input",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP38-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP38-after.png",
+   "sha256_12": [
+    "25d272d759d8",
+    "2bbf842c13c4"
+   ],
+   "frameBytes": [
+    8101,
+    8168
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "reshoot",
+   "routeBefore": "subpackages/village/village/post",
+   "routeAfter": "subpackages/village/village/post",
+   "dispatched": [
+    "input:.post-content__input",
+    "input:.post-header__close"
+   ],
+   "unmet": [],
+   "why": "前后帧逐字节相同 sha256:403b3c32877c ⇒ input:.post-content__input,input:.post-header__close 这一步没被证明改变过画面，不许当「状态已生效」的证据（判决名照 shoot-frameplan.mjs:168） ｜收口：重拍轮 交互已下发（input:.post-content__input,input:.post-header__close）且前后帧 sha256 不同（25d272d759d8 → 2bbf842c13c4）",
+   "firstPassOutcome": "UNCHANGED_AFTER_INTERACTION"
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-POST|VP40",
+   "page": "subpackages/village/village/post",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.post-header__submit",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP40-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "403b3c32877c"
+   ],
+   "frameBytes": [
+    8219
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "LEFT_PAGE",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/village/village/post",
+   "routeAfter": "subpackages/village/village/index",
+   "dispatched": [
+    "tap:.post-header__submit"
+   ],
+   "unmet": [
+    "input:.post-title__input :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+    "input:.post-content__input :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互后离开目标页（栈顶=subpackages/village/village/index）⇒ 状态量不到，不是产品判红（口径 r-exec-cli.mjs:638）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB19",
+   "page": "subpackages/village/village/publish",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.publish-content__input",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB19-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB19-after.png",
+   "sha256_12": [
+    "aadcdb55fa7c",
+    "db096b9885ce"
+   ],
+   "frameBytes": [
+    8024,
+    7974
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/village/village/publish",
+   "routeAfter": "subpackages/village/village/publish",
+   "dispatched": [
+    "input:.publish-content__input"
+   ],
+   "unmet": [],
+   "why": "交互已下发（input:.publish-content__input）且前后帧 sha256 不同（aadcdb55fa7c → db096b9885ce）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB20",
+   "page": "subpackages/village/village/publish",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.publish-content__input",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB20-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB20-after.png",
+   "sha256_12": [
+    "35d91957788f",
+    "3adde9173268"
+   ],
+   "frameBytes": [
+    7972,
+    7968
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "reshoot",
+   "routeBefore": "subpackages/village/village/publish",
+   "routeAfter": "subpackages/village/village/publish",
+   "dispatched": [
+    "input:.publish-content__input",
+    "input:.publish-header__close",
+    "input:.publish-image--add"
+   ],
+   "unmet": [],
+   "why": "前后帧逐字节相同 sha256:81864c2f1d4b ⇒ input:.publish-content__input,input:.publish-header__close,input:.publish-image--add 这一步没被证明改变过画面，不许当「状态已生效」的证据（判决名照 shoot-frameplan.mjs:168） ｜收口：重拍轮 交互已下发（input:.publish-content__input,input:.publish-header__close,input:.publish-image--add）且前后帧 sha256 不同（35d91957788f → 3adde9173268）",
+   "firstPassOutcome": "UNCHANGED_AFTER_INTERACTION"
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB22",
+   "page": "subpackages/village/village/publish",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.publish-content__input",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB22-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB22-after.png",
+   "sha256_12": [
+    "3adde9173268",
+    "5082d7097e15"
+   ],
+   "frameBytes": [
+    7968,
+    7971
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "reshoot",
+   "routeBefore": "subpackages/village/village/publish",
+   "routeAfter": "subpackages/village/village/publish",
+   "dispatched": [
+    "input:.publish-content__input",
+    "input:.publish-header__submit"
+   ],
+   "unmet": [],
+   "why": "前后帧逐字节相同 sha256:81864c2f1d4b ⇒ input:.publish-content__input,input:.publish-header__submit 这一步没被证明改变过画面，不许当「状态已生效」的证据（判决名照 shoot-frameplan.mjs:168） ｜收口：重拍轮 交互已下发（input:.publish-content__input,input:.publish-header__submit）且前后帧 sha256 不同（3adde9173268 → 5082d7097e15）",
+   "firstPassOutcome": "UNCHANGED_AFTER_INTERACTION"
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB25",
+   "page": "subpackages/village/village/publish",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap",
+   "framesBefore": "",
+   "framesAfter": "",
+   "sha256_12": [],
+   "frameBytes": [],
+   "frameMagic": "",
+   "framePixels": "",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [],
+   "why": "判据台已盖章 automatable:false ⇒ 本通道不发交互（载具口径 r-exec-cli.mjs:90 notAutomatableSkip） :: 发布成功自动返回 + 下拉刷新 2 次 + 等 5s：下拉刷新是原生手势，CLI 通道不驱动",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB26",
+   "page": "subpackages/village/village/publish",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.publish-content__input",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB26-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB26-after.png",
+   "sha256_12": [
+    "20545d7aac55",
+    "0d56bc08f7b2"
+   ],
+   "frameBytes": [
+    7969,
+    7965
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "reshoot",
+   "routeBefore": "subpackages/village/village/publish",
+   "routeAfter": "subpackages/village/village/publish",
+   "dispatched": [
+    "input:.publish-content__input",
+    "input:.publish-header__submit"
+   ],
+   "unmet": [],
+   "why": "前后帧逐字节相同 sha256:698b8737a2a9 ⇒ input:.publish-content__input,input:.publish-header__submit 这一步没被证明改变过画面，不许当「状态已生效」的证据（判决名照 shoot-frameplan.mjs:168） ｜收口：重拍轮 交互已下发（input:.publish-content__input,input:.publish-header__submit）且前后帧 sha256 不同（20545d7aac55 → 0d56bc08f7b2）",
+   "firstPassOutcome": "UNCHANGED_AFTER_INTERACTION"
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB33",
+   "page": "subpackages/village/village/publish",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.publish-content__input",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB33-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB33-after.png",
+   "sha256_12": [
+    "0d56bc08f7b2",
+    "d539f1213b38"
+   ],
+   "frameBytes": [
+    7965,
+    7966
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "reshoot",
+   "routeBefore": "subpackages/village/village/publish",
+   "routeAfter": "subpackages/village/village/publish",
+   "dispatched": [
+    "input:.publish-content__input"
+   ],
+   "unmet": [],
+   "why": "前后帧逐字节相同 sha256:698b8737a2a9 ⇒ input:.publish-content__input 这一步没被证明改变过画面，不许当「状态已生效」的证据（判决名照 shoot-frameplan.mjs:168） ｜收口：重拍轮 交互已下发（input:.publish-content__input）且前后帧 sha256 不同（0d56bc08f7b2 → d539f1213b38）",
+   "firstPassOutcome": "UNCHANGED_AFTER_INTERACTION"
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB34",
+   "page": "subpackages/village/village/publish",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.publish-content__input",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB34-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB34-after.png",
+   "sha256_12": [
+    "d539f1213b38",
+    "498a4735f689"
+   ],
+   "frameBytes": [
+    7966,
+    7970
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "reshoot",
+   "routeBefore": "subpackages/village/village/publish",
+   "routeAfter": "subpackages/village/village/publish",
+   "dispatched": [
+    "input:.publish-content__input",
+    "input:.publish-header__submit"
+   ],
+   "unmet": [],
+   "why": "前后帧逐字节相同 sha256:bfec5703187f ⇒ input:.publish-content__input,input:.publish-header__submit 这一步没被证明改变过画面，不许当「状态已生效」的证据（判决名照 shoot-frameplan.mjs:168） ｜收口：重拍轮 交互已下发（input:.publish-content__input,input:.publish-header__submit）且前后帧 sha256 不同（d539f1213b38 → 498a4735f689）",
+   "firstPassOutcome": "UNCHANGED_AFTER_INTERACTION"
+  },
+  {
+   "id": "次要18|VD10",
+   "page": "subpackages/village/village/detail",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.input-bar__input",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要18-VD10-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/次要18-VD10-after.png",
+   "sha256_12": [
+    "5f2d8f8cea07",
+    "111c0b50f752"
+   ],
+   "frameBytes": [
+    13592,
+    13740
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/village/village/detail",
+   "routeAfter": "subpackages/village/village/detail",
+   "dispatched": [
+    "input:.input-bar__input"
+   ],
+   "unmet": [],
+   "why": "交互已下发（input:.input-bar__input）且前后帧 sha256 不同（5f2d8f8cea07 → 111c0b50f752）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要18|VD15",
+   "page": "subpackages/village/village/detail",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.post-body",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要18-VD15-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/次要18-VD15-after.png",
+   "sha256_12": [
+    "af0a01fbade7",
+    "af0a01fbade7"
+   ],
+   "frameBytes": [
+    13597,
+    13597
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/village/village/detail",
+   "routeAfter": "subpackages/village/village/detail",
+   "dispatched": [
+    "tap:.post-body"
+   ],
+   "unmet": [],
+   "why": "前后帧逐字节相同 sha256:af0a01fbade7 ⇒ tap:.post-body 这一步没被证明改变过画面，不许当「状态已生效」的证据（判决名照 shoot-frameplan.mjs:168）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要18|TD03",
+   "page": "subpackages/circles/circles/topic-detail",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.reply-input",
+   "framesBefore": "",
+   "framesAfter": "",
+   "sha256_12": [],
+   "frameBytes": [],
+   "frameMagic": "",
+   "framePixels": "",
+   "outcome": "VEHICLE_DENY",
+   "outcomeClosedBy": "",
+   "routeBefore": "",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [],
+   "why": "载具 DENY_TAP（r-exec-cli.mjs:60 词表）命中 action 文本 ⇒ 载具在取租约前就不发交互；本 lane 不放宽判据，如实记。命中词=清空",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要18|TD06",
+   "page": "subpackages/circles/circles/topic-detail",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.topic-content",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要18-TD06-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/次要18-TD06-after.png",
+   "sha256_12": [
+    "222f40c7ab97",
+    "222f40c7ab97"
+   ],
+   "frameBytes": [
+    10411,
+    10411
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/circles/circles/topic-detail",
+   "routeAfter": "subpackages/circles/circles/topic-detail",
+   "dispatched": [
+    "tap:.topic-content"
+   ],
+   "unmet": [],
+   "why": "前后帧逐字节相同 sha256:222f40c7ab97 ⇒ tap:.topic-content 这一步没被证明改变过画面，不许当「状态已生效」的证据（判决名照 shoot-frameplan.mjs:168）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要19|LK04",
+   "page": "subpackages/discover-extra/likes/index",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.likes-card__name",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要19-LK04-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/次要19-LK04-after.png",
+   "sha256_12": [
+    "fff859e95322",
+    "4a6925c36066"
+   ],
+   "frameBytes": [
+    6933,
+    6725
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/discover-extra/likes/index",
+   "routeAfter": "subpackages/discover-extra/likes/index|subpackages/chat/chat-session/index",
+   "dispatched": [
+    "tap:.likes-card__name"
+   ],
+   "unmet": [
+    "tap:.likes-unlock-bar__btn :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互已下发（tap:.likes-card__name）且前后帧 sha256 不同（fff859e95322 → 4a6925c36066）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要20|VRN07",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.form-item__input",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要20-VRN07-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "f2e59bd7b159"
+   ],
+   "frameBytes": [
+    5879
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/profile-extra/verification/real-name",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [
+    "input:.form-item__input :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: input:.form-item__input :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要20|VRN11",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap",
+   "framesBefore": "",
+   "framesAfter": "",
+   "sha256_12": [],
+   "frameBytes": [],
+   "frameMagic": "",
+   "framePixels": "",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [],
+   "why": "判据台已盖章 automatable:false ⇒ 本通道不发交互（载具口径 r-exec-cli.mjs:90 notAutomatableSkip） :: 纯观察 + 全页截图（无点击），被 TAP_RE 误判为交互型 ⇒ 该修的是分类，不是判据",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要20|OT05",
+   "page": "subpackages/profile-extra/profile/other",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.relationship-cta__btn--like",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要20-OT05-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "e9461ce29464"
+   ],
+   "frameBytes": [
+    3369
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/profile-extra/profile/other",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [
+    "tap:.relationship-cta__btn--like :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: tap:.relationship-cta__btn--like :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要20|OT06",
+   "page": "subpackages/profile-extra/profile/other",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.relationship-cta__btn--like",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要20-OT06-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "e9461ce29464"
+   ],
+   "frameBytes": [
+    3369
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/profile-extra/profile/other",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [
+    "tap:.relationship-cta__btn--like :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+    "tap:.relationship-cta__btn--hello :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: tap:.relationship-cta__btn--like :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me ; tap:.relationship-cta",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要20|OT09",
+   "page": "subpackages/profile-extra/profile/other",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.whisper-sheet__input",
+   "framesBefore": "",
+   "framesAfter": "",
+   "sha256_12": [],
+   "frameBytes": [],
+   "frameMagic": "",
+   "framePixels": "",
+   "outcome": "VEHICLE_DENY",
+   "outcomeClosedBy": "",
+   "routeBefore": "",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [],
+   "why": "载具 DENY_TAP（r-exec-cli.mjs:60 词表）命中 action 文本 ⇒ 载具在取租约前就不发交互；本 lane 不放宽判据，如实记。命中词=清空",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要20|AB06",
+   "page": "subpackages/profile-extra/profile/album",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.album-cell",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要20-AB06-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/次要20-AB06-after.png",
+   "sha256_12": [
+    "239583f5a402",
+    "5b5dedbaef98"
+   ],
+   "frameBytes": [
+    6391,
+    9208
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/profile-extra/profile/album",
+   "routeAfter": "subpackages/profile-extra/profile/album",
+   "dispatched": [
+    "tap:.album-cell"
+   ],
+   "unmet": [],
+   "why": "交互已下发（tap:.album-cell）且前后帧 sha256 不同（239583f5a402 → 5b5dedbaef98）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要20|AB09",
+   "page": "subpackages/profile-extra/profile/album",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap",
+   "framesBefore": "",
+   "framesAfter": "",
+   "sha256_12": [],
+   "frameBytes": [],
+   "frameMagic": "",
+   "framePixels": "",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [],
+   "why": "判据台已盖章 automatable:false ⇒ 本通道不发交互（载具口径 r-exec-cli.mjs:90 notAutomatableSkip） :: 长按相册图 → 原生 ActionSheet「设为头像」；且要跨页到「我的」复核，单页通道做不到",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要20|AB10",
+   "page": "subpackages/profile-extra/profile/album",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap",
+   "framesBefore": "",
+   "framesAfter": "",
+   "sha256_12": [],
+   "frameBytes": [],
+   "frameMagic": "",
+   "framePixels": "",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [],
+   "why": "判据台已盖章 automatable:false ⇒ 本通道不发交互（载具口径 r-exec-cli.mjs:90 notAutomatableSkip） :: 删除走 showModal 确认 + 系统返回键，均非页面 DOM 动作",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要20|TK07",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.task-item",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要20-TK07-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/次要20-TK07-after.png",
+   "sha256_12": [
+    "69b47bfc9cfa",
+    "d4bb4773b666"
+   ],
+   "frameBytes": [
+    9594,
+    9599
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/profile-extra/profile/tasks",
+   "routeAfter": "subpackages/profile-extra/profile/tasks",
+   "dispatched": [
+    "tap:.task-item"
+   ],
+   "unmet": [],
+   "why": "交互已下发（tap:.task-item）且前后帧 sha256 不同（69b47bfc9cfa → d4bb4773b666）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要20|TK08",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.task-item",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要20-TK08-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/次要20-TK08-after.png",
+   "sha256_12": [
+    "69b47bfc9cfa",
+    "d4bb4773b666"
+   ],
+   "frameBytes": [
+    9594,
+    9599
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/profile-extra/profile/tasks",
+   "routeAfter": "subpackages/profile-extra/profile/tasks",
+   "dispatched": [
+    "tap:.task-item"
+   ],
+   "unmet": [],
+   "why": "交互已下发（tap:.task-item）且前后帧 sha256 不同（69b47bfc9cfa → d4bb4773b666）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要20|TK10",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap",
+   "framesBefore": "",
+   "framesAfter": "",
+   "sha256_12": [],
+   "frameBytes": [],
+   "frameMagic": "",
+   "framePixels": "",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [],
+   "why": "判据台已盖章 automatable:false ⇒ 本通道不发交互（载具口径 r-exec-cli.mjs:90 notAutomatableSkip） :: 要改服务端签到态（换身份/改后端），执行轮无权改后端数据",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要21|FHT05",
+   "page": "subpackages/profile-extra/feedback/history",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.attachment-img",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要21-FHT05-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "06b048a93188"
+   ],
+   "frameBytes": [
+    5488
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/profile-extra/feedback/history",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [
+    "tap:.attachment-img :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: tap:.attachment-img :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要21|OC09",
+   "page": "subpackages/chat/official-chat/index",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.retry-btn",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要21-OC09-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "315174813be9"
+   ],
+   "frameBytes": [
+    13458
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/chat/official-chat/index",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [
+    "tap:.retry-btn :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: tap:.retry-btn :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要21|FB13",
+   "page": "subpackages/support/feedback/index",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap",
+   "framesBefore": "",
+   "framesAfter": "",
+   "sha256_12": [],
+   "frameBytes": [],
+   "frameMagic": "",
+   "framePixels": "",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [],
+   "why": "判据台已盖章 automatable:false ⇒ 本通道不发交互（载具口径 r-exec-cli.mjs:90 notAutomatableSkip） :: 纯观察 + 与另一身份对照 + 下拉一次；对照需要第三个会话，非本页可驱动",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要22|AC10",
+   "page": "subpackages/discover/activities/index",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.retry-btn",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要22-AC10-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "b05591bad89e"
+   ],
+   "frameBytes": [
+    12599
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/discover/activities/index",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [
+    "tap:.retry-btn :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: tap:.retry-btn :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要22|MD09",
+   "page": "subpackages/market/detail/index",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.product-scroll",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要22-MD09-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "31a84715d098"
+   ],
+   "frameBytes": [
+    4301
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/market/detail/index",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [
+    "tap:.product-scroll :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: tap:.product-scroll :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要22|PC06",
+   "page": "subpackages/vip/promo-code",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.code-input",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要22-PC06-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/次要22-PC06-after.png",
+   "sha256_12": [
+    "0c76dd0f2e0d",
+    "735c4f0dfefb"
+   ],
+   "frameBytes": [
+    9812,
+    10075
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/vip/promo-code",
+   "routeAfter": "subpackages/vip/promo-code",
+   "dispatched": [
+    "input:.code-input"
+   ],
+   "unmet": [
+    "input:.footer__btn :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互已下发（input:.code-input）且前后帧 sha256 不同（0c76dd0f2e0d → 735c4f0dfefb）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要22|VB03",
+   "page": "subpackages/vip/bills",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要22-VB03-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "691681ab36f8"
+   ],
+   "frameBytes": [
+    6193
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/vip/bills",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [],
+   "why": "判据没点名可交互元素（tapTarget 空且 action 抠不出类名）⇒ 点击无法归属",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要22|VB07",
+   "page": "subpackages/vip/bills",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要22-VB07-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "691681ab36f8"
+   ],
+   "frameBytes": [
+    6193
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/vip/bills",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [],
+   "why": "判据没点名可交互元素（tapTarget 空且 action 抠不出类名）⇒ 点击无法归属",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要22|VB10",
+   "page": "subpackages/vip/bills",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.filter-chip",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A/次要22-VB10-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A/次要22-VB10-after.png",
+   "sha256_12": [
+    "81fdb970ad73",
+    "81fdb970ad73"
+   ],
+   "frameBytes": [
+    6200,
+    6200
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/vip/bills",
+   "routeAfter": "subpackages/vip/bills",
+   "dispatched": [
+    "tap:.filter-chip"
+   ],
+   "unmet": [],
+   "why": "前后帧逐字节相同 sha256:81fdb970ad73 ⇒ tap:.filter-chip 这一步没被证明改变过画面，不许当「状态已生效」的证据（判决名照 shoot-frameplan.mjs:168）",
+   "firstPassOutcome": ""
+  },
+  {
+   "id": "次要20|OT06",
+   "page": "subpackages/profile-extra/profile/other",
+   "identity": "游客",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.relationship-cta__btn--like",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-guest/次要20-OT06-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "c6ec9cea9433"
+   ],
+   "frameBytes": [
+    3368
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/profile-extra/profile/other",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [
+    "tap:.relationship-cta__btn--like :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+    "tap:.relationship-cta__btn--hello :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: tap:.relationship-cta__btn--like :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me ; tap:.relationship-cta",
+   "firstPassOutcome": "",
+   "axisNote": "游客轴补测（clearSession 后 verifyLogin 实测量到 not-logged-in 才开跑）"
+  },
+  {
+   "id": "次要21|OC09",
+   "page": "subpackages/chat/official-chat/index",
+   "identity": "游客",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.retry-btn",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-guest/次要21-OC09-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "1f6f23049988"
+   ],
+   "frameBytes": [
+    12837
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/chat/official-chat/index",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [
+    "tap:.retry-btn :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: tap:.retry-btn :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+   "firstPassOutcome": "",
+   "axisNote": "游客轴补测（clearSession 后 verifyLogin 实测量到 not-logged-in 才开跑）"
+  },
+  {
+   "id": "次要22|MD09",
+   "page": "subpackages/market/detail/index",
+   "identity": "游客",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "tap:.product-scroll",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-guest/次要22-MD09-before.png",
+   "framesAfter": "",
+   "sha256_12": [
+    "f987b0ca4a79"
+   ],
+   "frameBytes": [
+    4302
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/market/detail/index",
+   "routeAfter": "",
+   "dispatched": [],
+   "unmet": [
+    "tap:.product-scroll :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me"
+   ],
+   "why": "交互腿下发全部失败 ⇒ 没有交互后的状态可判 :: tap:.product-scroll :: automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e=process.argv[1],a=process.argv. | stdout={ \"ok\": false, \"errorType\": \"MCP_TOOL_ERROR\", \"me",
+   "firstPassOutcome": "",
+   "axisNote": "游客轴补测（clearSession 后 verifyLogin 实测量到 not-logged-in 才开跑）"
+  },
+  {
+   "id": "次要18|TD03-DENYEXPERIMENT",
+   "page": "subpackages/circles/circles/topic-detail",
+   "identity": "登录",
+   "band": "real",
+   "bandStamp": "real@ed1cd82c",
+   "interaction": "input:.reply-input",
+   "framesBefore": "reports/screenshots/round-8-interact/real-sc-A-denyexp/次要18-TD03-DENYEXPERIMENT-before.png",
+   "framesAfter": "reports/screenshots/round-8-interact/real-sc-A-denyexp/次要18-TD03-DENYEXPERIMENT-after.png",
+   "sha256_12": [
+    "b1c0e812c9e4",
+    "b1c0e812c9e4"
+   ],
+   "frameBytes": [
+    10400,
+    10400
+   ],
+   "frameMagic": "JPEG",
+   "framePixels": "192x413",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "",
+   "routeBefore": "subpackages/circles/circles/topic-detail",
+   "routeAfter": "subpackages/circles/circles/topic-detail",
+   "dispatched": [
+    "input:.reply-input"
+   ],
+   "unmet": [],
+   "why": "前后帧逐字节相同 sha256:b1c0e812c9e4 ⇒ input:.reply-input 这一步没被证明改变过画面，不许当「状态已生效」的证据（判决名照 shoot-frameplan.mjs:168）",
+   "firstPassOutcome": "",
+   "axisNote": "DENY 误挡对照行，不是判据判决行；载具那条 VEHICLE_DENY 仍按原样在 49 条里"
+  }
+ ],
+ "reshootPass": {
+  "why": "首拍 11 条 UNCHANGED_AFTER_INTERACTION 里有 6 条是**输入腿**且落点页有草稿持久化（village/post、village/publish）：同一条固定串重跑必然同帧，那是我的夹具问题不是产品问题。改每条投唯一串重拍 ⇒ 6 条全部 EXECUTED（前后帧 sha256 不同）。",
+  "cmd": "\"D:/codex-tools/node-v22.17.0-win-x64/node.exe\" .zcode/tmp/lane-ui2/interact-pair.mjs --project apps/client/dist/build/mp-weixin-showcase --identity A --band real-sc --jobs .zcode/tmp/lane-ui2/jobs-reshoot.json --shots reports/screenshots/round-8-interact/real-sc-A-reshoot --rows .zcode/tmp/lane-ui2/rows-reshoot.jsonl --settle 2600",
+  "out": "LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=lane-ui2-interact-real-sc-A band=real@ed1cd82c project=apps/client/dist/build/mp-weixin-showcase\nROW SUBPACKAGES-VILLAGE-VILLAGE-POST|VP38 outcome=EXECUTED sha=[25d272d759d8,2bbf842c13c4] 交互已下发（input:.post-content__input,input:.post-header__close）且前后帧 sha256 不同（25d272d759d8 → 2bbf842c13c4）\nROW SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB20 outcome=EXECUTED sha=[35d91957788f,3adde9173268] 交互已下发（input:.publish-content__input,input:.publish-header__close,input:.publish-image--add）且前后帧 sha256 不同（35d91957788f → 3adde9173\nROW SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB22 outcome=EXECUTED sha=[3adde9173268,5082d7097e15] 交互已下发（input:.publish-content__input,input:.publish-header__submit）且前后帧 sha256 不同（3adde9173268 → 5082d7097e15）\nROW SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB26 outcome=EXECUTED sha=[20545d7aac55,0d56bc08f7b2] 交互已下发（input:.publish-content__input,input:.publish-header__submit）且前后帧 sha256 不同（20545d7aac55 → 0d56bc08f7b2）\nROW SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB33 outcome=EXECUTED sha=[0d56bc08f7b2,d539f1213b38] 交互已下发（input:.publish-content__input）且前后帧 sha256 不同（0d56bc08f7b2 → d539f1213b38）\nROW SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB34 outcome=EXECUTED sha=[d539f1213b38,498a4735f689] 交互已下发（input:.publish-content__input,input:.publish-header__submit）且前后帧 sha256 不同（d539f1213b38 → 498a4735f689）\nLEASE=RELEASED {\"released\":true,\"file\":\"D:\\\\6\\\\恋爱小程序\\\\tmp\\\\qa\\\\locks\\\\wechat-automation-cli.lock\"}\nHELD_AFTER=[{\"file\":\"wechat-automation-9498.lock\",\"owner\":\"r1-exec-subagent-R1\",\"pid\":28556,\"resource\":\"wechat-automation-9498\",\"leaseUntil\":\"2026-09-28T19:51:17.563Z\",\"pidState\":\"alive\",\"orphan\":false,\"why\":\"属主进程 pid 28556 仍在跑 ⇒ 真有人在用\",\"label\":\"r1-exec-subagent-R1@pid28556\"}]\nPAIR_RESULT rows=6 band=real@ed1cd82c identity=A\n",
+  "ids": [
+   "SUBPACKAGES-VILLAGE-VILLAGE-POST|VP38",
+   "PUB20",
+   "PUB22",
+   "PUB26",
+   "PUB33",
+   "PUB34"
+  ],
+  "keptUnchanged": "另外 5 条 UNCHANGED 是**点击腿**打在非交互容器上（CX15 .topic-scroll、CPT22 .bottom-submit__btn+.post-header__submit、VD15 .post-body、TD06 .topic-content、VB10 .filter-chip），重拍不会变，按在册判据如实留 UNCHANGED_AFTER_INTERACTION。"
+ },
+ "vehicleBlocker": {
+  "denyTapEvidence": "scripts/qa/r-exec-cli.mjs:60  const DENY_TAP = /注销|解绑|清空|删除账号|删除帐号|退出登录|登出/;  应用点 scripts/qa/r-exec-cli.mjs:582  if (DENY_TAP.test(String(c.action || \"\"))) { … rows.push(row(…, \"SKIPPED\", …, \"交互禁触（注销/解绑/清空这类不可逆动作会打掉后面几百条共用的会话）⇒ 显式记 DENY，不混进已跑\", …)); continue; }  ｜scripts/qa/r-exec-ws.mjs:391 同一份词表（注释在 :388-390）。",
+  "measuredBlastRadius": "对 §4 第 1 项那 49 条逐条按载具口径（只测 c.action 字段，不测整条判据正文）复算：命中 DENY 的是 **2 条**：次要18|TD03（.reply-input）、次要20|OT09（.whisper-sheet__input），命中词都是「清空」。⇒ 前一车道 result.json 把它写成挡住整批的形状不成立：按 action-only 口径它挡的是 2/49。（若把 pre/expected/evidence 一起喂给这条正则，会数到 10 条 —— 那是载具没有的口径，本轮不采用。）",
+  "misblockProof": "TD03 现场实测（.zcode/tmp/lane-ui2/deny-probe.txt）：DP_ROUTE=subpackages/circles/circles/topic-detail、DP_NODECOUNT .reply-input=1（物件在渲染树里）、DP_HTML=\"<input class=\\\"reply-input data-v-2c543109\\\" aria-label=\\\"写下你的回复...\\\" placeholder=\\\"写下你的回复...\\\" value=\\\"></input>\"、DP_INPUT_DISPATCH=OK {\"success\":true}。⇒ 被挡的是一个 placeholder 写着「写下你的回复…」的普通回复输入框，动作是往里打字，不是注销/解绑/删号那一类不可逆账号级动作；载具词表按「判据正文里出现了清空这三个字」就拦，与它自己注释写的拦阻理由（会打掉后面几百条共用的会话）对不上。对照实验行（次要18|TD03-DENYEXPERIMENT）也确实把 input 发出去了、没有报错，只是前后帧逐字节相同 ⇒ 记 UNCHANGED，没被读成状态生效。",
+  "whatStillBlocksTheBatch": "整批真正的拦路虎不是 DENY，是这两条：① real 档唯一在听且能握手的 WS 实例（9420）绑 mock，为 real 新起的实例（9421）connect() 在版本握手处就抛 ⇒ 组件作用域那一族（OT05/OT06/OT09）没有能点进组件子树的通道；② mp-weixin-real 那台窗口模拟器启动失败（Timeout），而载具的 open/screenshot 两道成功判据都会放行那张失败页 ⇒ 本轮所有 real 档交互证据只能落在 showcase 载体（real@ed1cd82c）上。",
+  "changedByMe": false,
+  "changedByMeNote": "scripts/qa/** 一字未改（含 r-exec-cli.mjs:60 与 r-exec-ws.mjs:391 的词表），verify-* 门与分诊台未碰。本 lane 的对照实验行写在**单独一个目录** reports/audit/round-7/exec-interact-denyexp-r10/，载具自己那条 VEHICLE_DENY 仍原样留在 exec-interact-real-sc-r10 的 49 行里 ⇒ 改不改载具由台账员拿着这两份证据决定。"
+ },
+ "gateRerun": {
+  "cmd": "\"D:/codex-tools/node-v22.17.0-win-x64/node.exe\" scripts/qa/verify-real-coverage.mjs",
+  "exit": 1,
+  "out": "REALCOV_CASES=236 EXEC_ROWS=15206 结果目录=D:\\6\\恋爱小程序\\reports\\audit\\round-7\nREALCOV_NEVER_ON_REAL=0 REAL_BAND_BUT_ALL_SKIPPED=14 JUDGED_MISSING_A=14 JUDGED_MISSING_GUEST=3\nREALCOV_IDENTITY_SCOPED 游客轴豁免=122 登录轴豁免=1（来源=ops 用例上的 c.identities，载体 tag-ops-identity-scope.mjs；豁免只减认领者，不减判据）\nREALCOV_AUTOMATABLE_EXEMPT=10（其中 real 档有行但全被 SKIPPED=9）来源=ops 用例声明字段 c.automatable===false（严格判等，与 r-exec-ws.mjs:611 拒跑名单同一字段同一条件；载具 dc9f7297 WSX_IDS_NOT_AUTOMATABLE）⇒ 执行腿被禁止跑的行，本门不再索要\"跑过\"的证据；豁免≠覆盖，REALCOV_COVERED 不含它们。\n  EXEMPT PAGES-LOGIN-INDEX|LG30 出处=cellplan-round7-login-skips.json real档=有行且判过\n  EXEMPT PAGES-MESSAGES-INDEX|MSG24 出处=cellplan-round7-taptarget.json real档=有行但全 SKIPPED\n  EXEMPT PAGES-MESSAGES-INDEX|MSG26 出处=cellplan-round7-taptarget.json real档=有行但全 SKIPPED\n  EXEMPT SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI28 出处=cellplan-round7-taptarget.json real档=有行但全 SKIPPED\n  EXEMPT SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB25 出处=cellplan-round7-taptarget.json real档=有行但全 SKIPPED\n  EXEMPT 次要20|VRN11 出处=cellplan-round7-taptarget.json real档=有行但全 SKIPPED\n  EXEMPT 次要20|AB09 出处=cellplan-round7-taptarget.json real档=有行但全 SKIPPED\n  EXEMPT 次要20|AB10 出处=cellplan-round7-taptarget.json real档=有行但全 SKIPPED\n  EXEMPT 次要20|TK10 出处=cellplan-round7-taptarget.json real档=有行但全 SKIPPED\n  EXEMPT 次要21|FB13 出处=cellplan-round7-taptarget.json real档=有行但全 SKIPPED\n  NO_A_JUDGED PAGES-PROFILE-INDEX|PFI25\n  NO_A_JUDGED SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25\n  NO_A_JUDGED SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34\n  NO_A_JUDGED 次要18|TD03\n  NO_A_JUDGED 次要20|VRN07\n  NO_A_JUDGED 次要20|OT05\n  NO_GUEST_JUDGED 次要20|OT06\n  NO_GUEST_JUDGED 次要21|OC09\n  NO_GUEST_JUDGED 次要22|MD09\nREALCOV_BANDLESS_ROWS=31（在本门会看的 3274 行里）REALCOV_BANDLESS_CASES=31 REALCOV_BANDLESS_SCANNED=145／15206 全扫描行\n  BANDLESS 出处 exec-ws-tap-r8=145（这些行的 band 字段缺失 ⇒ 无论档位是 mock 还是 real，本门一律无法认领；盖法见 r-exec-cli.mjs:176 与 r-exec-ws.mjs 的 mkRow/BAND_STR，格式 mode@sha8，判点即上面的 REAL_BAND）\n  BANDLESS PAGES-HOME-INDEX|H17 漏盖行=1\n  BANDLESS PAGES-HOME-INDEX|H19 漏盖行=1\n  BANDLESS PAGES-HOME-INDEX|H30 漏盖行=1\n  BANDLESS SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX29 漏盖行=1\n  BANDLESS SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT29 漏盖行=1\n  BANDLESS SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI01 漏盖行=1\n  BANDLESS SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI07 漏盖行=1\n  BANDLESS SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI12 漏盖行=1\n  BANDLESS SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI14 漏盖行=1\n  BANDLESS SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI18 漏盖行=1\n  BANDLESS SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI19 漏盖行=1\n  BANDLESS SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI20 漏盖行=1\n  BANDLESS …另 19 条判据未逐条点名（总数已计入 REALCOV_BANDLESS_CASES）\n  BANDLESS_HINT 这不是欠账新增（欠账仍按 real 档的行算），是生产者的字段缺失；修法是让那条腿盖上 band 再重跑，别把 mock 行改成 real 来\"补数\"\nREALCOV_IDENTITYLESS_ROWS=31（在本门会看的 3274 行里）REALCOV_IDENTITYLESS_CASES=31 REALCOV_IDENTITYLESS_ON_REAL=0（其中档位已是 real、只差身份的）REALCOV_IDENTITYLESS_SCANNED=145／15206 全扫描行\n  IDENTITYLESS 出处 exec-ws-tap-r8=145（这些行的 identity 字段缺失或读成 \"?\" ⇒ 门的登录轴 A/B 与游客轴 guest/not-logged-in 都不认它，哪怕 band=real@…；盖法见 r-exec-cli.mjs:176 与 r-exec-ws.mjs 的 mkRow/IDENTITY，判点即上面的 :237-238）\n  IDENTITYLESS PAGES-HOME-INDEX|H17 漏身份行=1\n  IDENTITYLESS PAGES-HOME-INDEX|H19 漏身份行=1\n  IDENTITYLESS PAGES-HOME-INDEX|H30 漏身份行=1\n  IDENTITYLESS SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX29 漏身份行=1\n  IDENTITYLESS SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT29 漏身份行=1\n  IDENTITYLESS SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI01 漏身份行=1\n  IDENTITYLESS SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI07 漏身份行=1\n  IDENTITYLESS SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI12 漏身份行=1\n  IDENTITYLESS SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI14 漏身份行=1\n  IDENTITYLESS SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI18 漏身份行=1\n  IDENTITYLESS SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI19 漏身份行=1\n  IDENTITYLESS SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI20 漏身份行=1\n  IDENTITYLESS …另 19 条判据未逐条点名（总数已计入 REALCOV_IDENTITYLESS_CASES）\n  IDENTITYLESS_HINT 这也不是欠账新增（欠账仍按 real 档+身份的行算），是生产者的字段缺失；修法是让那条腿带上 --identity 再重跑。\nREALCOV_SESSION_PROVEN=56 REALCOV_SESSION_UNPROVEN_ROWS=1149（在本门会看的 3274 行里）REALCOV_SESSION_UNPROVEN_CASES=204 REALCOV_SESSION_CONTRADICT_ROWS=0 REALCOV_SESSION_CONTRADICT_CASES=0 REALCOV_SESSION_SCANNED=3242／15206 全扫描行（其中 证过=75 不可证=3167 不符=0）\n  SESSION 口径 「identity 声明与可证会话不符/不可证」：不符=行上的 sessionSource/loginVerify 与 identity 矛盾（例：identity=B 而票是 /auth/guest-login 铸的），这种行**不再领它那条轴的钱**，欠账因此增加——这就是本轮那条假记账（--identity B 的腿铸游客票、盖 B 的标签、门按登录轴认）从此量得到的形状；不可证=行上没有会话字段，认领照旧，只数不撤。\nREALCOV_IDENT_VOCAB A=9359 B=0 guest=5702 not-logged-in=0 none=0（全扫描 15206 行里各拼法实际出现次数） ⇒ not-logged-in 有判点(:238)无生产者=死词；none 既不被两轴认领、旗标词表里却有(r-exec-cli.mjs --identity guest|none)⇒ 也是死词。本门不为此新增任何拼法。\nREALCOV_COVERED=212\nREALCOV_UNCOVERED=14／236（阈值同旧：非免检欠账 =0 才绿）\nREALCOV_CONSERVATION=OK 免检=10 + 覆盖=212 + 欠账=14 = 236／236\nREALCOV_RESULT=FAIL（真实模式覆盖守恒：跳过不算量到，单身份不算双身份；免检只免\"本门不追\"，不降阈值）\n",
+  "reading": {
+   "本 lane 开跑前（前一车道收工态）": "REALCOV_UNCOVERED=14／236 COVERED=212 免检=10（.zcode/tmp/lane-uicov/gate-final.txt）",
+   "本 lane 收工后": "REALCOV_CASES=236 EXEC_ROWS=15206 结果目录=D:\\6\\恋爱小程序\\reports\\audit\\round-7 ｜ REALCOV_NEVER_ON_REAL=0 REAL_BAND_BUT_ALL_SKIPPED=14 JUDGED_MISSING_A=14 JUDGED_MISSING_GUEST=3 ｜ REALCOV_COVERED=212 ｜ REALCOV_UNCOVERED=14／236（阈值同旧：非免检欠账 =0 才绿） ｜ REALCOV_CONSERVATION=OK 免检=10 + 覆盖=212 + 欠账=14 = 236／236 ｜ REALCOV_RESULT=FAIL（真实模式覆盖守恒：跳过不算量到，单身份不算双身份；免检只免\"本门不追\"，不降阈值）",
+   "为什么门没因此变绿": "本 lane 的 19 条 EXECUTED 落在那 14 条欠账**之外**的判据上（它们早先已被别的腿判过，门按 case 记覆盖不按行数）；14 条欠账里本 lane 试过的 TD03/OT05/OT06/OT09/MD09/OC09/AC10/VB03/VB07/FHT05/VRN07/VI25/VI34/PFI25 全部如实记 SKIPPED（NOT_SHOOTABLE / VEHICLE_DENY），SKIPPED 不算量到 ⇒ 欠账不动。EXEC_ROWS 从 15153 涨到 15202（+49），守恒等式仍 OK。",
+   "口径未动": "verify-real-coverage.mjs 一字未改，读数允许仍红（本轮实测仍 RED，exit=1）。"
+  }
+ },
+ "leaseHygiene": {
+  "acquired": "本 lane 全程只有两种用法：① 裸调 cli-automator 原语的自写脚本（interact-pair / channel-usability / window-state / deny-probe）在调用点显式 import { acquireUi, releaseUi, heldLeases } 并包成 try/finally；② 自带 guardUiLease 的现成工具（open-project-window.mjs）单独跑、不叠加我的租约。owner 逐次为 lane-ui2-window-probe / lane-ui2-channel-usability / lane-ui2-interact-real-sc-A / lane-ui2-interact-real-sc-guest / lane-ui2-deny-probe。",
+  "released": "每次跑完都打 LEASE=RELEASED {\"released\":true,…} 与 HELD_AFTER=[]；6 批设备腿的原文见 .zcode/tmp/lane-ui2/batch-*.txt 与 probe-run*.txt。",
+  "heldLeasesNow": "[]",
+  "lockFileFinal": "{\n \"resource\": \"wechat-automation-cli\",\n \"owner\": \"lane-ui2-deny-probe\",\n \"pid\": 34204,\n \"host\": \"DESKTOP-IOQK625\",\n \"batch\": \"R8-UI2\",\n \"status\": \"released\",\n \"leaseUntil\": \"2026-09-28T20:02:00.174Z\",\n \"attempt\": 1124,\n \"acquiredAt\": \"2026-09-26T20:14:41.139Z\",\n \"lastHeartbeat\": \"2026-09-28T19:42:00.165Z\",\n \"releasedAt\": \"2026-09-28T19:42:29.951Z\"\n}",
+  "note": "中途一次 HELD_AFTER 里出现过**别人**的一把活锁（wechat-automation-9498.lock owner=r1-exec-subagent-R1@pid28556，租期未到），本 lane 的租约当时已释放、没有去动它（ui-lease 规矩 1：只读别人的锁）；收工复问 heldLeases() 已空。9420/9430 两台 DevTools 与 8080 后端全程原样，没杀没重启任何不是本 lane 起的进程；没有通配删除。"
+ },
+ "boundary": {
+  "wrote": [
+   "reports/screenshots/round-8-interact/**（79 张帧 + pairs.json + manifest-detail.json + 一张 real 载体启动失败留档帧）",
+   "reports/audit/round-7/exec-interact-real-sc-r10/exec-results.json（49 行）",
+   "reports/audit/round-7/exec-interact-real-sc-guest-r10/exec-results.json（3 行）",
+   "reports/audit/round-7/exec-interact-denyexp-r10/exec-results.json（1 行，对照实验）",
+   ".zcode/tmp/lane-ui2/**"
+  ],
+  "notTouched": [
+   "scripts/**（一字未改，含两条 DENY_TAP 词表与全部 verify-* 门、分诊台、emit-round-report.mjs）",
+   "reports/audit/round-6/issue-matrix.md、round6-LEDGER.md、任何 *.bak",
+   "reports/audit/round-6/ops/**（判据台只读；49 条名单是从盘上结果文件里数出来的派生物）",
+   "apps/client/**（只读产物）"
+  ],
+  "notRun": [
+   "verify-provenance-all.mjs",
+   "verify-evidence-corpus.mjs",
+   "emit-round-report.mjs",
+   "triage-exec-failures.mjs"
+  ]
+ }
+}

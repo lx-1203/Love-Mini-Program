@@ -1,0 +1,54 @@
+{
+ "gitSha": "93650335",
+ "updatedAt": "2026-09-28T19:44:27.854Z",
+ "runner": "scripts/qa/cli-automator.mjs 原语 + ui-lease 显式包裹（.zcode/tmp/lane-ui2/interact-pair.mjs）",
+ "results": [
+  {
+   "suite": "C-undefined",
+   "page": "subpackages/circles/circles/topic-detail",
+   "band": "real@ed1cd82c",
+   "identity": "A",
+   "loginVerify": "logged-in userId=100158",
+   "sessionSource": "phone-login",
+   "requiresReal": true,
+   "title": "",
+   "status": "SKIPPED",
+   "observed": "top=subpackages/circles/circles/topic-detail | {\"targets\":[\"input:.reply-input\"],\"unmet\":[]}",
+   "missingEvidence": [],
+   "failureReason": "UNCHANGED_AFTER_INTERACTION :: 前后帧逐字节相同 sha256:b1c0e812c9e4 ⇒ input:.reply-input 这一步没被证明改变过画面，不许当「状态已生效」的证据（判决名照 shoot-frameplan.mjs:168）",
+   "route": "subpackages/circles/circles/topic-detail",
+   "toast": "",
+   "console": "",
+   "evidence": "reports/screenshots/round-8-interact/real-sc-A-denyexp/次要18-TD03-DENYEXPERIMENT-after.png(10400B)",
+   "durationMs": 0,
+   "transport": "cli-bridge(shot+element)",
+   "framesPair": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A-denyexp/次要18-TD03-DENYEXPERIMENT-before.png",
+     "bytes": 10400,
+     "sha256_12": "b1c0e812c9e4",
+     "magic": "JPEG",
+     "pixels": "192x413"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A-denyexp/次要18-TD03-DENYEXPERIMENT-after.png",
+     "bytes": 10400,
+     "sha256_12": "b1c0e812c9e4",
+     "magic": "JPEG",
+     "pixels": "192x413"
+    }
+   ]
+  }
+ ],
+ "round": "round-8-interact-denyexp",
+ "identity": "A",
+ "identities": [
+  "A"
+ ],
+ "project": "apps/client/dist/build/mp-weixin-showcase",
+ "band": "real@ed1cd82c",
+ "loginVerify": "logged-in userId=100158",
+ "note": "这是「载具 DENY_TAP 是否误挡」的对照实验行，不是判据的判决行；载具自己那条 VEHICLE_DENY 仍按原样记在 exec-interact-real-sc-r10。"
+}
