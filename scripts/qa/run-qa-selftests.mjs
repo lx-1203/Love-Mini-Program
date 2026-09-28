@@ -62,5 +62,28 @@ const passable = ran + skipped;
 console.log(`SELFTEST_RAN=${ran} SKIPPED=${skipped} FAILED=${failed} NO_SUMMARY_LINE=${noSummary} 覆盖文件=${ran + skipped}/${files.length}`);
 if (ran + skipped !== files.length) { console.log("SELFTEST_RESULT=FAIL reason=有测试文件既没跑也没记为跳过"); process.exit(2); }
 if (ran === 0 && !ALLOW_UI) { console.log("SELFTEST_RESULT=FAIL reason=全部测试都被跳过（没有一个离线测试可跑 = 接线是空的）"); process.exit(2); }
-console.log(failed ? `SELFTEST_RESULT=FAIL（${failed}/${ran} 个离线测试未过）` : `SELFTEST_RESULT=PASS（${ran} 个离线测试全绿，${skipped} 个 UI 绑定测试按策略跳过）`);
+/* ── 门自己的 --selftest 也要有人跑（wiring 车道 2026-09-29 接的第三处）──────────────
+   上面那条扫描规则是 ^test-.+\.(cjs|mjs)$，按**文件名**收 ⇒ 它永远收不到 verify-*.mjs。
+   verify-dry-no-lease.mjs 带 5 条自对照（:94-113，含"先抢租约、dry 在后面才判 ⇒ 必须 RISK"这条
+   本轮真实事故形状），建完同样是"没人跑"—— 一条自检没有运行器，和一条门没有消费者是同一个病。
+   所以这里显式列门自检，与 test-* 同罪同罚：任一不过 ⇒ failed++ ⇒ SELFTEST_RESULT=FAIL 且非 0 退出。
+   计数单独开一行 GATE_SELFTESTS_*，不混进上面 files.length 的守恒（那是 test-* 的账，
+   混进去会让 :63 的"有测试文件既没跑也没记为跳过"假红）。 */
+const GATE_SELFTESTS = [
+  { name: "verify-dry-no-lease", cmd: ["scripts/qa/verify-dry-no-lease.mjs", "--selftest"], want: /DRYLEASE_SELFTEST=PASS cases=(\d+) bad=0/ },
+];
+let gateRan = 0, gateFailed = 0;
+for (const g of GATE_SELFTESTS) {
+  const gr = spawnSync(process.execPath, g.cmd, { cwd: REPO, encoding: "utf8", timeout: 300000, maxBuffer: 32 * 1024 * 1024 });
+  const gout = `${gr.stdout || ""}${gr.stderr || ""}`;
+  const gm = gout.match(g.want);
+  const gok = gr.status === 0 && !!gm;
+  gateRan++;
+  if (!gok) gateFailed++;
+  console.log(`${gok ? "PASS " : "FAIL "} ${g.name} --selftest  exit=${gr.status}  ${gm ? gm[0] : "退出码 0 但没抓到它自报的 PASS 行（不可信，按失败算）"}`);
+  if (!gok && gout) console.log(gout.split("\n").filter((l) => /BAD|FAIL|Error|error/.test(l)).slice(0, 12).map((l) => "      | " + l.slice(0, 160)).join("\n"));
+}
+console.log(`GATE_SELFTESTS_RAN=${gateRan} GATE_SELFTESTS_FAILED=${gateFailed}`);
+failed += gateFailed;
+console.log(failed ? `SELFTEST_RESULT=FAIL（${failed}/${ran + gateRan} 个离线测试与门自检未过）` : `SELFTEST_RESULT=PASS（${ran} 个离线测试 + ${gateRan} 条门自检全绿，${skipped} 个 UI 绑定测试按策略跳过）`);
 process.exit(failed ? 1 : 0);

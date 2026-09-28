@@ -1,6 +1,6 @@
 /* zcode-workflow
 description: round-8 收官闭环（v3.3 续作）：不重跑已完成的 R1/R2/round-7 主体，直接从机器门禁账单出发——
-  十项只读门禁并行 + 环境/端口/工作树探针出「缺口账单」；分拣员把缺口三分（可执行/需用户拍板/需环境），只有可执行项进车道；
+  十二项门禁并行（都只读，唯一落盘是 .zcode/tmp 侧车，不覆写任何权威件）+ 环境/端口/工作树探针出「缺口账单」；分拣员把缺口三分（可执行/需用户拍板/需环境），只有可执行项进车道；
   按域并行收口（每车道 修复→独立复验 链式流水；UI 交互腿单写者串行、锁协议）；账本员统一落账（先干跑核对再 --apply，备份纪律）；
   门禁终验复量对照 + 构建/typecheck/vitest 守门员重跑；显式路径清单提交；总报告把「需拍板清单」原样交还用户，绝不替写政策。
   前置事实：后端 8080 在跑（health UP）；DevTools 自动化端口可能是冷的，但**零点击能拉起**（见交互腿车道纪律），不要一上来就判 UNVERIFIED-TOOLING；跑任何 scripts/** 都必须用 Node>=20.11（PATH 上的 node 是 v16，会把多条门崩成假红）。
@@ -52,6 +52,20 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   { name: "档位新鲜度 verify-band-freshness", args: ["scripts/qa/verify-band-freshness.mjs"], timeoutMs: 180000 },
   { name: "后端新鲜度 verify-backend-fresh", args: ["scripts/qa/verify-backend-fresh.mjs"], timeoutMs: 120000 },
   { name: "证据洞 verify-evidence-holes", args: ["scripts/qa/verify-evidence-holes.mjs"], timeoutMs: 180000 },
+  // 接线（2026-09-29 wiring 车道）：下面两把门是"建了没人跑"的孤儿门，本清单是唯一必然经过的调用点
+  // —— GATE_SUITE 被 Promise.all 无条件遍历两处：缺口账单 phase 与门禁终验复量；提交后还按 SHA 敏感子集复量一次
+  //    （那条 filter 的口径是 corpus|provenance|band-freshness|real-coverage，下面两条不在其内，也不该在：
+  //     它们扫的是脚本字节与 ops 用例清单，不随产物/证据 SHA 变）。
+  { name: "dry 不抢租约静态门 verify-dry-no-lease", args: ["scripts/qa/verify-dry-no-lease.mjs"], timeoutMs: 180000 },
+  // verify-case-automatable 两轴分开看：exit 2 = 完整性轴（r-exec.cjs 的 UNIMPLEMENTABLE_ACTION_RE
+  // 取不到 / --ops 目录不存在 / 扫到一个 manifest 都没有 ⇒ 单一真值源断了，这条照旧判红）；
+  // exit 0 + CA_RESULT=ADVISORY = 普查轴（它 :157-169 自己写明"假阳性率未量，默认不判红，要判红加 --strict"）。
+  // 这里**不**加 --strict：那等于替未量的假阳性率背书、把 102/1107 直接写成红 —— 拍板归人，见本轮需裁决清单。
+  // --json 显式点到 .zcode/tmp（它 :17 自定的规矩：结构化输出必须落在 reports/** 之外），不碰任何判决件。
+  { name: "用例可自动化预检 verify-case-automatable", args: ["scripts/qa/verify-case-automatable.mjs", "--json", ".zcode/tmp/case-automatable/preflight.json"], timeoutMs: 180000 },
+  // 已判"不该接"的一条（wiring 车道，别再试着接它）：verify-openqueue-lanes.mjs 不是门而是 round-7 一次性转换工具——
+  // :22 把输入根写死成 reports/audit/round-7、:90 无条件 writeFileSync 覆写 round-7 判决件 cellplan-round7-openqueue.json，
+  // 而且全文零个 process.exit ⇒ 打出 OPENQ_RESULT=PARTIAL（:99）照样退 0。接进本清单只会多一条永不变红的假绿。
 ];
 
 // ===== 看板（声明一次；report(item,"gates") 喂点，同名 key 后写覆盖 → 终验后展示的是最终状态）=====
@@ -224,7 +238,9 @@ function uiToLane(u: UiLaneOut): LaneOut {
 
 // =====================================================================
 phase("缺口账单");
-// —— 十项只读门禁并行 + 环境/端口/工作树探针；产出本轮唯一事实源 ——
+// —— 十二项门禁并行 + 环境/端口/工作树探针；产出本轮唯一事实源 ——
+// 「只读」口径：这批门都不写 reports/**。唯一落盘的是 verify-case-automatable 的 .zcode/tmp 侧车
+// （它 :17 自己规定的：结构化输出必须落在 reports/** 之外），不覆写任何判决件/台账。
 const gateOuts: GateOut[] = await Promise.all(GATE_SUITE.map(async (g) => {
   const out = await runGate(g);
   gateToBoard(out);
@@ -474,7 +490,7 @@ if (postCommit.length > 0) {
 }
 
 const verified: string[] = [
-  "十项机器门禁两轮实测（开账单 + 终验复量），判读以退出码与 *_RESULT 机器行为准",
+  "十二项机器门禁两轮实测（开账单 + 终验复量），判读以退出码与 *_RESULT 机器行为准",
   "门禁可变红自检 prove-gates-can-fail：值域外/空扫描集/缺计划清单/状态真值 四类变异各自咬红，绿不是恒绿",
   "构建 build:mp-weixin:mock / typecheck / vitest 全量经收口守门员实测（PATH 前置 Node22）",
   `台账落账后回读 verify-ledger=${ledgerman.ledgerPass ? "PASS" : "FAIL"}、verify-state-truth=${ledgerman.truthPass ? "PASS" : "FAIL"}`,

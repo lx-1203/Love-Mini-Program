@@ -313,6 +313,11 @@ export function reconcileQueueTally(o = {}) {
 /* 步骤表：write=true 的步骤默认不跑（要 --allow-write）；device=true 的还要设备空着。 */
 const STEPS = [
   { id: "queue-tally", kind: "check", note: "跨多条 queue-state 台账按腿名对账：解析表 + 对权威计划的腿名守恒（OK/红/MISSING/DROPPED 逐条点名）+ 每腿重跑历史；读空/读坏/有红/有未跑 ⇒ 这一步红" },
+  /* 接线（2026-09-29 wiring 车道）：这条门建完没人跑，而它守的正是"下面这一步会不会把正在执行的腿顶掉"。
+     放在所有 spawn 之前：它只读 scripts/qa/*.mjs 的字节序（自称支持 --dry 的脚本不许在 dry 路径上
+     acquireUi/guardUiLease/createServer/写迁移），扫的就是本收尾接下来要 spawn 的那批消费者。
+     纯读盘 ⇒ 不标 write，默认档就跑；exit 2 = 有脚本会在 dry 路径抢设备 ⇒ 这一步红，收尾非 0 退出。 */
+  { id: "verify-dry-no-lease", file: "scripts/qa/verify-dry-no-lease.mjs", kind: "gate", args: [], note: "dry 不抢设备静态门：现量扫 scripts/qa 全部脚本（扫描数由它自己打印的 DRYLEASE 扫描= 报，不写死在这），每一处 acquireUi/guardUiLease/createServer/写迁移的调用都必须在 dry 早退点之后或 dry/跳过开关的 else 分支里有可见守卫；无守卫 ⇒ DRYLEASE_RESULT=FAIL exit 2。本轮两次「只是跑个预览」打掉 15 条腿的同一形状，就是这条门要拦的" },
   { id: "exec-frames-to-corpus", file: "scripts/qa/exec-frames-to-corpus.mjs", kind: "gate", write: true, eachExecResults: true, args: [], note: "执行轮出的帧登记进语料库（#52）：按盘上真实存在的 exec-results.json 一条一步，identity 从结果文件里读" },
   { id: "tour-frames-vs-exec-corpus", kind: "check", note: "巡检/取景 corpus 与 exec-* 消费链的关系：逐 corpus 点名『为什么 exec-frames-to-corpus:* 与 triage-exec-* 不吃这批帧』，别让 18 条 exec 步骤的沉默冒充成『巡检帧已经处理过』；读数在 main() 里出，理由全文见那段注释与 .zcode/tmp/gap-framewire/FOLLOWUP-tour-frames-bridge.md" },
   { id: "client-unit-tests", file: "scripts/qa/run-client-tests.mjs", kind: "gate", write: true, args: [], note: "⑤ 的「全部门禁」含客户端单测：上一轮只在我手动 npx 时跑过一次、证据落在 tmp/（等于没交出去）；这个载具用同一颗 node 跑并把汇总与完整输出留档到 reports/，且要求 files/tests 汇总行齐全 + failed=0 + 退出码 0 三者同时成立才算过" },
@@ -331,6 +336,17 @@ const STEPS = [
   { id: "verify-tab-bar-single-source", file: "scripts/qa/verify-tab-bar-single-source.mjs", kind: "gate", args: [], note: "④ 第 5 项的判点：面板字面量相加 == token" },
   { id: "verify-case-selectors-mock", file: "scripts/qa/verify-case-selectors-exist.mjs", kind: "gate", args: [], note: "点名物件在两档产物里成不成元素（mock 档）" },
   { id: "verify-case-selectors-real", file: "scripts/qa/verify-case-selectors-exist.mjs", kind: "gate", args: ["--band", "apps/client/dist/build/mp-weixin-real"], note: "同上，real 档" },
+  /* 接线（2026-09-29 wiring 车道）：起跑前的"不可自动化用例"普查门，建完只被 verify-ops-corpus-stamp.mjs:319-320
+     当反面样本引用过，没有任何门/队列 spawn 它。放在这一族旁边：上面两条 case-selectors 量的是"点名物件成不成元素"，
+     这条量的是"用例写法执行器跑不跑得动"，同一批 ops manifest 的两个轴。
+     --ops 不传 = 走它自己的默认 reports/audit/round-6/ops，与执行器 r-exec-cli.mjs:43 的默认语料同目录
+     （round-7/ops 那份冻结副本按 verify-ops-corpus-stamp.mjs:6-9 现量引用次数 0，接它就是把读数绑到没人读的副本上）。
+     --json 显式点到 .zcode/tmp（它 :17 自定：结构化输出必须落在 reports/** 之外）⇒ 只写侧车、不碰判决件，故不标 write。
+     退出码两轴分清：exit 2=完整性轴（r-exec.cjs 的 UNIMPLEMENTABLE_ACTION_RE 取不到 / --ops 不存在 / 一个 manifest 都没扫到，
+     单一真值源断 ⇒ 这一步红）；exit 0 + CA_RESULT=ADVISORY = 普查轴（它 :157-169 写明"假阳性率未量，默认不判红，要判红加 --strict"）。
+     这里刻意**不加 --strict**：现量 102/1107 命中，加 strict 等于替未量的假阳性率背书、把一条没裁过的口径直接写成红，
+     正是它注释里点名的"门是红的、但没人知道该先修门还是先修用例"僵局。strict 与否归人裁决（见本轮需裁决清单）。 */
+  { id: "verify-case-automatable", file: "scripts/qa/verify-case-automatable.mjs", kind: "gate", args: ["--json", ".zcode/tmp/case-automatable/preflight.json"], note: "用例可自动化预检（静态轴）：从执行器自己的 UNIMPLEMENTABLE_ACTION_RE eval 出真能力缺口词表（单一真值源，断则 exit 2），另数逐态标注/亚秒连拍/全文本扫描/主观审美四类；现量 CA_TOTAL=1107 CA_UNAUTOMATABLE=102；默认 ADVISORY 不判红，--strict 的极性交人拍板" },
   { id: "g8-e2e", file: "scripts/qa/g8-e2e.cjs", kind: "gate", write: true, device: false, needs: "--with-g8", args: [], note: "十环真后端复跑（会写库：G8 产生的行按既定裁定保留并披露）" },
   { id: "g9-probe", file: "scripts/qa/g9-probe.cjs", kind: "gate", write: true, needs: "--with-g8", args: [], note: "素材普查复量" },
   { id: "land-verdicts-into-ledger", file: "scripts/qa/land-verdicts-into-ledger.mjs", kind: "gate", write: true, args: [], note: "帧级判决落台账：消费者只有 --apply（不传即 DRY，只打将改清单、落盘前自动备份）⇒ 原先的 --dry 没人读，是假接线；收尾里这一步出的就是那份 DRY 清单" },

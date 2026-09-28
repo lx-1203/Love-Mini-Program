@@ -105,3 +105,14 @@ provenance 门剩下的红主要是 `PROV_FRAMES_PRE_STAMP=4867`，成因已定�
 - 选 A：就这样（它确实不产盘上戳，11 是诚实数）。
 - 选 B：想让门继续盯着它，就把那个派生常量命名为 `GIT_SHA`（一行），它会重新进集合。
 - 盘上按 A 落定；"能变红"已用临时探针证明过（真写死时门报 `PROV_PRODUCER_LITERAL` 且 exit 1，探针已删）。要 B 说一声就改。
+
+## 15. verify-openqueue-lanes.mjs：修成真的门，还是归档
+接线车道判它"不该接"，理由都在盘上：:22 写死 round-7、:90 无条件覆写 round-7 判决件，而全文 process.exit 出现 0 次 —— 实测它打完 OPENQ_RESULT=PARTIAL 仍然 exit=0。一条"说有事却放行"的门接进清单只会教人误信绿。
+- 选 A：先修它（exit 码与判决一致、不再无条件覆写权威件、去掉写死轮次），再当门接；
+- 选 B：当 round-7 一次性转换工具归档，不再按门看待；
+- 已在 GATE_SUITE 留排除注释，防下一程又试着接它。
+
+## 16. run-round7-closeout.mjs：唯一能答"stage-8 过了吗"的载具，现在没人跑
+车道查实它 hasConsumer=false，但它**不是死批处理**：NOTES:4266 点名它的 queue-tally 是回答"stage-8 过了吗"的唯一载具。实测经它跑那两条新门可以红（ CLOSEOUT_RAN=1 红=1 → exit 1），也可以绿（RAN=2 红=0 → exit 0）。
+- 选 A：经现有"收口守门员"接进工作流（推荐，因为它是门而不是转换工具）；
+- 选 B：留在人工收尾时用，但得接受"stage-8 过了吗"这个问题每次都要手跑一遍才有答案。
