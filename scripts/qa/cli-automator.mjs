@@ -69,7 +69,7 @@ export function isAbsolutePath(s) {
  *    · 脚本自己的 `existsSync(join(PROJECT,"app.json"))` 用进程 cwd（队列里恒为仓库根）⇒ 一路放行；
  *    · IDE 用它的 cwd 解析同一个相对串 ⇒ `项目路径不存在`。
  *  stage-8 的 ws-component-scoped-r8 整腿每页都挂在这上面，而窗口明明是活的（开页之前 clearSession
- *  都正常）。r-exec-ws.mjs:48 是 `opt("project", join(REPO,…))`——默认值绝对、传进来的相对值原样留着，
+ *  都正常）。r-exec-ws.mjs:57 是 `opt("project", join(REPO,…))`——默认值绝对、传进来的相对值原样留着，
  *  就是这个形状；open-project-window.mjs:20 自己 resolve 过所以那条腿是绿的。
  *  归一放在共享边界，调用方就没有"忘 resolve"这一类错误可犯。 */
 export function resolveProjectPath(p, repoRoot = REPO) {
@@ -209,24 +209,133 @@ export function apiPost(path, payload, { port = 8080, timeoutMs = 15000 } = {}) 
     req.write(body); req.end();
   });
 }
+/** 凭据文件里 A 那一对（tmp/r11_chains2.py 只声明了 A：一份文件里只有一组 phone/password）。
+ *  B 不在这份文件里 ⇒ 别拿它当"B 的凭据读不到"的证据，看 identityTable()。 */
 export function readCredA(repoRoot) {
   const p = join(repoRoot, "tmp", "r11_chains2.py");
   if (!existsSync(p)) throw new Error("读不到 A 身份凭据文件 tmp/r11_chains2.py（不猜凭据）");
   const s = readFileSync(p, "utf8");
   const ph = s.match(/"phone"\s*:\s*"(\d{11})"/), pw = s.match(/"password"\s*:\s*"([^"]+)"/);
   if (!ph || !pw) throw new Error("凭据文件里没解析出 phone/password");
-  return { phone: ph[1], password: pw[1] };
+  const uid = s.match(/UID_A\s*=\s*(\d+)/);
+  return { phone: ph[1], password: pw[1], userId: uid ? uid[1] : "" };
 }
-/** 后端登录响应是**平铺**的（没有 data 包一层）—— 首版按 j.data 取值拿到过 undefined */
+
+/* 本仓唯一一处**同时**声明了 A 与 B 的 (userId, phone, password, 端点) 的地方：scripts/qa/r-exec.cjs 的
+   IDENT_DEFS（旧桥版执行器的身份表，B=100159 那条账号是 2026-09-16 r9 生命周期审计里真实注册、
+   DB users.id=100159 双证落库的那个）。凭据只在运行期从表里读，绝不上命令行、绝不进日志。 */
+const TABLE_FILE = "scripts/qa/r-exec.cjs";
+
+/** 从 `{` 起数到配对的 `}`：与 artifact-band.mjs:29 matchingBrace 同一口径（按缩进找块尾会扫过头）。 */
+function braceSpan(src, open) {
+  let depth = 0;
+  for (let k = open; k < src.length; k++) {
+    if (src[k] === "{") depth++;
+    else if (src[k] === "}") { depth--; if (depth === 0) return k - open + 1; }
+  }
+  return src.length - open;
+}
+
+/** 读身份声明表：kind → { userId, phone, password, ep, from }。表读不到就返回空 Map（调用方据此拒跑）。
+ *  只取表的**第一层**键（A/B/guest），嵌套的 `body: {}` 不是身份，别把它读成一个身份条目。 */
+export function identityTable(repoRoot) {
+  const out = new Map();
+  const p = join(repoRoot, TABLE_FILE);
+  if (!existsSync(p)) return out;
+  const src = readFileSync(p, "utf8");
+  const head = src.indexOf("const IDENT_DEFS");
+  if (head < 0) return out;
+  const open = src.indexOf("{", head);
+  if (open < 0) return out;
+  const block = src.slice(open, open + braceSpan(src, open));
+  let depth = 0, keyStart = -1;
+  for (let i = 0; i < block.length; i++) {
+    const ch = block[i];
+    if (ch === "{") { depth++; keyStart = -1; continue; }
+    if (ch === "}") { depth--; continue; }
+    if (depth === 1 && keyStart < 0 && /[A-Za-z_]/.test(ch)) keyStart = i;
+    if (depth === 1 && keyStart >= 0 && ch === ":") {
+      const key = block.slice(keyStart, i).trim();
+      const vStart = block.indexOf("{", i);
+      if (vStart > i) {
+        const body = block.slice(vStart, vStart + braceSpan(block, vStart));
+        const g = (re) => (body.match(re) || [])[1] || "";
+        out.set(key, {
+          userId: g(/userId\s*:\s*'(\d+)'/), ep: g(/ep\s*:\s*'([^']+)'/),
+          phone: (body.match(/phone\s*:\s*'(\d{11})'/) || [])[1] || "",
+          password: (body.match(/password\s*:\s*'([^']+)'/) || [])[1] || "",
+          from: TABLE_FILE + ":IDENT_DEFS." + key,
+        });
+      }
+      keyStart = -1;
+    }
+  }
+  return out;
+}
+
+/** 铸票的**计划**（不发音、不碰设备）：身份标签 → 该走哪个端点、用哪份凭据、期望哪个 userId。
+ *  这一层是本轮修的根：旧 mintToken 只分 "A" 与"不是 A"，非 A 一律 /auth/guest-login ⇒
+ *  一条 --identity B 的腿铸到的是游客会话，行却盖着 B，门的登录轴（verify-real-coverage.mjs:237）照样认它。 */
+export function mintPlanFor(kind, repoRoot, deviceId) {
+  const k = String(kind || "");
+  if (k === "guest") {
+    return { kind: k, source: "guest-login", endpoint: "/api/v1/auth/guest-login", body: {}, expectUserId: "", credFrom: "(体验号，无需凭据)" };
+  }
+  if (k !== "A" && k !== "B") {
+    throw new Error("MINT_UNSUPPORTED_IDENTITY kind=" + (k || "(空)") + " ⇒ 身份词表只有 A/B/guest（verify-real-coverage.mjs:237-238 也只认这几条轴）；"
+      + "未知标签一律不铸，绝不退回 guest 顶替（那正是本轮那条假记账）");
+  }
+  const t = identityTable(repoRoot).get(k) || {};
+  if (k === "A") {
+    const a = readCredA(repoRoot);
+    const phone = a.phone || t.phone, password = a.password || t.password;
+    if (!phone || !password) throw new Error("A 凭据读不到（tmp/r11_chains2.py 与 " + TABLE_FILE + " 的 IDENT_DEFS 都没有 A 的 phone/password）⇒ 不猜凭据");
+    return { kind: k, source: "phone-login", endpoint: "/api/v1/auth/phone-login", body: { phone, password, deviceId: deviceId || "r7-cli-a" },
+      expectUserId: a.userId || t.userId || "", credFrom: "tmp/r11_chains2.py" };
+  }
+  /* B：tmp/r11_chains2.py 里**没有**第二组凭据（实测：那份文件只有一处 "phone"/"password"，是 A 的 13800006666）。
+     所以 B 只能来自身份声明表；表里没有 B 就抛，让调用方在取租约之前拒跑，而不是铸一张游客票盖 B。 */
+  if (!t.phone || !t.password) {
+    throw new Error("NO_B_CREDENTIALS ⇒ " + TABLE_FILE + " 的 IDENT_DEFS 里读不到 B 的 phone/password（A 的凭据文件 tmp/r11_chains2.py 只声明了 A 一对）"
+      + " ⇒ B 身份铸不出来，这一腿只能拒跑；把 B 行盖成游客票或 A 票都是伪造证据");
+  }
+  return { kind: k, source: "phone-login", endpoint: "/api/v1/auth/phone-login", body: { phone: t.phone, password: t.password, deviceId: deviceId || "r7-cli-b" },
+    expectUserId: t.userId || "", credFrom: TABLE_FILE + ":IDENT_DEFS" };
+}
+
+/** 取租约**之前**该问的那一句：这个身份标签今天到底铸不铸得出会话。纯离线（读文件、不发请求、不碰设备）。
+ *  拒跑的形状照 assertGuestCapable（artifact-band.mjs:59）/ 游客档拒跑（r-exec-cli.mjs:335）：{ok:false, reason}。 */
+export function assertIdentityProducible(kind, repoRoot) {
+  const k = String(kind || "");
+  if (k === "none") return { ok: true, mints: false, kind: k, reason: "identity=none ⇒ 不铸票，按清会话跑（游客画面）" };
+  try { const plan = mintPlanFor(k, repoRoot); return { ok: true, mints: true, kind: k, plan, source: plan.source, credFrom: plan.credFrom }; }
+  catch (e) { return { ok: false, kind: k, mints: true, reason: String(e && e.message || e) }; }
+}
+
+/** 后端登录响应是**平铺**的（没有 data 包一层）—— 首版按 j.data 取值拿到过 undefined。
+ *  返回 { token, userId, source }：source 是"这张票到底从哪个端点铸的"，行上要落这个数（门的会话核对读它）。 */
 export async function mintToken(kind, repoRoot, deviceId) {
-  const r = kind === "A"
-    ? await apiPost("/api/v1/auth/phone-login", Object.assign({}, readCredA(repoRoot), { deviceId: deviceId || "r7-cli-a" }))
-    : await apiPost("/api/v1/auth/guest-login", {});
-  if (r.status !== 200) throw new Error((kind === "A" ? "phone" : "guest") + "-login http " + r.status + " " + r.body.slice(0, 100));
+  const plan = mintPlanFor(kind, repoRoot, deviceId);
+  const r = await apiPost(plan.endpoint, plan.body);
+  if (r.status !== 200) throw new Error(plan.source + "(" + kind + ") http " + r.status + " " + r.body.slice(0, 100));
   const j = JSON.parse(r.body);
   const token = j.token || (j.data && j.data.token);
   if (!token) throw new Error("响应里没有 token（键=" + Object.keys(j).join(",") + "）");
-  return { token, userId: j.userId || (j.data && j.data.userId) || "?" };
+  const userId = String(j.userId || (j.data && j.data.userId) || "?");
+  /* 标签与铸到的会话对不对得上，在铸的那一刻就核一次（不指望设备侧、也不指望门）：
+     声明表给了期望 userId 而实测不等 ⇒ 抛。不等就不是这个身份，盖它上账是伪造。 */
+  if (plan.expectUserId && userId !== "?" && userId !== String(plan.expectUserId)) {
+    throw new Error("IDENTITY_USERID_MISMATCH kind=" + kind + " 铸到 userId=" + userId + " 而凭据声明的期望是 " + plan.expectUserId +
+      "（来源=" + plan.credFrom + "）⇒ 这张票不是 " + kind + " 的会话，不许盖 " + kind);
+  }
+  return { token, userId, source: plan.source, kind };
+}
+/** verifyLogin() 那串里抠出**后端那种纯数字** userId：'logged-in userId=100159' → '100159'。
+ *  mock 载体报的是 'logged-in userId=user-1001'（apps/client/src/stores/session.ts 的 mockUserSession）
+ *  ⇒ 这里刻意返回 ""，调用方据此**跳过**核对：mock 包表达不了真账号会话，拿它判"标签与会话不符"
+ *  会把所有 mock 腿打成假红（那是载体档位问题，不是身份问题，口径同 artifact-band.mjs:59）。 */
+export function observedUserId(v) {
+  return String(/^logged-in userId=(\d+)\s*$/.exec(String(v || "").trim()) ? RegExp.$1 : "");
 }
 export function bootSession(token, opts) {
   return evaluate("() => { try { wx.setStorageSync('token', " + JSON.stringify(token) + ");"
@@ -272,6 +381,13 @@ if (IS_MAIN) {
     // print-argv：只组装、不派生进程、不碰模拟器/租约 —— 队列随时可能重开时用它看真相
     if (cmd === "print-argv") console.log("CHILD_ARGV=" + JSON.stringify(childArgv(rest[1], rest.slice(2), opts)));
     else if (cmd === "resolve") console.log("PROJECT_ABS=" + resolveProjectPath(project));
+    // check-identity：只读凭据文件/身份表，不发请求、不碰模拟器、不取租约 —— 开 B 腿之前先问这一句
+    else if (cmd === "check-identity") {
+      const kind = rest[1] || "A";
+      const r = assertIdentityProducible(kind, REPO);
+      console.log("IDENT_CHECK " + JSON.stringify({ kind, ok: r.ok, mints: r.mints, source: r.source || "", credFrom: r.credFrom || "", reason: r.reason || "" }));
+      process.exit(r.ok ? 0 : 2);
+    }
     else if (cmd === "eval") console.log("EVAL=", evaluate(rest[1], opts));
     else if (cmd === "route") console.log("ROUTE=", routeStack(opts));
     else if (cmd === "count") console.log("NODE_COUNT=", nodeCount(rest[1], opts));
@@ -282,6 +398,6 @@ if (IS_MAIN) {
     else if (cmd === "open") console.log("OPEN=", openPage(rest[1], rest[2], opts));
     else if (cmd === "raw") console.log("RAW=", JSON.stringify(element(rest[1], rest[2], opts, rest.slice(3))));
     else if (cmd === "raweval") console.log("RAWEVAL=", JSON.stringify(evaluate(rest[1], opts)).slice(0, 600));
-    else console.log("用法：node scripts/qa/cli-automator.mjs --project <路径> resolve|print-argv|eval|route|count|tap|text|html|shot|open|raw|raweval …（resolve/print-argv 不碰设备）");
+    else console.log("用法：node scripts/qa/cli-automator.mjs --project <路径> resolve|check-identity|print-argv|eval|route|count|tap|text|html|shot|open|raw|raweval …（resolve/check-identity/print-argv 不碰设备）");
   } catch (e) { console.log("CLI_AUTOMATOR=FAIL " + e.message.slice(0, 200)); process.exit(1); }
 }

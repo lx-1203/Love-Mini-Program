@@ -22,7 +22,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, statSy
 import { acquireUi, releaseUi, renewUi } from "./ui-lease.mjs";
 import { resolve, join } from "node:path";
 import { execFileSync } from "node:child_process";
-import { evaluate, openPage, shot, mintToken, bootSession, verifyLogin, routeStack, clearSession, element } from "./cli-automator.mjs";
+import { evaluate, openPage, shot, mintToken, bootSession, verifyLogin, routeStack, clearSession, element, assertIdentityProducible, observedUserId } from "./cli-automator.mjs";
 import { readApiMode, assertGuestCapable } from "./artifact-band.mjs";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
@@ -174,6 +174,11 @@ function row(manifest, page, c, status, route, reason, observed, evid, miss) {
   return {
     suite: "C-" + manifest, manifest, id: c.id, page, tier: c.tier || "normal",
     identity: IDENTITY, band: (BAND.mode || "?") + "@" + (BAND.sha8 || "?"),
+    /* 会话证据与身份标签是两件事，行上必须两个都落：identity 是人给的标签，
+       sessionSource/loginVerify 是这条腿**实际**拿到的会话（铸票端点 + store 实测）。
+       门的登录轴（verify-real-coverage.mjs:237）以前只能信标签，从此能核对标签。
+       文件级早就有 loginVerify（:387/:739），但门只读 results 里的行 ⇒ 行上没有就等于没证据。 */
+    loginVerify: LOGIN_VERIFY, sessionSource: SESSION_SOURCE,
     requiresReal: c.requiresReal === true, title: String(c.title || "").slice(0, 160),
     status, observed: observed || "", missingEvidence: miss || [], failureReason: reason || "",
     route: route || "", toast: "", console: "", evidence: evid || "",
@@ -248,6 +253,24 @@ if (process.argv.includes("--redo-holes")) {
   console.log("RUNNER_VOIDED " + (before - prior.results.length) + " 条 EXECUTED-无证据 的行作废重测");
 }
 const done = new Set((prior.results || []).map((r) => r.manifest + "|" + r.id));
+/* 身份标签先自证——位置在**建目录/取租约之前**，因为拒跑的含义就是"什么都没发生"：
+   不写 OUT_DIR、不写帧目录、不碰 tmp/qa/locks、一行不跑。
+   拒跑的形状照下面的游客档前置（assertGuestCapable @ artifact-band.mjs:59，r-exec-cli 里那条
+   RUNNER_RESULT=FAIL reason=… + 退 2）。
+   本轮实测的根因：mintToken 旧写法只分 "A" 与"不是 A"，非 A 一律 POST /auth/guest-login ⇒
+   `--identity B` 的腿铸到的是**游客会话**，行却盖着 identity:"B"，而门的登录轴
+   （verify-real-coverage.mjs:237 judgedLogin=has("A")||has("B")）把 A/B 等量齐观 ⇒ 假记账（不是假红）。
+   现在 mintToken 分 A/B/guest：B 要 B 的凭据（scripts/qa/r-exec.cjs:IDENT_DEFS），读不到就抛 ⇒ 当场拒跑。 */
+const IDENTITY = arg("identity", "A");
+const PRODUCIBLE = assertIdentityProducible(IDENTITY, REPO);
+if (!PRODUCIBLE.ok) {
+  console.log("RUNNER_RESULT=FAIL reason=identity=" + IDENTITY + " 铸不出与之相符的会话：" + PRODUCIBLE.reason +
+    " ⇒ 未建目录、未取租约、未写任何文件、一行不跑（把 B 行盖成游客票或 A 票都是伪造证据）");
+  process.exit(2);
+}
+console.log("RUNNER_IDENT_PRODUCIBLE=" + IDENTITY + (PRODUCIBLE.mints
+  ? " 铸票端点=" + PRODUCIBLE.source + "（凭据来源=" + PRODUCIBLE.credFrom + "）"
+  : " 不铸票 ⇒ 按清会话跑（游客画面）"));
 mkdirSync(OUT_DIR, { recursive: true });
 mkdirSync(SHOT_DIR, { recursive: true });
 
@@ -293,8 +316,11 @@ if (process.env.QA_SKIP_UI_LEASE === "1") {
   process.on("exit", releaseLease);
   for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => { releaseLease(); process.exit(sig === "SIGINT" ? 130 : 143); });
 }
-const IDENTITY = arg("identity", "A");
+/* IDENTITY 与"这个标签铸不铸得出相符会话"已经在取租约之前判过（见 RUNNER_IDENT_PRODUCIBLE）。
+   SESSION_SOURCE = 这一腿的会话**实际**是从哪儿来的（phone-login / guest-login / cleared），
+   与 identity（人给的标签）是两个独立的事实，行上要同时落这两个数，门才核对得了（:176 row()）。 */
 let LOGIN_VERIFY = "";
+let SESSION_SOURCE = "";
 if (IDENTITY === "guest" || IDENTITY === "none") {
   /* 游客档不是"铸一个 B token"：mintToken + bootSession 之后 store 仍是 logged-in，
      而本执行器下一道门要求 logged-in，于是 --identity B 既当不了游客也过不了门
@@ -315,6 +341,7 @@ if (IDENTITY === "guest" || IDENTITY === "none") {
     console.log("RUNNER_GUEST_WARMUP page=" + WARMUP_PAGE + " landing=" + (String(routeStack({ project: PROJECT }) || "(空)")));
   }
   const c = clearSession({ project: PROJECT });
+  SESSION_SOURCE = "cleared";
   LOGIN_VERIFY = verifyLogin({ project: PROJECT });
   console.log(`[boot] ${c} identity=guest verify=${LOGIN_VERIFY}${WARMUP_GUEST ? "（预热后清的会话）" : ""}`);
   if (!/^not-logged-in/.test(LOGIN_VERIFY)) {
@@ -322,17 +349,30 @@ if (IDENTITY === "guest" || IDENTITY === "none") {
     process.exit(2);
   }
 } else {
+  let minted = null;
   try {
-    const t = (await mintToken(IDENTITY === "B" ? "B" : "A", REPO, "r7-exec-" + LABEL)).token;
-    const b = bootSession(t, { project: PROJECT });
+    /* 标签原样交给 mintToken：A 铸 A 的票、B 铸 B 的票、guest 铸游客票，词表外的标签直接抛。
+       旧写法是 `IDENTITY === "B" ? "B" : "A"`，而 mintToken 内部又只分 A/非 A ⇒ 任何非 A 标签
+       最后拿到的都是游客会话（本轮那条假记账的两个环节都在这里）。 */
+    minted = await mintToken(IDENTITY, REPO, "r7-exec-" + LABEL);
+    const b = bootSession(minted.token, { project: PROJECT });
+    SESSION_SOURCE = String(minted.source || "(mintToken 未报 source)");
     LOGIN_VERIFY = verifyLogin({ project: PROJECT });
-    console.log(`[boot] ${b} identity=${IDENTITY} verify=${LOGIN_VERIFY}`);
+    console.log(`[boot] ${b} identity=${IDENTITY} mint=${SESSION_SOURCE} 铸到userId=${minted.userId} verify=${LOGIN_VERIFY}`);
   } catch (e) {
     console.log("RUNNER_RESULT=FAIL reason=铸 token / 写会话失败：" + String(e.message).slice(0, 140) + " ⇒ 一行都不跑");
     process.exit(2);
   }
   if (!/^logged-in/.test(LOGIN_VERIFY)) {
     console.log("RUNNER_RESULT=FAIL reason=store 报 " + LOGIN_VERIFY + " ⇒ 未登录画面不能当已登录证据，整批不跑（游客档请用 --identity guest）");
+    process.exit(2);
+  }
+  /* 最后一道核对：store 里那个会话必须就是这次铸出来的那张票。
+     对不上是"上一个进程留下的 storage 状态"（r-exec-ws.mjs:57 记过同款事故），不是这个身份的会话 ⇒ 整批不跑。 */
+  const obsUser = observedUserId(LOGIN_VERIFY);
+  if (obsUser && minted && minted.userId && obsUser !== String(minted.userId)) {
+    console.log("RUNNER_RESULT=FAIL reason=identity=" + IDENTITY + " 要的是 userId=" + minted.userId + "（" + SESSION_SOURCE + "）的会话，"
+      + "store 实测 userId=" + obsUser + " ⇒ 标签与可证会话不符，一行都不跑");
     process.exit(2);
   }
 }

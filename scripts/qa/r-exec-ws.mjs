@@ -15,7 +15,7 @@
  *   (c) unmeasurable 一整批 route/探针/帧全空（通道或窗口没起来）⇒ WSX_ADMISSIBLE=no 且退出码非 0，
  *                    runner 那句自描述不写"完整跑完"；这类行是通道状态的投影，不许当产品 FAILED 结案
  *                    （口径同 artifact-band.mjs:70「只能记 NOT_SHOOTABLE，不许记成产品 FAILED」、
- *                      r-exec-cli.mjs:302「一行都不跑（跑出来的落点红不可采信）」）。
+ *                      r-exec-cli.mjs:335「一行都不跑（跑出来的落点红不可采信）」）。
  *
  * 用法：
  *   node scripts/qa/r-exec-ws.mjs --fidelity <MANIFEST>   # 先做保真对照，不一致就别当默认
@@ -48,7 +48,7 @@ import { readApiMode } from "./artifact-band.mjs";
 const require = createRequire(import.meta.url);
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, "..", "..");
-const { openPage, shot, evaluate, mintToken, bootSession, verifyLogin } = await import("./cli-automator.mjs");
+const { openPage, shot, evaluate, mintToken, bootSession, verifyLogin, assertIdentityProducible, observedUserId } = await import("./cli-automator.mjs");
 
 const argv = process.argv.slice(2);
 function opt(n, d) { const i = argv.indexOf("--" + n); return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[i + 1] : d; }
@@ -101,24 +101,32 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
    .zcode/tmp/gap-openpage/REPORT.md：窗口刚被 ws-channel-up 重开、还在 boot，桥侧开页全量
    "timeout waiting for automator response"）。零取证的一批不是"跑完"，也不是产品红。
    口径沿用仓里已有的两句话：artifact-band.mjs:70「就只能记 NOT_SHOOTABLE，不许记成产品 FAILED」
-   / r-exec-cli.mjs:302「一行都不跑（跑出来的落点红不可采信）」。 */
+   / r-exec-cli.mjs:335「一行都不跑（跑出来的落点红不可采信）」。 */
 
-/* 行形状（本腿唯一的生产者）：字段名与 r-exec-cli.mjs:173-182 对齐，落账的就是这些。
+/* 行形状（本腿唯一的生产者）：字段名与 r-exec-cli.mjs:173-185 对齐，落账的就是这些。
    band 是第 10 个**入参**而不是在函数里读模块级常量：这个函数住在 WSX-GATE 区，
    离线夹具（.zcode/tmp/gap-wsx/gate-harness.mjs:24-26）把该区原文字节切出来按 data-URL import，
    读一次模块级 BAND 就会让那段自成一个模块、直接 ReferenceError（:88 的"纯函数"约束就断了）。
    缺省成空串而不是某个"看起来对"的档位：忘了传就等于没盖，门那边会把它数成漏盖（见
    verify-real-coverage.mjs 的 REALCOV_BANDLESS_ROWS），不给一个假的 real。
    identity 是第 11 个入参、同样的缺省口径（空串=没盖），因为**档位只是入场券，认领看身份**：
-   门的两条轴各读一个字段（verify-real-coverage.mjs:170 judgedLogin=has("A")||has("B")、
-   :171 judgedGuest=has("guest")||has("not-logged-in")），两边都不读 prose、也不接受"随便一个非空串"。
+   门的两条轴各读一个字段（verify-real-coverage.mjs:237 judgedLogin=has("A")||has("B")、
+   :238 judgedGuest=has("guest")||has("not-logged-in")），两边都不读 prose、也不接受"随便一个非空串"。
    盖法与 r-exec-cli.mjs:176 `identity: IDENTITY` 逐字同一套词表（A/B/guest/none，来自 --identity），
-   本仓不另立第二个身份词表。gap-band2 的 F1 实测：只有 band 没有 identity ⇒ COVERED 202→202（+0）。 */
-export function row(manifest, page, c, status, route, reason, observed, evid, miss, band, identity) {
+   本仓不另立第二个身份词表。gap-band2 的 F1 实测：只有 band 没有 identity ⇒ COVERED 202→202（+0）。
+   第 12 个入参 session 是**会话证据**（{source, verify}，由 :294 的 mkRow 注入，函数体照旧保持纯）：
+   identity 是人给的标签，session 是这条腿实际拿到的会话。旧 mintToken 只分 A/非 A（非 A 一律
+   /auth/guest-login），所以 `--identity B` 的腿铸的是游客票、行却盖 B，而门的登录轴
+   （verify-real-coverage.mjs:237）把 A/B 等量齐观 ⇒ 假记账。门从此用这两个字段核对标签，
+   缺证据（老行）只数不撤，见 REALCOV_SESSION_*。 */
+export function row(manifest, page, c, status, route, reason, observed, evid, miss, band, identity, session) {
+  const s = session || {};
   return {
     suite: "C-" + manifest, manifest, id: c.id, page, tier: c.tier || "normal",
     band: band || "",
     identity: identity || "",
+    /* 会话证据与身份标签分家落账（口径同 r-exec-cli.mjs:181）：空串=本行没有证据（老行/没前置）。 */
+    loginVerify: String(s.verify || ""), sessionSource: String(s.source || ""),
     requiresReal: c.requiresReal === true, title: String(c.title || "").slice(0, 160),
     status, observed: observed || "", missingEvidence: miss || [], failureReason: reason || "",
     route: route || "", toast: "", console: "", evidence: evid || "", durationMs: 0, transport: "ws+cli-shot",
@@ -162,7 +170,7 @@ export function classifyBatch({ rows, stats, stopped = false, aborted = false } 
     ? outcome === "measured" ? "有 EXECUTED 且带可复核物件 ⇒ 可入账"
       : outcome === "judged" ? "整批落点/探针都有答案，只是没有 EXECUTED ⇒ 这是判决不是取证失败"
         : "本腿没产生新行（守恒门会另行判红；这不是取证失败，是没取证）"
-    : "批次里没有任何一条量到落点/探针/帧 ⇒ 通道或窗口没起来，这批行不许当产品 FAILED 结案，须重跑（口径同 artifact-band.mjs:70 / r-exec-cli.mjs:302）"));
+    : "批次里没有任何一条量到落点/探针/帧 ⇒ 通道或窗口没起来，这批行不许当产品 FAILED 结案，须重跑（口径同 artifact-band.mjs:70 / r-exec-cli.mjs:335）"));
   let runnerNote;
   if (!admissible) runnerNote = "，本批无可采信测量⇒不采信（未完整跑完）";
   else if (aborted) runnerNote = "，开页连续同因失败提前中止（未完整跑完）";
@@ -228,8 +236,8 @@ export function failReasonOf(err, budget = REASON_BUDGET) {
    换来的是不再把 145 行同一条不可采信 reason 落进账本。 */
 export const OPEN_POLICY = { firstAttempts: 6, firstWaitMs: 9000, attempts: 3, waitMs: 4000, abortAfterGroups: 3 };
 /* 盘上行级字段的清点（纯函数，只描述事实、不判好坏）：
-   "哪一档"的判定权只留给门（verify-real-coverage.mjs:102 的 REAL_BAND）与执行旗标，
-   "哪一身份"的判定权只留给门的两条轴（:170-171），这里若再写一份 /^real/ 或 has("A")
+   "哪一档"的判定权只留给门（verify-real-coverage.mjs:110 的 REAL_BAND）与执行旗标，
+   "哪一身份"的判定权只留给门的两条轴（:237-238），这里若再写一份 /^real/ 或 has("A")
    就出现两个说了算的地方，口径迟早分家。
    rows 里可能含上一腿 merge 进来的旧行 ⇒ 统计的是盘面事实，不是本腿产量。 */
 export function fieldCensus(rows, field) {
@@ -254,11 +262,11 @@ export function identCensus(rows) { return fieldCensus(rows, "identity"); }
      mixed     本腿新行跨两种身份（同一条腿里换过会话）
      disagree  文件级那个标量 identity 在替不属于自己的行说话（续跑/合并把别的身份、
                或压根没盖身份的旧行留在了同一个文件里；后者记成 "?"，与 flush() 的 identities 同源）
-   判据口径不在这里：这里只报事实，谁能领哪条轴仍由门说了算（verify-real-coverage.mjs:170-171）。 */
+   判据口径不在这里：这里只报事实，谁能领哪条轴仍由门说了算（verify-real-coverage.mjs:237-238）。 */
 export function identVerdict(newRows, allRows, fileIdentity) {
   const iNew = identCensus(newRows), iAll = identCensus(allRows || []);
   /* 盘上事实要和 flush() 写进文件头的 identities 数组说同一句话：那里把"没盖身份"读成 "?"
-     （r-exec-cli.mjs:652 同写法），这里也必须把 missing 并进同一张表，否则漏盖的行
+     （r-exec-cli.mjs:692 同写法），这里也必须把 missing 并进同一张表，否则漏盖的行
      既不在 kinds 里也不在告警里，头部标量就又没人对账了。 */
   const onDisk = { ...iAll.byValue };
   if (iAll.missing) onDisk["?"] = iAll.missing;
@@ -267,7 +275,7 @@ export function identVerdict(newRows, allRows, fileIdentity) {
     " 漏盖=" + iNew.missing + " 本腿身份=" + (iNew.kinds.map((b) => b + "=" + iNew.byValue[b]).join(" ") || "(全无)") +
     " 盘上全部身份=" + (iAll.kinds.map((b) => b + "=" + iAll.byValue[b]).join(" ") || "(全无)") + " 盘上漏盖=" + iAll.missing);
   if (iNew.missing) lines.push("WSX_IDENT_UNSTAMPED " + iNew.missing + " 条新行没有 identity ⇒ 门的两条身份轴都认领不了它们（哪怕 band=real@…），先修生产者再谈结论");
-  if (iNew.kinds.length > 1) lines.push("WSX_MIXED_IDENT 本腿新行跨 " + iNew.kinds.join(",") + " 两种身份 ⇒ 同一腿里换过会话，整批通过率不能当单一身份的数，须按行 identity 拆开算（口径同 r-exec-cli.mjs:658）");
+  if (iNew.kinds.length > 1) lines.push("WSX_MIXED_IDENT 本腿新行跨 " + iNew.kinds.join(",") + " 两种身份 ⇒ 同一腿里换过会话，整批通过率不能当单一身份的数，须按行 identity 拆开算（口径同 r-exec-cli.mjs:698）");
   const disagree = Object.keys(onDisk).filter((k) => k !== String(fileIdentity)).sort();
   if (disagree.length) lines.push("WSX_IDENT_DISAGREE 文件级 identity=" + fileIdentity + " 但盘上有别的身份：" +
     disagree.map((k) => k + "=" + onDisk[k]).join(" ") +
@@ -290,12 +298,15 @@ const BAND_STR = (BAND.mode || "?") + "@" + (BAND.sha8 || "?");
 /* row() 住在 GATE 区、必须保持纯（见那里的注释），所以档位与身份都由这里注入。
    本腿生产行的唯一入口就是这个包装；再出现裸 row(...) 调用就是漏盖 band/identity，
    门那边会分别数成 REALCOV_BANDLESS_ROWS / REALCOV_IDENTITYLESS_ROWS。
-   IDENTITY 是模块级 --identity 的值（:60，缺省 "A"），与 r-exec-cli.mjs:296 同一套旗标同一套词表。 */
-const mkRow = (...a) => row(...a, BAND_STR, IDENTITY);
+   IDENTITY 是模块级 --identity 的值（:60，缺省 "A"），与 r-exec-cli.mjs:264 同一套旗标同一套词表。
+   SESSION 是本腿**实际**拿到的会话证据（铸票端点 + store 实测串），boot 之后才填得上；
+   填不上就是空串 ⇒ 行没有可证会话 ⇒ 门数成"不可证"（REALCOV_SESSION_UNPROVEN_ROWS），不认领成已证。 */
+const SESSION = { source: "", verify: "" };
+const mkRow = (...a) => row(...a, BAND_STR, IDENTITY, SESSION);
 /* 旗标 ↔ 档位的两种错配，都只报不改（改执行语义是设备腿的事，离线不许动）：
    · --real 而产物声明非 real ⇒ 这一腿跑的是 mock 载体上的"真实用例"，行仍按 real=false 的档位入账；
    · 产物声明 real 而没带 --real ⇒ requiresReal 整批会被记 SKIPPED
-     （r-exec-cli.mjs:686 对同款形状直接判红）。 */
+     （r-exec-cli.mjs:726 对同款形状直接判红）。 */
 const BAND_FLAG_CONFLICT = REAL_MODE && BAND.mode !== "real";
 const BAND_FLAG_UNSERVED = !REAL_MODE && BAND.mode === "real";
 
@@ -491,6 +502,21 @@ async function runTapCase(name, page, c, route, cls) {
 }
 
 if (!existsSync(join(PROJECT, "app.json"))) { console.log("WSX_RESULT=FAIL reason=--project 不是已编译产物：" + PROJECT); process.exit(2); }
+/* 身份标签先自证，位置在**建目录/取租约之前**（拒跑就要真的什么都没发生：不建 OUT_DIR、不碰
+   tmp/qa/locks、一行不跑）。形状照 artifact-band.mjs:59 assertGuestCapable 与 r-exec-cli.mjs:265 那条前置。
+   本轮实测的根因：mintToken 旧写法只分 "A" 与"不是 A"，非 A 一律 POST /auth/guest-login ⇒
+   `--identity B` 的腿铸到的是游客会话、行却盖 identity:"B"，而门的登录轴（verify-real-coverage.mjs:237）
+   把 A/B 等量齐观 ⇒ 每一次"B 轴已判"都可能是游客穿着 B 的标签领了登录轴的钱（假绿，不是假红）。
+   现在 B 必须用 B 的凭据走 phone-login（scripts/qa/r-exec.cjs:IDENT_DEFS），读不到就抛 ⇒ 这条腿当场拒跑。 */
+const PRODUCIBLE = assertIdentityProducible(IDENTITY, REPO);
+if (!PRODUCIBLE.ok) {
+  console.log("WSX_RESULT=FAIL reason=identity=" + IDENTITY + " 铸不出与之相符的会话：" + PRODUCIBLE.reason +
+    " ⇒ 未建目录、未取租约、未写任何文件、一行不跑（把 B 行盖成游客票或 A 票都是伪造证据）");
+  process.exit(2);
+}
+console.log("WSX_IDENT_PRODUCIBLE=" + IDENTITY + (PRODUCIBLE.mints
+  ? " 铸票端点=" + PRODUCIBLE.source + "（凭据来源=" + PRODUCIBLE.credFrom + "）"
+  : " 不铸票 ⇒ 按未登录画面跑"));
 mkdirSync(OUT_DIR, { recursive: true });
 mkdirSync(SHOT_DIR, { recursive: true });
 const prior = existsSync(RES) ? JSON.parse(readFileSync(RES, "utf8")) : { results: [] };
@@ -521,15 +547,15 @@ function flush(cls) {
   const note = cls ? cls.runnerNote : "，增量落盘";
   try {
     writeFileSync(RES, JSON.stringify({ round: LABEL, gitSha: GIT_SHA, identity: IDENTITY,
-      /* 文件级也留一份档位与出处（口径同 r-exec-cli.mjs:347/699）：行级 band 是门的认领依据，
+      /* 文件级也留一份档位与出处（口径同 r-exec-cli.mjs:387/699）：行级 band 是门的认领依据，
          文件级 project 让事后的人能拿 sha8 回到那包 env.js 复核——不然这个数只是一个猜不透的哈希。
          注意 merge 进来的上一腿旧行**不会被这里改写**：band/identity 只在 row() 生产那一刻盖，
          补跑/续跑把历史行的档位或身份刷成本腿的档位，就等于伪造证据。
-         identities 是**行级事实的清点**（口径同 r-exec-cli.mjs:347 的 identities 与 :699 的 fileBands）：
+         identities 是**行级事实的清点**（口径同 r-exec-cli.mjs:387 的 identities 与 :699 的 fileBands）：
          上面那个标量 identity 会替整批行说话，而它替说话的资格要靠这份清点来对账
-         （对不上就在收尾打 WSX_IDENT_DISAGREE。事故原文见 r-exec-cli.mjs:647-658 的注释：
+         （对不上就在收尾打 WSX_IDENT_DISAGREE。事故原文见 r-exec-cli.mjs:687-698 的注释：
          头部 identity=A、里面 38 行是游客腿跑出来的）。"?" 是本仓既有的"没盖身份"哨兵
-         （r-exec-cli.mjs:652 同写法），门的认领判点读到的也是这个数。 */
+         （r-exec-cli.mjs:692 同写法），门的认领判点读到的也是这个数。 */
       identities: [...new Set([...m2.values()].map((r) => String(r.identity || "?")))].sort(),
       project: relOf(resolve(PROJECT)), band: BAND_STR,
       loginVerify: LOGIN_VERIFY, updatedAt: new Date().toISOString(),
@@ -590,11 +616,12 @@ async function main() {
     }
     console.log("WSX_IDS_GUARD=OK 身份口径与不可自动化盖章都对上（名单 " + IDS.size + " 条都能由 identity=" + IDENTITY + " 这一腿认领）");
   }
-  /* WS 通道与 CLI 桥驱动的是同一台模拟器：并发不报错，只互相换页 ⇒ 排队用同一把租约。 */
+  /* WS 通道与 CLI 桥驱动的是同一台模拟器：并发不报错，只互相换页 ⇒ 排队用同一把租约。
+     （身份标签能不能铸，早在 :505 取租约之前就判过了 —— WSX_IDENT_PRODUCIBLE。） */
   guardUiLease({ owner: "r-exec-ws-" + LABEL, tag: "WSX_LEASE", failTag: "WSX" });
   console.log("[boot] sha=" + GIT_SHA + " project=" + relOf(PROJECT) + " transport=ws-route+ws-probe+cli-shot");
   /* 档位自证：开跑前就把"这一腿的每一行会盖成什么 band、这个数是从哪个文件读的"打出来。
-     门那边按 band 认领覆盖（verify-real-coverage.mjs:102 /^real(@|$)/），所以这行字就是
+     门那边按 band 认领覆盖（verify-real-coverage.mjs:110 /^real(@|$)/），所以这行字就是
      本腿能不能入账的预告，不等跑完 90 分钟才发现 145 行全是白跑的（exec-ws-tap-r8 的形状）。 */
   console.log("WSX_BAND_STAMP band=" + BAND_STR + " 读自=" + relOf(BAND.envFile) +
     " 声明档位=" + (BAND.mode || "(env.js 读不到)") + " viteMode=" + (BAND.viteMode || "(读不到)") +
@@ -607,7 +634,7 @@ async function main() {
   if (BAND_FLAG_UNSERVED) console.log("WSX_BAND_WARN 载体是 real 档（" + BAND_STR + "）但没带 --real ⇒ requiresReal 整批记 SKIPPED；" +
     "那条跳过原因写的「本切片只跑 mock 产物」在这条腿上不成立（同款事故见 r-exec-cli.mjs:36-41），别拿这句当结论");
   /* 身份自证（与档位同一件事，但它是**认领的那一步**）：band 只回答"这行是真档跑的"，
-     门还问"是谁这一腿跑的"——verify-real-coverage.mjs:170 登录轴=A/B、:171 游客轴=guest/not-logged-in。
+     门还问"是谁这一腿跑的"——verify-real-coverage.mjs:237 登录轴=A/B、:238 游客轴=guest/not-logged-in。
      只盖档位不盖身份的波次照样 +0（gap-band2 F1 实测：COVERED 202→202，补 identity 才 +5），
      所以这一行同样是"能不能入账"的预告，而不是装饰。词表由门说了算，本腿不自创写法。 */
   console.log("WSX_IDENT_STAMP identity=" + IDENTITY + "（旗标 --identity，缺省 A；盖法同 r-exec-cli.mjs:176/296）" +
@@ -620,25 +647,39 @@ async function main() {
      因为未登录画面不能当已登录证据（桥版执行器就是栽在没 await mintToken 上）。 */
   if (IDENTITY === "none") {
     LOGIN_VERIFY = "skipped-by-flag";
+    SESSION.source = "no-mint"; SESSION.verify = LOGIN_VERIFY;
     console.log("[boot] identity=none ⇒ 不写会话，按游客档跑，落点一律按未登录读");
   } else {
-    let t = "";
-    try { t = (await mintToken(IDENTITY === "B" ? "B" : "A", REPO, "r7-ws-" + LABEL)).token; }
+    let t = "", minted = null;
+    /* 标签原样传给 mintToken（旧写法 `IDENTITY === "B" ? "B" : "A"` 外面还套着 mintToken 内部的"非 A 即游客"，
+       两道合起来让任何非 A 标签都铸到游客票）。mintToken 现在会：A/B 走 phone-login 各自那对凭据、
+       guest 走 guest-login、别的标签直接抛。 */
+    try { minted = await mintToken(IDENTITY, REPO, "r7-ws-" + LABEL); t = minted.token; }
     catch (e) { console.log("WSX_RESULT=FAIL reason=铸 token 失败：" + String(e.message).slice(0, 130) + " ⇒ 一行都不跑"); process.exit(2); }
+    SESSION.source = String(minted.source || "");
     let b = await wsBootSession(t);
     if (b === undefined) { b = bootSession(t, { project: PROJECT }); console.log("[boot] WS 写会话没答，退回桥写入（下方 verify 仍以 WS 为准）"); }
     let v = await wsVerifyLogin();
     if (v === undefined) { v = "(WS 无答案，桥值=" + verifyLogin({ project: PROJECT }) + ")"; }
     LOGIN_VERIFY = String(v);
-    console.log("[boot] " + b + " identity=" + IDENTITY + " verify=" + LOGIN_VERIFY);
+    SESSION.verify = LOGIN_VERIFY;
+    console.log("[boot] " + b + " identity=" + IDENTITY + " mint=" + SESSION.source + " 铸到userId=" + minted.userId + " verify=" + LOGIN_VERIFY);
     if (!/^logged-in/.test(LOGIN_VERIFY)) {
-      console.log("WSX_RESULT=FAIL reason=store 报 " + LOGIN_VERIFY + " ⇒ 整批不跑（换 --identity B 跑游客档）");
+      console.log("WSX_RESULT=FAIL reason=store 报 " + LOGIN_VERIFY + " ⇒ 整批不跑（游客档请用 --identity guest，真游客画面用 r-exec-cli.mjs --identity guest）");
+      process.exit(2);
+    }
+    /* store 里那个会话必须就是这次铸出来的那张票（口径同 r-exec-cli.mjs 的 obsUser 核对）：
+       对不上是"上一个进程留下的 storage 状态"（:57 记过同款事故），标签就不能作证 ⇒ 整批不跑。 */
+    const obsUser = observedUserId(LOGIN_VERIFY);
+    if (obsUser && minted.userId && obsUser !== String(minted.userId)) {
+      console.log("WSX_RESULT=FAIL reason=identity=" + IDENTITY + " 要的是 userId=" + minted.userId + "（" + SESSION.source + "）的会话，"
+        + "store 实测 userId=" + obsUser + " ⇒ 标签与可证会话不符，一行都不跑");
       process.exit(2);
     }
   }
   /* 盖出去的身份与这条腿**量到的**会话对不对得上账（只报、不改执行语义）：
-     WS 腿没有 CLI 那道游客前置（r-exec-cli.mjs:306 assertGuestCapable + :317 clearSession +
-     :320 要求 not-logged-in），所以 --identity guest 在本腿走的是"铸 guest-login token + 断言 logged-in"
+     WS 腿没有 CLI 那道游客前置（r-exec-cli.mjs:332 assertGuestCapable + :343 clearSession +
+     :348 要求 not-logged-in），所以 --identity guest 在本腿走的是"铸 guest-login token + 断言 logged-in"
      那一支——会话是登录了的游客账号，不是清了会话的游客画面，而门的游客轴照样认这个数。
      另一头 identity=none 量的确实是未登录画面，但词表里没有 none ⇒ 两轴都不认领（不是产品红，是白跑）。
      这两句都是为了让"身份"这一格在落账前就有出处可查，别等门 +0 才发现（同 WSX_BAND_WARN 的位置）。 */
@@ -646,10 +687,12 @@ async function main() {
     " ⇒ 这一腿盖的是「游客」，量的是 guest-login 登录态（本腿没有 CLI 那道 assertGuestCapable 前置）；门的游客轴会认这些行，" +
     "要真游客画面（清会话 + not-logged-in）只能走 r-exec-cli.mjs --identity guest 那条前置，别把本腿当游客账");
   if (IDENTITY === "none") console.log("WSX_IDENT_WARN identity=none ⇒ 行按未登录画面跑，但门的认领词表是 A/B（登录轴）与 guest/not-logged-in（游客轴）" +
-    "（verify-real-coverage.mjs:170-171）⇒ 这一腿对两条轴都 +0；要游客轴的账得把旗标写成 --identity guest（并看上一条）");
-  if (IDENTITY === "B") console.log("WSX_IDENT_WARN identity=B ⇒ 注意 mintToken 只分 A/非 A（cli-automator.mjs:222-224：非 A 走 /auth/guest-login），" +
-    "所以这一腿的会话不是 B 账号而是游客登录，而门的登录轴把 A 与 B 等量齐观（:170）⇒ 盖 B 会领到登录轴的钱；" +
-    "要 B 账号的证据得先给 mintToken 补 B 凭据（那是另一件事，本腿不代做）");
+    "（verify-real-coverage.mjs:237-238）⇒ 这一腿对两条轴都 +0；要游客轴的账得把旗标写成 --identity guest（并看上一条）");
+  if (IDENTITY === "B") console.log("WSX_IDENT_B proven mint=" + SESSION.source + " store=" + LOGIN_VERIFY +
+    " ⇒ B 这一腿现在铸的是 phone-login 的 B 票（凭据读自 scripts/qa/r-exec.cjs:IDENT_DEFS.B，声明 userId=100159），"
+    + "铸不出就已在取租约前拒跑（WSX_IDENT_PRODUCIBLE）；门核对行上的 sessionSource/loginVerify 后才认登录轴的钱"
+    + "（verify-real-coverage.mjs 的 REALCOV_SESSION_*）。旧版这条只打 WARN、把 A/非 A 的分叉留给下一轮，"
+    + "于是每条盖 B 的行其实是游客会话——那条假记账到此不可能再发生，发生了也会被门数成 CONTRADICT。");
 
   if (FIDELITY) {
     /* 保真对照：同一时刻同一页，WS 并发 $$ 与桥折叠探针必须给出同样的 present/absent 结论。
@@ -844,7 +887,7 @@ async function main() {
   const st = {};
   for (const r of all) st[r.status] = (st[r.status] || 0) + 1;
   console.log("WSX_STATUS_ALL " + Object.keys(st).sort().map((k) => k + "=" + st[k]).join(" "));
-  /* 档位清点（与 r-exec-cli.mjs:653-659 的 RUNNER_FILE_BANDS/RUNNER_MIXED 同一件事）：
+  /* 档位清点（与 r-exec-cli.mjs:693-699 的 RUNNER_FILE_BANDS/RUNNER_MIXED 同一件事）：
      本腿新行必须 100% 盖上带；漏盖（missing>0）就是上面那条注释说的"裸 row() 调用"，
      门那边会把同样的行数计进 REALCOV_BANDLESS_ROWS，所以这里不能装看不见。 */
   const cNew = bandCensus(rows), cAll = bandCensus(all);
@@ -854,7 +897,7 @@ async function main() {
   if (cNew.missing) console.log("WSX_BAND_UNSTAMPED " + cNew.missing + " 条新行没有 band ⇒ 这一腿对档位门完全不可见（本轮 145 行的原案），先修生产者再谈结论");
   if (cNew.kinds.length > 1) console.log("WSX_MIXED_BAND 本腿新行跨 " + cNew.kinds.join(",") + " 两档以上 ⇒ 同一腿里换过产物，档位不同的行不能互相复验，须按档位分别重跑");
   /* 身份清点（与上面档位同一件事、同一个形状）：档位只是入场券，门按 identity 分两条轴认领
-     （verify-real-coverage.mjs:170 登录轴=A/B、:171 游客轴=guest/not-logged-in），
+     （verify-real-coverage.mjs:237 登录轴=A/B、:238 游客轴=guest/not-logged-in），
      所以"盖了 real 却没盖身份"的波次照样 +0（gap-band2 F1 的实测形状）。读数由 GATE 区的
      identVerdict() 一次算完（离线夹具 verdict-proof.mjs 跑的就是它），这里只负责打印。 */
   identVerdict(rows, all, IDENTITY).lines.forEach((l) => console.log(l));
@@ -864,7 +907,7 @@ async function main() {
     console.log("WSX_UNMEASURABLE_ROWS " + rows.length + " 条（" + rows.slice(0, 6).map((r) => r.manifest + "/" + r.id).join(",") +
       (rows.length > 6 ? "…" : "") + "）：落点/探针/帧三样全空 ⇒ 这些行是通道状态的投影，不是产品判决");
     console.log("WSX_REMEDY 先接回活窗口再重跑这一腿：node scripts/qa/open-project-window.mjs --project " + relOf(PROJECT) +
-      " --settle 24（必要时 node scripts/qa/ws-channel-up.mjs）；窗口没起来的红不许记成产品 FAILED（artifact-band.mjs:70 / r-exec-cli.mjs:302）");
+      " --settle 24（必要时 node scripts/qa/ws-channel-up.mjs）；窗口没起来的红不许记成产品 FAILED（artifact-band.mjs:70 / r-exec-cli.mjs:335）");
   }
   const fails = [];
   if (!rows.length) fails.push("一行都没产生（要么全跑过了，要么筛选把用例全挡住了 ⇒ 这不叫跑完）");

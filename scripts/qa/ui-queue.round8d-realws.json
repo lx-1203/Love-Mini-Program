@@ -1,0 +1,59 @@
+{
+ "$schema": "run-ui-queue.mjs --legs <本文件> --out reports/audit/round-7/ui-queue-round8d-realws；串行，第一条非 advisory 红就停并把剩下的记成 NOT_RUN",
+ "$why": "真实覆盖门现量 UNCOVERED=24，其中一批欠的是『组件作用域 + 真实档』这一把刀：8c 那波带 --tap 跑的是 mock 档（band 盖成 mock@…，门按 /^real/ 认档所以一分不给），8b 的巡检腿又被证实拿不到真档 automator。这一份把同一份 145 条组件作用域名册挪到 mp-weixin-real 上重跑一遍，是今天 band/identity 两刀落地后第一次可能真正加名的波次。",
+ "$hold": "开跑前：(1) heldLeases() 必须为空，本机不得有第二把驱动；(2) 9420 上不得再有归 mock 实例的 automator 通道（今天实测现在三个端口都没在听，这一条已满足）；(3) 后端 8080 必须在（现量 java pid=32156，未鉴权 /api/v1/posts 回 401）；(4) 窗口腿必须排在换档之后，本文件里没有重建腿，若上游有任何 apps/ 改动或重建，须在其后补开一条同样的窗腿。",
+ "legs": [
+  {
+   "name": "ws-channel-up-real-r8d",
+   "file": "scripts/qa/ws-channel-up.mjs",
+   "args": ["--project", "apps/client/dist/build/mp-weixin-real", "--wait", "150"],
+   "timeoutMin": 12,
+   "why": "把 automator 通道起在真实档产物上。今天新增的档位断言会拿只读取证（Tool.getInfo 的键与路径、应用内 config/env.js 的 apiMode、落点页只作旁证）核对端口上那个实例是不是 real 档，核不上就 exit 2，不再出现『已在』一支把 mock 实例放行。"
+  },
+  {
+   "name": "open-window-real-r8d",
+   "file": "scripts/qa/open-project-window.mjs",
+   "args": ["--project", "apps/client/dist/build/mp-weixin-real", "--settle", "24"],
+   "timeoutMin": 14,
+   "why": "换档必须把窗口接回来：通道端口起来了不等于有一条活着且属于这一档的窗口，本仓唯一的窗口活着判据就是这条腿的 live()。8b 那一波正是只证了 9420 在听、没证窗口归谁，巡检才在 mock 会话上跑空。"
+  },
+  {
+   "name": "gate-selectors-exist-real-r8d",
+   "file": "scripts/qa/verify-case-selectors-exist.mjs",
+   "args": ["--band", "apps/client/dist/build/mp-weixin-real"],
+   "advisory": true,
+   "timeoutMin": 6,
+   "why": "开跑前先量一次这份名册在选择器层面到底够不够得着真档产物：这一条红是发现缺陷（判据点了产物里没有的物件），不是 UI 坏了，所以标 advisory，红不让路但照样计入本轮 FAIL。"
+  },
+  {
+   "name": "exec-ws-tap-real-r8d",
+   "file": "scripts/qa/r-exec-ws.mjs",
+   "args": ["--ids-file", "reports/audit/round-7/ids-component-scoped.json", "--project", "apps/client/dist/build/mp-weixin-real", "--out", "reports/audit/round-7/exec-ws-tap-real-r8d", "--identity", "A", "--round", "round-7", "--tap", "--real"],
+   "timeoutMin": 120,
+   "why": "这一波的主刀：同一份 145 条组件作用域名册，带 --tap（8c 证实不带会把 75 行留成『这一刀不点』）且带 --real（31 行 requiresReal 在不带时全被 SKIPPED），产物在 exec- 前缀目录里、每行带 band=real@sha8 与 identity=A ⇒ 前两刀修好之后这是第一条可能真的给真实覆盖加名的腿。零证据批次会被 WSX_ADMISSIBLE=no 判不可采，不再自称完整跑完。"
+  },
+  {
+   "name": "triage-ws-tap-real-r8d",
+   "file": "scripts/qa/triage-exec-failures.mjs",
+   "args": ["--results", "reports/audit/round-7/exec-ws-tap-real-r8d/exec-results.json", "--dist", "apps/client/dist/build/mp-weixin-real"],
+   "timeoutMin": 8,
+   "why": "每个执行腿都必须有人分诊：这一条排在本腿结果之后，读的是同一批行。分诊今天已经认得盖章不可自动化、开页重试到尽、六种 --tap 原文，并把不能归因的 absent 与可归因的 absent 分成两支各自计数。"
+  },
+  {
+   "name": "gate-real-coverage-r8d",
+   "file": "scripts/qa/verify-real-coverage.mjs",
+   "args": ["--round", "round-7"],
+   "advisory": true,
+   "timeoutMin": 6,
+   "why": "把本轮的真实覆盖当场再量一遍，并且要看见守恒：免检+覆盖+欠账=236。这一条是本轮加名的直接验收 —— 若 COVERED 不动，原因必须是能读出来的（band/identity 缺失会被点名，不再是静默不给分），不许靠猜。"
+  },
+  {
+   "name": "queue-homogeneity-r8d",
+   "file": "scripts/qa/verify-ops-corpus-stamp.mjs",
+   "args": ["--queue", "scripts/qa/ui-queue.round8d-realws.json"],
+   "advisory": true,
+   "timeoutMin": 3,
+   "why": "本波所有执行腿必须读同一版语料戳：r8e 之后语料又动过（身份轴 12 行、一条钉死的深链），没有这一条就没法把这波的判决与上一波的读数分开。"
+  }
+ ]
+}

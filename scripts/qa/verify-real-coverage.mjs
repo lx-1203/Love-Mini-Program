@@ -14,7 +14,7 @@
  *  一条门不能一边禁跑、一边又索要"你为什么不跑"的红：那样这些行永远凑不齐证据，
  *  门就永久红，永久红的门最后会被绕过去。所以这里给它们一个**单独的、计数的、点名的**
  *  桶：REALCOV_AUTOMATABLE_EXEMPT=n + 逐条 EXEMPT 明细。
- *  三条硬口径：① 只读判据台声明的 automatable 字段（与 r-exec-ws.mjs:585 同一个字段、
+ *  三条硬口径：① 只读判据台声明的 automatable 字段（与 r-exec-ws.mjs:611 同一个字段、
  *  同一个严格判等 === false），不从 prose、id 模式或硬编码名单反推；
  *  ② 豁免 ≠ 覆盖，免检行绝不并进 covered；
  *  ③ 剩余非免检的欠账照旧按原阈值（uncovered === 0 才绿）判红，一条不减。
@@ -31,12 +31,25 @@
  *  把漏盖做成新的常红判点，正撞上面那句"永久红的门最后会被绕过去"。它是一条看得见的漏，
  *  不是一根新的狼牙棒。
  *
- *  认领的第二步（2026-09-28 补）：band 只是入场券，**分账按 identity 走两条轴**（:170-171）。
+ *  认领的第二步（2026-09-28 补）：band 只是入场券，**分账按 identity 走两条轴**（:237-238）。
  *  一条 real 档、没带 identity 的行两边都不认，而旧门同样对此一声不吭——实测：round-8 那条 WS 波次
  *  加上 band 之后 COVERED 仍是 202→202，只有连 identity 一起加才 +5（.zcode/tmp/gap-band2/REPORT.md F1）。
  *  这一格与漏盖那格同构、不同轴：REALCOV_IDENTITYLESS_ROWS / _CASES / _SCANNED / _ON_REAL + 出处 + 点名，
  *  同样**不进 ok 的判据**。生产者一侧的对账读数在 r-exec-ws.mjs 的 WSX_IDENT_STAMP / WSX_FILE_IDENT /
  *  WSX_IDENT_UNSTAMPED / WSX_MIXED_IDENT / WSX_IDENT_DISAGREE。
+ *
+ *  认领的第三步（2026-09-28 补）：identity 只是**人给的标签**，不是证据。实测缺陷：
+ *  cli-automator.mjs 的 mintToken 旧写法只分 "A" 与"不是 A"，非 A 一律 POST /auth/guest-login ⇒
+ *  一条 `--identity B` 的腿铸到的是游客会话、行却盖 identity:"B"，而登录轴（:237）把 A/B 等量齐观 ⇒
+ *  每一次"B 轴已判"都可能是游客穿着 B 的标签领了钱（这是假绿，不是假红）。
+ *  现在行上带生产者实际写下的会话证据（loginVerify=store 实测串、sessionSource=这张票的铸票端点；
+ *  生产者 r-exec-cli.mjs:181 与 r-exec-ws.mjs row() 第 12 入参），门按证据核对标签：
+ *  · 证据与标签矛盾 ⇒ 该行不给它那条轴记账（REALCOV_SESSION_CONTRADICT_ROWS/_CASES，逐条点名 + 出处）；
+ *  · 行上没有证据（本轮之前的全部历史行）⇒ 只数不撤（REALCOV_SESSION_UNPROVEN_ROWS/_CASES/_SCANNED）——
+ *    撤了就是把每条老行判成红，正撞本文件上面那句"永久红的门最后会被绕过去"；
+ *    但盘上所有 B / 历史读数从此都挂着"不可证"这个数，不许再当"已证"读。
+ *  另一件只测不改的事：词表死活 REALCOV_IDENT_VOCAB（:237-238 收的 none / not-logged-in 今天有没有生产者），
+ *  死词就报成死词，不为此新增任何拼法。
  *
  *  用法：node scripts/qa/verify-real-coverage.mjs [--round round-7]
  *       [--ops reports/audit/round-6/ops] [--dir reports/audit/round-7] [--selftest]
@@ -90,8 +103,16 @@ function execRows() {
     const p = join(DIR, d, "exec-results.json");
     if (!d.startsWith("exec-") || !existsSync(p)) continue;
     let j; try { j = JSON.parse(readFileSync(p, "utf8")); } catch { console.log("REALCOV_SKIP_UNPARSEABLE " + d); continue; }
-    /* dir 带着走：漏盖这件事必须能报到"是哪一条腿/哪个目录没盖"，否则计数没有下一步。 */
-    for (const r of j.results || []) rows.push({ key: r.manifest + "|" + r.id, band: String(r.band || ""), identity: String(r.identity || "?"), status: String(r.status || ""), dir: d });
+    /* dir 带着走：漏盖这件事必须能报到"是哪一条腿/哪个目录没盖"，否则计数没有下一步。
+       loginVerify / sessionSource 是**行上的会话证据**（生产者：r-exec-cli.mjs:181、r-exec-ws.mjs 的 row() 第 12 入参
+       → 同一对字段；文件级那份 loginVerify 早就有，见 r-exec-cli.mjs:387/737、r-exec-ws.mjs:561，但门只读 results 里的行）。
+       老行没有这两个字段 ⇒ 读成空串 ⇒ 数成"不可证"，不据此撤认领（撤了就是把没盖证据的历史全判红）。 */
+    for (const r of j.results || []) rows.push({
+      key: r.manifest + "|" + r.id, band: String(r.band || ""), identity: String(r.identity || "?"),
+      status: String(r.status || ""), dir: d,
+      loginVerify: String(r.loginVerify == null ? "" : r.loginVerify),
+      sessionSource: String(r.sessionSource == null ? "" : r.sessionSource),
+    });
   }
   return rows;
 }
@@ -100,7 +121,41 @@ function execRows() {
    把 SKIPPED 记成覆盖，正是本轮 236 条被吞掉的那条路径。 */
 const JUDGED = /^(EXECUTED|FAILED|PASS)$/;
 const REAL_BAND = /^real(@|$)/;
-/* "这一行没声明身份"的判点：execRows 把缺失/空串统一读成 "?"（:87，与 r-exec-cli.mjs:652 的哨兵同一个数），
+
+/* ---------- 身份声明 ↔ 可证会话（2026-09-28 补，本轮那条假记账的正面处理） ----------
+   门的认领以前只看行上的 identity 标签（:237-238 那两轴），标签是**人给的旗标**，不是证据。
+   实测缺陷：mintToken 旧写法只分 "A" 与"不是 A"，非 A 一律 POST /auth/guest-login
+   （cli-automator.mjs 旧 :222-224）⇒ 一条 `--identity B` 的腿铸到的是游客会话、行却盖 identity:"B"，
+   而登录轴把 A 与 B 等量齐观 ⇒ "B 轴已判"可以是游客穿着 B 的标签领了钱（假绿，不是假红）。
+   现在行上多了两个生产者实际写下的事实（sessionSource=这张票到底从哪个端点铸的、loginVerify=store 实测串），
+   这一格就把它们与标签对一次账。三条口径：
+   ① 只读声明字段，不按 prose/id 模式反推，也不自创词表（词表就是 :237-238 那几条）；
+   ② 证据**与标签矛盾** ⇒ 该行不给它那条轴记账（CONTRADICT 撤认领，这是本轮要修的假记账）；
+   ③ 证据**缺失**（盘上历史行的形状）⇒ 数出来、点名，但不撤认领——否则每条老行都变成新红，
+      正撞本文件上面那句"永久红的门最后会被绕过去"。历史那些 B 读数一律按"未证"处理（见输出）。 */
+const LOGIN_IDS = ["A", "B"];
+const GUEST_IDS = ["guest", "not-logged-in"];
+/** 一行的会话证据判点：proven（证据支持标签）/ contradict（证据与标签矛盾）/ unproven（没证据可核）。 */
+function sessionVerdict(r) {
+  const src = String(r.sessionSource || "").trim();
+  const ver = String(r.loginVerify || "").trim();
+  const login = LOGIN_IDS.includes(r.identity);
+  const guest = GUEST_IDS.includes(r.identity);
+  if (!login && !guest) return "unproven";
+  if (!src && !ver) return "unproven";
+  const phoneMint = src === "phone-login";
+  const guestMint = src === "guest-login" || src === "cleared";
+  const logged = /^logged-in\b/.test(ver);
+  const notLogged = /^not-logged-in\b/.test(ver);
+  /* 半份证据（只有 source 没有 store 读数，或反之）不足以作证 ⇒ 不可证，不撤。 */
+  if (!src || !ver) return "unproven";
+  if (!(phoneMint || guestMint)) return "unproven";
+  if (login) return phoneMint && logged ? "proven" : "contradict";
+  /* 游客标签：清会话后量到未登录画面，或游客账号登录态（WS 腿那一支，本门照旧按游客轴认）。
+     真账号（phone-login）的会话盖成游客标签同样是标签与证据不符。 */
+  return guestMint && (notLogged || logged) ? "proven" : "contradict";
+}
+/* "这一行没声明身份"的判点：execRows 把缺失/空串统一读成 "?"（:97，与 r-exec-cli.mjs:692 的哨兵同一个数），
    所以这里同时收 absent、""、"?" 三种写法。反过来**不收**"声明了但门不认"的值（none、logged-in…）：
    那种行是"词表外的身份"，不是"没有身份"——两件事分开数，才不会把生产者的字段缺失与旗标写错混成同一格。 */
 const isIdentityless = (v) => v === "" || v === "?" || v === undefined || v === null;
@@ -119,14 +174,18 @@ function judge(rows, req, ids) {
   /* 漏盖计数（行轴，不是用例轴）：本门会去看、却读不出档位的行。
      只数 key 命中 requiresReal 判据的行——其它判据本来就不归这本账，数进来只会稀释信号。 */
   const bandless = { rows: 0, cases: new Map() };
-  /* 身份漏盖（与 bandless 同一类、另一个轴）：档位只是入场券，认领按 identity 分两条轴做（:170-171）。
+  /* 身份漏盖（与 bandless 同一类、另一个轴）：档位只是入场券，认领按 identity 分两条轴做（:237-238）。
      行上没 identity ⇒ real 档也 +0（gap-band2 的 F1 实测：COVERED 202→202，补身份才 +5）。
      onReal 单列，因为"有档位、没身份"正是那条 145 行 WS 波次**修好 band 之后**的新形状：
      它看着像真实覆盖，实际两条轴都领不到钱，而旧门对此一声不吭。 */
   const identityless = { rows: 0, cases: new Map(), onReal: 0 };
+  /* 会话证据对账（行轴读数，与 bandless/identityless 同一类：只数、只点名，不另立阈值）。
+     proven=证据支持标签；unproven=行上没有可核的会话证据（盘上历史行的形状，照旧认领）；
+     contradict=证据与标签矛盾 ⇒ **不给它那条轴记账**（本轮那条假记账唯一会被撤认领的形状）。 */
+  const session = { proven: 0, unproven: { rows: 0, cases: new Map(), dirs: new Map() }, contradict: { rows: 0, cases: new Map(), dirs: new Map() } };
   for (const r of rows) {
     if (!ids.has(r.key)) continue;
-    const rec = byId.get(r.key) || { real: new Set(), realJudged: new Set() };
+    const rec = byId.get(r.key) || { real: new Set(), realJudged: new Set(), judgedAny: false, contradicted: new Set() };
     if (!r.band) {
       bandless.rows++;
       bandless.cases.set(r.key, (bandless.cases.get(r.key) || 0) + 1);
@@ -138,7 +197,24 @@ function judge(rows, req, ids) {
     }
     if (REAL_BAND.test(r.band)) {
       rec.real.add(r.identity);
-      if (JUDGED.test(r.status)) rec.realJudged.add(r.identity);
+      if (JUDGED.test(r.status)) {
+        rec.judgedAny = true;
+        const v = sessionVerdict(r);
+        if (v === "contradict") {
+          rec.contradicted.add(r.identity);
+          session.contradict.rows++;
+          session.contradict.cases.set(r.key, (session.contradict.cases.get(r.key) || 0) + 1);
+          session.contradict.dirs.set(r.dir, (session.contradict.dirs.get(r.dir) || 0) + 1);
+        } else {
+          if (v === "proven") session.proven++;
+          else {
+            session.unproven.rows++;
+            session.unproven.cases.set(r.key, (session.unproven.cases.get(r.key) || 0) + 1);
+            session.unproven.dirs.set(r.dir, (session.unproven.dirs.get(r.dir) || 0) + 1);
+          }
+          rec.realJudged.add(r.identity);
+        }
+      }
     }
     byId.set(r.key, rec);
   }
@@ -147,14 +223,14 @@ function judge(rows, req, ids) {
     /* 免检桶与覆盖桶都是新增的、互斥的格子；下面三个旧判点（neverOnReal / noA / noGuest）
        以及 skippedOnly 的判据一个字没改，只是免检行不再进它们的路径。 */
     automatableExempt: [], covered: [],
-    bandless, identityless,
+    bandless, identityless, session,
   };
   for (const c of req) {
     const key = c.manifest + "|" + c.id;
     const ax = axesOf(c.identities);
     if (!ax.guest) missing.scopedGuestExempt++;
     if (!ax.login) missing.scopedLoginExempt++;
-    /* 执行通道免检：判据台声明字段 c.automatable === false（严格判等，跟 r-exec-ws.mjs:585
+    /* 执行通道免检：判据台声明字段 c.automatable === false（严格判等，跟 r-exec-ws.mjs:611
        拒跑名单用的是同一个字段同一个条件；写成 "false" 字符串、0、null 都不算豁免）。
        放在身份轴读数之后，是为了让 REALCOV_IDENTITY_SCOPED 的两个数与加轴前完全可比。
        免检行单独点名，不进 covered ⇒ "本门不追"绝不被读成"量到了"。 */
@@ -162,7 +238,11 @@ function judge(rows, req, ids) {
       const rec = byId.get(key);
       const hadRealRow = !!(rec && rec.real.size > 0);
       const judged = !!(rec && rec.realJudged.size > 0);
-      missing.automatableExempt.push({ key, from: c.notAutomatableFrom || "", hadRealRow, judged, allSkipped: hadRealRow && !judged });
+      /* allSkipped 问的是"有没有判过"，不是"判过的行有没有拿到认领"——证据矛盾而没被撤认领前
+         也算判过，别把"证据不符"打成"全被跳过"（那是两种不同的欠，混起来下一步就找不到修法）。
+         今天的盘上没有矛盾行 ⇒ 这个数与改前逐字相同。 */
+      const judgedAtAll = !!(rec && rec.judgedAny);
+      missing.automatableExempt.push({ key, from: c.notAutomatableFrom || "", hadRealRow, judged, allSkipped: hadRealRow && !judgedAtAll });
       continue;
     }
     const rec = byId.get(key);
@@ -172,7 +252,9 @@ function judge(rows, req, ids) {
     let deficient = false;
     if (ax.login && !judgedLogin) { missing.noA.push(key); deficient = true; }
     if (ax.guest && !judgedGuest) { missing.noGuest.push(key); deficient = true; }
-    if (rec.realJudged.size === 0) missing.skippedOnly[key] = [...rec.real];
+    /* "全被 SKIPPED"这一格只说跳过：判过但证据与标签矛盾的那些行不算 SKIPPED，
+       它们已经通过 noA/noGuest 进了欠账（撤认领），这里再把它们说成"跳过"就是第二句假话。 */
+    if (rec.realJudged.size === 0 && !rec.judgedAny) missing.skippedOnly[key] = [...rec.real];
     if (!deficient) missing.covered.push(key);
   }
   return missing;
@@ -265,7 +347,42 @@ function selftest() {
     { n: "标了 A/B 的判据 + B 身份判过⇒ 登录轴认（B 与 A 等量齐观），漏身份=0", req: extraReq, ids: extraIds,
       rows: [rl("M|1", "B")], wantMissing: 0, wantExempt: 0, wantCovered: 1, wantIdentlessRows: 0, wantIdentlessCases: 0 },
   ];
-  for (const c of cases2.concat(cases3, blCases, idCases)) {
+  /* 会话证据对账自己的样本（本轮那条假记账）：五个方向都要锁死——
+     · 标签 B + 游客票（缺陷原形状）⇒ 登录轴不认，且被数成"不符"；
+     · 同一行换成 B 自己的 phone-login 票 ⇒ 登录轴认（修的是核对，不是把 B 身份一棍子打死）；
+     · 标签 A + store 报未登录 ⇒ 不符；真账号会话盖游客标签 ⇒ 同样不符；
+     · 游客轴：cleared/not-logged-in 的行只进游客轴，不给登录轴领钱；
+     · 老行没有会话证据（盘上历史形状）⇒ 照旧认领，但必须数成"不可证"（不许悄悄撤认领，也不许假装证过）。 */
+  const sm = (key, identity, source, verify, band) => ({ key, band: band || "real@deadbeef", identity, status: "EXECUTED", sessionSource: source, loginVerify: verify });
+  const sessReq = [{ manifest: "M", id: "1", identities: ["A", "B"] }];
+  const sessIds = new Set(["M|1"]);
+  const guestReq = [{ manifest: "M", id: "1", identities: ["guest", "none"] }];
+  const sessCases = [
+    { n: "标签 B 而票是 guest-login 铸的（本轮缺陷原形状）⇒ 登录轴不认，判据仍欠，数成「不符」",
+      req: sessReq, ids: sessIds, rows: [sm("M|1", "B", "guest-login", "logged-in userId=100151")],
+      wantMissing: 1, wantExempt: 0, wantCovered: 0, wantContradictRows: 1, wantUnprovenRows: 0, wantProven: 0 },
+    { n: "同一行换成 B 自己的 phone-login 票 + store 实测 logged-in ⇒ 登录轴认（B 身份没有被一棍子打死）",
+      req: sessReq, ids: sessIds, rows: [sm("M|1", "B", "phone-login", "logged-in userId=100159")],
+      wantMissing: 0, wantExempt: 0, wantCovered: 1, wantContradictRows: 0, wantProven: 1 },
+    { n: "标签 A 而 store 报 not-logged-in ⇒ 不符，登录轴不认",
+      req: sessReq, ids: sessIds, rows: [sm("M|1", "A", "phone-login", "not-logged-in")],
+      wantMissing: 1, wantContradictRows: 1, wantProven: 0 },
+    { n: "游客标签盖真账号（phone-login）票 ⇒ 不符，游客轴也不给领（游客账要游客会话）",
+      req: guestReq, ids: new Set(["M|1"]), rows: [sm("M|1", "guest", "phone-login", "logged-in userId=100158")],
+      wantMissing: 1, wantContradictRows: 1, wantProven: 0 },
+    { n: "游客标签 + 清会话 + not-logged-in ⇒ 只进游客轴（登录轴一条也不认）",
+      req: guestReq, ids: new Set(["M|1"]), rows: [sm("M|1", "guest", "cleared", "not-logged-in")],
+      wantMissing: 0, wantExempt: 0, wantCovered: 1, wantProven: 1, wantContradictRows: 0 },
+    { n: "老行没有任何会话证据（盘上历史形状）⇒ 照旧认领，但数成「不可证」，一条也不许假装证过",
+      req: [{ manifest: "M", id: "1" }], ids: new Set(["M|1"]),
+      rows: [{ key: "M|1", band: "real@deadbeef", identity: "A", status: "EXECUTED", dir: "exec-old-leg" },
+             { key: "M|1", band: "real@deadbeef", identity: "guest", status: "EXECUTED", dir: "exec-old-leg" }],
+      wantMissing: 0, wantExempt: 0, wantCovered: 1, wantProven: 0, wantUnprovenRows: 2, wantUnprovenCases: 1 },
+    { n: "半份证据（只有铸票端点、没有 store 读数）⇒ 算不可证不算证过（证据不齐不能盖章）",
+      req: sessReq, ids: sessIds, rows: [sm("M|1", "B", "phone-login", "")],
+      wantMissing: 0, wantCovered: 1, wantUnprovenRows: 1, wantProven: 0 },
+  ];
+  for (const c of cases2.concat(cases3, blCases, idCases, sessCases)) {
     const R = reqOf(c);
     const m = judge(c.rows, R, c.ids || ids);
     const got = new Set([...m.neverOnReal, ...m.noA, ...m.noGuest]).size;
@@ -280,11 +397,17 @@ function selftest() {
     if (c.wantIdentlessRows !== undefined && m.identityless.rows !== c.wantIdentlessRows) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 漏身份行=${m.identityless.rows} want=${c.wantIdentlessRows}`); }
     if (c.wantIdentlessCases !== undefined && m.identityless.cases.size !== c.wantIdentlessCases) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 漏身份判据=${m.identityless.cases.size} want=${c.wantIdentlessCases}`); }
     if (c.wantIdentlessOnReal !== undefined && m.identityless.onReal !== c.wantIdentlessOnReal) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 其中 real 档=${m.identityless.onReal} want=${c.wantIdentlessOnReal}`); }
+    /* 会话对账计数：撤认领（不符）与只数不撤（不可证/证过）必须分开对上，混一格就看不出下一步怎么修。 */
+    if (c.wantContradictRows !== undefined && m.session.contradict.rows !== c.wantContradictRows) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 不符行=${m.session.contradict.rows} want=${c.wantContradictRows}`); }
+    if (c.wantContradictCases !== undefined && m.session.contradict.cases.size !== c.wantContradictCases) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 不符判据=${m.session.contradict.cases.size} want=${c.wantContradictCases}`); }
+    if (c.wantUnprovenRows !== undefined && m.session.unproven.rows !== c.wantUnprovenRows) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 不可证行=${m.session.unproven.rows} want=${c.wantUnprovenRows}`); }
+    if (c.wantUnprovenCases !== undefined && m.session.unproven.cases.size !== c.wantUnprovenCases) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 不可证判据=${m.session.unproven.cases.size} want=${c.wantUnprovenCases}`); }
+    if (c.wantProven !== undefined && m.session.proven !== c.wantProven) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 已证行=${m.session.proven} want=${c.wantProven}`); }
     /* 守恒在每个样本上都得成立：免检 + 覆盖 + 欠账 = 用例条数，一个都不许凭空消失或重复计。
        漏盖与漏身份都是**行轴**的读数，不参与这条等式（同一行既可能被认领也可能同时被数成漏盖/漏身份）。 */
     if (ge + gc + got !== R.length) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 守恒 ${ge}+${gc}+${got}≠${R.length}`); }
   }
-  console.log(`REALCOV_SELFTEST=${bad === 0 ? "PASS" : "FAIL"} cases=${cases2.length + cases3.length + blCases.length + idCases.length} bad=${bad}`);
+  console.log(`REALCOV_SELFTEST=${bad === 0 ? "PASS" : "FAIL"} cases=${cases2.length + cases3.length + blCases.length + idCases.length + sessCases.length} bad=${bad}`);
   process.exit(bad === 0 ? 0 : 1);
 }
 if (process.argv.includes("--selftest")) selftest();
@@ -299,7 +422,7 @@ console.log(`REALCOV_NEVER_ON_REAL=${m.neverOnReal.length} REAL_BAND_BUT_ALL_SKI
 console.log(`REALCOV_IDENTITY_SCOPED 游客轴豁免=${m.scopedGuestExempt} 登录轴豁免=${m.scopedLoginExempt}（来源=ops 用例上的 c.identities，载体 tag-ops-identity-scope.mjs；豁免只减认领者，不减判据）`);
 const exemptN = m.automatableExempt.length;
 const exemptSkipped = m.automatableExempt.filter((e) => e.allSkipped).length;
-console.log(`REALCOV_AUTOMATABLE_EXEMPT=${exemptN}（其中 real 档有行但全被 SKIPPED=${exemptSkipped}）来源=ops 用例声明字段 c.automatable===false（严格判等，与 r-exec-ws.mjs:585 拒跑名单同一字段同一条件；载具 dc9f7297 WSX_IDS_NOT_AUTOMATABLE）⇒ 执行腿被禁止跑的行，本门不再索要"跑过"的证据；豁免≠覆盖，REALCOV_COVERED 不含它们。`);
+console.log(`REALCOV_AUTOMATABLE_EXEMPT=${exemptN}（其中 real 档有行但全被 SKIPPED=${exemptSkipped}）来源=ops 用例声明字段 c.automatable===false（严格判等，与 r-exec-ws.mjs:611 拒跑名单同一字段同一条件；载具 dc9f7297 WSX_IDS_NOT_AUTOMATABLE）⇒ 执行腿被禁止跑的行，本门不再索要"跑过"的证据；豁免≠覆盖，REALCOV_COVERED 不含它们。`);
 const EXEMPT_PRINT = 40;
 for (const e of m.automatableExempt.slice(0, EXEMPT_PRINT)) {
   console.log(`  EXEMPT ${e.key} 出处=${e.from || "(判据台未记 notAutomatableFrom)"} real档=${e.hadRealRow ? (e.judged ? "有行且判过" : "有行但全 SKIPPED") : "无行"}`);
@@ -329,7 +452,7 @@ if (bandlessAll.length) {
   console.log(`  BANDLESS_HINT 这不是欠账新增（欠账仍按 real 档的行算），是生产者的字段缺失；修法是让那条腿盖上 band 再重跑，别把 mock 行改成 real 来"补数"`);
 }
 /* 身份这一侧的账（2026-09-28 补，与上面漏盖 band 同构、不同轴）：
-   认领分两步——先用 band 认出"这是真档跑的"，再用 identity 分到"哪条身份轴"（:170-171）。
+   认领分两步——先用 band 认出"这是真档跑的"，再用 identity 分到"哪条身份轴"（:237-238）。
    第一步的漏盖已经被上面那格接住了，第二步的漏盖以前还是暗面：一条 real 档、没有 identity 的行
    会进 rec.real（集合里多个 "?"），两条轴都不认，于是"扫到了、判过了、一条钱也领不到"与
    "根本没跑"在读数上 again 长得一样。gap-band2 的 F1 就是这么量出来的：同一批行加 band +0、
@@ -341,15 +464,49 @@ const idlDir = new Map();
 for (const r of idlessAll) idlDir.set(r.dir, (idlDir.get(r.dir) || 0) + 1);
 console.log(`REALCOV_IDENTITYLESS_ROWS=${idl.rows}（在本门会看的 ${inIdsRows.length} 行里）REALCOV_IDENTITYLESS_CASES=${idl.cases.size} REALCOV_IDENTITYLESS_ON_REAL=${idl.onReal}（其中档位已是 real、只差身份的）REALCOV_IDENTITYLESS_SCANNED=${idlessAll.length}／${rows.length} 全扫描行`);
 if (idlessAll.length) {
-  console.log(`  IDENTITYLESS 出处 ${[...idlDir].map(([d, n]) => d + "=" + n).join(" ")}（这些行的 identity 字段缺失或读成 "?" ⇒ 门的登录轴 A/B 与游客轴 guest/not-logged-in 都不认它，哪怕 band=real@…；盖法见 r-exec-cli.mjs:176 与 r-exec-ws.mjs 的 mkRow/IDENTITY，判点即上面的 :170-171）`);
+  console.log(`  IDENTITYLESS 出处 ${[...idlDir].map(([d, n]) => d + "=" + n).join(" ")}（这些行的 identity 字段缺失或读成 "?" ⇒ 门的登录轴 A/B 与游客轴 guest/not-logged-in 都不认它，哪怕 band=real@…；盖法见 r-exec-cli.mjs:176 与 r-exec-ws.mjs 的 mkRow/IDENTITY，判点即上面的 :237-238）`);
   const IL_PRINT = 12;
   for (const [k, n] of [...idl.cases].sort((a, b) => b[1] - a[1]).slice(0, IL_PRINT)) console.log(`  IDENTITYLESS ${k} 漏身份行=${n}`);
   if (idl.cases.size > IL_PRINT) console.log(`  IDENTITYLESS …另 ${idl.cases.size - IL_PRINT} 条判据未逐条点名（总数已计入 REALCOV_IDENTITYLESS_CASES）`);
   console.log(`  IDENTITYLESS_HINT 这也不是欠账新增（欠账仍按 real 档+身份的行算），是生产者的字段缺失；修法是让那条腿带上 --identity 再重跑。` +
     (idl.onReal ? ` 注意别用"把 identity 随手改成 A"来补数：游客腿的行盖成 A 会去领登录轴的钱，那是伪造。` : ""));
 }
-console.log(`REALCOV_COVERED=${coveredN}`);
-console.log(`REALCOV_UNCOVERED=${uncovered}／${req.length}（阈值同旧：非免检欠账 =0 才绿）`);
+/* 身份声明 ↔ 可证会话（2026-09-28 补，本轮那条假记账的正面读数）。
+   读的字段是生产者实际写下的两个事实，不是标签的另一种写法：
+   · 行级 loginVerify / sessionSource —— 生产者 r-exec-cli.mjs:181（row()）、
+     r-exec-ws.mjs 的 row() 第 12 入参（经 mkRow 注入 SESSION）；
+   · 文件级 loginVerify 早就有（r-exec-cli.mjs flush()/终稿、r-exec-ws.mjs flush()），
+     但本门只读 results 里的行（execRows），文件级那个数对认领从来没有说过话。
+   两个桶的语义差别就是"要不要撤认领"：
+   · 不符(CONTRADICT)=证据与标签矛盾 ⇒ **不给它那条轴记账**（于是直接进欠账，本轮要修的就是这一格）；
+   · 不可证(UNPROVEN)=行上没有可核的会话证据（本轮之前的所有历史行）⇒ 认领照旧、但必须数出来点名。
+     历史那些 identity:"B" 的读数全落在这一格里 ⇒ 一律按"未证"看待，要 B 的证据得重跑带 B 凭据的那条腿。
+   两格都不进 ok 的判据（与漏盖/漏身份同一口径），但 CONTRADICT 通过撤认领改变欠账——
+   它不是一根新的常红狼牙棒：修好 mintToken 之后生产不出这种行，出现就是真出事。 */
+const sVerdictAll = { proven: 0, unproven: 0, contradict: 0 };
+const sAll = rows.filter((r) => {
+  if (!REAL_BAND.test(r.band) || !JUDGED.test(r.status)) return false;
+  const ok = LOGIN_IDS.includes(r.identity) || GUEST_IDS.includes(r.identity);
+  if (ok) sVerdictAll[sessionVerdict(r)]++;
+  return ok;
+});
+console.log(`REALCOV_SESSION_PROVEN=${m.session.proven} REALCOV_SESSION_UNPROVEN_ROWS=${m.session.unproven.rows}（在本门会看的 ${inIdsRows.length} 行里）REALCOV_SESSION_UNPROVEN_CASES=${m.session.unproven.cases.size} REALCOV_SESSION_CONTRADICT_ROWS=${m.session.contradict.rows} REALCOV_SESSION_CONTRADICT_CASES=${m.session.contradict.cases.size} REALCOV_SESSION_SCANNED=${sAll.length}／${rows.length} 全扫描行（其中 证过=${sVerdictAll.proven} 不可证=${sVerdictAll.unproven} 不符=${sVerdictAll.contradict}）`);
+console.log(`  SESSION 口径 「identity 声明与可证会话不符/不可证」：不符=行上的 sessionSource/loginVerify 与 identity 矛盾（例：identity=B 而票是 /auth/guest-login 铸的），这种行**不再领它那条轴的钱**，欠账因此增加——这就是本轮那条假记账（--identity B 的腿铸游客票、盖 B 的标签、门按登录轴认）从此量得到的形状；不可证=行上没有会话字段，认领照旧，只数不撤。`);
+if (m.session.contradict.rows) {
+  console.log(`  CONTRADICT 出处 ${[...m.session.contradict.dirs].map(([d, n]) => d + "=" + n).join(" ")}（这些行的标签与它实际拿到的会话不是同一个身份 ⇒ 别改标签补数，重跑那条腿：A 用 tmp/r11_chains2.py 的凭据、B 用 scripts/qa/r-exec.cjs:IDENT_DEFS.B 的凭据、游客用清会话，见 cli-automator.mjs 的 mintPlanFor/assertIdentityProducible）`);
+  const SC_PRINT = 12;
+  for (const [k, n] of [...m.session.contradict.cases].sort((a, b) => b[1] - a[1]).slice(0, SC_PRINT)) console.log(`  CONTRADICT ${k} 矛盾行=${n}`);
+  if (m.session.contradict.cases.size > SC_PRINT) console.log(`  CONTRADICT …另 ${m.session.contradict.cases.size - SC_PRINT} 条判据未逐条点名（总数已计入 REALCOV_SESSION_CONTRADICT_CASES）`);
+}
+/* 词表死活（只测只报，**不新增拼法**）：门的认领词表是 A/B（登录轴，:237）与 guest/not-logged-in
+   （游客轴，:238）。实测今天盘上有没有行真的写着 not-logged-in / none：没有生产者就是死词，
+   死词留着不害人（兼容旧形状），但再给它加一个别名就是把"身份"变成又一层没人核对的自由文本。 */
+const identHist = new Map();
+for (const r of rows) identHist.set(r.identity, (identHist.get(r.identity) || 0) + 1);
+const VOCAB = ["A", "B", "guest", "not-logged-in", "none"];
+console.log(`REALCOV_IDENT_VOCAB ${VOCAB.map((v) => v + "=" + (identHist.get(v) || 0)).join(" ")}（全扫描 ${rows.length} 行里各拼法实际出现次数）`
+  + " ⇒ not-logged-in 有判点(:238)无生产者=死词；none 既不被两轴认领、旗标词表里却有(r-exec-cli.mjs --identity guest|none)⇒ 也是死词。本门不为此新增任何拼法。");
+console.log(`REALCOV_COVERED=${coveredN}`);console.log(`REALCOV_UNCOVERED=${uncovered}／${req.length}（阈值同旧：非免检欠账 =0 才绿）`);
 const sum = exemptN + coveredN + uncovered;
 const conserved = sum === req.length;
 console.log(`REALCOV_CONSERVATION=${conserved ? "OK" : "FAIL"} 免检=${exemptN} + 覆盖=${coveredN} + 欠账=${uncovered} = ${sum}／${req.length}`);
