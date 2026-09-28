@@ -1,0 +1,23 @@
+{
+ "auditedAt": "2026-09-28T19:15:05.140Z",
+ "auditor": "主会话（不信车道自报，逐帧实测）",
+ "source": ".zcode/tmp/lane-uicov/result.json",
+ "rows": 27,
+ "frameRefs": 10,
+ "missing": [],
+ "hashMismatch": [],
+ "byteIdenticalGroups": [
+  {
+   "sha256_12": "c80ead99e37e",
+   "files": [
+    "reports/screenshots/round-8-coverage/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS10-after.png",
+    "reports/screenshots/round-8-coverage/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS29-after.png"
+   ]
+  }
+ ],
+ "verdict": "盘上帧全部存在、哈希与车道标注一致；重复帧组已单列（属 MP-R6EVID-STATE-DUPBYTES-001 同型，不是通过证据）",
+ "caveat": "帧字节受 .gitignore 的 *.png 挡在版本库外：以上核验只在采集机成立，干净 clone 复现不了（见 decisions-v33.md 第 5 项）",
+ "framesChecked": 10,
+ "framesIgnoredByGit": 10,
+ "ignoredRule": "见 .gitignore 中 *.png 那一条（round7-final-report §3.2 记的是 :68）"
+}
