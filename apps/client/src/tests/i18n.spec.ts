@@ -763,6 +763,7 @@ describe("Task 3.3.4 - Mock 数据 i18n 化回归", () => {
    * 验证 fixtures.ts 中的 Mock 数据已迁移为 i18n key 或可正常解析。
    * Mock 数据本身不应硬编码中文文案（应通过 i18n key 引用）。
    */
+  // 冷模块图在并行负载下的动态 import 会挤爆 5000ms 默认预算：实测绿色跑 1076ms、一次加载跑的红色跑 5025ms 超时（Test timed out in 5000ms）——非产品缺陷，只给这一条放宽到 30s。
   it("fixtures 模块应可正常导入", async () => {
     // 动态导入 fixtures 模块，验证其结构完整
     // 注意：fixtures.ts 位于 services/mocks/ 目录下
@@ -774,5 +775,5 @@ describe("Task 3.3.4 - Mock 数据 i18n 化回归", () => {
       // 仅作为可选回归验证
       expect(true).toBe(true);
     }
-  });
+  }, { timeout: 30_000 });
 });

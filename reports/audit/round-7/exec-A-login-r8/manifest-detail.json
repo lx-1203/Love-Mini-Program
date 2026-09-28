@@ -1,0 +1,39 @@
+{
+ "gitSha": "f024f3df9b7b314491bd2cdb6d43e1c8bf3415ab",
+ "resultsGitSha": "60832cd2",
+ "workflowVersion": "round-7 exec slice（WS 取证 + 桥出帧）",
+ "generatedAt": "2026-09-28T01:05:51.122Z",
+ "project": "apps/client/dist/build/mp-weixin",
+ "harness": "scripts/qa/exec-frames-to-corpus.mjs ← reports/audit/round-7/exec-A-login-r8/exec-results.json",
+ "hashStampedAt": "conversion",
+ "captureLimitations": [
+  "contentHash / bytes / at 都是**转换时刻**从盘上重算的，不是采集时刻；采集时刻的执行器口径见 resultsGitSha。",
+  "observe-only 切片：交互动词类与 requiresReal 类不在本 corpus 内。",
+  "同一页多条用例常常同字节（§18：实测 59% 重复），这里的 dupHash 只作信息轴，不做改判。"
+ ],
+ "verdictLegend": {
+  "EXECUTED": "该条有帧或有探针答案，二者皆无的执行器不会记 EXECUTED"
+ },
+ "shots": [],
+ "failures": [
+  {
+   "caseId": "PAGES-LOGIN-INDEX/LG02",
+   "page": "pages/login/index",
+   "reason": "落在别的页（页内守卫或路由重定向），须人判",
+   "at": "2026-09-28T01:05:51.124Z"
+  },
+  {
+   "caseId": "PAGES-LOGIN-INDEX/LG03",
+   "page": "pages/login/index",
+   "reason": "落在别的页（页内守卫或路由重定向），须人判",
+   "at": "2026-09-28T01:05:51.124Z"
+  }
+ ],
+ "skipped": 36,
+ "missingEvidence": [],
+ "dupStats": {
+  "frames": 0,
+  "uniqueHash": 0,
+  "dupBytesReducible": 0
+ }
+}

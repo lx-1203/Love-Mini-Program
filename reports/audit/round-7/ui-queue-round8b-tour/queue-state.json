@@ -1,0 +1,95 @@
+{
+ "startedAt": "2026-09-27T23:26:15.841Z",
+ "legs": [
+  {
+   "name": "ws-channel-up-real-r8b",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8b-tour/ws-channel-up-real-r8b.log",
+   "bytes": 276,
+   "resultLines": []
+  },
+  {
+   "name": "gate-ide-port-listening-r8b",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8b-tour/gate-ide-port-listening-r8b.log",
+   "bytes": 145,
+   "resultLines": [
+    "IDEPORT_RESULT=OK"
+   ]
+  },
+  {
+   "name": "open-window-real-r8b",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8b-tour/open-window-real-r8b.log",
+   "bytes": 603,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "measure-runtime-holes-r8b",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8b-tour/measure-runtime-holes-r8b.log",
+   "bytes": 1330,
+   "resultLines": []
+  },
+  {
+   "name": "tour-precheck-real-r8b",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8b-tour/tour-precheck-real-r8b.log",
+   "bytes": 535,
+   "resultLines": []
+  },
+  {
+   "name": "tour-B-real-r8b",
+   "status": "FAIL",
+   "exitCode": 1,
+   "log": "reports/audit/round-7/ui-queue-round8b-tour/tour-B-real-r8b.log",
+   "bytes": 2928,
+   "resultLines": []
+  },
+  {
+   "name": "corpus-union-r8b",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-state-truth-r8b",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-frame-debt-coverage-r8b",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-frame-debt-triage-r8b",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-evidence-holes-r8b",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "close-out-open-window-mock-r8b",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "advisoryFail": 0,
+ "finishedAt": "2026-09-28T00:18:03.425Z",
+ "conservation": {
+  "legsTotal": 12,
+  "legsOk": 5,
+  "tally": {
+   "OK": 5,
+   "FAIL": 1,
+   "NOT_RUN": 6
+  },
+  "ok": true
+ }
+}

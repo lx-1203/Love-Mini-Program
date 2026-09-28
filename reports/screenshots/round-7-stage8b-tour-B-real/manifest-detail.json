@@ -1,0 +1,91 @@
+{
+  "gitSha": "6857049b",
+  "workflowVersion": "3.1",
+  "buildMode": "build:mp-weixin:real",
+  "gitWorktreeDirtyPaths": 0,
+  "buildFingerprint": {
+    "buildMode": "build:mp-weixin:real",
+    "mode": "real",
+    "apiMode": "real",
+    "isShowcaseMode": false,
+    "membershipEnabled": false,
+    "readFrom": [
+      "apps/client/dist/build/mp-weixin/config/env.js",
+      "apps/client/dist/build/mp-weixin/config/showcase.js",
+      "apps/client/dist/build/mp-weixin/config/feature-flags.js"
+    ]
+  },
+  "generatedAt": "2026-09-27T23:29:46.647Z",
+  "shots": [],
+  "failures": [],
+  "suiteLog": [],
+  "stateNotApplied": [],
+  "routeDrifts": [],
+  "zoomFrames": [],
+  "permissionSuppression": {
+    "mockMethods": [
+      "getLocation",
+      "chooseLocation",
+      "authorize",
+      "getSetting",
+      "requirePrivacyAuthorize",
+      "getPrivacySetting"
+    ],
+    "notes": {
+      "getLocation": "抑制 wx.getLocation 触发的 scope.userLocation 原生授权框（标题「获取你的位置信息」，描述文案实取自 apps/client/src/manifest.json:38-39，:42 requiredPrivateInfos=[\"getLocation\"]）；改为直接回固定坐标（合成值）。真实调用点 apps/client/src/utils/location.ts:34（uni.getLocation），上游 apps/client/src/pages/home/index.vue:70 与 :249、apps/client/src/pages/nearby/index.vue:111、apps/client/src/subpackages/profile-extra/profile/location.vue:63",
+      "chooseLocation": "抑制 wx.chooseLocation 原生地图选点框（按「用户取消」返回，不编造 POI）。真实调用点 apps/client/src/subpackages/profile-extra/profile/location.vue:82",
+      "authorize": "抑制 wx.authorize 授权框。本项目唯一调用点申请的是 scope.record（麦克风，不是定位）：apps/client/src/utils/audio-recorder.ts:273",
+      "getSetting": "抑制「读权限 → 未授权即申请」这条链上的框：apps/client/src/utils/audio-recorder.ts:264 读到已授权后就不会再走到 :273",
+      "requirePrivacyAuthorize": "抑制 wx.requirePrivacyAuthorize 的《用户隐私保护指引》同意框。真实调用点 apps/client/src/utils/privacy.ts:257（由 :344 ensurePrivacyAuthorized → :358 触发；入口如 apps/client/src/pages/profile/index.vue:921、apps/client/src/utils/media.ts:371）",
+      "getPrivacySetting": "回报 needAuthorization:false，让 apps/client/src/utils/privacy.ts:153 的检查早退，协议框不进取证帧"
+    },
+    "grepEvidence": {
+      "wx.getLocation": "apps/client/src/utils/location.ts:34（uni.getLocation）→ 产物 apps/client/dist/build/mp-weixin/utils/location.js 内 index.getLocation",
+      "wx.chooseLocation": "apps/client/src/subpackages/profile-extra/profile/location.vue:82",
+      "wx.authorize": "apps/client/src/utils/audio-recorder.ts:273（scope:**record**）",
+      "wx.getSetting": "apps/client/src/utils/audio-recorder.ts:264",
+      "wx.requirePrivacyAuthorize": "apps/client/src/utils/privacy.ts:257",
+      "wx.getPrivacySetting": "apps/client/src/utils/privacy.ts:153",
+      "wx.onNeedPrivacyAuthorization": "apps/client/src/App.vue:98,:106 —— 注册型 API，故意不 mock",
+      "popupDescSource": "apps/client/src/manifest.json:38-41（scope.userLocation.desc 与评审转写的弹窗描述逐字一致）",
+      "distConsumers": "对 apps/client/dist/build/mp-weixin 递归 grep fetchCurrentLocation/chooseLocation/authorize(：只有 pages/home/index.js、pages/nearby/index.js、subpackages/profile-extra/profile/location.js 三个消费方（village/circles 产物已一并 grep 过，无定位调用）⇒ 这两页帧上的弹窗是 S01 触发后跨 reLaunch 常驻的原生层（推断，待实测）"
+    },
+    "notMockedBecauseAbsent": [
+      "wx.getFuzzyLocation（apps/client/src 全仓 grep 命中 0 次）",
+      "wx.startLocationUpdate / wx.onLocationChange（命中 0 次）"
+    ],
+    "notMockedOnPurpose": [
+      "wx.onNeedPrivacyAuthorization（注册型 API，见 PERM_MOCKS 上方注释）"
+    ],
+    "apiCannotAssertNativeDialog": true,
+    "armCount": 1,
+    "generations": 3,
+    "installFailures": [],
+    "armedAtExit": [
+      "getLocation",
+      "chooseLocation",
+      "authorize",
+      "getSetting",
+      "requirePrivacyAuthorize",
+      "getPrivacySetting"
+    ],
+    "firstFrameRisk": "app 冷启动（simulator_refresh 后由 IDE 自动打开入口页）到脚本首次注入之间有一个时间窗，若入口页在这一窗内已弹框，automator 无法从外部关掉它；对策是「连接成功即注入 + 每页 reLaunch 前与每帧落盘前各确认一次代次」，残余风险如实记于此。"
+  },
+  "captureLimitations": {
+    "screenshotDprSupported": false,
+    "apiEvidence": "miniprogram-automator/out/MiniProgram.d.ts:6-8 IScreenshotOptions{path?} + MiniProgram.js screenshot(){send(\"App.captureScreenshot\")} 无参",
+    "zoomCropSupported": true,
+    "zoomFactor": 3,
+    "zoomOn": true,
+    "deviceInfo": {
+      "model": "iPhone 12/13 (Pro)",
+      "SDKVersion": "3.16.3",
+      "windowWidth": 390,
+      "windowHeight": 844,
+      "pixelRatio": 3,
+      "screenWidth": 390,
+      "screenHeight": 844
+    },
+    "pngLib": "未触发"
+  }
+}
