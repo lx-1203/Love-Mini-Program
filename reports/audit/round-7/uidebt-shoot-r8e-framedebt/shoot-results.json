@@ -1,0 +1,472 @@
+{
+ "round": "round-7-r8e-framedebt",
+ "gitSha": "a2200696",
+ "updatedAt": "2026-09-28T08:13:09.289Z",
+ "plan": "reports/audit/round-7/frameplan-round7-final.json",
+ "project": "apps/client/dist/build/mp-weixin",
+ "identitySeen": "A",
+ "verifyLast": "logged-in userId=user-1001",
+ "planned": 8,
+ "rows": [
+  {
+   "id": "MP-R2-CAMPUSINDEX-011",
+   "route": "subpackages/campus/campus/index",
+   "landing": "subpackages/campus/campus/index",
+   "status": "SHOT",
+   "frame": "reports/screenshots/round-7-r8e-framedebt/C-MP-R2-CAMPUSINDEX-011.png",
+   "bytes": 10171,
+   "contentHash": "e16b71db1c18b6e1",
+   "checks": [
+    {
+     "kind": "request-count",
+     "target": "认证状态请求（campusStore.fetchCertificationStatus）",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    },
+    {
+     "kind": "text-regex",
+     "target": ".cert-badge__text",
+     "anchors": [
+      ".cert-badge__text"
+     ],
+     "anchor": ".cert-badge__text",
+     "check": "PROBE_NO_ANSWER",
+     "note": "WS 没回文本"
+    },
+    {
+     "kind": "element-present",
+     "target": ".school-name",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    }
+   ],
+   "identity": "A",
+   "crop": "校园页顶部学校信息栏与认证徽章",
+   "stepsApplied": [
+    "navigate",
+    "wait",
+    "capture"
+   ],
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingVia": "cli",
+   "landingAfter": "",
+   "stateApplied": true,
+   "interactionProof": "无改状态步骤（基线帧）",
+   "stateSig": "基线",
+   "stateChange": "NO_COMPARATOR",
+   "dupOf": "",
+   "stateFrame": true,
+   "countsTowardStateQuota": true,
+   "stateChangeNote": "组内第一帧，还没有可比对象",
+   "identityAtFrame": "logged-in userId=user-1001",
+   "identityOk": true,
+   "lockAtFrame": "no-answer",
+   "lockHit": false
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-004",
+   "route": "subpackages/circles/circles/index",
+   "landing": "subpackages/circles/circles/index",
+   "status": "SHOT",
+   "frame": "reports/screenshots/round-7-r8e-framedebt/D-MP-R2-CIRCLES-INDEX-004.png",
+   "bytes": 14203,
+   "contentHash": "d712b7051883d218",
+   "checks": [
+    {
+     "kind": "text-contains",
+     "target": ".circles-tab__text",
+     "anchors": [
+      ".circles-tab__text"
+     ],
+     "anchor": ".circles-tab__text",
+     "check": "PROBE_NO_ANSWER",
+     "note": "WS 没回文本"
+    },
+    {
+     "kind": "text-regex",
+     "target": ".circles-tab__text",
+     "anchors": [
+      ".circles-tab__text"
+     ],
+     "anchor": ".circles-tab__text",
+     "check": "PROBE_NO_ANSWER",
+     "note": "WS 没回文本"
+    },
+    {
+     "kind": "text-regex",
+     "target": ".circle-card__count",
+     "anchors": [
+      ".circle-card__count"
+     ],
+     "anchor": ".circle-card__count",
+     "check": "PROBE_NO_ANSWER",
+     "note": "WS 没回文本"
+    },
+    {
+     "kind": "text-contains",
+     "target": ".circles-banner__title",
+     "anchors": [
+      ".circles-banner__title"
+     ],
+     "anchor": ".circles-banner__title",
+     "check": "PROBE_NO_ANSWER",
+     "note": "WS 没回文本"
+    }
+   ],
+   "identity": "A",
+   "crop": "首屏：副标题行 + 7 枚快捷分类 chip + 首张圈卡的统计行（meta 行）",
+   "stepsApplied": [
+    "open-page"
+   ],
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingVia": "cli",
+   "landingAfter": "",
+   "stateApplied": true,
+   "interactionProof": "无改状态步骤（基线帧）",
+   "stateSig": "基线",
+   "stateChange": "NO_COMPARATOR",
+   "dupOf": "",
+   "stateFrame": true,
+   "countsTowardStateQuota": true,
+   "stateChangeNote": "组内第一帧，还没有可比对象",
+   "identityAtFrame": "logged-in userId=user-1001",
+   "identityOk": true,
+   "lockAtFrame": "no-answer",
+   "lockHit": false
+  },
+  {
+   "id": "MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001",
+   "route": "subpackages/circles/circles/index",
+   "landing": "subpackages/circles/circles/index",
+   "status": "SHOT",
+   "frame": "reports/screenshots/round-7-r8e-framedebt/D-MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001.png",
+   "bytes": 14195,
+   "contentHash": "159c8ca817c96e21",
+   "checks": [
+    {
+     "kind": "style-value",
+     "target": ".circles-tabs",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    },
+    {
+     "kind": "style-value",
+     "target": ".circles-card-list",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    },
+    {
+     "kind": "geometry",
+     "target": "..circle-card",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    },
+    {
+     "kind": "geometry",
+     "target": ".circles-tab:first-child",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    },
+    {
+     "kind": "style-value",
+     "target": ".circles-banner",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    }
+   ],
+   "identity": "A",
+   "crop": "左侧一条竖向窄带：副标题首字、首枚 chip 左缘、首张卡左缘三者对齐",
+   "stepsApplied": [
+    "open-page"
+   ],
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingVia": "cli",
+   "landingAfter": "",
+   "stateApplied": true,
+   "interactionProof": "无改状态步骤（基线帧）",
+   "stateSig": "基线",
+   "stateChange": "SAME_STATE_DIFF_BYTES",
+   "dupOf": "MP-R2-CIRCLES-INDEX-004",
+   "stateFrame": false,
+   "countsTowardStateQuota": false,
+   "stateChangeNote": "同一状态(基线) 重拍像素却不同（与「MP-R2-CIRCLES-INDEX-004」sha256 不等）⇒ 采集不稳定，别拿差值当判决",
+   "identityAtFrame": "logged-in userId=user-1001",
+   "identityOk": true,
+   "lockAtFrame": "no-answer",
+   "lockHit": false
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-005",
+   "route": "pages/home/index",
+   "landing": "pages/home/index",
+   "status": "SHOT",
+   "frame": "reports/screenshots/round-7-r8e-framedebt/E-MP-R2VIS-PAGES-HOME-INDEX-005.png",
+   "bytes": 14966,
+   "contentHash": "b4ba3e19f0086072",
+   "checks": [
+    {
+     "kind": "computed-style",
+     "target": ".home-header",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    },
+    {
+     "kind": "geometry",
+     "target": ".home-header__title",
+     "count": 0,
+     "check": "ABSENT_UNEXPECTED",
+     "anchors": [
+      ".home-header__title"
+     ]
+    },
+    {
+     "kind": "geometry",
+     "target": ".header-me",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    }
+   ],
+   "identity": "A",
+   "crop": "首页头部整行（标题 + 右侧头像/定位/铃铛）含其下今日推荐卡左缘",
+   "stepsApplied": [
+    "none"
+   ],
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingVia": "cli",
+   "landingAfter": "",
+   "stateApplied": true,
+   "interactionProof": "无改状态步骤（基线帧）",
+   "stateSig": "基线",
+   "stateChange": "NO_COMPARATOR",
+   "dupOf": "",
+   "stateFrame": true,
+   "countsTowardStateQuota": true,
+   "stateChangeNote": "组内第一帧，还没有可比对象",
+   "identityAtFrame": "logged-in userId=user-1001",
+   "identityOk": true,
+   "lockAtFrame": "no-answer",
+   "lockHit": false
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-006",
+   "route": "pages/home/index",
+   "landing": "pages/home/index",
+   "status": "SHOT",
+   "frame": "reports/screenshots/round-7-r8e-framedebt/HOME_TODAYLOVE_LEFTBASELINE.png",
+   "bytes": 14948,
+   "contentHash": "21a806d75a93ba47",
+   "checks": [
+    {
+     "kind": "?",
+     "target": "",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    }
+   ],
+   "identity": "A",
+   "crop": "full",
+   "stepsApplied": [
+    "none"
+   ],
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingVia": "cli",
+   "landingAfter": "",
+   "stateApplied": true,
+   "interactionProof": "无改状态步骤（基线帧）",
+   "stateSig": "基线",
+   "stateChange": "SAME_STATE_DIFF_BYTES",
+   "dupOf": "MP-R2VIS-PAGES-HOME-INDEX-005",
+   "stateFrame": false,
+   "countsTowardStateQuota": false,
+   "stateChangeNote": "同一状态(基线) 重拍像素却不同（与「MP-R2VIS-PAGES-HOME-INDEX-005」sha256 不等）⇒ 采集不稳定，别拿差值当判决",
+   "identityAtFrame": "logged-in userId=user-1001",
+   "identityOk": true,
+   "lockAtFrame": "no-answer",
+   "lockHit": false
+  },
+  {
+   "id": "MP-R2-PAGES-DISCOVER-INDEX-013",
+   "route": "pages/discover/index",
+   "landing": "pages/discover/index",
+   "status": "SHOT",
+   "frame": "reports/screenshots/round-7-r8e-framedebt/E-MP-R2-PAGES-DISCOVER-INDEX-013.png",
+   "bytes": 14040,
+   "contentHash": "8f77ae9f0b854e3a",
+   "checks": [
+    {
+     "kind": "text-regex",
+     "target": ".match-info__distance",
+     "anchors": [
+      ".match-info__distance"
+     ],
+     "anchor": ".match-info__distance",
+     "check": "PROBE_NO_ANSWER",
+     "note": "WS 没回文本"
+    },
+    {
+     "kind": "text-regex",
+     "target": ".match-info__distance",
+     "anchors": [
+      ".match-info__distance"
+     ],
+     "anchor": ".match-info__distance",
+     "check": "PROBE_NO_ANSWER",
+     "note": "WS 没回文本"
+    },
+    {
+     "kind": "count",
+     "target": ".match-info__distance",
+     "count": 0,
+     "check": "ABSENT_UNEXPECTED",
+     "anchors": [
+      ".match-info__distance"
+     ]
+    }
+   ],
+   "identity": "A",
+   "crop": "匹配卡 info 区的 distance 行（距离 · 活跃态）",
+   "stepsApplied": [],
+   "stepsUnmet": [
+    "swipe-card:WS 不可用（具体原因见本腿日志里的 ws-off / ws-connect-err 行：没带 --ws-taps 是「未启用」，带了但连不上才是「连不上」）"
+   ],
+   "wsApplied": [],
+   "wsFailed": [
+    "swipe-card:WS 不可用（具体原因见本腿日志里的 ws-off / ws-connect-err 行：没带 --ws-taps 是「未启用」，带了但连不上才是「连不上」）"
+   ],
+   "landingVia": "cli",
+   "landingAfter": "",
+   "stateApplied": false,
+   "interactionProof": "无改状态步骤（基线帧）",
+   "stateSig": "基线",
+   "stateChange": "NO_COMPARATOR",
+   "dupOf": "",
+   "stateFrame": true,
+   "countsTowardStateQuota": true,
+   "stateChangeNote": "组内第一帧，还没有可比对象",
+   "identityAtFrame": "logged-in userId=user-1001",
+   "identityOk": true,
+   "lockAtFrame": "no-answer",
+   "lockHit": false
+  },
+  {
+   "id": "MP-R2VIS-PAGES-PROFILE-INDEX-004",
+   "route": "pages/profile/index",
+   "landing": "pages/profile/index",
+   "status": "SHOT",
+   "frame": "reports/screenshots/round-7-r8e-framedebt/PROFILE_BIO_CLAMP_2行.png",
+   "bytes": 10314,
+   "contentHash": "4b932d5a02b64a6a",
+   "checks": [
+    {
+     "kind": "?",
+     "target": "",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    }
+   ],
+   "identity": "A",
+   "crop": "full",
+   "stepsApplied": [
+    "none"
+   ],
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingVia": "cli",
+   "landingAfter": "",
+   "stateApplied": true,
+   "interactionProof": "无改状态步骤（基线帧）",
+   "stateSig": "基线",
+   "stateChange": "NO_COMPARATOR",
+   "dupOf": "",
+   "stateFrame": true,
+   "countsTowardStateQuota": true,
+   "stateChangeNote": "组内第一帧，还没有可比对象",
+   "identityAtFrame": "logged-in userId=user-1001",
+   "identityOk": true,
+   "lockAtFrame": "ERR",
+   "lockHit": false
+  },
+  {
+   "id": "MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01",
+   "route": "subpackages/chat/chat-session/index",
+   "landing": "subpackages/chat/chat-session/index",
+   "status": "SHOT",
+   "frame": "reports/screenshots/round-7-r8e-framedebt/CHATSESSION_AFTER_CHATINPUT_DELETE.png",
+   "bytes": 5803,
+   "contentHash": "330318e3803f59bf",
+   "checks": [
+    {
+     "kind": "?",
+     "target": "",
+     "check": "FRAME_ONLY",
+     "note": "没有可机器查的选择器，帧是它的载体"
+    }
+   ],
+   "identity": "A",
+   "crop": "full",
+   "stepsApplied": [
+    "none"
+   ],
+   "stepsUnmet": [],
+   "wsApplied": [],
+   "wsFailed": [],
+   "landingVia": "cli",
+   "landingAfter": "",
+   "stateApplied": true,
+   "interactionProof": "无改状态步骤（基线帧）",
+   "stateSig": "基线",
+   "stateChange": "NO_COMPARATOR",
+   "dupOf": "",
+   "stateFrame": true,
+   "countsTowardStateQuota": true,
+   "stateChangeNote": "组内第一帧，还没有可比对象",
+   "identityAtFrame": "logged-in userId=user-1001",
+   "identityOk": true,
+   "lockAtFrame": "ERR",
+   "lockHit": false
+  }
+ ],
+ "identityAtFrameLast": "subpackages/chat/chat-session/index=logged-in userId=user-1001",
+ "identityMismatch": [],
+ "lockHitAtFrame": [],
+ "artifactBand": {
+  "envFile": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin\\config\\env.js",
+  "mode": "mock",
+  "viteMode": "mp-weixin-mock",
+  "sha8": "f1c7b96b"
+ },
+ "hashAlgo": "sha256(文件字节)→hex 前 16 位（同源 verify-evidence-corpus.mjs:28 / rebuild-frozen-manifest.mjs:37）",
+ "framesHashed": 8,
+ "stateChangeVerdicts": {
+  "NO_COMPARATOR": 6,
+  "SAME_STATE_DIFF_BYTES": 2
+ },
+ "unchangedAfterInteraction": [],
+ "unchangedStateWaived": {
+  "ids": [],
+  "reason": "调用方声明该状态视觉上不变（逐条 id 点名才生效）",
+  "hit": []
+ },
+ "counts": {
+  "SHOT": 8,
+  "EVIDENCE_HOLE": 0,
+  "FAILED": 0,
+  "NO_EVIDENCE": 0,
+  "UNCHANGED_AFTER_INTERACTION": 0,
+  "UNCHANGED_AFTER_INTERACTION_BLOCKING": 0,
+  "SAME_STATE_SAME_BYTES": 0,
+  "SAME_STATE_DIFF_BYTES": 2
+ },
+ "machinePassAllChecks": 4
+}

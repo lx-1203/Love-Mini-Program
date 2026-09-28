@@ -1,0 +1,143 @@
+{
+ "startedAt": "2026-09-28T07:53:36.064Z",
+ "legs": [
+  {
+   "name": "open-window-showcase-r8e",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8e-close/open-window-showcase-r8e.log",
+   "bytes": 1092,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-showcase",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "gate-selectors-exist-showcase-r8e",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8e-close/gate-selectors-exist-showcase-r8e.log",
+   "bytes": 3044,
+   "resultLines": [
+    "SEL_RESULT=PASS 执行器要点的选择器全部在被测档里有对应元素（另有 7 条只提示：文案提及或幽灵入口断言，不构成点不动）"
+   ]
+  },
+  {
+   "name": "exec-A-showcase-r8e",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8e-close/exec-A-showcase-r8e.log",
+   "bytes": 14365,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-r8e-A-showcase",
+    "RUNNER_STATS identity=A loginVerify=logged-in userId=100158 executed=31 failed=0 skipped=47(交互动词=0 requiresReal=0 非真实用例=0 探针无结果=0 判据无可判物件=0 出帧失败=0 交互禁触=1 交互没点名=12 交互后离页=6 锁屏挡住=0 交互下发失败=28 身份适用范围外=0 盖章不可自动化=0) 页组=7 真做过的交互=14 折叠探针类名次数=60 出帧=31 未点名类名=16 通道异常次数=0",
+    "RUNNER_SCOPE=tap+real（真点击/真输入 + 含 requiresReal；覆盖数见 RUNNER_STATS）",
+    "RUNNER_RESULT=OK"
+   ]
+  },
+  {
+   "name": "triage-A-showcase-r8e",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8e-close/triage-A-showcase-r8e.log",
+   "bytes": 1364,
+   "resultLines": []
+  },
+  {
+   "name": "open-window-mock-r8e",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8e-close/open-window-mock-r8e.log",
+   "bytes": 719,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "shoot-framedebt8-r8e",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8e-close/shoot-framedebt8-r8e.log",
+   "bytes": 8609,
+   "resultLines": [
+    "SHOOT_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-shooter-41184",
+    "SHOOT_CONSERVED=yes",
+    "SHOOT_RESULT=OK"
+   ]
+  },
+  {
+   "name": "open-window-real-r8e",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8e-close/open-window-real-r8e.log",
+   "bytes": 853,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-guest-real-close-r8e",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8e-close/exec-guest-real-close-r8e.log",
+   "bytes": 27763,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-r8e-guest-real-close",
+    "RUNNER_STATS identity=guest loginVerify=not-logged-in executed=15 failed=0 skipped=335(交互动词=0 requiresReal=0 非真实用例=115 探针无结果=0 判据无可判物件=0 出帧失败=0 交互禁触=2 交互没点名=1 交互后离页=0 锁屏挡住=0 交互下发失败=17 身份适用范围外=200 盖章不可自动化=0) 页组=31 真做过的交互=3 折叠探针类名次数=256 出帧=15 未点名类名=10 通道异常次数=0",
+    "RUNNER_RESULT=OK"
+   ]
+  },
+  {
+   "name": "triage-guest-real-r8e",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8e-close/triage-guest-real-r8e.log",
+   "bytes": 1559,
+   "resultLines": []
+  },
+  {
+   "name": "gate-real-coverage-r8e",
+   "status": "ADVISORY_RED",
+   "exitCode": 1,
+   "log": "reports/audit/round-7/ui-queue-round8e-close/gate-real-coverage-r8e.log",
+   "bytes": 6460,
+   "resultLines": [
+    "REALCOV_RESULT=FAIL（真实模式覆盖守恒：跳过不算量到，单身份不算双身份；免检只免\"本门不追\"，不降阈值）"
+   ]
+  },
+  {
+   "name": "gate-frame-debt-coverage-r8e",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8e-close/gate-frame-debt-coverage-r8e.log",
+   "bytes": 325,
+   "resultLines": [
+    "FRAMECOV_RESULT=PASS 每条未收口行都有去向"
+   ]
+  },
+  {
+   "name": "queue-homogeneity-r8e",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-round8e-close/queue-homogeneity-r8e.log",
+   "bytes": 263,
+   "resultLines": [
+    "STAMP_RESULT=PASS 队列执行腿语料目录唯一"
+   ]
+  }
+ ],
+ "result": "FAIL",
+ "advisoryFail": 1,
+ "finishedAt": "2026-09-28T08:34:25.797Z",
+ "conservation": {
+  "legsTotal": 12,
+  "legsOk": 11,
+  "tally": {
+   "OK": 11,
+   "ADVISORY_RED": 1
+  },
+  "ok": true
+ }
+}

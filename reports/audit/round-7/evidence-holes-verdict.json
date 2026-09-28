@@ -1,0 +1,39 @@
+{
+ "generatedAt": "2026-09-28T06:53:08.985Z",
+ "holes": 3,
+ "decided": 3,
+ "triageHoles": [
+  "REG29",
+  "REG36",
+  "DC33"
+ ],
+ "rows": [
+  {
+   "hole": "DC33",
+   "page": "pages/discover/index",
+   "from": "round-7 游客刀 real 档（帧只有 2958B，按契约不当证据）",
+   "claim": "离开本页时 store 被显式回收（onUnload → discoverStore.dispose），且重复进出 3 次后页面栈不累积",
+   "status": "DECIDED",
+   "sourceMisses": [],
+   "runtime": "PROBE_OK"
+  },
+  {
+   "hole": "REG29",
+   "page": "pages/register/index",
+   "from": "round-7 A 刀 real 档（simulator_screenshot 调用失败，帧未写出）",
+   "claim": "注册提交无论失败走哪条分支，最终都在 finally 里复位 submitting ⇒ 不残留 loading；错误分支集中交给 handleRegisterError",
+   "status": "DECIDED",
+   "sourceMisses": [],
+   "runtime": null
+  },
+  {
+   "hole": "REG36",
+   "page": "pages/register/index",
+   "from": "round-7 A 刀 real 档（同上，帧未写出）",
+   "claim": "注册页不消费任何 onLoad/query ⇒ 「幽灵参数不生效」的对照面是零读取，而不是某一帧像素",
+   "status": "DECIDED",
+   "sourceMisses": [],
+   "runtime": null
+  }
+ ]
+}

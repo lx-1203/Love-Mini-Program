@@ -9,6 +9,14 @@
  *   · selector 型断言：机器判 present(N)/absent，探测失败就是"没测到"，不记成 absent；
  *   · text/观感型断言：机器读不到渲染文本，帧就是它的载体 ⇒ 记 FRAME_ONLY，交人读帧；
  *   · 一条 SHOOT 项没有产出可用帧 ⇒ 记 EVIDENCE_HOLE 并 exit 非 0，绝不写"已完成"。
+ *   · 身份归因（本轮补）：分组键只认配方自己说出来的身份 —— `precondition.identity` 必须是非空字段。
+ *     precondition 是裸串、字段缺失、或被上游生产者 String() 成 "[object Object]" ⇒ 身份不可归因，
+ *     整组**拒拍**（status=NOT_SHOOTABLE、identity=unattributed、不出帧也不计数进台账），
+ *     并出机器读数 SHOOT_IDENTITY_UNATTRIBUTED=n ⇒ exit 2。
+ *     为什么不许默认成 A：旧写法（:503 的 normIdent + :506）把"没说出身份"当成"要的是 A"，
+ *     于是 :635 的 identityOk 恒真，一条要求登出态的行拿到一张登录态帧并关掉台账行 ——
+ *     那是伪证不是缺测量（实测 --dry 分组：DRY_GROUP pages/messages/index|A 条目=MP-R2VIS-PAGES-MESSAGES-INDEX-001）。
+ *     词表沿用本仓既有拼写：unattributed（triage-exec-failures.mjs:153）、NOT_SHOOTABLE（artifact-band.mjs:70）。
  *   · 帧内容守恒（本次补的）：每张过地板的帧立刻算 contentHash（sha256(字节) 前 16 位，与
  *     scripts/qa/verify-evidence-corpus.mjs:28 逐字同源），再与同 (身份,页) 组内已入账的帧比内容；
  *     "在早先状态上多做了几步、像素却逐字节相同"的帧判 UNCHANGED_AFTER_INTERACTION ——
@@ -20,7 +28,8 @@
  *   --plan reports/audit/round-7/frameplan-merged.json \
  *   --project apps/client/dist/build/mp-weixin --label round-7-uidebt [--limit N]
  * 干跑（只打印计划不出帧不写盘）：--dry
- * 退出码：0=全过；2=有 SHOOT 项没拿到可用帧；3=帧都拿到了但有帧证明不了自己挂的那个状态。 */
+ * 退出码：0=全过；2=有 SHOOT 项没拿到可用帧（含"身份不可归因 ⇒ 拒拍"，见 SHOOT_IDENTITY_UNATTRIBUTED）；
+ *        3=帧都拿到了但有帧证明不了自己挂的那个状态。 */
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync, rmSync, readdirSync } from "node:fs";
 import { acquireUi, releaseUi, renewUi } from "./ui-lease.mjs";
 import { readIdePort, portIsListening, FALLBACK_PORT } from "./ide-port-config.mjs";
@@ -182,6 +191,103 @@ export function stateGateAudit(rows) {
     " 其中追溯改判=" + unchangedRows.filter((r) => r.retroactive).length + " 已豁免=" + (unchangedRows.length - blockers.length));
   for (const r of blockers) lines.push("  UNCHANGED " + r.id + " 组=" + frameGroupKey(r.identity, r.route) + " 状态=" + r.stateSig + " == " + r.dupOf + " sha256:" + r.contentHash);
   return { shotRows, verdictCount, unchangedRows, blockers, lines, exit: blockers.length ? 3 : 0 };
+}
+/* ========================= 配方身份归因（取景分组的前置判据）=========================
+ * 为什么必须在这里加（本轮实测的假证据路径）：
+ *   旧写法只有 scripts/qa/shoot-frameplan.mjs:503 那一行 ——
+ *     const normIdent = (v) => (/guest|游客|未登录/i.test(String(v || "")) ? "guest" : "A");
+ *   :506 拿它去读 `it.precondition && it.precondition.identity`。配方行的 precondition
+ *   一旦是**裸串**（或被上游生产者 String() 成 "[object Object]"、或整个字段缺失），
+ *   `.identity` 就是 undefined ⇒ 落进 "A" 这个默认分支 ⇒ 分组键变成 `route|A`，
+ *   :635 的 identityOk 于是按"要的就是 A"去核对，量到 logged-in 即成立 ⇒ 出帧、盖 A 的身份章、
+ *   把一条要求登出态的台账行判成已复验。frames 里躺着的是登录态画面 —— 那不是缺测量，是伪证。
+ *   实测（node scripts/qa/shoot-frameplan.mjs --plan reports/audit/round-7/frameplan-round7-guest-real.json --dry）：
+ *     DRY_GROUP pages/messages/index|A 条目=MP-R2VIS-PAGES-MESSAGES-INDEX-001
+ *   而同一条配方文件里它那 6 个同胞（precondition 是带 .identity 的对象）全部正确分成 |guest。
+ * 判据（设计决定，一句话）：**配方说不出身份 ⇒ 这一条不可归因 ⇒ 整条拒拍并计数，绝不默认成 A**，
+ *   因为默认成 A 的代价是"一张看着像证据的登录态帧"，而拒拍的代价只是"这一行还开着"。
+ * 词表不另立拼写（本仓既有）：
+ *   · "unattributed" = 归因未定，口径同 scripts/qa/triage-exec-failures.mjs:153 的 kind:"unattributed"
+ *     与机器读数 TRIAGE_TAP_ABSENT_UNATTRIBUTED=（:814）；
+ *   · 行状态 "NOT_SHOOTABLE" 口径同 scripts/qa/artifact-band.mjs:70「就只能记 NOT_SHOOTABLE，不许记成产品 FAILED」
+ *     与 r-exec-ws.mjs:103（并同 frameplan 处置列 merge-frameplans.mjs:139）；
+ *   · 计数行形状照 r-exec-ws.mjs:277 的 WSX_IDENT_UNSTAMPED / verify-real-coverage.mjs:465 的
+ *     REALCOV_IDENTITYLESS_ROWS ⇒ 门的既有规矩就是"没盖身份的行只数、不认领"。
+ * 本区仍是纯函数：不读设备、不读模块级状态，所以 .zcode/tmp/gap-identshape/identity-gate-harness.mjs
+ * 能把这段字节原样 import 起来跑红/绿两个方向（与上面的 stateGateAudit 同一套办法）。
+ */
+export const GUEST_TOKEN_RE = /guest|游客|未登录|登出|注销/i;
+/* 归一化只做一件事：认不认得出是游客。认不出**不是** A —— 是 null（旧版在这里默认成 A）。 */
+export const normIdent = (v) => {
+  const s = String(v ?? "").trim();
+  return s ? (GUEST_TOKEN_RE.test(s) ? "guest" : "A") : null;
+};
+/* 身份不可归因时行的落点：分组键上的哨兵 + 行状态。 */
+export const IDENTITY_UNATTRIBUTED = "unattributed";
+export const IDENTITY_REFUSED_STATUS = "NOT_SHOOTABLE";
+/* 一条配方的身份到底说没说清楚：只有 precondition 是**对象**且带非空 .identity 才算说清楚。
+   返回 {ok:true, ident} 或 {ok:false, why, literal, guestHinted, statedElsewhere}。
+   guestHinted 只用于把"文案要求游客、字段没写"这一族假证据形状点名出来 —— 它**不**参与归因，
+   否则就又回到"从散文里猜身份"，那正是本次要堵的口径。 */
+export function identityResolutionOf(it) {
+  const p = it && it.precondition;
+  const shown = (x) => (typeof x === "string" ? x : JSON.stringify(x ?? null));
+  if (p === undefined || p === null) {
+    return { ok: false, ident: IDENTITY_UNATTRIBUTED, why: "配方没有 precondition 字段", literal: "(缺失)", guestHinted: false, statedElsewhere: it && it.identity !== undefined ? String(it.identity) : "" };
+  }
+  if (typeof p === "string") {
+    return { ok: false, ident: IDENTITY_UNATTRIBUTED, why: "precondition 是裸串，没有结构化的 .identity ⇒ 取景分组读不到身份", literal: shown(p), guestHinted: GUEST_TOKEN_RE.test(p), statedElsewhere: it.identity !== undefined ? String(it.identity) : "" };
+  }
+  if (typeof p !== "object" || Array.isArray(p)) {
+    return { ok: false, ident: IDENTITY_UNATTRIBUTED, why: "precondition 既不是对象也不是串（shape=" + (Array.isArray(p) ? "array" : typeof p) + "）", literal: shown(p), guestHinted: GUEST_TOKEN_RE.test(shown(p)), statedElsewhere: "" };
+  }
+  const raw = p.identity;
+  const s = raw === undefined || raw === null ? "" : String(raw).trim();
+  const elsewhere = it.identity !== undefined ? String(it.identity) : "";
+  if (!s) return { ok: false, ident: IDENTITY_UNATTRIBUTED, why: "precondition 是对象但没有 .identity（或为空串）", literal: shown(Object.keys(p)), guestHinted: false, statedElsewhere: elsewhere };
+  /* 上游生产者把整个对象 String() 了一遍 ⇒ .identity 剩下 "[object Object]"（round-7 实测 15 条中招，
+     见 enumerate-out.txt）。这不是"认不出是游客"，是**身份正文已经被销毁** ⇒ 同样不可归因。
+     只测正文文本：早先这里还写了一条 Object.prototype.toString.call(raw) 的判据，那是错的 ——
+     字符串原始值也返回 "[object String]"，会把 76 条正常配方全判成不可归因（夹具当场抓到，见 harness 记录）。 */
+  if (/^\[object \w*\]?$/i.test(s) || /^\[object /.test(s)) {
+    return { ok: false, ident: IDENTITY_UNATTRIBUTED, why: "identity 的正文是 \"" + s + "\" ⇒ 上游生产者把对象 String() 了，身份正文已丢（候选口径见 emit-frameplan-additions.mjs:61）", literal: s, guestHinted: false, statedElsewhere: elsewhere };
+  }
+  const ident = normIdent(s);
+  if (!ident) return { ok: false, ident: IDENTITY_UNATTRIBUTED, why: ".identity 归一化不出任何已知身份", literal: s, guestHinted: false, statedElsewhere: elsewhere };
+  return { ok: true, ident, literal: s };
+}
+/* 分组键：**只有配方自己说出来的身份**才允许决定一帧盖谁的章；说不出 ⇒ 单独一组，组名 unattributed。 */
+export const groupKeyOf = (it) => String(it.route) + "|" + (identityResolutionOf(it).ok ? identityResolutionOf(it).ident : IDENTITY_UNATTRIBUTED);
+/* 分组（纯函数，替掉旧 :504-509 的裸 normIdent 写法）。 */
+export function groupByIdentity(items) {
+  const byRoute = new Map();
+  for (const it of items || []) {
+    const key = groupKeyOf(it);
+    if (!byRoute.has(key)) byRoute.set(key, []);
+    byRoute.get(key).push(it);
+  }
+  return byRoute;
+}
+/* 收尾账目：身份归因读数一律从**配方集（items）**算，不从 rows 算 ——
+   从 rows 算会被 --limit / 早断截断成一个更小的数（"没走到"就会被读成"没有"）。
+   exit：有不可归因条目 ⇒ 2（与"有 SHOOT 项没拿到可用帧"同一档，因为这就是同一件事：没帧）。 */
+export function identityGateAudit(items, rows) {
+  const list = items || [];
+  const unattr = [];
+  for (const it of list) {
+    const g = identityResolutionOf(it);
+    if (g.ok) continue;
+    unattr.push({ id: it.id, route: it.route, why: g.why, literal: String(g.literal).slice(0, 120), guestHinted: g.guestHinted === true, filedUnderOldCode: "A", statedElsewhere: g.statedElsewhere || "" });
+  }
+  const refusedInRows = new Set((rows || []).filter((r) => r && r.identity === IDENTITY_UNATTRIBUTED).map((r) => r.id));
+  const lines = [];
+  const guestDemanded = unattr.filter((u) => u.guestHinted);
+  lines.push("SHOOT_IDENTITY_ATTRIBUTED=" + (list.length - unattr.length) + "/" + list.length + "（身份来自配方 precondition.identity 的条目数）");
+  lines.push("SHOOT_IDENTITY_UNATTRIBUTED=" + unattr.length + (unattr.length ? "（一律拒拍：不 ensureIdentity、不开页、不出帧；旧口径会把这 " + unattr.length + " 条全盖成 identity=A）" : ""));
+  for (const u of unattr) lines.push("  UNATTRIBUTED " + u.id + " route=" + u.route + " 旧口径盖成=A" + (u.guestHinted ? " ⚠配方文案点名游客/未登录 ⇒ 正是\"登录态帧冒充登出态证据\"那一族" : "") + (u.statedElsewhere ? "（配方顶层有 identity=\"" + u.statedElsewhere + "\"，把它写进 precondition.identity 再拍）" : "") + " 因=" + u.why + " 字段=" + JSON.stringify(u.literal).slice(0, 96));
+  if (guestDemanded.length) lines.push("  IDENTITY_FALSE_EVIDENCE_RISK=" + guestDemanded.length + " ids=" + guestDemanded.map((u) => u.id).join(",") + "（这几条在旧代码下会出帧并关掉台账行 —— 本次补判据要挡的就是它们）");
+  if (unattr.length && refusedInRows.size !== unattr.length) lines.push("  UNATTRIBUTED_NOT_RECONCILED rows 里记了 " + refusedInRows.size + " 条拒拍 ≠ 配方里的 " + unattr.length + " 条 ⇒ 有不可归因条目没走到拒拍分支（--limit 截断也算），不许当已处理");
+  return { unattr, lines, exit: unattr.length ? 2 : 0 };
 }
 /* GATE-END */
 
@@ -500,13 +606,14 @@ async function ensureIdentity(which) {
 
 /* lane 写的 precondition.identity 是一句中文（"A（已登录且资料已完善…）"、"guest 身份"…），
    直接当分组键会把同一身份拆成 N 组、每组重新铸一次 token。归一化只做一件事：认不认得出是游客。 */
-const normIdent = (v) => (/guest|游客|未登录/i.test(String(v || "")) ? "guest" : "A");
-const byRoute = new Map();
-for (const it of items) {
-  const key = it.route + "|" + normIdent(it.precondition && it.precondition.identity);
-  if (!byRoute.has(key)) byRoute.set(key, []);
-  byRoute.get(key).push(it);
-}
+/* 【本轮补】旧版这里两行就是缺陷本体：
+ *   const normIdent = (v) => (/guest|游客|未登录/i.test(String(v || "")) ? "guest" : "A");
+ *   const key = it.route + "|" + normIdent(it.precondition && it.precondition.identity);
+ * 那是"默认成 A"的形状：precondition 是裸串/缺失/被上游 String() 成 "[object Object]" 时
+ * `.identity` 为 undefined ⇒ 归一化落进 "A" ⇒ "配方没说出身份"被洗成"配方要的是 A"，
+ * 于是 :635 的 identityOk 再按 A 去核对恒真、出帧、盖 A 的身份章关掉一条要求登出态的台账行。
+ * 现在归因判据搬进 GATE 区（identityResolutionOf / groupByIdentity）：认不出 ⇒ unattributed ⇒ 整组拒拍。 */
+const byRoute = groupByIdentity(items);
 if (!DRY) { mkdirSync(SHOT_DIR, { recursive: true }); mkdirSync(OUT, { recursive: true }); }
 /* 上一轮（同 OUT 目录）的落点确认集合——决定哪些帧可以复用。读不到就当作首轮。 */
 const REUSE_PREV_OK = new Set((() => {
@@ -517,8 +624,14 @@ const REUSE_PREV_OK = new Set((() => {
 })());
 console.log("SHOOT_PLAN items=" + items.length + " 组(路由×身份)=" + byRoute.size + " sha=" + GIT_SHA + " project=" + relOf(PROJECT) + (DRY ? " DRY" : ""));
 if (DRY) {
-  /* 干跑不许占设备：上一版 --dry 仍然铸 token、开页，等于"说是干跑其实把现场改了"。 */
+  /* 干跑预告"哪几组会被拒拍"：配方作者的 pre-flight 就看这一行，否则缺陷要等真机腿跑完才浮出来。
+     这里把拒拍行按构造补齐（干跑的循环根本不跑），免得对账行把"干跑没出 rows"误报成"有条目漏了"。
+     干跑本身仍退 0 —— 它没做任何测量，红/绿是设备腿的事。 */
   for (const [k, grp] of byRoute) console.log("  DRY_GROUP " + k + " 条目=" + grp.map((x) => x.id).join(","));
+  const refusedGroups = [...byRoute.keys()].filter((k) => k.endsWith("|" + IDENTITY_UNATTRIBUTED));
+  const pre = identityGateAudit(items, items.filter((it) => !identityResolutionOf(it).ok).map((it) => ({ id: it.id, identity: IDENTITY_UNATTRIBUTED })));
+  for (const l of pre.lines) console.log("  DRY_" + l);
+  console.log("DRY_REFUSED_GROUPS=" + refusedGroups.length + (refusedGroups.length ? " " + refusedGroups.join(",") : "（无：这份配方每条都说得出身份）"));
   console.log("SHOOT_RESULT=DRY 未碰设备、未写盘");
   process.exit(0);
 }
@@ -588,6 +701,29 @@ function stateFieldsFor(it, ident, route, sp, contentHash) {
 for (const [key, grp] of byRoute) {
   const [route, ident] = key.split("|");
   if (LIMIT && done >= LIMIT) break;
+  /* 身份不可归因 ⇒ 这一组一条都不拍：不 ensureIdentity（不铸票、不清会话）、不开页、不出帧。
+     配方没说出这一条要哪个身份，拍回来的任何画面都可以被盖成任意身份 —— 那正是本轮要堵的假证据。
+     行照样出（status=NOT_SHOOTABLE + reason），因为本仓的规矩是"拒拍也要入账、不许消失"
+     （口径同 artifact-band.mjs:70 / r-exec-ws.mjs:277；形状同本文件 :599 的 NO_EVIDENCE 分支）。
+     旧口径下这些行会拿到 ident="A" ⇒ 走 ensureIdentity("A") 铸登录票 ⇒ 帧盖上 identity:"A"、
+     :635 的 identityOk 恒真 ⇒ 台账行被关掉。 */
+  if (ident === IDENTITY_UNATTRIBUTED) {
+    const gs = grp.map((it) => identityResolutionOf(it));
+    let anyGuest = false;
+    grp.forEach((it, i) => {
+      const g = gs[i];
+      if (g.guestHinted) anyGuest = true;
+      rows.push({
+        id: it.id, route, landing: "", status: IDENTITY_REFUSED_STATUS, identity: IDENTITY_UNATTRIBUTED,
+        reason: "配方身份不可归因：" + g.why + " ⇒ 拒拍（旧口径会把它盖成 identity=A），欠的是把 precondition.identity 写成字段",
+        recipePrecondition: String(g.literal).slice(0, 200), checks: [], frame: "", bytes: 0, contentHash: "",
+        stateFrame: false, countsTowardStateQuota: false,
+      });
+    });
+    console.log("SHOOT_IDENTITY_UNATTRIBUTED route=" + route + " 条目=" + grp.length + " ids=" + grp.map((x) => x.id).join(",") +
+      " 旧口径=整组按 identity=A 出帧" + (anyGuest ? " ⚠配方文案点名游客/未登录 ⇒ 这就是\"登录态帧冒充登出态证据\"" : ""));
+    continue;
+  }
   let booted = false;
   for (let a = 0; a < 2 && !booted; a++) {
     try { await ensureIdentity(ident); booted = true; }
@@ -749,6 +885,11 @@ const unchangedRows = gateAudit.unchangedRows;
 const stateBlockers = gateAudit.blockers;
 const framesHashed = gateAudit.shotRows.filter((r) => r.contentHash).length;
 const waivedRows = gateAudit.shotRows.filter((r) => r.stateGateWaived === true);
+/* ---- 身份归因的账（与内容守恒同一套办法：读数由 GATE 区的纯函数从**配方集**算）----
+   为什么从 items 而不是从 rows 算：--limit / 中途 break 会让某些不可归因组根本没走到拒拍分支，
+   从 rows 数就得到一个小一号的数，"没走到"于是被读成"没有" —— 本仓为这个形状写过
+   "空扫描集不算跑完"（:206）。所以这里两本账都出，并对不上时点名（UNATTRIBUTED_NOT_RECONCILED）。 */
+const identAudit = identityGateAudit(items, rows);
 if (!DRY) {
   writeFileSync(join(OUT, "shoot-results.json"), JSON.stringify({
     round: LABEL, gitSha: GIT_SHA, updatedAt: new Date().toISOString(), plan: relOf(PLAN), project: relOf(PROJECT),
@@ -757,6 +898,9 @@ if (!DRY) {
        mock 包会在开页那次把会话造回来 ⇒ 只有 identityAtFrame 能证明帧是谁的帧。 */
     identityAtFrameLast: lastAtFrame,
     identityMismatch: rows.filter((r) => r.identityOk === false).map((r) => r.id),
+    /* 身份不可归因（配方没说出身份 ⇒ 拒拍）与上面的"身份错位（量出来不符）"是两件事，
+       所以各用一个键，别让下游把"没拍"读成"拍坏了"。逐条含旧口径会盖成的身份，便于对账。 */
+    identityUnattributed: identAudit.unattr,
     lockHitAtFrame: rows.filter((r) => r.lockHit).map((r) => r.id),
     artifactBand: readApiMode(PROJECT),
     /* 内容守恒：hashAlgo 与语料门禁同源，读者可自己复算（verify-evidence-corpus.mjs:28）。
@@ -769,6 +913,9 @@ if (!DRY) {
       SHOT: shotRows.length, EVIDENCE_HOLE: holes, FAILED: rows.filter((r) => r.status === "FAILED").length, NO_EVIDENCE: noEvidence.length,
       UNCHANGED_AFTER_INTERACTION: unchangedRows.length, UNCHANGED_AFTER_INTERACTION_BLOCKING: stateBlockers.length,
       SAME_STATE_SAME_BYTES: verdictCount.SAME_STATE_SAME_BYTES || 0, SAME_STATE_DIFF_BYTES: verdictCount.SAME_STATE_DIFF_BYTES || 0,
+      /* 身份归因读数（从配方集算，不是从 rows 算 ⇒ --limit 也数得全）*/
+      IDENTITY_UNATTRIBUTED: identAudit.unattr.length, IDENTITY_ATTRIBUTED: items.length - identAudit.unattr.length,
+      IDENTITY_UNATTRIBUTED_GUEST_DEMANDED: identAudit.unattr.filter((u) => u.guestHinted).length,
     },
     machinePassAllChecks: machinePass,
   }, null, 1));
@@ -777,14 +924,18 @@ console.log("SHOOT_SUMMARY planned=" + items.length + " 出帧=" + shotRows.leng
   " 通道异常=" + transportErrs + " WS交互成功=" + rows.reduce((n, r) => n + ((r.wsApplied || []).length), 0) + " WS交互未成=" + rows.reduce((n, r) => n + ((r.wsFailed || []).length), 0) + " WS通道异常=" + wsErrs +
   " 全部判点通过的条目=" + machinePass);
 for (const l of gateAudit.lines) console.log(l);
+for (const l of identAudit.lines) console.log(l);
 if (waivedRows.length) console.log("  已豁免（判决仍在账上，只是不判红）：" + waivedRows.map((r) => r.id + "@" + r.contentHash).join(",") + " 理由=" + WAIVE_REASON);
 if (WAIVED_IDS.size && !waivedRows.length) console.log("  豁免名单空转：--allow-unchanged-state 点了 " + [...WAIVED_IDS].join(",") + " 但这一轮没有任何帧被判 UNCHANGED_AFTER_INTERACTION（点了不存在的条目就是给自己找台阶）");
 const conserved = rows.length === items.length || (LIMIT && done >= LIMIT);
 console.log("SHOOT_CONSERVED=" + (conserved ? "yes" : "NO（rows=" + rows.length + " ≠ planned=" + items.length + "）"));
 if (DRY) { console.log("SHOOT_RESULT=DRY"); process.exit(0); }
-/* 退出码：2 = 有 SHOOT 项没拿到可用帧（原口径）；3 = 帧都拿到了，但有帧证明不了自己挂的那个状态
+/* 退出码：2 = 有 SHOOT 项没拿到可用帧（原口径，含"身份不可归因 ⇒ 拒拍"）；3 = 帧都拿到了，但有帧证明不了自己挂的那个状态
    （内容守恒判决不通过，见 stateGateAudit）。分开是因为两者的修法完全不同：前者补拍，
-   后者要么承认这一步是空动作、要么逐条 id 声明"这个状态本来就不改画面"。 */
-console.log("SHOOT_RESULT=" + (!conserved || noEvidence.length ? "FAIL（" + noEvidence.length + " 条没拿到可用帧）"
-  : (stateBlockers.length ? "FAIL（UNCHANGED_AFTER_INTERACTION=" + stateBlockers.length + "：帧与同组上游状态逐字节相同，不能当该状态的文字证据）" : "OK")));
-process.exit(!conserved || noEvidence.length ? 2 : gateAudit.exit);
+   后者要么承认这一步是空动作、要么逐条 id 声明"这个状态本来就不改画面"。
+   【本轮补】身份不可归因单列一条原因并排在最前：它的修法既不是补拍也不是豁免，是回去把配方
+   的 precondition.identity 写成字段 —— 混在"没拿到帧"里会让人去重拍一次同样的假证据。 */
+console.log("SHOOT_RESULT=" + (identAudit.unattr.length ? "FAIL（IDENTITY_UNATTRIBUTED=" + identAudit.unattr.length + "：配方说不出身份 ⇒ 已拒拍，不许默认成 A 出帧）"
+  : (!conserved || noEvidence.length ? "FAIL（" + noEvidence.length + " 条没拿到可用帧）"
+    : (stateBlockers.length ? "FAIL（UNCHANGED_AFTER_INTERACTION=" + stateBlockers.length + "：帧与同组上游状态逐字节相同，不能当该状态的文字证据）" : "OK"))));
+process.exit(identAudit.exit || (!conserved || noEvidence.length ? 2 : gateAudit.exit));
