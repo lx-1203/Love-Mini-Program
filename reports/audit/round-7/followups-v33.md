@@ -101,12 +101,18 @@
 ## 0. 续跑前先做的三件事（2026-09-29 03:52 停点，本轮预算耗尽）
 
 本文件第 1/3 节的命令**不能在车道还在跑的时候执行**，否则拿到的是撕裂读数（本轮实测：同一条命令在重建窗口内会读 dist 0 vs dist 2；边跑边提交会把 corpus 的 resolvableOlder 从 42 抬到 45）。1. 确认三条在途车道都已收工：`ls -lat --time-style=%H:%M .zcode/tmp/lane-wiring/ .zcode/tmp/lane-panelword/ .zcode/tmp/lane-ops/` 全部停止增长；它们未提交的改动分别落在 `run-qa-selftests.mjs`、`run-round7-closeout.mjs`、`emit-round-report.mjs`、`test-guest-landing.mjs`、`verify-guest-landing.mjs`、`.zcode/workflows/miniprogram-qa-finish-v33.dwf.ts`（GATE_SUITE 已由 10 条接到 12 条）。
-2. 确认 UI 租约没人持有：`node22 -e "import('./scripts/qa/ui-lease.mjs').then(m=>m.heldLeases().then(h=>console.log(h)))"` 应为空；端口 9420/9430 与后端 8080 此刻都是活的（零点击冷启配方见第 3 节）。
+2. 确认 UI 租约没人持有：`node22 --input-type=module -e "import { heldLeases } from './scripts/qa/ui-lease.mjs'; console.log(JSON.stringify(heldLeases()));"` 应打印 `[]`
+   （本节原先写的是 `node22 -e "import('./scripts/qa/ui-lease.mjs').then(...)"` 那种形式 —— **实测跑不通**，
+   普通 `-e` 里 `import()` 的动态形式在这个入口下会先撞语法，2026-09-29 我在车道还在持租时实跑复现过；
+   锁目录是 `tmp/qa/locks/`，不是 `.zcode/tmp`。锁按 **pid** 判活：本轮读到
+   `owner=guard-r10-guest-shoot pid=30572 pidState=alive orphan=false`，那是真有人在用，不许接管）。
+   端口 9420/9430 与后端 8080 此刻都是活的（零点击冷启配方见第 3 节）。
 3. 跑 `bash scripts/qa/run-final-verify-v33.sh`（12 条门禁 + 可变红自检 + 自测汇总 + 工作流干跑 + 不跳实时门的全量面板 + 面板后复量），再跑 `node22 scripts/qa/gen-round8-report.mjs` —— 总报告 §7 会从 summary.json 自动填真实读数。**在那之前 §7 保持"未跑"字样，不要手填。**
+   **（2026-09-29 13:05 已照此执行完：18 步全跑、红 4、HEAD 前=后=83fd47a7（同值 ⇒ 这批 sha 敏感读数没被提交漂移污染），§7 已由生成器填真数；红因与可收性逐条落在 decisions 第 25 项与本报告 §7。该脚本的 `:39-40` 两行 JS 注释写在 bash 里会被当命令执行，已修为 `#`。）**
 
 本轮已入库 25 条提交；工作树约 160 项脏，其中绝大多数属于上述三条在途车道，**不属于我、也不该由我代为提交**。
 
-## 4. 终局复量之后欠下的四把载具刀（等 UI 车道收工再动，跑中不改载具）
+## 6. 终局复量之后欠下的四把载具刀（等 UI 车道收工再动，跑中不改载具）
 1. **`verify-real-coverage` 只数不点名**。`scripts/qa/verify-real-coverage.mjs:434` 把欠账算成
    `|neverOnReal ∪ noA ∪ noGuest|` 的集合大小，`:509` 只印一个数 —— 于是本轮"欠账 10/236"这三行里
    没有任何一处能读出**是哪 10 条**。头两行给了线索（`REAL_BAND_BUT_ALL_SKIPPED=10`、
