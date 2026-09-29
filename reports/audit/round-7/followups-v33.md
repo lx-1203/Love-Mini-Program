@@ -233,3 +233,42 @@ r6 的稳定读数：`SRC_SHAPE total=98 成立=98 不成立=0`；
 `CORPUS_SCANNED=47 PROBLEMS=1 STORE=reachable`；`PROV_FRAMES_CONSISTENT=4154 / PRE_STAMP=4886`；
 `verify-band-freshness` PASS（三档 MODE 各自正确，mock 的 env.js 仍是 `f1c7b96b`＝证据里的 `mock@f1c7b96b`）；
 `run-qa-selftests` 发现=30 全绿；`dryrun` 3/3；`emit-round-report` OK。
+
+## 9. 我按 #15 重建三档时抓到的两件事（其中一条推翻了我上一条报告的措辞）
+先纠正我自己：我在落账 #15 时说"两次 showcase 真构建已验证"——那是**引用车道的自报**。
+我这次亲自按 `mock → real:isolated → showcase:isolated` 顺序重跑，结果是：
+
+| 步骤 | 退出码 | 结果 |
+|---|---|---|
+| `build:mp-weixin:mock` | 0 | ✅ |
+| `build:mp-weixin:real:isolated` | 0 | ✅ `MODE:"real"` |
+| `build:mp-weixin:showcase:isolated` | **1** | ❌ 但产物侧其实是对的 |
+
+**好消息（这才是 #15 真正要证的事）**：showcase 那一步失败时，
+`mp-weixin/config/env.js` 的 sha256 前 8 位仍是 `f1c7b96b`、`MODE` 仍是 `mp-weixin-mock`，
+`mp-weixin-real` 仍是 `real` —— 也就是说 showcase 再也碰不到 mock 共享档，**隔离成立**。
+失败发生在构建自己的前段（`profile-svg-to-png`）：
+`src/static/assets/profile/png/profile-hero.png: write error / system error: Invalid argument`，
+载具 `:239` 于是如实报 `showcase 构建未成功退出` 并 `SHOWCASE_RESULT=FAIL`。
+注意它**没有**把这条误判成"feature-flags 断言不过"——那行 `membershipEnabled:!1` 只是信息打印
+（showcase 是运行时由 `config/showcase.js` 翻成 `!0`，编译初值本来就该是 `!1`）。
+
+**新发现的稳定性问题（不是这次改动引入的，是既有设计）**：
+`profile-svg-to-png` 把产物**写回 `apps/client/src/static/` 里被 git 跟踪的文件**，
+而且编码器不是逐字节确定的 —— 同一份 SVG 重跑得到 28622B，仓库里是 28638B（两端都有完整 IEND，
+不是截断，是合法重生）。后果有两条，都不容小看：
+1. **任何一次构建都会把工作树弄脏**，于是"跟踪文件脏项=0"不再是"没动过"的凭据；
+   我在 #15 之后量到 `tracked_dirty=1` 就是这个，而不是谁改了产品代码。
+2. 更危险的方向：这类 16 字节抖动会让**按字节/按 mtime 的判定**漂——本仓的门禁恰恰重度依赖
+   mtime（band-freshness）与 sha（provenance/corpus/证据库）。
+   我把这次抖动当作 `verify-band-freshness` 未来假红的候选源来登记，而不是当噪声。
+
+处置（我已做的）：先把重生出的 PNG 备份到 `.zcode/tmp/profile-hero.build-output.png`，
+再对**单个路径** `git checkout --` 归位（当时所有车道已收工，且要丢的只是构建产物 diff，
+不是任何人的编辑）；归位后 `git status --short apps/client/src/static` 为空。
+我另有一条自己犯的错要记：重试时把重定向写成 `../..zcode-tmp`，
+先差点留下杂散文件、又把构建输出丢掉——已确认仓内没留下该文件（`git status` 干净）。
+
+待办（不在本轮做，需你点头才动）：把 `profile-svg-to-png` 的产物写回源目录改成
+写进 `dist`（或加 `--check` 只验不写），并让它确定化输出字节；这条改的是构建链与 src 的关系，
+动完必须重建三档 + 全量复量，属于新的授权范围。
