@@ -96,6 +96,13 @@ const OUT_METRICS = toRel(flag("metrics", join(ROUND_DIR, RTAG ? `round-${RTAG}-
 const SIDE_DIR = toRel(flag("sidecar-dir", ".zcode/tmp/report-emitter"));
 const NODE22 = flag("node22", "D:/codex-tools/node-v22.17.0-win-x64/node.exe");
 let SKIP_LIVE = has("skip-live-gates");
+/* `--dry` 从"面板碰巧往子门传的一个旗标"升级成**面板自己的真语义**：不取租约、不跑实时门。
+   起因是 verify-dry-no-lease 的静态门：我给 :620 那发加了 "--dry" 实参之后，这个文件第一次
+   被判定为"自称支持 --dry"，于是它那句 acquireUi 没有可见守卫就成了红。
+   改前它其实**根本不在门的射程内**（DRY_RE 命中 0 行 ⇒ verdict=no-dry），也就是说
+   "面板会抢设备租约"这件事从来没被任何静态门禁审过 —— 红是真的，我把它做成名实相符而不是教门放行。 */
+const DRY = has("dry");
+if (DRY && !SKIP_LIVE) { SKIP_LIVE = true; LIVE_SKIP_WHY = "--dry 生效（不取 UI 租约、不复跑 G7/G8/G9/probe）"; }
 let LIVE_SKIP_WHY = "--skip-live-gates 生效";
 /* 只读探针：回答「现在跑我会不会去碰模拟器」，不取租约、不写任何锁文件。
    为什么要有 —— 这个工具的实时分支会开页、会重建产物，它的守卫不能在真跑一轮的时候才第一次被检验；
@@ -765,7 +772,14 @@ G.i18n = runGate("verify-i18n-orphan", "scripts/qa/verify-i18n-orphan.mjs", [], 
    并把它按「缺证据」记进失败清单 —— 宁可报告缺一块，也不交出一块看着完整、实际被污染的结论。
    --skip-live-gates 是人工声明的同一条路，两路的差别只在报告里写明的原因。 */
 let leaseHolders = [];
-if (!SKIP_LIVE) {
+/* 守卫要"结构上看得见"：写成 `if (dry/跳过) { 说明 } else { 抢租约 }` 的 else 分支，
+   而不是 `if (!SKIP_LIVE) { 抢租约 }` —— 后者对静态门等于没有守卫（它要求 take 上方几行内
+   同时看得见 dry/跳过开关与 else 形状，verify-dry-no-lease.mjs:80-87）。
+   两条分支都写 LIVE_SKIP_WHY，跳过原因仍然逐字进报告，不改判定语义。 */
+if (DRY || SKIP_LIVE) {
+  if (!LIVE_SKIP_WHY) LIVE_SKIP_WHY = "--dry 生效";
+  console.log("REPORT_LIVE_SKIPPED=" + LIVE_SKIP_WHY + "（不取 UI 租约）");
+} else {
   const LEASE_OWNER = "emit-round-report-" + process.pid;
   const acc = acquireUi({ owner: LEASE_OWNER, batch: "R" + ROUND_TAG });
   if (!acc.ok) {
