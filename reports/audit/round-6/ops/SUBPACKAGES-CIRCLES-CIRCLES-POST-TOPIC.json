@@ -351,7 +351,10 @@
    "action": "依次 tap 4 个 .tag-chip（:595-609 → toggleTag :130-141）→ 再 tap 已选中的一个取消 → 观察提示行计数",
    "expected": "选中变 --active（品牌绿实底白字 :1054-1069）；提示行「最多选 3 个」计数与实际选中数一致（:593 ← circle.postTopicTagsHint {n:3}，{n} 必须被替换）；第 4 个被拒并弹 Toast circle.postTopicMaxTags（:136-139，{n}=3 不得出现字面量）；取消选中计数-1；再次选第 4 个仍可提示；tags 仅在 mock 下影响提交（:361 翻译后文案数组 /:402-412）；console 无报错",
    "evidence": "normal：选中 3 个 / 上限 Toast / 取消后 3 张 after 截图 + Toast 文案逐字 + console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=tag-chip=pageWxmlText(both bands；v-for 共用同类名；绑 :class 拼 --active)。注：探针报的 pageWxmlExact 是同目录兄弟页 circle-home.wxml 的 artifact，post-topic 内为 bound ‖ 七枚 tag-chip(:604-616 @tap=toggleTag(tag.key) 只靠 key 区分)，判点要「依次点第 1→4 枚，第 4 被 MAX_TAGS=3 拒并弹 Toast」⇒ 需 nth 序号定位 + 四次连续点击，class first-match 只命中第 1 枚反复来回。另 tags-section 整块在 v-if=useMock(:598)，real 档静息不渲染。 ‖ apps/client/src/subpackages/circles/circles/post-topic.vue:606",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "CPT28",

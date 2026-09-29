@@ -256,7 +256,10 @@
    "action": "全页滚动，确认「语音介绍」「背景图编辑」「邀请好友」「VIP 开通卡」四块均渲染且可点；VIP 卡需 appConfig.isCommerceOn('vip')=true 且未开通",
    "expected": "四块必须出现在本人态活代码路径（index.vue:1683-1825 <template v-if=\"isOwnProfile\"> 内，紧随 ProfileShell）：语音录制 CTA（:1696-1714）、背景编辑 CTA（:1771-1791）、邀请 CTA（:1795-1809）、VIP 卡（:1813-1824）；任一块缺失即判 P1 回归（历史：挂载点全在 v-if=false legacy 槽或他人态恒 false 分支）；VIP 卡不得出现在他人态（MP-R1-PROFILE-206 颠倒修复）",
    "evidence": "normal：after 截图（四块各一张）+ 执行日志（DOM 存在性清单）",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=video-cta=pageWxmlExact(both bands，:1694/:1768/:1793 三枚同名)；vip-card=pageWxmlExact(commerce v-if 门控) ‖ 三块 CTA 共用 .video-cta（分别 handleRecordVoice :1699 / handleEditBackground :1773 / openInviteModal :1798），页级 first-match 只能命中渲染树首枚；VIP 卡 .vip-card(:1809) v-if isCommerceOn('vip') 在 mock 恒假。且动作是「全页滚动确认」，滚动态非帧可判。 ‖ apps/client/src/pages/profile/index.vue:1694",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "PFI23",
@@ -408,7 +411,10 @@
    "action": "① 开关开启时点 .vip-card（index.vue:1813 → handleVipClick :1148-1151）；② 开关关闭时确认不渲染；③ 全页搜索是否存在价格/交友币等泄漏文案",
    "expected": "① 落 /subpackages/vip/index（500ms 内路由变化）；② 关闭时卡片必须不渲染（v-if :1813）；③ 关闭态下页面不得残留任何价格/币文案（G5「封存页无价格/币泄漏」反向检查，命中即判 P1 合规问题）；VIP 徽章在已开通时按 :1965-1968 显示且仅本人态",
    "evidence": "critical：before + after 截图（两态）+ 路由断言 + console + 执行日志（文案泄漏扫描结果）",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "WRONG_BAND｜档位口径=vip-card=pageWxmlExact(both bands，渲染条件恒假) ‖ v-if appConfig.isCommerceOn('vip') && !isVip；isCommerceOn 缺省封存（stores/app-config.ts:67 总闸 commerce.enabled!==true 即 false，mock getAppConfig 无 commerce.* 键）⇒ 静息无元素、② 也无法与「开关从没开过」区分。可在 commerce.enabled+commerce.vip 置真的夹具档/real 档表达。 ‖ apps/client/src/pages/profile/index.vue:1809",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "PFI35",
@@ -445,7 +451,10 @@
    "action": "在页面顶部执行下拉手势；统计 onShow 驱动刷新",
    "expected": "**不得**出现下拉刷新动画或 onPullDownRefresh 回调；数据刷新只能靠切 Tab/onShow 轻刷（PFI03）→ 须在 observed 记录「与首页/附近/消息三页不一致」（缺手动刷新入口属可感知体验缺口，按 P2/P3 记录不夸大）；若出现刷新动画说明配置或全局样式串场，判缺陷",
    "evidence": "noop：执行日志（下拉手势后的动画/回调结论）+ console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "NO_ELEMENT_NO_FIX｜档位口径=n/a — 下拉无载体 ‖ 否命题：本页 pages.json 无 enablePullDownRefresh、index.vue:13 未 import onPullDownRefresh ⇒ 断言是「不得刷新」，页内无元素承载下拉，任何 tap 都会污染零副作用观测环境。点不到东西是设计使然，无诚实改写。 ‖ apps/client/src/pages/profile/index.vue:13",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "PFI38",
@@ -500,7 +509,10 @@
    "action": "逐元素点击并计时：MyHeader（分享 button / 设置 / 头像 / 编辑文本）、MyCompletion、MyStats 四格、MyStory 四类、MyInteraction 四格、MyMore 四项、功能区四块（语音/背景/邀请/VIP）、FAB、他人态（分享/设置/greet/徽章两枚/照片墙）；逐一读 rect 换算 rpx",
    "expected": "① 每个可点元素 500ms 内必有路由/DOM/Toast/震动之一，否则死按钮 FAILED（G4 死按钮=0；MyHeader 分享因改为原生 button，其反馈为系统面板，须按 PFI06 的判定下限处理，不可直接判死也不可轻判 VERIFIED）；② 热区 ≥88rpx：列出 .my-header__icon（含新 button 复位后尺寸）、.my-header__edit、.my-stats__col、.avatar-menu__item、.video-cta、.invite-modal__btn、.profile-bg__edit 等所有 <88rpx 读数；③ 原生 button 复位不得改变外观（无边框/灰底/字号漂移，对照修复前截图）",
    "evidence": "normal：after 截图（普查清单 + 失败元素特写）+ 路由断言 + console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=my-header__icon/my-stats__col/my-more__cell=bandWxmlOther（components/profile/mine/*.wxml，页级查询够不着） ‖ 逐元素 rect 普查，多数目标在子组件（MyHeader/MyStats/MyMore 编译到 components/profile/mine/）→ SEL_COMPONENT_SCOPE 实测 90.6% 点不动，需 WS selectComponent；且判点是 boundingClientRect→rpx，probeMany 只回条数不回宽高。页内 .video-cta/.invite-modal__btn/.profile-bg__edit 虽 pageWxmlExact，也不足以逐元素量。 ‖ apps/client/src/components/profile/mine/MyHeader.vue",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "PFI43",

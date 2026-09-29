@@ -31,7 +31,10 @@
    "action": "真实档：①制造列表拉取失败进入本页 → 读取 .state-error 与 ErrorState 文案、重试钮（ErrorState.vue:50 @tap=emit('retry') → index.vue:331 @retry=handleRetry :138-140）；②tap 重试钮；③恢复后端后再 tap 一次；mock 档：④核对是否出现空态文案 circle.circlesEmpty（:329）",
    "expected": "①错误态显示 store.errorMessage 原文或 circle.loadFailedRetry 兜底（:133），不得为裸 key/技术性 HTTP 串，且不得同时渲染卡片；②重试必须真实重拉（真实档 network 新增 1 条 GET /circles；loading 重新置位再回落）；③恢复后成功渲染列表且错误态消失；④mock 档下 empty 不可达属**不可构造前置**，须写入 unverifiable（格式「用例|原因|尝试次数」），禁止凭代码判 VERIFIED；错误态与空态不得互相冒充（错误显示为「暂无数据」即误导，判 P2 Data）",
    "evidence": "critical：各态 before/after 截图 + 错误文案原文 + network 逐条（重试计数）+ 构建模式来源（screenshot-manifest.json buildMode）；不可构造项写 unverifiable 三元组",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=bandWxmlOther（门自跑亦列 SEL_COMPONENT_SCOPE） ‖ 重试钮是真元素、真事件绑定，但整块编在组件自己的 wxml 里 ⇒ 页作用域查询进不去（本门实测该轴 90.6% 点不动）。另需真实档把 GET /circles 弄失败才有 error 态；mock-empty 那半按判据自述就该记不可构造。 ‖ apps/client/src/components/common/PageStateContainer.vue:24 (v-else-if=\"state === 'error'\" class=\"state-slot state-error\") 与 apps/client/src/components/common/ErrorState.vue:49-50 (class=\"error-btn\" @tap=\"emit('retry')\")；产物 class token 只在 components/common/PageStateContainer.wxml 与 components/common/ErrorState.wxml（命令：node tmp/qa/tok.mjs state-error error-btn）",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "CI04",
@@ -67,7 +70,10 @@
    "action": "①在列表内向下滚动至第 5 张卡可见，记录 scrollTop 值；②tap 顶部第 4 个 tab（音乐）；③再 tap 回「全部」；④读取 scrollTop 与卡片渲染顺序；⑤重复 3 轮",
    "expected": "切走再切回后：数据不得丢失/不得重复拉取（network 在无 tab 相关请求时保持 0 新增）；滚动位若被重置（tab 过滤语义下重置为顶是合理，但**同一 tab 反复切换**必须保留或明确记录为「滚动位丢失」缺陷）；不得出现空列表闪烁、骨架重放、卡片动画 delay 重跑（:366 animationDelay 与 index 相关，反复触发会视觉抖动）；连续 3 轮无累积异常",
    "evidence": "normal：①③④各帧截图 + scrollTop 数值表 + network 计数 + console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlText（产物里不是 class token） ‖ 机制：节点带 :class 对象绑定后，连静态类名都被编译成运行期数组 ⇒ 字面 .circles-tab 在产物 class token 里查不到（门落 pageWxmlText）。且判据要的是「第 4 个 tab」，现通道只点首匹配；本条真正的判点（滚动位是否丢）另需 scrollTop 读数。 ‖ apps/client/src/subpackages/circles/circles/index.vue:400 class=\"circles-tab\" + :401 :class=\"{ 'circles-tab--active': … }\" + :404 @tap；命令：grep -o 'class=\"[^\"]*circles-tab[^\"]*\"' apps/client/dist/build/mp-weixin/subpackages/circles/circles/index.wxml → class=\"{{['circles-tab', 'data-v-85666a04', tab.e && 'circles-tab--active']}}\"",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "CI07",
@@ -238,7 +244,10 @@
    "action": "①批量读 4 类元素 boundingClientRect 并换算 rpx；②对返回钮上/下边缘内 4rpx 各 tap；③对加入钮左右与下边缘 tap；④对 tab 文字与 tab 外边距区各 tap；⑤对卡片最右下角（含 list-bottom-spacer :418 区域）tap",
    "expected": "逐项给实测尺寸并判定（≥88rpx 为达标）：64rpx 顶栏两钮、60rpx 加入钮均 <88rpx → 判 FAILED（P2 UX 热区不达标，须给数值表）；②③④边缘点击不得出现无反馈死点、不得误命中相邻元素（加入钮边缘点偏到卡片即触发跳转，须在坐标表中显式记录）；⑤底部 spacer 区点击不得触发任何卡片动作；每张截图须标出点击坐标",
    "evidence": "normal：尺寸表（px→rpx，逐元素）+ 各边缘点击后的 after 截图与命中结果 + console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlText（加入钮）；返回钮 pageWxmlExact ‖ 加入钮与 CI06 的 tab 同一种「静态名被 :class 拖进运行期数组」机制；返回钮/tab/卡片名字都查得到。真正卡住本条的是「按边缘 4rpx 坐标点击」——现通道只按选择器点节点，落不到边界。 ‖ apps/client/src/subpackages/circles/circles/index.vue:458-459 class=\"circle-card__action\" + :class=\"{ 'circle-card__action--joined': … }\" + :462 @tap.stop，编译为 class=\"{{['circle-card__action', 'data-v-85666a04', circle.k && 'circle-card__action--joined']}}\"（命令同 CI06 的 grep，见 :455-470 区块）；返回钮 :350 class=\"circles-header__back press-feedback\" 为真 token",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "CI21",
@@ -249,7 +258,10 @@
    "action": "①滚到顶、中、底各截图；②横滚 .circles-tabs 至最右（「更多」出视口）再回最左；③在 iPhone SE 与带 home 指示条机型核对最后一张卡与加入钮是否完整可见；④双指回弹观察是否出现内容裁切",
    "expected": "①最后一张卡与统计行完整可见、不被 home 指示条/安全区遮挡（:tab-bar-safe=false 意味着本页自处理，须实测 spacer 是否足够）；②横滚流畅、7 个 tab 全部可达、「更多」tab 可点（不得被裁到不可点）；③无 sticky 头与列表内容的遮挡/穿透（fixed 头 pointer-events 不得吃掉列表点击）；④回弹后无内容裁切、无滚动位置错乱；⑤无白屏尾部",
    "evidence": "noop：执行日志（scrollTop/scrollLeft 极值 + 元素 rect）+ 顶/中/底 3 张截图（两机型）",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "NO_ELEMENT_NO_FIX｜档位口径=pageWxmlExact ‖ 四条腿是纵/横滚动极值 + 双指回弹 + 多机型 rect 遮挡判定，名字虽在但点它零反馈 ⇒ 缺滚动通道与 rect/scroll 读数，不属选择器缺口。 ‖ apps/client/src/subpackages/circles/circles/index.vue:395 <scroll-view class=\"circles-tabs\" scroll-x :show-scrollbar=\"false\">（无任何事件绑定）；命令：node tmp/qa/axis.mjs … → CI21 .circles-tabs axis=pageWxmlExact strict=ownPageExact",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "CI22",

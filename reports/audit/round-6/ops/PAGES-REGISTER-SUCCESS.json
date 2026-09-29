@@ -147,7 +147,10 @@
    "action": "顶部下拉 300px 松手 ×2；观察 console/network 与页面状态",
    "expected": "无刷新动画、无 onPullDownRefresh、无 stopPullDownRefresh；清单与脱敏号不变；无新增请求；页面不得因下拉被重新加载（loading 重放导致 3 行清单闪回）",
    "evidence": "noop：执行日志（手势 + network 零新增 + 首行 tag 前后一致）",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "NO_ELEMENT_NO_FIX｜档位口径=absent ‖ 否定式能力守卫：判点是「下拉了但不该刷新」。这条判据没有承载元素，成功页的出口钮与它无关；结论口径应是功能未开启，不是缺陷。 ‖ apps/client/dist/build/mp-weixin/pages/register/success.json（只有 usingComponents，没有 enablePullDownRefresh）；success.vue 无 onPullDownRefresh",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "RS14",

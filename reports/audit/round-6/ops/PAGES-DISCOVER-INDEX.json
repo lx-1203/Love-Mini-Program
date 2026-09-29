@@ -177,7 +177,10 @@
    "action": "进入本页并尝试点击卡片与三键",
    "expected": "显示 EmptyState type=no-data + discover.matchClosed 文案（index.vue:297-299），卡片与 MatchActions 不得渲染；所有交互 0 请求 0 跳转；开关恢复后卡片正常出现（onShow 重拉，:216-225）",
    "evidence": "normal：after 截图（关闭态）+ 执行日志（DOM 不存在断言）+ network 计数",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "WRONG_BAND｜档位口径=no-data=absent(是 EmptyState 的 prop 值，非 class)；empty-state 仅在他处组件；关闭分支 v-if !isMatchOpen(:297) ‖ isMatchOpen=switches.match_open!==false(stores/app-config.ts:41，mock 恒真) ⇒ 判据要的 false 分支只渲染一个 EmptyState(:298 type=no-data 无 action-text)，卡片与 MatchActions 整体不渲染，可点目标按定义不存在。需下发 match_open=false 的配置档表达；判点本体是 DOM 不存在断言非点击。 ‖ apps/client/src/pages/discover/index.vue:297",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "DC17",
@@ -246,7 +249,10 @@
    "action": "① 拖动下限滑块到最大（250）；② 拖动上限滑块到最小（120）；③ 两端各推到边界（120/250）；④ 尝试做出 min>max 的组合",
    "expected": "取值范围严格 120-250cm、step=1（FilterDrawer.vue:62-64、模板 :658-681 onHeightMinChange/onHeightMaxChange）；min>max 必须被互斥约束纠正（不得提交倒挂区间）；滑块本体在 mp 端可拖动且数值实时回显；不得因拖动触发请求（未确认前只改 draft）",
    "evidence": "normal：after 截图（三态数值）+ 执行日志（min/max 读数）",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=height-slider=bandWxmlOther(FilterDrawer 子组件同名两枚 :659/:672，原生 <slider>；抽屉根 v-if=visible :597 静息不渲染) ‖ 两枚身高滑块在子组件 FilterDrawer 里（原生 <slider>，同名 height-slider，@change=onHeightMin/MaxChange），页作用域查询够不着；抽屉根 v-if=visible 须先点 .discover-header__filter(index.vue:249 已存在) 展开。且判点要把滑块推到 250/120 端点做 min>max 组合 ⇒ 需 WS 坐标拖动，class 点击只命中轨道中点。 ‖ apps/client/src/components/discover/FilterDrawer.vue:659",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "DC23",
@@ -329,7 +335,10 @@
    "action": "在顶部执行下拉手势；随后统计 onShow 驱动的重拉",
    "expected": "**不得**出现下拉刷新动画或 onPullDownRefresh 回调（页面无该钩子，pages.json 未开启）→ 若出现判配置/实现不一致；数据刷新只能通过切 Tab（onShow :216-225）或抽屉「确认」重拉，须在 observed 里写明该页无手动刷新入口（与首页/附近页/消息页不一致，属可感知体验缺口，按事实记 P3/P2 不夸大）",
    "evidence": "noop：执行日志（下拉手势后的动画与回调结论）+ console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "NO_ELEMENT_NO_FIX｜档位口径=n/a — 下拉无载体（.discover-header__filter=pageWxmlExact 但不是下拉对象） ‖ 否命题+连续手势：本页无 onPullDownRefresh、pages.json 未开 ⇒ 断言「顶部下拉 300px 后无动画/回调/新增请求」。页面无任何可点等价物件，点击载具无法替代表述这条不存在的交互。 ‖ apps/client/src/pages/discover/index.vue:249",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "DC30",

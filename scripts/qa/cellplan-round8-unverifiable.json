@@ -1,0 +1,417 @@
+{
+ "$comment": "round-8：把三刀只读重判里已点名机制/档位的行落成 B-not-automatable 标记。why 全部逐字抄自 unverifiable-recheck-{1,2,3}.json 的 verdict/bandAxis/note/citation，无任何改写或补写；CRITERIA_NAMES_NOTHING 与未点名档位的 WRONG_BAND 不进本计划（前者是拍板项，后者证据不足）。",
+ "$source": "reports/audit/round-7/unverifiable-recheck-1.json / -2 / -3（已复制进 reports，脱离 tmp）",
+ "$generatedBy": "scripts/qa/emit-round8-unverifiable-plan.mjs",
+ "B-not-automatable": [
+  {
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H02",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=not-named ‖ 下拉是页面级系统手势，首页模板里没有任何承载节点（axis 脚本对本条 action+expected 抠出 0 个类名）；判点是请求计数与动画起止时刻，换任何 tapTarget 都测不到。 ‖ apps/client/src/pages/home/index.vue:122 (onPullDownRefresh 注册) + apps/client/src/pages.json:55-56 (home 条目 enablePullDownRefresh:true)"
+  },
+  {
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H47",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=not-named ‖ 判据两腿都是导航进入 + 路由 options/storage 读数，页面上没有承载深链参数的元素；首页源码无 onLoad ⇒ 断言本身就是「参数不被消费」，无物件可点。 ‖ 命令：node tmp/qa/axis.mjs apps/client/dist/build/mp-weixin → H47「判据正文里一个类名都没点名」；apps/client/dist/build/mp-weixin/pages/home/index.wxml 自有 class token 仅 home-page/home-page__top-scrim/home-section-gap/location-sheet__*（grep -o 'class=\"[^\"]*\"' 计数）"
+  },
+  {
+   "manifest": "PAGES-HOME-INDEX",
+   "id": "H48",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=bandWxmlOther（全在 components/home/*.wxml，页作用域进不去） ‖ 首页 9 区块的可点件一个都不在页自己的 wxml 里，全住在子组件模板 ⇒ 机制是组件作用域，不是「元素不存在」。且本条是逐元素 rect/反馈普查（4 件事一条），单个 tapTarget 表达不了，须先拆条再逐条给组件作用域腿。 ‖ apps/client/src/components/home/TodayLoveProgress.vue:79、RelationActivity.vue:34/45/56/67、InterestRecommendation.vue:83、NearbyPeople.vue:53、CommunityFeed.vue:177、InviteBanner.vue:15（每个都带 @tap）；命令：grep -o '<[a-z][a-z0-9-]*' apps/client/dist/build/mp-weixin/pages/home/index.wxml → 页里只有 <home-header/<today-love-progress/… 这些自定义组件标签"
+  },
+  {
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "id": "CX11",
+   "why": "WRONG_BAND｜档位口径=pageWxmlExact（两档都在本页 index.wxml 的 class token 里） ‖ banner 的类名是真的、也进了两档产物，但那条 v-else-if 在 mock 档永不被求值；能表达它的是 mp-weixin-real + 「已认证 A 校看 B 校」身份夹具。到位后仍无物件可点（banner 无 bindtap，expected 自认「点击无反馈属预期」）⇒ 文案腿要的是文本读数。 ‖ apps/client/src/subpackages/campus/campus/index.vue:303 (v-else-if=\"!isOwnCertifiedView\")，其 v-if 链前一项是 :289 (v-if=\"!isVerified\")；apps/client/src/stores/campus.ts:938-939 mock 分支直接 return ⇒ certificationStatus 恒 unverified（:388 isVerified getter）"
+  },
+  {
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "id": "CX12",
+   "why": "WRONG_BAND｜档位口径=pageWxmlExact ‖ FAB 类名在两档 index.wxml 里都是真 token，但页内没有任何元素能把视角切到 isOwnCertifiedView（只由服务端认证结果与 ?school= 决定）⇒ mock 档不可表达，real 档 + 已认证本校夹具才行。 ‖ apps/client/src/subpackages/campus/campus/index.vue:391 (v-if=\"isOwnCertifiedView\" … @tap=\"goToPostTopic\") + :68-70 计算属性 + stores/campus.ts:938-939"
+  },
+  {
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "id": "CX13",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=pageWxmlExact ‖ 名字不是缺的（判据正文就写着 .topic-scroll，只因它没有 __/-- 而不被执行器 classesOf 抠到）；缺的是下拉触摸腿与 scrollY/scrollTop 读数，以及 network 计数。判点本身是「无下拉刷新能力」这一配置事实。 ‖ apps/client/src/subpackages/campus/campus/index.vue:347（scroll-view 只有 scroll-y/enhanced/bounces/@scrolltolower，无 bindtap）；命令：grep -n -A4 '\"path\": \"campus/index\"' apps/client/src/pages.json → 条目无 style 段 ⇒ 无 enablePullDownRefresh"
+  },
+  {
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "id": "CX15",
+   "why": "WRONG_BAND｜档位口径=pageWxmlExact ‖ 真实分页语义（10→20 不重不漏、没有更多了）只有 mp-weixin-real 能表达；mock 档既空又重复，判出来必假。执行器固定带 ?school=南京大学（scripts/qa/r-exec-cli.mjs:192）⇒ 连容器都不渲染。 ‖ case 标 requiresReal=true；apps/client/src/stores/campus.ts:476-481（mock 下非「北京大学」直接返回空列表）+ :442-450（mock page>1 整批重复 push）；apps/client/src/pages/home/… 无关，入口锚 index.vue:347 @scrolltolower"
+  },
+  {
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "id": "CX16",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=gate=pageWxmlExact（目录口径误判）；按页文件精确=otherFileToken ‖ 机制：本条归页是 campus/index，而 .reply-input 住在同目录的另一页 topic-detail.wxml —— 本门按「同目录」而非「本页文件」判页内（verify-case-selectors-exist.mjs:107 pageDir 前缀），所以把它算成 pageWxmlExact，属门的口径漏洞。跨页两步骤 + 读 maxlength 属性都超出 tap 腿。 ‖ 入口 apps/client/src/subpackages/campus/campus/index.vue:350（class=\"topic-card\" @tap=goToTopicDetail，两档 index.wxml 真 token）；被点名物在 apps/client/src/subpackages/campus/campus/topic-detail.vue:334 + :335 :maxlength，编译产物是 subpackages/campus/campus/topic-detail.wxml 的 class token（非 index.wxml）"
+  },
+  {
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "id": "CX17",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlText（字面名不在任何 class token 里，只作为字符串出现在模板） ‖ 两层机制叠加：静态名 reply-btn 因为节点带 :class 对象绑定而被编译成运行期数组 ⇒ 产物里不成 class token；且它在兄弟页 topic-detail.wxml 而非本条归页。另需 evaluate 注入 501 字绕过 maxlength。 ‖ apps/client/src/subpackages/campus/campus/topic-detail.vue:354 class=\"reply-btn press-feedback\" + :356 :class 绑定 + :358 @tap=submitReply；命令：grep -o 'class=\"[^\"]*reply[^\"]*\"' apps/client/dist/build/mp-weixin/subpackages/campus/campus/topic-detail.wxml → class=\"{{['reply-btn', 'press-feedback', 'data-v-3281090c', U && 'reply-btn--disabled']}}\""
+  },
+  {
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "id": "CX22",
+   "why": "WRONG_BAND｜档位口径=pageWxmlExact ‖ 与 CX12 同一档内不可表达；real 档 + 已认证本校夹具才出 FAB。「500ms 内连点 5 次 + 全路由栈」另属频率与时序读数。 ‖ apps/client/src/subpackages/campus/campus/index.vue:391 v-if=\"isOwnCertifiedView\" + stores/campus.ts:938-939（mock 不置 verified）；case 标 requiresReal=true"
+  },
+  {
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "id": "CX26",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=pageWxmlExact ×2 ‖ 本条三条腿全是滚动几何（到底/回顶/横滑到底 + scrollTop/scrollHeight/scrollWidth 回填），两个 scroll-view 都没有 bindtap ⇒ 补 tapTarget 也测不到，缺的是滚动通道与 rect/滚动数值读数。 ‖ apps/client/src/subpackages/campus/campus/index.vue:347（@scrolltolower）与 :311（scroll-view scroll-x，只有 :scroll-left/:show-scrollbar）；命令：node tmp/qa/axis.mjs apps/client/dist/build/mp-weixin → CX26 两个名都 ownPageExact"
+  },
+  {
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "id": "CX30",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=gate=pageWxmlExact（目录口径）；按页文件精确=otherFileToken ‖ 作用域问题不是「元素没有」：名字都是真 token，但住在同目录的另一页；本门的 pageDir 前缀判定掩盖了这点。另需 ≥500 字可控输入腿（CLI 固定写 123456）与 locale 切换载具。 ‖ apps/client/src/subpackages/campus/campus/topic-detail.vue:334-335（.reply-input + :maxlength）与 :342（<text v-if=\"isReplyAtLimit\" class=\"reply-counter\">）；产物里两者都是 topic-detail.wxml 的 class token，不在 index.wxml"
+  },
+  {
+   "manifest": "PAGES-NEARBY-INDEX",
+   "id": "N02",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=pageWxmlExact ‖ 配置与钩子都在，缺的是「页面级下拉手势」这条腿；容器名是真的（判据 expected 里就写着 .nearby-home__scroll，只是行号 :367 已漂到 :395），点它不产生任何可判反馈。 ‖ apps/client/src/pages/nearby/index.vue:395（<scroll-view scroll-y class=\"nearby-home__scroll\" :show-scrollbar=\"false\">，无 bindtap/无 refresher-enabled）+ :173 页面级 onPullDownRefresh + pages.json:59-60 enablePullDownRefresh:true"
+  },
+  {
+   "manifest": "PAGES-NEARBY-INDEX",
+   "id": "N03",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=not-named ‖ 判点是三类请求的拉取次数与动画停止时机，页面上没有下拉承载节点 ⇒ 无物件可锚，属手势+计数条。 ‖ apps/client/src/pages/nearby/index.vue:173-194（下拉里并行三路重拉、force 绕 TTL）；命令：node tmp/qa/axis.mjs … → N03「判据正文里一个类名都没点名」"
+  },
+  {
+   "manifest": "PAGES-NEARBY-INDEX",
+   "id": "N04",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=not-named ‖ 判点是原生层 Toast 文案（不在渲染树，探针取不到）+ 需要制造一路数据源失败；另欠 N02 的下拉通道 ⇒ 没有可点的等价物件。 ‖ apps/client/src/pages/nearby/index.vue:188/192（下拉完成后读三 store 错误槽并 uni.showToast）"
+  },
+  {
+   "manifest": "PAGES-NEARBY-INDEX",
+   "id": "N30",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=not-named ‖ 三条腿是「登出 A → 滚到分区⑤ → 登录 B」：两腿是会话切换、一腿是滚动到位，判点是渲染归属与内存残留 ⇒ 引导卡虽是物件但不是本条要判的东西（冒充它即换判据）。 ‖ apps/client/src/pages/nearby/index.vue:622-629（未登录分支引导卡 .nearby-login-guide / __btn，两档 pages/nearby/index.wxml 真 token）；villageStore.nearbyPosts 无登出清空路径"
+  },
+  {
+   "manifest": "PAGES-NEARBY-INDEX",
+   "id": "N31",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=not-named ‖ 四档全在时间窗口与请求计数上（切走<30s/>30s、发一条新动态、失败后再下拉），零页面元素；最后一档另需下拉通道与故障注入。 ‖ apps/client/src/pages/nearby/index.vue:241（NEARBY_POSTS_TTL_MS=30_000）/:255 短路/:261-263 失败不更新时间戳；命令：node tmp/qa/axis.mjs … → N31「一个类名都没点名」"
+  },
+  {
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "id": "CI03",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=bandWxmlOther（门自跑亦列 SEL_COMPONENT_SCOPE） ‖ 重试钮是真元素、真事件绑定，但整块编在组件自己的 wxml 里 ⇒ 页作用域查询进不去（本门实测该轴 90.6% 点不动）。另需真实档把 GET /circles 弄失败才有 error 态；mock-empty 那半按判据自述就该记不可构造。 ‖ apps/client/src/components/common/PageStateContainer.vue:24 (v-else-if=\"state === 'error'\" class=\"state-slot state-error\") 与 apps/client/src/components/common/ErrorState.vue:49-50 (class=\"error-btn\" @tap=\"emit('retry')\")；产物 class token 只在 components/common/PageStateContainer.wxml 与 components/common/ErrorState.wxml（命令：node tmp/qa/tok.mjs state-error error-btn）"
+  },
+  {
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "id": "CI06",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlText（产物里不是 class token） ‖ 机制：节点带 :class 对象绑定后，连静态类名都被编译成运行期数组 ⇒ 字面 .circles-tab 在产物 class token 里查不到（门落 pageWxmlText）。且判据要的是「第 4 个 tab」，现通道只点首匹配；本条真正的判点（滚动位是否丢）另需 scrollTop 读数。 ‖ apps/client/src/subpackages/circles/circles/index.vue:400 class=\"circles-tab\" + :401 :class=\"{ 'circles-tab--active': … }\" + :404 @tap；命令：grep -o 'class=\"[^\"]*circles-tab[^\"]*\"' apps/client/dist/build/mp-weixin/subpackages/circles/circles/index.wxml → class=\"{{['circles-tab', 'data-v-85666a04', tab.e && 'circles-tab--active']}}\""
+  },
+  {
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "id": "CI20",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlText（加入钮）；返回钮 pageWxmlExact ‖ 加入钮与 CI06 的 tab 同一种「静态名被 :class 拖进运行期数组」机制；返回钮/tab/卡片名字都查得到。真正卡住本条的是「按边缘 4rpx 坐标点击」——现通道只按选择器点节点，落不到边界。 ‖ apps/client/src/subpackages/circles/circles/index.vue:458-459 class=\"circle-card__action\" + :class=\"{ 'circle-card__action--joined': … }\" + :462 @tap.stop，编译为 class=\"{{['circle-card__action', 'data-v-85666a04', circle.k && 'circle-card__action--joined']}}\"（命令同 CI06 的 grep，见 :455-470 区块）；返回钮 :350 class=\"circles-header__back press-feedback\" 为真 token"
+  },
+  {
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "id": "CI21",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=pageWxmlExact ‖ 四条腿是纵/横滚动极值 + 双指回弹 + 多机型 rect 遮挡判定，名字虽在但点它零反馈 ⇒ 缺滚动通道与 rect/scroll 读数，不属选择器缺口。 ‖ apps/client/src/subpackages/circles/circles/index.vue:395 <scroll-view class=\"circles-tabs\" scroll-x :show-scrollbar=\"false\">（无任何事件绑定）；命令：node tmp/qa/axis.mjs … → CI21 .circles-tabs axis=pageWxmlExact strict=ownPageExact"
+  },
+  {
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "id": "CS08",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlText ‖ 机制：条件类走 :class 对象绑定，产物是运行期数组 ⇒ temp-action-btn 连父名都不成 class token，判据要「读按钮 class 是否含 --disabled」在静态产物里无从命中。另需 temp 失效深链才有该态，Toast 走 uni.showToast 属原生层。 ‖ apps/client/src/subpackages/chat/chat-session/index.vue:2248-2249 与 :2257-2258：class=\"temp-action-btn temp-action-btn--secondary press-feedback\" + :class=\"{ 'temp-action-btn--disabled': tempSessionUnavailable }\"；命令：node tmp/qa/tok.mjs temp-action-btn temp-action-btn--disabled → 两档 BAND classToken=- 只在 wxml 文本里"
+  },
+  {
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "id": "CS19",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=入口 bandWxmlOther；菜单 pageWxmlExact ‖ 弹层里六个菜单项都是本页真 token（可补），但唯一置真入口是子组件气泡上的 longpress，而本通道只有 tap/input 两条腿（r-exec-cli.mjs:402-412）⇒ 组件作用域 + 无长按腿双挡。把 tap 打在气泡上是换判据，不是补选择器。 ‖ apps/client/src/subpackages/chat/chat-session/index.vue:2104 @longpress=\"handleMessageLongpress(…)\" 挂在 <ChatBubble> 上，命令：grep -o '<[a-z][a-z0-9-]*' apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml → 含 <chat-bubble（气泡类名住在 components/chat/ChatBubble.wxml）；菜单：index.vue:2277 v-if=\"longPressMenu.visible\" class=\"longpress-overlay\"、:2289 起 .longpress-menu__item 各带 @tap"
+  },
+  {
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "id": "CS23",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=pageWxmlExact ‖ 动作是「下拉到顶」连续手势，点这个 scroll-view 不会产生滚动事件，页内也没有「到顶」等价按钮 ⇒ 保留原动词就点不了任何东西；判点（视口不跳位、temp 会话零分页请求）要 scrollTop/scrollHeight 与 network 读数。 ‖ apps/client/src/subpackages/chat/chat-session/index.vue:2040 class=\"chat-scroll\" + :2046 @scrolltoupper=\"onScrollToUpper\"（scroll-view，无 bindtap）；命令：node tmp/qa/axis.mjs → CS23 strict=ownPageExact，另见 chat/official-chat/index.wxml 同名"
+  },
+  {
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "id": "CS31",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=absent（正文里的 .chat-session 是 URL 残片，门自跑 SEL_ABSENT_ROW …#CS31 只提示） ‖ 五个判点全是「参数没被读」的求值/网络事实，DOM 里无从表达；唯一动作腿要 input+tap 串接（本通道一条 case 只发一种动作）。补深链 query 才有会话可发，但那不属选择器缺口。 ‖ 命令：node scripts/qa/verify-case-selectors-exist.mjs --band apps/client/dist/build/mp-weixin --max-samples 300 → SEL_ABSENT_ROW SUBPACKAGES-CHAT-CHAT-SESSION-INDEX#CS31 .chat-session 只提示（该串来自 action 里的 reLaunch '...chat-session/index?…'）；判据断言项 apps/client/src/subpackages/chat/chat-session/index.vue:896-907 标题取 store 真名"
+  },
+  {
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "id": "MT02",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=bandWxmlOther ‖ 「喜欢/超赞」两枚按钮在产品里存在，但既在子组件又在另一页 ⇒ 本页作用域查不到（门实测该轴 90.6% 点不动）；左右滑另属连续手势。本页唯一在册可点件 .matching-page__back（matching.vue:259 @tap=goBack）点即离页，冒充它等于换判据。 ‖ apps/client/src/components/match/MatchActions.vue:41/55/69 <text class=\"match-actions__label\">{{ t('discover.like'…) }}（中文标签在类名里）；命令：grep -rln MatchActions apps/client/src --include=*.vue → 只有 apps/client/src/pages/discover/index.vue 用它，本页 apps/client/src/subpackages/discover-extra/discover/matching.vue:257-270 模板只渲染 .matching-page__back 与 <MatchLoading>"
+  },
+  {
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "id": "MT05",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=not-named ‖ 三个观测面（Toast 文案、自动返回耗时、寻觅页 cards 长度 -1）都不是本页元素；本页静息可点件只有 .matching-page__back（matching.vue:259），点它是主动返回，与判据的自动返回语义相反。 ‖ apps/client/src/subpackages/discover-extra/discover/matching.vue:94（uni.showToast，原生层不入渲染树）+ 400ms 自动返回时序；命令：node tmp/qa/axis.mjs → MT05「判据正文里一个类名都没点名」"
+  },
+  {
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "id": "MT06",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=not-named ‖ 与 MT05 同型：判点是原生 Toast 原文 + 耗时 + 跨页 cards 差异，且前置要故障注入 ⇒ 本档本页无物件可点。 ‖ apps/client/src/subpackages/discover-extra/discover/matching.vue:97-101（失败路 Toast 与 600ms 返回）；case.pre 两路都要求断网/后端非 2xx"
+  },
+  {
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "id": "MT14",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=not-named ‖ 两栏判点（写请求 URL + Idempotency-Key 逐条、后端记录数 R1=R0+1）零 DOM 目标；缺的是按 case 定制的 query 深链与 network/后端回读通道，不属选择器缺口。 ‖ apps/client/src/subpackages/discover-extra/discover/matching.vue:106 onLoad 的 cardId/action/userId 分支（需 ?userId=…&cardId=…&action=like 深链，而 scripts/qa/r-exec-cli.mjs:193 只给 dev-preview=1）；命令：node tmp/qa/axis.mjs → MT14 未点名任何类名"
+  },
+  {
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "id": "MT20",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=not-named；替代物 bandWxmlOther ‖ 判据是「上下滑 300px 后零副作用」的无主手势普查：没有任何节点承载它，点返回钮或点组件里的跳过区都会引入本条要排除的副作用 ⇒ 诚实结论是换不了物件，只能转 WS 手势通道 + 路由/animationDone 采样。 ‖ apps/client/src/components/match/MatchLoading.vue:73 <view class=\"match-loading__skip\" … @tap=\"emit('skip')\">（token 只在 components/match/MatchLoading.wxml，命令 node tmp/qa/tok.mjs match-loading__skip）；本页 apps/client/src/subpackages/discover-extra/discover/matching.vue:257-270 无 scroll-view、模板上无 @touch 绑定"
+  },
+  {
+   "manifest": "次要18",
+   "id": "VD07",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=字面名 otherFileToken（兄弟页 village/post.wxml）；真名 pageWxmlText ‖ 两层机制：判据点的是改名前的旧名，而现名因带 :class 绑定在产物里不成 class token（运行期才拼出）；.image-viewer 那半倒还是真 token（detail.vue:1333，v-if imageViewerVisible）。裸直达无 ?id= ⇒ currentPost 空、整块 .detail-body 不渲染。 ‖ apps/client/src/subpackages/village/village/detail.vue:846-847 class=\"post-image-wrap press-feedback\" + :class=\"{ 'post-image-wrap--first': idx === 0 }\"；命令：grep -o 'class=\"[^\"]*{{\\[[^\"]*\"' apps/client/dist/build/mp-weixin/subpackages/village/village/detail.wxml → class=\"{{['post-image-wrap', 'press-feedback', 'data-v-d0b36fc6', img.d && 'post-image-wrap--first']}}\"；字面 .post-image 的真 token 在兄弟页 apps/client/src/subpackages/village/village/post.vue:901（发布页九宫格）"
+  },
+  {
+   "manifest": "次要18",
+   "id": "VD19",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=字面名 otherFileToken；真名 pageWxmlText ‖ 本条判点是图像 naturalWidth/src 与「杯/饮品特写」语义比对：探针只回节点条数，虽然 r-exec-cli.mjs:145-146 已 fields({size:true}) 取了 size 却没往外报；另需 ?id= 深链让图片进渲染树。名字层面属「真名被 :class 拼掉」，不是无元素。 ‖ 同 VD07 的命令输出（apps/client/dist/build/mp-weixin/subpackages/village/village/detail.wxml 里 post-image-wrap 只出现在 {{[…], …}} 数组里；字面 post-image 的 class token 在 subpackages/village/village/post.wxml）；源码 apps/client/src/subpackages/village/village/detail.vue:846-847"
+  },
+  {
+   "manifest": "PAGES-MESSAGES-INDEX",
+   "id": "MSG05",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=n/a — 动作未点名选择器（.chat-item=pageWxmlExact 但不承载下拉） ‖ 「进入页面后立即下拉刷新」是页面级 pull-down，无元素承载；onPullDownRefresh 在 :317-322，本页 pages.json:64 有 enablePullDownRefresh 但只能由真实触摸序列触发。CLI 桥无 touch/swipe 通道 ⇒ 无可点对象、无诚实改写。 ‖ apps/client/src/pages/messages/index.vue:529"
+  },
+  {
+   "manifest": "PAGES-PROFILE-INDEX",
+   "id": "PFI22",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=video-cta=pageWxmlExact(both bands，:1694/:1768/:1793 三枚同名)；vip-card=pageWxmlExact(commerce v-if 门控) ‖ 三块 CTA 共用 .video-cta（分别 handleRecordVoice :1699 / handleEditBackground :1773 / openInviteModal :1798），页级 first-match 只能命中渲染树首枚；VIP 卡 .vip-card(:1809) v-if isCommerceOn('vip') 在 mock 恒假。且动作是「全页滚动确认」，滚动态非帧可判。 ‖ apps/client/src/pages/profile/index.vue:1694"
+  },
+  {
+   "manifest": "PAGES-PROFILE-INDEX",
+   "id": "PFI34",
+   "why": "WRONG_BAND｜档位口径=vip-card=pageWxmlExact(both bands，渲染条件恒假) ‖ v-if appConfig.isCommerceOn('vip') && !isVip；isCommerceOn 缺省封存（stores/app-config.ts:67 总闸 commerce.enabled!==true 即 false，mock getAppConfig 无 commerce.* 键）⇒ 静息无元素、② 也无法与「开关从没开过」区分。可在 commerce.enabled+commerce.vip 置真的夹具档/real 档表达。 ‖ apps/client/src/pages/profile/index.vue:1809"
+  },
+  {
+   "manifest": "PAGES-PROFILE-INDEX",
+   "id": "PFI37",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=n/a — 下拉无载体 ‖ 否命题：本页 pages.json 无 enablePullDownRefresh、index.vue:13 未 import onPullDownRefresh ⇒ 断言是「不得刷新」，页内无元素承载下拉，任何 tap 都会污染零副作用观测环境。点不到东西是设计使然，无诚实改写。 ‖ apps/client/src/pages/profile/index.vue:13"
+  },
+  {
+   "manifest": "PAGES-PROFILE-INDEX",
+   "id": "PFI42",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=my-header__icon/my-stats__col/my-more__cell=bandWxmlOther（components/profile/mine/*.wxml，页级查询够不着） ‖ 逐元素 rect 普查，多数目标在子组件（MyHeader/MyStats/MyMore 编译到 components/profile/mine/）→ SEL_COMPONENT_SCOPE 实测 90.6% 点不动，需 WS selectComponent；且判点是 boundingClientRect→rpx，probeMany 只回条数不回宽高。页内 .video-cta/.invite-modal__btn/.profile-bg__edit 虽 pageWxmlExact，也不足以逐元素量。 ‖ apps/client/src/components/profile/mine/MyHeader.vue"
+  },
+  {
+   "manifest": "次要18",
+   "id": "CH06",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=tab-item=pageWxmlText(both bands；编译成 class=\"{{['tab-item','data-v-…',key.d&&'tab-item--active']}}\" 运行期拼名，渲染确有 .tab-item) ‖ 类名运行期存在且页作用域可查，但五个 tab 共用 .tab-item，first-match 恒为 TAB_KEYS[0]=posts(默认已激活)，tap 一次「什么都不变」必判假红；② 成员 tab 要读拼接文案、③ 逐 tab 读激活 class。需按 nth 定位（或每 tab 一枚专属修饰类）。 ‖ apps/client/src/subpackages/circles/circles/circle-home.vue:525"
+  },
+  {
+   "manifest": "次要21",
+   "id": "DND09",
+   "why": "WRONG_BAND｜档位口径=retry-btn=pageWxmlExact(both bands，但在 v-else-if pageState==='error' :344，静息不渲染) ‖ case.pre 自述 REAL_ONLY：需真后端 + GET /dnd 失败注入；mock getDndSetting 恒成功 ⇒ error 分支永不渲染，静息是 :357 content 分支。retry-btn 类名在档里是本页 token，但态在本档不存在 ⇒ real 档 + 网络失败夹具才能表达。 ‖ apps/client/src/subpackages/profile-extra/settings/dnd.vue:347"
+  },
+  {
+   "manifest": "PAGES-REGISTER-INDEX",
+   "id": "REG32",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=n/a — 下拉无载体 ‖ 否命题：本页未配 enablePullDownRefresh，断言「不得下拉刷新/无新增请求/六字段前后一致」。需顶部下拉 300px+松手真实手势，页面无等价可点物件 ⇒ 无对象、无诚实改写。 ‖ apps/client/src/pages/register/index.vue:1"
+  },
+  {
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+   "id": "CPT27",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=tag-chip=pageWxmlText(both bands；v-for 共用同类名；绑 :class 拼 --active)。注：探针报的 pageWxmlExact 是同目录兄弟页 circle-home.wxml 的 artifact，post-topic 内为 bound ‖ 七枚 tag-chip(:604-616 @tap=toggleTag(tag.key) 只靠 key 区分)，判点要「依次点第 1→4 枚，第 4 被 MAX_TAGS=3 拒并弹 Toast」⇒ 需 nth 序号定位 + 四次连续点击，class first-match 只命中第 1 枚反复来回。另 tags-section 整块在 v-if=useMock(:598)，real 档静息不渲染。 ‖ apps/client/src/subpackages/circles/circles/post-topic.vue:606"
+  },
+  {
+   "manifest": "次要22",
+   "id": "AC04",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=quick-filter=pageWxmlText(both bands；v-for 三枚共用同类名，:class 拼 --active) ‖ 三枚 chip(:400-410 数组序 全部/今天/周末，@tap=switchQuickFilter(f.key)) 共用 .quick-filter，first-match 命中第 1 枚=默认 all ⇒ 点下去无变化，判据要的「今天→0 卡+quickEmpty」主分支取不到，且三步序列一次点击走不完。需 nth/坐标定位 + 三次连续点击。 ‖ apps/client/src/subpackages/discover/activities/index.vue:401"
+  },
+  {
+   "manifest": "次要22",
+   "id": "AC10",
+   "why": "WRONG_BAND｜档位口径=retry-btn=pageWxmlExact(both bands，但 v-else-if activityStore.errorMessage :350，静息不渲染) ‖ 错误盒+retry-btn 只在 errorMessage 非空的 v-else-if 分支，需断网冷启动才出现（页面无点击造出断网）；余下 (b)(c) 是 scroll-view 触底 @scrolltolower 连发。requiresReal=true ⇒ real 档 + 离线注入 + WS scroll 通道才能表达。 ‖ apps/client/src/subpackages/discover/activities/index.vue:354"
+  },
+  {
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC16",
+   "why": "WRONG_BAND｜档位口径=no-data=absent(是 EmptyState 的 prop 值，非 class)；empty-state 仅在他处组件；关闭分支 v-if !isMatchOpen(:297) ‖ isMatchOpen=switches.match_open!==false(stores/app-config.ts:41，mock 恒真) ⇒ 判据要的 false 分支只渲染一个 EmptyState(:298 type=no-data 无 action-text)，卡片与 MatchActions 整体不渲染，可点目标按定义不存在。需下发 match_open=false 的配置档表达；判点本体是 DOM 不存在断言非点击。 ‖ apps/client/src/pages/discover/index.vue:297"
+  },
+  {
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC22",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=height-slider=bandWxmlOther(FilterDrawer 子组件同名两枚 :659/:672，原生 <slider>；抽屉根 v-if=visible :597 静息不渲染) ‖ 两枚身高滑块在子组件 FilterDrawer 里（原生 <slider>，同名 height-slider，@change=onHeightMin/MaxChange），页作用域查询够不着；抽屉根 v-if=visible 须先点 .discover-header__filter(index.vue:249 已存在) 展开。且判点要把滑块推到 250/120 端点做 min>max 组合 ⇒ 需 WS 坐标拖动，class 点击只命中轨道中点。 ‖ apps/client/src/components/discover/FilterDrawer.vue:659"
+  },
+  {
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "id": "DC29",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=n/a — 下拉无载体（.discover-header__filter=pageWxmlExact 但不是下拉对象） ‖ 否命题+连续手势：本页无 onPullDownRefresh、pages.json 未开 ⇒ 断言「顶部下拉 300px 后无动画/回调/新增请求」。页面无任何可点等价物件，点击载具无法替代表述这条不存在的交互。 ‖ apps/client/src/pages/discover/index.vue:249"
+  },
+  {
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI17",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=action-btn=bandWxmlOther(PostCard 子组件四枚同名 :268/:274/:282/:287；注：探针/门报的 pageWxmlExact 来自同目录兄弟页 detail/tag-posts.wxml 的 artifact，village/index.wxml 自身不含) ‖ 卡内点赞是 PostCard(:274 @tap.stop=handleLike) 的第 2 枚同名 .action-btn，第 1 枚是评论钮(:268 @tap.stop=emit open-detail→父页跳详情离开本页) ⇒ class first-match 测成评论判据。需 nth/aria-label/坐标定位。③ 失败回滚需断网注入；requiresReal=true mock 档被档位闸先跳。 ‖ apps/client/src/components/village/PostCard.vue:274"
+  },
+  {
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI18",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=action-btn=bandWxmlOther(PostCard 子组件同名×4) ‖ 与 VI17 同承载缺陷：连点目标是卡内第 2 枚 .action-btn(:274 handleLike)，class 定位只命中第 1 枚评论钮(:268) ⇒ rapidTap×5 变成连开 5 次详情/触发导航栈限制。需 nth 锁定同一张卡 + 500ms 连点时序；requiresReal 另欠后端回读 liked/likeCount。 ‖ apps/client/src/components/village/PostCard.vue:274"
+  },
+  {
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI28",
+   "why": "WRONG_BAND｜档位口径=channel-composer-bar=pageWxmlText(v-if isPostPublishOpen :881；本档恒真 ⇒ 关闭态不存在) ‖ 前置是后台开关 post_publish_open=false：isPostPublishOpen=switches.post_publish_open!==false(app-config.ts:45，mock 恒真) ⇒ 该态下输入条整体不渲染、空态换 village.postClosed(:830)，页面无可点物件、input 腿不成立。需下发 post_publish_open=false 的配置档 + 带参 deep link + real 档 VillageController.java:158 的 403 回读。 ‖ apps/client/src/subpackages/village/village/index.vue:880"
+  },
+  {
+   "manifest": "次要18",
+   "id": "TP03",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=action-btn=pageWxmlExact(both bands，tag-posts 页自身 v-for 三枚同名 :381/:392/:404) ‖ 点赞是页作用域(非子组件，与 VI 不同)的第 2 枚 .action-btn(:392 @tap.stop=toggleLike，aria-label=likeAria)，第 1 枚评论钮(:381 @tap.stop=goToDetail)一跳就换页 ⇒ class first-match 点错东西。需 nth/aria-label(village.tagPosts.likeAria)/坐标定位命中第 2 枚；页面另欠 ?tagName= 预置(无参直达被 onLoad 弹回)。 ‖ apps/client/src/subpackages/village/village/tag-posts.vue:392"
+  },
+  {
+   "manifest": "次要18",
+   "id": "TP04",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=action-btn=pageWxmlExact(同名×3) ‖ 与 TP03 同缺陷另一半：连点目标同一张卡第 2 枚 .action-btn(:392 toggleLike)，class 只命中第 1 枚评论钮(:381 goToDetail) ⇒ rapidTap×5 变五次跳详情，POST /posts/{id}/like 条数与 Idempotency-Key 两判点无从采集。需 nth 锁定 + 300ms 连点时序；requiresReal 另欠后端回读。 ‖ apps/client/src/subpackages/village/village/tag-posts.vue:392"
+  },
+  {
+   "manifest": "次要18",
+   "id": "CF09",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=upload-area=pageWxmlExact(both bands，两枚同名 :353 学生证/:397 学信网) ‖ 学信网轨 @tap=uploadChsiScreenshot(:397) 与学生证轨(:353 uploadStudentCard)共用 .upload-area，class first-match 只命中第 1 枚学生证 ⇒ 预览/移除(:413)/重选(:410) 全打另一轨。需 nth/坐标命中第 2 枚（或补区分修饰类，属源码改）。④ 超限需 >5MB 图夹具。 ‖ apps/client/src/subpackages/campus/campus/certification.vue:397"
+  },
+  {
+   "manifest": "次要20",
+   "id": "VRN11",
+   "why": "WRONG_BAND｜档位口径=verified-card=pageWxmlExact(both bands，但 template v-if status==='verified' :441，未认证态不渲染) ‖ 判据要已认证态(status=verified)：该态下表单/上传卡/提交按钮按判据即不存在，可点为零；断言是 verified-card 两行文本(userName/maskedIdCardNo 前6后4掩码 :45-46 不得露 18 位)+DOM 不存在两类。需一个 idCardVerified 且 status=verified 的账号 + reLaunch 进页配方(real 档)。 ‖ apps/client/src/subpackages/profile-extra/verification/real-name.vue:443"
+  },
+  {
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB11",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlExact ‖ 元素在（两档 wxml 里 class= 静态含 publish-row，共 4 处），但 4 行只共用一个类名：首匹配拿到的是第 1 行「添加话题」，会把这条归属到完全不同的跳转。提及行连 press-feedback/chevron 都被剥掉了（:829-834 注释自述），没有第二枚类可写。欠的是产品侧唯一修饰类或按序号/aria 定位的载具。 ‖ apps/client/src/subpackages/village/village/publish.vue:835 @tap=openMentionPicker，行内文案 :837「提及好友」"
+  },
+  {
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB12",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlExact ‖ 同一枚 .publish-row 被 4 行共用，位置行是第 2 枚；.publish-row__meta 也是 3 枚共用。这条要的是「tap 了没反馈」的负向证据，首匹配必错行。另欠 currentCity 有/无两种 storage 前置。 ‖ apps/client/src/subpackages/village/village/publish.vue:820-825（位置行，meta=:825）"
+  },
+  {
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "id": "PUB25",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=bandWxmlOther ‖ 「审核中」徽标不在本条声明的 publish 页，而在 village/index 页里的 PostCard 自定义组件内（页面作用域的选择器进不去，实测该轴 90.6% 点不动）。还欠发布成功这条写链路＋原生下拉＋服务端回读。 ‖ apps/client/src/components/village/PostCard.vue:265"
+  },
+  {
+   "manifest": "次要20",
+   "id": "AB09",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlText ‖ 格子在、类名在，但 v-for 出多枚已填格共用同一类，「第 2 张」无法按名寻到（首匹配=第 1 张）；加之上面的 longpress＋原生 ActionSheet 两层。requiresReal=true，mock 档整条还会先被档位门跳过。 ‖ apps/client/src/subpackages/profile-extra/profile/album.vue:459-466"
+  },
+  {
+   "manifest": "次要20",
+   "id": "AB10",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlText ‖ 同上序号问题；且本条主体动作是点 showModal 的「取消/确定」——原生层按钮不在渲染树里，任何档都没有选择器可写。 ‖ apps/client/src/subpackages/profile-extra/profile/album.vue:459-466；二次确认在 :320 uni.showModal"
+  },
+  {
+   "manifest": "次要21",
+   "id": "RP09",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=bandWxmlOther ‖ 保存主按钮与三张卡标题/副标题都住在自定义组件里：bar__primary 在整个 mock 档只出现在 components/common/BottomActionBar.wxml，页面作用域查不到。页内的「范围三项」也只在绑定数组 class=\"{{['option-item',…opt.c && 'option-item--active']}}\" 里（pageWxmlText）。真正站得住的是 .option-label / .toggle-label（页内静态）。 ‖ apps/client/src/components/common/BottomActionBar.vue:39；apps/client/src/components/common/SectionCard.vue:17-18；apps/client/src/subpackages/setup/recommend-pref/index.vue:185-191"
+  },
+  {
+   "manifest": "次要21",
+   "id": "RP11",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=bandWxmlOther ‖ 本页 wxml 里 SetupProgress 只是一个 <setup-progress wx:if> 组件标签，步骤条节点全在组件模板里；主按钮同理。滚动数值与 padding-bottom 本身也无元素可点。 ‖ apps/client/src/components/setup/SetupProgress.vue:170；apps/client/src/subpackages/setup/recommend-pref/index.vue:159（<SetupProgress>）"
+  },
+  {
+   "manifest": "次要22",
+   "id": "MS02",
+   "why": "WRONG_BAND｜档位口径=pageWxmlText ‖ mock 档 isCommerceOn() 恒 false ⇒ 本页恒渲染 :377 .shop-sealed，分类栏/商品卡/积分条一个都不出。real 档也一样封：database/flyway/sql/V2026.09.01.0001__seed_commerce_switches.sql:14 把 commerce.enabled 种成 FALSE。能表达这条的档位＝real 且把 app_switch.commerce.enabled 置 TRUE（或 showcase 档，apps/client/src/config/showcase.ts:69）。 ‖ apps/client/src/subpackages/market/shop/index.vue:305-311，整块被 :285 <template v-if=\"!commerceSealed\"> 包住；门控链 :32 ＋ apps/client/src/stores/app-config.ts:67 ＋ apps/client/src/services/api.ts:307-315（mock 返回的 switches 里没有 commerce.enabled）"
+  },
+  {
+   "manifest": "次要22",
+   "id": "MS05",
+   "why": "WRONG_BAND｜档位口径=pageWxmlExact ‖ token 静态存在于两档，但档位里根本渲染不出商品卡。此外「第 3 张」在 6 卡共用 .shop-card 时首匹配只会拿到第 1 张——即使解封也还欠序号载具。 ‖ apps/client/src/subpackages/market/shop/index.vue:349（在 :285 的 !commerceSealed 分支内）"
+  },
+  {
+   "manifest": "次要22",
+   "id": "MS08",
+   "why": "WRONG_BAND｜档位口径=pageWxmlExact ‖ 同上封存；第 1 张可用首匹配定到，所以选择器其实不成问题，欠的是 commerce 开关与 rapidTap×5＋栈快照。 ‖ apps/client/src/subpackages/market/shop/index.vue:349"
+  },
+  {
+   "manifest": "次要22",
+   "id": "MS09",
+   "why": "WRONG_BAND｜档位口径=pageWxmlExact ‖ 三个 token 都在本页静态 class 里（两档都有），但都在 !commerceSealed 分支下，mock 档渲染不出。requiresReal=true 也救不了：real 档该开关同样种为 FALSE。 ‖ apps/client/src/subpackages/market/shop/index.vue:318/:300/:371"
+  },
+  {
+   "manifest": "次要22",
+   "id": "VB04",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=absent ‖ 判点是系统下拉指示器的收起时序与 force 请求条数，指示器不在渲染树里；改成点页面上任何节点都等于换了被测对象。 ‖ apps/client/dist/build/mp-weixin/subpackages/vip/bills.json（enablePullDownRefresh=true）；bills.vue:90-91 stopPullDownRefresh"
+  },
+  {
+   "manifest": "次要22",
+   "id": "VB05",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlText ‖ 两档 bills.wxml 里 filter-chip 只出现在绑定数组 class=\"{{['filter-chip','press-feedback','data-v-3573f0cc',opt.c && 'filter-chip--active']}}\"，静态 class token 里没有它（gate 判 pageWxmlText）。四枚 chip 同名，「订阅→续费→退款→全部」四步首匹配永远落在第 1 枚。唯一有辨识力的 .filter-chip--active 只在「当前激活」这一维上，覆盖不了按序号的四连点。 ‖ apps/client/src/subpackages/vip/bills.vue:195-201"
+  },
+  {
+   "manifest": "次要22",
+   "id": "VB07",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=bandWxmlOther ‖ 这条要证伪的是「失败被渲染成空态」，而空态节点整块住在 EmptyState 自定义组件里（bills.json 的 usingComponents），页面作用域查不到 empty-msg；页内那对 .empty-state/.empty-state__text 只是 :209 的加载占位，不是空态。另欠 5xx 注入夹具。 ‖ apps/client/src/components/common/EmptyState.vue:94/101；bills.vue:214-218 挂载处"
+  },
+  {
+   "manifest": "次要20",
+   "id": "TK03",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlExact ‖ .task-item 静态存在且带 @tap，但 v-for 出多张卡共用它；「已完成」只由绑定表达式里的 task-item__status--done / --go 区分（band 里是 class=\"{{['task-item__status',…task.h]}}\"，没有静态 token）。首匹配会点到一张不确定的卡，属归属错点。 ‖ apps/client/src/subpackages/profile-extra/profile/tasks.vue:405-411（@tap=handleTaskTap）；区分态在 :427-428 的三元绑定"
+  },
+  {
+   "manifest": "次要21",
+   "id": "FHT02",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlText ‖ 与 VB05 同机制：两档 history.wxml 里 filter-chip 只活在绑定数组 class=\"{{['filter-chip','press-feedback',…opt.c && 'filter-chip--active']}}\" 里，4 枚同名。「反馈/建议/活动提案/全部」四连点没有序号载具就必然错行。 ‖ apps/client/src/subpackages/profile-extra/feedback/history.vue:277-283"
+  },
+  {
+   "manifest": "次要21",
+   "id": "FHT05",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlExact ‖ 附件图有类名有 @tap，但 v-for 同名共用，「第 2 张」无法按名寻到；且它整块在 :339 v-if=expandedId 展开分支＋:358-360 附件分组里，requiresReal=true（mock 无附件数据）。 ‖ apps/client/src/subpackages/profile-extra/feedback/history.vue:365-370（@tap=handleAttachmentTap）"
+  },
+  {
+   "manifest": "次要21",
+   "id": "FHT14",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=absent ‖ history 页没有任何可滚容器，判的是 window 级 scrollTop/scrollHeight/windowHeight 三元组；改点 .record__header 只会把滚动判据换成展开判据。 ‖ apps/client/src/subpackages/profile-extra/feedback/history.vue（全页无 scroll-view/onReachBottom）"
+  },
+  {
+   "manifest": "次要21",
+   "id": "SCU13",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=bandWxmlOther ‖ 跨页进度条链路判的是组件内部渲染与步骤序号，页面作用域查不到 setup-progress__*；padding-bottom 与滚到底两腿没有元素可点。 ‖ apps/client/src/components/setup/SetupProgress.vue:170"
+  },
+  {
+   "manifest": "PAGES-REGISTER-SUCCESS",
+   "id": "RS13",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=absent ‖ 否定式能力守卫：判点是「下拉了但不该刷新」。这条判据没有承载元素，成功页的出口钮与它无关；结论口径应是功能未开启，不是缺陷。 ‖ apps/client/dist/build/mp-weixin/pages/register/success.json（只有 usingComponents，没有 enablePullDownRefresh）；success.vue 无 onPullDownRefresh"
+  },
+  {
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+   "id": "MS17",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=bandWxmlOther ‖ 可滚内容整块在 MatchSuccess 自定义组件里（页面 json 用 usingComponents 注册），页面作用域查不到；页内那三枚带 @tap 的按钮（:136/:147/:157）都不是本条判点，拿它们替手势＝换被测对象。小屏机型还欠改视口夹具。 ‖ apps/client/src/subpackages/discover-extra/discover/match-success.vue:131/142/152（三枚带 @tap 的出口）与 :164 <MatchSuccess>；组件节点 apps/client/dist/build/mp-weixin/components/match/MatchSuccess.wxml"
+  },
+  {
+   "manifest": "次要19",
+   "id": "HP04",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlExact ‖ 三行（在线客服 :105、意见反馈 :123、联系邮箱 :141）共用同一个类，行内子节点 .help-contact__label / __arrow / __icon 同样三行同名 ⇒ 按类名寻址必落到在线客服，把这条归属到一次完全不同的跳转。lane 说得对，这是序号/aria 载具缺口。 ‖ apps/client/src/subpackages/tools/help/index.vue:122-131（意见反馈行：@tap=goFeedback，role=button，:aria-label=help.feedbackEntry，行内文案 :136）"
+  },
+  {
+   "manifest": "次要19",
+   "id": "PE03",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=absent ‖ 判点是 window 级 onPullDownRefresh 的请求条数与指示器收起时刻，指示器不在渲染树；lane 也确认页内带事件的物件（.people-tab 两颗、.people-row）都与刷新无关。 ‖ apps/client/dist/build/mp-weixin/subpackages/discover-extra/nearby/people.json（enablePullDownRefresh=true）；页内无承载下拉刷新的元素"
+  },
+  {
+   "manifest": "次要20",
+   "id": "OT14",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=bandWxmlOther ‖ 错误卡整块在 ProfileShell 组件里（other.json 用 usingComponents 注册），页面作用域查不到 profile-shell__retry；页内唯一能点名的是 .other-more-fab（other.vue:447，静态，两档都在），但它是「更多操作」不是重试。错误态本身还欠 401/断网夹具。 ‖ apps/client/src/components/profile/ProfileShell.vue:76-77（class=\"profile-shell__retry\" @tap=emit('retry')，文案位 :77）；挂载处 apps/client/src/subpackages/profile-extra/profile/other.vue:417-440"
+  },
+  {
+   "manifest": "次要21",
+   "id": "FB01",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=styleOnly ‖ 双重不可查：字面 shell/is-fixed 在组件 wxml 里一个都没有（只在 AppShell.wxss 的 .is-fixed .shell__header{position:sticky…} 里），运行期由 a.n() 拼进 class。按五轴它落 styleOnly＝不是可点元素。组件内可静态命中的是 .shell__header/.shell__title 等，但它们不是本条的判点。 ‖ apps/client/src/components/layout/AppShell.vue:66-74（computed 数组里 'shell' 与 {'is-fixed': props.fixed}）；产物 apps/client/dist/build/mp-weixin/components/layout/AppShell.wxml:1 class=\"{{['data-v-355a28ea', t]}}\"＋AppShell.js 里 a.n(u.value)"
+  },
+  {
+   "manifest": "次要20",
+   "id": "PR05",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlExact ‖ 与 ST05/VI09 同族：两枚 switch 都没有类名，父行 .privacy-item 不挂事件。但这条并非整条无救——第②步「tap 返回离开页」有唯一静态可点 token（.privacy-page__back，两档都在），lane 自己也承认它对应第②步。 复核补证：编译产物里 <switch> 标签本身活着（例：settings/index.wxml 的 `<switch class=\"data-v-6a0dd42b\" checked=\"{{w}}\" bindchange=\"{{x}}\">`），class 位置只有 scoped 哈希 ⇒ 类名轴=absent。但 apply-ops-cellplans.mjs:106-108 明写「其余形态（裸词、标签链）一律拒」⇒ 拿 `switch` 当 tapTarget 落不了地，只能给这枚 switch 补 class 或 #id（band 实测 switch 节点数：post-topic=1、vip/index=1、settings=2、privacy=2，后两页补名后仍剩序号问题）。 ‖ apps/client/src/subpackages/profile-extra/profile/privacy.vue:86-90 与 :97-101（两枚 switch 只有 :checked/:color/@change）；返回钮 :72（class=\"privacy-page__back press-feedback\" @tap=goBack）"
+  },
+  {
+   "manifest": "次要20",
+   "id": "PL05",
+   "why": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlExact ‖ 复核支持 lane：两颗钮共用 .location-btn，只有第 1 颗有 primary 修饰类，第 2 颗（本条要的返回首页）没有任何唯一类可写；首匹配拿到的是重新定位，它不换页还会起原生授权。容器 .location-actions（:209）不挂事件。 ‖ apps/client/src/subpackages/profile-extra/profile/location.vue:213-214（class=\"location-btn press-feedback\" @tap=goHome，aria-label=返回首页，文案「返回首页」）；第 1 枚 :210 多带 .location-btn--primary"
+  },
+  {
+   "manifest": "次要22",
+   "id": "MW09",
+   "why": "NO_ELEMENT_NO_FIX｜档位口径=absent ‖ 又是一条否定式守卫：判的是「下拉两次不该出现原生指示器」。指示器不在渲染树，钱包页也没有可滚容器（滚到底同样是 window 级）。lane 已排除 .wallet__load-error-retry 那条替代路径，我同意——那是换被测对象。 ‖ apps/client/dist/build/mp-weixin/subpackages/market/wallet/index.json（只有 usingComponents，未开 enablePullDownRefresh）；替代入口 .wallet__load-error-retry 见 apps/client/src/subpackages/market/wallet/index.vue:185"
+  },
+  {
+   "manifest": "次要22",
+   "id": "MD09",
+   "why": "WRONG_BAND｜档位口径=pageWxmlExact ‖ 两个承载物件都有静态 token，但都躲在 !commerceSealed 那一支里（:306 的封存卡优先渲染），而 commerce.enabled 在 mock 的 app-config 响应里没有（api.ts:307-315）、在 real 的种子里是 FALSE（V2026.09.01.0001__seed_commerce_switches.sql:14）⇒ 两档都表达不出「商品详情正文」。能表达的档＝real 且把 commerce.enabled 置 TRUE。 ‖ apps/client/src/subpackages/market/detail/index.vue:360/:387；封存分支 :306 v-if=commerceSealed"
+  }
+ ]
+}

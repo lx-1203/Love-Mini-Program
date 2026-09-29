@@ -53,7 +53,10 @@
    "action": "进入页面后立即下拉刷新；统计 bootstrap 请求条数与动画起止",
    "expected": "loadPage(true) 穿透缓存强制重拉，await 真实完成后才 uni.stopPullDownRefresh（index.vue:317-322，MP-R1-PAGES-MESSAGES-INDEX-009 修复的终验：原 await 落在 void 上立即返回）；刷新期间保留现有内容不得整页闪回骨架（:156-158 MP-R2-MSG-006）；刷新后未读红点按 markAllSessionsRead 收敛（:299、:315）",
    "evidence": "normal：after 截图（刷新中/后各一张）+ console + 执行日志（请求计数与动画时长）",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "NO_ELEMENT_NO_FIX｜档位口径=n/a — 动作未点名选择器（.chat-item=pageWxmlExact 但不承载下拉） ‖ 「进入页面后立即下拉刷新」是页面级 pull-down，无元素承载；onPullDownRefresh 在 :317-322，本页 pages.json:64 有 enablePullDownRefresh 但只能由真实触摸序列触发。CLI 桥无 touch/swipe 通道 ⇒ 无可点对象、无诚实改写。 ‖ apps/client/src/pages/messages/index.vue:529",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "MSG06",

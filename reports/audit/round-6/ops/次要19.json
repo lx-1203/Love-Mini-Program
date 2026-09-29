@@ -115,7 +115,10 @@
    "action": "整页下拉触发刷新，采样请求条数与指示器收起时刻；下拉期间再下拉一次",
    "expected": "下拉后重发 getRecommendations 且判定点为「客户端请求条数」（loadToken 只保证结果一致，不保证只发 1 次，须如实记录）；列表按新数据重排（去重 :81-89 + 排序 :91-103）；uni.stopPullDownRefresh 必须被调用（刷新圈不常驻）；失败时 errorMessage 渲染 + 重试按钮（:195-200），Toast/文案不得缺席",
    "evidence": "normal：下拉中态 + 完成态截图 + network 条数 + console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "NO_ELEMENT_NO_FIX｜档位口径=absent ‖ 判点是 window 级 onPullDownRefresh 的请求条数与指示器收起时刻，指示器不在渲染树；lane 也确认页内带事件的物件（.people-tab 两颗、.people-row）都与刷新无关。 ‖ apps/client/dist/build/mp-weixin/subpackages/discover-extra/nearby/people.json（enablePullDownRefresh=true）；页内无承载下拉刷新的元素",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "PE04",
@@ -371,7 +374,10 @@
    "action": "① tap 意见反馈行（:122-138）；② 读落点路由与页面标题；③ 返回；④ 未登录态重复 ①（守卫前置同 HP01）",
    "expected": "①② 落点=subpackages/profile-extra/feedback/history，页面正常渲染不闪错误空态；③ 返回后帮助页可继续交互；④ 未登录时被页面守卫拦下并给可见引导（不得跳到空白历史页）",
    "evidence": "navigation：路由链 + 落点页标题断言；可免截图",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlExact ‖ 三行（在线客服 :105、意见反馈 :123、联系邮箱 :141）共用同一个类，行内子节点 .help-contact__label / __arrow / __icon 同样三行同名 ⇒ 按类名寻址必落到在线客服，把这条归属到一次完全不同的跳转。lane 说得对，这是序号/aria 载具缺口。 ‖ apps/client/src/subpackages/tools/help/index.vue:122-131（意见反馈行：@tap=goFeedback，role=button，:aria-label=help.feedbackEntry，行内文案 :136）",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "HP05",

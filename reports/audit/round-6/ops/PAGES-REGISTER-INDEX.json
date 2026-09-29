@@ -398,7 +398,10 @@
    "action": "在页面顶部执行下拉手势 300px 并松手；观察 console 与 network",
    "expected": "无下拉刷新动画、无 onPullDownRefresh 触发、无 stopPullDownRefresh 调用（未配置即不得自行造轮子）；已填表单内容零变化；network 无任何新增请求（若出现表单被重置或重新拉取 app-config 的副作用须记 ISSUE）",
    "evidence": "noop：执行日志（手势 + network 零新增 + 6 字段值前后一致）",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "NO_ELEMENT_NO_FIX｜档位口径=n/a — 下拉无载体 ‖ 否命题：本页未配 enablePullDownRefresh，断言「不得下拉刷新/无新增请求/六字段前后一致」。需顶部下拉 300px+松手真实手势，页面无等价可点物件 ⇒ 无对象、无诚实改写。 ‖ apps/client/src/pages/register/index.vue:1",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "REG33",

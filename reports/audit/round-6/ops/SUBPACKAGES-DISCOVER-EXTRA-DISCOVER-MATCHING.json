@@ -1,409 +1,424 @@
 {
-  "cases": [
-    {
-      "id": "MT01",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "正常链路进入（pending 上下文 + URL 三参）：动画自动播放 → finished → 跳转决策",
-      "tier": "critical",
-      "pre": "身份 A mock 登录；从 pages/discover/index 对当前卡执行「喜欢」→ 该页 matchStore.beginCheck 后 openAppPath 携带 userId/cardId/action 进入本页（discover/index.vue:128-133，参数名以该三行为准）；记录进入前 discoverStore.cards 长度 N 与 matchStore.status/pendingCardId/animationDone",
-      "action": "进入后不做任何操作，观察至动画结束（MatchLoading 心跳 animationend :97 或 2600ms 兜底计时器 MatchLoading.vue:40）；每 500ms 采样路由与 store 状态",
-      "expected": "500ms 内出现可观测反馈：动画元素（双头像/轨道/心跳）渲染并开始播放，无白屏/骨架永驻；动画播完由组件 emit finished → matchStore.markAnimationDone（matching.vue:194-196）；watch(status,animationDone) 依 store 结果分派（:63-83）—— matched→消费卡组 + redirectTo 成功页；idle→toast「喜欢已发送」+ 400ms 返回；failed→toast 错误 + 600ms 返回；三种分派必须由实际 status 决定，禁止执行器手工改写；console 无 unhandled rejection",
-      "evidence": "critical：before（动画首帧）/after（跳转后）截图 + 完整路由链 + Toast 文案 + console + status/animationDone 采样序列",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT02",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "CardSwiper 滑动方向语义：右滑=喜欢才进本页且 action=like；左滑=跳过不得进入",
-      "tier": "critical",
-      "pre": "身份 A 在 pages/discover/index，卡数 ≥3，今日额度未用尽（discover/index.vue:124-127 额度门会拦截，须先确认未触发）",
-      "action": "①对当前卡执行「右滑」（swipe right）到底；②返回寻觅后对下一张执行「左滑」（swipe left）到底；③对下一张点击「喜欢」按钮；④对下一张点击「超赞」按钮；每步抄录路由与传入本页的 action 参数",
-      "expected": "方向语义必须成立且可判定：右滑与点「喜欢」→ 进入本页且 query.action=like（store pendingAction=like）；左滑（跳过）→ **停留寻觅页、不进入本页**、卡组切到下一张；超赞 → 进入本页且 action=superLike（runMatchCheck 以 pendingAction==='superLike' 传 isSuperLike，match.ts:53-56）；四种路径均 500ms 内有可观测反馈（切卡动画或路由变化），不得出现「左滑也进了匹配中页」的方向反转",
-      "evidence": "critical：四路径各 before/after 截图 + 路由链 + matchStore.pendingAction 求值 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT03",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "匹配成功（status=matched）：消费卡组 + redirectTo 成功页，栈中不得残留本页",
-      "tier": "critical",
-      "pre": "构造 matched 结果：mock 构建下用可命中 lastSwipeResult.matched=true 的卡片（discover store 的 mock 判定）；若 mock 恒不返 matched，则本前置在 mock 构建下**不可构造** → 按「前置未构造 → UNVERIFIED」如实记录，禁止手工改写 store 冒充",
-      "action": "进入本页后等动画播完；读取跳转前后 getCurrentPages 与 matchStore.status/animationDone/pendingCardId",
-      "expected": "redirectTo 语义：路由末位=subpackages/discover-extra/discover/match-success 且栈中**不含** matching 页（matching.vue:47-52 uni.redirectTo）；从成功页返回**不得**回到「匹配中」动画页；跳转前 consumeCardFromDeck 已被调用（:68）；redirectTo 的 url 必须带 ?userId=<对方 userId>（:50）；无 Toast 风暴、无二次跳转",
-      "evidence": "critical：before/after 截图 + 跳转前后完整栈数组 + redirectTo 的 url 原文 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT04",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "【跨页状态契约证伪】redirectTo 触发 onUnload reset → 成功页仍须正确显示对方（MP-R2-MATCHING-014）",
-      "tier": "critical",
-      "pre": "同 MT03；本页 onUnload 无条件 matchStore.reset()（matching.vue:211-216，MP-R2-MATCHING-007 修复），而 reset() 会清 matchedUser/pendingCardId/status（match.ts:82-89）—— redirectTo 的卸载顺序使成功页 onLoad 时 matchedUser 已为 null，只能靠 query userId 兜底（match-success.vue:73-78 loadFallbackPartner 异步拉取）",
-      "action": "matched 跳转后：①在成功页 500ms 内、2s 内、5s 内各截一张图并读取 matchStore.matchedUser 与页面 partner 名/头像；②从成功页 tap「立即聊天」按钮 .match-success__primary（@tap=emit chat → goChat），抄录聊天页 URL 的 userId 与对方昵称；③回读本次匹配真实对方 userId（discover 卡数据）",
-      "expected": "修复后应有表现（按当前代码口径判定）：①成功页不得因 matchedUser 被 reset 而**永久**停在空白/默认名——异步兜底必须在 ≤5s 内把对方名与头像填充完成，全程不得出现错误态或死屏；②「立即聊天」跳过去的 userId 必须等于本次匹配的真实对方 userId（三处一致：卡数据 / 成功页 URL 参数 / 聊天页 URL 参数），错配即 P0（把消息发进别人的会话）；③若成功页 5s 后仍无对方信息、或聊天对象错配、或「立即聊天」点击无任何反馈（partner 为 null 时 match-success.vue:95 静默 return = 死按钮）→ 三项分别判 FAILED 并记为跨页状态契约缺陷",
-      "evidence": "critical：三个时间点 before/after 截图 + 三方 userId 对照表 + matchStore 状态求值 + 聊天页路由与 URL + console",
-      "requiresReal": false,
-      "actionPreTapfix": "matched 跳转后：①在成功页 500ms 内、2s 内、5s 内各截一张图并读取 matchStore.matchedUser 与页面 partner 名/头像；②从成功页 tap「立即聊天」，抄录聊天页 URL 的 userId 与对方昵称；③回读本次匹配真实对方 userId（discover 卡数据）",
-      "tapTarget": ".match-success__primary",
-      "tapTargetEvidence": "apps/client/src/components/match/MatchSuccess.vue:140",
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT05",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "单向喜欢（status=idle）：Toast + 400ms 自动返回 + 卡组已消费（返回后不见同卡）",
-      "tier": "critical",
-      "pre": "构造单向喜欢（后端/mock 返回 lastSwipeResult.matched=false，match.ts:57-59 走 idle）；进入本页前记录寻觅页当前卡的 id 与 cards 列表顺序",
-      "action": "等动画播完 → 观察 Toast 与自动返回 → 返回后读取寻觅页当前卡 id 与 cards 长度",
-      "expected": "Toast 文案为 discover.likeSent 的本地化串（不得出现裸 key，i18n 走 t() matching.vue:73）；返回发生在 Toast 后约 400ms（:74），500ms 内可观测；返回后**不得再看到刚消费的那张卡**（该卡已在 runMatchCheck 内被 swipeRight 消费，match.ts:52-56；consumeCardFromDeck 的存在性检查按幂等直接 return，matching.vue:171-181）→ cards 长度较进入前 -1；不得再次进入本页形成回环；不得弹「卡片不存在或已被处理」误报横幅（MP-R1-DISCOVER-001 回归：重复 swipeRight 已被幂等门挡住）",
-      "evidence": "critical：before/after 截图（返回后寻觅页首屏）+ Toast 文案 + cards 列表与当前卡 id 前后对照 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT06",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "失败（status=failed）：Toast 错误文案 + 600ms 返回，不得永驻「匹配中」",
-      "tier": "critical",
-      "pre": "构造失败：①mock 构建下断网/停后端使 discoverStore.swipeRight reject（match.ts:60-64 → status=failed, lastError=error.message）；②或额度耗尽路径；两路均须记录实际触发方式",
-      "action": "进入本页等动画播完，观察 Toast 与返回；记录总耗时",
-      "expected": "Toast 显示 matchStore.lastError 原文（后端友好文案优先）或 matching.likeFailed 兜底（matching.vue:75-79），不得为空白/裸 key/技术性错误串（HTTP 码、stack）；约 600ms 后自动返回寻觅页（:80），500ms 内可观测；返回后卡组状态一致（失败**不应**消费卡片 —— 若该卡从列表消失则判「失败却吞卡」的 P1 数据缺陷，须回读 cards 前后差异）；不得停留本页、不得动画永驻、无 unhandled rejection",
-      "evidence": "critical：before/after 截图 + Toast 文案原文 + cards 前后对照 + console/network（请求失败证据）",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT07",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "动画中点「跳过」= 快进；播完后再点 = 返回（handleSkip 双语义）",
-      "tier": "normal",
-      "pre": "正常进入本页（动画播放中，matchStore.animationDone=false）",
-      "action": "①动画播放中 tap .match-loading__skip（MatchLoading.vue:73-75）一次；②观察后再次 tap 同一元素",
-      "expected": "①第一次点：animationDone 置 true（markAnimationDone，matching.vue:203-206 分支一）→ 立即按当前 status 分派跳转/返回，动画不得卡住；②第二次点（若仍在本页，即 status 尚未产生分派或 preview 态）：走 goBack 返回上一页（:207-208 分支二）；两路必须各自有 500ms 内可观测变化，不得出现「点了没反应」；不得因快进产生双跳转",
-      "evidence": "normal：两步 after 截图 + animationDone/status 求值 + 路由链",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT08",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "「跳过」与返回箭头连点×5：不得重复跳转 / 不得多层出栈",
-      "tier": "critical",
-      "pre": "正常进入本页；记录进入时 getCurrentPages 栈深 K（来源为寻觅 Tab，预期 K=2 量级）；本页 handleSkip/goBack（matching.vue:54-61,203-209）均**无** createButtonGuard 包裹（对照注册页 index.vue:456 有守卫）",
-      "action": "①对 .match-loading__skip 以 <150ms 间隔连点 5 次；②重来一轮，对 .matching-page__back（:222-224）连点 5 次；每轮记录最终路由链与 toast/跳转次数",
-      "expected": "客户端层：一次操作只产生一次出栈/跳转 —— 最终栈深必须为 K-1（返回）或恰 1 个成功页实例（matched 跳转），不得出现连点导致多页被弹掉（回到 Tab 以外/退出小程序）或 success 页重复压栈；若栈深 <K-1 或出现重复跳转 → 判 FAILED（无防连点守卫）；网络层：若返回前触发了写请求，network 面板请求条数与后端「喜欢」记录条数分别记录（稳定 Idempotency-Key 会令服务端去重，services/http.ts:262-274，不得以服务端 1 条判客户端守卫通过）",
-      "evidence": "critical：before/after 截图 + 每次点击后的栈数组序列 + network 请求条数 + 后端落库回读条数 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT09",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "顶栏返回箭头：热区 72rpx 与状态栏补偿，动画中强制返回不得残留 checking",
-      "tier": "normal",
-      "pre": "正常进入本页（status=checking，动画在播）；读取 .matching-page__back 的 boundingClientRect（声明 72rpx×72rpx，matching.vue:242-255）与 top 的 --statusbar 注入值（:244，useMenuButtonRect :20-21）",
-      "action": "①tap .matching-page__back 中心；②重来，tap 其外扩 10rpx 处；③返回后立刻读取 matchStore.status/pendingCardId/matchedUser 与寻觅页渲染",
-      "expected": "①500ms 内路由返回来源页；②外扩点命中情况须如实记录（72rpx < 88rpx → 铁律判 FAILED，热区不达标）；③返回必须触发 onUnload → matchStore.reset()：status 回 idle、pendingCardId/matchedUser/animationDone 全部清空（:211-216，MP-R2-MATCHING-007 修复后表现）—— 若 status 残留 'checking' 或 pendingCardId 未清，则下次进入会绕过 200ms 兜底并对已消费卡重复 swipeRight 误报 → 判 FAILED；寻觅页不得残留遮罩/骨架",
-      "evidence": "normal：after 截图 + boundingClientRect（px→rpx）+ matchStore 全量字段求值 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT10",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "【P0 证伪】空上下文进入：200ms 自动返回，不得死页/白屏（P0 未修坏断言）",
-      "tier": "critical",
-      "pre": "先清匹配上下文：wx.reLaunch 到寻觅页后不点卡，直接 miniRouter 进 '/subpackages/discover-extra/discover/matching'（无 query，且 matchStore.pendingCardId/pendingAction 为 null —— 可先访问一次本页以触发 onUnload reset）",
-      "action": "进入后每 200ms 采样路由与页面文本至 2s；观察是否出现空白页/骨架永驻",
-      "expected": "命中兜底分支（matching.vue:128-147）：无 pending 且无 query 三参 → setTimeout(goBack,200)；实测必须在 ≤1s 内离开本页（返回来源页；栈深=1 时 switchTab 到寻觅 Tab，:54-61），**不得白屏、不得停留**；不得调用 runMatchCheck、不得发任何写请求（network 零新增）；不得弹「缺少匹配卡片信息」错误 Toast（该文案仅 store 内部，页面不应出现）；无 console error",
-      "evidence": "critical：before/after 截图（含中途采样帧）+ 路由链时间序列 + network 零请求断言 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT11",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "栈深=1 冷启动深链直开本页：goBack 必须 switchTab 寻觅 Tab 兜底",
-      "tier": "critical",
-      "pre": "清登录态外保持已登录；wx.reLaunch('/subpackages/discover-extra/discover/matching')（getCurrentPages 长度=1，无 query、无 pending）",
-      "action": "进入后观察至 2s；确认兜底返回的落点与 Tab 页渲染；再补一轮带合法三参的栈深=1 直开（?userId=100158&cardId=card-1&action=like）",
-      "expected": "第一路：200ms 兜底触发，goBack 判栈深=1 → uni.switchTab(ROUTES.TAB.DISCOVER)（:54-61）→ 最终栈=[pages/discover/index]，不得报 navigateBack fail、不得停留本页；第二路：带参直开按 URL 初始化上下文（:128-142）并真实拉取对方资料，不得白屏；两路均无「can not navigateTo a tabbar page」类报错；冷启动深链不得闪现错误空态（铁律）",
-      "evidence": "critical：两路 before/after 截图 + 完整栈数组 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT12",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "dev-preview=1 QA 入口：停留本页、不发匹配请求、不消费卡组",
-      "tier": "normal",
-      "pre": "wx.reLaunch('/subpackages/discover-extra/discover/matching?dev-preview=1')；记录进入前 discoverStore.cards 与 status",
-      "action": "停留 6s（超过 2600ms 动画兜底）；读取页面渲染、路由、matchStore.status/pendingCardId、network 请求；再 tap 一次 .match-loading__skip",
-      "expected": "previewMode=true 分支（:92-105）：以固定「星野」演示对象与本地 AVATAR_1 头像渲染完整动画页；watch 因 previewMode 直接 return（:66）→ **不得**跳转成功页/返回、不得调 runMatchCheck、不得发 POST（network 零新增）、cards 长度不变；tap 跳过时因 animationDone 置位后走 goBack 返回（:203-209）—— 该行为须如实记录为「预览入口下跳过即退出」；profile 无头像时静默 load 且失败仅 warn（:99-103）",
-      "evidence": "normal：after 截图（动画态 + 停留 6s 后）+ status/pendingCardId 求值 + network 零请求断言 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT13",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "preview=1 分享/演示模式：三参齐备才生效，缺任一走真实链路",
-      "tier": "normal",
-      "pre": "四路：①?preview=1&cardId=c1&userId=100158&action=like（三参齐）；②?preview=1&cardId=c1（缺 userId/action）；③?preview=1（仅 preview）；④?preview=0&… 三参齐",
-      "action": "四路各进入并停留 6s，读取是否停留本页、是否发出匹配写请求（network）、cards 是否变化",
-      "expected": "分支条件为 String(q.preview)==='1' && cardId && action && userId 同时成立（:108）→ ①停留本页、不发接口、不调 consumeCardFromDeck（cards 不变），异步 loadPartnerProfile 填充对方头像（:115-119）；②③④不得进 preview 分支：②③若 pending 也为空则命中 200ms 自动返回兜底（:144-146），④走真实链路（消费卡 + 跳转/返回）；不得出现「②既不发请求也不返回」的卡死",
-      "evidence": "normal：四路 after 截图 + 路由链 + cards 前后对照 + network 计数",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT14",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "URL 直达路径的写请求：客户端连点/重复进入的请求条数与后端「喜欢」记录条数分离判定",
-      "tier": "critical",
-      "pre": "wx.reLaunch 直开 '/subpackages/discover-extra/discover/matching?userId=100158&cardId=<真实卡 id>&action=like'；network 面板清空；后端该 (己方,100158) 的喜欢/匹配记录条数回读为 R0；注意 discoverStore.swipeRight→写接口经 http 层注入**稳定** Idempotency-Key（services/http.ts:262-274，idem-POST-<url+body 哈希>）",
-      "action": "①直开一次，记录新增请求条数与 URL/Idempotency-Key；②返回后再直开同一卡 3 次（每次等动画结束离开），统计累计请求条数与后端记录条数 R1",
-      "expected": "必须分栏写清，禁止用服务端结果替客户端结论：【客户端层】记录每次进入发出的写请求条数（同 key 重复出现即为客户端重复提交，须逐条列出 Idempotency-Key 值）；【数据层】回读 R1 必须 = R0 + 1（同一目标用户不得因重复进入累积多条喜欢/匹配记录）；若 R1>R0+1 → 服务端幂等或业务唯一约束失效，判 P1 Data；若客户端出现 N 条同 key 请求而 R1=R0+1 → 判「客户端守卫缺失但被服务端兜住」= 本用例仍记 FAILED（假通过陷阱，stage-contract §6.2）；mock 构建下若无网络出口，则客户端层记 N/A 并改用 handler 调用计数（runMatchCheck 被调用次数）替代，须显式写明依据来源",
-      "evidence": "critical：network 面板逐条（URL/method/Idempotency-Key）+ 后端记录条数回读（R0/R1）+ runMatchCheck 调用计数 + before/after 截图 + console",
-      "requiresReal": true,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT15",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "双头像兜底链：本人/对方头像缺失或为服务端相对路径时必须落默认头像（MP-R2-MATCHING-002 修复后表现）",
-      "tier": "critical",
-      "pre": "三路：①profileStore.avatarUrl 为空的账号进入；②对方 avatar 为服务端相对路径（/uploads/xxx.png 或 /api/v1/media/xxx）；③对方 avatar 与 photo 同时为空",
-      "action": "三路各进入本页，观察 .match-loading__avatar 与 --blur 两颗头像节点，读取其 src 属性；截图放大比对是否为空白圆",
-      "expected": "三路均不得出现空白圆/破图：本人 myAvatar = resolveMediaUrl(profileStore.avatarUrl) || resolveMediaUrl(DEFAULT_AVATAR)（:38-40），对方 partnerAvatar = resolveMediaUrl(avatar||photo||'') || DEFAULT_AVATAR（:41-45）；相对路径必须被统一媒体出口解析为可带鉴权的绝对地址（utils/media.ts，:14-15 引入）；解析失败时 src 落到包内默认头像资源；②路真机/DevTools 下头像必须实际渲染出图像（非 0 尺寸/非透明占位）",
-      "evidence": "critical：三路头像区域放大截图 + 两颗 avatar 的 src 原文 + 图片加载成功状态（naturalWidth>0 等价证据）+ console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT16",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "参数极值与注入：userId/cardId/action 超长、中文、非法枚举、HTML 片段",
-      "tier": "critical",
-      "pre": "本页 onLoad 实际消费参数集合（以源码为准）：userId（:89,131-142）、cardId（:87,131-137）、action（:88,136 断言为 'like'|'superLike' 但**无运行时校验**）、preview（:108）、dev-preview（:92）",
-      "action": "五路直开并各停留 6s：①cardId= 重复 500 个 'A'；②userId=<img src=x onerror=alert(1)>（URL 编码）；③action=hack（非法枚举）；④userId=999999999（不存在的用户）；⑤userId 与 cardId 前后含空格 %20",
-      "expected": "全部五路：①无崩溃、无布局溢出、无白屏（可返回/可提示）；②页面文本/属性中不得出现被解析的 <img> 节点、无 alert 执行（wxml 快照核查）；③非法 action 不得导致未处理异常：action 被 as 强转（:136）后传 store，最终由后端/mock 拒绝 → 必须走 failed 分支（Toast + 600ms 返回，:75-81），不得静默卡住；④不存在的用户：loadPartnerProfile 内部 try/catch 返 null（:184-192）→ 头像走默认兜底、页面不得白屏，且 runMatchCheck 失败必须可见（Toast）；⑤trim 语义须如实记录（源码 userId/cardId 未 trim → 含空格应判为不同 id，须在 observed 说明实际结果）",
-      "evidence": "critical：五路 after 截图 + Toast 文案 + wxml 快照（注入核查）+ console（未处理异常计数）",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT17",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "幽灵参数核查：本页仅消费 5 个参数，多余参数不得影响行为",
-      "tier": "normal",
-      "pre": "源码依据：matching.vue:86-92,108 仅读 cardId/action/userId/preview/dev-preview；无任何其它 query 消费点（无 name/from/token/redirect 处理）",
-      "action": "直开 '/subpackages/discover-extra/discover/matching?userId=100158&cardId=c1&action=like&name=%E6%98%9F%E9%87%8E&from=share&token=fake.jwt&redirect=%2Fpages%2Fhome%2Findex&preview=1'，停留 6s 后读取页面文本、路由、storage token",
-      "expected": "name/from/redirect/token/preview 组合下：页面显示的对方名**不得**来自 name 参数（必须走真实/store 数据），整页文本不含 'fake.jwt'；storage token 不被覆盖；不因 redirect 发生额外跳转；行为与仅带 5 参时一致（preview=1 三参齐 → 停留本页）；observed 须把 name/from/redirect/token 逐项标注为**幽灵参数**（源码不消费），并注明本结论来源为当前源码行号而非旧参数固化表",
-      "evidence": "normal：after 截图 + 页面全文本抄录 + route options 与 storage token 求值 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT18",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "未登录/免踢门槛：本页无 LockScreen 分支，未登录直开的真实表现",
-      "tier": "critical",
-      "pre": "wx.removeStorageSync('token')/('refresh_token') 清登录态；本页面源码**无** isUnlocked/LockScreen 判断（对照 chat-session/index.vue:1836 有），仅依赖路由门槛/拦截器（usePageAccess 未在本页出现）",
-      "action": "两路：①reLaunch 直开本页（无参）；②reLaunch 直开带三参版；各停留 6s 记录路由、Toast、network 401、console 报错",
-      "expected": "必须给出可判定结论而非「未测」：①②均不得出现白屏死页、不得动画永驻；未登录写请求若被后端拒 401 → 走 failed 分支产生用户可见 Toast（600ms 后返回）；若路由门槛把用户重定向到登录页则记录重定向链路；出现「静默停留 + 无任何反馈」即判 P1 死页/死按钮；不得出现未捕获的 Promise rejection 或 TypeError（如 'xxx is not defined'）",
-      "evidence": "critical：两路 before/after 截图 + 路由链 + network 401 证据 + Toast 文案 + console",
-      "requiresReal": false
-    },
-    {
-      "id": "MT19",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "重复进出本页×3（同一卡与不同卡混合）：状态机不复用、不产生双跳转",
-      "tier": "normal",
-      "pre": "身份 A 已登录、卡数 ≥3；准备两条序列：①同一 cardId 反复进出 3 次（第二次起该卡已被消费）；②每次换一张新卡进出 3 次",
-      "action": "按序列进出本页（每次等分派结束后返回寻觅），逐次记录：pendingCardId、status、发出的请求、Toast、跳转次数、cards 长度",
-      "expected": "每次进入都必须重新 beginCheck（status: idle→checking→分派后 reset 回 idle，:211-216）→ 不得出现第二次进入沿用上一次 matchedUser 的情况；序列①第 2/3 次进入时该卡已不在 cards：consumeCardFromDeck 的存在性门（:175）应幂等 return，**不得**弹「卡片不存在或已被处理」误报、不得 unhandled rejection（MP-R1-DISCOVER-001/MATCHING-001/002 回归）；序列②cards 每次严格 -1；每轮跳转次数=1",
-      "evidence": "normal：逐轮 after 截图 + status/pendingCardId 采样序列 + cards 长度序列 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT20",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "滚动与无滚容器断言：本页无可滚内容，不得出现回弹/双层滚动",
-      "tier": "noop",
-      "pre": "正常进入本页（matching-page min-height:100%，:236-240，页面无 scroll-view）",
-      "action": "①页面内上下滑动 300px 各一次；②观察动画区是否被手势干扰、是否出现双层滚动或回弹异常",
-      "expected": "无页面滚动（内容一屏内）、无双层 scroll 打架、无橡皮筋导致的动画位移/头像是错位；滑动手势**不得**被误判为「跳过」或触发返回（本页仅绑 @tap，:222,MatchLoading:73）；日志记录手势后的路由与 animationDone 不变",
-      "evidence": "noop：执行日志（手势 + 路由/animationDone 前后一致）",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT21",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "下拉刷新：未配置 enablePullDownRefresh，不得触发伪刷新与重复匹配请求",
-      "tier": "noop",
-      "pre": "pages.json:137-143 discover-extra 分包两条页面条目均无 enablePullDownRefresh（对照 :54-64 有配页面）",
-      "action": "进入本页后下拉 300px 松手 ×2；再在动画播放中下拉一次",
-      "expected": "无刷新动画、无 onPullDownRefresh/stopPullDownRefresh；不得因下拉重复触发 onLoad/runMatchCheck（network 零新增写请求）；动画不因下拉被打断或加速；日志记 animationDone/status 不变",
-      "evidence": "noop：执行日志（手势 + network 零新增 + status 采样）",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT22",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "物理/手势返回与页面卸载竞态：动画在播时出栈不得留下脏状态",
-      "tier": "critical",
-      "pre": "正常进入本页，动画播到约 1s 时（status=checking、runMatchCheck 在途）",
-      "action": "①用系统返回手势/返回键出栈（不等分派完成）；②在寻觅页立即再次点另一张卡进入；③回读第一次那张卡的 cards 状态与后端喜欢记录",
-      "expected": "①出栈必须干净：onUnload reset 生效，无残留 checking/pendingCardId（:211-216）；②第二次进入正常工作，不受上一次在途请求污染：即使第一次的 swipeRight 稍后返回，也**不得**在寻觅页/新匹配页触发跳转或 Toast（watch 的 checked 门 :63-66 与 previewMode 门不得被绕过）→ 出现「上一次结果把当前页跳走」判 P1 串扰；③第一次的喜欢若已成功则 cards 与后端记录各计一次，不得重复",
-      "evidence": "critical：三步 before/after 截图 + 路由链 + store 状态采样 + 后端记录回读 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT23",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "Loading 不永驻：动画兜底计时器与 finished 事件双路一致性",
-      "tier": "normal",
-      "pre": "正常进入本页；MatchLoading 心跳 @animationend 触发 finish（MatchLoading.vue:31-40）且另设 2600ms fallbackTimer 兜底",
-      "action": "记录 finish 实际触发时刻（进入后多少 ms）与 animationDone 置位顺序；在 DevTools CPU 降速（慢速模式）下重复一次",
-      "expected": "无论 animationend 还是 2600ms 兜底先到，均只 emit 一次 finished（fallbackTimer 必须被清理，不得二次 emit 造成重复分派/双跳转）；进入后 ≤3.5s 内必有可观测结果（跳转或 Toast），不得停在「正在匹配」文案上永驻；降速下同样不得 >6s 无反馈；console 无「动画未触发」类错误",
-      "evidence": "normal：after 截图（结果帧）+ finished 触发时间戳与 emit 计数 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    },
-    {
-      "id": "MT24",
-      "page": "subpackages/discover-extra/discover/matching",
-      "title": "跨页一致性：动画页与成功页/寻觅页的对方信息与文案口径一致",
-      "tier": "normal",
-      "pre": "正常链路走完一次匹配成功（MT03/MT04 同前置），保留进入前寻觅页当前卡的姓名与头像",
-      "action": "对照三处：寻觅页卡片显示的对方名/头像 → 匹配动画页 partnerAvatar/partner-name（:226-231）→ 成功页显示与「立即聊天」后聊天页标题（pageTitle，chat-session:896-907）；在 en-US locale 下重复并核对 matching.searching/subtitle/skip 与 discover.likeSent 文案",
-      "expected": "三处对方身份必须完全一致（名、头像来源同一 userId），出现「动画页 A、成功页 B」即 P0 串号；文案不得为裸 i18n key（t() 走 :110-113,203 的 matching.* 与 :73 discover.likeSent）；en-US 下不得中英混排（MatchCard 的「在线/同校」已改走 t()，本轮 diff 内改动，须核对动画页与结果页无硬编码残留）；头像兜底链三处一致",
-      "evidence": "normal：三处并排对照截图（zh-CN 与 en-US 各一套）+ 三处 name/avatar 值抄录 + console",
-      "requiresReal": false,
-      "identities": [
-        "A",
-        "B"
-      ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
-    }
-  ]
+ "cases": [
+  {
+   "id": "MT01",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "正常链路进入（pending 上下文 + URL 三参）：动画自动播放 → finished → 跳转决策",
+   "tier": "critical",
+   "pre": "身份 A mock 登录；从 pages/discover/index 对当前卡执行「喜欢」→ 该页 matchStore.beginCheck 后 openAppPath 携带 userId/cardId/action 进入本页（discover/index.vue:128-133，参数名以该三行为准）；记录进入前 discoverStore.cards 长度 N 与 matchStore.status/pendingCardId/animationDone",
+   "action": "进入后不做任何操作，观察至动画结束（MatchLoading 心跳 animationend :97 或 2600ms 兜底计时器 MatchLoading.vue:40）；每 500ms 采样路由与 store 状态",
+   "expected": "500ms 内出现可观测反馈：动画元素（双头像/轨道/心跳）渲染并开始播放，无白屏/骨架永驻；动画播完由组件 emit finished → matchStore.markAnimationDone（matching.vue:194-196）；watch(status,animationDone) 依 store 结果分派（:63-83）—— matched→消费卡组 + redirectTo 成功页；idle→toast「喜欢已发送」+ 400ms 返回；failed→toast 错误 + 600ms 返回；三种分派必须由实际 status 决定，禁止执行器手工改写；console 无 unhandled rejection",
+   "evidence": "critical：before（动画首帧）/after（跳转后）截图 + 完整路由链 + Toast 文案 + console + status/animationDone 采样序列",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT02",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "CardSwiper 滑动方向语义：右滑=喜欢才进本页且 action=like；左滑=跳过不得进入",
+   "tier": "critical",
+   "pre": "身份 A 在 pages/discover/index，卡数 ≥3，今日额度未用尽（discover/index.vue:124-127 额度门会拦截，须先确认未触发）",
+   "action": "①对当前卡执行「右滑」（swipe right）到底；②返回寻觅后对下一张执行「左滑」（swipe left）到底；③对下一张点击「喜欢」按钮；④对下一张点击「超赞」按钮；每步抄录路由与传入本页的 action 参数",
+   "expected": "方向语义必须成立且可判定：右滑与点「喜欢」→ 进入本页且 query.action=like（store pendingAction=like）；左滑（跳过）→ **停留寻觅页、不进入本页**、卡组切到下一张；超赞 → 进入本页且 action=superLike（runMatchCheck 以 pendingAction==='superLike' 传 isSuperLike，match.ts:53-56）；四种路径均 500ms 内有可观测反馈（切卡动画或路由变化），不得出现「左滑也进了匹配中页」的方向反转",
+   "evidence": "critical：四路径各 before/after 截图 + 路由链 + matchStore.pendingAction 求值 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=bandWxmlOther ‖ 「喜欢/超赞」两枚按钮在产品里存在，但既在子组件又在另一页 ⇒ 本页作用域查不到（门实测该轴 90.6% 点不动）；左右滑另属连续手势。本页唯一在册可点件 .matching-page__back（matching.vue:259 @tap=goBack）点即离页，冒充它等于换判据。 ‖ apps/client/src/components/match/MatchActions.vue:41/55/69 <text class=\"match-actions__label\">{{ t('discover.like'…) }}（中文标签在类名里）；命令：grep -rln MatchActions apps/client/src --include=*.vue → 只有 apps/client/src/pages/discover/index.vue 用它，本页 apps/client/src/subpackages/discover-extra/discover/matching.vue:257-270 模板只渲染 .matching-page__back 与 <MatchLoading>",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
+  },
+  {
+   "id": "MT03",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "匹配成功（status=matched）：消费卡组 + redirectTo 成功页，栈中不得残留本页",
+   "tier": "critical",
+   "pre": "构造 matched 结果：mock 构建下用可命中 lastSwipeResult.matched=true 的卡片（discover store 的 mock 判定）；若 mock 恒不返 matched，则本前置在 mock 构建下**不可构造** → 按「前置未构造 → UNVERIFIED」如实记录，禁止手工改写 store 冒充",
+   "action": "进入本页后等动画播完；读取跳转前后 getCurrentPages 与 matchStore.status/animationDone/pendingCardId",
+   "expected": "redirectTo 语义：路由末位=subpackages/discover-extra/discover/match-success 且栈中**不含** matching 页（matching.vue:47-52 uni.redirectTo）；从成功页返回**不得**回到「匹配中」动画页；跳转前 consumeCardFromDeck 已被调用（:68）；redirectTo 的 url 必须带 ?userId=<对方 userId>（:50）；无 Toast 风暴、无二次跳转",
+   "evidence": "critical：before/after 截图 + 跳转前后完整栈数组 + redirectTo 的 url 原文 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT04",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "【跨页状态契约证伪】redirectTo 触发 onUnload reset → 成功页仍须正确显示对方（MP-R2-MATCHING-014）",
+   "tier": "critical",
+   "pre": "同 MT03；本页 onUnload 无条件 matchStore.reset()（matching.vue:211-216，MP-R2-MATCHING-007 修复），而 reset() 会清 matchedUser/pendingCardId/status（match.ts:82-89）—— redirectTo 的卸载顺序使成功页 onLoad 时 matchedUser 已为 null，只能靠 query userId 兜底（match-success.vue:73-78 loadFallbackPartner 异步拉取）",
+   "action": "matched 跳转后：①在成功页 500ms 内、2s 内、5s 内各截一张图并读取 matchStore.matchedUser 与页面 partner 名/头像；②从成功页 tap「立即聊天」按钮 .match-success__primary（@tap=emit chat → goChat），抄录聊天页 URL 的 userId 与对方昵称；③回读本次匹配真实对方 userId（discover 卡数据）",
+   "expected": "修复后应有表现（按当前代码口径判定）：①成功页不得因 matchedUser 被 reset 而**永久**停在空白/默认名——异步兜底必须在 ≤5s 内把对方名与头像填充完成，全程不得出现错误态或死屏；②「立即聊天」跳过去的 userId 必须等于本次匹配的真实对方 userId（三处一致：卡数据 / 成功页 URL 参数 / 聊天页 URL 参数），错配即 P0（把消息发进别人的会话）；③若成功页 5s 后仍无对方信息、或聊天对象错配、或「立即聊天」点击无任何反馈（partner 为 null 时 match-success.vue:95 静默 return = 死按钮）→ 三项分别判 FAILED 并记为跨页状态契约缺陷",
+   "evidence": "critical：三个时间点 before/after 截图 + 三方 userId 对照表 + matchStore 状态求值 + 聊天页路由与 URL + console",
+   "requiresReal": false,
+   "actionPreTapfix": "matched 跳转后：①在成功页 500ms 内、2s 内、5s 内各截一张图并读取 matchStore.matchedUser 与页面 partner 名/头像；②从成功页 tap「立即聊天」，抄录聊天页 URL 的 userId 与对方昵称；③回读本次匹配真实对方 userId（discover 卡数据）",
+   "tapTarget": ".match-success__primary",
+   "tapTargetEvidence": "apps/client/src/components/match/MatchSuccess.vue:140",
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT05",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "单向喜欢（status=idle）：Toast + 400ms 自动返回 + 卡组已消费（返回后不见同卡）",
+   "tier": "critical",
+   "pre": "构造单向喜欢（后端/mock 返回 lastSwipeResult.matched=false，match.ts:57-59 走 idle）；进入本页前记录寻觅页当前卡的 id 与 cards 列表顺序",
+   "action": "等动画播完 → 观察 Toast 与自动返回 → 返回后读取寻觅页当前卡 id 与 cards 长度",
+   "expected": "Toast 文案为 discover.likeSent 的本地化串（不得出现裸 key，i18n 走 t() matching.vue:73）；返回发生在 Toast 后约 400ms（:74），500ms 内可观测；返回后**不得再看到刚消费的那张卡**（该卡已在 runMatchCheck 内被 swipeRight 消费，match.ts:52-56；consumeCardFromDeck 的存在性检查按幂等直接 return，matching.vue:171-181）→ cards 长度较进入前 -1；不得再次进入本页形成回环；不得弹「卡片不存在或已被处理」误报横幅（MP-R1-DISCOVER-001 回归：重复 swipeRight 已被幂等门挡住）",
+   "evidence": "critical：before/after 截图（返回后寻觅页首屏）+ Toast 文案 + cards 列表与当前卡 id 前后对照 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "NO_ELEMENT_NO_FIX｜档位口径=not-named ‖ 三个观测面（Toast 文案、自动返回耗时、寻觅页 cards 长度 -1）都不是本页元素；本页静息可点件只有 .matching-page__back（matching.vue:259），点它是主动返回，与判据的自动返回语义相反。 ‖ apps/client/src/subpackages/discover-extra/discover/matching.vue:94（uni.showToast，原生层不入渲染树）+ 400ms 自动返回时序；命令：node tmp/qa/axis.mjs → MT05「判据正文里一个类名都没点名」",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
+  },
+  {
+   "id": "MT06",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "失败（status=failed）：Toast 错误文案 + 600ms 返回，不得永驻「匹配中」",
+   "tier": "critical",
+   "pre": "构造失败：①mock 构建下断网/停后端使 discoverStore.swipeRight reject（match.ts:60-64 → status=failed, lastError=error.message）；②或额度耗尽路径；两路均须记录实际触发方式",
+   "action": "进入本页等动画播完，观察 Toast 与返回；记录总耗时",
+   "expected": "Toast 显示 matchStore.lastError 原文（后端友好文案优先）或 matching.likeFailed 兜底（matching.vue:75-79），不得为空白/裸 key/技术性错误串（HTTP 码、stack）；约 600ms 后自动返回寻觅页（:80），500ms 内可观测；返回后卡组状态一致（失败**不应**消费卡片 —— 若该卡从列表消失则判「失败却吞卡」的 P1 数据缺陷，须回读 cards 前后差异）；不得停留本页、不得动画永驻、无 unhandled rejection",
+   "evidence": "critical：before/after 截图 + Toast 文案原文 + cards 前后对照 + console/network（请求失败证据）",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "NO_ELEMENT_NO_FIX｜档位口径=not-named ‖ 与 MT05 同型：判点是原生 Toast 原文 + 耗时 + 跨页 cards 差异，且前置要故障注入 ⇒ 本档本页无物件可点。 ‖ apps/client/src/subpackages/discover-extra/discover/matching.vue:97-101（失败路 Toast 与 600ms 返回）；case.pre 两路都要求断网/后端非 2xx",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
+  },
+  {
+   "id": "MT07",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "动画中点「跳过」= 快进；播完后再点 = 返回（handleSkip 双语义）",
+   "tier": "normal",
+   "pre": "正常进入本页（动画播放中，matchStore.animationDone=false）",
+   "action": "①动画播放中 tap .match-loading__skip（MatchLoading.vue:73-75）一次；②观察后再次 tap 同一元素",
+   "expected": "①第一次点：animationDone 置 true（markAnimationDone，matching.vue:203-206 分支一）→ 立即按当前 status 分派跳转/返回，动画不得卡住；②第二次点（若仍在本页，即 status 尚未产生分派或 preview 态）：走 goBack 返回上一页（:207-208 分支二）；两路必须各自有 500ms 内可观测变化，不得出现「点了没反应」；不得因快进产生双跳转",
+   "evidence": "normal：两步 after 截图 + animationDone/status 求值 + 路由链",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT08",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "「跳过」与返回箭头连点×5：不得重复跳转 / 不得多层出栈",
+   "tier": "critical",
+   "pre": "正常进入本页；记录进入时 getCurrentPages 栈深 K（来源为寻觅 Tab，预期 K=2 量级）；本页 handleSkip/goBack（matching.vue:54-61,203-209）均**无** createButtonGuard 包裹（对照注册页 index.vue:456 有守卫）",
+   "action": "①对 .match-loading__skip 以 <150ms 间隔连点 5 次；②重来一轮，对 .matching-page__back（:222-224）连点 5 次；每轮记录最终路由链与 toast/跳转次数",
+   "expected": "客户端层：一次操作只产生一次出栈/跳转 —— 最终栈深必须为 K-1（返回）或恰 1 个成功页实例（matched 跳转），不得出现连点导致多页被弹掉（回到 Tab 以外/退出小程序）或 success 页重复压栈；若栈深 <K-1 或出现重复跳转 → 判 FAILED（无防连点守卫）；网络层：若返回前触发了写请求，network 面板请求条数与后端「喜欢」记录条数分别记录（稳定 Idempotency-Key 会令服务端去重，services/http.ts:262-274，不得以服务端 1 条判客户端守卫通过）",
+   "evidence": "critical：before/after 截图 + 每次点击后的栈数组序列 + network 请求条数 + 后端落库回读条数 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT09",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "顶栏返回箭头：热区 72rpx 与状态栏补偿，动画中强制返回不得残留 checking",
+   "tier": "normal",
+   "pre": "正常进入本页（status=checking，动画在播）；读取 .matching-page__back 的 boundingClientRect（声明 72rpx×72rpx，matching.vue:242-255）与 top 的 --statusbar 注入值（:244，useMenuButtonRect :20-21）",
+   "action": "①tap .matching-page__back 中心；②重来，tap 其外扩 10rpx 处；③返回后立刻读取 matchStore.status/pendingCardId/matchedUser 与寻觅页渲染",
+   "expected": "①500ms 内路由返回来源页；②外扩点命中情况须如实记录（72rpx < 88rpx → 铁律判 FAILED，热区不达标）；③返回必须触发 onUnload → matchStore.reset()：status 回 idle、pendingCardId/matchedUser/animationDone 全部清空（:211-216，MP-R2-MATCHING-007 修复后表现）—— 若 status 残留 'checking' 或 pendingCardId 未清，则下次进入会绕过 200ms 兜底并对已消费卡重复 swipeRight 误报 → 判 FAILED；寻觅页不得残留遮罩/骨架",
+   "evidence": "normal：after 截图 + boundingClientRect（px→rpx）+ matchStore 全量字段求值 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT10",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "【P0 证伪】空上下文进入：200ms 自动返回，不得死页/白屏（P0 未修坏断言）",
+   "tier": "critical",
+   "pre": "先清匹配上下文：wx.reLaunch 到寻觅页后不点卡，直接 miniRouter 进 '/subpackages/discover-extra/discover/matching'（无 query，且 matchStore.pendingCardId/pendingAction 为 null —— 可先访问一次本页以触发 onUnload reset）",
+   "action": "进入后每 200ms 采样路由与页面文本至 2s；观察是否出现空白页/骨架永驻",
+   "expected": "命中兜底分支（matching.vue:128-147）：无 pending 且无 query 三参 → setTimeout(goBack,200)；实测必须在 ≤1s 内离开本页（返回来源页；栈深=1 时 switchTab 到寻觅 Tab，:54-61），**不得白屏、不得停留**；不得调用 runMatchCheck、不得发任何写请求（network 零新增）；不得弹「缺少匹配卡片信息」错误 Toast（该文案仅 store 内部，页面不应出现）；无 console error",
+   "evidence": "critical：before/after 截图（含中途采样帧）+ 路由链时间序列 + network 零请求断言 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT11",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "栈深=1 冷启动深链直开本页：goBack 必须 switchTab 寻觅 Tab 兜底",
+   "tier": "critical",
+   "pre": "清登录态外保持已登录；wx.reLaunch('/subpackages/discover-extra/discover/matching')（getCurrentPages 长度=1，无 query、无 pending）",
+   "action": "进入后观察至 2s；确认兜底返回的落点与 Tab 页渲染；再补一轮带合法三参的栈深=1 直开（?userId=100158&cardId=card-1&action=like）",
+   "expected": "第一路：200ms 兜底触发，goBack 判栈深=1 → uni.switchTab(ROUTES.TAB.DISCOVER)（:54-61）→ 最终栈=[pages/discover/index]，不得报 navigateBack fail、不得停留本页；第二路：带参直开按 URL 初始化上下文（:128-142）并真实拉取对方资料，不得白屏；两路均无「can not navigateTo a tabbar page」类报错；冷启动深链不得闪现错误空态（铁律）",
+   "evidence": "critical：两路 before/after 截图 + 完整栈数组 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT12",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "dev-preview=1 QA 入口：停留本页、不发匹配请求、不消费卡组",
+   "tier": "normal",
+   "pre": "wx.reLaunch('/subpackages/discover-extra/discover/matching?dev-preview=1')；记录进入前 discoverStore.cards 与 status",
+   "action": "停留 6s（超过 2600ms 动画兜底）；读取页面渲染、路由、matchStore.status/pendingCardId、network 请求；再 tap 一次 .match-loading__skip",
+   "expected": "previewMode=true 分支（:92-105）：以固定「星野」演示对象与本地 AVATAR_1 头像渲染完整动画页；watch 因 previewMode 直接 return（:66）→ **不得**跳转成功页/返回、不得调 runMatchCheck、不得发 POST（network 零新增）、cards 长度不变；tap 跳过时因 animationDone 置位后走 goBack 返回（:203-209）—— 该行为须如实记录为「预览入口下跳过即退出」；profile 无头像时静默 load 且失败仅 warn（:99-103）",
+   "evidence": "normal：after 截图（动画态 + 停留 6s 后）+ status/pendingCardId 求值 + network 零请求断言 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT13",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "preview=1 分享/演示模式：三参齐备才生效，缺任一走真实链路",
+   "tier": "normal",
+   "pre": "四路：①?preview=1&cardId=c1&userId=100158&action=like（三参齐）；②?preview=1&cardId=c1（缺 userId/action）；③?preview=1（仅 preview）；④?preview=0&… 三参齐",
+   "action": "四路各进入并停留 6s，读取是否停留本页、是否发出匹配写请求（network）、cards 是否变化",
+   "expected": "分支条件为 String(q.preview)==='1' && cardId && action && userId 同时成立（:108）→ ①停留本页、不发接口、不调 consumeCardFromDeck（cards 不变），异步 loadPartnerProfile 填充对方头像（:115-119）；②③④不得进 preview 分支：②③若 pending 也为空则命中 200ms 自动返回兜底（:144-146），④走真实链路（消费卡 + 跳转/返回）；不得出现「②既不发请求也不返回」的卡死",
+   "evidence": "normal：四路 after 截图 + 路由链 + cards 前后对照 + network 计数",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT14",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "URL 直达路径的写请求：客户端连点/重复进入的请求条数与后端「喜欢」记录条数分离判定",
+   "tier": "critical",
+   "pre": "wx.reLaunch 直开 '/subpackages/discover-extra/discover/matching?userId=100158&cardId=<真实卡 id>&action=like'；network 面板清空；后端该 (己方,100158) 的喜欢/匹配记录条数回读为 R0；注意 discoverStore.swipeRight→写接口经 http 层注入**稳定** Idempotency-Key（services/http.ts:262-274，idem-POST-<url+body 哈希>）",
+   "action": "①直开一次，记录新增请求条数与 URL/Idempotency-Key；②返回后再直开同一卡 3 次（每次等动画结束离开），统计累计请求条数与后端记录条数 R1",
+   "expected": "必须分栏写清，禁止用服务端结果替客户端结论：【客户端层】记录每次进入发出的写请求条数（同 key 重复出现即为客户端重复提交，须逐条列出 Idempotency-Key 值）；【数据层】回读 R1 必须 = R0 + 1（同一目标用户不得因重复进入累积多条喜欢/匹配记录）；若 R1>R0+1 → 服务端幂等或业务唯一约束失效，判 P1 Data；若客户端出现 N 条同 key 请求而 R1=R0+1 → 判「客户端守卫缺失但被服务端兜住」= 本用例仍记 FAILED（假通过陷阱，stage-contract §6.2）；mock 构建下若无网络出口，则客户端层记 N/A 并改用 handler 调用计数（runMatchCheck 被调用次数）替代，须显式写明依据来源",
+   "evidence": "critical：network 面板逐条（URL/method/Idempotency-Key）+ 后端记录条数回读（R0/R1）+ runMatchCheck 调用计数 + before/after 截图 + console",
+   "requiresReal": true,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "NO_ELEMENT_NO_FIX｜档位口径=not-named ‖ 两栏判点（写请求 URL + Idempotency-Key 逐条、后端记录数 R1=R0+1）零 DOM 目标；缺的是按 case 定制的 query 深链与 network/后端回读通道，不属选择器缺口。 ‖ apps/client/src/subpackages/discover-extra/discover/matching.vue:106 onLoad 的 cardId/action/userId 分支（需 ?userId=…&cardId=…&action=like 深链，而 scripts/qa/r-exec-cli.mjs:193 只给 dev-preview=1）；命令：node tmp/qa/axis.mjs → MT14 未点名任何类名",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
+  },
+  {
+   "id": "MT15",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "双头像兜底链：本人/对方头像缺失或为服务端相对路径时必须落默认头像（MP-R2-MATCHING-002 修复后表现）",
+   "tier": "critical",
+   "pre": "三路：①profileStore.avatarUrl 为空的账号进入；②对方 avatar 为服务端相对路径（/uploads/xxx.png 或 /api/v1/media/xxx）；③对方 avatar 与 photo 同时为空",
+   "action": "三路各进入本页，观察 .match-loading__avatar 与 --blur 两颗头像节点，读取其 src 属性；截图放大比对是否为空白圆",
+   "expected": "三路均不得出现空白圆/破图：本人 myAvatar = resolveMediaUrl(profileStore.avatarUrl) || resolveMediaUrl(DEFAULT_AVATAR)（:38-40），对方 partnerAvatar = resolveMediaUrl(avatar||photo||'') || DEFAULT_AVATAR（:41-45）；相对路径必须被统一媒体出口解析为可带鉴权的绝对地址（utils/media.ts，:14-15 引入）；解析失败时 src 落到包内默认头像资源；②路真机/DevTools 下头像必须实际渲染出图像（非 0 尺寸/非透明占位）",
+   "evidence": "critical：三路头像区域放大截图 + 两颗 avatar 的 src 原文 + 图片加载成功状态（naturalWidth>0 等价证据）+ console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT16",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "参数极值与注入：userId/cardId/action 超长、中文、非法枚举、HTML 片段",
+   "tier": "critical",
+   "pre": "本页 onLoad 实际消费参数集合（以源码为准）：userId（:89,131-142）、cardId（:87,131-137）、action（:88,136 断言为 'like'|'superLike' 但**无运行时校验**）、preview（:108）、dev-preview（:92）",
+   "action": "五路直开并各停留 6s：①cardId= 重复 500 个 'A'；②userId=<img src=x onerror=alert(1)>（URL 编码）；③action=hack（非法枚举）；④userId=999999999（不存在的用户）；⑤userId 与 cardId 前后含空格 %20",
+   "expected": "全部五路：①无崩溃、无布局溢出、无白屏（可返回/可提示）；②页面文本/属性中不得出现被解析的 <img> 节点、无 alert 执行（wxml 快照核查）；③非法 action 不得导致未处理异常：action 被 as 强转（:136）后传 store，最终由后端/mock 拒绝 → 必须走 failed 分支（Toast + 600ms 返回，:75-81），不得静默卡住；④不存在的用户：loadPartnerProfile 内部 try/catch 返 null（:184-192）→ 头像走默认兜底、页面不得白屏，且 runMatchCheck 失败必须可见（Toast）；⑤trim 语义须如实记录（源码 userId/cardId 未 trim → 含空格应判为不同 id，须在 observed 说明实际结果）",
+   "evidence": "critical：五路 after 截图 + Toast 文案 + wxml 快照（注入核查）+ console（未处理异常计数）",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT17",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "幽灵参数核查：本页仅消费 5 个参数，多余参数不得影响行为",
+   "tier": "normal",
+   "pre": "源码依据：matching.vue:86-92,108 仅读 cardId/action/userId/preview/dev-preview；无任何其它 query 消费点（无 name/from/token/redirect 处理）",
+   "action": "直开 '/subpackages/discover-extra/discover/matching?userId=100158&cardId=c1&action=like&name=%E6%98%9F%E9%87%8E&from=share&token=fake.jwt&redirect=%2Fpages%2Fhome%2Findex&preview=1'，停留 6s 后读取页面文本、路由、storage token",
+   "expected": "name/from/redirect/token/preview 组合下：页面显示的对方名**不得**来自 name 参数（必须走真实/store 数据），整页文本不含 'fake.jwt'；storage token 不被覆盖；不因 redirect 发生额外跳转；行为与仅带 5 参时一致（preview=1 三参齐 → 停留本页）；observed 须把 name/from/redirect/token 逐项标注为**幽灵参数**（源码不消费），并注明本结论来源为当前源码行号而非旧参数固化表",
+   "evidence": "normal：after 截图 + 页面全文本抄录 + route options 与 storage token 求值 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT18",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "未登录/免踢门槛：本页无 LockScreen 分支，未登录直开的真实表现",
+   "tier": "critical",
+   "pre": "wx.removeStorageSync('token')/('refresh_token') 清登录态；本页面源码**无** isUnlocked/LockScreen 判断（对照 chat-session/index.vue:1836 有），仅依赖路由门槛/拦截器（usePageAccess 未在本页出现）",
+   "action": "两路：①reLaunch 直开本页（无参）；②reLaunch 直开带三参版；各停留 6s 记录路由、Toast、network 401、console 报错",
+   "expected": "必须给出可判定结论而非「未测」：①②均不得出现白屏死页、不得动画永驻；未登录写请求若被后端拒 401 → 走 failed 分支产生用户可见 Toast（600ms 后返回）；若路由门槛把用户重定向到登录页则记录重定向链路；出现「静默停留 + 无任何反馈」即判 P1 死页/死按钮；不得出现未捕获的 Promise rejection 或 TypeError（如 'xxx is not defined'）",
+   "evidence": "critical：两路 before/after 截图 + 路由链 + network 401 证据 + Toast 文案 + console",
+   "requiresReal": false
+  },
+  {
+   "id": "MT19",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "重复进出本页×3（同一卡与不同卡混合）：状态机不复用、不产生双跳转",
+   "tier": "normal",
+   "pre": "身份 A 已登录、卡数 ≥3；准备两条序列：①同一 cardId 反复进出 3 次（第二次起该卡已被消费）；②每次换一张新卡进出 3 次",
+   "action": "按序列进出本页（每次等分派结束后返回寻觅），逐次记录：pendingCardId、status、发出的请求、Toast、跳转次数、cards 长度",
+   "expected": "每次进入都必须重新 beginCheck（status: idle→checking→分派后 reset 回 idle，:211-216）→ 不得出现第二次进入沿用上一次 matchedUser 的情况；序列①第 2/3 次进入时该卡已不在 cards：consumeCardFromDeck 的存在性门（:175）应幂等 return，**不得**弹「卡片不存在或已被处理」误报、不得 unhandled rejection（MP-R1-DISCOVER-001/MATCHING-001/002 回归）；序列②cards 每次严格 -1；每轮跳转次数=1",
+   "evidence": "normal：逐轮 after 截图 + status/pendingCardId 采样序列 + cards 长度序列 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT20",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "滚动与无滚容器断言：本页无可滚内容，不得出现回弹/双层滚动",
+   "tier": "noop",
+   "pre": "正常进入本页（matching-page min-height:100%，:236-240，页面无 scroll-view）",
+   "action": "①页面内上下滑动 300px 各一次；②观察动画区是否被手势干扰、是否出现双层滚动或回弹异常",
+   "expected": "无页面滚动（内容一屏内）、无双层 scroll 打架、无橡皮筋导致的动画位移/头像是错位；滑动手势**不得**被误判为「跳过」或触发返回（本页仅绑 @tap，:222,MatchLoading:73）；日志记录手势后的路由与 animationDone 不变",
+   "evidence": "noop：执行日志（手势 + 路由/animationDone 前后一致）",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "NO_ELEMENT_NO_FIX｜档位口径=not-named；替代物 bandWxmlOther ‖ 判据是「上下滑 300px 后零副作用」的无主手势普查：没有任何节点承载它，点返回钮或点组件里的跳过区都会引入本条要排除的副作用 ⇒ 诚实结论是换不了物件，只能转 WS 手势通道 + 路由/animationDone 采样。 ‖ apps/client/src/components/match/MatchLoading.vue:73 <view class=\"match-loading__skip\" … @tap=\"emit('skip')\">（token 只在 components/match/MatchLoading.wxml，命令 node tmp/qa/tok.mjs match-loading__skip）；本页 apps/client/src/subpackages/discover-extra/discover/matching.vue:257-270 无 scroll-view、模板上无 @touch 绑定",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
+  },
+  {
+   "id": "MT21",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "下拉刷新：未配置 enablePullDownRefresh，不得触发伪刷新与重复匹配请求",
+   "tier": "noop",
+   "pre": "pages.json:137-143 discover-extra 分包两条页面条目均无 enablePullDownRefresh（对照 :54-64 有配页面）",
+   "action": "进入本页后下拉 300px 松手 ×2；再在动画播放中下拉一次",
+   "expected": "无刷新动画、无 onPullDownRefresh/stopPullDownRefresh；不得因下拉重复触发 onLoad/runMatchCheck（network 零新增写请求）；动画不因下拉被打断或加速；日志记 animationDone/status 不变",
+   "evidence": "noop：执行日志（手势 + network 零新增 + status 采样）",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT22",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "物理/手势返回与页面卸载竞态：动画在播时出栈不得留下脏状态",
+   "tier": "critical",
+   "pre": "正常进入本页，动画播到约 1s 时（status=checking、runMatchCheck 在途）",
+   "action": "①用系统返回手势/返回键出栈（不等分派完成）；②在寻觅页立即再次点另一张卡进入；③回读第一次那张卡的 cards 状态与后端喜欢记录",
+   "expected": "①出栈必须干净：onUnload reset 生效，无残留 checking/pendingCardId（:211-216）；②第二次进入正常工作，不受上一次在途请求污染：即使第一次的 swipeRight 稍后返回，也**不得**在寻觅页/新匹配页触发跳转或 Toast（watch 的 checked 门 :63-66 与 previewMode 门不得被绕过）→ 出现「上一次结果把当前页跳走」判 P1 串扰；③第一次的喜欢若已成功则 cards 与后端记录各计一次，不得重复",
+   "evidence": "critical：三步 before/after 截图 + 路由链 + store 状态采样 + 后端记录回读 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT23",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "Loading 不永驻：动画兜底计时器与 finished 事件双路一致性",
+   "tier": "normal",
+   "pre": "正常进入本页；MatchLoading 心跳 @animationend 触发 finish（MatchLoading.vue:31-40）且另设 2600ms fallbackTimer 兜底",
+   "action": "记录 finish 实际触发时刻（进入后多少 ms）与 animationDone 置位顺序；在 DevTools CPU 降速（慢速模式）下重复一次",
+   "expected": "无论 animationend 还是 2600ms 兜底先到，均只 emit 一次 finished（fallbackTimer 必须被清理，不得二次 emit 造成重复分派/双跳转）；进入后 ≤3.5s 内必有可观测结果（跳转或 Toast），不得停在「正在匹配」文案上永驻；降速下同样不得 >6s 无反馈；console 无「动画未触发」类错误",
+   "evidence": "normal：after 截图（结果帧）+ finished 触发时间戳与 emit 计数 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  },
+  {
+   "id": "MT24",
+   "page": "subpackages/discover-extra/discover/matching",
+   "title": "跨页一致性：动画页与成功页/寻觅页的对方信息与文案口径一致",
+   "tier": "normal",
+   "pre": "正常链路走完一次匹配成功（MT03/MT04 同前置），保留进入前寻觅页当前卡的姓名与头像",
+   "action": "对照三处：寻觅页卡片显示的对方名/头像 → 匹配动画页 partnerAvatar/partner-name（:226-231）→ 成功页显示与「立即聊天」后聊天页标题（pageTitle，chat-session:896-907）；在 en-US locale 下重复并核对 matching.searching/subtitle/skip 与 discover.likeSent 文案",
+   "expected": "三处对方身份必须完全一致（名、头像来源同一 userId），出现「动画页 A、成功页 B」即 P0 串号；文案不得为裸 i18n key（t() 走 :110-113,203 的 matching.* 与 :73 discover.likeSent）；en-US 下不得中英混排（MatchCard 的「在线/同校」已改走 t()，本轮 diff 内改动，须核对动画页与结果页无硬编码残留）；头像兜底链三处一致",
+   "evidence": "normal：三处并排对照截图（zh-CN 与 en-US 各一套）+ 三处 name/avatar 值抄录 + console",
+   "requiresReal": false,
+   "identities": [
+    "A",
+    "B"
+   ],
+   "identitiesFrom": "tag-ops-identity-scope.mjs",
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/discover-extra/discover/matching → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+  }
+ ]
 }

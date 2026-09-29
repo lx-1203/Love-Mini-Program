@@ -192,7 +192,10 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/settings/dnd → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/settings/dnd → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "WRONG_BAND｜档位口径=retry-btn=pageWxmlExact(both bands，但在 v-else-if pageState==='error' :344，静息不渲染) ‖ case.pre 自述 REAL_ONLY：需真后端 + GET /dnd 失败注入；mock getDndSetting 恒成功 ⇒ error 分支永不渲染，静息是 :357 content 分支。retry-btn 类名在档里是本页 token，但态在本档不存在 ⇒ real 档 + 网络失败夹具才能表达。 ‖ apps/client/src/subpackages/profile-extra/settings/dnd.vue:347",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "DND10",
@@ -294,7 +297,10 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/feedback/history → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/feedback/history → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlText ‖ 与 VB05 同机制：两档 history.wxml 里 filter-chip 只活在绑定数组 class=\"{{['filter-chip','press-feedback',…opt.c && 'filter-chip--active']}}\" 里，4 枚同名。「反馈/建议/活动提案/全部」四连点没有序号载具就必然错行。 ‖ apps/client/src/subpackages/profile-extra/feedback/history.vue:277-283",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "FHT03",
@@ -352,7 +358,10 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/feedback/history → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/feedback/history → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlExact ‖ 附件图有类名有 @tap，但 v-for 同名共用，「第 2 张」无法按名寻到；且它整块在 :339 v-if=expandedId 展开分支＋:358-360 附件分组里，requiresReal=true（mock 无附件数据）。 ‖ apps/client/src/subpackages/profile-extra/feedback/history.vue:365-370（@tap=handleAttachmentTap）",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "FHT06",
@@ -514,7 +523,10 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/feedback/history → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/profile-extra/feedback/history → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "NO_ELEMENT_NO_FIX｜档位口径=absent ‖ history 页没有任何可滚容器，判的是 window 级 scrollTop/scrollHeight/windowHeight 三元组；改点 .record__header 只会把滚动判据换成展开判据。 ‖ apps/client/src/subpackages/profile-extra/feedback/history.vue（全页无 scroll-view/onReachBottom）",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "OC01",
@@ -923,7 +935,10 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/setup/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/setup/campus/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=bandWxmlOther ‖ 跨页进度条链路判的是组件内部渲染与步骤序号，页面作用域查不到 setup-progress__*；padding-bottom 与滚到底两腿没有元素可点。 ‖ apps/client/src/components/setup/SetupProgress.vue:170",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "SCH01",
@@ -1275,7 +1290,10 @@
    "action": "切语言后逐元素检视：范围三项、开关标签、三张卡标题副标题、保存按钮、错误/加载文案",
    "expected": "预期=已知缺陷表现：范围三项标签由 setup 期一次性求值的 scopeOptions 提供（:66-70 普通数组、非 computed）→ 同实例内切语言后仍显示中文，而 dnd.vue:62-67 与 history.vue:64-69 同类选项均用 computed 会即时更新（MP-R2-RECOMMEND-001 一致性问题，须截图对比三处）；reLaunch 重进后应恢复为英文（en-US.ts 对应 recommendPref.* 键）；全页不得出现字符串裸 key（recommendPref.xxx）；对照 zh-CN 截图逐条记录缺失译文；console 无 i18n 缺 key 告警",
    "evidence": "normal：同实例切换前后 + 重进后 三张 after 截图（en/zh 对照）+ 路由 + console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=bandWxmlOther ‖ 保存主按钮与三张卡标题/副标题都住在自定义组件里：bar__primary 在整个 mock 档只出现在 components/common/BottomActionBar.wxml，页面作用域查不到。页内的「范围三项」也只在绑定数组 class=\"{{['option-item',…opt.c && 'option-item--active']}}\" 里（pageWxmlText）。真正站得住的是 .option-label / .toggle-label（页内静态）。 ‖ apps/client/src/components/common/BottomActionBar.vue:39；apps/client/src/components/common/SectionCard.vue:17-18；apps/client/src/subpackages/setup/recommend-pref/index.vue:185-191",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "RP10",
@@ -1297,7 +1315,10 @@
    "action": "scrollTo 到底 → 回顶；量测正文 padding-bottom 与主按钮位置；量测 SetupProgress 在滚动时是否随页滚出",
    "expected": "滚到底时保存主按钮完整可见且与系统手势区不重叠；回顶后 SetupProgress 步骤条与标题完整可见、无 sticky 抖动（本页未传 fixed，AppShell :158 → 头部随页滚动，须注明滚到底时进度条是否已滚出视口导致用户失去进度感知）；底部留白：本页传 show-tab-bar=false（:158）→ 期望=修复后表现：AppShell 已补 showTabBar 并映射 tabBarSafe（AppShell.vue:42-43,108-113 false→0）→ 正文底部 padding 应为 0，若实测仍约 180rpx 留白即判 MP-R2-APP-001 未落地，数值须回填；进度条链路（MP-R2-SETUP-001）：本页显示第 3/4 步，而其上游 schedule 页无进度条（SCU13 对照）→ 序号与实际经过页面数不匹配，以两页截图串证；console 无报错",
    "evidence": "noop：执行日志（scrollTop/scrollHeight、padding-bottom、主按钮 rect）+ 顶/底 2 张截图 + schedule 页对照截图；console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=bandWxmlOther ‖ 本页 wxml 里 SetupProgress 只是一个 <setup-progress wx:if> 组件标签，步骤条节点全在组件模板里；主按钮同理。滚动数值与 padding-bottom 本身也无元素可点。 ‖ apps/client/src/components/setup/SetupProgress.vue:170；apps/client/src/subpackages/setup/recommend-pref/index.vue:159（<SetupProgress>）",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "INT01",
@@ -1519,7 +1540,10 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/support/feedback/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/support/feedback/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=styleOnly ‖ 双重不可查：字面 shell/is-fixed 在组件 wxml 里一个都没有（只在 AppShell.wxss 的 .is-fixed .shell__header{position:sticky…} 里），运行期由 a.n() 拼进 class。按五轴它落 styleOnly＝不是可点元素。组件内可静态命中的是 .shell__header/.shell__title 等，但它们不是本条的判点。 ‖ apps/client/src/components/layout/AppShell.vue:66-74（computed 数组里 'shell' 与 {'is-fixed': props.fixed}）；产物 apps/client/dist/build/mp-weixin/components/layout/AppShell.wxml:1 class=\"{{['data-v-355a28ea', t]}}\"＋AppShell.js 里 a.n(u.value)",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "FB02",

@@ -82,7 +82,10 @@
    "action": "① tap .post-image（detail.vue:848 → openImageViewer :84-98）；② tap .image-viewer 遮罩（:1327-1335 → closeImageViewer）；③ 重开后改按系统返回",
    "expected": "打开后 .image-viewer 存在且 src=imageViewerSrc（:1335）；关闭后节点移除、路由不变仍在详情；两路均 500ms 内可见 DOM 变化；图片 src 须经 resolveMediaUrl 解析（缩略 :848 与查看层同源）",
    "evidence": "normal：打开态与关闭态 after 截图 + 路由不变断言 + console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=字面名 otherFileToken（兄弟页 village/post.wxml）；真名 pageWxmlText ‖ 两层机制：判据点的是改名前的旧名，而现名因带 :class 绑定在产物里不成 class token（运行期才拼出）；.image-viewer 那半倒还是真 token（detail.vue:1333，v-if imageViewerVisible）。裸直达无 ?id= ⇒ currentPost 空、整块 .detail-body 不渲染。 ‖ apps/client/src/subpackages/village/village/detail.vue:846-847 class=\"post-image-wrap press-feedback\" + :class=\"{ 'post-image-wrap--first': idx === 0 }\"；命令：grep -o 'class=\"[^\"]*{{\\[[^\"]*\"' apps/client/dist/build/mp-weixin/subpackages/village/village/detail.wxml → class=\"{{['post-image-wrap', 'press-feedback', 'data-v-d0b36fc6', img.d && '",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "VD08",
@@ -249,7 +252,10 @@
    "action": "读取 .post-image 的 src 与渲染尺寸（naturalWidth>0）；另 tap 作者头像读落点；再对无头像作者帖观察兜底",
    "expected": "详情配图 src 解析为可加载绝对/包内路径且实际加载成功（naturalWidth>0），图像语义为杯/饮品特写而非海岸礁石（对照 mock-data.ts:611-613 注释的定标理由）；头像为空时走首字/默认头像兜底链，不得空白方块；若命中 avatars/people 目录，real 包下 URL 前缀应为 /api/v1/media/app-assets/（media.ts:72,:229-231），dev mock 包退回本地路径亦须可显示",
    "evidence": "normal：after 截图（配图与头像区）+ observed 记录解析后 URL 与 naturalWidth",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=字面名 otherFileToken；真名 pageWxmlText ‖ 本条判点是图像 naturalWidth/src 与「杯/饮品特写」语义比对：探针只回节点条数，虽然 r-exec-cli.mjs:145-146 已 fields({size:true}) 取了 size 却没往外报；另需 ?id= 深链让图片进渲染树。名字层面属「真名被 :class 拼掉」，不是无元素。 ‖ 同 VD07 的命令输出（apps/client/dist/build/mp-weixin/subpackages/village/village/detail.wxml 里 post-image-wrap 只出现在 {{[…], …}} 数组里；字面 post-image 的 class token 在 subpackages/village/village/post.wxml）；源码 apps/client/src/subpackages/village/village/detail.vue:846-847",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "VD20",
@@ -315,7 +321,10 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/tag-posts → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/tag-posts → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=action-btn=pageWxmlExact(both bands，tag-posts 页自身 v-for 三枚同名 :381/:392/:404) ‖ 点赞是页作用域(非子组件，与 VI 不同)的第 2 枚 .action-btn(:392 @tap.stop=toggleLike，aria-label=likeAria)，第 1 枚评论钮(:381 @tap.stop=goToDetail)一跳就换页 ⇒ class first-match 点错东西。需 nth/aria-label(village.tagPosts.likeAria)/坐标定位命中第 2 枚；页面另欠 ?tagName= 预置(无参直达被 onLoad 弹回)。 ‖ apps/client/src/subpackages/village/village/tag-posts.vue:392",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "TP04",
@@ -332,7 +341,10 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/tag-posts → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/tag-posts → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=action-btn=pageWxmlExact(同名×3) ‖ 与 TP03 同缺陷另一半：连点目标同一张卡第 2 枚 .action-btn(:392 toggleLike)，class 只命中第 1 枚评论钮(:381 goToDetail) ⇒ rapidTap×5 变五次跳详情，POST /posts/{id}/like 条数与 Idempotency-Key 两判点无从采集。需 nth 锁定 + 300ms 连点时序；requiresReal 另欠后端回读。 ‖ apps/client/src/subpackages/village/village/tag-posts.vue:392",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "TP05",
@@ -1060,7 +1072,10 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/circles/circles/circle-home → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/circles/circles/circle-home → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=tab-item=pageWxmlText(both bands；编译成 class=\"{{['tab-item','data-v-…',key.d&&'tab-item--active']}}\" 运行期拼名，渲染确有 .tab-item) ‖ 类名运行期存在且页作用域可查，但五个 tab 共用 .tab-item，first-match 恒为 TAB_KEYS[0]=posts(默认已激活)，tap 一次「什么都不变」必判假红；② 成员 tab 要读拼接文案、③ 逐 tab 读激活 class。需按 nth 定位（或每 tab 一枚专属修饰类）。 ‖ apps/client/src/subpackages/circles/circles/circle-home.vue:525",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "CH07",
@@ -1308,7 +1323,10 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/certification → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/campus/campus/certification → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=upload-area=pageWxmlExact(both bands，两枚同名 :353 学生证/:397 学信网) ‖ 学信网轨 @tap=uploadChsiScreenshot(:397) 与学生证轨(:353 uploadStudentCard)共用 .upload-area，class first-match 只命中第 1 枚学生证 ⇒ 预览/移除(:413)/重选(:410) 全打另一轨。需 nth/坐标命中第 2 枚（或补区分修饰类，属源码改）。④ 超限需 >5MB 图夹具。 ‖ apps/client/src/subpackages/campus/campus/certification.vue:397",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "CF10",

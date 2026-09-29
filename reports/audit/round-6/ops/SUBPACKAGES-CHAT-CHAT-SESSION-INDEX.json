@@ -93,7 +93,10 @@
    "action": "①若 .temp-action-row 仍渲染，tap 两个按钮各一次并抄录 Toast；②读取按钮 class 是否含 temp-action-btn--disabled（:2099,2108）；③记录「输入区显示错误文案导致整组按钮不渲染」这一实际分支",
    "expected": "判定按修复后应有表现：tempSessionUnavailable 为真时按钮须带禁用样式 **且** 点击给出「会话不存在或已失效」或 operationFailed Toast（:1199-1205,1219-1225），绝不允许「点了没反应」；若当前实现因 pageErrorMessage 存在而整组不渲染（:2008 v-else），执行器须如实记录「入口不渲染」并核对 :2093-2095 注释声称的『仍渲染整组禁用按钮』是否与实际一致 → 不一致记 Consistency/P2 缺陷；两种表现都必须保证无静默死按钮",
    "evidence": "normal：after 截图（按钮区放大）+ class 与求值 + Toast 数组 + console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlText ‖ 机制：条件类走 :class 对象绑定，产物是运行期数组 ⇒ temp-action-btn 连父名都不成 class token，判据要「读按钮 class 是否含 --disabled」在静态产物里无从命中。另需 temp 失效深链才有该态，Toast 走 uni.showToast 属原生层。 ‖ apps/client/src/subpackages/chat/chat-session/index.vue:2248-2249 与 :2257-2258：class=\"temp-action-btn temp-action-btn--secondary press-feedback\" + :class=\"{ 'temp-action-btn--disabled': tempSessionUnavailable }\"；命令：node tmp/qa/tok.mjs temp-action-btn temp-action-btn--disabled → 两档 BAND classToken=- 只在 wxml 文本里",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "CS09",
@@ -227,7 +230,10 @@
    "action": "①longpress 一条对方气泡 → 抄录出现的菜单项集合；②longpress 一条自己气泡（temp 会话）→ 抄录含撤回的集合；③菜单打开后分别用「tap 遮罩 :2128」「tap 取消 :2196」「选择某一项」三种方式关闭；④tap 复制、引用、转发各一次观察反馈",
    "expected": "①对方气泡不得出现撤回项（仅自己 + temp 才有，:2171）；②temp 自己气泡必须出现撤回；③三路关闭全部生效且关闭后不得残留遮罩阻塞点击（:2126-2204）；④复制 → Toast 复制成功且剪贴板有该文本；引用 → 出现 .quote-reply-bar 预览条并把输入框 placeholder 切成回复态（:2020-2028,2070）；转发 → 打开会话选择弹层（openForwardSheet :1594）；所有文案不得为裸 i18n key；每项点击 500ms 内必有可观测反馈",
    "evidence": "critical：各项 before/after 截图 + 菜单项集合抄录 + 剪贴板回读 + Toast 数组 + console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=入口 bandWxmlOther；菜单 pageWxmlExact ‖ 弹层里六个菜单项都是本页真 token（可补），但唯一置真入口是子组件气泡上的 longpress，而本通道只有 tap/input 两条腿（r-exec-cli.mjs:402-412）⇒ 组件作用域 + 无长按腿双挡。把 tap 打在气泡上是换判据，不是补选择器。 ‖ apps/client/src/subpackages/chat/chat-session/index.vue:2104 @longpress=\"handleMessageLongpress(…)\" 挂在 <ChatBubble> 上，命令：grep -o '<[a-z][a-z0-9-]*' apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml → 含 <chat-bubble（气泡类名住在 components/chat/ChatBubble.wxml）；菜单：index.vue:2277 v-if=\"longPressMenu.visible\" class=\"longpress-overlay\"、:2289 起 .longpress-menu__item 各带 @tap",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "CS20",
@@ -275,7 +281,10 @@
    "action": "①在 .chat-scroll 内下拉到顶触发 @scrolltoupper（:1911,397-428），记录加载前后 scrollTop 与被加载的首条消息 id；②重复上拉 3 次；③在 temp 会话执行同样的到顶手势；每步记录 network 请求",
    "expected": "①加载后视口**保持原位**（用 scrollHeight 差值补偿，:412-420），不得跳到顶部或底部；老消息前置插入且时间条顺序正确；【客户端层】请求按页递增（第 2 页 1 条，不得重复同页风暴，:402-407 loadingOlder 门生效）；②连续上拉不得重复拉同一页；③temp 会话必须**不发**任何分页请求（isTempSession 门 :406 直接 return，temp-chat 一次性返回全部，:399-401 注释）→ 出现私信分页请求即判 P2/P1（temp id 非数字必 500）；④分页失败必须给轻提示 Toast（:422-424，MP-R2-CHAT-006），不得让 rejection 逃逸到全局 onError",
    "evidence": "critical：①②③before/after 截图（含首条消息定位标记）+ scrollTop/scrollHeight 数值 + network 逐条 + Toast 数组 + console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "NO_ELEMENT_NO_FIX｜档位口径=pageWxmlExact ‖ 动作是「下拉到顶」连续手势，点这个 scroll-view 不会产生滚动事件，页内也没有「到顶」等价按钮 ⇒ 保留原动词就点不了任何东西；判点（视口不跳位、temp 会话零分页请求）要 scrollTop/scrollHeight 与 network 读数。 ‖ apps/client/src/subpackages/chat/chat-session/index.vue:2040 class=\"chat-scroll\" + :2046 @scrolltoupper=\"onScrollToUpper\"（scroll-view，无 bindtap）；命令：node tmp/qa/axis.mjs → CS23 strict=ownPageExact，另见 chat/official-chat/index.wxml 同名",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "CS24",
@@ -382,7 +391,10 @@
    "action": "reLaunch '...chat-session/index?sessionId=SA&partnerName=%E5%83%8F%E5%A1%AB&token=fake.jwt&targetId=999&type=temp&unread=99&redirect=%2Fpages%2Fhome%2Findex&x=' + 'y'*2000，停留 3s；随后 tap 发送一条正常消息",
    "expected": "会话与标题必须仍由 sessionId/真实数据决定（**不得**被 partnerName 覆盖标题，:896-907 仅取 store/deepLink 真名）；unread=99 不得伪造未读角标（未读由 store 计算）；type=temp 不得把私聊会话误导入 temp 链路（判定依据为 :615-617 的 id 形态与列表匹配，非 query）；storage token 不被 query token 覆盖（回读 token 值前后一致）；redirect/x=2000 不得被消费或致溢出；发送功能不受影响（正常 1 条上屏）；observed 逐项标注幽灵参数并列源码依据行号",
    "evidence": "critical：before/after 截图 + 标题/会话 id/token 前后求值 + network 逐条 + console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "NO_ELEMENT_NO_FIX｜档位口径=absent（正文里的 .chat-session 是 URL 残片，门自跑 SEL_ABSENT_ROW …#CS31 只提示） ‖ 五个判点全是「参数没被读」的求值/网络事实，DOM 里无从表达；唯一动作腿要 input+tap 串接（本通道一条 case 只发一种动作）。补深链 query 才有会话可发，但那不属选择器缺口。 ‖ 命令：node scripts/qa/verify-case-selectors-exist.mjs --band apps/client/dist/build/mp-weixin --max-samples 300 → SEL_ABSENT_ROW SUBPACKAGES-CHAT-CHAT-SESSION-INDEX#CS31 .chat-session 只提示（该串来自 action 里的 reLaunch '...chat-session/index?…'）；判据断言项 apps/client/src/subpackages/chat/chat-session/index.vue:896-907 标题取 store 真名",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "CS32",

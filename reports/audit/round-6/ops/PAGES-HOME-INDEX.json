@@ -20,7 +20,10 @@
    "action": "触发页面级下拉刷新（onPullDownRefresh，index.vue:118-121），等待动画停止",
    "expected": "必须真实调用 homeStore.fetchDashboard()（非仅动画）→ network/日志出现 1 次 dashboard 拉取；stopPullDownRefresh 在 promise 完成后调用（:120 finally），不得立即停止或未停；刷新期间不重复并发（loading 防重入在 refreshHomeFeed :86，注意下拉路径未过该函数，实测若下拉连续触发出现 ≥2 条并发请求即记并发缺陷）；数据更新后各区块回显新值",
    "evidence": "normal：after 截图 + console + 执行日志（请求计数与动画起止时间）",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "NO_ELEMENT_NO_FIX｜档位口径=not-named ‖ 下拉是页面级系统手势，首页模板里没有任何承载节点（axis 脚本对本条 action+expected 抠出 0 个类名）；判点是请求计数与动画起止时刻，换任何 tapTarget 都测不到。 ‖ apps/client/src/pages/home/index.vue:122 (onPullDownRefresh 注册) + apps/client/src/pages.json:55-56 (home 条目 enablePullDownRefresh:true)",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "H03",
@@ -545,7 +548,10 @@
    "action": "以 reLaunch 与 switchTabWithQuery 两种方式进入，观察是否定位到社区区/滚动到帖子；并读取 storage 桥接 key 是否残留",
    "expected": "首页源码只注册 onShow/onPullDownRefresh/onPageScroll，**无 onLoad、无 consumeTabQuery 调用**（index.vue:10、:62、:93、:118 全量核对）→ tab/communityId/postId/focus 等深链参数一律不被消费，属幽灵参数（若固化表声称这些参数生效即判文档过期）；唯一真实生效的入参是 dev-user=1，且由 App.onLaunch/全局导航拦截器消费而非本页（utils/dev-user.ts:80-132）；写入桥接但未消费的 key 不得残留污染后续页面",
    "evidence": "noop：执行日志（两种方式的路由/滚动结论 + storage 读数）+ console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "NO_ELEMENT_NO_FIX｜档位口径=not-named ‖ 判据两腿都是导航进入 + 路由 options/storage 读数，页面上没有承载深链参数的元素；首页源码无 onLoad ⇒ 断言本身就是「参数不被消费」，无物件可点。 ‖ 命令：node tmp/qa/axis.mjs apps/client/dist/build/mp-weixin → H47「判据正文里一个类名都没点名」；apps/client/dist/build/mp-weixin/pages/home/index.wxml 自有 class token 仅 home-page/home-page__top-scrim/home-section-gap/location-sheet__*（grep -o 'class=\"[^\"]*\"' 计数）",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "H48",
@@ -556,7 +562,10 @@
    "action": "① DOM 普查首页是否存在 CardSwiper/滑动卡片结构；② 逐可点元素（9 区块内全部 @tap，含 TodayLoveProgress 4 格、RelationActivity 4 格、Interest 卡与加入、Nearby 条目、Community 卡/关注/作者/更多、Invite）验证 500ms 内反馈；③ 逐元素 rect 换算热区；④ 从任一子页返回后确认 2 步内可回任一 Tab",
    "expected": "① 首页渲染树**不得**出现 CardSwiper/连续滑动卡片（源码注释硬约束：禁止使用 CardSwiper，连续人物浏览属寻觅 Tab，index.vue:5-8）→ 出现即判架构违规 P2；② 每个可点元素 500ms 内必有路由/DOM/Toast 之一，否则「死按钮」FAILED（G4 死按钮=0）；③ 热区 <88rpx 的元素逐个列出（不得凭代码判过）；④ 七态：Idle/Loading(骨架 H21)/Success/Empty(H21、H35)/Error(H41)/Disabled(未登录拦截 H16)/Refreshing(H02) 必须各有截图或日志支撑；⑤ 本页无输入框 → 表单三态记「不适用」并写明依据",
    "evidence": "normal：after 截图（每态一张 + 死按钮/热区普查清单）+ 路由断言 + console",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=bandWxmlOther（全在 components/home/*.wxml，页作用域进不去） ‖ 首页 9 区块的可点件一个都不在页自己的 wxml 里，全住在子组件模板 ⇒ 机制是组件作用域，不是「元素不存在」。且本条是逐元素 rect/反馈普查（4 件事一条），单个 tapTarget 表达不了，须先拆条再逐条给组件作用域腿。 ‖ apps/client/src/components/home/TodayLoveProgress.vue:79、RelationActivity.vue:34/45/56/67、InterestRecommendation.vue:83、NearbyPeople.vue:53、CommunityFeed.vue:177、InviteBanner.vue:15（每个都带 @tap）；命令：grep -o '<[a-z][a-z0-9-]*' apps/client/dist/build/mp-weixin/pages/home/index.wxml → 页里只有 <home-header/<today-love-progress/… 这些自定义组件标签",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   }
  ]
 }

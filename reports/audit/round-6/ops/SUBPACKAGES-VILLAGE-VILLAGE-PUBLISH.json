@@ -219,7 +219,10 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlExact ‖ 元素在（两档 wxml 里 class= 静态含 publish-row，共 4 处），但 4 行只共用一个类名：首匹配拿到的是第 1 行「添加话题」，会把这条归属到完全不同的跳转。提及行连 press-feedback/chevron 都被剥掉了（:829-834 注释自述），没有第二枚类可写。欠的是产品侧唯一修饰类或按序号/aria 定位的载具。 ‖ apps/client/src/subpackages/village/village/publish.vue:835 @tap=openMentionPicker，行内文案 :837「提及好友」",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "PUB12",
@@ -236,7 +239,10 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "COMPOSED_OR_SCOPED｜档位口径=pageWxmlExact ‖ 同一枚 .publish-row 被 4 行共用，位置行是第 2 枚；.publish-row__meta 也是 3 枚共用。这条要的是「tap 了没反馈」的负向证据，首匹配必错行。另欠 currentCity 有/无两种 storage 前置。 ‖ apps/client/src/subpackages/village/village/publish.vue:820-825（位置行，meta=:825）",
+   "notAutomatableFrom": "cellplan-round8-unverifiable.json"
   },
   {
    "id": "PUB13",
@@ -487,7 +493,10 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/village/village/publish → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "notAutomatableAlso": [
+    "cellplan-round8-unverifiable.json"
+   ]
   },
   {
    "id": "PUB26",
