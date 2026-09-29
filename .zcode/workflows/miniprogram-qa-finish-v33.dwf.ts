@@ -52,6 +52,12 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   { name: "档位新鲜度 verify-band-freshness", args: ["scripts/qa/verify-band-freshness.mjs"], timeoutMs: 180000 },
   { name: "后端新鲜度 verify-backend-fresh", args: ["scripts/qa/verify-backend-fresh.mjs"], timeoutMs: 120000 },
   { name: "证据洞 verify-evidence-holes", args: ["scripts/qa/verify-evidence-holes.mjs"], timeoutMs: 180000 },
+  // QA 离线自检聚合器必须进这条清单：它按文件名自动收 scripts/qa/test-*，本轮新增的三条负例
+  // （落地对判域收窄 test-landing-identity-scope、证据库三态 test-evidence-store-axis、
+  //  欠账点名 test-real-coverage-nominate）都靠它才会被真正跑到。
+  // 此前 DSL 只跑 prove-gates-can-fail 那一支，聚合器只存在于 bash 版 run-final-verify-v33.sh ——
+  // 于是"工作流绿了"与"负例从没被执行过"可以同时成立，这正是"建了门不接线就等于没建"的形状。
+  { name: "离线负例聚合 run-qa-selftests", args: ["scripts/qa/run-qa-selftests.mjs"], timeoutMs: 900000 },
   // 接线（2026-09-29 wiring 车道）：下面两把门是"建了没人跑"的孤儿门，本清单是唯一必然经过的调用点
   // —— GATE_SUITE 被 Promise.all 无条件遍历两处：缺口账单 phase 与门禁终验复量；提交后还按 SHA 敏感子集复量一次
   //    （那条 filter 的口径是 corpus|provenance|band-freshness|real-coverage，下面两条不在其内，也不该在：
