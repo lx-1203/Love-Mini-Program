@@ -24,8 +24,18 @@ const t = (name, cond, got) => {
   if (!cond) { fail++; console.log(`FAIL ${name} :: ${String(got).slice(0, 260)}`); }
   else console.log(`ok   ${name}`);
 };
-const run = (args) => {
-  const r = spawnSync(NODE, args, { cwd: REPO, encoding: "utf8", timeout: 900000 });
+const run = (args, opts = {}) => {
+  /* ⚠ 这条隔离是我自己踩出来的 bug（2026-09-29 终验 r4 实测）：
+     verify-evidence-corpus 的库路径有两个来源 —— `--store` **或** process.env.QA_EVIDENCE_STORE
+     （verify-evidence-corpus.mjs:44-45）。而 run-final-verify-v33.sh 为了让终验真的走"可达"那一支，
+     起头就 export 了 QA_EVIDENCE_STORE，于是**每个子门都继承它**。
+     我原本只用"不传 --store"来表示"未配库"，结果继承来的是"配了库"的行为：
+     断言 1 期望 PROBLEMS=1 实得 2，断言 4c 期望"不配库必须涨红"实得与基线相等 ——
+     测的根本不是它声称要测的那一支（而且门是对的，错的是测试没隔离）。
+     所以现在显式区分：cleanStore=true ⇒ 剥掉环境变量，才是真的"未配库"。 */
+  const env = { ...process.env };
+  if (opts.cleanStore) delete env.QA_EVIDENCE_STORE;
+  const r = spawnSync(NODE, args, { cwd: REPO, encoding: "utf8", timeout: 900000, env });
   return { code: r.status, out: (r.stdout || "") + (r.stderr || "") };
 };
 const numOf = (out, key) => { const m = new RegExp(key + "=(\\d+)").exec(out); return m ? Number(m[1]) : null; };
@@ -44,7 +54,7 @@ t("前置：库已导出可达（不可达时下面的「可达/背书」两条�
 
 /* 1) 未配库 ⇒ 本轴不参与判定 */
 {
-  const r = run([GATE]);
+  const r = run([GATE], { cleanStore: true });
   t("1 未配库：印 CORPUS_STORE=unconfigured", /CORPUS_STORE=unconfigured/.test(r.out), r.out.split(/\r?\n/).find(l => l.startsWith("CORPUS_STORE")) || "(无此行)");
   t("1 未配库：判定与从前相同（不因本轴新增红）", numOf(r.out, "CORPUS_PROBLEMS") === 1 && r.code === 1,
     "exit=" + r.code + " PROBLEMS=" + numOf(r.out, "CORPUS_PROBLEMS") + "（从前实测就是 1：round-1 空 gitSha 那一份）");
@@ -118,7 +128,7 @@ t("前置：库已导出可达（不可达时下面的「可达/背书」两条�
       t("4 帧被挪走后：PROBLEMS 不许因为「盘上缺这一张」而上涨", redOnEvict === pBefore,
         "挪开前=" + pBefore + " 挪开后=" + redOnEvict);
       /* 反向证明：同一张帧，若不给库，就必须落进 missing ⇒ 上面那条绿不是"门根本不看缺帧" */
-      const noStore = run([GATE]);
+      const noStore = run([GATE], { cleanStore: true });
       t("4c 反证：同一状态不配库 ⇒ missing 必须涨、PROBLEMS 必须多一条红",
         numOf(noStore.out, "CORPUS_PROBLEMS") > pBefore,
         "不配库 PROBLEMS=" + numOf(noStore.out, "CORPUS_PROBLEMS") + " 基线=" + pBefore);

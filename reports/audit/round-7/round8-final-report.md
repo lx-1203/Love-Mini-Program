@@ -89,9 +89,9 @@
 
 ```
 dryrun-workflow exit=0
-emit-round-report exit=1
+emit-round-report exit=0
 prove-gates-can-fail exit=0
-run-qa-selftests exit=0
+run-qa-selftests exit=1
 verify-backend-fresh exit=0
 verify-band-freshness exit=0
 verify-case-automatable exit=0
@@ -107,7 +107,7 @@ verify-source-shape exit=0
 verify-state-truth-after-panel exit=0
 verify-state-truth exit=0
 ```
-红项：emit-round-report、verify-evidence-corpus、verify-provenance-all、verify-real-coverage
+红项：run-qa-selftests、verify-evidence-corpus、verify-provenance-all、verify-real-coverage
 
 ## 8. 本轮把「排在后面做」的账收掉了多少（含纠出的文档错）
 
