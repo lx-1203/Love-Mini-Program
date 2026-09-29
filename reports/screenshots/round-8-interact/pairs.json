@@ -1,0 +1,1414 @@
+{
+ "generatedAt": "2026-09-28T19:44:27.890Z",
+ "gitSha": "93650335",
+ "legend": "每条一对象：frames[0]=交互前、frames[1]=交互后；sha256 是盘上真实字节现算，sha256_12 是行内留档值。",
+ "caveats": {
+  "codec": "全部帧的魔法字节 ffd8ff（JPEG）挂在 .png 名下 ⇒ 按扩展名判 PNG 的盖章会误判（本文件每帧带 magic/pixels 字段）。",
+  "pixels": "192x413",
+  "sharedBytes": [
+   {
+    "sha256_12": "07acc410241b",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A/PAGES-PROFILE-INDEX-PFI23-before.png",
+     "reports/screenshots/round-8-interact/real-sc-A/PAGES-PROFILE-INDEX-PFI25-before.png"
+    ]
+   },
+   {
+    "sha256_12": "161c073b6068",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX15-before.png",
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX15-after.png",
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX29-before.png"
+    ]
+   },
+   {
+    "sha256_12": "c5ceb3b0ba48",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS10-before.png",
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS29-before.png"
+    ]
+   },
+   {
+    "sha256_12": "f9b397f65c17",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-CPT22-before.png",
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-CPT22-after.png",
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-CPT35-before.png"
+    ]
+   },
+   {
+    "sha256_12": "403b3c32877c",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP33-after.png",
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP38-before.png",
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP38-after.png",
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP40-before.png"
+    ]
+   },
+   {
+    "sha256_12": "81864c2f1d4b",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB20-before.png",
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB20-after.png",
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB22-before.png",
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB22-after.png"
+    ]
+   },
+   {
+    "sha256_12": "3adde9173268",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB20-after.png",
+     "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB22-before.png"
+    ]
+   },
+   {
+    "sha256_12": "698b8737a2a9",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB26-before.png",
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB26-after.png",
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB33-before.png",
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB33-after.png"
+    ]
+   },
+   {
+    "sha256_12": "0d56bc08f7b2",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB26-after.png",
+     "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB33-before.png"
+    ]
+   },
+   {
+    "sha256_12": "d539f1213b38",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB33-after.png",
+     "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB34-before.png"
+    ]
+   },
+   {
+    "sha256_12": "bfec5703187f",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB34-before.png",
+     "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB34-after.png"
+    ]
+   },
+   {
+    "sha256_12": "af0a01fbade7",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A/次要18-VD15-before.png",
+     "reports/screenshots/round-8-interact/real-sc-A/次要18-VD15-after.png"
+    ]
+   },
+   {
+    "sha256_12": "222f40c7ab97",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A/次要18-TD06-before.png",
+     "reports/screenshots/round-8-interact/real-sc-A/次要18-TD06-after.png"
+    ]
+   },
+   {
+    "sha256_12": "e9461ce29464",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A/次要20-OT05-before.png",
+     "reports/screenshots/round-8-interact/real-sc-A/次要20-OT06-before.png"
+    ]
+   },
+   {
+    "sha256_12": "69b47bfc9cfa",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A/次要20-TK07-before.png",
+     "reports/screenshots/round-8-interact/real-sc-A/次要20-TK08-before.png"
+    ]
+   },
+   {
+    "sha256_12": "d4bb4773b666",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A/次要20-TK07-after.png",
+     "reports/screenshots/round-8-interact/real-sc-A/次要20-TK08-after.png"
+    ]
+   },
+   {
+    "sha256_12": "691681ab36f8",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A/次要22-VB03-before.png",
+     "reports/screenshots/round-8-interact/real-sc-A/次要22-VB07-before.png"
+    ]
+   },
+   {
+    "sha256_12": "81fdb970ad73",
+    "files": [
+     "reports/screenshots/round-8-interact/real-sc-A/次要22-VB10-before.png",
+     "reports/screenshots/round-8-interact/real-sc-A/次要22-VB10-after.png"
+    ]
+   }
+  ]
+ },
+ "pairs": [
+  {
+   "id": "PAGES-MESSAGES-INDEX|MSG24",
+   "page": "pages/messages/index",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [],
+   "reshoot": null
+  },
+  {
+   "id": "PAGES-MESSAGES-INDEX|MSG26",
+   "page": "pages/messages/index",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [],
+   "reshoot": null
+  },
+  {
+   "id": "PAGES-PROFILE-INDEX|PFI23",
+   "page": "pages/profile/index",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/PAGES-PROFILE-INDEX-PFI23-before.png",
+     "bytes": 9764,
+     "sha256_12": "07acc410241b",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "07acc410241b93bb44a145469c700f82c8441de211d806bf96d16200630a4aec"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/PAGES-PROFILE-INDEX-PFI23-after.png",
+     "bytes": 9456,
+     "sha256_12": "e63f9b17ac93",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "e63f9b17ac93d8e4881460810e9b022839ebf9317648c861aba50f212accd02e"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "PAGES-PROFILE-INDEX|PFI25",
+   "page": "pages/profile/index",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/PAGES-PROFILE-INDEX-PFI25-before.png",
+     "bytes": 9764,
+     "sha256_12": "07acc410241b",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "07acc410241b93bb44a145469c700f82c8441de211d806bf96d16200630a4aec"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX15",
+   "page": "subpackages/campus/campus/index",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX15-before.png",
+     "bytes": 11852,
+     "sha256_12": "161c073b6068",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "161c073b60682a0e8f6b7e058d0168e2ea25538bab2423674be79e3aaefdd601"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX15-after.png",
+     "bytes": 11852,
+     "sha256_12": "161c073b6068",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "161c073b60682a0e8f6b7e058d0168e2ea25538bab2423674be79e3aaefdd601"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX29",
+   "page": "subpackages/campus/campus/index",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "input",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CAMPUS-CAMPUS-INDEX-CX29-before.png",
+     "bytes": 11852,
+     "sha256_12": "161c073b6068",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "161c073b60682a0e8f6b7e058d0168e2ea25538bab2423674be79e3aaefdd601"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT19",
+   "page": "subpackages/campus/campus/post-topic",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT19-before.png",
+     "bytes": 9060,
+     "sha256_12": "56504836031a",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "56504836031a7e8f4845130c633e3f3193c26605ed9a4c8684fa145452631600"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC-PT19-after.png",
+     "bytes": 9058,
+     "sha256_12": "58eabe6f4a44",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "58eabe6f4a4429cb7241b6bbd53bf48059ecd8320f337fc8003a7071d96ac49d"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS10",
+   "page": "subpackages/chat/chat-session/index",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "input",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS10-before.png",
+     "bytes": 6435,
+     "sha256_12": "c5ceb3b0ba48",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "c5ceb3b0ba48f5a72aa00d1701da002006cbbacc2cf5480fbf9f416c9b6cf47b"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS10-after.png",
+     "bytes": 6721,
+     "sha256_12": "111b94899ee7",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "111b94899ee74c23162354e49f88e2dda9b27b5ec7c26294e4d5d7cfec25e46f"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS29",
+   "page": "subpackages/chat/chat-session/index",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "input",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS29-before.png",
+     "bytes": 6435,
+     "sha256_12": "c5ceb3b0ba48",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "c5ceb3b0ba48f5a72aa00d1701da002006cbbacc2cf5480fbf9f416c9b6cf47b"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS29-after.png",
+     "bytes": 6719,
+     "sha256_12": "906e3febb37a",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "906e3febb37a636cf0e117c40cef21be8e055b9ccbfc8f0709dc8bcc9403980f"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC|CPT22",
+   "page": "subpackages/circles/circles/post-topic",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-CPT22-before.png",
+     "bytes": 7543,
+     "sha256_12": "f9b397f65c17",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "f9b397f65c176990333aa34e483539df1aba513fc83ac4652d487008a4303f71"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-CPT22-after.png",
+     "bytes": 7543,
+     "sha256_12": "f9b397f65c17",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "f9b397f65c176990333aa34e483539df1aba513fc83ac4652d487008a4303f71"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC|CPT35",
+   "page": "subpackages/circles/circles/post-topic",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-CPT35-before.png",
+     "bytes": 7543,
+     "sha256_12": "f9b397f65c17",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "f9b397f65c176990333aa34e483539df1aba513fc83ac4652d487008a4303f71"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC-CPT35-after.png",
+     "bytes": 7548,
+     "sha256_12": "c82cf6df31f5",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "c82cf6df31f5056feccbe6385fd39aac7ff5eeba128550059014d08b15089c25"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+   "page": "subpackages/village/village/index",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI25-before.png",
+     "bytes": 9603,
+     "sha256_12": "46d8cce9c62c",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "46d8cce9c62c5e9ab19f45e258c2503136411ad56923f7e9b4cf1384b31ee867"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI28",
+   "page": "subpackages/village/village/index",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [],
+   "reshoot": null
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+   "page": "subpackages/village/village/index",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI34-before.png",
+     "bytes": 9616,
+     "sha256_12": "6af42085da03",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "6af42085da0347343c3a6b9cab3da51cc95bfc3d0a83f534100872373f1cb52e"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-POST|VP33",
+   "page": "subpackages/village/village/post",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "input",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP33-before.png",
+     "bytes": 8104,
+     "sha256_12": "3500b158f755",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "3500b158f755b14b884cb6d5bc03aae94a7500efa74545cfbc3c9042ae895429"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP33-after.png",
+     "bytes": 8219,
+     "sha256_12": "403b3c32877c",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "403b3c32877cc5613da3f429ea40aeef6f83a805a9475478aad0c15592b2b44d"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-POST|VP38",
+   "page": "subpackages/village/village/post",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "input",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "reshoot",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP38-before.png",
+     "bytes": 8219,
+     "sha256_12": "403b3c32877c",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "403b3c32877cc5613da3f429ea40aeef6f83a805a9475478aad0c15592b2b44d"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP38-after.png",
+     "bytes": 8219,
+     "sha256_12": "403b3c32877c",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "403b3c32877cc5613da3f429ea40aeef6f83a805a9475478aad0c15592b2b44d"
+    }
+   ],
+   "reshoot": {
+    "outcome": "EXECUTED",
+    "frames": [
+     {
+      "role": "before",
+      "file": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP38-before.png",
+      "bytes": 8101,
+      "sha256_12": "25d272d759d8",
+      "magic": "JPEG",
+      "pixels": "192x413",
+      "sha256": "25d272d759d81e1db8b21029fdb71ef3bb0e0c60224ff176b86ccdbb562df2a3"
+     },
+     {
+      "role": "after",
+      "file": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP38-after.png",
+      "bytes": 8168,
+      "sha256_12": "2bbf842c13c4",
+      "magic": "JPEG",
+      "pixels": "192x413",
+      "sha256": "2bbf842c13c49148079928d74f1cc9beeafb6d461c22b9bbb107b3b6e6d72396"
+     }
+    ]
+   }
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-POST|VP40",
+   "page": "subpackages/village/village/post",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "LEFT_PAGE",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-POST-VP40-before.png",
+     "bytes": 8219,
+     "sha256_12": "403b3c32877c",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "403b3c32877cc5613da3f429ea40aeef6f83a805a9475478aad0c15592b2b44d"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB19",
+   "page": "subpackages/village/village/publish",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "input",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB19-before.png",
+     "bytes": 8024,
+     "sha256_12": "aadcdb55fa7c",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "aadcdb55fa7c1fcb5e1fe9d600a5cb4907cabe8c0ab93612c91f451f06b50d0a"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB19-after.png",
+     "bytes": 7974,
+     "sha256_12": "db096b9885ce",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "db096b9885ce495a704abff80f355649ac4cf391064dfd298cc0bd8d2b2b2736"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB20",
+   "page": "subpackages/village/village/publish",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "input",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "reshoot",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB20-before.png",
+     "bytes": 7971,
+     "sha256_12": "81864c2f1d4b",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "81864c2f1d4bd1a25ae8462d7dcee8841231145a994dd63b38e25bdfca3c2670"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB20-after.png",
+     "bytes": 7971,
+     "sha256_12": "81864c2f1d4b",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "81864c2f1d4bd1a25ae8462d7dcee8841231145a994dd63b38e25bdfca3c2670"
+    }
+   ],
+   "reshoot": {
+    "outcome": "EXECUTED",
+    "frames": [
+     {
+      "role": "before",
+      "file": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB20-before.png",
+      "bytes": 7972,
+      "sha256_12": "35d91957788f",
+      "magic": "JPEG",
+      "pixels": "192x413",
+      "sha256": "35d91957788fa116e6c954e5b57b981d827eb2e69d96f29c74895d027e4fb251"
+     },
+     {
+      "role": "after",
+      "file": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB20-after.png",
+      "bytes": 7968,
+      "sha256_12": "3adde9173268",
+      "magic": "JPEG",
+      "pixels": "192x413",
+      "sha256": "3adde91732689209ab2c96da81b08460996d662c6433dba02f8580bd499561bd"
+     }
+    ]
+   }
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB22",
+   "page": "subpackages/village/village/publish",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "input",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "reshoot",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB22-before.png",
+     "bytes": 7971,
+     "sha256_12": "81864c2f1d4b",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "81864c2f1d4bd1a25ae8462d7dcee8841231145a994dd63b38e25bdfca3c2670"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB22-after.png",
+     "bytes": 7971,
+     "sha256_12": "81864c2f1d4b",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "81864c2f1d4bd1a25ae8462d7dcee8841231145a994dd63b38e25bdfca3c2670"
+    }
+   ],
+   "reshoot": {
+    "outcome": "EXECUTED",
+    "frames": [
+     {
+      "role": "before",
+      "file": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB22-before.png",
+      "bytes": 7968,
+      "sha256_12": "3adde9173268",
+      "magic": "JPEG",
+      "pixels": "192x413",
+      "sha256": "3adde91732689209ab2c96da81b08460996d662c6433dba02f8580bd499561bd"
+     },
+     {
+      "role": "after",
+      "file": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB22-after.png",
+      "bytes": 7971,
+      "sha256_12": "5082d7097e15",
+      "magic": "JPEG",
+      "pixels": "192x413",
+      "sha256": "5082d7097e1557eda824de8548f7aba4e01dfdff0a6b698cc10b057be9e1f19d"
+     }
+    ]
+   }
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB25",
+   "page": "subpackages/village/village/publish",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [],
+   "reshoot": null
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB26",
+   "page": "subpackages/village/village/publish",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "input",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "reshoot",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB26-before.png",
+     "bytes": 7976,
+     "sha256_12": "698b8737a2a9",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "698b8737a2a94ba068286b52312a1f12bc348be9e07744051ee2df811dce3d68"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB26-after.png",
+     "bytes": 7976,
+     "sha256_12": "698b8737a2a9",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "698b8737a2a94ba068286b52312a1f12bc348be9e07744051ee2df811dce3d68"
+    }
+   ],
+   "reshoot": {
+    "outcome": "EXECUTED",
+    "frames": [
+     {
+      "role": "before",
+      "file": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB26-before.png",
+      "bytes": 7969,
+      "sha256_12": "20545d7aac55",
+      "magic": "JPEG",
+      "pixels": "192x413",
+      "sha256": "20545d7aac55e4e2470c796769e3de79a416b01a72825193317dfa937597ebc6"
+     },
+     {
+      "role": "after",
+      "file": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB26-after.png",
+      "bytes": 7965,
+      "sha256_12": "0d56bc08f7b2",
+      "magic": "JPEG",
+      "pixels": "192x413",
+      "sha256": "0d56bc08f7b22c6e0b95a398f8866a7f5459509316690db2325fe7a429d3a329"
+     }
+    ]
+   }
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB33",
+   "page": "subpackages/village/village/publish",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "input",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "reshoot",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB33-before.png",
+     "bytes": 7976,
+     "sha256_12": "698b8737a2a9",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "698b8737a2a94ba068286b52312a1f12bc348be9e07744051ee2df811dce3d68"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB33-after.png",
+     "bytes": 7976,
+     "sha256_12": "698b8737a2a9",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "698b8737a2a94ba068286b52312a1f12bc348be9e07744051ee2df811dce3d68"
+    }
+   ],
+   "reshoot": {
+    "outcome": "EXECUTED",
+    "frames": [
+     {
+      "role": "before",
+      "file": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB33-before.png",
+      "bytes": 7965,
+      "sha256_12": "0d56bc08f7b2",
+      "magic": "JPEG",
+      "pixels": "192x413",
+      "sha256": "0d56bc08f7b22c6e0b95a398f8866a7f5459509316690db2325fe7a429d3a329"
+     },
+     {
+      "role": "after",
+      "file": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB33-after.png",
+      "bytes": 7966,
+      "sha256_12": "d539f1213b38",
+      "magic": "JPEG",
+      "pixels": "192x413",
+      "sha256": "d539f1213b380bca3bded0bcde25e48c612355ed0a431d61d205ea6981b95f54"
+     }
+    ]
+   }
+  },
+  {
+   "id": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB34",
+   "page": "subpackages/village/village/publish",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "input",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "reshoot",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB34-before.png",
+     "bytes": 7979,
+     "sha256_12": "bfec5703187f",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "bfec5703187f7c56d6b84f6c1116cbd46912c2bc074874c6d5e02a3d9ef18f53"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB34-after.png",
+     "bytes": 7979,
+     "sha256_12": "bfec5703187f",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "bfec5703187f7c56d6b84f6c1116cbd46912c2bc074874c6d5e02a3d9ef18f53"
+    }
+   ],
+   "reshoot": {
+    "outcome": "EXECUTED",
+    "frames": [
+     {
+      "role": "before",
+      "file": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB34-before.png",
+      "bytes": 7966,
+      "sha256_12": "d539f1213b38",
+      "magic": "JPEG",
+      "pixels": "192x413",
+      "sha256": "d539f1213b380bca3bded0bcde25e48c612355ed0a431d61d205ea6981b95f54"
+     },
+     {
+      "role": "after",
+      "file": "reports/screenshots/round-8-interact/real-sc-A-reshoot/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB34-after.png",
+      "bytes": 7970,
+      "sha256_12": "498a4735f689",
+      "magic": "JPEG",
+      "pixels": "192x413",
+      "sha256": "498a4735f689c851e006afd6983d6871e2ed4448bf2409c530d59cea5d6f8133"
+     }
+    ]
+   }
+  },
+  {
+   "id": "次要18|VD10",
+   "page": "subpackages/village/village/detail",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "input",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要18-VD10-before.png",
+     "bytes": 13592,
+     "sha256_12": "5f2d8f8cea07",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "5f2d8f8cea078f9da7ffddb4c281c337ac5cdfada83915f8eac491b6c44b7b59"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要18-VD10-after.png",
+     "bytes": 13740,
+     "sha256_12": "111c0b50f752",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "111c0b50f75291a368952d543f96027a8a229023b4a122fd378970f9d17d71ba"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要18|VD15",
+   "page": "subpackages/village/village/detail",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要18-VD15-before.png",
+     "bytes": 13597,
+     "sha256_12": "af0a01fbade7",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "af0a01fbade79d5bd28c6c21e163232b4940770ad0d042db92525cead90dec52"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要18-VD15-after.png",
+     "bytes": 13597,
+     "sha256_12": "af0a01fbade7",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "af0a01fbade79d5bd28c6c21e163232b4940770ad0d042db92525cead90dec52"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要18|TD03",
+   "page": "subpackages/circles/circles/topic-detail",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "input",
+   "outcome": "VEHICLE_DENY",
+   "outcomeClosedBy": "",
+   "frames": [],
+   "reshoot": null
+  },
+  {
+   "id": "次要18|TD06",
+   "page": "subpackages/circles/circles/topic-detail",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要18-TD06-before.png",
+     "bytes": 10411,
+     "sha256_12": "222f40c7ab97",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "222f40c7ab977d4ef639fc1824c0bf6abbbbe6716652143db437b3d44ea27250"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要18-TD06-after.png",
+     "bytes": 10411,
+     "sha256_12": "222f40c7ab97",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "222f40c7ab977d4ef639fc1824c0bf6abbbbe6716652143db437b3d44ea27250"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要19|LK04",
+   "page": "subpackages/discover-extra/likes/index",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要19-LK04-before.png",
+     "bytes": 6933,
+     "sha256_12": "fff859e95322",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "fff859e953225ff8e53947844c1da55e2b316ad381fbcff14803259ac228132e"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要19-LK04-after.png",
+     "bytes": 6725,
+     "sha256_12": "4a6925c36066",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "4a6925c360665c89e9a6649113e8662f6152089647d51e3b5e5c7dc8b6d50ac7"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要20|VRN07",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "input",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要20-VRN07-before.png",
+     "bytes": 5879,
+     "sha256_12": "f2e59bd7b159",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "f2e59bd7b159585284ad6afb34295f71a36a5626dc8c1e842ba0c9c7df2f763b"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要20|VRN11",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [],
+   "reshoot": null
+  },
+  {
+   "id": "次要20|OT05",
+   "page": "subpackages/profile-extra/profile/other",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要20-OT05-before.png",
+     "bytes": 3369,
+     "sha256_12": "e9461ce29464",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "e9461ce29464240aa0b8cc82317f81d756ccf22000c8338c5ee6150f56fa7b92"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要20|OT06",
+   "page": "subpackages/profile-extra/profile/other",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要20-OT06-before.png",
+     "bytes": 3369,
+     "sha256_12": "e9461ce29464",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "e9461ce29464240aa0b8cc82317f81d756ccf22000c8338c5ee6150f56fa7b92"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要20|OT09",
+   "page": "subpackages/profile-extra/profile/other",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "input",
+   "outcome": "VEHICLE_DENY",
+   "outcomeClosedBy": "",
+   "frames": [],
+   "reshoot": null
+  },
+  {
+   "id": "次要20|AB06",
+   "page": "subpackages/profile-extra/profile/album",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要20-AB06-before.png",
+     "bytes": 6391,
+     "sha256_12": "239583f5a402",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "239583f5a402e1f112f1d90fdc798cadf8cf7fefcb50ea4c1f92a048eedc8a12"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要20-AB06-after.png",
+     "bytes": 9208,
+     "sha256_12": "5b5dedbaef98",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "5b5dedbaef9857d399200e101d7a9bb7c54fb591ee21a69e89cd878c3179e961"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要20|AB09",
+   "page": "subpackages/profile-extra/profile/album",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [],
+   "reshoot": null
+  },
+  {
+   "id": "次要20|AB10",
+   "page": "subpackages/profile-extra/profile/album",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [],
+   "reshoot": null
+  },
+  {
+   "id": "次要20|TK07",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要20-TK07-before.png",
+     "bytes": 9594,
+     "sha256_12": "69b47bfc9cfa",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "69b47bfc9cfae501ba0645458ed5977aee3cfa89b57a9c3072e1a636d533ee0a"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要20-TK07-after.png",
+     "bytes": 9599,
+     "sha256_12": "d4bb4773b666",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "d4bb4773b66641fd0e840811eb8c3899dd5584baac4e1098f1f847024ede58f1"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要20|TK08",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要20-TK08-before.png",
+     "bytes": 9594,
+     "sha256_12": "69b47bfc9cfa",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "69b47bfc9cfae501ba0645458ed5977aee3cfa89b57a9c3072e1a636d533ee0a"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要20-TK08-after.png",
+     "bytes": 9599,
+     "sha256_12": "d4bb4773b666",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "d4bb4773b66641fd0e840811eb8c3899dd5584baac4e1098f1f847024ede58f1"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要20|TK10",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [],
+   "reshoot": null
+  },
+  {
+   "id": "次要21|FHT05",
+   "page": "subpackages/profile-extra/feedback/history",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要21-FHT05-before.png",
+     "bytes": 5488,
+     "sha256_12": "06b048a93188",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "06b048a931883c99655e82b5c7f5db4fe7567ddd1bd880722ef510479f2f3c42"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要21|OC09",
+   "page": "subpackages/chat/official-chat/index",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要21-OC09-before.png",
+     "bytes": 13458,
+     "sha256_12": "315174813be9",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "315174813be977390639dac0e0e3bc9031843da281bac0c81c63f67b6735928a"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要21|FB13",
+   "page": "subpackages/support/feedback/index",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [],
+   "reshoot": null
+  },
+  {
+   "id": "次要22|AC10",
+   "page": "subpackages/discover/activities/index",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要22-AC10-before.png",
+     "bytes": 12599,
+     "sha256_12": "b05591bad89e",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "b05591bad89e1ca72380d234076500233f20bfc5ea0180814cab8798ec863d56"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要22|MD09",
+   "page": "subpackages/market/detail/index",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要22-MD09-before.png",
+     "bytes": 4301,
+     "sha256_12": "31a84715d098",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "31a84715d09851ce6c391e7e6c8534f9df9d93cf30f1a02624fb8d91c4d4c31f"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要22|PC06",
+   "page": "subpackages/vip/promo-code",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "input",
+   "outcome": "EXECUTED",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要22-PC06-before.png",
+     "bytes": 9812,
+     "sha256_12": "0c76dd0f2e0d",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "0c76dd0f2e0db72403b6ff40581de79f2ce4e9e2ee7172ab27b0edfe8b1dd53f"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要22-PC06-after.png",
+     "bytes": 10075,
+     "sha256_12": "735c4f0dfefb",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "735c4f0dfefbb823c62b63652487e7de13a43103e405d5abfa13fb09bf789da6"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要22|VB03",
+   "page": "subpackages/vip/bills",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要22-VB03-before.png",
+     "bytes": 6193,
+     "sha256_12": "691681ab36f8",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "691681ab36f8c8e7b4c17c215a5334a5cafd91b1056ffb2622489ba4518e9411"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要22|VB07",
+   "page": "subpackages/vip/bills",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "NOT_SHOOTABLE",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要22-VB07-before.png",
+     "bytes": 6193,
+     "sha256_12": "691681ab36f8",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "691681ab36f8c8e7b4c17c215a5334a5cafd91b1056ffb2622489ba4518e9411"
+    }
+   ],
+   "reshoot": null
+  },
+  {
+   "id": "次要22|VB10",
+   "page": "subpackages/vip/bills",
+   "band": "real@ed1cd82c",
+   "identity": "登录",
+   "interaction": "tap",
+   "outcome": "UNCHANGED_AFTER_INTERACTION",
+   "outcomeClosedBy": "",
+   "frames": [
+    {
+     "role": "before",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要22-VB10-before.png",
+     "bytes": 6200,
+     "sha256_12": "81fdb970ad73",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "81fdb970ad739d7669c509f5d83525f7d9ad9da006864c2a9c2fe3db538fd949"
+    },
+    {
+     "role": "after",
+     "file": "reports/screenshots/round-8-interact/real-sc-A/次要22-VB10-after.png",
+     "bytes": 6200,
+     "sha256_12": "81fdb970ad73",
+     "magic": "JPEG",
+     "pixels": "192x413",
+     "sha256": "81fdb970ad739d7669c509f5d83525f7d9ad9da006864c2a9c2fe3db538fd949"
+    }
+   ],
+   "reshoot": null
+  }
+ ]
+}

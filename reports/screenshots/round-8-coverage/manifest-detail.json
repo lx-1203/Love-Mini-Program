@@ -1,0 +1,119 @@
+{
+ "gitSha": "a4c8f995",
+ "workflowVersion": "dir-to-manifest-detail/1.0",
+ "generatedAt": "2026-09-28T18:36:00.819Z",
+ "project": "apps/client/dist/build/mp-weixin-real",
+ "harness": "由 D:/6/恋爱小程序/reports/audit/round-7/exec-real-coverage-a-r9/exec-results.json（scripts/qa/r-exec-cli.mjs（tap+real 切片））补建，戳记取自该结果文件而不是当前 HEAD",
+ "verdictLegend": {
+  "PASS": "该条已出帧且判点/落点按执行器记录成立",
+  "其他": "原样带执行器的状态词"
+ },
+ "captureLimitations": [
+  "本文件由执行器结果反推，不含巡检才有的 tap/expect 细节",
+  "字节全部与记录相符",
+  "记录的帧全部在磁盘上",
+  "目录里另有 1 张帧未被结果文件提及"
+ ],
+ "shots": [
+  {
+   "identity": "A",
+   "page": "subpackages/chat/chat-session/index",
+   "state": "发送文字（私信会话）：气泡上屏 + 草稿清空 + 持久化草稿清除",
+   "route": "subpackages/chat/chat-session/index",
+   "landing": "subpackages/chat/chat-session/index",
+   "verdict": "PASS",
+   "caseId": "CS10",
+   "path": "reports/screenshots/round-8-coverage/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS10-after.png",
+   "bytes": 6443,
+   "contentHash": "c80ead99e37e18fe",
+   "at": "2026-09-28T18:12:01.044Z"
+  },
+  {
+   "identity": "A",
+   "page": "subpackages/chat/chat-session/index",
+   "state": "会话生命周期清理：打开即返回 / 重复进出 ×3 不得残留计时器与 typing 模拟",
+   "route": "subpackages/chat/chat-session/index",
+   "landing": "subpackages/chat/chat-session/index",
+   "verdict": "PASS",
+   "caseId": "CS29",
+   "path": "reports/screenshots/round-8-coverage/SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS29-after.png",
+   "bytes": 6443,
+   "contentHash": "c80ead99e37e18fe",
+   "at": "2026-09-28T18:12:01.044Z"
+  },
+  {
+   "identity": "A",
+   "page": "subpackages/village/village/publish",
+   "state": "【并发修复·当前源码】提交在途不得离页、已销毁页面不做 UI 副作用、离页提示 publishing（MP-R2-POST-010 两页一致）",
+   "route": "subpackages/village/village/publish",
+   "landing": "subpackages/village/village/publish",
+   "verdict": "PASS",
+   "caseId": "PUB32",
+   "path": "reports/screenshots/round-8-coverage/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-PUB32-after.png",
+   "bytes": 8023,
+   "contentHash": "4e1ce1ccd226c280",
+   "at": "2026-09-28T18:12:01.044Z"
+  },
+  {
+   "identity": "A",
+   "page": "subpackages/village/village/detail",
+   "state": "发评论三态：正常提交成功 toast 与列表回读（写操作）",
+   "route": "subpackages/village/village/detail",
+   "landing": "subpackages/village/village/detail",
+   "verdict": "PASS",
+   "caseId": "VD10",
+   "path": "reports/screenshots/round-8-coverage/次要18-VD10-after.png",
+   "bytes": 13595,
+   "contentHash": "2e76c7b7ba6f4657",
+   "at": "2026-09-28T18:12:01.044Z"
+  },
+  {
+   "identity": "A",
+   "page": "subpackages/village/village/detail",
+   "state": "长按举报链路：ActionSheet 取消 / 选原因 + Modal 补充描述 / 跳过 → 提交 toast",
+   "route": "subpackages/village/village/detail",
+   "landing": "subpackages/village/village/detail",
+   "verdict": "PASS",
+   "caseId": "VD15",
+   "path": "reports/screenshots/round-8-coverage/次要18-VD15-after.png",
+   "bytes": 13598,
+   "contentHash": "822f3fb5bce555e8",
+   "at": "2026-09-28T18:12:01.044Z"
+  },
+  {
+   "identity": "A",
+   "page": "subpackages/circles/circles/topic-detail",
+   "state": "长按举报：ActionSheet 取消 / Modal 跳过 / 完整提交（写操作，Toast 文案）",
+   "route": "subpackages/circles/circles/topic-detail",
+   "landing": "subpackages/circles/circles/topic-detail",
+   "verdict": "PASS",
+   "caseId": "TD06",
+   "path": "reports/screenshots/round-8-coverage/次要18-TD06-after.png",
+   "bytes": 10403,
+   "contentHash": "7eaa601a831bb66e",
+   "at": "2026-09-28T18:12:01.044Z"
+  },
+  {
+   "identity": "A",
+   "page": "subpackages/chat/official-chat/index",
+   "state": "深链参数核对：唯一真实消费参数是 accountId，其余为幻影参数；未解锁走 LockScreen",
+   "route": "subpackages/chat/official-chat/index",
+   "landing": "subpackages/chat/official-chat/index",
+   "verdict": "PASS",
+   "caseId": "OC11",
+   "path": "reports/screenshots/round-8-coverage/次要21-OC11-after.png",
+   "bytes": 13462,
+   "contentHash": "7979d7e0a5321842",
+   "at": "2026-09-28T18:12:01.044Z"
+  }
+ ],
+ "failures": [],
+ "meta": {
+  "shaSource": "results-file",
+  "mismatch": [],
+  "missing": [],
+  "orphan": [
+   "次要19-LK04-after.png"
+  ]
+ }
+}

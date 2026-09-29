@@ -1,0 +1,25 @@
+{
+ "gitSha": "a4c8f995",
+ "workflowVersion": "dir-to-manifest-detail/1.0",
+ "generatedAt": "2026-09-28T18:36:01.213Z",
+ "project": "apps/client/dist/build/mp-weixin-real",
+ "harness": "由 D:/6/恋爱小程序/reports/audit/round-7/exec-real-coverage-guest-r9/exec-results.json（scripts/qa/r-exec-cli.mjs（tap+real 切片））补建，戳记取自该结果文件而不是当前 HEAD",
+ "verdictLegend": {
+  "PASS": "该条已出帧且判点/落点按执行器记录成立",
+  "其他": "原样带执行器的状态词"
+ },
+ "captureLimitations": [
+  "本文件由执行器结果反推，不含巡检才有的 tap/expect 细节",
+  "字节全部与记录相符",
+  "记录的帧全部在磁盘上",
+  "目录内帧与结果文件一一对应"
+ ],
+ "shots": [],
+ "failures": [],
+ "meta": {
+  "shaSource": "results-file",
+  "mismatch": [],
+  "missing": [],
+  "orphan": []
+ }
+}

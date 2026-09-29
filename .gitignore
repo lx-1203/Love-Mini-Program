@@ -102,6 +102,7 @@ Thumbs.db
 .claude/
 .design_library/
 **/.mimosa/
+.qoder/
 
 # ---------- 本机运行时产物 ----------
 /appendonly.aof

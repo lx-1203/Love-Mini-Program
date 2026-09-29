@@ -1,0 +1,39 @@
+{
+ "gitSha": "a4c8f995",
+ "workflowVersion": "dir-to-manifest-detail/1.0",
+ "generatedAt": "2026-09-28T18:36:01.399Z",
+ "project": "apps/client/dist/build/mp-weixin-showcase",
+ "harness": "由 D:/6/恋爱小程序/reports/audit/round-7/exec-real-coverage-guest-showcase-r9/exec-results.json（scripts/qa/r-exec-cli.mjs（tap+real 切片））补建，戳记取自该结果文件而不是当前 HEAD",
+ "verdictLegend": {
+  "PASS": "该条已出帧且判点/落点按执行器记录成立",
+  "其他": "原样带执行器的状态词"
+ },
+ "captureLimitations": [
+  "本文件由执行器结果反推，不含巡检才有的 tap/expect 细节",
+  "字节全部与记录相符",
+  "记录的帧全部在磁盘上",
+  "目录内帧与结果文件一一对应"
+ ],
+ "shots": [
+  {
+   "identity": "guest",
+   "page": "subpackages/discover-extra/likes/index",
+   "state": "解锁全部：封存态入口隐藏（不可达前置确证）与放行后扣费/幂等拆两判定点",
+   "route": "subpackages/discover-extra/likes/index",
+   "landing": "subpackages/discover-extra/likes/index",
+   "verdict": "PASS",
+   "caseId": "LK04",
+   "path": "reports/screenshots/round-8-coverage/guest-sc/次要19-LK04-after.png",
+   "bytes": 13623,
+   "contentHash": "e3b18659b40d5d2a",
+   "at": "2026-09-28T18:34:31.376Z"
+  }
+ ],
+ "failures": [],
+ "meta": {
+  "shaSource": "results-file",
+  "mismatch": [],
+  "missing": [],
+  "orphan": []
+ }
+}
