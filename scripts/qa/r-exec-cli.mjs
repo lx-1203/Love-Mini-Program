@@ -112,10 +112,21 @@ function runSelftest() {
     { n: "#70④ 动词+输入框才走输入腿", got: wantsInputLeg("输入手机号", ".phone-input"), want: true },
     { n: "#70④ 动词说输入但元素不是输入框 ⇒ 退回点击", got: wantsInputLeg("输入验证码后点", ".hero__back"), want: false },
     { n: "#70④ 没动词的输入框也不走输入腿", got: wantsInputLeg("查看列表", ".search-input"), want: false },
-    { n: "TAP_RE 认 lane 写的英文 tap（旧表不认 ⇒ 那 13 条点名静默不测）", got: TAP_RE.test("tap .code-input 提交"), want: true },
-    { n: "TAP_RE 不被 getApp() 里的 tAp 骗到", got: TAP_RE.test("调用 getApp() 取应用实例"), want: false },
-    { n: "TAP_RE 不被 searchTap 里的 Tap 骗到", got: TAP_RE.test("emit('searchTap') 触发搜索"), want: false },
-    { n: "TAP_RE 中文动词仍然算交互", got: TAP_RE.test("长按卡片标题"), want: true },
+    { n: "TAP_RE 认 lane 写的英文 tap（旧表不认 ⇒ 那 13 条点名静默不测）", got: wantsInteraction("tap .code-input 提交"), want: true },
+    { n: "TAP_RE 不被 getApp() 里的 tAp 骗到", got: wantsInteraction("调用 getApp() 取应用实例"), want: false },
+    { n: "TAP_RE 不被 searchTap 里的 Tap 骗到", got: wantsInteraction("emit('searchTap') 触发搜索"), want: false },
+    { n: "TAP_RE 中文动词仍然算交互", got: wantsInteraction("长按卡片标题"), want: true },
+    /* —— camelCase 动词（#C-3 假绿的正例；旧边界把 "Tap" 前面的字母 d 当反例整类杀掉）—— */
+    { n: "TAP_RE 认 rapidTap×5（DND08/TP04/SCU06 一族，旧表不认 ⇒ 没发交互还记 EXECUTED）", got: wantsInteraction("500ms 内对 .save-btn rapidTap×5"), want: true },
+    { n: "TAP_RE 认 doubleTap", got: wantsInteraction("对 .card doubleTap 两次"), want: true },
+    { n: "TAP_RE 认 longPress", got: wantsInteraction("对气泡 longPress 800ms"), want: true },
+    { n: "TAP_RE 不被 scrollTop/scrollHeight 里的 scroll 骗到（动词嵌在更长标识符开头）", got: wantsInteraction("记录 scrollTop、scrollHeight 读数"), want: false },
+    { n: "TAP_RE 不被 tapAvatar 里的 tap 骗到（动词开头、后面还有字母）", got: wantsInteraction("emit tapAvatar 冒泡"), want: false },
+    { n: "TAP_RE 不被引号里的驼峰名骗到（searchTap 与 rapidTap 同形，靠引号分动作/名字）", got: wantsInteraction("der.vue:17 emit('searchTap') 声明"), want: false },
+    { n: "TAP_RE 不被 bindtap/catchtap/CardSwiper 骗到（平台事件属性名与组件名：动词不在驼峰接缝上）", got: wantsInteraction("根 SwipeContainer 上 catchtap 绑 bindtap 于 CardSwiper.vue"), want: false },
+    { n: "TAP_RE 放宽后仍认中文动词（放宽驼峰不能挤掉旧口径）", got: wantsInteraction("长按卡片标题"), want: true },
+    { n: "尾段驼峰处理器名（onTap/handleVipClick）按交互算：判据里它们总与 点/@tap 同现，实测新增 14 条逐条读过没有假命中 ⇒ 这条钉住不许当 bug 改回去", got: wantsInteraction("手势层 onTap 冒泡到页面"), want: true },
+    { n: "驼峰半边必须独立带旗标：/i 一上 [a-z][A-Z] 就失效 ⇒ TAP_CAMEL_RE 不许有 i", got: !/i/.test(TAP_CAMEL_RE.flags) && !TAP_CAMEL_RE.test("catchtap"), want: true },
     { n: "#51 没标 identities ⇒ 每一腿都照认领", got: identityScopeSkip({ action: "看帖子" }, "guest"), want: "" },
     { n: "#51 identities=[]（空名单）⇒ 视同没标，不能让一条判据凭空没人跑", got: identityScopeSkip({ identities: [] }, "guest"), want: "" },
     { n: "#51 标 A/B 的游客腿 ⇒ 出原因并点名载体", got: /^本条判据的身份适用范围已标为 A\/B.*guest-landing-policy/.test(identityScopeSkip({ identities: ["A", "B"] }, "guest")), want: true },
@@ -125,6 +136,19 @@ function runSelftest() {
     { n: "#70⑤ automatable:false ⇒ 出跳过理由并点名盖章出处", got: /^action-not-automatable: .*盖章出处 cellplan-/.test(notAutomatableSkip({ automatable: false, notAutomatableReason: "原生 ActionSheet 点不了", notAutomatableFrom: "cellplan-round7-taptarget.json" })), want: true },
     { n: "#70⑤ automatable 缺省（undefined）⇒ 照跑，不能把整本判据台当盖章", got: notAutomatableSkip({ action: "点 .a-b" }), want: "" },
     { n: "#70⑤ automatable:true ⇒ 照跑", got: notAutomatableSkip({ automatable: true }), want: "" },
+    /* —— #C-1 几何留存 / #C-2 逐行带戳：这两组也进 --selftest，让"改坏了探针"在启动时就响，
+       不必等到离线测试那一层（更不必等到跑完 90 分钟看行） —— */
+    { n: "#C-1 interpretProbe 留下 width/height（旧写法只留 length ⇒ VI40 那族从没量到过）", got: JSON.stringify(interpretProbe([".a-b"], { 0: { c: 2, b: [[128, 240], [128, 240]] }, __win: 375 }).__geom || null), want: JSON.stringify({ ".a-b": { nodes: 2, boxes: [[128, 240], [128, 240]], win: 375 } }) },
+    { n: "#C-1 计数口径不许漂：present(2) 仍是 present(2)", got: interpretProbe([".a-b"], { 0: { c: 2, b: [[1, 2]] }, __win: 375 })[".a-b"], want: "present(2)" },
+    { n: "#C-1 0 个节点仍是 absent（新增几何不许把 absent 变成 present）", got: interpretProbe([".a-b"], { 0: { c: 0, b: [] } })[".a-b"], want: "absent" },
+    { n: "#C-1 geomText 给出 px 并按窗口宽度换算 rpx（750rpx=375px ⇒ 128px=256rpx）", got: geomText({ action: "点 .a-b", tapTarget: "" }, interpretProbe([".a-b"], { 0: { c: 1, b: [[128, 240]] }, __win: 375 })), want: ".a-b=[128x240px ≈256x480rpx]" },
+    { n: "#C-1 没量到窗口宽度就只报 px（宁缺毋造 rpx）", got: geomText({ action: "点 .a-b" }, interpretProbe([".a-b"], { 0: { c: 1, b: [[128, 240]] } })), want: ".a-b=[128x240px]" },
+    { n: "#C-1 渲染器没给数字时记 ? 不记 0（0 是「量到 0」，两码事）", got: geomText({ action: "点 .a-b" }, interpretProbe([".a-b"], { 0: { c: 1, b: [[null, null]] }, __win: 375 })), want: ".a-b=[?]" },
+    { n: "#C-1 老袋子形状（纯数字）进来也不炸，只是没有几何", got: geomText({ action: "点 .a-b" }, interpretProbe([".a-b"], { 0: 3 })), want: "" },
+    { n: "#C-2 续跑：旧行保留第一次的带，不被本 boot 的 HEAD 顶掉", got: (function () { const p = { gitSha: "SHA1" }; const a = stampMerged(p, [{ manifest: "M", id: "A", gitSha: "SHA1" }], [{ manifest: "M", id: "B", gitSha: "SHA2" }], "SHA2", "boot2"); return a.merged.map((r) => r.id + "=" + r.gitSha).join(","); })(), want: "A=SHA1,B=SHA2" },
+    { n: "#C-2 文件头那枚 = 本 boot 的 HEAD（语义收窄，另附 mergedFrom）", got: (function () { const p = { gitSha: "SHA1" }; const a = stampMerged(p, [{ manifest: "M", id: "A", gitSha: "SHA1" }], [], "SHA2", "boot2"); return a.bootSha + "|" + a.mergedFrom.map((m) => m.gitSha + ":" + m.rows).join(","); })(), want: "SHA2|SHA1:1" },
+    { n: "#C-2 历史行没有逐行戳 ⇒ 退回上一份文件头并写明是继承，绝不套本 boot 的", got: (function () { const a = stampMerged({ gitSha: "SHA1" }, [{ manifest: "M", id: "A" }], [], "SHA2", "b2"); return a.merged[0].gitSha + "|" + a.merged[0].gitShaSource.slice(0, 20); })(), want: "SHA1|inherited-prior-file" },
+    { n: "#C-2 连上一份文件头都没戳 ⇒ unknown，不猜", got: (function () { const a = stampMerged({}, [{ manifest: "M", id: "A" }], [], "SHA2", "b2"); return a.merged[0].gitSha; })(), want: "unknown" },
   ];
   const bad = cases.filter((c) => c.got !== c.want);
   for (const c of cases) console.log((c.got === c.want ? "  ok " : "  BAD") + " " + c.n + " got=" + c.got + " want=" + c.want);
@@ -141,13 +165,39 @@ const relOf = (p) => p.split("\\").join("/").replace(REPO.split("\\").join("/") 
 /* 交互动词表就是"这条用例会不会被点"的唯一口径，普查与选择器门都从这里取（它们不许再各抄一份）。
    英文词必须带字母边界：只读复判抓到 lane 自己写的 newAction 用 "tap .x"，旧表没有英文 ⇒ 那 13 条
    点名点得对、执行器却根本不走点击分支（静默不测）。反向的坑也要挡住：getApp() 里有 "tAp"、
-   searchTap 里有 "tap"，无边界会把这些幽灵入口断言误判成"要点东西"。 */
+   searchTap 里有 "tap"，无边界会把这些幽灵入口断言误判成"要点东西"。
+   2026-09-29（capability audit C-3/G-2）：这条老边界 `(?<![A-Za-z])` 把**驼峰动词**整类杀了 ——
+   `rapidTap×5` 里的 "Tap" 左边是字母 `d` ⇒ 不匹配 ⇒ DND08/TP04/SCU06/SCU10/SCH10/RP06/INT07/FB07/TK05
+   这一族"快速连点"判据一次交互都没发出，却顺着最后的 else 记成 EXECUTED（假绿，不是假红）。
+   这里**不放宽 TAP_RE 本身**：驼峰接缝只能靠大小写认，而 /i 会把 `[a-z]`/`[A-Z]` 一起折叠
+   （实测 `/(?<=[a-z])(?=[A-Z])/i` 连 catchtap、bindtap 都判成驼峰 ⇒ 整道边界失效；
+   换 `\p{Ll}`/`\p{Lu}` 也一样被折叠，且不带 u 旗标时它俩根本退化成字面量集合）。
+   所以另起一条大小写敏感的字面量 TAP_CAMEL_RE，再由 wantsInteraction() 合成消费者用的唯一口径。
+   判据台 1107 条 action 实测：旧口径 698 条命中 ⇒ 新口径 712 条，新增 14 条**逐条读过**
+   全是要求真点/真连点的（9 条 rapidTap×5 + 5 条"点 X"），且旧命中一条没丢（严格超集，
+   守恒断言在 scripts/qa/test-exec-tap-verb-camel.cjs）。 */
 const TAP_RE = /点击|按下|长按|双击|输入|滑动|滚动|拖动|下拉|勾选|切换后|聚焦|失焦|(?<![A-Za-z])(?:tap|click|input|scroll|swipe|trigger|press)(?![A-Za-z])/i;
+/* 驼峰接缝那一半（**不许加 i 旗标**，加了就等于没有）：
+   判点四条 —— ① 动词起点在"小写字母紧跟大写字母"的接缝上（rapid|Tap、double|Tap、long|Press）；
+   ② 动词按驼峰本来的写法逐字列出（首字母大写 + 其余小写）：没有 /i 就不能写小写 `tap` 去顶 "Tap"，
+      列成 Tap|Click|Input|Scroll|Swipe|Trigger|Press 顺带把全大写的常量名（TAP_MOVE_THRESHOLD）挡在外面；
+   ③ 动词必须是标识符的末段（后面不再跟字母），所以 `tapAvatar`/`scrollTo`/`CardSwiper`/`TAP_…` 不算；
+   ④ 接缝之后整段词不许紧接着引号：`emit('searchTap')` 里 search|Tap 与 rapid|Tap 形状完全相同，
+      机器分得开的只有"被引号包住的是**名字**（幽灵入口断言，本轮实测过的误判来源，见
+      scripts/qa/census-tap-targets.mjs:22-25），裸写在动作句里的才是动作"。
+   消费者一律走 wantsInteraction()；普查脚本按名字把这两条一起取走，取不到就硬失败（不许各抄一份）。 */
+const TAP_CAMEL_RE = /(?<=[a-z])(?=[A-Z])(?![\w$]*['"`])(?:Tap|Click|Input|Scroll|Swipe|Trigger|Press)(?![A-Za-z])/;
+const wantsInteraction = (text) => { const s = String(text === undefined || text === null ? "" : text); return TAP_RE.test(s) || TAP_CAMEL_RE.test(s); };
 const FRAME_RE = /截图|全帧|出帧|特写|帧/;
 
 function git(a) { try { return execFileSync("git", a.split(" "), { cwd: REPO, encoding: "utf8" }).trim(); } catch { return ""; } }
 const GIT_SHA = git("rev-parse --short HEAD") || "unknown";
 const BOOT_T = Date.now();
+/* 一次启动一枚 id：续跑合并之后"这些行是同一次跑出来的"这件事要看得见（行上 bootId、文件头 boots）。
+   取值 = 启动时刻（到分）+ pid + 本次启动读到的 HEAD，不引入随机数（随机数没法复盘）。 */
+const BOOT_ID = new Date().toISOString().slice(0, 16).replace(/[:T-]/g, "") + "-pid" + process.pid + "-" + GIT_SHA;
+/* 尺寸读数的传递位：observed0 在拼 observed 的同一刻写，row() 取用后即清（见 row() 注释）。 */
+let CUR_GEOM = "";
 
 /* 这条通道的超时有时不是从 execFileSync 抛回来的，而是之后以未捕获的 socket 事件冒出来
    （本轮实测两次，第一次直接把整批取景带走）。执行轮是按小时算的，一条噪声不能吞掉已跑的行：
@@ -171,6 +221,13 @@ process.on("unhandledRejection", (e) => {
 });
 
 function row(manifest, page, c, status, route, reason, observed, evid, miss) {
+  /* 逐行带戳（#C-2）：这一行是**本次启动**跑的，所以它的带就是 GIT_SHA（进程一开头读的 HEAD，
+     见 stampMerged 的说明）。续跑合并时只有带这个字段的行才被认成"本 boot 干的"。 */
+  /* 尺寸读数（#C-1）：observed0 在拼 observed 的同一刻把 geomText() 的结果放进 CUR_GEOM，
+     这里取用后即清 —— 上一条的量到的尺寸绝不能落到下一条头上（同 :570 "上一版用 var，
+     一条点着过就把后面全标成已交互" 那一族）。没走过 observed0 的行（开页失败/整页锁屏）
+     拿到的是空串，因为组边界和每条开头都清过一次。 */
+  const geometry = CUR_GEOM; CUR_GEOM = "";
   return {
     suite: "C-" + manifest, manifest, id: c.id, page, tier: c.tier || "normal",
     identity: IDENTITY, band: (BAND.mode || "?") + "@" + (BAND.sha8 || "?"),
@@ -182,6 +239,8 @@ function row(manifest, page, c, status, route, reason, observed, evid, miss) {
     requiresReal: c.requiresReal === true, title: String(c.title || "").slice(0, 160),
     status, observed: observed || "", missingEvidence: miss || [], failureReason: reason || "",
     route: route || "", toast: "", console: "", evidence: evid || "",
+    geometry,
+    gitSha: GIT_SHA, gitShaSource: "this-boot（该行执行时进程启动读到的 HEAD）", bootId: BOOT_ID,
     durationMs: CUR_T0 ? Date.now() - CUR_T0 : 0, at: new Date().toISOString(),
   };
 }
@@ -215,25 +274,156 @@ function inputVerbOnly(action) { return /输入|填写|粘贴/.test(String(actio
    放在文件顶部那段会撞 TDZ —— 症状是"自检一跑就抛"，看起来像被测逻辑坏了）。 */
 if (process.argv.includes("--selftest")) runSelftest();
 /* 折叠探测：一次调用起 K 条 selectAll 查询，回调把条数写进 app 上的普通字段；
-   第二次调用只读那个字段。返回 Promise 的写法本机不会被 await（notes §12），所以拆两步。 */
-function probeMany(selectors) {
-  if (!selectors.length) return {};
-  const start = "() => { const app = getApp(); const bag = {}; app.__probeBag = bag; " +
+   第二次调用只读那个字段。返回 Promise 的写法本机不会被 await（notes §12），所以拆两步。
+   2026-09-29（capability audit C-1/G-1）：这条探测**本来就问了渲染器要 size**
+   （`fields({ size: true })`），但回调里只留 `res.length`，width/height 当场丢掉 ⇒
+   "逐个 boundingClientRect 量测、回填 rpx 对照 88rpx"这一类判据（VI40/VI42/DND12/FHT14/CI21/CS23…
+   按审计口径 67 条）从来没被量到过，行却还是 EXECUTED 且带帧。
+   现在把已经回来的 width/height 留在袋子里（每个选择器最多 4 个节点，防爆载荷），
+   经 interpretProbe() 挂到返回值的 `__geom` 上，再由 geomText() 拼成行内 `geometry` 字段。
+   对设备只多了一个动作：同一次 evaluate 里顺手读一次窗口宽度（`__win`），用来把 px 换成判据点名的
+   rpx；读不到就只报 px，绝不凭空造一个 rpx 数。**问渲染器要什么完全没变**（还是 size:true），
+   所以这一刀不改任何探测的成败判定，只把丢掉的读数留下。
+   先例：scripts/qa/r1-exec.cjs:1195-1198 的 measureTap 就是把 size/offset 当一等证据留着的。 */
+function probeStartSource(selectors) {
+  return "() => { const app = getApp(); const bag = {}; app.__probeBag = bag; " +
+    "const num = function (v) { return (typeof v === 'number' && isFinite(v)) ? Math.round(v * 100) / 100 : null; }; " +
+    "try { const wi = (wx.getWindowInfo ? wx.getWindowInfo() : (wx.getSystemInfoSync ? wx.getSystemInfoSync() : null)); " +
+    "bag.__win = (wi && typeof wi.windowWidth === 'number') ? wi.windowWidth : null; } catch (e) { bag.__win = null; } " +
     "const sels = " + JSON.stringify(selectors) + "; " +
     "sels.forEach(function (s, i) { try { const q = wx.createSelectorQuery(); " +
-    "q.selectAll(s).fields({ size: true }, function (res) { bag[i] = (Array.isArray(res) ? res.length : (res ? 1 : 0)); }); q.exec(); } " +
+    "q.selectAll(s).fields({ size: true }, function (res) { var arr = Array.isArray(res) ? res : (res ? [res] : []); " +
+    "var boxes = []; for (var k = 0; k < arr.length && k < 4; k++) { boxes.push([num(arr[k] && arr[k].width), num(arr[k] && arr[k].height)]); } " +
+    "bag[i] = { c: arr.length, b: boxes }; }); q.exec(); } " +
     "catch (e) { bag[i] = 'ERR'; } }); " +
     "return 'started:' + sels.length; }";
+}
+/* 纯函数（离线可测：scripts/qa/test-exec-probe-geometry.cjs 直接喂合成袋子）：
+   把探测袋里的原始读数翻译成"计数 + 几何"。计数那一半的口径一个字都不动
+   （present(N)/absent/no-answer/ERR），因为 probeCount()、锁屏闸门、observed 形状都有人在读。 */
+function interpretProbe(selectors, bag) {
+  const out = {};
+  const geom = {};
+  const src = bag && typeof bag === "object" ? bag : {};
+  const win = typeof src.__win === "number" && src.__win > 0 ? src.__win : null;
+  selectors.forEach((s, i) => {
+    const v = src[i];
+    if (v && typeof v === "object" && !Array.isArray(v)) {
+      const n = Number(v.c);
+      out[s] = isFinite(n) ? (n > 0 ? "present(" + n + ")" : "absent") : "no-answer";
+      if (isFinite(n) && n > 0) geom[s] = { nodes: n, boxes: Array.isArray(v.b) ? v.b : [], win };
+    } else if (typeof v === "number" && isFinite(v)) {
+      /* 老袋子形状（只有条数）也照旧翻译成 present/absent：新增几何不该改变任何一条计数读法，
+         万一哪天有人从别处塞一个数字进来，也不能凭空变成 "no-answer"。 */
+      out[s] = v > 0 ? "present(" + v + ")" : "absent";
+    } else {
+      out[s] = v === undefined ? "no-answer" : String(v);
+    }
+  });
+  if (Object.keys(geom).length) { out.__geom = geom; if (win) out.__win = win; }
+  return out;
+}
+function probeMany(selectors) {
+  if (!selectors.length) return {};
+  const start = probeStartSource(selectors);
   const read = "() => JSON.stringify(getApp().__probeBag || {})";
   try { evaluate(start, { project: PROJECT }); } catch (e) { return { __err: String(e.message).slice(0, 70) }; }
   sleep(900);
   let bag = {};
   try { bag = JSON.parse(String(evaluate(read, { project: PROJECT }))); } catch (e) { return { __err: "read:" + String(e.message).slice(0, 50) }; }
-  const out = {};
-  selectors.forEach((s, i) => {
-    out[s] = typeof bag[i] === "number" ? (bag[i] > 0 ? "present(" + bag[i] + ")" : "absent") : String(bag[i] === undefined ? "no-answer" : bag[i]);
-  });
-  return out;
+  return interpretProbe(selectors, bag);
+}
+/* px → rpx：小程序里 750rpx == 窗口宽度 px。窗口宽度没量到就返回 null（宁缺毋造）。 */
+function pxToRpx(px, winPx) {
+  if (typeof px !== "number" || typeof winPx !== "number" || !(winPx > 0)) return null;
+  return Math.round((px * 750 / winPx) * 100) / 100;
+}
+/* 把一个选择器量到的尺寸拼成"人眼可核、机器可抠"的一行：
+   `.village-search=[128x240px ≈256x480rpx]`；渲染器没给数字就记 `?`，不记 0（0 是"量到 0"，两码事）。 */
+function geomText(c, d) {
+  const g = d && d.__geom;
+  if (!g) return "";
+  const parts = [];
+  for (const sel of judgeTargets(c)) {
+    const e = g[sel];
+    if (!e) continue;
+    const boxes = (e.boxes || []).map((b) => {
+      const w = b && b[0], h = b && b[1];
+      if (typeof w !== "number" || typeof h !== "number") return "?";
+      const rw = pxToRpx(w, e.win), rh = pxToRpx(h, e.win);
+      return w + "x" + h + "px" + (rw === null ? "" : " ≈" + rw + "x" + rh + "rpx");
+    });
+    parts.push(sel + (e.nodes > 1 ? "×" + e.nodes : "") + "=[" + (boxes.join(" ") || "?") + "]");
+  }
+  return parts.join(" ");
+}
+/* ── 逐行带戳的合并（纯函数；离线负例在 scripts/qa/test-exec-row-sha.cjs，函数声明提升所以 --selftest 也跑得到）──
+   症状（capability audit C-2）：文件头那一枚 gitSha 是**进程启动时**读的 HEAD（:181），
+   而续跑（同一 --out 下已有 exec-results.json，按 manifest|id 跳过跑过的）写盘时把它盖在
+   **合并后的全集**上 ⇒ 上一次启动跑的行被盖上这一次启动的提交号，等于这一次跑在认领它根本没跑过的证据。
+   实测形状：reports/audit/round-7/exec-interact-real-sc-r10/exec-results.json 文件头 gitSha=93650335
+   （提交于 2026-09-28T19:41Z）、updatedAt=19:44Z，而它认领的行/帧是 19:13Z 的 —— 早了 28 分钟；
+   下游 exec-frames-to-corpus.mjs 只能拿这枚顶层戳当"采集带"逐行写进 bandSha（:44/:70），
+   verify-provenance-all.mjs:196 于是按这枚晚到的戳读出 4886 帧 PRE_STAMP（回填归因）。
+   口径改三条：
+     ① 行上 `gitSha` = 该行**实际执行那一刻**这次启动的 HEAD（row() 里写，续跑不改它）；
+     ② 文件头 `gitSha` 保留，但语义明确收窄成本 boot 的 HEAD（gitShaScope="this-boot"），
+        并把历次启动的戳记进 `mergedFrom` / `bootShas`，谁也没被悄悄改写；
+     ③ 上一份文件里**没有**逐行戳的历史行：只能退回"它上次被写盘时文件头那枚"，并显式记
+        `gitShaSource="inherited-prior-file"`；连那枚都没有就记 "unknown"，绝不套本 boot 的戳。 */
+function stampMerged(priorDoc, priorRows, newRows, bootSha, bootId) {
+  const boot = String(bootSha || "unknown");
+  const map = new Map();
+  for (const r of [...(priorRows || []), ...(newRows || [])]) map.set(r.manifest + "|" + r.id, r);
+  const priorSha = String((priorDoc && priorDoc.gitSha) || "");
+  const merged = [];
+  for (const r of map.values()) {
+    if (r && r.gitSha) { merged.push(r); continue; }
+    merged.push(Object.assign({}, r, {
+      gitSha: priorSha || "unknown",
+      gitShaSource: priorSha
+        ? "inherited-prior-file（该行由更早一次启动写入、当时没有逐行戳 ⇒ 沿用上一份文件头的 " + priorSha +
+          "，绝不套本 boot 的 " + boot + "：本 boot 没跑过它，就不认领它的证据）"
+        : "unknown（上一份文件头也没记戳 ⇒ 不猜是谁跑的）",
+      bootId: (priorDoc && priorDoc.bootId) || "prior-boot",
+    }));
+  }
+  const rowShas = {};
+  const rowBoots = {};
+  for (const r of merged) {
+    rowShas[r.gitSha || "unknown"] = (rowShas[r.gitSha || "unknown"] || 0) + 1;
+    const b = String(r.bootId || "unknown");
+    if (!(b in rowBoots)) rowBoots[b] = r.gitSha || "unknown";
+  }
+  const mergedFrom = (Array.isArray(priorDoc && priorDoc.mergedFrom) ? priorDoc.mergedFrom : []).slice();
+  const nPrior = (priorRows || []).length;
+  if (nPrior) {
+    mergedFrom.push({
+      gitSha: priorSha || "unknown", rows: nPrior, bootId: (priorDoc && priorDoc.bootId) || "",
+      round: (priorDoc && priorDoc.round) || "", updatedAt: (priorDoc && priorDoc.updatedAt) || "",
+      note: "本 boot（" + boot + "）之前已在盘上的行：没重跑就不认领",
+    });
+  }
+  const bootShas = [...new Set([...mergedFrom.map((m) => m.gitSha), priorSha, boot].filter((x) => x && x !== "unknown"))];
+  return { merged, rowShas, rowBoots, mergedFrom, bootShas, nPrior, nNew: (newRows || []).length, priorSha, bootSha: boot, bootId };
+}
+/* 文件头里凡是"这一枚戳代表什么"的字段，都从这一处出（增量落盘与终稿共用，不许两套形状：
+   :455 那条 skipped 数字互相打架就是分家分出来的）。 */
+function fileStampHeader(stamped, extra) {
+  return Object.assign({
+    gitSha: stamped.bootSha,
+    gitShaScope: "this-boot",
+    gitShaMeaning: "顶层 gitSha = 本次进程启动时的 HEAD（只对**本 boot 跑的行**成立）；"
+      + "逐行 gitSha 才是该行执行时的带，续跑不重打戳（#C-2）。下游按行取带请读 results[].gitSha，"
+      + "exec-frames-to-corpus.mjs 已改成优先用行内戳写 bandSha。",
+    bootId: stamped.bootId,
+    bootShas: stamped.bootShas,
+    rowShas: stamped.rowShas,
+    rowBoots: stamped.rowBoots,
+    mergedFrom: stamped.mergedFrom,
+    resume: stamped.nPrior > 0,
+    priorGitSha: stamped.priorSha || "(首跑，盘上没有旧件)",
+  }, extra || {});
 }
 
 if (!existsSync(join(PROJECT, "app.json"))) { console.log("RUNNER_RESULT=FAIL reason=--project 不是已编译产物：" + PROJECT); process.exit(2); }
@@ -431,10 +621,12 @@ RUN.booted = true;
 /* 每跑完一个页组就落一次盘：这条通道会偶发把进程带走（实测两次未捕获 socket 超时），
    跑了 40 分钟的成果不能跟着一起没了。最终那次写盘仍走下面的守恒检查。 */
 function flush() {
-  const m2 = new Map();
-  for (const r of [...(prior.results || []), ...rows]) m2.set(r.manifest + "|" + r.id, r);
-  const merged = [...m2.values()];
-  try { writeFileSync(RES, JSON.stringify({ round: LABEL, gitSha: GIT_SHA, identity: IDENTITY, identities: [...new Set(merged.map((r) => r.identity || "?"))], project: relOf(PROJECT), band: (BAND.mode || "?") + "@" + (BAND.sha8 || "?"), loginVerify: LOGIN_VERIFY, updatedAt: new Date().toISOString(), runner: "scripts/qa/r-exec-cli.mjs（" + MODE_LABEL + " 切片，增量落盘）", results: merged }, null, 1)); }
+  /* 增量落盘也走同一个 stampMerged：以前这里把 prior 的行和本 boot 的行合并后，
+     整份文件盖上 GIT_SHA（本 boot 的 HEAD）——续跑跑到一半就把旧行的出处改写了，
+     终稿那次至少还有个守恒检查挡一下，增量那次连挡都没有。现在两处分文合并成一处。 */
+  const stamped = stampMerged(prior, prior.results || [], rows, GIT_SHA, BOOT_ID);
+  const merged = stamped.merged;
+  try { writeFileSync(RES, JSON.stringify(fileStampHeader(stamped, { round: LABEL, identity: IDENTITY, identities: [...new Set(merged.map((r) => r.identity || "?"))], project: relOf(PROJECT), band: (BAND.mode || "?") + "@" + (BAND.sha8 || "?"), loginVerify: LOGIN_VERIFY, updatedAt: new Date().toISOString(), runner: "scripts/qa/r-exec-cli.mjs（" + MODE_LABEL + " 切片，增量落盘）", results: merged }), null, 1)); }
   catch (e) { console.log("FLUSH_ERR " + String(e.message).slice(0, 90)); }
 }
 
@@ -475,6 +667,8 @@ for (const name of files) {
     if (!todo.length) continue;
     try { renewUi({ owner: UI_LEASE_OWNER, batch: "R7" }); } catch (e) { console.log("RUNNER_LEASE_RENEW_ERR " + String(e.message).slice(0, 60)); }
     stats.pages++;
+    /* 组边界清一次尺寸传递位：本页第一个探针还没打过，任何行都不许继承上一页最后一条的读数。 */
+    CUR_GEOM = "";
     console.log("RUNNER_GROUP_START page=" + page + " 待跑=" + todo.length + " 累计=" + ((Date.now() - BOOT_T) / 60000).toFixed(1) + "min");
     try { openPage(page, ROUTE_QUERY[page] || "", { project: PROJECT }); } catch (e) {
       for (const c of todo) rows.push(row(name, page, c, "FAILED", "", "open_page 失败：" + String(e.message).slice(0, 70), ""));
@@ -533,13 +727,20 @@ for (const name of files) {
     if (dom.__err) console.log("  probe-err " + page + " :: " + dom.__err);
     const domFor = (list) => (list.length ? probeMany(list) : {});
     /** 行里的 observed 只有一处生成，交互刀和 observe-only 共用同一个形状，
-        否则同一轮里会出现两种读法（这在本仓已经被点过一次）。 */
-    const observed0 = (c, routeStr, rOk, d, tapNote) =>
-      "top=" + (String(routeStr || "").split("|").pop() || (routeKnown ? "?" : "(落点未取证)")) + (rOk === false ? " ≠ " + page : "") +
-      " | dom: " + (judgeTargets(c).length
-        ? judgeTargets(c).map((s) => s + ":" + (d[s] || (d.__err ? "ERR" : "no-answer"))).join(" ")
-        : "(本条没点名类名)") +
-      " | " + (TAP_MODE ? "tap-腿" : "observe-only") + (d.__err ? " | probe-err:" + d.__err : "") + routeRetry + probeRetry + (tapNote || "") + gateNote;
+        否则同一轮里会出现两种读法（这在本仓已经被点过一次）。
+        尺寸读数也在这一处生成：observed 里追加 ` | size: …`（只有量到才追加，旧形状不变），
+        同时把它放进 CUR_GEOM，由 row() 落到行内独立字段 `geometry`
+        （observed 会被下游截到 300 字，尺寸绝不能挤在一个被截断的串里 —— #C-1）。 */
+    const observed0 = (c, routeStr, rOk, d, tapNote) => {
+      const gm = geomText(c, d);
+      CUR_GEOM = gm;
+      return "top=" + (String(routeStr || "").split("|").pop() || (routeKnown ? "?" : "(落点未取证)")) + (rOk === false ? " ≠ " + page : "") +
+        " | dom: " + (judgeTargets(c).length
+          ? judgeTargets(c).map((s) => s + ":" + (d[s] || (d.__err ? "ERR" : "no-answer"))).join(" ")
+          : "(本条没点名类名)") +
+        (gm ? " | size: " + gm.slice(0, 300) : "") +
+        " | " + (TAP_MODE ? "tap-腿" : "observe-only") + (d.__err ? " | probe-err:" + d.__err : "") + routeRetry + probeRetry + (tapNote || "") + gateNote;
+    };
     /* 这条行将被"档位/切片原因"跳过时，连点击都不该发生：
        点了再记 SKIPPED 会把同页后面几百条共用的状态改掉，红没判出来反倒污染了它们的前提。 */
     /* 防再犯 #74②：mock 档在结构上表达不了游客态 —— 它的 mock 引导会先把会话种子写好，
@@ -554,6 +755,8 @@ const bandSkip = (c) => (process.argv.includes("--real-cases-only") && c.require
       (c.requiresReal === true && !REAL_BAND);
     for (const c of todoToJudge) {
       CUR_T0 = Date.now();
+      /* 每条开头再清一次尺寸传递位：上一条量到的读数绝不能落到下一条头上（:570 那一族的翻版）。 */
+      CUR_GEOM = "";
       const scopeNote = identityScopeSkip(c, IDENTITY);
       if (scopeNote) {
         stats.idScope++;
@@ -578,7 +781,7 @@ const bandSkip = (c) => (process.argv.includes("--real-cases-only") && c.require
       /* 顺序要先问"在不在本页"再问"要不要点"：实测 mock 档登录页因已登录被重定向到 discover，
          整组 26 条都没落在本页，而交互腿照发 ⇒ 点的是别人的页，
          失败原因又被记成"点不到点名物件"，把真正的落点问题盖掉了（本轮 19 条）。 */
-      if (TAP_MODE && !bandSkip(c) && routeOk !== false && TAP_RE.test(String(c.action || ""))) {
+      if (TAP_MODE && !bandSkip(c) && routeOk !== false && wantsInteraction(c.action)) {
         if (DENY_TAP.test(String(c.action || ""))) {
           stats.tapDeny++;
           rows.push(row(name, page, c, "SKIPPED", route, "交互禁触（注销/解绑/清空这类不可逆动作会打掉后面几百条共用的会话）⇒ 显式记 DENY，不混进已跑", observed0(c, route, routeOk, dom, "")));
@@ -654,7 +857,7 @@ const bandSkip = (c) => (process.argv.includes("--real-cases-only") && c.require
            两个出口现在都只认 REAL_BAND，且原因串只陈述**当时量到的**档位，不写"本切片只跑 mock"这种断言。 */
         stats.skipReal++;
         rows.push(row(name, page, c, "SKIPPED", route, "requiresReal ⇒ 当前被测档位 VITE_API_MODE=" + (BAND.mode || "?") + "（project=" + relOf(PROJECT) + "）不是 real ⇒ 跳过；真实模式要把 --project 指到 mp-weixin-real 且后端在跑", observed));
-      } else if (TAP_RE.test(String(c.action || "")) && !tapped) {
+      } else if (wantsInteraction(c.action) && !tapped) {
         /* 这句台词以前无条件写着"本切片只跑 observe-only"，可 --tap 腿里它也会被打出来：
            实测游客档 27 条 requiresReal 走的就是这一支，真正原因是那一页被弹走了（routeOk===false），
            跟"这一腿只观察"没有半点关系。与 §98 那条档位谎话同一族：原因必须说当时量到的东西。 */
@@ -727,13 +930,23 @@ const bandSkip = (c) => (process.argv.includes("--real-cases-only") && c.require
 }
 
 /* 守恒：新行与旧行按 manifest|id 合并，状态只允许三种词，总数必须等于两边之和减重复。
-   对不上就不写盘——「账没闭合还把结果落下去」是本轮已被门禁点过名的那类失败。 */
-const merged = new Map();
-for (const r of [...(prior.results || []), ...rows]) merged.set(r.manifest + "|" + r.id, r);
-const all = [...merged.values()];
+   对不上就不写盘——「账没闭合还把结果落下去」是本轮已被门禁点过名的那类失败。
+   合并 + 逐行带戳一起走 stampMerged（与 flush() 同一份实现，#C-2）：
+   旧行保留**它自己那次启动**的戳，本 boot 只认领本 boot 跑出来的行。 */
+const stamped = stampMerged(prior, prior.results || [], rows, GIT_SHA, BOOT_ID);
+const all = stamped.merged;
 const dupNew = rows.length - new Set(rows.map((r) => r.manifest + "|" + r.id)).size;
 const bad = all.filter((r) => !["EXECUTED", "FAILED", "SKIPPED"].includes(r.status));
 console.log("RUNNER_ROWS new=" + rows.length + " merged=" + all.length + " 之前已有=" + (prior.results || []).length + " 重复新行=" + dupNew);
+/* #C-2 的可见性行：续跑时到底有多少行"没重跑所以不被本次认领"，以及这份文件横跨几次启动。
+   顶层那枚 gitSha 只对本 boot 跑的行成立，读它的人必须同时看见这一行。 */
+console.log("RUNNER_ROW_SHA 本boot新行=" + stamped.nNew + " 沿用旧行=" + stamped.nPrior +
+  " 逐行带分布=" + Object.keys(stamped.rowShas).sort().map((k) => k + "=" + stamped.rowShas[k]).join(" ") +
+  " 本boot=" + stamped.bootSha + (stamped.mergedFrom.length ? " 历次=" + stamped.mergedFrom.map((m) => m.gitSha + "(" + m.rows + "行)").join(",") : "（首跑，无续跑）"));
+const noRowSha = all.filter((r) => !r.gitSha || r.gitSha === "unknown").length;
+if (noRowSha) console.log("RUNNER_ROW_SHA_INCOMPLETE " + noRowSha + " 行给不出执行时的带（历史件，不猜 ⇒ 下游按 unknown 受审，不当已归因）");
+console.log("RUNNER_GEOM 带尺寸读数的行=" + rows.filter((r) => r.geometry).length + "/" + rows.length +
+  "（#C-1：fields({size:true}) 量到的 width/height 现在留在行内 geometry 字段；仍为 0 条时说明这一腿没点名可量物件）");
 /* 一份文件里混进多个身份/档位时，头部那个标量 identity 会替所有行说话
    （实测 interact-b2：头部 identity=A，里面 38 行是游客腿跑出来的）。
    合并是允许的，但必须看得见：这里把两套 census 打出来，并把它们写进文件头。 */
@@ -781,12 +994,12 @@ if (fails.length) {
   /* 红归红，数据归数据：以前这里"不写盘"，等于把 56 分钟的实测读数一起丢掉。
      现在写一份**带标签的旁路文件**（权威文件名不动，门禁读不到它），既不污染账，也留得住现场。 */
   const side = RES.replace(/\.json$/, "") + ".rejected.json";
-  try { writeFileSync(side, JSON.stringify({ rejected: true, rejectReason: fails.join(" / "), round: LABEL, gitSha: GIT_SHA, identity: IDENTITY, project: relOf(PROJECT), band: (BAND.mode || "?") + "@" + (BAND.sha8 || "?"), updatedAt: new Date().toISOString(), results: all }, null, 1)); console.log("RUNNER_REJECTED_WROTE=" + relOf(side) + " results=" + all.length); }
+  try { writeFileSync(side, JSON.stringify(fileStampHeader(stamped, { rejected: true, rejectReason: fails.join(" / "), round: LABEL, identity: IDENTITY, project: relOf(PROJECT), band: (BAND.mode || "?") + "@" + (BAND.sha8 || "?"), updatedAt: new Date().toISOString(), results: all }), null, 1)); console.log("RUNNER_REJECTED_WROTE=" + relOf(side) + " results=" + all.length); }
   catch (e) { console.log("RUNNER_REJECTED_WRITE_FAIL " + String(e.message).slice(0, 80)); }
   console.log("RUNNER_RESULT=FAIL reason=" + fails.join(" / ") + " ⇒ 权威结果不写盘（旁路文件仅供复盘）");
   process.exit(2);
 }
-writeFileSync(RES, JSON.stringify({ round: LABEL, gitSha: GIT_SHA, identity: IDENTITY, identities: Object.keys(identOf).sort(), project: relOf(PROJECT), band: (BAND.mode || "?") + "@" + (BAND.sha8 || "?"), fileBands: bandOf, loginVerify: LOGIN_VERIFY, updatedAt: new Date().toISOString(), runner: "scripts/qa/r-exec-cli.mjs（" + MODE_LABEL + " 切片）", results: all }, null, 1));
+writeFileSync(RES, JSON.stringify(fileStampHeader(stamped, { round: LABEL, identity: IDENTITY, identities: Object.keys(identOf).sort(), project: relOf(PROJECT), band: (BAND.mode || "?") + "@" + (BAND.sha8 || "?"), fileBands: bandOf, loginVerify: LOGIN_VERIFY, updatedAt: new Date().toISOString(), runner: "scripts/qa/r-exec-cli.mjs（" + MODE_LABEL + " 切片）", results: all }), null, 1));
 console.log("RUNNER_WRITTEN=" + relOf(RES) + " results=" + all.length);
 console.log("RUNNER_SCOPE=" + (process.argv.includes("--real-cases-only") ? "real-cases-only（只跑 requiresReal 那一批，产物必须是 mp-weixin-real）"
     : TAP_MODE && REAL_BAND ? "tap+real（真点击/真输入 + 含 requiresReal；覆盖数见 RUNNER_STATS）"

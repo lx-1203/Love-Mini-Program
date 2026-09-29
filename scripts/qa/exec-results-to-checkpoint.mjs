@@ -54,11 +54,21 @@ if (failures.length !== counts.failed) { console.log("CKPT_RESULT=FAIL reason=fa
 const out = resolve(REPO, arg("out", join("tmp/qa/checkpoints", "exec-" + arg("round", "R7") + ".json")));
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, JSON.stringify({
-  round: arg("round", "R7"), gitSha: j.gitSha || "unknown", script: arg("script", j.runner || "scripts/qa/r-exec-cli.mjs"),
+  round: arg("round", "R7"), gitSha: j.gitSha || "unknown",
+  /* #C-2：源件的顶层戳现在只表示"最后一次写盘那次启动的 HEAD"，逐行带的分布必须一起带下来，
+     否则这个派生件又把跨了几次启动的账读成一次跑的账（下游按单戳核对时必然假红/假绿）。 */
+  gitShaScope: j.gitShaScope || (j.gitSha ? "file-scalar（源件由 #C-2 修复之前的执行器写出，只有文件头一枚戳）" : "unknown"),
+  rowShas: j.rowShas || null, mergedFrom: j.mergedFrom || null,
+  rowsWithOwnSha: rows.filter((r) => r.gitSha).length,
+  script: arg("script", j.runner || "scripts/qa/r-exec-cli.mjs"),
   startedAt: null, suites, failures, updatedAt: j.updatedAt || new Date().toISOString(),
   derived: true, derivedFrom: RS(RES),
   note: "本检查点由结果文件派生（桥版执行器不写逐组检查点）。组名/计数/executedCaseIds 全部来自真实行；"
     + "startedAt 结果文件里没有，故记 null 而不是拿 updatedAt 冒充。identity=" + (j.identity || "?") + " verify=" + (j.loginVerify || "?"),
 }, null, 1));
+console.log("CKPT_SHA 顶层=" + (j.gitSha || "unknown") + "（" + String(j.gitShaScope || "源件只有文件头一枚戳") + "）"
+  + " 行内自报带的行数=" + rows.filter((r) => r.gitSha).length + "/" + rows.length
+  + (j.rowShas ? " 逐行带分布=" + Object.keys(j.rowShas).sort().map((k) => k + "=" + j.rowShas[k]).join(" ") : " 源件无逐行带分布")
+  + ((j.mergedFrom && j.mergedFrom.length) ? " 历次启动=" + j.mergedFrom.map((m) => m.gitSha + "(" + m.rows + "行)").join(",") : ""));
 console.log("CKPT_SUITES=" + Object.keys(suites).length + " rows=" + rows.length + " executed=" + counts.executed + " failed=" + counts.failed + " skipped=" + counts.skipped + " 守恒=yes");
 console.log("CKPT_RESULT=OK 写出 " + RS(out) + "（派生件，note 里写明来源）");

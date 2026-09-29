@@ -34,14 +34,16 @@ const outPath = corpusDir ? join(REPO, corpusDir, "manifest-detail.json") : "";
 function sha16(abs) { return crypto.createHash("sha256").update(readFileSync(abs)).digest("hex").slice(0, 16); }
 function rel(p) { return relative(REPO, p).split(sep).join("/"); }
 
-/* 这批帧的**采集带** = 源结果文件自己记的 gitSha（盘上出处，不是推断出来的）。
-   顶层 gitSha 按 L67-68 取的是「转换那一刻的 HEAD」，两者跨天重建 corpus 时必然不同：
-   round-7 的 18 份 exec-* 索引就是这么被 verify-provenance-all.mjs:204 判成 4867 帧「回填戳记」
-   —— 帧的 mtime 和行内 at 都是 2026-09-26~27，顶层戳记却是 2026-09-28 的提交。
-   门禁其实早就支持逐行带（:196 `const rowStamp = s.bandSha || stamp`），只是生产者一直没写它，
-   于是「诚实的转换时间」把「诚实的采集带」顶掉了，跨带进来的帧被读成造假。
-   补 bandSha：每帧按自己那一带受审，顶层 gitSha 仍然如实记转换环境的 HEAD。 */
-const capturedBand = j.gitSha || "";
+/* 这批帧的**采集带**优先取**逐行**戳（r-exec-cli.mjs 的 #C-2 修复之后每行都带 gitSha =
+   该行实际执行那次启动的 HEAD），退回文件头那一枚（历史件只有文件头，或该腿是旧执行器跑的）。
+   为什么必须先看行内：文件头那枚从前到后一直是"本 boot 启动时的 HEAD"，续跑（同一 --out 已有
+   exec-results.json 就跳过跑过的）会把它盖在合并后的全集上 ⇒ 上一 boot 跑出来的帧被归给
+   一枚晚 28 分钟的提交（实测 exec-interact-real-sc-r10：gitSha=93650335 提交于 19:41Z、
+   updatedAt=19:44Z，而它认领的帧是 19:13Z 的）。顶层 gitSha 按 L67-68 取的是「转换那一刻的 HEAD」，
+   两者不同是事实，不是造假：门禁 verify-provenance-all.mjs:196 读的就是行内 bandSha。 */
+const fileBand = j.gitSha || "";
+const rowBandOf = (r) => String((r && r.gitSha) || "") || fileBand;
+let bandFromRow = 0, bandFromFile = 0, bandUnknown = 0;
 
 const shots = [];
 const missing = [];
@@ -53,6 +55,8 @@ for (const r of rows) {
   const st = statSync(abs);
   if (st.size !== Number(m[2])) missing.push({ id: r.manifest + "/" + r.id, why: "字节不符：记 " + m[2] + " 实 " + st.size });
   const statePart = String(r.title || "").split("：")[0].trim().slice(0, 40);
+  const rowBand = rowBandOf(r);
+  if (r && r.gitSha) bandFromRow++; else if (fileBand) bandFromFile++; else bandUnknown++;
   shots.push({
     identity: IDENTITY,
     page: r.page,
@@ -67,7 +71,8 @@ for (const r of rows) {
     bytes: st.size,
     contentHash: sha16(abs),
     at: new Date(st.mtimeMs).toISOString(),
-    ...(capturedBand ? { bandSha: capturedBand } : {}),
+    ...(rowBand ? { bandSha: rowBand } : {}),
+    ...(rowBand ? { bandShaOrigin: (r && r.gitSha) ? "行内 gitSha（该行执行时启动读到的 HEAD）" : "文件头 gitSha（该腿没有逐行戳，只能退回文件头那一枚）" } : {}),
   });
 }
 const dupHash = {};
@@ -80,9 +85,11 @@ try { headSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: REPO, encoding
 const manifest = {
   gitSha: headSha,
   resultsGitSha: j.gitSha || "(结果文件没记)",
-  bandShaSource: capturedBand
-    ? "行内 bandSha 逐字取自 " + RESULTS + " 顶层记的那一枚（采集带）；顶层 gitSha 仍是转换时刻的 HEAD，两者不同是事实，不是造假"
-    : "(结果文件没记 ⇒ 行内不写 bandSha，由门禁退回顶层，按转换带受审)",
+  bandShaSource: (bandFromRow || bandFromFile)
+    ? "行内 bandSha 优先取该行自己的 gitSha（" + bandFromRow + " 帧来自逐行戳 = 该行执行时启动读到的 HEAD；"
+      + bandFromFile + " 帧只能退回结果文件头那一枚 = 最后一次写盘那次启动的 HEAD，历史件没有逐行戳）；"
+      + "顶层 gitSha 仍是转换时刻的 HEAD，三者不同是事实，不是造假"
+    : "(结果文件既没逐行戳也没文件头戳 ⇒ 行内不写 bandSha，由门禁退回顶层，按转换带受审)",
   workflowVersion: "round-7 exec slice（WS 取证 + 桥出帧）",
   generatedAt: new Date().toISOString(),
   project: "apps/client/dist/build/mp-weixin",
@@ -100,6 +107,14 @@ const manifest = {
   })),
   skipped: (j.results || []).filter((r) => r.status === "SKIPPED").length,
   missingEvidence: missing,
+  /* 历次启动的戳原样传下去（续跑过的结果文件横跨多个带）：下游只要读到顶层单戳就该同时看到这一对。 */
+  resultsRowShas: j.rowShas || "(源结果件没有逐行戳分布 ⇒ 该件由 #C-2 修复之前的执行器写出)",
+  resultsMergedFrom: j.mergedFrom || [],
+  bandShaCensus: (() => {
+    const c = {};
+    for (const s of shots) { const k = s.bandSha || "unknown"; c[k] = (c[k] || 0) + 1; }
+    return c;
+  })(),
   dupStats: { frames: shots.length, uniqueHash: uniq, dupBytesReducible: shots.length - uniq },
 };
 if (outPath) {
@@ -109,6 +124,11 @@ console.log("EXEC2CORPUS frames=" + shots.length + " uniqueHash=" + uniq + " 可
   " failures=" + manifest.failures.length + " skipped=" + manifest.skipped + " 证据异常=" + missing.length +
   " gitSha=" + headSha.slice(0, 8) + " 结果sha=" + String(manifest.resultsGitSha).slice(0, 8));
 missing.slice(0, 8).forEach((x) => console.log("  E2C_EVIDENCE_BAD " + x.id + " :: " + x.why));
+console.log("EXEC2CORPUS_BANDS 帧带来源：逐行 gitSha=" + bandFromRow + " 退回文件头=" + bandFromFile +
+  " 无戳=" + bandUnknown + " 分布=" + Object.keys(manifest.bandShaCensus).sort().map((k) => k + "=" + manifest.bandShaCensus[k]).join(" ") +
+  (manifest.resultsMergedFrom.length
+    ? "（源件跨了 " + (manifest.resultsMergedFrom.length + 1) + " 次启动 ⇒ 逐行带才是一手出处，顶层那枚只是最后一次）"
+    : (bandFromFile && !bandFromRow ? "（源件由 #C-2 修复之前的执行器写出：没有逐行戳，只能整批按文件头那一枚受审）" : "")));
 console.log(outPath ? "EXEC2CORPUS_WRITTEN=" + rel(outPath) : "EXEC2CORPUS_WRITTEN=(未给 --corpus，只报数不写盘)");
 if (bySha && headSha && !headSha.startsWith(bySha)) {
   console.log("E2C_SHA_MISMATCH 结果文件 sha=" + j.gitSha + " 与当前 HEAD 不同 ⇒ 这批帧测的不是当前产物，索引里 resultsGitSha 已如实记录");

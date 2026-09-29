@@ -15,27 +15,76 @@ const REPO = resolve(import.meta.dirname, "..", "..");
 const argv = process.argv.slice(2);
 const arg = (k, d) => { const i = argv.indexOf("--" + k); return i >= 0 && argv[i + 1] !== undefined ? argv[i + 1] : d; };
 const OPS = resolve(REPO, arg("ops", "reports/audit/round-6/ops"));
-const OUT = resolve(REPO, "reports/audit/round-7");
+/* --out 默认值就是原来的权威目录（不传旗标行为不变）。加这一条只为让回归测试
+   （scripts/qa/test-exec-tap-verb-camel.cjs）能把产物写进自己的目录：
+   test-probe-hygiene.cjs:16-19 记过一次同类事故 —— 测试跑生产工具，把生产载体覆盖了。 */
+const OUT = resolve(REPO, arg("out", "reports/audit/round-7"));
 
 if (!existsSync(OPS)) { console.log("TAPCENSUS_RESULT=FAIL reason=判据台目录不存在 " + OPS); process.exit(2); }
 
 /* "含交互动词"这条轴也不能自己发明：上一版这里自带一张 /i 无边界表，于是
    getApp()（含 "tAp"）、「长按提示」「勾选态」这种名词都被算成"这条要点东西"，
    把 36/69 条本不欠点名的判据混进了待补清单（只读复判第三刀抓到）。
-   现在直接取执行器那一行 TAP_RE 的原文；取不到就 exit 2，绝不回落到自己抄的那张表。 */
-const TAP_RE = (() => {
-  const src0 = readFileSync(join(REPO, "scripts", "qa", "r-exec-cli.mjs"), "utf8");
-  const key = "const TAP_RE = /";
-  const p = src0.indexOf(key);
-  if (p < 0) { console.log("TAPCENSUS_RESULT=FAIL reason=取不到执行器的 TAP_RE ⇒ 动词轴无法对齐"); process.exit(2); }
-  const line = src0.slice(p + key.length - 1).split(String.fromCharCode(10))[0].trim();
+   现在直接取执行器那一行 TAP_RE 的原文；取不到就 exit 2，绝不回落到自己抄的那张表。
+   2026-09-29（#C-3 驼峰动词假绿）：执行器把口径拆成了 TAP_RE + TAP_CAMEL_RE 两条字面量
+   （驼峰接缝只能靠大小写认，并进带 /i 的那条就会失效），所以这里必须**两条都取**、
+   合成同一个判定函数；任何一条取不到、或者驼峰那条被加上了 i 旗标，一律 exit 2 ⇒
+   口径分家只会响，不会静默数出一张按旧动词表的普查。 */
+const EXEC_SRC = join(REPO, "scripts", "qa", "r-exec-cli.mjs");
+function grabLiteral(src, key, why) {
+  const p = src.indexOf(key);
+  if (p < 0) { console.log("TAPCENSUS_RESULT=FAIL reason=" + why); process.exit(2); }
+  const line = src.slice(p + key.length - 1).split(String.fromCharCode(10))[0].trim();
   const end = line.lastIndexOf("/");
-  if (!line.startsWith("/") || end <= 0) { console.log("TAPCENSUS_RESULT=FAIL reason=TAP_RE 那行读成了 " + JSON.stringify(line.slice(0, 60))); process.exit(2); }
+  if (!line.startsWith("/") || end <= 0) { console.log("TAPCENSUS_RESULT=FAIL reason=" + key + " 那行读成了 " + JSON.stringify(line.slice(0, 60))); process.exit(2); }
   const flags = line.slice(end + 1).replace(/[^a-zgimsuy]/g, "");
-  const re = new RegExp(line.slice(1, end), flags.includes("i") ? flags : flags + "i");
-  if (re.test("调用 getApp() 取应用实例")) { console.log("TAPCENSUS_RESULT=FAIL reason=取到的 TAP_RE 把 getApp() 里的 tAp 当成交互动词 ⇒ 字母边界守卫丢了，动词轴不可信"); process.exit(2); }
-  if (!re.test("tap .code-input 提交")) { console.log("TAPCENSUS_RESULT=FAIL reason=取到的 TAP_RE 不认英文动词 ⇒ lane 写的 tap 点名会被漏计"); process.exit(2); }
-  return re;
+  try { return new RegExp(line.slice(1, end), flags); }
+  catch (e) { console.log("TAPCENSUS_RESULT=FAIL reason=" + key + " 抠出来重建失败：" + String(e.message).slice(0, 80)); process.exit(2); }
+}
+const { TAP_RE, TAP_CAMEL_RE, TAP_TEST } = (() => {
+  const src0 = readFileSync(EXEC_SRC, "utf8");
+  const TAP_RE = grabLiteral(src0, "const TAP_RE = /", "取不到执行器的 TAP_RE ⇒ 动词轴无法对齐");
+  const TAP_CAMEL_RE = grabLiteral(src0, "const TAP_CAMEL_RE = /",
+    "取不到执行器的 TAP_CAMEL_RE ⇒ 驼峰动词那一半丢了（rapidTap×5 一族会被普查漏计，正是 #C-3 假绿的形状）");
+  if (/i/.test(TAP_CAMEL_RE.flags)) {
+    console.log("TAPCENSUS_RESULT=FAIL reason=TAP_CAMEL_RE 带上了 i 旗标 ⇒ [a-z][A-Z] 的驼峰接缝被大小写折叠掉，catchtap/bindtap 全会被算成交互（实测形状）");
+    process.exit(2);
+  }
+  const TAP_TEST = (() => {
+    /* 合成式也必须从执行器里取（不许在这儿自己写 `a || b`）：执行器真正下发/跳过交互判的是
+       wantsInteraction()，测试里若各拼各的，把驼峰半边从 wantsInteraction 里摘掉都不会响。 */
+    const p = src0.indexOf("const wantsInteraction = ");
+    if (p < 0) { console.log("TAPCENSUS_RESULT=FAIL reason=取不到执行器的 wantsInteraction() ⇒ 动词轴的两半由谁合成不知道，口径已分家"); process.exit(2); }
+    const line = src0.slice(p).split(String.fromCharCode(10))[0].trim();
+    let fn = null;
+    try { fn = new Function("TAP_RE", "TAP_CAMEL_RE", "return " + line.slice("const wantsInteraction = ".length).replace(/;$/, ""))(TAP_RE, TAP_CAMEL_RE); } catch (e) { }
+    if (typeof fn !== "function") { console.log("TAPCENSUS_RESULT=FAIL reason=wantsInteraction 取出来了但不是函数：" + JSON.stringify(line.slice(0, 80))); process.exit(2); }
+    if (/TAP_RE\.test\(String\(c\.action/.test(src0)) {
+      console.log("TAPCENSUS_RESULT=FAIL reason=执行器里还有一处直接读 TAP_RE.test(c.action) 的判点（没走 wantsInteraction）⇒ 两半口径在该处会分家");
+      process.exit(2);
+    }
+    return (s) => fn(s);
+  })();
+  /* 四条对照，缺一即红（这些就是"口径可不可信"的全部依据，宁可不出表）：
+     ① getApp() 里的 tAp 不许算交互（幽灵入口断言误判的历史来源）
+     ② lane 写的英文 tap 必须算交互（旧表不认 ⇒ 13 条静默不测）
+     ③ rapidTap×5 必须算交互 —— #C-3：DND08/TP04/SCU06/SCU10/SCH10/RP06/INT07/FB07/TK05
+        就因为旧边界认不出驼峰，一次交互都没发出却记成 EXECUTED（假绿）
+     ④ emit('searchTap') 不许算交互：它与 rapidTap 同形（小写→大写接缝 + 末段 Tap），
+        唯一分得开的是引号；把引号守卫删了这条就红 */
+  const CTRL = [
+    { s: "调用 getApp() 取应用实例", want: false, why: "TAP_RE 把 getApp() 里的 tAp 当成交互动词 ⇒ 字母边界守卫丢了，动词轴不可信" },
+    { s: "tap .code-input 提交", want: true, why: "TAP_RE 不认英文动词 ⇒ lane 写的 tap 点名会被漏计" },
+    { s: "500ms 内对 .save-btn rapidTap×5", want: true, why: "驼峰动词 rapidTap 没被认出来 ⇒ #C-3 假绿复活（DND08 一族会继续一行不跑却记 EXECUTED）" },
+    { s: "der.vue:17 emit('searchTap') 声明", want: false, why: "引号里的驼峰名被当成动作 ⇒ 幽灵入口断言会重新混进待补清单" },
+  ];
+  for (const c of CTRL) {
+    let got = false;
+    try { got = TAP_TEST(c.s); } catch (e) { got = "throw:" + e.message; }
+    if (got !== c.want) { console.log("TAPCENSUS_RESULT=FAIL reason=取到的 TAP_RE/TAP_CAMEL_RE 对照不过：" + c.why + "（样本 " + JSON.stringify(c.s) + " 期望 " + c.want + " 实得 " + got + "）"); process.exit(2); }
+  }
+  console.log("TAPCENSUS_CONTROLS 4/4 通过（getApp 负例 / 英文 tap 正例 / rapidTap 驼峰正例 / 'searchTap' 引号负例）口径=" + EXEC_SRC.replace(REPO + "/", "").split("\\").join("/"));
+  return { TAP_RE, TAP_CAMEL_RE, TAP_TEST };
 })();
 /* 类名抽取口径必须**由消费者自己提供**，不能在这里抄一份：
    上一版注释写着"与执行器保持一致"，却在下面多加了 BARE_CLS_RE、又把 pre 一起扫，
@@ -86,7 +135,7 @@ for (const f of readdirSync(OPS).filter((x) => x.endsWith(".json"))) {
   for (const c of (mf.cases || [])) {
     total++;
     const actionText = String(c.action || "");
-    if (!TAP_RE.test(actionText + " " + String(c.pre || ""))) continue;
+    if (!TAP_TEST(actionText + " " + String(c.pre || ""))) continue;
     tapCases++;
     /* 判据台里被显式盖章 automatable:false 的条目（apply-ops-cellplans 落的，带 notAutomatableReason）
        不再算"没点名"：它欠的是一次裁决/换载体，不是一个类名。单列一桶并写进守恒等式，
