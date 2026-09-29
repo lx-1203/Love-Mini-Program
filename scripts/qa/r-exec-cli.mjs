@@ -9,14 +9,33 @@
      · 每页只开一次，页内所有用例点名的类名折叠成一次「点火 + 取件」探测（notes §12：0.21 s/条且与逐条一致）；
      · 需要出帧的用例逐例截图；requiresReal 的用例记 SKIPPED 并写明原因（不拿 mock 帧冒充真实模式）；
      · 只观察不判决：它不推断「该出现却没出现算失败」——清单里没写极性的判点，猜出来就是假判决。
+   2026-09-29 capability 车道补上的另一半（**都要旗标**；不带旗标时上面那四条就是它的全部能力，
+   既有 1107 条批次能原样复现）：
+     · --native-capture：把 r1-exec.cjs:278-305 的 toast / 原生 Modal 调用流钩子接到本通道的 evaluate 上
+       （:25 早就 import 了 evaluate ⇒ 是接线，不是新造通道），行上 toast/console 从此是数组
+       ⇒「toast 文案在本项目量不到」这句话从本车道起**不再成立**；
+     · --gestures：发出 longpress（r1-exec.cjs:1033+:1068 的等价物 = 同一个工具的另一个 --action）
+       与 pullDown / stopPullDownRefresh（r1-exec.cjs:1115-1126 那条 evaluate 动线）；
+     · --strict-verbs（被 --gestures 隐含）：判据点名的动词在本通道发不出去时**扣住不发**，
+       记 SKIPPED + NOT_SHOOTABLE 原因，绝不退化成一次普通 tap
+       （MSG26 / DND08 / DC08 / VI40 就钉在这条上；负例 scripts/qa/test-exec-verb-dispatch.cjs）。
 
    行形状与 round-6 一致（suite/manifest/id/page/tier/requiresReal/title/status/observed/
    missingEvidence/failureReason/route/toast/console/evidence/durationMs），
    这样 queue-reconcile / evidence-integrity / readjudicate 三个门禁的账本不用改。
+   2026-09-29 capability 车道**追加**了四个键（geometry / nativeCapture / consoleScope / evidenceGaps）
+   与两个动词读数 —— 追加键不改既有读取路径（本仓既有约定见 tour-r6.mjs:49「JSON 多余字段被忽略」）；
+   toast/console 只在 --native-capture 下从字面空串变成数组，不带旗标时形状与 round-6 逐字一致。
 
    用法：PATH=<node22 目录>:$PATH node scripts/qa/r-exec-cli.mjs \
      --project apps/client/dist/build/mp-weixin --out reports/audit/round-7/interact \
      [--manifests PAGES-HOME-INDEX,PAGES-NEARBY-INDEX] [--limit 40]
+     [--tap]            元素级真点/真输入（以前就有）
+     [--gestures]       发 longpress / pullDown，并隐含 --strict-verbs
+     [--strict-verbs]   只做防降级：判据点名的动词发不出去时不发普通 tap，记 SKIPPED + NOT_SHOOTABLE 原因
+     [--native-capture] 装 wx.showToast/hideToast/showModal/showLoading + console.* 调用流钩子
+                        ⇒ 行上 toast/console 变成数组（每行一次取件，1107 条约多 4 分钟）
+   三个旗标都不带时本文件的下发、判决与落盘字段与 2026-09-28 之前的腿逐字相同（既有 1107 条批次要能复现）。
    续跑：同一 --out 下已有 exec-results.json 时按 manifest|id 跳过跑过的，合并后整体守恒才写盘。 */
 import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync } from "node:fs";
 import { acquireUi, releaseUi, renewUi } from "./ui-lease.mjs";
@@ -52,11 +71,26 @@ const WARMUP_GUEST = process.argv.includes("--guest-warmup");
    不可逆的账号级动作一律禁触并显式记 DENY——不是藏红，是这类动作会把后面几百条
    共用的会话打掉，那一次跑就只剩下"注销成功"这一帧。 */
 const TAP_MODE = process.argv.includes("--tap");
+/* ── 能力旗标（2026-09-29 capability 车道；三条都是**加法**，不带旗标时本文件的行、判决、
+   字段与 2026-09-28 之前逐字一致 —— 判据台 1107 条的既有批次必须能原样复现）───────
+   · --gestures   发出 longpress / pullDown（r1-exec.cjs:1033+:1068、:1115-1126 那两条一直没接过来的动线）。
+                  同时**隐含 --strict-verbs**：capability 与"不许换动词"必须同批到货，
+                  否则"新增 longpress"的同一腿里 DND08 仍会被一次普通 tap 顶掉。
+   · --strict-verbs 只做防降级：判据点名的动词发不出去时不发普通 tap，改记 SKIPPED + NOT_SHOOTABLE 原因。
+   · --native-capture 装 wx.showToast/hideToast/showModal/showLoading + console.* 的调用流钩子
+                  （载具：r1-exec.cjs:278-299 installToastHook / :300-305 drainToasts，都是纯 evaluate 载荷，
+                   本文件的 evaluate 在 :25 就已 import ⇒ 是接线不是新造通道）。 */
+const GESTURE_MODE = process.argv.includes("--gestures");
+const STRICT_VERBS = GESTURE_MODE || process.argv.includes("--strict-verbs");
+const NATIVE_CAPTURE = process.argv.includes("--native-capture");
 /* 落盘字段 runner 必须由 argv 派生。此前它写死「observe-only 切片」，
    于是 `--tap` 跑出来的 exec-results.json 自称只跑了观察腿 —— 载具在撒谎。
-   权威结论行 RUNNER_SCOPE 早就按 argv 派生（在 run.log 里），这里只是把同一个口径补进 JSON。 */
-const MODE_LABEL = process.argv.includes("--real-cases-only") ? "real-cases-only"
-  : TAP_MODE ? (REAL_BAND ? "tap+real" : "tap") : (REAL_BAND ? "real" : "observe-only");
+   权威结论行 RUNNER_SCOPE 早就按 argv 派生（在 run.log 里），这里只是把同一个口径补进 JSON。
+   2026-09-29：新能力旗标同样要进这个名字（+gestures / +capture），否则"这一腿有没有发过
+   longpress、有没有采过 toast"在账本里又变成看不见的东西。不带旗标时名字一个字不变。 */
+const MODE_SUFFIX = (GESTURE_MODE ? "+gestures" : "") + (NATIVE_CAPTURE ? "+capture" : "");
+const MODE_LABEL = (process.argv.includes("--real-cases-only") ? "real-cases-only"
+  : TAP_MODE ? (REAL_BAND ? "tap+real" : "tap") : (REAL_BAND ? "real" : "observe-only")) + MODE_SUFFIX;
 const DENY_TAP = /注销|解绑|清空|删除账号|删除帐号|退出登录|登出/;
 /* 整页锁屏（LockScreen）探针：present 时页面内容根本不在渲染树里。
    --allow-gate 用来在 showcase 档（挡不掉也要照判）或专门测锁屏时强行照判。 */
@@ -149,6 +183,26 @@ function runSelftest() {
     { n: "#C-2 文件头那枚 = 本 boot 的 HEAD（语义收窄，另附 mergedFrom）", got: (function () { const p = { gitSha: "SHA1" }; const a = stampMerged(p, [{ manifest: "M", id: "A", gitSha: "SHA1" }], [], "SHA2", "boot2"); return a.bootSha + "|" + a.mergedFrom.map((m) => m.gitSha + ":" + m.rows).join(","); })(), want: "SHA2|SHA1:1" },
     { n: "#C-2 历史行没有逐行戳 ⇒ 退回上一份文件头并写明是继承，绝不套本 boot 的", got: (function () { const a = stampMerged({ gitSha: "SHA1" }, [{ manifest: "M", id: "A" }], [], "SHA2", "b2"); return a.merged[0].gitSha + "|" + a.merged[0].gitShaSource.slice(0, 20); })(), want: "SHA1|inherited-prior-file" },
     { n: "#C-2 连上一份文件头都没戳 ⇒ unknown，不猜", got: (function () { const a = stampMerged({}, [{ manifest: "M", id: "A" }], [], "SHA2", "b2"); return a.merged[0].gitSha; })(), want: "unknown" },
+    /* —— capability 车道 #1/#2（2026-09-29）：动词拒发 + 原生调用流读数也进 --selftest，
+       症状（"改坏了探针在启动时就响"）同款：这三条纯函数决定 1107 条里哪些行会被扣下、
+       哪些 toast 会进行字段，等到跑完 90 分钟才发现就等于没验证。 —— */
+    { n: "#2 DND08 的 rapidTap×5 在无 --gestures 与有 --gestures 下**都**拒发（重复原语物理缺失，与旗标无关）", got: (function () { const a = "500ms 内对 .save-btn rapidTap×5，逐次记录：客户端 PUT /dnd 请求条数、Toast 条数"; return /^NOT_SHOOTABLE\(verb=rapidTap\)/.test(verbRefusal(a, false)) && /^NOT_SHOOTABLE\(verb=rapidTap\)/.test(verbRefusal(a, true)); })(), want: true },
+    { n: "#2 DC08 的向右拖动拒发（swipe 半边没接）", got: /^NOT_SHOOTABLE\(verb=swipe\)/.test(verbRefusal("在卡片上向右拖动 >SWIPE_THRESHOLD 后松手", true)), want: true },
+    { n: "#2 MSG26 一次点名四个动词 ⇒ 原因串把四个都列出来，不许只报最好写的点", got: (function () { const r = verbRefusal("① 长按→「删除会话」→ 在 showModal 点「取消」；③ 对同一会话在 500ms 内连点删除入口 5 次；④ 断网执行确定", true); return ["longpress", "rapidTap", "nativeModal", "networkFault"].every((v) => r.includes(v)); })(), want: true },
+    { n: "#2 长按在无 --gestures 时拒发（不许退化成 tap）；带旗标后发得出去 ⇒ 不再拒发", got: verbRefusal("长按 .msg-row 呼出操作条", false).startsWith("NOT_SHOOTABLE(verb=longpress)") && verbRefusal("长按 .msg-row 呼出操作条", true) === "", want: true },
+    { n: "#2 普通点击判据一条都不该被拒（防降级闸不许把 624 条可发的交互全扣了）", got: verbRefusal("点 .save-btn 保存", true) === "" && verbRefusal("点 .save-btn 保存", false) === "", want: true },
+    { n: "#2 pickElementVerb：长按只在旗标下顶掉 tap，输入腿口径一字不变", got: pickElementVerb("长按 .msg-row", ".msg-row", true) + "/" + pickElementVerb("长按 .msg-row", ".msg-row", false) + "/" + pickElementVerb("输入手机号", ".phone-input", true), want: "longpress/tap/input" },
+    { n: "#2 pullDown 三态分得开：uni-ok=ok，no-uni=unsupported，ERR=error，取空=unknown（把 no-uni 读成已下拉就是凭空造绿）", got: [pullDownVerdict("uni-ok"), pullDownVerdict("no-uni"), pullDownVerdict("ERR x"), pullDownVerdict(""), pullDownVerdict("page-handler-ok"), pullDownVerdict("no-page")].map((v) => String(v).split("(")[0]).join("/"), want: "ok/unsupported/error/unknown/ok/no-page" },
+    { n: "#2 pullDownSource 问的是 uni.startPullDownRefresh（照 r1-exec.cjs:1115-1120，不是自造一套）", got: pullDownSource().includes("uni.startPullDownRefresh") && stopRefreshSource().includes("uni.stopPullDownRefresh"), want: true },
+    { n: "#1 钩子包住 showModal/showLoading（r1-exec.cjs:293 同列）⇒ modal 调用从此可观察", got: ["showToast", "hideToast", "showModal", "showLoading"].every((n) => nativeHookSource().includes("wrap('" + n + "')")), want: true },
+    { n: "#1 钩子不许声称覆盖 showActionSheet（那条是 [NEW]，本车道不接 ⇒ 说了就是overclaim）", got: !/wrap\('showActionSheet'\)/.test(nativeHookSource()), want: true },
+    { n: "#1 钩子原样透传（orig.apply）⇒ 装钩子不改变小程序行为", got: /orig\.apply\(wx, arguments\)/.test(nativeHookSource()) && /orig\.apply\(console, arguments\)/.test(nativeHookSource()), want: true },
+    { n: "#1 interpretNative 把取件串翻成两个数组（行字段要的是数组，不是空串）", got: (function () { const r = interpretNative('{"toasts":[{"api":"showToast","title":"设置已保存"}],"logs":[{"level":"error","text":"boom"}],"hooked":true}'); return r.toasts.length === 1 && r.toasts[0].api === "showToast" && r.hooked === true; })(), want: true },
+    { n: "#1 interpretNative 遇到通道噪声（前缀日志/非 JSON）不抛，报 err ⇒ 行仍出，读数标「没取到」", got: (function () { const r = interpretNative("IDE_PROJECT_ABS … not json"); return Array.isArray(r.toasts) && r.toasts.length === 0 && !!r.err; })(), want: true },
+    { n: "#1 toastSummary 给出「条数」（DND08 判据②要的就是这个数）", got: toastSummary([{ api: "showToast", title: "设置已保存" }]), want: "条数=1 showToast×1 文案[设置已保存]" },
+    { n: "#1 consoleLines 照 r1-exec.cjs:1393 的口径：纯 log 不收，log 里带 error/TypeError 的收", got: (function () { const a = consoleLines([{ level: "log", text: "普通一行" }, { level: "log", text: "TypeError: x" }, { level: "error", text: "接口 500" }]); return a.length === 2; })(), want: true },
+    { n: "#1/#3 evidenceGaps：没开旗标时点名「载具没采」，开了而窗口为空时点名「通道已开但没采到」（两句意思不同）", got: (function () { const c = { evidence: "截图 + Toast + console + network", title: "" }; const off = evidenceGaps(c, { on: false, toastCount: 0, consoleCount: 0 }); const on = evidenceGaps(c, { on: true, toastCount: 1, consoleCount: 3 }); return off.length === 3 && /没带 --native-capture/.test(off[0]) && /network/.test(off[2]) && on.length === 1; })(), want: true },
+    { n: "#1 行上必须真的落这两个字段（钉死「rejection 路径也要填自己报告的读数」）", got: (function () { const src = readFileSync(resolve(import.meta.dirname, "r-exec-cli.mjs"), "utf8"); return /toast: toastVal, console: consoleVal/.test(src) && /nativeDrain\(\)/.test(src); })(), want: true },
   ];
   const bad = cases.filter((c) => c.got !== c.want);
   for (const c of cases) console.log((c.got === c.want ? "  ok " : "  BAD") + " " + c.n + " got=" + c.got + " want=" + c.want);
@@ -189,6 +243,192 @@ const TAP_RE = /点击|按下|长按|双击|输入|滑动|滚动|拖动|下拉|�
 const TAP_CAMEL_RE = /(?<=[a-z])(?=[A-Z])(?![\w$]*['"`])(?:Tap|Click|Input|Scroll|Swipe|Trigger|Press)(?![A-Za-z])/;
 const wantsInteraction = (text) => { const s = String(text === undefined || text === null ? "" : text); return TAP_RE.test(s) || TAP_CAMEL_RE.test(s); };
 const FRAME_RE = /截图|全帧|出帧|特写|帧/;
+/* ── 动词清单与"发得出去吗"的判定（capability 车道 #2；2026-09-29）──────────────────────
+   症状（reports/audit/round-7/c21-executor-capability-matrix.md:356-360 已记为比"没接线"更高一级）：
+   本文件只有一个元素级下发点（:1141 那一句 element(isInput ? "input" : "tap", …)），
+   判据点名 longpress / rapidTap×5 / 拖动 / 在 showModal 点「取消」时，它**一律发一次普通 tap**，
+   然后顺着末尾的 else 记 EXECUTED —— 换动词冒充判据，就是假绿。
+   老执行器早就有这道闸：scripts/qa/r-exec.cjs:1174 UNIMPLEMENTABLE_ACTION_RE（回归测试
+   scripts/qa/test-observe-markers.cjs），但 r-exec-cli.mjs 里没有对应物 ⇒ 这里补的是**那条闸的等价物**，
+   再加上 r1-exec.cjs 有、本文件没接的 longpress(:1033+:1068) / pullDown(:1115-1126) 两条动线。
+   口径三条：
+     ① emittable=false 的动词（repeat/swipe/nativeModal/networkFault）在任何模式下都发不出去 ⇒ 拒发，
+        记 SKIPPED + NOT_SHOOTABLE 原因，点名欠的是哪个原语；**绝不退化成 tap**。
+     ② emittable 取决于旗标的动词（longpress/pullDown）：--gestures 才发；没带旗标时同样拒发（而不是发 tap）。
+     ③ 判据同时点名"发得出去的"和"发不出去的"（例：MSG26 长按 + 连点×5 + showModal + 断网）⇒ 整条拒发：
+        一次部分交互会把"这一条已按判据点名的动作测过"冒充出来，而那正是它不许的结果。
+   动词表是**读 c.action 的纯函数**（不读 argv），旗标由调用方显式传进来 ⇒ 离线负例能同时驱动两条模式。 */
+const VERB_LONGPRESS_RE = /长按|longpress|long\s*press/i;
+const VERB_PULLDOWN_RE = /下拉刷新|下拉|pullDown|startPullDownRefresh|onPullDownRefresh/i;
+const VERB_RAPID_RE = /rapidTap|连点|连击|连续点|重复点击|双击|doubleTap|×\s*\d+\s*次|\d+\s*次内|循环\s*\d+\s*次|依次点|逐个点击/i;
+const VERB_SWIPE_RE = /拖动|拖拽|滑块|滑动|swipe|drag/i;
+const VERB_MODAL_RE = /showModal|showActionSheet|操作菜单|原生 ?Modal|系统弹窗/i;
+const VERB_OFFLINE_RE = /断网|网络中断|弱网|离线状态|故障注入|5xx|返回 ?500/i;
+const VERB_RULES = [
+  { verb: "longpress", re: VERB_LONGPRESS_RE, needsGesture: true,
+    why: "判据点名长按；本通道的元素级动作只有带 --gestures 时才发 longpress（载具 r1-exec.cjs:1033+:1068）" },
+  { verb: "pullDown", re: VERB_PULLDOWN_RE, needsGesture: true,
+    why: "判据点名下拉刷新；这条动线是 evaluate(uni.startPullDownRefresh)（载具 r1-exec.cjs:1115-1120），只在 --gestures 下发" },
+  { verb: "rapidTap", re: VERB_RAPID_RE,
+    why: "判据点名「重复/连点/依次点」，本通道没有重复下发原语：每次 element() 都是一次 execFileSync 进程派生（cli-automator.mjs:111），而 :1145 还刻意 sleep(700) ⇒ 「500ms 内 ×5」在这条腿上物理不可满足（审计 C21 (f) G-6 判它 transport-bound）。一次 tap 会把「请求条数=1／Toast 条数=1」这类判点变成恒真，正是 DND08 判据④点名的失败模式" },
+  { verb: "swipe", re: VERB_SWIPE_RE,
+    why: "判据点名拖动/滑动方向：需要 touchstart→touchmove→touchend 带位移的三件套（载具 r1-exec.cjs:1201-1222），本通道没接，且 DC08 那类判据还含「轻点不得被判为左右滑」的反向断言 ⇒ 用 tap 顶它等于测它明确排除的东西" },
+  { verb: "nativeModal", re: VERB_MODAL_RE,
+    why: "判据要在原生 Modal/ActionSheet 里选「取消」或「确定」：原生弹层不在页面渲染树里，automation_element_action 只收 selector（cli-automator.mjs:162-164）⇒ 选择器进不去。--native-capture 能把「弹过哪个原生 API、标题是什么」采进 row.toast（观察半边），但「点哪个选项」的驱动半边仍是新代码，不在本车道" },
+  { verb: "networkFault", re: /断网|网络中断|弱网|离线状态|故障注入|5xx|返回 ?500/i,
+    why: "判据点名断网/故障注入：本仓五条执行器里没有任何网络条件注入通道（审计 C21 (d)-c-2：mockWxMethod 只在 r1-exec.cjs:1134/r-exec.cjs:1551 用于 chooseImage）⇒ 属 [NEW]，不在本车道" },
+];
+/* 纯函数：这条判据点名了哪些动词、各自发不发得出去。旗标由调用方传入（离线负例据此跑两种模式）。 */
+function verbsNamed(action, gesturesOn) {
+  const s = String(action === undefined || action === null ? "" : action);
+  return VERB_RULES
+    .filter((r) => r.re.test(s))
+    .map((r) => ({ verb: r.verb, why: r.why, emittable: r.needsGesture ? !!gesturesOn : false }));
+}
+/* 返回拒发原因串（空串 = 没有不可发出的点名动词，按原口径下发）。
+   NOT_SHOOTABLE 是本仓既有拼写（artifact-band.mjs:70、shoot-frameplan.mjs:227 IDENTITY_REFUSED_STATUS），
+   但行状态词表受 :1284 的守恒检查限定为 EXECUTED|FAILED|SKIPPED ⇒ 状态留 SKIPPED（执行器里的"拒发"档），
+   机读标记放在原因串开头，记账方按前缀抠。 */
+function verbRefusal(action, gesturesOn) {
+  const bad = verbsNamed(action, gesturesOn).filter((v) => !v.emittable);
+  if (!bad.length) return "";
+  return "NOT_SHOOTABLE(verb=" + bad.map((v) => v.verb).join("/") + "): 判据点名的动词在本通道发不出去 ⇒ 一次普通 tap 都不发（换动词冒充＝假绿，见 c21 审计 E-II）：" +
+    bad.map((v) => v.verb + " :: " + v.why).join("；") +
+    "；要它被自动判，得补对应原语（longpress/pullDown 用 --gestures，其余欠 [NEW] 通道）或换载具/人工判，不许记成产品 FAILED";
+}
+/* 元素级动词的唯一选择点（纯函数；:1141 那一句是它唯一消费者）。
+   输入腿口径完全照旧（wantsInputLeg），长按只在 --gestures 且判据点名长按时才顶掉 tap。 */
+function pickElementVerb(action, sel, gesturesOn) {
+  if (wantsInputLeg(action, sel)) return "input";
+  if (gesturesOn && VERB_LONGPRESS_RE.test(String(action || ""))) return "longpress";
+  return "tap";
+}
+/* longpress/pullDown 两条动线的载荷（纯字符串构造，可离线检查问了什么）。
+   pullDown 照 r1-exec.cjs:1115-1120：取栈顶页、有 uni.startPullDownRefresh 就调，返回 'uni-ok'/'no-uni'/'ERR …'，
+   绝不静默成功。stopRefresh 同款（:1121-1126），用来收尾避免刷新态吊在下一组上。 */
+function pullDownSource() {
+  return "() => { try { var c = getCurrentPages(); var p = c[c.length - 1]; if (!p) return 'no-page'; " +
+    "if (typeof uni !== 'undefined' && uni.startPullDownRefresh) { uni.startPullDownRefresh(); return 'uni-ok'; } " +
+    "if (typeof p.onPullDownRefresh === 'function') { p.onPullDownRefresh(); return 'page-handler-ok'; } return 'no-uni'; } " +
+    "catch (e) { return 'ERR ' + e.message; } }";
+}
+function stopRefreshSource() {
+  return "() => { try { if (typeof uni !== 'undefined' && uni.stopPullDownRefresh) { uni.stopPullDownRefresh(); return 'ok'; } return 'no-uni'; } " +
+    "catch (e) { return 'ERR ' + e.message; } }";
+}
+/* pullDown 的返回值翻译成判点：三种答案必须分得开 —— 刷新真被调起 / 页面无下拉刷新能力 / 通道报错。
+   （把 'no-uni' 读成"已下拉"就是凭空造绿。） */
+function pullDownVerdict(r) {
+  const s = String(r === undefined || r === null ? "" : r);
+  if (/uni-ok/.test(s)) return "ok";
+  if (/page-handler-ok/.test(s)) return "ok(直接调页内 onPullDownRefresh，非 uni 链路)";
+  if (/no-uni/.test(s)) return "unsupported(该页没挂下拉刷新能力)";
+  if (/no-page/.test(s)) return "no-page";
+  if (/ERR/.test(s)) return "error";
+  return "unknown";
+}
+/* ── 原生调用流钩子（capability 车道 #1；载具 r1-exec.cjs:278-299 installToastHook / :300-305 drainToasts）──
+   症状：本文件把 row.toast / row.console 钉死成空串（同一句现在落在 :524，只是右边换成了 toastVal/consoleVal），
+   于是"Toast 文案/条数"这类判点在本项目被宣告成**不可测**（c21 审计 G-4：372 条点名 Toast、G-5：864 条点名 console，
+   零条记到欠账）。而 :25 早就 import 了 evaluate ⇒ 这两个钩子本来就是纯 evaluate 载荷，是能接而没接。
+   接上之后"toast 文案量不到"这句话在本项目**不再成立**（这一条要显式改口，见 RUNNER_NATIVE_CAPTURE 行）。
+   诚实边界三条，别当成与 r1 等位：
+     ① 钩子包的是 **wx.*** 那一层（uni.showToast 最终落到 wx.showToast ⇒ 覆盖得到），
+        但它记的是"**调用**"：原生浮层有没有真渲染出来要靠帧，行里读不到帧上的浮层；
+     ② console 只有**应用上下文**那一份（DevTools 框架告警/未捕获异常走的是 WS 事件流
+        r1-exec.cjs:211-222，本 CLI 通道没有对应工具 ⇒ 审计 C21 (f) G-5 判它 [PORT, WS-only]）。
+        所以行上另记 consoleScope，读的人不许把这一份当全量 console；
+     ③ 钩子内**原样透传**被包函数（orig.apply），不改小程序行为；包裹失败逐 API 吞掉，
+        装不上就报 ERR，绝不假装装上了（返回 'installed' / 'already' / 'ERR …' 三态照 r1-exec.cjs:281-296）。 */
+function nativeHookSource() {
+  return "() => { try {" +
+    "if (globalThis.__qaNativeHooked) return 'already';" +
+    "globalThis.__qaToasts = []; globalThis.__qaLogs = [];" +
+    "var num = function (v) { return (typeof v === 'number' && isFinite(v)) ? v : null; };" +
+    "var txt = function (v) { try { var s = (typeof v === 'string') ? v : (v && v.title !== undefined ? String(v.title) : JSON.stringify(v)); return String(s === undefined ? '' : s).slice(0, 200); } catch (e) { return String(v).slice(0, 200); } };" +
+    "var wrap = function (name) { try {" +
+    "  var orig = wx[name] ? wx[name].bind(wx) : null; if (!orig) return;" +
+    "  wx[name] = function (o) {" +
+    "    try { globalThis.__qaToasts.push({ api: name, title: txt(o), content: txt(o && o.content), confirm: !!(o && o.confirmText), cancel: !!(o && o.cancelText), dur: num(o && o.duration), ts: Date.now() }); } catch (e) {}" +
+    "    return orig.apply(wx, arguments); };" +
+    "  } catch (e) {} };" +
+    "wrap('showToast'); wrap('hideToast'); wrap('showModal'); wrap('showLoading');" +   // 与 r1-exec.cjs:293 同列（showActionSheet 不在其中 ⇒ 别声称覆盖）
+    "var cwrap = function (lv) { try {" +
+    "  var orig = console[lv] ? console[lv].bind(console) : null; if (!orig) return;" +
+    "  console[lv] = function () {" +
+    "    try { var a = Array.prototype.slice.call(arguments); globalThis.__qaLogs.push({ level: lv, text: txt(a.join(' ')), ts: Date.now() }); } catch (e) {}" +
+    "    return orig.apply(console, arguments); };" +
+    "  } catch (e) {} };" +
+    "cwrap('log'); cwrap('warn'); cwrap('error');" +
+    "globalThis.__qaNativeHooked = true; return 'installed';" +
+    "} catch (e) { return 'ERR ' + e.message; } }";
+}
+function nativeDrainSource() {
+  return "() => { try { var t = (globalThis.__qaToasts || []).splice(0); var l = (globalThis.__qaLogs || []).splice(0); " +
+    "return JSON.stringify({ toasts: t, logs: l.slice(-12), hooked: !!globalThis.__qaNativeHooked }); } " +
+    "catch (e) { return JSON.stringify({ toasts: [], logs: [], hooked: false, err: String(e && e.message) }); } }";
+}
+/* 把取件串翻译成行字段（纯函数；喂合成 JSON 就能离线判红，不需要设备）。 */
+function interpretNative(raw) {
+  if (raw && typeof raw === "object") {
+    const t = Array.isArray(raw.toasts) ? raw.toasts : [];
+    const l = Array.isArray(raw.logs) ? raw.logs : [];
+    return { toasts: t, logs: l, hooked: raw.hooked === true, err: raw.err ? String(raw.err).slice(0, 80) : "" };
+  }
+  const s = String(raw === undefined || raw === null ? "" : raw).trim();
+  if (!s) return { toasts: [], logs: [], hooked: false, err: "取件串为空" };
+  const cut = s.indexOf("{");
+  try {
+    const j = JSON.parse(cut >= 0 ? s.slice(cut) : s);
+    const t = Array.isArray(j.toasts) ? j.toasts : [];
+    const l = Array.isArray(j.logs) ? j.logs : [];
+    return { toasts: t, logs: l, hooked: j.hooked === true, err: j.err ? String(j.err).slice(0, 80) : "" };
+  } catch (e) { return { toasts: [], logs: [], hooked: false, err: "取件串解析失败:" + s.slice(0, 60) }; }
+}
+/* console 的取值口径照 r1-exec.cjs:1393：log 级默认不收，但其中的 error/warn/fail/TypeError 要收。 */
+function consoleLines(logs) {
+  return (Array.isArray(logs) ? logs : []).filter((e) => {
+    const lv = String((e && e.level) || "");
+    const tx = String((e && e.text) || "");
+    return lv !== "log" || /error|warn|fail|NAV|TypeError|not defined/i.test(tx);
+  }).map((e) => "[" + String((e && e.level) || "?") + "] " + String((e && e.text) || "").slice(0, 300));
+}
+/* toast 调用流 → 行内人眼可核、机器可抠的一串（DND08 的「Toast 条数=1」就是这条要给出的数）。 */
+function toastSummary(toasts) {
+  const t = Array.isArray(toasts) ? toasts : [];
+  if (!t.length) return "无";
+  const by = {};
+  for (const e of t) { const k = String((e && e.api) || "?"); by[k] = (by[k] || 0) + 1; }
+  const titles = t.map((e) => String((e && e.title) || "")).filter(Boolean);
+  return "条数=" + t.length + " " + Object.keys(by).sort().map((k) => k + "×" + by[k]).join(",") +
+    (titles.length ? " 文案[" + titles.slice(0, 3).join(" / ").slice(0, 160) + "]" : "");
+}
+/* 判据点名了哪几类证据（c21 审计 C-3：c.evidence 里写着 截图/network/Toast/console 五种，
+   而本文件以前只拿 FRAME_RE 查"截图"那一种 ⇒ 其余三类既没取、也没在行上留下"欠"的记录）。
+   文本面取 evidence + title + **expected**：DND08 的「Toast「设置已保存」条数=1」这条判点写在
+   expected 里、不在 evidence 里，只看 evidence 就会漏掉这一族（实测 DND08/CS11/CF04 这一类
+   "逐次记录条数"的判据都是这么写的）。 */
+function evidenceKindsNamed(c) {
+  const s = String((c && (c.evidence || "")) + " " + (c && c.title || "") + " " + (c && c.expected || ""));
+  return { frame: FRAME_RE.test(s), toast: /toast|浮层提示|提示文案/i.test(s), console: /console|控制台/i.test(s), network: /network|请求|接口|响应|抓包/i.test(s) };
+}
+/* 证据欠账（纯函数，新增字段 evidenceGaps 的唯一来源；**不动 missingEvidence**，
+   那字段的既有消费者 emit-exec-manifest.mjs:54 是按帧拒收正则抠的，塞别的串会把它的账搅浑）。
+   读法：cap.on=false ⇒ "这一腿根本没开这个通道"；cap.on=true 而计数 0 ⇒ "通道开了但本条窗口内没有"
+   —— 两句话意思不同，必须分开写，后者是判据信号、前者是载具限制。 */
+function evidenceGaps(c, cap) {
+  const k = evidenceKindsNamed(c);
+  const out = [];
+  if (k.toast) out.push(cap.on
+    ? (cap.toastCount > 0 ? "" : "toast 通道已开但本条窗口内 0 条原生调用（读作「没采到」，不等于「页面没弹」——帧上的浮层另说）")
+    : "判据点名 Toast 证据，而本腿没带 --native-capture ⇒ toast 调用流未采（行上 toast 恒空「不许」读成「没弹」）");
+  if (k.console) out.push(cap.on
+    ? (cap.consoleCount > 0 ? "" : "console 通道已开但本条窗口内 0 条（只有应用上下文那一份，见行内 consoleScope）")
+    : "判据点名 console 证据，而本腿没带 --native-capture ⇒ 连应用上下文这一份都没采（DevTools 框架告警/异常是 WS 事件流那半边，审计 G-5）");
+  if (k.network) out.push("判据点名 network 证据，而本通道没有逐请求计数通道（审计 G-2 [NEW]，不在本车道）");
+  return out.filter(Boolean);
+}
+
 
 function git(a) { try { return execFileSync("git", a.split(" "), { cwd: REPO, encoding: "utf8" }).trim(); } catch { return ""; } }
 const GIT_SHA = git("rev-parse --short HEAD") || "unknown";
@@ -220,6 +460,26 @@ process.on("unhandledRejection", (e) => {
   RUN.abort();
 });
 
+/* 钩子的两个设备调用点（只在 --native-capture 下发生；不带旗标时本文件一次都不多发这两个 evaluate）。
+   装钩子 = 每批一次（照 r1-exec.cjs:230 在 connect 时装一次的做法）；取件 = 每行一次（窗口边界）。
+   取件抛错不许把整批带走：routeStack 那一族实测过"一条探针抛错打死 18 行取景"（cli-automator.mjs:167-169），
+   所以这里吞掉错误、把原因回传给行（interpretNative 的 err 半边会进 observed/evidenceGaps）。 */
+function nativeInstall() {
+  if (!NATIVE_CAPTURE) return { on: false, note: "off（没带 --native-capture ⇒ toast/console 通道未装，行上这两个字段照旧是空串）" };
+  try {
+    const r = String(evaluate(nativeHookSource(), { project: PROJECT }) || "");
+    const st = /installed/.test(r) ? "installed" : /already/.test(r) ? "already" : /ERR/.test(r) ? "ERR" : "unknown";
+    return { on: true, note: "install=" + st + " raw=" + r.slice(0, 80) };
+  } catch (e) {
+    return { on: true, note: "install=THREW " + String(e.message).replace(/\s+/g, " ").slice(0, 90) + " ⇒ 后续每行取件都会记 err，行不为空但读数不可信" };
+  }
+}
+function nativeDrain() {
+  if (!NATIVE_CAPTURE) return null;
+  try { return interpretNative(evaluate(nativeDrainSource(), { project: PROJECT })); }
+  catch (e) { return { toasts: [], logs: [], hooked: false, err: "取件抛错:" + String(e.message).replace(/\s+/g, " ").slice(0, 70) }; }
+}
+
 function row(manifest, page, c, status, route, reason, observed, evid, miss) {
   /* 逐行带戳（#C-2）：这一行是**本次启动**跑的，所以它的带就是 GIT_SHA（进程一开头读的 HEAD，
      见 stampMerged 的说明）。续跑合并时只有带这个字段的行才被认成"本 boot 干的"。 */
@@ -228,6 +488,24 @@ function row(manifest, page, c, status, route, reason, observed, evid, miss) {
      一条点着过就把后面全标成已交互" 那一族）。没走过 observed0 的行（开页失败/整页锁屏）
      拿到的是空串，因为组边界和每条开头都清过一次。 */
   const geometry = CUR_GEOM; CUR_GEOM = "";
+  /* 原生调用流（capability 车道 #1）：**每一条出口都取一次件**，包括 SKIPPED/FAILED 那些。
+     钩子装在 app 上、袋子是全局的，只有在"这一条的窗口边界"上排空，toast 才归属得到这条判据；
+     更要紧的是——按本仓反复踩过的那条教训，拒绝路径必须把它自己该填的字段填上，
+     否则下游（verify-guest-landing.mjs:182 读 row.toast、readjudicate-evidence.mjs:241 读 Array.isArray(row.console)）
+     会把"这条被拒了"误读成"这条量过了而且没有 toast"。放在 row() 一处，是因为全文件的行只有这一处出口。 */
+  const cap = nativeDrain();
+  const capOn = !!cap;
+  const toastVal = capOn ? cap.toasts : "";
+  const consoleVal = capOn ? consoleLines(cap.logs) : "";
+  const nativeNote = capOn
+    ? " | native toast[" + toastSummary(cap.toasts) + "] console[" + (consoleVal.length ? consoleVal.length + "条(应用上下文)" : "无") + "]" +
+      (cap.err ? " 取件未成:" + cap.err : "") + (cap.hooked ? "" : " 钩子不在位(取件时 __qaNativeHooked=false)")
+    : "";
+  const gaps = evidenceGaps(c, {
+    on: capOn,
+    toastCount: capOn ? cap.toasts.length : 0,
+    consoleCount: capOn ? consoleLines(cap.logs).length : 0,
+  });
   return {
     suite: "C-" + manifest, manifest, id: c.id, page, tier: c.tier || "normal",
     identity: IDENTITY, band: (BAND.mode || "?") + "@" + (BAND.sha8 || "?"),
@@ -237,8 +515,16 @@ function row(manifest, page, c, status, route, reason, observed, evid, miss) {
        文件级早就有 loginVerify（:387/:739），但门只读 results 里的行 ⇒ 行上没有就等于没证据。 */
     loginVerify: LOGIN_VERIFY, sessionSource: SESSION_SOURCE,
     requiresReal: c.requiresReal === true, title: String(c.title || "").slice(0, 160),
-    status, observed: observed || "", missingEvidence: miss || [], failureReason: reason || "",
-    route: route || "", toast: "", console: "", evidence: evid || "",
+    status, observed: (observed || "") + nativeNote, missingEvidence: miss || [], failureReason: reason || "",
+    /* toast / console：--native-capture 开时是**数组**（与 r1-exec.cjs:1437-1438 同形，
+       也让 readjudicate-evidence.mjs:241 那句 Array.isArray(r.console) 第一次真的成立）；
+       没带旗标时保持字面空串 ⇒ 既有批次的行形状一字不变（非破坏性）。
+       nativeCapture / consoleScope 是把"这一份是什么范围的采集"写进行里，
+       免得应用上下文那一份被读成 DevTools 全量控制台（审计 G-5 的诚实边界）。 */
+    route: route || "", toast: toastVal, console: consoleVal, evidence: evid || "",
+    nativeCapture: capOn ? "on(wx.showToast/hideToast/showModal/showLoading + console.log/warn/error)" : "off",
+    consoleScope: capOn ? "app-context-only（CLI 通道没有 DevTools 框架告警/异常事件流；那半边是 WS：r1-exec.cjs:211-222）" : "none",
+    evidenceGaps: gaps,
     geometry,
     gitSha: GIT_SHA, gitShaSource: "this-boot（该行执行时进程启动读到的 HEAD）", bootId: BOOT_ID,
     durationMs: CUR_T0 ? Date.now() - CUR_T0 : 0, at: new Date().toISOString(),
@@ -617,6 +903,19 @@ if (IDENTITY === "guest" || IDENTITY === "none") {
   }
 }
 RUN.booted = true;
+/* 原生调用流钩子：会话就绪之后、开任何页之前装一次（载具 r1-exec.cjs:230 是 connect 后立刻装）。
+   装在开页之前是必须的 —— 游客闸门/守卫弹回的那些 showModal 就发生在页面 onLoad 那一刻，
+   装晚了那些调用永远采不到，而它们恰好是 guest-landing 一族判据要看的证据。 */
+const NATIVE_INSTALL = nativeInstall();
+console.log("RUNNER_NATIVE_CAPTURE=" + (NATIVE_CAPTURE ? "on" : "off") + " " + NATIVE_INSTALL.note +
+  (NATIVE_CAPTURE
+    ? " ⇒ 行上 toast/console 改为数组（r1-exec.cjs:1437-1438 同形）；「toast 文案在本项目量不到」这句话从本腿起不再成立"
+    : " ⇒ 行上 toast/console 仍是字面空串（与既有批次同形）；空串读作「没采」，不读作「没弹」"));
+console.log("RUNNER_VERBS gestures=" + (GESTURE_MODE ? "on(longpress+pullDown 会发出)" : "off") +
+  " strict=" + (STRICT_VERBS ? "on(判据点名的动词发不出去时拒发普通 tap ⇒ SKIPPED+NOT_SHOOTABLE)" : "off(旧口径：动词不匹配也照发一次 tap)") +
+  (STRICT_VERBS || !TAP_MODE ? "" :
+    " ⇒ 注意：本腿仍是旧口径，rapidTap/拖动/原生Modal/断网/长按/下拉 这六类判据会被一次普通 tap 顶掉并记 EXECUTED，" +
+    "那一类 EXECUTED 不许读成「点名动词已测」（c21 审计 E-II；要它们不被冒充请带 --strict-verbs 或 --gestures）"));
 
 /* 每跑完一个页组就落一次盘：这条通道会偶发把进程带走（实测两次未捕获 socket 超时），
    跑了 40 分钟的成果不能跟着一起没了。最终那次写盘仍走下面的守恒检查。 */
@@ -642,11 +941,13 @@ try {
 } catch (e) {
   console.log("RUNNER_POLICY_LANDINGS=0 reason=读不到 guest-landing-policy.json（" + String(e && e.message).slice(0, 60) + "）⇒ 落点一律按人工判，不冒充裁定");
 }
-const stats = { executed: 0, failed: 0, skipTap: 0, skipReal: 0, skipNonReal: 0, skipProbe: 0, skipNoCrit: 0, skipMiss: 0, skipGate: 0, skipTapFail: 0, pages: 0, probes: 0, shots: 0, noClass: 0, tapDeny: 0, tapNoTarget: 0, tapsDone: 0, leftPage: 0, guestGate: 0, idScope: 0, notAuto: 0 };
+const stats = { executed: 0, failed: 0, skipTap: 0, skipReal: 0, skipNonReal: 0, skipProbe: 0, skipNoCrit: 0, skipMiss: 0, skipGate: 0, skipTapFail: 0, pages: 0, probes: 0, shots: 0, noClass: 0, tapDeny: 0, tapNoTarget: 0, tapsDone: 0, leftPage: 0, guestGate: 0, idScope: 0, notAuto: 0, verbRefused: 0, pullDowns: 0, longpresses: 0 };
 /* 增量行与终稿行共用同一个加总函数：上一版只在终稿那处补了新加的 skipNonReal，
    组内那条 print 漏了，于是同一轮里两个 skipped 数字互相打架（差值正好是真用例跳过数）。
-   交互刀新增的三类跳过（DENY / 没点名元素 / 交互后离页）也走同一个函数，不再各写各的。 */
-const skippedTotal = () => stats.skipTap + stats.skipReal + stats.skipNonReal + stats.skipProbe + stats.skipNoCrit + stats.skipMiss + stats.skipGate + stats.skipTapFail + stats.tapDeny + stats.tapNoTarget + stats.leftPage + stats.idScope + stats.notAuto;
+   交互刀新增的三类跳过（DENY / 没点名元素 / 交互后离页）也走同一个函数，不再各写各的。
+   2026-09-29：防降级闸扣下的那条同样是 SKIPPED 行 ⇒ 必须进加总，否则"skipped=" 会少算它，
+   与 RUNNER_STATUS_ALL 的 SKIPPED 计数当场对不上（本仓为两个 skipped 口径打架记过一次账）。 */
+const skippedTotal = () => stats.skipTap + stats.skipReal + stats.skipNonReal + stats.skipProbe + stats.skipNoCrit + stats.skipMiss + stats.skipGate + stats.skipTapFail + stats.tapDeny + stats.tapNoTarget + stats.leftPage + stats.idScope + stats.notAuto + stats.verbRefused;
 /* 协同停止位：与 r-exec.cjs 共用 EXEC_STOP_FLAG 口径。长跑必须能"停在组边界"而不是被 kill，
       否则在跑的那一组成果跟着没（实测这条通道会偶发把进程带走，已经为此做过增量落盘）。 */
 const STOP_FLAG = process.env.EXEC_STOP_FLAG ? resolve(process.env.EXEC_STOP_FLAG) : "";
@@ -677,6 +978,16 @@ for (const name of files) {
     }
     sleep(SETTLE);
     let route = String(routeStack({ project: PROJECT }) || "");
+    /* 组基线排件（只在 --native-capture 下发生）：开页那一下的 onLoad 会弹自己的 toast/modal
+       （游客闸门、守卫弹回、锁屏提示都是这一类），这些调用**不属于本页任何一条判据**。
+       不在这里排空，它们就会整包落进本页第一条判据的窗口里，被读成"这条判据弹出了 toast"——
+       那正是本车道要防的归属错误。排出来的东西打进组日志（RUNNER_GROUP_NATIVE），
+       它仍是证据（"这一页开页时弹了什么"），只是不能记账到某一条判据头上。 */
+    if (NATIVE_CAPTURE) {
+      const base = nativeDrain();
+      console.log("RUNNER_GROUP_NATIVE page=" + page + " 开页窗口内 toast[" + toastSummary(base.toasts) + "]" +
+        " console=" + consoleLines(base.logs).length + " 条" + (base.err ? " 取件未成:" + base.err : ""));
+    }
     /* 空串/ERR 不等于「落在别的页」——实测这条通道会整批正常而路由探针取空（notes §12），
        把它折叠成失败会凭空造出十条 FAILED；但也不能反过来当作已确认。三态分开。
        真实工程下取空的比例明显更高（实测一轮 104 条），所以先重试一次再判"没答案"，
@@ -787,6 +1098,18 @@ const bandSkip = (c) => (process.argv.includes("--real-cases-only") && c.require
           rows.push(row(name, page, c, "SKIPPED", route, "交互禁触（注销/解绑/清空这类不可逆动作会打掉后面几百条共用的会话）⇒ 显式记 DENY，不混进已跑", observed0(c, route, routeOk, dom, "")));
           continue;
         }
+        /* 防降级闸（capability 车道 #2，--strict-verbs / --gestures 才生效；不带旗标时这一整块跳过，
+           旧腿的判决一字不变）。为什么放在"取目标"之前：目标都还没解析就不该有任何一次下发。
+           这一闸只**扣住**发不出去的动词，不会多发任何动作 ⇒ 它不是新能力，是不冒充新能力的账。 */
+        if (STRICT_VERBS) {
+          const refuse = verbRefusal(c.action, GESTURE_MODE);
+          if (refuse) {
+            stats.verbRefused++;
+            rows.push(row(name, page, c, "SKIPPED", route, refuse, observed0(c, route, routeOk, dom, " | 动词拒发[strict-verbs]") +
+              " | 本条点名的动词=" + (verbsNamed(c.action, GESTURE_MODE).map((v) => v.verb + (v.emittable ? "(发得出)" : "(发不出)")).join(",") || "(无)")));
+            continue;
+          }
+        }
         /* 目标优先取判据里显式写下的 tapTarget（merge-tapfix-lanes 落进去的字段）：
            裸类名（.error-btn / .channel-feed）没有 BEM 分隔符，classesOf 抠不出来，
            只靠 action 文本就会把这些用例重新变成"没点名"。 */
@@ -808,16 +1131,38 @@ const bandSkip = (c) => (process.argv.includes("--real-cases-only") && c.require
         for (const sel of targets.slice(0, 4)) {
           /* 只按动词判输入腿：判据现在会把选择器写进 action（`.code-input` 这类
              裸类名里的 "input" 曾经把一条点击判据翻成输入腿）。 */
-          const isInput = wantsInputLeg(c.action, sel);
-          if (!isInput && inputVerbOnly(c.action)) inputRefused.push(sel);
+          const verb = pickElementVerb(c.action, sel, GESTURE_MODE);
+          const isInput = verb === "input";
+          if (!isInput && inputVerbOnly(c.action) && verb !== "longpress") inputRefused.push(sel);
           try {
-            element(isInput ? "input" : "tap", sel, { project: PROJECT }, isInput ? ["--value", "123456"] : ["--wait", "1"]);
-            done.push((isInput ? "input:" : "tap:") + sel);
-          } catch (e) { unmet.push((isInput ? "input:" : "tap:") + sel + " :: " + String(e.message).replace(/\s+/g, " ").slice(0, 200)); }
+            /* 动词与载荷：longpress 是与 tap **同一个工具、换一个 --action**（cli-automator.mjs:162-164 的第一参就是自由串，
+               工具支持的动词面记在 cli-automator.mjs:12）⇒ 这是接线，不是新通道（r1-exec.cjs:1033+:1068 那条 el.longpress() 的等价物）。
+               非长按时发的还是原来那一句（tap + --wait 1 / input + --value 123456），旧腿逐字不变。 */
+            element(verb, sel, { project: PROJECT }, isInput ? ["--value", "123456"] : ["--wait", "1"]);
+            done.push(verb + ":" + sel);
+            if (verb === "longpress") stats.longpresses++;
+          } catch (e) { unmet.push(verb + ":" + sel + " :: " + String(e.message).replace(/\s+/g, " ").slice(0, 200)); }
           sleep(700);
         }
+        /* 下拉刷新动线（capability 车道 #2 的另一半；载具 r1-exec.cjs:1115-1126）。
+           它是 evaluate 载荷、不是元素动作 ⇒ 不占元素选择器、也不需要 tapTarget：
+           "下拉刷新看列表"这类判据以前只能被降级成一次 tap，现在能真把刷新调起来。
+           三种答案（uni-ok / no-uni / ERR）必须分开记：把 no-uni 读成"已下拉"就是凭空造绿。 */
+        let pullNote = "";
+        if (GESTURE_MODE && VERB_PULLDOWN_RE.test(String(c.action || ""))) {
+          let pr = "";
+          try { pr = String(evaluate(pullDownSource(), { project: PROJECT })); sleep(SETTLE); }
+          catch (e) { pr = "ERR " + String(e.message).replace(/\s+/g, " ").slice(0, 90); }
+          const verdict = pullDownVerdict(pr);
+          if (/^ok/.test(verdict)) { done.push("pullDown"); stats.pullDowns = (stats.pullDowns || 0) + 1; }
+          pullNote = " | pullDown=" + verdict + "(" + pr.slice(0, 60) + ")";
+          /* 收尾停掉刷新态：不停的话转圈动画吊在页上，同组后面几条量到的帧/探针不是静息态。 */
+          try { evaluate(stopRefreshSource(), { project: PROJECT }); } catch (e) { pullNote += " stopRefresh 未成"; }
+        }
         sleep(SETTLE);
-        stats.tapsDone += done.length;
+        /* tapsDone 只数元素级下发（pullDown 是 evaluate 动线，单列在 stats.pullDowns，
+           不许混进"真做过的交互"里把点击数虚报上去）。 */
+        stats.tapsDone += done.filter((d) => d.includes(":")).length;
         /* 一次都没点着 ⇒ 这条没有"交互后"的任何东西可判。
            记 SKIPPED 并带上原错误，不许顺着往下记 EXECUTED（那是拿"没点着"冒充"点过"）。 */
         if (!done.length) {
@@ -834,7 +1179,7 @@ const bandSkip = (c) => (process.argv.includes("--real-cases-only") && c.require
         let r2 = "";
         try { r2 = String(routeStack({ project: PROJECT }) || ""); } catch (e) { r2 = "ERR"; }
         if (r2 && !r2.startsWith("ERR")) { caseRoute = r2; caseRouteOk = r2.includes(page); }
-        tapNote = (inputRefused.length ? " | 输入腿动词对不上元素，退回点击[" + inputRefused.join(",") + "]" : "") + " | tap[" + done.join(",") + "]" + (unmet.length ? " 未成[" + unmet.join(",") + "]" : "") +
+        tapNote = (inputRefused.length ? " | 输入腿动词对不上元素，退回点击[" + inputRefused.join(",") + "]" : "") + " | tap[" + done.join(",") + "]" + (unmet.length ? " 未成[" + unmet.join(",") + "]" : "") + pullNote +
           (caseRouteOk === false ? " 交互后已离开本页 ⇒ 本条探针不在本页上，不作判" : "");
         /* 交互把页面导航走了 ⇒ 在本页查本页物件已经没有意义，但这条不能记红：
            它欠的是"交互后回到本页"的配方，不是产品没做。 */
@@ -968,6 +1313,15 @@ console.log("RUNNER_STATS identity=" + IDENTITY + " loginVerify=" + LOGIN_VERIFY
   " 锁屏挡住=" + stats.skipGate + " 交互下发失败=" + stats.skipTapFail + " 身份适用范围外=" + stats.idScope + " 盖章不可自动化=" + stats.notAuto + ") 页组=" + stats.pages +
   " 真做过的交互=" + stats.tapsDone +
   " 折叠探针类名次数=" + stats.probes + " 出帧=" + stats.shots + " 未点名类名=" + stats.noClass + " 通道异常次数=" + transportErrs);
+/* 这一车道自己那本账单开一行（不动 RUNNER_STATS 的既有形状 —— 队列按前缀抠它的定长读数）。
+   verbRefused 已进 skippedTotal()，这里再单列一次：它是"判据点名的动词发不出去"，
+   与"这一腿没带 --tap"是两种欠款，混进同一个数字就没法复盘欠的是哪个原语。 */
+console.log("RUNNER_CAP strict-verbs=" + (STRICT_VERBS ? "on" : "off") + " gestures=" + (GESTURE_MODE ? "on" : "off") +
+  " native-capture=" + (NATIVE_CAPTURE ? "on" : "off") +
+  " 动词拒发=" + stats.verbRefused + " 发出长按=" + stats.longpresses + " 发出下拉刷新=" + stats.pullDowns +
+  " 行内 toast 非空=" + rows.filter((r) => Array.isArray(r.toast) && r.toast.length > 0).length +
+  " 行内 console 非空=" + rows.filter((r) => Array.isArray(r.console) && r.console.length > 0).length +
+  " 行内证据欠账非空=" + rows.filter((r) => Array.isArray(r.evidenceGaps) && r.evidenceGaps.length > 0).length + "/" + rows.length);
 const statusOf = {};
 for (const r of all) statusOf[r.status] = (statusOf[r.status] || 0) + 1;
 console.log("RUNNER_STATUS_ALL " + Object.keys(statusOf).sort().map((k) => k + "=" + statusOf[k]).join(" "));
