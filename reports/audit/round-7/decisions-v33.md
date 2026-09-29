@@ -234,3 +234,42 @@ abs7 车道把 7 条"断言某物不存在"的判据换成了能判的非帧载�
 
 另记一条会咬人的漂移：CH22 判据正文引用的行号 `:336-339` 已经漂到 `:330-332`。判据里写死行号是定时炸弹，建议后续只写"锚点 + 类名"不写行号——但这属于改判据文本，得你点头才动。
 
+## 29. `landingMissing=5` 不是产品欠账：分诊台在向一份"零行声明身份"的语料索要**游客**处置
+先给复跑核对（我把 triage 钉到面板同一份输入，见 `emit-round-report.mjs:82` 的 `EXEC` 口径）：
+
+| 读数 | 13:05（终局复量） | 现在（守卫车道之后） |
+|---|---|---|
+| total | 1107 | 1107 |
+| unclassified | 0 | 0 |
+| landingKeys | 9 | 9 |
+| **landingMissing** | **5** | **5（逐字未变）** |
+
+守卫本身已经生效并有物证：新腿 `reports/audit/round-7/exec-guest-real-guard-r10/exec-results.json`
+顶层与逐行都写 `identity="guest"`、`band=real@f0677920`、156 行，五页 `observed` 全为
+`top=pages/login/index` ⇒ **游客轴 1→0**，帧在盘。
+
+那 5 组为什么不动：它们来自 `reports/audit/round-7/interact/exec-results.json`，
+而我逐行数过 ——**这份语料 1107 行里 0 行带 `identity` 字段，`doc.identity` 也是 `undefined`**。
+`triage-exec-failures.mjs:843` 于是把 `corpusIdentity` 落成 `"?"`，而 `:877` 的
+`landingMissing = landingKeys.filter(k => !dispositionOf(k))` **不看身份**：
+它照样向这份身份不明的语料索要"游客落地处置"。
+换句话说：这一条红不是产品缺陷，是**门的判域越界**。车道拒绝把 5 组补进账本是对的
+（补进去就是造账）；但它的理由"这是 A 档跑的"是从 `observed` 散文里推的，盘上没那个字段——
+诚实的说法是"此处门无权判"，不是"A 档与我无关"。
+
+请你在三条里选一条，我都不自选：
+- **(a) 重拍带身份的切片**：对那 5 页用 `--identity guest` 与 `--identity A` 各跑一条腿，
+  让 9 个 key 变成可归属；游客那批会落 `FAILED-guest-gate-by-ruling`（词表在 `:305` 已备），
+  登录态那批走 `SKIPPED-identity-scope`。代价：两条腿的设备时间，**不改门的任何判定**。
+- **(b) 给门加一道前置**：语料零行声明身份 ⇒ 不raise `landingMissing`，改打
+  `LANDING_IDENTITY_UNDECLARED=1107` 并判 `UNVERIFIED-INSTRUMENT`。
+  这是**收窄论断到它能归属的那批人**，不是降阈值；但它是改门的口径，所以要你点头。
+  附条件：必须同时加一条能变红的负例——一份**声明了** `identity=guest` 的语料里留一组未入账落地对，
+  门必须照旧 exit 2（否则 (b) 就成了把红藏起来）。
+- **(c) 维持现状**：这条红长期挂着，我在总报告里如实写"5 组落地对无法归属，守卫在游客轴已证"，
+  不拿它当产品失败，也不拿它当已结案。
+
+顺带一条同源事实（不是新账，是同一病根的另一处）：`verify-real-coverage` 已经在量这个形状——
+本轮 `REALCOV_IDENTITYLESS_ROWS=31`、`REALCOV_IDENT_VOCAB` 还抓到 `not-logged-in` 与 `none`
+是"有判点无生产者"的死词。**一个门认这个字段、另一个门不认就去索要处置**，这个不对称本身就是 §29 的成因。
+
