@@ -3,7 +3,7 @@
    每条一个"必须红"的注入 + 一条真数据的"必须绿"，全部离线（不开模拟器、不抢租约）。
    Node 要 v22：PATH 上的缺省 node 是 DevTools 的 v16。 */
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, renameSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { landingStatus, LANDING_UNCLOSED } from "./guest-landing-status.mjs";
@@ -14,6 +14,32 @@ mkdirSync(TMP, { recursive: true });
 const SCRIPT = resolve(REPO, "scripts/qa/verify-guest-landing.mjs");
 const POLICY = resolve(REPO, "scripts/qa/guest-landing-policy.json");
 const TRIAGE = resolve(REPO, ".zcode/tmp/triage-r7-guest.json");
+/* 第二条腿：守卫车道的声明身份游客语料（exec-guest-real-guard-r10）。
+   为什么必须在测试里现算而不是抄一份：:16 那份 scratch 是 2026-09-27 09:28 的，早于守卫入库，
+   它不可能含 "setup/recommend-pref/index → pages/login/index" 这一组 —— 于是第 28 条裁定一落地，
+   "每条裁定恰好一条腿" 就在一份**过期夹具**上判红（夹具会随数据过期，钉它的字面数更是雪上加霜）。
+   载具自己在 GUEST_LAND_WARN 里就写了正确用法："本轮多条执行腿必须 --triage a,b 传并集"。 */
+const GUEST_LEG_corpus = resolve(REPO, "reports/audit/round-7/exec-guest-real-guard-r10/exec-results.json");
+const TRIAGE2 = resolve(TMP, "triage-r10-guest.json");
+if (existsSync(GUEST_LEG_corpus)) {
+  const g = spawnSync(process.execPath, [resolve(REPO, "scripts/qa/triage-exec-failures.mjs"),
+    "--results", GUEST_LEG_corpus, "--out", TRIAGE2], { cwd: REPO, encoding: "utf8", timeout: 300000 });
+  if (g.status !== 0 || !existsSync(TRIAGE2 + ".json")) {
+    console.log("FAIL 派生第二条游客腿的 triage 没成功 :: exit=" + g.status + " " + String(g.stdout + g.stderr).slice(0, 200));
+    fail++; checks++;
+  } else { renameSync(TRIAGE2 + ".json", TRIAGE2); }
+}
+/* 并集组数：两语料各自 "page → landed" 的去重并（与载具的 SOURCES 轴同口径），
+   用来替掉原先钉死的 26 / 239 / 27 —— 那些字面数每加一条合法裁定就必然假红。 */
+const unionGroupsOf = (...docs) => {
+  const s = new Set();
+  for (const d of docs) for (const k of Object.keys(d.landingGroups || {})) s.add(k);
+  return s;
+};
+const UNION_GROUPS = unionGroupsOf(
+  JSON.parse(readFileSync(TRIAGE, "utf8")),
+  existsSync(TRIAGE2) ? JSON.parse(readFileSync(TRIAGE2, "utf8")) : { results: [] },
+).size;
 const OPS_DIR = resolve(REPO, "reports/audit/round-6/ops");
 const NODE = process.execPath;
 const realTriage = JSON.parse(readFileSync(TRIAGE, "utf8"));
@@ -46,16 +72,34 @@ let realOut = ""; // 块 1 存一份真数据 stdout，块 3 的守恒可见性�
    **不再钉死快照值**，改成"载具印的数 == 载具自己写的账本头 == 账本逐组相加"三方互算，任一不一致就红。
    这是收紧不是放宽：原写法只能发现"数字变了"，新写法能发现"哪两条腿对不上"，而且 ops 一动不会假红。 */
 {
-  const r = run("real", ["--policy", POLICY, "--triage", TRIAGE]);
+  const triageArg = existsSync(TRIAGE2) ? TRIAGE + "," + TRIAGE2 : TRIAGE;
+  const r = run("real", ["--policy", POLICY, "--triage", triageArg]);
   realOut = r.out;
   t("真数据 exit 0", r.code === 0, "exit=" + r.code + "\n" + r.out);
   const srcLine = lineWith(r.out, "GUEST_LAND_SOURCES=");
-  t("跑测观察轴 = 在册实测值 26 组 / 239 行次（载具须逐字复述）",
-    /（组=26，行次=239） ⇒ 并集组数=26 并集行数=239/.test(srcLine), srcLine);
+  /* 原来钉的是字面串 "（组=26，行次=239） ⇒ 并集组数=26 并集行数=239" —— 一句话里钉了三个数，
+     且钉的是"某一次夹具快照"。改成两条真守恒：① 行内自述的组数必须等于它自己算出的并集组数
+     （载具内部两轴对不上就红）；② 该并集组数必须等于我从输入语料按同一口径独立算出的数
+     （载具少收一条腿/多并一份语料就红）。行次只断言正数，防空集凑绿。 */
+  const mSrcAll = [...srcLine.matchAll(/（组=(\d+)，行次=(\d+)）/g)].map((m) => [Number(m[1]), Number(m[2])]);
+  const mUni = /并集组数=(\d+) 并集行数=(\d+)/.exec(srcLine);
+  /* 原来钉的是字面串 "（组=26，行次=239） ⇒ 并集组数=26 并集行数=239"：一句话里钉了三个数，
+     钉的还是"某一次夹具的快照"。传第二条腿以后这行变成两段（组=26）;（组=1）⇒ 并集=27，
+     那条字面正则本身就必然失配 —— 所以改成两条与输入无关的守恒：
+     ① 并集不得小于任何一路输入（少收一条腿/悄悄丢一份语料就红），且各路都得是正数（防空集凑绿）；
+     ② 并集组数必须等于我按同一口径（各 triage 的 landingGroups 去重并）独立复算的数。 */
+  t("跑测观察轴守恒：并集 ≥ 每一路输入、每路组/行皆正（不许空集凑绿、不许悄悄丢语料）",
+    !!mUni && mSrcAll.length >= 1 && mSrcAll.every(([g, n]) => g > 0 && n > 0) &&
+      Number(mUni[1]) >= Math.max(...mSrcAll.map(([g]) => g)) &&
+      Number(mUni[2]) >= Math.max(...mSrcAll.map(([, n]) => n)) && Number(mUni[2]) > 0,
+    "并集=" + (mUni ? mUni[1] + "组/" + mUni[2] + "行" : "(读不到)") + " 各路=" + JSON.stringify(mSrcAll) + " ｜ " + srcLine.slice(0, 200));
+  t("跑测观察轴 == 按同一口径独立复算的并集组数（" + UNION_GROUPS + "）",
+    !!mUni && Number(mUni[1]) === UNION_GROUPS,
+    "载具并集组数=" + (mUni ? mUni[1] : "(读不到)") + " 独立复算=" + UNION_GROUPS + " ｜ " + srcLine.slice(0, 160));
   const finalLine = lineWith(r.out, "GUEST_LANDING groups=");
   const mDebt = /groups=(\d+) 覆盖欠款行=(\d+)/.exec(finalLine);
-  t("成员账轴：groups=26 且覆盖欠款行为正数（不许是空集凑出来的绿）",
-    !!mDebt && mDebt[1] === "26" && Number(mDebt[2]) > 0, finalLine);
+  t("成员账轴：groups == 独立复算的并集组数 且覆盖欠款行为正数（不许是空集凑出来的绿）",
+    !!mDebt && Number(mDebt[1]) === UNION_GROUPS && Number(mDebt[2]) > 0, finalLine);
   const booked = JSON.parse(readFileSync(resolve(TMP, "real-booked.json"), "utf8"));
   const sumDebt = booked.rows.reduce((a, x) => a + (x.debtRows || 0), 0);
   t("成员账三方互算：载具印的数 == 账本头 == 账本逐组相加",
@@ -67,8 +111,8 @@ let realOut = ""; // 块 1 存一份真数据 stdout，块 3 的守恒可见性�
      （实跑 rows=27、groups=26，两者本就不是一个东西）。现在两轴各钉一条，并补一条真正要守的东西：
      每条裁定恰好一条腿、groupKey 不重不漏 —— 载具里那两个 `continue`（成员为空 / family 无 markers 口径）
      会静默吞掉整组的腿，旧写法只比总数，吞一组与多一组相互抵掉时看不见。 */
-  t("出例数 = policy 裁定条数（#67 后名册遍历 policy；实跑 27）",
-    booked.rows.length === polObj.rows.length && booked.rows.length === 27,
+  t("出例数 = policy 裁定条数（#67 后名册遍历 policy；这个数由 policy 派生，不钉字面值）",
+    booked.rows.length === polObj.rows.length,
     "rows=" + booked.rows.length + " policy.rows=" + polObj.rows.length);
   const polKeys = new Set(polObj.rows.map((x) => x.page + " → " + x.landing));
   const gotKeys = booked.rows.map((x) => x.groupKey);
@@ -77,8 +121,8 @@ let realOut = ""; // 块 1 存一份真数据 stdout，块 3 的守恒可见性�
       gotKeys.every((k) => polKeys.has(k)) && [...polKeys].every((k) => gotKeys.includes(k)),
     "腿=" + gotKeys.length + " 唯一=" + new Set(gotKeys).size + " policy 组=" + polKeys.size);
   t("每组都带 caseIds（欠款可归属）", booked.rows.every((x) => Array.isArray(x.caseIds) && x.caseIds.length), "有空 caseIds");
-  t("跑测组数与裁定条数不相等时必须说得出为什么（NO_RUN_WITNESS 具名读数存在）",
-    /GUEST_LAND_NO_RUN_WITNESS=(\d+)/.test(r.out) && Number(/GUEST_LAND_NO_RUN_WITNESS=(\d+)/.exec(r.out)[1]) === polObj.rows.length - 26,
+  t("跑测组数与裁定条数不相等时必须说得出为什么（NO_RUN_WITNESS 具名读数存在且等于两轴之差）",
+    /GUEST_LAND_NO_RUN_WITNESS=(\d+)/.test(r.out) && Number(/GUEST_LAND_NO_RUN_WITNESS=(\d+)/.exec(r.out)[1]) === polObj.rows.length - UNION_GROUPS,
     lineWith(r.out, "GUEST_LAND_NO_RUN_WITNESS="));
 }
 /* 2) triage 多出一组（新落点没裁定）必须红 */
