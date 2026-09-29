@@ -57,6 +57,8 @@ fail_list.txt
 test_comp.txt
 test-comp.txt
 test-screenshots/
+# QA 截图一律不入库（2026-09-29 指示：截图以后都不要提交）
+reports/screenshots/
 tests/e2e/test-results/
 tests/e2e/tests/
 eslint-*.json
