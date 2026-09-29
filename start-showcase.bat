@@ -42,7 +42,12 @@ if errorlevel 1 (
     exit /b 1
 )
 
-call pnpm run build:mp-weixin:showcase
+REM 走 isolated 出口：build:mp-weixin:showcase 不带 UNI_OUTPUT_DIR，会把展示包
+REM 直接写进 dist\build\mp-weixin（那是 mock 证据档），把 mock 档覆盖成
+REM VITE_API_MODE=real / SHOWCASE_MODE=true。这个坑上一轮就记过
+REM （scripts/qa/ui-queue.round7-carryover.json:7："22:23 那次跑它，mock 档的
+REM config/env.js 当场变成 VITE_API_MODE=real"），现在两侧都被门拦住，故改走 :isolated。
+call pnpm run build:mp-weixin:showcase:isolated
 if errorlevel 1 (
     echo [ERROR] 展示包编译失败，请查看上方错误信息
     exit /b 1
@@ -56,7 +61,9 @@ echo ========================================
 echo   全功能展示版构建成功！
 echo ========================================
 echo.
-echo 输出目录: %~dp0apps\client\dist\build\mp-weixin
+REM 导入的是 showcase 自己的目录，不是共享的 mp-weixin（后者是 mock 证据档，
+REM 拿它当展示包导入会让 DevTools 与 QA 腿互相污染）。
+echo 输出目录: %~dp0apps\client\dist\build\mp-weixin-showcase
 echo.
 echo 下一步：
 echo   1. 打开微信开发者工具
