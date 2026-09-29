@@ -151,6 +151,10 @@ apps/api/run-real.args
 *driver.cjs
 scripts/__*.mjs
 static/generated_test/
+# profile SVG→PNG 构建期生成物（scripts/profile-svg-to-png.mjs 的输出根）。
+# 必须显式忽略：上面 `.gitignore:91 !/**/avatar*.png` 那条白名单会把这张目录里的
+# avatar-ring.png 重新放行成未跟踪脏项，只靠全局 `*.png` 一条挡不住。
+apps/client/static-generated/
 # 临时设计稿压缩包 / 构建脚本本地产物
 design-preview.7z
 build-mp-weixin.bat.local

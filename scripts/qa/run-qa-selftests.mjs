@@ -71,6 +71,10 @@ if (ran === 0 && !ALLOW_UI) { console.log("SELFTEST_RESULT=FAIL reason=全部测
    混进去会让 :63 的"有测试文件既没跑也没记为跳过"假红）。 */
 const GATE_SELFTESTS = [
   { name: "verify-dry-no-lease", cmd: ["scripts/qa/verify-dry-no-lease.mjs", "--selftest"], want: /DRYLEASE_SELFTEST=PASS cases=(\d+) bad=0/ },
+  // verify-case-automatable 的自证轴（静态判定 vs 执行器实测）此前零覆盖：两条缺陷
+  // （喂空/零拒答的结果件印 0% 冒充读数、路径打错整轴静默消失照样退 0）都是人肉实测才撞出来的。
+  // 7 条负例钉住"假阳性率/召回率是两个方向"与三类不可测状态，不读磁盘。
+  { name: "verify-case-automatable", cmd: ["scripts/qa/verify-case-automatable.mjs", "--selftest"], want: /CA_SELFTEST=PASS cases=(\d+) bad=0/ },
 ];
 let gateRan = 0, gateFailed = 0;
 for (const g of GATE_SELFTESTS) {

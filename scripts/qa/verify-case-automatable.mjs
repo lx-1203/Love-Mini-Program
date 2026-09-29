@@ -263,7 +263,7 @@ const patSum = Object.values(byPattern).reduce((a, b) => a + b, 0);
 /* 键唯一性是下面那条自证轴的前置条件：一致率是拿 `manifest|id` 当集合做交并的，
    一个键在清单里出现两次，"静态命中 102" 与 "执行器实测 140" 就不再是同一批东西的数。
    原实现里 seenCase 只 add 不读（写了个没人看的 Set，等于没守），这里改成真的守恒：
-   重复键 ⇒ 分母不可信 ⇒ 按 :18 的"输入不可读/守恒不过"退 2，不许继续产比率。 */
+   重复键 ⇒ 分母不可信 ⇒ 按文件头《退出码》契约的"输入不可读/守恒不过"退 2，不许继续产比率。 */
 if (dupKeys.length) {
   console.log(`CA_RESULT=FAIL reason=用例清单有 ${dupKeys.length} 个重复的 manifest|id 键，分母不可信，自证轴的集合运算无意义（前 5 个：${dupKeys.slice(0, 5).join("、")}）`);
   process.exit(2);
@@ -280,7 +280,7 @@ if (flagged.length) {
    这一发只在 --results 显式给出时才跑。既然给了，"跑不成"就必须说话，绝不能静默消失：
    旧实现把整段包在 `if (RESULTS && existsSync(...))` 里 ⇒ 路径打错一个字母，
    自证轴整块蒸发、既无 CA_AGREE 也无一句警告、照样退 0 —— 门的自证被顺手关掉而无人知晓。
-   现按 :18 既有的退出码契约处理：给了 --results 而读不到/解析不了/零行 ⇒ 输入不可读 ⇒ exit 2。 */
+   现按文件头《退出码》既有的契约处理：给了 --results 而读不到/解析不了/零行 ⇒ 输入不可读 ⇒ exit 2。 */
 let AXIS = null;
 if (RESULTS) {
   const abs = resolve(ROOT, RESULTS);
@@ -296,8 +296,13 @@ if (RESULTS) {
   console.log(`CA_AGREE 行数=${AXIS.rows} 去重后键=${AXIS.distinctKeys}（重复行 ${AXIS.rowDups} / 缺 manifest|id 的行 ${AXIS.malformed}）`);
   console.log(`CA_AGREE 执行器实测 action-not-automatable=${AXIS.refused} 静态命中=${AXIS.staticN} 交集=${AXIS.both}`);
   console.log(`CA_AGREE_EXEC 静态拦下而执行侧未拒答=${AXIS.fp} 条（跑完且通过=${AXIS.passed} 试图做但死在产品/选择器=${AXIS.attempted}）｜不可测=${AXIS.unmeasurable} 条（他因跳过=${AXIS.otherSkip} 结果件里没有这行=${AXIS.absent}）`);
-  if (!AXIS.measurable) {
-    console.log(`CA_AGREE_STATE=UNMEASURABLE 静态 ${AXIS.staticN} 个键与结果件 ${AXIS.distinctKeys} 个键零重合 —— 八成是 --ops 与 --results 配错了轮次/身份，这一轴没有任何读数，不印百分比`);
+  // 四立场必须刚好铺满静态分母，缺一条就是有人在某一桶里改了口径没改另一桶
+  const partSum = AXIS.both + AXIS.passed + AXIS.attempted + AXIS.otherSkip + AXIS.absent;
+  console.log(`CA_AGREE_CONSERVE 交集=${AXIS.both}+通过=${AXIS.passed}+试图做=${AXIS.attempted}+他因跳过=${AXIS.otherSkip}+没这行=${AXIS.absent}=${partSum} 静态命中=${AXIS.staticN} 校验=${partSum === AXIS.staticN ? "ok" : "FAIL（分桶没铺满分母，下面两个比率都不可信）"}`);
+  if (AXIS.staticN === 0) {
+    console.log(`CA_AGREE_STATE=NO-STATIC-HIT 静态一条都没拦到（分母为 0）—— 这不是配对喂错，是自证轴没有可对照的分子；执行侧拒答=${AXIS.refused} 条静态全漏，属召回侧问题`);
+  } else if (!AXIS.measurable) {
+    console.log(`CA_AGREE_STATE=UNMEASURABLE 静态 ${AXIS.staticN} 个键与结果件 ${AXIS.distinctKeys} 个键零重合（overlap=0）—— 八成是 --ops 与 --results 配错了轮次/身份，这一轴没有任何读数，不印百分比`);
   } else {
     console.log(`CA_AGREE_RATE 假阳性率（静态命中里执行侧照做的占比）= ${AXIS.fpRate}%（${AXIS.fp}/${AXIS.staticN}）；其中"跑完且通过"的硬口径 = ${AXIS.fpHardRate}%（${AXIS.passed}/${AXIS.staticN}）`);
     console.log(`CA_AGREE_RATE 召回率（执行器拒答里静态也拦到的占比）= ${AXIS.recall === null ? "不可测（本轮执行器一条 action-not-automatable 都没标，分母为 0）" : AXIS.recall + "%（" + AXIS.both + "/" + AXIS.refused + "）"}；静态精确率 = ${AXIS.precision}%`);

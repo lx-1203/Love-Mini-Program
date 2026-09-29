@@ -26,9 +26,9 @@
  *   node scripts/prepare-static.mjs --real
  *   node scripts/prepare-static.mjs --h5
  */
-import { existsSync, mkdirSync, cpSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, cpSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -126,6 +126,74 @@ function sysCpDirSingleFile(srcDir, dstDir) {
   }
 }
 
+function listFilesRecursive(dir, base = dir, out = []) {
+  if (!existsSync(dir)) return out;
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) listFilesRecursive(p, base, out);
+    else out.push(relative(base, p).split(sep).join("/"));
+  }
+  return out;
+}
+
+/** profile PNG 的权威来源（2026-09-30 r9 处置，reports/audit/round-7/followups-v33.md §9）。
+ *
+ * `src/static/assets/profile/png/**` 是 48 个**被 git 跟踪**的文件，而
+ * `static-local-backup/full-static/assets/profile/png/**` 里那一份是**未跟踪的本机副本**
+ * （`.gitignore:70` 的 `*.png` 挡住了它，只有 `!apps/client/src/static/**` 白名单里的那份入库）。
+ * 旧链无条件把备份盖进 src ⇒ 备份陈旧时（实测 `profile-hero.png` 差 16B、且差在像素不在元数据）
+ * 跟踪文件就被写成非 HEAD 字节，只能靠紧随其后的 profile-svg-to-png 再改写一次才自愈；
+ * 那一步在 Windows 上会被微信 IDE/模拟器占用打断（实测 `Invalid argument`），脏项就留下来了。
+ *
+ * 现在备份不再是这几个 PNG 的来源，权威顺序 =
+ *   现有 src（被跟踪的字节，就是"入库的那一份"）> static-generated（构建期从 SVG 现算）> 备份（兜底）。
+ * 这样 src 的字节不再由"本机恰好留存的备份"决定，构建也不再改写跟踪文件。
+ *
+ * onlyExisting=true 给 strip()（real 档）用：只把已经因引用而进包的那些重新对齐到权威来源，
+ * 不因 seeding 往 real 档里多塞文件（那会动包体积与 strip 的既有语义）。
+ * 返回 { seeded, skippedSame }。 */
+function seedProfilePngFromAuthority(stage, { onlyExisting = false } = {}) {
+  const REL_DIR = join("assets", "profile", "png");
+  const authorities = [
+    { label: "src(跟踪字节)", dir: join(SRC, REL_DIR) },
+    { label: "static-generated(构建现算)", dir: join(STAGE_ROOT, "static-generated", REL_DIR) },
+    { label: "backup(本机备份)", dir: join(BACKUP, "full-static", REL_DIR) },
+  ];
+  const dstDir = join(stage, REL_DIR);
+  const names = onlyExisting
+    ? listFilesRecursive(dstDir)
+    : [...new Set(authorities.flatMap((a) => listFilesRecursive(a.dir)))];
+  let seeded = 0;
+  let skippedSame = 0;
+  for (const rel of names) {
+    const auth = authorities.find((a) => existsSync(join(a.dir, rel)));
+    if (!auth) { continue; }
+    const from = join(auth.dir, rel);
+    const to = join(dstDir, rel);
+    let bytes;
+    try { bytes = readFileSync(from); } catch (e) {
+      throw new Error(`读不到权威 PNG ${from}（来源 ${auth.label}）：${e.message}`);
+    }
+    mkdirSync(dirname(to), { recursive: true });
+    try {
+      if (existsSync(to) && readFileSync(to).equals(bytes)) { skippedSame++; continue; }
+    } catch { /* 读不动就当作要写 */ }
+    /**
+     * 这里**不能**用 cpSingle()：它把 `cpSync` 的 Windows 假错按"目标存在就算写成功"咽掉，
+     * 而本函数的前提恰好是**覆盖已有文件**（旧目标本来就存在、且是要被换掉的陈旧字节）。
+     * 沙箱实测过这条形状（.zcode/tmp/svgpng-r9/ps-sbx-{A,B}）：用 cpSingle 时陈旧字节留在原处、
+     * 本函数却谎报"换成权威来源 1 个"。改成读进来再写出去 + 写完复验，复验不过直接抛，
+     * 由既有的回滚路径接手（宁可构建失败，不要带着陈旧 PNG 假装成功）。
+     */
+    writeFileSync(to, bytes);
+    if (!readFileSync(to).equals(bytes)) {
+      throw new Error(`权威字节没落进 ${to}（写完复验不一致，来源 ${auth.label}）`);
+    }
+    seeded++;
+  }
+  return { seeded, skippedSame, total: names.length, from: authorities.map((a) => a.label).join(" > ") };
+}
+
 function restore() {
   const full = join(BACKUP, "full-static");
   if (!existsSync(full)) {
@@ -136,6 +204,8 @@ function restore() {
   try {
     mkdirSync(stage);
     sysCpContents(full, stage);
+    const png = seedProfilePngFromAuthority(stage);
+    console.log(`[prepare-static] profile PNG 权威对齐：换成权威来源 ${png.seeded} 个 / 字节相同跳过 ${png.skippedSame} 个 / 共 ${png.total} 个（顺序 ${png.from}）`);
     atomicPromote(stage, "restored full-static -> src/static");
     console.log(`[prepare-static] 完成（模式 ${mode}）`);
   } catch (e) {
@@ -193,6 +263,8 @@ function strip() {
         kept++;
       }
     }
+    const png = seedProfilePngFromAuthority(stage, { onlyExisting: true });
+    console.log(`[prepare-static] real 模式 profile PNG 权威对齐：换成权威来源 ${png.seeded} 个 / 字节相同跳过 ${png.skippedSame} 个（顺序 ${png.from}）`);
     atomicPromote(stage, `real 模式：本地保留 tabBar + 源码字面量引用 ${kept} 个文件`);
     console.log(`[prepare-static] real 模式：其余由后端 app-assets 托管`);
     console.log(`[prepare-static] 完成（模式 ${mode}）`);

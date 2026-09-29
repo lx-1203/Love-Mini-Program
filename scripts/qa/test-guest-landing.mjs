@@ -169,18 +169,25 @@ let realOut = ""; // 块 1 存一份真数据 stdout，块 3 的守恒可见性�
   const keyWasThere = TARGET in tri.landingGroups;
   delete tri.landingGroups[TARGET];
   const pLess = writeJson(resolve(TMP, "less-triage.json"), tri);
+  /* 2026-09-30：这两条腿的 --triage 现在传并集（与基线 realOut 同一份输入）。
+     原来只传单份 TRIAGE，于是"跑测少一组"这个变量上同时混着两件事：
+     被检的 tools/search 没了 + 真语料里 subpackages/setup/recommend-pref/index 本来就不在这份 2026-09-27
+     的单切片里 ⇒ 删一组后读数从 +1 变成 +2，测的就不再是"少一组"这一个变量
+     （载具自己在 GUEST_LAND_WARN 里就要求多条执行腿传并集，这里只是把夹具对齐它写的正确用法，
+     判据一个字没松）。 */
+  const triageArg = existsSync(TRIAGE2) ? pLess + "," + TRIAGE2 : pLess;
   t("注入本身落在被检的那一行上（triage 里本来有这一组、ops 里本来有这一页的成员）",
     keyWasThere && tam.mutated > 0 && ctl.copied > 0,
     "triage 命中=" + keyWasThere + " ops 改写条数=" + tam.mutated + " ops 文件拷贝=" + ctl.copied + "（N=0 = 负例空转）");
   /* 3a 控制腿：换 ops 目录（内容与权威目录逐条相同）+ 删掉跑测那一组 ⇒ 按 #67 口径不判红，
         但必须把这一组记成具名读数（读数比基线多 1，不许静默） */
-  const rc = run("less-control", ["--policy", POLICY, "--triage", pLess, "--ops", resolve(TMP, "ops-pristine")]);
+  const rc = run("less-control", ["--policy", POLICY, "--triage", triageArg, "--ops", resolve(TMP, "ops-pristine")]);
   const rwOf = (out) => { const m = /GUEST_LAND_NO_RUN_WITNESS=(\d+)/.exec(out); return m ? Number(m[1]) : null; };
   const rwBase = rwOf(realOut);
   t("跑测少一组而判据台仍认账 ⇒ 具名读数 +1（不许静默吞掉失效裁定）",
     rwBase !== null && rwOf(rc.out) === rwBase + 1, "基线=" + rwBase + " 删一组后=" + rwOf(rc.out) + "\n" + rc.out.slice(0, 300));
   /* 3b 重武装后的负例：两把尺同时撤 ⇒ 必须红，且红句点名这一组 */
-  const rr = run("less-stripped", ["--policy", POLICY, "--triage", pLess, "--ops", resolve(TMP, "ops-stripped")]);
+  const rr = run("less-stripped", ["--policy", POLICY, "--triage", triageArg, "--ops", resolve(TMP, "ops-stripped")]);
   t("失效裁定 ⇒ 红（跑测证人 + 判据台证人同时撤）",
     rr.code === 2 && /这一组没有任何证人/.test(rr.out) && rr.out.includes(TARGET),
     "exit=" + rr.code + "\n" + rr.out.slice(0, 400));
@@ -229,7 +236,135 @@ let realOut = ""; // 块 1 存一份真数据 stdout，块 3 的守恒可见性�
   t("全中 = CLOSED", landingStatus(booked, mk({}))[0].status === "CLOSED", "x");
   t("四态里除 CLOSED 都算未结案", LANDING_UNCLOSED.length === 4 && !LANDING_UNCLOSED.includes("CLOSED"), LANDING_UNCLOSED.join(","));
 }
-/* 8) 依据写成裸文字（没有 anchors）必须红：那是一条谁都没复核过的"理由" */
+/* 9) 2026-09-30 裁定 (a)：成员来源只许一条规则，而新路线的窄条件必须还能变红。
+   病灶（followups-v33.md §11）：某页 ops 行**整页没有 identities 声明**（= 游客腿一行都没被收窄，
+   按 r-exec-cli.mjs:161 这些行仍归游客腿认领）时，#67 的"被收窄才算成员"路线给出零成员 ⇒
+   预检拦腿，而在册账本却凭跑测证人把那组记成有 4 名成员 ⇒ "booked 却拍不了"。
+   裁定 (a) 允许整页游客断言自己当证人；红线是它**只**允许"整页都没声明"：
+     9a 整页未声明 + 跑测证人缺席 ⇒ 必须绿，且具名说出这一组靠哪条路线进的账；
+     9b 同一页只要**有一行声明了** identities:["guest"]（= 判据台明写这些行归游客执行腿自己判）
+        ⇒ 新路线一律不生效 ⇒ 必须照旧 exit 2（第 3 条负例钉的是"整页声明 guest"，这条钉"部分声明"）；
+     9c 结构检查：载具只算一次名册（一个 buildPlan），且 measure 的拦门在取租约之前。
+   9b 就是那把能变红的尺：把"整页"松成"有任意一行是游客断言"，9b 立刻 exit 0 ⇒ 本条判红。 */
+{
+  const PAGE = "subpackages/tools/search/index";
+  const PAIR = PAGE + " → pages/login/index";
+  const buildOps = (dir, declaredGuestIds) => {
+    mkdirSync(dir, { recursive: true });
+    let pageRows = 0, stripped = 0, declared = 0;
+    for (const f of readdirSync(OPS_DIR).filter((x) => x.endsWith(".json"))) {
+      const j = JSON.parse(readFileSync(join(OPS_DIR, f), "utf8"));
+      for (const c of j.cases || []) {
+        if (String(c.page || "").trim() !== PAGE) continue;
+        pageRows++;
+        delete c.identities; delete c.identitiesFrom; delete c.identitiesWhy; stripped++;
+        if (declaredGuestIds.includes(String(c.id))) { c.identities = ["guest"]; c.identitiesFrom = "test-guest-landing.mjs#9b"; declared++; }
+      }
+      writeFileSync(join(dir, f), JSON.stringify(j));
+    }
+    return { pageRows, stripped, declared };
+  };
+  const idsOnPage = new Set();
+  for (const f of readdirSync(OPS_DIR).filter((x) => x.endsWith(".json"))) {
+    const j = JSON.parse(readFileSync(join(OPS_DIR, f), "utf8"));
+    for (const c of j.cases || []) if (String(c.page || "").trim() === PAGE) idsOnPage.add(String(c.id));
+  }
+  const FIRST_ID = [...idsOnPage].sort()[0];
+  const tri = JSON.parse(JSON.stringify(realTriage));
+  const keyWasThere = PAIR in tri.landingGroups;
+  delete tri.landingGroups[PAIR];
+  const pTri = writeJson(resolve(TMP, "less9-triage.json"), tri);
+  const a = buildOps(resolve(TMP, "ops9-all-undeclared"), []);
+  const b = buildOps(resolve(TMP, "ops9-partial-declared"), [FIRST_ID]);
+  t("9 的夹具不空转（这一页在 ops 里有行、在 triage 里本来有这一组；9b 恰好只有 1 行被声明）",
+    a.pageRows > 1 && keyWasThere && a.stripped === a.pageRows && b.declared === 1 && b.pageRows === a.pageRows,
+    "页行数=" + a.pageRows + " 去标=" + a.stripped + " 9b声明=" + b.declared + " triage 命中=" + keyWasThere);
+  /* 9a 整页未声明 ⇒ 新路线生效 */
+  const ra = run("entire", ["--policy", POLICY, "--triage", pTri, "--ops", resolve(TMP, "ops9-all-undeclared")]);
+  const entLine = lineWith(ra.out, "GUEST_LAND_OPS_ENTIRE_GUEST=");
+  t("9a 整页未声明 + 跑测证人缺席 ⇒ 绿（这一组有证人，腿拍得出来）",
+    ra.code === 0, "exit=" + ra.code + "\n" + ra.out.slice(0, 400));
+  /* 计数不钉死：真语料里 subpackages/setup/recommend-pref/index 本来就整页没声明（那是裁定 (a) 的对象），
+     夹具里 tools/search 又被剥成整页没声明 ⇒ 命中面是"这些页的和"。钉的是：读数得是个正数、
+     并且**点名到夹具这一页**（说不出页名的读数等于没说）。 */
+  const mEnt = /GUEST_LAND_OPS_ENTIRE_GUEST=(\d+) 组 \/ (\d+) 行/.exec(entLine);
+  t("9a 具名读数说得出这一组靠哪条路线进的账（组数/行数为正且点名到夹具页）",
+    !!mEnt && Number(mEnt[1]) >= 1 && Number(mEnt[2]) >= a.pageRows && entLine.includes(PAGE), entLine);
+  {
+    const bk = JSON.parse(readFileSync(resolve(TMP, "entire-booked.json"), "utf8"));
+    const g = bk.rows.find((x) => x.groupKey === PAIR);
+    t("9a 账本把成员来源写成机器可读字段（memberBasis / memberSource.fromOpsEntireGuest / memberBasisEvidence）",
+      !!g && g.memberBasis === "ops-entirely-undeclared-guest-assertions" &&
+        g.memberSource.fromOpsEntireGuest === a.pageRows && g.memberSource.fromOpsNarrowed === 0 &&
+        g.memberBasisEvidence.rowsWithoutIdentityDeclaration === a.pageRows &&
+        g.memberBasisEvidence.rowsScopedOutOfGuestLeg === 0,
+      JSON.stringify(g && { m: g.memberBasis, s: g.memberSource, e: g.memberBasisEvidence }).slice(0, 300));
+    t("9a 证人 = 该页 ops 全部行（没有凭空多、没有少）",
+      !!g && [...idsOnPage].sort().join(",") === [...g.caseIds].sort().join(","),
+      "账本=" + (g ? g.caseIds.join(",") : "(无)") + " 该页 ops=" + [...idsOnPage].join(","));
+    const polKeys2 = new Set(polObj.rows.map((x) => x.page + " → " + x.landing));
+    const gotKeys2 = new Set(bk.rows.map((x) => x.groupKey));
+    t("9a 落地对集合不因新规则而变（既不许多也不许丢：与 policy 逐组相等，且 28 组都在）",
+      gotKeys2.size === polKeys2.size && [...polKeys2].every((k) => gotKeys2.has(k)),
+      "账本组=" + gotKeys2.size + " policy 组=" + polKeys2.size);
+  }
+  /* 9b 部分声明（有一行明写 guest）⇒ 新规则不得生效，必须照旧拦腿 */
+  const rb = run("partial", ["--policy", POLICY, "--triage", pTri, "--ops", resolve(TMP, "ops9-partial-declared")]);
+  t("9b 整页里只要有一行声明了 guest ⇒ 新路线不生效：跑测证人也缺席时仍 exit 2（不许被新规则悄悄放行）",
+    rb.code === 2 && /一名成员都没有/.test(rb.out) && /这一组没有任何证人/.test(rb.out) && rb.out.includes(PAIR),
+    "exit=" + rb.code + "\n" + rb.out.slice(0, 500));
+  t("9b 读数不点名夹具页（整页未声明的计数里没有这一页 ⇒ 有一行声明了 guest 就不许走新路线）",
+    (() => { const l = lineWith(rb.out, "GUEST_LAND_OPS_ENTIRE_GUEST="); return /GUEST_LAND_OPS_ENTIRE_GUEST=\d+ 组/.test(l) && !l.includes(PAGE); })(),
+    lineWith(rb.out, "GUEST_LAND_OPS_ENTIRE_GUEST="));
+  {
+    const bk = JSON.parse(readFileSync(resolve(TMP, "partial-booked.json"), "utf8"));
+    t("9b 拍不了的组不许进账本（booked 里不得出现这一组 ⇒ 不存在「booked 却拒拍」）",
+      !bk.rows.some((x) => x.groupKey === PAIR),
+      "账本组=" + bk.rows.length + " 含这一组=" + bk.rows.some((x) => x.groupKey === PAIR));
+  }
+  /* 9c 结构：名册只算一次；measure 的拦门在拿租约之前（本文件全程离线，绝不真去跑 measure） */
+  {
+    const src = readFileSync(SCRIPT, "utf8");
+    const calls = (src.match(/=\s*buildPlan\(\)/g) || []).length;
+    const iProb = src.indexOf('if (problems.length) { console.log("GUEST_LANDING=FAIL');
+    const iAcq = src.indexOf("acquireUi({");
+    t("9c 名册只有一个来源（buildPlan() 只被调用一次 ⇒ book 与 measure 共用同一份成员账）",
+      calls === 1, "buildPlan() 调用次数=" + calls);
+    t("9c measure 的带病拦门排在 acquireUi 之前（预检不过时结构上拿不到租约）",
+      iProb > 0 && iAcq > iProb, "problems 检查@" + iProb + " acquireUi@" + iAcq);
+  }
+}
+/* 10) 真数据的成员账：每组都必须有 ops 派生的证人，且新路线的命中面必须恒为"整页未声明"那一类
+   （这一条钉的是"改动面"：现在实测 policy 28 页里恰好 1 页走新路线、27 页走 #67 老路线。
+     别的页一旦开始整页掉 identities 声明，这里会先变红，而不是悄悄多发几条 GG-* 腿。） */
+{
+  const triageArg = existsSync(TRIAGE2) ? TRIAGE + "," + TRIAGE2 : TRIAGE;
+  const r = run("real-memb", ["--policy", POLICY, "--triage", triageArg]);
+  const bk = JSON.parse(readFileSync(resolve(TMP, "real-memb-booked.json"), "utf8"));
+  const kinds = {};
+  for (const x of bk.rows) kinds[x.memberBasis || "(缺字段)"] = (kinds[x.memberBasis || "(缺字段)"] || 0) + 1;
+  t("10 真数据：每一组都有 ops 证人（fromOps>0 ⇒ 成员不再随 --triage 喂哪份切片而消失）",
+    r.code === 0 && bk.rows.length === polObj.rows.length && bk.rows.every((x) => x.memberSource.fromOps > 0),
+    "exit=" + r.code + " 组=" + bk.rows.length + " policy=" + polObj.rows.length +
+      " 没有 ops 证人的组=" + bk.rows.filter((x) => !x.memberSource.fromOps).map((x) => x.page).join(","));
+  t("10 真数据：新路线命中面 == 整页未声明的那一类页（分布可核，不是一句「都好了」）",
+    (kinds["ops-entirely-undeclared-guest-assertions"] || 0) === 1 &&
+      (kinds["ops-narrowed-out-of-guest-leg"] || 0) === polObj.rows.length - 1,
+    JSON.stringify(kinds));
+  t("10 真数据：booked 的落地对集合 == measured 的落地对集合（在册账本与实测腿同一批组）",
+    existsSync(resolve(REPO, "reports/audit/round-7/guest-landing-measured.json")) &&
+      (() => {
+        const mm = JSON.parse(readFileSync(resolve(REPO, "reports/audit/round-7/guest-landing-measured.json"), "utf8"));
+        const ks = new Set(mm.rows.map((x) => x.groupKey));
+        return ks.size === bk.rows.length && bk.rows.every((x) => ks.has(x.groupKey));
+      })(),
+    "measured 组=" + (existsSync(resolve(REPO, "reports/audit/round-7/guest-landing-measured.json"))
+      ? JSON.parse(readFileSync(resolve(REPO, "reports/audit/round-7/guest-landing-measured.json"), "utf8")).rows.length : "(读不到)") +
+      " booked 组=" + bk.rows.length);
+}
+
+/* 11) 依据写成裸文字（没有 anchors）必须红：那是一条谁都没复核过的「理由」
+   （原编号 8；9/10 是 2026-09-30 裁定 (a) 新增的两块，为了不重排既有编号把它挪到最后，判据一字未改。） */
 {
   const pol = JSON.parse(realPolicy);
   delete pol.anchors;

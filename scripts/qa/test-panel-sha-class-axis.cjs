@@ -33,9 +33,14 @@ const { spawnSync, execFileSync } = require("node:child_process");
 const REPO = resolve(__dirname, "..", "..");
 const PANEL = join(REPO, "scripts", "qa", "emit-round-report.mjs");
 const GATE = join(REPO, "scripts", "qa", "verify-evidence-corpus.mjs");
-const FXREL = ".zcode/tmp/panel-shaclass";
+/* 夹具与替身目录**按 pid 命名**。实测踩到的形状（2026-09-30 00:0x，本车道自己的自检在聚合器里红了一次）：
+   聚合器可以被同时跑两遍（主控收尾跑一次、某条车道手上一遍），而固定路径的自检会在开头 `rmSync` 对方的目录 ——
+   于是这一份正在写的替身被那一份抹掉，报 `ENOENT … _mutant-emptyBlocked-emit-round-report.mjs`，
+   同一时刻 test-corpus-legacy-window.cjs 也因为它的固定夹具目录被这样抹掉而报 bad=2。
+   那是"两个跑的人互相踩"，不是判据有问题 ⇒ 每个进程用自己的目录，谁也不碰谁。 */
+const FXREL = `.zcode/tmp/panel-shaclass-${process.pid}`;
 const FX = join(REPO, ...FXREL.split("/"));
-const MUTREL = ".zcode/tmp/panel-shaclass-mut";
+const MUTREL = `.zcode/tmp/panel-shaclass-mut-${process.pid}`;
 const MUT = join(REPO, ...MUTREL.split("/"));
 
 const git = (...a) => { try { return execFileSync("git", a, { cwd: REPO, encoding: "utf8" }).trim(); } catch { return ""; } };
@@ -52,12 +57,16 @@ const CONV = CONV_RAW ? new Date(CONV_RAW) : null;
 
 const sha256 = (buf) => createHash("sha256").update(buf).digest("hex");
 const brk = (s) => String(s).replace(/([A-Z]{2,8})_(RESULT|TEST)=/g, "$1-$2="); // 断掉聚合器那条正则，见文件头
-
+/* ok() 对**标签也**做 brk：本文件第一版把一条断言标签写成 `… ⇒ EMIT_RESULT=FAIL` 原形，
+   聚合器 run-qa-selftests.mjs:52 取的是整个输出里第一个 `[A-Z]{2,8}_(TEST|RESULT)=(PASS|FAIL)`，
+   于是它把"我在转述别人的判据名"读成"本次判决是 FAIL"，一条 61 项全中的自检被打成 FAIL（实测，2026-09-29 本车道自己踩的）。
+   标签一律过 brk，就不必再靠"写的时候记得断字符"这条靠不住的纪律。 */
 let fail = 0, cases = 0;
 const ok = (cond, label, detail) => {
   cases++;
-  if (cond) console.log(`  ok   ${label}`);
-  else { fail++; console.log(`  FAIL ${label}${detail ? "  <<" + brk(String(detail)).slice(0, 260) + ">>" : ""}`); }
+  const lb = brk(label);
+  if (cond) console.log(`  ok   ${lb}`);
+  else { fail++; console.log(`  FAIL ${lb}${detail ? "  <<" + brk(String(detail)).slice(0, 260) + ">>" : ""}`); }
 };
 
 /* ---------- 夹具：一份 manifest + 若干"盘上真有、哈希相符"的帧 ----------
@@ -303,9 +312,15 @@ function readdirHas(dir, needle) {
 rmSync(MUT, { recursive: true, force: true });
 rmSync(FX, { recursive: true, force: true });
 ok(!existsSync(MUT), "H 替身目录已删除并复核不存在", "existsSync(" + MUTREL + ")=" + existsSync(MUT));
-ok(!existsSync(join(REPO, ".zcode", "tmp", "panel-shaclass-mut")), "H 复核（按仓库相对路径再问一次）：替身目录确实没了", "");
+ok(!existsSync(join(REPO, ".zcode", "tmp", ...MUTREL.split("/").slice(-1)[0].split("/"))), "H 复核（按仓库相对路径再问一次）：替身目录确实没了", "");
 ok(!readdirHas(join(REPO, "scripts", "qa"), "_mutant-"), "H scripts/qa 活目录里没有替身文件（本文件从不往活目录写）", "");
 ok(!existsSync(FX), "H 夹具目录已删除（不落盘残留）", "");
+{
+  const mine = [FXREL.split("/").pop(), MUTREL.split("/").pop()];
+  let left = [];
+  try { left = require("node:fs").readdirSync(join(REPO, ".zcode", "tmp")).filter((n) => mine.includes(n)); } catch { left = ["(读不出 .zcode/tmp)"]; }
+  ok(left.length === 0, "H 复核（点名问 .zcode/tmp）：本 pid 的夹具/替身目录都不在（别人的 pid 目录不算 —— 目录按 pid 隔离，并发跑两遍也互不抹）", left.join(" "));
+}
 
 console.log(`PNSHA_SUMMARY cases=${cases} fail=${fail} head40=${HEAD40.slice(0, 12)} older=${OLDER40.slice(0, 12)} phantom=${PHANTOM.slice(0, 12)} conv=${CONV.toISOString()} platform=${process.platform}`);
 console.log(`PNSHA_TEST=${fail ? "FAIL" : "PASS"}`);
