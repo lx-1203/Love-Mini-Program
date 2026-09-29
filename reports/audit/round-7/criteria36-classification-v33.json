@@ -1,0 +1,374 @@
+{
+  "lane": "criteria36",
+  "read": 36,
+  "tally": {
+    "A-absence-assertion": 7,
+    "B-missing-object": 7,
+    "C-unjudgeable-at-all": 21,
+    "D-unclear": 1
+  },
+  "rows": [
+    {
+      "id": "H13",
+      "page": "pages/home/index",
+      "manifest": "PAGES-HOME-INDEX.json",
+      "criteriaVerbatim": "title「死接线核对：HomeHeader 声明并绑定 searchTap 但模板无搜索元素」/ action「DOM 探测 .header-search / 放大镜图标，并尝试用 automation 触发 HomeHeader emit('searchTap')」/ expected「结论必须写明：首页无搜索入口…这属功能缺失/死接线，按『首页无搜索』记 Function 类观察（不得凭空造视觉缺陷）」",
+      "evidence": "PAGES-HOME-INDEX.json#H13 tier=noop。命令：grep -n searchTap apps/client/src/components/home/HomeHeader.vue → 仅 17:defineEmits<{ (e:\"schoolTap\"): void; (e:\"searchTap\"): void; ... }>()（声明位，全文无 $emit('searchTap') 调用点）；apps/client/src/pages/home/index.vue:333 「@searchTap=\"openNearbyList\"」（绑定位悬空）；命令：grep -rn \"header-search\" apps/client/src/ → 零命中；命令：grep -o \"header-search|header-me|header-location|header-icon\" apps/client/dist/build/mp-weixin/components/home/HomeHeader.wxml | uniq -c → header-icon 2、header-location 3、header-me 2，header-search 0 ⇒ 页头只渲染三件，判据断言的是这个零。",
+      "action": "不许补搜索入口（补了 expected 的「首页无搜索入口」直接变红）。换成源码级死接线判点，进 scripts/qa/verify-source-shape.mjs 的 SPEC（谓词只允许 absent/present/countEq/countTemplateEq，见该文件 26-28 行注释）：{file:\"apps/client/src/components/home/HomeHeader.vue\", checks:[{kind:\"countEq\", re:/\\(e: \"searchTap\"\\)/, n:1}（声明恰一次）, {kind:\"absent\", re:/\\$emit\\(\\s*[\"']searchTap/}（零发射点）]} + {file:\"apps/client/src/pages/home/index.vue\", checks:[{kind:\"present\", re:/@searchTap=\"openNearbyList\"/}（绑定在位）, {kind:\"absent\", re:/class=\"[^\"]*header-search/}]} + {file:\"apps/client/dist/build/mp-weixin/components/home/HomeHeader.wxml\", checks:[{kind:\"absent\", re:/header-search|放大镜|search/}]}。判据正文一字不动，把「DOM 探测」两句按 noop 档改记为该判点的执行日志。",
+      "canExecuteRulingLiterally": false,
+      "class": "A-absence-assertion"
+    },
+    {
+      "id": "N10",
+      "page": "pages/nearby/index",
+      "manifest": "PAGES-NEARBY-INDEX.json",
+      "criteriaVerbatim": "title「输入框覆盖度核对：本页已无输入框 → 正常/清空/超长/特殊字符四组不适用并转由搜索页承接」/ action「DOM 扫描本页全部 <input>/<textarea>（含搜索区、五入口、四分区）」/ expected「结论必须写明：附近页无任何输入框（本轮移除后模板内无 <input>，:362-643 全量核对）→ …在本页记为不适用，不得凭空造输入用例」",
+      "evidence": "PAGES-NEARBY-INDEX.json#N10 tier=noop。命令：grep -c \"<input\\|<textarea\" apps/client/src/pages/nearby/index.vue → 0；同命令打到 apps/client/dist/build/mp-weixin/pages/nearby/index.wxml → 0。替代锚其实是产品里唯一那枚「搜索按钮」：apps/client/src/pages/nearby/index.vue:406 「<view class=\"nearby-home__search-btn press-feedback\" … role=\"button\" :aria-label=\"t('nearby.searchPlaceholder')\" @tap=\"goSearch\"」——它是按钮不是输入框，正是判据要记录的「文案语义仍是搜索但已不可输入」。",
+      "action": "不许给附近页补输入框（expected 的「无任何输入框」立刻变红，且「不得凭空造输入用例」被违反）。非帧载体＝结构计数判点：{file:\"apps/client/src/pages/nearby/index.vue\", checks:[{kind:\"absent\", re:/<(input|textarea)[\\s>]/}, {kind:\"absent\", re:/v-model/}]} + 对两档产物各跑一条 countEq=0（apps/client/dist/build/mp-weixin/pages/nearby/index.wxml、…-real/…同路径）+ 文案一致性一条 present：{re:/:aria-label=\"t\\('nearby\\.searchPlaceholder'\\)/}。四组输入用例照判据记「不适用」，依据写这两条计数。",
+      "canExecuteRulingLiterally": false,
+      "class": "A-absence-assertion"
+    },
+    {
+      "id": "CI22",
+      "page": "subpackages/circles/circles/index",
+      "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json",
+      "criteriaVerbatim": "title「下拉刷新：本页未配置 enablePullDownRefresh，须确认刷新入口缺失是否构成缺陷」/ pre「pages.json:97-101 兴趣圈页条目无 style 配置，全局亦无 enablePullDownRefresh」/ expected「①②不得出现伪刷新动画或未调用的 stopPullDownRefresh；③…(a) 列表数据陈旧时用户无任何主动刷新手段→判 P2 Function『缺少刷新入口』；(b) 若产品定义本页无需刷新则记 observation；④非空状态下回本页不发新请求…须给出请求计数依据」",
+      "evidence": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json#CI22 tier=noop。命令：grep -n -A5 '\"path\": \"circles/index\"' apps/client/src/pages.json → 100:\"path\": \"circles/index\" 后面直接是 101:} 与 103:\"path\": \"circles/topics\"，整条条目无 style 段 ⇒ enablePullDownRefresh 确实未配。命令：grep -c \"onPullDownRefresh\" apps/client/src/subpackages/circles/circles/index.vue → 0；grep -n \"refresher-enabled\\|enablePullDownRefresh\" 该文件 → 零命中（两个 scroll-view 也没开 refresher）。对照：apps/client/src/pages.json 里 vip/bills 条目（:340-343）是有 \"style\":{\"enablePullDownRefresh\":true} 的，说明「配/不配」是页级配置事实、可机判。",
+      "action": "不许给这页开下拉刷新（pre 的「无 style 配置」与 ④「非空不发新请求」都会变红；(a)/(b) 那条「缺刷新入口」是缺陷取证，不是待补物件的点名）。非帧载体＝配置级 + 源码级 + 网络计数三段：①配置级判点对 pages.json 断言 circles/index 条目 JSON 里不存在 style.enablePullDownRefresh（谓词 countEq 0，对照 bills 条目为 present 做阳性对照）；②源码级判点对 index.vue 断言 absent onPullDownRefresh / absent refresher-enabled；③④ 那半改「onShow 请求计数」判点：源码级 present 「circles.length === 0」补拉门（index.vue:83）+ 一次进页的 GET 计数（需给在役载体补网络计数刀，见同批 AC02/VB03）；缺陷结论 (a)/(b) 由 lane 按判据二选一写 observed，不靠帧。",
+      "canExecuteRulingLiterally": false,
+      "class": "A-absence-assertion"
+    },
+    {
+      "id": "CS26",
+      "page": "subpackages/chat/chat-session/index",
+      "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json",
+      "criteriaVerbatim": "action「进入后等 1.5s；读取 pageErrorMessage/friendlyPageError…随后在 UI 上尝试输入并发送（若入口存在）」/ expected「命中 :660-663 失败门 → 显示用户可读错误（不得是裸 HTTP 串/数字码）；不得渲染『破冰引导 + 空会话 + 可用输入栏』；输入栏不可用或发送必须失败并有 Toast；【数据层】不得在未知会话下于后端落任何消息记录」",
+      "evidence": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json#CS26 tier=critical requiresReal=false。失败门在 apps/client/src/subpackages/chat/chat-session/index.vue:662-664「if (!chatStore.activeSession || chatStore.activeSession.id !== sessionId.value) { pageErrorMessage.value = …; tempLoadFailed.value = true;」。互斥渲染实证：:2151「<view v-if=\"pageErrorMessage\" class=\"meta-copy meta-copy--padded\">{{ pageErrorMessage }}</view>」紧接 :2152「<template v-else>」——整条微信输入栏（:2154 起 chat-input-area，输入框 class 在 :2217 wechat-input-bar__input）只活在 v-else 里 ⇒ 该态下「可用输入栏」是结构性不存在，判据要的正是这个不存在。命令：grep -c meta-copy--padded apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml → 1（错误文案位是真 token）。",
+      "action": "不许在失效会话态里保留可用输入栏（expected「不得渲染…可用输入栏」反红）。输入/发送那条腿改负向判点：①源码级 absent——断言 wechat-input-bar 相关节点整块位于 :2152 的 <template v-else> 之内（谓词：present /<template v-else>/ 且该块内含 chat-input-area，即 pageErrorMessage 为真时不可达）；②帧侧留一条负向计数 countEq('.wechat-input-bar__input')==0（probeMany 已回条数，r-exec-cli.mjs:224，负向计数是现成能力）；③正向那半不动：countEq('.meta-copy--padded')>=1 + 错误文案读数；④数据层「后端落 0 条」用 apiPost（cli-automator.mjs:203）回读该 sessionId 消息数==0，属非帧载体。判据正文一字不改。",
+      "canExecuteRulingLiterally": false,
+      "class": "A-absence-assertion"
+    },
+    {
+      "id": "MT21",
+      "page": "subpackages/discover-extra/discover/matching",
+      "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json",
+      "criteriaVerbatim": "title「下拉刷新：未配置 enablePullDownRefresh，不得触发伪刷新与重复匹配请求」/ pre「pages.json:137-143 discover-extra 分包两条页面条目均无 enablePullDownRefresh」/ expected「无刷新动画、无 onPullDownRefresh/stopPullDownRefresh；不得因下拉重复触发 onLoad/runMatchCheck（network 零新增写请求）；动画不因下拉被打断或加速；日志记 animationDone/status 不变」",
+      "evidence": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json#MT21 tier=noop。命令：grep -n -A5 '\"path\": \"discover/matching\"' apps/client/src/pages.json → 140:\"path\": \"discover/matching\" 141:}（无 style 段）；命令：grep -c \"onPullDownRefresh\" apps/client/src/subpackages/discover-extra/discover/matching.vue → 0。整条 expected 全是否断言（无动画/无钩子/零新增写请求），没有任何「必须出现的东西」。",
+      "action": "不许配 enablePullDownRefresh、不许加刷新按钮（「无 onPullDownRefresh/stopPullDownRefresh」与「零新增写请求」立刻反红，且下拉一次就真触发一次匹配写请求，正是本条要防的副作用）。非帧载体：①配置级判点 pages.json 该条目 absent style.enablePullDownRefresh；②源码级判点 matching.vue absent onPullDownRefresh|stopPullDownRefresh；③「零新增写请求」＝网络计数（在役两条载体都没有请求计数器，需补刀；补前记 UNVERIFIED 不记绿）；④animationDone/status 不变＝页级 data 读数（cli-automator.mjs:364 readPageData 已有该刀，可直接读页面 data 断言不变）。",
+      "canExecuteRulingLiterally": false,
+      "class": "A-absence-assertion"
+    },
+    {
+      "id": "MSG22",
+      "page": "pages/messages/index",
+      "manifest": "PAGES-MESSAGES-INDEX.json",
+      "criteriaVerbatim": "action「分别长按两条会话读 itemList 四项；再长按一条后点取消/外部关闭」/ expected「itemList 必须为『置顶/取消置顶、标为未读、免打扰或恢复提醒（随 session.muted 切换第三项文案）、删除会话』（index.vue:261-263）；取消（fail）静默无副作用；四项均可命中」",
+      "evidence": "PAGES-MESSAGES-INDEX.json#MSG22 tier=critical。实盘 apps/client/src/pages/messages/index.vue:261-263「uni.showActionSheet({ itemList: [\"置顶/取消置顶\", \"标为未读\", session.muted ? \"恢复提醒\" : \"免打扰\", \"删除会话\"], …」；触发位 :530「@longpress=\"onSessionLongpress(session)\"」（同一 view 的 :529 是 @tap=\"openSession\" 导航，不是本条判点）。⇒ 四项文本活在原生 ActionSheet 层，渲染树里没有对应节点。载体面：grep -rln \"showActionSheet\" scripts/qa/ 无任何读数/选项刀；r-exec-ws.mjs 里只有 el.tap()（:397），无 longpress。",
+      "action": "补物件无意义（面板本就在产品里，:261-263 就是它），也不能降级成 tap .chat-item（会走 :529 导航，把判点测成另一件事）。缺的载具能力＝两条：①长按注入——IDE 桥本身支持（cli-automator.mjs:11-13 自述 automation_element_action 支持 tap/longpress/…），但 r-exec-cli.mjs:611 只发 \"input\"/\"tap\" 两种 ⇒ 需把 longpress 接进 runner（仓内先例：r1-exec.cjs:610/613 ops.push({op:'longpress'})）；②原生弹层读数/选项——需 wx.showActionSheet 参数拦截（读 itemList 数组）+ success({tapIndex}) 回调注入（miniprogram-automator 的 mockWxMethod 已在用，r1-exec.cjs:1134 有 mp.mockWxMethod('chooseImage') 的先例）⇒ 照这个形态补一条 showActionSheet 桩即可逐项命中并读文案。两刀补齐前本条记「载体缺失」不记红。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "MSG24",
+      "page": "pages/messages/index",
+      "manifest": "PAGES-MESSAGES-INDEX.json",
+      "criteriaVerbatim": "action「① 长按选『免打扰』；② 下拉刷新（穿透 TTL 重拉）后再看；③ 切走 Tab >30s 再回；④ 恢复提醒；⑤ 断网执行一次」/ expected「① 行右侧出现静音图标（index.vue:557-563）；②③ 重拉后免打扰图标仍在…④ 图标消失、提醒恢复；⑤ setSessionMuted 返回 false 时 toast apiErrors.operationFailed…本地不改值」",
+      "evidence": "PAGES-MESSAGES-INDEX.json#MSG24 tier=critical requiresReal=true。写路径只能从原生层进：messages/index.vue:271-275「if (tapIndex === 2) { void messagesStore.setSessionMuted(...) }」，入口是 :261-263 的 uni.showActionSheet。⑤ 那半的失败支在 :272-274「if (!ok) uni.showToast({title: t(\"apiErrors.operationFailed\")…）。读数侧 .chat-item__muted-icon 是有的（:555-557「<image v-if=\"session.muted\" class=\"chat-item__muted-icon\" …>」，两档产物都是真 token）⇒ 难点全在四条动作腿：原生选项、页面级下拉、跨 Tab 停留 >30s、断网。载体面：grep -c \"network\" scripts/qa/r-exec-cli.mjs → 0（无请求计数/无断网刀）。",
+      "action": "不能靠补物件解：图标本就在 DOM，缺的是「把 muted 置真的那条原生路径」＋「断网」。需要三种载具能力：①原生 ActionSheet 选项注入（同 MSG22 的 mockWxMethod 桩）；②网络条件注入（offline / 强制让 PUT /mute 返 false）——在役两条载体都没有，须新建；③页面级下拉与 Tab 停留：CLI 桥有 scrollTo/touchstart/touchmove/touchend（cli-automator.mjs:11-13）但 runner 没接（r-exec-cli.mjs:611 只有 tap/input）。可落地的非帧补法（不改判据、只换载体）：stores/messages.ts:210-211/276-277/594-600/1280-1290 四处 muted 传递链做源码级 present 判点（verify-source-shape.mjs 那套 absent/present/countEq 谓词），②③ 的「重拉不丢」以「服务端回读 + 前端映射在位」双证代替帧。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "MSG25",
+      "page": "pages/messages/index",
+      "manifest": "PAGES-MESSAGES-INDEX.json",
+      "criteriaVerbatim": "action「长按选『标为未读』→ 观察徽标 → 进入该会话再返回」/ expected「markSessionUnread 为本地逻辑（后端无对应接口，stores/messages.ts:1328）→ 徽标立即出现（index.vue:566-568）；进入会话后会被 markAllSessionsRead 清掉（:299、:315）→ 该行为须在 observed 写明；未读数 >99 显示 99+；evidence…（network 应为 0 条未读相关写请求）」",
+      "evidence": "PAGES-MESSAGES-INDEX.json#MSG25 tier=critical。触发腿＝原生面板第 2 项：messages/index.vue:262 itemList[1]=\"标为未读\" → :269-270「if (tapIndex === 1) { messagesStore.markSessionUnread(session.id); uni.showToast(...) }」。读数腿在 DOM 且点名可得：:574-575「<view v-if=\"session.unreadCount > 0\" class=\"chat-item__unread-badge\"><text class=\"chat-item__unread-text\">{{ session.unreadCount > 99 ? '99+' : session.unreadCount }}</text>」。⇒ 徽标不是「无物件」，卡的是进不去那个态（长按＋原生选项）。",
+      "action": "缺的载具能力同 MSG22 那两刀（longpress 注入 + showActionSheet 选项桩）。另两条腿可先落非帧判、判据不动：①「后端无对应接口」是源码级事实 ⇒ absent 谓词（services/api 里无 markUnread/PUT /unread 端点 + stores/messages.ts:1328 后那条 TODO 注释在位）；②「network 应为 0 条未读相关写请求」是网络计数断言，需请求计数器（在役载体没有）。99+ 格式化那半纯 DOM 文本，载具到位后可帧判。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "MSG26",
+      "page": "pages/messages/index",
+      "manifest": "PAGES-MESSAGES-INDEX.json",
+      "criteriaVerbatim": "action「① 长按→『删除会话』→ 在 showModal 点『取消』；② 再次执行并点『确定』；③ 对同一会话在 500ms 内连点删除入口 5 次；④ 断网执行确定」/ expected「① 取消不得删除（index.vue:277-282 仅 res.confirm 才 deleteSession）；② 确定后会话从列表消失、条数 -1；③ 两条口径：客户端 DELETE 请求计数=1；服务端回读…④ 失败 toastOpError 且行不消失」",
+      "evidence": "PAGES-MESSAGES-INDEX.json#MSG26 tier=critical requiresReal=true。两层原生 UI 叠在一起：messages/index.vue:276-282「if (tapIndex === 3) { uni.showModal({ title: \"确定删除该会话？\", success: (res) => { if (res.confirm) void messagesStore.deleteSession(...) } }) }」——ActionSheet 与 showModal 在渲染树里都没有节点。判据正文自己就点名了「客户端 DELETE 请求计数=1」，而 grep -c \"network\" scripts/qa/r-exec-cli.mjs → 0。再加 500ms 连点 5 次（r-exec-cli.mjs:605-611 每目标只下发一次动作）与不可逆删除（执行器另有 DENY 口径）。",
+      "action": "四类能力全缺，且互不替代：①长按注入；②原生 showModal 按钮命中（取消/确定两路）；③rapidTap×5 通道（r1-exec.cjs:574 有 rapidTap 先例，在役 CLI 腿没接）；④网络条件注入＋逐条请求计数＋服务端回读（apiPost 已在 cli-automator.mjs:203，但没有请求计数器）。绝不能降级成「点一次删除入口」——那样「DELETE 计数=1」恒成立，正是判据第③条要防的假通过。补件前记载体缺失。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "PFI28",
+      "page": "pages/profile/index",
+      "manifest": "PAGES-PROFILE-INDEX.json",
+      "criteriaVerbatim": "action「① 点遮罩 .invite-mask（index.vue:2101 @tap 关）；② 点底部『关闭』按钮（:2145-2155）；③ 弹窗内 .invite-modal 点击（@tap.stop :2102）确认不关闭；④ 面板打开时尝试点底层元素」/ expected「①② 两路均在 500ms 内关闭弹窗、无残留遮罩；③ 内容区点击不得冒泡关闭…关闭后再次打开状态干净」",
+      "evidence": "PAGES-PROFILE-INDEX.json#PFI28 tier=normal。判据点名的三件全在盘上且都有作者类名：apps/client/src/pages/profile/index.vue:2097「<view v-if=\"showInviteModal\" class=\"invite-mask\" @tap=\"showInviteModal = false\">」、:2098「<view class=\"invite-modal\" @tap.stop>」、:2143-2147「class=\"invite-modal__btn invite-modal__btn--cancel press-feedback\" … @tap=\"showInviteModal = false\"」。唯一进不去的是「打开」这一步：打开态只有 :1062 showInviteModal.value = true（在 openInviteModal 内），而入口是同名 .video-cta 三枚之一——grep -n video-cta → :1694（录音）/:1768/:1793（邀请，@tap=\"openInviteModal\"，:1791 aria-label=t('profile.shareFriend')）⇒ 首匹配会点到录音那枚。",
+      "action": "可照字面补（补的是「可点名入口」，不是新功能）：apps/client/src/pages/profile/index.vue:1793 那枚 .video-cta 上加 modifier class=\"video-cta video-cta--invite\"（:1694/:1768 两枚也一并补上各自 modifier，否则 .video-cta 仍歧义）。补完后 tap .video-cta--invite 即把 showInviteModal 置真，:2097/:2098/:2143 三件本就点名可得，①②③④ 四路全是 DOM 点击＋帧/计数读数。平行路径：本页已存在 invite=1 桥接（:235-237「if (bridged.invite === \"1\") … void openInviteModal()」），可在进页配方里预置弹窗态——但 ROUTE_QUERY 是页粒度（r-exec-cli.mjs:479，且 :338 注释自述「这页要的是『逐条目 precondition.query』」），要按条预置仍需补刀。参照：同 App 内「一个语义一个 modifier 类」的写法见 profile/index.vue 里 .video-cta__icon-wrap--recording(:1701) 已有先例。",
+      "canExecuteRulingLiterally": true,
+      "class": "B-missing-object"
+    },
+    {
+      "id": "PFI41",
+      "page": "pages/profile/index",
+      "manifest": "PAGES-PROFILE-INDEX.json",
+      "criteriaVerbatim": "title「表单三态适用性核对（本页无输入框）与弹层内输入面」/ action「全页扫描 <input>/<textarea>；核对头像菜单、认证弹层、邀请弹窗内的可输入面」/ expected「结论须明确：本人/他人主页主渲染树无任何输入框（无 v-model 输入元素）→ …四组输入用例在本页不适用（防执行员凭空造表单用例）」",
+      "evidence": "PAGES-PROFILE-INDEX.json#PFI41 tier=noop。命令：grep -c \"<input\\|<textarea\" apps/client/src/pages/profile/index.vue → 0；同命令打 apps/client/dist/build/mp-weixin/pages/profile/index.wxml → 0。⇒ 这是结构计数命题，帧/像素两侧都看不见「计数为 0」这个量，与 scripts/qa/verify-source-shape.mjs 头部 4-8 行自述的那类行同形。",
+      "action": "不许给主页补输入框（expected「无任何输入框」反红，且这条存在的目的正是「防执行员凭空造表单用例」）。非帧载体＝verify-source-shape.mjs SPEC 加两条 countEq=0：{file:\"apps/client/src/pages/profile/index.vue\", checks:[{kind:\"absent\", re:/<(input|textarea)[\\s>]/}]} 与两档产物 .../pages/profile/index.wxml 各一条 absent；另加 present 断言「无 v-model 输入元素」。执行日志记这两个 0，四组输入用例记不适用。",
+      "canExecuteRulingLiterally": false,
+      "class": "A-absence-assertion"
+    },
+    {
+      "id": "DND02",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "manifest": "次要21.json",
+      "criteriaVerbatim": "action「tap 第一个 switch（dnd.vue:369-373）→ 观察 → 再 tap 切回」/ expected「500ms 内 switch 视觉态翻转且 .status-row__value 文案随 statusText 在『已开启/已关闭』间切换…关键：切开关不得发写请求…network 面板 PUT /dnd 计数=0」",
+      "evidence": "次要21.json#DND02 tier=normal。实盘 apps/client/src/subpackages/profile-extra/settings/dnd.vue:369-373 整节点＝「<switch :checked=\"form.enabled\" :color=\"SWITCH_ACTIVE_COLOR\" @change=\"handleToggleEnabled\" />」——无 class、无 id。产物自证：grep -o \"<switch[^>]*>\" apps/client/dist/build/mp-weixin/subpackages/profile-extra/settings/dnd.wxml → 「<switch class=\"data-v-f71e7d20\" checked=\"{{l}}\" color=\"{{m}}\" bindchange=\"{{n}}\"/>」（class 位只剩 scoped 哈希）。父级 .switch-row(:364) 不挂任何事件 ⇒ 点父级不会翻开关。命令：grep -rn \"<switch\" apps/client/src --include=*.vue → 全 App 共 9 枚 switch，逐枚读属性块确认 0 枚带 class/id。",
+      "action": "可照字面补：在 dnd.vue:369 那行 <switch 上补一个作者类名（推荐 class=\"switch switch--master\"，与同文件 .switch-row/.switch-row__label 的 BEM 形一致；语义/行为零改动，@change 原样保留）。点名后 r-exec-cli.mjs:611 的 tap 刀能真翻这枚开关，.status-row__value(:378) 文案与开关态同帧可读。同页第二枚（:478）必须同时补成不同名（见 DND03），否则首匹配歧义。注意三条边界：①脚本 emit-bare-tapfix.mjs:14-19 要求「类名逐字出现在页源码 + 命中行±EVENT_WINDOW 内挂着事件绑定 + 唯一候选」，把类名写在 <switch 本行（该行就有 @change）正好三条全满足；②别只加裸类名 switch（apply-ops-cellplans.mjs:118 /^[.#][\\w-]+$/ 拒裸词与标签链）；③expected 里「PUT /dnd 计数=0」那半仍需网络计数刀（在役两条载体都没有，见 MT21 同注），补名前记 UNVERIFIED。",
+      "canExecuteRulingLiterally": true,
+      "class": "B-missing-object"
+    },
+    {
+      "id": "DND03",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "manifest": "次要21.json",
+      "criteriaVerbatim": "title「紧急消息穿透开关独立于总开关：关总开关后仍可单独切穿透」/ action「总开关置关 → tap 紧急穿透 switch（dnd.vue:478-482）×2」/ expected「两个 switch 互不联动…DOM 可观测反馈=switch 滑块位置变化，500ms 内可见；写请求计数=0」",
+      "evidence": "次要21.json#DND03 tier=normal。实盘 dnd.vue:478-482＝「<switch :checked=\"form.allowUrgent\" :color=\"SWITCH_ACTIVE_COLOR\" @change=\"handleToggleAllowUrgent\" />」，同样无 class/id；产物里与 :369 那枚共用同一个 scoped 哈希 class=\"data-v-f71e7d20\"（见 DND02 的 grep -o 输出：两行 class 值相同，只有 checked/bindchange 的绑定槽不同）⇒ 按类名无法区分两枚。父级 .switch-row--no-border(:474) 不挂事件。",
+      "action": "可照字面补：dnd.vue:478 的 <switch 补 class=\"switch switch--urgent\"（与 DND02 的 switch--master 成对，名字必须互不相同，否则同页两枚歧义）。滑块位置读数走 element(\"attribute\"/\"property\", sel, [\"--name\",\"checked\"])——cli-automator.mjs:11-13 自述 automation_element_action 支持 attribute/property/value，但 r-exec-cli.mjs 目前只发 tap/input 两种（:611），需把已有刀接上。",
+      "canExecuteRulingLiterally": true,
+      "class": "B-missing-object"
+    },
+    {
+      "id": "DND08",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "manifest": "次要21.json",
+      "criteriaVerbatim": "title「防连点×5（假通过陷阱拆列）：isSaving 守卫 + 800ms 冷却只出 1 次 Toast」/ action「500ms 内对 .save-btn rapidTap×5，逐次记录：客户端 PUT /dnd 请求条数、Toast 条数、handler 进入次数」/ expected「① 客户端层：PUT /dnd 请求条数=1…② Toast『设置已保存』条数=1；④ 若出现 ≥2 条客户端请求或 ≥2 条 Toast，判 FAILED」",
+      "evidence": "次要21.json#DND08 tier=critical。物件本身在盘上且点名可得：apps/client/src/subpackages/profile-extra/settings/dnd.vue:488-493「class=\"save-btn press-feedback\" :class=\"{ 'save-btn--disabled': isSaving }\" … @tap=\"handleSave\"」；守卫 :244「if (isSaving.value) return」+ :278-280 冷却。卡的是「500ms 内 5 次」这个节奏：scripts/qa/r-exec-cli.mjs:605「for (const sel of targets.slice(0, 4))」→ :611 每选择器只发一次 element(isInput?\"input\":\"tap\", sel, …) 再 sleep(700) ⇒ 单发 tap 使「PUT=1」恒真＝判据第④条点名的假通过。",
+      "action": "补件无意义（.save-btn 已存在、@tap 已接）。缺的载具能力＝①rapidTap 通道（r1-exec.cjs:574 已有 ops.push({op:'rapidTap', selector:sel, times}) 的先例，照它接进 CLI 腿即可，times=5、间隔<100ms）；②逐条客户端请求计数（现无：grep -c \"network\" r-exec-cli.mjs → 0）；③Toast 条数读数（r1-exec.cjs:1392 drainToasts() 有先例）。三条到位前本条只能记 UNVERIFIED，不许「已按一次点击判绿」。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "DND12",
+      "page": "subpackages/profile-extra/settings/dnd",
+      "manifest": "次要21.json",
+      "criteriaVerbatim": "title「页级滚动到顶/底：底部安全区占位生效、保存按钮可达不被裁」/ action「切到 CUSTOM 使内容超视口 → scrollTo 到底 → 回顶；记录 scrollTop/scrollHeight/windowHeight」/ expected「滚到底时 .save-btn 完整可见且未被底部安全区占位（:501 起 safe-bottom 占位）或系统手势条遮挡；数值如实回填」",
+      "evidence": "次要21.json#DND12 tier=noop。两端都缺：①滚动位移——r-exec-cli.mjs 全文无 pageScrollTo/scrollTo 调用（只在 :611 发 tap/input）；②尺寸读数——折叠探针 :223-224「q.selectAll(s).fields({ size: true }, function (res) { bag[i] = (Array.isArray(res) ? res.length : (res ? 1 : 0)); })」：请求了 size 但回调只写 res.length ⇒ 宽高被丢弃，boundingClientRect 拿不到。被量对象本身在盘上（dnd.vue:488 .save-btn、:501 起 safe-bottom 占位）。",
+      "action": "缺的载具能力＝页面滚动 + 元素几何读数。两条都不必新造：IDE 桥已支持 size/offset/scrollTo（cli-automator.mjs:11-13 自述），r1-exec.cjs:502「ops.push({op:'scroll', to:'top'|'bottom'})」与 :1195-1198「const size = await el.size(); const off = await el.offset()」就是现成刀 ⇒ 把它们接进在役 runner（并让 probeMany 保留 fields 的 size 结果而非只算 length）。本条不改状态、真去 tap 反而引入副作用（判据明写「本用例不改状态，无写请求」）⇒ 严禁塞 tapTarget 凑数。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "REG31",
+      "page": "pages/register/index",
+      "manifest": "PAGES-REGISTER-INDEX.json",
+      "criteriaVerbatim": "title「滚动到顶/到底：长表单可达性与 safe-area 底衬」/ action「① 页面级下拉滚到最顶；② 上推滚到底（.to-login 与 .safety-note 可见）；③ 记录 scrollTop 极值与底部 padding」/ expected「底部：『已有账号？去登录』整行完整可见且不被 home 指示条/safe-area 压住（…:773）；数值如实回填」",
+      "evidence": "PAGES-REGISTER-INDEX.json#REG31 tier=noop。判据点名的两件都在盘上且是真 token：apps/client/src/pages/register/index.vue:786「<text class=\"safety-note\">…」、:789-791「<view class=\"to-login\"><text class=\"to-login__text\">已有账号？</text><text class=\"to-login__link\" @tap=\"goLogin\">去登录</text>」。但它们只是「滚到底应可见」的标记物：点 .to-login__link 会跳登录页、既不产滚动也不改判点。滚动＋几何两端缺刀（同 DND12：r-exec-cli.mjs:223-224 探针只回 length，全文无 pageScrollTo）。",
+      "action": "缺的载具能力＝页面级 scrollTo（顶/底）+ scrollTop/scrollHeight/windowHeight 采样 + 元素 rect。先例齐备：r1-exec.cjs:502/668 有 scroll(top/bottom) 刀、:1195 有 el.size()/el.offset() ⇒ 接进在役 runner 即可；另需小屏机型（iPhone SE）档位，判据 PRE 已写死。禁止给 .to-login 挂 tapTarget：会换页并破坏「无可滚容器异常」的观察前提。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "CPT26",
+      "page": "subpackages/circles/circles/post-topic",
+      "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.json",
+      "criteriaVerbatim": "pre「同 CPT01 → 先 tap『兴趣圈』使分类区可见（:564）」/ action「依次 tap 8 个 .category-chip（学习/运动/音乐/影视/旅行/游戏/美食/阅读，:564-578 ← INTEREST_CATEGORY_KEY_MAP :84-93），每次记录高亮集合」/ expected「每次 tap 后仅一个 chip --active；aria-pressed 与高亮一致（:574）」",
+      "evidence": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.json#CPT26 tier=normal。8 枚 chip 本身完全在盘上、每枚都带事件：apps/client/src/subpackages/circles/circles/post-topic.vue:572-583「<view v-if=\"publishTarget === 'interest'\" class=\"category-options\"><view v-for=\"cat in interestCategoryList\" … class=\"category-chip press-feedback\" :class=\"{ 'category-chip--active': … }\" :aria-pressed=… @tap=\"selectInterestCategory(cat.id)\">」。三重载体限制叠加：①整块 v-if 静息不渲染（默认 publishTarget=campus）；②切换入口是两枚同名 .target-chip（:546/:558）⇒ 首匹配会点错；③r-exec-cli.mjs:605 targets.slice(0, 4) 单条最多 4 个目标且每目标一次动作 ⇒ 8 枚逐一命中＋逐次读数结构上不可能。",
+      "action": "不缺物件（chip 与 @tap 都在），缺的是三种载具能力：①进页/预置态配方（把 publishTarget 预置成 interest，或按 :546/:558 的位置补两枚不同的 modifier 类名以精确点「兴趣圈」那枚）；②同类多实例 nth 定位（v-for 出的 8 枚共用一个类，需 index 定位；r1-exec.cjs 有 tapIndex/triggerIndex 先例 :705）；③每步之后的 aria-pressed/高亮读数（需 attribute 刀，桥支持、runner 未发）。另可顺手按 B 组同法给两枚 .target-chip 补 .target-chip--campus/--interest 以消歧义。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "CPT28",
+      "page": "subpackages/circles/circles/post-topic",
+      "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.json",
+      "criteriaVerbatim": "action「tap .favorite-section switch 开 → 关 → 再开；随后填表提交一次（唯一标题）」/ expected「checked 与 favoriteEnabled 一致…提交时 favorite 随 createTopic 传…real 构建下该区块整体不渲染（CPT29）→ 本用例 real 轮记 N/A」",
+      "evidence": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.json#CPT28 tier=normal。实盘 apps/client/src/subpackages/circles/circles/post-topic.vue:664-669＝「<switch :checked=\"favoriteEnabled\" :color=\"brandColor\" @change=\"toggleFavorite\" :aria-label=\"t('circle.postTopicFavoriteLabel')\" />」——无 class/id。判据写的「.favorite-section switch」是标签链形，apply-ops-cellplans.mjs:118 直接拒；而容器 .favorite-section(:659) 自己「v-if=\"useMock()\"」且不带任何事件 ⇒ 点容器只会落左文案区，碰不到右侧开关。",
+      "action": "可照字面补：post-topic.vue:664 的 <switch 补 class=\"switch switch--favorite\"（同文件既有 .favorite-section__left/__title/__desc 的 BEM 形，加一个 __switch 或 modifier 都合规）。本页 band 实测只有 1 枚 switch ⇒ 补名后无歧义。判据正文里的「.favorite-section switch」不删不改，另在 tapTarget 落 .switch--favorite。real 档整块不渲染这一支判据自己已写明「记 N/A」，不是缺口。",
+      "canExecuteRulingLiterally": true,
+      "class": "B-missing-object"
+    },
+    {
+      "id": "CPT32",
+      "page": "subpackages/circles/circles/post-topic",
+      "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.json",
+      "criteriaVerbatim": "pre「身份A mock 登录 → reLaunch '?channel=activity'（isPostMode=true → :613-648 活动区渲染）」/ action「① tap .activity-add → 遮罩出现 → tap 遮罩空白（.activity-picker :708）；② 重开 → tap 右上 × 图标；③ 再重开 → tap 某条活动项」/ expected「首次打开触发 fetchActivities 一次…二次打开不再重复请求 → 回填两次请求条数；三路关闭都必须在 500ms 内隐藏弹层」",
+      "evidence": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.json#CPT32 tier=normal。物件全在盘上：apps/client/src/subpackages/circles/circles/post-topic.vue:621「<view v-if=\"isPostMode\" class=\"activity-section\">」、:625「class=\"activity-add press-feedback\"」（@tap 走 openActivityPicker）、弹层 .activity-picker 亦为真 token。isPostMode 只由进页参数决定：:238-239「computed(() => [\"today\",\"school\",\"activity\"].includes(sourceChannel.value))」+ :475「sourceChannel.value = q.channel || \"\"」。裸直达 ⇒ sourceChannel 空 ⇒ 整块不渲染，页面上没有任何点击能带出它。另外判据要「三次重开＋每次回填请求条数」：r-exec-cli.mjs:605 每目标只发一次动作、单条上限 4 个目标，且全文无请求计数（grep -c \"network\" → 0）。",
+      "action": "不缺物件，缺三种载具能力：①逐条目进页参数配方（openPage 本身支持 query，见 cli-automator.mjs:156-159「if (query) extra.push(\"--query\", …)」；但 runner 用的是页粒度表 r-exec-cli.mjs:479「openPage(page, ROUTE_QUERY[page] || \"\")」，:338 注释自述「页粒度表里落一行就吃掉另一行 ⇒ 这页要的是『逐条目 precondition.query』」⇒ 需把 query 从页粒度降到条目粒度）；②多轮 open/close 子动作编排（重开 3 次＋逐轮读数，现一条 case 只能一趟）；③逐轮 GET /activities 请求计数。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "HS03",
+      "page": "subpackages/village/village/history",
+      "manifest": "次要18.json",
+      "criteriaVerbatim": "title「下拉刷新受控收起（refresher-triggered 绑定 loadingHistory）」/ action「下拉触发 @refresherrefresh（:186 → onRefresh :80-82）并松手，采样指示器收起时刻与列表刷新结果」/ expected「刷新指示器由 loadingHistory 驱动（:185 已绑定业务态，R2 发现 MP-R2-HISTORY-001 写死 false 的形态不得复现）：fetchPostHistory 结束后必须自动收起，不得常驻」",
+      "evidence": "次要18.json#HS03 tier=normal。承载容器实盘 apps/client/src/subpackages/village/village/history.vue:184-186「refresher-enabled / :refresher-triggered=\"loadingHistory\" / @refresherrefresh=\"onRefresh\"」——只有 refresher 系事件，节点上没有任何 @tap（:180-188 整块扫过，无 tap 绑定），所以没有可点等价物。触发动作是「下拉 300px 再松手」＋逐帧采样指示器。",
+      "action": "缺的载具能力＝连续触摸位移（touchstart→touchmove→touchend，位移量参数化）＋逐帧采样 refresher 态。桥侧其实支持（cli-automator.mjs:11-13 自述 automation_element_action 含 touchstart/touchmove/touchend），runner 未发（r-exec-cli.mjs:611 只 tap/input）；仓内先例 r1-exec.cjs:595「ops.push({op:'refresherPull', handler:'refresherrefresh'})」。非帧可补一半：:185 绑定的是业务态而非写死 false ⇒ 可用 present 谓词断言「:refresher-triggered=\"loadingHistory\"」在位（这正是 MP-R2-HISTORY-001 的回归点），但「动画自动收起」的时序腿仍需触摸刀。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "HS04",
+      "page": "subpackages/village/village/history",
+      "manifest": "次要18.json",
+      "criteriaVerbatim": "pre「身份A 浏览记录条数 >1 页（不足时先用 mock 会话刷若干详情页补足；不可满足则记前置未构造）」/ action「滚动 .history-list 至底部触发 @scrolltolower（:187 → onLoadMore :85-97），连续 3 次直到到底」/ expected「每次触底追加下一页且 isLoadingMore 期间显示 spinner；条数不再增长时 hasMore=false 并显示 t('village.noMorePosts')」",
+      "evidence": "次要18.json#HS04 tier=normal。绑定位实盘 history.vue:187「@scrolltolower=\"onLoadMore\"」，触底只能由滚动位移产生（容器无 @tap，见 HS03 同一节点块）。判据的 PRE 自己就承认前置可能造不出：「不足时…不可满足则记前置未构造」——mock 种子固定 6 条，不足一页 ⇒ 除滚动刀外还缺分页数据夹具。",
+      "action": "缺三种载具能力：①scroll-view 内部滚动到位（非页面 scrollTo；r1-exec.cjs:671 有 ops.push({op:'scrollElement', selector, to:'bottom'}) 先例，在役 runner 没有）；②同一 case 内 3 次重复触底并逐次数条数（每目标一次动作的限制，r-exec-cli.mjs:605-611）；③分页数据夹具（>1 页历史记录）。文本侧 .noMore 文案是判据点名的读数位，滚动刀到位即可判。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "HS08",
+      "page": "subpackages/village/village/history",
+      "manifest": "次要18.json",
+      "criteriaVerbatim": "pre「先执行 HS07④ 清空，或新账号无浏览记录（不可构造时记 UNVERIFIED 并说明）」/ action「① 在空态 tap EmptyState 动作『返回村口』（:245 → openAppPath 村口）；② 对 .history-back（:147-156）、.history-clear（:161）取 boundingBox；③ 列表滚到顶/底」/ expected「① 落点=subpackages/village/village/index…② 热区 ≥88rpx，不足记实测值；③ 顶/底滚动均可达」",
+      "evidence": "次要18.json#HS08 tier=normal。①的判点物件不在页级产物里：命令 grep -c \"empty-action\" apps/client/dist/build/mp-weixin/subpackages/village/village/history.wxml → 0；该类名住在子组件 apps/client/src/components/common/EmptyState.vue:105「class=\"empty-action press-feedback\" … @tap=\"handleAction\"」，且整块受 v-else(:241) 空态门控、空态又要先跑完 HS07④ 的清空写链才出现。②的两个物件在盘上（history.vue:148 .history-back、:162 .history-clear）但判点是 boundingBox 尺寸，r-exec-cli.mjs:223-224 的探针只回 res.length（尺寸被丢）。③需滚动刀。",
+      "action": "三腿三缺：①子组件作用域定位（CLI 元素动作进不了组件子树——r-exec-cli.mjs:348 注释自述「CLI 通道的元素级动作进不了组件子树 ⇒ 补 query 至多让它可判，闭不上，归 WS 腿」）＋空历史前置配方；②rect 尺寸读数（桥有 size/offset，runner 未用；先例 r1-exec.cjs:1195-1196）；③滚动到顶/底刀。注意②的判据措辞是「不足记实测值」——记的是实测数值，源码级替代会被判据自己否掉（同 VI40「不得以源码结论代替实测数值」口径）。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "AC02",
+      "page": "subpackages/discover/activities/index",
+      "manifest": "次要22.json",
+      "criteriaVerbatim": "title「下拉刷新必须真实重拉（MP-R2-次要22-005 证伪：fetchActivities(true) 穿透 30s TTL）」/ action「在列表 scroll-view 内下拉到 refresher 触发…重复下拉 3 次，每次间隔 2s」/ expected「每次下拉都发出 1 次列表请求：real 模式 GET /recommendations/activities?page=1&pageSize=20 条数 = 3；若 3 次下拉的网络请求数为 0 → 即 MP-R2-次要22-005 复发，判 FAILED；evidence…network 面板逐次请求计数」",
+      "evidence": "次要22.json#AC02 tier=critical。容器实盘 apps/client/src/subpackages/discover/activities/index.vue:390-397「<scroll-view v-if=\"viewMode === 'list'\" class=\"activity-scroll\" scroll-y refresher-enabled :refresher-triggered=\"refresherTriggered\" @refresherrefresh=\"onRefresherRefresh\" @scrolltolower=\"onScrollToLower\"」——无 @tap，触发只能靠手指位移。判定的核心量是「3 次下拉对应 3 条请求」，命令 grep -c \"network\" scripts/qa/r-exec-cli.mjs → 0、r-exec-ws.mjs 同样无网络腿。",
+      "action": "两缺且都在关键判点上：①连续下拉手势 ×3（含 2s 间隔与逐轮采样 refresher 收起）；②逐轮网络请求计数（判 FAILED 的唯一依据，缺它就是「假通过」温床）。仓内先例：r1-exec.cjs:595 refresherPull 刀可复用；网络计数全仓无实现，属新建能力。mock 支路那条（「以 refresherTriggered 由 true 复位为 false＋列表仍 4 卡判定」）需要同一 case 内的时序采样，也在①里。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "DC08",
+      "page": "pages/discover/index",
+      "manifest": "PAGES-DISCOVER-INDEX.json",
+      "criteriaVerbatim": "title「右滑手势 = 喜欢（方向语义铁律）」/ action「在卡片上向右拖动 >SWIPE_THRESHOLD 后松手…另做向左、向上、向下各一次」/ expected「右滑触发 handleLike…上/下与位移 <TAP_MOVE_THRESHOLD 的轻点不得被判为左右滑（方向语义错乱判 P1）；滑动过程中卡片有跟手位移与旋转（dragStyle），松手后飞行动画终态明确」",
+      "evidence": "PAGES-DISCOVER-INDEX.json#DC08 tier=critical。承载点在子组件里：apps/client/src/components/common/swipe/SwipeContainer.vue:72-78「<view class=\"swipe-container\" :class=\"rootClass\" :style=\"dragStyle\" @touchstart=\"handleTouchStart\" catchtouchmove=\"onTouchMove\" @touchend=\"handleTouchEnd\" catchtap=\"onCatchTap\"」——同节点上既有触摸三件套又有 catchtap，把「右滑」测成「点击」会落到 onCatchTap 那个完全不同的语义上。卡片本体 MatchCard 也是子组件 ⇒ 页级选择器够不着（同 HS08 的 :348 注释口径）。",
+      "action": "缺的载具能力＝参数化四方向拖动（touchstart→多段 touchmove→touchend，位移量与方向可控，且要能在阈值内/外分别构造）＋拖动过程中对 dragStyle（跟手位移＋旋转）的逐帧采样。先例：r1-exec.cjs:678「ops.push({op:'swipe', dir, selector})」与 :1201-1211 的 swipe 实现（el.swipeTo 或 size+offset 手算 touch 序列）——在役两条腿都没接。判据末句「本条不许降级成点击」＝明确禁止用 tapTarget 替代。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "VI40",
+      "page": "subpackages/village/village/index",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX.json",
+      "criteriaVerbatim": "title「热区量测：搜索入口 / 频道 Tab / 点赞收藏关注分享按钮 / 回到顶部 / 输入条（铁律 ≥88rpx）」/ action「对 .village-search、.channel-feed 内每个频道 Tab 项、PostCard 的 .action-btn…逐个 boundingClientRect 量测」/ expected「如实回填 rpx 数值并对照 88rpx：.village-search 高 64rpx 低于铁律；.back-to-top 88×88rpx 刚好达标；不可量元素记 UNVERIFIED 而不省略；执行员不得以源码结论代替实测数值」",
+      "evidence": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX.json#VI40 tier=noop。action 里一个点击动词都没有，判的全是宽高。量测目标全在盘上：apps/client/src/subpackages/village/village/index.vue:599 .village-search、:621 .channel-feed、:890 .back-to-top（v-if showBackToTop），源码数值与判据一致（.village-search height:64rpx 在 :974；.back-to-top width/height 88rpx 在 :1412-1413）。缺的是读数：r-exec-cli.mjs:223-224「q.selectAll(s).fields({ size: true }, cb)」里 cb 只写「res.length」⇒ size 请求了但被丢弃；.action-btn 在 PostCard 子组件里同名 4 枚（bandWxmlOther）。",
+      "action": "缺的载具能力＝①boundingClientRect 尺寸读数（桥支持 size/offset，先例 r1-exec.cjs:1195-1196；在役探针需改成保留 size 而非只算 length）；②同名多实例 nth（PostCard 4 枚 .action-btn）＋子组件作用域；③.back-to-top 的 scrollTop>600 前置（需滚动刀）。特别注意：判据末句「执行员不得以源码结论代替实测数值」＝明写拒绝源码级替代 ⇒ 本条不能用 A 组那套非帧判点交差；且它如实记录的是「.village-search 64rpx 低于铁律」这一未达标事实，把热区补到 88rpx 反而会让这句实测结论过期（属缺陷修复议题，不是本条的判点）。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "TP06",
+      "page": "subpackages/village/village/tag-posts",
+      "manifest": "次要18.json",
+      "criteriaVerbatim": "title「下拉刷新（scroll-view refresher）动画受控收起 + 数据替换」/ action「在 .post-feed（:305-312，refresher-enabled=true / :refresher-triggered=isRefreshing）内下拉至出现刷新指示器并松手，采样收起时刻」/ expected「触发 @refresherrefresh → onRefresh（:206-209）…请求结束后 isRefreshing 在 finally 归 false（:198）→ 动画必须自动收起（不得常驻顶部圈）」",
+      "evidence": "次要18.json#TP06 tier=normal。实盘 apps/client/src/subpackages/village/village/tag-posts.vue:313-317「scroll-y / :refresher-enabled=\"true\" / :refresher-triggered=\"isRefreshing\" / @refresherrefresh=\"onRefresh\" / @scrolltolower=\"onLoadMore\"」——容器上无 @tap，没有可点等价物。判点是「下拉出现指示器→松手→采样自动收起」的时序，需要连续触摸位移＋逐帧采样。",
+      "action": "缺的载具能力＝下拉位移注入＋逐帧采样（refresher 指示器出现/收起两帧）。先例 r1-exec.cjs:595 refresherPull。半条可先落非帧：:314「:refresher-triggered=\"isRefreshing\"」绑定业务态（不是写死值）可用 present 谓词断言，但「动画自动收起」的时序判点仍需触摸刀。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "TP07",
+      "page": "subpackages/village/village/tag-posts",
+      "manifest": "次要18.json",
+      "criteriaVerbatim": "title「触底加载更多与失败不得静默（证伪 MP-R2-TAGPOSTS-002 开放缺陷）」/ action「① 滚动 .post-feed 至触底触发 @scrolltolower…② 失败前置下重复触底」/ expected「① 到底时 hasMore=false 且显示 noMore，不得继续发第 2 页请求；② 已有列表时的加载失败必须有可见反馈——当前源码仅置 errorMessage、模板错误态只在 posts.length===0 时渲染（:320 条件）→ 静默失败判 FAILED」",
+      "evidence": "次要18.json#TP07 tier=normal。①靠 :317「@scrolltolower=\"onLoadMore\"」（容器无 @tap）；到底文本位在 :430「<text class=\"load-more__text\">{{ t(\"village.tagPosts.noMore\") }}</text>」。②是故障注入（判据写「real 后端断网或 500」），在役两条载体都没有网络条件刀（grep -c \"network\" r-exec-cli.mjs → 0）。另注：判据点名的静默失败根因在盘上可核——:320「<view v-if=\"loading && posts.length === 0\" class=\"feed-state\">」把失败/加载文本锁在空列表条件里，这条正是 MP-R2-TAGPOSTS-002 未修的取证点。",
+      "action": "缺两种载具能力：①scroll-view 触底滚动（r1-exec.cjs:671 scrollElement 先例）；②加载失败注入（断网/500）——全仓无实现，属新建。②的本体取证可以先落源码级 present 判点（:320 那条 length===0 门在位 ⇒ 有列表时失败无可见反馈），但判据要求的「截图证据（含 Toast 队列或『无任何提示』的截图证据）」这一取证形态仍需载具到位；不许降级成一次点击。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "VRN13",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "manifest": "次要20.json",
+      "criteriaVerbatim": "title「页级滚动到顶/底 + 双安全区：提交按钮与背面上传卡完整可见」/ action「scrollTo 底 → 中 → 顶，记录 scrollTop/scrollHeight/windowHeight 与提交按钮 boundingClientRect」/ expected「滚到底提交按钮完整可见可点（safe-bottom 占位 :588 生效）；背面上传卡 :542-564 不被裁切；回顶 nav-bar 不与状态栏叠印；数值如实回填」",
+      "evidence": "次要20.json#VRN13 tier=noop。三处滚动位移＋几何比较，没有一个点击动词是判点。bandAxis 报 submit-btn=absent 是真，但被点名的「提交按钮」在盘上存在、只是另一个名字：apps/client/src/subpackages/profile-extra/verification/real-name.vue:577-583「class=\"action-btn press-feedback\" :class=\"{ 'action-btn--disabled': submitting || !isAdult }\" … <text class=\"action-btn__text\">{{ …t('realName.submitBtn') }}</text>」⇒ 属改名（apply-ops-cellplans.mjs:95 的 A-rename-to-real-name 组就是为这类行准备的），不属缺物件。滚动/尺寸两刀仍缺（同 DND12：无 pageScrollTo，探针只回 length）。",
+      "action": "缺的载具能力＝pageScrollTo 三段位移＋scrollTop/scrollHeight/windowHeight 与 rect 读数（先例 r1-exec.cjs:502/668 scroll、:1195 size/offset）。副发现：判据隐含的「提交按钮」应以 .action-btn（real-name.vue:577）点名，走改名刀即可闭合点名这一半；但「滚到底完整可见不被安全区盖住」的判点仍需滚动＋rect，补名不解决它 ⇒ 整条仍归 C。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "VCI13",
+      "page": "subpackages/profile-extra/verification/index",
+      "manifest": "次要20.json",
+      "criteriaVerbatim": "title「页级滚动到顶/底 + 底部安全区：提交按钮不被 home indicator/TabBar 遮挡，无内容裁切」/ action「页面 scrollTo 到底 → 回顶 → 中途停一次；全程记录 scrollTop/scrollHeight/windowHeight」/ expected「滚到底时提交按钮完整可见且可点（.safe-bottom 占位 :687 生效…）；回顶后 nav-bar 标题与返回键不与状态栏叠印（safe-top :462 前置于 nav-bar :466）；evidence…按钮 boundingClientRect.bottom 与 windowHeight 比较」",
+      "evidence": "次要20.json#VCI13 tier=noop。bandAxis 说 .safe-bottom(:687) 两档产物都在（存在、可点名），但它是无事件的占位 view，按 hardRules 不能当点击目标。本条判点全是位移＋几何：无 pageScrollTo（r-exec-cli.mjs 全文无该调用），且探针把 size 丢了（:223-224 只写 res.length）。recheck note 另点出一半前置需要带 home indicator 的机型模拟。",
+      "action": "缺的载具能力＝①页面级滚动三段（top/中/bottom）；②boundingClientRect.bottom 与 windowHeight 的比较读数；③机型/安全区模拟（iPhone home indicator 档）。①②可复用 r1-exec.cjs 的 scroll + size/offset 两刀（:502/668、:1195-1196），③属档位/设备矩阵议题不在补件范围。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "CH22",
+      "page": "subpackages/campus/campus/hub",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB.json",
+      "criteriaVerbatim": "title「页级滚动到顶/底：底部静态提示『更多校园圈持续接入中』完整可见、无死箭头」/ expected「滚到底可见静态说明文案…（无展开箭头、无可点动作——MP-R1-CAMPUS-HUB-003 死元素已移除，不得回归出带箭头的可点假象）；回顶后 header/引导卡/搜索框/Tab 完整不被遮挡；scrollTop/scrollHeight 数值回填」",
+      "evidence": "SUBPACKAGES-CAMPUS-CAMPUS-HUB.json#CH22 tier=noop。实盘 apps/client/src/subpackages/campus/campus/hub.vue:328-332：注释自证「MP-R1-CAMPUS-HUB-003：原『查看更多校园圈 ⌄』是无可绑动作的死元素…按审计建议移除箭头改为静态说明文案」，节点只有 <view class=\"campus-hub__more\"><text class=\"campus-hub__more-text\">{{ t('campus.hub.moreHint') }}</text></view>，无 @tap、无箭头 image；文案实盘 apps/client/src/i18n/locales/zh-CN.ts:3628 \"moreHint\": \"更多校园圈持续接入中\"。附带发现（判据前提过期）：判据 ACTION 写「页级 window 滚动，非 scroll-view」，但 hub.vue:269-271 起列表就包在 <scroll-view class=\"campus-hub__feed\" scroll-y :enhanced :bounces> 里，:334 才闭合 ⇒ 底部文案在 scroll-view 内、不在 window 滚动流上；且判据引用的 hub.vue:336-339 已漂到 :330-332。",
+      "action": "不许补回那枚箭头/可点「查看更多」（expected 明写「不得回归出带箭头的可点假象」，补即反红，且会把 MP-R1-CAMPUS-HUB-003 的修复改掉）。缺席那半改源码级判点：{file:\".../campus/hub.vue\", checks:[{kind:\"present\", re:/campus-hub__more-text/}, {kind:\"absent\", re:/campus-hub__more[^\\S]*[\\s\\S]{0,200}@tap/}, {kind:\"absent\", re:/⌄/}]} + i18n 文案 present(zh-CN.ts:3628)。「滚到底完整可见 + scrollTop/scrollHeight 数值回填」那半不是判据写错就是需要页级滚动刀（见同批 VRN13/VCI13 的 C 定性）⇒ 需要用户另行裁一件事：ACTION 里「页级 window 滚动，非 scroll-view」这句按盘上真形（scroll-view 内滚动）重述，还是判整条待滚动载具。",
+      "canExecuteRulingLiterally": false,
+      "class": "A-absence-assertion"
+    },
+    {
+      "id": "VB03",
+      "page": "subpackages/vip/bills",
+      "manifest": "次要22.json",
+      "criteriaVerbatim": "title「MP-R2-次要22-010 部分开放：onShow 命中 store 缓存不重拉 → 开通后回账单页需下拉才更新（拆客户端请求数与服务端回读）」/ action「（a）进入账单页 → 记 network 与列表条数；（b）返回 VIP → 再进入账单页 → 记请求数与条数；（c）在 (b) 的态上下拉刷新一次 → 记请求数与条数」/ expected「（a）必发 1 条 GET /vip/bills；（b）命中缓存短路 → 请求数=0、条数与上次一致…有差即记『进入页未强制刷新导致资金记录陈旧』缺陷；（c）下拉 force=true → 请求数=1」",
+      "evidence": "次要22.json#VB03 tier=critical requiresReal=true。三个动作没有一个是元素级点击：(a)(b) 是路由进出＋请求计数，(c) 是下拉手势。下拉这个 affordance 产品是有的（apps/client/src/pages.json 里 subpackages/vip 的 bills 条目 :340-343 明配 \"style\":{\"enablePullDownRefresh\":true}，页内 apps/client/src/subpackages/vip/bills.vue:89-92「onPullDownRefresh(async () => { await loadBills(true); uni.stopPullDownRefresh(); })」）⇒ 不是缺席断言、也没有缺物件；缓存短路的判点在 :97-98「onShow(() => { if (featureFlags.membershipEnabled) void loadBills(); })」。条数侧可读：grep -c bill-card apps/client/dist/build/mp-weixin/subpackages/vip/bills.wxml → 命中（真 token）。",
+      "action": "缺三种载具能力：①逐时刻网络请求计数（三个时刻各自 1/0/1 是本条唯一判据，grep -c \"network\" r-exec-cli.mjs → 0，全仓无实现）；②服务端回读配对（apiPost 在 cli-automator.mjs:203 有刀，但没有接进 runner 做「界面条数 vs 回读条数」差值）；③页面级下拉手势（同 AC02）。可即刻落的半条：用折叠探针数 .bill-card 条数（探针回的就是条数，r-exec-cli.mjs:224），足以支撑「条数与上次一致」那一列；「请求数」那一列在计数器建出来之前必须记 UNVERIFIED，不能借帧给绿。另：recheck note 已自证「membershipEnabled=false 整页不可达」那句说过头了——config/feature-flags.ts:5-6 写的是页面路由保留。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "SE09",
+      "page": "subpackages/tools/search/index",
+      "manifest": "次要19.json",
+      "criteriaVerbatim": "title「帖子结果分页：触底必须能到第 2 页（证伪 MP-R2-SEARCH-002 分页死路）」/ pre「在 tags tab 搜索命中 >20 条的词…注意本页为页面级滚动（非 scroll-view），触底判定依赖 window 滚动」/ action「① 滚到结果列表底部并停留，读 network 第 2 页请求与列表条数变化；② 连续触底 3 次；③ hasMore=false 后继续下拉触底；④ 加载中重复触底」/ expected「① 触底必须触发 store.loadMore 并发出 page=2 请求（无请求即分页死路，FAILED）」",
+      "evidence": "次要19.json#SE09 tier=normal。触发器是页面级钩子而非元素：apps/client/src/subpackages/tools/search/index.vue:41-45「// MP-R2-SEARCH-002：触底加载下一页… onReachBottom(() => { void searchStore.loadMore(); });」——本页没有任何 scroll-view，所以没有可点/可触的元素级等价物。读数位在盘上：:407 .result-meta__text（条数文案）、:432/:435 .load-more__text（加载中/没有更多两态）。判据的「page=2 请求」「分页参数序列」需网络计数（全仓无）。",
+      "action": "缺三种载具能力：①页面级 window 滚动到底（含连续 3 次与加载中重复触底）——r1-exec.cjs:502/668 的 scroll(top/bottom) 是现成刀，在役 runner 没接；②逐次分页请求与其 query 参数读取（判 FAILED 的唯一依据，需新建网络计数）；③>20 条命中结果的后端/ mock 分页夹具。条数与两态文案可先用折叠探针（.load-more__text / .result-meta__text 计数）承担，但「必须发出 page=2 请求」这半句在计数器建出来前不能判绿。",
+      "canExecuteRulingLiterally": false,
+      "class": "C-unjudgeable-at-all"
+    },
+    {
+      "id": "LG31",
+      "page": "pages/login/index",
+      "manifest": "PAGES-LOGIN-INDEX.json",
+      "criteriaVerbatim": "title「验证码长度边界（5/6/7 位，maxlength=6）」/ pre「接 LG30 已获取验证码」/ action「#login-sms-code 依次输入 5 位、7 位（观察截断）、6 位，各点一次『注册/登录』主按钮」/ expected「7 位被截为 6 位（maxlength=6，模板 :857）；5 位时 canPhoneRegister=false → toast phoneAndCodeInvalid、0 请求（index.vue:143 要求长度恰为 6）」",
+      "evidence": "PAGES-LOGIN-INDEX.json#LG31 tier=normal。命令：grep -rn \"login-sms-code\" apps/client/src/ apps/client/dist/build/mp-weixin/pages/login/index.wxml apps/client/dist/build/mp-weixin-real/pages/login/index.wxml → 源码零命中、两档产物各 0（grep -c 输出 0）。登录页现存两个输入框只有：:714 id=\"login-phone\"（产物 maxlength=\"11\"）、:736 id=\"login-password\"。删除是自证且有案的：:748-750「MP-R2-PAGES-LOGIN-INDEX-015：内联注册模式的昵称/出生日期/短信验证码三组输入（原 v-if=\"phoneRegisterMode\" 节点）已整删，注册唯一入口 = 下方『去注册』→ pages/register/index」；配套 :1221「.sms-send-btn* 死样式已删（模板零引用，注册模式整删）」；:131 亦注明 canPhoneRegister 随之内删。判据引用的 index.vue:143 现在实为 heroDescSub computed（不再是「长度恰为 6」），:857 现在是 CSS。同物在注册页活着：apps/client/src/pages/register/index.vue:563 maxlength=\"6\"、:572 class=\"sms-btn\"。",
+      "action": "卡在两句：action 的「#login-sms-code」与 expected 的「index.vue:143 要求长度恰为 6」——一个指向已被 MP-R2-PAGES-LOGIN-INDEX-015 整删的入口，一个是已漂移的源码指针。照裁定字面「补物件」＝把内联注册的验证码框加回登录页，但那会直接逆转一条已定案的缺陷修复（注册唯一入口改为 pages/register/index），而且本条 PRE 还写着「接 LG30 已获取验证码」、LG29/LG30 同样点名 .sms-send-btn（现仅存 :1221 的删除注释）⇒ 不是单条能补的，是一族三条的页面归属问题。需用户裁其一：(1) 判据正文一字不改、把 LG31（连同 LG29/LG30）的 page 从 pages/login/index 迁到 pages/register/index（:563 那框真有 maxlength=6，迁过去即全条可判）；或 (2) 明确推翻 015、在登录页复活内联注册三组输入。lane 提过的第三种「把截断判据改指 #login-sms-phone/#login-phone（maxlength=11）」换了校验分支＝改判据，不该做，lane 与本轮复核都不同意。",
+      "canExecuteRulingLiterally": false,
+      "class": "D-unclear"
+    },
+    {
+      "id": "PT25",
+      "page": "subpackages/campus/campus/post-topic",
+      "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC.json",
+      "criteriaVerbatim": "action「tap switch 开（post-topic.vue:389-393 @change → toggleAnonymous :127-129）→ 再 tap 关 → 再开并保持，随后填表提交一次」/ expected「switch checked 与 isAnonymous 双向一致；switch color 取 designTokens.color.brand[500]；@change 每次只触发一次…提交 payload.isAnonymous 与最终 UI 态一致」",
+      "evidence": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC.json#PT25 tier=normal。实盘 apps/client/src/subpackages/campus/campus/post-topic.vue:570-574＝「<switch :checked=\"isAnonymous\" :color=\"brandColor\" @change=\"toggleAnonymous\" />」，无 class/id；产物自证 grep -o \"<switch[^>]*>\" apps/client/dist/build/mp-weixin/subpackages/campus/campus/post-topic.wxml → 「<switch class=\"data-v-50997d12\" checked=\"{{T}}\" color=\"{{U}}\" bindchange=\"{{V}}\"/>」（class 位只有 scoped 哈希）。同卡其余可点/可读节点都有作者类名（.options-section:561、.option-row:562、.option-label:564、.option-desc:568）⇒ 唯独开关没有。注：判据引的 :389-393 已漂到 :570-574。",
+      "action": "可照字面补（这条 recheck note 自己也说「最省的诚实修法是给这枚 switch 加一个 id 或修饰类，而不是改判据」）：post-topic.vue:570 的 <switch 补 class=\"switch switch--anonymous\"（或 id=\"anonymous-switch\"，两种形态 apply-ops-cellplans.mjs:118 都收）。本页只有 1 枚 switch ⇒ 无序号歧义。payload 一致性那半走提交后 network/payload 快照（判据已写「real 轮回填 POST body」），与补名不冲突。",
+      "canExecuteRulingLiterally": true,
+      "class": "B-missing-object"
+    },
+    {
+      "id": "ST05",
+      "page": "subpackages/profile-extra/settings/index",
+      "manifest": "次要19.json",
+      "criteriaVerbatim": "action「① tap 开关开 → 读 Toast 与 storage 值；② 切回关 → 复读；③ 开启后切到首页确认『本周安排/课表』区块出现…④ 造 setStorageSync 失败（写满或 mock 抛错）后切换」/ expected「Toast 文案随目标态切换…storage 值为 '1'/'0'…④ 存储失败时当前实现仍弹成功 Toast → 判 FAILED」",
+      "evidence": "次要19.json#ST05 tier=critical requiresReal=false。实盘 apps/client/src/subpackages/profile-extra/settings/index.vue:570-575＝「<switch :checked=\"weeklyScheduleEnabled\" color=\"#36C99A\" @change=\"toggleWeeklySchedule\" :aria-label=\"t('settings.weeklySchedule')\" />」——无 class/id；父行 .menu-item.menu-item--no-border(:563) 不挂事件。同页 :588 还有第二枚同构 switch（深色模式）⇒ 产物里两枚 class 都是同一个 scoped 哈希，裸标签或有名无别都会撞序号歧义（recheck note 复核：band 实测 settings 页 switch 节点数=2）。",
+      "action": "可照字面补：settings/index.vue:570 补 class=\"switch switch--weekly-schedule\"，并同一刀把 :588 那枚补成 class=\"switch switch--theme\"（两枚必须异名，一次改完，否则补一个仍歧义）。残留两腿仍需别的载体：①「读 storage 值 '1'/'0'」可用 cli-automator.mjs:137 evaluate 读 wx.getStorageSync（刀已有，未接进 runner）；②「④ 造 setStorageSync 失败」是故障注入，在役两条载体都没有该刀 ⇒ 该支在补名后仍记 UNVERIFIED，不许靠补名冒充全条可判。",
+      "canExecuteRulingLiterally": true,
+      "class": "B-missing-object"
+    },
+    {
+      "id": "ST06",
+      "page": "subpackages/profile-extra/settings/index",
+      "manifest": "次要19.json",
+      "criteriaVerbatim": "action「① 在 mode=auto 且系统深色态下 tap 开关一次；② 连续 tap ×5 观察主题与 Toast 交替；③ 切到其他页确认主题同步；④ 杀进程重进确认持久化；⑤ 读开关与当前实际主题是否一致」/ expected「①…即为源码注释自述的 auto 边界缺陷（MP-R2-SETTINGS-002，H5 限定，须按『mp 端不可达/H5 端 FAILED』分支记录，不得判通过）；⑤ 二态 switch 若与三态 store 冲突…判 FAILED」",
+      "evidence": "次要19.json#ST06 tier=critical。实盘 apps/client/src/subpackages/profile-extra/settings/index.vue:588-593＝「<switch :checked=\"themeStore.isDark\" color=\"#36C99A\" @change=\"handleThemeSwitch\" :aria-label=\"t('settings.themeAria')\" />」，无 class/id；父行 :580-583 只带 :aria-label=\"t('settings.themeAria')\" 不挂事件 ⇒ 点父行不会翻开关。本页 switch 节点数=2（与 ST05 同因），且 aria-label 两枚同值（都绑 settings.themeAria）⇒ 按 aria 也分不开。",
+      "action": "可照字面补：settings/index.vue:588 补 class=\"switch switch--theme\"（与 ST05 的 :570 一并改，两枚异名）。②的「连续 tap ×5」需要 rapidTap 刀——仓里有先例（r1-exec.cjs:574 ops.push({op:'rapidTap', selector:sel, times})，且它同样要求 /^[.#]/ 选择器 ⇒ 补名正好是它的前置），只是在役 r-exec-cli.mjs:605-611 每目标只下发一次动作，需接线；①的「mode=auto 且系统深色」判据自己已分「mp 端不可达/H5 端 FAILED」两支，属档位口径不是缺口；④杀进程重进需要重启会话刀。",
+      "canExecuteRulingLiterally": true,
+      "class": "B-missing-object"
+    }
+  ],
+  "summary": "裁定能照字面「补齐实现」执行的只有 7 条：DND02、DND03、CPT28、PT25、ST05、ST06、PFI28。但要收紧措辞——这 7 条补的不是功能，而是「可点名钩子」：命令 grep -rn \"<switch\" apps/client/src --include=*.vue 查出全 App 共 9 枚原生 <switch>，逐枚读属性块确认 0 枚携带 class 或 id（产物里 class 位只剩 scoped 哈希，如 dnd.wxml 的 <switch class=\"data-v-f71e7d20\" …bindchange=\"{{n}}\"/>），而点名闸门 scripts/qa/apply-ops-cellplans.mjs:118 的 /^[.#][w-]+$/ 明写「裸词、标签链一律拒」⇒ 唯一不改判据、不降断言、不改行为的落法就是给这些既有节点补作者类名/id（同页两枚必须补成互不相同的名字，否则首匹配歧义）；PFI28 同理，弹窗三件（.invite-mask:2097 / .invite-modal:2098 / .invite-modal__btn--cancel:2143）本就点名可得，缺的只是把三枚同名 .video-cta 里 :1793 那枚邀请入口唯一化。除这 7 条外，0 条需要新增功能、文案或组件。缺席断言类我逐条读正文读出 7 条（粗分给的 8 条差 1）：H13、N10、CI22、MT21、CS26、PFI41、CH22——它们的 expected 判的就是「不存在/不出现」，去把物件实现出来正好让它变红，所以只能换非帧载体且判据正文一字不动：源码级谓词进 scripts/qa/verify-source-shape.mjs 的 SPEC（该载具只收 absent/present/countEq/countTemplateEq 四种谓词，已是仓内可重跑机制）、配置级断言 pages.json 条目里不存在 style.enablePullDownRefresh（对照 :340-343 的 bills 条目确配有，可作阳性对照）、结构计数 .wechat-input-bar__input==0（探针本就回条数）、网络计数与 apiPost 服务端回读。CH22 我按「不得回归出带箭头的可点假象」这句归 A，但它「滚到底可见」那一半仍要滚动刀，且判据 ACTION 写「页级 window 滚动，非 scroll-view」与盘上 hub.vue:269-271 把底部文案包进 <scroll-view> 冲突（引用的 :336-339 也漂到 :330-332），需另裁。其余 21 条归 C：物件都在，缺的是载具能力，而且多数能力仓里已有先例——scripts/qa/r1-exec.cjs 已实现 scroll(:502/668)/scrollElement(:671)/swipe(:678,1201)/rapidTap(:574)/longpress(:610)/measureTap 含 el.size()+el.offset()(:682,1195-1196)/refresherPull(:595)/trigger(:535)，只是在役两条腿没接：r-exec-cli.mjs:605-611 每条 case 每目标只下发一次 tap/input（上限 4 目标），probeMany(:223-224) 虽然请求了 fields({size:true}) 但回调只写 res.length 把宽高丢了，且 grep -c network 两条 runner 都是 0。真正要新建的只有三件：逐条网络请求计数、网络条件注入（断网/500/失败）、原生 ActionSheet+showModal 的选项桩与读数桩（可照 r1-exec.cjs:1134 的 mockWxMethod 形态做）。其中 4 条绝对不许降级成点击：MSG26（否则「DELETE 计数=1」恒真＝判据第③条点名的假通过）、DND08（单发 tap 使「PUT=1」恒真）、DC08（判据末句自写「本条不许降级成点击」）、VI40（判据自写「不得以源码结论代替实测数值」，且它如实记的「.village-search 高 64rpx 低于铁律」是未达标实测值，把热区补到 88rpx 反而让这句过期）。最后 1 条 D＝LG31：卡在 action 的「#login-sms-code」与 expected 的「index.vue:143 要求长度恰为 6」两句——该入口被 MP-R2-PAGES-LOGIN-INDEX-015 整删（login/index.vue:748-750 自证「三组输入已整删，注册唯一入口=pages/register/index」、:1221「.sms-send-btn* 死样式已删」、:131 canPhoneRegister 随之删；grep -rn login-sms-code 源码与两档产物全 0），照字面补物件＝逆转一条已定案的缺陷修复；同族 LG29/LG30 也点名已不存在的 .sms-send-btn，所以不是一条而是一族的页面归属问题，需用户裁：正文不动、把三条 page 从 pages/login/index 迁到 pages/register/index（注册页 :563 真有 maxlength=\"6\" 的验证码框、:572 有 .sms-btn，迁过去即全条可判），还是明确推翻 015 在登录页复活内联注册。lane 提的第三种（改指 #login-phone 的 maxlength=11）换掉了校验分支＝改判据，本轮复核与 lane 都不同意。",
+  "pending": 0
+}
