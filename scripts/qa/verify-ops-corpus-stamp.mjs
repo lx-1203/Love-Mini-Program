@@ -12,6 +12,8 @@
  *
  * 用法：
  *   node scripts/qa/verify-ops-corpus-stamp.mjs --write [--ops 目录] [--out 戳文件]
+ *       （目标戳已存在时先复制成 <戳>.pre-stamp-write.<yyyymmdd-hhmmss>.bak 再覆写，
+ *        并印一行 STAMP_BACKUP=<路径>／STAMP_BACKUP=none（首次盖章）—— 2026-09-29 丢基线事故的补，见 §写/读保护注释）
  *   node scripts/qa/verify-ops-corpus-stamp.mjs --check [--ops 目录] [--stamp 戳文件]
  *   node scripts/qa/verify-ops-corpus-stamp.mjs --queue scripts/qa/ui-queue.round7-stage6.json
  *   node scripts/qa/verify-ops-corpus-stamp.mjs --selftest   （素材写在 os.tmpdir()，不落在仓里）
@@ -27,7 +29,7 @@
  *           QUEUE_RESULT=FAIL，所以这条波尾门照旧带 advisory:true —— 2 不会让别的腿 NOT_RUN（不挡波），
  *           而 0 会把"这一问没答过"记成 OK，正是本仓「没跑的门不算通过」要防的那件事。
  */
-import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, rmSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, rmSync, statSync, copyFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname, relative, sep } from "node:path";
@@ -330,10 +332,63 @@ if (has("selftest")) {
     if (!NONCORPUS_LEGS.some((r) => r.script === s)) Q.push("识别表没有点名「确实不读语料」的腿 " + s);
     if (CORPUS_READERS.some((r) => r.script === s)) Q.push("把不读语料的腿错登成语料腿 " + s + "（会拿我替它猜的默认目录盖章）");
   }
+  /* ---- 写戳保护：--write 覆写已有戳必须留下"逐字节等于旧戳"的备份 ----
+     为什么端到端 spawn 自己、而不是直接调 backupStamp：本仓反复吃过"负例永远不变红"——
+     只测 helper 的话，把 --write 分支里那一次调用删掉，这条断言照样绿。spawn 真实 CLI 才能让
+     "删掉备份调用"与"把备份挪到覆写之后"这两种破法必然落到本断言上。
+     素材仍全在 os.tmpdir() 的 T 里：--out 指到 T，绝不碰仓里的 reports/audit/round-7/ops-corpus-stamp.json。 */
+  const W = join(T, "write"), WC = join(W, "corpus");
+  mkdirSync(WC, { recursive: true });
+  const WOUT = join(W, "stamp.json");
+  const runWrite = () => {
+    try {
+      return { code: 0, body: execFileSync(process.execPath, [fileURLToPath(import.meta.url), "--write", "--ops", WC, "--out", WOUT], { cwd: repo, encoding: "utf8" }) };
+    } catch (e) { return { code: e.status == null ? -1 : e.status, body: String(e.stdout || "") + String(e.stderr || "") }; }
+  };
+  const baks = () => readdirSync(W).filter((f) => f.startsWith("stamp.json.pre-stamp-write.") && f.endsWith(".bak")).sort();
+  const bakLine = (s) => (s.match(/^STAMP_BACKUP=.*$/m) || ["(没打出 STAMP_BACKUP 行)"])[0];
+  let wc = 0;
+  const WR = [];
+  // 1) 首次盖章：盘上没有旧戳 ⇒ 不许凭空产生 .bak，且要如实报 none（首次盖章）
+  writeFileSync(join(WC, "P1.json"), JSON.stringify({ cases: base }, null, 1));
+  let wr = runWrite(); wc++;
+  if (wr.code !== 0) WR.push("首次盖章 --write 退出码=" + wr.code + "（应为 0）：" + wr.body.slice(0, 200));
+  else if (bakLine(wr.body) !== "STAMP_BACKUP=none（首次盖章）") WR.push("首次盖章应报「STAMP_BACKUP=none（首次盖章）」，现=" + bakLine(wr.body));
+  else if (baks().length) WR.push("首次盖章根本没有旧戳，却产生了备份：" + baks().join(","));
+  // 2) 覆写：旧戳存在 ⇒ 必须留下恰好一个备份，内容逐字节等于旧戳，且现戳已经不是旧戳（防"覆写之后才复制"）
+  const oldStamp1 = readFileSync(WOUT, "utf8");
+  writeFileSync(join(WC, "P1.json"), JSON.stringify({ cases: [...base, mk("X3", "第三条用例")] }, null, 1));
+  wr = runWrite(); wc++;
+  if (wr.code !== 0) WR.push("覆写 --write 退出码=" + wr.code + "：" + wr.body.slice(0, 200));
+  else {
+    const b = baks();
+    const printed = bakLine(wr.body).slice("STAMP_BACKUP=".length);
+    if (b.length !== 1) WR.push("旧戳存在却没有恰好 1 个备份（实得 " + b.length + " 个：" + (b.join(",") || "无") + "）⇒ --write 又在裸覆写，本轮丢基线走的正是这条路；打印行=" + bakLine(wr.body));
+    else {
+      if (!/^stamp\.json\.pre-stamp-write\.\d{8}-\d{6}(\.\d+)?\.bak$/.test(b[0])) WR.push("备份名不合口径（应形如 stamp.json.pre-stamp-write.<yyyymmdd-hhmmss>.bak）：" + b[0]);
+      if (readFileSync(join(W, b[0]), "utf8") !== oldStamp1) WR.push("备份内容不等于旧戳 ⇒ 备的不是那一份：bak=" + sha256(readFileSync(join(W, b[0]), "utf8")).slice(0, 12) + " ≠ 旧戳=" + sha256(oldStamp1).slice(0, 12));
+      if (readFileSync(WOUT, "utf8") === oldStamp1) WR.push("覆写后现戳仍逐字节等于旧戳 ⇒ 根本没写进去，备份断言无从判起");
+      if (printed.split(/[/\\]/).pop() !== b[0]) WR.push("STAMP_BACKUP 报的路径与盘上备份不符：printed=" + printed + " 盘上=" + b[0]);
+    }
+  }
+  // 3) 连续覆写：上一次的底不许被下一次撞掉（同秒撞名是"留了底却又丢一次"的形状）
+  const oldStamp2 = readFileSync(WOUT, "utf8");
+  writeFileSync(join(WC, "P1.json"), JSON.stringify({ cases: [...base, mk("X3", "第三条用例"), mk("X4", "第四条用例")] }, null, 1));
+  wr = runWrite(); wc++;
+  if (wr.code !== 0) WR.push("第三次 --write 退出码=" + wr.code + "：" + wr.body.slice(0, 200));
+  else {
+    const b = baks(), got = b.map((f) => readFileSync(join(W, f), "utf8"));
+    if (b.length !== 2) WR.push("连续两次覆写只留下 " + b.length + " 个备份（应为 2）⇒ 撞名时把上一次的底覆掉了：" + b.join(","));
+    else {
+      if (!got.includes(oldStamp1)) WR.push("第一份旧戳底在第三次盖章后已不在盘上（被后续备份顶掉）");
+      if (!got.includes(oldStamp2)) WR.push("第二次覆写的旧戳底没留下（三次盖章后只剩别的）");
+    }
+  }
+  bad.push(...WR.map((x) => "写戳保护：" + x));
   bad.push(...Q.map((x) => "队列口径：" + x));
   rmSync(T, { recursive: true, force: true });
   console.log(`STAMP_SELFTEST_DIR=${T}（仓外临时目录，rmSync 收尾）`);
-  console.log(`STAMP_SELFTEST 负例=3 队列口径=${qc} 表内语料腿=${CORPUS_READERS.length} 表内非语料腿=${NONCORPUS_LEGS.length} 结果=${bad.length ? "FAIL" : "PASS"}`);
+  console.log(`STAMP_SELFTEST 负例=3 队列口径=${qc} 写戳保护=${wc} 表内语料腿=${CORPUS_READERS.length} 表内非语料腿=${NONCORPUS_LEGS.length} 结果=${bad.length ? "FAIL" : "PASS"}`);
   for (const b of bad) console.log("  BAD " + b);
   process.exit(bad.length ? 1 : 0);
 }
@@ -357,6 +412,28 @@ const OPS = resolve(repo, arg("ops", "reports/audit/round-6/ops"));
 const fp = fingerprint(OPS);
 if (fp.err) { console.log(`STAMP_RESULT=FAIL reason=${fp.err}`); process.exit(2); }
 
+/* ---------------- --write 的落盘保护 ----------------
+   为什么加它（2026-09-29 实测事故，登记在 reports/audit/round-7/stamp-baseline-loss-v33.md）：
+   本门的全部价值就是"某时刻语料内容的基线"，而 --write 此前是单行 writeFileSync 裸覆写、一个备份都不留。
+   上一轮为了落 86 行欠账按 sanctioned 路径重打了戳，旧戳里 24 份 manifest 的逐文件 canon 基线当场消失——
+   于是"哪些文件在我动手之前就已经漂移"这个本门本该回答的问题再也答不出（旧戳当时未跟踪、无 git 底、无 .bak）。
+   盖章这个动作自己更不能无底：目标已存在 ⇒ 先复制成带时间戳的 .bak 再覆写，并把路径机器可读地印出来。 */
+function stampTs(d) {
+  const p2 = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}`;
+}
+
+/* 返回备份路径；目标不存在（首次盖章）返回 null。必须在 writeFileSync 之前调用 —— 事后复制到的是新戳。 */
+function backupStamp(target, now = new Date()) {
+  if (!existsSync(target)) return null;
+  let bak = `${target}.pre-stamp-write.${stampTs(now)}.bak`;
+  /* 同一秒内跑两次 --write（排队器里很常见）会撞名：撞了就顺延 .2/.3。
+     "覆写而不留底"正是丢基线的成因，不能在保护逻辑里重演一次。 */
+  for (let i = 2; existsSync(bak); i++) bak = `${target}.pre-stamp-write.${stampTs(now)}.${i}.bak`;
+  copyFileSync(target, bak);
+  return bak;
+}
+
 if (has("write")) {
   const out = resolve(repo, arg("out", "reports/audit/round-7/ops-corpus-stamp.json"));
   const rec = {
@@ -372,6 +449,10 @@ if (has("write")) {
     note: "本轮 1107 例执行轮所绑判据版本的内容戳；--check 复算不一致即视为跑的过程中语料被改过。",
   };
   mkdirSync(dirname(out), { recursive: true });
+  /* 备份先于覆写，且路径先于覆写打印出去：writeFileSync 万一中途抛了，旧戳至少已经在 .bak 里，
+     终端也看得见底落在哪。 */
+  const bak = backupStamp(out);
+  console.log(`STAMP_BACKUP=${bak ? rel(bak) : "none（首次盖章）"}`);
   writeFileSync(out, JSON.stringify(rec, null, 1));
   const sum = fp.per.reduce((a, x) => a + x.n, 0);
   if (sum !== fp.cases) { console.log(`STAMP_RESULT=FAIL reason=守恒不成立 逐文件相加=${sum} ≠ 总数=${fp.cases}`); process.exit(2); }
