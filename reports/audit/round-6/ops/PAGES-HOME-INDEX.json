@@ -34,7 +34,11 @@
    "action": "未登录进入首页后执行下拉刷新",
    "expected": "修复后应有的表现：onPullDownRefresh 路径必须与 refreshHomeFeed 同款登录门（现门仅在 index.vue:85-91 的 `if (!useMock() && !getToken()) return;`，下拉 :118-121 为门旁路）→ 未登录时 0 条 /home/dashboard 请求、无 401、终栈仍为 [pages/home/index]、不出现「登录已过期」toast；实测被踢到 /pages/login/index 即判 MP-R2-PAGES-HOME-INDEX-001（P2 待修复）在 UI 层复现成立",
    "evidence": "critical：before + after 截图 + 路由链断言（终栈）+ Toast 文案 + console + network 计数",
-   "requiresReal": false
+   "requiresReal": false,
+   "automatable": false,
+   "notAutomatableReason": "WRONG_BAND｜能表达这条判据的档=real（apps/client/dist/build/mp-weixin-real，band=real@f0677920）‖ apps/client/src/pages/home/index.vue:92 的门 !useMock()&&!getToken()：mock 档 config/env.js 写 VITE_API_MODE:\"mock\" ⇒ 门恒放行，apps/client/src/services/api.ts:437-441 又直接 return mockFixtures 不发请求 ⇒ 判点「0 条 /home/dashboard」在 mock 恒真、这一档拍不出差异；real 档同文件写 \"real\" 才可能 401、才走 apps/client/src/services/http.ts:468-494 的 reLaunch 登录；游客×mock 被执行器硬拒 scripts/qa/r-exec-cli.mjs:549-551‖ 盖章理由在档外：旁路 apps/client/src/pages/home/index.vue:122-125 是页面级 onPullDownRefresh，页 wxml 无承载节点，r-exec-cli.mjs 无 pullDown op 也无 network 计数通道",
+   "notAutomatableCarrier": "real 档游客腿已在盘跑过且取到本页读数：reports/audit/round-7/exec-guest-real-final/exec-results.json 本行 band=real@f0677920 identity=guest loginVerify=not-logged-in observed top=pages/home/index（页在栈内、未被弹）；mock 腿 exec-A-mock-final 本行 band=mock@f1c7b96b 同读数",
+   "notAutomatableFrom": "cellplan-round8-held4.json"
   },
   {
    "id": "H04",

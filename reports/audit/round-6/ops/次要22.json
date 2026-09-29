@@ -797,7 +797,11 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/index → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/index → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "automatable": false,
+   "notAutomatableReason": "WRONG_BAND｜能表达这条判据的档=showcase（apps/client/dist/build/mp-weixin-showcase，band=real@ed1cd82c）‖ 只有这一档让这枚开关能存在：该档 config/showcase.js 的内联 env 带 VITE_SHOWCASE_MODE:\"true\"（另两档无此键）⇒ applyShowcaseMode() 把 config/feature-flags.js 的 membershipEnabled:!1 翻成 !0；mock/real 档 apps/client/src/subpackages/vip/index.vue:42 membershipDisabled 恒真 ⇒ :57-65 onLoad 守卫 switchTab 到 :63 的 PROFILE、:536 :disabled 打死开关 ⇒ VIP 页不渲染‖ 档内无名字可核：三档 vip/index.wxml 逐字节相同(80e97fdd753ba01f)，开关编译成 <switch class=\"data-v-f489de86\" disabled=\"{{v}}\" bindchange=\"{{w}}\"/>＝class 位只有作用域哈希，apply-ops-cellplans.mjs:118 只收 .class/#id",
+   "notAutomatableCarrier": "确认/取消两处 uni.showModal＝apps/client/src/subpackages/vip/index.vue:324/:343；在盘腿：exec-A-showcase-r8e 本行 top=subpackages/vip/index(band=real@ed1cd82c)，exec-A-mock-final(mock@f1c7b96b) 与 exec-A-real(real@f0677920) 本行 observed 都是 top=pages/profile/index ≠ vip",
+   "notAutomatableFrom": "cellplan-round8-held4.json"
   },
   {
    "id": "VI10",
