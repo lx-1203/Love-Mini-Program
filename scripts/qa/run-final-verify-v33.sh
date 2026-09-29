@@ -36,8 +36,10 @@ g verify-evidence-holes   300 scripts/qa/verify-evidence-holes.mjs --mode judge
 echo "--- 反 vacuous-green：门禁必须能变红 ---"
 g prove-gates-can-fail    300 scripts/qa/prove-gates-can-fail.mjs
 
-// GATE_SUITE 现有 12 条（wiring 车道 2026-09-29 接进两把孤儿门），本清单必须跟着长，
-// 否则终验会少量两条门却仍自称全清单 —— 少测的门不在任何总数里。
+# GATE_SUITE 现有 12 条（wiring 车道 2026-09-29 接进两把孤儿门），本清单必须跟着长，
+# 否则终验会少量两条门却仍自称全清单 —— 少测的门不在任何总数里。
+# （此处曾写成 // —— bash 不认 JS 注释，会把 // 当命令执行并喷两条 No such file，
+#   在 set -u 下不致命，但那两行等于没被任何解释器读过。）
 g verify-dry-no-lease     180 scripts/qa/verify-dry-no-lease.mjs
 g verify-case-automatable 180 scripts/qa/verify-case-automatable.mjs --json .zcode/tmp/case-automatable/final.json
 

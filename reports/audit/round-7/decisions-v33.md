@@ -186,3 +186,36 @@ provenance 门剩下的红主要是 `PROV_FRAMES_PRE_STAMP=4867`，成因已定�
 999,151B（person-01~21）。它是 09-03 / 09-12 两次"头像 404"修复留下的强制引用 —— 删掉它 `src` 退化口径立刻从 2.76MB 降到约 1.81MB，但可能把那两次 404 复发。
 另有 `mascot` 组 23 张 / 311,678B 占改后剩余保留集的 81.5%，它在册钉死本地且是匹配/消息动效本体；`tabbar`/默认头像/功能 SVG 70,745B 属 `NEVER_DELETE`；这三项体积刀**故意没动**。
 要不要为 0.76MB 动 `person-avatars.ts`，是"复发 404 风险 vs 达标"的取舍，交你定。
+
+## 25. provenance 那 4886 张帧：三种改法我都量过了，**买不到绿**
+终验读数 `PROV_FRAMES_PRE_STAMP=4886 / CONSISTENT=4154 / STALE=0`（`.zcode/tmp/final-verify/verify-provenance-all.log:1958`）。逐册看：19 份 manifest 的全部帧都是 pre_stamp，其中 18 份共用同一枚顶层 `gitSha=6fd151786c…`（提交于 2026-09-28T18:07+08），而帧的 `at` 是 2026-09-26/27 —— 归属晚于实物，这一条判红是对的。
+
+根因不在转换载具（它已经修好了）：`scripts/qa/exec-frames-to-corpus.mjs:70` 现在逐行写 `bandSha`，`:82-90` 明写"顶层 gitSha 仍是转换时刻的 HEAD，两者不同是事实，不是造假"。真正晚到的那枚 sha 来自**更上游**——腿自己的 `exec-results.json` 就是在写盘时读 HEAD。实测新证据：`reports/screenshots/round-8-interact/manifest-detail.json` 行内 `bandSha=93650335`（该提交 2026-09-28T19:41Z），而 `shots[0].at=2026-09-28T19:13Z` ⇒ 转换载具诚实继承了一份本身就晚的 sha，19 张照红。
+
+我写了门的判定复刻（`.zcode/tmp/prov-predicate-replica.mjs`），先让它**复现门的原数**才敢用它做投影：`MANIFESTS=47 FRAMES=9184 CONSISTENT=4154 PRE_STAMP=4886 STALE=0 UNRESOLVABLE=0 LEGACY=144` —— 与门逐字相同（第一版复刻漏看行内 `bandSha`，把 325 张跨带帧误算进 pre_stamp，差值恰是门注释里点名的那 325）。三种改法的投影：
+
+| 改法 | CONSISTENT | PRE_STAMP | STALE | 门 |
+|---|---|---|---|---|
+| ① 不改（现状） | 4154 | 4886 | 0 | 红 |
+| ② 顶层 `gitSha := 册内已有的 resultsGitSha` | 8697 | 19 | **324** | **仍红**（红换了类名） |
+| ③ 逐帧按采集时刻归带 | 9165 | 19 | 0 | **仍红**，且 LEGACY 被抹成 0 |
+
+③ 的"好看"是假的：它给 round-1 那 144 张本来**没有戳**的帧凭空造出一枚归属，那是造证据，不是修证据。②是唯一干净的（sha 是册子里本来就记着的腿自身的值），但它换来 324 张 stale —— 语义是"帧拍摄时 src 已有更新的提交"，这条判据同样判红，而且**它是真话**：那些腿横跨了改动。
+
+所以这一门的绿只能靠：**(a)** 重跑这 19 册的腿（要设备时间，量级是十几个 leg 而不是几条），或 **(b)** 你给一个长期口径"转换带/跨提交带的历史帧不作产物级引用"——(b) 等于给门加一档 legacy，属改判口径，我不自决。**不需你裁定、我会做的**：把 leg 的 sha 改成在**腿起点**读（止住继续新造假归属），排在 UI 车道收工之后，跑中不改载具。
+
+## 26. 纠正我写进库的一处错：命名闸**并不**拒作用域哈希
+我给 VI09 落的 `notAutomatableReason`（已随 4727f38b 提交，在 `reports/audit/round-6/ops/次要22.json:802` 与 `scripts/qa/cellplan-round8-held4.json:10/:28`）写着"class 位只有作用域哈希，`apply-ops-cellplans.mjs:118` 只收 .class/#id"。**这句的机制是错的**：
+
+- 实测 `/^[.#][\w-]+$/` 对 `.data-v-f489de86` 返回 **true**（Node22 直试：`.data-v-f489de86`、`.a_b-1`、`#mine-header`、`.vip-switch` 全 true；`switch`、`pages/home/index` false）。:118 拒的是**裸标签/标签链**，不是作用域哈希。
+- 门的第二道 `nameInBands`（`apply-ops-cellplans.mjs:110-116`）要的是"每一档都逐字命中"，不是"必须作者手写的名字"。实测三档 `subpackages/vip/index.wxml` 里 switch 各 1 枚、类值同为 `data-v-f489de86` ⇒ 哈希连这道也能过。
+
+所以 VI09 真正拦它的不是词表，而是：换组件就换哈希、**它不是作者可维护的名字**，以及同页两枚 switch 共用同一哈希时点不唯一（车道实测 settings/dnd/privacy 各 2 枚；vip 实测 1 枚，所以 vip 不含歧义）。这两处文字我会在 B7 落地的同一波里一并改口径，不单独留错在库里；判据正文不动。
+
+## 27. B7「给 switch 补名字」是必要的，但**不足以**让那 7 条变绿
+车道普查（`.zcode/tmp/b7-switch-inventory.md`）+ 我自己复核：`apps/client/src` 下原生 `<switch>` 共 **9 枚 / 6 文件**（12 处 `<switch` 命中里 3 处是 `env.d.ts` 的文档行），9 枚全部零 class、零 id、零 data-qa。受影响判据是 `ST05, ST06, PT25, DND02, DND03, PR05, VI09`；另 **CPT28 是同源的第 8 条**（不在那 7 条名单里），而 v33 桶里的第 7 条 **PFI28 不是 switch 行**（它卡的是 `.video-cta` 歧义）。
+
+补名字之后仍拦着的，是**执行器只有两条腿**：`r-exec-cli.mjs:611-613` 实测只有 `element("input"|"tap", …)`，没有 `change`/属性读通道；而 9 枚 switch 编译出来全是 `bindchange`（vip 那份 wxml 逐字可见 `checked="{{s}}" … bindchange="{{w}}"`）。也就是说：判据要断言"开关处于开/关态"，执行器既不能稳定派发也不能读回状态。按车道结论，**光补钩子 0/7 确定可自动化**（PT25 现实可、ST05/ST06/DND02 只部分）。
+
+这一条我不打算靠"把动词降级成 tap"来凑绿——MSG26/DND08/DC08/VI40 已明确记为不许换动词。要真收这批账，得给执行器加一条 change/属性读的能力（与第 28 项 C21 的能力差同一刀），排在做完 §10 的落账之后。
+
