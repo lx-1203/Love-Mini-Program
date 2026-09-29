@@ -1,7 +1,7 @@
 {
- "generatedAt": "2026-09-29T07:53:55.354Z",
+ "generatedAt": "2026-09-29T11:46:36.387Z",
  "source": "verify-source-shape.mjs",
- "passed": 98,
+ "passed": 99,
  "failed": 0,
  "patches": [
   {
@@ -1446,6 +1446,82 @@
      "status": "RED",
      "grew": 63,
      "why": "apps/client/dist/build/mp-weixin-real/subpackages/campus/campus/hub.wxml :: 禁用写法仍在：campus-hub__more-arrow"
+    }
+   ]
+  },
+  {
+   "id": "MP-R7CRIT-PAGES-LOGIN-INDEX-LG31",
+   "manifest": "PAGES-LOGIN-INDEX.json",
+   "caseId": "LG31",
+   "page": "pages/login/index",
+   "ok": true,
+   "why": "",
+   "carrier": [
+    "apps/client/src/pages/login/index.vue",
+    "apps/client/src/pages/register/index.vue",
+    "apps/client/dist/build/mp-weixin/pages/login/index.wxml",
+    "apps/client/dist/build/mp-weixin-real/pages/login/index.wxml"
+   ],
+   "bands": [
+    "mock",
+    "real"
+   ],
+   "needsRuling": "",
+   "claim": "判据点名的 #login-sms-code 已被 015 整删（补回来就是逆转已定案修复）⇒ 帧侧永远等不到这个节点；LG31 判决真正依赖的三件事实换源码级＋两档产物载具：登录页零 login-sms-code/sms-send-btn/canPhoneRegister、幸存两枚输入框各恰一枚、六位约束在盘上确为真谓词（登录页 :129 >=6&&<=64；注册页 maxlength=6＋.slice(0, 6) 截断＋两处 /^\\d{6}$/ 恰为六位）。判据正文与页归属都不许改",
+   "neg": [
+    {
+     "file": "apps/client/src/pages/login/index.vue",
+     "status": "RED",
+     "grew": 43,
+     "why": "apps/client/src/pages/login/index.vue :: 禁用写法仍在：login-sms-code"
+    },
+    {
+     "file": "apps/client/src/pages/login/index.vue",
+     "status": "RED",
+     "grew": 36,
+     "why": "apps/client/src/pages/login/index.vue :: 计数应为 1，实测 2（/id=\"login-password\"/g）"
+    },
+    {
+     "file": "apps/client/src/pages/login/index.vue",
+     "status": "RED",
+     "grew": -95,
+     "why": "apps/client/src/pages/login/index.vue :: 要求的写法查不到：/const isCodeValid = computed\\(\\(\\) => passwor"
+    },
+    {
+     "file": "apps/client/src/pages/login/index.vue",
+     "status": "RED",
+     "grew": -30,
+     "why": "apps/client/src/pages/login/index.vue :: 计数应为 1，实测 0（/t\\(\"login\\.phoneAndCodeInvalid\"\\)/g）"
+    },
+    {
+     "file": "apps/client/src/pages/register/index.vue",
+     "status": "RED",
+     "grew": -13,
+     "why": "apps/client/src/pages/register/index.vue :: <template> 内计数应为 1，实测 0"
+    },
+    {
+     "file": "apps/client/src/pages/register/index.vue",
+     "status": "RED",
+     "grew": -12,
+     "why": "apps/client/src/pages/register/index.vue :: 计数应为 1，实测 0（/\\.slice\\(0, 6\\)/g）"
+    },
+    {
+     "file": "apps/client/src/pages/register/index.vue",
+     "status": "RED",
+     "grew": 35,
+     "why": "apps/client/src/pages/register/index.vue :: 计数应为 2，实测 3（/\\.test\\(smsCode\\.value\\)/g）"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin/pages/login/index.wxml",
+     "status": "RED",
+     "grew": 42,
+     "why": "apps/client/dist/build/mp-weixin/pages/login/index.wxml :: 禁用写法仍在：login-sms-code"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin-real/pages/login/index.wxml",
+     "status": "RED",
+     "grew": 42,
+     "why": "apps/client/dist/build/mp-weixin-real/pages/login/index.wxml :: 禁用写法仍在：login-sms-code"
     }
    ]
   }

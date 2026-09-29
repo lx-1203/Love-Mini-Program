@@ -90,4 +90,19 @@ describe("B7 — 9 枚原生 switch 的 authored 命名钩子", () => {
       }
     }
   });
+
+  /**
+   * PFI28 与 switch 同一病根：profile 页三枚 `.video-cta` 同名 ⇒ 选择器首匹配落到"录音"那一枚，
+   * 邀请入口在自动化里点不到（判据点名的是打开邀请弹窗这条动作）。这里钉"唯一化"这件事本身。
+   */
+  it("PFI28：邀请入口有一枚页内唯一的 video-cta--invite", () => {
+    const source = readFileSync(resolve(__dirname, "../pages/profile/index.vue"), "utf-8");
+    // 前置空白把 hover-class="…" 排除在外：它也含 `class="`，不排除会把计数灌水
+    const classAttrs = [...source.matchAll(/\sclass="([^"]*\bvideo-cta\b[^"]*)"/g)].map((m) => m[1]);
+    const bare = classAttrs.filter((c) => /\bvideo-cta\b/.test(c) && !/video-cta__/.test(c));
+    expect(bare.length, "profile 页可点的 .video-cta 枚数").toBe(3);
+    const invite = bare.filter((c) => c.split(/\s+/).includes("video-cta--invite"));
+    expect(invite.length, "video-cta--invite 必须恰好命中 1 次（0 次=没点名，2 次=换了个歧义）").toBe(1);
+    expect(invite[0]).not.toMatch(/search/);
+  });
 });

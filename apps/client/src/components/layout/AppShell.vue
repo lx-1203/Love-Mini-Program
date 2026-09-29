@@ -277,8 +277,10 @@ function focusMainContent(): void {
 }
 
 // 变体内边距
+// MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001：水平 gutter 取判据裁定的 32rpx（= 令牌 --page-padding
+// 实值，design-variables.scss:546），与全站 var(--page-padding) 消费页同侧；旧值 28rpx 与令牌差 4rpx。
 .shell--standard {
-  padding: 0 28rpx;
+  padding: 0 32rpx;
 }
 
 .shell--immersive {
@@ -286,7 +288,7 @@ function focusMainContent(): void {
 }
 
 .shell--minimal {
-  padding: 0 28rpx;
+  padding: 0 32rpx;
 }
 
 // 头部
@@ -301,15 +303,16 @@ function focusMainContent(): void {
 /* MP-R1-APPSHELL-101：fixed prop 落样式（此前 shellClass 注入 is-fixed 但样式表
    无任何规则，传了也不生效）。is-fixed 时头部吸顶（sticky 保留布局位、无遮挡补偿
    问题），背景延伸进状态栏区——滚动时正文不得与系统状态栏文字叠印。
-   注意：外层 .shell--standard 等变体自身带 28rpx 水平内边距，吸顶行内补水平负边距
-   使背景铺满整行宽度。 */
+   注意：外层 .shell--standard 等变体自身带 32rpx 水平内边距（判据裁定的 gutter 值），吸顶行内补
+   水平负边距使背景铺满整行宽度；负边距与下方 padding 的水平值必须与该 gutter 同数，
+   否则吸顶行内容会与正文错位。 */
 .is-fixed .shell__header {
   position: sticky;
   top: 0;
   z-index: 100;
-  margin-left: -28rpx;
-  margin-right: -28rpx;
-  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx) 28rpx 20rpx;
+  margin-left: -32rpx;
+  margin-right: -32rpx;
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx) 32rpx 20rpx;
   background: var(--c-bg-page, #EEF7F2);
 }
 

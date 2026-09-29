@@ -344,3 +344,69 @@ abs7 车道把 7 条"断言某物不存在"的判据换成了能判的非帧载�
 下一轮真跑会第一次真的去点 ⇒ **可能冒出一批新失败**。那不是回归，是被静默吞掉的账第一次露头；
 我不会为了让数字好看把它们预先标成免检。
 
+## 31. 36 条 CRITERIA_NAMES_NOTHING 的去向已经跑完，顺带纠出一台**假仪器**（2026-09-29 20:4x）
+
+r7→r8 这一段做的是裁定"一律按判据补齐实现"在 36 条 CNR 行上的落地。**判据正文一个字没改过。**
+
+### ① 七条 B 类（可照字面补）：6 条早已在盘，第 7 条今天补上
+`DND02/DND03/ST05/ST06/PT25/CPT28` 六枚原生 `<switch>` 的作者类名不在我这一轮改的——它们在盘上，
+且**两档产物都带着**（实测：9 枚 switch 全部有 authored class，页内唯一命中，mock 与 real 的 wxml 逐枚一致）。
+`PFI28` 是今天才真的动：`pages/profile/index.vue` 三枚 `.video-cta` 同名 ⇒ 邀请入口点不到
+（首匹配落在录音那枚）。加 `video-cta--invite` 一枚修饰类，判点从 0→1：
+改前 `bare=3 invite=0`、改后 `bare=3 invite=1`，两档 wxml 各命中 1 次，
+并把这条钉进 `native-switch-naming.spec.ts`（该 spec 8→9 tests）。
+**这份绿不是"能测了"**：执行器仍没有 `change` 这条腿（§27 那句仍然成立），且 DND02 的
+expected 里那半条网络计数谓词要靠下面的 `--net-count` 才谈得上可判。
+
+### ② 七条 A 类（判据断言的是"不存在"）：全部改走非帧载具，最后一条今天入册
+`H13/N10/CI22/MT21/CS26/PFI41/CH22` 先前已在 `verify-source-shape` 的 SPEC 里；
+`LG31` 是唯一没去向的（它点名的 `#login-sms-code` 已被 `MP-R2-PAGES-LOGIN-INDEX-015` 整删）。
+今天入册后实测：`SRC_SHAPE total=98→99 成立=98→99 不成立=0`、负例注入点 `33→42 全变红`。
+连带纠出一处**过期夹具**：`test-source-shape-absence.mjs` 把判据行数写死成 `== 7`，
+名册合法增长到 8 就红。处置是**登记 LG31 进名册**（棘轮：少一条红、冒出一条没定案过的也红），
+不是把 `==` 松成 `>=`——松比较就是 §29 那类"把红藏起来"。
+
+### ③ 二十一条 C 类（物件在，缺的是载具能力）：拆成三种去向，不许混成一句"测不了"
+- **接上了**：`--rapid`（rapidTap×N 逐次计时，窗口没守住仍拒发）、`--scroll`（页级 `wx.pageScrollTo` +
+  scroll-view 的 `scrollOffset` 回读，判点取自"scrollTop 动没动"而不是"调用没抛"）、
+  `--geom-pos`（boundingClientRect 的 left/top + scrollOffset 进 geometry）、
+  `--net-count`（逐时刻请求计数，走 `uni.addInterceptor('request')`）。
+  自测 `EXEC_SELFTEST cases=67→92→97 bad=0`，且每条新通道都配了会红的负例（我用摘除式变异实测过
+  `netGap` 那一支：改坏后 `EXEC_SELFTEST=FAIL bad=1 exit=1`，改回即 PASS）。
+- **仍缺原语、如实记拒发**：`swipe` 的三点带位移序列、原生 Modal 里"选哪个选项"的驱动、断网/500 故障注入。
+- **今天新发现的结构性缺陷**：见 ④。
+
+### ④ 今天最要紧的一条：`--native-capture` 的 toast 半边是一台假仪器，而它一直在打零分
+`r-exec-cli.mjs` 的注释与结论行此前写着"钩子包的是 `wx.*`，`uni.showToast` 最终落到 `wx.showToast` ⇒ 覆盖得到"，
+并在开钩子时打印"「toast 文案在本项目量不到」这句话从本腿起不再成立"。**两句都是错的**，实测三条独立证据：
+1. 编译产物里 `uni` 是 `Fr=Vf(Zf,tp,ji)`，get-trap 默认分支 `Tn(i, r(i, n[i]))`，`n=ji=Hi()`
+   是**启动期把 `wx[t]` 逐名按引用拷死**的快照（`vendor.js +230990`）⇒ 之后再换 `wx.showToast`，
+   `uni.showToast` 调的还是快照里那个；
+2. CLI 的 `automation.evaluate` **只有 service 上下文**（一个 `Page={}` 空壳，无 App、无全局逻辑层），
+   应用代码在 appservice worker 里 ⇒ 实测 `installed:false / hooked:false` 恒成立，钩子根本没装进对象；
+3. 应用侧 586 处 toast 调用全是 `uni.*`，**0 处直呼 `wx.*`** ⇒ 这条通道对本项目一件都采不到。
+反证也在盘上：`globalThis.wx===ji`（两名字同一对象）时钩子就会亮 ⇒ "采不到"不是普遍规律而是本通道的形状。
+
+**为什么这条比一条判据红更严重**：行上 `toast:""` 会被下游读成"这一条判据的窗口里页面没弹 toast"，
+于是"没弹"变成产品缺陷——**是仪器在被告，不是 app**。今天已改口（三处打印 + 行内
+`nativeCapture/consoleScope` 的出处声明 + `evidenceGaps` 的两条文案），并加了判点：
+Toast 类判据要证据请走 **WS 腿**（`r1-exec.cjs:217-218` 的 onConsole、`:278-299` 的 installToastHook，
+那份实现跑在 AppService 上下文里，实测抓到过含 `appservice.log` 的 8 条）。
+
+顺带纠两处**车道自报的错**（我核过才写）：#10-d 说 "`addInterceptor` 在产物里 0 命中、恒 false"——
+实测三档产物各有 **2 处命中**，且 `ko` 对象上明写着 `addInterceptor: tf` ⇒ 网络计数通道不需要重建产物；
+它真正的限制是 ④ 那条上下文问题，装不上时如实报 `no-uni/no-addInterceptor` 并逐行记欠账，绝不交出假零。
+我自己也在 brief 里把 `b7-switch-inventory-r10.md` 写成了 `b7-naming-report.md`——**在提示里点符号名，
+就得自己先跑一遍 grep**（这条教训早就在账上，我又犯了一次）。
+
+### ⑤ 令牌冲突族：能补的补了，两句互相矛盾的交给你
+`AppShell` 水平内边距 28rpx→**32rpx** 按判据补齐，连带把耦合的负边距/吸顶行内边距一起改齐
+（只改一侧会造出新错位），实测编译产物 `AppShell.wxss` 里 `padding:0 32rpx` 命中 2 处、`28rpx` 0 处；
+出处三条（`round-6/issue-matrix.md:28`、`--page-padding:32rpx` 及其 12 个消费者、spec §1.4）。
+**但 decisions-v33:37-39 引用的 `APPSHELL-005` 在仓里 0 命中**——那个编号不存在，值是三条独立出处顶住的，
+引用缺陷一并登记。两条**必须你裁定**、我不动实现的：
+`MP-R2VIS-PAGES-MESSAGES-INDEX-002`（判据要游客可见 `/recommendations/people` 计数，
+与"游客必须被引导去登录/注册"的生效裁定正面冲突，且 `messages/index.vue:374` 的 `!useMock()` 让它在 mock 档不可测）；
+`MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001`（判据点名的"九宫格上限常驻提示"产品里没有，
+spec §3.14 既没给元素也没给文案，而且它写的 0/1000 与在跑的 500 相互矛盾）。
+

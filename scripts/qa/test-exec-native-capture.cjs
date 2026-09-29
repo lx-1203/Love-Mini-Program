@@ -54,15 +54,31 @@ function grabRe(src, name) {
 }
 
 const NAMES = ["nativeHookSource", "nativeDrainSource", "interpretNative", "consoleLines", "toastSummary", "evidenceKindsNamed", "evidenceGaps"];
+/* evidenceGaps 从 #10-d 起多了一个**跨文件**依赖（networkGap / NET_STATE 来自
+   exec-network-observe.mjs）。本文件的纪律是"纯函数从活文件里现抠，绝不另抄一份实现"，
+   所以这里同样去抠模块那一份，而不是在测试里手写一个假的 networkGap ——
+   抄了就等于测我的抄本，而三态判定的真身住在模块里。 */
+const NETMOD = path.join(REPO, "scripts", "qa", "exec-network-observe.mjs");
+function loadNetDeps(label) {
+  let modSrc = "";
+  try { modSrc = fs.readFileSync(NETMOD, "utf8"); } catch (e) { console.log("[" + label + "] 网络模块读不到：" + e.message); return null; }
+  const st = /export const STATE = (\{[^}]*\})/.exec(modSrc);
+  const fn = extract(modSrc, "networkGap");
+  if (!st || !fn) { console.log("[" + label + "] 网络模块里抠不到 STATE/networkGap"); return null; }
+  const STATE = new Function("return " + st[1] + ";")();
+  const networkGap = new Function("STATE", fn + "\n return networkGap;")(STATE);
+  return { STATE, networkGap };
+}
 function loadExec(src, label) {
   const got = {};
   for (const n of NAMES) got[n] = extract(src, n);
   const FRAME_RE = grabRe(src, "FRAME_RE");
-  const missing = NAMES.filter((n) => !got[n]).concat(FRAME_RE ? [] : ["FRAME_RE"]);
+  const NET = loadNetDeps(label);
+  const missing = NAMES.filter((n) => !got[n]).concat(FRAME_RE ? [] : ["FRAME_RE"]).concat(NET ? [] : ["networkGap/STATE"]);
   if (missing.length) { console.log("[" + label + "] 抠不到：" + missing.join(",")); return null; }
   /* evidenceGaps 用到 toastSummary/evidenceKindsNamed，都在同一批里；参数名 FRAME_RE 作常量注入。 */
-  return new Function("FRAME_RE", NAMES.map((n) => got[n]).join("\n") + "\n return {" + NAMES.join(",") + "};")(
-    new Function("return " + FRAME_RE)());
+  return new Function("FRAME_RE", "networkGap", "NET_STATE", NAMES.map((n) => got[n]).join("\n") + "\n return {" + NAMES.join(",") + "};")(
+    new Function("return " + FRAME_RE)(), NET.networkGap, NET.STATE);
 }
 
 let src = "";
@@ -135,24 +151,32 @@ t("evidence 串里四类点名都抠得出来（以前只有 FRAME_RE 那一种�
 t("没点名的判据不许凭空欠账（宁缺毋滥：把没要求的证据记成欠项会造出一批假欠）",
   (function () { const k = evidenceKindsNamed({ evidence: "截图", title: "看列表渲染" }); return !k.toast && !k.console && !k.network; })());
 t("旗标没开 ⇒ 点名 Toast/console/network 的判据各记一条欠账，且串里写明是**载具没采**",
-  (function () { const g = evidenceGaps({ evidence: "Toast + console + network", title: "" }, { on: false, toastCount: 0, consoleCount: 0 }); return g.length === 3 && g.every((x) => /--native-capture|审计 G-2/.test(x)); })(),
+  (function () { const g = evidenceGaps({ evidence: "Toast + console + network", title: "" }, { on: false, toastCount: 0, consoleCount: 0 }); return g.length === 3 && g.every((x) => /--native-capture|没开网络计数通道/.test(x)); })(),
   JSON.stringify(evidenceGaps({ evidence: "Toast + console + network", title: "" }, { on: false, toastCount: 0, consoleCount: 0 })).slice(0, 200));
-t("开了旗标且窗口里有 toast ⇒ 不再报欠账（报就是撒谎）；开了但窗口为空 ⇒ 报的是「采了但没弹」，与「没采」**两句不同的话**",
+t("开了旗标且窗口里有 toast ⇒ 不报欠账；开了而窗口为空 ⇒ 报的是「本通道看不见 uni.*，0 是仪器读数」，与「没装」两句不同的话",
   (function () {
     const ok = evidenceGaps({ evidence: "Toast", title: "" }, { on: true, toastCount: 2, consoleCount: 0 });
     const zero = evidenceGaps({ evidence: "Toast", title: "" }, { on: true, toastCount: 0, consoleCount: 0 });
-    return ok.length === 0 && zero.length === 1 && /通道已开但本条窗口内 0 条/.test(zero[0]) && !/没带 --native-capture/.test(zero[0]);
-  })());
-t("network 那一条在本车道恒记欠账（审计 G-2 判它 [NEW]，没有逐请求计数通道 ⇒ 不许假装覆盖）",
-  evidenceGaps({ evidence: "network 请求条数", title: "" }, { on: true, toastCount: 5, consoleCount: 5 }).some((x) => /逐请求计数通道/.test(x)));
+    return ok.length === 0 && zero.length === 1 && /结构性采不到 uni\.\*/.test(zero[0]) && /仪器读数/.test(zero[0]) && !/没带 --native-capture/.test(zero[0]);
+  })(),
+  JSON.stringify(evidenceGaps({ evidence: "Toast", title: "" }, { on: true, toastCount: 0, consoleCount: 0 })).slice(0, 200));
+t("network 半边仍是三态而不是「一条死账」：没开通道⇒记欠账（不许假装覆盖）；可判的零⇒不记；读数残缺⇒记的是残缺",
+  (function () {
+    const off = evidenceGaps({ evidence: "network 请求条数", title: "" }, { on: true, toastCount: 5, consoleCount: 5 });
+    const zero = evidenceGaps({ evidence: "network 请求条数", title: "" }, { on: true, toastCount: 5, consoleCount: 5, netGap: "" });
+    const broken = evidenceGaps({ evidence: "network 请求条数", title: "" }, { on: true, toastCount: 5, consoleCount: 5, netGap: "网络计数通道已开但本窗口读数残缺（截断）" });
+    return off.length === 1 && /没开网络计数通道/.test(off[0]) && zero.length === 0 && broken.length === 1 && /读数残缺/.test(broken[0]) && !/没开网络计数通道/.test(broken[0]);
+  })(),
+  JSON.stringify(evidenceGaps({ evidence: "network 请求条数", title: "" }, { on: true, toastCount: 5, consoleCount: 5 })).slice(0, 200));
 
 /* ── 4. 接线判点：读数必须真的落到 reporters 读的那两个字段上 ── */
 t("row() 里 toast/console 不再是字面空串（这条是整车道存在的理由）",
   /toast: toastVal, console: consoleVal/.test(src), /toast: "", console: ""/.test(src) ? "仍在钉死成空串" : "ok");
 t("取件在 row() 内部发生 ⇒ 每一条出口（含 SKIPPED/FAILED 这些被拒的路径）都填自己的读数，不会只在成功路径填",
   (function () { const at = src.indexOf("function row("); const body = src.slice(at, at + 2600); return /nativeDrain\(\)/.test(body) && /evidenceGaps\(c,/.test(body); })());
-t("行上带 nativeCapture / consoleScope 出处位（应用上下文那一份不许被读成 DevTools 全量控制台）",
-  /nativeCapture:/.test(src) && /consoleScope:/.test(src) && /app-context-only/.test(src));
+t("行上带 nativeCapture / consoleScope 出处位（本通道那份是 service 上下文，不许被读成应用 console 或 DevTools 全量控制台）",
+  /nativeCapture:/.test(src) && /consoleScope:/.test(src) && /SERVICE-context only/.test(src) && /app-context-only/.test(src) === false,
+  /app-context-only/.test(src) ? "仍在声称 app-context（2026-09-29 实测已推翻）" : "ok");
 t("evidenceGaps 走**新字段**，不塞进 missingEvidence（那字段的消费者 emit-exec-manifest.mjs:54 是按帧拒收正则抠的）",
   /evidenceGaps: gaps,/.test(src) && !/missingEvidence: .*gaps/.test(src));
 t("钩子装在会话就绪之后、开页之前（游客闸门/守卫弹回的 showModal 就在 onLoad 那一刻，装晚了永远采不到）",

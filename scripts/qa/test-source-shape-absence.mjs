@@ -35,7 +35,11 @@ const GATE = "scripts/qa/verify-source-shape.mjs";
 const FXREL = ".zcode/tmp/lane-abs7/negfix";
 mkdirSync(resolve(REPO, FXREL), { recursive: true });
 
-/* 判据台 A 类行（定案件给的就是这 7 条，写死在这里，少一条就是要有人看见） */
+/* 判据台 A 类行的**定案名册**（写死是有意的棘轮：门里少一条 ⇒ 这里红；门里冒出一条没定案过的
+   criteria 行 ⇒ 也一样红，必须有人把它登记进来才算数）。**新增判据行时必须同批改这张表**，
+   并把下面 A1 的期望条数一起改 —— 这条断言的力气就在"名单与计数同时相等"，
+   把 == 换成 >= 就等于把红藏起来。最近一次登记：LG31（round-7，36 条 CNR 里唯一 D-unclear
+   的那条，去向＝源码级判点，见 reports/audit/round-7/lg31-nonframe-r10b.md）。 */
 const WANT = [
   ["H13", "PAGES-HOME-INDEX.json", "pages/home/index"],
   ["N10", "PAGES-NEARBY-INDEX.json", "pages/nearby/index"],
@@ -44,6 +48,7 @@ const WANT = [
   ["CS26", "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json", "subpackages/chat/chat-session/index"],
   ["PFI41", "PAGES-PROFILE-INDEX.json", "pages/profile/index"],
   ["CH22", "SUBPACKAGES-CAMPUS-CAMPUS-HUB.json", "subpackages/campus/campus/hub"],
+  ["LG31", "PAGES-LOGIN-INDEX.json", "pages/login/index"],
 ];
 
 let cases = 0, fail = 0;
@@ -60,7 +65,7 @@ const before = new Map(carrierFiles.map((p) => [p, sha(p)]));
 
 /* ── A. 接线：载体必须覆盖定案的 7 条，且指到的行确实是判据台里那条 ── */
 const crit = CRIT_ROWS;
-ok(crit.length === WANT.length, "A1 SPEC 里 criteria 行 == 定案的 7 条", "实测 " + crit.length);
+ok(crit.length === WANT.length, `A1 SPEC 里 criteria 行 == 定案名册的 ${WANT.length} 条`, `实测 ${crit.length}`);
 ok(crit.length > 0, "A2 criteria 行不是空表（空表会让下面所有断言空跑）", crit.length);
 for (const [cid, manifest, page] of WANT) {
   const row = crit.find((r) => r.caseId === cid);

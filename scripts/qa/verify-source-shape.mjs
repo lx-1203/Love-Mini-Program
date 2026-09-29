@@ -1452,6 +1452,92 @@ const SPEC = [
       { file: "apps/client/dist/build/mp-weixin-real/subpackages/campus/campus/hub.wxml", marker: '<view class="campus-hub__more', insertAfter: ' bindtap="{{cm}}"><text class="campus-hub__more-arrow">⌄</text>' },
     ],
   },
+  {
+    /* ══ LG31（判据台 round-7/ops/PAGES-LOGIN-INDEX.json，36 条 CRITERIA_NAMES_NOTHING 里唯一没去向的
+       一条，class="D-unclear"）。判据正文一字不改：title「验证码长度边界（5/6/7 位，maxlength=6）」、
+       action 点名 #login-sms-code、expected 引 index.vue:143「要求长度恰为 6」。
+       这三句指的物件都被 MP-R2-PAGES-LOGIN-INDEX-015 整删了（:748-750 删除自证、:1221 .sms-send-btn*
+       死样式已删、:131-132 canPhoneRegister 随之内删），照字面"补物件"＝逆转一条已定案的修复
+       （注册唯一入口改为 pages/register/index）。所以按裁定只换载具 ⇒ 源码级＋两档产物判点。
+       逐条实测过的行号（写判点前量的，不是抄判据里那些已漂移的 :143 / :857）：
+         · login-sms-code：apps/client/src 全树 0、两档 login wxml 各 0 ⇒ 判据点名的节点确实不存在。
+         · 幸存输入框各恰一枚：src :714 id="login-phone"、:736 id="login-password"（各 1），
+           两档 wxml 也各 1；登录页唯一带截断的输入框是 maxlength="11"（:717）⇒ 正例锚点用它。
+         · 「六位」在盘上是真谓词，只是搬了家：
+             登录页 :129 isCodeValid = password.value.length >= 6 && <= 64（:130 canPhoneLogin 消费，
+               :368-370 不过就 toast login.phoneAndCodeInvalid 后 return ⇒ 判据「5 位不放行、0 请求」的现役形态）
+             注册页 :563 maxlength="6"、:177 .replace(/\D/g, "").slice(0, 6)、:153/:237 /^\d{6}$/.test(smsCode.value)
+               ⇒ 判据「7 位截为 6 位」「不得污染成非数字」「恰为 6」三条真身都在注册页（LG29/LG30/LG31 一族同此）。
+       ⚠ phoneRegisterMode 不能判 absent：它活在 :748 的 HTML 注释里，而 stripComments 只剥行注释与块注释，
+          HTML 注释原样进 src ⇒ 判 absent 就是恒红门。sms-send-btn(:1221 块注释) 与 canPhoneRegister(:131 行注释)
+          剥注释后各 0 命中，所以那两条 absent 判得动（已实测）。 */
+    id: "MP-R7CRIT-PAGES-LOGIN-INDEX-LG31",
+    criteria: true, manifest: "PAGES-LOGIN-INDEX.json", caseId: "LG31", page: "pages/login/index",
+    bands: ["mock", "real"],
+    claim: "判据点名的 #login-sms-code 已被 015 整删（补回来就是逆转已定案修复）⇒ 帧侧永远等不到这个节点；LG31 判决真正依赖的三件事实换源码级＋两档产物载具：登录页零 login-sms-code/sms-send-btn/canPhoneRegister、幸存两枚输入框各恰一枚、六位约束在盘上确为真谓词（登录页 :129 >=6&&<=64；注册页 maxlength=6＋.slice(0, 6) 截断＋两处 /^\\d{6}$/ 恰为六位）。判据正文与页归属都不许改",
+    files: [
+      {
+        file: "apps/client/src/pages/login/index.vue",
+        checks: [
+          { kind: "absent", re: /login-sms-code/g },
+          { kind: "absent", re: /sms-send-btn/g },
+          { kind: "absent", re: /\bcanPhoneRegister\b/g },
+          { kind: "countEq", re: /id="login-phone"/g, n: 1 },
+          { kind: "countEq", re: /id="login-password"/g, n: 1 },
+          { kind: "countTemplateEq", re: /maxlength="6"/g, n: 0 },
+          { kind: "countTemplateEq", re: /maxlength="11"/g, n: 1 },
+          { kind: "present", re: /const isCodeValid = computed\(\(\) => password\.value\.length >= 6 && password\.value\.length <= 64\)/ },
+          { kind: "present", re: /const canPhoneLogin = computed\(\(\) => isPhoneValid\.value && isCodeValid\.value && agreed\.value\)/ },
+          { kind: "countEq", re: /t\("login\.phoneAndCodeInvalid"\)/g, n: 1 },
+        ],
+      },
+      {
+        file: "apps/client/src/pages/register/index.vue",
+        checks: [
+          { kind: "countTemplateEq", re: /:value="smsCode"/g, n: 1 },
+          { kind: "countTemplateEq", re: /maxlength="6"/g, n: 1 },
+          { kind: "countTemplateEq", re: /class="sms-btn"/g, n: 1 },
+          { kind: "countEq", re: /\.test\(smsCode\.value\)/g, n: 2 },
+          { kind: "countEq", re: /\.slice\(0, 6\)/g, n: 1 },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin/pages/login/index.wxml",
+        checks: [
+          { kind: "absent", re: /login-sms-code/g },
+          { kind: "countEq", re: /id="login-phone"/g, n: 1 },
+          { kind: "countEq", re: /id="login-password"/g, n: 1 },
+          { kind: "countEq", re: /maxlength="11"/g, n: 1 },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin-real/pages/login/index.wxml",
+        checks: [
+          { kind: "absent", re: /login-sms-code/g },
+          { kind: "countEq", re: /id="login-phone"/g, n: 1 },
+          { kind: "countEq", re: /id="login-password"/g, n: 1 },
+          { kind: "countEq", re: /maxlength="11"/g, n: 1 },
+        ],
+      },
+    ],
+    /* 负例：9 处命中注入，全部只在内存里做（apps/client/** 与产物一个字节都不写）。
+       ① 把 015 删掉的验证码框原样复活＝判据字面"补物件"的形状，必须红；
+       ② 幸存两枚 id 复制成一枚半＝溯源锚点漂了，必须红；
+       ③ 摘掉六位谓词/toast 分支＝"5 位也放行"，必须红；
+       ④ 注册页把"恰为 6"放宽成"5 位也收"或摘掉截断，必须红；
+       ⑤ 两档产物各注一次，缺一档就是"只验了 mock"。 */
+    neg: [
+      { file: "apps/client/src/pages/login/index.vue", marker: '<view class="form-btns">', insertBefore: '<input id="login-sms-code" maxlength="6" />' },
+      { file: "apps/client/src/pages/login/index.vue", marker: 'id="login-phone"', insertAfter: '\n                id="login-password"' },
+      { file: "apps/client/src/pages/login/index.vue", removeRe: /const isCodeValid = computed[^\n]*\n/ },
+      { file: "apps/client/src/pages/login/index.vue", removeRe: /t\("login\.phoneAndCodeInvalid"\)/ },
+      { file: "apps/client/src/pages/register/index.vue", removeRe: /maxlength="6"/ },
+      { file: "apps/client/src/pages/register/index.vue", removeRe: /\.slice\(0, 6\)/ },
+      { file: "apps/client/src/pages/register/index.vue", marker: '  /^\\d{6}$/.test(smsCode.value) &&', insertAfter: '\n  /^\\d{5}$/.test(smsCode.value) &&' },
+      { file: "apps/client/dist/build/mp-weixin/pages/login/index.wxml", marker: 'id="login-phone"', insertBefore: '<input id="login-sms-code" maxlength="6"/>' },
+      { file: "apps/client/dist/build/mp-weixin-real/pages/login/index.wxml", marker: 'id="login-phone"', insertBefore: '<input id="login-sms-code" maxlength="6"/>' },
+    ],
+  },
 ];
 
 /* 剥注释：禁用的写法只出现在注释里（说明"这里原来是怎么写的"）不算违反。

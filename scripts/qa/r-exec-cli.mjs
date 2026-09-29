@@ -19,6 +19,14 @@
      · --strict-verbs（被 --gestures 隐含）：判据点名的动词在本通道发不出去时**扣住不发**，
        记 SKIPPED + NOT_SHOOTABLE 原因，绝不退化成一次普通 tap
        （MSG26 / DND08 / DC08 / VI40 就钉在这条上；负例 scripts/qa/test-exec-verb-dispatch.cjs）。
+   2026-09-29 动线车道 #10-c 再补三条（同样**全都要旗标**，同样不改上面那四条的缺省形状）：
+     · --rapid：把 r1-exec.cjs:574/:1063-1070 的 rapidTap 重复下发原语接过来（同一元素连发 N 次），
+       并**逐次时间戳**核对判据点名的窗口（"500ms 内"）—— 窗口没守住就仍记 NOT_SHOOTABLE，
+       这一条旗标买的是"真去满足窗口"，不是"允许把 ×5 冒充成一次 tap"；
+     · --scroll：页面级滚动 + scroll-view 内部滚动（判据台里 33 条只欠这一条的交互行，
+       以前会被 #C-3 放宽后的 TAP_RE 认成"要交互"、再顺着 else 发一次普通 tap 顶掉"滚到底"）；
+     · --geom-pos：#C-1 只留下了 width/height，这一条把 left/top 与 scroll-view 的 scrollTop/scrollHeight
+       也留在行内（VI40/VI42/CS23/MS17 那一族"够不够得着/重叠几个像素"判点的最低要求）。
 
    行形状与 round-6 一致（suite/manifest/id/page/tier/requiresReal/title/status/observed/
    missingEvidence/failureReason/route/toast/console/evidence/durationMs），
@@ -35,7 +43,15 @@
      [--strict-verbs]   只做防降级：判据点名的动词发不出去时不发普通 tap，记 SKIPPED + NOT_SHOOTABLE 原因
      [--native-capture] 装 wx.showToast/hideToast/showModal/showLoading + console.* 调用流钩子
                         ⇒ 行上 toast/console 变成数组（每行一次取件，1107 条约多 4 分钟）
-   三个旗标都不带时本文件的下发、判决与落盘字段与 2026-09-28 之前的腿逐字相同（既有 1107 条批次要能复现）。
+     [--rapid]        发重复下发原语（rapidTap×N：同一元素连发 N 次、每次各自计时），并隐含 --strict-verbs
+                      可选 --rapid-gap <ms> 控制两次之间的等待（缺省 0 = 派生完立刻发下一次）
+                      ⚠ 只有「实测跨度 ≤ 判据点名的窗口」才算发得出去；跨度超了照样拒发（见 rapidVerdict）
+     [--scroll]       发页面级滚动（wx.pageScrollTo 顶/底，载具 shoot-frameplan.mjs:385）与 scroll-view
+                      内部滚动，判点来自 scrollOffset 回读（tour-r6.mjs:1141-1146 那一条查询），
+                      位置没动就记 no-move ⇒ 不许顺着记 EXECUTED，并隐含 --strict-verbs
+     [--geom-pos]     折叠探测顺手把 boundingClientRect 的 left/top（+ scroll-view 的 scrollTop/scrollHeight）
+                      留在行内 geometry 字段（#C-1 只留了 width/height ⇒「够不够得着/重叠几个像素」判不了）
+   五个旗标都不带时本文件的下发、判决与落盘字段与 2026-09-28 之前的腿逐字相同（既有 1107 条批次要能复现）。
    续跑：同一 --out 下已有 exec-results.json 时按 manifest|id 跳过跑过的，合并后整体守恒才写盘。 */
 import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync } from "node:fs";
 import { acquireUi, releaseUi, renewUi } from "./ui-lease.mjs";
@@ -43,6 +59,11 @@ import { resolve, join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { evaluate, openPage, shot, mintToken, bootSession, verifyLogin, routeStack, clearSession, element, assertIdentityProducible, observedUserId } from "./cli-automator.mjs";
 import { readApiMode, assertGuestCapable } from "./artifact-band.mjs";
+/* 网络计数通道（#10-d 造的独立模块，主控在这里接线；模块本身不碰设备）。
+   为什么不在本文件里就地重写一份：三态裁决（没开 / 开了但读数残缺 / 真的零条）与载荷构造
+   必须和离线负例**同一份代码**——判点逻辑抄第二份，离线测试验的就是那份抄本，
+   真设备上"零条"到底是哪种零就又没人说得清了。 */
+import { networkHookSource, networkDrainSource, interpretInstallResult, parseNetworkBuffer, observeFromDrain, networkGap, STATE as NET_STATE } from "./exec-network-observe.mjs";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
@@ -81,14 +102,37 @@ const TAP_MODE = process.argv.includes("--tap");
                   （载具：r1-exec.cjs:278-299 installToastHook / :300-305 drainToasts，都是纯 evaluate 载荷，
                    本文件的 evaluate 在 :25 就已 import ⇒ 是接线不是新造通道）。 */
 const GESTURE_MODE = process.argv.includes("--gestures");
-const STRICT_VERBS = GESTURE_MODE || process.argv.includes("--strict-verbs");
+/* 动线车道 #10-c 的三条（2026-09-29）—— 与 --gestures 同一条纪律：**能力与"不许换动词"同批到货**。
+   · --rapid    重复下发原语（r1-exec.cjs:574 的 rapidTap 那一族，判据台里 76 条交互行点名要连点）。
+                带 --rapid-gap 控制两次之间的等待；缺省 0（element() 本身就是 execFileSync 同步派生，
+                派生完立刻发下一次，中间不再 sleep(700)）。
+   · --scroll   页面级 wx.pageScrollTo（载具早就在 shoot-frameplan.mjs:385 用同一条 evaluate 动线）
+                + scroll-view 内部滚动，判点来自 scrollOffset 回读，不来自"调用没抛"。
+   · --geom-pos 折叠探测顺手多要 rect/scrollOffset 两个字段（缺省不传时 probeStartSource 逐字不变）。 */
+const RAPID_MODE = process.argv.includes("--rapid");
+const SCROLL_MODE = process.argv.includes("--scroll");
+const GEOM_POS = process.argv.includes("--geom-pos");
+/* --net-count（#10-d → 主控接线）：逐时刻请求条数。它**不**隐含 --strict-verbs，
+   因为它是一条观察通道、不是一种动词能力：开着它照样可能把 rapidTap 降级成一次 tap，
+   那件事该由 --rapid/--strict-verbs 说，不许由"我开了别的旗标"顺带宣布。
+   缺省不带时本文件一次都不多发 install/drain 这两次 evaluate。 */
+const NET_COUNT = process.argv.includes("--net-count");
+const RAPID_GAP = parseInt(arg("rapid-gap", "0"), 10);
+/* --strict-verbs 的隐含条件从「只有 --gestures」扩到"任何一条新动词旗标"：
+   接了 rapidTap 却还允许把 rapidTap×5 降级成一次 tap，等于装着更差的能力跑（那是 #C-3 那批假绿本身）。 */
+const STRICT_VERBS = GESTURE_MODE || RAPID_MODE || SCROLL_MODE || process.argv.includes("--strict-verbs");
 const NATIVE_CAPTURE = process.argv.includes("--native-capture");
+/* 动词表的"这一腿开了哪几条通道"就是这一个对象：verbRefusal/verbsNamed 是纯函数、不读 argv，
+   所以离线负例可以拿任意 caps 组合同步驱动各档模式（这与 GESTURE_MODE 走参数是同一个道理）。 */
+const CAPS = { rapid: RAPID_MODE, scroll: SCROLL_MODE, geomPos: GEOM_POS };
 /* 落盘字段 runner 必须由 argv 派生。此前它写死「observe-only 切片」，
    于是 `--tap` 跑出来的 exec-results.json 自称只跑了观察腿 —— 载具在撒谎。
    权威结论行 RUNNER_SCOPE 早就按 argv 派生（在 run.log 里），这里只是把同一个口径补进 JSON。
    2026-09-29：新能力旗标同样要进这个名字（+gestures / +capture），否则"这一腿有没有发过
    longpress、有没有采过 toast"在账本里又变成看不见的东西。不带旗标时名字一个字不变。 */
-const MODE_SUFFIX = (GESTURE_MODE ? "+gestures" : "") + (NATIVE_CAPTURE ? "+capture" : "");
+const MODE_SUFFIX = (GESTURE_MODE ? "+gestures" : "") + (NATIVE_CAPTURE ? "+capture" : "")
+  + (RAPID_MODE ? "+rapid" : "") + (SCROLL_MODE ? "+scroll" : "") + (GEOM_POS ? "+geompos" : "")
+  + (NET_COUNT ? "+net" : "");
 const MODE_LABEL = (process.argv.includes("--real-cases-only") ? "real-cases-only"
   : TAP_MODE ? (REAL_BAND ? "tap+real" : "tap") : (REAL_BAND ? "real" : "observe-only")) + MODE_SUFFIX;
 const DENY_TAP = /注销|解绑|清空|删除账号|删除帐号|退出登录|登出/;
@@ -186,7 +230,35 @@ function runSelftest() {
     /* —— capability 车道 #1/#2（2026-09-29）：动词拒发 + 原生调用流读数也进 --selftest，
        症状（"改坏了探针在启动时就响"）同款：这三条纯函数决定 1107 条里哪些行会被扣下、
        哪些 toast 会进行字段，等到跑完 90 分钟才发现就等于没验证。 —— */
-    { n: "#2 DND08 的 rapidTap×5 在无 --gestures 与有 --gestures 下**都**拒发（重复原语物理缺失，与旗标无关）", got: (function () { const a = "500ms 内对 .save-btn rapidTap×5，逐次记录：客户端 PUT /dnd 请求条数、Toast 条数"; return /^NOT_SHOOTABLE\(verb=rapidTap\)/.test(verbRefusal(a, false)) && /^NOT_SHOOTABLE\(verb=rapidTap\)/.test(verbRefusal(a, true)); })(), want: true },
+    { n: "#2 DND08 的 rapidTap×5 在无 --gestures 与有 --gestures 下**都**拒发（重复原语与 gestures 无关）；#10-c 起：带 --rapid 且次数抠得出来才放行", got: (function () { const a = "500ms 内对 .save-btn rapidTap×5，逐次记录：客户端 PUT /dnd 请求条数、Toast 条数"; return /^NOT_SHOOTABLE\(verb=rapidTap\)/.test(verbRefusal(a, false)) && /^NOT_SHOOTABLE\(verb=rapidTap\)/.test(verbRefusal(a, true)) && verbRefusal(a, true, { rapid: true }) === ""; })(), want: true },
+    /* —— #10-c 动线车道（2026-09-29）：重复下发 / 滚动 / 位置读数 ——
+       同一族症状：这几条纯函数决定 1107 条里哪些行会被扣下、哪一行的 geometry 里有没有 left/top。
+       每条都配了能变红的输入（含"旗标开着也照样拒发"的那一类 —— 加了通道不等于判据的要求就做得到）。 */
+    { n: "#10c 次数抠不出来的「重复点击」带 --rapid 也仍拒发（没有次数就没有重复下发这回事，硬填默认值=凭空造判据）", got: /^NOT_SHOOTABLE\(verb=rapidTap\)/.test(verbRefusal("重复点击提交按钮若干次，观察是否出现两次请求", false, { rapid: true })), want: true },
+    { n: "#10c parseRepeatSpec 认本判据台真实出现的几种写法 + 窗口（×5 / 连点 3 次 / 双击 / 1 秒内），抠不出次数时给 null 不给默认值", got: [parseRepeatSpec("对 .a rapidTap×5"), parseRepeatSpec("500ms 内连点 .a 3 次"), parseRepeatSpec("双击 .a"), parseRepeatSpec("1 秒内连点"), parseRepeatSpec("点 .a 一次")].map((x) => x.times + "/" + x.windowMs).join(" "), want: "5/null 3/500 2/null null/1000 null/null" },
+    { n: "#10c rapidVerdict 四态分得开：ok / short / window-miss / no-spec（把「只发出去 3 次」读成已按 ×5 测过就是本车道要防的假绿）", got: [rapidVerdict({ times: 5, windowMs: 500 }, [0, 100, 200, 300, 400]).kind, rapidVerdict({ times: 5, windowMs: 500 }, [0, 100, 200]).kind, rapidVerdict({ times: 5, windowMs: 500 }, [0, 200, 400, 600, 800]).kind, rapidVerdict({ times: null, windowMs: null }, [0, 100]).kind, rapidVerdict({ times: 5, windowMs: null }, [0, 900, 1800, 2700, 3600]).ok].join("/"), want: "ok/short/window-miss/no-spec/true" },
+    { n: "#10c window-miss 的串里同时给出**实测跨度**与判据点名的窗口，并明写不记 EXECUTED（不许只说做不到，要看得见差多少）", got: (function () { const r = rapidVerdict({ times: 5, windowMs: 500 }, [0, 200, 400, 600, 800]); return /800ms/.test(r.text) && /500ms/.test(r.text) && /绝不记 EXECUTED/.test(r.text); })(), want: true },
+    { n: "#10c rapidDeltas 给出逐次间隔串（判据要「逐次记录」的就是这一串），不足两次时给空串不猜", got: rapidDeltas([10, 35, 60]) + "|" + rapidDeltas([10]) + "|" + rapidDeltas(undefined), want: "25,25||" },
+    { n: "#10c 滚动：无 --scroll 拒发（以前这类行根本没进动词表 ⇒ 被一次普通 tap 顶掉）；带旗标且点名方向才放行；没点名方向即使带旗标也拒发", got: (function () { const a = "在面板内容区滚动到底，观察 .location-sheet__btn 的可见性"; const b = "列表滚动位置保持不丢"; return /^NOT_SHOOTABLE\(verb=scroll\)/.test(verbRefusal(a, false)) && /^NOT_SHOOTABLE\(verb=scroll\)/.test(verbRefusal(a, true)) && verbRefusal(a, true, { scroll: true }) === "" && /^NOT_SHOOTABLE\(verb=scroll\)/.test(verbRefusal(b, true, { scroll: true })); })(), want: true },
+    { n: "#10c parseScrollSpec 认到底/回顶/显式 px 三态并认得出 scroll-view 作用域；没方向时给 null", got: JSON.stringify([parseScrollSpec("滚动到底"), parseScrollSpec("回到顶部"), parseScrollSpec("wx.pageScrollTo(600)"), parseScrollSpec(".post-scroll 里滚动到底"), parseScrollSpec("看列表")]), want: JSON.stringify([{ sel: null, to: "bottom", y: 99999 }, { sel: null, to: "top", y: 0 }, { sel: null, to: "y", y: 600 }, { sel: ".post-scroll", to: "bottom", y: 99999 }, null]) },
+    { n: "#10c 页级滚动载荷问的是 wx.pageScrollTo（载具 shoot-frameplan.mjs:385 已在用同一条 evaluate）且三态分开、不静默成功", got: (function () { const s = pageScrollSource(99999); return s.includes("wx.pageScrollTo") && s.includes("uni.pageScrollTo") && s.includes("'no-api'") && s.includes("ERR") && /'wx-ok:' \+ v/.test(s); })(), want: true },
+    { n: "#10c 目标 scrollTop 逐字进载荷：判据点名 pageScrollTo(600) 时发出去的就是 600（不许悄悄换成 99999 去「反正到底了」）", got: (function () { const m = /var v = (\d+);/.exec(pageScrollSource(parseScrollSpec("wx.pageScrollTo(600)").y)); return m ? m[1] : "none"; })(), want: "600" },
+    { n: "#10c scrollOffset 读件用**自己的袋子**（不许顶掉 __probeBag：同组的折叠探针还在读它），且把 no-node / not-scrollable 两种缺席分开写", got: (function () { const s = scrollOffsetStartSource(["__viewport__", ".x"]); return s.includes("app.__qaScroll") && !s.includes("__probeBag") && s.includes("selectViewport") && s.includes("scrollOffset") && s.includes("no-node") && s.includes("not-scrollable"); })(), want: true },
+    { n: "#10c scrollVerdict 四种答案分得开：moved / no-move / no-reader / no-node（位置没动却记「已滚动」就是凭空造绿）", got: [scrollVerdict({ to: "bottom" }, { __viewport__: { t: 0 } }, { __viewport__: { t: 512, h: 4800 } }).kind, scrollVerdict({ to: "bottom" }, { __viewport__: { t: 512 } }, { __viewport__: { t: 512 } }).kind, scrollVerdict({ to: "bottom" }, { __err: "read:x" }, { __err: "read:x" }).kind, scrollVerdict({ sel: ".a", to: "bottom" }, { ".a": { t: null, note: "no-node" } }, { ".a": { t: null, note: "no-node" } }).kind].join("/"), want: "moved/no-move/no-reader/no-node" },
+    { n: "#10c moved 的串里同时带 scrollTop 与 scrollHeight（「滚到底」这条判据要的就是这两个数同框）", got: (function () { const v = scrollVerdict({ to: "bottom" }, { __viewport__: { t: 0 } }, { __viewport__: { t: 512, h: 1200 } }); return v.ok === true && /0→512/.test(v.text) && /scrollHeight=1200/.test(v.text); })(), want: true },
+    { n: "#10c interpretScrollOffsets 遇通道噪声不抛、报 __err ⇒ 行仍出，读数标「没取到」而不是「没滚」", got: (function () { const a = interpretScrollOffsets('IDE_PROJECT_ABS 传入=x {"__viewport__":{"t":12}}'); const b = interpretScrollOffsets("not json"); const c = interpretScrollOffsets("ERR 通道没就绪"); return a.__viewport__.t === 12 && !!b.__err && /通道没就绪/.test(c.__err); })(), want: true },
+    { n: "#10c 位置读数：4 元 box + scroll + __hin 翻得出 left/top/屏外像素（#C-1 只有尺寸 ⇒ 够不够得着判不了）", got: geomPosText({ action: "点 .a-b" }, interpretProbe([".a-b"], { 0: { c: 1, b: [[128, 240, 20, 700]], s: [[0, 4800]] }, __win: 375, __hin: 667 })), want: ".a-b=[@left=20 top=700 右边=148 底边=940] 视口高=667 屏外=273px(需滚动才够得着) scroll=0/4800" },
+    { n: "#10c 缺省袋子（今天的 2 元 box、没有 __hin）⇒ 位置串恒为空 ⇒ geometry 字段与今天逐字相同", got: geomPosText({ action: "点 .a-b" }, interpretProbe([".a-b"], { 0: { c: 1, b: [[128, 240]] }, __win: 375 })), want: "" },
+    { n: "#10c 重叠判点：同一行点名的两个物件都量到位置才相减（MS17/DC44 那一族要的就是这个数）", got: geomPosText({ action: "看 .a-b 与 .c-d 是否重叠" }, interpretProbe([".a-b", ".c-d"], { 0: { c: 1, b: [[100, 50, 0, 100]] }, 1: { c: 1, b: [[100, 50, 40, 120]] }, __win: 375 })), want: ".a-b=[@left=0 top=100 右边=100 底边=150] .c-d=[@left=40 top=120 右边=140 底边=170] .a-b∩.c-d=重叠 60×30px" },
+    { n: "#10c 位置读数不许凭空造参照物：没量到窗口高度就**不写**屏外结论（同 #C-1 宁缺毋造 rpx 那条纪律）", got: geomPosText({ action: "点 .a-b" }, interpretProbe([".a-b"], { 0: { c: 1, b: [[128, 240, 20, 700]] }, __win: 375 })), want: ".a-b=[@left=20 top=700 右边=148 底边=940]" },
+    { n: "#10c probeStartSource：不带 --geom-pos 时整段载荷与 2026-09-29 之前逐字相同（fields 只问 size、b 只留两元）", got: (function () { const s = probeStartSource([".a-b"], false); return s.includes("fields({ size: true },") && !s.includes("rect") && !s.includes("scrollOffset") && !s.includes("__hin") && /var boxes = \[\]; for \(var k = 0; k < arr\.length && k < 4; k\+\+\) \{ boxes\.push\(\[num\(arr\[k\] && arr\[k\]\.width\), num\(arr\[k\] && arr\[k\]\.height\)\]\); \} bag\[i\] = \{ c: arr\.length, b: boxes \};/.test(s); })(), want: true },
+    { n: "#10c probeStartSource：带 --geom-pos 时才多问 rect/scrollOffset 并留 4 元 box（新读数是加法，不改计数口径）", got: (function () { const s = probeStartSource([".a-b"], true); return s.includes("size: true, rect: true, scrollOffset: true") && s.includes("arr[k].left") && s.includes("scr.push") && s.includes("b: boxes, s: scr"); })(), want: true },
+    { n: "#10c 闸的调用点必须把本腿的 caps 传进去（漏传一个参数就等于接了新通道却还在全额拒发 ⇒ 静默退回旧行为，谁也看不出来）", got: (function () { const s = readFileSync(resolve(import.meta.dirname, "r-exec-cli.mjs"), "utf8"); return /verbRefusal\(c\.action, GESTURE_MODE, CAPS\)/.test(s) && /verbsNamed\(c\.action, GESTURE_MODE, CAPS\)/.test(s); })(), want: true },
+    { n: "#10c --rapid / --scroll 与 --gestures 同一条纪律：隐含 --strict-verbs（能力与不许换动词同批到货）", got: (function () { const s = readFileSync(resolve(import.meta.dirname, "r-exec-cli.mjs"), "utf8"); return /const STRICT_VERBS = GESTURE_MODE \|\| RAPID_MODE \|\| SCROLL_MODE \|\| process\.argv\.includes\("--strict-verbs"\)/.test(s); })(), want: true },
+    { n: "#10c 新动线只在各自旗标下碰设备（runScrollLeg 的唯一调用点在 if (SCROLL_MODE…) 之内；重复下发只从 RAPID_MODE 那一支取 times）", got: (function () { const s = readFileSync(resolve(import.meta.dirname, "r-exec-cli.mjs"), "utf8"); const iCall = s.lastIndexOf("= runScrollLeg(c);"); const iGuard = s.lastIndexOf("if (SCROLL_MODE &&", iCall); return iCall > 0 && iGuard > 0 && (iCall - iGuard) < 160 && s.lastIndexOf("= RAPID_MODE ? parseRepeatSpec(c.action) : null;") > 0; })(), want: true },
+    { n: "#10c 全旗标开着也仍拒发：swipe / nativeModal / networkFault（不许因为加了三条通道就把没证过的原语一并放出去）", got: (function () { const caps = { rapid: true, scroll: true, geomPos: true }; const a = ["在卡片上向右拖动 >SWIPE_THRESHOLD 后松手", "在 showModal 点「取消」", "断网执行确定"]; return a.every((x, i) => verbRefusal(x, true, caps).startsWith("NOT_SHOOTABLE(verb=" + ["swipe", "nativeModal", "networkFault"][i] + ")")); })(), want: true },
+    { n: "#10c swipe 的拒发理由点名「桥自述里有、argv 载荷未证」这一具体缺口（不是一句「做不到」糊过去）", got: (function () { const r = verbRefusal("在卡片上向右拖动超过阈值", true, { rapid: true, scroll: true }); return /cli-automator\.mjs:11-13/.test(r) && /print-argv|argv/.test(r) && /WS/.test(r); })(), want: true },
+    { n: "#10c 行上落 rapid/scroll 两本账的字段位（skippedTotal 少了任何一个新出口，两个 skipped 口径就会当场打架）", got: (function () { const s = readFileSync(resolve(import.meta.dirname, "r-exec-cli.mjs"), "utf8"); const i = s.lastIndexOf("const skippe" + "dTotal"); return /stats\.rapidRefused/.test(s.slice(i, i + 600)) && /stats\.scrollRefused/.test(s.slice(i, i + 600)) && /rapidDelivered: 0/.test(s) && /scrollsOk: 0/.test(s); })(), want: true },
     { n: "#2 DC08 的向右拖动拒发（swipe 半边没接）", got: /^NOT_SHOOTABLE\(verb=swipe\)/.test(verbRefusal("在卡片上向右拖动 >SWIPE_THRESHOLD 后松手", true)), want: true },
     { n: "#2 MSG26 一次点名四个动词 ⇒ 原因串把四个都列出来，不许只报最好写的点", got: (function () { const r = verbRefusal("① 长按→「删除会话」→ 在 showModal 点「取消」；③ 对同一会话在 500ms 内连点删除入口 5 次；④ 断网执行确定", true); return ["longpress", "rapidTap", "nativeModal", "networkFault"].every((v) => r.includes(v)); })(), want: true },
     { n: "#2 长按在无 --gestures 时拒发（不许退化成 tap）；带旗标后发得出去 ⇒ 不再拒发", got: verbRefusal("长按 .msg-row 呼出操作条", false).startsWith("NOT_SHOOTABLE(verb=longpress)") && verbRefusal("长按 .msg-row 呼出操作条", true) === "", want: true },
@@ -203,6 +275,18 @@ function runSelftest() {
     { n: "#1 consoleLines 照 r1-exec.cjs:1393 的口径：纯 log 不收，log 里带 error/TypeError 的收", got: (function () { const a = consoleLines([{ level: "log", text: "普通一行" }, { level: "log", text: "TypeError: x" }, { level: "error", text: "接口 500" }]); return a.length === 2; })(), want: true },
     { n: "#1/#3 evidenceGaps：没开旗标时点名「载具没采」，开了而窗口为空时点名「通道已开但没采到」（两句意思不同）", got: (function () { const c = { evidence: "截图 + Toast + console + network", title: "" }; const off = evidenceGaps(c, { on: false, toastCount: 0, consoleCount: 0 }); const on = evidenceGaps(c, { on: true, toastCount: 1, consoleCount: 3 }); return off.length === 3 && /没带 --native-capture/.test(off[0]) && /network/.test(off[2]) && on.length === 1; })(), want: true },
     { n: "#1 行上必须真的落这两个字段（钉死「rejection 路径也要填自己报告的读数」）", got: (function () { const src = readFileSync(resolve(import.meta.dirname, "r-exec-cli.mjs"), "utf8"); return /toast: toastVal, console: consoleVal/.test(src) && /nativeDrain\(\)/.test(src); })(), want: true },
+    /* ── #10-d 网络计数通道接线（主控亲手接的，所以判点也亲手写；每条都要能变红）── */
+    { n: "#10d evidenceGaps 的网络半边是三态：没开通道⇒欠账一句；可判的零(netGap=\"\")⇒不写 gap；残缺⇒点名残缺", got: (function () {
+      const c = { evidence: "network", title: "", expected: "" };
+      const off = evidenceGaps(c, { on: false, toastCount: 0, consoleCount: 0 });
+      const judgeableZero = evidenceGaps(c, { on: false, toastCount: 0, consoleCount: 0, netGap: "" });
+      const broken = evidenceGaps(c, { on: false, toastCount: 0, consoleCount: 0, netGap: "网络计数通道已开但本窗口读数残缺（截断）" });
+      return off.length === 1 && /没开网络计数通道/.test(off[0]) && judgeableZero.length === 0 && broken.length === 1 && /读数残缺/.test(broken[0]);
+    })(), want: true },
+    { n: "#10d 不带 --net-count 时一个 evaluate 都不许多发（install/drain 两支都以旗标早退开头）", got: (function () { const src = readFileSync(resolve(import.meta.dirname, "r-exec-cli.mjs"), "utf8"); return /function netInstall\(\) \{\s*\n\s*if \(!NET_COUNT\) return/.test(src) && /function netDrain\(install\) \{\s*\n\s*if \(!NET_COUNT\) return null;/.test(src); })(), want: true },
+    { n: "#10d 没开通道时必须把 netGap 留成 undefined（传空串＝把欠账抹掉，那是假绿的一条通路）", got: (function () { const src = readFileSync(resolve(import.meta.dirname, "r-exec-cli.mjs"), "utf8"); return /netGap: net \? net\.gap : undefined,/.test(src) && /network: netOn \? net\.counts : ""/.test(src); })(), want: true },
+    { n: "#10d 通道名必须进 MODE_SUFFIX 与开页归属排空（+net 进了落盘字段名，且组边界在 if (NET_COUNT) 内排空）", got: (function () { const src = readFileSync(resolve(import.meta.dirname, "r-exec-cli.mjs"), "utf8"); const iGuard = src.lastIndexOf("if (NET_COUNT) {"); const iDrain = src.lastIndexOf("netDrain(NET_INSTALL)"); return /\+ \(NET_COUNT \? "\+net" : ""\)/.test(src) && iGuard > 0 && iDrain > iGuard && (iDrain - iGuard) < 200; })(), want: true },
+    { n: "#10d 被 import 的模块不许在 import 阶段跑自己的 CLI（实测过一次：宿主 EXEC_SELFTEST 一个字没印而进程退 0）", got: (function () { const m = readFileSync(resolve(import.meta.dirname, "exec-network-observe.mjs"), "utf8"); return /if \(SELF_ENTRY && process\.argv\.includes\("--selftest"\)\)/.test(m) && /process\.exit\(bad\.length \? 1 : 0\);/.test(m); })(), want: true },
   ];
   const bad = cases.filter((c) => c.got !== c.want);
   for (const c of cases) console.log((c.got === c.want ? "  ok " : "  BAD") + " " + c.n + " got=" + c.got + " want=" + c.want);
@@ -251,12 +335,16 @@ const FRAME_RE = /截图|全帧|出帧|特写|帧/;
    老执行器早就有这道闸：scripts/qa/r-exec.cjs:1174 UNIMPLEMENTABLE_ACTION_RE（回归测试
    scripts/qa/test-observe-markers.cjs），但 r-exec-cli.mjs 里没有对应物 ⇒ 这里补的是**那条闸的等价物**，
    再加上 r1-exec.cjs 有、本文件没接的 longpress(:1033+:1068) / pullDown(:1115-1126) 两条动线。
-   口径三条：
-     ① emittable=false 的动词（repeat/swipe/nativeModal/networkFault）在任何模式下都发不出去 ⇒ 拒发，
+   口径四条：
+     ① 没有任何旗标就发不出去的动词（swipe/nativeModal/networkFault）在任何模式下都拒发 ⇒
         记 SKIPPED + NOT_SHOOTABLE 原因，点名欠的是哪个原语；**绝不退化成 tap**。
-     ② emittable 取决于旗标的动词（longpress/pullDown）：--gestures 才发；没带旗标时同样拒发（而不是发 tap）。
+     ② emittable 取决于旗标的动词（longpress/pullDown 看 --gestures；rapidTap 看 --rapid；scroll 看 --scroll）：
+        带了那条旗标才发；没带时同样拒发（而不是发 tap）。
      ③ 判据同时点名"发得出去的"和"发不出去的"（例：MSG26 长按 + 连点×5 + showModal + 断网）⇒ 整条拒发：
         一次部分交互会把"这一条已按判据点名的动作测过"冒充出来，而那正是它不许的结果。
+     ④ 旗标只是"通道有这个原语"，不等于"这条判据的要求做得到"（#10-c 新加的一维，走 specSatisfies）：
+        rapidTap 要点名得出次数、scroll 要点名得出方向，否则仍然拒发；发完之后的窗口/位移是否达标
+        由 rapidVerdict()/scrollVerdict() 按**实测读数**判，读不出来就记拒发，不记 EXECUTED。
    动词表是**读 c.action 的纯函数**（不读 argv），旗标由调用方显式传进来 ⇒ 离线负例能同时驱动两条模式。 */
 const VERB_LONGPRESS_RE = /长按|longpress|long\s*press/i;
 const VERB_PULLDOWN_RE = /下拉刷新|下拉|pullDown|startPullDownRefresh|onPullDownRefresh/i;
@@ -264,40 +352,112 @@ const VERB_RAPID_RE = /rapidTap|连点|连击|连续点|重复点击|双击|doub
 const VERB_SWIPE_RE = /拖动|拖拽|滑块|滑动|swipe|drag/i;
 const VERB_MODAL_RE = /showModal|showActionSheet|操作菜单|原生 ?Modal|系统弹窗/i;
 const VERB_OFFLINE_RE = /断网|网络中断|弱网|离线状态|故障注入|5xx|返回 ?500/i;
+/* 滚动动词（#10-c）：这一类以前**根本不在动词表里** ⇒ "在面板内容区滚动到底"（H11/PT33/TP10…）
+   顺着 #C-3 放宽后的 TAP_RE 被认成"要交互"，防降级闸又问不到它，于是走 else 发**一次普通 tap** 顶掉"滚到底"
+   —— 与 rapidTap×5 被一次 tap 顶掉是同一个病，只是没人给它立过案。实测判据台 round-7/ops 1107 条：
+   action 点名滚动、又没被别的动词扣住的交互行 = 33 条（H11,H47,N07,N11,N30,N33,CH22,CX15,CX20,PT33,…）。 */
+const VERB_SCROLL_RE = /滚动|滚到|滑到|回顶|到底部|pageScrollTo|scroll-view[^。；]{0,10}(?:滚|滑)/i;
 const VERB_RULES = [
   { verb: "longpress", re: VERB_LONGPRESS_RE, needsGesture: true,
     why: "判据点名长按；本通道的元素级动作只有带 --gestures 时才发 longpress（载具 r1-exec.cjs:1033+:1068）" },
   { verb: "pullDown", re: VERB_PULLDOWN_RE, needsGesture: true,
     why: "判据点名下拉刷新；这条动线是 evaluate(uni.startPullDownRefresh)（载具 r1-exec.cjs:1115-1120），只在 --gestures 下发" },
-  { verb: "rapidTap", re: VERB_RAPID_RE,
-    why: "判据点名「重复/连点/依次点」，本通道没有重复下发原语：每次 element() 都是一次 execFileSync 进程派生（cli-automator.mjs:111），而 :1145 还刻意 sleep(700) ⇒ 「500ms 内 ×5」在这条腿上物理不可满足（审计 C21 (f) G-6 判它 transport-bound）。一次 tap 会把「请求条数=1／Toast 条数=1」这类判点变成恒真，正是 DND08 判据④点名的失败模式" },
+  { verb: "rapidTap", re: VERB_RAPID_RE, needsCap: "rapid", spec: "repeat",
+    why: "判据点名「重复/连点/依次点」。重复下发原语已在 #10-c 接上（--rapid；载具 r1-exec.cjs:574+:1063-1070 的等价物 = 同一元素连发 N 次、每次各打一枚时间戳）⇒ **没带 --rapid 时仍然拒发**：不带旗标时本通道只会发一次 tap，而一次 tap 会把「请求条数=1／Toast 条数=1」这类判点变成恒真，正是 DND08 判据④点名的失败模式。带了 --rapid 也不是自动放行：本通道每次 element() 都是一次 execFileSync 进程派生（cli-automator.mjs:111）⇒ 跨度只能实测不能假设，实测没守住判据点名的窗口（如「500ms 内 ×5」）时 rapidVerdict() 判 window-miss ⇒ 依旧拒发；次数抠不出来（「重复点击若干次」这种）时也拒发，绝不猜一个数下来" },
+  { verb: "scroll", re: VERB_SCROLL_RE, needsCap: "scroll", spec: "scroll",
+    why: "判据点名滚动方向。页面级那条动线是 evaluate(wx.pageScrollTo({scrollTop}))（同一条载具本仓早就在用：shoot-frameplan.mjs:385），scroll-view 内部那一半的判点来自 scrollOffset 回读（载具 tour-r6.mjs:1141-1146 那一条查询），只在 --scroll 下发；且**判点取自「scrollTop 前后变没变」而不是「调用没抛」**——没动就记 no-move，不许顺着记 EXECUTED。没带 --scroll 时同样拒发：拿一次普通 tap 顶掉「滚到底」就是这条车道立案要修的病" },
   { verb: "swipe", re: VERB_SWIPE_RE,
-    why: "判据点名拖动/滑动方向：需要 touchstart→touchmove→touchend 带位移的三件套（载具 r1-exec.cjs:1201-1222），本通道没接，且 DC08 那类判据还含「轻点不得被判为左右滑」的反向断言 ⇒ 用 tap 顶它等于测它明确排除的东西" },
+    why: "判据点名拖动/滑动方向：需要 touchstart→touchmove→touchend **带位移的三点序列**。桥的自述里 automation_element_action 确实列了 touchstart/touchmove/touchend（cli-automator.mjs:11-13），但本仓没有任何一处调用带过承载触点坐标的 argv（:162-164 只保证 --action/--selector + 透传位，全仓在用的载荷只有 --wait 与 --value 两种），r1-exec.cjs:1627-1634 那条 swipe 走的是 **WS 的 Element API**（el.touchstart 带 touches 数组），本通道没有对应物 ⇒ 载荷形状未经证实就是没接（要接先在离线 print-argv 上证 argv，再上设备，不在本车道）。且 DC08 那类判据还含「轻点不得被判为左右滑」的反向断言 ⇒ 用 tap 顶它等于测它明确排除的东西" },
   { verb: "nativeModal", re: VERB_MODAL_RE,
     why: "判据要在原生 Modal/ActionSheet 里选「取消」或「确定」：原生弹层不在页面渲染树里，automation_element_action 只收 selector（cli-automator.mjs:162-164）⇒ 选择器进不去。--native-capture 能把「弹过哪个原生 API、标题是什么」采进 row.toast（观察半边），但「点哪个选项」的驱动半边仍是新代码，不在本车道" },
   { verb: "networkFault", re: /断网|网络中断|弱网|离线状态|故障注入|5xx|返回 ?500/i,
-    why: "判据点名断网/故障注入：本仓五条执行器里没有任何网络条件注入通道（审计 C21 (d)-c-2：mockWxMethod 只在 r1-exec.cjs:1134/r-exec.cjs:1551 用于 chooseImage）⇒ 属 [NEW]，不在本车道" },
+    why: "判据点名断网/故障注入：本仓五条执行器里没有任何网络条件注入通道（审计 C21 (d)-c-2：mockWxMethod 只在 r1-exec.cjs:1134/r-exec.cjs:1551 用于 chooseImage）⇒ 属 [NEW]，不在本车道。逐请求**计数**是另一回事：#10-d 的通道已经接在 --net-count 上（走 uni.addInterceptor('request')，产物里确有 addInterceptor），所以 network 那一条不再恒欠——但它在**钩子装不上的上下文**里依然记 OFF 并逐行点名欠账，绝不交出一假零" },
 ];
-/* 纯函数：这条判据点名了哪些动词、各自发不发得出去。旗标由调用方传入（离线负例据此跑两种模式）。 */
-function verbsNamed(action, gesturesOn) {
+/* 「旗标开了」不等于「判据的要求做得到」—— 这两条 spec 就是那条差别在代码里的形状：
+   次数/方向抠不出来时**不许**把动词标成发得出去（那等于把一条猜出来的判据记成测过的）。 */
+function specSatisfies(kind, text) {
+  if (kind === "repeat") { const p = parseRepeatSpec(text); return !!p && p.times >= 2; }
+  if (kind === "scroll") return !!parseScrollSpec(text);
+  return true;
+}
+/* 判据点名的重复次数 + 时间窗口（r1-exec.cjs:560-575 那九种 rapidTap 写法里，本判据台实际出现的三种形态：
+   `rapidTap×5` / `连点 5 次` / `×5`；窗口是 `500ms 内`）。**抠不出来就返回 null**：
+   没有次数就没有重复下发这回事，硬填一个默认值就是凭空造判据（同 :553 "读不出数字不许当成 1"）。 */
+function parseRepeatSpec(text) {
+  const s = String(text === undefined || text === null ? "" : text);
+  let times = null;
+  const mult = s.match(/[×xX]\s*(\d{1,3})/);
+  const cnt = s.match(/(\d{1,3})\s*次/);
+  if (mult) times = parseInt(mult[1], 10);
+  else if (cnt) times = parseInt(cnt[1], 10);
+  else if (/双击/.test(s)) times = 2;
+  const ms = s.match(/(\d{1,5})\s*(?:ms|毫秒)\s*内/i);
+  const sec = s.match(/(\d{1,3}(?:\.\d+)?)\s*(?:s|秒)\s*内/i);
+  return {
+    times: (isFinite(times) && times > 0) ? times : null,
+    windowMs: ms ? parseInt(ms[1], 10) : (sec ? Math.round(parseFloat(sec[1]) * 1000) : null),
+  };
+}
+/* 判据点名的滚动方向 + 是不是 scroll-view 内部：
+   显式 `wx.pageScrollTo(N)` / `滚动到底|滑到底|到底部` → 底、`回顶|滚动到顶` → 顶，显式数字优先。
+   方向抠不出来就返回 null（"滚动位置保持"这类没方向要求的判据不许被硬塞一个方向去滚）。 */
+function parseScrollSpec(text) {
+  const s = String(text === undefined || text === null ? "" : text);
+  const mEl = /([.#][-\w]+)[^。；，]{0,16}?(?:内|里|中)?(?:滚|滑)(?:动)?到/.exec(s);
+  const sel = mEl ? mEl[1] : null;
+  const px = /(?:wx\.)?pageScrollTo\s*\(\s*(?:\{\s*scrollTop\s*:\s*)?(\d{1,6})/.exec(s);
+  if (px) return { sel, to: "y", y: parseInt(px[1], 10) };
+  if (/滚动?到底|滚到底|滑到底|到底部|下拉到底/.test(s)) return { sel, to: "bottom", y: 99999 };
+  if (/回顶|回到顶部|滚动?到顶|滑到顶|滚到最上/.test(s)) return { sel, to: "top", y: 0 };
+  return null;
+}
+/* 逐次时间戳 → 判点（**整车道不许撒谎的那一处**）：
+   ① 没点名次数 / ② 实际发出去的次数不够 / ③ 跨度超出判据点名的窗口 ⇒ 三种都 ok=false，行记拒发；
+   判据没点名窗口时 ③ 不适用，但实测跨度照样写进行里 ⇒ 读的人看得见这一腿真实花了多少毫秒。 */
+function rapidVerdict(spec, stamps) {
+  const s = (Array.isArray(stamps) ? stamps : []).filter((x) => typeof x === "number" && isFinite(x));
+  const need = spec && spec.times;
+  if (!need) return { ok: false, kind: "no-spec", delivered: s.length, span: null, text: "判据没点明重复次数 ⇒ 重复下发没法按判据的要求做（不猜一个数）" };
+  if (s.length < need) return { ok: false, kind: "short", delivered: s.length, span: s.length > 1 ? s[s.length - 1] - s[0] : null, text: "重复下发只发出 " + s.length + "/" + need + " 次 ⇒ 判据点名的 ×" + need + " 没做到（通道问题，不是产品判红）" };
+  const span = s[s.length - 1] - s[0];
+  if (spec.windowMs && span > spec.windowMs) {
+    return { ok: false, kind: "window-miss", delivered: s.length, span, text: "实测跨度 " + span + "ms > 判据点名的 " + spec.windowMs + "ms ⇒ 「" + spec.windowMs + "ms 内 ×" + need + "」在这条腿上没做到（每次 element() 是一次 execFileSync 进程派生，cli-automator.mjs:111）⇒ 记拒发，绝不记 EXECUTED：放宽窗口再去判一个恒真的守卫，正是 DND08 判据④点名的失败模式" };
+  }
+  return { ok: true, kind: "ok", delivered: s.length, span, text: "×" + need + " 已发完，实测跨度 " + span + "ms" + (spec.windowMs ? "（判据点名 ≤" + spec.windowMs + "ms ⇒ 守住了）" : "（判据没点名窗口，只记实测值）") };
+}
+/* 相邻两次的间隔串：判据要"逐次记录 handler 进入次数"时，这条给出逐次的时间基线。 */
+function rapidDeltas(stamps) {
+  const s = (Array.isArray(stamps) ? stamps : []).filter((x) => typeof x === "number" && isFinite(x));
+  return s.length < 2 ? "" : s.slice(1).map((t, i) => t - s[i]).join(",");
+}
+/* 纯函数：这条判据点名了哪些动词、各自发不发得出去。旗标由调用方传入（离线负例据此跑各档模式）。 */
+function verbsNamed(action, gesturesOn, caps) {
   const s = String(action === undefined || action === null ? "" : action);
+  const on = caps && typeof caps === "object" ? caps : {};
   return VERB_RULES
     .filter((r) => r.re.test(s))
-    .map((r) => ({ verb: r.verb, why: r.why, emittable: r.needsGesture ? !!gesturesOn : false }));
+    .map((r) => ({
+      verb: r.verb, why: r.why,
+      emittable: r.needsGesture ? !!gesturesOn
+        : r.needsCap ? (!!on[r.needsCap] && specSatisfies(r.spec, s))
+          : false,
+    }));
 }
 /* 返回拒发原因串（空串 = 没有不可发出的点名动词，按原口径下发）。
    NOT_SHOOTABLE 是本仓既有拼写（artifact-band.mjs:70、shoot-frameplan.mjs:227 IDENTITY_REFUSED_STATUS），
    但行状态词表受 :1284 的守恒检查限定为 EXECUTED|FAILED|SKIPPED ⇒ 状态留 SKIPPED（执行器里的"拒发"档），
    机读标记放在原因串开头，记账方按前缀抠。 */
-function verbRefusal(action, gesturesOn) {
-  const bad = verbsNamed(action, gesturesOn).filter((v) => !v.emittable);
+function verbRefusal(action, gesturesOn, caps) {
+  const bad = verbsNamed(action, gesturesOn, caps).filter((v) => !v.emittable);
   if (!bad.length) return "";
   return "NOT_SHOOTABLE(verb=" + bad.map((v) => v.verb).join("/") + "): 判据点名的动词在本通道发不出去 ⇒ 一次普通 tap 都不发（换动词冒充＝假绿，见 c21 审计 E-II）：" +
     bad.map((v) => v.verb + " :: " + v.why).join("；") +
-    "；要它被自动判，得补对应原语（longpress/pullDown 用 --gestures，其余欠 [NEW] 通道）或换载具/人工判，不许记成产品 FAILED";
+    "；要它被自动判，得补对应原语（longpress/pullDown 用 --gestures，rapidTap 用 --rapid，滚动用 --scroll，几何位置用 --geom-pos；其余欠 [NEW] 通道）或换载具/人工判，不许记成产品 FAILED";
 }
 /* 元素级动词的唯一选择点（纯函数；:1141 那一句是它唯一消费者）。
-   输入腿口径完全照旧（wantsInputLeg），长按只在 --gestures 且判据点名长按时才顶掉 tap。 */
+   输入腿口径完全照旧（wantsInputLeg），长按只在 --gestures 且判据点名长按时才顶掉 tap。
+   重复下发不在这里换动词 —— rapidTap 用的**还是 tap 这个动词**，只是把同一下发做 N 次并逐次计时；
+   动词面不许多出"rapidTap"这个假 action（桥没有它，编出来就是一次必然失败的下发）。 */
 function pickElementVerb(action, sel, gesturesOn) {
   if (wantsInputLeg(action, sel)) return "input";
   if (gesturesOn && VERB_LONGPRESS_RE.test(String(action || ""))) return "longpress";
@@ -327,17 +487,142 @@ function pullDownVerdict(r) {
   if (/ERR/.test(s)) return "error";
   return "unknown";
 }
+/* ── 滚动动线（capability 车道 #10-c，2026-09-29；只在 --scroll 下发生设备调用）─────────────
+   载具不是新造的：页面级那一条 evaluate(wx.pageScrollTo) 本仓早就在用（shoot-frameplan.mjs:385，
+   同一条 automation_evaluate 通道，本文件 :25 就 import 了 evaluate）；
+   读数那一条 evaluate(createSelectorQuery().selectViewport().scrollOffset()) 也是现成的
+   （tour-r6.mjs:1141-1146），而 createSelectorQuery 在本通道的折叠探测里已经天天在跑（probeStartSource）。
+   r1-exec.cjs 那边对应的是 :1103-1113 的 scroll / :1107-1114 的 scrollElement（WS 的 mp.pageScrollTo /
+   el.scrollTo），本文件一直没接 ⇒ 判据台里 33 条只欠这一条动线的交互行被一次普通 tap 顶掉。
+   口径与 pullDown 那一族一致：**三态分开、绝不静默成功**，而且判点取自"位置到底动了没有"。 */
+function pageScrollSource(y) {
+  const v = Number(y);
+  const target = isFinite(v) ? Math.round(v) : 0;
+  return "() => { try { var v = " + target + "; var err = null;" +
+    " if (typeof wx !== 'undefined' && wx.pageScrollTo) { try { wx.pageScrollTo({ scrollTop: v, duration: 0 }); return 'wx-ok:' + v; } catch (e) { err = 'wx:' + e.message; } }" +
+    " if (typeof uni !== 'undefined' && uni.pageScrollTo) { try { uni.pageScrollTo({ scrollTop: v, duration: 0 }); return 'uni-ok:' + v; } catch (e) { err = (err ? err + ';' : '') + 'uni:' + e.message; } }" +
+    " if (typeof getCurrentPages === 'function') { try { var cs = getCurrentPages(); var pg = cs[cs.length - 1]; if (pg && pg.pageScrollTo) { pg.pageScrollTo({ scrollTop: v }); return 'page-ok:' + v; } } catch (e) { err = (err ? err + ';' : '') + 'page:' + e.message; } }" +
+    " return err ? 'ERR ' + err : 'no-api'; } catch (e) { return 'ERR ' + e.message; } }";
+}
+/* scrollOffset 读件：一次 evaluate 起 K 条查询、写进 app.__qaScroll（不是 __probeBag，
+   免得把同组折叠探测的袋子顶掉），第二次 evaluate 只取件 —— 与 probeMany 同一套两步法（notes §12：
+   回调式异步在本通道拿不到 await）。keys 里 "__viewport__" 是页级滚动的哨兵。 */
+function scrollOffsetStartSource(keys) {
+  const list = Array.isArray(keys) && keys.length ? keys : ["__viewport__"];
+  return "() => { try { var app = getApp(); app.__qaScroll = {};" +
+    " var q = wx.createSelectorQuery();" +
+    " var keys = " + JSON.stringify(list) + ";" +
+    " keys.forEach(function (k) { try {" +
+    "   var n = (k === '__viewport__') ? q.selectViewport() : q.select(k);" +
+    "   n.scrollOffset().exec(function (res) { var r = Array.isArray(res) ? res[0] : res;" +
+    "     if (r === null || r === undefined) { app.__qaScroll[k] = { t: null, note: 'no-node' }; return; }" +
+    "     if (typeof r.scrollTop !== 'number') { app.__qaScroll[k] = { t: null, note: 'not-scrollable' }; return; }" +
+    "     var num = function (x) { return (typeof x === 'number' && isFinite(x)) ? Math.round(x * 100) / 100 : null; };" +
+    "     app.__qaScroll[k] = { t: num(r.scrollTop), h: num(r.scrollHeight), l: num(r.scrollLeft), sw: num(r.scrollWidth) }; });" +
+    " } catch (e) { app.__qaScroll[k] = { t: null, note: 'ERR ' + String(e && e.message).slice(0, 60) }; } });" +
+    " return 'started:' + keys.length; } catch (e) { return 'ERR ' + e.message; } }";
+}
+function scrollOffsetReadSource() {
+  return "() => { try { return JSON.stringify(getApp().__qaScroll || {}); } catch (e) { return 'ERR ' + e.message; } }";
+}
+/* 读件串 → { key: {t,h,l,sw,note} }；通道噪声/非 JSON 一律不抛（同 interpretNative 的纪律：
+   解析失败是"读数没取到"，绝不能被读成"页面没滚动"）。 */
+function interpretScrollOffsets(raw) {
+  if (raw && typeof raw === "object") return raw;
+  const s = String(raw === undefined || raw === null ? "" : raw).trim();
+  if (!s) return { __err: "读件串为空" };
+  if (/^ERR/.test(s)) return { __err: s.slice(0, 80) };
+  const cut = s.indexOf("{");
+  try { return JSON.parse(cut >= 0 ? s.slice(cut) : s); }
+  catch (e) { return { __err: "读件串解析失败:" + s.slice(0, 60) }; }
+}
+/* 判点（纯函数）：滚动这件事的唯一证据是**位置动了**，不是"调用没抛"。
+   四种答案必须分得开：moved / no-move（驱动没接住或这一层本就不滚）/ no-reader（读数取不到）。
+   后两种一律 ok=false ⇒ 行不许记 EXECUTED。 */
+function scrollVerdict(spec, before, after) {
+  const key = spec && spec.sel ? spec.sel : "__viewport__";
+  const b = before && before[key];
+  const a = after && after[key];
+  const scope = spec && spec.sel ? "scroll-view " + spec.sel : "页面";
+  if ((after && after.__err) || (before && before.__err)) {
+    return { ok: false, kind: "no-reader", text: scope + " scrollOffset 读数取件失败（" + String((after && after.__err) || (before && before.__err)).slice(0, 70) + "）⇒ 读不出位置就不能判这一条，读数没取到 ≠ 页面没滚" };
+  }
+  if (!a && !b) return { ok: false, kind: "no-reader", text: scope + " 的 scrollOffset 两次都没回东西（通道没答）⇒ 不能判这一条" };
+  const bt = b && typeof b.t === "number" ? b.t : null;
+  const at = a && typeof a.t === "number" ? a.t : null;
+  if (bt === null || at === null) {
+    const note = String((a && a.note) || (b && b.note) || "无 scrollTop 字段");
+    return { ok: false, kind: note === "no-node" ? "no-node" : "no-reader", text: scope + " 量不到 scrollTop（" + note + "）⇒ 它不是可滚动容器或选择器没命中，这条判据欠的是载具不是产品；不许记 EXECUTED" };
+  }
+  const moved = at !== bt;
+  const h = typeof (a && a.h) === "number" ? a.h : (typeof (b && b.h) === "number" ? b.h : null);
+  return {
+    ok: moved, kind: moved ? "moved" : "no-move",
+    text: scope + " scrollTop " + bt + "→" + at + (h === null ? "" : "（scrollHeight=" + h + "）")
+      + (moved ? " ⇒ 位置确实动了" : " ⇒ 发了滚动而位置没动（驱动没接住 / 这一层本来不滚）⇒ 不记 EXECUTED"),
+  };
+}
+/* scroll 三态的下发结果翻译（照 pullDownVerdict 的样子；调用没抛不等于滚动了，见 scrollVerdict）。 */
+function pageScrollCallVerdict(r) {
+  const s = String(r === undefined || r === null ? "" : r);
+  if (/wx-ok|uni-ok|page-ok/.test(s)) return "sent";
+  if (/no-api/.test(s)) return "unsupported(这一层没有 pageScrollTo API)";
+  if (/ERR/.test(s)) return "error";
+  return "unknown";
+}
+/* 元素级 scrollTo：桥的自述（cli-automator.mjs:11-13）把 scrollTo 列在 automation_element_action
+   支持的动词里，但"滚到哪"这一参数在本仓**没有任何已验证调用点**（在用的载荷只有 --wait/--value 两种）
+   ⇒ 这一试只算"驱动尝试"，判点一律取自 readScrollOffsets 的回读（见 runScrollLeg）：
+   抛错就记抛错，既不许读成"滚不动"，更不许读成"滚了"。 */
+function scrollElementStep(sel, y) {
+  const v = Math.round(Number(y));
+  return element("scrollTo", sel, { project: PROJECT }, ["--x", "0", "--y", String(isFinite(v) ? v : 0), "--wait", "1"]);
+}
+/* 这一条判据的滚动动线走一遍，返回 {ok, kind, text}（**ok 只由回读决定，不由调用是否抛错决定**）。 */
+function runScrollLeg(c) {
+  const spec = parseScrollSpec(c.action);
+  if (!spec) return { ok: false, kind: "no-direction", text: "scroll=refused(判据点名滚动但没点名方向/位置 ⇒ 通道不知道该滚到哪，不猜)" };
+  const keys = spec.sel ? [spec.sel, "__viewport__"] : ["__viewport__"];
+  const before = readScrollOffsets(keys);
+  let sent = "";
+  try { sent = String(evaluate(pageScrollSource(spec.y), { project: PROJECT })); }
+  catch (e) { sent = "ERR " + String(e.message).replace(/\s+/g, " ").slice(0, 80); }
+  let elSent = "";
+  if (spec.sel) {
+    try { elSent = String(scrollElementStep(spec.sel, spec.y)).slice(0, 60); }
+    catch (e) { elSent = "THREW " + String(e.message).replace(/\s+/g, " ").slice(0, 80); }
+  }
+  sleep(SETTLE);
+  const after = readScrollOffsets(keys);
+  const v = scrollVerdict(spec, before, after);
+  return {
+    ok: v.ok, kind: v.kind,
+    text: "scroll[" + spec.to + (spec.sel ? " on " + spec.sel : " 页面级") + "] 目标 scrollTop=" + spec.y +
+      " 调用=" + pageScrollCallVerdict(sent) + "(" + String(sent).slice(0, 48) + ")" +
+      (elSent ? " 元素级scrollTo=" + elSent.slice(0, 60) : "") + " " + v.text,
+  };
+}
 /* ── 原生调用流钩子（capability 车道 #1；载具 r1-exec.cjs:278-299 installToastHook / :300-305 drainToasts）──
    症状：本文件把 row.toast / row.console 钉死成空串（同一句现在落在 :524，只是右边换成了 toastVal/consoleVal），
    于是"Toast 文案/条数"这类判点在本项目被宣告成**不可测**（c21 审计 G-4：372 条点名 Toast、G-5：864 条点名 console，
    零条记到欠账）。而 :25 早就 import 了 evaluate ⇒ 这两个钩子本来就是纯 evaluate 载荷，是能接而没接。
-   接上之后"toast 文案量不到"这句话在本项目**不再成立**（这一条要显式改口，见 RUNNER_NATIVE_CAPTURE 行）。
+   接上之后"toast 文案量不到"这句话**仍不成立**——但成立的原因是 WS 腿，不是这条 CLI 腿（见下面 ①，2026-09-29 实测改口）。
    诚实边界三条，别当成与 r1 等位：
-     ① 钩子包的是 **wx.*** 那一层（uni.showToast 最终落到 wx.showToast ⇒ 覆盖得到），
-        但它记的是"**调用**"：原生浮层有没有真渲染出来要靠帧，行里读不到帧上的浮层；
-     ② console 只有**应用上下文**那一份（DevTools 框架告警/未捕获异常走的是 WS 事件流
-        r1-exec.cjs:211-222，本 CLI 通道没有对应工具 ⇒ 审计 C21 (f) G-5 判它 [PORT, WS-only]）。
-        所以行上另记 consoleScope，读的人不许把这一份当全量 console；
+     ① 钩子包的是 **wx.*** 那一层，而**这条通道采不到 uni.showToast**（实测两处各自独立致命，
+        证据见 reports/audit/round-7/toast-hook-r10f.md）：
+          (a) 编译产物里 uni 的取数路径是 `uni.xxx → Tn.xxx`，而 `Tn` 是**启动期快照**
+              （vendor.js +230990 `Hi()`：`const e={};for(const t in wx)Gf(t)&&(e[t]=wx[t])` 逐名拷死函数引用），
+              evaluate 的赋值发生在启动之后 ⇒ 换掉的 wx 槽位永远不会被经过；
+          (b) CLI 的 automation.evaluate **只有 service 上下文**（一个 `Page = {}` 空壳，无 App / 无全局逻辑层），
+              应用代码在 appservice worker 里 ⇒ 本钩子实测恒 `installed:false / hooked:false`。
+        要 toast / 应用 console 的判据走 **WS 腿**（r1-exec.cjs:217-218 onConsole + :278-299 installToastHook
+        跑在 AppService 上下文里，那份实现是活的）。
+        且注意：本钩子记的是"**调用**"——即便在能采的上下文里，原生浮层有没有真渲染出来仍要靠帧。
+     ② console 采到的是**服务上下文**那一份，**不是**应用上下文（实测：应用里 `console.log("APP_MARKER")`
+        一条都不进本通道，唯一稳定进来的是 IDE 自己的 `logNJSReady` ⇒ 拿这份当"页面没报错"的证据
+        等于看错了台）。DevTools 框架告警/未捕获异常与应用 console 都走 WS 事件流
+        （r1-exec.cjs:211-222 / :243-250，那份实现在真会话里实测抓到 8 条含 appservice.log）。
+        所以行上另记 consoleScope，读的人不许把这一份当应用 console；
      ③ 钩子内**原样透传**被包函数（orig.apply），不改小程序行为；包裹失败逐 API 吞掉，
         装不上就报 ERR，绝不假装装上了（返回 'installed' / 'already' / 'ERR …' 三态照 r1-exec.cjs:281-296）。 */
 function nativeHookSource() {
@@ -420,16 +705,38 @@ function evidenceGaps(c, cap) {
   const k = evidenceKindsNamed(c);
   const out = [];
   if (k.toast) out.push(cap.on
-    ? (cap.toastCount > 0 ? "" : "toast 通道已开但本条窗口内 0 条原生调用（读作「没采到」，不等于「页面没弹」——帧上的浮层另说）")
-    : "判据点名 Toast 证据，而本腿没带 --native-capture ⇒ toast 调用流未采（行上 toast 恒空「不许」读成「没弹」）");
+    ? (cap.toastCount > 0 ? "" : "判据点名 Toast 证据，本腿虽带了 --native-capture，但 CLI 通道**结构性采不到 uni.***" +
+        "（uni.showToast 走启动期快照 Tn，且 evaluate 只在 service 上下文 ⇒ hooked 恒 false；" +
+        "实测见 reports/audit/round-7/toast-hook-r10f.md）⇒ 这条 0 是仪器读数，不是产品结论；要 toast 证据走 WS 腿 r1-exec.cjs:278-299")
+    : "判据点名 Toast 证据，而本腿没带 --native-capture ⇒ toast 调用流未装（行上 toast 空串读作「没装」，不读作「没弹」）");
   if (k.console) out.push(cap.on
-    ? (cap.consoleCount > 0 ? "" : "console 通道已开但本条窗口内 0 条（只有应用上下文那一份，见行内 consoleScope）")
-    : "判据点名 console 证据，而本腿没带 --native-capture ⇒ 连应用上下文这一份都没采（DevTools 框架告警/异常是 WS 事件流那半边，审计 G-5）");
-  if (k.network) out.push("判据点名 network 证据，而本通道没有逐请求计数通道（审计 G-2 [NEW]，不在本车道）");
+    ? (cap.consoleCount > 0 ? "" : "console 通道已开但本条窗口内 0 条 —— 注意这份是**服务上下文**（IDE 自己的 logNJSReady 那一层），" +
+        "应用 console 结构性不在里面 ⇒ 0 条读作「看错了台」，不读作「页面没报错」；应用那一份走 WS 腿 r1-exec.cjs:217-218")
+    : "判据点名 console 证据，而本腿没带 --native-capture ⇒ 连服务上下文这一份都没装（应用 console 从来只在 WS 腿那半边，审计 G-5）");
+  /* 网络半边不再写死一句"本通道没有这条"——那句话在 --net-count 存在之后就变成谎话。
+     三态由模块裁决（没开 / 开了但读数残缺 / 可判的零）：可判的零**不是**欠账，不进 gaps。 */
+  if (k.network) {
+    const ng = typeof cap.netGap === "string"
+      ? cap.netGap
+      : networkGap({ state: NET_STATE.OFF, note: "本腿未开 --net-count" });
+    if (ng) out.push(ng);
+  }
   return out.filter(Boolean);
 }
 
 
+/* ── 滚动动线的设备侧那半（只在 --scroll 下被调用；不带旗标时本文件一次都不多发这些 evaluate）──
+   一次「起步 + 取件」的 scrollOffset 读数：两步法照 probeMany（回调式异步在本通道 await 不到）。
+   取件抛错不许带走整批：回 {__err}，由 scrollVerdict 翻成 no-reader（读数没取到 ≠ 页面没滚）。 */
+function readScrollOffsets(keys) {
+  try { evaluate(scrollOffsetStartSource(keys), { project: PROJECT }); }
+  catch (e) { return { __err: "start:" + String(e.message).replace(/\s+/g, " ").slice(0, 60) }; }
+  sleep(700);
+  let raw = "";
+  try { raw = String(evaluate(scrollOffsetReadSource(), { project: PROJECT })); }
+  catch (e) { return { __err: "read:" + String(e.message).replace(/\s+/g, " ").slice(0, 60) }; }
+  return interpretScrollOffsets(raw);
+}
 function git(a) { try { return execFileSync("git", a.split(" "), { cwd: REPO, encoding: "utf8" }).trim(); } catch { return ""; } }
 const GIT_SHA = git("rev-parse --short HEAD") || "unknown";
 const BOOT_T = Date.now();
@@ -480,6 +787,31 @@ function nativeDrain() {
   catch (e) { return { toasts: [], logs: [], hooked: false, err: "取件抛错:" + String(e.message).replace(/\s+/g, " ").slice(0, 70) }; }
 }
 
+/* ── 网络计数通道（#10-d 模块的接线，只在 --net-count 下碰设备）────────────────────
+   install 每批一次（钩子挂在 uni.addInterceptor('request') 上，装在 app 上下文里，
+   与 toast 钩子同一处时机：开页之前——游客闸门那批"进页就发的请求"若装晚了就永远计不到）。
+   两次调用都吞错：本通道偶发把进程带走，一条取件抛错不许打死整批取景腿
+   （routeStack 那一族实测过"一条探针抛错打死 18 行"）。抛错一律翻成 state=broken，
+   由 netSummary 打成"条数=? …⇒ 不可判，不许读成 0"——把坏读数折成零是本仓最常见的假绿/假红来源。 */
+function netInstall() {
+  if (!NET_COUNT) return { state: NET_STATE.OFF, installed: false, note: "off（没带 --net-count ⇒ 逐请求计数未装，行上 network 字段照旧是空串）" };
+  try {
+    return interpretInstallResult(evaluate(networkHookSource(), { project: PROJECT }));
+  } catch (e) {
+    return { state: NET_STATE.OFF, installed: false, note: "install=THREW " + String(e.message).replace(/\s+/g, " ").slice(0, 90) + " ⇒ 后续每行计数都记 broken，0 不许读成「没发请求」" };
+  }
+}
+function netDrain(install) {
+  if (!NET_COUNT) return null;
+  let parsed;
+  try {
+    parsed = parseNetworkBuffer(String(evaluate(networkDrainSource(), { project: PROJECT }) || ""), { on: true });
+  } catch (e) {
+    parsed = { state: NET_STATE.BROKEN, requests: [], err: "取件抛错:" + String(e.message).replace(/\s+/g, " ").slice(0, 70) };
+  }
+  return observeFromDrain(parsed, install);
+}
+
 function row(manifest, page, c, status, route, reason, observed, evid, miss) {
   /* 逐行带戳（#C-2）：这一行是**本次启动**跑的，所以它的带就是 GIT_SHA（进程一开头读的 HEAD，
      见 stampMerged 的说明）。续跑合并时只有带这个字段的行才被认成"本 boot 干的"。 */
@@ -498,13 +830,22 @@ function row(manifest, page, c, status, route, reason, observed, evid, miss) {
   const toastVal = capOn ? cap.toasts : "";
   const consoleVal = capOn ? consoleLines(cap.logs) : "";
   const nativeNote = capOn
-    ? " | native toast[" + toastSummary(cap.toasts) + "] console[" + (consoleVal.length ? consoleVal.length + "条(应用上下文)" : "无") + "]" +
+    ? " | native toast[" + toastSummary(cap.toasts) + "] console[" + (consoleVal.length ? consoleVal.length + "条(service上下文,非应用)" : "无") + "]" +
       (cap.err ? " 取件未成:" + cap.err : "") + (cap.hooked ? "" : " 钩子不在位(取件时 __qaNativeHooked=false)")
+    : "";
+  /* 网络计数取件（和 toast 用同一条窗口边界：每一条出口排空一次，计数才归属得到这条判据头上）。
+     不带 --net-count 时 net=null ⇒ 本函数一次都不多发那次 evaluate，行上 network 仍是空串。 */
+  const net = netDrain(NET_INSTALL);
+  const netOn = !!net && !!net.installed;
+  const netNote = net
+    ? " | net[" + net.summary + "]" + (net.installed ? "" : " install 未成功:" + String(net.installNote || "").slice(0, 70))
     : "";
   const gaps = evidenceGaps(c, {
     on: capOn,
     toastCount: capOn ? cap.toasts.length : 0,
     consoleCount: capOn ? consoleLines(cap.logs).length : 0,
+    /* 没开通道时必须留给 evidenceGaps 自己那句"本腿没开"——传空串等于把欠账抹掉。 */
+    netGap: net ? net.gap : undefined,
   });
   return {
     suite: "C-" + manifest, manifest, id: c.id, page, tier: c.tier || "normal",
@@ -515,15 +856,21 @@ function row(manifest, page, c, status, route, reason, observed, evid, miss) {
        文件级早就有 loginVerify（:387/:739），但门只读 results 里的行 ⇒ 行上没有就等于没证据。 */
     loginVerify: LOGIN_VERIFY, sessionSource: SESSION_SOURCE,
     requiresReal: c.requiresReal === true, title: String(c.title || "").slice(0, 160),
-    status, observed: (observed || "") + nativeNote, missingEvidence: miss || [], failureReason: reason || "",
+    status, observed: (observed || "") + nativeNote + netNote, missingEvidence: miss || [], failureReason: reason || "",
     /* toast / console：--native-capture 开时是**数组**（与 r1-exec.cjs:1437-1438 同形，
        也让 readjudicate-evidence.mjs:241 那句 Array.isArray(r.console) 第一次真的成立）；
        没带旗标时保持字面空串 ⇒ 既有批次的行形状一字不变（非破坏性）。
        nativeCapture / consoleScope 是把"这一份是什么范围的采集"写进行里，
-       免得应用上下文那一份被读成 DevTools 全量控制台（审计 G-5 的诚实边界）。 */
+       免得这一份被读成应用 console 或 DevTools 全量控制台（审计 G-5 的诚实边界；2026-09-29 实测：
+       CLI 的 evaluate 只有 service 上下文，应用 console 与 uni.* 调用流只有 WS 腿采得到）。 */
     route: route || "", toast: toastVal, console: consoleVal, evidence: evid || "",
-    nativeCapture: capOn ? "on(wx.showToast/hideToast/showModal/showLoading + console.log/warn/error)" : "off",
-    consoleScope: capOn ? "app-context-only（CLI 通道没有 DevTools 框架告警/异常事件流；那半边是 WS：r1-exec.cjs:211-222）" : "none",
+    /* network：#10-d 的逐时刻计数。没带 --net-count 时是字面空串（与 toast/console 同一套
+       "没采 ≠ 零"的形状约定）；开了之后是 {state,total,moments,byMethodPath,writes,…} 对象，
+       state=broken 时 **counts 里的数字是 null 而不是 0**（模块自己保证的三态，不许下游猜）。 */
+    network: netOn ? net.counts : "",
+    netCapture: net ? (net.installed ? "on(" + net.cover + ")" : "off(install=" + String(net.installNote || "").slice(0, 70) + ")") : "off",
+    nativeCapture: capOn ? "on(console[service-context only] + 尝试 wx.showToast/hideToast/showModal/showLoading：实测 uni.* 走启动期快照 Tn ⇒ 本通道 toast 半边结构性不计数，见 reports/audit/round-7/toast-hook-r10f.md)" : "off",
+    consoleScope: capOn ? "SERVICE-context only（automation.evaluate 只有 service；应用自己的 console 一条都不进——实测唯一进来的是 IDE 的 logNJSReady）。应用 console 与 wx 快照在 **WS 腿**：r1-exec.cjs:217-218 / :278-299" : "none",
     evidenceGaps: gaps,
     geometry,
     gitSha: GIT_SHA, gitShaSource: "this-boot（该行执行时进程启动读到的 HEAD）", bootId: BOOT_ID,
@@ -571,16 +918,28 @@ if (process.argv.includes("--selftest")) runSelftest();
    rpx；读不到就只报 px，绝不凭空造一个 rpx 数。**问渲染器要什么完全没变**（还是 size:true），
    所以这一刀不改任何探测的成败判定，只把丢掉的读数留下。
    先例：scripts/qa/r1-exec.cjs:1195-1198 的 measureTap 就是把 size/offset 当一等证据留着的。 */
-function probeStartSource(selectors) {
-  return "() => { const app = getApp(); const bag = {}; app.__probeBag = bag; " +
+function probeStartSource(selectors, posOn) {
+  /* 不带 --geom-pos 时这一整串与 2026-09-29 之前逐字相同（fields 只问 size、b 只留 [w,h]）：
+     既有 1107 条批次里 geometry 字段的形状必须能原样复现。带旗标时才多问 rect/scrollOffset 两个字段，
+     并在 b 的后两位补 left/top（geomText 只读 0/1 位 ⇒ 尺寸那半串的输出一个字不变）。 */
+  const fields = posOn ? "{ size: true, rect: true, scrollOffset: true }" : "{ size: true }";
+  /* 窗口高度只有位置判点要 ⇒ 整段也跟着旗标走，不带旗标时这一段与今天逐字相同。 */
+  const winSeg = "() => { const app = getApp(); const bag = {}; app.__probeBag = bag; " +
     "const num = function (v) { return (typeof v === 'number' && isFinite(v)) ? Math.round(v * 100) / 100 : null; }; " +
     "try { const wi = (wx.getWindowInfo ? wx.getWindowInfo() : (wx.getSystemInfoSync ? wx.getSystemInfoSync() : null)); " +
-    "bag.__win = (wi && typeof wi.windowWidth === 'number') ? wi.windowWidth : null; } catch (e) { bag.__win = null; } " +
+    "bag.__win = (wi && typeof wi.windowWidth === 'number') ? wi.windowWidth : null;" +
+    (posOn ? " bag.__hin = (wi && typeof wi.windowHeight === 'number') ? wi.windowHeight : null;" : "") +
+    " } catch (e) { bag.__win = null;" + (posOn ? " bag.__hin = null;" : "") + " } ";
+  return winSeg +
     "const sels = " + JSON.stringify(selectors) + "; " +
     "sels.forEach(function (s, i) { try { const q = wx.createSelectorQuery(); " +
-    "q.selectAll(s).fields({ size: true }, function (res) { var arr = Array.isArray(res) ? res : (res ? [res] : []); " +
-    "var boxes = []; for (var k = 0; k < arr.length && k < 4; k++) { boxes.push([num(arr[k] && arr[k].width), num(arr[k] && arr[k].height)]); } " +
-    "bag[i] = { c: arr.length, b: boxes }; }); q.exec(); } " +
+    "q.selectAll(s).fields(" + fields + ", function (res) { var arr = Array.isArray(res) ? res : (res ? [res] : []); " +
+    "var boxes = []; " + (posOn ? "var scr = []; " : "") +
+    "for (var k = 0; k < arr.length && k < 4; k++) { boxes.push([num(arr[k] && arr[k].width), num(arr[k] && arr[k].height)" +
+    (posOn ? ", num(arr[k] && arr[k].left), num(arr[k] && arr[k].top)" : "") + "]); " +
+    (posOn ? "scr.push([num(arr[k] && arr[k].scrollTop), num(arr[k] && arr[k].scrollHeight)]); " : "") +
+    "} " +
+    "bag[i] = { c: arr.length, b: boxes" + (posOn ? ", s: scr" : "") + " }; }); q.exec(); } " +
     "catch (e) { bag[i] = 'ERR'; } }); " +
     "return 'started:' + sels.length; }";
 }
@@ -592,12 +951,21 @@ function interpretProbe(selectors, bag) {
   const geom = {};
   const src = bag && typeof bag === "object" ? bag : {};
   const win = typeof src.__win === "number" && src.__win > 0 ? src.__win : null;
+  const hin = typeof src.__hin === "number" && src.__hin > 0 ? src.__hin : null;
   selectors.forEach((s, i) => {
     const v = src[i];
     if (v && typeof v === "object" && !Array.isArray(v)) {
       const n = Number(v.c);
       out[s] = isFinite(n) ? (n > 0 ? "present(" + n + ")" : "absent") : "no-answer";
-      if (isFinite(n) && n > 0) geom[s] = { nodes: n, boxes: Array.isArray(v.b) ? v.b : [], win };
+      if (isFinite(n) && n > 0) {
+        /* #C-1 的三个键形状一字不动（既有批次的 geometry 靠它们比对）；
+           --geom-pos 才往后面**追加** scroll/hin 两个键（不追加时它们连键都不存在，
+           这样 JSON.stringify(__geom) 在缺省路径上与今天逐字相同）。 */
+        const g = { nodes: n, boxes: Array.isArray(v.b) ? v.b : [], win };
+        if (Array.isArray(v.s) && v.s.length) g.scroll = v.s;
+        if (hin !== null) g.hin = hin;
+        geom[s] = g;
+      }
     } else if (typeof v === "number" && isFinite(v)) {
       /* 老袋子形状（只有条数）也照旧翻译成 present/absent：新增几何不该改变任何一条计数读法，
          万一哪天有人从别处塞一个数字进来，也不能凭空变成 "no-answer"。 */
@@ -606,12 +974,12 @@ function interpretProbe(selectors, bag) {
       out[s] = v === undefined ? "no-answer" : String(v);
     }
   });
-  if (Object.keys(geom).length) { out.__geom = geom; if (win) out.__win = win; }
+  if (Object.keys(geom).length) { out.__geom = geom; if (win) out.__win = win; if (hin) out.__hin = hin; }
   return out;
 }
 function probeMany(selectors) {
   if (!selectors.length) return {};
-  const start = probeStartSource(selectors);
+  const start = probeStartSource(selectors, GEOM_POS);
   const read = "() => JSON.stringify(getApp().__probeBag || {})";
   try { evaluate(start, { project: PROJECT }); } catch (e) { return { __err: String(e.message).slice(0, 70) }; }
   sleep(900);
@@ -640,6 +1008,54 @@ function geomText(c, d) {
       return w + "x" + h + "px" + (rw === null ? "" : " ≈" + rw + "x" + rh + "rpx");
     });
     parts.push(sel + (e.nodes > 1 ? "×" + e.nodes : "") + "=[" + (boxes.join(" ") || "?") + "]");
+  }
+  return parts.join(" ");
+}
+/* 位置读数（#10-c 的 --geom-pos）：#C-1 只留下了 width/height，于是
+   "逐个 boundingClientRect 量测、离底边多少像素算够得着"（VI40/VI42/CI21/CS23）与
+   "两个浮层重叠了几个像素"（MS17/DC44/REG31 一族）到今天仍然判不了 —— 那些判点要的是 left/top，
+   不是尺寸。载具先例：r1-exec.cjs:1195-1198 的 measureTap 就是把 size **和 offset** 一起当一等证据留着。
+   纯函数，只读 interpretProbe 已经拿回来的东西（对设备不多问一句）：
+     · `.x=[W×Hpx @L,T 右边=.. 底边=..]` —— 左右上下四个边都算出来，重叠判点据此两两相减；
+     · 量到窗口高度时才附 `视口=..×..` 与「屏外 Nh」—— 够不够得着要有参照物，没参照物就不下这个结论；
+     · scroll-view 内部滚动位置（scrollTop/scrollHeight）来自同一次 fields({scrollOffset:true})。
+   缺省（不带旗标）时 bags 里没有 s/__hin ⇒ 这一串恒为空，geometry 字段与今天逐字相同。 */
+function geomPosText(c, d) {
+  const g = d && d.__geom;
+  if (!g) return "";
+  const parts = [];
+  const sels = judgeTargets(c);
+  const boxes = [];
+  for (const sel of sels) {
+    const e = g[sel];
+    if (!e) continue;
+    const b0 = (e.boxes || [])[0];
+    if (!b0 || typeof b0[2] !== "number" || typeof b0[3] !== "number") continue;
+    if (typeof b0[0] !== "number" || typeof b0[1] !== "number") continue;
+    const l = b0[2], t = b0[3], w = b0[0], h = b0[1];
+    let s = sel + "=[@left=" + l + " top=" + t + " 右边=" + Math.round((l + w) * 100) / 100 + " 底边=" + Math.round((t + h) * 100) / 100 + "]";
+    if (typeof e.hin === "number" && e.hin > 0) {
+      const over = Math.round((t + h - e.hin) * 100) / 100;
+      s += " 视口高=" + e.hin + (over > 0 ? " 屏外=" + over + "px(需滚动才够得着)" : " 屏内(差=" + (Math.abs(over)) + "px)");
+    }
+    const sc = Array.isArray(e.scroll) ? e.scroll[0] : null;
+    if (sc && (typeof sc[0] === "number" || typeof sc[1] === "number")) {
+      s += " scroll=" + (sc[0] === null ? "?" : sc[0]) + "/" + (sc[1] === null ? "?" : sc[1]);
+    }
+    boxes.push({ sel, l, t, r: l + w, bt: t + h });
+    parts.push(s);
+  }
+  /* 两两重叠：只在**同一行点名的两个物件都量到位置**时才算（跨行相减毫无意义），最多三对，防爆载荷。 */
+  let pairs = 0;
+  for (let i = 0; i < boxes.length && pairs < 3; i++) {
+    for (let j = i + 1; j < boxes.length && pairs < 3; j++) {
+      const a = boxes[i], b = boxes[j];
+      const ow = Math.round((Math.min(a.r, b.r) - Math.max(a.l, b.l)) * 100) / 100;
+      const oh = Math.round((Math.min(a.bt, b.bt) - Math.max(a.t, b.t)) * 100) / 100;
+      const inter = (ow > 0 && oh > 0) ? "重叠 " + ow + "×" + oh + "px" : "不重叠(横向差 " + (ow < 0 ? -ow : ow) + "px 纵向差 " + (oh < 0 ? -oh : oh) + "px)";
+      parts.push(a.sel + "∩" + b.sel + "=" + inter);
+      pairs++;
+    }
   }
   return parts.join(" ");
 }
@@ -907,15 +1323,27 @@ RUN.booted = true;
    装在开页之前是必须的 —— 游客闸门/守卫弹回的那些 showModal 就发生在页面 onLoad 那一刻，
    装晚了那些调用永远采不到，而它们恰好是 guest-landing 一族判据要看的证据。 */
 const NATIVE_INSTALL = nativeInstall();
+/* 网络计数钩子与 toast 钩子同一时机（开页之前）：游客闸门/守卫弹回那批"进页即发"的请求
+   装晚了就永远计不到，而它们恰好是 network 计数一族判据里唯一能证伪"切换发了写请求"的窗口。 */
+const NET_INSTALL = netInstall();
 console.log("RUNNER_NATIVE_CAPTURE=" + (NATIVE_CAPTURE ? "on" : "off") + " " + NATIVE_INSTALL.note +
   (NATIVE_CAPTURE
-    ? " ⇒ 行上 toast/console 改为数组（r1-exec.cjs:1437-1438 同形）；「toast 文案在本项目量不到」这句话从本腿起不再成立"
+    ? " ⇒ 行上 toast/console 改为数组，但**这一通道结构性看不见 uni.***：uni.showToast 走启动期快照 Tn，" +
+      "且 automation.evaluate 只有 service 上下文（实测见 reports/audit/round-7/toast-hook-r10f.md）" +
+      "⇒ 本腿的 0 是仪器读数，不是产品结论；Toast/console 判据请走 WS 腿 r1-exec.cjs:217-218 / :278-299"
     : " ⇒ 行上 toast/console 仍是字面空串（与既有批次同形）；空串读作「没采」，不读作「没弹」"));
+console.log("RUNNER_NET_COUNT=" + (NET_COUNT ? (NET_INSTALL.installed ? "on" : "install-failed") : "off") + " " + NET_INSTALL.note +
+  (NET_INSTALL.installed
+    ? " ⇒ 行上 network 变为逐时刻计数对象；state=broken 时计数是 null 而不是 0（不可判不许读成「零条请求」）"
+    : " ⇒ 行上 network 仍是字面空串，evidenceGaps 会逐行点名「network 未采」；缺席读作「没采」，不读作「没发请求」"));
 console.log("RUNNER_VERBS gestures=" + (GESTURE_MODE ? "on(longpress+pullDown 会发出)" : "off") +
   " strict=" + (STRICT_VERBS ? "on(判据点名的动词发不出去时拒发普通 tap ⇒ SKIPPED+NOT_SHOOTABLE)" : "off(旧口径：动词不匹配也照发一次 tap)") +
+  " rapid=" + (RAPID_MODE ? "on(rapidTap×N 会连发并逐次计时，窗口没守住仍拒发)" : "off") +
+  " scroll=" + (SCROLL_MODE ? "on(页级 wx.pageScrollTo + scroll-view 回读，位置没动仍拒发)" : "off") +
+  " geom-pos=" + (GEOM_POS ? "on(boundingClientRect 的 left/top + scrollOffset 进 geometry)" : "off(只留 width/height，#C-1 那形状)") +
   (STRICT_VERBS || !TAP_MODE ? "" :
-    " ⇒ 注意：本腿仍是旧口径，rapidTap/拖动/原生Modal/断网/长按/下拉 这六类判据会被一次普通 tap 顶掉并记 EXECUTED，" +
-    "那一类 EXECUTED 不许读成「点名动词已测」（c21 审计 E-II；要它们不被冒充请带 --strict-verbs 或 --gestures）"));
+    " ⇒ 注意：本腿仍是旧口径，rapidTap/滚动/拖动/原生Modal/断网/长按/下拉 这七类判据会被一次普通 tap 顶掉并记 EXECUTED，" +
+    "那一类 EXECUTED 不许读成「点名动词已测」（c21 审计 E-II + 本轮 #10-c 补的滚动那一族；要它们不被冒充请带 --strict-verbs/--gestures/--rapid/--scroll）"));
 
 /* 每跑完一个页组就落一次盘：这条通道会偶发把进程带走（实测两次未捕获 socket 超时），
    跑了 40 分钟的成果不能跟着一起没了。最终那次写盘仍走下面的守恒检查。 */
@@ -941,13 +1369,13 @@ try {
 } catch (e) {
   console.log("RUNNER_POLICY_LANDINGS=0 reason=读不到 guest-landing-policy.json（" + String(e && e.message).slice(0, 60) + "）⇒ 落点一律按人工判，不冒充裁定");
 }
-const stats = { executed: 0, failed: 0, skipTap: 0, skipReal: 0, skipNonReal: 0, skipProbe: 0, skipNoCrit: 0, skipMiss: 0, skipGate: 0, skipTapFail: 0, pages: 0, probes: 0, shots: 0, noClass: 0, tapDeny: 0, tapNoTarget: 0, tapsDone: 0, leftPage: 0, guestGate: 0, idScope: 0, notAuto: 0, verbRefused: 0, pullDowns: 0, longpresses: 0 };
+const stats = { executed: 0, failed: 0, skipTap: 0, skipReal: 0, skipNonReal: 0, skipProbe: 0, skipNoCrit: 0, skipMiss: 0, skipGate: 0, skipTapFail: 0, pages: 0, probes: 0, shots: 0, noClass: 0, tapDeny: 0, tapNoTarget: 0, tapsDone: 0, leftPage: 0, guestGate: 0, idScope: 0, notAuto: 0, verbRefused: 0, pullDowns: 0, longpresses: 0, rapidDelivered: 0, rapidsOk: 0, rapidRefused: 0, scrollsOk: 0, scrollRefused: 0 };
 /* 增量行与终稿行共用同一个加总函数：上一版只在终稿那处补了新加的 skipNonReal，
    组内那条 print 漏了，于是同一轮里两个 skipped 数字互相打架（差值正好是真用例跳过数）。
    交互刀新增的三类跳过（DENY / 没点名元素 / 交互后离页）也走同一个函数，不再各写各的。
    2026-09-29：防降级闸扣下的那条同样是 SKIPPED 行 ⇒ 必须进加总，否则"skipped=" 会少算它，
    与 RUNNER_STATUS_ALL 的 SKIPPED 计数当场对不上（本仓为两个 skipped 口径打架记过一次账）。 */
-const skippedTotal = () => stats.skipTap + stats.skipReal + stats.skipNonReal + stats.skipProbe + stats.skipNoCrit + stats.skipMiss + stats.skipGate + stats.skipTapFail + stats.tapDeny + stats.tapNoTarget + stats.leftPage + stats.idScope + stats.notAuto + stats.verbRefused;
+const skippedTotal = () => stats.skipTap + stats.skipReal + stats.skipNonReal + stats.skipProbe + stats.skipNoCrit + stats.skipMiss + stats.skipGate + stats.skipTapFail + stats.tapDeny + stats.tapNoTarget + stats.leftPage + stats.idScope + stats.notAuto + stats.verbRefused + stats.rapidRefused + stats.scrollRefused;
 /* 协同停止位：与 r-exec.cjs 共用 EXEC_STOP_FLAG 口径。长跑必须能"停在组边界"而不是被 kill，
       否则在跑的那一组成果跟着没（实测这条通道会偶发把进程带走，已经为此做过增量落盘）。 */
 const STOP_FLAG = process.env.EXEC_STOP_FLAG ? resolve(process.env.EXEC_STOP_FLAG) : "";
@@ -987,6 +1415,13 @@ for (const name of files) {
       const base = nativeDrain();
       console.log("RUNNER_GROUP_NATIVE page=" + page + " 开页窗口内 toast[" + toastSummary(base.toasts) + "]" +
         " console=" + consoleLines(base.logs).length + " 条" + (base.err ? " 取件未成:" + base.err : ""));
+    }
+    /* 开页窗口同样要排空网络计数袋：登录态自检、列表首屏拉取都是开页即发的请求，
+       不在这里丢掉，它们就会整包落进本页第一条判据的窗口，被读成"这条判据发了请求"。 */
+    if (NET_COUNT) {
+      const nb = netDrain(NET_INSTALL);
+      console.log("RUNNER_GROUP_NET page=" + page + " 开页窗口内丢弃 net[" + (nb ? nb.summary : "n/a") + "]" +
+        "（丢弃是归属正确，不是丢证据——这行就是它的留痕）");
     }
     /* 空串/ERR 不等于「落在别的页」——实测这条通道会整批正常而路由探针取空（notes §12），
        把它折叠成失败会凭空造出十条 FAILED；但也不能反过来当作已确认。三态分开。
@@ -1045,11 +1480,19 @@ for (const name of files) {
     const observed0 = (c, routeStr, rOk, d, tapNote) => {
       const gm = geomText(c, d);
       CUR_GEOM = gm;
+      /* 位置读数（#10-c --geom-pos）：**追在尺寸那一串后面**，不替换它。
+         缺省不带旗标时 geomPosText 恒为空（袋子里压根没有 left/top 那两位）⇒ geometry 逐字同今天。
+         这里刻意写成"先赋 gm、有位置再覆盖一次"两句，是为了让既有门禁
+         scripts/qa/test-exec-probe-geometry.cjs:106 那条文形判点（observed0 在拼 observed 的同一刻
+         把读数交给 CUR_GEOM）继续成立 —— 它钉的语义我没换，就不去改它。 */
+      const gp = GEOM_POS ? geomPosText(c, d) : "";
+      if (gp) CUR_GEOM = gm + " | 位置: " + gp;
       return "top=" + (String(routeStr || "").split("|").pop() || (routeKnown ? "?" : "(落点未取证)")) + (rOk === false ? " ≠ " + page : "") +
         " | dom: " + (judgeTargets(c).length
           ? judgeTargets(c).map((s) => s + ":" + (d[s] || (d.__err ? "ERR" : "no-answer"))).join(" ")
           : "(本条没点名类名)") +
         (gm ? " | size: " + gm.slice(0, 300) : "") +
+        (gp ? " | pos: " + gp.slice(0, 300) : "") +
         " | " + (TAP_MODE ? "tap-腿" : "observe-only") + (d.__err ? " | probe-err:" + d.__err : "") + routeRetry + probeRetry + (tapNote || "") + gateNote;
     };
     /* 这条行将被"档位/切片原因"跳过时，连点击都不该发生：
@@ -1102,11 +1545,11 @@ const bandSkip = (c) => (process.argv.includes("--real-cases-only") && c.require
            旧腿的判决一字不变）。为什么放在"取目标"之前：目标都还没解析就不该有任何一次下发。
            这一闸只**扣住**发不出去的动词，不会多发任何动作 ⇒ 它不是新能力，是不冒充新能力的账。 */
         if (STRICT_VERBS) {
-          const refuse = verbRefusal(c.action, GESTURE_MODE);
+          const refuse = verbRefusal(c.action, GESTURE_MODE, CAPS);
           if (refuse) {
             stats.verbRefused++;
             rows.push(row(name, page, c, "SKIPPED", route, refuse, observed0(c, route, routeOk, dom, " | 动词拒发[strict-verbs]") +
-              " | 本条点名的动词=" + (verbsNamed(c.action, GESTURE_MODE).map((v) => v.verb + (v.emittable ? "(发得出)" : "(发不出)")).join(",") || "(无)")));
+              " | 本条点名的动词=" + (verbsNamed(c.action, GESTURE_MODE, CAPS).map((v) => v.verb + (v.emittable ? "(发得出)" : "(发不出)")).join(",") || "(无)")));
             continue;
           }
         }
@@ -1127,22 +1570,66 @@ const bandSkip = (c) => (process.argv.includes("--real-cases-only") && c.require
           rows.push(row(name, page, c, "SKIPPED", route, "action 含交互动词但没点名可交互元素 ⇒ 没法把这次点击归属到某个东西，待把判据收紧" + (ambiguous.length ? "（另有 " + ambiguous.length + " 个推断名在同页多命中，归属不成立：#70⑥）" : ""), observed0(c, route, routeOk, dom, "")));
           continue;
         }
-        const done = [], unmet = [], inputRefused = [];
-        for (const sel of targets.slice(0, 4)) {
+        /* 重复下发（capability 车道 #10-c，--rapid 才有）：判据点名 rapidTap×N 时，"这多次"就是判据本身。
+           rapidTimes 只在**旗标在位且次数抠得出来**时 > 1；其它情况（没旗标 / 次数没点名）上面那道闸已经把
+           这条扣下了，走不到这里，所以这里不需要再判一次"要不要连点"。 */
+        const rapidSpec = RAPID_MODE ? parseRepeatSpec(c.action) : null;
+        const rapidTimes = (rapidSpec && rapidSpec.times >= 2) ? rapidSpec.times : 1;
+        const done = [], unmet = [], inputRefused = [], rapids = [];
+        /* 只点名滚动的那些行（H11/N07 一族）**不该再补一次普通 tap**：它们点名的类名是"要观察的东西"
+           （footer 按钮、空态卡），点下去会导航走、把这一条的落点判据换成别人的页 —— 以前那次 tap
+           就是这么发出去的。--scroll 在位时改成只发滚动、不发点击。 */
+        const scrollOnly = SCROLL_MODE && verbsNamed(c.action, GESTURE_MODE, CAPS)
+          .every((v) => v.verb === "scroll" && v.emittable) && verbsNamed(c.action, GESTURE_MODE, CAPS).length > 0;
+        for (const sel of scrollOnly ? [] : targets.slice(0, 4)) {
           /* 只按动词判输入腿：判据现在会把选择器写进 action（`.code-input` 这类
              裸类名里的 "input" 曾经把一条点击判据翻成输入腿）。 */
           const verb = pickElementVerb(c.action, sel, GESTURE_MODE);
           const isInput = verb === "input";
           if (!isInput && inputVerbOnly(c.action) && verb !== "longpress") inputRefused.push(sel);
-          try {
-            /* 动词与载荷：longpress 是与 tap **同一个工具、换一个 --action**（cli-automator.mjs:162-164 的第一参就是自由串，
-               工具支持的动词面记在 cli-automator.mjs:12）⇒ 这是接线，不是新通道（r1-exec.cjs:1033+:1068 那条 el.longpress() 的等价物）。
-               非长按时发的还是原来那一句（tap + --wait 1 / input + --value 123456），旧腿逐字不变。 */
-            element(verb, sel, { project: PROJECT }, isInput ? ["--value", "123456"] : ["--wait", "1"]);
+          /* 同一个动词连发 rapidTimes 次：**载荷一字不变**（tap 还是 --wait 1），变的只是次数；
+             两次之间不再 sleep(700)（那一句是给"点完这个再点下一个"的），RAPID_GAP 默认 0 ⇒ 立刻发下一次。
+             每次各打一枚时间戳，窗口是否守住由 rapidVerdict 按实测值判，不按"发完了"判。 */
+          const stamps = [];
+          for (let k = 0; k < rapidTimes; k++) {
+            try {
+              /* 动词与载荷：longpress 是与 tap **同一个工具、换一个 --action**（cli-automator.mjs:162-164 的第一参就是自由串，
+                 工具支持的动词面记在 cli-automator.mjs:12）⇒ 这是接线，不是新通道（r1-exec.cjs:1033+:1068 那条 el.longpress() 的等价物）。
+                 非长按时发的还是原来那一句（tap + --wait 1 / input + --value 123456），旧腿逐字不变。 */
+              element(verb, sel, { project: PROJECT }, isInput ? ["--value", "123456"] : ["--wait", "1"]);
+              stamps.push(Date.now());
+              if (verb === "longpress") stats.longpresses++;
+            } catch (e) {
+              unmet.push(verb + ":" + sel + (rapidTimes > 1 ? "#" + (k + 1) : "") + " :: " + String(e.message).replace(/\s+/g, " ").slice(0, 200));
+              break;
+            }
+            if (k + 1 < rapidTimes && RAPID_GAP > 0) sleep(RAPID_GAP);
+          }
+          stats.rapidDelivered += stamps.length;
+          if (rapidTimes > 1) {
+            const rv = rapidVerdict(rapidSpec, stamps);
+            rapids.push({ sel, rv, deltas: rapidDeltas(stamps) });
+            /* 达标的进 done；未达标的**不在这里计数**（一个目标组可能有两格，而出口只出一行 ⇒
+               行数计数只在下面那个 SKIPPED 出口那一处加，两个口径不许混）。 */
+            if (rv.ok) { done.push("rapid×" + rv.delivered + ":" + sel); stats.rapidsOk++; }
+          } else if (stamps.length) {
             done.push(verb + ":" + sel);
-            if (verb === "longpress") stats.longpresses++;
-          } catch (e) { unmet.push(verb + ":" + sel + " :: " + String(e.message).replace(/\s+/g, " ").slice(0, 200)); }
+          }
           sleep(700);
+        }
+        /* 重复下发没达到判据点名的次数/窗口 ⇒ 这条**不许往下走**（往下就是拿"点过一次"冒充"连点 N 次"，
+           而那族判据判的恰恰是"第 2..N 次有没有被守卫挡住"）。状态留在 SKIPPED，
+           机读前缀沿用 NOT_SHOOTABLE(verb=…) 那一套，并把你已经量到的跨度写进原因串。 */
+        const badRapid = rapids.filter((x) => !x.rv.ok);
+        if (badRapid.length) {
+          stats.rapidRefused++;
+          rows.push(row(name, page, c, "SKIPPED", route,
+            "NOT_SHOOTABLE(verb=rapidTap/" + [...new Set(badRapid.map((x) => x.rv.kind))].join(",") + "): " +
+            badRapid.map((x) => x.sel + " :: " + x.rv.text).join("；") +
+            "（判据点名的次数/窗口在 --rapid 这一腿上没做到 ⇒ 这是通道欠的原语，不是产品判红；" +
+            "要它被自动判得换 WS/真机腿，或把判据的窗口改窄到本通道做得到 —— 但**改判据要人签字，不许执行器自己放宽**）",
+            observed0(c, route, routeOk, dom, " | 重复下发未达标[rapid] " + badRapid.map((x) => x.sel + " 跨度=" + (x.rv.span === null ? "?" : x.rv.span) + "ms 间隔[" + x.deltas + "]").join(" "))));
+          continue;
         }
         /* 下拉刷新动线（capability 车道 #2 的另一半；载具 r1-exec.cjs:1115-1126）。
            它是 evaluate 载荷、不是元素动作 ⇒ 不占元素选择器、也不需要 tapTarget：
@@ -1159,9 +1646,29 @@ const bandSkip = (c) => (process.argv.includes("--real-cases-only") && c.require
           /* 收尾停掉刷新态：不停的话转圈动画吊在页上，同组后面几条量到的帧/探针不是静息态。 */
           try { evaluate(stopRefreshSource(), { project: PROJECT }); } catch (e) { pullNote += " stopRefresh 未成"; }
         }
+        /* 滚动动线（capability 车道 #10-c；--scroll 才发）。判点是「scrollTop 前后变没变」，
+           不是「调用没抛」—— 读不出位置、或位置没动，都记 SKIPPED，不许顺着往下记 EXECUTED。 */
+        let scrollNote = "";
+        if (SCROLL_MODE && VERB_SCROLL_RE.test(String(c.action || ""))) {
+          const sc = runScrollLeg(c);
+          scrollNote = " | " + sc.text;
+          if (sc.ok) {
+            done.push("scroll");
+            stats.scrollsOk++;
+          } else {
+            stats.scrollRefused++;
+            rows.push(row(name, page, c, "SKIPPED", route,
+              "NOT_SHOOTABLE(verb=scroll/" + sc.kind + "): " + sc.text +
+              "（滚动这条动线的判点取自 scrollOffset 回读；读不出位置或位置没动 ⇒ 通道没能按判据把页面滚起来，" +
+              "这是载具欠款不是产品判红 ⇒ 不记 EXECUTED、也不记 FAILED）",
+              observed0(c, route, routeOk, dom, scrollNote + " | 滚动读数未达标[scroll]")));
+            continue;
+          }
+        }
         sleep(SETTLE);
         /* tapsDone 只数元素级下发（pullDown 是 evaluate 动线，单列在 stats.pullDowns，
-           不许混进"真做过的交互"里把点击数虚报上去）。 */
+           scroll 同样是 evaluate 动线 ⇒ 单列在 stats.scrollsOk，不许混进"真做过的交互"里把点击数虚报上去）。
+           注意 rapid×N 那一条在 done 里只占一格（按目标计次），真实发出去的**次数**在 stats.rapidDelivered。 */
         stats.tapsDone += done.filter((d) => d.includes(":")).length;
         /* 一次都没点着 ⇒ 这条没有"交互后"的任何东西可判。
            记 SKIPPED 并带上原错误，不许顺着往下记 EXECUTED（那是拿"没点着"冒充"点过"）。 */
@@ -1179,7 +1686,8 @@ const bandSkip = (c) => (process.argv.includes("--real-cases-only") && c.require
         let r2 = "";
         try { r2 = String(routeStack({ project: PROJECT }) || ""); } catch (e) { r2 = "ERR"; }
         if (r2 && !r2.startsWith("ERR")) { caseRoute = r2; caseRouteOk = r2.includes(page); }
-        tapNote = (inputRefused.length ? " | 输入腿动词对不上元素，退回点击[" + inputRefused.join(",") + "]" : "") + " | tap[" + done.join(",") + "]" + (unmet.length ? " 未成[" + unmet.join(",") + "]" : "") + pullNote +
+        tapNote = (inputRefused.length ? " | 输入腿动词对不上元素，退回点击[" + inputRefused.join(",") + "]" : "") + " | tap[" + done.join(",") + "]" + (unmet.length ? " 未成[" + unmet.join(",") + "]" : "") + pullNote + scrollNote +
+          (rapids.length ? " | 重复下发[" + rapids.map((x) => x.sel + " " + x.rv.text + (x.deltas ? " 间隔=" + x.deltas + "ms" : "")).join(" ") + "]" : "") +
           (caseRouteOk === false ? " 交互后已离开本页 ⇒ 本条探针不在本页上，不作判" : "");
         /* 交互把页面导航走了 ⇒ 在本页查本页物件已经没有意义，但这条不能记红：
            它欠的是"交互后回到本页"的配方，不是产品没做。 */
@@ -1318,9 +1826,13 @@ console.log("RUNNER_STATS identity=" + IDENTITY + " loginVerify=" + LOGIN_VERIFY
    与"这一腿没带 --tap"是两种欠款，混进同一个数字就没法复盘欠的是哪个原语。 */
 console.log("RUNNER_CAP strict-verbs=" + (STRICT_VERBS ? "on" : "off") + " gestures=" + (GESTURE_MODE ? "on" : "off") +
   " native-capture=" + (NATIVE_CAPTURE ? "on" : "off") +
+  " rapid=" + (RAPID_MODE ? "on" : "off") + " scroll=" + (SCROLL_MODE ? "on" : "off") + " geom-pos=" + (GEOM_POS ? "on" : "off") +
   " 动词拒发=" + stats.verbRefused + " 发出长按=" + stats.longpresses + " 发出下拉刷新=" + stats.pullDowns +
+  " 重复下发实发次数=" + stats.rapidDelivered + " 重复下发达标组=" + stats.rapidsOk + " 重复下发未达标行=" + stats.rapidRefused +
+  " 滚动达标行=" + stats.scrollsOk + " 滚动未达标行=" + stats.scrollRefused +
   " 行内 toast 非空=" + rows.filter((r) => Array.isArray(r.toast) && r.toast.length > 0).length +
   " 行内 console 非空=" + rows.filter((r) => Array.isArray(r.console) && r.console.length > 0).length +
+  " 行内位置读数非空=" + rows.filter((r) => /位置:/.test(String(r.geometry || ""))).length +
   " 行内证据欠账非空=" + rows.filter((r) => Array.isArray(r.evidenceGaps) && r.evidenceGaps.length > 0).length + "/" + rows.length);
 const statusOf = {};
 for (const r of all) statusOf[r.status] = (statusOf[r.status] || 0) + 1;

@@ -483,12 +483,13 @@ defineExpose({ toggleJoin });
 
 /* ========== 推荐副标题（对齐理想图"找到与你志趣相投的人"） ========== */
 /* MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001（页内侧）：本页根节点是 AppShell，
-   .shell--standard 已提供 28rpx 水平内边距（components/layout/AppShell.vue:280-282）。
-   页面自身再叠 var(--sp-6)=24rpx → 正文实际缩进 52rpx，而自定义头部只有 28rpx，
+   水平 gutter 由 .shell--standard 单源承担（AppShell.vue 现为判据裁定的 32rpx，
+   = 令牌 --page-padding 实值；旧值 28rpx 与令牌差 4rpx，已由同一条判据收掉）。
+   页面自身再叠 var(--sp-6)=24rpx → 正文实际缩进 52rpx，而自定义头部只有壳的 gutter，
    同页双基线。台账口径「水平内边距单一来源：由 AppShell 承担，页内层水平 padding 归零」，
    故 banner / card-list / tabs 三处活的横向内缩一并归零（纵向值不动）。
    理想图 素材/理想效果图/兴趣圈列表.png 实测卡框左缘约 25rpx、副标题与首枚 chip 约 37rpx，
-   与 28rpx 单源一致（原 52rpx 两处都偏宽）。 */
+   单源 gutter（原 28rpx／现判据裁定的 32rpx）落在这两点之间；原 52rpx 两处都偏宽。 */
 .circles-banner {
   display: flex;
   align-items: center;

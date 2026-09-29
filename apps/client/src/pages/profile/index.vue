@@ -1790,7 +1790,7 @@ onUnload(() => {
         <!-- 邀请好友（POST /invites 真实链路，3-K）：入口自此可达 -->
         <view class="media-section">
           <view
-            class="video-cta press-feedback"
+            class="video-cta video-cta--invite press-feedback"
             hover-class="video-cta--hover"
             hover-stay-time="40"
             role="button"
