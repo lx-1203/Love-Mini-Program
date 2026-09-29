@@ -190,3 +190,24 @@ B7 补名之后 src 比三档产物新，我按 mock → real:isolated → showc
 （照 build-real-isolated.mjs 用 `UNI_OUTPUT_DIR` 改道，别再靠"建完手工拷"这种没有回滚的载具）。
 在这把刀落地之前，任何"按 mock/real/showcase 顺序重建"的编排都必须把 mock 放在最后一步，
 并且重建完必须逐档 grep `MODE:` 复核 —— 只看构建退出码看不出土被谁占了。
+
+### §7.1 我这次恢复动作自己造了一次半销毁（如实记，不粉）
+为了让 showcase 落进它自己的目录，我写了 `rm -rf dist/build/mp-weixin-showcase && mv _sc.new dist/build/mp-weixin-showcase`。
+实际发生的是：
+- `rm -rf` 报 **`Device or resource busy`** 而**非零退出** —— 那个目录被开发者工具（模拟器）持有；
+  但它在我碰到被占的那一项**之前已经删掉了其余内容**；
+- 我的 `mv` 于是没有"替换目录"，而是把 `_sc.new` **搬进了那个半空目录里**，
+  而 `SWAP_EXIT=$?` 取的是 `mv` 的 0 ⇒ 日志看着像成功。
+- 结果：`mp-weixin-showcase/` 顶层只剩一个套娃的 `_sc.new`，9-28 那版 showcase 产物已没了。
+
+恢复：`_sc.new` 是当轮 showcase 的完整拷贝（28 项、`MODE:"mp-weixin-showcase"`、app.json/app.wxss 齐），
+把内容上移一层即复原，且这一版比 9-28 那版更新（含守卫与 B7 命名）。终态逐档 grep 复核：
+`mp-weixin=mp-weixin-mock`、`mp-weixin-real=real`、`mp-weixin-showcase=mp-weixin-showcase`。
+
+三条以后必须守的规矩（都是这次用代价换来的）：
+1. **模拟器持有的目录不许 `rm -rf`** —— 要换内容就先 `mv` 到临时名再就地覆盖写，或直接往里拷；
+   `rm -rf` 在 busy 时是"删了一半 + 退出码非 0"，不是"什么都没做"。
+2. 编排里每一步的退出码必须**逐步**取（`cmd; echo $?`），不能让 `rm && mv` 共用一个 `$?` ——
+   我这次的 `SWAP_EXIT=0` 就是拿 `mv` 的成功掩盖了 `rm` 的失败。
+3. 动 `dist/build/**` 之前先确认没有 UI 腿/模拟器在用：`heldLeases()` 为空**不代表**模拟器没开着项目，
+   它只代表租约没人拿；目录能不能删是另一件事。

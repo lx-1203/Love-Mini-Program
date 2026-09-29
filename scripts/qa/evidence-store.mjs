@@ -228,7 +228,10 @@ function cmdEvict() {
     index.set(b, m);
   }
   const rows = referencedFrames();
-  let candidates = 0, moved = 0, wouldMove = 0, noClaim = 0, hashBad = 0, absent = 0, ambig = 0;
+  /* --limit N：最多动 N 张候选。pilot 必须有上限这一档 —— 一上来就动 7540 张，
+     万一回程有缺陷就是全量事故；先动 3 张把"挪出→门仍绿→挪回→字节全等"整条回路跑通再说。 */
+  const limit = Number(flag("limit", "0")) || 0;
+  let candidates = 0, moved = 0, wouldMove = 0, noClaim = 0, hashBad = 0, absent = 0, ambig = 0, capped = 0;
   const rollback = [];
   for (const r of rows) {
     const key = String(r.claimHash || "").toLowerCase();
@@ -239,6 +242,7 @@ function cmdEvict() {
     const hits = (index.get(bucketOf(key)) || new Map()).get(key) || 0;
     if (hits !== 1) { ambig++; continue; }
     candidates++;
+    if (limit && (apply ? moved : wouldMove) >= limit) { capped++; continue; }
     const dest = join(quarantine, bucketOf(key), key + "--" + r.rel.replace(/[\\/]/g, "_"));
     if (apply) {
       mkdirSync(dirname(dest), { recursive: true });
@@ -250,7 +254,7 @@ function cmdEvict() {
       moved++;
     } else wouldMove++;
   }
-  console.log(`STORE_EVICT mode=${apply ? "APPLY" : "DRY"} 引用=${rows.length} 可动=${apply ? moved : wouldMove} 盘上无=${absent} 无指纹=${noClaim} 哈希不符=${hashBad} 库内歧义=${ambig} 候选合计=${candidates} 隔离区=${quarantine}`);
+  console.log(`STORE_EVICT mode=${apply ? "APPLY" : "DRY"} limit=${limit || "(无限)"} 引用=${rows.length} 可动=${apply ? moved : wouldMove} 盘上无=${absent} 无指纹=${noClaim} 哈希不符=${hashBad} 库内歧义=${ambig} 候选合计=${candidates} 因封顶未动=${capped} 隔离区=${quarantine}`);
   if (apply) {
     const rb = join(quarantine, "rollback-manifest.json");
     writeFileSync(rb, JSON.stringify({ at: new Date().toISOString(), repo, count: rollback.length, rows: rollback }, null, 1));
@@ -262,9 +266,53 @@ function cmdEvict() {
   process.exit(dirty ? 1 : 0);
 }
 
+/* ---------------- --rehydrate：按回滚清单把隔离区里的帧挪回仓内 ----------------
+   这一支是 --evict 的**存在理由**：没有验证过的回程，"可回滚"就只是一句承诺。
+   所以它不但要能跑，还要在 --evict 之前就先写出来。
+   逐条做三件事：① 目标位置为空 ⇒ 才动；② 拷回去后按 sha256 全量校验，不符就删掉副本并判红；
+   ③ 校验通过才删隔离区那份。任何一条不满足都如实计数，不"顺手跳过"。 */
+function cmdRehydrate() {
+  const apply = has("apply");
+  const rbPath = flag("rollback", "");
+  const only = flag("path", "");
+  if (!rbPath) {
+    console.log("STORE_RESULT=FAIL reason=--rehydrate 必须给 --rollback <rollback-manifest.json>（凭记忆往回搬等于再造一次归属）");
+    process.exit(2);
+  }
+  const rbFull = resolve(rbPath);
+  if (!existsSync(rbFull)) {
+    console.log(`STORE_RESULT=FAIL reason=回滚清单不存在 ${rbPath}`);
+    process.exit(2);
+  }
+  const doc = JSON.parse(readFileSync(rbFull, "utf8"));
+  const rows = Array.isArray(doc.rows) ? doc.rows : [];
+  let restored = 0, wouldRestore = 0, occupied = 0, hashBad = 0, gone = 0, skipped = 0;
+  for (const r of rows) {
+    if (only && !String(r.from).includes(only)) { skipped++; continue; }
+    const dest = resolve(repo, r.from);
+    const src = resolve(String(r.to));
+    if (!existsSync(src)) { gone++; continue; }
+    if (existsSync(dest)) { occupied++; continue; }
+    const h = hashFull(src);
+    if (r.sha256 && h !== r.sha256) { hashBad++; continue; }
+    if (apply) {
+      mkdirSync(dirname(dest), { recursive: true });
+      copyFileSync(src, dest);
+      if (hashFull(dest) !== h) { rmSync(dest, { force: true }); hashBad++; continue; }
+      rmSync(src, { force: true });
+      restored++;
+    } else wouldRestore++;
+  }
+  console.log(`STORE_REHYDRATE mode=${apply ? "APPLY" : "DRY"} 清单条数=${rows.length} 过滤=${only || "(无)"} 可回=${apply ? restored : wouldRestore} 目标已被占=${occupied} 隔离区里没了=${gone} 哈希不符=${hashBad} 跳过=${skipped}`);
+  const bad = hashBad + occupied + gone;
+  console.log(`STORE_RESULT=${bad ? "FAIL" : (apply ? "REHYDRATED" : "DRY")}${bad ? ` reason=哈希不符=${hashBad} 目标被占=${occupied} 隔离区缺=${gone}` : ""}`);
+  process.exit(bad ? 1 : 0);
+}
+
 if (has("status")) cmdStatus();
 else if (has("export")) cmdExport();
 else if (has("evict")) cmdEvict();
+else if (has("rehydrate")) cmdRehydrate();
 else if (has("verify")) cmdVerify();
 else {
   console.log("用法：evidence-store.mjs --status | --export [--apply] [--limit N] | --verify [--json out] | --evict [--apply --confirm EVICT_EVIDENCE]  [--store <仓外目录>]");
