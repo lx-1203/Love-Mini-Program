@@ -617,7 +617,12 @@ G.opsCellPlan = runGate("apply-ops-cellplans --dry（手写计划还能不能落
 /* 判点本体（88 条 SPEC）此前只在两条旧队列里跑过，终报面板根本没读它 ⇒ "判据成立"这句话没有门在管。
    这条把它接进门：条数与唯一 id 一起打印，重复 id 不否决（多条同 id 是刻意保留的两个判点，合并会改强度），
    但措辞必须用唯一 id 数，不然 total 会被读成"88 个不同判决"。 */
-G.sourceShape = runGate("verify-source-shape（判点本体是否还在盘上成立）", "scripts/qa/verify-source-shape.mjs", [], { timeoutMs: 300000 });/* ④ 的"按可辩护默认落地"以前只有我写的段落背书；这条门把它变成会红的判据（四项各绑一个载体）。 */
+/* 落点口径同 :649 那段说明，只是那边修的是**账单阶段**、这里（面板自己这一发）一直漏着：
+   不带 --dry 时 verify-source-shape 的默认 OUT 就是 reports/audit/round-7/cellplan-source-shape.json
+   （verify-source-shape.mjs:25），而那份文件是**下游的输入**（scripts/qa/ui-queue.round7-final.json 点名它，
+   rerun-round7-slices.sh / round7-post-b-slice.sh 也引它）⇒ 面板每跑一次就改写一次别人的队列输入，
+   实测 r4 跑完 git status 里就多了它一行 M。判定、参数语义与退出码一字不动，只让它别落权威件。 */
+G.sourceShape = runGate("verify-source-shape（判点本体是否还在盘上成立）", "scripts/qa/verify-source-shape.mjs", ["--dry"], { timeoutMs: 300000 });/* ④ 的"按可辩护默认落地"以前只有我写的段落背书；这条门把它变成会红的判据（四项各绑一个载体）。 */
 
 /* WS 通道与 CLI 通道是否互斥：机制层用空白锁目录跑探针（不碰 IDE、不碰真锁），
    真 IDE 那一半只能在开窗口时量 —— 这里报的是前者，措辞里不许混成"已验完"。 */
@@ -658,8 +663,16 @@ const GUEST_BOOK_SIDECAR = pj(SIDE_DIR, "guest-landing-booked-r" + ROUND_TAG + "
 mkdirSync(dirname(resolve(ROOT, GUEST_BOOK_SIDECAR)), { recursive: true });
 G.guestLanding = runGate("verify-guest-landing（book）", "scripts/qa/verify-guest-landing.mjs", ["--mode", "book", "--out", GUEST_BOOK_SIDECAR]);
 /* 证据缺口（要求出帧却没拿到帧）逐洞换成了可重跑判据；停在 BOOKED 说明运行时探针没跑成，红得正确，
-   绝不允许把"洞起了名字"当成"洞已结案"。 */
-G.holes = runGate("verify-evidence-holes", "scripts/qa/verify-evidence-holes.mjs", []);
+   绝不允许把"洞起了名字"当成"洞已结案"。
+   落点同上一条口径（:644 那段注释就是本形的说明）：MODE 默认是 judge（verify-evidence-holes.mjs:17），
+   而 judge 分支 :144 无条件 writeFileSync 到 reports/audit/round-7/evidence-holes-verdict.json ⇒
+   以前**面板每跑一次就重打一次那份权威件**（实测 r4 跑完 git status 就多了它一行 M）。
+   这里全仓没有任何读者把它当输入（triage-exec-failures.mjs:649 自己从行里算 evidenceHoles，
+   不读这份文件），所以它既是被反复改写的权威件、又是"没人消费的产出"——两样都得治：
+   落点改侧车（判定逻辑与退出码一字不动），要更新权威件仍由显式落盘动作写回原默认路径。 */
+const HOLES_SIDECAR = pj(SIDE_DIR, "evidence-holes-verdict-r" + ROUND_TAG + ".json");
+mkdirSync(dirname(resolve(ROOT, HOLES_SIDECAR)), { recursive: true });
+G.holes = runGate("verify-evidence-holes", "scripts/qa/verify-evidence-holes.mjs", ["--out", HOLES_SIDECAR]);
 /* 载具自身的自检：一条"名字叫一致却只判 HTTP"的环（G8 RING6）能骗过我一整轮，
    而骗过它的正是我自己那句打印截断 —— 所以凡是本轮新写/新改的判点函数，都必须在面板里跑一次它的负例样本。
    跑红不代表产品坏，代表那条判点**已经没能力变红**（样本会先骂出来）。 */
