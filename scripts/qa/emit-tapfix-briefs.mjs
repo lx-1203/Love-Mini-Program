@@ -60,7 +60,13 @@ for (const [i, b] of batches.entries()) {
        （次要18→3 页、次要20→2 页），于是两条 lane 拿到同一个 outFile —— lane 只能自己改写到兄弟文件，
        谁没注意到就会把前一条的成果覆盖掉。下面还加了硬闸：真撞了就红，不再靠读者细心。 */
     const slug = String(p.page || "no-page").replace(/[^0-9A-Za-z_-]+/g, "-").replace(/^-+|-+$/g, "");
-    const file = "tapfix-lane-" + p.manifest + "--" + slug + ".json";
+    /* 尾巴必须先剥：普查给的 p.manifest 本身就带 .json（本轮 54 页全是），
+       这里再拼一次就生成出 tapfix-lane-PAGES-HOME-INDEX.json.json 的双后缀名 ——
+       产物名与 ops/*.json 的账对不上，人也读不出哪个才是扩展名。
+       注意：**已入库的 .json.json 产物不改名**（accepted[].lane 与各清单都按那个名字记着，
+       改名等于把历史引用打断），这里只让新生成的简报交出干净名字。 */
+    const manifestBase = String(p.manifest || "").replace(/\.json$/i, "");
+    const file = "tapfix-lane-" + manifestBase + "--" + slug + ".json";
     if (owned.includes(file)) { console.log("BRIEF_RESULT=FAIL reason=outFile 撞了：" + tag + "/" + file + "（一页一名规则被破坏，摊出去的简报会互相覆盖）"); process.exit(2); }
     owned.push(file);
     const items = p.missing.map((m) => {

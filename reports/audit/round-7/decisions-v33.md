@@ -151,3 +151,16 @@ provenance 门剩下的红主要是 `PROV_FRAMES_PRE_STAMP=4867`，成因已定�
 已用不走 shell 的编辑通道逐字补回。记这条是因为：这正是本轮我纠过车道三次的同一类错
 （写死条数、不存在的旗标、旧数字），只不过这次是我自己写的。
 **纪律补一条：往文档里写带反引号的内容，绝不走内联 shell。**
+
+## 21. 第 5 项的两处"传闻"已量成实测，结论比原记载更糟
+
+- **JPEG 冒充 .png 不是个别现象，是 99%**：835 张已跟踪帧里 **826 张是 JPEG 字节挂 .png 名**，真 PNG 只有 9 张（`od` 出 `ff d8 ff e0 … JFIF`，`file(1)` 判 `JPEG image data … 373x820`；集中在 `r11-acceptance` 632 / `r9-lifecycle` 66 / `r7-final-verify` 36）。含义：**任何 sniff PNG magic 的校验会把 99% 的帧判成坏帧**，实际效果是逼人关掉校验；而 LFS 按扩展名迁移完全看不出问题 —— 于是"全绿"、谎原封带进新历史。**LFS 收得住"文件在不在",收不住"文件是什么"。**
+- **改成相对路径治不了第二个洞**：`git ls-files reports/audit/round-7/tapfix-briefs/` = **0**，56 张 lane 产物全是未跟踪 ⇒ 干净 clone 现在拿到的是"路径正确、文件不存在"。所以第 5 项的"帧进 LFS"必须与"这些文本产物也入库"同批裁，否则可携性只做了一半。
+- **绝对路径规模**：`reports/` + `scripts/` 下 133 个文件 / 5265 行含绝对仓库路径，其中 **4809 行在被跟踪文件里**（逐条登记在 `.zcode/tmp/lane-relpath/abs-scan.json`）。根因是一处分隔符写错并在 **20 个脚本**里复制：拼接键用了 `REPO + "/"`，Windows 上 `REPO` 是反斜杠形态 ⇒ 空操作、绝对路径原样漏进产物。反证在同族：`emit-tapfix-briefs.mjs:114` 用 `REPO + "\\"` 就正常。
+- **有些绝对路径不能改**（改了会坏）：`TOUR_PROJECT`/`CLI_PROJECT` 12 处是原样喂给 DevTools `simulator_refresh --project` 的**执行输入**，不是证据引用；`real-e2e/provenance.json` 的 `rawOutput` 是命令逐字 stdout，规范化等于伪造取证；`ops/**` 的 `tapTargetEvidence` 是判据正文。
+
+## 22. 一条会删无回滚产物的载具（本轮实测，未修）
+`emit-tapfix-briefs.mjs:51` 有 `rmSync(OUT, {recursive:true})` —— 跑一次就把那 56 张**没进 git** 的 lane 产物整批抹掉，且没有任何回滚点。可携车道因此全程用独立模拟验证命名，没执行这个脚本。
+- 选 A：给它加"目标目录含未跟踪文件 ⇒ 先自动打包/备份再清"的闸（与本轮戳备份同形状）；
+- 选 B：把 56 张 lane 产物入库（与第 21 项第二条一起），让 rmSync 至少删的是可恢复的东西。
+在选做之前，**任何车道跑它都等于一次性毁证**，这条按风险登记而不是当已解决。

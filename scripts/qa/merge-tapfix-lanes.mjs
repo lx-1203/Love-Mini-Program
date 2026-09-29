@@ -8,11 +8,22 @@
      3. lane 声称的 id 确实在这条页的 missing 清单里（防止凭空多写或漏写）。
    通过校验的条目可以 --apply 写回判据台（ops/*.json 的 action 字段，带备份）；
    不通过的条目一律不写，并把拒绝原因打出来。
-   用法：node scripts/qa/merge-tapfix-lanes.mjs [--lanes a,b,c] [--apply] */
+   用法：node scripts/qa/merge-tapfix-lanes.mjs [--lanes a,b,c] [--apply]
+   落盘的清单里 census/lanes 一律是**仓库相对路径**（绝对路径换 clone 根目录就整批指空）。
+   写完必过一道 fail-closed 闸：回读产物逐条核「是仓内相对路径」且「解析后盘上存在」，
+   断链就 TAPFIX_RESULT=FAIL 非 0 退出并逐条点名（dry 与 apply 都过）。退出码 2=前置件缺失/断链。 */
 import { readFileSync, writeFileSync, existsSync, readdirSync, copyFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, resolve, relative, sep } from "node:path";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
+/* 清单里的引用一律走 toRepoRel，不许再自己拼。
+   旧写法是 `p.replace(REPO + "/", "")`：Windows 上 REPO 是反斜杠形态（D: 反斜杠 6 反斜杠 恋爱小程序），
+   而 `walk()`/`resolve()` 出来的路径也是反斜杠，拼接键里那个正斜杠永远命中不了 ⇒ replace 静默空操作，
+   紧接着的 split-join 又把反斜杠翻成正斜杠，于是**绝对路径原样漏进被跟踪的产物**。
+   本机自洽、换 clone 根目录整批指空（decisions-v33 第 5 项「证据可携」的路径轴）。
+   path.relative 才是跨平台唯一正确写法；对照 emit-tapfix-briefs.mjs 末尾用的是 REPO + 反斜杠，
+   那一处恰好命中 —— 说明这是分隔符形态写错，不是有意留绝对路径。 */
+const toRepoRel = (p) => relative(REPO, p).split(sep).join("/");
 const argv = process.argv.slice(2);
 const arg = (k, d) => { const i = argv.indexOf("--" + k); return i >= 0 && argv[i + 1] !== undefined ? argv[i + 1] : d; };
 const APPLY = argv.includes("--apply");
@@ -161,11 +172,39 @@ for (const r of rejected.slice(0, 25)) console.log("TAPFIX_REJECT " + r.lane + "
 const PLAN_FILE = join(OUT, APPLY ? "tapfix-merged.json" : "tapfix-merged.dry.json");
 writeFileSync(PLAN_FILE, JSON.stringify({
   generatedAt: new Date().toISOString(), mode: APPLY ? "apply" : "dry",
-  census: CENSUS.replace(REPO + "/", "").split("\\").join("/"),
-  lanes: found.map((f) => f.replace(REPO + "/", "").split("\\").join("/")),
+  census: toRepoRel(CENSUS),
+  lanes: found.map(toRepoRel),
   accepted, rejected,
 }, null, 1));
 console.log("TAPFIX_WRITTEN=" + PLAN_FILE);
+
+/* fail-closed 断言：清单不是写完就完事，每一条引用必须①是仓内相对路径、②解析后在盘上真存在。
+   原来"56 条都存在"只是**本机自洽**（绝对路径当然在自己机器上指得开），改成相对后如果没人再核，
+   一次目录搬动、一次拼名改动、或 --lanes 传了个不存在的文件，都会让清单静静指空而全程绿灯。
+   所以这里回读刚落盘的那份文件（不是回读内存里的对象）按同一套规则重解析，
+   断链就非 0 退出并逐条点名 —— dry 与 apply 两条路都要过这道闸。
+   同时把"①相对性"也当断链处理：绝对路径回到产物里就该红，而不是等下一台机器才发现。 */
+const planBack = JSON.parse(readFileSync(PLAN_FILE, "utf8"));
+const refs = [["census", planBack.census]].concat((planBack.lanes || []).map((x, i) => ["lanes[" + i + "]", x]));
+const brokenRefs = [];
+for (const [where, p] of refs) {
+  const s = String(p || "");
+  if (!s) { brokenRefs.push(where + " = 空值"); continue; }
+  if (/^[a-zA-Z]:[\\/]/.test(s) || s.startsWith("/") || s.includes("\\") || s === ".." || s.startsWith("../"))
+    brokenRefs.push(where + " 不是仓内相对路径（绝对/越界/带反斜杠）：" + s);
+  else if (!existsSync(join(REPO, s))) brokenRefs.push(where + " 相对路径解析后盘上没有：" + s + " → " + join(REPO, s));
+}
+if ((planBack.lanes || []).length !== found.length)
+  brokenRefs.push("lanes 条数漂移：落盘 " + (planBack.lanes || []).length + " 条 vs 扫描到 " + found.length + " 条");
+if (brokenRefs.length) {
+  console.log("TAPFIX_REFS_ASSERT=FAIL 共核 " + refs.length + " 条，断链 " + brokenRefs.length + " 条");
+  for (const b of brokenRefs.slice(0, 25)) console.log("TAPFIX_REFS_BROKEN " + b);
+  if (brokenRefs.length > 25) console.log("TAPFIX_REFS_BROKEN … 其余 " + (brokenRefs.length - 25) + " 条略");
+  console.log("TAPFIX_RESULT=FAIL reason=清单引用断链（见上面 TAPFIX_REFS_BROKEN 逐条点名），这份件不可采信");
+  process.exit(2);
+}
+console.log("TAPFIX_REFS_ASSERT=OK 全部 " + refs.length + " 条引用（lanes " + planBack.lanes.length + " + census 1）" +
+  "都是仓内相对路径且解析后存在于盘上；断链 0 条");
 
 if (!APPLY) { console.log("TAPFIX_RESULT=DRY 只出计划；核对过再自己加 --apply"); process.exit(0); }
 if (!accepted.length) { console.log("TAPFIX_RESULT=FAIL reason=零条通过校验，ops 一个字都不改"); process.exit(2); }
@@ -179,7 +218,7 @@ for (const [rawMf, items] of byManifest) {
   /* 普查给出来的 manifest 带 .json 尾巴（本轮 54 个页全是），
      上一版在这里再拼一次 .json ⇒ 拼出 PAGES-X.json.json，整批读不到、
      只在 --apply 那一步才炸。 */
-  const mf = String(rawMf || "").replace(/.json$/, "");
+  const mf = String(rawMf || "").replace(/\.json$/, "");
   const f = join(OPS, mf + ".json");
   if (!existsSync(f)) { console.log("TAPFIX_SKIP_MANIFEST 读不到 " + mf + ".json"); continue; }
   /* 备份名必须唯一：上一波已经用过 .pre-tapfix.bak，直接覆写会把
