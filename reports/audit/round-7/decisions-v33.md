@@ -316,10 +316,20 @@ abs7 车道把 7 条"断言某物不存在"的判据换成了能判的非帧载�
 
 **本轮正在跑、暂不结案**
 - **#15** showcase 覆盖 mock 共享产物 → 车道 #15（独立 `UNI_OUTPUT_DIR` 出口）。
-- **#22** `emit-tapfix-briefs.mjs:51` 的 `rmSync(OUT,{recursive})` 删的是
-  **git 已跟踪的 7 个文件**（`git ls-files reports/audit/round-7/tapfix-briefs | wc -l` = 7），
-  **不是我原先记的"56 个未跟踪产物"** —— 这条自己的记载也在此纠正。车道 #22 正在改成
-  "只删自己拥有的 + 删前留可指名备份"，并要求负例**对改前行为必须红**。
+- **#22 已修**（`emit-tapfix-briefs.mjs`：所有权 = 根层 `NN.json` **且**内容也必须是载具形状；外来的保留并打
+  `TAPFIX_KEEP_FOREIGN=`；删前先整批逐字节验备份；撞名 `exit 3`；另修了无视 `--out` 的打印）。
+  复验：`rmSync(OUT,{recursive:true})` 已不存在（只剩逐文件删），负例 `NOTWIPE_TEST=PASS checks=18`，
+  聚合器 `SELFTEST_RESULT=PASS` exit 0。
+- **#22 的暴露面数字，我在本节上一版写错了，在此纠正**：我写的是"删的是 git **已跟踪的 7 个**文件
+  （不是我原先记的 56 个未跟踪产物）"。**这句是错的，原记载反而是对的。**
+  实测：`git ls-files reports/audit/round-7/tapfix-briefs | wc -l` = **0**，`git status --short` 该目录是
+  `?? …/tapfix-briefs/`（整个目录未被跟踪）；盘上该目录共 **66 个文件**（含子目录；顶层 20 项）。
+  我那个"7"是另一条命令的产物 —— `git ls-files reports/audit/round-7 | grep -c tapfix` = 7，
+  数的是**父目录**里的 `tapfix-*` 文件（6 个 `.applied` + `tapfix-merged.json`），**正好在 wipe 目标之外**。
+  错法记录：把"路径前缀相近的两次计数"当成同一件事，且没看 `git status` 给的形式（`??` 已明说未跟踪）。
+  这个错数还被我写进了车道任务书，是车道复核时纠正的 —— 也就是说我差点让它按错前提改代码。
+  危险方向也要说清：**真正被抹的是 42 份手写复核结果**（未跟踪 ⇒ 无 git 可回滚），
+  比"已跟踪"的版本更糟而不是更轻；我当时那句"更严重一档"的推论一并作废。
 - **执行器能力**（#27 结尾点名的那把刀）→ 车道 #16：toast 钩子搬运（`evaluate` 已在
   `r-exec-cli.mjs:25` 导入，可行）、pullDown/longpress 派发出口；网络计数/条件注入属真新代码，
   只调研不硬造。车道约束里写死 **MSG26 / DND08 / DC08 / VI40 不许换动词凑绿**。

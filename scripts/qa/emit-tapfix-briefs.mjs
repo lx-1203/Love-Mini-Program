@@ -3,9 +3,13 @@
    为什么要有这一步：不摊的话我只能一次改几十条判据，改完既没人复核也没守恒；
    摊成简报后，每条的应补数、承载文件、该页产物路径都是数据，
    执行器与合并器（merge-tapfix-lanes.mjs）拿同一份普查对账，谁自述都不算。
-   用法：node scripts/qa/emit-tapfix-briefs.mjs [--maxPerBatch 26] [--out reports/audit/round-7/tapfix-briefs] */
-import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, rmSync } from "node:fs";
-import { join, resolve } from "node:path";
+   用法：node scripts/qa/emit-tapfix-briefs.mjs [--maxPerBatch 26] [--out reports/audit/round-7/tapfix-briefs]
+   覆写口径（2026-09-29 改，见下面「覆写保护」那段）：本载具**不再整目录递归删除**。
+   只替换自己认领的批次清单，且删前先备份到 OUT/pre-<ts>/ 并打印路径；
+   别人的东西（含复核员写的 tapfix-lane-* 与任何入库文件）一律保留、只报数；
+   名字撞车就 exit 3 红给它看。负例见 scripts/qa/test-tapfix-briefs-no-wipe.cjs。 */
+import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, rmSync, copyFileSync, statSync } from "node:fs";
+import { join, resolve, basename, relative, sep, dirname } from "node:path";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
 const argv = process.argv.slice(2);
@@ -48,7 +52,96 @@ for (const p of pages) {
 }
 if (cur.length) batches.push({ pages: cur, n: curN });
 
-rmSync(OUT, { recursive: true, force: true });
+/* ── 覆写保护（本轮修的正是这里）──────────────────────────────────────────────
+   旧写法这里是 `rmSync(OUT, { recursive: true, force: true })`：整目录连带**别人写的东西**
+   一起没，无备份、无回滚。本载具唯一的一次 writeFileSync 写的是批次清单 OUT/<tag>.json，
+   而 OUT/<tag>/tapfix-lane-*.json 是复核员写的 lane 产物——本脚本只在 specs 的 outFile 字段里
+   "声明"过它们的名字，从来没写过它们。所以 owned[] 装的是「我声明出去的名字」，
+   不是「我创建的文件」；拿它当删除白名单恰好会把复核员的成果按名删掉。口径反过来：
+   tapfix-lane-* 永远不删，只删「名字是我的 + 内容是我写的那个形状」的批次清单，
+   其余一律保留并打成机器可读的一行。
+   备份沿用本仓既有约定（verify-ops-corpus-stamp.mjs:427 backupStamp() / :423 时间戳格式，
+   以及 reports/audit/round-7/*.bak-20260929-134610 那批）：动手删之前先整份落到
+   OUT/pre-<ts>/，路径当场打印——不读代码就该知道去哪儿捞。 */
+const p2 = (n) => String(n).padStart(2, "0");
+const stampTs = (d = new Date()) =>
+  `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}`;
+const relp = (abs) => relative(REPO, abs).replace(/\\/g, "/");
+/* lane 产物名（含 .json.json 双后缀的历史产物：`.*\.json$` 本来就吃得下它）。 */
+const LANE_ARTIFACT = /^tapfix-lane-.*\.json$/i;
+const BATCH_NAME = /^\d+\.json$/;
+const SNAPSHOT_NAME = /^pre-\d{8}-\d{6}(\.\d+)?$/;
+
+/* 「这个文件是不是本载具自己写的」= 名字对 + 内容是我写的那个形状，两条缺一不可。
+   只按名字判的话，一个碰巧叫 07.json 的入库文件会照删不误——那正是本轮要堵的洞。
+   只认 OUT 根层的批次清单：子目录里同名不同深度的东西一律算别人的。 */
+function isCarrierOwned(absPath, relPath) {
+  if (relPath.includes("/") || relPath.includes("\\")) return false;
+  const name = basename(absPath);
+  if (LANE_ARTIFACT.test(name)) return false;
+  if (!BATCH_NAME.test(name)) return false;
+  try {
+    const j = JSON.parse(readFileSync(absPath, "utf8"));
+    return typeof j.batch === "string" && Array.isArray(j.lanes) && Array.isArray(j.hardRules);
+  } catch { return false; }
+}
+function walkFiles(dir, rel, acc) {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const r = rel ? rel + "/" + e.name : e.name;
+    const p = join(dir, e.name);
+    if (e.isDirectory()) { if (!SNAPSHOT_NAME.test(e.name)) walkFiles(p, r, acc); }
+    else if (e.isFile()) acc.push({ abs: p, rel: r });
+  }
+  return acc;
+}
+
+const TAGS = batches.map((_, i) => String(i + 1).padStart(2, "0"));
+if (existsSync(OUT) && !statSync(OUT).isDirectory()) {
+  console.log("BRIEF_RESULT=FAIL reason=--out 指到的是一个文件不是目录，继续就得删它：" + relp(OUT));
+  process.exit(3);
+}
+if (existsSync(OUT)) {
+  /* 先验碰撞、再谈删除：删到一半才发现撞了，等于把目录铲平了才知道写不回去。 */
+  const clash = [];
+  for (const t of TAGS) {
+    const bp = join(OUT, t + ".json"), dp = join(OUT, t);
+    if (existsSync(bp) && !isCarrierOwned(bp, t + ".json")) clash.push(relp(bp));
+    if (existsSync(dp) && !statSync(dp).isDirectory()) clash.push(relp(dp) + "（应为目录，实为文件）");
+  }
+  if (clash.length) {
+    console.log("BRIEF_RESULT=FAIL reason=碰撞：" + clash.join("、") + "（本载具不认领这些路径，既不覆盖也不跳过，直接红）");
+    process.exit(3);
+  }
+  const all = walkFiles(OUT, "", []);
+  const mine = all.filter((f) => isCarrierOwned(f.abs, f.rel));
+  const foreign = all.filter((f) => !isCarrierOwned(f.abs, f.rel));
+  const laneArt = foreign.filter((f) => LANE_ARTIFACT.test(basename(f.abs)));
+  if (mine.length) {
+    /* 同一秒内跑两次会撞快照名，撞了就顺延 .2/.3 —— 备份被自己的下一趟覆写掉，
+       等于把"留了底"这句话也删了（同 verify-ops-corpus-stamp.mjs:432 的处理）。 */
+    let snap = join(OUT, "pre-" + stampTs());
+    for (let i = 2; existsSync(snap); i++) snap = join(OUT, "pre-" + stampTs() + "." + i);
+    const pairs = mine.map((f) => ({ src: f.abs, dst: join(snap, f.rel.split("/").join(sep) + ".bak") }));
+    for (const { src, dst } of pairs) {
+      mkdirSync(dirname(dst), { recursive: true });
+      copyFileSync(src, dst);              // 备份先于删除
+    }
+    /* 逐字节复核整批过了才动手删。一边验一边删的话，第 5 个没验上时前 4 个已经没了。 */
+    for (const { src, dst } of pairs) {
+      if (!readFileSync(dst).equals(readFileSync(src))) {
+        console.log("BRIEF_RESULT=FAIL reason=备份与原件不逐字节相等，拒绝删除 " + relp(src) + "（备份留在 " + relp(dst) + "）");
+        process.exit(3);
+      }
+    }
+    console.log("TAPFIX_BACKUP=" + relp(snap) + " files=" + pairs.length);
+    for (const { src } of pairs) rmSync(src, { force: true });
+  } else {
+    console.log("TAPFIX_BACKUP=none（目录里没有本载具认领的产物）");
+  }
+  console.log("TAPFIX_OWNED_REMOVED=" + mine.length + " TAPFIX_KEEP_FOREIGN=" + foreign.length +
+    " TAPFIX_KEEP_LANE_ARTIFACTS=" + laneArt.length);
+  for (const f of laneArt.slice(0, 5)) console.log("TAPFIX_KEEP_SAMPLE=" + relp(f.abs));
+}
 mkdirSync(OUT, { recursive: true });
 const owned = [];
 for (const [i, b] of batches.entries()) {
@@ -81,9 +174,18 @@ for (const [i, b] of batches.entries()) {
     });
     specs.push({
       lane: p.page, manifest: p.manifest, sourceFile: p.sourceFile || null, sourceFound: !!p.sourceFound,
-      planned: items.length, outFile: "reports/audit/round-7/tapfix-briefs/" + tag + "/" + file,
+      /* outFile 以前把 reports/audit/round-7/tapfix-briefs 写死在字符串里：--out 一改，
+         简报里声明的路径就和实际落盘的路径分家，lane 照着简报往老目录写、载体往新目录写。
+         现在统一从 OUT 推导，声明的路径 = 真的要用的路径。 */
+      planned: items.length, outFile: relp(OUT) + "/" + tag + "/" + file,
       cases: items,
     });
+    /* 落盘前的最后一道闸：这一刻 OUT/<tag>.json 要么不存在、要么是本载具认领的形状。
+       要是中间冒出个别人的东西占着这个名字，红给它看，绝不静默覆盖。 */
+    if (!isCarrierOwned(join(OUT, tag + ".json"), tag + ".json") && existsSync(join(OUT, tag + ".json"))) {
+      console.log("BRIEF_RESULT=FAIL reason=落盘前碰撞：" + tag + ".json 被非本载具产物占用，不覆盖");
+      process.exit(3);
+    }
     writeFileSync(join(OUT, tag + ".json"), JSON.stringify({
       batch: tag, laneCount: specs.length, caseCount: specs.reduce((s, x) => s + x.planned, 0),
       lanes: specs,
@@ -115,6 +217,12 @@ for (const [i, b] of batches.entries()) {
   console.log("BRIEF_BATCH " + tag + " lanes=" + specs.length + " 条=" + b.n + " 手势类=" +
     specs.reduce((s, x) => s + x.cases.filter((c) => c.gestureOnly).length, 0));
 }
-for (const f of readdirSync(OUT)) if (/^tapfix-lane-.*\.json$/.test(f)) rmSync(join(OUT, f), { force: true });
-console.log("BRIEF_TOTAL 页=" + pages.length + " 条=" + total + " 批次=" + batches.length + " 守恒=" + (total === census.totals.actionMissingSelector ? "yes" : "no"));
-console.log("BRIEF_RESULT=OK out=" + OUT.replace(REPO + "\\", "").replace(/\\/g, "/"));
+/* 这里原来还有一句尾巴清扫：
+     for (const f of readdirSync(OUT)) if (/^tapfix-lane-.*\.json$/.test(f)) rmSync(join(OUT, f), { force: true });
+   它是第二处未申报的删除，且删的正是复核员的 lane 产物（根层那份也在，.json.json 也匹配）。
+   现在不改名、不删除，只数出来报上去；要清理由人（或合并器）自己决定。 */
+let strayLane = 0;
+if (existsSync(OUT)) for (const f of readdirSync(OUT)) if (LANE_ARTIFACT.test(f)) strayLane++;
+console.log("BRIEF_TOTAL 页=" + pages.length + " 条=" + total + " 批次=" + batches.length + " 守恒=" + (total === census.totals.actionMissingSelector ? "yes" : "no") +
+  " 根层lane产物(保留未动)=" + strayLane);
+console.log("BRIEF_RESULT=OK out=" + relp(OUT));
