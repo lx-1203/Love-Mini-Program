@@ -46,6 +46,15 @@
  *   --dispo-matrix <file>      只改②那条轴读的台账矩阵（默认由该门自己定 round-6/issue-matrix.md）。
  *                              存在的理由：这条轴要能当场演示红与绿，而唯一"零矛盾"的输入是一份夹具；
  *                              它**不是**生产默认值 —— 报告路径不传它，判的还是权威台账。
+ *   --sha-class-selftest       离线渲染/判决「语料 gitSha 拆类」这条轴（followups-v33.md §5 的补法）：把语料门
+ *                              自己那行 `CORPUS_SHA_CLASS resolvableOlder/unresolvable/empty` 拆成三个具名读数，
+ *                              并显式标出 resolvableOlder 是**预期随 HEAD 增长**的那一类。只 spawn 只读的
+ *                              verify-evidence-corpus.mjs（或直接回放它的一段 stdout），不取 UI 租约、不写任何文件。
+ *   --sha-class-root <dir>     给上一条用：把只读门的扫描根指到一份夹具（该门自己有这个旋钮，见其 :105-109，
+ *                              生产路径不传 ⇒ 门的行为逐字不变）。不传就量真实 reports/ 树。
+ *   --sha-class-body <file>    给上一条用：回放一份存下来的门 stdout。存在的唯一理由是把「类行缺失 /
+ *                              值不是整数 / 三类相加≠合并数 / legacy>empty」这四种**读数失效**做出来 ——
+ *                              真门总会打那行，不回放在就演示不了负例。不是生产默认值，报告路径不传。
  *   实时门还受 UI 租约自动保护：有别的驱动在跑时，等价于 --skip-live-gates 并在报告里写明原因。
  */
 import { execFileSync, spawnSync } from "node:child_process";
@@ -327,6 +336,106 @@ function queueCarrierSignal(roundDir) {
   } catch (e) { return { n: 0, how: `${roundDir}/ 不可读（${String(e.message).slice(0, 50)}）⇒ 期望信号未量` }; }
 }
 
+/* ============ 语料 gitSha「三类」读数轴（面板侧 · followups-v33.md §5 · lane-shaclass-r9） ============
+ * 在册缺陷（原文照抄）：「`emit-round-report.mjs` 目前只印 `CORPUS_EXPIRED_GITSHA` 这个合并数，而语料门
+ * 已经能分三类（`CORPUS_SHA_CLASS resolvableOlder/unresolvable/empty`）。HEAD 每前进一次，那个合并数就涨
+ * 一次，读的人分不清"历史轮本应定格"和"真断链"。补法在面板侧。」
+ * 门侧的逐字事实（scripts/qa/verify-evidence-corpus.mjs:328，**字段名照抄不改**）：
+ *   CORPUS_SHA_CLASS resolvableOlder=<n> unresolvable=<n> empty=<n> :: frames resolvableOlder=<n> unresolvable=<n> empty=<n>
+ * `::` 前是**清单级**计数（一份 manifest 一个），`:: frames` 后是**帧级**计数（该类清单的 shots 之和）。
+ * 退出码语义（同一文件 :341-345、:178-181、:277-280）：`fail ∨ 硬编码 SHA ≠ HEAD ⇒ exit 1`、
+ * 全域跑才把硬编码计入、空扫描集/无帧集 ⇒ exit 2、其余 exit 0。**本轴不改这些**，只是把门已经打印的
+ * 三类接进面板读数；两个类的红权由门自己的 `shaBlocked = !real && !legacyNoStamp`（:258）握着：
+ *   · resolvableOlder ⇒ 门**永不**为此计红（有戳且 real ⇒ shaBlocked=false）。它是"戳记比 HEAD 旧"的
+ *     历史轮定格状态 ⇒ **预期随 HEAD 单调增长**，面板必须把它标成"预期增长"，否则读者把衰减读成衰减。
+ *   · unresolvable    ⇒ 有戳却 !real ⇒ 门必 fail ⇒ 门必红。面板与门同向，不新增阈值。
+ *   · empty           ⇒ 顶层无 gitSha；其中 generatedAt 早于打戳约定的那些被门按 legacy 豁免（:238 要求 !sha，
+ *     所以 legacy ⊆ empty）。故**只有 empty−legacy 那一部分**是门的红；直接拿 empty>0 判红就会把
+ *     advisory（已被豁免的历史无戳件）读成红 —— 那正是本车道被要求避免的方向。
+ * 面板这一轴**新增**的红只有一种：读数本身不可信（类行缺失 / 值不是整数 / 三类相加≠合并数 / legacy>empty），
+ * 走 ERRORS ⇒ EMIT_RESULT=FAIL。两个证据类**不重复进 gatePanel**：corpus 门（scoped 那条本就在面板里、
+ * 全域那条进"一条不藏"）已经为同一批 manifest 握着否决权，再计一次就是本文件 :1390 ③ 明令禁止的
+ * "重复计同一个洞让面板数字失真"。 */
+const SHA_CLASS_KEYS = ["resolvableOlder", "unresolvable", "empty"];
+const shaNum = (v) => (v === null || v === undefined ? "未量" : v);
+/** 门 stdout 里 KEY=value 的两种既有形态（先行首锚定，再允许"行内但前置空格"）。runGate 内的 kv/num 走这同一份实现。 */
+function gateKv(body, k) {
+  let m = body.match(new RegExp("^" + k + "=(.*)$", "m"));
+  if (m) return m[1].trim();
+  m = body.match(new RegExp("(?:^| )" + k + "=([^\\s]*)", "m"));
+  return m ? m[1].trim() : null;
+}
+function gateNum(body, k) { const v = gateKv(body, k); if (v === null) return null; const m = v.match(/-?\d+/); return m ? Number(m[0]) : null; }
+/** 类的值只认「整串是十进制」。`empty=abc` 必须算"读不到"，不许悄悄回落成 0 —— 一个 0 命中的正则读成绿，本仓已犯六次。 */
+function parseShaClassHalf(seg) {
+  const out = {};
+  for (const k of SHA_CLASS_KEYS) {
+    const m = String(seg || "").match(new RegExp("(?:^|\\s)" + k + "=(\\S+)", "m"));
+    out[k] = m && /^-?\d+$/.test(m[1]) ? Number(m[1]) : null;
+  }
+  return out;
+}
+/** 拆一次门输出 ⇒ 三个具名读数 + 两个派生数（emptyBlocked/legacy）+ 判决。leg 只进措辞，不参与判定。 */
+function measureCorpusShaClassAxis(body, leg, gateExit) {
+  const src = String(body || "");
+  const hit = src.match(/^CORPUS_SHA_CLASS.*$/m);
+  const man = parseShaClassHalf(null); const frm = parseShaClassHalf(null);
+  if (hit) {
+    const rest = hit[0].replace(/^CORPUS_SHA_CLASS\s*/, "");
+    const ix = rest.indexOf("::");
+    Object.assign(man, parseShaClassHalf(ix >= 0 ? rest.slice(0, ix) : rest));
+    if (ix >= 0) Object.assign(frm, parseShaClassHalf(rest.slice(ix + 2).replace(/^\s*frames\s*/, "")));
+  }
+  const merged = gateNum(src, "CORPUS_EXPIRED_GITSHA");
+  const legacy = gateNum(src, "CORPUS_LEGACY_NO_SHA");
+  const known = SHA_CLASS_KEYS.every((k) => man[k] !== null);
+  const sum = known ? man.resolvableOlder + man.unresolvable + man.empty : null;
+  const emptyBlocked = (man.empty === null || legacy === null) ? null : Math.max(0, man.empty - legacy);
+  const reasons = [];
+  const instr = (why) => reasons.push({ kind: "instrument", why });
+  if (!hit) instr(`门输出里根本没有 \`CORPUS_SHA_CLASS\` 行 ⇒ 三类**未量**（不得读成 0/0/0）。合并数取到的是 ${shaNum(merged)}，那仍然是三类并在一起的那一个数 —— 面板退回"分不清定格与断链"的老读数`);
+  else if (!known) instr(`\`CORPUS_SHA_CLASS\` 行在，但清单级三个类里有值不是整数（缺：${SHA_CLASS_KEYS.filter((k) => man[k] === null).join(" ")}）⇒ 字段改名或值形态变了，本轴未量`);
+  else {
+    if (merged === null) instr("合并数 CORPUS_EXPIRED_GITSHA 取不到 ⇒ 拆类无从对账（" + SHA_CLASS_KEYS.map((k) => `${k}=${man[k]}`).join(" ") + " 没有总数可比，谁漏计了都不知道）");
+    else if (sum !== merged) instr(`三类相加 ${sum} ≠ 合并数 CORPUS_EXPIRED_GITSHA=${merged} ⇒ 有一类被漏计或重复计，这个拆分不可信`);
+    if (legacy > man.empty) instr(`legacy 无戳清单 ${legacy} > empty 类 ${man.empty} ⇒ 不可能（legacy 是 empty 的子集，门 :253 只在 !sha 时才进 empty）⇒ 两把尺子对不上`);
+    if (man.unresolvable > 0) reasons.push({ kind: "class", cls: "unresolvable", n: man.unresolvable,
+      why: `unresolvable=${man.unresolvable} 份（其帧 ${shaNum(frm.unresolvable)}）＝ 写了个形状像 SHA 的串、本仓解析不到 = **真断链**。门对这一类无条件计红（verify-evidence-corpus.mjs:258：有戳时 legacyNoStamp 恒 false ⇒ shaBlocked=!real=true ⇒ fail++），本轴与门同向` });
+    if (emptyBlocked > 0) reasons.push({ kind: "class", cls: "emptyBlocked", n: emptyBlocked,
+      why: `empty=${man.empty} 份顶层无 gitSha，其中只有 legacy=${legacy} 份被"早于打戳约定"豁免 ⇒ 剩下 ${emptyBlocked} 份**不在豁免窗口内**、门照旧计红（同 :258，其帧 ${shaNum(frm.empty)}）。注意：拿 empty>0 直接判红会把已豁免的历史无戳件读成红，所以本轴只判 empty−legacy` });
+  }
+  return { leg, line: hit ? hit[0] : null, man, frm, merged, legacy, sum, emptyBlocked,
+    measured: !!hit && known, conserved: known && merged !== null ? sum === merged : null,
+    reasons, red: reasons.length > 0, gateExit, expectedToGrow: "resolvableOlder" };
+}
+/** 报告正文与 --sha-class-selftest 共用这一份渲染（自检显示的和报告落的是同一次测量）。 */
+function shaClassAxisCountLine(ms) {
+  const one = (m) => `leg \`${m.leg}\`：合并数 merged=${shaNum(m.merged)} ⇒ ` +
+    SHA_CLASS_KEYS.map((k) => `${k}=${shaNum(m.man[k])}`).join(" ") +
+    `（帧轴 ${SHA_CLASS_KEYS.map((k) => `${k}=${shaNum(m.frm[k])}`).join(" ")}）` +
+    `，legacy 豁免 ${shaNum(m.legacy)} ⇒ 未被豁免的 empty=${shaNum(m.emptyBlocked)}`;
+  const bad = ms.filter((m) => m.red);
+  return `- **语料 gitSha 拆类读数（面板成员，逐字取自语料门自己的 \`CORPUS_SHA_CLASS\` 行）**：${ms.map(one).join("；")}` +
+    `\n  —— **哪一类"预期随 HEAD 增长"：\`resolvableOlder\`**。它数的是「戳记指向一枚真实存在、只是比 HEAD 旧的提交」，` +
+    `历史轮证据本就该定格在当时那枚提交上（门 :184-186），HEAD 每前进一枚它就 +1 —— **这条增长不是衰减**，` +
+    `读的人要判"链断了没有"看的是另外两个数：\`unresolvable\` 与 \`未被豁免的 empty（empty−legacy）\`，它们非零时语料门自己必然已经计红（门 :258），本轴不另立阈值、也不放宽它。` +
+    `\`resolvableOlder\` 非零**不判红**（把 advisory 读成红同样是错）。` +
+    `\n  合并数 \`CORPUS_EXPIRED_GITSHA\` **保留打印、不退役**：门 :324 那行没改一个字（门自己的注释 :325-327 写明面板 :1332 靠它取数，动它的形状就是跨车道改契约），` +
+    `但它从今天起**只当总数用**——"坏了几处"由上面两个类回答。` +
+    `\n  本轴的判决来源只有两类：① **读数本身不可信**（类行缺失 / 值不是整数 / 三类相加≠合并数 / legacy>empty）⇒ 进 ERRORS ⇒ \`EMIT_RESULT=FAIL\`；` +
+    `② 两个证据类非零 ⇒ 进「一条不藏」并点名，**不重复进 gatePanel**（corpus 门已为同一批 manifest 握着否决权，见本文件 H 节口径注 ③「重复计同一个洞会让面板数字失真」）。` +
+    `\n  ${bad.length ? `本轴本次判红 ${bad.length} 处：${bad.map((m) => `\`${m.leg}\``).join(" ")}（逐条见下方「一条不藏」/ ERROR 行）` : "本轴本次无读数失效、两个证据类均为 0 ⇒ 不红"}`;
+}
+/** 机器行：给 run-final-verify 与负例自检抓的具名读数（键名与门那行同源，读者两侧可逐字对账）。 */
+function shaClassMachineLine(m) {
+  return `EMIT_SHA_CLASS leg=${m.leg} merged=${shaNum(m.merged)} ` +
+    SHA_CLASS_KEYS.map((k) => `${k}=${shaNum(m.man[k])}`).join(" ") + " " +
+    SHA_CLASS_KEYS.map((k) => `frames_${k}=${shaNum(m.frm[k])}`).join(" ") +
+    ` legacy=${shaNum(m.legacy)} emptyBlocked=${shaNum(m.emptyBlocked)} class_sum=${shaNum(m.sum)} ` +
+    `conserved=${m.conserved === null ? "未量" : (m.conserved ? "yes" : "no")} split=${m.measured ? "measured" : "unmeasured"} ` +
+    `gate_exit=${shaNum(m.gateExit)} expected_to_grow=${m.expectedToGrow} axis_red=${m.red ? "yes" : "no"} reds=${m.reasons.length}`;
+}
+
 /* --dup-axis-selftest：只跑只读门禁、只渲染这一条轴，用来在**不启动任何会写盘的门**（verify-evidence-holes /
    verify-guest-landing / verify-source-shape 的默认输出都落在 reports/ 里）的前提下看到该轴的逐字渲染。 */
 if (has("dup-axis-selftest")) {
@@ -455,14 +564,11 @@ function runGate(name, file, args, { timeoutMs = 240000, needNode22 = false } = 
    * 同族键（实测：`QUEUE_PLANNED_SUITES=24 QUEUE_PLANNED_CASES=1107`、
    * `G9_PROBED=455 G9_OK=455 …` 一行多键）。两种形态都要求 KEY 是完整 token
    * （行首或前置空格 + 紧跟 `=`），绝不裸 substring 命中 —— 那正是把 0 命中的正则读成绿的入口。
+   * 实现搬在门外的 gateKv/gateNum：语料拆类轴既要读 runGate 的输出、也要读**回放文件**的输出，
+   * 两边必须是同一把尺子，否则"自检里绿的那次"量的就不是报告里那次数了。
    */
-  const kv = (k) => {
-    let m = body.match(new RegExp("^" + k + "=(.*)$", "m"));
-    if (m) return m[1].trim();
-    m = body.match(new RegExp("(?:^| )" + k + "=([^\\s]*)", "m"));
-    return m ? m[1].trim() : null;
-  };
-  const num = (k) => { const v = kv(k); if (v === null) return null; const m = v.match(/-?\d+/); return m ? Number(m[0]) : null; };
+  const kv = (k) => gateKv(body, k);
+  const num = (k) => gateNum(body, k);
   /** 单 token 取值：同一行多键时（`A=1 B=2`）只取 B 的值，绝不把后半行一起端进报告。 */
   const tok = (k) => {
     let m = body.match(new RegExp("(?:^| )" + k + "=(\\S+)", "m"));
@@ -521,6 +627,49 @@ if (has("queue-dispo-selftest")) {
   console.log(`QUEUE_PLAN_AXIS_RESULT=${qMeasurable ? (m.matched.length ? "PASS" : "FAIL") : "UNMEASURED"} matched=${m.matched.length} plans_on_disk=${m.plansOnDisk} carriers=${m.carriers} legs=${legs.length}`);
   const red = (qMeasurable && !m.matched.length) || daxis.exitCode !== 0;
   process.exit(red ? 1 : 0);
+}
+
+/** H 节表格里那一格：三类点名 + 明确标出"哪一类预期随 HEAD 增长"，读者不必自己去猜。 */
+function shaClassCell(m) {
+  return `拆类 resolvableOlder=${shaNum(m.man.resolvableOlder)}【预期随 HEAD 增长，非衰减】 ` +
+    `unresolvable=${shaNum(m.man.unresolvable)}【非 0 即断链】 empty=${shaNum(m.man.empty)}（legacy 豁免 ${shaNum(m.legacy)} ⇒ 未豁免 empty=${shaNum(m.emptyBlocked)}） ` +
+    `帧轴 ${SHA_CLASS_KEYS.map((k) => `${k}=${shaNum(m.frm[k])}`).join(" ")} 相加=${shaNum(m.sum)} vs 合并 ${shaNum(m.merged)}${m.measured ? "" : " ⇒ 本轴未量"}`;
+}
+
+/* --sha-class-selftest：离线、只读地渲染上面那条拆类轴（followups-v33 §5 的补法就在这条轴上）。
+   两种输入，同一个解析器、同一份渲染：
+   ① 默认（或 --sha-class-root <夹具目录>）：真跑一次**只读**语料门。该门自己有 `--root` 旋钮
+      （verify-evidence-corpus.mjs:105-109，注释写明"自测专用，生产不传 ⇒ 行为与逐字改前一致"），
+      所以能用真门的判据在夹具上量出 unresolvable / empty / legacy 三个方向，不必另抄影子实现。
+   ② --sha-class-body <file>：回放一份存下来的门 stdout。用来演示「类行没了 / 值不是整数 /
+      三类相加≠合并数 / legacy>empty」这四种**读数失效**：真门永远会打那行，不回放就造不出负例。
+   两条都不取 UI 租约、不写任何文件、不进报告路径（所以也不碰权威产物）。 */
+if (has("sha-class-selftest")) {
+  const bodyFile = flag("sha-class-body") ? toRel(flag("sha-class-body")) : null;
+  const rootArg = flag("sha-class-root");
+  let body = "", gateExit = null, how = "", leg = "global";
+  if (bodyFile) {
+    const s = readSrc(bodyFile, { label: "回放的门 stdout（--sha-class-body）" });
+    if (!s) { console.log("SHA_CLASS_AXIS=UNMEASURED reason=回放文件读不到 ⇒ 没有输入可拆（不许当成 0/0/0）"); process.exit(1); }
+    body = s.text.split("\n").filter((l) => !l.startsWith("#")).join("\n"); // 与 runGate 同一条剥头注释规则
+    how = `回放 ${bodyFile}（没跑门 ⇒ gate_exit 未量）`;
+    leg = "replay";
+  } else {
+    const args = rootArg ? ["--root", rootArg] : [];
+    if (rootArg) leg = "fixture";
+    const rec = runGate("verify-evidence-corpus" + (rootArg ? " --root " + rootArg : "（全域）"),
+      "scripts/qa/verify-evidence-corpus.mjs", args, { timeoutMs: 600000 });
+    body = rec.body; gateExit = rec.exitCode;
+    how = `真跑只读门 ${rec.cmd}（exit ${shaNum(rec.exitCode)}，不取租约、不写文件）`;
+  }
+  const m = measureCorpusShaClassAxis(body, leg, gateExit);
+  console.log(`SHA_CLASS_SELFTEST leg=${m.leg} how=${how}`);
+  console.log(`  门那一行（逐字）：${m.line || "(没有 CORPUS_SHA_CLASS 行 ⇒ 三类未量)"}`);
+  console.log(shaClassAxisCountLine([m]));
+  for (const r of m.reasons) console.log(`  - SHA_CLASS_HIT[${r.kind}] ${r.why}`);
+  console.log(shaClassMachineLine(m));
+  console.log(`SHA_CLASS_AXIS=${m.red ? "FAIL" : "PASS"} reds=${m.reasons.length}`);
+  process.exit(m.red ? 1 : 0);
 }
 
 /* ============================================================== 前置体检 */
@@ -723,6 +872,19 @@ const RESHOOT_MANIFEST = "reports/screenshots/round-6-tour-reshoot/manifest-deta
 const roundCorpusDirs = collectRoundCorpusDirs(ROUND_NO);
 const EVIDENCE_SCOPE = [ROUND_DIR, ...roundCorpusDirs].join(",");
 G.corpusScoped = runGate("verify-evidence-corpus（本轮 scope）", "scripts/qa/verify-evidence-corpus.mjs", ["--scope", EVIDENCE_SCOPE], { timeoutMs: 600000 });
+/* 面板侧把语料门的合并数拆成三个具名读数（followups-v33.md §5）。两把门各拆各的、**不并成一条通过率**：
+   全域那把是历史口径（进"一条不藏"），scope 那把才否决本轮收尾（本来就在 gatePanel 里）。
+   判定权重照抄门自己（见 measureCorpusShaClassAxis 顶注）：resolvableOlder 永不红且预期随 HEAD 增长，
+   红只来自 unresolvable 与「empty−legacy 豁免」那部分，以及"读数本身不可信"。 */
+G.shaClass = [
+  measureCorpusShaClassAxis(G.corpus && G.corpus.body, "global", G.corpus ? G.corpus.exitCode : null),
+  measureCorpusShaClassAxis(G.corpusScoped && G.corpusScoped.body, "scoped", G.corpusScoped ? G.corpusScoped.exitCode : null),
+];
+for (const m of G.shaClass) for (const r of m.reasons) {
+  if (r.kind === "instrument") ERRORS.push(`语料 gitSha 拆类（leg=${m.leg}）读数不可信 :: ${r.why}`);
+  else OPEN.push({ item: `语料 gitSha 拆类（leg=${m.leg}）${r.cls}=${r.n}`,
+    why: `${r.why} —— 这条**不重复进 gatePanel**：语料门自己已为同一批 manifest 计红（scoped 那条本就在面板里、全域那条见下方"历史口径红"），再计一次就是 H 节口径注 ③ 禁止的"重复计同一个洞"。结案条件：把那份清单的戳记补成真提交（unresolvable），或给出可核的 generatedAt/gitSha 让 legacy 窗口判它（empty）` });
+}
 G.provenanceScoped = runGate("verify-provenance-all（本轮 scope）", "scripts/qa/verify-provenance-all.mjs", ["--scope", EVIDENCE_SCOPE], { timeoutMs: 600000 });
 /* 用例语料版本戳：回答"这一轮 1107 例判的是哪一版正文"。执行腿开跑前 --write 记一次，收尾 --check 复算：
    跑的过程中正文被改过就红 —— 早跑的腿与晚跑的腿判的不是同一版，整体通过率不可整体引用。
@@ -1329,10 +1491,10 @@ function gateRow(rec, kw, headline) {
 gateRow(G.ledger, `verify-ledger（台账目录=${LEDGER_DIR}${LEDGER_DIR !== ROUND_DIR ? "，与本轮目录不同：本轮条目登记在权威台账里" : ""}）`, `SOURCES=${n(G.ledger.re(/LEDGER_SOURCES=(\d+)/))} DISTINCT_IDS=${n(G.ledger.re(/DISTINCT_IDS=(\d+)/))} MATRIX_IDS=${n(G.ledger.re(/MATRIX_IDS=(\d+)/))} ORPHAN_TRUE=${n(G.ledger.re(/LEDGER_ORPHAN_TRUE=(\d+)/))} MULTI_ID_FAMILIES=${n(G.ledger.re(/LEDGER_MULTI_ID_FAMILIES=(\d+)/))} → ${(G.ledger.body.match(/^LEDGER_RESULT=.*/m) || [null])[0]}`);
 gateRow(G.stateTruth, "verify-state-truth", `CASE_SPREAD=${n(G.stateTruth.num("STATE_CASE_SPREAD"))} FAIL_SPREAD=${n(G.stateTruth.num("STATE_FAIL_SPREAD"))} → ${(G.stateTruth.body.match(/^STATE_RESULT=.*/m) || [null])[0]}`);
 gateRow(G.integrity, "verify-evidence-integrity", `SHOTS=${n(G.integrity.re(/EVIDENCE_SHOTS=(\d+)/))} MATCHED=${n(G.integrity.re(/MATCHED=(\d+)/))} MISSING=${n(G.integrity.re(/MISSING=(\d+)/))} HASH_MISMATCH=${n(G.integrity.re(/HASH_MISMATCH=(\d+)/))} ORPHANS=${n(G.integrity.re(/ORPHANS=(\d+)/))} DUP_STATE=${n(G.integrity.re(/DUP_STATE_GROUPS=(\d+)/))} SNA改判=${n(G.integrity.re(/EVIDENCE_SNA_RECLASSIFIED=(\d+)/))} 盘上仅算非证据=${n(G.integrity.re(/EVIDENCE_FRAMES_ON_DISK_ONLY_AS_NON_EVIDENCE=(\d+)/))}；exec: ${n(G.integrity.re(/EXEC_EVIDENCE_ENTRIES=(\d+)/))} 条 WITH_ERROR=${n(G.integrity.re(/WITH_ERROR=(\d+)/))} 伪造引用=${n(G.integrity.re(/EXEC_CLEAN_BUT_MISSING=(\d+)/))} → ${(G.integrity.body.match(/^EVIDENCE_RESULT=.*/m) || [null])[0]}`);
-gateRow(G.corpus, "verify-evidence-corpus", `MANIFESTS=${n(G.corpus.num("CORPUS_MANIFESTS"))} SCANNED=${n(G.corpus.num("CORPUS_SCANNED"))} EXPIRED_GITSHA=${n(G.corpus.num("CORPUS_EXPIRED_GITSHA"))} PROBLEMS=${n(G.corpus.num("CORPUS_PROBLEMS"))} → ${(G.corpus.body.match(/^CORPUS_RESULT=.*/m) || [null])[0]}`);
+gateRow(G.corpus, "verify-evidence-corpus", `MANIFESTS=${n(G.corpus.num("CORPUS_MANIFESTS"))} SCANNED=${n(G.corpus.num("CORPUS_SCANNED"))} EXPIRED_GITSHA=${n(G.corpus.num("CORPUS_EXPIRED_GITSHA"))} PROBLEMS=${n(G.corpus.num("CORPUS_PROBLEMS"))} ${shaClassCell(G.shaClass[0])} → ${(G.corpus.body.match(/^CORPUS_RESULT=.*/m) || [null])[0]}`);
 gateRow(G.provenance, "verify-provenance-all", `FRAMES_CONSISTENT=${n(G.provenance.re(/PROV_FRAMES_CONSISTENT=(\d+)/))} PRE_STAMP=${n(G.provenance.re(/PROV_FRAMES_PRE_STAMP=(\d+)/))} STALE=${n(G.provenance.re(/PROV_FRAMES_STALE=(\d+)/))} UNDATED=${n(G.provenance.re(/PROV_FRAMES_UNDATED=(\d+)/))} 无戳=${n(G.provenance.re(/PROV_MANIFESTS_NO_SHA=(\d+)/))} 约定前历史清单=${n(G.provenance.re(/PROV_MANIFESTS_NO_SHA_LEGACY=(\d+)/))}（其帧不计入时间轴判决：LEGACY_FRAMES=${n(G.provenance.re(/PROV_FRAMES_LEGACY=(\d+)/))}） ${(G.provenance.body.match(/^PROV_FRAME_ACCOUNTING.*/m) || ["(没打出守恒行)"])[0]} PRODUCERS=${n(G.provenance.re(/PROV_PRODUCERS=(\d+)/))} LITERAL_SHA=${n(G.provenance.re(/LITERAL_SHA=(\d+)/))} → ${(G.provenance.body.match(/^PROVENANCE_RESULT=.*/m) || [null])[0]}`);
 /* 本轮 scope 的两把才是"本轮证据"的判据；全域那两把在上面照实打印，只作为历史记录进 J 节。 */
-gateRow(G.corpusScoped, "verify-evidence-corpus --scope " + EVIDENCE_SCOPE, `MANIFESTS=${n(G.corpusScoped.num("CORPUS_MANIFESTS"))} SCANNED=${n(G.corpusScoped.num("CORPUS_SCANNED"))} PROBLEMS=${n(G.corpusScoped.num("CORPUS_PROBLEMS"))} → ${(G.corpusScoped.body.match(/^CORPUS_RESULT=.*/m) || [null])[0]}`);
+gateRow(G.corpusScoped, "verify-evidence-corpus --scope " + EVIDENCE_SCOPE, `MANIFESTS=${n(G.corpusScoped.num("CORPUS_MANIFESTS"))} SCANNED=${n(G.corpusScoped.num("CORPUS_SCANNED"))} PROBLEMS=${n(G.corpusScoped.num("CORPUS_PROBLEMS"))} ${shaClassCell(G.shaClass[1])} → ${(G.corpusScoped.body.match(/^CORPUS_RESULT=.*/m) || [null])[0]}`);
 gateRow(G.provenanceScoped, "verify-provenance-all --scope " + EVIDENCE_SCOPE, `FRAMES_CONSISTENT=${n(G.provenanceScoped.re(/PROV_FRAMES_CONSISTENT=(\d+)/))} UNDATED=${n(G.provenanceScoped.re(/PROV_FRAMES_UNDATED=(\d+)/))} 约定前历史清单=${n(G.provenanceScoped.re(/PROV_MANIFESTS_NO_SHA_LEGACY=(\d+)/))} LEGACY_FRAMES=${n(G.provenanceScoped.re(/PROV_FRAMES_LEGACY=(\d+)/))} ${(G.provenanceScoped.body.match(/^PROV_FRAME_ACCOUNTING.*/m) || ["(没打出守恒行)"])[0]} → ${(G.provenanceScoped.body.match(/^PROVENANCE_RESULT=.*/m) || [null])[0]}`);
 /* 语料版本戳三把：同一版正文（check）、副本即那一版（copy）、每条队列腿读同一份语料（queue）。 */
 gateRow(G.opsStamp, "verify-ops-corpus-stamp --check（1107 例所绑判据版本有无中途漂移）", `${(G.opsStamp.body.match(/^STAMP_OPS=.*$/m) || ["(没打出 STAMP_OPS 行)"])[0]} → ${(G.opsStamp.body.match(/^STAMP_RESULT=.*$/m) || [null])[0]}`);
@@ -1417,6 +1579,15 @@ M.sources.dispoAxis = {
   axisExit: G.dispoAxis.exitCode, matrix: DISPO_MATRIX,
   hits: (G.dispoClash.body.match(/^\s*DISPO_HIT \S+/gm) || []).map((l) => l.trim().replace(/^DISPO_HIT /, "")),
 };
+P(shaClassAxisCountLine(G.shaClass));
+M.sources.shaClassAxis = G.shaClass.map((m) => ({
+  leg: m.leg, gateLineVerbatim: m.line, measured: m.measured,
+  merged: m.merged, resolvableOlder: m.man.resolvableOlder, unresolvable: m.man.unresolvable, empty: m.man.empty,
+  frames: { resolvableOlder: m.frm.resolvableOlder, unresolvable: m.frm.unresolvable, empty: m.frm.empty },
+  legacy: m.legacy, emptyBlocked: m.emptyBlocked, classSum: m.sum, conserved: m.conserved,
+  expectedToGrow: m.expectedToGrow, gateExit: m.gateExit, axisRed: m.red,
+  reasons: m.reasons.map((r) => `[${r.kind}] ${r.why}`),
+}));
 for (const d of RAW_DUP_AGG.details.slice(0, 12)) P(`  - 同字节组明细：\`${d}\``);
 if (RAW_DUP_AGG.details.length > 12) P(`  - …明细另有 ${RAW_DUP_AGG.details.length - 12} 行未打印（报告侧上限 12 行）`);
 if (RAW_DUP_AGG.hiddenDetails) P(`  - 另有 ${RAW_DUP_AGG.hiddenDetails} 组连门禁自己都没打出来（它每条 leg 只打前 6 组）⇒ 本报告的明细**不是全量**，组数/帧数才是全量；取全量对该 leg 加 \`--json <out>\` 读 \`dupState[]\``);
@@ -1614,6 +1785,9 @@ console.log(`EMIT_HEAD=${HEAD || "?"} execRows=${execRows ? execRows.length : "?
    于是"队列计划命中 0 份"与"台账矛盾 11 行"这两件事在终端输出里都不存在。 */
 console.log(`EMIT_QUEUE_PLANS round=${ROUND_NO} matched=${G.queuePlans.matched.length} plans_on_disk=${G.queuePlans.plansOnDisk} carriers=${G.queuePlans.carriers} legs=${G.opsQueueList.length} axis_exit=${G.queuePlanAxis ? G.queuePlanAxis.exitCode : "null(未量)"}`);
 console.log(`EMIT_DISPO rows=${G.dispo.rows === null ? "未量" : G.dispo.rows} clashes=${G.dispo.clashes === null ? "未量" : G.dispo.clashes} gate_mode=${G.dispo.mode} axis_exit=${G.dispoAxis.exitCode}`);
+/* 拆类读数各印一条机器行（键名与语料门那行同源）：run-final-verify 与配对自检都按这两行对账，
+   expected_to_grow=resolvableOlder 是**写给机器读的**同一条免责标注，免得脚本作者自己把历史定格读成衰减。 */
+for (const m of G.shaClass) console.log(shaClassMachineLine(m));
 for (const c of CONSERVE) console.log(`CONSERVE ${c.ok ? "OK" : "FAIL"} ${c.what} ${c.parts.join("+")}=${c.sum} vs ${c.whole}`);
 if (ERRORS.length) {
   console.log(`EMIT_RESULT=FAIL 自判失败 ${ERRORS.length} 条：`);

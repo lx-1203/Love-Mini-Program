@@ -1,0 +1,53 @@
+{
+ "lane": "pages/profile/index",
+ "counts": {
+  "planned": 6,
+  "ok": 0,
+  "unverifiable": 6
+ },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "PFI22",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "page": "pages/profile/index",
+   "reason": "四块里三块同名、一块永不渲染：语音 CTA、背景编辑 CTA 与邀请 CTA 共用一个类名 video-cta（index.vue:1694、:1768、:1793，三处都带 @tap 但分别指向 handleRecordVoice、handleEditBackground、openInviteModal），first-match 只会打到渲染树里的第一枚（实测同轮 PFI25 dom .voice-preview__delete:present(2)，说明语音走的是 :1712 的 v-else 预览分支，那么首个 video-cta 是背景编辑那一枚），点名它就把三条判据混成一条且必判错；VIP 卡 .vip-card（:1809）的 v-if 是 appConfig.isCommerceOn 且未开通，而该开关缺省封存（stores/app-config.ts:67 总闸不为 true 即假，mock 的 getAppConfig 只回 7 个开关、没有任何 commerce.* 键，services/api.ts:309-317）⇒ 静息态根本不渲染。本条还要求整页滚动逐块确认。",
+   "needsCarrier": "欠三枚 CTA 各自的专属修饰类（产品侧）+ 能把 commerce.enabled 与 commerce.vip 同时置真的开关夹具 + 页面滚动通道（CLI 桥只有 tap 与 input）。"
+  },
+  {
+   "id": "PFI28",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "page": "pages/profile/index",
+   "reason": "三路关闭的对象全在弹层分支里：.invite-mask（index.vue:2097，@tap 置 showInviteModal=false）与 .invite-modal（:2098，@tap.stop）以及底部的 .invite-modal__btn--cancel（:2143）都在 v-if 条件 showInviteModal 内，同轮实测该页 dom .invite-modal__btn:absent ⇒ 静息态不成元素。打开弹层的入口 .video-cta（:1793 @tap=openInviteModal）与语音、背景两枚 CTA 同名（见 PFI22），first-match 打不到邀请那一枚，mock 下另需 invite=1 桥接才能构造（case.pre 与 PFI29 口径）。",
+   "needsCarrier": "欠一个能唯一命中邀请入口的类名（或按 nth 定位）+ 弹层先开的构造路径；④ 的「底层不可穿透」还要逐元素 rect 与点击归属验证。"
+  },
+  {
+   "id": "PFI34",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "page": "pages/profile/index",
+   "reason": "判点元素在编译档里是本页 token（pages/profile/index.wxml 含 vip-card 且带 bindtap），但它的渲染条件（模板里是 isCommerceOn 传 vip 再与 !isVip 取与，index.vue:1809）在本档恒假：isCommerceOn 是缺省封存语义（stores/app-config.ts:67，总闸 commerce.enabled 不为 true 直接 false），mock 的 getAppConfig 返回体里没有 commerce.* 键（services/api.ts:309-317）。于是 ① 无元素可点，而 ② 与 ③ 的「关闭时不渲染、无价格泄漏」也无法与「开关从没开过」区分。",
+   "needsCarrier": "欠后端/管理后台把 commerce.enabled 与 commerce.vip 置真的夹具（或 real 档一轮），并需 isVip 两态各测一次；点 .vip-card 之后是跳子包页，tap 成功即离开本页。"
+  },
+  {
+   "id": "PFI37",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "page": "pages/profile/index",
+   "reason": "无主手势且判据是负向：动作是在页顶下拉并统计刷新，而本页在 pages.json 里只有一条无 style 的条目（:66-67，对照 :63-64 的消息页有 enablePullDownRefresh），index.vue:13 只 import 了 onShow、onUnload、onShareAppMessage 与 onTabItemTap，没有 onPullDownRefresh⇒ 断言是「不得出现刷新动画与回调」，页内没有任何元素承载下拉，任何真实 tap 都会引入副作用、把「零刷新」的观测环境弄脏。",
+   "needsCarrier": "欠 WS 的下拉手势通道 + 动画与请求计数读数；本条属配置核对加零副作用观测，点不到东西是设计使然而非缺陷。"
+  },
+  {
+   "id": "PFI41",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "page": "pages/profile/index",
+   "reason": "本条的结论恰恰是没有可点对象：页内源码搜不到 input、textarea 与 v-model（grep 无命中），两档编译产物 pages/profile/index.wxml 里 input 与 textarea 标签数为 0；唯一可写副作用是剪贴板复制邀请码与系统选图。把 tapChannel 的 input 腿硬指到某个类名（如 :2097 的 .invite-mask 或 :2143 的按钮）会凭空造出一个输入面，正是要防的「执行员凭空造表单用例」。",
+   "needsCarrier": "欠的是结构普查载体（模板与渲染树的标签枚举，或一条断言 input 数为 0 的探针），不是 selector；弹层内输入面另需弹层先开。"
+  },
+  {
+   "id": "PFI42",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "page": "pages/profile/index",
+   "reason": "判据点名的多数类名不住在本页产物里，而在子组件的 wxml 中：.my-header__icon 与 .my-header__edit 在 components/profile/mine/MyHeader.vue、.my-stats__col 在 MyStats.vue、.my-more__cell 在 MyMore.vue，编译后落在 components/profile/mine/*.wxml 而不是 pages/profile/index.wxml ⇒ 页级选择器查询与元素动作都够不着（同轮实测 dom .my-header__icon:absent、.my-stats__col:absent、.my-more__cell:absent；exec-A-mock-final 里 tap:.my-more__cell 与 tap:.chat-header__avatar-wrap 都回 no such element）。页内真在树里的几枚（.video-cta 三处同名、.voice-preview__delete 两处同名、.profile-bg__edit 在 v-if 里）也不足以逐元素读 rect。",
+   "needsCarrier": "欠跨组件边界的元素定位（WS 侧 selectComponent 或 component.$）+ 逐元素 boundingBox 到 rpx 的换算 + 路由/DOM/Toast/震动四选一的反馈判定；.avatar-menu__item 一类页级节点实测 present(4) 可点，但它不是本条普查的全部对象。"
+  }
+ ]
+}

@@ -1,0 +1,36 @@
+{
+ "lane": "subpackages/vip/index",
+ "manifest": "次要22.json",
+ "sourceFile": "apps/client/src/subpackages/vip/index.vue",
+ "counts": { "planned": 3, "ok": 1, "unverifiable": 2 },
+ "cases": [
+  {
+   "id": "VI04",
+   "manifest": "次要22",
+   "page": "subpackages/vip/index",
+   "selector": ".benefit-item",
+   "file": "apps/client/src/subpackages/vip/index.vue",
+   "line": 441,
+   "oldAction": "tap 第 1 个 .benefit-item（:439-457 viewBenefitDetail :248-256）→ 弹层出现后分别验证：① tap 确认按钮；② 用系统返回手势/物理返回关闭；③ 关闭后再 tap 第 4 个权益项",
+   "newAction": "tap 第 1 个 .benefit-item（:439-457 viewBenefitDetail :248-256）→ 弹层出现后分别验证：① tap 确认按钮；② 用系统返回手势/物理返回关闭；③ 关闭后再 tap 第 4 个权益项（权益卡点名：.benefit-item，类名在 apps/client/src/subpackages/vip/index.vue:441、同节点 @tap 在 :442 且回调是 viewBenefitDetail(item)，编译产物 subpackages/vip/index.wxml 内该类按 v-for 渲染六项、不带 wx:if，静息态即可命中；第 1 项即 expected 要吃的那颗；②步的弹层是 uni.showModal 原生层，它的确认按钮不在 wxml 树里，只能由帧与路由采证，③步再点第 4 项需要同名节点的序号定位载具）",
+   "needsIdentity": "",
+   "why": "expected 的第一句就是 tap 后 500ms 内出现 showModal，承载这次点击的就是 .benefit-item（:442 的 @tap 是唯一入口），它在编译产物里是六枚同名节点中的第一个，正好对上判据里的第 1 个。"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "VI03",
+   "manifest": "次要22",
+   "page": "subpackages/vip/index",
+   "reason": "判据要的是模板顺序与几何：safe-top 先于 nav-bar、nav-bar 上方留白恰为一个状态栏高度、标题与 header 文案取语言包、权益六项图标必须是 IMAGE_PATHS 的 SVG 而非 emoji 或破图。承载前两样的 .safe-top（vip/index.vue:414）与 .nav-bar（:416）都是纯占位容器，整块不挂 @tap/@click，按 hardRules 不能把只有样式没有事件的类当目标；「滚动全页采集权益与套餐区」又是连续手势。",
+   "needsCarrier": "欠 boundingClientRect 的顺序与几何量测载具（safe-top/nav-bar 的 top 与 height 加 DOM 序），加 WS 连续滚动通道；图标是不是 SVG 属图像内容断言，需要读 IMAGE_PATHS 与帧比对，不是可点物件。"
+  },
+  {
+   "id": "VI09",
+   "manifest": "次要22",
+   "page": "subpackages/vip/index",
+   "reason": "这条的用户意图全部来自原生 switch 的 change 事件（apps/client/src/subpackages/vip/index.vue:532-538 的 @change 走 toggleAutoRenew，以 e.detail.value 为准），但这个 switch 没有类名：源文件里它只带 :key/:checked/:color/:disabled，编译产物 subpackages/vip/index.wxml 里它是 class 仅剩 data-v-f489de86 这种 scoped 样式哈希的 switch 节点，按类名寻址点不到它；把 .auto-renew（:523）或 .auto-renew__info 当目标等于点一块无事件空白。确认与取消又都是 uni.showModal 原生层按钮，同样不在 wxml 树里；expected 还要求 evaluate 读 useAutoRenewStore().status.enabled。",
+   "needsCarrier": "欠两样：一是给这一行 switch 补一个可寻址的类名载体（或让桥支持按 role/属性/序号定位原生控件），二是 showModal 确认与取消按钮的原生层点按载具；第④步在途重复拨动还欠连拨的时序通道，第⑤步失败路径欠拦截自动续费接口返回 500 的夹具。"
+  }
+ ]
+}

@@ -1,0 +1,32 @@
+{
+ "lane": "subpackages/village/village/publish",
+ "counts": {
+  "planned": 3,
+  "ok": 0,
+  "unverifiable": 3
+ },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "PUB11",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "page": "subpackages/village/village/publish",
+   "reason": "提及好友行的 @tap 确实挂在 publish-row 上（publish.vue:835 → openMentionPicker :347-349 只弹 village.post.mentionHint 的 Toast），但这个类名全页共用四处且没有修饰类可分：:808 话题行（v-if=!isCircleTarget，@tap 开话题弹层）、:820 位置行（只读）、:835 提及行、:843 谁可以看行（只读），first-match 只会命中 :808 话题行并真弹出弹层，把「只弹 Toast 且 content 不变」判成假红；行内子节点 publish-row__icon 与 publish-row__label（:836/:837）同样共用且首位也在话题行。这与上一波对同页同 id 的结论一致，仍属产品侧缺唯一载具。",
+   "needsCarrier": "欠载体不是欠通道：需要产品侧给提及行加唯一修饰类（或把四行拆成各自类名），否则 selector 无法唯一点到它"
+  },
+  {
+   "id": "PUB12",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "page": "subpackages/village/village/publish",
+   "reason": "位置行（:820 的 view class 只有 publish-row）按硬规则不能点名：它没有 @tap、没有 press-feedback、没有 chevron，正是要证的「只读无反馈」，点名一个只有样式没有事件的类等于给执行器一个点不动的目标；而本条的判据是两态文案（currentCity 为空时 meta 显示「选择位置」:825，有缓存时显示 currentCityLabel 拼接 :72）与提交 body 不含 location（:49 恒空串），都是文本与请求体取证。",
+   "needsCarrier": "纯文案与 body 快照断言：欠 nearby 定位缓存有/无两种 storage 前置与提交 body 读数，无可点目标可点名"
+  },
+  {
+   "id": "PUB25",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "page": "subpackages/village/village/publish",
+   "reason": "本条的落点不在本页：发布成功 400ms 后自动 navigateAway 回村口（:714-721），要判的是村口列表首条、审核中徽标与同标题条数=1（village/index.vue:257-260 的 force 刷新与 :152-165 的按 id 去重），再下拉刷新两次并等服务端回读；下拉刷新是页面原生手势，CLI 桥只有 tap 与 input 两条腿发不出，而且本页提交链路要真发一条 POST 才能进入该状态（requiresReal=true）。",
+   "needsCarrier": "欠原生下拉刷新通道、跨页（publish 到 village/index）路由链读数与服务端 GET /posts 回读，另欠发布成功这条写链路的前置"
+  }
+ ]
+}

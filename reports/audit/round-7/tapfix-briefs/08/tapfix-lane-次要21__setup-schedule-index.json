@@ -1,0 +1,32 @@
+{
+ "lane": "subpackages/setup/schedule/index",
+ "counts": {
+  "planned": 3,
+  "ok": 0,
+  "unverifiable": 3
+ },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "SCH07",
+   "manifest": "次要21",
+   "page": "subpackages/setup/schedule/index",
+   "reason": "＋ 按钮本身是好目标（schedule/index.vue:117 的 view class 含 time-window-add press-feedback，@tap 绑 addTimeWindow :122，全页唯一且不在 v-if 之后），但本条走不到点击腿：判据正文里的「随后填写新行内容」会让 r-exec-cli.mjs:408 的输入类动词判定（正文出现 输入 或 填写 或 粘贴 即整条走 input 腿）把整条判成输入腿，届时点名下发的动作是 input 而不是 tap（同族实测见 search 页 SE01 的 tap[input:.search-input]），对一张 view 必然点不动；断言的又是行数 N0→N0+3、:key=idx 是否报重复 key、保存后重进的回显一致性，都要 DOM 计数与跨次进入对比。",
+   "needsCarrier": "欠把「点＋三次」与「填写并保存」拆成两条判据的能力（否则 leg 判定被填写字样抢走），另需节点计数与重进回显读数"
+  },
+  {
+   "id": "SCH08",
+   "manifest": "次要21",
+   "page": "subpackages/setup/schedule/index",
+   "reason": "删除钮 .time-window-remove（:106，@tap 绑 removeTimeWindow :110）整块在 v-if 的 form.preferredTimeWindows.length>1 分支里（:105），而该数组初值是空数组（:28，R4-00045/46 已去掉示例预填，只有 profileStore.scheduleProfile 回读才会有值），静息态一行时段都没有 ⇒ 删除钮不渲染；判据还要求首两行的值分别是 B 与 C 才看得出 idx 作 key 的错位，那是先点＋再逐行填值的前置，而填值走输入腿、点删除走点击腿，同一条判据两腿不可兼得。",
+   "needsCarrier": "欠「新增两行并填入不同值」的前置配方（输入腿）与随后只含点击的删除判据，另需提交体 preferredTimeWindows 的网络读数"
+  },
+  {
+   "id": "SCH12",
+   "manifest": "次要21",
+   "page": "subpackages/setup/schedule/index",
+   "reason": "本条是滚动与热区量测：scrollTo 到底回顶、对 .field 与 .time-window-input 与 .time-window-remove 与 .time-window-add 与 BottomActionBar 主按钮取 boundingClientRect 并对照 88rpx、量正文 padding-bottom、下拉一次观察是否触发刷新，判据全是尺寸与滚动数值；CLI 桥只有 tap 与 input 两条腿（r-exec-cli.mjs:410），scroll 与下拉与 rect 都发不出；其中删除钮与主按钮还分别落在非静息态与组件内部（见 SCH08 与同族 .bar__primary 页级探针恒 absent）。",
+   "needsCarrier": "欠 WS 滚动与下拉通道与 boundingClientRect 量测通道，另需一个页级可达的底部主按钮载具，纯量测无点击目标"
+  }
+ ]
+}

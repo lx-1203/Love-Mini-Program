@@ -1,0 +1,225 @@
+{
+ "generatedAt": "2026-09-26T21:49:40.135Z",
+ "ledgerRows": 177,
+ "needRows": 53,
+ "split": {
+  "待修复": 15,
+  "已修复待复验": 38
+ },
+ "pagesNeedFrames": 18,
+ "pagesInUniverse": 17,
+ "pagesDropped": 1,
+ "droppedPages": [
+  {
+   "page": "subpackages/chat/chat-session/index",
+   "ids": [
+    "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002"
+   ]
+  }
+ ],
+ "tsvRows": 45,
+ "identities": [
+  "A",
+  "guest"
+ ],
+ "perPage": [
+  {
+   "page": "pages/discover/index",
+   "ids": [
+    "MP-R2-PAGES-DISCOVER-INDEX-013"
+   ],
+   "severities": [
+    "P3"
+   ]
+  },
+  {
+   "page": "pages/home/index",
+   "ids": [
+    "MP-R2-PAGES-HOME-INDEX-105",
+    "MP-R2VIS-PAGES-HOME-INDEX-003",
+    "MP-R2-PAGES-HOME-INDEX-112",
+    "MP-R2VIS-PAGES-HOME-INDEX-001",
+    "MP-R2VIS-PAGES-HOME-INDEX-002",
+    "MP-R2VIS-PAGES-HOME-INDEX-005",
+    "MP-R2VIS-PAGES-HOME-INDEX-006"
+   ],
+   "severities": [
+    "P3",
+    "P2→P3",
+    "P4",
+    "P1→P4"
+   ]
+  },
+  {
+   "page": "pages/login/index",
+   "ids": [
+    "MP-R2-PAGES-LOGIN-INDEX-016"
+   ],
+   "severities": [
+    "P4"
+   ]
+  },
+  {
+   "page": "pages/messages/index",
+   "ids": [
+    "MP-R2-PAGES-MESSAGES-INDEX-018",
+    "MP-R2-PAGES-MESSAGES-INDEX-020",
+    "MP-R2VIS-PAGES-MESSAGES-INDEX-002",
+    "MP-R2VIS-PAGES-MESSAGES-INDEX-004",
+    "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
+    "MP-R2VIS-PAGES-MESSAGES-INDEX-009"
+   ],
+   "severities": [
+    "P3",
+    "P4→P3",
+    "P2→P3",
+    "P1→P4",
+    "P3→P4"
+   ]
+  },
+  {
+   "page": "pages/profile/index",
+   "ids": [
+    "MP-R2-PROFILE-023",
+    "MP-R2VIS-PAGES-PROFILE-INDEX-003",
+    "MP-R2-PROFILE-022",
+    "MP-R2-PROFILE-025",
+    "MP-R2VIS-PAGES-PROFILE-INDEX-004"
+   ],
+   "severities": [
+    "P2",
+    "P3"
+   ]
+  },
+  {
+   "page": "pages/register/index",
+   "ids": [
+    "MP-R2-PAGES-REGISTER-INDEX-009"
+   ],
+   "severities": [
+    "P3"
+   ]
+  },
+  {
+   "page": "subpackages/campus/campus/hub",
+   "ids": [
+    "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002",
+    "MP-R2-CAMPUS-HUB-011",
+    "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006"
+   ],
+   "severities": [
+    "P2→P3",
+    "P4",
+    "P3→P4"
+   ]
+  },
+  {
+   "page": "subpackages/campus/campus/index",
+   "ids": [
+    "MP-R2-CAMPUSINDEX-011"
+   ],
+   "severities": [
+    "P4"
+   ]
+  },
+  {
+   "page": "subpackages/campus/campus/post-topic",
+   "ids": [
+    "MP-R2-CAMPUSPOST-014"
+   ],
+   "severities": [
+    "P4"
+   ]
+  },
+  {
+   "page": "subpackages/circles/circles/circle-home",
+   "ids": [
+    "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002"
+   ],
+   "severities": [
+    "P3→P4"
+   ]
+  },
+  {
+   "page": "subpackages/circles/circles/index",
+   "ids": [
+    "MP-R2-CIRCLES-INDEX-006",
+    "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003"
+   ],
+   "severities": [
+    "P3",
+    "P2→P4"
+   ]
+  },
+  {
+   "page": "subpackages/circles/circles/post-topic",
+   "ids": [
+    "MP-R2-POSTTOPIC-012"
+   ],
+   "severities": [
+    "P4"
+   ]
+  },
+  {
+   "page": "subpackages/profile-extra/profile/other",
+   "ids": [
+    "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+    "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002"
+   ],
+   "severities": [
+    "P2",
+    "P2→P4"
+   ]
+  },
+  {
+   "page": "subpackages/village/village/detail",
+   "ids": [
+    "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001"
+   ],
+   "severities": [
+    "P2→P3"
+   ]
+  },
+  {
+   "page": "subpackages/village/village/index",
+   "ids": [
+    "MP-R2-VILLAGE-INDEX-011"
+   ],
+   "severities": [
+    "P4"
+   ]
+  },
+  {
+   "page": "subpackages/village/village/post",
+   "ids": [
+    "MP-R2-POST-009",
+    "MP-R2-POST-012",
+    "MP-R2-POST-010",
+    "MP-R2-POST-011",
+    "MP-R2-POST-014",
+    "MP-R2-POST-016",
+    "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-001",
+    "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-003",
+    "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006"
+   ],
+   "severities": [
+    "P1",
+    "P3",
+    "P2→P4",
+    "P4",
+    "P3→P4"
+   ]
+  },
+  {
+   "page": "subpackages/village/village/publish",
+   "ids": [
+    "MP-R2-PUB-113",
+    "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001"
+   ],
+   "severities": [
+    "P3",
+    "P3→P4"
+   ]
+  }
+ ]
+}

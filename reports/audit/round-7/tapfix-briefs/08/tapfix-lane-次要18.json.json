@@ -1,0 +1,32 @@
+{
+ "lane": "subpackages/circles/circles/topic-detail",
+ "counts": {
+  "planned": 3,
+  "ok": 0,
+  "unverifiable": 3
+ },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "TD05",
+   "manifest": "次要18",
+   "page": "subpackages/circles/circles/topic-detail",
+   "reason": "加载更多按钮 .replies-more（topic-detail.vue:374，@tap 绑 loadMoreReplies :379）叠了两层非静息态：整块 detail-body 在 scroll-view v-if 的 currentTopic 分支里（:266），而本页 onLoad 只从路由 query 取 topicId（:217-225），执行器的开页参数表 ROUTE_QUERY 里没有这一页（r-exec-cli.mjs:191-197），直开等于无参 → 弹 storeErrors.circle.topicIdInvalid 的 Toast 且 currentTopic 为 null；本轮实拍已证静息态是「话题不存在」加一个重试键（reports/screenshots/round-7-tap3/次要18-TD05-after.png）。第二层是按钮自身的 v-if 条件 repliesHasMore（:373 与 :47-49 拿 replies.length 与服务端 replyCount 比），没有带 replyCount 大于单页数的话题就永远不渲染。",
+   "needsCarrier": "欠进入配方：ROUTE_QUERY 需补 topicId（指向 mock 里 replyCount 大于单页回复数的话题），另需失败注入（断网或 500）才能跑本条第②步"
+  },
+  {
+   "id": "TD06",
+   "manifest": "次要18",
+   "page": "subpackages/circles/circles/topic-detail",
+   "reason": "入口是 .topic-content 上的 @longpress（:294 → handleReportTopic），CLI 桥只有 tap 与 input 两条腿（r-exec-cli.mjs:410）发不出长按；且 .topic-content 本身也在 currentTopic 的 v-if 分支里（:266），无 topicId 直开时不渲染（同 TD05 的实拍证据）；长按之后的举报原因 ActionSheet 与补充描述 Modal 都是 uni 原生层（:180-194），不在本页 wxml 里，没有 class 可点名，最后的连点提交×5 还要客户端请求条数与后端举报记录两路读数。",
+   "needsCarrier": "欠 WS 的 longpress 通道、原生 ActionSheet 与 showModal 的按键通道、带 topicId 的进入配方，以及举报记录的服务端回读"
+  },
+  {
+   "id": "TD07",
+   "manifest": "次要18",
+   "page": "subpackages/circles/circles/topic-detail",
+   "reason": "打招呼按钮的真实类名是 reply-say-hello（:357，@tap.stop 绑 sayHello :358），判据正文写的 .say-hello 既不是页面上存在的类名、也不含 __/-- 因而执行器抠不到；更关键的是它挂在回复项内且带 v-if 排除自己（:356），整块又在 currentTopic 的 v-if 分支里（:266），无 topicId 直开时页面上只有「话题不存在」加重试（同 TD05 实拍），一条回复都渲染不出来；本条还要未实名与已实名两种身份各跑一遍并解码去程 query 三项。",
+   "needsCarrier": "欠带 topicId 的进入配方（且该话题要有他人回复）、未实名与已实名两份身份夹具，以及 chat-session 输入框预填内容的回读通道"
+  }
+ ]
+}

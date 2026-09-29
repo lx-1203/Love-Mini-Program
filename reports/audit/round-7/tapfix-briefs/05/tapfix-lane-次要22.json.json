@@ -1,0 +1,65 @@
+{
+  "lane": "subpackages/discover/activities/index",
+  "counts": { "planned": 6, "ok": 3, "unverifiable": 3 },
+  "cases": [
+    {
+      "id": "AC06",
+      "manifest": "次要22",
+      "page": "subpackages/discover/activities/index",
+      "selector": ".activity-row",
+      "file": "apps/client/src/subpackages/discover/activities/index.vue",
+      "line": 417,
+      "oldAction": "tap 第 1 张 .activity-row（:414-423 → goToActivityDetail :143-145）→ 在详情页用返回键回到列表",
+      "newAction": "tap 第 1 张 .activity-row（activities/index.vue:417，:422 @tap=goToActivityDetail(item.id)；日历视图里的同名节点 :574 只在 viewMode=calendar 渲染，默认 list（:41）故文档序第 1 枚就是 mock 首条 a-1）→ 在详情页用返回键回到列表",
+      "needsIdentity": "",
+      "why": "跳详情的落点是列表卡根节点：activities/index.vue:417 的 .activity-row 带 @tap=goToActivityDetail(item.id)（:422，:144 encodeURIComponent 拼 detail?id=），默认 viewMode=list（:41）所以列表分支静息渲染，产物 mp-weixin 与 mp-weixin-real 的该页 wxml 里 activity-row 都在（日历分支那份带 wx:if 不参与静息命中）。"
+    },
+    {
+      "id": "AC07",
+      "manifest": "次要22",
+      "page": "subpackages/discover/activities/index",
+      "selector": ".enroll-btn",
+      "file": "apps/client/src/subpackages/discover/activities/index.vue",
+      "line": 452,
+      "oldAction": "tap 第 1 张卡的 .enroll-btn（activities/index.vue:451-459，@tap.stop）→ 等 toast → 再 tap 一次（取消报名）",
+      "newAction": "tap 第 1 张卡的 .enroll-btn（activities/index.vue:452，:455 @tap.stop=toggleEnroll(item.id) 编译为 catchtap，:454 :disabled=activityStore.enrolling 或 submittingId=item.id）→ 等 toast → 再 tap 一次（取消报名）",
+      "needsIdentity": "",
+      "why": "报名开关就是卡内的 .enroll-btn：activities/index.vue:452 自带 @tap.stop=toggleEnroll（:110-129 的乐观更新与回滚都在这里），@tap.stop 编译成 catchtap 正是本条要断言的「不冒泡跳详情」；产物 wxml 里 enroll-btn 带 catchtap，两档都有，静息渲染。"
+    },
+    {
+      "id": "AC08",
+      "manifest": "次要22",
+      "page": "subpackages/discover/activities/index",
+      "selector": ".enroll-btn",
+      "file": "apps/client/src/subpackages/discover/activities/index.vue",
+      "line": 452,
+      "oldAction": "500ms 内对 a-2 的 .enroll-btn 快速 tap×5（rapidTap，记录每击落点），随后静置 3s 观察",
+      "newAction": "500ms 内对 a-2 的 .enroll-btn 快速 tap×5（rapidTap，记录每击落点；.enroll-btn 每卡一枚且同名，class 定位按文档序命中第 1 张 a-1，handler 与在途守卫完全同一份代码，回填时 POST /activities/<id>/enroll 的 id 按实测写并注明不是原判据的 a-2），随后静置 3s 观察",
+      "needsIdentity": "",
+      "why": "并发守卫的触发物件与 AC07 同一枚：activities/index.vue:452 的 .enroll-btn（:455 @tap.stop=toggleEnroll，:454 :disabled 绑 activityStore.enrolling），enrollingActivityIds 的在途去重在 activity.ts:254-257；本条要的是同一 widget 的第 2 枚（a-2），class 通道只能命中第 1 枚，故按同守卫等价记并注明 id 差异。"
+    }
+  ],
+  "unverifiable": [
+    {
+      "id": "AC02",
+      "manifest": "次要22",
+      "page": "subpackages/discover/activities/index",
+      "reason": "判据要的是列表 scroll-view 的 refresher 真下拉三次并逐次数请求（refresher-enabled 与 @refresherrefresh 在 activities/index.vue:390-397，force=true 穿透 activity.ts:171 的 30s TTL）；承载下拉的容器 .activity-scroll 没有点击事件，点它既不触发 refresher 也发不出列表请求，等于把一条刷新判据换成一条空点击。",
+      "needsCarrier": "欠 WS automator 的 touch/move 连续手势通道（在 .activity-scroll 内下拉到 refresher 阈值并松手，还要三次、间隔 2s）与 network 逐条计数；CLI 桥只有 element tap/input。"
+    },
+    {
+      "id": "AC04",
+      "manifest": "次要22",
+      "page": "subpackages/discover/activities/index",
+      "reason": "三枚 chip 共用同一个类名 .quick-filter（activities/index.vue:400-410 的 v-for，数组序是 全部/今天/周末），@tap=switchQuickFilter(f.key) 只在 f.key 上区分；CLI 的 class 定位按文档序只命中第 1 枚也就是「全部」，而 quickFilter 默认值就是 all（:45）⇒ 点下去是彻底的无变化，判据要的「今天 → 0 卡 + quickEmpty 文案」这条主分支永远取不到，且三步序列（今天→周末→全部）在一次点击里也走不完。",
+      "needsCarrier": "欠 nth/序号或坐标定位通道（要分别命中第 2 枚「今天」与第 3 枚「周末」），或给三枚 chip 补 key 派生类名（属源码改动，本任务禁改）；另需三次连续点击的执行载具。"
+    },
+    {
+      "id": "AC10",
+      "manifest": "次要22",
+      "page": "subpackages/discover/activities/index",
+      "reason": "本条三条支路都落不到静息可点物件上：错误盒与 .retry-btn 在 :350-354 的 v-else-if=activityStore.errorMessage 里，要断网冷启动才出现（页面上没有任何点击能造出断网态）；底部「加载中/没有更多」在 :468-473 的两个 v-if/v-else-if 里；剩下的判据动作是 scroll-view 触底 @scrolltolower 连发两次看 300ms 防抖，CLI 桥既发不出滚动也构造不了离线。",
+      "needsCarrier": "欠断网夹具（DevTools network 限速或 mock 层注入失败）以造出 errorMessage 非空的错误态，以及 WS 的 scroll/触底手势通道来连发两次 scrolltolower；requiresReal=true 还需要真后端分页数据把 hasMore 置真。"
+    }
+  ]
+}

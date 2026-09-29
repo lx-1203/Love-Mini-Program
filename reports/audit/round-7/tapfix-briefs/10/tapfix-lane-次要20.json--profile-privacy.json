@@ -1,0 +1,16 @@
+{
+ "lane": "subpackages/profile-extra/profile/privacy",
+ "manifest": "次要20.json",
+ "sourceFile": "apps/client/src/subpackages/profile-extra/profile/privacy.vue",
+ "counts": { "planned": 1, "ok": 0, "unverifiable": 1 },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "PR05",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/privacy",
+   "reason": "本条的前置是把开关1 置为 true，而两枚开关都是没有类名的原生 switch：privacy.vue:86-90 与 :97-101 只带 :checked、:color 与 @change，编译产物 subpackages/profile-extra/profile/privacy.wxml 里它们的 class 只剩 data-v-7734bd25 这种 scoped 样式哈希，类名通道点不到；装它们的 .privacy-item（:81 与 :92）整块不挂 @tap/@change，按 hardRules 不能当点击目标。页内唯一带事件且能点名的是返回钮 .privacy-page__back（:72，@tap goBack），它对应的是本条第②步，但建立不了第①步的开关态，剩下的三次回读与缺字段兜底断言（:186/:187 的取值规则）也就无从判起。",
+   "needsCarrier": "欠可寻址的开关载体（给这两枚 switch 补类名，或让桥支持按 role/属性/序号定位原生控件），另需一条 storage 写读与清空加冷启动重进的夹具载具（mock 与 real 两条水合路径各跑一次，④ 还要构造缺字段与非法值的存储态）。"
+  }
+ ]
+}

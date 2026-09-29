@@ -1,0 +1,32 @@
+{
+ "lane": "subpackages/tools/search/index",
+ "counts": {
+  "planned": 3,
+  "ok": 0,
+  "unverifiable": 3
+ },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "SE06",
+   "manifest": "次要19",
+   "page": "subpackages/tools/search/index",
+   "reason": "用户结果行 .user-row（search/index.vue:343，@tap 绑 goUserProfile :348）只在结果态渲染：静息态走的是 :284 那个 v-if（!isSearching 且 posts.length===0）的热搜加历史页，必须先键入关键词并等请求回来才有行，本轮执行档实测同页结果分支就是 absent（SE08 探针 .post-card__user:absent 与 .post-card__tag:absent）；本条还要求构造 nickname 为空与 avatarUrl 为空各一条数据（判 :350 的 DEFAULT_AVATAR 回退与不塌陷），并读该行的 src 与 naturalWidth，属图片解码读数。另有一条通道级障碍：判据正文里的「输入框」字样会让 r-exec-cli.mjs:408 把整条判成输入腿，届时点名任何非输入元素都只会下发 input 动作而点不动。",
+   "needsCarrier": "欠关键词结果态前置（先键入并等 GET 回来）加空昵称与空头像是两份数据夹具，另需 naturalWidth 读数通道，以及把点击腿从输入腿里拆出来的能力"
+  },
+  {
+   "id": "SE09",
+   "manifest": "次要19",
+   "page": "subpackages/tools/search/index",
+   "reason": "本条的动作全是触底与停留（滚到结果列表底部、连续触底 3 次、hasMore=false 后继续下拉触底、加载中重复触底），断言是 store.loadMore 是否发出 page=2 与条数递增，没有一次元素点击可归属；CLI 桥只有 tap 与 input 两条腿（r-exec-cli.mjs:410），发不出 scroll 与 reachBottom；而且结果列表本身要先有数据（同 SE06 的结果态前置）。",
+   "needsCarrier": "欠 WS 滚动到底通道（含 onReachBottom 触发）与网络分页参数读数，另欠关键词结果态前置"
+  },
+  {
+   "id": "SE11",
+   "manifest": "次要19",
+   "page": "subpackages/tools/search/index",
+   "reason": "两个入口物件都是真目标（.search-back :238 的 @tap 绑 goBack，.search-cancel :263 的 @tap 也绑 goBack），但本条要求「两种前置分别」跑：栈=2 由来源页进入与栈=1 直开，执行器只会 reLaunch 到本页（栈恒=1），路A 无从产生，落点页的搜索词与滚动位恢复也要跨页读数；③的六个热区 boundingBox 量测需要 WS 侧 rect 通道；④的滚到顶底同样发不出。还有一条硬障碍：判据里的「输入框」字样使 r-exec-cli.mjs:408 把整条判成输入腿，点名 .search-back 或 .search-cancel 都只会被当输入目标下发（同页 SE01 与 SE04 实测就是 tap[input:.search-input]）。",
+   "needsCarrier": "欠两种栈深前置配方、boundingBox 量测通道与滚动通道，另需把点击腿与输入腿拆成两条判据的能力"
+  }
+ ]
+}

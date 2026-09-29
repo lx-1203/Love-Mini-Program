@@ -1,0 +1,16 @@
+{
+ "lane": "subpackages/discover-extra/discover/match-success",
+ "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json",
+ "sourceFile": "apps/client/src/subpackages/discover-extra/discover/match-success.vue",
+ "counts": { "planned": 1, "ok": 0, "unverifiable": 1 },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "MS17",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS",
+   "page": "subpackages/discover-extra/discover/match-success",
+   "reason": "本条四件事全靠连续手势与几何判定：小屏机型下内容能否滚到底（若整页不可滚且超出视口要判 P1）、下拉 300px 是否触发 onPullDownRefresh 或重复 getPersonProfile、左右滑动是否劫持返回或误点相邻钮、以及 flex 高度链是否让宿主塌陷为 0（MP-R2-MATCH-SUCCESS-009）。整页是 flex 撑满、源码里没有 scroll-view 容器也没有 onPullDownRefresh 钩子，页内三枚带 @tap 的物件（:136 出口、:147 截图、:157 分享）都不是本条的判点，拿它们替手势等于换了被测对象。",
+   "needsCarrier": "欠 WS automator 的连续手势通道（下拉 300px 两次、左右滑动一次）加 scrollTop 极值与宿主高度的 rect 读数载具、network 侧 getPersonProfile 的条数计数；「小屏机型」还需要改视口尺寸的夹具。"
+  }
+ ]
+}

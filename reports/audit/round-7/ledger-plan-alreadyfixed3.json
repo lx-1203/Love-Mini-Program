@@ -1,0 +1,40 @@
+{
+ "patches": [
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
+   "col": 6,
+   "new": "已修复（源码级判点：激活态已是品牌绿底 + 反白字；处置在码里早已落地，本轮补的是判点）",
+   "why": "账实不符的反方向；结案依据是谓词不是 lane 自述"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
+   "col": 9,
+   "new": "判点 MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001：.circles-tab--active 底色 var(--c-brand, #36C99A)（index.vue:835-836）、其下 .circles-tab__text 字色 var(--c-neutral-0, #FFFFFF)（:852-853），并断言旧的浅底 --c-bg-brand 不再出现在该规则里。产物 index.wxss 早前已含同写法（lane 复核）。仍然欠：处置提到的「按压态走 --c-brand-600」这一半在 mp-weixin 需要模板 hover-class，静态判点不覆盖，且本文件 :active 规则被 /* #ifdef H5 */ 门控、产物里被剥掉 ⇒ 不写进本条判点，按压态观感另欠一帧。",
+   "why": "把「不判的那半段」写明并给出不判的理由，避免下一轮当成漏改或当成已改"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-011",
+   "col": 6,
+   "new": "已修复（源码级判点：遮罩走 --c-bg-overlay，--c-bg-brand-soft 已有亮/暗双值定义）",
+   "why": "同上：处置早已在码，本轮补判点"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-011",
+   "col": 9,
+   "new": "判点 MP-R2-POSTTOPIC-011（多文件谓词，两文件都过才过）：post-topic.vue:1308 background: var(--c-bg-overlay, rgba(0,0,0,0.45))；styles/tokens.scss:70 亮值 --c-bg-brand-soft: #F0FDF9、:273 暗值 var(--c-brand-50)，且 --c-bg-brand-soft 定义恰好 2 处（多一处就说明有人另开了一份口径）。护栏照旧：:824 的 --c-overlay-bg-pure 是另一个**已定义**的令牌，与要禁的 --c-overlay-bg 只是子串关系，不许被子串匹配重新点成红。",
+   "why": "这一条被误判过一次，原因正是子串匹配；把护栏写进证据格防止复发"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
+   "col": 6,
+   "new": "待修复（部分落地：toast 明示半段已在码且有判点；后端未读元数据同步与「全清」语义重复仍欠）",
+   "why": "只落了一半就不许整行变绿；沿用台账既有的「待修复（部分落地：…）」口径，状态仍留在未结案那一侧"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
+   "col": 9,
+   "new": "判点 MP-R2-PAGES-MESSAGES-INDEX-020（多文件谓词）：pages/messages/index.vue:273 在 tapIndex===1 之后 uni.showToast({title: t(\"messages.unreadLocalHint\")})，键在 zh-CN.ts:2723「已标为未读（仅本机生效，离开页面后会还原）」与 en-US.ts:2550 配对。裁决按可辩护默认采 (a) 保留能力 + toast 明示，不摘菜单项。台账原记「无任何 toast/回执」是误测：该改动在 91e56562，是本轮被测产物 d99f3a1f 的祖先。**仍然欠**：stores/messages.ts:1326-1335 的 TODO(backend)（未读元数据无后端同步）与 :300 markAllSessionsRead 与 :316 onShow 的语义重复——后者会改变红点闭环时序，属产品可见行为，本轮不擅改，两项一并留在本行证据里而不是另开一列。",
+   "why": "半段结案 + 半段欠项必须同格可见，且要记明台账原先是误测"
+  }
+ ]
+}

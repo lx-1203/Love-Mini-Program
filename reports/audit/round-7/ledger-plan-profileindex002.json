@@ -1,0 +1,24 @@
+{
+ "generatedAt": "2026-09-27T01:01:00.000Z",
+ "source": "手工实测（grep 五个 mine 组件的 margin 行 + git show 094f7239 同文件比对 + 全仓横向字面量清单）",
+ "patches": [
+  {
+   "id": "MP-R2VIS-PAGES-PROFILE-INDEX-002",
+   "col": 8,
+   "new": "实测（2026-09-27，本轮复核）：五个 mine 组件的横向 margin 现在都是令牌 —— MyCompletion.vue:31 / MyInteraction.vue:55 / MyMore.vue:51 / MyStats:47 均为 margin: var(--page-padding) var(--page-padding) 0，MyStory.vue:172 为 margin: var(--sp-5) var(--page-padding) 0（横向同为该令牌，纵向另用 --sp-5）。**同样的五行在基线 094f7239 上逐字相同**（git show 五文件逐一比对；git diff --stat 094f7239 -- components/profile/mine/ 只有 MyProfile.vue 被本轮别的条目改过，与本行无关）。原判据写的「MyInteraction.vue:54-55 .my-interaction{margin:24rpx 24rpx 0}」在盘上与基线上都不存在 ⇒ 那是更早 revision 的形状，不是本轮的改前态。",
+   "why": "证据必须换成量得到的东西：旧串把一个不存在的改前态当成缺陷实体，下一轮照抄就会去「修」一个早已成立的东西"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-PROFILE-INDEX-002",
+   "col": 6,
+   "new": "保留-判据不成立（本轮前落地：四个 in-scope 组件在本轮开跑基线 094f7239 上就已全是 var(--page-padding)，本轮没有可归因于本行的改动）",
+   "why": "判据点名的改前态在基线不存在 ⇒ 不是「本修未修」，而是「这条描述的那个缺陷不成立」"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-PROFILE-INDEX-002",
+   "col": 9,
+   "new": "源码判点（可重跑）：grep \"margin: var(--page-padding) var(--page-padding) 0\" 命中 MyCompletion:31 / MyInteraction:55 / MyMore:51 / MyStats:47（4/4 in-scope 组件），MyStory:172 横向同为该令牌、纵向 --sp-5。基线 094f7239 逐文件命中数 = 1/1/1/1/0。承载文件：apps/client/src/components/profile/mine/*.vue。范围外观察（不另立案，理由见处置）：全仓仍有 ≥12 个文件使用横向 24rpx/20rpx 字面量（含 components/profile/public/Public*.vue 五个、subpackages/circles/circles/circle-home.vue、subpackages/profile-extra/settings/{dnd,index}.vue、verification/index.vue、discover-extra/discover/history.vue、market/{detail,shop}/index.vue）—— 本行处置只裁了那四个组件，其余没有口径 ⇒ 记观察，不当缺陷也不当已修。",
+   "why": "把「判点只覆盖一个组件」这个洞补成逐文件可核的数，并给范围外的字面量一个明确去向（观察项），免得下轮把它误当已修或误当新缺陷"
+  }
+ ]
+}

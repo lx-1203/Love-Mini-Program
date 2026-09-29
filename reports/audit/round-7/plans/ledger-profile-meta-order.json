@@ -1,0 +1,23 @@
+{
+  "note": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001 收口：判据按本轮重写成「两页 meta 顺序一致」，并按两张理想效果图（都是 年龄 · 学校 · 城市）落地共用 formatter。载具是 vitest 挂载测（含一条负例实测能红），不是源码正则。",
+  "patches": [
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+      "col": 6,
+      "new": "已修复待复验（判据已按本轮重写为「两页 meta 顺序一致」并落地共用 formatter；挂载测已绿，重建产物后的两页真机帧未出，故不判结案）",
+      "why": "缺陷本体（同一份 basic 在两页渲染成两种顺序）已在源码与运行时两侧消除，欠的只是帧级复验"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+      "col": 9,
+      "new": "判据重写：原判据里「与 MyHeader 共用 formatter」的前提被源码推翻（MyHeader 当时是整串直出，两页根本不同序），而「把 loc 解构顺序对调」字面不可执行（后端 location 串本体是「城市 · 学校」，对调会把城市渲染成学校）。本轮把这条改判成可判物件：**两页对同一份 basic 必须渲染出同一序**，方向由两张理想效果图定——素材/理想效果图/已经填完资料的个人主页.png 的 meta 行实测读作「21岁 · 北京大学 · 北京」（本轮逐图像素核对，2026-09-27 03:19），与 他人显示主页.png 同序 ⇒ 该动的是「我的页」而不是「他人页」。落地三件：新建 apps/client/src/utils/profile-meta.ts（profileMetaParts 与 profileMetaLine，解析位序不动、只改输出 push 序）；components/profile/mine/MyHeader.vue:23 由整串直出改成 profileMetaLine；components/profile/public/PublicIdentity.vue:21 由本地重排改成 profileMetaParts（两处都留了 import 判点）。载具：apps/client/src/tests/utils/profile-meta.spec.ts 六条（纯函数三条：重序、无分隔符不造假、缺字段不产悬空分隔符；挂载测三条：两页各自 年龄 在最前且 学校 先于 城市、两页必须真的调用共用 formatter 且不得自己 split location）。实测 `vitest run src/tests/utils/profile-meta.spec.ts` = Tests 6 passed (6)；**负例实测能红**：把 MyHeader 临时退回整串直出后同一命令报 `MyHeader 里应当出现城市: expected 17 to be greater than 17`、Tests 1 failed 5 passed，退回已撤销并复跑回 6/6。另记：两页 meta 原先 0 条测试覆盖，本行是它们的第一条。",
+      "why": "把「判据被推翻后重写成什么、方向由谁定」写清楚，否则下一轮又有人拿旧的 formatter 说法立案"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+      "col": 11,
+      "new": "结案条件：①mock 档重建后重跑该 spec（必须仍 6/6，且 spec 是挂载测不是源码正则，重建不会让它假绿）；②出两帧——我的页（已填完资料态）与他人主页各一张，肉眼或裁切判点确认 meta 行读作 年龄 · 学校 · 城市，与两张理想效果图同序；③若有人主张「我的页应保持后端串序」，那要同时改两张理想效果图的口径并把 formatter 反序，属产品裁定，不在 QA 修复范围内。本轮不改判、不销案：状态停在 已修复待复验 直到 ①② 都有落盘读数。",
+      "why": "把「什么算复验完」写成可执行清单，避免下一轮拿 spec 绿当成帧已取"
+    }
+  ]
+}

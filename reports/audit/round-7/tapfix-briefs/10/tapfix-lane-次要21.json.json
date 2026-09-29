@@ -1,0 +1,20 @@
+{
+ "lane": "subpackages/setup/interest/index",
+ "manifest": "次要21.json",
+ "sourceFile": "apps/client/src/subpackages/setup/interest/index.vue",
+ "counts": { "planned": 1, "ok": 1, "unverifiable": 0 },
+ "cases": [
+  {
+   "id": "INT07",
+   "manifest": "次要21",
+   "page": "subpackages/setup/interest/index",
+   "selector": ".interest-save",
+   "file": "apps/client/src/subpackages/setup/interest/index.vue",
+   "line": 105,
+   "oldAction": "500ms 内对 .interest-save rapidTap×5，逐条记录：客户端 PUT 条数、Toast 条数、600ms 后返回回调执行次数、最终路由栈（每帧 route）",
+   "newAction": "500ms 内对 .interest-save rapidTap×5，逐条记录：客户端 PUT 条数、Toast 条数、600ms 后返回回调执行次数、最终路由栈（每帧 route）（保存钮点名：.interest-save，类名与 @tap 同在一行 apps/client/src/subpackages/setup/interest/index.vue:105，回调是 handleSave（:32 起首行的 saving 闸即本条要判的防连点），编译产物 subpackages/setup/interest/index.wxml 内该类唯一且外层不带 wx:if，静息态即可命中；限界一条如实记：rapidTap×5 需 WS automator 的连发时序，本通道一次判点只下发一次元素动作，至少能验到一条 PUT 与一次返回回调）",
+   "needsIdentity": "",
+   "why": "expected 的三条守恒（PUT 一条、Toast 一条、路由栈只减一层）全部挂在 :105 那枚 @tap handleSave 上，它是本页唯一带事件的保存入口，.interest-save__text 只是里面的文案节点。"
+  }
+ ]
+}

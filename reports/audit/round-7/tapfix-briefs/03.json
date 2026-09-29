@@ -1,0 +1,351 @@
+{
+ "batch": "03",
+ "laneCount": 3,
+ "caseCount": 23,
+ "lanes": [
+  {
+   "lane": "subpackages/chat/chat-session/index",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/chat/chat-session/index.vue",
+   "sourceFound": true,
+   "planned": 8,
+   "outFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json.json",
+   "cases": [
+    {
+     "id": "CS07",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "page": "subpackages/chat/chat-session/index",
+     "title": "temp 会话正常加载：横幅 + 倒计时首进即出（MP-R1-...-001 回归），交换/结束入口可用",
+     "oldAction": "进入后等 1.5s：抄录 .temp-banner 三行文本与倒计时值（:1852-1861）、页面标题（chat.tempSessionTitle :897）、气泡数；观察倒计时是否每约 1s 递减；再 tap .temp-action-row 两钮",
+     "expected": "首进即显示倒计时（不得为恒空 —— 倒计时在会话就绪后重启，:644-649 startTempCountdown），格式为剩余时间文案（formatTempCountdown，已结束不得残留「已结束」字样 :1113-1123）；横幅 hint 取 activeSession.availabilityHint 或默认文案（:1860）；标题为临时会话标题非「对方」；3 条气泡完整渲染（sync 生效 :644）；两钮可点且分别触发：同意交换 → 成功 Toast（:1206-1208），结束会话 → **先弹 showModal 确认**（:1227-1236），取消则会话不结束",
+     "evidence": "critical：before/after 截图（倒计时两个时刻各一张）+ 横幅/标题文本 + activeSession 求值 + Toast/modal 文案 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CS08",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "page": "subpackages/chat/chat-session/index",
+     "title": "会话未加载时的 temp 操作按钮：禁用态 + 点击必须有 Toast，不得静默（MP-R1-...-002/-105）",
+     "oldAction": "①若 .temp-action-row 仍渲染，tap 两个按钮各一次并抄录 Toast；②读取按钮 class 是否含 temp-action-btn--disabled（:2099,2108）；③记录「输入区显示错误文案导致整组按钮不渲染」这一实际分支",
+     "expected": "判定按修复后应有表现：tempSessionUnavailable 为真时按钮须带禁用样式 **且** 点击给出「会话不存在或已失效」或 operationFailed Toast（:1199-1205,1219-1225），绝不允许「点了没反应」；若当前实现因 pageErrorMessage 存在而整组不渲染（:2008 v-else），执行器须如实记录「入口不渲染」并核对 :2093-2095 注释声称的『仍渲染整组禁用按钮』是否与实际一致 → 不一致记 Consistency/P2 缺陷；两种表现都必须保证无静默死按钮",
+     "evidence": "normal：after 截图（按钮区放大）+ class 与求值 + Toast 数组 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "input"
+    },
+    {
+     "id": "CS19",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "page": "subpackages/chat/chat-session/index",
+     "title": "长按气泡菜单六项与三路关闭：复制/引用/转发/撤回/删除/取消",
+     "oldAction": "①longpress 一条对方气泡 → 抄录出现的菜单项集合；②longpress 一条自己气泡（temp 会话）→ 抄录含撤回的集合；③菜单打开后分别用「tap 遮罩 :2128」「tap 取消 :2196」「选择某一项」三种方式关闭；④tap 复制、引用、转发各一次观察反馈",
+     "expected": "①对方气泡不得出现撤回项（仅自己 + temp 才有，:2171）；②temp 自己气泡必须出现撤回；③三路关闭全部生效且关闭后不得残留遮罩阻塞点击（:2126-2204）；④复制 → Toast 复制成功且剪贴板有该文本；引用 → 出现 .quote-reply-bar 预览条并把输入框 placeholder 切成回复态（:2020-2028,2070）；转发 → 打开会话选择弹层（openForwardSheet :1594）；所有文案不得为裸 i18n key；每项点击 500ms 内必有可观测反馈",
+     "evidence": "critical：各项 before/after 截图 + 菜单项集合抄录 + 剪贴板回读 + Toast 数组 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CS20",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "page": "subpackages/chat/chat-session/index",
+     "title": "引用回复：发送带 quoteRef、预览条可取消、tap 原文定位被引用消息",
+     "oldAction": "①longpress 一条对方气泡 → tap 引用；②不取消直接输入文字发送；③重来一次 longpress → tap 引用 → tap .quote-reply-bar 取消（:2020 @tap=cancelQuoteReply :1650）；④tap 气泡上的引用区（@tap-quote=handleTapQ",
+     "expected": "①预览条显示被引用人 + 摘要，输入框 placeholder 变为回复态；②发送后新气泡带引用块（quoteRef/quoteBody/quoteSender 被同步保留 :560-564）且请求体携带 quoteRef 目标消息 id（network 逐条核对）；发送后预览条清空（:1178）；③取消后 placeholder 复原、随后发送为普通消息（无 quoteRef）；④tap 引用区能定位/滚动到被引用消息（不得无反馈）；引用不存在的消息 id 时须给提示或静默但不得崩溃",
+     "evidence": "normal：四步 after 截图 + 请求体字段（quoteRef）抄录 + 气泡引用块文本 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "input"
+    },
+    {
+     "id": "CS23",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "page": "subpackages/chat/chat-session/index",
+     "title": "上拉到顶加载更早历史：视口保持不跳位、temp 会话不得请求分页",
+     "oldAction": "①在 .chat-scroll 内下拉到顶触发 @scrolltoupper（:1911,397-428），记录加载前后 scrollTop 与被加载的首条消息 id；②重复上拉 3 次；③在 temp 会话执行同样的到顶手势；每步记录 network 请求",
+     "expected": "①加载后视口**保持原位**（用 scrollHeight 差值补偿，:412-420），不得跳到顶部或底部；老消息前置插入且时间条顺序正确；【客户端层】请求按页递增（第 2 页 1 条，不得重复同页风暴，:402-407 loadingOlder 门生效）；②连续上拉不得重复拉同一页；③temp 会话必须**不发**任何分页请求（isTempSession 门 :406 直接 return，temp-chat 一次性返回全部，:399-401 注释）→ 出现私信分页请求即判 P2/P1（temp id 非数字必 500）；④分页失败必须给轻提示 Toast（:422-424，MP-R2-CHAT-006），不得让 rejection 逃逸到全局 onError",
+     "evidence": "critical：①②③before/after 截图（含首条消息定位标记）+ scrollTop/scrollHeight 数值 + network 逐条 + Toast 数组 + console",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CS24",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "page": "subpackages/chat/chat-session/index",
+     "title": "滚动到底与「新消息」浮层：jumpToLatest 可用且不打断阅读",
+     "oldAction": "①向上滚动至中间并停止，观察浮层；②tap .unread-hint；③滚动到最底观察最后一条气泡与安全区关系；④再滚到最顶，记录 onScroll 采样（:382-384）",
+     "expected": "①浏览历史位置时不得被强制滚回底部（阅读不被打断）；浮层文案为 chat.newMessageHint 本地化（不得裸 key）；②tap 后平滑滚至最新一条（:501-505 jumpToLatest → scrollToBottom），浮层消失；③最后一条气泡完整可见、不被输入栏/home 指示条遮挡（safe-area）；④滚动过程无回弹异常、无 nearBottom 恒真导致历史分页被误触发",
+     "evidence": "normal：①②③after 截图 + scrollTop 采样序列 + 浮层可见性求值 + console",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CS26",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "page": "subpackages/chat/chat-session/index",
+     "title": "失效数字 sessionId 深链：错误态而非假空会话（私信分支失败门 MP-R1-...-201/-104）",
+     "oldAction": "进入后等 1.5s；读取 pageErrorMessage/friendlyPageError、消息区文本、输入栏可用性、network 响应码；随后在 UI 上尝试输入并发送（若入口存在）",
+     "expected": "命中 :660-663 失败门 → 显示用户可读错误（不得是裸 HTTP 串/数字码）；不得渲染「破冰引导 + 空会话 + 可用输入栏」；输入栏不可用或发送必须失败并有 Toast；【数据层】不得在未知会话下于后端落任何消息记录（回读该 id 相关消息数=0）；console 允许接口 4xx 但不得有未捕获 rejection",
+     "evidence": "critical：before/after 截图 + 错误文案 + network 响应码 + 后端回读（该 id 消息数）+ console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "input"
+    },
+    {
+     "id": "CS31",
+     "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+     "page": "subpackages/chat/chat-session/index",
+     "title": "幽灵参数与注入面：未消费参数与超长/编码异常值不得影响会话与鉴权",
+     "oldAction": "reLaunch '...chat-session/index?sessionId=SA&partnerName=%E5%83%8F%E5%A1%AB&token=fake.jwt&targetId=999&type=temp&unread=99&redirect=%2Fpages%2Fhome%2Findex&x='",
+     "expected": "会话与标题必须仍由 sessionId/真实数据决定（**不得**被 partnerName 覆盖标题，:896-907 仅取 store/deepLink 真名）；unread=99 不得伪造未读角标（未读由 store 计算）；type=temp 不得把私聊会话误导入 temp 链路（判定依据为 :615-617 的 id 形态与列表匹配，非 query）；storage token 不被 query token 覆盖（回读 token 值前后一致）；redirect/x=2000 不得被消费或致溢出；发送功能不受影响（正常 1 条上屏）；observed 逐项标注幽灵参数并列源码依据行号",
+     "evidence": "critical：before/after 截图 + 标题/会话 id/token 前后求值 + network 逐条 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/village/village/detail",
+   "manifest": "次要18.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/village/village/detail.vue",
+   "sourceFound": true,
+   "planned": 8,
+   "outFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-次要18.json.json",
+   "cases": [
+    {
+     "id": "VD01",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/detail",
+     "title": "冷启动深链 ?id=post-16：骨架→正文，全程不闪「帖子不存在」空态",
+     "oldAction": "启动后 0s/0.5s/1s 三次 DOM 采样（.detail-page 存在性、.comments-loading 骨架、toast 队列），不打点",
+     "expected": "有 id 分支：命中 store 缓存则首帧直渲、未命中置 detailLoading 骨架（detail.vue:685-693），setCurrentPost 落定后 finally 关骨架（:702-704）；:713 的 t('village.detail.postNotExist') toast 全程不出现、不闪错误/空态；1s 内标题/作者/正文可见；console 无 TypeError/unhandledRejection",
+     "evidence": "navigation：getCurrentPages 栈顶=subpackages/village/village/detail + options.id=post-16；三次采样截图（骨架帧与正文帧）+ console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VD07",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/detail",
+     "title": "帖子图片全屏查看与遮罩关闭（弹层两路）",
+     "oldAction": "① tap .post-image（detail.vue:848 → openImageViewer :84-98）；② tap .image-viewer 遮罩（:1327-1335 → closeImageViewer）；③ 重开后改按系统返回",
+     "expected": "打开后 .image-viewer 存在且 src=imageViewerSrc（:1335）；关闭后节点移除、路由不变仍在详情；两路均 500ms 内可见 DOM 变化；图片 src 须经 resolveMediaUrl 解析（缩略 :848 与查看层同源）",
+     "evidence": "normal：打开态与关闭态 after 截图 + 路由不变断言 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VD08",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/detail",
+     "title": "标签跳 tag-posts 与返回落点状态恢复",
+     "oldAction": "tap .post-tag（detail.vue:877 → goToTagPosts :380-383）→ 观察路由 → 在 tag-posts 按返回键 → 观察落点与详情页滚动位置",
+     "expected": "去程：栈顶=subpackages/village/village/tag-posts 且 options.tagName 已去 # 前缀并 encodeURIComponent（:381-382）；回程：落点=subpackages/village/village/detail（来源页），帖子内容与滚动位置恢复、评论未被清空、点赞态不变；不得 reLaunch 丢栈",
+     "evidence": "navigation：getCurrentPages 双向路由链（去程/回程各一次）+ 落点页标题断言；可免截图",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VD09",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/detail",
+     "title": "评论排序切换最热/最新 + 加载更多/到底两态",
+     "oldAction": "① tap .comments-sort（detail.vue:947 → toggleCommentSort :75-83）两次，比对首条评论与文案；② tap 加载更多评论（:1134）至出现「没有更多」；③ 滚动 .detail-body（:781）到顶与到底",
+     "expected": "排序文案在「最热」↔「最新」切换且列表顺序随之变（:948-949）；分页追加不重复不丢条、到底后不再出现可点「更多」（幻影更多即 FAILED，参照 noMoreComments 自愈 :475）；scroll-view 触顶/触底均有位置变化，无 Loading 永驻",
+     "evidence": "normal：切换前后 + 到底帧 after 截图 + observed 记录首条评论内容与列表长度",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VD15",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/detail",
+     "title": "长按举报链路：ActionSheet 取消 / 选原因 + Modal 补充描述 / 跳过 → 提交 toast",
+     "oldAction": "① 长按 .post-content 区（detail.vue:774 → handlePostLongpress :302-）；② ActionSheet 点「取消」；③ 重开选原因（:309）后在 showModal 描述框留空并点「跳过/取消」；④ 重开走完填描述 + 提交；⑤ 另测 PostReportDial",
+     "expected": "取消与跳过路径均不得发写请求、无「提交成功」toast；走完提交后 Toast t('village.detail.reportSubmitted')（:370），失败显示后端文案（:373）；ActionSheet/Modal 关闭后页面仍可交互（无遮罩残留）；举报写请求数与后端回读条数拆两判定点（http.ts:262-274 幂等键会掩盖重复提交）",
+     "evidence": "critical：before+after 截图（两态弹层各一张）+ Toast 文案 + network（写请求条数）+ console",
+     "requiresReal": true,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VD16",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/detail",
+     "title": "相似作者三入口（头像/关注/私信）与关注失败必须可见（证伪静默失败）",
+     "oldAction": "① tap 作者头像（:1160）；② tap「+关注」（:1204 → handleFollowSimilarAuthor :651-662）并使其失败（real 后端置 500 或断网复现）；③ tap 私信（:1216 → sendMessageToSimilarAuthor :667-676）；④ 断网态重复 ",
+     "expected": "①跳他人主页且落点参数为 userId；②失败必须有用户可见反馈：Toast（当前源码仅 console.error、无 toast，detail.vue:659-661 = 开放缺陷 MP-R2-DETAIL-002 → 修复后应有表现为 Toast t('village.followFailed')，若仅 console 判 FAILED）；④ 同 ②，静默失败即 FAILED；③跳 chat-session 且按已有会话优先带 sessionId（:672）否则 userId（:674）",
+     "evidence": "critical：三入口各 before+after 截图 + Toast 文案（或缺失记录）+ 路由链 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VD19",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/detail",
+     "title": "图片/头像兜底链与 mock-data 未提交改动证伪：post-16 图文相符（泡茶→杯子图）",
+     "oldAction": "读取 .post-image 的 src 与渲染尺寸（naturalWidth>0）；另 tap 作者头像读落点；再对无头像作者帖观察兜底",
+     "expected": "详情配图 src 解析为可加载绝对/包内路径且实际加载成功（naturalWidth>0），图像语义为杯/饮品特写而非海岸礁石（对照 mock-data.ts:611-613 注释的定标理由）；头像为空时走首字/默认头像兜底链，不得空白方块；若命中 avatars/people 目录，real 包下 URL 前缀应为 /api/v1/media/app-assets/（media.ts:72,:229-231），dev mock 包退回本地路径亦须可显示",
+     "evidence": "normal：after 截图（配图与头像区）+ observed 记录解析后 URL 与 naturalWidth",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VD20",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/detail",
+     "title": "无副作用装饰元素点击零反馈（noop 基线）+ Loading 不永驻总检",
+     "oldAction": "① tap 评论区时间戳文本与「说点什么」占位文本（非按钮节点）；② tap 相似作者区块标题文本；③ 全程监听 loading/toast 队列",
+     "expected": "装饰文本节点点击不触发路由/写请求（允许聚焦类副作用则不计死按钮），也不得抛异常；页面所有 spinner/showLoading 在交互结束后均已消失（无永驻），console 无新增 error",
+     "evidence": "noop：仅执行日志（记录点击元素、路由未变、DOM 未变、loading 计数=0）",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/discover-extra/discover/matching",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/discover-extra/discover/matching.vue",
+   "sourceFound": true,
+   "planned": 7,
+   "outFile": "reports/audit/round-7/tapfix-briefs/03/tapfix-lane-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json.json",
+   "cases": [
+    {
+     "id": "MT02",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+     "page": "subpackages/discover-extra/discover/matching",
+     "title": "CardSwiper 滑动方向语义：右滑=喜欢才进本页且 action=like；左滑=跳过不得进入",
+     "oldAction": "①对当前卡执行「右滑」（swipe right）到底；②返回寻觅后对下一张执行「左滑」（swipe left）到底；③对下一张点击「喜欢」按钮；④对下一张点击「超赞」按钮；每步抄录路由与传入本页的 action 参数",
+     "expected": "方向语义必须成立且可判定：右滑与点「喜欢」→ 进入本页且 query.action=like（store pendingAction=like）；左滑（跳过）→ **停留寻觅页、不进入本页**、卡组切到下一张；超赞 → 进入本页且 action=superLike（runMatchCheck 以 pendingAction==='superLike' 传 isSuperLike，match.ts:53-56）；四种路径均 500ms 内有可观测反馈（切卡动画或路由变化），不得出现「左滑也进了匹配中页」的方向反转",
+     "evidence": "critical：四路径各 before/after 截图 + 路由链 + matchStore.pendingAction 求值 + console",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "MT03",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+     "page": "subpackages/discover-extra/discover/matching",
+     "title": "匹配成功（status=matched）：消费卡组 + redirectTo 成功页，栈中不得残留本页",
+     "oldAction": "进入本页后等动画播完；读取跳转前后 getCurrentPages 与 matchStore.status/animationDone/pendingCardId",
+     "expected": "redirectTo 语义：路由末位=subpackages/discover-extra/discover/match-success 且栈中**不含** matching 页（matching.vue:47-52 uni.redirectTo）；从成功页返回**不得**回到「匹配中」动画页；跳转前 consumeCardFromDeck 已被调用（:68）；redirectTo 的 url 必须带 ?userId=<对方 userId>（:50）；无 Toast 风暴、无二次跳转",
+     "evidence": "critical：before/after 截图 + 跳转前后完整栈数组 + redirectTo 的 url 原文 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "MT05",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+     "page": "subpackages/discover-extra/discover/matching",
+     "title": "单向喜欢（status=idle）：Toast + 400ms 自动返回 + 卡组已消费（返回后不见同卡）",
+     "oldAction": "等动画播完 → 观察 Toast 与自动返回 → 返回后读取寻觅页当前卡 id 与 cards 长度",
+     "expected": "Toast 文案为 discover.likeSent 的本地化串（不得出现裸 key，i18n 走 t() matching.vue:73）；返回发生在 Toast 后约 400ms（:74），500ms 内可观测；返回后**不得再看到刚消费的那张卡**（该卡已在 runMatchCheck 内被 swipeRight 消费，match.ts:52-56；consumeCardFromDeck 的存在性检查按幂等直接 return，matching.vue:171-181）→ cards 长度较进入前 -1；不得再次进入本页形成回环；不得弹「卡片不存在或已被处理」误报横幅（MP-R1-DISCOVER-001 回归：重复 swipeRight 已被幂等门挡住）",
+     "evidence": "critical：before/after 截图（返回后寻觅页首屏）+ Toast 文案 + cards 列表与当前卡 id 前后对照 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "MT06",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+     "page": "subpackages/discover-extra/discover/matching",
+     "title": "失败（status=failed）：Toast 错误文案 + 600ms 返回，不得永驻「匹配中」",
+     "oldAction": "进入本页等动画播完，观察 Toast 与返回；记录总耗时",
+     "expected": "Toast 显示 matchStore.lastError 原文（后端友好文案优先）或 matching.likeFailed 兜底（matching.vue:75-79），不得为空白/裸 key/技术性错误串（HTTP 码、stack）；约 600ms 后自动返回寻觅页（:80），500ms 内可观测；返回后卡组状态一致（失败**不应**消费卡片 —— 若该卡从列表消失则判「失败却吞卡」的 P1 数据缺陷，须回读 cards 前后差异）；不得停留本页、不得动画永驻、无 unhandled rejection",
+     "evidence": "critical：before/after 截图 + Toast 文案原文 + cards 前后对照 + console/network（请求失败证据）",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "MT14",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+     "page": "subpackages/discover-extra/discover/matching",
+     "title": "URL 直达路径的写请求：客户端连点/重复进入的请求条数与后端「喜欢」记录条数分离判定",
+     "oldAction": "①直开一次，记录新增请求条数与 URL/Idempotency-Key；②返回后再直开同一卡 3 次（每次等动画结束离开），统计累计请求条数与后端记录条数 R1",
+     "expected": "必须分栏写清，禁止用服务端结果替客户端结论：【客户端层】记录每次进入发出的写请求条数（同 key 重复出现即为客户端重复提交，须逐条列出 Idempotency-Key 值）；【数据层】回读 R1 必须 = R0 + 1（同一目标用户不得因重复进入累积多条喜欢/匹配记录）；若 R1>R0+1 → 服务端幂等或业务唯一约束失效，判 P1 Data；若客户端出现 N 条同 key 请求而 R1=R0+1 → 判「客户端守卫缺失但被服务端兜住」= 本用例仍记 FAILED（假通过陷阱，stage-contract §6.2）；mock 构建下若无网络出口，则客户端层记 N/A 并改用 handler 调用计数（runMatchCheck 被调用次数）替代，须显式写明依据来源",
+     "evidence": "critical：network 面板逐条（URL/method/Idempotency-Key）+ 后端记录条数回读（R0/R1）+ runMatchCheck 调用计数 + before/after 截图 + console",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "MT20",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+     "page": "subpackages/discover-extra/discover/matching",
+     "title": "滚动与无滚容器断言：本页无可滚内容，不得出现回弹/双层滚动",
+     "oldAction": "①页面内上下滑动 300px 各一次；②观察动画区是否被手势干扰、是否出现双层滚动或回弹异常",
+     "expected": "无页面滚动（内容一屏内）、无双层 scroll 打架、无橡皮筋导致的动画位移/头像是错位；滑动手势**不得**被误判为「跳过」或触发返回（本页仅绑 @tap，:222,MatchLoading:73）；日志记录手势后的路由与 animationDone 不变",
+     "evidence": "noop：执行日志（手势 + 路由/animationDone 前后一致）",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "MT21",
+     "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+     "page": "subpackages/discover-extra/discover/matching",
+     "title": "下拉刷新：未配置 enablePullDownRefresh，不得触发伪刷新与重复匹配请求",
+     "oldAction": "进入本页后下拉 300px 松手 ×2；再在动画播放中下拉一次",
+     "expected": "无刷新动画、无 onPullDownRefresh/stopPullDownRefresh；不得因下拉重复触发 onLoad/runMatchCheck（network 零新增写请求）；动画不因下拉被打断或加速；日志记 animationDone/status 不变",
+     "evidence": "noop：执行日志（手势 + network 零新增 + status 采样）",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  }
+ ],
+ "schema": {
+  "lane": "本页 page 路径（逐字照抄，普查靠它对账）",
+  "counts": {
+   "planned": "必须等于本 lane 的 cases.length",
+   "ok": "写进 cases 的条数",
+   "unverifiable": "写进 unverifiable 的条数"
+  },
+  "cases": [
+   {
+    "id": "",
+    "manifest": "",
+    "page": "",
+    "selector": ".kebab-case，必须逐字出现在 file:line 那一行",
+    "file": "仓库相对路径，如 apps/client/src/pages/discover/index.vue（组件里的类名写组件自己的路径）",
+    "line": "该行号那一行必须含该类名片段（合并器会重读文件核对，不接受自述）",
+    "oldAction": "逐字抄简报里的 oldAction，一个字都别改",
+    "newAction": "保留全部交互动词，把 selector 逐字写进去；动词丢了或多出来都会被整条拒绝",
+    "needsIdentity": "该目标只在某身份下存在时写 guest/A/B，否则留空",
+    "why": "为什么是它（一句话，指向源码里那条 bindtap）"
+   }
+  ],
+  "unverifiable": [
+   {
+    "id": "",
+    "manifest": "",
+    "page": "",
+    "reason": "",
+    "needsCarrier": "欠哪条载具才能点名（如 WS automator 的 touch/swipe、需要特定夹具、纯文案断言）"
+   }
+  ]
+ },
+ "hardRules": [
+  "cases + unverifiable 必须恰好等于 planned，多一条少一条整份不采信。",
+  "selector 必须在 file 的 line 那一行逐字存在；不许把类名改成「更好看」的写法，也不许引用一个只有样式没有事件的类——目标是能被自动化点到的东西，优先带 @tap/@click/bindtap/@input/@confirm 的那层。",
+  "gestureOnly=true 的条：CLI 桥没有连续手势，要么它其实有个可点的等价物件（如三键按钮本身）并保留原动词，要么进 unverifiable 并在 needsCarrier 写明欠 WS 手势通道。不许把「向右拖动」悄悄改成「点击」。",
+  "expected 里出现的具体文案/数字不能当点击目标；这类条进 unverifiable 并说明它断言的是文本不是物件。",
+  "只写自己这一份 outFile，不改 ops/*.json，不改别的 lane，不改台账，不跑模拟器。"
+ ]
+}

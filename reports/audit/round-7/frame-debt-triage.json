@@ -1,0 +1,176 @@
+{
+ "$comment": "round-7 帧债「没点名」的 18 行的归置结果。每行的 landed / token / 去向都是回盘核过的（基线 094f7239 对照过），不是按台账原文抄的。",
+ "baseline": "094f7239",
+ "headSha": "e4495d67",
+ "dispositions": [
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-004",
+   "kind": "needs_ruling",
+   "resolved": true,
+   "namedBy": "scripts/qa/verify-source-shape.mjs 判点 MP-R2VIS-PAGES-HOME-INDEX-004（只覆盖换图这一半）",
+   "token": "class=\"today-card__rotate-icon\"",
+   "carrier": "apps/client/src/components/home/TodayRecommendationCard.vue:63",
+   "why": "换 SVG 这一半已核实是本轮改动（基线 094f7239:58 是行内字符 ↻，该 class 基线 0 命中）⇒ 判点只写这一半。但判据的另一半「色 --c-text-tertiary、与 22rpx 文字同字号」不同：字号已对齐（:164/:170-171 均 22rpx），颜色对不上 —— 图标色烧在 SVG 资源里（stroke #94A3B8），而 --c-text-tertiary 实测是 #6B7571（design-variables.scss:118/357），且微信 <image> 引用 svg 无法由 CSS 继承着色",
+   "next": "待拍板：要么把资源改成内联/双份着色以满足 token 一致，要么承认「同色」在 svg-as-file 方案下不可达并把判据改成只要求同尺寸（改判据须留这条测量，不许静默放宽）",
+   "ruling": "2026-09-27 按可辩护默认拍定，测量与理由落在台账 处置 格（patches 见 reports/audit/round-7/ledger-plan-rulings4.json）"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001",
+   "kind": "needs_naming",
+   "resolved": true,
+   "namedBy": "scripts/qa/verify-source-shape.mjs 判点 MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001",
+   "token": "cityDistant / t(\"locationPage.addressUnavailable\")",
+   "carrier": "apps/client/src/subpackages/profile-extra/profile/location.vue:87,50",
+   "why": "cityDistant 基线 0 命中、工作树 5 命中 ⇒ 本轮新增；台账原写的 srcFile（utils/location.ts）里没有可渲染物件，探针要落在页面文件",
+   "next": "帧需要一个 >100km 的数据态（NEEDS_STATE），先按页面文件的 token 立静态判点，帧侧仍欠一次该状态"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-007",
+   "kind": "needs_naming",
+   "resolved": false,
+   "token": "header__icon-plus",
+   "carrier": "apps/client/src/pages/messages/index.vue:391",
+   "why": "交换本身在基线前（f9a60925）就完成，两个类名基线里都在 ⇒ 类名不判别，唯一可判的是相对位置",
+   "next": "要么把「左右顺序」写成可判物件（坐标比较），要么按本轮前落地重新归类；不得用类名命中冒充本轮证据"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-PROFILE-INDEX-002",
+   "kind": "needs_naming",
+   "resolved": false,
+   "token": "var(--page-padding)",
+   "carrier": "apps/client/src/components/profile/mine/MyInteraction.vue:55（四个兄弟组件同）",
+   "why": "四组件在基线 094f7239 就已是同一 token，台账证据里写的 margin:24rpx 24rpx 0 在盘上不存在 ⇒ 该证据是旧的",
+   "next": "按「本轮前落地」提请改判；判据里那句 24rpx 旧值要删掉，否则下轮又照抄"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
+   "kind": "not_frame_observable",
+   "resolved": false,
+   "token": "none",
+   "carrier": "apps/client/src/pages/messages/index.vue:302",
+   "why": "断言的是内存 Set 在重载后被重建，渲染上没有任何对应物件；且该复位在基线就有",
+   "next": "要结案需两帧序列（失败→重载）或运行期探针，不能记帧级已验"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-012",
+   "kind": "not_frame_observable",
+   "resolved": true,
+   "token": "none",
+   "carrier": "apps/client/src/subpackages/circles/circles/post-topic.vue:460-462",
+   "why": "navigateBack().catch→switchTab 只在栈深 1 时触发，两态渲染像素相同；已在基线内",
+   "next": "已由单测覆盖即视为源码级结案，退出帧债（不得再要求出帧）"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A05",
+   "kind": "not_frame_observable",
+   "resolved": false,
+   "token": "publish-target-sheet（不判别）",
+   "carrier": "apps/client/src/subpackages/village/village/publish.vue:892",
+   "why": "判据要的是 DOM 嵌套层级的改变，帧分不出两种嵌套；移动本身在基线前",
+   "next": "结案载体应是源码结构判点（在 scroll-view 之外），不是帧"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
+   "kind": "not_frame_observable",
+   "resolved": true,
+   "token": "circle.home.pinnedNotice",
+   "carrier": "apps/client/src/subpackages/circles/circles/circle-home.vue:119",
+   "why": "本轮把写死文案搬进 i18n，zh 值与原字面量逐字节相同 ⇒ 视觉零变化，帧无法区分改前改后",
+   "next": "已由源码判点 + i18n 配对门禁结案，退出帧债"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001",
+   "kind": "not_frame_observable",
+   "resolved": false,
+   "token": "chat-time-bar（两侧都在，不判别）",
+   "carrier": "apps/client/src/subpackages/chat/chat-session/index.vue:368-369",
+   "why": "先过滤再建行是顺序守卫；渲染物件事先事后都在，只有构造一个删除态才会露出差别，而该顺序在基线就有",
+   "next": "本轮真正落地的是单测（tests/pages/chat-session-page.spec.ts:51-54）；若要帧，需要一次真删消息的状态取景，属新取证不是复验"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
+   "kind": "needs_ruling",
+   "resolved": false,
+   "token": "messages.unreadLocalHint",
+   "carrier": "apps/client/src/pages/messages/index.vue:273",
+   "why": "短期方案（toast 明示仅本地）已落地且有单测；行内还挂着两件待拍：后端未读元数据同步、:304/:320 双重置的语义冲突",
+   "next": "待裁决项，不属帧债；帧侧无待拍内容"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
+   "kind": "needs_ruling",
+   "resolved": true,
+   "token": "none",
+   "carrier": "apps/client/src/stores/messages.ts:646",
+   "why": "该行的实际指令是「删掉台账里一句字面不可行的话」，且 mock 无 warmPeople 种子（单一 dashboard 视图对象），帧取不到那个状态",
+   "next": "待裁决：要么删该句并重设状态来源，要么承认该态不可测；srcFile 是 store，本就不该要求帧",
+   "ruling": "2026-09-27 按可辩护默认拍定，测量与理由落在台账 处置 格（patches 见 reports/audit/round-7/ledger-plan-rulings4.json）"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-007",
+   "kind": "needs_ruling",
+   "resolved": false,
+   "token": "circle-card__hot-badge（尚无 token）",
+   "carrier": "apps/client/src/subpackages/circles/circles/index.vue:571,574,580",
+   "why": "前半（描边换 var(--c-brand)）已落但在基线前；后半仍是 rgba(255,77,92,.92) 与 #FFFFFF 字面量，A/B/C 三案未拍",
+   "next": "待拍板后才有可判物件；未拍之前不得记帧级已验"
+  },
+  {
+   "id": "MP-R2-POST-016",
+   "kind": "needs_ruling",
+   "resolved": true,
+   "token": "none",
+   "carrier": "apps/client/src/subpackages/village/village/post.vue:1461-1463",
+   "why": "已核实：要删的高度声明在基线 094f7239 里就不存在（git log -S 指向 f9a60925），工作树与基线同值 ⇒ 修复早于本轮而 status 未同步",
+   "next": "待裁定改判为「本轮前落地」；另有一件设计取舍（极旧内核是否仍要百分比高度）未拍",
+   "ruling": "2026-09-27 按可辩护默认拍定，测量与理由落在台账 处置 格（patches 见 reports/audit/round-7/ledger-plan-rulings4.json）"
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-011",
+   "kind": "needs_ruling",
+   "resolved": true,
+   "token": "none",
+   "carrier": "apps/client/src/pages/nearby/index.vue:659",
+   "why": "判据原文称「页根容器上内边距取零」，而盘上是 padding: 24rpx 32rpx 0 —— 末位 0 是下内边距，上内边距是 24rpx；该行自基线起零改动（git diff 空）⇒ 判据的目标是被误读简写产生的",
+   "next": "先把判据里那句事实错误改掉（我已单独记录），再决定 24rpx 顶边距留不留",
+   "ruling": "2026-09-27 按可辩护默认拍定，测量与理由落在台账 处置 格（patches 见 reports/audit/round-7/ledger-plan-rulings4.json）"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-PROFILE-INDEX-003",
+   "kind": "needs_ruling",
+   "resolved": false,
+   "token": "story-add__text",
+   "carrier": "apps/client/src/components/profile/mine/MyStory.vue:89",
+   "why": "四处锚点已同词且与基线逐字节相同 ⇒ 统一早于本轮；台账证据里写的「渲染『添加日常』」与盘上不符。组件内 :59 注释与 :93 提示仍用旧词（在本行范围外）",
+   "next": "待产品拍板要用哪个词；若选另一词则本行变成真缺口"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-002",
+   "kind": "needs_code",
+   "resolved": false,
+   "token": "none",
+   "carrier": "apps/client/src/components/discover/NotLoggedWaiting.vue:72",
+   "why": "要求的带插值计数副标题从未写入（仍是静态 key notLoggedWaiting.subtitle）；且 .zcode/tmp/subtitle-wire/REPORT.md 记有一条 2026-09-25 裁定：游客态没有可信计数可用",
+   "next": "写代码前必须正面处理那条既有裁定（给出计数来源或改用无数字文案），不许默默推翻"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-004",
+   "kind": "needs_code",
+   "resolved": false,
+   "token": "none",
+   "carrier": "apps/client/src/components/discover/NotLoggedWaiting.vue:64",
+   "why": "要求的四件物件（mascot 节点、虚线轨道、各格真实头像独立节点）在该组件自己的文件里全部不存在；台账自己也写明「本条不要写绿，按未修处理」",
+   "next": "先落代码，物件存在后才谈得上点名与出帧"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-006",
+   "kind": "needs_code",
+   "resolved": false,
+   "token": "circle.circlesEmptyLogin（只覆盖游客半段）",
+   "carrier": "apps/client/src/subpackages/circles/circles/index.vue:152",
+   "why": "游客引导登录那半段已落但在基线前；「有权限但空列表给去路」那半段仍是空串，EmptyState.vue:104 因 hasAction=false 直接隐藏按钮",
+   "next": "补后半段的空列表 CTA；补完才可立判点"
+  }
+ ],
+ "rulingNote": "needs_ruling 一栏里的 4 行已于 2026-09-27 拍定（HOME-004 同色半段判不可达并留 stroke/令牌两侧实测；POST-016 与 NEARBY-011 是判据前提被基线推翻；MESSAGES-005 不可行半段已删、余下走 needs_backend）。kind 保持不变：kind 描述的是「为什么一页帧还不了这笔债」，裁定不改变这一点。余下 2 行（MESSAGES-INDEX-020 待拍的两件事、PROFILE-INDEX-003 的用词）仍未拍。"
+}

@@ -1,0 +1,67 @@
+{
+ "lane": "subpackages/village/village/detail",
+ "counts": {
+  "planned": 8,
+  "ok": 0,
+  "unverifiable": 8
+ },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "VD01",
+   "manifest": "次要18",
+   "page": "subpackages/village/village/detail",
+   "reason": "本条原文明写「不打点」⇒ 没有任何交互物件可归属：三个观测面是 .detail-page 的存在性、.comments-loading 骨架与 toast 队列在 0s/0.5s/1s 的取值。两个类名虽都编进了本页 wxml（detail.wxml 里 detail-page 与 comments-loading 都是 class token），但一个无事件绑定、另一个在 v-if 条件 loading 里（:959）；而且裸直达无 ?id= 时 onLoad 走 :712-713 的清空分支并弹 postNotExist toast，静息态就是判据要排除的那个空态。",
+   "needsCarrier": "欠 ROUTE_QUERY 给本页补 ?id=post-16 深链 + 三帧时序采样（同一 case 内多次 DOM 读数），tap 腿一次只发一次动作且无 toast 队列读数。"
+  },
+  {
+   "id": "VD07",
+   "manifest": "次要18",
+   "page": "subpackages/village/village/detail",
+   "reason": "判据点名的 .post-image 在编译档里不成元素：mp-weixin 与 mp-weixin-real 的 detail.wxml 与 detail.wxss 里都找不到 post-image 这个 token（现名是 :846 的 post-image-wrap，@tap=openImageViewer 在 :852），属改名后的陈旧点名，正是 verify-case-selectors-exist.mjs 的 absent 桶。换用真名也仍不可点：该节点整体在 v-if 条件 currentPost 的 .detail-body 里（:781），而执行器裸直达无 ?id= ⇒ currentPost 为空（同轮 exec-tap-final3 实测 VD06 dom .author-inline__avatar:absent、.input-bar__input:absent，只有 .detail-header__back 与 .detail-header__menu present(1)）。②的 .image-viewer 还要 imageViewerVisible 为真（:1331 v-if），③要系统返回键。",
+   "needsCarrier": "欠 ?id= 深链（且该帖要有图）把 .post-image-wrap 弄进渲染树 + 原生返回键通道；遮罩关闭可点，但前置态先要能出现。"
+  },
+  {
+   "id": "VD08",
+   "manifest": "次要18",
+   "page": "subpackages/village/village/detail",
+   "reason": ".post-tag（:878，@tap=goToTagPosts 在 :881）是本页 wxml 里的真元素，但在 v-if 条件 currentPost 的 .detail-body（:781）内，裸直达时不渲染（实测同页作者区与输入栏一律 absent）；回程一半还要在 tag-posts 按系统返回键并核对落点与滚动位置，本通道无返回键与滚动读数。",
+   "needsCarrier": "欠 ?id=post-16 深链夹具 + 原生返回键通道 + 滚动位置读数（scrollTop）。"
+  },
+  {
+   "id": "VD09",
+   "manifest": "次要18",
+   "page": "subpackages/village/village/detail",
+   "reason": ".comments-sort（:946，@tap=toggleCommentSort :951）与 .comments-more（:1131，@tap=loadMoreComments :1138）都带真事件绑定且编进本页 wxml，但两层前置都不可达：整块在 v-if 条件 currentPost 里（裸直达即无正文），评论列表另需该帖已有评论与 commentHasMore 分页；③的滚动 .detail-body 到顶/到底属连续手势，本通道只有 tap 与 input。",
+   "needsCarrier": "欠 ?id= 深链 + 已有评论且跨页的夹具 + WS 滚动通道；否则任何 tap 都落在空态上，会把「排序未切换」判成假红。"
+  },
+  {
+   "id": "VD15",
+   "manifest": "次要18",
+   "page": "subpackages/village/village/detail",
+   "reason": "长按入口与判点都不在可点面上：.post-content（:831，@longpress=handlePostLongpress :830）在 v-if 条件 currentPost 内，裸直达不渲染；页内唯一同 handler 的 tap 入口是 .detail-header__menu（:774，实测 VD06 dom .detail-header__menu:present(1)），但点它只把 handlePostLongpress 跑起来，后续三项都住在原生层：uni.showActionSheet（:309 与 :341）与 uni.showModal 描述框（:353）不进渲染树，tap 腿与探针都取不到，PostReportDialog（:1419）又是子组件、页级查询够不着。",
+   "needsCarrier": "欠 WS 的 longpress 通道 + 原生 ActionSheet/Modal 的选项命中能力（或产品侧把菜单改为 DOM 弹层）；另需 ?id= 深链让长按对象存在。"
+  },
+  {
+   "id": "VD16",
+   "manifest": "次要18",
+   "page": "subpackages/village/village/detail",
+   "reason": "三个入口（.similar-author-avatar :1160-1164、.action-btn--follow :1201-1208、.action-btn--message :1215-1220）都带 @tap 且编进本页 wxml，但要同时满足 v-if 条件 currentPost（:781）与 v-if 条件 similarAuthors.length 大于 0（:1147），裸直达时两者皆假；②与④还要求把关注接口打成失败（real 后端 500 或断网）才能验「失败必须可见」。",
+   "needsCarrier": "欠 ?id= 深链 + 有相似作者数据的夹具 + 可控的写请求失败注入（断网或后端 500）。"
+  },
+  {
+   "id": "VD19",
+   "manifest": "次要18",
+   "page": "subpackages/village/village/detail",
+   "reason": "两个观测对象一个不存在、一个量不到：.post-image 在两档编译产物里都不是 class token（现名 post-image-wrap，见 VD07），naturalWidth 一类图像尺寸读数本通道也不回（探针只给 present/absent 与 size 字段，没有图像加载成功与否）；「杯/饮品特写而非海岸礁石」是人工语义比对；同条的「另 tap 作者头像」又落在 v-if 条件 currentPost 内（:786 在 :781 的 .detail-body 里），裸直达不渲染。",
+   "needsCarrier": "欠 ?id=post-16 深链 + 图像尺寸与 src 的读数通道（image 信息 API）+ 人工语义判图；mock 与 real 两档媒体前缀差异还要各自一档。"
+  },
+  {
+   "id": "VD20",
+   "manifest": "次要18",
+   "page": "subpackages/village/village/detail",
+   "reason": "本条点的是非交互展示节点，判据是「零反馈」：评论区时间戳 .comment-time（:1010）、「说点什么」占位（它是 :1284 input 的 placeholder 文案，不是节点）、相似作者标题 .similar-authors-title（:1149）三处都没有 @tap，前两者还整体在 v-if 条件 currentPost 内；noop 判定要求逐元素 rect 与点击后的路由/DOM/loading 计数比对，单条 selector 承载不了。",
+   "needsCarrier": "欠 ?id= 深链（让评论区与相似作者区存在）+ 逐元素点击并读路由/DOM/loading 计数的通道，属人工或 WS 逐点普查，不是点名一个类。"
+  }
+ ]
+}

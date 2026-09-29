@@ -1,0 +1,349 @@
+{
+ "batch": "05",
+ "laneCount": 4,
+ "caseCount": 22,
+ "lanes": [
+  {
+   "lane": "pages/register/index",
+   "manifest": "PAGES-REGISTER-INDEX.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/pages/register/index.vue",
+   "sourceFound": true,
+   "planned": 6,
+   "outFile": "reports/audit/round-7/tapfix-briefs/05/tapfix-lane-PAGES-REGISTER-INDEX.json.json",
+   "cases": [
+    {
+     "id": "REG12",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "page": "pages/register/index",
+     "title": "倒计时期间再次点击获取验证码：必须无请求、无 Toast、按钮维持禁用态",
+     "oldAction": "tap .sms-btn ×1",
+     "expected": "500ms 内**不得**新增 send-code 请求、不得再弹 Toast（handleSendSms 首行守卫 smsSending||smsCountdown>0||submitting 直接 return，index.vue:256）；按钮文案继续倒计时、不重置为 60s、不闪回「获取验证码」（:556）；「点击后无反馈」是设计内行为，但须在 observed 记录「倒计时未跳号」的前后数值证据，不得只写「无反应」",
+     "evidence": "normal：after 截图（前后倒计时数值）+ network 面板零新增断言 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "REG21",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "page": "pages/register/index",
+     "title": "出生日期 picker：默认值/未来日期上限/未成年拦截/清空四路",
+     "oldAction": "① tap picker 空白区确认弹层；② 选择明天（:end=today 应拒绝/不可选，:698）；③ 选择 16 年前日期（如 2010-01-01）后 tap .submit-btn；④ 选择 20 年前合法日期；⑤ 记录 picker 未选时 :value 回退值",
+     "expected": "①picker 弹层正常打开（原生日期选择器，500ms 内可见）；②不可选/被 end 拦截止于今天；③isAdult 判否（:103-109）→ 行内「未满 18 岁暂无法注册」+ 抖动 + Toast，且**不发**注册请求；④合法日期写入 birthDate、文案色转 --filled 深色（:705-707,972-975）；⑤未选时弹层默认定位 2005-01-01（:697），但页面显示仍为占位文案 —— 二者不得混淆成「已填」",
+     "evidence": "normal：弹层态 + 各步 after 截图 + birthDate 值与 errors.birth 求值 + network 零请求断言（③）",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "REG25",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "page": "pages/register/index",
+     "title": "逐字段非法提交：错误定位顺序与「协议未勾」专用路径",
+     "oldAction": "tap .submit-btn 一次；随后依次制造：验证码 5 位、密码缺数字（'Abcdefgh'）、生日留空，每改一次点一次（间隔 >2s 避开守卫）",
+     "expected": "协议未勾时走专用分支：复选框抖动 + Toast「请先阅读并勾选同意《用户协议》和《隐私政策》」，且**不写任何行内字段错误**（:340-343）；其余三例分别精确落 sms/password/birth 字段行内错误与对应文案（:213-222），零注册请求；同屏最多 1 条行内错误，不得多字段同时飘红造成定位失焦",
+     "evidence": "normal：逐例 after 截图 + errors 全量求值 + network 零请求断言",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "REG28",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "page": "pages/register/index",
+     "title": "业务失败分支：「该手机号已注册」→ 行内错误 + 次级登录出口出现且可用",
+     "oldAction": "tap .submit-btn；观察后 tap .ghost-btn「用这个手机号登录」（index.vue:730-732 @tap=goLogin）",
+     "expected": "错误映射按 detail.includes('已注册')：行内「该手机号已注册，试试直接登录」+ 手机号抖动 + Toast「该手机号已注册，可直接登录」（:380-385）；.ghost-btn 出现（phoneRegistered=true）；tap 后 500ms 内路由变化（navigateBack 回登录页，栈深=1 时 reLaunch，:437-444）；已填内容不得被清空（:368 注释「失败不清空已填内容」）、密码回到密文；错误不得进 Sentry 上报噪音（:421-427 仅非 AppApiError/5xx 上报）",
+     "evidence": "normal：after 截图（行内错误 + ghost-btn + Toast）+ 路由链 + console（须无 captureException 噪音）",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "REG31",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "page": "pages/register/index",
+     "title": "滚动到顶/到底：长表单可达性与 safe-area 底衬",
+     "oldAction": "① 页面级下拉滚到最顶；② 上推滚到底（.to-login 与 .safety-note 可见）；③ 记录 scrollTop 极值与底部 padding",
+     "expected": "顶部：hero 插图与标题完整无裁切；底部：「已有账号？去登录」整行完整可见且不被 home 指示条/safe-area 压住（.register-page padding-bottom calc(env(safe-area-inset-bottom)+24rpx) :773）；滚到底最后一条内容完整可见；无回弹、无空白尾部；页面无可滚容器异常",
+     "evidence": "noop：执行日志（scrollTop 起止值 + 底部元素 rect 与 safe-area 关系），可仅记 console 日志",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "REG32",
+     "manifest": "PAGES-REGISTER-INDEX",
+     "page": "pages/register/index",
+     "title": "下拉刷新：本页未配置 enablePullDownRefresh，不得出现伪刷新与重复请求",
+     "oldAction": "在页面顶部执行下拉手势 300px 并松手；观察 console 与 network",
+     "expected": "无下拉刷新动画、无 onPullDownRefresh 触发、无 stopPullDownRefresh 调用（未配置即不得自行造轮子）；已填表单内容零变化；network 无任何新增请求（若出现表单被重置或重新拉取 app-config 的副作用须记 ISSUE）",
+     "evidence": "noop：执行日志（手势 + network 零新增 + 6 字段值前后一致）",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/discover/activities/index",
+   "manifest": "次要22.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/discover/activities/index.vue",
+   "sourceFound": true,
+   "planned": 6,
+   "outFile": "reports/audit/round-7/tapfix-briefs/05/tapfix-lane-次要22.json.json",
+   "cases": [
+    {
+     "id": "AC02",
+     "manifest": "次要22",
+     "page": "subpackages/discover/activities/index",
+     "title": "下拉刷新必须真实重拉（MP-R2-次要22-005 证伪：fetchActivities(true) 穿透 30s TTL）",
+     "oldAction": "在列表 scroll-view 内下拉到 refresher 触发（activities/index.vue:390-397 refresher-enabled + @refresherrefresh），松手后等待动画结束；重复下拉 3 次，每次间隔 2s",
+     "expected": "每次下拉都发出 1 次列表请求：real 模式 GET /recommendations/activities?page=1&pageSize=20 条数 = 3（fetchActivities 传 force=true 绕过 activity.ts:171 的 !force && activities.length>0 && isCacheFresh 短路；锚点 activities/index.vue:86-87 注释与调用）；若 3 次下拉的网络请求数为 0 → 即 MP-R2-次要22-005 复发，判 FAILED；mock 模式该请求为本地分支（activity.ts:178 直接赋 mockActivities），network 面板应 0 条真实请求，此时以「refresherTriggered 由 true 复位为 false（:84/:89）+ 动画结束 + 列表仍 4 卡」判定，并在 actual 注明按 buildMode 选了 mock 支路；refresher 不永驻（下拉指示器必须在 fetch 结束后收起，finally 复位 :88-90）；数据不闪空、console 无报错",
+     "evidence": "critical：before（下拉前列表）+ 每次下拉中 + after 截图 + 路由 + Toast（应为无）+ console + network 面板逐次请求计数（3 次下拉对应 3 条列表请求）",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "AC04",
+     "manifest": "次要22",
+     "page": "subpackages/discover/activities/index",
+     "title": "快捷筛选 全部/今天/周末：客户端按 scheduleText 中文子串过滤，今天为空态文案",
+     "oldAction": "依次 tap .quick-filter 三个 chip：今天（:400-410）→ 周末 → 全部，每步等待渲染",
+     "expected": "「今天」→ 命中 scheduleText 含 今天/今晚/今日 的条目（:51 判定），mock 四条均不含 → 列表 0 卡 + 出现「当前筛选下暂无活动，换个时间看看吧」（:463-465，zh-CN.ts:700），chip 选中态迁移（quick-filter--active :402）；「周末」→ 命中 周六/周日 两条（电影社轻松线下碰面 + 周末篮球友谊赛，:52 判定）；「全部」→ 恢复 4 卡；全程零网络请求（纯客户端过滤 :46-57）；aria-selected 随选中变化（:406）；console 无报错",
+     "evidence": "normal：三个筛选态 after 截图（共 3）+ 路由 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "AC06",
+     "manifest": "次要22",
+     "page": "subpackages/discover/activities/index",
+     "title": "点活动卡跳详情带 id 参数，返回落点=活动列表且 Tab/筛选状态恢复",
+     "oldAction": "tap 第 1 张 .activity-row（:414-423 → goToActivityDetail :143-145）→ 在详情页用返回键回到列表",
+     "expected": "500ms 内路由到 /subpackages/tools/activities/detail?id=a-1（encodeURIComponent 后原样，:144；id 与 mock 数据 activity.ts:62 对应）；返回后落点为 subpackages/discover/activities/index 本身、栈长度 -1（openAppPath 的 navigateTo/栈满 redirectTo 语义按 utils/navigation.ts 实测回填）；回列表后 viewMode 与 quickFilter 选中态保持（Vue 实例未销毁 → 页面内 ref 保留 :41/:45）；滚动位不强制归零（如实回填 scrollTop 实测差值）；console 无报错",
+     "evidence": "navigation：getCurrentPages 完整栈链（含每帧 route+options）断言 + console；可免截图（目标页渲染异常时补 1 张 after）",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "AC07",
+     "manifest": "次要22",
+     "page": "subpackages/discover/activities/index",
+     "title": "点「感兴趣」报名：乐观文案 toast、按钮态翻转、计数 +1，取消回滚",
+     "oldAction": "tap 第 1 张卡的 .enroll-btn（activities/index.vue:451-459，@tap.stop）→ 等 toast → 再 tap 一次（取消报名）",
+     "expected": "首次点击 500ms 内：按钮内文案切到「已感兴趣」（isEnrolled 翻转后 :458 三元）+ toast「报名成功」（:122-125，zh-CN.ts:739 enrolledToast）+ 人数标记 12→13（mock 分支同步 enrollCount 与 enrollmentCount，activity.ts:268-276）；@tap.stop 编译为 catchtap，点击不得冒泡触发卡片跳转（:450 注释；路由必须仍停在 activities 页，若跳到 activities/detail 即判事件阻断失效）；再次 tap → toast「已取消报名」（zh-CN.ts:740）+ 人数回 12；报名在途期间按钮 disabled（:454 :disabled=activityStore.enrolling || submittingId===item.id）；real 模式请求：POST /activities/a-1/enroll 1 条 + DELETE 1 条（activity.ts:301-306 POST、:290-294 DELETE），服务端幂等 key 带 opSeq 随机后缀故不去重（:280-286 注释）→ 客户端请求数=2、服务端报名态回读为未报名，两列分开记；失败路径（errorMessage 非空）应 toast 后端文案而非「已取消报名」（:117-120，MP-R1-DISCOVERACTIVITIES-002 回归），构造不了时标 REAL_ONLY",
+     "evidence": "critical：before（未报名态卡）+ 报名后 + 取消后 三张截图 + 路由（不应变化）+ Toast 文案逐字 + console + network 请求计数与方法",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "AC08",
+     "manifest": "次要22",
+     "page": "subpackages/discover/activities/index",
+     "title": "连点报名按钮×5：客户端并发守卫只提交 1 次（防假通过：拆客户端请求数与服务端回读）",
+     "oldAction": "500ms 内对 a-2 的 .enroll-btn 快速 tap×5（rapidTap，记录每击落点），随后静置 3s 观察",
+     "expected": "分两列判定：① 客户端多余请求数 —— real 模式 POST /activities/a-2/enroll 必须恰为 1 条（enrollingActivityIds 在途守卫 activity.ts:254-257 + submittingId 本地锁 :110-111 + 按钮 :disabled），若为 2~5 条即判 FAILED（该接口幂等 key 含 Date.now()+随机后缀，服务端不会兜住重复，见 :286 起（POST :305 / DELETE :293 各带该后缀）；mock 模式无网络请求，改判 toast 条数恰为 1 且最终态为「已感兴趣」（5 次同步 toggle 若产生奇偶错位会停在未报名态 → 立即暴露为状态错乱，此时记 FAILED）；② 服务端回读 —— 报名态 isEnrolled=true、enrollmentCount=9（+1 而非 +5），GET 回读一次核对；按钮在途文案为「...」占位（:457）且不得永驻（finally 复位 submittingId='' :129）",
+     "evidence": "critical：before + after 截图 + 路由 + Toast 条数与文案 + console + network（POST 计数=1，方法/URL 列表）+ 服务端回读断言（real 轮）",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "AC10",
+     "manifest": "次要22",
+     "page": "subpackages/discover/activities/index",
+     "title": "七态覆盖：Loading / Error+重试 / Empty / 列表末尾 noMore / 上拉分页 300ms 防抖",
+     "oldAction": "（a）断网冷启动进页面观察错误盒 → tap .retry-btn；（b）网络正常滚动列表 scroll-view 到底触发 @scrolltolower，200ms 内再触发一次；（c）正常态到底观察末尾提示",
+     "expected": "错误态：显示 activityStore.errorMessage 原文 + 「重试」按钮（:349-355，common.retry），点重试必须真的重发请求（fetchActivities() 非 force 但 activities.length===0 → 不命中 TTL 短路，activity.ts:171 条件含 length>0，且缓存时间戳只在成功时写入 :194）；恢复网络后重试 → 渲染 4 卡；加载态：有数据时的底部「加载中...」与「没有更多活动了」（:468-473，zh-CN.ts:704 noMore）互斥出现，mock 模式 hasMore=false → 应显示 noMore 而非永驻加载中；上拉分页：两次快速 scrolltolower 只产生 1 次 fetchMoreActivities（debounce 300ms，:93-98；mock 模式 hasMore=false 直接 return 也算合规，需在 actual 注明支路）；页面卸载时挂起防抖被取消（onUnload debouncedLoadMore.cancel() :77-81）→ 离开后不得再有请求；console 不得出现未捕获异常",
+     "evidence": "normal：错误态/重试后/底部提示 三张 after 截图 + 路由 + console + network 请求计数（重试=1 条、双触发=1 条）；不可构造支路标 UNVERIFIED/REAL_ONLY",
+     "requiresReal": true,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/circles/circles/post-topic",
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/circles/circles/post-topic.vue",
+   "sourceFound": true,
+   "planned": 5,
+   "outFile": "reports/audit/round-7/tapfix-briefs/05/tapfix-lane-SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.json.json",
+   "cases": [
+    {
+     "id": "CPT26",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "page": "subpackages/circles/circles/post-topic",
+     "title": "8 个兴趣分类 chip 逐个点选 + 单选语义 + 圈名可读性",
+     "oldAction": "依次 tap 8 个 .category-chip（学习/运动/音乐/影视/旅行/游戏/美食/阅读，:564-578 ← INTEREST_CATEGORY_KEY_MAP :84-93），每次记录高亮集合",
+     "expected": "每次 tap 后仅一个 chip --active（interestCategory 单值 :64）；aria-pressed 与高亮一致（:574）；文案全部走 circle.cat* i18n 且在 zh/en 下均渲染为译文、无裸 key（en 轮另计 CPT29）；选中值即提交目标（resolvedCircleId=分类 id，:386-388）→ mock 轮可成功、real 轮 slug 会被 :395-399 拦（见 CPT17）；console 无报错",
+     "evidence": "normal：8 张 after 截图 + chip 文案清单（zh）+ console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CPT27",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "page": "subpackages/circles/circles/post-topic",
+     "title": "话题标签 7 chip（mock 区块）：点选/取消/第 4 个上限 Toast（MAX_TAGS=3）",
+     "oldAction": "依次 tap 4 个 .tag-chip（:595-609 → toggleTag :130-141）→ 再 tap 已选中的一个取消 → 观察提示行计数",
+     "expected": "选中变 --active（品牌绿实底白字 :1054-1069）；提示行「最多选 3 个」计数与实际选中数一致（:593 ← circle.postTopicTagsHint {n:3}，{n} 必须被替换）；第 4 个被拒并弹 Toast circle.postTopicMaxTags（:136-139，{n}=3 不得出现字面量）；取消选中计数-1；再次选第 4 个仍可提示；tags 仅在 mock 下影响提交（:361 翻译后文案数组 /:402-412）；console 无报错",
+     "evidence": "normal：选中 3 个 / 上限 Toast / 取消后 3 张 after 截图 + Toast 文案逐字 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CPT28",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "page": "subpackages/circles/circles/post-topic",
+     "title": "「喜爱」开关（mock 区块）：开/关两次切换与 favorite 透传",
+     "oldAction": "tap .favorite-section switch 开 → 关 → 再开；随后填表提交一次（唯一标题）",
+     "expected": "checked 与 favoriteEnabled 一致（:657 ← :144-146 @change）；switch color 走 designTokens.color.brand[500]（:160,:658）；提交时 favorite 随 createTopic 传（:411）；mock 回读 newTopic 附带 favorite=true 与 tags（circle.ts:515）；real 构建下该区块整体不渲染（CPT29）→ 本用例 real 轮记 N/A；无多余写请求；console 无报错",
+     "evidence": "normal：三态截图 + 提交 payload（favorite/tags）快照 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CPT32",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "page": "subpackages/circles/circles/post-topic",
+     "title": "关联活动弹层：打开（懒加载）+ 弹层三路关闭（遮罩 / × / 选中项）",
+     "oldAction": "① tap .activity-add（:616-626 → openActivityPicker :258-271）→ 遮罩出现 → tap 遮罩空白（.activity-picker :708）；② 重开 → tap 右上 × 图标（:712）；③ 再重开 → tap 某条活动项（:718-733 → select",
+     "expected": "首次打开触发 fetchActivities 一次并显示加载态文案 common.loading（:715-717，loadingActivities :255），二次打开不再重复请求（activityOptions.length>0 早退 :259）→ 回填两次请求条数；三路关闭都必须在 500ms 内隐藏弹层且遮罩不留（v-if :708）；路径①② 不改变 selectedActivity（仍显示「+ 选择活动」）；路径③ 关闭弹层并渲染已选卡（:628-647）；弹层内滚动区可达（.activity-picker__list max-height 50vh :1336-1339）；点击面板内部不得误关（@tap.stop=\"noop\" :709，noop 定义 :47-49）；console 无报错",
+     "evidence": "normal：加载态 + 三路关闭后 4 张 after 截图 + 每次 GET /activities 计数 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CPT39",
+     "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+     "page": "subpackages/circles/circles/post-topic",
+     "title": "表单滚动到顶/底 + 键盘弹起：内滚边界、header 常驻、光标间距",
+     "oldAction": ".post-body（:499 scroll-view）滚到底 → 回顶；再聚焦 textarea 输入 3 行观察键盘",
+     "expected": "滚动只在 .post-body 内发生（页面容器 height:100% + overflow:hidden :759-771，MP-R1-POSTTOPIC-007/201：header 不得滚出视口、分类区不得顶入状态栏）；滚到底时底部大按钮完整可见；cursor-spacing=\"20\"（:503,:514）生效、:show-confirm-bar=\"false\"（:519）不出现确认条；键盘收起后布局复位；数值回填 scrollTop/scrollHeight/键盘高度",
+     "evidence": "noop：执行日志（滚动数值、按钮 rect、键盘高度）+ 键盘弹起截图；可免全量截图",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "input"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/village/village/history",
+   "manifest": "次要18.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/village/village/history.vue",
+   "sourceFound": true,
+   "planned": 5,
+   "outFile": "reports/audit/round-7/tapfix-briefs/05/tapfix-lane-次要18.json.json",
+   "cases": [
+    {
+     "id": "HS03",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/history",
+     "title": "下拉刷新受控收起（refresher-triggered 绑定 loadingHistory）",
+     "oldAction": "下拉触发 @refresherrefresh（:186 → onRefresh :80-82）并松手，采样指示器收起时刻与列表刷新结果",
+     "expected": "刷新指示器由 loadingHistory 驱动（:185 已绑定业务态，R2 发现 MP-R2-HISTORY-001 写死 false 的形态不得复现）：fetchPostHistory 结束后必须自动收起，不得常驻；列表为最新记录且无重复；下拉期间不得并发触发第二次（store/页面守卫）",
+     "evidence": "normal：下拉中态 + 收起后两帧截图 + console（无 refresher 相关 warning）",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "HS04",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/history",
+     "title": "触底加载更多与到底判定（hasMore 由条数增量推导）",
+     "oldAction": "滚动 .history-list 至底部触发 @scrolltolower（:187 → onLoadMore :85-97），连续 3 次直到到底",
+     "expected": "每次触底追加下一页且 isLoadingMore 期间显示 spinner（:229-232）；条数不再增长时 hasMore=false 并显示 t('village.noMorePosts')（:233-235），此后不再发请求；失败时 hasMore 置 false 且给出可见提示（不得静默停在半页）",
+     "evidence": "normal：中部/到底两帧截图 + network 分页请求参数（page）与条数增量",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "HS05",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/history",
+     "title": "记录卡点击带 id 直达详情 + 返回后落点与位置恢复",
+     "oldAction": "tap 第 3 条 .history-item（:189-194 → goToDetail :118-122）→ 进详情 → tap 详情返回 → 采样列表状态",
+     "expected": "去程路由=subpackages/village/village/detail 且 options.id 为该条 post.id（:121 带 encodeURIComponent，不得无 id 直开导致详情页误报「帖子不存在」）；回程落点=subpackages/village/village/history，滚动位置仍在第 3 条附近、列表未回到顶部且无重复条目；onShow 刷新后条目集合不减少",
+     "evidence": "navigation：双向路由链 + options.id 值 + 回程帧截图",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "HS07",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/history",
+     "title": "清空确认弹窗三路关闭：遮罩 / 取消 / 确认（写操作）",
+     "oldAction": "① tap .history-clear（:167）开弹窗；② tap .clear-dialog-mask 遮罩自身（:249 @tap.self）；③ 重开后 tap 取消（:259）；④ 重开后 tap 确认清空（:269 → handleClear :100-115）",
+     "expected": "① 弹窗展开且 500ms 内可见；②③ 两路仅关弹窗、列表条数不变、不发写请求；④ 确认后才发 DELETE /posts/history，按钮文案在 clearing 期间显示 loading 文案（:271）且不永驻；成功 Toast t('village.history.cleared')（:106）、列表转空态；失败 Toast 后端/兜底文案（:108-111）且列表不变；重复确认（连点×5）只应落 1 次效果",
+     "evidence": "critical：弹窗态与清空后截图 + Toast 文案 + network（DELETE 条数与 Idempotency-Key）+ 服务端回读记录条数（两判定点分开记）",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "HS08",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/history",
+     "title": "空态动作回村口 + 热区/滚动总检（noop 装饰项）",
+     "oldAction": "① 在空态 tap EmptyState 动作「返回村口」（:245 → openAppPath 村口）；② 对 .history-back（:147-156）、.history-clear（:161）取 boundingBox；③ 列表滚到顶/底",
+     "expected": "① 落点=subpackages/village/village/index 且正常渲染（村口非 tabBar 页，不得 switchTab 静默失败）；② 热区 ≥88rpx，不足记实测值；③ 顶/底滚动均可达、底部留白不遮挡最后一条与「没有更多」文案；空态文案为 t('village.history.empty')，不得出现错误态样式",
+     "evidence": "normal：空态帧 + 落点帧截图 + 路由链 + observed 元素尺寸清单",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    }
+   ]
+  }
+ ],
+ "schema": {
+  "lane": "本页 page 路径（逐字照抄，普查靠它对账）",
+  "counts": {
+   "planned": "必须等于本 lane 的 cases.length",
+   "ok": "写进 cases 的条数",
+   "unverifiable": "写进 unverifiable 的条数"
+  },
+  "cases": [
+   {
+    "id": "",
+    "manifest": "",
+    "page": "",
+    "selector": ".kebab-case，必须逐字出现在 file:line 那一行",
+    "file": "仓库相对路径，如 apps/client/src/pages/discover/index.vue（组件里的类名写组件自己的路径）",
+    "line": "该行号那一行必须含该类名片段（合并器会重读文件核对，不接受自述）",
+    "oldAction": "逐字抄简报里的 oldAction，一个字都别改",
+    "newAction": "保留全部交互动词，把 selector 逐字写进去；动词丢了或多出来都会被整条拒绝",
+    "needsIdentity": "该目标只在某身份下存在时写 guest/A/B，否则留空",
+    "why": "为什么是它（一句话，指向源码里那条 bindtap）"
+   }
+  ],
+  "unverifiable": [
+   {
+    "id": "",
+    "manifest": "",
+    "page": "",
+    "reason": "",
+    "needsCarrier": "欠哪条载具才能点名（如 WS automator 的 touch/swipe、需要特定夹具、纯文案断言）"
+   }
+  ]
+ },
+ "hardRules": [
+  "cases + unverifiable 必须恰好等于 planned，多一条少一条整份不采信。",
+  "selector 必须在 file 的 line 那一行逐字存在；不许把类名改成「更好看」的写法，也不许引用一个只有样式没有事件的类——目标是能被自动化点到的东西，优先带 @tap/@click/bindtap/@input/@confirm 的那层。",
+  "gestureOnly=true 的条：CLI 桥没有连续手势，要么它其实有个可点的等价物件（如三键按钮本身）并保留原动词，要么进 unverifiable 并在 needsCarrier 写明欠 WS 手势通道。不许把「向右拖动」悄悄改成「点击」。",
+  "expected 里出现的具体文案/数字不能当点击目标；这类条进 unverifiable 并说明它断言的是文本不是物件。",
+  "只写自己这一份 outFile，不改 ops/*.json，不改别的 lane，不改台账，不跑模拟器。"
+ ]
+}

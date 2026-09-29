@@ -1,0 +1,73 @@
+{
+ "startedAt": "2026-09-27T03:42:41.283Z",
+ "legs": [
+  {
+   "name": "rebuild-mock-stage4",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage4/rebuild-mock-stage4.log",
+   "bytes": 456,
+   "resultLines": [
+    "NPMSCRIPT_RESULT=OK（命中 1/2 个「mp-build」标记）"
+   ]
+  },
+  {
+   "name": "rebuild-real-stage4",
+   "status": "FAIL",
+   "exitCode": 1,
+   "log": "reports/audit/round-7/ui-queue-stage4/rebuild-real-stage4.log",
+   "bytes": 1009,
+   "resultLines": [
+    "NPMSCRIPT_RESULT=FAIL（退出码非 0）"
+   ]
+  },
+  {
+   "name": "gate-band-freshness-stage4",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "open-window-real-for-cases",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "exec-A-real-only",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "exec-guest-real-only",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "measure-matching-drift",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-guest-landing-book",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "judge-stand-stage4",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "open-window-mock-for-reshoot",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "reshoot-stage4",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "finishedAt": "2026-09-27T03:44:31.926Z",
+ "conservation": {
+  "legsTotal": 11,
+  "legsOk": 1,
+  "tally": {
+   "OK": 1,
+   "FAIL": 1,
+   "NOT_RUN": 9
+  },
+  "ok": true
+ }
+}

@@ -1,0 +1,16 @@
+{
+ "lane": "subpackages/market/detail/index",
+ "manifest": "次要22.json",
+ "sourceFile": "apps/client/src/subpackages/market/detail/index.vue",
+ "counts": { "planned": 1, "ok": 0, "unverifiable": 1 },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "MD09",
+   "manifest": "次要22",
+   "page": "subpackages/market/detail/index",
+   "reason": "本条判的是滚动承担体与遮挡：滚到底时介绍正文末行是否被固定购买栏压住、scroll 到底由 scroll-view 的 scroll 事件还是页面级原生滚动承担（MP-R2-次要22-019 的高度链隐患）、回顶后 nav-bar 与大图完整且无白屏，并回填 scrollTop 与 scrollHeight 与 windowHeight 三元组。承载它们的两个物件都不挂事件：.product-scroll（market/detail/index.vue:360）是只带滚动语义的 scroll-view，.product-footer（:387）是纯占位留白 view，按 hardRules 不能当点击目标；滚动到底、静置、回顶本身也是连续手势。",
+   "needsCarrier": "欠 WS automator 的连续滚动通道加逐帧 rect 读数载具，另需一个能分别读出 scroll-view 的 scroll 事件计数与页面 scrollTop 的判定出口，否则承担体归属做不出来；requiresReal 还需有货的商品夹具。"
+  }
+ ]
+}

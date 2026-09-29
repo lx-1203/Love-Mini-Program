@@ -1,0 +1,95 @@
+{
+ "startedAt": "2026-09-27T01:29:37.337Z",
+ "legs": [
+  {
+   "name": "rebuild-real",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-final/rebuild-real.log",
+   "bytes": 28863,
+   "resultLines": [
+    "G7_RESULT=PASS"
+   ]
+  },
+  {
+   "name": "rebuild-mock",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-final/rebuild-mock.log",
+   "bytes": 237,
+   "resultLines": [
+    "NPMSCRIPT_RESULT=OK"
+   ]
+  },
+  {
+   "name": "rebuild-showcase",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-final/rebuild-showcase.log",
+   "bytes": 30664,
+   "resultLines": [
+    "SHOWCASE_RESULT=PASS"
+   ]
+  },
+  {
+   "name": "gate-band-freshness-all",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-final/gate-band-freshness-all.log",
+   "bytes": 1601,
+   "resultLines": [
+    "FRESH_RESULT=PASS bands=3 markers=3 —— 每档产物都不晚于任何未提交改动，且符号级深检全部命中"
+   ]
+  },
+  {
+   "name": "gate-source-shape",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-final/gate-source-shape.log",
+   "bytes": 90,
+   "resultLines": [
+    "SRC_SHAPE_RESULT=OK"
+   ]
+  },
+  {
+   "name": "measure-guest-landing",
+   "status": "FAIL",
+   "exitCode": 1,
+   "log": "reports/audit/round-7/ui-queue-final/measure-guest-landing.log",
+   "bytes": 1513,
+   "resultLines": []
+  },
+  {
+   "name": "exec-A-mock-final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "exec-guest-real-final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-frame-debt-triage",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "shoot-frameplan-final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "close-out-open-window-mock",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "finishedAt": "2026-09-27T01:33:43.359Z",
+ "conservation": {
+  "legsTotal": 11,
+  "legsOk": 5,
+  "tally": {
+   "OK": 5,
+   "FAIL": 1,
+   "NOT_RUN": 5
+  },
+  "ok": true
+ }
+}

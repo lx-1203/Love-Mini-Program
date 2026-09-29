@@ -1,0 +1,405 @@
+{
+ "batch": "06",
+ "laneCount": 6,
+ "caseCount": 25,
+ "lanes": [
+  {
+   "lane": "subpackages/campus/campus/certification",
+   "manifest": "次要18.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/campus/campus/certification.vue",
+   "sourceFound": true,
+   "planned": 5,
+   "outFile": "reports/audit/round-7/tapfix-briefs/06/tapfix-lane-次要18.json.json",
+   "cases": [
+    {
+     "id": "CF03",
+     "manifest": "次要18",
+     "page": "subpackages/campus/campus/certification",
+     "title": "学生证上传：隐私授权前置（拒绝即中止并 Toast）与 chooseImage 失败提示（权限类写链路）",
+     "oldAction": "① 首次 tap .upload-area（:353 → uploadStudentCard :113-136）触发隐私授权弹窗，选「拒绝」；② 重进选「同意」并完成相册选图；③ 选图后改 tap「×」移除（:369）；④ 再 tap「重新上传」（:366）换图；⑤ 造 chooseImage fail（取消系统选图）",
+     "expected": "① 拒绝后必须 Toast t('campus.certification.privacyRequiredImage')（:117-121）且不发上传、预览态不出现；② 预览出现本地 temp 路径图（:360-364）；③④ 移除后回到 .upload-area 空态、重换图后 src 变化；⑤ 取消选图不得留 error Toast 误导（fail 分支 Toast chooseImageFailed :133 仅用于真失败），任何一路都有 500ms 内可观测反馈，无 Loading 永驻",
+     "evidence": "critical：授权弹窗/拒绝/成功/移除四帧截图 + Toast 文案 + network（上传请求条数）+ console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CF06",
+     "manifest": "次要18",
+     "page": "subpackages/campus/campus/certification",
+     "title": "必填三连缺失与未实名双保险拦截（门槛提示文案）",
+     "oldAction": "① 依次只填一项后 tap 提交（:421-431 submitCert）；② 三项齐全但无学生证图提交；③ 未实名态（idCardVerified=false）提交；④ 未实名态读 .gate-banner",
+     "expected": "①② 每次都命中对应 Toast 且顺序正确（学校→专业→学生证，:147-158）；③ 未实名时 Toast realNameRequiredBanner（:144）且不发写请求（双保险，按钮同时为禁用态 :423）；④ 门槛横幅文案与「去认证」按钮同时可见（:303-308）；四路都必须 500ms 内可观测反馈，不得静默 return",
+     "evidence": "normal：每路 Toast 截图 + Toast 文案 + network（写请求条数=0 的断言）",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CF08",
+     "manifest": "次要18",
+     "page": "subpackages/campus/campus/certification",
+     "title": "提交认证成功：Toast + 状态卡刷新 + 重复提交防重（写操作，拆两判定点）",
+     "oldAction": "① tap .submit-btn（:421）×1；② 观察按钮文案（提交中↔提交认证）；③ 成功后重进页面读状态；④ 回到可提交态后 300ms 内 rapidTap 提交 ×5；⑤ 断网态提交 ×1",
+     "expected": "① Toast t('campus.certification.submitSuccess')（:191）+ 状态卡刷新为审核中（:190 重拉）；② isSubmitting 期间按钮禁用/文案「提交中」（:423/:429），结束后必须复位（:198）不得永驻；③ 服务端回读认证记录条数=1；④ 判定点①：network 面板 POST /certification 条数（页面层 isSubmitting 串行守卫是否吞掉后 4 次，须逐条记录含 Idempotency-Key）；判定点②：后端认证记录仍只能 1 条（若 5 条则为客户端缺陷，不得因服务端幂等去重判 VERIFIED）；⑤ 失败 Toast 显示 campusStore.errorMessage 或 submitFailed（:193-196），表单内容不丢",
+     "evidence": "critical：提交前/中/后 + 失败态截图 + Toast 文案 + network 逐条（含键）+ 服务端认证记录回读条数",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CF09",
+     "manifest": "次要18",
+     "page": "subpackages/campus/campus/certification",
+     "title": "学信网（选填）截图上传/移除与两处上传实现一致性（证伪 MP-R2-CERT-003 双轨）",
+     "oldAction": "① tap 学信网 .upload-area（:397）→ 选图 → 移除（:413）→ 重选（:410）；② 仅填 chsiCode 不传图提交；③ 两字段都填提交；④ 对两轨分别选一张 >5MB 图（可造时）",
+     "expected": "① 学信网预览/移除/重传均有 500ms 内可见反馈；取消选择不得报错；②③ 选填空缺不得被当必填拦（:141-158 仅校验三项），提交成功；④ 超限须被拒并给出可见文案（chooseImages 的 maxSizeMB=5，:92 与学生证侧对齐口径）；两轨在隐私授权、大小校验、失败提示三处表现必须一致（不一致即记 MP-R2-CERT-003 双轨缺陷，不得以 mock 下「都能跑通」判 VERIFIED）",
+     "evidence": "critical：两轨上传/移除/重传四帧截图 + Toast 文案 + network（/media/upload 条数与 name）+ console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CF10",
+     "manifest": "次要18",
+     "page": "subpackages/campus/campus/certification",
+     "title": "scroll-view 内滚与键盘弹起（cursor-spacing）+ 热区总检 + 装饰项 noop",
+     "oldAction": "① 分别聚焦三个输入框，观察键盘是否遮挡输入框与提交按钮；② .cert-body 滚到顶/底（含底部隐私提示 :434-438 可见）；③ 对返回键、两处上传区、重传/移除按钮、提交按钮、门槛「去认证」取 boundingBox；④ tap 说明卡条目与隐私提示文本（非交互）",
+     "expected": "① 键盘弹起时聚焦输入框与提交按钮均不被遮挡（cursor-spacing 生效，无整页错位）；收起后布局复位、无 Loading 残留；② 内滚生效可达顶底、头部「学生认证」不被推走（MP-R2 高度约束同类风险须记录 scrollTop 与 windowScrollY）；③ 全部热区 ≥88rpx，不足列实测值；④ 装饰文本点击无路由/无写请求（noop，仅记日志）",
+     "evidence": "normal：键盘态/顶/底三帧截图 + observed（scrollTop、windowScrollY、元素尺寸清单）+ 装饰项执行日志",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "input"
+    }
+   ]
+  },
+  {
+   "lane": "pages/discover/index",
+   "manifest": "PAGES-DISCOVER-INDEX.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/pages/discover/index.vue",
+   "sourceFound": true,
+   "planned": 4,
+   "outFile": "reports/audit/round-7/tapfix-briefs/06/tapfix-lane-PAGES-DISCOVER-INDEX.json.json",
+   "cases": [
+    {
+     "id": "DC08",
+     "manifest": "PAGES-DISCOVER-INDEX",
+     "page": "pages/discover/index",
+     "title": "右滑手势 = 喜欢（方向语义铁律）",
+     "oldAction": "在卡片上向右拖动 >SWIPE_THRESHOLD 后松手（SwipeGesture.ts:37-42 判定，常量见其 :4-7 导入）；另做向左、向上、向下各一次",
+     "expected": "右滑触发 handleLike（MatchCard.vue @swipe-right → index.vue:319）→ 进入打招呼/喜欢链路（enterMatching('like') :119-134）；左滑触发 handleSwipeLeft（:318）；上/下与位移 <TAP_MOVE_THRESHOLD 的轻点**不得**被判为左右滑（方向语义错乱判 P1）；滑动过程中卡片有跟手位移与旋转（dragStyle），松手后飞行动画终态明确，不得停在半透明中间态",
+     "evidence": "critical：before + after 截图 + 路由链断言 + Toast + console + 执行日志（四个手势各自的触发结果矩阵）",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "DC16",
+     "manifest": "PAGES-DISCOVER-INDEX",
+     "page": "pages/discover/index",
+     "title": "Disabled 态：isMatchOpen=false 时匹配功能关闭",
+     "oldAction": "进入本页并尝试点击卡片与三键",
+     "expected": "显示 EmptyState type=no-data + discover.matchClosed 文案（index.vue:297-299），卡片与 MatchActions 不得渲染；所有交互 0 请求 0 跳转；开关恢复后卡片正常出现（onShow 重拉，:216-225）",
+     "evidence": "normal：after 截图（关闭态）+ 执行日志（DOM 不存在断言）+ network 计数",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "DC22",
+     "manifest": "PAGES-DISCOVER-INDEX",
+     "page": "pages/discover/index",
+     "title": "身高双滑块边界与互斥约束",
+     "oldAction": "① 拖动下限滑块到最大（250）；② 拖动上限滑块到最小（120）；③ 两端各推到边界（120/250）；④ 尝试做出 min>max 的组合",
+     "expected": "取值范围严格 120-250cm、step=1（FilterDrawer.vue:62-64、模板 :658-681 onHeightMinChange/onHeightMaxChange）；min>max 必须被互斥约束纠正（不得提交倒挂区间）；滑块本体在 mp 端可拖动且数值实时回显；不得因拖动触发请求（未确认前只改 draft）",
+     "evidence": "normal：after 截图（三态数值）+ 执行日志（min/max 读数）",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "DC29",
+     "manifest": "PAGES-DISCOVER-INDEX",
+     "page": "pages/discover/index",
+     "title": "下拉刷新不适用：本页未开 enablePullDownRefresh",
+     "oldAction": "在顶部执行下拉手势；随后统计 onShow 驱动的重拉",
+     "expected": "**不得**出现下拉刷新动画或 onPullDownRefresh 回调（页面无该钩子，pages.json 未开启）→ 若出现判配置/实现不一致；数据刷新只能通过切 Tab（onShow :216-225）或抽屉「确认」重拉，须在 observed 里写明该页无手动刷新入口（与首页/附近页/消息页不一致，属可感知体验缺口，按事实记 P3/P2 不夸大）",
+     "evidence": "noop：执行日志（下拉手势后的动画与回调结论）+ console",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/village/village/index",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/village/village/index.vue",
+   "sourceFound": true,
+   "planned": 4,
+   "outFile": "reports/audit/round-7/tapfix-briefs/06/tapfix-lane-SUBPACKAGES-VILLAGE-VILLAGE-INDEX.json.json",
+   "cases": [
+    {
+     "id": "VI17",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "page": "subpackages/village/village/index",
+     "title": "点赞：单击乐观更新 + 服务端权威校正 + 失败回滚（写操作）",
+     "oldAction": "① tap 卡内点赞按钮（PostCard.vue:271 handleLike → index.vue handleLike :334-341 → likePost）→ 立即观察计数与图标态；② 再 tap 一次取消；③ 断网/拦截使请求失败后再点一次观察回滚",
+     "expected": "① 立即（<300ms）出现乐观态：图标变已点赞 + 动画（PostCard.vue:75-86 likeAnimating 300ms 定时器）+ likes +1（applyOptimisticLike，village/index.ts:575-579）→ 随后按后端 {liked, likeCount} 权威校正（:585-590）；② 第二次点击必须**真的发出**第二请求并回到未点赞（该端点已移除 @Idempotent，VillageController.java:235-237；若被 409 拦截导致无法取消 → P1）；③ 失败时回滚到原始快照（rollbackLike :592-594）+ 页面级 showErrorToast（index.vue:336-340 ← village.likeFailed）→ 不得停留在错误乐观态；断言两列：① 客户端请求条数（点击 3 次应 3 条，失败注入那次仍计入）；② 服务端回读该帖 liked/likeCount 权威值（取消后=初值）；console 允许失败日志、不得有未捕获 rejection",
+     "evidence": "critical：未点赞 before + 乐观态 + 校正后 + 取消后 + 回滚后 共 5 张截图 + 路由 + 全部 Toast 文案 + console + network 三条明细（URL/Key/状态码/响应 liked）+ 服务端回读",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VI18",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "page": "subpackages/village/village/index",
+     "title": "连点同一帖点赞×5：客户端请求条数与服务端最终 liked/likeCount 分列（无幂等兜底的真实风险点）",
+     "oldAction": "500ms 内对同一 .action-btn 点赞按钮快速 tap×5，逐次记录 tap 时刻；等 ≥2s 后回读",
+     "expected": "禁止用「Toast/图标只变一次」推结论，两列必须分开回填：① 【客户端层】network 面板 POST /posts/{id}/like 条数（in-flight 期间后续点击是否被吞 → 条数可 <5，须如实记录）+ 每次 tap 后本地图标态序列截图/描述；② 【服务端层】最终 GET 回读该帖 liked 布尔与 likeCount 权威值，且与本地 UI 完全一致（不一致即乐观未回滚，按 P1 立案）；期望态：奇数次生效=已赞、偶数次=未赞，但**实际值以回读为准**并回填；无 likeCount 负数/NaN/明显漂移；无重复 Toast 风暴；console 无报错",
+     "evidence": "critical：连点前 before + 连点后 after + 回读态截图 + 路由 + Toast 条数与文案 + console + network 请求条数明细 + 服务端回读 liked/likeCount",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VI28",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "page": "subpackages/village/village/index",
+     "title": "REAL_ONLY 后台发帖开关（post_publish_open=false）：输入条隐藏、空态文案切换、发帖被拒 403",
+     "oldAction": "观察底部输入条与空态 → 改由 deep link 直达 /subpackages/village/village/post 强行发帖一次 → 观察错误提示 → 后台恢复开关后再刷新本页",
+     "expected": "输入条整体不渲染（v-if=isPostPublishOpen :847-848）；空态文案=village.postClosed 且发帖按钮隐藏（:795-809）；绕过 UI 强发时后端 403 且 message 为「发帖功能已关闭」类原文（VillageController.java:158-161 OperationForbiddenException(ErrorMessages.POST_PUBLISH_CLOSED)）→ 前端必须把该原因呈现给用户（Toast 或错误槽），不得静默/不得显示泛化「发布失败」；恢复开关后下拉刷新即重新出现输入条（isPostPublishOpen 响应式，:71-72）→ 回填刷新前后的请求与 UI 变化；断言两列：① 客户端发帖请求条数=1 且状态码 403；② 服务端回读：该标题帖数=0（未落库）；console 无未捕获异常",
+     "evidence": "critical：开关关闭态 before + 强发失败 Toast after + 恢复后截图 + 路由 + Toast 文案逐字 + console + network 403 明细（error.code/message）+ 服务端回读帖数",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "input"
+    },
+    {
+     "id": "VI40",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+     "page": "subpackages/village/village/index",
+     "title": "热区量测：搜索入口 / 频道 Tab / 点赞收藏关注分享按钮 / 回到顶部 / 输入条（铁律 ≥88rpx）",
+     "oldAction": "对 .village-search、.channel-feed 内每个频道 Tab 项、PostCard 的 .action-btn（点赞/收藏/评论/分享）、.back-to-top、ChannelComposerBar 可点区逐个 boundingClientRect 量测",
+     "expected": "如实回填 rpx 数值并对照 88rpx：.village-search 高 64rpx（index.vue:934-945）低于铁律；.back-to-top 88×88rpx（:1342-1356）刚好达标；PostCard 各 .action-btn 需实测（components/village/PostCard.vue:263-286）；不可量元素记 UNVERIFIED 而不省略；执行员不得以源码结论代替实测数值；无写请求；console 无报错",
+     "evidence": "noop：执行日志（各元素 width/height 数值表）；可免截图",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/village/village/tag-posts",
+   "manifest": "次要18.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/village/village/tag-posts.vue",
+   "sourceFound": true,
+   "planned": 4,
+   "outFile": "reports/audit/round-7/tapfix-briefs/06/tapfix-lane-次要18.json.json",
+   "cases": [
+    {
+     "id": "TP03",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/tag-posts",
+     "title": "mock 模式点赞本地翻转成功（证伪 MP-R2-TAGPOSTS-001 恒失败）",
+     "oldAction": "tap 卡片点赞 .action-btn（:391-402，aria-label=village.tagPosts.likeAria，@tap.stop toggleLike :32）×1，再 tap ×1 取消",
+     "expected": "两次点击图标均在 500ms 内空心↔实心切换（:400）且计数 +1/−1（:401/:37）；全程不得出现错误 Toast（:47-50 分支不触发）、console 无「帖子不存在」；mock 下不发网络请求（network 面板该 URL 条数=0）",
+     "evidence": "critical：before/中间/取消后三帧截图 + Toast 队列（须为空）+ network（无 /like 请求）+ console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "TP04",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/tag-posts",
+     "title": "real 模式点赞连点×5：客户端请求数与服务端回读条数拆两判定点",
+     "oldAction": "300ms 内 rapidTap 同一卡片点赞 ×5，停 2s 后重进该标签页服务端回读 likeCount",
+     "expected": "判定点①：network 面板记录 POST /posts/{id}/like 实际发出条数与各自 Idempotency-Key（若相同即为客户端复用同键、不能据此认定客户端有守卫）；判定点②：回读 likeCount 相对初始值只能 ±1（toggle 语义，奇偶一致），出现 +5 或状态与图标不一致即 FAILED；页面本地态与服务端回读须一致（:42-45 同步逻辑）",
+     "evidence": "critical：before+after 截图 + network 逐条（URL/键/状态码）+ 服务端回读数值 + console",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "TP06",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/tag-posts",
+     "title": "下拉刷新（scroll-view refresher）动画受控收起 + 数据替换",
+     "oldAction": "在 .post-feed（:305-312，refresher-enabled=true / :refresher-triggered=isRefreshing）内下拉至出现刷新指示器并松手，采样收起时刻",
+     "expected": "触发 @refresherrefresh → onRefresh（:206-209）置 isRefreshing=true、loadPosts(true)；请求/模拟延迟结束后 isRefreshing 在 finally 归 false（:198）→ 动画必须自动收起（不得常驻顶部圈），列表条数与首条内容刷新且无重复；下拉期间不得重复触发第二次（loading 守卫 :123）",
+     "evidence": "normal：下拉中态与收起后两帧截图 + observed 记录条数与首条标题 + console",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "TP07",
+     "manifest": "次要18",
+     "page": "subpackages/village/village/tag-posts",
+     "title": "触底加载更多与失败不得静默（证伪 MP-R2-TAGPOSTS-002 开放缺陷）",
+     "oldAction": "① 滚动 .post-feed 至触底触发 @scrolltolower（:311 → onLoadMore :214-218），观察是否出现「没有更多」；② 失败前置下重复触底",
+     "expected": "① 到底时 hasMore=false 且显示 t('village.tagPosts.noMore')（:423-425），不得继续发第 2 页请求；② 已有列表时的加载失败必须有可见反馈（inline 提示或 Toast）——当前源码仅置 errorMessage、模板错误态只在 posts.length===0 时渲染（:320 条件）→ 静默失败判 FAILED（该缺陷在本轮 code-findings 记为 MP-R2-TAGPOSTS-002 未修）",
+     "evidence": "normal：到底帧 + 失败态帧截图（含 Toast 队列或「无任何提示」的截图证据）+ network 请求条数",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/profile-extra/verification/index",
+   "manifest": "次要20.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/profile-extra/verification/index.vue",
+   "sourceFound": true,
+   "planned": 4,
+   "outFile": "reports/audit/round-7/tapfix-briefs/06/tapfix-lane-次要20.json.json",
+   "cases": [
+    {
+     "id": "VCI04",
+     "manifest": "次要20",
+     "page": "subpackages/profile-extra/verification/index",
+     "title": "空提交：四道必填校验按序各出一次 Toast 且文案正确（姓名→学号→学校→学生证）",
+     "oldAction": "① 全空 tap .action-btn（提交，index.vue:675-683）→ 记录 toast；② 只填姓名再提交；③ 补学号再提交；④ 补学校再提交；⑤ 最后不选图直接提交",
+     "expected": "① toast=verification.errStudentName（index.vue:187-190）且不发请求、不进入 submitting 态（守卫在校验之前 :184）；② toast=verification.errStudentId（:191-194）；③ toast=verification.errSchoolName（:195-198）；④ toast=verification.errImageRequired（:199-202）；每步 500ms 内出现 Toast（死按钮判据）；每次提交后状态卡仍 unverified、页面无 showLoading 残留（校验分支在 showLoading :206 之前返回）；console 无报错",
+     "evidence": "normal：四步各 1 张 after 截图（须含 Toast 文本）+ 路由（仍在本页）+ console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VCI08",
+     "manifest": "次要20",
+     "page": "subpackages/profile-extra/verification/index",
+     "title": "上传学生证：隐私授权前置 + 选图成功/取消两路反馈",
+     "oldAction": "① tap .upload-card（index.vue:649-656 → chooseImage :138-172）→ 在选图面板选一张图确认；② 再 tap 上传卡的「更换」态（:667-669）→ 取消选择；③ 未授权分支：把隐私授权置为未同意后重进页面再 tap",
+     "expected": "① 成功后 uploadedImagePath 写入 tempFilePath（:157）→ 上传卡从空态切预览态（v-if/v-else :657/:661）+ toast=verification.imageUploaded（duration 1200ms :31/:158-162），500ms 内可见；预览 <image :src=\"resolvedUploadedImage\">（:662-666）必须出图不破图（解析链 resolveMediaUrl，:174-178）；② 取消走 fail 分支 → toast=verification.imageChooseCancelled（:164-170，1000ms），原预览图保持不变（不清空）；③ 未授权/隐私未同意 → toast=verification.privacyRequiredImage（:142-148）且不调起 chooseImage、不改状态；三种反馈均为 Toast 可观测（无死按钮）；console 无 unhandledRejection",
+     "evidence": "critical：before（空态）+ after（预览态/取消后/未授权）截图 + 路由 + Toast 文案逐条 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VCI09",
+     "manifest": "次要20",
+     "page": "subpackages/profile-extra/verification/index",
+     "title": "提交认证（mock 全填合法）：Loading mask 不永驻 + 1s 后转 pending + 成功 Toast；连点提交×5 只走一次流程",
+     "oldAction": "① tap .action-btn 提交一次，分别在 200ms/800ms/1500ms/3000ms 采样 Loading 与状态卡；② 复位后（退出重进）500ms 内 rapidTap .action-btn ×5",
+     "expected": "① 点击后 500ms 内出现 uni.showLoading(mask:true)（index.vue:205-206，mask 必须为 true——MP-R1-VERIFY-INDEX-002 双保险守卫）；1000ms 后 hideLoading（:213）→ Loading 不永驻（3000ms/4000ms 采样不得仍有 Loading）；状态卡转 pending（:214）+ toast=verification.submitSuccess（:215-219）+ 页面切至「审核中」分支（:532-545）；② rapidTap×5 断言分两列：客户端层=submitting 守卫（:184）使第 2-5 次点击在 submitting=true 期间直接 return → setTimeout 只注册 1 次（mock 提交成功 Toast 条数=1，观察 1s 内 toast 计数）；服务端层=real 轮 network POST /verification 条数与 GET /verification 回读的申请条数（防 Idempotency-Key 假通过：若客户端发出多条而服务端仅 1 条记录，客户端缺陷仍成立）；③ 提交按钮在 submitting 期间文案转「提交中」（:682）+ disabled 类（:677）",
+     "evidence": "critical：before（填齐待提交）+ after（pending 态）截图 + 路由 + Toast 文案与条数 + console + network 请求计数（real 轮）",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VCI13",
+     "manifest": "次要20",
+     "page": "subpackages/profile-extra/verification/index",
+     "title": "页级滚动到顶/底 + 底部安全区：提交按钮不被 home indicator/TabBar 遮挡，无内容裁切",
+     "oldAction": "页面 scrollTo 到底 → 回顶 → 中途停一次；全程记录 scrollTop/scrollHeight/windowHeight",
+     "expected": "滚到底时提交按钮完整可见且可点（.safe-bottom 占位 :687 生效，按钮不被 iPhone 底部安全区/自定义 TabBar 盖住——本批 8 页 navigationStyle=custom 均无原生导航栏）；回顶后 nav-bar 标题与返回键不与状态栏叠印（safe-top :462 前置于 nav-bar :466，R10-P2-012 顺序）；滚动过程无白屏、无吸顶抖动、无固定元素错位；数值如实回填",
+     "evidence": "noop：执行日志（scrollTop/scrollHeight/windowHeight + 按钮 boundingClientRect.bottom 与 windowHeight 比较）+ console；可免截图",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/profile-extra/verification/real-name",
+   "manifest": "次要20.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/profile-extra/verification/real-name.vue",
+   "sourceFound": true,
+   "planned": 4,
+   "outFile": "reports/audit/round-7/tapfix-briefs/06/tapfix-lane-次要20.json.json",
+   "cases": [
+    {
+     "id": "VRN06",
+     "manifest": "次要20",
+     "page": "subpackages/profile-extra/verification/real-name",
+     "title": "身份证正/反面上传卡：隐私授权前置 + 选图成功/取消/超限三路反馈 + 预览出图",
+     "oldAction": "① tap 正面卡 .upload-card（:518-525 → chooseIdCardImage('front') :146-169）选图确认；② 再 tap 预览态「更换」→ 取消选择；③ tap 背面卡选一张 >5MB 图（count:1, maxSizeMB:5 :149）；④ 未授权分支重跑",
+     "expected": "① 成功后 idCardFrontPath=tempPath（:152-156）+ toast=realName.imageUploaded（1200ms :30/:157-161），预览 <image :src=\"resolveMediaUrl(idCardFrontPath)\">（:530-535）必须出图、无破图占位（未提交改动 utils/media.ts:222-232 影响 /static/assets/images/avatars|people 前缀解析，须记录解析后的最终 URL 形态）；② 取消 → paths[0] 为空 → 直接 return（:150-151）→ 原预览保持不变、无错误 toast（不得误报隐私错误）；③ 超限/异常 → 走 catch → toast=realName.privacyRequiredImage（:162-168）——注意源码把「隐私未授权」与「文件超限」合并为同一文案，如实采证为 observation（文案不精确），不得据此判功能缺失；④ 未授权 → 同 toast 且不调起系统选图；三面（成功/取消/拒绝）均有 500ms 内可观测反馈；console 无 unhandledRejection",
+     "evidence": "critical：before（空态）+ 正/反面预览成功 + 取消后 + 拒绝后 共 5 张截图 + 路由 + Toast 文案逐条 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VRN08",
+     "manifest": "次要20",
+     "page": "subpackages/profile-extra/verification/real-name",
+     "title": "提交实名认证（mock 全合法）：Loading mask 不永驻 + 1s 转 pending + 成功 Toast；连点提交×5 只走一次",
+     "oldAction": "① tap .action-btn 一次，在 200ms/800ms/1500ms/3000ms 采样；② 退出重进复位后 rapidTap .action-btn ×5（500ms 内）",
+     "expected": "① 500ms 内出现 showLoading(title=realName.submitting, mask:true)（:201-202，mask 必须为 true）；1000ms 后 hideLoading（:209）+ status=pending（:210）+ toast=realName.submitSuccess（:211-215）→ 页面转「审核中」分支（:458-465）且表单/上传卡/提交按钮全部消失（分支互斥）；3000ms 采样不得仍有 Loading（不永驻）；② 客户端层=submitting 守卫（:177）使第 2-5 次点击 return → mock 成功 Toast 条数=1、setTimeout 注册 1 次；服务端层（real 轮）=POST /real-name-certification 条数与 GET 回读申请条数（防 Idempotency-Key 稳定哈希假通过：多条客户端请求 + 服务端 1 条记录 → 仍判客户端缺陷）；③ 按钮 submitting 期间文案「提交中」（:583）；console 无报错",
+     "evidence": "critical：before（填齐）+ after（pending 态）截图 + 路由 + Toast 文案与条数 + console + network 计数（real 轮）",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VRN11",
+     "manifest": "次要20",
+     "page": "subpackages/profile-extra/verification/real-name",
+     "title": "REAL_ONLY 已认证态：脱敏身份证号回显、表单与提交按钮不得出现",
+     "oldAction": "reLaunch 进本页 → 观察状态卡与已认证卡两行 → 全页截图并检查是否残留输入框/上传卡/提交按钮",
+     "expected": "状态卡=已认证（statusVerified 绿 :85-92）+ verified-card 两行：真实姓名 = userName、身份证号 = maskedIdCardNo（applyRealNameView :290 写入，模板 :445-452 渲染）→ 必须为脱敏形态（前 6 后 4 掩码 :45-46），不得出现完整 18 位号码（合规硬判据）；表单区/上传卡/提交按钮均不存在（template v-if 分支 :441-455 与 v-else :468）；无隐私说明卡？如实回填（privacyNote 仅在未认证分支内 :569-573）；console 无报错",
+     "evidence": "normal：after 截图（含脱敏号可读）+ 路由 + console；前置不满足标 UNVERIFIED 并写明缺什么",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "input"
+    },
+    {
+     "id": "VRN13",
+     "manifest": "次要20",
+     "page": "subpackages/profile-extra/verification/real-name",
+     "title": "页级滚动到顶/底 + 双安全区：提交按钮与背面上传卡完整可见",
+     "oldAction": "scrollTo 底 → 中 → 顶，记录 scrollTop/scrollHeight/windowHeight 与提交按钮 boundingClientRect",
+     "expected": "滚到底提交按钮完整可见可点（safe-bottom 占位 :588 生效，不被 home indicator 盖住）；背面上传卡 :542-564 不被裁切；回顶 nav-bar 不与状态栏叠印（safe-top :412 前置）；滚动中无白屏/无内容跳变（statusLoading 骨架不得因滚动重复出现）；数值如实回填",
+     "evidence": "noop：执行日志（三段滚动数值 + 按钮 rect）+ console；可免截图",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  }
+ ],
+ "schema": {
+  "lane": "本页 page 路径（逐字照抄，普查靠它对账）",
+  "counts": {
+   "planned": "必须等于本 lane 的 cases.length",
+   "ok": "写进 cases 的条数",
+   "unverifiable": "写进 unverifiable 的条数"
+  },
+  "cases": [
+   {
+    "id": "",
+    "manifest": "",
+    "page": "",
+    "selector": ".kebab-case，必须逐字出现在 file:line 那一行",
+    "file": "仓库相对路径，如 apps/client/src/pages/discover/index.vue（组件里的类名写组件自己的路径）",
+    "line": "该行号那一行必须含该类名片段（合并器会重读文件核对，不接受自述）",
+    "oldAction": "逐字抄简报里的 oldAction，一个字都别改",
+    "newAction": "保留全部交互动词，把 selector 逐字写进去；动词丢了或多出来都会被整条拒绝",
+    "needsIdentity": "该目标只在某身份下存在时写 guest/A/B，否则留空",
+    "why": "为什么是它（一句话，指向源码里那条 bindtap）"
+   }
+  ],
+  "unverifiable": [
+   {
+    "id": "",
+    "manifest": "",
+    "page": "",
+    "reason": "",
+    "needsCarrier": "欠哪条载具才能点名（如 WS automator 的 touch/swipe、需要特定夹具、纯文案断言）"
+   }
+  ]
+ },
+ "hardRules": [
+  "cases + unverifiable 必须恰好等于 planned，多一条少一条整份不采信。",
+  "selector 必须在 file 的 line 那一行逐字存在；不许把类名改成「更好看」的写法，也不许引用一个只有样式没有事件的类——目标是能被自动化点到的东西，优先带 @tap/@click/bindtap/@input/@confirm 的那层。",
+  "gestureOnly=true 的条：CLI 桥没有连续手势，要么它其实有个可点的等价物件（如三键按钮本身）并保留原动词，要么进 unverifiable 并在 needsCarrier 写明欠 WS 手势通道。不许把「向右拖动」悄悄改成「点击」。",
+  "expected 里出现的具体文案/数字不能当点击目标；这类条进 unverifiable 并说明它断言的是文本不是物件。",
+  "只写自己这一份 outFile，不改 ops/*.json，不改别的 lane，不改台账，不跑模拟器。"
+ ]
+}

@@ -1,0 +1,63 @@
+{
+  "lane": "subpackages/campus/campus/certification",
+  "counts": { "planned": 5, "ok": 4, "unverifiable": 1 },
+  "cases": [
+    {
+      "id": "CF03",
+      "manifest": "次要18",
+      "page": "subpackages/campus/campus/certification",
+      "selector": ".upload-area",
+      "file": "apps/client/src/subpackages/campus/campus/certification.vue",
+      "line": 353,
+      "oldAction": "① 首次 tap .upload-area（:353 → uploadStudentCard :113-136）触发隐私授权弹窗，选「拒绝」；② 重进选「同意」并完成相册选图；③ 选图后改 tap「×」移除（:369）；④ 再 tap「重新上传」（:366）换图；⑤ 造 chooseImage fail（取消系统选图）",
+      "newAction": "① 首次 tap 学生证侧的 .upload-area（certification.vue:353，v-if=!studentCardUrl，@tap=uploadStudentCard :113-136）触发隐私授权弹窗，选「拒绝」；② 重进选「同意」并完成相册选图；③ 选图后改 tap「×」移除（:369 的 upload-preview__remove，@tap 把 studentCardUrl 置空）；④ 再 tap「重新上传」（:366 的 upload-preview__reupload，同一个 uploadStudentCard）换图；⑤ 造 chooseImage fail（取消系统选图）观察",
+      "needsIdentity": "",
+      "why": "隐私授权与 chooseImage 的唯一入口是学生证上传区：certification.vue:353 的 .upload-area（v-if=!studentCardUrl，:369 移除与 :366 重传都在预览态 v-else 分支里、要先选到图才渲染）带 @tap=uploadStudentCard（:113-136 内含隐私前置与 Toast 分支），产物两档 certification.wxml 里 upload-area 都在；拒绝/同意那一步的按钮是原生授权模态，class 通道点不到，但触发它的就是这一击。"
+    },
+    {
+      "id": "CF06",
+      "manifest": "次要18",
+      "page": "subpackages/campus/campus/certification",
+      "selector": ".submit-btn",
+      "file": "apps/client/src/subpackages/campus/campus/certification.vue",
+      "line": 422,
+      "oldAction": "① 依次只填一项后 tap 提交（:421-431 submitCert）；② 三项齐全但无学生证图提交；③ 未实名态（idCardVerified=false）提交；④ 未实名态读 .gate-banner",
+      "newAction": "① 依次只填一项后 tap 提交按钮 .submit-btn（certification.vue:422，:426 @tap=submitCert，:423 的 submit-btn--disabled 只是样式、不拦事件）（:421-431 submitCert）；② 三项齐全但无学生证图提交；③ 未实名态（idCardVerified=false）提交；④ 未实名态读 .gate-banner（:303 v-if=!gateLoading 且 !idCardVerified）",
+      "needsIdentity": "",
+      "why": "四路拦截都挂在同一个提交节点上：certification.vue:422 的 .submit-btn 带 @tap=submitCert（:426，:144 未实名先 Toast realNameRequiredBanner，:147-158 学校→专业→学生证按序 Toast），表单在 :301 的 v-if=certificationStatus 为 unverified 或 rejected 分支里、store 初值就是 unverified（stores/campus.ts:374），故静息可点；③④ 两路要求 idCardVerified=false，而 mock 档 checkGate 会把它强置 true（:80），只有 real 档才出得来。"
+    },
+    {
+      "id": "CF08",
+      "manifest": "次要18",
+      "page": "subpackages/campus/campus/certification",
+      "selector": ".submit-btn",
+      "file": "apps/client/src/subpackages/campus/campus/certification.vue",
+      "line": 422,
+      "oldAction": "① tap .submit-btn（:421）×1；② 观察按钮文案（提交中↔提交认证）；③ 成功后重进页面读状态；④ 回到可提交态后 300ms 内 rapidTap 提交 ×5；⑤ 断网态提交 ×1",
+      "newAction": "① tap .submit-btn（certification.vue:422，:426 @tap=submitCert，:423 禁用类不改事件）×1；② 观察按钮文案（提交中↔提交认证，:428-430 的 submit-btn__text 三元）；③ 成功后重进页面读状态；④ 回到可提交态后 300ms 内 rapidTap 提交 .submit-btn ×5；⑤ 断网态提交 ×1",
+      "needsIdentity": "",
+      "why": "写链路与 isSubmitting 串行守卫的触发物就是提交钮：certification.vue:422 的 .submit-btn（@tap=submitCert :426，:184 起的 isSubmitting 守卫与 :198 复位、:190-196 的重拉与失败 Toast 都在这条链上），静息渲染且产物两档都有；本条 requiresReal=true，mock 档只会被档位闸门跳过，点名不改变这一点。"
+    },
+    {
+      "id": "CF10",
+      "manifest": "次要18",
+      "page": "subpackages/campus/campus/certification",
+      "selector": ".form-input",
+      "file": "apps/client/src/subpackages/campus/campus/certification.vue",
+      "line": 330,
+      "oldAction": "① 分别聚焦三个输入框，观察键盘是否遮挡输入框与提交按钮；② .cert-body 滚到顶/底（含底部隐私提示 :434-438 可见）；③ 对返回键、两处上传区、重传/移除按钮、提交按钮、门槛「去认证」取 boundingBox；④ tap 说明卡条目与隐私提示文本（非交互）",
+      "newAction": "① 分别聚焦三个 .form-input 输入框（certification.vue:330 学校 v-model=schoolName、:341 专业、:385 学信码，cursor-spacing=20 在 :328 与 :339 与 :383 挂在节点自身上），观察键盘是否遮挡输入框与提交按钮；② .cert-body 滚到顶/底（含底部隐私提示 :434-438 可见）；③ 对返回键、两处上传区、重传/移除按钮、提交按钮、门槛「去认证」取 boundingBox；④ tap 说明卡条目与隐私提示文本（非交互）",
+      "needsIdentity": "",
+      "why": "键盘遮挡与 cursor-spacing 这条判据的承载物是三个 <input> 节点自身，class 定位命中的是文档序第一枚即学校名 .form-input（certification.vue:330，:328 cursor-spacing=20），聚焦它才会弹键盘；表单在 :301 的 unverified 分支内、store 初值 unverified（stores/campus.ts:374）故静息渲染，产物两档 certification.wxml 里 form-input 出现三次。② 的内滚与 ③ 的 boundingBox 尺寸仍欠读数通道，④ 是无事件的装饰文本。"
+    }
+  ],
+  "unverifiable": [
+    {
+      "id": "CF09",
+      "manifest": "次要18",
+      "page": "subpackages/campus/campus/certification",
+      "reason": "本条判据要的是学信网那条轨（certification.vue:397 的上传区，@tap=uploadChsiScreenshot），但它与学生证轨共用同一个类名 .upload-area 且两枚的 handler 不同（:353 uploadStudentCard 与 :397 uploadChsiScreenshot）；CLI 的 class 定位按文档序只会命中第 1 枚学生证轨，点出来的预览/移除/重传（:403 与 :410 与 :413）也全是另一轨的节点，双轨一致性这条判据会被测成单轨重复。",
+      "needsCarrier": "欠 nth/序号或坐标定位通道以命中第 2 枚 .upload-area（或给两轨补区分修饰类，属源码改动，本任务禁改）；④ 的超限一路还欠一张 >5MB 的图片夹具。"
+    }
+  ]
+}

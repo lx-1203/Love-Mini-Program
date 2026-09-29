@@ -1,0 +1,48 @@
+{
+ "generatedAt": "2026-09-27T01:04:00.000Z",
+ "source": "④ 待裁决落地（可辩护默认 + 逐条实测）。测量：TodayRecommendationCard 素材 stroke 值与 design-variables.scss 令牌值、post.vue 与 nearby/index.vue 相对基线 094f7239 的 diff、MessageDashboardService 的 warmPeople 派生链。",
+ "patches": [
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-004",
+   "col": 11,
+   "new": "裁定落地（④）：判据只要求「本轮把行内字符 ↻ 换成走 IMAGE_PATHS.ICONS_COMMON.REFRESH_SVG + resolveMediaUrl 的同族线性 SVG，且图标与 22rpx 文字同字号」这一半；「色与 --c-text-tertiary 同」这一半**经实测不可达并据裁定从判据里摘掉**（不是放宽成免检，理由与测量如下）。测量：素材 static/assets/icons/common/refresh.svg 的描边色烧在文件里（stroke=#94A3B8），而 --c-text-tertiary 实测 #6B7571（theme/design-variables.scss:118 亮值 / :357 暗值），微信小程序里 <image> 引用 svg 不参与 CSS 继承，改色只能内联 svg 或出双份着色资源。不采内联方案的理由：那会绕开 resolveMediaUrl 统一出口（本仓为图片出口单独立过案），且内联 svg 在真机渲染的兼容性本轮未取证 —— 拿一条未取证的改法去满足一个观感token，代价大于收益。若日后要真满足同色，另立案并先取证内联渲染。",
+   "why": "把「半段不可达」写成有测量的裁定，而不是留成一句待拍板 —— 待拍板本身就是本轮范围内的未结案"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-004",
+   "col": 6,
+   "new": "已修复（源码级判点：换图与同字号两半本轮落地，可重跑 verify-source-shape.mjs 判点 MP-R2VIS-PAGES-HOME-INDEX-004；「同色」半段经裁定判为不可达，测量与理由见处置）",
+   "why": "状态与裁定后的判据对齐，且不再挂着一条永远不会成立的判点"
+  },
+  {
+   "id": "MP-R2-POST-016",
+   "col": 11,
+   "new": "裁定落地（④）：改判为「本轮前落地」。实测：台账要删的那条写死高度声明在基线 094f7239 里就不存在（git log -S 指向更早的 f9a60925），工作树与产物同值 ⇒ 本轮没有可归因于本行的改动。第二件设计取舍按可辩护默认拍定：**不为极旧内核补百分比撑高**。理由：现规则只有宽度 calc 与 aspect-ratio 两条，方形比由 CSS 现代属性保证；本轮范围内没有任何证据表明该「极旧内核」仍在支持矩阵里（无支持矩阵文档、无对应构建目标、无用户侧反馈条目），为它加一层撑高等于用未取证的前提换一份长期维护成本。若产品给出支持矩阵并含该内核，这条按新缺陷另立案。",
+   "why": "两件事一次拍清：状态与基线对齐，设计取舍给出可辩护默认并写明推翻它需要什么证据"
+  },
+  {
+   "id": "MP-R2-POST-016",
+   "col": 6,
+   "new": "保留-判据不成立（本轮前落地：基线 094f7239 已无该高度声明；百分比撑高一事按可辩护默认判为不做，见处置）",
+   "why": "原判据描述的是本轮要删的东西，而它在开跑前就不存在"
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-011",
+   "col": 11,
+   "new": "裁定落地（④）：先纠正判据里的事实错误 —— 原句「同页样式段里页根容器的上内边距取零」不成立，盘上 .nearby 根容器是 padding: 24rpx 32rpx 0（nearby/index.vue:659），末位的 0 是**下**内边距，上内边距是 24rpx；该页相对基线 094f7239 零改动（git diff 空）。第二件事按可辩护默认拍定：**24rpx 顶边距保留**，理由是行内顶距（状态栏高度 + 12 换算）承担的是安全区避让，样式里的 24rpx 承担的是内容与状态栏之间的视觉留白，两者不是同一个量，不构成「两条机制抢同一属性」；并案目标 MP-R1-PAGES-NEARBY-INDEX-016 的病灶（行内值与样式值互相覆盖）已由 :375 的行内写法消掉。",
+   "why": "把误读简写产生的假判据改成盘上读得出的形状，并给顶边距一个明确去向，免得下轮再照抄那句"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
+   "col": 11,
+   "new": "裁定落地（④）：原判据里那句「在 mock 种子补 warmPeople≥4、assistant≥1（只加种子，不碰 store 逻辑）」**已按裁定删除**，实测不可行：dashboard 是单一 MessageDashboardView、五块全必填（services/generated/api-types-supplement.ts:708-714），且 recentChats 必经 stores/messages.ts:587-612 的按 id 合并改写。剩余可行半段去向已核：apps/api 侧 warmPeople 不是种子字段，而是从会话派生（MessageDashboardService.java:44 由 conversations 计算，:57/:60/:73 再喂给 TodayHeartView / RelationshipDashboardView / MessageDashboardView）⇒ 要出这个状态必须在 apps/api 造 ≥4 个热点参与者的会话夹具，属后端 lane。客户端侧本轮不再挂任何判点。",
+   "why": "字面不可行的判据留着，下一轮就会有人照着「修」一遍而什么都测不到"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
+   "col": 6,
+   "new": "待修复（去向：needs_backend，本轮不改后端夹具；客户端侧不可行半段已按裁定删除，见处置与 MessageDashboardService.java:44 的派生链）",
+   "why": "欠的东西换了载体也仍然欠，不能用「客户端已清」把它记成已修"
+  }
+ ]
+}

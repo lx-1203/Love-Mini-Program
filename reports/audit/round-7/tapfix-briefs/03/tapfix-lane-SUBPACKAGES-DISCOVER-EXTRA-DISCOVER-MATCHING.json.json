@@ -1,0 +1,60 @@
+{
+ "lane": "subpackages/discover-extra/discover/matching",
+ "counts": {
+  "planned": 7,
+  "ok": 0,
+  "unverifiable": 7
+ },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "MT02",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "page": "subpackages/discover-extra/discover/matching",
+   "reason": "三个判点都不在本页：右滑/左滑是连续手势（gestureOnly），而「喜欢」与「超赞」两枚按钮住在 pages/discover/index 的 MatchActions 组件里（case.pre 亦自述身份 A 在 pages/discover/index），编译后落在 components/match/MatchActions.wxml，不在本页 wxml 内——同轮实测该组件类名一律点不动（exec-A-mock-final 里 DC 侧 tap:.match-actions__label 回 no such element）。本页静息态唯一的可点件是 .matching-page__back（matching.vue:259 @tap=goBack，实测 MT08 dom present(1)），点它只会离开本页，测不到方向语义。",
+   "needsCarrier": "欠 WS 的 swipe/touch 通道 + 以寻觅页为起点的跨页导航（含额度未用尽的夹具）与 matchStore.pendingAction、路由链求值。"
+  },
+  {
+   "id": "MT03",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "page": "subpackages/discover-extra/discover/matching",
+   "reason": "判据是 redirectTo 的路由栈语义（末位是 match-success、栈中不含 matching、返回不得回到本页）加 consumeCardFromDeck 是否被调——全是求值与导航读数，页内没有承载它的元素；而且 matched 这一支在本档不可构造：case.pre 自述 mock 下若 lastSwipeResult.matched 恒假就按 UNVERIFIED 记录，同时执行器给本页带的 query 是 dev-preview=1（r-exec-cli.mjs:193），previewMode 为真时 watch 直接早退（matching.vue:87），状态机永不跳转，也就永远不会出现那次 redirectTo。",
+   "needsCarrier": "欠 matched 结果夹具（real 后端或可命中 mock 判定的卡）+ 完整路由栈数组与 redirectTo url 的读数通道；dev-preview=1 与判据互斥，需要按 case 定制 query。"
+  },
+  {
+   "id": "MT05",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "page": "subpackages/discover-extra/discover/matching",
+   "reason": "三个观测面都不成元素：Toast 文案走 uni.showToast（matching.vue:94）属原生层、不在渲染树里；400ms 自动返回是时序；cards 长度 -1 与「不再看到刚消费的那张卡」要在寻觅页读数。本页静息可点件只有 .matching-page__back（:259），点它是主动返回、不是判据里的自动返回路径。",
+   "needsCarrier": "欠 status=idle 的 swipe 结果夹具 + toast 文本与延迟读数 + 寻觅页 cards 列表前后对照（跨页求值）。"
+  },
+  {
+   "id": "MT06",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "page": "subpackages/discover-extra/discover/matching",
+   "reason": "同 MT05 的失败路：判点是 lastError 原文的 Toast（:97-101，原生层）与 600ms 返回、以及「失败不该吞卡」的 cards 前后差异；构造失败本身要断网或停后端（case.pre 两路），本档无物件可点。",
+   "needsCarrier": "欠可控的 swipeRight 失败注入（断网或后端非 2xx）+ toast 文本读数 + cards 前后对照。"
+  },
+  {
+   "id": "MT14",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "page": "subpackages/discover-extra/discover/matching",
+   "reason": "判据分两栏且都不是元素：客户端层要逐条列出写请求的 URL 与 Idempotency-Key，数据层要回读后端记录条数 R1=R0+1，或改用 runMatchCheck 调用计数——没有任何 DOM 目标。前置本身还是带参深链（case.pre：?userId=100158&cardId=真实卡 id&action=like），而执行器给本页只带 dev-preview=1（r-exec-cli.mjs:193），URL 直达分支（:106 onLoad 的 cardId 路径）进不去。",
+   "needsCarrier": "欠按 case 定制的 query 深链 + network 面板逐条与 Idempotency-Key 读数 + 后端回读通道。"
+  },
+  {
+   "id": "MT20",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "page": "subpackages/discover-extra/discover/matching",
+   "reason": "gestureOnly：动作是页面内上下各滑 300px 并断言「无页面滚动、无双层滚动、手势不被误判为跳过」，本页没有 scroll-view（case.pre 指 :236-240 的 min-height 满屏），模板上也没有任何 @touch 绑定可归属；把 tap 打在 .matching-page__back（:259）或 MatchLoading 的跳过区（子组件 components/match/MatchLoading.vue，页级查询够不着，实测 MT07 dom .match-loading__skip:absent）都会引入判据要排除的副作用。",
+   "needsCarrier": "欠 WS 的 touch/swipe 通道与逐手势后的路由、animationDone 采样；属零副作用普查，不是点名一个类。"
+  },
+  {
+   "id": "MT21",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "page": "subpackages/discover-extra/discover/matching",
+   "reason": "gestureOnly 且是无主手势：判据要求「下拉不产生伪刷新、不重复触发 onLoad/runMatchCheck」，而本页两档分包配置都没有 enablePullDownRefresh（case.pre 指 pages.json:137-143），也没有 onPullDownRefresh 钩子；页内无可点物件承载「下拉」，任何真实 tap 反而会改状态、破坏零新增请求的判据语义。",
+   "needsCarrier": "欠 WS 的下拉手势通道 + network 零新增写请求与 status 采样读数。"
+  }
+ ]
+}

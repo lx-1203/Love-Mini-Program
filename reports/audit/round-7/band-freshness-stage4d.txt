@@ -1,0 +1,22 @@
+warning: in the working copy of 'apps/client/src/services/mocks/fixtures.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/client/src/i18n/locales/en-US.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/client/src/services/mocks/fixtures.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/client/src/i18n/locales/en-US.ts', LF will be replaced by CRLF the next time Git touches it
+FRESH srcFiles=747 git脏项(46行报出/46条解析) srcDirtyFiles=46 档位=3 标记=3
+  mock      产物文件=2153 最新产物=2026-09-27T03:53:06.368Z 源码脏项最新=2026-09-27T03:54:11.287Z 脏项晚于产物=2 构建写回(仅mtime)=6
+           晚于产物的脏项：apps/client/src/services/mocks/fixtures.ts, apps/client/src/i18n/locales/en-US.ts
+  real      产物文件=2152 最新产物=2026-09-27T03:53:56.574Z 源码脏项最新=2026-09-27T03:54:11.287Z 脏项晚于产物=2 构建写回(仅mtime)=6
+           晚于产物的脏项：apps/client/src/services/mocks/fixtures.ts, apps/client/src/i18n/locales/en-US.ts
+  showcase  产物文件=2154 最新产物=2026-09-27T04:01:08.537Z 源码脏项最新=2026-09-27T03:54:11.287Z 脏项晚于产物=0 构建写回(仅mtime)=0
+  标记 isAllowedMediaExt          mock=3 real=3 showcase=3
+  标记 parsePrivateQuoteContext   mock=2 real=2 showcase=2
+  标记 pinnedNotice               mock=2 real=2 showcase=2
+FRESH_内容级 嫌疑(按mtime)=4 真过期=0 仅mtime已洗清=1 无法定罪=0 不可观测=3 跳过(测试文件不进产物)=0 跳过(该档已定罪)=0
+  嫌疑 mock：2 个脏项文件晚于该档产物
+  嫌疑 real：2 个脏项文件晚于该档产物
+  洗清 mock ← apps/client/src/services/mocks/fixtures.ts（相对 HEAD 新增的 1 个字面量全在该档产物里 ⇒ 构建脚本写回，不是没吃进改动）
+  不可观测 mock ← apps/client/src/i18n/locales/en-US.ts：该档里只找得到该文件既有内容的 18% ⇒ 这一档不承载它，「我新增的不在包里」既不能定罪也不能洗清（不否决本门，但要单独公开）
+  不可观测 real ← apps/client/src/services/mocks/fixtures.ts：该档里只找得到该文件既有内容的 0% ⇒ 这一档不承载它，「我新增的不在包里」既不能定罪也不能洗清（不否决本门，但要单独公开）
+  不可观测 real ← apps/client/src/i18n/locales/en-US.ts：该档里只找得到该文件既有内容的 18% ⇒ 这一档不承载它，「我新增的不在包里」既不能定罪也不能洗清（不否决本门，但要单独公开）
+FRESH_JSON=reports/audit/round-7/band-freshness-stage4d
+FRESH_RESULT=PASS bands=3 markers=3 —— 每档产物都不晚于任何未提交改动，且符号级深检全部命中

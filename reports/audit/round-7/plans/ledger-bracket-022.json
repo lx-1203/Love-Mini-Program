@@ -1,0 +1,11 @@
+{
+ "patches": [
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-022",
+   "col": 11,
+   "new": "修：删除型单判点：store 侧无调用方的 action 本轮已删除，修后判据为页作用域产物（stores/messages.js 与消息页编译文件）内不再保留字符串判点 \"toggleSessionPin\"，源码侧注释残留不在被测载体内不计。⟨原二选一处置 删除并同步删测试用例 或长按菜单改调并补 console.warn 留痕⟩ ⟨把同一 token 抽成 present 与 absent 两支互斥硬判点 判据自相矛盾永不可判⟩ ⟨本轮收紧为删除单判点⟩ ⟨测试注释见 spec 文件 line 40 属非载体残留⟩",
+   "why": "一个壳里套了中文括号并且跨了判据台的切句边界 ⇒ 提取器看到半只壳，其后真判点被当成说明吞掉。按一壳一物拆成四只短壳，壳内不再嵌套括号"
+  }
+ ],
+ "note": "旧壳: ⟨原二选一处置（删除并同步删测试用例 或长按菜单改调并补 console.warn 留痕）把同一 token 抽成 present 与 absent 两支互斥硬"
+}

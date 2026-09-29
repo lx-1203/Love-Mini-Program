@@ -1,0 +1,16 @@
+{
+ "lane": "pages/register/success",
+ "manifest": "PAGES-REGISTER-SUCCESS.json",
+ "sourceFile": "apps/client/src/pages/register/success.vue",
+ "counts": { "planned": 1, "ok": 0, "unverifiable": 1 },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "RS13",
+   "manifest": "PAGES-REGISTER-SUCCESS",
+   "page": "pages/register/success",
+   "reason": "这是一条否定式能力守卫：本页在 pages.json 未开 enablePullDownRefresh，源码也没有 onPullDownRefresh 与 stopPullDownRefresh，判点是顶部下拉 300px 松手两次之后不该有刷新动画、不该有新增请求、清单与脱敏号不变、页面不得被重新加载导致三行清单闪回。页面里没有任何物件承载这条判据，成功页的出口钮与这条判据无关，把它改成点某个按钮等于换了被测对象。",
+   "needsCarrier": "欠 WS automator 的下拉手势通道（真实 touch 序列才能起系统下拉指示器）加网络与生命周期的零新增计数载具；结论口径应是功能未开启，不是产品缺陷。"
+  }
+ ]
+}

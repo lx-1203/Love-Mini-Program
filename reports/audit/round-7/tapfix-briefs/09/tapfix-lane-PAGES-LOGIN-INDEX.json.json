@@ -1,0 +1,16 @@
+{
+ "lane": "pages/login/index",
+ "manifest": "PAGES-LOGIN-INDEX.json",
+ "sourceFile": "apps/client/src/pages/login/index.vue",
+ "counts": { "planned": 1, "ok": 0, "unverifiable": 1 },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "LG31",
+   "manifest": "PAGES-LOGIN-INDEX",
+   "page": "pages/login/index",
+   "reason": "判据点名的目标元素在当前源码里根本不存在：全文件搜不到 login-sms-code，也没有 maxlength 为 6 的输入节点。内联注册模式的昵称、出生日期、短信验证码三组输入已按 MP-R2-PAGES-LOGIN-INDEX-015 整删（:749-751 的删除注释），注册唯一入口改为下方的去注册跳转。现存的两枚 .input-field（:715 手机号且 maxlength 11、:737 密码）都在 :704 的 v-else 表单分支里，静息态（微信端快捷登录态）压根不渲染，这正是本轮复核员遇到的那类「名字在模板里但当前态没渲染」的假目标；把 5/6/7 位截断改指手机号或密码框会换掉 maxlength 与校验分支，属篡改判据。",
+   "needsCarrier": "欠被删掉的那枚验证码输入本身：要么源码重新落地 6 位验证码框并给它一个类名，要么把这条判据迁到真正承载它的 pages/register/index 表单；另需一条能把登录页切到表单态的前置（微信端是 :643 那枚带 @tap togglePhoneLogin 的兜底入口，但它位于条件编译块内），截断后的回读还需只读取值载具而不是写入腿。"
+  }
+ ]
+}

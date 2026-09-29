@@ -1,0 +1,87 @@
+{
+ "lane": "pages/nearby/index",
+ "manifest": "PAGES-NEARBY-INDEX.json",
+ "sourceFile": "apps/client/src/pages/nearby/index.vue",
+ "counts": {
+  "planned": 9,
+  "ok": 2,
+  "unverifiable": 7
+ },
+ "cases": [
+  {
+   "id": "N15",
+   "manifest": "PAGES-NEARBY-INDEX",
+   "page": "pages/nearby/index",
+   "selector": ".nearby-entry",
+   "file": "apps/client/src/pages/nearby/index.vue",
+   "line": 422,
+   "oldAction": "逐一点击 .nearby-entry：附近的人（index.vue:393）、热门兴趣圈（:400）、校园圈（:406）、活动（:412）、我的人脉（:418）",
+   "newAction": "逐一点击 .nearby-entry：附近的人（index.vue:393）、热门兴趣圈（:400）、校园圈（:406）、活动（:412）、我的人脉（:418） ⇒ 点名 tapTarget .nearby-entry（apps/client/src/pages/nearby/index.vue:422）",
+   "needsIdentity": "",
+   "why": "index.vue:422 的 .nearby-entry 是五个圆形入口的共用节点、同节点就带 @tap（:422 goPeople 附近的人、:428 goCircleList、:434 goCampusHub、:440 goActivityList、:446 goConnections），简报原引的 :393-:418 是过期行号；编译产物 pages/nearby/index.wxml 里它是页面自有节点的 bindtap view（不是子组件里的东西），实测同页 .campus-entry__desc 一类的页面节点都答 present ⇒ 通道够得到。现通道只能点首匹配，五格逐一落点要按序定位的载具"
+  },
+  {
+   "id": "N18",
+   "manifest": "PAGES-NEARBY-INDEX",
+   "page": "pages/nearby/index",
+   "selector": ".circle-mini",
+   "file": "apps/client/src/pages/nearby/index.vue",
+   "line": 514,
+   "oldAction": "① 点 .circle-mini（index.vue:483-491 → goCircleDetail :254-256）；② 在该行执行横向滑动；③ 与圈子列表页/首页同圈封面并排比对",
+   "newAction": "① 点 .circle-mini（index.vue:483-491 → goCircleDetail :254-256）；② 在该行执行横向滑动；③ 与圈子列表页/首页同圈封面并排比对 ⇒ 点名 tapTarget .circle-mini（apps/client/src/pages/nearby/index.vue:514）",
+   "needsIdentity": "",
+   "why": "index.vue:514 的 .circle-mini 就是兴趣圈小卡本体、同节点 :519 @tap=goCircleDetail(circle.id)（:254-256 跳 circle-home 带 circleId），它在 :509 的 v-else 横滑容器里、要 hotCircles 非空才渲染，实测同族的 .circle-mini__count 在本页静息态答 present(8) ⇒ 卡是真的在屏。② 腿的横向滑动不得误触跳转那一半没有载具（CLI 无连续手势），③ 腿是跨页封面比对"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "N02",
+   "manifest": "PAGES-NEARBY-INDEX",
+   "page": "pages/nearby/index",
+   "reason": "本条要的是页面级下拉手势能否穿透到 onPullDownRefresh（index.vue:173 注册，pages.json:60 给本页开了 enablePullDownRefresh）：全部内容位于页内 scroll-view .nearby-home__scroll（:395，实测该节点 present(1)），它只有 scroll-y 与 show-scrollbar、没有任何事件绑定可点，也刷不出原生下拉指示器；判据是回调是否进入与有无动画，属手势与日志断言",
+   "needsCarrier": "欠 WS automator 的页面级下拉手势通道 + 回调进入与请求计数的日志读数；.nearby-home__scroll 是容器不是可点物件，不能当 A"
+  },
+  {
+   "id": "N03",
+   "manifest": "PAGES-NEARBY-INDEX",
+   "page": "pages/nearby/index",
+   "reason": "与 N02 同一载体：本条要触发一次页面级下拉并统计 circles 与 nearbyPosts 与 activities 三类的重拉次数与起止时间（index.vue:173-194 并行三路、force 绕 TTL），下拉本身在页面上没有可点节点可替",
+   "needsCarrier": "欠 WS 下拉手势通道 + network 分类型计数与时间戳读数（force 绕 TTL 这一半只能从请求参数判）"
+  },
+  {
+   "id": "N04",
+   "manifest": "PAGES-NEARBY-INDEX",
+   "page": "pages/nearby/index",
+   "reason": "本条要在下拉完成后核 toast（index.vue:188 与 :192 读三个 store 的错误字段）与失败分区的真实错误文案：先欠 N02 那条下拉通道，还要制造三路拉取之一失败的前置（真实档故障或断网），判据物是 Toast 文案与错误槽文本，无可点等价物件",
+   "needsCarrier": "欠 WS 下拉手势通道 + 后端故障夹具 + Toast 文案读数腿"
+  },
+  {
+   "id": "N05",
+   "manifest": "PAGES-NEARBY-INDEX",
+   "page": "pages/nearby/index",
+   "reason": "本条四段全不在元素层：未登录冷启动 switchTab 进本页（门在 index.vue:66/148/167/182/207 四处）、停留 30s、执行下拉刷新、触发定位；判据是受保护端点请求计数为 0、终栈不变、无 401 与无 Toast。下拉那一段同 N02 无载具，其余是导航与时序",
+   "needsCarrier": "欠未登录身份夹具（执行器游客位）+ 页面级下拉手势通道 + 定时器与 network 计数读数；无一元素可点"
+  },
+  {
+   "id": "N10",
+   "manifest": "PAGES-NEARBY-INDEX",
+   "page": "pages/nearby/index",
+   "reason": "本条断言的是「附近页无任何输入框」这一缺席事实：源码 pages/nearby/index.vue 模板里 0 个 input 或 textarea，编译产物 pages/nearby/index.wxml 里 <input> 也是 0 命中 ⇒ 没有物件可点名，也不能把 nearby-home__search-btn（:406，只跳搜索页）冒充输入框；第二条腿要读 :378 一带搜索按钮的 aria-label 文案，属文本断言",
+   "needsCarrier": "欠一份 DOM 扫描清单与 aria-label 文本读数；这是「不适用」结论条，不该被硬造出一个点击目标"
+  },
+  {
+   "id": "N30",
+   "manifest": "PAGES-NEARBY-INDEX",
+   "page": "pages/nearby/index",
+   "reason": "本条要登出 A、切到附近页、把列表滚到分区⑤ 再比对帖文与作者，然后登录 B 回本页看列表被覆盖：三段里两腿是账号会话切换（要铸 token 与清会话，不是元素点击）、一腿是滚动到位，判据是渲染归属与内存残留（villageStore.nearbyPosts 无登出清空路径）",
+   "needsCarrier": "欠双账号会话切换载具（A 登出 / B 登录）+ WS 滚动通道 + 逐卡作者文本读数；分区⑤ 的引导卡本身在 v-if 未登录分支里（:622），也不是本条要点的东西"
+  },
+  {
+   "id": "N31",
+   "manifest": "PAGES-NEARBY-INDEX",
+   "page": "pages/nearby/index",
+   "reason": "本条四档都在切走切回与时间窗口上：切走小于 30s 与大于 30s 后切回（TTL 常量在 index.vue:241、短路在 :255）、在村口发一条新动态再回本页、制造一次失败后立刻再下拉刷新；判据全是请求计数与时间戳是否更新，没有页面元素可点，最后一档还要 N02 的下拉通道与故障夹具",
+   "needsCarrier": "欠可控时间推进或真实等待的切 Tab 导航载具 + WS 下拉通道 + network 计数读数 + 发动态的写操作与故障注入"
+  }
+ ]
+}

@@ -1,0 +1,39 @@
+{
+ "startedAt": "2026-09-26T21:58:23.769Z",
+ "legs": [
+  {
+   "name": "exec-guest-tap",
+   "status": "FAIL",
+   "exitCode": 2,
+   "log": "reports/audit/round-7/ui-queue/exec-guest-tap.log",
+   "bytes": 938,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-guest1",
+    "RUNNER_RESULT=FAIL reason=mock 包会把游客吃掉：D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin\\config\\env.js 的 VITE_API_MODE=\"mock\"，而 D:\\6\\恋爱小程序\\apps\\client\\src\\stores\\session.ts:617 mock 分支无条件把 userSession 赋成 mockUserSession ⇒ 只要启动链路重跑一次（冷启动那次开页就会），store 就又变 logged-in，登录页按设计 switchTab 到寻觅（pages/login/index.vue:87-89）。这不是产品缺陷，是载体次序：跑游客批次前先预热一次开页并复查 not-logged-in（见 scripts/qa/probe-guest-band.mjs），或换 --project apps/client/dist/build/mp-weixin-real 跑；两处都不做就只能记 NOT_SHOOTABLE，不许记成产品 FAILED。 ⇒ 一行都不跑（跑出来的落点红不可采信）"
+   ]
+  },
+  {
+   "name": "rebuild-mock",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "source-shape-49",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "i18n-gate",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "finishedAt": "2026-09-26T22:14:24.055Z",
+ "conservation": {
+  "legsTotal": 4,
+  "legsOk": 0,
+  "tally": {
+   "FAIL": 1,
+   "NOT_RUN": 3
+  },
+  "ok": true
+ }
+}

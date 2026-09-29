@@ -1,0 +1,16 @@
+{
+ "patches": [
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-002",
+   "col": 6,
+   "new": "保留-判据不成立（原判据要求副标改成带计数的「附近有 {n} 位同频的你」，已被 NotLoggedWaiting.vue 顶部五条实测理由正面否掉：游客无计数真源、mock 池是演示规模、real 侧被 GUEST_LIST_LIMIT 截断、理想图那个 12 与图里 6 个头像自相矛盾。代码与裁定一致，判点在案可重跑）",
+   "why": "这一行不是本轮修好的，是判据本身不成立；用通用「已修复（源码级判点）」会把一条被裁掉的判据记成本轮功劳"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-002",
+   "col": 9,
+   "new": "承载 apps/client/src/components/discover/NotLoggedWaiting.vue；判点 MP-R2VIS-PAGES-MESSAGES-INDEX-002：模板内 t(notLoggedWaiting.subtitle) 计数=1 且 subtitleWithCount 全文件 0 命中 ⇒ 副标恒取静态键。变异测：把 subtitleWithCount 塞回去判点立刻红（tmp/qa/mutcheck-source-shape.mjs 9 条变异之一）。裁定原文见该组件 :16-32。",
+   "why": "把「代码符合裁定」这件事做成可重跑的判点，而不是留一句待复验"
+  }
+ ]
+}

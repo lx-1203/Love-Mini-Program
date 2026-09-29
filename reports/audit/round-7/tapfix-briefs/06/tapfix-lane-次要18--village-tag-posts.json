@@ -1,0 +1,35 @@
+{
+  "lane": "subpackages/village/village/tag-posts",
+  "counts": { "planned": 4, "ok": 0, "unverifiable": 4 },
+  "cases": [],
+  "unverifiable": [
+    {
+      "id": "TP03",
+      "manifest": "次要18",
+      "page": "subpackages/village/village/tag-posts",
+      "reason": "点赞键是卡内第 2 枚同名节点：tag-posts.vue 的互动栏三枚 .action-btn 共用一个类名（:381 评论 @tap.stop=goToDetail、:392 点赞 @tap.stop=toggleLike、:404 分享 @tap.stop=handleSharePost），只有 aria-label 与 handler 不同；CLI 的 class 定位按文档序命中的是评论钮，一跳就把本页换成帖子详情（执行器会按 LEFT_PAGE 收尾），本地空心到实心的两次翻转与计数增减这两段判据一条也量不到，正是「点名点错东西等于测错东西」那一类。",
+      "needsCarrier": "欠 nth/aria-label（village.tagPosts.likeAria）/坐标定位通道以命中第 2 枚 .action-btn；页面本身还欠 ?tagName= 预置（无参直达会被 onLoad 弹回，见 scripts/qa/r-exec-cli.mjs 的 ROUTE_QUERY）。"
+    },
+    {
+      "id": "TP04",
+      "manifest": "次要18",
+      "page": "subpackages/village/village/tag-posts",
+      "reason": "与 TP03 同一承载缺陷的另一半：连点目标是同一张卡的第 2 枚 .action-btn（tag-posts.vue:392 @tap.stop=toggleLike），class 定位只会命中第 1 枚评论钮（:381 @tap.stop=goToDetail）⇒ rapidTap×5 变成五次跳详情，POST /posts/{id}/like 的条数与各次 Idempotency-Key 这两个判定点都无从采集，多卡渲染时同名节点还会继续成倍重复。",
+      "needsCarrier": "欠 nth/序号定位通道（锁定同一张卡的第 2 枚 .action-btn）与 300ms 内连点五次的时序载具；requiresReal=true 另欠真实后端回读该帖 likeCount 与逐条请求键。"
+    },
+    {
+      "id": "TP06",
+      "manifest": "次要18",
+      "page": "subpackages/village/village/tag-posts",
+      "reason": "判据动作是在 .post-feed 内下拉到出现 refresher 指示器并松手，采样 isRefreshing 随 finally 归 false 的时刻（tag-posts.vue:305-312 的 refresher-enabled 与 :refresher-triggered=isRefreshing、:206-209 onRefresh、:198 复位）；这个 scroll-view 容器没有任何点击事件，点它不触发刷新，页面上也没有能替代下拉的按钮。",
+      "needsCarrier": "欠 WS automator 的 touch/move 下拉手势通道（在 .post-feed 内下拉过阈值并松手）与指示器收起时刻的逐帧采样；CLI 桥只有 element tap/input 两种动作。"
+    },
+    {
+      "id": "TP07",
+      "manifest": "次要18",
+      "page": "subpackages/village/village/tag-posts",
+      "reason": "两条支路都不是点击：① 要连续把 .post-feed 滚到触底触发 @scrolltolower（tag-posts.vue:311 → onLoadMore :214-218）并核对 hasMore=false 时的 village.tagPosts.noMore 文案（:423-425），② 还要在已有列表的前置下注入加载失败来验证静默失败（errorMessage 只在 posts.length===0 的 :320 错误态里渲染，这正是 MP-R2-TAGPOSTS-002 未修的点）。页面上没有加载更多按钮可作等价物，错误文案是文本断言不是可点物件。",
+      "needsCarrier": "欠 WS 的 scroll/触底手势通道（可重复触发 scrolltolower）与请求失败注入夹具（拦截第 2 页响应），另需文本/条数读数来判 noMore 与静默失败；本条属开放缺陷的取证，不能降级成一次点击。"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "$comment": "复判 MP-R2-CAMPUSPOST-015（免罪锚点被本轮修复作废）+ 把 010 的证据改写成可被 verify-disproof-anchors.mjs 机械核对的锚点形状。",
+  "patches": [
+    {
+      "id": "MP-R2-CAMPUSPOST-015",
+      "col": 9,
+      "new": "否证锚点（2026-09-27 复判后只剩一条腿，另一条已作废）：成立的一条 = 用户裁定「两个发布页/多处重复不合并」属跨页重复族豁免（同族另见 MP-R2-CAMPUSPOST-009 记录两页实现漂移）；作废的一条 = 原引 apps/client/src/subpackages/campus/campus/post-topic.vue:64 CAMPUS_TOPIC_IMAGES_SUPPORTED=false（real 上传关闭）—— ③ 第①项落地后该常量已在 apps/client/src/subpackages/campus/campus/post-topic.vue:65 CAMPUS_TOPIC_IMAGES_SUPPORTED=true，且后端 CampusController.java:461 的 CreateCampusTopicRequest 已收 images ⇒ campus 侧这条路径真跑真抛，「因为链路关着所以不成立」不再成立。重跑：node scripts/qa/verify-disproof-anchors.mjs",
+      "why": "把两条腿分开写清楚哪一条还撑着结论、哪一条已经废了，避免下一轮把整格当免罪依据照抄"
+    },
+    {
+      "id": "MP-R2-CAMPUSPOST-015",
+      "col": 11,
+      "new": "不修（判据不成立）—— 但成立的理由换了一条，状态不变而依据变窄：原判有两腿（① 跨页重复属用户裁定豁免族；② campus 侧 real 上传整体关闭所以无从表现）。本轮 ③ 把 ② 作废了 ⇒ 这条现在**只**靠裁定豁免站着。残余差异仍只有 village 侧文件名无每图序号一处，且逐张 await 顺序执行、同毫秒碰撞概率极低；本轮已把每图唯一量那套写法在 campus 侧固定住（见同文件 :330-333 的 MP-R2-CAMPUSPOST-002 注释）。关联（非同一缺陷）MP-R2-CAMPUSPOST-009：两页实现自那次修复后漂移。若哪天有人取消跨页重复豁免，这条要重新立案而不是沿用本格的结论。",
+      "why": "状态没动，但必须留下「依据变窄」的记录，否则下一轮会以为两条腿都还在"
+    },
+    {
+      "id": "MP-R2-CAMPUSPOST-010",
+      "col": 9,
+      "new": "复判依据（本轮实测，逐条可重跑）：① apps/client/src/subpackages/campus/campus/post-topic.vue:65 CAMPUS_TOPIC_IMAGES_SUPPORTED=true —— 本行立案时引作否证锚点的 :64=false 已不存在，锚点门现在能机械核对这一条；② apps/api/src/main/java/com/campuslove/api/campus/CampusController.java:461 的 CreateCampusTopicRequest 已收 @Size(max=6) List images（:180 把 req.images() 传给服务层），本行处置原文那句「后端 CreateCampusTopicRequest 无 images 字段」已经不成立；③ 于是发布链路里 319-341 那段逐张 uploadPostImage 真的会跑、真的会抛，而它跑在 campusStore.createCampusTopic() **之前** —— errorMessage 只在 createCampusTopic 入口才清空（stores/campus.ts），所以上传失败时 catch 读到的是上一次动作（拉话题/拉认证）留下的陈旧文案；④ 修复：上传段自己 try/catch，给 t(\"campus.postTopic.uploadFailed\") 并复位 isSubmitting 后 return，不再冒充发布失败。判点 MP-R2-CAMPUSPOST-010（多文件谓词，三份文件都过才过）：post-topic.vue 要有包住 for 的 try、要有 catch (uploadErr)、要有那句 uploadFailed 调用；zh-CN 要 \"uploadFailed\"、en-US 要 uploadFailed。重跑：node scripts/qa/verify-source-shape.mjs",
+      "why": "上一版把锚点写成「:65 现在是 X=true」的散文形状，锚点门扫不到 ⇒ 我自己写的证据逃过了自己的门；改成它能认的形状"
+    }
+  ]
+}

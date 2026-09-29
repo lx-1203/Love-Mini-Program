@@ -1,0 +1,23 @@
+{
+ "lane": "subpackages/tools/help/index",
+ "manifest": "次要19.json",
+ "sourceFile": "apps/client/src/subpackages/tools/help/index.vue",
+ "counts": { "planned": 2, "ok": 0, "unverifiable": 2 },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "HP04",
+   "manifest": "次要19",
+   "page": "subpackages/tools/help/index",
+   "reason": "意见反馈行确实带事件（apps/client/src/subpackages/tools/help/index.vue:128 的 @tap 调 goFeedback），但它与在线客服、联系邮箱两行共用同一个类名 .help-contact__item（三处分别在 :105、:123、:141），三行没有各自唯一的类可写：按类名寻址只会拿到第 1 行在线客服（:110 的 goOnlineService），于是这条落点判据会被归属到一次完全不同的跳转，产出的是假结果而不是真缺口。行内可寻址的子节点（.help-contact__label、.help-contact__arrow、.help-contact__icon）同样三行同名且都不挂事件，页面里唯一另一处带事件的是 FAQ 折叠项（:88 的 toggleFaq），它不是本条的落点判据。",
+   "needsCarrier": "欠「按序号或按 aria-label 文本定位同类名第 N 个节点」的载具，或由源码给反馈行补一枚唯一修饰类；④ 未登录态那一步还欠一条 guest 身份的守卫前置。"
+  },
+  {
+   "id": "HP06",
+   "manifest": "次要19",
+   "page": "subpackages/tools/help/index",
+   "reason": "本条判的是热区尺寸清单与装饰项 noop：要点的三样（客服项图标、复制标签、footer 文本）在源码里都不挂 @tap/@click，事件只在整行 .help-contact__item 上，而整行三枚同名 —— 点装饰子节点与点整行不等价，且判据要的是它们的 boundingBox 数值是否达到 88rpx，属几何断言；① 的滚到顶与底、④ 的尝试整页下拉又是连续手势，且本页未开下拉刷新，判点本身是「功能未开启」的负向记录。",
+   "needsCarrier": "欠 boundingClientRect 热区量测载具（逐项宽高压成 rpx 与 88rpx 比）加 WS 滚动与下拉手势通道；noop 采证需要能把点击落到无事件装饰节点并回读日志的出口，FAQ 六项与返回键的尺寸清单同理。"
+  }
+ ]
+}

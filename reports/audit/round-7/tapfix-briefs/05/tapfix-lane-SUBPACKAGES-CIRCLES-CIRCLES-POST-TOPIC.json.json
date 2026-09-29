@@ -1,0 +1,48 @@
+{
+  "lane": "subpackages/circles/circles/post-topic",
+  "counts": { "planned": 5, "ok": 1, "unverifiable": 4 },
+  "cases": [
+    {
+      "id": "CPT39",
+      "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+      "page": "subpackages/circles/circles/post-topic",
+      "selector": ".content-input",
+      "file": "apps/client/src/subpackages/circles/circles/post-topic.vue",
+      "line": 524,
+      "oldAction": ".post-body（:499 scroll-view）滚到底 → 回顶；再聚焦 textarea 输入 3 行观察键盘",
+      "newAction": ".post-body（:499 scroll-view）滚到底 → 回顶；再聚焦 textarea .content-input（post-topic.vue:524，v-model=content，:522 cursor-spacing=20 与 :527 :show-confirm-bar=false 都挂在这个节点上）输入 3 行观察键盘",
+      "needsIdentity": "",
+      "why": "键盘与光标间距这条判据的承载物是唯一的 textarea：post-topic.vue:524 的 .content-input（:522 cursor-spacing=20、:527 show-confirm-bar=false、maxlength=500），聚焦它才会弹键盘并让 .post-body（:507 scroll-view）自动滚到该节点；产物 mp-weixin 与 mp-weixin-real 的 post-topic.wxml 里 content-input 各出现一次且静息渲染，标题用的 .title-input（:513）是 <input> 不是本条点名的 textarea。"
+    }
+  ],
+  "unverifiable": [
+    {
+      "id": "CPT26",
+      "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+      "page": "subpackages/circles/circles/post-topic",
+      "reason": "八个分类 chip 在 :572 的 v-if 分支里（条件是 publishTarget 等于 interest），而 publishTarget 默认值是 campus（:62），静息态只渲染两枚入口 chip；入口又是同一个类名 .target-chip 的两枚（:545 校园圈、:557 兴趣圈），CLI 的 class 定位按文档序命中第 1 枚「校园圈」，点它等于把当前已选态再选一遍，分类宫格永远出不来。",
+      "needsCarrier": "欠 nth/坐标定位通道（要命中第二枚 .target-chip 即兴趣圈入口，:565 @tap=selectPublishTarget('interest')），或一条能预置 publishTarget=interest 的进页配方；之后八个 .category-chip 仍需按序号逐个命中。"
+    },
+    {
+      "id": "CPT27",
+      "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+      "page": "subpackages/circles/circles/post-topic",
+      "reason": "七枚标签共用一个类名 .tag-chip（:604-616 的 v-for，@tap=toggleTag(tag.key) 只靠 key 区分），本条判据要的恰恰是「依次点第 1 到第 4 枚，第 4 枚被 MAX_TAGS=3 拒掉并弹 Toast」；CLI 一条判据一次 class 定位只会命中文档序第 1 枚，反复点同一枚只是在选中与取消之间来回，计数上限这条主分支构造不出来。",
+      "needsCarrier": "欠 nth/序号定位通道（要按序命中四个不同的 .tag-chip 节点）与四次连续点击的执行载具；另注意 tags-section 整块在 v-if=useMock()（:598）内，real 档静息不渲染，本条只在 mock 档可判。"
+    },
+    {
+      "id": "CPT28",
+      "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+      "page": "subpackages/circles/circles/post-topic",
+      "reason": "「喜爱」开关是原生 <switch>（post-topic.vue:664-669，@change=toggleFavorite :144-146），它自己没有任何作者写的类名，编译产物里只剩 scoped 的 data-v-* 类（switch 节点上只有 class=data-v-8932ab9d 与 bindchange）；外层 .favorite-section（:659）只是一个 flex 容器、不带任何事件绑定，按类点名后点击落在容器几何中心（左侧文案区）根本碰不到右侧的开关，违反「不许引用只有样式没有事件的类」。",
+      "needsCarrier": "欠 tag/属性或 nth 定位通道（如按 [aria-label] 或 .favorite-section 内第 1 个 switch 子节点命中），或给该 switch 补一个作者类名（属源码改动，本任务禁改）；另外该区块整体在 v-if=useMock()（:659）内，real 档无载具。"
+    },
+    {
+      "id": "CPT32",
+      "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC",
+      "page": "subpackages/circles/circles/post-topic",
+      "reason": "关联活动整块在 :621 的 v-if=isPostMode 里，而 isPostMode 只由进页参数决定（:238-240 判 sourceChannel ∈ today/school/activity，:475 onLoad 取 q.channel）：裸直达本页时 sourceChannel 为空，入口 .activity-add（:625，@tap=openActivityPicker :630）与其后的遮罩 .activity-picker（:716）、右上 ×（:720）、活动项（:729）全都不渲染，页面上没有任何点击能把这块带出来。",
+      "needsCarrier": "欠一条带参进页配方（reLaunch 或 navigateTo 到 /subpackages/circles/circles/post-topic?channel=today，必要时再配 activityId），以及弹层打开后遮罩、×、列表项三路的顺序点击载具；弹层首次打开还依赖 fetchActivities 的懒加载网络态。"
+    }
+  ]
+}

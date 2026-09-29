@@ -1,0 +1,71 @@
+{
+ "lane": "subpackages/profile-extra/settings/dnd",
+ "counts": {
+  "planned": 7,
+  "ok": 2,
+  "unverifiable": 5
+ },
+ "cases": [
+  {
+   "id": "DND05",
+   "manifest": "次要21",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "selector": ".radio-row--no-border",
+   "file": "apps/client/src/subpackages/profile-extra/settings/dnd.vue",
+   "line": 430,
+   "oldAction": "依次 tap 四条 .radio-row（每天/工作日/周末/自定义，dnd.vue:426-440）；在 CUSTOM 下选 2 个星期；再 tap「每天」",
+   "newAction": "依次 tap 四条 .radio-row（每天/工作日/周末/自定义，dnd.vue:426-440）；在 CUSTOM 下选 2 个星期；再 tap「每天」 点名落点：.radio-row--no-border（dnd.vue:430 的条件修饰类，只有 index 为 repeatModeOptions.length-1 且当前不是 CUSTOM 时才挂上 ⇒ 默认 EVERYDAY 态下它唯一标出四条里的「自定义」那一行，该行的事件绑定是 :431 的 @tap=handleRepeatModeSelect）。tap 它把 repeatMode 切到 CUSTOM，:445 那个 v-if 条件 form.repeatMode 为 CUSTOM 的星期分组 section 随即进渲染树，本判据的开关面就长在这里。四条 radio-row 共用同一类名，写 .radio-row 时 first-match 只会打到「每天」，测不到这条。",
+   "needsIdentity": "",
+   "why": "dnd.vue:430 的条件修饰类在默认 EVERYDAY 态唯一标出「自定义」那一行，:431 的 @tap=handleRepeatModeSelect 就是本判据要触发的处理器；共用类 .radio-row 四处同名会被 first-match 打歪。"
+  },
+  {
+   "id": "DND07",
+   "manifest": "次要21",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "selector": ".save-btn",
+   "file": "apps/client/src/subpackages/profile-extra/settings/dnd.vue",
+   "line": 489,
+   "oldAction": "tap .save-btn（dnd.vue:488-498）一次，等待响应",
+   "newAction": "tap .save-btn（dnd.vue:488-498）一次，等待响应 点名落点：.save-btn（dnd.vue:489 的静态类，事件绑定是 :493 的 @tap=handleSave；它在 :357 起的 v-else content 分支里，mock 档 getDndSetting 恒成功 ⇒ 静息态就在树内，mp-weixin 与 mp-weixin-real 两档的 dnd.wxml 都以 save-btn 作 class token）。saving 可观测面是同节点 :490 的条件类 save-btn--disabled 与 :496 的文案切 processing，都由这一次 tap 触发。",
+   "needsIdentity": "",
+   "why": ".save-btn 是本页唯一带 @tap=handleSave 的保存节点（dnd.vue:489 与 :493），在 content 分支里静息渲染，两档编译产物都有该 class token。"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "DND02",
+   "manifest": "次要21",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "reason": "总开关这一侧根本没有可点名的类：dnd.vue:369-373 的 switch 只绑 :checked、:color 与 @change=handleToggleEnabled，标签上没有任何 class（两档编译产物里该 switch 节点也只有 data-v 散列），tap 父级 .switch-row（:364）或 .switch-row__left（:365） 不会触发原生 switch 的 change，把动作归属到父级等于造假。判据要的 .status-row__value（:378）是被动文案节点、无事件绑定；Toast 与 lightHaptic（:125）也不在渲染树里。",
+   "needsCarrier": "欠产品侧给这枚 switch 补专属类名（或由 WS 通道按 nth-node 定位无 class 的原生控件），另需 PUT 请求计数与触觉反馈读数。"
+  },
+  {
+   "id": "DND03",
+   "manifest": "次要21",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "reason": "同 DND02：紧急消息穿透那一枚也是裸 switch（dnd.vue:478-482，只有 :checked 与 @change=handleToggleAllowUrgent），全文件找不到作用在它身上的类名；父级 .switch-row--no-border（:474）不带事件，tap 它不产生 change，而判据要看的滑块位置属组件内部状态、页级探针读不到。",
+   "needsCarrier": "欠产品侧给这枚 switch 补专属类名（或 WS 的 nth-child 定位）+ 读 switch 属性值以判断两个开关是否互不联动。"
+  },
+  {
+   "id": "DND08",
+   "manifest": "次要21",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "reason": "欠的不是类名而是动作形态：判据要在 500ms 内对 .save-btn（dnd.vue:489，@tap=handleSave :493）连点 5 次并统计 PUT 条数与 Toast 条数，而本通道一条 case 对每个目标只下发一次动作（r-exec-cli.mjs:404-410 的 targets 循环里每个 selector 各一次）；只 tap 一次时「客户端请求条数=1」恒成立，等于把一条防连点判据测成假通过。",
+   "needsCarrier": "欠 rapidTap 连点通道（同一 selector 多次下发并逐次计网络与 toast 条数）；.save-btn 本身确实是可点的真元素，但本条要的是五次而非一次。"
+  },
+  {
+   "id": "DND09",
+   "manifest": "次要21",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "reason": "前置不可构造：case.pre 自述 REAL_ONLY，需要真实后端在跑并用 DevTools 网络拦截让 GET /dnd 失败，而 mock 档 getDndSetting 恒成功 ⇒ .retry-btn（dnd.vue:347-350，@tap=handleRetry）所在的 v-else-if pageState 为 error 分支永不渲染（静息态是 :357 的 content 分支）。恢复网络后的第二次动作还要观察 loading 态复位与新增一条 GET。",
+   "needsCarrier": "欠可控的 GET /dnd 失败注入（断网或后端 500，requiresReal 一档）+ network 计数读数；在 mock 档只能如实记 UNVERIFIED。"
+  },
+  {
+   "id": "DND12",
+   "manifest": "次要21",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "reason": "gestureOnly 且观测对象是滚动量：动作是 scrollTo 到底再回顶并记 scrollTop、scrollHeight、windowHeight，判据看的是 .save-btn（:489）是否被 :502 的 .safe-bottom 占位或系统手势条遮挡——逐元素 rect 与视口关系，不是点击；本通道只有 tap 与 input，既滚不动也读不到滚动量。",
+   "needsCarrier": "欠 WS automator 的 scrollTo/touch 通道 + 元素 boundingBox 与页面滚动量读数；本条不改状态、零写请求，真去 tap 反而引入副作用。"
+  }
+ ]
+}

@@ -1,0 +1,29 @@
+{
+ "lane": "subpackages/circles/circles/topics",
+ "manifest": "次要18.json",
+ "sourceFile": "apps/client/src/subpackages/circles/circles/topics.vue",
+ "counts": { "planned": 2, "ok": 1, "unverifiable": 1 },
+ "cases": [
+  {
+   "id": "CT03",
+   "manifest": "次要18",
+   "page": "subpackages/circles/circles/topics",
+   "selector": ".circle-tab",
+   "file": "apps/client/src/subpackages/circles/circles/topics.vue",
+   "line": 441,
+   "oldAction": "依次 tap .circle-tab ×5（:440-450 → switchTab :285-290），每个 tab 读激活态与内容区；在「成员」tab 读人数拼接（:280）；在「作品墙」只应有带图话题",
+   "newAction": "依次 tap .circle-tab ×5（:440-450 → switchTab :285-290），每个 tab 读激活态与内容区；在「成员」tab 读人数拼接（:280）；在「作品墙」只应有带图话题（tab 条点名：.circle-tab，类名在 apps/client/src/subpackages/circles/circles/topics.vue:441、同节点 @tap 在 :447 且回调是 switchTab，编译产物 subpackages/circles/circles/topics.wxml 内该类为 v-for 渲染的五枚同名节点、外层容器不带 wx:if，静息态即在；限界一条：桥的 --selector 一次只解析一枚同名节点（按首个匹配），所以本条归属到的是第 1 枚（默认已激活的动态），其余四枚的激活态与内容区仍需序号或文本定位载具，连点五次不得重复发活动请求）",
+   "needsIdentity": "",
+   "why": "expected 的判定点是 switchTab 驱动的 tab 激活与内容区，:447 那行 @tap 是五枚 tab 唯一的事件入口，类名同名所以只能按首个归属，序号定位的缺口已如实写在判据里。"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "CT08",
+   "manifest": "次要18",
+   "page": "subpackages/circles/circles/topics",
+   "reason": "判点是 scroll-view 的两条滚动事件：:471-479 的 refresherrefresh（onRefresh :70-78）与 :83-91 的 scrolltolower 分页，直至 :588-590 的没有更多。承载它们的 .topics-list（:473）只挂滚动事件、不挂任何 @tap/@click，按 hardRules 只有非点击事件与样式的容器不能当点击目标；而这两条回调只能由真实 touchmove 与惯性滚动产生，元素级的 tap 或 input 都触发不了下拉指示器与触底回调。",
+   "needsCarrier": "欠 WS automator 的连续手势通道：下拉甩动（起 refresher 并采收起时刻）与反复触底滚动（直至分页到底），另需每帧 scrollTop 与 window 滚动位置的读数载具来判定内滚是否生效（MP-R2-TOPICS-003 的形态就是整页 window 在滚）。"
+  }
+ ]
+}

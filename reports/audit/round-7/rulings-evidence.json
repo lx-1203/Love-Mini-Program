@@ -1,0 +1,522 @@
+{
+  "MP-R2-CIRCLES-INDEX-005": {
+    "question": "兴趣圈列表页的高链缺失能否用静态判点定案，还是必须一帧渲染图",
+    "machineCheckable": [
+      {
+        "claim": "本页根节点是 AppShell 组件，页面自身没有根容器类，定高链必须穿过两层组件",
+        "evidence": "apps/client/src/subpackages/circles/circles/index.vue:339-345 与 :376-386；编译后 apps/client/dist/build/mp-weixin/subpackages/circles/circles/index.wxml:1 首元素为 app-shell",
+        "value": "AppShell（variant=standard、fixed=true）→ PageStateContainer → scroll-view.circles-list"
+      },
+      {
+        "claim": "滚动容器只有 flex:1 与 overflow-y:auto，无任何 height/min-height",
+        "evidence": "apps/client/src/subpackages/circles/circles/index.vue:504-507；编译 apps/client/dist/build/mp-weixin/subpackages/circles/circles/index.wxss:1",
+        "value": ".circles-list.data-v-85666a04{flex:1;overflow-y:auto}"
+      },
+      {
+        "claim": "中间容器不定高，链在 PageStateContainer 处断",
+        "evidence": "apps/client/dist/build/mp-weixin/components/common/PageStateContainer.wxss:1；源码 apps/client/src/components/common/PageStateContainer.vue:138-142",
+        "value": ".page-state-container{width:100%;min-height:320rpx;position:relative}"
+      },
+      {
+        "claim": "外壳体 .shell__body 无 height/min-height（台账原述成立）",
+        "evidence": "apps/client/dist/build/mp-weixin/components/layout/AppShell.wxss:1；源码 apps/client/src/components/layout/AppShell.vue:368-374",
+        "value": ".shell__body.data-v-355a28ea{display:flex;flex-direction:column;gap:24rpx;outline:none}"
+      },
+      {
+        "claim": "外壳根节点只有 min-height:100% 且没有 display:flex，故 .shell__body 拿不到定高父级",
+        "evidence": "apps/client/dist/build/mp-weixin/components/layout/AppShell.wxss:1；源码 apps/client/src/components/layout/AppShell.vue:250-258",
+        "value": ".shell.data-v-355a28ea{min-height:100%;box-sizing:border-box;background:var(--c-bg-page,#EEF7F2)}（无 display 声明）"
+      },
+      {
+        "claim": "全局 page 是定高的，三档产物一致",
+        "evidence": "apps/client/src/App.vue:318-340（height 在 :334）；编译 apps/client/dist/build/mp-weixin/app.wxss:1 与 -real 与 -showcase 三档 page 规则逐字相同",
+        "value": "page{...height:100%;width:100%;box-sizing:border-box;padding-bottom:env(safe-area-inset-bottom)}"
+      },
+      {
+        "claim": "village/index 的做法是根节点自身定高并 overflow:hidden，且它不用 AppShell",
+        "evidence": "apps/client/src/subpackages/village/village/index.vue:908-920（HEAD 874ff52f 与 e4495d67 均为 :878-890）；编译 apps/client/dist/build/mp-weixin/subpackages/village/village/index.wxss:1；grep -c AppShell apps/client/src/subpackages/village/village/index.vue 为 0",
+        "value": ".village-page.data-v-a9cd4178{display:flex;flex-direction:column;width:100%;height:100%;background:#fff;overflow:hidden}"
+      },
+      {
+        "claim": "两页的滚动子容器声明完全相同，唯一差别是祖先是否定高",
+        "evidence": "apps/client/dist/build/mp-weixin/subpackages/village/village/index.wxss:1 的 .channel-feed 对比同目录 circles 的 .circles-list",
+        "value": ".channel-feed.data-v-a9cd4178{flex:1;overflow-y:auto} 与 .circles-list.data-v-85666a04{flex:1;overflow-y:auto}"
+      },
+      {
+        "claim": "A 案与既有裁定的正面冲突点逐字在码，可引用",
+        "evidence": "apps/client/src/components/layout/AppShell.vue:251-254",
+        "value": "注释明文「2026-08-31 滚动断层修复：禁止锁死 height:100%……仅保留 min-height 让内容自然撑高」"
+      },
+      {
+        "claim": "台账写「.shell 锁高影响 15 个消费页」在码不成立，实测 13 个引用文件（含 1 个非页面组件）",
+        "evidence": "grep -rl 'components/layout/AppShell.vue' apps/client/src --include=*.vue（命中 13，其中 components/common/LegalTextPage.vue 为组件）",
+        "value": "13 个文件，12 个页面 + 1 组件；15 无源码支撑，处置列应改 13"
+      },
+      {
+        "claim": "两档产物对本页逐字节相同，不存在某档支持另一种滚动架构",
+        "evidence": "cmp apps/client/dist/build/mp-weixin/subpackages/circles/circles/index.wxss apps/client/dist/build/mp-weixin-real/subpackages/circles/circles/index.wxss；两档 index.wxml md5 相同",
+        "value": "wxss IDENTICAL（各 6093B）；wxml md5 两档均为 b9cb458640844c09f3a39d464b347cf5"
+      },
+      {
+        "claim": "台账重锚的行号在当前 HEAD 复现，且本页源码工作树零漂移",
+        "evidence": "git status --porcelain -- apps/client/src/subpackages/circles/circles/index.vue（空）；HEAD 已由台账记的 874ff52f 前进到 e4495d67",
+        "value": "clean@HEAD；scroll-view 在 HEAD :386、.circles-list 在 HEAD :504-507"
+      },
+      {
+        "claim": "台账所需「能不能滚到末项」其实已有在册渲染帧可查，无需重拍",
+        "evidence": "reports/audit/round-6/screenshot-manifest.json shots[] 内 page=subpackages/circles/circles/index 的 state=滚动-底部 帧 4 张（identity A/B × corpus round-6-tour/round-6-tour-reshoot），如 reports/screenshots/round-6-tour/A/subpackages_circles_circles_index__滚动-底部.png（198247B，hash 8d3ceb93da4ea0be）",
+        "value": "默认/滚动-中部/滚动-底部 三态哈希互不相等（58add8ee969f0262 / 40ef64de6b62dd43 / 8d3ceb93da4ea0be）⇒ 滚动确实发生；默认帧 note 记 listCount=14 emptySeen=false"
+      }
+    ],
+    "notCheckable": [
+      {
+        "claim": "末张卡片在滚动-底部帧上是否完整可见",
+        "why": "帧已在盘上且三态哈希不同，可证「滚得动」；但「末项是否露出」是像素判读，本轮禁开图、禁连工具，静态 wxss 里没有任何 height 数值可算出终点位置",
+        "nearestCarrier": "直接开 reports/screenshots/round-6-tour/A/subpackages_circles_circles_index__滚动-底部.png 与人眼判读（不需重跑，属图判不是新载体）"
+      },
+      {
+        "claim": "A/B/C 三案的取舍（本页到底该内部滚动还是 window 滚动）",
+        "why": "码内同时存在两条互斥裁定（AppShell.vue:251-254 禁锁高 vs village/index.vue:912-917 要求定高），静态证据只能证明两者冲突，不能判定本页意图；理想图（兴趣圈列表.png 853x1844 单屏 6 卡）也不含滚动位",
+        "nearestCarrier": "无机器载体，需架构/产品裁决记录"
+      },
+      {
+        "claim": "C 案 calc(100vh − 头部实高) 能否算出可信值",
+        "why": "--statusbar 与胶囊避让是运行时注入值（AppShell.vue:312 用 env() 兜底，DevTools 恒 0），本轮禁构建禁连工具，取不到实高，猜值即造新漂移",
+        "nearestCarrier": "连工具一次只读 evaluate 量 .shell__header 的 boundingClientRect"
+      },
+      {
+        "claim": "改内部滚动后 sticky 吸顶是否失效",
+        "why": "position:sticky 的生效取决于运行时最近滚动祖先，编译产物只有声明（AppShell.wxss:1 的 .is-fixed .shell__header），无生效事实",
+        "nearestCarrier": "滚动前后对比帧（滚动-默认 与 滚动-底部 同 identity 已可满足）"
+      },
+      {
+        "claim": "三个 scroll-view 属性（scroll-y/enhanced/bounces）是否恒惰性",
+        "why": "半可判：无定高祖先这一事实可静态判（上列 5 条），但「属性完全不生效」需要运行时 scrollHeight 与 clientHeight 的比较，静态只能给推断",
+        "nearestCarrier": "automation_evaluate 读 .circles-list 的 scrollHeight 与 clientHeight 一次"
+      }
+    ],
+    "commandsToRecheck": [
+      "grep -o '.circles-list.data-v-85666a04[^}]*}' 'D:/6/恋爱小程序/apps/client/dist/build/mp-weixin/subpackages/circles/circles/index.wxss'",
+      "grep -o '.shell__body.data-v-355a28ea[^}]*}' 'D:/6/恋爱小程序/apps/client/dist/build/mp-weixin/components/layout/AppShell.wxss'",
+      "grep -o '.page-state-container.data-v-08b50eda[^}]*}' 'D:/6/恋爱小程序/apps/client/dist/build/mp-weixin/components/common/PageStateContainer.wxss'",
+      "cmp 'D:/6/恋爱小程序/apps/client/dist/build/mp-weixin/subpackages/circles/circles/index.wxss' 'D:/6/恋爱小程序/apps/client/dist/build/mp-weixin-real/subpackages/circles/circles/index.wxss'",
+      "grep -o 'page{[^}]*height:100%[^}]*}' 'D:/6/恋爱小程序/apps/client/dist/build/mp-weixin/app.wxss'",
+      "grep -rl 'components/layout/AppShell.vue' 'D:/6/恋爱小程序/apps/client/src' --include=*.vue",
+      "git -C 'D:/6/恋爱小程序' status --porcelain -- apps/client/src/subpackages/circles/circles/index.vue",
+      "D:/codex-tools/node-v22.17.0-win-x64/node.exe -e \"const fs=require('fs');const j=JSON.parse(fs.readFileSync('reports/audit/round-6/screenshot-manifest.json','utf8'));j.shots.filter(s=>/circles\\/circles\\/index/.test(s.page)).forEach(s=>console.log(s.corpus,s.identity,s.state,s.contentHash,s.width+'x'+s.height,s.path))\""
+    ]
+  },
+  "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001": {
+    "question": "publish 与 post 两页的字数阈值语义分歧在码是哪几个数，谁在当前生效",
+    "machineCheckable": [
+      {
+        "claim": "publish 页正文上限 = 500，来源是 store 常量而非页面常量",
+        "evidence": "apps/client/src/stores/village/constants.ts:12；publish.vue:19 引入；模板闸 publish.vue:775（HEAD :773）",
+        "value": "MAX_CONTENT_LENGTH = 500；textarea :maxlength=MAX_CONTENT_LENGTH"
+      },
+      {
+        "claim": "publish 页提前预警阈值 = 剩 50 字（即 450 字起变警示色）",
+        "evidence": "apps/client/src/subpackages/village/village/publish.vue:54（HEAD :54）与 :86-88（HEAD :86）；类绑定 publish.vue:782（HEAD :780）；样式 publish.vue:1079（HEAD :1071）",
+        "value": "CONTENT_LENGTH_WARN_THRESHOLD = 50；isNearLimit = 500 − currentLength ≤ 50；.publish-content__count--warning{color:var(--c-warning,#FF9F43)}"
+      },
+      {
+        "claim": "publish 页没有本页提交闸，长度失败只能落在 store",
+        "evidence": "apps/client/src/subpackages/village/village/publish.vue:617（submitPublish）与 :668（createPost）；apps/client/src/stores/village/index.ts:445-448",
+        "value": "store 抛 content.length > MAX_CONTENT_LENGTH(500)；页面 grep 无 content.length 判断"
+      },
+      {
+        "claim": "post 页正文上限同为 500，但语义是超限才报警",
+        "evidence": "apps/client/src/constants/village.ts:18（POST_MAX_LENGTH=500）；post.vue:184、:584-586（提交闸）、:890（maxlength）、:894（类绑定）、:1444-1451（样式）",
+        "value": "isOverLimit = currentLength > 500；.post-content__count--over{color:var(--c-error,#E5454D)}"
+      },
+      {
+        "claim": "post 页的 --over 态在正常输入路径不可达（maxlength 已把长度钉在 500）",
+        "evidence": "apps/client/src/subpackages/village/village/post.vue:890 与 :184 同读一个 500",
+        "value": "currentLength 恒 ≤ 500 ⇒ isOverLimit 恒 false；只有程序化回填能触发，台账可据此判「非漂移而是死态」"
+      },
+      {
+        "claim": "存在第三个字数常量 1000，但零消费，是本次分歧的唯一噪声源",
+        "evidence": "apps/client/src/constants/limits.ts:47（UI_LIMITS.POST_MAX_LENGTH=1000）；grep -rn POST_MAX_LENGTH apps/client/src 的全部实码命中为 constants/village.ts:18、constants/limits.ts:47、post.vue:30/:184/:585/:890/:895、publish.vue:18（仅注释），其余命中落在 apps/client/src/.mimosa/hook-state 工具快照内",
+        "value": "post.vue:30 的 import 来源是 constants/village（不是 limits），故 500 生效；limits.ts 的 1000 无任何消费者 ⇒ 当前在码事实是 500"
+      },
+      {
+        "claim": "服务端闸比客户端宽十倍，客户端是实际生效上限",
+        "evidence": "apps/api/src/main/java/com/campuslove/api/village/CreatePostRequest.java:17-18 与 :21",
+        "value": "content @Size(max=5000)、title @Size(min=5,max=30)、images @Size(max=9)"
+      },
+      {
+        "claim": "评论路径双端阈值也不同",
+        "evidence": "apps/api/src/main/java/com/campuslove/api/village/CreateCommentRequest.java:15 对比 apps/client/src/stores/village/index.ts:766-768（同一 MAX_CONTENT_LENGTH=500）",
+        "value": "后端 @Size(max=1000) vs 前端闸 500"
+      },
+      {
+        "claim": "DB 列不构成第四道闸",
+        "evidence": "apps/api/src/main/java/com/campuslove/api/entity/Post.java:112",
+        "value": "content 为 columnDefinition=TEXT（65535）"
+      },
+      {
+        "claim": "图片上限两处一致（9），且两页都无常驻上限提示节点",
+        "evidence": "apps/client/src/constants/village.ts:27；publish.vue:794（HEAD :792）与 :255；post.vue:914、:343-344；图格区 publish.vue:786-797",
+        "value": "POST_MAX_IMAGES=9；满 9 张只 v-if 掉加号块 + uni.showToast，无常驻文案节点"
+      },
+      {
+        "claim": "两态样式类在两档产物里都编译在盘，可作落地锚",
+        "evidence": "apps/client/dist/build/mp-weixin/subpackages/village/village/publish.wxss:1 与同目录 -real 档 publish.wxss:1；post.wxss 同两处",
+        "value": ".publish-content__count--warning.data-v-4c844c25{color:var(--c-warning,#FF9F43)}；.post-content__count--over.data-v-ef1fb74b{color:var(--c-error,#E5454D)}"
+      },
+      {
+        "claim": "ops 判据已把 450 边界与后端 5000 差异写成采证点，无需新判据",
+        "evidence": "reports/audit/round-6/ops/SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json:93（要求回填实际变色字符数，预期 450，边界 449/451，并采证双端阈值差异）；reports/audit/round-6/ops/SUBPACKAGES-VILLAGE-VILLAGE-POST.json:103（maxlength=500 与 --over 态）",
+        "value": "两页判点均已存在，仅「提前预警 vs 超限报警」的意图未裁"
+      }
+    ],
+    "notCheckable": [
+      {
+        "claim": "「剩 50 字预警」与「超限才报」是有意的产品分工还是漂移",
+        "why": "两页数字相同（500）、只有态类与触发时机不同；源码注释各自引用 MP-R1-PUB-016 与 R17，互不指认，理想图依据=不适用，机器无意图来源",
+        "nearestCarrier": "产品/设计口径记录（人拍板），或一条新的跨页一致性静态判点（可建：两页同上限必须同态类）"
+      },
+      {
+        "claim": "常驻「最多 9 张」提示元素的形态与文案",
+        "why": "理想图内无该元素，机器不能自创文案与位置；这是新增设计而非改码",
+        "nearestCarrier": "设计稿补标注后再立判点"
+      },
+      {
+        "claim": "450 字是否真的变色",
+        "why": "变色是渲染结果，静态只到声明层；需真输入 450 字的一次交互",
+        "nearestCarrier": "UI 执行器一次真输入 + 读 .publish-content__count 计算样式（本轮禁跑）"
+      }
+    ],
+    "commandsToRecheck": [
+      "grep -n 'MAX_' 'D:/6/恋爱小程序/apps/client/src/constants/village.ts' 'D:/6/恋爱小程序/apps/client/src/constants/limits.ts' 'D:/6/恋爱小程序/apps/client/src/stores/village/constants.ts'",
+      "grep -rn 'POST_MAX_LENGTH' 'D:/6/恋爱小程序/apps/client/src'",
+      "grep -n '@Size' 'D:/6/恋爱小程序/apps/api/src/main/java/com/campuslove/api/village/CreatePostRequest.java'",
+      "grep -o '\\.publish-content__count--warning[^}]*}' 'D:/6/恋爱小程序/apps/client/dist/build/mp-weixin-real/subpackages/village/village/publish.wxss'",
+      "git -C 'D:/6/恋爱小程序' show HEAD:apps/client/src/subpackages/village/village/publish.vue",
+      "grep -c 'currentLength' 'D:/6/恋爱小程序/apps/client/src/subpackages/village/village/publish.vue'"
+    ]
+  },
+  "MP-R2-PAGES-MESSAGES-INDEX-014": {
+    "question": "预览位外露验收残留这一条，代码半与数据半各能用什么载体判",
+    "machineCheckable": [
+      {
+        "claim": "预览字段确为原样透传，无过滤无脱敏（代码半可判，成立）",
+        "evidence": "apps/client/src/stores/messages.ts:272（HEAD 874ff52f 与当前 HEAD e4495d67 均为 :272，函数 mapToMessageSession 起 :254）；工作树因该文件在改，已移到 :293",
+        "value": "lastMessagePreview: raw.lastMessagePreview（直接赋值，无 sanitize/replace/条件）"
+      },
+      {
+        "claim": "渲染点也是直绑，且台账写的 :548-554 已过期",
+        "evidence": "apps/client/src/pages/messages/index.vue:563-564（工作树，该文件处于 M 态；HEAD e4495d67 对应 :562-563）",
+        "value": "v-if=「session.lastMessagePreview」 + :text=「session.lastMessagePreview」，中间层只有 EmojiText"
+      },
+      {
+        "claim": "除渲染外还有两处同字段消费，全部原样",
+        "evidence": "apps/client/src/pages/messages/index.vue:150（搜索直读）；apps/client/src/services/websocket/store-dispatch.ts:188（WS 覆写同字段）",
+        "value": "无一处做敏感词或残留文案过滤"
+      },
+      {
+        "claim": "后端也是原样取列，链路全段无脱敏",
+        "evidence": "apps/api/src/main/java/com/campuslove/api/chat/RealPrivateMessageService.java:583（conv.getLastMessagePreview() 进 ConversationView 第 7 位）",
+        "value": "来源为 private_conversations.last_message_preview 列"
+      },
+      {
+        "claim": "残留串不是代码或种子带入（全仓零命中，可复核）",
+        "evidence": "grep -rn '全链路验收' 全仓：命中只在 reports/ 与 .zcode/ 文档、ops 判据文本，以及 database/flyway/sql/V2026.09.18.0002__r11_seed_content_diversify.sql:13,17,21,25（那是清理正则 LIKE '%全链路验收%'，非写入）",
+        "value": "apps/client 与消息种子 0 命中 ⇒ 属运行时 DB 残留"
+      },
+      {
+        "claim": "现有 UI 载体不能读文本，只能数节点，这才是 MSG04 的真障碍",
+        "evidence": "scripts/qa/r-exec-cli.mjs:141-160（probeMany 用 wx.createSelectorQuery().selectAll(s).fields({size:true})，返回 bag[i]=节点数）",
+        "value": "observed 形态只有 present(n)/absent；results 见 reports/audit/round-6/interact/exec-results.json:3798（MSG04 SKIPPED，reason=action-not-automatable）"
+      },
+      {
+        "claim": "本轮重跑仍拿不到文本，且 mock 档列表是空态",
+        "evidence": "reports/audit/round-7/interact/exec-results.json:1682-1694（MSG04 status=EXECUTED，observed 仅 .chat-item__preview:absent）；reports/audit/round-6/screenshot-manifest.json 内 pages/messages/index 帧 note 记「默认帧同时含 空态 要素（listCount=0 emptySeen=true）」",
+        "value": "mock 档会话列表为空 ⇒ 预览文本在该档根本不存在可读对象"
+      },
+      {
+        "claim": "客户端 mock 夹具能表达这个数据态（不改 DB 也可表达前端行为）",
+        "evidence": "apps/client/src/stores/messages/mock-data.ts:17-75（6 条 mockSessions，preview 分别见 :18/:31/:44/:52/:64/:71）；消费点 apps/client/src/stores/messages.ts:700（useMock 分支直落 mockSessions）；另有 apps/client/src/services/mocks/fixtures.ts:1312-1341",
+        "value": "把任一条 lastMessagePreview 写成残留文案即可证明前端不改写，但这只复现代码半结论，不能证明真实库当前有该值"
+      },
+      {
+        "claim": "requiresReal 字段不足以表达「需真实库」",
+        "evidence": "reports/audit/round-6/ops 全量 requiresReal 计数；提及「real 数据源」的 19 条用例中 14 条 requiresReal=false，含 MSG04（PAGES-MESSAGES-INDEX.json:45）",
+        "value": "true 236 / false 871；MSG04 pre 写 real 数据源但 requiresReal=false"
+      }
+    ],
+    "notCheckable": [
+      {
+        "claim": "private_messages id=3894 与 private_conversations id=461 当前是否仍存在",
+        "why": "唯一判法是只读 SQL，本轮明令禁止（不接管凭据）；历史停在等授权（reports/audit/round-6/ledger-notes.md:214），且 mock 档帧与真实库无对应关系",
+        "nearestCarrier": "一次授权只读 SQL；或 real 档页面文本快照"
+      },
+      {
+        "claim": "真实库列表预览位此刻是否外露残留",
+        "why": "截图载体只出像素、探针载体只出节点计数，两者都不产出文本；OCR/人眼判读不在本轮许可载体内",
+        "nearestCarrier": "扩展探针取 text 属性（fields({properties:['text']})）后 real 档跑一次，或 real 档一帧 + 人工逐条读"
+      },
+      {
+        "claim": "残留是否已被删除",
+        "why": "删除不可逆且无授权执行记录；round-1 已判「证据不足，维持挂起」（reports/audit/round-1/regression/PAGES-MESSAGES-INDEX.json:15），本轮同样拿不到反向证据",
+        "nearestCarrier": "DB 变更工单或落库的清理迁移脚本（本仓 flyway 里只有 posts 侧清理，无 messages 侧）"
+      },
+      {
+        "claim": "该条是否属客户端缺陷",
+        "why": "ledger-notes.md:214 已判「即便确认也是需授权的 DB 清理项，不该进客户端缺陷台账」，但这是归属判断不是机器事实，静态码只能证前端无脱敏",
+        "nearestCarrier": "无机器载体，需主编排层裁归属（转 DB 清理项或保留为数据合规判点）"
+      }
+    ],
+    "commandsToRecheck": [
+      "grep -n 'lastMessagePreview' 'D:/6/恋爱小程序/apps/client/src/stores/messages.ts' 'D:/6/恋爱小程序/apps/client/src/pages/messages/index.vue'",
+      "git -C 'D:/6/恋爱小程序' show HEAD:apps/client/src/stores/messages.ts --stat",
+      "grep -rn '全链路验收' 'D:/6/恋爱小程序/apps/client/src/constants' 'D:/6/恋爱小程序/apps/client/src/stores' 'D:/6/恋爱小程序/apps/client/src/pages' 'D:/6/恋爱小程序/database'",
+      "sed -n '141,160p' 'D:/6/恋爱小程序/scripts/qa/r-exec-cli.mjs'",
+      "D:/codex-tools/node-v22.17.0-win-x64/node.exe -e \"const fs=require('fs');const j=JSON.parse(fs.readFileSync('reports/audit/round-6/interact/exec-results.json','utf8'));const a=(j.results?j.results:j);a.filter(c=>['MSG04','MSG16','MSG18'].includes(c.id)).forEach(c=>console.log(c.id,c.status,String(c.observed).slice(0,200)))\"",
+      "D:/codex-tools/node-v22.17.0-win-x64/node.exe -e \"const fs=require('fs');const j=JSON.parse(fs.readFileSync('reports/audit/round-7/interact/exec-results.json','utf8'));const a=(j.results?j.results:j);a.filter(c=>c.id==='MSG04').forEach(c=>console.log(JSON.stringify(c,null,1)))\""
+    ]
+  },
+  "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001": {
+    "question": "底部固定输入栏在回复态与挂图态是否压住末条评论，能否静态判",
+    "machineCheckable": [
+      {
+        "claim": "栏是 position:fixed 吸底并含安全区补白",
+        "evidence": "apps/client/src/subpackages/village/village/detail.vue:2929-2940；编译 apps/client/dist/build/mp-weixin/subpackages/village/village/detail.wxss:1（real 档同字节，文件各 29553B）",
+        "value": ".detail-input-bar{position:fixed;left:0;right:0;bottom:0;z-index:100;padding-bottom:calc(env(safe-area-inset-bottom)+12rpx);border-top:1rpx}"
+      },
+      {
+        "claim": "滚动容器预留两档值，且都在码且都在产物",
+        "evidence": "apps/client/src/subpackages/village/village/detail.vue:1615-1619（基础 140rpx）与 :1621-1623（扩展 320rpx）；编译同名类两档各 1 命中",
+        "value": ".detail-body{flex:1;padding-bottom:calc(140rpx+env(...))}；.detail-body--bar-expanded{padding-bottom:calc(320rpx+env(...))}"
+      },
+      {
+        "claim": "预留条件只含两个状态",
+        "evidence": "apps/client/src/subpackages/village/village/detail.vue:781；基线 094f7239 同行逐字相同（git show 094f7239:apps/client/src/subpackages/village/village/detail.vue 第 781 行）",
+        "value": "detail.vue:781 的 :class 绑定，键为 'detail-body--bar-expanded'，条件为 !!replyingTo 「或」 commentImages.length > 0（源码用双竖线逻辑或）"
+      },
+      {
+        "claim": "本页有定高链（与 circles 相反），所以预留算术是真生效机制",
+        "evidence": "apps/client/src/subpackages/village/village/detail.vue:1441-1452（height:100% + overflow:hidden，注释即 MP-R1-DETAIL-201 定高决策）",
+        "value": ".detail-page{display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden} ⇒ .detail-body 是真滚动宿主"
+      },
+      {
+        "claim": "静息态算术：预留富余 23rpx，不遮",
+        "evidence": "detail.vue:2932-2939（栏底 12rpx + 边框 1rpx）、:2942-2947（.input-bar padding 16rpx 上下）、:2956-2960（.input-bar__input height 72rpx）对比 :1618",
+        "value": "栏高 1+16+72+16+12 = 117rpx+env vs 预留 140rpx+env ⇒ 余 23rpx"
+      },
+      {
+        "claim": "挂图态算术：预留富余 67rpx，不遮",
+        "evidence": "detail.vue:3023-3033（.input-bar__thumbs padding-top 16rpx；.input-bar__thumb 120rpx 见方）+ :1621-1623",
+        "value": "117+136 = 253rpx+env vs 320rpx+env ⇒ 余 67rpx"
+      },
+      {
+        "claim": "表情面板态是静态可判的缺口：面板在同一 fixed 栏内，但不在预留条件里",
+        "evidence": "模板 detail.vue:1321-1327（emoji-panel 在 .detail-input-bar 内，条件 emojiPanelVisible）；样式 :3065-3083（padding 16rpx/8rpx、border-top 1rpx、max-height 360rpx；.emoji-panel__item height 72rpx、width 12.5%）；数据 :489-493（COMMON_EMOJIS 共 30 项）",
+        "value": "30 项按 8 列成 4 行 = 288rpx + 24rpx padding + 1rpx 边框 = 313rpx（未触发 360rpx 上限）⇒ 栏总高约 430rpx+env，vs 预留 140 或 320 ⇒ 静态判遮挡，缺口 110 至 290rpx"
+      },
+      {
+        "claim": "台账失败探针是选择器写错，不是物件缺失",
+        "evidence": "apps/client/src/subpackages/village/village/detail.vue:968 与 :1014 分别挂 comment-item 与 comment-reply-btn",
+        "value": "正确形式为后代选择器 .comment-item .comment-reply-btn（点号连写 .comment-item.comment-reply-btn 恒 0 命中）"
+      },
+      {
+        "claim": "两档产物一致，本轮没有跨档差异可查",
+        "evidence": "cmp apps/client/dist/build/mp-weixin/subpackages/village/village/detail.wxss 与 -real 同名文件",
+        "value": "wxss IDENTICAL（各 29553B）；.detail-body 与 .detail-body--bar-expanded 两档各 1 命中"
+      },
+      {
+        "claim": "在册帧只覆盖默认态，本轮不存在回复态/挂图态帧",
+        "evidence": "reports/audit/round-6/screenshot-manifest.json shots[] 内 page=subpackages/village/village/detail 共 4 帧（round-6-tour 与 -reshoot 各 A/B），state 全为默认，尺寸全 378x814",
+        "value": "0 帧回复态、0 帧挂图态、0 帧 real 档 ⇒ 台账「缺的载体=真实档两态帧」在帧目录上成立"
+      }
+    ],
+    "notCheckable": [
+      {
+        "claim": "回复态与挂图态并发时末条 .comment-item 底缘与栏顶缘的实际间隙",
+        "why": "并发算术得 315rpx vs 预留 320rpx，只差 5rpx，而 .reply-mode-bar__text（detail.vue:2598-2605）设了 font-size:26rpx 却没设 line-height ⇒ 文本行盒由 UA 默认值决定，静态不可定；这 5rpx 落在不可判带内",
+        "nearestCarrier": "真机两态各一帧 + 量 boundingClientRect（末条 .comment-item 的 bottom 与 .detail-input-bar 的 top 之差，需 >0）"
+      },
+      {
+        "claim": "表情面板打开且键盘同时弹起时的栏总高",
+        "why": "键盘高度是系统运行时值，产物与本仓任何文件都不含它",
+        "nearestCarrier": "真机一帧（键盘+面板并发）"
+      },
+      {
+        "claim": "env(safe-area-inset-bottom) 在目标机型的实值",
+        "why": "两侧都带 env() 可代数抵消，但一旦栏内出现第三方绝对值（如键盘）就不抵消；DevTools 恒 0、真机非 0",
+        "nearestCarrier": "真机一次 evaluate 取 safe-area"
+      },
+      {
+        "claim": "该预留是否本轮新落（还是基线既有）",
+        "why": "半可判：基线 094f7239 第 781 行已逐字相同 ⇒ 前置条件早于基线；但工作树 detail.vue 处于 M 态，任何引用工作树行号的判据都需同时给 HEAD 行号",
+        "nearestCarrier": "git show 094f7239 与 git show HEAD 的同文件比对（已可离线做）"
+      }
+    ],
+    "commandsToRecheck": [
+      "grep -n -A 12 '.detail-input-bar {' 'D:/6/恋爱小程序/apps/client/src/subpackages/village/village/detail.vue'",
+      "grep -n -A 4 '.detail-body {' 'D:/6/恋爱小程序/apps/client/src/subpackages/village/village/detail.vue'",
+      "grep -o '\\.detail-body--bar-expanded[^}]*}' 'D:/6/恋爱小程序/apps/client/dist/build/mp-weixin/subpackages/village/village/detail.wxss'",
+      "cmp 'D:/6/恋爱小程序/apps/client/dist/build/mp-weixin/subpackages/village/village/detail.wxss' 'D:/6/恋爱小程序/apps/client/dist/build/mp-weixin-real/subpackages/village/village/detail.wxss'",
+      "git -C 'D:/6/恋爱小程序' show 094f7239:apps/client/src/subpackages/village/village/detail.vue",
+      "D:/codex-tools/node-v22.17.0-win-x64/node.exe -e \"const fs=require('fs');const j=JSON.parse(fs.readFileSync('reports/audit/round-6/screenshot-manifest.json','utf8'));j.shots.filter(s=>/village\\/village\\/detail/.test(s.page)).forEach(s=>console.log(s.corpus,s.identity,s.state,s.path))\""
+    ]
+  },
+  "MP-R2VIS-PAGES-MESSAGES-INDEX-005": {
+    "question": "warmPeople≥4 与 assistant≥1 的 mock 种子现在实为多少，最小可表达改动与代价",
+    "machineCheckable": [
+      {
+        "claim": "mock 构建下客户端根本不拉 dashboard，warmPeople 与 assistant 恒为空，这是判据不可行的结构原因",
+        "evidence": "apps/client/src/stores/messages.ts:642-644（fetchRelationshipDashboard 起 :640；HEAD 为 :573-577）",
+        "value": "if (useMock()) { return; } 在 request 之前 ⇒ 两档 mock 下 this.dashboard 恒 null ⇒ v-if 恒假"
+      },
+      {
+        "claim": "在册帧与探针结果印证空态",
+        "evidence": "reports/audit/round-6/interact/exec-results.json:4119-4125（MSG18 status=FAILED，observed 含 .warm-item:absent .avatarUrl:absent，act-FAIL:tap(.warm-item) element not found）；reports/audit/round-7/interact/exec-results.json:1694 前后（MSG16 observed .assistant-card__activity:absent）",
+        "value": "两轮回放都是 absent，不是文案问题"
+      },
+      {
+        "claim": "客户端不存在 warmPeople/assistant 任何种子可补",
+        "evidence": "grep -rn warmPeople apps/client/src 仅命中 pages/messages/index.vue:108-111/:491/:498、api-types-supplement.ts:711；grep -n assistant apps/client/src/services/mocks/fixtures.ts 为 0 命中",
+        "value": "可改的客户端 mock 只有 mockSessions（会话列表），无 dashboard 结构"
+      },
+      {
+        "claim": "契约五块全必填，客户端侧造半量夹具过不了类型",
+        "evidence": "apps/client/src/services/generated/api-types-supplement.ts:708-714",
+        "value": "todayHeart/assistant/warmPeople/recommendedPeople/recentChats 均无 ?"
+      },
+      {
+        "claim": "服务端 mock 种子的实数：warmPeople = 3（不足 4）",
+        "evidence": "apps/api/src/main/java/com/campuslove/api/chat/MockPrivateMessageService.java:20-45（List.of 恰 3 条 ConversationView，relationship score 见 :26/:33/:40）+ MockMessageDashboardController.java:40（filter score>20）与 :43（limit(8)）",
+        "value": "score 72/55/38 全 >20 ⇒ warmPeople.size()=3"
+      },
+      {
+        "claim": "过滤闸恒真，warmPeople 就是会话数（封顶 8）",
+        "evidence": "apps/api/src/main/java/com/campuslove/api/chat/RealPrivateMessageService.java:599-618（buildRelationship 的 score = 40 + id%60）；派生链 MessageDashboardService.java:44/:57/:60/:73",
+        "value": "real 档 score 恒 ≥40 >20 ⇒ warmPeople = min(8, 会话数)，与「热点参与者夹具」无关，只与会话条数有关"
+      },
+      {
+        "claim": "assistant≥1 是永真判据，补种子对它无意义",
+        "evidence": "apps/api/src/main/java/com/campuslove/api/chat/MockMessageDashboardController.java:46（likedMeCount=3）、:76-79（>0 加第 1 条）、:80-81（无条件加第 2 条）、:82-86（warmPeople 非空再加第 3 条）、:87（limit(3)）",
+        "value": "assistant.size() 恒 ∈ {2,3} ⇒ 判据的 assistant≥1 半段本来就成立"
+      },
+      {
+        "claim": "「≥4」这个数来自渲染层切片，不是后端契约",
+        "evidence": "apps/client/src/pages/messages/index.vue:498",
+        "value": "v-for=「person in warmPeople.slice(0, 4)」 ⇒ 4 是铺满头像位的最小值"
+      },
+      {
+        "claim": "最小可表达改动落在 apps/api，客户端零改动",
+        "evidence": "apps/api/src/main/java/com/campuslove/api/chat/MockPrivateMessageService.java:20 的 List.of 追加第 4 条 ConversationView（relationship score 取 >20）",
+        "value": "warmPeople 3→4、assistant 2→3、todayHeart.warmCount 3→4（MockMessageDashboardController.java:49 传 warmPeople.size()）"
+      },
+      {
+        "claim": "依赖现值的用例（改种子的代价清单）",
+        "evidence": "reports/audit/round-7/ops/PAGES-MESSAGES-INDEX.json:4（MSG01 六段按序且无空白死段）、:169（MSG16 assistant 空数组/1 条两态）、:191（MSG18 pre 明写「构造 warmPeople 有 4 人 / 为空」）、:202（MSG19「返回后升温区数据与滚动位不丢」）、:301（MSG28 活动推荐卡 targetUrl）",
+        "value": "5 条直接读该块，其中 MSG18 的「为空」分支在 mock 档已由客户端短路天然满足，改服务端种子不影响它，但 MSG18 的「4 人」分支要成立必须先解除 stores/messages.ts:642 的 mock 短路"
+      }
+    ],
+    "notCheckable": [
+      {
+        "claim": "在 mock 档截到 warmPeople≥4 的画面",
+        "why": "客户端 useMock 先 return，改 Java 种子也不会被 mock 构建请求；要在 mock 档出这态必须改 store 逻辑，而原裁定明令「只加种子不碰 store 逻辑」",
+        "nearestCarrier": "real 档一次巡检（真库夹具），或把判据改写成读服务端契约（MockPrivateMessageService 条数）"
+      },
+      {
+        "claim": "真实库某用户是否恰有 ≥4 条会话",
+        "why": "需只读 SQL，本轮禁止；real 档会话数由运行时数据决定，仓内种子（database/flyway/sql/V2026.08.07.0023__seed_messages_and_visitors.sql 的 37 条 conv-seed-1-*）都挂在 user 100000，不是巡检登录号 100158",
+        "nearestCarrier": "授权只读 SQL 计数，或把巡检登录号切到有 37 条种子的 100000"
+      },
+      {
+        "claim": "原判据「只加种子不碰 store 逻辑」是否已彻底不可行",
+        "why": "静态已证客户端不请求 dashboard，比台账给的理由（五块全必填 + recentChats 按 id 合并）更前置；但「不可行」的最终定性是裁量，不是测量",
+        "nearestCarrier": "无机器载体，主编排层裁"
+      }
+    ],
+    "commandsToRecheck": [
+      "sed -n '638,650p' 'D:/6/恋爱小程序/apps/client/src/stores/messages.ts'",
+      "grep -rn 'warmPeople' 'D:/6/恋爱小程序/apps/client/src'",
+      "grep -c 'assistant' 'D:/6/恋爱小程序/apps/client/src/services/mocks/fixtures.ts'",
+      "grep -n 'RelationshipInfo' 'D:/6/恋爱小程序/apps/api/src/main/java/com/campuslove/api/chat/MockPrivateMessageService.java'",
+      "grep -n 'limit(8)' 'D:/6/恋爱小程序/apps/api/src/main/java/com/campuslove/api/chat/MockMessageDashboardController.java'",
+      "D:/codex-tools/node-v22.17.0-win-x64/node.exe -e \"const fs=require('fs');const j=JSON.parse(fs.readFileSync('reports/audit/round-6/interact/exec-results.json','utf8'));const a=(j.results?j.results:j);a.filter(c=>c.id==='MSG18').forEach(c=>console.log(c.status,c.observed))\""
+    ]
+  },
+  "MP-R2VIS-TMP-TOUR-R2-004": {
+    "question": "dpr 不可脚本改这一条，静态字号换算能否代替截图判字级",
+    "machineCheckable": [
+      {
+        "claim": "截图协议确无 dpr 入口，脚本侧改分辨率的断言成立",
+        "evidence": "node_modules/.pnpm/miniprogram-automator@0.12.1_supports-color@10.2.2/node_modules/miniprogram-automator/out/MiniProgram.d.ts:6-8（IScreenshotOptions 只有 path?: string）与 :41（screenshot(options?: IScreenshotOptions)）",
+        "value": "无 dpr/scale/clip/quality 形参"
+      },
+      {
+        "claim": "harness 里唯一的分辨率旋钮是放大倍率，不是 dpr；根本不存在 dpr 阈值常量",
+        "evidence": "tmp/tour-R2.mjs:410 与 scripts/qa/tour-r6.mjs:454（ZOOM_FACTOR=clamp(2..8, env ZOOM_FACTOR 默认 3)）；同文件 grep threshold 只命中 BLANK_MIN_BYTES（tmp/tour-R2.mjs:131）",
+        "value": "台账/判据里的「取证默认 ≥2x dpr」在码无对应常量，不能按现有 harness 自动判"
+      },
+      {
+        "claim": "实测设备档与出图尺度：设备 dpr=3，出图仍是约 1x",
+        "evidence": "reports/screenshots/round-6-tour/manifest-detail.json 的 captureLimitations.deviceInfo（model=iPhone 12/13 (Pro)、windowWidth=390、windowHeight=844、pixelRatio=3）；reports/audit/round-6/screenshot-manifest.json shots[] 尺寸分布 425 帧 378x814",
+        "value": "378/390 = 0.969 图像px/CSSpx ⇒ 有效出图 ≈1x，非设备档的 3x"
+      },
+      {
+        "claim": "当前 dpr 下「字级判定」的既有结论已由 harness 自述并可引用",
+        "evidence": "scripts/qa/tour-r6.mjs:1784-1785（limitation 文本）与 :329-333（conclusion/alternativeTruth）；tmp/tour-R2.mjs:294-299 同文本",
+        "value": "结论=1x 出图、裁切放大不产生新细节、字级判定需人工在 zoomFrames 辅助帧上背书或换高 dpr 机型（测试台之外）"
+      },
+      {
+        "claim": "静态字号换算可算：rpx → 图像 px 的系数由盘上两值决定",
+        "evidence": "系数 = windowWidth/750 × 帧宽/windowWidth = 390/750 × 378/390 = 0.504 图像px/rpx（源：reports/screenshots/round-6-tour/manifest-detail.json deviceInfo 与 PNG IHDR）",
+        "value": "编译产物最小字号换算：messages 页 18rpx→9.07px、village/detail 页 20rpx→10.08px、circles 页 22rpx→11.09px"
+      },
+      {
+        "claim": "放大辅助帧已在册且实测尺寸可核，替代载体已存在",
+        "evidence": "reports/audit/round-6/screenshot-manifest.json zoomFrameCount=750；逐帧读 PNG IHDR 得 1134x339 共 250 张（顶部带）与 1134x732 共 500 张（正文带/底部带）",
+        "value": "3x 最近邻 ⇒ 同字号字级推到约 30 至 39 图像px（tmp/tour-R2.mjs:296-299 声明不产生新细节）"
+      },
+      {
+        "claim": "台账引用的 round-2 备份帧尺寸逐帧复核成立",
+        "evidence": "遍历 .zcode/tmp/backup-round-2-tour-pre-capture/（含子目录）读 PNG IHDR",
+        "value": "267/267 帧均 378x814，与台账「全 267 帧均 378×814」一致"
+      },
+      {
+        "claim": "台账引用的 r11-acceptance 尺寸口径需更正，且容器名与实不符",
+        "evidence": "遍历 reports/screenshots/r11-acceptance/ 读文件头：920 个 .png 后缀文件全部是 JPEG（magic ffd8ffe0），SOFR 尺寸分布 189x408=576、139x305=200、185x405=114、138x305=27、337x739=3",
+        "value": "台账「r11-acceptance 为 189×408（0.5x）」只对 576/920（62.6%）成立；另有 31.5% 是 139x305。任何按 PNG 解码器读该目录的检查器都会静默失败"
+      },
+      {
+        "claim": "该行的载体页有两个不同源脚本，判据必须点明哪一个",
+        "evidence": "cmp tmp/tour-R2.mjs 与 scripts/qa/tour-r6.mjs；两者 node --check 均通过",
+        "value": "DIFFERENT（ZOOM_FACTOR 分别在 :410 与 :454）⇒ 「改 harness 阈值」要写清改哪个文件"
+      }
+    ],
+    "notCheckable": [
+      {
+        "claim": "换到高 dpr 机型档后的字级结论",
+        "why": "机型档由 DevTools/CLI 侧决定，自动化协议无写入口（tmp/tour-R2.mjs:296-299 自述脚本无权改），本轮又禁连工具（有实时运行占用该窗口）",
+        "nearestCarrier": "人工在 DevTools 切机型档后重跑 tmp/tour-R2 巡检，并在被判定文字处出 zoomFrames 辅助帧背书"
+      },
+      {
+        "claim": "1x 帧上的具体字形是否可辨（笔画级判读）",
+        "why": "静态换算给出行盒高度（px），不是可辨读性；最近邻放大不产生新细节，1x 采样丢掉的笔画复原不出来（tmp/tour-R2.mjs:297 与 :406 自述）",
+        "nearestCarrier": "人工在 3x 裁切帧上逐字判读并留档（round-2 已有一次误读实证：把 mock 正文读成「喜欢看山」，见 reports/audit/round-2/findings/VISUAL-WAVE2.json:727）"
+      },
+      {
+        "claim": "字级判定的合格线定在几 px",
+        "why": "harness 无该常量，仓内也没有已生效的字号最低值裁定，静态判据要成立必须先由人给阈值",
+        "nearestCarrier": "先立静态判点（最小 font-size(rpx) × windowWidth/750 × 帧宽/windowWidth ≥ 约定 px），再决定是否仍需帧"
+      }
+    ],
+    "commandsToRecheck": [
+      "sed -n '1,12p;38,44p' 'D:/6/恋爱小程序/node_modules/.pnpm/miniprogram-automator@0.12.1_supports-color@10.2.2/node_modules/miniprogram-automator/out/MiniProgram.d.ts'",
+      "grep -n 'const ZOOM_FACTOR' 'D:/6/恋爱小程序/tmp/tour-R2.mjs' 'D:/6/恋爱小程序/scripts/qa/tour-r6.mjs'",
+      "grep -n 'BLANK_MIN_BYTES' 'D:/6/恋爱小程序/tmp/tour-R2.mjs'",
+      "D:/codex-tools/node-v22.17.0-win-x64/node.exe --check 'D:/6/恋爱小程序/tmp/tour-R2.mjs'",
+      "cmp 'D:/6/恋爱小程序/tmp/tour-R2.mjs' 'D:/6/恋爱小程序/scripts/qa/tour-r6.mjs'",
+      "D:/codex-tools/node-v22.17.0-win-x64/node.exe -e \"const fs=require('fs');const j=JSON.parse(fs.readFileSync('reports/screenshots/round-6-tour/manifest-detail.json','utf8'));console.log(JSON.stringify(j.captureLimitations))\"",
+      "D:/codex-tools/node-v22.17.0-win-x64/node.exe -e \"const fs=require('fs');const j=JSON.parse(fs.readFileSync('reports/audit/round-6/screenshot-manifest.json','utf8'));const h={};for(const s of j.shots){const k=String(s.width)+'x'+String(s.height);h[k]=h[k]?h[k]+1:1;}console.log(JSON.stringify(h));\"",
+      "D:/codex-tools/node-v22.17.0-win-x64/node.exe -e \"const fs=require('fs');function d(p){const b=fs.readFileSync(p);if(b.toString('latin1',12,16)==='IHDR')return b.readUInt32BE(16)+'x'+b.readUInt32BE(20);return 'not-png';}const j=JSON.parse(fs.readFileSync('reports/audit/round-6/screenshot-manifest.json','utf8'));console.log('zoom sample',d(j.zoomFrames[0]))\"",
+      "D:/codex-tools/node-v22.17.0-win-x64/node.exe -e \"const fs=require('fs');const t=fs.readFileSync('apps/client/dist/build/mp-weixin/pages/messages/index.wxss','utf8');const n=new Set();for(const m of t.matchAll(/font-size:([^;}]+)/g)){const r=m[1].match(/(-?\\d+(?:\\.\\d+)?)rpx/);if(r)n.add(+r[1]);}const a=[...n].sort((x,y)=>x-y);console.log('rpx sizes',a.join(','),'min px',(a[0]*390/750*378/390).toFixed(2))\""
+    ]
+  }
+}

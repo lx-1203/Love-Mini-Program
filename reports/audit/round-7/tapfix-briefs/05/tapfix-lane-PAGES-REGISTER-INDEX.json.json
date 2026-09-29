@@ -1,0 +1,70 @@
+{
+  "lane": "pages/register/index",
+  "counts": { "planned": 6, "ok": 4, "unverifiable": 2 },
+  "cases": [
+    {
+      "id": "REG12",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "page": "pages/register/index",
+      "selector": ".sms-btn",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 572,
+      "oldAction": "tap .sms-btn ×1",
+      "newAction": "tap .sms-btn（index.vue:572 的 class=sms-btn 节点，:578 @tap=handleSendSms）×1",
+      "needsIdentity": "",
+      "why": "本条判据要点的就是倒计时中被守卫吃掉的那一次点击：index.vue:572 的 .sms-btn 自带 @tap=handleSendSms（:578），倒计时期间它仍然渲染（只换文案与 sms-btn--cd 类），产物 apps/client/dist/build/mp-weixin/pages/register/index.wxml 与 mp-weixin-real 同页里 sms-btn 都带 bindtap，属于静息可点元素。"
+    },
+    {
+      "id": "REG21",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "page": "pages/register/index",
+      "selector": ".field__picker",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 725,
+      "oldAction": "① tap picker 空白区确认弹层；② 选择明天（:end=today 应拒绝/不可选，:698）；③ 选择 16 年前日期（如 2010-01-01）后 tap .submit-btn；④ 选择 20 年前合法日期；⑤ 记录 picker 未选时 :value 回退值",
+      "newAction": "① tap picker 空白区（mode=date 的 picker 节点 .field__picker，index.vue:725，:731 @change=onBirthChange）确认弹层；② 选择明天（:end=today 应拒绝/不可选，:698，现号 :728）；③ 选择 16 年前日期（如 2010-01-01）后 tap .submit-btn（现号 :749，@tap=onSubmitGuarded :753）；④ 选择 20 年前合法日期；⑤ 记录 picker 未选时 :value 回退值（:727 的回退值是 2005-01-01）",
+      "needsIdentity": "",
+      "why": "弹层的唯一触发物件是包着内滚区的 picker 本体：index.vue:725 的 .field__picker 带 mode=date 与 @change=onBirthChange（:731），行内 :end=today（:728）与未选时 :value 回退（:727）都挂在这同一个节点上；产物 wxml 里它是 <picker class=field__picker ... bindchange>，两档都有，静息渲染（不受 v-if 约束）。"
+    },
+    {
+      "id": "REG25",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "page": "pages/register/index",
+      "selector": ".submit-btn",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 749,
+      "oldAction": "tap .submit-btn 一次；随后依次制造：验证码 5 位、密码缺数字（'Abcdefgh'）、生日留空，每改一次点一次（间隔 >2s 避开守卫）",
+      "newAction": "tap .submit-btn（index.vue:749，:753 @tap=onSubmitGuarded；未同意协议时走 :340-343 专用分支，复选框热区 :770 的 agree__hit 不属本条目标）一次；随后依次制造：验证码 5 位、密码缺数字（'Abcdefgh'）、生日留空，每改一次点一次（间隔 >2s 避开守卫）",
+      "needsIdentity": "",
+      "why": "四路逐字段非法提交全部由同一个提交钮触发：index.vue:749 的 .submit-btn 带 @tap=onSubmitGuarded（:753），页注释写明置灰仍可点以给行内错误定位；产物 wxml 里该节点带 bindtap 且不受 v-if 约束，两档都在。"
+    },
+    {
+      "id": "REG28",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "page": "pages/register/index",
+      "selector": ".submit-btn",
+      "file": "apps/client/src/pages/register/index.vue",
+      "line": 749,
+      "oldAction": "tap .submit-btn；观察后 tap .ghost-btn「用这个手机号登录」（index.vue:730-732 @tap=goLogin）",
+      "newAction": "tap .submit-btn（index.vue:749，:753 @tap=onSubmitGuarded；判据后半段的 .ghost-btn 在现号 :760 的 v-if=phoneRegistered 里，静息不渲染，只有先由提交钮拿到「已注册」失败响应才会出现，故本条点名的是把这个态带出来的入口物件）；观察后 tap .ghost-btn「用这个手机号登录」（index.vue:730-732 @tap=goLogin，现号 :760）",
+      "needsIdentity": "",
+      "why": "真正可点且静息存在的物件是提交钮（index.vue:749 @tap=onSubmitGuarded），它是「该手机号已注册」分支的唯一入口；出口 .ghost-btn（:760 v-if=phoneRegistered @tap=goLogin）虽在产物 wxml 里有名有姓，但只在非静息态渲染，按 bare A 点名会得到 no such element，故按入口物件记。"
+    }
+  ],
+  "unverifiable": [
+    {
+      "id": "REG31",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "page": "pages/register/index",
+      "reason": "本条断言的是页面级滚动的极值与几何关系（scrollTop 起止、.to-login 与 .safety-note 的 rect 与 env(safe-area-inset-bottom) 的上下关系、有无回弹与空白尾部），没有一个点击能产出这些读数；action 里的 .to-login 与 .safety-note 只是「滚到底后应当可见」的标记物，点它们既不产生滚动也不改判据（.to-login__link 的 @tap=goLogin 还会把本页换成登录页）。",
+      "needsCarrier": "欠 WS automator 的连续手势通道（touchstart/move/end 或 pageScrollTo）与 boundingClientRect 尺寸读数通道：r-exec-cli.mjs 的 probeMany 只回元素条数不回宽高，CLI 的 element offset 也只回 left/top。"
+    },
+    {
+      "id": "REG32",
+      "manifest": "PAGES-REGISTER-INDEX",
+      "page": "pages/register/index",
+      "reason": "判据是否命题（本页未配 enablePullDownRefresh，不得出现下拉动画、不得触发 onPullDownRefresh、network 零新增、六个字段值前后一致），要的是「在顶部下拉 300px 并松手」这个真实手势与它之后的请求计数，页面上不存在任何等价可点物件。",
+      "needsCarrier": "欠 WS 手势载具（页面级下拉 touchmove 300px + 松手惯性）与 network 逐条计数；CLI 桥只有 element tap/input 两种动作，发不出这段位移。"
+    }
+  ]
+}

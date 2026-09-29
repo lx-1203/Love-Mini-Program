@@ -1,0 +1,427 @@
+{
+ "batch": "07",
+ "laneCount": 7,
+ "caseCount": 26,
+ "lanes": [
+  {
+   "lane": "subpackages/profile-extra/profile/album",
+   "manifest": "次要20.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/profile-extra/profile/album.vue",
+   "sourceFound": true,
+   "planned": 4,
+   "outFile": "reports/audit/round-7/tapfix-briefs/07/tapfix-lane-次要20.json.json",
+   "cases": [
+    {
+     "id": "AB08",
+     "manifest": "次要20",
+     "page": "subpackages/profile-extra/profile/album",
+     "title": "长拍照操作菜单（ActionSheet 三路）：设为头像 / 删除 / 取消，取消不得有副作用",
+     "oldAction": "① 长按第 1 张已填格 → ActionSheet 出现；② 选「取消」/下滑关闭（第一路）；③ 重开选「删除」（不确认 modal，只看第二层）；④ 重开选「设为头像」；⑤ 长按空格子",
+     "expected": "① 500ms 内 ActionSheet 弹出，itemList 恰两项 = [profile.albumSetAvatar, profile.albumDelete]（:231-233，zh 文案「设为头像 / 删除」）+ 轻振动 :230；② 取消走 fail 分支 → 静默无副作用（:240-242）：photoGallery 顺序与内容不变、无 Toast、无路由变化；③ 选「删除」→ 必须再出现二次确认 showModal（confirmDelete :318-331），不得直接删（危险操作守卫）；④ 选「设为头像」→ 进入 setAsAvatar 链路（见 AB09）；⑤ 长按空格子 → @longpress 传 undefined（:466）→ 无任何弹层（不得对空位弹操作菜单）；越界索引保护（:229）；console 无报错",
+     "evidence": "normal：ActionSheet + 取消后 + 二次确认层 截图 + 路由 + Toast（应为无）+ console",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "AB09",
+     "manifest": "次要20",
+     "page": "subpackages/profile-extra/profile/album",
+     "title": "「设为头像」：mock 本地重排 vs real 下载+POST /profile/avatar；失败回退与 Toast；连点双判定",
+     "oldAction": "① 长按第 2 张 → 选「设为头像」；② 检查头像/顺序/Toast；③ 到「我的」页复核头像是否同步（跨页状态）；④ 复位后同路径 rapidTap 菜单项×5（能驱动则做，不能则记 UNVERIFIED）；⑤ 断网/让 downloadFile 返 4xx 再走一次",
+     "expected": "① mock：photoGallery 重排（选中项移到 [0]，:306-311）+ 无网络请求（不得调 uploadAvatar）+ Toast 表现如实回填（mock 分支 return 前无 toast/无 haptic——若界面无任何可观测反馈即为「死按钮」级缺陷，须记录实际观测）；② real：isUploading=true 蒙层（:263）→ downloadToTemp(resolveMediaUrl(url))（:265/:287-301，URL 必须带鉴权代理且解析遵循工作树 utils/media.ts:222-233 规则，回填最终 URL）→ profileStore.uploadAvatar → 成功 toast=profile.albumSetAvatarSuccess（:269）+ successHaptic；③ 跨页一致：「我的」页头像（pages/profile/index.vue，未提交改动中）必须与本操作结果一致，若 mock 分支仅本地重排而 real 失败回退仅本地生效，须写明「服务端未变更」（MP-R1-ALBUM 系列留档的既定兜底，属 observation）；④ 双判定：客户端层=isUploading 守卫下多余请求数（downloadFile/uploadAvatar 调用计数）；服务端层=GET /profile/basic 回读 avatarUrl 条数与值；相同 body 的重复 POST 会被稳定 Idempotency-Key 去重（services/http.ts:254-274）→「服务端只有 1 条变更」不得单独作为客户端无重复的结论；⑤ 失败 → 回退本地重排 + errorHaptic + toast=错误 message 或 profile.albumSetAvatarFailed（:270-275），Loading 必须收起（finally :276-278）；console 无 unhandledRejection",
+     "evidence": "critical：before（长按前）+ 菜单 + 执行中蒙层 + 成功后（本页 + 我的页头像）+ 失败态 截图 + 路由 + Toast 文案 + console + network 逐条 + 服务端回读 avatarUrl",
+     "requiresReal": true,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "AB10",
+     "manifest": "次要20",
+     "page": "subpackages/profile-extra/profile/album",
+     "title": "「删除照片」：二次确认 modal 的确认/取消两路 + 成功/失败 Toast + 索引错位防护",
+     "oldAction": "① 长按第 2 张 → 选「删除」→ modal 点「取消」；② 重复后点「确定」；③ 连续删除第 1 张两次（观察索引）；④ 断网走一次确定；⑤ modal 出现后按系统返回键",
+     "expected": "① modal 文案=title profile.albumDelete / content profile.albumDeleteConfirm / confirmText common.confirm / cancelText common.cancel（album.vue:320-324）；取消 → 零数据变化（res.confirm 判定 :325-329）、无 Toast；② 确定 → 该格移出、photoCount-1、格子重排无空洞（:306-311 同款语义 + store :866）+ toast=profile.albumDeleteSuccess（:342）+ successHaptic；服务端回读=photoGallery 少 1 项且顺序正确；③ 连续删除时 index 必须与当前渲染态一致（photoCells 由 photoGallery 派生 :73-80）→ 不得删错照片（越界保护 :319 生效）；④ 失败 → toast=错误 message 或 profile.albumDeleteFailed（:343-347）+ 列表不得半更新；⑤ 系统返回关闭 modal 等同取消（不得静默执行删除）；console 无报错",
+     "evidence": "critical：before（删除前网格）+ modal 两路 + 删除后 + 失败态 截图 + 路由 + Toast 文案 + console + network + 服务端回读 photoGallery",
+     "requiresReal": true,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "AB14",
+     "manifest": "次要20",
+     "page": "subpackages/profile-extra/profile/album",
+     "title": "en-US 语言包下本页 i18n 全量 key 采证（含 Toast/ActionSheet/modal 三类动态文案）",
+     "oldAction": "① fullPage 截图检视页头标题/计数/长按提示/空态/添加按钮/上传中文案；② 触发长按 → 检视 ActionSheet 两项文案；③ 触发删除 → 检视 modal 四段文案；④ 触发一次上传成功/失败 Toast",
+     "expected": "全部面向用户文案走 t()：profile.albumTitle/albumEmpty/albumEmptyDesc/albumAddPhoto/albumSetAvatar/albumDelete/albumDeleteConfirm/albumDeleteSuccess/albumDeleteFailed/albumUploadSuccess/albumUploadFailed/albumSetAvatarSuccess/albumSetAvatarFailed/albumFull/albumPreviewLongPress/uploading（album.vue:143/207/209/232/269/273/321-324/342/344/388/417/427/440-448/479/496/501）→ en 环境须全部为英文，不得出现裸 key（形如 \"profile.albumXxx\"）或 zh/en 混排；i18n key 缺失（en-US.ts 未同步）→ 记录为可观测缺陷（页面会显示 key 原文），关联本批 i18n 未提交改动（en-US.ts 在 diff 清单中）；原生 modal/ActionSheet 的 confirmColor 类原生属性不受 i18n 影响，但文案必须由 t() 提供；布局：en 长文案不得溢出/裁切（按钮/提示行）；console 无 [intlify] 缺 key 告警",
+     "evidence": "normal：en 与 zh 各 fullPage 截图 + 动态弹层/Toast 截图各 1 + 路由 + console（i18n 告警过滤）",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/chat/official-chat/index",
+   "manifest": "次要21.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/chat/official-chat/index.vue",
+   "sourceFound": true,
+   "planned": 4,
+   "outFile": "reports/audit/round-7/tapfix-briefs/07/tapfix-lane-次要21.json.json",
+   "cases": [
+    {
+     "id": "OC01",
+     "manifest": "次要21",
+     "page": "subpackages/chat/official-chat/index",
+     "title": "冷启动首屏滚底竞态证伪：骨架 500ms 放行后末条历史消息必须完整可见（MP-R2-OFFICIALCHAT-001）",
+     "oldAction": "进入后 300ms（骨架期）/700ms（放行瞬间）/1500ms/3000ms 四次采样：SkeletonBlock 与 .chat-body 存在性、scroll-view 的 scroll-into-view 值、scrollTop/scrollHeight、末条消息（「太好了！已经帮你报名成功啦」）boundi",
+     "expected": "骨架→内容在 500ms 完成（ready 由 onLoad setTimeout 500ms 放行 :363-365，SkeletonBlock :378）；Loading 不永驻（:403 分支应已消失）；期望=修复后表现：mock 初载 3 条后无条件滚底（:259-264 已补 nextTick+120ms scrollToBottom，锚点 :520 + scroll-into-view :435）→ 末条消息底边完整可见、不被 .input-bar 遮挡；关键竞态：滚底赋值在约 120ms 而 chat-body 500ms 才挂载，若 3000ms 时 scroll-into-view 已指向锚点但 scrollTop 仍=0（视窗停在顶部、末条被截）即判滚底竞态未修复（MP-R2-OFFICIALCHAT-001 后半）并回填实测时序数值；冷启动不得闪现错误态（:404-407）；console 无 TypeError/NAV_FAIL",
+     "evidence": "critical：before（骨架态）+ after（1.5s/3s 首屏滚底）截图 + 路由 + Toast 文案（应为 0 条）+ console + scroll 位置数值表（scrollTop/scrollHeight/末条 rect）",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "OC09",
+     "manifest": "次要21",
+     "page": "subpackages/chat/official-chat/index",
+     "title": "REAL_ONLY 加载失败错误态+重试真重拉；发送失败回滚草稿不丢内容",
+     "oldAction": "进页观察错误态与文案 → tap .retry-btn（:406）→ 恢复网络再 tap；另跑一次：正常加载后断网，输入文本点发送观察失败回滚",
+     "expected": "加载失败 → errorMessage=t('messages.officialChatLoadFailed')（:297-299）+ messages 清空 → .state-view 错误分支可见（:404-407），「重试」为硬编码中文字面量（:406 采证）；tap 重试 → 重新进入 loading 并新增 1 条 GET（客户端重试条数=点击次数；在途重复点击由 :217 if (loading) return 早退，须回填实际条数）；恢复后消息正常渲染并滚底；发送失败路径 → 本地 pending 气泡被移除、inputValue 恢复为原文本（:146-151 草稿回滚）+ Toast=t('messages.officialChatSendFailed')（:151）+ sending 复位（:152-154），不得出现「气泡消失且内容丢失」；Loading/错误态均不永驻；console 允许 5xx 日志、不得有未捕获异常",
+     "evidence": "critical：错误态 before + 重试中 + 恢复后 + 发送失败回滚 共 4 张截图 + 路由 + Toast 文案逐字 + console + network 逐条状态码",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "input"
+    },
+    {
+     "id": "OC10",
+     "manifest": "次要21",
+     "page": "subpackages/chat/official-chat/index",
+     "title": "返回两路：栈>1 navigateBack 回消息页、栈=1 switchTab 消息 Tab（MP-R1-OFFICIALCHAT-003 回归）",
+     "oldAction": "各 tap .nav-left（:382-385 → goBack :328-335）一次；路B 另连点×3",
+     "expected": "路A：length>1 → uni.navigateBack delta 1（:329-331）→ 栈长 -1、栈顶=pages/messages/index，消息页未读态/滚动位恢复；路B：栈=1 → uni.switchTab(ROUTES.TAB.CHAT)（:332-334，CHAT 属 TAB_BAR_ROUTES）→ 落「消息」Tab 且栈=1，不得静默无反应、不得产生 navigateBack:fail 未捕获 rejection（MP-R1-OFFICIALCHAT-003 修复点）；连点×3 后续 tap 落在已切走的页面、selector 不存在（无幽灵命中），最终栈=1；console 无报错",
+     "evidence": "navigation：两路完整路由链断言（栈长 + 每帧 route）+ console；可免截图",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "OC14",
+     "manifest": "次要21",
+     "page": "subpackages/chat/official-chat/index",
+     "title": "状态栏/胶囊避让与滚动高度链路：hero 折叠后 scroll-view 不溢出、输入栏不遮末条",
+     "oldAction": "检视 nav-bar paddingTop 与系统胶囊/时间是否叠印 → 页级是否可滚（应为 scroll-view 内滚）→ 长消息滚到底并记录 .chat-scroll scrollTop/scrollHeight 与 .input-bar 高度",
+     "expected": "nav-bar paddingTop=Math.max(statusBarHeightPx,24)（:381，useStatusBarHeight 注入，R20 兜底 24px）→ 标题「寻觅助手」与「官方」徽标不得压状态栏时间、不得与右上胶囊重叠（.nav-right 80rpx 须实测是否被胶囊遮挡）；100vh flex 列：hero-section + chat-scroll flex:1 + input-bar flex-shrink:0（coverage 高度链核对）→ 滚动只发生在 scroll-view 内，出现页级双层滚动即缺陷；滚到底时末条气泡与输入栏之间留出锚点 20rpx 间隙（:520）不被遮挡；无 scroll-view 高度回弹/内容裁切；console 无报错",
+     "evidence": "noop：执行日志（nav-bar top、chat-scroll scrollTop/scrollHeight、input-bar height 数值）+ 顶/底 2 张截图；console",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/setup/recommend-pref/index",
+   "manifest": "次要21.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/setup/recommend-pref/index.vue",
+   "sourceFound": true,
+   "planned": 4,
+   "outFile": "reports/audit/round-7/tapfix-briefs/07/tapfix-lane-次要21.json.json",
+   "cases": [
+    {
+     "id": "RP04",
+     "manifest": "次要21",
+     "page": "subpackages/setup/recommend-pref/index",
+     "title": "校园优先开关：整行可点（非仅滑块），切换即时无请求",
+     "oldAction": "tap .toggle-row 文字侧 → 观察；tap .toggle-switch 滑块侧 → 观察；再连点×5 观察最终态",
+     "expected": "整行绑定 @tap=\"campusPriority = !campusPriority\"（:215）→ 点文字与点滑块都必须翻转（不得只有滑块区域可点）；翻转后 .toggle-switch--on 类切换、knob 位移（left 4rpx→44rpx，:326-344 transition 200ms）；连点×5 后落到与奇偶一致的状态且无中间态卡死、无动画抖动；零写请求直至保存；console 无报错",
+     "evidence": "normal：两位置切换 + 连点后 三张 after 截图 + console + network 写请求计数",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "RP08",
+     "manifest": "次要21",
+     "page": "subpackages/setup/recommend-pref/index",
+     "title": "REAL_ONLY 拉取失败：错误态渲染 + 重试按钮真重拉（review #28 回归）",
+     "oldAction": "进页观察错误态文案与按钮 → tap .retry-btn → 恢复网络再 tap 一次；期间记录客户端 GET 条数",
+     "expected": "catch 必须置 error=true（:97-101，修复注释自证原实现从不置位、错误分支为死代码）→ 渲染 SectionCard recommendPref.errorTitle + errorText + 「重试」按钮（:170-175）；tap 重试 → 新增 1 条 GET（客户端条数=点击次数，不吞点击）且 error 先复位 false、loading 置 true（:76-77）→ 短暂回到 loading 卡而非直接内容；恢复网络后 → content 正常渲染、错误卡消失；Loading 不永驻；另采证 retry 为原生 <button>（:173）→ 小程序 button 默认 ::after 边框未被清除（样式段 :256-266 无 ::after 覆写）→ 按钮边缘是否残留细线须以截图特写佐证（MP-R2-RECOMMEND-001）；console 允许失败日志、不得有未捕获异常",
+     "evidence": "critical：错误态 before + 重试中 + 恢复后 三张截图（含 retry 按钮特写）+ 路由 + Toast（应为 0）+ console + network 逐条状态码",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "RP09",
+     "manifest": "次要21",
+     "page": "subpackages/setup/recommend-pref/index",
+     "title": "未提交改动无关的语言包一致性：scopeOptions 非 computed → 切语言选项不更新（证伪采证）",
+     "oldAction": "切语言后逐元素检视：范围三项、开关标签、三张卡标题副标题、保存按钮、错误/加载文案",
+     "expected": "预期=已知缺陷表现：范围三项标签由 setup 期一次性求值的 scopeOptions 提供（:66-70 普通数组、非 computed）→ 同实例内切语言后仍显示中文，而 dnd.vue:62-67 与 history.vue:64-69 同类选项均用 computed 会即时更新（MP-R2-RECOMMEND-001 一致性问题，须截图对比三处）；reLaunch 重进后应恢复为英文（en-US.ts 对应 recommendPref.* 键）；全页不得出现字符串裸 key（recommendPref.xxx）；对照 zh-CN 截图逐条记录缺失译文；console 无 i18n 缺 key 告警",
+     "evidence": "normal：同实例切换前后 + 重进后 三张 after 截图（en/zh 对照）+ 路由 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "RP11",
+     "manifest": "次要21",
+     "page": "subpackages/setup/recommend-pref/index",
+     "title": "滚动到顶/底 + 底部留白证伪（MP-R2-APP-001）+ 进度条与链路一致性采证",
+     "oldAction": "scrollTo 到底 → 回顶；量测正文 padding-bottom 与主按钮位置；量测 SetupProgress 在滚动时是否随页滚出",
+     "expected": "滚到底时保存主按钮完整可见且与系统手势区不重叠；回顶后 SetupProgress 步骤条与标题完整可见、无 sticky 抖动（本页未传 fixed，AppShell :158 → 头部随页滚动，须注明滚到底时进度条是否已滚出视口导致用户失去进度感知）；底部留白：本页传 show-tab-bar=false（:158）→ 期望=修复后表现：AppShell 已补 showTabBar 并映射 tabBarSafe（AppShell.vue:42-43,108-113 false→0）→ 正文底部 padding 应为 0，若实测仍约 180rpx 留白即判 MP-R2-APP-001 未落地，数值须回填；进度条链路（MP-R2-SETUP-001）：本页显示第 3/4 步，而其上游 schedule 页无进度条（SCU13 对照）→ 序号与实际经过页面数不匹配，以两页截图串证；console 无报错",
+     "evidence": "noop：执行日志（scrollTop/scrollHeight、padding-bottom、主按钮 rect）+ 顶/底 2 张截图 + schedule 页对照截图；console",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/market/shop/index",
+   "manifest": "次要22.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/market/shop/index.vue",
+   "sourceFound": true,
+   "planned": 4,
+   "outFile": "reports/audit/round-7/tapfix-briefs/07/tapfix-lane-次要22.json.json",
+   "cases": [
+    {
+     "id": "MS02",
+     "manifest": "次要22",
+     "page": "subpackages/market/shop/index",
+     "title": "Tab 切换分类：mock 本地过滤不重拉、real 按 category 重新请求，滚动位与已选态保持",
+     "oldAction": "依次 tap .category-item：ticket（演出票）→ creative（创意）→ all（全部）；每步等渲染并回填卡数；最后把分类栏横向滑到最右再滑回",
+     "expected": "mock：selectCategory 只改本地过滤（:247-252 的 if(!useMock()) 分支不走网络）→ 0 次新请求、ticket 命中 2 卡（id 1、5）、creative 命中 2 卡（id 2、6）、all 恢复 6 卡（:238-241）；real：每次切换发 1 条 GET /products?category=ticket&page=0&pageSize=20（:220-228），计数与切换次数一致，且 category=all 时该参数为 undefined 不得拼成字符串 'all'（:224）；选中态类名 category-item--active 随点迁移（:306）；商品纵向滚动位：分类切换后列表回到顶部还是保留需回填实测（Tab 切换滚动位与数据不丢铁律）；分类栏 scroll-x 可横滑到第 5 项且第 5 项完整可见；console 无报错",
+     "evidence": "normal：三个分类态截图 + 路由 + console + network 请求计数与 query 参数转储",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "MS05",
+     "manifest": "次要22",
+     "page": "subpackages/market/shop/index",
+     "title": "点商品卡 → 详情页带 id 参数（encodeURIComponent），返回后列表状态恢复",
+     "oldAction": "tap 第 3 张 .shop-card（:346-353 goToDetail(item.id) :258-262）→ 在详情页返回 → 再切到 ticket 分类 tap 其中 1 卡后返回",
+     "expected": "500ms 内 navigateTo '/subpackages/market/detail/index?id=3'（:259-261，encodeURIComponent 对纯数字无变化），栈 +1；详情页 onLoad 消费该 id 并渲染 id=3 的商品（market/detail/index.vue:261-269）→ 落点/数据一致即证明参数契约；返回 shop 页后：列表仍 6 卡、分类选中态为上次值（shopItems 为组件内 ref，onShow 重拉 :42-47 时须回填是否出现「加载中...」闪烁 → 出现即记「返回后状态未恢复」observation）；第二次进入详情页参数须为 ticket 分类下那张卡的 id；console 无报错",
+     "evidence": "normal：目标页 after 截图（2 张）+ 完整路由链（含 options）+ console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "MS08",
+     "manifest": "次要22",
+     "page": "subpackages/market/shop/index",
+     "title": "连点同一商品卡×5：只压入 1 层详情页（导航类防连点，无写请求）",
+     "oldAction": "500ms 内对第 1 张 .shop-card 快速 tap×5（rapidTap，记录每击落点），静置 3s",
+     "expected": "goToDetail 每次都会调 uni.navigateTo（:258-262 源码无防连点/无 in-flight 标志）→ 必须两列分开记：① 最终 getCurrentPages 栈长度与各帧 route/options（期望 2，即仅 1 层 market/detail；若栈>2 即多层压栈按死循环导航缺陷记；若出现 navigateBack/navigateTo:fail 或 webview count limit 告警一并记）；② 无服务端侧影响（本页无写请求，network 写请求计数=0，不需要服务端回读）；返回键一次即回到 shop（若被压多层，如实记录需返回 N 次）；console 无报错",
+     "evidence": "normal：落点截图 + 完整栈快照（每帧 route+options）+ console + network（写请求=0）",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "MS09",
+     "manifest": "次要22",
+     "page": "subpackages/market/shop/index",
+     "title": "滚动到顶/底 + 横滑滚动条采证（MP-R2-次要22-015 仍开放：show-scrollbar 字符串字面量）",
+     "oldAction": "商品 scroll-view 滚到底 → 回顶；分类 scroll-view 横滑到底 → 回左；分别回填 scrollTop/scrollHeight 与 scrollLeft/scrollWidth",
+     "expected": "纵向：滚到底最后 1 行商品完整可见、不被截断，.shop-footer 占位生效（:371-372），回顶后 header/积分条/分类栏完整不叠印（.shop-header padding-top 内嵌 --statusbar，:411，为本片唯一「header 自吞状态栏高度」的正确范式，对照 MD10）；横向：第 5 个分类可滑入视野并可点；滚动条采证：源码写成 show-scrollbar=\"false\" 字符串字面量且未开 enhanced（:300）→ 该属性在 mp-weixin 不生效（MP-R2-次要22-015 仍开放），若实测出现可见滚动条即为该条复现证据，记 observation 不判崩溃；滚动过程无白屏/回弹异常；console 无报错",
+     "evidence": "noop：执行日志（四个方向的滚动数值 + 滚动条可见性判定）+ 底部与横滑末端各 1 张截图",
+     "requiresReal": true,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/vip/bills",
+   "manifest": "次要22.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/vip/bills.vue",
+   "sourceFound": true,
+   "planned": 4,
+   "outFile": "reports/audit/round-7/tapfix-briefs/07/tapfix-lane-次要22.json.json",
+   "cases": [
+    {
+     "id": "VB03",
+     "manifest": "次要22",
+     "page": "subpackages/vip/bills",
+     "title": "MP-R2-次要22-010 部分开放：onShow 命中 store 缓存不重拉 → 开通后回账单页需下拉才更新（拆客户端请求数与服务端回读）",
+     "oldAction": "（a）进入账单页 → 记 network 与列表条数；（b）返回 VIP → 再进入账单页（同一 app 会话内 store 未销毁）→ 记请求数与条数；（c）在 (b) 的态上下拉刷新一次 → 记请求数与条数",
+     "expected": "（a）首次进入 onShow → loadBills()（:97-99，forceRefresh 默认 false）→ store 内 loaded=false → 必发 GET /vip/bills?page=0&size=20（stores/vip-billing.ts:168-178 之外）→ 1 条请求；（b）二次进入 loaded=true 且分页未变 → 命中缓存短路返回旧数据（stores/vip-billing.ts:168-178）→ 请求数=0、条数与上次一致：若此间 VIP 已产生新账单，则界面显示陈旧数据（MP-R2-次要22-010 仍开放的判定点），必须两列分开记：① 客户端多余请求数=0（缓存策略所致，非守卫缺陷）；② 服务端回读条数（GET /vip/bills 直查）与界面条数差值 → 有差即记「进入页未强制刷新导致资金记录陈旧」缺陷；（c）下拉刷新 force=true → 请求数=1 且条数与服务端回读一致（陈旧被纠正）；全程无「暂无账单记录」误显示；console 无报错",
+     "evidence": "critical：三个时刻的列表截图 + 路由链 + Toast（应为无）+ console + network（逐时刻计数与 query 参数）+ 服务端回读条数",
+     "requiresReal": true,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VB04",
+     "manifest": "次要22",
+     "page": "subpackages/vip/bills",
+     "title": "下拉刷新真实重拉（唯一有 enablePullDownRefresh 的本片页面）：动画必须收、force=true 必穿透缓存",
+     "oldAction": "页面原生下拉刷新 3 次，每次间隔 2s；期间每 500ms 连拍；第 3 次后立即离开页面再回来",
+     "expected": "每次下拉都必须发出 1 条带 force 语义的 GET /vip/bills（loadBills(true) → store.listBills(forceRefresh=true) 不命中 :168-178 缓存短路）→ network 计数=3；uni.stopPullDownRefresh() 必须在 await 之后调用（:90-91）→ 原生下拉指示器 1.5s 内收起，不得永驻转圈（Loading 不永驻铁律）；刷新期间列表数据保持可见（不清空、不闪「暂无账单记录」）；失败路径（REAL_ONLY：拦截返回 500）→ toast 后端 message 或 vip.billsLoadFailed（:82-85）且指示器仍要收起（finally 缺失即为缺陷，回填实际：stopPullDownRefresh 在 await 后同序执行，若 catch 抛回来是否执行需实测）；离开再回来时不重复触发刷新；console 无报错",
+     "evidence": "critical：下拉中 + 刷新完成 + 离开返回 三张截图 + 路由 + Toast 文案 + console + network（3 条请求与 query 参数逐条转储）+ 指示器收起时间实测",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VB05",
+     "manifest": "次要22",
+     "page": "subpackages/vip/bills",
+     "title": "筛选 Tab 四态切换（全部/订阅/续费/退款）：客户端过滤、空匹配时空态正确、切回数据不丢",
+     "oldAction": "依次 tap .filter-chip：订阅 → 续费 → 退款 → 全部，每步回填卡数与选中态；再把筛选栏横向滑到最右滑回",
+     "expected": "每个 chip tap 后 500ms 内：选中态类 filter-chip--active 迁移（:196）+ 列表按类型过滤（:63 b.type===filterType）+ 轻震动反馈（:73-76 lightHaptic）；「续费」「退款」在 mock 无对应数据时必须显示 EmptyState「暂无账单记录」（zh-CN.ts:2574）而非保留旧列表（空态判定 isEmpty 走 filteredBills :70，须确认不是用 store.bills 判空）；切回「全部」→ 恢复原条数（数据不丢，Tab 切换铁律；且不得因过滤后为空而误发新请求 —— 4 步筛选的 network 计数必须=0）；筛选栏 scroll-x 可把第 4 个 chip 滑入视野且完整可点（:191-204）；类型标签配色随类型区分（:124-129）；console 无报错",
+     "evidence": "normal：四态截图（各 1）+ 每态卡数与选中态转储 + 路由 + console + network（计数=0）",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "VB07",
+     "manifest": "次要22",
+     "page": "subpackages/vip/bills",
+     "title": "加载失败不得静默：toast 后端文案 + 界面不显示假空态（错误态与空态可区分）",
+     "oldAction": "冷启动进入账单页（拦截生效）→ 观察 toast 与列表区 → 恢复网络后下拉刷新一次",
+     "expected": "失败时：toast 显示后端 message 原文或兜底 vip.billsLoadFailed（:82-85，loadBills catch）；界面不得把失败渲染成「暂无账单记录」假空态 —— 源码目前 loading=false 后 isEmpty 即走 EmptyState（:70/:214-218），本条即该缺口的证伪：若出现空态而 toast 同时报失败，记「错误态与空态不可区分」缺陷（与 wallet 的 loadFailed 条 :183-188 形成跨页一致性对照，供判定员裁量）；恢复网络后下拉刷新 → 请求 1 条、列表渲染真实账单、空态消失；stopPullDownRefresh 必须执行；console 允许失败日志、不得有未捕获 rejection",
+     "evidence": "critical：错误态截图 + toast 文案逐字 + 恢复后截图 + 路由 + console + network（状态码与计数）；不可注入时标 UNVERIFIED",
+     "requiresReal": true,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/campus/campus/hub",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/campus/campus/hub.vue",
+   "sourceFound": true,
+   "planned": 3,
+   "outFile": "reports/audit/round-7/tapfix-briefs/07/tapfix-lane-SUBPACKAGES-CAMPUS-CAMPUS-HUB.json.json",
+   "cases": [
+    {
+     "id": "CH10",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+     "page": "subpackages/campus/campus/hub",
+     "title": "点学校卡片（未认证）：navigateTo campus/index?school=<URL编码校名> 公开浏览视角",
+     "oldAction": "tap 第一张 .campus-school-card（北京大学，hub.vue:282-291 → goSchool :160-162）",
+     "expected": "500ms 内路由到 /subpackages/campus/campus/index?school=%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6（encodeURIComponent hub.vue:161）；目标页 onLoad 解码后 viewSchool=北京大学（index.vue:186-199）→ 页头校名显示「北京大学」而非 URL 编码串（MP-R1-CAMPUSINDEX-001 回归）；返回 hub 后落点为 hub 本身（栈>1，navigateBack）；console 无报错",
+     "evidence": "normal：after（目标页）截图 + 路由链（hub→campus/index，栈=2）+ console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CH19",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+     "page": "subpackages/campus/campus/hub",
+     "title": "快速连点学校卡×5：只压入 1 层、目标页不重复打开",
+     "oldAction": "500ms 内对第一张 .campus-school-card 快速 tap×5（rapidTap，记录每次 tap 落点）",
+     "expected": "goSchool 每次都会调 openAppPath→uni.navigateTo（hub.vue:160-162，源码无防连点/无 in-flight 标志，如实回填）；断言分两列记录：① getCurrentPages 最终栈长度与各栈帧 route（期望=2，仅 1 层 campus/index；若出现栈>2 即多层压栈，按铁律记缺陷）；② navigateTo:fail / webview count limit 告警条数（应为 0；若 openAppPath 栈满兜底 redirectTo 触发则按 utils/navigation.ts:99-108 记实际行为）；本用例为纯导航，无写请求，不涉及服务端回读",
+     "evidence": "normal：落点 after 截图 + 路由链（完整栈快照，含每帧 route+options）+ console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CH22",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+     "page": "subpackages/campus/campus/hub",
+     "title": "页级滚动到顶/底：底部静态提示「更多校园圈持续接入中」完整可见、无死箭头",
+     "oldAction": "页面 scrollTo 到底 → 再回顶（页级 window 滚动，非 scroll-view）",
+     "expected": "滚到底可见静态说明文案「更多校园圈持续接入中」+ footer 占位（hub.vue:336-339，zh-CN.ts:3447；无展开箭头、无可点动作——MP-R1-CAMPUS-HUB-003 死元素已移除，不得回归出带箭头的可点假象）；回顶后 header/引导卡/搜索框/Tab 完整不被遮挡；滚动过程无白屏、无 sticky 抖动；scrollTop/scrollHeight 数值回填",
+     "evidence": "noop：执行日志（scrollTop、scrollHeight、windowHeight）+ console；可免截图",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/village/village/publish",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/village/village/publish.vue",
+   "sourceFound": true,
+   "planned": 3,
+   "outFile": "reports/audit/round-7/tapfix-briefs/07/tapfix-lane-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json.json",
+   "cases": [
+    {
+     "id": "PUB11",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "page": "subpackages/village/village/publish",
+     "title": "「提及好友」只弹 Toast、不插入 @（与 post.vue 行为分叉的交叉取证）",
+     "oldAction": "tap .publish-row「提及好友」（:704-708 → openMentionPicker :268-270）；再连点 3 次观察 Toast 队列；随后 evaluate 回读 content",
+     "expected": "只弹 Toast=village.post.mentionHint（:269）→ **content 实值仍为「周末」不被修改**（与 post.vue:157-160 的「向正文末尾插入 @」分叉）→ 须与 post.vue 的 VP20 证据并列（同功能两页不同实现）；有 Toast 即满足 500ms 反馈铁律，不得判死按钮；连点 3 次 Toast 是叠加还是覆盖须回填条数；无 @提及选择器/好友列表 → 功能完成度观察项；无写请求；console 无报错",
+     "evidence": "normal：点击后 Toast 截图 + content 实测值文本 + 连点 3 次后的 Toast 条数 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "PUB12",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "page": "subpackages/village/village/publish",
+     "title": "「添加位置」只读行：城市缓存有/无两态文案，点击无动作（不得有可点假象）",
+     "oldAction": "两态各检视位置行文案与是否带箭头/press-feedback → 各 tap 一次该行观察反馈 → 提交一次并回读 body",
+     "expected": "A：meta='选择位置'（:702，currentCity 为空时不再宣称「自动定位」，MP-R1-PUBLISH-006 回归：原恒显「北京市 · 自动定位」）；B：meta='杭州 · 自动定位'（:61 currentCityLabel 拼接）；该行**无 @tap、无 press-feedback、无 chevron**（:697-703）→ tap 必须无任何反馈且不弹层不跳页（属既定只读信息行，不得按死按钮立案，但须回填无变化的 DOM/路由快照）；location 字段恒为空串（:49，本页无位置输入口）→ 提交 body 不含 location（回填 body 证明；与 post.vue 可选位置形成能力差异）；console 无报错",
+     "evidence": "noop：两态截图 + 点击前后 DOM/路由快照 + storage 键值 + body 快照 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "PUB25",
+     "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+     "page": "subpackages/village/village/publish",
+     "title": "发帖回流村口：新帖出现在公开广场且按 id 去重（不双份、不「发完就消失」）",
+     "oldAction": "发布成功自动返回村口 → 观察列表首条与「审核中」徽标 → 下拉刷新 2 次并数该标题出现次数 → 再等 5s 后刷新一次",
+     "expected": "回流后列表首条为该新帖（force 刷新穿透 30s TTL，village/index.vue:257-260）→ 徽标与 auditStatus=pending 一致；同标题在列表中条数必须=1（selfPendingPosts 与服务端列表按 id 去重 :152-165，出现双份即判 P2/Data）；断言两列：① 客户端：创建 1 条 + 刷新读请求条数（含是否被本页 onUnmounted/请求 abort 影响；publish.vue 不调 villageStore.dispose，对照 post.vue:243-248 的 MP-R2-POST-002 结论）；② 服务端回读：GET /posts 与自己帖子列表中该标题各 1 条、无重复；Toast 条数=1；无 Loading/骨架永驻；console 无报错",
+     "evidence": "critical：发布前 before + 回流后列表首条 + 两次刷新后 共 3 张截图 + 完整路由链 + Toast 文案与条数 + console + network 明细 + 服务端回读条数与 id 去重结果",
+     "requiresReal": true,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  }
+ ],
+ "schema": {
+  "lane": "本页 page 路径（逐字照抄，普查靠它对账）",
+  "counts": {
+   "planned": "必须等于本 lane 的 cases.length",
+   "ok": "写进 cases 的条数",
+   "unverifiable": "写进 unverifiable 的条数"
+  },
+  "cases": [
+   {
+    "id": "",
+    "manifest": "",
+    "page": "",
+    "selector": ".kebab-case，必须逐字出现在 file:line 那一行",
+    "file": "仓库相对路径，如 apps/client/src/pages/discover/index.vue（组件里的类名写组件自己的路径）",
+    "line": "该行号那一行必须含该类名片段（合并器会重读文件核对，不接受自述）",
+    "oldAction": "逐字抄简报里的 oldAction，一个字都别改",
+    "newAction": "保留全部交互动词，把 selector 逐字写进去；动词丢了或多出来都会被整条拒绝",
+    "needsIdentity": "该目标只在某身份下存在时写 guest/A/B，否则留空",
+    "why": "为什么是它（一句话，指向源码里那条 bindtap）"
+   }
+  ],
+  "unverifiable": [
+   {
+    "id": "",
+    "manifest": "",
+    "page": "",
+    "reason": "",
+    "needsCarrier": "欠哪条载具才能点名（如 WS automator 的 touch/swipe、需要特定夹具、纯文案断言）"
+   }
+  ]
+ },
+ "hardRules": [
+  "cases + unverifiable 必须恰好等于 planned，多一条少一条整份不采信。",
+  "selector 必须在 file 的 line 那一行逐字存在；不许把类名改成「更好看」的写法，也不许引用一个只有样式没有事件的类——目标是能被自动化点到的东西，优先带 @tap/@click/bindtap/@input/@confirm 的那层。",
+  "gestureOnly=true 的条：CLI 桥没有连续手势，要么它其实有个可点的等价物件（如三键按钮本身）并保留原动词，要么进 unverifiable 并在 needsCarrier 写明欠 WS 手势通道。不许把「向右拖动」悄悄改成「点击」。",
+  "expected 里出现的具体文案/数字不能当点击目标；这类条进 unverifiable 并说明它断言的是文本不是物件。",
+  "只写自己这一份 outFile，不改 ops/*.json，不改别的 lane，不改台账，不跑模拟器。"
+ ]
+}

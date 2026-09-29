@@ -1,0 +1,32 @@
+{
+ "lane": "subpackages/profile-extra/feedback/history",
+ "counts": {
+  "planned": 3,
+  "ok": 0,
+  "unverifiable": 3
+ },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "FHT02",
+   "manifest": "次要21",
+   "page": "subpackages/profile-extra/feedback/history",
+   "reason": "四枚 chip 共用同一个热区类且没有逐型修饰类（history.vue:277 的 view class 只有 filter-chip press-feedback，@tap 绑 switchFilter :281，唯一的区分是状态类 filter-chip--active :278），而 FILTER_OPTIONS 的第 1 项恰是 value=all（:65），也就是默认激活的那一枚：CLI 桥按类名只点 first-match，于是这一下必然命中 switchFilter 开头的同值早退（:130 的 if (filter === activeFilter.value) return）⇒ 0 条新 GET，把「每次切换真实重拉」判成假红；本轮执行档同帧探针也只给得出 .filter-chip--active:present(1) 这一枚。逐型点名需要唯一类名或 nth 定位，而类名通道是这条路唯一的载具。",
+   "needsCarrier": "欠载体：需要产品侧给四枚 chip 各加唯一修饰类（或让执行器支持 nth 定位），否则无法点到非激活的那三枚；GET 计数与服务端重过滤也要网络读数通道"
+  },
+  {
+   "id": "FHT05",
+   "manifest": "次要21",
+   "page": "subpackages/profile-extra/feedback/history",
+   "reason": "附件图 .attachment-img（:365，@tap 绑 handleAttachmentTap :369）在两层非静息态之后：它整块在记录详情里，而详情要 expandedId 命中才展开（本轮实测同帧 .record__detail:absent 与 .record__header:present(2)，即默认全收起），展开又要先点某条 .record__header（:317 与 @tap :320，同样是共用类 first-match）；再往前还要求该条记录真的带 ≥2 个附件，当前 mock 反馈记录是否带附件并不确定。判据后半截要左右滑动预览与核对 real 档相对路径未经 resolveMediaUrl（:366 直绑 src=url），uni.previewImage 是原生层、没有 selector 可点。",
+   "needsCarrier": "欠展开配方与带多附件的记录夹具，另欠 WS 滑动通道与原生 previewImage 的翻页控制，以及 real 档图片 URL 解析读数"
+  },
+  {
+   "id": "FHT14",
+   "manifest": "次要21",
+   "page": "subpackages/profile-extra/feedback/history",
+   "reason": "本条量的是页级滚动与遮挡（scrollTop 与 scrollHeight 与 windowHeight、最后一条 .record 的时间行 rect、展开后滚到底、回顶后 filter-bar 是否被 AppShell 头部遮住），判据是滚动数值与布局可见性；「scrollTo 到底再回顶」CLI 桥发不出（只有 tap 与 input 两条腿，r-exec-cli.mjs:410），而展开一条记录这一步又落回 FHT05 说的共用类 first-match 问题。",
+   "needsCarrier": "欠 WS 页面滚动通道与 boundingClientRect 读数，另需记录展开配方，纯布局量测没有可点名目标"
+  }
+ ]
+}

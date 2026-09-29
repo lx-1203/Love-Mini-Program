@@ -1,0 +1,16 @@
+{
+ "lane": "subpackages/market/wallet/index",
+ "manifest": "次要22.json",
+ "sourceFile": "apps/client/src/subpackages/market/wallet/index.vue",
+ "counts": { "planned": 1, "ok": 0, "unverifiable": 1 },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "MW09",
+   "manifest": "次要22",
+   "page": "subpackages/market/wallet/index",
+   "reason": "这是一条否定式能力守卫：pages.json 里 subpackages/market 的 wallet/index 没有 style 项（未开 enablePullDownRefresh），源码也只 import onShow、没有 onPullDownRefresh 钩子，所以判点是上滑下拉两次不该出现原生指示器、也不该有半截实现（有动画但无数据重拉）。页内没有承载这条判据的可点物件；唯一等价的刷新入口 .wallet__load-error-retry（wallet/index.vue:185，@tap 调 refreshWallet）被 :184 的 v-if loadFailed 挡着，静息态不渲染，而滚到底与回顶是连续手势。",
+   "needsCarrier": "欠 WS automator 的下拉手势通道（真实 touch 序列才起系统指示器）加 scrollTop 与 scrollHeight 与 windowHeight 的读数载具；若改走错误条重试这条替代路径，还需一个让余额接口失败的夹具把 loadFailed 置起来。"
+  }
+ ]
+}

@@ -1,0 +1,39 @@
+{
+ "lane": "subpackages/vip/bills",
+ "counts": {
+  "planned": 4,
+  "ok": 0,
+  "unverifiable": 4
+ },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "VB03",
+   "manifest": "次要22",
+   "page": "subpackages/vip/bills",
+   "reason": "本页在 onLoad 就被会员闸门弹走：featureFlags.membershipEnabled 在 config/feature-flags.ts:29 硬编码 false，bills.vue:36-45 于是 toast 后 navigateBack 或 switchTab 到 pages/profile/index，执行器在落点不是本页时根本不发出交互腿（r-exec-cli.mjs:389 与 :464），本轮实测同页 VB05 记的就是 top=pages/profile/index ≠ subpackages/vip/bills；本条断言的又是三个时刻的 GET /vip/bills 条数与 store 缓存短路（stores/vip-billing.ts:168-178）和服务端回读差值，属请求计数取证。",
+   "needsCarrier": "欠 membershipEnabled=true 的开关载体（否则整页不可达），另需两次进入页的路由配方与 network 计数与服务端回读通道"
+  },
+  {
+   "id": "VB04",
+   "manifest": "次要22",
+   "page": "subpackages/vip/bills",
+   "reason": "唯一的动作是页面原生下拉刷新三次（onPullDownRefresh :89-92 走 loadBills(true) 穿透缓存），这不是元素级动作：CLI 桥只有 tap 与 input 两条腿（r-exec-cli.mjs:410），没有触发 enablePullDownRefresh 的通道；断言的是请求条数=3 与原生指示器收起时刻，同样要档位内可达本页（见 VB03 的会员闸门）。",
+   "needsCarrier": "欠原生下拉刷新触发通道与指示器收起计时读数，另欠 membershipEnabled=true 的开关载体"
+  },
+  {
+   "id": "VB05",
+   "manifest": "次要22",
+   "page": "subpackages/vip/bills",
+   "reason": "筛选 chip 本身是好目标（:195 的 view class 含 filter-chip press-feedback，@tap 绑 selectFilter :197，选中态类 filter-chip--active 在 :196），但本页静息态进不去：membershipEnabled=false 使 onLoad 直接弹到 pages/profile/index，本轮执行档实测 VB05 就是 FAILED 落点不符，交互腿没发出；后半截的筛选栏横滑 CLI 桥也发不出。",
+   "needsCarrier": "欠 membershipEnabled=true 的开关载体（先让本页可达），另欠 WS 横向滚动通道以完成第 4 个 chip 的滑入验证"
+  },
+  {
+   "id": "VB07",
+   "manifest": "次要22",
+   "page": "subpackages/vip/bills",
+   "reason": "本条要的是「拉取失败时 toast 与假空态同时出现」这一可观测缺陷（loadBills catch :82-85 与 isEmpty 走 EmptyState :70 与 :214-218），前置是把 GET /vip/bills 拦成失败，页内没有入口物件能造出它；恢复网络后的取证又是下拉刷新（同 VB04 缺通道），且本页当前被会员闸门弹走（同 VB03）。",
+   "needsCarrier": "欠失败注入夹具与 membershipEnabled=true 的开关载体，另需 Toast 文案与 EmptyState 渲染态读数"
+  }
+ ]
+}

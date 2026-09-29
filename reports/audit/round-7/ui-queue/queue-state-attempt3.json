@@ -1,0 +1,44 @@
+{
+ "startedAt": "2026-09-26T22:19:54.752Z",
+ "legs": [
+  {
+   "name": "rebuild-mock",
+   "status": "FAIL",
+   "exitCode": 1,
+   "log": "reports/audit/round-7/ui-queue/rebuild-mock.log",
+   "bytes": 562,
+   "resultLines": []
+  },
+  {
+   "name": "gates-source-shape",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gates-i18n",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "rebuild-real",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "exec-guest-real",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "exec-A-real",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "finishedAt": "2026-09-26T22:19:54.851Z",
+ "conservation": {
+  "legsTotal": 6,
+  "legsOk": 0,
+  "tally": {
+   "FAIL": 1,
+   "NOT_RUN": 5
+  },
+  "ok": true
+ }
+}

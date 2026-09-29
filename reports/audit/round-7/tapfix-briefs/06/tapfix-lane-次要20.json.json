@@ -1,0 +1,51 @@
+{
+  "lane": "subpackages/profile-extra/verification/index",
+  "counts": { "planned": 4, "ok": 3, "unverifiable": 1 },
+  "cases": [
+    {
+      "id": "VCI04",
+      "manifest": "次要20",
+      "page": "subpackages/profile-extra/verification/index",
+      "selector": ".action-btn",
+      "file": "apps/client/src/subpackages/profile-extra/verification/index.vue",
+      "line": 676,
+      "oldAction": "① 全空 tap .action-btn（提交，index.vue:675-683）→ 记录 toast；② 只填姓名再提交；③ 补学号再提交；④ 补学校再提交；⑤ 最后不选图直接提交",
+      "newAction": "① 全空 tap 提交按钮 .action-btn（index.vue:676，:678 @tap=submitVerification，:184 的 submitting 守卫与 :187-202 的四道必填校验都在它之后）→ 记录 toast；② 只填姓名再提交；③ 补学号再提交；④ 补学校再提交；⑤ 最后不选图直接提交",
+      "needsIdentity": "",
+      "why": "四道按序校验都由同一个提交节点触发：index.vue:676 的 .action-btn 带 @tap=submitVerification（:678，:187 errStudentName、:191 errStudentId、:195 errSchoolName、:199 errImageRequired 依次 return，都在 :206 showLoading 之前）；已验证与审核中两支里的 .action-btn（:521 与 :526 与 :542）在 status 为 verified/pending 的分支里，status 初值是 unverified（:55）且 mock 无既有申请，故静息态页面上渲染的就是这一枚；产物两档 verification/index.wxml 里 action-btn 在。"
+    },
+    {
+      "id": "VCI08",
+      "manifest": "次要20",
+      "page": "subpackages/profile-extra/verification/index",
+      "selector": ".upload-card",
+      "file": "apps/client/src/subpackages/profile-extra/verification/index.vue",
+      "line": 650,
+      "oldAction": "① tap .upload-card（index.vue:649-656 → chooseImage :138-172）→ 在选图面板选一张图确认；② 再 tap 上传卡的「更换」态（:667-669）→ 取消选择；③ 未授权分支：把隐私授权置为未同意后重进页面再 tap",
+      "newAction": "① tap .upload-card（index.vue:650，:651 @tap=chooseImage，:138-172 内含隐私前置、成功写 uploadedImagePath :157 与取消走 :164-170 的 fail 分支）→ 在选图面板选一张图确认；② 再 tap 上传卡的「更换」态（:667-669）→ 取消选择；③ 未授权分支：把隐私授权置为未同意后重进页面再 tap",
+      "needsIdentity": "",
+      "why": "空态与预览态是同一个节点：index.vue:650 的 .upload-card 自带 @tap=chooseImage（:651），卡内的 :657 空态与 :661 预览态只是它的 v-if/v-else 子块，所以 ①② 两路点的是同一个可静息命中的节点；③ 的隐私授权模态与系统选图面板是原生 UI、class 通道点不到，但触发它们的仍是这一击。产物两档 wxml 里 upload-card 均在。"
+    },
+    {
+      "id": "VCI09",
+      "manifest": "次要20",
+      "page": "subpackages/profile-extra/verification/index",
+      "selector": ".action-btn",
+      "file": "apps/client/src/subpackages/profile-extra/verification/index.vue",
+      "line": 676,
+      "oldAction": "① tap .action-btn 提交一次，分别在 200ms/800ms/1500ms/3000ms 采样 Loading 与状态卡；② 复位后（退出重进）500ms 内 rapidTap .action-btn ×5",
+      "newAction": "① tap .action-btn（index.vue:676，:678 @tap=submitVerification，:184 submitting 守卫吞掉后续四次，:205-206 showLoading 带 mask true、:213 hideLoading、:214 转 pending）提交一次，分别在 200ms/800ms/1500ms/3000ms 采样 Loading 与状态卡；② 复位后（退出重进）500ms 内 rapidTap .action-btn ×5",
+      "needsIdentity": "",
+      "why": "Loading mask、1s 后转 pending 与防重入这三段都只由提交钮触发：index.vue:676 的 .action-btn（@tap=submitVerification :678，:677 的禁用态只是类名不拦事件，:682 文案随 submitting 换成提交中）；status 初值 unverified（:55）时它是静息态里唯一渲染的 action-btn，产物两档都在。本条 requiresReal=true，mock 档由档位闸门跳过，点名不改变这一点。"
+    }
+  ],
+  "unverifiable": [
+    {
+      "id": "VCI13",
+      "manifest": "次要20",
+      "page": "subpackages/profile-extra/verification/index",
+      "reason": "本条要的是页面级滚动的三段位移与几何比较（scrollTop/scrollHeight/windowHeight 以及提交按钮 boundingClientRect.bottom 与 windowHeight 的大小关系、回顶后 nav-bar 与状态栏是否叠印、.safe-bottom 占位 :687 是否生效），产出物全是数值；CLI 桥没有 pageScrollTo 也没有连续滑动，页面上没有任何点击能代替滚到顶或滚到底。",
+      "needsCarrier": "欠 WS 的滚动通道（pageScrollTo 或 touchmove 到底/回顶）与 boundingClientRect 尺寸读数（r-exec-cli.mjs 的 probeMany 只回命中条数不回宽高，CLI 的 element offset 只回 left/top）；iPhone 安全区那一半还需带 home indicator 的机型模拟。"
+    }
+  ]
+}

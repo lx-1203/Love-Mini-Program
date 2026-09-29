@@ -1,0 +1,40 @@
+{
+  "patches": [
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
+      "col": 6,
+      "new": "已修复待复验（自裁 2026-09-27：演示公告入 i18n，文案内容零变化；欠的是渲染帧）",
+      "why": "④ 同款可辩护默认已落地，静态判点成立但帧级观感未验，不许直接写已验证"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
+      "col": 9,
+      "new": "判点 MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002（多文件谓词，三文件都过才过；2026-09-27 实测 SRC_SHAPE total=46 成立=46 不成立=0）：circle-home.vue:115-119 内「【圈规】」「【规约】」两种字面量已不再出现，且 useMock() 三元取 t(circle.home.pinnedNotice) 恰好 1 处；zh-CN.ts 与 en-US.ts 各有该键 1 份（无同父重复）。同日 i18n 门禁：I18N_ZH_KEYS=4171＝I18N_EN_KEYS、I18N_PAIRED=4171、ZH_ONLY=0、EN_ONLY=0。可见性未变：useMock() 这道门在本次改动之前就已在码里（git diff 逐行核对，本次只替换字面量，见同处 MP-R1-CIRCLEHOME-001 旧裁定）。仍然欠：mock 档该公告在渲染帧里的观感（换行、截断、与 pinnedBadge 的排布）需一帧。",
+      "why": "把「改了哪一半、没改哪一半、还欠哪一半」写进证据格，防止下一轮把可见性当成被这次改动顺带改掉"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
+      "col": 11,
+      "new": "裁决已取（④ 同款可辩护默认，2026-09-27，自裁理由如下）：写死的演示公告入 i18n。为什么这不算产品裁决而算缺陷收口——本仓有 i18n 配对与孤儿门禁，同页其余文案全部走 circle.home.* 命名（相邻即 circle.home.pinnedBadge），单留一条中文字面量就是不一致，不存在第二种可读通的结果。mock 夹具侧核查：stores/circle/mock-data.ts 与 services/mocks/fixtures.ts 都没有承载该公告的字段，字面量只存在于组件内 ⇒ 原判据里「连 mock 夹具同批」那半句没有对象，就此了结。键名 circle.home.pinnedNotice，zh 与 en 同步落，en 用英文对等文案。",
+      "why": "原判据里那条「需要人拍板后才能定新判点」的前提（要同时改夹具）经核查不成立，必须写明，否则下一轮会去找不存在的夹具"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
+      "col": 6,
+      "new": "已修复待复验（自裁 2026-09-27：两入口统一到多数侧结构；欠帧）",
+      "why": "结构已并成一种且静态判点成立，但两个入口的观感需帧级复验"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
+      "col": 9,
+      "new": "判点 MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006（多文件谓词，post.vue 与 publish.vue 都过才过；同一批 SRC_SHAPE 46/46 内）：两文件均不再出现 target-sheet__joined 类；两文件各自的描述行各恰好 1 处，形如「已加入 · 花括号 formatMemberShort(circle.memberCount) 花括号 成员」。多数侧证据（决定取哪一种结构的那 5:1）：post.vue:795、:814、:850 与 publish.vue:900、:906 共 5 处用「名称段 + 描述段」两段式，三段式独立「已加入」pill 全仓仅旧 publish.vue:931 一处。同向佐证（若 5:1 判不动时才用的 tie-break）：pill 是 role 为 button 的行内孤立 text，其颜色 2FA366 与底 E8F6EE 及圆角 6rpx 都没有令牌对应。仍然欠：两个入口各一帧，证明合并后的成员数文案在窄屏不产生换行错乱。",
+      "why": "把选边依据写成可复算的计数而不是「看起来更统一」，并保留帧级欠款"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
+      "col": 11,
+      "new": "裁决已取（④ 同款可辩护默认，2026-09-27）：两个发布入口的圈子候选行取多数结构——名称行 + 合并的「已加入 · N 成员」描述行，删掉只出现在单一入口的独立「已加入」pill 及其样式规则。理由：原判据是二选一，而 5:1 的既有用法就是本域既定口径；保留第二种的代价是同一功能在两个入口长得不一样、且那份样式没有令牌可依。落地范围只 publish.vue 一个文件（post.vue 本就是胜出一侧，未改）；未改任何 props、emits 与函数名，selectTarget 与 formatMemberShort 的调用形状原样。附带发现另立：publish.vue 里 .publish-target-sheet__circle-opt 这条样式在本次改动前就零模板命中，疑属别的行，未动。",
+      "why": "写清「只动了一个文件」与「顺手发现但没动的死样式」，避免下一轮误以为 post.vue 也被重写过"
+    }
+  ]
+}

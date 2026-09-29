@@ -1,0 +1,172 @@
+{
+ "startedAt": "2026-09-27T13:54:25.060Z",
+ "legs": [
+  {
+   "name": "open-window-real-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/open-window-real-stage7.log",
+   "bytes": 541,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-A-real-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/exec-A-real-stage7.log",
+   "bytes": 69085,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-stage7-A-real",
+    "RUNNER_STATS identity=A loginVerify=logged-in userId=100158 executed=107 failed=1 skipped=767(交互动词=8 requiresReal=0 非真实用例=669 探针无结果=0 判据无可判物件=2 出帧失败=0 交互禁触=4 交互没点名=6 交互后离页=3 锁屏挡住=0 交互下发失败=55 身份适用范围外=0 盖章不可自动化=20) 页组=51 真做过的交互=94 折叠探针类名次数=609 出帧=107 未点名类名=40 通道异常次数=0",
+    "RUNNER_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-guest-real-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/exec-guest-real-stage7.log",
+   "bytes": 53370,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-stage7-guest-real",
+    "RUNNER_STATS identity=guest loginVerify=not-logged-in executed=53 failed=2 skipped=820(交互动词=7 requiresReal=0 非真实用例=422 探针无结果=0 判据无可判物件=1 出帧失败=0 交互禁触=4 交互没点名=2 交互后离页=2 锁屏挡住=0 交互下发失败=29 身份适用范围外=339 盖章不可自动化=14) 页组=51 真做过的交互=51 折叠探针类名次数=609 出帧=53 未点名类名=24 通道异常次数=0",
+    "RUNNER_RESULT=OK"
+   ]
+  },
+  {
+   "name": "gate-real-coverage-stage7",
+   "status": "ADVISORY_RED",
+   "exitCode": 1,
+   "log": "reports/audit/round-7/ui-queue/gate-real-coverage-stage7.log",
+   "bytes": 1072,
+   "resultLines": [
+    "REALCOV_RESULT=FAIL（真实模式覆盖守恒：跳过不算量到，单身份不算双身份）"
+   ]
+  },
+  {
+   "name": "stamp-check-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/stamp-check-stage7.log",
+   "bytes": 258,
+   "resultLines": [
+    "STAMP_RESULT=PASS 语料与戳一致（cases=1107 与记录相同，判据内容零漂移）"
+   ]
+  },
+  {
+   "name": "queue-homogeneity-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/queue-homogeneity-stage7.log",
+   "bytes": 278,
+   "resultLines": [
+    "STAMP_RESULT=PASS 队列执行腿语料目录唯一"
+   ]
+  },
+  {
+   "name": "reconcile-frameplan-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/reconcile-frameplan-stage7.log",
+   "bytes": 2463,
+   "resultLines": [
+    "FRAMEPLAN_RESULT=OK（已落盘，SHOOT 只剩帧能判的那些）"
+   ]
+  },
+  {
+   "name": "open-window-mock-for-reshoot-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/open-window-mock-for-reshoot-stage7.log",
+   "bytes": 531,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "reshoot-mock-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/reshoot-mock-stage7.log",
+   "bytes": 34817,
+   "resultLines": [
+    "SHOOT_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-shooter-44436",
+    "SHOOT_CONSERVED=yes",
+    "SHOOT_RESULT=OK"
+   ]
+  },
+  {
+   "name": "open-window-real-for-frames-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/open-window-real-for-frames-stage7.log",
+   "bytes": 541,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "reshoot-guest-real-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/reshoot-guest-real-stage7.log",
+   "bytes": 5578,
+   "resultLines": [
+    "SHOOT_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-shooter-9340",
+    "SHOOT_CONSERVED=yes",
+    "SHOOT_RESULT=OK"
+   ]
+  },
+  {
+   "name": "reshoot-A-real-stage7",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/reshoot-A-real-stage7.log",
+   "bytes": 1186,
+   "resultLines": [
+    "SHOOT_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-shooter-43752",
+    "SHOOT_CONSERVED=yes",
+    "SHOOT_RESULT=OK"
+   ]
+  },
+  {
+   "name": "open-window-real-for-tour-b",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/open-window-real-for-tour-b.log",
+   "bytes": 606,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "tour-B-real-stage7",
+   "status": "FAIL",
+   "exitCode": 1,
+   "log": "reports/audit/round-7/ui-queue/tour-B-real-stage7.log",
+   "bytes": 552,
+   "resultLines": [
+    "TOUR_RESULT=FAIL reason=端口 9420 来自 default 退路而非 env，且探测未在听（94xx 在听=[9430]）——多半是命令少了 WS_ENDPOINT=ws://127.0.0.1:<实测端口>。现在退出还没占租约。"
+   ]
+  }
+ ],
+ "result": "FAIL",
+ "advisoryFail": 1,
+ "finishedAt": "2026-09-27T15:44:36.206Z",
+ "conservation": {
+  "legsTotal": 14,
+  "legsOk": 12,
+  "tally": {
+   "OK": 12,
+   "ADVISORY_RED": 1,
+   "FAIL": 1
+  },
+  "ok": true
+ }
+}

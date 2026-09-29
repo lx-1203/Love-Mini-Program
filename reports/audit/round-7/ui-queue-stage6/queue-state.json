@@ -1,0 +1,162 @@
+{
+ "startedAt": "2026-09-27T06:19:07.711Z",
+ "legs": [
+  {
+   "name": "selftest-executor",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage6/selftest-executor.log",
+   "bytes": 388,
+   "resultLines": []
+  },
+  {
+   "name": "rebuild-mock-r7final",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage6/rebuild-mock-r7final.log",
+   "bytes": 536,
+   "resultLines": [
+    "NPMSCRIPT_RESULT=OK（命中 1/2 个「mp-build」标记）"
+   ]
+  },
+  {
+   "name": "rebuild-real-r7final",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage6/rebuild-real-r7final.log",
+   "bytes": 509,
+   "resultLines": [
+    "NPMSCRIPT_RESULT=OK（命中 1/2 个「mp-build」标记）"
+   ]
+  },
+  {
+   "name": "rebuild-showcase-r7final",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage6/rebuild-showcase-r7final.log",
+   "bytes": 30664,
+   "resultLines": [
+    "SHOWCASE_RESULT=PASS"
+   ]
+  },
+  {
+   "name": "gate-band-freshness-r7final",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage6/gate-band-freshness-r7final.log",
+   "bytes": 2876,
+   "resultLines": [
+    "FRESH_RESULT=PASS bands=3 markers=3 —— 每档产物都不晚于任何未提交改动，且符号级深检全部命中"
+   ]
+  },
+  {
+   "name": "open-window-mock-r7final",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage6/open-window-mock-r7final.log",
+   "bytes": 534,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-A-mock-r7final",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage6/exec-A-mock-r7final.log",
+   "bytes": 104113,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-final-A-mock",
+    "RUNNER_STATS identity=A loginVerify=logged-in userId=user-1001 executed=642 failed=51 skipped=414(交互动词=20 requiresReal=236 非真实用例=0 探针无结果=0 判据无可判物件=34 出帧失败=0 交互禁触=15 交互没点名=72 交互后离页=1 锁屏挡住=0 交互下发失败=36) 页组=58 真做过的交互=96 折叠探针类名次数=417 出帧=642 未点名类名=315 通道异常次数=0",
+    "RUNNER_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-guest-mock-r7final",
+   "status": "FAIL",
+   "exitCode": 2,
+   "log": "reports/audit/round-7/ui-queue-stage6/exec-guest-mock-r7final.log",
+   "bytes": 181,
+   "resultLines": [
+    "RUNNER_RESULT=FAIL reason=模拟器已被占用（gates-writer-44580@pid44580 租期到 2026-09-27T08:59:17.054Z）⇒ 一行都不跑；确要并发请显式设 QA_SKIP_UI_LEASE=1"
+   ]
+  },
+  {
+   "name": "open-window-real-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "exec-A-real-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "exec-guest-real-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-real-coverage-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "measure-matching-drift-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-guest-landing-book-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "judge-stand-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "reconcile-frameplan-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "open-window-mock-for-reshoot",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "reshoot-mock-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "open-window-real-for-guest-reshoot",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "reshoot-guest-real-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "tour-dual-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-state-truth-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-evidence-holes-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gates-json-r7final",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "finishedAt": "2026-09-27T08:39:17.347Z",
+ "conservation": {
+  "legsTotal": 24,
+  "legsOk": 7,
+  "tally": {
+   "OK": 7,
+   "FAIL": 1,
+   "NOT_RUN": 16
+  },
+  "ok": true
+ }
+}

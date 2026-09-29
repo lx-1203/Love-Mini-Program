@@ -1,0 +1,35 @@
+{
+  "lane": "subpackages/village/village/index",
+  "counts": { "planned": 4, "ok": 0, "unverifiable": 4 },
+  "cases": [],
+  "unverifiable": [
+    {
+      "id": "VI17",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "page": "subpackages/village/village/index",
+      "reason": "点赞按钮在子组件里且四枚互动键共用同一个类名：components/village/PostCard.vue 的底部互动栏是 .action-btn 的四枚兄弟（:268 评论、:274 点赞、:280 分享、:285 收藏），只有 @tap.stop 里的 handler 不同；CLI 的 class 定位按文档序命中的是第 1 枚评论钮（:268 @tap.stop=emit('open-detail')，父页 index.vue 收到后跳帖子详情），点下去就离开本页，乐观态、服务端权威校正、失败回滚三段一条都取不到，属于把点赞判据测成评论判据。列表里每张卡还各有一组同名节点，命中歧义进一步放大。",
+      "needsCarrier": "欠 nth/aria-label/坐标定位通道（要命中卡内第 2 枚 .action-btn，即 :274 那个带 @tap.stop=handleLike 的节点，其条件类名 action-btn--liked 与 action-btn--animating 只在已赞与动画期出现，不能当静息目标）；③ 的失败回滚另欠断网或请求拦截注入；本条 requiresReal=true，mock 档会被档位闸门先跳过。"
+    },
+    {
+      "id": "VI18",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "page": "subpackages/village/village/index",
+      "reason": "与 VI17 同一个承载缺陷：连点目标是卡内第 2 枚 .action-btn（PostCard.vue:274，@tap.stop=handleLike），而 class 定位按文档序只会命中第 1 枚评论钮（:268 @tap.stop=emit('open-detail')），rapidTap×5 会把帖子详情连开五次或触发导航栈限制，客户端请求条数与服务端 liked/likeCount 回读两个判定点都拿不到；本页多卡渲染时同名节点还会继续重复。",
+      "needsCarrier": "欠 nth/序号定位通道（第 2 枚 .action-btn，并要能锁定同一张卡）与 500ms 内连点五次的时序载具；requiresReal=true 另欠真实后端回读该帖 liked 与 likeCount。"
+    },
+    {
+      "id": "VI28",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "page": "subpackages/village/village/index",
+      "reason": "本条的前置是后台开关 post_publish_open=false：isPostPublishOpen 由 appConfigStore 派生（index.vue:72 解构），该态下底部输入条整体不渲染（:880-881 ChannelComposerBar 的 v-if=isPostPublishOpen）、空态文案换成 village.postClosed（:830），所以页面上不存在可点名的物件，tapChannel=input 也不成立（输入条本身就是被关掉的东西）；判据剩下的三步是 deep link 直达 post 页强行发帖拿 403、后台恢复开关、再刷新本页，三步都发生在本页点击之外。",
+      "needsCarrier": "欠后台开关夹具（先下发 post_publish_open=false、测完再置回 true）与带参 deep link 载具；另需 real 档 VillageController.java:158-161 的 403 响应与服务端该标题帖数回读（mock 档不产生该分支）。"
+    },
+    {
+      "id": "VI40",
+      "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+      "page": "subpackages/village/village/index",
+      "reason": "这是一条纯量测判据（对 .village-search、频道 Tab、PostCard 四枚 .action-btn、.back-to-top、ChannelComposerBar 可点区逐个取 boundingClientRect 并对照 88rpx 铁律），产出物是宽高数值表，而现有载具给不出宽度：执行器的折叠探针虽用 fields 请求了 size 但只把命中条数写回（scripts/qa/r-exec-cli.mjs 的 probeMany），CLI 的 element offset 也只回 left/top；且这条 action 里没有任何点击动词，即便补了 tapTarget 也不会发交互腿。另外 .back-to-top 自身带 v-if=showBackToTop（index.vue:890）在未滚动的静息态不渲染，PostCard 的四枚 .action-btn 同名只靠 handler 区分。",
+      "needsCarrier": "欠 boundingClientRect 尺寸读数通道（把 width/height 回写进执行日志）；.back-to-top 那一项还欠先滚动把按钮显出来的前置；四枚同名 action-btn 欠 nth 定位；频道 Tab 项与 ChannelComposerBar 的可点区需能按子节点序号取数。"
+    }
+  ]
+}

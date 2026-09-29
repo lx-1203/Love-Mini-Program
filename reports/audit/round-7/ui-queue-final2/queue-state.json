@@ -1,0 +1,99 @@
+{
+ "startedAt": "2026-09-27T01:48:46.537Z",
+ "legs": [
+  {
+   "name": "open-window-real-for-driftcheck",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-final2/open-window-real-for-driftcheck.log",
+   "bytes": 2353,
+   "resultLines": [
+    "GUEST_LANDING_RESULT=OK（每组都有具名复测腿；BOOKED/MEASURED-* 非 CLOSED 一律不算结案）"
+   ]
+  },
+  {
+   "name": "open-window-mock-for-exec",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-final2/open-window-mock-for-exec.log",
+   "bytes": 534,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-A-mock-final",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-final2/exec-A-mock-final.log",
+   "bytes": 103997,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-A-mock-final",
+    "RUNNER_STATS identity=A loginVerify=logged-in userId=user-1001 executed=650 failed=43 skipped=414(交互动词=19 requiresReal=236 非真实用例=0 探针无结果=0 判据无可判物件=34 出帧失败=0 交互禁触=15 交互没点名=73 交互后离页=1 锁屏挡住=0 交互下发失败=36) 页组=58 真做过的交互=96 折叠探针类名次数=417 出帧=650 未点名类名=319 通道异常次数=0",
+    "RUNNER_RESULT=OK"
+   ]
+  },
+  {
+   "name": "open-window-real-for-guest",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-final2/open-window-real-for-guest.log",
+   "bytes": 541,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-guest-real-final",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-final2/exec-guest-real-final.log",
+   "bytes": 85238,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-guest-real-final",
+    "RUNNER_STATS identity=guest loginVerify=not-logged-in executed=436 failed=239 skipped=432(交互动词=60 requiresReal=236 非真实用例=0 探针无结果=0 判据无可判物件=26 出帧失败=0 交互禁触=9 交互没点名=51 交互后离页=1 锁屏挡住=0 交互下发失败=49) 页组=58 真做过的交互=58 折叠探针类名次数=417 出帧=436 未点名类名=221 通道异常次数=0",
+    "RUNNER_RESULT=OK"
+   ]
+  },
+  {
+   "name": "gate-frame-debt-triage",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-final2/gate-frame-debt-triage.log",
+   "bytes": 276,
+   "resultLines": [
+    "TRIAGEGATE_RESULT=PASS 18 行全部有去向，配方里没有帧不可证的 SHOOT 行"
+   ]
+  },
+  {
+   "name": "shoot-frameplan-final",
+   "status": "FAIL",
+   "exitCode": 2,
+   "log": "reports/audit/round-7/ui-queue-final2/shoot-frameplan-final.log",
+   "bytes": 18430,
+   "resultLines": [
+    "SHOOT_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-shooter-33992",
+    "SHOOT_CONSERVED=yes",
+    "SHOOT_RESULT=FAIL（6 条没拿到可用帧）"
+   ]
+  },
+  {
+   "name": "close-out-open-window-mock",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "finishedAt": "2026-09-27T03:40:45.051Z",
+ "conservation": {
+  "legsTotal": 8,
+  "legsOk": 6,
+  "tally": {
+   "OK": 6,
+   "FAIL": 1,
+   "NOT_RUN": 1
+  },
+  "ok": true
+ }
+}

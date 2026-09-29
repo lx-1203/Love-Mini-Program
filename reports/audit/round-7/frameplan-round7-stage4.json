@@ -1,0 +1,269 @@
+{
+ "generatedAt": "2026-09-27T03:41:39.992Z",
+ "from": "frameplan-round7-final.json",
+ "rows": [
+  {
+   "id": "MP-R2-PROFILE-025",
+   "lane": "A",
+   "disposition": "SHOOT",
+   "route": "pages/profile/index",
+   "assertions": 3,
+   "assertionList": [
+    {
+     "kind": "text-equals",
+     "target": ".my-interaction__label",
+     "expected": "存在文本为「最近访客」的一格，label 字面值来自 interactionItems 第四项",
+     "sourceAnchor": "apps/client/src/components/profile/mine/MyInteraction.vue:45",
+     "anchorFixed": "apps/client/src/pages/profile/index.vue:758 ⇒ apps/client/src/components/profile/mine/MyInteraction.vue:45（对象实名 my-interaction__label）"
+    },
+    {
+     "kind": "text-equals",
+     "target": ".my-stats__label",
+     "expected": "四列顶栏统计文本依次为我喜欢、喜欢我的、我赞、访客；访客列取 socialProof.visitorCount",
+     "sourceAnchor": "apps/client/src/components/profile/mine/MyStats.vue:40",
+     "anchorFixed": "apps/client/src/components/profile/mine/MyStats.vue:14 ⇒ apps/client/src/components/profile/mine/MyStats.vue:40（对象实名 my-stats__label）"
+    },
+    {
+     "kind": "value-equal-across-nodes",
+     "target": "「最近访客」所在 .my-interaction__row 的 .my-interaction__value 与「访客」所在 .my-stats__col 的 .my-stats__value",
+     "expected": "同帧两数值必须相等——两处都是 likesStore.visitors.length 优先、profileStats.visitorsCount 兜底的同一表达式；若互动格取列表长度而顶栏格只取后台统计，两数即不等，本条判红",
+     "sourceAnchor": "apps/client/src/pages/profile/index.vue:694"
+    }
+   ],
+   "steps": [
+    {
+     "action": "open-page",
+     "selector": "",
+     "note": "进入已登录个人主页"
+    },
+    {
+     "action": "scroll",
+     "selector": ".my-interaction",
+     "note": "让四列互动数据区与顶部四格统计同时入画，一张帧内两格并判"
+    }
+   ],
+   "precondition": {
+    "identity": "A（已登录且资料已完善，本人主页态：未解锁分支与本人分支的渲染条件分别是 pages/profile/index.vue:1647 与 :1651）",
+    "theme": "light",
+    "fixture": "mock 默认数据且 likesStore.visitors 非空——访客值为 0 时数值节点因 v-if 不渲染（apps/client/src/components/profile/mine/MyInteraction.vue:46），两格同为空会把断言 3 变成空判"
+   },
+   "crop": "个人主页顶部四格统计加我的互动四行区（同屏配对）",
+   "frameName": "A-MP-R2-PROFILE-025",
+   "unresolved": "判据要求的传参链已静态对上，不需帧：profile/index.vue:758 与 :694 两行表达式逐字符同形，:1657 把 interactionItems 传给 ProfileShell，外壳在 MyProfile.vue:60 转交 MyInteraction。台账原句的另一半「与喜欢页访客列表帧配对复验」是跨帧判点，单张帧判不了，需主编排层把本帧与访客列表帧并列裁：期望访客列表条目数等于本帧「最近访客」数值；likesStore.visitors 是两边共同真源，故不等即说明某侧走了后台统计。"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
+   "lane": "A",
+   "disposition": "SHOOT",
+   "route": "subpackages/discover-extra/discover/matching",
+   "assertions": 4,
+   "assertionList": [
+    {
+     "kind": "computed-style",
+     "target": ".match-loading__skip",
+     "expected": "底色解析为 --c-bg-container（容器底，全局已定义于 theme/design-variables.scss:366），即台账要的白底；源码当前仍是半透明品牌绿字面值 rgba(54, 201, 154, 0.85)，故本帧预期判红，这正是台账今天应有的判决",
+     "sourceAnchor": "apps/client/src/components/match/MatchLoading.vue:73",
+     "anchorFixed": "apps/client/src/components/match/MatchLoading.vue:179 ⇒ apps/client/src/components/match/MatchLoading.vue:73（对象实名 match-loading__skip）"
+    },
+    {
+     "kind": "computed-style",
+     "target": ".match-loading__skip-text",
+     "expected": "文字色解析为品牌绿 --c-brand（同令牌在本组件别处已用，见 MatchLoading.vue:277 与 :384）；源码当前仍是纯白 #ffffff",
+     "sourceAnchor": "apps/client/src/components/match/MatchLoading.vue:74",
+     "anchorFixed": "apps/client/src/components/match/MatchLoading.vue:190 ⇒ apps/client/src/components/match/MatchLoading.vue:74（对象实名 match-loading__skip-text）"
+    },
+    {
+     "kind": "text-equals",
+     "target": ".match-loading__skip-text",
+     "expected": "文本为「跳过」，词条 matching.skip 见 apps/client/src/i18n/locales/zh-CN.ts:437",
+     "sourceAnchor": "apps/client/src/components/match/MatchLoading.vue:74"
+    },
+    {
+     "kind": "rect-contrast",
+     "target": ".match-loading__skip",
+     "expected": "钮底色与其背后页面底色明差需大到文字可辨（当前半透明绿底叠白字属低对比，改白底绿字后应显著提高），作为两色合起来的观感兜底判点",
+     "sourceAnchor": "apps/client/src/components/match/MatchLoading.vue:171"
+    }
+   ],
+   "steps": [
+    {
+     "action": "open-page",
+     "selector": "",
+     "note": "直接进入匹配中页即可，跳过钮即时可见"
+    }
+   ],
+   "precondition": {
+    "identity": "A（已登录，匹配链路可达）",
+    "theme": "light",
+    "fixture": "无需额外造数：匹配中页无条件挂载 MatchLoading（apps/client/src/subpackages/discover-extra/discover/matching.vue:251），跳过钮与动画结束无关，声明为绝对定位于胶囊下方（MatchLoading.vue:175）"
+   },
+   "crop": "匹配中页右上跳过钮（含胶囊避让区）",
+   "frameName": "A-MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
+   "unresolved": "台账自陈的两点核对为真：判点只落在该组件自己的样式规则上，--c-brand 虽在同组件其他规则早已存在，按护栏不作本条判点；位置移到标题行之上独立成行那半段是观感，未写进断言，需人裁。底色与文字色两项都可用 computed-style 直接判，不需像素比对基线。"
+  },
+  {
+   "id": "MP-R2-PROFILE-024",
+   "lane": "C",
+   "disposition": "SHOOT",
+   "route": "pages/profile/index",
+   "assertions": 4,
+   "assertionList": [
+    {
+     "kind": "computed-style",
+     "target": "..not-logged-profile",
+     "expected": "padding-bottom 实测 = 184rpx 加 2×env(safe-area-inset-bottom)（台账判定的现状值）",
+     "sourceAnchor": "apps/client/src/components/profile/NotLoggedProfile.vue:153",
+     "anchorFixed": "apps/client/src/components/profile/NotLoggedProfile.vue:161 ⇒ apps/client/src/components/profile/NotLoggedProfile.vue:34（对象实名 not-logged-profile）",
+     "laneFixed": ".not-logged-profile @ apps/client/src/components/profile/NotLoggedProfile.vue:34 ⇒ .not-logged-profile @ apps/client/src/components/profile/NotLoggedProfile.vue:153"
+    },
+    {
+     "kind": "bounding-box-from-bottom",
+     "target": ".nlp-footer-btn",
+     "expected": "顶缘距视口底 = 292rpx 加 2×env（bottom 200rpx+2env 加 height 92rpx）",
+     "sourceAnchor": "apps/client/src/components/profile/NotLoggedProfile.vue:146",
+     "anchorFixed": "apps/client/src/components/profile/NotLoggedProfile.vue:451-452 ⇒ apps/client/src/components/profile/NotLoggedProfile.vue:146（对象实名 nlp-footer-btn）"
+    },
+    {
+     "kind": "bounding-box-gap",
+     "target": ".nlp-interaction--last 底缘 到 .nlp-footer-btn 顶缘",
+     "expected": "垂直间距 ≥ 24rpx；按现状 padding-bottom 184rpx+2env 小于浮层顶缘 292rpx+2env，滚动到底时最后一行会被固定 CTA 压住，判红",
+     "sourceAnchor": "apps/client/src/components/profile/NotLoggedProfile.vue:133",
+     "anchorFixed": "apps/client/src/components/profile/NotLoggedProfile.vue:161 ⇒ apps/client/src/components/profile/NotLoggedProfile.vue:133（对象实名 nlp-interaction--last）"
+    },
+    {
+     "kind": "bounding-box-from-bottom",
+     "target": ".nlp-footer-btn",
+     "expected": "底缘距视口底 ≥ 184rpx 加 2×env（custom-tab-bar 面板顶缘），即 CTA 本身不被 tabBar 面板盖住",
+     "sourceAnchor": "apps/client/src/components/profile/NotLoggedProfile.vue:146",
+     "anchorFixed": "apps/client/src/components/profile/NotLoggedProfile.vue:451 ⇒ apps/client/src/components/profile/NotLoggedProfile.vue:146（对象实名 nlp-footer-btn）"
+    }
+   ],
+   "steps": [
+    {
+     "action": "navigate",
+     "selector": "",
+     "note": "以访客身份进 /pages/profile/index"
+    },
+    {
+     "action": "scroll",
+     "selector": ".nlp-interaction--last",
+     "note": "把内容流滚到底，使「我的互动」最后一行与固定登录 CTA 同屏"
+    },
+    {
+     "action": "measure",
+     "selector": ".nlp-footer-btn",
+     "note": "量固定 CTA 顶缘距视口底的距离"
+    },
+    {
+     "action": "measure",
+     "selector": ".not-logged-profile",
+     "note": "量容器 padding-bottom 实测值"
+    }
+   ],
+   "precondition": {
+    "identity": "未登录访客（isUnlocked 为 false 时挂载 NotLoggedProfile，见 apps/client/src/pages/profile/index.vue:1647）",
+    "theme": "light",
+    "fixture": "带底部安全区的机型档（iPhone X 及以上，使 env(safe-area-inset-bottom) 非 0）；custom-tab-bar 可见"
+   },
+   "crop": "未登录个人主页底部：我的互动卡最后一行、固定登录 CTA、custom-tab-bar 面板顶缘",
+   "frameName": "C-MP-R2-PROFILE-024",
+   "unresolved": "判据的本人态半项（MyProfile.vue 的 padding-bottom 应为 296rpx+2env、浮层为 GlobalPublishFab）不在本 lane 的 files 清单内，需另开一帧；本帧只结未登录态这一档。"
+  },
+  {
+   "id": "MP-R2-MATCHING-016",
+   "lane": "C",
+   "disposition": "SHOOT",
+   "route": "subpackages/discover-extra/discover/matching",
+   "assertions": 3,
+   "assertionList": [
+    {
+     "kind": "text-not-contains",
+     "target": "toast 浮层",
+     "expected": "不得出现「操作失败，请重试」（matching.likeFailed，apps/client/src/i18n/locales/zh-CN.ts:451）或 store lastError 文案，出现即直达分支仍恒 failed",
+     "sourceAnchor": "apps/client/src/subpackages/discover-extra/discover/matching.vue:85-91"
+    },
+    {
+     "kind": "element-present",
+     "target": ".matching-page__back",
+     "expected": "直达即渲染匹配中页，未走 :156-158 的 200ms 兜底 goBack 死页",
+     "sourceAnchor": "apps/client/src/subpackages/discover-extra/discover/matching.vue:248-250"
+    },
+    {
+     "kind": "route-in",
+     "target": "页面栈栈顶路由",
+     "expected": "终态 ∈ {/subpackages/discover-extra/discover/match-success（:59-61 跳转，常量见 apps/client/src/constants/routes.ts:68）, 带「已喜欢」toast 后返回寻觅页（:83-84）}，不得是 failed 分支的 600ms goBack",
+     "sourceAnchor": "apps/client/src/subpackages/discover-extra/discover/matching.vue:56-62"
+    }
+   ],
+   "steps": [
+    {
+     "action": "navigate",
+     "selector": "",
+     "note": "带 query 直达 matching 页，命中 :138-154 的直达分支"
+    },
+    {
+     "action": "wait",
+     "selector": ".matching-page__back",
+     "note": "等动画播完并等状态机出结果（含 :172-179 的资料等待链），再取终态帧"
+    },
+    {
+     "action": "capture",
+     "selector": "",
+     "note": "第二帧取离开后的页面，判是否被 failed 分支 600ms 踢回"
+    }
+   ],
+   "precondition": {
+    "identity": "已登录 mock 用户",
+    "theme": "light",
+    "fixture": "URL 直达：/subpackages/discover-extra/discover/matching?cardId=4001&userId=4001&action=superLike。4001 是 mock 推荐人 id（apps/client/src/services/mocks/fixtures.ts:177），getPersonProfile 在 mock 下按该 id 查推荐列表（apps/client/src/services/api.ts:964-970）。进入前 matchStore.pendingCardId 与 pendingAction 必须为空（冷启动直达，不从寻觅卡片进入）"
+   },
+   "crop": "匹配进行中页（含离开后的终态页）",
+   "frameName": "C-MP-R2-MATCHING-016",
+   "unresolved": "route 输入为空串，已按 pages.json 反查补全：subPackages root subpackages/discover-extra 加 path discover/matching（apps/client/src/pages.json:140），常量侧对应 apps/client/src/constants/routes.ts:66。判据第一半的 callerSnapshot 透传在本文件内可见（:40 声明、:211 写入、:176 传入 runMatchCheck），但 runMatchCheck 的形参与是否必 matched 在 apps/client/src/stores/match.ts，不属本 lane files 清单、本轮未读，故本帧只判「不再恒 failed」这一半。判据第二半「:177 补 isSuperLike」在工作树已漂位并落地于 :197（swipeRight 第二参传 matchStore.pendingAction === superLike），:177 现为 finally 回调行，行号引用失效。"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+   "lane": "D",
+   "disposition": "SHOOT",
+   "route": "subpackages/profile-extra/profile/other",
+   "assertions": 3,
+   "assertionList": [
+    {
+     "kind": "text-regex",
+     "target": ".public-identity__meta-item",
+     "expected": "片段按 年龄 → 学校 → 城市 顺序出现，例：21岁 / 北京大学 / 北京（源码先 push schoolPart 再 push cityPart）",
+     "sourceAnchor": "apps/client/src/components/profile/public/PublicIdentity.vue:69",
+     "anchorFixed": "apps/client/src/components/profile/public/PublicIdentity.vue:27 ⇒ apps/client/src/components/profile/public/PublicIdentity.vue:69（对象实名 public-identity__meta-item）"
+    },
+    {
+     "kind": "text-regex",
+     "target": ".public-identity__meta-row",
+     "expected": "整行文本形如「21岁 · 北京大学 · 北京」，分隔符只有 · 且不出现原串直出的「北京 · 北京大学」顺序、行尾无 · 与空格",
+     "sourceAnchor": "apps/client/src/components/profile/public/PublicIdentity.vue:66"
+    },
+    {
+     "kind": "text-regex",
+     "target": ".public-identity__distance-text",
+     "expected": "有距离时渲染「2.3km · 在线」、无距离时只出「在线」，两种情况都不得以 · 或空格结尾（拼接式见 distanceLine computed）",
+     "sourceAnchor": "apps/client/src/components/profile/public/PublicIdentity.vue:75",
+     "anchorFixed": "apps/client/src/components/profile/public/PublicIdentity.vue:15 ⇒ apps/client/src/components/profile/public/PublicIdentity.vue:75（对象实名 public-identity__distance-text）"
+    }
+   ],
+   "steps": [
+    {
+     "action": "open-page",
+     "selector": "",
+     "note": "带 userId 直开他人公开主页（pages.json:218 在 profile-extra 分包 root :200 下注册）"
+    }
+   ],
+   "precondition": {
+    "identity": "A",
+    "theme": "light",
+    "fixture": "带 query userId=<mock 可解析用户>（参数名与路径口径见 apps/client/src/subpackages/chat/chat-session/index.vue:1099 的跳转 path），使 PublicIdentity 经 components/profile/public/PublicProfile.vue:67 渲染进他人主页；该用户 basic.location 为「北京 · 北京大学」形态（城市在串首，判据自述的后端口径转抄于 PublicIdentity.vue:19-21），basic.age 非空"
+   },
+   "crop": "他人主页信息卡：姓名行下方的 meta 行 + 距离行",
+   "frameName": "D-MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+   "unresolved": "两点未取证：(1) 判据点名的后端串实证 api/profile.ts:21 不在本 lane 读集，本条依据只能是 PublicIdentity.vue:18-21 的口径注释加解析代码 :26；(2) 「与我的页 MyHeader 的 metaLine 共用同一 formatter」的对照物不在本 lane 读集内，帧只能判本页输出顺序，共用 formatter 属源码侧另案。解析位序不动、只改 push 顺序的实现在 :26-28。"
+  }
+ ]
+}

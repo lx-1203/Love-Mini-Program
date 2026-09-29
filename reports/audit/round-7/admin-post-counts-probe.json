@@ -1,0 +1,91 @@
+{
+ "at": "2026-09-27T02:58:02.335Z",
+ "base": "http://127.0.0.1:8080/api/v1",
+ "verdict": "COUNTS_PRESENT",
+ "rows": [
+  {
+   "id": "270",
+   "status": 200,
+   "admissible": true,
+   "keys": [
+    "id",
+    "authorId",
+    "authorNickname",
+    "authorAvatar",
+    "title",
+    "content",
+    "images",
+    "tags",
+    "category",
+    "status",
+    "auditStatus",
+    "visibility",
+    "circleId",
+    "auditRemark",
+    "auditorId",
+    "auditedAt",
+    "isPinned",
+    "likesCount",
+    "commentsCount",
+    "shareCount",
+    "viewCount",
+    "favoriteCount",
+    "hotScore",
+    "hotBoost",
+    "hotBanned",
+    "createdAt",
+    "updatedAt"
+   ],
+   "counts": [
+    "likesCount",
+    "commentsCount"
+   ],
+   "values": {
+    "likesCount": 1,
+    "commentsCount": 1
+   }
+  },
+  {
+   "id": "236",
+   "status": 200,
+   "admissible": true,
+   "keys": [
+    "id",
+    "authorId",
+    "authorNickname",
+    "authorAvatar",
+    "title",
+    "content",
+    "images",
+    "tags",
+    "category",
+    "status",
+    "auditStatus",
+    "visibility",
+    "circleId",
+    "auditRemark",
+    "auditorId",
+    "auditedAt",
+    "isPinned",
+    "likesCount",
+    "commentsCount",
+    "shareCount",
+    "viewCount",
+    "favoriteCount",
+    "hotScore",
+    "hotBoost",
+    "hotBanned",
+    "createdAt",
+    "updatedAt"
+   ],
+   "counts": [
+    "likesCount",
+    "commentsCount"
+   ],
+   "values": {
+    "likesCount": 1,
+    "commentsCount": 1
+   }
+  }
+ ]
+}

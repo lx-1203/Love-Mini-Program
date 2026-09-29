@@ -1,0 +1,100 @@
+{
+ "patches": [
+  {
+   "id": "MP-R2-CAMPUSPOST-011",
+   "col": 6,
+   "new": "保留-判据不成立（本轮前落地：配图上传失败走专属文案键 所要求的写法在开跑基线 094f7239 与工作树里计数逐字相同（chooseImageFailed 基线=2/工作树=2），本轮没有可归因于本行的改动；记为「该缺陷在本轮开始前就不成立」，不冒充本轮功劳，也不挂着待修复）",
+   "why": "判据台对本行报 UNDECIDABLE 的原话是「授予绿用的判点在修复前的 HEAD 里就已存在 ⇒ 命中不能证明改动落地」；本补丁把这句判决落成台账口径，数字由 scripts/qa/emit-prebaseline-attribution-patches.mjs 现测生成，可重跑复现"
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-011",
+   "col": 9,
+   "new": "承载 apps/client/src/i18n/locales/zh-CN.ts；判点非判别性实测：git show 094f7239:apps/client/src/i18n/locales/zh-CN.ts 与当前工作树对 chooseImageFailed 基线=2/工作树=2 的计数相同（HEAD 侧 chooseImageFailed=2）⇒ 本行证据只能证明「写法在位」，不能证明「本轮落地」。重跑：node scripts/qa/emit-prebaseline-attribution-patches.mjs",
+   "why": "把「数出来的等式」写进 statusEvidence，下一个读者不必再信我的转述"
+  },
+  {
+   "id": "MP-R2-MATCHING-014",
+   "col": 6,
+   "new": "保留-判据不成立（本轮前落地：匹配成功跳转时保住 matchedUser，不被 onUnload 的 reset 打掉 所要求的写法在开跑基线 094f7239 与工作树里计数逐字相同（redirectingToSuccess 基线=3/工作树=3，onUnload( 基线=1/工作树=1），本轮没有可归因于本行的改动；记为「该缺陷在本轮开始前就不成立」，不冒充本轮功劳，也不挂着待修复）",
+   "why": "判据台对本行报 UNDECIDABLE 的原话是「授予绿用的判点在修复前的 HEAD 里就已存在 ⇒ 命中不能证明改动落地」；本补丁把这句判决落成台账口径，数字由 scripts/qa/emit-prebaseline-attribution-patches.mjs 现测生成，可重跑复现"
+  },
+  {
+   "id": "MP-R2-MATCHING-014",
+   "col": 9,
+   "new": "承载 apps/client/src/subpackages/discover-extra/discover/matching.vue；判点非判别性实测：git show 094f7239:apps/client/src/subpackages/discover-extra/discover/matching.vue 与当前工作树对 redirectingToSuccess 基线=3/工作树=3，onUnload( 基线=1/工作树=1 的计数相同（HEAD 侧 redirectingToSuccess=3，onUnload(=1）⇒ 本行证据只能证明「写法在位」，不能证明「本轮落地」。重跑：node scripts/qa/emit-prebaseline-attribution-patches.mjs",
+   "why": "把「数出来的等式」写进 statusEvidence，下一个读者不必再信我的转述"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-010",
+   "col": 6,
+   "new": "保留-判据不成立（本轮前落地：手机号脱敏由统一工具函数提供 所要求的写法在开跑基线 094f7239 与工作树里计数逐字相同（export function maskPhone 基线=1/工作树=1），本轮没有可归因于本行的改动；记为「该缺陷在本轮开始前就不成立」，不冒充本轮功劳，也不挂着待修复）",
+   "why": "判据台对本行报 UNDECIDABLE 的原话是「授予绿用的判点在修复前的 HEAD 里就已存在 ⇒ 命中不能证明改动落地」；本补丁把这句判决落成台账口径，数字由 scripts/qa/emit-prebaseline-attribution-patches.mjs 现测生成，可重跑复现"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-010",
+   "col": 9,
+   "new": "承载 apps/client/src/utils/form-validator.ts；判点非判别性实测：git show 094f7239:apps/client/src/utils/form-validator.ts 与当前工作树对 export function maskPhone 基线=1/工作树=1 的计数相同（HEAD 侧 export function maskPhone=1）⇒ 本行证据只能证明「写法在位」，不能证明「本轮落地」。重跑：node scripts/qa/emit-prebaseline-attribution-patches.mjs",
+   "why": "把「数出来的等式」写进 statusEvidence，下一个读者不必再信我的转述"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-010",
+   "col": 6,
+   "new": "保留-判据不成立（本轮前落地：活动话题报名提示走 i18n 键并复用 ActivityCard 所要求的写法在开跑基线 094f7239 与工作树里计数逐字相同（postTopicActivityEnrollHint 基线=1/工作树=1，ActivityCard 基线=4/工作树=4），本轮没有可归因于本行的改动；记为「该缺陷在本轮开始前就不成立」，不冒充本轮功劳，也不挂着待修复）",
+   "why": "判据台对本行报 UNDECIDABLE 的原话是「授予绿用的判点在修复前的 HEAD 里就已存在 ⇒ 命中不能证明改动落地」；本补丁把这句判决落成台账口径，数字由 scripts/qa/emit-prebaseline-attribution-patches.mjs 现测生成，可重跑复现"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-010",
+   "col": 9,
+   "new": "承载 apps/client/src/subpackages/circles/circles/post-topic.vue；判点非判别性实测：git show 094f7239:apps/client/src/subpackages/circles/circles/post-topic.vue 与当前工作树对 postTopicActivityEnrollHint 基线=1/工作树=1，ActivityCard 基线=4/工作树=4 的计数相同（HEAD 侧 postTopicActivityEnrollHint=1，ActivityCard=4）⇒ 本行证据只能证明「写法在位」，不能证明「本轮落地」。重跑：node scripts/qa/emit-prebaseline-attribution-patches.mjs",
+   "why": "把「数出来的等式」写进 statusEvidence，下一个读者不必再信我的转述"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-LOGIN-INDEX-001",
+   "col": 6,
+   "new": "保留-判据不成立（本轮前落地：登录页三枚按钮圆角走同一令牌 所要求的写法在开跑基线 094f7239 与工作树里计数逐字相同（btn-guest 基线=7/工作树=7），本轮没有可归因于本行的改动；记为「该缺陷在本轮开始前就不成立」，不冒充本轮功劳，也不挂着待修复）",
+   "why": "判据台对本行报 UNDECIDABLE 的原话是「授予绿用的判点在修复前的 HEAD 里就已存在 ⇒ 命中不能证明改动落地」；本补丁把这句判决落成台账口径，数字由 scripts/qa/emit-prebaseline-attribution-patches.mjs 现测生成，可重跑复现"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-LOGIN-INDEX-001",
+   "col": 9,
+   "new": "承载 apps/client/src/pages/login/index.vue；判点非判别性实测：git show 094f7239:apps/client/src/pages/login/index.vue 与当前工作树对 btn-guest 基线=7/工作树=7 的计数相同（HEAD 侧 btn-guest=7）⇒ 本行证据只能证明「写法在位」，不能证明「本轮落地」。重跑：node scripts/qa/emit-prebaseline-attribution-patches.mjs",
+   "why": "把「数出来的等式」写进 statusEvidence，下一个读者不必再信我的转述"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001",
+   "col": 6,
+   "new": "保留-判据不成立（本轮前落地：圈主页「更多」用图标素材且右侧避让胶囊留 104px 所要求的写法在开跑基线 094f7239 与工作树里计数逐字相同（MORE_SVG 基线=1/工作树=1，104px 基线=1/工作树=1），本轮没有可归因于本行的改动；记为「该缺陷在本轮开始前就不成立」，不冒充本轮功劳，也不挂着待修复）",
+   "why": "判据台对本行报 UNDECIDABLE 的原话是「授予绿用的判点在修复前的 HEAD 里就已存在 ⇒ 命中不能证明改动落地」；本补丁把这句判决落成台账口径，数字由 scripts/qa/emit-prebaseline-attribution-patches.mjs 现测生成，可重跑复现"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001",
+   "col": 9,
+   "new": "承载 apps/client/src/subpackages/circles/circles/circle-home.vue；判点非判别性实测：git show 094f7239:apps/client/src/subpackages/circles/circles/circle-home.vue 与当前工作树对 MORE_SVG 基线=1/工作树=1，104px 基线=1/工作树=1 的计数相同（HEAD 侧 MORE_SVG=1，104px=1）⇒ 本行证据只能证明「写法在位」，不能证明「本轮落地」。重跑：node scripts/qa/emit-prebaseline-attribution-patches.mjs",
+   "why": "把「数出来的等式」写进 statusEvidence，下一个读者不必再信我的转述"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-004",
+   "col": 6,
+   "new": "保留-判据不成立（本轮前落地：圈子列表头部搜索图标尺寸/底色与规范一致 所要求的写法在开跑基线 094f7239 与工作树里计数逐字相同（circles-header__search 基线=5/工作树=5），本轮没有可归因于本行的改动；记为「该缺陷在本轮开始前就不成立」，不冒充本轮功劳，也不挂着待修复）",
+   "why": "判据台对本行报 UNDECIDABLE 的原话是「授予绿用的判点在修复前的 HEAD 里就已存在 ⇒ 命中不能证明改动落地」；本补丁把这句判决落成台账口径，数字由 scripts/qa/emit-prebaseline-attribution-patches.mjs 现测生成，可重跑复现"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-004",
+   "col": 9,
+   "new": "承载 apps/client/src/subpackages/circles/circles/index.vue；判点非判别性实测：git show 094f7239:apps/client/src/subpackages/circles/circles/index.vue 与当前工作树对 circles-header__search 基线=5/工作树=5 的计数相同（HEAD 侧 circles-header__search=5）⇒ 本行证据只能证明「写法在位」，不能证明「本轮落地」。重跑：node scripts/qa/emit-prebaseline-attribution-patches.mjs",
+   "why": "把「数出来的等式」写进 statusEvidence，下一个读者不必再信我的转述"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-002",
+   "col": 6,
+   "new": "保留-判据不成立（本轮前落地：位置卡图标走素材路径而不是内联字形 所要求的写法在开跑基线 094f7239 与工作树里计数逐字相同（location-card__icon 基线=2/工作树=2），本轮没有可归因于本行的改动；记为「该缺陷在本轮开始前就不成立」，不冒充本轮功劳，也不挂着待修复）",
+   "why": "判据台对本行报 UNDECIDABLE 的原话是「授予绿用的判点在修复前的 HEAD 里就已存在 ⇒ 命中不能证明改动落地」；本补丁把这句判决落成台账口径，数字由 scripts/qa/emit-prebaseline-attribution-patches.mjs 现测生成，可重跑复现"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-002",
+   "col": 9,
+   "new": "承载 apps/client/src/subpackages/profile-extra/profile/location.vue；判点非判别性实测：git show 094f7239:apps/client/src/subpackages/profile-extra/profile/location.vue 与当前工作树对 location-card__icon 基线=2/工作树=2 的计数相同（HEAD 侧 location-card__icon=2）⇒ 本行证据只能证明「写法在位」，不能证明「本轮落地」。重跑：node scripts/qa/emit-prebaseline-attribution-patches.mjs",
+   "why": "把「数出来的等式」写进 statusEvidence，下一个读者不必再信我的转述"
+  }
+ ]
+}

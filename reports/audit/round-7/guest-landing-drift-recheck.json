@@ -1,0 +1,53 @@
+{
+ "mode": "measure",
+ "generatedAt": "2026-09-27T01:48:46.692Z",
+ "project": "apps/client/dist/build/mp-weixin-real",
+ "band": "real@f0677920",
+ "guestCapable": true,
+ "repeat": 3,
+ "rows": [
+  {
+   "groupKey": "subpackages/discover-extra/discover/matching → pages/login/index",
+   "guardCaseId": "GG-discover-extra-discover-matching",
+   "measuredLanding": "pages/discover/index",
+   "identity": "not-logged-in",
+   "markers": {
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
+   },
+   "waitedMs": 4500,
+   "samples": [
+    {
+     "landing": "pages/discover/index",
+     "identity": "not-logged-in",
+     "markers": {
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
+     },
+     "waitedMs": 4500
+    },
+    {
+     "landing": "pages/discover/index",
+     "identity": "not-logged-in",
+     "markers": {
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
+     },
+     "waitedMs": 4500
+    },
+    {
+     "landing": "pages/discover/index",
+     "identity": "not-logged-in",
+     "markers": {
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
+     },
+     "waitedMs": 4500
+    }
+   ],
+   "stable": true,
+   "measuredAt": "2026-09-27T01:50:03.114Z",
+   "band": "real@f0677920"
+  }
+ ]
+}

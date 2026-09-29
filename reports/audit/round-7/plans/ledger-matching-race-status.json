@@ -1,0 +1,17 @@
+{
+  "note": "MP-R7-GUEST-MATCHING-REDIRECT-RACE-001 代码已落（工作树），状态从『待修复』推进到『已修复待复验』；复验载体是游客落点 measure 腿，重建产物后跑。行号 2026-09-27 02:48 以 grep 实测核对。",
+  "patches": [
+    {
+      "id": "MP-R7-GUEST-MATCHING-REDIRECT-RACE-001",
+      "col": 6,
+      "new": "已修复待复验",
+      "why": "兜底分支的未登录守卫已写进源码并通过 parse-check 与 typecheck，但渲染帧级复验（measure 腿 CLOSED）还没在重建产物上跑，故不判结案"
+    },
+    {
+      "id": "MP-R7-GUEST-MATCHING-REDIRECT-RACE-001",
+      "col": 9,
+      "new": "代码落点（2026-09-27 实测 grep 行号）：apps/client/src/subpackages/discover-extra/discover/matching.vue:19（import getToken）、:20（import replaceAppPath）、:67-82（goBack 内 :72-75 未登录先 replaceAppPath(ROUTES.LOGIN) 后 return，:78 才有 navigateBack、:80 才 switchTab 到「寻觅」）。机器判据：scripts/qa/verify-source-shape.mjs 里同名 SPEC 条目，本轮实测 total=60 成立=59 不成立=1（唯一不成立项是 MP-R2VIS-PAGES-MESSAGES-INDEX-004，属设计待裁决，与本行无关）；语法门 PARSE_RESULT=PASS files=42；apps/client typecheck（vue-tsc --noEmit）经 scripts/qa/run-npm-script.mjs 判 OK。渲染帧级复验载体已就位且**尚未转绿**：scripts/qa/verify-guest-landing.mjs --mode measure --only GG-discover-extra-discover-matching --repeat 3，policy 期望落点 pages/login/index，现存量结果为 MEASURED-DRIFT（reports/audit/round-7/guest-landing-drift-recheck.json 三次一致落 pages/discover/index，那是改动前的产物）⇒ 本行按『已修复待复验』挂账，不提前结案",
+      "why": "把『判据已就位』与『复验已完成』分开写清楚，避免下一次读到 已修复待复验 时误当成 CLOSED"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "lane": "subpackages/profile-extra/verification/real-name",
+  "counts": { "planned": 4, "ok": 2, "unverifiable": 2 },
+  "cases": [
+    {
+      "id": "VRN06",
+      "manifest": "次要20",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "selector": ".upload-card",
+      "file": "apps/client/src/subpackages/profile-extra/verification/real-name.vue",
+      "line": 519,
+      "oldAction": "① tap 正面卡 .upload-card（:518-525 → chooseIdCardImage('front') :146-169）选图确认；② 再 tap 预览态「更换」→ 取消选择；③ tap 背面卡选一张 >5MB 图（count:1, maxSizeMB:5 :149）；④ 未授权分支重跑",
+      "newAction": "① tap 正面卡 .upload-card（real-name.vue:519，:520 @tap=chooseIdCardImage 传 front，:146-169 内含隐私前置、成功写 idCardFrontPath 与失败 Toast）选图确认；② 再 tap 预览态「更换」（同一个 .upload-card 节点的 v-else 预览子块 :536）→ 取消选择；③ tap 背面卡选一张 >5MB 图（count:1, maxSizeMB:5 :149；背面卡是同名的第二枚 :543 @tap=chooseIdCardImage 传 back）；④ 未授权分支重跑",
+      "needsIdentity": "",
+      "why": "成功/取消/拒绝三路的触发物是正面卡根节点：real-name.vue:519 的 .upload-card 带 @tap=chooseIdCardImage(front)（:520），空态与预览态是它内部的 v-if/v-else 子块（:526 与 :530），所以点一次就同时覆盖 ①②④；status 初值 unverified（:55）时表单在 :468 的 v-else 分支里静息渲染，产物两档 real-name.wxml 里 upload-card 均在。③ 的背面卡是同名的第二枚（:543），class 通道按文档序命中不到，需按本条注明。"
+    },
+    {
+      "id": "VRN08",
+      "manifest": "次要20",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "selector": ".action-btn",
+      "file": "apps/client/src/subpackages/profile-extra/verification/real-name.vue",
+      "line": 577,
+      "oldAction": "① tap .action-btn 一次，在 200ms/800ms/1500ms/3000ms 采样；② 退出重进复位后 rapidTap .action-btn ×5（500ms 内）",
+      "newAction": "① tap 提交按钮 .action-btn（real-name.vue:577，:579 @tap=submitRealName，:177 submitting 守卫、:201-202 showLoading 带 mask true、:209 hideLoading、:210 转 pending、:583 文案随 submitting 变化）一次，在 200ms/800ms/1500ms/3000ms 采样；② 退出重进复位后 rapidTap .action-btn ×5（500ms 内）",
+      "needsIdentity": "",
+      "why": "Loading 不永驻、1s 转 pending 与防重入三段都由唯一的提交节点触发：real-name.vue:577 的 .action-btn（@tap=submitRealName :579，:578 的禁用类不拦事件）；status 初值 unverified（:55）时它是静息态里渲染的那一枚，verified/pending 两支（:441 与 :458）里没有同名节点参与命中，产物两档 real-name.wxml 里 action-btn 在。本条 requiresReal=true，mock 档由档位闸门跳过。"
+    }
+  ],
+  "unverifiable": [
+    {
+      "id": "VRN11",
+      "manifest": "次要20",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "reason": "本条要求已认证态（status=verified 走 :441 的分支），该态下表单区、上传卡与提交按钮按判据本身就不存在，能点的东西为零；判据断言的是 verified-card 两行的文本形态（userName 与 maskedIdCardNo，:445-452 渲染，:290 写入，前 6 后 4 掩码 :45-46 不得露出完整 18 位），属纯文本与 DOM 不存在两类断言，没有可点名的物件。",
+      "needsCarrier": "欠已认证夹具（real 档要一个 idCardVerified 且 status=verified 的账号与 reLaunch 进页配方）；判据本体欠文本读数与脱敏格式核对，不是点击载具。"
+    },
+    {
+      "id": "VRN13",
+      "manifest": "次要20",
+      "page": "subpackages/profile-extra/verification/real-name",
+      "reason": "三段滚动位移与几何比较（scrollTop/scrollHeight/windowHeight、提交按钮 boundingClientRect、背面上传卡 :543-564 是否被裁切、回顶后 safe-top :412 与 nav-bar 是否叠印、statusLoading 骨架是否随滚动重复出现），产出物全是数值与帧；CLI 桥没有 pageScrollTo 与连续滑动，页面上也没有能替代滚到顶/底的点击物件。",
+      "needsCarrier": "欠 WS 的滚动通道（scrollTo 底/中/顶三段）与 boundingClientRect 尺寸读数（probeMany 只回条数，CLI offset 只回 left/top）；statusLoading 骨架的重复出现还需逐帧采样。"
+    }
+  ]
+}

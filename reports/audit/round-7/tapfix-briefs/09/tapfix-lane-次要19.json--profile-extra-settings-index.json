@@ -1,0 +1,23 @@
+{
+ "lane": "subpackages/profile-extra/settings/index",
+ "manifest": "次要19.json",
+ "sourceFile": "apps/client/src/subpackages/profile-extra/settings/index.vue",
+ "counts": { "planned": 2, "ok": 0, "unverifiable": 2 },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "ST05",
+   "manifest": "次要19",
+   "page": "subpackages/profile-extra/settings/index",
+   "reason": "本周安排开关是原生 switch 且没有类名：apps/client/src/subpackages/profile-extra/settings/index.vue:570-575 只带 :checked、color、@change 与 aria-label，编译产物 subpackages/profile-extra/settings/index.wxml 里它的 class 只剩 data-v-6a0dd42b 这种 scoped 哈希，类名通道点不到它。外层那一行 .menu-item（:563）本身不挂 @tap（只有 aria-label），而同名 .menu-item 在上面几个分组里都是带 @tap 的跳转项且首匹配就是它们，拿 .menu-item 当目标等于点了别的行、还会跳走。",
+   "needsCarrier": "欠可寻址的开关载体（给这枚 switch 补类名，或让桥支持按 role/属性/序号定位原生控件）；④ 还欠一条能让 uni.setStorageSync 抛错的注入夹具（判据要的就是持久化失败却报成功那条），③ 需要跨页回到首页读课表区块的载具。"
+  },
+  {
+   "id": "ST06",
+   "manifest": "次要19",
+   "page": "subpackages/profile-extra/settings/index",
+   "reason": "同一形态：深色模式 switch（:588-593）也没有类名，编译产物里 class 仅剩 scoped 哈希，类名寻址点不到；父行 .menu-item（:579）不挂事件。更要紧的是本条的正身判点是 mode=auto 三态 store 被二态 switch 驱动的边界（源码注释自述该态需系统深色、H5 限定），这个前置在 mp 档位根本建不出来，而判据要求区分「mp 端不可达」与「H5 端 FAILED」两支。",
+   "needsCarrier": "欠可寻址的开关载体，加一条三态前置配方（把 themeStore.mode 置为 auto 且系统处于深色，mp 档不可达）；④ 杀进程重进验持久化需冷启动载具，③ 跨页主题一致需第二页的帧与 CSS 变量读数，② 连续五次点击需连发时序通道。"
+  }
+ ]
+}

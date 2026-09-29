@@ -1,0 +1,16 @@
+{
+ "lane": "subpackages/tools/love-center/nearby",
+ "manifest": "次要19.json",
+ "sourceFile": "apps/client/src/subpackages/tools/love-center/nearby.vue",
+ "counts": { "planned": 1, "ok": 0, "unverifiable": 1 },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "LN01",
+   "manifest": "次要19",
+   "page": "subpackages/tools/love-center/nearby",
+   "reason": "本条是冷启动时序采样与请求入参比对：0/0.5/1s 三帧里只能看 loading、错误加重试、空态带出口、卡片区这四个互斥分支中的某一个（nearby.vue:182/:187/:196/:206 起），判点是首帧不闪错误恒空屏、幻影参数 schoolId 与 userId 不改变 distanceMax 也不新增请求；这三样都不是可点物件。带事件的两枚（:189 的重试与空态出口钮）分别被 v-else-if errorMessage 与 cards.length 为空的分支挡着，静息态不渲染，页内也没有元素能把失败或空态带出来，最后一步尝试整页下拉同样是手势（本页未开启下拉刷新）。",
+   "needsCarrier": "欠首帧多点时序采样载具（三个时间点的渲染树与 network 快照）、可控的失败与空态夹具（让 :187-192 与 :196-202 分支真渲染出来以便点那两枚），以及 WS 下拉手势通道与 getRecommendations 入参转储出口。"
+  }
+ ]
+}

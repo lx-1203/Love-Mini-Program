@@ -1,0 +1,22 @@
+{
+  "patches": [
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
+      "col": 6,
+      "new": "已修复待复验（自裁 2026-09-27：统一到两级 campus.hub；键已迁、引用已改，欠 hub 页一帧）",
+      "why": "命名空间收口是结构改动，视觉应当零变化，但仍须一帧证明没把 hub 页打空"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
+      "col": 9,
+      "new": "判点 MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006（多文件谓词，三份文件都过才过；同批 SRC_SHAPE total=47 成立=47 不成立=0 补丁=94 守恒 yes）：hub.vue 里扁平前缀 campusHub. 残留 0，campus.hub. 恰好 23 处（与迁移前测到的 23 处引用一一对上）；两份语言包里顶层 campusHub 块都不再存在，而顶层（行首两空格缩进）campus 块内确有一层 hub。反对照做过：迁移前的 zh-CN.ts.bak 用同一条 present 正则去查是查不到的（NEG_CONTROL_old_bak_matches=false），也就是这条谓词有判别力、不是恒真。i18n 门禁同轮：I18N_ZH_KEYS=4171＝I18N_EN_KEYS、I18N_PAIRED=4171、ZH_ONLY=0、EN_ONLY=0、I18N_RESULT=PASS。载具：.zcode/tmp/rename-campushub-ns.mjs（默认干跑，写盘后自动拿 i18n 门禁当事务检查，不过就按 .bak 整体回滚；实测第一次真跑正是它把坏文件自动撤回去的）。仍然欠：hub 页一帧。",
+      "why": "把「键数守恒、引用数守恒、反对照、事务回滚」四件事都留成可重跑的说法，避免下一轮只能信我一句话"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
+      "col": 11,
+      "new": "裁决已取（④ 同款可辩护默认，2026-09-27）：统一到两级 campus.hub。选边依据是既有用法的计数而不是偏好——校园域五页里四页走两级（certification.vue 48 处、post-topic.vue 34 处、index.vue 21 处、topic-detail.vue 20 处，合计 123 处，本轮逐个 grep 复算过），只有一页（hub.vue 23 处）用顶层扁平 campusHub；因此本行要改的只有 hub.vue 加两份语言包，其余四页本就已经是目标形状。落地口径：25 个键一次性同批迁进中英文两份（只迁一边会让 i18n 配对门禁当场打红；该门禁的孤儿棘轮只许降不许升，1257 是当下上界）。附带发现（不在本行内、由孤儿棘轮承接，不另立开放项）：迁过去的 25 个键里有一批是零引用键，本来就已计入孤儿数；删它们会让棘轮下降，属下一次收口该做的事，本轮不混进这次结构迁移。名单不要靠裸键名 grep 得出——本轮实测 statusVerified 这类名字在别的命名空间里有同名引用，裸名一搜就误判成「有人在用」，派生必须按完整键路径。",
+      "why": "「为什么算自裁而非等人」要有计数；顺手发现的死键要写清归谁承接，否则下一轮会以为漏了"
+    }
+  ]
+}

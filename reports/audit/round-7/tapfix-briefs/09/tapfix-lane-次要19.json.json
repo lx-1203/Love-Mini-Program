@@ -1,0 +1,23 @@
+{
+ "lane": "subpackages/discover-extra/nearby/people",
+ "manifest": "次要19.json",
+ "sourceFile": "apps/client/src/subpackages/discover-extra/nearby/people.vue",
+ "counts": { "planned": 2, "ok": 0, "unverifiable": 2 },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "PE03",
+   "manifest": "次要19",
+   "page": "subpackages/discover-extra/nearby/people",
+   "reason": "本页在 pages.json 里开了 enablePullDownRefresh，判点就是整页下拉起 onPullDownRefresh 后重发 getRecommendations 的条数、指示器收起时刻与列表去重排序结果；页内没有任何元素能替代这个手势（.people-tab 两颗只改 scope、.people-row 只跳资料，都与刷新无关），判据要的三项全是时序与网络读数，另需在下拉途中再下拉一次。",
+   "needsCarrier": "欠 WS automator 的整页下拉通道（只有真实 touch 序列能起 onPullDownRefresh），加下拉进行中的二次下拉时序载具与 network 条数计数、uni.stopPullDownRefresh 被调用的生命周期探针。"
+  },
+  {
+   "id": "PE04",
+   "manifest": "次要19",
+   "page": "subpackages/discover-extra/nearby/people",
+   "reason": "判点是 .people-list（people.vue:207 的 scroll-view，只挂 @scrolltolower 到 loadMoreVisible :46-50）的增量渲染：第 21 人必须在触底后出现。该 scroll-view 不挂任何 @tap/@click，按 hardRules 不能当点击目标，而元素级 tap 也产生不了 scrollTop 变化去触发触底回调；它本身还在 v-else 分支里（前面依次是 loading、errorMessage、空态三个分支），静息首帧并不渲染。",
+   "needsCarrier": "欠 WS 连续滚动通道（反复触底直至无增量，再回顶）与每帧 DOM 行数、scrollTop、visibleCount 的读数载具；另需一个推荐人数大于 20 的账号或种子夹具，否则第 21 条数据根本不存在。"
+  }
+ ]
+}

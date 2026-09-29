@@ -1,0 +1,23 @@
+{
+ "lane": "subpackages/campus/campus/post-topic",
+ "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC.json",
+ "sourceFile": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+ "counts": { "planned": 2, "ok": 0, "unverifiable": 2 },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "PT25",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "page": "subpackages/campus/campus/post-topic",
+   "reason": "判点在匿名开关的 change 事件与它驱动的提交 payload 一致性（apps/client/src/subpackages/campus/campus/post-topic.vue:570-573 的 @change 调 toggleAnonymous，:390 口径的 checked 双向一致），而这个 switch 没有类名：源码里它只带 :checked/:color/@change，编译产物 subpackages/campus/campus/post-topic.wxml 里它是 class 仅剩 data-v-50997d12 的 scoped 哈希。同一卡片里能逐字看到的类只有 .options-section（:561）/.option-row（:562）/.option-info（:563）/.option-label（:564）/.option-desc（:568），没有一个挂 @tap/@change，点 .option-row 命中的是左侧文案区、触发不了原生 switch 的 change，把归属挂到父级等于篡改判据。",
+   "needsCarrier": "欠可寻址的开关载体：给这一行 switch 补类名，或让桥支持按 role/属性/序号定位原生控件；末尾「填表提交一次」还欠一条表单夹具（唯一标题）与提交钮的两步载具，payload.isAnonymous 需 network 请求体读数。"
+    },
+  {
+   "id": "PT40",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "page": "subpackages/campus/campus/post-topic",
+   "reason": "这条要读的是 .option-desc（post-topic.vue:568）在匿名开启后的文案替换与 --warn 修饰类，而文案与类名是文本断言、按 hardRules 不能当点击目标；能把这个状态带出来的唯一物件又是那枚没有类名的原生 switch（:570-573），页面上不存在带事件且能拨动它的等价物件（.option-row 及其子节点全无 @tap）。判据还要求 real 档回读服务端实际作者显示名与 isAnonymous 落库值，并把 UI 是否如实说明与后端硬编码 false 分两列裁级。",
+   "needsCarrier": "欠三样：可寻址的 switch 载体（补类名或桥支持按属性/role 定位）、开启匿名这个前置态的落地方式，以及 real 后端回读载具（创建响应体与服务端落库值比对）；mock 轮另需核对作者名为「匿名校友」的文本断言出口。"
+  }
+ ]
+}

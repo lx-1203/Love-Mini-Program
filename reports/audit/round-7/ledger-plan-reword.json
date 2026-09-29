@@ -1,0 +1,10 @@
+{
+ "patches": [
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001",
+   "col": 9,
+   "new": "判点 …-VILLAGE-INDEX-001：PostCard.vue 里 .post-card__tag--pink 规则已删（absent 锁规则行首；类名仅存于 :550 的删除说明注释），单色绿走 brand-500 这一档绿令牌（保留色，不是待删项）。**残余未并案**：胶囊底色两页不同源 —— PostCard 用 --c-bg-brand（#f0fdf9），detail 用 --c-brand-50（#E8FAF3），差一档；两处都在本行页内承载之外（PostCard/detail），作观察项，不在本行结案。测试锁住「索引页标签只来自 PostCard」这一前提。",
+   "why": "证据格里写成 css 声明形态的保留色，被删除型判据抽成「必须消失」的探针 ⇒ 产物里当然还在，成了假红；改成不会被当成 css-decl 的写法"
+  }
+ ]
+}

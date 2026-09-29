@@ -1,0 +1,29 @@
+{
+ "lane": "subpackages/profile-extra/profile/other",
+ "manifest": "次要20.json",
+ "sourceFile": "apps/client/src/subpackages/profile-extra/profile/other.vue",
+ "counts": { "planned": 2, "ok": 1, "unverifiable": 1 },
+ "cases": [
+  {
+   "id": "OT11",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/other",
+   "selector": ".other-more-fab",
+   "file": "apps/client/src/subpackages/profile-extra/profile/other.vue",
+   "line": 447,
+   "oldAction": "① tap .other-more-fab → sheet 弹出；② 三路关闭：点遮罩（BottomSheet.vue:73/:67）/ 点右上 ×（:91-92）/ 点任一动作项后自动关；③ 重开 tap「分享给好友」（other.vue:468-470）；④ 重开 tap「举报用户」（:471-473）→ ActionSheet 四个理由各选一次；⑤ 重开 tap「拉黑用户」（:474-476）→ modal 点取消 / 再走一次点确定；⑥ 右上「···」（:403-413）tap → ActionSheet 检查项数（未匹配 3 项 / matched 4 项含取消匹配）→ 选「取消匹配」→ modal 确定",
+   "newAction": "① tap .other-more-fab → sheet 弹出；② 三路关闭：点遮罩（BottomSheet.vue:73/:67）/ 点右上 ×（:91-92）/ 点任一动作项后自动关；③ 重开 tap「分享给好友」（other.vue:468-470）；④ 重开 tap「举报用户」（:471-473）→ ActionSheet 四个理由各选一次；⑤ 重开 tap「拉黑用户」（:474-476）→ modal 点取消 / 再走一次点确定；⑥ 右上「···」（:403-413）tap → ActionSheet 检查项数（未匹配 3 项 / matched 4 项含取消匹配）→ 选「取消匹配」→ modal 确定（FAB 点名：.other-more-fab，类名与 @tap 同在一行 apps/client/src/subpackages/profile-extra/profile/other.vue:447，回调把 moreSheetVisible 置 true，编译产物 subpackages/profile-extra/profile/other.wxml 内该类唯一；它是整条链的入口载具，sheet 里那三项 other-more-item（:468/:471/:474）与右上 × 都要先由这一步带出来才渲染，ActionSheet 与 modal 属原生层不在 wxml 树内）",
+   "needsIdentity": "A",
+   "why": "expected 的第一句就是 500ms 内 sheet 弹出且标题为更多操作，:447 那枚 FAB 是 moreSheetVisible 的唯一入口，其余目标全在它带出来的分支或原生层里；身份记 A 是因为该页要已登录且有可访问的目标 userId，未登录会被页面守卫拦下。"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "OT14",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/other",
+   "reason": "本条要点的重试在错误卡里：other.vue:425 把 @retry 交给 ProfileShell，真正挂事件的是 apps/client/src/components/profile/ProfileShell.vue:76 那枚 .profile-shell__retry，而它整块被 :74 的 v-else-if 条件（errorMessage 且无 profile）挡着，静息态不渲染；页面上没有任何元素能把这个错误态带出来，它只能由一次 401 或断网的真实请求失败造出来，② 的 reLaunch 深链与 ① 的 scrollTo 底到顶也不是可点物件。",
+   "needsCarrier": "欠错误态前置配方（real 档 401 或断网让 errorMessage 置起、missingParam 为假以保留 retryable）加 WS 连续滚动通道与 rect 量测载具；401 专属文案 apiErrors.loginRequired 的判定还需 network 状态码读数，③ 的两次重试还要求网络恢复可控。"
+  }
+ ]
+}

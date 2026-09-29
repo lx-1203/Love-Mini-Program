@@ -1,0 +1,22 @@
+{
+ "patches": [
+  {
+   "id": "MP-R2-CAMPUSINDEX-010",
+   "col": 11,
+   "new": "修：store 拆 certificationError 独立字段，index.vue 在认证拉取失败时给轻量重试/toast（对齐 hub.vue:180-186 的错误条形态 ⟨作废 certLoadFailed 系参照页令牌非本页判点⟩），或失败时保留上次 certificationInfo 不回退 unverified。；关联（非同一缺陷）MP-R2-CAMPUS-HUB-004 同族页 / MP-R2-CAMPUSINDEX-007 同根因不同症状",
+   "why": "把「参照物」标成作废，判点才只锁本页承载：参照页的类名/令牌被抽成本页必需判点，会产生 NOT_IN_EITHER 的假红（本轮实测 3 条）"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-005",
+   "col": 11,
+   "new": "修：为本页建定高链（参考 village/index.vue 的定高链 ⟨作废 village-page 系参照页类名非本页判点⟩ height:100%，工作树 :879-887 带 MP-R1-VILLAGE-INDEX-201 注释），使内部 scroll-y 与 enhanced/bounces 生效。**→ 本句作废为待裁决项**，三案交主编排层：**A**（台账原推荐，建定高链）代价＝正面违反 AppShell.vue:250-254 明文裁定，且 .shell 是全站共享外壳、锁高同时影响 15 个消费页，:306-314 的 sticky 头部改内部滚动后失效（吸顶丢效 + 断层底色回归）＝用一条新缺陷换一条旧缺陷；**B**（保持 window 滚动）代价＝模板 :386 的 scroll-y/:enhanced/:bounces 三属性永久惰性成误导性死属性，修法退化为「删三属性」，与台账处置语义相反；**C**（只在 .circles-list 写 calc(100vh − 头部实高)）代价＝需 --statusbar 与胶囊避让的实测量值（本 wave 禁构建禁连工具取不到，猜值即造新漂移），且仍与 sticky 机制冲突。三案均需架构裁决 + 真机量测。同类（非同缺陷）MP-R1-VILLAGE-INDEX-201（village 侧已实证修复，可抄定高链——但 village 无 AppShell 外壳，照抄即触发 A 案代价）",
+   "why": "把「参照物」标成作废，判点才只锁本页承载：参照页的类名/令牌被抽成本页必需判点，会产生 NOT_IN_EITHER 的假红（本轮实测 3 条）"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001",
+   "col": 11,
+   "new": "修：颜色按标签语义映射（活动/情感/普通）并两页共用同一 helper；或直接统一为 detail 的单色绿 ⟨作废 --c-brand-500 是判点要保留的绿色非待删项⟩，删掉 :545-548 的 pink 分支。 〔§82 注释清扫落定：ID 锚点在工作树 2 处命中、HEAD 0 命中、承载文件 dirty=1；判据台桶=UNDECIDABLE ⇒ 静态判据不足（判据未点名可核验物件或压缩改名），需补判点或帧；22:59 mock 重建已并入产物，本轮不声称观感已验〕",
+   "why": "把「参照物」标成作废，判点才只锁本页承载：参照页的类名/令牌被抽成本页必需判点，会产生 NOT_IN_EITHER 的假红（本轮实测 3 条）"
+  }
+ ]
+}

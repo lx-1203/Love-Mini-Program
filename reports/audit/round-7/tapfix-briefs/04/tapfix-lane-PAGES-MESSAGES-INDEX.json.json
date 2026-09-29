@@ -1,0 +1,59 @@
+{
+ "lane": "pages/messages/index",
+ "counts": {
+  "planned": 6,
+  "ok": 1,
+  "unverifiable": 5
+ },
+ "cases": [
+  {
+   "id": "MSG21",
+   "manifest": "PAGES-MESSAGES-INDEX",
+   "page": "pages/messages/index",
+   "selector": ".chat-item",
+   "file": "apps/client/src/pages/messages/index.vue",
+   "line": 527,
+   "oldAction": "① 点 .chat-item（index.vue:523 → openSession :253-255）；② 长按同一条（:524 → onSessionLongpress）观察是否同时发生跳转",
+   "newAction": "① 点 .chat-item（index.vue:523 → openSession :253-255）；② 长按同一条（:524 → onSessionLongpress）观察是否同时发生跳转 点名落点：.chat-item（现源码 index.vue:527 是该行的 class，:529 的 @tap=openSession 与 :530 的 @longpress=onSessionLongpress 挂在同一个节点上，hover-class 为 :528 的 chat-item--hover；该类在 mp-weixin 与 mp-weixin-real 两档的 pages/messages/index.wxml 里都是 class token，静息态实测 dom .chat-item:present(5)）——① 的跳转本腿可判，② 的长按仍欠 WS 侧 longpress 通道，本桥只发得出 tap 与 input。",
+   "needsIdentity": "",
+   "why": ".chat-item 同时带本条两个判点：:529 的 @tap=openSession（① 要验的跳转）与 :530 的 @longpress=onSessionLongpress（② 的误触发面），且实测静息态 present(5) 可点。"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "MSG05",
+   "manifest": "PAGES-MESSAGES-INDEX",
+   "page": "pages/messages/index",
+   "reason": "无主手势条：动作是「进入页面后立即下拉刷新」并统计 bootstrap 请求条数与动画起止，判点是 onPullDownRefresh 回调（index.vue:323-327 的 await 之后才 stopPullDownRefresh）与骨架不闪回，页内没有任何元素承载下拉；本页确实配了 enablePullDownRefresh（pages.json:64），但那只能由真实触摸序列触发，tap 一条元素既不会刷新也不产生动画读数。",
+   "needsCarrier": "欠 WS automator 的 touch/swipe 下拉通道 + network 请求条数与 stopPullDownRefresh 时刻读数（CLI 桥只有 tap 与 input）。"
+  },
+  {
+   "id": "MSG22",
+   "manifest": "PAGES-MESSAGES-INDEX",
+   "page": "pages/messages/index",
+   "reason": "面板与触发腿都不在本通道：长按会话行（index.vue:530 @longpress=onSessionLongpress :261）弹出的是 uni.showActionSheet（:262），四项 itemList 是原生层文本、不在渲染树里，success 与 fail 两路（:264 起）也只能由原生面板回调触发；本桥既发不出 longpress，也点不到原生面板的项。前置还要一条 muted=false 与一条 muted=true 的会话以核对第三项文案切换。",
+   "needsCarrier": "欠 WS 的 longpress 通道 + 原生 ActionSheet 的选项命中与取消路径（或产品侧把面板改成 DOM 弹层）+ 一条已免打扰会话夹具。"
+  },
+  {
+   "id": "MSG24",
+   "manifest": "PAGES-MESSAGES-INDEX",
+   "page": "pages/messages/index",
+   "reason": "整条是四步跨通道序列：① 长按选「免打扰」与 ④「恢复提醒」都要原生 ActionSheet 的项（index.vue:262 起，见 MSG22 同机理）；② 的下拉刷新要触摸手势；③ 要切走 Tab 大于 30s 再回（onShow 计时）；⑤ 要断网让 setSessionMuted 回 false 才能看 :276-277 的 operationFailed toast。可观测面 .chat-item__muted-icon（:557）虽是本页真元素，但它只在 muted 为真时挂上，且它没有事件、不是判点。",
+   "needsCarrier": "欠 longpress + 原生面板选项命中 + 下拉手势 + Tab 切换与网络失败注入四种载具，任缺一环都只能记半条。"
+  },
+  {
+   "id": "MSG25",
+   "manifest": "PAGES-MESSAGES-INDEX",
+   "page": "pages/messages/index",
+   "reason": "判点在原生面板项与徽标读数上：「标为未读」要先长按会话行（index.vue:530 @longpress=onSessionLongpress）再在 uni.showActionSheet（:262）里选第三项，本通道发不出 longpress 也点不到原生项；随后要核对的是 .chat-item__unread-badge（:574）与 :575 的 99+ 格式化文本，以及「进会话后被 markAllSessionsRead 清掉」（:304）这条闭环——后者还要求真跳进会话页再返回，tap 一成功就离开本页。",
+   "needsCarrier": "欠 longpress 通道 + 原生面板选项命中 + 未读徽标文本与 99+ 格式化读数；进入会话再返回属导航链断言，本桥留不下本页证据。"
+  },
+  {
+   "id": "MSG26",
+   "manifest": "PAGES-MESSAGES-INDEX",
+   "page": "pages/messages/index",
+   "reason": "删除路径三步都在本通道之外：① 与 ② 都要长按会话行开原生 ActionSheet 选「删除会话」，再在 uni.showModal（index.vue:281）里点取消或确定——两层都是原生 UI，没有 DOM 类名可归属；③ 要求 500ms 内连点删除入口 5 次并分栏统计客户端 DELETE 条数与服务端回读，④ 还要断网。删除是不可逆写操作，执行器另有 DENY 口径，不该由点名代替。",
+   "needsCarrier": "欠 longpress + 原生 Modal 按钮命中 + rapidTap 连点计数 + 断网注入与后端回读；本条应留在 WS/人工轮，不适合 tapTarget。"
+  }
+ ]
+}

@@ -1,0 +1,23 @@
+{
+  "note": "台账 24 行（MP-R7-G8-RING6-ADMIN-COUNT-FIELDS-001）改判：2026-09-27 用只读探针实测后台详情视图 27 个分量、likesCount/commentsCount 都在且值=1/1，原判据把「探针自己把字段集打印截断到前 14 个」当成了「后端没有计数字段」。真缺口只剩展示层一列，已另立 MP-R7-ADMIN-VILLAGE-COMMENTSCOLUMN-001。",
+  "patches": [
+    {
+      "id": "MP-R7-G8-RING6-ADMIN-COUNT-FIELDS-001",
+      "col": 6,
+      "new": "判据不成立（2026-09-27 只读探针实测反证：后台详情视图 HTTP 200、字段数=27、likesCount 与 commentsCount 都在且值=1/1。原判据读的是 g8-e2e.cjs 里 Object.keys(aRow).slice(0, 14) 截断后的前 14 个分量，计数排在第 18、19 位被切掉，于是把「我自己的打印截断」记成了「后端缺字段」）",
+      "why": "这不是改判洗绿：有一条可重跑的只读载具（scripts/qa/probe-admin-post-counts.mjs）与一份落盘读数（reports/audit/round-7/admin-post-counts-probe.json）当场否定原前提，且根因定位到具体那半行代码"
+    },
+    {
+      "id": "MP-R7-G8-RING6-ADMIN-COUNT-FIELDS-001",
+      "col": 9,
+      "new": "反证链三件：①运行态实测——scripts/qa/probe-admin-post-counts.mjs（只 GET，不写库，随时可重跑）2026-09-27 02:57 对保留帖 270／236 打出 HTTP=200、字段数=27、计数类字段=likesCount,commentsCount、值=1/1，读数落 reports/audit/round-7/admin-post-counts-probe.json；②源码侧——apps/api/src/main/java/com/campuslove/api/admin/AdminVillagePostController.java:857-885（record AdminVillagePostDetailView 第 18、19 分量就是 likesCount/commentsCount）、:787-810（SummaryView 同样带）、:71（@RequestMapping 前缀 /api/v1/admin/forum/village-posts 与环里请求的路径一致），且 git diff 094f7239..HEAD 对该文件为空 ⇒ 本轮基线以来没人改过它，这条账从立案起就判错了对象；③成因侧——原 g8-e2e.cjs RING6 的 evidence 串把 Object.keys(aRow) 截到前 14 个再用逗号拼成「后台字段集」，恰好打到 auditRemark 为止，与那条账 statusEvidence 里逐字抄下来的 15 字段集一字不差。残留真缺口已另立 MP-R7-ADMIN-VILLAGE-COMMENTSCOLUMN-001（列表页少渲染「评论」一列＋两语言包缺 villagePosts.statsComments），本行不再兼着它",
+      "why": "把「谁在什么时候量错了什么」写进台账，防止下一次有人又拿同一份截断输出立案"
+    },
+    {
+      "id": "MP-R7-G8-RING6-ADMIN-COUNT-FIELDS-001",
+      "col": 11,
+      "new": "不再需要后端改动（字段本来就在）。环本身要修的地方本轮已改：scripts/qa/g8-e2e.cjs 的 RING6 判点从「两条 HTTP <300」换成 countsParity(clientCounts, aRow)——两侧都必须读到数值且同名同值才 OK，任一侧读不到就按不通过处理（不许拿 HTTP 200 顶包），evidence 不再截断字段集；判点抽成纯函数并配 node scripts/qa/g8-e2e.cjs --selftest 六条样本（两侧同值=成、后台缺评论计数=不分成、数值不等=不分成、客户端 0 而后台缺字段=不分成、后台空体=不分成、客户端字段是字符串=不分成），三条变异体（sameCount 永真／numOf 缺字段补 0／不读数即通过）实测都能让它变红。下一手：8080 重建重启后随 G8 十环一起重跑，读到的应当是「两侧同名同值」那一支",
+      "why": "把环的加强和它的自测样本记在原行上，结案时能直接指着复跑输出而不是这段文字"
+    }
+  ]
+}

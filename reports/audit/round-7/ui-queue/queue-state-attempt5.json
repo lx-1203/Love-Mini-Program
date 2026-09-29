@@ -1,0 +1,28 @@
+{
+ "startedAt": "2026-09-26T22:37:13.383Z",
+ "legs": [
+  {
+   "name": "open-window-real",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/open-window-real.log",
+   "bytes": 541,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-guest-real",
+   "status": "QUEUED"
+  },
+  {
+   "name": "exec-A-real",
+   "status": "QUEUED"
+  },
+  {
+   "name": "close-out-open-window-mock",
+   "status": "QUEUED"
+  }
+ ]
+}

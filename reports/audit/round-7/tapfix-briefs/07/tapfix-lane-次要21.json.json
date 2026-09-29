@@ -1,0 +1,45 @@
+{
+ "lane": "subpackages/chat/official-chat/index",
+ "counts": {
+  "planned": 4,
+  "ok": 1,
+  "unverifiable": 3
+ },
+ "cases": [
+  {
+   "id": "OC10",
+   "manifest": "次要21",
+   "page": "subpackages/chat/official-chat/index",
+   "selector": ".nav-left",
+   "file": "apps/client/src/subpackages/chat/official-chat/index.vue",
+   "line": 386,
+   "oldAction": "各 tap .nav-left（:382-385 → goBack :328-335）一次；路B 另连点×3",
+   "newAction": "各 tap .nav-left（:382-385 → goBack :328-335，本条把目标逐字点名为 .nav-left 整块返回热区）一次；路B 另连点×3",
+   "needsIdentity": "A",
+   "why": "返回热区就是这一行的 view（class 含 nav-left press-feedback 且 @tap 绑 goBack，:386），goBack :328-335 的两路（栈>1 navigateBack 与 栈=1 switchTab）全挂在它这一个 bindtap 上；编译档 mp-weixin 与 mp-weixin-real 的 subpackages/chat/official-chat/index.wxml 里 class 静态含 nav-left 且该 view 带 bindtap，本轮执行档实测本页内容分支已渲染（OC02 探针 .input-bar__send:present(1)），说明它不在 LockScreen 与骨架之后；needsIdentity 写 A 是因为整块在模板 v-else 分支里（:380），未解锁身份只渲染 LockScreen（:379）而没有 nav-left。"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "OC01",
+   "manifest": "次要21",
+   "page": "subpackages/chat/official-chat/index",
+   "reason": "本条断言的是四个时刻的时序与滚动数值（SkeletonBlock 与 .chat-body 的存在性、scroll-into-view 取值、scrollTop 与 scrollHeight、末条消息 boundary），全程没有一次点击；.chat-body 与 .chat-scroll 都要等 ready 放行后才挂载（:363-365 与 :414），量的是渲染结果而不是可点物件；另外简报抄来的 oldAction 已被普查截断（与判据台现文差 27 字），照它改写 newAction 会被合并器按丢原文拒收。",
+   "needsCarrier": "欠 WS 侧定时采样与 createSelectorQuery 读数通道（scroll-into-view 与 scrollTop 与节点 rect），纯数值断言没有可点目标"
+  },
+  {
+   "id": "OC09",
+   "manifest": "次要21",
+   "page": "subpackages/chat/official-chat/index",
+   "reason": "重试按钮 .retry-btn（:410）确实编进了 wxml，但它整块在 view v-else-if 的 errorMessage 分支里（:408），静息态不渲染——同类条件分支本轮实测就是 absent（OC08 探针 .action-btn--primary:absent）；要进这个状态只能靠 GET 失败置 errorMessage（:297-299），页内没有任何入口物件能把它点出来。后半截的发送失败回滚还要求 real 档断网（requiresReal=true）并回读 inputValue 与 Toast 文案，而判据里的「输入」字样会让整条被 r-exec-cli.mjs:408 判成输入腿，点击目标一律点不动。",
+   "needsCarrier": "欠网络失败注入夹具（GET 返 5xx 或断网）以产生 errorMessage 前置，另欠把点击腿与输入腿拆成两条的能力"
+  },
+  {
+   "id": "OC14",
+   "manifest": "次要21",
+   "page": "subpackages/chat/official-chat/index",
+   "reason": "本条量的是布局链路：nav-bar 的 paddingTop 内联值（:381）、页级是否双层滚动、.chat-scroll 的 scrollTop 与 scrollHeight、.input-bar 高度、末条与输入栏之间那 20rpx 锚点间隙（:524），判据全是尺寸与滚动数值；其中的「滚到底」这一步 CLI 桥也发不出（只有 tap 与 input 两条腿，无 scroll 与 swipe）。",
+   "needsCarrier": "欠 WS 滚动通道与元素 rect 与样式读数，纯布局量测没有点击目标"
+  }
+ ]
+}

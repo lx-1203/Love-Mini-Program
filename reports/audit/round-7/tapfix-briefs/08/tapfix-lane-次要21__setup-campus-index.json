@@ -1,0 +1,38 @@
+{
+ "lane": "subpackages/setup/campus/index",
+ "counts": {
+  "planned": 3,
+  "ok": 1,
+  "unverifiable": 2
+ },
+ "cases": [
+  {
+   "id": "SCU09",
+   "manifest": "次要21",
+   "page": "subpackages/setup/campus/index",
+   "selector": ".skip-bar",
+   "file": "apps/client/src/subpackages/setup/campus/index.vue",
+   "line": 277,
+   "oldAction": "tap .skip-bar → 记录路由；再从 schedule 返回；另跑一次先选满城市再 tap 跳过；并跑一次同实例内切语言后观察跳过文案",
+   "newAction": "tap .skip-bar → 记录路由；再从 schedule 返回；另跑一次先选满城市再 tap 跳过；并跑一次同实例内切语言后观察跳过文案（本条把目标逐字点名为 .skip-bar，@tap 绑 skip）",
+   "needsIdentity": "",
+   "why": "跳过入口就是 :277 这张 view（class 含 skip-bar，role=button，@tap 绑 skip，skip :184-192 在非补认证场景下 replaceAppPath 到 schedule），它是全页唯一的 skip-bar 实例、也不在任何 v-if 之后；编译档 mp-weixin 与 mp-weixin-real 的 subpackages/setup/campus/index.wxml 里 class 静态含 skip-bar 且该 view 带 bindtap，本轮执行档实测本页内容在静息态已渲染（SCU05 探针 .card-header__help:present(1)）；「先选满城市再跳过」与「切语言看 skipLabel 是否更新」（:40 是 setup 期一次性求值的 const，非 computed）这两步仍要人工前置，点击会离页、落点按 observed 的路由链判。"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "SCU08",
+   "manifest": "次要21",
+   "page": "subpackages/setup/campus/index",
+   "reason": "本条两路都要走 isReauthScenario()=true 的分支（save :164-166 与 skip :186-188 才 replaceAppPath 到 pages/profile/index），而它读的是 profileStore.campusProfile.campusName 是否非空（:149-151）——注册流程身份下该值为空，两路都会被判进注册分支，判据要的落点根本不会产生；保存那半截还多两层：主按钮在 BottomActionBar 组件内部（:282-286 只传 primary-label），页级探针在本轮实测 15 次全为 .bar__primary:absent（组件作用域查不到），且它带 disabled 条件 !isComplete 或 saving（:284），空表单静息态是禁用态、点了不 emit。",
+   "needsCarrier": "欠「已有校园资料」的身份夹具（补认证场景），另需一个页级可达的底部主按钮载具（组件内按钮当前查不到且默认禁用）与写请求条数读数"
+  },
+  {
+   "id": "SCU13",
+   "manifest": "次要21",
+   "page": "subpackages/setup/campus/index",
+   "reason": "本条量的是滚动与底部留白与跨页链路一致性（正文 padding-bottom 实测值、scrollTop 与 scrollHeight、主按钮与安全区是否重叠，以及 campus 第 2 步到 schedule 无进度条再到 recommend-pref 第 3/4 步的三页截图串证），判据全是数值与跨页对照；「scrollTo 到底再回顶」与沿链路走一遍都要 WS 侧滚动与多页导航配方，CLI 桥只有 tap 与 input 两条腿；en-US 下的 skipLabel 文案完整性也是文本比对。",
+   "needsCarrier": "欠 WS 滚动通道与 padding 与 rect 读数，另欠跨三页的链路导航配方与双语截图对照，纯量测无点击目标"
+  }
+ ]
+}

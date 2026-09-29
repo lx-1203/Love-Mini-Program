@@ -1,0 +1,177 @@
+{
+ "batch": "10",
+ "laneCount": 6,
+ "caseCount": 6,
+ "lanes": [
+  {
+   "lane": "subpackages/tools/love-center/nearby",
+   "manifest": "次要19.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/tools/love-center/nearby.vue",
+   "sourceFound": true,
+   "planned": 1,
+   "outFile": "reports/audit/round-7/tapfix-briefs/10/tapfix-lane-次要19.json.json",
+   "cases": [
+    {
+     "id": "LN01",
+     "manifest": "次要19",
+     "page": "subpackages/tools/love-center/nearby",
+     "title": "冷启动直开：无参数消费（全部参数为幻影）；三态首帧不闪错误",
+     "oldAction": "① 进入后 0/0.5/1s 采样三态（loading :182-184 / error+retry :187-192 / empty+CTA :196-202 / 卡片区 :206-216）与 network；② 带 ?schoolId=1&userId=2 重进比对渲染与请求入参；③ 尝试整页下拉",
+     "expected": "① 首帧至多骨架/loading，落定后为卡片队列或带 CTA 的空态（R12-IND-NEARBY-LC-001 形态：插画+「看全部推荐」），不得闪「恒 0 人」式空屏或错误态；② 幻影参数不改变请求（仍固定 distanceMax=NEARBY_MAX_DISTANCE_KM，:52-54）也不新增请求；③ 无下拉刷新（未开启），记录为「功能未开启」而非缺陷",
+     "evidence": "navigation：两种路由 options 断言 + 三态采样截图 + network（getRecommendations 入参与条数）",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/profile-extra/profile/location",
+   "manifest": "次要20.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/profile-extra/profile/location.vue",
+   "sourceFound": true,
+   "planned": 1,
+   "outFile": "reports/audit/round-7/tapfix-briefs/10/tapfix-lane-次要20.json.json",
+   "cases": [
+    {
+     "id": "PL05",
+     "manifest": "次要20",
+     "page": "subpackages/profile-extra/profile/location",
+     "title": "「返回首页」按钮：openAppPath 走 Tab 语义（switchTab），栈不异常增长",
+     "oldAction": "tap .location-actions 第二个 .location-btn（:186-188 → goHome :114-116 → openAppPath(ROUTES.TAB.HOME)）",
+     "expected": "500ms 内落到 pages/home/index；openAppPath 对 tab 页走 uni.switchTab（utils/navigation.ts:95-116）→ 最终栈长度=1、栈顶=pages/home/index（不得出现 navigateTo 叠栈或栈深>1）；首页 Tab 选中态正确、原滚动位/信息流不丢失（Tab 页保活）；两条前置结果一致；console 无 navigateTo:fail/switchTab 报错",
+     "evidence": "navigation：两条完整栈快照（每帧 route+options）+ console；可免截图",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/profile-extra/profile/privacy",
+   "manifest": "次要20.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/profile-extra/profile/privacy.vue",
+   "sourceFound": true,
+   "planned": 1,
+   "outFile": "reports/audit/round-7/tapfix-briefs/10/tapfix-lane-次要20.json.json",
+   "cases": [
+    {
+     "id": "PR05",
+     "manifest": "次要20",
+     "page": "subpackages/profile-extra/profile/privacy",
+     "title": "跨页与冷启动持久化：改后 switchTab 离开 → 重进/整机重启后回读同值（两条水合路径 mock/real 分别验证）",
+     "oldAction": "① 开关1 置为 true 并确认 storage；② tap 返回离开页 → 再进入本页读值；③ wx.reLaunch('/pages/profile/index') 模拟整机回前台 → 再进本页读值；④ 清空 storage 后进入本页（缺字段/非法值兜底）",
+     "expected": "②③ 三次进入的 checked 均为 true：值来源必须是 store 水合（mock 分支 stores/profile.ts:336-339；real 分支 :365-368），不得依赖页面实例（页面零 onLoad、无本地 ref，privacy.vue 全页 computed 直取 store）；④ 缺字段兜底：allowSameSchoolRecommend 非 boolean → false（:186），receiveSameSchoolInfo !== false → true（:187，缺省即「接收开」），不得出现 undefined 传给 :checked（否则 switch 渲染异常）；⑤ 页面不得闪现「加载中/错误态」（本页无异步态）；console 无报错",
+     "evidence": "critical：三次进入的 after 截图 + storage 值与 checked 对照日志 + 路由链 + console",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/setup/interest/index",
+   "manifest": "次要21.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/setup/interest/index.vue",
+   "sourceFound": true,
+   "planned": 1,
+   "outFile": "reports/audit/round-7/tapfix-briefs/10/tapfix-lane-次要21.json.json",
+   "cases": [
+    {
+     "id": "INT07",
+     "manifest": "次要21",
+     "page": "subpackages/setup/interest/index",
+     "title": "未提交改动证伪（防连点双返回）：连点×5 只提交 1 次且只返回一次（MP-R2-INTEREST-001）",
+     "oldAction": "500ms 内对 .interest-save rapidTap×5，逐条记录：客户端 PUT 条数、Toast 条数、600ms 后返回回调执行次数、最终路由栈（每帧 route）",
+     "expected": "① 客户端 PUT 条数=1（handleSave 首行 if (saving.value) return :32-34）；② Toast 条数=1；③ 返回只发生 1 次：setTimeout 600ms 回调（:57-63）只随一次成功执行 → 最终栈长恰减 1 且落点=来源页；若守卫缺失会表现为两次回调先后触发 navigateBack/switchTab → 多弹一页（落到了来源页的上页或 switchTab 重复切换），该现象即为未修复判定；④ 保存中按钮文案切 common.loading（:106 已有文案反馈，无 disabled 置灰 → 与 campus 口径不一致须采证）；⑤ 服务端回读仅作旁证（services/http.ts:254-278 稳定 Idempotency-Key 会替客户端去重同 body 重试，不能作为守卫生效的证据）；console 无 navigateBack:fail、无报错",
+     "evidence": "critical：before + after 截图 + 完整路由链（每帧 route，验证只减一层）+ Toast 条数与文案 + console + network 逐条 PUT（含 Idempotency-Key）+ 服务端回读条数",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/market/detail/index",
+   "manifest": "次要22.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/market/detail/index.vue",
+   "sourceFound": true,
+   "planned": 1,
+   "outFile": "reports/audit/round-7/tapfix-briefs/10/tapfix-lane-次要22.json.json",
+   "cases": [
+    {
+     "id": "MD09",
+     "manifest": "次要22",
+     "page": "subpackages/market/detail/index",
+     "title": "长内容滚动到底：介绍正文完整可见、不被固定购买栏遮挡（MP-R2-次要22-019 结构风险采证）",
+     "oldAction": "scroll-view/页面滚动到底 → 静置观察 → 回顶；回填 scrollTop/scrollHeight/windowHeight 三元组",
+     "expected": "滚到底时商品介绍正文末行完整可见、不被 position:fixed 的购买栏遮住（.product-footer 160rpx 留白，:387/:630-632）；.product-scroll 为 flex:1 + overflow:hidden 而父级 .product-page 仅 min-height:100%（:409-415 / :540-543）→ 本页高度链不闭合（MP-R2-次要22-019 仍开放）：必须回填「滚动实际由 scroll-view 承担还是由页面级原生滚动承担」（观察 scroll-view 的 scroll 事件与页面 scrollTop 哪个变化），若为页面原生滚动兜底则记结构隐患 observation；回顶后 nav-bar 与大图完整、无白屏；无滚动穿透/回弹异常；console 无报错",
+     "evidence": "noop：执行日志（scrollTop/scrollHeight/windowHeight + 滚动承载体判定）+ 底部 1 张截图（遮挡判定属视觉结论，需要图）",
+     "requiresReal": true,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  },
+  {
+   "lane": "subpackages/market/wallet/index",
+   "manifest": "次要22.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/market/wallet/index.vue",
+   "sourceFound": true,
+   "planned": 1,
+   "outFile": "reports/audit/round-7/tapfix-briefs/10/tapfix-lane-次要22.json.json",
+   "cases": [
+    {
+     "id": "MW09",
+     "manifest": "次要22",
+     "page": "subpackages/market/wallet/index",
+     "title": "无下拉刷新能力守卫（pages.json 未开 enablePullDownRefresh）：不得出现半截刷新",
+     "oldAction": "在 wallet 页面上滑下拉 2 次，观察是否出现原生下拉刷新指示器；再滚到底/回顶各一次",
+     "expected": "不得出现下拉刷新动画，也不得出现「有动画但无数据重拉」的半截实现（源码无 onPullDownRefresh 钩子，wallet/index.vue 只 import onShow :10）；页面刷新路径应唯一：离开再进入（onShow）或错误条重试；若环境实际出现下拉指示器，说明全局 style 打开该能力 → 判「刷新无实现」为缺陷（此时 expected 改为：必须新增 onPullDownRefresh 且调 refreshWallet 后 stopPullDownRefresh）；纵向滚动到顶/底无白屏、无内容裁切；滚动数值回填；console 无报错",
+     "evidence": "noop：执行日志（下拉手势响应 + scrollTop/scrollHeight/windowHeight）+ 底部截图 1 张",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  }
+ ],
+ "schema": {
+  "lane": "本页 page 路径（逐字照抄，普查靠它对账）",
+  "counts": {
+   "planned": "必须等于本 lane 的 cases.length",
+   "ok": "写进 cases 的条数",
+   "unverifiable": "写进 unverifiable 的条数"
+  },
+  "cases": [
+   {
+    "id": "",
+    "manifest": "",
+    "page": "",
+    "selector": ".kebab-case，必须逐字出现在 file:line 那一行",
+    "file": "仓库相对路径，如 apps/client/src/pages/discover/index.vue（组件里的类名写组件自己的路径）",
+    "line": "该行号那一行必须含该类名片段（合并器会重读文件核对，不接受自述）",
+    "oldAction": "逐字抄简报里的 oldAction，一个字都别改",
+    "newAction": "保留全部交互动词，把 selector 逐字写进去；动词丢了或多出来都会被整条拒绝",
+    "needsIdentity": "该目标只在某身份下存在时写 guest/A/B，否则留空",
+    "why": "为什么是它（一句话，指向源码里那条 bindtap）"
+   }
+  ],
+  "unverifiable": [
+   {
+    "id": "",
+    "manifest": "",
+    "page": "",
+    "reason": "",
+    "needsCarrier": "欠哪条载具才能点名（如 WS automator 的 touch/swipe、需要特定夹具、纯文案断言）"
+   }
+  ]
+ },
+ "hardRules": [
+  "cases + unverifiable 必须恰好等于 planned，多一条少一条整份不采信。",
+  "selector 必须在 file 的 line 那一行逐字存在；不许把类名改成「更好看」的写法，也不许引用一个只有样式没有事件的类——目标是能被自动化点到的东西，优先带 @tap/@click/bindtap/@input/@confirm 的那层。",
+  "gestureOnly=true 的条：CLI 桥没有连续手势，要么它其实有个可点的等价物件（如三键按钮本身）并保留原动词，要么进 unverifiable 并在 needsCarrier 写明欠 WS 手势通道。不许把「向右拖动」悄悄改成「点击」。",
+  "expected 里出现的具体文案/数字不能当点击目标；这类条进 unverifiable 并说明它断言的是文本不是物件。",
+  "只写自己这一份 outFile，不改 ops/*.json，不改别的 lane，不改台账，不跑模拟器。"
+ ]
+}

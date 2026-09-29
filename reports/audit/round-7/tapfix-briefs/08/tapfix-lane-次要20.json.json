@@ -1,0 +1,32 @@
+{
+ "lane": "subpackages/profile-extra/profile/tasks",
+ "counts": {
+  "planned": 3,
+  "ok": 0,
+  "unverifiable": 3
+ },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "TK01",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "reason": "本条只等首屏并核对三处数值是否同源（已完成计数文案 :380-381、积分卡百分比与进度条填充宽度 :385-393 都取自 progressPercent :234-236、四张卡的勾选态 :426-438），全程没有一次点击，判据是文本与内联 style 宽度读数；骨架分支（:398-400 的 v-if=loadingRealTasks 且 realTasks===null）在 mock 轮本就不该出现，也是渲染态读数而不是可点物件。",
+   "needsCarrier": "纯首屏数值与文案断言：欠两个时刻的截图与 rect 与 style 读数通道，没有点击目标可点名"
+  },
+  {
+   "id": "TK03",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "reason": "任务卡的热区是真的（tasks.vue:405 的 view class 含 task-item card-base press-feedback，@tap 绑 handleTaskTap :410），但本条要的是「已完成那张」，而 done 态在静息态取不到：mock 列表里 profile 卡的 done 由 sessionStore.isProfileComplete 驱动（:111 与 :120）、checkin 卡的 done 由 onShow 从签到状态同步且初值为 false（:108 与 :129），本轮实拍四张卡右侧全是「去完成」且头部计数为已完成 0（reports/screenshots/round-7-tap3/次要20-TK02-after.png），条件类 task-item__status--done（:428）因此不渲染；此时点名 .task-item 只会 first-match 到第一张未完成卡、走跳转分支，把「必给 taskDone Toast」判成假红。requiresReal=true 还会让 mock 档整条先被档位门跳过。",
+   "needsCarrier": "欠一份至少一项任务已完成的夹具（真实签到一次，或换 profileCompleted=true 的身份），另需 Toast 文案与振动与路由不变读数"
+  },
+  {
+   "id": "TK10",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "reason": "本条证的是 checkinDone 单向锁存（:346-348 只在 true 时置位、无 else 复位）在 UI 上的后果，前置是服务端签到状态的两向翻转：先以已签到身份 reLaunch 进页读勾选态，再把服务端改回未签到（或换身份）退出重进，还要 evaluate 回读 store 与页面 ref 对照，并分别记录回退列表与后端列表两种来源（:164 与 :172-174）；没有任何一步是元素点击，requiresReal=true 使 mock 档整条被跳过。",
+   "needsCarrier": "欠服务端签到状态可控的夹具与 evaluate 取值通道，另需两次重进页的路由配方，纯状态翻转断言无点击目标"
+  }
+ ]
+}

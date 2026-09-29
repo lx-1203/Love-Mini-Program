@@ -1,0 +1,22 @@
+{
+ "patches": [
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-022",
+   "col": 6,
+   "new": "已修复（源码级判点：删除型缺陷只能按 absent 判；旧写法「产物侧已见」授予的那条绿本轮作废，理由见 statusEvidence）",
+   "why": "判据台本轮把该行从 ARTIFACT_VERIFIED 降成 UNDECIDABLE：授予绿用的探针是 console.warn，而它在修复前的 HEAD 里就已存在，命中不能证明改动落地"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-022",
+   "col": 9,
+   "new": "apps/client/src/stores/messages.ts:1241 现值：async setSessionPinned(sessionId: string, pinned: boolean) { 〔2026-09-27 04:46 重锚〕真身复核：`git show 094f7239:apps/client/src/stores/messages.ts` 里 toggleSessionPin 出现 2 次，工作树源码 0 次，mock 产物 grep 0 命中（src/.mimosa/hook-state 下的命中是别家工具的历史快照，不是源码，也不进产物）。机器判点已立在 scripts/qa/verify-source-shape.mjs 同号条目：absent /toggleSessionPin/ 加 present /async setSessionPinned\\(/，本轮实测成立（total=62 成立=61，唯一不成立是 MESSAGES-004 待裁决）。旧判点之所以不可采信：它把相邻的 console.warn 命中当成删除已落地的证据。",
+   "why": "把「旧绿为什么不作数」和「新判点是什么」写在同一格，下一轮不会再拿 console.warn 认领这条"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+   "col": 9,
+   "new": "判据重写：原判据里「与 MyHeader 共用 formatter」的前提被源码推翻（MyHeader 当时是整串直出，两页根本不同序），而「把 loc 解构顺序对调」字面不可执行（后端 location 串本体是「城市 · 学校」，对调会把城市渲染成学校）。本轮把这条改判成可判物件：**两页对同一份 basic 必须渲染出同一序**，方向由两张理想效果图定——素材/理想效果图/已经填完资料的个人主页.png 的 meta 行实测读作「21岁 · 北京大学 · 北京」（本轮逐图像素核对，2026-09-27 03:19），与 他人显示主页.png 同序 ⇒ 该动的是「我的页」而不是「他人页」。落地三件：新建 apps/client/src/utils/profile-meta.ts（profileMetaParts 与 profileMetaLine，解析位序不动、只改输出 push 序）；components/profile/mine/MyHeader.vue:23 由整串直出改成 profileMetaLine；components/profile/public/PublicIdentity.vue:21 由本地重排改成 profileMetaParts（两处都留了 import 判点）。载具：apps/client/src/tests/utils/profile-meta.spec.ts 六条（纯函数三条：重序、无分隔符不造假、缺字段不产悬空分隔符；挂载测三条：两页各自 年龄 在最前且 学校 先于 城市、两页必须真的调用共用 formatter 且不得自己 split location）。实测 `vitest run src/tests/utils/profile-meta.spec.ts` = Tests 6 passed (6)；**负例实测能红**：把 MyHeader 临时退回整串直出后同一命令报 `MyHeader 里应当出现城市: expected 17 to be greater than 17`、Tests 1 failed 5 passed，退回已撤销并复跑回 6/6。另记：两页 meta 原先 0 条测试覆盖，本行是它们的第一条。 〔判点重锚 2026-09-27 04:48〕本轮把内联解析抽进 apps/client/src/utils/profile-meta.ts 之后，旧三条 present（钉 PublicIdentity 内部的 `const [cityPart, schoolPart] = loc.split(\"·\")` 等）当场失效——不是缺陷回归，是判点钉错了地方：它钉「某一页内部怎么写」，而本行缺陷本体是「两页必须同序」。verify-source-shape 同号条目已改成结构断言：两页都 import 且调用 profileMeta*、都不再就地 split、共用模块里 push 序为 school→city；实测 total=62 成立=61。",
+   "why": "自己本轮的改动会作废自己早先的判点，必须当场留痕，否则下一轮读到的是一条永远不成立的判点"
+  }
+ ]
+}

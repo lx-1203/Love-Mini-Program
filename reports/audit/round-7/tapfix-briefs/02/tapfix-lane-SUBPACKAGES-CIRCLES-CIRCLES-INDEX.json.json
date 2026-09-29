@@ -1,0 +1,111 @@
+{
+ "lane": "subpackages/circles/circles/index",
+ "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json",
+ "sourceFile": "apps/client/src/subpackages/circles/circles/index.vue",
+ "counts": {
+  "planned": 11,
+  "ok": 4,
+  "unverifiable": 7
+ },
+ "cases": [
+  {
+   "id": "CI05",
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "page": "subpackages/circles/circles/index",
+   "selector": ".circles-tab",
+   "file": "apps/client/src/subpackages/circles/circles/index.vue",
+   "line": 400,
+   "oldAction": "依次 tap 7 个 .circles-tab（:353 @tap=activeQuickTab=tab.key），每个 tab 记录：卡片数、首卡名称、激活样式 class、aria-selected；再回到「全部」",
+   "newAction": "依次 tap 7 个 .circles-tab（:353 @tap=activeQuickTab=tab.key），每个 tab 记录：卡片数、首卡名称、激活样式 class、aria-selected；再回到「全部」 ⇒ 点名 tapTarget .circles-tab（apps/client/src/subpackages/circles/circles/index.vue:400）",
+   "needsIdentity": "",
+   "why": "index.vue:400 的 .circles-tab 是七个快捷分类 tab 在 v-for 里的共用节点，同节点 :404 就是 @tap 直接把 activeQuickTab 赋成 tab.key，激活态条件类 circles-tab--active 绑在同一节点的 :401；简报原引的 :353/:346-357 是过期行号。它在页自有的 #default 插槽里（PageStateContainer 的内容态），编译产物 subpackages/circles/circles/index.wxml 里是 wx:for + bindtap 的 view，同页 .circle-card__count 实测 present(14) 证明内容态在屏"
+  },
+  {
+   "id": "CI10",
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "page": "subpackages/circles/circles/index",
+   "selector": ".circle-card",
+   "file": "apps/client/src/subpackages/circles/circles/index.vue",
+   "line": 416,
+   "oldAction": "①tap 第 1 张 .circle-card 的**非按钮区**（封面或名称处）；②读取主页 URL 的 circleId 与页面标题；③返回本页；④对最后一张卡重复一次",
+   "newAction": "①tap 第 1 张 .circle-card 的**非按钮区**（封面或名称处）；②读取主页 URL 的 circleId 与页面标题；③返回本页；④对最后一张卡重复一次 ⇒ 点名 tapTarget .circle-card（apps/client/src/subpackages/circles/circles/index.vue:416）",
+   "needsIdentity": "",
+   "why": "index.vue:416 的 .circle-card 是圈卡本体、同节点 :418 @tap=goToCircleHome(circle)（:151-161 内未认证校园圈会 Toast 拦截再跳），加入钮另有 .circle-card__action 且用 @tap.stop（:458/:462）不冒泡 ⇒ 点卡片非按钮区正是本条要的那一下；编译产物里 circle-card 是页面自有节点、实测 present(14)"
+  },
+  {
+   "id": "CI05",
+   "manifest": "次要18",
+   "page": "subpackages/circles/circles/index",
+   "selector": ".circles-tab",
+   "file": "apps/client/src/subpackages/circles/circles/index.vue",
+   "line": 400,
+   "oldAction": "依次 tap 7 个 .circles-tab（:346-357 → activeQuickTab 赋值 :353），每次记录卡片集合；对「更多」（仅图标无文字，:355）单独确认；横向滚动 .circles-tabs（:344）到尾并点最后一项",
+   "newAction": "依次 tap 7 个 .circles-tab（:346-357 → activeQuickTab 赋值 :353），每次记录卡片集合；对「更多」（仅图标无文字，:355）单独确认；横向滚动 .circles-tabs（:344）到尾并点最后一项 ⇒ 点名 tapTarget .circles-tab（apps/client/src/subpackages/circles/circles/index.vue:400）",
+   "needsIdentity": "",
+   "why": "与主 manifest 的 CI05 同一物件：index.vue:400 的 .circles-tab（v-for、@tap 赋值 activeQuickTab 在 :404、激活类 circles-tab--active 在 :401），简报里的 :353 已过期。横向滚到尾那一腿无载具 ⇒ 本条只能点名 tab 本体，尾项「更多」的可点性仍要滚动通道"
+  },
+  {
+   "id": "CI06",
+   "manifest": "次要18",
+   "page": "subpackages/circles/circles/index",
+   "selector": ".circle-card",
+   "file": "apps/client/src/subpackages/circles/circles/index.vue",
+   "line": 416,
+   "oldAction": "① tap 普通圈卡 .circle-card（:363-367 → goToCircleHome :151-161）→ 观察路由；② tap campusVerified=true 的圈（未认证身份）；③ 返回后确认列表态",
+   "newAction": "① tap 普通圈卡 .circle-card（:363-367 → goToCircleHome :151-161）→ 观察路由；② tap campusVerified=true 的圈（未认证身份）；③ 返回后确认列表态 ⇒ 点名 tapTarget .circle-card（apps/client/src/subpackages/circles/circles/index.vue:416）",
+   "needsIdentity": "",
+   "why": "index.vue:416 的 .circle-card + :418 @tap=goToCircleHome 就是本条 ① 的落点判据载体（:160 带 circleId），② 的校园认证圈 Toast 拦截在同一函数 :156 里、要未认证身份才会走到，但点击物同一件；③ 是返回后的态保持。简报原引 :363-367/:151-161 中行号已过期"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "CI03",
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "page": "subpackages/circles/circles/index",
+   "reason": "错误态不是本页任何元素能切出来的：.state-error 住在 components/common/PageStateContainer.vue:24 的 v-else-if=state 为 error 里，重试钮 .error-btn 在 components/common/ErrorState.vue:49（同节点 :50 @tap=emit 一个 retry，页侧 index.vue:381 接 @retry=handleRetry），两者都编译进组件自己的 wxml、页作用域选择器进不去（实测页面对组件内互斥分支 .today-card__skeleton 与 .today-card__empty 同帧都答 absent，页面自有节点答 present）；要出这一态还得真实档把列表拉取弄失败，mock 档 empty 亦不可达（expected 自己就要求把 mock-empty 记进 unverifiable）",
+   "needsCarrier": "欠真实档后端故障注入（让 GET /circles 失败以把 pageState 推到 error）+ 组件作用域深选载具 + 恢复后端后再 tap 一次的三段串接；这些都是前置配方，不是缺类名"
+  },
+  {
+   "id": "CI06",
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "page": "subpackages/circles/circles/index",
+   "reason": "本条判的是「切走再切回的滚动位与数据是否丢」：第 ① 与 ④ 腿要在列表里向下滚到第 5 张卡并回读 scrollTop，第 ⑤ 腿要重复 3 轮，CLI 桥没有连续滚动通道也没有 scrollTop 读数；tab 本身虽可点（.circles-tab 在 :400），但点名它测不到本条断言的东西，且「第 4 个 tab」也点不到（现通道只会点选择器首匹配）",
+   "needsCarrier": "欠 WS 滚动通道与 scrollTop/卡片渲染顺序读数，另欠按第 N 个同名节点定位的能力；network 计数腿也要另一条载具"
+  },
+  {
+   "id": "CI17",
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "page": "subpackages/circles/circles/index",
+   "reason": "本条逐卡抄录统计行文本并核对千分位与「w」阈值格式（.circle-card__count 在 :435，热门徽标 .circle-card__hot-badge 在 :427 的 v-if 上），判据是文本内容与像素宽度，两者都是纯信息节点、没有事件绑定可点；还要 375px 机型与 7999/8000 边界值的 mock 数据构造",
+   "needsCarrier": "欠逐卡文本读数与 rect 宽度核对腿，以及能造出边界成员数的夹具；expected 里出现的 999、1,000、8,932、1.0w 这些文案不能当点击目标"
+  },
+  {
+   "id": "CI18",
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "page": "subpackages/circles/circles/index",
+   "reason": "本条核的是封面出图、未知圈名的兜底封面、加载失败降级与 lazy-load 补齐：物件是 circle-card__cover 这个 image 节点（:421），它没有任何事件绑定，点它不产生可判反馈；第 ③ 腿要在 DevTools 里阻断该图片资源、第 ④ 腿要快速滚到底再回顶，都超出点击通道",
+   "needsCarrier": "欠资源阻断（图片加载失败模拟）与 WS 滚动通道，另需逐卡视觉比对与 src 读数；属视觉与网络模拟载具"
+  },
+  {
+   "id": "CI20",
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "page": "subpackages/circles/circles/index",
+   "reason": "本条 ① 要批量读四类元素的 boundingClientRect 并换算 rpx，②③④⑤ 要点的是「返回钮上/下边缘内 4rpx」「加入钮左右与下边缘」「tab 外边距区」「卡片最右下角含 list-bottom-spacer」这类坐标级位置；现通道只能按选择器点节点首匹配，落不到边缘，也报不出误命中相邻元素这件事",
+   "needsCarrier": "欠按坐标点击的载具（tap at x,y）与批量 rect 读数腿；64rpx 与 60rpx 的热区判定要靠数值表而非点击成败"
+  },
+  {
+   "id": "CI21",
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "page": "subpackages/circles/circles/index",
+   "reason": "本条是滚动与遮挡普查：滚到顶中底、把 .circles-tabs（:395 的 scroll-view，只有 scroll-x 没有事件绑定）横滚到最右再回最左、在两种机型上核最后一张卡与加入钮是否被安全区遮挡、双指回弹看裁切，全是手势与 rect 极值读数，没有可点的等价物件",
+   "needsCarrier": "欠 WS 纵横滚动通道 + scrollTop/scrollLeft 极值与元素 rect 读数 + 多机型视口设置"
+  },
+  {
+   "id": "CI22",
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "page": "subpackages/circles/circles/index",
+   "reason": "本页 pages.json 条目（subpackages/circles 的 circles/index，pages.json:100）没有 style 段即未开 enablePullDownRefresh，页内 scroll-view（:386 与 :395）也没有 refresher-enabled ⇒ 下拉手势不会产生任何刷新控件可点，本条断言的正是「刷新入口缺失」这一事实；第 ④ 腿还要退出到首页再回到本页观察 onShow 的补拉条件（:83 要求列表为空），是导航与请求计数",
+   "needsCarrier": "欠 WS 下拉手势通道与 network 计数读数；结论本身是「缺少可点载具」这一观察，不能靠点名某个元素来判"
+  }
+ ]
+}

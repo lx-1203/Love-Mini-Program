@@ -1,0 +1,86 @@
+{
+ "lane": "subpackages/circles/circles/circle-home",
+ "counts": {
+  "planned": 7,
+  "ok": 5,
+  "unverifiable": 2
+ },
+ "cases": [
+  {
+   "id": "CH03",
+   "manifest": "次要18",
+   "page": "subpackages/circles/circles/circle-home",
+   "selector": ".hero-btn",
+   "file": "apps/client/src/subpackages/circles/circles/circle-home.vue",
+   "line": 460,
+   "oldAction": "两种前置各 tap .hero-btn（:457-460 → goBack :332-339）",
+   "newAction": "两种前置各 tap .hero-btn（:457-460 → goBack :332-339） 点名落点：.hero-btn（circle-home.vue:460 那个返回那一枚，@tap=goBack；同名节点还有 :467 的分享 button，它在 DOM 序里靠后，first-match 正好落在返回键上）。类名在 mp-weixin 与 mp-weixin-real 两档的 circles/circle-home.wxml 里都是 class token；mock 档走 FALLBACK_CIRCLE 演示圈（isUnknownCircle 在 useMock 时恒假，:90）⇒ 静息态就渲染主分支，real 档裸直达要先有 ?circleId= 才有这些节点；实测同页 CH04 dom .hero-btn--share:present(1) 亦证 hero 两钮在静息态成元素。",
+   "needsIdentity": "",
+   "why": ":460 的 .hero-btn 是本页唯一绑 goBack 的静息可点件，正是两态判据要触发的那次返回。"
+  },
+  {
+   "id": "CH05",
+   "manifest": "次要18",
+   "page": "subpackages/circles/circles/circle-home",
+   "selector": ".info-join",
+   "file": "apps/client/src/subpackages/circles/circles/circle-home.vue",
+   "line": 505,
+   "oldAction": "① tap .info-join ×1 → 观察两处按钮文案同步；② tap 底部按钮退出；③ 300ms 内 rapidTap .info-join ×5；④ 失败前置（real 500/断网）tap ×1",
+   "newAction": "① tap .info-join ×1 → 观察两处按钮文案同步；② tap 底部按钮退出；③ 300ms 内 rapidTap .info-join ×5；④ 失败前置（real 500/断网）tap ×1 点名落点：.info-join（circle-home.vue:505，@tap=toggleJoin，与信息卡底部栏的 .bottom-join（:614）、.bottom-post（:617）共享 joined 这一份 computed :105）。类名在 mp-weixin 与 mp-weixin-real 两档的 circles/circle-home.wxml 里都是 class token；mock 档走 FALLBACK_CIRCLE 演示圈（isUnknownCircle 在 useMock 时恒假，:90）⇒ 静息态就渲染主分支，real 档裸直达要先有 ?circleId= 才有这些节点。①② 一次 tap 可判；③ 的 300ms 内连点 5 次仍欠 rapidTap 通道（本桥一条 case 每个目标只下发一次）。",
+   "needsIdentity": "",
+   "why": ":505 的 .info-join 带 @tap=toggleJoin 且静息渲染，是三处入口里唯一能一次 tap 就看到文案同步的那一枚。"
+  },
+  {
+   "id": "CH07",
+   "manifest": "次要18",
+   "page": "subpackages/circles/circles/circle-home",
+   "selector": ".feed-card",
+   "file": "apps/client/src/subpackages/circles/circles/circle-home.vue",
+   "line": 546,
+   "oldAction": "① tap .feed-card 正文区；② tap 卡片内「评论」action（:588 @tap.stop openFeedDetail）；③ 返回；④ 对 mock 无话题而回退演示 feed 的场景重复 tap（演示 id f1/f2）",
+   "newAction": "① tap .feed-card 正文区；② tap 卡片内「评论」action（:588 @tap.stop openFeedDetail）；③ 返回；④ 对 mock 无话题而回退演示 feed 的场景重复 tap（演示 id f1/f2） 点名落点：.feed-card（circle-home.vue:546，@tap=openFeedDetail）。类名在 mp-weixin 与 mp-weixin-real 两档的 circles/circle-home.wxml 里都是 class token；mock 档走 FALLBACK_CIRCLE 演示圈（isUnknownCircle 在 useMock 时恒假，:90）⇒ 静息态就渲染主分支，real 档裸直达要先有 ?circleId= 才有这些节点，且 mock 下 displayFeed 有演示数据回退（:543 空态与 :546 卡片二选一），默认 activeTab 就是 posts（:54）。② 的评论 action 是另一枚同名 .feed-action（:591），本条按 ① 的卡片点名。",
+   "needsIdentity": "",
+   "why": ":546 的 .feed-card 就是被判「死卡片」的那个节点，@tap=openFeedDetail 落 topic-detail，非空 id 即跳（:418-420）。"
+  },
+  {
+   "id": "CH08",
+   "manifest": "次要18",
+   "page": "subpackages/circles/circles/circle-home",
+   "selector": ".feed-more",
+   "file": "apps/client/src/subpackages/circles/circles/circle-home.vue",
+   "line": 560,
+   "oldAction": "① tap .feed-more；② 原生菜单选第 1 项「查看全部话题」；③ 返回重开后选第 2 项「去圈内发帖」；④ 重开后取消；⑤ 验证 tap 图标不冒泡进详情",
+   "newAction": "① tap .feed-more；② 原生菜单选第 1 项「查看全部话题」；③ 返回重开后选第 2 项「去圈内发帖」；④ 重开后取消；⑤ 验证 tap 图标不冒泡进详情 点名落点：.feed-more（circle-home.vue:560，@tap.stop=onFeedMore，全文件唯一）。类名在 mp-weixin 与 mp-weixin-real 两档的 circles/circle-home.wxml 里都是 class token；mock 档走 FALLBACK_CIRCLE 演示圈（isUnknownCircle 在 useMock 时恒假，:90）⇒ 静息态就渲染主分支，real 档裸直达要先有 ?circleId= 才有这些节点。②③④ 的菜单项与取消住在 uni.showActionSheet（:398-408）原生层，tap 之后只能靠截图与路由变化判定，本桥点不到选项本身。",
+   "needsIdentity": "",
+   "why": ":560 的 .feed-more 带 @tap.stop=onFeedMore，是「死图标」判据唯一可归属的节点，且 .stop 就是 ⑤ 要验的冒泡隔离。"
+  },
+  {
+   "id": "CH09",
+   "manifest": "次要18",
+   "page": "subpackages/circles/circles/circle-home",
+   "selector": ".feed-action",
+   "file": "apps/client/src/subpackages/circles/circles/circle-home.vue",
+   "line": 580,
+   "oldAction": "① tap .feed-action（点赞，:577-586）×1 与 ×2；② 记录 network 面板是否有写请求；③ 下拉重进/切后台回页后再读点赞数；④ real 包重复 ①③",
+   "newAction": "① tap .feed-action（点赞，:577-586）×1 与 ×2；② 记录 network 面板是否有写请求；③ 下拉重进/切后台回页后再读点赞数；④ real 包重复 ①③ 点名落点：.feed-action（circle-home.vue:580 那一枚点赞，@tap=toggleLike；:591 的评论 action 同类名但 DOM 序靠后，first-match 即点赞）。类名在 mp-weixin 与 mp-weixin-real 两档的 circles/circle-home.wxml 里都是 class token；mock 档走 FALLBACK_CIRCLE 演示圈（isUnknownCircle 在 useMock 时恒假，:90）⇒ 静息态就渲染主分支，real 档裸直达要先有 ?circleId= 才有这些节点。③④ 的重新进入与切后台回页仍欠 WS 手势与前后台通道。",
+   "needsIdentity": "",
+   "why": ":580 的 .feed-action 绑 @tap=toggleLike（纯本地翻转 :385-388），正是本条要验的反馈面；同名第二枚是要跳详情的评论项。"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "CH06",
+   "manifest": "次要18",
+   "page": "subpackages/circles/circles/circle-home",
+   "reason": "类名真存在（.tab-item 在两档 circle-home.wxml 里都是 class token，circle-home.vue:525，@tap=activeTab=key 在 :527），但一条 selector 表达不了这条判据：五个 tab 共用 .tab-item，first-match 恒是 TAB_KEYS[0] 即 posts（:54），而默认激活项就是它——tap 一次看到的是「点已选中的 tab 什么都不变」，必判假红；②还要在「成员」tab 核对拼接了人数格式化结果的文案，③要逐 tab 读激活 class（:526 tab-item--active）与指示条（:530）。",
+   "needsCarrier": "欠按 nth 定位同名节点的通道（或每个 tab 一枚专属修饰类）+ 逐 tab 的 DOM 与文本读数；本桥一条 case 每个目标只下发一次动作。"
+  },
+  {
+   "id": "CH11",
+   "manifest": "次要18",
+   "page": "subpackages/circles/circles/circle-home",
+   "reason": "本条是一次跨元素普查而非单点：底部栏两态互斥（.bottom-join :614 与 .bottom-post :617 靠 v-if joined 二选一，单档只能看到其中一种）、.bottom-fab（:620）、.topics-link（:599）、hero 两钮、三处加入、5 个 tab、feed 四类可点元素都要取 boundingBox 换算 rpx，⑤ 还要把页面滚到顶与底并核对置顶公告箭头（:535）与统计文本的零副作用。一条 selector 承载不了 20 多个元素的 rect 与滚动读数。",
+   "needsCarrier": "欠逐元素 rect 与 rpx 换算通道 + 页面级滚动通道 + 未加入与已加入两态各一轮夹具（两态由 store 的 isJoined 决定，不是页内可切的东西）。"
+  }
+ ]
+}

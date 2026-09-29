@@ -1,0 +1,110 @@
+{
+ "startedAt": "2026-09-27T08:45:07.119Z",
+ "legs": [
+  {
+   "name": "open-window-real-r7final",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage6b/open-window-real-r7final.log",
+   "bytes": 541,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-A-real-r7final",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage6b/exec-A-real-r7final.log",
+   "bytes": 62882,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-final-A-real",
+    "RUNNER_STATS identity=A loginVerify=logged-in userId=100158 executed=195 failed=6 skipped=906(交互动词=4 requiresReal=0 非真实用例=871 探针无结果=0 判据无可判物件=2 出帧失败=0 交互禁触=2 交互没点名=16 交互后离页=0 锁屏挡住=0 交互下发失败=11) 页组=58 真做过的交互=36 折叠探针类名次数=417 出帧=195 未点名类名=94 通道异常次数=0",
+    "RUNNER_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-guest-real-r7final",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage6b/exec-guest-real-r7final.log",
+   "bytes": 54304,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-final-guest-real",
+    "RUNNER_STATS identity=guest loginVerify=not-logged-in executed=105 failed=87 skipped=915(交互动词=22 requiresReal=0 非真实用例=871 探针无结果=0 判据无可判物件=1 出帧失败=0 交互禁触=2 交互没点名=9 交互后离页=0 锁屏挡住=0 交互下发失败=10) 页组=58 真做过的交互=15 折叠探针类名次数=417 出帧=105 未点名类名=46 通道异常次数=0",
+    "RUNNER_RESULT=OK"
+   ]
+  },
+  {
+   "name": "gate-real-coverage-r7final",
+   "status": "FAIL",
+   "exitCode": 1,
+   "log": "reports/audit/round-7/ui-queue-stage6b/gate-real-coverage-r7final.log",
+   "bytes": 879,
+   "resultLines": [
+    "REALCOV_RESULT=FAIL（真实模式覆盖守恒：跳过不算量到，单身份不算双身份）"
+   ]
+  },
+  {
+   "name": "measure-matching-drift-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-guest-landing-book-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "judge-stand-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "reconcile-frameplan-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "open-window-mock-for-reshoot",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "reshoot-mock-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "open-window-real-for-guest-reshoot",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "reshoot-guest-real-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "tour-dual-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-state-truth-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-evidence-holes-r7final",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gates-json-r7final",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "finishedAt": "2026-09-27T10:38:41.934Z",
+ "conservation": {
+  "legsTotal": 16,
+  "legsOk": 3,
+  "tally": {
+   "OK": 3,
+   "FAIL": 1,
+   "NOT_RUN": 12
+  },
+  "ok": true
+ }
+}

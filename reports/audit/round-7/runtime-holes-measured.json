@@ -1,0 +1,31 @@
+{
+ "mode": "measure",
+ "generatedAt": "2026-09-27T23:29:01.332Z",
+ "project": "apps/client/dist/build/mp-weixin-real",
+ "rows": [
+  {
+   "hole": "DC33",
+   "page": "pages/discover/index",
+   "cycles": [
+    {
+     "cycle": 1,
+     "in": "pages/discover/index",
+     "out": "pages/home/index"
+    },
+    {
+     "cycle": 2,
+     "in": "pages/discover/index",
+     "out": "pages/home/index"
+    },
+    {
+     "cycle": 3,
+     "in": "pages/discover/index",
+     "out": "pages/home/index"
+    }
+   ],
+   "stackAfter3Cycles": 1,
+   "discoverInStack": 0,
+   "measuredAt": "2026-09-27T23:29:01.332Z"
+  }
+ ]
+}

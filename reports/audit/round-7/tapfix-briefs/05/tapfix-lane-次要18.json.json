@@ -1,0 +1,53 @@
+{
+  "lane": "subpackages/village/village/history",
+  "counts": { "planned": 5, "ok": 2, "unverifiable": 3 },
+  "cases": [
+    {
+      "id": "HS05",
+      "manifest": "次要18",
+      "page": "subpackages/village/village/history",
+      "selector": ".history-item",
+      "file": "apps/client/src/subpackages/village/village/history.vue",
+      "line": 191,
+      "oldAction": "tap 第 3 条 .history-item（:189-194 → goToDetail :118-122）→ 进详情 → tap 详情返回 → 采样列表状态",
+      "newAction": "tap 第 3 条 .history-item（history.vue:191，:194 @tap=goToDetail(item)，:121 带 encodeURIComponent(post.id)；.history-item 每条一枚且同名，class 定位按文档序命中第 1 条，同 handler 同链路，回填 options.id 时按实测那条记）→ 进详情 → tap 详情返回 → 采样列表状态",
+      "needsIdentity": "",
+      "why": "进详情的落点是记录卡根节点：history.vue:191 的 .history-item 带 @tap=goToDetail(item)（:118-122 navigateTo detail?id=）；列表容器在 :181 的 v-else-if=historyPosts.length>0 里，而 mock 档 store 直接塞 6 条种子历史（stores/village/index.ts:1036 取 mock-data.ts:1031 的 mockPostHistory），故静息态就有记录卡；产物两档 history.wxml 里 history-item 均在。"
+    },
+    {
+      "id": "HS07",
+      "manifest": "次要18",
+      "page": "subpackages/village/village/history",
+      "selector": ".history-clear",
+      "file": "apps/client/src/subpackages/village/village/history.vue",
+      "line": 162,
+      "oldAction": "① tap .history-clear（:167）开弹窗；② tap .clear-dialog-mask 遮罩自身（:249 @tap.self）；③ 重开后 tap 取消（:259）；④ 重开后 tap 确认清空（:269 → handleClear :100-115）",
+      "newAction": "① tap .history-clear（history.vue:162，:167 @tap=showClearDialog=true，弹窗本体在它之后的 v-if 里）开弹窗；② tap .clear-dialog-mask 遮罩自身（:249 @tap.self）；③ 重开后 tap 取消（:259）；④ 重开后 tap 确认清空（:269 → handleClear :100-115）",
+      "needsIdentity": "",
+      "why": "四路关闭全部以同一个入口为前置：history.vue:162 的 .history-clear 带 @tap=showClearDialog=true（:167），弹窗遮罩（:249）、取消（:259）、确认（:264 handleClear）全在 :249 的 v-if=showClearDialog 里、静息不渲染，所以点名入口物件而不点名弹窗内部；另需注明执行器的 DENY_TAP（scripts/qa/r-exec-cli.mjs:60 含「清空」）会把这条整条判为交互禁触，落的是 DENY 而不是没点名。"
+    }
+  ],
+  "unverifiable": [
+    {
+      "id": "HS03",
+      "manifest": "次要18",
+      "page": "subpackages/village/village/history",
+      "reason": "判据要的是 scroll-view refresher 受控收起：下拉触发 @refresherrefresh（history.vue:184-186，:refresher-triggered=loadingHistory）→ 松手后看指示器何时随 fetchPostHistory 结束复位，全程是一次连续位移手势加两帧采样；承载下拉的 .history-list 容器没有点击事件，点它不触发刷新，也没有任何按钮能替代 refresher。",
+      "needsCarrier": "欠 WS automator 的 touch/move 下拉手势通道（在 .history-list 内下拉过阈值并松手）与 refresher 状态的逐帧采样；CLI 桥只有 element tap/input 两种动作。"
+    },
+    {
+      "id": "HS04",
+      "manifest": "次要18",
+      "page": "subpackages/village/village/history",
+      "reason": "判据动作是把 .history-list 连续滚到底三次触发 @scrolltolower（history.vue:187 → onLoadMore :85-97），断言的是分页追加、isLoadingMore 的 spinner（:229-232）与条数不再增长时 hasMore=false 的 noMore 文案（:233-235）——全是滚动位移与文本结果，页面上没有「加载更多」这种可点等价物（触底是自动的）。",
+      "needsCarrier": "欠 WS 的 scroll/touch 连续手势通道（可重复的 scroll-view 触底）与 network 分页参数读数；mock 档种子只有 6 条（不足一页），要真跑出「连续 3 次直到到底」还需 real 档的分页夹具。"
+    },
+    {
+      "id": "HS08",
+      "manifest": "次要18",
+      "page": "subpackages/village/village/history",
+      "reason": "本条的落点判据要求空态，而空态与有记录态互斥：EmptyState 在 :240-245 的 v-else 分支里，mock 档 store 固定塞 6 条种子历史（stores/village/index.ts:1036），静息态渲染的是列表不是空态，要出空态必须先跑完 HS07 的清空写链路（点 .history-clear → 再点确认），单条判据的一次点击到不了那一步（且中途会留一个遮罩弹窗挡掉后续探针）；剩下的 ②③ 要的是 boundingBox 尺寸读数与滚动到顶底，同样不是点击能产出的。",
+      "needsCarrier": "欠一条预置配方（先清 postHistory 或让 store 以空历史进入本页）把空态造出来，之后仍需 nth/组件内定位命中 EmptyState 的动作节点 .empty-action（components/common/EmptyState.vue:105，@tap=handleAction :110 → emit action → 本页 :245 openAppPath 村口）；另欠 boundingClientRect 尺寸读数与 WS 滚动通道做 ②③。"
+    }
+  ]
+}

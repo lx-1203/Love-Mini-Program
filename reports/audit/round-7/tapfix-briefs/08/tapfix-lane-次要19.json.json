@@ -1,0 +1,38 @@
+{
+ "lane": "subpackages/discover-extra/home/segment",
+ "counts": {
+  "planned": 3,
+  "ok": 1,
+  "unverifiable": 2
+ },
+ "cases": [
+  {
+   "id": "SG04",
+   "manifest": "次要19",
+   "page": "subpackages/discover-extra/home/segment",
+   "selector": ".segment-row",
+   "file": "apps/client/src/subpackages/discover-extra/home/segment.vue",
+   "line": 142,
+   "oldAction": "① tap 第 1 行 .segment-row（:139-148 → openProfile :112-114）；② 从他人主页返回；③ 同一行连点 ×2 观察栈深；④ tap 行内头像（:149）与箭头（:160）",
+   "newAction": "① tap 第 1 行 .segment-row（:139-148 → openProfile :112-114，本条把目标逐字点名为 .segment-row 这一整行）；② 从他人主页返回；③ 同一行连点 ×2 观察栈深；④ tap 行内头像（:149）与箭头（:160）",
+   "needsIdentity": "",
+   "why": "整行热区就是 :142 这张 view（class 含 segment-row press-feedback，@tap 绑 openProfile :147，openProfile :112-114 用 encodeURIComponent 拼 userId 进 profile-extra/profile/other），行内头像 :149 与箭头 :160 都没有自己的 handler，所以④那半步按冒泡必然与①同落点、正好证「行内无第二热区」；编译档 mp-weixin 与 mp-weixin-real 的 subpackages/discover-extra/home/segment.wxml 里 class 静态含 segment-row 且带 bindtap，本轮执行档实测列表在静息态已渲染（SG07 探针 .segment-row__avatar:present(9)），不在 loading 与 error 与 empty 三个 v-if 分支（:126 与 :129 与 :135）之后；点击会离页，落点与 options.userId 按 observed 的路由链判。"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "SG01",
+   "manifest": "次要19",
+   "page": "subpackages/discover-extra/home/segment",
+   "reason": "本条是三条深链前置（type=nearby 与 type=not-exist 与无 type）各自的 reLaunch 与三个时刻的文本与条数采样（标题拼接 :37、.segment-state 是哪个分支、列表条数、getRecommendations 入参 distanceMax），全程没有点击动作；.segment-state 是状态容器而不是可点元素，且执行器的开页参数表 ROUTE_QUERY 不含本页 type（r-exec-cli.mjs:191-197），三条前置都要靠路由注入。",
+   "needsCarrier": "欠三条 reLaunch 前置配方（type 参数）与定时采样读数通道，纯文本与条数断言没有点击目标"
+  },
+  {
+   "id": "SG06",
+   "manifest": "次要19",
+   "page": "subpackages/discover-extra/home/segment",
+   "reason": "重试键 .segment-retry（:131，@tap 绑 load :131 行内）整块在 view v-else-if 的 errorMessage 分支里（:129），只有把 getRecommendations 拦成失败才会渲染，页内没有入口物件能造出这个前置；空态那半截另需空数据夹具（:135 的 list.length===0 分支）；第三半截的整页下拉在本页压根没开（pages.json 未给该页 enablePullDownRefresh），CLI 桥也没有下拉通道，判据要的正是「实测无刷新指示器且请求条数不变」这一否证。",
+   "needsCarrier": "欠失败注入与空数据夹具以渲染错误态与空态，另欠原生下拉刷新触发通道"
+  }
+ ]
+}

@@ -1,0 +1,29 @@
+{
+ "lane": "subpackages/vip/promo-code",
+ "manifest": "次要22.json",
+ "sourceFile": "apps/client/src/subpackages/vip/promo-code.vue",
+ "counts": { "planned": 2, "ok": 1, "unverifiable": 1 },
+ "cases": [
+  {
+   "id": "PC08",
+   "manifest": "次要22",
+   "page": "subpackages/vip/promo-code",
+   "selector": ".action-btn",
+   "file": "apps/client/src/subpackages/vip/promo-code.vue",
+   "line": 250,
+   "oldAction": "500ms 内对 .action-btn（校验）快速 tap×5，连拍 3s 记录 toast 条数与结果卡变化；real 轮同步骤另记 network",
+   "newAction": "500ms 内对 .action-btn（校验）快速 tap×5，连拍 3s 记录 toast 条数与结果卡变化；real 轮同步骤另记 network（校验钮点名：.action-btn，类名在 apps/client/src/subpackages/vip/promo-code.vue:250、同节点 @tap 在 :252 且回调是 handleValidate；该类在本页只有两枚同名节点且校验这颗在 DOM 序里靠前，所以按类名寻址拿到的正是它，重置那颗的 @tap 在 :262 不会被误归属；限界两条如实记：连点五次需桥支持重复下发，而请求在途那条路径要先让优惠码非空（空码时这颗钮走的是必填提示分支、不发 POST））",
+   "needsIdentity": "",
+   "why": "expected 判的 validating 锁与多余请求数全部挂在 handleValidate 上（:252），而 :251 的禁用修饰类只是视觉副产物不能当目标；DOM 序靠前保证按类名点到的是校验而不是重置。"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "PC02",
+   "manifest": "次要22",
+   "page": "subpackages/vip/promo-code",
+   "reason": "这条是首屏只读采样：两个栏位的初值与 placeholder（优惠码为空且 maxlength 32（:224）、订单金额初值取自 VIP_PLANS 里 quarterly 的 48（:69）而不是硬编码）、safe-top 与 nav-bar 的模板顺序几何（:193 先于 :196）、以及此刻结果卡（:271 v-if）与兑换钮（:308 v-if）不得出现。带事件的两枚 code-input（:221）与 amount-input（:239）虽然是这些值的宿主，但 CLI 桥对含输入语义的判点会走写入腿并塞入固定值（实测参数 --value 123456），那恰好把「初值」这条判据的前提打掉；两个容器类 safe-top 与 nav-bar 又整块不挂 @tap/@click，按 hardRules 不能当目标。",
+   "needsCarrier": "欠一条只读取值的载具（读两枚原生 input 的 value 与 placeholder 而不写入），加 boundingClientRect 顺序量测与滚动到下的手势通道；此刻不得出现结果卡是 wx:if 未渲染的负向断言，需要渲染树读数能力而不是点击。"
+  }
+ ]
+}

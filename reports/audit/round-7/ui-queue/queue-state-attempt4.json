@@ -1,0 +1,72 @@
+{
+ "startedAt": "2026-09-26T22:21:29.997Z",
+ "legs": [
+  {
+   "name": "rebuild-mock",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/rebuild-mock.log",
+   "bytes": 237,
+   "resultLines": [
+    "NPMSCRIPT_RESULT=OK"
+   ]
+  },
+  {
+   "name": "gates-source-shape",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/gates-source-shape.log",
+   "bytes": 89,
+   "resultLines": [
+    "SRC_SHAPE_RESULT=OK"
+   ]
+  },
+  {
+   "name": "gates-i18n",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/gates-i18n.log",
+   "bytes": 1851,
+   "resultLines": [
+    "I18N_RESULT=PASS"
+   ]
+  },
+  {
+   "name": "rebuild-real",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue/rebuild-real.log",
+   "bytes": 28863,
+   "resultLines": [
+    "G7_RESULT=PASS"
+   ]
+  },
+  {
+   "name": "exec-guest-real",
+   "status": "FAIL",
+   "exitCode": 2,
+   "log": "reports/audit/round-7/ui-queue/exec-guest-real.log",
+   "bytes": 556,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-guest-real",
+    "RUNNER_RESULT=FAIL reason=启动阶段（登录票据/开页）就抛了，一行都没跑 ⇒ 这不是跑完，退 2"
+   ]
+  },
+  {
+   "name": "exec-A-real",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "finishedAt": "2026-09-26T22:24:13.839Z",
+ "conservation": {
+  "legsTotal": 6,
+  "legsOk": 4,
+  "tally": {
+   "OK": 4,
+   "FAIL": 1,
+   "NOT_RUN": 1
+  },
+  "ok": true
+ }
+}

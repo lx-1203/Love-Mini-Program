@@ -1,0 +1,29 @@
+{
+ "lane": "subpackages/profile-extra/profile/favorites",
+ "manifest": "次要20.json",
+ "sourceFile": "apps/client/src/subpackages/profile-extra/profile/favorites.vue",
+ "counts": { "planned": 2, "ok": 1, "unverifiable": 1 },
+ "cases": [
+  {
+   "id": "FV03",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/favorites",
+   "selector": ".favorite-card",
+   "file": "apps/client/src/subpackages/profile-extra/profile/favorites.vue",
+   "line": 31,
+   "oldAction": "① tap 第 1 张 .favorite-card（:28-33 @tap=\"openPost(post.id)\"）；② 在详情页返回；③ 再 tap 第 2 张；④ 记录两次跳转的 options.id 与卡片 post.id 对应关系",
+   "newAction": "① tap 第 1 张 .favorite-card（:28-33 @tap=\"openPost(post.id)\"）；② 在详情页返回；③ 再 tap 第 2 张；④ 记录两次跳转的 options.id 与卡片 post.id 对应关系（收藏卡点名：.favorite-card，类名在 apps/client/src/subpackages/profile-extra/profile/favorites.vue:31、同节点 @tap 在 :32 且回调是 openPost(post.id)，编译产物 subpackages/profile-extra/profile/favorites.wxml 内该类为 v-for 卡片根节点；它在 :26 的 v-else 列表分支里，前两个分支是 loading 与空态，所以要有收藏数据才渲染，归属到的是第 1 张，第 2 张仍需同名节点的序号定位载具）",
+   "needsIdentity": "A",
+   "why": "expected 的判定点是这次 tap 带出的路由参数与 currentPost 是否同源，:32 的 @tap 是收藏卡唯一事件入口；身份记 A 是因为空收藏账号只会渲染空态分支、卡片不存在。"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "FV07",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/favorites",
+   "reason": "判据是几何与滚动承担体：容器高度是否随页头自适应（MP-R2-FAVORITES-002 的 flex:1 与 min-height:0 是否回归成硬编码 calc）、滚到底末卡是否被裁切、页面级是否出现第二条滚动条。承载这些的 .favorites-list（:27）是 scroll-view、只挂滚动语义不挂 @tap/@click，.list-bottom-spacer（:53）是纯占位 view，按 hardRules 都不能当点击目标；scrollTo 底与顶本身也是连续手势。",
+   "needsCarrier": "欠 WS 连续滚动通道加逐帧 rect 量测载具（scrollTop/scrollHeight/clientHeight 三元组、末卡与屏幕底边关系、pageScrollTop 是否恒为 0）；④ 高状态栏机型那一次还需要能改 --statusbar 注入值或换视口尺寸的夹具。"
+  }
+ ]
+}

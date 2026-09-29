@@ -1,0 +1,18 @@
+LEDGER_BRACKET spans=48 pairs=48/48 straddling-clause-delimiter=0
+PROSE_BRACKET_SELFCHECK spans=3 unbalanced=1
+PROBE_SELFCHECK_CASES=6 SUPPRESSED=5 KEPT=5 PROBE_SELFCHECK_RESULT=OK
+BASELINE=094f7239 srcDirtyVsHead=yes
+
+状态打脸 1 条｜次级来源与台账不一致 5 条｜静态可判 29 条｜需排 UI 帧 67 条
+PROSE_BRACKET_REAL spans=44 suppressed-ident-tokens=93 unbalanced=0
+PROBE_VETOED_BY_LEDGER_SHELL=24 涉及条目=8（被否决的都是非台账来源的同名判点；逐条名字见各 item.notes）
+  VETO MP-R2-PAGES-HOME-INDEX-110 :: ledger-action:identifier:metaLine / ledger-statusEvidence:identifier:metaLine / closer-diff:identifier:metaLine
+  VETO MP-R2-CAMPUSINDEX-010 :: ledger-statusEvidence:identifier:certLoadFailed
+  VETO MP-R2-CIRCLES-INDEX-005 :: ledger-statusEvidence:class:village-page
+  VETO MP-R2-CIRCLES-INDEX-008 :: ledger-statusEvidence:class:loading-spinner
+  VETO MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-005 :: ledger-statusEvidence:css-decl:env(safe-area-inset-bottom)) / src-anchor:css-decl:env(safe-area-inset-bottom))
+  VETO MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A03 :: ledger-statusEvidence:identifier:ChatHeader
+  VETO MP-R2-PAGES-HOME-INDEX-105 :: ledger-statusEvidence:identifier:handleRefresh / ledger-statusEvidence:identifier:props.items / ledger-statusEvidence:identifier:failedKeys / ledger-statusEvidence:identifier:avatarSrc / closer-diff:identifier:props.items / closer-diff:identifier:failedKeys / closer-diff:identifier:avatarSrc / closer-diff:identifier:isFailed / closer-diff:identifier:post.id / closer-diff:string-lit:handleRefresh / closer-diff:identifier:handleRefresh / closer-diff:identifier:handleRefresh / src-anchor:string-lit:handleRefresh / src-anchor:identifier:handleRefresh
+  VETO MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006 :: ledger-statusEvidence:identifier:campusHub
+输出：.zcode/tmp/fixverify/verdicts.json / .zcode/tmp/fixverify/verdicts.md / verdicts.jsonl（逐条追加，崩溃可续）
+FIXVERIFY_RESULT=OK items=116 ARTIFACT_VERIFIED=28 SOURCE_ONLY=1 NEEDS_UI_FRAME=67 NOT_IN_EITHER=0 UNDECIDABLE=20 PROBE_CONFLICTS=0 CONSERVED=yes

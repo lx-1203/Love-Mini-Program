@@ -1,0 +1,16 @@
+{
+ "patches": [
+  {
+   "id": "MP-R7-GUEST-LANDING-REGENTRY-001",
+   "col": 6,
+   "new": "已修复（帧级实测：本轮落在登录页的 23 组全部量到 .login-register-entry＝23/23；源码级判点见 verify-source-shape 同号条目）",
+   "why": "入口已加进登录页默认分支并被渲染帧侧证，状态不能再留 待修复"
+  },
+  {
+   "id": "MP-R7-GUEST-LANDING-REGENTRY-001",
+   "col": 9,
+   "new": "落点机制已核到行：弹游客到登录页的是 HTTP 401 兜底跳转（apps/client/src/services/http.ts:493-494，跳转前延迟 LOGIN_REDIRECT_DELAY_MS=500，constants/app.ts:40），不是路由守卫——apps/client/src/composables/usePageAccess.ts:79 对「无 token 游客」一律放行，所以「守卫弹的」这种说法没有载体。裁定要求未登录须引导到注册，而被弹过来的新用户在这页默认态看不见注册入口（要先点「手机号登录」才会出现「没有账号？去注册」）⇒ 判据成立、产品未修 〔2026-09-27 04:53 结案读数〕修复落点：apps/client/src/pages/login/index.vue 默认分支 .login-quick 内、游客按钮之后加 v-if=isRegisterOpen 的 .login-register-entry（复用既有键 login.goRegister，zh-CN:2197 与 en-US:2140，不新增文案）。帧侧实测：reports/audit/round-7/guest-landing-measured.json（01:45 落盘）里 measuredLanding=pages/login/index 的组共 23 个，markers 含 login-register-entry 的 23 个＝100%，其余 3 组是 vip 三页的开关弹回 profile，本来就不渲染登录页故不计。机器判点：verify-source-shape 同号条目本轮成立（total=62 成立=61）。",
+   "why": "把「23/23」这个数与它的口径（只数落在登录页的组）写进台账，避免下一轮把 3 组 vip 误读成入口缺失"
+  }
+ ]
+}

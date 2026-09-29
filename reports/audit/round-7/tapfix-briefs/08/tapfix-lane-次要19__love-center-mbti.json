@@ -1,0 +1,38 @@
+{
+ "lane": "subpackages/tools/love-center/mbti",
+ "counts": {
+  "planned": 3,
+  "ok": 1,
+  "unverifiable": 2
+ },
+ "cases": [
+  {
+   "id": "LM03",
+   "manifest": "次要19",
+   "page": "subpackages/tools/love-center/mbti",
+   "selector": ".quiz-submit",
+   "file": "apps/client/src/subpackages/tools/love-center/mbti.vue",
+   "line": 212,
+   "oldAction": "① tap .quiz-submit（:212-214 → submitTest :83-88）；② 采样 Toast 与 .mbti-result-mask；③ 0 题作答时重复 ①；④ 连点提交 ×5",
+   "newAction": "① tap .quiz-submit（:212-214 → submitTest :83-88，本条把目标逐字点名为 .quiz-submit）；② 采样 Toast 与 .mbti-result-mask；③ 0 题作答时重复 ①；④ 连点提交 ×5",
+   "needsIdentity": "",
+   "why": "提交键就是 :212 那张 view（class 含 quiz-submit press-feedback，@tap 绑 submitTest，submitTest :83-88 在未答完时只弹 contentPages.mbti.pleaseComplete 的 Toast 并 return，不改 showResult），整个问卷在 :148 的 content-scroll 里无条件渲染，所以它在静息态就在页上；编译档 mp-weixin 与 mp-weixin-real 的 subpackages/tools/love-center/mbti.wxml 里 class 静态含 quiz-submit 且带 bindtap；判据②要证的 .mbti-result-mask（:223）在 showResult 的 v-if 里、静息态本就取不到（本轮实测同族 LM04 探针 .mbti-result-panel__type-code:absent），它作为第二个目标点不中恰恰是本条要的证据；连点×5 的 Toast 叠加条数仍要人工看，CLI 桥一次判据只发一次点击。"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "LM06",
+   "manifest": "次要19",
+   "page": "subpackages/tools/love-center/mbti",
+   "reason": "16 型宫格 .type-cell（mbti.vue:167）与四维说明 .dimension-chip（:156）都是纯展示节点：源码里既没有 @tap 也没有 bindtap 与 role=button，按硬规则不能点名一个只有样式没有事件的类；本条断言的恰恰是「点了没反应」（无路由无弹层无请求无报错）与 16 型名称加 4 维文案在 en-US 与 zh-CN 下是否都有译文，前者要 no-op 判定与 DOM 不变读数，后者是文本完整性比对，都不落在某个可点物件上。",
+   "needsCarrier": "纯展示节点与文案断言：欠 no-op 判定（点击前后 DOM 与路由与 network 对比）与双语键完整性取数通道，页内没有带事件绑定的目标可点名"
+  },
+  {
+   "id": "LM08",
+   "manifest": "次要19",
+   "page": "subpackages/tools/love-center/mbti",
+   "reason": "本条主体是滚动与量测：.content-scroll 滚到底再回顶（:148 的 scroll-view，含 :217 的 content-footer-space）、对返回键与 8 个选项与提交键与弹层两按钮与遮罩取 boundingBox、弹层展开态下滑动背景页，CLI 桥只有 tap 与 input 两条腿（r-exec-cli.mjs:410），scroll 与滑动与 rect 都发不出；而弹层那两个按钮（.mbti-result-panel__btn--ghost :244 与 --primary :254）还要先把 8 题答完并成功提交才会渲染（在 showResult 的 v-if 里，本轮实测同族 LM05 探针两按钮 absent），属非静息态。",
+   "needsCarrier": "欠 WS 滚动与滑动通道与 boundingClientRect 量测通道，另欠答完 8 题的前置配方才能让弹层两按钮进入渲染树"
+  }
+ ]
+}

@@ -1,0 +1,365 @@
+{
+ "batch": "01",
+ "laneCount": 2,
+ "caseCount": 25,
+ "lanes": [
+  {
+   "lane": "subpackages/campus/campus/index",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/subpackages/campus/campus/index.vue",
+   "sourceFound": true,
+   "planned": 14,
+   "outFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json.json",
+   "cases": [
+    {
+     "id": "CX10",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "page": "subpackages/campus/campus/index",
+     "title": "栈中返回：由 hub 进入时返回落回 hub 且 hub 状态恢复",
+     "oldAction": "tap .campus-back（index.vue:228-237 → goBack :102-106）",
+     "expected": "uni.navigateBack 落回 subpackages/campus/campus/hub（栈>1 分支 :104-106）；hub 的 searchKeyword/activeTab 因 hub.vue 无跨实例持久化而回到默认（推荐 Tab + 11 卡，属预期行为，如实记录不判缺陷）；栈顶 route=hub；console 无报错",
+     "evidence": "navigation：路由链断言 + 落点页首屏截图 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CX11",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "page": "subpackages/campus/campus/index",
+     "title": "REAL_ONLY 已认证查看非本校：public-browse banner 双行文案 + 无 FAB 无引导卡",
+     "oldAction": "观察首屏 banner、header 徽章、是否出现 FAB；tap banner 区域一次",
+     "expected": "isVerified=true 且 isOwnCertifiedView=false（index.vue:65-67）→ 渲染 banner「公开浏览」+「非本校，可浏览公开内容；完成对应学校认证后可进入私域互动」（:275-278 ← zh-CN.ts:3529-3530 / en-US.ts:3446-3447）；不渲染引导卡与热门兴趣圈（v-if=!isVerified :249,:261）；不渲染 FAB（:363）；banner 为纯信息块、无 @tap（点击无反馈属预期，不得判死按钮）；页头校名=目标校 B 而非本校 A；话题列表按 B 校过滤（见 CX14）",
+     "evidence": "normal：after 截图 + 路由 options + console；前置不可构造时记 UNVERIFIED 并写明缺 verified+跨校身份",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CX12",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "page": "subpackages/campus/campus/index",
+     "title": "REAL_ONLY 已认证本校私域视角：6 分类 Tab + 话题列表 + FAB，无引导卡/banner",
+     "oldAction": "观察首屏 → tap .campus-fab（index.vue:363-365）→ 返回",
+     "expected": "isOwnCertifiedView=true → 6 分类 Tab（:283-292）+ 话题列表/状态槽（:295-359）+ FAB（:363-365）；无引导卡、无 banner；tap FAB navigateTo /subpackages/campus/campus/post-topic?category=<当前分类URL编码>（goToPostTopic :122-126，MP-R2-CAMPUSINDEX-002(a) 透传当前分类，非恒 course_exchange）；返回后仍在 index 且 activeCategory 不变；console 无报错",
+     "evidence": "normal：before（index 带 FAB）+ after（post-topic 且分类高亮）截图 + 路由链（含 options.category 值）+ console",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CX13",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "page": "subpackages/campus/campus/index",
+     "title": "无下拉刷新（源码事实采证）：手势下拉不产生重拉，容器不外滚",
+     "oldAction": "在 .topic-scroll 内向下滑动一次模拟下拉（touch 手势）；再 evaluate 检查 window.scrollY 与 .topic-scroll.scrollTop",
+     "expected": "pages.json 无 enablePullDownRefresh（campus/index 条目无 style 段）、scroll-view 未开 refresher-enabled（index.vue:319-359）→ 下拉手势不应触发任何 GET /campus/topics 重拉（network 计数 0 增量）、不出现原生下拉 loading 三点；window 不产生外层滚动（容器 height:100% + overflow:hidden :385-396）；如实记录「本页无下拉刷新能力」这一事实供 A4 需求对照裁量，不判死按钮",
+     "evidence": "noop：执行日志（手势前后 scrollTop/window.scrollY、network 增量）+ console；可免截图",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CX14",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "page": "subpackages/campus/campus/index",
+     "title": "REAL_ONLY 分类 Tab 切换 6 次：请求按 school 透传、旧分类列表被清空（MP-R1-CAMPUSINDEX-002 / MP-R2-CAMPUSINDEX-0",
+     "oldAction": "依次 tap 6 个 .category-tab（课程交流/社团招新/校园活动/学习互助/生活服务/校友动态，index.vue:283-292），每次等 ≤500ms 观察",
+     "expected": "每次 tap → setActiveCategory(category, viewSchool)（index.vue:86-91）→ store 先清空 topics/topicPage=1/topicHasMore=false（campus.ts:403-410）再 fetch；network 面板 GET /campus/topics 请求数=6，且每条 URL 均含 category=<对应值> 且含 school=<本校URL编码>（campus.ts:455）；每条返回前页面先短暂出现空态/加载态而非旧分类内容残留；高亮 Tab 的 --active 样式与列表内容一致；:key=tab.key 稳定",
+     "evidence": "normal：6 张 after 截图（每 Tab 一张）+ 6 条请求 URL 清单 + 路由 + console",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CX15",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "page": "subpackages/campus/campus/index",
+     "title": "上拉分页 scrolltolower：page 递增、列表追加、到底出「没有更多了」（REAL_ONLY 真实分页）",
+     "oldAction": "在 .topic-scroll 内滚动到底 → 等 ≤1s 观察 → 重复滚动到底 3 次",
+     "expected": "滚动发生在 .topic-scroll 内部（index.vue:643-645 内滚 + :319 @scrolltolower，MP-R2-CAMPUSINDEX-001 修复生效证据）；第 1 次到底 → onLoadMoreTopic（:172-181）发 GET /campus/topics?page=2&size=10（campus.ts:455，page-1 换算）；加载中显示「加载中...」+ spinner（index.vue:351-354 ← campus.index.loadingMore）；列表条数从 10 → 20 且不重不漏（按 topic.id 去重校验：无重复 id）；最后 topicHasMore=false → 底部出现「没有更多了」（:355-357 ← campus.index.noMore）；后续再滚到底不得再发请求",
+     "evidence": "normal：分页前/后 + 到底态 3 张 after 截图 + network URL 清单（含 page 参数）+ 列表 id 去重校验结果 + console",
+     "requiresReal": true,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CX16",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "page": "subpackages/campus/campus/index",
+     "title": "【重点回归③】话题详情回复框 maxlength 实测：前端取 500 与后端 @Size(max=2000) 的差值采证",
+     "oldAction": "tap 第一张 .topic-card（index.vue:320-324 → goToTopicDetail :115-117）→ 进入 topic-detail → 读 .reply-input 的 maxlength 属性值与 computed 样式；随后在输入框连打 600 个可输入字符",
+     "expected": "路由到 /subpackages/campus/campus/topic-detail?topicId=<id>（index.vue:116）；.reply-input 的 maxlength 实测值必须等于 500（**当前工作树**锚点：topic-detail.vue:337 绑定 MAX_REPLY_LENGTH ← stores/campus.ts:307 导出，注释明确「客户端 500 / 后端 2000」的取舍见同文件 :300-306）；连打 600 字后输入框实际文本长度必须 ≤500（原生截断），计数区/滚动不得溢出；回填实测值三元组：前端 maxlength / 后端 @Size / 实际可输入长度——若实测 maxlength≠500 或 =140（uni input 默认值，说明 :337 绑定未生效）即判 FAILED",
+     "evidence": "normal：topic-detail 回复区 after 截图 + maxlength 属性实测值 + 实际字符长度 + 路由链 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "input"
+    },
+    {
+     "id": "CX17",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "page": "subpackages/campus/campus/index",
+     "title": "【重点回归③】绕过原生截断注入 501 字回复：客户端 store 守卫 toast「回复内容不能超过500字」且零写请求",
+     "oldAction": "用 automation evaluate 直接把组件 replyContent 置为 501 个字符（绕过原生 maxlength；记录所用注入方式与最终取回的 replyContent.length），再 tap .reply-btn（topic-detail.vue:306-315 → submitReply :",
+     "expected": "store 命中长度守卫（**当前工作树**锚点：stores/campus.ts:774-776，位于 useMock 分支之前 → mock/real 两模式都拦得住）→ errorMessage=storeErrors.campus.replyContentTooLong → 页面 catch 弹 Toast「回复内容不能超过500字」（**当前** topic-detail.vue:63-80 submitReply 的 catch 读 campusStore.errorMessage；zh-CN.ts:3932，en 环境为对应英文键）；Toast 中 {n} 必须被替换为 500（出现字面 {n} 即插值缺陷）；network 面板 POST /campus/topics/{id}/replies 计数=0（守卫在请求之前）；本页回复条数与 replyCount 不变；isSubmitting 复位可再次提交；console 无未捕获异常",
+     "evidence": "critical：before（501 字注入后输入态）+ after（Toast 文案）截图 + 路由 + Toast 文案逐字 + console + network 写请求计数（应为 0）",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CX20",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "page": "subpackages/campus/campus/index",
+     "title": "话题卡点击进入详情并返回：?topicId= 消费正确、列表位置恢复",
+     "oldAction": "滚动列表到中部 → tap 第 3 张 .topic-card → 在详情页 tap 返回 → 观察落点与滚动位",
+     "expected": "tap → openAppPath('/subpackages/campus/campus/topic-detail?topicId='+id)（index.vue:115-117，未 encodeURIComponent，如实回填 id 形态：mock 为 campus-topic-… 含连字符可用；若为真实数字 id 亦成立）；详情页按 query.topicId 取参（topic-detail.vue:96-105）不报「话题 ID 无效」；返回后栈顶=subpackages/campus/campus/index，:key=topic.id 列表不丢条目；无重复压栈",
+     "evidence": "navigation：往返两段路由链（含 options.topicId 实值）+ console",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CX22",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "page": "subpackages/campus/campus/index",
+     "title": "连点 FAB×5（已认证本校视角）：只压入 1 层发布页",
+     "oldAction": "500ms 内对 .campus-fab 快速 tap×5",
+     "expected": "goToPostTopic 无防连点标志（index.vue:122-126）→ 断言两列：① getCurrentPages 最终栈内容（期望仅 1 层 post-topic；出现 ≥2 层 post-topic 即判缺陷并回填完整栈）；② navigateTo:fail/webview limit 告警条数（openAppPath 栈满兜底 redirectTo，utils/navigation.ts:99-115）；本用例为纯导航、无写请求，不涉及服务端落库计数；console 无未捕获异常",
+     "evidence": "normal：落点 after 截图 + 完整路由栈快照 + console",
+     "requiresReal": true,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CX23",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "page": "subpackages/campus/campus/index",
+     "title": "打开即返回（≤500ms）：onMounted 两个并发请求不产生未捕获 Promise、无骨架永驻",
+     "oldAction": "进入后 300ms 内 tap .campus-back（抢在 Promise.allSettled 完成前，index.vue:212-219）→ 观察 → 再次进入",
+     "expected": "返回成功、无 JS 崩溃；两个请求（fetchCertificationStatus + fetchCampusTopics）由 Promise.allSettled 聚合（:215-218）→ console 不得出现 Unhandled promise rejection / Cannot read properties of null (reading …)；实例销毁后 store 状态更新不得报错；再次进入首屏正常（同 CX01）；无 Loading 骨架/「正在加载话题...」永驻",
+     "evidence": "normal：落点截图 + 二次进入 after 截图 + 路由 + console 全量",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CX24",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "page": "subpackages/campus/campus/index",
+     "title": "重复进出 index×3：onShow 每次重取认证状态（MP-R2-CAMPUSINDEX-006），不重复堆叠话题列表",
+     "oldAction": "循环 3 次：tap .campus-back 回 hub → tap 同一校卡再进 index → 每次等待并断言",
+     "expected": "每轮 onShow 触发 fetchCertificationStatus（index.vue:207-210，非仅 onMounted 一次）+ onMounted 各触发 1 次认证与 1 次话题请求；断言两列：① 每轮 GET /campus/certification 计数=1（real 轮）；② 话题列表条数每轮稳定（page===1 走覆盖赋值 this.topics=mapped，campus.ts:461-465，不得因重进而翻倍或出现重复 id）；每轮 viewSchool 与 activeCategory 均回到默认（course_exchange，:295-301 初值），如出现「第二次进入停在上一分类」需回填并说明来源；console 无累积错误",
+     "evidence": "normal：每轮 after 截图（3）+ 每轮路由 + 每轮请求计数表 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CX26",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "page": "subpackages/campus/campus/index",
+     "title": "滚动到顶/底与横向 Tab：内滚容器边界、Tab 横滑可达第 6 项、FAB 不遮最后一条",
+     "oldAction": ".topic-scroll 滚到底 → 回顶；对 .category-tabs（index.vue:283-292 scroll-x）横向滑动到底",
+     "expected": "滚动只发生在 .topic-scroll（容器 overflow:hidden index.vue:385-396）；Tab 横滑可见并完整点击第 6 个「校友动态」（category-tab display:inline-flex 修复生效证据 :546-561，MP-R1-CAMPUSINDEX-011：不得出现纵向堆叠全宽列表）；滚到底时最后一条 topic-card 完整可见、不被 FAB（fixed bottom calc(safe-area+150rpx) :795-809）与 list-bottom-spacer(160rpx :790-792) 遮挡；回顶后 header/引导卡/Tab 完整；数值回填 scrollTop/scrollHeight/scrollWidth",
+     "evidence": "noop：执行日志（纵向/横向滚动数值 + 最后一条 rect）+ console；可免截图",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "CX30",
+     "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+     "page": "subpackages/campus/campus/index",
+     "title": "【重点回归③·当前源码】回复输入触顶的可观测性：500 字硬截断时必须出现「已达 500 字上限」提示（原为零反馈）",
+     "oldAction": "① 在 .reply-input 连打至恰好 500 字 → 观察输入框下方是否出现提示行；② 删到 499 字 → 观察提示是否消失；③ 继续输入第 501 个字符，观察是否有「打不进字」的静默感；④ 切 en-US 重复 ①",
+     "expected": "isReplyAtLimit = replyContent.length >= MAX_REPLY_LENGTH（topic-detail.vue:58）→ 触顶时渲染 .reply-counter 提示「已达 500 字上限，无法继续输入」（:342-344 ← campus.topicDetail.replyAtLimit，zh-CN.ts:3600，{n} 必须被替换为 500）；499 字时提示必须消失（v-if 严格）；第 501 字符被 maxlength 硬截断（:337）→ 有提示即满足「超长态可观测」，无提示即判 P2/Interaction（本轮 ③ 的可观测半边修复证据）；en-US 下提示为英文非裸 key；提示行不得挤压回复按钮或溢出 safe-area（样式 topic-detail.vue:766 起）；零写请求；console 无报错",
+     "evidence": "normal：500 字触顶 + 499 字 + en-US 三张 after 截图 + 提示行实际文本与 {n} 替换结果 + maxlength 实测值 + console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "input"
+    }
+   ]
+  },
+  {
+   "lane": "pages/home/index",
+   "manifest": "PAGES-HOME-INDEX.json",
+   "sourceFile": "D:/6/恋爱小程序/apps/client/src/pages/home/index.vue",
+   "sourceFound": true,
+   "planned": 11,
+   "outFile": "reports/audit/round-7/tapfix-briefs/01/tapfix-lane-PAGES-HOME-INDEX.json.json",
+   "cases": [
+    {
+     "id": "H02",
+     "manifest": "PAGES-HOME-INDEX",
+     "page": "pages/home/index",
+     "title": "下拉刷新真实重拉：/home/dashboard 重发且动画按完成时机停止",
+     "oldAction": "触发页面级下拉刷新（onPullDownRefresh，index.vue:118-121），等待动画停止",
+     "expected": "必须真实调用 homeStore.fetchDashboard()（非仅动画）→ network/日志出现 1 次 dashboard 拉取；stopPullDownRefresh 在 promise 完成后调用（:120 finally），不得立即停止或未停；刷新期间不重复并发（loading 防重入在 refreshHomeFeed :86，注意下拉路径未过该函数，实测若下拉连续触发出现 ≥2 条并发请求即记并发缺陷）；数据更新后各区块回显新值",
+     "evidence": "normal：after 截图 + console + 执行日志（请求计数与动画起止时间）",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "H03",
+     "manifest": "PAGES-HOME-INDEX",
+     "page": "pages/home/index",
+     "title": "影响范围回归：未登录（real）下拉刷新不得被强踢登录页（待修复项证伪）",
+     "oldAction": "未登录进入首页后执行下拉刷新",
+     "expected": "修复后应有的表现：onPullDownRefresh 路径必须与 refreshHomeFeed 同款登录门（现门仅在 index.vue:85-91 的 `if (!useMock() && !getToken()) return;`，下拉 :118-121 为门旁路）→ 未登录时 0 条 /home/dashboard 请求、无 401、终栈仍为 [pages/home/index]、不出现「登录已过期」toast；实测被踢到 /pages/login/index 即判 MP-R2-PAGES-HOME-INDEX-001（P2 待修复）在 UI 层复现成立",
+     "evidence": "critical：before + after 截图 + 路由链断言（终栈）+ Toast 文案 + console + network 计数",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "H06",
+     "manifest": "PAGES-HOME-INDEX",
+     "page": "pages/home/index",
+     "title": "顶栏「我的」头像入口 → 我的 Tab，并 2 步内可回首页",
+     "oldAction": "点 HomeHeader.vue:60 的 .header-me（aria-label=本人昵称，@tap=goMyProfile → openAppPath(ROUTES.PROFILE.INDEX)），再点自定义 TabBar「首页」",
+     "expected": "去程 getCurrentPages 末位 = pages/profile/index（tab 页经 switchTab，utils/navigation.ts openAppPath tab 分支）；回程 2 步内回到首页 Tab（铁律：任意页 2 步内能否回 tab）；昵称不得回退为旧 mock 假名「星野」，缺失时显示「我的」（HomeHeader.vue:40-46）",
+     "evidence": "navigation：路由链断言（去程+回程落点），可不截图",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "H07",
+     "manifest": "PAGES-HOME-INDEX",
+     "page": "pages/home/index",
+     "title": "顶栏定位胶囊 → 弹出「我的位置」底部弹层并自动重取定位",
+     "oldAction": "点 .header-location（HomeHeader.vue:63 @tap=$emit('schoolTap') → index.vue:241-245 openLocationSheet）",
+     "expected": "500ms 内 BottomSheet 面板从底部滑入（BottomSheet.vue:72-108）标题「我的位置」，且自动触发一次 refetchLocation（:243-244）；定位文案 locationText 更新（拒绝授权时保留 buildLocationText 默认值，不得白屏或空串裸奔 :68）；校区行为「未认证」或真实校区名 + 已认证态（index.vue:443-450）",
+     "evidence": "normal：after 截图（弹层展开态）+ console + DOM 文本读数（校区/定位）",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "H08",
+     "manifest": "PAGES-HOME-INDEX",
+     "page": "pages/home/index",
+     "title": "弹层三路关闭：遮罩 / × / 「我知道了」，且 tabBar 隐藏态必须恢复",
+     "oldAction": "依次执行三条关闭路径各一轮：① 点遮罩 .bottom-sheet-mask（BottomSheet.vue:73 → onMaskTap :66-68，maskClosable 默认 true）；② 重开后点右上角 ×（:91 closeSheet，showClose 默认 true）；③ 重开后点 footer「我",
+     "expected": "每路点击后 500ms 内面板与遮罩消失（DOM 不存在 .bottom-sheet-root）；三路后自定义 tabBar 均恢复可见（BottomSheet.vue:50-60 watch→setTabBarHidden(false)；卸载兜底 :58-60）——残留隐藏态污染其他 Tab 页即判 P1；关闭不触发任何请求；重开后定位数据仍在（visible 由 ref 控制，无脏态）",
+     "evidence": "normal：after 截图（三路关闭各一张 + 关闭后 TabBar 可见性）+ console + DOM 断言",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "H13",
+     "manifest": "PAGES-HOME-INDEX",
+     "page": "pages/home/index",
+     "title": "死接线核对：HomeHeader 声明并绑定 searchTap 但模板无搜索元素",
+     "oldAction": "在首页全部可点元素上普查是否存在搜索入口（DOM 探测 .header-search / 放大镜图标），并尝试用 automation 触发 HomeHeader emit('searchTap')",
+     "expected": "结论必须写明：首页**无搜索入口**（HomeHeader.vue:17 声明 searchTap emit、index.vue:333 绑定 openNearbyList，但模板 :52-74 只渲染 .header-me/.header-location/.header-icon 三项 → 该绑定永不触发）；这属功能缺失/死接线，按「首页无搜索」记 Function 类观察（不得凭空造视觉缺陷）；同时核对 openNearbyList 仍经 NearbyPeople「全部」入口可达（index.vue:372-377），不得因本条判整条链路死",
+     "evidence": "noop：执行日志（DOM 探测清单 + emit 触发结果）+ console",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "H24",
+     "manifest": "PAGES-HOME-INDEX",
+     "page": "pages/home/index",
+     "title": "今日恋爱进度 4 格分别跳对应 Tab（navigation 全覆盖）",
+     "oldAction": "逐一点击 .love-step（TodayLoveProgress.vue:79 @tap=$emit('step', step.action)），覆盖 action=profile/discover/messages/nearby 四值",
+     "expected": "四格分别 switchTab 到 /pages/profile/index、/pages/discover/index、/pages/messages/index、/pages/nearby/index（index.vue:188-193）；每次 500ms 内路由变化；未知 action 值必须零跳转（无 else 分支）且不报错——若出现空白页或抛错判缺陷；TabBar 选中态随目标页同步",
+     "evidence": "navigation：路由链断言 ×4 + 返回落点断言，可不截图",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "H25",
+     "manifest": "PAGES-HOME-INDEX",
+     "page": "pages/home/index",
+     "title": "关系动态四格落点（含跳转失败可见性）",
+     "oldAction": "逐一点击 .relation-cell（RelationActivity.vue:34 liked-by、:45 whispers、:56 visitors、:67 matches），并执行一次返回",
+     "expected": "落点分别为 /subpackages/discover-extra/likes-visitors/index、/pages/messages/index（tab→switchTab）、/subpackages/profile-extra/profile/visitors、/subpackages/discover-extra/likes/index（index.vue:284-303）；四格均带 hover-class 按下态（MP-R1-HOME-REG 第 6 项修复：4 格仅第一个可感知的缺陷），每格 500ms 内路由变化；返回落点=首页；aria-label 含真实计数",
+     "evidence": "navigation：路由链断言 ×4 + 返回落点，可不截图",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "H29",
+     "manifest": "PAGES-HOME-INDEX",
+     "page": "pages/home/index",
+     "title": "兴趣卡整体点击 → 圈子主页 circle-home?circleId=",
+     "oldAction": "点 .interest-card（InterestRecommendation.vue:50-51 @tap=$emit('select', item.id)）",
+     "expected": "落 /subpackages/circles/circles/circle-home 且 query 带真实 circleId（index.vue:195-198 走 encodeURIComponent）；圈子主页能读到该参数（与本页无关但影响判定：若落点页空白说明参数口径不符，按事实记录）；返回后首页滚动位置与数据不丢",
+     "evidence": "navigation：路由链断言（含 options 读数）+ 返回落点断言",
+     "requiresReal": false,
+     "gestureOnly": false,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "H47",
+     "manifest": "PAGES-HOME-INDEX",
+     "page": "pages/home/index",
+     "title": "参数消费核对：首页无 onLoad → 所有深链参数为幽灵参数",
+     "oldAction": "以 reLaunch 与 switchTabWithQuery 两种方式进入，观察是否定位到社区区/滚动到帖子；并读取 storage 桥接 key 是否残留",
+     "expected": "首页源码只注册 onShow/onPullDownRefresh/onPageScroll，**无 onLoad、无 consumeTabQuery 调用**（index.vue:10、:62、:93、:118 全量核对）→ tab/communityId/postId/focus 等深链参数一律不被消费，属幽灵参数（若固化表声称这些参数生效即判文档过期）；唯一真实生效的入参是 dev-user=1，且由 App.onLaunch/全局导航拦截器消费而非本页（utils/dev-user.ts:80-132）；写入桥接但未消费的 key 不得残留污染后续页面",
+     "evidence": "noop：执行日志（两种方式的路由/滚动结论 + storage 读数）+ console",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    },
+    {
+     "id": "H48",
+     "manifest": "PAGES-HOME-INDEX",
+     "page": "pages/home/index",
+     "title": "七态齐备 + 首页交互形态铁律（禁 CardSwiper、热区普查、2 步回 Tab）",
+     "oldAction": "① DOM 普查首页是否存在 CardSwiper/滑动卡片结构；② 逐可点元素（9 区块内全部 @tap，含 TodayLoveProgress 4 格、RelationActivity 4 格、Interest 卡与加入、Nearby 条目、Community 卡/关注/作者/更多、Invite）验证 500ms ",
+     "expected": "① 首页渲染树**不得**出现 CardSwiper/连续滑动卡片（源码注释硬约束：禁止使用 CardSwiper，连续人物浏览属寻觅 Tab，index.vue:5-8）→ 出现即判架构违规 P2；② 每个可点元素 500ms 内必有路由/DOM/Toast 之一，否则「死按钮」FAILED（G4 死按钮=0）；③ 热区 <88rpx 的元素逐个列出（不得凭代码判过）；④ 七态：Idle/Loading(骨架 H21)/Success/Empty(H21、H35)/Error(H41)/Disabled(未登录拦截 H16)/Refreshing(H02) 必须各有截图或日志支撑；⑤ 本页无输入框 → 表单三态记「不适用」并写明依据",
+     "evidence": "normal：after 截图（每态一张 + 死按钮/热区普查清单）+ 路由断言 + console",
+     "requiresReal": false,
+     "gestureOnly": true,
+     "tapChannel": "tap"
+    }
+   ]
+  }
+ ],
+ "schema": {
+  "lane": "本页 page 路径（逐字照抄，普查靠它对账）",
+  "counts": {
+   "planned": "必须等于本 lane 的 cases.length",
+   "ok": "写进 cases 的条数",
+   "unverifiable": "写进 unverifiable 的条数"
+  },
+  "cases": [
+   {
+    "id": "",
+    "manifest": "",
+    "page": "",
+    "selector": ".kebab-case，必须逐字出现在 file:line 那一行",
+    "file": "仓库相对路径，如 apps/client/src/pages/discover/index.vue（组件里的类名写组件自己的路径）",
+    "line": "该行号那一行必须含该类名片段（合并器会重读文件核对，不接受自述）",
+    "oldAction": "逐字抄简报里的 oldAction，一个字都别改",
+    "newAction": "保留全部交互动词，把 selector 逐字写进去；动词丢了或多出来都会被整条拒绝",
+    "needsIdentity": "该目标只在某身份下存在时写 guest/A/B，否则留空",
+    "why": "为什么是它（一句话，指向源码里那条 bindtap）"
+   }
+  ],
+  "unverifiable": [
+   {
+    "id": "",
+    "manifest": "",
+    "page": "",
+    "reason": "",
+    "needsCarrier": "欠哪条载具才能点名（如 WS automator 的 touch/swipe、需要特定夹具、纯文案断言）"
+   }
+  ]
+ },
+ "hardRules": [
+  "cases + unverifiable 必须恰好等于 planned，多一条少一条整份不采信。",
+  "selector 必须在 file 的 line 那一行逐字存在；不许把类名改成「更好看」的写法，也不许引用一个只有样式没有事件的类——目标是能被自动化点到的东西，优先带 @tap/@click/bindtap/@input/@confirm 的那层。",
+  "gestureOnly=true 的条：CLI 桥没有连续手势，要么它其实有个可点的等价物件（如三键按钮本身）并保留原动词，要么进 unverifiable 并在 needsCarrier 写明欠 WS 手势通道。不许把「向右拖动」悄悄改成「点击」。",
+  "expected 里出现的具体文案/数字不能当点击目标；这类条进 unverifiable 并说明它断言的是文本不是物件。",
+  "只写自己这一份 outFile，不改 ops/*.json，不改别的 lane，不改台账，不跑模拟器。"
+ ]
+}

@@ -1,0 +1,121 @@
+{
+ "lane": "pages/home/index",
+ "manifest": "PAGES-HOME-INDEX.json",
+ "sourceFile": "apps/client/src/pages/home/index.vue",
+ "counts": {
+  "planned": 11,
+  "ok": 6,
+  "unverifiable": 5
+ },
+ "cases": [
+  {
+   "id": "H06",
+   "manifest": "PAGES-HOME-INDEX",
+   "page": "pages/home/index",
+   "selector": ".header-me",
+   "file": "apps/client/src/components/home/HomeHeader.vue",
+   "line": 60,
+   "oldAction": "点 HomeHeader.vue:60 的 .header-me（aria-label=本人昵称，@tap=goMyProfile → openAppPath(ROUTES.PROFILE.INDEX)），再点自定义 TabBar「首页」",
+   "newAction": "点 HomeHeader.vue:60 的 .header-me（aria-label=本人昵称，@tap=goMyProfile → openAppPath(ROUTES.PROFILE.INDEX)），再点自定义 TabBar「首页」 ⇒ 点名 tapTarget .header-me（apps/client/src/components/home/HomeHeader.vue:60）",
+   "needsIdentity": "",
+   "why": "HomeHeader.vue:60 的 .header-me 就是顶栏头像入口本体（同节点 @tap=goMyProfile，页侧 index.vue:330 无条件挂 HomeHeader），编译产物 components/home/HomeHeader.wxml 里它是 class=「header-me」 + bindtap 的 view；注意它在子组件内、名字不在 pages/home/index.wxml 里，而实测页作用域选择器通道进不去组件（同帧互斥分支 .today-card__skeleton 与 .today-card__empty 都答 absent，页面自有节点 .location-sheet__btn 答 present(2)）⇒ 若本轮仍点不到，欠的是组件深选载具，不是产品没做"
+  },
+  {
+   "id": "H07",
+   "manifest": "PAGES-HOME-INDEX",
+   "page": "pages/home/index",
+   "selector": ".header-location",
+   "file": "apps/client/src/components/home/HomeHeader.vue",
+   "line": 63,
+   "oldAction": "点 .header-location（HomeHeader.vue:63 @tap=$emit('schoolTap') → index.vue:241-245 openLocationSheet）",
+   "newAction": "点 .header-location（HomeHeader.vue:63 @tap=$emit('schoolTap') → index.vue:241-245 openLocationSheet） ⇒ 点名 tapTarget .header-location（apps/client/src/components/home/HomeHeader.vue:63）",
+   "needsIdentity": "",
+   "why": "HomeHeader.vue:63 的 .header-location 是顶栏定位胶囊本体（同节点 @tap=$emit(「schoolTap」) → index.vue:332 openLocationSheet），编译产物 components/home/HomeHeader.wxml 里为 class=「header-location」 + bindtap；与 H45 已落盘的 tapTarget 同名同行，属既有口径。同一条也在子组件作用域内，页作用域点不到时按通道欠账记"
+  },
+  {
+   "id": "H08",
+   "manifest": "PAGES-HOME-INDEX",
+   "page": "pages/home/index",
+   "selector": ".header-location",
+   "file": "apps/client/src/components/home/HomeHeader.vue",
+   "line": 63,
+   "oldAction": "依次执行三条关闭路径各一轮：① 点遮罩 .bottom-sheet-mask（BottomSheet.vue:73 → onMaskTap :66-68，maskClosable 默认 true）；② 重开后点右上角 ×（:91 closeSheet，showClose 默认 true）；③ 重开后点 footer「我",
+   "newAction": "依次执行三条关闭路径各一轮：① 点遮罩 .bottom-sheet-mask（BottomSheet.vue:73 → onMaskTap :66-68，maskClosable 默认 true）；② 重开后点右上角 ×（:91 closeSheet，showClose 默认 true）；③ 重开后点 footer「我知道了」（index.vue:476-484 @tap=closeLocationSheet） ⇒ 点名 tapTarget .header-location（apps/client/src/components/home/HomeHeader.vue:63）",
+   "needsIdentity": "",
+   "why": "三路关闭的载体是 .bottom-sheet-mask（BottomSheet.vue:73 @tap=onMaskTap）、.bottom-sheet-close（:91 @tap=closeSheet）与 footer「我知道了」（home/index.vue:477 @tap=closeLocationSheet :481），但前两个连同整个面板都在 BottomSheet.vue:72 的 v-if=sheetVisible 里、默认不渲染，第三个虽有页面自有节点且实测 present(2)，可 .location-sheet__btn 在同帧有两个同名节点、首匹配是 :468 的「重新定位」（H09 已占用），点不到关闭那一路 ⇒ 本条只点名把弹层带入的入口 .header-location（HomeHeader.vue:63 @tap=$emit schoolTap → index.vue:332 openLocationSheet），三路关闭本身仍欠两步骤串接"
+  },
+  {
+   "id": "H24",
+   "manifest": "PAGES-HOME-INDEX",
+   "page": "pages/home/index",
+   "selector": ".love-step",
+   "file": "apps/client/src/components/home/TodayLoveProgress.vue",
+   "line": 79,
+   "oldAction": "逐一点击 .love-step（TodayLoveProgress.vue:79 @tap=$emit('step', step.action)），覆盖 action=profile/discover/messages/nearby 四值",
+   "newAction": "逐一点击 .love-step（TodayLoveProgress.vue:79 @tap=$emit('step', step.action)），覆盖 action=profile/discover/messages/nearby 四值 ⇒ 点名 tapTarget .love-step（apps/client/src/components/home/TodayLoveProgress.vue:79）",
+   "needsIdentity": "",
+   "why": "TodayLoveProgress.vue:79 的 .love-step 是四格在 v-for 里的共用节点、同节点 @tap=$emit(「step」, step.action)，格子的 action 值由 :79 的 v-for 数据决定；编译产物 components/home/TodayLoveProgress.wxml 里有 class=「love-step」 的节点，但它住在组件作用域内（页作用域实测够不到，见 H06 同条说明）"
+  },
+  {
+   "id": "H25",
+   "manifest": "PAGES-HOME-INDEX",
+   "page": "pages/home/index",
+   "selector": ".relation-cell",
+   "file": "apps/client/src/components/home/RelationActivity.vue",
+   "line": 34,
+   "oldAction": "逐一点击 .relation-cell（RelationActivity.vue:34 liked-by、:45 whispers、:56 visitors、:67 matches），并执行一次返回",
+   "newAction": "逐一点击 .relation-cell（RelationActivity.vue:34 liked-by、:45 whispers、:56 visitors、:67 matches），并执行一次返回 ⇒ 点名 tapTarget .relation-cell（apps/client/src/components/home/RelationActivity.vue:34）",
+   "needsIdentity": "",
+   "why": "RelationActivity.vue:34 的 .relation-cell 是四格第一格（同节点 @tap=$emit(「liked-by」)、:45 whispers、:56 visitors、:67 matches 各一格且均带 hover-class），编译产物 components/home/RelationActivity.wxml 里是 class=「relation-cell」 + bindtap + aria-label 的 view；四格在 RelationActivity.vue:28 的 template v-else 里，要 loading 结束才渲染，mock 首页数据到位后在屏。组件作用域限制同 H06"
+  },
+  {
+   "id": "H29",
+   "manifest": "PAGES-HOME-INDEX",
+   "page": "pages/home/index",
+   "selector": ".interest-card",
+   "file": "apps/client/src/components/home/InterestRecommendation.vue",
+   "line": 83,
+   "oldAction": "点 .interest-card（InterestRecommendation.vue:50-51 @tap=$emit('select', item.id)）",
+   "newAction": "点 .interest-card（InterestRecommendation.vue:50-51 @tap=$emit('select', item.id)） ⇒ 点名 tapTarget .interest-card（apps/client/src/components/home/InterestRecommendation.vue:83）",
+   "needsIdentity": "",
+   "why": "InterestRecommendation.vue:83 的 .interest-card 是兴趣卡本体（同节点 :84 @tap=$emit(「select」, item.id) → index.vue:368 openCircle 走 encodeURIComponent），编译产物 components/home/InterestRecommendation.wxml 里有 interest-card 节点；它在 :78 的 v-else 横滑容器内，要 items 非空才渲染，mock 有数据。组件作用域限制同 H06，且 .interest-card__cover 实测在页作用域答 absent 正是这一层原因"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "H02",
+   "manifest": "PAGES-HOME-INDEX",
+   "page": "pages/home/index",
+   "reason": "本条触发的是页面级 onPullDownRefresh（home/index.vue:122 注册），它由系统下拉手势唤起、页面上没有任何对应节点可点；要判的又是「真实重拉一次 dashboard」与「stopPullDownRefresh 在 promise finally 之后才调」这两件时序与请求计数的事，且 expected 还要求连续下拉观察并发 ⇒ 没有可点的等价物件（首页三键 TabBar 与它无关）",
+   "needsCarrier": "欠 WS automator 的页面级下拉手势通道 + 请求计数与动画起止时间读数；若能给一个「直接调 onPullDownRefresh 回调」的注入腿也可判"
+  },
+  {
+   "id": "H03",
+   "manifest": "PAGES-HOME-INDEX",
+   "page": "pages/home/index",
+   "reason": "与 H02 同一载体缺失：本条要的是未登录 real 档下执行页面级下拉刷新，观察是否被 401 弹到登录页；下拉本身没有可点物件，判据是终栈断言 + 请求计数 + Toast 文案",
+   "needsCarrier": "欠下拉手势通道，另欠「未登录 + real 档」身份夹具（执行器 real 刀的游客位）与路由栈/网络计数读数腿"
+  },
+  {
+   "id": "H13",
+   "manifest": "PAGES-HOME-INDEX",
+   "page": "pages/home/index",
+   "reason": "本条断言的是「首页无搜索入口」这一缺席事实：.header-search 在 src 全树与编译产物 pages/home/index.wxml、components/home/HomeHeader.wxml 里都是 0 命中（HomeHeader 模板只有 .header-me/.header-location/.header-icon 三项，:60/:63/:67），缺席的东西没有可点载体；第二腿要 automation 直接触发 HomeHeader 的 emit 事件，属事件注入而不是点击",
+   "needsCarrier": "欠 DOM 普查清单（列出首页全部可点节点）与向子组件 emit 注入 searchTap 的通道；本条该按「无物件可点」的普查结论判，不该被改写成点某个按钮"
+  },
+  {
+   "id": "H47",
+   "manifest": "PAGES-HOME-INDEX",
+   "page": "pages/home/index",
+   "reason": "本条两条进入方式都是导航（reLaunch 与 switchTabWithQuery 到 pages/home/index 带深链参数），页面上没有承载参数的元素；要读的是当前路由 options、是否滚动到社区区，以及 storage 桥接 key 是否残留，全是导航与存储读数",
+   "needsCarrier": "欠「以带参路由进入同一 tab 页」的导航载具 + storage 读数腿；expected 断言的是 onLoad 缺失导致的参数不被消费，属结构性事实而非点击反馈"
+  },
+  {
+   "id": "H48",
+   "manifest": "PAGES-HOME-INDEX",
+   "page": "pages/home/index",
+   "reason": "一条里塞了四件事：CardSwiper 结构缺席普查、9 区块内全部 @tap 元素逐个 500ms 反馈验证、逐元素 rect 换算热区是否 <88rpx、以及从子页返回后 2 步内能否回任一 Tab，都是清单式普查与数值换算，单选择器点不动整张表；且首页大量可点元素住在子组件作用域内（见 H06 说明）",
+   "needsCarrier": "欠批量元素枚举 + 逐元素 boundingClientRect 读数 + 多步导航串接；七态与表单不适用那一段还要按态取帧的载具，属人工普查不是点名一个 selector 能过的条"
+  }
+ ]
+}

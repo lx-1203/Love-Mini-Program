@@ -1,0 +1,78 @@
+{
+ "generatedAt": "2026-09-27T02:20:00.000Z",
+ "source": "②「37 条判据含糊」剩余 6 行的收紧：两个只读研究 lane 逐行开文件量过，我再独立复核了其中 4 处关键行（fixtures.ts:1460 与 :1131、register/index.vue:114-122、hub.vue:283-284 与基线 291、NotLoggedWaiting.vue:62-66），并按 verify-source-shape.mjs 的口径实测了新增判点：total=57 成立=55 不成立=2（红的两条正是 MESSAGES-004 与当时未修的 HOME-112）。HOME-112 已在本批同时修掉（fixtures.ts:1460 去掉双层 resolveMediaUrl 包裹，改成与 :1131 等同龄条目一致的裸终路径）。",
+ "patches": [
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-112",
+   "col": 8,
+   "new": "实测（2026-09-27，本会话亲量）：apps/client/src/services/mocks/fixtures.ts:1460 原为 photoUrl: resolveMediaUrl(resolveMediaUrl(\"/static/assets/images/people/person-02.png\"))，是同文件 14 处调用里唯一的双层嵌套，而同字段同龄条目 :1131 交的是裸终路径。这不是空操作：utils/media.ts:221-233 把 /static/assets/images/people/* 改写成 apiRoot 的 app-assets 地址，:180-190 又因为路径含 APP_ASSET_PREFIX 把它改写回 /static ⇒ 双层调用把 R13 的真实构建修正原地抵消掉。该行在基线 094f7239、HEAD 与工作树上逐字相同（git diff 094f7239 对该文件为空），属本轮仍存在的缺陷。",
+   "why": "原判据点的行号（:1155-1163 双层/单层对比）在基线和今天都是 nearbyPeople 的裸 avatarUrl 行，跟嵌套无关；留着下一轮会去改错的地方"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-112",
+   "col": 11,
+   "new": "修：:1460 去掉双层包裹，与 :1131 等条目一致交裸终路径（本轮已落）。判点：verify-source-shape.mjs 条目 MP-R2-PAGES-HOME-INDEX-112 —— 两条 absent（禁止 resolveMediaUrl(resolveMediaUrl、禁止 photoUrl: resolveMediaUrl），修前实测各命中 1 处判红、修后 0 处判绿。纠正一处口径：处置原句「与同数组其余条目一致为单层」是错的，:1460 属 rotateTodayRecommendation() 的对象字面量、其数组里没有别的条目，真实约定是数据层 0 层包裹、由模板层单次消费。",
+   "why": "把「跟谁一致」写错会让人以为目标是包一层，而正确目标是包零层"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-004",
+   "col": 8,
+   "new": "实测（2026-09-27）：apps/client/src/components/discover/NotLoggedWaiting.vue:62-66 的第一个模板节点就是整图 :src=IMAGE_PATHS.POSTERS.NOT_LOGGED_WAITING（键定义 services/mocks/images.ts:148 → posters/notlogged-waiting.png），组件内没有 mascot、没有头像池 v-for、没有独立引导层；消息页只在 pages/messages/index.vue:374 的 !isLoggedIn && !useMock() 分支挂它，同页 :457 的 XunmiMascot 是 assistant-card 的东西，与本案无关。git diff 094f7239 -- 该组件为空 ⇒ 基线/HEAD/工作树三态同值，缺陷仍在。可判的只有负半段：verify-source-shape.mjs 条目 MP-R2VIS-PAGES-MESSAGES-INDEX-004（absent POSTERS.NOT_LOGGED_WAITING + not-logged__bg 模板计数 0），2026-09-27 实测两条都不过 ⇒ 判红，符合预期。",
+   "why": "写清哪一半今天可判、哪一半还没有载体，避免下一轮拿一张整图帧当「已按理想图分解」"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-004",
+   "col": 11,
+   "new": "去向拆开：负半段（不再用整图海报当唯一背景）已可机判且今天为红；正半段（mascot + person-01..08 头像池独立节点 + 引导层）今天没有可判物件，因为替代节点还不存在，且头像池需要真实数据源 —— 属需要设计/数据口径的产品改动，不是 QA 能顺手补的样式。补一条硬约束：这张卡只在真实档游客身份渲染（mock 档 useMock() 恒真，永远不出该卡），所以它的复验帧必须是 real 档 guest 帧，拿 mock 帧判它一律无效。行保持待修复，不许用「整图也算一种实现」把判据放宽。",
+   "why": "这条一旦写成「观感接近即可」，本轮就再也量不出它有没有做"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-009",
+   "col": 8,
+   "new": "实测（2026-09-27）：isAdult 真身在 apps/client/src/pages/register/index.vue:114-122（台账原判的 :103-109 是 phoneRaw/phoneValid/today 三行），实现已是分段 new Date(year, month-1, day) + 本地满 18 界点比较，全仓 grep 'new Date(dateStr' 0 命中 ⇒ 台账描述的「整串按 UTC 解析」这个改前态在任何可达版本里都不存在。基线 094f7239 同函数逐字相同 ⇒ 本轮无可归因改动。判点：verify-source-shape.mjs 条目 MP-R2-PAGES-REGISTER-INDEX-009（present 函数头 + present 分段构造 + adultSince 计数 2 + absent 整串解析），今天全绿、在基线上也全绿。",
+   "why": "台账原写「静态侧没有可写载体」是错的：该载体读的是 .vue 源码，不受压缩改名影响；把它记成不可判等于永久挂着"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-009",
+   "col": 11,
+   "new": "改判：保留-判据不成立（本轮前落地）。判点已在源码级建立并可重跑（见 statusEvidence 的 4 项测量），但两条基线事实要说清楚：函数体在基线 094f7239 就已是本地比较，且被判为病灶的整串 UTC 解析从未存在于任何可达版本 ⇒ 本行不构成本轮的修复归因，也不构成本轮的欠项。若日后要再收紧（例如满 18 当日的时间戳边界），另立案并先给出口径。",
+   "why": "「绿灯是量出来的还是继承来的」必须区分，否则本轮通过率会吃到不属于它的功劳"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-011",
+   "col": 8,
+   "new": "实测（2026-09-27）：apps/client/src/subpackages/campus/campus/hub.vue:283-284 为 v-for=school in filteredSchools 配 :key=school.id（模板内 :key= 只此一处）；基线 094f7239 同一处在第 291 行、值已是 school.id，带 tab 拼接的旧写法只存在于 874ff52f:284，而移除它的 f9a60925 是 094f7239 的祖先 ⇒ 本轮之前就已落地。判点：verify-source-shape.mjs 条目 MP-R2-CAMPUS-HUB-011（absent :key 含 activeTab + 模板内 :key=school.id 计数 1 + 模板内 :key 总数 1），三测全过。台账处置里那句「禁止再用 stores/likes/mock-data.js 的同名命中」指的文件不存在（实际是 stores/likes/mock-data.ts），且那里也没有这种 key。",
+   "why": "行号跨提交漂移与不存在的文件都要当场纠正，否则下一轮会照抄去改一个不存在的地方"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-011",
+   "col": 11,
+   "new": "改判：保留-判据不成立（本轮前落地，f9a60925 已在基线之前把 key 收敛到 school.id）。同时撤掉处置里残留的「帧侧再人工裁决一次列表复用」：源码级判点已经把「tab 值参与 key 拼接」这个病灶钉死为不可回退，一帧像素区分不出 key 策略，追加帧只是多一个不可判的欠项。",
+   "why": "把「再加一种证据」当稳健是反的：不可判的欠项只会永久挂着"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
+   "col": 9,
+   "new": "载体纠正（2026-09-27 实开文件）：结构前置在盘上都成立且早于基线 —— detail.vue:781 绑 'detail-body--bar-expanded': 条件 !!replyingTo 或 commentImages.length 大于 0，:1621-1622 预留 padding-bottom: calc(320rpx + env(safe-area-inset-bottom))（基础值 :1618 为 140rpx），固定输入栏 .detail-input-bar 在 :2929（台账写的 :2913-2923 与「第 1617 行预留」都是旧行号，1617 今天是 R17 注释）。statusEvidence 里那句失败探针 .comment-item.comment-reply-btn 是**选择器写错**而非物件缺失：两个类分别挂在 :968 与 :1014 两个不同元素上，正确写法是后代形式 .comment-item .comment-reply-btn。欠的证据形态明确：真实档 subpackages/village/village/detail 的两帧（回复态与挂图态），量最后一条 .comment-item 底缘与 .detail-input-bar 顶缘的间隙是否 >0。",
+   "why": "把「探针没命中」记成「产品没做」是这条行了三轮的错法；选择器与行号都要按盘上事实钉回去"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
+   "col": 6,
+   "new": "待修复（去向：closer=已在码且早于基线；判据台=需排UI帧；缺的载体=真实档两态帧 + 间隙量测，源码级只能证前置不能证遮挡；详见处置）",
+   "why": "这行欠的从来不是代码改动而是一次能问对物件的量测，载体要如实改名"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001",
+   "col": 6,
+   "new": "未取证/需裁决（口径未定：提示元素与文案没有设计依据，两页字数阈值语义分歧属产品选择；行内已核的部分见处置）",
+   "why": "原挂「待修复（缺可判物件）」会让人以为改代码就能结案，实际缺的是一个决定"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001",
+   "col": 11,
+   "new": "收紧结果（2026-09-27 实开文件）：已达一致的部分先量掉 —— 图片上限两处都走 POST_MAX_IMAGES（publish.vue:794 的 v-if=images.length < POST_MAX_IMAGES，全仓字面量 <9 0 命中，constants/village.ts:27=9），这半段没有欠项。仍在欠的两件都不是代码形状：① 「最多 9 张」常驻提示节点在 publish.vue:786-797 的图格区里根本不存在（超限时只有 :255 的 toast），要加就得先定元素与文案（理想图依据=不适用，机器无法自创）；② 字数阈值语义两页相反：publish.vue:782 用 --warning（CONTENT_LENGTH_WARN_THRESHOLD=50，剩 50 字提前预警），post.vue:894 用 --over（currentLength > POST_MAX_LENGTH，超限才报警）—— 提前预警与超限报警是有意的还是漂移，需要拍板。行内旧行号一并纠正：v-if 在 :794（原判 :792）、图格区 :786-797（原判 :785-795）、预警类绑定 :782（原判 :779-781）、预警样式 :1079（原判 :1071，那里是一条无关注释）。",
+   "why": "把「已经一致的那半」和「必须先有人拍板的那半」分开写，才不会下一轮拿已成立的半段冒充结案"
+  }
+ ]
+}

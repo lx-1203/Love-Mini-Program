@@ -1,0 +1,22 @@
+{
+ "patches": [
+  {
+   "id": "MP-R2-POST-016",
+   "col": 11,
+   "new": "裁定落地（④，含一次自我更正）：改判为「本轮前落地」。一手测量（本轮亲跑，不是继承）：`git diff -U6 094f7239 -- apps/client/src/subpackages/village/village/post.vue` 的全部高度相关改动只有一处（底部栏 ⟨height: calc(200rpx + env(safe-area-inset-bottom))⟩ → ⟨calc(120rpx + …)⟩，属别的条目），**图块规则 .post-images 整段不在 diff 里**；基线同段（git show 094f7239 同文件 :1455 区）只有 `width: calc((100% - 3 * 16rpx) / 4)` 与 `aspect-ratio: 1`，没有台账要删的那条写死高度 ⇒ 该声明在本轮开跑前就已不在。时间线也对得上：f9a60925（2026-09-26，round-6 收尾）已在基线之前动过该文件。更正说明：rulings4 里那句「git log -S 指向 f9a60925」当时是从归置文件继承的、我没有当场复现，现已换成上面这两条我自己跑出来的判据。第二件设计取舍按可辩护默认拍定：不为极旧内核补百分比撑高（现规则由 aspect-ratio 保证方形，本轮范围内没有该内核仍在支持矩阵的任何证据：无支持矩阵文档、无对应构建目标、无用户侧条目）；若产品给出含该内核的支持矩阵，按新缺陷另立案。",
+   "why": "把引用性标识符/CSS 片段套进 ⟨⟩：它们是「这段 diff 长什么样」的说明，不是判点；不套就被判据台抽成硬探针，产生 NOT_IN_EITHER 假红"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
+   "col": 11,
+   "new": "裁定落地（④）：原判据里那句「在 mock 种子补 ⟨warmPeople⟩≥4、⟨assistant⟩≥1（只加种子，不碰 store 逻辑）」**已按裁定删除**，实测不可行：dashboard 是单一 MessageDashboardView、五块全必填（services/generated/api-types-supplement.ts:708-714），且 ⟨recentChats⟩ 必经 stores/messages.ts:587-612 的按 id 合并改写。剩余可行半段去向已核：apps/api 侧 ⟨warmPeople⟩ 不是种子字段，而是从会话派生（MessageDashboardService.java:44 由 conversations 计算，:57/:60/:73 再喂给 TodayHeartView / RelationshipDashboardView / MessageDashboardView）⇒ 要出这个状态必须在 apps/api 造 ≥4 个热点参与者的会话夹具，属后端 lane。客户端侧本轮不再挂任何判点。",
+   "why": "把引用性标识符/CSS 片段套进 ⟨⟩：它们是「这段 diff 长什么样」的说明，不是判点；不套就被判据台抽成硬探针，产生 NOT_IN_EITHER 假红"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
+   "col": 11,
+   "new": "裁决已取（④ 同款可辩护默认，2026-09-27）：统一到两级 campus.hub。选边依据是既有用法的计数而不是偏好——校园域五页里四页走两级（certification.vue 48 处、post-topic.vue 34 处、index.vue 21 处、topic-detail.vue 20 处，合计 123 处，本轮逐个 grep 复算过），只有一页（hub.vue 23 处）用顶层扁平 ⟨campusHub⟩；因此本行要改的只有 hub.vue 加两份语言包，其余四页本就已经是目标形状。落地口径：25 个键一次性同批迁进中英文两份（只迁一边会让 i18n 配对门禁当场打红；该门禁的孤儿棘轮只许降不许升，1257 是当下上界）。附带发现（不在本行内、由孤儿棘轮承接，不另立开放项）：迁过去的 25 个键里有一批是零引用键，本来就已计入孤儿数；删它们会让棘轮下降，属下一次收口该做的事，本轮不混进这次结构迁移。名单不要靠裸键名 grep 得出——本轮实测 statusVerified 这类名字在别的命名空间里有同名引用，裸名一搜就误判成「有人在用」，派生必须按完整键路径。",
+   "why": "把引用性标识符/CSS 片段套进 ⟨⟩：它们是「这段 diff 长什么样」的说明，不是判点；不套就被判据台抽成硬探针，产生 NOT_IN_EITHER 假红"
+  }
+ ]
+}

@@ -1,0 +1,16 @@
+{
+ "lane": "subpackages/village/village/post",
+ "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST.json",
+ "sourceFile": "apps/client/src/subpackages/village/village/post.vue",
+ "counts": { "planned": 1, "ok": 0, "unverifiable": 1 },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "VP24",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "page": "subpackages/village/village/post",
+   "reason": "三个状态里没有一个是点击能造出来的。要点的「重试加载」是 post.vue:830 那枚 .post-target-sheet__option（同节点 @tap 调 retryLoadCircles），但整块被 :828 的 v-else-if circlesLoadFailed 挡着，而该标志只在 circleStore.errorMessage 非空时置起（:95）——mock 档的 fetchCircles 恒回种子圈子、从不进 catch，所以开弹层后只会走 :834 的成功列表分支，静息态与非静息态都拿不到那颗重试项；空态文案在 :860 的 v-else 分支，需要已登录但一个圈子都没加入的账号；加载中文案只在 :825 的 v-if 窗口内渲染。入口那枚 .post-to__card（:746）虽然可点，但它只带到成功分支，用它替「重试加载」定位等于把失败态判据换成列表判据，故不采用。",
+   "needsCarrier": "欠可控的 fetchCircles 失败注入（断网或后端 500 的真实档位，让 :95 那条置起 circlesLoadFailed）、一个已加入圈子为空的账号夹具，以及加载中文案的取帧时序载具；另需 GET /circles 的条数读数来验并发闸（:77-78）。"
+  }
+ ]
+}

@@ -1,0 +1,72 @@
+{
+ "startedAt": "2026-09-27T04:02:38.514Z",
+ "legs": [
+  {
+   "name": "note-bands-already-rebuilt",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage4tail/note-bands-already-rebuilt.log",
+   "bytes": 2879,
+   "resultLines": [
+    "FRESH_RESULT=PASS bands=3 markers=3 —— 每档产物都不晚于任何未提交改动，且符号级深检全部命中"
+   ]
+  },
+  {
+   "name": "gate-band-freshness-stage4",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage4tail/gate-band-freshness-stage4.log",
+   "bytes": 2875,
+   "resultLines": [
+    "FRESH_RESULT=PASS bands=3 markers=3 —— 每档产物都不晚于任何未提交改动，且符号级深检全部命中"
+   ]
+  },
+  {
+   "name": "open-window-real-for-cases",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage4tail/open-window-real-for-cases.log",
+   "bytes": 541,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-A-real-only",
+   "status": "QUEUED"
+  },
+  {
+   "name": "exec-guest-real-only",
+   "status": "QUEUED"
+  },
+  {
+   "name": "measure-matching-drift",
+   "status": "QUEUED"
+  },
+  {
+   "name": "gate-guest-landing-book",
+   "status": "QUEUED"
+  },
+  {
+   "name": "judge-stand-stage4",
+   "status": "QUEUED"
+  },
+  {
+   "name": "open-window-mock-for-reshoot",
+   "status": "QUEUED"
+  },
+  {
+   "name": "reshoot-stage4",
+   "status": "QUEUED"
+  },
+  {
+   "name": "open-window-real-for-guest-reshoot",
+   "status": "QUEUED"
+  },
+  {
+   "name": "reshoot-guest-real",
+   "status": "QUEUED"
+  }
+ ]
+}

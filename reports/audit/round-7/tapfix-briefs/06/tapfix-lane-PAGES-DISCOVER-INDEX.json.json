@@ -1,0 +1,35 @@
+{
+  "lane": "pages/discover/index",
+  "counts": { "planned": 4, "ok": 0, "unverifiable": 4 },
+  "cases": [],
+  "unverifiable": [
+    {
+      "id": "DC08",
+      "manifest": "PAGES-DISCOVER-INDEX",
+      "page": "pages/discover/index",
+      "reason": "这条是方向语义铁律：要的是在卡片上向右拖动超过 SWIPE_THRESHOLD 再松手（components/common/swipe/SwipeGesture.ts:37-42 按 dx/dy 与阈值判向，常量 :4-7），外加向左、向上、向下各一次组成触发矩阵，还要看跟手位移与旋转（dragStyle）和松手后的飞行终态。CLI 桥只有 element 的 tap 与 input 两种动作，发不出任何位移；卡片承载节点是组件里的 SwipeContainer（components/common/swipe/SwipeContainer.vue:72，:77 @touchend 与 :78 catchtap），点它只会走 @card-tap=handleCardTap 这条另一语义的路径，等于把「右滑=喜欢」测成「轻点」。",
+      "needsCarrier": "欠 WS automator 的 touchstart/touchmove/touchend 序列通道（四个方向各一次、位移过阈值并松手）与逐帧动画采样；本页已裁定卡片与三键的可点等价物另有 DC07/DC27/DC38 覆盖，本条不许降级成点击。"
+    },
+    {
+      "id": "DC16",
+      "manifest": "PAGES-DISCOVER-INDEX",
+      "page": "pages/discover/index",
+      "reason": "关闭态由后台开关决定，不是页面上能点出来的：isMatchOpen 取 appConfigStore 的 switches.match_open（stores/app-config.ts:41，只要不是显式 false 就为真，mock 档恒为真），而判据要的正是 false 那一支——此时 index.vue:297-299 只渲染一个 type=no-data 的 EmptyState（没传 action-text，连组件内的动作节点都不出），卡片与 MatchActions 整体不渲染。本条断言是 DOM 不存在加 0 请求 0 跳转，可点目标在该态里按定义不存在。",
+      "needsCarrier": "欠 app-config 夹具（下发 match_open=false，或在 mock 层把该开关注入为 false）；判据本体要的是渲染树读数（元素不存在断言），不是点击载具；「开关恢复后卡片正常出现」还需一次二次下发与 onShow 重拉（:216-225）。"
+    },
+    {
+      "id": "DC22",
+      "manifest": "PAGES-DISCOVER-INDEX",
+      "page": "pages/discover/index",
+      "reason": "两枚身高滑块住在筛选抽屉里，抽屉根节点带 v-if=visible（components/discover/FilterDrawer.vue:596）静息不渲染（页头入口是 .discover-header__filter，index.vue:249，已由 DC38 点名）；更关键的是判据本体是把滑块推到 250 与 120 这两个端点并做出 min>max 的组合，两枚都是原生 <slider>（FilterDrawer.vue:658 与 :671，同名 height-slider，@change=onHeightMinChange 与 onHeightMaxChange），CLI 的 class 点击只能命中轨道几何中点，造不出端点值，也造不出倒挂顺序。",
+      "needsCarrier": "欠 WS 的 touch/move 拖动通道（可指定坐标端点的两次反向拖动，且需先点页头筛选键展开抽屉这一前置）；数值回显（filter-section__value）另需文本读数。"
+    },
+    {
+      "id": "DC29",
+      "manifest": "PAGES-DISCOVER-INDEX",
+      "page": "pages/discover/index",
+      "reason": "否命题加连续手势：本页 pages.json 未开 enablePullDownRefresh、也没有 onPullDownRefresh 钩子，判据要的是在顶部做一次 300px 量级下拉并松手后确认无动画、无回调、无新增请求，同时统计 onShow 驱动的重拉（index.vue:216-225）；页面在该手势下不存在任何可点的等价物件（结论恰恰是「没有手动刷新入口」，与首页/附近页/消息页不一致）。",
+      "needsCarrier": "欠 WS 页面级下拉手势通道（touchmove 位移与松手惯性）与 network 逐条计数；点击载具无法替代表述这条不存在的交互。"
+    }
+  ]
+}

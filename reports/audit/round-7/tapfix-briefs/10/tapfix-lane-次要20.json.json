@@ -1,0 +1,16 @@
+{
+ "lane": "subpackages/profile-extra/profile/location",
+ "manifest": "次要20.json",
+ "sourceFile": "apps/client/src/subpackages/profile-extra/profile/location.vue",
+ "counts": { "planned": 1, "ok": 0, "unverifiable": 1 },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "PL05",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/location",
+   "reason": "判点确实是可点的：apps/client/src/subpackages/profile-extra/profile/location.vue:213 那一行同一行里既有类名又挂 @tap goHome。但两颗钮共用同一个类 .location-btn，只有第 1 颗（:210，@tap 调 loadLocation）额外带一枚 primary 修饰类，第 2 颗（返回首页）没有任何唯一类可写：按类名寻址一次只会拿到一颗，拿到的那颗是重新定位，它不换页还会起原生定位授权，本条的落点与栈深断言会被归属到完全不同的动作上，属于假结果而不是真缺口。容器 .location-actions（:209）与卡内文案 .location-btn__text 都不挂事件，按 hardRules 不能当目标。",
+   "needsCarrier": "欠「按序号或按 aria-label 文本定位同类名第 N 个节点」的载具（本页两颗的 aria-label 分别是重新定位与返回首页），或由源码给返回首页那颗补一枚唯一修饰类；本条还要求 switchTab 后的栈快照读数，需 routeStack 出口配合。"
+  }
+ ]
+}

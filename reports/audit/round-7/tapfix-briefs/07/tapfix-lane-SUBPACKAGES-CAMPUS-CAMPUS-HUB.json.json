@@ -1,0 +1,38 @@
+{
+ "lane": "subpackages/campus/campus/hub",
+ "counts": {
+  "planned": 3,
+  "ok": 1,
+  "unverifiable": 2
+ },
+ "cases": [
+  {
+   "id": "CH10",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+   "page": "subpackages/campus/campus/hub",
+   "selector": ".campus-school-card",
+   "file": "apps/client/src/subpackages/campus/campus/hub.vue",
+   "line": 285,
+   "oldAction": "tap 第一张 .campus-school-card（北京大学，hub.vue:282-291 → goSchool :160-162）",
+   "newAction": "tap 第一张 .campus-school-card（北京大学，hub.vue:282-291 → goSchool :160-162，本条把目标逐字点名为 .campus-school-card 这张卡）",
+   "needsIdentity": "",
+   "why": "学校卡的唯一热区就是 :285 这张 view（class 含 campus-school-card press-feedback，@tap 绑 goSchool :290，goSchool :160-162 里 encodeURIComponent 后 openAppPath 到 campus/index），卡内的 __cover 与 __cta 都没有自己的 handler；编译档 mp-weixin 与 mp-weixin-real 的 subpackages/campus/campus/hub.wxml 里 class 静态含 campus-school-card 且带 bindtap，本轮执行档同页探针实测静息态就有 11 个卡内节点（CH11 探针 .campus-school-card__cta:present(11)），说明列表不在空态分支（:277）之后；点它会离开本页，落点与编码校名要按 observed 里的路由链判。"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "CH19",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+   "page": "subpackages/campus/campus/hub",
+   "reason": "目标物件本身没问题（同 CH10 的 .campus-school-card，hub.vue:285 与 @tap :290），但本条断言的是 500ms 内连点×5 之后的栈深与各帧 route，CLI 桥一次判据只发一次点击（r-exec-cli.mjs:405-414 逐个 selector 各发一次），单点一次必然得到栈=2，等于用一次点击冒充五次点击，判据要的防连点缺口（goSchool :160-162 无 in-flight 标志）反而被掩盖；且点击会把本页导航走，交互后探针不在本页上。",
+   "needsCarrier": "欠 WS automator 的 rapidTap 连发通道（同页 500ms 内五次）与 getCurrentPages 栈快照读数，另需点击后回到本页的配方"
+  },
+  {
+   "id": "CH22",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+   "page": "subpackages/campus/campus/hub",
+   "reason": "本条量的是页级 window 滚动到顶与到底（scrollTop 与 scrollHeight 与 windowHeight）以及底部静态说明文案是否完整可见（:330-332 的 campus-hub__more 与 footer 占位），断言的是滚动数值与一段固定文本；「scrollTo 到底再回顶」CLI 桥发不出（只有 tap 与 input 腿），而那行文案按硬规则也不能当点击目标（它是静态说明，无可点动作，正是 MP-R1-CAMPUS-HUB-003 移除箭头后的形态）。",
+   "needsCarrier": "欠 WS 页面滚动通道与滚动数值读数，纯文本与布局断言无点击目标"
+  }
+ ]
+}

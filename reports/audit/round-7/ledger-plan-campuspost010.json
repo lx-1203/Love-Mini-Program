@@ -1,0 +1,23 @@
+{
+  "$comment": "MP-R2-CAMPUSPOST-010 的复判改写。不是把红洗成绿：这条原先判「保留-判据不成立」的两条否证锚点已被本轮 ③ 第①项的落地推翻，前提重新可达，所以状态必须离开「不成立」；新状态是「已修复待复验」，并且明写还欠哪一格载体。",
+  "patches": [
+    {
+      "id": "MP-R2-CAMPUSPOST-010",
+      "col": 6,
+      "new": "已修复待复验（源码级判点已过：上传段自带 catch ＋ 专属文案键在中英两份语料里；欠真机那一格「配图上传失败」的 toast 观感帧）",
+      "why": "原判「不成立」的两条否证锚点已失效，前提重新可达 ⇒ 必须离开不成立；但端到端观感仍未取证 ⇒ 只到待复验，不写已验证"
+    },
+    {
+      "id": "MP-R2-CAMPUSPOST-010",
+      "col": 9,
+      "new": "复判依据（本轮实测，逐条可重跑）：① apps/client/src/subpackages/campus/campus/post-topic.vue:65 现在是 CAMPUS_TOPIC_IMAGES_SUPPORTED=true，而本行立案时引作否证锚点的 :64=false 已不存在；② apps/api/src/main/java/com/campuslove/api/campus/CampusController.java:461 的 CreateCampusTopicRequest 已有 @Size(max=6) List images（:180 req.images() 传给服务层），本行处置原文里那句「后端 CreateCampusTopicRequest 无 images 字段」已经不成立；③ 于是发布链路里 319-341 那段逐张 uploadPostImage 真的会跑、真的会抛，而它跑在 campusStore.createCampusTopic() **之前** —— errorMessage 只在 createCampusTopic 入口才清空（stores/campus.ts），所以上传失败时 catch 读到的是上一次动作（拉话题/拉认证）留下的陈旧文案；④ 修复：上传段自己 try/catch，给 t(\"campus.postTopic.uploadFailed\") 并复位 isSubmitting 后 return，不再冒充发布失败。判点 MP-R2-CAMPUSPOST-010（多文件谓词，三份文件都过才过）：post-topic.vue 要有包住房 for 的 try、要有 catch (uploadErr)、要有那句 uploadFailed 调用；zh-CN 要 \"uploadFailed\"、en-US 要 uploadFailed。重跑：node scripts/qa/verify-source-shape.mjs",
+      "why": "把「为什么这条从判据不成立翻成成立」写成可复核的盘上事实，而不是我的一句话"
+    },
+    {
+      "id": "MP-R2-CAMPUSPOST-010",
+      "col": 11,
+      "new": "翻转记录（2026-09-27）：本轮 ③ 的第①项（后端收 images）落地之后，本行原有的否证锚点整个反了 —— 原来「真模式配图链路整体关闭、所以上传阶段抛不出来、所以判据触发前提不可达」，现在是链路会跑、会抛、且错误会被上一次动作的陈旧 errorMessage 顶掉。这条不是新发现，是**同一轮的修复把上一轮的免罪理由作废了**，而当时没有任何载体能报警 ⇒ 已另立 scripts/qa/verify-disproof-anchors.mjs 专门扫这类失效锚点。去向：状态推进到 已修复待复验，仍欠的是真机一次被拦下的观感帧（要真实模式 + 故意给一张非法/断网的图），属 ① 的帧债同类。",
+      "why": "保留翻转原因与欠项，避免下一轮把它当成从一开始就成立的结论"
+    }
+  ]
+}

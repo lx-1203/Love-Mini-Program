@@ -1,0 +1,857 @@
+{
+ "generatedAt": "2026-09-26T18:29:35.031Z",
+ "base": {
+  "gapBeforeWave": 281,
+  "named": 199,
+  "unverifiable": 82,
+  "censusNowMissing": 82
+ },
+ "conservation": {
+  "namedPlusUnverifiable": 281,
+  "ok": true,
+  "overlaps": 0,
+  "unclaimed": 0
+ },
+ "byKind": [
+  {
+   "kind": "连续手势（swipe/drag/longpress/scroll）",
+   "n": 55,
+   "ids": [
+    "PAGES-DISCOVER-INDEX|DC08",
+    "PAGES-DISCOVER-INDEX|DC22",
+    "PAGES-DISCOVER-INDEX|DC29",
+    "PAGES-PROFILE-INDEX|PFI22",
+    "PAGES-PROFILE-INDEX|PFI37",
+    "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB25",
+    "次要20|OT14",
+    "PAGES-MESSAGES-INDEX|MSG05",
+    "PAGES-MESSAGES-INDEX|MSG22",
+    "PAGES-MESSAGES-INDEX|MSG24",
+    "PAGES-MESSAGES-INDEX|MSG25",
+    "PAGES-MESSAGES-INDEX|MSG26",
+    "PAGES-HOME-INDEX|H02",
+    "PAGES-HOME-INDEX|H03",
+    "PAGES-HOME-INDEX|H47",
+    "PAGES-HOME-INDEX|H48",
+    "次要21|FB01",
+    "次要21|FB13",
+    "PAGES-NEARBY-INDEX|N02",
+    "PAGES-NEARBY-INDEX|N03",
+    "PAGES-NEARBY-INDEX|N04",
+    "PAGES-NEARBY-INDEX|N05",
+    "PAGES-NEARBY-INDEX|N30",
+    "PAGES-NEARBY-INDEX|N31",
+    "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS19",
+    "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT02",
+    "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT20",
+    "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT21",
+    "次要19|SE09",
+    "次要20|AB08",
+    "次要20|AB09",
+    "次要20|AB10",
+    "次要20|AB14",
+    "SUBPACKAGES-CIRCLES-CIRCLES-INDEX|CI17",
+    "SUBPACKAGES-CIRCLES-CIRCLES-INDEX|CI18",
+    "SUBPACKAGES-CIRCLES-CIRCLES-INDEX|CI22",
+    "次要20|VRN13",
+    "次要21|RP11",
+    "次要19|LN01",
+    "PAGES-REGISTER-INDEX|REG32",
+    "PAGES-REGISTER-SUCCESS|RS13",
+    "SUBPACKAGES-CAMPUS-CAMPUS-HUB|CH22",
+    "次要20|VCI13",
+    "次要21|SCU13",
+    "次要21|FHT14",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI28",
+    "次要21|DND12",
+    "次要22|VB03",
+    "次要22|VB04",
+    "次要22|VB07",
+    "次要19|PE03",
+    "次要22|AC02",
+    "次要22|MS09",
+    "次要22|MW09",
+    "次要22|MD09"
+   ]
+  },
+  {
+   "kind": "断言对象是文案/数值，不是可点物件",
+   "n": 22,
+   "ids": [
+    "PAGES-DISCOVER-INDEX|DC16",
+    "PAGES-PROFILE-INDEX|PFI41",
+    "PAGES-PROFILE-INDEX|PFI42",
+    "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB12",
+    "次要19|ST05",
+    "次要20|TK01",
+    "次要20|TK10",
+    "PAGES-NEARBY-INDEX|N10",
+    "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT03",
+    "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT05",
+    "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT06",
+    "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT14",
+    "次要20|VRN11",
+    "次要21|RP09",
+    "次要19|HP04",
+    "SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX11",
+    "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI17",
+    "次要18|VD20",
+    "次要21|DND02",
+    "PAGES-LOGIN-INDEX|LG31",
+    "SUBPACKAGES-VILLAGE-VILLAGE-POST|VP24"
+   ]
+  },
+  {
+   "kind": "需要特定夹具或账号状态",
+   "n": 5,
+   "ids": [
+    "次要19|ST06",
+    "次要21|DND03",
+    "次要18|TP04",
+    "次要20|PR05",
+    "次要22|VI09"
+   ]
+  }
+ ],
+ "items": [
+  {
+   "id": "DC08",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "page": "pages/discover/index",
+   "reason": "本条断言的四个动作全是连续手势：向右拖动 >SWIPE_THRESHOLD 后松手，外加向左/向上/向下各一次（SwipeGesture.ts:37-42 用 touchstart→touchmove→touchend 的位移与方向判向）。HTTP 桥只有 tap 与 input 两条腿，swipe-container 上的 tap 无法表达方向位移；若改成点三键「喜欢」，就把「右滑=喜欢、上下≠左右滑」的手势语义判据换成了按钮判据（动词也保不住），故不点名。",
+   "needsCarrier": "WS automator 的 touch/swipe 连续手势通道（可给定起点+方向+位移+松手），并保留 handleLike/handleSwipeLeft 触发矩阵读数",
+   "lane": "pages/discover/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/01/tapfix-lane-PAGES-DISCOVER-INDEX.json.json"
+  },
+  {
+   "id": "DC16",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "page": "pages/discover/index",
+   "reason": "isMatchOpen=false 时本页只渲染 .match-state 里的 EmptyState（index.vue:297-299），卡片、MatchActions 整棵子树都不渲染，EmptyState 未传 actionText ⇒ .empty-action（EmptyState.vue:105 @tap=handleAction）也不渲染——该态下全页找不到任何带处理器的可点物件；本条断言本身是「DOM 不存在 + 0 请求 0 跳转」。",
+   "needsCarrier": "需要 appConfigStore.isMatchOpen=false 的开关夹具，外加「元素不存在/DOM 计数」断言载具（现桥只有 tap/input + 截图）",
+   "lane": "pages/discover/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/01/tapfix-lane-PAGES-DISCOVER-INDEX.json.json"
+  },
+  {
+   "id": "DC22",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "page": "pages/discover/index",
+   "reason": "身高区间靠原生 <slider>（FilterDrawer.vue:658-682，只绑 @change=onHeightMinChange/onHeightMaxChange，无 @tap/@input），把下限拖到 250、上限拖到 120 并构造 min>max 需要连续按住拖动；tap 在轨道上的落点位置在 mp 端不可控，input 通道对 slider 也不成立。",
+   "needsCarrier": "WS automator 的按住拖动（touch drag）通道，或 slider 数值注入夹具（能直接置 heightMinDraft/heightMaxDraft 再回显）",
+   "lane": "pages/discover/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/01/tapfix-lane-PAGES-DISCOVER-INDEX.json.json"
+  },
+  {
+   "id": "DC29",
+   "manifest": "PAGES-DISCOVER-INDEX",
+   "page": "pages/discover/index",
+   "reason": "整条判据唯一的驱动动作是「在顶部执行下拉手势」，本页 pages.json 未开 enablePullDownRefresh、也没有下拉入口按钮（.match-page/.match-scroll 均无 @tap），断言的是「不出现下拉动画、不触发 onPullDownRefresh 回调」。",
+   "needsCarrier": "WS automator 的下拉（pull-down overscroll）手势通道 + onPullDownRefresh 回调探针",
+   "lane": "pages/discover/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/01/tapfix-lane-PAGES-DISCOVER-INDEX.json.json"
+  },
+  {
+   "id": "PFI22",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "page": "pages/profile/index",
+   "reason": "这条要的是「本人态功能区四块是否出现在活代码路径」的 DOM 存在性清单，手段是「全页滚动」——桥没有 scroll/全页探测腿。更硬的一点：四块的真物件（语音 .video-cta index.vue:1694、背景 .video-cta :1768、邀请 .video-cta :1793、VIP .vip-card :1809）任何一枚被 tap 都会当场触发 handleRecordVoice/handleEditBackground/openInviteModal/handleVipClick 副作用（起录音、拉起选图、开弹窗、跳支付），等于把「渲染可达」判据换成「点击落点」判据，而后者已由 PFI23/PFI25/PFI27/PFI28 承担。一条 schema 只能挂一个 selector 也覆盖不了四块，故不硬凑。",
+   "needsCarrier": "需要 WS automator 的全页滚动 + DOM 存在性探测通道（或把本条拆成 4 条「selector 存在即可、不点击」的子判点，各挂 .video-cta / .vip-card）",
+   "lane": "pages/profile/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/02/tapfix-lane-PAGES-PROFILE-INDEX.json.json"
+  },
+  {
+   "id": "PFI37",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "page": "pages/profile/index",
+   "reason": "动作本身就是「在页面顶部执行下拉手势」这个连续手势，且 expected 是负向断言（不得出现下拉刷新动画/onPullDownRefresh 回调）——没有正向落点物件可点。实测 pages/profile/index 在 pages.json:66 只有 path 无 style（未开 enablePullDownRefresh），index.vue 也只注册 onShow/onUnload/onShareAppMessage/onTabItemTap，页内不存在任何下拉可承载节点。",
+   "needsCarrier": "WS automator 的 touch/drag 下拉通道（现桥只有 tap 与 input 两条腿）+ 能读 onPullDownRefresh 是否被调用的钩子计数",
+   "lane": "pages/profile/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/02/tapfix-lane-PAGES-PROFILE-INDEX.json.json"
+  },
+  {
+   "id": "PFI41",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "page": "pages/profile/index",
+   "reason": "判据要的就是「本页可输入面数量」这个扫描结论，expected 已写死「主渲染树无任何输入框 → 输入四态在本页不适用」。实测 pages/profile/index.vue 与其整棵子树（ProfileShell/MyProfile/MyHeader/MyCompletion/MyStats/MyStory/MyInteraction/MyMore/CertBadgeRow/CertDetailSheet/VerificationBadge/BottomSheet/GlobalPublishFab，含 index.vue:2097-2152 的邀请弹窗）grep '<input'/'<textarea' 命中 0 处；tapChannel=input 却没有可输入的节点，随便指一个 .class 就是把「无输入面」判据改指成按钮。",
+   "needsCarrier": "断言的是 DOM 扫描结果不是物件：需要 evaluate 侧 querySelectorAll('input,textarea') 计数腿；若真要跑输入三态，得先给本页（弹层内昵称/邀请码）引入真实输入面",
+   "lane": "pages/profile/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/02/tapfix-lane-PAGES-PROFILE-INDEX.json.json"
+  },
+  {
+   "id": "PFI42",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "page": "pages/profile/index",
+   "reason": "全页热区/死按钮普查：一条 action 里要逐元素点击并计时十几枚物件（MyHeader 四枚、MyCompletion、MyStats 四格、MyStory 四类、MyInteraction 四格、MyMore 四项、功能区四块、FAB、他人态六枚），还要逐枚读 rect 换算 rpx 并列出 <88rpx 清单。schema 一条只能挂一个 selector，任挂一枚（例如 .my-header__icon）都会把整页普查缩成单点，且 ②③ 两栏是热区尺寸与外观复位断言，不是点击落点断言。",
+   "needsCarrier": "需要 selector 数组/清单式多目标 tap 载具（每枚元素一个 tap + boundingClientRect 读数），或把本条按元素拆成 20 条子判点后再逐条点名",
+   "lane": "pages/profile/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/02/tapfix-lane-PAGES-PROFILE-INDEX.json.json"
+  },
+  {
+   "id": "PUB12",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "page": "subpackages/village/village/publish",
+   "reason": "该行按设计就没有可点物件：publish.vue:818 是 <view class=\"publish-row\">（无 @tap、无 press-feedback、无 › ），而 .publish-row 是四行共用的布局类——DOM 里第一个 .publish-row 是 :804 的「添加话题」行（@tap 打开话题弹层），点名它必然弹层，直接把「tap 必须无任何反馈且不弹层不跳页」判成假 FAILED；行内子节点 .publish-row__label(:813)/.publish-row__meta(:823) 同样四处共用且首个都落在话题行。另一半判据是两态文案（meta='选择位置' / '杭州 · 自动定位'）与提交 body 不含 location，都是文本/报文断言。",
+   "needsCarrier": "需要给只读位置行一个唯一钩子（如 .publish-row--location 或 data-testid）后才能点名；两态文案与 body.location 断言还需读文本/读报文的通道",
+   "lane": "subpackages/village/village/publish",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/02/tapfix-lane-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json.json"
+  },
+  {
+   "id": "PUB25",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH",
+   "page": "subpackages/village/village/publish",
+   "reason": "本页（subpackages/village/village/publish）没有任何可点物件参与这条判据：发布成功后是 400ms setTimeout 自动 navigateAway（publish.vue:717-721），之后的「观察列表首条与审核中徽标 → 下拉刷新 2 次并数标题出现次数 → 再等 5s 刷新一次」全发生在村口页（subpackages/village/village/index.vue，refresher 挂在其 :628 的 scroll-view 上，不属本 lane 的文件），且「下拉刷新」是连续手势、桥无 touch/scroll 腿；「数标题出现次数」是文本计数断言。把 selector 指回本页发布钮会测成另一条用例（PUB15/PUB16 已覆盖）。",
+   "needsCarrier": "WS automator 的下拉/scroll 通道 + 判点须落在 village/index 页的 refresher scroll-view（跨页用例，或拆成「回流首条」与「下拉去重」两条并各挂载具）",
+   "lane": "subpackages/village/village/publish",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/02/tapfix-lane-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json.json"
+  },
+  {
+   "id": "ST05",
+   "manifest": "次要19",
+   "page": "subpackages/profile-extra/settings/index",
+   "reason": "本案唯一的交互目标是「本周安排」开关本身，即 :570-575 的 <switch> 节点（@change=toggleWeeklySchedule :573），源码里它没有写任何 class（只有 :checked/color/@change/aria-label），而桥只认 .class 选择器 ⇒ 点不到真正驱动持久化与 Toast 的那个物件。外层行 :563 的 .menu-item.menu-item--no-border 与 :568 的 .menu-item__label 都只有样式/文本、没有 @tap，点它们不会触发 toggleWeeklySchedule（等于把开关判据测成空白行判据），按硬规则不许引用只有样式的类；另外 ③ 的首页区块属 home lane，④ 的 setStorageSync 抛错还需要 storage 失败注入夹具。",
+   "needsCarrier": "欠类名载体：需源码给 :570-575 的 <switch> 补一个 class（例如 menu-item__switch--weekly），或桥侧提供 switch 标签/aria-label/nth 选择器通道；④ 另需 setStorageSync 失败注入夹具。",
+   "lane": "subpackages/profile-extra/settings/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/03/tapfix-lane-次要19.json.json"
+  },
+  {
+   "id": "ST06",
+   "manifest": "次要19",
+   "page": "subpackages/profile-extra/settings/index",
+   "reason": "本案点位是深色模式开关，即 :588-593 的 <switch>（@change=handleThemeSwitch :591），该节点同样没有 class，桥按类名选择器无法命中；所在行 :578-581 的 .menu-item.menu-item--no-border 只有样式无事件，点它不切主题（会测成 noop 而行）。此外 ① 要求 mode=auto 且系统深色的前置、③ 要跨页主题比对（属 home lane）、④ 要杀进程冷启动载具，均非 tap/input 桥能点名。",
+   "needsCarrier": "欠类名载体：需源码给 :588-593 的 <switch> 补 class（例如 menu-item__switch--theme），或桥侧提供 switch/aria-label 选择器通道；④ 另需杀进程重进（restart）载具。",
+   "lane": "subpackages/profile-extra/settings/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/03/tapfix-lane-次要19.json.json"
+  },
+  {
+   "id": "OT14",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/other",
+   "reason": "这条的主判点是「滚动到顶/底 + 底部 CTA 固定栏遮挡」：① 要 scrollTo 底→顶并量测最后一条动态（.public-moment__card）与底栏 .relationship-cta（RelationshipCTA.vue:40，样式 fixed 与 env(safe-area-inset-bottom) 在 :77-87）的 rect 是否相交——桥只有 tap/input，既没有滚动载具也没有几何回读，且它没有可点的「等价物件」（滚动不是任何按钮的别名，硬套一个类名等于换判据）。② 断言的是 401 错误文案 apiErrors.loginRequired（other.vue:148-150 写入 errorMessage，渲染在 .profile-shell__text :75）属文本判据。③ 唯一的离散点击点是错误卡重试，但它已在同页 OT02 用 .profile-shell__retry（ProfileShell.vue:76）点名，用它当本条锚点会把「遮挡检查」测成「重试链路」，故整条判 unverifiable 而不是凑数。",
+   "needsCarrier": "欠 WS automator 的 scrollTo/滚动 + 元素 rect 量测通道（遮挡判据必需）；② 另需可注入 401 的真实鉴权态夹具。",
+   "lane": "subpackages/profile-extra/profile/other",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/03/tapfix-lane-次要20.json.json"
+  },
+  {
+   "id": "MSG05",
+   "manifest": "PAGES-MESSAGES-INDEX",
+   "page": "pages/messages/index",
+   "reason": "下拉刷新是 onPullDownRefresh 的连续手势（await loadPage(true)→stopPullDownRefresh :322-327），tap/input 桥无等价触发点；断言还含刷新期间不闪回骨架、未读红点收敛等生命周期/渲染态，非可点物件。",
+   "needsCarrier": "WS automator 的 pull-down/下拉刷新通道 + 请求计数取证",
+   "lane": "pages/messages/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/04/tapfix-lane-PAGES-MESSAGES-INDEX.json.json"
+  },
+  {
+   "id": "MSG22",
+   "manifest": "PAGES-MESSAGES-INDEX",
+   "page": "pages/messages/index",
+   "reason": "「长按」会话弹 uni.showActionSheet 四项面板属连续手势，桥仅 tap/input；且点 .chat-item 会走 openSession 打开会话（@tap :528）而非弹面板，无等价离散目标。",
+   "needsCarrier": "WS automator 的 longpress 通道（并驱动原生 actionSheet 选项）",
+   "lane": "pages/messages/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/04/tapfix-lane-PAGES-MESSAGES-INDEX.json.json"
+  },
+  {
+   "id": "MSG24",
+   "manifest": "PAGES-MESSAGES-INDEX",
+   "page": "pages/messages/index",
+   "reason": "免打扰经「长按→动作面板选项」触发（onSessionLongpress :261-279），第②步又依赖「下拉刷新」，两条均为连续手势，tap 桥无离散等价入口。",
+   "needsCarrier": "WS automator 的 longpress + pull-down 通道",
+   "lane": "pages/messages/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/04/tapfix-lane-PAGES-MESSAGES-INDEX.json.json"
+  },
+  {
+   "id": "MSG25",
+   "manifest": "PAGES-MESSAGES-INDEX",
+   "page": "pages/messages/index",
+   "reason": "「标为未读」只能由长按弹层的动作面板选项触发（onSessionLongpress tapIndex===1 :270-273），点 .chat-item 只会进会话，无等价离散可点目标。",
+   "needsCarrier": "WS automator 的 longpress 通道（并驱动原生 actionSheet 选项）",
+   "lane": "pages/messages/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/04/tapfix-lane-PAGES-MESSAGES-INDEX.json.json"
+  },
+  {
+   "id": "MSG26",
+   "manifest": "PAGES-MESSAGES-INDEX",
+   "page": "pages/messages/index",
+   "reason": "删除入口以长按弹面板起（onSessionLongpress tapIndex===3 :280-287），后续在原生 showModal 上点取消/确定，桥无 longpress 也无原生弹窗驱动，无离散可点目标。",
+   "needsCarrier": "WS automator 的 longpress 通道 + 原生 showModal 取消/确定驱动",
+   "lane": "pages/messages/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/04/tapfix-lane-PAGES-MESSAGES-INDEX.json.json"
+  },
+  {
+   "id": "TK01",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "reason": "本条只等待首屏渲染并核对进度条宽度/百分比与已完成计数文案、卡片勾选态是否同源（tasks.vue:380-393），oldAction 无任何可执行交互动词，断言的是渲染数值/文本一致性而非可点物件，桥的 tap/input 无落点。",
+   "needsCarrier": "无 — 纯首屏渲染/数值断言，需取帧+evaluate 读宽度百分比计数，非点击可表达",
+   "lane": "subpackages/profile-extra/profile/tasks",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/04/tapfix-lane-次要20.json.json"
+  },
+  {
+   "id": "TK10",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/tasks",
+   "reason": "验证 checkinDone 单向锁存靠改服务端签到态 + reLaunch 观察勾选态/积分卡是否仍显示已完成（tasks.vue:346-348），断言的是渲染勾选图标的显示态（.task-item__check 无 @tap）；页面无 <input>，tap/input 桥既无翻转态的可点物件也无可输入节点。",
+   "needsCarrier": "签到态服务端夹具/第二身份 + reLaunch 取帧通道（tap/input 桥无法翻转服务端态）",
+   "lane": "subpackages/profile-extra/profile/tasks",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/04/tapfix-lane-次要20.json.json"
+  },
+  {
+   "id": "H02",
+   "manifest": "PAGES-HOME-INDEX",
+   "page": "pages/home/index",
+   "reason": "触发物是页面级下拉手势 onPullDownRefresh（index.vue:122-124，pages.json:56 enablePullDownRefresh=true），DOM 内不存在能等价触发该路径的可点物件；判据核心恰是 stopPullDownRefresh 在 promise 完成后才调用、以及下拉路径绕过 :92 登录门时的并发行为。页面里唯一同样调 fetchDashboard 的可点物是 CommunityFeed 的 retry（index.vue:383），它不走 onPullDownRefresh、也不会触发 stopPullDownRefresh，用它替代会把下拉判据改成重试判据，属篡改。",
+   "needsCarrier": "WS automator 的 pull-down/touchmove 手势通道（含动画起止计时）",
+   "lane": "pages/home/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/05/tapfix-lane-PAGES-HOME-INDEX.json.json"
+  },
+  {
+   "id": "H03",
+   "manifest": "PAGES-HOME-INDEX",
+   "page": "pages/home/index",
+   "reason": "与 H02 同因：判据是未登录态执行页面级下拉刷新是否被强踢到 /pages/login/index，触发腿只能是页面下拉手势，桥无该通道；登录门旁路在 index.vue:92（refreshHomeFeed 有门）vs :122-124（下拉无门），任何 tap 目标都无法构造这条入栈路径，终栈断言还需要路由栈读数。",
+   "needsCarrier": "WS automator 的 pull-down 手势通道 + 未登录（real 模式无 token）夹具 + 路由栈读数",
+   "lane": "pages/home/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/05/tapfix-lane-PAGES-HOME-INDEX.json.json"
+  },
+  {
+   "id": "H47",
+   "manifest": "PAGES-HOME-INDEX",
+   "page": "pages/home/index",
+   "reason": "判据读的是入参消费结论与滚动/storage 数值（首页只注册 onShow/onPullDownRefresh/onPageScroll、无 onLoad → tab/communityId/postId/focus 为幽灵参数；是否定位到社区区/滚动到帖子；storage 桥接 key 是否残留）。两种进入方式由 reLaunch 与 switchTabWithQuery 完成，不是点击行为；观测对象是路由、scrollTop 与 storage，不落在任何可点元素上，无 selector 可点名。",
+   "needsCarrier": "需要能注入深链入参并读 scrollTop/storage 的执行载具（automator evaluate + 路由夹具），断言的是行为与数值不是物件",
+   "lane": "pages/home/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/05/tapfix-lane-PAGES-HOME-INDEX.json.json"
+  },
+  {
+   "id": "H48",
+   "manifest": "PAGES-HOME-INDEX",
+   "page": "pages/home/index",
+   "reason": "普查型判据，单 selector 承载不了：①要求 DOM 全树查 CardSwiper/滑动卡片结构是否存在（缺失断言，没有目标可点，index.vue:5-8 是源码注释硬约束）；②要求对 9 个区块内全部 @tap 元素（TodayLoveProgress 4 格、RelationActivity 4 格、Interest 卡与加入、Nearby 条目、Community 卡/关注/作者/更多、Invite）逐个验证 500ms 反馈与 <88rpx 热区包围盒；⑤「本页无输入框」是结构结论。任取一个元素点名会把全量普查伪装成单点判据。",
+   "needsCarrier": "需要逐元素遍历载具（DOM 普查 + 每元素 tap + 500ms 计时 + 包围盒量测），非单 selector 桥可表达",
+   "lane": "pages/home/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/05/tapfix-lane-PAGES-HOME-INDEX.json.json"
+  },
+  {
+   "id": "FB01",
+   "manifest": "次要21",
+   "page": "subpackages/support/feedback/index",
+   "reason": "判据测的是滚动位置与元素 rect（scrollTo 到底 → 回顶 → 逐次量测 .shell 头部 rect、正文首元素 top、是否出现 is-fixed 类），桥只有 tap 与 input 两条腿，产生不了页面滚动，也没有任何可点物件是这个判据的对象；承载 is-fixed 的是 AppShell.vue:173 :class=shellClass 的根 view，只有样式没有事件（该 shell 内唯一带 handler 的是 :205 .shell__back 返回钮与 :184 skip-link，点它们要么导航离开要么与滚动量测无关）。按原语义硬指一个类名等于把吸顶判据换成别的判据，故如实标 unverifiable。",
+   "needsCarrier": "WS automator 的 touch/swipe 滚动通道（scrollTo 到底 + 回顶）+ 元素 rect 量测能力",
+   "lane": "subpackages/support/feedback/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/05/tapfix-lane-次要21-feedback.json.json"
+  },
+  {
+   "id": "FB13",
+   "manifest": "次要21",
+   "page": "subpackages/support/feedback/index",
+   "reason": "断言的是故障态的渲染分支：列表加载失败时记录区渲染 EmptyState「暂无反馈」而非错误条/重试。本页 :565-569 的 EmptyState 只传 title 与 type，未传 action，组件里唯一带 @tap 的 .empty-action（EmptyState.vue:105-110，v-if=hasAction）在此不渲染 → 失败态下没有任何可点物件可点名；另外 oldAction 的「下拉一次」腿在产品上不存在（pages.json:288 feedback/index 无 style 段，未开 enablePullDownRefresh），进入失败态还需吞错夹具（stores/feedback.ts:25-36）。断言的是文案/渲染分支而不是物件。",
+   "needsCarrier": "需要列表接口 5xx/吞错夹具 + 双身份（有记录/无记录）对照 + WS automator pull-down 通道；EmptyState 不带 action 时零可点节点",
+   "lane": "subpackages/support/feedback/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/05/tapfix-lane-次要21-feedback.json.json"
+  },
+  {
+   "id": "N02",
+   "manifest": "PAGES-NEARBY-INDEX",
+   "page": "pages/nearby/index",
+   "reason": "要做的动作是「在列表顶部按住往下下拉 ≥500ms」这类页面级下拉手势，HTTP 桥只有 tap 与 input 两种动作，没有下拉/触摸序列。本页可滚的东西只有内层 scroll-view .nearby-home__scroll（:377），它没绑任何事件（既无 refresher-enabled 也无 @refresherrefresh），点它不产生下拉，也没有别的可点等价物；配置侧 enablePullDownRefresh 已在 pages.json:60 开启，缺的纯粹是手势载具，而判据要的正是「回调 onPullDownRefresh（:158）是否进入」。",
+   "needsCarrier": "页面级下拉载具：uni.startPullDownRefresh 的触发通道，或 WS automator 的 touch 下拉序列（并回读 onPullDownRefresh 是否进入的执行日志）",
+   "lane": "pages/nearby/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/06/tapfix-lane-PAGES-NEARBY-INDEX.json.json"
+  },
+  {
+   "id": "N03",
+   "manifest": "PAGES-NEARBY-INDEX",
+   "page": "pages/nearby/index",
+   "reason": "同 N02：本条唯一触发手段是下拉刷新手势，桥没这条载具；而判定对象是 circles/nearbyPosts/activities 三类的真实拉取次数与起止时间（:163-177 的 Promise.all），属 network 与执行日志计数，不是页面上任何可点物件。",
+   "needsCarrier": "页面级下拉触发通道 + network 三类请求计数与起止时间取证",
+   "lane": "pages/nearby/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/06/tapfix-lane-PAGES-NEARBY-INDEX.json.json"
+  },
+  {
+   "id": "N04",
+   "manifest": "PAGES-NEARBY-INDEX",
+   "page": "pages/nearby/index",
+   "reason": "触发手段只有一个字面「下拉刷新」，桥不可表达（同 N02）；判据本体是 nearby.loadFailed 的 Toast 文案（:169-175）与失败分区显示的真实错误文案——纯文本断言。分区内渲染错误的 .nearby-home__empty-text（:488/:579/:622）只是 <text>，没有任何事件，点它不产生任何东西。",
+   "needsCarrier": "页面级下拉通道 + Toast 文案抄录 + 制造三 store 失败的拦截夹具",
+   "lane": "pages/nearby/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/06/tapfix-lane-PAGES-NEARBY-INDEX.json.json"
+  },
+  {
+   "id": "N05",
+   "manifest": "PAGES-NEARBY-INDEX",
+   "page": "pages/nearby/index",
+   "reason": "四步里至少两步桥表达不了：「下拉刷新」（N02 的载具缺口）与「触发定位」（定位针 .nearby-home__pin 是 :384/:397 的 <image>，无 @tap；定位由 initLocation 在 :145 的 onLoad 里自跑，页内没有可点的等价入口）。判据本体是 network 里 0 条受保护请求与终栈保持 [pages/nearby/index]，全是流量/路由状态断言，不是元素。",
+   "needsCarrier": "下拉通道 + 定位触发夹具（wx.getLocation/wx.authorize mock）+ network 受保护端点计数与路由链求值通道",
+   "lane": "pages/nearby/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/06/tapfix-lane-PAGES-NEARBY-INDEX.json.json"
+  },
+  {
+   "id": "N10",
+   "manifest": "PAGES-NEARBY-INDEX",
+   "page": "pages/nearby/index",
+   "reason": "这条要的不是点某个东西，而是「扫一遍本页有没有 <input>/<textarea> 并把结论写下来」。源码侧答案已是确定事实：模板 :372-653 全量核对无任何 <input>/<textarea>（MP-R1-PAGES-NEARBY-INDEX-904 已把关键词输入框移除，输入改由搜索页自持，见 :93-95 与 :252-256 的 goSearch），关键词入口只剩一枚复用 nearby.searchPlaceholder 当 aria-label 的放大镜按钮（:388）。给它配任何输入类选择器都是凭空造一个不存在的物件。",
+   "needsCarrier": "无需点击载具：欠一次 DOM 扫描（本页 input/textarea 计数）与 aria-label 文案抄录的取证通道",
+   "lane": "pages/nearby/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/06/tapfix-lane-PAGES-NEARBY-INDEX.json.json"
+  },
+  {
+   "id": "N30",
+   "manifest": "PAGES-NEARBY-INDEX",
+   "page": "pages/nearby/index",
+   "reason": "判据是「登出后分区⑤渲染了谁的帖文与作者」——文本/数据归属比对，不是某个可点物件；步骤还要求滚动到分区⑤并在 A/B 两账号间登出登录。未登录态分区⑤按 :604-616 只渲染引导卡，卡上唯一的 .nearby-login-guide__btn（:612 @tap=goLogin）一点就跳登录页，会把「截图比对帖文/作者」的前提直接打掉；帖子列表 :630-647 里的可点件在 PostCard 内部且本条要求它「不渲染」。",
+   "needsCarrier": "滚动定位载具 + 登出/换号（A、B 身份）夹具 + 分区⑤帖文与作者归属的文本比对通道",
+   "lane": "pages/nearby/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/06/tapfix-lane-PAGES-NEARBY-INDEX.json.json"
+  },
+  {
+   "id": "N31",
+   "manifest": "PAGES-NEARBY-INDEX",
+   "page": "pages/nearby/index",
+   "reason": "四档动作是「切走切回的 TTL 计时」「在村口发一条新动态」「制造失败后再下拉刷新」，判定物是各档的重拉次数（:222-244 的 TTL 短路与失败不更新时间戳）——纯请求计数与跨页时序，本页没有对应的可点元素；其中 ④ 的触发手段又是页面级下拉（N02 缺口）。",
+   "needsCarrier": "Tab 切走/切回的时序控制 + 页面级下拉通道 + network 计数取证；③ 还需在村口发一条新动态的跨页夹具",
+   "lane": "pages/nearby/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/06/tapfix-lane-PAGES-NEARBY-INDEX.json.json"
+  },
+  {
+   "id": "CS19",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "page": "subpackages/chat/chat-session/index",
+   "reason": "本条第一步是 longpress 一条气泡，而长按只绑在 ChatBubble.vue:153-155 的 .bubble-wrap（@longpress=handleLongpress）上：桥没有长按动作，tap 这个节点不会触发任何 handler。③④ 要点的三路关闭与复制/引用/转发（.longpress-overlay :2277 的 @tap=closeLongPressMenu、逐项的 .longpress-menu__item :2289/:2300/…）全部由 longPressMenu.visible 控制（:2275 起才渲染），菜单没打开时这些节点根本不存在 ⇒ 无论点名哪个都只能得到「元素不存在」，等于把工具缺口读成产品缺陷；撤回项还额外要求 temp 会话且是自己发的那条气泡才渲染。",
+   "needsCarrier": "element.longpress 或 WS automator 的 touch 长按通道：先长按一条对方气泡与一条 temp 自己气泡把菜单打开，之后的 tap 遮罩、tap 取消、tap 复制/引用/转发才有点得到的东西",
+   "lane": "subpackages/chat/chat-session/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/06/tapfix-lane-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json.json"
+  },
+  {
+   "id": "MT02",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "page": "subpackages/discover-extra/discover/matching",
+   "reason": "本条判的是滑动方向语义（右滑到底进本页且 action=like、左滑到底不得进本页且卡组切下一张），左右滑是连续手势，桥没有该载具；三条离散等价物（跳过/喜欢/超赞三键）在寻觅页的 components/match/MatchActions.vue:29-69（.match-actions__item，@tap=emit pass/like/superLike）与 MatchCard 的滑动卡上，都不属于本用例页 subpackages/discover-extra/discover/matching —— 执行器落到匹配中页后点不到它们，硬点名只会得到「未成」。",
+   "needsCarrier": "WS automator 的 touch/swipe 通道（MatchCard 左右滑到底）+ 从寻觅页 pages/discover/index 起步、把三键点击与滑动混排的跨页执行序列",
+   "lane": "subpackages/discover-extra/discover/matching",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/06/tapfix-lane-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json.json"
+  },
+  {
+   "id": "MT03",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "page": "subpackages/discover-extra/discover/matching",
+   "reason": "本条动作是「进入本页等动画播完」+ 读跳转前后的 getCurrentPages 栈与 matchStore.status/animationDone/pendingCardId，判定物是路由栈数组与 redirectTo 的 url 原文（状态/文本断言），页面上没有待点的东西。本页仅有的两枚可点节点都会污染这条：.matching-page__back（matching.vue:248 @tap=goBack）自己改栈；MatchLoading.vue:73 的 .match-loading__skip（@tap=emit skip → matching.vue:227-233 handleSkip）在 animationDone 之后语义翻转为「返回」，点它就不再是被测的自动 redirectTo。",
+   "needsCarrier": "无需点击载具：欠动画自然播完后的路由栈数组与 redirectTo url 原文求值通道（含 matchStore 三字段回读）",
+   "lane": "subpackages/discover-extra/discover/matching",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/06/tapfix-lane-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json.json"
+  },
+  {
+   "id": "MT05",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "page": "subpackages/discover-extra/discover/matching",
+   "reason": "判据是 discover.likeSent 的 Toast 文案、Toast 后约 400ms 的自动返回计时、返回后寻觅页当前卡 id 与 cards 长度 -1 —— 文案/计时/数据状态，本页无可点物件。若改用跳过钮触发，handleSkip（matching.vue:227-233）在动画已播完的分支里直接 goBack，Toast 与 400ms 自动返回这条被测路径会被绕开，产生假红。",
+   "needsCarrier": "Toast 文案抄录 + 返回计时采样 + 寻觅页 cards/当前卡 id 的跨页回读，均非 tap/input 可表达",
+   "lane": "subpackages/discover-extra/discover/matching",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/06/tapfix-lane-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json.json"
+  },
+  {
+   "id": "MT06",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "page": "subpackages/discover-extra/discover/matching",
+   "reason": "同 MT05：判据是 matchStore.lastError 原文（或 matching.likeFailed 兜底）的 Toast 文案、约 600ms 自动返回、以及「失败不得吞卡」的 cards 前后差异，页内没有可点元素；且本条要先制造 status=failed，需要失败注入夹具而不是点击。",
+   "needsCarrier": "status=failed 的失败注入夹具（拦 runMatchCheck）+ Toast 文案/计时/cards 前后对照通道",
+   "lane": "subpackages/discover-extra/discover/matching",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/06/tapfix-lane-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json.json"
+  },
+  {
+   "id": "MT14",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "page": "subpackages/discover-extra/discover/matching",
+   "reason": "本条要求分栏记【客户端层】每次进入的写请求条数与 Idempotency-Key 原文、【数据层】后端喜欢记录条数 R0/R1：判据对象是网络请求与后端行数，不是元素——进本页即由 onLoad 在 :172-179 自动跑 runMatchCheck，页内没有需要点的开关；且 requiresReal=true，mock 产物下根本没有网络出口。",
+   "needsCarrier": "真实后端 + network 面板逐条（URL/method/Idempotency-Key）与后端记录条数回读；无网络出口时改 runMatchCheck 调用计数夹具",
+   "lane": "subpackages/discover-extra/discover/matching",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/06/tapfix-lane-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json.json"
+  },
+  {
+   "id": "MT20",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "page": "subpackages/discover-extra/discover/matching",
+   "reason": "「页面内上下滑动 300px 各一次」是连续手势，桥无载具；本页模板只有全屏容器 .matching-page（matching.vue:246）与不带任何滚动/触摸事件的动画区（:245-259，仅一枚 @tap 返回钮与 MatchLoading 的 @tap 跳过），而判据要看的正是「手势不得被误判为跳过、不得触发返回」以及有无双层滚动/橡皮筋位移——手势后的路由与 animationDone 采样，不是元素属性。",
+   "needsCarrier": "WS automator 的 touch/滑动（页面级滚动）通道 + 手势后的路由链与 animationDone 采样",
+   "lane": "subpackages/discover-extra/discover/matching",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/06/tapfix-lane-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json.json"
+  },
+  {
+   "id": "MT21",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING",
+   "page": "subpackages/discover-extra/discover/matching",
+   "reason": "「下拉 300px 松手 ×2、动画播放中再下拉一次」需要页面级下拉载具，桥没有；本页在 pages.json 里也未配 enablePullDownRefresh，页面无可滚内容、也没有带 refresher 的 scroll-view，因此不存在可点的等价物。判据本体是零事件断言：无刷新动画、无 onPullDownRefresh/stopPullDownRefresh、network 零新增写请求、status/animationDone 不变。",
+   "needsCarrier": "页面级下拉/触摸通道（对未开启下拉的页面做一次显式注入尝试）+ network 计数与 status 采样",
+   "lane": "subpackages/discover-extra/discover/matching",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/06/tapfix-lane-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json.json"
+  },
+  {
+   "id": "SE09",
+   "manifest": "次要19",
+   "page": "subpackages/tools/search/index",
+   "reason": "分页触发器是页面生命周期 onReachBottom（apps/client/src/subpackages/tools/search/index.vue:43-45 调 searchStore.loadMore），由滚动位置驱动而非任何节点；列表尾部只有一个纯文案容器 .load-more（:431/:434，无 @tap），源码里不存在「加载更多」按钮这类离散等价物件，故「触底/下拉触底/加载中重复触底」无法归属到可交互元素",
+   "needsCarrier": "欠 WS automator 的 scroll/touch 通道（要把页面滚到底才能触发 onReachBottom），CLI 桥只有 tap/input 两条腿",
+   "lane": "subpackages/tools/search/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/07/tapfix-lane-次要19.json.json"
+  },
+  {
+   "id": "AB08",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/album",
+   "reason": "整条判点的入口是格子的 @longpress（apps/client/src/subpackages/profile-extra/profile/album.vue:466 → handleLongPress :228），弹层与其两项来自 uni.showActionSheet（:231-233），菜单项与「下滑关闭」都不在本页 DOM 里；tap 同一格只会走 :465 的 handlePhotoTap 预览，不是长按的离散等价物件，⑤「长按空格子」同理（:466 传 undefined）",
+   "needsCarrier": "欠 WS automator 的 longpress/touch 通道 + 原生 ActionSheet 选项的点击载具",
+   "lane": "subpackages/profile-extra/profile/album",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/07/tapfix-lane-次要20.json.json"
+  },
+  {
+   "id": "AB09",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/album",
+   "reason": "「设为头像」只能经长按弹层进入（album.vue:466 @longpress → :231 showActionSheet → :234 res.tapIndex===0 → setAsAvatar :255），菜单项在原生 ActionSheet 上、非本页可点名节点；④「rapidTap 菜单项×5」与 ⑤ 的 downloadFile 4xx 也分别欠同一手势通道与后端故障注入夹具",
+   "needsCarrier": "欠 WS automator 的 longpress 通道与原生 ActionSheet 选项点击载具（另需 real 档 downloadFile/uploadAvatar 故障夹具与服务端 avatarUrl 回读）",
+   "lane": "subpackages/profile-extra/profile/album",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/07/tapfix-lane-次要20.json.json"
+  },
+  {
+   "id": "AB10",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/album",
+   "reason": "删除链路的三个可点对象分别是长按手势（album.vue:466）、原生 ActionSheet 的「删除」项（:232 itemList[1]）与 uni.showModal 二次确认的确定/取消按钮（:320-330），⑤ 还要按系统返回键 —— 没有一项是本页 DOM 里能点名的节点",
+   "needsCarrier": "欠 WS automator 的 longpress 通道 + 原生 ActionSheet/showModal 按钮点击与系统返回键载具",
+   "lane": "subpackages/profile-extra/profile/album",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/07/tapfix-lane-次要20.json.json"
+  },
+  {
+   "id": "AB14",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/album",
+   "reason": "断言对象是 en-US 语言包下各条文案本身（页头标题/计数/长按提示/空态/添加按钮/上传中，以及 ActionSheet 两项、modal 四段、Toast 两条）与 console 缺 key 告警，属文本采样；其中三项还必须先由长按与原生弹层产生，本页没有可点名的物件承载该判定",
+   "needsCarrier": "断言的是文案不是物件；另欠 WS automator longpress 通道 + 原生 ActionSheet/modal/Toast 取词载具与 en-US 档位夹具",
+   "lane": "subpackages/profile-extra/profile/album",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/07/tapfix-lane-次要20.json.json"
+  },
+  {
+   "id": "CI17",
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "page": "subpackages/circles/circles/index",
+   "reason": "判点是逐卡抄录统计行完整文本、千分位与 1.0w 格式、7999/8000 徽标边界（.circle-card__count / .circle-card__hot-badge 的文本与存在性），属文案与格式断言；唯一动作类步骤「横向滚动 tab 条」是连续手势（.circles-tabs 的 scroll-view，index.vue:395），桥无 swipe/scroll 通道。",
+   "needsCarrier": "文案抄录/OCR + mock 成员数极值夹具（构造 999/1000/8000/10000/99999999），横向滚动需 WS automator 的 swipe/scrollTo 通道",
+   "lane": "subpackages/circles/circles/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/08/tapfix-lane-SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json.json"
+  },
+  {
+   "id": "CI18",
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "page": "subpackages/circles/circles/index",
+   "reason": "判点是封面是否出图、兜底 src、加载失败降级与 lazy-load 补齐，全部落在 .circle-card__cover 图像渲染本身（index.vue:421），不是可点物件；④ 的「快速滚动至底部再回顶」是连续手势，③ 还要 DevTools 资源阻断模拟。",
+   "needsCarrier": "图片像素/加载态核查（截图比对或 evaluate 读 image naturalWidth）+ DevTools 网络阻断夹具 + WS automator 滚动通道",
+   "lane": "subpackages/circles/circles/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/08/tapfix-lane-SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json.json"
+  },
+  {
+   "id": "CI22",
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX",
+   "page": "subpackages/circles/circles/index",
+   "reason": "两个动作步骤都是下拉手势（列表顶部下拉 300px 松手 ×2、scroll-view 内下拉触发 enhanced bounces），桥只有 tap/input，表达不了位移手势；判定点本身还是「不得出现伪刷新动画/新请求」的缺席与网络计数断言（本页 pages.json 未开 enablePullDownRefresh）。",
+   "needsCarrier": "WS automator 的 touch/drag 下拉手势通道 + network 请求计数与动画帧采样",
+   "lane": "subpackages/circles/circles/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/08/tapfix-lane-SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json.json"
+  },
+  {
+   "id": "VRN11",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "reason": "已认证（verified）分支 real-name.vue:441-455 只渲染 verified-card 两行文本，v-else 表单分支（:468 起）根本不进 DOM，因此该状态下不存在任何 <input>/可点物件；断言内容是「身份证号是否脱敏（前 6 后 4）」与「输入框/上传卡/提交按钮不得存在」——文本回显与元素缺席，桥的 tap/input 两条通道都无目标。",
+   "needsCarrier": "需要 verified 态账号夹具（GET /real-name-certification 返回 APPROVED + maskedIdCardNo）+ DOM 存在性/文本断言通道（evaluate 查询节点是否存在、读取掩码文本），tap/input 桥表达不了「不得出现」这类缺席断言",
+   "lane": "subpackages/profile-extra/verification/real-name",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/08/tapfix-lane-次要20.json.json"
+  },
+  {
+   "id": "VRN13",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "reason": "动作是 scrollTo 底→中→顶并记录 scrollTop/scrollHeight/windowHeight 与提交按钮 boundingClientRect，属连续滚动 + 几何量测；本页根节点是普通 view（real-name.vue:410，非 scroll-view），无可点等价物件能把「滚到某位置」表达出来，硬塞 .action-btn 会把滚动判点换成点击判点。",
+   "needsCarrier": "WS automator 的 scrollTo / 滚动位置量测通道（并回传 boundingClientRect）",
+   "lane": "subpackages/profile-extra/verification/real-name",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/08/tapfix-lane-次要20.json.json"
+  },
+  {
+   "id": "RP09",
+   "manifest": "次要21",
+   "page": "subpackages/setup/recommend-pref/index",
+   "reason": "判点是切语言后逐元素抄录标签文本（范围三项 scopeOptions 非 computed 仍是中文，index.vue:66-70），断言对象是文案；而「切语言」这一步在本页没有任何可点元素（语言开关在设置域页面），tap/input 两条通道都点不到入口。",
+   "needsCarrier": "需要跨页语言切换夹具（或 evaluate 直接 setLocale）+ 文本抄录/对比通道，才能把 en/zh 两套标签逐条核出",
+   "lane": "subpackages/setup/recommend-pref/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/08/tapfix-lane-次要21.json.json"
+  },
+  {
+   "id": "RP11",
+   "manifest": "次要21",
+   "page": "subpackages/setup/recommend-pref/index",
+   "reason": "动作是 scrollTo 到底→回顶并量测正文 padding-bottom、主按钮 rect 与 SetupProgress 是否滚出视口，属连续滚动 + 几何量测；主按钮 .bar__primary 只能被点，点它不会给出任何滚动数值（还会触发保存跳转，把判点换成另一件事）。",
+   "needsCarrier": "WS automator 的 scrollTo/滚动位置量测通道 + evaluate 读取 computed padding-bottom 与 boundingClientRect",
+   "lane": "subpackages/setup/recommend-pref/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/08/tapfix-lane-次要21.json.json"
+  },
+  {
+   "id": "LN01",
+   "manifest": "次要19",
+   "page": "subpackages/tools/love-center/nearby",
+   "reason": "本条断言的是冷启动首帧时序（0/0.5/1s 采样 loading :182-184 / error+retry :187-192 / empty+CTA :196-202 / 卡片区 :206-216）、幻影参数不改变渲染与请求入参、以及 network 条数——全是渲染/请求断言，没有任何一步需要点某个物件；唯一交互腿「③ 尝试整页下拉」是连续手势，且 pages.json:189 的本页配置未开 enablePullDownRefresh、源码也无 onPullDownRefresh，即下拉既无载具也无功能出口，硬点 .nearby-card-area 之类容器只会造出假目标",
+   "needsCarrier": "欠 WS automator 的 touch/下拉（pull-down）手势通道，且页面须先开启 enablePullDownRefresh 并实现 onPullDownRefresh 才有等价物；三态时序本身另需 0/0.5/1s 连拍采样载具。（.nearby-error__retry :189 与 .nearby-empty__cta :199 虽是离散按钮，但点它们既不产生首帧时序也不验证幻影参数，拿来充当本条目标＝假点名）",
+   "lane": "subpackages/tools/love-center/nearby",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/09/tapfix-lane-次要19.json-nearby.json"
+  },
+  {
+   "id": "HP04",
+   "manifest": "次要19",
+   "page": "subpackages/tools/help/index",
+   "reason": "「意见反馈行」没有任何可点名的独立物件：三条客服入口行共用同一个类名 .help-contact__item（help/index.vue:105/123/141），行内子节点也全部同名（.help-contact__icon-wrap :112/130/148、.help-contact__icon :113/131/149、.help-contact__info :115/133/151、.help-contact__label :116/134/152、.help-contact__desc :117/135/153、.help-contact__arrow :119/137），页内无 id、第二行无独有类名；执行器按文档序首匹配点击 ⇒ 用 .help-contact__item 只会点到「在线客服」行（那是 HP03 的目标），本条会被测成另一个入口的跳转＝假绿，故宁可不点名",
+   "needsCarrier": "欠可区分目标：给三行入口各加修饰类（如 .help-contact__item--online/--feedback/--email）或给行加 id，或执行器支持 :nth-child／按文案匹配的点击通道（merge-tapfix-lanes 的 selector 形态正则 ^\\.[A-Za-z][\\w-]*([.#][\\w-]+)*$ 也不允许伪类/nth 写法）",
+   "lane": "subpackages/tools/help/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/09/tapfix-lane-次要19.json.json"
+  },
+  {
+   "id": "REG32",
+   "manifest": "PAGES-REGISTER-INDEX",
+   "page": "pages/register/index",
+   "reason": "本条判的就是「无主手势」：在页面顶部下拉 300px 并松手，而 pages.json 里注册页条目未配 enablePullDownRefresh、index.vue 也没有 onPullDownRefresh/scroll-view，页内没有任何承载「下拉」这个动作的元素（.register-page :485 只是布局容器，无事件绑定）；给它配任何 tap 目标都会引入真实副作用，直接破坏「零请求、表单零变化」的断言语义。",
+   "needsCarrier": "WS automator 的触摸下拉通道（touchstart/touchmove/touchend 的 300px 下拉），并需要能观测 network 零新增与 6 字段值前后一致",
+   "lane": "pages/register/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/10/tapfix-lane-PAGES-REGISTER-INDEX.json.json"
+  },
+  {
+   "id": "RS13",
+   "manifest": "PAGES-REGISTER-SUCCESS",
+   "page": "pages/register/success",
+   "reason": "同 REG32：动作是页面顶部下拉 300px 松手 ×2，而 pages/register/success 未配 enablePullDownRefresh、success.vue 内也没有 onPullDownRefresh/scroll-view 或任何带 @tap 的可下拉元素（全页只有 :71 .reg-success__btn 与 :76 .reg-success__alt 两枚可点物，点了会 navigateTo/switchTab 离开本页），没有可归属的点击目标。",
+   "needsCarrier": "WS automator 的触摸下拉通道（页面级 pull-down 手势 ×2）+ network/console 零新增探针",
+   "lane": "pages/register/success",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/10/tapfix-lane-PAGES-REGISTER-SUCCESS.json.json"
+  },
+  {
+   "id": "CH22",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB",
+   "page": "subpackages/campus/campus/hub",
+   "reason": "判点是「滚到底时底部静态文案完整可见 + 无死箭头」：底部说明 .campus-hub__more（hub.vue:330）与其文案节点 .campus-hub__more-text（:331）都是纯展示节点，模板上没有任何 @tap（MP-R1-CAMPUS-HUB-003 已按审计把可点假象的箭头删掉，本条恰恰要求「不得回归出带箭头的可点物件」），而 feed 容器 .campus-hub__feed（:269-275 scroll-view）也不是可点目标；桥只有 tap/input，给不出滚动载具就无法产出 scrollTop/scrollHeight 与末行可见性证据。",
+   "needsCarrier": "WS automator 的页面/scroll-view 滚动通道（scrollTo 到底 + 回顶）+ 文案可见性（boundingClientRect）探针",
+   "lane": "subpackages/campus/campus/hub",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/10/tapfix-lane-SUBPACKAGES-CAMPUS-CAMPUS-HUB.json.json"
+  },
+  {
+   "id": "VCI13",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/verification/index",
+   "reason": "判点是页级滚动与几何：scrollTo 到底 → 回顶 → 中途停一次，取 scrollTop/scrollHeight/windowHeight 并比提交按钮 boundingClientRect.bottom 与 windowHeight，另外量 .safe-bottom（index.vue:687）与 .safe-top（:463）两个占位 view —— 这两枚都是无事件的纯占位节点，本页也没有回到顶部之类的可点等价物件；把 selector 写成 :676 的提交按钮会把「滚动到顶/底」篡改成为「点提交」，触发 submitVerification 真实提交流程。",
+   "needsCarrier": "WS automator 的 pageScrollTo/滚动通道 + boundingClientRect 数值探针（滚动三段：到底/中途/回顶）",
+   "lane": "subpackages/profile-extra/verification/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/10/tapfix-lane-次要20.json.json"
+  },
+  {
+   "id": "SCU13",
+   "manifest": "次要21",
+   "page": "subpackages/setup/campus/index",
+   "reason": "本条主体是页级滚动 + 几何量测：scrollTo 到底 → 回顶、量正文容器 padding-bottom（AppShell.vue:233 .shell__body 的 :style=\"{paddingBottom: bodyPaddingBottom}\"，由 :108-113 计算），这些都不是点击能产出的观测；页内可点物件（.bar__primary、.skip-bar campus/index.vue:277）一按就 replaceAppPath 离开本页（:169/:191），会把「底部留白 + 进度条逐页截图串」的判点打掉，属于载具缺失而非产品缺陷。",
+   "needsCarrier": "WS automator 的 pageScrollTo/滚动 + boundingClientRect/样式量测通道（滚动到顶底并取 scrollTop、scrollHeight、padding-bottom 数值），跨页链路另需 navigateBack 载具",
+   "lane": "subpackages/setup/campus/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/10/tapfix-lane-次要21.json-setup-campus-index.json"
+  },
+  {
+   "id": "FHT14",
+   "manifest": "次要21",
+   "page": "subpackages/profile-extra/feedback/history",
+   "reason": "本条动作是页级滚动（scrollTo 到底 → 回顶 → 展开后再滚到底），桥只有 tap/input 两种交互：history.vue 全文没有滚动容器（模板根是 AppShell，页面靠 window 滚动），也没有「回到顶部/滚到底」这类可点等价物件；页内唯一可点的 .record__header（:317，@tap :320）只负责展开，点它不能产出 scrollTop/scrollHeight/windowHeight 与「最后一条时间行是否被视口底裁切」的证据。硬指一个类名等于替执行器造一个不存在的手势目标。",
+   "needsCarrier": "WS automator 的页面滚动通道（pageScrollTo/触摸滚动）+ boundingClientRect 量测；展开前置可用 .record__header",
+   "lane": "subpackages/profile-extra/feedback/history",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/10/tapfix-lane-次要21.json.json"
+  },
+  {
+   "id": "CX11",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "page": "subpackages/campus/campus/index",
+   "reason": "本条点名要 tap 的 banner 是一个刻意不带事件的纯信息块：index.vue:280-283 的 .public-browse-banner 只有 class 与两张文本节点（:281 .public-browse-banner__title、:282 __desc），全块没有 @tap——expected 自己也写明「banner 为纯信息块、无 @tap（点击无反馈属预期，不得判死按钮）」。同理页头徽章 .cert-badge（:246）与其文本 .cert-badge__text（:247）也无事件；引导卡 .cert-guide-card（:254）与热门兴趣圈（:266）在 v-if=!isVerified 分支下不渲染，FAB .campus-fab（:368）在 v-if=isOwnCertifiedView 下也不渲染。判点是两行 banner 文案逐字（zh-CN.ts:3529-3530）与三处「不该出现的东西确实没出现」，属文本/缺席断言而非物件断言，按规则不许引用只有样式的类来凑一个可点目标。",
+   "needsCarrier": "欠 noop 点击载具（tap 一个无事件节点并记录路由/DOM/Toast 零变化）+ 可构造的「已认证但查看他校」身份夹具（verified 且路由带 ?school=B，让 :280 分支渲染）",
+   "lane": "subpackages/campus/campus/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/11/tapfix-lane-SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json.json"
+  },
+  {
+   "id": "PT25",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC",
+   "page": "subpackages/campus/campus/post-topic",
+   "reason": "点击目标 <switch> 在源码里没有 class：post-topic.vue:558-562 只绑 :checked=isAnonymous（:559）、:color=brandColor（:560）与 @change=toggleAnonymous（:561），标签上不存在 class 属性，全文件也搜不到任何作用在该 switch 上的类名。同一卡片里逐字可见的 .options-section（:550）、.option-row（:551）、.option-info（:552）、.option-label（:553）、.option-desc（:556）都只有样式、没有 @tap/@change；.option-row 是 flex 行且左侧 .option-info 占 flex 区，按选择器中心 tap 它命中的是文案区，不会翻原生 switch 的 change（判据后半截「提交 payload.isAnonymous 与最终 UI 态一致」:646-652 也就测不到）。上一轮同一页的 lane 对这条（tapfix-lane-campus-post-topic.json）已按同一理由登记 unverifiable，本轮结论不变——不硬凑父类、也不把「tap switch」改成点别的按钮。",
+   "needsCarrier": "需要给 post-topic.vue:558 的匿名 <switch> 补一个专属 class（同页 dnd.vue:369/:478、privacy.vue:86/:97 的 switch 同病），或让桥支持 tag/xpath 选择器直接选中原生控件节点",
+   "lane": "subpackages/campus/campus/post-topic",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/11/tapfix-lane-SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC.json.json"
+  },
+  {
+   "id": "VI17",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "page": "subpackages/village/village/index",
+   "reason": "卡内点赞按钮没有可唯一定位的类名：它与评论/分享/收藏同为 .action-btn（PostCard.vue:268 评论、:274 点赞、:282 分享、:287 收藏），内部图标也同为 .action-btn__icon（:269/:278/:283/:291），点赞独有的 .action-btn--liked 与 .action-btn--animating（:275）是条件类，首次点击前该元素还不存在。按 first-match 点名 .action-btn 会打到排在前面的评论按钮（@tap.stop=emit('open-detail') :268，直接跳详情页），把「乐观更新+权威校正+失败回滚」这条写操作判点测成一次导航假红；上一轮同一页的 lane 也是同样结论（tapfix-lane-village-index.json 对 VI17/VI18）。",
+   "needsCarrier": "需产品侧给点赞那枚 <view> 补专属修饰类（如 action-btn--like，PostCard.vue:274-276），或 automator 支持 nth-child/xpath 之类可区分四枚同构按钮的定位；③ 的失败回滚另需请求失败注入夹具（requiresReal=true）",
+   "lane": "subpackages/village/village/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/11/tapfix-lane-SUBPACKAGES-VILLAGE-VILLAGE-INDEX.json.json"
+  },
+  {
+   "id": "VI28",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "page": "subpackages/village/village/index",
+   "reason": "本条的判点恰恰是「这些东西都不在页面上」：post_publish_open=false 时底部输入条整块被 v-if=isPostPublishOpen 摘掉（index.vue:850-851，隐藏后 ChannelComposerBar 的 .composer-bar__publish:58 与 .composer-bar__input:41 都不存在），空态里的发帖动作 .village-empty__action（:802-812，@tap=handleEmptyAction :809）同样被 v-if=isPostPublishOpen 摘掉；剩下的 .village-empty（:796）与 EmptyState 的文案节点只是文本、不可点，强行发帖靠 deep link 直达 /subpackages/village/village/post（index.vue:71-72 的响应式开关与后端 403 在 VillageController.java:158-161），不落在本页任何点击上；「后台恢复开关后再刷新本页」还要一次后台改配置 + 页面刷新，都不是 tap/input 能表达的。",
+   "needsCarrier": "欠可控的后台开关夹具（operation_config post_publish_open=false→true 切换）+ deep link 导航载具 + 下拉/重进刷新通道（requiresReal=true，需后端返回 403 POST_PUBLISH_CLOSED）",
+   "lane": "subpackages/village/village/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/11/tapfix-lane-SUBPACKAGES-VILLAGE-VILLAGE-INDEX.json.json"
+  },
+  {
+   "id": "VD20",
+   "manifest": "次要18",
+   "page": "subpackages/village/village/detail",
+   "reason": "本条要点的三处都是刻意不带事件的装饰文本：评论时间戳 .comment-time（detail.vue:1006）与相似作者区块标题 .similar-authors-title（:1145）是纯 <text> 节点，模板里没有 @tap/@click；「说点什么」是第 1281 行 <input> 的 :placeholder=replyPlaceholder 渲染出来的占位文案，不是独立节点，能点到的只有输入框自身（点它必触发聚焦与键盘，属副作用腿，与本条「非按钮节点零反馈」的判点相反）。按规则不能引用只有样式没有事件的类当目标，也不许为了凑数把 tap 改指成某个真按钮；「全程监听 loading/toast 队列」那半截也不是物件断言。",
+   "needsCarrier": "欠 noop 点击基线载具：能按节点/坐标 tap 一个无事件的 text 并记录「路由未变、DOM 未变、无 toast/spinner 残留」，而不是只能用 class 选择器",
+   "lane": "subpackages/village/village/detail",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/11/tapfix-lane-次要18.json.json"
+  },
+  {
+   "id": "DND02",
+   "manifest": "次要21",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "reason": "点击目标是无 class 的原生组件：总开关就是 dnd.vue:369-373 的 <switch>，它只有 :checked=form.enabled（:370）、:color=SWITCH_ACTIVE_COLOR（:371）、@change=handleToggleEnabled（:372）三个绑定，标签上根本没有 class 属性，整份文件里也搜不到任何作用在 switch 上的类名。能逐字看到的父级/兄弟类只有 .switch-row（:364）、.switch-row__left（:365）、.switch-row__label（:366），三者都不带事件；且 .switch-row 是 flex 行（左区 flex:1、原生 switch 仅约 57px 贴在右端），按选择器中心点 tap 它命中的是左侧文案区，不会触发 switch 的 change ⇒ 归属到父级会把「切总开关」这条判据测成「点标签文字」。与上一轮 tapfix-lane-campus-post-topic.json 对同类 PT25（无 class 的匿名 switch）的结论一致，按规则如实登记而不硬凑选择器。",
+   "needsCarrier": "需要给 dnd.vue:369-373 的总开关 <switch> 补一个专属 class 夹具（或让桥支持 tag/xpath 选择器以直接选中 switch 节点）；现有 tap/input 两通道都点不到无类名的原生控件",
+   "lane": "subpackages/profile-extra/settings/dnd",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/11/tapfix-lane-次要21.json.json"
+  },
+  {
+   "id": "DND03",
+   "manifest": "次要21",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "reason": "同 DND02：紧急消息穿透开关是 dnd.vue:478-482 的 <switch>，只有 :checked=form.allowUrgent（:479）、:color（:480）、@change=handleToggleAllowUrgent（:481），标签上没有 class；本条要点的两枚 switch（总开关 :369-373 与穿透 :478-482）都因此无法用 .kebab-case 点名。可看到的 .switch-row（:474）/.switch-row--no-border（:474）/.switch-row__label（:476）均为纯样式节点、无事件，点它们不会翻转 allowUrgent，写进判据等于把「独立切穿透」变成「点标题文字」的假绿/假红。",
+   "needsCarrier": "需要给 dnd.vue:478-482 的穿透 <switch>（连同总开关 :369-373）补专属 class，或 automator 支持非 class 选择器；另需保持「关总开关」前置（同样靠 switch，非 tap 可达）",
+   "lane": "subpackages/profile-extra/settings/dnd",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/11/tapfix-lane-次要21.json.json"
+  },
+  {
+   "id": "DND12",
+   "manifest": "次要21",
+   "page": "subpackages/profile-extra/settings/dnd",
+   "reason": "这条的动作是页面级 scrollTo 到底/回顶并回填 scrollTop/scrollHeight/windowHeight 与 .save-btn 的 boundingClientRect，不对应任何元素点击：本页根 .dnd-page（:316）不是 scroll-view、模板里没有任何滚动绑定或滚动容器，被观察的 .save-btn（:489）与 .safe-bottom 占位（:502）在滚动前后都是同一批节点。切 CUSTOM 的前置腿虽有可点的 .radio-row（:426，@tap=handleRepeatModeSelect :431），但它不是本条判点；把 selector 写成 .save-btn 只会让执行器「点一次保存按钮」，凭空引入一次 PUT /dnd 写请求，直接篡改「本用例不改状态、无写请求」的判据。",
+   "needsCarrier": "欠 WS automator 的滚动通道（scrollTo/scrollTop 读写 + boundingClientRect 采样）；tap/input 两桥无法表达连续滚动，也不该用点击代替",
+   "lane": "subpackages/profile-extra/settings/dnd",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/11/tapfix-lane-次要21.json.json"
+  },
+  {
+   "id": "VB03",
+   "manifest": "次要22",
+   "page": "subpackages/vip/bills",
+   "reason": "三个观测时刻全靠「进入页面 / 返回上级 / 下拉刷新」驱动，页内没有任何承载这些动作的元素：首次与二次进入是 onShow 生命周期自动 loadBills()（bills.vue:97-99）+ store 缓存短路（stores/vip-billing.ts:168-178），(c) 的「下拉刷新一次」走原生 onPullDownRefresh（:89-92）+ uni.stopPullDownRefresh()（:91），都不挂在任何 class 上。本页真正有 @tap 的只有 .nav-bar__back（:174，goBack）与 .filter-chip（:195，selectFilter），点它们得到的是导航或本地筛选，测不到「命中缓存不重拉」与「force=true 穿透缓存」这两列判点 ⇒ 按无离散等价目标处理，不硬凑。",
+   "needsCarrier": "欠 WS automator 的下拉（pull-down）手势通道 + 页面导航/回退载具（返回 VIP 再进账单页），以及按时刻逐条统计 GET /vip/bills 的 network 探针",
+   "lane": "subpackages/vip/bills",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/11/tapfix-lane-次要22.json.json"
+  },
+  {
+   "id": "VB04",
+   "manifest": "次要22",
+   "page": "subpackages/vip/bills",
+   "reason": "整条判点是「页面原生下拉刷新 3 次 + 每 500ms 连拍 + 第 3 次后离开再回来」：本页 enablePullDownRefresh 是 pages.json 的页面级配置，刷新由 onPullDownRefresh（bills.vue:89-92）承接，指示器收起靠 uni.stopPullDownRefresh()（:91）——三件事都没有对应的可点节点。桥只有 tap/input，没有连续下拉手势；把 selector 写成 .filter-chip 或 .nav-bar__back 会把「force=true 必穿透缓存、动画必须收」改成筛选/导航判据（离开再回来那次还会触发 onShow 的 loadBills()，:97-99，属缓存腿而非 force 腿）。",
+   "needsCarrier": "欠 WS automator 的下拉手势通道（含下拉起止与 1.5s 内指示器收起计时）+ 连拍帧采集；失败路径另需 GET /vip/bills 500 注入夹具（REAL_ONLY）",
+   "lane": "subpackages/vip/bills",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/11/tapfix-lane-次要22.json.json"
+  },
+  {
+   "id": "VB07",
+   "manifest": "次要22",
+   "page": "subpackages/vip/bills",
+   "reason": "动作序列是「冷启动进入账单页（拦截生效）→ 观察 toast 与列表区 → 恢复网络后下拉刷新一次」：进入靠路由、失败靠 GET /vip/bills 的 500 注入（loadBills catch 在 bills.vue:82-85）、恢复后的刷新是原生下拉（onPullDownRefresh :89-92），三者都不是页内元素点击。本条断言的对象是文案与状态区分（toast 原文 vs isEmpty 走 EmptyState 的假空态 :70/:214-218），属「断言的是文本不是物件」，给任何 class 都不能把这次失败注入变成可点目标。",
+   "needsCarrier": "欠网络故障注入夹具（拦截 GET /vip/bills 返 500，可撤回）+ WS automator 的下拉刷新通道；requiresReal=true 还需 real 包与后端可用",
+   "lane": "subpackages/vip/bills",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/11/tapfix-lane-次要22.json.json"
+  },
+  {
+   "id": "LG31",
+   "manifest": "PAGES-LOGIN-INDEX",
+   "page": "pages/login/index",
+   "reason": "本案的输入目标（判据里的 #login-sms-code，maxlength=6 的独立短信验证码框）在本页源码里已经不存在：内联注册模式的昵称/出生日期/短信验证码三组输入按 MP-R2-PAGES-LOGIN-INDEX-015 整删（index.vue:49 与 :730-732 两处注释记录），全仓 grep login-sms-code/smsCode 的 input 节点 0 命中，本页表单只剩 :697 手机号 .input-field（maxlength=11）与 :719 密码 .input-field（:password=true）两个 <input>；把 5/6/7 位截断这条判点改指到手机号框（maxlength 是 11）等于换掉了断言本身，改指密码框同理。原语义现在落在 pages/register/index.vue 的验证码输入框（<input> 标签自身带 class=field__input，:556-565，maxlength=6，@input=onSmsInput），那是另一个 page/lane，不能挂在本页执行。",
+   "needsCarrier": "要么把这条判点的 page 归属改到 pages/register/index（该页有 maxlength=6 的 .field__input 验证码框，属另一 lane），要么恢复本页的验证码输入节点；本条现缺的是「本页可点的验证码输入物件」，不是产品缺陷。",
+   "lane": "pages/login/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/12/tapfix-lane-PAGES-LOGIN-INDEX.json.json"
+  },
+  {
+   "id": "VP24",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-POST",
+   "page": "subpackages/village/village/post",
+   "reason": "三态里唯一要点的「重试加载」单元（:830，@tap=retryLoadCircles）与公域项（:788）、校园项（:807）、已加入圈子项（:843）共用同一个类名 .post-target-sheet__option，而元素查询恒返回首个命中＝公域「个人动态」（@tap=chooseGeneral :792），点它会把发布目标切走而不是重试，属于点错物件；其次该单元被 v-else-if=circlesLoadFailed（:828）闸住，只有 fetchCircles 抛错写 errorMessage（:95）才渲染，mock 分支恒返回种子圈子、永不进 catch（census 标 requiresReal=true）；剩下「加载中」（:826）与「尚未加入兴趣圈子」（:861）两支都是 .post-target-sheet__hint 纯文案节点，断言的是文案与 GET /circles 请求条数（并发闸 :86-88），不是物件响应。入口 .post-to__card（:746）虽可点，但用它替「重试加载」定位等于把这条判点改成开弹层。",
+   "needsCarrier": "① 给「重试加载」单元补专属类名（如 .post-target-sheet__option--retry）或 automator 支持 nth-child/aria 消歧；② 可控的 fetchCircles 失败注入（断网或真后端 500）；③ 一个「已登录但 joinedCircles 为空」的账号夹具；④ GET /circles 条数与状态码回填通道。",
+   "lane": "subpackages/village/village/post",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/12/tapfix-lane-SUBPACKAGES-VILLAGE-VILLAGE-POST.json.json"
+  },
+  {
+   "id": "TP04",
+   "manifest": "次要18",
+   "page": "subpackages/village/village/tag-posts",
+   "reason": "两个缺口叠加：① 目标不可点名——「点赞」单元与评论/分享共用同一个类名 .action-btn（:381/:392/:404），源码没有给点赞单元专属类（区分维度只有 :aria-label=village.tagPosts.likeAria :396 与 :aria-pressed :397），而桥只吃 class 且元素查询恒返回首个命中＝评论单元（@tap.stop=goToDetail :386，一点就跳详情页，根本不是点赞）；② 动作与判定点都超通道——「300ms 内 rapidTap ×5」是连点节奏（本通道每点之间固定 sleep），要读的是 POST /posts/{id}/like 实际发出条数、各自 Idempotency-Key 以及停 2s 后重进标签页的服务端回读 likeCount（toggle 奇偶），页内没有任何物件的点击响应能承载这些结论。census 标 requiresReal=true。",
+   "needsCarrier": "点赞单元专属类名（如 .action-btn--like）或 automator 支持 aria-label/nth-child 定位 + 连点×5（300ms 节奏）通道 + network 逐条（URL/Idempotency-Key/状态码）与服务端 likeCount 回读夹具。",
+   "lane": "subpackages/village/village/tag-posts",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/12/tapfix-lane-次要18.json.json"
+  },
+  {
+   "id": "PE03",
+   "manifest": "次要19",
+   "page": "subpackages/discover-extra/nearby/people",
+   "reason": "「整页下拉」是 uni-app 页面级 enablePullDownRefresh 的原生手势，落点不是本页任何物件：本页可点的东西只有 .people-header__back（:148 返回）、两个 .people-tab（:172/:181）、错误态 .people-state__retry（:197）和列表单元（.people-list :207 内），点它们分别得到返回/切 scope/错误重试/进个人页，都触发不了 onPullDownRefresh；用 .people-state__retry 替「下拉」等于把「刷新是否重拉一次」这条判点换成「错误重试按钮能不能点」。判定点本身还是「客户端请求条数 + uni.stopPullDownRefresh 的收起时刻 + 下拉期间再下拉一次」这种时序与请求计数结论（census 标 gestureOnly=true）。",
+   "needsCarrier": "WS automator 的 touch/swipe 页面下拉通道（可触发页面 onPullDownRefresh，并能在下拉未收时再下拉一次）+ network 请求条数与指示器收起时刻采样；失败态那条腿另需 errorMessage 故障夹具才能验 :195-200 的重试按钮。",
+   "lane": "subpackages/discover-extra/nearby/people",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/12/tapfix-lane-次要19.json.json"
+  },
+  {
+   "id": "PR05",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/privacy",
+   "reason": "本案的第一步就要「把开关1 置为 true」，而本页两个 <switch> 节点在源码里没有 class：:86-90 只有 :checked=allowRecommend、:color、@change=onAllowRecommendChange；:97-101 只有 :checked=receiveInfo、:color、@change=onReceiveInfoChange。桥只吃 class selector，元素又没有专属类可写；行容器 .privacy-item（:81/:92）与其信息块 .privacy-item__info（:82/:93）只有样式、不挂任何 @tap/@change，点它们不会派发 change（也就改不了值），按规则不能当点击目标。全页唯一的 @tap 是页头返回 .privacy-page__back（:72，@tap=goBack），那是②「离开本页」这一步的目标，用它当整条判点的 tapTarget 会把「开关值持久化」这条判据测成「返回按钮可用」。另外本案还要求跨 switchTab/reLaunch 两条水合分支与 storage 缺字段兜底读数（stores/profile.ts 的 mock/real 分支），属 evaluate + storage 夹具类前置。",
+   "needsCarrier": "① 给两个 <switch> 补专属 class（如 .privacy-item__switch--allow / --receive）作为定位锚；② automator 对 switch 需要能派发 change（拨动，e.detail.value）而不是 tap 的通道；③ storage 值与 :checked 对照的 evaluate 夹具，以及「清空 storage/缺字段非法值」的前置（census 标 requiresReal=true 的 real 水合分支）。",
+   "lane": "subpackages/profile-extra/profile/privacy",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/12/tapfix-lane-次要20--profile-privacy.json"
+  },
+  {
+   "id": "AC02",
+   "manifest": "次要22",
+   "page": "subpackages/discover/activities/index",
+   "reason": "动作是 scroll-view 自带 refresher 的下拉手势：:390-397 的 <scroll-view class=\"activity-scroll\" refresher-enabled :refresher-triggered=refresherTriggered @refresherrefresh=onRefresherRefresh>，容器只有滚动/refresher 属性、没有 @tap，桥的 tap/input 两原语表达不了「下拉到 refresher 触发 + 重复 3 次、每次间隔 2s」这种连续手势与节奏；判定点又是 real 模式 3 次 GET /recommendations/activities 条数与 refresherTriggered 由 true→false 的收起时序（:84/:89），属请求计数与动画收口结论，没有任何物件的点击响应可以承载。页内可点的 .retry-btn（:354）是错误态重试、.activity-row（:417）是进详情，点它们都会把「下拉刷新是否真重拉」换成别的断言，故不改动词硬凑。census 标 gestureOnly=true。",
+   "needsCarrier": "WS automator 的 touch/swipe scroll-view refresher 下拉通道（含 3 次×2s 节奏控制）+ network 面板逐次请求计数回填 + refresher 收起时刻采样；mock 支路还需 buildMode 标注（activity.ts:178 本地赋值分支）。",
+   "lane": "subpackages/discover/activities/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/12/tapfix-lane-次要22--discover-activities.json"
+  },
+  {
+   "id": "MS09",
+   "manifest": "次要22",
+   "page": "subpackages/market/shop/index",
+   "reason": "本案四条动作全是连续滚动手势（纵向 scroll-view 滚到底/回顶、横向分类栏横滑到底/回左）并要求回填 scrollTop/scrollHeight 与 scrollLeft/scrollWidth 四个读数；两个滚动容器 .category-scroll（:300 <scroll-view scroll-x>）与 .shop-scroll（:318 <scroll-view scroll-y>）都只有滚动属性、没有任何 @tap/@click 处理器，把它们当点击目标点不出「滚到底」这个状态；采证的 show-scrollbar 字符串字面量（:300，MP-R2-次要22-015）判的是滚动条可见性这种渲染结论，而「第 5 个分类可滑入视野并可点」的前半段（滑入视野）本身就是手势。census 对本条标 gestureOnly=true、requiresReal=true，evidence 记 noop。",
+   "needsCarrier": "WS automator 的 touch/swipe 通道（纵向到底/回顶 + 横向到底/回左四段）+ 四个滚动读数（scrollOffset evaluate）+ 底部与横滑末端各 1 张截图帧。",
+   "lane": "subpackages/market/shop/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/12/tapfix-lane-次要22--market-shop.json"
+  },
+  {
+   "id": "MW09",
+   "manifest": "次要22",
+   "page": "subpackages/market/wallet/index",
+   "reason": "本案要的是「上滑下拉 2 次」这个页面级原生下拉手势 + 再滚到底/回顶，判定点是「有没有出现下拉指示器、出现时是否真的重拉数据」——一条存在性/时序观察。本页是页面级原生滚动（文件里没有 <scroll-view>），下拉手势没有落在任何物件上；页内三个 @tap 物件 .wallet__back（:152）、.wallet__recharge（:174）、.wallet__load-error-retry（:185）分别是返回、充值、错误条重试，点任何一个都不会触发下拉刷新，用它替「下拉」等于把「刷新能力缺失」这条判点换成「重试按钮能不能点」，断言被换掉了。",
+   "needsCarrier": "WS automator 的 touch/swipe 页面下拉通道（能触发页面 onPullDownRefresh/原生指示器）+ 下拉响应与 scrollTop/scrollHeight/windowHeight 读数采样；本案 evidence 亦记 noop（执行日志 + 底部截图）。",
+   "lane": "subpackages/market/wallet/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/12/tapfix-lane-次要22--market-wallet.json"
+  },
+  {
+   "id": "VI09",
+   "manifest": "次要22",
+   "page": "subpackages/vip/index",
+   "reason": "本案三路全挂在自动续费那个原生 <switch> 上（:532-538），而这个节点在源码里没有 class——只有 :key=autoRenewSwitchKey（:533）、:checked=autoRenewEnabled（:534）、:color（:535）、:disabled（:536）与 @change=toggleAutoRenew（:537），事件通道也只有 change 没有 tap；桥只吃 class selector，给不出逐字存在于某行的目标。外层 .auto-renew（:523）与 .auto-renew__info（:524）只有样式、不挂事件，按规则不能当点击目标（点它们不会派发 change，也就拨不动开关）；弹层的「确认/取消」是 uni.showModal 的系统按钮（:324-334 与 :343-350 的 confirmText/cancelText），本页 DOM 内没有对应类名；④「在途重复拨动」与 ⑤「视觉态 vs store 值」的判定还要读 MP-R1-VIP-001 的 :key 重建时序（:296-299 revertAutoRenewSwitch），属开关态时序而非物件点击。",
+   "needsCarrier": "给该 <switch> 补专属 class（如 .auto-renew__switch）作为定位锚，加 automator 对 switch 触发 change（拨动，e.detail.value）而不是 tap 的通道，再加系统 modal 确认/取消按钮的可点载具与 useAutoRenewStore().status 的 evaluate 读数。",
+   "lane": "subpackages/vip/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/12/tapfix-lane-次要22--vip-index.json"
+  },
+  {
+   "id": "MD09",
+   "manifest": "次要22",
+   "page": "subpackages/market/detail/index",
+   "reason": "本案动作是「scroll-view/页面滚动到底 → 静置观察 → 回顶 + 回填 scrollTop/scrollHeight/windowHeight」的连续滚动几何判定，页内没有任何承载它的可点物件：滚动容器 .product-scroll（:360 的 <scroll-view scroll-y>）与页面根 .product-page（:286）都只有布局属性、没有 @tap/@click/@scroll 之外的可点 handler；真正要判的是「介绍正文末行是否被 fixed 的购买栏（.product-buybar :391/:635、占位 .product-footer :387（样式 :630-632）口径）遮住」以及「滚动由 scroll-view 还是页面原生滚动承担」，属视觉与时序结论而非物件响应。census 对本条标 gestureOnly=true、requiresReal=true。",
+   "needsCarrier": "WS automator 的 touch/swipe 滚动通道（滚到底 + 回顶两段）+ scrollTop/scrollHeight/windowHeight 三元组 evaluate 夹具 + 底部 1 张遮挡判定帧；桥的 tap/input 两原语无法表达。",
+   "lane": "subpackages/market/detail/index",
+   "src": "D:/6/恋爱小程序/reports/audit/round-7/tapfix-briefs/12/tapfix-lane-次要22.json.json"
+  }
+ ]
+}

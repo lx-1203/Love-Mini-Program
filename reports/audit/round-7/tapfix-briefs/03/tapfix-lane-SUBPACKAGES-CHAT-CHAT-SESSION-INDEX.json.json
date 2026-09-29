@@ -1,0 +1,67 @@
+{
+ "lane": "subpackages/chat/chat-session/index",
+ "counts": {
+  "planned": 8,
+  "ok": 0,
+  "unverifiable": 8
+ },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "CS07",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "page": "subpackages/chat/chat-session/index",
+   "reason": "判据点名的 .temp-banner（:1987）与 .temp-action-row 两钮（:2246）都挂在 v-if 条件 isTempSession 或 tempLoadFailed 上：两个类名在编译档里确实是本页元素（mp-weixin 与 mp-weixin-real 两档的 subpackages/chat/chat-session/index.wxml 都含 temp-banner 与 temp-action-btn，后者各带 bindtap），但执行器把本页按裸路径直开（r-exec-cli.mjs:309 只给 ROUTE_QUERY 里那三页带 query），无 sessionId 时 onLoad 落到 :790 的 missingSessionId 分支 ⇒ 两态都不成立、整组不渲染。同轮 exec-tap-final3 实测该页 CS09 dom .temp-action-btn--danger:absent、CS05 dom .wechat-input-bar__send:absent，可证静息态没有这组按钮；倒计时逐秒递减还要两个时刻的读数。",
+   "needsCarrier": "欠 ROUTE_QUERY 给本页补临时会话深链（case.pre 自述 sessionId=session-temp-1）——页内没有任何元素能把会话变成 temp；另欠倒计时两帧采样通道，tap 腿一条 case 只发一次动作。"
+  },
+  {
+   "id": "CS08",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "page": "subpackages/chat/chat-session/index",
+   "reason": "禁用样式 temp-action-btn--disabled 是条件类（index.vue:2249 与 :2258 的 :class 绑定），只有 tempSessionUnavailable 为真才挂上；其外层 .temp-action-row 又整体在 v-if 里（:2246）⇒ 静息态既无按钮也无该类。判据还要读按钮 class 与 Toast 数组，而 :1199-1205 那条提示走 uni.showToast，属原生层、不在渲染树里，探针与 tap 都取不到。",
+   "needsCarrier": "欠失效 temp 深链夹具（sessionId=temp-* 且拉取失败，使 tempLoadFailed 为真）+ 读 class 与 toast 序列的取证通道；CLI 桥只回 present/absent 与一次 tap。"
+  },
+  {
+   "id": "CS19",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "page": "subpackages/chat/chat-session/index",
+   "reason": "六项菜单（.longpress-menu__item，:2289 起每项带 @tap）编进了本页 wxml，但整块在 v-if 条件 longPressMenu.visible 里（:2275 的 .longpress-overlay）；把 visible 置真的唯一入口是 ChatBubble 的 @longpress（:2104 handleMessageLongpress），而本通道只有 tap 与 input 两条腿（r-exec-cli.mjs:402-410 按动词二选一），没有长按。把 tap 打在气泡上是另一种语义（不弹菜单），等于换判据；气泡还住在子组件 components/chat/ChatBubble.vue 里，页级查询够不着。",
+   "needsCarrier": "欠 WS automator 的 longpress/touch 通道；另需一条已有 self 与 peer 气泡的私聊会话深链，撤回项还另需 temp 会话一路。"
+  },
+  {
+   "id": "CS20",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "page": "subpackages/chat/chat-session/index",
+   "reason": "四个观测面全在长按之后：.quote-reply-bar 在 v-if 条件 quoteReply 里（:2163，@tap=cancelQuoteReply），输入框 placeholder 切回复态由同一变量驱动（:2220），气泡上的引用区是 ChatBubble 的 @tap-quote（:2105）。置真要先长按气泡再点菜单里的「引用」（:2313 那条 @tap 在弹层内），tap 腿进不去；判据另要核对请求体 quoteRef 字段。",
+   "needsCarrier": "欠长按通道把弹层弄出来，再欠 input 与 tap 两腿串联（先往 .wechat-input-bar__input 写草稿、再点 .wechat-input-bar__send）——本通道一条 case 只按动词发一种动作；另欠 network 请求体读数。"
+  },
+  {
+   "id": "CS23",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "page": "subpackages/chat/chat-session/index",
+   "reason": "gestureOnly：动作是在 .chat-scroll 内下拉到顶以触发 @scrolltoupper（:2039-2046）。.chat-scroll 是 scroll-view、只绑 @scroll 与 @scrolltoupper，点它不会产生滚动事件；页内也没有「到顶」等价按钮，保留原动词就点不了任何东西。",
+   "needsCarrier": "欠 WS automator 的 touch/swipe 或 element scrollTo 通道（CLI 桥只有 tap/input）+ 一页以上的历史消息夹具（case.pre：messageHasMore=true）+ network 逐条计数。"
+  },
+  {
+   "id": "CS24",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "page": "subpackages/chat/chat-session/index",
+   "reason": ".unread-hint 在编译档里是本页节点（index.wxml 含 unread-hint 且带 bindtap=jumpToLatest），但整块在 v-if 条件 unreadHintVisible 里（:2137-2142），置真需要先上滑到中部使 nearBottom 为假、并在观测窗口内到达一条新消息；tap 腿既滚不动也造不出新消息。同轮实测该页静息态连输入栏都不在（CS05 与 CS06 的 .wechat-input-bar__send 和 __input 均 absent）。",
+   "needsCarrier": "欠滚动手势通道 + 让对端在观测窗口内推一条消息的夹具（real 轮 WS 或 mock 定时器）+ scrollTop 与 scrollHeight 采样读数。"
+  },
+  {
+   "id": "CS26",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "page": "subpackages/chat/chat-session/index",
+   "reason": "本条要的是未知数字 sessionId 的失败门（:660-663 置 pageErrorMessage 与 tempLoadFailed）。执行器按裸路径直开时 onLoad 先看 :736 的 sessionId 分支（无值）再落 :790 的 missingSessionId，同属 pageErrorMessage 态；此时输入区只渲染 :2151 的 .meta-copy--padded 错误文本，整条输入栏在 :2152 的 v-else 里不渲染 ⇒ 判据那句「在 UI 上尝试输入并发送（若入口存在）」没有元素可点，实测同页 .wechat-input-bar__input:absent。",
+   "needsCarrier": "欠 ROUTE_QUERY 给本页补未知 id 深链（case.pre：sessionId=999999999）+ 后端回读该 id 消息数的通道；输入腿还需要一个真在渲染树里的 input。"
+  },
+  {
+   "id": "CS31",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX",
+   "page": "subpackages/chat/chat-session/index",
+   "reason": "判据逐项是负向断言：标题仍取 store 真名（:896-907）、unread 不造角标、storage token 不被 query 覆盖、redirect 与 x=2000 不被消费——对象是求值结果与 network，不是页内物件；唯一的动作「tap 发送一条正常消息」在静息态无元素可点（输入栏在 pageErrorMessage 的 v-else 内，实测 absent），而且它本身要 input 与 tap 两腿。",
+   "needsCarrier": "欠带全量幽灵参数的深链夹具（ROUTE_QUERY 或 WS openPage 带 query）+ input 与 tap 两腿串联 + 标题/会话 id/token 的前后求值读数；单条 selector 表达不了「参数没被读」。"
+  }
+ ]
+}

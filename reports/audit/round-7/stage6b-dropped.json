@@ -1,0 +1,16 @@
+{
+ "dropped": [
+  {
+   "name": "exec-guest-mock-r7final",
+   "file": "scripts/qa/r-exec-cli.mjs",
+   "reason": "mock 档在载体上表达不了游客身份：session.ts:617 的 useMock() 分支无条件注入 mockUserSession，冷/热两种次序实测都会在第一次开页后回到 logged-in",
+   "evidence": [
+    "reports/audit/round-7/ui-queue-stage6b/exec-guest-mock-r7final.log（RUNNER_GUEST_BAND mode=mock ok=false ⇒ 一行都不跑）",
+    "probe-guest-band.mjs 实跑：cold=AUTOLOGIN_ON_OPEN warm=AUTOLOGIN_ON_OPEN ⇒ --guest-warmup 也救不了"
+   ],
+   "notSilent": "这条腿不是被跳过，是判定为 NOT_SHOOTABLE；游客身份的覆盖由 real 档三条 corpus 承担（exec-guest-real-final 1107 行 loginVerify=not-logged-in）",
+   "durableFix": "要真做到 mock 档 × 游客，需要一个 build 期不注入会话的 mock-guest 档（与 build-real-isolated / build-showcase-isolated 同法的隔离脚本 + 一个 env 开关），排进 stage-7 的载体清单"
+  }
+ ],
+ "at": "2026-09-27T08:44:47.025Z"
+}

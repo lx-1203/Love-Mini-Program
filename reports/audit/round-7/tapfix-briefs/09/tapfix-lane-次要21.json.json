@@ -1,0 +1,36 @@
+{
+ "lane": "subpackages/support/feedback/index",
+ "manifest": "次要21.json",
+ "sourceFile": "apps/client/src/subpackages/support/feedback/index.vue",
+ "counts": { "planned": 3, "ok": 1, "unverifiable": 2 },
+ "cases": [
+  {
+   "id": "FB05",
+   "manifest": "次要21",
+   "page": "subpackages/support/feedback/index",
+   "selector": ".bar__primary",
+   "file": "apps/client/src/components/common/BottomActionBar.vue",
+   "line": 39,
+   "oldAction": "直接 tap 主按钮 3 次；再跑一次只填标题不填内容；观察 .form-error 区是否出现",
+   "newAction": "直接 tap 主按钮 3 次；再跑一次只填标题不填内容；观察 .form-error 区是否出现（主按钮点名：.bar__primary，类名在 apps/client/src/components/common/BottomActionBar.vue:39、同一节点的 @tap 在 :44 且回调是 emit primary，本页由 subpackages/support/feedback/index.vue:545 的 BottomActionBar 以 @primary submit 引入；编译产物 components/common/BottomActionBar.wxml 内这颗 button 不带 wx:if，静息态即可命中，空表单时它走的就是必填校验分支）",
+   "needsIdentity": "",
+   "why": "提交钮不在本页源码里：本页把 submit 挂到底层组件 BottomActionBar 的 primary 槽，该类唯一带 @tap 且恒渲染，所以 .bar__primary 才是 expected 里那条 if 校验真正要吃到的东西。"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "FB01",
+   "manifest": "次要21",
+   "page": "subpackages/support/feedback/index",
+   "reason": "判据断言的是头部吸顶表现：滚动中量 .shell 的 rect、正文首元素 top、以及根容器 class 里是否出现 is-fixed。这三个读数都是几何与类名，不是可点物件；.shell 在 apps/client/src/components/layout/AppShell.vue:173 由 shellClass 计算注入，整块根 view 不挂 @tap/@click，按 hardRules「只有样式没有事件的类不能当目标」不能点名，本页也没有任何可点等价物件能把「滚到底再回顶」这个前置做出来。",
+   "needsCarrier": "欠 WS automator 的连续滚动通道（scrollTo 到底与回顶两段手势）加逐帧 boundingClientRect 读数载具；is-fixed 必须在滚动中途取样，元素级 tap/input 产生不了页面滚动。"
+  },
+  {
+   "id": "FB13",
+   "manifest": "次要21",
+   "page": "subpackages/support/feedback/index",
+   "reason": "本条判的是列表请求失败时记录区渲染成什么。失败分支由 stores/feedback.ts 写进 store.errorMessage 驱动，而本页 :565-569 只按 submissions.length 判空，于是失败被渲染成空态；这个状态没有任何页内元素能点出来（本页错误卡压根不存在），判据还要求与一个有记录的另一身份并排对照、离开重进复验，末尾另有一次下拉。",
+   "needsCarrier": "欠夹具载具：一个让反馈列表请求返回 500/401 的真实后端档位（或请求拦截），加一个已有提交记录的对照身份；「下拉一次」还欠 WS 连续手势通道（本页未开 enablePullDownRefresh，属功能未开启而非缺陷）。"
+  }
+ ]
+}

@@ -1,0 +1,264 @@
+# 交互判据点名欠项台账（round-7）
+
+- 本轮开工前"含交互动词但没点名可点物件"的缺口：**281** 条（普查当时记 281）；其中 **199** 条已补上真目标并落盘（合并器逐行核过源码），**82** 条 lane 判定为点不了 ⇒ 记在下面。
+- 守恒：199 + 82 = 281，应等于 281 → yes
+- 复核口径（普查已按新判据重算）：当前仍"没点名"= 82 条；既不在已点名也不在欠项里的 = 0 条。
+- 一份东西同时点名两件事就无效：同一 id 既被"补上"又被"欠项"的 = 0 条。
+
+## 按欠的载具分组（这才是结论：82 条其实只欠这么几样东西）
+
+### 连续手势（swipe/drag/longpress/scroll） — 55 条
+
+- `PAGES-DISCOVER-INDEX|DC08`（pages/discover/index）：本条断言的四个动作全是连续手势：向右拖动 >SWIPE_THRESHOLD 后松手，外加向左/向上/向下各一次（SwipeGesture.ts:37-42 用 touchstart→touchmove→touchend 的位移与方向判向）。HTTP 桥只有 tap 与 input 两条腿，swipe
+  - 欠的载具：WS automator 的 touch/swipe 连续手势通道（可给定起点+方向+位移+松手），并保留 handleLike/handleSwipeLeft 触发矩阵读数
+  - 原判据现文（未改）：在卡片上向右拖动 >SWIPE_THRESHOLD 后松手（SwipeGesture.ts:37-42 判定，常量见其 :4-7 导入）；另做向左、向上、向下各一次
+- `PAGES-DISCOVER-INDEX|DC22`（pages/discover/index）：身高区间靠原生 <slider>（FilterDrawer.vue:658-682，只绑 @change=onHeightMinChange/onHeightMaxChange，无 @tap/@input），把下限拖到 250、上限拖到 120 并构造 min>max 需要连续按住拖动；tap 在轨
+  - 欠的载具：WS automator 的按住拖动（touch drag）通道，或 slider 数值注入夹具（能直接置 heightMinDraft/heightMaxDraft 再回显）
+  - 原判据现文（未改）：① 拖动下限滑块到最大（250）；② 拖动上限滑块到最小（120）；③ 两端各推到边界（120/250）；④ 尝试做出 min>max 的组合
+- `PAGES-DISCOVER-INDEX|DC29`（pages/discover/index）：整条判据唯一的驱动动作是「在顶部执行下拉手势」，本页 pages.json 未开 enablePullDownRefresh、也没有下拉入口按钮（.match-page/.match-scroll 均无 @tap），断言的是「不出现下拉动画、不触发 onPullDownRefresh 回调」。
+  - 欠的载具：WS automator 的下拉（pull-down overscroll）手势通道 + onPullDownRefresh 回调探针
+  - 原判据现文（未改）：在顶部执行下拉手势；随后统计 onShow 驱动的重拉
+- `PAGES-PROFILE-INDEX|PFI22`（pages/profile/index）：这条要的是「本人态功能区四块是否出现在活代码路径」的 DOM 存在性清单，手段是「全页滚动」——桥没有 scroll/全页探测腿。更硬的一点：四块的真物件（语音 .video-cta index.vue:1694、背景 .video-cta :1768、邀请 .video-cta :1793、VIP
+  - 欠的载具：需要 WS automator 的全页滚动 + DOM 存在性探测通道（或把本条拆成 4 条「selector 存在即可、不点击」的子判点，各挂 .video-cta / .vip-card）
+  - 原判据现文（未改）：全页滚动，确认「语音介绍」「背景图编辑」「邀请好友」「VIP 开通卡」四块均渲染且可点；VIP 卡需 appConfig.isCommerceOn('vip')=true 且未开通
+- `PAGES-PROFILE-INDEX|PFI37`（pages/profile/index）：动作本身就是「在页面顶部执行下拉手势」这个连续手势，且 expected 是负向断言（不得出现下拉刷新动画/onPullDownRefresh 回调）——没有正向落点物件可点。实测 pages/profile/index 在 pages.json:66 只有 path 无 style（未开 enab
+  - 欠的载具：WS automator 的 touch/drag 下拉通道（现桥只有 tap 与 input 两条腿）+ 能读 onPullDownRefresh 是否被调用的钩子计数
+  - 原判据现文（未改）：在页面顶部执行下拉手势；统计 onShow 驱动刷新
+- `SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB25`（subpackages/village/village/publish）：本页（subpackages/village/village/publish）没有任何可点物件参与这条判据：发布成功后是 400ms setTimeout 自动 navigateAway（publish.vue:717-721），之后的「观察列表首条与审核中徽标 → 下拉刷新 2 次并数标题出现次数
+  - 欠的载具：WS automator 的下拉/scroll 通道 + 判点须落在 village/index 页的 refresher scroll-view（跨页用例，或拆成「回流首条」与「下拉去重」两条并各挂载具）
+  - 原判据现文（未改）：发布成功自动返回村口 → 观察列表首条与「审核中」徽标 → 下拉刷新 2 次并数该标题出现次数 → 再等 5s 后刷新一次
+- `次要20|OT14`（subpackages/profile-extra/profile/other）：这条的主判点是「滚动到顶/底 + 底部 CTA 固定栏遮挡」：① 要 scrollTo 底→顶并量测最后一条动态（.public-moment__card）与底栏 .relationship-cta（RelationshipCTA.vue:40，样式 fixed 与 env(safe-area-in
+  - 欠的载具：欠 WS automator 的 scrollTo/滚动 + 元素 rect 量测通道（遮挡判据必需）；② 另需可注入 401 的真实鉴权态夹具。
+  - 原判据现文（未改）：① A：scrollTo 底 → 顶，量测最后一条动态与底部 CTA 栏 rect；② B：reLaunch 深链观察错误卡文案与 FAB；③ C：错误卡点「重试」（:425 @retry="loadProfile"）两次（断网一次、恢复网络一次）
+- `PAGES-MESSAGES-INDEX|MSG05`（pages/messages/index）：下拉刷新是 onPullDownRefresh 的连续手势（await loadPage(true)→stopPullDownRefresh :322-327），tap/input 桥无等价触发点；断言还含刷新期间不闪回骨架、未读红点收敛等生命周期/渲染态，非可点物件。
+  - 欠的载具：WS automator 的 pull-down/下拉刷新通道 + 请求计数取证
+  - 原判据现文（未改）：进入页面后立即下拉刷新；统计 bootstrap 请求条数与动画起止
+- `PAGES-MESSAGES-INDEX|MSG22`（pages/messages/index）：「长按」会话弹 uni.showActionSheet 四项面板属连续手势，桥仅 tap/input；且点 .chat-item 会走 openSession 打开会话（@tap :528）而非弹面板，无等价离散目标。
+  - 欠的载具：WS automator 的 longpress 通道（并驱动原生 actionSheet 选项）
+  - 原判据现文（未改）：分别长按两条会话读 itemList 四项；再长按一条后点取消/外部关闭
+- `PAGES-MESSAGES-INDEX|MSG24`（pages/messages/index）：免打扰经「长按→动作面板选项」触发（onSessionLongpress :261-279），第②步又依赖「下拉刷新」，两条均为连续手势，tap 桥无离散等价入口。
+  - 欠的载具：WS automator 的 longpress + pull-down 通道
+  - 原判据现文（未改）：① 长按选「免打扰」；② 下拉刷新（穿透 TTL 重拉）后再看；③ 切走 Tab >30s 再回；④ 恢复提醒；⑤ 断网执行一次
+- `PAGES-MESSAGES-INDEX|MSG25`（pages/messages/index）：「标为未读」只能由长按弹层的动作面板选项触发（onSessionLongpress tapIndex===1 :270-273），点 .chat-item 只会进会话，无等价离散可点目标。
+  - 欠的载具：WS automator 的 longpress 通道（并驱动原生 actionSheet 选项）
+  - 原判据现文（未改）：长按选「标为未读」→ 观察徽标 → 进入该会话再返回
+- `PAGES-MESSAGES-INDEX|MSG26`（pages/messages/index）：删除入口以长按弹面板起（onSessionLongpress tapIndex===3 :280-287），后续在原生 showModal 上点取消/确定，桥无 longpress 也无原生弹窗驱动，无离散可点目标。
+  - 欠的载具：WS automator 的 longpress 通道 + 原生 showModal 取消/确定驱动
+  - 原判据现文（未改）：① 长按→「删除会话」→ 在 showModal 点「取消」；② 再次执行并点「确定」；③ 对同一会话在 500ms 内连点删除入口 5 次（若能重复打开面板）；④ 断网执行确定
+- `PAGES-HOME-INDEX|H02`（pages/home/index）：触发物是页面级下拉手势 onPullDownRefresh（index.vue:122-124，pages.json:56 enablePullDownRefresh=true），DOM 内不存在能等价触发该路径的可点物件；判据核心恰是 stopPullDownRefresh 在 promise 完
+  - 欠的载具：WS automator 的 pull-down/touchmove 手势通道（含动画起止计时）
+  - 原判据现文（未改）：触发页面级下拉刷新（onPullDownRefresh，index.vue:118-121），等待动画停止
+- `PAGES-HOME-INDEX|H03`（pages/home/index）：与 H02 同因：判据是未登录态执行页面级下拉刷新是否被强踢到 /pages/login/index，触发腿只能是页面下拉手势，桥无该通道；登录门旁路在 index.vue:92（refreshHomeFeed 有门）vs :122-124（下拉无门），任何 tap 目标都无法构造这条入栈路径，终栈
+  - 欠的载具：WS automator 的 pull-down 手势通道 + 未登录（real 模式无 token）夹具 + 路由栈读数
+  - 原判据现文（未改）：未登录进入首页后执行下拉刷新
+- `PAGES-HOME-INDEX|H47`（pages/home/index）：判据读的是入参消费结论与滚动/storage 数值（首页只注册 onShow/onPullDownRefresh/onPageScroll、无 onLoad → tab/communityId/postId/focus 为幽灵参数；是否定位到社区区/滚动到帖子；storage 桥接 key 是否残留
+  - 欠的载具：需要能注入深链入参并读 scrollTop/storage 的执行载具（automator evaluate + 路由夹具），断言的是行为与数值不是物件
+  - 原判据现文（未改）：以 reLaunch 与 switchTabWithQuery 两种方式进入，观察是否定位到社区区/滚动到帖子；并读取 storage 桥接 key 是否残留
+- `PAGES-HOME-INDEX|H48`（pages/home/index）：普查型判据，单 selector 承载不了：①要求 DOM 全树查 CardSwiper/滑动卡片结构是否存在（缺失断言，没有目标可点，index.vue:5-8 是源码注释硬约束）；②要求对 9 个区块内全部 @tap 元素（TodayLoveProgress 4 格、RelationActivi
+  - 欠的载具：需要逐元素遍历载具（DOM 普查 + 每元素 tap + 500ms 计时 + 包围盒量测），非单 selector 桥可表达
+  - 原判据现文（未改）：① DOM 普查首页是否存在 CardSwiper/滑动卡片结构；② 逐可点元素（9 区块内全部 @tap，含 TodayLoveProgress 4 格、RelationActivity 4 格、Interest 卡与加入、Nearby 条目、Communi
+- `次要21|FB01`（subpackages/support/feedback/index）：判据测的是滚动位置与元素 rect（scrollTo 到底 → 回顶 → 逐次量测 .shell 头部 rect、正文首元素 top、是否出现 is-fixed 类），桥只有 tap 与 input 两条腿，产生不了页面滚动，也没有任何可点物件是这个判据的对象；承载 is-fixed 的是 AppS
+  - 欠的载具：WS automator 的 touch/swipe 滚动通道（scrollTo 到底 + 回顶）+ 元素 rect 量测能力
+  - 原判据现文（未改）：首屏采样 0.5s/2s → scrollTo 到底 → 回顶，逐次量测 .shell 头部 rect 与正文首元素 top、是否出现 is-fixed 类
+- `次要21|FB13`（subpackages/support/feedback/index）：断言的是故障态的渲染分支：列表加载失败时记录区渲染 EmptyState「暂无反馈」而非错误条/重试。本页 :565-569 的 EmptyState 只传 title 与 type，未传 action，组件里唯一带 @tap 的 .empty-action（EmptyState.vue:105-1
+  - 欠的载具：需要列表接口 5xx/吞错夹具 + 双身份（有记录/无记录）对照 + WS automator pull-down 通道；EmptyState 不带 action 时零可点节点
+  - 原判据现文（未改）：进页观察记录区渲染 → 与另一身份（有记录）对照 → 保持在本页 3s 观察是否出现错误条 → 下拉一次（本页无刷新能力，见 FB14）→ 离开重进验证是否恢复
+- `PAGES-NEARBY-INDEX|N02`（pages/nearby/index）：要做的动作是「在列表顶部按住往下下拉 ≥500ms」这类页面级下拉手势，HTTP 桥只有 tap 与 input 两种动作，没有下拉/触摸序列。本页可滚的东西只有内层 scroll-view .nearby-home__scroll（:377），它没绑任何事件（既无 refresher-enable
+  - 欠的载具：页面级下拉载具：uni.startPullDownRefresh 的触发通道，或 WS automator 的 touch 下拉序列（并回读 onPullDownRefresh 是否进入的执行日志）
+  - 原判据现文（未改）：在列表顶部执行下拉手势 ≥500ms，观察刷新指示器与 onPullDownRefresh（index.vue:149）是否进入
+- `PAGES-NEARBY-INDEX|N03`（pages/nearby/index）：同 N02：本条唯一触发手段是下拉刷新手势，桥没这条载具；而判定对象是 circles/nearbyPosts/activities 三类的真实拉取次数与起止时间（:163-177 的 Promise.all），属 network 与执行日志计数，不是页面上任何可点物件。
+  - 欠的载具：页面级下拉触发通道 + network 三类请求计数与起止时间取证
+  - 原判据现文（未改）：触发一次下拉刷新，统计 circles / nearbyPosts / activities 三类拉取
+- `PAGES-NEARBY-INDEX|N04`（pages/nearby/index）：触发手段只有一个字面「下拉刷新」，桥不可表达（同 N02）；判据本体是 nearby.loadFailed 的 Toast 文案（:169-175）与失败分区显示的真实错误文案——纯文本断言。分区内渲染错误的 .nearby-home__empty-text（:488/:579/:622）只是 <t
+  - 欠的载具：页面级下拉通道 + Toast 文案抄录 + 制造三 store 失败的拦截夹具
+  - 原判据现文（未改）：触发下拉刷新
+- `PAGES-NEARBY-INDEX|N05`（pages/nearby/index）：四步里至少两步桥表达不了：「下拉刷新」（N02 的载具缺口）与「触发定位」（定位针 .nearby-home__pin 是 :384/:397 的 <image>，无 @tap；定位由 initLocation 在 :145 的 onLoad 里自跑，页内没有可点的等价入口）。判据本体是 netwo
+  - 欠的载具：下拉通道 + 定位触发夹具（wx.getLocation/wx.authorize mock）+ network 受保护端点计数与路由链求值通道
+  - 原判据现文（未改）：未登录冷启动 switchTab 到附近页 → 停留 30s → 下拉刷新 → 触发定位
+- `PAGES-NEARBY-INDEX|N30`（pages/nearby/index）：判据是「登出后分区⑤渲染了谁的帖文与作者」——文本/数据归属比对，不是某个可点物件；步骤还要求滚动到分区⑤并在 A/B 两账号间登出登录。未登录态分区⑤按 :604-616 只渲染引导卡，卡上唯一的 .nearby-login-guide__btn（:612 @tap=goLogin）一点就跳登录页
+  - 欠的载具：滚动定位载具 + 登出/换号（A、B 身份）夹具 + 分区⑤帖文与作者归属的文本比对通道
+  - 原判据现文（未改）：登出后切到附近页 → 滚动到分区⑤ → 截图比对帖文/作者；再登录 B 账号回本页
+- `PAGES-NEARBY-INDEX|N31`（pages/nearby/index）：四档动作是「切走切回的 TTL 计时」「在村口发一条新动态」「制造失败后再下拉刷新」，判定物是各档的重拉次数（:222-244 的 TTL 短路与失败不更新时间戳）——纯请求计数与跨页时序，本页没有对应的可点元素；其中 ④ 的触发手段又是页面级下拉（N02 缺口）。
+  - 欠的载具：Tab 切走/切回的时序控制 + 页面级下拉通道 + network 计数取证；③ 还需在村口发一条新动态的跨页夹具
+  - 原判据现文（未改）：① 切走 <30s 后切回；② 切走 >30s 后切回；③ 在村口发一条新动态后回本页；④ 制造一次失败后立刻再下拉刷新
+- `SUBPACKAGES-CHAT-CHAT-SESSION-INDEX|CS19`（subpackages/chat/chat-session/index）：本条第一步是 longpress 一条气泡，而长按只绑在 ChatBubble.vue:153-155 的 .bubble-wrap（@longpress=handleLongpress）上：桥没有长按动作，tap 这个节点不会触发任何 handler。③④ 要点的三路关闭与复制/引用/转发（.lo
+  - 欠的载具：element.longpress 或 WS automator 的 touch 长按通道：先长按一条对方气泡与一条 temp 自己气泡把菜单打开，之后的 tap 遮罩、tap 取消、tap 复制/引用/转发才有点得到的东西
+  - 原判据现文（未改）：①longpress 一条对方气泡 → 抄录出现的菜单项集合；②longpress 一条自己气泡（temp 会话）→ 抄录含撤回的集合；③菜单打开后分别用「tap 遮罩 :2128」「tap 取消 :2196」「选择某一项」三种方式关闭；④tap 复制、引用、
+- `SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT02`（subpackages/discover-extra/discover/matching）：本条判的是滑动方向语义（右滑到底进本页且 action=like、左滑到底不得进本页且卡组切下一张），左右滑是连续手势，桥没有该载具；三条离散等价物（跳过/喜欢/超赞三键）在寻觅页的 components/match/MatchActions.vue:29-69（.match-actions__it
+  - 欠的载具：WS automator 的 touch/swipe 通道（MatchCard 左右滑到底）+ 从寻觅页 pages/discover/index 起步、把三键点击与滑动混排的跨页执行序列
+  - 原判据现文（未改）：①对当前卡执行「右滑」（swipe right）到底；②返回寻觅后对下一张执行「左滑」（swipe left）到底；③对下一张点击「喜欢」按钮；④对下一张点击「超赞」按钮；每步抄录路由与传入本页的 action 参数
+- `SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT20`（subpackages/discover-extra/discover/matching）：「页面内上下滑动 300px 各一次」是连续手势，桥无载具；本页模板只有全屏容器 .matching-page（matching.vue:246）与不带任何滚动/触摸事件的动画区（:245-259，仅一枚 @tap 返回钮与 MatchLoading 的 @tap 跳过），而判据要看的正是「手势不得
+  - 欠的载具：WS automator 的 touch/滑动（页面级滚动）通道 + 手势后的路由链与 animationDone 采样
+  - 原判据现文（未改）：①页面内上下滑动 300px 各一次；②观察动画区是否被手势干扰、是否出现双层滚动或回弹异常
+- `SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT21`（subpackages/discover-extra/discover/matching）：「下拉 300px 松手 ×2、动画播放中再下拉一次」需要页面级下拉载具，桥没有；本页在 pages.json 里也未配 enablePullDownRefresh，页面无可滚内容、也没有带 refresher 的 scroll-view，因此不存在可点的等价物。判据本体是零事件断言：无刷新动画、无
+  - 欠的载具：页面级下拉/触摸通道（对未开启下拉的页面做一次显式注入尝试）+ network 计数与 status 采样
+  - 原判据现文（未改）：进入本页后下拉 300px 松手 ×2；再在动画播放中下拉一次
+- `次要19|SE09`（subpackages/tools/search/index）：分页触发器是页面生命周期 onReachBottom（apps/client/src/subpackages/tools/search/index.vue:43-45 调 searchStore.loadMore），由滚动位置驱动而非任何节点；列表尾部只有一个纯文案容器 .load-more（:43
+  - 欠的载具：欠 WS automator 的 scroll/touch 通道（要把页面滚到底才能触发 onReachBottom），CLI 桥只有 tap/input 两条腿
+  - 原判据现文（未改）：① 滚到结果列表底部并停留，读 network 第 2 页请求与列表条数变化；② 连续触底 3 次；③ 拉到 hasMore=false 后继续下拉触底；④ 加载中重复触底
+- `次要20|AB08`（subpackages/profile-extra/profile/album）：整条判点的入口是格子的 @longpress（apps/client/src/subpackages/profile-extra/profile/album.vue:466 → handleLongPress :228），弹层与其两项来自 uni.showActionSheet（:231-233），
+  - 欠的载具：欠 WS automator 的 longpress/touch 通道 + 原生 ActionSheet 选项的点击载具
+  - 原判据现文（未改）：① 长按第 1 张已填格 → ActionSheet 出现；② 选「取消」/下滑关闭（第一路）；③ 重开选「删除」（不确认 modal，只看第二层）；④ 重开选「设为头像」；⑤ 长按空格子
+- `次要20|AB09`（subpackages/profile-extra/profile/album）：「设为头像」只能经长按弹层进入（album.vue:466 @longpress → :231 showActionSheet → :234 res.tapIndex===0 → setAsAvatar :255），菜单项在原生 ActionSheet 上、非本页可点名节点；④「rapidTap 菜
+  - 欠的载具：欠 WS automator 的 longpress 通道与原生 ActionSheet 选项点击载具（另需 real 档 downloadFile/uploadAvatar 故障夹具与服务端 avatarUrl 回读）
+  - 原判据现文（未改）：① 长按第 2 张 → 选「设为头像」；② 检查头像/顺序/Toast；③ 到「我的」页复核头像是否同步（跨页状态）；④ 复位后同路径 rapidTap 菜单项×5（能驱动则做，不能则记 UNVERIFIED）；⑤ 断网/让 downloadFile 返 4x
+- `次要20|AB10`（subpackages/profile-extra/profile/album）：删除链路的三个可点对象分别是长按手势（album.vue:466）、原生 ActionSheet 的「删除」项（:232 itemList[1]）与 uni.showModal 二次确认的确定/取消按钮（:320-330），⑤ 还要按系统返回键 —— 没有一项是本页 DOM 里能点名的节点
+  - 欠的载具：欠 WS automator 的 longpress 通道 + 原生 ActionSheet/showModal 按钮点击与系统返回键载具
+  - 原判据现文（未改）：① 长按第 2 张 → 选「删除」→ modal 点「取消」；② 重复后点「确定」；③ 连续删除第 1 张两次（观察索引）；④ 断网走一次确定；⑤ modal 出现后按系统返回键
+- `次要20|AB14`（subpackages/profile-extra/profile/album）：断言对象是 en-US 语言包下各条文案本身（页头标题/计数/长按提示/空态/添加按钮/上传中，以及 ActionSheet 两项、modal 四段、Toast 两条）与 console 缺 key 告警，属文本采样；其中三项还必须先由长按与原生弹层产生，本页没有可点名的物件承载该判定
+  - 欠的载具：断言的是文案不是物件；另欠 WS automator longpress 通道 + 原生 ActionSheet/modal/Toast 取词载具与 en-US 档位夹具
+  - 原判据现文（未改）：① fullPage 截图检视页头标题/计数/长按提示/空态/添加按钮/上传中文案；② 触发长按 → 检视 ActionSheet 两项文案；③ 触发删除 → 检视 modal 四段文案；④ 触发一次上传成功/失败 Toast
+- `SUBPACKAGES-CIRCLES-CIRCLES-INDEX|CI17`（subpackages/circles/circles/index）：判点是逐卡抄录统计行完整文本、千分位与 1.0w 格式、7999/8000 徽标边界（.circle-card__count / .circle-card__hot-badge 的文本与存在性），属文案与格式断言；唯一动作类步骤「横向滚动 tab 条」是连续手势（.circles-tabs 的 sc
+  - 欠的载具：文案抄录/OCR + mock 成员数极值夹具（构造 999/1000/8000/10000/99999999），横向滚动需 WS automator 的 swipe/scrollTo 通道
+  - 原判据现文（未改）：①在 375px 宽机型逐卡抄录统计行完整文本；②对含 4/5/6 位数成员数的卡核对格式（999 / 1,000 / 8,932 / 9,999 / 10,000 → 1.0w）；③核对 7,999 与 8,000 两侧热门徽标的显示切换；④横向滚动 tab
+- `SUBPACKAGES-CIRCLES-CIRCLES-INDEX|CI18`（subpackages/circles/circles/index）：判点是封面是否出图、兜底 src、加载失败降级与 lazy-load 补齐，全部落在 .circle-card__cover 图像渲染本身（index.vue:421），不是可点物件；④ 的「快速滚动至底部再回顶」是连续手势，③ 还要 DevTools 资源阻断模拟。
+  - 欠的载具：图片像素/加载态核查（截图比对或 evaluate 读 image naturalWidth）+ DevTools 网络阻断夹具 + WS automator 滚动通道
+  - 原判据现文（未改）：①逐卡核对封面是否出图且与圈名语义匹配（图文一致性）；②对未知圈名卡核对兜底封面是否出图（不得空白框/破图图标）；③开启图片加载失败模拟（DevTools 阻断该资源）核对降级；④lazy-load 下快速滚动至底部再回顶，核对图片是否补齐
+- `SUBPACKAGES-CIRCLES-CIRCLES-INDEX|CI22`（subpackages/circles/circles/index）：两个动作步骤都是下拉手势（列表顶部下拉 300px 松手 ×2、scroll-view 内下拉触发 enhanced bounces），桥只有 tap/input，表达不了位移手势；判定点本身还是「不得出现伪刷新动画/新请求」的缺席与网络计数断言（本页 pages.json 未开 enablePul
+  - 欠的载具：WS automator 的 touch/drag 下拉手势通道 + network 请求计数与动画帧采样
+  - 原判据现文（未改）：①在列表顶部下拉 300px 松手 ×2；②在 scroll-view 内下拉（触发 enhanced bounces）；③观察是否出现任何刷新动画/新请求；④作为对照：退出到首页再回到本页，观察 onShow 补拉条件（:83 要求列表为空）
+- `次要20|VRN13`（subpackages/profile-extra/verification/real-name）：动作是 scrollTo 底→中→顶并记录 scrollTop/scrollHeight/windowHeight 与提交按钮 boundingClientRect，属连续滚动 + 几何量测；本页根节点是普通 view（real-name.vue:410，非 scroll-view），无可点等价物件
+  - 欠的载具：WS automator 的 scrollTo / 滚动位置量测通道（并回传 boundingClientRect）
+  - 原判据现文（未改）：scrollTo 底 → 中 → 顶，记录 scrollTop/scrollHeight/windowHeight 与提交按钮 boundingClientRect
+- `次要21|RP11`（subpackages/setup/recommend-pref/index）：动作是 scrollTo 到底→回顶并量测正文 padding-bottom、主按钮 rect 与 SetupProgress 是否滚出视口，属连续滚动 + 几何量测；主按钮 .bar__primary 只能被点，点它不会给出任何滚动数值（还会触发保存跳转，把判点换成另一件事）。
+  - 欠的载具：WS automator 的 scrollTo/滚动位置量测通道 + evaluate 读取 computed padding-bottom 与 boundingClientRect
+  - 原判据现文（未改）：scrollTo 到底 → 回顶；量测正文 padding-bottom 与主按钮位置；量测 SetupProgress 在滚动时是否随页滚出
+- `次要19|LN01`（subpackages/tools/love-center/nearby）：本条断言的是冷启动首帧时序（0/0.5/1s 采样 loading :182-184 / error+retry :187-192 / empty+CTA :196-202 / 卡片区 :206-216）、幻影参数不改变渲染与请求入参、以及 network 条数——全是渲染/请求断言，没有任何一步需
+  - 欠的载具：欠 WS automator 的 touch/下拉（pull-down）手势通道，且页面须先开启 enablePullDownRefresh 并实现 onPullDownRefresh 才有等价物；三态时序本身另需 0/0.5/1s 连拍采样载具。（.nearby-error__
+  - 原判据现文（未改）：① 进入后 0/0.5/1s 采样三态（loading :182-184 / error+retry :187-192 / empty+CTA :196-202 / 卡片区 :206-216）与 network；② 带 ?schoolId=1&userId=2
+- `PAGES-REGISTER-INDEX|REG32`（pages/register/index）：本条判的就是「无主手势」：在页面顶部下拉 300px 并松手，而 pages.json 里注册页条目未配 enablePullDownRefresh、index.vue 也没有 onPullDownRefresh/scroll-view，页内没有任何承载「下拉」这个动作的元素（.register-p
+  - 欠的载具：WS automator 的触摸下拉通道（touchstart/touchmove/touchend 的 300px 下拉），并需要能观测 network 零新增与 6 字段值前后一致
+  - 原判据现文（未改）：在页面顶部执行下拉手势 300px 并松手；观察 console 与 network
+- `PAGES-REGISTER-SUCCESS|RS13`（pages/register/success）：同 REG32：动作是页面顶部下拉 300px 松手 ×2，而 pages/register/success 未配 enablePullDownRefresh、success.vue 内也没有 onPullDownRefresh/scroll-view 或任何带 @tap 的可下拉元素（全页只有 :
+  - 欠的载具：WS automator 的触摸下拉通道（页面级 pull-down 手势 ×2）+ network/console 零新增探针
+  - 原判据现文（未改）：顶部下拉 300px 松手 ×2；观察 console/network 与页面状态
+- `SUBPACKAGES-CAMPUS-CAMPUS-HUB|CH22`（subpackages/campus/campus/hub）：判点是「滚到底时底部静态文案完整可见 + 无死箭头」：底部说明 .campus-hub__more（hub.vue:330）与其文案节点 .campus-hub__more-text（:331）都是纯展示节点，模板上没有任何 @tap（MP-R1-CAMPUS-HUB-003 已按审计把可点假象的箭
+  - 欠的载具：WS automator 的页面/scroll-view 滚动通道（scrollTo 到底 + 回顶）+ 文案可见性（boundingClientRect）探针
+  - 原判据现文（未改）：页面 scrollTo 到底 → 再回顶（页级 window 滚动，非 scroll-view）
+- `次要20|VCI13`（subpackages/profile-extra/verification/index）：判点是页级滚动与几何：scrollTo 到底 → 回顶 → 中途停一次，取 scrollTop/scrollHeight/windowHeight 并比提交按钮 boundingClientRect.bottom 与 windowHeight，另外量 .safe-bottom（index.vue:6
+  - 欠的载具：WS automator 的 pageScrollTo/滚动通道 + boundingClientRect 数值探针（滚动三段：到底/中途/回顶）
+  - 原判据现文（未改）：页面 scrollTo 到底 → 回顶 → 中途停一次；全程记录 scrollTop/scrollHeight/windowHeight
+- `次要21|SCU13`（subpackages/setup/campus/index）：本条主体是页级滚动 + 几何量测：scrollTo 到底 → 回顶、量正文容器 padding-bottom（AppShell.vue:233 .shell__body 的 :style="{paddingBottom: bodyPaddingBottom}"，由 :108-113 计算），这些都不
+  - 欠的载具：WS automator 的 pageScrollTo/滚动 + boundingClientRect/样式量测通道（滚动到顶底并取 scrollTop、scrollHeight、padding-bottom 数值），跨页链路另需 navigateBack 载具
+  - 原判据现文（未改）：scrollTo 到底 → 回顶；量测正文容器 padding-bottom；沿「保存 → schedule → 返回 → recommend-pref」走一遍并逐页记录 SetupProgress 是否渲染与步骤序号
+- `次要21|FHT14`（subpackages/profile-extra/feedback/history）：本条动作是页级滚动（scrollTo 到底 → 回顶 → 展开后再滚到底），桥只有 tap/input 两种交互：history.vue 全文没有滚动容器（模板根是 AppShell，页面靠 window 滚动），也没有「回到顶部/滚到底」这类可点等价物件；页内唯一可点的 .record__head
+  - 欠的载具：WS automator 的页面滚动通道（pageScrollTo/触摸滚动）+ boundingClientRect 量测；展开前置可用 .record__header
+  - 原判据现文（未改）：scrollTo 到底 → 回顶 → 展开一条记录后再滚到底；记录 scrollTop/scrollHeight/windowHeight
+- `SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI28`（subpackages/village/village/index）：本条的判点恰恰是「这些东西都不在页面上」：post_publish_open=false 时底部输入条整块被 v-if=isPostPublishOpen 摘掉（index.vue:850-851，隐藏后 ChannelComposerBar 的 .composer-bar__publish:58 
+  - 欠的载具：欠可控的后台开关夹具（operation_config post_publish_open=false→true 切换）+ deep link 导航载具 + 下拉/重进刷新通道（requiresReal=true，需后端返回 403 POST_PUBLISH_CLOSED）
+  - 原判据现文（未改）：观察底部输入条与空态 → 改由 deep link 直达 /subpackages/village/village/post 强行发帖一次 → 观察错误提示 → 后台恢复开关后再刷新本页
+- `次要21|DND12`（subpackages/profile-extra/settings/dnd）：这条的动作是页面级 scrollTo 到底/回顶并回填 scrollTop/scrollHeight/windowHeight 与 .save-btn 的 boundingClientRect，不对应任何元素点击：本页根 .dnd-page（:316）不是 scroll-view、模板里没有任何滚动
+  - 欠的载具：欠 WS automator 的滚动通道（scrollTo/scrollTop 读写 + boundingClientRect 采样）；tap/input 两桥无法表达连续滚动，也不该用点击代替
+  - 原判据现文（未改）：切到 CUSTOM 使内容超视口 → scrollTo 到底 → 回顶；记录 scrollTop/scrollHeight/windowHeight
+- `次要22|VB03`（subpackages/vip/bills）：三个观测时刻全靠「进入页面 / 返回上级 / 下拉刷新」驱动，页内没有任何承载这些动作的元素：首次与二次进入是 onShow 生命周期自动 loadBills()（bills.vue:97-99）+ store 缓存短路（stores/vip-billing.ts:168-178），(c) 的「下拉
+  - 欠的载具：欠 WS automator 的下拉（pull-down）手势通道 + 页面导航/回退载具（返回 VIP 再进账单页），以及按时刻逐条统计 GET /vip/bills 的 network 探针
+  - 原判据现文（未改）：（a）进入账单页 → 记 network 与列表条数；（b）返回 VIP → 再进入账单页（同一 app 会话内 store 未销毁）→ 记请求数与条数；（c）在 (b) 的态上下拉刷新一次 → 记请求数与条数
+- `次要22|VB04`（subpackages/vip/bills）：整条判点是「页面原生下拉刷新 3 次 + 每 500ms 连拍 + 第 3 次后离开再回来」：本页 enablePullDownRefresh 是 pages.json 的页面级配置，刷新由 onPullDownRefresh（bills.vue:89-92）承接，指示器收起靠 uni.stopPu
+  - 欠的载具：欠 WS automator 的下拉手势通道（含下拉起止与 1.5s 内指示器收起计时）+ 连拍帧采集；失败路径另需 GET /vip/bills 500 注入夹具（REAL_ONLY）
+  - 原判据现文（未改）：页面原生下拉刷新 3 次，每次间隔 2s；期间每 500ms 连拍；第 3 次后立即离开页面再回来
+- `次要22|VB07`（subpackages/vip/bills）：动作序列是「冷启动进入账单页（拦截生效）→ 观察 toast 与列表区 → 恢复网络后下拉刷新一次」：进入靠路由、失败靠 GET /vip/bills 的 500 注入（loadBills catch 在 bills.vue:82-85）、恢复后的刷新是原生下拉（onPullDownRefresh 
+  - 欠的载具：欠网络故障注入夹具（拦截 GET /vip/bills 返 500，可撤回）+ WS automator 的下拉刷新通道；requiresReal=true 还需 real 包与后端可用
+  - 原判据现文（未改）：冷启动进入账单页（拦截生效）→ 观察 toast 与列表区 → 恢复网络后下拉刷新一次
+- `次要19|PE03`（subpackages/discover-extra/nearby/people）：「整页下拉」是 uni-app 页面级 enablePullDownRefresh 的原生手势，落点不是本页任何物件：本页可点的东西只有 .people-header__back（:148 返回）、两个 .people-tab（:172/:181）、错误态 .people-state__retry（
+  - 欠的载具：WS automator 的 touch/swipe 页面下拉通道（可触发页面 onPullDownRefresh，并能在下拉未收时再下拉一次）+ network 请求条数与指示器收起时刻采样；失败态那条腿另需 errorMessage 故障夹具才能验 :195-200 的重试按
+  - 原判据现文（未改）：整页下拉触发刷新，采样请求条数与指示器收起时刻；下拉期间再下拉一次
+- `次要22|AC02`（subpackages/discover/activities/index）：动作是 scroll-view 自带 refresher 的下拉手势：:390-397 的 <scroll-view class="activity-scroll" refresher-enabled :refresher-triggered=refresherTriggered @refreshe
+  - 欠的载具：WS automator 的 touch/swipe scroll-view refresher 下拉通道（含 3 次×2s 节奏控制）+ network 面板逐次请求计数回填 + refresher 收起时刻采样；mock 支路还需 buildMode 标注（activity.
+  - 原判据现文（未改）：在列表 scroll-view 内下拉到 refresher 触发（activities/index.vue:390-397 refresher-enabled + @refresherrefresh），松手后等待动画结束；重复下拉 3 次，每次间隔 2s
+- `次要22|MS09`（subpackages/market/shop/index）：本案四条动作全是连续滚动手势（纵向 scroll-view 滚到底/回顶、横向分类栏横滑到底/回左）并要求回填 scrollTop/scrollHeight 与 scrollLeft/scrollWidth 四个读数；两个滚动容器 .category-scroll（:300 <scroll-view
+  - 欠的载具：WS automator 的 touch/swipe 通道（纵向到底/回顶 + 横向到底/回左四段）+ 四个滚动读数（scrollOffset evaluate）+ 底部与横滑末端各 1 张截图帧。
+  - 原判据现文（未改）：商品 scroll-view 滚到底 → 回顶；分类 scroll-view 横滑到底 → 回左；分别回填 scrollTop/scrollHeight 与 scrollLeft/scrollWidth
+- `次要22|MW09`（subpackages/market/wallet/index）：本案要的是「上滑下拉 2 次」这个页面级原生下拉手势 + 再滚到底/回顶，判定点是「有没有出现下拉指示器、出现时是否真的重拉数据」——一条存在性/时序观察。本页是页面级原生滚动（文件里没有 <scroll-view>），下拉手势没有落在任何物件上；页内三个 @tap 物件 .wallet__back
+  - 欠的载具：WS automator 的 touch/swipe 页面下拉通道（能触发页面 onPullDownRefresh/原生指示器）+ 下拉响应与 scrollTop/scrollHeight/windowHeight 读数采样；本案 evidence 亦记 noop（执行日志 + 
+  - 原判据现文（未改）：在 wallet 页面上滑下拉 2 次，观察是否出现原生下拉刷新指示器；再滚到底/回顶各一次
+- `次要22|MD09`（subpackages/market/detail/index）：本案动作是「scroll-view/页面滚动到底 → 静置观察 → 回顶 + 回填 scrollTop/scrollHeight/windowHeight」的连续滚动几何判定，页内没有任何承载它的可点物件：滚动容器 .product-scroll（:360 的 <scroll-view scroll
+  - 欠的载具：WS automator 的 touch/swipe 滚动通道（滚到底 + 回顶两段）+ scrollTop/scrollHeight/windowHeight 三元组 evaluate 夹具 + 底部 1 张遮挡判定帧；桥的 tap/input 两原语无法表达。
+  - 原判据现文（未改）：scroll-view/页面滚动到底 → 静置观察 → 回顶；回填 scrollTop/scrollHeight/windowHeight 三元组
+
+### 断言对象是文案/数值，不是可点物件 — 22 条
+
+- `PAGES-DISCOVER-INDEX|DC16`（pages/discover/index）：isMatchOpen=false 时本页只渲染 .match-state 里的 EmptyState（index.vue:297-299），卡片、MatchActions 整棵子树都不渲染，EmptyState 未传 actionText ⇒ .empty-action（EmptyState.vu
+  - 欠的载具：需要 appConfigStore.isMatchOpen=false 的开关夹具，外加「元素不存在/DOM 计数」断言载具（现桥只有 tap/input + 截图）
+  - 原判据现文（未改）：进入本页并尝试点击卡片与三键
+- `PAGES-PROFILE-INDEX|PFI41`（pages/profile/index）：判据要的就是「本页可输入面数量」这个扫描结论，expected 已写死「主渲染树无任何输入框 → 输入四态在本页不适用」。实测 pages/profile/index.vue 与其整棵子树（ProfileShell/MyProfile/MyHeader/MyCompletion/MyStats/My
+  - 欠的载具：断言的是 DOM 扫描结果不是物件：需要 evaluate 侧 querySelectorAll('input,textarea') 计数腿；若真要跑输入三态，得先给本页（弹层内昵称/邀请码）引入真实输入面
+  - 原判据现文（未改）：全页扫描 <input>/<textarea>；核对头像菜单、认证弹层、邀请弹窗内的可输入面
+- `PAGES-PROFILE-INDEX|PFI42`（pages/profile/index）：全页热区/死按钮普查：一条 action 里要逐元素点击并计时十几枚物件（MyHeader 四枚、MyCompletion、MyStats 四格、MyStory 四类、MyInteraction 四格、MyMore 四项、功能区四块、FAB、他人态六枚），还要逐枚读 rect 换算 rpx 并列出 
+  - 欠的载具：需要 selector 数组/清单式多目标 tap 载具（每枚元素一个 tap + boundingClientRect 读数），或把本条按元素拆成 20 条子判点后再逐条点名
+  - 原判据现文（未改）：逐元素点击并计时：MyHeader（分享 button / 设置 / 头像 / 编辑文本）、MyCompletion、MyStats 四格、MyStory 四类、MyInteraction 四格、MyMore 四项、功能区四块（语音/背景/邀请/VIP）、FA
+- `SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB12`（subpackages/village/village/publish）：该行按设计就没有可点物件：publish.vue:818 是 <view class="publish-row">（无 @tap、无 press-feedback、无 › ），而 .publish-row 是四行共用的布局类——DOM 里第一个 .publish-row 是 :804 的「添加话题」
+  - 欠的载具：需要给只读位置行一个唯一钩子（如 .publish-row--location 或 data-testid）后才能点名；两态文案与 body.location 断言还需读文本/读报文的通道
+  - 原判据现文（未改）：两态各检视位置行文案与是否带箭头/press-feedback → 各 tap 一次该行观察反馈 → 提交一次并回读 body
+- `次要19|ST05`（subpackages/profile-extra/settings/index）：本案唯一的交互目标是「本周安排」开关本身，即 :570-575 的 <switch> 节点（@change=toggleWeeklySchedule :573），源码里它没有写任何 class（只有 :checked/color/@change/aria-label），而桥只认 .class 选择器
+  - 欠的载具：欠类名载体：需源码给 :570-575 的 <switch> 补一个 class（例如 menu-item__switch--weekly），或桥侧提供 switch 标签/aria-label/nth 选择器通道；④ 另需 setStorageSync 失败注入夹具。
+  - 原判据现文（未改）：① tap 开关开 → 读 Toast 与 storage 值；② 切回关 → 复读；③ 开启后切到首页确认「本周安排/课表」区块出现，再关闭后确认消失；④ 造 setStorageSync 失败（写满或 mock 抛错）后切换
+- `次要20|TK01`（subpackages/profile-extra/profile/tasks）：本条只等待首屏渲染并核对进度条宽度/百分比与已完成计数文案、卡片勾选态是否同源（tasks.vue:380-393），oldAction 无任何可执行交互动词，断言的是渲染数值/文本一致性而非可点物件，桥的 tap/input 无落点。
+  - 欠的载具：无 — 纯首屏渲染/数值断言，需取帧+evaluate 读宽度百分比计数，非点击可表达
+  - 原判据现文（未改）：仅等待首屏渲染；≤500ms 首拍 + 2s 复拍；核对进度条宽度与百分比、已完成计数文案与卡片勾选态是否同源
+- `次要20|TK10`（subpackages/profile-extra/profile/tasks）：验证 checkinDone 单向锁存靠改服务端签到态 + reLaunch 观察勾选态/积分卡是否仍显示已完成（tasks.vue:346-348），断言的是渲染勾选图标的显示态（.task-item__check 无 @tap）；页面无 <input>，tap/input 桥既无翻转态的可点物件
+  - 欠的载具：签到态服务端夹具/第二身份 + reLaunch 取帧通道（tap/input 桥无法翻转服务端态）
+  - 原判据现文（未改）：① 服务端为已签到时 reLaunch 进本页 → 读勾选态；② 把服务端状态改回未签到（或换未签到身份）→ 退出重进本页；③ 观察勾选态/积分卡是否仍显示已完成；④ evaluate 读 store/页面值对照
+- `PAGES-NEARBY-INDEX|N10`（pages/nearby/index）：这条要的不是点某个东西，而是「扫一遍本页有没有 <input>/<textarea> 并把结论写下来」。源码侧答案已是确定事实：模板 :372-653 全量核对无任何 <input>/<textarea>（MP-R1-PAGES-NEARBY-INDEX-904 已把关键词输入框移除，输入改由搜索页
+  - 欠的载具：无需点击载具：欠一次 DOM 扫描（本页 input/textarea 计数）与 aria-label 文案抄录的取证通道
+  - 原判据现文（未改）：DOM 扫描本页全部 <input>/<textarea>（含搜索区、五入口、四分区）；对扫描结果做结论记录
+- `SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT03`（subpackages/discover-extra/discover/matching）：本条动作是「进入本页等动画播完」+ 读跳转前后的 getCurrentPages 栈与 matchStore.status/animationDone/pendingCardId，判定物是路由栈数组与 redirectTo 的 url 原文（状态/文本断言），页面上没有待点的东西。本页仅有的两枚可点
+  - 欠的载具：无需点击载具：欠动画自然播完后的路由栈数组与 redirectTo url 原文求值通道（含 matchStore 三字段回读）
+  - 原判据现文（未改）：进入本页后等动画播完；读取跳转前后 getCurrentPages 与 matchStore.status/animationDone/pendingCardId
+- `SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT05`（subpackages/discover-extra/discover/matching）：判据是 discover.likeSent 的 Toast 文案、Toast 后约 400ms 的自动返回计时、返回后寻觅页当前卡 id 与 cards 长度 -1 —— 文案/计时/数据状态，本页无可点物件。若改用跳过钮触发，handleSkip（matching.vue:227-233）在动画已
+  - 欠的载具：Toast 文案抄录 + 返回计时采样 + 寻觅页 cards/当前卡 id 的跨页回读，均非 tap/input 可表达
+  - 原判据现文（未改）：等动画播完 → 观察 Toast 与自动返回 → 返回后读取寻觅页当前卡 id 与 cards 长度
+- `SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT06`（subpackages/discover-extra/discover/matching）：同 MT05：判据是 matchStore.lastError 原文（或 matching.likeFailed 兜底）的 Toast 文案、约 600ms 自动返回、以及「失败不得吞卡」的 cards 前后差异，页内没有可点元素；且本条要先制造 status=failed，需要失败注入夹具而不是点
+  - 欠的载具：status=failed 的失败注入夹具（拦 runMatchCheck）+ Toast 文案/计时/cards 前后对照通道
+  - 原判据现文（未改）：进入本页等动画播完，观察 Toast 与返回；记录总耗时
+- `SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING|MT14`（subpackages/discover-extra/discover/matching）：本条要求分栏记【客户端层】每次进入的写请求条数与 Idempotency-Key 原文、【数据层】后端喜欢记录条数 R0/R1：判据对象是网络请求与后端行数，不是元素——进本页即由 onLoad 在 :172-179 自动跑 runMatchCheck，页内没有需要点的开关；且 requiresRe
+  - 欠的载具：真实后端 + network 面板逐条（URL/method/Idempotency-Key）与后端记录条数回读；无网络出口时改 runMatchCheck 调用计数夹具
+  - 原判据现文（未改）：①直开一次，记录新增请求条数与 URL/Idempotency-Key；②返回后再直开同一卡 3 次（每次等动画结束离开），统计累计请求条数与后端记录条数 R1
+- `次要20|VRN11`（subpackages/profile-extra/verification/real-name）：已认证（verified）分支 real-name.vue:441-455 只渲染 verified-card 两行文本，v-else 表单分支（:468 起）根本不进 DOM，因此该状态下不存在任何 <input>/可点物件；断言内容是「身份证号是否脱敏（前 6 后 4）」与「输入框/上传卡/提交
+  - 欠的载具：需要 verified 态账号夹具（GET /real-name-certification 返回 APPROVED + maskedIdCardNo）+ DOM 存在性/文本断言通道（evaluate 查询节点是否存在、读取掩码文本），tap/input 桥表达不了「不得出现」
+  - 原判据现文（未改）：reLaunch 进本页 → 观察状态卡与已认证卡两行 → 全页截图并检查是否残留输入框/上传卡/提交按钮
+- `次要21|RP09`（subpackages/setup/recommend-pref/index）：判点是切语言后逐元素抄录标签文本（范围三项 scopeOptions 非 computed 仍是中文，index.vue:66-70），断言对象是文案；而「切语言」这一步在本页没有任何可点元素（语言开关在设置域页面），tap/input 两条通道都点不到入口。
+  - 欠的载具：需要跨页语言切换夹具（或 evaluate 直接 setLocale）+ 文本抄录/对比通道，才能把 en/zh 两套标签逐条核出
+  - 原判据现文（未改）：切语言后逐元素检视：范围三项、开关标签、三张卡标题副标题、保存按钮、错误/加载文案
+- `次要19|HP04`（subpackages/tools/help/index）：「意见反馈行」没有任何可点名的独立物件：三条客服入口行共用同一个类名 .help-contact__item（help/index.vue:105/123/141），行内子节点也全部同名（.help-contact__icon-wrap :112/130/148、.help-contact__ico
+  - 欠的载具：欠可区分目标：给三行入口各加修饰类（如 .help-contact__item--online/--feedback/--email）或给行加 id，或执行器支持 :nth-child／按文案匹配的点击通道（merge-tapfix-lanes 的 selector 形态正则 ^
+  - 原判据现文（未改）：① tap 意见反馈行（:122-138）；② 读落点路由与页面标题；③ 返回；④ 未登录态重复 ①（守卫前置同 HP01）
+- `SUBPACKAGES-CAMPUS-CAMPUS-INDEX|CX11`（subpackages/campus/campus/index）：本条点名要 tap 的 banner 是一个刻意不带事件的纯信息块：index.vue:280-283 的 .public-browse-banner 只有 class 与两张文本节点（:281 .public-browse-banner__title、:282 __desc），全块没有 @tap—
+  - 欠的载具：欠 noop 点击载具（tap 一个无事件节点并记录路由/DOM/Toast 零变化）+ 可构造的「已认证但查看他校」身份夹具（verified 且路由带 ?school=B，让 :280 分支渲染）
+  - 原判据现文（未改）：观察首屏 banner、header 徽章、是否出现 FAB；tap banner 区域一次
+- `SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC|PT25`（subpackages/campus/campus/post-topic）：点击目标 <switch> 在源码里没有 class：post-topic.vue:558-562 只绑 :checked=isAnonymous（:559）、:color=brandColor（:560）与 @change=toggleAnonymous（:561），标签上不存在 class 属性
+  - 欠的载具：需要给 post-topic.vue:558 的匿名 <switch> 补一个专属 class（同页 dnd.vue:369/:478、privacy.vue:86/:97 的 switch 同病），或让桥支持 tag/xpath 选择器直接选中原生控件节点
+  - 原判据现文（未改）：tap switch 开（post-topic.vue:389-393 @change → toggleAnonymous :127-129）→ 再 tap 关 → 再开并保持，随后填表提交一次（唯一标题）
+- `SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI17`（subpackages/village/village/index）：卡内点赞按钮没有可唯一定位的类名：它与评论/分享/收藏同为 .action-btn（PostCard.vue:268 评论、:274 点赞、:282 分享、:287 收藏），内部图标也同为 .action-btn__icon（:269/:278/:283/:291），点赞独有的 .action-bt
+  - 欠的载具：需产品侧给点赞那枚 <view> 补专属修饰类（如 action-btn--like，PostCard.vue:274-276），或 automator 支持 nth-child/xpath 之类可区分四枚同构按钮的定位；③ 的失败回滚另需请求失败注入夹具（requiresRea
+  - 原判据现文（未改）：① tap 卡内点赞按钮（PostCard.vue:271 handleLike → index.vue handleLike :334-341 → likePost）→ 立即观察计数与图标态；② 再 tap 一次取消；③ 断网/拦截使请求失败后再点一次观察回
+- `次要18|VD20`（subpackages/village/village/detail）：本条要点的三处都是刻意不带事件的装饰文本：评论时间戳 .comment-time（detail.vue:1006）与相似作者区块标题 .similar-authors-title（:1145）是纯 <text> 节点，模板里没有 @tap/@click；「说点什么」是第 1281 行 <input>
+  - 欠的载具：欠 noop 点击基线载具：能按节点/坐标 tap 一个无事件的 text 并记录「路由未变、DOM 未变、无 toast/spinner 残留」，而不是只能用 class 选择器
+  - 原判据现文（未改）：① tap 评论区时间戳文本与「说点什么」占位文本（非按钮节点）；② tap 相似作者区块标题文本；③ 全程监听 loading/toast 队列
+- `次要21|DND02`（subpackages/profile-extra/settings/dnd）：点击目标是无 class 的原生组件：总开关就是 dnd.vue:369-373 的 <switch>，它只有 :checked=form.enabled（:370）、:color=SWITCH_ACTIVE_COLOR（:371）、@change=handleToggleEnabled（:372）
+  - 欠的载具：需要给 dnd.vue:369-373 的总开关 <switch> 补一个专属 class 夹具（或让桥支持 tag/xpath 选择器以直接选中 switch 节点）；现有 tap/input 两通道都点不到无类名的原生控件
+  - 原判据现文（未改）：tap 第一个 switch（dnd.vue:369-373）→ 观察 → 再 tap 切回
+- `PAGES-LOGIN-INDEX|LG31`（pages/login/index）：本案的输入目标（判据里的 #login-sms-code，maxlength=6 的独立短信验证码框）在本页源码里已经不存在：内联注册模式的昵称/出生日期/短信验证码三组输入按 MP-R2-PAGES-LOGIN-INDEX-015 整删（index.vue:49 与 :730-732 两处注释记录
+  - 欠的载具：要么把这条判点的 page 归属改到 pages/register/index（该页有 maxlength=6 的 .field__input 验证码框，属另一 lane），要么恢复本页的验证码输入节点；本条现缺的是「本页可点的验证码输入物件」，不是产品缺陷。
+  - 原判据现文（未改）：#login-sms-code 依次输入 5 位、7 位（观察截断）、6 位，各点一次「注册/登录」主按钮
+- `SUBPACKAGES-VILLAGE-VILLAGE-POST|VP24`（subpackages/village/village/post）：三态里唯一要点的「重试加载」单元（:830，@tap=retryLoadCircles）与公域项（:788）、校园项（:807）、已加入圈子项（:843）共用同一个类名 .post-target-sheet__option，而元素查询恒返回首个命中＝公域「个人动态」（@tap=chooseGener
+  - 欠的载具：① 给「重试加载」单元补专属类名（如 .post-target-sheet__option--retry）或 automator 支持 nth-child/aria 消歧；② 可控的 fetchCircles 失败注入（断网或真后端 500）；③ 一个「已登录但 joinedCi
+  - 原判据现文（未改）：tap 发布到卡片打开弹层 → 观察加载态 → 失败态下 tap「重试加载」（:723-728 retryLoadCircles :90-92）→ 再构造空态（已登录但无圈子）
+
+### 需要特定夹具或账号状态 — 5 条
+
+- `次要19|ST06`（subpackages/profile-extra/settings/index）：本案点位是深色模式开关，即 :588-593 的 <switch>（@change=handleThemeSwitch :591），该节点同样没有 class，桥按类名选择器无法命中；所在行 :578-581 的 .menu-item.menu-item--no-border 只有样式无事件，点它不
+  - 欠的载具：欠类名载体：需源码给 :588-593 的 <switch> 补 class（例如 menu-item__switch--theme），或桥侧提供 switch/aria-label 选择器通道；④ 另需杀进程重进（restart）载具。
+  - 原判据现文（未改）：① 在 mode=auto 且系统深色（H5/模拟器可造时）态下 tap 开关一次；② 连续 tap ×5 观察主题与 Toast 交替；③ 切到其他页（如首页）确认主题同步生效；④ 杀进程重进确认持久化；⑤ 读开关与当前实际主题是否一致
+- `次要21|DND03`（subpackages/profile-extra/settings/dnd）：同 DND02：紧急消息穿透开关是 dnd.vue:478-482 的 <switch>，只有 :checked=form.allowUrgent（:479）、:color（:480）、@change=handleToggleAllowUrgent（:481），标签上没有 class；本条要点的两枚
+  - 欠的载具：需要给 dnd.vue:478-482 的穿透 <switch>（连同总开关 :369-373）补专属 class，或 automator 支持非 class 选择器；另需保持「关总开关」前置（同样靠 switch，非 tap 可达）
+  - 原判据现文（未改）：总开关置关 → tap 紧急穿透 switch（dnd.vue:478-482）×2
+- `次要18|TP04`（subpackages/village/village/tag-posts）：两个缺口叠加：① 目标不可点名——「点赞」单元与评论/分享共用同一个类名 .action-btn（:381/:392/:404），源码没有给点赞单元专属类（区分维度只有 :aria-label=village.tagPosts.likeAria :396 与 :aria-pressed :397），
+  - 欠的载具：点赞单元专属类名（如 .action-btn--like）或 automator 支持 aria-label/nth-child 定位 + 连点×5（300ms 节奏）通道 + network 逐条（URL/Idempotency-Key/状态码）与服务端 likeCount 回
+  - 原判据现文（未改）：300ms 内 rapidTap 同一卡片点赞 ×5，停 2s 后重进该标签页服务端回读 likeCount
+- `次要20|PR05`（subpackages/profile-extra/profile/privacy）：本案的第一步就要「把开关1 置为 true」，而本页两个 <switch> 节点在源码里没有 class：:86-90 只有 :checked=allowRecommend、:color、@change=onAllowRecommendChange；:97-101 只有 :checked=recei
+  - 欠的载具：① 给两个 <switch> 补专属 class（如 .privacy-item__switch--allow / --receive）作为定位锚；② automator 对 switch 需要能派发 change（拨动，e.detail.value）而不是 tap 的通道；③ 
+  - 原判据现文（未改）：① 开关1 置为 true 并确认 storage；② tap 返回离开页 → 再进入本页读值；③ wx.reLaunch('/pages/profile/index') 模拟整机回前台 → 再进本页读值；④ 清空 storage 后进入本页（缺字段/非法值兜
+- `次要22|VI09`（subpackages/vip/index）：本案三路全挂在自动续费那个原生 <switch> 上（:532-538），而这个节点在源码里没有 class——只有 :key=autoRenewSwitchKey（:533）、:checked=autoRenewEnabled（:534）、:color（:535）、:disabled（:536）与
+  - 欠的载具：给该 <switch> 补专属 class（如 .auto-renew__switch）作为定位锚，加 automator 对 switch 触发 change（拨动，e.detail.value）而不是 tap 的通道，再加系统 modal 确认/取消按钮的可点载具与 useA
+  - 原判据现文（未改）：① 把 switch 拨到开 → 弹「开启自动续费」确认层 → tap 确认；② 拨到关 → 弹关闭确认 → tap 取消；③ 拨到开 → tap 取消；④ 在请求在途时再拨 2 次；⑤ 每次操作后读 switch 视觉态与 store 值（evaluate 
+

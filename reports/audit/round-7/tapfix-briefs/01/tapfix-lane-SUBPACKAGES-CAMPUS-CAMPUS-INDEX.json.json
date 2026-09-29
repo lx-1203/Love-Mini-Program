@@ -1,0 +1,132 @@
+{
+ "lane": "subpackages/campus/campus/index",
+ "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json",
+ "sourceFile": "apps/client/src/subpackages/campus/campus/index.vue",
+ "counts": {
+  "planned": 14,
+  "ok": 4,
+  "unverifiable": 10
+ },
+ "cases": [
+  {
+   "id": "CX10",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "page": "subpackages/campus/campus/index",
+   "selector": ".campus-back",
+   "file": "apps/client/src/subpackages/campus/campus/index.vue",
+   "line": 242,
+   "oldAction": "tap .campus-back（index.vue:228-237 → goBack :102-106）",
+   "newAction": "tap .campus-back（index.vue:228-237 → goBack :102-106） ⇒ 点名 tapTarget .campus-back（apps/client/src/subpackages/campus/campus/index.vue:242）",
+   "needsIdentity": "",
+   "why": "index.vue:242 的 .campus-back 是本页唯一无条件渲染、且同节点带 @tap=goBack（:247）的返回键，编译产物 subpackages/campus/campus/index.wxml 里它是没有 wx:if 的 view + bindtap；goBack（:110-117）只在栈>1 时 navigateBack 落回 hub，而执行器是直开本页并补 ?school= 参数、栈深为 1 ⇒ 落点会是 switchTab 首页，这一半属导航前置配方而不是类名点不到，回填时如实记"
+  },
+  {
+   "id": "CX14",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "page": "subpackages/campus/campus/index",
+   "selector": ".category-tab",
+   "file": "apps/client/src/subpackages/campus/campus/index.vue",
+   "line": 314,
+   "oldAction": "依次 tap 6 个 .category-tab（课程交流/社团招新/校园活动/学习互助/生活服务/校友动态，index.vue:283-292），每次等 ≤500ms 观察",
+   "newAction": "依次 tap 6 个 .category-tab（课程交流/社团招新/校园活动/学习互助/生活服务/校友动态，index.vue:283-292），每次等 ≤500ms 观察 ⇒ 点名 tapTarget .category-tab（apps/client/src/subpackages/campus/campus/index.vue:314）",
+   "needsIdentity": "",
+   "why": "index.vue:314 的 .category-tab 是六个分类 Tab 在 v-for（:313）里的共用节点、同节点 :316 就是 @tap=switchCategory(tab.key)，高亮类 category-tab--active 绑在 :315；它在 <block wx:if=「isVerified 或 viewSchool」>（:309）内，而执行器进本页自带 ?school= 南京大学 ⇒ 静息态就在屏上（与 .topic-scroll 的 wx:else 不同：mock 下话题恒空、那一支不渲染）"
+  },
+  {
+   "id": "CX23",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "page": "subpackages/campus/campus/index",
+   "selector": ".campus-back",
+   "file": "apps/client/src/subpackages/campus/campus/index.vue",
+   "line": 242,
+   "oldAction": "进入后 300ms 内 tap .campus-back（抢在 Promise.allSettled 完成前，index.vue:212-219）→ 观察 → 再次进入",
+   "newAction": "进入后 300ms 内 tap .campus-back（抢在 Promise.allSettled 完成前，index.vue:212-219）→ 观察 → 再次进入 ⇒ 点名 tapTarget .campus-back（apps/client/src/subpackages/campus/campus/index.vue:242）",
+   "needsIdentity": "",
+   "why": "本条要抢在 Promise.allSettled 之前返回，动作载体就是 index.vue:242 的 .campus-back（@tap=goBack :247，无 wx:if、编译产物里 bindtap 常在）；它是本页唯一无条件可点的导航元素"
+  },
+  {
+   "id": "CX24",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "page": "subpackages/campus/campus/index",
+   "selector": ".campus-back",
+   "file": "apps/client/src/subpackages/campus/campus/index.vue",
+   "line": 242,
+   "oldAction": "循环 3 次：tap .campus-back 回 hub → tap 同一校卡再进 index → 每次等待并断言",
+   "newAction": "循环 3 次：tap .campus-back 回 hub → tap 同一校卡再进 index → 每次等待并断言 ⇒ 点名 tapTarget .campus-back（apps/client/src/subpackages/campus/campus/index.vue:242）",
+   "needsIdentity": "",
+   "why": "循环第一腿 tap .campus-back 回 hub（index.vue:242 @tap :247，无条件渲染）；第二腿「tap 同一校卡」的节点在 hub.vue 的 .campus-school-card（hub.vue:285）⇒ 单选择器只能点名第一腿，两步骤串接是通道欠账"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "CX11",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "page": "subpackages/campus/campus/index",
+   "reason": "本条断言的是 public-browse banner 的双行文案、以及引导卡/热门兴趣圈/FAB 三者不渲染。banner 节点在 index.vue:303 的 v-else-if=非本校私域视角，而同一条件链的前一项是 v-if=未认证（:277 与 :289）；实测 mock 档执行器以 ?school=南京大学 进入本页时认证状态恒为未认证（同帧探针 .cert-recommend__label present(8)、.cert-guide-card__btn present(1) 就是这一分支的证据），那个 elif 分支永不被求值、banner 零节点；真实档还要「已认证 A 校却看 B 校」的身份夹具，不可构造",
+   "needsCarrier": "欠 verified 且查看非本校的 real 身份夹具；即便到位也仍无物件：编译产物里 .public-browse-banner 是纯信息 view、整段没有 bindtap（expected 自己也写明点击无反馈属预期、不得判死按钮），文案断言要靠文本读数而不是点击"
+  },
+  {
+   "id": "CX12",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "page": "subpackages/campus/campus/index",
+   "reason": "本条 6 个分类 Tab 与话题列表可点（见 CX14），但判定的主角 FAB 在 index.vue:391 的 v-if=isOwnCertifiedView 里，编译产物是 wx:if 的 view；isOwnCertifiedView（:68-70）要求 isVerified 且 viewSchool 为空或等于本人校名，而 mock 档 fetchCertificationStatus 直接 return（stores/campus.ts:938-939）把状态留在 unverified ⇒ 静息态 FAB 零节点，真实档 requiresReal 需已认证本校身份",
+   "needsCarrier": "欠「已认证本校」身份夹具：页内没有任何元素能把视角切到 isOwnCertifiedView，该状态只由服务端认证结果与 ?school= 入参决定，属前置态而非类名缺口"
+  },
+  {
+   "id": "CX13",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "page": "subpackages/campus/campus/index",
+   "reason": "本条要在 .topic-scroll 里做一次下拉触摸手势，随后回读 window.scrollY 与 .topic-scroll.scrollTop 两个数值并统计网络增量；CLI 桥既没有连续手势也没有属性读数腿。而且 .topic-scroll 在 index.vue:347 的 v-else 上，mock 档以 ?school=南京大学 进入时 campus.ts:476-481 对非北京大学的校名直接返回空列表 ⇒ 该容器静息态根本不渲染",
+   "needsCarrier": "欠 WS automator 的下拉触摸通道与 createSelectorQuery 的 scrollTop/scrollY 读数，另需一个能让话题列表出数据的入参载具（?school=北京大学 或已认证本校身份）"
+  },
+  {
+   "id": "CX15",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "page": "subpackages/campus/campus/index",
+   "reason": "上拉分页由 scroll-view 的 @scrolltolower（index.vue:347）触发，需要一个把容器滚到底的连续手势与页码计数读数，CLI 桥没有这个通道；该容器又落在 v-else 上，mock 档以执行器自带的 ?school=南京大学 进入时话题列表恒空（campus.ts:476-481）⇒ 容器与 .topic-card 静息态零节点，没有任何可点等价物件能把滚动推到底",
+   "needsCarrier": "欠 WS 滚动通道的滚到底事件（或 scroll-view 的 scroll-top 写值）与非空列表的入参夹具；分页请求计数也要 network 读数腿"
+  },
+  {
+   "id": "CX16",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "page": "subpackages/campus/campus/index",
+   "reason": "本条的判定物在另一个页面：.reply-input 与它的 maxlength 属性住在 topic-detail.vue:334（input，@confirm 在 :338），而本条归页是 campus/index，执行器只在 index 页面上动作 ⇒ 跨页点名必点空（同 manifest 的 CX29 已实测 input:.reply-input 报 automation_element_action 调用失败）。本条在 index 侧的入口 .topic-card（index.vue:350 @tap=goToTopicDetail）又落在 index.vue:347 的 v-else 里，mock 档以 ?school=南京大学 进入时话题恒空、卡片零节点；剩下的 600 字连打与 maxlength 读数也都超出 CLI 能力",
+   "needsCarrier": "欠三件：能出话题卡的入参夹具（?school=北京大学 或已认证本校，用来点出 .topic-card 这一入口）、跨页两步骤串接、以及读 input maxlength 属性与连打 600 字的输入腿（CLI 输入腿固定写 123456）"
+  },
+  {
+   "id": "CX17",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "page": "subpackages/campus/campus/index",
+   "reason": "本条的前半是「用 automation evaluate 把组件 replyContent 置为 501 字」这一绕过原生截断的注入动作，CLI 桥没有 evaluate 注入腿；后半的 .reply-btn 又住在另一个页面（topic-detail.vue:354 @tap=submitReply :358，整块 detail-footer 在 v-if=currentTopic 内），而本条归页是 campus/index ⇒ 在它上面点名必点空（CX29 的跨页 .reply-input 已实测失败）",
+   "needsCarrier": "欠 evaluate 注入 501 字的通道 + 跨页两步骤串接 + 写请求计数读数；长度守卫本身还要求绕过 maxlength，属注入类载具不是选择器"
+  },
+  {
+   "id": "CX20",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "page": "subpackages/campus/campus/index",
+   "reason": "本条第一腿是在 .topic-scroll 里把列表滚到中部，CLI 无连续手势；要点的 .topic-card 在 index.vue:347 的 v-else 分支内，而 mock 档执行器以 ?school=南京大学 进入本页时 campus.ts:476-481 直接返回空列表 ⇒ 卡片零节点（同页 CX05/CX09 实测 present 的是未认证分支的 cert-recommend 与 cert-guide-card，反证列表态为空），退一步即使有卡，CLI 也只能点选择器首匹配、点不到第 3 张",
+   "needsCarrier": "欠 WS 滚动通道 + 非空话题列表的入参夹具 + 按第 N 个同名节点定位的能力（现通道一律点首个匹配）"
+  },
+  {
+   "id": "CX22",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "page": "subpackages/campus/campus/index",
+   "reason": "连点 5 次的目标 .campus-fab 在 index.vue:391 的 v-if=isOwnCertifiedView 内（编译产物 wx:if + bindtap），mock 档认证状态恒未认证（campus.ts:938-939）⇒ FAB 静息态不存在，真实档 requiresReal 需已认证本校身份；本条要的「500ms 内快速 tap×5 + 完整路由栈快照」也是频率与时序断言",
+   "needsCarrier": "欠已认证本校身份夹具（页内无元素可切态）+ 连点计时与 getCurrentPages 全栈读数；缺一样都点不到 FAB"
+  },
+  {
+   "id": "CX26",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "page": "subpackages/campus/campus/index",
+   "reason": "本条三条腿全是滚动几何：把 .topic-scroll 滚到底再回顶、把 .category-tabs 横向滑到底、并回填 scrollTop/scrollHeight/scrollWidth 与最后一条卡片的 rect；两个 scroll-view 都没有事件绑定可点（:311 与 :347 只有 scroll-x/scroll-y 与 @scrolltolower），且 .topic-scroll 在 v-else 上、mock 空列表时不渲染",
+   "needsCarrier": "欠 WS 纵横滚动通道与 boundingClientRect/滚动数值读数腿；判据是滚动边界与遮挡，不是点击反馈"
+  },
+  {
+   "id": "CX30",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX",
+   "page": "subpackages/campus/campus/index",
+   "reason": "本条判定的提示行 .reply-counter 在 topic-detail.vue:342 的 v-if=isReplyAtLimit 内（isReplyAtLimit 定义 :58），只有输入框被灌到 500 字才渲染；而输入框本身也在另一个页面（topic-detail.vue:334），本条归页是 campus/index ⇒ 跨页点名必点空；CLI 输入腿固定写 123456 六个字符，无法触顶，第四腿还要切 en-US 重跑",
+   "needsCarrier": "欠可控长文本输入腿（≥500 字）、跨页两步骤串接与 locale 切换载具；.reply-counter 属 v-if 才出现的物件，不能当裸 A"
+  }
+ ]
+}

@@ -1,0 +1,88 @@
+{
+  "patches": [
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001",
+      "col": 6,
+      "new": "已修复（源码级判点：距离守卫与标注分支都在码；产物侧待重建复核，帧侧无欠）",
+      "why": "旧状态说「>100km 距离守卫未落」，本轮判点证明它在源码里；这不改判颜色，是把载体状态更正到可复核口径"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001",
+      "col": 9,
+      "new": "判点 MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001（verify-source-shape，2026-09-27 25/25 成立）：shownCity 由 cityDistant 短路、cityDistant 仅在 citySource=ip 且 cityTrusted=false 时置位、cityFromIp 复位恰好一处。本轮另补一处同源残留：地图选点(pickFromMap)沿用上一次 locate 的 ip 标记，会把新地址标成「服务器所在城市」或吞成「地址解析不可用」，现已复位（单测 src/tests/utils/location-city.spec.ts 9 例，去掉复位即红）。既往证据保留：本条曾按 F1 复审线取舍（三案里唯一无副作用那条），根因是 fetchCurrentLocation 逆地理拿不到城市时退回 /location/ip-city 按 IP 推断，两值可差一个省；旧状态记「距离守卫未落」针对的是当时那份产物，判点现在核的是源码，产物侧欠一次重建复核。",
+      "why": "结案依据换成源码判点，但旧取证与「产物待重建」必须继续看得见"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
+      "col": 6,
+      "new": "已修复（源码级判点：跳过钮令牌化；观感半段与帧侧取证仍是欠项，见证据）",
+      "why": "令牌半段结案，位置/观感半段与帧侧留欠项，三段不混"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
+      "col": 9,
+      "new": "判点 MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001：.match-loading__skip 底色走 var(--c-bg-container)、文字走 var(--c-text-brand)，且该规则内不再有裸 rgba(54,…（同一字面值仍在别的规则里，判点只锁 __skip 那条）。令牌在 design-variables.scss 已存在（--c-bg-container:366 / --c-text-brand:360）。处置另半段「移到标题之上」是观感，须帧复验，静态不判。帧侧旧证据保留：此前判的是「探针没给数字答案：没有尺寸」，帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/A-MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001.png —— 那一侧仍未闭合；产物 .wxss 也还没带新令牌，欠一次重建后复核。",
+      "why": "静态判点成立不等于帧与产物都验过，把两处欠项留在原格子里"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-LOGIN-INDEX-007",
+      "col": 6,
+      "new": "已修复（源码级判点：命名早已分开，本轮补降级样式；帧侧「两键观感」仍待复验）",
+      "why": "命名半段既往已落、样式半段本轮落、观感半段留欠"
+    },
+    {
+      "id": "MP-R2VIS-PAGES-LOGIN-INDEX-007",
+      "col": 9,
+      "new": "判点 MP-R2VIS-PAGES-LOGIN-INDEX-007：快捷授权仍是 .btn-phone-quick（主按钮样式），验证码/密码入口改用 .login-phone-entry（min-height:var(--btn-height-sm)、1rpx 细边、透明底），class 与样式块四处逐字可查。键值 login.phoneQuickLogin=「手机号快捷登录」/ login.phoneLogin=「验证码或密码登录」，zh-CN 与 en-US 同结构（parity 测试绿），aria-label 与可见文本一致。单测 src/tests/components/login-index.spec.ts 136 例（本轮 +3）。帧侧旧证据保留：此前那条帧 reports/screenshots/round-7-realguest/E-MP-R2VIS-PAGES-LOGIN-INDEX-007.png(12171B) 判点 0 条（原判词全是 FRAME_ONLY，静态判不了）—— 现在判点补上了静态那半，两键在帧里的观感分级仍待复验。",
+      "why": "配对 locale 无例外；旧「判点 0 条」记录不能被我一句话抹掉"
+    },
+    {
+      "id": "MP-R2-PAGES-HOME-INDEX-111",
+      "col": 6,
+      "new": "已修复（源码级判点：两卡均已补 v-else-if=\"items.length === 0\" 空态块；空态帧待重拍）",
+      "why": "旧证据正是「源码里没有那个分支」，本轮补上了，取证状态要写清是谁改的"
+    },
+    {
+      "id": "MP-R2-PAGES-HOME-INDEX-111",
+      "col": 9,
+      "new": "判点 MP-R2-PAGES-HOME-INDEX-111（多文件谓词，两文件都过才过）：InterestRecommendation.vue:77 与 NearbyPeople.vue:50 各有一个 v-else-if=\"items.length === 0\" 空态块，样式沿用 CommunityFeed 的 __empty 口径；空态文案复用已在产品里的既有串（「暂无兴趣圈」/「附近暂时没有可匹配的人，去看看推荐吧」），未新增 i18n 键。单测 src/tests/components/InterestRecommendation.spec.ts、NearbyPeople.spec.ts 本轮新建。旧证据保留：此前配方判 NOT_SHOOTABLE，理由正是「:73 骨架、:76 v-else scroll-view，两支之间没有判据要求的 v-else-if 空态块」—— 那是修之前的源码事实，本轮补的是修本身；补完仍欠一张 items 为空那一态的帧（需要空数据夹具）。",
+      "why": "旧 NOT_SHOOTABLE 的原因已被本轮改动消除，但「空态帧」这一半还欠着"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005",
+      "col": 6,
+      "new": "已修复（源码级判点：@tap 节点补 hover-class 且 <text> 上零 hover-class；按压态帧仍欠）",
+      "why": "属性在不在是静态可判的；「按下去有没有反馈」只有帧能证明"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005",
+      "col": 9,
+      "new": "判点 MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005：publish-header__submit 与 __close 均带 hover-class=\"press-feedback--active\" + hover-stay-time=\"120\"（范式同 .publish-image__remove）；全文件 <text … hover-class= 计数为 0（话题 chip 的 × 已是 view）。press-feedback--active 定义在 src/theme/global.scss:277。该页无 vitest 覆盖（No test files found），故此条只有静态判点。旧证据保留：此前帧已拍但状态未施加（press-hold 选择器查不到 .publish-topic-chip__remove），帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/C-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005.png —— 按压态取景这条腿仍然欠。另记：post.vue:731 .publish-header__submit 仍无 hover-class，属别的页，未顺手改。",
+      "why": "静态绿不能顶掉「交互状态没施加」那条取证记录"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001",
+      "col": 6,
+      "new": "已修复（源码级判点+单测：过滤先于行模型；删除动作本身的 UI 帧仍欠）",
+      "why": "逻辑半段可静态+单测结案；触发删除的那条交互腿仍欠载体"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001",
+      "col": 9,
+      "new": "判点 MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001：messageRows = buildChatMessageRows(currentMessagesView.value.filter(m => !deletedMessageIds.value.has(m.id)))（index.vue:367-371），且不存在未过滤直接 build 的写法。单测 src/tests/pages/chat-session-page.spec.ts：删除夹在两条时间栏之间的消息后行序为 [timebar,message,timebar,message]，并断言过滤发生在建行之前（去掉即红）。处置改法本身早在 f9a60925 已进 HEAD，本轮补的是判点与单测。旧证据保留：此前帧已拍但状态未施加（欠 longpress:.#msg-row-<被删消息id> 与 tap:.longpress-menu__item，当前页查不到），帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001.png —— 长按删除这条交互腿仍欠（CLI 桥无长按，归 WS 手势通道）。",
+      "why": "写清「早改了、本轮补判点」，并把仍欠的交互腿留在格子里"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004",
+      "col": 6,
+      "new": "已修复（源码级判点+单测：骨架底与 @error 文案态都在码；失败图帧仍判 NOT_SHOOTABLE）",
+      "why": "静态判点结案逻辑与写法，渲染取证那一半的欠项不换、不删"
+    },
+    {
+      "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004",
+      "col": 9,
+      "new": "判点 MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004：.bubble__image--skeleton（min-height:160rpx + 浅底）随 !imageLoaded 施加，@error=\"imageError = true\" 后走 .bubble__image-failed 文案态（chat.imageLoadFailed，zh/en 配对 1423/1348）。单测 src/tests/components/ChatBubble.spec.ts 三条（骨架、@error 切文案、样式块含 min-height）。未改走 SafeImage.vue——它的失败态是头像/纯色块、无占位文案，换过去反而违反处置。旧证据保留：配方仍判 NOT_SHOOTABLE，欠一条 kind=image 且 src 必失败的消息夹具（ChatBubble.vue:214 分支要求 kind==='image' 且 body 非空且未置 error），帧那一侧没闭合；处置改法本身早在 f9a60925 已进 HEAD，本轮补判点与单测。",
+      "why": "记明「为什么没走另一条备选」，也保住「渲染态没取证」这条真欠项"
+    }
+  ]
+}

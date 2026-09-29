@@ -1,0 +1,127 @@
+{
+ "generatedAt": "2026-09-27T04:02:09.548Z",
+ "srcDirtyFiles": 46,
+ "bands": [
+  {
+   "name": "mock",
+   "dir": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin",
+   "files": 2153,
+   "newestArtifact": "2026-09-27T03:53:06.368Z",
+   "newestArtifactMs": 1790481186368.037,
+   "srcDirtyNewest": "2026-09-27T03:54:11.287Z",
+   "restoredTouch": 6,
+   "lateDirty": 2,
+   "apiMode": "mock",
+   "viteMode": "mp-weixin-mock"
+  },
+  {
+   "name": "real",
+   "dir": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+   "files": 2152,
+   "newestArtifact": "2026-09-27T03:53:56.574Z",
+   "newestArtifactMs": 1790481236574.7136,
+   "srcDirtyNewest": "2026-09-27T03:54:11.287Z",
+   "restoredTouch": 6,
+   "lateDirty": 2,
+   "apiMode": "real",
+   "viteMode": "real"
+  },
+  {
+   "name": "showcase",
+   "dir": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-showcase",
+   "files": 2154,
+   "newestArtifact": "2026-09-27T04:01:08.537Z",
+   "newestArtifactMs": 1790481668537.132,
+   "srcDirtyNewest": "2026-09-27T03:54:11.287Z",
+   "restoredTouch": 0,
+   "lateDirty": 0,
+   "apiMode": "real",
+   "viteMode": "mp-weixin-showcase"
+  }
+ ],
+ "stale": [],
+ "mtimeOnly": [
+  {
+   "band": "mock",
+   "rel": "apps/client/src/services/mocks/fixtures.ts",
+   "needles": 1,
+   "baseRate": 0.65
+  }
+ ],
+ "undecidable": [],
+ "notObservable": [
+  {
+   "band": "mock",
+   "rel": "apps/client/src/i18n/locales/en-US.ts",
+   "baseRate": 0.175,
+   "added": 30,
+   "addedHit": 4
+  },
+  {
+   "band": "real",
+   "rel": "apps/client/src/services/mocks/fixtures.ts",
+   "baseRate": 0,
+   "added": 1,
+   "addedHit": 0,
+   "why": "该档构建链里有 strip-mock-for-mp，mock 源码域按设计不进包"
+  },
+  {
+   "band": "real",
+   "rel": "apps/client/src/i18n/locales/en-US.ts",
+   "baseRate": 0.175,
+   "added": 30,
+   "addedHit": 4
+  }
+ ],
+ "skippedTests": 0,
+ "skippedAfterConviction": 0,
+ "markers": [
+  {
+   "symbol": "isAllowedMediaExt",
+   "bands": [
+    "mock",
+    "real",
+    "showcase"
+   ],
+   "covers": [
+    "apps/client/src/utils/media.ts",
+    "apps/client/src/services/voice-upload.ts"
+   ],
+   "from": "③ 上传扩展名两侧都不校验（客户端侧门禁，services/api.ts）",
+   "hits": {
+    "mock": 3,
+    "real": 3,
+    "showcase": 3
+   }
+  },
+  {
+   "symbol": "parsePrivateQuoteContext",
+   "bands": [
+    "mock",
+    "real",
+    "showcase"
+   ],
+   "from": "③ 私聊路径缺引用回复字段（stores/messages.ts）",
+   "hits": {
+    "mock": 2,
+    "real": 2,
+    "showcase": 2
+   }
+  },
+  {
+   "symbol": "pinnedNotice",
+   "bands": [
+    "mock",
+    "real",
+    "showcase"
+   ],
+   "from": "② circle-home 置顶提示改为走 i18n（t(\"circle.home.pinnedNotice\")）",
+   "hits": {
+    "mock": 2,
+    "real": 2,
+    "showcase": 2
+   }
+  }
+ ],
+ "problems": []
+}

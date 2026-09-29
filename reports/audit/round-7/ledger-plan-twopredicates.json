@@ -1,0 +1,30 @@
+{
+ "generatedAt": "2026-09-27T02:29:30.000Z",
+ "source": "②「帧级判点不可判」两行改写成源码结构判点。判点已进 scripts/qa/verify-source-shape.mjs（total=59 成立=58 不成立=1，红的只有 MESSAGES-004）；基线对照是本会话另跑的一次（git show 094f7239 同文件 + 同四条正则、同样只取 <template> 段）。",
+ "patches": [
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
+   "col": 9,
+   "new": "源码结构判点（可重跑：node scripts/qa/verify-source-shape.mjs，条目 MP-R2VIS-PAGES-MESSAGES-INDEX-009）。真实行号（台账旧写 541-559 / 570-573 已漂 1-2 行）：昵称行容器 pages/messages/index.vue:542 开、:561 闭，免打扰图标 :555-560（:557 类名 chat-item__muted-icon），时间行 :571-573 且 :572 只有时间文本。基线对照实测（同一组正则、同样只取模板段）：图标为昵称行末位子节点 基线 0 → 现状 1；时间行只剩时间文本 基线 0 → 现状 1；时间行内不得再出现 image 基线 1 → 现状 0；图标唯一 基线 1 → 现状 1（护栏，不计归因）。前三条在基线上为红 ⇒ 这一行的本轮归因是量出来的。",
+   "why": "上一版把「像素分不出父子」当成欠一次人判；模板里的相对位置本来就可判，留着人判就等于永久挂着"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
+   "col": 6,
+   "new": "已修复（源码级判点：本轮把免打扰图标从时间行移进昵称行，四条判点里三条在基线为红、现状全绿；可重跑 verify-source-shape.mjs）",
+   "why": "状态换成能重跑的载体，替代原先撤销帧判红后留下的「欠探针/载体」"
+  },
+  {
+   "id": "MP-R2-PROFILE-025",
+   "col": 9,
+   "new": "源码结构判点（条目 MP-R2-PROFILE-025，可重跑）。盘上事实：pages/profile/index.vue:694 与 :758 两处取值表达式逐字相同（likesStore.visitors.length 优先、profileStore.profileStats 的 visitorsCount 兜底、皆空取 0），传参链 :1657 → ProfileShell.vue:108 → mine/MyProfile.vue:60 → MyInteraction.vue:46；下游两组件内不再出现统计字段（absent 判点 0 命中）。归因：该文件与基线 094f7239 逐字节相同（git diff --stat 为空）⇒ 判点在基线上同样全绿，本轮没有可归因于本行的改动。残留的运行时半段（visitors 为空时两路都印 104 之类的等值校验）不属于本行判点：mock 下 stores/profile.ts:144 visitorsCount=104，若优先级写反会直接印 104，而结构判点已经把反向写法钉为红。",
+   "why": "把「这条能证什么、不能证什么」与归因写在同一格，下一轮不会再拿它去要一帧像素"
+  },
+  {
+   "id": "MP-R2-PROFILE-025",
+   "col": 6,
+   "new": "保留-判据不成立（本轮前落地：:694/:758 的取值表达式在基线 094f7239 就已同形且本文件对基线零差异；本轮补的是源码结构判点，不是修复）",
+   "why": "帧级判红撤销后不能只留「欠载体」，要给出这条到底成不成立的判定与归因"
+  }
+ ]
+}

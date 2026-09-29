@@ -1,0 +1,1024 @@
+{
+ "patches": [
+  {
+   "id": "MP-R2-POST-009",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PROFILE-023",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PROFILE-022",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-POST-012",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PUB-113",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-002",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PAGES-LOGIN-INDEX-016",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-POST-010",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-POST-011",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-POST-014",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-003",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-THEME-DESIGN-VARIABLES-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-THEME-DESIGN-VARIABLES-002",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PROFILE-034",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-013",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-014",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-006",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-003",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-004",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-112",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R7-ADMIN-VILLAGE-COMMENTSCOLUMN-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-022",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-009",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-011",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R7-GUEST-MATCHING-REDIRECT-RACE-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PROFILE-025",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R7-GUEST-LANDING-REGENTRY-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-012",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-016",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-VILLAGE-INDEX-010",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PROFILE-034",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-014",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-009",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-LOGIN-INDEX-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-002",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-003",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PROFILE-035",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-009",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R6-F1-NEARBY-IP-CITY-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-CONFIG-IMAGES-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-019",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-014",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-110",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-LOGIN-INDEX-007",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-111",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-011",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PROFILE-024",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-004",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-011",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-012",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-013",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-CAMPUSINDEX-010",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-VILLAGE-INDEX-012",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-POST-013",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-PUB-114",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-004",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-013",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R7CLIENT-UPLOAD-EXT-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-010",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-004",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001",
+   "col": 6,
+   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
+   "why": "不借帧的名义给绿，也不再挂着待修复"
+  },
+  {
+   "id": "MP-R2-POST-009",
+   "col": 9,
+   "new": "源码判点：发布页圈子选择不再铺 store 全量，而是消费截断后的 joinedCircles ｜承载 apps/client/src/subpackages/village/village/post.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PROFILE-023",
+   "col": 9,
+   "new": "源码判点：growth 整链（数据与卡片）已从本人主页移除，只留解释性注释 ｜承载 apps/client/src/pages/profile/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PROFILE-022",
+   "col": 9,
+   "new": "源码判点：未登录态顶距改为让开状态栏（走 --statusbar 注入），不再是固定 32rpx 顶距 ｜承载 apps/client/src/components/profile/NotLoggedProfile.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-POST-012",
+   "col": 9,
+   "new": "源码判点：选图一次可选项上限取 POST_MAX_IMAGES，不再写死小于上限的数 ｜承载 apps/client/src/subpackages/village/village/post.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PUB-113",
+   "col": 9,
+   "new": "源码判点：草稿写入前一律过 hasDraftContent 守卫（本地/后端/入口回设三处），空态不再落草稿 ｜承载 apps/client/src/subpackages/village/village/publish.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-001",
+   "col": 9,
+   "new": "源码判点：关系动态卡底色改用容器令牌，不再硬编码与页面底色同值的 #EEF7F2 ｜承载 apps/client/src/components/home/RelationActivity.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-002",
+   "col": 9,
+   "new": "源码判点：装饰层不吃点击：pointer-events 走 WXSS，不用 WXML 属性形式（属性形式不改渲染层 hit-test） ｜承载 apps/client/src/components/home/InviteBanner.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PAGES-LOGIN-INDEX-016",
+   "col": 9,
+   "new": "源码判点：H5 手机号入口的 aria-label 与可见文本同取一个 i18n 键（WCAG 2.5.3 名称同源） ｜承载 apps/client/src/pages/login/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003",
+   "col": 9,
+   "new": "源码判点：朋友加入数在列表页与圈主页按同一规则派生（真实字段优先、非 mock 直接 0、mock 才用 5+(seed%8)） ｜承载 apps/client/src/subpackages/circles/circles/index.vue ＋ apps/client/src/subpackages/circles/circles/circle-home.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002",
+   "col": 9,
+   "new": "源码判点：他人主页顶部只保留一条压暗渐变层用于文字可读性，模板里就这一个节点（不引入深色状态栏层） ｜承载 apps/client/src/components/profile/public/PublicHero.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-POST-010",
+   "col": 9,
+   "new": "源码判点：页面销毁标志与卸载钩子在位，成功回调不再在离页后清表单/弹 toast ｜承载 apps/client/src/subpackages/village/village/post.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-POST-011",
+   "col": 9,
+   "new": "源码判点：发布页不再触碰后端草稿单例（get/save/deleteDraft 三类调用全部移除，草稿只读本地） ｜承载 apps/client/src/subpackages/village/village/post.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-POST-014",
+   "col": 9,
+   "new": "源码判点：本页不留空兜底 catch（越权调用已整段删除，其余 catch 均带 _e 注释） ｜承载 apps/client/src/subpackages/village/village/post.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-001",
+   "col": 9,
+   "new": "源码判点：.post-row__label 与 publish 对齐：色走主文本令牌，且不再用等于字号的 height 撑高 ｜承载 apps/client/src/subpackages/village/village/post.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-003",
+   "col": 9,
+   "new": "源码判点：publish 侧存在与 post 页同形的通用弹层（70vh + 安全区），两页弹层高度口径可对账 ｜承载 apps/client/src/subpackages/village/village/publish.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-THEME-DESIGN-VARIABLES-001",
+   "col": 9,
+   "new": "源码判点：圆角令牌只有唯一一组 $radius-* 声明（双映射收敛为 7 档，不再有第二处定义源） ｜承载 apps/client/src/theme/design-variables.scss",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-THEME-DESIGN-VARIABLES-002",
+   "col": 9,
+   "new": "源码判点：图上徽标的底色/前景走图片遮罩令牌，不再在暗色变量块里重复定义 --c-text-inverse ｜承载 apps/client/src/subpackages/tools/activities/detail.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PROFILE-034",
+   "col": 9,
+   "new": "源码判点：socialProgressStore 实例化与 onShow 里的 fetchProgress() 已从本人主页删除 ｜承载 apps/client/src/pages/profile/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006",
+   "col": 9,
+   "new": "源码判点：附件「+」是 <image> 节点而不是文本 glyph，且本页不再留 .wechat-input-bar__icon-text 样式 ｜承载 apps/client/src/subpackages/chat/chat-session/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-013",
+   "col": 9,
+   "new": "源码判点：校园圈入口的派生源从静态 SCHOOLS 换成后端列表 ref，且 onLoad/onShow/下拉各刷一次 ｜承载 apps/client/src/pages/nearby/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-014",
+   "col": 9,
+   "new": "源码判点：配图列表的 v-for key 用图片临时路径而不是下标（删除中间一张时不会让 Vue 复用错节点） ｜承载 apps/client/src/subpackages/campus/campus/post-topic.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-006",
+   "col": 9,
+   "new": "源码判点：游客（未登录且非 mock）走独立空态文案，不与「有权但空列表」共用同一句 ｜承载 apps/client/src/subpackages/circles/circles/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-003",
+   "col": 9,
+   "new": "源码判点：附近的人头像改为顶部锚定裁切（外层圆 + overflow 裁，图片按宽缩放贴顶），脸恒在画内 ｜承载 apps/client/src/components/home/NearbyPeople.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-004",
+   "col": 9,
+   "new": "源码判点：等待卡不再以整图海报作背景，且理想图那一圈是独立节点（吉祥物 + 6 个头像 + 虚线轨道） ｜承载 apps/client/src/components/discover/NotLoggedWaiting.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-112",
+   "col": 9,
+   "new": "源码判点：数据层不得把 resolveMediaUrl 套在自己的输出上，photoUrl 交原始终路径由模板层单次消费 ｜承载 apps/client/src/services/mocks/fixtures.ts",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R7-ADMIN-VILLAGE-COMMENTSCOLUMN-001",
+   "col": 9,
+   "new": "源码判点：后台内容管理列表必须渲染评论数（与赞／藏／看同栏），且两个语言包的 villagePosts 段都有 statsComments 文案 ｜承载 apps/admin/src/views/forum/VillagePosts.vue ＋ apps/admin/src/i18n/locales/zh-CN.ts ＋ apps/admin/src/i18n/locales/en-US.ts",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-022",
+   "col": 9,
+   "new": "源码判点：无调用方的 setSessionPinned 旧 action 必须从 store 源码里消失（缺席量只能按 absent 判，不能拿相邻的 console.warn 命中当证据） ｜承载 apps/client/src/stores/messages.ts",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-009",
+   "col": 9,
+   "new": "源码判点：isAdult 用分段年月日构造本地 Date 并与本地满 18 界点比较，不做整串 UTC 解析 ｜承载 apps/client/src/pages/register/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-011",
+   "col": 9,
+   "new": "源码判点：学校卡列表 key 只能是稳定值 school.id，任何 tab 值不得参与拼接 ｜承载 apps/client/src/subpackages/campus/campus/hub.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R7-GUEST-MATCHING-REDIRECT-RACE-001",
+   "col": 9,
+   "new": "源码判点：goBack 在无 token 时先走登录引导，不再把落点定在内容 Tab；switchTab 只可能是已登录路径的兜底 ｜承载 apps/client/src/subpackages/discover-extra/discover/matching.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PROFILE-025",
+   "col": 9,
+   "new": "源码判点：「最近访客」格与顶栏访客数共用同一表达式，访客列表长度优先、后台 visitorsCount 仅兜底，下游组件不得另取统计字段 ｜承载 apps/client/src/pages/profile/index.vue ＋ apps/client/src/components/profile/mine/MyProfile.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
+   "col": 9,
+   "new": "源码判点：免打扰图标是昵称行（chat-item__top-row）的末位子节点，时间行只承载时间文本 ｜承载 apps/client/src/pages/messages/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R7-GUEST-LANDING-REGENTRY-001",
+   "col": 9,
+   "new": "源码判点：默认态（未展开手机号表单的 .login-quick 分支）就有可见的注册入口，且仍受 isRegisterOpen 开关控制、与表单内那处共用同一跳转函数 ｜承载 apps/client/src/pages/login/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-012",
+   "col": 9,
+   "new": "源码判点：成员数/动态数每卡只计算一次（模板不得反复调 statsOf） ｜承载 apps/client/src/subpackages/campus/campus/hub.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
+   "col": 9,
+   "new": "源码判点：头像失败的置位集合必须有清除点（否则重载后永远占位） ｜承载 apps/client/src/pages/messages/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-016",
+   "col": 9,
+   "new": "源码判点：onLoad 的 import 必须在文件头 import 区，不得夹在脚本中段 ｜承载 apps/client/src/subpackages/circles/circles/post-topic.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-VILLAGE-INDEX-010",
+   "col": 9,
+   "new": "源码判点：删掉 `.catch(() => {})` 这种吞异常的空兜底 ｜承载 apps/client/src/subpackages/village/village/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PROFILE-034",
+   "col": 9,
+   "new": "源码判点：删除 socialProgressStore 实例化与 onShow 里的 fetchProgress() ｜承载 apps/client/src/pages/profile/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-014",
+   "col": 9,
+   "new": "源码判点：(A) 三处彩色底上的白色前景改用 var(--c-text-inverse)，并明令禁改 var(--c-bg-container) ｜承载 apps/client/src/pages/register/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-CAMPUS-HUB-009",
+   "col": 9,
+   "new": "源码判点：同文件两处 --c-bg-page 兜底值统一：:372 用 #EEF7F2，另一处不得再留 #F0F4F2 ｜承载 apps/client/src/subpackages/campus/campus/hub.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-LOGIN-INDEX-001",
+   "col": 9,
+   "new": "源码判点：三枚按钮（.btn-primary / .btn-phone-quick / .btn-guest）的 border-radius 全部改用 var(--r-full) ｜承载 apps/client/src/pages/login/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-001",
+   "col": 9,
+   "new": "源码判点：权限抑制点在 wx.* JS 桥那层，且注册型 API（wx.onNeedPrivacyAuthorization）故意不 mock ｜承载 scripts/qa/tour-r6.mjs",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-002",
+   "col": 9,
+   "new": "源码判点：帧去重要有整帧内容哈希（sha256 前 16 位），且判等口径是字节全等而非感知哈希 ｜承载 scripts/qa/tour-r6.mjs",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-TMP-TOUR-R2-003",
+   "col": 9,
+   "new": "源码判点：probeRoute 不能只取栈顶：必须同时把整条页面栈（top/depth/stack）带回来 ｜承载 scripts/qa/tour-r6.mjs",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PROFILE-035",
+   "col": 9,
+   "new": "源码判点：两处 likesStore.fetchLikes() 的 .catch(() => {}) 空兜底改为 captureException 上报 ｜承载 apps/client/src/pages/profile/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-CIRCLES-INDEX-009",
+   "col": 9,
+   "new": "源码判点：删除函数内重复的 useSessionStore 实例化，只保留 setup 顶层一处 ｜承载 apps/client/src/subpackages/circles/circles/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R6-F1-NEARBY-IP-CITY-001",
+   "col": 9,
+   "new": "源码判点：citySource=ip 时城市只用于标注：home/nearby 副标题带「按服务器位置推断」，且不写进 NEARBY_CITY 缓存 ｜承载 apps/client/src/pages/home/index.vue ＋ apps/client/src/pages/nearby/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-CONFIG-IMAGES-001",
+   "col": 9,
+   "new": "源码判点：config/images.ts 引用的 paw/cat/planet 三枚图标文件确实在盘上（非 0 字节） ｜承载 apps/client/src/config/images.ts",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-019",
+   "col": 9,
+   "new": "源码判点：活动推荐卡的 CTA 按 act.targetUrl 条件渲染（无跳转目标就不出「查看详情」） ｜承载 apps/client/src/pages/messages/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PAGES-NEARBY-INDEX-014",
+   "col": 9,
+   "new": "源码判点：loadActivities 非 force 分支前置在途守卫（activityStore.loading 时直接 return），force 分支仍强制拉 ｜承载 apps/client/src/pages/nearby/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-110",
+   "col": 9,
+   "new": "源码判点：distance 行与 metaLine 同口径：computed 里 parts 数组 join(' · ')，模板只输出一个 text ｜承载 apps/client/src/components/home/TodayRecommendationCard.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001",
+   "col": 9,
+   "new": "源码判点：城市与坐标同源：ip 城市超 100km 就不渲染（只留坐标 + 地址解析不可用），且地图选点必须把上一次的 ip 标记复位 ｜承载 apps/client/src/subpackages/profile-extra/profile/location.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
+   "col": 9,
+   "new": "源码判点：跳过钮走令牌（容器面底色 + 品牌绿字），且 __skip 那条规则里不许再留裸 rgba 品牌绿 ｜承载 apps/client/src/components/match/MatchLoading.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-LOGIN-INDEX-007",
+   "col": 9,
+   "new": "源码判点：两个手机号入口分开命名且样式分级：快捷授权仍是主按钮，验证码/密码入口降级为细边小高度文字入口 ｜承载 apps/client/src/pages/login/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PAGES-HOME-INDEX-111",
+   "col": 9,
+   "new": "源码判点：首页两张卡在骨架分支后补了 items.length === 0 的空态块（缺一个就不算修） ｜承载 apps/client/src/components/home/InterestRecommendation.vue ＋ apps/client/src/components/home/NearbyPeople.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005",
+   "col": 9,
+   "new": "源码判点：@tap 节点补 hover-class；hover-class 一个都不许留在 <text> 上（mp-weixin 里那是死属性，话题 chip 的 × 已换型为 view） ｜承载 apps/client/src/subpackages/village/village/publish.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001",
+   "col": 9,
+   "new": "源码判点：先按 deletedMessageIds 过滤再进 buildChatMessageRows（过滤发生在行模型外面，时间条才不会挂在没有消息的位置上） ｜承载 apps/client/src/subpackages/chat/chat-session/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-004",
+   "col": 9,
+   "new": "源码判点：图片泡有加载前骨架（min-height + 浅底）与 @error 后的「图片加载失败」文案态，两者都在样式与模板里落地 ｜承载 apps/client/src/components/chat/ChatBubble.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
+   "col": 9,
+   "new": "源码判点：激活态频道页签是品牌绿底 + 反白字（令牌而非浅底字面量） ｜承载 apps/client/src/subpackages/circles/circles/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-011",
+   "col": 9,
+   "new": "源码判点：遮罩用已定义令牌 --c-bg-overlay，且 --c-bg-brand-soft 在主题层有亮/暗双值（页面代码不再自带字面量兜底） ｜承载 apps/client/src/subpackages/circles/circles/post-topic.vue ＋ apps/client/src/styles/tokens.scss",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
+   "col": 9,
+   "new": "源码判点：「标为未读」后有 toast 明示只在本地生效（zh/en 键都在），且「全部已读」只在数据加载完成那一处发生（锁定态的 onShow 不再无条件清）；后端未读元数据同步那半段仍是欠项 ｜承载 apps/client/src/pages/messages/index.vue ＋ apps/client/src/i18n/locales/zh-CN.ts ＋ apps/client/src/i18n/locales/en-US.",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PROFILE-024",
+   "col": 9,
+   "new": "源码判点：页底安全区分两档：游客档让开 .nlp-footer-btn 顶缘(+108rpx)，本人档让开 GlobalPublishFab 顶缘(+112rpx)，都以 --tab-bar-total-h 令牌为基准而不是重抄 184rpx ｜承载 apps/client/src/components/profile/NotLoggedProfile.vue ＋ apps/client/src/components/profile/m",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
+   "col": 9,
+   "new": "源码判点：两页 meta 同序由共用 formatter 保证：PublicIdentity 与 MyHeader 都 import 且调用 profileMeta*，且都不再就地 split location ｜承载 apps/client/src/components/profile/public/PublicIdentity.vue ＋ apps/client/src/components/profile/mine/MyHeade",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-004",
+   "col": 9,
+   "new": "源码判点：「换一位」的刷新符从裸字符换成同族线性 SVG（IMAGE_PATHS + resolveMediaUrl），色走 --c-text-tertiary，素材真在盘上 ｜承载 apps/client/src/components/home/TodayRecommendationCard.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-011",
+   "col": 9,
+   "new": "源码判点：小目标点的热区外扩到命中层（hero 返回 / 同意勾选 / 三个字段前缀都走包一层 hit view），视觉尺寸不动 ｜承载 apps/client/src/pages/register/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-012",
+   "col": 9,
+   "new": "源码判点：两次密码比对挪到确认框 @blur（onConfirmBlur），且这条 blur 绑定全页只有一处 ｜承载 apps/client/src/pages/register/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-013",
+   "col": 9,
+   "new": "源码判点：注册页提示语改走 t(register.*)，zh/en 同批配对（举两条为锚，不留裸中文） ｜承载 apps/client/src/pages/register/index.vue ＋ apps/client/src/i18n/locales/zh-CN.ts ＋ apps/client/src/i18n/locales/en-US.ts",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-CAMPUSINDEX-010",
+   "col": 9,
+   "new": "源码判点：认证拉取失败与通用错误拆开：store 有独立 certificationError，认证页据此出重试条，不再静默退成「未认证」 ｜承载 apps/client/src/stores/campus.ts ＋ apps/client/src/subpackages/campus/campus/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007",
+   "col": 9,
+   "new": "源码判点：消息区空态垂直居中：空态分支挂 .chat-list--empty 且该规则含 justify-content: center ｜承载 apps/client/src/subpackages/chat/chat-session/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02",
+   "col": 9,
+   "new": "源码判点：键盘态差异化间距那条死分支已从样式表删除（处置选「只删不猜」）；类名只允许出现在说明注释里，故判点锁规则行首 ｜承载 apps/client/src/subpackages/chat/chat-session/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-VILLAGE-INDEX-012",
+   "col": 9,
+   "new": "源码判点：精选话题失败出错误条 + 重试（复用 loadChannelData(id,true) 的 TTL 旁路），活动列表补空态且失败不冒充空态 ｜承载 apps/client/src/subpackages/village/village/index.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001",
+   "col": 9,
+   "new": "源码判点：话题标签统一单色绿：.post-card__tag--pink 规则已从样式表删除，绿色仍走 --c-brand-500 ｜承载 apps/client/src/components/village/PostCard.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-POST-013",
+   "col": 9,
+   "new": "源码判点：副标题在「目标是圈子但圈子还没解析出来」时兜到圈内成员可见，与标题兜底、标签同语义，且走 i18n 键（zh/en 都在） ｜承载 apps/client/src/subpackages/village/village/post.vue ＋ apps/client/src/i18n/locales/zh-CN.ts ＋ apps/client/src/i18n/locales/en-US.ts",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-PUB-114",
+   "col": 9,
+   "new": "源码判点：onLoad 回设 campus/circleId 时同步 visibility（campus→school、circle→interest） ｜承载 apps/client/src/subpackages/village/village/publish.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-004",
+   "col": 9,
+   "new": "源码判点：24rpx 两处走等值令牌 var(--r-xl, 24rpx)；本文件一次都不许出现 --card-radius（那是 40rpx，换上就是视觉变更，须另立裁决） ｜承载 apps/client/src/subpackages/village/village/publish.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-013",
+   "col": 9,
+   "new": "源码判点：提交中的防重在途有可见反馈：两处提交按钮文案在 isSubmitting 时切成 common.submitting（复用既有键） ｜承载 apps/client/src/subpackages/circles/circles/post-topic.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002",
+   "col": 9,
+   "new": "源码判点：两张图时等宽 50/50（首图不再独占整行），与 PostCard 两图口径同算法 ｜承载 apps/client/src/subpackages/village/village/detail.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
+   "col": 9,
+   "new": "源码判点：圈内置顶公告不再是写死的中文字面量：组件走 i18n 键，且两个语种都真的有这个键 ｜承载 apps/client/src/subpackages/circles/circles/circle-home.vue ＋ apps/client/src/i18n/locales/zh-CN.ts ＋ apps/client/src/i18n/locales/en-US.ts",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
+   "col": 9,
+   "new": "源码判点：两个发布入口的圈子候选行结构一致：不再有独立的「已加入」pill 类，成员数并进同一句 desc ｜承载 apps/client/src/subpackages/village/village/post.vue ＋ apps/client/src/subpackages/village/village/publish.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
+   "col": 9,
+   "new": "源码判点：校园域两级键命名空间已统一：hub 页不再用顶层扁平 campusHub.*，而是与同域其余四页一样的 campus.hub.*（两份语言包都真有这么一层） ｜承载 apps/client/src/subpackages/campus/campus/hub.vue ＋ apps/client/src/i18n/locales/zh-CN.ts ＋ apps/client/src/i18n/locales/en-US.ts",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002",
+   "col": 9,
+   "new": "源码判点：引用回复端到端接通：私信与临时两条发送链路都把 quoteRef 发出去，读回侧把 quoteContext 解析成行模型字段（后端早就有字段，缺的是客户端） ｜承载 apps/client/src/stores/messages.ts ＋ apps/client/src/stores/chat/actions/messaging.ts ＋ apps/client/src/subpackages/chat/chat-sessi",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R7CLIENT-UPLOAD-EXT-001",
+   "col": 9,
+   "new": "源码判点：共享上传路径有客户端扩展名闸门，白名单是单一来源且与后端同集合（图片 jpg/jpeg/png/webp、视频 mp4/mov、音频 aac/mp3/m4a/wav） ｜承载 apps/client/src/utils/media.ts ＋ apps/client/src/services/api.ts ＋ apps/client/src/services/voice-upload.ts",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-010",
+   "col": 9,
+   "new": "源码判点：配图上传失败由上传这一层自己接住并给专属提示，不会落进发布的 catch 去显示上一次动作留下的陈旧 errorMessage ｜承载 apps/client/src/subpackages/campus/campus/post-topic.vue ＋ apps/client/src/i18n/locales/zh-CN.ts ＋ apps/client/src/i18n/locales/en-US.ts",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-004",
+   "col": 9,
+   "new": "源码判点：首页「换一位」的刷新图标已从行内字符 ↻ 换成同族线性 SVG 资源（走 IMAGE_PATHS 常量 + resolveMediaUrl），旧字符写法不得残留 ｜承载 apps/client/src/components/home/TodayRecommendationCard.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001",
+   "col": 9,
+   "new": "源码判点：IP 城市与坐标不同源（>100km 或量不出距离）时页面不再渲染该城市，改渲染「地址解析不可用」；阈值常量在工具层单一来源 ｜承载 apps/client/src/utils/location.ts ＋ apps/client/src/subpackages/profile-extra/profile/location.vue",
+   "why": "写明这条是靠哪个谓词成立的"
+  }
+ ]
+}

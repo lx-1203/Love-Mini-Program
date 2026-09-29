@@ -1,0 +1,16 @@
+{
+  "patches": [
+    {
+      "id": "MP-R7-G8-RING6-ADMIN-COUNT-FIELDS-001",
+      "col": 11,
+      "new": "维持 needs_backend 欠项，但把债做成**可直接照抄的补丁形状**（本轮不落地，理由见末句）。盘上事实（本轮逐个 grep 定位，不是推测）：客户端那条计数来自 `apps/client` 无关、是服务端 `dto/PostDto.java:41 private long commentCount` 由 `dto/DtoMapper.java:145 toPostDto(Post, User, long likeCount, long commentCount)` 在 :156 `dto.setCommentCount(commentCount)` 赋的；后台那条读侧视图是 `admin/AdminVillagePostController.java:649 toSummaryView(Post post, M…)` → :652 `return new AdminVillagePostSummaryView(…)`，列表入口 :126 `listPosts(...)`、:164 逐条映射，记录类里就是没有计数字段（G8 RING6 实测打印的字段集 `id,authorId,authorNickname,authorAvatar,title,content,images,tags,category,status,auditStatus,visibility,circleId,auditRemark` 与之一字不差）。下一手要做的三件（择一裁决已经清楚：①展示就补字段，②不展示就改判据并写注释，两案都需要人先定产品口径，所以仍留在 needs_backend）：(a) 给 `AdminVillagePostSummaryView` 加 `likeCount`/`commentCount` 两个 long 分量；(b) 在 `toSummaryView` 的调用侧把计数按**客户端同一条聚合路径**传进来（不要在后台另起一套 SQL，否则两端口径又会分叉，那正是本行立案的原因）；(c) 同步 `apps/admin/src/api/forum.ts:64 VillagePostSummary` 与 :110 `VillagePostDetail` 的 TS 类型，并给后台列表页加两列。本轮不动它的硬理由：改 Java 就要重建 + 重启共享的 8080 实例，而这一轮的真实模式判据与 G8/G9 都以那个实例为准——半途换版本会让「代码」和「被量的东西」再次分叉，那比欠一条债更糟。",
+      "why": "把 needs_backend 从一句托词变成能照做的补丁（含 file:line 与『为什么这轮不做』的可检验理由），下一轮就不必重新勘察"
+    },
+    {
+      "id": "MP-R7-G8-RING6-ADMIN-COUNT-FIELDS-001",
+      "col": 9,
+      "new": "证据链（本轮实测，两件载具）：① `reports/audit/round-7/g8-rerun.log:8` 的 `RING6 [OK ] 计数客户端↔后台一致 :: … 客户端(comment=1, like=1) vs 后台字段集=id,…,auditRemark` —— 注意这一环现在**判的是字段集对比**，它打 OK 的同时把后台缺两个计数字段的事实原样打印出来，所以「G8 十环全绿」与「本行仍欠」并不矛盾，别把前者读成后者已修；② 静态读码定位见处置列的 file:line。复验载具（修完之后）：G8 RING6 重跑应打印出后台字段集含 likeCount 与 commentCount 且数值与客户端一致，另需 apps/admin 列表页一帧。本轮 G8 十环全绿的口径以 `reports/audit/real-e2e/GATES.json`（gitSha 绑 e4495d67、由 scripts/qa/write-gates-json.mjs 生成）为准。",
+      "why": "这一行最容易被误读成「G8 十环都绿了那这条也算绿」，必须把两种判据的口径差别写在证据格里"
+    }
+  ]
+}

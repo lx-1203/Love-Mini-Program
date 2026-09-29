@@ -1,0 +1,45 @@
+{
+ "lane": "subpackages/setup/recommend-pref/index",
+ "counts": {
+  "planned": 4,
+  "ok": 1,
+  "unverifiable": 3
+ },
+ "cases": [
+  {
+   "id": "RP04",
+   "manifest": "次要21",
+   "page": "subpackages/setup/recommend-pref/index",
+   "selector": ".toggle-row",
+   "file": "apps/client/src/subpackages/setup/recommend-pref/index.vue",
+   "line": 215,
+   "oldAction": "tap .toggle-row 文字侧 → 观察；tap .toggle-switch 滑块侧 → 观察；再连点×5 观察最终态",
+   "newAction": "tap .toggle-row 文字侧 → 观察；tap .toggle-switch 滑块侧 → 观察；再连点×5 观察最终态（本条目标逐字点名 .toggle-row：翻转开关的 @tap 只挂在这一整行上）",
+   "needsIdentity": "",
+   "why": "「整行可点而非仅滑块」这条判据的载体就是 :215 的 view（class 含 toggle-row press-feedback 且 @tap 直接写 campusPriority 取反），文字侧的 .toggle-label（:216）与滑块 .toggle-switch（:217）都没有自己的 handler、只能靠冒泡到这一行；编译档 mp-weixin 与 mp-weixin-real 的 subpackages/setup/recommend-pref/index.wxml 里 class 静态含 toggle-row 且该 view 带 bindtap，本轮执行档实测表单分支在静息态已渲染（RP04 同帧探针 .toggle-switch--on:present(1)），不在 loading 与 error 两个 v-if 分支之后；连点×5 的奇偶终态仍要人工看，CLI 桥一次判据只发一次点击。"
+  }
+ ],
+ "unverifiable": [
+  {
+   "id": "RP08",
+   "manifest": "次要21",
+   "page": "subpackages/setup/recommend-pref/index",
+   "reason": "重试按钮 .retry-btn（:173）整块在 SectionCard v-else-if 的 error 分支里（:170），而 error 只有 GET /recommendations/preferences/me 抛异常才会置 true（:97-101），页内没有任何入口能把它点出来；静息态渲染的是 loading 或正常表单，实测同类条件分支就是 absent。本条还要求逐条数重试新增的 GET 条数，并特写原生 button 的 ::after 细线（:173 与样式段 :256-266 无覆写），requiresReal=true 使 mock 档整条先被档位门跳过。",
+   "needsCarrier": "欠 real 档网络失败注入夹具（让 fetchPreferences 走 catch 置 error=true）以产生错误态前置，另需按钮边缘特写截图与 GET 计数读数"
+  },
+  {
+   "id": "RP09",
+   "manifest": "次要21",
+   "page": "subpackages/setup/recommend-pref/index",
+   "reason": "本条断言的是切语言之后页面上各处文案是否即时更新（scopeOptions 在 setup 期一次性求值，:66-70 是普通数组而非 computed），判据是文本比对与三处页面截图对照；语言开关不在本页（本页没有任何语言入口），要在别的页完成切换再回本页，属于跨页前置与文案取证，没有可点名的物件。",
+   "needsCarrier": "纯文案断言：欠跨页语言切换前置与 DOM 文本取数通道，本页无可点目标可承载"
+  },
+  {
+   "id": "RP11",
+   "manifest": "次要21",
+   "page": "subpackages/setup/recommend-pref/index",
+   "reason": "本条量的是滚动与留白数值（scrollTop 与 scrollHeight、正文 padding-bottom、主按钮 rect、SetupProgress 是否随页滚出）并要求与 schedule 页做两页截图对照，判据是布局数值与链路一致性；「scrollTo 到底再回顶」这一步 CLI 桥发不出（只有 tap 与 input 腿，无 scroll 通道），且 BottomActionBar 的主按钮在组件内部、页级探针实测取不到（同页族 SCU06 探针 .bar__primary:absent）。",
+   "needsCarrier": "欠 WS 滚动通道与 rect 与 padding 读数，另欠跨页对照取证，纯量测无点击目标"
+  }
+ ]
+}

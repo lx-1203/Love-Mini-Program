@@ -1,0 +1,114 @@
+{
+ "startedAt": "2026-09-27T05:19:21.054Z",
+ "legs": [
+  {
+   "name": "note-bands-already-rebuilt",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-tail4/note-bands-already-rebuilt.log",
+   "bytes": 2879,
+   "resultLines": [
+    "FRESH_RESULT=PASS bands=3 markers=3 —— 每档产物都不晚于任何未提交改动，且符号级深检全部命中"
+   ]
+  },
+  {
+   "name": "gate-band-freshness-stage4",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-tail4/gate-band-freshness-stage4.log",
+   "bytes": 2875,
+   "resultLines": [
+    "FRESH_RESULT=PASS bands=3 markers=3 —— 每档产物都不晚于任何未提交改动，且符号级深检全部命中"
+   ]
+  },
+  {
+   "name": "open-window-real-for-cases",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-tail4/open-window-real-for-cases.log",
+   "bytes": 541,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-guest-real-only",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-tail4/exec-guest-real-only.log",
+   "bytes": 53350,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-guest-real-only",
+    "RUNNER_STATS identity=guest loginVerify=not-logged-in executed=100 failed=92 skipped=915(交互动词=27 requiresReal=0 非真实用例=871 探针无结果=0 判据无可判物件=1 出帧失败=0 交互禁触=2 交互没点名=6 交互后离页=0 锁屏挡住=0 交互下发失败=8) 页组=58 真做过的交互=15 折叠探针类名次数=417 出帧=100 未点名类名=45 通道异常次数=0",
+    "RUNNER_RESULT=OK"
+   ]
+  },
+  {
+   "name": "measure-matching-drift",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-tail4/measure-matching-drift.log",
+   "bytes": 2348,
+   "resultLines": [
+    "GUEST_LANDING_RESULT=OK（每组都有具名复测腿；BOOKED/MEASURED-* 非 CLOSED 一律不算结案）"
+   ]
+  },
+  {
+   "name": "gate-guest-landing-book",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-tail4/gate-guest-landing-book.log",
+   "bytes": 308,
+   "resultLines": [
+    "GUEST_LANDING_RESULT=OK（每组都有具名复测腿；BOOKED/MEASURED-* 非 CLOSED 一律不算结案）"
+   ]
+  },
+  {
+   "name": "judge-stand-stage4",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-tail4/judge-stand-stage4.log",
+   "bytes": 2136,
+   "resultLines": [
+    "PROBE_SELFCHECK_CASES=6 SUPPRESSED=5 KEPT=5 PROBE_SELFCHECK_RESULT=OK",
+    "FIXVERIFY_RESULT=OK items=116 ARTIFACT_VERIFIED=28 SOURCE_ONLY=1 NEEDS_UI_FRAME=68 NOT_IN_EITHER=0 UNDECIDABLE=19 PROBE_CONFLICTS=0 CONSERVED=yes"
+   ]
+  },
+  {
+   "name": "open-window-mock-for-reshoot",
+   "status": "FAIL",
+   "exitCode": 1,
+   "log": "reports/audit/round-7/ui-queue-tail4/open-window-mock-for-reshoot.log",
+   "bytes": 598,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin",
+    "OPENWIN_RESULT=FAIL ⇒ 窗口没起来或里面不是这个产物；不要接着往下跑执行腿"
+   ]
+  },
+  {
+   "name": "reshoot-stage4",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "open-window-real-for-guest-reshoot",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "reshoot-guest-real",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "finishedAt": "2026-09-27T06:05:34.431Z",
+ "conservation": {
+  "legsTotal": 11,
+  "legsOk": 7,
+  "tally": {
+   "OK": 7,
+   "FAIL": 1,
+   "NOT_RUN": 3
+  },
+  "ok": true
+ }
+}

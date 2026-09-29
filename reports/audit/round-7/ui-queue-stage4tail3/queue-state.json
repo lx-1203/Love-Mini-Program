@@ -1,0 +1,92 @@
+{
+ "startedAt": "2026-09-27T05:11:07.739Z",
+ "legs": [
+  {
+   "name": "note-bands-already-rebuilt",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage4tail3/note-bands-already-rebuilt.log",
+   "bytes": 2879,
+   "resultLines": [
+    "FRESH_RESULT=PASS bands=3 markers=3 —— 每档产物都不晚于任何未提交改动，且符号级深检全部命中"
+   ]
+  },
+  {
+   "name": "gate-band-freshness-stage4",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage4tail3/gate-band-freshness-stage4.log",
+   "bytes": 2875,
+   "resultLines": [
+    "FRESH_RESULT=PASS bands=3 markers=3 —— 每档产物都不晚于任何未提交改动，且符号级深检全部命中"
+   ]
+  },
+  {
+   "name": "open-window-real-for-cases",
+   "status": "OK",
+   "exitCode": 0,
+   "log": "reports/audit/round-7/ui-queue-stage4tail3/open-window-real-for-cases.log",
+   "bytes": 544,
+   "resultLines": [
+    "OPENWIN_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=open-project-window-D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "OPENWIN_RESULT=OK"
+   ]
+  },
+  {
+   "name": "exec-A-real-only",
+   "status": "FAIL",
+   "exitCode": 2,
+   "log": "reports/audit/round-7/ui-queue-stage4tail3/exec-A-real-only.log",
+   "bytes": 1373,
+   "resultLines": [
+    "RUNNER_LEASE=ACQUIRED D:\\6\\恋爱小程序\\tmp\\qa\\locks\\wechat-automation-cli.lock owner=r7-cli-exec-round-7-A-real-only",
+    "RUNNER_STATS identity=A loginVerify=logged-in userId=100158 executed=0 failed=0 skipped=0(交互动词=0 requiresReal=0 非真实用例=0 探针无结果=0 判据无可判物件=0 出帧失败=0 交互禁触=0 交互没点名=0 交互后离页=0 锁屏挡住=0 交互下发失败=0) 页组=0 真做过的交互=0 折叠探针类名次数=0 出帧=0 未点名类名=0 通道异常次数=0",
+    "RUNNER_RESULT=FAIL reason=一行都没产生（要么全跑过了，要么筛选把用例全挡住了 ⇒ 这不叫跑完） ⇒ 权威结果不写盘（旁路文件仅供复盘）"
+   ]
+  },
+  {
+   "name": "exec-guest-real-only",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "measure-matching-drift",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "gate-guest-landing-book",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "judge-stand-stage4",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "open-window-mock-for-reshoot",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "reshoot-stage4",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "open-window-real-for-guest-reshoot",
+   "status": "NOT_RUN"
+  },
+  {
+   "name": "reshoot-guest-real",
+   "status": "NOT_RUN"
+  }
+ ],
+ "result": "FAIL",
+ "finishedAt": "2026-09-27T05:11:43.014Z",
+ "conservation": {
+  "legsTotal": 12,
+  "legsOk": 3,
+  "tally": {
+   "OK": 3,
+   "FAIL": 1,
+   "NOT_RUN": 8
+  },
+  "ok": true
+ }
+}

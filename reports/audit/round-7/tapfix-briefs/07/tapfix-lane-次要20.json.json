@@ -1,0 +1,39 @@
+{
+ "lane": "subpackages/profile-extra/profile/album",
+ "counts": {
+  "planned": 4,
+  "ok": 0,
+  "unverifiable": 4
+ },
+ "cases": [],
+ "unverifiable": [
+  {
+   "id": "AB08",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/album",
+   "reason": "整条判据的入口是 .album-cell 上的 @longpress（album.vue:466，写法是 cell.filled ? handleLongPress(cell.index) : undefined），而 CLI 桥只有 tap 与 input 两条腿（r-exec-cli.mjs:410 按输入类动词二选一），发不出长按；长按之后的三段断言（ActionSheet 恰两项、取消走 fail 分支无副作用、删除的二次确认 modal）全部住在 uni.showActionSheet 与 uni.showModal 的原生层（:231-233 与 :240-242 与 :318-331），原生弹层不在本页 wxml 里，编译档 apps/client/dist/build/mp-weixin/subpackages/profile-extra/profile/album.wxml 也抠不出任何可点 class；把 tapTarget 写成 .album-cell 只会走 @tap 腿（:465 handlePhotoTap → 本页自建全屏查看层 :505），测的是另一件事。",
+   "needsCarrier": "欠 WS automator 的 longpress 通道，外加原生 ActionSheet 选项与 showModal 按钮的索引点击通道（这两层没有 selector 可点名）"
+  },
+  {
+   "id": "AB09",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/album",
+   "reason": "「设为头像」只能从长按菜单的第一项进入（handleLongPress :233-238 的 res.tapIndex===0 → setAsAvatar :255-279），入口手势与菜单两项都不是本页元素；本条还要求 real 档下逐条核对 downloadFile 与 POST /profile/avatar 的调用次数、跨页到「我的」页复核头像、断网看回退，这些是网络与服务端回读取数，不是点击能产出的证据。",
+   "needsCarrier": "欠 longpress 通道 + 原生 ActionSheet 选项点击 + network 计数与服务端回读取数通道（requiresReal=true，mock 档整条还会先被档位门跳过）"
+  },
+  {
+   "id": "AB10",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/album",
+   "reason": "删除链路是「长按 → 菜单第二项 → 二次确认 modal 的确定/取消」三段（:236-237 → confirmDelete :318-331），三段里只有第一段挂在本页 .album-cell 上且需要长按；modal 的四段文案、系统返回键等同取消、以及连续删除时 index 与渲染态是否错位，都要原生弹层按键与列表读数，页内没有对应 class。",
+   "needsCarrier": "欠 longpress 通道 + 原生 showModal 的确认/取消按键通道 + 系统返回键注入，另需 photoGallery 前后对比读数"
+  },
+  {
+   "id": "AB14",
+   "manifest": "次要20",
+   "page": "subpackages/profile-extra/profile/album",
+   "reason": "本条断言的是 en-US 下 16 个 i18n key 的译文是否落地（页头标题、计数、长按提示、空态、添加按钮、上传中文案，以及 ActionSheet/ modal/ Toast 三类动态文案），全是文本比对而非某个可点物件；其中三类动态弹层文案还必须先长按并选菜单项才会出现（同 AB08 的通道缺口），Toast 与 modal 也不在本页 wxml 里。",
+   "needsCarrier": "纯文案断言：欠双语环境切换 + 弹层与 Toast 文案取数（含 longpress 与原生弹层通道），没有可点名的 selector"
+  }
+ ]
+}
