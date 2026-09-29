@@ -1,10 +1,15 @@
 {
- "generatedAt": "2026-09-26T16:55:17.656Z",
+ "generatedAt": "2026-09-28T10:15:47.355Z",
  "source": "audit-frame-verdicts.mjs",
- "artifactClassTokens": 3162,
- "redRows": 16,
- "admissible": 2,
- "held": 14,
+ "frames": "reports/screenshots/round-7-guest-real/manifest-detail.json,reports/screenshots/round-7-mock-tour-1a1df78b/manifest-detail.json,reports/screenshots/round-7-real-exec/manifest-detail.json,reports/screenshots/round-7-real-tour/manifest-detail.json,reports/screenshots/round-7-real-tour-full/manifest-detail.json,reports/screenshots/round-7-states/manifest-detail.json,reports/screenshots/round-7-states-fix2/manifest-detail.json,reports/screenshots/round-7-states-pilot/manifest-detail.json,reports/screenshots/round-7-states-pilot2/manifest-detail.json,reports/screenshots/round-7-states-pilot3/manifest-detail.json,reports/screenshots/round-7-states-pilot4/manifest-detail.json,reports/screenshots/round-7-tap3/manifest-detail.json,reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json,reports/audit/round-7/screenshot-manifest.round-7-stage8b-tour-B-real.json,reports/audit/round-7/uidebt-shoot-ws/shoot-results.json",
+ "framesCount": 15,
+ "firstFrameSource": "reports/screenshots/round-7-guest-real/manifest-detail.json",
+ "scanSetMode": "派生（源A 权威索引 + 源B subset + 源C 旧默认）",
+ "project": "apps/client/dist/build/mp-weixin",
+ "artifactClassTokens": 3177,
+ "redRows": 18,
+ "admissible": 3,
+ "held": 15,
  "patches": [
   {
    "id": "MP-R2-CAMPUS-HUB-009",
@@ -14,15 +19,9 @@
   },
   {
    "id": "MP-R2-CAMPUS-HUB-010",
-   "col": 6,
-   "new": "已修复（帧级复验：当轮帧 + 3 个机器判点全部成立）",
-   "why": "①的帧债按帧闭环"
-  },
-  {
-   "id": "MP-R2-CAMPUS-HUB-010",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2-CAMPUS-HUB-010.png(38407B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条",
-   "why": "帧路径 + 字节，可复查"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2-CAMPUS-HUB-010.png 38401B），但该载体不跑本条配方的 3 个判点 ⇒ 既不算复验通过也不算判红，欠带判点的取景腿重拍",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2-CAMPUS-HUB-011",
@@ -38,27 +37,15 @@
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001",
-   "col": 6,
-   "new": "已修复（帧级复验：当轮帧 + 4 个机器判点全部成立）",
-   "why": "①的帧债按帧闭环"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001.png(38407B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 4 条",
-   "why": "帧路径 + 字节，可复查"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003",
-   "col": 6,
-   "new": "已修复（帧级复验：当轮帧 + 3 个机器判点全部成立）",
-   "why": "①的帧债按帧闭环"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-001.png 38381B），但该载体不跑本条配方的 4 个判点 ⇒ 既不算复验通过也不算判红，欠",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003.png(38407B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条",
-   "why": "帧路径 + 字节，可复查"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-003.png 38382B），但该载体不跑本条配方的 3 个判点 ⇒ 既不算复验通过也不算判红，欠",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-002",
@@ -75,7 +62,7 @@
   {
    "id": "MP-R2-PROFILE-025",
    "col": 9,
-   "new": "帧级判点不作判据：探针没给数字答案：expected 里没有可核对的字面量；target 不是单一选择器：「最近访客」所在 .my-interaction__row 的 .my-interaction__value 与「访客」；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/A-MP-R2-PROFILE-025.png",
+   "new": "帧级判点不作判据：target 不是单一选择器：「最近访客」所在 .my-interaction__row 的 .my-interaction__value 与「访客」；该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2-PROFILE-025.png",
    "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
@@ -92,21 +79,15 @@
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A05",
-   "col": 6,
-   "new": "已修复（帧级复验：当轮帧 + 2 个机器判点全部成立）",
-   "why": "①的帧债按帧闭环"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A05",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A05.png(18543B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 2 条",
-   "why": "帧路径 + 字节，可复查"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A05.png 21894B），但该载体不跑本条配方的 4 个判点 ⇒ 既不算复验通过也",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001",
    "col": 9,
-   "new": "帧级判点不作判据：探针没给数字答案：没有尺寸；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/A-MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001.png",
-   "why": "探针问的不是判据点名的物件，落账就是造假"
+   "new": "本轮巡检在路由 subpackages/discover-extra/discover/matching 出过 22 张帧（reports/screenshots/round-7-mock-tour-1a1df78b/manifest-deta），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 4 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
   },
   {
    "id": "MP-R2-PAGES-HOME-INDEX-106",
@@ -117,13 +98,13 @@
   {
    "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
    "col": 9,
-   "new": "帧已拍：reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002.png(36265B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 0 条；本条判点全部是 FRAME_ONLY（只能人读帧）",
-   "why": "欠的是人眼，不是证据"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/A-MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002.png 37442B），但该载体不跑本条配方的 3 个判点 ⇒ 既不算复",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002",
    "col": 9,
-   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002.png",
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/A-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002.png",
    "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
@@ -135,8 +116,8 @@
   {
    "id": "MP-R2-PAGES-MESSAGES-INDEX-019",
    "col": 9,
-   "new": "配方判 NOT_SHOOTABLE：缺的夹具：一条 targetUrl 为空的 assistant 数据（real 模式下由后端 /messages/relationship-dashboard 下发，见 apps/client/src/stores/messages.ts:579）。已核实的源码事实：判据点名的条件渲染在位——app",
-   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+   "new": "本轮巡检在路由 pages/messages/index 出过 64 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
   },
   {
    "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
@@ -146,20 +127,14 @@
   },
   {
    "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-007",
-   "col": 6,
-   "new": "已修复（帧级复验：当轮帧 + 3 个机器判点全部成立）",
-   "why": "①的帧债按帧闭环"
-  },
-  {
-   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-007",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/B-MP-R2VIS-PAGES-MESSAGES-INDEX-007.png(29386B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条",
-   "why": "帧路径 + 字节，可复查"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/B-MP-R2VIS-PAGES-MESSAGES-INDEX-007.png 28724B），但该载体不跑本条配方的 4 个判点 ⇒ 既不算复验通过也不算判红，欠带判点的取景腿重拍",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-009",
    "col": 9,
-   "new": "帧级判点不作判据：target 不是单一选择器：陈默那一行的 .chat-item__time-row 内的 image 与 .chat-item__muted-ico；target 不是单一选择器：陈默那一行的 .chat-item__time-row；探针没给数字答案：expected 里没有可核对的字面量；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/B-MP-R2VIS-PAGES-MESSAGES-INDEX-009.png",
+   "new": "帧级判点不作判据：target 不是单一选择器：陈默那一行的 .chat-item__time-row 内的 image 与 .chat-item__muted-ico；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/B-MP-R2VIS-PAGES-MESSAGES-INDEX-009.png",
    "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
@@ -177,14 +152,14 @@
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
    "col": 9,
-   "new": "配方判 NOT_SHOOTABLE：缺的夹具＝产品裁决，不是数据：判据本身是二选一（post 页把已加入与成员数合成一条描述，还是 publish 页拆成圈名、已加入胶囊、成员数三段），未拍板前任何断言都是替未定方案押注。已核实的本 lane 一侧源码事实：apps/client/src/subpackages/village/vil",
-   "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+   "new": "本轮巡检在路由 subpackages/village/village/publish 出过 35 张帧（reports/screenshots/round-7-mock-tour-1a1df78b/manifest-deta），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
   },
   {
    "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
    "col": 9,
-   "new": "帧已拍但状态未施加：欠 longpress:选择器在当前页查不到 .陈默那一行的.chat-item、tap:选择器在当前页查不到 .动作面板第2项（文本标为未读）、re-enter-tab:选择器在当前页查不到 .pages/messages/index；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/B-MP-R2-PAGES-MESSAGES-INDEX-020.png",
-   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/B-MP-R2-PAGES-MESSAGES-INDEX-020.png 28724B），但该载体不跑本条配方的 4 个判点 ⇒ 既不算复验通过也不算判红，欠带判点的取景腿重拍",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
@@ -212,21 +187,15 @@
   },
   {
    "id": "MP-R2-PAGES-REGISTER-SUCCESS-005",
-   "col": 6,
-   "new": "已修复（帧级复验：当轮帧 + 3 个机器判点全部成立）",
-   "why": "①的帧债按帧闭环"
-  },
-  {
-   "id": "MP-R2-PAGES-REGISTER-SUCCESS-005",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/B-MP-R2-PAGES-REGISTER-SUCCESS-005.png(22585B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条",
-   "why": "帧路径 + 字节，可复查"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/B-MP-R2-PAGES-REGISTER-SUCCESS-005.png 22578B），但该载体不跑本条配方的 3 个判点 ⇒ 既不算复验通过也不算判红，欠带判点的取景腿重拍",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
    "col": 9,
-   "new": "帧已拍但状态未施加：欠 tap:选择器在当前页查不到 .comment-item.comment-reply-btn；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/B-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001.png",
-   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/B-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001.png 11327B），但该载体不跑本条配方的 4 个判点 ⇒ 既不算复验通过也不",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
@@ -243,20 +212,20 @@
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-011",
    "col": 9,
-   "new": "帧已拍但状态未施加：欠 input:选择器在当前页查不到 .field__input、tap:选择器在当前页查不到 .field__tap--40；帧 reports/screenshots/round-7-realguest/C-MP-R2-PAGES-REGISTER-INDEX-011.png",
-   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-PAGES-REGISTER-INDEX-011.png 27180B），但该载体不跑本条配方的 8 个判点 ⇒ 既不算复验通过也不算判红，欠带判点的取景腿重拍",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-012",
    "col": 9,
-   "new": "帧已拍但状态未施加：欠 input:选择器在当前页查不到 .field__input、input:选择器在当前页查不到 .field__input--confirm、tap:选择器在当前页查不到 .field__input；帧 reports/screenshots/round-7-realguest/C-MP-R2-PAGES-REGISTER-INDEX-012.png",
-   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-PAGES-REGISTER-INDEX-012.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-013",
    "col": 9,
-   "new": "帧已拍但状态未施加：欠 input:选择器在当前页查不到 .field__input、tap:选择器在当前页查不到 .sms-btn；帧 reports/screenshots/round-7-realguest/C-MP-R2-PAGES-REGISTER-INDEX-013.png",
-   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-PAGES-REGISTER-INDEX-013.png 27180B），但该载体不跑本条配方的 3 个判点 ⇒ 既不算复验通过也不算判红，欠带判点的取景腿重拍",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-014",
@@ -266,33 +235,21 @@
   },
   {
    "id": "MP-R2-PUB-114",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
-  },
-  {
-   "id": "MP-R2-PUB-114",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/C-MP-R2-PUB-114.png(19087B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 4 条 未成立：.publish-row__meta=TEXT_MISS、.publish-to__subtitle=TEXT_MISS、",
-   "why": "把实测值写进账"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2-PUB-114.png 21902B），但该载体不跑本条配方的 4 个判点 ⇒ 既不算复验通过也不算判红，欠带判点的取景腿重拍",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005",
    "col": 9,
-   "new": "帧已拍但状态未施加：欠 press-hold:选择器在当前页查不到 .publish-topic-chip__remove；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/C-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005.png",
-   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01",
-   "col": 6,
-   "new": "已修复（帧级复验：当轮帧 + 2 个机器判点全部成立）",
-   "why": "①的帧债按帧闭环"
+   "new": "帧级判点不作判据：target 不是单一选择器：..publish-topic-chip__remove；该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01.png(18685B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 2 条",
-   "why": "帧路径 + 字节，可复查"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/C-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01.png 21902B），但该载体不跑本条配方的 4 个判点 ⇒ 既不算复验通过也",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2-CAMPUSINDEX-010",
@@ -303,8 +260,8 @@
   {
    "id": "MP-R2-CAMPUSINDEX-011",
    "col": 9,
-   "new": "帧级判点不作判据：探针没给数字答案：expected 里没有可核对的字面量；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/C-MP-R2-CAMPUSINDEX-011.png",
-   "why": "探针问的不是判据点名的物件，落账就是造假"
+   "new": "本轮巡检在路由 subpackages/campus/campus/index 出过 15 张帧（reports/screenshots/round-7-mock-tour-1a1df78b/manifest-deta），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 3 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
   },
   {
    "id": "MP-R2-PAGES-HOME-INDEX-105",
@@ -315,13 +272,13 @@
   {
    "id": "MP-R2VIS-PAGES-HOME-INDEX-003",
    "col": 9,
-   "new": "配方判 REWRITE（判据本身要改）：原判据两半。半 1（删除 :68 共同兴趣行）已在基线落地且可帧判，不必改写：apps/client/src/components/home/NearbyPeople.vue 模板 :66-67 只剩 name 与 distance 两个 text 节点，组件内无任何兴趣标签节点（数据侧 commo",
-   "why": "判据不可判不是缺陷不存在，写清楚欠的是判据"
+   "new": "本轮巡检在路由 pages/home/index 出过 83 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
   },
   {
    "id": "MP-R2-PROFILE-024",
    "col": 9,
-   "new": "帧级判点不作判据：target 不是单一选择器：.nlp-interaction--last 底缘 到 .nlp-footer-btn 顶缘；探针没给数字答案：没有尺寸；帧 reports/screenshots/round-7-realguest/C-MP-R2-PROFILE-024.png",
+   "new": "帧级判点不作判据：target 不是单一选择器：.nlp-interaction--last 底缘 到 .nlp-footer-btn 顶缘；该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/C-MP-R2-PROFILE-024.png",
    "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
@@ -338,27 +295,15 @@
   },
   {
    "id": "MP-R2-MATCHING-016",
-   "col": 6,
-   "new": "已修复（帧级复验：当轮帧 + 1 个机器判点全部成立）",
-   "why": "①的帧债按帧闭环"
-  },
-  {
-   "id": "MP-R2-MATCHING-016",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/C-MP-R2-MATCHING-016.png(19362B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 1 条",
-   "why": "帧路径 + 字节，可复查"
-  },
-  {
-   "id": "MP-R2-CIRCLES-INDEX-004",
-   "col": 6,
-   "new": "已修复（帧级复验：当轮帧 + 4 个机器判点全部成立）",
-   "why": "①的帧债按帧闭环"
+   "new": "本轮巡检在路由 subpackages/discover-extra/discover/matching 出过 22 张帧（reports/screenshots/round-7-mock-tour-1a1df78b/manifest-deta），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 3 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
   },
   {
    "id": "MP-R2-CIRCLES-INDEX-004",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2-CIRCLES-INDEX-004.png(38182B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 4 条",
-   "why": "帧路径 + 字节，可复查"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2-CIRCLES-INDEX-004.png 38175B），但该载体不跑本条配方的 4 个判点 ⇒ 既不算复验通过也不算判红，欠带判点的取景腿重拍",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2-CIRCLES-INDEX-005",
@@ -381,13 +326,13 @@
   {
    "id": "MP-R2-POSTTOPIC-011",
    "col": 9,
-   "new": "帧已拍但状态未施加：欠 tap:选择器在当前页查不到 .activity-add；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2-POSTTOPIC-011.png",
-   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2-POSTTOPIC-011.png 23929B），但该载体不跑本条配方的 3 个判点 ⇒ 既不算复验通过也不算判红，欠带判点的取景腿重拍",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2-POSTTOPIC-012",
    "col": 9,
-   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2-POSTTOPIC-012.png",
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2-POSTTOPIC-012.png",
    "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
@@ -411,92 +356,68 @@
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007",
    "col": 9,
-   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007.png",
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-007.png",
    "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02",
    "col": 9,
-   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02.png",
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-A02.png",
    "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001",
    "col": 9,
-   "new": "帧已拍：reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001.png(38179B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 0 条；本条判点全部是 FRAME_ONLY（只能人读帧）",
-   "why": "欠的是人眼，不是证据"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001.png 38167B），但该载体不跑本条配方的 5 个判点 ⇒ 既不算复验通过也不算判红，欠带判点",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
    "col": 9,
-   "new": "帧级判点不作判据：探针没给数字答案：expected 里没有可核对的字面量；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001.png",
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001.png",
    "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001",
    "col": 9,
-   "new": "帧已拍但状态未施加：欠 longpress:选择器在当前页查不到 .#msg-row-<被删消息id>、tap:选择器在当前页查不到 .longpress-menu__item；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001.png",
-   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001",
-   "col": 6,
-   "new": "已修复（帧级复验：当轮帧 + 1 个机器判点全部成立）",
-   "why": "①的帧债按帧闭环"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-001.png 12423B），但该载体不跑本条配方的 3 个判点 ⇒ 既不算复验通过也",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001.png(36265B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 1 条",
-   "why": "帧路径 + 字节，可复查"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004",
-   "col": 6,
-   "new": "已修复（帧级复验：当轮帧 + 2 个机器判点全部成立）",
-   "why": "①的帧债按帧闭环"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-001.png 37452B），但该载体不跑本条配方的 3 个判点 ⇒ 既不算复",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/D-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004.png(20581B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 2 条",
-   "why": "帧路径 + 字节，可复查"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/D-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-004.png 20580B），但该载体不跑本条配方的 2 个判点 ⇒ 既不算复验通过也不算判",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2-PAGES-HOME-INDEX-102",
    "col": 9,
-   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/E-MP-R2-PAGES-HOME-INDEX-102.png",
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2-PAGES-HOME-INDEX-102.png",
    "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2-PAGES-HOME-INDEX-110",
-   "col": 6,
-   "new": "待修复（帧级复验判红：判点未成立，见 statusEvidence）",
-   "why": "帧拍出来了、判点没成立 ⇒ 这是回归/未修，不能记绿"
-  },
-  {
-   "id": "MP-R2-PAGES-HOME-INDEX-110",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-txt-d99f3a1f/E-MP-R2-PAGES-HOME-INDEX-110.png(36435B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-txt\\shoot-results.json) 判点 2 条 未成立：.today-card__distance=ABSENT_UNEXPECTED、.today-c",
-   "why": "把实测值写进账"
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2-PAGES-HOME-INDEX-110.png",
+   "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2VIS-PAGES-HOME-INDEX-004",
    "col": 9,
-   "new": "帧级判点不作判据：探针没给数字答案：没有尺寸；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/E-MP-R2VIS-PAGES-HOME-INDEX-004.png",
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-PAGES-HOME-INDEX-004.png",
    "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2-CAMPUSPOST-013",
-   "col": 6,
-   "new": "已修复（帧级复验：当轮帧 + 1 个机器判点全部成立）",
-   "why": "①的帧债按帧闭环"
-  },
-  {
-   "id": "MP-R2-CAMPUSPOST-013",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2-CAMPUSPOST-013.png(22646B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 1 条",
-   "why": "帧路径 + 字节，可复查"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2-CAMPUSPOST-013.png 22652B），但该载体不跑本条配方的 3 个判点 ⇒ 既不算复验通过也不算判红，欠带判点的取景腿重拍",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2-CAMPUSPOST-014",
@@ -513,14 +434,14 @@
   {
    "id": "MP-R2VIS-PAGES-LOGIN-INDEX-001",
    "col": 9,
-   "new": "帧已拍：reports/screenshots/round-7-realguest/E-MP-R2VIS-PAGES-LOGIN-INDEX-001.png(12094B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-real-guest\\shoot-results.json) 判点 0 条；本条判点全部是 FRAME_ONLY（只能人读帧）",
-   "why": "欠的是人眼，不是证据"
+   "new": "本轮巡检在路由 pages/login/index 出过 28 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 3 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
   },
   {
    "id": "MP-R2VIS-PAGES-LOGIN-INDEX-007",
    "col": 9,
-   "new": "帧已拍：reports/screenshots/round-7-realguest/E-MP-R2VIS-PAGES-LOGIN-INDEX-007.png(12171B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-real-guest\\shoot-results.json) 判点 0 条；本条判点全部是 FRAME_ONLY（只能人读帧）",
-   "why": "欠的是人眼，不是证据"
+   "new": "本轮巡检在路由 pages/login/index 出过 28 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 3 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
   },
   {
    "id": "MP-R2-VILLAGE-INDEX-010",
@@ -537,38 +458,134 @@
   {
    "id": "MP-R2VIS-PAGES-HOME-INDEX-005",
    "col": 9,
-   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/E-MP-R2VIS-PAGES-HOME-INDEX-005.png",
+   "new": "帧级判点不作判据：该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-PAGES-HOME-INDEX-005.png",
    "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2-PAGES-DISCOVER-INDEX-013",
    "col": 9,
-   "new": "帧已拍但状态未施加：欠 swipe-card:选择器在当前页查不到 .match-info__distance；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/E-MP-R2-PAGES-DISCOVER-INDEX-013.png",
-   "why": "欠的是交互步骤，不是结论——写清楚谁来补"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2-PAGES-DISCOVER-INDEX-013.png 34084B），但该载体不跑本条配方的 3 个判点 ⇒ 既不算复验通过也不算判红，欠带判点的取景腿重拍",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001",
    "col": 9,
-   "new": "帧级判点不作判据：探针没给数字答案：没有尺寸；产物里查无此 class：.post-card__tag--pink；帧 reports/screenshots/round-7-uidebt-txt-d99f3a1f/E-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001.png",
+   "new": "帧级判点不作判据：产物里查无此 class：.post-card__tag--pink；该帧没有任何正对照（所有机器判点都读成 0）：无法区分「物件不在」与「页面没渲染/探针没通」；帧 reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001.png",
    "why": "探针问的不是判据点名的物件，落账就是造假"
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001",
-   "col": 6,
-   "new": "已修复（帧级复验：当轮帧 + 3 个机器判点全部成立）",
-   "why": "①的帧债按帧闭环"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001",
    "col": 9,
-   "new": "reports/screenshots/round-7-uidebt-ws-8df4de49/E-MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001.png(36143B 取自 D:\\6\\恋爱小程序\\reports\\audit\\round-7\\uidebt-shoot-ws\\shoot-results.json) 判点 3 条",
-   "why": "帧路径 + 字节，可复查"
+   "new": "当轮帧已拍（载体 reports/screenshots/round-7-uidebt-1a1df78b/manifest-detail.json@1a1df78b，帧 reports/screenshots/round-7-uidebt-1a1df78b/E-MP-R2VIS-SUBPACKAGES-CHAT-OFFICIAL-CHAT-INDEX-001.png 36136B），但该载体不跑本条配方的 3 个判点 ⇒ 既不算复验通过",
+   "why": "corpus 帧没有判点结论，写成待人读帧就是把没测过换个说法"
   },
   {
    "id": "MP-R2VIS-TMP-TOUR-R2-004",
    "col": 9,
    "new": "配方判 NOT_SHOOTABLE：缺的夹具：微信开发者工具模拟器的高 dpr 机型档（判据自述脚本无权改，且本轮禁止调用 wechatide）。补上夹具后的正确判据不是 selector 断言，而是巡检口径：在高 dpr 档重跑 tmp/tour-R2 巡检并对被判定文字出 zoomFrames 辅助帧，由人工在辅助帧上背书字级结论",
    "why": "把缺哪个夹具写进账，不让它冒充已闭环"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-PROFILE-INDEX-004",
+   "col": 9,
+   "new": "本轮巡检在路由 pages/profile/index 出过 74 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-006",
+   "col": 9,
+   "new": "本轮巡检在路由 pages/home/index 出过 83 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+  },
+  {
+   "id": "MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01",
+   "col": 9,
+   "new": "本轮巡检在路由 subpackages/chat/chat-session/index 出过 37 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+  },
+  {
+   "id": "MP-R2-PROFILE-023",
+   "col": 9,
+   "new": "帧已拍：reports/screenshots/round-7-r8h-lasttwo/A-MP-R2-PROFILE-023.png(10312B 取自 uidebt-shoot) 判点 0 条；本条判点全部是 FRAME_ONLY（只能人读帧）",
+   "why": "欠的是人眼，不是证据"
+  },
+  {
+   "id": "MP-R2-PROFILE-022",
+   "col": 9,
+   "new": "本轮巡检在路由 pages/profile/index 出过 74 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
+   "col": 9,
+   "new": "本轮巡检在路由 subpackages/circles/circles/index 出过 58 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-001",
+   "col": 9,
+   "new": "本轮巡检在路由 pages/home/index 出过 83 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-006",
+   "col": 9,
+   "new": "本轮巡检在路由 subpackages/chat/chat-session/index 出过 37 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003",
+   "col": 9,
+   "new": "本轮巡检在路由 subpackages/circles/circles/index 出过 58 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002",
+   "col": 9,
+   "new": "帧已拍：reports/screenshots/round-7-r8h-lasttwo/A-MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002.png(3641B 取自 uidebt-shoot) 判点 0 条；本条判点全部是 FRAME_ONLY（只能人读帧）",
+   "why": "欠的是人眼，不是证据"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-001",
+   "col": 9,
+   "new": "本轮巡检在路由 subpackages/village/village/post 出过 68 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+  },
+  {
+   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-003",
+   "col": 9,
+   "new": "本轮巡检在路由 subpackages/village/village/publish 出过 35 张帧（reports/screenshots/round-7-mock-tour-1a1df78b/manifest-deta），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+  },
+  {
+   "id": "MP-R7-GUEST-LANDING-REGENTRY-001",
+   "col": 9,
+   "new": "本轮巡检在路由 pages/login/index 出过 28 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+  },
+  {
+   "id": "MP-R7-GUEST-MATCHING-REDIRECT-RACE-001",
+   "col": 9,
+   "new": "本轮巡检在路由 subpackages/discover-extra/discover/matching 出过 22 张帧（reports/screenshots/round-7-mock-tour-1a1df78b/manifest-deta），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+  },
+  {
+   "id": "MP-R6-F1-NEARBY-IP-CITY-001",
+   "col": 9,
+   "new": "本轮巡检在路由 pages/nearby/index 出过 52 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+  },
+  {
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-001",
+   "col": 9,
+   "new": "本轮巡检在路由 pages/messages/index 出过 64 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
+  },
+  {
+   "id": "MP-R2-CAMPUSPOST-010",
+   "col": 9,
+   "new": "本轮巡检在路由 subpackages/campus/campus/post-topic 出过 61 张帧（reports/screenshots/round-7-guest-real/manifest-detail.json@），但巡检帧只带 page/state/route、不带本条配方行 id，也没跑本条的 1 个判点 ⇒ 不作复验判据，欠点名的取景腿（shoot-frameplan --only-ids / r-exec）重拍",
+   "why": "巡检帧到了这一页这件事要入账，但不能冒充这一条已复验"
   }
  ]
 }

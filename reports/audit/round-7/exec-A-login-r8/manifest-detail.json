@@ -1,8 +1,8 @@
 {
- "gitSha": "f024f3df9b7b314491bd2cdb6d43e1c8bf3415ab",
+ "gitSha": "6fd151786c43438eb3cc32c5b53d0ac6d67d95f3",
  "resultsGitSha": "60832cd2",
  "workflowVersion": "round-7 exec slice（WS 取证 + 桥出帧）",
- "generatedAt": "2026-09-28T01:05:51.122Z",
+ "generatedAt": "2026-09-28T10:11:17.109Z",
  "project": "apps/client/dist/build/mp-weixin",
  "harness": "scripts/qa/exec-frames-to-corpus.mjs ← reports/audit/round-7/exec-A-login-r8/exec-results.json",
  "hashStampedAt": "conversion",
@@ -20,13 +20,13 @@
    "caseId": "PAGES-LOGIN-INDEX/LG02",
    "page": "pages/login/index",
    "reason": "落在别的页（页内守卫或路由重定向），须人判",
-   "at": "2026-09-28T01:05:51.124Z"
+   "at": "2026-09-28T10:11:17.111Z"
   },
   {
    "caseId": "PAGES-LOGIN-INDEX/LG03",
    "page": "pages/login/index",
    "reason": "落在别的页（页内守卫或路由重定向），须人判",
-   "at": "2026-09-28T01:05:51.124Z"
+   "at": "2026-09-28T10:11:17.111Z"
   }
  ],
  "skipped": 36,

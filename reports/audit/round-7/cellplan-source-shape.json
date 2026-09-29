@@ -1,7 +1,7 @@
 {
- "generatedAt": "2026-09-27T14:47:34.126Z",
+ "generatedAt": "2026-09-29T06:13:22.405Z",
  "source": "verify-source-shape.mjs",
- "passed": 91,
+ "passed": 98,
  "failed": 0,
  "patches": [
   {
@@ -1095,6 +1095,359 @@
    "col": 9,
    "new": "源码判点：表情面板在场时正文底部预留必须把面板自身高度也算进去：吸底栏 140rpx + 面板 max-height 360rpx + 面板上下内距 24rpx，且该修饰类必须在 bar-expanded 之后声明（同属性后声明者胜出） ｜承载 apps/client/src/subpackages/village/village/detail.vue",
    "why": "写明这条是靠哪个谓词成立的"
+  }
+ ],
+ "criteriaRows": [
+  {
+   "id": "MP-R7CRIT-PAGES-HOME-INDEX-H13",
+   "manifest": "PAGES-HOME-INDEX.json",
+   "caseId": "H13",
+   "page": "pages/home/index",
+   "ok": true,
+   "why": "",
+   "carrier": [
+    "apps/client/src/components/home/HomeHeader.vue",
+    "apps/client/src/pages/home/index.vue",
+    "apps/client/dist/build/mp-weixin/components/home/HomeHeader.wxml",
+    "apps/client/dist/build/mp-weixin-real/components/home/HomeHeader.wxml",
+    "apps/client/dist/build/mp-weixin/pages/home/index.wxml",
+    "apps/client/dist/build/mp-weixin-real/pages/home/index.wxml"
+   ],
+   "bands": [
+    "mock",
+    "real"
+   ],
+   "needsRuling": "",
+   "claim": "判据断言的是「首页无搜索入口」这个缺席量：HomeHeader 只声明并对外挂 searchTap，模板里没有搜索物件＝死接线。补一枚搜索入口会让 expected 直接变红，故换源码级＋两档产物判点",
+   "neg": [
+    {
+     "file": "apps/client/src/components/home/HomeHeader.vue",
+     "status": "RED",
+     "grew": 27,
+     "why": "apps/client/src/components/home/HomeHeader.vue :: 禁用写法仍在：$emit(\"searchTap\""
+    },
+    {
+     "file": "apps/client/src/pages/home/index.vue",
+     "status": "RED",
+     "grew": 30,
+     "why": "apps/client/src/pages/home/index.vue :: 禁用写法仍在：class=\"header-search"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin/components/home/HomeHeader.wxml",
+     "status": "RED",
+     "grew": 75,
+     "why": "apps/client/dist/build/mp-weixin/components/home/HomeHeader.wxml :: 禁用写法仍在：header-search"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin-real/components/home/HomeHeader.wxml",
+     "status": "RED",
+     "grew": 75,
+     "why": "apps/client/dist/build/mp-weixin-real/components/home/HomeHeader.wxml :: 禁用写法仍在：header-search"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin/pages/home/index.wxml",
+     "status": "RED",
+     "grew": 22,
+     "why": "apps/client/dist/build/mp-weixin/pages/home/index.wxml :: 禁用写法仍在：class=\"header-search\""
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin-real/pages/home/index.wxml",
+     "status": "RED",
+     "grew": 22,
+     "why": "apps/client/dist/build/mp-weixin-real/pages/home/index.wxml :: 禁用写法仍在：class=\"header-search\""
+    }
+   ]
+  },
+  {
+   "id": "MP-R7CRIT-PAGES-NEARBY-INDEX-N10",
+   "manifest": "PAGES-NEARBY-INDEX.json",
+   "caseId": "N10",
+   "page": "pages/nearby/index",
+   "ok": true,
+   "why": "",
+   "carrier": [
+    "apps/client/src/pages/nearby/index.vue",
+    "apps/client/dist/build/mp-weixin/pages/nearby/index.wxml",
+    "apps/client/dist/build/mp-weixin-real/pages/nearby/index.wxml"
+   ],
+   "bands": [
+    "mock",
+    "real"
+   ],
+   "needsRuling": "",
+   "claim": "判据断言「附近页无任何输入框（模板内无 <input>）」⇒ 正常/清空/超长/特殊字符四组输入用例不适用。给这页补输入框即反红，故换结构计数判点：源码模板＋两档产物各一条计数为 0，正例锚点是那枚「文案仍是搜索但不可输入」的按钮",
+   "neg": [
+    {
+     "file": "apps/client/src/pages/nearby/index.vue",
+     "status": "RED",
+     "grew": 54,
+     "why": "apps/client/src/pages/nearby/index.vue :: <template> 内计数应为 0，实测 1"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin/pages/nearby/index.wxml",
+     "status": "RED",
+     "grew": 52,
+     "why": "apps/client/dist/build/mp-weixin/pages/nearby/index.wxml :: 禁用写法仍在：input"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin-real/pages/nearby/index.wxml",
+     "status": "RED",
+     "grew": 52,
+     "why": "apps/client/dist/build/mp-weixin-real/pages/nearby/index.wxml :: 禁用写法仍在：input"
+    }
+   ]
+  },
+  {
+   "id": "MP-R7CRIT-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI22",
+   "manifest": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json",
+   "caseId": "CI22",
+   "page": "subpackages/circles/circles/index",
+   "ok": true,
+   "why": "",
+   "carrier": [
+    "apps/client/src/pages.json",
+    "apps/client/src/subpackages/circles/circles/index.vue",
+    "apps/client/dist/build/mp-weixin/subpackages/circles/circles/index.json",
+    "apps/client/dist/build/mp-weixin-real/subpackages/circles/circles/index.json"
+   ],
+   "bands": [
+    "mock",
+    "real"
+   ],
+   "needsRuling": "",
+   "claim": "判据 pre「兴趣圈页条目无 style 配置」＋expected「不得出现伪刷新动画或未调用的 stopPullDownRefresh」都是否定命题。配置级用 pages.json 条目形状判，同文件 vip/bills 条目真配了 enablePullDownRefresh ⇒ 阳性对照证明这条判点会咬；源码级判刷新钩子零命中",
+   "neg": [
+    {
+     "file": "apps/client/src/pages.json",
+     "status": "RED",
+     "grew": 82,
+     "why": "apps/client/src/pages.json :: 计数应为 1，实测 0（/\"path\": \"circles\\/index\"\\s*\\}/g）"
+    },
+    {
+     "file": "apps/client/src/pages.json",
+     "status": "RED",
+     "grew": -91,
+     "why": "apps/client/src/pages.json :: 要求的写法查不到：/\"path\": \"bills\",\\s*\"style\": \\{\\s*\"enablePullD"
+    },
+    {
+     "file": "apps/client/src/subpackages/circles/circles/index.vue",
+     "status": "RED",
+     "grew": 72,
+     "why": "apps/client/src/subpackages/circles/circles/index.vue :: 禁用写法仍在：onPullDownRefresh"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin/subpackages/circles/circles/index.json",
+     "status": "RED",
+     "grew": 35,
+     "why": "apps/client/dist/build/mp-weixin/subpackages/circles/circles/index.json :: 禁用写法仍在：enablePullDownRefresh"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin-real/subpackages/circles/circles/index.json",
+     "status": "RED",
+     "grew": 35,
+     "why": "apps/client/dist/build/mp-weixin-real/subpackages/circles/circles/index.json :: 禁用写法仍在：enablePullDownRefresh"
+    }
+   ]
+  },
+  {
+   "id": "MP-R7CRIT-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT21",
+   "manifest": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json",
+   "caseId": "MT21",
+   "page": "subpackages/discover-extra/discover/matching",
+   "ok": true,
+   "why": "",
+   "carrier": [
+    "apps/client/src/pages.json",
+    "apps/client/src/subpackages/discover-extra/discover/matching.vue",
+    "apps/client/dist/build/mp-weixin/subpackages/discover-extra/discover/matching.json",
+    "apps/client/dist/build/mp-weixin-real/subpackages/discover-extra/discover/matching.json"
+   ],
+   "bands": [
+    "mock",
+    "real"
+   ],
+   "needsRuling": "",
+   "claim": "整条 expected 全是否断言（无刷新动画/无 onPullDownRefresh/stopPullDownRefresh/零新增写请求）。配 enablePullDownRefresh 或加刷新按钮都会反红，且下拉一次就真触发一次匹配写请求＝本条要防的副作用。故配置级＋源码级＋产物档页级配置三段判；「零新增写请求」要网络计数刀，不在本载体",
+   "neg": [
+    {
+     "file": "apps/client/src/pages.json",
+     "status": "RED",
+     "grew": 82,
+     "why": "apps/client/src/pages.json :: 计数应为 1，实测 0（/\"path\": \"discover\\/matching\"\\s*\\}/g）"
+    },
+    {
+     "file": "apps/client/src/pages.json",
+     "status": "RED",
+     "grew": -91,
+     "why": "apps/client/src/pages.json :: 要求的写法查不到：/\"path\": \"bills\",\\s*\"style\": \\{\\s*\"enablePullD"
+    },
+    {
+     "file": "apps/client/src/subpackages/discover-extra/discover/matching.vue",
+     "status": "RED",
+     "grew": 100,
+     "why": "apps/client/src/subpackages/discover-extra/discover/matching.vue :: 禁用写法仍在：onPullDownRefresh"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin/subpackages/discover-extra/discover/matching.json",
+     "status": "RED",
+     "grew": 35,
+     "why": "apps/client/dist/build/mp-weixin/subpackages/discover-extra/discover/matching.json :: 禁用写法仍在：enablePullDownRefresh"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin-real/subpackages/discover-extra/discover/matching.json",
+     "status": "RED",
+     "grew": 35,
+     "why": "apps/client/dist/build/mp-weixin-real/subpackages/discover-extra/discover/matching.json :: 禁用写法仍在：enablePullDownRefresh"
+    }
+   ]
+  },
+  {
+   "id": "MP-R7CRIT-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS26",
+   "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json",
+   "caseId": "CS26",
+   "page": "subpackages/chat/chat-session/index",
+   "ok": true,
+   "why": "",
+   "carrier": [
+    "apps/client/src/subpackages/chat/chat-session/index.vue",
+    "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml",
+    "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml"
+   ],
+   "bands": [
+    "mock",
+    "real"
+   ],
+   "needsRuling": "",
+   "claim": "判据 expected「不得渲染『破冰引导＋空会话＋可用输入栏』」判的是互斥渲染：错误文案节点紧接 <template v-else>，整枚输入栏只活在 v-else 里 ⇒ pageErrorMessage 为真时输入栏结构性不可达。把输入栏搬出 v-else 即反红，故判「唯一一枚且在 else 块内」；产物档另判编译后的 <block wx:else> 同形",
+   "neg": [
+    {
+     "file": "apps/client/src/subpackages/chat/chat-session/index.vue",
+     "status": "RED",
+     "grew": 48,
+     "why": "apps/client/src/subpackages/chat/chat-session/index.vue :: 计数应为 1，实测 2（/class=\"wechat-input-bar__input\"/g）"
+    },
+    {
+     "file": "apps/client/src/subpackages/chat/chat-session/index.vue",
+     "status": "RED",
+     "grew": 11,
+     "why": "apps/client/src/subpackages/chat/chat-session/index.vue :: 计数应为 1，实测 0（/<view v-if=\"pageErrorMessage\" class=\"me）"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml",
+     "status": "RED",
+     "grew": 22,
+     "why": "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml :: 计数应为 1，实测 2（/<input[\\s>]/g）"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml",
+     "status": "RED",
+     "grew": 7,
+     "why": "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml :: 计数应为 1，实测 2（/<input[\\s>]/g）"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml",
+     "status": "RED",
+     "grew": 22,
+     "why": "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml :: 计数应为 1，实测 2（/<input[\\s>]/g）"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml",
+     "status": "RED",
+     "grew": 7,
+     "why": "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml :: 计数应为 1，实测 2（/<input[\\s>]/g）"
+    }
+   ]
+  },
+  {
+   "id": "MP-R7CRIT-PAGES-PROFILE-INDEX-PFI41",
+   "manifest": "PAGES-PROFILE-INDEX.json",
+   "caseId": "PFI41",
+   "page": "pages/profile/index",
+   "ok": true,
+   "why": "",
+   "carrier": [
+    "apps/client/src/pages/profile/index.vue",
+    "apps/client/dist/build/mp-weixin/pages/profile/index.wxml",
+    "apps/client/dist/build/mp-weixin-real/pages/profile/index.wxml"
+   ],
+   "bands": [
+    "mock",
+    "real"
+   ],
+   "needsRuling": "",
+   "claim": "判据 expected「本人主页主渲染树无任何输入框（无 v-model 输入元素）」⇒ 四组输入用例在本页不适用（这条存在的目的正是防执行员凭空造表单用例）。补输入框即反红，故换结构计数：源码模板＋两档产物各一条 0，正例锚点是判据点名的认证弹层",
+   "neg": [
+    {
+     "file": "apps/client/src/pages/profile/index.vue",
+     "status": "RED",
+     "grew": 26,
+     "why": "apps/client/src/pages/profile/index.vue :: <template> 内计数应为 0，实测 1"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin/pages/profile/index.wxml",
+     "status": "RED",
+     "grew": 47,
+     "why": "apps/client/dist/build/mp-weixin/pages/profile/index.wxml :: 禁用写法仍在：input"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin-real/pages/profile/index.wxml",
+     "status": "RED",
+     "grew": 47,
+     "why": "apps/client/dist/build/mp-weixin-real/pages/profile/index.wxml :: 禁用写法仍在：input"
+    }
+   ]
+  },
+  {
+   "id": "MP-R7CRIT-SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH22",
+   "manifest": "SUBPACKAGES-CAMPUS-CAMPUS-HUB.json",
+   "caseId": "CH22",
+   "page": "subpackages/campus/campus/hub",
+   "ok": true,
+   "why": "",
+   "carrier": [
+    "apps/client/src/subpackages/campus/campus/hub.vue",
+    "apps/client/src/i18n/locales/zh-CN.ts",
+    "apps/client/dist/build/mp-weixin/subpackages/campus/campus/hub.wxml",
+    "apps/client/dist/build/mp-weixin-real/subpackages/campus/campus/hub.wxml"
+   ],
+   "bands": [
+    "mock",
+    "real"
+   ],
+   "needsRuling": "判据 ACTION 写「页级 window 滚动，非 scroll-view」，而 hub.vue:269-271 起列表包在 <scroll-view class=\"campus-hub__feed\"> 里、:334 才闭合 ⇒ 底部文案在 scroll-view 内不在 window 滚动流上；判据引用的 hub.vue:336-339 也已漂到 :330-332。两句冲突未裁，本行不预设任一解释。",
+   "claim": "本条只落「无展开箭头、无可点动作」这一半（MP-R1-CAMPUS-HUB-003 死元素已移除，不得回归出带箭头的可点假象）；补回箭头或可点「查看更多」即反红。⚠ src 的 HTML 注释里留着旧箭头字符，故箭头字符级缺席只能在产物档判；「滚到底完整可见＋scrollTop/scrollHeight 回填」那一半未落（见 NEG/RULING 说明）",
+   "neg": [
+    {
+     "file": "apps/client/src/subpackages/campus/campus/hub.vue",
+     "status": "RED",
+     "grew": 52,
+     "why": "apps/client/src/subpackages/campus/campus/hub.vue :: <template> 内计数应为 0，实测 1"
+    },
+    {
+     "file": "apps/client/src/subpackages/campus/campus/hub.vue",
+     "status": "RED",
+     "grew": 19,
+     "why": "apps/client/src/subpackages/campus/campus/hub.vue :: 禁用写法仍在：class=\"campus-hub__more\"> @tap"
+    },
+    {
+     "file": "apps/client/src/i18n/locales/zh-CN.ts",
+     "status": "RED",
+     "grew": 1,
+     "why": "apps/client/src/i18n/locales/zh-CN.ts :: 计数应为 1，实测 0（/\"moreHint\": \"更多校园圈持续接入中\"/g）"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin/subpackages/campus/campus/hub.wxml",
+     "status": "RED",
+     "grew": 63,
+     "why": "apps/client/dist/build/mp-weixin/subpackages/campus/campus/hub.wxml :: 禁用写法仍在：campus-hub__more-arrow"
+    },
+    {
+     "file": "apps/client/dist/build/mp-weixin-real/subpackages/campus/campus/hub.wxml",
+     "status": "RED",
+     "grew": 63,
+     "why": "apps/client/dist/build/mp-weixin-real/subpackages/campus/campus/hub.wxml :: 禁用写法仍在：campus-hub__more-arrow"
+    }
+   ]
   }
  ]
 }

@@ -1,5 +1,5 @@
 {
- "gitSha": "unknown",
+ "gitSha": "094f7239",
  "workflowVersion": "3.7-cli-states",
  "generatedAt": "2026-09-26T03:12:47.758Z",
  "project": "apps/client/dist/build/mp-weixin",
@@ -519,5 +519,9 @@
    "severity": "P1",
    "reason": "取景器点错控件：tap 命中的文本是 \"NOMATCH(tried=)\"，不含期望 \"验证码\" ⇒ 本行不得当产品结论，选择器要重定"
   }
- ]
+ ],
+ "gitShaSource": "derived:git log -1 --before=generatedAt",
+ "gitShaFull": "094f7239f8808d5c66edebccaee025fa7cdbc224",
+ "gitShaCommitDate": "2026-09-26T01:59:47.000Z",
+ "gitShaLagSec": 4381
 }

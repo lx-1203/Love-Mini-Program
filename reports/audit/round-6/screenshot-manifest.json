@@ -6,7 +6,7 @@
   "derivation": {
     "generatedBy": "scripts/qa/rebuild-frozen-manifest.mjs",
     "mode": "union-of-corpus-manifests（索引由既有 manifest 派生，未重拍任何像素）",
-    "at": "2026-09-26T01:25:40.460Z",
+    "at": "2026-09-27T00:14:55.783Z",
     "rule": "同 (identity,page) 内后到且与已落盘帧 sha256 全等的帧，按现行采集规则改判出 shots[] 进 stateNotApplied[]，条目带 retroactive=true 与采集当时判定值",
     "corpora": [
       {
@@ -24211,7 +24211,7 @@
         "reports/screenshots/round-6-tour/A/pages_nearby_index__交互后__zoom3x-正文带.png",
         "reports/screenshots/round-6-tour/A/pages_nearby_index__交互后__zoom3x-底部带.png"
       ],
-      "at": "2026-09-26T01:25:40.147Z",
+      "at": "2026-09-27T00:14:55.223Z",
       "suite": "REAL",
       "corpus": "round-6-tour",
       "sourceManifest": "reports/screenshots/round-6-tour/manifest-detail.json",
@@ -24275,7 +24275,7 @@
         "reports/screenshots/round-6-tour/A/subpackages_village_village_publish__弹层态__zoom3x-正文带.png",
         "reports/screenshots/round-6-tour/A/subpackages_village_village_publish__弹层态__zoom3x-底部带.png"
       ],
-      "at": "2026-09-26T01:25:40.148Z",
+      "at": "2026-09-27T00:14:55.225Z",
       "suite": "REAL",
       "corpus": "round-6-tour",
       "sourceManifest": "reports/screenshots/round-6-tour/manifest-detail.json",
@@ -24346,7 +24346,7 @@
         "reports/screenshots/round-6-tour/B/pages_nearby_index__交互后__zoom3x-正文带.png",
         "reports/screenshots/round-6-tour/B/pages_nearby_index__交互后__zoom3x-底部带.png"
       ],
-      "at": "2026-09-26T01:25:40.149Z",
+      "at": "2026-09-27T00:14:55.228Z",
       "suite": "REAL",
       "corpus": "round-6-tour",
       "sourceManifest": "reports/screenshots/round-6-tour/manifest-detail.json",
@@ -24410,7 +24410,7 @@
         "reports/screenshots/round-6-tour/B/subpackages_village_village_publish__弹层态__zoom3x-正文带.png",
         "reports/screenshots/round-6-tour/B/subpackages_village_village_publish__弹层态__zoom3x-底部带.png"
       ],
-      "at": "2026-09-26T01:25:40.150Z",
+      "at": "2026-09-27T00:14:55.228Z",
       "suite": "REAL",
       "corpus": "round-6-tour",
       "sourceManifest": "reports/screenshots/round-6-tour/manifest-detail.json",
@@ -24474,7 +24474,7 @@
         "reports/screenshots/round-6-tour/B/subpackages_village_village_post__弹层态__zoom3x-正文带.png",
         "reports/screenshots/round-6-tour/B/subpackages_village_village_post__弹层态__zoom3x-底部带.png"
       ],
-      "at": "2026-09-26T01:25:40.150Z",
+      "at": "2026-09-27T00:14:55.228Z",
       "suite": "REAL",
       "corpus": "round-6-tour",
       "sourceManifest": "reports/screenshots/round-6-tour/manifest-detail.json",
@@ -24545,7 +24545,7 @@
         "reports/screenshots/round-6-tour/B/subpackages_campus_campus_hub__交互后__zoom3x-正文带.png",
         "reports/screenshots/round-6-tour/B/subpackages_campus_campus_hub__交互后__zoom3x-底部带.png"
       ],
-      "at": "2026-09-26T01:25:40.150Z",
+      "at": "2026-09-27T00:14:55.228Z",
       "suite": "REAL",
       "corpus": "round-6-tour",
       "sourceManifest": "reports/screenshots/round-6-tour/manifest-detail.json",
@@ -24616,7 +24616,7 @@
         "reports/screenshots/round-6-tour-reshoot/A/pages_nearby_index__交互后__zoom3x-正文带.png",
         "reports/screenshots/round-6-tour-reshoot/A/pages_nearby_index__交互后__zoom3x-底部带.png"
       ],
-      "at": "2026-09-26T01:25:40.151Z",
+      "at": "2026-09-27T00:14:55.230Z",
       "suite": "REAL",
       "corpus": "round-6-tour-reshoot",
       "sourceManifest": "reports/screenshots/round-6-tour-reshoot/manifest-detail.json",
@@ -24680,7 +24680,7 @@
         "reports/screenshots/round-6-tour-reshoot/A/subpackages_village_village_publish__弹层态__zoom3x-正文带.png",
         "reports/screenshots/round-6-tour-reshoot/A/subpackages_village_village_publish__弹层态__zoom3x-底部带.png"
       ],
-      "at": "2026-09-26T01:25:40.151Z",
+      "at": "2026-09-27T00:14:55.231Z",
       "suite": "REAL",
       "corpus": "round-6-tour-reshoot",
       "sourceManifest": "reports/screenshots/round-6-tour-reshoot/manifest-detail.json",
@@ -24744,7 +24744,7 @@
         "reports/screenshots/round-6-tour-reshoot/A/subpackages_village_village_post__弹层态__zoom3x-正文带.png",
         "reports/screenshots/round-6-tour-reshoot/A/subpackages_village_village_post__弹层态__zoom3x-底部带.png"
       ],
-      "at": "2026-09-26T01:25:40.151Z",
+      "at": "2026-09-27T00:14:55.231Z",
       "suite": "REAL",
       "corpus": "round-6-tour-reshoot",
       "sourceManifest": "reports/screenshots/round-6-tour-reshoot/manifest-detail.json",
@@ -24815,7 +24815,7 @@
         "reports/screenshots/round-6-tour-reshoot/B/pages_nearby_index__交互后__zoom3x-正文带.png",
         "reports/screenshots/round-6-tour-reshoot/B/pages_nearby_index__交互后__zoom3x-底部带.png"
       ],
-      "at": "2026-09-26T01:25:40.152Z",
+      "at": "2026-09-27T00:14:55.232Z",
       "suite": "REAL",
       "corpus": "round-6-tour-reshoot",
       "sourceManifest": "reports/screenshots/round-6-tour-reshoot/manifest-detail.json",
@@ -24879,7 +24879,7 @@
         "reports/screenshots/round-6-tour-reshoot/B/subpackages_village_village_publish__弹层态__zoom3x-正文带.png",
         "reports/screenshots/round-6-tour-reshoot/B/subpackages_village_village_publish__弹层态__zoom3x-底部带.png"
       ],
-      "at": "2026-09-26T01:25:40.152Z",
+      "at": "2026-09-27T00:14:55.232Z",
       "suite": "REAL",
       "corpus": "round-6-tour-reshoot",
       "sourceManifest": "reports/screenshots/round-6-tour-reshoot/manifest-detail.json",
@@ -24943,7 +24943,7 @@
         "reports/screenshots/round-6-tour-reshoot/B/subpackages_village_village_post__弹层态__zoom3x-正文带.png",
         "reports/screenshots/round-6-tour-reshoot/B/subpackages_village_village_post__弹层态__zoom3x-底部带.png"
       ],
-      "at": "2026-09-26T01:25:40.152Z",
+      "at": "2026-09-27T00:14:55.232Z",
       "suite": "REAL",
       "corpus": "round-6-tour-reshoot",
       "sourceManifest": "reports/screenshots/round-6-tour-reshoot/manifest-detail.json",
@@ -25014,7 +25014,7 @@
         "reports/screenshots/round-6-tour-reshoot/B/subpackages_campus_campus_hub__交互后__zoom3x-正文带.png",
         "reports/screenshots/round-6-tour-reshoot/B/subpackages_campus_campus_hub__交互后__zoom3x-底部带.png"
       ],
-      "at": "2026-09-26T01:25:40.152Z",
+      "at": "2026-09-27T00:14:55.232Z",
       "suite": "REAL",
       "corpus": "round-6-tour-reshoot",
       "sourceManifest": "reports/screenshots/round-6-tour-reshoot/manifest-detail.json",

@@ -1,12 +1,12 @@
 {
  "kind": "ops-corpus-stamp",
- "at": "2026-09-29T03:57:20.015Z",
- "gitSha": "0294395d",
+ "at": "2026-09-29T05:05:26.125Z",
+ "gitSha": "83fd47a7",
  "opsDir": "reports/audit/round-6/ops",
  "files": 24,
  "cases": 1107,
- "canonSha": "46812907c1b86649a7f5f7f93d6edf9ff2f3d4f1f55a52bd000deb8135d57941",
- "byteSha": "7211be30a5e750187fdb9549565a48e556a01b4743d4df1d81eb9b7fd4be0246",
+ "canonSha": "0fef00d141e774e859b983ec746b2c4790618505183aa7fa16930e3a8e53116a",
+ "byteSha": "350987d5e4fdc65c50b1a21d7402284e57325161024c314f30438bd9cd56c268",
  "perFile": [
   {
    "file": "PAGES-DISCOVER-INDEX.json",
@@ -18,8 +18,8 @@
   {
    "file": "PAGES-HOME-INDEX.json",
    "n": 48,
-   "canon": "924c5bd71ba2ceb651b182484b432ab2485c174a4967bbf9bd7eb7f3da6cc524",
-   "bytes": "e4f3ddd9fca49f6a5c797438fbf9cb6bbc42413622e002c9a1f5b79c7220de45",
+   "canon": "ab8b3b4063437fbf3f73599cf8795a16c8ddb7a0c2cc7e21daf991ffb175ad35",
+   "bytes": "347066049af697b8ff918d9090a2ca13677669ca71d5dfbddc013454b0255f3a",
    "ids": "2325f3e7c8e17296585424c7435ea2283c5f1d6ea3f5dc8dc74a6e547c8e1ccc"
   },
   {
@@ -39,8 +39,8 @@
   {
    "file": "PAGES-NEARBY-INDEX.json",
    "n": 42,
-   "canon": "ae87a3bb44ed722d9000751d5fc863a6d9d71689d5a1207aec7c4a16ecdb2ee6",
-   "bytes": "afb532ad7a2c8cfcd869eb71771965d744248b3de2b9e51d043b4b7b08839c17",
+   "canon": "d415726076d7f30f3743fd260985f00b80bf4eb57f5a2780c0e37aa485c02f7d",
+   "bytes": "d9cac09cfd4eb56fcf215a87ad58d1cc1b4fa2aa06e9c5f1685a8bfce6415cf9",
    "ids": "55e1c9d405bd8ba56725ada94fb2762b2ef6b53d4211dcfcaf90d66188f7b2eb"
   },
   {
@@ -172,8 +172,8 @@
   {
    "file": "次要22.json",
    "n": 78,
-   "canon": "780d7b71af1033dc39fdc1cd7a58d9b4977f677913a3d3a613003386ca4de947",
-   "bytes": "62b8d6d5136403480dbfaf97c8a87b017e0a7e77826bf0262f5cc1d18957ff89",
+   "canon": "808c998445507e91a6a6cbde60af04da2d6f5ccd53c5e4263e46800e3e02eef2",
+   "bytes": "176fc08d86143de9c61669291e56732284e36d86d8e943efbe4004a833651bb8",
    "ids": "c6ac0a3c6460bde9cbd186a4c44b57ec098030da8fa47c38abaee0200f9aaf57"
   }
  ],

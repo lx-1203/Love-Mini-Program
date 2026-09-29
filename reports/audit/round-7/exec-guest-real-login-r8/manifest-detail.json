@@ -1,8 +1,8 @@
 {
- "gitSha": "f024f3df9b7b314491bd2cdb6d43e1c8bf3415ab",
+ "gitSha": "6fd151786c43438eb3cc32c5b53d0ac6d67d95f3",
  "resultsGitSha": "60832cd2",
  "workflowVersion": "round-7 exec slice（WS 取证 + 桥出帧）",
- "generatedAt": "2026-09-28T01:06:58.418Z",
+ "generatedAt": "2026-09-28T10:11:42.518Z",
  "project": "apps/client/dist/build/mp-weixin",
  "harness": "scripts/qa/exec-frames-to-corpus.mjs ← reports/audit/round-7/exec-guest-real-login-r8/exec-results.json",
  "hashStampedAt": "conversion",

@@ -1,21 +1,21 @@
 {
   "schemaVersion": "gates-2",
   "gateSet": "真实模式三道 Gate G7/G8/G9 + 后端已重启前置件",
-  "gitSha": "1a1df78b",
+  "gitSha": "e4495d67",
   "gitShaSource": "运行时 git rev-parse --short HEAD（本文件不写死 SHA）",
-  "capturedAt": "2026-09-26T11:16:58.188Z",
-  "headSubject": "test(round-7): 交互刀 513 条跑完（守恒 OK）+ 帧去重重算 52%，并记下 3 组跨页同字节",
+  "capturedAt": "2026-09-26T20:07:24.251Z",
+  "headSubject": "fix(qa,round-7): 更正交互普查的口径盲区，并把最后一批 lane 目标落盘",
   "supersedes": {
-    "gitSha": "1598715f",
-    "capturedAt": "2026-09-26T05:08:52.571Z",
+    "gitSha": "1a1df78b",
+    "capturedAt": "2026-09-26T11:16:58.188Z",
     "G8rings": "10/10"
   },
   "precondition": {
     "check": "scripts/qa/verify-backend-restarted.mjs",
     "result": "PASS",
-    "jvmPid": 29536,
-    "jvmStartedAt": "2026-09-26 03:12:29",
-    "note": "RESTARTED_NEWEST_SOURCE=D:/6/恋爱小程序/apps/api/src/main/java/com/campuslove/api/campus/RealCampusService.java mtime=2026-09-25T16:35:35.256Z ; RESTARTED_HEAD_COMMIT_TIME=2026-09-26T08:51:09.000Z ; RESTARTED_HEAD_DRIFT=content-identical（HEAD 提交晚于 JVM 只是记账，apps/api 相对 HEAD 干净且无 .java 比 JVM 新 ⇒ 不否决） ; RESTARTED_STALE_SOURCE=none  HEAD_NEWER_THAN_JVM=no  APPS_API_CLEAN_VS_HEAD=yes"
+    "jvmPid": 32156,
+    "jvmStartedAt": "2026-09-26 21:32:46",
+    "note": "RESTARTED_NEWEST_SOURCE=D:/6/恋爱小程序/apps/api/src/main/java/com/campuslove/api/location/LocationController.java mtime=2026-09-26T12:55:06.927Z ; RESTARTED_HEAD_COMMIT_TIME=2026-09-26T17:49:11.000Z ; RESTARTED_HEAD_DRIFT=content-identical（HEAD 提交晚于 JVM 只是记账，apps/api 相对 HEAD 干净且无 .java 比 JVM 新 ⇒ 不否决） ; RESTARTED_STALE_SOURCE=none  HEAD_NEWER_THAN_JVM=no  APPS_API_CLEAN_VS_HEAD=yes"
   },
   "G7_RESULT": "PASS",
   "G8_RESULT": "PASS",
@@ -46,10 +46,10 @@
     }
   },
   "newDbKeysThisRound": {
-    "posts": 263,
-    "comments": 1231,
-    "campus_topics": 292,
-    "campus_replies": 24
+    "posts": 276,
+    "comments": 1244,
+    "campus_topics": 305,
+    "campus_replies": 37
   },
   "dbWriteDisclosure": "G8 每跑一次都会真写库（发帖/评论/点赞/校园话题/匿名回复），按既定裁定这些行保留不删；本载体的 newDbKeysThisRound 就是本轮新增主键的清单。",
   "notEvidenced": [

@@ -1,129 +1,129 @@
 {
  "frozenFrom": "reports/audit/round-6/ops",
- "frozenAt": "2026-09-26T12:19:55.567Z",
+ "frozenAt": "2026-09-28T03:59:55.330Z",
  "note": "本轮沿用上一轮的 1107 例计划；这里是**冻结拷贝**而不是活引用，逐文件 sha256 见 files[]。PROVENANCE.json 自身不在 files[] 里。",
  "planFiles": 24,
  "totalCases": 1107,
  "files": [
   {
    "name": "PAGES-DISCOVER-INDEX.json",
-   "bytes": 46151,
-   "sha256_16": "2ac0856008767417"
+   "bytes": 47341,
+   "sha256_16": "e7cb906e17d1c840"
   },
   {
    "name": "PAGES-HOME-INDEX.json",
-   "bytes": 45441,
-   "sha256_16": "b8baff1965ad54f9"
+   "bytes": 47294,
+   "sha256_16": "44a84768166fabe4"
   },
   {
    "name": "PAGES-LOGIN-INDEX.json",
-   "bytes": 36524,
-   "sha256_16": "bd1e5e5c668f7863"
+   "bytes": 74360,
+   "sha256_16": "cacfa498c928411c"
   },
   {
    "name": "PAGES-MESSAGES-INDEX.json",
-   "bytes": 41537,
-   "sha256_16": "00d360a889468e23"
+   "bytes": 42114,
+   "sha256_16": "b5ee9d7bb4acbc2a"
   },
   {
    "name": "PAGES-NEARBY-INDEX.json",
-   "bytes": 40074,
-   "sha256_16": "6f6c3426cb898e56"
+   "bytes": 49613,
+   "sha256_16": "baaa32e4a0daa7b3"
   },
   {
    "name": "PAGES-PROFILE-INDEX.json",
-   "bytes": 49140,
-   "sha256_16": "ea288a2ce113d36f"
+   "bytes": 50570,
+   "sha256_16": "6eb90c94adb697ec"
   },
   {
    "name": "PAGES-REGISTER-INDEX.json",
-   "bytes": 40882,
-   "sha256_16": "e1fa00d9e078e8f0"
+   "bytes": 44604,
+   "sha256_16": "5653f9506af06449"
   },
   {
    "name": "PAGES-REGISTER-SUCCESS.json",
-   "bytes": 17450,
-   "sha256_16": "99f6f8471b3a84a2"
+   "bytes": 17849,
+   "sha256_16": "6416e38ca852f4f7"
   },
   {
    "name": "SUBPACKAGES-CAMPUS-CAMPUS-HUB.json",
-   "bytes": 30519,
-   "sha256_16": "1e61e5d0b125efb4"
+   "bytes": 38343,
+   "sha256_16": "03bd1bb4c0cfd71b"
   },
   {
    "name": "SUBPACKAGES-CAMPUS-CAMPUS-INDEX.json",
-   "bytes": 40935,
-   "sha256_16": "e95c80b175e180fe"
+   "bytes": 51441,
+   "sha256_16": "2b5487f77b13f5aa"
   },
   {
    "name": "SUBPACKAGES-CAMPUS-CAMPUS-POST-TOPIC.json",
-   "bytes": 58490,
-   "sha256_16": "390da47c0a26f7a6"
+   "bytes": 63116,
+   "sha256_16": "2471333bd970fa01"
   },
   {
    "name": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json",
-   "bytes": 46582,
-   "sha256_16": "3d79a942d66e72f1"
+   "bytes": 50679,
+   "sha256_16": "be808f712bf8d39c"
   },
   {
    "name": "SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json",
-   "bytes": 34556,
-   "sha256_16": "fe125ce2d28ec53e"
+   "bytes": 36120,
+   "sha256_16": "9b8e3c020af8c43e"
   },
   {
    "name": "SUBPACKAGES-CIRCLES-CIRCLES-POST-TOPIC.json",
-   "bytes": 53990,
-   "sha256_16": "037b1e77cff557c4"
+   "bytes": 58184,
+   "sha256_16": "3319904c2365c92c"
   },
   {
    "name": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json",
-   "bytes": 25783,
-   "sha256_16": "5f1a724676049dd1"
+   "bytes": 35961,
+   "sha256_16": "270373525df9bb3b"
   },
   {
    "name": "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json",
-   "bytes": 30952,
-   "sha256_16": "2c4aaa776222248f"
+   "bytes": 38896,
+   "sha256_16": "7168a00d97b2ed77"
   },
   {
    "name": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX.json",
-   "bytes": 58519,
-   "sha256_16": "cba81e56e54d490f"
+   "bytes": 75700,
+   "sha256_16": "5d92d19618aff3dc"
   },
   {
    "name": "SUBPACKAGES-VILLAGE-VILLAGE-POST.json",
-   "bytes": 63288,
-   "sha256_16": "46c35c58722828b1"
+   "bytes": 71164,
+   "sha256_16": "3326324202f46294"
   },
   {
    "name": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH.json",
-   "bytes": 65655,
-   "sha256_16": "a159db1f582bb9a2"
+   "bytes": 82211,
+   "sha256_16": "186ffb0682cbb48d"
   },
   {
    "name": "次要18.json",
-   "bytes": 99622,
-   "sha256_16": "09150e1249b409e9"
+   "bytes": 120975,
+   "sha256_16": "2860519d82223e2f"
   },
   {
    "name": "次要19.json",
-   "bytes": 89791,
-   "sha256_16": "5ea5f0f82ee7bb57"
+   "bytes": 109342,
+   "sha256_16": "611165e453a0657a"
   },
   {
    "name": "次要20.json",
-   "bytes": 175213,
-   "sha256_16": "d7ff6a9d8a0c2897"
+   "bytes": 215923,
+   "sha256_16": "1b45277d9501c306"
   },
   {
    "name": "次要21.json",
-   "bytes": 147501,
-   "sha256_16": "22a095da9578f295"
+   "bytes": 182889,
+   "sha256_16": "9e9b03b4efc58be7"
   },
   {
    "name": "次要22.json",
-   "bytes": 129470,
-   "sha256_16": "9e7a6764ada7324a"
+   "bytes": 150882,
+   "sha256_16": "55e275661cb56104"
   }
  ]
 }
