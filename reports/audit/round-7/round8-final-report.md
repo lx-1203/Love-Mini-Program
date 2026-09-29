@@ -50,7 +50,7 @@
 - 在册陷阱：`mp-weixin-real` 窗口已死却过地板——`open_project_window` 回 success/type:reuse、截图 11290B，画面实为「模拟器启动失败」。过字节数不等于可采。
 - 载具误挡：按载具口径复算 `DENY` 只命中 2/49（TD03、OT09），不是整批拦路虎；本轮未擅自改载具，待授权。
 
-## 6. 需你拍板 30 项（本轮一律未自裁）
+## 6. 需你拍板 31 项（本轮一律未自裁）
 
 - 0. 用户已裁定（2026-09-29 06:20；下列四项口径已定，本轮按此执行）
 - 1. `--r-lg` 令牌值与判据正面冲突
@@ -82,6 +82,7 @@
 - 27. B7「给 switch 补名字」是必要的，但**不足以**让那 7 条变绿
 - 28. CH22 只落了不依赖滚动裁决的那半，另半是三件事互斥，得你选一个解释
 - 29. `landingMissing=5` 不是产品欠账：分诊台在向一份"零行声明身份"的语料索要**游客**处置
+- 30. 状态对账（2026-09-29 16:2x；上面 0–29 节原文一字未改，现状态只写在这里）
 
 全文与每条的可选方向见 `reports/audit/round-7/decisions-v33.md`。判据冲突、令牌值、测试数据去留、证据入库方式都是政策选择，我不替你写。
 
@@ -91,7 +92,7 @@
 dryrun-workflow exit=0
 emit-round-report exit=0
 prove-gates-can-fail exit=0
-run-qa-selftests exit=1
+run-qa-selftests exit=0
 verify-backend-fresh exit=0
 verify-band-freshness exit=0
 verify-case-automatable exit=0
@@ -107,7 +108,7 @@ verify-source-shape exit=0
 verify-state-truth-after-panel exit=0
 verify-state-truth exit=0
 ```
-红项：run-qa-selftests、verify-evidence-corpus、verify-provenance-all、verify-real-coverage
+红项：verify-evidence-corpus、verify-provenance-all、verify-real-coverage
 
 ## 8. 本轮把「排在后面做」的账收掉了多少（含纠出的文档错）
 

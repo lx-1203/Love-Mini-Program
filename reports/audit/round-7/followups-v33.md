@@ -211,3 +211,25 @@ B7 补名之后 src 比三档产物新，我按 mock → real:isolated → showc
    我这次的 `SWAP_EXIT=0` 就是拿 `mv` 的成功掩盖了 `rm` 的失败。
 3. 动 `dist/build/**` 之前先确认没有 UI 腿/模拟器在用：`heldLeases()` 为空**不代表**模拟器没开着项目，
    它只代表租约没人拿；目录能不能删是另一件事。
+
+## 8. 四轮终局复量的差值（同一支脚本；每轮 HEAD 前后同值 ⇒ 读数不受提交漂移污染）
+
+| 轮 | HEAD | 绿/红 | 红项成员 | 这一轮为什么变 |
+|---|---|---|---|---|
+| r3 | `5a9c65ec` | 14 / 4 | panel, corpus, provenance, real-coverage | 基线 |
+| r4 | `ea7acbd6` | 14 / 4 | selftests, corpus, provenance, real-coverage | **panel 转绿**（§29(b) 生效，`EMIT_RESULT=OK`）；新红是我接受守卫车道账本时带进的**过期夹具**（第 28 条裁定 vs 9-27 的 triage scratch） |
+| r5 | `0e62fa22` | 14 / 4 | dry-no-lease, corpus, provenance, real-coverage | selftests 回绿（测试没隔离父环境那事修好）；**新红 `verify-dry-no-lease`** |
+| r6 | `224356b0` | **15 / 3** | corpus, provenance, real-coverage | dry-no-lease 回绿；剩下三条**全是等人裁定，没有一条是工具坏** |
+
+r5→r6 这条要单独记：它不是回归，而是**我修面板落点时把面板第一次送进了静态门的射程**。
+改前该文件 verdict=`no-dry`（门根本不审它），我往 `:620` 加了 `"--dry"` 实参之后它才"自称支持 --dry"，
+于是那句 `acquireUi` 第一次被要求有可见守卫 —— 而它确实没有。**这个洞一直都在，只是从没被审过。**
+解法是把 `--dry` 做成真语义（不取租约、不跑实时门）+ 把 take 放进 else 分支，
+不是给门加 `--allow`（commit `224356b0`；复测 `DRYLEASE_SELFTEST=PASS cases=5`，
+"只印不退出"那条负例仍在 ⇒ 识别能力没被削弱，覆盖面是净增）。
+
+r6 的稳定读数：`SRC_SHAPE total=98 成立=98 不成立=0`；
+`REALCOV_COVERED=198 / UNCOVERED=10 / UNCOVERED_LIST=10`（点名数与计数守恒）；
+`CORPUS_SCANNED=47 PROBLEMS=1 STORE=reachable`；`PROV_FRAMES_CONSISTENT=4154 / PRE_STAMP=4886`；
+`verify-band-freshness` PASS（三档 MODE 各自正确，mock 的 env.js 仍是 `f1c7b96b`＝证据里的 `mock@f1c7b96b`）；
+`run-qa-selftests` 发现=30 全绿；`dryrun` 3/3；`emit-round-report` OK。
