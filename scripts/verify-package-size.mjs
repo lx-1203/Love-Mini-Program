@@ -87,8 +87,23 @@ const mainBytes = totalBytes - subTotal;
 const mb = (b) => `${(b / 1024 / 1024).toFixed(2)}MB`;
 
 const failures = [];
+/* 口径必须跟着数字一起印（用户裁定册第 23 项）：同一个"主包"在三个被测物下有六个数量级差距
+   （实测：发布形态 1762.7KB / src 退化扫描 2.76MB / 本门默认被测物即 mock 档 27.78MB）。
+   只印一个数就是让人在三个口径之间猜，而猜错的方向是"以为达标了"。
+   这里只**加标注**，不改任何阈值、判定或退出码。 */
+const bandMode = (() => {
+  try {
+    const env = readFileSync(join(distRoot, "config/env.js"), "utf8");
+    const pick = (k) => (new RegExp(k + ':\\s*"?([^",\\n]+)"?').exec(env) || [, "?"])[1].trim();
+    return `MODE:${pick("MODE")} API:${pick("VITE_API_MODE")}` +
+      (/VITE_SHOWCASE_MODE:\s*"?true"?/.test(env) ? " SHOWCASE:on" : " SHOWCASE:off");
+  } catch { return "MODE:未知（读不到 config/env.js）"; }
+})();
+let waivedMainOver = false;
 console.log("[verify-size] ===== mp-weixin 包体积验收 =====");
-console.log(`  主包: ${mb(mainBytes)}  (上限 ${mb(MAIN_PACKAGE_LIMIT)})`);
+console.log(`  被测物: ${distRoot}`);
+console.log(`PACKAGE_SIZE_BAND=${bandMode}`);
+console.log(`  主包: ${mb(mainBytes)}  (上限 ${mb(MAIN_PACKAGE_LIMIT)})  ← 以上数字只代表上面那个档，不是发布形态`);
 console.log(`  总包: ${mb(totalBytes)}  (上限 ${mb(TOTAL_LIMIT)})`);
 for (const [root, bytes] of Object.entries(subBytes)) {
   console.log(`  分包 ${root}: ${mb(bytes)}`);
@@ -96,6 +111,7 @@ for (const [root, bytes] of Object.entries(subBytes)) {
 
 if (mainBytes > MAIN_PACKAGE_LIMIT) {
   if (allowMock) {
+    waivedMainOver = true;
     console.warn(`  ⚠ 主包 ${mb(mainBytes)} 超过微信主包上限 ${mb(MAIN_PACKAGE_LIMIT)}（dev 构建豁免：携带 mock 数据与本地装饰图；发布形态由 real 构建严格门禁）`);
   } else {
     failures.push(`主包 ${mb(mainBytes)} 超过微信主包上限 ${mb(MAIN_PACKAGE_LIMIT)}`);
@@ -165,4 +181,13 @@ if (failures.length > 0) {
   for (const f of failures) console.error(`  - ${f}`);
   process.exit(1);
 }
-console.log("[verify-size] ✓ 验收通过：主包/总包体积合规，无 mp4，mock/en-US 已剔除");
+/* 原来这里无条件印「✓ 验收通过：主包/总包体积合规」——而上面刚刚 warn 过"主包超上限（豁免）"，
+   两条自相矛盾的话出自同一次运行（用户裁定册第 22 项的第二条也点了这个命名）。
+   退出码一字不动（豁免路仍 0，否则 mock 构建链会断），只把话说明白：
+   带豁免通过 ≠ 合规。判读要认 PACKAGE_SIZE_WAIVED 这行与 ⚠，不要认那句 ✓。 */
+if (waivedMainOver) {
+  console.log("[verify-size] ⚠ 带豁免通过：主包超上限被 --allow-mock 豁免，本条**不是**「体积合规」");
+  console.log("PACKAGE_SIZE_WAIVED=main_over_limit（发布形态需另跑 build:mp-weixin:real 严格门禁）");
+} else {
+  console.log("[verify-size] ✓ 验收通过：主包/总包体积合规，无 mp4，mock/en-US 已剔除");
+}
