@@ -105,7 +105,14 @@ $neutral-900: #1A1E1C;
 // （--c-text-primary #1A1E1C / --c-text-secondary #4A524E / --c-text-tertiary #6B7571 /
 // --c-text-quaternary #9AA39F），删除影子源后单一来源归 Phase 0 节，渲染值不变。
 // 原「P2 对比度修复 #9AA1AB → #999999」的意图由更深的 #6B7571（白底约 5.6:1）承接，无回退。
-$text-inverse: #FFFFFF;
+// 【判据优先轮 · decisions-v33 §2】$text-inverse（原 #FFFFFF）已删除：它令
+// --c-text-inverse 与 --c-bg-container（$bg-container #FFFFFF）浅色系同值，
+// 而 MP-R2-PAGES-REGISTER-INDEX-014(A) 一面要求「彩色底上的白色前景走 var(--c-text-inverse)」、
+// 一面「明令禁改 var(--c-bg-container)」——两令牌同值时这条禁令逐像素不可判
+// （round7-NOTES §25：「用对用错逐像素一致，这条判据永不可判」）。
+// 现按 MP-R2VIS-THEME-DESIGN-VARIABLES-002 判点「图上徽标的底色/前景走图片遮罩令牌，
+// 不再在暗色变量块里重复定义 --c-text-inverse」把 --c-text-inverse 归口到本文件既有的
+// 图片遮罩白字档 --c-overlay-text-primary（rgba(255, 255, 255, 0.95)），不新增色值。
 $text-brand: #36C99A;
 $text-romance: #FF6B81;
 $text-vip: #C9A36A;
@@ -356,7 +363,10 @@ page {
   --c-text-secondary: #{$text-secondary};
   --c-text-tertiary: #{$text-tertiary};
   --c-text-quaternary: #{$text-quaternary};
-  --c-text-inverse: #{$text-inverse};
+  /* 反色前景 = 图片遮罩白字档（rgba(255, 255, 255, 0.95)），与本文件下方
+     --c-badge-on-image-text 同一范式（:742 亦走 var(--c-overlay-text-primary)）。
+     不再取 #FFFFFF：那与 --c-bg-container 同值，见上方「文本色」节的 decisions-v33 §2 说明。 */
+  --c-text-inverse: var(--c-overlay-text-primary);
   --c-text-brand: #{$text-brand};
   --c-text-romance: #{$text-romance};
   --c-text-vip: #{$text-vip};
@@ -702,7 +712,7 @@ page {
   --c-overlay-bg-strong: rgba(255, 255, 255, 0.6);
   --c-overlay-bg-solid: rgba(255, 255, 255, 0.9);
   // 注意：本令牌是「近白」底（ rgba(255,255,255,.95) ），配文字必须用深色，
-  // 不可与浅色系 --c-text-inverse（#FFFFFF）配对；图片/遮罩上的徽标请改用
+  // 不可与 --c-text-inverse（decisions-v33 §2 起即为本档白字，见 :369）配对；图片/遮罩上的徽标请改用
   // 下方成对令牌 --c-badge-on-image-bg / --c-badge-on-image-text（Wave-2）。
   --c-overlay-bg-pure: rgba(255, 255, 255, 0.95);
 
@@ -734,7 +744,7 @@ page {
 
   // Wave-2 · 图片/遮罩上的徽标「底色 + 文字」配对令牌
   // 背景：叠在头图上的胶囊徽标原本分别取 --c-overlay-bg-pure（近白 rgba(255,255,255,.95)）
-  // 与 --c-text-inverse（浅色系白 #FFFFFF）→ 两个令牌各自演进、组合后白底白字。
+  // 与 --c-text-inverse（当时浅色系取 #FFFFFF）→ 两个令牌各自演进、组合后白底白字。
   // 现按 --c-badge-video-bg 的既有范式提供成对令牌：深色玻璃底 + 深底白字，
   // 二者同源固定且不随主题翻转（styles/tokens.scss 的 dark-theme-vars 不覆盖 --c-overlay-*），
   // 因此浅色/深色模式下对比度恒定（约 12:1 以上）。仅新增，不影响任何既有用量。

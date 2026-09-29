@@ -1467,7 +1467,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   --c-text-primary: #1A1E1C;
   --c-text-secondary: #4A524E;
   --c-text-tertiary: #6B7571;
-  --c-text-inverse: #FFFFFF;
+  /* decisions-v33 §2：本行原为 #FFFFFF，与同块 --c-bg-container 逐字同值。
+     归口到全局单一来源 --c-overlay-text-primary（rgba(255,255,255,.95)），
+     保持本块「按浅色值重声明」的原意，不再另立一份反色前景值。 */
+  --c-text-inverse: var(--c-overlay-text-primary);
   --c-border-light: #EEF2F0;
   --c-tint-gray-50: #F3F4F6;
   --c-brand-50: #E8FAF3;

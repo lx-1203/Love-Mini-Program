@@ -214,7 +214,10 @@ page {
   --color-text-secondary: #B8BEC8;
   --color-text-tertiary: #8A92A0;
   --color-text-quaternary: #5A6270;
-  --color-text-inverse: #1A1F26;
+  // decisions-v33 §2 / MP-R2VIS-THEME-DESIGN-VARIABLES-002：反色前景不在暗色块里重复定义。
+  // 原 `--color-text-inverse: #1A1F26;` 与同块 --color-bg-container（#1A1F26）逐字同值，
+  // 使 MP-R2-PAGES-REGISTER-INDEX-014(A)「白色前景走 --c-text-inverse、禁改 --c-bg-container」
+  // 在深色档也逐像素不可判；删除后本别名继续等于 :57 的 var(--c-text-inverse) 单一来源。
   --color-text-placeholder: #5A6270;
 
   // 边框色：深色模式使用深灰
@@ -241,7 +244,13 @@ page {
   --c-text-secondary: #B8BEC8;
   --c-text-tertiary: #8A92A0;
   --c-text-quaternary: #5A6270;
-  --c-text-inverse: #1A1F26;
+  // decisions-v33 §2 / MP-R2VIS-THEME-DESIGN-VARIABLES-002 判点原句：
+  // 「图上徽标的底色/前景走图片遮罩令牌，**不再在暗色变量块里重复定义 --c-text-inverse**」。
+  // 原 `--c-text-inverse: #1A1F26;` 与本块上方 :235 的 --c-bg-container 逐字同值 ⇒ 深色档同样
+  // 逐像素不可判，且主题一翻就把它从「彩色底上的白色前景」变成「彩色底上的近黑前景」
+  // （该令牌 ~200 处消费者全部是 color/border-top-color/background 压在品牌色·错误色·蓝底上）。
+  // 删除后单一来源归 theme/design-variables.scss:369 = var(--c-overlay-text-primary)，
+  // 与 --c-overlay-* 一族「不随主题翻转」的既有口径一致（见该文件 :741-745 注释）。
   --c-text-placeholder: #5A6270;
 
   --c-border-light: #222831;

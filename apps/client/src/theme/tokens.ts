@@ -176,7 +176,11 @@ export const designTokens = {
         secondary:  '#4A524E',
         tertiary:   '#6B7571',
         quaternary: '#9AA39F',
-      inverse:    '#FFFFFF',
+      /* decisions-v33 §2：反色前景取图片遮罩白字档 rgba(255,255,255,0.95)（原 #FFFFFF
+         与本文件 bg.container #FFFFFF 同值 ⇒ 「白色前景走 --c-text-inverse、禁改
+         --c-bg-container」这条判据逐像素不可判）。与 CSS 层
+         theme/design-variables.scss:369 var(--c-overlay-text-primary) 同值单一来源。 */
+      inverse:    'rgba(255, 255, 255, 0.95)',
       brand:      '#36C99A',
       link:       '#36C99A',
       romance:    '#FF6B81',
@@ -495,7 +499,12 @@ export const darkThemeTokens = {
       secondary:  '#B8BEC8',
       tertiary:   '#8A92A0',
       quaternary: '#5A6270',
-      inverse:    '#1A1F26',
+      /* decisions-v33 §2 / MP-R2VIS-THEME-DESIGN-VARIABLES-002：反色前景不随主题翻转
+         （原 #1A1F26 与本块 bg.container #1A1F26 同值，且一翻主题就把「彩色底上的白色前景」
+         刷成近黑前景）。三处消费者（EducationBadge 认证态文字、SocialProgressIndicator
+         L4~L6 漏斗文字）压的都是品牌渐变/深蓝底，深色档同样要的是近白前景。
+         与 styles/tokens.scss 暗色块已删除的重复定义保持同一口径。 */
+      inverse:    'rgba(255, 255, 255, 0.95)',
       brand:      '#36C99A',
       link:       '#36C99A',
       romance:    '#FF7C91',
