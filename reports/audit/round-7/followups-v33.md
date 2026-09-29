@@ -221,6 +221,7 @@ B7 补名之后 src 比三档产物新，我按 mock → real:isolated → showc
 | r5 | `0e62fa22` | 14 / 4 | dry-no-lease, corpus, provenance, real-coverage | selftests 回绿（测试没隔离父环境那事修好）；**新红 `verify-dry-no-lease`** |
 | r6 | `224356b0` | **15 / 3** | corpus, provenance, real-coverage | dry-no-lease 回绿；剩下三条**全是等人裁定，没有一条是工具坏** |
 | r7 | `f1e05ebd` | **16 / 2** | provenance, real-coverage | corpus 转绿（§见下：空 gitSha 改按"打戳约定起点"判 legacy，与 provenance 同一口径）；两条剩红各自**只剩一个成因**，见 §10 |
+| r8 | `992f0fe8` | **16 / 2** | provenance, real-coverage（成员一字未变） | **红集合没动，这一轮的账也不欠在门禁上**：#10 的 36 条 CNR 全部落去向（7 补命名 / 7 转源码级判点 / 21 拆成"已接通道 · 仍拒发 · 采不到要说清"三种），四条新通道进执行器，另纠出一台一直在打零分的假仪器（decisions §31④）；这些都不在 provenance/real-coverage 的判点上，所以掉绿 0、增绿 0 是**正确的读数**，不是没干活。离线自测 30+1 → **34+1 全绿**（新增的 5 条都配了能变红的负例） |
 
 r5→r6 这条要单独记：它不是回归，而是**我修面板落点时把面板第一次送进了静态门的射程**。
 改前该文件 verdict=`no-dry`（门根本不审它），我往 `:620` 加了 `"--dry"` 实参之后它才"自称支持 --dry"，
