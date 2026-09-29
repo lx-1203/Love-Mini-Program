@@ -15,6 +15,8 @@ import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 // 修复 no-duplicate-imports：合并 ../../stores/campus 的重复 import
 import { useCampusStore, CAMPUS_CATEGORY_MAP, formatCampusTime, type CampusTopicCategory } from "../../../stores/campus";
+// MP-R7-GUEST-LANDING：游客在 onLoad 入口就被引导到登录/注册，不再随页内 redirectTo 停在 hub
+import { guideGuestToLogin } from "../../../guards/guest-access";
 import { openAppPath } from "../../../utils/navigation";
 import { IMAGE_PATHS } from "../../../config/images";
 import SafeImage from "../../../components/common/SafeImage.vue";
@@ -188,7 +190,19 @@ function onLoadMoreTopic() {
     });
 }
 
+/**
+ * 游客落点守卫（round-7 裁定：游客一律引导到登录/注册）。
+ * 置位后本页 onLoad/onShow/onMounted 一律早退——既不再 redirectTo 送游客去 hub 内容页，
+ * 也不再为一张留不住的页面打认证/话题请求（受保护请求由登录后的会话发起）。
+ */
+let guestGuarded = false;
+
 onLoad((query) => {
+  // 游客：先进守卫，再谈页内重定向（守卫返回 true 时下面的 hub 跳转不允许发生）
+  if (guideGuestToLogin()) {
+    guestGuarded = true;
+    return;
+  }
   // 2026-08-25 P0：无 ?school= 时，校园圈入口应落到 hub（规格书 16 的结构在 hub.vue）
   const q = (query || {}) as Record<string, string>;
   if (typeof q.school === "string" && q.school.trim()) {
@@ -217,13 +231,13 @@ onLoad((query) => {
 // 后续返回本页仍由 onShow 无条件重取——那正是 006 的立项目标，不能被一次性去重标志吃掉。
 let certFetchedByShow = false;
 onShow(() => {
-  if (redirectedToHub.value) return;
+  if (guestGuarded || redirectedToHub.value) return;
   certFetchedByShow = true;
   void campusStore.fetchCertificationStatus();
 });
 
 onMounted(async () => {
-  if (redirectedToHub.value) return;
+  if (guestGuarded || redirectedToHub.value) return;
   // 修复（review）：两个请求聚合等待，避免任一请求 reject 产生未处理 Promise
   await Promise.allSettled([
     certFetchedByShow ? Promise.resolve() : campusStore.fetchCertificationStatus(),

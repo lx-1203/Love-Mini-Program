@@ -16,6 +16,8 @@
  * - 按钮状态：三项未选完时主按钮置灰不可点击，完成后高亮
  */
 import { computed, onMounted, reactive, ref } from "vue";
+// MP-R7-GUEST-LANDING：游客进引导流程同样要被引导到登录/注册（裁定：setup 不豁免），需要 onLoad 入口
+import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
@@ -25,6 +27,8 @@ import SetupProgress from "../../../components/setup/SetupProgress.vue";
 import { useProfileStore } from "../../../stores/profile";
 import { SUBPACKAGE_ROUTES } from "../../../constants/routes";
 import { replaceAppPath } from "../../../utils/navigation";
+// MP-R7-GUEST-LANDING：游客进入引导流程同样必须被送到登录/注册（裁定：setup 不豁免）
+import { guideGuestToLogin } from "../../../guards/guest-access";
 import { lightHaptic, successHaptic } from "../../../utils/haptic";
 import {
   loadSchools,
@@ -114,7 +118,24 @@ function showPrivacyInfo(): void {
 
 /* ==================== 生命周期 ==================== */
 
+/**
+ * 游客落点守卫（round-7 裁定：游客一律引导到登录/注册，setup 引导流程不豁免）。
+ * 本页原先对游客零门控：学校列表拉取失败会静默回退本地静态表（config/schools.ts:131-141
+ * 的 loadSchools catch），mock 带下 profileStore.load() 直接吃 fixture
+ * （stores/profile.ts:322），两趟都不产生 401 ⇒ 唯一的弹登录动作只剩 HTTP 401 兜底，
+ * 游客可以一路点「保存/跳过」把引导流程走完（终点见 recommend-pref/index.vue 的 discover 跳转）。
+ */
+let guestGuarded = false;
+
+onLoad(() => {
+  if (guideGuestToLogin()) {
+    guestGuarded = true;
+    return;
+  }
+});
+
 onMounted(async () => {
+  if (guestGuarded) return;
   // 学校数据优先走后端，失败回退本地静态列表（见 loadSchools 内部兜底）
   schools.value = await loadSchools();
   await profileStore.load();

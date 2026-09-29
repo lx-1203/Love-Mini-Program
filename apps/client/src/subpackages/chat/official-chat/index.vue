@@ -468,7 +468,7 @@ onLoad((query) => {
                            real 模式所有活动卡片永远显示同一张与内容无关的库存图 -->
                       <image
                         class="activity-embed__image"
-                        :src="resolveMediaUrl(msg.cardActivity.imageUrl || '/static/assets/images/activities/activity-1.jpg')"
+                        :src="resolveMediaUrl(msg.cardActivity.imageUrl || IMAGE_PATHS.ACTIVITIES.ACTIVITY_1)"
                         mode="aspectFill"
                       />
                       <view class="activity-embed__info">

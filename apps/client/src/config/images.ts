@@ -53,6 +53,51 @@ export const IMAGE_PATHS = {
     AVATAR_10: AVATAR_BASE + '/avatar-10.jpg',
     AVATAR_11: AVATAR_BASE + '/avatar-11.jpg',
     AVATAR_12: AVATAR_BASE + '/avatar-12.jpg',
+    /* 2026-09-29 主包体积车道：AVATAR_13 ~ AVATAR_49 收编。
+       stores/likes/mock-data.ts 与 stores/village/mock-data.ts 此前把 43 个头像写成
+       完整 `…/avatars/avatar-<n>.jpg` 的 /static 字面量，被 prepare-static.mjs
+       strip() 的 /static/** 字面量正则命中 → 发布形态主包保留集被塞进 40 张共 235,243B。
+       这些串只服务于 mock 演示数据（real 构建由 strip-mock-for-mp.mjs 整段剔除），
+       且 13~49 全部已托管在后端公开端点 /api/v1/media/app-assets/assets/images/avatars/
+       （与 full-static 逐字节一致），属本文件 2026-08-29「主包素材全量迁后端」的正统口径。
+       mock/dev 档 AVATAR_BASE 求值仍是 /static/assets/images/avatars → 运行时取值逐字节不变。 */
+    AVATAR_13: AVATAR_BASE + '/avatar-13.jpg',
+    AVATAR_14: AVATAR_BASE + '/avatar-14.jpg',
+    AVATAR_15: AVATAR_BASE + '/avatar-15.jpg',
+    AVATAR_16: AVATAR_BASE + '/avatar-16.jpg',
+    AVATAR_17: AVATAR_BASE + '/avatar-17.jpg',
+    AVATAR_18: AVATAR_BASE + '/avatar-18.jpg',
+    AVATAR_19: AVATAR_BASE + '/avatar-19.jpg',
+    AVATAR_20: AVATAR_BASE + '/avatar-20.jpg',
+    AVATAR_21: AVATAR_BASE + '/avatar-21.jpg',
+    AVATAR_22: AVATAR_BASE + '/avatar-22.jpg',
+    AVATAR_23: AVATAR_BASE + '/avatar-23.jpg',
+    AVATAR_24: AVATAR_BASE + '/avatar-24.jpg',
+    AVATAR_25: AVATAR_BASE + '/avatar-25.jpg',
+    AVATAR_26: AVATAR_BASE + '/avatar-26.jpg',
+    AVATAR_27: AVATAR_BASE + '/avatar-27.jpg',
+    AVATAR_28: AVATAR_BASE + '/avatar-28.jpg',
+    AVATAR_29: AVATAR_BASE + '/avatar-29.jpg',
+    AVATAR_30: AVATAR_BASE + '/avatar-30.jpg',
+    AVATAR_31: AVATAR_BASE + '/avatar-31.jpg',
+    AVATAR_32: AVATAR_BASE + '/avatar-32.jpg',
+    AVATAR_33: AVATAR_BASE + '/avatar-33.jpg',
+    AVATAR_34: AVATAR_BASE + '/avatar-34.jpg',
+    AVATAR_35: AVATAR_BASE + '/avatar-35.jpg',
+    AVATAR_36: AVATAR_BASE + '/avatar-36.jpg',
+    AVATAR_37: AVATAR_BASE + '/avatar-37.jpg',
+    AVATAR_38: AVATAR_BASE + '/avatar-38.jpg',
+    AVATAR_39: AVATAR_BASE + '/avatar-39.jpg',
+    AVATAR_40: AVATAR_BASE + '/avatar-40.jpg',
+    AVATAR_41: AVATAR_BASE + '/avatar-41.jpg',
+    AVATAR_42: AVATAR_BASE + '/avatar-42.jpg',
+    AVATAR_43: AVATAR_BASE + '/avatar-43.jpg',
+    AVATAR_44: AVATAR_BASE + '/avatar-44.jpg',
+    AVATAR_45: AVATAR_BASE + '/avatar-45.jpg',
+    AVATAR_46: AVATAR_BASE + '/avatar-46.jpg',
+    AVATAR_47: AVATAR_BASE + '/avatar-47.jpg',
+    AVATAR_48: AVATAR_BASE + '/avatar-48.jpg',
+    AVATAR_49: AVATAR_BASE + '/avatar-49.jpg',
     DEFAULT: STATIC_BASE + '/default-avatar.jpg',
   },
 
@@ -586,20 +631,27 @@ export const IMAGE_PATHS = {
     CIRCLE_FIRE:    ICONS_BASE + '/fire.svg',            // 🔥 热门 / 活力
   },
 
-  /** 首页拆分素材（素材/首页/最终/拆分图标-精修版） */
+  /** 首页拆分素材（素材/首页/最终/拆分图标-精修版）
+   *  2026-09-29 主包体积车道：本组当前 0 消费方（全仓 grep `HOME_SPLIT` 只命中本定义），
+   *  原先写成完整 `/static/...` 字面量 → 被 prepare-static.mjs strip() 的 /static/** 字面量
+   *  正则命中，把 200,028B（12 张 PNG）拖进发布形态主包保留集。改走本文件既有基址约定
+   *  （IMAGES = STATIC_BASE + '/images'，2026-08-29「主包素材全量迁后端」）：
+   *  mock/dev 运行时取值与改前逐字相同（`/static/assets/images/home-split/...`），
+   *  real 档取值改指后端公开端点 /api/v1/media/app-assets/（12 张均已托管，字节一致），
+   *  于是发布包不再随包这 200,028B。 */
   HOME_SPLIT: {
-    CIRCLE_PHOTO: '/static/assets/images/home-split/circle/circle_row6_01.png',
-    CIRCLE_TRAVEL: '/static/assets/images/home-split/circle/circle_row6_02.png',
-    CIRCLE_MUSIC: '/static/assets/images/home-split/circle/circle_row6_03.png',
-    CIRCLE_FOOD: '/static/assets/images/home-split/circle/circle_row6_04.png',
-    CIRCLE_SPORTS: '/static/assets/images/home-split/circle/circle_row6_05.png',
-    CIRCLE_READING: '/static/assets/images/home-split/circle/circle_row6_06.png',
-    JOIN_BTN: '/static/assets/images/home-split/circle/circle_row6_07.png',
-    MEMBER_BADGE: '/static/assets/images/home-split/circle/circle_row6_08.png',
-    HOT_BADGE: '/static/assets/images/home-split/circle/circle_row6_09.png',
-    LIKE: '/static/assets/images/home-split/toolbar/toolbar_row7_01.png',
-    COMMENT: '/static/assets/images/home-split/toolbar/toolbar_row7_02.png',
-    SHARE: '/static/assets/images/home-split/toolbar/toolbar_row7_03.png',
+    CIRCLE_PHOTO: IMAGES + '/home-split/circle/circle_row6_01.png',
+    CIRCLE_TRAVEL: IMAGES + '/home-split/circle/circle_row6_02.png',
+    CIRCLE_MUSIC: IMAGES + '/home-split/circle/circle_row6_03.png',
+    CIRCLE_FOOD: IMAGES + '/home-split/circle/circle_row6_04.png',
+    CIRCLE_SPORTS: IMAGES + '/home-split/circle/circle_row6_05.png',
+    CIRCLE_READING: IMAGES + '/home-split/circle/circle_row6_06.png',
+    JOIN_BTN: IMAGES + '/home-split/circle/circle_row6_07.png',
+    MEMBER_BADGE: IMAGES + '/home-split/circle/circle_row6_08.png',
+    HOT_BADGE: IMAGES + '/home-split/circle/circle_row6_09.png',
+    LIKE: IMAGES + '/home-split/toolbar/toolbar_row7_01.png',
+    COMMENT: IMAGES + '/home-split/toolbar/toolbar_row7_02.png',
+    SHARE: IMAGES + '/home-split/toolbar/toolbar_row7_03.png',
   },
 
   /** 兴趣圈大封面摄影图（static/assets/images/covers/，参考图风格） */

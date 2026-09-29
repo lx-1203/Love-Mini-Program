@@ -1,4 +1,5 @@
 import { resolveMediaUrl } from "@/utils/media";
+import { IMAGE_PATHS } from "@/config/images";
 /**
  * Village Store Mock 数据（mock 模式专用，自 stores/village/utils.ts 拆分）。
  *
@@ -27,7 +28,7 @@ export const mockSimilarAuthors: SimilarAuthor[] = [
     userId: "user-3004",
     name: "南风",
     // D-05（第五轮 QA）：default-avatar 占位 → 真实头像
-    avatar: "/static/assets/images/avatars/avatar-5.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_5,
     campusName: "北京大学",
     headline: "97年 · 深圳 · 产品经理 · 本科",
     isAlumni: true,
@@ -37,7 +38,7 @@ export const mockSimilarAuthors: SimilarAuthor[] = [
   {
     userId: "user-3005",
     name: "北岛",
-    avatar: "/static/assets/images/avatars/avatar-6.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_6,
     campusName: "四川大学",
     headline: "93年 · 成都 · 创业者 · 博士",
     isAlumni: false,
@@ -127,7 +128,7 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   {
     userId: "user-3001",
     name: "小鹿",
-    avatar: "/static/assets/images/avatars/avatar-13.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_13,
     headline: "94年 · 北京 · 年薪30w+ · 985硕士",
     campusName: "北京大学",
     interests: ["阅读", "旅行", "志愿者"],
@@ -135,7 +136,7 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   {
     userId: "user-3002",
     name: "阿泽",
-    avatar: "/static/assets/images/avatars/avatar-14.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_14,
     headline: "96年 · 上海 · 互联网大厂 · 本科",
     campusName: "复旦大学",
     interests: ["徒步", "户外", "摄影"],
@@ -143,7 +144,7 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   {
     userId: "user-3003",
     name: "橙子",
-    avatar: "/static/assets/images/avatars/avatar-15.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_15,
     headline: "95年 · 杭州 · 设计师 · 硕士",
     campusName: "浙江大学",
     interests: ["设计", "美食", "旅行"],
@@ -151,7 +152,7 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   {
     userId: "user-3004",
     name: "南风",
-    avatar: "/static/assets/images/avatars/avatar-16.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_16,
     headline: "97年 · 深圳 · 产品经理 · 本科",
     campusName: "北京大学",
     interests: ["产品", "运动", "音乐"],
@@ -159,7 +160,7 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   {
     userId: "user-3005",
     name: "北岛",
-    avatar: "/static/assets/images/avatars/avatar-17.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_17,
     headline: "93年 · 成都 · 创业者 · 博士",
     campusName: "四川大学",
     interests: ["创业", "摄影", "读书"],
@@ -167,7 +168,7 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   {
     userId: "user-3006",
     name: "苏晴",
-    avatar: "/static/assets/images/avatars/avatar-18.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_18,
     headline: "95年 · 广州 · 摄影师 · 本科",
     campusName: "中山大学",
     interests: ["摄影", "旅行", "音乐"],
@@ -175,7 +176,7 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   {
     userId: "user-3007",
     name: "周沐",
-    avatar: "/static/assets/images/avatars/avatar-19.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_19,
     headline: "96年 · 南京 · 教师 · 硕士",
     campusName: "南京大学",
     interests: ["教育", "阅读", "手工"],
@@ -183,7 +184,7 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   {
     userId: "user-3008",
     name: "许诺",
-    avatar: "/static/assets/images/avatars/avatar-20.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_20,
     headline: "97年 · 武汉 · 工程师 · 本科",
     campusName: "武汉大学",
     interests: ["编程", "桌游", "健身"],
@@ -191,7 +192,7 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   {
     userId: "user-3009",
     name: "夏言",
-    avatar: "/static/assets/images/avatars/avatar-21.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_21,
     headline: "94年 · 西安 · 医生 · 博士",
     campusName: "西安交通大学",
     interests: ["医学", "跑步", "咖啡"],
@@ -199,7 +200,7 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   {
     userId: "user-3010",
     name: "叶青",
-    avatar: "/static/assets/images/avatars/avatar-22.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_22,
     headline: "95年 · 苏州 · 律师 · 硕士",
     campusName: "中国人民大学",
     interests: ["法律", "辩论", "旅行"],
@@ -207,7 +208,7 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   {
     userId: "user-3011",
     name: "夏言",
-    avatar: "/static/assets/images/avatars/avatar-23.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_23,
     headline: "96年 · 厦门 · 自媒体 · 本科",
     campusName: "厦门大学",
     interests: ["写作", "美食", "电影"],
@@ -215,7 +216,7 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   {
     userId: "user-3012",
     name: "顾北",
-    avatar: "/static/assets/images/avatars/avatar-24.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_24,
     headline: "93年 · 青岛 · 建筑师 · 硕士",
     campusName: "天津大学",
     interests: ["建筑", "手绘", "旅行"],
@@ -223,7 +224,7 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   {
     userId: "user-3013",
     name: "沈念",
-    avatar: "/static/assets/images/avatars/avatar-25.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_25,
     headline: "95年 · 长沙 · 运营 · 本科",
     campusName: "中南大学",
     interests: ["运营", "瑜伽", "宠物"],
@@ -231,7 +232,7 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   {
     userId: "user-3014",
     name: "白鹭",
-    avatar: "/static/assets/images/avatars/avatar-26.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_26,
     headline: "97年 · 大连 · 教师 · 硕士",
     campusName: "大连理工大学",
     interests: ["教育", "钢琴", "烘焙"],
@@ -239,7 +240,7 @@ export const mockAuthors: [PostAuthor, PostAuthor, PostAuthor, PostAuthor, PostA
   {
     userId: "user-3015",
     name: "季风",
-    avatar: "/static/assets/images/avatars/avatar-27.jpg",
+    avatar: IMAGE_PATHS.AVATARS.AVATAR_27,
     headline: "94年 · 重庆 · 产品设计 · 本科",
     campusName: "重庆大学",
     interests: ["设计", "桌游", "火锅"],

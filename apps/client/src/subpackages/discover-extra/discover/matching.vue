@@ -18,6 +18,8 @@ import { ROUTES } from "../../../constants/routes";
 // MP-R7-GUEST-MATCHING-REDIRECT-RACE-001：未登录的落点必须是登录引导，需要先判 token 再决定导航
 import { getToken } from "../../../services/http";
 import { replaceAppPath } from "../../../utils/navigation";
+// MP-R7-GUEST-LANDING：入口即拦——游客不该先进到匹配中页再靠失败分支投票决定落点
+import { guideGuestToLogin } from "../../../guards/guest-access";
 
 import MatchLoading from "../../../components/match/MatchLoading.vue";
 // R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
@@ -104,6 +106,10 @@ watch(
 );
 
 onLoad((query) => {
+  /* MP-R7-GUEST-LANDING：游客进入本页即引导到登录/注册，不再走下面的任何分支——
+     原实现的落点取决于「哪一次请求先 401」或「preview/dev-preview 参数有没有带」，
+     与裁定（游客一律引导到登录/注册）不符。下面的 goBack() 未登录分支保留作兜底。 */
+  if (guideGuestToLogin()) return;
   const q = (query || {}) as Record<string, string>;
   const cardId = q.cardId || "";
   const action = q.action || "";

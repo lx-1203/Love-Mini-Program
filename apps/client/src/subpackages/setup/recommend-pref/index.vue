@@ -8,6 +8,8 @@
  * 保存成功后进入 /pages/discover/index（对应「完成」步骤）。
  */
 import { computed, onMounted, ref } from "vue";
+// MP-R7-GUEST-LANDING：游客进引导流程也要被引导到登录/注册（裁定：setup 不豁免），需要 onLoad 入口
+import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
@@ -19,6 +21,8 @@ import { useSessionStore } from "../../../stores/session";
 // 2026-08-07 流程重构：按身份分支展示步骤进度
 import { loadIdentity } from "../../../config/identity";
 import { replaceAppPath } from "../../../utils/navigation";
+// MP-R7-GUEST-LANDING：游客进入引导流程同样必须被送到登录/注册（裁定：setup 不豁免）
+import { guideGuestToLogin } from "../../../guards/guest-access";
 
 // P2-12：文案全部走 i18n（key 见 locales/zh-CN.ts / en-US.ts 的 recommendPref 命名空间）
 const { t } = useI18n();
@@ -149,7 +153,24 @@ async function savePreferences() {
 // 修复（严格模式 noUnusedLocals）：goBack 函数未被模板/脚本调用（页面使用 AppShell 的返回按钮），已移除。
 // ==================== 生命周期 ====================
 
+/**
+ * 游客落点守卫（round-7 裁定：游客一律引导到登录/注册，setup 引导流程不豁免）。
+ * 本页原先对游客是「读默认值 + 保存即进寻觅」：fetchPreferences 只在有 userId 时才发 GET
+ * （:86-97 的 `if (userId)`，否则直接吃本地默认值），savePreferences 同样跳过 PUT 后
+ * 直接 replaceAppPath("/pages/discover/index")（:144）⇒ 游客一路碰不到 401，
+ * 却能把引导流程走完并停在寻觅内容 Tab。
+ */
+let guestGuarded = false;
+
+onLoad(() => {
+  if (guideGuestToLogin()) {
+    guestGuarded = true;
+    return;
+  }
+});
+
 onMounted(() => {
+  if (guestGuarded) return;
   fetchPreferences();
 });
 </script>

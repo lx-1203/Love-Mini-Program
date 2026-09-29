@@ -149,9 +149,13 @@ const feedItems = ref<FeedItem[]>([
     content: "周末去爬山拍到了云海，太震撼了！",
     images: [
       // R4：post-5 海岸悬崖山感不足，换 post-2 暗色云雾海岸（更贴近「爬山云海」语义）
-      "/static/assets/images/posts/post-placeholder.jpg",
-      "/static/assets/images/posts/post-2.jpg",
-      "/static/assets/images/posts/post-8.jpg",
+      // 2026-09-29 主包体积车道：三条完整 /static/** 字面量（119,739B 的本地随包保留量）
+      // 收敛到 IMAGE_PATHS.POSTS.*（本文件下方 f2 已是这同一写法）——
+      // mock/dev 运行时取值逐字不变（IMAGE_PATHS 在 mock 档基址就是 /static/assets/images），
+      // real 档改指后端 /api/v1/media/app-assets（三张均已托管、字节一致）→ 发布主包不再带这三张。
+      IMAGE_PATHS.POSTS.POST_PLACEHOLDER,
+      IMAGE_PATHS.POSTS.POST_2,
+      IMAGE_PATHS.POSTS.POST_8,
     ],
     likes: 256,
     comments: 32,

@@ -28,8 +28,8 @@ const MOCK_ME: UserProfileDTO = {
   },
   relationship: { goal: "认真恋爱", expectation: ["有趣", "真诚", "爱旅行"] },
   media: {
-    cover: "/static/assets/images/people/person-01.png",
-    photos: ["/static/assets/images/people/person-01.png"],
+    cover: IMAGE_PATHS.PEOPLE.CARD_1,
+    photos: [IMAGE_PATHS.PEOPLE.CARD_1],
     videos: [],
   },
   socialProof: { followingCount: 128, followersCount: 96, likesCount: 356, matchCount: 42 },

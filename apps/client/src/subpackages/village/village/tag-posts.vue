@@ -17,6 +17,8 @@ import { useVillageStore, formatRelativeTime, type PostItem } from "../../../sto
 import { useMock } from "../../../stores/helpers/use-mock";
 // R4-batch2: mock 标签帖子数据源（仅 apiMode === "mock" 分支使用，real 模式不读取）
 import { mockTagPosts, mockPosts } from "../../../stores/village/mock-data";
+// MP-R7-GUEST-LANDING：游客进入标签聚合页即引导到登录/注册（裁定：setup/引导链路也不豁免）
+import { guideGuestToLogin } from "../../../guards/guest-access";
 
 /** 状态/互动图标（emoji 实体替换为 SVG） */
 const stateIcons = {
@@ -260,6 +262,10 @@ function goBack() {
 }
 
 onLoad((query) => {
+  /* MP-R7-GUEST-LANDING：游客入口即拦。本页原先两条路径都会把游客留在内容页：
+     ① 无 tagName ⇒ toast 后 goBack()（:258 navigateBack / :260 reLaunch 到村口列表，都是内容页）；
+     ② 带 tagName 且 mock 带 ⇒ loadPosts() 走本地 fixture（:133），永远不触发 401 兜底。 */
+  if (guideGuestToLogin()) return;
   const raw = query?.tagName;
   if (raw && typeof raw === "string" && raw.trim().length > 0) {
     tagName.value = decodeURIComponent(raw);
