@@ -288,3 +288,49 @@ abs7 车道把 7 条"断言某物不存在"的判据换成了能判的非帧载�
 本轮 `REALCOV_IDENTITYLESS_ROWS=31`、`REALCOV_IDENT_VOCAB` 还抓到 `not-logged-in` 与 `none`
 是"有判点无生产者"的死词。**一个门认这个字段、另一个门不认就去索要处置**，这个不对称本身就是 §29 的成因。
 
+## 30. 状态对账（2026-09-29 16:2x；上面 0–29 节原文一字未改，现状态只写在这里）
+要查历史说法请看本文件的 git 旧版，不要相信下面这段的转述。
+
+**已闭（盘上有证据）**
+- **#17 已闭，但我先前报小了。** `ea3bd785` 只把 `verify-guest-landing --mode book` 的落点改侧车；
+  面板自己**另两发写权威件的调用一直漏着**：`emit-round-report.mjs:620` 不带 `--dry`
+  （`verify-source-shape.mjs:25` 的默认 OUT 就是 `cellplan-source-shape.json`，而那份是**下游输入** ——
+  `ui-queue.round7-final.json` 点名它，`rerun-round7-slices.sh`/`round7-post-b-slice.sh` 也引它），
+  `:662` 不带 `--out`（`verify-evidence-holes.mjs:17` MODE 默认 judge、`:144` 无条件写 verdict，
+  而全仓没人读回它 —— triage 在 `:649` 自己从行里算 evidenceHoles）。
+  实测 r4 面板跑完这两份文件各多一行 M，且 diff 只有 `generatedAt` 一个字段。
+  commit `6e5bfd38` 按同一口径修完：判定、参数语义、退出码一字未动，只改落点。
+- **#18 已闭**：`triage-exec-failures.mjs:507/511/521-524` 有 `OPS_EXPLICIT` 开关与
+  "派生分支目录不存在 ⇒ 红"的 fail-closed；现值自报来源
+  （`opsFromCorpus=true`、`ops="reports\audit\round-7\ops"`、`opsRenameEntries=1107`）。
+  残留：反推那一支仍是默认行为，只是不再静默。
+- **#19 被 #29 取代**：原文写"5 组仍是真欠账"。本轮实测推翻该归因 —— 那 5 组所属语料
+  `reports/audit/round-7/interact/exec-results.json` **1107 行里 0 行声明 identity**
+  （`doc.identity` 亦 undefined）。守卫本身已在重建后的 real 档上以逐行 `identity="guest"` 证得 5/5→登录。
+  原文保留，判定以 #29 为准。
+- **#21 / #26 / #27**：都已把"传闻"换成实测，并纠了我自己的错引
+  （`:118` 词表其实**接受**作用域哈希；命名必要而非充分）。
+- **#29**：(b) 已落地并配能变红的负例（`test-landing-identity-scope.mjs`，9 断言全过），
+  `emit-round-report` 在 r4 实测**转绿**（`EMIT_RESULT=OK 全部源可读、全部守恒断言通过`）。
+  **(a) 那 5 组的产品级归属仍开着，等带 `--identity` 重拍。**
+
+**本轮正在跑、暂不结案**
+- **#15** showcase 覆盖 mock 共享产物 → 车道 #15（独立 `UNI_OUTPUT_DIR` 出口）。
+- **#22** `emit-tapfix-briefs.mjs:51` 的 `rmSync(OUT,{recursive})` 删的是
+  **git 已跟踪的 7 个文件**（`git ls-files reports/audit/round-7/tapfix-briefs | wc -l` = 7），
+  **不是我原先记的"56 个未跟踪产物"** —— 这条自己的记载也在此纠正。车道 #22 正在改成
+  "只删自己拥有的 + 删前留可指名备份"，并要求负例**对改前行为必须红**。
+- **执行器能力**（#27 结尾点名的那把刀）→ 车道 #16：toast 钩子搬运（`evaluate` 已在
+  `r-exec-cli.mjs:25` 导入，可行）、pullDown/longpress 派发出口；网络计数/条件注入属真新代码，
+  只调研不硬造。车道约束里写死 **MSG26 / DND08 / DC08 / VI40 不许换动词凑绿**。
+
+**仍等你裁定（一条都没替你选）**
+#1 #2 #3 #4 #6 #8 #9 #12 #13 #14 #23 #24 #25 #28，以及 #29 的 (a)/(c)。
+其中三个能直接解掉现存的三条红：**#12**（corpus 唯一红源）、**#25**（provenance，
+三种改法实测都买不到绿）、**#13**（代跑 18 份在途清单 —— 那也是 real-coverage 那 10 条欠账的主要解法）。
+
+**一条必须提前说清的代价**
+`TAP_RE` 那把刀把判域从 705 放宽到 **719（新增 14 条，含 DND08）**。这些行以前"没人发交互却记 EXECUTED"，
+下一轮真跑会第一次真的去点 ⇒ **可能冒出一批新失败**。那不是回归，是被静默吞掉的账第一次露头；
+我不会为了让数字好看把它们预先标成免检。
+
