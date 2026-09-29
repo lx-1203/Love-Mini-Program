@@ -45,3 +45,38 @@
 - [ ] dryrun-workflow
 
 ## 6. 没证到的 / UNKNOWN
+
+## 7. 验收补记（车道在 150 轮上限处中断，状态原为"进行中"；以下全部我本人复跑）
+车道中断时三份负例已落盘、报告只写了一半。我逐项复量后才入库（commit 见 git log）：
+
+- `test-exec-row-sha.cjs` → `ROWSHA_TEST=PASS`，exit 0（自己重跑，非引用车道结论）
+- `test-exec-tap-verb-camel.cjs` → `TVC_TEST=PASS`，exit 0
+- `test-exec-probe-geometry.cjs` → `GEOM_TEST=PASS`，exit 0
+- `r-exec-cli.mjs --selftest` → `EXEC_SELFTEST=PASS cases=50 bad=0`，exit 0
+- `run-qa-selftests.mjs` → 发现=27 ⇒ 26 个离线测试 + 1 条门自检全绿，1 个 UI 绑定按策略跳过，exit 0
+- `dryrun-workflow.mjs --profile all` → `DRYRUN_RESULT=PASS（3/3）`，exit 0（§5 里车道没跑完的那一项由我补跑）
+- `verify-ops-corpus-stamp.mjs --check` → `PASS`，canon=`0fef00d141e7` / cases=1107 ⇒ 判据台未被这一刀碰过
+
+**provenance 不因为这一刀变绿，这是事实不是遗漏**：复量仍 `CONSISTENT=4154 / PRE_STAMP=4886 / STALE=0`，
+`PROVENANCE_RESULT=FAIL`。逐行 sha 只**止住后续新增**的假归属；那 4886 张的错戳早已写死在历史产物里，
+而 decisions 第 25 项实测过两种重打都换不来绿（一种把 324 张推成 stale，一种给 144 张无戳帧造出归属）。
+
+### §7.1 我第一版复量脚本比错了对象（记下来，免得下次拿它当结论）
+我最初量"这一刀放行了多少判据"时，比的是**新旧两版的 TAP_RE 本身**，得到 `新增认出=0`。
+这句是废话：这一刀**刻意不动 TAP_RE 主表**（`/i` 会把 `[a-z]`/`[A-Z]` 一起折叠，见 §注释 :172），
+加的是 `TAP_CAMEL_RE`，派发谓词是 `wantsInteraction = TAP_RE.test || TAP_CAMEL_RE.test`。
+按真正的谓词重量（两枚正则都从 git 原文抠出，不手抄）：
+
+```
+PRE  有 TAP_RE=true  有 TAP_CAMEL_RE=no（修复前确实没有这一支）
+POST 两版 TAP_RE 字面量相同 ⇒ 主表未被放宽
+TAP_RE_DELTA 判据=1107 旧判要交互=705 新判要交互=719 新增认出=14 新丢=0
+```
+
+新增认出 14 条含 DND08 / TP04 / TK05 / SCU06 / SCU10 / SCH10 / PFI09 / PFI17 / PFI18 / PFI34 / PFI35 等。
+**这 14 条要读成代价而不是成绩**：它们过去"没人发交互却记 EXECUTED"，下一轮真跑会第一次真的去点，
+可能带出一批新失败 —— 那是被静默吞掉的账第一次露头，不是回归。
+census 现值同步：`TAPCENSUS cases=1107 含交互动词=719 点名了=606 没点名=23 已盖章不可自动化=90（守恒：yes）`。
+
+### §7.2 车道自报的一处操作失误（它自己记了，我复核成立）
+它取过一次 UI 租约并在 4 秒内自行释放，现况空闲。我复量 `heldLeases()` 为 `[]`，与它的记载一致。

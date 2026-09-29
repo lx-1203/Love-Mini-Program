@@ -167,3 +167,26 @@
 （`probeMany` 扔了 `fields({size:true})`），应如实补一个"该 clause 未测"的落点而不是把整行抹掉。
 动账必须走单一写者路径、先 `--dry` 再 `--apply`、并留逐文件回滚点，不能顺手把两行改了就算完。
 四刀都必须排在车道收工之后，理由见本节开头那条撕裂读数。
+
+## 7. 我踩到的一处构建链缺陷：`build:mp-weixin:showcase` 会覆盖 mock 共享产物
+B7 补名之后 src 比三档产物新，我按 mock → real:isolated → showcase 的顺序重建，
+结果**最后一手把 mock 档毒掉了**。实测（`apps/client/dist/build/*/config/env.js`）：
+
+| 目录 | 重建后 MODE | 说明 |
+|---|---|---|
+| `mp-weixin`（mock 共享产物） | `mp-weixin-showcase` ← **错** | showcase 链没有 `UNI_OUTPUT_DIR`，`uni build` 默认就写这个目录 |
+| `mp-weixin-real` | `real` | 隔离脚本守住了（`sharedOutUntouched=yes`） |
+| `mp-weixin-showcase` | 9-28 00:49 的旧物 | 我这轮没写进去，它是历史上"建完再拷"留下的 |
+
+也就是说 **mock 与 showcase 共用同一个输出目录，二者不能共存**：谁后手谁毒掉对方。
+这正是 WF-RUNTIME-GAPS 里 F1 给 real 档点名的同一族缺陷，只是发生在 showcase 上，
+而 real 那一支已经有专用隔离载具（`apps/client/scripts/build-real-isolated.mjs`），showcase 没有。
+
+我这次的恢复动作（顺序敏感，记下来免得重复踩）：showcase 建 → 把共享目录整体拷进
+`mp-weixin-showcase` → **无论前一步成败都必须**再跑一次 `build:mp-weixin:mock` 收尾；
+终态复量：`mp-weixin=mp-weixin-mock`、`mp-weixin-real=real`、`mp-weixin-showcase=mp-weixin-showcase`。
+
+该修的不是我的顺序，是脚本本身：**给 showcase 一条自己的隔离出口**
+（照 build-real-isolated.mjs 用 `UNI_OUTPUT_DIR` 改道，别再靠"建完手工拷"这种没有回滚的载具）。
+在这把刀落地之前，任何"按 mock/real/showcase 顺序重建"的编排都必须把 mock 放在最后一步，
+并且重建完必须逐档 grep `MODE:` 复核 —— 只看构建退出码看不出土被谁占了。
