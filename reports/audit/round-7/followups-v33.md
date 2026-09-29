@@ -308,3 +308,48 @@ r6 的稳定读数：`SRC_SHAPE total=98 成立=98 不成立=0`；
 不影响跟踪脏项计数——我不用"脏项变少"来当处置成功的凭据）。
 教训与既有那条同族 [[feedback-audit-claims-before-restating]]：**"已确认没有留下"必须由我自己 `ls` 出证**。
 杂散文件的命名错误本身也记一次：重定向目标应写成绝对/仓内已知目录，`..` 开头的相对路径会落到上一级目录里。
+
+## 11. #17 的设备腿**没能开拍**：两支架载具对"谁是证人"各执一词（2026-09-29 21:0x，实测非推断）
+
+我先按裁定去拍那 5 组落地对：
+`verify-guest-landing.mjs --mode measure --project apps/client/dist/build/mp-weixin-real --repeat 3
+--only GG-campus-campus-index,GG-discover-extra-discover-matching,GG-village-village-tag-posts,GG-setup-campus-index,GG-setup-recommend-pref-index`
+⇒ **exit=2，一条帧都没拍**，租约也没白拿（这正是它该有的样子）：
+
+```
+GUEST_LANDING=FAIL 先修这几条再来量（带病出腿 = 白拿租约）：
+  policy 里这几组既不在本轮跑测的落地对里、ops 也没有任何被收窄出游客腿的用例 ⇒ 这一组没有任何证人：
+  subpackages/setup/recommend-pref/index → pages/login/index
+  组 … 一名成员都没有 ⇒ 有裁定却没有账本成员，不能出 GG-* 腿
+```
+
+我把"是不是我传错了"逐条排掉，然后量到真正的分歧（每条都有命令与数字）：
+
+1. **不是 `--ops` 传错**：round-6 与 round-7 两份语料里含 `RP01` 的文件各 1 份；换成 round-7 同样 exit 2。
+2. **判据行是真的存在**：`reports/audit/round-7/ops/次要21.json` 里 `subpackages/setup/recommend-pref/index`
+   有 **11 行**（RP01–RP11），只是它们**全部没有 `identities` 字段**；而同文件的兄弟页
+   `setup/campus/index`(SCU 13 行)、`setup/schedule/index`(SCH 12)、`setup/interest/index`(INT 11)
+   每行都带 `identities:["A","B"] + identitiesFrom:"tag-ops-identity-scope.mjs" + identitiesWhy`。
+   （我第一次扫 RP 行用了 `/^RP\d+/` 去匹配 round-7 全目录，输出为空，差点据此写"RP 行不存在"——
+   那是我的匹配口径错，不是语料缺行。）
+3. **`tag-ops-identity-scope.mjs` 干跑报 `改写文件=0`，而这不矛盾**：policy 落点表 28 页覆盖 **471 行**，
+   其中 **462 行**正文自己提到 游客/未登录/引导/弹回 ⇒ 该载具的第二条规矩（"判据文本自己点名游客的一律不标，
+   摘掉它们等于把唯一有效的断言删了"）把它们全保护住了；剩下 9 行早已带标 ⇒ 确实无账可写。
+4. 于是矛盾落在**取证口径**上：`verify-guest-landing.mjs` 的组员是**从"被收窄出游客腿"的行反推**的，
+   而 recommend-pref 这页恰好**一行都没被收窄**（它的行全是"游客该看到什么"的断言）⇒ 名册为空 ⇒ 预检拦腿。
+   但 `guest-landing-booked.json` 里这一组的 `caseIds` 明明写着 `RP01,RP02,RP06,RP10`（nIds=4）——
+   **booked 与预检用的是两套成员来源，且互不认账**（booked=28 组、measured=28 行、roster=27 组）。
+
+**为什么我停在这里而不是顺手改**：两种改法都会**改变"游客这条腿该判哪些行"**——
+(a) 预检允许"整页都是游客断言"的组用该页游客行当证人（我认为这是对的：这一页恰恰最需要落地腿，
+    现在的规则把"最该拍的一页"判成"没有证人"，方向是反的）；
+(b) 或按 booked 的成员名册给这 4 行补 `identities:["guest"]`（等于把 RP01/02/06/10 改判成游客档）。
+(a) 要配一条能变红的负例（声明了 guest 的语料里留一组无名册落地对 ⇒ 必须照旧 exit 2，不许顺手放行），
+(b) 要动语料的身份声明 ⇒ 判据台 canon 变、必须重打戳。两条都不是"修 bug"，是**改判域**，按规矩交回你裁。
+
+现场没有被破坏：`guest-landing-measured.json` 仍是 2026-09-28T10:15:58Z / `real@f0677920` 的 28 行
+（我量之前先做了 `.bak-pre17-20260929-205601` 双备份）；scratch measured 未生成；`tmp/qa/locks` 无残留租约；
+`git status -uno` 干净。另外两件事顺带确认：守卫在**新产物里活着** ——
+`dist/build/mp-weixin-real/subpackages/setup/campus/index.js` 里有
+`onLoad(()=>{if(E.guideGuestToLogin())…})`，五个页源码各引用 `guideGuestToLogin` 两次；
+所以这一腿一旦解开拦门，落点是可归属的，不用再回到"由 401 兜底"那种解释。
