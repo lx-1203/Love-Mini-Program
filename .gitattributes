@@ -1,0 +1,49 @@
+# ============================================================================
+# .gitattributes —— 证据帧的入库规则（用户 2026-09-29 裁定：走 "LFS 只管未来 + 仓外证据库 + manifest 内 sha256 可核"）
+#
+# 这份文件只解决一件事：**如果**有人把证据帧 force-add 进 git，它必须走 LFS，
+# 而不是静默地把几十万像素当普通 blob 塞进 .git（那正是本轮要止住的膨胀路径）。
+#
+# ⚠ 这里**故意不写** `* text=auto`：仓库已有数千文件的行尾是既有状态，加这一行会让下一次
+#   触碰把全仓 CRLF/LF 重归一化，产出一个吞掉真实改动的巨型 diff。行尾策略维持现状，
+#   由 .editorconfig / .prettierrc 管，不在这里动。（写它属于"顺手加个最佳实践"，
+#   代价是下一份 diff 不可读 —— 记在这里免得有人再手滑。）
+#
+# ⚠ 本文件生效**不**要求先跑 `git lfs install`：本机实测 filter.lfs 四条早已配好
+#   （clean / smudge / process / required=true，git-lfs/3.4.1，见
+#    reports/audit/round-7/lfs-migration-plan.md §0）。若哪天在未装 LFS 的机器上命中
+#   下面的 pattern 去 `git add`，git 会直接失败退出 —— 这是**故意的 fail-loud**，
+#   宁可红着，也不要静默把像素写成普通 blob。
+#
+# 与 .gitignore 的分工（这点必须写清，否则会被误读成"规则没生效"）：
+#   .gitignore 里 `*.png`/`*.jpg`/`*.jpeg` 继续挡着 reports/ 下的绝大多数帧 ——
+#   在裁定 ③ 下这是**想要的状态**：证据的正本在仓外库（scripts/qa/evidence-store.mjs --export），
+#   仓内只留 manifest 里的 contentHash（sha256 前 16 位）与相对路径。
+#   所以不要为了"让帧进 LFS"去改 .gitignore 的例外清单 —— 那会把同一份像素同时放进 git 和库，
+#   造出第二个权威。下面的 pattern 只服务"确实要入库的那一小撮"。
+#
+# 范围只圈审计/回归证据像素与手工归档。**不圈** apps/client/src/static/** 与 apps/admin/public/**：
+#   那是要打进小程序包的业务静态资源，随构建走；交给 LFS 会改 CI/Docker 取数方式。
+# ============================================================================
+
+# --- 审计/回归截图帧 ---
+reports/screenshots/**/*.png  filter=lfs diff=lfs merge=lfs -text
+reports/screenshots/**/*.jpg  filter=lfs diff=lfs merge=lfs -text
+reports/screenshots/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
+
+reports/audit/**/*.png        filter=lfs diff=lfs merge=lfs -text
+reports/audit/**/*.jpg        filter=lfs diff=lfs merge=lfs -text
+reports/audit/**/*.jpeg       filter=lfs diff=lfs merge=lfs -text
+
+# --- 手工归档的截图存档目录 ---
+截图存档/**/*.png             filter=lfs diff=lfs merge=lfs -text
+截图存档/**/*.jpg             filter=lfs diff=lfs merge=lfs -text
+
+# --- 交付物里的像素（截图/设计稿） ---
+deliverables/**/*.png         filter=lfs diff=lfs merge=lfs -text
+deliverables/**/*.jpg         filter=lfs diff=lfs merge=lfs -text
+deliverables/**/*.jpeg        filter=lfs diff=lfs merge=lfs -text
+
+# --- 明确排除：业务静态资源随构建走，不进 LFS ---
+apps/client/src/static/**     -filter -lfs
+apps/admin/public/**          -filter -lfs
