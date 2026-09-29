@@ -51,6 +51,18 @@
  *  另一件只测不改的事：词表死活 REALCOV_IDENT_VOCAB（:237-238 收的 none / not-logged-in 今天有没有生产者），
  *  死词就报成死词，不为此新增任何拼法。
  *
+ *  欠账点名（2026-09-29 补）：这条门一直**红得对、却红得没有署名**——
+ *  uncovered 是个集合大小（new Set([...neverOnReal, ...noA, ...noGuest]).size），
+ *  只印一个数。于是读红的人得自己反推"这 10 条里哪几条缺登录轴、哪几条缺游客轴、
+ *  哪几条压根没在 real 档出现过"；一笔点不出名的红最后会被当成噪音划掉（这正是要消灭的失败模式）。
+ *  本文件对另外几类欠（免检/漏盖/漏身份/证据不符）早就逐条点名了，欠账这一类是最后一只暗桶。
+ *  现在补齐：REALCOV_UNCOVERED_LIST=n + 每行 `  UNCOVERED <suite>|<id> 缺=<轴>`
+ *  （轴词表 never-on-real / login / guest，两轴同缺写 login+guest），排序=suite→id 固定 ⇒ diff 稳定。
+ *  并且门对自己这本账下一条守恒断言：点名数必须等于 REALCOV_UNCOVERED，且每条点出来的都得是
+ *  判据集里真实存在的用例；不闭合 ⇒ **以门自己的名字判红**（REALCOV_UNCOVERED_LEDGER=FAIL）。
+ *  口径：判点一个字没动（下面 `const ok = uncovered === 0 && conserved;` 原样保留），
+ *  台账只往退出口上叠一条**独立**的红——盘上正常时它恒真，读数与改前逐字相同。
+ *
  *  用法：node scripts/qa/verify-real-coverage.mjs [--round round-7]
  *       [--ops reports/audit/round-6/ops] [--dir reports/audit/round-7] [--selftest]
  */
@@ -260,6 +272,49 @@ function judge(rows, req, ids) {
   return missing;
 }
 
+/* ---------- 欠账台账：从一个数到一本账（2026-09-29 补） ----------
+   输入就是算 uncovered 的那三个数组本身（neverOnReal / noA / noGuest），不另起判点 ⇒
+   判红阈值一个字都没动；这里做的只有两件事：
+   ① 把**同一个并集**逐行摊开、按轴归名（轴词表固定三条，输出顺序固定 suite→id）；
+   ② 独立地把账再对一次自己：点名数 vs REALCOV_UNCOVERED、点出来的用例 vs 判据集。
+   四条不变量（任何一条不成立 ⇒ 门以 REALCOV_UNCOVERED_LEDGER=FAIL 自己的名字判红）：
+   ① 点名数 = 欠账数（漏点名或点重了都不闭合）；
+   ② 每条点名的都得在判据集 ids 里（不许凭空多出一笔钱）；
+   ③ 每条至少归上一根轴（不许有一笔欠账没有下一步）；
+   ④ never-on-real 不与具体轴并存（judge 里那句 `continue` 保证了互斥，
+      哪天重构把它拆了，这本账必须当场响）。
+   排序按 UTF-16 码元序（不用 localeCompare）⇒ 跨平台、跨 locale 都逐字可复现。 */
+const AXIS_NEVER = "never-on-real";
+const AXIS_LOGIN = "login";
+const AXIS_GUEST = "guest";
+const AXIS_ORDER = [AXIS_NEVER, AXIS_LOGIN, AXIS_GUEST];
+/** key 就是判据那一侧的 c.manifest + "|" + c.id（requiredCases 里的造法），按第一个 "|" 拆回去即逆运算。 */
+function splitKey(k) { const i = k.indexOf("|"); return i < 0 ? [k, ""] : [k.slice(0, i), k.slice(i + 1)]; }
+function buildUncoveredLedger(m, ids, uncovered) {
+  const axes = new Map();
+  const add = (k, ax) => { const s = axes.get(k) || new Set(); s.add(ax); axes.set(k, s); };
+  for (const k of m.neverOnReal) add(k, AXIS_NEVER);
+  for (const k of m.noA) add(k, AXIS_LOGIN);
+  for (const k of m.noGuest) add(k, AXIS_GUEST);
+  const axisOf = (k) => AXIS_ORDER.filter((a) => (axes.get(k) || new Set()).has(a)).join("+");
+  const enumerated = [...axes.keys()].sort((a, b) => {
+    const [sa, ia] = splitKey(a), [sb, ib] = splitKey(b);
+    return sa < sb ? -1 : sa > sb ? 1 : ia < ib ? -1 : ia > ib ? 1 : 0;
+  });
+  const problems = [];
+  if (enumerated.length !== uncovered) {
+    problems.push(`点名 ${enumerated.length} 条 ≠ REALCOV_UNCOVERED=${uncovered} ⇒ 有欠账没被点名（或点重了），这条红不可信`);
+  }
+  const phantom = enumerated.filter((k) => !ids.has(k));
+  if (phantom.length) problems.push(`点出 ${phantom.length} 条判据集里不存在的用例：${phantom.join(" ")} ⇒ 台账凭空多出一笔`);
+  for (const k of enumerated) {
+    const s = axes.get(k) || new Set();
+    if (!s.size) problems.push(`${k} 一根轴都没归上 ⇒ 这笔欠账没有下一步`);
+    if (s.has(AXIS_NEVER) && s.size > 1) problems.push(`${k} 同时写着 never-on-real 与具体轴 ⇒ judge 的互斥（continue）被破坏`);
+  }
+  return { enumerated, axisOf, uncovered, problems, ok: problems.length === 0 };
+}
+
 function selftest() {
   const req = [{ manifest: "M", id: "1" }, { manifest: "M", id: "2" }, { manifest: "M", id: "3" }];
   const ids = new Set(req.map((c) => c.manifest + "|" + c.id));
@@ -406,8 +461,45 @@ function selftest() {
     /* 守恒在每个样本上都得成立：免检 + 覆盖 + 欠账 = 用例条数，一个都不许凭空消失或重复计。
        漏盖与漏身份都是**行轴**的读数，不参与这条等式（同一行既可能被认领也可能同时被数成漏盖/漏身份）。 */
     if (ge + gc + got !== R.length) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 守恒 ${ge}+${gc}+${got}≠${R.length}`); }
+    /* 台账守恒也在每个样本上跑一遍：上面每一例的形状（漏盖/漏身份/矛盾/免检/双轴缺…）都必须
+       既点得出名、又与 uncovered 对得上。这一步只读不改判点，样本本身就是它的输入。 */
+    {
+      const L = buildUncoveredLedger(m, c.ids || ids, got);
+      if (L.enumerated.length !== got) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 台账点名=${L.enumerated.length}≠欠账=${got}`); }
+      if (!L.ok) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 台账不闭合 ${L.problems.join("；")}`); }
+    }
   }
-  console.log(`REALCOV_SELFTEST=${bad === 0 ? "PASS" : "FAIL"} cases=${cases2.length + cases3.length + blCases.length + idCases.length + sessCases.length} bad=${bad}`);
+  /* 台账自己的负样本：这一格咬的是"门自己的账"，不是欠账阈值 ⇒ 它必须**能**响，
+     否则"点名数 = 欠账数"就只是一句印在纸上的话。四个方向都要锁死：
+     · 正常并集（含两轴同缺只点一次名、轴名固定 login+guest、顺序固定 suite→id）⇒ 闭合；
+     · 欠账数比点名多一条（点名漏了）⇒ 必须响；
+     · 点出一条判据集里不存在的用例（凭空多钱）⇒ 必须响；
+     · never-on-real 与具体轴写在同一行（judge 那句 continue 被人拆掉的形状）⇒ 必须响。 */
+  const lgIds = new Set(["M|1", "M|2", "M|3"]);
+  const lg = (neverOnReal, noA, noGuest, u) => buildUncoveredLedger({ neverOnReal, noA, noGuest }, lgIds, u);
+  const lgCases = [
+    { n: "三条各缺一根轴⇒ 点名 3、轴名逐条对、台账闭合", L: lg(["M|1"], ["M|2"], ["M|3"], 3), wantLen: 3, wantOk: true,
+      wantAxes: { "M|1": AXIS_NEVER, "M|2": AXIS_LOGIN, "M|3": AXIS_GUEST } },
+    { n: "同一行两轴都缺⇒ 只点一次名、轴名 login+guest、台账仍闭合", L: lg([], ["M|1", "M|2"], ["M|1"], 2), wantLen: 2, wantOk: true,
+      wantAxes: { "M|1": AXIS_LOGIN + "+" + AXIS_GUEST, "M|2": AXIS_LOGIN } },
+    { n: "欠账数比点名多一条⇒ 台账必须响（漏点名=这条红不可信）", L: lg(["M|1", "M|2"], [], [], 3), wantLen: 2, wantOk: false },
+    { n: "点出判据集里没有的用例⇒ 台账必须响（凭空多出一笔）", L: lg(["M|9"], [], [], 1), wantLen: 1, wantOk: false },
+    { n: "never-on-real 与具体轴同一行⇒ 台账必须响（互斥被破坏）", L: lg(["M|1"], ["M|1"], [], 1), wantLen: 1, wantOk: false },
+    { n: "零欠账⇒ 点名 0 条且闭合（绿的时候这本账也得是空的、自洽的）", L: lg([], [], [], 0), wantLen: 0, wantOk: true },
+  ];
+  for (const c of lgCases) {
+    const L = c.L;
+    if (L.enumerated.length !== c.wantLen) { bad++; console.log(`  REALCOV_SAMPLE_BAD 台账 ${c.n} 点名=${L.enumerated.length} want=${c.wantLen}`); }
+    if (L.ok !== c.wantOk) { bad++; console.log(`  REALCOV_SAMPLE_BAD 台账 ${c.n} 闭合=${L.ok ? "OK" : "FAIL"} want=${c.wantOk ? "OK" : "FAIL"}`); }
+    for (const k of Object.keys(c.wantAxes || {})) {
+      if (L.axisOf(k) !== c.wantAxes[k]) { bad++; console.log(`  REALCOV_SAMPLE_BAD 台账 ${c.n} ${k} 轴=${L.axisOf(k) || "(空)"} want=${c.wantAxes[k]}`); }
+    }
+    /* 排序确定性：点名序列必须逐字等于 suite→id 的码元序（同一输入两次运行不许换顺序）。 */
+    const sorted = [...L.enumerated].sort();
+    if (sorted.join(" ") !== L.enumerated.join(" ")) { bad++; console.log(`  REALCOV_SAMPLE_BAD 台账 ${c.n} 顺序不稳 ${L.enumerated.join(" ")}`); }
+  }
+  const lgTotal = lgCases.length;
+  console.log(`REALCOV_SELFTEST=${bad === 0 ? "PASS" : "FAIL"} cases=${cases2.length + cases3.length + blCases.length + idCases.length + sessCases.length + lgTotal} bad=${bad} 台账负样本=${lgTotal}`);
   process.exit(bad === 0 ? 0 : 1);
 }
 if (process.argv.includes("--selftest")) selftest();
@@ -507,10 +599,31 @@ const VOCAB = ["A", "B", "guest", "not-logged-in", "none"];
 console.log(`REALCOV_IDENT_VOCAB ${VOCAB.map((v) => v + "=" + (identHist.get(v) || 0)).join(" ")}（全扫描 ${rows.length} 行里各拼法实际出现次数）`
   + " ⇒ not-logged-in 有判点(:238)无生产者=死词；none 既不被两轴认领、旗标词表里却有(r-exec-cli.mjs --identity guest|none)⇒ 也是死词。本门不为此新增任何拼法。");
 console.log(`REALCOV_COVERED=${coveredN}`);console.log(`REALCOV_UNCOVERED=${uncovered}／${req.length}（阈值同旧：非免检欠账 =0 才绿）`);
+/* 欠账点名（2026-09-29）：把上面那个数摊开成一行一条，缺哪根轴写哪根轴。
+   没有上限（不许"另 N 条未点名"）——一条点不出名的欠账就无法派活，而一本必须对得上数的账
+   才允许被红。轴词表与判点的两条轴一一对应：
+   · never-on-real = real 档一行都没有（要么跑错档要么没跑）；
+   · login         = 有 real 档的行，但登录轴（A/B）一条都没判过；
+   · guest         = 有 real 档的行，但游客轴（guest/not-logged-in）一条都没判过。 */
+const ledger = buildUncoveredLedger(m, ids, uncovered);
+console.log(`REALCOV_UNCOVERED_LIST=${ledger.enumerated.length}（逐条点名，排序=suite→id；轴词表 ${AXIS_ORDER.join("|")}，两轴同缺写 ${AXIS_LOGIN}+${AXIS_GUEST}；本数必须等于 REALCOV_UNCOVERED）`);
+if (ledger.enumerated.length) {
+  console.log(`  UNCOVERED 轴口径 never-on-real=real 档一行都没有；login=登录轴 A/B 无判过的行；guest=游客轴无判过的行 ⇒ 缺哪根轴去补哪条腿，别改标签、别把 mock 行改成 real 来"补数"`);
+  for (const k of ledger.enumerated) console.log(`  UNCOVERED ${k} 缺=${ledger.axisOf(k)}`);
+}
 const sum = exemptN + coveredN + uncovered;
 const conserved = sum === req.length;
 console.log(`REALCOV_CONSERVATION=${conserved ? "OK" : "FAIL"} 免检=${exemptN} + 覆盖=${coveredN} + 欠账=${uncovered} = ${sum}／${req.length}`);
 if (!conserved) console.log(`  CONSERVATION_FAIL 差=${req.length - sum} ⇒ 有用例没被「免检/覆盖/欠账」任一格接住（或有重复计），这笔账不可信，门直接判红`);
 const ok = uncovered === 0 && conserved;
-console.log(`REALCOV_RESULT=${ok ? "PASS" : "FAIL"}（真实模式覆盖守恒：跳过不算量到，单身份不算双身份；免检只免"本门不追"，不降阈值）`);
-process.exit(ok ? 0 : 1);
+/* 台账守恒（门对自己那本账的断言，2026-09-29 补）：点名数与欠账数对不上、或点出了判据集外的用例
+   ⇒ **以门自己的名字判红**。上面那行 ok 一个字节没改（判点仍是"欠账 =0 且守恒"），
+   这里只往退出口叠一条独立的红：ledgerOk 恒真时 REALCOV_RESULT 与改前逐字相同，
+   它响起来只有一个原因——这本账自己算错了，那比欠账更该先修。 */
+const ledgerOk = ledger.ok;
+console.log(`REALCOV_UNCOVERED_LEDGER=${ledgerOk ? "OK" : "FAIL"} 点名=${ledger.enumerated.length} 欠账=${uncovered} 判据外=${ledger.enumerated.filter((k) => !ids.has(k)).length}（台账守恒断言：点名逐行摊开后必须等于 REALCOV_UNCOVERED，且每条都在判据集里）`);
+for (const p of ledger.problems) console.log(`  UNCOVERED_LEDGER_BAD ${p}`);
+const pass = ok && ledgerOk;
+console.log(`REALCOV_RESULT=${pass ? "PASS" : "FAIL"}（真实模式覆盖守恒：跳过不算量到，单身份不算双身份；免检只免"本门不追"，不降阈值）`
+  + (ledgerOk ? "" : " ← 这一格的红是本门台账不闭合（REALCOV_UNCOVERED_LEDGER=FAIL），不是欠账新增，先修点名再谈欠账"));
+process.exit(pass ? 0 : 1);
