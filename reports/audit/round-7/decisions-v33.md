@@ -257,7 +257,22 @@ abs7 车道把 7 条"断言某物不存在"的判据换成了能判的非帧载�
 （补进去就是造账）；但它的理由"这是 A 档跑的"是从 `observed` 散文里推的，盘上没那个字段——
 诚实的说法是"此处门无权判"，不是"A 档与我无关"。
 
-请你在三条里选一条，我都不自选：
+**裁定已下（2026-09-29 14:5x，用户）：选 (b)，并强制附那条能变红的负例。** 已按此实现：
+`triage-exec-failures.mjs` 逐组记下该组行**真的**声明了哪些身份（`items` 现在带 `identity`，
+不再从 `observed` 散文猜），只有"整组行都无 identity 声明"才改记
+`LANDING_IDENTITY_UNDECLARED=<组>` + `TRIAGE_LANDING_SCOPE= …UNVERIFIED-INSTRUMENT=yes`，不判红也不算结案；
+只要该组有任何一行声明了身份，判红照旧。阈值本身没动（仍是 `landingMissing===0`），改的是"谁有权被数进去"。
+负例是新文件 `scripts/qa/test-landing-identity-scope.mjs`（9 条断言全过，聚合器已按文件名自动收进来）：
+声明 `guest` + 无处置 ⇒ **exit 2 且红句点名那一组**；同一语料剥掉 identity ⇒ exit 0、
+`landingMissing=0 而 landingUndeclared=1`、且必须逐组点名（静默吞掉即红）；
+两侧"看见的组数"必须相同 ⇒ 证明收窄只改判域、没让轴消失。
+实现顺带撞出两处我自己的契约漏洞：`test-triage-dead-selector.mjs:162` 对 `gateFires` 做**全等**比键，
+扩两个键就红（这是对的，期望已同步并注明"静默扩键才是真隐患"）；新测试第一版只印自家方言
+`LANDING_SCOPE_TEST cases=…`，被聚合器判"无自报断言计数（不可信）"—— 聚合器认
+`assertion failures = N` 与 `*_TEST=` 两种写法（`run-qa-selftests.mjs:45-49`），必须照其一印，
+否则"绿等于没测"。路 (a)/(c) 不再执行；那 5 组的产品级归属仍等 §29 之外的语料重拍。
+
+当时摆出的三条路原文存档如下（(b) 已执行，另两条留作日后若改口径的参照）：
 - **(a) 重拍带身份的切片**：对那 5 页用 `--identity guest` 与 `--identity A` 各跑一条腿，
   让 9 个 key 变成可归属；游客那批会落 `FAILED-guest-gate-by-ruling`（词表在 `:305` 已备），
   登录态那批走 `SKIPPED-identity-scope`。代价：两条腿的设备时间，**不改门的任何判定**。

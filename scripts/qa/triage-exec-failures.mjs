@@ -678,7 +678,7 @@ let curMismatch = false;  // observed 里的 `MISMATCH!`：前置身份/状态�
 
 const push = (r, b, extra) => {
   buckets[b] = (buckets[b] || 0) + 1;
-  items.push({ id: r.id, suite: r.suite, page: r.page, status: r.status, bucket: b, onTarget: curOnTarget, mismatch: curMismatch, ...extra });
+  items.push({ id: r.id, suite: r.suite, page: r.page, status: r.status, identity: r.identity ?? null, bucket: b, onTarget: curOnTarget, mismatch: curMismatch, ...extra });
 };
 
 for (const r of rows) {
@@ -824,10 +824,12 @@ for (const it of NEEDS_INDEX) {
 
 // ---------- 落地对（每组须有 booked 复测腿或裁决）----------
 const landingGroups = {};
+const landingIdents = {};   // 每组落地对里"有哪些行真的声明了身份"——判域收窄要用它，不能靠 observed 散文猜
 for (const it of items) {
   if (it.bucket !== "FAILED-landing-guard") continue;
   const k = `${it.page} → ${it.landed || "?"}`;
   (landingGroups[k] = landingGroups[k] || []).push(it.id);
+  (landingIdents[k] = landingIdents[k] || new Set()).add(String(it.identity ?? "").trim());
 }
 const landingKeys = Object.keys(landingGroups);
 /* 落地对的处置：先读机器账本（verify-guest-landing.mjs --mode book 出的复测腿），
@@ -874,7 +876,22 @@ if (fs.existsSync(GUEST_BOOK)) {
   }
 }
 const dispositionOf = (k) => bookedText[k] || LANDING_DISPOSITION[k] || null;
-const landingMissing = landingKeys.filter((k) => !dispositionOf(k));
+/* 判域收窄（用户 2026-09-29 裁定，走 decisions §29 的路 (b)）：
+   落地对这条轴断言的是"游客该被引导到登录/注册"，可它读的语料有 0/1107 行声明 identity
+   （实测 reports/audit/round-7/interact/exec-results.json：逐行与顶层都没有这个字段）。
+   向一群身份不明的人索要游客处置，判红也只是在替一个没人认领的前提记账。
+   所以：**该组只要有任一行真声明了身份，判红照旧咬**（负例由 test-landing-identity-scope.mjs 证明能红）；
+   只有"整组行都没声明身份"的那批才改记 UNVERIFIED-INSTRUMENT 具名读数，不判红、也不算结案。
+   注意这不是降阈值：阈值仍是 landingMissing===0，只是把"能归属的人"重新数对了。 */
+const landingMissingAll = landingKeys.filter((k) => !dispositionOf(k));
+const landingUndeclared = landingMissingAll.filter((k) => {
+  const s = landingIdents[k] || new Set();
+  s.delete("");
+  return s.size === 0;
+});
+const landingMissing = landingMissingAll.filter((k) => !landingUndeclared.includes(k));
+const landingUndeclaredSet = new Set(landingUndeclared);
+const landingAdjudicable = landingKeys.length - landingUndeclared.length;
 
 // ---------- 守恒断言（自洽性：不成立就别写报告）----------
 const total = rows.length;
@@ -1008,7 +1025,7 @@ if (landingKeys.length) {
   lines.push("| 声明页 → 实际落地页 | 条数 | 处置 |");
   lines.push("|---|---|---|");
   for (const k of landingKeys.sort((a, b) => landingGroups[b].length - landingGroups[a].length))
-    lines.push(`| ${k} | ${landingGroups[k].length} | ${dispositionOf(k) || "**无处置 —— 须 booking 复测腿或写裁决**"} |`);
+    lines.push(`| ${k} | ${landingGroups[k].length} | ${dispositionOf(k) || (landingUndeclaredSet.has(k) ? "**本轴不判：这一组的行全无 identity 声明 ⇒ UNVERIFIED-INSTRUMENT（不算结案，也不判红）**" : "**无处置 —— 须 booking 复测腿或写裁决**")} |`);
   lines.push("");
 }
 
@@ -1042,7 +1059,7 @@ for (const b of order) {
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT + ".md", lines.join("\n"));
-fs.writeFileSync(OUT + ".json", JSON.stringify({ results: RESULTS, updatedAt: doc.updatedAt ?? null, total, buckets, bucketNames: Object.keys(BUCKET), unclassified, unclassifiedRows, stampedCount: stampedRows.length, stampedRows, openPageUnmeasuredCount: openPageUnmeasuredRows.length, openPageUnmeasuredRows, openPageMeasuredDefectCount: openPageMeasuredRows.length, openPageMeasuredRows, tapShapeCounts: Object.fromEntries(Object.entries(tapShapeRows).map(([k, v]) => [k, v.length])), tapShapeRows, tapAbsentTotal, deadSelectorRenamed: tapShapeRows["dead-selector-renamed"].length, deadSelectorRows: tapShapeRows["dead-selector-renamed"], deadSelectorSources: { table: DEAD_SEL_TABLE, tableEntries: DEAD_SEL.size, tableIgnored: deadSelIgnored, ops: RENAME_OPS, opsFromCorpus: !OPS_EXPLICIT, opsRenameEntries: OPS_RENAME.size }, gateFires: { unclassified, landingMissing: landingMissing.length, coverMismatch: coverMismatch.length, openPageMeasuredDefect: openPageMeasuredRows.length, evidenceHoles: evidenceHoles.length }, tapDeferredCount: tapDeferredRows.length, tapDeferredReadings, tapDeferredRows, controlSelectors: [...CONTROL_SEL].sort(), batchSelfReport: { admissible: doc.admissible ?? null, outcome: doc.outcome ?? null, runner: doc.runner ?? null }, evidenceHoles, landingGroups, landingMissing, items }, null, 1));
+fs.writeFileSync(OUT + ".json", JSON.stringify({ results: RESULTS, updatedAt: doc.updatedAt ?? null, total, buckets, bucketNames: Object.keys(BUCKET), unclassified, unclassifiedRows, stampedCount: stampedRows.length, stampedRows, openPageUnmeasuredCount: openPageUnmeasuredRows.length, openPageUnmeasuredRows, openPageMeasuredDefectCount: openPageMeasuredRows.length, openPageMeasuredRows, tapShapeCounts: Object.fromEntries(Object.entries(tapShapeRows).map(([k, v]) => [k, v.length])), tapShapeRows, tapAbsentTotal, deadSelectorRenamed: tapShapeRows["dead-selector-renamed"].length, deadSelectorRows: tapShapeRows["dead-selector-renamed"], deadSelectorSources: { table: DEAD_SEL_TABLE, tableEntries: DEAD_SEL.size, tableIgnored: deadSelIgnored, ops: RENAME_OPS, opsFromCorpus: !OPS_EXPLICIT, opsRenameEntries: OPS_RENAME.size }, gateFires: { unclassified, landingMissing: landingMissing.length, landingUndeclared: landingUndeclared.length, landingAdjudicable, coverMismatch: coverMismatch.length, openPageMeasuredDefect: openPageMeasuredRows.length, evidenceHoles: evidenceHoles.length }, tapDeferredCount: tapDeferredRows.length, tapDeferredReadings, tapDeferredRows, controlSelectors: [...CONTROL_SEL].sort(), batchSelfReport: { admissible: doc.admissible ?? null, outcome: doc.outcome ?? null, runner: doc.runner ?? null }, evidenceHoles, landingGroups, landingMissing, landingUndeclared, landingAdjudicable, items }, null, 1));
 console.log(`TRIAGE_SUMMARY rows=${total} unclassified=${unclassified}`);
 for (const b of order) if (buckets[b]) console.log(`  ${String(buckets[b]).padStart(4)} ${b}`);
 /* 盖章行必须**这一腿自己数给读者看**：它是免掉缺陷计数的唯一新增口径，
@@ -1139,6 +1156,10 @@ const openRulings = landingKeys.filter((k) => /^未结案/.test(dispositionOf(k)
 /* 红的那一次也要把"未结案"的组数打出来：这些是已归类但**没结案**的行，
    如果只在绿的时候报，读者永远看不到它们（而它们正是本门要往外送的东西）。 */
 console.log(`TRIAGE_OPEN 未结案的落地对=${openRulings.length} 证据缺口=${evidenceHoles.length}（处置来源：复测腿账本 ${Object.keys(bookedText).length} 组 / 手写表 ${landingKeys.filter((k) => !bookedText[k] && LANDING_DISPOSITION[k]).length} 组）`);
+/* 这条落地对轴到底"有权判谁"，必须自己说清楚：以前只印 landingMissing，读者无从知道
+   那 5 组是产品没处置，还是语料压根没告诉我们是游客 —— 这两种红的处置人完全不同。 */
+console.log(`TRIAGE_LANDING_SCOPE= 落地对总组数=${landingKeys.length} 可归属组=${landingAdjudicable} 身份未声明组=${landingUndeclared.length}（读数 LANDING_IDENTITY_UNDECLARED=${landingUndeclared.length}）判红组=${landingMissing.length} UNVERIFIED-INSTRUMENT=${landingUndeclared.length ? "yes" : "no"}`);
+for (const k of landingUndeclared) console.log(`  LANDING_IDENTITY_UNDECLARED ${k}（该组 ${landingGroups[k].length} 行，无一声明 identity ⇒ 本轴不判，也不得当作结案）`);
 for (const k of openRulings) console.log(`  OPEN_RULING ${k}（${landingGroups[k].length} 条）：${dispositionOf(k)}`);
 if (corpusIsPartialSlice) console.log(`TRIAGE_SLICE_AXIS=partial（--real-cases-only 语料）不比成员的组数=${coverSliceSkips.length}；这些组仍须被复测腿认领，缺认领照旧判缺（见 TRIAGE_OPEN）`);
 for (const s of coverSliceSkips) console.log(`  COVER_SLICE_SKIP ${s}`);

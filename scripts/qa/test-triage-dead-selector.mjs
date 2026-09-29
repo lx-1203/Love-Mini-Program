@@ -159,7 +159,11 @@ if (pos.json) {
     "C4: POS 行没进 dist/src 双载体检（被藏起来了）：" + JSON.stringify(it && { verdict: it.verdict, distHits: it.distHits, srcHits: it.srcHits }));
   ok(pos.json.deadSelectorRenamed === 1 && (pos.json.tapShapeCounts || {})["dead-selector-renamed"] === 1,
     "C4b: sidecar 的 deadSelectorRenamed/tapShapeCounts 计数不是 1：" + JSON.stringify({ a: pos.json.deadSelectorRenamed, b: pos.json.tapShapeCounts }));
-  ok(JSON.stringify(pos.json.gateFires || {}) === JSON.stringify({ unclassified: 0, landingMissing: 0, coverMismatch: 0, openPageMeasuredDefect: 0, evidenceHoles: 0 }),
+  /* gateFires 是"哪条规则在火上"的机器面：这里故意做**全等**比对（多一个键、少一个键、值不对都红），
+     所以任何一次判据面扩键都必须同时改这条期望 —— 2026-09-29 落地对判域收窄（decisions §29 路 b）
+     新增 landingUndeclared / landingAdjudicable 两键，POS 夹具里它们应当分别是 0 与 0（无可归属组、
+     也无身份未声明组）。不把期望改全就当红，是对的方向：静默扩键才是真隐患。 */
+  ok(JSON.stringify(pos.json.gateFires || {}) === JSON.stringify({ unclassified: 0, landingMissing: 0, landingUndeclared: 0, landingAdjudicable: 0, coverMismatch: 0, openPageMeasuredDefect: 0, evidenceHoles: 0 }),
     "C4c: gateFires（哪条规则在火上）没记全或 POS 有额外红：" + JSON.stringify(pos.json.gateFires));
 }
 ok(pos.json && pos.json.unclassified === 0, "C5: POS 夹具的 unclassified 不是 0，实际=" + (pos.json && pos.json.unclassified));
