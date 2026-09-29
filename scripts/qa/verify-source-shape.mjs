@@ -21,8 +21,8 @@ import { resolve } from "node:path";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
-const DRY = process.argv.includes("--dry");
-const OUT = resolve(REPO, arg("out", "reports/audit/round-7/cellplan-source-shape.json"));
+let DRY = process.argv.includes("--dry");
+const SPEC_EXTRA = arg("spec-extra", "");const OUT = resolve(REPO, arg("out", "reports/audit/round-7/cellplan-source-shape.json"));
 
 /* 每条判点：id=台账行号，file=承载文件，claim=判据原文要求，checks=可重跑谓词。
    谓词只允许四种：absent / present / countEq / countTemplateEq。 */
@@ -1121,6 +1121,337 @@ const SPEC = [
       { kind: "countEq", re: /detail-body--emoji-open/g, n: 2 },
     ],
   },
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     以下 7 条＝判据台（reports/audit/round-6/ops/**，判据正文一个字都没改）里
+     class="A"（缺席断言）的行：round-7/criteria36-classification-v33.json。
+     它们的 expected 判的是「某物不存在／不出现」，而用户裁定「一律按判据补齐实现」
+     —— 对这 7 条，去把物件实现出来恰好让判据变红。所以只换载具：判据正文不动，
+     把断言搬到能判的非帧载体上（源码级谓词＋配置级＋两档产物结构计数）。
+
+     三条硬规矩（这一批自己加的，违反任何一条这条行就不许进表）：
+       1. criteria:true ⇒ 不发台账补丁。判据台行（H13/N10/…）不是台账行（issue-matrix.md
+          里 0 命中），而 scripts/qa/patch-ledger-cells.mjs:48 对「命中 0 行」是整份计划 die，
+          所以把这些 id 混进 patches 会连累那 91 条本来能落的补丁一起失败。
+       2. 每条都必须带 neg（命中注入负例）：把"该属性不存在"的物件真注进承载文本的内存副本，
+          谓词必须变红。没注入成功、或注入后仍成立 ⇒ 这道门是恒绿的，直接判红。
+          内存副本注入，绝不写 apps/client/**（两条车道正在改源码）。
+       3. 每个承载层都得有一个「能变绿的正例锚点」（present / countEq n>0），否则「查不到」
+          可能只是读到了空壳：产物档在构建期间会被整体重写。
+     取数口径逐条写在 neg 的 marker 上；两档产物＝mp-weixin(mock) 与 mp-weixin-real(real)。
+     ══════════════════════════════════════════════════════════════════════════ */
+  {
+    id: "MP-R7CRIT-PAGES-HOME-INDEX-H13",
+    criteria: true, manifest: "PAGES-HOME-INDEX.json", caseId: "H13", page: "pages/home/index",
+    claim: "判据断言的是「首页无搜索入口」这个缺席量：HomeHeader 只声明并对外挂 searchTap，模板里没有搜索物件＝死接线。补一枚搜索入口会让 expected 直接变红，故换源码级＋两档产物判点",
+    bands: ["mock", "real"],
+    files: [
+      {
+        file: "apps/client/src/components/home/HomeHeader.vue",
+        checks: [
+          { kind: "countEq", re: /\(e: "searchTap"\)/g, n: 1 },
+          { kind: "absent", re: /\$emit\(\s*["']searchTap["']/g },
+          { kind: "absent", re: /class="[^"]*header-search/g },
+          { kind: "countEq", re: /role="button"/g, n: 3 },
+        ],
+      },
+      {
+        file: "apps/client/src/pages/home/index.vue",
+        checks: [
+          { kind: "countEq", re: /@searchTap="openNearbyList"/g, n: 1 },
+          { kind: "absent", re: /class="[^"]*header-search/g },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin/components/home/HomeHeader.wxml",
+        checks: [
+          { kind: "absent", re: /header-search|搜索|放大镜|search/gi },
+          { kind: "countEq", re: /header-icon|header-location|header-me/g, n: 7 },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin-real/components/home/HomeHeader.wxml",
+        checks: [
+          { kind: "absent", re: /header-search|搜索|放大镜|search/gi },
+          { kind: "countEq", re: /header-icon|header-location|header-me/g, n: 7 },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin/pages/home/index.wxml",
+        checks: [
+          { kind: "countEq", re: /bindsearchTap/g, n: 1 },
+          { kind: "absent", re: /class="[^"]*search[^"]*"/g },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin-real/pages/home/index.wxml",
+        checks: [
+          { kind: "countEq", re: /bindsearchTap/g, n: 1 },
+          { kind: "absent", re: /class="[^"]*search[^"]*"/g },
+        ],
+      },
+    ],
+    neg: [
+      { file: "apps/client/src/components/home/HomeHeader.vue", marker: '(e: "searchTap"): void', insertAfter: '，占位；实际发射：$emit("searchTap")' },
+      { file: "apps/client/src/pages/home/index.vue", marker: '@searchTap="openNearbyList"', insertAfter: '\n        class="header-search"' },
+      { file: "apps/client/dist/build/mp-weixin/components/home/HomeHeader.wxml", marker: '<view class="header-icon', insertBefore: '<view class="header-search" aria-label="搜索"></view><view class="header-icon' },
+      { file: "apps/client/dist/build/mp-weixin-real/components/home/HomeHeader.wxml", marker: '<view class="header-icon', insertBefore: '<view class="header-search" aria-label="搜索"></view><view class="header-icon' },
+      { file: "apps/client/dist/build/mp-weixin/pages/home/index.wxml", marker: 'bindsearchTap="{{c}}"', insertAfter: ' class="header-search"' },
+      { file: "apps/client/dist/build/mp-weixin-real/pages/home/index.wxml", marker: 'bindsearchTap="{{c}}"', insertAfter: ' class="header-search"' },
+    ],
+  },
+  {
+    id: "MP-R7CRIT-PAGES-NEARBY-INDEX-N10",
+    criteria: true, manifest: "PAGES-NEARBY-INDEX.json", caseId: "N10", page: "pages/nearby/index",
+    claim: "判据断言「附近页无任何输入框（模板内无 <input>）」⇒ 正常/清空/超长/特殊字符四组输入用例不适用。给这页补输入框即反红，故换结构计数判点：源码模板＋两档产物各一条计数为 0，正例锚点是那枚「文案仍是搜索但不可输入」的按钮",
+    bands: ["mock", "real"],
+    files: [
+      {
+        file: "apps/client/src/pages/nearby/index.vue",
+        checks: [
+          { kind: "countTemplateEq", re: /<(input|textarea)[\s>]/g, n: 0 },
+          { kind: "absent", re: /v-model/g },
+          { kind: "countEq", re: /:aria-label="t\('nearby\.searchPlaceholder'\)"/g, n: 1 },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin/pages/nearby/index.wxml",
+        checks: [
+          { kind: "absent", re: /input|textarea/gi },
+          { kind: "countEq", re: /nearby-home__search-btn/g, n: 1 },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin-real/pages/nearby/index.wxml",
+        checks: [
+          { kind: "absent", re: /input|textarea/gi },
+          { kind: "countEq", re: /nearby-home__search-btn/g, n: 1 },
+        ],
+      },
+    ],
+    neg: [
+      { file: "apps/client/src/pages/nearby/index.vue", marker: '<view class="nearby-home__actions">', insertAfter: '\n              <input v-model="kw" placeholder="搜索" />' },
+      { file: "apps/client/dist/build/mp-weixin/pages/nearby/index.wxml", marker: '<view class="nearby-home__actions data-v-', insertBefore: '<input class="nearby-home__input" placeholder="搜索"/>' },
+      { file: "apps/client/dist/build/mp-weixin-real/pages/nearby/index.wxml", marker: '<view class="nearby-home__actions data-v-', insertBefore: '<input class="nearby-home__input" placeholder="搜索"/>' },
+    ],
+  },
+  {
+    id: "MP-R7CRIT-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-CI22",
+    criteria: true, manifest: "SUBPACKAGES-CIRCLES-CIRCLES-INDEX.json", caseId: "CI22", page: "subpackages/circles/circles/index",
+    claim: "判据 pre「兴趣圈页条目无 style 配置」＋expected「不得出现伪刷新动画或未调用的 stopPullDownRefresh」都是否定命题。配置级用 pages.json 条目形状判，同文件 vip/bills 条目真配了 enablePullDownRefresh ⇒ 阳性对照证明这条判点会咬；源码级判刷新钩子零命中",
+    bands: ["mock", "real"],
+    files: [
+      {
+        file: "apps/client/src/pages.json",
+        checks: [
+          { kind: "countEq", re: /"path": "circles\/index"\s*\}/g, n: 1 },
+          { kind: "absent", re: /"path":\s*"circles\/index"\s*,[^}]*enablePullDownRefresh/g },
+          { kind: "present", re: /"path": "bills",\s*"style": \{\s*"enablePullDownRefresh": true/ },
+        ],
+      },
+      {
+        file: "apps/client/src/subpackages/circles/circles/index.vue",
+        checks: [
+          { kind: "absent", re: /onPullDownRefresh|stopPullDownRefresh/g },
+          { kind: "absent", re: /refresher-enabled|refresherEnabled/g },
+          { kind: "countEq", re: /circleStore\.circles\.length === 0/g, n: 1 },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin/subpackages/circles/circles/index.json",
+        checks: [
+          { kind: "absent", re: /enablePullDownRefresh/g },
+          { kind: "present", re: /usingComponents/ },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin-real/subpackages/circles/circles/index.json",
+        checks: [
+          { kind: "absent", re: /enablePullDownRefresh/g },
+          { kind: "present", re: /usingComponents/ },
+        ],
+      },
+    ],
+    neg: [
+      { file: "apps/client/src/pages.json", marker: '"path": "circles/index"', insertAfter: ',\n            "style": {\n              "enablePullDownRefresh": true\n            }' },
+      { file: "apps/client/src/pages.json", removeRe: /"path": "bills",\s*"style": \{\s*"enablePullDownRefresh": true\s*\}/ },
+      { file: "apps/client/src/subpackages/circles/circles/index.vue", marker: 'onShow(() => {', insertBefore: 'async function onPullDownRefresh() { await circleStore.loadCircles(); }\n' },
+      { file: "apps/client/dist/build/mp-weixin/subpackages/circles/circles/index.json", marker: '{\n  "usingComponents": {', insertAfter: '\n    "enablePullDownRefresh": true,' },
+      { file: "apps/client/dist/build/mp-weixin-real/subpackages/circles/circles/index.json", marker: '{\n  "usingComponents": {', insertAfter: '\n    "enablePullDownRefresh": true,' },
+    ],
+  },
+  {
+    id: "MP-R7CRIT-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-MT21",
+    criteria: true, manifest: "SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING.json", caseId: "MT21", page: "subpackages/discover-extra/discover/matching",
+    claim: "整条 expected 全是否断言（无刷新动画/无 onPullDownRefresh/stopPullDownRefresh/零新增写请求）。配 enablePullDownRefresh 或加刷新按钮都会反红，且下拉一次就真触发一次匹配写请求＝本条要防的副作用。故配置级＋源码级＋产物档页级配置三段判；「零新增写请求」要网络计数刀，不在本载体",
+    bands: ["mock", "real"],
+    files: [
+      {
+        file: "apps/client/src/pages.json",
+        checks: [
+          { kind: "countEq", re: /"path": "discover\/matching"\s*\}/g, n: 1 },
+          { kind: "countEq", re: /"path": "discover\/match-success"\s*\}/g, n: 1 },
+          { kind: "absent", re: /"path":\s*"discover\/matching"\s*,[^}]*enablePullDownRefresh/g },
+          { kind: "present", re: /"path": "bills",\s*"style": \{\s*"enablePullDownRefresh": true/ },
+        ],
+      },
+      {
+        file: "apps/client/src/subpackages/discover-extra/discover/matching.vue",
+        checks: [
+          { kind: "absent", re: /onPullDownRefresh|stopPullDownRefresh/g },
+          { kind: "absent", re: /refresher-enabled|refresherEnabled/g },
+          { kind: "present", re: /matchStore\.animationDone/ },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin/subpackages/discover-extra/discover/matching.json",
+        checks: [
+          { kind: "absent", re: /enablePullDownRefresh/g },
+          { kind: "present", re: /usingComponents/ },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin-real/subpackages/discover-extra/discover/matching.json",
+        checks: [
+          { kind: "absent", re: /enablePullDownRefresh/g },
+          { kind: "present", re: /usingComponents/ },
+        ],
+      },
+    ],
+    neg: [
+      { file: "apps/client/src/pages.json", marker: '"path": "discover/matching"', insertAfter: ',\n            "style": {\n              "enablePullDownRefresh": true\n            }' },
+      { file: "apps/client/src/pages.json", removeRe: /"path": "bills",\s*"style": \{\s*"enablePullDownRefresh": true\s*\}/ },
+      { file: "apps/client/src/subpackages/discover-extra/discover/matching.vue", marker: 'onLoad((query) => {', insertBefore: 'async function onPullDownRefresh() { await matchStore.runMatchCheck(); uni.stopPullDownRefresh(); }\n' },
+      { file: "apps/client/dist/build/mp-weixin/subpackages/discover-extra/discover/matching.json", marker: '{\n  "usingComponents": {', insertAfter: '\n    "enablePullDownRefresh": true,' },
+      { file: "apps/client/dist/build/mp-weixin-real/subpackages/discover-extra/discover/matching.json", marker: '{\n  "usingComponents": {', insertAfter: '\n    "enablePullDownRefresh": true,' },
+    ],
+  },
+  {
+    id: "MP-R7CRIT-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS26",
+    criteria: true, manifest: "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json", caseId: "CS26", page: "subpackages/chat/chat-session/index",
+    claim: "判据 expected「不得渲染『破冰引导＋空会话＋可用输入栏』」判的是互斥渲染：错误文案节点紧接 <template v-else>，整枚输入栏只活在 v-else 里 ⇒ pageErrorMessage 为真时输入栏结构性不可达。把输入栏搬出 v-else 即反红，故判「唯一一枚且在 else 块内」；产物档另判编译后的 <block wx:else> 同形",
+    bands: ["mock", "real"],
+    files: [
+      {
+        file: "apps/client/src/subpackages/chat/chat-session/index.vue",
+        checks: [
+          { kind: "countEq", re: /<view v-if="pageErrorMessage" class="meta-copy meta-copy--padded">\{\{ pageErrorMessage \}\}<\/view>\s*<template v-else>/g, n: 1 },
+          { kind: "countEq", re: /<template v-else>(?:(?!<\/template>)[\s\S])*?class="wechat-input-bar__input"/g, n: 1 },
+          { kind: "countEq", re: /class="wechat-input-bar__input"/g, n: 1 },
+          { kind: "absent", re: /class="wechat-input-bar__input"[\s\S]{0,4000}v-if="pageErrorMessage"/g },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml",
+        checks: [
+          { kind: "countEq", re: /class="meta-copy meta-copy--padded[^"]*">[\s\S]{0,60}<\/view><block wx:else>/g, n: 1 },
+          { kind: "countEq", re: /<block wx:else>(?:(?!<\/block>)[\s\S])*?class="wechat-input-bar__input/g, n: 1 },
+          { kind: "countEq", re: /<input[\s>]/g, n: 1 },
+          { kind: "absent", re: /<textarea[\s>]/g },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml",
+        checks: [
+          { kind: "countEq", re: /class="meta-copy meta-copy--padded[^"]*">[\s\S]{0,60}<\/view><block wx:else>/g, n: 1 },
+          { kind: "countEq", re: /<block wx:else>(?:(?!<\/block>)[\s\S])*?class="wechat-input-bar__input/g, n: 1 },
+          { kind: "countEq", re: /<input[\s>]/g, n: 1 },
+          { kind: "absent", re: /<textarea[\s>]/g },
+        ],
+      },
+    ],
+    neg: [
+      { file: "apps/client/src/subpackages/chat/chat-session/index.vue", marker: '<view class="chat-input-area"', insertAfter: ' v="x"><input class="wechat-input-bar__input" />' },
+      { file: "apps/client/src/subpackages/chat/chat-session/index.vue", marker: '<template v-else>\n        <!-- 引用上下文卡片', insertBefore: '</template>' },
+      { file: "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml", marker: '<input cursor-spacing="20"', insertBefore: '<input class="leak" />' },
+      { file: "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml", marker: 'class="wechat-input-bar__input', insertBefore: '<input ' },
+      { file: "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml", marker: '<input cursor-spacing="20"', insertBefore: '<input class="leak" />' },
+      { file: "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml", marker: 'class="wechat-input-bar__input', insertBefore: '<input ' },
+    ],
+  },
+  {
+    id: "MP-R7CRIT-PAGES-PROFILE-INDEX-PFI41",
+    criteria: true, manifest: "PAGES-PROFILE-INDEX.json", caseId: "PFI41", page: "pages/profile/index",
+    claim: "判据 expected「本人主页主渲染树无任何输入框（无 v-model 输入元素）」⇒ 四组输入用例在本页不适用（这条存在的目的正是防执行员凭空造表单用例）。补输入框即反红，故换结构计数：源码模板＋两档产物各一条 0，正例锚点是判据点名的认证弹层",
+    bands: ["mock", "real"],
+    files: [
+      {
+        file: "apps/client/src/pages/profile/index.vue",
+        checks: [
+          { kind: "countTemplateEq", re: /<(input|textarea)[\s>]/g, n: 0 },
+          { kind: "absent", re: /v-model/g },
+          { kind: "present", re: /CertDetailSheet/ },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin/pages/profile/index.wxml",
+        checks: [
+          { kind: "absent", re: /input|textarea/gi },
+          { kind: "countEq", re: /profile-shell/g, n: 2 },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin-real/pages/profile/index.wxml",
+        checks: [
+          { kind: "absent", re: /input|textarea/gi },
+          { kind: "countEq", re: /profile-shell/g, n: 2 },
+        ],
+      },
+    ],
+    neg: [
+      { file: "apps/client/src/pages/profile/index.vue", marker: '<ProfileShell', insertBefore: '<textarea v-model="bio" />' },
+      { file: "apps/client/dist/build/mp-weixin/pages/profile/index.wxml", marker: '<profile-shell wx:if="{{c}}"', insertBefore: '<input class="profile-input" placeholder="签名"/>' },
+      { file: "apps/client/dist/build/mp-weixin-real/pages/profile/index.wxml", marker: '<profile-shell wx:if="{{c}}"', insertBefore: '<input class="profile-input" placeholder="签名"/>' },
+    ],
+  },
+  {
+    id: "MP-R7CRIT-SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH22",
+    criteria: true, manifest: "SUBPACKAGES-CAMPUS-CAMPUS-HUB.json", caseId: "CH22", page: "subpackages/campus/campus/hub",
+    claim: "本条只落「无展开箭头、无可点动作」这一半（MP-R1-CAMPUS-HUB-003 死元素已移除，不得回归出带箭头的可点假象）；补回箭头或可点「查看更多」即反红。⚠ src 的 HTML 注释里留着旧箭头字符，故箭头字符级缺席只能在产物档判；「滚到底完整可见＋scrollTop/scrollHeight 回填」那一半未落（见 NEG/RULING 说明）",
+    bands: ["mock", "real"],
+    needsRuling: "判据 ACTION 写「页级 window 滚动，非 scroll-view」，而 hub.vue:269-271 起列表包在 <scroll-view class=\"campus-hub__feed\"> 里、:334 才闭合 ⇒ 底部文案在 scroll-view 内不在 window 滚动流上；判据引用的 hub.vue:336-339 也已漂到 :330-332。两句冲突未裁，本行不预设任一解释。",
+    files: [
+      {
+        file: "apps/client/src/subpackages/campus/campus/hub.vue",
+        checks: [
+          { kind: "countEq", re: /class="campus-hub__more-text"/g, n: 1 },
+          { kind: "absent", re: /class="campus-hub__more["'][\s\S]{0,260}(?:@tap|bindtap|role="button")/g },
+          { kind: "countTemplateEq", re: /campus-hub__more-arrow/g, n: 0 },
+          { kind: "countTemplateEq", re: /class="campus-hub__feed"/g, n: 1 },
+        ],
+      },
+      {
+        file: "apps/client/src/i18n/locales/zh-CN.ts",
+        checks: [
+          { kind: "countEq", re: /"moreHint": "更多校园圈持续接入中"/g, n: 1 },
+          { kind: "absent", re: /"moreHint": "[^"]*[⌄∨▼⌃]/g },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin/subpackages/campus/campus/hub.wxml",
+        checks: [
+          { kind: "countEq", re: /campus-hub__more-text/g, n: 1 },
+          { kind: "absent", re: /⌄|campus-hub__more-arrow/g },
+          { kind: "absent", re: /class="campus-hub__more[\s\S]{0,260}bindtap/g },
+        ],
+      },
+      {
+        file: "apps/client/dist/build/mp-weixin-real/subpackages/campus/campus/hub.wxml",
+        checks: [
+          { kind: "countEq", re: /campus-hub__more-text/g, n: 1 },
+          { kind: "absent", re: /⌄|campus-hub__more-arrow/g },
+          { kind: "absent", re: /class="campus-hub__more[\s\S]{0,260}bindtap/g },
+        ],
+      },
+    ],
+    neg: [
+      { file: "apps/client/src/subpackages/campus/campus/hub.vue", marker: '<view class="campus-hub__more">', insertAfter: '\n      <text class="campus-hub__more-arrow">⌄</text>' },
+      { file: "apps/client/src/subpackages/campus/campus/hub.vue", marker: '<view class="campus-hub__more">', insertAfter: ' @tap="expandMore">' },
+      { file: "apps/client/src/i18n/locales/zh-CN.ts", marker: '更多校园圈持续接入中', insertAfter: '⌄' },
+      { file: "apps/client/dist/build/mp-weixin/subpackages/campus/campus/hub.wxml", marker: '<view class="campus-hub__more', insertAfter: ' bindtap="{{cm}}"><text class="campus-hub__more-arrow">⌄</text>' },
+      { file: "apps/client/dist/build/mp-weixin-real/subpackages/campus/campus/hub.wxml", marker: '<view class="campus-hub__more', insertAfter: ' bindtap="{{cm}}"><text class="campus-hub__more-arrow">⌄</text>' },
+    ],
+  },
 ];
 
 /* 剥注释：禁用的写法只出现在注释里（说明"这里原来是怎么写的"）不算违反。
@@ -1144,28 +1475,39 @@ function templateOf(src) {
   const a = src.indexOf("<template"), b = src.lastIndexOf("</template>");
   return a >= 0 && b > a ? stripComments(src.slice(a, b)) : "";
 }
-
-/* 载体完整性：真档构建期间 scripts/strip-mock-for-mp.mjs 会把 en-US.ts 临时换成
-   "export default {}"（实测 19:14:13Z→19:15:59Z，窗口 106s），这期间跑判点会读到假空文件，
-   把两条本来成立的 locale 判点读成"写法查不到"的假红——与本轮"锁屏帧读成 absent"同一类：
-   量到的是构建过程，不是产品。所以先验文件大小，异常就拒绝出判决。 */
-for (const p of ["apps/client/src/i18n/locales/en-US.ts", "apps/client/src/i18n/locales/zh-CN.ts"]) {
-  const abs = resolve(REPO, p);
-  if (!existsSync(abs)) continue;
-  const sz = statSync(abs).size;
-  if (sz < 20000) {
-    console.log("SRC_SHAPE_RESULT=FAIL reason=承载文件疑似被构建脚本临时改写（" + p + " 只有 " + sz + "B；"
-      + "真档构建的 strip-mock-for-mp 会在这百余秒里把它换成空壳）⇒ 等构建结束再跑，不在 flux 上出判决");
-    process.exit(2);
+/* 命中注入：把"该物件不存在"的那件物件真塞进承载文本，用来证明谓词会咬（不是恒绿门）。
+   ⚠ 只在内存里做，绝不写盘：apps/client/** 正被两条车道改着。
+   marker 必须在承载文本里**唯一**，否则注入点会漂、负例就成了碰运气。
+   两种注法：
+     insertBefore / insertAfter —— 在唯一 marker 旁边插入一段"回归后的物件"；
+     removeRe —— 删掉**恰好匹配一次**的正则命中，用来打阳性对照（把真配了该属性那条配置摘掉，
+                 对照判点必须跟着红；否则"对照"本身也是恒真的，整条判据仍然没被证明会咬）。 */
+function inject(raw, n) {
+  if (n.removeRe) {
+    const hits = raw.match(n.removeRe) || [];
+    if (!hits.length) return { why: "阳性对照的 removeRe 在承载文本里 0 命中（对照已经过期了）：" + String(n.removeRe).slice(0, 60) };
+    if (hits.length > 1) return { why: "阳性对照的 removeRe 命中 " + hits.length + " 次，摘哪一次都不许猜" };
+    return { text: raw.replace(n.removeRe, ""), removed: hits[0].slice(0, 60) };
   }
+  const first = raw.indexOf(n.marker);
+  if (first < 0) return { why: "负例锚点不在承载文本里（判点写的形状与盘上脱钩了）：" + n.marker.slice(0, 60) };
+  if (raw.indexOf(n.marker, first + 1) >= 0) return { why: "负例锚点在承载文本里不唯一，注入点会漂：" + n.marker.slice(0, 60) };
+  const piece = n.insertBefore || n.insertAfter || "";
+  if (!piece) return { why: "负例既没 insertBefore/insertAfter 也没 removeRe ⇒ 什么都没注入" };
+  const at = n.insertBefore ? first : first + n.marker.length;
+  return { text: raw.slice(0, at) + piece + raw.slice(at), inserted: piece.slice(0, 60) };
 }
-const results = [];
 /** 一条谓词跑一个文件。fileExists 是唯一不看内容、只看"在不在盘上"的判点类型
-    （图标/素材这类"引用了但不存在"的判据本来就是存在性命题，不是文本命题）。 */
-function runChecks(fileRel, checks) {
-  const f = resolve(REPO, fileRel);
-  if (!existsSync(f)) return "承载文件不存在 " + fileRel;
-  const raw = readFileSync(f, "utf8");
+    （图标/素材这类"引用了但不存在"的判据本来就是存在性命题，不是文本命题）。
+    rawOverride 只给负例注入用：同一条谓词、同一个取数管道，把承载文本换成"注入命中后的内存副本"，
+    绝不写盘 ⇒ apps/client/** 一个字节都不动（两条车道正在改源码，判点不许踩别人的盘）。 */
+function runChecks(fileRel, checks, rawOverride) {
+  let raw = rawOverride;
+  if (raw === undefined) {
+    const f = resolve(REPO, fileRel);
+    if (!existsSync(f)) return "承载文件不存在 " + fileRel;
+    raw = readFileSync(f, "utf8");
+  }
   const src = stripComments(raw);
   const tpl = templateOf(raw);
   const lines = src.split("\n");
@@ -1189,30 +1531,130 @@ function runChecks(fileRel, checks) {
   return null;
 }
 function statSyncSize(p) { try { return statSync(p).size > 0; } catch { return false; } }
+/** 整条判点跑一遍：多承载文件逐条跑，任一不过整条不过。overrideFile/overrideText 供负例注入。 */
+function runRow(s, overrideFile, overrideText) {
+  const targets = s.files ? s.files : [{ file: s.file, checks: s.checks }];
+  for (const t of targets) {
+    const r = t.file === overrideFile ? runChecks(t.file, t.checks, overrideText) : runChecks(t.file, t.checks);
+    if (r) return { where: t.file, why: r };
+  }
+  return null;
+}
+export { SPEC, stripComments, templateOf, inject, runChecks, runRow, REPO };
+export const CRIT_ROWS = SPEC.filter((s) => s.criteria);
+/* 只在被当模块 import 时短路：库模式必须由 import 方**显式**声明（QA_SHAPE_LIB=1），
+   不靠"argv[1 是不是本文件"去猜——猜错就会退化成"不跑 CLI、不输出、exit 0"的哑门，
+   那是最坏的失败形状（本车道实测过一次：自测件把变量带进了子进程 env，门整个空跑还报 0）。
+   作为脚本跑时（emit-round-report / rerun-round7-slices / run-final-verify 都是 spawn 本文件）
+   没有这个环境变量 ⇒ 照旧跑完整 CLI。 */
+const IS_CLI = !process.env.QA_SHAPE_LIB;
+if (!IS_CLI) { /* library 模式：只导出引擎，不出判决 */ }
+else {
+
+/* ── --spec-extra <file>：把外部 JSON 里的判点临时并进 SPEC，用**同一个** CLI 出判决。
+   只给负例（注入命中的 fixture 副本）用：缺席断言要能变红，而"能变红"必须在真门的
+   真退出码上验一次，不能只在自测件里自己跟自己说红。
+   安全：用了它就必须是 dry —— 注入的判点永远不许打进 cellplan-source-shape.json。 */
+if (SPEC_EXTRA) {
+  let extra;
+  try { extra = JSON.parse(readFileSync(resolve(REPO, SPEC_EXTRA), "utf8")); }
+  catch (e) {
+    console.log("SRC_SHAPE_RESULT=FAIL reason=--spec-extra 指过去的文件读不到/不是 JSON（" + SPEC_EXTRA + "：" + e.code + "）⇒ 空注入不许当成跑了");
+    process.exit(2);
+  }
+  const rows = Array.isArray(extra) ? extra : extra.rows;
+  if (!Array.isArray(rows) || !rows.length) {
+    console.log("SRC_SHAPE_RESULT=FAIL reason=--spec-extra 指过去却读不到 rows（空注入不许当跑了）");
+    process.exit(2);
+  }
+  let rehydrated = 0;
+  const toRe = (v) => {
+    if (typeof v !== "string") return v;
+    const m = v.match(/^\/([\s\S]*)\/([a-z]*)$/);
+    if (!m) { console.log("SRC_SHAPE_RESULT=FAIL reason=--spec-extra 里的正则不是 /x/flags 形态：" + String(v).slice(0, 60)); process.exit(2); }
+    rehydrated++;
+    return new RegExp(m[1], m[2]);
+  };
+  for (const r of rows) {
+    r.criteria = true;                       // 注入行一律按判据台行记 ⇒ 不发台账补丁
+    const ts = r.files || (r.file ? [{ file: r.file, checks: r.checks }] : []);
+    for (const t of ts) {
+      for (const c of (t.checks || [])) if (typeof c.re === "string") c.re = toRe(c.re);
+    }
+    for (const ng of (r.neg || [])) if (typeof ng.removeRe === "string") ng.removeRe = toRe(ng.removeRe);
+    SPEC.push(r);
+  }
+  DRY = true;
+  console.log("SRC_SHAPE_NOTE --spec-extra=" + SPEC_EXTRA + " 注入判点=" + rows.length + " 条（re 还原 " + rehydrated + " 个）⇒ 本次强制 --dry，不打进 cellplan");
+}
+
+/* 载体完整性：真档构建期间 scripts/strip-mock-for-mp.mjs 会把 en-US.ts 临时换成
+   "export default {}"（实测 19:14:13Z→19:15:59Z，窗口 106s），这期间跑判点会读到假空文件，
+   把两条本来成立的 locale 判点读成"写法查不到"的假红——与本轮"锁屏帧读成 absent"同一类：
+   量到的是构建过程，不是产品。所以先验文件大小，异常就拒绝出判决。 */
+for (const p of ["apps/client/src/i18n/locales/en-US.ts", "apps/client/src/i18n/locales/zh-CN.ts"]) {
+  const abs = resolve(REPO, p);
+  if (!existsSync(abs)) continue;
+  const sz = statSync(abs).size;
+  if (sz < 20000) {
+    console.log("SRC_SHAPE_RESULT=FAIL reason=承载文件疑似被构建脚本临时改写（" + p + " 只有 " + sz + "B；"
+      + "真档构建的 strip-mock-for-mp 会在这百余秒里把它换成空壳）⇒ 等构建结束再跑，不在 flux 上出判决");
+    process.exit(2);
+  }
+}
+/* 同一形状的 flux 门，第二条车道正在改的那 5 个页面 + 体积刀改过的引用点都可能在构建里：
+   缺席判点的两档产物（mock / real）一旦被构建脚本清空或写成半截，absent 会"读成成立"＝假绿。
+   所以判点开跑前先验：档目录在不在、每条判据点名的产物文件在不在且非 0 字节。缺就拒绝出判决。 */
+{
+  const BANDS = { mock: "apps/client/dist/build/mp-weixin", real: "apps/client/dist/build/mp-weixin-real" };
+  const missing = [];
+  for (const [band, root] of Object.entries(BANDS)) {
+    if (!existsSync(resolve(REPO, root))) missing.push(band + " 整档不在盘上（" + root + "）");
+  }
+  for (const s of SPEC.filter((x) => x.criteria)) {
+    for (const t of (s.files || [{ file: s.file }])) {
+      if (!/\/dist\/build\//.test(t.file)) continue;
+      const p = resolve(REPO, t.file);
+      if (!existsSync(p)) missing.push(s.caseId + " 产物承载文件不在盘上：" + t.file);
+      else if (!statSyncSize(p)) missing.push(s.caseId + " 产物承载文件是 0 字节：" + t.file);
+    }
+  }
+  if (missing.length) {
+    console.log("SRC_SHAPE_RESULT=FAIL reason=产物档处于构建 flux（" + missing.length + " 项）⇒ 不在 flux 上出判决");
+    for (const m of missing.slice(0, 8)) console.log("  ✗ " + m);
+    process.exit(2);
+  }
+}
+const results = [];
 
 for (const s of SPEC) {
   /* 一条判据可以横跨几个文件（"home 与 nearby 都要标注 IP 推断城市"）。
      这种情况写成 files: [{file, checks}]，逐文件跑，任一不过整条不过——
      不能只核一个文件就给整条绿灯。 */
   const targets = s.files ? s.files : [{ file: s.file, checks: s.checks }];
-  let bad = null, where = s.file;
-  for (const t of targets) {
-    const r = runChecks(t.file, t.checks);
-    if (r) { bad = t.file + " :: " + r; where = t.file; break; }
-  }
+  const bad = runRow(s);
   /* 承载列必须**全部**谓词都过时也写得出文件名。原来这里取 s.file，而多文件判点没有 s.file，
      只有失败分支才会把 where 换成真文件 —— 于是 50 条判点里 14 条往台账写成「承载 undefined」，
      恰好是最需要溯源的那 14 条（跨文件命题）。 */
   const carriers = targets.map((t) => t.file);
-  results.push({ id: s.id, file: bad ? where : carriers.join(" ＋ "), files: carriers, ok: !bad, why: bad || "", claim: s.claim });
+  results.push({
+    id: s.id, file: bad ? bad.where : carriers.join(" ＋ "), files: carriers, ok: !bad, why: bad ? bad.where + " :: " + bad.why : "", claim: s.claim,
+    criteria: !!s.criteria, manifest: s.manifest || "", caseId: s.caseId || "", page: s.page || "",
+    bands: s.bands || [], needsRuling: s.needsRuling || "",
+  });
 }
 
 const pass = results.filter((r) => r.ok);
 const fail = results.filter((r) => !r.ok);
-const patches = pass.map((r) => ({
+/* 判据台行（criteria:true）一律不进 patches：H13/N10/… 这些 id 在 issue-matrix.md 里 0 命中，
+   而 patch-ledger-cells.mjs:48 是「命中 ≠ 1 行 ⇒ 整份计划 die」——混进去会把另外 91 条能落的
+   补丁一起打死。判据台行的落点由判据台侧（apply-ops-cellplans.mjs）自己接，本门只出判决。 */
+const ledgerPass = pass.filter((r) => !r.criteria);
+const critRows = results.filter((r) => r.criteria);
+const patches = ledgerPass.map((r) => ({
   id: r.id, col: 6, new: "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
   why: "不借帧的名义给绿，也不再挂着待修复",
-})).concat(pass.map((r) => ({ id: r.id, col: 9, new: ("源码判点：" + r.claim + " ｜承载 " + r.file).replace(/\|/g, "／").slice(0, 220), why: "写明这条是靠哪个谓词成立的" })));
+})).concat(ledgerPass.map((r) => ({ id: r.id, col: 9, new: ("源码判点：" + r.claim + " ｜承载 " + r.file).replace(/\|/g, "／").slice(0, 220), why: "写明这条是靠哪个谓词成立的" })));
 
 /* 补丁文字里出现 "undefined" 就是载具在撒谎：台账会把「承载 undefined」当成溯源写进去。
    这类形状（字段没解析出来却照原样拼进权威件）本轮已经付过一次学费，所以直接判红而不是容忍。 */
@@ -1223,7 +1665,52 @@ if (lying.length) {
   process.exit(2);
 }
 
-if (!DRY) writeFileSync(OUT, JSON.stringify({ generatedAt: new Date().toISOString(), source: "verify-source-shape.mjs", passed: pass.length, failed: fail.length, patches }, null, 1));
+/* ── 负例注入：缺席断言的「必须能变红」检验 ─────────────────────────────────
+   缺席判据最容易长成恒绿门：物件本来就不在，谓词永远成立，产品真回归了也不会红。
+   所以每条 criteria 行都带 neg：把那件"不该存在的物件"注进承载文本的**内存副本**
+   （marker 必须唯一 ⇒ 注入点确定），同一条谓词、同一个取数管道重跑整条判点，必须判不成立。
+     · 注入没落地（marker 不在盘上 / 不唯一 / 没给注入内容）⇒ 判红：负例是空的
+     · 注入后整条仍然成立 ⇒ 判红：这道门咬不动，就是恒绿门
+   ⚠ 全程只在内存里做，apps/client/** 与产物一个字节都不写（两条车道正在改源码，
+      而本项目在册教训是"产物里查不到不等于运行时不存在"，反过来注入也不能靠改产物做）。 */
+const critSpec = SPEC.filter((x) => x.criteria);
+const negRows = [];
+for (const s of critSpec) {
+  const targets = s.files || [{ file: s.file, checks: s.checks }];
+  const per = [];
+  for (const ng of (s.neg || [])) {
+    if (!targets.some((t) => t.file === ng.file)) { per.push({ file: ng.file, status: "BAD_INJECT", why: "neg 点名的承载文件不在本条判点里" }); continue; }
+    let base = null;
+    try { base = readFileSync(resolve(REPO, ng.file), "utf8"); } catch { per.push({ file: ng.file, status: "BAD_INJECT", why: "承载文件读不到" }); continue; }
+    const inj = inject(base, ng);
+    if (inj.why) { per.push({ file: ng.file, status: "BAD_INJECT", why: inj.why }); continue; }
+    const after = runRow(s, ng.file, inj.text);
+    per.push({
+      file: ng.file,
+      status: after ? "RED" : "VACUOUS",
+      grew: inj.text.length - base.length,
+      why: after ? after.where + " :: " + after.why : "注入命中后整条判点仍然成立 ⇒ 恒绿门",
+    });
+  }
+  negRows.push({ id: s.id, caseId: s.caseId, manifest: s.manifest, declared: (s.neg || []).length, rows: per });
+}
+const noNeg = critSpec.filter((s) => !(s.neg || []).length).map((s) => s.caseId);
+const negBad = negRows.flatMap((r) => r.rows.filter((n) => n.status !== "RED").map((n) => r.caseId + " :: " + n.file + " :: " + n.status + " :: " + n.why));
+const negRed = negRows.reduce((a, r) => a + r.rows.filter((n) => n.status === "RED").length, 0);
+const negTotal = negRows.reduce((a, r) => a + r.rows.length, 0);
+
+if (!DRY) writeFileSync(OUT, JSON.stringify({
+  generatedAt: new Date().toISOString(), source: "verify-source-shape.mjs",
+  passed: pass.length, failed: fail.length, patches,
+  /* 判据台行的判决单独放这里（不进 patches ⇒ patch-ledger-cells 不会被 0 命中的 id 打死），
+     判据台侧要盖章时从 criteriaRows 取 manifest+caseId，负例读数一并留痕。 */
+  criteriaRows: critRows.map((r) => ({
+    id: r.id, manifest: r.manifest, caseId: r.caseId, page: r.page, ok: r.ok, why: r.why,
+    carrier: r.files, bands: r.bands, needsRuling: r.needsRuling, claim: r.claim,
+    neg: (negRows.find((n) => n.id === r.id) || { rows: [] }).rows,
+  })),
+}, null, 1));
+
 /* 判点条数要能说清"唯一判点"有几个：复算发现表里存在同一 id 多条（重复会让 total 虚高，
    而"88 条判点成立"这句话读起来像 88 个不同的判决）。这里只打印 + 带 --strict-dup 才否决，
    因为去重本身要逐条判"是同一条写了两遍，还是两个不同判点共用了一个 id"。 */
@@ -1245,6 +1732,36 @@ if (!DRY) writeFileSync(OUT, JSON.stringify({ generatedAt: new Date().toISOStrin
 }
 console.log("SRC_SHAPE total=" + results.length + " 成立=" + pass.length + " 不成立=" + fail.length + " 补丁=" + patches.length +
   "（守恒：" + (pass.length + fail.length === results.length ? "yes" : "NO") + "）");
+console.log("SRC_SHAPE_CRIT 判据台行=" + critRows.length + " 成立=" + critRows.filter((r) => r.ok).length +
+  " 不成立=" + critRows.filter((r) => !r.ok).length + " 未裁半句=" + critRows.filter((r) => r.needsRuling).length);
+/* 判据台行（H13/N10/…）不是台账行：patch-ledger-cells.mjs:48 对「命中 0 行」是整份计划 die，
+   所以这些 id 只要漏进 patches，就会连累另外 91 条本来能落的补丁一起失败。这里当场判红。 */
+const leaked = patches.filter((p) => critRows.some((c) => c.id === p.id));
+if (leaked.length) {
+  console.log("SRC_SHAPE_RESULT=FAIL reason=判据台行的 id 漏进了台账补丁（会把整份 cellplan 打死）：" + leaked.map((p) => p.id).slice(0, 6).join(" "));
+  process.exit(2);
+}
+
+console.log("SRC_SHAPE_NEG 注入点=" + negTotal + " 已变红=" + negRed + " 咬不动=" + (negTotal - negRed) + " 没挂负例的判据行=" + noNeg.length + (noNeg.length ? "（" + noNeg.join(" ") + "）" : ""));
 for (const r of fail) console.log("SHAPE_FAIL " + r.id + " :: " + r.why);
-console.log("SRC_SHAPE_RESULT=" + (fail.length ? "PARTIAL（有谓词不过，不过的那几条不落账）" : "OK"));
-process.exit(pass.length + fail.length === results.length ? 0 : 2);
+for (const b of negBad) console.log("SHAPE_NEG_VACUOUS " + b);
+/* 退出码分档：守恒破了 / 判据台行不成立 / 负例咬不动（恒绿门）都要出非 0。
+   台账行不过仍走原来的 PARTIAL＋exit 0 —— 那是别的车道在读的既有语义，今天不动它。 */
+const critFail = fail.filter((r) => r.criteria);
+if (pass.length + fail.length !== results.length) {
+  console.log("SRC_SHAPE_RESULT=FAIL reason=守恒破了（成立+不成立 ≠ 条目数）");
+  process.exit(2);
+}
+if (critFail.length) {
+  console.log("SRC_SHAPE_RESULT=FAIL reason=判据台缺席判点不成立（" + critFail.length + " 条：" + critFail.map((r) => r.caseId).join(" ") + "）⇒ 被断言缺席的物件回到了盘上");
+  process.exit(1);
+}
+if (noNeg.length || negBad.length) {
+  console.log("SRC_SHAPE_RESULT=FAIL reason=缺席判据的负例不成立（恒绿门形状：注入命中后谓词仍成立，或压根没挂负例）⇒ 判据行=" + (noNeg.length + negBad.length) + " 处");
+  process.exit(1);
+}
+console.log("SRC_SHAPE_RESULT=" + (fail.length ? "PARTIAL（有台账判点不过，不过的那几条不落账）" : "OK"));
+process.exit(0);
+} /* ← if (IS_CLI) 的收尾：library 模式（被自测件 import）只导出引擎，不出判决也不退出 */
+
+
