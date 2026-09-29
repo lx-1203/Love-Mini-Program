@@ -217,5 +217,20 @@ provenance 门剩下的红主要是 `PROV_FRAMES_PRE_STAMP=4867`，成因已定�
 
 补名字之后仍拦着的，是**执行器只有两条腿**：`r-exec-cli.mjs:611-613` 实测只有 `element("input"|"tap", …)`，没有 `change`/属性读通道；而 9 枚 switch 编译出来全是 `bindchange`（vip 那份 wxml 逐字可见 `checked="{{s}}" … bindchange="{{w}}"`）。也就是说：判据要断言"开关处于开/关态"，执行器既不能稳定派发也不能读回状态。按车道结论，**光补钩子 0/7 确定可自动化**（PT25 现实可、ST05/ST06/DND02 只部分）。
 
-这一条我不打算靠"把动词降级成 tap"来凑绿——MSG26/DND08/DC08/VI40 已明确记为不许换动词。要真收这批账，得给执行器加一条 change/属性读的能力（与第 28 项 C21 的能力差同一刀），排在做完 §10 的落账之后。
+这一条我不打算靠"把动词降级成 tap"来凑绿——MSG26/DND08/DC08/VI40 已明确记为不许换动词。要真收这批账，得给执行器加一条 change/属性读的能力（就是 followups 第 6 节第 4 条那三件"载具已有、只是没接线"的事），排在做完 §10 的落账之后。
+
+## 28. CH22 只落了不依赖滚动裁决的那半，另半是三件事互斥，得你选一个解释
+abs7 车道把 7 条"断言某物不存在"的判据换成了能判的非帧载体（判据正文一字未动，我已复跑：`SRC_SHAPE total=98 成立=98 不成立=0`、`SRC_SHAPE_NEG 注入点=33 已变红=33 咬不动=0`、`SRC_SHAPE_RESULT=OK`）。其中 6 条 DONE，**CH22 是第 7 条 = NEEDS_RULING**，车道没有替我选解释，我也同意不选：
+
+同一条判据里三处互不相让：
+- **ACTION 句**说"页级 window 滚动，非 scroll-view"；
+- **expected 句**要"滚到底可见…以 `scrollTop/scrollHeight` 数值回填"——这是 scroll-view 才有的量，页级 window 滚动给不出这两个数；
+- **盘上的第三个事实**：`apps/client/src/subpackages/campus/campus/hub.vue:269-271` 是 `<scroll-view class="campus-hub__feed" scroll-y :enhanced :bounces>`，一直开到 :334 ⇒ 底部文案确实在 scroll-view **内**。
+
+所以"按字面补实现"在这条上不可满足：满足 ACTION 句就得把 feed 从 scroll-view 里搬出来（动结构、动滚动语义），满足 expected 句就得承认它是 scroll-view（那 ACTION 句为假）。我只落了**不需要这个裁决的那半**并让它可判：
+`hub.vue:330-332` 底部块无 `@tap`/无箭头节点（模板里 `campus-hub__more-arrow` 0 命中，只剩 :768 那行死样式）、i18n 文案 `zh-CN.ts:3628 "更多校园圈持续接入中"` 无箭头字符、mock/real **两档** `hub.wxml` 各判 `absent(/⌄|campus-hub__more-arrow/g)` 实测 0/0。
+
+请你三选一：**(a)** 承认它是 scroll-view，把 ACTION 那句当笔误（判据按 expected 的 scrollTop/scrollHeight 走，需要执行器加"读 scroll-view 数值"的能力）；**(b)** 要它变成页级 window 滚动（我把 `campus-hub__feed` 搬出 scroll-view，属结构改动，会牵动 :269-271 的 enhanced/bounces 行为）；**(c)** 拆成两条各判各的（无箭头/无可点 = 已落；滚动归属 = 另立新行）。
+
+另记一条会咬人的漂移：CH22 判据正文引用的行号 `:336-339` 已经漂到 `:330-332`。判据里写死行号是定时炸弹，建议后续只写"锚点 + 类名"不写行号——但这属于改判据文本，得你点头才动。
 
