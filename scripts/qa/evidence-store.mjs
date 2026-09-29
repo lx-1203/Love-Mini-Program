@@ -188,11 +188,86 @@ function cmdVerify() {
   process.exit(ok ? 0 : 1);
 }
 
+/* ---------------- --evict：把仓内副本挪进仓外隔离区（不是删除） ----------------
+   为什么这个动作要写这么死：本项目的证据一旦没了就再也对不上账（提交号不能重生）。
+   四条护栏，缺一条就拒绝动：
+     1) 必须同时给 --apply 与 --confirm EVICT_EVIDENCE —— 少一个就是 DRY，只数不动；
+     2) 只动"manifest 声称了 contentHash 且盘上字节重算相符"的帧（对不上 = 生产者有问题，先修它）；
+     3) 库里必须**恰好一枚**同前缀对象；0 枚或 >1 枚一律不动；
+     4) 动作是 move 到仓外隔离区 + 落一份逐文件回滚清单，不是 rm —— 任何一步都能原路退回。
+   隔离区默认在库旁边（仓外）；落在仓内直接拒绝，理由同 assertStoreOutsideRepo。 */
+function cmdEvict() {
+  assertStoreOutsideRepo();
+  const apply = has("apply");
+  const confirm = flag("confirm", "");
+  if (apply && confirm !== "EVICT_EVIDENCE") {
+    console.log("STORE_RESULT=FAIL reason=--evict --apply 必须带 --confirm EVICT_EVIDENCE（这是移动证据的动作，不许被顺手敲出来）");
+    process.exit(2);
+  }
+  if (!existsSync(store)) {
+    console.log(`STORE_RESULT=FAIL reason=库不可达（${store}）⇒ 没有库就没有背书，一张都不能动`);
+    process.exit(1);
+  }
+  const quarantine = resolve(flag("quarantine", join(store, "..", "love-mini-evidence-quarantine")));
+  const qN = quarantine.split(sep).join("/"), rN = repo.split(sep).join("/");
+  if (qN === rN || qN.startsWith(rN + "/")) {
+    console.log(`STORE_RESULT=FAIL reason=隔离区落在仓库内（${relPosix(quarantine) || "."}）⇒ 挪出去才有意义，也才谈得上回滚`);
+    process.exit(2);
+  }
+  /* 先给库建一份前缀索引（桶目录 → 16 位前缀 → 命中数），避免逐帧 readdir 把盘打满。 */
+  const index = new Map();
+  for (const b of readdirSync(store)) {
+    const sub = join(store, b);
+    let st = null; try { st = statSync(sub); } catch { continue; }
+    if (!st.isDirectory()) continue;
+    const m = new Map();
+    for (const f of readdirSync(sub)) {
+      const k = f.replace(/\.[0-9a-z]+$/i, "").toLowerCase().slice(0, 16);
+      m.set(k, (m.get(k) || 0) + 1);
+    }
+    index.set(b, m);
+  }
+  const rows = referencedFrames();
+  let candidates = 0, moved = 0, wouldMove = 0, noClaim = 0, hashBad = 0, absent = 0, ambig = 0;
+  const rollback = [];
+  for (const r of rows) {
+    const key = String(r.claimHash || "").toLowerCase();
+    if (!existsSync(r.abs)) { absent++; continue; }
+    if (key.length < 16) { noClaim++; continue; }
+    const h = hashFull(r.abs);
+    if (h.slice(0, 16) !== key) { hashBad++; continue; }
+    const hits = (index.get(bucketOf(key)) || new Map()).get(key) || 0;
+    if (hits !== 1) { ambig++; continue; }
+    candidates++;
+    const dest = join(quarantine, bucketOf(key), key + "--" + r.rel.replace(/[\\/]/g, "_"));
+    if (apply) {
+      mkdirSync(dirname(dest), { recursive: true });
+      copyFileSync(r.abs, dest);
+      const okBytes = statSync(dest).size === statSync(r.abs).size;
+      if (!okBytes) { console.log(`STORE_EVICT_VERIFY_FAIL ${r.rel} ⇒ 隔离区副本字节数不符，原文件保持不动`); continue; }
+      rmSync(r.abs);
+      rollback.push({ from: r.rel, to: dest.replace(/\\/g, "/"), sha256: h, bytes: statSync(dest).size });
+      moved++;
+    } else wouldMove++;
+  }
+  console.log(`STORE_EVICT mode=${apply ? "APPLY" : "DRY"} 引用=${rows.length} 可动=${apply ? moved : wouldMove} 盘上无=${absent} 无指纹=${noClaim} 哈希不符=${hashBad} 库内歧义=${ambig} 候选合计=${candidates} 隔离区=${quarantine}`);
+  if (apply) {
+    const rb = join(quarantine, "rollback-manifest.json");
+    writeFileSync(rb, JSON.stringify({ at: new Date().toISOString(), repo, count: rollback.length, rows: rollback }, null, 1));
+    console.log(`STORE_EVICT_ROLLBACK=${rb.replace(/\\/g, "/")} 条数=${rollback.length}`);
+  }
+  /* 判红口径：只要还有"盘上有帧但库不能唯一背书"，就说明证据没有两处都能对账 —— 不许宣布成功。 */
+  const dirty = hashBad + ambig;
+  console.log(`STORE_RESULT=${dirty ? "FAIL" : (apply ? "EVICTED" : "DRY")}${dirty ? ` reason=哈希不符=${hashBad} 库内歧义=${ambig}，这批一张都不许动` : ""}`);
+  process.exit(dirty ? 1 : 0);
+}
+
 if (has("status")) cmdStatus();
 else if (has("export")) cmdExport();
+else if (has("evict")) cmdEvict();
 else if (has("verify")) cmdVerify();
 else {
-  console.log("用法：evidence-store.mjs --status | --export [--apply] [--limit N] | --verify [--json out]  [--store <仓外目录>]");
+  console.log("用法：evidence-store.mjs --status | --export [--apply] [--limit N] | --verify [--json out] | --evict [--apply --confirm EVICT_EVIDENCE]  [--store <仓外目录>]");
   console.log("STORE_RESULT=FAIL reason=没给动作");
   process.exit(2);
 }

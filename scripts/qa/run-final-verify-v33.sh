@@ -13,6 +13,20 @@ mkdir -p "$OUT"
 HEAD_BEFORE=$(git rev-parse --short HEAD)
 echo "HEAD=$HEAD_BEFORE  node=$("$N22" -v)"
 
+# 证据库这一轴必须说清"本轮是在哪种状态下量的"，否则同一道门在两台机器上给出不同结论却没人知道为什么。
+# 规则：库目录存在 ⇒ 导出 QA_EVIDENCE_STORE，让 verify-evidence-corpus 真的走 reachable 那一支；
+#       不存在 ⇒ 不设变量（门会报 CORPUS_STORE=unconfigured），并在日志里把这一事实印出来。
+# 这里**故意**不做"库没了就假装没事"以外的任何事：设置了变量却够不着，是要判红的（那是用户点名的条件）。
+STORE_DIR_DEFAULT="/d/6/love-mini-evidence"
+if [ -n "${QA_EVIDENCE_STORE:-}" ]; then
+  echo "SWEEP_STORE_MODE=configured（沿用外部给的 QA_EVIDENCE_STORE=$QA_EVIDENCE_STORE）"
+elif [ -d "$STORE_DIR_DEFAULT" ]; then
+  export QA_EVIDENCE_STORE="D:/6/love-mini-evidence"
+  echo "SWEEP_STORE_MODE=reachable（$QA_EVIDENCE_STORE 在盘 ⇒ 本轮证据库这一轴参与判定）"
+else
+  echo "SWEEP_STORE_MODE=absent（仓外库不存在 ⇒ 本轴报 unconfigured，不参与判定；这不是豁免，是如实标注）"
+fi
+
 g() { # g <name> <timeoutMs> <args...>
   local n="$1"; shift; local t="$1"; shift
   timeout "$t" "$N22" "$@" > "$OUT/$n.log" 2>&1
