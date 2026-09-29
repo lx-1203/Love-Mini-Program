@@ -106,19 +106,58 @@
 
 本轮已入库 25 条提交；工作树约 160 项脏，其中绝大多数属于上述三条在途车道，**不属于我、也不该由我代为提交**。
 
-## 4. 终局复量之后欠下的两把载具刀（等 UI 车道收工再动，跑中不改载具）
+## 4. 终局复量之后欠下的四把载具刀（等 UI 车道收工再动，跑中不改载具）
 1. **`verify-real-coverage` 只数不点名**。`scripts/qa/verify-real-coverage.mjs:434` 把欠账算成
    `|neverOnReal ∪ noA ∪ noGuest|` 的集合大小，`:509` 只印一个数 —— 于是本轮"欠账 10/236"这三行里
    没有任何一处能读出**是哪 10 条**。头两行给了线索（`REAL_BAND_BUT_ALL_SKIPPED=10`、
    `JUDGED_MISSING_A=10 JUDGED_MISSING_GUEST=2`），但那是计数不是名册。红必须可归因，
    否则下一条车道只能重新反推。改法：加一条 `REALCOV_UNCOVERED_LIST=`（逐条 suite|id 带缺 A/缺 guest 的哪一侧），
    并且**不改判红阈值**（:514 的 `ok` 仍只看 uncovered 与守恒）。
-2. **leg 的 sha 要在腿起点读，不能在写盘时读**。`exec-frames-to-corpus.mjs:70/:82-90` 已经修好
-   （逐行写 bandSha、顶层如实记转换时刻），但它上游那份 `exec-results.json` 的 `gitSha`
-   仍是写盘时刻的 HEAD —— 实测 `reports/screenshots/round-8-interact/manifest-detail.json`
-   行内 `bandSha=93650335`（提交 2026-09-28T19:41Z）比帧 `at=19:13Z` 晚 28 分钟，19 张因此全判 pre_stamp。
-   改法：执行器在**开腿时**取一次 HEAD 并随每行落下，收尾不再重取；改完必须自证能变红
-   （拿一份"行 sha 晚于帧"的旧产物当正对照，见 decisions 第 25 项的复刻口径）。
+2. **续跑会把别人那一批的行重新盖成自己这程的 sha**（此项已纠正我先前写错的归因）。
+   我原来写的是"leg 的 sha 在写盘时读"——**不对**：`r-exec-cli.mjs:147` 的
+   `const GIT_SHA = git("rev-parse --short HEAD")` 是顶层量，进程**启动**就取好了。
+   真机制在续跑：`:20` 明写"同一 --out 下已有 exec-results.json 时按 manifest|id 跳过跑过的，合并后整体守恒才写盘"，
+   而 `:437` 落盘时给**合并后的全集**写 `gitSha: GIT_SHA` ⇒ 老行被新程的提交背书。
+   实测形状：`exec-interact-real-sc-r10/exec-results.json` 的 `gitSha=93650335`（提交 2026-09-28T19:41Z）、
+   `updatedAt=19:44Z`，而它转出的 `reports/screenshots/round-8-interact/manifest-detail.json`
+   帧 `at` 早至 19:13Z —— 早 28 分钟，19 张因此全判 pre_stamp。
+   改法（不改判据）：每行落 `row.sha = GIT_SHA`（该行**实际执行时**那程的启动 sha），
+   顶层只留"本程启动 sha"并如实记 `mergedFrom`；或者拒绝给"含未跑过之外来行"的文件整体重盖。
+   可照 `:789` 已有的 `fileBands` 那种逐件记账的形状做。
 
-这两刀都不涉及判据与阈值，属于"把我自己造的假归属止住"，不需要你裁定；但都必须排在车道收工之后，
-理由见本节开头那条撕裂读数。
+3. **TAP_RE 看不见驼峰动词，已核实造成两条假绿**。`r-exec-cli.mjs:145` 的英文支是
+   `(?<![A-Za-z])(?:tap|click|input|scroll|swipe|trigger|press)(?![A-Za-z])` —— 前视断言把
+   `rapidTap×5` 里的 `Tap` 挡在外面（前面是字母 d），于是"这条判据要不要点东西"判成**否**，
+   执行器根本不走点击分支，却仍被记 `EXECUTED`。
+   我按判据原文实跑那条正则：`RE.test(DND08.action)=false`、`RE.test(VI40.action)=false`
+   （别被我第一眼的读法骗了——VI40 正文里有"频道 Tab 项"，看着像命中，但 `tab` 与 `tap` 不同形，
+   实测就是 false）。两行在 `reports/audit/round-6/interact/exec-results.json` 里现在都是
+   `"status": "EXECUTED"`。
+   DND08 还叠了**第二条独立的不合格依据**：它自己的 `observed` 写着
+   `pre:login A ok userId=user-1001 MISMATCH!`，且 `missingEvidence=2` 两条都是
+   "未写出:ERROR:timeout … 盘上存在=false" —— 前置身份核对报了不符、前后帧一张都没落盘，
+   却仍是 EXECUTED。VI40 则有证据（`missingEvidence=0`），它的问题是 `probeMany` 把
+   `fields({size:true})` 的几何扔了（见第 4 条），不是同一处塌法，别混成一类。
+   这不是小瑕疵：它和 `census-tap-targets.mjs:26-37` 想防的是同一个坑（那门甚至会为 `getApp()` 里的
+   `tAp` 立负例），却漏了驼峰这一形。
+   改法要成对做：① 动词表补驼峰边界（别写成把 `searchTap` 也吞了的无边界版）；
+   ② 给 `census-tap-targets.mjs` 加一条**能变红**的负例 —— 拿 `rapidTap×5` 当正对照，
+   断言它必须被认成交互动词；再拿 `getApp()` 当反对照，确认没把幽灵入口放进来。
+   注意 `r-exec.cjs:1174-1178` 那条防降级守卫只在一处存在，另一条路径没有 ⇒ 别以为已经全局挡住。
+
+4. 车道普查（`.zcode/tmp/c21-capability-matrix.md`，396 行）指出三件"载具已有、只是没接线"的事，
+   都不需要新能力：`probeMany` 取了 `fields({size:true})` 却只留 `res.length`（`r-exec-cli.mjs:224`，
+   `r-exec-ws.mjs:430` 同抄；正例在 `r1-exec.cjs:1195-1198` 保留了几何）；
+   `installToastHook/drainToasts`（`r1-exec.cjs:278-305`，:293 已经包住 showModal）是可整段搬的
+   evaluate 载荷，而 `row.toast/console` 现在被钉成空串（`:184`、`r-exec-ws.mjs:132`）；
+   `pullDown/stopRefresh`（`r1-exec.cjs:1115-1126`）与 `longpress`（`:1033/:1068`）在派发环
+   `r-exec-cli.mjs:605-611` 里没有出口（那儿只发 tap/input，且 `--value` 硬编码 `123456`）。
+   真正需要新写的是：逐请求网络计数、网络条件注入、原生 ActionSheet/showModal 选项桩
+   （选择器够不到原生层 ⇒ **MSG26 的"真点"腿保持 NOT_SHOOTABLE**）、同名多元素的第 n 个消歧。
+
+这四刀都不涉及判据文本与阈值。其中 1、2、4 属于"把我自己造的假归属/漏量止住"，不需要你裁定；
+第 3 刀会**动到台账计数**，但两条不一样：**DND08** 有两个独立的不合格依据（动词没被认出 + 前置身份报 MISMATCH + 前后帧零落盘），
+该从 EXECUTED 降级；**VI40** 有帧、`missingEvidence=0`，它不该降级，缺的是那条几何判点从未被量到
+（`probeMany` 扔了 `fields({size:true})`），应如实补一个"该 clause 未测"的落点而不是把整行抹掉。
+动账必须走单一写者路径、先 `--dry` 再 `--apply`、并留逐文件回滚点，不能顺手把两行改了就算完。
+四刀都必须排在车道收工之后，理由见本节开头那条撕裂读数。
