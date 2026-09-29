@@ -52,19 +52,33 @@ const storeReachable = existsSync(storeDir);
 t("前置：库已导出可达（不可达时下面的「可达/背书」两条没法测，直接红给你看）",
   storeReachable, "缺库就先跑 node22 scripts/qa/evidence-store.mjs --export --apply ｜ dir=" + storeDir);
 
+/* 基线必须量出来，不能写死。本文件第一版把"真语料有几条红"钉成 1（round-1 那份空 gitSha），
+   结果 #12 那条 legacy 规则一落地、语料合理转绿，这里就 4 处齐红 ——
+   同一类错我今天已经犯过两次（test-guest-landing 钉死 27/26、test-triage-dead-selector 全等比键）。
+   现在：P0 = 当场量一次未配库时的 CORPUS_PROBLEMS，其余断言全部相对它。 */
+let P0 = null;
+{
+  const r = run([GATE], { cleanStore: true });
+  P0 = numOf(r.out, "CORPUS_PROBLEMS");
+  t("基线可测：未配库那一发能读到 CORPUS_PROBLEMS 数字（读不到就是门的打印形状变了，本文件全部失效）",
+    P0 !== null && P0 >= 0, "PROBLEMS=" + P0);
+  t("基线自洽：退出码必须与它自己印的问题数一致（>0 ⇔ 非 0）",
+    P0 !== null && (P0 > 0 ? r.code === 1 : r.code === 0), `P0=${P0} exit=${r.code}`);
+}
+
 /* 1) 未配库 ⇒ 本轴不参与判定 */
 {
   const r = run([GATE], { cleanStore: true });
   t("1 未配库：印 CORPUS_STORE=unconfigured", /CORPUS_STORE=unconfigured/.test(r.out), r.out.split(/\r?\n/).find(l => l.startsWith("CORPUS_STORE")) || "(无此行)");
-  t("1 未配库：判定与从前相同（不因本轴新增红）", numOf(r.out, "CORPUS_PROBLEMS") === 1 && r.code === 1,
-    "exit=" + r.code + " PROBLEMS=" + numOf(r.out, "CORPUS_PROBLEMS") + "（从前实测就是 1：round-1 空 gitSha 那一份）");
+  t("1 未配库：判定与本发基线逐字相同（不因本轴新增红）",
+    numOf(r.out, "CORPUS_PROBLEMS") === P0, `exit=${r.code} PROBLEMS=${numOf(r.out, "CORPUS_PROBLEMS")} 基线 P0=${P0}`);
 }
 
 /* 2) 库可达且帧都在盘上 ⇒ 本轴不该凭空加红 */
 {
   const r = run([GATE, "--store", storeDir]);
-  t("2 库可达：PROBLEMS 仍是 1（库不新增红，也不豁免既有问题）",
-    numOf(r.out, "CORPUS_PROBLEMS") === 1, "PROBLEMS=" + numOf(r.out, "CORPUS_PROBLEMS") + " ｜ " + (r.out.split(/\r?\n/).find(l => l.startsWith("CORPUS_STORE")) || ""));
+  t("2 库可达：PROBLEMS 仍等于基线（库不新增红，也不豁免既有问题）",
+    numOf(r.out, "CORPUS_PROBLEMS") === P0, `PROBLEMS=${numOf(r.out, "CORPUS_PROBLEMS")} 基线 P0=${P0} ｜ ` + (r.out.split(/\r?\n/).find(l => l.startsWith("CORPUS_STORE")) || ""));
   t("2 库可达：库内对象数与 --status 同源（>0）",
     (numOf(r.out, "库内对象") ?? 0) > 0, r.out.split(/\r?\n/).find(l => l.startsWith("CORPUS_STORE")) || "(无此行)");
 }
@@ -75,14 +89,14 @@ t("前置：库已导出可达（不可达时下面的「可达/背书」两条�
   const r = run([GATE, "--store", ghost]);
   const p = numOf(r.out, "CORPUS_PROBLEMS");
   t("3 不可达 ⇒ 判红：PROBLEMS 必须比基线多（不许当「库里没有就算了」）",
-    p !== null && p >= 2 && r.code !== 0, "exit=" + r.code + " PROBLEMS=" + p);
+    p !== null && p >= P0 + 1 && r.code !== 0, "exit=" + r.code + " PROBLEMS=" + p + " 基线 P0=" + P0);
   t("3 不可达的红必须说清是哪个目录（不指名的红没法处置）",
     /CORPUS_PROBLEM 证据库已配置但够不着/.test(r.out) && r.out.includes(ghost),
     r.out.split(/\r?\n/).find(l => l.includes("证据库已配置")) || "(没有指名行)");
   const inside = join(REPO, "reports");
   const r2 = run([GATE, "--store", inside]);
   t("3b 库落在仓内 ⇒ 也判红（藏在被测物里时「证据在不在」会被仓库脏净污染）",
-    (numOf(r2.out, "CORPUS_PROBLEMS") ?? 0) >= 2 && /CORPUS_STORE=inside-repo/.test(r2.out),
+    (numOf(r2.out, "CORPUS_PROBLEMS") ?? 0) >= P0 + 1 && /CORPUS_STORE=inside-repo/.test(r2.out),
     "PROBLEMS=" + numOf(r2.out, "CORPUS_PROBLEMS"));
 }
 

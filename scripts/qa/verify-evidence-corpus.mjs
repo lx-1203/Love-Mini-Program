@@ -10,6 +10,13 @@
  * 「顶层没有 gitSha（无从核实）」。前一类是证据定格在当时的正常状态，后两类才不可背书。
  * 现在拆成 CORPUS_SHA_CLASS 三个类各自计数；**判红条件一字未放宽**（仍然是 !real ⇒ 红），
  * 并且 HEAD 比对从「短写字符串相等」改成「经 git 归一到 40 位」，免得同一枚提交的全写被读成过期。
+ *
+ * 2026-09-29 追加（lane-corpus-legacy）：empty 那一类里「早于打戳约定」的那些原先被本门判红，
+ * 而 verify-provenance-all.mjs 早已把同一批帧读成 PROV_MANIFEST_LEGACY —— 两把尺子对同一份
+ * reports/screenshots/round-1/manifest.json 给出相反结论。现在本门用**同一条派生来源**
+ * （git log -S gitSha -- scripts/qa，无硬编码日期）认约定起点：只有 generatedAt 严格早于该起点的
+ * 无戳清单才不判红，且必须逐份点名 + 单独一行 CORPUS_LEGACY_NO_SHA（legacy ≠ 通过，其帧仍无背书）。
+ * 除这一格外，其余判据、阈值、退出码语义一字未动。
  */
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -72,6 +79,28 @@ const isRealCommit = (sha) => { try { execFileSync("git", ["cat-file", "-e", sha
 const HEAD40 = (() => { try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: repo, encoding: "utf8" }).trim(); } catch { return ""; } })();
 const fullCommit = (sha) => { try { return execFileSync("git", ["rev-parse", sha + "^{commit}"], { cwd: repo, encoding: "utf8" }).trim(); } catch { return ""; } };
 const behindCount = (sha) => { try { return Number(execFileSync("git", ["rev-list", "--count", sha + "^{commit}..HEAD"], { cwd: repo, encoding: "utf8" }).trim()); } catch { return -1; } };
+/* 「manifest 顶层必须带 gitSha」这条约定本身有生效日期：早于该日期生成的清单不可能带上当时还不存在的字段。
+   本门与 verify-provenance-all.mjs:139-144 必须用**同一把尺子**、且用**同一个派生来源**
+   （`git log --reverse --format=%cI -S gitSha -- scripts/qa` 的首枚提交），不落硬编码日期常量 ——
+   常量会静默过期：约定起点在历史上前移/后移时，硬编码不会报警，只会悄悄改掉判据。
+   取的是约定存在的**下界** ⇒ 只会偏严不会偏松：晚于该时刻生成的无戳清单仍然判红。
+   修的这个缺陷是实测的分裂（2026-09-29）：同一份 reports/screenshots/round-1/manifest.json，
+   provenance 报 PROV_MANIFEST_LEGACY/PROV_FRAMES_LEGACY=144（约定尚未存在，不判红），
+   本门却报 CORPUS_PROBLEMS=1（空 gitSha ⇒ 判红）—— 两把尺子量同一批帧量出两个结论。
+   约定起点派生不出来时**一条 legacy 都不放行**（保持本文件改前的逐字行为），并把失败单独印出来。 */
+const STAMP_CONVENTION = (() => {
+  const raw = (() => { try { return execFileSync("git", ["log", "--reverse", "--format=%cI", "-S", "gitSha", "--", "scripts/qa"], { cwd: repo, encoding: "utf8" }).trim(); } catch { return ""; } })();
+  const first = (raw || "").split("\n")[0] || "";
+  const d = first ? new Date(first) : null;
+  return d && !isNaN(d.getTime()) ? d : null;
+})();
+/* 生成时间按 provenance 那门的同一对方言读（generatedAt 优先，退回 generated_at）。
+   读不到日期 ⇒ 不算 legacy：无法证明它早于约定，就按「约定之后生成」处理（宁可红，不空放）。 */
+const genTimeOf = (j) => {
+  const raw = String(j.generatedAt || j.generated_at || "");
+  const d = raw ? new Date(raw) : null;
+  return { raw, at: d && !isNaN(d.getTime()) ? d : null };
+};
 
 // 自测专用 --root（默认 reports，生产不传 → 行为与逐字改前一致）：本工具只扫 reports/，
 // 而门禁小修的段边界自证需要在 reports/ 之外放一次性夹具（见 .zcode/tmp/scope-fixtures/），
@@ -161,7 +190,12 @@ let fail = 0, expired = 0, scanned = 0;
 let expiredResolvableOlder = 0, expiredUnresolvable = 0, expiredEmpty = 0;
 let framesResolvableOlder = 0, framesUnresolvable = 0, framesEmpty = 0;
 let storeVouchedTotal = 0, storeCollisionTotal = 0;
+/* legacy 是**新增的可见性**，不是将既有计数重新解释：empty 类照旧数「顶层无 gitSha」（事实没变），
+   fail 只少了「无戳且早于约定」这一种判决。legacy 的清单/帧数单独两个计数器，绝不并进绿的那一侧，
+   也不与 expiredEmpty 共用同一个数 —— 并进 green 就是把"没有戳记"读成"有背书"。 */
+let legacyNoSha = 0, legacyNoShaFrames = 0;
 const failReasons = [];
+const legacyReasons = [];
 for (const m of manifests) {
   let j; try { j = JSON.parse(readFileSync(m, "utf8")); } catch { console.log(`  UNPARSEABLE ${m}`); fail++; continue; }
   const shots = j.shots ?? j.frames ?? [];
@@ -197,11 +231,20 @@ for (const m of manifests) {
   }
   const sha = j.gitSha || "";
   const real = sha ? isRealCommit(sha) : false;
+  const gen = genTimeOf(j);
+  /* legacy 只放行**顶层无 gitSha**这一类（有戳却解析不到 = 真断链，一个都没被放行），
+     且必须 generatedAt **严格早于**约定起点；等于或晚于 ⇒ 约定当时已生效，照旧判红。
+     豁免的只是"红"，不是"背书"：这批帧仍没有戳记可核，不得被引用为产物级证据。 */
+  const legacyNoStamp = !sha && !!STAMP_CONVENTION && !!gen.at && gen.at < STAMP_CONVENTION;
   const full = real ? fullCommit(sha) : "";
   // 归一到 40 位再比：同一枚提交的短写/全写是同一个事实，不是两种事实。
   const same = !!full && full === HEAD40;
   const behind = real && !same ? behindCount(sha) : 0;
-  const verdict = !sha ? "无gitSha(空 ⇒ 不可核实，判红)"
+  const verdict = !sha ? (legacyNoStamp
+      ? `无gitSha(顶层无 gitSha，但 generatedAt=${gen.raw} 早于打戳约定 ${STAMP_CONVENTION.toISOString()} ⇒ legacy：不判红，其帧无戳可核、不得作产物级证据引用)`
+      : `无gitSha(空 ⇒ 不可核实，判红；${STAMP_CONVENTION
+          ? `generatedAt=${gen.raw || "(无)"} 不早于约定起点 ${STAMP_CONVENTION.toISOString()}${gen.at ? "" : "（日期读不出来 ⇒ 无法证明早于约定 ⇒ 不豁免）"}`
+          : "约定起点派生不出来 ⇒ 无 legacy 豁免"})`)
     : (!real ? "gitSha不存在(形状合法但本仓解析不到 ⇒ 真断链，判红)"
       : (same ? "对应当前HEAD"
         : `非当前HEAD→按契约过期(可解析=${behind < 0 ? "?" : behind}个提交前的历史 ⇒ 不判红，历史轮证据本应定格在当时那枚提交)`));
@@ -211,11 +254,17 @@ for (const m of manifests) {
     else if (!real) { expiredUnresolvable++; framesUnresolvable += shots.length; }
     else { expiredResolvableOlder++; framesResolvableOlder += shots.length; }
   }
-  if (missing || mismatch || noHash || !real || bytesBad) {
+  // 判红条件只在「无戳 ∧ 早于约定」这一格松开；其余四类（缺帧/哈希不符/无 hash/真断链）一字未动。
+  const shaBlocked = !real && !legacyNoStamp;
+  if (missing || mismatch || noHash || shaBlocked || bytesBad) {
     fail++;
     const why = [missing && `帧不存在=${missing}`, mismatch && `哈希不符=${mismatch}`, noHash && `无 contentHash=${noHash}`,
-      bytesBad && `字节数不符=${bytesBad}`, !real && `gitSha 不可核实(${sha ? sha + " ⇒ 本仓解析不到（真断链）" : "空 ⇒ 顶层无 gitSha（无从核实）"})`].filter(Boolean).join(" ");
+      bytesBad && `字节数不符=${bytesBad}`, shaBlocked && `gitSha 不可核实(${sha ? sha + " ⇒ 本仓解析不到（真断链）" : `空 ⇒ 顶层无 gitSha（无从核实；generatedAt=${gen.raw || "(无)"} vs 约定起点 ${STAMP_CONVENTION ? STAMP_CONVENTION.toISOString() : "(派生不出来)"}）`})`].filter(Boolean).join(" ");
     failReasons.push(`${toRelPosix(m)} 共 ${shots.length} 帧 :: ${why}`);
+  }
+  if (legacyNoStamp) {
+    legacyNoSha++; legacyNoShaFrames += shots.length;
+    legacyReasons.push(`${toRelPosix(m)} 共 ${shots.length} 帧 :: generatedAt=${gen.raw} 早于打戳约定 ${STAMP_CONVENTION.toISOString()} ⇒ legacy（不判红 ≠ 通过：这批帧没有戳记可核，本轮终报不得引用它作「产物级」证据）`);
   }
   // 只改打印，不改判定：原写法 m.replace(repo + "/")，Windows 下 m 与 repo 都是反斜杠路径，
   // "D:\…\reports" 里插个正斜杠前缀永远剥不掉 → 日志打出全量绝对路径。走同一条归一化流水线拿相对路径。
@@ -273,14 +322,24 @@ if (STORE.mode === "unconfigured") {
   }
 }
 console.log(`CORPUS_SCANNED=${scanned} CORPUS_EXPIRED_GITSHA=${expired} CORPUS_PROBLEMS=${fail}${scoped ? "（限定 scope=" + scopeArg.join("+") + "，生产者侧降级 INFO）" : ""}`);
-/* 新增行、不改上面那行一个字节（emit-round-report.mjs:1254 用 num("CORPUS_EXPIRED_GITSHA") 取数，
+/* 新增行、不改上面那行一个字节（emit-round-report.mjs:1332 用 num("CORPUS_EXPIRED_GITSHA") 取数，
    动了它的形状就是跨车道改契约）。这一行把那个合并数拆成三个类，谁该红一目了然：
    可解析的旧是历史轮定格的正常状态，不可解析/空才是断链。 */
 console.log(`CORPUS_SHA_CLASS resolvableOlder=${expiredResolvableOlder} unresolvable=${expiredUnresolvable} empty=${expiredEmpty} :: frames resolvableOlder=${framesResolvableOlder} unresolvable=${framesUnresolvable} empty=${framesEmpty}`);
+/* legacy 这一轴**绝不能安静**：上面那行里的 empty 仍然数着「顶层无 gitSha」（事实没变），
+   但其中早于打戳约定的那些**不再判红**。没有下面这行的话，读者只会看见 PROBLEMS 从 1 掉到 0，
+   把「有一批无戳证据被豁免」读成「所有证据都有背书」—— 那正是本仓反复点名的形状。
+   约定起点与 verify-provenance-all.mjs:139-144 同源派生，两把尺子的读数因此可以逐条对账。 */
+console.log(`CORPUS_LEGACY_NO_SHA=${legacyNoSha} CORPUS_LEGACY_FRAMES=${legacyNoShaFrames} 打戳约定起点=${STAMP_CONVENTION ? STAMP_CONVENTION.toISOString() : "(派生不出来 ⇒ 本门无 legacy 豁免，无戳一律判红)"}（由 git log -S gitSha -- scripts/qa 派生，与 verify-provenance-all 同一条尺子；legacy ≠ 通过：这批帧无戳可核，本轮终报不得引用它作「产物级」证据）`);
 /* 判红必须当场说清是哪几份、缺什么。原来只有一个 CORPUS_PROBLEMS=N 的计数，
-   读的人得自己在几十行里逐行对数字找原因 —— 一个不指名道姓的红和没有证据一样没用。 */
+   读的人得自己在几十行里逐行对数字找原因 —— 一个不指名道姓的红和没有证据一样没用。
+   legacy 也按同一条规矩逐份点名（CORPUS_LEGACY_FILE 与 CORPUS_PROBLEM 平行、不混用）。 */
 for (const r of failReasons) console.log("  CORPUS_PROBLEM " + r);
+for (const r of legacyReasons) console.log("  CORPUS_LEGACY_FILE " + r);
 /* 仓外证据库这一轴的判决见上面（必须在 CORPUS_PROBLEMS 印出来之前改 fail，
    否则"配了库却够不着"会躲在计数后面 —— 第一版就是这么写的，实测 PROBLEMS 仍是 1）。 */
-console.log(fail || hardBlocking.some((h) => h.includes("≠ HEAD")) ? "CORPUS_RESULT=FAIL（存在不可背书证据或硬编码 SHA）" : "CORPUS_RESULT=PASS");
+console.log(fail || hardBlocking.some((h) => h.includes("≠ HEAD"))
+  ? "CORPUS_RESULT=FAIL（存在不可背书证据或硬编码 SHA）"
+  // 绿也要说清绿的是什么：这里的 PASS 只表示「没有可引用的违规」，不表示「每份证据都有背书」。
+  : `CORPUS_RESULT=PASS（无不可背书证据；legacy 无戳清单=${legacyNoSha} 帧=${legacyNoShaFrames} 因早于打戳约定而不判红，但它们同样没有戳记可核 ⇒ 绿＝没有违规，≠ 证据全有背书）`);
 process.exit(fail || hardBlocking.some((h) => h.includes("≠ HEAD")) ? 1 : 0);
