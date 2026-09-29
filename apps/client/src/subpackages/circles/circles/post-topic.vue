@@ -662,6 +662,7 @@ onLoad((query) => {
           <text class="favorite-section__desc">{{ t('circle.postTopicFavoriteDesc') }}</text>
         </view>
         <switch
+          class="favorite-section__switch"
           :checked="favoriteEnabled"
           :color="brandColor"
           @change="toggleFavorite"

@@ -367,6 +367,7 @@ onMounted(() => {
               <text class="switch-row__desc">{{ t("dnd.enableDesc") }}</text>
             </view>
             <switch
+              class="switch-row__control switch-row__control--enabled"
               :checked="form.enabled"
               :color="SWITCH_ACTIVE_COLOR"
               @change="handleToggleEnabled"
@@ -476,6 +477,7 @@ onMounted(() => {
               <text class="switch-row__label">{{ t("dnd.tip") }}</text>
             </view>
             <switch
+              class="switch-row__control switch-row__control--urgent"
               :checked="form.allowUrgent"
               :color="SWITCH_ACTIVE_COLOR"
               @change="handleToggleAllowUrgent"

@@ -568,6 +568,7 @@ function goBack() {
             <text class="option-desc" :class="{ 'option-desc--warn': anonymousBlocked }">{{ anonymousBlocked ? t('campus.postTopic.anonymousUnsupported') : t('campus.postTopic.anonymousDesc') }}</text>
           </view>
           <switch
+            class="option-switch"
             :checked="isAnonymous"
             :color="brandColor"
             @change="toggleAnonymous"

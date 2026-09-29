@@ -84,6 +84,7 @@ function goBack() {
           <text class="privacy-item__desc">{{ t('profile.allowSameSchoolRecommendDesc') }}</text>
         </view>
         <switch
+          class="privacy-item__switch privacy-item__switch--allow"
           :checked="allowRecommend"
           :color="designTokens.color.brand[500]"
           @change="onAllowRecommendChange"
@@ -95,6 +96,7 @@ function goBack() {
           <text class="privacy-item__desc">{{ t('profile.receiveSameSchoolInfoDesc') }}</text>
         </view>
         <switch
+          class="privacy-item__switch privacy-item__switch--receive"
           :checked="receiveInfo"
           :color="designTokens.color.brand[500]"
           @change="onReceiveInfoChange"

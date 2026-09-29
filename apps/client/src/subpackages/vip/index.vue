@@ -530,6 +530,7 @@ onMounted(() => {
           </text>
         </view>
         <switch
+          class="auto-renew__switch"
           :key="autoRenewSwitchKey"
           :checked="autoRenewEnabled"
           :color="SWITCH_ACTIVE_COLOR"

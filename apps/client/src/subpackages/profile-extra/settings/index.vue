@@ -568,6 +568,7 @@ function handleMenuTap(item: MenuItem) {
             <text class="menu-item__label">{{ t("settings.weeklySchedule") }}</text>
           </view>
           <switch
+            class="menu-item__switch menu-item__switch--weekly"
             :checked="weeklyScheduleEnabled"
             color="#36C99A"
             @change="toggleWeeklySchedule"
@@ -586,6 +587,7 @@ function handleMenuTap(item: MenuItem) {
             <text class="menu-item__label">{{ t('settings.themeMode') }}</text>
           </view>
           <switch
+            class="menu-item__switch menu-item__switch--theme"
             :checked="themeStore.isDark"
             color="#36C99A"
             @change="handleThemeSwitch"
