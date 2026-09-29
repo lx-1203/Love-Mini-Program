@@ -35,7 +35,23 @@ TODO-lockcheck
 
 ## 2. 两条成员路线与分叉点（file:line）
 
-TODO
+一次读代码的结论：**book 与 measure 并没有把成员算两遍** —— 两者都跑同一个 `buildPlan()`（`scripts/qa/verify-guest-landing.mjs:235` 模块级调用，`:243` 才分叉到 measure 分支）。分叉不在"两处计算"，而在 `buildPlan()` 里那**两条互不认账的成员来源**：
+
+- 路线 ①「ops 派生」（#67 立的规矩）：`verify-guest-landing.mjs:57-61` `guestNoLongerClaims()` + `:64-79` `opsRosterByPage()`。
+  只把**已被收窄成登录态腿**的行算成员，判据是 `c.identities` 非空且不含 `guest`/`none`。
+  RP01–RP11 整页**根本没有 `identities` 字段** ⇒ `:59` 的 `if (!ids.length) return false;` 直接返回 false ⇒ 这一页成员=0。
+  实测语料：`reports/audit/round-6/ops/次要21.json` 与 `reports/audit/round-7/ops/次要21.json` 里 RP01–RP11 共 11 行，`identities` 全缺、`identitiesFrom` 全缺（兄弟页 SCU 13 行 / INT 11 行每行都带 `["A","B"] + identitiesFrom:"tag-ops-identity-scope.mjs"`；SCH 12 行里 SCH02 也没标）。
+- 路线 ②「跑测观察」：`verify-guest-landing.mjs:92-106` 把 `--triage` 各源的 `landingGroups` 取并集，`:146-147` 与 ① 合并成 `ids`。
+  这一路**跟着喂进来的 triage 文件走**：`.zcode/tmp/triage-r7-guest.json` 有 26 组、**不含** `subpackages/setup/recommend-pref/index → pages/login/index`；`.zcode/tmp/triage-r10-guest.json.json`（守卫腿 exec-guest-real-guard-r10 派生）只有 1 组，正是这一组、4 行（RP01,RP02,RP06,RP10）。
+  `:19-24` 的 `--triage` 缺省就是那份 26 组单切片，并且只在 `MODE==="book"` 时才打 `GUEST_LAND_WARN`。
+
+**分叉点 = `:148`**：`if (!ids.length) markProblem("组 … 一名成员都没有 ⇒ 有裁定却没有账本成员，不能出 GG-* 腿")`。
+它要求**两路同时为空**才放行拦门，但 ① 对"整页从没被收窄"的页结构性失明、② 又随 triage 选择漂移 ⇒ 同一份 policy 下：
+喂并集（在册 booked 的来历）⇒ 该组 `fromOps=0/fromRun=4` 记账 28 组；喂缺省单切片（§11 的 measure 调用）⇒ 该组零成员、roster 只剩 27 组并拦腿。
+**"在册却拍不了"就是这么来的**：`:249-254` 写盘用的 `plan.rows` 属于那一次调用的输入，而预检用的是另一次调用的输入。
+
+另一半的口径证据（为什么"没标 identities"= 游客腿仍在认领，不是"没人管"）：执行器 `scripts/qa/r-exec-cli.mjs:159-163` `identityScopeSkip()` —— `identities` 为空 ⇒ `return ""`（不跳），即**未声明 = 游客执行腿照跑这一行**。所以"整页未声明"的页确实是一群还归游客腿判的断言，而落点被弹到登录页时它们一条都判不到东西 —— 这正是最该由 GG-* 落点腿替它们记账的形态。
+
 
 ## 3. 实现的规则与它的窄条件
 
