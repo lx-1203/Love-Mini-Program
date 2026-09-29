@@ -85,7 +85,7 @@ async function once(PROFILE) {
       git,
       world,
     );
-    const covered = ["提交后 HEAD", "可变红自检", "车道划分", "门禁复量"].filter(t => calls.logs.some(l => l.indexOf(t) >= 0));
+    const covered = ["提交后 HEAD", "可变红自检", "车道划分", "门禁复量", "终报读数已落盘", "报告生成器"].filter(t => calls.logs.some(l => l.indexOf(t) >= 0));
     return { PROFILE, ok: true, phases: calls.phases, reports: calls.reports, artifacts: calls.artifacts, covered, conclusion: r && r.conclusion ? String(r.conclusion).slice(0, 160) : "(无 conclusion)" };
   } catch (e) {
     return { PROFILE, ok: false, phases: calls.phases, err: (e && e.message) || String(e), stack: String((e && e.stack) || "").split(/\r?\n/).slice(1, 3).join(" | ") };

@@ -489,6 +489,26 @@ if (postCommit.length > 0) {
   await persistJson("reports/audit/round-7/post-commit-gates-v33.json", { headBefore: head, headAfter, gates: postCommit, flipped: flipped.map(o => o.name) });
 }
 
+// —— 终报读数落盘 + 生成器接进必经调用点 ——
+// 为什么要专门接：总报告的 §7 由 scripts/qa/gen-round8-report.mjs 从 summary.json 读，
+// 而这份 DSL 自己不产那个文件（此前只有 bash 版 run-final-verify-v33.sh 产）。不接的后果是
+// 下一程明明跑完了全部门禁，报告里 §7 仍是"未跑"，于是有人照着记忆手填数字 —— 手填正是本轮反复纠掉的病。
+// 同名门以"提交后复量"为准（后写入覆盖前写入），因为那才是当前 HEAD 下的读数。
+const finalReadings: Record<string, number> = {};
+for (const o of [...gateOuts2, ...postCommit]) finalReadings[o.name] = o.exitCode;
+const redNames = Object.keys(finalReadings).filter(k => finalReadings[k] !== 0);
+await persistJson(".zcode/tmp/final-verify/summary.json", {
+  headBefore: head,
+  headAfter: (await gitTry(["rev-parse", "--short", "HEAD"])).out.trim() || head,
+  gates: finalReadings,
+  reds: redNames,
+  producedBy: "miniprogram-qa-finish-v33 DSL（与 run-final-verify-v33.sh 同 schema，任一生产者都能喂 §7）",
+});
+log(`终报读数已落盘：门 ${Object.keys(finalReadings).length} 条，红 ${redNames.length} 条${redNames.length ? "（" + redNames.join("、") + "）" : ""}`);
+const reportGen = await runGate({ name: "总报告读数回填 gen-round8-report", args: ["scripts/qa/gen-round8-report.mjs"], timeoutMs: 120000 });
+log(`报告生成器：exit=${reportGen.exitCode} ${reportGen.resultLine}`);
+if (reportGen.exitCode !== 0) blockers.push(`总报告生成器没跑成，§7 会停在"未跑" —— 此时不得手填数字代替读数：exit=${reportGen.exitCode} ${reportGen.resultLine}`);
+
 const verified: string[] = [
   "十二项机器门禁两轮实测（开账单 + 终验复量），判读以退出码与 *_RESULT 机器行为准",
   "门禁可变红自检 prove-gates-can-fail：值域外/空扫描集/缺计划清单/状态真值 四类变异各自咬红，绿不是恒绿",
@@ -500,7 +520,7 @@ const notCovered: string[] = [];
 // 两条已核实的"绿不自证"范围，写进报告免得被读成全覆盖（数字与归因以 sizegate 车道产出为准）：
 // 注意措辞：这条不是"dev 档豁免"。实测 apps/client/dist/build/mp-weixin 的 env.js 自证
 // DEV:!1、PROD:!0、MODE:"mp-weixin-mock"，是 mock 料的**生产编译**；豁免只是调用方挂了 --allow-mock 旗号。
-notCovered.push("verify-package-size 靠调用方 --allow-mock 旗号放行体积（去旗即红，实测同字节 exit 0 vs exit 1）：发布形态主包估 2.59MB，仍超微信 2.00MB 上限约 0.59MB——构建绿不等于体积合规");
+notCovered.push("verify-package-size 靠调用方 --allow-mock 旗号放行体积（去旗即红，实测同字节 exit 0 vs exit 1）。体积本身在 sizegate 车道后有三个并存口径，别只取一个数下结论：发布形态（真实上传物）主包 1762.7KB=1.72MB 已在 2.00MB 内；src 退化扫描口径 2.76MB 超 0.76MB；门的默认被测物（mock 档，prepare-static --dev 用 full-static 整目录覆盖 src/static）27.78MB 仍判红 —— 哪个口径算数已开成 decisions 第 23 项，未拍板前本工作流不得自称体积合规");
 notCovered.push("同一脚本在打印两条 ⚠ 之后仍输出「✓ 验收通过：主包/总包体积合规」，是矛盾命名，判读只认 PACKAGE_SIZE ⚠ 行与退出码，不认那句 ✓");
 notCovered.push("typecheck 不覆盖测试代码：apps/client/tsconfig.json 的 exclude 里有 src/tests/**/*（实测 117 个 spec 不在 vue-tsc 范围内）");
 if (!backendUp) notCovered.push("后端 8080 不可达：真实档相关验证只能 BLOCKED");
