@@ -1,0 +1,96 @@
+{
+ "carrier": "scripts/qa/guard-r10-shoot (mirror of verify-guest-landing measure)",
+ "project": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+ "band": "real@f0677920",
+ "guestCapable": true,
+ "identityExpected": "guest",
+ "expectLanding": "pages/login/index",
+ "generatedAt": "2026-09-29T05:33:07.271Z",
+ "rows": [
+  {
+   "page": "subpackages/campus/campus/index",
+   "opened": "ok",
+   "clearSession": "clear-ok",
+   "identityBefore": "not-logged-in",
+   "identityAfter": "not-logged-in",
+   "finalTop": "pages/login/index",
+   "expected": "pages/login/index",
+   "resolvedByGuard": true,
+   "band": "real@f0677920",
+   "markers": {
+    ".login-page__brand": "1",
+    ".login-register-entry": "1"
+   },
+   "waitedMs": 2500,
+   "frame": "reports/audit/round-7/exec-guest-real-guard-r10/subpackages-campus-campus-index.png"
+  },
+  {
+   "page": "subpackages/discover-extra/discover/matching",
+   "opened": "ok",
+   "clearSession": "clear-ok",
+   "identityBefore": "not-logged-in",
+   "identityAfter": "not-logged-in",
+   "finalTop": "pages/login/index",
+   "expected": "pages/login/index",
+   "resolvedByGuard": true,
+   "band": "real@f0677920",
+   "markers": {
+    ".login-page__brand": "1",
+    ".login-register-entry": "1"
+   },
+   "waitedMs": 4500,
+   "frame": "reports/audit/round-7/exec-guest-real-guard-r10/subpackages-discover-extra-discover-matching.png"
+  },
+  {
+   "page": "subpackages/village/village/tag-posts",
+   "opened": "ok",
+   "clearSession": "clear-ok",
+   "identityBefore": "not-logged-in",
+   "identityAfter": "not-logged-in",
+   "finalTop": "pages/login/index",
+   "expected": "pages/login/index",
+   "resolvedByGuard": true,
+   "band": "real@f0677920",
+   "markers": {
+    ".login-page__brand": "1",
+    ".login-register-entry": "1"
+   },
+   "waitedMs": 2500,
+   "frame": "reports/audit/round-7/exec-guest-real-guard-r10/subpackages-village-village-tag-posts.png"
+  },
+  {
+   "page": "subpackages/setup/campus/index",
+   "opened": "ok",
+   "clearSession": "clear-ok",
+   "identityBefore": "not-logged-in",
+   "identityAfter": "not-logged-in",
+   "finalTop": "pages/login/index",
+   "expected": "pages/login/index",
+   "resolvedByGuard": true,
+   "band": "real@f0677920",
+   "markers": {
+    ".login-page__brand": "1",
+    ".login-register-entry": "1"
+   },
+   "waitedMs": 2500,
+   "frame": "reports/audit/round-7/exec-guest-real-guard-r10/subpackages-setup-campus-index.png"
+  },
+  {
+   "page": "subpackages/setup/recommend-pref/index",
+   "opened": "ok",
+   "clearSession": "clear-ok",
+   "identityBefore": "not-logged-in",
+   "identityAfter": "not-logged-in",
+   "finalTop": "pages/login/index",
+   "expected": "pages/login/index",
+   "resolvedByGuard": true,
+   "band": "real@f0677920",
+   "markers": {
+    ".login-page__brand": "1",
+    ".login-register-entry": "1"
+   },
+   "waitedMs": 2500,
+   "frame": "reports/audit/round-7/exec-guest-real-guard-r10/subpackages-setup-recommend-pref-index.png"
+  }
+ ]
+}

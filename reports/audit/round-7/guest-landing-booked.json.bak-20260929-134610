@@ -982,30 +982,6 @@
    "guardCaseId": "GG-vip-promo-code",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/vip/promo-code') 后 2500ms 内（复采 4500ms）栈顶 route === pages/profile/index.profile-page:present（证明落的是真页而不是空壳）；采样时身份不是游客的落点不作证",
    "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
-  },
-  {
-   "groupKey": "subpackages/setup/recommend-pref/index → pages/login/index",
-   "page": "subpackages/setup/recommend-pref/index",
-   "landing": "pages/login/index",
-   "family": "guide-401",
-   "entry": "推荐偏好设置（引导流程，按裁定不豁免）",
-   "identity": "guest",
-   "caseIds": [
-    "RP01",
-    "RP02",
-    "RP06",
-    "RP10"
-   ],
-   "debtRows": 4,
-   "memberSource": {
-    "fromOps": 0,
-    "fromRun": 4
-   },
-   "landingMarker": ".login-page__brand",
-   "registerEntry": ".login-register-entry",
-   "guardCaseId": "GG-setup-recommend-pref-index",
-   "criterion": "游客（verifyLogin=not-logged-in）冷启 openPage(/subpackages/setup/recommend-pref/index) 后栈顶 route === pages/login/index；.login-page__brand:present（真页非空壳）；.login-register-entry:present（默认态露出注册入口）；采样身份非游客不作证。carrier 帧=reports/audit/round-7/exec-guest-real-guard-r10/subpackages-setup-recommend-pref-index.png",
-   "why": "guard-r10 复测（真实档 real@f0677920，重建含 guards/guest-access.js）：游客冷启该 setup 引导页被 guideGuestToLogin reLaunch 到 pages/login/index，与 2026-09-29 裁定（setup 引导不豁免，游客一律引导到登录/注册）一致；判据原断言页内内容，须改断言重定向。"
   }
  ]
 }

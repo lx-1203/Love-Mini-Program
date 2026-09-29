@@ -674,31 +674,6 @@
    "stable": true,
    "measuredAt": "2026-09-28T10:25:57.710Z",
    "band": "real@f0677920"
-  },
-  {
-   "groupKey": "subpackages/setup/recommend-pref/index → pages/login/index",
-   "guardCaseId": "GG-setup-recommend-pref-index",
-   "measuredLanding": "pages/login/index",
-   "identity": "not-logged-in",
-   "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
-   },
-   "waitedMs": 2500,
-   "samples": [
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
-    }
-   ],
-   "stable": true,
-   "measuredAt": "2026-09-29T05:46:50.448Z",
-   "band": "real@f0677920"
   }
  ]
 }
