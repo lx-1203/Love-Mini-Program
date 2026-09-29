@@ -50,7 +50,35 @@
 | `WRONG_BAND` | 19 | 这一档表达不了 ⇒ 要点名哪一档能（mock/real/showcase 三档各答不同问题，见在册规则） |
 | `NO_ELEMENT_NO_FIX` | 25 | 无物件且不修，按免检登记并写理由 |
 
-⚠ 这三份产物在 `tmp/` 里，被 `.gitignore` 挡着，**只在采集机存在**。这和 `decisions-v33.md` 第 5 项是同一个病：账面引用了不可携的路径。要么把它们挪进 `reports/audit/round-7/`，要么在报告里写死"仅采集机可查"。
+⚠ 这三份产物原本只在 `tmp/`（被 `.gitignore` 挡着、只在采集机存在）——**已处理**：三份复制进
+`reports/audit/round-7/unverifiable-recheck-{1,2,3}.json` 并入库，账面不再引用不可携路径。
+
+### 2.1 这 86 行已处理完（06:0x）：净新增 77、暂扣 4，另有两件必须记的事
+
+分配：候选 86 → 进计划 82 → **真正新增盖章 77**；暂扣 4 条（`WRONG_BAND` 但 `bandAxis` 未点名哪一档能表达）：
+`H03@pages/home/index`、`N05@pages/nearby/index`、`MT03@subpackages/discover-extra/discover/matching`、`VI09@subpackages/vip/index`。
+`CRITERIA_NAMES_NOTHING` 那 36 条不在本批，也不该由我落——那是拍板项。
+
+刻意做的三件事：
+1. `why` 逐字抄自 recheck 产物的 `verdict/bandAxis/note/citation`，生成器
+   `scripts/qa/emit-round8-unverifiable-plan.mjs` 只拼接与过滤，一个字都不改写；
+2. 落盘走 sanctioned 的 `apply-ops-cellplans.mjs`（四道闸、每 manifest 自动续号备份、幂等），没有手改 ops JSON；
+3. 可采性逐字段证，不是"看起来没坏"：20 份 manifest 用例条数全等，236 处字段写入全部落在
+   `automatable`/`notAutomatable*` 一族，`title/pre/action/expected/evidence/requiresReal/needsIdentity/tapTarget`
+   零改动，越界 0。落盘后按该工具自己的 sanctioned 路径 `--selftest`（负例=3 PASS）→`--write`→`--check`
+   重打语料戳：`canon=46812907c1b8`、`cases=1107`、零漂移 PASS。
+
+两件要记的：
+- **落盘工具报数不实**：它自报「已落地=0 待改=82 拒绝=0」，但拿它自己生成的 `.pre-ops-cellplan*.bak`
+  逐份比对，82 条里有 **5 条先前就被别的 B-not-automatable 计划盖过章**，净新增是 77。
+  它只在单次运行内去重，不把跨计划既有标记算进 `already` —— 这是它一个真实缺陷（建议 `already` 含"落盘前已 false"）。
+  我没按它说的 82 记账。
+- **别把覆盖度读成进展**：`verify-real-coverage` 从 14/236 收到 10/236，同时**免检从 10 涨到 28**。
+  那 4 行的减少是我把行从"欠账"重分类成"免检"的结果，不是多挣到的证据（门自己的措辞：
+  免检只免"本门不追"，不降阈值）。本轮不把它当成绩。`band-freshness` 仍 PASS（符号级深检，元数据不影响）。
+
+剩 4 条暂扣行的下一步：缺的是"哪一档能表达"这一句，需逐条核渲染条件（`v-if`/`v-else-if` 静息不渲染、
+子组件作用域、`pageWxmlText` 字符串名这些机制在其余 77 条里都点过名，可照着做）——是技术活，不是拍板项。
 
 ## 3. `CH12`：命名不等于结案
 
