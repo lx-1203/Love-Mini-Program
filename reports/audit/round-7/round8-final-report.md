@@ -97,7 +97,7 @@ verify-backend-fresh exit=0
 verify-band-freshness exit=0
 verify-case-automatable exit=0
 verify-dry-no-lease exit=0
-verify-evidence-corpus exit=1
+verify-evidence-corpus exit=0
 verify-evidence-holes exit=0
 verify-ledger-after-panel exit=0
 verify-ledger exit=0
@@ -108,7 +108,7 @@ verify-source-shape exit=0
 verify-state-truth-after-panel exit=0
 verify-state-truth exit=0
 ```
-红项：verify-evidence-corpus、verify-provenance-all、verify-real-coverage
+红项：verify-provenance-all、verify-real-coverage
 
 ## 8. 本轮把「排在后面做」的账收掉了多少（含纠出的文档错）
 

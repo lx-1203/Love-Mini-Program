@@ -220,6 +220,7 @@ B7 补名之后 src 比三档产物新，我按 mock → real:isolated → showc
 | r4 | `ea7acbd6` | 14 / 4 | selftests, corpus, provenance, real-coverage | **panel 转绿**（§29(b) 生效，`EMIT_RESULT=OK`）；新红是我接受守卫车道账本时带进的**过期夹具**（第 28 条裁定 vs 9-27 的 triage scratch） |
 | r5 | `0e62fa22` | 14 / 4 | dry-no-lease, corpus, provenance, real-coverage | selftests 回绿（测试没隔离父环境那事修好）；**新红 `verify-dry-no-lease`** |
 | r6 | `224356b0` | **15 / 3** | corpus, provenance, real-coverage | dry-no-lease 回绿；剩下三条**全是等人裁定，没有一条是工具坏** |
+| r7 | `f1e05ebd` | **16 / 2** | provenance, real-coverage | corpus 转绿（§见下：空 gitSha 改按"打戳约定起点"判 legacy，与 provenance 同一口径）；两条剩红各自**只剩一个成因**，见 §10 |
 
 r5→r6 这条要单独记：它不是回归，而是**我修面板落点时把面板第一次送进了静态门的射程**。
 改前该文件 verdict=`no-dry`（门根本不审它），我往 `:620` 加了 `"--dry"` 实参之后它才"自称支持 --dry"，
@@ -272,3 +273,37 @@ r6 的稳定读数：`SRC_SHAPE total=98 成立=98 不成立=0`；
 待办（不在本轮做，需你点头才动）：把 `profile-svg-to-png` 的产物写回源目录改成
 写进 `dist`（或加 `--check` 只验不写），并让它确定化输出字节；这条改的是构建链与 src 的关系，
 动完必须重建三档 + 全量复量，属于新的授权范围。
+
+## 10. r7 终局复量：16 绿 / 2 红，以及"两条剩红各自只剩一个成因"
+
+读数由机器填（`scripts/qa/run-final-verify-v33.sh` → `.zcode/tmp/final-verify/summary.json` →
+`gen-round8-report.mjs`），归档在 `reports/audit/round-7/final-verify-summary-v33.json` 与
+`final-verify-r7.md`（逐行读数的可提交副本 —— 原始 `.log` 被 `.gitignore:37` 的 `*.log` 挡在仓外，
+本仓 `reports/audit/round-7/` 里跟踪的 `.log` 数实测为 0）。`HEAD 前=f1e05ebd 后=f1e05ebd` ⇒ 这一轮的 sha 敏感门读数不受提交漂移污染。
+
+**r6→r7 的差值只有一条**：`verify-evidence-corpus` 由 `PROBLEMS=1 exit=1` 变 `PROBLEMS=0 exit=0`，
+成因是 `0c8175e2` —— 空 gitSha 不再一律索要处置，而是与 provenance 共用同一条"打戳约定起点"
+（由 `git log -S gitSha -- scripts/qa` 派生，实测 `conv=2026-09-24T16:31:39Z`），早于它的 144 帧
+记 `CORPUS_LEGACY_NO_SHA=1` 而不是记红。掉绿 = 0 条。**这条不是把红藏起来**：undated / 幻影 sha /
+晚于约定起点的无戳帧仍然判红，且负例 `test-corpus-legacy-window.cjs cases=36 fail=0` 里
+`mutant_bad=2 / live_bad=0` 证明它会红。
+
+两条剩红现在**各只有一个成因**，都等裁定、都不是工具坏：
+
+| 门 | 当前唯一红源 | 已排除的其它成因（本轮实测字段） |
+|---|---|---|
+| `verify-provenance-all` | `PROV_FRAMES_PRE_STAMP=4886` | `STALE=0 / UNDATED=0 / UNRESOLVABLE=0 / UNKNOWN_BAND=0 / MANIFESTS_BAD_SHA=0 / MANIFESTS_NO_SHA=0`；`CONSISTENT=4154`、`LEGACY=144`、`NO_SHA_LEGACY=1`、`PRODUCERS=11` ⇒ 待 #25 |
+| `verify-real-coverage` | `REALCOV_UNCOVERED=10／236` | `CONSERVATION=OK / NEVER_ON_REAL=0 / IDENTITYLESS_ON_REAL=0 / SESSION_CONTRADICT_*=0`；`COVERED=198`、免检 28 ⇒ 待 #17 的设备腿授权 |
+
+三条新轴本轮**第一次有读数**（不再是空白）：`BANDLESS_ROWS=31／SCANNED=145／15363`、
+`IDENTITYLESS_ROWS=31／15363`、`SESSION_UNPROVEN_ROWS=1149／15363`（`SESSION_PROVEN=57`）。
+它们是 advisory，不进判红集合；登记在此是为了下次有人问"这三条轴是不是空转"时能给数字。
+
+**纠一条我自己落档错的话**（§9 末句）：我写了"已确认仓内没留下该文件（`git status` 干净）"，
+这句是**引用车道当时的自报**、不是我的复测。我这次量到 `apps/..zcode-tmp` 确实存在
+（4800 字节，mtime 18:48，内容就是那次 showcase 构建的 stdout —— 重定向 `../..zcode-tmp`
+从 `apps/client` 解析出来正是这个位置）。处置：不删，移到仓外只读位置
+`.zcode/tmp/stray-apps-dotdot-zcode-tmp-r7.log`（它是**未跟踪**杂散项，移走只减掉一条 `??`，
+不影响跟踪脏项计数——我不用"脏项变少"来当处置成功的凭据）。
+教训与既有那条同族 [[feedback-audit-claims-before-restating]]：**"已确认没有留下"必须由我自己 `ls` 出证**。
+杂散文件的命名错误本身也记一次：重定向目标应写成绝对/仓内已知目录，`..` 开头的相对路径会落到上一级目录里。
