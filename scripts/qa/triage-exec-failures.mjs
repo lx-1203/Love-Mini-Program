@@ -509,6 +509,37 @@ const OPS_EXPLICIT = argv.indexOf("--ops") >= 0;
    于是上面的 OPS 回落到 round-6 默认值；拿 round-6 的 ops 核对 round-7 语料的改名会永远对不上 ⇒
    显式 --ops 优先，没给就按语料自己所在轮次派生，并把来源打印出来（不静默换目录）。 */
 const RENAME_OPS = OPS_EXPLICIT ? OPS : path.join(path.dirname(path.dirname(String(RESULTS).replace(/[\\/]+$/, ""))), "ops");
+/* 【断言：派生出来的判据台目录必须真是"这批语料那一轮的"，不许悄悄走通】
+   上面那行是**位置猜测**（dirname(dirname(--results))/ops）⇒ 同一批语料换个目录就会换分类结果。
+   两种坏形状里已有一种被接住：目录根本不存在时 :568 出 warn 并 fail-closed（改名无从核对 ⇒ 逐行照旧判红）。
+   会**静默**走通的是另一种：目录在盘上，但它不是这批语料的判据台（层级错后撞见别处同名 `ops/`、
+   或撞见一份与本语料毫无交集的空目录）。这时 readdirSync 出 0 条与语料同 suite 的文件 ⇒ OPS_RENAME 是空表，
+   该被认领的"两载皆无"行落不回具名桶，而 stdout 一句抱怨都不出 —— 读者只看见桶名换了，看不见判据台换了。
+   所以这里把"派生出的目录里必须能找到该轮 ops 的必要文件"写成硬条件：
+     必要文件 = 该目录里至少有一份非 .bak 的 ops JSON，且其中至少一份的 suite 名
+     （与下面 :572 同一把尺：j.suite || 文件名去 .json）确实被这批语料的某一行 manifest/suite 点名。
+   只约束派生那一支（OPS_EXPLICIT=false）：显式 --ops 是人给的决定，不归这里替人改口径
+   （它自己的缺失仍由 :485 那条 warn fail-closed）。目录不存在也不在这里改退出码，保持 :568 既有行为，
+   免得把"故意不给判据台的离线夹具"（scripts/qa/test-fourgrid-domextract.mjs:53 就不传 --ops）打成新的红。 */
+if (!OPS_EXPLICIT && fs.existsSync(RENAME_OPS)) {
+  let derivedOpsFiles = null;
+  try { derivedOpsFiles = fs.readdirSync(RENAME_OPS).filter((f) => f.endsWith(".json") && !f.includes(".bak")); }
+  catch { derivedOpsFiles = null; }
+  if (derivedOpsFiles !== null) {
+    const corpusManifests = new Set(rows.map((r) => String((r && (r.manifest || r.suite)) || "")).filter(Boolean));
+    const derivedSuites = new Set();
+    for (const f of derivedOpsFiles) {
+      let j = null; try { j = JSON.parse(fs.readFileSync(path.join(RENAME_OPS, f), "utf8")); } catch { continue; }
+      derivedSuites.add(String((j && j.suite) || f.replace(/\.json$/, "")));
+    }
+    const matched = [...corpusManifests].filter((m) => derivedSuites.has(m));
+    console.log(`TRIAGE_RENAME_OPS derived=${RENAME_OPS} 规则=dirname(dirname(--results))/ops 语料点名=${corpusManifests.size} 目录内ops=${derivedSuites.size} 对上=${matched.length}`);
+    if (!derivedSuites.size || !matched.length) {
+      console.log(`TRIAGE_RESULT=FAIL reason=派生出的判据台目录不是这批语料那一轮的：${RENAME_OPS} 里能读到 ${derivedSuites.size} 份 ops，与本语料点名的 ${corpusManifests.size} 个 manifest 一个都对不上（语料=${RESULTS}）⇒ 分类结果会随语料摆放的层级而变。修法是给人显式传 --ops <该轮>/ops（本脚本 :41 的 KNOWN 里已有这一旗标），不是把这条断言放宽`);
+      process.exit(2);
+    }
+  }
+}
 const DEAD_SEL = new Map();   // "manifest|id" → { group, manifest, id, dead, proposed, prestate, file, line }
 let deadSelIgnored = 0;       // 表里被忽略的条目数（没有 proposed 的那一族）—— 忽略了什么必须可查
 {

@@ -28,7 +28,11 @@
  *   --screenshot-manifest <f>  默认 <round-dir>/screenshot-manifest.json
  *   --report <file>            默认 <round-dir>/round-<n>-report.md（<n> 从 --round-dir 里派生）
  *   --metrics <file>           默认 <round-dir>/round-<n>-metrics.json（同上）
- *   --sidecar-dir <dir>        分诊台 --out 落点（reports/ 之外），默认 .zcode/tmp/report-emitter
+ *   --sidecar-dir <dir>        面板自产文件的落点（reports/ 之外），默认 .zcode/tmp/report-emitter。
+ *                              放这里的有两个：分诊台 --out、verify-guest-landing --mode book 的 --out。
+ *                              后者的 booked 落点必须在这个方向，否则面板每跑一次就重打一次权威判决件
+ *                              reports/audit/round-7/guest-landing-booked.json，而它的读者是 triage-exec-failures.mjs
+ *                              （见 :640 处的说明；判定不变，只改落点）。
  *   --node22 <path>            默认 D:/codex-tools/node-v22.17.0-win-x64/node.exe
  *   --skip-live-gates          不复跑 G7/G8/G9/probe；记为一条 FAIL，不出绿报告
  *   --lease-probe-only         只看有没有人持有模拟器租约后退出（不取锁、不跑任何门）
@@ -636,8 +640,23 @@ G.tabBar = runGate("verify-tab-bar-single-source（④：面板字面量相加 =
    判得动的是这条只读探针（GET only，任何时刻可跑，凭据运行时解析不上命令行）。 */
 G.adminCounts = runGate("probe-admin-post-counts（RING6 计数字段两侧一致）", "scripts/qa/probe-admin-post-counts.mjs", ["--limit", "5"], { timeoutMs: 240000 });
 /* 游客落点：26 组裁定与本轮实测落地对必须双向守恒，且每组都要有具名复测腿。
-   结案与否由 triage 门读 booked+measured 后报 OPEN_RULING，这条门管的是"裁定还成立吗"。 */
-G.guestLanding = runGate("verify-guest-landing（book）", "scripts/qa/verify-guest-landing.mjs", ["--mode", "book"]);
+   结案与否由 triage 门读 booked+measured 后报 OPEN_RULING，这条门管的是"裁定还成立吗"。
+   【落点：面板侧 --out 指侧车，权威件只由显式落盘动作改】
+   以前这里不带 --out，于是 `--mode book` 的默认落点（verify-guest-landing.mjs:26
+   `const BOOK_OUT = resolve(REPO, arg("out", "reports/audit/round-7/guest-landing-booked.json"))`）
+   让**每跑一次面板就重打一次那份权威判决件**（实测 git diff 只有 generatedAt 一行），
+   它的读者 scripts/qa/triage-exec-failures.mjs:805/822 于是拿到"随谁在什么时候跑过面板"而变的账本。
+   这与本轮已修的"账单阶段 verify-source-shape 不带 --dry 覆写自己依赖的事实源"是同一形状，采同一口径：
+   面板是**读方**，不落权威件。判定逻辑、参数语义与退出码一字不动，只改落点 ——
+   `--out` 是该脚本真实支持的旗标（通用 `arg()` 解析、无 KNOWN_FLAGS 白名单，拼错不会被拒也不会被当成没传，
+   所以这里按既有约定 pj(SIDE_DIR, …) 显式点名；scripts/qa/test-guest-landing.mjs:30 早就是这么跑的）。
+   权威件仍由显式落盘动作更新：run-round7-closeout.mjs:331 的 `--mode measure` 腿与手跑的
+   `--mode book`（emit-open-items.mjs:54 列为 reverify 命令）都写回原默认路径 ⇒ 读者不断输入。 */
+const GUEST_BOOK_SIDECAR = pj(SIDE_DIR, "guest-landing-booked-r" + ROUND_TAG + ".json");
+/* 侧车目录可能比这一次 spawn 更早还没被建出来（--sidecar-dir 指到新路径时）；
+   writeFileSync 撞 ENOENT 会让这条门以"崩溃"的形态红，而红的原因根本不是裁定不成立。 */
+mkdirSync(dirname(resolve(ROOT, GUEST_BOOK_SIDECAR)), { recursive: true });
+G.guestLanding = runGate("verify-guest-landing（book）", "scripts/qa/verify-guest-landing.mjs", ["--mode", "book", "--out", GUEST_BOOK_SIDECAR]);
 /* 证据缺口（要求出帧却没拿到帧）逐洞换成了可重跑判据；停在 BOOKED 说明运行时探针没跑成，红得正确，
    绝不允许把"洞起了名字"当成"洞已结案"。 */
 G.holes = runGate("verify-evidence-holes", "scripts/qa/verify-evidence-holes.mjs", []);
