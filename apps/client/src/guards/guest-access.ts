@@ -2,16 +2,18 @@
  * 游客落点守卫（round-7 裁定：游客一律必须被引导到登录/注册，setup 引导流程不豁免）
  *
  * 为什么需要这一层（在册机制事实，逐条核过源码）：
- * - 此前游客被弹到登录页**只出自 HTTP 401 兜底**（`services/http.ts:493` 的
+ * - 此前游客被弹到登录页基本只出自 HTTP 401 兜底（`services/http.ts:493` 的
  *   `uni.reLaunch({ url: ROUTES.LOGIN })`，前置 `:494` 的 `LOGIN_REDIRECT_DELAY_MS`
- *   = `constants/app.ts:40` 的 500ms），也就是「页面先渲染、请求先打出去、后端先说 401」
- *   之后才有的补救动作。页面拿得到数据（mock 带 fixture）或压根不发请求
+ *   = `constants/app.ts:40` 的 500ms；唯一的路由侧例外是 fe3338d2 给 matching.vue goBack
+ *   加的 !getToken() 分支，但那是失败分支的事后补救），也就是「页面先渲染、请求先打出去、
+ *   后端先说 401」之后才有的补救动作。页面拿得到数据（mock 带 fixture）或压根不发请求
  *   （无 userId 就跳过 GET）时，401 永远不来，游客就一直停在内容页上 ——
  *   分诊台点名的 5 组落地对（landingMissing=5）就是这么产生的。
  * - 路由守卫 `composables/usePageAccess.ts:79` 对「无 token 的游客」是**故意放行**的
  *   （注释在 :75-78：未登录由页面自身 LockScreen 承担引导），因此它既不是这批落点的来源，
  *   也不能反向拿来拦这批人：它是 onShow 时序，而 campus/index 这类页在 onLoad 就已经
- *   `redirectTo` 把游客送走了；把 :79 的早退改成弹登录页还会连带改掉另外 21 组已入账落点的语义。
+ *   `redirectTo` 把游客送走了；把 :79 的早退改成弹登录页还会连带改掉
+ *   guest-landing-booked.json 那 26 组已入账落点的语义（改的是机制口径，不是这一层）。
  *
  * 所以本模块只做一件事：在**页面自己的 onLoad 入口**（早于任何数据请求与页内重定向）
  * 判定游客，并按 401 兜底同一套物件引导 —— 同一文案键 `apiErrors.loginRequired`、
