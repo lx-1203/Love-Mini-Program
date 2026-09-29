@@ -100,16 +100,26 @@ function atomicPromote(next, logLabel) {
 
 /** 单文件循环 copy（node fs cpSync 单文件不被 shim 拦截）—— 用于小目录如 tabbar。
  * 沙箱 cpSync 在某些 Windows 路径下会抛"The operation completed successfully"假错
- * （文件实际已 copy）。捕获后校验目标存在，存在即视为成功 */
+ * （文件实际已 copy）。
+ * 2026-09-30 r12 修正（reports/audit/round-7/build-determinism-accept-r12.md §1.2）：
+ * 原来这里按"抛错了但目标存在 = 写成功"咽掉假错。该启发式只在**目标本来不存在**时成立；
+ * 一旦是覆盖已有文件（目标本来就存在、且正是要被换掉的那份陈旧字节），假错被咽下后
+ * 陈旧字节留在原处，调用方却收到"成功"—— 本仓的 seedProfilePngFromAuthority 第一版就是这样谎报的。
+ * 现在按**字节复验**判定：真·假错（目标已等于源）照旧容错继续；字节没落对就直接抛，
+ * 交给调用方既有的回滚路径（宁可构建失败，不带错字节假装成功）。 */
 function cpSingle(src, dst) {
   try {
     cpSync(src, dst, { force: true });
   } catch (e) {
-    if (!existsSync(dst)) {
-      throw new Error(`cpSync ${src} -> ${dst} 失败且目标不存在: ${e.message}`);
+    let same = false;
+    try {
+      same = existsSync(dst) && readFileSync(dst).equals(readFileSync(src));
+    } catch { /* 复验读不动也按"没落对"处理 */ }
+    if (!same) {
+      throw new Error(`cpSync ${src} -> ${dst} 失败且目标字节未落对: ${e.message}`);
     }
-    // 假错：文件已存在，记录警告继续
-    console.warn(`[prepare-static] warn: cpSync ${src} 假错（目标已写入，继续）`);
+    // 假错：已复验目标字节 == 源，记录警告继续
+    console.warn(`[prepare-static] warn: cpSync ${src} 假错（已复验目标字节==源，继续）`);
   }
 }
 

@@ -55,7 +55,9 @@ g prove-gates-can-fail    300 scripts/qa/prove-gates-can-fail.mjs
 # （此处曾写成 // —— bash 不认 JS 注释，会把 // 当命令执行并喷两条 No such file，
 #   在 set -u 下不致命，但那两行等于没被任何解释器读过。）
 g verify-dry-no-lease     180 scripts/qa/verify-dry-no-lease.mjs
-g verify-case-automatable 180 scripts/qa/verify-case-automatable.mjs --json .zcode/tmp/case-automatable/final.json
+g verify-case-automatable 180 scripts/qa/verify-case-automatable.mjs --results reports/audit/round-6/interact/exec-results.json --json .zcode/tmp/case-automatable/final.json
+# r9 接线：判据台语料戳（--check 只读）。此前只有车道"自己记得跑"，而本轮有车道往 ops 写过行 ⇒ 必须有人必然经过。
+g verify-ops-stamp          180 scripts/qa/verify-ops-corpus-stamp.mjs --check
 
 echo "--- QA 自测汇总器（19+ 条离线）---"
 g run-qa-selftests        600 scripts/qa/run-qa-selftests.mjs

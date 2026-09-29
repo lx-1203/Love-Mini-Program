@@ -1,0 +1,495 @@
+{
+  "meta": {
+    "lane": "ruling-packet",
+    "head": "1788675d8b96d62f4d47370241199e2df4f8eefb",
+    "node_used": "/d/codex-tools/node-v22.17.0-win-x64/node.exe (v22.17.0)",
+    "mode": "read-only",
+    "post_reading_commits_verified": {
+      "claim": "orchestrator believed 5d7fb941 + 1788675d are docs-only",
+      "verdict": "confirmed",
+      "command": "git diff --name-status 992f0fe8 1788675d",
+      "files_changed": [
+        "reports/audit/round-7/evidence-holes-verdict.json",
+        "reports/audit/round-7/final-verify-r8.md",
+        "reports/audit/round-7/final-verify-summary-v33.json",
+        "reports/audit/round-7/followups-v33.md",
+        "reports/audit/round-7/round8-final-report.md"
+      ],
+      "note": "全部在 reports/ 下，scripts/ 与 apps/ 零改动 ⇒ 不影响门的判点；但其中 evidence-holes-verdict.json 与 final-verify-summary-v33.json 是 JSON 判决件而非纯文档"
+    },
+    "lease_state_read_only": {
+      "heldLeases": [],
+      "command": "node22 --input-type=module -e \"import { heldLeases } from './scripts/qa/ui-lease.mjs'; console.log(JSON.stringify(heldLeases()));\"",
+      "lock_files_untouched": ["wechat-automation-9420.lock", "wechat-automation-9430.lock", "wechat-automation-9431.lock", "wechat-automation-cli.lock"]
+    }
+  },
+  "reds_today": {
+    "verify-provenance-all": {
+      "exit": 1,
+      "command": "N=/d/codex-tools/node-v22.17.0-win-x64/node.exe; \"$N\" scripts/qa/verify-provenance-all.mjs",
+      "fields": {
+        "PROV_FRAMES_PRE_STAMP": 4886,
+        "PROV_FRAMES_CONSISTENT": 4154,
+        "PROV_FRAMES_LEGACY": 144,
+        "PROV_FRAMES_STALE": 0,
+        "PROV_FRAMES_UNDATED": 0,
+        "PROV_FRAMES_UNRESOLVABLE": 0,
+        "PROV_FRAMES_UNKNOWN_BAND": 0,
+        "PROV_FRAMES_ABSOLUTE": 0,
+        "PROV_MANIFESTS_BAD_SHA": 0,
+        "PROV_MANIFESTS_NO_SHA": 0,
+        "PROV_MANIFESTS_NO_SHA_LEGACY": 1,
+        "PROV_PRODUCERS": 11,
+        "PROV_PRODUCER_DERIVED_OK": 11,
+        "PROV_PRODUCER_LITERAL_SHA": 0,
+        "PROV_PRODUCER_NO_DERIVE": 0,
+        "PROV_FRAME_ACCOUNTING": "in=9184 out=9184 OK",
+        "stamping_convention_start": "2026-09-24T16:31:39.000Z"
+      },
+      "matches_recorded_r8": true,
+      "all_pre_stamp_manifests": 19,
+      "manifests_sharing_gitSha_6fd151786c": 18,
+      "log": ".zcode/tmp/lane-ruling-packet/r9-provenance-all.log"
+    },
+    "verify-real-coverage": {
+      "exit": 1,
+      "command": "N=/d/codex-tools/node-v22.17.0-win-x64/node.exe; \"$N\" scripts/qa/verify-real-coverage.mjs",
+      "fields": {
+        "REALCOV_CASES": 236,
+        "REALCOV_COVERED": 198,
+        "REALCOV_UNCOVERED": 10,
+        "REALCOV_UNCOVERED_LIST": 10,
+        "REALCOV_AUTOMATABLE_EXEMPT": 28,
+        "REALCOV_CONSERVATION": "OK",
+        "REALCOV_UNCOVERED_LEDGER": "OK",
+        "REALCOV_NEVER_ON_REAL": 0,
+        "REALCOV_IDENTITYLESS_ON_REAL": 0,
+        "REALCOV_SESSION_CONTRADICT_ROWS": 0,
+        "REALCOV_SESSION_CONTRADICT_CASES": 0,
+        "REALCOV_SESSION_PROVEN": 57,
+        "REALCOV_SESSION_UNPROVEN_CASES": 204,
+        "REALCOV_BANDLESS_CASES": 31,
+        "REALCOV_IDENTITYLESS_CASES": 31
+      },
+      "matches_recorded_r8": true,
+      "uncovered_rows_verbatim": [
+        "UNCOVERED PAGES-PROFILE-INDEX|PFI25 缺=login",
+        "UNCOVERED SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25 缺=login",
+        "UNCOVERED SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34 缺=login",
+        "UNCOVERED 次要18|TD03 缺=login",
+        "UNCOVERED 次要20|OT05 缺=login",
+        "UNCOVERED 次要20|OT06 缺=login+guest",
+        "UNCOVERED 次要20|OT09 缺=login",
+        "UNCOVERED 次要20|VRN07 缺=login",
+        "UNCOVERED 次要21|OC09 缺=login+guest",
+        "UNCOVERED 次要22|VB03 缺=login"
+      ],
+      "axis_breakdown": { "login_only": 8, "login_plus_guest": 2 },
+      "log": ".zcode/tmp/lane-ruling-packet/r9-real-coverage.log"
+    },
+    "closeability_of_the_10": {
+      "D-13_proxy_run_18_manifests_closes": 0,
+      "G-17_guest_landing_leg_closes": 0,
+      "reason_D13": "纠正后：这 10 条在门所扫的 30 个 exec 目录里都有行（每条 14~20 行）、real 档也都有行（10~16 行），但 real 档 EXECUTED 全为 0、状态恒为 SKIPPED；#13 只改 manifest-detail.json 的戳字段、不动 status ⇒ 收 0 条",
+      "reason_G17": "grep -c guest-landing scripts/qa/verify-real-coverage.mjs = 0 ⇒ 覆盖门不读 guest-landing 件；10 条中 8 条缺的是 login 轴。间接沾边的 4 条（VI25/VI34/VRN07 各 1 行、VB03 4 行）跳过原因是『本页没落在声明页（栈顶=login/profile）』",
+      "per_row_dominant_skip_reason": {
+        "PAGES-PROFILE-INDEX|PFI25": "欠前置配方×8 / requiresReal×2 / NOT_SHOOTABLE×1",
+        "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25": "欠前置配方×5 / requiresReal×2 / observe-only×1 / 栈顶=login×1",
+        "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34": "欠前置配方×5 / requiresReal×2 / observe-only×1 / 栈顶=login×1",
+        "次要18|TD03": "手写交互禁触×9 + VEHICLE_DENY(词表,命中=清空)×1 / requiresReal×2",
+        "次要20|OT05": "欠前置配方×9 / requiresReal×2 / 身份A-B不由guest腿认领×1",
+        "次要20|OT06": "欠前置配方×12 / requiresReal×2 / NOT_SHOOTABLE×1",
+        "次要20|OT09": "手写交互禁触×9 + VEHICLE_DENY(命中=清空)×1 / requiresReal×2 / 身份收窄×1",
+        "次要20|VRN07": "欠前置配方×7 / requiresReal×2 / 身份A-B×1 / observe-only×1 / 栈顶=login×1",
+        "次要21|OC09": "欠前置配方×7 / 判据没点名可交互元素×5 / requiresReal×2 / 无--tap×1",
+        "次要22|VB03": "欠前置配方族 / 栈顶=profile×4 / observe-only×3 / 未点名元素×2 / requiresReal×2 / 身份A-B×2"
+      },
+      "F04_closes": 2,
+      "F04_closes_named": ["次要18|TD03", "次要20|OT09"],
+      "criteria_tightening_closes": 1,
+      "prestate_recipe_closes": 7,
+      "reason_G17": "grep -c guest-landing scripts/qa/verify-real-coverage.mjs = 0 ⇒ 覆盖门不读 guest-landing 件；且 10 条中 8 条缺的是 login 轴",
+      "contradicts_doc": "followups-v33.md §10 表把 real-coverage 的红归到『待 #17 的设备腿授权』——今日实测该授权收 0 条账",
+      "what_would_close": "real 档 exec 腿逐行带 band=real@sha + identity=A|B（OT06/OC09 另需 guest|not-logged-in）+ 非 SKIPPED + 会话证据（判点在 verify-real-coverage.mjs:262-266）"
+    }
+  },
+  "guest_landing_three_counts": {
+    "question": "followups-v33.md §11 的拦门分歧是否仍在",
+    "answer": "仍在，且数值逐字相同",
+    "booked": {
+      "rows_len": 28,
+      "top_level_groups": 26,
+      "top_level_debtRows": 434,
+      "sum_caseIds": 438,
+      "internal_conservation": "不一致（434 vs 438，差 4 = recommend-pref 那 4 个 id）",
+      "generatedAt": "2026-09-28T20:16:20.597Z",
+      "path": "reports/audit/round-7/guest-landing-booked.json"
+    },
+    "measured": {
+      "rows_len": 28,
+      "distinct_groupKeys": 28,
+      "band": "real@f0677920",
+      "generatedAt": "2026-09-28T10:15:58.555Z",
+      "all_stable": true,
+      "path": "reports/audit/round-7/guest-landing-measured.json"
+    },
+    "roster_rerun_today": {
+      "groups": 27,
+      "members_from_ops": 27,
+      "members_from_run_only": 0,
+      "debt_rows": 434,
+      "observed_union_groups": 26,
+      "no_run_witness_groups": 1,
+      "anchors_ok": 11,
+      "anchors_bad": 0,
+      "exit": 2,
+      "problems": 2,
+      "named_group": "subpackages/setup/recommend-pref/index → pages/login/index",
+      "verbatim_fail": [
+        "policy 里这几组既不在本轮跑测的落地对里、ops 也没有任何被收窄出游客腿的用例 ⇒ 这一组没有任何证人：",
+        "组 subpackages/setup/recommend-pref/index → pages/login/index 一名成员都没有 ⇒ 有裁定却没有账本成员，不能出 GG-* 腿"
+      ],
+      "command": "\"$N\" scripts/qa/verify-guest-landing.mjs --mode book --out .zcode/tmp/lane-ruling-packet/guest-landing-booked-r9.json",
+      "log": ".zcode/tmp/lane-ruling-packet/r9-guest-book.log"
+    },
+    "disagreement_today": "booked(28 组名册 / 438 成员) vs measured(28 行) vs roster 今日重跑(27 组 / 434 成员) —— 差的那 1 组 = recommend-pref，其 memberSource 在 booked 里是 fromOps=0/fromRun=4",
+    "why_two_routes_disagree_measured": "权威 booked 件的该组成员来自『跑测观察』那一支；今日预检用的缺省跑测源 .zcode/tmp/triage-r7-guest.json（updatedAt=2026-09-26T23:57:29.862Z，results=exec-guest-real/exec-results.json）其 landingGroups 只有 26 组且 0 组含 recommend-pref，ops 那一支该页 0 成员 ⇒ 名册空 ⇒ exit 2",
+    "panel_sidecar_also_27": {
+      "path": ".zcode/tmp/final-verify/panel/guest-landing-booked-r7.json",
+      "generatedAt": "2026-09-29T12:49:47.509Z",
+      "rows_len": 27,
+      "groups": 26,
+      "debtRows": 434
+    },
+    "measure_mode_not_run": "预检通过后路径会 acquireUi 并驱动 DevTools（verify-guest-landing.mjs:245-247），越本车道只读边界"
+  },
+  "corpus_gate_today_for_D12": {
+    "exit": 0,
+    "command": "export QA_EVIDENCE_STORE=D:/6/love-mini-evidence; \"$N\" scripts/qa/verify-evidence-corpus.mjs",
+    "fields": { "CORPUS_PROBLEMS": 0, "CORPUS_SCANNED": 47, "CORPUS_MANIFESTS_TOTAL": 53, "CORPUS_LEGACY_NO_SHA": 1, "CORPUS_LEGACY_FRAMES": 144, "CORPUS_EXPIRED_GITSHA": 47, "CORPUS_STORE": "reachable" },
+    "verbatim_named_manifest": "reports/screenshots/round-1/manifest.json  shots=144 … gitSha=- → 无gitSha(顶层无 gitSha，但 generatedAt=2026-09-19T17:28:57.090Z 早于打戳约定 2026-09-24T16:31:39.000Z ⇒ legacy：不判红，其帧无戳可核、不得作产物级证据引用)",
+    "gate_own_caveat": "legacy ≠ 通过：这批帧无戳可核，本轮终报不得引用它作「产物级」证据"
+  },
+  "package_size_today_for_D23": {
+    "path": "scripts/verify-package-size.mjs",
+    "writes": 0,
+    "in_final_sweep": false,
+    "with_allow_mock": { "exit": 0 },
+    "without_flag": { "exit": 1, "main_package": "27.78MB", "limit": "2.00MB", "total": "28.82MB", "total_limit": "10.00MB" },
+    "caliber_label_already_printed_by_gate": "← 以上数字只代表上面那个档，不是发布形态",
+    "release_form_1_72MB": "unknown（要重建，越本车道边界）",
+    "src_degraded_2_76MB": "unknown（同上）"
+  },
+  "items": [
+    {
+      "id": "D-01",
+      "title": "--r-lg 令牌值与判据正面冲突",
+      "blocks_which_gate": "none（判据 MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-004 扣住不动）",
+      "measured_value": "$radius-lg: 20rpx @design-variables.scss:201 → --r-lg:20rpx in both dist bands; Card.vue:5 comment claims 16rpx; design-token-rulings.spec.ts:122 pins 20rpx",
+      "command": "grep -rn -- '--r-lg *:' apps/client/src/theme/design-variables.scss; grep -rho -- '--r-lg:[^;]*' apps/client/dist/build/mp-weixin/app.wxss apps/client/dist/build/mp-weixin-real/app.wxss",
+      "options": ["A 改判据指向实值 16rpx 的令牌", "B 改令牌值"],
+      "cost_per_option": { "A": "改判据正文；不动视觉", "B": "design-variables.scss:201 + spec.ts:122 两处 + 全站 --r-lg 消费者 + 需构建后帧级复核" },
+      "needs_user": true,
+      "runnable_now": false
+    },
+    {
+      "id": "D-02",
+      "title": "--c-text-inverse 与 --c-bg-container 浅色同值",
+      "blocks_which_gate": "none（受影响行 MP-R2VIS-PAGES-MESSAGES-INDEX-001）",
+      "measured_value": "已不同值 ⇒ 本条按 bc89dc79/§31⑤ 已闭：--c-text-inverse: var(--c-overlay-text-primary) @design-variables.scss:369（=rgba(255,255,255,0.95) :720），--c-bg-container: #{$bg-container} :376；暗色块重复定义已删（tokens.scss:238 只剩 container，:249 是注释）",
+      "command": "grep -rn -- '--c-text-inverse *:' apps/client/src/; grep -rn -- '--c-overlay-text-primary:\\|--c-bg-container:' apps/client/src/theme/design-variables.scss",
+      "options": ["已按判据补齐实现，无需再选"],
+      "cost_per_option": { "none": "文档 §2 正文与那四个行号（design-variables.scss:108/121、tokens.scss:235/244）已过期，需在下次落账时纠正" },
+      "needs_user": false,
+      "runnable_now": false,
+      "status": "closed_by_implementation_still_documented_as_pending"
+    },
+    {
+      "id": "D-03",
+      "title": "MP-R2-PAGES-MESSAGES-INDEX-002 判据 vs 已生效裁定",
+      "blocks_which_gate": "none（mock 档判不了）",
+      "measured_value": "pages/messages/index.vue:374 逐字 v-if=\"!sessionStore.isLoggedIn && !useMock()\" ⇒ mock 档不挂组件；:65 isUnlocked 同向",
+      "command": "grep -n \"useMock\" apps/client/src/pages/messages/index.vue",
+      "options": ["A 改判据（换真实档判点）", "B 改裁定（mock 下也挂组件）"],
+      "cost_per_option": { "A": "改判据正文", "B": "动 :374 守卫 ⇒ 改变 mock 可见面，需重建 + 帧级复核" },
+      "needs_user": true,
+      "runnable_now": false
+    },
+    {
+      "id": "D-04",
+      "title": "AppShell 左右内距 28rpx 还是 32rpx",
+      "blocks_which_gate": "none",
+      "measured_value": "已过期：AppShell.vue:283 与 :291 现值均为 padding: 0 32rpx（:315 吸顶行亦 32rpx；:281 注释记旧值 28rpx）",
+      "command": "grep -rn \"padding.*32rpx\\|padding.*28rpx\" apps/client/src/components/layout/AppShell.vue",
+      "options": ["已按 -005 口径补齐，无需再选"],
+      "cost_per_option": { "none": "decisions §4 正文（仍写 028rpx/停在原地）与 APPSHELL-005 这个不存在的编号需在下次落账时纠正" },
+      "needs_user": false,
+      "runnable_now": false,
+      "status": "closed_by_implementation_still_documented_as_pending"
+    },
+    {
+      "id": "D-05",
+      "title": "帧像素与清单路径要不要长期可查",
+      "blocks_which_gate": "none",
+      "measured_value": "git ls-files reports/ 下 .png = 835；JPEG 字节挂 .png = 826；真 PNG = 9；其它 0（与 §21 逐字相同，98.9%）",
+      "command": "git ls-files reports/ | grep -ci '\\.png$' + 逐文件 openSync/readSync 判前 12 字节 magic",
+      "options": ["A LFS + 清单绝对路径改相对", "B 包外归档只留 hash", "C 明写证据绑定采集机"],
+      "cost_per_option": { "A": "改历史要单独授权；必须与 D-08 同批否则 clone 里路径对但文件不存在", "B": "报告模板不再伪装可携", "C": "零成本但引用永久只在本机可读" },
+      "needs_user": true,
+      "runnable_now": false
+    },
+    {
+      "id": "D-06",
+      "title": "各轮写进库的测试数据要不要清",
+      "blocks_which_gate": "none（连带 MP-R2-PAGES-MESSAGES-INDEX-014）",
+      "measured_value": "unknown（本车道不连后端；且 inventory-g8-test-data.mjs 有 3 处 writeFileSync :124/:127/:191 ⇒ 跑它就要写盘，没跑）",
+      "command": "unknown（要重量的话得由允许写盘的车道跑 scripts/qa/inventory-g8-test-data.mjs）",
+      "options": ["A 清（先对完 schema 表名）", "B 继续保留"],
+      "cost_per_option": { "A": "删数据不可回滚 + 要撤销『保留』裁定", "B": "每跑一次 G8 计数继续 +1，014 那行继续挂" },
+      "needs_user": true,
+      "runnable_now": false
+    },
+    {
+      "id": "D-07",
+      "title": "village-publish-001 提示元素与文案缺设计依据",
+      "blocks_which_gate": "none",
+      "measured_value": "unknown（判据口径属产品，非盘上可测）。今日复核：§7 与 §31⑤ 第二条指同一条判据，不是两条待裁",
+      "command": "unknown（无盘上判点可量）",
+      "options": ["定字数阈值按哪页语义", "定提示文案以哪张设计稿为准（§31⑤ 另记 0/1000 与在跑 500 矛盾）"],
+      "cost_per_option": { "unknown": "两条都要产品口径" },
+      "needs_user": true,
+      "runnable_now": false
+    },
+    {
+      "id": "D-08",
+      "title": "几百个非 png 的文本 dump 要不要入库",
+      "blocks_which_gate": "none（与 D-05 耦合）",
+      "measured_value": "今日 ls|wc -l 与 git ls-files|wc -l：round-2-interact=499/已跟踪0（文档原记 258）、round-6-interact=868/0（原记 340）、round-2-tour=5/0（原记 3）⇒ 文档三个数都是旧的",
+      "command": "for d in reports/screenshots/round-2-interact reports/screenshots/round-6-interact reports/screenshots/round-2-tour; do ls $d|wc -l; git ls-files $d|wc -l; done",
+      "options": ["入库（与 D-05 同批）", "不入库（可携性只做一半）"],
+      "cost_per_option": { "入库": "一次涉及 1300+ 个文件（今日实数，不是文档的 601）", "不入库": "干净 clone 拿不到判据侧文本产物" },
+      "needs_user": true,
+      "runnable_now": false
+    },
+    {
+      "id": "D-09",
+      "title": "高 dpr 机型档的巡检帧要不要补",
+      "blocks_which_gate": "none",
+      "measured_value": "unknown（本车道未遍历全库帧尺寸）",
+      "command": "unknown（要读每帧 IHDR/SOF，留给允许写盘车道或下一程）",
+      "options": ["A 加一档高 dpr 重拍 HOME-005 与 TMP-TOUR-R2-004", "B 接受两条长期 NOT_SHOOTABLE 并改免检"],
+      "cost_per_option": { "A": "一档设备时间 + 重拍两帧", "B": "改判据口径（免检）" },
+      "needs_user": true,
+      "runnable_now": false
+    },
+    {
+      "id": "D-12",
+      "title": "round-1 那 144 帧要不要显式 LEGACY 豁免",
+      "blocks_which_gate": "verify-evidence-corpus（今日实测该门已绿）",
+      "measured_value": "exit=0；CORPUS_PROBLEMS=0 / LEGACY_NO_SHA=1 / LEGACY_FRAMES=144 / SCANNED=47 / MANIFESTS_TOTAL=53 / EXPIRED_GITSHA=47 / STORE=reachable ⇒ 选项 A 事实已落地",
+      "command": "export QA_EVIDENCE_STORE=D:/6/love-mini-evidence; \"$N\" scripts/qa/verify-evidence-corpus.mjs",
+      "options": ["(剩下的只有一句) 是否允许终报引用这 144 帧作产物级证据——门自己印了『legacy ≠ 通过，不得引用』"],
+      "cost_per_option": { "允许引用": "等于把无戳帧当产物级背书", "不允许": "零成本，但 round-1 结论继续只可作历史线索" },
+      "needs_user": true,
+      "runnable_now": false,
+      "doc_conflict": "decisions §12 仍写这是 corpus 唯一具名红；§30 写 r7 已转绿。当前读数：绿"
+    },
+    {
+      "id": "D-13",
+      "title": "18 份在途 exec-* 清单要不要授权代跑",
+      "blocks_which_gate": "verify-provenance-all（不 block verify-real-coverage）",
+      "measured_value": "18/18 manifest 在盘、18/18 带 resultsGitSha、15/18 目录未被 git 跟踪（3 已跟踪）；这 18 册贡献 4886-19=4867 帧（与 §13 逐字相同）。对 real-coverage 的收账今日实测 0/10",
+      "command": "node22 -e \"逐目录读 manifest-detail.json 查 resultsGitSha + git ls-files 数跟踪\" ⇒ 18_dirs_checked=18 manifest_missing=0 with_resultsGitSha=18 git_tracked_dirs=3 git_untracked_dirs=15",
+      "options": ["A 授权代跑修好的生产者（只改戳字段）", "B 留给 exec/帧车道"],
+      "cost_per_option": { "A": "改 18 份未提交产物的戳字段；provenance 仍不会因此转绿（门比的是归属晚于实物），real-coverage 收 0 条", "B": "慢，但每份由产出者背书" },
+      "needs_user": true,
+      "runnable_now": false
+    },
+    {
+      "id": "D-14",
+      "title": "生产者集合 11 vs 12",
+      "blocks_which_gate": "verify-provenance-all（计数轴，不进判红集合）",
+      "measured_value": "PROV_PRODUCERS=11 / DERIVED_OK=11 / LITERAL_SHA=0 / NO_DERIVE=0 ⇒ 盘上已按选项 A 落定",
+      "command": "\"$N\" scripts/qa/verify-provenance-all.mjs | grep PROV_PRODUCERS",
+      "options": ["A 维持 11", "B 把派生常量命名为 GIT_SHA 让它重回 12"],
+      "cost_per_option": { "A": "零改动", "B": "一行改名" },
+      "needs_user": true,
+      "runnable_now": false
+    },
+    {
+      "id": "D-15",
+      "title": "verify-openqueue-lanes.mjs：修成真的门还是归档",
+      "blocks_which_gate": "不在终验 18 步清单",
+      "measured_value": "文件 6279B；grep -c process.exit = 0（今日仍为真）；:22 写死 reports/audit/round-7；:90 无条件 writeFileSync 判决件 ⇒ 跑它就是写 reports/。今日仍只被 gen-round8-report.mjs 与工作流文件点名排除",
+      "command": "grep -c \"process.exit\" scripts/qa/verify-openqueue-lanes.mjs; grep -n \"writeFileSync|round-7\" scripts/qa/verify-openqueue-lanes.mjs",
+      "options": ["A 先修（exit 与判决一致 + 不无条件覆写 + 去写死轮次）再接", "B 归档为 round-7 一次性转换工具"],
+      "cost_per_option": { "A": "改一个脚本三段", "B": "零成本，但『少一条门』只能靠注释提醒" },
+      "needs_user": true,
+      "runnable_now": false,
+      "one_line_verdict": "没有裁定就跑不了（它无条件写盘）；但接不接的决定今日已用命令把三条理由都复现了"
+    },
+    {
+      "id": "D-16",
+      "title": "run-round7-closeout.mjs 接不接进工作流",
+      "blocks_which_gate": "不在终验 18 步清单",
+      "measured_value": "今日现跑 --list ⇒ exit=0，CLOSEOUT_FLAGS=OK / CLOSEOUT_RESULT=LIST / CLOSEOUT_PLAN 总步骤=61 本次启用=22；旗标白名单 :45（10 个）；--list 早退点 :523 在所有 spawn 之前 ⇒ 纯读。真跑段 :357 明写会 spawnSync + 读设备租约",
+      "command": "\"$N\" scripts/qa/run-round7-closeout.mjs --list",
+      "options": ["A 经收口守门员接进工作流", "B 留在人工收尾时用"],
+      "cost_per_option": { "A": "接线一处 + 工作流多跑默认 22 步", "B": "零改动，但 stage-8 每问一次都要人手跑" },
+      "needs_user": true,
+      "runnable_now": true,
+      "one_line_verdict": "无裁定可跑的那半我已跑：`node22 scripts/qa/run-round7-closeout.mjs --list`（只读、exit 0）；接线口径仍要用户，真跑要设备空着 + 放行"
+    },
+    {
+      "id": "D-17",
+      "title": "面板每跑一次就重打一份权威判决件（decisions 原 #17 编号）",
+      "blocks_which_gate": "n/a",
+      "measured_value": "今日复量确认已闭：emit-round-report.mjs:820 带 --out 侧车、verify-source-shape 那发带 [\"--dry\"]、evidence-holes 落 panel/evidence-holes-verdict-r7.json；侧车三份都在盘（Sep 29 20:49）",
+      "command": "grep -n GUEST_BOOK_SIDECAR scripts/qa/emit-round-report.mjs; ls .zcode/tmp/final-verify/panel/",
+      "options": ["已闭；只留编号提醒：编排方口中的 #17 指的是游客设备腿，不是这一条"],
+      "cost_per_option": { "none": "无" },
+      "needs_user": false,
+      "runnable_now": false,
+      "status": "closed"
+    },
+    {
+      "id": "D-18",
+      "title": "分诊台的判据台目录是从结果路径反推的",
+      "blocks_which_gate": "n/a",
+      "measured_value": "闭，但『反推仍是默认』今日复核为真：:507 OPS_EXPLICIT=argv 里有 --ops；:511 仍是 dirname(dirname(RESULTS))/ops；:524 派生分支目录不存在才红",
+      "command": "grep -n \"OPS_EXPLICIT\\|opsFromCorpus\" scripts/qa/triage-exec-failures.mjs",
+      "options": ["残留那半（把反推改成显式参数默认）属实现，不是政策"],
+      "cost_per_option": { "改成显式默认": "一处调用点写死" },
+      "needs_user": false,
+      "runnable_now": false,
+      "status": "closed_with_residual_implementation"
+    },
+    {
+      "id": "D-23",
+      "title": "体积达标了，但达的是哪一个口径",
+      "blocks_which_gate": "scripts/verify-package-size.mjs（不在终验 18 步里）",
+      "measured_value": "今日现跑：去旗 exit=1、挂 --allow-mock exit=0（门能红，非自我放行）；印 `主包: 27.78MB (上限 2.00MB)  ← 以上数字只代表上面那个档，不是发布形态`、`总包: 28.82MB (上限 10.00MB)`。发布形态 1.72MB 与 src 退化 2.76MB 两个数今日未复算（要重建）= unknown",
+      "command": "\"$N\" scripts/verify-package-size.mjs; \"$N\" scripts/verify-package-size.mjs --allow-mock",
+      "options": ["A 门的被测物/阈值按发布形态判", "B 三门并立但强制标口径（已部分成立）", "C 让 mock 档也降下来（要动不许删的素材）"],
+      "cost_per_option": { "A": "改门的被测物与阈值", "B": "补两处打印", "C": "动素材 ⇒ 单独放行" },
+      "needs_user": true,
+      "runnable_now": false,
+      "doc_conflict": "§23 说『现状是只印一个数』；今日门已自印口径声明那一行"
+    },
+    {
+      "id": "D-24",
+      "title": "person-avatars.ts 的 21 条强制收集 import 要不要动",
+      "blocks_which_gate": "scripts/verify-package-size.mjs（src 退化口径）",
+      "measured_value": "解析出 21 条唯一引用、21/21 全部在盘可解析、字节合计 999151 B（0.95MB）⇒ 与 §24 逐字相同；文件本体 2717B",
+      "command": "node22 -e \"正则取 apps/client/src/utils/person-avatars.ts 的引用 → statSync 累加\" ⇒ refs_found=21 unique=21 resolved=21 total_bytes=999151",
+      "options": ["A 动它（src 退化口径 2.76MB → 约 1.81MB）", "B 不动（保持 0.76MB 缺口）"],
+      "cost_per_option": { "A": "可能复发 09-03/09-12 两次头像 404", "B": "发布形态余量维持约 0.28MB" },
+      "needs_user": true,
+      "runnable_now": false
+    },
+    {
+      "id": "D-25",
+      "title": "provenance 那批 pre_stamp 帧：三种改法都买不到绿",
+      "blocks_which_gate": "verify-provenance-all",
+      "measured_value": "今日：PRE_STAMP=4886 / CONSISTENT=4154 / STALE=0 / UNDATED=0 / UNRESOLVABLE=0 / UNKNOWN_BAND=0 / ABSOLUTE=0 / MANIFESTS_BAD_SHA=0 / MANIFESTS_NO_SHA=0 / NO_SHA_LEGACY=1 / LEGACY=144 / PRODUCERS=11 / 帧 9184 in=out 守恒；19 册全帧 pre_stamp（18 册共用 6fd151786c…，第 19 册 round-8-interact 用 93650335…）；逐册明细合计复算到 4886",
+      "command": "\"$N\" scripts/qa/verify-provenance-all.mjs（日志 .zcode/tmp/lane-ruling-packet/r9-provenance-all.log）",
+      "options": ["(a) 重跑这 19 册的腿（十几个 leg 的设备时间，不改判据）", "(b) 给长期口径：转换带/跨提交带的历史帧不作产物级引用（=给门加 legacy 档，改判口径）"],
+      "cost_per_option": { "a": "十几个 leg 设备时间", "b": "一行口径，但从此『归属晚于实物』不再判红" },
+      "needs_user": true,
+      "runnable_now": false,
+      "unverified_in_doc": "§25 的三种改法投影（8697/19/324、9165/19/0）本车道未复跑 = unknown；我只能确认其前提（18/18 册内有 resultsGitSha）"
+    },
+    {
+      "id": "D-28",
+      "title": "CH22 只落了不依赖滚动裁决的那半，另半三件事互斥",
+      "blocks_which_gate": "none（已落那半可由 verify-source-shape 判）",
+      "measured_value": "盘上第三个事实今日成立：hub.vue:269 <scroll-view / :270 class=\"campus-hub__feed\" / 闭合 :334；campus-hub__more-arrow 全文件 1 命中且就是 :768 那行样式（模板 0 命中）⇒ 无箭头那半仍可判。判据正文引用的 :336-339 与今日 :330-332 一带仍是漂的",
+      "command": "grep -n \"campus-hub__feed\\|scroll-view\" apps/client/src/subpackages/campus/campus/hub.vue; grep -n campus-hub__more-arrow apps/client/src/subpackages/campus/campus/hub.vue",
+      "options": ["(a) 承认是 scroll-view、ACTION 句当笔误（需执行器加读 scroll-view 数值能力）", "(b) 搬出 scroll-view 改页级滚动（结构改动）", "(c) 拆成两条各判各的"],
+      "cost_per_option": { "a": "载具加一条通道", "b": "动结构 + 牵 :269-271 enhanced/bounces + 重建两档", "c": "新增一行判据" },
+      "needs_user": true,
+      "runnable_now": false
+    },
+    {
+      "id": "D-29a",
+      "title": "那 5 组落地对的产品级归属（重拍带身份的切片）",
+      "blocks_which_gate": "none（#29(b) 已把它移出判红集合）",
+      "measured_value": "unknown（本车道未重跑 triage；r8 记账 landingMissing=5）",
+      "command": "unknown（要跑 triage-exec-failures.mjs --results … --out 侧车，写盘 ⇒ 未跑）",
+      "options": ["(a) 对 5 页各跑 --identity guest 与 --identity A 两条腿", "(c) 长期挂着，总报告如实写无法归属"],
+      "cost_per_option": { "a": "两条腿设备时间，不改门的任何判定", "c": "零成本但永不算结案" },
+      "needs_user": true,
+      "runnable_now": false
+    },
+    {
+      "id": "G-17",
+      "title": "游客落地设备腿（编排方所称 #17；followups §11）",
+      "blocks_which_gate": "verify-guest-landing（今日实测 exit 2 拦门仍在）；不 block verify-real-coverage",
+      "measured_value": "三计数今日复量 booked=28（顶层 groups=26、debtRows=434、sum(caseIds)=438 自守恒破裂）/ measured=28（real@f0677920，全 stable）/ roster=27（ops 27 + 跑测 0，成员 434，观察并集 26）⇒ 分歧仍在，差的 1 组是 subpackages/setup/recommend-pref/index → pages/login/index（booked 里 memberSource fromOps=0/fromRun=4，今日缺省跑测源 landingGroups 26 组里 0 组含它）",
+      "command": "\"$N\" scripts/qa/verify-guest-landing.mjs --mode book --out .zcode/tmp/lane-ruling-packet/guest-landing-booked-r9.json（exit=2, problems=2；book 模式不开模拟器）",
+      "options": ["(a) 预检允许整页都是游客断言的组用该页游客行当证人（要配能变红的负例）", "(b) 按 booked 名册给 RP01/02/06/10 补 identities:[\"guest\"]（判据台 canon 变、必须重打戳）"],
+      "cost_per_option": { "a": "改预检成员来源 + 新增负例测试", "b": "动语料身份声明 + 重打 ops 戳" },
+      "needs_user": true,
+      "runnable_now": false,
+      "why_not_runnable": "--mode measure 预检通过后路径是 acquireUi + 驱动 DevTools（:245-247），越只读车道边界",
+      "closeability_real_coverage": "直接 0/10（门不读 guest-landing）；间接点名 4 条（VI25/VI34/VRN07 各 1 行、VB03 4 行的跳过原因是页面没落在声明页）"
+    },
+    {
+      "id": "D-31e",
+      "title": "MP-R2VIS-PAGES-MESSAGES-INDEX-002 游客计数 vs 登录裁定",
+      "blocks_which_gate": "none",
+      "measured_value": "让 mock 不可测的那道守卫今日在盘：pages/messages/index.vue:374 的 !useMock()。注意它与 D-03 是同族两个不同判据 id（MP-R2-… vs MP-R2VIS-…），不能并成一条裁",
+      "command": "grep -n useMock apps/client/src/pages/messages/index.vue",
+      "options": ["按判据补实现（等于收窄游客引导裁定在这一页的适用）", "按裁定改判据", "把判据收到登录档"],
+      "cost_per_option": { "第一条": "动产品行为并改变落点账基线", "第二条": "改判据正文", "第三条": "新增一档判据要求，需登录档腿" },
+      "needs_user": true,
+      "runnable_now": false
+    },
+    {
+      "id": "F-04",
+      "title": "两条 VEHICLE_DENY 是被误拦的（载具白名单）",
+      "blocks_which_gate": "verify-real-coverage（今日点名其中 2 条）",
+      "measured_value": "词表 DENY_TAP=/注销|解绑|清空|删除账号|删除帐号|退出登录|登出/ 今日在 r-exec-cli.mjs:138 与 r-exec-ws.mjs:391（⚠ 文档写的 :60 已漂）。exec-interact-real-sc-r10 49 行里 VEHICLE_DENY=2：次要18|TD03、次要20|OT09，命中词都是『清空』，band=real@ed1cd82c、identity=A、status=SKIPPED；两条都在今日 10 条欠账里。round-6 ops 全目录静态扫该词表命中 31 行 ⇒ 放宽的暴露面远大于 2",
+      "command": "grep -n DENY_TAP scripts/qa/r-exec-cli.mjs scripts/qa/r-exec-ws.mjs; node22 扫 exec-interact-real-sc-r10 的 failureReason + 扫 round-6/ops 的 action",
+      "options": ["A 从词表摘掉『清空』（或限定为清空账号）", "B 保持（白名单是安全边界）"],
+      "cost_per_option": { "A": "点名 2 条欠账，但同两条各还有 9 次被另一支手写『交互禁触』表挡 ⇒ 单放开词表翻不绿；静态命中面 31 行意味着误放可能真打掉共用会话", "B": "这 2 条继续挂欠账" },
+      "needs_user": true,
+      "runnable_now": false
+    },
+    {
+      "id": "F-09",
+      "title": "profile-svg-to-png 会重写被 git 跟踪的源 PNG",
+      "blocks_which_gate": "verify-band-freshness / verify-provenance-all（登记的假红候选源）",
+      "measured_value": "git status --porcelain apps/client/src/static/assets/profile/png/profile-hero.png = 空 ⇒ 此刻工作树干净、抖动不在盘上；『每次构建都脏树』这句本车道无法验（验它要重建）= unknown；文档记的 28622B vs 28638B（差 16B）未复现",
+      "command": "git status --porcelain apps/client/src/static/assets/profile/png/profile-hero.png",
+      "options": ["A 产物改写入 dist", "B 加 --check 只验不写", "C 让它确定化输出字节"],
+      "cost_per_option": { "三条共同": "都属改构建链 ⇒ 文档已写明动完必须重建三档 + 全量复量，是新授权范围" },
+      "needs_user": true,
+      "runnable_now": false
+    }
+  ],
+  "rulings_landed_during_this_lane": {
+    "detected_by": "wc -l + git status（起跑时 decisions-v33.md 412 行，现 441 行）",
+    "section": "## 32. 2026-09-29 21:41 用户裁定四项",
+    "not_written_by_this_lane": true,
+    "items_now_ruled": [
+      { "packet_id": "D-13", "ruling": "授权代跑 18 份在途 exec-* 清单；派生 L7 先只读普查三态", "caveat_in_doc": "§32 自陈该授权的前提（它是那 10 条欠账的主要解法）已被实测推翻，本车道独立量到同一结论：0/10" },
+      { "packet_id": "G-17", "ruling": "§11(a) 整页游客断言即可当证人，必须配能变红的负例；明确不采用 (b)，不动 ops canon" },
+      { "packet_id": "D-25", "ruling": "记为已知历史红，每轮如实复量；不买绿、不重打历史戳、不改判据" },
+      { "packet_id": "F-09", "ruling": "授权修：产物移出 src 并确定化，改完重建三档并逐档 grep MODE:" }
+    ],
+    "dangling_reference": "§32 正文两次引用『§32.1』，但文件到 :441 结束、该节不存在 ⇒ 『#13 授权范围是否延伸』目前挂在空引用上",
+    "this_lanes_correction": "本车道 §0.4 第一版把『10 条在 exec 语料里一行都没有』写进过包内，原因是探针读了 j.rows 而这些文件的行数组叫 j.results；已就地纠正：10 条全部有 real 档行（10~16 行/条），但 real 档 EXECUTED 全为 0，状态恒为 SKIPPED"
+  },
+  "summary_counts": {
+    "pending_items_in_packet": 25,
+    "needs_user_true_before_2141_rulings": 21,
+    "ruled_at_2141": 4,
+    "net_still_needs_user": 17,
+    "already_closed_or_implementation_only": 4,
+    "runnable_now_true": 1,
+    "runnable_now_note": "只有 D-16 的 --list 那一发是无裁定可跑且本车道已跑（exit 0，总步骤=61 本次启用=22）；D-15 明确跑不了（:90 无条件写 reports/ 判决件，且 grep -c process.exit = 0）；其余都需裁定、或要占设备/写盘",
+    "measured_fields_left_unknown": ["D-06 DB 行数", "D-07 判据口径", "D-09 帧尺寸分布", "D-25 §25 三改法投影", "D-23 发布形态与 src 退化两数", "D-29a triage 今日读数", "F-09 构建抖动是否仍发生"]
+  }
+}
+

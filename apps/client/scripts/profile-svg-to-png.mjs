@@ -106,6 +106,11 @@ async function main() {
       if (!tracked.equals(png)) {
         if (WRITE && !CHECK_ONLY) {
           await writeIfChanged(trackedPath, png);
+          // 写完复验：不复验就会像 cpSingle 那样"目标存在=写成功"地谎报刷新过（r9 §5.4.1）
+          const now = readFileSync(trackedPath);
+          if (!now.equals(png)) {
+            throw new Error(`--write 刷新后复验不一致 ${rel}（${now.length}B vs ${png.length}B）`);
+          }
           refreshed++;
           console.log(`[profile-svg-to-png] WRITE 已刷新跟踪 PNG ${rel}（记得提交这一份）`);
         } else {

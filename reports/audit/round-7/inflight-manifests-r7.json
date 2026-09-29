@@ -1,0 +1,1264 @@
+{
+ "generatedBy": "lane-manifest-triage (READ-ONLY lane)",
+ "head": "1788675d",
+ "premiseCorrection": "exec-* dirs under reports/audit/round-7 are executor --out RESULT directories, not in-flight input-manifest containers. Also: manifest-detail.json is NOT an input manifest — it is a DOWNSTREAM conversion artifact written by scripts/qa/exec-frames-to-corpus.mjs (its own harness field names the exec-results.json it consumed), so its presence proves MORE progress than its absence. Presence/absence of manifest-detail.json therefore cannot be used as an executed/unexecuted discriminator (it is absent in 11 dirs that did run).",
+ "enumerationCounts": {
+  "round7_execStar_glob_entries": 36,
+  "of_which_files": 3,
+  "of_which_files_named": [
+   "exec-capabilities-report.md",
+   "exec-knives-report.md",
+   "exec-verbs-r10c.md"
+  ],
+  "of_which_directories": 33,
+  "dirs_with_populated_exec_results": 30,
+  "dirs_completely_empty_no_manifest_no_results": 3,
+  "empty_dirs": [
+   "exec-guest-login-r8",
+   "exec-guest-mock-r7final",
+   "exec-guest-tap"
+  ],
+  "dirs_containing_an_unexecuted_input_manifest": 0,
+  "genuinely_unexecuted_manifests": 0,
+  "orchestrator_claimed_count": 18,
+  "reconciliation": "18 matches nothing measured (not 36, not 33, not 30, not 3, not 11). Closest real numbers: 4 dirs are named exec-real-coverage-*-r9 (the round-8-coverage remedy wave, gitSha a4c8f995), and 11 dirs lack manifest-detail.json. Most likely stale basis: the orchestrator counted a pre-existing snapshot before the r9/r10 waves ran."
+ },
+ "gate": {
+  "name": "verify-real-coverage",
+  "invoked_from": "scripts/qa/run-final-verify-v33.sh:42 -> scripts/qa/verify-real-coverage.mjs (no special flag; per-row uncovered list is now unconditional)",
+  "result": "FAIL",
+  "cases": 236,
+  "covered": 198,
+  "uncovered": 10,
+  "automatable_exempt": 28,
+  "never_on_real": 0,
+  "real_band_but_all_skipped": 10,
+  "judged_missing_A": 10,
+  "judged_missing_guest": 2,
+  "conservation": "OK 28+198+10=236/236",
+  "uncovered_ledger": "OK 点名=10 判据外=0",
+  "other_visible_leaks": {
+   "bandless_rows": 31,
+   "identityless_rows": 31,
+   "session_unproven_rows": 1149,
+   "session_contradict_rows": 0,
+   "bandless_source": "exec-ws-tap-r8 (145 rows, no band field at all — produced by r-exec-ws.mjs)"
+  },
+  "decisive_reading": "REALCOV_NEVER_ON_REAL=0. Not one of the 10 debts is missing a real-band row. All 10 have real-band rows and all of them are SKIPPED (REAL_BAND_BUT_ALL_SKIPPED=10). So this is NOT a band-coverage problem and re-running band sweeps cannot fix it."
+ },
+ "bands": {
+  "mock": {
+   "dir": "apps/client/dist/build/mp-weixin",
+   "sha8_seen_in_results": "f1c7b96b"
+  },
+  "real": {
+   "dir": "apps/client/dist/build/mp-weixin-real",
+   "apiMode": "real",
+   "sha8_seen_in_results": "f0677920"
+  },
+  "showcase": {
+   "dir": "apps/client/dist/build/mp-weixin-showcase",
+   "apiMode": "real",
+   "sha8_seen_in_results": "ed1cd82c",
+   "warning": "showcase declares apiMode=real (measured in reports/audit/round-7/band-freshness-final.json, no dist read). verify-real-coverage claims rows by /^real(@|$)/, so a SHOWCASE-band leg is counted as real coverage. 5 round-7 dirs (exec-A-showcase-r8e, exec-ch12-knife, exec-interact-*-r10 x3, exec-real-coverage-*-showcase-r9) ran against the showcase project and stamped band=real@ed1cd82c. Distinguish by the sha8, not the mode word."
+  },
+  "dist_read": "NOT read — rebuild in flight. sha8 values above come from the ops corpus and from the declared band fields inside the existing exec-results.json files. Freshness at run time is deferred-to-run-time."
+ },
+ "classificationCounts": {
+  "SHOOTABLE_NOW": 0,
+  "NEEDS_IDENTITY": 1,
+  "NEEDS_REBAND": 1,
+  "NOT_SHOOTABLE": 8,
+  "shootable_after_carrier_only_fix_no_new_device_capability": 1,
+  "note": "the 1 is 次要18|TD03, blocked only by the DENY_TAP prose regex."
+ },
+ "overlapWithUncovered": {
+  "uncovered_rows_total": 10,
+  "rows_this_exec_batch_can_close": 0,
+  "honest_answer": "NONE OF THEM.",
+  "full_scope_dirs_computed": [
+   "exec-A-mock-final",
+   "exec-A-mock-r7final",
+   "exec-A-real",
+   "exec-A-real-only",
+   "exec-A-real-r7final",
+   "exec-guest-real",
+   "exec-guest-real-final",
+   "exec-guest-real-only",
+   "exec-guest-real-r7final",
+   "exec-interact-real-sc-r10",
+   "exec-real-coverage-a-r9",
+   "exec-real-coverage-a-showcase-r9",
+   "exec-tap-final3"
+  ],
+  "full_scope_real_band_dirs": [
+   "exec-A-real@real@f0677920",
+   "exec-A-real-only@real@f0677920",
+   "exec-A-real-r7final@real@f0677920",
+   "exec-guest-real@real@f0677920",
+   "exec-guest-real-final@real@f0677920",
+   "exec-guest-real-only@real@f0677920",
+   "exec-guest-real-r7final@real@f0677920",
+   "exec-interact-real-sc-r10@real@ed1cd82c",
+   "exec-real-coverage-a-r9@real@f0677920",
+   "exec-real-coverage-a-showcase-r9@real@ed1cd82c"
+  ],
+  "detail": "Thirteen of the 33 dirs already declare ALL 10 debt rows inside their own scope (see full_scope_dirs_computed), and the exec-real-coverage-*-r9 wave was built for exactly this purpose. They ran. All 10 rows came back SKIPPED on every real-band leg. The rows are still uncovered BECAUSE those runs skipped them, not because they never ran. Re-running the same dirs with the same flags reproduces the same skips; resuming into them is additionally a guaranteed no-op (see hazards). Note that 3 of these dirs are MOCK-band legs (mock@f1c7b96b) whose rows the gate cannot claim at all — mock scope presence is not real coverage. Every one of the 10 real-band full-scope dirs ran with the plain observe/tap slice: none of --rapid / --scroll / --gestures / --native-capture / --geom-pos / --net-count appears in its declared runner field."
+ },
+ "dirs": [
+  {
+   "dir": "reports/audit/round-7/exec-A-login-r8",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 38,
+   "band_from_declared_field": "mock@f1c7b96b",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（tap 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 36,
+    "FAILED": 2
+   },
+   "declared_scope_touches_debt_rows": [],
+   "classification": "ABORTED_or_all_SKIPPED",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-A-mock-final",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 1107,
+   "band_from_declared_field": "mock@f1c7b96b",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（tap 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "EXECUTED": 650,
+    "SKIPPED": 414,
+    "FAILED": 43
+   },
+   "declared_scope_touches_debt_rows": [
+    "PAGES-PROFILE-INDEX|PFI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+    "次要18|TD03",
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_full_ledger_batch",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-A-mock-r7final",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 1107,
+   "band_from_declared_field": "mock@f1c7b96b",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（tap 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "EXECUTED": 642,
+    "SKIPPED": 414,
+    "FAILED": 51
+   },
+   "declared_scope_touches_debt_rows": [
+    "PAGES-PROFILE-INDEX|PFI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+    "次要18|TD03",
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_full_ledger_batch",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-A-mock-stage7",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 875,
+   "band_from_declared_field": "mock@f1c7b96b",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（tap 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "EXECUTED": 275,
+    "SKIPPED": 589,
+    "FAILED": 11
+   },
+   "declared_scope_touches_debt_rows": [
+    "次要18|TD03",
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_partial_or_targeted_slice",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-A-real",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 1107,
+   "band_from_declared_field": "real@f0677920",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-real",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（tap+real 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "EXECUTED": 822,
+    "SKIPPED": 236,
+    "FAILED": 49
+   },
+   "declared_scope_touches_debt_rows": [
+    "PAGES-PROFILE-INDEX|PFI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+    "次要18|TD03",
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_full_ledger_batch",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-A-real-only",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 1107,
+   "band_from_declared_field": "real@f0677920",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-real",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（real-cases-only 切片，增量落盘）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 907,
+    "EXECUTED": 194,
+    "FAILED": 6
+   },
+   "declared_scope_touches_debt_rows": [
+    "PAGES-PROFILE-INDEX|PFI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+    "次要18|TD03",
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_full_ledger_batch",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-A-real-only.partial-second-exit-bug",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 410,
+   "band_from_declared_field": "real@f0677920",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-real",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（real-cases-only 切片，增量落盘）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 410
+   },
+   "declared_scope_touches_debt_rows": [
+    "PAGES-PROFILE-INDEX|PFI25"
+   ],
+   "classification": "ABORTED_or_all_SKIPPED",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-A-real-r7final",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 1107,
+   "band_from_declared_field": "real@f0677920",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-real",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（real-cases-only 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 906,
+    "EXECUTED": 195,
+    "FAILED": 6
+   },
+   "declared_scope_touches_debt_rows": [
+    "PAGES-PROFILE-INDEX|PFI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+    "次要18|TD03",
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_full_ledger_batch",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-A-real-stage7",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 875,
+   "band_from_declared_field": "real@f0677920",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-real",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（real-cases-only 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 767,
+    "EXECUTED": 107,
+    "FAILED": 1
+   },
+   "declared_scope_touches_debt_rows": [
+    "次要18|TD03",
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_partial_or_targeted_slice",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-A-showcase-r8e",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 78,
+   "band_from_declared_field": "real@ed1cd82c",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-showcase",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（tap+real 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "EXECUTED": 31,
+    "SKIPPED": 47
+   },
+   "declared_scope_touches_debt_rows": [
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_partial_or_targeted_slice",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-ch12-knife",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 1,
+   "band_from_declared_field": "real@ed1cd82c",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-showcase",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（tap+real 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "EXECUTED": 1
+   },
+   "declared_scope_touches_debt_rows": [],
+   "classification": "FINISHED_partial_or_targeted_slice",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-guest-login-r8",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": null,
+   "band_from_declared_field": "unknown",
+   "identities_from_declared_field": "unknown",
+   "project_from_declared_field": "n/a (empty dir)",
+   "runner_from_declared_field": "n/a (empty dir)",
+   "capability_flags_in_declared_runner": "unknown",
+   "status_counts": {},
+   "declared_scope_touches_debt_rows": [],
+   "classification": "NOT_A_MANIFEST_empty_output_dir",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "empty dir — not pending work, nothing to shoot"
+  },
+  {
+   "dir": "reports/audit/round-7/exec-guest-mock-r7final",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": null,
+   "band_from_declared_field": "unknown",
+   "identities_from_declared_field": "unknown",
+   "project_from_declared_field": "n/a (empty dir)",
+   "runner_from_declared_field": "n/a (empty dir)",
+   "capability_flags_in_declared_runner": "unknown",
+   "status_counts": {},
+   "declared_scope_touches_debt_rows": [],
+   "classification": "NOT_A_MANIFEST_empty_output_dir",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "empty dir — not pending work, nothing to shoot"
+  },
+  {
+   "dir": "reports/audit/round-7/exec-guest-real",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 1107,
+   "band_from_declared_field": "real@f0677920",
+   "identities_from_declared_field": [
+    "guest"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-real",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（tap 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "EXECUTED": 434,
+    "SKIPPED": 434,
+    "FAILED": 239
+   },
+   "declared_scope_touches_debt_rows": [
+    "PAGES-PROFILE-INDEX|PFI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+    "次要18|TD03",
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_full_ledger_batch",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-guest-real-close-r8e",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 350,
+   "band_from_declared_field": "real@f0677920",
+   "identities_from_declared_field": [
+    "guest"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-real",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（real-cases-only 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 335,
+    "EXECUTED": 15
+   },
+   "declared_scope_touches_debt_rows": [
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_partial_or_targeted_slice",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-guest-real-final",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 1107,
+   "band_from_declared_field": "real@f0677920",
+   "identities_from_declared_field": [
+    "guest"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-real",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（tap 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "EXECUTED": 436,
+    "SKIPPED": 432,
+    "FAILED": 239
+   },
+   "declared_scope_touches_debt_rows": [
+    "PAGES-PROFILE-INDEX|PFI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+    "次要18|TD03",
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_full_ledger_batch",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-guest-real-guard-r10",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 156,
+   "band_from_declared_field": "real@f0677920",
+   "identities_from_declared_field": [
+    "guest"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-real",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（real 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "FAILED": 8,
+    "SKIPPED": 146,
+    "EXECUTED": 2
+   },
+   "declared_scope_touches_debt_rows": [
+    "次要21|OC09"
+   ],
+   "classification": "FINISHED_partial_or_targeted_slice",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-guest-real-login-r8",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 38,
+   "band_from_declared_field": "real@f0677920",
+   "identities_from_declared_field": [
+    "guest"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-real",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（real-cases-only 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 38
+   },
+   "declared_scope_touches_debt_rows": [],
+   "classification": "ABORTED_or_all_SKIPPED",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-guest-real-only",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 1107,
+   "band_from_declared_field": "real@f0677920",
+   "identities_from_declared_field": [
+    "guest"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-real",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（real-cases-only 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 915,
+    "EXECUTED": 100,
+    "FAILED": 92
+   },
+   "declared_scope_touches_debt_rows": [
+    "PAGES-PROFILE-INDEX|PFI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+    "次要18|TD03",
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_full_ledger_batch",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-guest-real-r7final",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 1107,
+   "band_from_declared_field": "real@f0677920",
+   "identities_from_declared_field": [
+    "guest"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-real",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（real-cases-only 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 915,
+    "EXECUTED": 105,
+    "FAILED": 87
+   },
+   "declared_scope_touches_debt_rows": [
+    "PAGES-PROFILE-INDEX|PFI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+    "次要18|TD03",
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_full_ledger_batch",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-guest-real-stage7",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 875,
+   "band_from_declared_field": "real@f0677920",
+   "identities_from_declared_field": [
+    "guest"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-real",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（real-cases-only 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 820,
+    "EXECUTED": 53,
+    "FAILED": 2
+   },
+   "declared_scope_touches_debt_rows": [
+    "次要18|TD03",
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_partial_or_targeted_slice",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-guest-tap",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": null,
+   "band_from_declared_field": "unknown",
+   "identities_from_declared_field": "unknown",
+   "project_from_declared_field": "n/a (empty dir)",
+   "runner_from_declared_field": "n/a (empty dir)",
+   "capability_flags_in_declared_runner": "unknown",
+   "status_counts": {},
+   "declared_scope_touches_debt_rows": [],
+   "classification": "NOT_A_MANIFEST_empty_output_dir",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "empty dir — not pending work, nothing to shoot"
+  },
+  {
+   "dir": "reports/audit/round-7/exec-interact-denyexp-r10",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 1,
+   "band_from_declared_field": "real@ed1cd82c",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-showcase",
+   "runner_from_declared_field": "scripts/qa/cli-automator.mjs 原语 + ui-lease 显式包裹（.zcode/tmp/lane-ui2/interact-pair.mjs）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 1
+   },
+   "declared_scope_touches_debt_rows": [],
+   "classification": "ABORTED_or_all_SKIPPED",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-interact-real-sc-guest-r10",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 3,
+   "band_from_declared_field": "real@ed1cd82c",
+   "identities_from_declared_field": [
+    "guest"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-showcase",
+   "runner_from_declared_field": "scripts/qa/cli-automator.mjs 原语 + ui-lease 显式包裹（.zcode/tmp/lane-ui2/interact-pair.mjs）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 3
+   },
+   "declared_scope_touches_debt_rows": [],
+   "classification": "ABORTED_or_all_SKIPPED",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-interact-real-sc-r10",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 49,
+   "band_from_declared_field": "real@ed1cd82c",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-showcase",
+   "runner_from_declared_field": "scripts/qa/cli-automator.mjs 原语 + ui-lease 显式包裹（.zcode/tmp/lane-ui2/interact-pair.mjs）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 30,
+    "EXECUTED": 19
+   },
+   "declared_scope_touches_debt_rows": [
+    "PAGES-PROFILE-INDEX|PFI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+    "次要18|TD03",
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_partial_or_targeted_slice",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-real-coverage-a-r9",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 23,
+   "band_from_declared_field": "real@f0677920",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-real",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（tap+real 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 16,
+    "EXECUTED": 7
+   },
+   "declared_scope_touches_debt_rows": [
+    "PAGES-PROFILE-INDEX|PFI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+    "次要18|TD03",
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_partial_or_targeted_slice",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-real-coverage-a-showcase-r9",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 16,
+   "band_from_declared_field": "real@ed1cd82c",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-showcase",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（tap+real 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 14,
+    "EXECUTED": 2
+   },
+   "declared_scope_touches_debt_rows": [
+    "PAGES-PROFILE-INDEX|PFI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+    "次要18|TD03",
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_partial_or_targeted_slice",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-real-coverage-guest-r9",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 4,
+   "band_from_declared_field": "real@f0677920",
+   "identities_from_declared_field": [
+    "guest"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-real",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（tap+real 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 4
+   },
+   "declared_scope_touches_debt_rows": [
+    "次要20|OT06",
+    "次要21|OC09"
+   ],
+   "classification": "ABORTED_or_all_SKIPPED",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-real-coverage-guest-showcase-r9",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 4,
+   "band_from_declared_field": "real@ed1cd82c",
+   "identities_from_declared_field": [
+    "guest"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin-showcase",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（tap+real 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "EXECUTED": 1,
+    "SKIPPED": 3
+   },
+   "declared_scope_touches_debt_rows": [
+    "次要20|OT06",
+    "次要21|OC09"
+   ],
+   "classification": "FINISHED_partial_or_targeted_slice",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-tap-final",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 259,
+   "band_from_declared_field": "mock@f1c7b96b",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（observe-only 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 159,
+    "EXECUTED": 100
+   },
+   "declared_scope_touches_debt_rows": [
+    "PAGES-PROFILE-INDEX|PFI25"
+   ],
+   "classification": "FINISHED_partial_or_targeted_slice",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-tap-final2",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 93,
+   "band_from_declared_field": "mock@f1c7b96b",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（observe-only 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "SKIPPED": 62,
+    "EXECUTED": 31
+   },
+   "declared_scope_touches_debt_rows": [],
+   "classification": "FINISHED_partial_or_targeted_slice",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-tap-final3",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 1107,
+   "band_from_declared_field": "mock@f1c7b96b",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "apps/client/dist/build/mp-weixin",
+   "runner_from_declared_field": "scripts/qa/r-exec-cli.mjs（observe-only 切片）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "EXECUTED": 650,
+    "SKIPPED": 414,
+    "FAILED": 43
+   },
+   "declared_scope_touches_debt_rows": [
+    "PAGES-PROFILE-INDEX|PFI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+    "次要18|TD03",
+    "次要20|VRN07",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09",
+    "次要21|OC09",
+    "次要22|VB03"
+   ],
+   "classification": "FINISHED_full_ledger_batch",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  },
+  {
+   "dir": "reports/audit/round-7/exec-ws-tap-r8",
+   "unexecuted": false,
+   "unexecuted_reason": "has a populated exec-results.json. round-7 exec-* dirs are executor --out RESULT dirs, not input-manifest containers; the input case manifests live in reports/audit/round-6/ops/*.json (r-exec-cli.mjs:83 default --ops, :1132 readdirSync(OPS), :1390 readFileSync(join(OPS,name+'.json')))。--manifests is a NAME FILTER over that corpus, not a path.",
+   "cases": 145,
+   "band_from_declared_field": "(no band field)",
+   "identities_from_declared_field": [
+    "A"
+   ],
+   "project_from_declared_field": "unknown",
+   "runner_from_declared_field": "scripts/qa/r-exec-ws.mjs（WS 取证 + 桥出帧，完整跑完）",
+   "capability_flags_in_declared_runner": [
+    "NONE (plain observe/tap slice)"
+   ],
+   "status_counts": {
+    "EXECUTED": 37,
+    "SKIPPED": 100,
+    "FAILED": 8
+   },
+   "declared_scope_touches_debt_rows": [
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+    "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+    "次要20|OT05",
+    "次要20|OT06",
+    "次要20|OT09"
+   ],
+   "classification": "FINISHED_partial_or_targeted_slice",
+   "closes_which_uncovered_rows": [],
+   "closes_count_honest": "0 — every one of the 10 uncovered rows is STILL on the uncovered list after this dir ran; the dir is spent, not pending",
+   "command": "none (already executed; do NOT resume into this --out)",
+   "hazard": "RESUME HAZARD: r-exec-cli.mjs:1356 rewrites exec-results.json HEADER fields (gitSha/band/project/identity/identities/runner/round/loginVerify) from the resuming boot while prior rows keep an inherited sha; these rows are also what the gate counts (EXEC_ROWS=15363). Use a FRESH --out."
+  }
+ ],
+ "rowTriage": [
+  {
+   "row": "PAGES-PROFILE-INDEX|PFI25",
+   "page": "pages/profile/index",
+   "band_from_declared_field": "requiresReal=true => real",
+   "identities_from_declared_field": [
+    "A",
+    "B"
+   ],
+   "declared_precondition": "接 PFI23 已有语音状态",
+   "missing_axis": "login",
+   "classification": "NOT_SHOOTABLE",
+   "reason": "c.action requires a tap on the native showModal 取消/确定 branch. Selectors cannot reach the native modal — it is not in the page render tree and automation_element_action takes only a selector (c21-executor-capability-matrix.md G-12, and its :381 do-not-overclaim note). Second independent blocker: the pre is a per-case precondition chain (PFI23 must have uploaded a voice first) which the page-granular ROUTE_QUERY deliberately cannot express (G-16). The pull-down half IS available via --gestures.",
+   "closes_which_uncovered_rows": [],
+   "carrier_change_needed": "per-case pre-recipe; modal-option stub (note: stubbing changes what is asserted)"
+  },
+  {
+   "row": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+   "page": "subpackages/village/village/index",
+   "band_from_declared_field": "requiresReal=true => real",
+   "identities_from_declared_field": [
+    "A",
+    "B"
+   ],
+   "declared_precondition": "REAL_ONLY：真实后端 + 身份A 先经底部输入条发一条新帖（进审核流）→ 返回本页今日广场",
+   "missing_axis": "login",
+   "classification": "NOT_SHOOTABLE",
+   "reason": ".post-card__audit only exists after a write side-effect (publish → return). No sequenced per-case pre-recipe exists in the executor; recorded skip on every leg is 欠前置配方（先展开/先切态）. Pull-down x2 half is covered by --gestures.",
+   "closes_which_uncovered_rows": [],
+   "carrier_change_needed": "per-case precondition recipe (publish -> return -> observe)"
+  },
+  {
+   "row": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+   "page": "subpackages/village/village/index",
+   "band_from_declared_field": "requiresReal=true => real",
+   "identities_from_declared_field": [
+    "A",
+    "B"
+   ],
+   "declared_precondition": "REAL_ONLY 优先（可注入慢速与失败）",
+   "missing_axis": "login",
+   "classification": "NOT_SHOOTABLE",
+   "reason": "needs 7 render states including injected slow/failure and the Disabled form gated on the backend 发帖开关 (app_switch). c21 G-3 network-condition injection is marked [NEW] (nothing to port) and true 断网 is [SURFACE] — no automation tool for it exists on this repo's surface. This lane is read-only on the DB so no fixture may be written.",
+   "closes_which_uncovered_rows": [],
+   "carrier_change_needed": "fault/state injection + a backend switch write"
+  },
+  {
+   "row": "次要18|TD03",
+   "page": "subpackages/circles/circles/topic-detail",
+   "band_from_declared_field": "requiresReal=true => real",
+   "identities_from_declared_field": [
+    "A",
+    "B"
+   ],
+   "declared_precondition": "身份A 进入话题详情（回复栏 :412-428）",
+   "missing_axis": "login",
+   "classification": "NOT_SHOOTABLE",
+   "reason": "EVERY device precondition is already met: real band already has rows for it, identity A is producible, ROUTE_QUERY already pins topicId=37 for this page (r-exec-cli.mjs:1213-1224 documents the in-register circle_topics.id=37 choice), and input/tap/rapidTap x5 are covered by --tap/--rapid/--strict-verbs. The ONLY blocker is r-exec-cli.mjs:1539, which tests DENY_TAP = /注销|解绑|清空|删除账号|删除帐号|退出登录|登出/ against the c.action PROSE. TD03 says 「② 清空 .reply-input 后 tap .reply-btn 发送」 — clearing a text field, not destroying an account. There is no argv bypass (verified: only --allow-gate and --allow-guest-mock exist, neither touches DENY_TAP). This is a prose-derived verdict, the exact failure mode this repo's declared-fields rule forbids.",
+   "closes_which_uncovered_rows": [],
+   "carrier_change_needed": "scope DENY_TAP to declared irreversible actions rather than action prose. After that TD03 becomes SHOOTABLE_NOW with ZERO new device capability — cheapest row in the set.",
+   "flagged_as_hazard": true
+  },
+  {
+   "row": "次要20|OT05",
+   "page": "subpackages/profile-extra/profile/other",
+   "band_from_declared_field": "requiresReal=true => real",
+   "identities_from_declared_field": [
+    "A",
+    "B"
+   ],
+   "declared_precondition": "身份A mock 登录；目标用户须为「未喜欢过」的演示用户",
+   "missing_axis": "login",
+   "classification": "NOT_SHOOTABLE",
+   "reason": "the named target .relationship-cta__btn--like lives only inside components/profile/public/RelationshipCTA.vue. r-exec-cli.mjs:1239-1241 states in its own source comment that the CLI channel's element-level action cannot enter a component subtree => 「补 query 至多让它『可判』，闭不上，归 WS 腿（r-exec-ws.mjs）」. The WS automation channel is measured WS_UP=FAIL today. Plus G-12 native modal and G-16 per-case deep-link (the executor deliberately refuses to pin this page because OT05 and OT02/OT03 need opposite landings).",
+   "closes_which_uncovered_rows": [],
+   "carrier_change_needed": "drivable WS channel (r-exec-ws.mjs) or component-scoped selectors on the CLI channel"
+  },
+  {
+   "row": "次要20|OT06",
+   "page": "subpackages/profile-extra/profile/other",
+   "band_from_declared_field": "requiresReal=true => real",
+   "identities_from_declared_field": "unknown — the ops case declares NO identities field (measured keys: id,page,title,tier,pre,action,expected,evidence,requiresReal,actionPreTapfix,tapTarget,tapTargetEvidence)",
+   "declared_precondition": "预置两态分别执行：态1=已喜欢未匹配；态2=已互喜 matched（real 构造需服务端互喜数据 → REAL_ONLY）",
+   "missing_axis": "login+guest",
+   "classification": "NOT_SHOOTABLE",
+   "reason": "same component-subtree block as OT05 (WS leg only). Additionally the page-granular ROUTE_QUERY cannot express two contradictory landings on one page (态1 vs 态2 need different target userIds: measured 100155 = liked-not-matched, 10003 = mutual), and the guest axis on this page lands on pages/login/index (recorded skip reason for sibling VRN07: 本页没落在声明页（栈顶=pages/login/index）).",
+   "closes_which_uncovered_rows": [],
+   "carrier_change_needed": "per-case deep-link query + WS channel + a declared identities field on the ops row"
+  },
+  {
+   "row": "次要20|OT09",
+   "page": "subpackages/profile-extra/profile/other",
+   "band_from_declared_field": "requiresReal=true => real",
+   "identities_from_declared_field": [
+    "A",
+    "B"
+   ],
+   "declared_precondition": "态2（已实名登录）下 tap 悄悄话键使 sheet 弹出",
+   "missing_axis": "login",
+   "classification": "NOT_SHOOTABLE",
+   "reason": "two independent blockers: (1) DENY_TAP prose regex hits 「每路关闭后重新打开检查内容是否清空」 — sheet content clearing, not account deletion; no bypass flag. (2) target .whisper-sheet__input lives in components/discover/WhisperComposeSheet.vue => component subtree, WS leg only.",
+   "closes_which_uncovered_rows": [],
+   "carrier_change_needed": "DENY_TAP scoping + drivable WS channel"
+  },
+  {
+   "row": "次要20|VRN07",
+   "page": "subpackages/profile-extra/verification/real-name",
+   "band_from_declared_field": "requiresReal=true => real",
+   "identities_from_declared_field": [
+    "A",
+    "B"
+   ],
+   "declared_precondition": "REAL_ONLY：真实后端 + 出生日期未满 18 岁（或资料缺 birthDate）的登录身份；无该身份时本用例记 UNVERIFIED；另构造「token 过期」子态",
+   "missing_axis": "login",
+   "classification": "NEEDS_IDENTITY",
+   "reason": "the band is the WRONG axis here — all three bands (mock / real / showcase) can render this page; what the criterion demands is an IDENTITY that cannot be minted. The executor only accepts labels that assertIdentityProducible (r-exec-cli.mjs:1156-1157) will mint a matching session for; there is no under-18 (or birthDate-absent) real-backend account in the mintable set, and the existing A(100158)/guest legs both skip with 身份不符 / 本页没落在声明页. The criterion itself already names UNVERIFIED as the honest terminal state — that is a recorded non-pass, never a green.",
+   "closes_which_uncovered_rows": [],
+   "identity_needed": "a mintable real-backend identity whose birthDate makes it under-18 (or with birthDate absent), plus a token-expired sub-state"
+  },
+  {
+   "row": "次要21|OC09",
+   "page": "subpackages/chat/official-chat/index",
+   "band_from_declared_field": "requiresReal=true => real",
+   "identities_from_declared_field": "unknown — ops case declares NO identities field (measured keys: id,page,title,tier,pre,action,expected,evidence,requiresReal,tapTarget,tapTargetFrom,tapTargetEvidence,tapTargetConfirmedAt)",
+   "declared_precondition": "REAL_ONLY：用 Network 拦截使 GET /official-accounts/{code}/messages 返回 5xx 或断网（mock 分支 useMock() 恒走本地，永不失败 → 不可构造时记 UNVERIFIED，禁止用 mock 冒充错误态）",
+   "missing_axis": "login+guest",
+   "classification": "NOT_SHOOTABLE",
+   "reason": "the criterion needs the NETWORK layer that selectors cannot reach. c21 (d)-c-1 confirms no per-request network channel and no network-condition injection in either runner; G-3 is [NEW] and true 断网 is explicitly [SURFACE] (no documented automation tool on this repo's surface). --net-count (#10-d) only COUNTS requests, it cannot make one fail, so even the newest flag set does not express the 5xx/offline state.",
+   "closes_which_uncovered_rows": [],
+   "carrier_change_needed": "wx.request fault-injection carrier; also needs the guest axis on this page"
+  },
+  {
+   "row": "次要22|VB03",
+   "page": "subpackages/vip/bills",
+   "band_from_declared_field": "requiresReal=true => real",
+   "identities_from_declared_field": [
+    "A",
+    "B"
+   ],
+   "declared_precondition": "展示版 + 身份A 登录（栈：我的 → VIP → 账单）；先在 VIP 页走完一次开通，再进账单页；另一轮冷启动直入账单页",
+   "missing_axis": "login",
+   "classification": "NEEDS_REBAND",
+   "reason": "this is the one row where the band genuinely matters, and the declared pre names the band itself: 「展示版」 = the SHOWCASE band. The real band cannot hold the VIP→账单 stack because the VIP completeness gate redirects it (measured skip on the real-band leg: 「action 含交互动词但本页没落在声明页（栈顶=pages/profile/index）」), whereas the showcase-band leg DID get past the gate. The band that CAN express it is showcase = apps/client/dist/build/mp-weixin-showcase. SECOND, independent blocker recorded on that showcase leg: 「action 含交互动词但没点名可交互元素 ⇒ 没法把这次点击归属到某个东西，待把判据收紧」 — the ops row declares NO tapTarget, so no band or flag can attribute the click; the criterion must be tightened. Pull-down half needs --gestures.",
+   "closes_which_uncovered_rows": [],
+   "band_needed": "showcase (mp-weixin-showcase) + --allow-gate; then a tapTarget must be added to the ops row"
+  }
+ ]
+}

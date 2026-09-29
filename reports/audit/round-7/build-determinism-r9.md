@@ -206,12 +206,12 @@ mp-weixin-showcase size=2441 mtime=2026-09-29 20:40:11 sha=ed1cd82c  MODE:"mp-we
    - `strip()`（real 档）用 `onlyExisting: true`：只把已经因引用进包的那些对齐到权威来源，
      不借 seeding 往 real 档多塞文件 —— 包体积与 strip 的既有语义不动。
    - **写盘方式换了，因为测出了既有 `cpSingle()` 的一个真坑**：第一版 seeding 用现成的
-     `cpSingle(from, to)`，沙箱实测（§5.4 场景 A/B）**失败** —— `cpSync` 在这台 Windows 上抛
-     那条被注释记录过的假错（`warn: cpSync … 假错（目标已写入，继续）`），而 `cpSingle` 的
-     "目标存在就算写成功"启发式对**覆盖已有文件**是错的：目标本来就存在（那份陈旧字节），
-     于是陈旧字节留在原处、seeding 却谎报"换成权威来源 1 个"。现在 seeding 自己
-     `readFileSync` 权威字节 → `writeFileSync` 落盘 → **写完复验**，复验不一致就抛，
-     交给既有的回滚路径（宁可构建失败，不带着陈旧 PNG 假装成功）。
+     `cpSingle(from, to)`，同一对沙箱**第一轮是错的**（完整读数见 §5.4.1）—— `cpSync` 在这台
+     Windows 上抛那条被本文件注释记录过的假错（`warn: cpSync … 假错（目标已写入，继续）`），
+     而 `cpSingle` 的"目标存在就算写成功"启发式对**覆盖已有文件**不成立：目标本来就存在
+     （就是要被换掉的那份陈旧字节），于是陈旧字节留在原处、seeding 却谎报"换成权威来源 1 个"，
+     而沙箱的 `SBX_*_EXIT` 还是 0。现在 seeding 自己 `readFileSync` 权威字节 → `writeFileSync`
+     落盘 → **写完复验**，复验不一致就抛，交给既有的回滚路径（宁可构建失败，不带着陈旧 PNG 假装成功）。
      这条不是顺手重构：不改它，本处置就是**假成功**。
 3. **`.gitignore`** 新增一行 `apps/client/static-generated/`（放在 `:153 static/generated_test/` 之后）。
    必要性实测过：只靠全局 `*.png` 挡不住这棵目录 —— `.gitignore:91 !/**/avatar*.png`
@@ -262,33 +262,70 @@ profile-hero_src_sha16      =1f4230626c084860
 profile-hero_backup_copy_现在=1f4230626c084860  （§9.1 那次一次性 cp 之后；cp 之前量到的是 25fb835b9d091b4a，见 §3.3）
 ```
 
-### 5.4 沙箱：证明 seeding 的权威顺序真的在承重（两轮，第一轮是红的）
+### 5.4 三条负例/恢复路径都在沙箱里量过（不碰跟踪文件）
 
-沙箱根 `.zcode/tmp/svgpng-r9/ps-sbx-{A,B}/`：各放一份 `prepare-static.mjs` 副本 +
-一份**陈旧**备份 `profile-hero.png`（28622B，就是 §3.2 那份证人）+ 一份正确字节，
-A 的 `src/static` 里**没有**这张 PNG，B 的 `src/static` 里放的是**跟踪的那一份**（28638B）。
+沙箱根 `.zcode/tmp/svgpng-r9/{negtest,ps-sbx-A,ps-sbx-B}/`，各放脚本副本 + 真 SVG +
+那份陈旧的 28622B PNG（`.zcode/tmp/profile-hero.build-output.png`，§9 留下的证人）当"src 里在包的字节"。
 
-**第一轮（seeding 用既有 `cpSingle()` 覆盖）—— 两档都是错的**：
+1. **生成器的校验会红**（这是"把抖动改判成响亮失败"这条处置的承重证明）：
+
+   ```
+   NEGTEST_EXIT=1
+   SVGPNG_RESULT=FAIL mode=check encoded=1 … tracked_checked=1 mismatch=1 tracked_refreshed=0
+   [profile-svg-to-png] MISMATCH profile-hero.png: src 里的 PNG 与 SVG 现算结果不一致（28622B vs 28638B）
+   ```
+
+2. **`--write` 恢复路径能用**（改了 SVG 之后的人工出口）：
+
+   ```
+   WRITE_EXIT=0
+   [profile-svg-to-png] WRITE 已刷新跟踪 PNG profile-hero.png（记得提交这一份）
+   SVGPNG_RESULT=PASS mode=write encoded=1 … mismatch=0 tracked_refreshed=1
+   sandbox_src_png_now=28638 1f4230626c084860      ← 沙箱那份"在包的字节"被刷成正确字节
+   RERUN_EXIT=0 → SVGPNG_RESULT=PASS … written=0 unchanged=1 mismatch=0 tracked_refreshed=0   ← 再跑一遍就干净
+   ```
+
+3. **`prepare-static` 的权威顺序真的在换字节**：
+
+   ```
+   SBX_A_EXIT=0  profile PNG 权威对齐：换成权威来源 1 个 / 字节相同跳过 0 个 / 共 1 个
+                 → promoted_png=28638 1f4230626c084860
+                 （场景：src/static 里**没有**这张 PNG —— 模拟新克隆或被 --real 裁过；
+                   备份里那份是陈旧的 28622B ⇒ 必须由 static-generated 补上正确字节）
+   SBX_B_EXIT=0  profile PNG 权威对齐：换成权威来源 1 个 / 字节相同跳过 0 个 / 共 1 个
+                 → promoted_png=28638 1f4230626c084860
+                 （场景：src/static 里放着**跟踪的那一份** 28638B，备份仍是陈旧 28622B
+                   ⇒ 跟踪字节保住，备份盖不动它）
+   ```
+
+   注：两个沙箱里都**只**放了 1 张 PNG（不是整棵 `full-static`），所以 `共 1 个` 是沙箱规模的正确读数；
+   真树上同一行读数是 `换成权威来源 0 个 / 字节相同跳过 48 个 / 共 48 个`（§7）。
+
+### 5.4.1 上一节那两条 SBX 读数不是天生就对的：第一轮它们红的
+
+`seedProfilePngFromAuthority()` 第一版复用了本文件里现成的 `cpSingle()`（`cpSync` +
+"抛错但目标存在就算写成功"的启发式）。同一对沙箱在那一版下的读数：
 
 ```
 [prepare-static] warn: cpSync …\ps-sbx-B\src\static\assets\profile\png\profile-hero.png 假错（目标已写入，继续）
 [prepare-static] profile PNG 权威对齐：换成权威来源 1 个 / 字节相同跳过 0 个 / 共 1 个
-SBX_A_src_png(size/sha16)=28622 25fb835b9d091b4a   ← 期望 28638 ⇒ 陈旧字节没被换掉，日志却在谎报"换成权威来源 1 个"
-SBX_B_src_png=28622 25fb835b9d091b4a               ← 期望 28638 ⇒ 跟踪字节被备份盖掉了
+SBX_A_src_png(size/sha16)=28622 25fb835b9d091b4a     ← 期望 28638：陈旧字节没被换掉，日志却在谎报"换成 1 个"
+SBX_B_src_png=28622 25fb835b9d091b4a                 ← 期望 28638：跟踪字节被陈旧备份盖掉了
+（两档的 SBX_*_EXIT 都是 0 —— 只看退出码会当成通过）
 ```
 
-⇒ 这一轮如果只看 `SBX_*_EXIT=0` 就会被骗过去（构建"成功"了）；正是这两行读数逼出了 §5.1(2) 里
-"seeding 不复用 `cpSingle`、改自读自写 + 写完复验"那一条。
+`cpSingle` 的启发式对**新建文件**是安全的，对**覆盖已有文件**不成立：目标本来就存在，
+假错之后 `existsSync(dst)` 必然为真 ⇒ 旧字节被当成新字节。本处置的语义恰好是覆盖，
+所以 seeding 改成自己 `readFileSync` 权威字节 → `writeFileSync` 落盘 → **写完立刻复验**，
+不一致就抛给既有的回滚路径。改完才是 §5.4 里那两条 `28638 / 1f4230626c084860`。
+同样的复验纪律也加进了生成器的 `--write` 分支（写完不复验就 `refreshed++` 是同一个坑）。
+这条是本道唯一一个"改了自己的实现"的返工，原因和证据都在上面，不是事后修饰。
 
-**第二轮（改成读→写→复验）—— 两档都对**：
+### 5.5 一处**没有**用来当凭据的本机动作
 
-```
-SBX_A_EXIT=0  profile PNG 权威对齐：换成权威来源 1 个 / 字节相同跳过 0 个 / 共 1 个  ⇒ promoted_png=28638 1f4230626c084860
-SBX_B_EXIT=0  profile PNG 权威对齐：换成权威来源 1 个 / 字节相同跳过 0 个 / 共 1 个  ⇒ promoted_png=28638 1f4230626c084860
-```
-
-A 证明"src 缺图时由生成目录补，而不是拿陈旧备份凑"；B 证明"备份陈旧也盖不动被跟踪的那一份"。
-两条合起来才是 §9.1 那句"换台机器也不会脏"的依据。
+排查时我顺手把本机备份 `static-local-backup/full-static/assets/profile/png/profile-hero.png`
+`cp` 成了正确字节（`BACKUP_REFRESH_EXIT=0`）—— 见 §9.1：那条动作**不在处置的依赖里**，
+换一台留着陈旧备份的机器跑同样三档也不会脏（§5.4 场景 A/B 就是为这句话出的证）。
 
 ## 6. 运行期仍能解析到图：以构建产物为证，不以源码图为证
 
@@ -470,11 +507,12 @@ FRESH_RESULT=PASS bands=3 markers=4 —— 每档产物都不晚于任何未提�
 ### 9.1 一处需要编排者知道的"本机不可复现"事实（本道没有用它当凭据）
 
 `apps/client/static-local-backup/full-static/assets/profile/png/profile-hero.png`
-是**未跟踪的本机副本**（`git cat-file HEAD:…` 报 `exists on disk, but not in 'HEAD'`，
-`git check-ignore` 指到 `.gitignore:70 *.png`）。我在排查过程中把它刷成了正确字节
-（`cp` 自生成目录，`BACKUP_REFRESH_EXIT=0`，现在它是 `1f4230626c084860`，与 src/生成物一致；
-`cp` 之前量到的是 `25fb835b9d091b4a`（就是 §3.3 那张表里 `profile-hero.png` 一行
-`backup=` 读到的那个值，也是 §3.2 里那份 28622B 证人的哈希），
+是**未跟踪的本机副本**：`git cat-file HEAD:…` 报 `exists on disk, but not in 'HEAD'`，
+`git check-ignore` 指到 `.gitignore:70 *.png`（同目录 48 张里只有 2 张 `avatar-ring.png`
+因 `.gitignore:91` 的白名单入库，见 §5.1(2)）。我在排查过程中把它 `cp` 成了正确字节
+（`BACKUP_REFRESH_EXIT=0`；现在它是 `1f4230626c084860`，与 src/生成物一致；`cp` 之前量到的是
+`25fb835b9d091b4a` —— 就是 §3.3 表里 `profile-hero.png` 那行 `backup=` 的读数，
+也是 §3.2 那份 28622B 证人的哈希）。
 但**处置不依赖这一步**：§5.1(2) 之后构建根本不再以备份为权威，
 换一台留着陈旧备份的机器跑同样三档，跟踪的 src 也不会被它盖掉。
 
@@ -492,4 +530,56 @@ SBX_B_EXIT=0  promoted_png=28638 1f4230626c084860   （src 有跟踪字节、备
    会按引用扫描裁剪 `src/static`，而 profile 这批 PNG 的引用是模板串拼出来的，扫不出字面量 ⇒ 理论上
    可能把跟踪的 PNG 从 src 里裁掉（那就是 48 行 `D` 的脏项）。本道按裁定只跑
    `real:isolated`（其 preSteps 为空，不裁剪），**没有实测**这一条，留给后续车道。
-2. §6.2：两个 profile 资产注册表无人引用。要么产品侧接上，要么它们是死码 —— 都超出"构建确定性"授权。
+2. §6.2：两个 profile 资产注册表（`profile-assets.ts` / `profile-svg.ts`）无人引用 ——
+   要么产品侧接上，要么它们是死码；两者都超出"构建确定性"的授权范围。
+
+### 9.3 HEAD 在本道跑的过程中动了（记账，免得读数被误读）
+
+- 本道起点 `HEAD=1788675d`（任务书给的）；终态 `HEAD=491210dd` —— 编排者在跑三档期间
+  做了本地落账提交（`git log --oneline 1788675d..HEAD` 共 5 条）。
+- 关键复核：**这些提交没有改过被跟踪的 src** ——
+  `git diff --name-status 1788675d..HEAD -- apps/client/src` 输出为空。
+  所以 §8 的 `SRC_DIRTY_LINES=0` 无论按起点 HEAD 还是按当前 HEAD 读都是同一个意思。
+- 本道改动的落库状态（我没有提交，按分工由编排者提交）：
+  `apps/client/scripts/prepare-static.mjs` 与 `.gitignore` 已被 491210dd 带走；
+  `apps/client/scripts/profile-svg-to-png.mjs` 还剩 5 行未提交
+  （`git diff HEAD --stat` 报 `1 file changed, 5 insertions(+)`），
+  就是 §5.4.1 末句那条"`--write` 写完复验"的加固。
+- 未跟踪且**应当**保持未跟踪：`apps/client/static-generated/`（48 张 PNG，§5.1(3) 那条规则）。
+- 测量台与沙箱都留在 `.zcode/tmp/svgpng-r9/`（被 `.gitignore:112 tmp/` 忽略，不进仓也不弄脏任何计数）；
+  §9 那份 28622B 证人 `.zcode/tmp/profile-hero.build-output.png` **原样未删**。
+
+## 10. 一句话结论
+
+抖动不是编码器"逐字节不确定"（本机 48/48 与 HEAD 逐字节相同），而是**构建在写被跟踪的 src**：
+陈旧的未跟踪备份被 `prepare-static` 盖进跟踪文件，`profile-svg-to-png` 再改写回来当自愈，
+自愈一旦被 Windows 占用打断（`Invalid argument`）就留下脏项 —— 本道把这两次写盘都取消了
+（生成物进未跟踪目录 + 备份不再具有权威），改成"不一致就判红"，
+并按 mock → real:isolated → showcase:isolated 重建三档：三步 exit=0、
+三档各自报自己的 `MODE`、mock/共享目录没有被毒、`git status --short apps/client/src` = 0 行、
+`verify-band-freshness` PASS。
+
+---
+
+## 附：r12 验收车道接手附记（2026-09-30，逐字独立复量，非背书）
+
+本道在本报告中断后接手，全部读数自量（详见 `build-determinism-accept-r12.md`）。三条结论：
+
+1. **本报告 §1–§9 的自报读数没有一处被复量推翻。** §3.3（`gen==HEAD 48/48`）、§5.4（两个沙箱落在
+   28638）、§5.1(2)（备份 profile png 目录 48 张里只有 2 张 `avatar-ring.png` 被跟踪 —— 本道
+   `git ls-files` 复量 = 2）、§8（`SRC_DIRTY_LINES=0`、`FRESH_RESULT=PASS`）全部复现。
+   三档重建本道又跑了一遍：`STEP1/2/3_EXIT=0`，共享目录仍是 `MODE:"mp-weixin-mock"`。
+2. **§5.4.1 那条 `cpSingle` 假错：本道补修了 helper 本体**（原来只有 seeding 绕开它）。
+   `apps/client/scripts/prepare-static.mjs:101-124` 的 catch 分支从「目标存在就算写成功」改为
+   「字节复验 == 源才放行，否则抛」。本机可用只读目标**确定性复现**那条 Windows 假错
+   （`cpSync` 抛「操作成功完成」而目标仍是陈旧字节），改前 `NEG_EXIT=0` 且谎报、改后 `NEG_EXIT=1`，
+   真·假错容错（POS）仍 `exit=0`。本报告 §1.2/§4.1 有双向读数。
+   同时如实记下可达性：现有两个调用点写的都是新建 stage，目标不可能预存，
+   故该谎报**在生产链路上今天是潜伏的**，本道补修是拆雷，不是救火。
+3. **一处范围补正（原报告没量到，容易让后人低估这条链）**：被跟踪的构建写盘目标不是 48 张 profile PNG，
+   而是 `git ls-files apps/client/src/static` = **1344** 个路径（`.gitignore` 的
+   `!apps/client/src/static/**/*.png` 之类是**整棵**放行）。`prepare-static --dev` 仍以未跟踪的
+   `static-local-backup` 为那其余 ~1296 个文件的来源；权威顺序只护住了 profile 那 48 张。
+   今天量到 0 脏项是因为备份字节恰好与入库一致，**不是结构上盖不动**。超出本次裁定授权，登记待后道处理。
+   另：本道补测了原 §5.4 未覆盖的场景 C（src 与 static-generated 同时缺位）⇒ seeding 会退回陈旧备份，
+   这是权威顺序的固有局限，不是本道的回归。

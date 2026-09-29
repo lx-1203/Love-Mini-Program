@@ -4,7 +4,7 @@
 
 ## 1. 起点账单（唯一事实源，Node 22 实测）
 
-十项门禁并行实测 10 项，红 3 项：verify-evidence-corpus、verify-provenance-all、verify-real-coverage。
+门禁并行实测 10 项，红 3 项：verify-evidence-corpus、verify-provenance-all、verify-real-coverage。（此句读的是**缺口账单件**，其 HEAD=a4c8f995；终局复量那一发在第 7 节，两份件不同源、口径以第 7 节为准。缺口账单那一发只有整条 v3.3 工作流真跑时才会重打，只跑终验脚本时它是上一程的旧件。）
 
 - 后端 8080 UP；起点自动化端口为空，本程用零点击冷启打通（9420/9430 实测 LISTENING）。
 - 起点 HEAD=a4c8f995，工作树脏 145 项。
@@ -50,7 +50,7 @@
 - 在册陷阱：`mp-weixin-real` 窗口已死却过地板——`open_project_window` 回 success/type:reuse、截图 11290B，画面实为「模拟器启动失败」。过字节数不等于可采。
 - 载具误挡：按载具口径复算 `DENY` 只命中 2/49（TD03、OT09），不是整批拦路虎；本轮未擅自改载具，待授权。
 
-## 6. 需你拍板 32 项（本轮一律未自裁）
+## 6. 需你拍板 34 项（本轮一律未自裁）
 
 - 0. 用户已裁定（2026-09-29 06:20；下列四项口径已定，本轮按此执行）
 - 1. `--r-lg` 令牌值与判据正面冲突
@@ -84,6 +84,8 @@
 - 29. `landingMissing=5` 不是产品欠账：分诊台在向一份"零行声明身份"的语料索要**游客**处置
 - 30. 状态对账（2026-09-29 16:2x；上面 0–29 节原文一字未改，现状态只写在这里）
 - 31. 36 条 CRITERIA_NAMES_NOTHING 的去向已经跑完，顺带纠出一台**假仪器**（2026-09-29 20:4x）
+- 32. 2026-09-29 21:41 用户裁定四项（原文 0–31 节一字未动，裁定只写在本节）
+- 33. r9 收口流水（2026-09-30 01:4x；编排亲验，非车道自报）
 
 全文与每条的可选方向见 `reports/audit/round-7/decisions-v33.md`。判据冲突、令牌值、测试数据去留、证据入库方式都是政策选择，我不替你写。
 
@@ -92,16 +94,17 @@
 ```
 dryrun-workflow exit=0
 emit-round-report exit=0
-prove-gates-can-fail exit=0
-run-qa-selftests exit=0
+prove-gates-can-fail exit=1
+run-qa-selftests exit=1
 verify-backend-fresh exit=0
 verify-band-freshness exit=0
 verify-case-automatable exit=0
 verify-dry-no-lease exit=0
 verify-evidence-corpus exit=0
 verify-evidence-holes exit=0
-verify-ledger-after-panel exit=0
-verify-ledger exit=0
+verify-ledger-after-panel exit=1
+verify-ledger exit=1
+verify-ops-stamp exit=0
 verify-provenance-all exit=1
 verify-queue-reconcile exit=0
 verify-real-coverage exit=1
@@ -109,7 +112,7 @@ verify-source-shape exit=0
 verify-state-truth-after-panel exit=0
 verify-state-truth exit=0
 ```
-红项：verify-provenance-all、verify-real-coverage
+红项：prove-gates-can-fail、run-qa-selftests、verify-ledger-after-panel、verify-ledger、verify-provenance-all、verify-real-coverage
 
 ## 8. 本轮把「排在后面做」的账收掉了多少（含纠出的文档错）
 

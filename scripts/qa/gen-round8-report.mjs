@@ -26,7 +26,9 @@ L.push("本轮不重跑已完成的轮次。起点是盘上事实：上一程 `d
 L.push("## 1. 起点账单（唯一事实源，Node 22 实测）", "");
 if (g.gap) {
   const reds = g.gap.red || g.gap.gates.filter(x => x.exitCode !== 0).map(x => x.name);
-  L.push(`十项门禁并行实测 ${g.gap.gates.length} 项，红 ${reds.length} 项：${reds.join("、")}。`, "");
+  L.push(`门禁并行实测 ${g.gap.gates.length} 项，红 ${reds.length} 项：${reds.join("、")}。` +
+    `（此句读的是**缺口账单件**，其 HEAD=${g.gap.head || "unknown"}；终局复量那一发在第 7 节，两份件不同源、` +
+    `口径以第 7 节为准。缺口账单那一发只有整条 v3.3 工作流真跑时才会重打，只跑终验脚本时它是上一程的旧件。）`, "");
   L.push(`- 后端 8080 UP；起点自动化端口为空，本程用零点击冷启打通（9420/9430 实测 LISTENING）。`);
   L.push(`- 起点 HEAD=${g.gap.head}，工作树脏 ${g.gap.dirty} 项。`);
   L.push("- 纠正一处长期误读：PATH 上的 node 是 v16.13.1，会把 verify-source-shape.mjs:22 与 verify-evidence-holes.mjs:15（用 import.meta.dirname，需 >=20.11）崩成假红；钉死 Node 22 后这两条门为绿，账单由「5 红」收正为「3 红」。", "");

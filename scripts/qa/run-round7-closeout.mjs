@@ -341,12 +341,14 @@ const STEPS = [
      这条量的是"用例写法执行器跑不跑得动"，同一批 ops manifest 的两个轴。
      --ops 不传 = 走它自己的默认 reports/audit/round-6/ops，与执行器 r-exec-cli.mjs:43 的默认语料同目录
      （round-7/ops 那份冻结副本按 verify-ops-corpus-stamp.mjs:6-9 现量引用次数 0，接它就是把读数绑到没人读的副本上）。
-     --json 显式点到 .zcode/tmp（它 :17 自定：结构化输出必须落在 reports/** 之外）⇒ 只写侧车、不碰判决件，故不标 write。
+     --json 显式点到 .zcode/tmp（它 :24 自定：结构化输出必须落在 reports/** 之外）⇒ 只写侧车、不碰判决件，故不标 write。
      退出码两轴分清：exit 2=完整性轴（r-exec.cjs 的 UNIMPLEMENTABLE_ACTION_RE 取不到 / --ops 不存在 / 一个 manifest 都没扫到，
-     单一真值源断 ⇒ 这一步红）；exit 0 + CA_RESULT=ADVISORY = 普查轴（它 :157-169 写明"假阳性率未量，默认不判红，要判红加 --strict"）。
-     这里刻意**不加 --strict**：现量 102/1107 命中，加 strict 等于替未量的假阳性率背书、把一条没裁过的口径直接写成红，
+     单一真值源断 ⇒ 这一步红；r11 之后"给了 --results 却读不到/解析不了/零行"也归这条，不再静默退 0）。
+     exit 0 + CA_RESULT=ADVISORY = 普查轴；契约正文在 :324-341（旧注释指 :157-169，那条已被文件增长挪走）。
+     "假阳性率未量"这句 r11 之后**只对未喂 --results 的默认调用成立**：轴喂进去量出来是 FP 83.3%（硬口径 47.1%）、召回 12.1%。
+     这里刻意**不加 --strict**：现量 102/1107 命中，加 strict 等于替一条实测 83.3% 假阳性的静态判据背书、把一条没裁过的口径直接写成红，
      正是它注释里点名的"门是红的、但没人知道该先修门还是先修用例"僵局。strict 与否归人裁决（见本轮需裁决清单）。 */
-  { id: "verify-case-automatable", file: "scripts/qa/verify-case-automatable.mjs", kind: "gate", args: ["--json", ".zcode/tmp/case-automatable/preflight.json"], note: "用例可自动化预检（静态轴）：从执行器自己的 UNIMPLEMENTABLE_ACTION_RE eval 出真能力缺口词表（单一真值源，断则 exit 2），另数逐态标注/亚秒连拍/全文本扫描/主观审美四类；现量 CA_TOTAL=1107 CA_UNAUTOMATABLE=102；默认 ADVISORY 不判红，--strict 的极性交人拍板" },
+  { id: "verify-case-automatable", file: "scripts/qa/verify-case-automatable.mjs", kind: "gate", args: ["--results", "reports/audit/round-6/interact/exec-results.json", "--json", ".zcode/tmp/case-automatable/preflight.json"], note: "用例可自动化预检（静态轴 + 自证轴）：从执行器自己的 UNIMPLEMENTABLE_ACTION_RE eval 出真能力缺口词表（单一真值源，断则 exit 2），另数逐态标注/亚秒连拍/全文本扫描/主观审美四类；现量 CA_TOTAL=1107 CA_UNAUTOMATABLE=102；r9 起显式喂 --results（唯一 title 全等配对），自证轴读数 CA_AGREE_RATE 假阳性 83.3%/硬口径 47.1%、召回 12.1%；喂了读不到会退 2 而不是静默 0%，默认仍 ADVISORY，--strict 的极性交人拍板" },
   { id: "g8-e2e", file: "scripts/qa/g8-e2e.cjs", kind: "gate", write: true, device: false, needs: "--with-g8", args: [], note: "十环真后端复跑（会写库：G8 产生的行按既定裁定保留并披露）" },
   { id: "g9-probe", file: "scripts/qa/g9-probe.cjs", kind: "gate", write: true, needs: "--with-g8", args: [], note: "素材普查复量" },
   { id: "land-verdicts-into-ledger", file: "scripts/qa/land-verdicts-into-ledger.mjs", kind: "gate", write: true, args: [], note: "帧级判决落台账：消费者只有 --apply（不传即 DRY，只打将改清单、落盘前自动备份）⇒ 原先的 --dry 没人读，是假接线；收尾里这一步出的就是那份 DRY 清单" },

@@ -4,6 +4,22 @@ description: round-8 收官闭环（v3.3 续作）：不重跑已完成的 R1/R2
   按域并行收口（每车道 修复→独立复验 链式流水；UI 交互腿单写者串行、锁协议）；账本员统一落账（先干跑核对再 --apply，备份纪律）；
   门禁终验复量对照 + 全量面板与面板后复量（PANEL_SUITE，车道全部收工后顺序跑）+ 构建/typecheck/vitest 守门员重跑；显式路径清单提交；总报告把「需拍板清单」原样交还用户，绝不替写政策。
   前置事实：后端 8080 在跑（health UP）；DevTools 自动化端口可能是冷的，但**零点击能拉起**（见交互腿车道纪律），不要一上来就判 UNVERIFIED-TOOLING；跑任何 scripts/** 都必须用 Node>=20.11（PATH 上的 node 是 v16，会把多条门崩成假红）。
+  ⚠ r9 实测给上一句补边界：零点击能把**端口**架起来（9420 在听），不等于会话**可驱动**。
+  本轮 `ws-channel-up --wait 150` 打在 real 档上报的是 `WS_UP=FAIL`——端口 19s 起就在听，
+  但 connect 后取页失败 34 次（`Cannot read properties of undefined (reading 'split')`），
+  量到的原因是那个 IDE 窗口处于**最小化**状态（标题 `undefined - mp-weixin-real`）。
+  所以设备腿开拍前的判据只有一条：脚本自己印的 `WS_UP=OK/ALREADY_UP`，**不是** netstat 的端口表；
+  先恢复窗口再接通道，别只加大 --wait（我犯过一次，还把 `| tail` 的 0 当成了脚本的 0）。
+  【r9 收通的形状，照抄可用】`--wait 300` 那一发回来的是
+  `WS_UP=ALREADY_UP port=9420 connectMs=446 page=pages/login/index 单条查询=30.0ms` +
+  `WS_UP_BAND=match … VITE_API_MODE=real MODE=real envSha8=f0677920` + `WS_UP_BAND_OK` +
+  `WS_UP_BAND_RESULT=match exit=0`，端口来源 `scripts/qa/ide-port.json → 9420`。
+  ⚠ **归因不许写谎**：这次收通之前我只做了一件事——试图把那个最小化窗口 activate/restore，
+  而那次 MCP 调用是 `idle timeout 120000ms`（**没有成功回执**）。所以"恢复窗口导致可驱动"
+  这句我**不能声明**；能声明的只有"从第一次 FAIL 到 ALREADY_UP 之间过了约 29 分钟，
+  窗口尝试与时间二者择一，未分离"。下次要定论就把两条分开跑：只等，或只动窗口再等。
+  另注：`hits=00000000` 是探针选择器在登录页没命中任何节点，属数据读数，不是通道故障——
+  别把它当 `STATE_NOT_APPLIED` 的阳性对照缺席来判红（阳性对照要另选一个已知 present 的选择器）。
 whenToUse: 需要把 round-7/r8 之后仍挂着的具名缺口（台账待修复、已修复待复验、门禁红项、真实档覆盖缺行）一次并行收口并出终报时运行。
 args: {}
 */
@@ -91,15 +107,25 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   { name: "dry 不抢租约静态门 verify-dry-no-lease", args: ["scripts/qa/verify-dry-no-lease.mjs"], timeoutMs: 180000 },
   // verify-case-automatable 两轴分开看：exit 2 = 完整性轴（r-exec.cjs 的 UNIMPLEMENTABLE_ACTION_RE
   // 取不到 / --ops 目录不存在 / 扫到一个 manifest 都没有 ⇒ 单一真值源断了，这条照旧判红）；
-  // exit 0 + CA_RESULT=ADVISORY = 普查轴（它 :157-169 自己写明"假阳性率未量，默认不判红，要判红加 --strict"）。
-  // 这里**不**加 --strict：那等于替未量的假阳性率背书、把 102/1107 直接写成红 —— 拍板归人，见本轮需裁决清单。
-  // --json 显式点到 .zcode/tmp（它 :17 自定的规矩：结构化输出必须落在 reports/** 之外），不碰任何判决件。
+  // exit 0 + CA_RESULT=ADVISORY = 普查轴。引用纠偏（r11 之后）：该脚本的退出码契约现在写在 :324-341
+  // （旧注释指 :157-169，文件长了一倍后那条已落到别处）；"假阳性率未量"这句在 r11 之后**只对未喂
+  // --results 的默认调用成立** —— 轴本身已量出来：FP 83.3%（硬口径 47.1%）、召回 12.1%
+  // （实测过程见 reports/audit/round-7/ 与 .zcode/tmp/lane-ca-fp/REPORT.md）。
+  // 这里**不**加 --strict：那等于替一条 83.3% 假阳性率的静态判据背书、把 102/1107 直接写成红 ——
+  // 拍板归人，见本轮需裁决清单。
+  // --json 显式点到 .zcode/tmp（它 :24 自定的规矩：结构化输出必须落在 reports/** 之外），不碰任何判决件。
   // 文件名与 bash 不一致是**判过的保留**（r9 对账，别当漏改）：bash 终验那一发写 final.json，
-  // 而 preflight.json 既是该脚本 :32 的默认值、也是 run-round7-closeout.mjs:349 用的名字；
+  // 而 preflight.json 既是该脚本 :42 的默认值、也是 run-round7-closeout.mjs:349 用的名字；
   // DSL 这一张表同时喂「缺口账单」与「终验复量」两个 phase（同一条 args 用两次），
   // 指成 final.json 就会把账单阶段那一发标成"终验"——是造假标签，不是对齐。
   // 退路上也无风险：两份 JSON 全仓零读者（只有本门自己写），退出码与落点无关 ⇒ 改名的收益是 0、代价是label 错。
-  { name: "用例可自动化预检 verify-case-automatable", args: ["scripts/qa/verify-case-automatable.mjs", "--json", ".zcode/tmp/case-automatable/preflight.json"], timeoutMs: 180000 },
+  // 接线（r9 编排亲验）：这条门自 r11 起"给了 --results 却读不到/零行"退 2，所以喂它的人
+  // 必须对语料负责。这里显式喂 round-6 那份 interact 结果件，因为它是本轮唯一被量出来
+  // **逐条 title 全等**的配对（1107/1107 键、102 条静态命中全在、title 匹配 102/102）；
+  // 换别的配对会退 2 或报"不可测"，那是要的效果——自证轴不许静默消失。
+  // 派生依赖：reports/audit/round-6/interact/exec-results.json（今日已确认被 HEAD 跟踪）若被清理，
+  // 这条会红并指名"给了 --results 读不到"。那时正确做法是换一个 title 全等的配对，不是删掉本行。
+  { name: "用例可自动化预检 verify-case-automatable", args: ["scripts/qa/verify-case-automatable.mjs", "--results", "reports/audit/round-6/interact/exec-results.json", "--json", ".zcode/tmp/case-automatable/preflight.json"], timeoutMs: 180000 },
   // 接线（r9 dsl-gate-sync 车道）：dryrun-workflow 此前只在 bash 版 :64 有一发，DSL 自己从不跑它
   // ⇒ "这条 DSL 还能不能干跑到终报"这句话在工作流里无人作证，而它恰恰是 F2 那一类（炸在终报之前）的探测器。
   // 放进 GATE_SUITE 安全的前提已核过：它只 transpile 本文件 + 在 stub 宿主里执行，world.run/artifact 全是桩，
@@ -107,6 +133,12 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   // 超时 300000 = bash 的 300 秒逐字照抄（1:1，不缩）。名字里不含 corpus|provenance|band-freshness|real-coverage
   // ⇒ 不会被提交后的 sha 敏感子集重复捞（它读的是脚本字节，不随产物 SHA 变）。
   { name: "工作流干跑预检 dryrun-workflow", args: ["scripts/qa/dryrun-workflow.mjs", "--profile", "all"], timeoutMs: 300000 },
+  // 接线（r9 编排亲验）：判据台语料的 canon/戳此前**没有任何终验经过它**——它只活在车道"自己记得跑"里，
+  // 而本轮确实有车道往 ops 写过行（L2 的 held4 那一笔）。写而不重打戳=判据与戳记分家，正是本仓反复纠的
+  // "建了门没人开"。--check 只读：实测今日连过三次 HEAD 移动仍 `canon=0fef00d141e7 / cases=1107 / 零漂移` exit 0。
+  // 标签里刻意不含 "corpus"（真文件名是 verify-ops-corpus-stamp.mjs）：:561 那条 sha 敏感子集是按 g.name 匹配的，
+  // 而这把门读的是 ops 用例清单的字节、不随产物/证据 SHA 变——按本文件 :96 自己定的口径，它就不该被提交后重复捞一遍。
+  { name: "判据台戳 verify-ops-stamp", args: ["scripts/qa/verify-ops-corpus-stamp.mjs", "--check"], timeoutMs: 180000 },
   // 已判"不该接"的一条（wiring 车道，别再试着接它）：verify-openqueue-lanes.mjs 不是门而是 round-7 一次性转换工具——
   // :22 把输入根写死成 reports/audit/round-7、:90 无条件 writeFileSync 覆写 round-7 判决件 cellplan-round7-openqueue.json，
   // 而且全文零个 process.exit ⇒ 打出 OPENQ_RESULT=PARTIAL（:99）照样退 0。接进本清单只会多一条永不变红的假绿。
@@ -308,7 +340,7 @@ function uiToLane(u: UiLaneOut): LaneOut {
 phase("缺口账单");
 // —— 全清单门禁并行（条数 = GATE_SUITE.length，r9 起不写死中文数字）+ 环境/端口/工作树探针；产出本轮唯一事实源 ——
 // 「只读」口径：这批门基本都不写 reports/**。已知的两处落盘都记在清单内注释里、本车道都不改判域：
-//   ① verify-case-automatable 写 .zcode/tmp 侧车（它 :17 自己规定的：结构化输出必须落在 reports/** 之外）；
+//   ① verify-case-automatable 写 .zcode/tmp 侧车（它 :24 自己规定的：结构化输出必须落在 reports/** 之外）；
 //   ② verify-evidence-holes 的 judge 分支无条件写 reports/audit/round-7/evidence-holes-verdict.json（bash 同形）。
 // 面板（emit-round-report）不在这条 Promise.all 里，原因见 PANEL_SUITE 段注释。
 const gateOuts: GateOut[] = await Promise.all(GATE_SUITE.map(async (g) => {

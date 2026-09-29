@@ -439,3 +439,110 @@ spec §3.14 既没给元素也没给文案，而且它写的 0/1000 与在跑的
 ⇒ 自动化腿当时**不可开拍**；加大 `--wait` 或先把项目窗口开一次再接通道，是脚本自己给的下一步。
 教训与既有那条同族（管道状态是 `tail` 的）：**架通道这件事的凭据只能是 `WS_UP=OK` 这一行，不能是端口表**。
 
+### 32.1 r9 实测推翻本节 §32 的两条前提，并补记用户后续三项裁定（2026-09-30 00:45）
+本小节是 §32 的**事实纠偏**，不改写 §32 原文（原文留作"我当时是怎么错的"的记录）。
+
+**(1) #13 的前提不成立：那 18 份"在途清单"在盘上对不上任何测量。**
+L7（只读普查）实测：`reports/audit/round-7/exec-*` 是执行器的 **`--out` 结果目录**，不是清单容器；
+清单输入在 `reports/audit/round-6/ops/*.json`，`--manifests` 是**名字过滤器**不是路径（`r-exec-cli.mjs:83/1132/1390`）。
+36 个 glob 项 = 3 个 `.md` + **33 个目录**，其中 30 个有内容充实的 `exec-results.json`、3 个完全为空
+（`exec-guest-login-r8`、`exec-guest-mock-r7final`、`exec-guest-tap` ⇒ 没有可跑的东西）。
+`manifest-detail.json` 是**下游**转换产物（它自己的 `harness` 字段指向它消费的结果件），
+所以它不能当"已跑/未跑"的判别式 —— 11 个确实跑过的目录里它反而缺席。**"18" 这个数字来源不明，作废。**
+
+**(2) 两个授权对 real-coverage 那 10 条欠账各关 0 条（L4 与 L7 两条独立车道同数）。**
+- `grep -c "guest-landing" scripts/qa/verify-real-coverage.mjs` = **0** ⇒ 覆盖门**根本不读** `guest-landing-{booked,measured}.json`，
+  它只认 exec 行上的 `band/identity/status`。所以"待 #17 的设备腿授权"这句归因（`followups-v33.md` §10 表）
+  的收账价值今日实测是 **0 条**，不是 10 条。
+- `REALCOV_NEVER_ON_REAL=0` ⇒ 这 10 条**在盘上都已有 real 档行，且全部 SKIPPED**；13 个目录（含
+  `exec-real-coverage-*-r9` 这一批补救腿）都声明了它们在内 —— 跑过，跳过了。
+- 10 条里 8 条缺 login 轴、2 条缺 login+guest（`次要20|OT06`、`次要21|OC09`）。
+⇒ `followups-v33.md` §10 的归因与本节 §32 的"主要解法"说法**都不成立**；两个说法并存于此，数附在车道件里。
+
+**用户后续裁定（2026-09-30 00:45，三项）**
+- **F-04 授权修词界**：`r-exec-cli.mjs:60` / `r-exec-ws.mjs:391` 的 `DENY_TAP` 把"清空输入框"当账号级动作拦了，
+  误拦 `次要18|TD03`、`次要20|OT09`。L7 实测 **TD03 不需要任何设备能力，只坑这一处改就能跑**。
+  派生动作：验收车道按上下文区分"账号级清空"与"清空输入框"，并**必须**配一条能变红的负例
+  （真账号级动作照旧被拦）—— 白名单是安全边界，收窄不许顺手放宽。
+- **10 条欠账逐条按可采性分流**：TD03 走 F-04；`VB03` 转 showcase 档（它自己的 `pre` 就写着展示版，real 档会重定向）；
+  `VRN07` 需未成年真身份 ⇒ 登记不可采；其余 7 条（原生模态 PFI25/OT05/OT09、故障/网络注入 VI34/OC09、逐例配方 VI25）
+  逐条写明成因后记 `NOT_SHOOTABLE`。**红不靠换动词或标免检来解除。**
+- **3848 帧盘上截图的删除：用户确认"不用管，这是我选的"** ⇒ 不恢复、不改判据、不为此重打证据。
+  直接后果如实落账：`test-evidence-store-axis` 因此转红（仓外库背书、盘上无物，`PROBLEMS=0 基线 P0=2`），
+  `verify-ledger` 因 `70472d92` exit 1（提交信息自称"260 个文件"，**L15 实量 118 个 —— 我先前照抄了 260，按实测纠正**）。
+  该红的因果已被 L15 用对照实验钉死，不是推断：同一条未改动的门、同一 argv，跑在 `git archive 70472d92^` 的镜像上
+  ⇒ **exit 0、孤儿 0**；跑在当前盘上 ⇒
+  `LEDGER_RESULT=FAIL（71 个 ID 全轮次矩阵均无本尊行，账实不符；另有 5 条非 ID 截断串待改源头写法）` exit 1（未接管道亲验）。
+  71 条逐条有归属：**71/71 是被删掉的"佐证文档"**（64 个字面 token + 1 个 cluster 锚 `MP-R2-MSG-001-002 @ baseline/regression-index.json` + 6 个别名指向 `round-2/*`）；
+  **0 条来自截图删除，0 条内容违例**（形状轴逐字节相同：`DATA_ROWS=236`、`OFF_SCHEMA/ROTATED/VOCAB_BAD=0`）。
+  ⇒ 这条红**不是台账写坏，是台账还在引用已被 hygiene 提交抹掉的东西**；解法要么恢复那 7 个文件（L15 消融实量：可让 71→0 并 PASS），
+  要么重指向（等于重建 71 行），两者都**隐藏 provenance**，只有"语料缩水断言"这条是加信息的。选哪条归人。
+  **同一轮里 L15 还量出一处更该警惕的静默盲区**：`verify-evidence-corpus` 对着 3848 张被删帧**只看得见 2 张**
+  （其余没有被任何 manifest 点名），却照印 `PROBLEMS=0` PASS。车道 L16 正在把"分母/缩水"做成具名读数。
+  另：`prove-gates-can-fail` 会因这条链路把自己的 FAIL 读成纯传播（它 `baselineExit!==0` 即判 INCONCLUSIVE）。
+  这两条都进 §33 与终报的读数口径。
+  ⚠ 由此派生一条硬规矩：**本仓禁止 `git checkout -- .` / `git restore .` 这类全仓还原** ——
+  它会复活用户刚删掉的 3848 帧。要还原只能按**具名路径**逐条动。
+
+**一条车道事故，如实记**：验收目标 §9 的车道 L9（`profile-svg-to-png` 产物移出 src + 确定化）在 **150 轮上限中断**，
+盘上留有**未验收**改动：`apps/client/scripts/profile-svg-to-png.mjs`、`apps/client/scripts/prepare-static.mjs`、
+`.gitignore`（新增 `apps/client/static-generated/` 忽略条，理由是 `.gitignore:91` 的 `!/**/avatar*.png` 白名单
+会把该目录里的 `avatar-ring.png` 重新放行成未跟踪脏项）。它中断前发现一个真缺陷：
+`cpSingle` 吞掉了 Windows 的伪错误、而它的 seed 函数对此**报谎**。⇒ 这条**不能记为已完成**，派验收车道接手。
+
+**编号漂移登记（引用时必须带前缀）**：本册 §17 = "面板重打权威判决件"（D-17，§30 记已闭）；
+`followups-v33.md` §11 与各轮终验里"待 #17 的设备腿授权"指的是**游客落地设备腿**（G-17）。
+两者同号不同事；本册此后用 `D-17` / `G-17` 分写，避免用户按错号裁定。
+
+## 33. r9 收口流水（2026-09-30 01:4x；编排亲验，非车道自报）
+本节只记**我已经自己复跑过**的事；车道自报但未复验的一律写在"待补"里，不当已入账。
+
+**已验收**
+- **§9 构建确定性（用户授权修）—— 经 L12 验收后成立**，且我逐档自己 grep 过 `config/env.js`：
+  mock `MODE:"mp-weixin-mock"` / real `MODE:"real"` / showcase `MODE:"mp-weixin-showcase"`，三档各自归位、无串档；
+  `git status --short apps/client/src` **0 行**（这正是授权要买的东西：src 不再是构建输出）。
+  L12 另修了一处 `prepare-static.mjs:104-114` 的 `cpSingle` 吞 Windows 伪错误（读覆盖写回：`cpSync` 抛"操作成功完成"
+  而旧字节留在盘上），负例 `NEG_EXIT=1`、真伪错误仍放行 `POS_EXIT=0`。今天两条调用点都写新建 stage 目录 ⇒ 属排雷，不属救火。
+- **§11 游客腿拦门 —— 用户裁定 (a) 已落地**，我自己跑 `--mode book` 亲验：`BOOK_EXIT=0`、
+  `GUEST_LAND_ROSTER 组=28 … 成员行次合计=445`、`GUEST_LAND_OPS_ENTIRE_GUEST=1 组 / 11 行`、`GUEST_LANDING_RESULT=OK`。
+- **两条"建了没人跑"的门已接**（编排亲跑后再接线）：`verify-case-automatable --results`（自证轴此前三个调用点
+  一个都没喂，"假阳性率未量"是结构必然；现量 FP 83.3%／硬口径 47.1%／召回 12.1%，`CA_AGREE_CONSERVE …=102 校验=ok`）；
+  `verify-ops-corpus-stamp --check`（判据台语料戳，此前只在车道"自己记得跑"里；本跑 `canon=0fef00d141e7 / cases=1107 / 零漂移` exit 0，
+  且在 HEAD 连动三次的情况下仍是 0 ⇒ 不是 sha 敏感门，标签因此刻意不含 "corpus"，避开 :561 那条复量子集）。
+- **real-coverage 那 10 条已逐条给去向**（用户裁定"按可采性分流"，L14 落账后我自己复跑那条门确认**逐字节未变**：
+  `CASES=236 UNCOVERED=10 COVERED=198 EXEMPT=28 NEVER_ON_REAL=0 REAL_BAND_BUT_ALL_SKIPPED=10`）：
+  `NEEDS_CAPABILITY` 7（PFI25 VI25 VI34 OT05 OT06 OT09 OC09）· `NEEDS_BAND_CHANGE` 1（VB03→showcase）·
+  `NEEDS_IDENTITY_IMPOSSIBLE` 1（VRN07，它自己的 `pre` 就承认没有 birthDate）· `DISPATCHABLE_NOW` 1（TD03）·
+  `NOT_SHOOTABLE` 0 · **免检 0 条、identities 与 ops 字节 0 改动**（这条是本节最要紧的一句：分流没有关掉任何红）。
+  ⚠ **F-04 授权的产量被 L14 实测下调**：TD03 即使 DENY_TAP 收窄，它自己的第⑥步「断网」撞上恒拒的 `networkFault`
+  会整例 SKIPPED（`:1560-1567`），输入值还硬编码 `123456` ⇒ **光修词界很可能关 0 条**。这是本轮第二条
+  "授权前提被高估"，与 §32.1 的 #13/#17 同族，以后要授权前先量产量。
+  去向的**机器件无处可落**：仓里没有消费它的工具（最接近的 `emit-openrow-register.mjs` 键的是 `MP-*` 台账行、
+  读者是 `verify-frame-debt-coverage`，不是这条门）。要落地只有两条路：扩那张 register 的键并给这条门加读者，
+  或新建一个具名载具。这属于改判域/加工具，**归你或归我下刀，不由车道顺手改**。
+
+**一处工具造成的证据销毁，已还原，并派生在修的缺陷**
+G-17 那条腿我按裁定 (a) 放行后开跑：预检过了、租约拿到了，却在 `clearSession`（`cli-automator.mjs:349` ←
+`verify-guest-landing.mjs:271`）抛 `cant find runtimeid by projectpath …mp-weixin-real` 而死，`MEASURE_EXIT=1`、
+**落盘帧 0 张**——可它已经改了权威账本：`rows` 从 **28 行变成 `[]`**，`generatedAt`/`repeat`(1→3) 被重打。
+**一次没产出任何证据的失败测量，把上一轮的真实测量抹掉了。** 处置：我跑前留了
+`.bak-prer9-20260930-011844`，已从该具名备份还原并核 `RESTORED rows= 28`、sha256 与备份全等。
+根因两条分开写清：(i) 触发是我的编排错——我 01:06 接好通道，L12 **01:07:18 重建了 real 档**，
+IDE 对该路径的 runtime 绑定随之失效，正是本仓"每轮重建之后必须重接设备腿"那条老规矩；
+(ii) 缺陷在载具自己——失败/零行路径不该无条件覆写账本。修法与能变红的负例交给车道 L17
+（"失败或零行的 measure 不得缩减/覆写既有账本；缩减必须显式具名旗标"），并在守卫落地前不重试那条腿。
+
+**终验前必须知道的读数口径（本轮已实测，不许当噪声）**
+- `verify-ledger` 现红：`LEDGER_RESULT=FAIL（71 个 ID 全轮次矩阵均无本尊行…）`，因果由 `git archive 70472d92^`
+  镜像对照钉死（改前 exit 0／孤儿 0）。71 条全是被那次 hygiene 提交删掉的佐证文档，0 条来自截图删除、0 条内容违例。
+- **`verify-evidence-corpus` 对 3848 张被删帧只看得见 2 张，却印 `PROBLEMS=0` PASS**（L15 量）——
+  盲区正在由 L16 补成具名分母读数；不改判据、不把你选的删除判成默认红。
+- `prove-gates-can-fail` 遇上游红会读成纯传播（`baselineExit!==0` ⇒ INCONCLUSIVE），本反空转检查器本轮部分失效。
+- 离线聚合器 01:08 那一发是红的（4 失败 + 2 条没印判据行），四条我已逐条归因：
+  torn read（L12 重建窗口）、端口占用、你的删帧（既定后果）、以及 L16 正在改 corpus 门的过期夹具。
+  ⇒ **r9 终验必须在所有车道收工后跑**，否则读数不可归因。
+
+**待补（现在是状态，不是遗漏）**：L13（F-04 词界收窄）、L16（语料分母读数）、L17（腿写盘守卫 + 重接重试）
+三件收工后，其读数与负例证据进本节；r9 十八步→十九步（新接一条）终验与 §7 由
+`gen-round8-report.mjs` 机器回填，我不手填任何数。
+
