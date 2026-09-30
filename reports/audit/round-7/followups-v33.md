@@ -505,3 +505,35 @@ POST verify-real-coverage   exit=1  REALCOV_RESULT=FAIL（真实模式覆盖守�
 4. 终局 22 门复量剩余两红不变：`verify-provenance-all`（§25 裁定＝已知历史红，每轮如实复量，不买绿）、
    `verify-real-coverage`（10 条已按去向件分流，见 `uncovered10-disposition-carrier-r19.md`）。
 
+## §16 2026-10-01 01:3x —— §35(4) 的游客落点空判据由车道 L18 落地，我独立复算过它的绿损失
+
+**判据改动（唯一实现落在纯函数件 `scripts/qa/guest-landing-status.mjs`，载具与下游都从它取，不留第二份副本）**：
+`MIN_STABLE_SAMPLES = 2` 是**地板值**，生效要求 = `max(地板, 声明的 repeat)`。
+只写 `n >= repeat` 是不够的——一条 `--repeat 1` 的腿会原地复活那个空判据（`n=1>=1` 恒真），这一点车道替我想到了。
+降级原因分两类机器码：`SHORT_SAMPLES`（没测够）与 `LANDING_DISAGREE`（落点不一致），
+行内字段 `stableBasis / stableWhy / stableSamples / stableRequiredSamples / stableDeclaredRepeat / stableDefect`，
+`recomputeStability()` 读账本时**不信**旧的 `stable` 字段、拿 `samples` 现算。
+
+**绿损失对账（我不读车道的 md，直接从账本 + 新函数现算 28 行）**：
+| 读数 | 值 |
+|---|---|
+| 现算仍稳定 | **11** |
+| 因样本数不足降级 | **17**（全部 `n=1 / req=2`，逐行 `guardCaseId` 见 `guest-stability-tightening-r22.md`） |
+| 因落点不一致降级 | **0** |
+| 账本里写着 `stable=true` 但现算不成立（＝冒充数） | **17** |
+⇒ 这 17 格从"稳定"降到"未成立"是**这次收紧的直接后果**，具名、可复算、不是静默改写；
+`LANDING_UNCLOSED` 里新增 `MEASURED-UNSTABLE` 使这 17 行计入未闭环，闭合数由 28 变 11。
+**这 17 个第二个样本只能靠重拍得到**（要 8080 + DevTools 通道 `WS_UP=OK` 且档对得上 + 空租约），属未授权动作。
+
+**测试侧没有丢绿**：`test-guest-landing.mjs` 由 39 格变 44 格且 `fail=0`（`GL_TEST=PASS`）、
+新件 `test-guest-landing-stability.mjs` `STABN_TEST=PASS checks=37 fail=0`、
+`test-guest-landing-writeguard.mjs` `WG_TEST=PASS checks=49 fail=0`；三件都印主方言 `SUMMARY: … assertion failures = N`
+（stem `STABN` 无下划线，避开了 §35(3) 那个 8 字符上限）。
+聚合器整发在本波改动后复跑，读数见提交说明。
+
+**本轮提交边界（第二发，单独提交，不与 §15 那五件混）**：
+`scripts/qa/guest-landing-status.mjs`、`scripts/qa/verify-guest-landing.mjs`、`scripts/qa/test-guest-landing.mjs`、
+`scripts/qa/test-guest-landing-stability.mjs`（新）、`reports/audit/round-7/guest-stability-tightening-r22.md`（新）、
+本文件 §16。**不含** `guest-landing-measured.json` / `-booked.json`（车道与我都未改账本数据，重拍才动它们）。
+
+

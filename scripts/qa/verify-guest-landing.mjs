@@ -246,8 +246,10 @@ function buildPlan() {
   return { pol, rows, groupCount: gkeys.length, debtRows: debt, generatedAt: new Date().toISOString() };
 }
 
-/* ---------- 三态：booked + measured 合起来才是结论（纯函数在 guest-landing-status.mjs，门禁共用） ---------- */
-import { landingStatus } from "./guest-landing-status.mjs";
+/* ---------- 三态：booked + measured 合起来才是结论（纯函数在 guest-landing-status.mjs，门禁共用）
+   落点稳定性判据（§35(4) 收紧版）也住在那同一个模块里：measure 写行与 landingStatus 结案判定
+   取的是同一把尺，不在这里另写一份会漂移的副本。 ---------- */
+import { landingStatus, judgeStability, stabilityAuditLines, MIN_STABLE_SAMPLES } from "./guest-landing-status.mjs";
 
 
 /* ---------- mode=measure ---------- */
@@ -256,6 +258,10 @@ function measure(plan) {
      稳定漂移还是竞态）；--repeat 决定同一组连测几次。 */
   const only = (arg("only", "") || "").split(",").map((s) => s.trim()).filter(Boolean);
   const REPEAT = Math.max(1, Number(arg("repeat", "1")) || 1);
+  /* --repeat 1 现在量不出"稳定"这一格（单样本是空判据，见 §35(4)）：判据会把它记成
+     stable=false / stableDefect=SHORT_SAMPLES，这里只提前说一句，不 markProblem ——
+     正在跑的腿不能因为一条新加的硬失败被带走（同 :24 那条 GUEST_LAND_WARN 的纪律）。 */
+  if (REPEAT < MIN_STABLE_SAMPLES) console.log("GUEST_LAND_WARN=--repeat " + REPEAT + " < 最低样本数 " + MIN_STABLE_SAMPLES + " ⇒ 本轮每一行都会按 落点稳定=false(SHORT_SAMPLES) 入账，单样本不再算「稳定」");
   const rows = only.length ? plan.rows.filter((r) => only.includes(r.guardCaseId)) : plan.rows;
   if (only.length && rows.length !== only.length) {
     console.log("GUEST_LANDING=FAIL reason=--only 里有对不上的 guardCaseId（请求 " + only.length + " 组，命中 " + rows.length + " 组）：" + only.filter((o) => !rows.some((r) => r.guardCaseId === o)).join(","));
@@ -312,16 +318,29 @@ function measure(plan) {
       if (r.registerEntry) markers[r.registerEntry] = nodeCount(r.registerEntry, { project: PROJECT });
       samples.push({ landing, identity, markers, waitedMs: waited });
     }
-    const stable = new Set(samples.map((s) => s.landing)).size === 1;
-    const stableText = stable ? "yes" : "NO(所有落点: " + samples.map((x) => x.landing).join(" | ") + ")";
+    /* 落点稳定性判据（§35(4) 收紧，2026-10-01）：旧写法是
+       `const stable = new Set(samples.map((s) => s.landing)).size === 1;` —— n=1 时那个集合恒为 1 元，
+       于是"只量了一次"在账里写成 stable=true，判据空转（盘上后果：28 行全绿、17 行只有 1 个样本）。
+       新判据够两个条件才算稳定：样本数 >= 生效最低样本数（max(MIN_STABLE_SAMPLES, 本次声明的 repeat)）
+       且所有 samples[].landing 一致。结论与前提一律写进**字段**（stableBasis / stableWhy /
+       stableDefect / stableSamples / stableRequiredSamples / repeatDeclared），
+       下游 landingStatus 据此把不达标的行算成 MEASURED-UNSTABLE（未闭环），不认散文。 */
+    const stab = judgeStability(samples, REPEAT);
+    const stable = stab.stable;
+    const stableText = stable
+      ? "yes(" + stab.stableBasis + ")"
+      : "NO(" + stab.stableBasis + " 因=" + stab.stableDefect + " " + stab.stableWhy + " 全部落点: " + samples.map((x) => x.landing).join(" | ") + ")";
     const s0 = samples[0];
-    measured.push({ groupKey: r.groupKey, guardCaseId: r.guardCaseId, measuredLanding: s0.landing, identity: s0.identity, markers: s0.markers, waitedMs: s0.waitedMs, samples, stable, measuredAt: new Date().toISOString(), band: runMeta.band });
+    measured.push({ groupKey: r.groupKey, guardCaseId: r.guardCaseId, measuredLanding: s0.landing, identity: s0.identity, markers: s0.markers, waitedMs: s0.waitedMs, samples, stable, stableBasis: stab.stableBasis, stableWhy: stab.stableWhy, stableDefect: stab.stableDefect, stableSamples: stab.stableSamples, stableRequiredSamples: stab.stableRequiredSamples, repeatDeclared: REPEAT, measuredAt: new Date().toISOString(), band: runMeta.band });
     /* 逐行落盘：中途掉链子时，已量到的行仍然是证据（整批只在最后写盘 = 一崩就没跑过）。 */
     lastMerge = mergeNow();
     if (lastMerge.write) writeFileSync(MEASURED, JSON.stringify(lastMerge.doc, null, 1));
-    console.log(`  LANDING ${r.page} → ${s0.landing || "(空)"} 身份=${s0.identity} 连测${REPEAT}次落点一致=${stableText} ${Object.entries(s0.markers).map(([k, v]) => k + ":" + v).join(" ")}`);
+    console.log(`  LANDING ${r.page} → ${s0.landing || "(空)"} 身份=${s0.identity} 落点稳定=${stableText} 连测声明=${REPEAT} 最低样本数=${Math.max(MIN_STABLE_SAMPLES, REPEAT)} ${Object.entries(s0.markers).map(([k, v]) => k + ":" + v).join(" ")}`);
   }
+  const selfAudit = stabilityAuditLines({ repeat: REPEAT, rows: measured });
   console.log(`GUEST_LANDING_MEASURED=${measured.length} 档=${runMeta.band} 全部落点稳定=${measured.every((x) => x.stable) ? "yes" : "NO"} → ${MEASURED}`);
+  /* 本轮自己量的行也要具名报数：哪几格是因为没测够而降级、哪几格是落点真的不一致，两笔账分开说。 */
+  for (const l of selfAudit) console.log("  " + l);
   if (!lastMerge) lastMerge = mergeNow();
   console.log("GUEST_LAND_LEDGER_WRITTEN=" + (lastMerge.write ? "yes" : "no") + " reason=" + lastMerge.reason
     + " policy=" + (lastMerge.write ? lastMerge.doc.rowPolicy : ROW_POLICY)
@@ -352,11 +371,20 @@ writeFileSync(BOOK_OUT, JSON.stringify({
   anchorsOk, anchorsBad, carrier: `scripts/qa/verify-guest-landing.mjs --mode measure --project ${arg("project")}`,
   measuredFile: "reports/audit/round-7/guest-landing-measured.json", rows: plan.rows,
 }, null, 1));
-const st = landingStatus(plan, existsSync(MEASURED) ? JSON.parse(readFileSync(MEASURED, "utf8")) : null);
+/* 台账只读一次，landingStatus 与稳定性具名报数吃同一份对象（两处各读各的会造出两个口径）。 */
+const measuredDoc = existsSync(MEASURED) ? JSON.parse(readFileSync(MEASURED, "utf8")) : null;
+const st = landingStatus(plan, measuredDoc);
 const cnt = {};
 for (const r of st) cnt[r.status] = (cnt[r.status] || 0) + 1;
 console.log(`GUEST_LANDING groups=${plan.groupCount} 覆盖欠款行=${plan.debtRows} 锚点可核=${anchorsOk}（不可核 ${anchorsBad}）`);
 console.log("  状态分布 " + (Object.keys(cnt).length ? Object.entries(cnt).map(([k, v]) => k + "=" + v).join(" ") : "空"));
+/* §35(4) 的具名报数：在册台账里"落点稳定"这一格有多少行其实没有第二次测量支撑，必须单独说得出数，
+   且和"落点真的不一致"分开 —— 前者是仪器欠账（补测要 UI 租约 + 授权重拍），后者是产品/裁定漂移。
+   降级行在 landingStatus 里是 MEASURED-UNSTABLE，属 LANDING_UNCLOSED ⇒ 状态分布那一行也会跟着变，
+   报数行只是把"为什么变"拆成两笔账（本文件不因此改退出码：book 门的红仍由 problems 决定，见 §6 的裁量项）。 */
+console.log("  " + (measuredDoc
+  ? stabilityAuditLines(measuredDoc).join("\n  ")
+  : "GUEST_LAND_STABILITY rows=0 稳定=0 降级=0｜台账不存在（" + MEASURED + "）⇒ 没有一行实测支撑，全部按 BOOKED 未结案计"));
 console.log("  booked → " + BOOK_OUT);
 if (problems.length) {
   console.log(`GUEST_LANDING_RESULT=FAIL problems=${problems.length}`);

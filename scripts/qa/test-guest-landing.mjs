@@ -224,17 +224,52 @@ let realOut = ""; // 块 1 存一份真数据 stdout，块 3 的守恒可见性�
   const r = run("dup", ["--policy", writeJson(resolve(TMP, "dup-policy.json"), pol), "--triage", writeJson(resolve(TMP, "dup-triage.json"), tri)]);
   t("guardCaseId 撞号 ⇒ 红", r.code === 2 && /撞号/.test(r.out), "exit=" + r.code + "\n" + r.out.slice(0, 300));
 }
-/* 7) landingStatus 四态各自成立（这函数决定 triage 门禁说什么话） */
+/* 7) landingStatus 五态各自成立（这函数决定 triage 门禁说什么话）
+   2026-10-01 §35(4) 收紧落点稳定性判据 ⇒ 四态变五态：新增 MEASURED-UNSTABLE。
+   这次改的是**夹具**与**态数**，不是判据的松紧：
+     - 原 `mk()` 造的行没有 samples 字段。旧判据看不见 samples，所以它照样 CLOSED；
+       新判据"没有第二次测量就不算稳定"于是把那行打成 MEASURED-UNSTABLE —— 这不是门坏了，
+       是那条夹具本来就不满足"稳定"的前提。补齐两样本让"全中 = CLOSED"这一格测的仍是它声称的那一格，
+       并另加两格负例把"单样本不许算 CLOSED"钉住（少这两格，收紧就等于没测）。
+     - 态数从 4 钉到 5 是可归因的决定，不是把红数改小：新增的那两格负例保证
+       "谁把 MEASURED-UNSTABLE 从 LANDING_UNCLOSED 里摘掉"或"把 n=1 折成稳定"都会立刻变红。 */
 {
   const booked = { rows: [{ groupKey: "g1", landing: "pages/login/index", landingMarker: ".login-page__brand", registerEntry: ".login-register-entry", guardCaseId: "GG-1", debtRows: 3 }] };
-  const mk = (over) => ({ rows: [{ groupKey: "g1", measuredLanding: "pages/login/index", identity: "not-logged-in", markers: { ".login-page__brand": "1", ".login-register-entry": "1" }, measuredAt: "x", band: "real@1" , ...over }] });
+  const same2 = [{ landing: "pages/login/index" }, { landing: "pages/login/index" }];
+  const mk = (over) => ({ repeat: 2, rows: [{ groupKey: "g1", measuredLanding: "pages/login/index", identity: "not-logged-in", markers: { ".login-page__brand": "1", ".login-register-entry": "1" }, samples: same2, repeatDeclared: 2, measuredAt: "x", band: "real@1", ...over }] });
   t("无实测 = BOOKED（不算结案）", landingStatus(booked, null)[0].status === "BOOKED", landingStatus(booked, null)[0].status);
   t("落点变了 = MEASURED-DRIFT", landingStatus(booked, mk({ measuredLanding: "pages/home/index" }))[0].status === "MEASURED-DRIFT", "x");
   t("身份不是游客 = MEASURED-INVALID", landingStatus(booked, mk({ identity: "logged-in userId=7" }))[0].status === "MEASURED-INVALID", "x");
   t("注册入口不在 = MEASURED-FAIL（产品缺口，不许改判据）", landingStatus(booked, mk({ markers: { ".login-page__brand": "1", ".login-register-entry": "0" } }))[0].status === "MEASURED-FAIL", "x");
   t("探针答 ERR 也算不过（不许把探针坏了折成 absent）", landingStatus(booked, mk({ markers: { ".login-page__brand": "1", ".login-register-entry": "ERR:timeout" } }))[0].status === "MEASURED-FAIL", "x");
-  t("全中 = CLOSED", landingStatus(booked, mk({}))[0].status === "CLOSED", "x");
-  t("四态里除 CLOSED 都算未结案", LANDING_UNCLOSED.length === 4 && !LANDING_UNCLOSED.includes("CLOSED"), LANDING_UNCLOSED.join(","));
+  t("全中且有第二次测量 = CLOSED", landingStatus(booked, mk({}))[0].status === "CLOSED", "x");
+  /* 7a 收紧买到的东西：n=1 的行（就是账本里那 17 行的形状）不许再被读成已结案。
+     旧判据在这里会判 CLOSED —— 这条断言就是那把能量出红的尺。 */
+  const one = landingStatus(booked, mk({ samples: [{ landing: "pages/login/index" }], repeatDeclared: 1 }))[0];
+  t("7a 单样本 + 顶层声明 repeat=2 ⇒ MEASURED-UNSTABLE（未结案，不算 CLOSED）",
+    one.status === "MEASURED-UNSTABLE" && /^未结案/.test(one.statusText), one.status + " ｜ " + one.statusText);
+  t("7a 降级原因写成字段：样本数不足（SHORT_SAMPLES），且话说清是「没测够」而不是「落点变了」",
+    one.stability && one.stability.stableDefect === "SHORT_SAMPLES" && one.stability.stableSamples === 1 &&
+      one.stability.stableRequiredSamples === 2 && /单样本|样本数不足/.test(one.stability.stableWhy || "") &&
+      !/落点不一致/.test(one.stability.stableWhy || ""),
+    JSON.stringify(one.stability && { d: one.stability.stableDefect, b: one.stability.stableBasis, w: one.stability.stableWhy }));
+  /* 7b 另一类降级：够数但落点不一致，原因必须与 7a 分得开（两类分开计数是报数行的前提） */
+  const diff = landingStatus(booked, mk({ samples: [{ landing: "pages/login/index" }, { landing: "pages/home/index" }] }))[0];
+  t("7b 两次测量落点不一致 ⇒ MEASURED-UNSTABLE 且原因点名「落点不一致」",
+    diff.status === "MEASURED-UNSTABLE" && diff.stability.stableDefect === "LANDING_DISAGREE" &&
+      /落点不一致/.test(diff.stability.stableWhy) && diff.stability.stableWhy.includes("pages/home/index"),
+    JSON.stringify(diff.stability && { d: diff.stability.stableDefect, w: diff.stability.stableWhy }));
+  /* 7c 读取侧不信行里那个 stable=true：合并账里旧行的字段与现算矛盾时必须以现算为准 */
+  const stale = landingStatus(booked, mk({ samples: [{ landing: "pages/login/index" }], stable: true, repeatDeclared: undefined }))[0];
+  t("7c 旧行写着 stable=true 但只有 1 个样本 ⇒ 以现算为准（未结案），不许拿字段冒充证据",
+    stale.status === "MEASURED-UNSTABLE" && stale.stability.recordedStable === true && stale.stability.stable === false,
+    "status=" + stale.status + " 字段=" + stale.stability.recordedStable + " 现算=" + stale.stability.stable);
+  /* 7d 没有 samples 数组的行（更早那批形状）= 无从复核 = 不算稳定 */
+  t("7d 行内没有 samples 数组 ⇒ 不算稳定（不许把「读不到样本」折成「没问题」）",
+    landingStatus(booked, mk({ samples: undefined }))[0].status === "MEASURED-UNSTABLE", "x");
+  t("五态里除 CLOSED 都算未结案（MEASURED-UNSTABLE 必须在这把尺上，态数是可归因的决定不是随手加的）",
+    LANDING_UNCLOSED.length === 5 && LANDING_UNCLOSED.includes("MEASURED-UNSTABLE") &&
+      !LANDING_UNCLOSED.includes("CLOSED"), LANDING_UNCLOSED.join(","));
 }
 /* 9) 2026-09-30 裁定 (a)：成员来源只许一条规则，而新路线的窄条件必须还能变红。
    病灶（followups-v33.md §11）：某页 ops 行**整页没有 identities 声明**（= 游客腿一行都没被收窄，
