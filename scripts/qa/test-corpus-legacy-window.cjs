@@ -192,9 +192,16 @@ ok(!existsSync(join(REPO, "scripts", "qa", "verify-evidence-corpus.mut.mjs")),
   ok(cSet.includes(ROUND1) && pSet.includes(ROUND1),
     "H 真仓对跑：round-1 那 144 帧在两把尺子下都被认成 legacy（这才是本轮要修的不对称）",
     `corpus=[${cSet}] provenance=[${pSet}]`);
-  ok(c.problems === 0 && c.legacy >= 1,
-    "H 真仓对跑：scoped corpus 侧 PROBLEMS=0 而 legacy>=1 ⇒ 红与豁免分得开",
-    `problems=${c.problems} legacy=${c.legacy}`);
+  /* 这一格原先写死 `c.problems === 0`，那只在 round-1 那 144 帧还在盘上时成立。
+     2026-09-30 用户选择清理截图后它们不在了，而它们又被 .gitignore 挡着（截图一律不入库）
+     ⇒ git ls-files --deleted 无法为它们背书 ⇒ 无库配置下这 144 帧是"拿不出凭据的缺席"，problems=1 是**正确读数**。
+     所以判据改成派生的、且真正对准本节要证的事：红只能来自"帧不存在"这一轴，
+     **legacy 那一格永不产红**（红与豁免分得开）。帧哪天回到盘上，本断言自动退回要求 problems=0。 */
+  const problemLines = (c.body.match(/^\s*CORPUS_PROBLEM .*$/gm) || []);
+  const nonAbsence = problemLines.filter((l) => !/帧不存在=/.test(l));
+  ok(c.legacy >= 1 && nonAbsence.length === 0 && problemLines.length === c.problems,
+    "H 真仓对跑：红只可能来自「帧不存在」，legacy 那一格永不产红（红与豁免分得开）",
+    `problems=${c.problems} problemLines=${problemLines.length} nonAbsence=${nonAbsence.length} legacy=${c.legacy}`);
 }
 
 /* ---------- I. 负例能咬人：把谓词符号翻转的替身跑同一套判据 ----------

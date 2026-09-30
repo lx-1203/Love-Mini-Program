@@ -56,5 +56,8 @@ const run = (planText, planName = "plan.json") => {
 }
 
 try { rmSync(root, { recursive: true, force: true }); } catch {}
+/* 自报格式必须跟仓库既有方言（聚合器认 `^\w{2,8}_SUMMARY ... fail=N` 或 "assertion failures = N"）：
+   第一版只印 checks=/failures= ⇒ 聚合器判"无自报断言计数（不可信）"，绿了也不算被跑过。 */
+console.log(`QTALLY_SUMMARY cases=${checks} fail=${failures}`);
 console.log(`QTALLY_TEST=${failures ? "FAIL" : "PASS"} checks=${checks} failures=${failures}`);
 process.exit(failures ? 1 : 0);

@@ -77,8 +77,18 @@ let P0 = null;
 /* 2) 库可达且帧都在盘上 ⇒ 本轴不该凭空加红 */
 {
   const r = run([GATE, "--store", storeDir]);
-  t("2 库可达：PROBLEMS 仍等于基线（库不新增红，也不豁免既有问题）",
-    numOf(r.out, "CORPUS_PROBLEMS") === P0, `PROBLEMS=${numOf(r.out, "CORPUS_PROBLEMS")} 基线 P0=${P0} ｜ ` + (r.out.split(/\r?\n/).find(l => l.startsWith("CORPUS_STORE")) || ""));
+  /* 原断言是 `PROBLEMS === P0`（配库前后一律相等），注释里写的前提是"库可达**且帧都在盘上**"。
+     2026-09-30 之后那个前提不成立了：帧被 --evict 挪进仓外库（裁定③ 的本意就是"仓外库为不在盘上的帧背书，
+     库不可达则判红"），所以配库后问题数**应当**下降 —— 拿等式去卡它，等于把库的正常作用判成缺陷。
+     但也不能反过来放成"随便降"：降了必须**具名可核**。所以真不变量是两条：
+       ① 配库不新增红（p <= P0）；
+       ② 只要问题数降了，就必须有 >0 的"库背书帧"计数在 CORPUS_STORE 行里点名（静默降 = 红）。 */
+  const p2 = numOf(r.out, "CORPUS_PROBLEMS");
+  const storeLine = (r.out.split(/\r?\n/).find((l) => l.startsWith("CORPUS_STORE")) || "");
+  const vouched = Number((storeLine.match(/库背书帧=(\d+)/) || [])[1]);
+  t("2 库可达：不新增红；若问题数下降，必须有具名的库背书帧数撑着（不许静默豁免）",
+    p2 !== null && p2 <= P0 && (p2 === P0 || (Number.isFinite(vouched) && vouched > 0)),
+    `PROBLEMS=${p2} 基线 P0=${P0} 库背书帧=${vouched} ｜ ` + storeLine);
   t("2 库可达：库内对象数与 --status 同源（>0）",
     (numOf(r.out, "库内对象") ?? 0) > 0, r.out.split(/\r?\n/).find(l => l.startsWith("CORPUS_STORE")) || "(无此行)");
 }
