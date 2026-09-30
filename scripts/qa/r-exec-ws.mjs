@@ -385,10 +385,14 @@ async function wsVerifyLogin() {
     } catch (e) { return "ERR " + e.message; }
   }));
 }
-/* 交互切片用：WS 的元素.tap()。不可逆的账号级动作（注销/解绑/清空）先禁触——
+/* 交互切片用：WS 的元素.tap()。不可逆的账号级动作先禁触——
    不是为了把红的藏起来，而是这类动作会把后面几百条用例共用的会话打掉，
-   那一次跑就只剩下"注销成功"这一帧；被禁的条目一律显式记 SKIPPED-DENY，不混进已跑。 */
-const DENY_TAP = /注销|解绑|清空|删除账号|删除帐号|退出登录|登出/;
+   那一次跑就只剩下"注销成功"这一帧；被禁的条目一律显式记 SKIPPED-DENY，不混进已跑。
+   清单本体在 scripts/qa/deny-tap.cjs（与 r-exec-cli.mjs 同一份，词表不再两处各抄一份）；
+   其中「清空」按**宾语**判：判据自己指明了 <input>/<textarea>/v-model= 且清的就是那个框
+   或框里的内容 ⇒ 放行；清的是 storage/会话/历史/数据源，或「清空」本身就是被 tap 的
+   确认按钮 ⇒ 照旧禁触。证明不了宾语是字段的默认拦。详见该文件头注。 */
+const { denyTapMatch } = require("./deny-tap.cjs");
 async function wsTap(sel) {
   return await withRetry("tap " + sel, async (m) => {
     const p = await m.currentPage();
@@ -470,8 +474,10 @@ function shootFor(name, id) {
 async function runTapCase(name, page, c, route, cls) {
   const actionText = String(c.action || "");
   const targets = classesOf(actionText);
-  if (DENY_TAP.test(actionText)) {
-    return { bucket: "tapDeny", row: mkRow(name, page, c, "SKIPPED", route, "动作命中不可逆清单（注销/解绑/清空/登出）⇒ 禁触，否则后面几百条共用的会话会被打掉", "top=" + route + " | deny-tap | action=" + actionText.slice(0, 60)) };
+  const denyWord = denyTapMatch(actionText);
+  if (denyWord) {
+    return { bucket: "tapDeny", row: mkRow(name, page, c, "SKIPPED", route, "动作命中不可逆清单（注销/解绑/清空/登出）⇒ 禁触，否则后面几百条共用的会话会被打掉" +
+      " | 命中词=" + denyWord + "（清单唯一来源 scripts/qa/deny-tap.cjs；「清空」按宾语判）", "top=" + route + " | deny-tap | action=" + actionText.slice(0, 60)) };
   }
   if (!targets.length) {
     return { bucket: "tapNoTarget", row: mkRow(name, page, c, "SKIPPED", route, "交互动词但 action 里没点名可点元素（没有 selector 就没法把这次点击归属到某个东西）⇒ 待把判据收紧", "top=" + route + " | dom: (action 无类名) | tap-skipped") };

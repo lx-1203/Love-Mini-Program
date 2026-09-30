@@ -54,6 +54,12 @@
    五个旗标都不带时本文件的下发、判决与落盘字段与 2026-09-28 之前的腿逐字相同（既有 1107 条批次要能复现）。
    续跑：同一 --out 下已有 exec-results.json 时按 manifest|id 跳过跑过的，合并后整体守恒才写盘。 */
 import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync } from "node:fs";
+import { createRequire } from "node:module";
+/* 交互禁触清单是安全边界，两条载具（本文件的 --tap 刀、r-exec-ws.mjs 的 WS 腿）必须共用一份：
+   词表抄第二份，安全边界就能各自漂移（F-04 实测这里就各存了一份逐字相同的正则）。
+   同源先例见 scripts/qa/change-verbs.cjs（§96.2 同类缺陷的收口载体）。 */
+const require = createRequire(import.meta.url);
+const { denyTapMatch } = require("./deny-tap.cjs");
 import { acquireUi, releaseUi, renewUi } from "./ui-lease.mjs";
 import { resolve, join } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -90,7 +96,11 @@ const SETTLE = parseInt(arg("settle", "2400"), 10);
 const WARMUP_GUEST = process.argv.includes("--guest-warmup");
 /* 交互刀：真点/真输入（automation_element_action），只在显式 --tap 时开。
    不可逆的账号级动作一律禁触并显式记 DENY——不是藏红，是这类动作会把后面几百条
-   共用的会话打掉，那一次跑就只剩下"注销成功"这一帧。 */
+   共用的会话打掉，那一次跑就只剩下"注销成功"这一帧。
+   清单在 scripts/qa/deny-tap.cjs（唯一来源，与 r-exec-ws.mjs 同一份）。其中「清空」
+   按**宾语**判而不是按词禁触：判据自己指明了文本输入控件（<input>/<textarea>/v-model=）
+   且清的是那个框或框里的内容 ⇒ 放行；清的是 storage/会话/历史/数据源，或「清空」本身就是
+   被 tap 的确认按钮 ⇒ 照旧禁触。证明不了宾语是字段的默认拦（收窄，不是放宽）。 */
 const TAP_MODE = process.argv.includes("--tap");
 /* ── 能力旗标（2026-09-29 capability 车道；三条都是**加法**，不带旗标时本文件的行、判决、
    字段与 2026-09-28 之前逐字一致 —— 判据台 1107 条的既有批次必须能原样复现）───────
@@ -135,7 +145,8 @@ const MODE_SUFFIX = (GESTURE_MODE ? "+gestures" : "") + (NATIVE_CAPTURE ? "+capt
   + (NET_COUNT ? "+net" : "");
 const MODE_LABEL = (process.argv.includes("--real-cases-only") ? "real-cases-only"
   : TAP_MODE ? (REAL_BAND ? "tap+real" : "tap") : (REAL_BAND ? "real" : "observe-only")) + MODE_SUFFIX;
-const DENY_TAP = /注销|解绑|清空|删除账号|删除帐号|退出登录|登出/;
+/* 禁触清单本体已收进 scripts/qa/deny-tap.cjs（唯一来源，见文件头）。这里曾另存过一份
+   逐字相同的六词正则 —— 两条载具两份副本就是 F-04 的缺陷本体（安全边界能各自漂移）。 */
 /* 整页锁屏（LockScreen）探针：present 时页面内容根本不在渲染树里。
    --allow-gate 用来在 showcase 档（挡不掉也要照判）或专门测锁屏时强行照判。 */
 const GATE_SEL = ".lock-screen";
@@ -1536,9 +1547,11 @@ const bandSkip = (c) => (process.argv.includes("--real-cases-only") && c.require
          整组 26 条都没落在本页，而交互腿照发 ⇒ 点的是别人的页，
          失败原因又被记成"点不到点名物件"，把真正的落点问题盖掉了（本轮 19 条）。 */
       if (TAP_MODE && !bandSkip(c) && routeOk !== false && wantsInteraction(c.action)) {
-        if (DENY_TAP.test(String(c.action || ""))) {
+        const denyWord = denyTapMatch(String(c.action || ""));
+        if (denyWord) {
           stats.tapDeny++;
-          rows.push(row(name, page, c, "SKIPPED", route, "交互禁触（注销/解绑/清空这类不可逆动作会打掉后面几百条共用的会话）⇒ 显式记 DENY，不混进已跑", observed0(c, route, routeOk, dom, "")));
+          rows.push(row(name, page, c, "SKIPPED", route, "交互禁触（注销/解绑/清空这类不可逆动作会打掉后面几百条共用的会话）⇒ 显式记 DENY，不混进已跑" +
+            " | 命中词=" + denyWord + "（清单唯一来源 scripts/qa/deny-tap.cjs；「清空」按宾语判，不按词判）", observed0(c, route, routeOk, dom, "")));
           continue;
         }
         /* 防降级闸（capability 车道 #2，--strict-verbs / --gestures 才生效；不带旗标时这一整块跳过，

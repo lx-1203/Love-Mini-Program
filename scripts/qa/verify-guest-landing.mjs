@@ -11,6 +11,7 @@ import { resolve, join } from "node:path";
 import { acquireUi, releaseUi, renewUi, heldLeases } from "./ui-lease.mjs";
 import { openPage, routeStack, nodeCount, clearSession, verifyLogin } from "./cli-automator.mjs";
 import { readApiMode, assertGuestCapable } from "./artifact-band.mjs";
+import { ROW_POLICY, mergeMeasuredLedger, shrinkRequested } from "./measured-ledger.mjs";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
@@ -262,8 +263,38 @@ function measure(plan) {
   }
   const cap = assertGuestCapable(REPO, PROJECT, { allow: true });
   const band = readApiMode(PROJECT);
-  const out = { mode: "measure", generatedAt: new Date().toISOString(), project: arg("project"), band: (band.mode || "?") + "@" + (band.sha8 || "?"), guestCapable: cap.ok === true, repeat: REPEAT, rows: [] };
-  writeFileSync(MEASURED, JSON.stringify(out, null, 1));
+  const shrinkIdx = process.argv.indexOf("--allow-shrink");
+  const shrinkGiven = shrinkIdx >= 0 ? (process.argv[shrinkIdx + 1] || "") : "";
+  const shrink = shrinkRequested(shrinkGiven);
+  if (shrinkIdx >= 0 && !shrink.ok) console.log("GUEST_LAND_SHRINK=REJECTED " + shrink.why + " ⇒ 本轮仍按 " + ROW_POLICY + " 合并");
+  const runMeta = {
+    mode: "measure", generatedAt: new Date().toISOString(), project: arg("project"),
+    band: (band.mode || "?") + "@" + (band.sha8 || "?"), guestCapable: cap.ok === true, repeat: REPEAT,
+  };
+  /* 写盘判点必须走 measured-ledger.mjs 的合并语义，而不是在这里再落一个空壳：
+     2026-09-30 01:18 的实测事故就是旧写法在 for 循环【之前】把 `rows: []` 无条件覆写进权威台账
+     （HEAD 旧文件的 :265 造空壳、:266 落盘；由 L17b 按 `git show HEAD:` 逐行核正，L17 注释里写的
+     "旧 :266-267" 偏了一行 —— 锚点必须能被人对到同一行，否则复核就是空话），
+     随后循环体第一条 clearSession(旧 :271) 就抛（cli-automator.mjs:348-349 → IDE 桥回
+     cant find runtimeid by projectpath …mp-weixin-real），exit 1、0 帧落点，却已经把上一轮
+     real@f0677920 的 28 行测量清空（rows 28→[]、generatedAt 换成崩溃那次的时间戳、repeat 1→3）。
+     台账是这台设备唯一不可重生的仪器证据，一条没有产出任何证据的腿无权改写它 ⇒ 零行不写（generatedAt/repeat
+     一起不动，不拿崩溃冒充新鲜度）、有行只按 groupKey 就地合并（旧行永不因"本轮没量到"而消失）、
+     减行只认显式点名的 SHRINK_ROWS 令牌；守卫判据本身在 measured-ledger.mjs，这里只接线，不另写一份会漂移的副本。 */
+  let prevLedger = null;
+  if (existsSync(MEASURED)) {
+    try { prevLedger = JSON.parse(readFileSync(MEASURED, "utf8")); }
+    catch (e) {
+      console.log("GUEST_LANDING=FAIL reason=既有台账 " + MEASURED + " 读不动（" + String(e && e.message).slice(0, 60)
+        + "）⇒ 无法保证合并后不缩行，本轮拒绝写盘（宁可不写，也不把读不懂的 prev 当成空账本）");
+      process.exit(2);
+    }
+  }
+  const prevRowCount = Array.isArray(prevLedger && prevLedger.rows) ? prevLedger.rows.length : 0;
+  console.log("GUEST_LAND_LEDGER_GUARD=" + ROW_POLICY + " 既有台账 rows=" + prevRowCount + " 文件=" + MEASURED);
+  const measured = [];
+  const mergeNow = () => mergeMeasuredLedger(prevLedger, measured, runMeta, { allowShrink: shrink.ok, shrinkTokenGiven: shrinkGiven });
+  let lastMerge = null;
   for (const r of rows) {
     const samples = [];
     for (let pass = 0; pass < REPEAT; pass++) {
@@ -284,12 +315,20 @@ function measure(plan) {
     const stable = new Set(samples.map((s) => s.landing)).size === 1;
     const stableText = stable ? "yes" : "NO(所有落点: " + samples.map((x) => x.landing).join(" | ") + ")";
     const s0 = samples[0];
-    out.rows.push({ groupKey: r.groupKey, guardCaseId: r.guardCaseId, measuredLanding: s0.landing, identity: s0.identity, markers: s0.markers, waitedMs: s0.waitedMs, samples, stable, measuredAt: new Date().toISOString(), band: out.band });
+    measured.push({ groupKey: r.groupKey, guardCaseId: r.guardCaseId, measuredLanding: s0.landing, identity: s0.identity, markers: s0.markers, waitedMs: s0.waitedMs, samples, stable, measuredAt: new Date().toISOString(), band: runMeta.band });
     /* 逐行落盘：中途掉链子时，已量到的行仍然是证据（整批只在最后写盘 = 一崩就没跑过）。 */
-    writeFileSync(MEASURED, JSON.stringify(out, null, 1));
+    lastMerge = mergeNow();
+    if (lastMerge.write) writeFileSync(MEASURED, JSON.stringify(lastMerge.doc, null, 1));
     console.log(`  LANDING ${r.page} → ${s0.landing || "(空)"} 身份=${s0.identity} 连测${REPEAT}次落点一致=${stableText} ${Object.entries(s0.markers).map(([k, v]) => k + ":" + v).join(" ")}`);
   }
-  console.log(`GUEST_LANDING_MEASURED=${out.rows.length} 档=${out.band} 全部落点稳定=${out.rows.every((x) => x.stable) ? "yes" : "NO"} → ${MEASURED}`);
+  console.log(`GUEST_LANDING_MEASURED=${measured.length} 档=${runMeta.band} 全部落点稳定=${measured.every((x) => x.stable) ? "yes" : "NO"} → ${MEASURED}`);
+  if (!lastMerge) lastMerge = mergeNow();
+  console.log("GUEST_LAND_LEDGER_WRITTEN=" + (lastMerge.write ? "yes" : "no") + " reason=" + lastMerge.reason
+    + " policy=" + (lastMerge.write ? lastMerge.doc.rowPolicy : ROW_POLICY)
+    + " 本轮行=" + measured.length + " 台账行=" + lastMerge.counts.prevRows + "->" + lastMerge.counts.nextRows
+    + " 就地更新=" + lastMerge.counts.updated + " 新增=" + lastMerge.counts.added
+    + " 保留旧行=" + lastMerge.counts.keptFromPrev + " 丢弃=" + lastMerge.counts.dropped
+    + " 无键被拒=" + lastMerge.counts.rejectedNoKey);
 }
 
 /* ---------- 主流程 ---------- */

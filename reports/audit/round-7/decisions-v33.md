@@ -542,7 +542,370 @@ IDE 对该路径的 runtime 绑定随之失效，正是本仓"每轮重建之后
   torn read（L12 重建窗口）、端口占用、你的删帧（既定后果）、以及 L16 正在改 corpus 门的过期夹具。
   ⇒ **r9 终验必须在所有车道收工后跑**，否则读数不可归因。
 
-**待补（现在是状态，不是遗漏）**：L13（F-04 词界收窄）、L16（语料分母读数）、L17（腿写盘守卫 + 重接重试）
-三件收工后，其读数与负例证据进本节；r9 十八步→十九步（新接一条）终验与 §7 由
-`gen-round8-report.mjs` 机器回填，我不手填任何数。
+**已落地并有读数**
+- **F-04（L13）已按裁定收窄，且比账面更严重**：那条 `DENY_TAP` 不是两份而是**三份副本**
+  （`r-exec-cli.mjs:138`、`r-exec-ws.mjs:391`、`shoot-frameplan.mjs:479`；我任务书里写的 `cli:60` 是 import 行，错了）。
+  L13 把两条被授权的载具收敛到新单一真值源 `scripts/qa/deny-tap.cjs`，`shoot-frameplan` 因输入不同
+  （`note+selector`）**留作具名欠账**，没有顺手统一。规则一句话：「清空」按宾语判——判据文本就地指出
+  `<input>`/`<textarea>`/`v-model=` 且清的正是那个框才放行，否则照旧拦。
+  全语料前后对照：`DENYTAP_CORPUS cases=1107 refuse_before=32 refuse_after=30 released=次要18|TD03,次要20|OT09 newly_denied=(none)`
+  ⇒ **只放出被点名的两条，没有一条新拦**。双向负例：临时放宽会漏放 `PR05/HS07/SE05/CPT33`（`leaked=4, over=26`），
+  改回后 `DENYTAP_TEST=PASS`、聚合器 `发现 36→37`、`EXEC_SELFTEST=PASS cases=97 bad=0`。
+  TD03 **仍未代跑、仍未记通过**（本册只记"可Dispatch"，不代替腿产出结论）。
+- **#16（`run-round7-closeout.mjs` 没人跑）本轮第一次真跑**，只读档（默认不写盘、写盘类步骤要 `--allow-write`、
+  启动前逐个 `existsSync` 核步骤名、有腿持租约就拒启动 —— 这几条我已读源码确认，不是听它自报）：
+  `CLOSEOUT_RAN=20 红=3`，`CLOSEOUT_RESULT=ATTENTION 收尾计划跑完；终报与提交在 --with-report 之后`。
+  其中一条红的读数值得单记：`LANDING_IDENTITY_UNDECLARED subpackages/discover-extra/discover/matching → pages/discover/index`
+  —— 该组 5 行**无一声明 identity**，所以这一轴"不判、也不"（并标 `UNVERIFIED-INSTRUMENT=yes`），
+  即 §29 收窄后的行为在真载具上是成立的：它不拿零声明去索要处置，也不把它算成绿。
+  ⇒ 这一发的结论是**"stage-8 类问题现在有读数了"**，不是"stage-8 过了"：3 条红腿各自带原因。
+
+**待补（现在是状态，不是遗漏）**：L16（证据语料分母读数，此刻正在改 `verify-evidence-corpus.mjs`，
+mtime 04:44 起有动）、L17（游客腿写盘守卫 + 重接重试 —— 该文件自 00:30 起未动，守卫尚未落地，
+所以那条腿**还没重试**）三件收工后，其读数与负例证据进本节；**r9 十八步→十九步终局复量当前那份是暂定读数**
+（红 6，HEAD 前=后=491210dd，但它跑在 L13/L16/L17 在途期间，我的静默判据把"文件 39 分钟没动"误读成"车道收工"），
+车道全部落地后必须复量；§7 由 `gen-round8-report.mjs` 机器回填，我不手填任何数。
+
+## 34. r10 收口流水（2026-09-30 12:3x；编排亲验，非车道自报。上面 0–33 节原文一字未动）
+本节只记**编排方自己复跑过**的事；车道自报而未复验的写在 F 段"待补"里，不当已入账。门数一个都不手填，
+终局复量读数一律走 `run-final-verify-v33.sh` → `.zcode/tmp/final-verify/summary.json` → 生成器回填。
+
+**A. 起跑时实测到的三条在途缺口（§33「待补」的续账，逐条可复跑）**
+- `grep -n 'DENOM' scripts/qa/verify-evidence-corpus.mjs` **只命中该文件第 28 行那条注释本身**——注释声称
+  "新增 `CORPUS_*_DENOM_*` 具名读数"，代码里没有。⇒ 又是一例"自述与盘上不符"，与 `#25` 那台假仪器同族。
+- `grep -rn 'measured-ledger' scripts/` **0 命中**：`measured-ledger.mjs`（128 行，`ROW_POLICY="merge-never-shrink"`）
+  建好了没人 import ⇒ §33 记的那个病灶（一次 0 帧产出、`MEASURE_EXIT=1` 的失败测量把 28 行权威账本抹成 `[]`）
+  在 12:03 时点**仍然无人挡**。
+- `reports/audit/round-7/gate-recheck-v33.json` 与 `post-commit-gates-v33.json` **两份都不在盘上**，而 DSL
+  `:548/:591` 明确会写它们 ⇒ 事实是**这场 DSL 从未跑到过那两个 persistJson**，只有 bash 载体产过 `summary.json`。
+  如实记这条不是为了追责，是因为 `gen-round8-report.mjs:14-15` 读它们时缺件默认 `null` 并印
+  「（未跑，故此处不留结论。）」——它不静默填绿，所以**报告里那两格是诚实的空白，不是被抹掉的账**。
+
+**B. 编排亲验读数（Node22 `D:/codex-tools/node-v22.17.0-win-x64/node.exe`，全部未接管道取退出码）**
+- corpus 门（在途码 × 无 `QA_EVIDENCE_STORE`）：`exit=1`，`CORPUS_SCANNED=47 CORPUS_EXPIRED_GITSHA=47
+  CORPUS_PROBLEMS=2`，两条 PROBLEM 是 `exec-a-mock-final/manifest-detail.json 共 650 帧 :: 帧不存在=3` 与
+  `reports/screenshots/round-1/manifest.json 共 144 帧 :: 帧不存在=144`；`CORPUS_SHA_CLASS
+  resolvableOlder=46 unresolvable=0 empty=1 :: frames resolvableOlder=9040 unresolvable=0 empty=144`；
+  `CORPUS_LEGACY_NO_SHA=1 CORPUS_LEGACY_FRAMES=144 打戳约定起点=2026-09-24T16:31:39.000Z`。
+  ⚠ **口径必须钉死**：r9 那份 summary 记 `verify-evidence-corpus exit=0`，跑的是 bash 载体——仓外库
+  `D:/6/love-mini-evidence` 实测存在，`run-final-verify-v33.sh:23-25` 会 `export QA_EVIDENCE_STORE` 走
+  reachable 支；我这两发是 unconfigured 支。**同一道门跨载体不是同一次测量**，两格之差不得读成回归。
+  收口后要量满三格（在途码×有库 / 在途码×无库 / HEAD 码×有库）才能谈差值。
+- r9 暂定基线（盘上件直读）：`headBefore=headAfter=491210dd`、19 键、红 6（`prove-gates-can-fail`、
+  `run-qa-selftests`、`verify-ledger`、`verify-ledger-after-panel`、`verify-provenance-all`、
+  `verify-real-coverage`），其中 `verify-evidence-corpus=0`。
+- 产品账（`reports/audit/round-6/issue-matrix.md`，mtime 09-29 02:03，按 `status` 列前缀归类，共 **238 行**）：
+  已修复 127 / 保留-判据不成立 38 / 并入-不另立案 26 / 不立账 17 / 回归核对类 19 /
+  **未结案 9**＝待修复 2（一条 `needs_backend`、一条需排 UI 帧）+ 已修复待复验 3 + 待复验 1 + 未取证 1 +
+  未取证/需裁决 1（后者即 `#7` `village-publish-001`）。
+  ⚠ 另有 2 行 `status` 装的是非状态串（`为什么不新增行`、`---`），是 markdown 说明行/分隔被当数据列；
+  §33 曾记"5 条非 ID 截断串"，我这次按前缀口径量到 2 条，**差在归类口径**，不以我这次计数去改判据——
+  以 `verify-ledger` 自己的具名读数为准。
+- 客户端与后端实测：220 个 `.vue`（pages+14 分包共 73 个页面文件）、**121 个 `*.spec.ts`**（`*.test.ts` 0 个），
+  `apps/client/tsconfig.json:20-25` 的 `exclude` 含 `src/tests/**/*` ⇒ 这 121 个 spec 全不在 `vue-tsc` 射程内；
+  后端 `127.0.0.1:8080/actuator/health` = `{"status":"UP"}`。
+- 分支账：全仓 371 个提交，本地领先 `origin/main` **4 个**、落后 0 ⇒ 仍按"仅本地落账、不推送"执行。
+
+**C. 纠偏（本册体例：只新增、不回改原文）**
+- **`docs/` 那条"预期红"作废**。旧记载称 252 个跟踪文件删除未入库、`test:structure` 与 openapi lint 按设计为红。
+  实测：`git status --porcelain -- docs` **零行**，`git ls-files docs` = 9 = 盘上 9，最后一次变动是
+  `cc540a6e docs: restore openapi specs dropped in root-dir cleanup (unbreak CI openapi gate)`。
+  ⇒ 根级三道门 `lint` / `lint:openapi` / `test:structure` **不在预期红名单里**，今后若红就是真红，不许拿这条旧账放过。
+- `#13` 正文写 `PROV_FRAMES_PRE_STAMP=4867`，而 `#25`/§33 写 4886：差 19 恰是 §25 点名的 19 张 round-8-interact 帧。
+  两条在各自时刻可能都真，但并排读起来像同一量互相打脸 ⇒ 引用 provenance 红数时**必须带时刻与 log 出处**。
+- `#5`（证据可携）两个轴要分开重述：**绝对路径轴已自愈**——`reports/audit/round-7/tapfix-merged.json`
+  （mtime 09-29 12:16，即 `#5` 写下之后被重写）的 `lanes` 是 array[56] 且逐条为仓内相对路径，遍历全件绝对路径 **0 条**；
+  只剩 `.json.json` 双后缀这一轴还活着。**像素轴的分母要钉**——`.gitignore:61` 是 `reports/screenshots/`、`:70` 是 `*.png`，
+  但 HEAD 实际跟踪 `reports/**` 下 **10,425 个 .png + 32 个 jpg = 10,457 枚**（早于 ignore 规则入库者仍被跟踪），
+  所以原文"干净 clone 一条都打不开"对这 10,457 枚**不成立**。⇒ `#5` 的 A/B/C 要按"一轴已闭 / 一轴仍在 / 一轴分母已变"重述。
+- `#24` 的数**证实**：`apps/client/src/utils/person-avatars.ts` 2717 字节、恰 21 条 `import`；
+  同口径下 `src/static/**/person-NN.png` 21 个、合计 **999,151 bytes = 0.953MB**，与原文逐字相符。
+  我第一次用 `*person*` 宽口径数到 31 个 / 1,421,234 bytes —— **那是我口径错，不是册子错**，按纪律先纠自己。
+- **两个载具里的"手填数字"已与盘上脱节**：DSL `:648` 的未覆盖面句写「实测 **117** 个 spec 不在 vue-tsc 范围内」，
+  同口径现量是 **121**；bash `run-final-verify-v33.sh:53` 注释写「GATE_SUITE 现有 **12** 条」，而 DSL `:635` 那句
+  早已改成插值取长度 ⇒ 散文里那个 12 是漏改的第二处。处置原则：判据/阈值/退出码一律不动，只把手填数字换成插值或由机器行供给。
+- **§30:338 那句"仍等你裁定"漏计 5 条**（逐节对照原文得出）：`#5`、`#7`、`#10`、`#11`、`#15` 至今都明写着"需要你定"，
+  其中 `#10` 卡的正是**能不能上传**；而它列的 14 条里已有 7 条被 §32/§33 与 `bc89dc79`/`138c366b` 关掉
+  （`#2` `#4` `#13` `#16` `#23` `#25` `#29(a)`）。⇒ **真实开放集合约 14 条**：既不是 `round8-final-report.md` §6 那个
+  "34 项"（那是 `gen-round8-report.mjs:20` 把每个 `## N.` 标题都当拍板项、`:79` 直接印 `decisions.length` 的**标题数**，
+  我加本节它就变 35，L21 正在修分类器），也不是 §30 那句"16 项"。
+- **编号漂移再加一条硬规矩**：跨册引用一律带册名前缀（`decisions #N` / `followups §N`）。本册 §32 那句
+  「§9 `profile-svg-to-png`」指的是 `followups-v33.md` §9，而本册 `#9` 是高 dpr 巡检帧；§30:318 那句"正在跑 #15"
+  指的也是 followups 那一侧的 showcase 覆盖问题，不是本册 `#15`（`verify-openqueue-lanes.mjs` 修门还是归档）。
+  已有的 `D-17`/`G-17` 前缀规矩与此同源。
+
+**D. 编排下刀一处（措辞，判据与退出码一字未动）**
+`scripts/verify-package-size.mjs:106` 那句「← 以上数字只代表上面那个档，不是发布形态」原是**硬编码常量**，
+real 档也照印，与同一脚本 `:16`「发布形态由 real 构建（无 `--allow-mock`）执行严格主包 ≤2MB 门禁」互相打脸。
+已改成按 `bandMode` 条件化三态（未知档位 / real 档 / 其余档）。A/B 实测（盘上三档产物，未重建）：
+real 严格档 改前 `exit=1` → 改后 `exit=1`（现印"本档是发布形态门禁的调用对象；但只有走 `build:mp-weixin:real`
+（含 `prepare-static --real` 与 prune）出的档才是发布形态，这份 prune 过没有本门不判"）；
+mock 挂 `--allow-mock` 仍 `exit=0`；mock 无旗仍 `exit=1`（门不自证）；showcase 标
+`MODE:mp-weixin-showcase API:real SHOWCASE:on` 并正确印"不是发布形态"。消费者核查（限定 `scripts/`）只命中产生
+那行字的 `:106` 一处，无程序化消费端；`ruling-packet-r9.md:257/:346` 与其 JSON 是**当日测量记录**的逐字引用，
+按本册体例不改历史，此处记一句"该措辞已按档位条件化"即可。
+**未证部分如实标注**：`MODE:未知` 那一支没有夹具实测（要造一个缺 `config/env.js` 的假 dist），属结构可核而非实测。
+⚠ 这条对 `#10` 有直接后果：`#10` 里"发布形态主包 ≈2.59MB、瘦到位 1762.7KB=1.72MB 已在 2.00MB 内"那组数
+**今天在盘上复现不出来**——三份 dist（mock / real / showcase）都不是 prune 过的发布档（实测主包 27.67/27.78MB）。
+⇒ 选 A（继续瘦）/ B（改分包）/ C（降成告警）之前，必须先按 `:16` 那条构建路径重出一次带 prune 的发布档，
+否则三条路都是在对着复现不了的数讨论。此数在 §34 记为**未复现**，不当已核。
+
+**E. 车道事故与接手（如实记，不掩盖）**
+L16 / L17 / L18 于 **12:34 被服务端异常打断**（`error: unknown, unexpected agent result status`），三处半成品留盘：
+corpus 门已改 + 负例已建、报告 7 节全「（待填）」；`verify-guest-landing.mjs` 已变 M（说明守卫真接上了）+
+writeguard 负例已建 + 运行前具名备份 `guest-landing-measured.json.bak-r17-20260930-121557`（备份纪律照做了）、
+报告 8 节全「（待填）」；`verify-carrier-wiring.mjs` 等三件已建，但 **DSL 与 bash 两个载体都不在 modified 列表里**
+⇒ 接线那步根本没做。已按"按组重派"开 L16b / L17b / L18b 接手，任务书要求**先验收半成品再决定去留**，
+并明确"增量落盘是硬要求"。
+⚠ 这一手把本册 `#25`/§31 那台"假仪器"的病在 15 分钟内复现了三回：**代码写了、报告空着、没有任何门会红**。
+根因已定位在 DSL 自身的分野——`:447/:455`「交互腿」prompt 写着「增量落盘是硬要求：车道 agent 有轮次上限
+（实测 150 轮会被截断），先把骨架写盘，之后每完成一行立刻更新」，而 `:415/:417-421`「收口车道」prompt
+一个字都没有，车道撞上限就只走 `:422` 的 `askFail`。⇒ 派生两件事：① L20 的收件清单必须把"车道死了但产物存在"
+当 **blocking** case；② 该句增量落盘要求由编排方补进收口车道 prompt（改完必跑 DSL 语法自检 + `dryrun --profile all`）。
+
+**F. 待补（现在是状态，不是遗漏）**
+六条车道（L16b / L17b / L18b / L19 / L20 / L21）收工后才跑 r10 终局复量；§7 读数由机器回填，本册不手填门数。
+键数预期从 19 涨到 20+（L18 的 carrier-wiring、L19 的 real-coverage-disposition、L20 的 lane-report-complete 各自
+按收工实况接线），条数以 `GATE_SUITE` 为准、不在散文里写死。
+⚠ **接线时必须点明的一条**：L19 的门名含 `real-coverage` ⇒ 会**自动落进** DSL `:577` 那个 sha 敏感子集
+（`corpus|provenance|band-freshness|real-coverage`），提交后复量条数随之 +1；这是对"去向账是否随产物变"的正确行为，
+但要在对账表里写清，别让人读成"莫名多跑了一条门"。
+另：`#11`/`#29` 那批待拍板项此后要在本册里做成**机器可读块**（具名 `PENDING_RULINGS` 逐条带编号与出处），
+让生成器读它而不是数标题——这一步要等 L21 的分桶器落地后做，否则两边各写一套会漂。
+
+### 34.1 用户 2026-09-30 12:43 裁定两项（上面 0–34 节原文一字未动）
+- **`reports/screenshots/**` 那 3849 个 D 状态：不入库。** ⇒ 直接后果如实记账：
+  ① 本轮及后续提交一律走**显式路径清单**，禁止 `git add -A`/`git add .`，也禁止 `git checkout -- .`/`git restore .`
+  （后者会复活用户刚删的帧，§32 已立此规矩）；
+  ② `verify-ledger` 那 71 条孤儿引用与 corpus 门那 144 条 `帧不存在` **保持为红**，
+  不恢复、不重指向、不改判据——它们是"不入库"这个选择的**已知后果**，不是待修缺陷；
+  ③ 终报里凡引用盘上截图处均须带"本机采集态"限定，干净 clone 不含这些字节。
+  ⇒ 交还清单里的"新·3849 帧要不要入库"一项**就此关闭**，选的是"不入"。
+- **其余按最优建议执行。** 我把这句的作用域**只按在收口动作上**，因为本册铁律是"需拍板事项只列不做"，
+  而判据冲突/令牌值/视觉口径属政策选择，不属收口：
+  **授权我做的**——显式路径本地提交（不推送，延续 `不推送` 指示）、新门按 dsl-gate-sync 三条接进两个载具、
+  §7 由 `gen-round8-report.mjs` 机器回填、把 `:455` 那句"增量落盘是硬要求"补进 DSL 的收口车道 prompt
+  （改完必跑语法自检 + `dryrun --profile all`）、体积门措辞刀（已在 §34 D 段做完并留 A/B 证据）。
+  **仍交还你的**——§34 F 段之前那 15 项 + `#5`/`#12` 的口径重述后版本；
+  **我不做的**——删除两枚陈旧 worktree/分支（不可逆，且不在"收口"范围内），只给建议：留着无害，
+  真要清就逐条 `git worktree list` 指名后再动。
+- **一条实测风险登记**：r9 的暂定读数件已被我快照为 `.zcode/tmp/final-verify/summary-r9-provisional.json`，
+  因为 `run-final-verify-v33.sh` 的 `OUT` 目录是固定的，下一发终验会原地覆写 `summary.json`——
+  没有这份快照，§34 B 段那条"19 键红 6"的差值归因就失去可比对象。
+
+### 34.2 停点与续跑规程（2026-09-30 12:47；编排回合预算耗尽，此段是状态，不是遗漏）
+**此刻在盘上的事实（逐条可复跑，全部 Node22、未接管道）**
+- 六条车道在途，产物状态：`wiring-gate-r18.md` 143 行 / 0 待填（L18b 实质收工，且**已自行把
+  `verify-carrier-wiring` 接进两个载具**：DSL +19 行、bash +8 行）；`leg-writeguard-r17.md` 37→67 行（L17b 增量回填中）；
+  `lane-report-complete-r20.md` 427 行 / 14 待填；`corpus-blindspot-r16.md` 仍 32 行 / 7 待填；
+  `uncovered10-disposition-carrier-r19.md` 与 `report-buckets-r21.md` 尚未创建。
+- 聚合器收件分母实测 **42** 个 `^test-.+\.(cjs|mjs)$`（HEAD 跟踪 36 + 未跟踪 6）。
+  ⇒ 终局复量里 `run-qa-selftests` 的 `发现=` 应读 **42**；若比 42 大，说明有车道把临时变异体留在了 `scripts/qa/`，
+  那是要点名的事故，不是"多测了几条"。**小于 42** 则是有车道的负例没落进收件目录＝没接线。
+- 只读门全量复量在后台跑（`tmp/r10-readonly-gates.sh`，日志与退出码只进 `tmp/r10-gates/`，
+  **不写 `reports/**`、不覆写 `.zcode/tmp/final-verify/summary.json`**）；
+  它把 `verify-evidence-corpus` 量了**两格**（`-storemode` 与 `-nostore`），因为同一道门跨载体不是同一次测量。
+- 车道前的独立基线（编排亲跑）：corpus 在途码×无库 `exit=1 / CORPUS_PROBLEMS=2`；
+  real-coverage `exit=1 / COVERED=198 / UNCOVERED=10／236 / 免检 28`，且
+  `REALCOV_UNCOVERED_LEDGER=OK 点名=10 欠账=10 判据外=0`，十条缺腿轴＝8 条 `login` + `OT06`/`OC09` 两条 `login+guest`。
+
+**续跑的固定顺序（顺序本身是判据，别并到前面去）**
+1. 等六条车道全部回报；在此之前**不跑面板、不提交**（面板 `emit-round-report` 会抢 UI 租约并 spawn 三十来条实时门，
+   与 L17b 的设备腿并发＝互相污染；提交会推 HEAD，会抽掉 L16b 取 `git archive` 改前读数的脚）。
+2. 车道收工后跑 `bash scripts/qa/run-final-verify-v33.sh`（1800 秒面板腿 + 面板后 `verify-ledger` /
+   `verify-state-truth` 两条复量），产出新的 `summary.json`。
+3. 与 `summary-r9-provisional.json`（19 键、红 6、`headBefore=headAfter=491210dd`、`verify-evidence-corpus=0`）
+   做**逐条差值归因**，每条红点名成因；键数会因新门接线而涨，**条数以 `GATE_SUITE` 为准，散文里不写死数字**。
+4. 按 dsl-gate-sync 三条（name 以 bash 门名结尾 / 实参与 bash 逐字一致 / `timeoutMs ≥ bash 秒×1000` 且只准往大调）
+   验收 L18b 的接线，并追加 L19、L20 两条；⚠ **L19 的门名含 `real-coverage`，会自动落进 DSL `:577` 的 sha 敏感子集**，
+   提交后复量条数随之 +1，要在对账表里写清，别让人读成"莫名多跑了一条门"。
+5. 把 DSL `:447/:455`「交互腿」那句**增量落盘硬要求**补进 `:415/:417-421`「收口车道」prompt，
+   随后必跑：语法自检（`parseDiagnostics` 期望 0）与 `dryrun-workflow --profile all`（期望 `DRYRUN_RESULT=PASS` 3/3），
+   两条都未接管道取退出码。
+6. 补产 DSL 契约件 `gate-recheck-v33.json` 与 `post-commit-gates-v33.json`（§34 A 段实测两者从未落盘，
+   而 `gen-round8-report.mjs:14-15` 会读它们；缺件时它印「（未跑，故此处不留结论。）」，是诚实空白、不是绿）。
+7. `node22 scripts/qa/gen-round8-report.mjs` 机器回填 §7 与 §6 分桶 ⇒ **编排方一个数都不手填**。
+8. 显式路径本地提交、不推送；**绝不 `git add -A`**（3849 个截图 D 状态按 §34.1 裁定不入库），
+   也绝不 `git checkout -- .` / `git restore .`（会复活用户刚删的帧）。
+   清单至少含：`scripts/verify-package-size.mjs`、L13 的 `deny-tap.cjs` / `r-exec-cli.mjs` / `r-exec-ws.mjs` /
+   `test-deny-tap-field-clear.cjs`、五条车道各自的门/负例/报告、两个载具、裁定册与本文件。
+9. 提交后再量一遍 sha 敏感子集，落 post-commit 件；由绿转红的归因为"HEAD 被本轮提交推进"，不写成本测物退化。
+
+**本轮已交还、不许我替你做的**：§34 C 段那 15 项 + 本轮新增三条（陈旧 worktree 清理属不可逆、只给建议不执行；
+`verify-evidence-holes` 的 judge 分支仍无条件覆写权威判决件，改它属判域）。
+
+**停点后补记（12:48，只读复量第一发落地，改写了 `#12` 的归因）**
+`verify-evidence-corpus`（跑的是 L16 那版在途码，L16b 尚未接手）**两格已测出**：
+- × **reachable**（`QA_EVIDENCE_STORE=D:/6/love-mini-evidence`，与 bash 载体同形）⇒ **`exit=0`**，
+  `CORPUS_RESULT=PASS（无不可背书证据；legacy 无戳清单=1 帧=144 …）`（该行被我只留 80 字截断，续跑者取全文看
+  `tmp/r10-gates/verify-evidence-corpus-storemode.log`）
+- × **unconfigured**（裸跑）⇒ **`exit=1`**，`CORPUS_PROBLEMS=2`，其中一条就是
+  `reports/screenshots/round-1/manifest.json 共 144 帧 :: 帧不存在=144`
+⇒ **结论**：那 144 帧的"帧不存在"红**是库轴没接上造成的，不是新增的证据销毁**——同一批帧在仓外库可被唯一背书。
+所以 `#12` 重述时要写成：round-1 144 帧仍是"无戳可核的 legacy"（`LEGACY_NO_SHA=1/144 帧`，两格都在印），
+而**"帧不存在"这一条只在无库格出现**；把它当产品/证据新账来追就是追错方向。
+同理 §34 B 段那条"r9 记 corpus=0 vs 我测 corpus=1"的差值，**主因已定位为库轴而非码轴**（在途码在两格分别给 0 与 1，
+而 r9 那一发是 HEAD 码×有库）——第三格（HEAD 码×有库）仍需复量才能收口。
+
+### 34.3 一条车道事故的如实记法（12:49；这条比读数更要紧）
+12:34 我同时收到 3 条 `error: unknown, unexpected agent result status` 失败通知（L16/L17/L18），
+按本仓既有纪律"服务端瞬时拒答按组重派"立刻开出 L16b/L17b/L18b 接手，任务书写的是"前任死于异常、留下半成品"。
+**15 分钟后原 L18 自己回报了完整交付**：新门 `verify-carrier-wiring.mjs`、双向负例 25 断言、
+DSL + bash 两载体接线（bash `:65 g verify-carrier-wiring 180 …` ↔ DSL `{name:"载体接线零消费者门 verify-carrier-wiring",
+args:["scripts/qa/verify-carrier-wiring.mjs"], timeoutMs:180000}`，三条对齐口径齐、实测 wall ≈3 秒 ⇒ 180 秒有 57 倍余量）、
+报告 321 行。而 L18b 的任务书前提（"接线那步根本没做"）因此是**错的**，它正准备把同一条门再插一遍。
+处置：12:49 `TaskStop` 掉 L18b。事后核盘：两载体 mtime 仍是 12:35/12:36（原车道写入），
+DSL 里 `verify-carrier-wiring` 的 2 次命中是**同一条目的 name + args**、bash 1 次，非重复插入；
+`parseDiagnostics=0`、`bash -n` exit 0 ⇒ **未写坏，但属侥幸**（接手车道还在验收阶段就被停）。
+⇒ 派生两条硬规矩（已同步进跨项目编排记忆）：
+① **失败通知 ≠ 代理已死**。重派前先复查"交付态"：它名下产物是否在**通知之后**仍在长、共享载体是否已被它改过。
+② 接手车道的"前任留了半成品"是断言，任务书必须写成**"先验收，若前任其实已交付则立刻收手回报"**。
+③ 一旦发现原车道回报，主控第一动作是停掉接手方，而不是等它做完。
+
+**L18 这一刀带出一条新的具名红（终局复量要按新账读）**：该门首跑即点名两枚"建了没人跑"的活体死件——
+`WIRING_DEAD_ITEM path=scripts/qa/emit-component-scoped-ids.mjs 导出=parseScoped 消费者=0` 与
+`WIRING_DEAD_ITEM path=scripts/qa/run-round7-closeout.mjs 导出=reconcileQueueTally 消费者=0`，
+`WIRING_RESULT=FAIL（死件=2）`、`GATE_EXIT_UNPIPED=1`。**豁免清单 0 条**——车道论证是把这两条入账换绿等于掩盖，
+它们都是"文件头写明了该被谁吃、盘上零调用点"。⚠ 特别记一句：`run-round7-closeout.mjs` 正是 `decisions #16`
+那把"唯一能答 stage-8 过了吗"的载具，§33 记它本轮第一次真跑；**载具跑过 ≠ 它的导出有人消费**，两件事别混。
+另：车道如实报出 `发现=39 → 42（差 +3 而非 +1）`，并按文件名集合差归因为"本车道只贡献 1 枚，另 2 枚属并发车道"——
+这是本册要的记法，采纳；它同时给出 §34.2 分母 42 的第二条独立来源（聚合器亲印）。
+
+### 34.4 编排接线：`verify-lane-report-complete` 接进三个登记点（12:5x，L20 交付后由主控串行追加）
+L20 这道门交付时**只有实现没有消费者**——正是本册 §34 A/E 两段反复在拆的形状。接线三处全由编排方改（车道未动载体）：
+- `scripts/qa/run-final-verify-v33.sh` ⇒ `g verify-lane-report-complete 60 scripts/qa/verify-lane-report-complete.mjs
+  --intake reports/audit/round-7/lane-report-intake-round-7.json --exemptions reports/audit/round-7/lane-report-exemptions-round-7.json`
+- DSL `GATE_SUITE` ⇒ `{ name: "车道报告骨架完成度 verify-lane-report-complete", args:[同实参], timeoutMs: 90000 }`；
+  按 dsl-gate-sync 三条核过：name 以 bash 门名结尾 ✓、实参逐字一致 ✓、`90000 ≥ 60×1000` 只往大调 ✓；
+  名字不含 `corpus|provenance|band-freshness|real-coverage` ⇒ 不会被提交后的 sha 敏感子集重复捞（它读报告字节）。
+- `scripts/qa/run-qa-selftests.mjs` 的 `GATE_SELFTESTS` ⇒ 追加
+  `{ name:"verify-lane-report-complete", cmd:[…,"--selftest"], want:/LR_SELFTEST=PASS cases=(\d+) bad=0/ }`。
+  ⚠ **这是 L20 替我补出来的第三个登记点**：我的任务书原本只要求两个载体，而门自证轴若不进这张表，
+  就是"写好了 11 例、全仓零调用点"——与本册反复治的病同源，这次是车道发现并上报的。
+
+**接线后编排亲验（Node22，全部未接管道取退出码）**
+- `--selftest` ⇒ `exit=0`，`LR_SELFTEST=PASS cases=11 bad=0（判据边界：只认「（待填」；待补/TODO/半角/含待字的正常句/反引号引用一律不判红）`
+- 真跑（具名收件 20 份）⇒ **`exit=1`**，`LANEREPORT_INTAKE=20 SCANNED=20 MISSING=0 SKELETON_FILES=2
+  SKELETON_SECTIONS=4 EXEMPT_DECLARED=0 EXEMPT_APPLIED=0 EXEMPT_STALE=0 EXEMPT_BAD=0 EXEMPT_SWEEP=NO
+  PROBLEMS=4 RESULT=FAIL`
+- `bash -n` exit 0；DSL `parseDiagnostics: 0`；命中数 DSL=1 / bash=1 / selftests=2 ⇒ **无重复插入**。
+
+**这条红是对的，并且它上线第一发就证明了自己的价值**：四个未填小节全部来自**此刻仍在写的两条车道**——
+`corpus-blindspot-r16.md` 小节「0. 对 L16 半成品的验收判定」(:17) 与「7. 下游要求（本车道不改的文件）」(:80)、
+`leg-writeguard-r17.md` 小节「5. 复跑结果」(:179) 等。同刻旁证：r16 由 32 行涨到 80 行（待填 7→2）、
+r17 由 37 行涨到 240 行（待填 8→2）、`uncovered10-disposition-carrier-r19.md` 已 292 行 / 待填 0（L19 实质收工）、
+`report-buckets-r21.md` 尚未创建。⇒ 上一程那种"车道死了、报告全空骨架、而一切照绿"的状态，**从今天起会在终验里必然变红**。
+⚠ 读数口径要写清：这条门的红**随车道收工态移动**——现在是"在途"，不是"缺陷"；车道全部收工后若仍红，
+剩下的每一节都必须逐条点名是哪条车道没交付，**不许用豁免清单把它抹平**（sidecar 现为 0 条、`EXEMPT_SWEEP=NO`，
+这个"零放行"状态本身就是要保住的账）。
+
+### 34.5 只读门全量复量收工（13:15，15/15；这批数**不是终局复量**，面板腿与面板后两发仍未跑）
+载体：`tmp/r10-readonly-gates.sh`，读数落 `tmp/r10-gates/`，不写 `reports/**`、不覆写 `.zcode/tmp/final-verify/summary.json`。
+HEAD 全程 `da996f3a`（未提交 ⇒ 无 sha 漂移污染）。**9 绿 / 6 红**：
+- 绿：`dryrun-workflow`(PASS 3/3)、`verify-backend-fresh`、`verify-band-freshness`(`FRESH_RESULT=PASS bands=3 markers=4`)、
+  `verify-dry-no-lease`、`verify-ops-stamp`(`STAMP_RESULT=PASS cases=1107 与记录一致`)、`verify-queue-reconcile`、
+  `verify-source-shape --dry`、`verify-state-truth`
+- 红：`verify-ledger`（71 个 ID 无本尊行，`§34.1` 记为既定后果）、`verify-provenance-all`、
+  `verify-real-coverage`（10 条欠账）、`prove-gates-can-fail`（**有案例证据不足**，非"变异仍能放行"，两语义别混，
+  详见其 log）、`verify-evidence-corpus-nostore`，以及 **`run-qa-selftests` exit=124**。
+- ⚠⚠ **`run-qa-selftests exit=124` 是我这台载具的错，不是被测物的红**：我照 bash 抄了 600 秒，
+  而 DSL `GATE_SUITE` 给这条门的是 **900000ms**，其注释写得明明白白"留的是负例批量起进程的余量"——
+  本轮收件数已从 36 涨到 42（+6 条新负例），600 秒不够。⇒ **这条读数作废，须按 900 秒重跑**。
+  这正是本册 `dsl-gate-sync` 那段说的"被 timeout 掐掉时读出来是假红"，我自己犯了一次，如实记。
+- **corpus 两格齐了**（第三格"HEAD 码×有库"仍需复量）：`storemode exit=0 PASS` vs `nostore exit=1 FAIL` ⇒
+  `§34.2` 那条"`round-1` 144 帧不存在只在无库格出现"的结论在本批里再次成立。
+- 顺带把一件挂着的核查收掉：全仓搜 `caliber_label_already_printed_by_gate` 只命中
+  `.zcode/tmp/lane-new-reds/post/**` 与 `.zcode/tmp/lane-ruling-packet/**` 两份**数据件副本**，
+  无任何脚本消费 ⇒ `§34 D` 那句"体积门措辞无程序化消费端"由这条迟到的全仓搜索独立证实。
+
+### 34.6 L21 交付：分桶器落地，并量出"待办数"三方打架（差 11 条，这才是真账）
+交付三件：`scripts/qa/gen-round8-report.mjs`（分桶）、`scripts/qa/test-report-decision-buckets.cjs`（26 断言负例）、
+`reports/audit/round-7/report-buckets-r21.md`。**改前**逐字：`commits=88 decisions=34 … §6 印「需你拍板 34 项」`；
+编排方真加 §34 后当场复量即变 `decisions=35` ⇒ **§34 C 段预言的"加一节就虚增待办"当场发生，不是假想**。
+**改后**机器行：`GENREPORT_DECISION_BUCKETS headings_total=35 pending=26 ruled=2 closed=1 log=6 sum=35`、
+`GENREPORT_BUCKET_GUARD=OK removed=9/35 pending_zero_guard=clear ask_override_held=0`、
+`GENREPORT_SECTION6_SELFCOUNT heading_number=26 listed_items=26`。默认桶＝待拍板，规则只按标题语义、无节号、无 sidecar；
+移出 9 条各带命中片段；`ASK_OVERRIDE` 只会把待办往**大**推；空桶或移出>70% 一律印 RED。
+"新增一节流水不增待办数"有三条实测（真 §34：35/26/log 5→6；副本假 §34：36/26/log 7；夹具 A→B pending 3→3，
+反向对照 3→4）。负例变异（默认桶改 closed）⇒ `BUCKETS_TEST=FAIL（7 条断言未过）exit=1`，含
+`真册子 §6 自数一致｜标题=0 列出=1`；聚合器 `发现=42 → 43`（+1，与我 §34.2 钉的分母自洽）。
+它**没有**跑正式版 `round8-final-report.md`（盘上 `summary.json` 还是 r9 暂定读数，跑了就等于把暂定写成权威件），
+mtime 全程未变 ⇒ 真回填归编排方。`a4c8f995` 基线核过仍成立（`cat-file -t`=commit、88 发范围），未擅自改动态值。
+
+⚠ **它顺手量出本册最大的一处口径不一致**（`GENREPORT_LEDGER_DECLARED marker_line=337 marker_section=30
+latest_section=34 declared_lag=4 pending_declared=15 diff_vs_generator=11`）：
+同一个"等你拍板 N 项"今天有三个数——**26**（分桶器按标题语义的保守判定）、**15**（`§30:338` 那句人工汇总行）、
+**约 14**（编排方 §34 C 逐节核原文后的结论：§30 漏 5 条、其中 7 条已被后续关掉）。
+**三个都不是错，是分母不同**：26 把"标题没写闭合措辞"的全算待办（它读不到后面状态对账节里的闭合，
+这正是 §34 F 段预告的设计张力）；15 是人工汇总行，已被证伪漏计；14 是逐节核对的结果但依赖人读。
+⇒ 结论：**"待拍板数"在没有机器可读名册之前不可能唯一**，`§34 F` 那条 `PENDING_RULINGS` 具名块的优先级
+因此从"以后再做"升为**本轮下一刀**（有了它，分桶器就能读名册而不是猜标题，三方归一）。
+L21 另外点名两条：`#24`、`#28` 正文都明写"交你定/请你三选一"却不在 §30 那句里（与 §34 C 独立吻合）；
+反向多计 `#17 #18 #22 #27`（§30 称已闭，而 `#22` 标题还写着"未修"，**同一册内自相矛盾**）——
+这4条它如实标为"只核到原文与 commit 号存在、未复算门的效果"，我采纳同样的限定语，不替它升级成实测。
+
+### 34.7 L19 交付 + 编排接线（13:2x），并把 L19 自己标"未实测"的那条断言当场量掉
+L19 交付五件（`verify-real-coverage-disposition.mjs`、`emit-real-coverage-disposition.mjs`、
+`test-real-coverage-disposition.cjs` 61 断言、去向册 JSON、报告 292 行 0 待填）。三条要紧的：
+- **取数面**：上游 `verify-real-coverage.mjs` 无 `--json`、无写盘（`writeFileSync|--json|JSON.stringify` 零命中，
+  fs 只 import 读类），所以 L19 走"spawn 它 + 解析 `  UNCOVERED <suite>|<id> 缺=<轴>` 逐条行"，
+  并实测连跑两次 `diff -q` 相同（`STDOUT_IDENTICAL=yes`）、落盘后再跑上游仍相同 ⇒ **没改判域也没污染被测物**。
+  五桶与 §33 逐字节全等：`NEEDS_CAPABILITY=7 NEEDS_BAND_CHANGE=1 NEEDS_IDENTITY_IMPOSSIBLE=1 DISPATCHABLE_NOW=1 NOT_SHOOTABLE=0｜合计=10`。
+- **最关键那条性质成立**：`RCD_NO_REDUCTION 本门不替 verify-real-coverage 减红：REALCOV_UNCOVERED 仍=10`、
+  `RCD_RESULT=PASS（… 上游门照旧 RESULT=FAIL UNCOVERED=10）`、`RCD_STALE_POLICY=advisory`
+  （理由：一条 case 离开 UNCOVERED 只可能是收账，把"忘划旧去向"做成常红的唯一绿路是删册子＝销毁账）。
+  词表权威钉在门里，五词中**没有 DONE/CLOSED/EXEMPT** ⇒ 结构上销不掉红，这正是 §32 那句"分流不许关掉任何红"的机器化。
+- 自数诚实度值得记一笔：它报聚合器 `37(12:24) → 42(12:49)`，**明说"原始 +5，不是我 +1"**，
+  并按件名集合差只认领自己那一枚；`FAILED +1` 它也点名属 L18 的 `test-carrier-wiring.cjs` 而非自己。
+  ⇒ 与我 §34.2 钉的分母 42、§34.6 报的 43 三方自洽。
+
+**编排接线（两处登记点；该门无 `--selftest`，故不涉及 `GATE_SELFTESTS`）**：bash `:69`
+`g verify-real-coverage-disposition 180 scripts/qa/verify-real-coverage-disposition.mjs` ↔
+DSL `{ name: "真实档覆盖去向册 verify-real-coverage-disposition", args: [], timeoutMs: 180000 }`
+（实测墙钟 3.3–4.7 秒 ⇒ 180 秒余量 ~38 倍；`args:[]` 是因为本门自己 spawn 上游，DSL 侧不需再传旗标）。
+亲验：`L19_GATE_EXIT=0`、`RCD_CHECK 门欠账=10 有去向=10 无去向=0 册外词=0 空条目=0 重复键=0 陈旧=0 轴漂移=0 守恒=OK`、
+`bash -n` exit 0、DSL `parseDiagnostics: 0`。
+**L19 自己标为"转述、非实测"的那条断言，我当场量掉了**：按现盘解析两空格缩进条目共 21 条（GATE 18 + PANEL 3），
+其中命中 sha 敏感正则 `corpus|provenance|band-freshness|real-coverage` 的从 4 条涨到 **5 条**——新增正是
+`真实档覆盖去向册 verify-real-coverage-disposition`。⇒ §34.2 F 段那句预警成立且已量化：提交后复量必然多跑这一条，
+终局复量的键数因此从 19 涨到 **21**（GATE +2：去向册、车道报告完成度；再加 L18 的 carrier-wiring 一发 ⇒ 以收工实况为准）。
+
+**车道事故台账更新**：原 L17 于 13:2x 真死（`Queuing failed. Try again later or enter /model to switch models`，
+155 次工具调用后）；这次没有重叠风险——接手方 L17b 是在跑的那条，`leg-writeguard-r17.md` 由 37 行涨到 240 行、
+待填 8→2 都是它做的。⚠ 与 §34.3 那条教训相反方向的对照：L18 是"通知说死了其实活着"，L17 是"通知说死了确实死了"——
+**结论不是"通知都别信"，而是"以盘上交付态为准"**：产物在通知之后继续长＝活着，载体 mtime 未再动且报告停在待填＝按死处理。
+
+### 34.8 L16b 交付：分母轴落地，并带回一条要改账的实测（`PRE_STAMP` 4886 → **4882**）
+先记它的**验收判定**（这正是接手车道该做的事）：门体**留用**——`grep -c DENOM` 工作树 17 / `git show HEAD` 0，
+12:37 实跑真印五行，`git diff` 只删 5 行、判据仅动 `if (blockingMissing||…)` 一格、阈值未改；
+但 **L16 原版测试件被实测判为假负例并重写**——12:47 亲跑 = `cases=44 fail=2 exit=1`、
+`NEGATIVE_PROOF live_bad=2 mutant_bad=2`（变异前后都红 ⇒ 那条证明与谓词无关；替身未锚夹具根导致空扫描集 exit=2），
+且耗时 289s 距聚合器 300s kill 只剩 11s。**这一手把 §31 那台"一直在打零分的假仪器"的形状又抓了一次。**
+
+**分母轴真落地了**（15:52 全域默认，Node22，未接管道，`exit=1`）：
+`CORPUS_DENOM_TRACKED trackedFiles=12047 trackedFrames=10457 trackedNonImage=1590`、
+`CORPUS_DENOM_ABSENT trackedAbsentFiles=3851 trackedAbsentFrames=3841 trackedAbsentNonImage=10`、
+`CORPUS_DENOM_SCANNED gateItems=9184 gateNamedPaths=6460 gateNamedAbsent=149 :: vouchedByDeletionSet=5 notVouched=144`、
+`CORPUS_DENOM_BLINDSPOT absentNamedByGate=5 absentNeverOpenedByGate=3846`、
+`CORPUS_DENOM_AXIS advisoryFrames=5 blockingFrames=144 strict=off`。
+⇒ §32 里 L15 那句"对 3848 张被删帧只看得见 2 张却印 PROBLEMS=0"的盲区从此有了**具名分母**；
+`trackedFrames=10457` 与我 §34 C 段独立量的"HEAD 仍跟踪 reports/** 下 10,457 枚图片"**逐字对上**（两条不同路径的数互证）。
+极性按裁定执行：选定删除集能背书的 5 帧走 advisory（逐条 `git ls-files` 仍 tracked 且在 `--deleted` 内），
+**round-1 那 144 帧 `inDeletedSet=false stillTracked=false`（从未入库）⇒ 照旧判红，没有洗**。
+`--strict` 时 PROBLEMS=3；配库时 PROBLEMS=0 但 `BLINDSPOT` 仍 3846 —— 配库不等于盲区消失，这句要留。
+
+⚠⚠ **改账：`PRE_STAMP` 今天复量是 4882，不是本册 §25/§33 反复引用的 4886。** 依据四条全是实测：
+`verify-provenance-all.mjs` 工作树未改（`git status` 空）；该门 `if (!p || !existsSync(abs)) { unresolvable++; continue; }`
+使**缺席帧在 pre-stamp 判定之前就逃逸**；`PROV_FRAMES_UNRESOLVABLE=148` 与本门 `gateNamedAbsent=148` 相等、
+`in=9184` 与 `gateItems=9184` 相等；12:06 基线 54 行 `shots=` 与其复量 diff 为空 ⇒ **变的只有盘上存在性**。
+⇒ 派生一条通用规矩（比这个数本身重要）：**这张门的红数不随证据减少而变大——删帧会让 `PRE_STAMP` 自己变小**。
+所以"这轮红数降了"永远不许被读成改善，必须先答"是不是有帧从可见集里逃逸了"。
+本册 `#25`（用户裁定"记为已知历史红、每轮如实复量"）**不改**，只是复量值随盘移动，按裁定原样报新数。
+
+**它留下的两条连带红，我认下来、不掩盖**：兄弟自测 `test-corpus-legacy-window` 与 `test-evidence-store-axis`
+同发各 1 条断言红，两者都读 `PROBLEMS` 的构成 ⇒ 本轮把 5 帧改判 advisory 是**有连带面的 polarity 变更**。
+车道如实写明"我没拿 HEAD 码跑它们，故不能断言改前是绿"（`test-evidence-store-axis` 因用户删帧转红是 §32 已记的既定后果）。
+⇒ 新增待办：这两条要么按新 `PROBLEMS` 口径改断言（属修仪器），要么证明分轴判定本身错（属回退本刀），
+**由编排方在终局复量时定，不许靠放宽让它闭嘴**。另 `3→4→5` 帧漂移被点名是并行车道续删所致、盲区差恒 3846——
+这条要在终局复量里复现一次，若不可复现就写成本册的一处不确定读数。
 
