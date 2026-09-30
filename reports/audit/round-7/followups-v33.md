@@ -432,5 +432,15 @@ GUEST_LANDING=FAIL 先修这几条再来量（带病出腿 = 白拿租约）：
 **本轮的外部天花板**：两名车道死于 `You've reached your daily usage limit for Chat`（账号级额度，不是 turn 上限），
 所以**当天不可能再派发车道**；上面 1–4 得在下一个预算里做。
 
+**提交后 sha 敏感三连的读数（2026-09-30 20:0x 到点，HEAD 已验为 `0ba53340`）**——把它记下来，省得下一位重跑一遍当未知：
+```
+POST verify-provenance-all  exit=1  PROVENANCE_RESULT=FAIL（本轮产物侧存在回填/过期戳记/断链帧/无戳，禁止据此下结论）
+POST verify-band-freshness  exit=0  FRESH_RESULT=PASS
+POST verify-real-coverage   exit=1  REALCOV_RESULT=FAIL（真实模式覆盖守恒：跳过不算量到，单身份不算双身份；免检只免"本门不追"，不降阈值）
+```
+两条红与裁定预期一致（provenance=§25 既定历史红；real-coverage=已逐条分流的 10 条，分流**没有**关掉任何红），
+**没有新红**。特别记 `band-freshness=PASS`：这正是构建确定性那一刀必须保住的门（src 不再被写脏 ⇒ 它不再把构建产物读成"过期的源码改动"）。
+⚠ 注意这是**三连**（sha 敏感子集）而不是十九步全量：全量终验仍须按上面第 2 条在 `0ba53340` 上重跑一遍。
+
 **两条硬规矩（本轮用代价换来的，别重学）**：① 本仓禁止 `git checkout -- .` / `git restore .` / `git reset --hard` / `git clean`
 ——会复活用户明确选择删掉的 3848 帧；② 提交只走**显式路径清单**，`git add -A` 会把那 3848 条 `D` 卷进 QA 提交。
