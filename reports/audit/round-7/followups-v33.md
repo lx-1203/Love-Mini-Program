@@ -612,6 +612,44 @@ POST verify-real-coverage   exit=1  REALCOV_RESULT=FAIL（真实模式覆盖守�
 （`wechat-automation-9420/9430/9431` 与 `…-cli.lock`）。我这次取 pid 的写法没解析出持有者（`pid=` 空），
 所以**我不能宣布租约是空的**，只能说"没有 node 进程被我这轮留下占着"这一条没被证明。
 下一发要连 DevTools 之前，先用 `ui-lease.mjs` 自己的读法问一次持有者与存活，再决定；锁文件本身不许删（§既定纪律）。
+〔**已闭合（同轮，用门自己的读法量的）**：`heldLeases() ⇒ []` ⇒ 租约确实是空的，那 4 枚文件是不被任何活进程持有的残件，
+  我没有删它们（按纪律）。下一发可以直接起腿，不必先清锁。〕
+
+## §19 2026-10-01 04:3x —— 重拍的第二波连带：三处读数与一条**新增的真红**（我没有把它按下）
+
+终局复量在 `5c5c51b9` 重跑（`SWEEP_EXIT=0`，HEAD 前=后 ⇒ 无中途提交）：**红 3**，比 §17 多一条，
+多的那条是 `run-qa-selftests`（`2/48`）。逐条从源码复验后：
+
+**(a) `test-guest-landing.mjs` 里有一处 TDZ：错误处理分支比状态声明先跑。**
+`let checks = 0, fail = 0` 原先在第 49 行，而文件顶部那段"派生第二条游客腿的 triage"预检在失败时执行
+`fail++; checks++` ⇒ `ReferenceError: Cannot access 'fail' before initialization`。
+这一发之所以暴露出来，是因为它**第一次走进失败分支**：从前那步总是成功，所以这条错误路径从来没被执行过、
+也就从来没被测试过。⇒ 已把声明上提（`scripts/qa/test-guest-landing.mjs:28`），`--check` 通过，
+现在这一发印的是 `SUMMARY: checks=45 assertion failures = 1`（报失败）而不是崩溃（没跑完）。
+同形问题我在 `emit-round-report.mjs --dry` 上修过一次 ⇒ **凡"错误分支"都值得一问：它跑过吗**。
+
+**(b) `test-guest-landing-stability.mjs` 的一条断言把某一批数据的形状钉成了判据。**
+它除了恒等式还钉着 `a.landingDisagree === 0`（注释原话"本批实测落点不一致=0"）。我给那 17 行补上第二个样本之后，
+真台账里出现了 **1 行落点不一致**（`GG-campus-campus-index`：两次样本分别落在 `subpackages/campus/campus/index`
+与 `pages/login/index`）⇒ 被钉死的期望自己过期。⇒ 改成两条**独立复算**：
+样本不足数 == `samples` 短于要求的行数；落点不一致数 == 行内 `stableDefect` 含 `LANDING_DISAGREE` 的行数；
+恒等式照留。改后 `STABN checks=37 fail=0`（`STABN_TEST=PASS`）。
+
+**(c) 新增的那条红是真的，我按原样留着：`复测腿与债不同源`。**
+`triage-exec-failures.mjs --results reports/audit/round-7/exec-guest-real-guard-r10/exec-results.json` 现在 exit=2，
+`TRIAGE_RESULT=FAIL problems=1`，原文：
+`subpackages/setup/recommend-pref/index → pages/login/index：复测腿账本声称覆盖 11 行，本轮该组实测 4 行且成员不同 ⇒ 这条腿量的不是这笔债`。
+机制是我这一腿的**副产物**：measure 那趟顺带重写了 `guest-landing-booked.json`
+（`debtRows 434→445`、新增 `fromOpsNarrowed=28` ⇒ 成员名册改成按 ops 判据台派生），
+而 r10 那份 exec 语料是**改名册之前**跑的 ⇒ 账本声称的覆盖面与语料实测不再是同一批。
+⇒ 这不是可以"改判据"糊过去的东西，是欠一次同源重跑。修法（下一发，要设备）：
+`node22 scripts/qa/r-exec-cli.mjs`（或产出 `exec-guest-real-guard-r10` 的那条腿原命令）对当前名册重跑该组，
+使语料与 booked 同源；跑前照例命名备份 + `open-project-window.mjs --project …/mp-weixin-real` 验窗口。
+**我没有**动 triage 的判据、也没有把 `--only` 的结果当成"已闭环"来报。
+
+**顺带一条对比读数的警告**：裸跑 `verify-state-truth` 得 `STATE_RESULT=FAIL`，而终验里那一发是 `exit=0`
+（同一门不同入参 ⇒ 两份读数不可互引，本册 §18 已记一次同坑）。
+
 
 
 

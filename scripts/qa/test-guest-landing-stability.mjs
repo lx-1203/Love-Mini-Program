@@ -241,9 +241,15 @@ t("现网与替身在同一断言集上的差只出现在样本数相关的那�
     const a = LIVE_IMPL.stabilityAudit(doc);
     const n1 = doc.rows.filter((r) => (r.samples || []).length < LIVE_IMPL.requiredSamplesOf(r, doc));
     const recTrue = doc.rows.filter((r) => r.stable === true).length;
-    t("真台账：降级行数 == 现算样本数不足的行数（两类原因不混计；本批实测落点不一致=0）",
+    /* 这条从前还带一个 `a.landingDisagree === 0` 的等式 —— 那是**把某一批数据的形状钉成判据**：
+       2026-09-30 补齐第二个样本之后真台账里出现了 1 行落点不一致（GG-campus-campus-index 两次落点不同），
+       于是那条钉住的期望自己过期了（本仓已反复付过这个代价：门/测试点名一枚具体实体就会随数据变红）。
+       现在只留恒等式 + 两个**独立复算**：样本不足数 == 行内 samples 短于要求的行数、
+       落点不一致数 == 行内 stableDefect 含 LANDING_DISAGREE 的行数（各用一条与实现无关的数法）。 */
+    t("真台账：降级 = 样本不足 + 落点不一致 − 两者皆有，且两类各自与独立复算相等（不钉任何一批的字面数）",
       a.degraded === a.shortSamples + a.landingDisagree - a.both && a.rows === doc.rows.length &&
-        a.shortSamples === n1.length && a.landingDisagree === 0,
+        a.shortSamples === n1.length &&
+        a.landingDisagree === doc.rows.filter((r) => String(r.stableDefect || "").split("+").includes("LANDING_DISAGREE")).length,
       "rows=" + a.rows + " 降级=" + a.degraded + " 样本不足=" + a.shortSamples + " 落点不一致=" + a.landingDisagree + " 两者皆有=" + a.both);
     /* 这一条钉的是 §35(4) 的病本身：旧字段说「全绿」而现算说「有降级」。
        日后若补拍了第二个样本（字段与现算重新一致），这一支会自然改去核「矛盾必须归零」，

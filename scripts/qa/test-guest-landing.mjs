@@ -21,6 +21,11 @@ const TRIAGE = resolve(REPO, ".zcode/tmp/triage-r7-guest.json");
    载具自己在 GUEST_LAND_WARN 里就写了正确用法："本轮多条执行腿必须 --triage a,b 传并集"。 */
 const GUEST_LEG_corpus = resolve(REPO, "reports/audit/round-7/exec-guest-real-guard-r10/exec-results.json");
 const TRIAGE2 = resolve(TMP, "triage-r10-guest.json");
+/* 计数器必须在使用之前声明：下面那个预检分支在 `fail++/checks++` 时，本文件原本要到 :49
+   才 `let checks = 0, fail = 0` ⇒ TDZ 直接 ReferenceError（2026-09-30 实测：triage 那一子步
+   exit=2 时整发测试崩在错误处理分支上，"报了失败"变成"根本没跑完"）。
+   错误路径本身也是代码，它比正常路径更早需要状态。 */
+let checks = 0, fail = 0;
 if (existsSync(GUEST_LEG_corpus)) {
   const g = spawnSync(process.execPath, [resolve(REPO, "scripts/qa/triage-exec-failures.mjs"),
     "--results", GUEST_LEG_corpus, "--out", TRIAGE2], { cwd: REPO, encoding: "utf8", timeout: 300000 });
@@ -46,7 +51,6 @@ const realTriage = JSON.parse(readFileSync(TRIAGE, "utf8"));
 const realPolicy = readFileSync(POLICY, "utf8");
 const polObj = JSON.parse(realPolicy);
 
-let checks = 0, fail = 0;
 const t = (name, cond, got) => {
   checks++;
   if (!cond) { fail++; console.log(`FAIL ${name} :: ${String(got).slice(0, 240)}`); }
