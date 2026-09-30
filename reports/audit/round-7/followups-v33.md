@@ -563,5 +563,44 @@ POST verify-real-coverage   exit=1  REALCOV_RESULT=FAIL（真实模式覆盖守�
    diff_vs_generator=11` —— 册内"仍等你裁定"那一行的**自述**落后于实际节号，分桶器已按现算印出差异条目；
    这条属于"文档自述与机器计数不合"，改法是把那一行也改成派生件，需要动 `decisions-v33.md` 的表头，留给下一发。
 
+## §18 2026-10-01 02:1x —— 那 17 行的第二个样本已重拍到手，并且真的量出一处产品非确定性
+
+**做了什么（全用项目自己的载具，未自创第二套）**：`ws-channel-up.mjs --project …/mp-weixin-real` 架起自动化通道
+（`WS_UP=OK port=9420`、`WS_UP_BAND_RESULT=match`、档 `real@f0677920` —— 与账本记录的档**同一枚**）；
+首腿在 `clearSession` 处死于 `cant find runtimeid by projectpath`（已知形状：那条通道没有该项目的运行时窗口），
+按 §reference-real-env-and-devtools-ops 换 `open-project-window.mjs --project …/mp-weixin-real --settle 20`
+（`OPENWIN verify=window-live`、探针 `pages/login/index`）后重跑同一命令：
+`verify-guest-landing.mjs --mode measure --repeat 2 --project apps/client/dist/build/mp-weixin-real --only <17 个 guardCaseId>`。
+跑前把两本账做了命名备份（`*.bak-prefix-r23-20261001-015740`，md5 与原件一致），首腿崩溃后复核**账本一个字节没变**。
+
+**读数（我自己从账本现算，不读腿的自报）**：
+| 项 | 值 |
+|---|---|
+| 行数 | 28（备份 28 ⇒ 无缩水，`merge-never-shrink` 生效） |
+| 单样本行 | **0**（跑前 17） |
+| 样本总数 | 39 → **56** |
+| `stable=false` | **1** |
+| 因样本数不足降级 | **0**（跑前 17） |
+| 因落点不一致降级 | **1** ＝ `GG-campus-campus-index`，两次样本落点分别是 `subpackages/campus/campus/index` 与 `pages/login/index` |
+
+**⇒ 这条收紧立刻兑现了价值**：n=1 的空判据永远量不出"同一个守卫两次跑出两种结果"。
+现在这是**产品侧的非确定性缺陷**（游客进校园 index 页，守卫有时不触发 ⇒ 游客直接看见了页内内容），
+不是仪器问题。它撞上 `triage-exec-failures.mjs:615` 早已写明的那句"判据断言的是页内内容而非重定向，须收紧成可判…"
+——即这条组从一开始就不该用"页内元素"当断言，应改成断言重定向发生。**处置需要用户拍**（改判据 vs 改产品守卫时序），
+我不替选；两种改法的落点不同：改判据只动 `--policy`，改产品要动 `apps/client/src` 的路由守卫并重建 real 档。
+
+**一条我没验证成、必须如实挂出来的**：L18 说新增的 `MEASURED-UNSTABLE` 会被 `triage-exec-failures.mjs` 的
+`TRIAGE_OPEN` 数到，但我按**裸命令**跑它时印的是 `TRIAGE_OPEN 未结案的落地对=0`，而账本此刻明明有 1 行 unstable。
+⇒ **下游这条边还没在运行时被证明**（很可能是终验脚本给它传了 `--results/--ops` 等入参，裸跑读的是另一套输入，
+同 §"环境是第二条配置通道"那一坑）。不许据此宣称收紧已闭环。
+下一发要做的第一件事：从 `scripts/qa/run-final-verify-v33.sh` 里抄 triage 那条的**完整 argv** 复跑，
+确认 `MEASURED-UNSTABLE` 那 1 行确实进 `TRIAGE_OPEN`；进不去就是缺一条接线，按接线修。
+（顺带：裸跑 `verify-state-truth` 得 `STATE_RESULT=FAIL`，而 §7 终局那一发它 exit=0 —— 同一门不同入参，
+不可互相引用，别把它当新红。）
+
+**本轮改动清单（提交边界）**：`reports/audit/round-7/guest-landing-measured.json`（重拍写回，行数守恒）＋本文件 §18。
+命名备份 `.bak-prefix-r23-*` 与既有 `.bak-*` 一起留在树里未提交，作还原凭据。
+
+
 
 
