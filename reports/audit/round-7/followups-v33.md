@@ -446,3 +446,20 @@ POST verify-real-coverage   exit=1  REALCOV_RESULT=FAIL（真实模式覆盖守�
 
 **两条硬规矩（本轮用代价换来的，别重学）**：① 本仓禁止 `git checkout -- .` / `git restore .` / `git reset --hard` / `git clean`
 ——会复活用户明确选择删掉的 3848 帧；② 提交只走**显式路径清单**，`git add -A` 会把那 3848 条 `D` 卷进 QA 提交。
+
+## 14. §13 那四件的收口（2026-09-30 21:0x；用户裁定"将所有问题解决"当次的落地）
+§13 原文不动，这里只写它四件现在的状态与去向；逐项证据在 `decisions-v33.md` §34。
+
+| §13 的待办 | 现状 |
+|---|---|
+| 1. L16 语料门验证 | **已闭**（`d0b6f0d4`）：那发 FAIL 是**配置错**（我裸跑没带 `QA_EVIDENCE_STORE`），带库 ⇒ `reachable/PROBLEMS=0/PASS`，且盲区行 `absentNeverOpenedByGate=3846` **在 PASS 里也具名**。L16 的改动是改善（裸跑问题数 2→1），已入库。 |
+| 2. 十九步终验在 `0ba53340` 上重跑 + §7 回填 | 19:0x 那发**作废**（我在 sweep 中途改了面板 ⇒ 自污染，红 8 不可引用）；随后已在 `6e3420ec` 上重跑，**其读数与 §7 以 `reports/audit/round-7/final-verify-summary-v33.json` + 本轮报告为准**（本节写下时它刚起跑，别引用本节当读数）。 |
+| 3a. ledger 71 条孤儿 | **已按你裁定落地**（`6e3420ec`）：退役登记件 + 门读它，`LEDGER_RETIRED=71` 具名，**PASS 行也带退役数**；双向验证过。 |
+| 3b. 10 条去向无消费者 | **已按你裁定落地**（`6e3420ec`）：去向件入库 + 面板 `EMIT_DESTINATIONS` 具名行 + 校验（行数/词表/blocker），移开件即红。 |
+| 4. 非本会话未提交改动 | **按你裁定保持原样**：仍在树里未提交；其中 `run-final-verify-v33.sh` 的 +14 行新增 `verify-carrier-wiring`、`verify-lane-report-complete` 两条门并都读红 ⇒ 终验里这两条红**归它们**。 |
+
+**顺带修好一处既存缺陷**：`emit-round-report.mjs` 的 `--dry` 原先是"一启动就 TDZ 崩"（`LIVE_SKIP_WHY` 先赋值后声明），
+静态门只审守卫形状、审不出运行时崩 ⇒ 这条路径一直坏着没人发现；现已修好并复验。
+
+**仍然挂着（不是遗漏）**：那两条外来门的归属（问过它们的作者再说）；`real-coverage` 的 10 条按去向件推进
+（7 条缺载具能力、1 条换档、1 条身份不可造、1 条可下发）；`provenance` 的 §25 既定历史红按裁定每轮如实复量。

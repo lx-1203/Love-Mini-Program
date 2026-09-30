@@ -566,6 +566,30 @@ mtime 04:44 起有动）、L17（游客腿写盘守卫 + 重接重试 —— 该
 （红 6，HEAD 前=后=491210dd，但它跑在 L13/L16/L17 在途期间，我的静默判据把"文件 39 分钟没动"误读成"车道收工"），
 车道全部落地后必须复量；§7 由 `gen-round8-report.mjs` 机器回填，我不手填任何数。
 
+## 34. 2026-09-30 用户裁定三项（"将所有问题解决"当次）+ 逐项落地（原文各节一字未动）
+- **3a 台账 71 条孤儿 → 登记退役、具名报数（不恢复被有意删除的凭证，不重建行）**。已落地 `6e3420ec`：
+  新增 `scripts/qa/derive-ledger-retire-register.mjs`（凭证靠逐字搜索删除前的 18 份 blob 定；literal 找不到的
+  用仍存活的 `round-6/ledger-notes.md` 里簇锚/别名行补并标 `via`；找不到的一律不登记），产出
+  `reports/audit/round-7/ledger-retired-vouchers.json`：**71/71 有凭证 = literal 64 + alias 6 + cluster 1**
+  （与 L15 独立量出的分布逐字一致）。`verify-ledger` 读它：`LEDGER_RETIRED=71` 逐条具名，
+  硬失败只看未登记那部分，**PASS 行也带退役数**。双向已验：带件 PASS(exit 0)／移开件 FAIL exit 1。
+- **3b 覆盖欠账去向件 → 建具名件 + 面板加读者**。已落地 `6e3420ec`：`reports/audit/round-7/incident-destinations-round10.json`
+  （L14 那份 10 行件入库）+ `emit-round-report` 新增 `EMIT_DESTINATIONS` 行，校验"行数与门实测 UNCOVERED 相等 /
+  去向在词表内 / `blocker` 非空"，任一不成立进 ERRORS。实测 `rows=10 gate_uncovered=10 dispatchable=1
+  tally={NEEDS_CAPABILITY:7,DISPATCHABLE_NOW:1,NEEDS_IDENTITY_IMPOSSIBLE:1,NEEDS_BAND_CHANGE:1}`。
+- **item 4 非本会话未提交改动 → 保持原样、登记归属待定**。这些改动（DSL/gen-round8/run-final-verify/run-qa-selftests/
+  verify-package-size）**仍在树里且未提交**，其中 `run-final-verify-v33.sh` 的 +14 行**新增了两条我没见过的门**
+  （`verify-carrier-wiring`、`verify-lane-report-complete`）并都读红 ⇒ 任何终验读数里这两条红**归它们**，不归本轮车道。
+
+**同批修掉一处既存缺陷（与上面裁定无关，是被测试带出来的）**：`emit-round-report.mjs` 的 `LIVE_SKIP_WHY`
+在原文件里"先赋值后声明"⇒ **任何 `--dry` 调用都在 :114 TDZ ReferenceError 崩在启动处**；而静态门
+`verify-dry-no-lease` 只审守卫形状、审不出运行时崩，所以这条路径一直是坏的、没人发现。已改为先声明后赋值并复验
+（`--dry` 现在能跑到底，只剩"G7/G8/G9/probe 未复跑 ⇒ 按缺证据处理"这条设计内的告警）。
+
+**一处我自己的污染，作废两条读数**：19:0x 那发十九步终验（红 8）**不可引用** —— 它是在 sweep 进行中我编辑
+`emit-round-report.mjs` 导致的（面板那一步读到改到一半的文件，报出 10 条"缺理由"其实是我字段名写错），
+叠加上述两条外来门；重跑的那发才是本轮终值。教训与既有那条同族：**门禁跑到一半不许改门**。
+
 ## 34. r10 收口流水（2026-09-30 12:3x；编排亲验，非车道自报。上面 0–33 节原文一字未动）
 本节只记**编排方自己复跑过**的事；车道自报而未复验的写在 F 段"待补"里，不当已入账。门数一个都不手填，
 终局复量读数一律走 `run-final-verify-v33.sh` → `.zcode/tmp/final-verify/summary.json` → 生成器回填。
