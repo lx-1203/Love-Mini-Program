@@ -14,7 +14,7 @@ lane: L16 → **L16b 接手收口**  HEAD at start: 491210dd（实测当前 HEAD
 | `scripts/qa/verify-evidence-corpus.mjs` 的 `DENOM` 实现 | 打断前编排方 `grep -n 'DENOM'` 只命中注释本身；本车道 12:35 复量：文件 mtime **12:27:30**，`grep -c DENOM` = **17** 处，`git show HEAD:… \| grep -c DENOM` = **0** | 12:37 实跑该文件 ⇒ **五行 `CORPUS_DENOM_*` 全部打印**、`CORPUS_PROBLEMS` 从 2 降到 1、exit=1（见 §4/§6） | **留用**。承诺的机器行这次真落盘了；HEAD 里确实是 0 处 ⇒ 文件头那条自述在 HEAD 为假、在工作树为真 |
 | 两轴划分（advisory / blocking） | 判红条件只改了 `if (missing \|\| …)` → `if (blockingMissing \|\| …)` 一行；`git diff` 的删除行只有 5 条：用法注释、import 补 `relative`、上面那条 if、`why` 里的 `帧不存在=` 取数、PASS 行尾追加说明 | 见 §6 对照：`帧不存在=144`（round-1）仍判红；哈希/无 hash/字节数/真断链四类一字未动 | **留用**，符合"分轴"而非"改阈值" |
 | `scripts/qa/test-corpus-denominator.cjs`（未跟踪新件） | mtime **12:33:52**（打断前 40 秒写完），内容未验收 | 本车道 12:47 亲跑：**exit=1、cases=44 fail=2、289s**；两条 FAIL 都在 D 段（`NEGATIVE_PROOF live_bad=2 mutant_bad=2`） | **骨架留用、D 段与 B 段重写**：A/C2/C3/C4/E 都是有效阳性（尤其 C2"放回盘上读数必变"这条关键反证），但 **D 段是假负例**（替身没锚到夹具根 ⇒ 空扫描集 exit=2 ⇒ live 与 mutant 同样红，变异证明与谓词无关）；另外两发全域跑让整件 289s，距聚合器 300s kill 只剩 11s。修后实测 `NEGATIVE_PROOF live_bad=0 mutant_bad=1`，聚合器里 **PASS**（§5） |
-| `corpus-blindspot-r16.md` | 32 行 7 节全「（待填）」 | — | 本车道补写七节（即本文件），§5 用 12:47 与 14:07 两次实跑对照 |
+| `corpus-blindspot-r16.md` | 32 行 7 节全为占位（原文形状 `（待填）`，此处按 verify-lane-report-complete 的引用体例用反引号包住 —— 那门只豁免反引号里的引用，角括号引用会被当成本件自己的未填骨架） | — | 本车道补写七节（即本文件），§5 用 12:47 与 14:07 两次实跑对照 |
 
 **关键反证已复核（本车道独立实现，不共享门的判定）**：`exec-a-mock-final` 那批缺席帧的归属，
 结论是 **属"选定删除"advisory**（§2 末），而 `round-1` 的 144 帧 **属无凭据 blocking**（照旧判红）——

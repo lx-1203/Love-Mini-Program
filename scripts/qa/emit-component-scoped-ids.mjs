@@ -20,7 +20,10 @@ for (const a of argv) {
 
 const LINE_RE = /^\s*SEL_COMPONENT_SCOPE\s+([^\s#]+)(?:#([^\s]+))?\s+(.*)$/;
 /* 纯函数：门的面板 ⇒ 名单。所有分支都要能被合成数据打到。 */
-export function parseScoped(stdout) {
+/* 原先这里是 `export function parseScoped` —— 全仓 0 个外部消费者（verify-carrier-wiring 判死件），
+   而它只被本文件 :60/:91 两处内部使用，所以去掉 export：导出面收窄到真正有人用的形状，
+   不是给死件找个豁免。要复用它就把它搬进共用件，而不是留一个没人 import 的公开面。 */
+function parseScoped(stdout) {
   const cases = [];
   const seen = new Set();
   const byKey = new Map();
