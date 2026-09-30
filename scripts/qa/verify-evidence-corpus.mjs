@@ -57,6 +57,7 @@ function walk(dir, out = []) {
   }
   return out;
 }
+import { openEvidenceStore } from "./evidence-store-read.mjs";
 const hash16 = (p) => createHash("sha256").update(readFileSync(p)).digest("hex").slice(0, 16);
 
 /* ---------- 仓外证据库这一轴（用户 2026-09-29 裁定：帧改成"仓外证据库 + manifest 内 sha256 可核"） ----------
@@ -66,29 +67,9 @@ const hash16 = (p) => createHash("sha256").update(readFileSync(p)).digest("hex")
      reachable（配了且够得着）⇒ 盘上缺帧时，可由库按哈希背书；两边都没有 ⇒ 断链，判红并指名。
    库里的对象名是完整 sha256（evidence-store.mjs 写的），manifest 里只有 16 位前缀，
    所以索引按 16 位前缀建；同一前缀命中多枚 = 碰撞，宁可判红也不许"取第一个当命中"。 */
-const STORE = (() => {
-  const i = process.argv.indexOf("--store");
-  const d = i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : (process.env.QA_EVIDENCE_STORE || "");
-  if (!d) return { mode: "unconfigured", dir: "", index: null };
-  const dir = resolve(d);
-  const dirNorm = dir.split(sep).join("/"), repoNorm = repo.split(sep).join("/");
-  if (dirNorm === repoNorm || dirNorm.startsWith(repoNorm + "/")) return { mode: "inside-repo", dir, index: null };
-  if (!existsSync(dir)) return { mode: "unreachable", dir, index: null };
-  const index = new Map();
-  let objects = 0;
-  for (const b of readdirSync(dir)) {
-    const sub = join(dir, b);
-    let st = null; try { st = statSync(sub); } catch { continue; }
-    if (!st.isDirectory()) continue;
-    for (const f of readdirSync(sub)) {
-      const h = f.replace(/\.[0-9a-z]+$/i, "").toLowerCase();
-      objects++;
-      const k = h.slice(0, 16);
-      index.set(k, (index.get(k) || 0) + 1);
-    }
-  }
-  return { mode: "reachable", dir, index, objects };
-})();
+/* 三态与索引逻辑已抽到 evidence-store-read.mjs（唯一实现）—— provenance 现在也要问同一个问题，
+   两处各写一份就是 DENY_TAP 三副本那族病。本门行为逐字不变：模式判定、前缀长度、碰撞计数同源。 */
+const STORE = openEvidenceStore({ repo });
 const isRealCommit = (sha) => { try { execFileSync("git", ["cat-file", "-e", sha + "^{commit}"], { cwd: repo, stdio: "ignore" }); return true; } catch { return false; } };
 /* 把「是不是 HEAD」比成字符串相等是错的：HEAD 取的是 --short（8 位），而生产者在 2026-09-28
    起的 exec-* 清单里写的是 40 位全写（实测 reports/audit/round-7/exec-A-mock-final 那一枚）。

@@ -30,12 +30,20 @@ const rel = (p) => relative(repo, p).split(sep).join("/");
    方言漂移不豁免，改为单列 PROV_FRAMES_ABSOLUTE 提示行（生产者侧该自证，real-tour-cli.mjs 已加 selfcheck）。 */
 const resolveShot = (p) => { const n = p.replace(/[\\/]+/g, sep); return isAbsolute(n) ? n : join(repo, n); };
 const isAbsoluteDialect = (p) => p.startsWith("/") || /^[a-zA-Z]:[\\/]/.test(p);
+/* 库读法必须与 verify-evidence-corpus 同源（同一实现，不是第二份三态判定）。 */
+import { openEvidenceStore, storeVouches } from "./evidence-store-read.mjs";
 const git = (args) => {
   try { return execFileSync("git", args, { cwd: repo, encoding: "utf8" }).trim(); } catch { return ""; }
 };
 const HEAD = git(["rev-parse", "--short", "HEAD"]);
 
 const argv = process.argv.slice(2);
+/* 仓外证据库这一轴（本轮补）：本门以前只会说"这帧不在盘上 ⇒ 断链"，
+   而 evidence-store-read 的唯一实现允许问"库里能不能按哈希背书它"。
+   ⚠ 只背书"存在性"，**不**替代时间轴判定：库里的对象 mtime 是搬移时刻，不是拍摄时刻，
+   所以被背书的帧进 PROV_FRAMES_STORE_VOUCHED 单列，绝不并进 CONSISTENT（并进就是造假绿）。
+   库不可达 ⇒ 单列判红（与 verify-evidence-corpus 同一极性、同一实现）；未配库 ⇒ 行为逐字不变。 */
+const STORE = openEvidenceStore({ argv, repo });
 const SAMPLES = (() => { const i = argv.indexOf("--samples"); return i >= 0 ? Number(argv[i + 1]) || 0 : 3; })();
 // 时间轴判据的容差：帧与它所属提交的 committer date 相差不到 2 分钟时不下结论
 // （committer date 会被 rebase/cherry-pick 改写，只作粗判）。
@@ -148,6 +156,7 @@ if (!STAMP_CONVENTION) {
 }
 
 let frames = 0, noStamp = 0, badStamp = 0, unresolvable = 0;
+let storeVouched = 0; const vouchedSamples = [];
 let fabricated = 0, staleStamp = 0, consistent = 0, undated = 0, absoluteDialect = 0, unknownBand = 0;
 let noStampLegacy = 0, legacyFrames = 0;
 const samples = [];
@@ -182,6 +191,19 @@ for (const mPath of manifests) {
     mf++; frames++;
     if (p && isAbsoluteDialect(p)) absoluteDialect++;
     if (!p || !existsSync(abs)) {
+      /* 盘上没有 ⇒ 先问仓外库能不能按哈希唯一背书（裁定③的形状）。
+         能背书 ⇒ 单列 STORE_VOUCHED（承认存在性，不承认时间轴结论）；
+         不能背书（没哈希/前缀不唯一/库里没有）⇒ 仍是断链，照旧判红并指名。 */
+      const v = (!p || STORE.mode !== "reachable") ? { vouchable: false, why: "no_store_or_no_path" }
+        : storeVouches(STORE, s.contentHash || s.sha256 || s.hash);
+      if (v.vouchable) {
+        storeVouched++;
+        if (vouchedSamples.length < SAMPLES) {
+          const h = String(s.contentHash || s.sha256 || s.hash || "").slice(0, 16);
+          vouchedSamples.push(`PROV_FRAME_STORE_VOUCHED ${rel(mPath)} 记=${p} 哈希前缀=${h || "(空)"}`);
+        }
+        continue;
+      }
       unresolvable++;
       if (missingSamples.length < SAMPLES) missingSamples.push(`PROV_FRAME_MISSING ${rel(mPath)} 记=${p || "(空)"} 解析为=${abs}`);
       continue;
@@ -279,15 +301,21 @@ for (const x of perManifest) console.log(`PROV_MANIFEST ${x.file} shots=${x.shot
 samples.forEach((s) => console.log(s));
 missingSamples.forEach((s) => console.log(s));
 console.log(`PROV_FRAMES_CONSISTENT=${consistent} PROV_FRAMES_STALE=${staleStamp} PROV_FRAMES_PRE_STAMP=${fabricated} PROV_FRAMES_UNRESOLVABLE=${unresolvable} PROV_FRAMES_UNDATED=${undated} PROV_FRAMES_UNKNOWN_BAND=${unknownBand} PROV_FRAMES_LEGACY=${legacyFrames}`);
+/* 库这一轴单独印一行（不改上面任何计数的语义）：可达时把"盘上没有、但库里按哈希唯一命中"的帧具名报数；
+   未配库时印 unconfigured 且计数必为 0 —— 也就是与从前逐字节相同。
+   ⚠ 被背书的帧**不进** CONSISTENT：库里的 mtime 是搬移时刻，拿它做时间轴结论就是造假绿。 */
+console.log(`PROV_STORE=${STORE.mode} 库内对象=${STORE.objects || 0} PROV_FRAMES_STORE_VOUCHED=${storeVouched}`);
+for (const s of vouchedSamples) console.log(`  ${s}`);
+if (STORE.mode === "unreachable") console.log(`  PROV_STORE_UNREACHABLE ${STORE.dir} ⇒ 配了库但够不着，这一发不得被读成"证据完好"`);
 console.log(`PROV_FRAMES_ABSOLUTE=${absoluteDialect}（方言提示：manifest 规范写法是「仓库相对+正斜杠」；绝对路径能解析、不计红，但会跨机器失效，应由生产者 selfcheck 拦下）`);
 console.log(`PROV_MANIFESTS_NO_SHA=${noStamp} PROV_MANIFESTS_NO_SHA_LEGACY=${noStampLegacy} PROV_MANIFESTS_BAD_SHA=${badStamp} 打戳约定起点=${STAMP_CONVENTION.toISOString()}（由 git log -S gitSha -- scripts/qa 派生）`);
 /* 守恒断言：加了新桶（本次的 LEGACY）之后，最怕的不是判错而是漏记——漏掉的帧会让两个桶同时变小而
    看起来"更干净"。逐帧的结局互斥且穷尽（缺文件/无日期/历史件/未知带/回填/过期/一致），所以总数必须相等。 */
-const accounted = consistent + staleStamp + fabricated + unresolvable + undated + legacyFrames + unknownBand;
+const accounted = consistent + staleStamp + fabricated + unresolvable + undated + legacyFrames + unknownBand + storeVouched;
 const conserved = accounted === frames;
 console.log(`PROV_FRAME_ACCOUNTING in=${frames} out=${accounted} ${conserved ? "OK" : "MISMATCH（有帧没落到任何桶，本门的统计不可信）"}`);
 console.log(`PROV_PRODUCERS=${producerCount} DERIVED_OK=${producerOk} LITERAL_SHA=${producerLiteral} NO_DERIVE=${producerNoDerive}${scoped ? "（限定 scope，生产者侧只报不计）" : ""}`);
-const frameFail = fabricated || staleStamp || unresolvable || noStamp || badStamp;
+const frameFail = fabricated || staleStamp || unresolvable || noStamp || badStamp || STORE.mode === "unreachable";
 const fail = frameFail || !conserved || (!scoped && (producerLiteral || producerNoDerive));
 console.log(fail
   ? (!conserved
