@@ -403,8 +403,15 @@ GUEST_LANDING=FAIL 先修这几条再来量（带病出腿 = 白拿租约）：
 **两发后台作业在飞，turn 预算内不可能读到结果**（它们各自要 10–20 分钟，我起跑后只过了约 2 分钟）。
 会话若断，它们会被孤立；**重跑命令与日志落点如下**（别信"应该跑完了"）：
 1. L16 语料门验证：`node22 scripts/qa/verify-evidence-corpus.mjs > .zcode/tmp/orch-r9/corpus-after-l16.log 2>&1`；
-   已见的部分证据：它**跑得起来**且没有把门削弱（逐 manifest 打了 legacy 判决
-   `gitSha=6fd151786c… → 非当前HEAD→按契约过期…不判红`、`noHash=0`，并报出 `missing=5`）——**但终判行还没读到**。
+   **判据行已读到（2026-09-30 20:07 本机）：`PROBLEMS=1` / `CORPUS_RESULT=FAIL（存在不可背书证据或硬编码…）`**
+   ——注意这与 r9 那一发（02:05，corpus 不在红集合里）相反，也就是说**带着 L16 那 +125 行跑，这条门是红的**。
+   两种解释必须先分辨，别直接提交也别直接回滚：
+   (i) 这正是 L16 要做的事——把"看不见的分母/缩水"变成读数，于是它第一次把 3848 帧盘上删除暴露成不可背书；
+   (ii) 这是它中断前留下的半成品在误判。
+   分辨办法：先读全那条 FAIL 的 reason 全文（日志里 `CORPUS_RESULT=` 那行的完整展开 + 它的逐件清单），
+   再同一条命令跑一次 **HEAD 版**（`git stash` 不行——本仓禁用全仓还原；用 `git show HEAD:scripts/qa/verify-evidence-corpus.mjs > 临时路径` 起对照），
+   两份读数一比就知道红是新信号还是新缺陷。**判定前该文件维持未提交**。
+   已见的旁证：它跑得起来、没削弱门（逐 manifest 仍打 legacy 判决 `gitSha=6fd151786c… → 非当前HEAD→按契约过期…不判红`、`noHash=0`，并报出 `missing=5`）。
 2. 提交后 sha 敏感三连（工作流自己的规矩：提交会移 HEAD）：`verify-provenance-all` → `verify-band-freshness`
    → `verify-real-coverage`，日志在 `.zcode/tmp/orch-r9/post-*.log`；`provenance` 已起跑、另两发未起。
 
