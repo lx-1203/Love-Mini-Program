@@ -463,3 +463,45 @@ POST verify-real-coverage   exit=1  REALCOV_RESULT=FAIL（真实模式覆盖守�
 
 **仍然挂着（不是遗漏）**：那两条外来门的归属（问过它们的作者再说）；`real-coverage` 的 10 条按去向件推进
 （7 条缺载具能力、1 条换档、1 条身份不可造、1 条可下发）；`provenance` 的 §25 既定历史红按裁定每轮如实复量。
+
+## §15 2026-09-30 17:2x —— 三处仪器缺陷收口 + 本轮提交边界（终局复量的最新状态）
+
+**已修并已实测（全部用 node22 绝对路径，退出码逐条取，不过 `| tail`）**：
+| 件 | 修的是什么 | 实测读数 |
+|---|---|---|
+| `scripts/qa/gate-substitute-deps.cjs`（新） | 门替身不带相对依赖 ⇒ 自检测的是空气（denominator 14 格 null / legacy-window 变异被崩溃假满足） | 清单从替身文本派生；两把门各自带正反证 |
+| `scripts/qa/test-corpus-denominator.cjs`（此前**一直未入册**，本轮入库） | 接线 + C1x 主动摘依赖证明"读不出数"、搬回后由 C2 复现读数 | `CORPDEN cases=56 fail=0`（21s，安静盘） |
+| `scripts/qa/test-corpus-legacy-window.cjs` | 接线 + "反证必须带着读数失败" + 极性=窗口翻转本身（BEFORE→红、AFTER→legacy） | `LEGWIN cases=39 fail=0`，`live_bad=0 mutant_bad=2` |
+| `scripts/qa/evidence-store-read.mjs` | 显式入参被 `||` 链漏给 `QA_EVIDENCE_STORE` 通道 ⇒ "未配库"那一发在带环境的壳里测不到 | 优先级改为 显式 dir > `--store` > 环境；变异证明（退回 `||` ⇒ 恰 1 格具名红、exit 1） |
+| `scripts/qa/test-evidence-store-read.mjs` | 进场摘环境、出场用环境反向证明通道存在（+4 格）；补印主方言 `SUMMARY: assertion failures = N` | `STORE_READ cases=16 fail=0`（带/不带环境两种壳都跑过） |
+| 聚合器整发 | —— | `SELFTEST_RAN=44 SKIPPED=1 FAILED=0 NO_SUMMARY_LINE=0` ⇒ **`SELFTEST_RESULT=PASS`**（上一 HEAD 也是绿，本轮中途的红已闭） |
+
+**本轮提交边界＝只提交我这五件 + 两份账册**（`decisions-v33.md` §35 / 本文件 §15）。
+**故意留在工作树里不提交的，以及为什么不提交**：
+- `scripts/qa/run-qa-selftests.mjs`——我这轮的 stem 放宽（`\w{2,8}`→`\w{2,24}`）与该文件上兄弟车道的 +3
+  （`GATE_SELFTESTS` 新增 `verify-lane-report-complete`）在同一文件里；那把门的文件本身还没入册，
+  一起提交等于把别人在途工作钉进我的边界、并让 HEAD 引用一个仓库里不存在的门文件。
+  ⇒ 我的测试因此改印**主方言**，使红在**未含该放宽的 HEAD** 上也能被正确取数（已验证：本发 PASS 不依赖放宽）。
+- `.zcode/workflows/...dwf.ts`（我的两处接线 + 兄弟 +30）、`run-final-verify-v33.sh`（+14 属兄弟两条门）、
+  `gen-round8-report.mjs`（+136 兄弟）、`verify-package-size.mjs`（+8 兄弟）、
+  `reports/audit/round-7/evidence-holes-verdict.json`、以及 §34 已列的外来 `verify-*.mjs` ——
+  全部按用户裁定"保持原样、归因待定"，不在我的边界里动它们。
+- `reports/**.png` 的 3848 条 `D`：**用户选定的删除**，禁止仓库级恢复（`git checkout -- .` / `restore .` / `reset --hard` / `clean` 一律不许）。
+- `reports/audit/round-7/guest-landing-*.bak-*` 七个命名备份：留着，它们是 §34 那次账本被清零后的还原凭据。
+
+**在途车道 L18（不要与它同时改这些文件）**：`verify-guest-landing.mjs` / `guest-landing-status.mjs` /
+`measured-ledger.mjs` / `test-guest-landing*.mjs` + 新账件 `guest-stability-tightening-r22.md`。
+它做的是 §35(4) 的判据收紧：`stable` 在 n=1 是空判据，账本 28 行里 **17 行只有 1 个样本却写着 `stable=true`**。
+收紧必然丢 17 格绿 ⇒ 验收时我要逐格核它的"绿损失"对账（`audit green loss after tightening` 那条），
+并确认两类降级（样本数不够 vs 落点不一致）是**分开计数**的。
+
+**下一步（命令都是可直接复制的）**：
+1. 等 L18 回来 → 复跑 `"D:/codex-tools/node-v22.17.0-win-x64/node.exe" scripts/qa/run-qa-selftests.mjs`，
+   再把它的新件按 §34 的方言并入提交边界（单独一发提交，别和这五件混）。
+2. 游客落点的第二个样本**必须重拍**才存在：`node22 scripts/qa/verify-guest-landing.mjs --mode measure --repeat 2`
+   （要 8080 在跑 + DevTools 通道 `WS_UP=OK` 且档对得上；租约空着才能起）。这是需要用户点头的那件事。
+3. §7 面板回填：`node22 scripts/qa/gen-round8-report.mjs` —— 但它读的是缺口账单件的 HEAD，
+   且 `gen-round8-report.mjs` 此刻带兄弟 +136 未提交改动 ⇒ **等 L18 与归属问题都定了再跑**，否则读数掺别人的码。
+4. 终局 22 门复量剩余两红不变：`verify-provenance-all`（§25 裁定＝已知历史红，每轮如实复量，不买绿）、
+   `verify-real-coverage`（10 条已按去向件分流，见 `uncovered10-disposition-carrier-r19.md`）。
+

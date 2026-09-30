@@ -22,11 +22,13 @@
  */
 const { mkdirSync, writeFileSync, rmSync, readFileSync, statSync, existsSync } = require("node:fs");
 const { createHash } = require("node:crypto");
-const { join, resolve } = require("node:path");
+const { join, resolve, basename } = require("node:path");
 const { spawnSync, execFileSync } = require("node:child_process");
+const { carryRelativeDeps, relativeImportSpecifiers } = require("./gate-substitute-deps.cjs");
 
 const REPO = resolve(__dirname, "..", "..");
 const GATE = join(REPO, "scripts", "qa", "verify-evidence-corpus.mjs");
+const QA_DIR = join(REPO, "scripts", "qa");
 const PROV = join(REPO, "scripts", "qa", "verify-provenance-all.mjs");
 const FXREL = ".zcode/tmp/corpuslegacy";
 const FX = join(REPO, ...FXREL.split("/"));
@@ -211,10 +213,13 @@ ok(!existsSync(join(REPO, "scripts", "qa", "verify-evidence-corpus.mut.mjs")),
 function windowBattery(gatePath) {
   const a = runGate(gatePath, fxArgs("AFTER"));
   const b = runGate(gatePath, fxArgs("BEFORE"));
-  let bad = 0;
+  let bad = 0, unreadable = 0;
+  /* 读不出数（门崩了、零输出）绝不能算"判据反过来了"：node 未捕获异常同样 exit 1，
+     于是 2026-09-30 那一发替身缺依赖时 badMut=2 假满足 —— 反证必须**带着读数**失败。 */
+  if (a.problems === null || b.problems === null) unreadable = (a.problems === null ? 1 : 0) + (b.problems === null ? 1 : 0);
   if (!(a.code === 1 && a.problems === 1 && a.legacy === 0)) bad++;   // 约定之后无戳 ⇒ 红
   if (!(b.code === 0 && b.problems === 0 && b.legacy === 1)) bad++;   // 约定之前无戳 ⇒ legacy
-  return bad;
+  return { bad, unreadable, a, b };
 }
 {
   const liveBefore = sha256(readFileSync(GATE));
@@ -229,14 +234,28 @@ function windowBattery(gatePath) {
   const mutText = liveText.replace(PRED, FLIP).replace(ANCHOR, `const repo = ${JSON.stringify(REPO)};`);
   mkdirSync(MUT, { recursive: true });
   writeFileSync(MUTANT, mutText, "utf8");
+  /* 替身必须带上活门的相对依赖：ESM 的 `./x.mjs` 按导入方自身位置解析，替身在 .zcode/tmp 下 ⇒
+     不搬就 ERR_MODULE_NOT_FOUND、门零输出、node 照样 exit 1 —— 于是"变异必红"被一次崩溃假满足。
+     清单从替身文本派生，门以后加 import 不必回来改这里。 */
+  const carry = carryRelativeDeps({ dstPath: MUTANT, text: mutText, srcDir: QA_DIR });
+  const mutSpec = relativeImportSpecifiers(mutText);
+  ok(carry.missing.length === 0 && mutSpec.every((s) => existsSync(join(MUT, basename(s)))),
+    `I 替身依赖搬运完成（派生 ${mutSpec.length} 条：${mutSpec.map((s) => basename(s)).join(",") || "无"}）`,
+    "missing=" + carry.missing.join(" | "));
   const diffLines = mutText.split("\n").filter((l, i) => l !== liveText.split("\n")[i]).length;
   ok(diffLines === 2, "I 替身与活文件的差异行数==2（一处翻转谓词 + 一处根锚点，别的一个字没动）", "diffLines=" + diffLines);
-  const badLive = windowBattery(GATE);
-  const badMut = windowBattery(MUTANT);
-  ok(badLive === 0, "I 活文件：窗口判据两端都成立（AFTER 红 / BEFORE legacy）", "bad=" + badLive);
-  ok(badMut >= 2, "I 反证：谓词符号翻转后同一套判据**变红**（断言不是恒真的摆设）",
-    `mutant_bad=${badMut} live_bad=${badLive}`);
-  console.log(`  NEGATIVE_PROOF live_bad=${badLive} mutant_bad=${badMut}（翻转 <→> 让 BEFORE 判红、AFTER 变 legacy ⇒ 窗口两端都真的在受力）`);
+  const live = windowBattery(GATE);
+  const mut = windowBattery(MUTANT);
+  ok(live.bad === 0 && live.unreadable === 0, "I 活文件：窗口判据两端都成立且两发都读得出数（AFTER 红 / BEFORE legacy）",
+    `bad=${live.bad} unreadable=${live.unreadable}`);
+  ok(mut.unreadable === 0, "I 反证的阳性来源不是崩溃：替身两发都必须带读数（否则 bad>=2 是零输出冒充反证）",
+    `unreadable=${mut.unreadable} body=${mut.b.body.slice(0, 90).replace(/\s+/g, " ")}`);
+  ok(mut.bad >= 2, "I 反证：谓词符号翻转后同一套判据**变红**（断言不是恒真的摆设）",
+    `mutant_bad=${mut.bad} live_bad=${live.bad}`);
+  ok(mut.b.problems === 1 && mut.b.legacy === 0 && mut.a.legacy === 1 && mut.a.problems === 0,
+    "I 反证的极性就是窗口翻转本身：BEFORE 由 legacy 变红、AFTER 由红变 legacy（不是任意两种坏读数）",
+    `BEFORE problems=${mut.b.problems} legacy=${mut.b.legacy} / AFTER problems=${mut.a.problems} legacy=${mut.a.legacy}`);
+  console.log(`  NEGATIVE_PROOF live_bad=${live.bad} mutant_bad=${mut.bad}（翻转 <→> 让 BEFORE 判红、AFTER 变 legacy ⇒ 窗口两端都真的在受力）`);
   ok(sha256(readFileSync(GATE)) === liveBefore, "I 活文件在整套反证过程中逐字节未变（只动 .zcode/tmp 下的替身）", "");
 }
 

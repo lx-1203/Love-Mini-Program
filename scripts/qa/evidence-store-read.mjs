@@ -19,11 +19,16 @@ import { join, resolve, sep } from "node:path";
 export const STORE_HASH_PREFIX = 16;
 
 /** 从 argv 的 --store 或环境变量 QA_EVIDENCE_STORE 取库目录并建索引。
- *  ⚠ 环境变量是第二条配置通道：调用方"没传 --store"不等于"未配库"，两边都得看。 */
-export function openEvidenceStore({ argv = process.argv.slice(2), repo, dir: dirOverride } = {}) {
+ *  ⚠ 环境变量是第二条配置通道：调用方"没传 --store"不等于"未配库"，两边都得看。
+ *  ⚠ 反过来也成立：显式传的 `dir`（含空串）必须**压过**环境变量，否则测试与调用方
+ *    在带 QA_EVIDENCE_STORE 的壳里拿到的不再是自己那一发（2026-09-30 实测：聚合器
+ *    导出该变量，test-evidence-store-read 的"未配库"格读成 reachable —— 用 `||` 串联
+ *    入参时，空串被当成"没传"，环境就漏了进来）。所以这里按"是否显式提供"分支，不按真假值。 */
+export function openEvidenceStore({ argv = process.argv.slice(2), repo, dir: dirIn } = {}) {
   if (!repo) throw new Error("openEvidenceStore 需要 repo（判定库是否落在仓内要用它）");
   const i = argv.indexOf("--store");
-  const d = dirOverride || (i >= 0 && argv[i + 1] ? argv[i + 1] : (process.env.QA_EVIDENCE_STORE || ""));
+  const d = dirIn !== undefined ? String(dirIn)
+    : (i >= 0 && argv[i + 1] ? argv[i + 1] : (process.env.QA_EVIDENCE_STORE || ""));
   if (!d) return { mode: "unconfigured", dir: "", index: null, objects: 0 };
   const dir = resolve(d);
   const dirNorm = dir.split(sep).join("/"), repoNorm = String(repo).split(sep).join("/");

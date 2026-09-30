@@ -933,3 +933,46 @@ DSL `{ name: "真实档覆盖去向册 verify-real-coverage-disposition", args: 
 **由编排方在终局复量时定，不许靠放宽让它闭嘴**。另 `3→4→5` 帧漂移被点名是并行车道续删所致、盲区差恒 3846——
 这条要在终局复量里复现一次，若不可复现就写成本册的一处不确定读数。
 
+## §35 2026-09-30 17:1x 终局复量后的三处仪器缺陷（我自己造成的两条在内），按"判据缺陷按判据修"处置
+
+**背景**：`edd55203` 的 22 门终验出 3 红，其中 `run-qa-selftests` 上一 HEAD 还是绿的 ⇒ 红是我这轮改动带进来的。
+逐条从源码复验后，三条都是**仪器层**缺陷，不是产品缺陷；也都不是"放宽判据就能闭嘴"的形状。
+
+**(1) 门替身不带相对依赖 ⇒ 整发自检测的是空气。**
+`test-corpus-denominator.cjs` / `test-corpus-legacy-window.cjs` 都会把 `verify-evidence-corpus.mjs` **复制**到
+`.zcode/tmp` 下再跑（锚定夹具仓根 / 翻转一条谓词）。我为了消除 DENY_TAP 式三份副本，把仓外证据库的三态判定
+收敛成 `evidence-store-read.mjs` 一个实现，门于是多了一条 `import "./evidence-store-read.mjs"`；ESM 的相对说明符
+按**导入方自身位置**解析 ⇒ 替身目录里没这个文件 ⇒ `ERR_MODULE_NOT_FOUND`、门零输出。
+后果两种，都极难从读数看出来：denominator 那一发 14 格读数全成 `null`（跑得飞快、退出码却像"正常跑完"）；
+legacy-window 那一发的"变异必红"被同一次崩溃**假满足**（node 未捕获异常同样 exit 1）。
+⇒ 处置：共用实现 `scripts/qa/gate-substitute-deps.cjs`，**搬运清单从替身文本派生**（写死文件名的清单在门以后再加
+   import 时会静默漏搬）；两处接线各自带反证 —— denominator 的 C1x 主动摘掉依赖证明"读不出数"、再搬回证明
+   后续读数测的是判据；legacy-window 的 I 组新增"替身两发必须**带着读数**失败"与"极性就是窗口翻转本身"
+   （BEFORE 由 legacy 变红、AFTER 由红变 legacy），把崩溃冒充反证的形状钉死。
+实测：`CORPDEN cases=56 fail=0`、`LEGWIN cases=39 fail=0`（替身依赖派生 1 条 = `evidence-store-read.mjs`）。
+
+**(2) 共享实现的入参优先级回归：`dirOverride || …` 把"显式不配库"漏给了环境变量通道。**
+`openEvidenceStore({dir:""})` 本意是"我要未配库那一发"，但空串在 `||` 链里被当成"没传"，于是继承了
+`QA_EVIDENCE_STORE` ⇒ 在带该变量的壳里"未配库"格读成 `reachable`，测的根本不是它声称的那一支
+（`ambient env is a second config channel` 那条教训的另一半：环境是第二通道，**显式入参必须是第一权威**）。
+⇒ 处置：按"是否显式提供"分支（`dirIn !== undefined`），优先级 `显式 dir > --store > 环境变量`；
+   测试进场先摘 `QA_EVIDENCE_STORE`、出场前用它**反向证明环境通道确实会被读到**（否则"隔离"只是自欺）。
+   新增 4 格正反例。变异证明：把优先级改回 `||` ⇒ 恰 1 格具名红、exit 1；实测 `STORE_READ cases=16 fail=0`（带/不带环境两种壳都跑过）。
+
+**(3) 聚合器取数语法的 stem 上限量不到带下划线的标记词。**
+`run-qa-selftests.mjs` 认旧式 `^\w{2,8}_SUMMARY … fail=N`；本文件标记词 `STORE_READ` 有 10 个字符 ⇒ 匹配不上 ⇒
+"无自报断言计数（不可信）"而判红（exit 明明是 0）。⇒ 两处修：**测试补印主方言** `SUMMARY: assertion failures = N`
+（这一条单独就能闭红，不依赖聚合器改动）；聚合器把 stem 放宽到 `\w{2,24}` —— 但**这一处改动留在工作树里不提交**，
+因为该文件同时带着兄弟车道的 +3（`GATE_SELFTESTS` 新增 `verify-lane-report-complete`，其门文件尚未入册）：
+提交它等于把别人在途的工作钉进我的提交边界，还会让 HEAD 引用一个不在仓库里的门文件。归因仍按 §34 记"待定"。
+
+**(4) 游客落点的 `stable` 在 n=1 时是空判据（本条只落账、不在此刀改）。**
+`verify-guest-landing.mjs:315` 是 `new Set(samples.map(s=>s.landing)).size===1` —— 单样本恒为真。
+盘上实测：账本 28 行**全部**声称 `stable=true`，其中 **17 行只有 1 个样本**（04:39–04:58 那一列 leg 跑的是 repeat=1；
+顶层 `repeat=2` 是 06:0x 之后改的，`rowPolicy=merge-never-shrink` 把旧行原样留下 ⇒ 顶层声明与行内样本数互相矛盾）。
+⇒ 这是判据缺陷，不是数据缺陷，也不是"帧没截到"：交车道在**源码/单元层**收紧（`samples.length >= repeat` 才算 stable，
+   降级必须具名报数、不许悄悄 de-green）；把 17 行的第二个样本补齐是**另一件事**，要 UI 租约 + 8080 + 真档产物，
+   且按既定裁定"取证时效"必须重拍而非继承。收紧后必然丢 17 格绿 ⇒ 按 `audit green loss after tightening` 那条，
+   车道必须逐行说明"从哪格绿到哪格、为什么"，编排方在终局复量里核。
+
+
