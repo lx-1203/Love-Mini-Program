@@ -402,16 +402,18 @@ GUEST_LANDING=FAIL 先修这几条再来量（带病出腿 = 白拿租约）：
 
 **两发后台作业在飞，turn 预算内不可能读到结果**（它们各自要 10–20 分钟，我起跑后只过了约 2 分钟）。
 会话若断，它们会被孤立；**重跑命令与日志落点如下**（别信"应该跑完了"）：
-1. L16 语料门验证：`node22 scripts/qa/verify-evidence-corpus.mjs > .zcode/tmp/orch-r9/corpus-after-l16.log 2>&1`；
-   **判据行已读到（2026-09-30 20:07 本机）：`PROBLEMS=1` / `CORPUS_RESULT=FAIL（存在不可背书证据或硬编码…）`**
-   ——注意这与 r9 那一发（02:05，corpus 不在红集合里）相反，也就是说**带着 L16 那 +125 行跑，这条门是红的**。
-   两种解释必须先分辨，别直接提交也别直接回滚：
-   (i) 这正是 L16 要做的事——把"看不见的分母/缩水"变成读数，于是它第一次把 3848 帧盘上删除暴露成不可背书；
-   (ii) 这是它中断前留下的半成品在误判。
-   分辨办法：先读全那条 FAIL 的 reason 全文（日志里 `CORPUS_RESULT=` 那行的完整展开 + 它的逐件清单），
-   再同一条命令跑一次 **HEAD 版**（`git stash` 不行——本仓禁用全仓还原；用 `git show HEAD:scripts/qa/verify-evidence-corpus.mjs > 临时路径` 起对照），
-   两份读数一比就知道红是新信号还是新缺陷。**判定前该文件维持未提交**。
-   已见的旁证：它跑得起来、没削弱门（逐 manifest 仍打 legacy 判决 `gitSha=6fd151786c… → 非当前HEAD→按契约过期…不判红`、`noHash=0`，并报出 `missing=5`）。
+1. L16 语料门验证 —— **已裁决并入库（2026-09-30 21:0x）**：那发 FAIL **不是缺陷、也不是新信号，是我自己的配置错**。
+   分辨过程与结论（照此复核，别重跑）：
+   - 同一条命令**带** `QA_EVIDENCE_STORE=D:/6/love-mini-evidence`（终验脚本就是这么导出的）⇒ `CORPUS_STORE=reachable`、
+     `CORPUS_PROBLEMS=0`、`CORPUS_RESULT=PASS`，且 `CORPUS_DENOM_BLINDSPOT absentNeverOpenedByGate=3846`
+     **在 PASS 里也照样具名** —— 这正是 L16 那一刀要的效果：绿不能再被读成"语料完好"。
+   - **不带** store（我先前就这么跑的）⇒ `PROBLEMS=1`、FAIL；而**HEAD 版**同样不带 store 是 `PROBLEMS=2`。
+     ⇒ L16 的 +120 行把裸跑的问题数从 2 降到 1（把 5 帧"选定删除集内缺席"归入 advisory），**它是改善不是回归**。
+   - 那条被判红的 144 帧：`reports/screenshots/round-1/manifest.json` 的帧，`git status --short` 在该目录只有
+     **1** 个 `D`（`blank-check.tsv`）⇒ 这 144 帧既不在你的删除集里、也从未被跟踪，是 2026-09-19 那份
+     约定前清单的**幽灵引用**；带库时由仓外库背书 ⇒ 不判红。
+   **教训**：语料门的判决随"库可达/不可达"两态而变，比较任何两次读数前必须钉住这一维——
+   这正是本仓记过的"环境变量是第二条配置通道"。
 2. 提交后 sha 敏感三连（工作流自己的规矩：提交会移 HEAD）：`verify-provenance-all` → `verify-band-freshness`
    → `verify-real-coverage`，日志在 `.zcode/tmp/orch-r9/post-*.log`；`provenance` 已起跑、另两发未起。
 

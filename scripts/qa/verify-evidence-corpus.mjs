@@ -3,7 +3,9 @@
  * 单轮工具 verify-evidence-integrity.mjs 只管一份；本工具管整个 reports/ 树，
  * 并额外检查每份 manifest 记的 gitSha **是不是真提交**、**是不是当轮 HEAD**
  * （R1 的 305 帧就栽在这上面：manifest 记 aefd8a72，HEAD 实为 18c91ccf → 按契约整批过期）。
- * 只读。用法：node scripts/qa/verify-evidence-corpus.mjs
+ * 只读。用法：node scripts/qa/verify-evidence-corpus.mjs [--root <扫描根>] [--scope <前缀,逗号>] [--store <仓外库目录>] [--strict]
+ *   --strict 把分母轴从"具名报数"升成判红（默认不升 —— 见上面 2026-09-30 追加那段的两轴分工）。
+ *   注意：--strict 只影响 r16 新增的缺席分母这一格，其余判红条件与不带它时逐字相同。
  *
  * 2026-09-29 口径修订（lane-stamps）：CORPUS_EXPIRED_GITSHA 原先把三种完全不同的事实并成一个数
  * ——「可解析、只是比 HEAD 旧的历史轮戳记」「写了个本仓解析不到的字符串（真断链）」
@@ -17,10 +19,27 @@
  * （git log -S gitSha -- scripts/qa，无硬编码日期）认约定起点：只有 generatedAt 严格早于该起点的
  * 无戳清单才不判红，且必须逐份点名 + 单独一行 CORPUS_LEGACY_NO_SHA（legacy ≠ 通过，其帧仍无背书）。
  * 除这一格外，其余判据、阈值、退出码语义一字未动。
+ *
+ * 2026-09-30 追加（lane-corpus-blindspot r16）：**本门的输入集自己会不会缩水，从前没人量过。**
+ * 全域跑打开 9184 个 manifest 条目、报 `CORPUS_PROBLEMS=0` 并 PASS，而同期 `reports/screenshots/` 下
+ * 有 3849 个 git 在册文件已从盘上消失，其中只有 3 个被任何清单点名 ⇒ 剩下 3846 个本门**结构上看不见**
+ * （它遍历的是"清单点了名的路径"，不是"语料里本该存在的文件"）。
+ * 「被点名的都在不在」和「我以为会看到的那一集缩水了没有」是两个问题，从前只有前者有读数。
+ * 现在新增四行 `CORPUS_DENOM_*` 具名读数（TRACKED / ABSENT / SCANNED / BLINDSPOT + 一行 AXIS 记两轴），
+ * 分母取自 `git ls-files`，**不是**盘上 readdir —— readdir
+ * 看不见已经消失的文件，拿它当分母就是自欺）。极性照 scripts/qa/verify-case-automatable.mjs 的两轴分工：
+ *   ① blocking 轴（默认判红）＝ 拿不出"在册缺席"凭据的缺失 —— 真断链、真丢失，与改动前逐字同判；
+ *   ② advisory 轴（默认只报数、不判红）＝ 缺席路径能在 `git ls-files --deleted` 里查到凭据的那些，
+ *     即用户 2026-09-30 书面裁定"这是我选的"那一批。裁定同时明写"不把他行使选择权做成默认红"，
+ *     所以这一格**必须可见、必须具名、默认不红**；要拿它当门禁显式加 `--strict`
+ *     （与 verify-case-automatable 的 --strict 同名同义：加它之后 blockingMissing 退回 == missing，
+ *     并把"门结构上看不到的那批在册缺席"也计一处问题 ⇒ 默认档与 --strict 档的差只在分母这一格）。
+ * 阈值一个没动；除「帧不存在」这一项按上面两轴拆分外，其余判红条件（哈希不符/无 contentHash/字节数不符/
+ * 真断链/无戳窗口）与退出码语义一字未改，PROBLEMS 里也不含任何"为美化数字而豁免"的条目。
  */
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { join, resolve, dirname, sep } from "node:path";
+import { join, resolve, dirname, sep, relative } from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -173,6 +192,45 @@ const inScope = (p) => {
   });
 };
 const manifests = manifestsAll.filter(inScope);
+
+/* ---------- r16 分母轴的几个纯工具（先把它们放在循环之前，循环里只用它们记账） ----------
+   STRICT：只决定"在册证据缺席"这一格报不报红，不碰任何既有判据（两轴分工见文件头 2026-09-30 那段）。
+   EVIDENCE_EXT：语料的证据=帧。图扩展名之外还跟着一个"全部在册文件"的数，是为了对账
+     （缺席里混着 .tsv/.json 时，读者能一眼看出这两个数不该相等）。
+   ABS()：清单里的路径既有仓相对的、也有绝对写法（exec-* 那批）。本轴一律按 **repo** 而不是 cwd
+     解析 —— 门里既有的 existsSync(p) 走的是 cwd（生产从仓根起，二者相同），我不动它（动它就是动
+     既有判定），但新轴必须与调用目录无关，否则换个工作目录跑出来的分母是另一个数。 */
+const STRICT = process.argv.includes("--strict");
+const EVIDENCE_EXT = /\.(png|jpe?g|gif|webp|bmp)$/i;
+const isAbsPath = (p) => /^[a-zA-Z]:[\\/]/.test(p) || p.startsWith("/");
+const ABS = (p) => (isAbsPath(p) ? resolve(p) : join(repo, p));
+/* 归一到"仓相对 + 正斜杠 + Windows 折叠大小写"这一种方言（与 toRelPosix 同源）。
+   两侧方言不同源的话，交集就是 0，而 0 会被读成"没人点名 ⇒ 门没错"—— 那正是本轴要治的病。 */
+const namedDialect = (p) => toRelPosix(isAbsPath(p) ? resolve(p) : p);
+/* 门与分母求交只能用这一个键函数：条目路径有仓相对写法也有绝对写法（exec-* 那批），
+   ABS 先按 repo 解绝对、namedDialect 再归回"仓相对+正斜杠+折叠大小写"那一方言。 */
+const keyOf = (p) => namedDialect(ABS(p));
+/* ---------- 分母数据源：git 的在册集合（r16 的核心那一刀） ----------
+   为什么不能用 readdirSync 数分母：readdir 只看得见"还在盘上的"，2026-09-30 被删掉的那一整批在
+   readdir 里根本不存在 ⇒ 拿它当分母等于宣布"没有东西缺席"，正是本轴要治的自欺。
+   git 给得出两件别处给不出的事实：在册集合（ls-files）与"在册却已不在盘上"（ls-files --deleted），
+   后者就是"用户这次选定删除"唯一可读的凭据 —— 本门据此把缺席分两轴，不靠猜、也不靠豁免。
+   分母范围跟 --root 走（生产 = reports/）；--root 指到仓库外时"在册"无从可问 ⇒ ok:false，
+   此时**一条缺席都不背书**（宁可红，不空放），并把不可得本身印成读数而不是悄悄当 0。 */
+const DENOM = (() => {
+  const rel = toPosix(relative(repo, ROOT));
+  const spec = rel === "" || rel === "." ? "" : rel;
+  if (spec.startsWith("..")) return { ok: false, spec: "", why: "root 在仓库外", tracked: null, absent: null, absentSet: new Set() };
+  const ls = (extra) => {
+    try {
+      return execFileSync("git", ["-c", "core.quotepath=off", "ls-files"].concat(extra).concat(spec ? ["--", spec] : []),
+        { cwd: repo, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }).split(/\r?\n/).filter(Boolean);
+    } catch { return null; }
+  };
+  const tracked = ls([]), absent = ls(["--deleted"]);
+  if (!tracked || !absent) return { ok: false, spec, why: "git ls-files 取不到（不是仓、就是 git 不可用）", tracked: null, absent: null, absentSet: new Set() };
+  return { ok: true, spec, why: "", tracked, absent, absentSet: new Set(absent.map(foldCase)) };
+})();
 console.log(`CORPUS_MANIFESTS=${manifests.length} CORPUS_MANIFESTS_TOTAL=${manifestsAll.length} SCOPE=${scopeArg.join("+") || "全域"} HEAD=${HEAD || "?"}`);
 // 空扫描集不得判绿：首版在没有 manifest 时会安静地输出 CORPUS_PROBLEMS=0 并 PASS。
 if (!manifests.length) {
@@ -180,6 +238,20 @@ if (!manifests.length) {
   process.exit(2);
 }
 let fail = 0, expired = 0, scanned = 0;
+/* r16 分母轴在循环里只**记账**，不改任何计数归属：
+   itemsOpened  = 门真的遍历过的条目数（这就是"我以为会看到的那一集"有多大）
+   namedPaths   = 这些条目点到的路径（归一化方言，去重），用来和"git 在册但盘上没了"求交
+   namedAbsentItems = 点名了却在盘上没有的条目数（与库那一轴的 库背书/missing 同源可对账） */
+let itemsOpened = 0;
+const namedPaths = new Set();
+let namedAbsentItems = 0;
+/* 缺席的两轴（条目级）：vouched = 路径能在 git 在册缺席集里找到凭据（＝用户选定删除那一批），
+   unvouched = 拿不出这份凭据。advisoryManifests = 出现过第一类缺席的清单数。 */
+let absentVouchedItems = 0, absentUnvouchedItems = 0;
+const advisoryPaths = new Set();
+const advisoryReasons = [];
+let advisoryManifests = 0;
+/* 「过期」不是一个类，是三个类，而它们的历史含义完全不同：
 /* 「过期」不是一个类，是三个类，而它们的历史含义完全不同：
      · resolvableOlder —— 戳记指向一枚真实存在、只是比 HEAD 旧的提交。历史轮的证据本就该定格在
        当时那枚提交上（round-1 记 aefd8a72、round-6 记 874ff52f…），把它和真断链并成一个数，
@@ -210,8 +282,10 @@ for (const m of manifests) {
      盘上没有、库里也没有 ⇒ 照旧记 missing，判红不变。没配库时这两个计数器恒为 0，
      本门的判定与改动前**逐字节相同**。 */
   let storeVouched = 0, storeCollision = 0;
+  let advisory = 0;
   for (const s of shots) {
     const p = s.path || s.file || "";
+    if (p) { itemsOpened++; namedPaths.add(keyOf(p)); }
     if (!p || !existsSync(p)) {
       const k = String(s.contentHash || "").toLowerCase();
       if (STORE.mode === "reachable" && k.length >= 16) {
@@ -220,6 +294,11 @@ for (const m of manifests) {
         if (hits > 1) { storeCollision++; }
       }
       missing++;
+      namedAbsentItems++;
+      /* 这条 missing 属于哪一轴，问 git 不问手感：路径在"在册却已不在盘上"那份清单里 ⇒ 它正是
+         用户 2026-09-30 选定删除的那一批（裁定明写：不许把他行使选择权做成默认红，也不许为此改判据）
+         ⇒ advisory，具名报数；拿不出这份凭据 ⇒ 与改动前完全一样是红。分母不可得时一律走后者。 */
+      if (p && DENOM.ok && DENOM.absentSet.has(foldCase(keyOf(p)))) { advisory++; advisoryPaths.add(keyOf(p)); }
       continue;
     }
     if (!s.contentHash) {
@@ -256,9 +335,19 @@ for (const m of manifests) {
   }
   // 判红条件只在「无戳 ∧ 早于约定」这一格松开；其余四类（缺帧/哈希不符/无 hash/真断链）一字未动。
   const shaBlocked = !real && !legacyNoStamp;
-  if (missing || mismatch || noHash || shaBlocked || bytesBad) {
+  /* r16 只动「帧不存在」这一项的一格：路径能在"在册却已不在盘上"那份清单里找到的 ⇒ 属用户 2026-09-30
+     选定删除那一批 ⇒ 走 advisory 具名读数、不进 fail；拿不出这份凭据的照旧是红。加 --strict 时
+     blockingMissing 退回 == missing ⇒ 与 r16 之前逐字相同（判红权在旗标、不在判据，同
+     verify-case-automatable.mjs:332/343-344 的 --strict 口径）。哈希不符/无 hash/字节数/真断链四类一格没动。 */
+  const blockingMissing = STRICT ? missing : missing - advisory;
+  absentVouchedItems += advisory; absentUnvouchedItems += missing - advisory;
+  if (advisory) {
+    advisoryManifests++;
+    advisoryReasons.push(`${toRelPosix(m)} 共 ${shots.length} 帧 :: 选定删除集内缺席=${advisory}（凭据=git ls-files --deleted ⇒ ${STRICT ? "--strict 已生效：这批计进 CORPUS_PROBLEMS" : "advisory：不判红 ≠ 帧还在，这批帧盘上确实没有了"}）`);
+  }
+  if (blockingMissing || mismatch || noHash || shaBlocked || bytesBad) {
     fail++;
-    const why = [missing && `帧不存在=${missing}`, mismatch && `哈希不符=${mismatch}`, noHash && `无 contentHash=${noHash}`,
+    const why = [blockingMissing && `帧不存在=${blockingMissing}${advisory && !STRICT ? `（另有 ${advisory} 帧属选定删除集 ⇒ 见 CORPUS_ADVISORY_FILE，未计进 PROBLEMS）` : ""}`, mismatch && `哈希不符=${mismatch}`, noHash && `无 contentHash=${noHash}`,
       bytesBad && `字节数不符=${bytesBad}`, shaBlocked && `gitSha 不可核实(${sha ? sha + " ⇒ 本仓解析不到（真断链）" : `空 ⇒ 顶层无 gitSha（无从核实；generatedAt=${gen.raw || "(无)"} vs 约定起点 ${STAMP_CONVENTION ? STAMP_CONVENTION.toISOString() : "(派生不出来)"}）`})`].filter(Boolean).join(" ");
     failReasons.push(`${toRelPosix(m)} 共 ${shots.length} 帧 :: ${why}`);
   }
@@ -321,6 +410,29 @@ if (STORE.mode === "unconfigured") {
     failReasons.push(`库里同一 16 位前缀命中多枚对象（${storeCollisionTotal} 处）⇒ 不许"取第一个当命中"，宁可判红`);
   }
 }
+/* ---------- r16 分母读数 ----------
+   位置有讲究：必须**在 CORPUS_PROBLEMS 打印之前**把 --strict 的红涨进 fail（上一轮库判决就踩过
+   "fail 涨了却不进那个数 ⇒ 红不自洽"的坑，见上面 :343-344 那段注释）。
+   四个数各自问的是不同的事，谁也不能替谁：
+     · 在册分母（tracked / --deleted）问 git —— 盘上 readdir 问不到"已经不存在的文件"；
+     · 门的遍历集（gateItems / gateNamedPaths）是门自己打开过的东西；
+     · 两者的差（blindGap）就是从前没有任何读数的那一格：3849 个在册缺席 vs 门点名看见 3 个。 */
+const delTotal = DENOM.ok ? DENOM.absent.length : null;
+const delImgCount = DENOM.ok ? DENOM.absent.filter((p) => EVIDENCE_EXT.test(p)).length : null;
+const trackedTotal = DENOM.ok ? DENOM.tracked.length : null;
+const trackedImgCount = DENOM.ok ? DENOM.tracked.filter((p) => EVIDENCE_EXT.test(p)).length : null;
+let delNamedPaths = 0;
+if (DENOM.ok) for (const k of namedPaths) if (DENOM.absentSet.has(k)) delNamedPaths++;
+const blindGap = DENOM.ok ? delTotal - delNamedPaths : null;
+console.log(`CORPUS_DENOM_TRACKED source=git:ls-files root=${DENOM.spec || "(仓库根)"} trackedFiles=${DENOM.ok ? trackedTotal : "(不可得)"} trackedFrames=${DENOM.ok ? trackedImgCount : "(不可得)"} trackedNonImage=${DENOM.ok ? trackedTotal - trackedImgCount : "(不可得)"}（分母取自 git 在册集合，**不是**盘上 readdir、也不是 manifest 点名的并集 —— 后两者都只会数"还看得见的那些"）`);
+console.log(`CORPUS_DENOM_ABSENT trackedAbsentFiles=${DENOM.ok ? delTotal : "(不可得:" + DENOM.why + ")"} trackedAbsentFrames=${DENOM.ok ? delImgCount : "(不可得)"} trackedAbsentNonImage=${DENOM.ok ? delTotal - delImgCount : "(不可得)"}（在册却在盘上缺席＝"选定删除"的可核凭据；非图扩展单独给数是为了对账：缺席里混着 .tsv/.json/.log 时这两个数不该相等）`);
+console.log(`CORPUS_DENOM_SCANNED gateItems=${itemsOpened} gateNamedPaths=${namedPaths.size} gateNamedAbsent=${namedAbsentItems} :: vouchedByDeletionSet=${absentVouchedItems} notVouched=${absentUnvouchedItems}（对账 ${absentVouchedItems}+${absentUnvouchedItems}=${absentVouchedItems + absentUnvouchedItems} vs gateNamedAbsent=${namedAbsentItems}）`);
+console.log(`CORPUS_DENOM_BLINDSPOT absentNamedByGate=${DENOM.ok ? delNamedPaths : "(不可得)"} absentNeverOpenedByGate=${DENOM.ok ? blindGap : "(不可得)"} :: 在册缺席 ${DENOM.ok ? delTotal : "?"} 个路径里门结构上只遍历到 ${DENOM.ok ? delNamedPaths : "?"} 个 ⇒ 其余 ${DENOM.ok ? blindGap : "?"} 个既不进 PROBLEMS 也不进 advisory（它压根没打开过那个路径）——从前问题数报 0 并 PASS 时这一整批是静默的，本行就是它的具名读数`);
+console.log(`CORPUS_DENOM_AXIS advisoryFrames=${absentVouchedItems} advisoryPaths=${advisoryPaths.size} advisoryManifests=${advisoryManifests} blockingFrames=${absentUnvouchedItems} strict=${STRICT ? "on" : "off"}（advisory＝用户 2026-09-30 选定删除集的缺席，具名报数、默认不进 CORPUS_PROBLEMS；blocking＝拿不出这份凭据的缺席，照旧判红。两轴口径同 verify-case-automatable.mjs:332，不自创第二套语义）`);
+if (STRICT && DENOM.ok && blindGap > 0) {
+  fail++;
+  failReasons.push(`分母轴：${blindGap} 个在册缺席路径（git ls-files --deleted 于 ${DENOM.spec || "仓库根"}）不在任何被遍历的 manifest 点名列里 ⇒ 本门结构上打不开它们；--strict 把这一格计进 PROBLEMS（默认不判红，见 CORPUS_DENOM_BLINDSPOT）`);
+}
 console.log(`CORPUS_SCANNED=${scanned} CORPUS_EXPIRED_GITSHA=${expired} CORPUS_PROBLEMS=${fail}${scoped ? "（限定 scope=" + scopeArg.join("+") + "，生产者侧降级 INFO）" : ""}`);
 /* 新增行、不改上面那行一个字节（emit-round-report.mjs:1332 用 num("CORPUS_EXPIRED_GITSHA") 取数，
    动了它的形状就是跨车道改契约）。这一行把那个合并数拆成三个类，谁该红一目了然：
@@ -336,10 +448,13 @@ console.log(`CORPUS_LEGACY_NO_SHA=${legacyNoSha} CORPUS_LEGACY_FRAMES=${legacyNo
    legacy 也按同一条规矩逐份点名（CORPUS_LEGACY_FILE 与 CORPUS_PROBLEM 平行、不混用）。 */
 for (const r of failReasons) console.log("  CORPUS_PROBLEM " + r);
 for (const r of legacyReasons) console.log("  CORPUS_LEGACY_FILE " + r);
+/* advisory 也逐份点名，与 CORPUS_PROBLEM / CORPUS_LEGACY_FILE 平行、不混用：
+   "不判红"必须说得出是哪几份、多少帧，否则读者会把 PROBLEMS 变小读成"帧回来了"。 */
+for (const r of advisoryReasons) console.log("  CORPUS_ADVISORY_FILE " + r);
 /* 仓外证据库这一轴的判决见上面（必须在 CORPUS_PROBLEMS 印出来之前改 fail，
    否则"配了库却够不着"会躲在计数后面 —— 第一版就是这么写的，实测 PROBLEMS 仍是 1）。 */
 console.log(fail || hardBlocking.some((h) => h.includes("≠ HEAD"))
   ? "CORPUS_RESULT=FAIL（存在不可背书证据或硬编码 SHA）"
   // 绿也要说清绿的是什么：这里的 PASS 只表示「没有可引用的违规」，不表示「每份证据都有背书」。
-  : `CORPUS_RESULT=PASS（无不可背书证据；legacy 无戳清单=${legacyNoSha} 帧=${legacyNoShaFrames} 因早于打戳约定而不判红，但它们同样没有戳记可核 ⇒ 绿＝没有违规，≠ 证据全有背书）`);
+  : `CORPUS_RESULT=PASS（无不可背书证据；legacy 无戳清单=${legacyNoSha} 帧=${legacyNoShaFrames} 因早于打戳约定而不判红，但它们同样没有戳记可核；分母轴 advisory 缺席帧=${absentVouchedItems} 在册缺席而门未遍历=${DENOM.ok ? blindGap : "分母不可得"} 默认不判红——要判红加 --strict ⇒ 绿＝没有违规，≠ 证据全有背书，≠ 那批缺席的帧还在盘上）`);
 process.exit(fail || hardBlocking.some((h) => h.includes("≠ HEAD")) ? 1 : 0);
