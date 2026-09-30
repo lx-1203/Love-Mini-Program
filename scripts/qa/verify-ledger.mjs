@@ -261,7 +261,26 @@ console.log(`LEDGER_SOURCES=${sources.size} DISTINCT_IDS=${allIds.size} MATRIX_I
 console.log(`MATRIX_IDS_CURRENT_ROUND=${currentMatrixSet.size} MATRIX_FILES=${matrixDocs.length} CURRENT_MATRIX_FILES=${currentMatrixFiles.length}`);
 console.log(`NOT_IN_CURRENT_ROUND_MATRIX=${rescued}（旧报"从未入账"、实际只在别的轮次/别的锚点形态在册）`);
 console.log(`LEDGER_ORPHAN_ALL=${orphanAll.length}（旧口径：只比对当前轮次五份矩阵）`);
-console.log(`LEDGER_ORPHAN_TRUE=${trueOrphans.length}（扩矩阵集 + 锚点展开后仍无任何本尊行 → 硬失败依据）`);
+console.log(`LEDGER_ORPHAN_TRUE=${trueOrphans.length}（扩矩阵集 + 锚点展开后仍无任何本尊行；下一行按退役登记拆成 RETIRED 与 LIVE，硬失败只看未登记的那部分）`);
+/* ---------- 5b. 退役登记（用户 2026-09-30 裁定：登记退役、具名报数） ----------
+   凭证文档由 70472d92「删一周前报告」有意删除（round-2 与 baseline 共 18 份），台账未同步 ——
+   登记过的孤儿不再计硬失败，但**逐条具名打印 + 单独计数**；未登记的新孤儿照旧判红。
+   登记件由一次性派生工具生成（见其 derivedFrom / via 字段：literal 64 / cluster 1 / alias 6）。
+   缺件、读不动、或 Item 没有可核凭证 ⇒ 一律按未登记处理（宁可红，不空放）。 */
+const RETIRE_FILE = join(REPO_ROOT, "reports", "audit", "round-7", "ledger-retired-vouchers.json");
+const retired = new Map();
+let retireNote = "（登记件不存在 ⇒ 全部按未登记处理）";
+if (existsSync(RETIRE_FILE)) {
+  try {
+    const j = JSON.parse(readFileSync(RETIRE_FILE, "utf8"));
+    for (const it of j.items || []) if (it && it.id && it.voucher) retired.set(it.id, it);
+    retireNote = `（登记件 ${rel(RETIRE_FILE)} schema=${j.schema || "?"} 可核凭证=${retired.size}）`;
+  } catch (e) { retireNote = `（登记件读不动 ⇒ 全部按未登记处理：${String(e.message).slice(0, 60)}）`; }
+}
+const retiredOrphans = trueOrphans.filter(([i]) => retired.has(i));
+const liveOrphans = trueOrphans.filter(([i]) => !retired.has(i));
+console.log(`LEDGER_RETIRED=${retiredOrphans.length}${retireNote}`);
+for (const [i] of retiredOrphans) { const r = retired.get(i); console.log(`  RETIRED_ID ${i} 凭证=${r.voucher} via=${r.via} commit=${r.commit}`); }
 console.log(`LEDGER_CROSS_ROUND=${crossRound.length} LEDGER_ALIAS_HITS=${aliasHits.length} LEDGER_CLUSTER_EXPANDED=${clusterHits.length}`);
 console.log(`LEDGER_MATRIX_CLUSTER_ANCHORS=${clusterAnchors.size} LEDGER_CROSS_ROUND_MENTION_ONLY=${mentionOnly.length} LEDGER_ALIAS_AMBIGUOUS=${ambiguous.length}`);
 console.log(`LEDGER_MALFORMED_TOKENS=${malformed.length}（ID_RE 截断串/非 MP 工作代号，不算缺陷 ID，单列复核；其中 ${malformedInOrphanAll.length} 条旧口径被记成孤儿）`);
@@ -387,9 +406,11 @@ if (shapeNoHeader.length) console.log(`LEDGER_SHAPE_FAIL 表头无法定位（�
 shapeOff.slice(0, 12).forEach(([f, id, n]) => console.log(`  OFF_SCHEMA ${id} 列数=${n}（应为 ${shapeDecl}）@ ${f}`));
 if (shapeOff.length > 12) console.log(`  …OFF_SCHEMA 另有 ${shapeOff.length - 12} 条（跑 normalize-ledger-shape.mjs 归一化，不要手改）`);
 
-const ledgerHardFail = trueOrphans.length > 0 || shapeOff.length > 0 || shapeNoHeader.length > 0 || badStatus.length > 0 || rotated.length > 0 || shapeVacuous;
-console.log(trueOrphans.length ? `LEDGER_RESULT=FAIL（${trueOrphans.length} 个 ID 全轮次矩阵均无本尊行，账实不符${tail}）`
+const ledgerHardFail = liveOrphans.length > 0 || shapeOff.length > 0 || shapeNoHeader.length > 0 || badStatus.length > 0 || rotated.length > 0 || shapeVacuous;
+/* 退役数必须出现在判据行里——PASS 也要带，否则"绿"会被读成"没有孤儿"（退役 ≠ 通过）。 */
+const retiredTail = retiredOrphans.length ? `；另有 ${retiredOrphans.length} 条已登记退役（凭证被 70472d92 有意删除，见 LEDGER_RETIRED：退役 ≠ 通过）` : "";
+console.log(liveOrphans.length ? `LEDGER_RESULT=FAIL（${liveOrphans.length} 个 ID 全轮次矩阵均无本尊行，账实不符${tail}）${retiredTail}`
   : (shapeOff.length || shapeNoHeader.length || badStatus.length || rotated.length || shapeVacuous
-    ? `LEDGER_RESULT=FAIL（ID 账实相符，但表结构/值域不合规：错位行 ${shapeOff.length}、内容转置行 ${rotated.length}、status 值域外 ${badStatus.length}${shapeNoHeader.length ? " + 表头缺失 " + shapeNoHeader.length : ""}${shapeVacuous ? " + 判据空转（本范围无 issue-matrix.md 或 0 数据行）" : ""}）`
-    : `LEDGER_RESULT=PASS${tail}`));
+    ? `LEDGER_RESULT=FAIL（ID 账实相符，但表结构/值域不合规：错位行 ${shapeOff.length}、内容转置行 ${rotated.length}、status 值域外 ${badStatus.length}${shapeNoHeader.length ? " + 表头缺失 " + shapeNoHeader.length : ""}${shapeVacuous ? " + 判据空转（本范围无 issue-matrix.md 或 0 数据行）" : ""}）${retiredTail}`
+    : `LEDGER_RESULT=PASS${tail}${retiredTail}`));
 process.exit(ledgerHardFail ? 1 : 0);

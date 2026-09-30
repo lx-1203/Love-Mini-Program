@@ -1,0 +1,525 @@
+{
+ "schema": "ledger-retired-vouchers/v1",
+ "decidedBy": "用户 2026-09-30 裁定：登记退役、具名报数（不恢复被有意删除的凭证，不重建行）",
+ "appliesToGate": "scripts/qa/verify-ledger.mjs",
+ "policy": "已登记退役的 ID 不再计入 PROBLEMS，但必须逐条具名打印并计数；未登记的新孤儿照旧判红。",
+ "derivedBy": "scripts/qa/derive-ledger-retire-register.mjs",
+ "derivedFrom": {
+  "orphanCount": 71,
+  "voucherSearchScope": 18,
+  "blobsReadable": 18,
+  "commit": "70472d92",
+  "byVia": {
+   "alias": 6,
+   "literal": 64,
+   "cluster": 1
+  }
+ },
+ "unresolvedVouchers": [],
+ "items": [
+  {
+   "id": "MP-R2-DISCOVER-001",
+   "voucher": "reports/audit/round-2/issue-matrix.md",
+   "via": "alias",
+   "commit": "70472d92",
+   "voucherEvidence": "LEDGER_ALIAS_HIT MP-R2-DISCOVER-001 ≈ MP-R2-PAGES-DISCOVER-INDEX-001 @ reports/audit/round-2/issue-matrix.md [核心词 DISCOVER]",
+   "reason": "凭 literal 搜不到，靠 ledger-notes 里记的簇锚/别名指向的凭证（该凭证同样被 70472d92 删除）"
+  },
+  {
+   "id": "MP-R2-HOME-012",
+   "voucher": "reports/audit/baseline/historical-issues.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-MSG-001",
+   "voucher": "reports/audit/baseline/historical-issues.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-MSG-002",
+   "voucher": "reports/audit/baseline/regression-index.json",
+   "via": "cluster",
+   "commit": "70472d92",
+   "voucherEvidence": "LEDGER_CLUSTER_HIT MP-R2-MSG-002 <= 簇锚 MP-R2-MSG-001-002 @ reports/audit/baseline/regression-index.json",
+   "reason": "凭 literal 搜不到，靠 ledger-notes 里记的簇锚/别名指向的凭证（该凭证同样被 70472d92 删除）"
+  },
+  {
+   "id": "MP-R2-PAGES-REGISTER-INDEX-003",
+   "voucher": "reports/audit/round-2/issue-matrix.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-CHAT-002",
+   "voucher": "reports/audit/round-2/issue-matrix.md",
+   "via": "alias",
+   "commit": "70472d92",
+   "voucherEvidence": "LEDGER_ALIAS_HIT MP-R2-CHAT-002 ≈ MP-R2-CHAT-CHAT-SESSION-INDEX-002 @ reports/audit/round-2/issue-matrix.md [核心词 CHAT]",
+   "reason": "凭 literal 搜不到，靠 ledger-notes 里记的簇锚/别名指向的凭证（该凭证同样被 70472d92 删除）"
+  },
+  {
+   "id": "MP-R2-CHAT-003",
+   "voucher": "reports/audit/round-2/issue-matrix.md",
+   "via": "alias",
+   "commit": "70472d92",
+   "voucherEvidence": "LEDGER_ALIAS_HIT MP-R2-CHAT-003 ≈ MP-R2-CHAT-CHAT-SESSION-INDEX-003 @ reports/audit/round-2/issue-matrix.md [核心词 CHAT]",
+   "reason": "凭 literal 搜不到，靠 ledger-notes 里记的簇锚/别名指向的凭证（该凭证同样被 70472d92 删除）"
+  },
+  {
+   "id": "MP-R2-CHAT-004",
+   "voucher": "reports/audit/round-2/issue-matrix.md",
+   "via": "alias",
+   "commit": "70472d92",
+   "voucherEvidence": "LEDGER_ALIAS_HIT MP-R2-CHAT-004 ≈ MP-R2-CHAT-CHAT-SESSION-INDEX-004 @ reports/audit/round-2/issue-matrix.md [核心词 CHAT]",
+   "reason": "凭 literal 搜不到，靠 ledger-notes 里记的簇锚/别名指向的凭证（该凭证同样被 70472d92 删除）"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-003",
+   "voucher": "reports/audit/round-2/audit-report.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-006",
+   "voucher": "reports/audit/round-2/issue-matrix.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-004",
+   "voucher": "reports/audit/round-2/issue-matrix.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-POSTTOPIC-002",
+   "voucher": "reports/audit/baseline/historical-issues.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-MATCH-SUCCESS-005",
+   "voucher": "reports/audit/round-2/issue-matrix.md",
+   "via": "alias",
+   "commit": "70472d92",
+   "voucherEvidence": "LEDGER_ALIAS_HIT MP-R2-MATCH-SUCCESS-005 ≈ MP-R2-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-005 @ reports/audit/round-2/issue-matrix.md [核心词 MATCH,SUCCESS]",
+   "reason": "凭 literal 搜不到，靠 ledger-notes 里记的簇锚/别名指向的凭证（该凭证同样被 70472d92 删除）"
+  },
+  {
+   "id": "MP-R2-MATCH-SUCCESS-001",
+   "voucher": "reports/audit/round-2/audit-report.md",
+   "via": "alias",
+   "commit": "70472d92",
+   "voucherEvidence": "LEDGER_ALIAS_HIT MP-R2-MATCH-SUCCESS-001 ≈ MP-R2-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS-001 @ reports/audit/round-2/audit-report.md [核心词 MATCH,SUCCESS]",
+   "reason": "凭 literal 搜不到，靠 ledger-notes 里记的簇锚/别名指向的凭证（该凭证同样被 70472d92 删除）"
+  },
+  {
+   "id": "MP-R7-REALNAME-001",
+   "voucher": "reports/audit/baseline/historical-issues.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-POST-006",
+   "voucher": "reports/audit/round-2/issue-matrix.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-PUB-103",
+   "voucher": "reports/audit/round-2/audit-report.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-PUB-102",
+   "voucher": "reports/audit/round-2/audit-report.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R1-PUBLISH-003",
+   "voucher": "reports/audit/baseline/historical-issues.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-TOPICS-003",
+   "voucher": "reports/audit/round-2/code-findings/次要18.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-TOPICS-002",
+   "voucher": "reports/audit/round-2/code-findings/次要18.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-CIRCLEHOME-002",
+   "voucher": "reports/audit/round-2/code-findings/次要18.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-CERT-004",
+   "voucher": "reports/audit/round-2/code-findings/次要18.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-CERT-003",
+   "voucher": "reports/audit/round-2/code-findings/次要18.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-TAGPOSTS-001",
+   "voucher": "reports/audit/round-2/code-findings/次要18.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-TAGPOSTS-002",
+   "voucher": "reports/audit/round-2/code-findings/次要18.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-TAGPOSTS-004",
+   "voucher": "reports/audit/round-2/code-findings/次要18.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-HISTORY-003",
+   "voucher": "reports/audit/round-2/code-findings/次要18.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-LIKES-001",
+   "voucher": "reports/audit/round-2/code-findings/次要19.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R1-HELP-001",
+   "voucher": "reports/audit/baseline/historical-issues.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-SETTINGS-003",
+   "voucher": "reports/audit/round-2/code-findings/次要19.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-SEARCH-003",
+   "voucher": "reports/audit/round-2/audit-report.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-SEARCH-002",
+   "voucher": "reports/audit/round-2/code-findings/次要19.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-OTHER-002",
+   "voucher": "reports/audit/round-2/code-findings/次要20.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-OTHER-005",
+   "voucher": "reports/audit/round-2/audit-report.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-OTHER-003",
+   "voucher": "reports/audit/round-2/code-findings/次要20.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R1-PRIVACY-001",
+   "voucher": "reports/audit/baseline/historical-issues.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-ALBUM-001",
+   "voucher": "reports/audit/round-2/audit-report.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-FAVORITES-001",
+   "voucher": "reports/audit/round-2/audit-report.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-FAVORITES-002",
+   "voucher": "reports/audit/round-2/code-findings/次要20.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-TASKS-001",
+   "voucher": "reports/audit/round-2/audit-report.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-TASKS-002",
+   "voucher": "reports/audit/round-2/code-findings/次要20.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-VERIFICATION-001",
+   "voucher": "reports/audit/round-2/code-findings/次要20.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-REALNAME-001",
+   "voucher": "reports/audit/round-2/code-findings/次要20.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-FEEDBACKHIST-001",
+   "voucher": "reports/audit/round-2/audit-report.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-APP-001",
+   "voucher": "reports/audit/round-2/code-findings/次要21.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-OFFICIALCHAT-001",
+   "voucher": "reports/audit/round-2/code-findings/次要21.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-INTEREST-002",
+   "voucher": "reports/audit/round-2/code-findings/次要21.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-INTEREST-001",
+   "voucher": "reports/audit/round-2/audit-report.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-FEEDBACK-001",
+   "voucher": "reports/audit/round-2/code-findings/次要21.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-FEEDBACK-002",
+   "voucher": "reports/audit/round-2/audit-report.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-005",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-013",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-014",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-002",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-019",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-001",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-003",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-015",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-004",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-011",
+   "voucher": "reports/audit/round-2/audit-report.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-012",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-016",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-008",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-007",
+   "voucher": "reports/audit/round-2/audit-report.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R1-VIP-001",
+   "voucher": "reports/audit/baseline/historical-issues.md",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-009",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-010",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-017",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-006",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  },
+  {
+   "id": "MP-R2-次要22-018",
+   "voucher": "reports/audit/round-2/code-findings/次要22.json",
+   "via": "literal",
+   "commit": "70472d92",
+   "reason": "凭证文档由 70472d92（删一周前报告）有意删除；台账未同步退役 ⇒ 该 ID 无本尊行可对"
+  }
+ ]
+}

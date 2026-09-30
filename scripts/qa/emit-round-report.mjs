@@ -111,8 +111,10 @@ let SKIP_LIVE = has("skip-live-gates");
    改前它其实**根本不在门的射程内**（DRY_RE 命中 0 行 ⇒ verdict=no-dry），也就是说
    "面板会抢设备租约"这件事从来没被任何静态门禁审过 —— 红是真的，我把它做成名实相符而不是教门放行。 */
 const DRY = has("dry");
-if (DRY && !SKIP_LIVE) { SKIP_LIVE = true; LIVE_SKIP_WHY = "--dry 生效（不取 UI 租约、不复跑 G7/G8/G9/probe）"; }
 let LIVE_SKIP_WHY = "--skip-live-gates 生效";
+/* 声明必须在上一行（原顺序是"先赋值后声明"⇒ 任何 --dry 直接 TDZ ReferenceError 崩在启动处，
+   而且静态门 verify-dry-no-lease 只审守卫形状、审不出这个运行时崩；--dry 因此一直是坏的、没人发现）。 */
+if (DRY && !SKIP_LIVE) { SKIP_LIVE = true; LIVE_SKIP_WHY = "--dry 生效（不取 UI 租约、不复跑 G7/G8/G9/probe）"; }
 /* 只读探针：回答「现在跑我会不会去碰模拟器」，不取租约、不写任何锁文件。
    为什么要有 —— 这个工具的实时分支会开页、会重建产物，它的守卫不能在真跑一轮的时候才第一次被检验；
    拿 --skip-live-gates 验又会直接跳过守卫那段代码。探针只看，绝不落下自己的锁。 */
@@ -1789,6 +1791,41 @@ console.log(`EMIT_DISPO rows=${G.dispo.rows === null ? "未量" : G.dispo.rows} 
    expected_to_grow=resolvableOlder 是**写给机器读的**同一条免责标注，免得脚本作者自己把历史定格读成衰减。 */
 for (const m of G.shaClass) console.log(shaClassMachineLine(m));
 for (const c of CONSERVE) console.log(`CONSERVE ${c.ok ? "OK" : "FAIL"} ${c.what} ${c.parts.join("+")}=${c.sum} vs ${c.whole}`);
+/* 覆盖欠账的去向件必须有人消费（用户 2026-09-30 裁定：建具名去向件 + 面板加读者）。
+   在此之前那 10 条去向只活在报表散文里，仓里没有任何工具读它 ⇒ "给了去向"这件事无法被机器核。
+   口径：件在、每行有去向且在词表内、有理由、且行数与本门实测 UNCOVERED 对得上 ⇒ 打具名行；
+   任一条不成立 ⇒ 进 ERRORS（缺一条就红），不许安静。 */
+{
+  const DISPO_FILE = join(ROOT, "reports", "audit", "round-7", "incident-destinations-round10.json");
+  const VOCAB = ["DISPATCHABLE_NOW", "NEEDS_BAND_CHANGE", "NEEDS_CAPABILITY", "NEEDS_IDENTITY_IMPOSSIBLE", "NOT_SHOOTABLE"];
+  const gm = ((G.realCoverage && G.realCoverage.body) || "").match(/REALCOV_UNCOVERED=(\d+)/);
+  const gateUncovered = gm ? Number(gm[1]) : null;
+  if (!existsSync(DISPO_FILE)) {
+    ERRORS.push(`覆盖欠账去向件不存在：${DISPO_FILE} —— 去向只写在散文里等于没人能核`);
+  } else {
+    try {
+      const j = JSON.parse(readFileSync(DISPO_FILE, "utf8"));
+      const rows = j.rows || [];
+      const tally = {};
+      const bad = [];
+      for (const r of rows) {
+        const dest = r.destination || r.disposition;
+        tally[dest || "(空)"] = (tally[dest || "(空)"] || 0) + 1;
+        if (!VOCAB.includes(dest)) bad.push(`${r.key || "?"}:去向不在词表(${dest || "空"})`);
+        /* 字段名必须照 L14 那份件的真实形状取（blocker/mustBeTrueToStopBeingDebt），
+           我第一版凭想象写成 reason/why ⇒ 10 条全被误判"缺理由"，把面板打红。 */
+        const why = r.blocker || r.mustBeTrueToStopBeingDebt || r.reason || r.why;
+        if (!String(why || "").trim()) bad.push(`${r.key || "?"}:缺理由(blocker 为空)`);
+      }
+      const dispatchable = tally.DISPATCHABLE_NOW || 0;
+      console.log(`EMIT_DESTINATIONS file=${relative(ROOT, DISPO_FILE).split(sep).join("/")} rows=${rows.length} gate_uncovered=${gateUncovered === null ? "?" : gateUncovered} dispatchable=${dispatchable} tally=${JSON.stringify(tally)}`);
+      if (gateUncovered !== null && rows.length !== gateUncovered) {
+        ERRORS.push(`去向件行数 ${rows.length} 与门实测 UNCOVERED=${gateUncovered} 不等 ⇒ 有欠账没有去向`);
+      }
+      for (const b of bad) ERRORS.push(`去向件不合规：${b}`);
+    } catch (e) { ERRORS.push(`去向件读不动：${String(e.message).slice(0, 80)}`); }
+  }
+}
 if (ERRORS.length) {
   console.log(`EMIT_RESULT=FAIL 自判失败 ${ERRORS.length} 条：`);
   for (const e of ERRORS) console.log("  ! " + e);

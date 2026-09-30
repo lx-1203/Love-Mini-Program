@@ -1,0 +1,158 @@
+{
+  "$comment": "10 条 real-coverage 欠账的逐条可采性分流（机器件）。NO SANCTIONED CONSUMER YET — 仓里没有任何工具读这个形状（详见同车道报告 §4），因此本件按主控指示放在 .zcode/tmp/lane-ten-row/，不冒充 scripts/qa/cellplan-round10-*.json 那种有人吃的计划。落账需要：(a) 扩 emit-openrow-register.mjs 的登记表键空间与 kind 词表并让 verify-real-coverage.mjs（或新的只读门）读它，或 (b) 用户授权新加一个具名载体 + 读取方。",
+  "$lane": "r14 uncovered10 disposition (read-only; no device, no lease, no UI, no ledger hand-edit)",
+  "$generatedBy": "reports/audit/round-7/uncovered10-disposition-r14.md",
+  "$gate": "scripts/qa/verify-real-coverage.mjs",
+  "$gateRun": {
+    "cmd": "D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/verify-real-coverage.mjs",
+    "exit": 1,
+    "readings": "REALCOV_CASES=236 EXEC_ROWS=15363 NEVER_ON_REAL=0 REAL_BAND_BUT_ALL_SKIPPED=10 JUDGED_MISSING_A=10 JUDGED_MISSING_GUEST=2 AUTOMATABLE_EXEMPT=28 COVERED=198 UNCOVERED=10 CONSERVATION=OK UNCOVERED_LEDGER=OK RESULT=FAIL",
+    "opsDirDefault": "reports/audit/round-6/ops",
+    "dirDefault": "reports/audit/round-7",
+    "guestLandingGrepCount": 0
+  },
+  "$coveredPredicate": {
+    "source": "verify-real-coverage.mjs:134-135, :210-212, :260-270, :618",
+    "judgedRegex": "/^(EXECUTED|FAILED|PASS)$/",
+    "realBandRegex": "/^real(@|$)/",
+    "loginAxisIdentities": ["A", "B"],
+    "guestAxisIdentities": ["guest", "not-logged-in"],
+    "mustBeTrue": "a row in some reports/audit/round-7/exec-*/exec-results.json with matching manifest|id, band ~ /^real(@|$)/, status in {EXECUTED,FAILED,PASS}, identity on every axis the case's c.identities requires (untagged => BOTH axes), and sessionVerdict != contradict"
+  },
+  "$destinationVocabulary": ["DISPATCHABLE_NOW", "NEEDS_BAND_CHANGE", "NEEDS_CAPABILITY", "NEEDS_IDENTITY_IMPOSSIBLE", "NOT_SHOOTABLE"],
+  "$counts": { "DISPATCHABLE_NOW": 1, "NEEDS_BAND_CHANGE": 1, "NEEDS_CAPABILITY": 7, "NEEDS_IDENTITY_IMPOSSIBLE": 1, "NOT_SHOOTABLE": 0 },
+  "$notDoneOnPurpose": [
+    "no row stamped automatable:false (REALCOV_AUTOMATABLE_EXEMPT stays 28)",
+    "no identities field added (would silently drop the guest axis for OT06/OC09)",
+    "no ops manifest byte changed; gate still reads UNCOVERED=10",
+    "no repo-wide restore; 3848 user-chosen screenshot deletions left as-is"
+  ],
+  "rows": [
+    {
+      "key": "PAGES-PROFILE-INDEX|PFI25",
+      "gateAxis": "login",
+      "declared": { "requiresReal": true, "identities": ["A", "B"], "needsIdentity": "A", "automatable": null, "tapTarget": ".voice-preview__delete", "tapTargetSource": "apps/client/src/pages/profile/index.vue:1747 (page-level, not component-scoped)" },
+      "measuredRealRows": { "count": 11, "judgedReal": 0, "skipReasons": "real@f0677920|A|SKIPPED 交互腿下发全部失败…类名不在（静息态不存在）⇒ 欠前置配方 :: tap:.voice-preview__delete :: \"no such element\"" },
+      "destination": "NEEDS_CAPABILITY",
+      "blocker": ["nativeModal option-drive primitive (r-exec-cli.mjs:383: observation half exists via --native-capture, drive half is new code; :270/:350 selftest pins nativeModal as refused in ALL modes)", "per-case precondition recipe: PFI23 must leave a recorded-voice state so .voice-preview__delete exists"],
+      "alreadyAvailable": ["pull-down via --gestures (pullDownSource -> uni.startPullDownRefresh)", "per-request counts via --net-count (uni.addInterceptor('request'), :801-806)"],
+      "mustBeTrueToStopBeingDebt": "one real-band, A/B, EXECUTED|FAILED row whose leg actually pressed 取消 then 确定 inside the confirm modal and re-entered the page",
+      "cost": "1 new carrier capability; after it lands 1 leg ~= 20s (measured 19.6-22.8s/row). Device minutes cannot substitute before the capability exists."
+    },
+    {
+      "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+      "gateAxis": "login",
+      "declared": { "requiresReal": true, "identities": ["A", "B"], "automatable": null, "tapTarget": ".post-card__audit", "tapTargetSource": "apps/client/src/components/village/PostCard.vue:265 (COMPONENT-SCOPED)", "pre": "REAL_ONLY：真实后端 + 身份A 先经底部输入条发一条新帖（进审核流）" },
+      "measuredRealRows": { "count": 10, "judgedReal": 0, "skipReasons": "real@f0677920|A|SKIPPED …类名不在… :: tap:.post-card__audit :: \"no such element\"; showcase band (real@ed1cd82c) records the same sentence => band change does not help" },
+      "destination": "NEEDS_CAPABILITY",
+      "blocker": ["per-case precondition recipe channel (r-exec-cli.mjs:1241 explicitly: this page needs 逐条目 precondition.query/夹具, not page-granular ROUTE_QUERY)", "component-subtree element action => dispatch on the WS leg (r-exec-ws.mjs:65-66: SEL_COMPONENT_SCOPE 193 rows, CLI ~90.6% cannot tap)"],
+      "mustBeTrueToStopBeingDebt": "one real-band A/B EXECUTED|FAILED row taken while A genuinely has one audit-pending post (badge present, same id appears exactly once, server readback = 1)",
+      "cost": "1 capability + carrier switch to WS; then 1-2 legs ~= 20-40s + one rollback-able QA post in pending state."
+    },
+    {
+      "key": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
+      "gateAxis": "login",
+      "declared": { "requiresReal": true, "identities": ["A", "B"], "automatable": null, "tapTarget": ".skeleton-line--w60", "tapTargetSource": "apps/client/src/components/common/Skeleton.vue:31 (component-scoped)", "pre": "REAL_ONLY 优先（可注入慢速与失败）" },
+      "measuredRealRows": { "count": 10, "judgedReal": 0, "skipReasons": "real@f0677920|A|SKIPPED …类名不在… :: tap:.skeleton-line--w60 :: \"no such element\" (skeleton only renders inside the Loading window)" },
+      "destination": "NEEDS_CAPABILITY",
+      "blocker": ["networkFault / slow-response injection channel (r-exec-cli.mjs:384-385: no network-condition injection in any of the five executors, recorded as [NEW]; :270/:350 refuse it in all modes)", "per-case seven-state recipe (Error, Disabled, Idle)", "DATA DEFECT on the criteria desk itself: the action string is truncated on disk (\"…⑦ Idle（停止滚动 \" with no continuation) so step 7 cannot be executed as written"],
+      "mustNotBeConfusedWith": "VI28 (the Disabled-state sibling) is already stamped automatable:false and sits in REALCOV_AUTOMATABLE_EXEMPT — that exemption cannot be borrowed to close VI34",
+      "mustBeTrueToStopBeingDebt": "one real-band A/B EXECUTED|FAILED row with each of the seven states really rendered and captured",
+      "cost": "1 injection capability (carrier code) + 1 criteria-text repair (different authorization). Device minutes are worthless until the injection channel exists."
+    },
+    {
+      "key": "次要18|TD03",
+      "gateAxis": "login",
+      "declared": { "requiresReal": true, "identities": ["A", "B"], "automatable": null, "tapTarget": ".reply-input", "tapTargetSource": "apps/client/src/subpackages/circles/circles/topic-detail.vue:415 (page-level)" },
+      "measuredRealRows": { "count": 12, "judgedReal": 0, "skipReasons": "all DENY: 交互禁触（注销/解绑/清空…）; exec-interact-real-sc-r10 names it exactly: VEHICLE_DENY :: 载具 DENY_TAP 命中 action 文本 … 命中词=清空" },
+      "destination": "DISPATCHABLE_NOW",
+      "condition": "*AFTER* L13 lands (in-tree today: scripts/qa/deny-tap.cjs + r-exec-cli/r-exec-ws modified-uncommitted; L13's own deny-tap-f04-r13.md is still an all-TODO skeleton). MUST NOT be re-judged as passed until a leg actually runs it.",
+      "stillHasToActuallyRun": "one leg covering steps ① (valid submit) + ⑤ (rapidTap x5 via --rapid) and recording EXECUTED/FAILED",
+      "measuredLimitsOnTheTriageClaim": [
+        "triage said TD03 needs no device capability at all — partly wrong: step ⑥ of TD03's own action says 「断网态 tap .reply-btn」, and networkFault is refused in every mode; a verb refusal pushes the WHOLE case to SKIPPED and continues (r-exec-cli.mjs:1560-1567), while --rapid/--gestures imply --strict-verbs (:116/:132) => after L13, a strict leg still yields 0 closed rows for TD03",
+        "steps ①③④ name specific input values (「QA-自检-正常回复」/ 3 spaces / 501 chars) but the CLI input verb hardcodes --value 123456 (:1612, c21 G-15 still open) => those three decision points are inexpressible",
+        "expected needs per-request POST counts AND whether Idempotency-Key values match AND server readback of replies; --net-count gives counts only"
+      ],
+      "mustBeTrueToStopBeingDebt": "one real-band A/B EXECUTED|FAILED, non-contradicting-session row exists",
+      "cost": "minimal: 0 new capability + ~20s. Full-criterion: 2 capabilities (parameterized input value + read-back; networkFault) + 1 backend readback."
+    },
+    {
+      "key": "次要20|OT05",
+      "gateAxis": "login",
+      "declared": { "requiresReal": true, "identities": ["A", "B"], "automatable": null, "tapTarget": ".relationship-cta__btn--like", "tapTargetSource": "apps/client/src/components/profile/public/RelationshipCTA.vue:43 (component-scoped)", "pre": "身份A mock 登录" },
+      "internalContradiction": "the row's own pre says mock 登录 and its expected③ only asserts mock-side counts (「real 轮另见 OT07」) while requiresReal=true => the gate chases it on the real band. This is a criteria-desk defect, not a gate defect; fixing it is a criteria edit under another authorization, NOT an exemption.",
+      "measuredRealRows": { "count": 13, "judgedReal": 0, "skipReasons": "real@f0677920|A|SKIPPED …类名不在… :: tap:.relationship-cta__btn--like :: \"no such element\"; showcase band identical" },
+      "destination": "NEEDS_CAPABILITY",
+      "blocker": [
+        "per-case deep-link query for subpackages/profile-extra/profile/other — r-exec-cli.mjs:1242-1251 records the measured data: A=100158 likes only target=10003(active) and 100155(active); 10003=互喜(OT06 态2), 100155=已喜欢未匹配(OT06 态1), 10001=未喜欢(OT05, measured GET /api/v1/profile/10001 = 200 远山/25/北京) => three different ids needed, page-granular ROUTE_QUERY refuses to pin one; pinning one distorts the others and also breaks OT02/OT03 which assert the missingParam landing",
+        "component-subtree element action (same 90.6% CLI finding) => WS leg",
+        "nativeModal answer primitive for the 匹配成功 modal (c21 G-12 lists OT05 by name)"
+      ],
+      "mustBeTrueToStopBeingDebt": "one real-band A/B EXECUTED|FAILED row landed on ?userId=10001, tapped the CTA inside RelationshipCTA, and answered the match modal",
+      "cost": "3 capabilities (2 shared with OT06/OT09); after they land 1 WS leg ~= 20s."
+    },
+    {
+      "key": "次要20|OT06",
+      "gateAxis": "login+guest",
+      "declared": { "requiresReal": true, "identities": null, "automatable": null, "tapTarget": ".relationship-cta__btn--like", "pre": "预置两态分别执行：态1=已喜欢未匹配…态2=已互喜 matched…态2 的 real 构造需服务端互喜数据 → REAL_ONLY" },
+      "axisReason": "no identities field => axesOf([]) = both axes. No sanctioned way to drop the guest axis: tag-ops-identity-scope.mjs rule 1 only tags pages present in the landing table, and scripts/qa/guest-landing-policy.json does NOT contain subpackages/profile-extra/profile/other. Guest legs measured on the DECLARED page (reason is 类名不在, not 栈顶=…), so the guest axis is genuinely reachable and genuinely owed.",
+      "measuredRealRows": { "count": 15, "judgedReal": 0, "skipReasons": "A side x5 and guest side x5, both :: tap:.relationship-cta__btn--like :: \"no such element\" — neither axis is 'never ran'" },
+      "destination": "NEEDS_CAPABILITY",
+      "blocker": ["per-case query + WS component-subtree leg (shared with OT05)", "two server-side data states really constructed (100155 liked-not-matched, 10003 mutual)"],
+      "mustBeTrueToStopBeingDebt": "TWO judged real-band rows: one identity in {A,B} and one in {guest,not-logged-in}, non-contradicting session evidence, each covering both preset states",
+      "cost": "same capabilities as OT05 + a data fixture per state; device minutes DOUBLE: 2 legs ~= 40s, or 4 legs ~= 80s if both states are run on both axes."
+    },
+    {
+      "key": "次要20|OT09",
+      "gateAxis": "login",
+      "declared": { "requiresReal": true, "identities": ["A", "B"], "automatable": null, "tapTarget": ".whisper-sheet__input", "tapTargetSource": "apps/client/src/components/discover/WhisperComposeSheet.vue:85 (component-scoped)", "pre": "态2（已实名登录）下 tap 悄悄话键使 sheet 弹出" },
+      "triageCorrection": "triage said OT09 is blocked ONLY by DENY_TAP mis-reading 清空. Measured: DENY was the first guard (r10: 命中词=清空), but three more stand behind it — r-exec-cli.mjs:1242-1251 refuses to give this page a ROUTE_QUERY and names OT09's object as component-scoped (「补 query 至多让它可判，闭不上，归 WS 腿」), the four input states need parameterized values (carrier hardcodes 123456 at :1612), and the send-failure branch needs networkFault. => fixing DENY alone closes 0 rows here.",
+      "measuredRealRows": { "count": 13, "judgedReal": 0, "skipReasons": "all 交互禁触（…清空…）; r10 VEHICLE_DENY 命中词=清空" },
+      "destination": "NEEDS_CAPABILITY",
+      "mustBeTrueToStopBeingDebt": "one real-band A/B EXECUTED|FAILED row that opened the sheet, typed empty / normal / 80-char / special-character strings into .whisper-sheet__input, closed via all three routes, and produced a real send failure",
+      "cost": "3 capabilities (WS subtree leg, parameterized input+read-back, networkFault) + a 已实名 precondition; then 1 leg ~= 20-40s (census calls=2)."
+    },
+    {
+      "key": "次要20|VRN07",
+      "gateAxis": "login",
+      "declared": { "requiresReal": true, "identities": ["A", "B"], "automatable": null, "tapTarget": ".form-item__input", "pre": "真实后端 + 出生日期未满 18 岁（或资料缺 birthDate）的登录身份…无该身份时本用例记 UNVERIFIED" },
+      "destination": "NEEDS_IDENTITY_IMPOSSIBLE",
+      "whyIdentityCannotExist": [
+        "apps/api/src/test/java/com/campuslove/api/auth/RealAuthServiceMinorRegistrationTest.java:78 registerUser_minor_birthDate_rejectedWithMinorNotAllowed => the product refuses to register a minor",
+        "apps/api/src/main/java/com/campuslove/api/profile/ProfileUpdateService.java:197-204 => an existing account cannot be edited into a minor either",
+        "scripts/qa/r-exec.cjs:493-497 IDENT_DEFS has exactly A=100158 / B=100159 / guest=100151; database/round5-backfill-guest-age-gender.sql:28-33 backfilled birth_date only for openid LIKE 'guest:%' with 1998-2005 => no recorded identity is a minor",
+        "real-name.vue:330 `if (useMock()) return;` => mock/showcase-with-mock band cannot express the gate at all"
+      ],
+      "openSubQuestionMustRunFirst": "the row's own pre also admits 「资料缺 birthDate」 as the same branch (real-name.vue:335: birthDate ? ageOf>=18 : false) and V2026.08.10.0011__add_users_birth_date.sql:15 leaves birth_date NULL for 存量用户; A/B are phone accounts outside the backfill's WHERE clause. Whether A or B currently has birth_date NULL is NOT measured anywhere on disk. One read-only GET /profile/basic settles it. Do not assume it in either direction.",
+      "measuredRealRows": { "count": 13, "judgedReal": 0, "skipReasons": "real@f0677920|A|SKIPPED …类名不在… :: input:.form-item__input :: \"no such element\"; r10 NOT_SHOOTABLE" },
+      "mustBeTrueToStopBeingDebt": "one real-band A/B EXECUTED|FAILED row whose session really sat on the isAdult=false branch (banner + both inputs disabled + submit toast errMinorNotAllowed with zero requests), plus the 401/token-expired sub-state from expected④",
+      "cost": "0 device minutes for the read-only settlement; route A (birth_date already NULL) = 1 leg ~= 20s + a second adult comparison account; route B = one authorized DB fixture write (an identity that must exist, not purchasable with device time). Never automatable:false: the blocker is data existence, not channel ability."
+    },
+    {
+      "key": "次要21|OC09",
+      "gateAxis": "login+guest",
+      "declared": { "requiresReal": true, "identities": null, "automatable": null, "tapTarget": ".retry-btn", "tapTargetFrom": "cellplan-round7-taptarget.json", "pre": "真实后端在跑，用 Network 拦截使 GET …/messages 返回 5xx 或断网（…不可构造时记 UNVERIFIED，禁止用 mock 冒充错误态）" },
+      "destination": "NEEDS_CAPABILITY",
+      "blocker": [
+        "networkFault injection channel — [NEW] per r-exec-cli.mjs:384-385 and refused in all modes at :270/:350; .retry-btn only renders in the error branch (expected: messages 清空 → .state-view 错误分支 :404-407)",
+        "guest axis has no sanctioned removal path: guest-landing-policy.json does not contain subpackages/chat/official-chat/index, so tag-ops-identity-scope.mjs rule 1 refuses it"
+      ],
+      "notAWayToCloseThis": "the row's own 「记 UNVERIFIED」 does not close it: UNVERIFIED is not in JUDGED = /^(EXECUTED|FAILED|PASS)$/",
+      "measuredRealRows": { "count": 16, "judgedReal": 0, "skipReasons": "3 eras of guard, never a judgement: 没点名可交互元素 (before tapTarget landed) → 类名不在 :: tap:.retry-btn :: \"no such element\" (A and guest) → r10 NOT_SHOOTABLE" },
+      "mustBeTrueToStopBeingDebt": "TWO judged real-band rows (login axis + guest axis) each taken on a genuine 5xx/offline error state, with retry producing exactly one new GET and the send-failure rollback restoring inputValue",
+      "cost": "1 injection capability + a landing ruling if the guest axis is to be scoped + 2 legs ~= 40s. Zero收账 without the channel."
+    },
+    {
+      "key": "次要22|VB03",
+      "gateAxis": "login",
+      "declared": { "requiresReal": true, "identities": ["A", "B"], "automatable": null, "tapTarget": null, "pre": "展示版 + 身份A 登录（栈：我的 → VIP → 账单）… 先在 VIP 页走完一次 mock 开通…" },
+      "destination": "NEEDS_BAND_CHANGE",
+      "bandThatCanExpressIt": "showcase (mp-weixin-showcase, VITE_API_MODE=real + VITE_SHOWCASE_MODE=true) => rows stamp band=real@ed1cd82c and the gate's REAL_BAND=/^real(@|$)/ accepts them (it reads mode, not the showcase flag) — verbatim at reports/audit/round-7/interact-leg-result-v33.json:46",
+      "whyCurrentBandCannot": "plain real band rows record 交互没发出：本页没落在声明页（栈顶=pages/profile/index） in exec-A-real-r7final / -stage7 / exec-real-coverage-a-r9 — the page redirects off subpackages/vip/bills, contradicting the row's own 展示版 precondition",
+      "residualDebtAfterBandChange": "VB03 has NO tapTarget and its (a)(b)(c) are navigation + pull-down with no class name, so the carrier still refuses with 没点名可交互元素 ⇒ 待把判据收紧 (r10 recorded NOT_SHOOTABLE :: tapTarget 空且 action 抠不出类名 ⇒ 点击无法归属). Band change alone is NOT a close.",
+      "measuredRealRows": { "count": 14, "judgedReal": 0, "skipReasons": "real@f0677920|A: 栈顶=pages/profile/index (3) / observe-only (2); real@ed1cd82c|A (showcase): 没点名可交互元素 (2); r10: NOT_SHOOTABLE no named element; guest legs: identity-scoped skip (correct, not debt)" },
+      "mustBeTrueToStopBeingDebt": "one showcase-band (real@…) A/B row with status EXECUTED|FAILED that is no longer held by 落点不符 or 没点名元素",
+      "cost": "CHEAPEST of the 10: 0 new carrier capability (pull-down via --gestures and per-moment counts via --net-count already exist) = 1 band choice + 1 criteria naming edit through the sanctioned ops writer (which must verify the name verbatim in both bands' wxml) + 1 leg ~= 20s + the mock-activation precondition in the same session."
+    }
+  ]
+}
