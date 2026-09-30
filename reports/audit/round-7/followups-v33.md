@@ -601,6 +601,19 @@ POST verify-real-coverage   exit=1  REALCOV_RESULT=FAIL（真实模式覆盖守�
 **本轮改动清单（提交边界）**：`reports/audit/round-7/guest-landing-measured.json`（重拍写回，行数守恒）＋本文件 §18。
 命名备份 `.bak-prefix-r23-*` 与既有 `.bak-*` 一起留在树里未提交，作还原凭据。
 
+**更正我上一条自己写错的清单（盘上实测，两本账都动了，不是一本）**：`guest-landing-booked.json` 也被这一腿重写，
+差异是有内容的不是一般记账刷新 —— `generatedAt` 到本次时刻、`debtRows 434→445`、
+新增 `fromOpsNarrowed=28 / fromOpsEntireGuest=0` 两个来源分项，
+并且 **carrier 字段从前写的是 `--mode measure --project undefined`**（HEAD 里那版把未定义的入参原样印进了账本），
+这一腿把它改成了 `--project apps/client/dist/build/mp-weixin-real` ⇒ 顺手修掉一处"账本自述命令跑不出来"的旧脏。
+它与我跑前备份的 md5 **不同**（`773c119f` vs `8053953b`）是预期的：备份是跑前状态。
+
+**另一条如实挂出的未验证项**：`tmp/qa/locks/` 下此刻仍有 4 枚锁文件
+（`wechat-automation-9420/9430/9431` 与 `…-cli.lock`）。我这次取 pid 的写法没解析出持有者（`pid=` 空），
+所以**我不能宣布租约是空的**，只能说"没有 node 进程被我这轮留下占着"这一条没被证明。
+下一发要连 DevTools 之前，先用 `ui-lease.mjs` 自己的读法问一次持有者与存活，再决定；锁文件本身不许删（§既定纪律）。
+
+
 
 
 
