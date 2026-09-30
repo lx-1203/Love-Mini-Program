@@ -386,3 +386,44 @@ GUEST_LANDING=FAIL 先修这几条再来量（带病出腿 = 白拿租约）：
    同理**提交只走显式路径清单**：`git add -A` 会把这 3848 条 `D` 卷进 QA 提交。
 3. 设备腿开拍前只认一条凭据：脚本自己印的 `WS_UP=OK`。端口在 netstat 里听着不算——
    本轮实测 `9420` 在听而会话取页失败 34 次，根因是 IDE 窗口最小化；先恢复窗口再接通道，别只加大 `--wait`。
+
+## 13. r9 停点交接（2026-09-30 12:0x，turn 预算耗尽；§0–§12 原文一字未动）
+**已入库且我本人复跑过的**（HEAD `0ba53340`，前一发 `da996f3a`）：
+- `verify-case-automatable --results` 三处接线（FP 83.3%／硬口径 47.1%／召回 12.1%，`CA_AGREE_CONSERVE` ok）；
+  `verify-ops-corpus-stamp --check` 接进 DSL 与 bash（`canon=0fef00d141e7 / cases=1107 / 零漂移`）。
+- 构建确定性：产物移出 `apps/client/src`（三档 MODE 我逐档 grep 复核、`git status --short apps/client/src` 0 行）。
+- F-04：`DENY_TAP` 三副本收敛到 `scripts/qa/deny-tap.cjs`；我复跑 `DENYTAP_TEST=PASS checks=33`；
+  全语料 `refuse 32→30，released=次要18|TD03,次要20|OT09，newly_denied=(none)`。
+- 游客腿：`measured-ledger.mjs` 合并语义（`merge-never-shrink`，缩减需显式 token），我复跑 `GL_TEST=PASS checks=39`；
+  **5 组授权落地对全部真跑出读数**（landing=`pages/login/index`、identity=`not-logged-in`、stable=true、
+  band=`real@f0677920`、两枚 markers 皆在）。⚠ 如实降级：这些行 `samples=1`，调用却是 `--repeat 3`
+  ⇒ "stable"是单样本结论，当三样本稳定引用前必须重跑并核 `samples` 数。
+- 入册：`decisions-v33.md` §32/§32.1/§33（裁定、实测纠偏、亲验流水）。
+
+**两发后台作业在飞，turn 预算内不可能读到结果**（它们各自要 10–20 分钟，我起跑后只过了约 2 分钟）。
+会话若断，它们会被孤立；**重跑命令与日志落点如下**（别信"应该跑完了"）：
+1. L16 语料门验证：`node22 scripts/qa/verify-evidence-corpus.mjs > .zcode/tmp/orch-r9/corpus-after-l16.log 2>&1`；
+   已见的部分证据：它**跑得起来**且没有把门削弱（逐 manifest 打了 legacy 判决
+   `gitSha=6fd151786c… → 非当前HEAD→按契约过期…不判红`、`noHash=0`，并报出 `missing=5`）——**但终判行还没读到**。
+2. 提交后 sha 敏感三连（工作流自己的规矩：提交会移 HEAD）：`verify-provenance-all` → `verify-band-freshness`
+   → `verify-real-coverage`，日志在 `.zcode/tmp/orch-r9/post-*.log`；`provenance` 已起跑、另两发未起。
+
+**必须接手的四件（按优先级）**
+1. **L16 的 +125 行未验收**：`git diff scripts/qa/verify-evidence-corpus.mjs` —— 它在账号每日额度耗尽时中断，
+   本次**故意没入库**。跑通并读到 PASS/FAIL 与新的分母读数后再提交；若读不通就按具名路径回滚那一个文件。
+2. **r9 终局复量目前是暂定读数**：19 步、红 6，HEAD 前=后=`491210dd`，但它跑在 L13/L16/L17 在途期间
+   （我的静默判据把"文件 39 分钟没动"误读成"车道收工"）。三条红已逐条归因（ledger×2 由 `70472d92` 删 118 份佐证文档、
+   `prove-gates-can-fail` 是 INCONCLUSIVE 传播、`run-qa-selftests` 2/38 含你的删帧与过期夹具）。
+   **接 1 之后在 `0ba53340` 上复跑 `bash scripts/qa/run-final-verify-v33.sh`，再跑 `gen-round8-report.mjs` 让 §7 机器回填。**
+3. **两条待你裁定**（我不替你选）：(a) `verify-ledger` 那 71 条孤儿的去处——恢复 7 个文件（实测可 71→0 PASS）／
+   重指向（重建 71 行）／加"语料缩水断言"；前两条都隐藏 provenance。(b) real-coverage 10 条去向的**机器件无消费者**——
+   扩 `emit-openrow-register.mjs` 的键并加读者，或授权新载具。
+4. **非本会话的未提交改动不许顺手带走**（另一会话的 r20 车道）：`.zcode/workflows/…dwf.ts +30`、
+   `gen-round8-report.mjs +136`、`run-final-verify-v33.sh +14`、`run-qa-selftests.mjs +3`、`verify-package-size.mjs +8`、
+   `evidence-holes-verdict.json`。要动先问归属。
+
+**本轮的外部天花板**：两名车道死于 `You've reached your daily usage limit for Chat`（账号级额度，不是 turn 上限），
+所以**当天不可能再派发车道**；上面 1–4 得在下一个预算里做。
+
+**两条硬规矩（本轮用代价换来的，别重学）**：① 本仓禁止 `git checkout -- .` / `git restore .` / `git reset --hard` / `git clean`
+——会复活用户明确选择删掉的 3848 帧；② 提交只走**显式路径清单**，`git add -A` 会把那 3848 条 `D` 卷进 QA 提交。
