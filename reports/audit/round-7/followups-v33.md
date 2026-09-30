@@ -536,4 +536,32 @@ POST verify-real-coverage   exit=1  REALCOV_RESULT=FAIL（真实模式覆盖守�
 `scripts/qa/test-guest-landing-stability.mjs`（新）、`reports/audit/round-7/guest-stability-tightening-r22.md`（新）、
 本文件 §16。**不含** `guest-landing-measured.json` / `-booked.json`（车道与我都未改账本数据，重拍才动它们）。
 
+## §17 2026-10-01 01:5x —— 终局 22 门复量在 `cce95ff4` 上跑完：红 2，且两红都是裁定期望的样子
+
+`bash scripts/qa/run-final-verify-v33.sh` 整发跑完（`SWEEP_EXIT=0`），面板 §7 已回填（`gen-round8-report.mjs` exit 0，
+`finalReadings=已填`）。**HEAD 前=cce95ff4 后=cce95ff4** ⇒ 这一发没有踩"中途提交把 sha 敏感门读数搅浑"那个坑（§13 记过两次）。
+
+| 轴 | 读数 | 这条红/绿归谁 |
+|---|---|---|
+| 20 门 exit=0 | 含 `run-qa-selftests`（上一 HEAD 的红，本轮闭）、`verify-evidence-corpus`、`verify-band-freshness`、`verify-ledger`、`verify-real-coverage-disposition`、`prove-gates-can-fail`、`dryrun-workflow` | 全绿 |
+| `verify-provenance-all` exit=1 | 纯 §25 裁定的历史红：`PROV_STORE=reachable`、`PROV_FRAMES_STORE_VOUCHED=149`、`PROV_FRAME_ACCOUNTING in=9184 out=9184 OK`、`PROV_PRODUCERS=11 DERIVED_OK=11 LITERAL_SHA=0` ⇒ 已无断链帧，红来自 pre-stamp 旧戳 | **裁定＝每轮如实复量、不买绿** |
+| `verify-real-coverage` exit=1 | `REALCOV_CONSERVATION=OK 免检28 + 覆盖198 + 欠账=10 = 236/236`、`UNCOVERED_LEDGER=OK 点名=10 欠账=10 判据外=0` | 10 条已按去向件分流（§14），非新问题 |
+
+**§35(4) / §16 落地后的状态**：`stable` 判据现算仍稳定 11、因样本数不足降级 17、落点不一致 0；
+账本里写着 `stable=true` 但现算不成立的冒充数 = 17（我独立复算，不读车道 md）。
+`test-guest-landing` 44 格、`test-guest-landing-stability` 37 格（含变异 red=9/14、异常 0）、`writeguard` 49 格全 `fail=0`。
+
+**还等用户的（我没替他选，也不能替他选）**：
+1. **游客落点第二个样本**：`node22 scripts/qa/verify-guest-landing.mjs --mode measure --repeat 2`（要 8080 在跑 +
+   `WS_UP=OK` 且档对得上 + 空 UI 租约）。不做这条，17 行永远停在"未成立"——这是收紧判据的直接后果，不是新缺陷。
+2. **VB03** 需要 showcase 档重跑（那一档目前滞后于 mock/real，跑前先 `grep MODE: config/env.js` 复核三档）。
+3. **TD03** 卡在步骤⑥「断网」——`networkFault` 在 `VERB_RULES` 里是诚实的 NOT_SHOOTABLE（五把执行器都没有网络条件注入），
+   按裁定不许把动词降级成普通 tap 凑绿 ⇒ 除非有人写新代码，这条只能记"载体不可测"。
+4. **`run-qa-selftests.mjs` 的 stem 放宽（`\w{2,8}`→`\w{2,24}`）** 与外来 `verify-lane-report-complete` 的入册归属，
+   仍按 §34/§15 保持未提交；我的测试已改印主方言，所以 HEAD 单发不依赖它。
+5. 面板自述的两处对照读数供参考：`GENREPORT_LEDGER_DECLARED marker_section=30 latest_section=34 declared_lag=4
+   diff_vs_generator=11` —— 册内"仍等你裁定"那一行的**自述**落后于实际节号，分桶器已按现算印出差异条目；
+   这条属于"文档自述与机器计数不合"，改法是把那一行也改成派生件，需要动 `decisions-v33.md` 的表头，留给下一发。
+
+
 

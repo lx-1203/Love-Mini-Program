@@ -52,7 +52,7 @@
 
 ## 6. 需你拍板 26 项（本轮一律未自裁）
 
-> 口径钉死：本节的分母是裁定册 `reports/audit/round-7/decisions-v33.md`（sha1=e9084510d302，105284 字节）里**全部 36 条 `## N.` 标题**；原先的写法直接把标题总数当待拍板数（结构派生计数会随收账虚增），现按语义分桶：**待拍板 26 / 已裁定 3 / 已闭或状态对账 1 / 流水与自我纠正 6**，守恒 26+3+1+6=36（应等于 36）。默认桶是待拍板，只有命中显式规则才移出，每条移出项在下面 6.2 附一行依据。
+> 口径钉死：本节的分母是裁定册 `reports/audit/round-7/decisions-v33.md`（sha1=10dc7fa774d5，111940 字节）里**全部 36 条 `## N.` 标题**；原先的写法直接把标题总数当待拍板数（结构派生计数会随收账虚增），现按语义分桶：**待拍板 26 / 已裁定 3 / 已闭或状态对账 1 / 流水与自我纠正 6**，守恒 26+3+1+6=36（应等于 36）。默认桶是待拍板，只有命中显式规则才移出，每条移出项在下面 6.2 附一行依据。
 
 - 1. `--r-lg` 令牌值与判据正面冲突
 - 2. `--c-text-inverse` 与 `--c-bg-container` 浅色值完全相同
@@ -81,7 +81,7 @@
 - 28. CH22 只落了不依赖滚动裁决的那半，另半是三件事互斥，得你选一个解释
 - 29. `landingMissing=5` 不是产品欠账：分诊台在向一份"零行声明身份"的语料索要**游客**处置
 
-GENREPORT_DECISION_BUCKETS ledger=reports/audit/round-7/decisions-v33.md sha1=e9084510d302 headings_total=36 pending=26 ruled=3 closed=1 log=6 sum=36
+GENREPORT_DECISION_BUCKETS ledger=reports/audit/round-7/decisions-v33.md sha1=10dc7fa774d5 headings_total=36 pending=26 ruled=3 closed=1 log=6 sum=36
 
 GENREPORT_SECTION6_SELFCOUNT heading_number=26 listed_items=26 matches_title=true
 
