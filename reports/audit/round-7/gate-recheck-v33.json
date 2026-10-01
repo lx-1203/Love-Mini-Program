@@ -1,5 +1,5 @@
 {
-  "head": "593f4d2d",
+  "head": "cd6fa25c",
   "gates": [
     {
       "name": "dryrun-workflow",
@@ -97,6 +97,6 @@
     "verify-real-coverage"
   ],
   "redProbe": null,
-  "note": "编排方 r10 按 DSL :548 的 schema 补产（此前该件从未落盘 ⇒ gen-round8-report 一直读到 null 并印「（未跑，故此处不留结论。）」）。数据源 .zcode/tmp/final-verify/summary.json，22 键、红 3，headBefore=headAfter 无提交漂移。redProbe 留 null：prove-gates-can-fail 那一发在终验里单独记 exit=0，本件不复制它的判定语义。",
+  "note": "编排方 r10 补产（bash 侧等价件，schema 照 DSL :548）。数据源 .zcode/tmp/final-verify/summary.json：cd6fa25c→cd6fa25c，22 键、红 3，三条红均为已裁定的预期红（provenance 历史红 / real-coverage 10 条欠账 / selftests 唯一一条指向 decisions #11）。redProbe 留 null：prove-gates-can-fail 那一发在终验里 exit=0，判定语义归它自己，本件不复制。",
   "producedBy": "orchestrator-r10 (bash carrier, equivalent to DSL :548)"
 }

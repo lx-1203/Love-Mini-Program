@@ -1047,7 +1047,7 @@ legacy-window 那一发的"变异必红"被同一次崩溃**假满足**（node �
 `premise` 记"这条的前提是否已被后续实测推翻"，因为交还过期前提比不交更坏（见 `#5`/`#12`/`#10`）。
 
 ```machine
-PENDING_RULINGS_BEGIN producedBy=orchestrator-r10 head=a237aef4
+PENDING_RULINGS_BEGIN producedBy=orchestrator-r10 head=cd6fa25c
 RULING id=decisions#1 status=open title=--r-lg 令牌值与判据正面冲突 options=A改判据指实值16rpx的令牌|B改令牌值(影响所有使用处) basis="§1:20-23 判据扣住未动"
 RULING id=decisions#3 status=open title=MESSAGES-INDEX-002 判据与生效裁定只能动一个 options=A改判据(承认mock判不了)|B改裁定(mock也挂该组件) basis="§3:31-34；messages/index.vue:374 的 !useMock() 使 mock 档不可测"
 RULING id=decisions#5 status=open title=证据可携(帧与清单路径) options=A进LFS|B包外归档只留hash|C接受绑定采集机 premise=changed basis="§35 C 段：绝对路径轴已自愈(tapfix-merged.json lanes=56 全为仓内相对路径、绝对路径实测 0 条)；HEAD 仍跟踪 reports/** 下 10457 枚图片 ⇒ 原文『干净 clone 一条都打不开』对这些不成立；活着的只有 .json.json 双后缀 + 未跟踪那批"

@@ -52,9 +52,9 @@
 
 ## 6. 需你拍板 18 项（本轮一律未自裁）
 
-> **本节读的是裁定册 §36 的具名机器名册**（`PENDING_RULINGS` 第 1050–1071 行，open=18 half-closed=1 closed=1；名册自带对账：尾部计数与实际行数一致）。标题分桶那一套仍照常算，用作**交叉核对**：分类器判 27 条 ⇒ 差 9 条，差因是分类器只读标题措辞、读不到状态对账节里的闭合（不是谁算错）。
+> **本节读的是裁定册 §36 的具名机器名册**（`PENDING_RULINGS` 第 1050–1071 行，open=18 half-closed=1 closed=1；名册自带对账：尾部计数与实际行数一致）。标题分桶那一套仍照常算，用作**交叉核对**：分类器判 28 条 ⇒ 差 10 条，差因是分类器只读标题措辞、读不到状态对账节里的闭合（不是谁算错）。
 
-> 口径钉死：本节的分母是裁定册 `reports/audit/round-7/decisions-v33.md`（sha1=9015437a66fc，128045 字节）里**全部 37 条 `## N.` 标题**；原先的写法直接把标题总数当待拍板数（结构派生计数会随收账虚增），现按语义分桶：**待拍板 27 / 已裁定 3 / 已闭或状态对账 1 / 流水与自我纠正 6**，守恒 27+3+1+6=37（应等于 37）。默认桶是待拍板，只有命中显式规则才移出，每条移出项在下面 6.2 附一行依据。
+> 口径钉死：本节的分母是裁定册 `reports/audit/round-7/decisions-v33.md`（sha1=e37aea8c4411，130009 字节）里**全部 38 条 `## N.` 标题**；原先的写法直接把标题总数当待拍板数（结构派生计数会随收账虚增），现按语义分桶：**待拍板 28 / 已裁定 3 / 已闭或状态对账 1 / 流水与自我纠正 6**，守恒 28+3+1+6=38（应等于 38）。默认桶是待拍板，只有命中显式规则才移出，每条移出项在下面 6.2 附一行依据。
 
 - decisions#1：--r-lg 令牌值与判据正面冲突（可选：A改判据指实值16rpx的令牌|B改令牌值(影响所有使用处)）
 - decisions#3：MESSAGES-INDEX-002 判据与生效裁定只能动一个（可选：A改判据(承认mock判不了)|B改裁定(mock也挂该组件)）
@@ -75,21 +75,21 @@
 - r10new#C：两枚陈旧 worktree 与分支要不要清（可选：逐条具名后清|保留不动）
 - r10new#D：verify-evidence-holes 的 judge 分支仍无条件覆写权威判决件（可选：把落点改侧车(需改参数语义，属判域)|维持现状并记录）
 
-GENREPORT_DECISION_BUCKETS ledger=reports/audit/round-7/decisions-v33.md sha1=9015437a66fc headings_total=37 pending=27 ruled=3 closed=1 log=6 sum=37
+GENREPORT_DECISION_BUCKETS ledger=reports/audit/round-7/decisions-v33.md sha1=e37aea8c4411 headings_total=38 pending=28 ruled=3 closed=1 log=6 sum=38
 
-GENREPORT_SECTION6_SELFCOUNT heading_number=18 listed_items=18 source=roster crosscheck_classification=27 matches_title=true
+GENREPORT_SECTION6_SELFCOUNT heading_number=18 listed_items=18 source=roster crosscheck_classification=28 matches_title=true
 
-GENREPORT_BUCKET_GUARD=OK removed=10/37 pending_zero_guard=clear ask_override_held=0
+GENREPORT_BUCKET_GUARD=OK removed=10/38 pending_zero_guard=clear ask_override_held=0
 
-GENREPORT_LEDGER_DECLARED marker_line=337 marker_section=30 latest_section=36 declared_lag=6 pending_declared=15 diff_vs_generator=12 diff_items=#5,#7,#10,#11,#15,#16,#17,#18,#19,#22,#27,#36
+GENREPORT_LEDGER_DECLARED marker_line=337 marker_section=30 latest_section=37 declared_lag=7 pending_declared=15 diff_vs_generator=13 diff_items=#5,#7,#10,#11,#15,#16,#17,#18,#19,#22,#27,#36,#37
 
 ### 6.1 各桶条数（按标题总数计的原始数一并印出，便于核对没漏项）
 
-- 待拍板：27 条
+- 待拍板：28 条
 - 已裁定（册内已记录用户裁定）：3 条
 - 已闭或状态对账：1 条
 - 流水与自我纠正：6 条
-- 原始数（裁定册 `## N.` 标题总数，含以上四桶，即修复前 §6 会印的数）：37 条
+- 原始数（裁定册 `## N.` 标题总数，含以上四桶，即修复前 §6 会印的数）：38 条
 
 ### 6.2 已从「待拍板」移出的条目（每条一行移出依据，逐条可复核）
 
@@ -118,8 +118,8 @@ GENREPORT_LEDGER_DECLARED marker_line=337 marker_section=30 latest_section=36 de
 
 ### 6.3 与册内自述的对账（只印对照，不参与分桶）
 
-- 裁定册第 337 行（属 §30）有一处**声明式**的「仍等你裁定」，它列出的待裁项是 15 条：#1 #2 #3 #4 #6 #8 #9 #12 #13 #14 #23 #24 #25 #28 #29；册内最新的节已到 §36 ⇒ **该声明落后 6 节没重写**（引用它点评旧清单的那些行不算声明，已按措辞排除）。
-- 本节（按标题语义分桶）判为待拍板的有 27 条；两者差 12 条：#5 #7 #10 #11 #15 #16 #17 #18 #19 #22 #27 #36。
+- 裁定册第 337 行（属 §30）有一处**声明式**的「仍等你裁定」，它列出的待裁项是 15 条：#1 #2 #3 #4 #6 #8 #9 #12 #13 #14 #23 #24 #25 #28 #29；册内最新的节已到 §37 ⇒ **该声明落后 7 节没重写**（引用它点评旧清单的那些行不算声明，已按措辞排除）。
+- 本节（按标题语义分桶）判为待拍板的有 28 条；两者差 13 条：#5 #7 #10 #11 #15 #16 #17 #18 #19 #22 #27 #36 #37。
   - #5 5. 帧像素与清单路径要不要长期可查
     ｜册内另有原文称其已收（照抄，不据此移桶）：「所以原文"干净 clone 一条都打不开"对这 10,457 枚**不成立**。⇒ `#5` 的 A/B/C 要按"一轴已闭 / 一轴仍在 / 一轴分母已变」
   - #7 7. `village-publish-001` 的提示元素与文案缺设计依据
@@ -143,6 +143,8 @@ GENREPORT_LEDGER_DECLARED marker_line=337 marker_section=30 latest_section=36 de
   - #27 27. B7「给 switch 补名字」是必要的，但**不足以**让那 7 条变绿
     ｜册内另有原文称其已收（照抄，不据此移桶）：「- **#21 / #26 / #27**：都已把"传闻"换成实测，并纠了我自己的错引」
   - #36 36. 待拍板名册做成机器可读块（2026-10-01 12:2x；上面各节原文一字未动）
+    ｜册内除那行声明外没有一处说它已闭 ⇒ 更可能是那行声明漏列，仍按待拍板交还
+  - #37 37. #16 两套去向账并存 ⇒ 先让"不一致"响亮变红（2026-10-01 12:3x；上面各节原文一字未动）
     ｜册内除那行声明外没有一处说它已闭 ⇒ 更可能是那行声明漏列，仍按待拍板交还
 - 为什么**不**拿那行声明来分桶：它是编排方手写在册子里的一段汇总文本，会滞后（册内 §30 之后新增/翻转的节它不覆盖）。拿它当事实源就又把「清单靠人记得改」这个病请回来了。这里只印差集，让人一眼看出是「生成器漏了」还是「册内声明滞后」。
 
