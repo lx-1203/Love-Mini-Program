@@ -1,0 +1,102 @@
+{
+  "head": "593f4d2d",
+  "gates": [
+    {
+      "name": "dryrun-workflow",
+      "exitCode": 0
+    },
+    {
+      "name": "emit-round-report",
+      "exitCode": 0
+    },
+    {
+      "name": "prove-gates-can-fail",
+      "exitCode": 0
+    },
+    {
+      "name": "run-qa-selftests",
+      "exitCode": 1
+    },
+    {
+      "name": "verify-backend-fresh",
+      "exitCode": 0
+    },
+    {
+      "name": "verify-band-freshness",
+      "exitCode": 0
+    },
+    {
+      "name": "verify-carrier-wiring",
+      "exitCode": 0
+    },
+    {
+      "name": "verify-case-automatable",
+      "exitCode": 0
+    },
+    {
+      "name": "verify-dry-no-lease",
+      "exitCode": 0
+    },
+    {
+      "name": "verify-evidence-corpus",
+      "exitCode": 0
+    },
+    {
+      "name": "verify-evidence-holes",
+      "exitCode": 0
+    },
+    {
+      "name": "verify-lane-report-complete",
+      "exitCode": 0
+    },
+    {
+      "name": "verify-ledger-after-panel",
+      "exitCode": 0
+    },
+    {
+      "name": "verify-ledger",
+      "exitCode": 0
+    },
+    {
+      "name": "verify-ops-stamp",
+      "exitCode": 0
+    },
+    {
+      "name": "verify-provenance-all",
+      "exitCode": 1
+    },
+    {
+      "name": "verify-queue-reconcile",
+      "exitCode": 0
+    },
+    {
+      "name": "verify-real-coverage-disposition",
+      "exitCode": 0
+    },
+    {
+      "name": "verify-real-coverage",
+      "exitCode": 1
+    },
+    {
+      "name": "verify-source-shape",
+      "exitCode": 0
+    },
+    {
+      "name": "verify-state-truth-after-panel",
+      "exitCode": 0
+    },
+    {
+      "name": "verify-state-truth",
+      "exitCode": 0
+    }
+  ],
+  "improved": [],
+  "stillRed": [
+    "run-qa-selftests",
+    "verify-provenance-all",
+    "verify-real-coverage"
+  ],
+  "redProbe": null,
+  "note": "编排方 r10 按 DSL :548 的 schema 补产（此前该件从未落盘 ⇒ gen-round8-report 一直读到 null 并印「（未跑，故此处不留结论。）」）。数据源 .zcode/tmp/final-verify/summary.json，22 键、红 3，headBefore=headAfter 无提交漂移。redProbe 留 null：prove-gates-can-fail 那一发在终验里单独记 exit=0，本件不复制它的判定语义。",
+  "producedBy": "orchestrator-r10 (bash carrier, equivalent to DSL :548)"
+}

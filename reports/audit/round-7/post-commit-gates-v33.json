@@ -1,0 +1,14 @@
+{
+  "headBefore": "593f4d2d",
+  "headAfter": "e3c89104",
+  "gates": {
+    "verify-band-freshness": 0,
+    "verify-evidence-corpus": 0,
+    "verify-provenance-all": 1,
+    "verify-real-coverage-disposition": 0,
+    "verify-real-coverage": 1
+  },
+  "flipped": [],
+  "note": "编排方 r10 按 DSL :591 的 schema 补产（此前该件从未落盘）。载具 tmp/r10-postcommit，Node22、QA_EVIDENCE_STORE=D:/6/love-mini-evidence ⇒ reachable 支，与终验同口径。flipped=由绿转红条数。",
+  "producedBy": "orchestrator-r10 (bash carrier, equivalent to DSL :591)"
+}

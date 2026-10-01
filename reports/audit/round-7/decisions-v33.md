@@ -936,6 +936,48 @@ DSL `{ name: "真实档覆盖去向册 verify-real-coverage-disposition", args: 
 **由编排方在终局复量时定，不许靠放宽让它闭嘴**。另 `3→4→5` 帧漂移被点名是并行车道续删所致、盲区差恒 3846——
 这条要在终局复量里复现一次，若不可复现就写成本册的一处不确定读数。
 
+### 35.9 r10 终局收口（2026-10-01 12:1x；编排亲跑亲验，含一次跨会话并账）
+⚠ **先记一件事实：本册与我这份树之间夹进了另一场会话的 17 发提交**（`0ba53340`…`593f4d2d`），HEAD 从 `da996f3a`
+推进到 `593f4d2d`。后果有三条，都不是"谁对谁错"，而是**并行写同一工作树留下的账**：
+① **撞号**：那场会话入册了自己的 `## 34. 用户裁定三项`，而我在同一支笔位上写了 `## 34. r10 收口流水` ⇒ 册子里
+一度出现**两个 §34**。已实测更正：只把编号 34→35 并同步本节 25 处自引用，**正文一字未删改**，第 569 行那节原样不动；
+更正前核过对方那 24 行对我子节的反向引用命中数为 0，所以改名是安全的。更正后 `^## \d+\.` 标题数 = **36 个不同编号**，
+`gen-round8-report.mjs` 读到 `latest_section=35`（它按标题数当待办数，撞号期间那个数本身就是虚的）。
+② 我那几条"待办"被对方**先做掉了**：`5149d954` 修掉 L18 门点名的两枚死导出、并把车道报告里**被误判成未填骨架的引用**
+收窄（这正是我 §35.8 观察到的"报告自己含有它要检测的字符串"）；`43df734e` 把两条因数据变迁过期的断言改成派生不变量。
+③ 对方 §34 明写"非本会话未提交改动 ⇒ 保持原样、登记归属待定"，并指出 `run-final-verify-v33.sh` 里多出两条它没见过的门
+⇒ **归属今天认下来**：那是 L18/L20 的车道产物，我这一程负责入库。
+
+**终局复量按当前 HEAD 重跑**（上一发 22 键是 02:25 量的，而修仪器的那发在它之后 ⇒ 不重跑就是拿旧态当终值）：
+`FINAL_VERIFY_DONE reds=3`、`headBefore=headAfter=593f4d2d`（无提交漂移）、**22 键**。三条红：
+- `verify-provenance-all`＝`#25` 记为已知历史红（`#13` 那句 4867 与本节 4882 的差异另见 §35.8 与本段末）；
+- `verify-real-coverage`＝10 条欠账，`RCD_RESULT=PASS / RCD_NO_REDUCTION` 同时成立，即"条条有去向"与"红照旧"并存；
+- `run-qa-selftests` 只剩 **1/48** 红：`test-guest-landing.mjs` 一条断言，实跑复现 `exit=1 / checks=45 failures=1`，
+  根因是 `triage-exec-failures` 对 `exec-guest-real-guard-r10` 给出 `FAILED-landing-guard=4`
+  —— 该桶的判据文字就是"**每一组落地对须有 booked 复测腿或裁决**"，即 **`decisions #11`** 未裁。
+  ⇒ **不改断言、不放宽、不标免检**：改它就等于替用户做政策决定。#15 就此结案（两条连带红中
+  `test-corpus-legacy-window` 在工作树码上实测 `cases=39 fail=0 / live_bad=0 mutant_bad=2` 已绿，
+  `test-evidence-store-axis` 经 `43df734e` 改派生不变量后不再红）。
+
+**载具侧两处修复**：`run-qa-selftests` 600→**900 秒**（编排方 13:15 用 600 秒实测 `exit=124`，那是载具掐表不是被测物红；
+方向与 DSL 的 900000ms 齐平、只往大调）；三条新门在两载具里**各 1 条、无重复插入**（`grep -c` DSL 2/1/1 中那条 2 是
+同一目的 name+args 同行所致；两空格条目共 21）。DSL 语法 `parseDiagnostics: 0`、`bash -n` exit 0、
+`dryrun-workflow --profile all` = `DRYRUN_RESULT=PASS（3/3）`。
+
+**入库**：`e3c89104`（25 个显式路径）。按 §35.1 裁定**不入库**的三类都留在树里未动：
+3857 项截图删除、9 个 `guest-landing-*.bak-*` 备份、`evidence-holes-verdict.json`（门自重的 `generatedAt` 漂移，
+提交它就是把 D-17 那类污染再认一次）。
+**提交后 sha 敏感复量 5 条**（含 L19 那条会因名字含 `real-coverage` 而自动进子集的新门）：
+`band-freshness 0 / evidence-corpus 0 / provenance-all 1 / real-coverage-disposition 0 / real-coverage 1`，
+`flipped=0` ⇒ **没有任何一条是因为我这次提交才转红的**。并**首次补齐** DSL 承诺过的两份契约件
+`reports/audit/round-7/gate-recheck-v33.json`（22 键）与 `post-commit-gates-v33.json`——
+§35 A 段那条"两份件从未落盘＝这场 DSL 从没跑到终点"的账至此有了 bash 侧等价件，`producedBy` 已标明来源不冒充 DSL。
+
+**仍未闭（不是遗漏，是下一刀）**：`#11` 的 `PENDING_RULINGS` 机器名册（今天 `diff_vs_generator=11` 还在，
+26/15/14 三方未归一）；新登记的 `#16` 两套"覆盖欠账去向账"并存（本程 `real-coverage-disposition.json` + 门，
+与 `6e3420ec` 的 `incident-destinations-round10.json` + 面板 `EMIT_DESTINATIONS`，今日 tally 逐字相同但会各自漂移）；
+`#12` 两载具里的"手填数字"（117→实测 121、GATE_SUITE 写死 12）。
+
 ## §35 2026-09-30 17:1x 终局复量后的三处仪器缺陷（我自己造成的两条在内），按"判据缺陷按判据修"处置
 
 **背景**：`edd55203` 的 22 门终验出 3 红，其中 `run-qa-selftests` 上一 HEAD 还是绿的 ⇒ 红是我这轮改动带进来的。
