@@ -158,9 +158,21 @@ function main() {
   ok(real.buckets.sum === real.buckets.headings, "真册子四桶守恒", `headings=${real.buckets.headings} sum=${real.buckets.sum}`);
   ok(real6.headingNum === real6.items.length, "真册子 §6 自数一致", `标题=${real6.headingNum} 列出=${real6.items.length}`);
   ok(real6.basis === real.buckets.headings - real.buckets.pending, "真册子每条移出项都带依据", `移出 ${real.buckets.headings - real.buckets.pending} 条`);
-  const ids = new Set(real6.items.filter((i) => /^\d+\./.test(i)).map((i) => Number(i.match(/^(\d+)\./)[1])));
-  pair("真册子非待办项确实被移出", "§0/§30/§31/§32/§33 均不在待拍板桶", "§5（要不要长期可查）仍在待拍板桶",
+  /* §6 的渲染格式有两种：标题分类是 `N. 标题`，名册是 `decisions#N：标题（可选：…）`。
+     断言按**编号**认成员，不按行首形状认——上一版写死 `/^\d+\./`，名册一上线这条就假红（检查器与写入器
+     格式耦合，语义却没变），与本册"夹具过期就改成派生不变量、不许放宽语义"同一条处置。 */
+  const ids = new Set();
+  for (const i of real6.items) {
+    const m1 = /^(\d+)\./.exec(i);
+    const m2 = /^decisions#(\d+)/.exec(i);
+    if (m1) ids.add(Number(m1[1]));
+    if (m2) ids.add(Number(m2[1]));
+  }
+  pair("真册子非待办项确实被移出", "§0/§30/§31/§32/§33 均不在待拍板桶", "§5（要不要长期可查）在待拍板清单里",
     [0, 30, 31, 32, 33].every((n) => !ids.has(n)), ids.has(5));
+  ok(real6.items.length === real6.headingNum, "真册子 §6 列出条数==标题数字（自数一致，两种渲染口径同规）",
+    `列出=${real6.items.length} 标题=${real6.headingNum}`);
+  console.log(`  info 真册子 §6 来源=${/source=roster/.test(real.out) ? "PENDING_RULINGS 名册" : "标题分类"}；§5 命中=${ids.has(5)}`);
   ok(real.buckets.pending > 0, "反 vacuous：待拍板桶非空", `pending=${real.buckets.pending}（原始标题数 ${real.buckets.headings}）`);
 
   say("");

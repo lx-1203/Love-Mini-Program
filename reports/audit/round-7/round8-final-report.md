@@ -50,52 +50,46 @@
 - 在册陷阱：`mp-weixin-real` 窗口已死却过地板——`open_project_window` 回 success/type:reuse、截图 11290B，画面实为「模拟器启动失败」。过字节数不等于可采。
 - 载具误挡：按载具口径复算 `DENY` 只命中 2/49（TD03、OT09），不是整批拦路虎；本轮未擅自改载具，待授权。
 
-## 6. 需你拍板 26 项（本轮一律未自裁）
+## 6. 需你拍板 18 项（本轮一律未自裁）
 
-> 口径钉死：本节的分母是裁定册 `reports/audit/round-7/decisions-v33.md`（sha1=a4dbcd417f2d，117062 字节）里**全部 36 条 `## N.` 标题**；原先的写法直接把标题总数当待拍板数（结构派生计数会随收账虚增），现按语义分桶：**待拍板 26 / 已裁定 3 / 已闭或状态对账 1 / 流水与自我纠正 6**，守恒 26+3+1+6=36（应等于 36）。默认桶是待拍板，只有命中显式规则才移出，每条移出项在下面 6.2 附一行依据。
+> **本节读的是裁定册 §36 的具名机器名册**（`PENDING_RULINGS` 第 1050–1071 行，open=18 half-closed=1 closed=1；名册自带对账：尾部计数与实际行数一致）。标题分桶那一套仍照常算，用作**交叉核对**：分类器判 27 条 ⇒ 差 9 条，差因是分类器只读标题措辞、读不到状态对账节里的闭合（不是谁算错）。
 
-- 1. `--r-lg` 令牌值与判据正面冲突
-- 2. `--c-text-inverse` 与 `--c-bg-container` 浅色值完全相同
-- 3. `MP-R2-PAGES-MESSAGES-INDEX-002` 判据与已生效裁定只能动一个
-- 4. AppShell 的左右内距到底是 28rpx 还是 32rpx
-- 5. 帧像素与清单路径要不要长期可查
-- 6. 各轮写进库的测试数据要不要清
-- 7. `village-publish-001` 的提示元素与文案缺设计依据
-- 8. 几百个非 png 的文本 dump 要不要入库
-- 9. 高 dpr 机型档的巡检帧要不要补
-- 10. 主包体积超微信上限，需要你定怎么瘦
-- 11. 五组游客落地对没有裁定，分诊台因此一直 exit 2
-- 12. round-1 那 144 帧没有 gitSha，要不要给个显式豁免
-- 13. 18 份在途 exec-* 清单要不要授权代跑
-- 14. 一枚生产者退出溯源集合，要不要把它拉回来
-- 15. verify-openqueue-lanes.mjs：修成真的门，还是归档
-- 16. run-round7-closeout.mjs：唯一能答"stage-8 过了吗"的载具，现在没人跑
-- 17. 面板每跑一次就重打一份权威判决件
-- 18. 分诊台的判据台目录是从结果路径反推的
-- 19. 那 5 组落地对仍是真欠账（与第 11 项同源，这里补一条新证据）
-- 22. 一条会删无回滚产物的载具（本轮实测，未修）
-- 23. 体积达标了，但"达的是哪一个口径"必须你认定
-- 24. 剩下 0.76MB 的最大单一来源：`utils/person-avatars.ts` 的 21 条强制收集 import
-- 25. provenance 那 4886 张帧：三种改法我都量过了，**买不到绿**
-- 27. B7「给 switch 补名字」是必要的，但**不足以**让那 7 条变绿
-- 28. CH22 只落了不依赖滚动裁决的那半，另半是三件事互斥，得你选一个解释
-- 29. `landingMissing=5` 不是产品欠账：分诊台在向一份"零行声明身份"的语料索要**游客**处置
+> 口径钉死：本节的分母是裁定册 `reports/audit/round-7/decisions-v33.md`（sha1=9015437a66fc，128045 字节）里**全部 37 条 `## N.` 标题**；原先的写法直接把标题总数当待拍板数（结构派生计数会随收账虚增），现按语义分桶：**待拍板 27 / 已裁定 3 / 已闭或状态对账 1 / 流水与自我纠正 6**，守恒 27+3+1+6=37（应等于 37）。默认桶是待拍板，只有命中显式规则才移出，每条移出项在下面 6.2 附一行依据。
 
-GENREPORT_DECISION_BUCKETS ledger=reports/audit/round-7/decisions-v33.md sha1=a4dbcd417f2d headings_total=36 pending=26 ruled=3 closed=1 log=6 sum=36
+- decisions#1：--r-lg 令牌值与判据正面冲突（可选：A改判据指实值16rpx的令牌|B改令牌值(影响所有使用处)）
+- decisions#3：MESSAGES-INDEX-002 判据与生效裁定只能动一个（可选：A改判据(承认mock判不了)|B改裁定(mock也挂该组件)）
+- decisions#5：证据可携(帧与清单路径)（可选：A进LFS|B包外归档只留hash|C接受绑定采集机） ｜⚠ 前提changed
+- decisions#6：各轮写进库的测试数据要不要清（可选：先对 schema 表名再决定清|保持保留）
+- decisions#7：village-publish-001 提示元素与文案缺设计依据（可选：定字数阈值语义按哪页|定文案以哪张设计稿为准） ｜⚠ 前提contradicted
+- decisions#8：几百个非 png 文本 dump 要不要入库（可选：入库|不入库(维持现状)）
+- decisions#9：高 dpr 机型档巡检帧（可选：A加一档重拍HOME-005+TMP-TOUR-R2-004|B接受长期NOT_SHOOTABLE并记理由）
+- decisions#10：主包体积怎么瘦(卡的其实是能不能上传)（可选：A继续瘦约1.23MB本地raw引用|B改分包结构|C承认产物不能直接上传、门降成告警） ｜⚠ 前提not-reproducible
+- decisions#11：五组游客落地对是违例还是允许（可选：A认定违例开实现刀|B逐组允许并收窄在册裁定文字|C只裁setup两组） ｜⚠ 前提mis-ruled-risk
+- decisions#12：round-1 那 144 帧怎么定形（可选：A给corpus加LEGACY显式豁免|B重跑取证|C接受长期红并把round-1结论降级为不可引用） ｜⚠ 前提changed
+- decisions#15：verify-openqueue-lanes.mjs 修成真的门还是归档（可选：A先修(退出码与判决一致/不无条件覆写权威件/去写死轮次)再当门接|B归档为一次性转换工具）
+- decisions#24：要不要为体积动 utils/person-avatars.ts（可选：动(删 21 条强制收集 import)|不动(避免复发头像 404)） ｜⚠ 前提confirmed
+- decisions#28：CH22 滚动归属三选一（可选：(a)承认scroll-view、ACTION句当笔误|(b)把campus-hub__feed搬出scroll-view(结构改动)|(c)拆两条各判各的） ｜⚠ 前提drifted
+- decisions#29c：落地对 (c) 分支（可选：按裁定补 (c) 那条|(a) 已落地即视为足够）
+- r10new#A：两套「覆盖欠账去向账」并存要定唯一真值源（可选：以门侧 real-coverage-disposition.json 为准并让面板读它|以面板侧 incident-destinations-round10.json 为准并退役门侧|两侧保留但互指校验）
+- r10new#B：corpus 门 --strict 是否默认开启（可选：默认 advisory(现状)|默认 strict 判红）
+- r10new#C：两枚陈旧 worktree 与分支要不要清（可选：逐条具名后清|保留不动）
+- r10new#D：verify-evidence-holes 的 judge 分支仍无条件覆写权威判决件（可选：把落点改侧车(需改参数语义，属判域)|维持现状并记录）
 
-GENREPORT_SECTION6_SELFCOUNT heading_number=26 listed_items=26 matches_title=true
+GENREPORT_DECISION_BUCKETS ledger=reports/audit/round-7/decisions-v33.md sha1=9015437a66fc headings_total=37 pending=27 ruled=3 closed=1 log=6 sum=37
 
-GENREPORT_BUCKET_GUARD=OK removed=10/36 pending_zero_guard=clear ask_override_held=0
+GENREPORT_SECTION6_SELFCOUNT heading_number=18 listed_items=18 source=roster crosscheck_classification=27 matches_title=true
 
-GENREPORT_LEDGER_DECLARED marker_line=337 marker_section=30 latest_section=35 declared_lag=5 pending_declared=15 diff_vs_generator=11 diff_items=#5,#7,#10,#11,#15,#16,#17,#18,#19,#22,#27
+GENREPORT_BUCKET_GUARD=OK removed=10/37 pending_zero_guard=clear ask_override_held=0
+
+GENREPORT_LEDGER_DECLARED marker_line=337 marker_section=30 latest_section=36 declared_lag=6 pending_declared=15 diff_vs_generator=12 diff_items=#5,#7,#10,#11,#15,#16,#17,#18,#19,#22,#27,#36
 
 ### 6.1 各桶条数（按标题总数计的原始数一并印出，便于核对没漏项）
 
-- 待拍板：26 条
+- 待拍板：27 条
 - 已裁定（册内已记录用户裁定）：3 条
 - 已闭或状态对账：1 条
 - 流水与自我纠正：6 条
-- 原始数（裁定册 `## N.` 标题总数，含以上四桶，即修复前 §6 会印的数）：36 条
+- 原始数（裁定册 `## N.` 标题总数，含以上四桶，即修复前 §6 会印的数）：37 条
 
 ### 6.2 已从「待拍板」移出的条目（每条一行移出依据，逐条可复核）
 
@@ -124,8 +118,8 @@ GENREPORT_LEDGER_DECLARED marker_line=337 marker_section=30 latest_section=35 de
 
 ### 6.3 与册内自述的对账（只印对照，不参与分桶）
 
-- 裁定册第 337 行（属 §30）有一处**声明式**的「仍等你裁定」，它列出的待裁项是 15 条：#1 #2 #3 #4 #6 #8 #9 #12 #13 #14 #23 #24 #25 #28 #29；册内最新的节已到 §35 ⇒ **该声明落后 5 节没重写**（引用它点评旧清单的那些行不算声明，已按措辞排除）。
-- 本节（按标题语义分桶）判为待拍板的有 26 条；两者差 11 条：#5 #7 #10 #11 #15 #16 #17 #18 #19 #22 #27。
+- 裁定册第 337 行（属 §30）有一处**声明式**的「仍等你裁定」，它列出的待裁项是 15 条：#1 #2 #3 #4 #6 #8 #9 #12 #13 #14 #23 #24 #25 #28 #29；册内最新的节已到 §36 ⇒ **该声明落后 6 节没重写**（引用它点评旧清单的那些行不算声明，已按措辞排除）。
+- 本节（按标题语义分桶）判为待拍板的有 27 条；两者差 12 条：#5 #7 #10 #11 #15 #16 #17 #18 #19 #22 #27 #36。
   - #5 5. 帧像素与清单路径要不要长期可查
     ｜册内另有原文称其已收（照抄，不据此移桶）：「所以原文"干净 clone 一条都打不开"对这 10,457 枚**不成立**。⇒ `#5` 的 A/B/C 要按"一轴已闭 / 一轴仍在 / 一轴分母已变」
   - #7 7. `village-publish-001` 的提示元素与文案缺设计依据
@@ -133,11 +127,11 @@ GENREPORT_LEDGER_DECLARED marker_line=337 marker_section=30 latest_section=35 de
   - #10 10. 主包体积超微信上限，需要你定怎么瘦
     ｜册内除那行声明外没有一处说它已闭 ⇒ 更可能是那行声明漏列，仍按待拍板交还
   - #11 11. 五组游客落地对没有裁定，分诊台因此一直 exit 2
-    ｜册内除那行声明外没有一处说它已闭 ⇒ 更可能是那行声明漏列，仍按待拍板交还
+    ｜册内另有原文称其已收（照抄，不据此移桶）：「RULING id=decisions#11 status=open title=五组游客落地对是违例还是允许 options=A认定违例开实现刀|B逐组允」
   - #15 15. verify-openqueue-lanes.mjs：修成真的门，还是归档
     ｜册内除那行声明外没有一处说它已闭 ⇒ 更可能是那行声明漏列，仍按待拍板交还
   - #16 16. run-round7-closeout.mjs：唯一能答"stage-8 过了吗"的载具，现在没人跑
-    ｜册内除那行声明外没有一处说它已闭 ⇒ 更可能是那行声明漏列，仍按待拍板交还
+    ｜册内另有原文称其已收（照抄，不据此移桶）：「与 L21 分桶器的 `pending=26` 差在**分类源不同**（那个数按标题语义保守判定，把已闭的 `#2/#4/#13/#16/#17/#18/#」
   - #17 17. 面板每跑一次就重打一份权威判决件
     ｜册内另有原文称其已收（照抄，不据此移桶）：「- **#17 已闭，但我先前报小了。** `ea3bd785` 只把 `verify-guest-landing --mode book` 的落点改侧车；」
   - #18 18. 分诊台的判据台目录是从结果路径反推的
@@ -148,6 +142,8 @@ GENREPORT_LEDGER_DECLARED marker_line=337 marker_section=30 latest_section=35 de
     ｜册内另有原文称其已收（照抄，不据此移桶）：「- **#22 已修**（`emit-tapfix-briefs.mjs`：所有权 = 根层 `NN.json` **且**内容也必须是载具形状；外来的保留」
   - #27 27. B7「给 switch 补名字」是必要的，但**不足以**让那 7 条变绿
     ｜册内另有原文称其已收（照抄，不据此移桶）：「- **#21 / #26 / #27**：都已把"传闻"换成实测，并纠了我自己的错引」
+  - #36 36. 待拍板名册做成机器可读块（2026-10-01 12:2x；上面各节原文一字未动）
+    ｜册内除那行声明外没有一处说它已闭 ⇒ 更可能是那行声明漏列，仍按待拍板交还
 - 为什么**不**拿那行声明来分桶：它是编排方手写在册子里的一段汇总文本，会滞后（册内 §30 之后新增/翻转的节它不覆盖）。拿它当事实源就又把「清单靠人记得改」这个病请回来了。这里只印差集，让人一眼看出是「生成器漏了」还是「册内声明滞后」。
 
 ## 7. 终局复量读数

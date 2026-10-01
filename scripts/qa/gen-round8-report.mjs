@@ -77,6 +77,57 @@ const bucketCount = (k) => bucketOf(k).length;
 const bucketSum = BUCKETS.reduce((a, b) => a + bucketOf(b.key).length, 0);
 /* 反"凭空归零"守卫：待拍板桶空但标题数>0，或移出比例超过 70%，判红（印 GENREPORT_BUCKET_GUARD=RED）。 */
 const guardRed = classified.length > 0 && (pending.length === 0 || (classified.length - pending.length) / classified.length > 0.7);
+/* 名册优先（r10）：标题分桶再保守也只能读"标题怎么写"，读不到后面状态对账节里的闭合 ⇒ 同一个"待拍板数"
+   在盘上会长期并存三个（26 按标题 / 15 按 §30 那句人工汇总 / 18 按逐节核对）。裁定册 §36 把最后一者做成了
+   具名机器块，本节**优先读它**；读不到就退回标题分类，但必须**明印"未读名册"**——静默退回就等于把分类器
+   的保守数冒充成待办真数。 */
+/* 字段按"下一个键名"切，不按 `|` 切：写入方（裁定册 §36）用 `|` 作 options 的内部分隔符，
+   早先用 `[^|]*` 取 status 会把 "open title=… options=A|B" 整串吞进来 ⇒ 18 条 open 全被筛掉，
+   §6 静默印成「需你拍板 0 项」。这就是"凭空归零"最日常的成因：不是有人放宽判据，是解析器与写入器的分隔符打架。 */
+const RKEYS = [" status=", " title=", " options=", " premise=", " basis="];
+const parseRuling = (l) => {
+  /* 终止键按"实际存在的最早那个"取，不能假设某个键一定在：#1/#3 这类行没有 premise=，
+     早先写死 cut(" options=", " premise=") 时找不到停止符就一路吃到行尾，把 basis="…" 也吞进 options。 */
+  const cut = (fromKey, stops) => {
+    const a = l.indexOf(fromKey);
+    if (a < 0) return "";
+    const start = a + fromKey.length;
+    const cands = stops.map((k) => l.indexOf(k, start)).filter((i) => i >= 0);
+    if (cands.length === 0) return l.slice(start).trim();
+    return l.slice(start, Math.min(...cands)).trim();
+  };
+  const first = RKEYS.map((k) => (l.indexOf(k) < 0 ? Infinity : l.indexOf(k))).sort((x, y) => x - y)[0];
+  return {
+    id: first === Infinity ? l.replace(/^RULING\s+/, "") : l.slice("RULING id=".length, first).trim(),
+    status: cut(" status=", [" title="]),
+    title: cut(" title=", [" options="]),
+    options: cut(" options=", [" premise=", " basis="]),
+    premise: cut(" premise=", [" basis="]),
+    basis: cut(" basis=", []),
+  };
+};
+const roster = (() => {
+  const b = ledgerLines.findIndex((l) => /^\s*PENDING_RULINGS_BEGIN/.test(l));
+  if (b < 0) return null;
+  const e = ledgerLines.findIndex((l, i) => i > b && /^\s*PENDING_RULINGS_END/.test(l));
+  if (e < 0) return { broken: true, beginLine: b + 1 };
+  const rows = ledgerLines.slice(b + 1, e).filter((l) => /^\s*RULING id=/.test(l)).map(parseRuling);
+  /* 名册存在但一条 open 都切不出来 ⇒ 几乎必是解析器与写入器的分隔符/键名打架（本仓刚踩过一次），
+     这时**绝不能**把 §6 印成「需你拍板 0 项」：宁可退回保守的标题分类并明说，也不能让待办凭空归零。 */
+  if (rows.length > 0 && rows.filter((r) => r.status === "open").length === 0) {
+    return { broken: true, beginLine: b + 1, endLine: e + 1, rows, reason: "名册有 " + rows.length + " 行却切不出任何 status=open ⇒ 解析器与写入器格式打架，按未读名册处理" };
+  }
+  const header = /open=(\d+) half_closed=(\d+) closed=(\d+)/.exec(ledgerLines[e]);
+  return {
+    beginLine: b + 1, endLine: e + 1, rows,
+    open: rows.filter((r) => r.status === "open"),
+    halfClosed: rows.filter((r) => r.status === "half-closed"),
+    closed: rows.filter((r) => r.status === "closed"),
+    declared: header ? { open: +header[1], half: +header[2], closed: +header[3] } : null,
+    selfCountAgree: header ? (+header[1] === rows.filter((r) => r.status === "open").length && +header[2] === rows.filter((r) => r.status === "half-closed").length && +header[3] === rows.filter((r) => r.status === "closed").length) : false,
+  };
+})();
+const pendingView = roster && roster.open ? roster.open.map((r) => ({ title: `${r.id}：${r.title}（可选：${r.options}）` + (r.premise && r.premise !== "unchanged" ? ` ｜⚠ 前提${r.premise}` : ""), num: -1 })) : pending;
 /* 册内显式声明对账：只取**最后一处「以『仍等你裁定』起头的声明行」**，纯读盘、只印对照，不参与分桶（参与就变成靠人记得改的名单了）。
    后来新增的节会**引用**这句话来点评旧清单（如 §34 引用 §30 那句），引用不是声明 ⇒ 按措辞排除，否则会把"已关掉"的编号也当成待裁项。 */
 const isDeclaration = (l) => /^\s*[*>-\s]*\**仍等你裁定/.test(l) && !/那句|漏计|引用|指的/.test(l);
@@ -156,14 +207,17 @@ if (il) {
   L.push("**（交互腿产物文件尚未落盘，此处不留结论。）**", "");
 }
 
-L.push("## 6. 需你拍板 " + pending.length + " 项（本轮一律未自裁）", "");
+L.push("## 6. 需你拍板 " + pendingView.length + " 项（本轮一律未自裁）", "");
+L.push(roster && roster.open
+  ? `> **本节读的是裁定册 §36 的具名机器名册**（\`PENDING_RULINGS\` 第 ${roster.beginLine}–${roster.endLine} 行，open=${roster.open.length} half-closed=${roster.halfClosed.length} closed=${roster.closed.length}；名册自带对账：${roster.selfCountAgree ? "尾部计数与实际行数一致" : "**尾部计数与行数不一致，名册需回修**"}）。标题分桶那一套仍照常算，用作**交叉核对**：分类器判 ${pending.length} 条 ⇒ 差 ${Math.abs(pending.length - roster.open.length)} 条，差因是分类器只读标题措辞、读不到状态对账节里的闭合（不是谁算错）。`
+  : `> ⚠ **未读名册**：裁定册里没有 \`PENDING_RULINGS_BEGIN/END\` 块（或块未闭合：${roster && roster.broken ? "有 BEGIN 无 END，行 " + roster.beginLine : "整块缺失"}）⇒ 本节退回**标题语义分类**，那个数按构造只会偏保守（把已闭的算成待办），不得当成"真待办数"引用。`, "");
 L.push(`> 口径钉死：本节的分母是裁定册 \`${LEDGER_REL}\`（sha1=${ledgerDigest}，${ledgerBytes} 字节）里**全部 ${classified.length} 条 \`## N.\` 标题**；` +
   `原先的写法直接把标题总数当待拍板数（结构派生计数会随收账虚增），现按语义分桶：**待拍板 ${bucketOf("pending").length} / 已裁定 ${bucketOf("ruled").length} / 已闭或状态对账 ${bucketOf("closed").length} / 流水与自我纠正 ${bucketOf("log").length}**，` +
   `守恒 ${BUCKETS.map((b) => bucketOf(b.key).length).join("+")}=${bucketSum}（应等于 ${classified.length}）。默认桶是待拍板，只有命中显式规则才移出，每条移出项在下面 6.2 附一行依据。`, "");
-for (const d of pending) L.push("- " + d.title);
+for (const d of pendingView) L.push("- " + d.title);
 if (pending.length === 0) L.push("- **（本桶为空。若裁定册仍有 `## N.` 标题却一条待办都没有，这是分桶规则过度移出的形状，先按 6.2 逐条复核再采信。）**");
 L.push("", `GENREPORT_DECISION_BUCKETS ledger=${LEDGER_REL} sha1=${ledgerDigest} headings_total=${classified.length} pending=${bucketOf("pending").length} ruled=${bucketOf("ruled").length} closed=${bucketOf("closed").length} log=${bucketOf("log").length} sum=${bucketSum}`, "");
-L.push(`GENREPORT_SECTION6_SELFCOUNT heading_number=${pending.length} listed_items=${pending.length} matches_title=${pending.length === Number(L.filter((x) => /^## 6\. 需你拍板 (\d+) 项/.test(x)).map((x) => x.match(/^## 6\. 需你拍板 (\d+) 项/)[1])[0])}`, "");
+L.push(`GENREPORT_SECTION6_SELFCOUNT heading_number=${pendingView.length} listed_items=${pendingView.length} source=${roster && roster.open ? "roster" : "heading-classification"} crosscheck_classification=${pending.length} matches_title=${pendingView.length === Number(L.filter((x) => /^## 6\. 需你拍板 (\d+) 项/.test(x)).map((x) => x.match(/^## 6\. 需你拍板 (\d+) 项/)[1])[0])}`, "");
 L.push(`GENREPORT_BUCKET_GUARD=${guardRed ? "RED" : "OK"} removed=${classified.length - pending.length}/${classified.length} pending_zero_guard=${pending.length === 0 && classified.length > 0 ? "TRIPPED" : "clear"} ask_override_held=${classified.filter((c) => c.heldByAskOverride).length}`, "");
 L.push(`GENREPORT_LEDGER_DECLARED marker_line=${declIdx + 1} marker_section=${declSection} latest_section=${newestSection} declared_lag=${newestSection - declSection} pending_declared=${declaredNums.length} diff_vs_generator=${diffVsLedger.length} diff_items=${diffVsLedger.map((p) => `#${p.num}`).join(",") || "无"}`, "");
 
@@ -219,5 +273,5 @@ console.log("WROTE " + OUT_REL + " ledger=" + LEDGER_REL);
 console.log("commits=" + commits.length + " decisions=" + classified.length + " openRows=" + (g.open ? g.open.openRowCount : "n/a") + " finalReadings=" + (g.final ? "已填" : "未跑"));
 console.log(`GENREPORT_DECISION_BUCKETS ledger=${LEDGER_REL} sha1=${ledgerDigest} headings_total=${classified.length} pending=${bucketOf("pending").length} ruled=${bucketOf("ruled").length} closed=${bucketOf("closed").length} log=${bucketOf("log").length} sum=${bucketSum}`);
 console.log(`GENREPORT_BUCKET_GUARD=${guardRed ? "RED" : "OK"} removed=${classified.length - pending.length}/${classified.length} pending_zero_guard=${pending.length === 0 && classified.length > 0 ? "TRIPPED" : "clear"} ask_override_held=${classified.filter((c) => c.heldByAskOverride).length}`);
-console.log(`GENREPORT_SECTION6_SELFCOUNT heading_number=${pending.length} listed_items=${pending.length}`);
+console.log(`GENREPORT_SECTION6_SELFCOUNT heading_number=${pendingView.length} listed_items=${pendingView.length} source=${roster && roster.open ? "roster" : "heading-classification"} crosscheck_classification=${pending.length}`);
 console.log(`GENREPORT_LEDGER_DECLARED marker_line=${declIdx + 1} marker_section=${declSection} latest_section=${newestSection} declared_lag=${newestSection - declSection} pending_declared=${declaredNums.length} diff_vs_generator=${diffVsLedger.length}`);

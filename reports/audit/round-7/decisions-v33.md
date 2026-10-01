@@ -1036,3 +1036,63 @@ legacy-window 那一发的"变异必红"被同一次崩溃**假满足**（node �
    行内写着 `stable=true` 但现算不成立=17；`guest-stability-tightening-r22.md` 逐行列 `guardCaseId`。
 
 
+
+## 36. 待拍板名册做成机器可读块（2026-10-01 12:2x；上面各节原文一字未动）
+`gen-round8-report.mjs` 的分桶器把"等你拍板 N 项"从**数标题**改成了保守分类，但它读不到后面状态对账节里的闭合，
+所以今天同一个数仍有三方（L21 实测 `diff_vs_generator=11`）：**26**（按标题语义）、**15**（`§30:337` 人工汇总行，
+已证伪漏计）、**约 14–18**（逐节核对原文的结果，取决于把"半闭/新增"算不算）。
+⇒ 只要这个数还需要人读散文才能定，它就永远不可能唯一。本节把它做成**具名机器块**：生成器优先读本块，
+读不到才退回标题分类并**明印"未读名册"**（不静默）。字段口径：
+`status`=`open`（等你选）/`half-closed`（已按某选项落定，另一选项只在你开口才改）/`ruled`（已裁）；
+`premise` 记"这条的前提是否已被后续实测推翻"，因为交还过期前提比不交更坏（见 `#5`/`#12`/`#10`）。
+
+```machine
+PENDING_RULINGS_BEGIN producedBy=orchestrator-r10 head=a237aef4
+RULING id=decisions#1 status=open title=--r-lg 令牌值与判据正面冲突 options=A改判据指实值16rpx的令牌|B改令牌值(影响所有使用处) basis="§1:20-23 判据扣住未动"
+RULING id=decisions#3 status=open title=MESSAGES-INDEX-002 判据与生效裁定只能动一个 options=A改判据(承认mock判不了)|B改裁定(mock也挂该组件) basis="§3:31-34；messages/index.vue:374 的 !useMock() 使 mock 档不可测"
+RULING id=decisions#5 status=open title=证据可携(帧与清单路径) options=A进LFS|B包外归档只留hash|C接受绑定采集机 premise=changed basis="§35 C 段：绝对路径轴已自愈(tapfix-merged.json lanes=56 全为仓内相对路径、绝对路径实测 0 条)；HEAD 仍跟踪 reports/** 下 10457 枚图片 ⇒ 原文『干净 clone 一条都打不开』对这些不成立；活着的只有 .json.json 双后缀 + 未跟踪那批"
+RULING id=decisions#6 status=open title=各轮写进库的测试数据要不要清 options=先对 schema 表名再决定清|保持保留 premise=unchanged basis="§6:56-59 posts=270/comments=1238 每跑一次 G8 各 +1；cleanup.sql 默认 ROLLBACK 且表名未实名替换前删不动；连带 MESSAGES-INDEX-014"
+RULING id=decisions#7 status=open title=village-publish-001 提示元素与文案缺设计依据 options=定字数阈值语义按哪页|定文案以哪张设计稿为准 premise=contradicted basis="§7:61-64 + §31⑤:410：判据写 0/1000 而在跑的限值是 500，两者互斥；台账 未取证/需裁决"
+RULING id=decisions#8 status=open title=几百个非 png 文本 dump 要不要入库 options=入库|不入库(维持现状) premise=unchanged basis="§8:65-67 round-2-interact 258 / round-6-interact 340 / round-2-tour 3 现整体未跟踪"
+RULING id=decisions#9 status=open title=高 dpr 机型档巡检帧 options=A加一档重拍HOME-005+TMP-TOUR-R2-004|B接受长期NOT_SHOOTABLE并记理由 premise=unchanged basis="§9:68-72 无一行真实档欠账以高 dpr 为前置"
+RULING id=decisions#10 status=open title=主包体积怎么瘦(卡的其实是能不能上传) options=A继续瘦约1.23MB本地raw引用|B改分包结构|C承认产物不能直接上传、门降成告警 premise=not-reproducible basis="§10:73-85 + §35 D：发布形态 1762.7KB/2.59MB 那组数今日盘上复现不出来(三份 dist 都非 prune 档，实测 mock 27.78MB / real 27.67MB) ⇒ 选哪条前须先按 :16 重出带 prune 的发布档"
+RULING id=decisions#11 status=open title=五组游客落地对是违例还是允许 options=A认定违例开实现刀|B逐组允许并收窄在册裁定文字|C只裁setup两组 premise=mis-ruled-risk basis="§11:87-101；§32 裁的是『成员来源(整页游客断言可当证人)』，不是这条的违例判定 ⇒ 不许当它已闭。当前实测定时红：终局复量 run-qa-selftests 唯一那条红(test-guest-landing.mjs 1 断言)就来自 triage FAILED-landing-guard=4，判据原文『每一组落地对须有 booked 复测腿或裁决』"
+RULING id=decisions#12 status=open title=round-1 那 144 帧怎么定形 options=A给corpus加LEGACY显式豁免|B重跑取证|C接受长期红并把round-1结论降级为不可引用 premise=changed basis="§12:105-110 + §35 B/§35.8：从『无 gitSha』变成『帧不存在=144』，且该红**只在无库格出现**(有库格 CORPUS_RESULT=PASS) ⇒ 归因是库轴未接上，不是新证据销毁"
+RULING id=decisions#14 status=half-closed title=一枚生产者退出溯源集合 options=A维持(11 是诚实数，已按此落定)|B把派生常量命名为 GIT_SHA 让它重回集合 premise=unchanged basis="§14:117-121 盘上按 A 落定；要 B 说一声就改"
+RULING id=decisions#15 status=open title=verify-openqueue-lanes.mjs 修成真的门还是归档 options=A先修(退出码与判决一致/不无条件覆写权威件/去写死轮次)再当门接|B归档为一次性转换工具 premise=unchanged basis="§15:123-127 全文 process.exit 出现 0 次、打完 OPENQ_RESULT=PARTIAL 照样退 0；GATE_SUITE 已留排除注释"
+RULING id=decisions#24 status=open title=要不要为体积动 utils/person-avatars.ts options=动(删 21 条强制收集 import)|不动(避免复发头像 404) premise=confirmed basis="§24:185-188 + §35 C 同口径复量：恰 21 个 person-NN.png、合计 999151 bytes=0.953MB ⇒ 册子的数成立(我第一次用 *person* 宽口径数到 31 个/1.36MB 是我口径错)"
+RULING id=decisions#28 status=open title=CH22 滚动归属三选一 options=(a)承认scroll-view、ACTION句当笔误|(b)把campus-hub__feed搬出scroll-view(结构改动)|(c)拆两条各判各的 premise=drifted basis="§28:222-235 campus-hub__feed 在 hub.vue:269-271 确是 scroll-view；判据正文引用的行号 :336-339 已漂到 :330-332 ⇒ 改成『锚点+类名』属改判据文本，需你点头"
+RULING id=decisions#29c status=open title=落地对 (c) 分支 options=按裁定补 (c) 那条|(a) 已落地即视为足够 premise=unchanged basis="§29:237-290 与 §30:313-315：(a) 已落地并配能变红的负例，(b) 已落地"
+RULING id=r10new#A status=open title=两套「覆盖欠账去向账」并存要定唯一真值源 options=以门侧 real-coverage-disposition.json 为准并让面板读它|以面板侧 incident-destinations-round10.json 为准并退役门侧|两侧保留但互指校验 premise=unchanged basis="§35.9 + 本册 6e3420ec 那节：今日 tally 逐字相同(NEEDS_CAPABILITY 7/DISPATCHABLE_NOW 1/NEEDS_IDENTITY_IMPOSSIBLE 1/NEEDS_BAND_CHANGE 1)，但两份副本会各自漂移，本仓明令反对『多一个会漂移的副本』"
+RULING id=r10new#B status=open title=corpus 门 --strict 是否默认开启 options=默认 advisory(现状)|默认 strict 判红 premise=unchanged basis="§35.8 L16b 明示『--strict 不默认开启属政策，归编排方/用户』：strict 那发 PROBLEMS=3 而默认 1"
+RULING id=r10new#C status=open title=两枚陈旧 worktree 与分支要不要清 options=逐条具名后清|保留不动 premise=unchanged basis="reasonix/...(8月5日) 与 .qoder/worktrees/agent-general-purpose-72d31d9b；删分支/worktree 不可逆，不属收口动作 ⇒ 只建议不执行"
+RULING id=r10new#D status=open title=verify-evidence-holes 的 judge 分支仍无条件覆写权威判决件 options=把落点改侧车(需改参数语义，属判域)|维持现状并记录 premise=unchanged basis="DSL :87-94 那段明写『要真把落点挪进侧车得改参数语义，那是判域，归人拍板』；r9/D-17 只修了面板那三发里的一部分"
+RULING id=r10new#E status=closed title=reports/screenshots 那 3857 项删除要不要入库 options=用户 2026-09-30 裁定：不入库 basis="§35.1；直接后果(verifier-ledger 71 条孤儿、corpus 144 帧不存在、test-evidence-store-axis)按裁定保持，不恢复不重指向"
+PENDING_RULINGS_END open=18 half_closed=1 closed=1
+```
+
+⚠ 三条使用限制，免得这块被读成"权威且自动正确"：
+① **本块由编排方手写维护**，它不会自己跟着新裁定更新 ⇒ 下一位若替用户做了选择，必须回来改 `status`，
+否则生成器会继续把它算进待办（宁可多报不可漏报：漏报就是拿过期账交给人）。
+② 计数口径：`open=18` 含 `half-closed=1` 之外全部；`#14` 属半闭不算待办，`r10new#E` 已裁不计。
+   与 L21 分桶器的 `pending=26` 差在**分类源不同**（那个数按标题语义保守判定，把已闭的 `#2/#4/#13/#16/#17/#18/#22/#23/#25/#27`
+   等仍算待办），不是谁算错。归一到本块是下一步（`gen-round8-report.mjs` 优先读本块）。
+③ 每条 `basis` 只给"依据在哪"，不复述正文；引用时按本册体例带前缀（`decisions #N` / `followups §N` / `§35.x`）。
+
+### 36.1 这块名册上线当天抓到的两个洞（都不是"别人写错"，是我自己两步都错了）
+① **解析器与写入器的分隔符打架**：我第一版用 `[^|]*` 切字段，而名册里 `options=A|B|C` 的分隔符**就是 `|`**
+⇒ `status` 被切成"open title=… options=A"整串，`===" open"` 全不成立 ⇒ §6 静默印成
+**「需你拍板 0 项」**。这就是本仓最怕的"凭空归零"，而它的成因不是有人放宽判据，是格式假设不一致。
+② **键不一定存在**：没有 `premise=` 的行（如 `#1`/`#3`）用写死的单一停止符会把后面的 `basis="…"` 整段吞进 options
+⇒ 交还给用户的清单串成一片。改成"取实际存在的最早后续键名"为终止符。
+③ **我自己的负例也有空过洞**：B 组断言原写 `heading !== "0"`，而变异对照时生成器**直接崩了没写报告**，
+`heading` 是 `undefined` ⇒ 断言**空过**。这恰是 §31 那台"恒为 0 的假仪器"的镜像形状（这次是恒为真）。
+已改成先要求"报告真的写出来且 §6 是个数字"，并在每次 `run()` 前删掉上一发的产物，防残留被读成通过。
+⇒ 由此加的硬守卫（可核）：**名册存在却切不出任何 `status=open` 时，一律视为解析失效**，
+退回标题分类并**明印「未读名册」**，绝不把 §6 归零；`GENREPORT_SECTION6_SELFCOUNT` 从此带
+`source=roster|heading-classification` 与 `crosscheck_classification=`，两个数并存可比而不是互相冒充。
+
+**名册上线后的三个数终于有了主次**：`18`（名册，读得到的那一份）／`27`（标题分类，构造性偏保守，
+把 §2/§4/§13/§16/§17/§18/§22/§23/§25/§27/§30/§31/§33/§34/§35 等已闭或对账节仍算待办）／`15`（§30 那句人工汇总，
+已证伪漏计）。差 9 条**不是谁算错，是分母不同**，而本块的职责就是把"以哪个为准"写进盘上而不是留在我嘴里。
+名册是**手写维护**的：下一位若替用户做了选择，必须回来改 `status`，否则它继续算待办（宁可多报不可漏报）。
