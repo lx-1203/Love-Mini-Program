@@ -55,7 +55,7 @@ const relPosix = (p) => relative(REPO, p).split(sep).join("/");
 const argv = process.argv.slice(2);
 const has = (f) => argv.includes("--" + f);
 const arg = (k, d) => { const i = argv.indexOf("--" + k); return i >= 0 && argv[i + 1] ? argv[i + 1] : d; };
-const KNOWN = ["register", "gate", "round", "gate-out"];
+const KNOWN = ["register", "gate", "round", "gate-out", "alt-register"];
 {
   const bad = argv.filter((a) => a.startsWith("--") && !KNOWN.includes(a.slice(2)));
   if (bad.length) { console.log(`RCD_RESULT=FAIL reason=未知旗标 ${bad.join(",")} ⇒ 本门只认 ${KNOWN.join(",")}（拼错旗标会让它在没读的那一路输入上判绿）`); process.exit(2); }
@@ -181,7 +181,44 @@ console.log(`RCD_STALE_POLICY=${STALE_POLICY}（陈旧去向点名+计数、不�
 if (!conserved) console.log(`  CONSERVATION_FAIL 有去向=${inBookDebts} + 无去向=${undisposed.length} ≠ 门 UNCOVERED=${g.reading.uncovered} ⇒ 有一笔欠账既没算成有账也没算成没账，这本对账本身不可信`);
 console.log(`RCD_NO_REDUCTION 本门不替 verify-real-coverage 减红：REALCOV_UNCOVERED 仍=${g.reading.uncovered}（那 ${g.reading.uncovered} 条的红归那条门自己判，本门只审"条条有没有去向"，一条都不许在这里被读成已解决）`);
 
-const blocking = undisposed.length || badWord.length || hollow.length || dup.length || provMissing.length || !conserved;
+/* 两套去向账并存（r10 台账 #16）：本门吃 real-coverage-disposition.json，而面板的 EMIT_DESTINATIONS
+   吃 incident-destinations-round10.json（同一笔 10 条欠账的第二份副本，两边今天逐字相同）。
+   "多一个会漂移的副本"是本仓明令反对的形状，但归并成单一真值源属改判域/改面板，本轮不动它——
+   先把**两边不一致**变成响亮红：宁可现在不许"各自绿着漂"。
+   极性：能比对且有任何出入 ⇒ blocking；文件不存在 ⇒ advisory（那正说明副本该退役了）；
+   存在却读不出形状 ⇒ blocking（"没读到"在本门一律不等于"对过了"，与 :90 上游不可用无权判绿同一条尺子）。 */
+/* 路径按**被审册子所在目录**派生，不写死在仓根：真实布局里两份件就在 reports/audit/round-7/ 同一目录，
+   而负例夹具是自包含的临时目录（里面没有对家 ⇒ 走 absent/advisory）。
+   上一版把它 resolve 到仓里那份真册，结果夹具的 2 条假欠账与真册的 10 条键集"必然不一致"⇒ 把该判绿的用例判成红。
+   显式 --alt-register 仍按仓根解析，供对照实验指向变异副本。 */
+const ALT_ARG = arg("alt-register", "");
+const ALT = ALT_ARG ? resolve(REPO, ALT_ARG) : resolve(dirname(REG), "incident-destinations-round10.json");
+const dual = (() => {
+  if (!existsSync(ALT)) return { state: "absent" };
+  let j;
+  try { j = JSON.parse(readFileSync(ALT, "utf8")); } catch (e) { return { state: "unreadable", why: String(e.message).slice(0, 80) }; }
+  const rows = Array.isArray(j.rows) ? j.rows : null;
+  if (!rows || !rows.every((r) => r && typeof r.key === "string")) return { state: "no-rows" };
+  const bm = new Map(rows.map((r) => [r.key, r.destination]));
+  const am = new Map((reg.dispositions || []).map((d) => [d.case, d.disposition]));
+  return {
+    state: "compared", a: am.size, b: bm.size,
+    onlyA: [...am.keys()].filter((k) => !bm.has(k)),
+    onlyB: [...bm.keys()].filter((k) => !am.has(k)),
+    diff: [...am.keys()].filter((k) => bm.has(k) && bm.get(k) !== am.get(k)).map((k) => `${k} 本册=${am.get(k)} 面板册=${bm.get(k)}`),
+  };
+})();
+const dualBlocking = dual.state === "compared" ? (dual.onlyA.length + dual.onlyB.length + dual.diff.length) > 0
+  : dual.state === "absent" ? false : true;
+console.log(`RCD_DUAL 面板侧册=${relPosix(ALT)} 状态=${dual.state}` +
+  (dual.state === "compared" ? ` 本册条数=${dual.a} 面板册条数=${dual.b} 只在本册=${dual.onlyA.length} 只在面板册=${dual.onlyB.length} 去向不一致=${dual.diff.length} 极性=${dualBlocking ? "blocking" : "一致，不判红"}`
+    : dual.state === "absent" ? " ⇒ advisory：对方那份副本不在盘上（若它是被退役的，这本对账就该由本册独任）"
+      : ` ⇒ blocking：文件在盘上却读不出可比较的形状（${dual.why || "缺 rows[]/key"}），"没读到"不等于"对过了"`));
+for (const x of (dual.diff || [])) console.log(`  DUAL_DISAGREE ${x}`);
+for (const x of (dual.onlyA || [])) console.log(`  DUAL_ONLY_MINE ${x}`);
+for (const x of (dual.onlyB || [])) console.log(`  DUAL_ONLY_PANEL ${x}`);
+
+const blocking = undisposed.length || badWord.length || hollow.length || dup.length || provMissing.length || !conserved || dualBlocking;
 const why = [];
 if (undisposed.length) why.push(`无去向欠账 ${undisposed.length} 条`);
 if (badWord.length) why.push(`册外去向词 ${badWord.length} 条`);
@@ -189,6 +226,9 @@ if (hollow.length) why.push(`空条目 ${hollow.length} 处`);
 if (dup.length) why.push(`重复键 ${dup.length} 个`);
 if (provMissing.length) why.push(`provenance 缺 ${provMissing.join("/")}`);
 if (!conserved) why.push("对账不守恒");
+if (dualBlocking) why.push(dual.state === "compared"
+  ? `两套去向账不一致（只在本册 ${dual.onlyA.length}／只在面板册 ${dual.onlyB.length}／去向不同 ${dual.diff.length}）`
+  : `面板侧副本读不出可比形状（${dual.state}）`);
 console.log(blocking
   ? `RCD_RESULT=FAIL（${why.join("；")}）⇒ 分流这本账不完整；注意这条红与 REALCOV_UNCOVERED=${g.reading.uncovered} 是两笔账，本门不合并、不折抵`
   : `RCD_RESULT=PASS（${g.reading.uncovered} 条欠账条条有在册去向；陈旧 ${stale.length} 条按 ${STALE_POLICY} 点名不判红；上游门照旧 RESULT=${g.reading.result} UNCOVERED=${g.reading.uncovered}）`);

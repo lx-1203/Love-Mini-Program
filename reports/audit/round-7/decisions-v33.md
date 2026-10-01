@@ -1096,3 +1096,19 @@ PENDING_RULINGS_END open=18 half_closed=1 closed=1
 把 §2/§4/§13/§16/§17/§18/§22/§23/§25/§27/§30/§31/§33/§34/§35 等已闭或对账节仍算待办）／`15`（§30 那句人工汇总，
 已证伪漏计）。差 9 条**不是谁算错，是分母不同**，而本块的职责就是把"以哪个为准"写进盘上而不是留在我嘴里。
 名册是**手写维护**的：下一位若替用户做了选择，必须回来改 `status`，否则它继续算待办（宁可多报不可漏报）。
+
+## 37. #16 两套去向账并存 ⇒ 先让"不一致"响亮变红（2026-10-01 12:3x；上面各节原文一字未动）
+现状：同一笔"10 条真实档覆盖欠账的分流"有两份副本，**而且两边都已经有消费者**——
+`real-coverage-disposition.json` 被本程的门 `verify-real-coverage-disposition` 吃（并接进两载具），
+`incident-destinations-round10.json` 被面板 `emit-round-report` 的 `EMIT_DESTINATIONS` 吃（那是 `6e3420ec` 落的）。
+两边今天逐字相同（同 10 个复合 id、同 `NEEDS_CAPABILITY 7 / NEEDS_BAND_CHANGE 1 / NEEDS_IDENTITY_IMPOSSIBLE 1 / DISPATCHABLE_NOW 1`）。
+**归并成单一真值源要动面板的参数语义，属改判域，本轮不自决**；但不归并不等于可以任其静默漂移 ⇒
+本门新增 `RCD_DUAL`：把两份册子按 id 对齐逐条比去向，任何"只在本册／只在对方／去向不同"一律 **blocking 判红**并逐条点名；
+对方副本不在盘上则走 advisory（那正说明它该退役）；**在盘上却读不出可比形状 ⇒ 判红**，
+因为在本门里"没读到"从来不等于"对过了"（与 :90 上游不可用无权判绿同一把尺子）。
+路径按**被审册子所在目录**派生而不是写死仓根——第一版写死把 L19 自己的 61 条断言跑红了
+（夹具是临时目录里的自备册子，与真册的键集毫不相干 ⇒ 被误判成分歧），这是"改动连带面要由原作者的负例来验"的又一例。
+实测三向：真盘默认 `exit=0 / 状态=compared`；`--alt-register` 指向不存在的副本 ⇒ advisory 且 PASS；
+指向改过一条去向的变异副本 ⇒ `exit=1 / DUAL_DISAGREE PAGES-PROFILE-INDEX|PFI25 本册=NEEDS_CAPABILITY 面板册=NOT_SHOOTABLE`。
+`test-real-coverage-disposition.cjs` 复跑 **61 断言 0 失败**。
+⇒ 遗留的真决策仍是"哪一份当唯一真值源"（已登记 §36 之外，本轮把风险从静默降到必红，不再放任）。
