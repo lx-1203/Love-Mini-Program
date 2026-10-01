@@ -1112,3 +1112,25 @@ PENDING_RULINGS_END open=18 half_closed=1 closed=1
 指向改过一条去向的变异副本 ⇒ `exit=1 / DUAL_DISAGREE PAGES-PROFILE-INDEX|PFI25 本册=NEEDS_CAPABILITY 面板册=NOT_SHOOTABLE`。
 `test-real-coverage-disposition.cjs` 复跑 **61 断言 0 失败**。
 ⇒ 遗留的真决策仍是"哪一份当唯一真值源"（已登记 §36 之外，本轮把风险从静默降到必红，不再放任）。
+
+## 38. 守门员三腿与构建后复量（2026-10-01 12:5x；上面各节原文一字未动）
+DSL 自己把 `构建 build:mp-weixin:mock / typecheck / vitest 全量经收口守门员实测` 列进 `verified`，
+所以"门禁绿了"不含这三腿就不算**完整运行完毕**。本轮真跑（PATH 前置 Node22，逐条未接管道取退出码）：
+- `G1 build:mp-weixin:mock` **exit=0**；产物自检印 `[verify] PASS：全部 4 项功能特征已包含在构建产物中`
+- `G2 typecheck` **exit=0**
+- `G3 test:unit` **exit=0**，`Tests 1357 passed (1357)`，`Duration 243.83s`
+- **§9 那把授权刀（"产物移出 src 并确定化"）就此复验成立**：构建之后 `git status --short apps/client/src` = **0 行**，
+  即 src 不再是构建输出。这是 §32 授权要买的东西，此前只有车道自报，本轮是编排亲跑第 N 次确认。
+- 构建改了 dist ⇒ **复量 sha 敏感 5 条**（有库支，与终验同口径）：
+  `band-freshness exit=0 FRESH_RESULT=PASS bands=3 markers=4`、`evidence-corpus exit=0 CORPUS_RESULT=PASS`、
+  `provenance-all exit=1`、`real-coverage exit=1`、`real-coverage-disposition exit=0 RCD_RESULT=PASS`
+  ⇒ **逐条与本次终局复量的判定相同，没有一条因为刚重建而转红**。
+- 范围如实划清：本轮**没有**重跑 G7/G8/G9/prove 那些要设备的实时腿。面板里那句
+  "G7/G8/G9/probe 未复跑 ⇒ 按缺证据处理"的告警继续成立；且在 `decisions #11`（五组游客落地对）未裁之前
+  那条 measure 腿本来就不该重跑——§35 记过一次"零帧产出的失败测量抹掉了 28 行真实账本"，
+  守卫已接线（`measured-ledger.mjs` merge-never-shrink），但重跑的授权仍归 #11 的裁定。
+
+**本程收口状态**：6 发本地提交（`e3c89104`/`2bf81952`/`a237aef4`/`5cbf5474`/`cd6fa25c`/本次），
+终局复量 22 键红 3 且三条都是已裁定的预期红；§6 交还清单由 `§36` 机器名册供数 = **18 项待拍板**
+（另 1 半闭、1 已裁），与标题分类的 28 并排报出并写明差因；`reports/screenshots` 那 3857 项删除、
+9 个 `guest-landing-*.bak-*` 备份、`evidence-holes-verdict.json` 的 `generatedAt` 漂移**按裁定不入库**。
