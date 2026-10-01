@@ -50,7 +50,9 @@ g verify-evidence-holes   300 scripts/qa/verify-evidence-holes.mjs --mode judge
 echo "--- 反 vacuous-green：门禁必须能变红 ---"
 g prove-gates-can-fail    300 scripts/qa/prove-gates-can-fail.mjs
 
-# GATE_SUITE 现有 12 条（wiring 车道 2026-09-29 接进两把孤儿门），本清单必须跟着长，
+# GATE_SUITE 的条数**不在本注释写死**（此处曾写"现有 12 条"，而 r10 之后两载具各加了三把门 ⇒ 注释自己就腐烂了，
+# 与 DSL :635 那句"条数以 GATE_SUITE 为准、不写死中文数字"是同一口径）。本清单必须跟着 DSL 长，
+# 否则终验会少量几条门却仍自称全清单 —— 少测的门不在任何总数里。
 # 否则终验会少量两条门却仍自称全清单 —— 少测的门不在任何总数里。
 # （此处曾写成 // —— bash 不认 JS 注释，会把 // 当命令执行并喷两条 No such file，
 #   在 set -u 下不致命，但那两行等于没被任何解释器读过。）

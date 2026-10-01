@@ -675,7 +675,7 @@ const notCovered: string[] = [];
 // DEV:!1、PROD:!0、MODE:"mp-weixin-mock"，是 mock 料的**生产编译**；豁免只是调用方挂了 --allow-mock 旗号。
 notCovered.push("verify-package-size 靠调用方 --allow-mock 旗号放行体积（去旗即红，实测同字节 exit 0 vs exit 1）。体积本身在 sizegate 车道后有三个并存口径，别只取一个数下结论：发布形态（真实上传物）主包 1762.7KB=1.72MB 已在 2.00MB 内；src 退化扫描口径 2.76MB 超 0.76MB；门的默认被测物（mock 档，prepare-static --dev 用 full-static 整目录覆盖 src/static）27.78MB 仍判红 —— 哪个口径算数已开成 decisions 第 23 项，未拍板前本工作流不得自称体积合规");
 notCovered.push("同一脚本在打印两条 ⚠ 之后仍输出「✓ 验收通过：主包/总包体积合规」，是矛盾命名，判读只认 PACKAGE_SIZE ⚠ 行与退出码，不认那句 ✓");
-notCovered.push("typecheck 不覆盖测试代码：apps/client/tsconfig.json 的 exclude 里有 src/tests/**/*（实测 117 个 spec 不在 vue-tsc 范围内）");
+notCovered.push("typecheck 不覆盖测试代码：apps/client/tsconfig.json 的 exclude 里有 src/tests/**/* ⇒ 该目录下全部 spec 都在 vue-tsc 射程之外。**这个数量随提交变动，不在本句钉死**：本句原写「实测 117 个」，r10 按同口径现量为 121 枚（`find apps/client/src -name '*.spec.ts'` 与 `find apps/client/src/tests -name '*.spec.ts'` 是同一集合，`*.test.ts` 为 0）⇒ 引用覆盖面时请现量，别把任何一个数当恒定值");
 if (!backendUp) notCovered.push("后端 8080 不可达：真实档相关验证只能 BLOCKED");
 if (uiPorts.length === 0) notCovered.push("DevTools 自动化端口无监听：UI 帧级复验受限，相关行如实 UNVERIFIED-TOOLING");
 notCovered.push("需用户拍板事项（判据冲突/政策/数据去留）只列不做，见 findings 与总报告");
