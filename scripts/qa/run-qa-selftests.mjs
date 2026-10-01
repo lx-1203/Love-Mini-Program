@@ -47,7 +47,10 @@ for (const f of files) {
        新：`SUMMARY: assertion failures = 0`
        旧：`EVT_SUMMARY cases=5 fail=0` + `EVT_TEST=PASS` */
   const mNew = out.match(/assertion failures = (\d+)/);
-  const mOld = out.match(/^\w{2,8}_SUMMARY\b.*?\bfail=(\d+)/m);
+  /* stem 上限从 8 放宽到 24：`\w` 含下划线，所以 `\w{2,8}_SUMMARY` 量不到带下划线的标记词
+     （实测：STORE_READ_SUMMARY 的 stem 有 10 个字符 ⇒ exit=0 的合格测试被记成"无自报断言计数（不可信）"）。
+     只放宽**取数**这一把尺子；下面的 *_TEST=/*_RESULT= 判据行匹配保持原样，判据极性不随这次改动漂移。 */
+  const mOld = out.match(/^\w{2,24}_SUMMARY\b.*?\bfail=(\d+)/m);
   const cnt = mNew ? Number(mNew[1]) : (mOld ? Number(mOld[1]) : null);
   const selfVerdict = out.match(/\b([A-Z]{2,8})_(?:TEST|RESULT)=(PASS|FAIL)\b/);
   const ok = r.status === 0 && cnt === 0 && !(selfVerdict && selfVerdict[2] !== "PASS");
@@ -75,6 +78,9 @@ const GATE_SELFTESTS = [
   // （喂空/零拒答的结果件印 0% 冒充读数、路径打错整轴静默消失照样退 0）都是人肉实测才撞出来的。
   // 7 条负例钉住"假阳性率/召回率是两个方向"与三类不可测状态，不读磁盘。
   { name: "verify-case-automatable", cmd: ["scripts/qa/verify-case-automatable.mjs", "--selftest"], want: /CA_SELFTEST=PASS cases=(\d+) bad=0/ },
+  // verify-lane-report-complete 的 --selftest 钉的是"只认「（待填」"这条判据边界（11 例，不读磁盘）：
+  // 待补/TODO/半角括号/含"待"字的正常句/反引号引用一律不许判红。它建好时零调用点，正是本清单要收的形状。
+  { name: "verify-lane-report-complete", cmd: ["scripts/qa/verify-lane-report-complete.mjs", "--selftest"], want: /LR_SELFTEST=PASS cases=(\d+) bad=0/ },
 ];
 let gateRan = 0, gateFailed = 0;
 for (const g of GATE_SELFTESTS) {

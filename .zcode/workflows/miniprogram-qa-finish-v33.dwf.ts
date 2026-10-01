@@ -105,6 +105,36 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   //    （那条 filter 的口径是 corpus|provenance|band-freshness|real-coverage，下面这几条不在其内，也不该在：
   //     它们扫的是脚本字节、ops 用例清单与工作流自身字节，不随产物/证据 SHA 变）。
   { name: "dry 不抢租约静态门 verify-dry-no-lease", args: ["scripts/qa/verify-dry-no-lease.mjs"], timeoutMs: 180000 },
+  // 接线（L18 工作流改进门车道 2026-09-30）：零消费者导出件检测——本流程此前缺的那一格。
+  // 病不是"某件东西没接线"，而是「没有任何门会因为没接线而变红」：本轮同族事故实测四次
+  //（--results 自证轴三个调用点都没喂 / run-qa-selftests 只在 bash 里 / measured-ledger 建了没人 import /
+  //  某门注释声称新增读数而 grep 只命中注释本身），逐条证据见 reports/audit/round-7/wiring-gate-r18.md。
+  // 判域刻意做小：只审 scripts/qa/** 与 apps/client/scripts/** 两棵树里写了 export 的 .mjs/.cjs（实测 23 件），
+  // 不扫 scripts 根下那 1000+ 个一次性调试脚本——判域一大就是噪音红，噪音红的下场是被整体关掉。
+  // 极性：默认判红（不是 --advisory 报数）。理由与 verify-case-automatable 相反且必须写清：
+  // 那把门实测假阳性率 83.3%，判据本身不可信所以只能报数等拍板；这把门的判据是结构性的（数入口引用），
+  // 且双向红绿都被 scripts/qa/test-carrier-wiring.cjs 钉住（零消费者⇒必须红、补一处真 import⇒必须绿），
+  // 命中数只有个位数且每条点到文件名 ⇒ 可处置，没有"红一大片只能整体关掉"的退路。
+  // 三个旗标一律不加（与 bash :65 那一发逐字同参）：--advisory 会把刚装上的刹车拆掉；
+  // --select 是负例专用旋钮；--json 用脚本默认落点 .zcode/tmp/carrier-wiring/wiring.json（不落 reports/**）。
+  // 超时 180000 = bash 的 180 秒 1:1（实测本门最慢一发 3157ms ⇒ ~57 倍余量；只准往大调，这里没往小调）。
+  // 名字尾串 verify-carrier-wiring 与 bash 门名相等；不含 corpus|provenance|band-freshness|real-coverage
+  // ⇒ 不会被提交后的 sha 敏感子集重复捞（它扫的是脚本字节与入口清单，不随产物/证据 SHA 变）。
+  // 派生依赖：scripts/qa/carrier-wiring-exemptions.json（豁免清单，实测生成、逐条带 why）与
+  // scripts/qa/run-qa-selftests.mjs 的收件正则 /^test-.+\.(cjs|mjs)$/。前者缺失 ⇒ exit 2；
+  // 后者漂走 ⇒ exit 2（那意味着我会把"其实被自动收件的负例"误报成死件）。这两种都是要的效果。
+  { name: "载体接线零消费者门 verify-carrier-wiring", args: ["scripts/qa/verify-carrier-wiring.mjs"], timeoutMs: 180000 },
+  // 接线（r10 L20）：车道报告的「（待填」骨架此前无人审——上一程三条车道撞轮次上限后留下的就是空骨架，
+  // 而"本轮已收口"照样能成立。收件清单与豁免清单都是具名文件，缺清单该门 exit 2（不许静默扫全目录造噪音红）。
+  // 与 bash :66 逐字同实参；timeoutMs 90000 ≥ bash 的 60 秒×1000（只往大调）。名字尾串相等，不含
+  // corpus|provenance|band-freshness|real-coverage ⇒ 不会被提交后的 sha 敏感子集重复捞（它读的是报告字节）。
+  { name: "车道报告骨架完成度 verify-lane-report-complete", args: ["scripts/qa/verify-lane-report-complete.mjs", "--intake", "reports/audit/round-7/lane-report-intake-round-7.json", "--exemptions", "reports/audit/round-7/lane-report-exemptions-round-7.json"], timeoutMs: 90000 },
+  // 接线（r10 L19）：那 10 条覆盖欠账的"按可采性分流"此前只有散文，没有机器件也没有门在核。
+  // 与 bash :69 逐字同实参（本门自己 spawn 上游 verify-real-coverage，DSL 侧不需再传旗标）；
+  // timeoutMs 180000 = bash 180 秒×1000（实测墙钟 3.3–4.7 秒，余量 ~38 倍）。
+  // ⚠ 名字含 `real-coverage` ⇒ 会被下面 :577 那条 sha 敏感子集正则捞到，提交后复量必然多跑这一条。
+  //   这是对的行为（去向册随产物/证据集移动），但引用时要说清"键数变化是接线所致"，别读成莫名多跑一条门。
+  { name: "真实档覆盖去向册 verify-real-coverage-disposition", args: [], timeoutMs: 180000 },
   // verify-case-automatable 两轴分开看：exit 2 = 完整性轴（r-exec.cjs 的 UNIMPLEMENTABLE_ACTION_RE
   // 取不到 / --ops 目录不存在 / 扫到一个 manifest 都没有 ⇒ 单一真值源断了，这条照旧判红）；
   // exit 0 + CA_RESULT=ADVISORY = 普查轴。引用纠偏（r11 之后）：该脚本的退出码契约现在写在 :324-341

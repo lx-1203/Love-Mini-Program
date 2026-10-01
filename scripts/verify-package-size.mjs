@@ -103,7 +103,13 @@ let waivedMainOver = false;
 console.log("[verify-size] ===== mp-weixin 包体积验收 =====");
 console.log(`  被测物: ${distRoot}`);
 console.log(`PACKAGE_SIZE_BAND=${bandMode}`);
-console.log(`  主包: ${mb(mainBytes)}  (上限 ${mb(MAIN_PACKAGE_LIMIT)})  ← 以上数字只代表上面那个档，不是发布形态`);
+// 这句说明原先是常量，real 档也照印"不是发布形态"，与 :16「发布形态由 real 构建执行严格 ≤2MB 门禁」互相打脸。
+const bandNote = bandMode.startsWith("MODE:未知")
+  ? "← 档位未知（读不到 config/env.js）⇒ 以下数字不能作为任何口径的达标依据"
+  : /MODE:real\b/.test(bandMode)
+    ? "← 本档是发布形态门禁的调用对象；但只有走 build:mp-weixin:real（含 prepare-static --real 与 prune）出的档才是发布形态，这份 prune 过没有本门不判"
+    : "← 以上数字只代表上面那个档，不是发布形态";
+console.log(`  主包: ${mb(mainBytes)}  (上限 ${mb(MAIN_PACKAGE_LIMIT)})  ${bandNote}`);
 console.log(`  总包: ${mb(totalBytes)}  (上限 ${mb(TOTAL_LIMIT)})`);
 for (const [root, bytes] of Object.entries(subBytes)) {
   console.log(`  分包 ${root}: ${mb(bytes)}`);

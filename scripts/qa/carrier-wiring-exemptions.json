@@ -1,0 +1,9 @@
+{
+  "_title": "载体接线门（scripts/qa/verify-carrier-wiring.mjs）的豁免清单",
+  "_owner": "L18 工作流改进门车道 2026-09-30 建立；条目增删须与 wiring-gate-r18.md 同批落账",
+  "_how_generated": "不是手挑的：跑 node scripts/qa/verify-carrier-wiring.mjs --advisory 取 WIRING_DEAD_ITEM 全集（判域=scripts/qa/** + apps/client/scripts/** 里按各自模块制度声明了导出的 .mjs/.cjs），逐条核过它的真实用途后，只把「确属一次性落账工具、且不会再被复用的」列进来，每条必须写 why。",
+  "_rule": "本仓定规「收紧门必须撤回旧放行＋逐档有账」：一旦某个已豁免文件重新获得消费者，门会打 WIRING_STALE_ITEM 并判红（见 scripts/qa/test-carrier-wiring.cjs 第 4 条断言），所以这张清单不能只进不出。",
+  "_why_empty_today": "2026-09-30 实测判域 23 个导出件、零消费者 2 个（emit-component-scoped-ids.mjs 的 parseScoped、run-round7-closeout.mjs 的 reconcileQueueTally）。这两条都是「写了 export 等着被复用/被负例吃，却一个调用点都没有」的活体缺陷，不是退役工具：前者自己的文件头就说产物要交给 r-exec-ws --ids-file 吃、后者文件头明写 reconcileQueueTally 是「负对照 harness 的载体」。按纪律保持判红，不写进清单换绿。",
+  "_not_exempted_deliberately": "scripts/qa/measured-ledger.mjs 起跑时零消费者（由并行 L17 车道接线），现已有 2 个消费者 ⇒ 既不进豁免清单，也不该进：它是本门要防的那类东西被修好了，不是需要放行的东西。",
+  "exemptions": []
+}

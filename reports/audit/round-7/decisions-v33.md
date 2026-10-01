@@ -590,7 +590,10 @@ mtime 04:44 起有动）、L17（游客腿写盘守卫 + 重接重试 —— 该
 `emit-round-report.mjs` 导致的（面板那一步读到改到一半的文件，报出 10 条"缺理由"其实是我字段名写错），
 叠加上述两条外来门；重跑的那发才是本轮终值。教训与既有那条同族：**门禁跑到一半不许改门**。
 
-## 34. r10 收口流水（2026-09-30 12:3x；编排亲验，非车道自报。上面 0–33 节原文一字未动）
+## 35. r10 收口流水（2026-09-30 12:3x；编排亲验，非车道自报。上面 0–33 节原文一字未动）
+⚠ **编号更正留痕**：本节原写作 `## 34.`，与同册第 569 行另一会话的 `## 34. 用户裁定三项` **同号**——两会话并行写同一工作树、
+各自从 §33 之后接笔所致（那次会话的 §34 未反向引用本节子节，已实测：命中 0）。此处**只把编号 34→35、本节内自引用同步**，
+正文一字未删改；第 569 行那节保持原样。撞号本身按本册体例不抹除，就记在这里。
 本节只记**编排方自己复跑过**的事；车道自报而未复验的写在 F 段"待补"里，不当已入账。门数一个都不手填，
 终局复量读数一律走 `run-final-verify-v33.sh` → `.zcode/tmp/final-verify/summary.json` → 生成器回填。
 
@@ -672,7 +675,7 @@ mock 挂 `--allow-mock` 仍 `exit=0`；mock 无旗仍 `exit=1`（门不自证）
 ⚠ 这条对 `#10` 有直接后果：`#10` 里"发布形态主包 ≈2.59MB、瘦到位 1762.7KB=1.72MB 已在 2.00MB 内"那组数
 **今天在盘上复现不出来**——三份 dist（mock / real / showcase）都不是 prune 过的发布档（实测主包 27.67/27.78MB）。
 ⇒ 选 A（继续瘦）/ B（改分包）/ C（降成告警）之前，必须先按 `:16` 那条构建路径重出一次带 prune 的发布档，
-否则三条路都是在对着复现不了的数讨论。此数在 §34 记为**未复现**，不当已核。
+否则三条路都是在对着复现不了的数讨论。此数在 §35 记为**未复现**，不当已核。
 
 **E. 车道事故与接手（如实记，不掩盖）**
 L16 / L17 / L18 于 **12:34 被服务端异常打断**（`error: unknown, unexpected agent result status`），三处半成品留盘：
@@ -697,7 +700,7 @@ writeguard 负例已建 + 运行前具名备份 `guest-landing-measured.json.bak
 另：`#11`/`#29` 那批待拍板项此后要在本册里做成**机器可读块**（具名 `PENDING_RULINGS` 逐条带编号与出处），
 让生成器读它而不是数标题——这一步要等 L21 的分桶器落地后做，否则两边各写一套会漂。
 
-### 34.1 用户 2026-09-30 12:43 裁定两项（上面 0–34 节原文一字未动）
+### 35.1 用户 2026-09-30 12:43 裁定两项（上面 0–34 节原文一字未动）
 - **`reports/screenshots/**` 那 3849 个 D 状态：不入库。** ⇒ 直接后果如实记账：
   ① 本轮及后续提交一律走**显式路径清单**，禁止 `git add -A`/`git add .`，也禁止 `git checkout -- .`/`git restore .`
   （后者会复活用户刚删的帧，§32 已立此规矩）；
@@ -709,15 +712,15 @@ writeguard 负例已建 + 运行前具名备份 `guest-landing-measured.json.bak
   而判据冲突/令牌值/视觉口径属政策选择，不属收口：
   **授权我做的**——显式路径本地提交（不推送，延续 `不推送` 指示）、新门按 dsl-gate-sync 三条接进两个载具、
   §7 由 `gen-round8-report.mjs` 机器回填、把 `:455` 那句"增量落盘是硬要求"补进 DSL 的收口车道 prompt
-  （改完必跑语法自检 + `dryrun --profile all`）、体积门措辞刀（已在 §34 D 段做完并留 A/B 证据）。
-  **仍交还你的**——§34 F 段之前那 15 项 + `#5`/`#12` 的口径重述后版本；
+  （改完必跑语法自检 + `dryrun --profile all`）、体积门措辞刀（已在 §35 D 段做完并留 A/B 证据）。
+  **仍交还你的**——§35 F 段之前那 15 项 + `#5`/`#12` 的口径重述后版本；
   **我不做的**——删除两枚陈旧 worktree/分支（不可逆，且不在"收口"范围内），只给建议：留着无害，
   真要清就逐条 `git worktree list` 指名后再动。
 - **一条实测风险登记**：r9 的暂定读数件已被我快照为 `.zcode/tmp/final-verify/summary-r9-provisional.json`，
   因为 `run-final-verify-v33.sh` 的 `OUT` 目录是固定的，下一发终验会原地覆写 `summary.json`——
-  没有这份快照，§34 B 段那条"19 键红 6"的差值归因就失去可比对象。
+  没有这份快照，§35 B 段那条"19 键红 6"的差值归因就失去可比对象。
 
-### 34.2 停点与续跑规程（2026-09-30 12:47；编排回合预算耗尽，此段是状态，不是遗漏）
+### 35.2 停点与续跑规程（2026-09-30 12:47；编排回合预算耗尽，此段是状态，不是遗漏）
 **此刻在盘上的事实（逐条可复跑，全部 Node22、未接管道）**
 - 六条车道在途，产物状态：`wiring-gate-r18.md` 143 行 / 0 待填（L18b 实质收工，且**已自行把
   `verify-carrier-wiring` 接进两个载具**：DSL +19 行、bash +8 行）；`leg-writeguard-r17.md` 37→67 行（L17b 增量回填中）；
@@ -746,16 +749,16 @@ writeguard 负例已建 + 运行前具名备份 `guest-landing-measured.json.bak
 5. 把 DSL `:447/:455`「交互腿」那句**增量落盘硬要求**补进 `:415/:417-421`「收口车道」prompt，
    随后必跑：语法自检（`parseDiagnostics` 期望 0）与 `dryrun-workflow --profile all`（期望 `DRYRUN_RESULT=PASS` 3/3），
    两条都未接管道取退出码。
-6. 补产 DSL 契约件 `gate-recheck-v33.json` 与 `post-commit-gates-v33.json`（§34 A 段实测两者从未落盘，
+6. 补产 DSL 契约件 `gate-recheck-v33.json` 与 `post-commit-gates-v33.json`（§35 A 段实测两者从未落盘，
    而 `gen-round8-report.mjs:14-15` 会读它们；缺件时它印「（未跑，故此处不留结论。）」，是诚实空白、不是绿）。
 7. `node22 scripts/qa/gen-round8-report.mjs` 机器回填 §7 与 §6 分桶 ⇒ **编排方一个数都不手填**。
-8. 显式路径本地提交、不推送；**绝不 `git add -A`**（3849 个截图 D 状态按 §34.1 裁定不入库），
+8. 显式路径本地提交、不推送；**绝不 `git add -A`**（3849 个截图 D 状态按 §35.1 裁定不入库），
    也绝不 `git checkout -- .` / `git restore .`（会复活用户刚删的帧）。
    清单至少含：`scripts/verify-package-size.mjs`、L13 的 `deny-tap.cjs` / `r-exec-cli.mjs` / `r-exec-ws.mjs` /
    `test-deny-tap-field-clear.cjs`、五条车道各自的门/负例/报告、两个载具、裁定册与本文件。
 9. 提交后再量一遍 sha 敏感子集，落 post-commit 件；由绿转红的归因为"HEAD 被本轮提交推进"，不写成本测物退化。
 
-**本轮已交还、不许我替你做的**：§34 C 段那 15 项 + 本轮新增三条（陈旧 worktree 清理属不可逆、只给建议不执行；
+**本轮已交还、不许我替你做的**：§35 C 段那 15 项 + 本轮新增三条（陈旧 worktree 清理属不可逆、只给建议不执行；
 `verify-evidence-holes` 的 judge 分支仍无条件覆写权威判决件，改它属判域）。
 
 **停点后补记（12:48，只读复量第一发落地，改写了 `#12` 的归因）**
@@ -768,10 +771,10 @@ writeguard 负例已建 + 运行前具名备份 `guest-landing-measured.json.bak
 ⇒ **结论**：那 144 帧的"帧不存在"红**是库轴没接上造成的，不是新增的证据销毁**——同一批帧在仓外库可被唯一背书。
 所以 `#12` 重述时要写成：round-1 144 帧仍是"无戳可核的 legacy"（`LEGACY_NO_SHA=1/144 帧`，两格都在印），
 而**"帧不存在"这一条只在无库格出现**；把它当产品/证据新账来追就是追错方向。
-同理 §34 B 段那条"r9 记 corpus=0 vs 我测 corpus=1"的差值，**主因已定位为库轴而非码轴**（在途码在两格分别给 0 与 1，
+同理 §35 B 段那条"r9 记 corpus=0 vs 我测 corpus=1"的差值，**主因已定位为库轴而非码轴**（在途码在两格分别给 0 与 1，
 而 r9 那一发是 HEAD 码×有库）——第三格（HEAD 码×有库）仍需复量才能收口。
 
-### 34.3 一条车道事故的如实记法（12:49；这条比读数更要紧）
+### 35.3 一条车道事故的如实记法（12:49；这条比读数更要紧）
 12:34 我同时收到 3 条 `error: unknown, unexpected agent result status` 失败通知（L16/L17/L18），
 按本仓既有纪律"服务端瞬时拒答按组重派"立刻开出 L16b/L17b/L18b 接手，任务书写的是"前任死于异常、留下半成品"。
 **15 分钟后原 L18 自己回报了完整交付**：新门 `verify-carrier-wiring.mjs`、双向负例 25 断言、
@@ -793,10 +796,10 @@ DSL 里 `verify-carrier-wiring` 的 2 次命中是**同一条目的 name + args*
 它们都是"文件头写明了该被谁吃、盘上零调用点"。⚠ 特别记一句：`run-round7-closeout.mjs` 正是 `decisions #16`
 那把"唯一能答 stage-8 过了吗"的载具，§33 记它本轮第一次真跑；**载具跑过 ≠ 它的导出有人消费**，两件事别混。
 另：车道如实报出 `发现=39 → 42（差 +3 而非 +1）`，并按文件名集合差归因为"本车道只贡献 1 枚，另 2 枚属并发车道"——
-这是本册要的记法，采纳；它同时给出 §34.2 分母 42 的第二条独立来源（聚合器亲印）。
+这是本册要的记法，采纳；它同时给出 §35.2 分母 42 的第二条独立来源（聚合器亲印）。
 
-### 34.4 编排接线：`verify-lane-report-complete` 接进三个登记点（12:5x，L20 交付后由主控串行追加）
-L20 这道门交付时**只有实现没有消费者**——正是本册 §34 A/E 两段反复在拆的形状。接线三处全由编排方改（车道未动载体）：
+### 35.4 编排接线：`verify-lane-report-complete` 接进三个登记点（12:5x，L20 交付后由主控串行追加）
+L20 这道门交付时**只有实现没有消费者**——正是本册 §35 A/E 两段反复在拆的形状。接线三处全由编排方改（车道未动载体）：
 - `scripts/qa/run-final-verify-v33.sh` ⇒ `g verify-lane-report-complete 60 scripts/qa/verify-lane-report-complete.mjs
   --intake reports/audit/round-7/lane-report-intake-round-7.json --exemptions reports/audit/round-7/lane-report-exemptions-round-7.json`
 - DSL `GATE_SUITE` ⇒ `{ name: "车道报告骨架完成度 verify-lane-report-complete", args:[同实参], timeoutMs: 90000 }`；
@@ -823,13 +826,13 @@ r17 由 37 行涨到 240 行（待填 8→2）、`uncovered10-disposition-carrie
 剩下的每一节都必须逐条点名是哪条车道没交付，**不许用豁免清单把它抹平**（sidecar 现为 0 条、`EXEMPT_SWEEP=NO`，
 这个"零放行"状态本身就是要保住的账）。
 
-### 34.5 只读门全量复量收工（13:15，15/15；这批数**不是终局复量**，面板腿与面板后两发仍未跑）
+### 35.5 只读门全量复量收工（13:15，15/15；这批数**不是终局复量**，面板腿与面板后两发仍未跑）
 载体：`tmp/r10-readonly-gates.sh`，读数落 `tmp/r10-gates/`，不写 `reports/**`、不覆写 `.zcode/tmp/final-verify/summary.json`。
 HEAD 全程 `da996f3a`（未提交 ⇒ 无 sha 漂移污染）。**9 绿 / 6 红**：
 - 绿：`dryrun-workflow`(PASS 3/3)、`verify-backend-fresh`、`verify-band-freshness`(`FRESH_RESULT=PASS bands=3 markers=4`)、
   `verify-dry-no-lease`、`verify-ops-stamp`(`STAMP_RESULT=PASS cases=1107 与记录一致`)、`verify-queue-reconcile`、
   `verify-source-shape --dry`、`verify-state-truth`
-- 红：`verify-ledger`（71 个 ID 无本尊行，`§34.1` 记为既定后果）、`verify-provenance-all`、
+- 红：`verify-ledger`（71 个 ID 无本尊行，`§35.1` 记为既定后果）、`verify-provenance-all`、
   `verify-real-coverage`（10 条欠账）、`prove-gates-can-fail`（**有案例证据不足**，非"变异仍能放行"，两语义别混，
   详见其 log）、`verify-evidence-corpus-nostore`，以及 **`run-qa-selftests` exit=124**。
 - ⚠⚠ **`run-qa-selftests exit=124` 是我这台载具的错，不是被测物的红**：我照 bash 抄了 600 秒，
@@ -837,38 +840,38 @@ HEAD 全程 `da996f3a`（未提交 ⇒ 无 sha 漂移污染）。**9 绿 / 6 红
   本轮收件数已从 36 涨到 42（+6 条新负例），600 秒不够。⇒ **这条读数作废，须按 900 秒重跑**。
   这正是本册 `dsl-gate-sync` 那段说的"被 timeout 掐掉时读出来是假红"，我自己犯了一次，如实记。
 - **corpus 两格齐了**（第三格"HEAD 码×有库"仍需复量）：`storemode exit=0 PASS` vs `nostore exit=1 FAIL` ⇒
-  `§34.2` 那条"`round-1` 144 帧不存在只在无库格出现"的结论在本批里再次成立。
+  `§35.2` 那条"`round-1` 144 帧不存在只在无库格出现"的结论在本批里再次成立。
 - 顺带把一件挂着的核查收掉：全仓搜 `caliber_label_already_printed_by_gate` 只命中
   `.zcode/tmp/lane-new-reds/post/**` 与 `.zcode/tmp/lane-ruling-packet/**` 两份**数据件副本**，
-  无任何脚本消费 ⇒ `§34 D` 那句"体积门措辞无程序化消费端"由这条迟到的全仓搜索独立证实。
+  无任何脚本消费 ⇒ `§35 D` 那句"体积门措辞无程序化消费端"由这条迟到的全仓搜索独立证实。
 
-### 34.6 L21 交付：分桶器落地，并量出"待办数"三方打架（差 11 条，这才是真账）
+### 35.6 L21 交付：分桶器落地，并量出"待办数"三方打架（差 11 条，这才是真账）
 交付三件：`scripts/qa/gen-round8-report.mjs`（分桶）、`scripts/qa/test-report-decision-buckets.cjs`（26 断言负例）、
 `reports/audit/round-7/report-buckets-r21.md`。**改前**逐字：`commits=88 decisions=34 … §6 印「需你拍板 34 项」`；
-编排方真加 §34 后当场复量即变 `decisions=35` ⇒ **§34 C 段预言的"加一节就虚增待办"当场发生，不是假想**。
+编排方真加 §35 后当场复量即变 `decisions=35` ⇒ **§35 C 段预言的"加一节就虚增待办"当场发生，不是假想**。
 **改后**机器行：`GENREPORT_DECISION_BUCKETS headings_total=35 pending=26 ruled=2 closed=1 log=6 sum=35`、
 `GENREPORT_BUCKET_GUARD=OK removed=9/35 pending_zero_guard=clear ask_override_held=0`、
 `GENREPORT_SECTION6_SELFCOUNT heading_number=26 listed_items=26`。默认桶＝待拍板，规则只按标题语义、无节号、无 sidecar；
 移出 9 条各带命中片段；`ASK_OVERRIDE` 只会把待办往**大**推；空桶或移出>70% 一律印 RED。
-"新增一节流水不增待办数"有三条实测（真 §34：35/26/log 5→6；副本假 §34：36/26/log 7；夹具 A→B pending 3→3，
+"新增一节流水不增待办数"有三条实测（真 §35：35/26/log 5→6；副本假 §35：36/26/log 7；夹具 A→B pending 3→3，
 反向对照 3→4）。负例变异（默认桶改 closed）⇒ `BUCKETS_TEST=FAIL（7 条断言未过）exit=1`，含
-`真册子 §6 自数一致｜标题=0 列出=1`；聚合器 `发现=42 → 43`（+1，与我 §34.2 钉的分母自洽）。
+`真册子 §6 自数一致｜标题=0 列出=1`；聚合器 `发现=42 → 43`（+1，与我 §35.2 钉的分母自洽）。
 它**没有**跑正式版 `round8-final-report.md`（盘上 `summary.json` 还是 r9 暂定读数，跑了就等于把暂定写成权威件），
 mtime 全程未变 ⇒ 真回填归编排方。`a4c8f995` 基线核过仍成立（`cat-file -t`=commit、88 发范围），未擅自改动态值。
 
 ⚠ **它顺手量出本册最大的一处口径不一致**（`GENREPORT_LEDGER_DECLARED marker_line=337 marker_section=30
 latest_section=34 declared_lag=4 pending_declared=15 diff_vs_generator=11`）：
 同一个"等你拍板 N 项"今天有三个数——**26**（分桶器按标题语义的保守判定）、**15**（`§30:338` 那句人工汇总行）、
-**约 14**（编排方 §34 C 逐节核原文后的结论：§30 漏 5 条、其中 7 条已被后续关掉）。
+**约 14**（编排方 §35 C 逐节核原文后的结论：§30 漏 5 条、其中 7 条已被后续关掉）。
 **三个都不是错，是分母不同**：26 把"标题没写闭合措辞"的全算待办（它读不到后面状态对账节里的闭合，
-这正是 §34 F 段预告的设计张力）；15 是人工汇总行，已被证伪漏计；14 是逐节核对的结果但依赖人读。
-⇒ 结论：**"待拍板数"在没有机器可读名册之前不可能唯一**，`§34 F` 那条 `PENDING_RULINGS` 具名块的优先级
+这正是 §35 F 段预告的设计张力）；15 是人工汇总行，已被证伪漏计；14 是逐节核对的结果但依赖人读。
+⇒ 结论：**"待拍板数"在没有机器可读名册之前不可能唯一**，`§35 F` 那条 `PENDING_RULINGS` 具名块的优先级
 因此从"以后再做"升为**本轮下一刀**（有了它，分桶器就能读名册而不是猜标题，三方归一）。
-L21 另外点名两条：`#24`、`#28` 正文都明写"交你定/请你三选一"却不在 §30 那句里（与 §34 C 独立吻合）；
+L21 另外点名两条：`#24`、`#28` 正文都明写"交你定/请你三选一"却不在 §30 那句里（与 §35 C 独立吻合）；
 反向多计 `#17 #18 #22 #27`（§30 称已闭，而 `#22` 标题还写着"未修"，**同一册内自相矛盾**）——
 这4条它如实标为"只核到原文与 commit 号存在、未复算门的效果"，我采纳同样的限定语，不替它升级成实测。
 
-### 34.7 L19 交付 + 编排接线（13:2x），并把 L19 自己标"未实测"的那条断言当场量掉
+### 35.7 L19 交付 + 编排接线（13:2x），并把 L19 自己标"未实测"的那条断言当场量掉
 L19 交付五件（`verify-real-coverage-disposition.mjs`、`emit-real-coverage-disposition.mjs`、
 `test-real-coverage-disposition.cjs` 61 断言、去向册 JSON、报告 292 行 0 待填）。三条要紧的：
 - **取数面**：上游 `verify-real-coverage.mjs` 无 `--json`、无写盘（`writeFileSync|--json|JSON.stringify` 零命中，
@@ -881,7 +884,7 @@ L19 交付五件（`verify-real-coverage-disposition.mjs`、`emit-real-coverage-
   词表权威钉在门里，五词中**没有 DONE/CLOSED/EXEMPT** ⇒ 结构上销不掉红，这正是 §32 那句"分流不许关掉任何红"的机器化。
 - 自数诚实度值得记一笔：它报聚合器 `37(12:24) → 42(12:49)`，**明说"原始 +5，不是我 +1"**，
   并按件名集合差只认领自己那一枚；`FAILED +1` 它也点名属 L18 的 `test-carrier-wiring.cjs` 而非自己。
-  ⇒ 与我 §34.2 钉的分母 42、§34.6 报的 43 三方自洽。
+  ⇒ 与我 §35.2 钉的分母 42、§35.6 报的 43 三方自洽。
 
 **编排接线（两处登记点；该门无 `--selftest`，故不涉及 `GATE_SELFTESTS`）**：bash `:69`
 `g verify-real-coverage-disposition 180 scripts/qa/verify-real-coverage-disposition.mjs` ↔
@@ -891,15 +894,15 @@ DSL `{ name: "真实档覆盖去向册 verify-real-coverage-disposition", args: 
 `bash -n` exit 0、DSL `parseDiagnostics: 0`。
 **L19 自己标为"转述、非实测"的那条断言，我当场量掉了**：按现盘解析两空格缩进条目共 21 条（GATE 18 + PANEL 3），
 其中命中 sha 敏感正则 `corpus|provenance|band-freshness|real-coverage` 的从 4 条涨到 **5 条**——新增正是
-`真实档覆盖去向册 verify-real-coverage-disposition`。⇒ §34.2 F 段那句预警成立且已量化：提交后复量必然多跑这一条，
+`真实档覆盖去向册 verify-real-coverage-disposition`。⇒ §35.2 F 段那句预警成立且已量化：提交后复量必然多跑这一条，
 终局复量的键数因此从 19 涨到 **21**（GATE +2：去向册、车道报告完成度；再加 L18 的 carrier-wiring 一发 ⇒ 以收工实况为准）。
 
 **车道事故台账更新**：原 L17 于 13:2x 真死（`Queuing failed. Try again later or enter /model to switch models`，
 155 次工具调用后）；这次没有重叠风险——接手方 L17b 是在跑的那条，`leg-writeguard-r17.md` 由 37 行涨到 240 行、
-待填 8→2 都是它做的。⚠ 与 §34.3 那条教训相反方向的对照：L18 是"通知说死了其实活着"，L17 是"通知说死了确实死了"——
+待填 8→2 都是它做的。⚠ 与 §35.3 那条教训相反方向的对照：L18 是"通知说死了其实活着"，L17 是"通知说死了确实死了"——
 **结论不是"通知都别信"，而是"以盘上交付态为准"**：产物在通知之后继续长＝活着，载体 mtime 未再动且报告停在待填＝按死处理。
 
-### 34.8 L16b 交付：分母轴落地，并带回一条要改账的实测（`PRE_STAMP` 4886 → **4882**）
+### 35.8 L16b 交付：分母轴落地，并带回一条要改账的实测（`PRE_STAMP` 4886 → **4882**）
 先记它的**验收判定**（这正是接手车道该做的事）：门体**留用**——`grep -c DENOM` 工作树 17 / `git show HEAD` 0，
 12:37 实跑真印五行，`git diff` 只删 5 行、判据仅动 `if (blockingMissing||…)` 一格、阈值未改；
 但 **L16 原版测试件被实测判为假负例并重写**——12:47 亲跑 = `cases=44 fail=2 exit=1`、
@@ -913,7 +916,7 @@ DSL `{ name: "真实档覆盖去向册 verify-real-coverage-disposition", args: 
 `CORPUS_DENOM_BLINDSPOT absentNamedByGate=5 absentNeverOpenedByGate=3846`、
 `CORPUS_DENOM_AXIS advisoryFrames=5 blockingFrames=144 strict=off`。
 ⇒ §32 里 L15 那句"对 3848 张被删帧只看得见 2 张却印 PROBLEMS=0"的盲区从此有了**具名分母**；
-`trackedFrames=10457` 与我 §34 C 段独立量的"HEAD 仍跟踪 reports/** 下 10,457 枚图片"**逐字对上**（两条不同路径的数互证）。
+`trackedFrames=10457` 与我 §35 C 段独立量的"HEAD 仍跟踪 reports/** 下 10,457 枚图片"**逐字对上**（两条不同路径的数互证）。
 极性按裁定执行：选定删除集能背书的 5 帧走 advisory（逐条 `git ls-files` 仍 tracked 且在 `--deleted` 内），
 **round-1 那 144 帧 `inDeletedSet=false stillTracked=false`（从未入库）⇒ 照旧判红，没有洗**。
 `--strict` 时 PROBLEMS=3；配库时 PROBLEMS=0 但 `BLINDSPOT` 仍 3846 —— 配库不等于盲区消失，这句要留。
@@ -964,7 +967,7 @@ legacy-window 那一发的"变异必红"被同一次崩溃**假满足**（node �
 "无自报断言计数（不可信）"而判红（exit 明明是 0）。⇒ 两处修：**测试补印主方言** `SUMMARY: assertion failures = N`
 （这一条单独就能闭红，不依赖聚合器改动）；聚合器把 stem 放宽到 `\w{2,24}` —— 但**这一处改动留在工作树里不提交**，
 因为该文件同时带着兄弟车道的 +3（`GATE_SELFTESTS` 新增 `verify-lane-report-complete`，其门文件尚未入册）：
-提交它等于把别人在途的工作钉进我的提交边界，还会让 HEAD 引用一个不在仓库里的门文件。归因仍按 §34 记"待定"。
+提交它等于把别人在途的工作钉进我的提交边界，还会让 HEAD 引用一个不在仓库里的门文件。归因仍按 §35 记"待定"。
 
 **(4) 游客落点的 `stable` 在 n=1 时是空判据（本条只落账、不在此刀改）。**
 `verify-guest-landing.mjs:315` 是 `new Set(samples.map(s=>s.landing)).size===1` —— 单样本恒为真。

@@ -1,0 +1,33 @@
+{
+  "_comment": [
+    "车道报告骨架完成度门（scripts/qa/verify-lane-report-complete.mjs）的具名收件清单，L20 起草，2026-09-30。",
+    "为什么必须具名而不扫目录：本目录 52 份 md 里大量散文故意把「待补」「TODO」当状态写。实测例：decisions-v33.md:563 的「待补（现在是状态，不是遗漏）」是本册合法记账体例；ui-frame-debt-classes.md:35 的 TODO(backend) 是台账行长期处置文案；round7-NOTES.md 的「待补」11 处是普查口径（738 = 点名 + 待补 + 已盖章）；uncovered10-disposition-r14.md:32/:175/:432 是在引用另一个门的形状。一起判红只会造出噪音红，最后被人整体关掉，那是这道门的死法。所以只有登记在这里的份数会被判。",
+    "收录规则（人工逐条确认，不许用工具批量塞）：本轮（round-7 收口轮，车道号 L9-L20）每条车道一份报告；登记条件＝这一份是本轮车道报告、每个小节都必须回填读数。",
+    "编排方待办：wiring-gate-r18.md 已在 12:52:05 首次落盘，本清单已补上它（此刻仍标 inFlight）；L19 的报告实测未见（-r19 形态在四个 audit 目录里都搜不到），落盘后补进来。r16/r17 在本发是在途件，dry 读数用 --skip-entry 剔除，收工账去掉这些旗标再跑。",
+    "观察不推断：未见 -r11 / -r15 形态的报告在盘上（round-7 与其余 audit 目录都搜过），成因未查。"
+  ],
+  "round": "round-7",
+  "dir": ".",
+  "reports": [
+    { "file": "build-determinism-r9.md", "lane": "L9", "due": "本轮车道报告：骨架先行、读数逐节回填，收口时每节必须有实测读数" },
+    { "file": "dsl-gate-sync-r9.md", "lane": "L9", "due": "同上" },
+    { "file": "guest-membership-r9.md", "lane": "L9", "due": "同上" },
+    { "file": "held4-landing-r9.md", "lane": "L9", "due": "同上" },
+    { "file": "panel-shaclass-r9.md", "lane": "L9", "due": "同上" },
+    { "file": "ruling-packet-r9.md", "lane": "L9", "due": "同上" },
+    { "file": "b7-switch-inventory-r10.md", "lane": "L10", "due": "同上" },
+    { "file": "b7-classes-verify-r10a.md", "lane": "L10a", "due": "同上" },
+    { "file": "lg31-nonframe-r10b.md", "lane": "L10b", "due": "同上" },
+    { "file": "exec-verbs-r10c.md", "lane": "L10c", "due": "同上" },
+    { "file": "network-count-r10d.md", "lane": "L10d", "due": "同上" },
+    { "file": "token-conflicts-r10e.md", "lane": "L10e", "due": "同上" },
+    { "file": "toast-hook-r10f.md", "lane": "L10f", "due": "同上" },
+    { "file": "build-determinism-accept-r12.md", "lane": "L12", "due": "同上" },
+    { "file": "deny-tap-f04-r13.md", "lane": "L13", "due": "同上；这一份是中断时通篇 TODO 骨架的当事件（uncovered10-disposition-r14.md:32/:175 实测记录）" },
+    { "file": "uncovered10-disposition-r14.md", "lane": "L14", "due": "同上" },
+    { "file": "corpus-blindspot-r16.md", "lane": "L16", "inFlight": "取数时刻（2026-09-30 12:29 +0800，实测 mtime 12:49:27）L16 正在改 scripts/qa/verify-evidence-corpus.mjs，本车道不取它的字节；收工账由编排方复量" },
+    { "file": "leg-writeguard-r17.md", "lane": "L17", "inFlight": "取数时刻 L17 在途（measured-ledger.mjs 与 verify-guest-landing.mjs 同一批，实测 mtime 12:49:20），同上" },
+    { "file": "wiring-gate-r18.md", "lane": "L18", "inFlight": "L18 的报告在 12:52:05 首次落盘（本车道只量到 mtime，没读内容），此刻仍在途；本车道把它收进账是因为它属于本轮收口车道" },
+    { "file": "lane-report-complete-r20.md", "lane": "L20", "due": "本车道自己的报告；它是增量落盘写出来的，收工账必须照本门复量" }
+  ]
+}

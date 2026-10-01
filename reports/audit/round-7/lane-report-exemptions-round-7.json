@@ -1,0 +1,13 @@
+{
+  "_comment": [
+    "车道报告骨架完成度门（scripts/qa/verify-lane-report-complete.mjs）的声明式豁免 sidecar，L20 起草，2026-09-30。",
+    "定规已写死在门里，不靠人自觉：",
+    "1) 每条必须同时有 file / section / reason / declaredBy 四个字段，缺任一条门就判红（LANEREPORT_EXEMPT_BAD）。",
+    "2) 豁免只按小节名放行，门不支持整份文件放行；防「这一份本轮不看」式整体关掉。",
+    "3) 指向已填完或不存在小节的旧放行判红（LANEREPORT_EXEMPT_STALE）：收紧门必须撤回旧放行，逐档有账。",
+    "4) 不许把当前已知红项整体写进来。若某发出现 LANEREPORT_EXEMPT_SWEEP=YES，说明这份绿完全来自放行，编排方必须逐条复核后才准收口；收工账可用 --require-zero-exempt 直接判红。",
+    "用法：node scripts/qa/verify-lane-report-complete.mjs --intake reports/audit/round-7/lane-report-intake-round-7.json --exemptions reports/audit/round-7/lane-report-exemptions-round-7.json",
+    "样例形状（本文件当前是空清单，一条都没有）：exemptions 数组里放 { file: xxx-r21.md, section: 4. 长期欠账, reason: 这一节按派单只登记去向、读数要等 L22 的载具落地, declaredBy: 编排方 2026-10-01 }。"
+  ],
+  "exemptions": []
+}

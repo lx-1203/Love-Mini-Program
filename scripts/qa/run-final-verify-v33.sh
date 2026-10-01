@@ -55,12 +55,28 @@ g prove-gates-can-fail    300 scripts/qa/prove-gates-can-fail.mjs
 # （此处曾写成 // —— bash 不认 JS 注释，会把 // 当命令执行并喷两条 No such file，
 #   在 set -u 下不致命，但那两行等于没被任何解释器读过。）
 g verify-dry-no-lease     180 scripts/qa/verify-dry-no-lease.mjs
+# 接线（L18 工作流改进门车道 2026-09-30）：零消费者导出件检测。
+# 这道门补的是本流程从来没有过的一格——"东西建好了没人跑/没人消费"此前不会让任何东西变红。
+# 四条同族实测事故与判域/极性论证见 reports/audit/round-7/wiring-gate-r18.md。
+# 不带 --advisory：默认极性就是判红，接进来的目的正是让它能红（带旗等于把刚装上的刹车拆掉）。
+# 不带 --select：那是负例专用的收窄旋钮，判据逻辑与整跑同一条码路，终验必须走整跑那一支。
+# 超时 180 秒＝与同簇静态门 verify-dry-no-lease 齐平；实测本门 3 发 wall=3157/2888/2595 ms
+#（Node22、默认参数、写 .zcode/tmp 侧车），最慢一发对 180 秒有 ~57 倍余量，方向上不会被掐。
+g verify-carrier-wiring   180 scripts/qa/verify-carrier-wiring.mjs
+# r10 接线（L20）：车道报告的「（待填」骨架此前没有任何门看过——上一程三条车道死于轮次上限时
+# 盘上留的就是全「待填」空骨架而一切照绿。收件清单具名、豁免须带理由，缺清单该门自己 exit 2。
+g verify-lane-report-complete 60 scripts/qa/verify-lane-report-complete.mjs --intake reports/audit/round-7/lane-report-intake-round-7.json --exemptions reports/audit/round-7/lane-report-exemptions-round-7.json
+# r10 接线（L19）：10 条真实档覆盖欠账的分流此前只有 50KB 散文（uncovered10-disposition-r14.md），
+# 没有任何门在核"条条有去向"。本门只审有没有账，结构上销不掉红（五词表里没有 DONE/CLOSED/EXEMPT）。
+g verify-real-coverage-disposition 180 scripts/qa/verify-real-coverage-disposition.mjs
 g verify-case-automatable 180 scripts/qa/verify-case-automatable.mjs --results reports/audit/round-6/interact/exec-results.json --json .zcode/tmp/case-automatable/final.json
 # r9 接线：判据台语料戳（--check 只读）。此前只有车道"自己记得跑"，而本轮有车道往 ops 写过行 ⇒ 必须有人必然经过。
 g verify-ops-stamp          180 scripts/qa/verify-ops-corpus-stamp.mjs --check
 
 echo "--- QA 自测汇总器（19+ 条离线）---"
-g run-qa-selftests        600 scripts/qa/run-qa-selftests.mjs
+# r10 上调 600→900（只准往大调，方向与 DSL 齐平：DSL 给 900000ms 并写明"留的是负例批量起进程的余量"）。
+# 实测依据：编排方 13:15 用 600 秒的临时载具跑出 exit=124（被掐死，不是被测物红），而收件数已从 36 涨到 43。
+g run-qa-selftests        900 scripts/qa/run-qa-selftests.mjs
 
 echo "--- 工作流干跑预检（3 画像）---"
 g dryrun-workflow         300 scripts/qa/dryrun-workflow.mjs --profile all
