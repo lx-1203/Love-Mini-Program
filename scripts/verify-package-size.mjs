@@ -185,15 +185,20 @@ if (allowMock) {
 if (failures.length > 0) {
   console.error("[verify-size] ✗ 验收失败:");
   for (const f of failures) console.error(`  - ${f}`);
+  /* 三态机器行（decisions #10 结尾提的那条，用户 2026-10-01 授权落地）：
+     原来失败只印 ✗、豁免印 ✓，同一次运行能同时出现"⚠ 超限"和"✓ 合规"——判读只能认这条具名行。 */
+  console.log("PACKAGE_SIZE_RESULT=FAIL（有硬性违例，见上面 ✗ 列表）");
   process.exit(1);
 }
 /* 原来这里无条件印「✓ 验收通过：主包/总包体积合规」——而上面刚刚 warn 过"主包超上限（豁免）"，
    两条自相矛盾的话出自同一次运行（用户裁定册第 22 项的第二条也点了这个命名）。
    退出码一字不动（豁免路仍 0，否则 mock 构建链会断），只把话说明白：
-   带豁免通过 ≠ 合规。判读要认 PACKAGE_SIZE_WAIVED 这行与 ⚠，不要认那句 ✓。 */
+   带豁免通过 ≠ 合规。判读要认 PACKAGE_SIZE_RESULT / PACKAGE_SIZE_WAIVED 这行与 ⚠，不要认那句 ✓。 */
 if (waivedMainOver) {
   console.log("[verify-size] ⚠ 带豁免通过：主包超上限被 --allow-mock 豁免，本条**不是**「体积合规」");
   console.log("PACKAGE_SIZE_WAIVED=main_over_limit（发布形态需另跑 build:mp-weixin:real 严格门禁）");
+  console.log("PACKAGE_SIZE_RESULT=WAIVED_MOCK（其余检查通过，但主包超限被豁免 ⇒ 不得引用本条作为「体积达标」的依据）");
 } else {
   console.log("[verify-size] ✓ 验收通过：主包/总包体积合规，无 mp4，mock/en-US 已剔除");
+  console.log(`PACKAGE_SIZE_RESULT=PASS（被测物档位见上面的 PACKAGE_SIZE_BAND，只指那一档）`);
 }

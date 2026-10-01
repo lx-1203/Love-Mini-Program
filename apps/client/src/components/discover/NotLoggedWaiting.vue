@@ -38,8 +38,10 @@ import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import { openAppPath } from "../../utils/navigation";
 import { ROUTES } from "../../constants/routes";
+import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
 
 const { t } = useI18n();
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 const emit = defineEmits<{
   (e: "goLogin"): void;
   (e: "goPhoneLogin"): void;
@@ -83,7 +85,7 @@ function goLater() {
 </script>
 
 <template>
-  <view class="not-logged">
+  <view class="not-logged" :style="menuStyleVars">
     <!-- 标题 / 头像环 / 解锁提示 / 4 icon / 3 按钮：按理想图自上而下的顺序排，
          不再用「整图打底 + 绝对定位压底」那一版（那一版没有整图就没有内容可压）。 -->
     <view class="not-logged__hero">
@@ -176,7 +178,7 @@ function goLater() {
   align-items: center;
   box-sizing: border-box;
   /* 内容改成正常流 ⇒ 上下留白由容器给（原来由那张整图海报撑开） */
-  padding: calc(env(safe-area-inset-top) + 72rpx) 48rpx calc(env(safe-area-inset-bottom) + 60rpx);
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 72rpx) 48rpx calc(env(safe-area-inset-bottom) + 60rpx);
 }
 
 .not-logged__hero {

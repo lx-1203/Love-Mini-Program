@@ -1144,3 +1144,32 @@ DSL `parseDiagnostics: 0`；`dryrun-workflow --profile all` **exit=0**；扫 DSL
 ⇒ **本轮所有车道报告都已填实**，§35.5 那条"在途红"随车道收工自行消掉，没有用豁免清单抹平（sidecar 仍 0 条）。
 影响范围如实说：这条改动动的是车道 prompt 文本，不动任何门的判据/阈值/退出码，
 所以 §38 那份 22 键终局复量对它仍然有效；`verify-dry-no-lease` 与 `dryrun-workflow` 这两条会读 DSL 字节的门已按新字节复跑。
+
+## 39. 用户 2026-10-01 授权"全部按建议执行"后的首批落地（上面各节原文一字未动）
+作用域仍按 §35.1 那条纪律：**可逆且能当场给证据的我做**；不可逆的不动（删 worktree/分支、`git push`、
+LFS 重写历史）；需要只有你才有的外部值，我**不编造**。
+
+**已落地并有读数**
+- **`#10` 结尾我此前标"待授权"的那条命名刀已做**：`verify-package-size.mjs` 现在打三态机器行
+  `PACKAGE_SIZE_RESULT=WAIVED_MOCK|PASS|FAIL`。A/B 实测三态齐全且**退出码一字未动**：
+  mock 挂 `--allow-mock` ⇒ `exit=0 / WAIVED_MOCK`；mock 无旗 ⇒ `exit=1 / FAIL`；real 档 ⇒ `exit=1 / FAIL`。
+  从此"⚠ 超限"与"✓ 合规"不可能再出自同一次运行（`#22` 第二条点过的矛盾命名）。
+- **发布链预检抓到一处真缺陷并已按判据补齐**：`components/discover/NotLoggedWaiting.vue:179` 裸写
+  `env(safe-area-inset-top)`，`check-statusbar-offset` 判 error（DevTools/无刘海机型该值恒 0 ⇒ 必然叠印）。
+  处置没有走"塞白名单"：先跑门自带的 `--fix` 包上 `var(--statusbar, env(...))`，此时**规则三立刻咬住**
+  ——该文件没有 JS 注入源。按同目录 `CardDetailOverlay.vue` 的既有写法补上
+  `useMenuButtonRect()` + 根节点 `:style="menuStyleVars"` 才真正合规。
+  复验：`check-statusbar-offset 570 files 0 errors 0 warns → PASS`、`check-project-rules → PASS`、
+  `typecheck exit=0`、`test:unit 121 files / 1357 tests 全过`。
+
+**`#10` 仍闭不了，原因换成了一条硬的**：发布链在 `verify-env-release` 停住——
+`.env.real` 里是 `VITE_API_BASE_URL=http://127.0.0.1:8080/api`，而门要求 **HTTPS 且不得指向本机**
+（微信小程序合法域名的硬要求）。这个值只有你有，我不编 ⇒ **发布形态主包大小今天依然不可复现**，
+`#10` 的 A/B/C 仍缺同一块依据。要我把数字量出来，只需要你给真后端 HTTPS 域名（或确认用哪个测试域名出发布档）。
+
+⚠ **一条必须入册的操作坑（它会静默把 1241 个文件摆成"被删除"）**：`build:mp-weixin:real` 的
+`prepare-static --real` **先搬空 `src/static` 到 `static-local-backup/full-static/`**，链子后面任何一步失败
+（这次是 env 校验）都会让 src 停在搬空态。本次按**具名路径** `git checkout -- apps/client/src` 还原
+（不是全仓还原——全仓还原会复活你裁定不入库的那 3851 项截图），还原后 `src` 脏项 D=0、我自己的改动保住。
+派生两件事待做：① 给发布链加"失败即还原"的 trap；② 把"跑 real 构建前先确认 `.env.real` 已配 HTTPS 域名"
+写成前置门，而不是靠人记得。
