@@ -447,6 +447,7 @@ const lanePromises = areas.map((area) => {
         `本车道要收口的缺口（照 how 的指定补法做）：${JSON.stringify(items)}`,
         `上下文出处：${WORKFLOW.finalReport}、${WORKFLOW.notes}（按需读）。`,
         `环境纪律：跑命令用 Bash 且 PATH 前置 Node22（export PATH="/d/codex-tools/node-v22.17.0-win-x64:$PATH"）；类型检查验证可用 node D:/codex-tools/node-v22.17.0-win-x64/node_modules/corepack/dist/pnpm.js -C apps/client run typecheck。`,
+        `增量落盘是硬要求（r10 补，与下面「交互腿」同一条尺子）：车道 agent 有轮次上限（实测 150 轮会被截断，本轮三条车道就是这么断的），所以开工先把报告骨架写盘，此后每完成一项立刻更新那一份文件，绝不攒到最后一次写；盘上没有对应读数＝这项未收口，不许在回报里当已完成。本仓已有一次"代码写了、报告全空骨架、而一切照绿"——那形状没有任何门会红（现由 scripts/qa/verify-lane-report-complete.mjs 审）。`,
         `返回 fixedIds / filesChanged（工作区相对路径）/ skipped（不修必须给 reason）/ evidence（文件:行 或 命令输出要点）/ notes。`,
       ].join("\n"),
     ).then((v) => v, (e) => askFail<LaneOut>(`收口车道-${area}`, e, { lane: area, fixedIds: [], filesChanged: [], skipped: items.map(i => ({ id: i.id, reason: "车道调用失败，未处理" })), evidence: [], notes: "" }));

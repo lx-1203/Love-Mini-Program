@@ -1134,3 +1134,13 @@ DSL 自己把 `构建 build:mp-weixin:mock / typecheck / vitest 全量经收口�
 终局复量 22 键红 3 且三条都是已裁定的预期红；§6 交还清单由 `§36` 机器名册供数 = **18 项待拍板**
 （另 1 半闭、1 已裁），与标题分类的 28 并排报出并写明差因；`reports/screenshots` 那 3857 项删除、
 9 个 `guest-landing-*.bak-*` 备份、`evidence-holes-verdict.json` 的 `generatedAt` 漂移**按裁定不入库**。
+
+### 38.1 DSL 补刀落地：「增量落盘」不再只写在交互腿那一侧（13:0x）
+§35 E 段定位的那处分野（`:447/:455` 交互腿有"增量落盘是硬要求"，`:415` 一带的收口车道没有）已由编排方补上：
+现在收口车道的任务里也要求"先落骨架、每完成一项立刻更新、盘上没有对应读数＝未收口"，并点名
+`verify-lane-report-complete` 会审这件事。改完的自检（全部未接管道取退出码）：
+DSL `parseDiagnostics: 0`；`dryrun-workflow --profile all` **exit=0**；扫 DSL 字节的 `verify-dry-no-lease` **exit=0**
+（`DRYLEASE_RESULT=OK —— 没有 dry 抢设备的路径`）；`verify-lane-report-complete` **exit=0、PROBLEMS=0**
+⇒ **本轮所有车道报告都已填实**，§35.5 那条"在途红"随车道收工自行消掉，没有用豁免清单抹平（sidecar 仍 0 条）。
+影响范围如实说：这条改动动的是车道 prompt 文本，不动任何门的判据/阈值/退出码，
+所以 §38 那份 22 键终局复量对它仍然有效；`verify-dry-no-lease` 与 `dryrun-workflow` 这两条会读 DSL 字节的门已按新字节复跑。
