@@ -1,3 +1,4 @@
 ﻿$t = $null; $e = $null
-[void][System.Management.Automation.Language.Parser]::ParseFile("D:\6\恋爱小程序\scripts\r7-journey.ps1", [ref]$t, [ref]$e)
+$repo = Split-Path $PSScriptRoot -Parent   # scripts/ 上一级 = 仓库根
+[void][System.Management.Automation.Language.Parser]::ParseFile((Join-Path $repo 'scripts\r7-journey.ps1'), [ref]$t, [ref]$e)
 if ($e.Count -eq 0) { "SYNTAX-OK" } else { $e | ForEach-Object { $_.Message + " @line " + $_.Extent.StartLineNumber } }

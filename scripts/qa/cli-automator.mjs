@@ -19,7 +19,7 @@
  * 用法（一次性调用）：
  *   node scripts/qa/cli-automator.mjs --project <路径> eval "() => 1+1"
  *   node scripts/qa/cli-automator.mjs --project <路径> tap --selector .foo --wait 1
- *   node scripts/qa/cli-automator.mjs --project <路径> shot --path D:/x.png
+ *   node scripts/qa/cli-automator.mjs --project <路径> shot --path <输出图片路径>
  *   node scripts/qa/cli-automator.mjs --project <路径> print-argv automation_evaluate --fn-source "()=>1"
  *     ↑ 只组装、不派生进程、不碰模拟器：用来看子进程**实际会收到**的那串 argv。
  * 被 import 时（IS_MAIN=false）只导出函数，不产生副作用。
@@ -35,14 +35,25 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 /** 相对 --project 的基准：脚本所在仓库根，**不是** process.cwd()（队列的 cwd、探针的 cwd 都可能不是这里）。 */
 const REPO = resolve(HERE, "..", "..");
 
-const IDE_DIR = process.env.WECHATIDE_DIR || "D:/微信开发者/微信web开发者工具";
+/** IDE 安装目录的解析序：WECHATIDE_DIR 显式指定 > 扫 PATH 找 wechatide.cmd 取其目录（可推导，
+ *  不写盘符死路径）> 空串（后续 ideCall 会因找不到主程序报错并提示设 WECHATIDE_DIR）。 */
+function ideDirFromPath() {
+  for (const d of String(process.env.PATH || "").split(";")) {
+    if (!d) continue;
+    try { if (existsSync(join(d, "wechatide.cmd"))) return d; } catch { /* 这段 PATH 坏了就跳过 */ }
+  }
+  return "";
+}
+const IDE_DIR = process.env.WECHATIDE_DIR || ideDirFromPath();
 const EXE_EXCLUDE = new Set(["node.exe", "node-18.exe", "wxfilewatcher.exe", "wxfilewatcher_x64.exe", "notification_helper.exe", "wechatdevtools.exe"]);
 const BOOTSTRAP_JS = "const e=process.argv[1],a=process.argv.slice(2).filter(function(x){return x!=='--electron'});if(!process.env.cwd)process.env.cwd=process.cwd();process.argv=[process.execPath,e].concat(a);require(e)";
 
 /** 找 Electron 主程序：与 wechatide.cmd 同一条规则（>50MB 的 exe，排除已知非主程序） */
 function electronExe(dir = IDE_DIR) {
   let best = null, min = 50 * 1024 * 1024;
-  for (const n of readdirSync(dir)) {
+  let names = [];
+  try { names = readdirSync(dir); } catch { return best; /* 目录取不到（含 IDE_DIR 为空）⇒ 调用方按缺失报 */ }
+  for (const n of names) {
     if (!/\.exe$/i.test(n) || EXE_EXCLUDE.has(n.toLowerCase())) continue;
     const s = statSync(join(dir, n)).size;
     if (s > min) { min = s; best = join(dir, n); }
@@ -54,7 +65,7 @@ const CLI_JS = join(IDE_DIR, "resources", "app.asar.unpacked", "js", "common", "
  *  （run-ui-queue 只 pick 结论行，但 shoot/r-exec 的 stdout 是人读的）。 */
 let projectNotePrinted = false;
 
-/** 路径是不是已经绝对的：posix `/x`、windows `C:\x` / `C:/x`、UNC `\\srv\x` 都算，原样保留。
+/** 路径是不是已经绝对的：posix `/x`、windows 盘符写法（单个字母 + 冒号 + 斜杠）、UNC `\\srv\x` 都算，原样保留。
  *  判据与 scripts/qa/ws-channel-up.mjs:39 同一套（那是本仓既有的口径，不另立第三种）。 */
 export function isAbsolutePath(s) {
   const v = String(s);

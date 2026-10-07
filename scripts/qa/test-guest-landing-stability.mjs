@@ -13,7 +13,7 @@
    方言（聚合器 run-qa-selftests.mjs 认的两行；stem 不带下划线，它取数的 ^\w{2,8}_SUMMARY 上限是 8 字符）：
      SUMMARY: assertion failures = N
      STABN_TEST=PASS|FAIL
-   跑法："D:/codex-tools/node-v22.17.0-win-x64/node.exe" scripts/qa/test-guest-landing-stability.mjs */
+   跑法：node scripts/qa/test-guest-landing-stability.mjs（需 ≥20.11；PATH 上是老 node 时用 NODE22_EXE 指一个新版） */
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -254,9 +254,18 @@ t("现网与替身在同一断言集上的差只出现在样本数相关的那�
     /* 这一条钉的是 §35(4) 的病本身：旧字段说「全绿」而现算说「有降级」。
        日后若补拍了第二个样本（字段与现算重新一致），这一支会自然改去核「矛盾必须归零」，
        判据不靠钉死 17 这个快照数活着。 */
-    t("真台账：行内 stable 字段与现算不一致的行必须被点名（空判据不许靠字段复活）",
-      recTrue === doc.rows.length ? a.degraded > 0 && a.fieldContradictions === a.degraded : a.fieldContradictions === 0,
-      "字段说 stable=true 的行=" + recTrue + "/" + doc.rows.length + " 现算降级=" + a.degraded + " 点名矛盾=" + a.fieldContradictions);
+    /* 2026-10-06 过期钉子修正（#11 booked 复测腿收口的一部分）：原写法
+       `recTrue===rows.length ? degraded>0 && … : contradictions===0`
+       把「字段全说 stable=true」当成「必有降级」—— 2026-10-06 的 booked 复测腿把 28 行全部补到
+       n=2 且落点一致（台账 healthy：降级=0、矛盾=0），第一支于是把健康账判成了红，与上一行注释
+       自己声明的意图（补拍后改核「矛盾必须归零」）相悖。改成形状无关的派生不变量：
+       矛盾计数必须等于逐行独立复算的「字段≠现算」行数（双向都算）——健康账自动归零，
+       字段说谎的账（含 17 行旧形状）照旧逐行点名，负例咬合力不变。 */
+    const lieCount = doc.rows.filter((r) => typeof r.stable === "boolean" &&
+      LIVE_IMPL.recomputeStability(r, doc).stable !== r.stable).length;
+    t("真台账：行内 stable 字段与现算不一致的行必须被点名（空判据不许靠字段复活；补拍后矛盾必须归零）",
+      a.fieldContradictions === lieCount,
+      "字段说 stable=true 的行=" + recTrue + "/" + doc.rows.length + " 现算降级=" + a.degraded + " 点名矛盾=" + a.fieldContradictions + " 独立复算矛盾=" + lieCount);
     console.log("STABN_REAL rows=" + a.rows + " 稳定=" + a.stable + " 降级=" + a.degraded +
       " 因样本数不足=" + a.shortSamples + " 因落点不一致=" + a.landingDisagree +
       " 顶层repeat=" + a.declaredRepeat + " 最低样本数=" + a.requiredSamples);

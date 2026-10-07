@@ -14,9 +14,10 @@
  * 输出：列出所有有问题的文件及行号，便于后续修复。
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = "d:/6/恋爱小程序/apps/client/src";
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "src");
 const problems = [];
 
 function walk(dir) {
@@ -85,7 +86,7 @@ function scanFile(filePath) {
     // 检测条件编译注释
     if (inTag && /<!--\s*#ifdef/.test(line)) {
       problems.push({
-        file: relative("d:/6/恋爱小程序/apps/client/src", filePath),
+        file: relative(ROOT, filePath),
         line: lineNum,
         content: line.trim(),
         tagStartLine,

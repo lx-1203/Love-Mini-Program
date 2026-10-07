@@ -12,9 +12,10 @@
  *   - 已有 role 属性的 v-for 子项
  */
 import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = "d:/6/恋爱小程序/apps/client/src";
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "src");
 let totalFixed = 0;
 const fixedFiles = [];
 
@@ -99,7 +100,7 @@ function fixFile(filePath) {
 
   if (fixCount > 0) {
     writeFileSync(filePath, lines.join("\n"), "utf8");
-    fixedFiles.push({ file: relative("d:/6/恋爱小程序/apps/client/src", filePath), count: fixCount });
+    fixedFiles.push({ file: relative(ROOT, filePath), count: fixCount });
     totalFixed += fixCount;
   }
 }

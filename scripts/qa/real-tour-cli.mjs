@@ -30,8 +30,8 @@ import { guardUiLease } from "./ui-lease.mjs";
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 /* manifest 里的 path 必须是「仓库相对 + 正斜杠」，与 tour-r6.mjs 同方言 ——
    verify-provenance-all 判「断链帧」的解法是 `p.startsWith(repo) || p.startsWith("/") ? p : join(repo, p)`，
-   而 repo 在 Windows 上是反斜杠形态，所以一个 `D:/…` 绝对写法两支都不匹配，会被 join 成
-   `repo\D:\6\…` 这种必然不存在的字符串 ⇒ 18 张帧全被判 UNRESOLVABLE（本轮实测踩过）。
+   而 repo 在 Windows 上是反斜杠形态，所以一个「盘符 + 正斜杠」的绝对写法两支都不匹配，会被 join 成
+   「repo\盘符+反斜杠+…」这种必然不存在的字符串 ⇒ 18 张帧全被判 UNRESOLVABLE（本轮实测踩过）。
    原先写的是 `file.replace(REPO + "/", "")`，而 file 由 join() 生成、分隔符是反斜杠，
    那次 replace 从来就没命中过，剩下 split/join 只是把反斜杠换成斜杠、留下绝对前缀。 */
 const relOf = (p) => relative(REPO, p).split(sep).join("/");
@@ -43,7 +43,15 @@ const PROJECT = arg("project", join(REPO, "apps/client/dist/build/mp-weixin-real
    （本轮就这么用过）。原先这里写死 "build:mp-weixin:real:isolated"，一旦指到 mock，
    权威索引里那一批帧就会被标成真实模式——那是伪造溯源。 */
 const BUILD_MODE = arg("build-mode", /mp-weixin-real/.test(String(PROJECT)) ? "build:mp-weixin:real:isolated" : "build:mp-weixin（mock）");
-const IDE = arg("ide", "D:/微信开发者/微信web开发者工具/wechatide.cmd");
+/* wechatide.cmd 解析序：--ide 显式 > WECHATIDE_DIR 环境变量 > 扫 PATH 找同名 cmd（可推导，不写盘符死路径）。 */
+function ideCmdFromPath() {
+  for (const d of String(process.env.PATH || "").split(";")) {
+    if (!d) continue;
+    try { const p = join(d, "wechatide.cmd"); if (existsSync(p)) return p; } catch { /* 这段 PATH 坏了就跳过 */ }
+  }
+  return "";
+}
+const IDE = arg("ide", process.env.WECHATIDE_DIR ? join(process.env.WECHATIDE_DIR, "wechatide.cmd") : ideCmdFromPath());
 const OUT_DIR = join(REPO, "reports/screenshots", LABEL);
 const SETTLE_MS = Number(arg("settle", "2600"));
 const APIDIR = "apps/client";
@@ -59,6 +67,7 @@ const GIT_SHA = git("rev-parse --short HEAD") || "unknown";
 const IDE_DIR = dirname(IDE);
 const EXE_EXCLUDE = new Set(["node.exe", "node-18.exe", "wxfilewatcher.exe", "wxfilewatcher_x64.exe", "notification_helper.exe", "wechatdevtools.exe"]);
 const ELECTRON_EXE = (() => {
+  if (!IDE_DIR) return null; /* PATH 上也没找到 wechatide.cmd ⇒ 走下面统一的 FAIL 文案 */
   let best = null, min = 50 * 1024 * 1024;
   for (const n of readdirSync(IDE_DIR)) {
     if (!/\.exe$/i.test(n) || EXE_EXCLUDE.has(n.toLowerCase())) continue;
@@ -69,7 +78,7 @@ const ELECTRON_EXE = (() => {
 })();
 const CLI_JS = join(IDE_DIR, "resources", "app.asar.unpacked", "js", "common", "cli", "skill-index.js");
 const BOOTSTRAP_JS = "const e=process.argv[1],a=process.argv.slice(2).filter(function(x){return x!=='--electron'});if(!process.env.cwd)process.env.cwd=process.cwd();process.argv=[process.execPath,e,'--electron'].concat(a);require(e)";
-if (!ELECTRON_EXE || !existsSync(CLI_JS)) { console.log("REALTOUR_RESULT=FAIL reason=找不到 Electron 主程序或 skill-index.js（IDE 安装目录变了？）"); process.exit(1); }
+if (!ELECTRON_EXE || !existsSync(CLI_JS)) { console.log("REALTOUR_RESULT=FAIL reason=找不到 Electron 主程序或 skill-index.js（IDE 安装目录变了？用 --ide 或 WECHATIDE_DIR 显式指安装目录）"); process.exit(1); }
 
 /** 调 wechatide CLI 并解析 JSON；失败一律抛出（不静默吞） */
 function ide(tool, extra = []) {

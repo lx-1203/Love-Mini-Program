@@ -1,0 +1,118 @@
+{
+ "gates": [
+  {
+   "name": "台账词表/形状 verify-ledger",
+   "exitCode": 0,
+   "resultLine": "LEDGER_RESULT=PASS；另有 5 条非 ID 截断串待改源头写法；另有 71 条已登记退役（凭证被 70472d92 有意删除，见 LEDGER_RETIRED：退役 ≠ 通过）"
+  },
+  {
+   "name": "状态真值 verify-state-truth",
+   "exitCode": 0,
+   "resultLine": "STATE_RESULT=PASS（全局极差比的是 2 列同范围源；检查点按 subset-window 已做逐套包含核对）"
+  },
+  {
+   "name": "队列守恒 verify-queue-reconcile",
+   "exitCode": 0,
+   "resultLine": "QUEUE_RESULT=PASS"
+  },
+  {
+   "name": "真实档覆盖 verify-real-coverage",
+   "exitCode": 1,
+   "resultLine": "REALCOV_RESULT=FAIL（真实模式覆盖守恒：跳过不算量到，单身份不算双身份；免检只免\"本门不追\"，不降阈值）"
+  },
+  {
+   "name": "判据台 verify-source-shape",
+   "exitCode": 0,
+   "resultLine": "SRC_SHAPE_RESULT=OK"
+  },
+  {
+   "name": "证据语料 verify-evidence-corpus",
+   "exitCode": 1,
+   "resultLine": "CORPUS_RESULT=FAIL（存在不可背书证据或硬编码 SHA）"
+  },
+  {
+   "name": "溯源全量 verify-provenance-all",
+   "exitCode": 1,
+   "resultLine": "PROVENANCE_RESULT=FAIL（本轮产物侧存在回填/过期戳记/断链帧/无戳，禁止据此下结论）"
+  },
+  {
+   "name": "档位新鲜度 verify-band-freshness",
+   "exitCode": 2,
+   "resultLine": "FRESH_RESULT=FAIL problems=16"
+  },
+  {
+   "name": "后端新鲜度 verify-backend-fresh",
+   "exitCode": 1,
+   "resultLine": "BACKEND_FRESH_RESULT=FAIL（apps/api 有 55 项未提交改动 ⇒ 运行实例不可能代表 HEAD / 运行实例起于 2026-09-26T21:32:46，早于最新 class 2026-10-05T17:26:06.245Z ⇒ 跑的是旧代码，需要重启）"
+  },
+  {
+   "name": "证据洞 verify-evidence-holes",
+   "exitCode": 0,
+   "resultLine": "EVIDENCE_HOLES_RESULT=PASS 每个洞都有可重跑判据，无一靠重判结案"
+  },
+  {
+   "name": "离线负例聚合 run-qa-selftests",
+   "exitCode": 1,
+   "resultLine": "SELFTEST_RESULT=FAIL（1/51 个离线测试与门自检未过）"
+  },
+  {
+   "name": "dry 不抢租约静态门 verify-dry-no-lease",
+   "exitCode": 0,
+   "resultLine": "DRYLEASE_RESULT=OK —— 没有 dry 抢设备的路径"
+  },
+  {
+   "name": "载体接线零消费者门 verify-carrier-wiring",
+   "exitCode": 0,
+   "resultLine": "WIRING_RESULT=PASS（判域 25 个导出件全部有消费者；死件=0 过期豁免=0；口径=消费者含 import/require/动态 import/spawn 字面量/sh/dsl/package.json/queue/ci 七类入口加已登记的按名自动收件，不含 .md 与 reports/** 的提及）"
+  },
+  {
+   "name": "车道报告骨架完成度 verify-lane-report-complete",
+   "exitCode": 0,
+   "resultLine": "LANEREPORT_RESULT=PASS 退出码=0 口径=本发判决（红项见上 PROBLEMS=0）"
+  },
+  {
+   "name": "真实档覆盖去向册 verify-real-coverage-disposition",
+   "exitCode": 0,
+   "resultLine": "RCD_RESULT=PASS（9 条欠账条条有在册去向；陈旧 1 条按 advisory 点名不判红；上游门照旧 RESULT=FAIL UNCOVERED=9）"
+  },
+  {
+   "name": "用例可自动化预检 verify-case-automatable",
+   "exitCode": 0,
+   "resultLine": "CA_RESULT=ADVISORY（静态命中 102/1107，占 9.2%；假阳性率已量 83.3%（85/102，其中\"跑完且通过\"硬口径 47.1%），召回率 12.1%；数字大不归本门自处，判红权在 --strict，默认不判红——要判红加 --strict）；分派口径：「真能力缺口」归 harness（要加 op），「逐态标注/亚秒连拍/全文本扫描/主观审美」归用例设计（要换等价可断言"
+  },
+  {
+   "name": "工作流干跑预检 dryrun-workflow",
+   "exitCode": 0,
+   "resultLine": "DRYRUN_RESULT=PASS（3/3 画像跑到底并产出总报告）"
+  },
+  {
+   "name": "判据台戳 verify-ops-stamp",
+   "exitCode": 0,
+   "resultLine": "STAMP_RESULT=PASS 语料与戳一致（cases=1107 与记录相同，判据内容零漂移）"
+  }
+ ],
+ "rootInv": {
+  "verdict": "FAIL",
+  "detail": "ROOT_INV_RESULT=FAIL\nROOT_INV_FILE_VIOL=[\".gitattributes\",\"nul\",\"tmp_admin_routes.json\",\"tmp_boot.js\",\"tmp_boot_out.txt\",\"tmp_menus.json\",\"tmp_msg_exec.json\",\"tmp_r11_guest.json\",\"tmp_r11_login.json\",\"tmp_r1_after_A.json\",\"tmp_r1_after_B.json\",\"tmp_r1_guest.json\",\"tmp_r1_login.json\",\"tmp_r2_guest.json\",\"tmp_r2_login.json\"]\nROOT_INV_DIR_VIOL=[\".qoder\",\"tmpr1-regsuccess-crops\"]\n",
+  "exitCode": 0
+ },
+ "absScan": {
+  "verdict": "HIT",
+  "detail": "ABS_SCAN_RESULT=HIT scanned=4321 hits=193\nABS_HIT scripts/audit-client-scan.mjs:6 'd:/6/恋爱小程序/apps/client/src',\nABS_HIT scripts/audit-client-scan.mjs:7 'd:/6/恋爱小程序/apps/client/pages',\nABS_HIT scripts/audit-client-scan.mjs:372 const outPath = 'd:/6/恋爱小程序/scripts/audit-client-issues.csv';\nABS_HIT scripts/qa/cellplan-round7-criteria-c.json:2 \"note\": \"lane C：零散原因的 UNDECIDABLE 收紧。范围按 verdictWhy 前缀排除后实测是 9 条而不是简报说的约 19 条（lane A「台账判据里抠不出任何可比对的具体物件」10 条、lane B「授予绿用\nABS_HIT scripts/qa/cli-automator.mjs:22 *   node scripts/qa/cli-automator.mjs --project <路径> shot --path D:/x.png\nABS_HIT scripts/qa/cli-automator.mjs:38 const IDE_DIR = process.env.WECHATIDE_DIR || \"D:/微信开发者/微信web开发者工具\";\nABS_HIT scripts/qa/cli-automator.mjs:57 /** 路径是不是已经绝对的：posix `/x`、windows `C:\\x` / `C:/x`、UNC `\\\\srv\\x` 都算，原样保留。\nABS_HIT scripts/qa/dryrun-workflow.mjs:20 const ts = createRequire(import.meta.url)(\"D:/6/恋爱小程序/apps/cl",
+  "exitCode": 0
+ },
+ "batStatic": {
+  "verdict": "FAIL",
+  "detail": "BAT_STATIC_RESULT=FAIL\nBAT_STATIC_PROBLEM build-mp-weixin.bat: 缺 NODE22_DIR/Node 版本闸（PATH node=v16 会把构建链崩成假红）\nBAT_STATIC_PROBLEM start-showcase.bat: 缺 NODE22_DIR/Node 版本闸（PATH node=v16 会把构建链崩成假红）\n",
+  "exitCode": 0
+ },
+ "backendUp": true,
+ "pathNodeVersion": "v16.13.1",
+ "dirty": -1,
+ "deletions": 0,
+ "deletionsScreenshots": 0,
+ "untracked": 0,
+ "ahead": 32,
+ "branch": "main",
+ "head": "c088e2d6"
+}

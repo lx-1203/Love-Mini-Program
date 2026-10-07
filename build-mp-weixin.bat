@@ -29,6 +29,34 @@ if errorlevel 1 (
     exit /b 1
 )
 
+REM ---------- Step 0: Node 版本闸（先于 Step 1，PATH node=v16 会把构建链崩成假红） ----------
+REM ① 已设置 NODE22_DIR 时把它前置到 PATH（延迟展开：块内不能用百分号，否则未定义时也会执行 set）
+if defined NODE22_DIR (
+    echo   检测到 NODE22_DIR=!NODE22_DIR!，已前置到 PATH
+    set "PATH=!NODE22_DIR!;!PATH!"
+)
+REM ② node -v 探测主版本，低于 20 直接拦下，不给假红机会
+set "NODE_VERSION="
+for /f "delims=" %%v in ('node -v 2^>nul') do set "NODE_VERSION=%%v"
+set "NODE_MAJOR="
+if defined NODE_VERSION for /f "tokens=1 delims=v." %%a in ("%NODE_VERSION%") do set "NODE_MAJOR=%%a"
+REM 注意：管道两侧由子 cmd 执行，不继承 setlocal enabledelayedexpansion，此处必须用百分号展开
+echo %NODE_MAJOR%| findstr /r "^[0-9][0-9]*$" >nul
+if errorlevel 1 (
+    echo [ERROR] 未找到可用的 node（node -v 探测失败），要求 Node 主版本不小于 20。
+    echo   修复路径一：安装或升级 Node.js 到 20 或更高版本后重跑本脚本；
+    echo   修复路径二：已装有 Node 20+ 时，先执行 set NODE22_DIR=该Node安装目录 再重跑，本脚本会自动把它前置到 PATH。
+    exit /b 1
+)
+if !NODE_MAJOR! LSS 20 (
+    echo [ERROR] PATH 上的 Node 版本过低：!NODE_VERSION!，要求 Node 主版本不小于 20。
+    echo   修复路径一：升级 Node.js 到 20 或更高版本后重跑本脚本；
+    echo   修复路径二：先执行 set NODE22_DIR=你的 Node 20+ 安装目录 再重跑，本脚本会自动把它前置到 PATH。
+    exit /b 1
+)
+echo   Node 版本检查通过：!NODE_VERSION!
+echo.
+
 REM ---------- Step 1: 检查 pnpm 是否可用 ----------
 echo [1/4] 检查 pnpm...
 where pnpm >nul 2>&1

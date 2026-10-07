@@ -78,7 +78,7 @@ function writeFixture(name, body) {
 
 function main() {
   if (!nodeOk) {
-    say(`BUCKETS_TEST=FAIL reason=Node ${process.version} 太老（生成器用 import.meta.dirname 需 >=20.11，跑在这里只会假红）；请用 D:/codex-tools/node-v22.17.0-win-x64/node.exe`);
+    say(`BUCKETS_TEST=FAIL reason=Node ${process.version} 太老（生成器用 import.meta.dirname 需 >=20.11，跑在这里只会假红）；请设 NODE22_EXE 指一个新版 node（或把它放进 PATH）再跑`);
     console.log("SUMMARY: assertion failures = 1");
     process.exit(1);
   }
@@ -168,8 +168,19 @@ function main() {
     if (m1) ids.add(Number(m1[1]));
     if (m2) ids.add(Number(m2[1]));
   }
-  pair("真册子非待办项确实被移出", "§0/§30/§31/§32/§33 均不在待拍板桶", "§5（要不要长期可查）在待拍板清单里",
-    [0, 30, 31, 32, 33].every((n) => !ids.has(n)), ids.has(5));
+  /* §5 的期望不再钉死"在待拍板清单里"（名册上线后 §6 以 PENDING_RULINGS 为源；#5 被记为 half-closed 后
+     它离开清单是名册的合法读数，不是分桶器漏——基线红正是这条过期钉子；2026-10-06 全量采纳后这一族只会更多）。
+     改成**派生不变量**：从真册名册逐行复算 decisions#5 的 status，断言 §6 成员资格与之一致
+     （status=open ⇔ 在清单里）⇒ 名册此后无论把 #5 挪到哪一档，这条都不会假红，也不会放过真漏。 */
+  const ledgerLines = fs.readFileSync(path.join(REPO, REAL_LEDGER), "utf8").split(/\r?\n/);
+  const rb = ledgerLines.findIndex((l) => /^\s*PENDING_RULINGS_BEGIN/.test(l));
+  const re5 = ledgerLines.findIndex((l, i) => i > rb && /^\s*PENDING_RULINGS_END/.test(l));
+  const row5 = rb >= 0 && re5 > rb ? (ledgerLines.slice(rb + 1, re5).find((l) => /^\s*RULING id=decisions#5 /.test(l)) || "") : "";
+  const row5Status = (/\bstatus=(\S+)/.exec(row5) || [])[1] || "(名册无此行)";
+  const row5Open = row5Status === "open";
+  pair("真册子非待办项确实被移出", "§0/§30/§31/§32/§33 均不在待拍板桶",
+    row5Open ? "§5 名册记 open 却不在待拍板清单里" : `§5 名册已记 ${row5Status}（非 open）却仍在待拍板清单里`,
+    [0, 30, 31, 32, 33].every((n) => !ids.has(n)), ids.has(5) === row5Open);
   ok(real6.items.length === real6.headingNum, "真册子 §6 列出条数==标题数字（自数一致，两种渲染口径同规）",
     `列出=${real6.items.length} 标题=${real6.headingNum}`);
   console.log(`  info 真册子 §6 来源=${/source=roster/.test(real.out) ? "PENDING_RULINGS 名册" : "标题分类"}；§5 命中=${ids.has(5)}`);

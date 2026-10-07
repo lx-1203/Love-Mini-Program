@@ -1,5 +1,6 @@
 # Debug script to verify font-size patterns match
-$file = 'd:\6\恋爱小程序\apps\client\src\pages\vip\index.vue'
+$repo = Split-Path $PSScriptRoot -Parent   # scripts/ 上一级 = 仓库根
+$file = Join-Path $repo 'apps\client\src\pages\vip\index.vue'
 $content = Get-Content $file -Raw -Encoding UTF8
 Write-Host "File size: $($content.Length)"
 $matches = [regex]::Matches($content, 'font-size:\s*\d+rpx\s*;')

@@ -1,4 +1,4 @@
-// D:\6\恋爱小程序\apps\client\src\stores\campus.ts
+// apps/client/src/stores/campus.ts
 import { defineStore } from "pinia";
 import { request } from "../services/http";
 import { useMock } from "./helpers/use-mock";

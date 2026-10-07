@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-Set-Location "D:\6\恋爱小程序\apps\api"
+Set-Location $PSScriptRoot
 
 # ============================================================
 # mock 后端启动脚本（2026-08-26 修正）

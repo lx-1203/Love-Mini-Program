@@ -1,0 +1,23 @@
+{
+ "fileViol": [
+  ".gitattributes",
+  "nul",
+  "tmp_admin_routes.json",
+  "tmp_boot.js",
+  "tmp_boot_out.txt",
+  "tmp_menus.json",
+  "tmp_msg_exec.json",
+  "tmp_r11_guest.json",
+  "tmp_r11_login.json",
+  "tmp_r1_after_A.json",
+  "tmp_r1_after_B.json",
+  "tmp_r1_guest.json",
+  "tmp_r1_login.json",
+  "tmp_r2_guest.json",
+  "tmp_r2_login.json"
+ ],
+ "dirViol": [
+  ".qoder",
+  "tmpr1-regsuccess-crops"
+ ]
+}

@@ -1,12 +1,14 @@
 ﻿# R11: ideal-image comparison shots (11 pages, fresh build + fresh session)
 $ErrorActionPreference = "Continue"
-$wi = "D:\微信开发者\微信web开发者工具\wechatide.cmd"
-$proj = "D:\6\恋爱小程序"
-$shots = "D:\6\恋爱小程序\reports\screenshots\r11-ideal"
+# 路径可推导：仓库根 = scripts/ 上一级；wechatide 走 WECHATIDE_DIR 或 PATH，不写盘符死路径。
+$repo = Split-Path $PSScriptRoot -Parent
+$wi = if ($env:WECHATIDE_DIR) { Join-Path $env:WECHATIDE_DIR 'wechatide.cmd' } else { 'wechatide.cmd' }
+$proj = $repo
+$shots = Join-Path $repo 'reports\screenshots\r11-ideal'
 New-Item -ItemType Directory -Force -Path $shots | Out-Null
 function WiRaw([string[]]$argList) { return (& $wi @argList 2>&1 | Out-String) }
 
-$token = (Get-Content "D:\6\恋爱小程序\tmp_r11_login.json" -Raw | ConvertFrom-Json).token
+$token = (Get-Content (Join-Path $repo 'tmp_r11_login.json') -Raw | ConvertFrom-Json).token
 $jsBoot = 'function(){ try { wx.setStorageSync(''token'', ''' + $token + '''); var app=getApp(); var vm=app[''$vm'']; var gp=(vm.$&&vm.$.appContext.config.globalProperties)||{}; var p=vm[''$pinia'']||gp[''$pinia'']; var s=p._s.get(''session''); if(s&&s.bootstrap){ s.bootstrap(); } return ''ok''; } catch(e){ return ''ERR''; } }'
 $null = WiRaw @("-c","ZCode","automation_evaluate","--project",$proj,"--fn-source",$jsBoot)
 Start-Sleep -Seconds 5

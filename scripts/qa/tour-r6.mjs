@@ -79,7 +79,9 @@ const PROJECT_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 
 // 默认为 mock 产物（R2 mock 轮原行为不变）。real 轮用 TOUR_PROJECT 指到
 // apps/client/dist/build/mp-weixin-real —— provenance（readBuildFingerprint 从本路径读
 // config/env.js 的 MODE）与截图目录标签都随它走，不需要另设一套。
-const CLI_PROJECT = process.env.TOUR_PROJECT || 'D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin';
+// CLI_PROJECT 必须落成绝对路径再交给 IDE CLI（IDE 用它自己的 cwd 解析相对串）：
+// env 给相对值时按仓库根（PROJECT_PATH）摊平，缺省 = mock 产物（R2 mock 轮原行为不变）。
+const CLI_PROJECT = path.resolve(PROJECT_PATH, process.env.TOUR_PROJECT || path.join('apps', 'client', 'dist', 'build', 'mp-weixin'));
 // 证据落点标签：real 轮传 TOUR_LABEL=round-2-real-tour，避免覆盖 mock 轮 254 帧
 const TOUR_LABEL = process.env.TOUR_LABEL || 'round-2-tour';
 const OUT_DIR = path.join(PROJECT_PATH, 'reports', 'screenshots', TOUR_LABEL);

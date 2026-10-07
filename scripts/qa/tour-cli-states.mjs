@@ -14,7 +14,7 @@
  *
  * 清单（TSV，制表符分隔，# 开头是注释）：identity<TAB>page<TAB>query或-<TAB>state<TAB>tapSelector<TAB>expectSelector
  * 用法：node scripts/qa/tour-cli-states.mjs --tsv .zcode/tmp/round7/states.tsv \
- *        --project D:/6/恋爱小程序/apps/client/dist/build/mp-weixin --label round-7-states
+ *        --project apps/client/dist/build/mp-weixin（仓库相对，跑在仓库根；绝对路径也认） --label round-7-states
  * 退出码：0=全部行都落帧且无 PROBE_ERR；1=有 PROBE_ERR 或一张帧都没有；2=输入不合法（空清单/缺文件）。
  */
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync, rmSync } from "node:fs";

@@ -6,7 +6,13 @@ const path = require("path");
 const cp = require("child_process");
 
 const REPO = path.resolve(__dirname, "..", "..");
-const NODE = "D:/codex-tools/node-v22.17.0-win-x64/node.exe";
+/* node 解析序：NODE22_EXE 显式 > 当前 node 自身（仅当 ≥20 大版）。老 node 上留空 ⇒ 立刻报错指路，
+   绝不回落到盘符死路径（这条链上的门在 v16 会假红，宁可不跑也不跑出假读数）。 */
+const NODE = process.env.NODE22_EXE || (Number(process.versions.node.split(".")[0]) >= 20 ? process.execPath : "");
+if (!NODE) {
+  console.log("TAIL1=ABORT reason=拿不到可用的 node（本进程 " + process.version + " 太老且没设 NODE22_EXE）");
+  process.exit(2);
+}
 const LIVE = path.join(REPO, "reports", "audit", "round-6", "interact", "exec-results.json");
 const CKPT = path.join(REPO, "tmp", "qa", "checkpoints", "exec-R6.json");
 const LOCK_DIR = path.join(REPO, "tmp", "qa", "locks");

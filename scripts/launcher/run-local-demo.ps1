@@ -10,7 +10,7 @@
 param([switch]$NoBuild)
 
 $ErrorActionPreference = "Stop"
-$Root = "D:\6\恋爱小程序"
+$Root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent   # scripts/launcher 的上两级 = 仓库根
 $ApiDir = "$Root\apps\api"
 $ClientDir = "$Root\apps\client"
 $OutLog = "$ApiDir\mock-backend.log"

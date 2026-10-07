@@ -30,7 +30,7 @@ const DEST = join(UPLOADS_ROOT, "app-assets");
 const URL_PREFIX = "/api/v1/media/app-assets/";
 
 const APPLY = process.argv.includes("--apply");
-const MYSQL = "D:/mysql-8.0.45-winx64/bin/mysql.exe";
+const MYSQL = process.env.MYSQL_BIN || "mysql"; // mysql 客户端走 PATH（或 MYSQL_BIN 显式指），不写盘符死路径
 const DB_URL = "jdbc:mysql://127.0.0.1:3307/campus_love";
 
 function collectFiles(dir, base, out = []) {

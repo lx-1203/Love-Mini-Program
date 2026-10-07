@@ -1,0 +1,71 @@
+{
+ "seeds": [
+  {
+   "id": "ROOT-HYGIENE",
+   "area": "根目录卫生",
+   "how": "按 目录整理说明.md §3 决策表回收根目录违例：tmp_* 散文件与 tmpr1-regsuccess-crops/ 一律移入 tmp/retired-20261008/（不删，非破坏）；nul 是 Windows 保留名垃圾文件，先试 Git Bash 的 rm -f nul，不行再试 cmd //c \"del \\\\\\\\.\\\\D:\\\\6\\\\恋爱小程序\\\\nul\"，两条都不行就如实记 skipped 并留方法。appendonly.aof 是说明 §2.4 保护文件（Redis 运行时持久化）绝对不动。回收完成后同步修订 目录整理说明.md：§0 说 25 个文件而 §2 标题写 29 个，本身就是矛盾——按现状重数并统一；把 docs/（openapi 门禁恢复产物）补进 §1 子目录清单并注明恢复缘由。违例清单见 reports/audit/rootorg-closure-2026-10-08/probe-root-inventory.json",
+   "source": "本轮 ROOT_INV 探针 + 目录整理说明.md §0/§1/§2.4"
+  },
+  {
+   "id": "BAT-VERSIONGATE",
+   "area": "启动bat",
+   "how": "给 build-mp-weixin.bat 与 start-showcase.bat 补 Node 版本闸（两支 bat 都在 Step1 之前）：① 若定义了 NODE22_DIR 环境变量则把它前置到 PATH；② 否则用 node -v 探测 PATH 上的 node 主版本，低于 20 就打印 ERROR 与两条修复路径（升级 node，或 set NODE22_DIR=<你的 Node>=20 目录 后重跑）并 exit /b 1——不许在 bat 里写死任何盘符路径（扫描门会红）。保持 %~dp0 定位与既有 errorlevel 纪律。静态清单见 reports/audit/rootorg-closure-2026-10-08/probe-bat-static.json",
+   "source": "本轮 BAT_STATIC 探针 + v3.3 文件头 Node16 PATH 坑实测记录"
+  },
+  {
+   "id": "ABSPATH-REGRESSION",
+   "area": "绝对路径",
+   "how": "把扫描命中的盘符绝对路径改回可推导写法（__dirname/import.meta.dirname/%~dp0/$SCRIPT_DIR/require.resolve），只动代码/脚本/配置文件；命中若在文档或 QA 报告里（引用历史的叙述）不改，逐条列进报告留档待拍板。命中清单见 reports/audit/rootorg-closure-2026-10-08/probe-abs-paths.json",
+   "source": "本轮 ABS_SCAN 探针（aefd8a72 清零后的回归扫描）"
+  },
+  {
+   "id": "EVIDENCE-DELETIONS",
+   "area": "证据删留",
+   "how": "对 3852 个 reports/screenshots 未提交删除做实测裁决：读账单里 verify-evidence-corpus 与 verify-provenance-all 两条读数——① 双 exit=0 ⇒ 删除是证据门 bless 过的状态，写决定文件 awaiting-commit-deletions=true（真正提交在编排层提交阶段做，你不执行 git add/commit）；② 任一红且红因指向缺截图 ⇒ 立即 git restore reports/screenshots 并复跑那两条门确认转绿；③ 任一读数 exit=-1（起不来）⇒ 不动盘面，写进需拍板。另把本轮三个未跟踪证据路径（reports/audit/2026-10-07-editpage-replace/、reports/audit/round-7/cap-ids/、reports/audit/round-7/device-legs-closure-2026-10-06.md）登记进待提交清单 awaiting-commit-adds。",
+   "source": "git status 实测：删除 0 条全在 reports/screenshots"
+  }
+ ],
+ "executableRows": [],
+ "needsUserRows": [
+  {
+   "id": "EVID-DELETION-DEADLOCK",
+   "why": "EVIDENCE-DELETIONS 车道方剂假设「任一红且红因指向缺截图 ⇒ git restore ⇒ 复跑两条门确认转绿 ⇒ 双绿才提交删除」。我本轮亲手复跑两条只读门证实该通道不可达：corpus 唯一红因是 round-1 manifest 的 144 帧，实测 0 tracked/0 pending-deleted/0 on-disk（已按 2026-09-30 裁定提交删除，盘上无物可 restore）；provenance 的 4881 个回填戳记全在盘上在帧（restore 不触及），且 5 帧恢复后 mtime 变为恢复时刻，会从 UNRESOLVABLE 翻成 STALE_STAMP 照旧红。即 3852 删留的「双绿才提交」判据永远无法满足，车道会卡死在方剂死角",
+   "options": "a) 红因已具名且各有裁定/去向的前提下，按「附红因记录+提交删除」收口（终报保留 CORPUS/PROV 红读数原文）；b) 全量 git restore 不提交，等判据修订后重裁；c) 先修下面 CORPUS-LEGACY-144 的判据再走原 ① 双绿通道"
+  },
+  {
+   "id": "CORPUS-LEGACY-144",
+   "why": "同一批 144 帧两把尺子结论相反：verify-provenance-all 按 2026-10-06 已采纳建议书 #12-A 豁免（我复跑实测 PROV_FRAMES_LEGACY_EXEMPT=144，判据见 scripts/qa/verify-provenance-all.mjs:195-206），而 verify-evidence-corpus 的缺席轴仍判 blocking（其 advisory 只认 git ls-files --deleted 的未提交删除，认不出已提交删除，见 scripts/qa/verify-evidence-corpus.mjs:279-282,323）⇒ CORPUS_PROBLEMS=1 恒红。改判据/处置旧 manifest 都属政策与数据去留，不归车道自裁",
+   "options": "a) 给 corpus 缺席轴加与 #12-A 同口径的 legacy/裁定豁免（对齐两把尺子）；b) 处置 reports/screenshots/round-1/manifest.json 本体（移出 reports 扫描域或归档——数据去留）；c) 接受该门长期红，仿 RCD 立去向册逐条点名"
+  },
+  {
+   "id": "PROV-PRESTAMP-4881",
+   "why": "我复跑 verify-provenance-all 实测 PROV_FRAMES_PRE_STAMP=4881／CONSISTENT=4154：19 份 manifest（round-7 exec-tap-final 646 帧、exec-guest-real 434 帧等、round-8-interact 19 帧）的在盘帧 mtime 早于所记提交（如 mtime 2026-09-27 vs 所记 6fd15178@2026-09-28）⇒ 回填戳记，门禁原话「禁止据此下结论」。生产者侧干净（11/11 派生、0 字面量），债在历史证据本体。重采属真实模式 UI 轮（不归本轮），改戳属造假",
+   "options": "a) 接受为已知降级：本轮/终报结论只锚 CONSISTENT=4154，4881 帧按 manifest 点名降级留档；b) 另立真实模式重采轮消化（UI 域）；c) 不接受任何一项，维持门红并挂起依赖本轮产物的结论（改戳/倒填 mtime 不设为选项——那是造假）"
+  },
+  {
+   "id": "BAND-REBUILD",
+   "why": "我复跑 verify-band-freshness 实测 problems=4：mock 档目录当前装的是 real 构建档（VITE_API_MODE=real，应 mp-weixin-mock ⇒ 「这个目录已被别的档位的构建覆盖，这一档上的全部判决作废」）、mock 对 vip/index.vue 真过期、showcase 对 pages.json 真过期、App.vue 无法定罪。重建动作属构建链不属四车道域，且产物会吞入未提交功能体。另注：账单 02:11 探针报 problems=16，我 03:4x 复量报 4，两时点间盘面有变动（有车道在动盘），读数是时点读数",
+   "options": "a) 现在重建 mock+showcase 两档（产物含未提交功能体，仅限本地取证，终报须注明）；b) 功能体入库后再重建；c) 本轮不重建，所有档位级判决挂起并点名"
+  },
+  {
+   "id": "BACKEND-8080",
+   "why": "账单门禁读数：运行实例起于 2026-09-26T21:32:46，早于最新 class 2026-10-05T17:26:06 ⇒ 跑的是旧代码；apps/api 有 55 项未提交 ⇒ 运行实例不可能代表 HEAD。修复链=提交/构建/重启，其中「功能体怎么入库」已有拍板底座（OCT5-FEATURE-BODY），但「8080 何时按哪份代码重建重启」仍需拍板",
+   "options": "a) 功能体过后端测试门入库后再重建+重启 8080；b) 先按 HEAD（不含功能体）构建重启，功能体另行走查；c) 本轮不动 8080，一切真实模式判据挂起点名"
+  },
+  {
+   "id": "SELFTEST-1OF51",
+   "why": "账单 SELFTEST_RESULT=FAIL（1/51）只有计数行，失败者身份不可达：.zcode 下最新聚合器落盘日志停在 2026-10-01 12:45，本轮探针的 stdout 未持久化且运行日志本会话读不到；我实测三条门自检全 PASS（DRYLEASE cases=5 bad=0、CA cases=7 bad=0、LR cases=11 bad=0）⇒ 失败在 48 个 test-* 之一，但其中 41/49 含写盘调用（写 .zcode/tmp 夹具），分拣员只读铁律不允许重跑定位",
+   "options": "a) 授权一次允许写 .zcode/tmp 夹具的复跑（node scripts/qa/run-qa-selftests.mjs）定位失败者；b) 归下轮 QA 车道处理；c) 终报按「1 项离线自检未过、定位留待下轮」如实点名"
+  },
+  {
+   "id": "ROOT-GITATTRIBUTES",
+   "why": "判据冲突：根目录白名单（目录整理说明.md/workflow ROOT_FILES_ALLOWED）未列 .gitattributes，探针把它点为 ROOT_INV 文件违例，按车道方剂会被非破坏移入 tmp/retired-20261008/；但该文件是 2026-09-29 用户裁定的 LFS fail-loud 闸（文件头自述：证据帧 force-add 必须走 LFS、未装 LFS 时 git add 故意失败），移走＝静默停用一项用户裁定。目录整理说明.md 对它零提及（grep 无命中）",
+   "options": "a) 白名单补录 .gitattributes 并修订目录整理说明.md（保留 LFS 闸，推荐）；b) 确认 retire（等于明示废止 2026-09-29 LFS 裁定，不建议）；c) 本轮跳过该文件不动，留待专项裁定"
+  },
+  {
+   "id": "REALCOV-9-SCHED",
+   "why": "我复跑 verify-real-coverage 实测 REALCOV_UNCOVERED=9/236，逐条点名（PFI25/VI25/VI34/OT05/OT06/OT09/VRN07/OC09/VB03，全部缺 login 或 login+guest 真实腿）；去向册门 RCD 已 PASS（9 条条条有在册去向）。补跑属真实模式 DevTools/UI 轮，不归本轮，但终验时该门仍红，红读数怎么呈现需要口径",
+   "options": "a) 下一真实模式 QA 轮按点名补腿；b) 终验/终报按去向册口径将该门记为「已处置欠账」并接受红；c) 判据侧收缩（须拍板，不默认）"
+  }
+ ]
+}

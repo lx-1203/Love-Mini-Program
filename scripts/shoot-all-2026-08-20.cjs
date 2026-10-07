@@ -17,6 +17,15 @@ const fs = require('fs');
 const path = require('path');
 
 const REPO_ROOT = require("path").resolve(__dirname, "..");
+/** IDE 安装目录：WECHATIDE_DIR 显式 > 扫 PATH 找 wechatide.cmd（可推导，不写盘符死路径）。 */
+function ideDirFromPath() {
+  for (const d of String(process.env.PATH || '').split(';')) {
+    if (!d) continue;
+    try { if (fs.existsSync(require('path').join(d, 'wechatide.cmd'))) return d; } catch (_) {}
+  }
+  return '';
+}
+const IDE_DIR = process.env.WECHATIDE_DIR || ideDirFromPath();
 const WS_ENDPOINT = 'ws://127.0.0.1:9420';
 const API_BASE = 'http://127.0.0.1:8080/api/v1';
 const REPO = `${REPO_ROOT}`;
@@ -145,7 +154,7 @@ async function main() {
   let miniProgram;
   try {
     miniProgram = await automator.launch({
-      cliPath: 'D:/微信开发者/微信web开发者工具/cli.bat',
+      cliPath: IDE_DIR ? require('path').join(IDE_DIR, 'cli.bat') : 'cli.bat',
       projectPath: `${REPO_ROOT}/apps/client/dist/build/mp-weixin`,
       port: 9420,
       timeout: 120000,
@@ -154,7 +163,7 @@ async function main() {
     console.log(`[${ts()}] launched & connected`);
   } catch (e) {
     console.error(`[FATAL] launch 失败: ${e.message}`);
-    console.error('请确认微信开发者工具已安装且 cli.bat 路径正确，且项目可正常编译');
+    console.error('请确认微信开发者工具已安装（找不到时设 WECHATIDE_DIR 指安装目录）且 cli.bat 路径正确，且项目可正常编译');
     process.exit(1);
   }
 

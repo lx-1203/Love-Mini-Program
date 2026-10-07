@@ -1,15 +1,18 @@
 ﻿# R11-N1: home blank investigation — bootstrap session, navigate home x3, entropy check each shot
 $ErrorActionPreference = "Continue"
-$wi = "D:\微信开发者\微信web开发者工具\wechatide.cmd"
-$proj = "D:\6\恋爱小程序"
-$token = (Get-Content "D:\6\恋爱小程序\tmp_r11_login.json" -Raw | ConvertFrom-Json).token
+# 路径可推导：仓库根 = scripts/ 上一级；wechatide 走 WECHATIDE_DIR 或 PATH，不写盘符死路径。
+$repo = Split-Path $PSScriptRoot -Parent
+$wi = if ($env:WECHATIDE_DIR) { Join-Path $env:WECHATIDE_DIR 'wechatide.cmd' } else { 'wechatide.cmd' }
+$proj = $repo
+$shots = Join-Path $repo 'reports\screenshots\r11-acceptance'
+$token = (Get-Content (Join-Path $repo 'tmp_r11_login.json') -Raw | ConvertFrom-Json).token
 
 function WiEval([string]$js) {
   & $wi -c ZCode automation_evaluate --project $proj --fn-source $js *> "$env:TEMP\n1eval.txt"
   return (Get-Content "$env:TEMP\n1eval.txt" -Encoding UTF8 -Raw)
 }
 function Shot([string]$name) {
-  & $wi -c ZCode simulator_screenshot --project $proj --path "D:\6\恋爱小程序\reports\screenshots\r11-acceptance\$name" *> "$env:TEMP\n1shot.txt"
+  & $wi -c ZCode simulator_screenshot --project $proj --path (Join-Path $shots $name) *> "$env:TEMP\n1shot.txt"
 }
 
 # 1) token + bootstrap (two-step login restore)

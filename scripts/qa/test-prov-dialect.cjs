@@ -3,7 +3,7 @@
  * 起因（本轮实测，不是假想）：round-6-real-tour 的 18 帧 + smoke 2 帧被门禁判成
  * PROV_FRAMES_UNRESOLVABLE=20，而 20 张帧**全部在盘上**。根因在门禁的解析式
  *   p.startsWith(repo) || p.startsWith("/") ? p : join(repo, p)
- * —— Windows 上 repo 是反斜杠形态，`D:/6/…` 这种绝对+正斜杠两支都不命中，join 出一个必然不存在的字符串。
+ * —— Windows 上 repo 是反斜杠形态，「盘符+正斜杠」的绝对写法两支都不命中，join 出一个必然不存在的字符串。
  * 一个把存在的文件报成断链的门禁，会把「取证洞」的注意力从真洞上引开，所以两侧都要有护栏：
  * 生产者写规范方言（real-tour-cli.mjs 的 selfcheck），门禁不再因分隔符方言误红。
  *

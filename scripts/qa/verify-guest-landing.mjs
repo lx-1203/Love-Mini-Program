@@ -5,7 +5,7 @@
      --mode measure 拿到 UI 租约后逐页实测：清会话→开页→按判定窗取栈顶+探针→出 measured.json
    判决口径：booked 不等于结案。三态由 landingStatus() 统一给（triage 门禁 import 它），
    所以「写了腿没跑」「跑了不过」「跑过且符合裁定」在报告里长得不一样。
-   Node：PATH 上的 node 是 DevTools 的 v16，本文件要 v22（见 D:/codex-tools/node-v22.17.0-win-x64）。 */
+   Node：PATH 上的 node 是 DevTools 的 v16，本文件要 v22（设 NODE22_EXE 或把新版 node 放进 PATH）。 */
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { acquireUi, releaseUi, renewUi, heldLeases } from "./ui-lease.mjs";

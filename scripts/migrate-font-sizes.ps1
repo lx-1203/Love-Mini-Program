@@ -14,33 +14,34 @@
 #   48rpx -> var(--fs-6xl, 48rpx)
 #   56rpx -> var(--fs-7xl, 56rpx)
 
+$srcRoot = Join-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) 'apps\client\src'   # scripts/ → 仓库根 → apps\client\src
 $targets = @(
-    'd:\6\恋爱小程序\apps\client\src\pages\vip\index.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\vip\bills.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\vip\red-packet.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\vip\promo-code.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\village\detail.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\village\tag-posts.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\village\post.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\campus\topic-detail.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\campus\index.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\campus\post-topic.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\settings\dnd.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\settings\index.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\chat\video-call.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\chat\red-packet.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\verification\index.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\discover\history.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\circles\post-topic.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\circle\index.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\feedback\history.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\shop\index.vue',
-    'd:\6\恋爱小程序\apps\client\src\pages\dev\index.vue',
-    'd:\6\恋爱小程序\apps\client\src\components\UnlockGuideModal.vue',
-    'd:\6\恋爱小程序\apps\client\src\components\UnlockGuideOverlay.vue',
-    'd:\6\恋爱小程序\apps\client\src\components\social\MatchGuideOverlay.vue',
-    'd:\6\恋爱小程序\apps\client\src\components\social\SocialProgressIndicator.vue'
-)
+    'pages\vip\index.vue',
+    'pages\vip\bills.vue',
+    'pages\vip\red-packet.vue',
+    'pages\vip\promo-code.vue',
+    'pages\village\detail.vue',
+    'pages\village\tag-posts.vue',
+    'pages\village\post.vue',
+    'pages\campus\topic-detail.vue',
+    'pages\campus\index.vue',
+    'pages\campus\post-topic.vue',
+    'pages\settings\dnd.vue',
+    'pages\settings\index.vue',
+    'pages\chat\video-call.vue',
+    'pages\chat\red-packet.vue',
+    'pages\verification\index.vue',
+    'pages\discover\history.vue',
+    'pages\circles\post-topic.vue',
+    'pages\circle\index.vue',
+    'pages\feedback\history.vue',
+    'pages\shop\index.vue',
+    'pages\dev\index.vue',
+    'components\UnlockGuideModal.vue',
+    'components\UnlockGuideOverlay.vue',
+    'components\social\MatchGuideOverlay.vue',
+    'components\social\SocialProgressIndicator.vue'
+) | ForEach-Object { Join-Path $srcRoot $_ }
 
 # 注意：从大到小匹配，避免 22rpx 被 2rpx 替换
 $replacements = @(

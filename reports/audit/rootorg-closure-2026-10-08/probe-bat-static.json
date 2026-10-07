@@ -1,0 +1,6 @@
+{
+ "problems": [
+  "build-mp-weixin.bat: 缺 NODE22_DIR/Node 版本闸（PATH node=v16 会把构建链崩成假红）",
+  "start-showcase.bat: 缺 NODE22_DIR/Node 版本闸（PATH node=v16 会把构建链崩成假红）"
+ ]
+}

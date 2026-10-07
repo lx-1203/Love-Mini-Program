@@ -3,13 +3,15 @@
 # 前置：DevTools 已开项目窗口（real 构建产物）；OBS 已启动且场景含 DevTools 窗口采集
 # 产物：反馈媒体\_self_frames\journey-timestamps.jsonl（秒级时间戳）+ shots\*.png（节点取证）
 
-$wi = "D:\微信开发者\微信web开发者工具\wechatide.cmd"
-$proj = "D:\6\恋爱小程序\apps\client\dist\build\mp-weixin"
-$framesDir = "D:\6\恋爱小程序\反馈媒体\_self_frames"
+# 路径可推导：仓库根 = scripts/ 上一级；wechatide 走 WECHATIDE_DIR 或 PATH，node 走 NODE22_EXE 或 PATH，不写盘符死路径。
+$repo = Split-Path $PSScriptRoot -Parent
+$wi = if ($env:WECHATIDE_DIR) { Join-Path $env:WECHATIDE_DIR 'wechatide.cmd' } else { 'wechatide.cmd' }
+$proj = Join-Path $repo 'apps\client\dist\build\mp-weixin'
+$framesDir = Join-Path $repo '反馈媒体\_self_frames'
 $shotsDir = Join-Path $framesDir "shots"
 $tsFile = Join-Path $framesDir "journey-timestamps.jsonl"
-$node = "D:\codex-tools\node-v20.19.5-win-x64\node.exe"
-$obsCtl = "D:\6\恋爱小程序\scripts\r7-obs-control.mjs"
+$node = if ($env:NODE22_EXE) { $env:NODE22_EXE } else { (Get-Command node).Source }
+$obsCtl = Join-Path $repo 'scripts\r7-obs-control.mjs'
 
 New-Item -ItemType Directory -Force -Path $shotsDir | Out-Null
 "" | Set-Content -Path $tsFile -Encoding UTF8

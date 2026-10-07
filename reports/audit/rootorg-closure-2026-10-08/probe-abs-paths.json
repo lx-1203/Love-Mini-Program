@@ -1,0 +1,971 @@
+{
+ "scanned": 4321,
+ "hits": [
+  {
+   "f": "scripts/audit-client-scan.mjs",
+   "l": 6,
+   "t": "'d:/6/恋爱小程序/apps/client/src',"
+  },
+  {
+   "f": "scripts/audit-client-scan.mjs",
+   "l": 7,
+   "t": "'d:/6/恋爱小程序/apps/client/pages',"
+  },
+  {
+   "f": "scripts/audit-client-scan.mjs",
+   "l": 372,
+   "t": "const outPath = 'd:/6/恋爱小程序/scripts/audit-client-issues.csv';"
+  },
+  {
+   "f": "scripts/qa/cellplan-round7-criteria-c.json",
+   "l": 2,
+   "t": "\"note\": \"lane C：零散原因的 UNDECIDABLE 收紧。范围按 verdictWhy 前缀排除后实测是 9 条而不是简报说的约 19 条（lane A「台账判据里抠不出任何可比对的具体物件」10 条、lane B「授予绿用"
+  },
+  {
+   "f": "scripts/qa/cli-automator.mjs",
+   "l": 22,
+   "t": "*   node scripts/qa/cli-automator.mjs --project <路径> shot --path D:/x.png"
+  },
+  {
+   "f": "scripts/qa/cli-automator.mjs",
+   "l": 38,
+   "t": "const IDE_DIR = process.env.WECHATIDE_DIR || \"D:/微信开发者/微信web开发者工具\";"
+  },
+  {
+   "f": "scripts/qa/cli-automator.mjs",
+   "l": 57,
+   "t": "/** 路径是不是已经绝对的：posix `/x`、windows `C:\\x` / `C:/x`、UNC `\\\\srv\\x` 都算，原样保留。"
+  },
+  {
+   "f": "scripts/qa/dryrun-workflow.mjs",
+   "l": 20,
+   "t": "const ts = createRequire(import.meta.url)(\"D:/6/恋爱小程序/apps/client/node_modules/typescript\");"
+  },
+  {
+   "f": "scripts/qa/emit-round-report.mjs",
+   "l": 36,
+   "t": "*   --node22 <path>            默认 D:/codex-tools/node-v22.17.0-win-x64/node.exe"
+  },
+  {
+   "f": "scripts/qa/emit-round-report.mjs",
+   "l": 106,
+   "t": "const NODE22 = flag(\"node22\", \"D:/codex-tools/node-v22.17.0-win-x64/node.exe\");"
+  },
+  {
+   "f": "scripts/qa/real-tour-cli.mjs",
+   "l": 33,
+   "t": "而 repo 在 Windows 上是反斜杠形态，所以一个 `D:/…` 绝对写法两支都不匹配，会被 join 成"
+  },
+  {
+   "f": "scripts/qa/real-tour-cli.mjs",
+   "l": 46,
+   "t": "const IDE = arg(\"ide\", \"D:/微信开发者/微信web开发者工具/wechatide.cmd\");"
+  },
+  {
+   "f": "scripts/qa/rerun-round7-slices.sh",
+   "l": 11,
+   "t": "NODE=${NODE:-D:/codex-tools/node-v22.17.0-win-x64/node.exe}"
+  },
+  {
+   "f": "scripts/qa/run-final-verify-v33.sh",
+   "l": 24,
+   "t": "export QA_EVIDENCE_STORE=\"D:/6/love-mini-evidence\""
+  },
+  {
+   "f": "scripts/qa/tail-1-freeze-and-readjudicate.cjs",
+   "l": 9,
+   "t": "const NODE = \"D:/codex-tools/node-v22.17.0-win-x64/node.exe\";"
+  },
+  {
+   "f": "scripts/qa/test-fourgrid-domextract.mjs",
+   "l": 36,
+   "t": "const alt = process.env.QA_FOURGRID_NODE22 || \"D:/codex-tools/node-v22.17.0-win-x64/node.exe\";"
+  },
+  {
+   "f": "scripts/qa/test-guest-landing-stability.mjs",
+   "l": 16,
+   "t": "跑法：\"D:/codex-tools/node-v22.17.0-win-x64/node.exe\" scripts/qa/test-guest-landing-stability.mjs */"
+  },
+  {
+   "f": "scripts/qa/test-guest-landing-writeguard.mjs",
+   "l": 10,
+   "t": "跑法：D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/test-guest-landing-writeguard.mjs"
+  },
+  {
+   "f": "scripts/qa/test-lane-report-complete.cjs",
+   "l": 25,
+   "t": "* 跑法：D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/test-lane-report-complete.cjs"
+  },
+  {
+   "f": "scripts/qa/test-lane-report-complete.cjs",
+   "l": 34,
+   "t": "const NODE22 = \"D:/codex-tools/node-v22.17.0-win-x64/node.exe\";"
+  },
+  {
+   "f": "scripts/qa/test-prov-dialect.cjs",
+   "l": 6,
+   "t": "* —— Windows 上 repo 是反斜杠形态，`D:/6/…` 这种绝对+正斜杠两支都不命中，join 出一个必然不存在的字符串。"
+  },
+  {
+   "f": "scripts/qa/test-report-decision-buckets.cjs",
+   "l": 81,
+   "t": "say(`BUCKETS_TEST=FAIL reason=Node ${process.version} 太老（生成器用 import.meta.dirname 需 >=20.11，跑在这里只会假红）；请用 D:/codex-tools/"
+  },
+  {
+   "f": "scripts/qa/test-triage-dead-selector.mjs",
+   "l": 37,
+   "t": "const alt = process.env.QA_TDS_NODE22 || \"D:/codex-tools/node-v22.17.0-win-x64/node.exe\";"
+  },
+  {
+   "f": "scripts/qa/tour-cli-states.mjs",
+   "l": 17,
+   "t": "*        --project D:/6/恋爱小程序/apps/client/dist/build/mp-weixin --label round-7-states"
+  },
+  {
+   "f": "scripts/qa/ui-queue.round8b-tour.json",
+   "l": 13,
+   "t": "\"D:/6/恋爱小程序/apps/client/dist/build/mp-weixin-real\","
+  },
+  {
+   "f": "scripts/qa/verify-evidence-corpus.mjs",
+   "l": 119,
+   "t": "// Windows 路径大小写不敏感：d:/… 与 D:/…、reports 与 REPORTS 指的是同一个目录。"
+  },
+  {
+   "f": "scripts/qa/verify-evidence-corpus.mjs",
+   "l": 161,
+   "t": "// 见下方探针：d:/… 与 REPORTS/Audit 这类同目录不同写法的 scope 照样 0 命中等值 FAIL。"
+  },
+  {
+   "f": "scripts/qa/verify-guest-landing.mjs",
+   "l": 8,
+   "t": "Node：PATH 上的 node 是 DevTools 的 v16，本文件要 v22（见 D:/codex-tools/node-v22.17.0-win-x64）。 */"
+  },
+  {
+   "f": "scripts/qa/verify-provenance-all.mjs",
+   "l": 27,
+   "t": "但 `D:/6/…/x.png` 这种绝对+正斜杠两支都不命中，被 join 成 `repo\\D:\\6\\…\\x.png` 这种必然不存在的"
+  },
+  {
+   "f": "scripts/qa/ws-channel-up.mjs",
+   "l": 41,
+   "t": "const IDE_DIR = opt('ide', process.env.WECHATIDE_DIR || \"D:/微信开发者/微信web开发者工具\");"
+  },
+  {
+   "f": "scripts/r13-admin-audit.mjs",
+   "l": 8,
+   "t": "const OUT = \"D:/6/恋爱小程序/reports/audit/2026-09-22-r13-goal\";"
+  },
+  {
+   "f": "scripts/r13-admin-image-recheck.mjs",
+   "l": 6,
+   "t": "const OUT = \"D:/6/恋爱小程序/reports/audit/2026-09-22-r13-goal\";"
+  },
+  {
+   "f": "scripts/r13-admin-ui-manage.mjs",
+   "l": 7,
+   "t": "const OUT = \"D:/6/恋爱小程序/reports/audit/2026-09-22-r13-goal\";"
+  },
+  {
+   "f": "scripts/r13-final.sh",
+   "l": 5,
+   "t": "WI=\"D:/微信开发者/微信web开发者工具/wechatide.cmd\""
+  },
+  {
+   "f": "scripts/r13-final.sh",
+   "l": 6,
+   "t": "D=\"D:/6/恋爱小程序/apps/client/dist/build/mp-weixin\""
+  },
+  {
+   "f": "scripts/r13-final.sh",
+   "l": 7,
+   "t": "ROOT=\"D:/6/恋爱小程序\""
+  },
+  {
+   "f": "scripts/r13-i18n-dupkeys.mjs",
+   "l": 5,
+   "t": "const ts = createRequire(import.meta.url)(\"D:/6/恋爱小程序/node_modules/.pnpm/typescript@5.3.3/node_modules/typescript\");"
+  },
+  {
+   "f": "scripts/r13b-mp-verify.sh",
+   "l": 5,
+   "t": "WI=\"D:/微信开发者/微信web开发者工具/wechatide.cmd\""
+  },
+  {
+   "f": "scripts/r13b-mp-verify.sh",
+   "l": 6,
+   "t": "P=\"D:/6/恋爱小程序\""
+  },
+  {
+   "f": "scripts/r13c-mp-recover.sh",
+   "l": 5,
+   "t": "WI=\"D:/微信开发者/微信web开发者工具/wechatide.cmd\""
+  },
+  {
+   "f": "scripts/r13c-mp-recover.sh",
+   "l": 6,
+   "t": "P=\"D:/6/恋爱小程序\""
+  },
+  {
+   "f": "scripts/r13d-mp-verify.sh",
+   "l": 4,
+   "t": "WI=\"D:/微信开发者/微信web开发者工具/wechatide.cmd\""
+  },
+  {
+   "f": "scripts/r13d-mp-verify.sh",
+   "l": 5,
+   "t": "D=\"D:/6/恋爱小程序/apps/client/dist/build/mp-weixin\""
+  },
+  {
+   "f": "scripts/r13d-mp-verify.sh",
+   "l": 6,
+   "t": "OUT=\"D:/6/恋爱小程序/reports/audit/2026-09-22-r13-goal\""
+  },
+  {
+   "f": "scripts/r13d-mp-verify.sh",
+   "l": 62,
+   "t": "grep -c \"IDEMPOTENT_CONFLICT\" \"D:/6/恋爱小程序/apps/api/logs/campus-love-api.log\" >> \"$LOG\" 2>&1"
+  },
+  {
+   "f": "scripts/r13e-mp-final.sh",
+   "l": 6,
+   "t": "WI=\"D:/微信开发者/微信web开发者工具/wechatide.cmd\""
+  },
+  {
+   "f": "scripts/r13e-mp-final.sh",
+   "l": 7,
+   "t": "D=\"D:/6/恋爱小程序/apps/client/dist/build/mp-weixin\""
+  },
+  {
+   "f": "scripts/r13e-mp-final.sh",
+   "l": 8,
+   "t": "OUT=\"D:/6/恋爱小程序/reports/audit/2026-09-22-r13-goal\""
+  },
+  {
+   "f": "scripts/r13e-mp-final.sh",
+   "l": 43,
+   "t": "BASE409=$(grep -c \"IDEMPOTENT_CONFLICT\" \"D:/6/恋爱小程序/apps/api/logs/campus-love-api.log\")"
+  },
+  {
+   "f": "scripts/r13e-mp-final.sh",
+   "l": 64,
+   "t": "NEW409=$(grep -c \"IDEMPOTENT_CONFLICT\" \"D:/6/恋爱小程序/apps/api/logs/campus-love-api.log\")"
+  },
+  {
+   "f": "scripts/scan-chinese.mjs",
+   "l": 13,
+   "t": "const ROOT = \"d:/6/恋爱小程序/apps/client/src\";"
+  },
+  {
+   "f": "scripts/scan-chinese.mjs",
+   "l": 190,
+   "t": "file: relative(\"d:/6/恋爱小程序\", file).split(sep).join(\"/\"),"
+  },
+  {
+   "f": "scripts/shoot-all-2026-08-20.cjs",
+   "l": 148,
+   "t": "cliPath: 'D:/微信开发者/微信web开发者工具/cli.bat',"
+  },
+  {
+   "f": "scripts/sync-app-assets.mjs",
+   "l": 33,
+   "t": "const MYSQL = \"D:/mysql-8.0.45-winx64/bin/mysql.exe\";"
+  },
+  {
+   "f": "apps/api/src/test/java/com/campuslove/api/wxpay/WxPayRequestSignerTest.java",
+   "l": 139,
+   "t": "() -> WxPayRequestSigner.loadMerchantPrivateKey(\"Z:/not/exist/key.pem\"));"
+  },
+  {
+   "f": "apps/client/scan-aria.cjs",
+   "l": 6,
+   "t": "const root = 'd:/6/恋爱小程序/apps/client/src';"
+  },
+  {
+   "f": "apps/client/scan-aria.cjs",
+   "l": 39,
+   "t": "fs.writeFileSync('d:/6/恋爱小程序/apps/client/scan-aria-results.json', JSON.stringify(results, null, 2));"
+  },
+  {
+   "f": "apps/client/scripts/add-error-a11y.mjs",
+   "l": 18,
+   "t": "const ROOT = \"d:/6/恋爱小程序/apps/client/src\";"
+  },
+  {
+   "f": "apps/client/scripts/add-error-a11y.mjs",
+   "l": 66,
+   "t": "fixedFiles.push({ file: relative(\"d:/6/恋爱小程序/apps/client/src\", filePath), count: fixCount });"
+  },
+  {
+   "f": "apps/client/scripts/add-input-aria-label.mjs",
+   "l": 16,
+   "t": "const ROOT = \"d:/6/恋爱小程序/apps/client/src\";"
+  },
+  {
+   "f": "apps/client/scripts/add-input-aria-label.mjs",
+   "l": 129,
+   "t": "fixedFiles.push({ file: relative(\"d:/6/恋爱小程序/apps/client/src\", filePath), count: fixCount });"
+  },
+  {
+   "f": "apps/client/scripts/add-list-roles.mjs",
+   "l": 17,
+   "t": "const ROOT = \"d:/6/恋爱小程序/apps/client/src\";"
+  },
+  {
+   "f": "apps/client/scripts/add-list-roles.mjs",
+   "l": 102,
+   "t": "fixedFiles.push({ file: relative(\"d:/6/恋爱小程序/apps/client/src\", filePath), count: fixCount });"
+  },
+  {
+   "f": "apps/client/scripts/add-loading-a11y.mjs",
+   "l": 16,
+   "t": "const ROOT = \"d:/6/恋爱小程序/apps/client/src\";"
+  },
+  {
+   "f": "apps/client/scripts/add-loading-a11y.mjs",
+   "l": 79,
+   "t": "fixedFiles.push({ file: relative(\"d:/6/恋爱小程序/apps/client/src\", filePath), count: fixCount });"
+  },
+  {
+   "f": "apps/client/scripts/detect-broken-aria-comments.mjs",
+   "l": 19,
+   "t": "const ROOT = \"d:/6/恋爱小程序/apps/client/src\";"
+  },
+  {
+   "f": "apps/client/scripts/detect-broken-aria-comments.mjs",
+   "l": 88,
+   "t": "file: relative(\"d:/6/恋爱小程序/apps/client/src\", filePath),"
+  },
+  {
+   "f": "apps/client/scripts/fix-broken-aria-comments.mjs",
+   "l": 34,
+   "t": "const ROOT = \"d:/6/恋爱小程序/apps/client/src\";"
+  },
+  {
+   "f": "apps/client/scripts/fix-broken-aria-comments.mjs",
+   "l": 72,
+   "t": "fixedFiles.push({ file: relative(\"d:/6/恋爱小程序/apps/client/src\", filePath), count: fixCount });"
+  },
+  {
+   "f": "apps/client/test-result.json",
+   "l": 1,
+   "t": "{\"numTotalTestSuites\":197,\"numPassedTestSuites\":176,\"numFailedTestSuites\":21,\"numPendingTestSuites\":0,\"numTotalTests\":11"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787630970283-8f82373ff12e6.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787630970283-8f82373ff12e6.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787630970283-8f82373ff12e6.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787645497795-6c32a069c021f.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787645497795-6c32a069c021f.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787645497795-6c32a069c021f.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787646034317-9e5520f23707b.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787646034317-9e5520f23707b.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787646034317-9e5520f23707b.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787654888409-1fb367efe144a.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787654888409-1fb367efe144a.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787654888409-1fb367efe144a.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655076828-935241e8d3f9e.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655076828-935241e8d3f9e.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655076828-935241e8d3f9e.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655103128-18648d96dd205.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655103128-18648d96dd205.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655103128-18648d96dd205.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655142835-25c5f58efa905.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655142835-25c5f58efa905.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655142835-25c5f58efa905.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655176834-1608c290e6e81.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655176834-1608c290e6e81.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655176834-1608c290e6e81.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655217797-c5a2e25bb8f4c.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655217797-c5a2e25bb8f4c.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655217797-c5a2e25bb8f4c.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655275968-eb9ffc04feb27.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655275968-eb9ffc04feb27.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655275968-eb9ffc04feb27.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655377080-9391d3caacc1f.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655377080-9391d3caacc1f.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655377080-9391d3caacc1f.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655416973-23991f5495592.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655416973-23991f5495592.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655416973-23991f5495592.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655455092-71d2a0afeb793.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655455092-71d2a0afeb793.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655455092-71d2a0afeb793.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655472631-3286ca77944dc.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655472631-3286ca77944dc.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655472631-3286ca77944dc.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655499098-a77d072fb442.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655499098-a77d072fb442.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655499098-a77d072fb442.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655523688-7c245d2fd8e96.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655523688-7c245d2fd8e96.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655523688-7c245d2fd8e96.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655696082-baef8faa0e5aa.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655696082-baef8faa0e5aa.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655696082-baef8faa0e5aa.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655819475-45de202c03896.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655819475-45de202c03896.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787655819475-45de202c03896.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787659423489-acc6c6ce529c2.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787659423489-acc6c6ce529c2.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787659423489-acc6c6ce529c2.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787673023562-d30d58e88ac48.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787673023562-d30d58e88ac48.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787673023562-d30d58e88ac48.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787673383292-a5b00117abc66.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787673383292-a5b00117abc66.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787673383292-a5b00117abc66.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787679964059-e970c75230073.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787679964059-e970c75230073.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787679964059-e970c75230073.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787680014700-5d51a2a4f8acf.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787680014700-5d51a2a4f8acf.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787680014700-5d51a2a4f8acf.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787680092325-4f0c22a11bf1d.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787680092325-4f0c22a11bf1d.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787680092325-4f0c22a11bf1d.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787680133917-6a97c46926669.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787680133917-6a97c46926669.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1787680133917-6a97c46926669.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788350051083-7197d02c56745.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788350051083-7197d02c56745.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788350051083-7197d02c56745.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788350805617-773dad974b838.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788350805617-773dad974b838.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788350805617-773dad974b838.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788351197020-1df0182f23e68.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788351197020-1df0182f23e68.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788351197020-1df0182f23e68.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788352992929-152359a413f54.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788352992929-152359a413f54.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788352992929-152359a413f54.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788353758382-898201eedb5f.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788353758382-898201eedb5f.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788353758382-898201eedb5f.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788356142049-cf0e0ea83335.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788356142049-cf0e0ea83335.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788356142049-cf0e0ea83335.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788411305642-fcc4cc9e1fad.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788411305642-fcc4cc9e1fad.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788411305642-fcc4cc9e1fad.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788411933874-1a92859171a6f.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788411933874-1a92859171a6f.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788411933874-1a92859171a6f.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788433139201-2727693d86575.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788433139201-2727693d86575.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788433139201-2727693d86575.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788433462662-499b414822a2c.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788433462662-499b414822a2c.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788433462662-499b414822a2c.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788434141981-c103eb9cec1f7.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788434141981-c103eb9cec1f7.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788434141981-c103eb9cec1f7.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788443090849-5e4acd0341a0d.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788443090849-5e4acd0341a0d.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788443090849-5e4acd0341a0d.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788445992567-c8981cb0a389a.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788445992567-c8981cb0a389a.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788445992567-c8981cb0a389a.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788447248078-3f1cddb65e9de.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788447248078-3f1cddb65e9de.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788447248078-3f1cddb65e9de.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788501212878-029a1596bd894.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788501212878-029a1596bd894.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788501212878-029a1596bd894.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788502883734-83ee9a55f76af.mjs",
+   "l": 3,
+   "t": "import { defineConfig, loadEnv } from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/vit"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788502883734-83ee9a55f76af.mjs",
+   "l": 5,
+   "t": "import uni from \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/node_modules/.pnpm/@dcloudio+vite-plugin-uni"
+  },
+  {
+   "f": "apps/client/vite.config.ts.timestamp-1788502883734-83ee9a55f76af.mjs",
+   "l": 7,
+   "t": "var __vite_injected_original_import_meta_url = \"file:///D:/6/%E6%81%8B%E7%88%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F/apps/client/v"
+  }
+ ],
+ "stopped": false
+}

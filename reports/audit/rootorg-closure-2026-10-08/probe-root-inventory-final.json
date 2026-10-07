@@ -1,0 +1,10 @@
+{
+ "fileViol": [
+  ".gitattributes",
+  "exit",
+  "nul"
+ ],
+ "dirViol": [
+  ".qoder"
+ ]
+}

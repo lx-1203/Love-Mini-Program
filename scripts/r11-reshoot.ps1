@@ -1,12 +1,14 @@
 ﻿# R11 G6: re-shoot flagged scenes with fresh tokens
 $ErrorActionPreference = "Continue"
-$wi = "D:\微信开发者\微信web开发者工具\wechatide.cmd"
-$proj = "D:\6\恋爱小程序"
+# 路径可推导：仓库根 = scripts/ 上一级；wechatide 走 WECHATIDE_DIR 或 PATH，不写盘符死路径。
+$repo = Split-Path $PSScriptRoot -Parent
+$wi = if ($env:WECHATIDE_DIR) { Join-Path $env:WECHATIDE_DIR 'wechatide.cmd' } else { 'wechatide.cmd' }
+$proj = $repo
 $stamp = "b0919-r12c"
-$shots = "D:\6\恋爱小程序\reports\screenshots\r11-acceptance"
+$shots = Join-Path $repo 'reports\screenshots\r11-acceptance'
 $ident = $args[0]
-$tokfile = "D:\6\恋爱小程序\tmp_r11_login.json"
-if ($ident -eq "B") { $tokfile = "D:\6\恋爱小程序\tmp_r11_guest.json" }
+$tokfile = Join-Path $repo 'tmp_r11_login.json'
+if ($ident -eq "B") { $tokfile = Join-Path $repo 'tmp_r11_guest.json' }
 
 function WiRaw([string[]]$argList) { return (& $wi @argList 2>&1 | Out-String) }
 

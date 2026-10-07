@@ -17,8 +17,9 @@ import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const ts = createRequire(import.meta.url)("D:/6/恋爱小程序/apps/client/node_modules/typescript");
 const REPO = resolve(import.meta.dirname, "..", "..");
+/* typescript 取自 apps/client 的依赖：路径从本文件位置推导（相对 REPO），不写盘符死路径。 */
+const ts = createRequire(import.meta.url)(resolve(REPO, "apps/client/node_modules/typescript"));
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
 const FILE = arg("file", ".zcode/workflows/miniprogram-qa-finish-v33.dwf.ts");
 const PROFILE_ARG = arg("profile", "all");

@@ -25,7 +25,7 @@
  */
 import { spawn, execFileSync } from "node:child_process";
 import { existsSync, readdirSync, statSync, openSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 /* 档位的唯一读法：artifact-band.mjs:14 readApiMode() —— 执行器/取景器/巡检与本脚本问的是同一句
@@ -38,7 +38,15 @@ const REPO = join(fileURLToPath(import.meta.url), "..", "..", "..");
 const argv = process.argv.slice(2);
 function opt(n, d) { const i = argv.indexOf("--" + n); return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[i + 1] : d; }
 import { readIdePort } from "./ide-port-config.mjs";
-const IDE_DIR = opt('ide', process.env.WECHATIDE_DIR || "D:/微信开发者/微信web开发者工具");
+/* IDE 目录解析序：--ide > WECHATIDE_DIR 环境变量 > 扫 PATH 找 wechatide.cmd 取其目录（可推导，不写盘符死路径）。 */
+function ideDirFromPath() {
+  for (const d of String(process.env.PATH || "").split(";")) {
+    if (!d) continue;
+    try { if (existsSync(join(d, "wechatide.cmd"))) return d; } catch { /* 这段 PATH 坏了就跳过 */ }
+  }
+  return "";
+}
+const IDE_DIR = opt('ide', process.env.WECHATIDE_DIR || ideDirFromPath());
 /* 目标 ① 要的是「端口走配置文件而非命令行」：缺省端口从 scripts/qa/ide-port.json 取。
    读法已抽到 ide-port-config.mjs 做唯一实现——此前这里有一份 configPort()，
    而两个真正的消费者（shoot-frameplan --ws-taps、r-exec-ws）各读各的，
@@ -212,10 +220,33 @@ function expectedBand() {
   return { project: PROJECT, envFile: band.envFile, envExists: existsSync(band.envFile), mode: band.mode, viteMode: band.viteMode, sha8: band.sha8 };
 }
 
+/* 【2026-10-07 mpcompile-real 腿补】绕过 SDK 的 checkVersion 握手，直接手工建会话。
+   为什么必须：IDE Stable 2.02.2608040 的 Tool.getInfo 实测只回 {"version":"2.02.2608040"}，
+   不再带 SDKVersion 字段；automator@0.12.1 的 MiniProgram.checkVersion 拿 undefined 交
+   licia/cmpVersion 的 v1.split('.') ⇒ A.connect() 必抛 "Cannot read properties of undefined
+   (reading 'split')"。今天三轮冷/热、--wait 150/420/480s、整 IDE 重启后全都在同一处炸，
+   与会话就绪无关（同端口绕过握手后 Tool.getInfo/App.getCurrentPage/currentPage 全部正常回，
+   现场留档 .zcode/tmp/mpcompile-real/probe-ws.mjs 输出）。SDK 其余功能（currentPage/$/
+   evaluate/on('console')/disconnect）不依赖那个字段，绕过即恢复。查找方式与 automator() 同一套。 */
+function automatorOut() {
+  try { return join(dirname(require.resolve("miniprogram-automator/package.json")), "out"); } catch { /* fallthrough */ }
+  const store = join(REPO, "node_modules", ".pnpm");
+  if (!existsSync(store)) return "";
+  const hit = readdirSync(store).filter((d) => d.startsWith("miniprogram-automator@")).sort()[0];
+  return hit ? join(store, hit, "node_modules", "miniprogram-automator", "out") : "";
+}
+async function connectMini() {
+  const out = automatorOut();
+  if (!out) throw new Error("automatorOut: 找不到 miniprogram-automator 包目录");
+  const Connection = require(join(out, "Connection.js")).default;
+  const MiniProgram = require(join(out, "MiniProgram.js")).default;
+  return Connection.create("ws://127.0.0.1:" + PORT).then((c) => new MiniProgram(c));
+}
+
 async function verify(A) {
   const t0 = Date.now();
   const mini = await Promise.race([
-    A.connect({ wsEndpoint: "ws://127.0.0.1:" + PORT }),
+    connectMini(),
     new Promise((_, rj) => setTimeout(() => rj(new Error("CONNECT_TIMEOUT_10S")), 10000)),
   ]);
   try {

@@ -13,7 +13,7 @@ set MANAGEMENT_HEALTH_RABBIT_ENABLED=false
 set SPRING_RABBITMQ_LISTENER_SIMPLE_AUTO_STARTUP=false
 set SPRING_AUTOCONFIGURE_EXCLUDE=org.redisson.spring.starter.RedissonAutoConfigurationV2
 set APP_REDISSON_MANUAL_CONFIG=true
-set APP_FLYWAY_LOCATIONS=filesystem:d:\6\恋爱小程序\database\flyway\sql
+set "APP_FLYWAY_LOCATIONS=filesystem:%~dp0..\..\database\flyway\sql"
 set APP_GUEST_LOGIN_ENABLED=true
 set APP_CAMPUS_CERT_SIMULATE_ENABLED=true
 set APP_DEMO_RECHARGE_ENABLED=true
@@ -21,7 +21,7 @@ set APP_DEMO_RECHARGE_ENABLED=true
 echo Starting API server (real profile)...
 echo DB: MySQL@3306 ^| Redis@6379 ^| Port: 8080
 
-java -jar d:\6\恋爱小程序\apps\api\target\campus-love-api-0.1.0.jar ^
+java -jar "%~dp0..\..\apps\api\target\campus-love-api-0.1.0.jar" ^
   --spring.profiles.active=real ^
   --spring.flyway.validate-on-migrate=false ^
   --spring.flyway.baseline-on-migrate=true ^

@@ -116,7 +116,7 @@ const scopeArg = (() => { const i = process.argv.indexOf("--scope"); return i >=
 // 一条归一化流水线，盘上路径和 --scope 入参都只能走它：反斜杠→正斜杠、剥仓库前缀、
 // Windows 上折叠大小写。两侧不同源的话比较就是在比两种方言，静默 0 命中只会伪装成门禁在管事。
 const toPosix = (p) => p.split(sep).join("/").replace(/\\/g, "/");
-// Windows 路径大小写不敏感：d:/… 与 D:/…、reports 与 REPORTS 指的是同一个目录。
+// Windows 路径大小写不敏感：「盘符+冒号+斜杠」那串的小写与大写、reports 与 REPORTS 指的是同一个目录。
 // 按字面比大小写会把合法 scope 筛成 0 命中，再撞上"空扫描集 FAIL"——看着像证据有问题，
 // 其实是档位没接上。用 sep 判平台，POSIX 上保持大小写敏感（那边确实区分）。
 const foldCase = (s) => (sep === "\\" ? s.toLowerCase() : s);
@@ -158,7 +158,7 @@ const inScope = (p) => {
   // 但 toRelPosix 会把仓库前缀又剥掉，于是 abs 其实还是相对路径，拿去 startsWith(绝对 scope)
   // 永远不成立，绝对写法的 --scope 实测 0 命中——同一个变量被相对化两次就是这个下场。
   // 本次接手时磁盘上已是 resolve(p).split(sep).join("/")（绝对了），但仍未折叠大小写，
-  // 见下方探针：d:/… 与 REPORTS/Audit 这类同目录不同写法的 scope 照样 0 命中等值 FAIL。
+  // 见下方探针：正斜杠绝对写法与 REPORTS/Audit 这类同目录不同写法的 scope 照样 0 命中等值 FAIL。
   const abs = foldCase(toPosix(resolve(p)));
   // 同时接受"仓库相对"与"绝对"两种 scope：只认相对的那版会把调用方按定义模板传下来的绝对路径
   // 筛成 0 命中，而 0 命中走"空扫描集"分支报 FAIL —— 看着像门禁在管事，实际档位从没接上。

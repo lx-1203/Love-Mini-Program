@@ -8,7 +8,9 @@
 #   2. 产物不比 HEAD 旧：比较 apps/client/dist/build/mp-weixin/app.json 的 mtime 与 git log -1 的时间
 #   3. 真实刀要把 --project 指到 real 产物，且 8080 在跑（先 node scripts/probe-real-env.mjs）
 set -euo pipefail
-NODE=${NODE:-D:/codex-tools/node-v22.17.0-win-x64/node.exe}
+# node 解析序：NODE 环境变量 > NODE22_EXE > PATH 上的 node（本项目纪律是 PATH 前置 Node22）；
+# 都取不到/取到老的 ⇒ 下一行 :? 守卫大声失败，不回落盘符死路径。
+NODE=${NODE:-${NODE22_EXE:-$(command -v node 2>/dev/null || true)}}
 REPO=${REPO:-$(cd "$(dirname "$0")/../.." && pwd)}
 cd "$REPO"
 : "${NODE:?NODE 未解析——PATH 里的 node 可能是 v16，会把这条链跑坏}"

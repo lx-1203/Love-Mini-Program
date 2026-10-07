@@ -1,8 +1,12 @@
 /* Report exact duplicate literal keys within the same object, via the TypeScript AST. */
 import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ts = createRequire(import.meta.url)("D:/6/恋爱小程序/node_modules/.pnpm/typescript@5.3.3/node_modules/typescript");
+/* typescript 取自仓库的 pnpm store：前缀从本文件位置推导，不写盘符死路径。 */
+const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const ts = createRequire(import.meta.url)(resolve(REPO, "node_modules/.pnpm/typescript@5.3.3/node_modules/typescript"));
 
 for (const file of process.argv.slice(2)) {
   const src = readFileSync(file, "utf8");

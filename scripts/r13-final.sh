@@ -2,9 +2,16 @@
 # R13 final: wait for build, clear caches, re-shoot the pages changed in the last build,
 # then restore the src/static files that prepare-static --real moved out.
 set -u
-WI="D:/微信开发者/微信web开发者工具/wechatide.cmd"
-D="D:/6/恋爱小程序/apps/client/dist/build/mp-weixin"
-ROOT="D:/6/恋爱小程序"
+# 路径全部可推导：仓库根 = 本脚本（scripts/）的上一级，转 Windows 形态（要传给 IDE 当 --project）；
+# wechatide.cmd 解析序：WECHATIDE_DIR 显式 > PATH 上的同名 cmd；都没有就大声失败，不写盘符死路径。
+_rp="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cygpath -m "$_rp" 2>/dev/null || echo "$_rp")"
+_wic="${WECHATIDE_DIR:-}"
+[ -n "$_wic" ] && _wic="$_wic/wechatide.cmd"
+[ -n "$_wic" ] || _wic="$(command -v wechatide.cmd 2>/dev/null || true)"
+[ -n "$_wic" ] || { echo "FATAL: 找不到 wechatide.cmd（设 WECHATIDE_DIR 或把它放进 PATH）" >&2; exit 1; }
+WI="$_wic"
+D="$ROOT/apps/client/dist/build/mp-weixin"
 OUT="$ROOT/reports/audit/2026-09-22-r13-goal"
 SH="$OUT/shots-r13final"; mkdir -p "$SH"
 LOG="$OUT/r13final.log"; : > "$LOG"

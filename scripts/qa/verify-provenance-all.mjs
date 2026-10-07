@@ -24,7 +24,7 @@ const repo = resolve(here, "../..");
 const rel = (p) => relative(repo, p).split(sep).join("/");
 /* 帧路径解析（本轮实测出来的方言洞）：旧写法 `p.startsWith(repo) || p.startsWith("/") ? p : join(repo, p)`
    在 Windows 上只认反斜杠形态的 repo，于是「仓库相对+正斜杠」的规范写法走 join（对），
-   但 `D:/6/…/x.png` 这种绝对+正斜杠两支都不命中，被 join 成 `repo\D:\6\…\x.png` 这种必然不存在的
+   但「盘符+正斜杠」的绝对写法两支都不命中，被 join 成「repo 前缀 + 反斜杠串」这种必然不存在的
    字符串 —— round-6-real-tour 的 18 帧 + smoke 2 帧就是这样被误判成 PROV_FRAMES_UNRESOLVABLE=20 的。
    本门禁的职责是发现「盘上没有这张帧」，不是发现「分隔符我不认识」，所以先归一分隔符再判绝对性；
    方言漂移不豁免，改为单列 PROV_FRAMES_ABSOLUTE 提示行（生产者侧该自证，real-tour-cli.mjs 已加 selfcheck）。 */
@@ -158,9 +158,10 @@ if (!STAMP_CONVENTION) {
 let frames = 0, noStamp = 0, badStamp = 0, unresolvable = 0;
 let storeVouched = 0; const vouchedSamples = [];
 let fabricated = 0, staleStamp = 0, consistent = 0, undated = 0, absoluteDialect = 0, unknownBand = 0;
-let noStampLegacy = 0, legacyFrames = 0;
+let noStampLegacy = 0, legacyFrames = 0, legacyExempt = 0;
 const samples = [];
 const missingSamples = [];
+const legacyExemptSamples = [];
 const perManifest = [];
 
 for (const mPath of manifests) {
@@ -191,6 +192,23 @@ for (const mPath of manifests) {
     mf++; frames++;
     if (p && isAbsoluteDialect(p)) absoluteDialect++;
     if (!p || !existsSync(abs)) {
+      /* LEGACY 豁免（2026-10-06 采纳建议书 #12-A，reports/audit/round-7/ruling-recommendations-2026-10-06.md）。
+         范围刻意收窄到最窄可证形状，三条缺一不可：
+           ① 只看**整份 manifest 无 gitSha 且 generatedAt 早于打戳约定**的那一份（上面的 legacy 标记，
+              由 git log -S 派生的 STAMP_CONVENTION 判定，不读任何手维护名单）；
+           ② 只豁免**盘上不存在**的帧——在盘上的无戳帧仍走 legacyFrames 轴逐帧留名，不借本豁免消失；
+           ③ 行内自带 bandSha 的帧不豁免（它声称了具体采集带，时间轴有据可判，按老规矩走）。
+         为什么这不是给"断链"开后门：round-1 那 144 帧属打戳约定生效前的历史 manifest，帧本体已按用户
+         2026-09-30 裁定删除不入库（decisions r10new#E）；没有本分支时它们落在 UNRESOLVABLE（红），读数
+         会把"按裁定删除的历史证据"误读成"证据被这轮弄丢了"。豁免后单列 LEGACY_EXEMPT 且结论钉死为
+         **「历史证据，不可引用」**——不进 CONSISTENT、不算覆盖、不给任何本轮结论背书（与 PROV_MANIFEST_LEGACY
+         那行"其帧一律不参与时间轴判决"同一条纪律）。约定之后生成的无戳清单照样走 noStamp 判红，豁免面
+         不会随时间自动变大（STAMP_CONVENTION 是固定下界）。 */
+      if (legacy && !s.bandSha) {
+        legacyExempt++;
+        if (legacyExemptSamples.length < SAMPLES) legacyExemptSamples.push(`PROV_FRAME_LEGACY_EXEMPT ${rel(mPath)} 记=${p || "(空)"}（历史证据，不可引用）`);
+        continue;
+      }
       /* 盘上没有 ⇒ 先问仓外库能不能按哈希唯一背书（裁定③的形状）。
          能背书 ⇒ 单列 STORE_VOUCHED（承认存在性，不承认时间轴结论）；
          不能背书（没哈希/前缀不唯一/库里没有）⇒ 仍是断链，照旧判红并指名。 */
@@ -300,7 +318,9 @@ console.log(`PROVENANCE_HEAD=${HEAD || "?"} SRC_COMMITS=${srcCommits.length} SCO
 for (const x of perManifest) console.log(`PROV_MANIFEST ${x.file} shots=${x.shots} gitSha=${x.stamp} pre_stamp=${x.fabricated} stale_stamp=${x.stale} consistent=${x.consistent}`);
 samples.forEach((s) => console.log(s));
 missingSamples.forEach((s) => console.log(s));
-console.log(`PROV_FRAMES_CONSISTENT=${consistent} PROV_FRAMES_STALE=${staleStamp} PROV_FRAMES_PRE_STAMP=${fabricated} PROV_FRAMES_UNRESOLVABLE=${unresolvable} PROV_FRAMES_UNDATED=${undated} PROV_FRAMES_UNKNOWN_BAND=${unknownBand} PROV_FRAMES_LEGACY=${legacyFrames}`);
+console.log(`PROV_FRAMES_CONSISTENT=${consistent} PROV_FRAMES_STALE=${staleStamp} PROV_FRAMES_PRE_STAMP=${fabricated} PROV_FRAMES_UNRESOLVABLE=${unresolvable} PROV_FRAMES_UNDATED=${undated} PROV_FRAMES_UNKNOWN_BAND=${unknownBand} PROV_FRAMES_LEGACY=${legacyFrames} PROV_FRAMES_LEGACY_EXEMPT=${legacyExempt}`);
+for (const s of legacyExemptSamples) console.log(s);
+console.log(`PROV_LEGACY_EXEMPT_NOTE 打戳约定生效前的无戳历史 manifest（如 round-1）里盘上已不存在的帧，按 2026-10-06 采纳建议书 #12-A 单列豁免：结论=历史证据，不可引用（不进 CONSISTENT、不算覆盖、不给本轮结论背书；约定后的无戳清单不豁免，照旧 noStamp 判红）`);
 /* 库这一轴单独印一行（不改上面任何计数的语义）：可达时把"盘上没有、但库里按哈希唯一命中"的帧具名报数；
    未配库时印 unconfigured 且计数必为 0 —— 也就是与从前逐字节相同。
    ⚠ 被背书的帧**不进** CONSISTENT：库里的 mtime 是搬移时刻，拿它做时间轴结论就是造假绿。 */
@@ -311,7 +331,7 @@ console.log(`PROV_FRAMES_ABSOLUTE=${absoluteDialect}（方言提示：manifest �
 console.log(`PROV_MANIFESTS_NO_SHA=${noStamp} PROV_MANIFESTS_NO_SHA_LEGACY=${noStampLegacy} PROV_MANIFESTS_BAD_SHA=${badStamp} 打戳约定起点=${STAMP_CONVENTION.toISOString()}（由 git log -S gitSha -- scripts/qa 派生）`);
 /* 守恒断言：加了新桶（本次的 LEGACY）之后，最怕的不是判错而是漏记——漏掉的帧会让两个桶同时变小而
    看起来"更干净"。逐帧的结局互斥且穷尽（缺文件/无日期/历史件/未知带/回填/过期/一致），所以总数必须相等。 */
-const accounted = consistent + staleStamp + fabricated + unresolvable + undated + legacyFrames + unknownBand + storeVouched;
+const accounted = consistent + staleStamp + fabricated + unresolvable + undated + legacyFrames + unknownBand + storeVouched + legacyExempt;
 const conserved = accounted === frames;
 console.log(`PROV_FRAME_ACCOUNTING in=${frames} out=${accounted} ${conserved ? "OK" : "MISMATCH（有帧没落到任何桶，本门的统计不可信）"}`);
 console.log(`PROV_PRODUCERS=${producerCount} DERIVED_OK=${producerOk} LITERAL_SHA=${producerLiteral} NO_DERIVE=${producerNoDerive}${scoped ? "（限定 scope，生产者侧只报不计）" : ""}`);

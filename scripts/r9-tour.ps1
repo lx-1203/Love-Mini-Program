@@ -1,6 +1,8 @@
-﻿$wi = "D:\微信开发者\微信web开发者工具\wechatide.cmd"
-$proj = "D:\6\恋爱小程序"
-$shotsDir = "D:\6\恋爱小程序\reports\screenshots\r9-lifecycle"
+﻿# 路径可推导：仓库根 = scripts/ 上一级；wechatide 走 WECHATIDE_DIR 或 PATH，不写盘符死路径。
+$repo = Split-Path $PSScriptRoot -Parent
+$wi = if ($env:WECHATIDE_DIR) { Join-Path $env:WECHATIDE_DIR 'wechatide.cmd' } else { 'wechatide.cmd' }
+$proj = $repo
+$shotsDir = Join-Path $repo 'reports\screenshots\r9-lifecycle'
 function WiRaw([string[]]$argList) { return (& $wi @argList 2>&1 | Out-String) }
 function Go([string]$url, [string]$name, [double]$wait = 4.5) {
   $js = "function(){ wx.reLaunch({ url: '" + $url + "', fail: function(e){ console.error('NAV_FAIL'); } }); return 1; }"

@@ -6,8 +6,15 @@
 # 所以这里的门一律 Node22、一律带 --dry（不许覆写别人的判决件），
 # 并把 sha 敏感门在提交前后各量一次的口径写死。
 set -u
-cd /d/6/恋爱小程序 || exit 1
-N22="/d/codex-tools/node-v22.17.0-win-x64/node.exe"
+# 仓库根从本脚本位置推导（scripts/qa/ 的上两级），不写盘符死路径。
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$REPO_ROOT" || exit 1
+# node 解析序：NODE22_EXE 显式 > PATH 上的 node（本项目纪律是 PATH 前置 Node22）。
+# 老 node 会让 import.meta.dirname 的门假红（本文件头注释第 1 条）⇒ 版本闸大声失败，不回落盘符死路径。
+N22="${NODE22_EXE:-$(command -v node 2>/dev/null || true)}"
+N22_MAJOR="$("$N22" -v 2>/dev/null | sed 's/^v//' | cut -d. -f1)"
+case "$N22_MAJOR" in ''|*[!0-9]*) N22_MAJOR=0 ;; esac
+[ "$N22_MAJOR" -ge 20 ] || { echo "FINAL_VERIFY=FAIL reason=解析到的 node 太老（$("$N22" -v 2>/dev/null || echo 未知)），设 NODE22_EXE 指一个 >=20 的 node 再跑"; exit 2; }
 OUT=.zcode/tmp/final-verify
 mkdir -p "$OUT"
 HEAD_BEFORE=$(git rev-parse --short HEAD)
@@ -17,12 +24,19 @@ echo "HEAD=$HEAD_BEFORE  node=$("$N22" -v)"
 # 规则：库目录存在 ⇒ 导出 QA_EVIDENCE_STORE，让 verify-evidence-corpus 真的走 reachable 那一支；
 #       不存在 ⇒ 不设变量（门会报 CORPUS_STORE=unconfigured），并在日志里把这一事实印出来。
 # 这里**故意**不做"库没了就假装没事"以外的任何事：设置了变量却够不着，是要判红的（那是用户点名的条件）。
-STORE_DIR_DEFAULT="/d/6/love-mini-evidence"
+# 证据库缺省位置 = 仓库根的仓外兄弟目录（与 evidence-store.mjs:36 的缺省是同一条推导），不写盘符死路径。
+# node 消费方要 Windows 形态路径 ⇒ 用 cygpath -m 转；推不出来就如实降级，不硬塞。
+STORE_DIR_DEFAULT="$(dirname "$REPO_ROOT")/love-mini-evidence"
 if [ -n "${QA_EVIDENCE_STORE:-}" ]; then
   echo "SWEEP_STORE_MODE=configured（沿用外部给的 QA_EVIDENCE_STORE=$QA_EVIDENCE_STORE）"
 elif [ -d "$STORE_DIR_DEFAULT" ]; then
-  export QA_EVIDENCE_STORE="D:/6/love-mini-evidence"
-  echo "SWEEP_STORE_MODE=reachable（$QA_EVIDENCE_STORE 在盘 ⇒ 本轮证据库这一轴参与判定）"
+  QA_EVIDENCE_STORE="$(cygpath -m "$STORE_DIR_DEFAULT" 2>/dev/null || true)"
+  if [ -n "${QA_EVIDENCE_STORE:-}" ]; then
+    export QA_EVIDENCE_STORE
+    echo "SWEEP_STORE_MODE=reachable（$QA_EVIDENCE_STORE 在盘 ⇒ 本轮证据库这一轴参与判定）"
+  else
+    echo "SWEEP_STORE_MODE=unresolved（默认库在盘，但此 bash 无 cygpath 推不出 Windows 形态路径 ⇒ 不设变量，门的自身缺省与门输出说了算）"
+  fi
 else
   echo "SWEEP_STORE_MODE=absent（仓外库不存在 ⇒ 本轴报 unconfigured，不参与判定；这不是豁免，是如实标注）"
 fi

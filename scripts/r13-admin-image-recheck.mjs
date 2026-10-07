@@ -1,9 +1,12 @@
 /* R13 targeted re-verification of admin image rendering after the /static -> app-assets fix. */
 import puppeteer from "puppeteer";
 import { writeFileSync, mkdirSync } from "node:fs";
+import { resolve, dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const BASE = "http://127.0.0.1:5179";
-const OUT = "D:/6/恋爱小程序/reports/audit/2026-09-22-r13-goal";
+const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const OUT = join(REPO, "reports", "audit", "2026-09-22-r13-goal");
 const SHOTS = `${OUT}/shots-admin`;
 mkdirSync(SHOTS, { recursive: true });
 

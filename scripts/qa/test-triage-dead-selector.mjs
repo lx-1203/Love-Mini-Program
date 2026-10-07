@@ -34,7 +34,7 @@ const ok = (cond, msg) => { checks++; if (!cond) fails.push(msg); };
 function pickNode() {
   const v = Number(process.versions.node.split(".")[0]);
   if (v >= 20) return process.execPath;
-  const alt = process.env.QA_TDS_NODE22 || "D:/codex-tools/node-v22.17.0-win-x64/node.exe";
+  const alt = process.env.QA_TDS_NODE22 || process.env.NODE22_EXE || "";
   return existsSync(alt) ? alt : null;
 }
 const NODE = pickNode();

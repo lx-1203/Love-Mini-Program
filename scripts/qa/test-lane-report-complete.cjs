@@ -22,7 +22,7 @@
  *   I 具名收件：目录里"没收进清单"的骨架件不得进 PROBLEMS（门不扫目录）
  *   J 变异证明：把判据放宽成认「待」字 ⇒ 阴性对照必须变红（证明本测试真的能变红）
  *
- * 跑法：D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/test-lane-report-complete.cjs
+ * 跑法：node scripts/qa/test-lane-report-complete.cjs（需 ≥20.11；PATH 上是老 node 时用 NODE22_EXE 指一个新版）
  * ============================================================================= */
 const fs = require("fs");
 const os = require("os");
@@ -31,8 +31,8 @@ const { spawnSync } = require("child_process");
 
 const REPO = path.resolve(__dirname, "..", "..");
 const GATE = path.join(REPO, "scripts", "qa", "verify-lane-report-complete.mjs");
-const NODE22 = "D:/codex-tools/node-v22.17.0-win-x64/node.exe";
-const NODE = fs.existsSync(NODE22) ? NODE22 : process.execPath;
+const NODE22 = process.env.NODE22_EXE || "";
+const NODE = NODE22 && fs.existsSync(NODE22) ? NODE22 : process.execPath;
 
 let fail = 0, ran = 0;
 function ck(name, cond, detail) {

@@ -10,12 +10,12 @@
    "file": "scripts/qa/ws-channel-up.mjs",
    "args": [
     "--project",
-    "D:/6/恋爱小程序/apps/client/dist/build/mp-weixin-real",
+    "apps/client/dist/build/mp-weixin-real",
     "--wait",
     "150"
    ],
    "timeoutMin": 8,
-   "why": "顺序 (a)：把 automator 的 WS 采集通道架起来。这一条与巡检腿共用 readIdePort()（ws-channel-up.mjs:33 = ide-port-config.mjs:17），所以『架起来的端口』和『巡检连的端口』不可能再是两个数——round-7b 那次红就是因为巡检自带一个与配置文件无关的 9420 字面量。--project 指 real 档：巡检跑在真实档上。这里必须给**绝对路径**：opt() 把值原样塞进 spawn 的命令行（:25/:35），而那个 spawn 的 cwd 是 IDE 安装目录（:109-:112），相对路径会解到 IDE 目录里去；open-project-window 那类腿能吃相对路径是因为它自己 resolve(REPO, …)。绝不 --port 覆盖、绝不 close()（close 会把整个自动化 IDE 实例带走，9420 随之消失——脚本头里写明的那条实测教训）。"
+   "why": "顺序 (a)：把 automator 的 WS 采集通道架起来。这一条与巡检腿共用 readIdePort()（ws-channel-up.mjs:33 = ide-port-config.mjs:17），所以『架起来的端口』和『巡检连的端口』不可能再是两个数——round-7b 那次红就是因为巡检自带一个与配置文件无关的 9420 字面量。--project 指 real 档：巡检跑在真实档上。这里给**仓库相对**值：ws-channel-up.mjs 收到后先按仓库根摊平再进 spawn（:52-:53），spawn 收到的仍是绝对路径——spawn 的 cwd 是 IDE 安装目录（:109-:112），直塞相对值才会解到 IDE 目录里去；open-project-window 那类腿能吃相对路径是因为它自己 resolve(REPO, …)。绝不 --port 覆盖、绝不 close()（close 会把整个自动化 IDE 实例带走，9420 随之消失——脚本头里写明的那条实测教训）。"
   },
   {
    "name": "gate-ide-port-listening-r8b",
@@ -54,7 +54,7 @@
    "args": [],
    "env": {
     "TOUR_PRECHECK_ONLY": "1",
-    "TOUR_PROJECT": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "TOUR_PROJECT": "apps/client/dist/build/mp-weixin-real",
     "TOUR_LABEL": "round-7-stage8b-tour-B-real",
     "TOUR_AUDIT_SUB": "round-7",
     "TOUR_CKPT_NAME": "tour-R7-stage8b-B.json",
@@ -69,7 +69,7 @@
    "file": "scripts/qa/tour-r6.mjs",
    "args": [],
    "env": {
-    "TOUR_PROJECT": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+    "TOUR_PROJECT": "apps/client/dist/build/mp-weixin-real",
     "TOUR_LABEL": "round-7-stage8b-tour-B-real",
     "TOUR_AUDIT_SUB": "round-7",
     "TOUR_CKPT_NAME": "tour-R7-stage8b-B.json",

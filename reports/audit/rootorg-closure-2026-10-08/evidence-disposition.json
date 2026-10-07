@@ -1,0 +1,66 @@
+{
+  "lane": "证据删留",
+  "gapId": "EVIDENCE-DELETIONS",
+  "decidedAt": "2026-10-08",
+  "head": "c088e2d6",
+  "branch": "main",
+  "awaitingCommitDeletions": false,
+  "awaitingCommitAdds": [
+    "reports/audit/2026-10-07-editpage-replace/",
+    "reports/audit/round-7/cap-ids/",
+    "reports/audit/round-7/device-legs-closure-2026-10-06.md"
+  ],
+  "needsAdjudication": [
+    {
+      "topic": "3851 条 reports/screenshots 未提交删除的提交/保留去留",
+      "reason": "三分规则未穷举的第四态：corpus 实测绿（缺席凭据=git ls-files --deleted 恰为本批删除，按设计归 advisory 不判红），provenance 实测红但红因=回填 pre_stamp、先于删除且与删除无关。种子口径①须双 exit=0 才 bless，实测只有单绿，故 awaitingCommitDeletions 不写 true；②的红因指向条件不成立故不 git restore。",
+      "measured": {
+        "deletionsInReportsScreenshots": 3851,
+        "seedSaid": 3852,
+        "delta": "第 3852 条是已暂存的 apps/client/src/i18n/locales/tmp-zh.js，不在本车道判域，未动"
+      },
+      "hints": "corpus 对这批删除实测绿且两轴设计本就把它当在册缺席；provenance 红要去 round-7/exec-*/manifest-detail.json 与 round-8-interact/manifest-detail.json 的回填戳（4881 帧 pre_stamp）修，与截图删留无关"
+    }
+  ],
+  "readings": {
+    "bill": {
+      "source": "reports/audit/rootorg-closure-2026-10-08/gapbill-v34.json:29-37",
+      "billContext": "head=c088e2d6，bill 自记 deletions=0 deletionsScreenshots=0 ⇒ 读数量于删除发生之前",
+      "verify-evidence-corpus": { "exitCode": 1, "resultLine": "CORPUS_RESULT=FAIL（存在不可背书证据或硬编码 SHA）" },
+      "verify-provenance-all": { "exitCode": 1, "resultLine": "PROVENANCE_RESULT=FAIL（本轮产物侧存在回填/过期戳记/断链帧/无戳，禁止据此下结论）" }
+    },
+    "rerun": {
+      "why": "账单读数先于删除，不能直接裁当前盘面 ⇒ 按 run-final-verify-v33.sh:44-45 同码路复跑（Node22 v22.17.0，QA_EVIDENCE_STORE=D:/6/love-mini-evidence reachable，timeout 590）",
+      "logs": [
+        "reports/audit/rootorg-closure-2026-10-08/gate-verify-evidence-corpus.exit",
+        "reports/audit/rootorg-closure-2026-10-08/gate-verify-evidence-corpus.log",
+        "reports/audit/rootorg-closure-2026-10-08/gate-verify-provenance-all.exit",
+        "reports/audit/rootorg-closure-2026-10-08/gate-verify-provenance-all.log"
+      ],
+      "verify-evidence-corpus": {
+        "exit": 0,
+        "keyLines": "CORPUS_PROBLEMS=0；缺席帧=0 在册缺席而门未遍历=3846 默认不判红；CORPUS_LEGACY_NO_SHA=1 帧=144 不判红"
+      },
+      "verify-provenance-all": {
+        "exit": 1,
+        "keyLines": "PROV_FRAMES_PRE_STAMP=4881；PROV_FRAMES_UNRESOLVABLE=0 STALE=0 UNDATED=0；PROV_MANIFESTS_NO_SHA=0 BAD_SHA=0；PROV_FRAME_ACCOUNTING in=9184 out=9184 OK；PROVENANCE_RESULT=FAIL（回填/过期戳记/断链帧/无戳）"
+      }
+    }
+  },
+  "ruleMatch": {
+    "rule1_bothGreen": false,
+    "rule2_redCausedByMissingScreenshots": false,
+    "rule3_gateUnstartable": false,
+    "restoreExecuted": false,
+    "note": "红因归属实测：provenance 点名帧 reports/screenshots/round-7-A-mock-final/PAGES-DISCOVER-INDEX-DC06-after.png 在盘未删；红因全为 round-7/exec-*/manifest-detail.json 与 round-8-interact/manifest-detail.json 的 pre_stamp（帧 mtime 2026-09-27 早于所记提交 6fd15178@2026-09-28）；账单在 deletionsScreenshots=0 时 provenance 已是同一红因串 ⇒ 红先于删除。corpus 缺席两轴设计见 scripts/qa/verify-evidence-corpus.mjs:31-36,196-198。"
+  },
+  "addsVerification": {
+    "method": "git ls-files 计数=0 + git status --porcelain 计 ??，逐路径实测",
+    "paths": [
+      { "path": "reports/audit/2026-10-07-editpage-replace/", "files": 31, "tracked": 0 },
+      { "path": "reports/audit/round-7/cap-ids/", "files": 1, "tracked": 0 },
+      { "path": "reports/audit/round-7/device-legs-closure-2026-10-06.md", "files": 1, "tracked": 0 }
+    ]
+  },
+  "discipline": "本车道未执行任何 git add/commit/restore；提交归编排层"
+}

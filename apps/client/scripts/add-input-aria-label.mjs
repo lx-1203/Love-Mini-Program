@@ -11,9 +11,10 @@
  *      - 无 placeholder -> 跳过（避免错误猜测语义）
  */
 import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = "d:/6/恋爱小程序/apps/client/src";
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "src");
 let totalFixed = 0;
 const fixedFiles = [];
 
@@ -126,7 +127,7 @@ function fixFile(filePath) {
 
   if (fixCount > 0) {
     writeFileSync(filePath, result, "utf8");
-    fixedFiles.push({ file: relative("d:/6/恋爱小程序/apps/client/src", filePath), count: fixCount });
+    fixedFiles.push({ file: relative(ROOT, filePath), count: fixCount });
     totalFixed += fixCount;
   }
 }

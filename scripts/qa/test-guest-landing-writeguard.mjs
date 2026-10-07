@@ -7,7 +7,7 @@
    却已经把上一轮 real@f0677920 的 28 行测量清空（rows 28→[]、generatedAt/repeat 1→3 被重打）。
    全程离线：设备调用换成 .zcode/tmp 下的一次性桩，租约落在 QA_LOCK_DIR 的临时目录里，
    权威台账只被**读取**（结尾用 sha256 证明它一个字节都没被这个测试动过）。
-   跑法：D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/test-guest-landing-writeguard.mjs
+   跑法：node scripts/qa/test-guest-landing-writeguard.mjs（需 ≥20.11；PATH 上是老 node 时用 NODE22_EXE 指一个新版）
    聚合器认的输出：SUMMARY: assertion failures = N + WG_TEST=PASS|FAIL */
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";

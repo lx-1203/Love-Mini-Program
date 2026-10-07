@@ -1,8 +1,10 @@
 ﻿# R11 Phase5: TTI baseline for 5 tab pages (reLaunch -> page ready -> stable shot)
 $ErrorActionPreference = "Continue"
-$wi = "D:\微信开发者\微信web开发者工具\wechatide.cmd"
-$proj = "D:\6\恋爱小程序"
-$shots = "D:\6\恋爱小程序\reports\audit\r11-acceptance"
+# 路径可推导：仓库根 = scripts/ 上一级；wechatide 走 WECHATIDE_DIR 或 PATH，不写盘符死路径。
+$repo = Split-Path $PSScriptRoot -Parent
+$wi = if ($env:WECHATIDE_DIR) { Join-Path $env:WECHATIDE_DIR 'wechatide.cmd' } else { 'wechatide.cmd' }
+$proj = $repo
+$shots = Join-Path $repo 'reports\audit\r11-acceptance'
 New-Item -ItemType Directory -Force -Path $shots | Out-Null
 
 function WiRaw([string[]]$argList) { return (& $wi @argList 2>&1 | Out-String) }

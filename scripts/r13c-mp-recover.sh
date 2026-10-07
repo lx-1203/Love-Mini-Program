@@ -2,8 +2,15 @@
 # R13c: recover DevTools to a compiled, logged-in state WITHOUT manually launching the exe
 # (open_project_window starts the IDE itself; launching it concurrently crashes Electron).
 set -u
-WI="D:/微信开发者/微信web开发者工具/wechatide.cmd"
-P="D:/6/恋爱小程序"
+# 路径全部可推导：仓库根 = 本脚本（scripts/）的上一级，转 Windows 形态（要传给 IDE 当 --project）；
+# wechatide.cmd 解析序：WECHATIDE_DIR 显式 > PATH 上的同名 cmd；都没有就大声失败，不写盘符死路径。
+_rp="$(cd "$(dirname "$0")/.." && pwd)"
+P="$(cygpath -m "$_rp" 2>/dev/null || echo "$_rp")"
+_wic="${WECHATIDE_DIR:-}"
+[ -n "$_wic" ] && _wic="$_wic/wechatide.cmd"
+[ -n "$_wic" ] || _wic="$(command -v wechatide.cmd 2>/dev/null || true)"
+[ -n "$_wic" ] || { echo "FATAL: 找不到 wechatide.cmd（设 WECHATIDE_DIR 或把它放进 PATH）" >&2; exit 1; }
+WI="$_wic"
 OUT="$P/reports/audit/2026-09-22-r13-goal"
 SHOTS="$OUT/shots-r13c"
 mkdir -p "$SHOTS"

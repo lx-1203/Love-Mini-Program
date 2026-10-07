@@ -1,7 +1,8 @@
 # Profile Page Design Token Batch Update Script
 # Updates only CSS/style values in profile-related Vue files
 
-$dir = "d:\6\恋爱小程序\apps\client\src"
+$repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent   # scripts/ 上一级 = 仓库根
+$dir = Join-Path $repo 'apps\client\src'
 $profilePaths = @(
   "$dir\pages\profile",
   "$dir\components\profile",
@@ -93,7 +94,7 @@ foreach ($file in $allFiles) {
   
   if ($content -ne $originalContent) {
     [System.IO.File]::WriteAllText($file, $content, [System.Text.Encoding]::UTF8)
-    $relativePath = $file.Replace("d:\6\恋爱小程序\", "")
+    $relativePath = $file.Replace("$repo\", "")
     $fileChanges[$relativePath] = $fileChangeCount
     $totalChanges += $fileChangeCount
     Write-Host "  Modified: $relativePath ($fileChangeCount replacements)"

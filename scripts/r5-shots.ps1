@@ -1,8 +1,10 @@
 ﻿# 第五轮逐页截图脚本（微信开发者工具 automator 通道）
 # 用法：powershell -ExecutionPolicy Bypass -File scripts\r5-shots.ps1
-$wi = "D:\微信开发者\微信web开发者工具\wechatide.cmd"
-$proj = "D:\6\恋爱小程序\apps\client\dist\build\mp-weixin"
-$out = "D:\6\恋爱小程序\shots\mp-r5"
+# 路径可推导：仓库根 = scripts/ 上一级；wechatide 走 WECHATIDE_DIR 或 PATH，不写盘符死路径。
+$repo = Split-Path $PSScriptRoot -Parent
+$wi = if ($env:WECHATIDE_DIR) { Join-Path $env:WECHATIDE_DIR 'wechatide.cmd' } else { 'wechatide.cmd' }
+$proj = Join-Path $repo 'apps\client\dist\build\mp-weixin'
+$out = Join-Path $repo 'shots\mp-r5'
 
 function Shot([string]$name, [int]$scroll = 0, [int]$waitBeforeShot = 1) {
   if ($scroll -gt 0) {

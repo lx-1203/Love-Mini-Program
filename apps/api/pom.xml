@@ -308,7 +308,7 @@
             </goals>
             <configuration>
               <!-- 执行数据文件放到系统临时目录（通常为英文路径）：
-                   项目路径含非 ASCII 字符（如 D:\6\恋爱小程序）时，
+                   项目路径含盘符 + 非 ASCII 字符（如本仓库根的中文目录名）时，
                    JaCoCo agent 在 Windows 上无法在默认 destfile
                    (${project.build.directory}/jacoco.exec，绝对路径含中文) 创建文件，
                    会静默失败导致执行数据缺失、覆盖率报告被跳过。

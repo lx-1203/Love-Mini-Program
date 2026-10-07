@@ -1,9 +1,11 @@
 ﻿# shot-round2b.ps1 - targeted re-screenshot of fixed pages
 param([int]$MaxPages = 999)
 $ErrorActionPreference = "Continue"
-$IDE = "D:\微信开发者\微信web开发者工具\wechatide.cmd"
-$PROJECT = "D:\6\恋爱小程序"
-$OUT = "D:\6\恋爱小程序\截图存档\2026-08-27-round\pages"
+# 路径可推导：仓库根 = scripts/ 上一级；wechatide 走 WECHATIDE_DIR 或 PATH，不写盘符死路径。
+$repo = Split-Path $PSScriptRoot -Parent
+$IDE = if ($env:WECHATIDE_DIR) { Join-Path $env:WECHATIDE_DIR 'wechatide.cmd' } else { 'wechatide.cmd' }
+$PROJECT = $repo
+$OUT = Join-Path $repo '截图存档\2026-08-27-round\pages'
 New-Item -ItemType Directory -Force -Path $OUT | Out-Null
 
 function Invoke-IdeTool {

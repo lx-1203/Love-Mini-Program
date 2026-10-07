@@ -33,7 +33,8 @@
  *                              后者的 booked 落点必须在这个方向，否则面板每跑一次就重打一次权威判决件
  *                              reports/audit/round-7/guest-landing-booked.json，而它的读者是 triage-exec-failures.mjs
  *                              （见 :640 处的说明；判定不变，只改落点）。
- *   --node22 <path>            默认 D:/codex-tools/node-v22.17.0-win-x64/node.exe
+ *   --node22 <path>            默认 NODE22_EXE 环境变量；再退当前 node 自身（仅当 ≥20 大版）；
+ *                              都取不到则 needNode22 的门记 FAIL 并写明原因
  *   --skip-live-gates          不复跑 G7/G8/G9/probe；记为一条 FAIL，不出绿报告
  *   --lease-probe-only         只看有没有人持有模拟器租约后退出（不取锁、不跑任何门）
  *   --dup-axis-selftest        离线渲染/判决「逐 corpus 同字节状态组」这一条否决轴：只按同一条取集规则
@@ -103,7 +104,9 @@ const RTAG = (ROUND_DIR.match(/round-(\d+)/) || [])[1];
 const OUT_REPORT = toRel(flag("report", join(ROUND_DIR, RTAG ? `round-${RTAG}-report.md` : "round-6-report.md")));
 const OUT_METRICS = toRel(flag("metrics", join(ROUND_DIR, RTAG ? `round-${RTAG}-metrics.json` : "round-6-metrics.json")));
 const SIDE_DIR = toRel(flag("sidecar-dir", ".zcode/tmp/report-emitter"));
-const NODE22 = flag("node22", "D:/codex-tools/node-v22.17.0-win-x64/node.exe");
+/* node22 解析序：--node22 显式 > NODE22_EXE 环境变量 > 当前 node 自身（仅当本进程已 ≥20 大版；
+   v16 之类老 node 上留空 ⇒ needNode22 的门记 FAIL 并写明原因，绝不回落到盘符死路径）。 */
+const NODE22 = flag("node22") || process.env.NODE22_EXE || (Number(process.versions.node.split(".")[0]) >= 20 ? process.execPath : "");
 let SKIP_LIVE = has("skip-live-gates");
 /* `--dry` 从"面板碰巧往子门传的一个旗标"升级成**面板自己的真语义**：不取租约、不跑实时门。
    起因是 verify-dry-no-lease 的静态门：我给 :620 那发加了 "--dry" 实参之后，这个文件第一次
@@ -540,6 +543,12 @@ function nodeVersionOf(bin) {
 function runGate(name, file, args, { timeoutMs = 240000, needNode22 = false } = {}) {
   const bin = needNode22 ? NODE22 : process.execPath;
   const cmdLine = `${relPosix(bin)} ${file} ${args.join(" ")}`.trim();
+  if (needNode22 && !bin) {
+    return { name, cmd: cmdLine, exitCode: null, stdout: "", body: "", stderr: "",
+      note: "拿不到 node22 路径：--node22 / NODE22_EXE 都没指，且启动本工具的 node <20 ⇒ 本门未执行（不是门自己红）",
+      timedOut: false, kv: () => null, num: () => null, tok: () => null, tonum: () => null, re: () => null,
+      sha8: sha8(""), stdoutBytes: 0 };
+  }
   let code = null, out = "", errtxt = "", note = "", timedOut = false;
   try {
     out = execFileSync(bin, [file, ...args], { cwd: ROOT, encoding: "utf8", maxBuffer: 1 << 26, timeout: timeoutMs, windowsHide: true, killSignal: "SIGTERM" });
