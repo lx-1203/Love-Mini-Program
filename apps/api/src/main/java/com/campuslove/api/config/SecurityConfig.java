@@ -144,9 +144,13 @@ public class SecurityConfig {
                 // 客户端该请求不携带鉴权头；内容为内嵌静态常量，无用户数据泄露风险。
                 .requestMatchers("/api/v1/config/legal").permitAll()
                 // R4-00318：微信支付回调端点 permitAll 放行。
-                // 由微信服务器调用（无 JWT），验签在端点内部完成（当前为骨架实现，
-                // 微信支付 SDK 接入前不得在生产启用——见 BillingController 类注释）。
+                // 由微信服务器调用（无 JWT）。2026-10-05 微信支付工程补齐后端点内为
+                // 真实验签（RSA-SHA256 平台证书）+ AES-256-GCM 解密 + 时间戳防重放 +
+                // IP 白名单，且 app.wechat-pay.enabled=false 时端点直接 404（配置闸）。
                 .requestMatchers("/api/v1/vip/payment-callback").permitAll()
+                // 2026-10-05：微信退款结果回调端点 permitAll 放行（同支付回调防护体系，
+                // 见 WxPayRefundNotifyController：配置闸 + IP 白名单 + 验签 + 解密）。
+                .requestMatchers("/api/v1/refund/notify").permitAll()
                 // Task 8.4.1：springdoc-openapi Swagger UI 与 OpenAPI 文档端点
                 // 仅 ADMIN 可访问，避免生产环境暴露接口结构。
                 // 开发环境可通过 SWAGGER_UI_ENABLED=true 环境变量在 application-dev.yml 中放开
