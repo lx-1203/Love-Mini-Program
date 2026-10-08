@@ -173,3 +173,24 @@ app:
   ai:
     agnes:
       api-base: ${AGNES_API_BASE:}
+  # ============ 微信支付 APIv3（2026-10-05 微信支付工程补齐） ============
+  # 缺省安全：enabled 默认 false（封存态）——下单/支付回调/退款回调端点直接 404。
+  # enabled=true 但缺任一必填项时启动 fail-fast（WxPayBootstrapChecker），拒绝半可用态。
+  # 全部敏感项由环境变量注入，禁止硬编码；merchant-private-key / platform-cert
+  # 支持「PEM 内容」或「PEM 文件路径」两种取值。
+  wechat-pay:
+    enabled: ${APP_WXPAY_ENABLED:false}
+    app-id: ${APP_WXPAY_APPID:}
+    mchid: ${APP_WXPAY_MCHID:}
+    mch-serial-no: ${APP_WXPAY_MCH_SERIAL_NO:}
+    merchant-private-key: ${APP_WXPAY_MERCHANT_PRIVATE_KEY:}
+    api-v3-key: ${APP_WXPAY_API_V3_KEY:}
+    notify-url: ${APP_WXPAY_NOTIFY_URL:}
+    refund-notify-url: ${APP_WXPAY_REFUND_NOTIFY_URL:}
+    platform-cert: ${APP_WXPAY_PLATFORM_CERT:}
+    # 回调来源 IP 白名单（逗号分隔，支持精确 IP 与 IPv4 CIDR；空=不限制但日志告警）
+    callback-ip-whitelist: ${APP_WXPAY_CALLBACK_IP_WHITELIST:}
+    connect-timeout-ms: ${APP_WXPAY_CONNECT_TIMEOUT_MS:3000}
+    read-timeout-ms: ${APP_WXPAY_READ_TIMEOUT_MS:6000}
+    order-expire-minutes: ${APP_WXPAY_ORDER_EXPIRE_MINUTES:120}
+    callback-timestamp-tolerance-seconds: ${APP_WXPAY_CALLBACK_TS_TOLERANCE_SECONDS:300}

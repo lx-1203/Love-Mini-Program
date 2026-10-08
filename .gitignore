@@ -235,3 +235,9 @@ apps/api/*.tmp
 报告/
 汇报/
 截图存档/
+
+# ---------- 泄露面清理（2026-10-05） ----------
+# 本地临时 token 文件与 Redis 持久化数据不入库
+tmp_*_token.txt
+*.aof
+appendonly.aof

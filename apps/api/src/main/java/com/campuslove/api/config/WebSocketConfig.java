@@ -93,6 +93,34 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     }
 
     /**
+     * 2026-10-05 安全收口：非 mock 环境下 Origin 未显式配置则拒绝启动（fail-fast）。
+     *
+     * <p>{@code app.websocket.allowed-origin-patterns} 为空时
+     * {@link #registerStompEndpoints} 不设置 AllowedOriginPatterns，浏览器侧等价于
+     * 不限制 Origin（跨站 WebSocket 劫持面）。real profile 生产部署必须通过
+     * {@code WEBSOCKET_ALLOWED_ORIGIN_PATTERNS} 显式注入站点来源；未配置说明部署
+     * 配置缺失，直接启动失败并给出明确提示，而不是带着全开放 Origin 上线。</p>
+     *
+     * <p>mock profile（本地演示）不受影响：application-mock.yml 提供
+     * {@code http://localhost:*,http://127.0.0.1:*} 默认值。</p>
+     */
+    @jakarta.annotation.PostConstruct
+    void failFastWhenOriginUnconfiguredInRealProfile() {
+        boolean isMockProfile = environment != null
+                && java.util.Arrays.asList(environment.getActiveProfiles()).contains("mock");
+        if (isMockProfile) {
+            return;
+        }
+        if (parseOriginPatterns(allowedOriginPatternsRaw).length == 0) {
+            throw new IllegalStateException(
+                    "WebSocket Origin 未配置（安全收口）：real 环境必须通过环境变量 "
+                            + "WEBSOCKET_ALLOWED_ORIGIN_PATTERNS（或 app.websocket.allowed-origin-patterns）"
+                            + "显式配置允许的来源，例如 https://your-domain.example；"
+                            + "本地演示请使用 mock profile。");
+        }
+    }
+
+    /**
      * 配置消息代理。
      * - /topic: 广播式消息（一对多）
      * - /queue: 点对点消息（一对一，需认证）

@@ -255,6 +255,11 @@ app:
   # 属"需额外授权"项（需认证小程序 + 正式 AppSecret），默认不启用。
   content-security:
     wechat-secret: ${CONTENT_SECURITY_WECHAT_SECRET:}
+  # 2026-10-05 合规接线：实名认证照片保留策略。
+  # 审核通过超过该天数后，定时任务（每日 04:30）删除身份证照片文件并置空记录引用，
+  # 保留审核结论与身份证号密文作为核验依据（隐私最小化）。
+  verification:
+    photo-retention-days: ${PHOTO_RETENTION_DAYS:30}
   wechat:
     # Task 0.6.3：微信小程序 AppID/AppSecret 通过环境变量注入
     # 环境变量命名规范：全大写 + 下划线（与 .env.example 保持一致）

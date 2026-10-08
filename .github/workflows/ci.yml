@@ -47,6 +47,10 @@ concurrency:
 #   7. e2e 显式指定 --config=tests/e2e/playwright.config.ts（FIN-00278：
 #      根目录无 playwright.config，原命令实际无法运行），并缓存 Playwright 浏览器
 #   8. Playwright 报告 artifact 设置 retention-days（FIN-00867）
+# - 供应链推送闸（2026-10-05）：未配置 secrets.COSIGN_PRIVATE_KEY 且仓库变量
+#   vars.ALLOW_UNSIGNED_IMAGES 未显式设为 true 时，security-scan 跳过 GHCR 推送
+#   并在显式步骤 fail（原实现 cosign 未配密钥时镜像照推不签名，属供应链缺口）；
+#   决策原因写明在 security-scan 的 job 名中
 # ============================================================
 
 jobs:
@@ -246,9 +250,16 @@ jobs:
   #   3. 镜像推送：push 事件（main/develop/tag）推送到 GHCR，PR 仅构建（infra #46）
   #   4. cosign 签名：仅当 secrets.COSIGN_PRIVATE_KEY 配置时执行（infra #45）
   # HIGH/CRITICAL 漏洞即失败
+  #
+  # 2026-10-05 供应链推送闸（修复「cosign 未配密钥时镜像照推不签名」）：
+  #   - 未配置 secrets.COSIGN_PRIVATE_KEY 且仓库变量 vars.ALLOW_UNSIGNED_IMAGES
+  #     未显式设为 true 时：跳过 GHCR 推送并在显式步骤 fail（原因写在下方 job 名里）；
+  #   - 配置了 COSIGN_PRIVATE_KEY → 推送并签名；
+  #   - 未配置密钥但显式 ALLOW_UNSIGNED_IMAGES=true → 允许未签名推送（显式决策留痕）。
+  #   本 job 名即决策说明：默认不允许未签名镜像出仓。
   # ----------------------------------------------------------------
   security-scan:
-    name: Trivy Security Scan
+    name: Trivy Security Scan（默认拒绝未签名镜像出仓：未配 COSIGN_PRIVATE_KEY 时需显式设置 vars.ALLOW_UNSIGNED_IMAGES=true 才推送，否则本 job fail）
     runs-on: ubuntu-latest
     needs:
       - api-test
@@ -256,6 +267,41 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+
+      # ---------- 阶段 0：镜像推送闸（2026-10-05）----------
+      # 判定本次运行属哪一档：sign（配了密钥，推送并签名）/
+      # allow-unsigned（未配密钥但 vars.ALLOW_UNSIGNED_IMAGES=true，显式接受未签名推送）/
+      # refuse（未配密钥且未显式放行 → 下方步骤 fail，不推送）。
+      # 注：密钥判断必须在 step 内经 env 中转——secrets 上下文不能直接用于 if 表达式。
+      - name: 镜像推送闸判定（cosign 密钥 / ALLOW_UNSIGNED_IMAGES 变量）
+        id: push-gate
+        env:
+          COSIGN_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          ALLOW_UNSIGNED: ${{ vars.ALLOW_UNSIGNED_IMAGES }}
+        run: |
+          if [ -n "$COSIGN_KEY" ]; then
+            echo "mode=sign" >> "$GITHUB_OUTPUT"
+            echo "推送闸：已配置 COSIGN_PRIVATE_KEY，将推送并签名"
+          elif [ "$ALLOW_UNSIGNED" = "true" ]; then
+            echo "mode=allow-unsigned" >> "$GITHUB_OUTPUT"
+            echo "推送闸：COSIGN_PRIVATE_KEY 未配置，但 vars.ALLOW_UNSIGNED_IMAGES=true（显式决策），允许未签名推送"
+          else
+            echo "mode=refuse" >> "$GITHUB_OUTPUT"
+            echo "推送闸：COSIGN_PRIVATE_KEY 未配置且 ALLOW_UNSIGNED_IMAGES 未显式放行 → 拒绝推送"
+          fi
+
+      # 显式 fail 步骤（决策：fail 而非 warning，让「未签名镜像可否出仓」成为显式门禁；
+      # 原因同时写在 job 名里，便于在 UI 上直接看到为什么挂）
+      - name: 拒绝推送未签名镜像（COSIGN_PRIVATE_KEY 未配置 且 vars.ALLOW_UNSIGNED_IMAGES 未显式设为 true）
+        if: ${{ steps.push-gate.outputs.mode == 'refuse' && github.event_name != 'pull_request' }}
+        run: |
+          echo "::error::按供应链安全策略拒绝推送未签名镜像到 GHCR。"
+          echo "::error::原因：secrets.COSIGN_PRIVATE_KEY 未配置，且仓库变量 ALLOW_UNSIGNED_IMAGES 未显式设为 true。"
+          echo "::error::处置二选一："
+          echo "::error::  1) Settings → Secrets and variables → Actions → Secrets 新增 COSIGN_PRIVATE_KEY / COSIGN_PASSWORD，启用 cosign 签名后推送；"
+          echo "::error::  2) Settings → Secrets and variables → Actions → Variables 新增 ALLOW_UNSIGNED_IMAGES=true，显式接受未签名推送（会留痕于本日志）。"
+          echo "::error::PR 场景只构建不推送，不受本闸影响。"
+          exit 1
 
       # ---------- 阶段 1：源码 fs 扫描（Task 24）----------
       # trivy-action 固定版本（infra #47 / FIN-00277）：禁止 @master
@@ -304,7 +350,8 @@ jobs:
             type=sha
 
       - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
+        # 2026-10-05 推送闸：refuse 档不登录 GHCR（PR 场景本就不推送）
+        if: github.event_name != 'pull_request' && steps.push-gate.outputs.mode != 'refuse'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -317,7 +364,8 @@ jobs:
           context: ./apps/api
           target: runtime
           tags: ${{ steps.meta-api.outputs.tags }}
-          push: ${{ github.event_name != 'pull_request' }}
+          # 2026-10-05 推送闸：refuse 档只构建不推送（配合上方显式 fail 步骤）
+          push: ${{ github.event_name != 'pull_request' && steps.push-gate.outputs.mode != 'refuse' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -327,7 +375,8 @@ jobs:
           context: ./apps/admin
           target: runtime
           tags: ${{ steps.meta-admin.outputs.tags }}
-          push: ${{ github.event_name != 'pull_request' }}
+          # 2026-10-05 推送闸：refuse 档只构建不推送（配合上方显式 fail 步骤）
+          push: ${{ github.event_name != 'pull_request' && steps.push-gate.outputs.mode != 'refuse' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
