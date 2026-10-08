@@ -114,6 +114,10 @@ const BANDS = {
     resultKey: "SHOWCASE_RESULT",
     gateName: "展示档自证",
     featureFlags: true,
+    // 2026-10-05 编译期剔除：showcase 路由用 #ifdef SHOWCASE（pages.json），SHOWCASE 符号
+    // 由 package.json uni-app.scripts.mp-weixin-showcase 的 define 注入，须以 `-p` 载具激活；
+    // 为空时按老命令 `--platform mp-weixin` 构造（real 档字节级行为不变）。
+    uniCustomPlatform: "mp-weixin-showcase",
   },
 };
 
@@ -221,8 +225,13 @@ if (!checkOnly) {
         console.error(`[${step}] 找不到 uni 可执行文件（node_modules/.bin/uni*），不假装构建成功`);
       } else {
         console.log(`[${step}] 用 ${uniBin}`);
+        // 2026-10-05：showcase 档走自定义平台 `-p mp-weixin-showcase`（激活 #ifdef SHOWCASE），
+        // real 档保持 `--platform mp-weixin` 老命令不变。
+        const uniArgs = band.uniCustomPlatform
+          ? `build -p ${band.uniCustomPlatform} --mode ${uniMode}`
+          : `build --platform mp-weixin --mode ${uniMode}`;
         try {
-          execSync(`"${uniBin}" build --platform mp-weixin --mode ${uniMode}`, { stdio: "inherit", cwd: clientDir, env });
+          execSync(`"${uniBin}" ${uniArgs}`, { stdio: "inherit", cwd: clientDir, env });
         } catch (e) {
           ok = false;
           console.error(`[${step}] 失败：${String(e.message).split("\n")[0]}`);

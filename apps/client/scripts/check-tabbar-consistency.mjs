@@ -34,12 +34,15 @@ function readNavigationTabs() {
   return matches.map((m) => m[1].replace(/^\//, ""));
 }
 
-/** 从 pages.json 提取 tabBar.list pagePath（JSON5：先剥离注释） */
+/** 从 pages.json 提取 tabBar.list pagePath（JSON5：先剥离注释与尾逗号） */
 function readPagesJsonTabs() {
   const src = readFileSync(pagesJsonPath, "utf-8");
+  // 2026-10-05：pages.json 是 JSONC——#ifdef 条件编译块按构建档剔除后可能留下
+  // 尾逗号（uni 侧 jsonc-parser 本就容忍），本检查同步容忍，避免严格 JSON.parse 误报
   const noComments = src
     .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/^\s*\/\/.*$/gm, "");
+    .replace(/^\s*\/\/.*$/gm, "")
+    .replace(/,\s*([\]}])/g, "$1");
   const data = JSON.parse(noComments);
   const list = data?.tabBar?.list;
   if (!Array.isArray(list)) {

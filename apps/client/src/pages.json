@@ -32,6 +32,12 @@
       "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
     }
   },
+  /*
+   * 2026-10-05 发布档减负：按需注入 lazyCodeLoading（微信基础库 2.11.1+），
+   * 仅在页面启动时注入当前页面实际引用的自定义组件与代码，减小主包注入量。
+   * requiredComponents 是微信官方推荐的发布档取值。
+   */
+  "lazyCodeLoading": "requiredComponents",
   "globalStyle": {
     "navigationStyle": "custom",
     "backgroundColor": "#EEF7F2",
@@ -275,10 +281,18 @@
           "path": "dev/index"
         },
         // #endif
-        /* 2026-08-10 主包减负迁移：showcase 全功能展示页（仅展示构建显示入口） */
+        /*
+         * 2026-10-05 编译期剔除：showcase 全功能展示页仅展示构建注册（#ifdef SHOWCASE）。
+         * SHOWCASE 条件由 package.json uni-app.scripts.mp-weixin-showcase 的 define 注入，
+         * showcase 构建需以 `uni build -p mp-weixin-showcase` 激活（build:mp-weixin:showcase
+         * 与 build-real-isolated.mjs 的 showcase 档已同步改用该载具）；
+         * 正式包（real/mock）不含该符号 → 路由在编译期剔除。
+         */
+        // #ifdef SHOWCASE
         {
           "path": "showcase/index"
-        }
+        },
+        // #endif
       ]
     },
     {

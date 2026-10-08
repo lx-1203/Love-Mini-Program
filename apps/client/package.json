@@ -24,9 +24,9 @@
     "dev:mp-weixin:debug": "node scripts/prepare-static.mjs --dev && uni -p dev-debug",
     "build:mp-weixin": "node scripts/prepare-static.mjs --dev && node scripts/profile-svg-to-png.mjs && uni build --platform mp-weixin --mode mp-weixin && node ../../scripts/verify-package-size.mjs --allow-mock",
     "build:mp-weixin:mock": "node scripts/check-mp-image-styles.mjs --strict && node scripts/prepare-static.mjs --dev && node scripts/profile-svg-to-png.mjs && uni build --platform mp-weixin --mode mp-weixin-mock && node ../../scripts/verify-package-size.mjs --allow-mock && node scripts/verify-build-features.mjs",
-    "build:mp-weixin:showcase": "node scripts/check-band-outdir-collision.mjs --mode mp-weixin-showcase && node scripts/check-mp-image-styles.mjs --strict && node scripts/prepare-static.mjs --dev && node scripts/profile-svg-to-png.mjs && uni build --platform mp-weixin --mode mp-weixin-showcase",
+    "build:mp-weixin:showcase": "node scripts/check-band-outdir-collision.mjs --mode mp-weixin-showcase && node scripts/check-mp-image-styles.mjs --strict && node scripts/prepare-static.mjs --dev && node scripts/profile-svg-to-png.mjs && uni build -p mp-weixin-showcase --mode mp-weixin-showcase",
     "build:mp-weixin:showcase:isolated": "node scripts/build-real-isolated.mjs --band showcase",
-    "build:mp-weixin:real": "node scripts/check-mp-image-styles.mjs --strict && node scripts/check-statusbar-offset.mjs && node scripts/check-tabbar-consistency.mjs && node scripts/check-project-rules.mjs && node scripts/inject-wx-appid.mjs && node scripts/prepare-static.mjs --real && node scripts/profile-svg-to-png.mjs && node ../../scripts/verify-env-release.mjs && node scripts/strip-mock-for-mp.mjs \"uni build --platform mp-weixin --mode real\" && node scripts/prune-unreferenced-static.mjs && node ../../scripts/verify-package-size.mjs",
+    "build:mp-weixin:real": "node scripts/release-chain.mjs",
     "build:mp-weixin:real:dev": "node scripts/check-mp-image-styles.mjs --strict && node scripts/check-statusbar-offset.mjs && node scripts/check-tabbar-consistency.mjs && node scripts/check-project-rules.mjs && node scripts/inject-wx-appid.mjs && node scripts/prepare-static.mjs --dev && node scripts/profile-svg-to-png.mjs && node scripts/strip-mock-for-mp.mjs \"uni build --platform mp-weixin --mode real\"",
     "build:mp-weixin:real:isolated": "node scripts/build-real-isolated.mjs",
     "build:mp-weixin:real:isolated:full": "node scripts/build-real-isolated.mjs --full-chain",
@@ -37,10 +37,10 @@
     "check:mp-image:strict": "node scripts/check-mp-image-styles.mjs --strict",
     "check:band-collision": "node scripts/check-band-outdir-collision.mjs --audit",
     "test:band-isolation": "node scripts/build-real-isolated.mjs --self-test",
-    "test": "vitest run --config vitest.config.ts",
-    "test:unit": "vitest run --config vitest.config.ts",
-    "test:coverage": "vitest run --config vitest.config.ts --coverage",
-    "test:watch": "vitest --config vitest.config.ts",
+    "test": "node scripts/run-vitest.mjs run --config vitest.config.ts",
+    "test:unit": "node scripts/run-vitest.mjs run --config vitest.config.ts",
+    "test:coverage": "node scripts/run-vitest.mjs run --config vitest.config.ts --coverage",
+    "test:watch": "node scripts/run-vitest.mjs --config vitest.config.ts",
     "test:e2e": "playwright test --config=../../tests/e2e/playwright.config.ts",
     "test:e2e:ui": "playwright test --ui --config=../../tests/e2e/playwright.config.ts",
     "test:a11y": "playwright test --grep=@a11y --config=../../tests/e2e/playwright.config.ts",
@@ -61,6 +61,15 @@
         },
         "define": {
           "DEV": true
+        }
+      },
+      "mp-weixin-showcase": {
+        "title": "展示版（Showcase，注册 SHOWCASE 条件编译符号）",
+        "env": {
+          "UNI_PLATFORM": "mp-weixin"
+        },
+        "define": {
+          "SHOWCASE": true
         }
       }
     }

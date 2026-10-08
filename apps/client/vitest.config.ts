@@ -7,6 +7,13 @@ import type { Plugin } from "vite";
  * JSONC 预处理器：在 vite 默认 JSON 解析前剥离行注释 // 与块注释 /* *\/
  * 解决 pages.json 等含注释 JSON 文件被 import 时抛出 "invalid JSON syntax" 的问题
  * （uni-app 的 pages.json 惯例允许注释，但标准 JSON.parse 不允许）
+ *
+ * 2026-10-07 补充：同时收敛尾逗号。pages.json 的条件编译块（// #ifdef … // #endif）
+ * 惯例允许「块尾带逗号」（如 showcase 条目 `,` 后紧跟 #endif，uni 编译期剔除后由
+ * uni 解析器容错）；但本插件只剥注释，剥完后尾逗号直接顶到 ]/} 前仍会被
+ * vite:json 严格解析拒绝（MP-R7 轮单测门禁 custom-tab-bar / navigation-config /
+ * circles-page / nearby-page 四个套件因此挂）。这里在注释剥离后移除 }/] 前的尾逗号，
+ * 与 uni 解析器的容错口径对齐；对本就合法的 JSON 是无操作。
  */
 function jsoncStripPlugin(): Plugin {
   return {
@@ -18,7 +25,8 @@ function jsoncStripPlugin(): Plugin {
       // 注意：用单引号避免与 JSON 内的双引号冲突
       const stripped = code
         .replace(/\/\*[\s\S]*?\*\//g, "")
-        .replace(/(^|[^:])\/\/.*$/gm, "$1");
+        .replace(/(^|[^:])\/\/.*$/gm, "$1")
+        .replace(/,(\s*[}\]])/g, "$1");
       return { code: stripped, map: null };
     },
   };
