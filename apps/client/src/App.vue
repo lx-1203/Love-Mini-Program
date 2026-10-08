@@ -90,6 +90,11 @@ onLaunch(() => {
     //   4. 用户点"查看协议"→ 跳转协议页后回到 modal 继续选择
     //   5. 用户关闭/拒绝 → resolve({ event: 'disagree' })，由微信决定后续行为
     // 兼容性：H5/APP 端 wx 对象可能不存在，需条件编译包裹。
+    // 2026-10-05 合规接线：manifest.json 已开启 __usePrivacyCheck__（去重为一处），
+    // 本回调负责弹自有隐私说明 + 同意后 resolve。注意：uni.onNeedPrivacyAuthorization
+    // 仅 mp-weixin（基础库 ≥2.32.3）支持，非 MP-WEIXIN 平台由上方条件编译剔除；
+    // 平台侧《用户隐私保护指引》仍需在微信公众平台后台配置（运营材料，见
+    // docs/wechat-submission-materials-checklist.md），代码内处理不能替代后台配置。
     // #ifdef MP-WEIXIN
     try {
       // 通过 unknown 收敛替代 `as any`，避免 any 类型污染；

@@ -41,11 +41,16 @@
     },
     "requiredPrivateInfos": ["getLocation"],
     /*
-     * 2026-08-29：关闭开发者工具隐私弹窗模拟。
-     * 真机的隐私授权由微信平台统一处理（上传时该开关仅影响开发工具模拟行为）；
-     * 开启会导致自动化回归被「位置授权弹窗」阻塞（本次审查实测）。
+     * 2026-10-05 合规接线：开启隐私接口检查（__usePrivacyCheck__: true）。
+     * - 授权回调处理：App.vue onLaunch 已通过 wx.onNeedPrivacyAuthorization
+     *   （#ifdef MP-WEIXIN 条件编译）注册自有隐私说明弹窗，用户同意后 resolve('agree')；
+     * - 平台侧《用户隐私保护指引》仍需在微信公众平台后台配置（运营材料，
+     *   见 docs/wechat-submission-materials-checklist.md），代码无法替代；
+     * - 注意：开启后开发者工具会真实弹隐私授权弹窗，自动化回归若被
+     *   「位置授权弹窗」阻塞，需在脚本中先行处理授权（原 2026-08-29 关闭决策由本项取代）。
+     * 原两处重复声明（本位置 + setting 附近）已去重为这一处。
      */
-    "__usePrivacyCheck__": false,
+    "__usePrivacyCheck__": true,
     /*
      * ============================================================
      *  AppID 状态（P1.18 / 2026-07-28 统一）
@@ -75,7 +80,6 @@
       "es6": true
     },
     "usingComponents": true,
-    "__usePrivacyCheck__": false,
     "darkmode": true,
     "themeLocation": "theme.json"
     /*
