@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { resolveMediaUrl } from "@/utils/media";
 import type { components } from "../services/generated/api-types";
-import type { ProfileStats } from "../services/generated/api-types-supplement";
+import type { ProfileStats, UpdateBasicProfileRequest } from "../services/generated/api-types-supplement";
 // 修复 no-duplicate-imports：合并 ../services/api 的重复 import
 import { clientApi, type UniUploadFileLike } from "../services/api";
 import { IMAGE_PATHS } from "../config/images";
@@ -15,7 +15,9 @@ import { request } from "../services/http";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
 // 2026-08-10 切换提速：个人资料 60s TTL 缓存（避免每次切「我的」tab 全量重拉 5 个请求）
-import { isCacheFresh, setCachedValue } from "../utils/cache-ttl";
+import { isCacheFresh, setCachedValue, removeCache } from "../utils/cache-ttl";
+// MP-R7-EDITPAGE：编辑资料页回显映射层（身份回退读取本地持久化身份）
+import { loadIdentity, type UserIdentity } from "../config/identity";
 
 /** 个人资料新鲜度窗口（60s） */
 const PROFILE_TTL_MS = 60_000;
@@ -75,6 +77,76 @@ export interface MyDailySummary {
   comments: number;
   createdAt: string;
   auditStatus: string;
+}
+
+/* ========== MP-R7-EDITPAGE：编辑资料页回显映射层 ========== */
+
+/**
+ * 编辑资料页（subpackages/setup/profile/index.vue?entry=edit）回显视图。
+ *
+ * 与页面表单/picker 一一对应：进入编辑模式时全部字段必须显示服务端已有值，
+ * 不允许任何字段缺映射而显示空（PFI15 审计线索：编辑模式回显从未被帧级验证）。
+ */
+export interface EditProfileEcho {
+  nickname: string;
+  bio: string;
+  grade: string;
+  pronouns: string;
+  /** 身高（cm）；服务端未填时为 undefined（表单保持「请选择」占位） */
+  height?: number;
+  /** 学历枚举；未填时为 undefined */
+  educationLevel?: string;
+  /** 感情状态枚举；未填时为 undefined */
+  relationshipStatus?: string;
+  hometownProvince: string;
+  hometownCity: string;
+  futureCity: string;
+  expectedPartner: string;
+  /** 头像（GET /v1/profile/basic 的 avatarUrl，存于 users.avatar_url） */
+  avatarUrl: string;
+  /** 照片墙 URL 数组（稠密，1-6 槽按序占位） */
+  photoGallery: string[];
+  /** 身份（student/non_student，推导规则见 mapBasicProfileToEditForm 注释） */
+  identity: UserIdentity;
+}
+
+/**
+ * 从 GET /v1/profile/basic 响应映射编辑回显视图（纯函数，vitest 直测）。
+ *
+ * 字段对照源：后端 ProfileController.BasicProfileView
+ * （apps/api/.../profile/ProfileController.java，含 height/educationLevel/
+ * relationshipStatus/hometownProvince/hometownCity/futureCity/expectedPartner/
+ * photoGallery/avatarUrl 等全部字段）。
+ *
+ * 身份（student/non_student）推导——服务端 BasicProfileView 无显式 identity 字段
+ * （identity.ts 约定：后端以校园身份信号区分），按以下优先级：
+ * 1. 服务端校园信号（verificationBadgeLevel === "school" 或 session.campusVerified）→ "student"；
+ * 2. 否则回退本地持久化身份（fallbacks.localIdentity / loadIdentity()）。
+ */
+export function mapBasicProfileToEditForm(
+  basic: Schemas["BasicProfile"] | null | undefined,
+  fallbacks: { localIdentity?: UserIdentity; campusVerified?: boolean } = {}
+): EditProfileEcho {
+  const b = (basic ?? {}) as Schemas["BasicProfile"] & { avatarUrl?: string | null };
+  const hasCampusIdentity =
+    b.verificationBadgeLevel === "school" || fallbacks.campusVerified === true;
+  return {
+    nickname: b.nickname ?? "",
+    bio: b.bio ?? "",
+    grade: b.grade ?? "",
+    pronouns: b.pronouns ?? "",
+    height: typeof b.height === "number" ? b.height : undefined,
+    educationLevel: typeof b.educationLevel === "string" && b.educationLevel ? b.educationLevel : undefined,
+    relationshipStatus:
+      typeof b.relationshipStatus === "string" && b.relationshipStatus ? b.relationshipStatus : undefined,
+    hometownProvince: b.hometownProvince ?? "",
+    hometownCity: b.hometownCity ?? "",
+    futureCity: b.futureCity ?? "",
+    expectedPartner: b.expectedPartner ?? "",
+    avatarUrl: typeof b.avatarUrl === "string" ? b.avatarUrl : "",
+    photoGallery: Array.isArray(b.photoGallery) ? [...b.photoGallery] : [],
+    identity: hasCampusIdentity ? "student" : (fallbacks.localIdentity ?? loadIdentity()),
+  };
 }
 
 /* ========== Mock 数据 ========== */
@@ -428,6 +500,76 @@ export const useProfileStore = defineStore("profile", {
     },
 
     /**
+     * MP-R7-EDITPAGE：为编辑资料页拉取并映射回显数据。
+     *
+     * 与 load() 的区别（编辑模式回显可靠性的两个关键点）：
+     * 1. 只请求 GET /v1/profile/basic 一个端点——load() 用 Promise.all 同时拉
+     *    basic/campus/schedule/stats 四端点，任一失败整个 catch，basicProfile 保持
+     *    null，编辑页全部字段回显为空（PFI15「编辑模式回显未被验证」的根因之一）；
+     * 2. 每次都真实请求，不受 60s TTL 缓存跳过影响——用户可能在别处改过资料，
+     *    编辑页必须显示服务端当前值。
+     *
+     * 成功后同步更新 store 状态（basicProfile/avatarUrl/photoGallery），
+     * 使我的页与编辑页数据一致。失败时抛出，由页面决定降级（保持可编辑）。
+     *
+     * @returns 映射后的编辑回显视图（见 mapBasicProfileToEditForm）
+     */
+    async loadBasicForEdit(): Promise<EditProfileEcho> {
+      this.errorMessage = null;
+      if (useMock()) {
+        // mock：复用 load() 的 mock 分支回填演示数据——fixtures.getBasicProfile()
+        // 仅返回 4 个基础字段（扩展字段在 extendedBasicProfile 且不合并返回），
+        // 直接取单端点会把照片墙/头像演示态清空
+        await this.load();
+        return mapBasicProfileToEditForm(this.basicProfile, {
+          localIdentity: loadIdentity(),
+          campusVerified: Boolean(useSessionStore().userSession?.campusVerified),
+        });
+      }
+      const basic = await clientApi.getBasicProfile();
+      this.basicProfile = basic;
+      // 头像/照片墙与 load() 同口径回写（BasicProfileView.avatarUrl 存于 users.avatar_url）
+      const basicRaw = basic as { avatarUrl?: string } | null;
+      this.avatarUrl = typeof basicRaw?.avatarUrl === "string" ? basicRaw.avatarUrl : this.avatarUrl;
+      this.photoGallery = Array.isArray(basic?.photoGallery) ? [...basic.photoGallery] : [];
+      const session = useSessionStore();
+      return mapBasicProfileToEditForm(basic, {
+        localIdentity: loadIdentity(),
+        campusVerified: Boolean(session.userSession?.campusVerified),
+      });
+    },
+
+    /**
+     * MP-R7-EDITPAGE：编辑资料页保存链路（PUT /v1/profile/basic）。
+     *
+     * 成功（PUT 正常返回）后做两件本地同步，保证「保存成功」后全应用一致：
+     * 1. 把 payload 合并进 basicProfile 视图——否则我的页 onShow 走 60s TTL
+     *    缓存直接跳过重拉，用户保存昵称后返回我的页仍看到旧值（误以为保存失败）；
+     * 2. 失效 "profile:load" TTL 缓存——下一次 load() 必然真实请求服务端。
+     *
+     * PUT 失败时抛出（页面 catch 提示「保存失败」）；会话刷新由页面单独
+     * try/catch 静默降级（MP-R1-SETUPPROFILE-003：刷新失败不误报保存失败）。
+     *
+     * @param payload - 已 diff 的更新请求体（必填 4 字段全量携带）
+     */
+    async saveBasicUpdate(payload: UpdateBasicProfileRequest): Promise<void> {
+      this.errorMessage = null;
+      try {
+        await clientApi.updateBasicProfile(payload);
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.saveBasicFailed");
+        throw error;
+      }
+      if (this.basicProfile) {
+        this.basicProfile = {
+          ...this.basicProfile,
+          ...payload,
+        } as typeof this.basicProfile;
+      }
+      removeCache("profile:load");
+    },
+
+    /**
      * SubTask 1.4.1：拉取当前用户的动态列表（个人主页"我的动态"模块）。
      *
      * <p>实现策略：</p>
@@ -676,7 +818,17 @@ export const useProfileStore = defineStore("profile", {
       this.errorMessage = null;
       try {
         const result = await clientApi.uploadProfileBackground(file);
-        const url = result.url;
+        // MP-R7-EDITPAGE-2：与 uploadPhotoAtIndex 同类防御——real 后端
+        // POST /profile/background 返回整份 BasicProfileView（背景 URL 在
+        // profileBackgroundUrl 字段），仅 mock fixtures 返回 {url}。
+        const view = result as unknown as {
+          url?: string;
+          profileBackgroundUrl?: string | null;
+        } | null;
+        const url =
+          (typeof view?.url === "string" && view.url) ||
+          (typeof view?.profileBackgroundUrl === "string" && view.profileBackgroundUrl) ||
+          "";
         // 同步更新 sessionStore.profileBackgroundUrl（同时持久化到本地存储）
         const sessionStore = useSessionStore();
         sessionStore.setProfileBackgroundUrl(url);
@@ -833,21 +985,50 @@ export const useProfileStore = defineStore("profile", {
       this.errorMessage = null;
       try {
         const result = await clientApi.uploadProfilePhoto(file, index);
-        const url = result.url;
-        const next = [...this.photoGallery];
-        if (index < next.length) {
-          // 替换现有位置
-          next[index] = url;
-        } else if (index === next.length) {
-          // 追加到末尾
-          next.push(url);
+        // MP-R7-EDITPAGE-2（评审 medium：上传后照片墙即时回显缺失）：
+        // real 后端 POST /profile/photos 返回的是写入后的整份 BasicProfileView
+        // （后端 ProfileController.uploadPhoto → BasicProfileView，含 photoGallery/
+        // photoGalleryItems），并非 {url}——旧实现 result.url 恒 undefined，本地
+        // 照片墙该槽被写入 undefined，页面渲染回「+」，直到重进页面重拉才显示
+        // （评审 chain 证据：上传后即时缺图、chain-06 重进才出现）。此处兼容三种
+        // 响应形态取回显 URL：{url}（mock fixtures）、photoGallery[index]、
+        // photoGalleryItems[index].url。
+        const view = result as unknown as {
+          url?: string;
+          photoGallery?: Array<string | null | undefined>;
+          photoGalleryItems?: Array<{ url?: string } | null | undefined>;
+        } | null;
+        const serverGallery = Array.isArray(view?.photoGallery)
+          ? view.photoGallery.filter((u): u is string => typeof u === "string" && u.length > 0)
+          : null;
+        const url =
+          (typeof view?.url === "string" && view.url) ||
+          (serverGallery ? serverGallery[index] : undefined) ||
+          (Array.isArray(view?.photoGalleryItems) ? view.photoGalleryItems[index]?.url : undefined) ||
+          "";
+
+        let next: string[];
+        if (serverGallery && serverGallery.length > 0) {
+          // 响应即写入后的完整视图 → 照片墙整面权威同步（本次上传已含其中），
+          // 同时天然修复本地数组的 undefined 空洞
+          next = serverGallery;
         } else {
-          // index > next.length：跳过空位追加（不应出现在 UI 流程中）
-          next.push(url);
+          // mock / 兜底：按稠密数组语义本地合并，且仅在取到合法 URL 时写入
+          // （杜绝旧实现把 undefined 写进槽位导致回显丢失）
+          next = [...this.photoGallery];
+          if (url) {
+            if (index < next.length) {
+              // 替换现有位置
+              next[index] = url;
+            } else {
+              // 追加到末尾（index === 当前长度；越界跳槽场景 UI 层已收敛为末位）
+              next.push(url);
+            }
+          }
         }
         this.photoGallery = next;
         // 2026-08-09：同步 basicProfile 与审核项（新上传默认 pending，待审核）
-        this.syncBasicProfileGallery(next, { url, auditStatus: "pending", auditRemark: null });
+        this.syncBasicProfileGallery(next, url ? { url, auditStatus: "pending", auditRemark: null } : null);
         return url;
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : t("storeErrors.profile.uploadPhotoFailed");

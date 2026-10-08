@@ -16,10 +16,20 @@
  * - 身份分流（student → 校园认证；non_student → 时间安排）
  * - 提交锁 + 必填 4 字段全量携带 + 可选字段 diff 语义（PUT /profile/basic 契约）
  *
- * 双模式（2026-09-14 流程修复）：
+ * 双模式（2026-09-14 流程修复；2026-10-07 MP-R7-EDITPAGE 再收敛）：
  * - wizard（默认，注册向导）：显示 SetupProgress，保存后 redirectTo 下一步
- * - edit（?entry=edit，从「我的」进入）：隐藏进度条，保存后 navigateBack 返回
+ * - edit（?entry=edit，从「我的」/设置/任务页进入）：隐藏进度条，保存后 navigateBack 返回
  *   ——修复原实现编辑保存后被误投递到注册向导下一身份步骤的流程断裂。
+ *
+ * MP-R7-EDITPAGE（2026-10-07）本轮收敛（用户反馈「编辑页还是有问题」）：
+ * - 回显：编辑模式改走 store.loadBasicForEdit()（仅 GET /v1/profile/basic 单端点，
+ *   不受 load() 四端点 Promise.all 连坐失败与 60s TTL 跳过影响），经
+ *   mapBasicProfileToEditForm 统一映射全部字段（含身份/头像/照片墙）后落表单，
+ *   与向导模式共用同一 applyEditEcho——两模式呈现与交互完全同款；
+ * - 保存：走 store.saveBasicUpdate()（PUT 成功即保存成功，同步 basicProfile 视图
+ *   + 失效 60s TTL，修复保存后返回我的页看到旧资料的假失败）；
+ * - MP-R1-SETUPPROFILE-003：session 刷新移出保存主 try，刷新失败静默降级，
+ *   不再误报「保存失败」诱导重复提交。
  */
 import { computed, onMounted, reactive, ref, onUnmounted } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
@@ -27,9 +37,9 @@ import { useI18n } from "vue-i18n";
 import SetupProgress from "../../../components/setup/SetupProgress.vue";
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../../constants/routes";
 import { IMAGE_PATHS } from "../../../config/images";
-import { useProfileStore } from "../../../stores/profile";
+import { useProfileStore, mapBasicProfileToEditForm, type EditProfileEcho } from "../../../stores/profile";
 import { useSessionStore } from "../../../stores/session";
-import { clientApi, type UniUploadFileLike } from "../../../services/api";
+import { type UniUploadFileLike } from "../../../services/api";
 import { lightHaptic, successHaptic } from "../../../utils/haptic";
 import type { UpdateBasicProfileRequest } from "../../../services/generated/api-types-supplement";
 // MP-R5-EDITPAGE：头像 + 照片墙（复用我的页同款链路，上传落 media_asset → 后台可审）
@@ -45,9 +55,22 @@ import {
 // y=0 布局，固定定位的返回键/标题组（88rpx/208rpx）在状态栏 >44px 机型压入系统
 // 时间/电量区；与注册页 MP-R2-PAGES-REGISTER-INDEX-002 修复同构
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+// MP-R7-EDITPAGE-3：hero 高度内联兜底（wxss calc 编译态翻车的保险丝，见样式区注释）
+import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
+import { getWindowWidth } from "../../../compat";
 
 const ICONS = IMAGE_PATHS.REGISTER_ICONS;
 const { styleVars: menuStyleVars } = useMenuButtonRect();
+const sbh = useStatusBarHeight();
+/** hero 高度内联值（px）：480rpx 设计稿值按窗宽换算 + 状态栏实际高度。
+ *  状态栏为 0（异常环境）时返回空串，回落到样式区的 calc(480rpx + var(--statusbar))。
+ *  内联 style 由运行时 CSSOM 求值、不经过 wxss 编译器，保证骑压几何不随编译态漂移。 */
+const heroStyle = computed<string>(() => {
+  const sb = Number(sbh.value) || 0;
+  if (sb <= 0) return "";
+  const base = (480 / 750) * (getWindowWidth() || 375);
+  return `height: ${Math.round((base + sb) * 100) / 100}px;`;
+});
 
 const profileStore = useProfileStore();
 const sessionStore = useSessionStore();
@@ -470,50 +493,62 @@ function onRelationshipStatusChange(e: { detail: { value: number } }): void {
   }
 }
 
-onMounted(async () => {
-  try {
-    await profileStore.load();
-  } catch (_e) {
-    // 资料加载失败不阻塞页面——表单保持空值可编辑，用户仍可保存
-  }
-  const basic = profileStore.basicProfile;
-  if (basic) {
-    form.nickname = basic.nickname ?? "";
-    form.bio = basic.bio ?? "";
-    form.grade = basic.grade ?? "";
-    form.pronouns = basic.pronouns ?? "";
-    // 2026-09-12 修复（PUT /profile/basic 400）：后端为全量替换语义，
-    // 必填 4 字段每次都要随请求携带；height/学历/感情状态同样从既有资料回填
-    if (typeof basic.height === "number") {
-      form.height = basic.height;
-    }
-    if (basic.educationLevel) {
-      form.educationLevel = basic.educationLevel;
-    }
-    if (basic.relationshipStatus) {
-      form.relationshipStatus = basic.relationshipStatus;
-    }
-  }
+/**
+ * MP-R7-EDITPAGE：把回显视图落到表单（编辑/向导两模式共用同一映射与同一呈现）。
+ * 头像与照片墙由 store（avatarUrl/photoGallery）驱动，此处只填文本字段与 picker 回显。
+ */
+function applyEditEcho(echo: EditProfileEcho): void {
+  form.nickname = echo.nickname;
+  form.bio = echo.bio;
+  form.grade = echo.grade;
+  form.pronouns = echo.pronouns;
+  form.height = echo.height;
+  form.educationLevel = echo.educationLevel;
+  form.relationshipStatus = echo.relationshipStatus;
   // R4-00043：籍贯/未来城市回填用户既有值（编辑语义，而非校区推导）
-  form.hometownProvince = basic?.hometownProvince ?? "";
-  form.hometownCity = basic?.hometownCity ?? "";
-  form.futureCity = basic?.futureCity ?? "";
-  // 同步初始 picker 回显文案
-  if (form.educationLevel) {
-    const found = educationLevelOptions.value.find((o) => o.value === form.educationLevel);
-    if (found) educationLevelLabel.value = found.label;
+  form.hometownProvince = echo.hometownProvince;
+  form.hometownCity = echo.hometownCity;
+  form.futureCity = echo.futureCity;
+  form.expectedPartner = echo.expectedPartner;
+  // 同步 picker 回显文案（服务端值不在选项表时原样展示，选中后替换）
+  if (echo.educationLevel) {
+    const found = educationLevelOptions.value.find((o) => o.value === echo.educationLevel);
+    educationLevelLabel.value = found ? found.label : echo.educationLevel;
   }
-  if (form.relationshipStatus) {
-    const found = relationshipStatusOptions.value.find((o) => o.value === form.relationshipStatus);
-    if (found) relationshipStatusLabel.value = found.label;
+  if (echo.relationshipStatus) {
+    const found = relationshipStatusOptions.value.find((o) => o.value === echo.relationshipStatus);
+    relationshipStatusLabel.value = found ? found.label : echo.relationshipStatus;
   }
-  if (form.height !== undefined) {
-    heightLabel.value = `${form.height}cm`;
+  heightLabel.value = echo.height !== undefined ? `${echo.height}cm` : "";
+  gradeLabel.value = echo.grade;
+  // 身份回显（服务端校园信号优先，回退本地持久化身份）；与本地不一致时持久化对齐
+  if (echo.identity !== identity.value) {
+    identity.value = echo.identity;
+    saveIdentity(echo.identity);
   }
-  if (form.grade) {
-    gradeLabel.value = form.grade;
+}
+
+onMounted(async () => {
+  if (entryMode.value === "edit") {
+    // MP-R7-EDITPAGE：编辑模式只拉 GET /v1/profile/basic 单端点（不受 60s TTL
+    // 跳过、不受 load() 四端点 Promise.all 任一失败连坐影响），保证回显可靠
+    try {
+      applyEditEcho(await profileStore.loadBasicForEdit());
+    } catch (_e) {
+      // 回显失败不阻塞编辑——回退用 store 既有状态映射，表单保持可编辑可保存
+      applyEditEcho(mapBasicProfileToEditForm(profileStore.basicProfile));
+    }
+  } else {
+    // 向导模式维持原链路：load() 预热 campus/schedule/stats（后续向导步骤复用）
+    try {
+      await profileStore.load();
+    } catch (_e) {
+      // 资料加载失败不阻塞页面——表单保持空值可编辑，用户仍可保存
+    }
+    applyEditEcho(
+      mapBasicProfileToEditForm(profileStore.basicProfile, { localIdentity: identity.value }),
+    );
   }
-  form.expectedPartner = basic?.expectedPartner ?? "";
 
   initialFormSnapshot = {
     ...form,
@@ -613,9 +648,18 @@ async function save() {
     if (diff.futureCity !== undefined) payload.futureCity = diff.futureCity;
     if (diff.expectedPartner !== undefined) payload.expectedPartner = diff.expectedPartner;
 
-    await clientApi.updateBasicProfile(payload);
-    // 同步刷新 session，更新 profileCompleted 状态
-    await sessionStore.refreshSession();
+    // MP-R7-EDITPAGE：保存成功以 PUT /v1/profile/basic 正常返回为准；
+    // store 内同步 basicProfile 视图并失效 60s TTL 缓存——否则返回我的页时
+    // onShow 命中缓存跳过重拉，用户看到旧资料误以为保存失败
+    await profileStore.saveBasicUpdate(payload);
+    // MP-R1-SETUPPROFILE-003：会话刷新与保存主链路解耦——PUT 已成功时
+    // 刷新失败（弱网）不得走 catch 误报「保存失败」诱导重复提交；
+    // 静默降级，profileCompleted 等会话态在下次进入页面时自愈
+    try {
+      await sessionStore.refreshSession();
+    } catch (refreshError) {
+      console.warn("[setup/profile] 保存成功但刷新会话失败（已静默降级）:", refreshError);
+    }
     successHaptic();
     uni.showToast({ title: t("setup.profile.saveSuccess"), icon: "success" });
     navigateAfterSave();
@@ -630,8 +674,8 @@ async function save() {
 
 <template>
   <view class="edit-page" :style="menuStyleVars">
-    <!-- 页头：注册页同款插图全出血 + 底部渐隐 -->
-    <view class="hero">
+    <!-- 页头：注册页同款插图全出血 + 底部渐隐；heroStyle=状态栏高度内联兜底（MP-R7-EDITPAGE-3） -->
+    <view class="hero" :style="heroStyle">
       <image class="hero__img" :src="IMAGE_PATHS.REGISTER.HERO" mode="aspectFill" alt="" />
       <view class="hero__fade" />
       <!-- 返回：白底 78% 圆形 + 背景模糊 -->
@@ -1039,7 +1083,19 @@ async function save() {
 .hero {
   position: relative;
   width: 750rpx;
-  height: 480rpx;
+  /* MP-R7-EDITPAGE-2（评审 medium：hero 副标题被表单卡裁切）：标题组 top 随状态栏
+     下移（--statusbar，见 .hero__txt），而表单卡骑压缘 = hero 高度 − 64rpx。hero 若
+     固定 480rpx，卡顶恒为 416rpx；状态栏 >66rpx（33px，真机普遍 44-59px）时副标题
+     底缘（statusbar+约350rpx）越过卡顶被裁。hero 随状态栏同步增高后，卡顶 =
+     statusbar+416rpx，任意状态栏高度下标题组与卡保持 ≥66rpx 呼吸位。
+     MP-R7-EDITPAGE-3（2026-10-07 复验钉死）：这条 calc 在 IDE(2.02.2608040) 模拟器上
+     出现过「编译装载后 height 未计入 --statusbar（hero 恒 480rpx）→ 副标题被卡裁切」
+     的旧几何渲染（评审复判 chain-02b/chain-06 即此形态）；同一条 calc 在清编译态后的
+     refresh 里实测生效（hero=296.6px=480rpx+47px）。为不依赖该易翻车的编译路径，
+     页面另以**内联 style 绑定像素值**兜底（见模板 .hero 的 :style="heroStyle"，与
+     AppShell.vue 状态栏占位的 inline 绑定同模式）——内联样式由运行时 CSSOM 求值，
+     不经过 wxss 编译器，两条路径任一生效即为正确几何。 */
+  height: calc(480rpx + var(--statusbar, env(safe-area-inset-top)));
 }
 
 .hero__img {

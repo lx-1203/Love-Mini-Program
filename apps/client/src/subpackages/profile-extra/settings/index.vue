@@ -94,7 +94,11 @@ onMounted(() => {
 /** 跳转到资料编辑 */
 function goToProfileSetup() {
   lightHaptic();
-  uni.navigateTo({ url: SUBPACKAGE_ROUTES.SETUP_PROGRESS.PROFILE } );
+  // MP-R7-EDITPAGE：设置页「编辑资料」与我的页/任务页入口同语义——必须带
+  // entry=edit 进编辑模式。原裸路径进向导模式：卡片显示「第 n/4 步」进度条、
+  // 按钮为「保存并继续」，保存后被 redirectTo 进注册向导下一步（校园认证/
+  // 时间安排），编辑资料的用户被误投递进注册流程，流程断裂。
+  uni.navigateTo({ url: `${SUBPACKAGE_ROUTES.SETUP_PROGRESS.PROFILE}?entry=edit` });
 }
 
 /**

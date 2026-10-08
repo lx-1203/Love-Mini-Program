@@ -53,7 +53,13 @@ vi.mock("../../services/api-error", () => ({
   AppApiError: class AppApiError extends Error {},
 }));
 
-vi.mock("../../config/env", () => ({
+// MP-R7 轮修复：改为部分 mock。原窄 mock 仅提供 isDev/isMockMode，而注册页经
+// services/config → services/http → services/env 引入 `export const appEnv =
+// clientEnv`（services/env.ts:31），模块求值期读取 clientEnv 时因 mock 缺该导出
+// 整套件挂（"No clientEnv export is defined on the config/env mock"）。
+// 用 importOriginal 保留真实导出，仅覆盖本用例关心的两个开关。
+vi.mock("../../config/env", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   isDev: false,
   isMockMode: () => true,
 }));
