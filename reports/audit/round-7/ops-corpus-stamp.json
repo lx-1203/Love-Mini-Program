@@ -1,12 +1,12 @@
 {
  "kind": "ops-corpus-stamp",
- "at": "2026-09-29T05:05:26.125Z",
- "gitSha": "83fd47a7",
+ "at": "2026-10-06T10:52:34.581Z",
+ "gitSha": "c088e2d6",
  "opsDir": "reports/audit/round-6/ops",
  "files": 24,
  "cases": 1107,
- "canonSha": "0fef00d141e774e859b983ec746b2c4790618505183aa7fa16930e3a8e53116a",
- "byteSha": "350987d5e4fdc65c50b1a21d7402284e57325161024c314f30438bd9cd56c268",
+ "canonSha": "4afc5c3d674fca9a86967286abade33f867551dcd2f2f6ca74fa28580ec48228",
+ "byteSha": "9f111e4df8892596ee12043b5fe3e1a5aa3ef84e4f26470985cd7bb1f78a73de",
  "perFile": [
   {
    "file": "PAGES-DISCOVER-INDEX.json",
@@ -67,8 +67,8 @@
   {
    "file": "SUBPACKAGES-CAMPUS-CAMPUS-HUB.json",
    "n": 27,
-   "canon": "de427444b39d84c62a6ee64cdc841242d4989a31fe7c8489acac960561fba015",
-   "bytes": "81cb0bc90ffc77e57d72c73bde32c51421688948c09b4aa830904c2f9e396f63",
+   "canon": "882a4c51791ac18a9152214dfb6a6f9b672722110d86b865c394c4425e619137",
+   "bytes": "855507137e64832a45a7635cf97c890e72550fa7a10da90e48e712e82d3626f3",
    "ids": "bacbe3a2305b81e9615f158fbf7a9c1fa35bb5566b7bd2ea56b632c386702d9e"
   },
   {
@@ -172,8 +172,8 @@
   {
    "file": "次要22.json",
    "n": 78,
-   "canon": "808c998445507e91a6a6cbde60af04da2d6f5ccd53c5e4263e46800e3e02eef2",
-   "bytes": "176fc08d86143de9c61669291e56732284e36d86d8e943efbe4004a833651bb8",
+   "canon": "a9f25e03428c66743e30f7bab68e926b1f6581b134dfd28e1760ff042d0edcd8",
+   "bytes": "948516773640fbc19bb38b3fa12984a374911a78f7a9fe888ce914457ba2c5d4",
    "ids": "c6ac0a3c6460bde9cbd186a4c44b57ec098030da8fa47c38abaee0200f9aaf57"
   }
  ],

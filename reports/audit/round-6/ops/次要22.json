@@ -1119,7 +1119,11 @@
     "B"
    ],
    "identitiesFrom": "tag-ops-identity-scope.mjs",
-   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/bills → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+   "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/vip/bills → pages/profile/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态",
+   "tapTarget": ".nav-bar__back",
+   "tapTargetFrom": "cellplan-round7-vb03-showcase.json",
+   "tapTargetEvidence": "产物逐字命中：D:/6/恋爱小程序/apps/client/dist/build/mp-weixin，D:/6/恋爱小程序/apps/client/dist/build/mp-weixin-real，D:/6/恋爱小程序/apps/client/dist/build/mp-weixin-showcase",
+   "tapTargetConfirmedAt": "apps/client/src/subpackages/vip/bills.vue:174 class=\"nav-bar__back press-feedback\" @tap=\"goBack\""
   },
   {
    "id": "VB04",

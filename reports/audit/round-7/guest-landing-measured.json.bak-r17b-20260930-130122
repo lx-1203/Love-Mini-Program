@@ -1,10 +1,10 @@
 {
  "mode": "measure",
- "generatedAt": "2026-10-06T10:46:08.778Z",
+ "generatedAt": "2026-09-30T04:53:32.315Z",
  "project": "apps/client/dist/build/mp-weixin-real",
  "band": "real@f0677920",
  "guestCapable": true,
- "repeat": 2,
+ "repeat": 1,
  "rows": [
   {
    "groupKey": "pages/nearby/index → pages/login/index",
@@ -25,25 +25,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:46:54.080Z",
+   "measuredAt": "2026-09-30T04:36:57.746Z",
    "band": "real@f0677920"
   },
   {
@@ -55,7 +40,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -64,26 +49,11 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:47:38.524Z",
+   "measuredAt": "2026-09-30T04:37:37.147Z",
    "band": "real@f0677920"
   },
   {
@@ -95,7 +65,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -104,26 +74,11 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:48:24.289Z",
+   "measuredAt": "2026-09-30T04:38:19.740Z",
    "band": "real@f0677920"
   },
   {
@@ -135,7 +90,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -144,26 +99,11 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:49:11.696Z",
+   "measuredAt": "2026-09-30T04:39:05.811Z",
    "band": "real@f0677920"
   },
   {
@@ -175,7 +115,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -184,66 +124,36 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:49:56.243Z",
+   "measuredAt": "2026-09-30T04:39:47.579Z",
    "band": "real@f0677920"
   },
   {
    "groupKey": "subpackages/discover-extra/discover/match-success → pages/login/index",
    "guardCaseId": "GG-discover-extra-discover-match-success",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/discover-extra/discover/match-success",
    "identity": "not-logged-in",
    "markers": {
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/discover-extra/discover/match-success",
      "identity": "not-logged-in",
      "markers": {
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:50:44.200Z",
+   "measuredAt": "2026-09-30T04:40:28.337Z",
    "band": "real@f0677920"
   },
   {
@@ -265,25 +175,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:51:30.909Z",
+   "measuredAt": "2026-09-30T04:41:00.122Z",
    "band": "real@f0677920"
   },
   {
@@ -295,7 +190,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -304,66 +199,36 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:52:16.503Z",
+   "measuredAt": "2026-09-30T04:41:41.046Z",
    "band": "real@f0677920"
   },
   {
    "groupKey": "subpackages/profile-extra/feedback/history → pages/login/index",
    "guardCaseId": "GG-profile-extra-feedback-history",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/profile-extra/feedback/history",
    "identity": "not-logged-in",
    "markers": {
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/profile-extra/feedback/history",
      "identity": "not-logged-in",
      "markers": {
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:53:02.807Z",
+   "measuredAt": "2026-09-30T04:42:27.375Z",
    "band": "real@f0677920"
   },
   {
@@ -375,7 +240,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -384,26 +249,11 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:53:49.169Z",
+   "measuredAt": "2026-09-30T04:43:09.298Z",
    "band": "real@f0677920"
   },
   {
@@ -415,7 +265,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -424,26 +274,11 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:54:37.352Z",
+   "measuredAt": "2026-09-30T04:45:28.266Z",
    "band": "real@f0677920"
   },
   {
@@ -465,65 +300,35 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 4500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:55:30.856Z",
+   "measuredAt": "2026-09-30T04:46:06.637Z",
    "band": "real@f0677920"
   },
   {
    "groupKey": "subpackages/profile-extra/settings/dnd → pages/login/index",
    "guardCaseId": "GG-profile-extra-settings-dnd",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "ERR:automation_evaluate 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.e",
    "identity": "not-logged-in",
    "markers": {
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "ERR:automation_evaluate 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.e",
      "identity": "not-logged-in",
      "markers": {
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:56:17.920Z",
+   "measuredAt": "2026-09-30T04:47:21.820Z",
    "band": "real@f0677920"
   },
   {
@@ -535,7 +340,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -544,66 +349,36 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:57:03.724Z",
+   "measuredAt": "2026-09-30T04:48:03.846Z",
    "band": "real@f0677920"
   },
   {
    "groupKey": "subpackages/profile-extra/verification/real-name → pages/login/index",
    "guardCaseId": "GG-profile-extra-verification-real-name",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "",
    "identity": "not-logged-in",
    "markers": {
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "",
      "identity": "not-logged-in",
      "markers": {
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:57:50.653Z",
+   "measuredAt": "2026-09-30T04:48:59.331Z",
    "band": "real@f0677920"
   },
   {
@@ -625,25 +400,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 4500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:58:45.935Z",
+   "measuredAt": "2026-09-30T04:49:43.308Z",
    "band": "real@f0677920"
   },
   {
@@ -655,7 +415,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -664,66 +424,36 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:59:32.180Z",
+   "measuredAt": "2026-09-30T04:50:26.242Z",
    "band": "real@f0677920"
   },
   {
    "groupKey": "subpackages/setup/schedule/index → pages/login/index",
    "guardCaseId": "GG-setup-schedule-index",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/setup/schedule/index",
    "identity": "not-logged-in",
    "markers": {
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/setup/schedule/index",
      "identity": "not-logged-in",
      "markers": {
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:01:02.146Z",
+   "measuredAt": "2026-09-30T04:51:04.711Z",
    "band": "real@f0677920"
   },
   {
@@ -735,7 +465,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -744,106 +474,61 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:01:47.423Z",
+   "measuredAt": "2026-09-30T04:51:43.349Z",
    "band": "real@f0677920"
   },
   {
    "groupKey": "subpackages/tools/search/index → pages/login/index",
    "guardCaseId": "GG-tools-search-index",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/tools/search/index",
    "identity": "not-logged-in",
    "markers": {
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/tools/search/index",
      "identity": "not-logged-in",
      "markers": {
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:02:32.449Z",
+   "measuredAt": "2026-09-30T04:54:56.677Z",
    "band": "real@f0677920"
   },
   {
    "groupKey": "subpackages/village/village/history → pages/login/index",
    "guardCaseId": "GG-village-village-history",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/village/village/history",
    "identity": "not-logged-in",
    "markers": {
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/village/village/history",
      "identity": "not-logged-in",
      "markers": {
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:03:17.063Z",
+   "measuredAt": "2026-09-30T04:55:36.465Z",
    "band": "real@f0677920"
   },
   {
@@ -865,25 +550,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:04:01.152Z",
+   "measuredAt": "2026-09-30T04:56:07.638Z",
    "band": "real@f0677920"
   },
   {
@@ -905,25 +575,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:04:46.968Z",
+   "measuredAt": "2026-09-30T04:56:45.793Z",
    "band": "real@f0677920"
   },
   {
@@ -935,7 +590,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -944,26 +599,11 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:05:30.292Z",
+   "measuredAt": "2026-09-30T04:57:23.040Z",
    "band": "real@f0677920"
   },
   {
@@ -974,7 +614,7 @@
    "markers": {
     ".profile-page": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/profile/index",
@@ -982,25 +622,11 @@
      "markers": {
       ".profile-page": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/profile/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".profile-page": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:06:14.461Z",
+   "measuredAt": "2026-09-30T04:58:00.282Z",
    "band": "real@f0677920"
   },
   {
@@ -1020,61 +646,33 @@
       ".profile-page": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/profile/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".profile-page": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:06:57.335Z",
+   "measuredAt": "2026-09-30T04:58:28.750Z",
    "band": "real@f0677920"
   },
   {
    "groupKey": "subpackages/vip/promo-code → pages/profile/index",
    "guardCaseId": "GG-vip-promo-code",
-   "measuredLanding": "pages/profile/index",
+   "measuredLanding": "",
    "identity": "not-logged-in",
    "markers": {
-    ".profile-page": "1"
+    ".profile-page": "ERR:automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e="
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/profile/index",
+     "landing": "",
      "identity": "not-logged-in",
      "markers": {
-      ".profile-page": "1"
+      ".profile-page": "ERR:automation_element_action 调用失败：Command failed: D:\\微信开发者\\微信web开发者工具\\微信开发者工具.exe -e const e="
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/profile/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".profile-page": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:07:42.514Z",
+   "measuredAt": "2026-09-30T04:59:08.706Z",
    "band": "real@f0677920"
   },
   {
@@ -1086,7 +684,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -1095,39 +693,24 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:00:17.295Z",
+   "measuredAt": "2026-09-30T04:54:12.915Z",
    "band": "real@f0677920"
   }
  ],
  "rowPolicy": "merge-never-shrink",
  "lastRun": {
-  "at": "2026-10-06T10:46:08.778Z",
+  "at": "2026-09-30T04:53:32.315Z",
   "project": "apps/client/dist/build/mp-weixin-real",
   "band": "real@f0677920",
-  "repeat": 2,
-  "rowsWritten": 28,
-  "groupsUpdated": 28,
+  "repeat": 1,
+  "rowsWritten": 9,
+  "groupsUpdated": 9,
   "groupsAdded": 0,
-  "rowsKeptFromPrevious": 0,
+  "rowsKeptFromPrevious": 19,
   "rowsDropped": 0,
   "shrinkToken": null,
   "prevHadRowsField": true

@@ -1,5 +1,10 @@
 {
-  "$comment": "10 条 real-coverage 欠账的逐条可采性分流（机器件）。NO SANCTIONED CONSUMER YET — 仓里没有任何工具读这个形状（详见同车道报告 §4），因此本件按主控指示放在 .zcode/tmp/lane-ten-row/，不冒充 scripts/qa/cellplan-round10-*.json 那种有人吃的计划。落账需要：(a) 扩 emit-openrow-register.mjs 的登记表键空间与 kind 词表并让 verify-real-coverage.mjs（或新的只读门）读它，或 (b) 用户授权新加一个具名载体 + 读取方。",
+ "$archived": true,
+ "$archivedAt": "2026-10-06",
+ "$archivedBy": "reports/audit/round-7/ruling-closure-2026-10-06.md（T7 / 采纳建议书 r10new#A）",
+ "$truthSource": "reports/audit/round-7/real-coverage-disposition.json",
+ "$archivedNote": "r10new#A 裁定：门侧 real-coverage-disposition.json 是「覆盖欠账去向」的唯一真值源，本件（面板侧 EMIT_DESTINATIONS 的历史副本）降级为归档——保留原文与全部 10 行不删，仅供 emit-round-report 既有读者与 RCD_DUAL 对账用；两份账下轮复跑一致后可撤 RCD_DUAL，撤门时本件同步退役。新增去向一律改写真值源，不再改本件。",
+ "$comment": "10 条 real-coverage 欠账的逐条可采性分流（机器件）。NO SANCTIONED CONSUMER YET — 仓里没有任何工具读这个形状（详见同车道报告 §4），因此本件按主控指示放在 .zcode/tmp/lane-ten-row/，不冒充 scripts/qa/cellplan-round10-*.json 那种有人吃的计划。落账需要：(a) 扩 emit-openrow-register.mjs 的登记表键空间与 kind 词表并让 verify-real-coverage.mjs（或新的只读门）读它，或 (b) 用户授权新加一个具名载体 + 读取方。",
   "$lane": "r14 uncovered10 disposition (read-only; no device, no lease, no UI, no ledger hand-edit)",
   "$generatedBy": "reports/audit/round-7/uncovered10-disposition-r14.md",
   "$gate": "scripts/qa/verify-real-coverage.mjs",

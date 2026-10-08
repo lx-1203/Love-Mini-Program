@@ -1,10 +1,10 @@
 {
  "mode": "measure",
- "generatedAt": "2026-10-06T10:46:08.778Z",
+ "generatedAt": "2026-09-28T10:15:58.555Z",
  "project": "apps/client/dist/build/mp-weixin-real",
  "band": "real@f0677920",
  "guestCapable": true,
- "repeat": 2,
+ "repeat": 1,
  "rows": [
   {
    "groupKey": "pages/nearby/index → pages/login/index",
@@ -25,25 +25,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:46:54.080Z",
+   "measuredAt": "2026-09-28T10:16:21.837Z",
    "band": "real@f0677920"
   },
   {
@@ -65,25 +50,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:47:38.524Z",
+   "measuredAt": "2026-09-28T10:16:44.123Z",
    "band": "real@f0677920"
   },
   {
@@ -105,25 +75,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:48:24.289Z",
+   "measuredAt": "2026-09-28T10:17:06.152Z",
    "band": "real@f0677920"
   },
   {
@@ -145,25 +100,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:49:11.696Z",
+   "measuredAt": "2026-09-28T10:17:27.944Z",
    "band": "real@f0677920"
   },
   {
@@ -185,25 +125,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:49:56.243Z",
+   "measuredAt": "2026-09-28T10:17:49.997Z",
    "band": "real@f0677920"
   },
   {
@@ -225,25 +150,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:50:44.200Z",
+   "measuredAt": "2026-09-28T10:18:11.540Z",
    "band": "real@f0677920"
   },
   {
@@ -265,25 +175,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:51:30.909Z",
+   "measuredAt": "2026-09-28T10:18:33.273Z",
    "band": "real@f0677920"
   },
   {
@@ -305,25 +200,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:52:16.503Z",
+   "measuredAt": "2026-09-28T10:18:58.405Z",
    "band": "real@f0677920"
   },
   {
@@ -345,25 +225,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:53:02.807Z",
+   "measuredAt": "2026-09-28T10:19:20.059Z",
    "band": "real@f0677920"
   },
   {
@@ -385,25 +250,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:53:49.169Z",
+   "measuredAt": "2026-09-28T10:19:41.592Z",
    "band": "real@f0677920"
   },
   {
@@ -425,25 +275,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:54:37.352Z",
+   "measuredAt": "2026-09-28T10:20:03.110Z",
    "band": "real@f0677920"
   },
   {
@@ -455,17 +290,8 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 4500,
+   "waitedMs": 2500,
    "samples": [
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 4500
-    },
     {
      "landing": "pages/login/index",
      "identity": "not-logged-in",
@@ -477,13 +303,7 @@
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:55:30.856Z",
+   "measuredAt": "2026-09-28T10:20:24.864Z",
    "band": "real@f0677920"
   },
   {
@@ -505,25 +325,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:56:17.920Z",
+   "measuredAt": "2026-09-28T10:20:46.505Z",
    "band": "real@f0677920"
   },
   {
@@ -545,25 +350,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:57:03.724Z",
+   "measuredAt": "2026-09-28T10:21:08.597Z",
    "band": "real@f0677920"
   },
   {
@@ -585,25 +375,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:57:50.653Z",
+   "measuredAt": "2026-09-28T10:21:30.557Z",
    "band": "real@f0677920"
   },
   {
@@ -615,17 +390,8 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 4500,
+   "waitedMs": 2500,
    "samples": [
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 4500
-    },
     {
      "landing": "pages/login/index",
      "identity": "not-logged-in",
@@ -637,13 +403,7 @@
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:58:45.935Z",
+   "measuredAt": "2026-09-28T10:21:53.089Z",
    "band": "real@f0677920"
   },
   {
@@ -665,25 +425,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:59:32.180Z",
+   "measuredAt": "2026-09-28T10:22:14.996Z",
    "band": "real@f0677920"
   },
   {
@@ -705,25 +450,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:01:02.146Z",
+   "measuredAt": "2026-09-28T10:22:38.259Z",
    "band": "real@f0677920"
   },
   {
@@ -745,25 +475,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:01:47.423Z",
+   "measuredAt": "2026-09-28T10:22:59.837Z",
    "band": "real@f0677920"
   },
   {
@@ -785,25 +500,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:02:32.449Z",
+   "measuredAt": "2026-09-28T10:23:21.523Z",
    "band": "real@f0677920"
   },
   {
@@ -825,25 +525,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:03:17.063Z",
+   "measuredAt": "2026-09-28T10:23:44.157Z",
    "band": "real@f0677920"
   },
   {
@@ -865,25 +550,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:04:01.152Z",
+   "measuredAt": "2026-09-28T10:24:10.805Z",
    "band": "real@f0677920"
   },
   {
@@ -905,25 +575,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:04:46.968Z",
+   "measuredAt": "2026-09-28T10:24:32.445Z",
    "band": "real@f0677920"
   },
   {
@@ -945,25 +600,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:05:30.292Z",
+   "measuredAt": "2026-09-28T10:24:54.179Z",
    "band": "real@f0677920"
   },
   {
@@ -983,24 +623,10 @@
       ".profile-page": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/profile/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".profile-page": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:06:14.461Z",
+   "measuredAt": "2026-09-28T10:25:15.692Z",
    "band": "real@f0677920"
   },
   {
@@ -1020,24 +646,10 @@
       ".profile-page": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/profile/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".profile-page": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:06:57.335Z",
+   "measuredAt": "2026-09-28T10:25:36.980Z",
    "band": "real@f0677920"
   },
   {
@@ -1057,24 +669,10 @@
       ".profile-page": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/profile/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".profile-page": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:07:42.514Z",
+   "measuredAt": "2026-09-28T10:25:57.710Z",
    "band": "real@f0677920"
   },
   {
@@ -1096,40 +694,11 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:00:17.295Z",
+   "measuredAt": "2026-09-29T05:46:50.448Z",
    "band": "real@f0677920"
   }
- ],
- "rowPolicy": "merge-never-shrink",
- "lastRun": {
-  "at": "2026-10-06T10:46:08.778Z",
-  "project": "apps/client/dist/build/mp-weixin-real",
-  "band": "real@f0677920",
-  "repeat": 2,
-  "rowsWritten": 28,
-  "groupsUpdated": 28,
-  "groupsAdded": 0,
-  "rowsKeptFromPrevious": 0,
-  "rowsDropped": 0,
-  "shrinkToken": null,
-  "prevHadRowsField": true
- }
+ ]
 }

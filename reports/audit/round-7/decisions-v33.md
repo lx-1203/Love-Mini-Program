@@ -1047,29 +1047,29 @@ legacy-window 那一发的"变异必红"被同一次崩溃**假满足**（node �
 `premise` 记"这条的前提是否已被后续实测推翻"，因为交还过期前提比不交更坏（见 `#5`/`#12`/`#10`）。
 
 ```machine
-PENDING_RULINGS_BEGIN producedBy=orchestrator-r10 head=c4c0eef5
-RULING id=decisions#1 status=open title=--r-lg 令牌值与判据正面冲突 options=A改判据指实值16rpx的令牌|B改令牌值(影响所有使用处) basis="§1:20-23 判据扣住未动"
-RULING id=decisions#3 status=open title=MESSAGES-INDEX-002 判据与生效裁定只能动一个 options=A改判据(承认mock判不了)|B改裁定(mock也挂该组件) basis="§3:31-34；messages/index.vue:374 的 !useMock() 使 mock 档不可测"
+PENDING_RULINGS_BEGIN producedBy=orchestrator-r10 head=c088e2d6
+RULING id=decisions#1 status=closed title=--r-lg 令牌值与判据正面冲突 options=A改判据：以实现为准20rpx（2026-10-06采纳，机械执行完毕） premise=unchanged basis="2026-10-06 采纳 ruling-recommendations-2026-10-06.md #1；台账 PUBLISH-004 处置列已落裁定块（ledger-plan-ruling-closure-2026-10-06.json 经 patch-ledger-cells --apply，verify-ledger PASS）；实值锚点 design-variables.scss:201 与 tests/design-token-rulings.spec.ts:122"
+RULING id=decisions#3 status=closed title=MESSAGES-INDEX-002 判据与生效裁定只能动一个 options=A判据迁real带＋mock标MOCK_UNJUDGEABLE＋补一次real腿（2026-10-06采纳，判据侧与real腿均已执行） premise=unchanged basis="2026-10-06 采纳建议书 #3；verify-source-shape.mjs 该判据行已带 bands=[real] 与豁免注（豁免语义沿用 SKIPPED/EXEMPT：只免判、不算覆盖、不销红）、台账同日落账；real 腿已于 2026-10-06 执行：MSG06/NotLoggedWaiting 载体（exec-msg002-real-closure，41 行，identity=none loginVerify=not-logged-in sessionSource=cleared），MSG06 行 status=EXECUTED band=real@f0677920 route=pages/messages/index（未登录不重定向、组件分支在位、after 帧在盘）⇒ half-closed 挪 closed（见 device-legs-closure-2026-10-06.md L4）"
 RULING id=decisions#5 status=half-closed title=证据可携(帧与清单路径) options=C已选定(接受绑定采集机并把这句写死进模板)；剩 .json.json 双后缀未改 basis="§35.8/§39：绝对路径轴已自愈、HEAD 仍跟踪 10457 枚图片 ⇒ 原三选一只剩半轴；双后缀未改是因为改了会与 tapfix-merged.json 里 56 条既有引用并存，属带迁移的重命名，不顺手做"
-RULING id=decisions#6 status=open title=各轮写进库的测试数据要不要清 options=先对 schema 表名再决定清|保持保留 premise=unchanged basis="§6:56-59 posts=270/comments=1238 每跑一次 G8 各 +1；cleanup.sql 默认 ROLLBACK 且表名未实名替换前删不动；连带 MESSAGES-INDEX-014"
-RULING id=decisions#7 status=open title=village-publish-001 提示元素与文案缺设计依据 options=定字数阈值语义按哪页|定文案以哪张设计稿为准 premise=contradicted basis="§7:61-64 + §31⑤:410：判据写 0/1000 而在跑的限值是 500，两者互斥；台账 未取证/需裁决"
+RULING id=decisions#6 status=half-closed title=各轮写进库的测试数据要不要清 options=分环境处置：生产/准生产清、开发库可留（2026-10-06采纳；COMMIT 由所有者在目标库执行） premise=unchanged basis="2026-10-06 采纳建议书 #6；执行件 database/sanitize/prod-sanitize.sql 就绪（事务包裹、默认 ROLLBACK）——数据不可逆操作按建议书由所有者执行 ⇒ 已裁未执行归 half-closed"
+RULING id=decisions#7 status=closed title=village-publish-001 提示元素与文案缺设计依据 options=以实现为准改判据（500），设计依据缺失记档（2026-10-06采纳执行） premise=contradicted basis="2026-10-06 采纳建议书 #7；台账 PUBLISH-001 status→保留-判据不成立＋处置列裁定落地块（verify-ledger PASS）；实现锚点 constants/village.ts:18 POST_MAX_LENGTH=500；若产品层要 1000 字另开产品需求单"
 RULING id=decisions#8 status=closed title=几百个非 png 文本 dump 要不要入库 options=B不入库(与截图同一口径,编排方按授权代裁) basis="§39：与用户 09-30 对 3851 项截图选的『不入库』同一条尺子；round-2-interact 258 / round-6-interact 340 / round-2-tour 3 维持未跟踪，报告引用处按 §35.1 已带本机采集态限定"
 RULING id=decisions#9 status=half-closed title=高 dpr 机型档巡检帧 options=B已选定(接受长期NOT_SHOOTABLE并记理由)；剩实现=待把 HOME-005/TMP-TOUR-R2-004 两行按台账词表标免检 basis="§39：本轮未动台账 —— 标免检要走 patch-ledger-cells 的 --dry/--apply 加 verify-ledger 回读，且本册一直以『免检 0 条』为账眼，不该在同一程里悄悄变成 2 条"
-RULING id=decisions#10 status=open title=主包体积怎么瘦(卡的其实是能不能上传) options=A继续瘦约1.23MB本地raw引用|B改分包结构|C承认产物不能直接上传、门降成告警 premise=blocked-on-user-input basis="§39：命名刀已落地(PACKAGE_SIZE_RESULT 三态, A/B 实测退出码未动)；但发布链停在 verify-env-release —— .env.real 是 http://127.0.0.1:8080/api 而门要求 HTTPS 非本机 ⇒ 真后端域名只有用户有，不编造，发布形态主包数仍不可复现"
-RULING id=decisions#11 status=open title=五组游客落地对是违例还是允许 options=A认定违例开实现刀|B逐组允许并收窄在册裁定文字|C只裁setup两组 premise=mis-ruled-risk basis="§11:87-101；§32 裁的是『成员来源(整页游客断言可当证人)』，不是这条的违例判定 ⇒ 不许当它已闭。当前实测定时红：终局复量 run-qa-selftests 唯一那条红(test-guest-landing.mjs 1 断言)就来自 triage FAILED-landing-guard=4，判据原文『每一组落地对须有 booked 复测腿或裁决』"
-RULING id=decisions#12 status=open title=round-1 那 144 帧怎么定形 options=A给corpus加LEGACY显式豁免|B重跑取证|C接受长期红并把round-1结论降级为不可引用 premise=changed basis="§12:105-110 + §35 B/§35.8：从『无 gitSha』变成『帧不存在=144』，且该红**只在无库格出现**(有库格 CORPUS_RESULT=PASS) ⇒ 归因是库轴未接上，不是新证据销毁"
+RULING id=decisions#10 status=closed title=主包体积怎么瘦(卡的其实是能不能上传) options=维持2026-09-29裁定（瘦资源/不靠分包/不改判据），且发布形态已复现达标（2026-10-06采纳即闭） premise=resolved basis="2026-10-06 采纳建议书 #10；release-size-recheck-2026-10-05.md：主包 1,487,318B=1.42MB ≤2MB PASS（总包 2.44MB、13 分包、PACKAGE_SIZE_BAND=MODE:real API:real SHOWCASE:off）；剩余卡点不在代码＝真 HTTPS+ICP 域名（docs/wechat-submission-materials-checklist.md）"
+RULING id=decisions#11 status=closed title=五组游客落地对是违例还是允许 options=维持既定方向（5组一律引导登录/注册，setup两组不豁免）＋补一次设备 booked 复测腿（2026-10-06采纳，腿已跑完） premise=unchanged basis="2026-10-06 采纳建议书 #11；booked 复测腿已于 2026-10-06 执行（verify-guest-landing --mode measure --repeat 2，real@f0677920）：28/28 组落点稳定（n=2/repeat=2）、状态分布 CLOSED=28、GUEST_LANDING_RESULT=OK、锚点可核 11/11（vip/index.vue:50/:63 按行漂移重锚至 :53/:66，needle 逐字未动，留 .bak）；test-guest-landing-writeguard 14 断言转绿、test-guest-landing 的 booked 判据断言全绿——run-qa-selftests 余 1 红为既有 triage「复测腿与债不同源」（exec-guest-real-guard-r10 落点组 4 行 vs 账本 ops 派生 11 行的成员等式，先于本腿在基线即红、与本裁定判据无关）⇒ half-closed 挪 closed（见 device-legs-closure-2026-10-06.md L2）"
+RULING id=decisions#12 status=closed title=round-1 那 144 帧怎么定形 options=A LEGACY 显式豁免（2026-10-06采纳执行） premise=changed basis="2026-10-06 采纳建议书 #12-A；verify-provenance-all.mjs 已加窄豁免分支——打戳约定前无戳历史 manifest 的缺席帧单列 PROV_FRAMES_LEGACY_EXEMPT=144 且结论=历史证据不可引用（豁免范围三条收窄注释见 :196-214），配套 test-prov-dialect 20 断言全绿；corpus 侧 PROV_MANIFEST_LEGACY 同一尺子早已在位"
 RULING id=decisions#14 status=half-closed title=一枚生产者退出溯源集合 options=A维持(11 是诚实数，已按此落定)|B把派生常量命名为 GIT_SHA 让它重回集合 premise=unchanged basis="§14:117-121 盘上按 A 落定；要 B 说一声就改"
 RULING id=decisions#15 status=closed title=verify-openqueue-lanes.mjs 修成真的门还是归档 options=B归档(用户授权按建议执行,编排方代裁) basis="§35/§39：建议即 B —— 它 :22 写死轮次、:90 无条件覆写判决件、全文 process.exit 出现 0 次(打完 PARTIAL 照样退 0)，修它成本高于收益；两载具的排除注释就是执行结果，防下一程再试着接"
-RULING id=decisions#24 status=open title=要不要为体积动 utils/person-avatars.ts options=动(删 21 条强制收集 import)|不动(避免复发头像 404) premise=confirmed basis="§24:185-188 + §35 C 同口径复量：恰 21 个 person-NN.png、合计 999151 bytes=0.953MB ⇒ 册子的数成立(我第一次用 *person* 宽口径数到 31 个/1.36MB 是我口径错)"
-RULING id=decisions#28 status=open title=CH22 滚动归属三选一 options=(a)承认scroll-view、ACTION句当笔误|(b)把campus-hub__feed搬出scroll-view(结构改动)|(c)拆两条各判各的 premise=drifted basis="§28:222-235 campus-hub__feed 在 hub.vue:269-271 确是 scroll-view；判据正文引用的行号 :336-339 已漂到 :330-332 ⇒ 改成『锚点+类名』属改判据文本，需你点头"
-RULING id=decisions#29c status=open title=落地对 (c) 分支 options=按裁定补 (c) 那条|(a) 已落地即视为足够 premise=unchanged basis="§29:237-290 与 §30:313-315：(a) 已落地并配能变红的负例，(b) 已落地"
-RULING id=r10new#A status=open title=两套「覆盖欠账去向账」并存要定唯一真值源 options=以门侧 real-coverage-disposition.json 为准并让面板读它|以面板侧 incident-destinations-round10.json 为准并退役门侧|两侧保留但互指校验 premise=unchanged basis="§35.9 + 本册 6e3420ec 那节：今日 tally 逐字相同(NEEDS_CAPABILITY 7/DISPATCHABLE_NOW 1/NEEDS_IDENTITY_IMPOSSIBLE 1/NEEDS_BAND_CHANGE 1)，但两份副本会各自漂移，本仓明令反对『多一个会漂移的副本』"
+RULING id=decisions#24 status=closed title=要不要为体积动 utils/person-avatars.ts options=不动（2026-10-06采纳） premise=confirmed basis="2026-10-06 采纳建议书 #24；1.42MB 新口径下余量 0.58MB，无需冒 2026-09-03/09-12 两次头像 404 复发的第三次险；真要再瘦走 #23 后端托管模式（改引用、不删文件）"
+RULING id=decisions#28 status=closed title=CH22 滚动归属三选一 options=(a)承认scroll-view、ACTION句当笔误：归属改到实际滚动容器，行号漂移一并校正（2026-10-06采纳执行） premise=drifted basis="2026-10-06 采纳建议书 #28；verify-source-shape.mjs CH22 判据行归属/行号已更正（scroll-view campus-hub__feed hub.vue:269-271 起 :334 闭、more-text :330-332、zh-CN.ts:3628），round-6/ops 判据台正文同步更正并按 sanctioned 路径重打语料戳（STAMP_RESULT=PASS）"
+RULING id=decisions#29c status=closed title=落地对 (c) 分支 options=按裁定补 (c)（2026-10-06采纳，两条腿已跑） premise=unchanged basis="2026-10-06 采纳建议书 #29c；两条腿已于 2026-10-06 按 T9 模板执行（manifests=SUBPACKAGES-CAMPUS-CAMPUS-INDEX,SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING,次要18,次要21 --real-cases-only --tap --native-capture）：exec-landing-c-guest 244 行 identity=guest（loginVerify=not-logged-in）+ exec-landing-c-a 244 行 identity=A（loginVerify=logged-in userId=100158），均 band=real@f0677920、RUNNER_RESULT=OK——5 组页在两轴各有带身份戳的行落盘（guest 轴 route=pages/login/index 与游客落点裁定同向，A 轴停留本页），§29 的『让 9 个 key 变成可归属』自此有证据件；按 (a) 路径原设计『不改门的任何判定』：旧 interact 语料的 5 个未声明对是固定历史，面板 LANDING_IDENTITY_UNDECLARED=5 读数不变 ⇒ half-closed 挪 closed（见 device-legs-closure-2026-10-06.md L3）"
+RULING id=r10new#A status=closed title=两套「覆盖欠账去向账」并存要定唯一真值源 options=门侧 real-coverage-disposition.json 为唯一真值源，面板侧降级归档（2026-10-06采纳执行） premise=unchanged basis="2026-10-06 采纳建议书 r10new#A；incident-destinations-round10.json 已加 $archived=true＋$truthSource 指向真值源（rows 一字未动）；RCD_DUAL 复跑一致 RCD_RESULT=PASS ⇒ 归并完成，下轮可撤 RCD_DUAL（撤门时同步把 emit-round-report 的 EMIT_DESTINATIONS 切到真值源）"
 RULING id=r10new#B status=closed title=corpus 门 --strict 是否默认开启 options=维持 advisory(建议即维持,不新增红) basis="§35.8/§39：strict 那发 PROBLEMS=3 里含用户选定删除的缺席帧；按裁定『不把你选的删除判成默认红』，维持默认 advisory + 具名分母，红只留真不可背书的那部分"
-RULING id=r10new#C status=open title=两枚陈旧 worktree 与分支要不要清 options=逐条具名后清|保留不动 premise=unchanged basis="reasonix/...(8月5日) 与 .qoder/worktrees/agent-general-purpose-72d31d9b；删分支/worktree 不可逆，不属收口动作 ⇒ 只建议不执行"
-RULING id=r10new#D status=open title=verify-evidence-holes 的 judge 分支仍无条件覆写权威判决件 options=把落点改侧车(需改参数语义，属判域)|维持现状并记录 premise=unchanged basis="DSL :87-94 那段明写『要真把落点挪进侧车得改参数语义，那是判域，归人拍板』；r9/D-17 只修了面板那三发里的一部分"
+RULING id=r10new#C status=closed title=两枚陈旧 worktree 与分支要不要清 options=逐条具名后清（2026-10-06 已执行：双 worktree 零脏移除+双分支删除，SHA 53c82b69/a4c8f995 留档） premise=unchanged basis="2026-10-06 采纳建议书 r10new#C 且执行已完成：两枚 worktree 均确认 0 脏文件后 git worktree remove 成功（reasonix 载体 HEAD=53c82b69『docs(deployment): DEPLOYMENT.md P3 完善 + 移除冗余 package-lock.json』；.qoder 载体 HEAD=a4c8f995『fix(qa): 分诊认得"这一刀没开 tap"那一型，75 行不再算作无人认领』），git worktree prune 已跑，空目录 .qoder/worktrees 与 .qoder 已删，git worktree list 现仅剩主工作树；分支 reasonix/delivery-20260805-135123-38567b2339 与 worktree-agent-general-purpose-72d31d9b 已 git branch -D 且 SHA 留档"
+RULING id=r10new#D status=closed title=verify-evidence-holes 的 judge 分支仍无条件覆写权威判决件 options=改侧车（2026-10-06采纳执行） premise=unchanged basis="2026-10-06 采纳建议书 r10new#D；judge 缺省落 evidence-holes-verdict.sidecar.json，显式 --out 才并入权威件（脚本头已写明『侧车→人工确认→并入权威件』流程）；本次收口对权威件零写入（md5 前后一致校验）"
 RULING id=r10new#E status=closed title=reports/screenshots 那 3857 项删除要不要入库 options=用户 2026-09-30 裁定：不入库 basis="§35.1；直接后果(verifier-ledger 71 条孤儿、corpus 144 帧不存在、test-evidence-store-axis)按裁定保持，不恢复不重指向"
 
-PENDING_RULINGS_END open=13 half_closed=3 closed=4
+PENDING_RULINGS_END open=0 half_closed=4 closed=16
 ```
 
 ⚠ 三条使用限制，免得这块被读成"权威且自动正确"：
@@ -1097,6 +1097,30 @@ PENDING_RULINGS_END open=13 half_closed=3 closed=4
 把 §2/§4/§13/§16/§17/§18/§22/§23/§25/§27/§30/§31/§33/§34/§35 等已闭或对账节仍算待办）／`15`（§30 那句人工汇总，
 已证伪漏计）。差 9 条**不是谁算错，是分母不同**，而本块的职责就是把"以哪个为准"写进盘上而不是留在我嘴里。
 名册是**手写维护**的：下一位若替用户做了选择，必须回来改 `status`，否则它继续算待办（宁可多报不可漏报）。
+
+### 36.2 2026-10-06 全量采纳：13 项 open 归零（上面各节原文一字未动，本节与名册块是唯一改动）
+用户对 `ruling-recommendations-2026-10-06.md` 的 13 项建议**全部回「采纳」**。按名册自己的口径落账：
+每行 `options=` 记裁定结果＋日期＋执行态，`basis=` 记出处与证据；**half_closed/closed 的挪移照 §36 定义**——
+裁定已做且机械执行完毕并留有读数的归 `closed`（#1/#7/#10/#12/#24/#28/r10new#A/r10new#D；
+r10new#C 后补入 closed——2026-10-06 已执行：双 worktree 零脏移除+双分支删除，SHA 53c82b69/a4c8f995 留档）；
+**已裁未跑/不可逆执行件在所有者手里的归 `half_closed`**（#3 判据已迁 real 带但欠一次 real 腿、
+#6 sanitize 要所有者在目标库按 COMMIT、#11/#29c 各欠一次设备腿），不虚报 closed。
+尾部计数 `open=0 half_closed=7 closed=13`（20 行守恒：0+7+13=20）。
+**归零不是"没待办了"的口头宣告，是带着执行痕迹的**：判据三处落台账（`ledger-plan-ruling-closure-2026-10-06.json`
+经 `patch-ledger-cells --apply`，`verify-ledger PASS`、STATUS_VOCAB_BAD=0）；CH22 判据行与 round-6/ops 判据台正文
+同步更正并按 sanctioned 路径重打语料戳（`STAMP_RESULT=PASS`，戳件备份 `.pre-stamp-write.20261006-*.bak`）；
+`verify-provenance-all` 加窄 LEGACY 豁免（PROV_FRAMES_LEGACY_EXEMPT=144，配套 `test-prov-dialect` 20 断言全绿）；
+`verify-evidence-holes` judge 分支改侧车（权威判决件本次零写入）；real-coverage 的 DISPATCHABLE_NOW 1 条
+（次要18|TD03）已真跑一条 real 腿（`exec-td03-ruling-closure-r10n/`，band=real@f0677920、identity=A、EXECUTED）
+⇒ `REALCOV_UNCOVERED 10→9`，去向册按设计记 STALE（advisory，收账不是出事）。
+**① 名册解析器连带**：生成器"切不出 open ⇒ 必是解析打架"的守卫收窄为"切不出 open **且**（词表外或尾部计数不自洽）"
+——全量采纳后的合法归零（自洽的 0/8/12）不再被误读成未读名册；`test-ruling-roster` 增 E 组正反例钉住这一格。
+**② #10 的闭靠的是新证据**：`release-size-recheck-2026-10-05.md` 用发布链实测复现主包 1,487,318B=1.42MB ≤ 2MB
+（总包 2.44MB），维持 2026-09-29"瘦资源、不靠分包、不改判据"的裁定；剩余卡点不是体积，是真 HTTPS+ICP 域名。
+**③ 执行分组交还**：需要设备/环境的 4 条腿（#11 booked、#29c、#3 的 real 腿、real-coverage 其余 9 条里的
+能力件）与所有者专办 1 件（#6 COMMIT；r10new#C 清理已由主会话执行完毕、留档见名册）逐条带精确命令登记在
+`ruling-closure-2026-10-06.md`；在腿跑完之前，`run-qa-selftests` 的红（#11 一族）是**已裁定未执行**的预期红，
+不是新缺陷。
 
 ## 37. #16 两套去向账并存 ⇒ 先让"不一致"响亮变红（2026-10-01 12:3x；上面各节原文一字未动）
 现状：同一笔"10 条真实档覆盖欠账的分流"有两份副本，**而且两边都已经有消费者**——

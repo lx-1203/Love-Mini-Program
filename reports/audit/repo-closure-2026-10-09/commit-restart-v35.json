@@ -1,0 +1,17 @@
+{
+ "commitHashes": [
+  "806410a2 feat(db): Flyway V2026.10.05.* 六支迁移（媒体分类/协议留痕建表回填/VIP订单/账单唯一",
+  "5689e881 feat(consent): 注册协议同意留痕域模型（user_agreement_consent 实体/仓库/服务，s",
+  "91fffe7b feat(wxpay): 微信支付 APIv3 管道（JSAPI 下单/回调 RSA-SHA256 验签+AES-GCM",
+  "0efd1325 feat(vip): VIP 订单域（下单/支付/退款状态机+管理员退款端点仅 SUPER_ADMIN+退款回调确认端点",
+  "20939d34 feat(verification): 实名照片保留策略（media_asset.category ID_CARD 高敏",
+  "2e12d362 feat(auth): 注册协议同意落库接线（agreedLegalVersion 服务端兜底 v1.0.0）+账号级防",
+  "a1d3fba4 feat(wallet): 资金端点加固（/wallet 扣减服务端价格目录去信任化+演示充值每用户累计隔离+幂等拦截器",
+  "b26c5197 feat(client): 编辑资料页双模式收敛（MP-R7-EDITPAGE ?entry=edit 回显/保存与导航",
+  "bb1f21db feat(client): 微信隐私授权接线（manifest __usePrivacyCheck__ + onNeed",
+  "0ac917de chore(client): 发布构建链收敛（build:mp-weixin:real 收敛为 release-chai",
+  "bd3cdfbf chore(infra): CI 供应链推送闸（未配 COSIGN_PRIVATE_KEY 默认拒绝未签名镜像出仓）+泄"
+ ],
+ "backendRestarted": false,
+ "backendFreshAfter": "(未重启，跳过读数)"
+}

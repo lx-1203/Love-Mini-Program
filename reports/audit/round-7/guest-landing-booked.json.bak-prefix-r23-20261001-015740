@@ -1,12 +1,12 @@
 {
- "generatedAt": "2026-10-06T10:46:08.726Z",
+ "generatedAt": "2026-09-28T20:16:20.597Z",
  "source": "undefined + undefined",
  "ruling": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。",
  "groups": 26,
- "debtRows": 445,
+ "debtRows": 434,
  "anchorsOk": 11,
  "anchorsBad": 0,
- "carrier": "scripts/qa/verify-guest-landing.mjs --mode measure --project apps/client/dist/build/mp-weixin-real",
+ "carrier": "scripts/qa/verify-guest-landing.mjs --mode measure --project undefined",
  "measuredFile": "reports/audit/round-7/guest-landing-measured.json",
  "rows": [
   {
@@ -49,17 +49,7 @@
    "debtRows": 28,
    "memberSource": {
     "fromOps": 28,
-    "fromRun": 0,
-    "fromOpsNarrowed": 28,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 42,
-    "rowsWithoutIdentityDeclaration": 14,
-    "rowsScopedOutOfGuestLeg": 28,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 0
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -89,17 +79,7 @@
    "debtRows": 10,
    "memberSource": {
     "fromOps": 10,
-    "fromRun": 4,
-    "fromOpsNarrowed": 10,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 10,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 10,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 4
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -141,17 +121,7 @@
    "debtRows": 22,
    "memberSource": {
     "fromOps": 19,
-    "fromRun": 18,
-    "fromOpsNarrowed": 19,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 27,
-    "rowsWithoutIdentityDeclaration": 8,
-    "rowsScopedOutOfGuestLeg": 19,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 18
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -198,17 +168,7 @@
    "debtRows": 27,
    "memberSource": {
     "fromOps": 23,
-    "fromRun": 15,
-    "fromOpsNarrowed": 23,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 30,
-    "rowsWithoutIdentityDeclaration": 7,
-    "rowsScopedOutOfGuestLeg": 23,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 15
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -239,17 +199,7 @@
    "debtRows": 11,
    "memberSource": {
     "fromOps": 11,
-    "fromRun": 9,
-    "fromOpsNarrowed": 11,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 11,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 11,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 9
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -289,17 +239,7 @@
    "debtRows": 20,
    "memberSource": {
     "fromOps": 19,
-    "fromRun": 19,
-    "fromOpsNarrowed": 19,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 20,
-    "rowsWithoutIdentityDeclaration": 1,
-    "rowsScopedOutOfGuestLeg": 19,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 19
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -343,17 +283,7 @@
    "debtRows": 24,
    "memberSource": {
     "fromOps": 23,
-    "fromRun": 20,
-    "fromOpsNarrowed": 23,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 24,
-    "rowsWithoutIdentityDeclaration": 1,
-    "rowsScopedOutOfGuestLeg": 23,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 20
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -385,17 +315,7 @@
    "debtRows": 12,
    "memberSource": {
     "fromOps": 11,
-    "fromRun": 8,
-    "fromOpsNarrowed": 11,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 12,
-    "rowsWithoutIdentityDeclaration": 1,
-    "rowsScopedOutOfGuestLeg": 11,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 8
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -429,17 +349,7 @@
    "debtRows": 14,
    "memberSource": {
     "fromOps": 14,
-    "fromRun": 10,
-    "fromOpsNarrowed": 14,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 14,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 14,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 10
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -473,17 +383,7 @@
    "debtRows": 14,
    "memberSource": {
     "fromOps": 14,
-    "fromRun": 4,
-    "fromOpsNarrowed": 14,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 14,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 14,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 4
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -515,17 +415,7 @@
    "debtRows": 12,
    "memberSource": {
     "fromOps": 12,
-    "fromRun": 5,
-    "fromOpsNarrowed": 12,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 12,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 12,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 5
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -559,17 +449,7 @@
    "debtRows": 14,
    "memberSource": {
     "fromOps": 14,
-    "fromRun": 3,
-    "fromOpsNarrowed": 14,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 14,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 14,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 3
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -602,17 +482,7 @@
    "debtRows": 13,
    "memberSource": {
     "fromOps": 13,
-    "fromRun": 12,
-    "fromOpsNarrowed": 13,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 13,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 13,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 12
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -646,17 +516,7 @@
    "debtRows": 14,
    "memberSource": {
     "fromOps": 14,
-    "fromRun": 9,
-    "fromOpsNarrowed": 14,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 14,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 14,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 9
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -690,17 +550,7 @@
    "debtRows": 14,
    "memberSource": {
     "fromOps": 13,
-    "fromRun": 7,
-    "fromOpsNarrowed": 13,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 14,
-    "rowsWithoutIdentityDeclaration": 1,
-    "rowsScopedOutOfGuestLeg": 13,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 7
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -733,17 +583,7 @@
    "debtRows": 13,
    "memberSource": {
     "fromOps": 13,
-    "fromRun": 11,
-    "fromOpsNarrowed": 13,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 13,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 13,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 11
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -774,63 +614,12 @@
    "debtRows": 11,
    "memberSource": {
     "fromOps": 11,
-    "fromRun": 7,
-    "fromOpsNarrowed": 11,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 11,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 11,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 7
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-setup-interest-index",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/setup/interest/index') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
-  },
-  {
-   "groupKey": "subpackages/setup/recommend-pref/index → pages/login/index",
-   "page": "subpackages/setup/recommend-pref/index",
-   "landing": "pages/login/index",
-   "family": "guide-401",
-   "entry": "推荐偏好设置（引导流程内的账号内动作，按 2026-09-29 裁定不豁免：游客一律引导到登录/注册）",
-   "identity": "guest",
-   "caseIds": [
-    "RP01",
-    "RP02",
-    "RP03",
-    "RP04",
-    "RP05",
-    "RP06",
-    "RP07",
-    "RP08",
-    "RP09",
-    "RP10",
-    "RP11"
-   ],
-   "debtRows": 11,
-   "memberSource": {
-    "fromOps": 11,
-    "fromRun": 0,
-    "fromOpsNarrowed": 0,
-    "fromOpsEntireGuest": 11
-   },
-   "memberBasis": "ops-entirely-undeclared-guest-assertions",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 11,
-    "rowsWithoutIdentityDeclaration": 11,
-    "rowsScopedOutOfGuestLeg": 0,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#ops-entirely-undeclared-guest-assertions（2026-09-30 裁定 (a)：该页 ops 行整页没有 identities 声明 ⇒ 按 r-exec-cli.mjs:161 游客腿仍在认领每一行 ⇒ 这些行自己就是这一落地对的证人）"
-   },
-   "landingMarker": ".login-page__brand",
-   "registerEntry": ".login-register-entry",
-   "guardCaseId": "GG-setup-recommend-pref-index",
-   "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/setup/recommend-pref/index') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
    "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
@@ -856,17 +645,7 @@
    "debtRows": 11,
    "memberSource": {
     "fromOps": 11,
-    "fromRun": 5,
-    "fromOpsNarrowed": 11,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 12,
-    "rowsWithoutIdentityDeclaration": 1,
-    "rowsScopedOutOfGuestLeg": 11,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 5
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -900,17 +679,7 @@
    "debtRows": 14,
    "memberSource": {
     "fromOps": 14,
-    "fromRun": 8,
-    "fromOpsNarrowed": 14,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 14,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 14,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 8
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -941,17 +710,7 @@
    "debtRows": 11,
    "memberSource": {
     "fromOps": 11,
-    "fromRun": 4,
-    "fromOpsNarrowed": 11,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 11,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 11,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 4
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -979,17 +738,7 @@
    "debtRows": 8,
    "memberSource": {
     "fromOps": 8,
-    "fromRun": 6,
-    "fromOpsNarrowed": 8,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 8,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 8,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 6
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -1048,17 +797,7 @@
    "debtRows": 39,
    "memberSource": {
     "fromOps": 39,
-    "fromRun": 19,
-    "fromOpsNarrowed": 39,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 42,
-    "rowsWithoutIdentityDeclaration": 3,
-    "rowsScopedOutOfGuestLeg": 39,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 19
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -1112,17 +851,7 @@
    "debtRows": 34,
    "memberSource": {
     "fromOps": 34,
-    "fromRun": 12,
-    "fromOpsNarrowed": 34,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 34,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 34,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 12
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -1152,17 +881,7 @@
    "debtRows": 10,
    "memberSource": {
     "fromOps": 10,
-    "fromRun": 7,
-    "fromOpsNarrowed": 10,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 10,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 10,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 7
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
@@ -1192,17 +911,7 @@
    "debtRows": 10,
    "memberSource": {
     "fromOps": 10,
-    "fromRun": 5,
-    "fromOpsNarrowed": 10,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 10,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 10,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 5
    },
    "landingMarker": ".profile-page",
    "registerEntry": null,
@@ -1234,17 +943,7 @@
    "debtRows": 12,
    "memberSource": {
     "fromOps": 12,
-    "fromRun": 10,
-    "fromOpsNarrowed": 12,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 12,
-    "rowsWithoutIdentityDeclaration": 0,
-    "rowsScopedOutOfGuestLeg": 12,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 10
    },
    "landingMarker": ".profile-page",
    "registerEntry": null,
@@ -1276,23 +975,37 @@
    "debtRows": 12,
    "memberSource": {
     "fromOps": 11,
-    "fromRun": 2,
-    "fromOpsNarrowed": 11,
-    "fromOpsEntireGuest": 0
-   },
-   "memberBasis": "ops-narrowed-out-of-guest-leg",
-   "memberBasisEvidence": {
-    "opsRowsOnPage": 12,
-    "rowsWithoutIdentityDeclaration": 1,
-    "rowsScopedOutOfGuestLeg": 11,
-    "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+    "fromRun": 2
    },
    "landingMarker": ".profile-page",
    "registerEntry": null,
    "guardCaseId": "GG-vip-promo-code",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/vip/promo-code') 后 2500ms 内（复采 4500ms）栈顶 route === pages/profile/index.profile-page:present（证明落的是真页而不是空壳）；采样时身份不是游客的落点不作证",
    "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+  },
+  {
+   "groupKey": "subpackages/setup/recommend-pref/index → pages/login/index",
+   "page": "subpackages/setup/recommend-pref/index",
+   "landing": "pages/login/index",
+   "family": "guide-401",
+   "entry": "推荐偏好设置（引导流程，按裁定不豁免）",
+   "identity": "guest",
+   "caseIds": [
+    "RP01",
+    "RP02",
+    "RP06",
+    "RP10"
+   ],
+   "debtRows": 4,
+   "memberSource": {
+    "fromOps": 0,
+    "fromRun": 4
+   },
+   "landingMarker": ".login-page__brand",
+   "registerEntry": ".login-register-entry",
+   "guardCaseId": "GG-setup-recommend-pref-index",
+   "criterion": "游客（verifyLogin=not-logged-in）冷启 openPage(/subpackages/setup/recommend-pref/index) 后栈顶 route === pages/login/index；.login-page__brand:present（真页非空壳）；.login-register-entry:present（默认态露出注册入口）；采样身份非游客不作证。carrier 帧=reports/audit/round-7/exec-guest-real-guard-r10/subpackages-setup-recommend-pref-index.png",
+   "why": "guard-r10 复测（真实档 real@f0677920，重建含 guards/guest-access.js）：游客冷启该 setup 引导页被 guideGuestToLogin reLaunch 到 pages/login/index，与 2026-09-29 裁定（setup 引导不豁免，游客一律引导到登录/注册）一致；判据原断言页内内容，须改断言重定向。"
   }
  ]
 }

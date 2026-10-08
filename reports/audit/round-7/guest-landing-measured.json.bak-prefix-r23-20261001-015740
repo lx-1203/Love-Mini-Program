@@ -1,6 +1,6 @@
 {
  "mode": "measure",
- "generatedAt": "2026-10-06T10:46:08.778Z",
+ "generatedAt": "2026-09-30T06:01:14.788Z",
  "project": "apps/client/dist/build/mp-weixin-real",
  "band": "real@f0677920",
  "guestCapable": true,
@@ -37,13 +37,7 @@
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:46:54.080Z",
+   "measuredAt": "2026-09-30T06:02:02.130Z",
    "band": "real@f0677920"
   },
   {
@@ -77,13 +71,7 @@
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:47:38.524Z",
+   "measuredAt": "2026-09-30T06:02:48.438Z",
    "band": "real@f0677920"
   },
   {
@@ -117,13 +105,7 @@
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:48:24.289Z",
+   "measuredAt": "2026-09-30T06:03:33.946Z",
    "band": "real@f0677920"
   },
   {
@@ -135,7 +117,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -144,26 +126,11 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:49:11.696Z",
+   "measuredAt": "2026-09-30T04:39:05.811Z",
    "band": "real@f0677920"
   },
   {
@@ -175,7 +142,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -184,26 +151,11 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:49:56.243Z",
+   "measuredAt": "2026-09-30T04:39:47.579Z",
    "band": "real@f0677920"
   },
   {
@@ -215,7 +167,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -224,7 +176,7 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     },
     {
      "landing": "pages/login/index",
@@ -237,13 +189,7 @@
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:50:44.200Z",
+   "measuredAt": "2026-09-30T05:02:56.754Z",
    "band": "real@f0677920"
   },
   {
@@ -265,25 +211,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:51:30.909Z",
+   "measuredAt": "2026-09-30T04:41:00.122Z",
    "band": "real@f0677920"
   },
   {
@@ -295,7 +226,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -304,26 +235,11 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:52:16.503Z",
+   "measuredAt": "2026-09-30T04:41:41.046Z",
    "band": "real@f0677920"
   },
   {
@@ -357,13 +273,7 @@
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:53:02.807Z",
+   "measuredAt": "2026-09-30T05:03:53.533Z",
    "band": "real@f0677920"
   },
   {
@@ -375,7 +285,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -384,26 +294,11 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:53:49.169Z",
+   "measuredAt": "2026-09-30T04:43:09.298Z",
    "band": "real@f0677920"
   },
   {
@@ -415,7 +310,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -424,8 +319,24 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
+     "waitedMs": 4500
+    }
+   ],
+   "stable": true,
+   "measuredAt": "2026-09-30T04:45:28.266Z",
+   "band": "real@f0677920"
+  },
+  {
+   "groupKey": "subpackages/profile-extra/profile/tasks → pages/login/index",
+   "guardCaseId": "GG-profile-extra-profile-tasks",
+   "measuredLanding": "pages/login/index",
+   "identity": "not-logged-in",
+   "markers": {
+    ".login-page__brand": "1",
+    ".login-register-entry": "1"
+   },
+   "waitedMs": 4500,
+   "samples": [
     {
      "landing": "pages/login/index",
      "identity": "not-logged-in",
@@ -433,22 +344,16 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:54:37.352Z",
+   "measuredAt": "2026-09-30T04:46:06.637Z",
    "band": "real@f0677920"
   },
   {
-   "groupKey": "subpackages/profile-extra/profile/tasks → pages/login/index",
-   "guardCaseId": "GG-profile-extra-profile-tasks",
+   "groupKey": "subpackages/profile-extra/settings/dnd → pages/login/index",
+   "guardCaseId": "GG-profile-extra-settings-dnd",
    "measuredLanding": "pages/login/index",
    "identity": "not-logged-in",
    "markers": {
@@ -477,53 +382,7 @@
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:55:30.856Z",
-   "band": "real@f0677920"
-  },
-  {
-   "groupKey": "subpackages/profile-extra/settings/dnd → pages/login/index",
-   "guardCaseId": "GG-profile-extra-settings-dnd",
-   "measuredLanding": "pages/login/index",
-   "identity": "not-logged-in",
-   "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
-   },
-   "waitedMs": 2500,
-   "samples": [
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
-    }
-   ],
-   "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:56:17.920Z",
+   "measuredAt": "2026-09-30T05:05:04.991Z",
    "band": "real@f0677920"
   },
   {
@@ -535,7 +394,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -544,26 +403,11 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:57:03.724Z",
+   "measuredAt": "2026-09-30T04:48:03.846Z",
    "band": "real@f0677920"
   },
   {
@@ -593,17 +437,11 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:57:50.653Z",
+   "measuredAt": "2026-09-30T05:06:01.925Z",
    "band": "real@f0677920"
   },
   {
@@ -625,25 +463,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 4500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:58:45.935Z",
+   "measuredAt": "2026-09-30T04:49:43.308Z",
    "band": "real@f0677920"
   },
   {
@@ -655,7 +478,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -664,26 +487,11 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:59:32.180Z",
+   "measuredAt": "2026-09-30T04:50:26.242Z",
    "band": "real@f0677920"
   },
   {
@@ -717,13 +525,7 @@
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:01:02.146Z",
+   "measuredAt": "2026-09-30T05:08:50.186Z",
    "band": "real@f0677920"
   },
   {
@@ -735,7 +537,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -744,26 +546,11 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:01:47.423Z",
+   "measuredAt": "2026-09-30T04:51:43.349Z",
    "band": "real@f0677920"
   },
   {
@@ -797,13 +584,7 @@
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:02:32.449Z",
+   "measuredAt": "2026-09-30T05:09:40.330Z",
    "band": "real@f0677920"
   },
   {
@@ -837,13 +618,7 @@
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:03:17.063Z",
+   "measuredAt": "2026-09-30T05:10:31.776Z",
    "band": "real@f0677920"
   },
   {
@@ -865,25 +640,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:04:01.152Z",
+   "measuredAt": "2026-09-30T04:56:07.638Z",
    "band": "real@f0677920"
   },
   {
@@ -905,25 +665,10 @@
       ".login-register-entry": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:04:46.968Z",
+   "measuredAt": "2026-09-30T04:56:45.793Z",
    "band": "real@f0677920"
   },
   {
@@ -935,7 +680,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -944,26 +689,11 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:05:30.292Z",
+   "measuredAt": "2026-09-30T04:57:23.040Z",
    "band": "real@f0677920"
   },
   {
@@ -974,7 +704,7 @@
    "markers": {
     ".profile-page": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/profile/index",
@@ -982,25 +712,11 @@
      "markers": {
       ".profile-page": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/profile/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".profile-page": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:06:14.461Z",
+   "measuredAt": "2026-09-30T04:58:00.282Z",
    "band": "real@f0677920"
   },
   {
@@ -1020,24 +736,10 @@
       ".profile-page": "1"
      },
      "waitedMs": 2500
-    },
-    {
-     "landing": "pages/profile/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".profile-page": "1"
-     },
-     "waitedMs": 2500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:06:57.335Z",
+   "measuredAt": "2026-09-30T04:58:28.750Z",
    "band": "real@f0677920"
   },
   {
@@ -1068,13 +770,7 @@
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:07:42.514Z",
+   "measuredAt": "2026-09-30T05:11:22.479Z",
    "band": "real@f0677920"
   },
   {
@@ -1086,7 +782,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -1095,39 +791,24 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:00:17.295Z",
+   "measuredAt": "2026-09-30T04:54:12.915Z",
    "band": "real@f0677920"
   }
  ],
  "rowPolicy": "merge-never-shrink",
  "lastRun": {
-  "at": "2026-10-06T10:46:08.778Z",
+  "at": "2026-09-30T06:01:14.788Z",
   "project": "apps/client/dist/build/mp-weixin-real",
   "band": "real@f0677920",
   "repeat": 2,
-  "rowsWritten": 28,
-  "groupsUpdated": 28,
+  "rowsWritten": 3,
+  "groupsUpdated": 3,
   "groupsAdded": 0,
-  "rowsKeptFromPrevious": 0,
+  "rowsKeptFromPrevious": 25,
   "rowsDropped": 0,
   "shrinkToken": null,
   "prevHadRowsField": true

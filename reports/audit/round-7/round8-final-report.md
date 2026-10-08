@@ -50,29 +50,16 @@
 - 在册陷阱：`mp-weixin-real` 窗口已死却过地板——`open_project_window` 回 success/type:reuse、截图 11290B，画面实为「模拟器启动失败」。过字节数不等于可采。
 - 载具误挡：按载具口径复算 `DENY` 只命中 2/49（TD03、OT09），不是整批拦路虎；本轮未擅自改载具，待授权。
 
-## 6. 需你拍板 13 项（本轮一律未自裁）
+## 6. 需你拍板 0 项（本轮一律未自裁）
 
-> **本节读的是裁定册 §36 的具名机器名册**（`PENDING_RULINGS` 第 1050–1072 行，open=13 half-closed=3 closed=4；名册自带对账：尾部计数与实际行数一致）。标题分桶那一套仍照常算，用作**交叉核对**：分类器判 30 条 ⇒ 差 17 条，差因是分类器只读标题措辞、读不到状态对账节里的闭合（不是谁算错）。
+> **本节读的是裁定册 §36 的具名机器名册**（`PENDING_RULINGS` 第 1050–1072 行，open=0 half-closed=4 closed=16；名册自带对账：尾部计数与实际行数一致）。标题分桶那一套仍照常算，用作**交叉核对**：分类器判 30 条 ⇒ 差 30 条，差因是分类器只读标题措辞、读不到状态对账节里的闭合（不是谁算错）。
 
-> 口径钉死：本节的分母是裁定册 `reports/audit/round-7/decisions-v33.md`（sha1=9e30f2f428a9，136635 字节）里**全部 40 条 `## N.` 标题**；原先的写法直接把标题总数当待拍板数（结构派生计数会随收账虚增），现按语义分桶：**待拍板 30 / 已裁定 3 / 已闭或状态对账 1 / 流水与自我纠正 6**，守恒 30+3+1+6=40（应等于 40）。默认桶是待拍板，只有命中显式规则才移出，每条移出项在下面 6.2 附一行依据。
+> 口径钉死：本节的分母是裁定册 `reports/audit/round-7/decisions-v33.md`（sha1=98ef3f657e57，142771 字节）里**全部 40 条 `## N.` 标题**；原先的写法直接把标题总数当待拍板数（结构派生计数会随收账虚增），现按语义分桶：**待拍板 30 / 已裁定 3 / 已闭或状态对账 1 / 流水与自我纠正 6**，守恒 30+3+1+6=40（应等于 40）。默认桶是待拍板，只有命中显式规则才移出，每条移出项在下面 6.2 附一行依据。
 
-- decisions#1：--r-lg 令牌值与判据正面冲突（可选：A改判据指实值16rpx的令牌|B改令牌值(影响所有使用处)）
-- decisions#3：MESSAGES-INDEX-002 判据与生效裁定只能动一个（可选：A改判据(承认mock判不了)|B改裁定(mock也挂该组件)）
-- decisions#6：各轮写进库的测试数据要不要清（可选：先对 schema 表名再决定清|保持保留）
-- decisions#7：village-publish-001 提示元素与文案缺设计依据（可选：定字数阈值语义按哪页|定文案以哪张设计稿为准） ｜⚠ 前提contradicted
-- decisions#10：主包体积怎么瘦(卡的其实是能不能上传)（可选：A继续瘦约1.23MB本地raw引用|B改分包结构|C承认产物不能直接上传、门降成告警） ｜⚠ 前提blocked-on-user-input
-- decisions#11：五组游客落地对是违例还是允许（可选：A认定违例开实现刀|B逐组允许并收窄在册裁定文字|C只裁setup两组） ｜⚠ 前提mis-ruled-risk
-- decisions#12：round-1 那 144 帧怎么定形（可选：A给corpus加LEGACY显式豁免|B重跑取证|C接受长期红并把round-1结论降级为不可引用） ｜⚠ 前提changed
-- decisions#24：要不要为体积动 utils/person-avatars.ts（可选：动(删 21 条强制收集 import)|不动(避免复发头像 404)） ｜⚠ 前提confirmed
-- decisions#28：CH22 滚动归属三选一（可选：(a)承认scroll-view、ACTION句当笔误|(b)把campus-hub__feed搬出scroll-view(结构改动)|(c)拆两条各判各的） ｜⚠ 前提drifted
-- decisions#29c：落地对 (c) 分支（可选：按裁定补 (c) 那条|(a) 已落地即视为足够）
-- r10new#A：两套「覆盖欠账去向账」并存要定唯一真值源（可选：以门侧 real-coverage-disposition.json 为准并让面板读它|以面板侧 incident-destinations-round10.json 为准并退役门侧|两侧保留但互指校验）
-- r10new#C：两枚陈旧 worktree 与分支要不要清（可选：逐条具名后清|保留不动）
-- r10new#D：verify-evidence-holes 的 judge 分支仍无条件覆写权威判决件（可选：把落点改侧车(需改参数语义，属判域)|维持现状并记录）
 
-GENREPORT_DECISION_BUCKETS ledger=reports/audit/round-7/decisions-v33.md sha1=9e30f2f428a9 headings_total=40 pending=30 ruled=3 closed=1 log=6 sum=40
+GENREPORT_DECISION_BUCKETS ledger=reports/audit/round-7/decisions-v33.md sha1=98ef3f657e57 headings_total=40 pending=30 ruled=3 closed=1 log=6 sum=40
 
-GENREPORT_SECTION6_SELFCOUNT heading_number=13 listed_items=13 source=roster crosscheck_classification=30 matches_title=true
+GENREPORT_SECTION6_SELFCOUNT heading_number=0 listed_items=0 source=roster crosscheck_classification=30 matches_title=true
 
 GENREPORT_BUCKET_GUARD=OK removed=10/40 pending_zero_guard=clear ask_override_held=0
 
@@ -120,9 +107,9 @@ GENREPORT_LEDGER_DECLARED marker_line=337 marker_section=30 latest_section=39 de
   - #7 7. `village-publish-001` 的提示元素与文案缺设计依据
     ｜册内除那行声明外没有一处说它已闭 ⇒ 更可能是那行声明漏列，仍按待拍板交还
   - #10 10. 主包体积超微信上限，需要你定怎么瘦
-    ｜册内另有原文称其已收（照抄，不据此移桶）：「RULING id=decisions#10 status=open title=主包体积怎么瘦(卡的其实是能不能上传) options=A继续瘦约1.23」
+    ｜册内除那行声明外没有一处说它已闭 ⇒ 更可能是那行声明漏列，仍按待拍板交还
   - #11 11. 五组游客落地对没有裁定，分诊台因此一直 exit 2
-    ｜册内另有原文称其已收（照抄，不据此移桶）：「RULING id=decisions#11 status=open title=五组游客落地对是违例还是允许 options=A认定违例开实现刀|B逐组允」
+    ｜册内除那行声明外没有一处说它已闭 ⇒ 更可能是那行声明漏列，仍按待拍板交还
   - #15 15. verify-openqueue-lanes.mjs：修成真的门，还是归档
     ｜册内除那行声明外没有一处说它已闭 ⇒ 更可能是那行声明漏列，仍按待拍板交还
   - #16 16. run-round7-closeout.mjs：唯一能答"stage-8 过了吗"的载具，现在没人跑
@@ -150,30 +137,35 @@ GENREPORT_LEDGER_DECLARED marker_line=337 marker_section=30 latest_section=39 de
 ## 7. 终局复量读数
 
 ```
-dryrun-workflow exit=0
-emit-round-report exit=0
-prove-gates-can-fail exit=0
-run-qa-selftests exit=1
-verify-backend-fresh exit=0
-verify-band-freshness exit=0
-verify-carrier-wiring exit=0
-verify-case-automatable exit=0
-verify-dry-no-lease exit=0
-verify-evidence-corpus exit=0
-verify-evidence-holes exit=0
-verify-lane-report-complete exit=0
-verify-ledger-after-panel exit=0
-verify-ledger exit=0
-verify-ops-stamp exit=0
-verify-provenance-all exit=1
-verify-queue-reconcile exit=0
-verify-real-coverage-disposition exit=0
-verify-real-coverage exit=1
-verify-source-shape exit=0
-verify-state-truth-after-panel exit=0
-verify-state-truth exit=0
+台账词表/形状 verify-ledger exit=0
+状态真值 verify-state-truth exit=0
+队列守恒 verify-queue-reconcile exit=0
+真实档覆盖 verify-real-coverage exit=1
+判据台 verify-source-shape exit=0
+证据语料 verify-evidence-corpus exit=1
+溯源全量 verify-provenance-all exit=1
+档位新鲜度 verify-band-freshness exit=2
+后端新鲜度 verify-backend-fresh exit=1
+证据洞 verify-evidence-holes exit=0
+离线负例聚合 run-qa-selftests exit=1
+dry 不抢租约静态门 verify-dry-no-lease exit=0
+载体接线零消费者门 verify-carrier-wiring exit=0
+车道报告骨架完成度 verify-lane-report-complete exit=0
+真实档覆盖去向册 verify-real-coverage-disposition exit=0
+用例可自动化预检 verify-case-automatable exit=0
+工作流干跑预检 dryrun-workflow exit=0
+判据台戳 verify-ops-stamp exit=0
+全量面板 emit-round-report exit=1
+面板后台账复量 verify-ledger-after-panel exit=0
+面板后状态真值复量 verify-state-truth-after-panel exit=0
+ROOT_INV exit=0
+ABS_SCAN exit=0
+BAT_STATIC exit=0
+BAT_DYNAMIC_BUILD exit=0
+BACKEND_TEST_GATE exit=0
+BAND_REBUILD exit=0
 ```
-红项：run-qa-selftests、verify-provenance-all、verify-real-coverage
+红项：真实档覆盖 verify-real-coverage、证据语料 verify-evidence-corpus、溯源全量 verify-provenance-all、档位新鲜度 verify-band-freshness、后端新鲜度 verify-backend-fresh、离线负例聚合 run-qa-selftests、全量面板 emit-round-report
 
 ## 8. 本轮把「排在后面做」的账收掉了多少（含纠出的文档错）
 

@@ -381,8 +381,8 @@
    "title": "页级滚动到顶/底：底部静态提示「更多校园圈持续接入中」完整可见、无死箭头",
    "tier": "noop",
    "pre": "同 CH01",
-   "action": "页面 scrollTo 到底 → 再回顶（页级 window 滚动，非 scroll-view）",
-   "expected": "滚到底可见静态说明文案「更多校园圈持续接入中」+ footer 占位（hub.vue:336-339，zh-CN.ts:3447；无展开箭头、无可点动作——MP-R1-CAMPUS-HUB-003 死元素已移除，不得回归出带箭头的可点假象）；回顶后 header/引导卡/搜索框/Tab 完整不被遮挡；滚动过程无白屏、无 sticky 抖动；scrollTop/scrollHeight 数值回填",
+   "action": "在 campus-hub__feed scroll-view 内滚到底 → 再回顶（2026-10-06 采纳建议书 #28：归属改到实际滚动容器——hub.vue:269-271 起列表包在 <scroll-view class=\"campus-hub__feed\"> 里、:334 闭合；原「页级 window 滚动，非 scroll-view」按裁定更正为笔误）",
+   "expected": "滚到底可见静态说明文案「更多校园圈持续接入中」+ footer 占位（campus-hub__more-text 在 scroll-view 内 hub.vue:330-332，zh-CN.ts:3628——2026-10-06 采纳建议书 #28 行号漂移一并校正；无展开箭头、无可点动作——MP-R1-CAMPUS-HUB-003 死元素已移除，不得回归出带箭头的可点假象）；回顶后 header/引导卡/搜索框/Tab 完整不被遮挡；滚动过程无白屏、无 sticky 抖动；scrollTop/scrollHeight 数值回填",
    "evidence": "noop：执行日志（scrollTop、scrollHeight、windowHeight）+ console；可免截图",
    "requiresReal": false
   },

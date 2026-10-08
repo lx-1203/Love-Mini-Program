@@ -1,0 +1,32 @@
+{
+ "head": "c088e2d6",
+ "headAfterCommit": "3a91b254",
+ "gates": [
+  {
+   "name": "真实档覆盖 verify-real-coverage",
+   "exitCode": 1,
+   "resultLine": "REALCOV_RESULT=FAIL（真实模式覆盖守恒：跳过不算量到，单身份不算双身份；免检只免\"本门不追\"，不降阈值）"
+  },
+  {
+   "name": "证据语料 verify-evidence-corpus",
+   "exitCode": 1,
+   "resultLine": "CORPUS_RESULT=FAIL（存在不可背书证据或硬编码 SHA）"
+  },
+  {
+   "name": "溯源全量 verify-provenance-all",
+   "exitCode": 1,
+   "resultLine": "PROVENANCE_RESULT=FAIL（本轮产物侧存在回填/过期戳记/断链帧/无戳，禁止据此下结论）"
+  },
+  {
+   "name": "档位新鲜度 verify-band-freshness",
+   "exitCode": 2,
+   "resultLine": "FRESH_RESULT=FAIL problems=13"
+  },
+  {
+   "name": "真实档覆盖去向册 verify-real-coverage-disposition",
+   "exitCode": 0,
+   "resultLine": "RCD_RESULT=PASS（9 条欠账条条有在册去向；陈旧 1 条按 advisory 点名不判红；上游门照旧 RESULT=FAIL UNCOVERED=9）"
+  }
+ ],
+ "flipped": []
+}
