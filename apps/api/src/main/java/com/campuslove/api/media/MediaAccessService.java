@@ -1,11 +1,14 @@
 package com.campuslove.api.media;
 
 import com.campuslove.api.common.ErrorMessages;
+import com.campuslove.api.entity.MediaAsset;
+import com.campuslove.api.repository.MediaAssetRepository;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +67,15 @@ public class MediaAccessService {
     /** 媒体存储根目录，与 LocalMediaStorageService 共享配置 */
     private final String storageRoot;
 
+    /** 受管媒体 URL 前缀（与 LocalMediaStorageService.URL_PREFIX 一致） */
+    private static final String MEDIA_URL_PREFIX = "/api/v1/media/";
+
+    /**
+     * 媒体资产仓库（可选注入，real profile 有 JPA 仓库；mock/单测直连构造时为 null）。
+     * 用于按 DB 分类（media_asset.category）判定访问权限——DB 分类优先，路径关键词兜底。
+     */
+    private final MediaAssetRepository mediaAssetRepository;
+
     /**
      * 构造函数，注入存储根目录配置。
      *
@@ -71,7 +83,21 @@ public class MediaAccessService {
      */
     public MediaAccessService(
             @Value("${app.media.storage-root:./uploads}") String storageRoot) {
+        this(storageRoot, null);
+    }
+
+    /**
+     * 构造函数（完整形态）：注入存储根目录与媒体资产仓库。
+     *
+     * @param storageRoot          来自 {@code app.media.storage-root} 配置，默认 {@code ./uploads}
+     * @param mediaAssetRepository 媒体资产仓库（可为 null：mock profile / 单元测试直连构造）
+     */
+    @org.springframework.beans.factory.annotation.Autowired
+    public MediaAccessService(
+            @Value("${app.media.storage-root:./uploads}") String storageRoot,
+            MediaAssetRepository mediaAssetRepository) {
         this.storageRoot = storageRoot;
+        this.mediaAssetRepository = mediaAssetRepository;
     }
 
     /**
@@ -97,6 +123,27 @@ public class MediaAccessService {
      * @throws ResponseStatusException  路径非法或文件不存在（400/404）
      */
     public MediaFile loadMedia(Long targetUserId, String subPath, Authentication authentication) {
+        MediaCategory category = resolveCategory(targetUserId, subPath);
+        return loadMedia(targetUserId, subPath, authentication, category);
+    }
+
+    /**
+     * 加载并返回指定用户的媒体文件（带分类提示重载，2026-10-05 身份证照片越权面收敛）。
+     *
+     * <p>与 {@link #loadMedia(Long, String, Authentication)} 语义一致，但由调用方
+     * （MediaAccessController）先经 {@link #resolveCategory} 解析分类后传入，
+     * 避免同一请求重复查库；controller 侧前置校验与 service 侧强制校验使用同一分类结论。</p>
+     *
+     * @param targetUserId   路径变量中的目标用户 ID（文件归属者）
+     * @param subPath        subPath（如 {@code 202607/uuid.jpg}），不含 userId
+     * @param authentication 当前请求的认证主体（由 SecurityContext 注入）
+     * @param categoryHint   已解析的媒体分类（null 时内部按路径关键词兜底推断）
+     * @return 已通过校验的 {@link MediaFile}，包含可读取的 Resource 与 MediaType
+     * @throws AccessDeniedException    当前用户无权访问该文件（非本人且非管理员，且非公开图片）
+     * @throws ResponseStatusException  路径非法或文件不存在（400/404）；分类查库故障时 503
+     */
+    public MediaFile loadMedia(Long targetUserId, String subPath, Authentication authentication,
+                               MediaCategory categoryHint) {
         if (targetUserId == null) {
             throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
                     "userId 不能为空");
@@ -108,7 +155,9 @@ public class MediaAccessService {
             // 未认证（无 token 或 token 无效）
             throw new AccessDeniedException(ErrorMessages.MEDIA_ACCESS_UNAUTHENTICATED);
         }
-        MediaCategory detectedType = probeMediaTypeByPath(subPath);
+        MediaCategory detectedType = categoryHint != null
+                ? categoryHint
+                : probeMediaTypeByPath(subPath);
         boolean isOwner = targetUserId.equals(currentUserId);
         boolean imagePublicRead = detectedType == MediaCategory.IMAGE;
         if (!isOwner && !isAdmin && !imagePublicRead) {
@@ -337,11 +386,83 @@ public class MediaAccessService {
     }
 
     /**
+     * 解析媒体访问分类（2026-10-05 身份证照片越权面收敛）。
+     *
+     * <p>优先级：</p>
+     * <ol>
+     *   <li>DB 分类（media_asset.category，按 URL 精确查询）：ID_CARD/VOICE/VIDEO
+     *       直接生效——实名认证照片上传时显式登记，不再依赖路径关键词</li>
+     *   <li>路径关键词（{@link #probeMediaTypeByPath}）兜底：DB 无记录（存量文件/
+     *       mock profile）或 DB 分类为普通类时，路径关键词命中仍收紧为更严格分类
+     *       （只收紧不放松，保留存量 "verification" 等路径的既有防护）</li>
+     *   <li>均未命中 → IMAGE（登录用户公开可读）</li>
+     * </ol>
+     *
+     * <p>fail-closed：DB 查询故障时抛 503（无法确认是否为高敏感分类时宁可拒绝服务，
+     * 不降级为公开可读）。mock profile（仓库为 null）直接走路径兜底，行为不变。</p>
+     *
+     * @param targetUserId 文件归属者用户 ID
+     * @param subPath      子路径（不含 userId）
+     * @return 解析出的访问分类，永不为 null
+     */
+    public MediaCategory resolveCategory(Long targetUserId, String subPath) {
+        if (mediaAssetRepository != null && targetUserId != null
+                && subPath != null && !subPath.isBlank()) {
+            try {
+                String url = MEDIA_URL_PREFIX + targetUserId + "/" + subPath;
+                List<MediaAsset> assets = mediaAssetRepository.findByUrlIn(List.of(url));
+                MediaCategory fromDb = assets.isEmpty()
+                        ? null : mapAccessCategory(assets.get(0).getCategory());
+                // DB 显式登记为高敏感分类 → 直接采用
+                if (fromDb == MediaCategory.ID_CARD) {
+                    return MediaCategory.ID_CARD;
+                }
+                MediaCategory fromPath = probeMediaTypeByPath(subPath);
+                // 路径关键词命中 → 收紧（VOICE/VIDEO/ID_CARD，只收紧不放松）
+                if (fromPath != MediaCategory.IMAGE) {
+                    return fromPath;
+                }
+                return fromDb != null ? fromDb : MediaCategory.IMAGE;
+            } catch (RuntimeException e) {
+                // fail-closed：分类不确定时拒绝服务（避免 DB 故障窗口期把 ID_CARD 判为公开 IMAGE）
+                LOGGER.warn("媒体分类查询失败，fail-closed 拒绝访问: targetUserId={}, subPath={}, error={}",
+                        targetUserId, subPath, e.getMessage());
+                throw new ResponseStatusException(
+                        org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
+                        "媒体权限校验暂不可用，请稍后重试");
+            }
+        }
+        return probeMediaTypeByPath(subPath);
+    }
+
+    /**
+     * media_asset.category 值 → 访问分类映射。
+     *
+     * @param category DB 分类（GENERAL/AVATAR/POST/VOICE/VIDEO/ID_CARD，可为 null）
+     * @return 高敏感分类映射（ID_CARD/VOICE/VIDEO）；普通类（GENERAL/AVATAR/POST/空）返回 null
+     */
+    private static MediaCategory mapAccessCategory(String category) {
+        if (category == null || category.isBlank()) {
+            return null;
+        }
+        return switch (category.trim().toUpperCase(Locale.ROOT)) {
+            case "ID_CARD" -> MediaCategory.ID_CARD;
+            case "VOICE" -> MediaCategory.VOICE;
+            case "VIDEO" -> MediaCategory.VIDEO;
+            default -> null; // GENERAL/AVATAR/POST → 走路径兜底后按 IMAGE 处理
+        };
+    }
+
+    /**
      * infra R2-00013：按子路径推断媒体类型，用于分级授权判定。
      *
      * <p>与 {@link com.campuslove.api.media.MediaAccessController.MediaType#fromPath}
      * 保持一致的分类规则：身份证/学生证关键词 → ID_CARD，voice/audio 或语音扩展名 → VOICE，
      * 视频扩展名 → VIDEO，其余按 IMAGE（公开可读）。</p>
+     *
+     * <p>2026-10-05 起降级为<b>兜底</b>推断：优先使用 {@link #resolveCategory}
+     * 的 DB 分类（实名照片上传即登记 category=ID_CARD），本方法仅用于
+     * DB 无记录的存量文件与 mock profile。</p>
      *
      * @param subPath 子路径（如 {@code 202607/uuid.jpg} 或 {@code voice/202607/uuid.m4a}）
      * @return 推断的媒体分类，默认 {@code IMAGE}

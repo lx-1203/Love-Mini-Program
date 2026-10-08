@@ -53,6 +53,16 @@ public class MediaAsset {
     @Column(name = "url", nullable = false, length = 512)
     private String url;
 
+    /**
+     * 业务分类（2026-10-05 新增，V2026.10.05.0001 迁移加列）。
+     * 取值：GENERAL（普通，默认）/ AVATAR / POST / VOICE / VIDEO / ID_CARD。
+     * ID_CARD（实名认证照片）为极高敏感分类：媒体访问侧优先按本字段授权，
+     * 仅本人与 ADMIN 可读（路径关键词仅作存量数据兜底）。
+     */
+    @Column(name = "category", nullable = false, length = 32,
+            columnDefinition = "VARCHAR(32) DEFAULT 'GENERAL'")
+    private String category = "GENERAL";
+
     /** 原始文件名（用于追溯） */
     @Column(name = "original_name", length = 255)
     private String originalName;
@@ -170,6 +180,14 @@ public class MediaAsset {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 
     public String getOriginalName() {

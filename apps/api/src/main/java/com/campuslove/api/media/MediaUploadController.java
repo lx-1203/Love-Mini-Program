@@ -53,6 +53,14 @@ public class MediaUploadController {
     private final MediaStorageService storageService;
 
     /**
+     * 媒体资产登记服务（可选注入，real profile 存在）。
+     * 上传带业务分类（非 GENERAL）时登记 media_asset（category 落库），
+     * 供媒体访问侧按 DB 分类授权（ID_CARD 仅本人/ADMIN 可读）。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private MediaAssetService mediaAssetService;
+
+    /**
      * 构造函数注入存储服务。
      *
      * @param storageService 媒体存储服务实现
@@ -99,12 +107,26 @@ public class MediaUploadController {
             @RequestParam("type") String type,
             @Parameter(in = ParameterIn.QUERY, description = "视频时长（毫秒），可选", example = "15000")
             @RequestParam(value = "durationMs", required = false)
-            Integer durationMs) {
+            Integer durationMs,
+            @Parameter(in = ParameterIn.QUERY, description = "业务分类（可选，缺省 GENERAL）：GENERAL/AVATAR/POST/VOICE/VIDEO/ID_CARD；"
+                    + "ID_CARD（实名认证照片）落库登记为高敏感分类，仅本人与 ADMIN 可读", example = "GENERAL")
+            @RequestParam(value = "category", required = false, defaultValue = "GENERAL")
+            String category) {
         Long userId = getCurrentUserId();
-        LOGGER.info("收到上传请求: userId={} type={} size={} durationMs={}",
-                userId, type, file == null ? 0 : file.getSize(), durationMs);
+        // 分类解析：非法取值抛 IllegalArgumentException（HTTP 400）
+        MediaUploadCategory uploadCategory = MediaUploadCategory.parse(category);
+        LOGGER.info("收到上传请求: userId={} type={} category={} size={} durationMs={}",
+                userId, type, uploadCategory, file == null ? 0 : file.getSize(), durationMs);
 
         MediaStorageService.UploadResult result = storageService.store(userId, file, type);
+        // 带业务分类（非 GENERAL）时登记 media_asset：分类落库后访问侧按 DB 分类授权
+        // （ID_CARD 登记 + 访问控制收敛，实名认证照片不再依赖路径关键词）。
+        // 登记失败向上抛出（fail-closed）：避免文件已落盘却无分类记录而被当作公开图片。
+        if (uploadCategory != MediaUploadCategory.GENERAL && mediaAssetService != null) {
+            mediaAssetService.recordUpload(userId, type, result,
+                    file != null ? file.getOriginalFilename() : null,
+                    uploadCategory.name());
+        }
         // 若调用方未传 durationMs，使用服务返回的（视频场景通常为 null）
         Integer finalDuration = durationMs != null ? durationMs : result.getDurationMs();
         return ApiResponse.ok(new UploadResponse(

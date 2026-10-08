@@ -1,5 +1,6 @@
 package com.campuslove.api.verification;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -21,6 +22,21 @@ public interface RealNameCertificationRepository extends JpaRepository<RealNameC
      * @return 认证记录（Optional）
      */
     Optional<RealNameCertification> findByUserId(Long userId);
+
+    /**
+     * 查询「已审核通过且超过照片保留期、仍有照片引用」的认证记录
+     * （2026-10-05 合规接线：保留策略定时任务用，清除身份证照片）。
+     *
+     * @param cutoff 截止时间（reviewedAt 早于该值）
+     * @return 待清除照片的认证记录列表
+     */
+    @Query("""
+            SELECT c FROM RealNameCertification c
+            WHERE c.status = 'APPROVED'
+              AND c.reviewedAt < :cutoff
+              AND (c.idCardFrontUrl IS NOT NULL OR c.idCardBackUrl IS NOT NULL)
+            """)
+    List<RealNameCertification> findApprovedWithPhotosBefore(@Param("cutoff") LocalDateTime cutoff);
 
     /**
      * 根据认证状态查询，按提交时间降序排列。

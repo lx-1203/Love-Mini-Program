@@ -279,18 +279,22 @@ public class MediaAccessController {
             HttpServletRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String subPath = extractSubPath(request, userId);
-        // Task 11.5：推断媒体类型，用于审计日志与差异化安全策略
-        MediaType mediaType = MediaType.fromPath(subPath);
+        // Task 11.5 + 2026-10-05 收敛：媒体类型优先按 DB 分类（media_asset.category，
+        // 实名认证照片上传即登记 ID_CARD）解析，路径关键词仅作存量数据兜底。
+        MediaAccessService.MediaCategory mediaCategory =
+                mediaAccessService.resolveCategory(userId, subPath);
+        MediaType mediaType = MediaType.valueOf(mediaCategory.name());
         String mediaId = extractMediaId(subPath);
         LOGGER.debug("媒体访问请求: userId={}, subPath={}, mediaType={}, mediaId={}, authenticated={}",
                 userId, subPath, mediaType, mediaId,
                 authentication != null && authentication.isAuthenticated());
 
         // Task 11.5：统一归属校验（含审计日志），实际访问控制仍由 service 强制执行
+        // （传入同一分类结论，controller/service 双层校验口径一致）
         assertOwnership(userId, mediaId, mediaType, authentication);
 
         MediaAccessService.MediaFile mediaFile =
-                mediaAccessService.loadMedia(userId, subPath, authentication);
+                mediaAccessService.loadMedia(userId, subPath, authentication, mediaCategory);
 
         // 审计日志：访问成功
         AUDIT_LOG.info("media.access.granted type={} targetUserId={} mediaId={} requesterId={} isAdmin={}",

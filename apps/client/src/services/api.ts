@@ -911,15 +911,21 @@ export const clientApi = {
    *
    * Mock 模式下直接返回本地路径（与现有图片链路一致，保持 mock 行为不破坏）。
    *
+   * 2026-10-05 合规接线：新增可选 category 参数（multipart 字段透传），
+   * 用于服务端按业务分类隔离存储（如实名认证传 ID_CARD）。
+   *
    * @param file - 图片文件（uni.chooseImage 的 tempFilePaths 包装）
+   * @param category - 媒体业务分类（可选，如 "ID_CARD"；不传时后端按默认分类处理）
    * @returns 服务端返回的图片 URL
    */
-  async uploadPostImage(file: UniUploadFileLike): Promise<{ url: string }> {
+  async uploadPostImage(file: UniUploadFileLike, category?: string): Promise<{ url: string }> {
     if (useMock()) {
       return { url: file.path ?? file.name };
     }
     const raw = await uploadFileViaUni<{ url?: string; data?: { url?: string } }>(file, "/media/upload", {
       type: "image",
+      // 契约：POST /api/v1/media/upload?type=image&category=ID_CARD（formData 字段透传）
+      ...(category ? { category } : {}),
     });
     // 兼容信封（{data:{url}}）与扁平（{url}）两种响应形态
     const url = raw?.url ?? raw?.data?.url;

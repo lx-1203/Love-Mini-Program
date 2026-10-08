@@ -231,9 +231,11 @@ async function submitRealNameReal(): Promise<void> {
   try {
     // MP-R7-REALNAME-001（2026-09-15）：本地临时路径（DevTools http://tmp/、真机 wxfile://）
     // 不能以 `/^https?:\/\//` 与服务器 URL 区分，须用 isUploadedMediaUrl 判定后上传。
+    // 2026-10-05 合规接线：身份证照片上传传 category=ID_CARD（服务端按业务分类隔离存储，
+    // 便于实名照片保留策略/注销清除按分类管理）
     const upload = async (path: string, name: string): Promise<string> => {
       if (isUploadedMediaUrl(path)) return path;
-      const uploaded = await clientApi.uploadPostImage({ name, path });
+      const uploaded = await clientApi.uploadPostImage({ name, path }, "ID_CARD");
       return uploaded?.url ?? path;
     };
     const frontUrl = await upload(idCardFrontPath.value, "real-name-id-front.jpg");

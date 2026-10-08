@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,13 @@ public class RealAccountSecurityService implements AccountSecurityService {
     private final JwtTokenProvider jwtTokenProvider;
     /** AES 加密器（phone 加密存储，与 RealAuthService 同一口径；单测可为 null） */
     private final AesEncryptor aesEncryptor;
+
+    /**
+     * 实名认证照片清除服务（2026-10-05 合规接线：注销时同步删除该用户实名照片文件与引用）。
+     * 字段注入（required=false）兼容既有单测构造器；为 null 时跳过照片清除。
+     */
+    @Autowired(required = false)
+    private com.campuslove.api.verification.RealNameMediaPurgeService realNameMediaPurgeService;
 
     public RealAccountSecurityService(
             UserRepository userRepository,
@@ -190,6 +198,12 @@ public class RealAccountSecurityService implements AccountSecurityService {
         user.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         userRepository.save(user);
         log.info("账号已注销并匿名化, userId={}", userId);
+
+        // 2026-10-05 合规接线：注销时同步删除该用户实名认证照片文件与引用
+        // （身份证照片属高敏个人信息，注销后不得留存；清除失败仅记日志不阻断注销主流程）
+        if (realNameMediaPurgeService != null) {
+            realNameMediaPurgeService.purgeByUserId(userId);
+        }
 
         // 吊销该用户全部 token（含当前请求 token）
         revokeAllTokens(userId, currentToken);

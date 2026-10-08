@@ -15,7 +15,10 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,6 +57,21 @@ public class RealRealNameCertificationService implements RealNameCertificationSe
     private final UserRepository userRepository;
     private final UserBasicProfileRepository userBasicProfileRepository;
     private final AesEncryptor aesEncryptor;
+
+    /**
+     * 实名认证照片保留天数（2026-10-05 合规接线，默认 30 天）：
+     * 审核通过超过该天数后，由定时任务删除身份证照片文件并置空记录引用，
+     * 保留审核结论与身份证号密文作为核验依据。
+     */
+    @Value("${app.verification.photo-retention-days:30}")
+    private int photoRetentionDays;
+
+    /**
+     * 实名照片清除服务（保留策略与注销清除共用，2026-10-05 合规接线）。
+     * 字段注入（required=false）兼容既有单测构造器；为 null 时跳过定时清除。
+     */
+    @Autowired(required = false)
+    private RealNameMediaPurgeService mediaPurgeService;
 
     public RealRealNameCertificationService(
             RealNameCertificationRepository repository,
@@ -194,6 +212,35 @@ public class RealRealNameCertificationService implements RealNameCertificationSe
 
         return RealNameCertificationView.from(saved,
                 RealNameCertificationView.maskIdCardNo(decryptIdCardNo(saved)));
+    }
+
+    /**
+     * 实名照片保留策略定时任务（2026-10-05 合规接线）。
+     *
+     * <p>每日 04:30 执行：删除「审核通过已超过 {@code app.verification.photo-retention-days}
+     * （默认 30）天」认证记录的身份证照片文件，并把记录中的照片 URL 置空；
+     * 审核结论与身份证号密文保留作为核验依据（隐私最小化：身份证照片属高敏个人生物信息，
+     * 用途完成后应及时删除）。</p>
+     *
+     * <p>任务由 {@code @EnableScheduling}（已在 CampusLoveApplication 启用）调度；
+     * 异常捕获记录日志，避免单次失败停止后续调度；清除逻辑委托
+     * {@link RealNameMediaPurgeService}（与注销清除共用）。</p>
+     */
+    @Scheduled(cron = "0 30 4 * * *")
+    public void purgeExpiredCertificationPhotos() {
+        if (mediaPurgeService == null) {
+            log.debug("实名照片清除服务未注入（单测/mock 场景），跳过保留策略定时任务");
+            return;
+        }
+        try {
+            LocalDateTime cutoff = LocalDateTime.now(TimeZones.BUSINESS).minusDays(photoRetentionDays);
+            int purged = mediaPurgeService.purgeApprovedPhotosBefore(cutoff);
+            if (purged > 0) {
+                log.info("实名照片保留策略任务完成：保留期 {} 天，本次清除 {} 条记录的照片", photoRetentionDays, purged);
+            }
+        } catch (RuntimeException e) {
+            log.warn("实名照片保留策略定时任务执行失败: {}", e.getMessage());
+        }
     }
 
     /**

@@ -67,6 +67,26 @@ public class MediaAssetService {
     @Transactional
     public MediaAsset recordUpload(Long userId, String type,
                                    MediaStorageService.UploadResult result, String originalName) {
+        return recordUpload(userId, type, result, originalName, "GENERAL");
+    }
+
+    /**
+     * 记录一次上传（带业务分类重载，2026-10-05 身份证照片越权面收敛）。
+     *
+     * <p>category 取 {@link MediaUploadCategory} 名称（GENERAL/AVATAR/POST/VOICE/VIDEO/ID_CARD）。
+     * ID_CARD 分类在媒体访问侧走「仅本人/ADMIN」授权（DB 分类优先，路径关键词兜底）。</p>
+     *
+     * @param userId       上传者用户 ID
+     * @param type         媒体类型（avatar/image/video/background）
+     * @param result       上传结果（URL/宽高/MIME/大小）
+     * @param originalName 原始文件名（可为 null）
+     * @param category     业务分类（空按 GENERAL 兜底）
+     * @return 已持久化的资产记录
+     */
+    @Transactional
+    public MediaAsset recordUpload(Long userId, String type,
+                                   MediaStorageService.UploadResult result, String originalName,
+                                   String category) {
         MediaAsset asset = new MediaAsset();
         asset.setUserId(userId);
         asset.setType(type);
@@ -79,6 +99,7 @@ public class MediaAssetService {
         asset.setDurationMs(result.getDurationMs());
         asset.setStatus("ready");
         asset.setAuditStatus(AUDIT_PENDING);
+        asset.setCategory(category != null && !category.isBlank() ? category : "GENERAL");
         return mediaAssetRepository.save(asset);
     }
 
