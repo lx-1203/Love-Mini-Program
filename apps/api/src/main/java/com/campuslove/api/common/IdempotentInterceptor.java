@@ -11,6 +11,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
@@ -75,6 +76,19 @@ public class IdempotentInterceptor implements HandlerInterceptor {
     private final RedisTemplate<String, Object> redisTemplate;
 
     /**
+     * 幂等降级策略开关（配置 app.security.idempotency.strict，默认 true）。
+     *
+     * <p>2026-10-05 资金端点 fail-closed：strict=true 时，Redis 不可用（未注入或运行时
+     * 故障）对<b>资金写端点</b>（/api/v1/wallet/**、/api/v1/vip/**）直接 503 拒绝——
+     * 幂等去重是防重复扣费/重复入账的最后一道闸，资金端点降级为非幂等模式等于
+     * 放开重复扣款风险；其他端点维持降级放行（幂等是优化项非阻断项）。strict=false
+     * （或单测直连构造未注入配置）时全端点维持旧的降级放行行为。</p>
+     */
+    @org.springframework.beans.factory.annotation.Value(
+            "${app.security.idempotency.strict:${APP_IDEMPOTENCY_STRICT:true}}")
+    private boolean strict;
+
+    /**
      * 构造函数注入 RedisTemplate。
      *
      * <p>当 Redis 不可用（如 mock profile）时，{@code redisTemplate} 可能为 null，
@@ -84,6 +98,20 @@ public class IdempotentInterceptor implements HandlerInterceptor {
      */
     public IdempotentInterceptor(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
+    }
+
+    /**
+     * 判断请求是否命中资金写端点（/wallet/**、/vip/**）。
+     *
+     * <p>这两类端点涉及扣费/入账/开通会员，重复执行有直接资金损失，
+     * strict 模式下 Redis 不可用时拒绝服务。</p>
+     *
+     * @param request 当前请求
+     * @return true 表示资金端点
+     */
+    private static boolean isFundsEndpoint(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        return uri != null && (uri.startsWith("/api/v1/wallet/") || uri.startsWith("/api/v1/vip/"));
     }
 
     @Override
@@ -136,8 +164,15 @@ public class IdempotentInterceptor implements HandlerInterceptor {
 
         String redisKey = buildRedisKey(idempotencyKey, userIdStr);
 
-        // Redis 降级：redisTemplate 为 null 时放行
+        // Redis 降级：redisTemplate 为 null 时放行（strict 模式下资金端点例外：503 拒绝）
         if (redisTemplate == null) {
+            if (strict && isFundsEndpoint(request)) {
+                log.warn("RedisTemplate 不可用且为资金端点，strict 模式拒绝服务: method={}, uri={}",
+                        handlerMethod.getMethod().getName(), request.getRequestURI());
+                throw new ResponseStatusException(
+                        org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
+                        "资金服务暂时不可用，请稍后重试");
+            }
             log.warn("RedisTemplate 不可用，跳过幂等校验：method={}, key={}",
                     handlerMethod.getMethod().getName(), redisKey);
             return true;
@@ -170,10 +205,22 @@ public class IdempotentInterceptor implements HandlerInterceptor {
         } catch (InvalidOperationException e) {
             // 参数校验异常向上抛出
             throw e;
+        } catch (ResponseStatusException e) {
+            // strict 模式资金端点 fail-closed 拒绝，向上抛出由 GlobalExceptionHandler 转 503
+            throw e;
         } catch (RuntimeException e) {
             // Redis 异常（DataAccessException 或 RedisTemplate 连接异常等）时降级放行，避免阻断主流程
             // 捕获 RuntimeException 而非 DataAccessException：覆盖 RedisTemplate 在连接异常时
             // 可能抛出的非 DataAccessException 子类异常（如 Mockito 测试场景）
+            // 2026-10-05 例外：strict 模式下资金写端点（/wallet/**、/vip/**）fail-closed，
+            // 幂等去重是防重复扣费的最后一道闸，Redis 故障时拒绝服务而非放开重复扣款风险
+            if (strict && isFundsEndpoint(request)) {
+                log.warn("幂等性校验异常且为资金端点，strict 模式拒绝服务：method={}, key={}, error={}",
+                        handlerMethod.getMethod().getName(), redisKey, e.getMessage());
+                throw new ResponseStatusException(
+                        org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
+                        "资金服务暂时不可用，请稍后重试");
+            }
             log.warn("幂等性校验异常，降级放行：method={}, key={}, error={}",
                     handlerMethod.getMethod().getName(), redisKey, e.getMessage());
             return true;

@@ -126,7 +126,7 @@ class WalletControllerTest {
     }
 
     @Test
-    @DisplayName("recharge 服务端生成 orderId 并委托充值，返回充值后余额")
+    @DisplayName("recharge 服务端生成 orderId 并委托充值，返回充值后余额（流水类型 WALLET_DEMO_RECHARGE）")
     void recharge_shouldGenerateOrderIdAndDelegate() {
         Long userId = 3001L;
         RechargeRequest request = new RechargeRequest(5000L);
@@ -135,11 +135,14 @@ class WalletControllerTest {
         org.springframework.test.util.ReflectionTestUtils.setField(controller, "demoRechargeEnabled", true);
         // 每日演示充值次数上限放宽，避免跨用例累计触发限流
         org.springframework.test.util.ReflectionTestUtils.setField(controller, "demoRechargeDailyLimit", 100);
+        // 2026-10-05 演示充值隔离：累计金额上限放宽（直连构造未注入配置时本就不限制，
+        // 此处显式设置保证语义清晰）
+        org.springframework.test.util.ReflectionTestUtils.setField(controller, "demoRechargeTotalLimitCents", 1_000_000L);
 
         try (MockedStatic<SecurityUtils> mocked = Mockito.mockStatic(SecurityUtils.class)) {
             mocked.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
             when(walletService.recharge(eq(userId), eq(5000L), anyString(),
-                    eq(WalletTransactionLog.RELATED_TYPE_WALLET_RECHARGE), any()))
+                    eq(WalletController.RELATED_TYPE_WALLET_DEMO_RECHARGE), any()))
                     .thenReturn(5000L);
 
             WalletRechargeView view = controller.recharge(request);
@@ -147,11 +150,12 @@ class WalletControllerTest {
             assertNotNull(view);
             assertEquals(Long.valueOf(5000L), view.balanceAfterCents(), "充值后余额应为 5000");
             assertEquals(Long.valueOf(5000L), view.amountCents(), "充值金额应为 5000 分");
-            assertEquals(WalletTransactionLog.RELATED_TYPE_WALLET_RECHARGE, view.relatedType());
+            assertEquals(WalletController.RELATED_TYPE_WALLET_DEMO_RECHARGE, view.relatedType(),
+                    "演示充值流水应使用独立的 WALLET_DEMO_RECHARGE 类型（与真实充值隔离）");
             assertNotNull(view.orderId(), "服务端应生成订单号");
             assertTrue(view.orderId().startsWith("WALLET-RECHARGE-"), "订单号应有业务前缀");
             verify(walletService).recharge(eq(userId), eq(5000L), anyString(),
-                    eq(WalletTransactionLog.RELATED_TYPE_WALLET_RECHARGE), any());
+                    eq(WalletController.RELATED_TYPE_WALLET_DEMO_RECHARGE), any());
         }
     }
 
@@ -173,10 +177,12 @@ class WalletControllerTest {
     }
 
     @Test
-    @DisplayName("recharge 演示充值：relatedType 使用 WALLET_RECHARGE，可查流水")
-    void recharge_relatedTypeMatchesWalletRechargeConstant() {
+    @DisplayName("recharge 演示充值：relatedType 使用独立的 WALLET_DEMO_RECHARGE（与真实充值 WALLET_RECHARGE 隔离）")
+    void recharge_relatedTypeUsesIsolatedDemoConstant() {
+        assertEquals("WALLET_DEMO_RECHARGE", WalletController.RELATED_TYPE_WALLET_DEMO_RECHARGE,
+                "演示充值相关业务类型常量应为独立取值");
         assertEquals("WALLET_RECHARGE", WalletTransactionLog.RELATED_TYPE_WALLET_RECHARGE,
-                "演示充值相关业务类型常量应存在");
+                "真实充值常量保持不变（两类流水互不污染）");
     }
 
     @Test

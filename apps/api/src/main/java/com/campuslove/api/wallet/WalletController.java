@@ -73,6 +73,9 @@ public class WalletController {
     /** 演示充值每日计数 Redis key 前缀（P0-15 演示充值风控）。 */
     private static final String REDIS_KEY_PREFIX_DEMO_RECHARGE = "demo-recharge:count:";
 
+    /** 演示充值累计金额 Redis key 前缀（2026-10-05 演示充值隔离：每用户累计上限）。 */
+    private static final String REDIS_KEY_PREFIX_DEMO_RECHARGE_TOTAL = "demo-recharge:total:";
+
     /** 日期格式（yyyyMMdd），用于组装每日计数 key。 */
     private static final DateTimeFormatter DATE_KEY_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -81,6 +84,19 @@ public class WalletController {
 
     /** 每日演示充值次数上限默认值（R4-01803，配置 app.demo-recharge.daily-limit）。 */
     private static final int DEFAULT_DEMO_RECHARGE_DAILY_LIMIT = 5;
+
+    /**
+     * 演示充值每用户累计金额上限默认值（分，2026-10-05 演示充值隔离）。
+     * 50_000 分 = 500 元；可通过 APP_DEMO_RECHARGE_TOTAL_LIMIT_CENTS 覆盖。
+     */
+    private static final long DEFAULT_DEMO_RECHARGE_TOTAL_LIMIT_CENTS = 50_000L;
+
+    /**
+     * 演示充值流水类型（2026-10-05 演示充值隔离）。
+     * 与未来真实支付入账的 WALLET_RECHARGE 区分：演示入账在账单/审计中一眼可辨，
+     * 真实充值上线后可直接按 relatedType 隔离两类流水（对账互不污染）。
+     */
+    public static final String RELATED_TYPE_WALLET_DEMO_RECHARGE = "WALLET_DEMO_RECHARGE";
 
     /**
      * 单次充值/扣减金额上限（分）（R4-01841/01842）。
@@ -123,6 +139,39 @@ public class WalletController {
     private int demoRechargeDailyLimit;
 
     /**
+     * 每用户累计演示充值金额上限（分，2026-10-05 演示充值隔离）。
+     * 默认 50_000 分（500 元），环境变量 APP_DEMO_RECHARGE_TOTAL_LIMIT_CENTS 覆盖；
+     * 值 <= 0（如单测直连构造未注入）视为不限制。
+     */
+    @Value("${app.demo-recharge.total-limit-cents:${APP_DEMO_RECHARGE_TOTAL_LIMIT_CENTS:"
+            + DEFAULT_DEMO_RECHARGE_TOTAL_LIMIT_CENTS + "}}")
+    private long demoRechargeTotalLimitCents;
+
+    // ============ 服务端价格目录（2026-10-05，/wallet/deduct 客户端金额去信任化） ============
+    // 客户端自带 amountCents 可被篡改（改包 1 分钱解锁）。服务端按 relatedType 查固定定价，
+    // 客户端金额与服务端不符时以服务端为准。定价可通过环境变量调价：
+    // APP_WALLET_PRICE_MESSAGE_UNLOCK / _VISITORS_UNLOCK / _LIKES_UNLOCK / _WHISPER_UNLOCK。
+    // 默认价与既有服务端定价口径对齐：LIKES_UNLOCK=喜欢我解锁 300 分、VISITORS_UNLOCK=访客解锁
+    // 300 分（app.unlock-price.liked-me/visitor 默认 300）、WHISPER_UNLOCK=悄悄话解锁 200 分
+    // （app.unlock-price.whisper 默认 200）；MESSAGE_UNLOCK 无既有定价，默认 100 分。
+
+    /** MESSAGE_UNLOCK 服务端定价（分），配置 app.wallet.price.MESSAGE_UNLOCK，默认 100 分 */
+    @Value("${app.wallet.price.MESSAGE_UNLOCK:${APP_WALLET_PRICE_MESSAGE_UNLOCK:100}}")
+    private long priceMessageUnlock;
+
+    /** VISITORS_UNLOCK 服务端定价（分），配置 app.wallet.price.VISITORS_UNLOCK，默认 300 分 */
+    @Value("${app.wallet.price.VISITORS_UNLOCK:${APP_WALLET_PRICE_VISITORS_UNLOCK:300}}")
+    private long priceVisitorsUnlock;
+
+    /** LIKES_UNLOCK 服务端定价（分），配置 app.wallet.price.LIKES_UNLOCK，默认 300 分 */
+    @Value("${app.wallet.price.LIKES_UNLOCK:${APP_WALLET_PRICE_LIKES_UNLOCK:300}}")
+    private long priceLikesUnlock;
+
+    /** WHISPER_UNLOCK 服务端定价（分），配置 app.wallet.price.WHISPER_UNLOCK，默认 200 分 */
+    @Value("${app.wallet.price.WHISPER_UNLOCK:${APP_WALLET_PRICE_WHISPER_UNLOCK:200}}")
+    private long priceWhisperUnlock;
+
+    /**
      * Redis 模板（可选注入）：演示充值每日计数持久化。
      * R4-00330：Redis 存在但运行时故障时【拒绝服务】（fail-closed），不再降级本地内存——
      * 多实例部署下本地降级会被各实例独立计数突破每日限额；仅 mock（无 Redis 单实例
@@ -133,6 +182,9 @@ public class WalletController {
 
     /** 本地内存每日计数（仅 mock/单实例本地演示场景，redisTemplate 未注入时使用）。 */
     private final ConcurrentHashMap<String, Integer> localDemoRechargeCount = new ConcurrentHashMap<>();
+
+    /** 本地内存累计金额（仅 mock/单实例本地演示场景，redisTemplate 未注入时使用）。 */
+    private final ConcurrentHashMap<String, Long> localDemoRechargeTotal = new ConcurrentHashMap<>();
 
     public WalletController(WalletService walletService, WalletUnlockService walletUnlockService) {
         this.walletService = walletService;
@@ -212,12 +264,64 @@ public class WalletController {
                     demoRechargeDailyLimit,
                     ErrorMessages.DEMO_RECHARGE_DAILY_LIMIT_PREFIX + demoRechargeDailyLimit + " 次），请明日再来");
         }
+        // 2026-10-05 演示充值隔离：每用户累计演示金额上限（超限拒绝并回滚预留）
+        if (!tryConsumeDemoRechargeTotalQuota(userId, request.amountCents())) {
+            throw new com.campuslove.api.common.OperationForbiddenException(
+                    "演示充值累计金额已达上限（" + demoRechargeTotalLimitCents / 100 + " 元），无法继续充值");
+        }
         // 演示充值：服务端生成订单号（UUID）；生产接入支付后，orderId 应由支付回调上下文确定
+        // relatedType 使用独立的 WALLET_DEMO_RECHARGE（2026-10-05 隔离），与未来真实
+        // 支付入账的 WALLET_RECHARGE 在账单/对账层面互不污染
         String orderId = "WALLET-RECHARGE-" + UUID.randomUUID();
         Long balanceAfter = walletService.recharge(userId, request.amountCents(), orderId,
-                WalletTransactionLog.RELATED_TYPE_WALLET_RECHARGE, null);
+                RELATED_TYPE_WALLET_DEMO_RECHARGE, null);
         return new WalletRechargeView(balanceAfter, request.amountCents(), orderId,
-                WalletTransactionLog.RELATED_TYPE_WALLET_RECHARGE);
+                RELATED_TYPE_WALLET_DEMO_RECHARGE);
+    }
+
+    /**
+     * 2026-10-05 演示充值隔离：原子预留累计演示金额额度（INCRBY amount，超限回滚）。
+     *
+     * <p>Redis key {@code demo-recharge:total:{userId}} 为终身累计值（无 TTL），
+     * 预留失败（超限）时立即回滚本次增量。Redis 运行时故障沿用每日计数的 fail-closed
+     * 语义（拒绝本次充值）；redisTemplate 未注入（mock 单实例本地演示）降级本地内存。</p>
+     *
+     * @param userId      用户 ID
+     * @param amountCents 本次充值金额（分）
+     * @return true 表示成功预留；false 表示超限或风控存储不可用
+     */
+    private boolean tryConsumeDemoRechargeTotalQuota(Long userId, long amountCents) {
+        // 上限未配置（<=0，如单测直连构造未注入配置）视为不限制
+        if (demoRechargeTotalLimitCents <= 0) {
+            return true;
+        }
+        if (redisTemplate == null) {
+            // mock/单实例本地演示（无 Redis）：synchronized 内判断+累加保证原子性
+            synchronized (localDemoRechargeTotal) {
+                long next = localDemoRechargeTotal.getOrDefault(String.valueOf(userId), 0L) + amountCents;
+                if (next > demoRechargeTotalLimitCents) {
+                    return false;
+                }
+                localDemoRechargeTotal.put(String.valueOf(userId), next);
+                return true;
+            }
+        }
+        String redisKey = REDIS_KEY_PREFIX_DEMO_RECHARGE_TOTAL + userId;
+        try {
+            Long newTotal = redisTemplate.opsForValue().increment(redisKey, amountCents);
+            if (newTotal != null && newTotal > demoRechargeTotalLimitCents) {
+                // 超限回滚本次增量，保证累计值不漂移
+                redisTemplate.opsForValue().increment(redisKey, -amountCents);
+                log.warn("演示充值被拒绝：累计金额超限, userId={}, total={}, limit={}",
+                        userId, newTotal - amountCents, demoRechargeTotalLimitCents);
+                return false;
+            }
+            return true;
+        } catch (RuntimeException e) {
+            // fail-closed：资金风控，Redis 故障时宁可拒绝本次演示充值也不放开额度
+            log.warn("写入 Redis 演示充值累计额度失败，拒绝本次演示充值（fail-closed）: {}", e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -332,8 +436,13 @@ public class WalletController {
      * scene ∈ MESSAGE / VISITORS / LIKES / WHISPER；余额不足返回
      * {@link InsufficientBalanceException}（HTTP 409，见全局异常处理）。</p>
      *
+     * <p><b>服务端定价（2026-10-05）</b>：客户端自带 amountCents 不可信任（可被改包
+     * 1 分钱解锁）。服务端按 relatedType 查定价目录取固定分价，客户端金额与服务端
+     * 不符时<b>以服务端为准</b>扣费（差异仅记录 warn，不中断——调价无需客户端发版协同）。
+     * 定价可经环境变量调整（APP_WALLET_PRICE_*）。</p>
+     *
      * @param request 扣费请求体
-     * @return 扣费结果视图（扣减后余额）
+     * @return 扣费结果视图（扣减后余额；amountCents 为服务端实际扣减金额）
      */
     @PostMapping("/deduct")
     @FeatureSwitch(FeatureSwitchKeys.COMMERCE_COIN)
@@ -348,12 +457,43 @@ public class WalletController {
                     userId, request.relatedType());
             throw new IllegalArgumentException("不支持的扣费业务类型: " + request.relatedType());
         }
+        // 2026-10-05：服务端价格目录——按 relatedType 取服务端固定分价，客户端金额不信任
+        long serverPrice = resolveServerPrice(request.relatedType());
+        if (serverPrice <= 0) {
+            log.warn("钱包扣减被拒绝：类型未配置服务端价格, userId={}, relatedType={}",
+                    userId, request.relatedType());
+            throw new IllegalArgumentException("扣费类型未配置服务端价格: " + request.relatedType());
+        }
+        if (request.amountCents() != serverPrice) {
+            log.warn("钱包扣减金额与服务端定价不符，以服务端为准: userId={}, relatedType={}, "
+                            + "clientAmount={}, serverPrice={}",
+                    userId, request.relatedType(), request.amountCents(), serverPrice);
+        }
         String orderId = request.orderId() != null && !request.orderId().isBlank()
                 ? request.orderId()
                 : "UNLOCK-" + UUID.randomUUID();
-        Long balanceAfter = walletService.deduct(userId, request.amountCents(), orderId,
+        Long balanceAfter = walletService.deduct(userId, serverPrice, orderId,
                 request.relatedType(), request.relatedId());
-        return new WalletDeductView(balanceAfter, request.amountCents(), orderId);
+        return new WalletDeductView(balanceAfter, serverPrice, orderId);
+    }
+
+    /**
+     * 解析服务端定价（分）。
+     *
+     * <p>配置值 <= 0（单测直连构造未注入配置）时回退内置默认价；
+     * 白名单之外的类型返回 0（由调用方拒绝）。</p>
+     *
+     * @param relatedType 扣费业务类型（MESSAGE_UNLOCK/VISITORS_UNLOCK/LIKES_UNLOCK/WHISPER_UNLOCK）
+     * @return 服务端定价（分）；未配置/未知类型返回 0
+     */
+    private long resolveServerPrice(String relatedType) {
+        return switch (relatedType) {
+            case "MESSAGE_UNLOCK" -> priceMessageUnlock > 0 ? priceMessageUnlock : 100L;
+            case "VISITORS_UNLOCK" -> priceVisitorsUnlock > 0 ? priceVisitorsUnlock : 300L;
+            case "LIKES_UNLOCK" -> priceLikesUnlock > 0 ? priceLikesUnlock : 300L;
+            case "WHISPER_UNLOCK" -> priceWhisperUnlock > 0 ? priceWhisperUnlock : 200L;
+            default -> 0L;
+        };
     }
 
     /** 实体 → 流水项视图映射。 */
@@ -385,7 +525,8 @@ record WalletDeductView(
 /**
  * 交友币扣费请求体。
  *
- * @param amountCents 扣减金额（分，1 ~ 100_000_000）
+ * @param amountCents 扣减金额（分，1 ~ 100_000_000）。2026-10-05 起为<b>建议值</b>：
+ *                    服务端按 relatedType 查价格目录定价，与定价不符时以服务端为准
  * @param orderId     幂等订单号（建议 UNLOCK-{scene}-{targetUserId}，可空，空则服务端生成）
  * @param relatedType 关联业务类型（MESSAGE_UNLOCK / VISITORS_UNLOCK / LIKES_UNLOCK / WHISPER_UNLOCK）
  * @param relatedId   关联业务实体 ID（如目标用户 ID，可空）

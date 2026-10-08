@@ -72,8 +72,13 @@ public class RealWalletUnlockService implements WalletUnlockService {
         // 未解锁：按配置单价扣费
         long priceCents = priceForType(normalizedType);
         String relatedType = relatedTypeFor(normalizedType);
-        // orderId 幂等：同一 (user, type, targetId) 重复提交只扣一次费
-        String orderId = "UNLOCK-" + normalizedType + "-" + targetId;
+        // orderId 幂等：同一 (user, type, targetId) 重复提交只扣一次费。
+        // 2026-10-05 修复：orderId 必须包含 userId——原格式 UNLOCK-{type}-{targetId}
+        // 缺少 userId，钱包流水 order_id 全局唯一约束下，其他用户解锁同一目标
+        // 会命中同一 orderId 被幂等吞掉（扣费静默失败）且解锁记录写不进去（必失败）。
+        // 新格式 UNLOCK-{type}-{userId}-{targetId} 天然与历史数据不冲突，
+        // 不同用户解锁同一目标对应不同订单，各自独立扣费/解锁。
+        String orderId = "UNLOCK-" + normalizedType + "-" + userId + "-" + targetId;
         Long balanceAfter;
         try {
             balanceAfter = walletService.deduct(userId, priceCents, orderId, relatedType, String.valueOf(targetId));
