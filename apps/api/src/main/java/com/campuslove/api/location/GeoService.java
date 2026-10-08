@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,8 +15,13 @@ import org.springframework.transaction.annotation.Transactional;
  * LBS Phase 2：地理坐标服务。
  *
  * <p>提供坐标上报存储与附近的人查询能力。</p>
+ *
+ * <p>依赖 {@link UserRepository}（JPA）。mock profile 排除了 DataSource/JPA 自动配置、
+ * 无 JPA 仓库可注入，因此与 RecommendationRanker 同规格限定 real 档装配；
+ * mock 档的 LBS 端点由 LocationController 的可选注入兜底。</p>
  */
 @Service
+@Profile("real")
 public class GeoService {
 
     private static final Logger log = LoggerFactory.getLogger(GeoService.class);

@@ -98,8 +98,11 @@ if defined WX_APPID (
 echo.
 
 REM ---------- Step 4: 编译微信小程序 ----------
-echo [4/4] 编译微信小程序...
-call pnpm run build:mp-weixin
+REM 走 isolated real 出口：build:mp-weixin 会把 real 档直接写进 dist\build\mp-weixin
+REM （那是 mock 证据档，档位新鲜度门实测两次抓到 VITE_API_MODE=real 覆盖），isolated
+REM 出口输出到 mp-weixin-real 自管目录，两侧互不污染。
+echo [4/4] 编译微信小程序（real 档，isolated 出口）...
+call pnpm run build:mp-weixin:real:isolated
 if errorlevel 1 (
     echo [ERROR] 编译失败，请查看上方错误信息
     exit /b 1
@@ -110,7 +113,7 @@ echo ========================================
 echo   编译成功！
 echo ========================================
 echo.
-echo 输出目录: %~dp0apps\client\dist\build\mp-weixin
+echo 输出目录: %~dp0apps\client\dist\build\mp-weixin-real
 echo.
 echo 下一步：
 echo   1. 打开微信开发者工具

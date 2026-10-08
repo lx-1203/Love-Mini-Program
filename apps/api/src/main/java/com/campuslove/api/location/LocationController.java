@@ -6,6 +6,7 @@ import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,11 +22,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class LocationController {
 
     private final LocationService locationService;
-    private final GeoService geoService;
 
-    public LocationController(LocationService locationService, GeoService geoService) {
+    /** LBS Phase 2：可选注入。GeoService 依赖 JPA、仅 real 档装配（mock 档无 JPA 仓库），为 null 时 LBS 端点按「功能未开启」降级 */
+    @Autowired(required = false)
+    private GeoService geoService;
+
+    public LocationController(LocationService locationService) {
         this.locationService = locationService;
-        this.geoService = geoService;
     }
 
     @GetMapping("/ip-city")
@@ -53,6 +56,9 @@ public class LocationController {
         if (body.longitude().doubleValue() < -180 || body.longitude().doubleValue() > 180) {
             return ApiResponse.error(400, "经度范围 -180 ~ 180");
         }
+        if (geoService == null) {
+            return ApiResponse.error(503, "LBS 功能未在当前环境开启");
+        }
         geoService.reportLocation(userId, body.latitude(), body.longitude());
         return ApiResponse.ok(null);
     }
@@ -71,6 +77,9 @@ public class LocationController {
             @RequestParam BigDecimal lng,
             @RequestParam(defaultValue = "5") int radiusKm,
             HttpServletRequest request) {
+        if (geoService == null) {
+            return ApiResponse.ok(List.of());
+        }
         List<GeoService.NearbyPerson> people = geoService.findNearby(lat, lng, radiusKm, 50);
         return ApiResponse.ok(people);
     }
