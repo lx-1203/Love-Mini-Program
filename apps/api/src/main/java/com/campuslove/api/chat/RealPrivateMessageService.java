@@ -5,6 +5,8 @@ import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.ResourceNotFoundException;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.DisplayConstants;
+import com.campuslove.api.config.ContentSecurityChecker;
+import com.campuslove.api.config.ContentSecurityVerdict;
 import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.entity.PrivateConversation;
 import com.campuslove.api.entity.PrivateMessage;
@@ -69,6 +71,14 @@ public class RealPrivateMessageService implements PrivateMessageService {
      */
     @Autowired(required = false)
     private SocialProgressService socialProgressService;
+
+    /**
+     * 统一内容安全检查器（微信 msgSecCheck v2 / 本地敏感词兜底，2026-10-05 合规接线）。
+     * 字段注入（required=false）兼容既有单测构造器；为 null 时跳过统一检查，
+     * 由 {@link SensitiveWordFilter} 兜底。checker 自身 fail-closed（异常降级本地过滤）。
+     */
+    @Autowired(required = false)
+    private ContentSecurityChecker contentSecurityChecker;
 
     public RealPrivateMessageService(
             PrivateConversationRepository conversationRepository,
@@ -231,6 +241,10 @@ public class RealPrivateMessageService implements PrivateMessageService {
         // 录音修复：kind 统一规范化为小写（客户端发送小写 text/voice，
         // 与临时聊天链路 kind 约定及前端 mapToMessageItem(messageKind === "voice") 映射保持一致）
         String resolvedKind = kind != null ? kind.toLowerCase(Locale.ROOT) : "text";
+
+        // 2026-10-05 合规接线：发送前统一内容安全检查（微信 msgSecCheck v2，scene=4 社交日志），
+        // 命中高风险（risky）直接拒绝发送；checker 异常时内部降级本地敏感词（fail-closed）。
+        rejectIfRisky(content, senderId, "4");
 
         // 敏感词过滤：过滤私信内容
         String filteredContent = sensitiveWordFilter.filterWithLog(content, senderId, "MESSAGE");
@@ -476,6 +490,30 @@ public class RealPrivateMessageService implements PrivateMessageService {
     }
 
     // ---- 私有辅助方法 ----
+
+    /**
+     * 统一内容安全检查（2026-10-05 合规接线）：高风险（risky）内容直接拒绝发送。
+     * review 判定放行但记录告警日志；checker 未注入（旧测试构造器）时跳过。
+     *
+     * @param content 待检文本
+     * @param userId  发送者 ID
+     * @param scene   msgSecCheck v2 场景（1=资料 2=评论 3=论坛 4=社交日志）
+     */
+    private void rejectIfRisky(String content, Long userId, String scene) {
+        if (contentSecurityChecker == null || content == null || content.isBlank()) {
+            return;
+        }
+        ContentSecurityVerdict verdict = contentSecurityChecker.check(content, userId, scene);
+        if ("risky".equals(verdict.suggest())) {
+            log.warn("内容安全检查命中高风险，拒绝发送私信: userId={}, scene={}, label={}, source={}",
+                    userId, scene, verdict.label(), verdict.source());
+            throw new IllegalArgumentException("消息包含违规内容，无法发送");
+        }
+        if ("review".equals(verdict.suggest())) {
+            log.warn("内容安全检查命中待复核（review），放行并记录: userId={}, scene={}, source={}",
+                    userId, scene, verdict.source());
+        }
+    }
 
     /**
      * 将 PrivateConversation 实体转换为 ConversationView（兼容单条调用场景）。

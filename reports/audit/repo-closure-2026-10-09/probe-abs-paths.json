@@ -1,0 +1,11 @@
+{
+ "scanned": 3767,
+ "hits": [
+  {
+   "f": "scripts/qa/cellplan-round7-criteria-c.json",
+   "l": 2,
+   "t": "\"note\": \"lane C：零散原因的 UNDECIDABLE 收紧。范围按 verdictWhy 前缀排除后实测是 9 条而不是简报说的约 19 条（lane A「台账判据里抠不出任何可比对的具体物件」10 条、lane B「授予绿用"
+  }
+ ],
+ "stopped": false
+}

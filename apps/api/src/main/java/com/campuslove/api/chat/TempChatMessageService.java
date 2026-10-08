@@ -2,6 +2,8 @@ package com.campuslove.api.chat;
 
 import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
+import com.campuslove.api.config.ContentSecurityChecker;
+import com.campuslove.api.config.ContentSecurityVerdict;
 import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.entity.TempChatMessage;
 import com.campuslove.api.entity.TempChatSession;
@@ -10,6 +12,7 @@ import com.campuslove.api.repository.TempChatMessageRepository;
 import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +52,14 @@ public class TempChatMessageService {
     private final TempChatMessageRepository messageRepository;
     private final TempChatSessionService sessionService;
     private final SensitiveWordFilter sensitiveWordFilter;
+
+    /**
+     * 统一内容安全检查器（微信 msgSecCheck v2 / 本地敏感词兜底，2026-10-05 合规接线）。
+     * 字段注入（required=false）兼容既有单测构造器；为 null 时跳过统一检查，
+     * 由 {@link SensitiveWordFilter} 兜底。checker 自身 fail-closed（异常降级本地过滤）。
+     */
+    @Autowired(required = false)
+    private ContentSecurityChecker contentSecurityChecker;
 
     public TempChatMessageService(TempChatMessageRepository messageRepository,
                                   TempChatSessionService sessionService,
@@ -104,6 +115,10 @@ public class TempChatMessageService {
 
         // FIN HIGH-3：sender 由服务端判定，不信任客户端传入值
         String sender = session.getUserAId().equals(currentUserId) ? "self" : "peer";
+
+        // 2026-10-05 合规接线：发送前统一内容安全检查（微信 msgSecCheck v2，scene=4 社交日志），
+        // 命中高风险（risky）直接拒绝发送；checker 异常时内部降级本地敏感词（fail-closed）。
+        rejectIfRisky(request.body(), currentUserId, "4");
 
         // infra R2-00252: 临时聊天消息补敏感词过滤（村口/私信已有，此处此前可绕过）
         String filteredBody = sensitiveWordFilter != null
@@ -179,6 +194,30 @@ public class TempChatMessageService {
 
         log.debug("会话 {} 发送消息: sender={}, kind={}", id, sender, request.kind());
         return session;
+    }
+
+    /**
+     * 统一内容安全检查（2026-10-05 合规接线）：高风险（risky）内容直接拒绝发送。
+     * review 判定放行但记录告警日志；checker 未注入（旧测试构造器）时跳过。
+     *
+     * @param content 待检文本
+     * @param userId  发送者 ID
+     * @param scene   msgSecCheck v2 场景（1=资料 2=评论 3=论坛 4=社交日志）
+     */
+    private void rejectIfRisky(String content, Long userId, String scene) {
+        if (contentSecurityChecker == null || content == null || content.isBlank()) {
+            return;
+        }
+        ContentSecurityVerdict verdict = contentSecurityChecker.check(content, userId, scene);
+        if ("risky".equals(verdict.suggest())) {
+            log.warn("内容安全检查命中高风险，拒绝发送临时聊天消息: userId={}, scene={}, label={}, source={}",
+                    userId, scene, verdict.label(), verdict.source());
+            throw new IllegalArgumentException("消息包含违规内容，无法发送");
+        }
+        if ("review".equals(verdict.suggest())) {
+            log.warn("内容安全检查命中待复核（review），放行并记录: userId={}, scene={}, source={}",
+                    userId, scene, verdict.source());
+        }
     }
 
     /**

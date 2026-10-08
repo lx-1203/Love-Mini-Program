@@ -1,0 +1,50 @@
+{
+ "seeds": [
+  {
+   "id": "FEATURE-BODY-COMMIT",
+   "area": "功能体入库",
+   "how": "后端测试门已 GREEN。按功能拆提交：读 git status 的 M/?? 清单（apps/**、database/**、docs/wechat-*、.github/**、application*.yml、.gitignore 等），按域分组产出 commitPlan——参考分组：VIP 订单（VipOrder*/vip/*/Billing*/VipBill/wallet 解锁）、微信支付（wxpay/**/PaymentCallbackLog/PaymentMetrics）、协议留痕（AgreementConsent*/UserAgreementConsent*）、实名照片保留策略（RealNameMediaPurgeService/verification/*）、Flyway 迁移与 database/sanitize、基础设施（ci.yml/.gitignore/配置/其余散件）。每条 {message, paths, deletePaths:[]}，message 用仓库风格 feat(scope): 中文描述；路径必须精确到本组文件，禁止 . 或 -A 全量；scripts/qa 的既有 M 文件不动（QA 台账体另册）。你绝不执行 git add/commit。",
+   "source": "v3.4 终报 OCT5-FEATURE-BODY 选项 (a) + 本轮后端测试门实测"
+  },
+  {
+   "id": "EVID-DELETION-LAND",
+   "area": "证据删留",
+   "how": "按 v3.4 车道实测的死角落执行其选项 (a)：写 reports/audit/repo-closure-2026-10-09/evidence-deletion-disposition.md（记载：3851 张 reports/screenshots 删除的实测死因——corpus 红因 round-1 manifest 144 帧已提交删除无物可 restore、provenance 红因 4881 帧历史回填戳 restore 不触及且恢复反而翻 STALE_STAMP；两门读数原文；帧内容在 git 历史与仓外证据库可按哈希回溯）。commitPlan：{message: \"evidence(qa): reports/screenshots 历史截图删留落地（附死因记录与红因读数，判据修订留待拍板）\", paths: [\"reports/audit/repo-closure-2026-10-09/evidence-deletion-disposition.md\"], deletePaths: [\"reports/screenshots\"]}。判据本身一字不改（CORPUS-LEGACY-144 仍留拍板）。",
+   "source": "v3.4 终报 EVID-DELETION-DEADLOCK 选项 (a)"
+  },
+  {
+   "id": "SELFTEST-LOCATE",
+   "area": "自检定位",
+   "how": "本轮授权写 .zcode/tmp 夹具：用 Node22 跑 node scripts/qa/run-qa-selftests.mjs，定位上轮 1/51 失败者身份；真缺陷（测试/门的 bug）→ 最小修复 → 复跑聚合器到 51/51；若是裁定内期望或环境缺件 → 不修，把失败原文与定性写进车道报告。若落了代码修复，给出 commitPlan（paths 精确到改动文件）。演练/临时产物只准落 .zcode/tmp 或 reports/audit/repo-closure-2026-10-09，禁止写仓库根。",
+   "source": "v3.4 终报 SELFTEST-1OF51 选项 (a)"
+  }
+ ],
+ "executableRows": [],
+ "needsUserRows": [
+  {
+   "id": "CORPUS-LEGACY-144",
+   "why": "同一批 144 帧两把尺子结论相反：provenance 按已采纳裁定 #12-A 豁免（判据在 scripts/qa/verify-provenance-all.mjs:195-206，v3.4 终报 §4.3 实测 PROV_FRAMES_LEGACY_EXEMPT=144），corpus 缺席轴仍判 blocking 且认不出已提交删除（v3.4 终报转录 scripts/qa/verify-evidence-corpus.mjs:279-282,323）⇒ CORPUS_PROBLEMS=1 恒红。本轮账单仍红（CORPUS_RESULT=FAIL）。改判据/处置旧 manifest 属政策与数据去留，不归车道自裁。",
+   "options": "a) 给 corpus 缺席轴加与 #12-A 同口径的 legacy 豁免（对齐两把尺子）；b) 处置 reports/screenshots/round-1/manifest.json 本体（移出扫描域或归档——数据去留）；c) 接受该门长期红，仿 RCD 立去向册逐条点名"
+  },
+  {
+   "id": "PROV-PRESTAMP-4881-RESCAN",
+   "why": "4881 帧历史回填戳（在盘帧 mtime 早于所记提交，如 mtime 2026-09-27 vs 所记 6fd15178@2026-09-28），门禁原话「禁止据此下结论」；生产者侧干净（11/11 派生、0 字面量），债在历史证据本体，改戳/倒填 mtime 属造假不设为选项。本轮账单 PROVENANCE_RESULT=FAIL 照旧。v3.5 已采纳 v3.4 选项 (a) 的报告口径（本轮 workflow 头部⑥：结论只锚 CONSISTENT=4154，4881 帧按 manifest 点名降级留档）——剩下唯一待裁的是是否另立重采轮。",
+   "options": "a) 维持现状（本轮已采纳口径 a）；b) 另立真实模式重采轮消化（DevTools/UI 域，不归收口轮）"
+  },
+  {
+   "id": "REALCOV-9-SCHED",
+   "why": "真实档覆盖门本轮账单仍红（REALCOV_RESULT=FAIL）。v3.4 终报 §4.9 复量点名 REALCOV_UNCOVERED=9/236（PFI25/VI25/VI34/OT05/OT06/OT09/VRN07/OC09/VB03，全部缺 login 或 login+guest 真实腿），去向册门 RCD 已 PASS（9 条条条有在册去向）。补腿属真实模式 DevTools/UI 轮，本轮纪律明令不归。",
+   "options": "a) 下一真实模式 QA 轮按点名补腿；b) 终验/终报按去向册口径将该门记「已处置欠账」并接受红；c) 判据侧收缩（须拍板，不默认）"
+  },
+  {
+   "id": "QODER-DISPOSITION",
+   "why": "根目录 .qoder/ 仍在：本轮 ROOT_INV_DIR_VIOL=[\".qoder\"]（FILE_VIOL 已清空），v3.5 白名单故意不录（workflow 注释「.qoder 裁处待拍板，故意不录」，.zcode/workflow-drafts/repo-closure-v35.dwf.ts:44）⇒ 终验探针复量必再点名并记 blocker。我实测目录内容仅 repowiki/ 一个子目录（2026-10-06/07 生成，Qoder IDE 的仓库百科产物），数据去留无授权依据。",
+   "options": "a) 确认属废弃工具产物→删除或归档；b) 在用→补录 ROOT_DIRS_ALLOWED 并修订 目录整理说明.md；c) 维持待裁点名（终验 blocker 按已裁留档解释）"
+  },
+  {
+   "id": "ABS-QA-CELLPLAN-NOTE",
+   "why": "本轮 ABS_SCAN=HIT scanned=3767 hits=1，唯一命中 scripts/qa/cellplan-round7-criteria-c.json:2——「note」字段里的历史记账叙述「…git show 094f7239 基线源码，node 走 D:/codex-tools 的 v22」（我读实文核实）。v3.4 绝对路径车道已裁：QA 记账叙述且该件是 QA 契约件（sha 敏感，改字即破契约），按纪律不改、留档待拍板（v3.4 终报 §五 blocker 6）。但本轮 workflow 终验把 ABS_SCAN≠PASS 无条件记 blocker（repo-closure-v35.dwf.ts:618）⇒ 这条常红会每轮顶成 blocker，长期口径需要拍板。",
+   "options": "a) 接受为历史叙述常红（v3.4 先例），终验 blocker 按已裁留档解释销账；b) 改写 note 去盘符（等于改 QA 历史记录/破 sha 敏感契约件，不建议）；c) 给探针加叙述性豁免判据（判据修订，须拍板）"
+  }
+ ]
+}

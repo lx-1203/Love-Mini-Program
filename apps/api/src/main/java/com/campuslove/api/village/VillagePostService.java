@@ -4,6 +4,8 @@ import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.OperationForbiddenException;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.CacheNames;
+import com.campuslove.api.config.ContentSecurityChecker;
+import com.campuslove.api.config.ContentSecurityVerdict;
 import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.entity.CampusCertification;
 import com.campuslove.api.entity.CircleMembership;
@@ -54,6 +56,14 @@ public class VillagePostService {
     private final PostRepository postRepository;
     private final SensitiveWordFilter sensitiveWordFilter;
     private final VillageQueryService queryService;
+
+    /**
+     * 统一内容安全检查器（微信 msgSecCheck v2 / 本地敏感词兜底，2026-10-05 合规接线）。
+     * 字段注入（required=false）兼容旧测试构造器；为 null 时跳过统一检查，
+     * 由下方 {@link SensitiveWordFilter} 兜底。checker 自身 fail-closed（异常降级本地过滤）。
+     */
+    @Autowired(required = false)
+    private ContentSecurityChecker contentSecurityChecker;
     /**
      * 2026-08-09 帖子关联活动：活动存在性校验（无效 activityId 宽松置 null，不抛错）。
      */
@@ -183,6 +193,11 @@ public class VillagePostService {
             validateSchoolCertification(userId);
         }
 
+        // 2026-10-05 合规接线：发布前统一内容安全检查（微信 msgSecCheck v2，scene=3 论坛），
+        // 命中高风险（risky）直接拒绝发布；checker 异常时内部降级本地敏感词（fail-closed）。
+        rejectIfRisky(title, userId, "3", "帖子标题");
+        rejectIfRisky(content, userId, "3", "帖子内容");
+
         String filteredTitle = sensitiveWordFilter.filterWithLog(title.trim(), userId, "POST");
         String filteredContent = sensitiveWordFilter.filterWithLog(content, userId, "POST");
         List<String> filteredTags = filterTagList(tags, userId);
@@ -245,6 +260,31 @@ public class VillagePostService {
     /** 标签唯一约束冲突日志（R4-00328：重复标签不阻断发帖）。 */
     private void logDuplicateTag(String tag) {
         log.warn("post_tags 写入冲突，跳过重复标签：tag={}", tag);
+    }
+
+    /**
+     * 统一内容安全检查（2026-10-05 合规接线）：高风险（risky）内容直接拒绝。
+     * review 判定放行但记录告警日志；checker 未注入（旧测试构造器）时跳过。
+     *
+     * @param content 待检文本
+     * @param userId  发布者 ID
+     * @param scene   msgSecCheck v2 场景（1=资料 2=评论 3=论坛 4=社交日志）
+     * @param field   字段名（用于拒绝文案与日志）
+     */
+    private void rejectIfRisky(String content, Long userId, String scene, String field) {
+        if (contentSecurityChecker == null || content == null || content.isBlank()) {
+            return;
+        }
+        ContentSecurityVerdict verdict = contentSecurityChecker.check(content, userId, scene);
+        if ("risky".equals(verdict.suggest())) {
+            log.warn("内容安全检查命中高风险，拒绝发布: userId={}, scene={}, field={}, label={}, source={}",
+                    userId, scene, field, verdict.label(), verdict.source());
+            throw new IllegalArgumentException(field + "包含违规内容，请修改后重试");
+        }
+        if ("review".equals(verdict.suggest())) {
+            log.warn("内容安全检查命中待复核（review），放行并记录: userId={}, scene={}, field={}, source={}",
+                    userId, scene, field, verdict.source());
+        }
     }
 
     /**

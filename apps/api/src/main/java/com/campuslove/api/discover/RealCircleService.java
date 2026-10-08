@@ -7,6 +7,8 @@ import com.campuslove.api.entity.CircleMembership;
 import com.campuslove.api.entity.CircleReply;
 import com.campuslove.api.chat.InteractionEventService;
 import com.campuslove.api.config.DisplayConstants;
+import com.campuslove.api.config.ContentSecurityChecker;
+import com.campuslove.api.config.ContentSecurityVerdict;
 import com.campuslove.api.entity.CircleTopic;
 import com.campuslove.api.entity.InterestCircle;
 import com.campuslove.api.entity.User;
@@ -67,6 +69,14 @@ public class RealCircleService implements CircleService {
      * 敏感词过滤器（FIN-00039 修复：createTopic 内容过滤，用法与 VillagePostService 一致）。
      */
     private final SensitiveWordFilter sensitiveWordFilter;
+
+    /**
+     * 统一内容安全检查器（微信 msgSecCheck v2 / 本地敏感词兜底，2026-10-05 合规接线）。
+     * 字段注入（required=false）兼容既有单测构造器；为 null 时跳过统一检查，
+     * 由 {@link SensitiveWordFilter} 兜底。checker 自身 fail-closed（异常降级本地过滤）。
+     */
+    @Autowired(required = false)
+    private ContentSecurityChecker contentSecurityChecker;
 
     /**
      * JPA 实体管理器（FIN-00037/00038 修复）。
@@ -416,6 +426,11 @@ public class RealCircleService implements CircleService {
             throw new OperationForbiddenException(ErrorMessages.CIRCLE_JOIN_REQUIRED);
         }
 
+        // 2026-10-05 合规接线：发布前统一内容安全检查（微信 msgSecCheck v2，scene=3 论坛），
+        // 命中高风险（risky）直接拒绝；checker 异常时内部降级本地敏感词（fail-closed）。
+        rejectIfRisky(title, authorId, "3", "话题标题");
+        rejectIfRisky(content, authorId, "3", "话题内容");
+
         // FIN-00039 修复：标题与内容做敏感词过滤（与 VillagePostService 用法一致），
         // 过滤策略为替换为 *** 而非拒绝发布，保证用户体验
         String filteredTitle = sensitiveWordFilter != null
@@ -488,6 +503,9 @@ public class RealCircleService implements CircleService {
         if (content == null || content.isBlank()) {
             throw new IllegalArgumentException(ErrorMessages.REPLY_CONTENT_REQUIRED);
         }
+
+        // 2026-10-05 合规接线：回复前统一内容安全检查（msgSecCheck v2，scene=2 评论），命中即拒绝
+        rejectIfRisky(content, authorId, "2", "回复内容");
 
         // infra R2-00234: 回复内容补敏感词过滤（createTopic 已有过滤，此前回复可绕过）
         String filteredContent = sensitiveWordFilter != null
@@ -597,6 +615,31 @@ public class RealCircleService implements CircleService {
     }
 
     // ==================== 私有辅助方法 ====================
+
+    /**
+     * 统一内容安全检查（2026-10-05 合规接线）：高风险（risky）内容直接拒绝。
+     * review 判定放行但记录告警日志；checker 未注入（旧测试构造器）时跳过。
+     *
+     * @param content 待检文本
+     * @param userId  发布者 ID
+     * @param scene   msgSecCheck v2 场景（1=资料 2=评论 3=论坛 4=社交日志）
+     * @param field   字段名（用于拒绝文案与日志）
+     */
+    private void rejectIfRisky(String content, Long userId, String scene, String field) {
+        if (contentSecurityChecker == null || content == null || content.isBlank()) {
+            return;
+        }
+        ContentSecurityVerdict verdict = contentSecurityChecker.check(content, userId, scene);
+        if ("risky".equals(verdict.suggest())) {
+            log.warn("内容安全检查命中高风险，拒绝发布: userId={}, scene={}, field={}, label={}, source={}",
+                    userId, scene, field, verdict.label(), verdict.source());
+            throw new IllegalArgumentException(field + "包含违规内容，请修改后重试");
+        }
+        if ("review".equals(verdict.suggest())) {
+            log.warn("内容安全检查命中待复核（review），放行并记录: userId={}, scene={}, field={}, source={}",
+                    userId, scene, field, verdict.source());
+        }
+    }
 
     /**
      * 查找圈子，不存在则抛出异常。

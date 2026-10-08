@@ -3,6 +3,8 @@ package com.campuslove.api.profile;
 import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.chat.InteractionEventService;
+import com.campuslove.api.config.ContentSecurityChecker;
+import com.campuslove.api.config.ContentSecurityVerdict;
 import com.campuslove.api.config.SensitiveWordFilter;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.Notification;
@@ -24,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -79,6 +82,14 @@ public class ProfileUpdateService {
     private final ProfileQueryService queryService;
     private final FollowService followService;
     private final SensitiveWordFilter sensitiveWordFilter;
+
+    /**
+     * 统一内容安全检查器（微信 msgSecCheck v2 / 本地敏感词兜底，2026-10-05 合规接线）。
+     * 字段注入（required=false）兼容既有单测构造器；为 null 时跳过统一检查，
+     * 由 {@link SensitiveWordFilter} 兜底。checker 自身 fail-closed（异常降级本地过滤）。
+     */
+    @Autowired(required = false)
+    private ContentSecurityChecker contentSecurityChecker;
 
     public ProfileUpdateService(
             UserRepository userRepository,
@@ -136,6 +147,10 @@ public class ProfileUpdateService {
         // （仅替换为 *** 无法阻止拆分/谐音绕过内容审核；拒绝策略保证资料区无违规内容）。
         // 与社区发帖（村口帖子/评论走替换策略）语义区分：资料字段更接近实名身份，
         // 从严处理。
+        // 2026-10-05 合规接线：保存前统一内容安全检查（微信 msgSecCheck v2，scene=1 资料），
+        // 命中高风险（risky）直接拒绝；checker 异常时内部降级本地敏感词（fail-closed）。
+        rejectIfRisky(request.nickname(), currentUserId, "1", "昵称");
+        rejectIfRisky(request.bio(), currentUserId, "1", "简介");
         String filteredNickname = request.nickname();
         if (sensitiveWordFilter != null && sensitiveWordFilter.containsSensitive(request.nickname())) {
             // 记录命中（含用户 ID 与场景），随后拒绝保存
@@ -503,6 +518,31 @@ public class ProfileUpdateService {
     }
 
     // ---- 私有辅助方法 ----
+
+    /**
+     * 统一内容安全检查（2026-10-05 合规接线）：高风险（risky）内容直接拒绝保存。
+     * review 判定放行但记录告警日志；checker 未注入（旧测试构造器）时跳过。
+     *
+     * @param content 待检文本
+     * @param userId  用户 ID
+     * @param scene   msgSecCheck v2 场景（1=资料 2=评论 3=论坛 4=社交日志）
+     * @param field   字段名（用于拒绝文案与日志）
+     */
+    private void rejectIfRisky(String content, Long userId, String scene, String field) {
+        if (contentSecurityChecker == null || content == null || content.isBlank()) {
+            return;
+        }
+        ContentSecurityVerdict verdict = contentSecurityChecker.check(content, userId, scene);
+        if ("risky".equals(verdict.suggest())) {
+            log.warn("内容安全检查命中高风险，拒绝保存资料: userId={}, scene={}, field={}, label={}, source={}",
+                    userId, scene, field, verdict.label(), verdict.source());
+            throw new IllegalArgumentException("资料包含违规内容，请修改后重试");
+        }
+        if ("review".equals(verdict.suggest())) {
+            log.warn("内容安全检查命中待复核（review），放行并记录: userId={}, scene={}, field={}, source={}",
+                    userId, scene, field, verdict.source());
+        }
+    }
 
     /**
      * 校验 Phase B 扩展字段范围。

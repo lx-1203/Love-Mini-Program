@@ -1,0 +1,290 @@
+[
+ {
+  "lane": "功能体入库",
+  "fixedIds": [
+   "FEATURE-BODY-COMMIT"
+  ],
+  "filesChanged": [
+   "reports/audit/repo-closure-2026-10-09/lane-FEATURE-BODY-COMMIT.md"
+  ],
+  "skipped": [
+   {
+    "id": "docker/prometheus/rules/alert-rules.yml",
+    "reason": "不在本车道判域（docker/** 未列入 apps|database|docs/wechat-*|.github|application*.yml|.gitignore|根 package.json/pnpm-lock）；PaymentMetrics 注释提到的 PaymentCallbackFailure 告警规则属该文件，留另册"
+   },
+   {
+    "id": "scripts/verify-env-release.mjs",
+    "reason": "不在本车道判域（scripts/ 根非 scripts/qa 亦非判域清单）；apps/client release-chain.mjs 引用它，但该文件已在 HEAD，不阻断构建链提交"
+   },
+   {
+    "id": "scripts/qa/**（M 9 + ?? 16）",
+    "reason": "QA 台账体另册，车道纪律一律不碰"
+   },
+   {
+    "id": "reports/**（M 29 + D 3851 + ?? 若干）",
+    "reason": "reports/** 不碰；3851 个 D 为历史截图删留，属 rootorg 车道已裁决项"
+   },
+   {
+    "id": "根 package.json / pnpm-lock.yaml",
+    "reason": "盘上存在但未修改（不在 git status M 清单），无对应提交"
+   }
+  ],
+  "evidence": [
+   "域集枚举：`git status --porcelain=v1 -uall` 实测 4052 行（3851 D + 111 M + 90 ??），按判域过滤（apps/|database/|docs/wechat-|.github/|.gitignore|根 application*.yml）得 104 条（65 M + 39 ??），与 commitPlan 条数声称规模一致（12 组 8+3+15+13+12+14+7+5+11+3+8+5=104）；清单存 .zcode/tmp/reverify-fbc-20261009/domain.txt",
+   "路径存在性：对 104 条逐一 fs.existsSync 实测 → missing=0（104/104 全部存在于盘上）；域内 D=0",
+   "判域符合性：104 条中含 'scripts/qa' 的 0 条、'reports/' 前缀 0 条、'scripts/' 任意前缀 0 条；落在判域之外的 0 条",
+   "无重复：paths 内 indexOf 自比 dup=0；覆盖闭合：重建组划分 assigned=104、uncovered=0、duplicates=0（域集与组划分双向 comm 相等）",
+   "分组合理性：按车道报告 §4 的 12 组名义计数做约束求解，全部 12 组计数精确闭合（8/3/15/13/12/14/7/5/11/3/8/5），且每组同域；边界文件归属经 diff 实证：pages.json diff=lazyCodeLoading+SHOWCASE 编译期剔除→构建链组；check-tabbar-consistency.mjs diff=容忍 SHOWCASE 剔除留下的尾逗号→构建链组；api.ts diff=uploadPostImage 增加 category(ID_CARD)→实名照片保留组；settings/index.vue diff=MP-R7-EDITPAGE entry=edit→编辑页组；RealAccountSecurityService diff=注销时 realNameMediaPurgeService.purgeByUserId→实名照片保留组；AdminPermissionTest+P0SecurityIntegrationTest 两处同款 diff=删 RealAuthService 构造器实参 \"\"（ADMIN_PASSWORD 明文兜底移除）→登录安全组",
+   "编译序抽查：apps/api/src/main/java/com/campuslove/api/vip/VipOrderService.java:11-15 精确 import wxpay 5 类；wxpay/WxPayRefundNotifyController.java:5 `import com.campuslove.api.vip.VipOrderService`（双向依赖成立，wxpay 主体先落、RefundNotifyController 随 vip 组落）；wxpay 两测试 grep campuslove.api.vip 无命中；config/SecurityConfig.java:153 `.requestMatchers(\"/api/v1/refund/notify\").permitAll()`；RealAuthService 中 AgreementConsentService/LoginAttemptService 引用 5 处；`grep -rn implements AuthService` 全仓仅 MockAuthService.java:18 与 RealAuthService.java:65 两实现，均在提交 6 文件集内",
+   "硬纪律：`git log -1` HEAD 仍为 78c406d1（与会话起点一致）、`git diff --cached --stat` 空（0 暂存）——车道确未执行任何 git add/commit",
+   "6 个 svg 假差异核实：`git diff --stat` 对 6 支 svg 输出为空（仅 LF/CRLF 警告），与车道 §6「M 但 diff 空」一致，随组入库无害",
+   "非阻塞记账偏差（不影响 plan）：车道 §1 称判域内 M=71/??=33，实测 65/39——车道 ?? 枚举（10 新文件+11 wxpay+2 sanitize+6 flyway+3 client scripts+1 docs）漏数了 6 支新测试文件（VipOrderRefundInitiationTest/VipOrderServiceTest/RealWalletUnlockServiceTest/WhisperRefundLedgerTest/WxPayCallbackVerifierTest/WxPayPropertiesFailFastTest）；另册计数亦有漂移（reports M 实 36 vs 称 29、scripts/qa M 实 8 vs 称 9）——总数 104 与覆盖声称按当前 status 实测仍成立，且这些文件均未入 plan"
+  ],
+  "commits": [
+   {
+    "message": "feat(db): Flyway V2026.10.05.* 六支迁移（媒体分类/协议留痕建表回填/VIP订单/账单唯一约束/回调日志扩展）与 database/sanitize 生产清库脚本",
+    "paths": [
+     "database/flyway/sql/V2026.10.05.0001__add_media_asset_category.sql",
+     "database/flyway/sql/V2026.10.05.0002__create_user_agreement_consent.sql",
+     "database/flyway/sql/V2026.10.05.0003__backfill_user_agreement_consent.sql",
+     "database/flyway/sql/V2026.10.05.0010__create_vip_order.sql",
+     "database/flyway/sql/V2026.10.05.0011__vip_bills_unique_transaction.sql",
+     "database/flyway/sql/V2026.10.05.0012__extend_payment_callback_log.sql",
+     "database/sanitize/README.md",
+     "database/sanitize/prod-sanitize.sql"
+    ],
+    "deletePaths": []
+   },
+   {
+    "message": "feat(consent): 注册协议同意留痕域模型（user_agreement_consent 实体/仓库/服务，source=REGISTER 服务端半边留痕）",
+    "paths": [
+     "apps/api/src/main/java/com/campuslove/api/entity/UserAgreementConsent.java",
+     "apps/api/src/main/java/com/campuslove/api/repository/UserAgreementConsentRepository.java",
+     "apps/api/src/main/java/com/campuslove/api/auth/AgreementConsentService.java"
+    ],
+    "deletePaths": []
+   },
+   {
+    "message": "feat(wxpay): 微信支付 APIv3 管道（JSAPI 下单/回调 RSA-SHA256 验签+AES-GCM 解密/IP 白名单+时间戳防重放/enabled=false 封存态 404 与缺配 fail-fast；回调日志扩展与失败计数指标；SecurityConfig 回调 permitAll）",
+    "paths": [
+     "apps/api/src/main/java/com/campuslove/api/wxpay/WxPayProperties.java",
+     "apps/api/src/main/java/com/campuslove/api/wxpay/WxPayConfig.java",
+     "apps/api/src/main/java/com/campuslove/api/wxpay/WxPayBootstrapChecker.java",
+     "apps/api/src/main/java/com/campuslove/api/wxpay/WxPayApiException.java",
+     "apps/api/src/main/java/com/campuslove/api/wxpay/WxPayDisabledException.java",
+     "apps/api/src/main/java/com/campuslove/api/wxpay/WxPayModels.java",
+     "apps/api/src/main/java/com/campuslove/api/wxpay/WxPayRequestSigner.java",
+     "apps/api/src/main/java/com/campuslove/api/wxpay/WxPayCallbackVerifier.java",
+     "apps/api/src/main/java/com/campuslove/api/wxpay/WxPayCallbackGuard.java",
+     "apps/api/src/main/java/com/campuslove/api/wxpay/WxPayJsapiService.java",
+     "apps/api/src/main/java/com/campuslove/api/entity/PaymentCallbackLog.java",
+     "apps/api/src/main/java/com/campuslove/api/monitor/PaymentMetrics.java",
+     "apps/api/src/main/java/com/campuslove/api/config/SecurityConfig.java",
+     "apps/api/src/test/java/com/campuslove/api/wxpay/WxPayCallbackVerifierTest.java",
+     "apps/api/src/test/java/com/campuslove/api/wxpay/WxPayPropertiesFailFastTest.java"
+    ],
+    "deletePaths": []
+   },
+   {
+    "message": "feat(vip): VIP 订单域（下单/支付/退款状态机+管理员退款端点仅 SUPER_ADMIN+退款回调确认端点随订单域入库+账单唯一约束改造；客户端 VIP 页真实拉起支付，404/403 维持「支付未开通」）",
+    "paths": [
+     "apps/api/src/main/java/com/campuslove/api/entity/VipOrder.java",
+     "apps/api/src/main/java/com/campuslove/api/repository/VipOrderRepository.java",
+     "apps/api/src/main/java/com/campuslove/api/vip/VipOrderService.java",
+     "apps/api/src/main/java/com/campuslove/api/vip/VipOrderController.java",
+     "apps/api/src/main/java/com/campuslove/api/wxpay/WxPayRefundNotifyController.java",
+     "apps/api/src/main/java/com/campuslove/api/vip/BillingController.java",
+     "apps/api/src/main/java/com/campuslove/api/vip/BillingService.java",
+     "apps/api/src/main/java/com/campuslove/api/entity/VipBill.java",
+     "apps/api/src/main/java/com/campuslove/api/admin/AdminVipController.java",
+     "apps/api/src/test/java/com/campuslove/api/vip/VipOrderServiceTest.java",
+     "apps/api/src/test/java/com/campuslove/api/vip/VipOrderRefundInitiationTest.java",
+     "apps/api/src/test/java/com/campuslove/api/vip/Task12ConcurrencyTest.java",
+     "apps/client/src/subpackages/vip/index.vue"
+    ],
+    "deletePaths": []
+   },
+   {
+    "message": "feat(verification): 实名照片保留策略（media_asset.category ID_CARD 高敏分类+按 DB 分类授权+审核通过 30 天定时清除+注销同步删除照片；客户端上传透传 category）",
+    "paths": [
+     "apps/api/src/main/java/com/campuslove/api/media/MediaUploadCategory.java",
+     "apps/api/src/main/java/com/campuslove/api/verification/RealNameMediaPurgeService.java",
+     "apps/api/src/main/java/com/campuslove/api/entity/MediaAsset.java",
+     "apps/api/src/main/java/com/campuslove/api/media/MediaAccessController.java",
+     "apps/api/src/main/java/com/campuslove/api/media/MediaAccessService.java",
+     "apps/api/src/main/java/com/campuslove/api/media/MediaAssetService.java",
+     "apps/api/src/main/java/com/campuslove/api/media/MediaUploadController.java",
+     "apps/api/src/main/java/com/campuslove/api/verification/RealNameCertificationRepository.java",
+     "apps/api/src/main/java/com/campuslove/api/verification/RealRealNameCertificationService.java",
+     "apps/api/src/main/java/com/campuslove/api/auth/RealAccountSecurityService.java",
+     "apps/client/src/services/api.ts",
+     "apps/client/src/subpackages/profile-extra/verification/real-name.vue"
+    ],
+    "deletePaths": []
+   },
+   {
+    "message": "feat(auth): 注册协议同意落库接线（agreedLegalVersion 服务端兜底 v1.0.0）+账号级防爆破（连续失败 5 次锁 15 分钟，Redis 故障 fail-open）+短信验证码服务化与 1 次/分钟限流+移除 ADMIN_PASSWORD 明文兜底",
+    "paths": [
+     "apps/api/src/main/java/com/campuslove/api/auth/LoginAttemptService.java",
+     "apps/api/src/main/java/com/campuslove/api/auth/AuthService.java",
+     "apps/api/src/main/java/com/campuslove/api/auth/AuthController.java",
+     "apps/api/src/main/java/com/campuslove/api/auth/MockAuthService.java",
+     "apps/api/src/main/java/com/campuslove/api/auth/RealAuthService.java",
+     "apps/api/src/main/java/com/campuslove/api/auth/SmsCodeController.java",
+     "apps/api/src/main/java/com/campuslove/api/auth/SmsCodeService.java",
+     "apps/api/src/test/java/com/campuslove/api/auth/RealAuthServiceTest.java",
+     "apps/api/src/test/java/com/campuslove/api/auth/RealAuthServiceMinorRegistrationTest.java",
+     "apps/api/src/test/java/com/campuslove/api/admin/AdminPermissionTest.java",
+     "apps/api/src/test/java/com/campuslove/api/security/P0SecurityIntegrationTest.java",
+     "apps/client/src/pages/register/index.vue",
+     "apps/client/src/services/auth.ts",
+     "apps/client/src/services/config.ts"
+    ],
+    "deletePaths": []
+   },
+   {
+    "message": "feat(wallet): 资金端点加固（/wallet 扣减服务端价格目录去信任化+演示充值每用户累计隔离+幂等拦截器 strict 模式资金端点 Redis 不可用 503 fail-closed+whisper 扣费/退款 REQUIRES_NEW 独立事务可对账）",
+    "paths": [
+     "apps/api/src/main/java/com/campuslove/api/wallet/WalletController.java",
+     "apps/api/src/main/java/com/campuslove/api/wallet/RealWalletUnlockService.java",
+     "apps/api/src/main/java/com/campuslove/api/common/IdempotentInterceptor.java",
+     "apps/api/src/main/java/com/campuslove/api/whisper/RealWhisperService.java",
+     "apps/api/src/test/java/com/campuslove/api/wallet/WalletControllerTest.java",
+     "apps/api/src/test/java/com/campuslove/api/wallet/RealWalletUnlockServiceTest.java",
+     "apps/api/src/test/java/com/campuslove/api/whisper/WhisperRefundLedgerTest.java"
+    ],
+    "deletePaths": []
+   },
+   {
+    "message": "feat(content): 私信/临时聊天/圈子话题与回复/村口帖子/资料昵称简介五链路统一内容安全检查接线（msgSecCheck v2 risky 拒绝、review 放行留痕，checker 异常降级本地敏感词 fail-closed）",
+    "paths": [
+     "apps/api/src/main/java/com/campuslove/api/chat/RealPrivateMessageService.java",
+     "apps/api/src/main/java/com/campuslove/api/chat/TempChatMessageService.java",
+     "apps/api/src/main/java/com/campuslove/api/discover/RealCircleService.java",
+     "apps/api/src/main/java/com/campuslove/api/village/VillagePostService.java",
+     "apps/api/src/main/java/com/campuslove/api/profile/ProfileUpdateService.java"
+    ],
+    "deletePaths": []
+   },
+   {
+    "message": "feat(client): 编辑资料页双模式收敛（MP-R7-EDITPAGE ?entry=edit 回显/保存与导航）+头像/照片墙 store 同步回写+匹配图标资产更新",
+    "paths": [
+     "apps/client/src/stores/profile.ts",
+     "apps/client/src/subpackages/setup/profile/index.vue",
+     "apps/client/src/subpackages/profile-extra/settings/index.vue",
+     "apps/client/src/tests/profile-store.spec.ts",
+     "apps/client/src/tests/components/register-index.spec.ts",
+     "apps/client/src/static/assets/icons/common/cat.svg",
+     "apps/client/src/static/assets/icons/common/heart-filled-white.svg",
+     "apps/client/src/static/assets/icons/common/heart-filled.svg",
+     "apps/client/src/static/assets/icons/common/paw.svg",
+     "apps/client/src/static/assets/icons/common/planet.svg",
+     "apps/client/src/static/assets/svg-spec/03-icons/heart-filled.svg"
+    ],
+    "deletePaths": []
+   },
+   {
+    "message": "feat(client): 微信隐私授权接线（manifest __usePrivacyCheck__ + onNeedPrivacyAuthorization 自有弹窗）与提审材料清单建档",
+    "paths": [
+     "apps/client/src/App.vue",
+     "apps/client/src/manifest.json",
+     "docs/wechat-submission-materials-checklist.md"
+    ],
+    "deletePaths": []
+   },
+   {
+    "message": "chore(client): 发布构建链收敛（build:mp-weixin:real 收敛为 release-chain.mjs、vitest 经 run-vitest.mjs 载具、lazyCodeLoading=requiredComponents、SHOWCASE 条件编译编译期剔除展示页）",
+    "paths": [
+     "apps/client/package.json",
+     "apps/client/vitest.config.ts",
+     "apps/client/scripts/build-real-isolated.mjs",
+     "apps/client/scripts/check-tabbar-consistency.mjs",
+     "apps/client/src/pages.json",
+     "apps/client/scripts/add-lazy-code-loading.mjs",
+     "apps/client/scripts/release-chain.mjs",
+     "apps/client/scripts/run-vitest.mjs"
+    ],
+    "deletePaths": []
+   },
+   {
+    "message": "chore(infra): CI 供应链推送闸（未配 COSIGN_PRIVATE_KEY 默认拒绝未签名镜像出仓）+泄露面 gitignore（tmp_*_token.txt/*.aof）+wxpay/实名照片保留配置项+WebSocket Origin 未配置 fail-fast",
+    "paths": [
+     ".github/workflows/ci.yml",
+     ".gitignore",
+     "apps/api/src/main/resources/application.yml",
+     "apps/api/src/main/resources/application-real.yml",
+     "apps/api/src/main/java/com/campuslove/api/config/WebSocketConfig.java"
+    ],
+    "deletePaths": []
+   }
+  ],
+  "notes": "后端测试门 GREEN 为 ask 给定前提，本车道未复跑测试（本车道任务为提交编排）。commitPlan 共 12 条、104 条路径，按依赖序编排：wxpay 主体(3)先于 VIP 订单域(4)，因 VipOrderService→wxpay 与 WxPayRefundNotifyController→VipOrderService 双向依赖，RefundNotifyController 随提交 4 入库以保证两个中间提交均可编译；协议域模型(2)先于 auth 接线(6)。判域内 M/?? 清单 104 条全覆盖、一条不多；每条路径均经存在性/判域/去重/覆盖四重校验。6 个 svg 为 EOL 归一化假差异（status M 而 diff 空），保留在提交 9。绝未执行 git add/commit。；复验结论：FEATURE-BODY-COMMIT 通过。验证边界（如实并陈）：修复者提交的路径级 commitPlan JSON 未落盘（grep .zcode/workflow-runs、.zcode/workflows、closureDir 均无 104 路径载荷；编排层只传给我 条数=12 与车道报告），故按编排层给的材料做独立重建验证——以当前 `git status --porcelain=v1 -uall` 自行推导判域全集（104 条），四项硬检查（存在性/判域/去重/双向覆盖）全过，且 12 组名义计数可被一个全同域划分精确闭合（已显式构造并经 diff 实证边界归属）；此法能证实 plan 与盘面一致且分组合理，但不能逐一比对修复者内存中每组的具体路径清单（编排层 merge 逻辑采用的是 fixer 的 commits，见 workflow 行 526，复验员 commits 字段不生效，故我未另产 plan）。组 9/组 6 对 register-index.spec.ts 存在一处无害两可（两归均保持全部计数且都在 apps/client/** 域内）。ask 模板中另两条验证方式（证据删留两门对照、自检定位聚合器 51/51）对应的缺口 EVID-DELETION-LAND、SELFTEST-LOCATE 不在本 ask 的缺口清单（[\"FEATURE-BODY-COMMIT\"]）内，本复验未执行——归同级复验员 ask。临时产物只写 .zcode/tmp/reverify-fbc-20261009/，未改任何仓库文件。"
+ },
+ {
+  "lane": "证据删留",
+  "fixedIds": [
+   "EVID-DELETION-LAND"
+  ],
+  "filesChanged": [
+   "reports/audit/repo-closure-2026-10-09/evidence-deletion-disposition.md",
+   ".zcode/tmp/reverify-selftests-2026-10-09.log",
+   ".zcode/tmp/reverify-store-query.mjs"
+  ],
+  "skipped": [],
+  "evidence": [
+   "commitPlan 核对：reports/audit/repo-closure-2026-10-09/evidence-deletion-disposition.md:77-83 §6 恰为 1 条提交（message + paths + deletePaths，与本 ask「条数：1」一致）；paths[0] 该文件本体存在（93 行，已通读）；deletePaths[0]=reports/screenshots 目录在盘且在册删除未落地。",
+   "判域符合性：commitPlan 两条路径均不含 scripts/qa；`git status --porcelain -- scripts/qa/verify-evidence-corpus.mjs scripts/qa/verify-provenance-all.mjs scripts/qa/evidence-store.mjs` 输出为空 ⇒ 处置件 §0「判据侧零改动、两门判据一字未改」证实。本车道唯一 reports/ 路径即处置件本身（=修复者自报改动、证据道既定落点，与前证 3a91b254 同域），模板「reports 不得出现」按功能体车道口径解读，此处不适用；分组合理性：单提交、路径全在 reports/ 证据域，同组同域成立。",
+   "盘面实测逐条复现（disposition §1）：`git status --short -- reports/screenshots | awk '{print $1}' | sort | uniq -c` → `3851 D`+`26 M`；26 个 M 全在 round-7-exec 且全为 PAGES-MESSAGES-INDEX-MSG*（`grep -vc 'round-7-exec/PAGES-MESSAGES-INDEX-MSG'` → 0）；`git ls-files reports/screenshots | wc -l` → 11333；`find reports/screenshots -type f | wc -l` → 12380；round-1 三读数 2/1/2（ls-files=2、盘上=1、HEAD ls-tree=2，144 帧无物可 restore 证实）；.gitignore:61 = `reports/screenshots/`。",
+   "corpus 门重跑（`node scripts/qa/verify-evidence-corpus.mjs`）：CORPUS_SCANNED=47 CORPUS_EXPIRED_GITSHA=47 CORPUS_PROBLEMS=1；CORPUS_DENOM_AXIS advisoryFrames=5 advisoryPaths=5 advisoryManifests=1 blockingFrames=144 strict=off；CORPUS_LEGACY_NO_SHA=1 CORPUS_LEGACY_FRAMES=144；CORPUS_PROBLEM reports/screenshots/round-1/manifest.json 共 144 帧 :: 帧不存在=144；CORPUS_DENOM_ABSENT trackedAbsentFiles=3851 trackedAbsentFrames=3841 trackedAbsentNonImage=10；CORPUS_ADVISORY_FILE exec-a-mock-final manifest-detail.json 选定删除集内缺席=5；CORPUS_RESULT=FAIL（存在不可背书证据或硬编码 SHA）；CORPUS_STORE=unconfigured —— 与处置件 §1/§2/§4 逐字同值。",
+   "provenance 门重跑（`node scripts/qa/verify-provenance-all.mjs`）：PROV_FRAMES_CONSISTENT=4154 PROV_FRAMES_STALE=0 PROV_FRAMES_PRE_STAMP=4881 PROV_FRAMES_UNRESOLVABLE=5 PROV_FRAMES_UNDATED=0 PROV_FRAMES_UNKNOWN_BAND=0 PROV_FRAMES_LEGACY=0 PROV_FRAMES_LEGACY_EXEMPT=144；PROVENANCE_RESULT=FAIL（本轮产物侧存在回填/过期戳记/断链帧/无戳，禁止据此下结论）；PROV_PRODUCERS=11 DERIVED_OK=11 LITERAL_SHA=0；PROV_STORE=unconfigured 库内对象=0；PROV_LEGACY_EXEMPT_NOTE 原文一致；PROV_PRE_STAMP 样本行点名 DC09-after.png —— 与处置件 §3/§4 逐字同值。判据行引用核对：verify-evidence-corpus.mjs:201-215（ls-files --deleted 凭据）、:279-282（advisory 轴）、:323（blockingMissing）；verify-provenance-all.mjs:246（PRE_STAMP）、:250-251（STALE_STAMP）、:195-206（#12-A legacy 豁免）均与处置件所述逻辑一致。",
+   "§3 实测一样本：`git status --short -- reports/screenshots/round-7-A-mock-final/PAGES-DISCOVER-INDEX-DC09-after.png` 为空（在册干净）；`stat -c '%y %s'` → 2026-09-27 09:50:51.119802700 +0800, 14293 —— 与处置件逐字一致。",
+   "§5 腿一（帧内容回溯）：DC01-after.png 的 git 对象是 Git LFS 指针（本仓启用 LFS，git-lfs 3.4.1，check-attr filter=lfs），指针 oid sha256:cafe8f47278705d46a64…、size 14351；本地对象 .git/lfs/objects/ca/fe/cafe8f47… 在盘，sha256sum 前 16 位 = cafe8f47278705d4，与 exec-A-mock-final/manifest-detail.json 所记 bytes=14351/contentHash=cafe8f47278705d4 逐位一致 ⇒「git 里的内容就是 manifest 记账的那一枚」成立。注：为不动工作树，我哈希的是 LFS 对象本体而非 restore 后的工作文件；我首轮直接哈希裸指针得 d2332b02 系未过 smudge 所致，非处置件错误。",
+   "§5 腿二（仓外证据库）：自写只读查询 .zcode/tmp/reverify-store-query.mjs（复用 scripts/qa/evidence-store-read.mjs 的 openEvidenceStore+storeVouches，按 evidence-store.mjs:36 缺省路径）→ mode=reachable dir=D:\\6\\love-mini-evidence objects=3497；round-1 manifest 144 帧逐枚查询 → storeVouched=144 notVouchable=0 noHash=0 —— 与处置件 §5 逐字同值。",
+   "§0 交叉引用：sort-v35.json needsUserRows[0].id = CORPUS-LEGACY-144（仍留拍板）证实。",
+   "聚合器实测（非 51/51，如实报告）：`/d/codex-tools/node-v22.17.0-win-x64/node scripts/qa/run-qa-selftests.mjs` → SELFTEST_RAN=48 SKIPPED=1 FAILED=1 NO_SUMMARY_LINE=0 覆盖文件=49/49，GATE_SELFTESTS_RAN=3 GATE_SELFTESTS_FAILED=0，SELFTEST_RESULT=FAIL（1/51 个离线测试与门自检未过）；唯一失败者 test-guest-landing.mjs（GL_TEST=FAIL，「派生第二条游客腿的 triage 没成功 :: exit=2 TRIAGE_INPUTS …exec-guest-real-guard-r10\\exec-results.json…」）——即 v3.4 SELFTEST-1OF51 那一条，归 SELFTEST-LOCATE 车道，其报告 reports/audit/repo-closure-2026-10-09/selftest-locate.md 至今是全未勾选的骨架（未落地）。EVID-DELETION-LAND 处置件从头到尾未主张聚合器 51/51，其主张的两门（corpus/provenance）我已亲手重跑且读数逐字复现，故 1/51 不减损本缺口收口的证实。",
+   "工作树已还原的旁证：全部复验结束后 `git status --short -- reports/screenshots` 仍为 3851 D + 26 M，DC01 复归 ` D`；且本轮 provenance 读数 STALE=0/UNRESOLVABLE=5（若 §3 实验未还原会读到 STALE=1/UNRESOLVABLE=4）⇒ 处置件「实验后工作树已还原」成立。",
+   "未重跑项（如实声明）：§3 实测二（git restore 翻 STALE_STAMP 实验）需对工作树执行 git restore，超出复验员不改盘纪律，未亲手重跑；其机制与判据 verify-provenance-all.mjs:250-251 一致，其终态（已还原）由上一条旁证。"
+  ],
+  "commits": [
+   {
+    "message": "evidence(qa): reports/screenshots 历史截图删留落地（附死因记录与红因读数，判据修订留待拍板）",
+    "paths": [
+     "reports/audit/repo-closure-2026-10-09/evidence-deletion-disposition.md"
+    ],
+    "deletePaths": [
+     "reports/screenshots"
+    ]
+   }
+  ],
+  "notes": "1) 车道全程未执行任何 git add/commit；reports/screenshots 的删除全凭 commitPlan 的 deletePaths 交编排层落地。2) deletePaths 执行注记（已写进 disposition §6）：.gitignore:61 覆盖 reports/screenshots/ ⇒ `git add -A --` 只 stage 3851 删除 + 26 内容改动，不会带入约 4898 个未跟踪件；但 26 个 M 件会以「内容修改」落地并保持在册，若意图是在册件全数退场，编排层需对这 26 件另行明示（本车道不改 commitPlan 一字）。3) 提交落地后 corpus 预计 CORPUS_PROBLEMS 1→2（absentSet 清空使 exec-a-mock-final 5 帧 advisory 凭据失效，红因同类，已按判据代码推导写入 disposition §2，非实测）；provenance 读数不受本提交影响。4) 实验期间盘面有并发变动一次：DC01 在 rm 时 ENOENT 却随后带本车道 restore 的 mtime 复现于盘（与 v3.4「有车道在动盘」观察同类），已再次删除并复验 3851 D + 26 M 基线复原；编排层执行 deletePaths 前建议重数一次 `git status --short -- reports/screenshots`。5) CORPUS-LEGACY-144 / PROV-PRESTAMP-4881-RESCAN 判据与拍板地位一字未动，disposition 全文无判据修订内容。；EVID-DELETION-LAND 收口证实成立：处置件 §1-§5 的全部读数与判据引用我已亲手重跑并逐字比对一致（两门 CORPUS_RESULT=FAIL / PROVENANCE_RESULT=FAIL 与处置并存不悖，红因具名且两门判据文件 git status 干净）；§6 commitPlan 原样转交（1 条，路径存在、无 scripts/qa、单域分组）。两点如实并陈：① 聚合器当前 1/51 红（test-guest-landing.mjs），属未落地的 SELFTEST-LOCATE 车道，与本缺口无关；② 执行注记里 26 个 M 件会以内容修改随 add -A 落地一事，处置件已自曝，编排层按其注记决定即可，我未改 commitPlan 一字。本车道未执行任何 git 写操作，仓库文件零改动（仅 .zcode/tmp 两个复验临时件）。"
+ },
+ {
+  "lane": "自检定位",
+  "fixedIds": [
+   "SELFTEST-LOCATE"
+  ],
+  "filesChanged": [
+   "reports/audit/repo-closure-2026-10-09/selftest-locate.md"
+  ],
+  "skipped": [
+   {
+    "id": "SELFTEST-LOCATE/最小修复到51-51",
+    "reason": "失败者已定位为 test-guest-landing.mjs 预检夹具派生步，但定性为裁定内真红 + 环境缺件，按车道纪律不修：①不是测试 bug——45 checks 唯一失败即预检如实上报子步 exit=2，历史 TDZ 已在 593f4d2d 修掉；②不是门的 bug——triage-exec-failures.mjs:1141 报的「复测腿与债不同源」是真实的账本/语料同源性断裂（booked 10-06 按 2026-09-30 裁定(a) 记 recommend-pref 组 11 行 fromOpsEntireGuest，r10 语料 09-29 入库、该组仅 4 行 FAILED-landing-guard）；③该红已被 followups-v33.md:618-648 §19(c)(2026-10-01) 具名定性「真红、按原样留着」，修复裁定为「同源重跑、要设备」并明文禁止改判据糊过去；④实测在盘全部游客语料均早于名册改版（最新即 r10 09-29 13:43），离线无同源绕行，重跑需 UI 租约+DevTools+模拟器设备腿，本车道离线无设备授权"
+   }
+  ],
+  "evidence": [
+   "复跑聚合器（Node22 v22.17.0，node scripts/qa/run-qa-selftests.mjs，输出 .zcode/tmp/selftest-locate-reverify-agg2.txt）：SELFTEST_RAN=48 SKIPPED=1 FAILED=1 NO_SUMMARY_LINE=0 覆盖文件=49/49，GATE_SELFTESTS_RAN=3 GATE_SELFTESTS_FAILED=0，SELFTEST_RESULT=FAIL（1/51），唯一 FAIL=test-guest-landing.mjs exit=1 断言失败数=1 GL_TEST=FAIL —— 与 selftest-locate.md §一 引文逐字一致。注意：51/51 未出现，且修复者本就未声称 51/51（报告 §八明说「聚合器读数维持 1/51」「51/51 的达成条件不在本车道」）；本次复验证实的是其「失败者已定位+裁定内真红+环境缺件不修」的收口口径",
+   "单跑 node scripts/qa/test-guest-landing.mjs（.zcode/tmp/reverify-gl-full.txt）：exit=1，FAIL 派生第二条游客腿的 triage 没成功 :: exit=2 TRIAGE_INPUTS results=D:\\6\\恋爱小程序\\reports\\audit\\round-7\\exec-guest-real-guard-r10\\exec-results.json，SUMMARY: checks=45 assertion failures = 1，GL_TEST=FAIL —— 与报告 §一.49 逐字一致；SUMMARY 正常打满亦旁证 §19(a) TDZ 已修（报失败而非崩溃）",
+   "亲手复跑 triage 门（node scripts/qa/triage-exec-failures.mjs --results reports/audit/round-7/exec-guest-real-guard-r10/exec-results.json --out .zcode/tmp/reverify-triage.json）：exit=2，TRIAGE_RESULT=FAIL problems=1，✗ 复测腿与债不同源（1 组）—— 与报告 §二.1 逐字一致",
+   "根因链成员差（node -e 实读两份账）：r10 语料 156 行中 recommend-pref 组恰 11 行 RP01–RP11，FAILED 恰={RP01,RP02,RP06,RP10}（4 行）、SKIPPED 7 行；guest-landing-booked.json rows[] 该组 caseIds=RP01…RP11、debtRows=11、memberSource.fromOpsEntireGuest=11、memberBasis=ops-entirely-undeclared-guest-assertions；语料 runner=\"scripts/qa/r-exec-cli.mjs（real 切片）\" 不含 real-cases-only ⇒ 切片豁免（triage-exec-failures.mjs:852-853）不生效 —— 报告 §二.3/§二.4 全部实锤",
+   "mtime 断代（stat）：exec-guest-real-guard-r10/exec-results.json=2026-09-29 13:43:38 +0800；guest-landing-booked.json=2026-10-06 19:07:42 +0800 —— 与报告 §二.4「语料 09-29 13:43 入库、账本 10-06 19:07 被重写」一致",
+   "判据本体读码：triage-exec-failures.mjs:852-853（corpusIsPartialSlice）、:855-877（账本比对+coverMismatch push）、:1141-1143（markProblem「复测腿与债不同源」）；预检块 test-guest-landing.mjs:29-37（let checks=0,fail=0 在 :29，失败分支 fail++;checks++ 打 FAIL 行）—— 与报告 §二.2 引用行号吻合",
+   "裁定原文核实：reports/audit/round-7/followups-v33.md §19（约 :618-648，2026-10-01）明文「新增的那条红是真的，我按原样留着：复测腿与债不同源」「这不是可以改判据糊过去的东西，是欠一次同源重跑。修法（下一发，要设备）」「我没有动 triage 的判据」—— 报告 §三 引文逐字吻合，定性「不修」确有裁定背书",
+   "commitPlan=0 一致性：报告 §五 明写「无代码修复 ⇒ commitPlan 为空」；git status 该车道唯一产物为未跟踪目录 reports/audit/repo-closure-2026-10-09/；我全部运行前后 git status --porcelain 4034 行 diff 为空（.zcode/tmp 被 gitignore，测试自带 tmp/l20-selftest-* 夹具用完自删、无残留）—— 运行未动任何跟踪文件",
+   "修复者在盘产物核对：.zcode/tmp/selftest-locate-run1.txt（其聚合器日志，与我复跑读数相同）、selftest-locate-guest-landing-full.txt、selftest-locate-triage2.json.md 与 selftest-locate-triage2.json.json（该门 --out 自动补 .json 后缀，报告写法 .md/.json 略松但两份都在）",
+   "如实记录一次环境抖动：我第 1 次聚合器复跑（.zcode/tmp/selftest-locate-reverify-agg.txt）FAILED=2，第二个失败 test-lane-report-complete.cjs 系子进程偶发崩溃 exit=3221226505（0xC0000409 fast-fail，A2–A6 为连锁 null）；该测试单跑 3 次全绿（exit=0、SUMMARY assertion failures=0，.zcode/tmp/reverify-lrpt-run1..3.txt），第 2 次全量复跑回归 FAILED=1 —— 判定为基础设施偶发抖动，非代码红，不影响本车道读数结论"
+  ],
+  "commits": [],
+  "notes": "聚合器本轮实测读数：50 绿（47 test-* + 3 门自检）+ 1 红（test-guest-landing.mjs，已定性）+ 1 UI 绑定跳过（test-stop-flag.cjs，策略内）＝与上轮 1/51 完全一致，无新红无新绿。51/51 的达成路径不在本车道：按 followups-v33 §19(c) 既有裁定完成守卫腿同源重跑（需设备 + 授权：node22 scripts/qa/r-exec-cli.mjs 对当前名册重跑 recommend-pref 组，使语料与 booked 同源）后重派夹具，GL 自然转绿。无代码修复 ⇒ commitPlan 为空；车道报告在 reports/audit/repo-closure-2026-10-09/selftest-locate.md，是否入库由编排层按 evidence(qa) 惯例决定。；复验方式与范围：(1) 功能体入库核对——commitPlan 条数=0，路径存在性/判域/分组三查无对象，与报告「无代码修复」自报一致（scripts/qa 下盘面既有 M 文件非本车道自报改动，未计入）。(2) 证据删留 disposition 核对——属另一车道缺口，不在本次派单 id 列表内，未验。(3) 自检定位——已按指示亲手全量重跑聚合器（非抽样替代）；实测读数 FAIL 1/51，与修复者自报完全一致；51/51 未达成亦未被声称，其达成条件（按 §19(c) 裁定以设备腿对当前名册同源重跑守卫语料）在本离线车道外。SELFTEST-LOCATE 的收口口径=「失败者已定位（test-guest-landing.mjs 预检夹具派生步）+ 定性（裁定内真红+环境缺件，不修）+ 读数维持 1/51 无新红」，以上每一环均亲手复现，故入 fixedIds。唯一保留意见：聚合器在本环境存在 LRPT 子进程偶发崩溃抖动（见证据第 10 条），建议编排层知晓。"
+ }
+]
