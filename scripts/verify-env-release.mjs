@@ -26,8 +26,10 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const clientDir = resolve(__dirname, "../apps/client");
 
-/** Vite 环境变量加载顺序（后加载覆盖先加载）：.env → .env.[mode] */
-const ENV_FILES = [".env", ".env.real"];
+/** Vite 环境变量加载顺序（后加载覆盖先加载）：.env → .env.[mode]
+ * 2026-10-05 补充 .env.real.local：与 Vite 的 *.local 本地覆盖约定对齐
+ * （.local 被 gitignore，供本机度量/联调覆盖正式值，不入库）。 */
+const ENV_FILES = [".env", ".env.real", ".env.real.local"];
 
 /** 解析 .env 文件的 KEY=VALUE 行（忽略注释与空行，支持引号包裹的值）。 */
 function parseEnv(content) {

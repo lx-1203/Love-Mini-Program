@@ -306,3 +306,49 @@ groups:
         annotations:
           summary: "登录失败率过高"
           description: "5 分钟内登录失败率 {{ $value | humanizePercentage }}，可能存在撞库或微信 API 异常。"
+
+      # 支付回调处理失败（2026-10-05 补充）：5 分钟窗口内失败计数 > 0
+      # 指标名对齐 PaymentMetrics.recordCallbackFailure 动态注册的
+      # payment.callback.failure（Prometheus 导出为 payment_callback_failure_total，
+      # reason 标签区分 signature_invalid/order_not_found/duplicate_notify/persist_error 等）。
+      # 注：BillingService（vip 包）回调失败路径接入 recordCallbackFailure 之前该指标
+      # 无序列，本规则静默不触发（与登录失败率规则的动态指标语义一致）。
+      - alert: PaymentCallbackFailure
+        expr: |
+          sum(increase(payment_callback_failure_total[5m])) > 0
+        labels:
+          severity: warning
+          service: campuslove-api
+        annotations:
+          summary: "支付回调处理失败"
+          description: "5 分钟内支付回调失败 {{ $value | humanize }} 次（原因 {{ $labels.reason }}），可能存在资金状态不一致，请立即核查 payment_callback_log 与回调日志。"
+
+      # 聊天消息发送失败（2026-10-05 补充）：连续 5 分钟有失败记录
+      # 指标名对齐 ChatMetrics.recordMessageFailed 的 chat.message.failed
+      # （Prometheus 导出为 chat_message_failed_total，reason 标签区分失败原因）
+      - alert: ChatMessageSendFailure
+        expr: |
+          sum(rate(chat_message_failed_total[5m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: campuslove-api
+        annotations:
+          summary: "聊天消息发送失败"
+          description: "消息发送失败持续 5 分钟（原因 {{ $labels.reason }}），请检查 WebSocket 推送链路与消息持久化。"
+
+      # 推荐算法 P99 耗时 > 1.5s（连续 5 分钟，2026-10-05 补充）
+      # 指标名对齐 MatchMetrics.recommendLatencyTimer 的 match.recommend.latency
+      # （Timer 导出为 match_recommend_latency_seconds_bucket 等）
+      - alert: MatchRecommendSlowP99
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(match_recommend_latency_seconds_bucket[5m])) by (le)
+          ) > 1.5
+        for: 5m
+        labels:
+          severity: warning
+          service: campuslove-api
+        annotations:
+          summary: "推荐算法 P99 耗时过高"
+          description: "推荐算法 P99 响应 {{ $value }}s，超过 1.5s 阈值，请检查推荐查询与缓存命中。"
