@@ -331,6 +331,8 @@ export async function loginWithPhone(phone: string, password: string): Promise<U
  * @param nickname  昵称（1-20 字）
  * @param birthDate 出生日期（ISO 日期串 yyyy-MM-dd）
  * @param verificationCode 短信验证码（模拟短信：POST /v1/sms/send-code 发送后回填）
+ * @param agreedLegalVersion 注册时同意的法定文本版本号（2026-10-05 合规接线新增可选字段，
+ *        取自 GET /v1/config/legal 的 version，拿不到时调用方传 '1.0.0'；后端落库留存）
  * @returns 用户会话信息
  * @throws Error 手机号已注册/未成年/参数非法/验证码错误时抛出(含后端 message)
  */
@@ -340,14 +342,22 @@ export async function registerUser(
   nickname: string,
   birthDate: string,
   verificationCode?: string,
+  agreedLegalVersion?: string,
 ): Promise<UserSession> {
   const response = await request<
     UserSession,
-    { phone: string; password: string; nickname: string; birthDate: string; verificationCode?: string }
+    {
+      phone: string;
+      password: string;
+      nickname: string;
+      birthDate: string;
+      verificationCode?: string;
+      agreedLegalVersion?: string;
+    }
   >({
     url: "/v1/auth/register",
     method: "POST",
-    data: { phone, password, nickname, birthDate, verificationCode },
+    data: { phone, password, nickname, birthDate, verificationCode, agreedLegalVersion },
     skipAuth: true,
     noRetry: true,
     // MP-R2-PAGES-REGISTER-INDEX-001：对齐 loginAsGuest 先例——已注册（400「该手机号已

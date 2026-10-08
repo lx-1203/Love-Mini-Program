@@ -68,9 +68,27 @@ public interface AuthService {
      * @return 用户会话视图(包含 JWT 令牌)
      * @throws IllegalArgumentException 手机号已注册/参数非法/验证码错误时抛出
      */
+    default UserSessionView registerUser(String phone, String password, String nickname,
+                                         java.time.LocalDate birthDate, String deviceId,
+                                         String verificationCode) {
+        // 兼容旧签名：未携带协议同意版本（agreedLegalVersion=null，服务端以当前版本兜底）
+        return registerUser(phone, password, nickname, birthDate, deviceId,
+                verificationCode, null);
+    }
+
+    /**
+     * 注册新用户（带协议同意版本，2026-10-05 合规落库）。
+     *
+     * <p>客户端在注册请求体中携带用户勾选同意的法律文本版本号
+     * {@code agreedLegalVersion}（可选字符串，缺省时服务端以当前版本兜底），
+     * 注册成功后写入 user_agreement_consent（source=REGISTER，服务端半边留痕）。</p>
+     *
+     * @param agreedLegalVersion 用户同意的法律文本版本（可空/空白 → 当前版本兜底）
+     * @return 用户会话视图(包含 JWT 令牌)
+     */
     UserSessionView registerUser(String phone, String password, String nickname,
                                  java.time.LocalDate birthDate, String deviceId,
-                                 String verificationCode);
+                                 String verificationCode, String agreedLegalVersion);
 
     /**
      * 手机号 + 密码登录。

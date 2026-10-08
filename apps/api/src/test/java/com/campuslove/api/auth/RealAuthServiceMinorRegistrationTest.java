@@ -59,7 +59,6 @@ class RealAuthServiceMinorRegistrationTest {
                 mock(TokenBlacklistService.class),
                 mock(OnlineUserService.class),
                 mock(SchoolRepository.class),
-                "",
                 true,
                 "13900000000",
                 smsCodeService

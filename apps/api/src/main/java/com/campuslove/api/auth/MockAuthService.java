@@ -63,8 +63,8 @@ public class MockAuthService implements AuthService {
     }
 
     @Override
-    public UserSessionView registerUser(String phone, String password, String nickname, java.time.LocalDate birthDate, String deviceId, String verificationCode) {
-        // mock 模式下直接返回 mock 会话(忽略注册参数)
+    public UserSessionView registerUser(String phone, String password, String nickname, java.time.LocalDate birthDate, String deviceId, String verificationCode, String agreedLegalVersion) {
+        // mock 模式下直接返回 mock 会话(忽略注册参数；协议同意留痕仅 real profile 落库)
         log.info("mock 注册用户, phone={}", SensitiveDataMasker.mask(phone));
         UserSessionView view = toView(runtimeState.loginWithWechat(), "mock-token-" + System.currentTimeMillis());
         recordLoginDevice(parseUserId(view.userId()), deviceId, "phone");

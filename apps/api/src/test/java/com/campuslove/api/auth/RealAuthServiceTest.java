@@ -83,7 +83,7 @@ class RealAuthServiceTest {
         correctHash = passwordEncoder.encode(RAW_PASSWORD);
         wrongHash = passwordEncoder.encode("another-password");
 
-        // ADMIN_PASSWORD 环境变量留空，强制走数据库 password 字段校验路径
+        // ADMIN_PASSWORD 环境变量兜底已移除（2026-10-05 安全修复），登录仅依赖数据库 password 字段
         realAuthService = new RealAuthService(
                 weChatClient,
                 jwtTokenProvider,
@@ -96,7 +96,6 @@ class RealAuthServiceTest {
                 tokenBlacklistService,
                 onlineUserService,
                 schoolRepository,
-                "",
                 true,
                 "13900000000",
                 smsCodeService
@@ -154,36 +153,22 @@ class RealAuthServiceTest {
     }
 
     /**
-     * 场景 4：环境变量兜底校验 —— 数据库无 password 字段时，回退到 ADMIN_PASSWORD 环境变量。
+     * 场景 4：数据库无 password 字段时拒绝登录（fail-closed，2026-10-05 安全修复）。
+     *
+     * <p>原行为：回退 ADMIN_PASSWORD 环境变量兜底校验；修复后环境变量明文兜底已移除，
+     * 数据库 password 为空时管理员登录未启用（抛 IllegalStateException），不再有任何
+     * 环境变量兜底路径。</p>
      */
     @Test
-    void loginAsAdmin_withEmptyDbPassword_shouldFallbackToEnvVar() {
+    void loginAsAdmin_withEmptyDbPassword_shouldFailClosed() {
         // Arrange：管理员用户无 password 字段（旧数据迁移场景）
         User adminUser = createAdminUser(null);
         when(userRepository.findByOpenid("admin")).thenReturn(Optional.of(adminUser));
-        when(jwtTokenProvider.generateToken(any())).thenReturn("mock-jwt-token");
 
-        // 重新构造 service，ADMIN_PASSWORD 环境变量配置为正确哈希
-        RealAuthService serviceWithEnvHash = new RealAuthService(
-                weChatClient,
-                jwtTokenProvider,
-                userRepository,
-                userBasicProfileRepository,
-                userCampusProfileRepository,
-                userScheduleProfileRepository,
-                passwordEncoder,
-                aesEncryptor,
-                tokenBlacklistService,
-                onlineUserService,
-                schoolRepository,
-                correctHash,
-                true,
-                "13900000000",
-                smsCodeService
-        );
-
-        // Act & Assert：应通过环境变量哈希校验成功
-        assertDoesNotThrow(() -> serviceWithEnvHash.loginAsAdmin("admin", RAW_PASSWORD));
+        // Act & Assert：环境变量兜底已删除，登录未启用应明确拒绝
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> realAuthService.loginAsAdmin("admin", RAW_PASSWORD));
+        assertEquals("管理员登录未启用", ex.getMessage());
     }
 
     /**
@@ -250,38 +235,24 @@ class RealAuthServiceTest {
     }
 
     /**
-     * 场景 8：环境变量兜底场景下，即使 storedHash 是明文也不应迁移（避免改写配置源）。
+     * 场景 8：历史明文密码在错误输入下不触发迁移（2026-10-05 重写）。
+     *
+     * <p>原「环境变量兜底不迁移」场景随 ADMIN_PASSWORD 兜底移除而失效；本场景保留
+     * 明文 storedHash 下的负路径覆盖：密码错误时拒绝且不迁移。</p>
      */
     @Test
-    void loginAsAdmin_withPlaintextEnvFallback_shouldNotMigrate() {
-        // Arrange：管理员用户无 password 字段，环境变量为明文密码（异常配置）
-        String plaintextEnvPassword = String.join("", "env-plaintext-", "pwd-2026");
-        User adminUser = createAdminUser(null);
+    void loginAsAdmin_withWrongPasswordAndPlaintextEnvReplacement_shouldNotMigrate() {
+        // Arrange：管理员用户无 password 字段（旧兜底场景的残留形态）
+        String plaintextPassword = String.join("", "env-plaintext-", "pwd-2026");
+        User adminUser = createAdminUser(plaintextPassword);
         when(userRepository.findByOpenid("admin")).thenReturn(Optional.of(adminUser));
-        when(jwtTokenProvider.generateToken(any())).thenReturn("mock-jwt-token");
 
-        RealAuthService serviceWithPlaintextEnv = new RealAuthService(
-                weChatClient,
-                jwtTokenProvider,
-                userRepository,
-                userBasicProfileRepository,
-                userCampusProfileRepository,
-                userScheduleProfileRepository,
-                passwordEncoder,
-                aesEncryptor,
-                tokenBlacklistService,
-                onlineUserService,
-                schoolRepository,
-                plaintextEnvPassword,
-                true,
-                "13900000000",
-                smsCodeService
-        );
+        // Act & Assert：错误密码应被拒绝
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> realAuthService.loginAsAdmin("admin", WRONG_PASSWORD));
+        assertEquals("管理员账号或密码错误", ex.getMessage());
 
-        // Act：使用明文密码登录，应成功（环境变量兜底 + 明文比较）
-        assertDoesNotThrow(() -> serviceWithPlaintextEnv.loginAsAdmin("admin", plaintextEnvPassword));
-
-        // Assert：userRepository.save 不应被调用（环境变量兜底不迁移）
+        // Assert：userRepository.save 不应被调用（校验未通过，不迁移）
         verify(userRepository, never()).save(any());
     }
 
@@ -507,7 +478,6 @@ class RealAuthServiceTest {
                 tokenBlacklistService,
                 onlineUserService,
                 schoolRepository,
-                "",
                 false,
                 "13900000000",
                 smsCodeService

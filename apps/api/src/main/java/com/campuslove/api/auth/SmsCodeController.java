@@ -1,12 +1,17 @@
 /**
- * 短信验证码控制器（模拟短信收发）。
+ * 短信验证码控制器。
  *
  * 接口：
- *   POST /api/v1/sms/send-code  发送验证码（模拟成功，返回 mockCode 供联调）
+ *   POST /api/v1/sms/send-code  发送验证码
  *
- * 说明：项目当前无短信基础设施，发送为模拟实现——"填入手机号后默认成功发送短信，
- * 用户输入返回的 mockCode 即视为已收到短信"。接入真实短信网关后仅替换
- * SmsCodeService 发送实现，接口契约不变。
+ * 安全契约（验证码去假 fail-closed）：
+ * <ul>
+ *   <li>mock profile（本地演示）：返回 mockCode 供联调回填（模拟短信默认成功）。</li>
+ *   <li>非 mock profile：绝不返回验证码本体——真实短信网关未配置时返回 503 明确错误；
+ *       网关就绪时验证码经网关下发，响应仅含 success/expiresIn。</li>
+ *   <li>限流：按手机号维度 1 次/分钟（令牌桶 capacity=1，每 60 秒补充 1 个），
+ *       防止单号刷短信；同端点另有全局限流体系兜底（见 ratelimit 包）。</li>
+ * </ul>
  */
 package com.campuslove.api.auth;
 
@@ -20,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.campuslove.api.common.ApiResponse;
+import com.campuslove.api.ratelimit.RateLimit;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -37,20 +43,34 @@ public class SmsCodeController {
     }
 
     /**
-     * 发送短信验证码（模拟：默认成功）。
+     * 发送短信验证码。
+     *
+     * <p>mock profile 返回 mockCode（联调用）；真实环境不返回验证码本体
+     * （网关未配置时 503）。按手机号维度限流 1 次/分钟。</p>
      *
      * @param request 手机号
-     * @return 发送结果 + mockCode（模拟联调用；真实短信场景不返回验证码本体）
+     * @return 发送结果（mock profile 附带 mockCode；真实环境不含验证码字段）
      */
     @PostMapping("/send-code")
+    @RateLimit(capacity = 1, refillTokens = 1.0 / 60, key = "#request.phone")
     public ApiResponse<Map<String, Object>> sendCode(@RequestBody SendCodeRequest request) {
-        String code = smsCodeService.sendCode(request.phone());
         log.info("验证码发送请求: phone={}", maskPhone(request.phone()));
+        // mock profile：模拟发送并回传 mockCode（本地演示契约保持不变）
+        if (smsCodeService.isMockProfile()) {
+            String code = smsCodeService.sendCode(request.phone());
+            return ApiResponse.ok(Map.of(
+                    "success", true,
+                    "mockCode", code,
+                    "expiresIn", "300秒",
+                    "message", "验证码已发送（模拟短信：无真实短信网关，默认发送成功）"
+            ));
+        }
+        // 真实环境：网关未配置时抛 503；网关就绪时下发且响应不含验证码本体
+        smsCodeService.sendCode(request.phone());
         return ApiResponse.ok(Map.of(
                 "success", true,
-                "mockCode", code,
                 "expiresIn", "300秒",
-                "message", "验证码已发送（模拟短信：无真实短信网关，默认发送成功）"
+                "message", "验证码已发送，请查收短信"
         ));
     }
 

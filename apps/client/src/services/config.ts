@@ -194,3 +194,54 @@ export async function loadUnlockGuideSteps(): Promise<UnlockGuideStepView[]> {
     method: "GET",
   });
 }
+
+/**
+ * 法定文本视图（与后端 {@code LegalTextView} record 对齐，P0-22）。
+ */
+export interface LegalTextView {
+  /** 文本标题（如「用户协议」/「隐私政策」） */
+  title: string;
+  /** 正文长文本（客户端原样展示） */
+  content: string;
+  /** 最后更新时间（ISO 8601 字符串） */
+  updatedAt: string | null;
+  /** 当前法定文本版本号（2026-10-05 合规接线新增字段；后端旧版本无此字段） */
+  version?: string | null;
+}
+
+/** 法定文本版本号获取失败时的兜底值 */
+export const DEFAULT_LEGAL_VERSION = "1.0.0";
+
+/**
+ * 获取当前法定文本版本号（2026-10-05 合规接线：注册同意落库）。
+ *
+ * <p>调用 {@code GET /config/legal?type=user_agreement}（后端 permitAll，无需鉴权），
+ * 读取返回体中的 {@code version} 字段；后端未升级（无 version 字段）时回退
+ * {@code updatedAt}；请求失败/字段缺失时回退 {@code DEFAULT_LEGAL_VERSION}（'1.0.0'）。
+ * 本函数任何情况下不抛错——注册主流程不应因版本号获取失败被阻断。</p>
+ *
+ * @returns 当前法定文本版本号（永远返回非空字符串）
+ */
+export async function fetchAgreedLegalVersion(): Promise<string> {
+  try {
+    const view = await request<LegalTextView>({
+      url: "/config/legal",
+      method: "GET",
+      data: { type: "user_agreement" },
+      skipAuth: true,
+      noRetry: true,
+      // 版本号获取属可降级辅助调用，失败由本函数兜底，不进 http 层上报
+      reportError: false,
+    });
+    if (view && typeof view.version === "string" && view.version.trim()) {
+      return view.version.trim();
+    }
+    if (view && typeof view.updatedAt === "string" && view.updatedAt.trim()) {
+      return view.updatedAt.trim();
+    }
+    return DEFAULT_LEGAL_VERSION;
+  } catch (e) {
+    // 任何失败（网络/后端未升级/字段缺失）都回退默认版本，不阻断注册主流程
+    return DEFAULT_LEGAL_VERSION;
+  }
+}

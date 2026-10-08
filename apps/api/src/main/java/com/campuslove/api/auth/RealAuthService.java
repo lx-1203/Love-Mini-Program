@@ -104,14 +104,6 @@ public class RealAuthService implements AuthService {
     private final SchoolRepository schoolRepository;
 
     /**
-     * 管理员登录密码哈希，由环境变量 ADMIN_PASSWORD 配置。
-     * <p>注意：值必须为 BCrypt 哈希（格式 {@code $...}），而非明文。
-     * 可通过 {@link com.campuslove.api.config.PasswordEncoderConfig#encodePassword(String)} 生成。</p>
-     * 未配置时为空字符串，此时管理员登录将被禁用。
-     */
-    private final String adminPassword;
-
-    /**
      * 体验账号一键登录入口开关（配置 app.guest-login.enabled，默认关闭）。
      * <p>P0-14 修复：商业化默认关闭体验入口，本地演示可通过
      * {@code APP_GUEST_LOGIN_ENABLED=true} 或 {@code --app.guest-login.enabled=true}
@@ -194,7 +186,6 @@ public class RealAuthService implements AuthService {
             TokenBlacklistService tokenBlacklistService,
             OnlineUserService onlineUserService,
             SchoolRepository schoolRepository,
-            @Value("${app.admin.password:}") String adminPassword,
             @Value("${app.guest-login.enabled:false}") boolean guestLoginEnabled,
             @Value("${app.guest-login.blacklist-phone:13900000000}") String guestBlacklistPhone,
             SmsCodeService smsCodeService
@@ -210,11 +201,24 @@ public class RealAuthService implements AuthService {
         this.tokenBlacklistService = tokenBlacklistService;
         this.onlineUserService = onlineUserService;
         this.schoolRepository = schoolRepository;
-        this.adminPassword = adminPassword;
         this.guestLoginEnabled = guestLoginEnabled;
         this.guestBlacklistPhone = guestBlacklistPhone;
         this.smsCodeService = smsCodeService;
     }
+
+    /**
+     * 登录失败计数与账号锁定服务（2026-10-05 账号级防爆破）。
+     * 可选注入：单元测试（不加载 Spring）为 null 时跳过锁定校验（IP 限流仍生效）。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private LoginAttemptService loginAttemptService;
+
+    /**
+     * 协议同意记录服务（2026-10-05 合规落库，任务 9）。
+     * 可选注入：单元测试（不加载 Spring）为 null 时跳过 consent 落库。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private AgreementConsentService agreementConsentService;
 
     @Override
     public UserSessionView getCurrentSession(String token) {
@@ -535,7 +539,8 @@ public class RealAuthService implements AuthService {
     @Override
     @Transactional
     public UserSessionView registerUser(String phone, String password, String nickname,
-                                        LocalDate birthDate, String deviceId, String verificationCode) {
+                                        LocalDate birthDate, String deviceId, String verificationCode,
+                                        String agreedLegalVersion) {
         // B6：后台关闭注册功能（app_switch.register_open=false）→ 拒绝注册（403）
         if (appConfigService != null && !appConfigService.isSwitchEnabled(
                 AppConfigService.SWITCH_REGISTER_OPEN)) {
@@ -609,6 +614,12 @@ public class RealAuthService implements AuthService {
             throw new RegisterValidationException(ErrorMessages.PHONE_REGISTERED_PLEASE_LOGIN);
         }
         log.info("新用户注册成功: userId={}, phone={}", saved.getId(), SensitiveDataMasker.mask(phone));
+        // 2026-10-05 合规落库（任务 9）：注册协议同意留痕（source=REGISTER）。
+        // 客户端传 agreedLegalVersion，缺省由 AgreementConsentService 以当前版本兜底；
+        // 同事务写入（注册成功 ⇔ consent 落库原子生效）；服务未注入（单测）时跳过。
+        if (agreementConsentService != null) {
+            agreementConsentService.recordRegisterConsent(saved.getId(), agreedLegalVersion);
+        }
         String token = jwtTokenProvider.generateToken(String.valueOf(saved.getId()));
         // 记录在线会话（eladmin「在线用户」对齐）：注册成功即自动登录，视为在线用户，
         // 与 loginWithPhone/loginAsAdmin/loginWithWechat 一致
@@ -640,6 +651,9 @@ public class RealAuthService implements AuthService {
             log.warn("黑名单手机号登录被拒绝：phone={}", SensitiveDataMasker.mask(phone));
             throw new IllegalArgumentException(ErrorMessages.PHONE_CANNOT_LOGIN);
         }
+        // 2026-10-05 账号级防爆破：连续失败 5 次（可配置）锁 15 分钟（可配置）。
+        // IP 限流之外的第二道防线——换出口 IP 无法绕过按账号计数。
+        assertAccountNotLocked(phone);
         // R4-00249：登录查询按确定性 openid 派生键（"phone:"+SHA-256(phone)）精确匹配
         // （新注册用户），未命中再按明文 phone 兜底（兼容历史明文数据）。
         // 注：不能用 AES 密文查询——AES-GCM 随机 IV 导致同手机号每次密文不同，无法匹配。
@@ -647,6 +661,8 @@ public class RealAuthService implements AuthService {
                 .or(() -> userRepository.findByPhone(phone))
                 .orElse(null);
         if (user == null) {
+            // 未注册手机号同样计数：防止通过锁定态差异枚举已注册手机号
+            recordLoginFailure(phone);
             throw new InvalidCredentialsException(ErrorMessages.PHONE_OR_PASSWORD_WRONG);
         }
         if (user.isDisabled()) {
@@ -655,8 +671,11 @@ public class RealAuthService implements AuthService {
         String storedHash = user.getPassword();
         if (storedHash == null || storedHash.isBlank()
                 || !passwordEncoder.matches(password, storedHash)) {
+            recordLoginFailure(phone);
             throw new InvalidCredentialsException(ErrorMessages.PHONE_OR_PASSWORD_WRONG);
         }
+        // 登录成功：清零失败计数并解除锁定
+        resetLoginFailures(phone);
         String token = jwtTokenProvider.generateToken(String.valueOf(user.getId()));
         // 记录在线会话（eladmin「在线用户」对齐），登录方式 phone
         recordOnlineSession(user.getId(), token, "phone");
@@ -912,29 +931,31 @@ public class RealAuthService implements AuthService {
             });
         }
 
-        // 4. 校验密码：优先使用数据库 password 字段，环境变量 ADMIN_PASSWORD 作为兜底。
+        // 4.5 账号级防爆破（2026-10-05）：与管理员账号（openid 即用户名）维度的
+        //     失败计数/锁定，与手机号登录同一套 LoginAttemptService。
+        assertAccountNotLocked(username);
+
+        // 4. 校验密码：仅使用数据库 password 字段（BCrypt 哈希）。
         //
-        // Phase 3 任务 13 扩展：引入 matchesPasswordWithMigration 通用校验方法，支持：
+        // 2026-10-05 安全修复：移除 ADMIN_PASSWORD 环境变量明文兜底——环境变量中的
+        // 明文/共享密码可被进程列表、日志、崩溃转储泄露，且多管理员共享单口令无法追责。
+        // 管理员初始密码引导走 application-real.yml 的 Flyway 占位符
+        // ADMIN_INITIAL_PASSWORD_HASH（BCrypt 哈希写入 users.password，机制不变）。
+        //
+        // Phase 3 任务 13 引入的 matchesPasswordWithMigration 保留：
         //   - BCrypt 哈希校验（标准路径，格式 $2a$10$...）
-        //   - 历史明文密码兼容（仅在 storedHash 非 BCrypt 格式时尝试明文 equals）
-        //   - 自动迁移：明文校验通过后，将 user.password 升级为 BCrypt 哈希并持久化（一次性升级）
-        //     仅对数据库 user.password 字段迁移，环境变量兜底不迁移（env var 是配置源，不应自动改写）
-        //
-        // 修复历史：原代码使用 String.equals 明文比较，存在严重安全风险（明文泄露、时序攻击）。
-        // Phase 1 已切换为 BCrypt，本任务扩展为支持历史明文兼容与自动迁移。
+        //   - 历史明文密码兼容与自动迁移（仅针对 user.password 字段，迁移后持久化）
         String storedHash = user.getPassword();
-        boolean allowMigration = true;
         if (storedHash == null || storedHash.isBlank()) {
-            storedHash = adminPassword;
-            allowMigration = false;
-        }
-        if (storedHash == null || storedHash.isBlank()) {
-            // 数据库与环境变量均未配置密码哈希，管理员登录未启用
+            // 数据库未配置密码哈希，管理员登录未启用（不再回退环境变量）
             throw new IllegalStateException(ErrorMessages.ADMIN_LOGIN_NOT_ENABLED);
         }
-        if (!matchesPasswordWithMigration(user, password, storedHash, allowMigration)) {
+        if (!matchesPasswordWithMigration(user, password, storedHash, true)) {
+            recordLoginFailure(username);
             throw new InvalidCredentialsException(ErrorMessages.ADMIN_ACCOUNT_OR_PASSWORD_WRONG);
         }
+        // 登录成功：清零失败计数并解除锁定
+        resetLoginFailures(username);
 
         // 5. 生成 JWT 令牌并返回会话视图
         String jwtToken = jwtTokenProvider.generateToken(String.valueOf(user.getId()));
@@ -956,7 +977,8 @@ public class RealAuthService implements AuthService {
      *
      * <p>使用场景：
      * <ul>
-     *   <li>创建新管理员账号时，将明文密码编码后存储到 ADMIN_PASSWORD 环境变量或数据库 password 字段</li>
+     *   <li>创建新管理员账号时，将明文密码编码后存储到数据库 password 字段
+     *       （ADMIN_PASSWORD 环境变量明文兜底已于 2026-10-05 移除）</li>
      *   <li>管理员重置密码时，生成新的 BCrypt 哈希用于更新存储</li>
      * </ul>
      *
@@ -989,14 +1011,13 @@ public class RealAuthService implements AuthService {
      * <p>安全考虑：
      * <ul>
      *   <li>明文比较仅在 storedHash 非 BCrypt 格式时触发，避免对有效 BCrypt 哈希做无意义明文比较</li>
-     *   <li>迁移仅更新 user.password 字段，环境变量 ADMIN_PASSWORD 兜底场景不迁移
-     *       （env var 是配置源，不应被运行时自动改写）</li>
+     *   <li>迁移仅更新 user.password 字段并持久化（一次性升级）</li>
      *   <li>迁移使用新随机 salt 生成 BCrypt 哈希，相同明文每次迁移结果不同</li>
      * </ul>
      *
      * @param user            用户实体（如触发迁移则更新其 password 字段并持久化）
      * @param rawPassword     用户输入的明文密码
-     * @param storedHash      存储的密码哈希（user.password 或环境变量兜底）
+     * @param storedHash      存储的密码哈希（user.password 字段）
      * @param allowMigration  是否允许在明文校验通过时自动迁移到 BCrypt
      * @return true 表示密码匹配（可能已触发迁移），false 表示不匹配
      */
@@ -1135,6 +1156,38 @@ public class RealAuthService implements AuthService {
             log.debug("登出时解析 token 失败: {}", ex.getMessage());
         }
         log.info("{}, userId={}", action, userId);
+    }
+
+    /**
+     * 账号级防爆破辅助：校验账号是否处于锁定态（2026-10-05）。
+     *
+     * <p>锁定时抛 {@link OperationForbiddenException}（403，登录失败次数过多）。
+     * {@link LoginAttemptService} 未注入（单测直连构造）时跳过校验。</p>
+     *
+     * @param account 账号标识（手机号或管理员用户名）
+     */
+    private void assertAccountNotLocked(String account) {
+        if (loginAttemptService == null || !loginAttemptService.isLocked(account)) {
+            return;
+        }
+        log.warn("账号登录被拒绝：连续失败锁定中, account={}", SensitiveDataMasker.mask(account));
+        throw new OperationForbiddenException("登录失败次数过多，账号已被临时锁定，请稍后再试");
+    }
+
+    /** 记录一次登录失败计数（服务未注入时跳过；失败不影响登录主流程）。 */
+    private void recordLoginFailure(String account) {
+        if (loginAttemptService == null) {
+            return;
+        }
+        loginAttemptService.recordFailure(account);
+    }
+
+    /** 登录成功后清零失败计数并解除锁定（服务未注入时跳过）。 */
+    private void resetLoginFailures(String account) {
+        if (loginAttemptService == null) {
+            return;
+        }
+        loginAttemptService.reset(account);
     }
 
     /**

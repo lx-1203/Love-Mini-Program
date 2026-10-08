@@ -32,6 +32,8 @@ import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
 import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
 import { IMAGE_PATHS } from "../../config/images";
 import { registerUser, sendSmsCode } from "../../services/auth";
+// 2026-10-05 合规接线：注册请求体携带 agreedLegalVersion（后端落库留存）
+import { fetchAgreedLegalVersion } from "../../services/config";
 import { AppApiError } from "../../services/api-error";
 import { useAppConfigStore } from "../../stores/app-config";
 import { useSessionStore } from "../../stores/session";
@@ -376,9 +378,18 @@ async function handleSubmit() {
   }
   submitting.value = true;
   try {
+    // 2026-10-05 合规接线：注册落库携带用户勾选协议时的法定文本版本号。
+    // fetchAgreedLegalVersion 内部任何失败回退 '1.0.0'，不会阻断注册主流程。
     // loading 最短展示 400ms 防闪烁；注册成功即签发 JWT（无需二次登录）
     const [session] = await Promise.all([
-      registerUser(phoneRaw.value, password.value, nickname.value.trim(), birthDate.value, smsCode.value),
+      registerUser(
+        phoneRaw.value,
+        password.value,
+        nickname.value.trim(),
+        birthDate.value,
+        smsCode.value,
+        await fetchAgreedLegalVersion(),
+      ),
       delay(400),
     ]);
     addBreadcrumb("ui", "register_success", { userId: String(session?.userId ?? "") });

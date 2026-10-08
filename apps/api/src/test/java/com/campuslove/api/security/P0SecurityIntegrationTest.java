@@ -218,7 +218,6 @@ class P0SecurityIntegrationTest {
                     tokenBlacklistService,
                     onlineUserService,
                     schoolRepository,
-                    "",
                     true,
                     "13900000000",
                     smsCodeService
