@@ -36,7 +36,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
  * <ul>
  *   <li>idx_vip_bills_user：user_id 索引，按用户查询账单列表</li>
  *   <li>idx_vip_bills_status：status 索引，按状态筛选账单</li>
- *   <li>idx_vip_bills_transaction：transaction_id 索引，按第三方交易号查询（对账场景，任务规格 order_no 的对应）</li>
+ *   <li>uk_vip_bills_transaction：transaction_id 唯一索引（V2026.10.05.0011 由普通索引
+ *       idx_vip_bills_transaction 升级）——微信交易单号/商户订单号全局唯一，
+ *       重复回调写第二笔账单被数据库拒绝（防重放纵深防御；MySQL 唯一键允许多个 NULL）</li>
  *   <li>idx_vip_bills_created_at：created_at 索引，按创建时间排序、分页</li>
  * </ul>
  *
@@ -52,8 +54,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
         @Index(name = "idx_vip_bills_user", columnList = "user_id"),
         // 状态索引：按状态筛选账单（SUCCESS/FAILED/REFUNDED）
         @Index(name = "idx_vip_bills_status", columnList = "status"),
-        // 第三方交易号索引：按交易号查询（对账场景，任务规格 order_no 的对应）
-        @Index(name = "idx_vip_bills_transaction", columnList = "transaction_id"),
+        // 第三方交易号唯一索引：按交易号查询 + 防重放（V2026.10.05.0011 升级为唯一键，
+        // MySQL 唯一键允许多个 NULL，历史无交易号账单不受影响）
+        @Index(name = "uk_vip_bills_transaction", columnList = "transaction_id", unique = true),
         // 创建时间索引：按创建时间排序、分页
         @Index(name = "idx_vip_bills_created_at", columnList = "created_at")
     }

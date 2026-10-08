@@ -1,8 +1,11 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.common.ResourceNotFoundException;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.VipBill;
 import com.campuslove.api.repository.VipBillRepository;
+import com.campuslove.api.vip.VipOrderService;
+import com.campuslove.api.wxpay.WxPayDisabledException;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
@@ -18,6 +21,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,6 +34,9 @@ import org.springframework.web.bind.annotation.RestController;
  * 方法层 @PreAuthorize 作为深度防御（需 @EnableMethodSecurity 启用后生效）。</p>
  * <p>数据隔离：账单按用户归属校区（{@code UserCampusProfile.campusName}）过滤，
  * 校区管理员仅可见本校区用户的数据，全局管理员（SUPER_ADMIN 或 ADMIN 无校区）可见全部。</p>
+ *
+ * <p>2026-10-05 微信支付工程补齐：新增管理员退款发起端点
+ * （POST /orders/{orderNo}/refund，仅 SUPER_ADMIN）——资金操作不开放给校区管理员。</p>
  */
 @Profile("real")
 @RestController
@@ -40,12 +48,16 @@ public class AdminVipController {
     private final VipBillRepository vipBillRepository;
     /** 校园管理员数据隔离（商业模式：每个高校一个管理员） */
     private final AdminDataScope adminDataScope;
+    /** VIP 微信支付订单服务（2026-10-05：退款发起） */
+    private final VipOrderService vipOrderService;
 
     public AdminVipController(
             VipBillRepository vipBillRepository,
-            AdminDataScope adminDataScope) {
+            AdminDataScope adminDataScope,
+            VipOrderService vipOrderService) {
         this.vipBillRepository = vipBillRepository;
         this.adminDataScope = adminDataScope;
+        this.vipOrderService = vipOrderService;
     }
 
     /**
@@ -111,6 +123,69 @@ public class AdminVipController {
         adminDataScope.assertCampusAccess(resolveUserCampus(billOpt.get().getUserId()));
 
         return ResponseEntity.ok(toBillView(billOpt.get()));
+    }
+
+    /**
+     * 管理员发起 VIP 订单退款（2026-10-05 微信支付工程补齐，仅 SUPER_ADMIN）。
+     * POST /api/v1/admin/business/vip/orders/{orderNo}/refund
+     *
+     * <p>流程：校验订单为 SUCCESS → 状态机迁移 REFUNDING → 调微信退款 API（全额，
+     * 商户退款单号 RF+orderNo 幂等，重试安全）→ 返回受理结果。最终 REFUNDED 由
+     * 微信退款回调（/api/v1/refund/notify）确认并写 REFUND 账单。</p>
+     *
+     * <p>错误口径：订单不存在/状态不允许 → 400（IllegalArgumentException）；
+     * 微信支付管道未开（enabled=false，含 mock/off）→ 404（与用户端支付端点口径一致）；
+     * 微信 API 失败 → 502 语义包装（事务已回滚，订单留在 SUCCESS，可凭同一单号重试）。</p>
+     *
+     * @param orderNo 商户订单号
+     * @param request 退款原因（可空）
+     * @return 退款受理视图
+     */
+    @PostMapping("/orders/{orderNo}/refund")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<AdminRefundView> refundOrder(
+            @PathVariable("orderNo") String orderNo,
+            @RequestBody(required = false) AdminRefundRequest request) {
+        SecurityUtils.getCurrentUserId();
+        String reason = request != null ? request.reason() : null;
+        try {
+            VipOrderService.RefundInitiatedView view = vipOrderService.initiateRefund(orderNo, reason);
+            return ResponseEntity.ok(new AdminRefundView(
+                    view.orderNo(), view.refundId(), view.outRefundNo(),
+                    view.status(), view.refundCents()));
+        } catch (WxPayDisabledException e) {
+            // 微信支付管道未开（mock/off）：拒绝发起，404 与用户端支付端点口径一致
+            throw new ResourceNotFoundException("资源不存在");
+        } catch (com.campuslove.api.wxpay.WxPayApiException e) {
+            // 微信退款 API 失败：事务已回滚（订单留 SUCCESS），向管理端透出失败原因便于重试
+            throw new IllegalStateException("微信退款受理失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 管理员退款发起请求体。
+     *
+     * @param reason 退款原因（审计日志用，可空）
+     */
+    public record AdminRefundRequest(String reason) {
+    }
+
+    /**
+     * 管理员退款受理视图。
+     *
+     * @param orderNo     商户订单号
+     * @param refundId    微信退款单号（受理成功返回）
+     * @param outRefundNo 商户退款单号（RF + orderNo，幂等键）
+     * @param status      订单状态（受理成功为 REFUNDING，等退款回调确认 REFUNDED）
+     * @param refundCents 退款金额（分，当前为全额退款）
+     */
+    public record AdminRefundView(
+            String orderNo,
+            String refundId,
+            String outRefundNo,
+            String status,
+            Integer refundCents
+    ) {
     }
 
     /**

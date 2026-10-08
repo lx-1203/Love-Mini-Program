@@ -33,6 +33,9 @@ import { designTokens } from "../../theme/tokens";
 // R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
 import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
 const { styleVars: menuStyleVars } = useMenuButtonRect();
+// 2026-10-05 微信支付管道打通：直接经 http 层下单（services/api.ts 未封装 VIP 订单接口，
+// 本页仅支付调用部分改造，避免为单页需求扩散改动公共 API 封装层）
+import { request } from "../../services/http";
 
 
 const { t } = useI18n();
@@ -155,6 +158,13 @@ function selectPlan(plan: VipPlan) {
  * - cancel：用户主动取消支付，仅 toast 提示，不报错
  * - fail：支付失败，toast 提示重试
  * - success：开通成功，提示后返回上一页
+ *
+ * 2026-10-05 微信支付管道打通（仅支付调用部分改造）：
+ * - real 模式从「提示支付未开通」升级为真实链路：
+ *   POST /api/v1/vip/orders 下单 → uni.requestPayment 拉起支付；
+ * - 后端 404（支付配置闸关闭）/ 403 COMMERCE_DISABLED（商业化总开关未解封）时
+ *   维持现状提示「支付未开通」——本次仅打通管道，不打开商业化闸门；
+ * - mock 模式保留本地模拟流程供 UI 走查。
  */
 function subscribe() {
   // P1-08：会员功能未启用时短路，不发起任何请求
@@ -169,13 +179,9 @@ function subscribe() {
     planId: selectedPlan.value.id,
   });
 
-  // infra R2-00021 修复：real 模式禁止假支付成功。
-  // 原实现无论环境都走 setTimeout 模拟成功——生产用户点击"立即开通"显示
-  // "开通成功"但未扣款、未开通 VIP，资金与体验双失控。
-  // 后端订单/微信支付接口未接入前，real 模式明确提示功能建设中；
-  // mock 模式保留本地演示供 UI 走查。
   if (!isMockMode()) {
-    uni.showToast({ title: t("vip.paymentNotReady"), icon: "none" });
+    // real 模式：真实微信支付链路（下单 → 拉起支付）
+    void subscribeReal();
     return;
   }
 
@@ -198,31 +204,14 @@ function subscribe() {
       uni.hideLoading();
       processing.value = false;
       if (result.cancelled) {
-        // 用户取消支付：仅友好提示，不报错；记录面包屑便于回溯
-        addBreadcrumb("ui", "payment_cancelled", {
-          planId: selectedPlan.value?.id,
-        });
-        uni.showToast({ title: t("vip.paymentCancelled"), icon: "none" });
+        handlePaymentCancelled();
         return;
       }
       if (!result.ok) {
-        // 支付失败：上报到 Sentry，source 标记为 vip.payment 便于后台筛选
-        captureException(new Error(result.msg || "payment failed"), {
-          source: "vip.payment",
-          planId: selectedPlan.value?.id,
-        });
-        uni.showToast({ title: result.msg || t("vip.paymentFailed"), icon: "none" });
+        handlePaymentFailure(result.msg || "payment failed", result.msg);
         return;
       }
-      uni.showModal({
-        title: t("vip.subscribeSuccess"),
-        content: `${t("vip.subscribeSuccessContent", { name: planText(selectedPlan.value, selectedPlan.value?.nameKey, selectedPlan.value?.name ?? ""), period: planText(selectedPlan.value, selectedPlan.value?.periodKey, selectedPlan.value?.period ?? "") })}`,
-        showCancel: false,
-        confirmText: t("profile.gotIt"),
-        success: () => {
-          uni.navigateBack({ delta: 1 });
-        },
-      });
+      showSubscribeSuccess();
     })
     .catch((error) => {
       uni.hideLoading();
@@ -234,6 +223,136 @@ function subscribe() {
       });
       uni.showToast({ title: t("vip.paymentFailed"), icon: "none" });
     });
+}
+
+/* ========== 真实微信支付链路（2026-10-05 管道打通） ========== */
+
+/**
+ * 后端下单返回的 wx.requestPayment 五件套（POST /api/v1/vip/orders 出参）。
+ * package 为 JS 侧字段名（后端 Java 关键字规避，@JsonProperty 映射）。
+ */
+interface VipOrderPayParams {
+  orderNo: string;
+  appId: string;
+  timeStamp: string;
+  nonceStr: string;
+  package: string;
+  signType: string;
+  paySign: string;
+}
+
+/** 支付结果归一化：ok=成功；cancelled=用户主动取消 */
+type PaymentOutcome = { ok: boolean; cancelled: boolean; msg?: string };
+
+/** 下单获取支付参数：POST /api/v1/vip/orders（@FeatureSwitch(COMMERCE_VIP) 封存时 403 COMMERCE_DISABLED） */
+async function requestVipOrder(planId: string): Promise<VipOrderPayParams> {
+  return request<VipOrderPayParams, { planId: string }>({
+    url: "/vip/orders",
+    method: "POST",
+    data: { planId },
+  });
+}
+
+/** uni.requestPayment Promise 化：success→ok；errMsg 含 cancel→cancelled；其余→失败 */
+function requestPaymentAsync(params: VipOrderPayParams): Promise<PaymentOutcome> {
+  return new Promise((resolve) => {
+    uni.requestPayment({
+      provider: "wxpay",
+      appId: params.appId,
+      timeStamp: params.timeStamp,
+      nonceStr: params.nonceStr,
+      package: params.package,
+      signType: params.signType,
+      paySign: params.paySign,
+      success: () => resolve({ ok: true, cancelled: false }),
+      fail: (err: unknown) => {
+        const errMsg = (err as { errMsg?: string } | undefined)?.errMsg ?? "";
+        if (errMsg.includes("cancel")) {
+          resolve({ ok: false, cancelled: true });
+        } else {
+          resolve({ ok: false, cancelled: false, msg: errMsg });
+        }
+      },
+    } as unknown as UniApp.RequestPaymentOptions);
+  });
+}
+
+/** 用户取消支付：仅友好提示，不报错；记录面包屑便于回溯 */
+function handlePaymentCancelled(): void {
+  addBreadcrumb("ui", "payment_cancelled", {
+    planId: selectedPlan.value?.id,
+  });
+  uni.showToast({ title: t("vip.paymentCancelled"), icon: "none" });
+}
+
+/** 支付失败：上报到 Sentry，source 标记为 vip.payment 便于后台筛选 */
+function handlePaymentFailure(rawMsg: string, toastMsg?: string): void {
+  captureException(new Error(rawMsg), {
+    source: "vip.payment",
+    planId: selectedPlan.value?.id,
+  });
+  uni.showToast({ title: toastMsg || t("vip.paymentFailed"), icon: "none" });
+}
+
+/** 开通成功提示（真实/mock 流程共用），确认后返回上一页 */
+function showSubscribeSuccess(): void {
+  uni.showModal({
+    title: t("vip.subscribeSuccess"),
+    content: `${t("vip.subscribeSuccessContent", { name: planText(selectedPlan.value, selectedPlan.value?.nameKey, selectedPlan.value?.name ?? ""), period: planText(selectedPlan.value, selectedPlan.value?.periodKey, selectedPlan.value?.period ?? "") })}`,
+    showCancel: false,
+    confirmText: t("profile.gotIt"),
+    success: () => {
+      uni.navigateBack({ delta: 1 });
+    },
+  });
+}
+
+/**
+ * real 模式真实支付流程：下单 → uni.requestPayment → 结果分支。
+ *
+ * 错误分支约定：
+ * - 404（后端支付配置闸关闭）/ 403 COMMERCE_DISABLED（商业化封存）→
+ *   维持现状提示「支付未开通」（vip.paymentNotReady），不上报 Sentry（预期业务态）；
+ * - 用户取消 → 友好提示不上报；
+ * - 其余失败/异常 → 上报 Sentry + toast paymentFailed。
+ */
+async function subscribeReal(): Promise<void> {
+  const planId = selectedPlan.value?.id;
+  if (!planId) return;
+
+  processing.value = true;
+  uni.showLoading({ title: t("vip.processing") });
+
+  try {
+    const params = await requestVipOrder(planId);
+    const result = await requestPaymentAsync(params);
+    uni.hideLoading();
+    processing.value = false;
+    if (result.cancelled) {
+      handlePaymentCancelled();
+      return;
+    }
+    if (!result.ok) {
+      handlePaymentFailure(result.msg || "payment failed");
+      return;
+    }
+    showSubscribeSuccess();
+  } catch (error) {
+    uni.hideLoading();
+    processing.value = false;
+    const err = error as { status?: number; error?: string; message?: string } | null;
+    // 支付管道未开闸（404）/ 商业化总开关未解封（403 COMMERCE_DISABLED）：
+    // 维持「支付未开通」提示，不弹后端错误文案
+    if (err?.status === 404 || err?.error === "COMMERCE_DISABLED") {
+      uni.showToast({ title: t("vip.paymentNotReady"), icon: "none" });
+      return;
+    }
+    captureException(error instanceof Error ? error : new Error(String(error)), {
+      source: "vip.payment",
+      planId,
+    });
+    uni.showToast({ title: err?.message || t("vip.paymentFailed"), icon: "none" });
+  }
 }
 
 /**

@@ -2,7 +2,6 @@ package com.campuslove.api.vip;
 
 import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
-import com.campuslove.api.entity.PaymentCallbackLog;
 import com.campuslove.api.entity.VipBill;
 import com.campuslove.api.repository.PaymentCallbackLogRepository;
 import com.campuslove.api.repository.VipBillRepository;
@@ -10,12 +9,10 @@ import com.campuslove.api.wallet.InsufficientBalanceException;
 import com.campuslove.api.wallet.WalletService;
 import com.campuslove.api.wallet.WalletTransactionLog;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,12 +40,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class BillingService {
 
     private static final Logger log = LoggerFactory.getLogger(BillingService.class);
-
-    /** 金额对账容差：1 分。
-     * <p>微信支付金额以分为单位，回调通知金额与订单金额可能因四舍五入存在 1 分差异，
-     * 在容差范围内视为一致；超出容差则记录告警并返回 FAIL。</p>
-     */
-    private static final int AMOUNT_TOLERANCE_CENTS = 1;
 
     /**
      * 支付成功后授予的 VIP 时长（天）：30 天（月度套餐）。
@@ -145,9 +136,9 @@ public class BillingService {
                     orderNo);
         }
 
-        // 3. 写入账单并顺延 VIP 到期时间（与支付回调开通逻辑对齐：max(now, 当前 periodEnd) + 30 天）
+        // 3. 写入账单并顺延 VIP 到期时间（与支付回调开通逻辑对齐：max(now, 当前 periodEnd) + 套餐天数）
         LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
-        LocalDateTime newExpiry = grantVipExpiry(userId, now);
+        LocalDateTime newExpiry = grantVipExpiry(userId, VIP_GRANT_DAYS);
         BillView bill = createBill(userId, planId, planName != null ? planName : "月度会员",
                 finalAmount, baseAmount, "SUBSCRIBE", "SUCCESS", "WALLET",
                 orderNo, now.toString(), newExpiry.toString(),
@@ -163,12 +154,20 @@ public class BillingService {
     }
 
     /**
-     * 计算并返回购买后 VIP 到期时间（max(now, 最近一笔 SUCCESS 账单 periodEnd) + 30 天）。
-     * 与 {@link #handlePaymentCallback} 的开通规则一致，保证续购不丢失剩余权益天数。
+     * 计算并返回购买后 VIP 到期时间（max(now, 最近一笔 SUCCESS 账单 periodEnd) + grantDays）。
+     * 与支付回调开通规则一致，保证续购不丢失剩余权益天数。
+     *
+     * <p>2026-10-05 微信支付工程补齐：由 private 提升为 public，供
+     * {@link VipOrderService} 支付回调开通时复用（天数按套餐定义传入，
+     * 原固定 30 天扩展为套餐快照天数）。</p>
+     *
+     * @param userId    用户 ID
+     * @param grantDays 本次授予天数（monthly=30 / quarterly=90 / yearly=365）
+     * @return 新的 VIP 到期时间
      */
-    private LocalDateTime grantVipExpiry(Long userId, LocalDateTime now) {
+    public LocalDateTime grantVipExpiry(Long userId, int grantDays) {
         List<VipBill> bills = vipBillRepository.findByUserIdOrderByCreatedAtDesc(userId);
-        LocalDateTime base = now;
+        LocalDateTime base = LocalDateTime.now(TimeZones.BUSINESS);
         if (bills != null) {
             for (VipBill bill : bills) {
                 if ("SUCCESS".equals(bill.getStatus()) && bill.getPeriodEnd() != null
@@ -178,7 +177,7 @@ public class BillingService {
                 }
             }
         }
-        return base.plusDays(VIP_GRANT_DAYS);
+        return base.plusDays(grantDays);
     }
 
     /**
@@ -297,150 +296,6 @@ public class BillingService {
             // 数据库写入失败时回滚事务并上报
             log.error("账单创建失败：userId={}, amount={}", userId, amount, e);
             throw new RuntimeException(ErrorMessages.BILL_CREATE_FAILED_RETRY, e);
-        }
-    }
-
-    /**
-     * 处理微信支付回调（幂等）。
-     *
-     * <p>Task 12.1（REAUDIT-REPORT-100+ 编号 38）：支付回调幂等性 + 金额对账。</p>
-     *
-     * <p>处理流程：</p>
-     * <ol>
-     *   <li>幂等键检查：notification_id + order_no 组合，查询 payment_callback_log 表，
-     *       若已处理过该 notification_id 直接返回 SUCCESS（不重复开通）</li>
-     *   <li>金额校验：回调金额 vs 订单金额（vip_bills.amount），不一致记录告警并返回 FAIL</li>
-     *   <li>处理业务：调用 createBill 写入账单（实际生产应调用 VIP 开通服务）</li>
-     *   <li>写日志：将本次处理结果写入 payment_callback_log 表</li>
-     * </ol>
-     *
-     * <p>幂等键设计：notification_id 是微信回调的唯一标识，作为幂等键主体。
-     * 同时携带 order_no 便于按订单号查询历史回调。即使攻击者伪造不同 notification_id，
-     * 由于 vip_bills.transaction_id 已存在唯一约束（业务层校验），仍能防止重复开通。</p>
-     *
-     * @param notificationId 微信回调通知 ID（幂等键）
-     * @param orderNo        业务订单号
-     * @param callbackAmount 回调通知金额（元，BigDecimal 避免浮点精度）
-     * @param userId         用户 ID（用于创建账单）
-     * @param planId         套餐 ID（用于创建账单）
-     * @param planName       套餐名称（用于创建账单）
-     * @return 处理结果 SUCCESS / FAIL
-     */
-    @Transactional
-    public String handlePaymentCallback(String notificationId, String orderNo,
-                                        BigDecimal callbackAmount, Long userId,
-                                        String planId, String planName) {
-        // 1. 参数校验
-        if (notificationId == null || notificationId.isBlank()) {
-            log.warn("支付回调缺少 notificationId，orderNo={}", orderNo);
-            return "FAIL";
-        }
-        if (orderNo == null || orderNo.isBlank()) {
-            log.warn("支付回调缺少 orderNo，notificationId={}", notificationId);
-            return "FAIL";
-        }
-        if (callbackAmount == null || callbackAmount.signum() < 0) {
-            log.warn("支付回调金额非法：notificationId={}, amount={}", notificationId, callbackAmount);
-            return "FAIL";
-        }
-
-        // 2. 幂等键检查：若已处理过该 (notification_id, order_no) 组合，直接返回
-        // SUCCESS 不重复开通。
-        // R4-00319 修复：幂等键从「仅 notification_id」升级为双键 (notificationId, orderNo)。
-        // 原实现同一 orderNo 以不同 notificationId 重复回调会绕过检查，重复开通/
-        // 无限顺延 VIP（注释自认）。双键检查保证：同一订单的任何重复通知均被幂等拦截；
-        // findByNotificationId 单键查询保留用于兼容历史日志数据（旧数据无 orderNo 场景）。
-        Optional<PaymentCallbackLog> existing = paymentCallbackLogRepository
-                .findByNotificationIdAndOrderNo(notificationId, orderNo)
-                .or(() -> paymentCallbackLogRepository.findByNotificationId(notificationId));
-        if (existing.isPresent()) {
-            log.info("支付回调重复通知，已处理过：notificationId={}, orderNo={}, status={}",
-                    notificationId, orderNo, existing.get().getStatus());
-            // 重复通知直接返回 SUCCESS，微信收到 SUCCESS 后不再重试
-            return "SUCCESS";
-        }
-
-        // 3. 金额校验：回调金额 vs 订单金额
-        // 通过订单号查找对应账单（VIP 账单 transaction_id 即订单号）
-        Optional<VipBill> billOpt = vipBillRepository.findByTransactionId(orderNo);
-        if (billOpt.isEmpty()) {
-            // 订单不存在：可能是攻击者伪造订单号，记录告警并返回 FAIL
-            log.warn("支付回调订单不存在：notificationId={}, orderNo={}", notificationId, orderNo);
-            writeCallbackLog(notificationId, orderNo, callbackAmount, "FAIL");
-            return "FAIL";
-        }
-
-        VipBill bill = billOpt.get();
-        // 账单金额以"分"存储，回调金额以"元"传入，统一转为分比较
-        int callbackCents = callbackAmount.multiply(BigDecimal.valueOf(100))
-                .setScale(0, RoundingMode.HALF_UP).intValueExact();
-        int orderCents = bill.getAmount() != null ? bill.getAmount() : 0;
-        if (Math.abs(callbackCents - orderCents) > AMOUNT_TOLERANCE_CENTS) {
-            // 金额不一致：可能少付、伪造回调，记录告警并返回 FAIL
-            log.warn("支付回调金额对账失败：notificationId={}, orderNo={}, callbackCents={}, orderCents={}",
-                    notificationId, orderNo, callbackCents, orderCents);
-            writeCallbackLog(notificationId, orderNo, callbackAmount, "FAIL");
-            return "FAIL";
-        }
-
-        try {
-            // 4. 处理业务：账单状态置为 SUCCESS + 开通/延长 VIP 权益（FIN HIGH-11）
-            //    修复前仅更新账单状态，支付成功但用户权益未开通，支付-权益链路断裂。
-            //    开通逻辑：以 vip_bills.period_end 记录 VIP 有效期结束时间（User 实体
-            //    未定义 vipExpiresAt 字段，VipBill.periodEnd 即"VIP 有效期结束时间"，见实体注释）。
-            //    规则：取 max(当前时间, 账单原 periodEnd) + 30 天（月度套餐），
-            //    保证新订阅/续费均正确顺延，不会因续费时间点丢失剩余天数。
-            bill.setStatus("SUCCESS");
-            bill.setTransactionId(orderNo);
-            LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
-            LocalDateTime base = (bill.getPeriodEnd() != null && bill.getPeriodEnd().isAfter(now))
-                    ? bill.getPeriodEnd() : now;
-            bill.setPeriodEnd(base.plusDays(VIP_GRANT_DAYS));
-            if (bill.getPeriodStart() == null) {
-                bill.setPeriodStart(now);
-            }
-            vipBillRepository.save(bill);
-            log.info("支付回调处理成功并开通/延长 VIP：notificationId={}, orderNo={}, userId={}, amount={}, newExpiry={}",
-                    notificationId, orderNo, userId, callbackAmount, bill.getPeriodEnd());
-
-            // 5. 写日志：将本次处理结果写入 payment_callback_log 表
-            writeCallbackLog(notificationId, orderNo, callbackAmount, "SUCCESS");
-
-            log.info("支付回调处理成功：notificationId={}, orderNo={}, userId={}, amount={}",
-                    notificationId, orderNo, userId, callbackAmount);
-            return "SUCCESS";
-        } catch (DataAccessException e) {
-            // 数据库写入失败：返回 FAIL 触发微信重试
-            log.error("支付回调处理失败：notificationId={}, orderNo={}", notificationId, orderNo, e);
-            return "FAIL";
-        }
-    }
-
-    /**
-     * 写入支付回调日志（内部辅助方法）。
-     *
-     * <p>独立 try-catch 防止日志写入失败影响主流程返回值。
-     * 若日志写入失败，主流程仍按业务结果返回，但会记录 ERROR 日志。</p>
-     *
-     * @param notificationId 微信回调通知 ID
-     * @param orderNo        业务订单号
-     * @param amount         回调金额（元）
-     * @param status         处理状态 SUCCESS / FAIL
-     */
-    private void writeCallbackLog(String notificationId, String orderNo,
-                                  BigDecimal amount, String status) {
-        try {
-            PaymentCallbackLog logEntry = new PaymentCallbackLog();
-            logEntry.setNotificationId(notificationId);
-            logEntry.setOrderNo(orderNo);
-            logEntry.setAmount(amount);
-            logEntry.setStatus(status);
-            logEntry.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
-            paymentCallbackLogRepository.save(logEntry);
-        } catch (DataAccessException e) {
-            // 日志写入失败不影响主流程，但需记录 ERROR 便于排查
-            log.error("支付回调日志写入失败：notificationId={}, orderNo={}",
-                    notificationId, orderNo, e);
         }
     }
 

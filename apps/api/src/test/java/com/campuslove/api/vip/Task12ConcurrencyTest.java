@@ -4,11 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -19,14 +23,16 @@ import com.campuslove.api.entity.PromoCodeUsage;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.VipBill;
 import com.campuslove.api.entity.VipBillingLog;
+import com.campuslove.api.entity.VipOrder;
 import com.campuslove.api.repository.PaymentCallbackLogRepository;
 import com.campuslove.api.repository.PromoCodeRepository;
 import com.campuslove.api.repository.PromoCodeUsageRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.VipBillRepository;
 import com.campuslove.api.repository.VipBillingLogRepository;
+import com.campuslove.api.repository.VipOrderRepository;
 import com.campuslove.api.wallet.WalletService;
-import java.math.BigDecimal;
+import com.campuslove.api.wxpay.WxPayModels;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -43,6 +49,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 /**
  * Task 12.5：资金类服务并发单元测试。
@@ -79,6 +86,8 @@ class Task12ConcurrencyTest {
     private PromoCodeUsageRepository promoCodeUsageRepository;
     @Mock
     private VipBillRepository vipBillRepository;
+    @Mock
+    private VipOrderRepository vipOrderRepository;
     @Mock
     private PaymentCallbackLogRepository paymentCallbackLogRepository;
     @Mock
@@ -215,67 +224,77 @@ class Task12ConcurrencyTest {
     }
 
     /**
-     * 场景 3：支付回调幂等 —— 同一 notificationId 被并发调用 10 次。
+     * 场景 3：支付回调幂等 —— 同一订单被并发调用 10 次（2026-10-05 订单状态机幂等）。
      *
-     * <p>验证 Task 12.1（REAUDIT-REPORT-100+ 编号 38）：</p>
+     * <p>幂等语义已从「(notificationId, orderNo) 双键查询」迁移到 vip_order 状态机
+     * （原双键可被「同 orderNo 换新 notificationId」绕过）：订单状态迁移成功的线程
+     * 完成开通，其余线程（状态已 SUCCESS / 乐观锁冲突）幂等返回 SUCCESS。</p>
+     *
+     * <p>验证目标：</p>
      * <ul>
-     *   <li>至少 1 次回调执行业务逻辑（更新账单状态）</li>
-     *   <li>其余回调检测到幂等键已处理，直接返回 SUCCESS</li>
-     *   <li>vip_bills 表至多被查询 N 次（每个并发回调都查询）</li>
+     *   <li>10 次并发回调全部得到成功应答（微信停止重试）；</li>
+     *   <li>开通（billingService.grantVipExpiry + createBill）至多执行 1 次——重复通知
+     *       不重复开通、不无限顺延 VIP。</li>
      * </ul>
-     *
-     * <p>注意：由于并发竞态，可能存在多个线程同时进入业务处理分支，
-     * 但 payment_callback_log 的唯一索引保证只有一个线程能成功 save。
-     * 失败的 save 抛 DataIntegrityViolationException，被 BillingService 捕获后返回 FAIL。</p>
      */
     @Test
-    @DisplayName("并发场景 3：同一 notificationId 并发回调 10 次 → 至少 1 次成功处理")
+    @DisplayName("并发场景 3：同一订单并发回调 10 次 → 全部成功应答且至多开通 1 次")
     void paymentCallbackIdempotentConcurrent_atLeastOneProcessed() throws InterruptedException {
-        // Arrange：构造测试数据
+        // Arrange：构造 PENDING 订单（共享实例模拟同一行的并发读取）
         final String notificationId = "NOTIF-1234567890";
-        final String orderNo = "ORDER-20260727-001";
-        final BigDecimal callbackAmount = new BigDecimal("19.90");
+        final String orderNo = "VIP20261005000000ABCD1234";
         final Long userId = 5000L;
 
-        VipBill bill = new VipBill();
-        bill.setId(1L);
-        bill.setUserId(userId);
-        bill.setAmount(1990); // 19.90 元 = 1990 分
-        bill.setStatus("PENDING");
-        bill.setTransactionId(orderNo);
+        VipOrder order = new VipOrder();
+        order.setId(1L);
+        order.setOrderNo(orderNo);
+        order.setUserId(userId);
+        order.setPlanId("monthly");
+        order.setPlanName("月卡");
+        order.setPlanDays(30);
+        order.setAmountCents(1800);
+        order.setStatus(VipOrder.STATUS_PENDING);
 
-        // 模拟 payment_callback_log 唯一索引：首个线程插入成功，其余插入抛唯一约束冲突
-        AtomicBoolean firstInsert = new AtomicBoolean(true);
-        AtomicReference<PaymentCallbackLog> existingLog = new AtomicReference<>(null);
+        AtomicReference<VipOrder> sharedOrder = new AtomicReference<>(order);
 
-        // findByNotificationId：返回当前已存在的记录（首次为空）
-        when(paymentCallbackLogRepository.findByNotificationId(notificationId))
-                .thenAnswer(invocation -> Optional.ofNullable(existingLog.get()));
+        when(vipOrderRepository.findByOrderNo(orderNo))
+                .thenAnswer(invocation -> Optional.ofNullable(sharedOrder.get()));
 
-        // 模拟 save 行为：首次 save 成功并设置到 existingLog，后续 save 抛唯一约束冲突
-        doAnswer(invocation -> {
-            PaymentCallbackLog logEntry = invocation.getArgument(0);
-            if (firstInsert.compareAndSet(true, false)) {
-                existingLog.set(logEntry);
-                return logEntry;
-            } else {
-                throw new org.springframework.dao.DataIntegrityViolationException(
-                        "Duplicate entry for notification_id");
-            }
-        }).when(paymentCallbackLogRepository).save(any(PaymentCallbackLog.class));
+        // 模拟乐观锁：首个 save 提交成功并对外可见（状态翻转），后续 save 抛乐观锁冲突
+        AtomicBoolean committed = new AtomicBoolean(false);
+        when(vipOrderRepository.save(any(VipOrder.class)))
+                .thenAnswer(invocation -> {
+                    VipOrder saving = invocation.getArgument(0);
+                    if (committed.compareAndSet(false, true)) {
+                        sharedOrder.set(saving);
+                        return saving;
+                    }
+                    throw new ObjectOptimisticLockingFailureException(VipOrder.class, orderNo);
+                });
 
-        // findByTransactionId 返回账单
-        when(vipBillRepository.findByTransactionId(orderNo))
-                .thenReturn(Optional.of(bill));
+        // 构造 VipOrderService（BillingService 为 mock；支付回调开通走 grantVipExpiry + createBill）
+        BillingService billing = mock(BillingService.class);
+        when(billing.grantVipExpiry(eq(userId), anyInt()))
+                .thenReturn(LocalDateTime.now().plusDays(30));
+        when(billing.createBill(anyLong(), anyString(), anyString(), anyInt(), anyInt(),
+                anyString(), anyString(), anyString(), anyString(),
+                any(), any(), any()))
+                .thenReturn(null);
 
-        // vipBillRepository.save 返回账单
-        when(vipBillRepository.save(any(VipBill.class)))
+        // 回调留痕仓库 save 透传
+        lenient().when(paymentCallbackLogRepository.save(any(PaymentCallbackLog.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        // 构造 BillingService
-        BillingService service = new BillingService(vipBillRepository, paymentCallbackLogRepository);
+        VipOrderService service = new VipOrderService(
+                vipOrderRepository, billing, paymentCallbackLogRepository);
 
-        // Act：10 个线程并发调用 handlePaymentCallback
+        // 支付结果通知载荷（成功，金额与订单一致）
+        WxPayModels.WxPayTransaction tx = new WxPayModels.WxPayTransaction(
+                "1900000001", "wxappid", orderNo, "4200001234202610051234567890",
+                "JSAPI", "SUCCESS", "2026-10-05T12:00:00+08:00",
+                new WxPayModels.WxPayTransaction.Amount(1800, 1800, "CNY"));
+
+        // Act：10 个线程并发处理同一订单的回调
         AtomicInteger successCount = new AtomicInteger(0);
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch doneLatch = new CountDownLatch(10);
@@ -285,8 +304,7 @@ class Task12ConcurrencyTest {
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    String result = service.handlePaymentCallback(
-                            notificationId, orderNo, callbackAmount, userId, "MONTHLY", "月度套餐");
+                    String result = service.handlePayNotification(tx, notificationId, "{}", "{}");
                     if ("SUCCESS".equals(result)) {
                         successCount.incrementAndGet();
                     }
@@ -305,14 +323,17 @@ class Task12ConcurrencyTest {
         // Assert：所有线程都完成
         assertTrue(finished, "所有并发线程应在超时前完成");
 
-        // Assert：至少 1 次回调成功处理（首个进入的线程完成业务并写入 SUCCESS 日志）
-        assertTrue(successCount.get() >= 1,
-                "至少 1 次回调应成功处理，实际: " + successCount.get());
+        // Assert：10 次回调全部成功应答（幂等：重复通知返回成功，微信停止重试）
+        assertEquals(10, successCount.get(),
+                "全部回调应成功应答（含幂等重复通知），实际: " + successCount.get());
 
-        // Assert：vip_bills 至少被查询一次（每个进入业务分支的线程都会查询）
-        verify(vipBillRepository, atLeastOnce()).findByTransactionId(orderNo);
+        // Assert：VIP 开通至多执行 1 次（重复通知不重复开通/顺延）
+        verify(billing, atMost(1)).grantVipExpiry(anyLong(), anyInt());
+        verify(billing, atMost(1)).createBill(anyLong(), anyString(), anyString(), anyInt(), anyInt(),
+                anyString(), anyString(), anyString(), anyString(),
+                any(), any(), any());
 
-        // Assert：payment_callback_log 至少被写入一次（首个成功处理的线程）
+        // Assert：回调留痕至少写入一次
         verify(paymentCallbackLogRepository, atLeastOnce()).save(any(PaymentCallbackLog.class));
     }
 
