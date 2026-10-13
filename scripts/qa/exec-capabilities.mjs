@@ -368,7 +368,7 @@ export function navigateToSource(url) {
   return "() => new Promise((res) => { try { if (!wx.navigateTo) { return res('no-api'); } " +
     "wx.navigateTo({ url: " + JSON.stringify(u) + ", success: () => res('nav-ok'), " +
     "fail: (e) => res('nav-fail ' + String((e && e.errMsg) || e).slice(0, 120)) }); } " +
-    "catch (e) { res('ERR ' + String((e && e.message) || e).slice(0, 120)); } } })";
+    "catch (e) { res('ERR ' + String((e && e.message) || e).slice(0, 120)); } })";
 }
 /* 裁决：ok / nav-fail / unsupported / error / unknown 互不折叠。
    空读数**不许**读成"页打开了"（桥有时只回 undefined，那一腿的落点必须由 assertRoute 再证）。 */
@@ -475,7 +475,7 @@ export function handlerCallSource(spec) {
     "bag.push({ method: " + m + ", route: route, via: via, ts: Date.now(), ret: n }); return res('handler-ok via=' + via); }; " +
     "var r0; try { r0 = t[" + m + "].apply(t, args); } catch (e) { return res('ERR ' + String((e && e.message) || e).slice(0, 120)); } " +
     "if (r0 && typeof r0.then === 'function') { return r0.then(fin).catch(function (e) { res('ERR ' + String((e && e.message) || e).slice(0, 120)); }); } " +
-    "return fin(r0); } catch (e) { res('ERR ' + String((e && e.message) || e).slice(0, 120)); } } })";
+    "return fin(r0); } catch (e) { res('ERR ' + String((e && e.message) || e).slice(0, 120)); } })";
 }
 /* 五态翻译（把 no-page/wrong-page/no-method 读成"打成功了"就是这条通道最坏的假绿）：
    直调没发生 = 判据点名的动作没发生 = 通道欠款，行记 NOT_SHOOTABLE，绝不记 EXECUTED。 */

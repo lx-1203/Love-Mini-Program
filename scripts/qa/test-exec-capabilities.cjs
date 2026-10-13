@@ -144,6 +144,44 @@ async function main() {
     }
   }
 
+  /* ── C6：所有 *Source 生成器产出的"要交给 evaluate 的字符串"必须自己可解析 ──
+     为什么单独有这一节（本程实测代价）：navigateToSource 与 handlerCallSource 尾部各多一个 `}`，
+     产出的源码 new Function 直接抛 `missing ) after argument list`；
+     而本测试此前 65 项全绿——因为它只测裁决函数与结构解析，**从没解析过模块自己生成的那段源码**。
+     后果是一条设备腿白跑（四例 OT/OC 全部 dispatched=0，记 UNVERIFIED-INSTRUMENT），
+     而且是到设备上才暴露。"生成源码"的模块不解析自己的产物，就等于把语法错误推到真机上。
+     判点做成"遍历导出名以 Source 结尾的函数"，将来新增生成器自动被覆盖，不靠人记得加。 */
+  if (C) {
+    const recipeSample = recipes ? Object.values(recipes.recipes || {})[0] : null;
+    const specFor = (name) => {
+      if (/handlerCall/i.test(name)) return { method: "handleLike", routeIncludes: "profile", args: [1], componentId: "cta-1" };
+      if (/navRead|route/i.test(name)) return {};
+      if (/modal/i.test(name)) return { answers: [{ confirm: true }], api: "showModal" };
+      if (/netFault|fault/i.test(name)) return { mode: "fail-all", urls: ["/api/v1/x"] };
+      if (/fixture/i.test(name)) return { setup: [{ op: "seed", key: "k" }], teardown: [{ op: "rollback", key: "k" }] };
+      if (recipeSample && Array.isArray(recipeSample.steps) && /nav|open/i.test(name)) return recipeSample.steps[0];
+      return "/pages/profile/index";
+    };
+    let srcChecked = 0, srcBad = [];
+    for (const [name, fn] of Object.entries(C)) {
+      if (typeof fn !== "function" || !/Source$/.test(name)) continue;
+      let src = null, how = "";
+      for (const arg of [specFor(name), { url: "/pages/profile/index" }, "/pages/profile/index", []]) {
+        try { const out = fn(arg); if (typeof out === "string" && out.trim() !== "") { src = out; how = "ok"; break; } } catch (e) { /* 换下一种入参形状 */ }
+      }
+      if (src === null) { srcBad.push(name + "(构造不出字符串)"); continue; }
+      srcChecked++;
+      /* 用 new Function 解析而不是数括号：括号计数会把"字符串字面量里的大括号"算进去，
+         而语法树只关心真结构括号——本仓已经栽过一次"用措辞判结构"。 */
+      try { new Function("return (" + src + ")"); }
+      catch (e) { srcBad.push(name + " ⇒ " + String(e.message).slice(0, 70)); }
+    }
+    t("C6 每个 *Source 生成器产出的源码都可解析（语法错不许留到设备上才暴露）",
+      srcBad.length === 0, srcChecked + " 个生成器；不可解析: " + (srcBad.join(" | ") || "无"));
+    t("C6 检查本身不许空转：至少覆盖到 navigateTo/handlerCall 两个生成器",
+      srcChecked >= 2, "srcChecked=" + srcChecked);
+  }
+
   console.log("SUMMARY: assertion failures = " + fails);
   console.log("CAPS_TEST=" + (fails === 0 ? "PASS" : "FAIL") + "（checks=" + checks + "）");
   process.exit(fails === 0 ? 0 : 1);

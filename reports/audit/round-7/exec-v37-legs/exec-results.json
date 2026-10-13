@@ -1,0 +1,272 @@
+{
+ "round": "ui-audit-2026-10-13-legs",
+ "gitSha": "391fb070",
+ "identity": "A",
+ "identities": [
+  "A"
+ ],
+ "project": "apps/client/dist/build/mp-weixin-real",
+ "band": "real@f0677920",
+ "loginVerify": "logged-in userId=100158",
+ "updatedAt": "2026-10-13T12:37:00.930Z",
+ "admissible": true,
+ "outcome": "judged",
+ "runner": "scripts/qa/r-exec-ws.mjs（WS 取证 + 桥出帧，完整跑完）",
+ "results": [
+  {
+   "suite": "C-次要20",
+   "manifest": "次要20",
+   "id": "OT05",
+   "page": "subpackages/profile-extra/profile/other",
+   "tier": "critical",
+   "band": "real@f0677920",
+   "identity": "A",
+   "loginVerify": "logged-in userId=100158",
+   "sessionSource": "phone-login",
+   "requiresReal": true,
+   "title": "喜欢（mock，未喜欢）：500ms 内反馈 + 匹配成功 modal 双按钮行为；连点×5 客户端层守卫生效",
+   "status": "SKIPPED",
+   "observed": "top=pages/discover/index | dom(配方步): 见 stepsNote | modal[off] | netFault[off] | openForm[navto subpackages/profile-extra/profile/other ⇒ unknown(空读数 ⇒ 读作没落地，不许读成已打开)] | fixture[（本条无夹具）] | frames[无] | toast[无]",
+   "missingEvidence": [],
+   "failureReason": "NOT_SHOOTABLE(recipe-step)：多步序列在「step#1 open：NOT_SHOOTABLE(openForm=navto/unknown(空读数 ⇒ 读作没落地，不许读成已打开)): 基底页 pages/discover/index（桥 open 不带 query）已打开，但应用内 wx.navigateTo 没落地（undefined）⇒ 目标页 subpackages/profile-extra/profile/other 不在栈顶，本腿后续步全部作废；这是通道欠款（R3-02 ③ 的替代开页法），不是产品判决」处中止 ⇒ 已完成 0/18 步；这是通道/前置欠款，不是产品判决（已完成步的读数照实保留在 observed/stepsNote）",
+   "route": "subpackages/profile-extra/profile/other",
+   "toast": "",
+   "console": "",
+   "evidence": "",
+   "durationMs": 0,
+   "transport": "ws+cli-shot",
+   "automationChannel": "ws",
+   "recipe": "次要20|OT05",
+   "stepsNote": "#1 open :: NOT_SHOOTABLE(openForm=navto/unknown(空读数 ⇒ 读作没落地，不许读成已打开)): 基底页 pages/discover/index（桥 open 不带 query）已打开，但应用内 wx.navigateTo 没落地（undefined）⇒ 目标页 subpackages/profile-extra/profile/other 不在栈顶，本腿后续步全部作废；这是通道欠款（R3-02 ③ 的替代开页法），不是产品判决",
+   "modalDrive": "off",
+   "netFault": "off",
+   "openForm": "bridge(没带 --navto-open ⇒ 新开的「基底页+navigateTo」通道本腿一字未用)",
+   "handlerCall": "on(未触发)",
+   "netArmWindow": "off",
+   "fixture": "none",
+   "reason": "UNVERIFIED-INSTRUMENT：--navto-open 的 open 步在应用内 wx.navigateTo 载荷上抛 JS 语法错（空读数 ⇒ navToVerdict=unknown，行不落地），后续 handler 步亦未下发 ⇒ dispatched=0，绝不记 EXECUTED，也不记产品 FAILED。根因是通道载荷缺陷，非产品事实，亦非选择器不存在。",
+   "verdict": "UNVERIFIED-INSTRUMENT",
+   "instrumentClass": "opt-in 通道载荷缺陷（--navto-open/--handler-call 的 JS 源在本带不可解析）",
+   "instrumentEvidence": "navigateToSource() 与 handlerCallSource()（scripts/qa/exec-capabilities.mjs:366/:handlerCallSource）产出的载荷是非法 JS：括号失衡（多一个收尾 } ⇒ brace balance=-1），new Function 报 “missing ) after argument list”。离线用 node22 逐字复现（PARSE_FAIL），带设备上 WS capEval 重试亦抛同一句（run log: WSX_RETRY capEval :: Uncaught missing ) after argument list ×10，currentPage timeout ×5）。",
+   "dispatched": 0,
+   "candidatesTried": [
+    "profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--like",
+    "profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta",
+    "handler: handleLike(other.vue:171/:426)"
+   ],
+   "positiveControlNote": "POSITIVE_CONTROL=PASS 由 ui-channel-lane 本机已证（题面列为已证不重做）；本次 WS_UP=ALREADY_UP port=9420 + WS_UP_BAND_RESULT=match 复确认通道活着。登录态下 currentPage=pages/profile/index，登录页选择器不在该页 ⇒ 属上下文差异非仪器死。"
+  },
+  {
+   "suite": "C-次要20",
+   "manifest": "次要20",
+   "id": "OT06",
+   "page": "subpackages/profile-extra/profile/other",
+   "tier": "critical",
+   "band": "real@f0677920",
+   "identity": "A",
+   "loginVerify": "logged-in userId=100158",
+   "sessionSource": "phone-login",
+   "requiresReal": true,
+   "title": "已喜欢 / 互喜（matched）态重复点喜欢：零请求、零「匹配成功」modal，仅一条等待 Toast（MP-R2-OTHER-002 修复守卫）",
+   "status": "SKIPPED",
+   "observed": "top=pages/discover/index | dom(配方步): 见 stepsNote | modal[off] | netFault[off] | openForm[navto subpackages/profile-extra/profile/other ⇒ unknown(空读数 ⇒ 读作没落地，不许读成已打开)] | fixture[（本条无夹具）] | frames[无] | toast[无]",
+   "missingEvidence": [],
+   "failureReason": "NOT_SHOOTABLE(recipe-step)：多步序列在「step#1 open：NOT_SHOOTABLE(openForm=navto/unknown(空读数 ⇒ 读作没落地，不许读成已打开)): 基底页 pages/discover/index（桥 open 不带 query）已打开，但应用内 wx.navigateTo 没落地（undefined）⇒ 目标页 subpackages/profile-extra/profile/other 不在栈顶，本腿后续步全部作废；这是通道欠款（R3-02 ③ 的替代开页法），不是产品判决」处中止 ⇒ 已完成 0/23 步；这是通道/前置欠款，不是产品判决（已完成步的读数照实保留在 observed/stepsNote）",
+   "route": "subpackages/profile-extra/profile/other",
+   "toast": "",
+   "console": "",
+   "evidence": "",
+   "durationMs": 0,
+   "transport": "ws+cli-shot",
+   "automationChannel": "ws",
+   "recipe": "次要20|OT06",
+   "stepsNote": "#1 open :: NOT_SHOOTABLE(openForm=navto/unknown(空读数 ⇒ 读作没落地，不许读成已打开)): 基底页 pages/discover/index（桥 open 不带 query）已打开，但应用内 wx.navigateTo 没落地（undefined）⇒ 目标页 subpackages/profile-extra/profile/other 不在栈顶，本腿后续步全部作废；这是通道欠款（R3-02 ③ 的替代开页法），不是产品判决",
+   "modalDrive": "off",
+   "netFault": "off",
+   "openForm": "bridge(没带 --navto-open ⇒ 新开的「基底页+navigateTo」通道本腿一字未用)",
+   "handlerCall": "on(未触发)",
+   "netArmWindow": "off",
+   "fixture": "none",
+   "reason": "UNVERIFIED-INSTRUMENT：--navto-open 的 open 步在应用内 wx.navigateTo 载荷上抛 JS 语法错（空读数 ⇒ navToVerdict=unknown，行不落地），后续 handler 步亦未下发 ⇒ dispatched=0，绝不记 EXECUTED，也不记产品 FAILED。根因是通道载荷缺陷，非产品事实，亦非选择器不存在。",
+   "verdict": "UNVERIFIED-INSTRUMENT",
+   "instrumentClass": "opt-in 通道载荷缺陷（--navto-open/--handler-call 的 JS 源在本带不可解析）",
+   "instrumentEvidence": "navigateToSource() 与 handlerCallSource()（scripts/qa/exec-capabilities.mjs:366/:handlerCallSource）产出的载荷是非法 JS：括号失衡（多一个收尾 } ⇒ brace balance=-1），new Function 报 “missing ) after argument list”。离线用 node22 逐字复现（PARSE_FAIL），带设备上 WS capEval 重试亦抛同一句（run log: WSX_RETRY capEval :: Uncaught missing ) after argument list ×10，currentPage timeout ×5）。",
+   "dispatched": 0,
+   "candidatesTried": [
+    "profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--like",
+    "profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--hello",
+    "handler: handleLike / openWhisperSheet(other.vue:250/:428)"
+   ],
+   "positiveControlNote": "POSITIVE_CONTROL=PASS 由 ui-channel-lane 本机已证（题面列为已证不重做）；本次 WS_UP=ALREADY_UP port=9420 + WS_UP_BAND_RESULT=match 复确认通道活着。登录态下 currentPage=pages/profile/index，登录页选择器不在该页 ⇒ 属上下文差异非仪器死。"
+  },
+  {
+   "suite": "C-次要20",
+   "manifest": "次要20",
+   "id": "OT09",
+   "page": "subpackages/profile-extra/profile/other",
+   "tier": "critical",
+   "band": "real@f0677920",
+   "identity": "A",
+   "loginVerify": "logged-in userId=100158",
+   "sessionSource": "phone-login",
+   "requiresReal": true,
+   "title": "悄悄话弹层（WhisperComposeSheet）：输入框四态（maxlength=60）+ 三路关闭 + 发送成功/失败副作用",
+   "status": "SKIPPED",
+   "observed": "top=pages/discover/index | dom(配方步): 见 stepsNote | modal[off] | netFault[off] | openForm[navto subpackages/profile-extra/profile/other ⇒ unknown(空读数 ⇒ 读作没落地，不许读成已打开)] | fixture[（本条无夹具）] | frames[无] | toast[无]",
+   "missingEvidence": [],
+   "failureReason": "NOT_SHOOTABLE(recipe-step)：多步序列在「step#1 open：NOT_SHOOTABLE(openForm=navto/unknown(空读数 ⇒ 读作没落地，不许读成已打开)): 基底页 pages/discover/index（桥 open 不带 query）已打开，但应用内 wx.navigateTo 没落地（undefined）⇒ 目标页 subpackages/profile-extra/profile/other 不在栈顶，本腿后续步全部作废；这是通道欠款（R3-02 ③ 的替代开页法），不是产品判决」处中止 ⇒ 已完成 0/32 步；这是通道/前置欠款，不是产品判决（已完成步的读数照实保留在 observed/stepsNote）",
+   "route": "subpackages/profile-extra/profile/other",
+   "toast": "",
+   "console": "",
+   "evidence": "",
+   "durationMs": 0,
+   "transport": "ws+cli-shot",
+   "automationChannel": "ws",
+   "recipe": "次要20|OT09",
+   "stepsNote": "#1 open :: NOT_SHOOTABLE(openForm=navto/unknown(空读数 ⇒ 读作没落地，不许读成已打开)): 基底页 pages/discover/index（桥 open 不带 query）已打开，但应用内 wx.navigateTo 没落地（undefined）⇒ 目标页 subpackages/profile-extra/profile/other 不在栈顶，本腿后续步全部作废；这是通道欠款（R3-02 ③ 的替代开页法），不是产品判决",
+   "modalDrive": "off",
+   "netFault": "off",
+   "openForm": "bridge(没带 --navto-open ⇒ 新开的「基底页+navigateTo」通道本腿一字未用)",
+   "handlerCall": "on(未触发)",
+   "netArmWindow": "off",
+   "fixture": "none",
+   "reason": "UNVERIFIED-INSTRUMENT：--navto-open 的 open 步在应用内 wx.navigateTo 载荷上抛 JS 语法错（空读数 ⇒ navToVerdict=unknown，行不落地），后续 handler 步亦未下发 ⇒ dispatched=0，绝不记 EXECUTED，也不记产品 FAILED。根因是通道载荷缺陷，非产品事实，亦非选择器不存在。",
+   "verdict": "UNVERIFIED-INSTRUMENT",
+   "instrumentClass": "opt-in 通道载荷缺陷（--navto-open/--handler-call 的 JS 源在本带不可解析）",
+   "instrumentEvidence": "navigateToSource() 与 handlerCallSource()（scripts/qa/exec-capabilities.mjs:366/:handlerCallSource）产出的载荷是非法 JS：括号失衡（多一个收尾 } ⇒ brace balance=-1），new Function 报 “missing ) after argument list”。离线用 node22 逐字复现（PARSE_FAIL），带设备上 WS capEval 重试亦抛同一句（run log: WSX_RETRY capEval :: Uncaught missing ) after argument list ×10，currentPage timeout ×5）。",
+   "dispatched": 0,
+   "candidatesTried": [
+    "profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--whisper",
+    "whisper-compose-sheet >>> .whisper-sheet__input / .whisper-sheet__send / .whisper-sheet / .whisper-mask",
+    "handler: openWhisperSheet(other.vue:250/:428)"
+   ],
+   "positiveControlNote": "POSITIVE_CONTROL=PASS 由 ui-channel-lane 本机已证（题面列为已证不重做）；本次 WS_UP=ALREADY_UP port=9420 + WS_UP_BAND_RESULT=match 复确认通道活着。登录态下 currentPage=pages/profile/index，登录页选择器不在该页 ⇒ 属上下文差异非仪器死。"
+  },
+  {
+   "suite": "C-次要21",
+   "manifest": "次要21",
+   "id": "OC09",
+   "page": "subpackages/chat/official-chat/index",
+   "tier": "critical",
+   "band": "real@f0677920",
+   "identity": "A",
+   "loginVerify": "logged-in userId=100158",
+   "sessionSource": "phone-login",
+   "requiresReal": true,
+   "title": "REAL_ONLY 加载失败错误态+重试真重拉；发送失败回滚草稿不丢内容",
+   "status": "SKIPPED",
+   "observed": "top=pages/discover/index | dom(配方步): 见 stepsNote | modal[off] | netFault[off] | openForm[navto subpackages/chat/official-chat/index ⇒ unknown(空读数 ⇒ 读作没落地，不许读成已打开)] | fixture[（本条无夹具）] | frames[无] | toast[无]",
+   "missingEvidence": [],
+   "failureReason": "NOT_SHOOTABLE(recipe-step)：多步序列在「step#1 open：NOT_SHOOTABLE(openForm=navto/unknown(空读数 ⇒ 读作没落地，不许读成已打开)): 基底页 pages/discover/index（桥 open 不带 query）已打开，但应用内 wx.navigateTo 没落地（undefined）⇒ 目标页 subpackages/chat/official-chat/index 不在栈顶，本腿后续步全部作废；这是通道欠款（R3-02 ③ 的替代开页法），不是产品判决」处中止 ⇒ 已完成 0/21 步；这是通道/前置欠款，不是产品判决（已完成步的读数照实保留在 observed/stepsNote）",
+   "route": "subpackages/chat/official-chat/index",
+   "toast": "",
+   "console": "",
+   "evidence": "",
+   "durationMs": 0,
+   "transport": "ws+cli-shot",
+   "automationChannel": "ws",
+   "recipe": "次要21|OC09",
+   "stepsNote": "#1 open :: NOT_SHOOTABLE(openForm=navto/unknown(空读数 ⇒ 读作没落地，不许读成已打开)): 基底页 pages/discover/index（桥 open 不带 query）已打开，但应用内 wx.navigateTo 没落地（undefined）⇒ 目标页 subpackages/chat/official-chat/index 不在栈顶，本腿后续步全部作废；这是通道欠款（R3-02 ③ 的替代开页法），不是产品判决",
+   "modalDrive": "off",
+   "netFault": "off",
+   "openForm": "bridge(没带 --navto-open ⇒ 新开的「基底页+navigateTo」通道本腿一字未用)",
+   "handlerCall": "on(未触发)",
+   "netArmWindow": "off",
+   "fixture": "none",
+   "reason": "UNVERIFIED-INSTRUMENT：--navto-open 的 open 步在应用内 wx.navigateTo 载荷上抛 JS 语法错（空读数 ⇒ navToVerdict=unknown，行不落地），后续 handler 步亦未下发 ⇒ dispatched=0，绝不记 EXECUTED，也不记产品 FAILED。根因是通道载荷缺陷，非产品事实，亦非选择器不存在。",
+   "verdict": "UNVERIFIED-INSTRUMENT",
+   "instrumentClass": "opt-in 通道载荷缺陷（--navto-open/--handler-call 的 JS 源在本带不可解析）",
+   "instrumentEvidence": "navigateToSource() 与 handlerCallSource()（scripts/qa/exec-capabilities.mjs:366/:handlerCallSource）产出的载荷是非法 JS：括号失衡（多一个收尾 } ⇒ brace balance=-1），new Function 报 “missing ) after argument list”。离线用 node22 逐字复现（PARSE_FAIL），带设备上 WS capEval 重试亦抛同一句（run log: WSX_RETRY capEval :: Uncaught missing ) after argument list ×10，currentPage timeout ×5）。",
+   "dispatched": 0,
+   "candidatesTried": [
+    ".retry-btn (页自身模板 index.vue:410)",
+    ".state-view",
+    "callHandler: loadOfficialChat"
+   ],
+   "positiveControlNote": "POSITIVE_CONTROL=PASS 由 ui-channel-lane 本机已证（题面列为已证不重做）；本次 WS_UP=ALREADY_UP port=9420 + WS_UP_BAND_RESULT=match 复确认通道活着。登录态下 currentPage=pages/profile/index，登录页选择器不在该页 ⇒ 属上下文差异非仪器死。"
+  }
+ ],
+ "legsLaneFindings": {
+  "channel": "WS_UP=ALREADY_UP port=9420 ownerPid=24892 + WS_UP_BAND_RESULT=match（band=real@f0677920，读自 mp-weixin-real/config/env.js）",
+  "identity": "identity=A mint=phone-login 铸到userId=100158 verify=logged-in userId=100158（boot 断言过）",
+  "verdictSummary": "OT05/OT06/OT09/OC09 登录轴四条全 UNVERIFIED-INSTRUMENT —— 本轮新落地的 --navto-open/--handler-call 两条替代通道在本带交出的载荷不可解析，dispatched=0。这是载具缺陷（scripts/qa/exec-capabilities.mjs），按纪律不记产品 FAILED、不记零下发的 EXECUTED；覆盖门保持 199（SKIPPED 不认领）。",
+  "notEdited": "未改 scripts/qa/**（含被隔壁车道修中的 case-recipes.json，本腿用其逐字只读切片 tmp/qa/v37-legs-recipes.json）；未改任何历史 exec-* 目录。"
+ },
+ "guestLandingReshoot": {
+  "page": "subpackages/setup/recommend-pref/index",
+  "landing": "pages/login/index",
+  "band": "real@f0677920",
+  "identity": "guest",
+  "sessionSource": "cleared",
+  "loginVerify": "not-logged-in",
+  "samples": [
+   {
+    "waitedMs": 2500,
+    "landing": "pages/login/index",
+    "identity": "not-logged-in",
+    "markers": {
+     ".login-page__brand": "1",
+     ".login-register-entry": "1"
+    }
+   },
+   {
+    "waitedMs": 4500,
+    "landing": "pages/login/index",
+    "identity": "not-logged-in",
+    "markers": {
+     ".login-page__brand": "1",
+     ".login-register-entry": "1"
+    }
+   }
+  ],
+  "landingStable": "yes(not-logged-in×2)",
+  "verdict": "GUEST_LANDING_RESHOOT=PASSES（页级落地对在带设备上成立）",
+  "memberEquation": {
+   "derivedFromOpsAndLedger": [
+    "RP01",
+    "RP02",
+    "RP03",
+    "RP04",
+    "RP05",
+    "RP06",
+    "RP07",
+    "RP08",
+    "RP09",
+    "RP10",
+    "RP11"
+   ],
+   "r10CreditedLandingGuard": [
+    "RP01",
+    "RP02",
+    "RP06",
+    "RP10"
+   ],
+   "r10AllRoutedToLogin": true,
+   "deltaNotCredited": [
+    "RP03",
+    "RP04",
+    "RP05",
+    "RP07",
+    "RP08",
+    "RP09",
+    "RP11"
+   ],
+   "explanation": "ops 派生账本与 guest-landing-booked.json 对这一组都记 11 名成员（memberSource.fromOpsEntireGuest=11）。exec-guest-real-guard-r10 里 11 条 RP 行 route 全=pages/login/index，但只有 4 条（RP01/02/06/10）status=FAILED 被 triage 归成 FAILED-landing-guard 成员，另 7 条 status=SKIPPED 未计入 ⇒ 成员等式在 r10 腿上差 {RP03,RP04,RP05,RP07,RP08,RP09,RP11}。这是逐例归属（SKIPPED 不认领）问题，不是「页没弹回登录」；本腿已带设备复测页级落地对为绿。test-guest-landing.mjs 硬编码读 exec-r10 语料，历史目录不可改，故该红无法由新腿抹平——如实报差集。"
+  },
+  "instrument": "tmp/qa/v37-gl-rp.mjs（cli-automator 桥 clearSession+reLaunch+routeStack+verifyLogin+nodeCount），在 v37-lease-run.mjs 租约内跑，heldLeases()=[]"
+ },
+ "excludedDeliberately": [
+  {
+   "item": "VRN07",
+   "reason": "需 DB fixture，用户未授权 ⇒ 不射"
+  },
+  {
+   "item": "OT06 游客轴 / OC09 游客轴",
+   "reason": "只读注入动词是否豁免未定（pending ruling），先射会交出判决不可验收的行 ⇒ 不射；两条本腿只判登录轴"
+  },
+  {
+   "item": "PFI25",
+   "reason": "隔壁车道正在改 scripts/qa/case-recipes.json 的选择器，本腿不碰（用其只读切片）"
+  }
+ ]
+}
