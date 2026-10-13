@@ -15,7 +15,12 @@ const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 
 const REPO = path.resolve(__dirname, "..", "..");
-const MOD = path.join(REPO, "scripts", "qa", "exec-capabilities.mjs");
+/* CAPS_UNDER_TEST：与 test-cap-recipes.cjs 的同名口子、r-exec-verb-dispatch 的 EXEC_UNDER_TEST 同一条纪律——
+   变异证明要在**工作树外的一次性副本**上跑同一套断言（活文件全程不改，用完即删），
+   否则新加的链感知判点就只是「活文件自己喂自己」，分不出能红的负例与永远绿的测试。 */
+const MOD = process.env.CAPS_UNDER_TEST
+  ? path.resolve(REPO, process.env.CAPS_UNDER_TEST)
+  : path.join(REPO, "scripts", "qa", "exec-capabilities.mjs");
 /* ESM 模块从 CJS 测试里加载：落到 tmp 的动态 import 包装（不落 node_modules，不改 package.json）。 */
 const WRAPPER = path.join(REPO, ".zcode", "tmp", "caps-import.mjs");
 
@@ -28,6 +33,7 @@ function t(name, cond, detail) {
 function eq(name, got, want) { t(name, JSON.stringify(got) === JSON.stringify(want), "got=" + JSON.stringify(got) + " want=" + JSON.stringify(want)); }
 
 async function main() {
+  console.log("被测能力模块=" + path.relative(REPO, MOD) + (process.env.CAPS_UNDER_TEST ? "（变异副本，非活文件）" : "（活文件）"));
   let C = null;
   try {
     fs.mkdirSync(path.dirname(WRAPPER), { recursive: true });
@@ -154,7 +160,7 @@ async function main() {
   if (C) {
     const recipeSample = recipes ? Object.values(recipes.recipes || {})[0] : null;
     const specFor = (name) => {
-      if (/handlerCall/i.test(name)) return { method: "handleLike", routeIncludes: "profile", args: [1], componentId: "cta-1" };
+      if (/handlerCall/i.test(name)) return { method: "handleLike", routeIncludes: "profile", args: [1], componentId: "cta-1", componentChain: ["profile-shell", "public-profile", "relationship-c-t-a"] };
       if (/navRead|route/i.test(name)) return {};
       if (/modal/i.test(name)) return { answers: [{ confirm: true }], api: "showModal" };
       if (/netFault|fault/i.test(name)) return { mode: "fail-all", urls: ["/api/v1/x"] };
@@ -180,6 +186,55 @@ async function main() {
       srcBad.length === 0, srcChecked + " 个生成器；不可解析: " + (srcBad.join(" | ") || "无"));
     t("C6 检查本身不许空转：至少覆盖到 navigateTo/handlerCall 两个生成器",
       srcChecked >= 2, "srcChecked=" + srcChecked);
+  }
+
+  /* ── C8-bis handler 组件链解析：链感知 + 每失败模态独立回执（本轮核心）──
+     病根：handlerCallSource 只在页实例找方法，两个 attempt 里 CTA 的 handleLike/openWhisperSheet
+     一律折叠成一句 no-method，把「链能不能走到 / 方法在不在叶子」两件事糊在一起，病看不出。
+     判点：① 组件链能吃得住且段形错法（路径形/带点带井）当场拒；② 链载荷与页载荷形状不同
+     （链走 selectComponent 逐跳、含 chain-missing/method-absent 独立前缀）；③ 六种失败模态 +
+     ok-with-via 的回执两两互不折叠（这正是「A single collapsed no-method 让病隐形两个 attempt」的反面）。 */
+  if (C) {
+    t("C8-bis componentChain 数组被 normalizeHandlerChain 归一化（保留标签、无 # 无路径）",
+      JSON.stringify(C.normalizeHandlerChain({ componentChain: ["profile-shell", "public-profile", "relationship-c-t-a"] }).chain) === JSON.stringify(["profile-shell", "public-profile", "relationship-c-t-a"]), "");
+    t("C8-bis selector 路径形（>>> 分段）也接受，与数组同解",
+      JSON.stringify(C.normalizeHandlerChain({ componentSelector: "profile-shell >>> public-profile >>> relationship-c-t-a" }).chain) === JSON.stringify(["profile-shell", "public-profile", "relationship-c-t-a"]), "");
+    t("C8-bis 负例：路径形组件段（含 /）/ 把类名当组件段（含 .）一律 parseHandlerCall 拒（selectComponent 入参只认标签名）",
+      C.parseHandlerCall({ method: "m", routeIncludes: "r", componentChain: ["components/profile/RelationshipCTA"] }).ok === false &&
+        C.parseHandlerCall({ method: "m", routeIncludes: "r", componentChain: [".relationship-cta"] }).ok === false &&
+        C.parseHandlerCall({ method: "m", routeIncludes: "r", componentChain: ["#cta"] }).ok === false, "");
+    const chainSrc = C.handlerCallSource(C.parseHandlerCall({ method: "handleLike", routeIncludes: "profile", componentChain: ["profile-shell", "public-profile", "relationship-c-t-a"] }).spec);
+    let chainParseErr = ""; try { new Function("return (" + chainSrc + ")"); } catch (e) { chainParseErr = e.message; }
+    t("C8-bis 链载荷可被 new Function 解析（语法错不许留到设备上，同 C6 那条纪律）", !chainParseErr, chainParseErr || "ok");
+    t("C8-bis 链载荷逐跳 selectComponent、带 chain-missing/method-absent 独立前缀，且无 uni 记号",
+      /selectComponent\(tag\)/.test(chainSrc) && /chain-missing/.test(chainSrc) && /method-absent/.test(chainSrc) && !/\buni\b/.test(chainSrc), "");
+    const noChainSrc = C.handlerCallSource(C.parseHandlerCall({ method: "loadOfficialChat", routeIncludes: "r" }).spec);
+    t("C8-bis 页载荷（缺省/空链）逐字保留 vm/page 两格既有 via 词、并补 page-setupState/page-ctx 把手，且与链载荷形状不同",
+      /via = 'vm'/.test(noChainSrc) && /via = 'page'/.test(noChainSrc) && /page-setupState/.test(noChainSrc) && /page-ctx/.test(noChainSrc) &&
+        !/selectComponent\(tag\)/.test(noChainSrc) && /no-method/.test(noChainSrc), "");
+    /* 每失败模态独立回执：no-page/wrong-page/chain-parent-not-component/chain-hop-missing/
+       method-absent-on-component/no-method/ok-with-via/空读数 —— 八个必须两两不同，且只有 ok-* 判 ok。 */
+    const raws = ["no-page", "wrong-page subpackages/profile-extra/profile/other",
+      "chain-no-select relationship-c-t-a @2", "chain-missing relationship-c-t-a @2",
+      "method-absent subpackages/profile-extra/profile/other @profile-shell>public-profile>relationship-c-t-a",
+      "no-method subpackages/profile-extra/profile/other", "handler-ok via=chain-setupState", ""];
+    const vs = raws.map((s) => C.handlerCallVerdict(s));
+    t("C8-bis 八种回执两两互不折叠（把 chain-*/method-absent 折叠成 no-method 就是这条通道两 attempt 隐形病的根）",
+      new Set(vs).size === raws.length, "distinct=" + new Set(vs).size + "/" + raws.length + " ⇒ " + vs.join(" | ").slice(0, 220));
+    t("C8-bis 回执各自点名模态（chain-hop-missing / chain-parent-not-component / method-absent-on-component / ok(via=chain-*)）",
+      /chain-hop-missing/.test(C.handlerCallVerdict("chain-missing relationship-c-t-a @2")) &&
+        /chain-parent-not-component/.test(C.handlerCallVerdict("chain-no-select relationship-c-t-a @2")) &&
+        /method-absent-on-component/.test(C.handlerCallVerdict("method-absent r @a>b")) &&
+        /^ok\(via=chain-setupState\)$/.test(C.handlerCallVerdict("handler-ok via=chain-setupState")), "");
+    t("C8-bis handlerCallOk 只在 ok-* 上为真：七种失败回执（含三种链/叶子模态）一律判假（零下发的动作不许读成打成功）",
+      C.handlerCallOk(C.handlerCallVerdict("handler-ok via=chain-setupState")) === true &&
+        ["no-page", "wrong-page p", "chain-missing t @2", "chain-no-select t @2", "method-absent p @a>b", "no-method p", "ERR boom", ""].every((s) => C.handlerCallOk(C.handlerCallVerdict(s)) === false), "");
+    /* validateRecipes 必须把链不合法的 handler 步拒收（配方写了错链不许上腿才炸）。 */
+    const badChainRecipes = { recipes: { "次要20|OT05": { page: "subpackages/profile-extra/profile/other", steps: [{ do: "tap", selector: ".x", handler: { method: "handleLike", routeIncludes: "r", componentChain: ["components/profile/RelationshipCTA"] } }] } } };
+    const badCorpus = new Map([["次要20|OT05", { page: "subpackages/profile-extra/profile/other", tapTarget: "" }]]);
+    const vr = C.validateRecipes(badChainRecipes, badCorpus);
+    t("C8-bis validateRecipes 拒收链形错的 handler 步（组件段写成路径形 ⇒ 离线就拦，不在设备上读成「不在页上」）",
+      vr.ok === false && vr.problems.join("").indexOf("组件链不合法") >= 0, vr.problems.join(" ｜ ").slice(0, 200));
   }
 
   console.log("SUMMARY: assertion failures = " + fails);

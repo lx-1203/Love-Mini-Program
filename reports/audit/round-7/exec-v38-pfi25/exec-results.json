@@ -1,0 +1,53 @@
+{
+ "round": "ui-audit-2026-10-13",
+ "gitSha": "40e1ba80",
+ "identity": "A",
+ "identities": [
+  "A"
+ ],
+ "project": "apps/client/dist/build/mp-weixin-real",
+ "band": "real@f0677920",
+ "loginVerify": "logged-in userId=100158",
+ "updatedAt": "2026-10-13T13:36:07.616Z",
+ "admissible": true,
+ "outcome": "judged",
+ "runner": "scripts/qa/r-exec-ws.mjs（WS 取证 + 桥出帧，完整跑完）",
+ "results": [
+  {
+   "suite": "C-PAGES-PROFILE-INDEX",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "id": "PFI25",
+   "page": "pages/profile/index",
+   "tier": "critical",
+   "band": "real@f0677920",
+   "identity": "A",
+   "loginVerify": "logged-in userId=100158",
+   "sessionSource": "phone-login",
+   "requiresReal": true,
+   "title": "删除语音：二次确认 + 「本地即删」是否真删（刷新后复现证伪）",
+   "status": "SKIPPED",
+   "verdict": "UNVERIFIED-INSTRUMENT",
+   "dispatched": 0,
+   "instrumentFault": "recipe-positional-pseudo-ignored",
+   "observed": "top=pages/profile/index | dom(配方步): 见 stepsNote | modal[on(armed=showModal answers=2 answered=0 restored=yes)] | netFault[off] | openForm[bridge（本腿没用 navigateTo 开页形态）] | fixture[夹具已回滚（setup 1 步 / teardown 0 步全成） setup:seed-voice=ok] | frames[无] | toast[无]",
+   "missingEvidence": [],
+   "failureReason": "非产品判决（按 recipe-lane.md §5 处方如实判读）：step#10 同刻 probe 报 .voice-preview__delete=present(2) 且 .voice-preview__delete:last-child=present(2) —— 位置伪类没有把两枚收窄到一枚 ⇒ WS/automator 引擎忽略 :last-child（与桥通道 tour-cli-states.mjs:89-90 的反面实测同向，本仓对 WS 通道是首次量到）。tap 因此仍按 page.$ 首命中打到 idx0「重录」（非判据点名的「删除」），step#13 drainModal=0 是这个寻址失败的仪器后果，不是产品把删除钮判红。dispatched（判据点名的删除动作被可验证触发）=0 ⇒ 记 UNVERIFIED-INSTRUMENT，不记 EXECUTED/FAILED。（原始下发读数照实在 stepsNote；正向对照本腿当场 PASS：switchTab→nearby 且 $ 清点 31 节点在。）",
+   "instrumentClass": "位置伪类在 WS 引擎被忽略（present(2)==裸形 present(2)）⇒ 两枚同名 .voice-preview__delete 无法用 :last-child 唯一定位；修法两条均在别的车道：(a) 执行器补「第 k 枚/按 aria-label 命中」把手（round-7 c21 矩阵 G-14，25 条同类）；(b) 源侧给重录/删除两枚分别补修饰类后重编译产物带（user-gated，本车道不碰 src）。",
+   "route": "pages/profile/index",
+   "toast": "",
+   "console": "",
+   "evidence": "",
+   "durationMs": 0,
+   "transport": "ws+cli-shot",
+   "automationChannel": "ws",
+   "recipe": "PAGES-PROFILE-INDEX|PFI25",
+   "stepsNote": "#1 open :: open pages/profile/index ⇒ top=pages/profile/index；#2 wait :: wait 2200ms；#3 fixture(setup) :: fixture setup ok 1 步；#4 wait :: wait 800ms；#5 read(渲染时 store 语音态（与下步 probe 配对定谳）) :: read 渲染时 store 语音态（与下步 probe 配对定谳） ⇒ {\"route\":\"pages/profile/index\",\"voiceUrlLen\":39,\"voiceUrlHead\":\"https://qa-carrier.example/qa-voice.mp3\",\"voiceDuration\":3,\"hasBasicProfile\":true}；#6 probe :: probe {\".video-cta\":\"present(2)\",\".voice-preview\":\"present(1)\",\".voice-preview__delete\":\"present(2)\",\".voice-preview__delete:last-child\":\"present(2)\"}；#7 assertPresent(.voice-preview__delete:last-child) :: assertPresent .voice-preview__delete:last-child ⇒ present(2)；#8 shot(a-before-delete) :: shot a-before-delete 仅 0B（不当证据）；#9 armModal :: armModal showModal answers=2 ⇒ armed(answers-armed)；#10 probe(tap 前同刻命中数（设备读数若给 :last-child present(2) ⇒ 引擎忽略位置伪类，本腿记仪器欠款而非产品红）) :: probe {\".voice-preview__delete\":\"present(2)\",\".voice-preview__delete:last-child\":\"present(2)\"}；#11 tap(.voice-preview__delete:last-child) :: tap .voice-preview__delete:last-child；#12 wait :: wait 1100ms；#13 drainModal :: drainModal 期望≥1 次弹窗，实收 0 次；#14 (cleanup)(restoreModal) :: ok",
+   "modalDrive": "on(armed=showModal answers=2 answered=0 restored=yes)",
+   "netFault": "off",
+   "openForm": "bridge(没带 --navto-open ⇒ 新开的「基底页+navigateTo」通道本腿一字未用)",
+   "handlerCall": "off(没带 --handler-call ⇒ AppService 直调未装，DOM 取不到的动作就是取不到)",
+   "netArmWindow": "off",
+   "fixture": "clean（setup:seed-voice=ok）"
+  }
+ ]
+}

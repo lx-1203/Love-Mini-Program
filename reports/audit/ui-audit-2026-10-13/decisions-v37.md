@@ -113,24 +113,43 @@
   (c) 撤下该行。
 - **不裁的后果**：本轮带内车道会按 (a) 去配 deck 夹具重拍；若你判 (b)，那 9 行里这一行的修法完全不同，重拍成本也要另算。
 
-### A11 `V37-NTH-TAP` — 「同名多枚钮怎么点准」这条长期欠款（去查之后：可能不需要新裁定）
-- **触发点**：PFI25 那枚 `.voice-preview__delete` 在产物里命中 2 枚（「重录」「删除」共用一个 class），
-  配方目前只能靠 `:last-child` 收窄，而 WS 引擎认不认位置伪类尚未带内证实。
+### A11 `V37-NTH-TAP` — 「点不准同名多枚钮」这笔长期欠款（**我先前给的前提被本程实测推翻，改写如下**）
+- **我给错的前提**：派活时我写"链式 `selectComponent('profile-shell')→…→selectComponent('relationship-c-t-a')`
+  即可直调子组件 handler"。带内活探针证伪两点：
+  ① `selectComponent` 只接受 `#id` / `.class`——那条标签链在 `usingComponents` 里逐跳核对全部通过，
+  **却不是运行时有效选择器**（实测 `chain-hop-missing @0`；能选中的只有编译期注入的
+  `.data-v-<hash>` 作用域类，而该 hash 随构建变，不能写进配方）；
+  ② 目标方法名根本不在产物里——我自己 grep：`handleLike` 在
+  `mp-weixin-real/subpackages/profile-extra/profile/other.js` 与
+  `components/profile/public/PublicProfile.js` 均 **0 次命中**，CTA 组件也没有具名 `methods`；
+  `<script setup>` 的处理器被编译成匿名闭包，`bindlike="{{t}}"` 是"事件向外冒"，
+  不是"方法可被外面叫"。⇒ 按名字调 handler 在**当前代码形态下不可达**，不是通道不够好。
 - **在册欠款**：`reports/audit/round-7/c21-executor-capability-matrix.md:308` 记 G-14
   「nth / multi-instance disambiguation」**25 条盖章行**（DC22\* PFI22\* CS23\* CI06\* CPT27\*
   VI17\* VI18\* PUB11\* PUB12\* TP03\* TP04\* CH06\* CF09\* HP04\* VP24\* MS05\* …）；
-  同文件 `:383` 给两条诚实路径：(a) `evaluate` 里 `querySelectorAll`+index 再按坐标点
+  同文件 `:383` 两条诚实路径：(a) `evaluate` 里 `querySelectorAll`+index 再按坐标点
   ——坐标 tap 本仓从未证实（与 G-8 swipe 同一堵墙）；(b) 作者侧补唯一 class/id。
-- **关键发现**：路径 (b) **已经是 7 条行的既裁处置**——同文件引
-  `reports/audit/round-7/criteria36-classification-v33.json`，意谓「唯一不降级的修法就是补作者类名/id」，
-  并由 `apply-ops-cellplans.mjs:118` 的 `/^[.#][\w-]+$/` 把门（`:116-117` 注释：裸词、标签链一律拒）。
-  ⇒ 把同一条尺子套到 PFI25 这两枚钮属于**按先例执行**，不是新决策。
-- **因此只需你确认一件事**：是否授权照先例给「重录」那枚补修饰类
-  （`apps/client/src/pages/profile/index.vue:1736-1745` 与 :1746-1755 现共用 class）
-  并**重编译三档**。重编译会让正在跑的 WS 通道作废（`cant find runtimeid by projectpath`），
-  所以它必须排在设备腿之后，不能并行。
-- 若不授权改源，就退到依赖 `:last-child`：带内若读回 `present(2)`，说明 WS 忽略位置伪类，
-  届时这 25 条要按 (a)/(b) 一起处置，而不是逐条再争一轮。
+- **关键发现**：路径 (b) **已经是 7 条行的既裁处置**（同文件引
+  `criteria36-classification-v33.json`：唯一不降级的修法就是补作者类名/id，
+  由 `apply-ops-cellplans.mjs:118` 的 `/^[.#][\w-]+$/` 把门，`:116-117` 注释明写裸词、标签链一律拒）。
+- **因此真正要裁的是三选一**：
+  - **(a) 改源**：给 CTA 那几枚钮补稳定 class/id，若要按名字调再加 `defineExpose`；
+    需要动 `apps/client/src/**` 并**重编译三档**（重编译会作废在跑的 WS 通道：
+    `cant find runtimeid by projectpath`，所以只能排在设备腿之后）。
+    这条路顺带解掉 G-14 那 25 条，与既有先例同尺。
+  - **(b) 补执行器**：实现「第 k 枚 / 按 aria-label 命中」的 tap 把手——不改业务代码，
+    但要先证明坐标 tap 可用。
+  - **(c) 换判据口径**：用组件实例 `triggerEvent('like')` 验"事件接线通不通"，
+    **明确不验**"按钮可点区域存在且命中"。选它就等于承认这条从"UI 可点"降级为"接线正确"；
+    本仓在命中区要靠相邻间距判、以及"缺席不等于证据"上都栽过，所以这条必须写清换了什么。
+- **同一轮顺带推翻的另一条**：PFI25 的 `:last-child` 收窄在带内回 `present(2)`、与裸形同数
+  ⇒ **WS 引擎忽略位置伪类**（与桥通道实测同向，`tour-cli-states.mjs:89-90`）。
+  "用伪类挑第 k 枚"在两个通道上都不成立；该例已按
+  `instrumentFault=recipe-positional-pseudo-ignored` 记仪器欠款，**未**记产品红。
+- **不裁的后果**：OT05/OT06/OT09/OC09 与 PFI25 这五条在任何一轮重跑里都会停在
+  `dispatched=0`。原因不是配额、不是环境、也不是通道没起来（本程两次独立拿到
+  `WS_UP=OK/ALREADY_UP` + `WS_UP_BAND_RESULT=match` 且正向对照 PASS），
+  而是**当前代码形态没有可寻址的动作入口**。要么 (a)/(b) 造一个，要么 (c) 换判据并写明换了什么。
 
 ## B. 历史裁定册里剩下的 4 条 half-closed（每条只剩半轴）
 

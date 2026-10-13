@@ -205,7 +205,6 @@ function countSelector(page, selector) {
   };
 }
 /* 一条配方的「命中数」判点（活语料与变异副本共用同一个函数，负例才不是另造一套判点）：
-   ① 动作步必须唯一致命中（0=死选择器，>1=歧义，wx:for=条数不可证）；
    ② 写了 expectMatches 的步必须与产物实测条数一致（expectMatches 的轴=编译产物命中数，不是设备同刻读数）；
    ③ 用位置伪类收窄的动作步，同配方必须有一步同时 probe 裸形与伪类形 ⇒ 设备读数自带「引擎认不认伪类」的判据。 */
 function matchCountProblems(recipes) {
@@ -261,7 +260,48 @@ function matchCountProblems(recipes) {
   }
   return problems;
 }
+/* §9 handler 组件链 ↔ 编译产物 usingComponents 注册表（comp-chain-lane 2026-10-13）。
+   判点：配方 handler 步声明的 componentChain 必须**逐跳**在产物 .json 的 usingComponents 里查得到，
+   且每一跳解析出的组件文件真实在盘 —— 全部从 *.json 现查，绝不从任何文档/笔记推。
+   为什么要这一条：上一程台账把「编译标签是路径形」写错、把 handler 落点猜成 CTA 子组件，
+   两条都在设备上撞墙两个 attempt；离线只要拿产物核一遍链，写法错/链漂移当场红。
+   空链（[]）表示页级 handler（OC09 的 loadOfficialChat），零跳可查 ⇒ 天然通过。 */
+function resolveChainRegistration(page, chain) {
+  let jsonFile = path.join(BAND, String(page) + ".json");
+  const trace = [];
+  for (let i = 0; i < chain.length; i++) {
+    const tag = chain[i];
+    let uc = {};
+    try { uc = JSON.parse(fs.readFileSync(jsonFile, "utf8")).usingComponents || {}; }
+    catch (e) { return { ok: false, trace, error: "读不到注册表 " + path.relative(BAND, jsonFile) + "：" + e.message }; }
+    const next = uc[tag];
+    if (!next) return { ok: false, trace, error: "第 " + (i + 1) + " 跳标签 " + tag + " 不在 " + path.relative(BAND, jsonFile) + " 的 usingComponents 里（该层实际键=[" + Object.keys(uc).join(",") + "]）⇒ 声明的链与产物注册表不符" };
+    const resolved = path.resolve(path.dirname(jsonFile), next + ".json");
+    if (!fs.existsSync(resolved)) return { ok: false, trace, error: "第 " + (i + 1) + " 跳 " + tag + " 指向 " + next + "，但 " + path.relative(BAND, resolved) + " 不在产物里" };
+    trace.push(path.relative(BAND, jsonFile) + " → " + tag + "(" + next + ")");
+    jsonFile = resolved;
+  }
+  return { ok: true, trace, leaf: path.relative(BAND, jsonFile) };
+}
+function handlerChainProblems(recipes) {
+  const problems = [];
+  const TARGETS = ["次要20|OT05", "次要20|OT06", "次要20|OT09", "次要21|OC09"];
+  for (const [key, r] of Object.entries(recipes.recipes || {})) {
+    const steps = r.steps || [];
+    steps.forEach((s, i) => {
+      const h = s && (s.do === "callHandler" ? s.handler : s.handler);
+      if (!h) return;
+      const declared = Array.isArray(h.componentChain);
+      if (TARGETS.includes(key) && !declared) problems.push(key + " step#" + (i + 1) + " 的 handler 没声明 componentChain（四例必须显式声明链或空链，空链=页级）");
+      if (!declared) return;
+      const res = resolveChainRegistration(r.page, h.componentChain);
+      if (!res.ok) problems.push(key + " step#" + (i + 1) + " 声明的 componentChain 与产物注册表对不上：" + res.error);
+    });
+  }
+  return problems;
+}
 const liveProblems = matchCountProblems(RECIPES);
+const liveChainProblems = handlerChainProblems(RECIPES);
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 
 const corpus = new Map();
@@ -693,6 +733,68 @@ async function main() {
       mut.recipes["SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25"].steps.unshift({ do: "tap", selector: ".no-such-btn-xyz" });
       const after = matchCountProblems(mut);
       return after.length === liveProblems.length + 1 && /命中 0 枚/.test(after.join(""));
+    })());
+
+  /* ══════════════════════════════════════════════════════════════════════════════
+     §9 handler 组件链 ↔ 产物 usingComponents 注册表（comp-chain-lane 2026-10-13）
+     正例：四例声明的链都从各层 .json 现查对得上；反面：改一枚标签名 / 换顺序 / 删声明 ⇒ 各判红。
+     这些判点**不给 §8 的「动作步恰命中 1 枚」开后门**：§9 只管链注册表可达性，选择器命中数
+     仍由 §8 独立拦死（下面最后一条把两者钉在一起，证明 §9 不是例外口子）。
+     ══════════════════════════════════════════════════════════════════════════════ */
+  const targetKeys = ["次要20|OT05", "次要20|OT06", "次要20|OT09", "次要21|OC09"];
+  const declaredChains = [];
+  for (const k of targetKeys) {
+    const r = (RECIPES.recipes || {})[k];
+    if (!r) continue;
+    (r.steps || []).forEach((s) => { const h = s && s.handler; if (h && Array.isArray(h.componentChain)) declaredChains.push({ key: k, chain: h.componentChain }); });
+  }
+  t("§9 四例的每个 handler 步都显式声明了 componentChain（OT05/OT06/OT09=三层 CTA 链；OC09=空链页级 loadOfficialChat）",
+    declaredChains.length >= 6 && declaredChains.every((x) => x.key !== "次要21|OC09" ? x.chain.join(">") === "profile-shell>public-profile>relationship-c-t-a" : x.chain.length === 0),
+    "声明链步=" + declaredChains.length);
+  const ctaChainRes = resolveChainRegistration("subpackages/profile-extra/profile/other", ["profile-shell", "public-profile", "relationship-c-t-a"]);
+  t("§9 OT05/OT06/OT09 声明的链逐跳在产物 .json 的 usingComponents 里查得到，叶子落在 RelationshipCTA.json（从 *.json 现查，不抄文档）",
+    ctaChainRes.ok === true && /RelationshipCTA\.json$/.test(String(ctaChainRes.leaf).replace(/\\/g, "/")), ctaChainRes.error || ctaChainRes.leaf);
+  t("§9 活配方全体 handler 步的声明链与注册表零冲突（" + path.relative(REPO, RECIPES_FILE) + "）",
+    liveChainProblems.length === 0, liveChainProblems.join(" ｜ ").slice(0, 260));
+  /* 负例 A：把链里一枚标签改坏（relationship-c-t-a → relationship-cta，去掉连字符）⇒ 注册表查不到该键 ⇒ 红。 */
+  t("§9 负例：把 OT05 链末段标签改成一枚产物里没注册的名字 ⇒ 声明链与 usingComponents 对不上，判红（链名漂移不许静默放行）",
+    (function () {
+      const mut = deepClone(RECIPES);
+      const step = mut.recipes["次要20|OT05"].steps.find((s) => s && s.handler && Array.isArray(s.handler.componentChain));
+      if (!step) return false;
+      step.handler.componentChain = ["profile-shell", "public-profile", "relationship-cta"];
+      const after = handlerChainProblems(mut);
+      return after.length === liveChainProblems.length + 1 && /relationship-cta/.test(after.join("")) && /usingComponents/.test(after.join(""));
+    })());
+  /* 负例 B：换顺序（public-profile 放到页根去找）⇒ 该层 usingComponents 没有 public-profile（它在 ProfileShell 层）⇒ 红。 */
+  t("§9 负例：把 OT09 链换顺序（public-profile 提到最前）⇒ 页根注册表里没有 public-profile，判红（链跳错层当场可知）",
+    (function () {
+      const mut = deepClone(RECIPES);
+      mut.recipes["次要20|OT09"].steps.forEach((s) => { if (s && s.handler && Array.isArray(s.handler.componentChain)) s.handler.componentChain = ["public-profile", "profile-shell", "relationship-c-t-a"]; });
+      const after = handlerChainProblems(mut);
+      return after.length >= 1 && /public-profile 不在/.test(after.join("")) && /other\.json/.test(after.join(""));
+    })());
+  /* 负例 C：删掉 OT06 某 handler 步的 componentChain 声明 ⇒ 「四例必须显式声明」判红。 */
+  t("§9 负例：摘掉 OT06 一个 handler 步的 componentChain ⇒ 四例必须显式声明链/空链，判红",
+    (function () {
+      const mut = deepClone(RECIPES);
+      const step = mut.recipes["次要20|OT06"].steps.find((s) => s && s.handler && s.handler.method === "openWhisperSheet");
+      if (!step) return false;
+      delete step.handler.componentChain;
+      const after = handlerChainProblems(mut);
+      return after.length === liveChainProblems.length + 1 && /没声明 componentChain/.test(after.join(""));
+    })());
+  /* §9 不是 §8 的后门：把 PFI25 的动作步放宽成歧义选择器（它没有链声明），§8 仍判红、§9 不掺和。 */
+  t("§9 与 §8 互不解锁：PFI25 动作步放宽成命中 2 枚的歧义选择器时，§8 照旧拦死（§9 不给动作步开后门）",
+    (function () {
+      const mut = deepClone(RECIPES);
+      const st = mut.recipes["PAGES-PROFILE-INDEX|PFI25"].steps;
+      const tap = st.find((s) => s && s.do === "tap" && /:last-child/.test(String(s.selector || "")));
+      if (!tap) return false;
+      tap.selector = ".voice-preview__delete";
+      delete tap.expectMatches;
+      const s8 = matchCountProblems(mut), s9 = handlerChainProblems(mut);
+      return s8.length >= 1 && /命中 2 枚/.test(s8.join("")) && s9.length === liveChainProblems.length;
     })());
 
   console.log("SUMMARY: assertion failures = " + fails);

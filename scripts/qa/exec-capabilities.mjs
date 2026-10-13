@@ -441,6 +441,27 @@ export function openFormNote(via) {
  * 纪律：method 必须点名（不猜 handler 名）、routeIncludes 必须点名（不在这一页上就打 handler，
  * 打的是上一页身上，那是比假绿更糟的东西）。
  */
+/* selectComponent 入参的段形：编译产物里的自定义组件标签名（kebab-case），不含 "/" "#" "."。
+   与 DOM 的 ">>>" 穿透链同词表但**不同消费者**：这条给 AppService 层的 selectComponent，
+   每段就是各层 .json usingComponents 的键（见 test-cap-recipes.cjs 用它反查产物注册表）。 */
+const CHAIN_TAG = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
+/* 把 handler 步上的组件链归一化成标签数组。接受三种写法（题面：componentChain 数组或 selector 路径）：
+     · componentChain: ["profile-shell","public-profile","relationship-c-t-a"]
+     · chain: [...]（别名）
+     · componentSelector: "profile-shell >>> public-profile >>> relationship-c-t-a"
+   没写 ⇒ 空链（页级解析，与既有配方逐字同形，不改历史行）。 */
+export function normalizeHandlerChain(spec) {
+  const s = spec && typeof spec === "object" ? spec : {};
+  let raw = null;
+  if (Array.isArray(s.componentChain)) raw = s.componentChain.map((x) => String(x).trim());
+  else if (Array.isArray(s.chain)) raw = s.chain.map((x) => String(x).trim());
+  else if (s.componentSelector) raw = String(s.componentSelector).split(">>>").map((x) => x.trim()).filter(Boolean);
+  if (!raw) return { chain: [], source: "none" };
+  const chain = raw.filter(Boolean);
+  const bad = chain.filter((seg) => seg.indexOf("/") >= 0 || !CHAIN_TAG.test(seg));
+  if (bad.length) return { chain: [], error: "每段必须是编译产物里的自定义组件标签名（kebab-case，无 / # .），收到 " + JSON.stringify(bad) + "；这是 selectComponent 的入参形，不是 DOM 选择器" };
+  return { chain, source: Array.isArray(s.componentChain) ? "array" : "selector" };
+}
 export function parseHandlerCall(spec) {
   if (!spec || typeof spec !== "object") return { ok: false, reason: "handler 缺失或不是对象（callHandler/替代通道必须点名打哪个 handler）" };
   const method = String(spec.method || "").trim();
@@ -449,33 +470,70 @@ export function parseHandlerCall(spec) {
   if (!routeIncludes) return { ok: false, reason: "handler.routeIncludes 必须点名目标页（不在页上就打 handler = 打在上一页身上）" };
   const componentId = String(spec.componentId || "").trim();
   const args = Array.isArray(spec.args) ? spec.args : [];
-  return { ok: true, spec: { method, routeIncludes, componentId, args, label: String(spec.label || method) } };
+  const ch = normalizeHandlerChain(spec);
+  if (ch.error) return { ok: false, reason: "handler 的组件链不合法：" + ch.error };
+  return { ok: true, spec: { method, routeIncludes, componentId, args, componentChain: ch.chain, chainSource: ch.source, label: String(spec.label || method) } };
 }
 /* 载荷：先验路由，再按 vm → page →（点名了 componentId 才）selectComponent 三格找函数，
    找到才调、并把这次调用记进 __qaHandler 袋（可 drain 复核）。
    三格都要试是因为 uni-app Vue3 的 setup 绑定落在 page.$vm、Options API 方法落在 page 本身、
    组件内方法要 selectComponent；哪一格命中由读数说话，不在测试里预设。 */
+/* 载荷：先验路由，再找函数实例。两种形态互不折叠：
+   · 无组件链（缺省，与既有配方逐字同形）——在页实例上按 vm → page →（点名了 componentId 才）
+     selectComponent("#id") 找；额外再探 $vm.$.setupState / $vm.$.ctx 两格，因为 <script setup> 的
+     方法在 mp-weixin Vue3 里不一定挂在实例具名方法上（这正是 handleLike 历史 no-method 的候选真因）。
+   · 有组件链（componentChain/组件 selector 路径）——从页实例起，逐跳 selectComponent(tag)，
+     每一跳失败都给**独立回执**（父节点不是组件 / 该跳 selectComponent 返回 null），
+     到叶子再按同样四格找方法，找不到给 method-absent-on-component。
+   每模态各回各的串是刻意的：把 chain-missing / method-absent / wrong-page / no-page 折叠成一句
+   no-method，正是这条通道两个 attempt 看不见病根的原因（题面）。 */
 export function handlerCallSource(spec) {
   const h = spec && spec.spec ? spec.spec : spec || {};
   const m = JSON.stringify(String(h.method || ""));
   const route = JSON.stringify(String(h.routeIncludes || ""));
   const args = JSON.stringify(Array.isArray(h.args) ? h.args : []);
   const cid = String(h.componentId || "").trim();
-  const compBranch = cid
-    ? "else if (typeof p.selectComponent === 'function') { var c = p.selectComponent(" + JSON.stringify("#" + cid) + "); if (c && typeof c[" + m + "] === 'function') { t = c; via = 'component'; } } "
-    : "";
-  return "() => new Promise((res) => { try { var cs = getCurrentPages(); if (!cs || !cs.length) { return res('no-page'); } " +
+  const chain = Array.isArray(h.componentChain) ? h.componentChain.filter(Boolean) : [];
+  const prologue = "() => new Promise((res) => { try { var cs = getCurrentPages(); if (!cs || !cs.length) { return res('no-page'); } " +
     "var p = cs[cs.length - 1]; var route = String((p && (p.route || p.__route__)) || ''); " +
     "if (route.indexOf(" + route + ") < 0) { return res('wrong-page ' + route); } " +
-    "var bag = globalThis.__qaHandler = globalThis.__qaHandler || []; var args = " + args + "; var t = null; var via = ''; " +
-    "if (p.$vm && typeof p.$vm[" + m + "] === 'function') { t = p.$vm; via = 'vm'; } " +
-    "else if (typeof p[" + m + "] === 'function') { t = p; via = 'page'; } " + compBranch +
-    "if (!t) { return res('no-method ' + route); } " +
-    "var fin = function (x) { var n = ''; try { n = JSON.stringify(x).slice(0, 80); } catch (e) { n = String(x).slice(0, 80); } " +
+    "var bag = globalThis.__qaHandler = globalThis.__qaHandler || []; var args = " + args + "; var t = null; var via = ''; ";
+  /* 在 obj 上按 vm → instance → setupState → ctx 四格找 m，命中即置 t/via（via 前缀区分来源）。 */
+  const slot = (obj, prefix) =>
+    "if (!t && " + obj + " && " + obj + ".$vm && typeof " + obj + ".$vm[" + m + "] === 'function') { t = " + obj + ".$vm; via = '" + prefix + "vm'; } " +
+    "if (!t && " + obj + " && typeof " + obj + "[" + m + "] === 'function') { t = " + obj + "; via = '" + prefix + "instance'; } " +
+    "if (!t && " + obj + " && " + obj + ".$vm && " + obj + ".$vm.$ && " + obj + ".$vm.$.setupState && typeof " + obj + ".$vm.$.setupState[" + m + "] === 'function') { t = " + obj + ".$vm.$.setupState; via = '" + prefix + "setupState'; } " +
+    "if (!t && " + obj + " && " + obj + ".$vm && " + obj + ".$vm.$ && " + obj + ".$vm.$.ctx && typeof " + obj + ".$vm.$.ctx[" + m + "] === 'function') { t = " + obj + ".$vm.$.ctx; via = '" + prefix + "ctx'; } ";
+  let find;
+  if (chain.length) {
+    const chainLit = JSON.stringify(chain);
+    find = "var chain = " + chainLit + "; var node = p; " +
+      "for (var hi = 0; hi < chain.length; hi++) { var tag = chain[hi]; " +
+      "if (!node || typeof node.selectComponent !== 'function') { return res('chain-no-select ' + tag + ' @' + hi); } " +
+      "var nx = node.selectComponent(tag); " +
+      "if (!nx) { return res('chain-missing ' + tag + ' @' + hi); } " +
+      "node = nx; } " +
+      "var c = node; " + slot("c", "chain-") +
+      "if (!t) { return res('method-absent ' + route + ' @' + chain.join('>')); } ";
+  } else {
+    const compBranch = cid
+      ? "if (!t && typeof p.selectComponent === 'function') { var cc = p.selectComponent(" + JSON.stringify("#" + cid) + "); " + slot("cc", "component-") + " } "
+      : "";
+    // 缺省页实例形态：保留 vm/page 两格的既有 via 词（'vm'/'page'），componentId 走 'component-*'，
+    // 再把 setupState/ctx 两格作为补充把手挂上（不改历史已命中的 vm/page/component 短路次序）。
+    find = "if (p.$vm && typeof p.$vm[" + m + "] === 'function') { t = p.$vm; via = 'vm'; } " +
+      "else if (typeof p[" + m + "] === 'function') { t = p; via = 'page'; } " +
+      "if (!t && p.$vm && p.$vm.$ && p.$vm.$.setupState && typeof p.$vm.$.setupState[" + m + "] === 'function') { t = p.$vm.$.setupState; via = 'page-setupState'; } " +
+      "if (!t && p.$vm && p.$vm.$ && p.$vm.$.ctx && typeof p.$vm.$.ctx[" + m + "] === 'function') { t = p.$vm.$.ctx; via = 'page-ctx'; } " +
+      compBranch +
+      "if (!t) { return res('no-method ' + route); } ";
+  }
+  const epilogue = "var fin = function (x) { var n = ''; try { n = JSON.stringify(x).slice(0, 80); } catch (e) { n = String(x).slice(0, 80); } " +
     "bag.push({ method: " + m + ", route: route, via: via, ts: Date.now(), ret: n }); return res('handler-ok via=' + via); }; " +
     "var r0; try { r0 = t[" + m + "].apply(t, args); } catch (e) { return res('ERR ' + String((e && e.message) || e).slice(0, 120)); } " +
     "if (r0 && typeof r0.then === 'function') { return r0.then(fin).catch(function (e) { res('ERR ' + String((e && e.message) || e).slice(0, 120)); }); } " +
     "return fin(r0); } catch (e) { res('ERR ' + String((e && e.message) || e).slice(0, 120)); } })";
+  return prologue + find + epilogue;
 }
 /* 五态翻译（把 no-page/wrong-page/no-method 读成"打成功了"就是这条通道最坏的假绿）：
    直调没发生 = 判据点名的动作没发生 = 通道欠款，行记 NOT_SHOOTABLE，绝不记 EXECUTED。 */
@@ -484,6 +542,9 @@ export function handlerCallVerdict(raw) {
   if (/^handler-ok/.test(s)) return "ok" + (s.indexOf(" ") >= 0 ? "(" + s.slice(s.indexOf(" ") + 1) + ")" : "");
   if (/^no-page/.test(s)) return "no-page(取不到页实例 ⇒ 没打任何 handler)";
   if (/^wrong-page/.test(s)) return "wrong-page(" + s.slice(11).trim() + " ⇒ 不在判据点名的页上，没打任何 handler)";
+  if (/^chain-no-select/.test(s)) return "chain-parent-not-component(" + s.slice(16).trim() + " ⇒ 这一跳的父节点没有 selectComponent（链头不是页/组件实例，或挂载时机未到），链在此断，属通道欠款不是产品判决)";
+  if (/^chain-missing/.test(s)) return "chain-hop-missing(" + s.slice(13).trim() + " ⇒ selectComponent 在该跳返回 null（该自定义组件标签在此层用 usingComponents 注册过但此刻取不到实例），链在此断，属通道欠款不是产品判决)";
+  if (/^method-absent/.test(s)) return "method-absent-on-component(" + s.slice(14).trim() + " ⇒ 链已走到叶子组件，但方法不在叶子的 vm/instance/setupState/ctx 任一格上（多半是 <script setup> 闭包未以具名方法暴露），换点法/换载具，不是产品判决)";
   if (/^no-method/.test(s)) return "no-method(" + s.slice(10).trim() + " ⇒ 该 handler 在本载具不可直调（setup 未暴露），换点法或换载具)";
   if (/^ERR/.test(s)) return "error(" + s.slice(4).trim() + ")";
   if (!s) return "unknown(空读数 ⇒ 读作没打，不许读成打成功)";
