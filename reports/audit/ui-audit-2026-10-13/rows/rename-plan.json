@@ -1,0 +1,14 @@
+{
+  "note": "把本车道 2026-10-13 经 admit-ledger-row.mjs 立入的 9 行的新号改成 verify-ledger.mjs isRealId 认得的形状（/^MP-R\\d/）。起因：承载脚本的 ID 判据是 /^MP-[A-Z0-9-]+$/，比门禁的 isRealId 宽，MP-AUDITR3-* 被承载放行后却被门禁打成 MALFORMED_TOKEN=非缺陷 ID，等于下一轮按 ID 读者看不见这 9 行。前缀改 MP-R3AUDIT- 与既有 MP-R2VIS-/MP-R6REAL-/MP-R6EVID- 同族风格。",
+  "patches": [
+    { "id": "MP-AUDITR3-CTA-PENETRATION-001", "col": 1, "new": "MP-R3AUDIT-CTA-PENETRATION-001", "why": "ID 形状对齐 verify-ledger isRealId（MP-R 后必须紧跟数字），否则本行被门禁判成非缺陷 ID" },
+    { "id": "MP-AUDITR3-NEARBY-TAB-BOUNCE-001", "col": 1, "new": "MP-R3AUDIT-NEARBY-TAB-BOUNCE-001", "why": "同上" },
+    { "id": "MP-AUDITR3-PFI25-VOICE-ORCHESTRATION-001", "col": 1, "new": "MP-R3AUDIT-PFI25-VOICE-ORCHESTRATION-001", "why": "同上" },
+    { "id": "MP-AUDITR3-NETFAULT-REARM-WINDOW-001", "col": 1, "new": "MP-R3AUDIT-NETFAULT-REARM-WINDOW-001", "why": "同上" },
+    { "id": "MP-AUDITR3-VI25-VI34-PARKED-001", "col": 1, "new": "MP-R3AUDIT-VI25-VI34-PARKED-001", "why": "同上" },
+    { "id": "MP-AUDITR3-GATE-VOIDED-BUCKET-001", "col": 1, "new": "MP-R3AUDIT-GATE-VOIDED-BUCKET-001", "why": "同上" },
+    { "id": "MP-AUDITR3-MATCHING-DIRECT-OPEN-BOUNCE-001", "col": 1, "new": "MP-R3AUDIT-MATCHING-DIRECT-OPEN-BOUNCE-001", "why": "同上" },
+    { "id": "MP-AUDITR3-TAPWRITE-GUARD-PENDING-001", "col": 1, "new": "MP-R3AUDIT-TAPWRITE-GUARD-PENDING-001", "why": "同上" },
+    { "id": "MP-AUDITR3-DISCOVER-MATCHCARD-BLANK-001", "col": 1, "new": "MP-R3AUDIT-DISCOVER-MATCHCARD-BLANK-001", "why": "同上" }
+  ]
+}

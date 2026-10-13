@@ -1,0 +1,11 @@
+{
+  "note": "更正 MP-R3AUDIT-PFI25-VOICE-ORCHESTRATION-001 的证据格：原写法引了仓外路径 wechatide-skill/references/tool-index.md（本车道 find 全仓 0 命中，属审计原文里带过来的不可达引用），改锚到在盘工件；同时把 exec-results.json 的 recipe 键写成不含竖线的说法。",
+  "patches": [
+    {
+      "id": "MP-R3AUDIT-PFI25-VOICE-ORCHESTRATION-001",
+      "col": 8,
+      "new": "apps/client/src/stores/profile.ts:401-402（voiceStatusUrl/voiceStatusDuration 仅在 mock 分支赋值）与 :886-897（动作方法内赋值），real 分支 load() 段 grep 零命中（本车道 2026-10-13 实跑复核，与定谳一致）；用例页与配方键 reports/audit/ui-audit-2026-10-09/exec-fixlane-pfi25/exec-results.json:39-40（recipe=PAGES-PROFILE-INDEX 与 PFI25 的合写键，automationChannel=ws）；配方重排与离线全绿见 reports/audit/ui-audit-2026-10-09/fix-round2.json:26,38-41（verifiedIds 含 R2-PFI25-04）；「simulator_open_page 属 compiler 族⇒桥 open 重启 AppService 清 seed」这一编排定性原文在盘于 reports/audit/ui-audit-2026-10-09/tour-ledger.json:1605（该段另引 tool-index.md，那份文件不在本仓，本车道 find 全仓 0 命中 ⇒ 只引在盘的那半）；旧口径 reports/audit/ui-audit-2026-10-09/sort-round2.json:28,84（仍写 critical 产品缺陷候选成立）",
+      "why": "证据格必须指向盘上真实存在的工件；不可达引用按本车道纪律摘掉并在 statusEvidence 之外留一句说明"
+    }
+  ]
+}

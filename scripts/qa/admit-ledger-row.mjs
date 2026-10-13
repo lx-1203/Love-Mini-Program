@@ -23,7 +23,14 @@ const cells = ROW.split("|").slice(1, -1).map((s) => s.trim());
 if (!ROW.startsWith("|") || !ROW.endsWith("|")) errs.push("行文本必须以 | 开头并以 | 结尾（现在不是表格行）");
 if (cells.length !== 11) errs.push(`列数 ${cells.length} ≠ 台账口径要求的 11 列`);
 const id = cells[0] || "";
-if (!/^MP-[A-Z0-9-]+$/.test(id)) errs.push(`新号形状不对：${id || "(空)"}`);
+/* ID 形状必须与 verify-ledger.mjs 的 isRealId 同源，否则会出现更坏的事：
+   本工具"放行"的号，权威门转头判 MALFORMED_TOKEN —— 实测第一版就是这样，
+   车道用 MP-AUDITR3-* 立了 9 行，ADMIT_RESULT=OK 连打九次，
+   随后 verify-ledger 把 MALFORMED_TOKENS 从 5 顶到 14，白修一轮。
+   两个载具对"什么叫合法 ID"必须有一条尺子：这里对齐 ^MP-R\d（含 R\d+ 多轮前缀）。 */
+if (!/^MP-R\d[A-Z0-9-]*$/.test(id)) {
+  errs.push(`新号形状不对：${id || "(空)"}（权威门 verify-ledger 认 ^MP-R\\d…，本工具不许放行它将来会判畸形的号）`);
+}
 const status = cells[5] || "";
 if (!VOCAB.some((v) => status.startsWith(v))) errs.push(`status「${status.slice(0, 40)}」不在受控词表里（词表 ${VOCAB.length} 档）`);
 
@@ -36,7 +43,10 @@ if (lines.some((l) => l.startsWith("|") && l.split("|")[1]?.trim() === id)) errs
    插到"下一节表格"里会把行送进另一个口径。 */
 let end = hdr + 1;
 while (end < lines.length && (lines[end].startsWith("|") || lines[end].startsWith("|MP-"))) end++;
-const bodyRows = lines.slice(hdr + 1, end).filter((l) => l.includes("|"));
+/* 分隔行 |---|---| 也是以 | 开头且含 | ⇒ 旧版把它算进"主表行数"，
+   报出来的 171 里有一枚幻影行（emit-open-items 同一条错，两处已对齐修掉）。
+   这里的行数既用于回显也用于守恒断言，两边必须数同一批东西：真 MP 数据行。 */
+const bodyRows = lines.slice(hdr + 1, end).filter((l) => l.includes("|") && !(/^\|[\s|:-]*\|?$/.test(l) && /---/.test(l)));
 /* 检查必须先于写入。第一版把 errs 的判断放在写盘之后，实测后果是：
    一条 status 不在词表里的行**已经被插进台账**，而屏幕上打的是 ADMIT_RESULT=FAIL ——
    一个"报了拒绝却已经把动作做完"的工具，比一个直接红掉的工具危险得多（它会让人以为台账是干净的）。 */

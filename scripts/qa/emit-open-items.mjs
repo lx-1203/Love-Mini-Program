@@ -20,6 +20,11 @@ for (const l of text.split(/\r?\n/)) {
   if (/^\| 新号 \| 历史别名/.test(l)) { inTable = true; continue; }
   if (!inTable) continue;
   if (!l.startsWith("|")) break;
+  /* 分隔行 |---|---| 也会切成 11 个空格子 ⇒ 旧版把它当数据行数进主表，
+     于是"主表=171"其实是 170 真行 + 1 枚幻影行（id="---"）。
+     分母虚高这件事本身不改变未结案数（它的 status 不匹配 OPEN_RE），
+     但任何拿"主表行数"做守恒或做口径的地方都会差一 ⇒ 只数真 MP 数据行。 */
+  if (/^\|[\s|:-]*\|?$/.test(l) && /---/.test(l)) continue;
   const c = l.split("|").slice(1, -1).map((s) => s.trim());
   if (c.length === 11) rows.push({ id: c[0], page: c[2], cat: c[3], sev: c[4], status: c[5], evidence: c[7], statusEvidence: c[8], action: c[10] });
 }

@@ -59,7 +59,17 @@ for (const p of patches) {
 for (const ch of changes) console.log(`CELL id=${ch.id} line=${ch.line} col=${ch.col}\n  before=${JSON.stringify(ch.before)}\n  after =${JSON.stringify(ch.after)}\n  why   =${ch.why}`);
 console.log(`CELLPATCH_PLANNED=${changes.length} ledger=${rel(LEDGER)}`);
 if (!APPLY) { console.log("CELLPATCH_RESULT=DRY 加 --apply 才写盘"); process.exit(0); }
-copyFileSync(LEDGER, LEDGER + ".pre-cellpatch.bak");
+/* 备份名以前是固定的 LEDGER + ".pre-cellpatch.bak" ⇒ 每次 --apply 都覆盖上一份。
+   实测代价：本仓一次并发派发里，第二条车道的 apply 把另一条车道 2026-09-29 的备份冲掉了
+   （台账在 git 里可回滚，那份 .bak 被 .gitignore 挡着，冲掉就是永久没了）。
+   工具不能"顺手吃掉别人的证据"：现在只往不存在的名字写，绝不覆盖既有备份；
+   并且把已有备份数一并报出来，让跑的人知道自己第几发。 */
+const backupCandidates = [LEDGER + ".pre-cellpatch.bak"];
+for (let i = 1; i <= 50; i++) backupCandidates.push(LEDGER + `.pre-cellpatch.${i}.bak`);
+const existingBackups = backupCandidates.filter((p) => existsSync(p));
+const BACKUP = backupCandidates.find((p) => !existsSync(p));
+if (!BACKUP) { console.log("CELLPATCH_RESULT=FAIL reason=备份位已满 50 份，先归档旧备份再写（本工具不覆盖既有备份）"); process.exit(2); }
+copyFileSync(LEDGER, BACKUP);
 writeFileSync(LEDGER, lines.join("\n"));
-console.log(`CELLPATCH_WRITTEN=${rel(LEDGER)} backup=${rel(LEDGER)}.pre-cellpatch.bak`);
+console.log(`CELLPATCH_WRITTEN=${rel(LEDGER)} backup=${rel(BACKUP)} 本次前已有备份=${existingBackups.length} 份`);
 console.log("CELLPATCH_RESULT=OK");
