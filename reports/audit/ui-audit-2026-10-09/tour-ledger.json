@@ -24,11 +24,11 @@
   },
   {
    "id": "REAL-PFI25-05/F07",
-   "applied": "PFI25 带 probe+shot 证据重跑（fixlane），产品缺陷成立与否按新证据回写"
+   "applied": "PFI25 带 probe+shot 证据重跑（fixlane），产品缺陷成立与否按新证据回写。【回写落定 2026-10-13·ledger 车道】新证据结论＝产品缺陷候选撤销（红已撤）：源码定谳 real 分支 load() 不赋 voiceStatusUrl/voiceStatusDuration（赋值仅 mock 分支与动作方法），「渲染链丢弃／fetchProfile 覆盖」不成立、产品侧无可修；真丢弃点＝测试编排顺序（simulator_open_page 属 compiler 族⇒桥 open 重编译重启 AppService⇒原序 seed→open 的 seed 被清），配方已重排（seed 后置＋read(profile-voice-state) 同刻对照＋死选择器 .profile-complete-card 摘除）。状态＝红已撤、绿未证，PFI25 仍无有效判决行，待实带重跑重排后配方定谳——不得读作已修复或判过。证据指针：fix-round2.json fix.evidence 定谳一/定谳二/死选择器实证三段；sort-round3.json R3-PFI25-03 与 R3-07；读数现场见本台账 fixlane「REAL-PFI25-05/F07」行改判记"
   },
   {
    "id": "F01/F02(OT05/OT06/OT09)",
-   "applied": "源码级实锤：other.vue 与 real 编译产物 other.wxml 均无 relationship-cta*（配方选择器指向当前代码不存在的组件）⇒ OT05/06/09 配方需判据台重写，非执行可解；维持 UNCOVERED"
+   "applied": "【原判定·留档】源码级实锤：other.vue 与 real 编译产物 other.wxml 均无 relationship-cta*（配方选择器指向当前代码不存在的组件）⇒ OT05/06/09 配方需判据台重写，非执行可解；维持 UNCOVERED。【改判 2026-10-13·ledger 车道】上述「结构性错配实锤」作废——读数本身复核成立（本车道实跑 grep：other.vue 与 mp-weixin-real 产物 other.wxml 对 relationship-cta 命中均为 0），错在推论：RelationshipCTA 组件存在且渲染（apps/client/src/components/profile/public/RelationshipCTA.vue 在盘、PublicProfile.vue:11 import 与 :80 使用、real 产物 components/profile/public/RelationshipCTA.{js,wxml,wxss} 在盘、PublicProfile.json 注册、PublicProfile.wxml 发射带 wx:if 的 relationship-c-t-a 节点并绑 like/message/whisper/follow），CTA 挂在 public-profile 分支而非 other 页，拿 other.* 无命中证「组件不存在」是查错了文件；真根因＝三层通道/选择器问题（①>>> 组件段与编译标签形状不匹配 ②本 IDE automator 0.12.1 元素查询不穿透自定义组件 ③带 query 的桥 open 令 currentPage 回报 webview 代理态、$ 全超时），三层原文见本台账 corrections「R2-OT-06(诊断增补)」行，判定出处 sort-round3.json R3-02 与 R3-OT-01、fix-round2.json fix.evidence「台账修正备注」段。维持 UNCOVERED（撤实锤≠补腿落地，四腿仍 NOT_SHOOTABLE）"
   },
   {
    "id": "R2-VI25-08",
@@ -1601,8 +1601,8 @@
   {
    "id": "REAL-PFI25-05/F07",
    "run": "exec-fixlane-pfi25/exec-results.json",
-   "result": "PAGES-PROFILE-INDEX|PFI25 FAILED（第 3 次复现，b1/b1b/fixlane 确定性）；新增证据：pre-assert-voice-state 帧 22726B（A 用户页正常渲染、资料完整度 30%、无语音预览块）+ real 编译产物 pages/profile/index.wxml 含 voice-preview__delete 类名（模板在、wx:if 运行时为假）+ seed-voice fixture ok；倾向归因=store-patch 注入的语音态被渲染链路丢弃（fetchProfile 覆盖嫌疑），尚差渲染时 store 态探针定谳",
-   "ledgerEffect": "产品缺陷候选维持 critical 档且证据链升级（route+帧+类名+3 复现）；console 原文仍缺（r-exec-ws 不采 console，见 CON-EV-01 方法）"
+   "result": "PAGES-PROFILE-INDEX|PFI25 FAILED（第 3 次复现，b1/b1b/fixlane 确定性）；新增证据：pre-assert-voice-state 帧 22726B（A 用户页正常渲染、资料完整度 30%、无语音预览块）+ real 编译产物 pages/profile/index.wxml 含 voice-preview__delete 类名（模板在、wx:if 运行时为假）+ seed-voice fixture ok；倾向归因=store-patch 注入的语音态被渲染链路丢弃（fetchProfile 覆盖嫌疑），尚差渲染时 store 态探针定谳——【改判 2026-10-13·ledger 车道】上述「倾向归因」为当时原判词、原文留档不删，已被后续源码定谳证伪（见本行 ledgerEffect 改判记与 corrections「REAL-PFI25-05/F07」行），三次 FAILED 定谳为测试编排伪红",
+   "ledgerEffect": "【原口径·留档】产品缺陷候选维持 critical 档且证据链升级（route+帧+类名+3 复现）；console 原文仍缺（r-exec-ws 不采 console，见 CON-EV-01 方法）。【撤红改判 2026-10-13·ledger 车道】critical 产品缺陷候选撤销：①源码级证伪「渲染链丢弃」——apps/client/src/stores/profile.ts real 分支 load() 不赋 voiceStatusUrl/voiceStatusDuration（赋值仅 mock 分支与动作方法），fetchProfile 仅 await this.load()，页面 clearVoiceStatus 仅用户点确认触发（fix-round2.json fix.evidence 定谳一段）；②真丢弃点＝编排顺序——simulator_open_page 属 compiler 族（wechatide-skill/references/tool-index.md 载明触发模拟器编译），桥 open 重编译重启 AppService 清空 pinia，配方原序 seed(step#1)→open(step#2) 的 seed 必灭（fix-round2.json 定谳二段，与本台账 CON-EV-01「桥开页重启 AppService」同原语实测吻合）；③修复已落盘——PFI25 配方重排（seed 后置）＋read(profile-voice-state) 渲染-存储同刻对照＋死选择器 .profile-complete-card 摘除，离线校验全绿。【现状】红已撤、绿未证：实带重跑未做（fix 车道无设备会话），PFI25 无有效判决行，待实带重跑定谳；本行不得读作已修复/已判过，也不计产品缺陷。证据指针：fix-round2.json fix.evidence 与 skipped 两条、sort-round3.json R3-PFI25-03/R3-07"
   },
   {
    "id": "CON-EV-01",
@@ -1620,8 +1620,8 @@
   {
    "id": "F01/F02/REAL-OT-06(OT05/06/09)",
    "run": "源码+编译产物核对",
-   "result": "apps/client/src/subpackages/profile-extra/profile/other.vue 与 real 产物 other.wxml（2424B 全文核对）均无 relationship-cta*——配方选择器指向当前代码不存在的组件，结构性错配实锤；OT05 另有 armModal 抛 showModal 语法错（C1 驱动缺陷）",
-   "ledgerEffect": "OT05/06/09 维持 UNCOVERED；补腿前置=判据台按现页面结构重写配方（非执行可解），已立案"
+   "result": "【原记·留档】apps/client/src/subpackages/profile-extra/profile/other.vue 与 real 产物 other.wxml（2424B 全文核对）均无 relationship-cta*——配方选择器指向当前代码不存在的组件，结构性错配实锤；OT05 另有 armModal 抛 showModal 语法错（C1 驱动缺陷）。【改判 2026-10-13·ledger 车道】「结构性错配实锤」作废，与 corrections「F01/F02(OT05/OT06/OT09)」行同源同判：本次核对只覆盖 other.* 一层（该层读数复核成立，本车道实跑 grep 命中 0），但 CTA 不在被核对的文件里——RelationshipCTA 存在且渲染（src components/profile/public/RelationshipCTA.vue＋PublicProfile.vue:11/:80；real 产物 components/profile/public/RelationshipCTA.{js,wxml,wxss}＋PublicProfile.json 注册＋PublicProfile.wxml 发射带 wx:if 的 relationship-c-t-a 节点），链 profile-shell→public-profile→relationship-cta，另 exec-realcov-b4 OT05 帧四钮可见（fix-round2.json fix.evidence 台账修正备注段所载）；错配在组件边界非组件缺失。探不到＝三层通道/选择器问题（>>> 组件段与编译标签形状、automator 不穿透自定义组件、带 query 桥 open 的 webview 代理态），三层原文见 corrections「R2-OT-06(诊断增补)」行，判定出处 sort-round3.json R3-02/R3-OT-01。armModal showModal 语法错一项不属本次改判范围（另一主体，仍在册）",
+   "ledgerEffect": "OT05/06/09 维持 UNCOVERED；补腿前置=判据台按现页面结构重写配方（非执行可解），已立案——【改判 2026-10-13·ledger 车道】上句「判据台按现页面结构重写配方（非执行可解）」前置作废：该核对只证 other.* 无 CTA，不证组件不存在，故「非执行可解」不成立（重估出处＝fix-round2.json fix.evidence 台账修正备注「该行『非执行可解』应按 round-1 证据重估」）；撤「结构性错配实锤」不改覆盖账，四腿仍 NOT_SHOOTABLE ⇒ OT05/06/09 维持 UNCOVERED 不变；补腿前置改记＝执行器落地「基底页＋应用内 wx.navigateTo 开页形态＋AppService 侧 handler 直调替代 DOM tap」后按已实证健康路径重跑 OT05/06/09/OC09 四腿（健康路径读数见本台账 corrections「R2-OT-06(诊断增补)」行 evidence/open 两段，判定出处＝sort-round3.json R3-OT-01 与 R3-02）；已立案待工具车道"
   }
  ],
  "fixlaneGateReadout": {
