@@ -471,7 +471,24 @@ async function runViaGatekeeper(purpose: string, command: string, timeoutMs: num
 }
 /** 只读量一次覆盖门，摊它自己的机器行（D2/D3：派活清单与判绿同源于门自己） */
 async function measureCoverage(dir: string, label: string): Promise<GateOut> {
-  return await runGate({ name: `真实档覆盖[${label}] verify-real-coverage --dir ${dir}`, args: ["scripts/qa/verify-real-coverage.mjs", "--ops", WORKFLOW.opsDir, "--dir", dir, "--ledger", WORKFLOW.harvestFrom + "/tour-ledger.json"], timeoutMs: 180000 });
+  const ledgerArg = WORKFLOW.harvestFrom + "/tour-ledger.json";
+  const g = await runGate({ name: `真实档覆盖[${label}] verify-real-coverage --dir ${dir}`, args: ["scripts/qa/verify-real-coverage.mjs", "--ops", WORKFLOW.opsDir, "--dir", dir, "--ledger", ledgerArg], timeoutMs: 180000 });
+  /**
+   * 回执核对：本仓的门普遍用通用 arg() 解析、没有 KNOWN_FLAGS 白名单，
+   * 实测把一个旗标名打错（--ledgir）时门**照跑不误、静默回落到默认值**，
+   * 屏幕上什么都不变 ⇒ "我以为我在判 A 台账，其实在判默认台账"这种错毫无征兆。
+   * 所以不信旗标，只信门自己回显的路径：它印的 结果目录 / LEDGER_SOURCE 必须就是我传进去的那两个。
+   */
+  const echoedDir = (g.metrics["REALCOV_CASES"] || "").match(/结果目录=(.*)$/);
+  const echoedLedger = g.metrics["REALCOV_LEDGER_SOURCE"] || "";
+  const dirTail = dir.replace(/\\/g, "/").split("/").filter(Boolean).slice(-1)[0] || "";
+  const dirOk = !echoedDir || echoedDir[1].replace(/\\/g, "/").indexOf(dirTail) >= 0;
+  const ledgerTail = ledgerArg.replace(/\\/g, "/").split("/").filter(Boolean).slice(-2).join("/");
+  const ledgerOk = echoedLedger === "" || echoedLedger.indexOf(ledgerTail) >= 0;
+  if (!dirOk) blockers.push(`覆盖门[${label}]回显的结果目录不含 "${dirTail}" ⇒ --dir 没被吃进去，本轮覆盖判的是别的目录，读数作废`);
+  if (!ledgerOk) blockers.push(`覆盖门[${label}]回显的台账不含 "${ledgerTail}" ⇒ --ledger 没被吃进去（多半是旗标名打错，本仓的门对未知旗标静默回落默认值），待判决桶判的是别的台账`);
+  if (dirOk && ledgerOk && echoedLedger === "") blockers.push(`覆盖门[${label}]没有回显台账出处 ⇒ 无法证明它读的是哪本台账，待判决桶不可信`);
+  return g;
 }
 function covNum(g: GateOut): { covered: number; uncovered: number; required: number; list: number } {
   const unc = (g.metrics["REALCOV_UNCOVERED"] || "").match(/^(\d+)／(\d+)/);
@@ -933,6 +950,16 @@ const gateOuts: GateOut[] = await Promise.all(GATE_SUITE.map(async (g) => {
 }));
 const realcovGate = gateOuts.find((g) => g.name.indexOf("verify-real-coverage") >= 0) || null;
 const realcovNum = realcovGate ? covNum(realcovGate) : { covered: NaN, uncovered: NaN, required: NaN, list: 0 };
+/* 同一道门在 DSL 里有第二个调用点（GATE_SUITE 直调，不走 measureCoverage），
+   回执核对必须在这一发也做一遍，否则终局读数可以来自一个旗标没生效的运行。 */
+if (realcovGate) {
+  const eDir = (realcovGate.metrics["REALCOV_CASES"] || "").match(/结果目录=(.*)$/);
+  const eLedger = realcovGate.metrics["REALCOV_LEDGER_SOURCE"] || "";
+  const wantDir = WORKFLOW.execDir.split("/").slice(-1)[0];
+  const wantLedger = WORKFLOW.harvestFrom + "/tour-ledger.json";
+  if (!eDir || eDir[1].replace(/\\/g, "/").indexOf(wantDir) < 0) blockers.push(`终局覆盖门回显结果目录不含 "${wantDir}" ⇒ --dir 未生效，终局覆盖读数作废`);
+  if (eLedger.indexOf(wantLedger.split("/").slice(-2).join("/")) < 0) blockers.push(`终局覆盖门回显台账不含 "${wantLedger.split("/").slice(-2).join("/")}" ⇒ --ledger 未生效，待判决桶判的不是本轮点名的台账`);
+}
 /** 只读量一次上一轮目录，作为对照；它不参与判绿，只为把"腿写在哪儿门就只看得见哪儿"这件事留痕 */
 const covHistory = await measureCoverage(WORKFLOW.harvestFrom, "上一轮只读对照");
 const covHistoryNum = covNum(covHistory);
