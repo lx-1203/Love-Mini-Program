@@ -724,7 +724,8 @@ for (let round = 1; round <= WORKFLOW.maxRounds; round++) {
           `【护栏】支付/VIP 拉起只验封存态（404/403「支付未开通」=预期通过）；删除/解绑/同意类一律记 SKIP(guard)；真实档写操作除覆盖门点名页外一律不做。`,
           `覆盖门点名欠账（本轮要按门自己的期待格式补 login/login+guest 真实腿，缺哪根轴补哪条腿；绝不允许把 mock 行改标 real 来「补数」）：${JSON.stringify(realcovItems).slice(0, 6000)}`,
           `【增量落盘是硬要求】开工先写 ${WORKFLOW.closureDir}/agent-tour-round${round}-b${batchNo}.md 骨架，每完成一页立刻补那一行；本批结束把 rows 返回（route/status(NAV_OK|NAV_FAIL|SKIP(guard)|NOT_SHOOTABLE)/screenshot/elementCount/censusWindow(full-tree 或 首-view，按实际读的窗口如实写，不许为了好看写 full-tree)/keyElements/consoleErrors/actions/band/notes），band 写 mode@sha8。dispatched 要填本批真实 dispatch 出去的动作数——0 就是 0，别为了好看编数。`,
-          `【正向对照】开工先选一个磁盘上确认存在的 selector 证明通道能选中并能动作；选不中就整批记 UNVERIFIED-INSTRUMENT，不得记产品失败。`,
+          `【正向对照先于任何"选不到"】开工第一件事：挑一个磁盘上确认存在的 selector，证明通道能选中、能动作、且状态按源码语义翻一个方向而路由不变（例：PRESENT(2)→ABSENT）。没过这条对照，后面所有"选不到"一律记 UNVERIFIED-INSTRUMENT，不得记产品缺陷。`,
+          `【首读不可信是实测事实】刚拿到 WS_UP=OK 之后的**第一次** page.$ 会把已经渲染的节点答成 null（同一秒内置探针八条全 0，复查询则 $=HIT、count=1）。所以任何选择器至少要查两次才允许下"不存在"的结论；"未渲染"与"没读到"必须靠复查区分，不得用一次 MISS 造一条缺陷。`,
         ].join("\n"),
       ).then((v) => v, (e) => askFail<TourOut>("UI巡检执行员", e, { round, rows: [], evidence: [], dispatched: -1, notes: "巡检批 ask 失败：" + String(e).slice(0, 100) }));
       let rows = Array.isArray(tour.rows) ? tour.rows : [];
