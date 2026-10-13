@@ -1,0 +1,82 @@
+{
+ "version": "3.7",
+ "drivenBy": "cli-session-subagents",
+ "note": "本轮由 CLI 会话按 v3.7 定义的 phase/lane 顺序手工派发子代理执行（DWF 编排运行时在本会话够不到）。件名与 schema 一律照 v3.7 的 dsl-/agent- namespace 落盘，使将来真跑 DSL 时能直接收割本轮产物、不必重跑设备腿。",
+ "headAtStart": "f9fd17b1",
+ "headNow": "2731f520",
+ "closureDir": "reports/audit/ui-audit-2026-10-13",
+ "harvestFrom": "reports/audit/ui-audit-2026-10-09",
+ "opsDir": "reports/audit/round-6/ops",
+ "opsDirAlt": "reports/audit/round-7/ops",
+ "execDir": "reports/audit/round-7",
+ "matrixDir": "reports/audit/round-6",
+ "inputs": {
+  "opsStamp": "4afc5c3d674f（来源=verify-ops-corpus-stamp STAMP_OPS=round-6/ops files=24 cases=1107 戳记一致，STAMP_RESULT=PASS）",
+  "opsDirRationale": "三处一致指向 round-6/ops：戳记门的 DEF_OPS 与在盘戳、verify-real-coverage 的 --ops 默认值、执行器 r-exec-cli 的默认语料目录。round-7/ops 是 9-28 的另一份拷贝，automatable===false 实测 101 vs 21，选错会把 80 条免检换成欠账。",
+  "bandStamp": {
+   "mock": "mp-weixin-mock@f1c7b96b env.js mtime 2026-10-13 19:40:29",
+   "real": "real@f0677920 env.js mtime 2026-10-13 19:39:18",
+   "showcase": "mp-weixin-showcase@ed1cd82c env.js mtime 2026-10-13 19:38:29",
+   "freshnessGate": "FRESH_RESULT=PASS bands=3 markers=4（改前 problems=13）",
+   "caveat": "带宽 sha8 取自单文件 config/env.js，只识别 config 不识别构建；本轮三条带的 mtime 均晚于其内容对应的提交时刻，故可 attests=current。"
+  }
+ },
+ "rounds": {
+  "1": {
+   "tour": "done-harvest",
+   "audit": "done-harvest",
+   "sort": "done-harvest",
+   "fix": "done-harvest",
+   "stamp": "f9fd17b1 期产物，收割自 ui-audit-2026-10-09/tour-round1.json（73 行，数组形态=DSL 写出形态）",
+   "admission": "本轮不重复入册：v3.6 round-1/2 的发现已在其 fix/sort 件内"
+  },
+  "2": {
+   "tour": "done-harvest",
+   "audit": "done-harvest",
+   "sort": "done-harvest",
+   "fix": "done-harvest",
+   "stamp": "收割自 ui-audit-2026-10-09/tour-round2.json + tour-round2-regression.json（代理形态 {round,rows}，v3.7 已用 dsl-/agent- 前缀消除同名覆盖）",
+   "admission": "同上"
+  },
+  "3": {
+   "tour": "done-harvest",
+   "audit": "done-harvest",
+   "sort": "done-harvest（executable=14 / needsUser=6，实点于 sort-round3.json）",
+   "fix": "in-progress",
+   "stamp": "巡检/审查/分拣三件在盘即收割；修复及之后 v3.6 一件没跑，本轮补这一段",
+   "fixLanes": {
+    "R3-01 门禁 voided/pending 分桶": "done — verify-real-coverage.mjs 新增 REALCOV_VOIDED，提交 bdef64ef，自测 36→48 例含 9 条必须能红的负样本，真语料 COVERED 203→199/VOIDED=4/守恒四项 OK",
+    "R3-02/R3-07 台账自相矛盾": "done — tour-ledger.json 四行六字段纯追加改判（原文逐字留档），提交 b679b4fb；守恒 corrections 11/routes 73/fixlane 5 前后不变",
+    "R3-NEARBY-02/R3-04 附近页弹回根因": "source-done — services/config.ts 给 loadCampuses 加 skipAuthRefresh（提交 896bfd0b），typecheck+1366 单测绿，且已确认进产物 mp-weixin-real/services/config.js；行为复验在跑",
+    "R3-OT-01/R3-02 执行器 navigateTo+handler 通道": "in-progress（车道在改 r-exec-*/exec-capabilities.mjs）",
+    "R3-NET-04 netFault functionDeclaration 集成": "in-progress（同一车道）",
+    "R3-PFI25-03/R3-07 配方重排实带重跑": "pending — 需设备通道，与附近页复测同批派",
+    "R3-05 matching 归因": "partially-answered — 产品车道源码核到两条假说：goBack 属设计只在 real 带+有 token+单子栈成立，配额耗尽无代码路径（DAILY_LIMIT_TOTAL 只管 deck 供给）；带内 stack 采样待跑",
+    "R3-06 heart-signals/circle-home 两笔待核": "pending（mock 带状态迁移核对）",
+    "R3-10/R3-11/F06/REAL-VI34-04-Q/GUEST-VERB-Q/R3-03/V37-CAMPUS-PUBLIC": "RULING_BLOCKED — 进 decisions-v37.md，不空跑设备租约"
+   }
+  }
+ },
+ "gates": "in-progress",
+ "gateReadingsSoFar": {
+  "verify-real-coverage": "exit=1 REALCOV_COVERED=199 UNCOVERED=5／236 VOIDED=4 CONSERVATION=OK(28+199+5+4=236) UNCOVERED_LEDGER=OK VOIDED_LEDGER=OK（欠账点名 OT05/OT06/OT09/VRN07/OC09；待判点名 PFI25/VI25/VI34/VB03）",
+  "verify-band-freshness": "FRESH_RESULT=PASS bands=3 markers=4",
+  "verify-backend-fresh": "BACKEND_FRESH_RESULT=PASS（运行实例 pid 23608 起于 2026-10-13T19:15:03，java 最新 2026-10-11T05:20:26）",
+  "verify-source-shape": "SRC_SHAPE_RESULT=OK total=99 成立=99 不成立=0 NEG 注入点=42 已变红=42 咬不动=0（--dry，未覆写判决件）",
+  "verify-ops-corpus-stamp": "STAMP_RESULT=PASS 语料与戳一致 cases=1107",
+  "emit-open-items": "OPEN_ITEMS_RESULT=OK 主表=171 未结案=7 分桶=reverify4/unverified1/backend1/frame1 未归类=0",
+  "dryrun-workflow(v3.7)": "DRYRUN_RESULT=PASS 3/3 画像跑到总报告，晚期分支标记全命中",
+  "verify-degraded-conclusion": "DEGRADE_RESULT=PASS（v3.7=HONEST，v3.6=CONTROL_OK 按预期暴露假绿）",
+  "test-cap-recipes": "CAPRECIPES_TEST=PASS checks=71",
+  "test-exec-capabilities": "CAPS_TEST=PASS checks=65",
+  "test-exec-verb-dispatch": "VERB_TEST=FAIL failures=1（唯一红：闸只在 STRICT_VERBS 下生效那条的字面正则未随新增 NAVTO_OPEN/HANDLER_CALL 更新；行为不变式待行为化改写，非放宽）"
+ },
+ "admission": "pending",
+ "report": "pending",
+ "blockers": [
+  "DevTools 通道尚未在本轮证明（WS_UP=OK 未取到之前，任何页面级保证不成立）",
+  "R3-03/F06/REAL-VI34-04-Q/GUEST-VERB-Q/R3-10/R3-11/V37-CAMPUS-PUBLIC 七项需用户拍板，其所阻塞的腿本轮不派发",
+  "运行中的 8080 仍是 GlobalExceptionHandler 修复之前的类（该修复需下一次重启才生效，已记入待重启清单，不偷偷重启）",
+  "carrier 车道触顶一次（150 轮），产物完好但留一条真红；验收车道在跑"
+ ]
+}
