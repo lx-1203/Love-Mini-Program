@@ -147,10 +147,10 @@ const CAPTURE_CHANNELS: Channel[] = [
   },
   {
     key: "safe-action",
-    what: "安全动作抽测：每页 1–2 个主按钮 tap 后回退；支付/VIP 只验封存态；破坏性动作 SKIP(guard)",
-    artifact: "closureDir/tour-round<轮>.md 的 actions 列",
-    deliverable: "yes",
-    note: "tap 通道已实证可用；rapidTap/swipe 需 --rapid/--scroll 旗标，nativeModal/networkFault 注入需 WS 道能力（exec-capabilities C1/C3）",
+    what: "安全动作抽测：每页 1–2 个**自身带事件绑定**的主控件 tap 后回退；支付/VIP 只验封存态；破坏性动作 SKIP(guard)",
+    artifact: "closureDir/tour-round<轮>.md 的 actions 列 + 每次 tap 命中的具体节点与其绑定来源",
+    deliverable: "partial",
+    note: "tap 通道本身可用，但抽测目标必须可归因，否则这一路测的是空气。两条本轮源码实证的失效形状：① 泛化选择器命中无事件的容器——[class*=card] 在 pages/nearby/index.vue:543 命中的是 .campus-cards（纯容器，@tap 挂在子节点 .campus-entry :547-556 上），subpackages/campus/campus/hub.vue:206 的 .campus-guide card-base 自身同样无绑定 ⇒ applied=true、observedRoute 不变、console clean 三条读数齐全却什么都没发生，历史轮的「安全动作抽测无失败」在这类页上没有含义。② 弹层态自取消——subpackages/village/village/publish.vue:892 的弹层根是 v-if=targetOpen 且 @tap=targetOpen=false（点遮罩即关），而 :751 的 .publish-to__card 才是开弹层的钮 ⇒ 按通用 [class*=sheet] 抽测会先命中弹层再把它关掉，两帧逐字节相同是构造使然，不是产品状态无差异。规则：动作目标要回显命中节点与绑定来源（@tap / role / handler 名）；容器无绑定就记 不可达(无绑定容器)，不得计为一次动作样本；弹层类状态用页专用选择器，且以节点挂载断言判迁移，不得用帧等值判。rapidTap/swipe 仍需 --rapid/--scroll 旗标，nativeModal/networkFault 注入需 WS 道能力（exec-capabilities C1/C3）",
   },
   {
     key: "storage-sniff",
@@ -689,7 +689,8 @@ for (let round = 1; round <= WORKFLOW.maxRounds; round++) {
       const tour = await ui.ask<TourOut>(
         [
           `第 ${round} 轮巡检，批次 ${batchNo}/${Math.ceil(pendingRoutes.length / batchSize)}（${isReline ? "回归批" : "全量批"}）：${JSON.stringify(batch)}`,
-          `逐页执行，采集面严格按这张通道表（deliverable=否 的通道直接记 NOT_SHOOTABLE 并把 note 原文抄进 notes，禁止假装采到）：${JSON.stringify(CAPTURE_CHANNELS)}`,
+          `逐页执行，采集面严格按这张通道表（deliverable=no 的通道直接记 NOT_SHOOTABLE 并把 note 原文抄进 notes，禁止假装采到；deliverable=partial 的只能按 note 写明的口径用，不得升格成更强的主张）：${JSON.stringify(CAPTURE_CHANNELS)}`,
+          `【动作归因是硬要求】每次 tap 要回显命中的具体节点选择器与它的绑定来源（@tap / role=button / handler 名）。命中到自身无事件绑定的容器时，记 不可达(无绑定容器) 且**不得**算作一次动作样本——历史上 [class*=card] 就打中过无绑定的 .campus-cards / .campus-guide，applied=true、路由不变、console clean 三样齐全却什么都没发生，那种"无失败"是空读数。弹层类状态要用页专用选择器，并以节点挂载断言判状态迁移，不得用两帧字节等值判"状态无差异"（弹层根常是 v-if 且点遮罩即关，抽测序列会自取消）。`,
           `【护栏】支付/VIP 拉起只验封存态（404/403「支付未开通」=预期通过）；删除/解绑/同意类一律记 SKIP(guard)；真实档写操作除覆盖门点名页外一律不做。`,
           `覆盖门点名欠账（本轮要按门自己的期待格式补 login/login+guest 真实腿，缺哪根轴补哪条腿；绝不允许把 mock 行改标 real 来「补数」）：${JSON.stringify(realcovItems).slice(0, 6000)}`,
           `【增量落盘是硬要求】开工先写 ${WORKFLOW.closureDir}/agent-tour-round${round}-b${batchNo}.md 骨架，每完成一页立刻补那一行；本批结束把 rows 返回（route/status(NAV_OK|NAV_FAIL|SKIP(guard)|NOT_SHOOTABLE)/screenshot/elementCount/keyElements/consoleErrors/actions/band/notes），band 写 mode@sha8。dispatched 要填本批真实 dispatch 出去的动作数——0 就是 0，别为了好看编数。`,
@@ -1108,7 +1109,8 @@ const md = [
   ...(blockers.length > 0 ? blockers.map((b) => `- ${b}`) : ["- （无）"]),
   "",
   "## 口径说明",
-  `- 「保证所有问题没有」以机器可判据收口：全部 ${routes.length} 页 NAV_OK + 重放期 console 清白 + 可交互元素清点齐 + 安全动作抽测无失败 + 覆盖门 UNCOVERED 清零且点名闭合。`,
+  `- 「保证所有问题没有」以机器可判据收口：全部 ${routes.length} 页 NAV_OK + 重放期 console 清白 + 可交互元素清点齐 + 安全动作抽测**且每次 tap 可归因到带绑定的节点**无失败 + 覆盖门 UNCOVERED 清零且点名闭合。`,
+  "- 「抽测无失败」只在动作可归因时才计数：命中无绑定容器的样本记 不可达、不算样本；弹层类状态以节点挂载断言判，不以两帧字节等值判（等值可能是自取消序列的构造结果）。",
   "- 页面真实加载期 console 原文、storage 明文嗅探属采集通道表已声明的能力边界（partial / no），不在判据内；不得以「未发现问题」表述替代「未取证」。",
   "- 截图帧未入库：.gitattributes 的 LFS fail-loud 闸 + .gitignore 的 *.png 双重挡住，帧留盘可复核，入库方式归既有拍板。",
   "- 搬运自上一轮的真档腿 attests 的是 rebuild 之前的 bundle（带宽戳只识别 config 不识别构建），本轮另有点样重跑，两者在 dsl-harvest-provenance.json 分列。",

@@ -1,0 +1,9 @@
+users	280
+posts	263
+comments	1183
+media_asset	1831
+post_likes	121
+vip_order	0
+vip_bills	0
+user_agreement_consent	280
+flyway_applied	203
