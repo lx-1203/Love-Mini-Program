@@ -143,7 +143,7 @@ const CAPTURE_CHANNELS: Channel[] = [
     what: "可交互元素清点（button/input/textarea/可点击 view 的数量与关键类名）",
     artifact: "closureDir/elements/<路由>.json",
     deliverable: "yes",
-    note: "自定义组件默认不穿透（automator 层实测）。编译后标签形状两说未定谳：v3.6 台账 R2-OT-06 断言是路径形 components/profile/public/RelationshipCTA，而 2026-10-13 实读 PublicProfile.json 注册的是 kebab 名 relationship-c-t-a、PublicProfile.wxml 亦输出 kebab、全树无路径形标签 ⇒ 选择器一律从当前编译产物实读，不得照任一说法写死；组件内节点优先走执行器的 handler 直调通道，且不得因选择器命中失败就判「元素不存在」",
+    note: "可交互元素清点本身可用，但**清点窗口必须声明**：上一轮实测 73 页里 45 页的计数来自 outerWxml 首-view（只读第一个 view 子树），3 页 NAV_OK 却报 0 元素，还有 chat-session=1 / register-success=2 / topic-detail=2 这类不可能的低值 ⇒ 兄弟节点里的主体内容从未进过分子。规则：censusWindow 要如实写 full-tree 或 首-view，写 首-view 的行不得计入「清点齐」。自定义组件默认不穿透（automator 层实测）。编译后标签形状两说未定谳：v3.6 台账 R2-OT-06 断言路径形 components/profile/public/RelationshipCTA，而 2026-10-13 实读 PublicProfile.json 注册的是 kebab 名 relationship-c-t-a、PublicProfile.wxml 亦输出 kebab、全树无路径形标签 ⇒ 选择器一律从当前编译产物实读，不得照任一说法写死；组件内节点优先走执行器的 handler 直调通道，且不得因选择器命中失败就判「元素不存在」",
   },
   {
     key: "safe-action",
@@ -248,6 +248,8 @@ interface TourRow {
   status: string;
   screenshot: string;
   elementCount: number;
+  /** 清点窗口：full-tree=整页；其余取值一律按截断窗口处理，不得计入"清点齐" */
+  censusWindow: string;
   keyElements: string;
   consoleErrors: string;
   actions: string;
@@ -469,6 +471,24 @@ async function runViaGatekeeper(purpose: string, command: string, timeoutMs: num
   ).then((v) => v, (e) => askFail<CheckOut>("终验守门员", e, { ok: false, err: "守门员调用失败: " + String(e), command }));
   return { ok: r.ok === true, err: typeof r.err === "string" ? r.err : "", command: typeof r.command === "string" ? r.command : command };
 }
+/**
+ * 清点窗口判据（本轮实测新增的仪器面缺陷）：
+ * 上一轮 73 页里有 45 页 NAV_OK 的元素清点来自 `outerWxml 首-view`（只读第一个 view 子树），
+ * 5 页 elementCount=0（其中 3 页仍判 NAV_OK），低到不可能的计数成片出现
+ * （subpackages/chat/chat-session/index=1、register/success=2、campus/topic/detail=2）。
+ * ⇒ 那句"可交互元素清点齐"是在截断窗口上成立的，它没有覆盖页面主体的兄弟节点。
+ * 规则：窗口不是 full-tree 的行可以留 NAV_OK（导航确实通了），
+ * 但其元素清点不得计入"覆盖齐"的分子；窗口缺失或计数为 0 却报 NAV_OK 的，按仪器故障改判。
+ */
+function censusFault(row: TourRow): string {
+  const win = String(row && row.censusWindow || "").toLowerCase();
+  const n = Number(row && row.elementCount);
+  if (row && String(row.status) === "NAV_OK") {
+    if (Number.isFinite(n) && n === 0) return "NAV_OK 但元素清点=0（页面不可能什么都没有 ⇒ 探针或窗口坏了）";
+    if (win === "" || win.indexOf("full") < 0) return "清点窗口非 full-tree（首-view 截断窗口，计数不可计入覆盖分子）";
+  }
+  return "";
+}
 /** 只读量一次覆盖门，摊它自己的机器行（D2/D3：派活清单与判绿同源于门自己） */
 async function measureCoverage(dir: string, label: string): Promise<GateOut> {
   const ledgerArg = WORKFLOW.harvestFrom + "/tour-ledger.json";
@@ -648,6 +668,16 @@ const fixVerifier = agent("修复复验员", "你是独立复验员：只认盘�
 
 const allTourRows: TourRow[] = [];
 for (const r of harvestTours) allTourRows.push(r);
+/** 收割件里的元素清点有多少来自截断窗口：先量出来再说，不沿用上一轮的"清点齐" */
+{
+  const ok = allTourRows.filter((x) => (x.status || "").indexOf("NAV_OK") === 0);
+  const truncated = ok.filter((x) => !String(x.censusWindow || "").toLowerCase().includes("full")).length;
+  const zeroed = ok.filter((x) => Number(x.elementCount) === 0).length;
+  log(`收割件清点窗口审计：NAV_OK=${ok.length} 行，其中窗口非 full-tree=${truncated}、elementCount=0=${zeroed}`);
+  if (truncated > 0 || zeroed > 0) {
+    blockers.push(`收割件的元素清点有 ${truncated} 行来自截断窗口、${zeroed} 行为 0 计数（上一轮实测 45/73 页只读了 outerWxml 首-view，另有 3 页 NAV_OK 却 0 元素）⇒「可交互元素清点齐」在收割件上不成立，本轮该轴只认 censusWindow=full-tree 的新行`);
+  }
+}
 const allNeedsUser: UserItem[] = [];
 for (const u of sortNeedsUser) if (u && typeof u.id === "string") allNeedsUser.push(u);
 let openItems = -1;
@@ -693,7 +723,7 @@ for (let round = 1; round <= WORKFLOW.maxRounds; round++) {
           `【动作归因是硬要求】每次 tap 要回显命中的具体节点选择器与它的绑定来源（@tap / role=button / handler 名）。命中到自身无事件绑定的容器时，记 不可达(无绑定容器) 且**不得**算作一次动作样本——历史上 [class*=card] 就打中过无绑定的 .campus-cards / .campus-guide，applied=true、路由不变、console clean 三样齐全却什么都没发生，那种"无失败"是空读数。弹层类状态要用页专用选择器，并以节点挂载断言判状态迁移，不得用两帧字节等值判"状态无差异"（弹层根常是 v-if 且点遮罩即关，抽测序列会自取消）。`,
           `【护栏】支付/VIP 拉起只验封存态（404/403「支付未开通」=预期通过）；删除/解绑/同意类一律记 SKIP(guard)；真实档写操作除覆盖门点名页外一律不做。`,
           `覆盖门点名欠账（本轮要按门自己的期待格式补 login/login+guest 真实腿，缺哪根轴补哪条腿；绝不允许把 mock 行改标 real 来「补数」）：${JSON.stringify(realcovItems).slice(0, 6000)}`,
-          `【增量落盘是硬要求】开工先写 ${WORKFLOW.closureDir}/agent-tour-round${round}-b${batchNo}.md 骨架，每完成一页立刻补那一行；本批结束把 rows 返回（route/status(NAV_OK|NAV_FAIL|SKIP(guard)|NOT_SHOOTABLE)/screenshot/elementCount/keyElements/consoleErrors/actions/band/notes），band 写 mode@sha8。dispatched 要填本批真实 dispatch 出去的动作数——0 就是 0，别为了好看编数。`,
+          `【增量落盘是硬要求】开工先写 ${WORKFLOW.closureDir}/agent-tour-round${round}-b${batchNo}.md 骨架，每完成一页立刻补那一行；本批结束把 rows 返回（route/status(NAV_OK|NAV_FAIL|SKIP(guard)|NOT_SHOOTABLE)/screenshot/elementCount/censusWindow(full-tree 或 首-view，按实际读的窗口如实写，不许为了好看写 full-tree)/keyElements/consoleErrors/actions/band/notes），band 写 mode@sha8。dispatched 要填本批真实 dispatch 出去的动作数——0 就是 0，别为了好看编数。`,
           `【正向对照】开工先选一个磁盘上确认存在的 selector 证明通道能选中并能动作；选不中就整批记 UNVERIFIED-INSTRUMENT，不得记产品失败。`,
         ].join("\n"),
       ).then((v) => v, (e) => askFail<TourOut>("UI巡检执行员", e, { round, rows: [], evidence: [], dispatched: -1, notes: "巡检批 ask 失败：" + String(e).slice(0, 100) }));
@@ -705,6 +735,11 @@ for (let round = 1; round <= WORKFLOW.maxRounds; round++) {
       }
       for (const row of rows) {
         if (!row || typeof row.route !== "string") continue;
+        const fault = censusFault(row);
+        if (fault && (row.status || "").indexOf("NAV_OK") === 0) {
+          log(`清点判据命中：${row.route} ⇒ ${fault}`);
+          blockers.push(`${row.route}：${fault}；该行导航可留证，但元素清点不得计入「清点齐」的分子`);
+        }
         const idx = allTourRows.findIndex((x) => x.route === row.route);
         if (idx >= 0) allTourRows[idx] = row; else allTourRows.push(row);
       }
@@ -1109,7 +1144,8 @@ const md = [
   ...(blockers.length > 0 ? blockers.map((b) => `- ${b}`) : ["- （无）"]),
   "",
   "## 口径说明",
-  `- 「保证所有问题没有」以机器可判据收口：全部 ${routes.length} 页 NAV_OK + 重放期 console 清白 + 可交互元素清点齐 + 安全动作抽测**且每次 tap 可归因到带绑定的节点**无失败 + 覆盖门 UNCOVERED 清零且点名闭合。`,
+  `- 「保证所有问题没有」以机器可判据收口：全部 ${routes.length} 页 NAV_OK + 重放期 console 清白 + 可交互元素清点齐**且 censusWindow=full-tree** + 安全动作抽测**且每次 tap 可归因到带绑定的节点**无失败 + 覆盖门 UNCOVERED 清零且点名闭合。`,
+  "- 「可交互元素清点齐」只统计清点窗口为 full-tree 的行：上一轮实测 45/73 页的计数来自 outerWxml 首-view（只读第一个 view 子树）、3 页 NAV_OK 报 0 元素，那部分行数不是覆盖证据。",
   "- 「抽测无失败」只在动作可归因时才计数：命中无绑定容器的样本记 不可达、不算样本；弹层类状态以节点挂载断言判，不以两帧字节等值判（等值可能是自取消序列的构造结果）。",
   "- 页面真实加载期 console 原文、storage 明文嗅探属采集通道表已声明的能力边界（partial / no），不在判据内；不得以「未发现问题」表述替代「未取证」。",
   "- 截图帧未入库：.gitattributes 的 LFS fail-loud 闸 + .gitignore 的 *.png 双重挡住，帧留盘可复核，入库方式归既有拍板。",
