@@ -173,12 +173,13 @@ function sessionVerdict(r) {
 const isIdentityless = (v) => v === "" || v === "?" || v === undefined || v === null;
 
 /* 一条判据"该由谁来判"，按 ops 的 identities 折算成两条轴（本门只有这两条轴）：
-   登录侧 = A 或 B（这条门不区分账号，区分账号是台账的事）；游客侧 = guest/none。
-   没标 identities ⇒ 两轴都要（⑤ 的双身份原口径，一条都不放松）。 */
+   登录侧 = A 或 B 或 minor（minor=未成年形态，2026-10-10 F04 入册：phone-login 铸票，属登录轴；
+   与 cli-automator.mjs mintPlanFor 同一词表，账号铺设前置见 r-exec.cjs:IDENT_DEFS.minor 注释）；
+   游客侧 = guest/none。没标 identities ⇒ 两轴都要（⑤ 的双身份原口径，一条都不放松）。 */
 function axesOf(identities) {
   const ids = (identities || []).map(String).filter(Boolean);
   if (!ids.length) return { login: true, guest: true };
-  return { login: ids.some((x) => x === "A" || x === "B"), guest: ids.some((x) => x === "guest" || x === "none") };
+  return { login: ids.some((x) => x === "A" || x === "B" || x === "minor"), guest: ids.some((x) => x === "guest" || x === "none") };
 }
 
 function judge(rows, req, ids) {
@@ -259,7 +260,7 @@ function judge(rows, req, ids) {
     }
     const rec = byId.get(key);
     if (!rec || rec.real.size === 0) { missing.neverOnReal.push(key); continue; }
-    const judgedLogin = rec.realJudged.has("A") || rec.realJudged.has("B");
+    const judgedLogin = rec.realJudged.has("A") || rec.realJudged.has("B") || rec.realJudged.has("minor");
     const judgedGuest = rec.realJudged.has("guest") || rec.realJudged.has("not-logged-in");
     let deficient = false;
     if (ax.login && !judgedLogin) { missing.noA.push(key); deficient = true; }

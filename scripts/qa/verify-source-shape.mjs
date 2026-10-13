@@ -244,10 +244,17 @@ const SPEC = [
     /* 这条不是"修复判点"而是"裁定在位判点"：原判据要求副标改成带计数的「附近有 {n} 位同频的你」，
        而 NotLoggedWaiting.vue 顶部那段裁定用五条实测理由把它否掉了（游客无计数真源、
        mock 池是演示规模、real 侧被 GUEST_LIST_LIMIT 截断、理想图那个 12 与图里 6 个头像自相矛盾）。
-       判点因此钉"恒取静态键 + 计数版键不存在"，成立即说明代码与裁定一致。 */
+       判点因此钉"恒取静态键 + 计数版键不存在"，成立即说明代码与裁定一致。
+       2026-10-06 采纳建议书 #3（ruling-recommendations-2026-10-06.md）：判据复验带迁 real——
+       本组件挂载条件是 !sessionStore.isLoggedIn && !useMock()（pages/messages/index.vue:373-374），
+       mock 构建下结构性不可判 ⇒ mock 侧标 MOCK_UNJUDGEABLE 豁免。豁免词汇语义沿用执行器
+       既有 SKIPPED/EXEMPT 口径（verify-real-coverage.mjs 的豁免三铁律同源）：只免判、不算覆盖、
+       不销红；它只免 mock 档的"判"这一格，real 带上仍须一次腿真的判过才能闭（见收口报告 T9）。
+       bands=["real"] 把这句裁定落进判决行输出，判据台侧盖章时按它对账。 */
     id: "MP-R2VIS-PAGES-MESSAGES-INDEX-002",
     file: "apps/client/src/components/discover/NotLoggedWaiting.vue",
-    claim: "副标恒取静态键 notLoggedWaiting.subtitle，不接任何游客计数（原判据按既有裁定作废）",
+    bands: ["real"],
+    claim: "副标恒取静态键 notLoggedWaiting.subtitle，不接任何游客计数（原判据按既有裁定作废；复验带=real，mock 侧 MOCK_UNJUDGEABLE 豁免——2026-10-06 采纳建议书 #3）",
     checks: [
       { kind: "countTemplateEq", re: /t\(['"]notLoggedWaiting\.subtitle['"]\)/g, n: 1 },
       { kind: "absent", re: /subtitleWithCount/g },
@@ -1407,9 +1414,9 @@ const SPEC = [
   {
     id: "MP-R7CRIT-SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH22",
     criteria: true, manifest: "SUBPACKAGES-CAMPUS-CAMPUS-HUB.json", caseId: "CH22", page: "subpackages/campus/campus/hub",
-    claim: "本条只落「无展开箭头、无可点动作」这一半（MP-R1-CAMPUS-HUB-003 死元素已移除，不得回归出带箭头的可点假象）；补回箭头或可点「查看更多」即反红。⚠ src 的 HTML 注释里留着旧箭头字符，故箭头字符级缺席只能在产物档判；「滚到底完整可见＋scrollTop/scrollHeight 回填」那一半未落（见 NEG/RULING 说明）",
+    claim: "本条只落「无展开箭头、无可点动作」这一半（MP-R1-CAMPUS-HUB-003 死元素已移除，不得回归出带箭头的可点假象）；补回箭头或可点「查看更多」即反红。⚠ src 的 HTML 注释里留着旧箭头字符，故箭头字符级缺席只能在产物档判。滚动归属按 2026-10-06 采纳建议书 #28（ruling-recommendations-2026-10-06.md）裁定改记：实际滚动容器就是 <scroll-view class=\"campus-hub__feed\">（hub.vue:269-271 起、:334 闭合，scroll-y），底部文案 campus-hub__more-text 在 hub.vue:330-332 即该 scroll-view 之内——原判据 ACTION 句「页级 window 滚动，非 scroll-view」属笔误，判据引用的 hub.vue:336-339 行号漂移一并校正为 :330-332（zh-CN.ts 锚点校正为 :3628）；「滚到底完整可见＋scrollTop/scrollHeight 回填」那一半不在本静态判点内（运行时量，载具 --scroll 通道已有原语）——本裁定只更正其归属与行号，不新增判据、不销任何红",
     bands: ["mock", "real"],
-    needsRuling: "判据 ACTION 写「页级 window 滚动，非 scroll-view」，而 hub.vue:269-271 起列表包在 <scroll-view class=\"campus-hub__feed\"> 里、:334 才闭合 ⇒ 底部文案在 scroll-view 内不在 window 滚动流上；判据引用的 hub.vue:336-339 也已漂到 :330-332。两句冲突未裁，本行不预设任一解释。",
+    needsRuling: "",
     files: [
       {
         file: "apps/client/src/subpackages/campus/campus/hub.vue",

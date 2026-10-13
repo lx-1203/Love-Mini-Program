@@ -112,10 +112,24 @@ const roster = (() => {
   const e = ledgerLines.findIndex((l, i) => i > b && /^\s*PENDING_RULINGS_END/.test(l));
   if (e < 0) return { broken: true, beginLine: b + 1 };
   const rows = ledgerLines.slice(b + 1, e).filter((l) => /^\s*RULING id=/.test(l)).map(parseRuling);
-  /* 名册存在但一条 open 都切不出来 ⇒ 几乎必是解析器与写入器的分隔符/键名打架（本仓刚踩过一次），
-     这时**绝不能**把 §6 印成「需你拍板 0 项」：宁可退回保守的标题分类并明说，也不能让待办凭空归零。 */
+  /* 名册存在但一条 open 都切不出来 ⇒ 两种形状必须分开判（2026-10-06 补）：
+     ① 解析事故（当年踩的分隔符打架）：切出的 status 全是词表外的串，或尾部计数与实际行数对不上
+        ⇒ 绝不能把 §6 印成「需你拍板 0 项」：宁可退回保守的标题分类并明说，也不能让待办凭空归零。
+     ② 全量裁定落账后的合法归零（decisions-v33 §36.2：13 项 open 已裁，0/8/12 与尾部自洽）
+        ⇒ 名册有效，§6 交还空清单是事实而不是故障。
+     判据：三态词表内 + 尾部 open/half_closed/closed 与逐行计数完全自洽 ⇒ ②，否则按 ① 处理。
+     只放宽到"自洽的零"，不自洽的零（含大小写漂移、键名打架、尾部忘改）仍然按未读名册处理。 */
   if (rows.length > 0 && rows.filter((r) => r.status === "open").length === 0) {
-    return { broken: true, beginLine: b + 1, endLine: e + 1, rows, reason: "名册有 " + rows.length + " 行却切不出任何 status=open ⇒ 解析器与写入器格式打架，按未读名册处理" };
+    const KNOWN_STATUS = ["open", "half-closed", "closed"];
+    const tailHeader = /open=(\d+) half_closed=(\d+) closed=(\d+)/.exec(ledgerLines[e]);
+    const tail = tailHeader ? { open: +tailHeader[1], half: +tailHeader[2], closed: +tailHeader[3] } : null;
+    const allKnown = rows.every((r) => KNOWN_STATUS.includes(r.status));
+    const tailAgrees = !!tail && tail.open === 0
+      && tail.half === rows.filter((r) => r.status === "half-closed").length
+      && tail.closed === rows.filter((r) => r.status === "closed").length;
+    if (!(allKnown && tailAgrees)) {
+      return { broken: true, beginLine: b + 1, endLine: e + 1, rows, reason: "名册有 " + rows.length + " 行却切不出任何 status=open ⇒ 解析器与写入器格式打架，按未读名册处理" };
+    }
   }
   const header = /open=(\d+) half_closed=(\d+) closed=(\d+)/.exec(ledgerLines[e]);
   return {

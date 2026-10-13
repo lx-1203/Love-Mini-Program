@@ -1,0 +1,279 @@
+{
+ "kind": "case-recipes",
+ "note": "能力解锁腿的逐例配方通道（capability 车道 2026-10-06）。键=判据台复合 id（与 verify-real-coverage 的 manifest|id 同源同写法）。每一例只含：只读前置（query/page）、可回滚夹具（fixture 必带 teardown，decisions#6 卫生裁定同向：跑完恢复原态、不留测试残留）、驱动脚本（modalScript/netFault）、多步序列（steps，逐步断言落点并逐步留帧）。夹具操作子（op）的 via 词表：api（产品 API；admin:true 走后台管理员票）、store-call（应用内 pinia action，走产品自己的 API 链路）、store-patch（会话内状态注入）、store-cleanup（会话内数组摘除）。选择器约定（REAL-OT-06，2026-10-10）：目标类名在自定义组件子树内时写「>>>」分段穿透链（如 profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--like），r-exec-ws 的探针/tap/rapidTap/input/readValue 逐层 element.$ 下钻；段与段之间以真实编译标签/类名为准（抄 dist/build/mp-weixin-real 对应 wxml/json，不许凭源码猜）。判据台 tapTarget 仍记平铺类名，穿透链以它结尾即可被子串校验命中。消费方 scripts/qa/r-exec-ws.mjs（--recipes）；交叉校验 scripts/qa/test-cap-recipes.cjs（配方键必须在判据台存在、tapTarget 必须被步骤覆盖、夹具必须可回滚）。",
+ "hygiene": "夹具纪律：零写库；admin 凭据只运行期读 apps/api/restart-backend.ps1，绝不上命令行/日志；store 注入的 teardown 显式恢复原值；OT06/OC09 的游客轴不在本通道管辖（页不在 guest-landing-policy.json，摘轴是落点裁定非能力问题）⇒ 本文件只配登录轴。",
+ "recipes": {
+  "PAGES-PROFILE-INDEX|PFI25": {
+   "page": "pages/profile/index",
+   "caps": { "nativeModal": true },
+   "fixture": {
+    "why": "pre=「接 PFI23 已有语音状态」。real 档 fetchProfile 不回填语音（stores/profile.ts real 分支无 voiceStatusUrl 映射，后端 profile 无语音字段）⇒ 语音态只能会话内注入：pinia profile store 写 voiceStatusUrl/Duration（零后端写入），teardown 调 clearVoiceStatus 恢复初值。判据 ③ 的「服务端回读语音字段」半边在 real 档无对象（后端本就不持久化该字段）—— 行上如实记，不冒充。",
+    "setup": [
+     { "name": "seed-voice", "via": "store-patch", "store": "profile", "patch": { "voiceStatusUrl": "https://qa-carrier.example/qa-voice.mp3", "voiceStatusDuration": 3 } }
+    ],
+    "teardown": [
+     { "name": "clear-voice", "via": "store-call", "store": "profile", "call": "clearVoiceStatus" }
+    ]
+   },
+   "modalScript": {
+    "showModal": { "answers": [ { "confirm": false }, { "confirm": true } ] }
+   },
+   "why": "pre=「接 PFI23 已有语音状态」。real 档 fetchProfile 不回填语音（stores/profile.ts real 分支无 voiceStatusUrl 映射，后端 profile 无语音字段）⇒ 语音态只能会话内注入：pinia profile store 写 voiceStatusUrl/Duration（零后端写入），teardown 调 clearVoiceStatus 恢复初值。判据 ③ 的「服务端回读语音字段」半边在 real 档无对象（后端本就不持久化该字段）—— 行上如实记，不冒充。动作 ③ 的复位靠重新 open 同页（同一 app 会话内 store 不销毁）。",
+   "adjudication": "R2-PFI25-04/R2-02 定谳（2026-10-10）：三次 FAILED（b1/b1b/fixlane）的丢弃点=测试编排，不是产品渲染链——(a) 源码定谳：stores/profile.ts load() real 分支（:415-469）不赋 voiceStatusUrl/Duration（仅 mock 分支 :401-402 赋值），fetchProfile（:498）委托 load ⇒ 「fetchProfile 覆盖」不成立；(b) 通道定谳：open 步走 ideCall simulator_open_page，skill tool-index 载明属 compiler 族「触发项目窗口模拟器编译并打开指定页」，且 tour-ledger CON-EV-01 实测在册「桥开页重启 AppService（包装器/缓冲全灭 i=0|n=-1）」⇒ open=重编译重启，open 之前的 seed 必灭。故本配方把 seed-voice 移到首次 open 之后（活应用上打补丁），并在 assert 前配 read(profile-voice-state)+probe(.video-cta/.voice-preview) 渲染-存储对照；「真删」判据由同页 confirm 后 assertAbsent 承担（重开步经重编译清态，对该判点无判别力，行上如实记不读作删除证据）。原 probe 里 .profile-complete-card 为死选择器（src 与编译产物均无此类名）已摘除。",
+   "steps": [
+    { "do": "open", "page": "pages/profile/index" },
+    { "do": "wait", "ms": 2200 },
+    { "do": "fixture", "phase": "setup" },
+    { "do": "wait", "ms": 800 },
+    { "do": "read", "expr": "profile-voice-state", "label": "渲染时 store 语音态（与下步 probe 配对定谳）" },
+    { "do": "probe", "selectors": [".video-cta", ".voice-preview", ".voice-preview__delete"] },
+    { "do": "assertPresent", "selector": ".voice-preview__delete" },
+    { "do": "shot", "label": "a-before-delete" },
+    { "do": "armModal" },
+    { "do": "tap", "selector": ".voice-preview__delete" },
+    { "do": "wait", "ms": 1100 },
+    { "do": "drainModal", "expect": 1 },
+    { "do": "assertPresent", "selector": ".voice-preview__delete" },
+    { "do": "shot", "label": "b-after-cancel" },
+    { "do": "tap", "selector": ".voice-preview__delete" },
+    { "do": "wait", "ms": 1100 },
+    { "do": "drainModal", "expect": 2 },
+    { "do": "assertAbsent", "selector": ".voice-preview__delete" },
+    { "do": "shot", "label": "c-after-confirm" },
+    { "do": "open", "page": "pages/profile/index" },
+    { "do": "wait", "ms": 2400 },
+    { "do": "read", "expr": "profile-voice-state", "label": "重进后 store 语音态（重开=重编译清态，本步对「真删」无判别力，读数照实记）" },
+    { "do": "assertAbsent", "selector": ".voice-preview__delete" },
+    { "do": "shot", "label": "d-reenter" },
+    { "do": "restoreModal" },
+    { "do": "fixture", "phase": "teardown" }
+   ]
+  },
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25": {
+   "page": "subpackages/village/village/index",
+   "caps": { "fixtureApi": true },
+   "fixture": {
+    "why": "pre=「身份A 先发一条新帖（进审核流）」。setup 走应用内 village store 的 createPost action（产品自己的 POST /api/v1/posts 链路，同时把帖子插进 selfPendingPosts 置顶——与经底部输入条发布同一条产品代码路径，判据的 action 从「发布成功后」才开始）；teardown 用后台 DELETE 撤帖 + store-cleanup 把会话内 selfPendingPosts/posts 数组里的该 id 摘掉 —— 走 API 不写库，跑完广场零残留。",
+    "setup": [
+     { "name": "create-pending-post", "via": "store-call", "store": "village", "call": "createPost",
+       "args": { "title": "QA回滚夹具帖 qa-vi25-{ts}", "content": "能力解锁腿 VI25 的可回滚夹具帖（跑完即由后台 DELETE 撤除）。qa-vi25-{ts}" },
+       "capture": "postId", "capturePath": "id" }
+    ],
+    "teardown": [
+     { "name": "delete-pending-post", "via": "api", "admin": true, "method": "DELETE", "path": "/api/v1/admin/forum/village-posts/{captured.postId}", "expectStatus": [200, 204] },
+     { "name": "store-cleanup", "via": "store-cleanup", "store": "village", "arrays": ["selfPendingPosts", "posts"], "byId": "{captured.postId}" }
+    ]
+   },
+   "steps": [
+    { "do": "fixture", "phase": "setup" },
+    { "do": "open", "page": "subpackages/village/village/index" },
+    { "do": "wait", "ms": 2800 },
+    { "do": "probe", "selectors": [".post-card__audit", ".channel-feed"] },
+    { "do": "shot", "label": "a-badge" },
+    { "do": "read", "expr": "village-selfPending-and-feed-dedup", "label": "selfPending+feed 按 id 计数" },
+    { "do": "pullDown" },
+    { "do": "wait", "ms": 2400 },
+    { "do": "stopPullDown" },
+    { "do": "read", "expr": "village-selfPending-and-feed-dedup", "label": "下拉1次后同 id 计数" },
+    { "do": "pullDown" },
+    { "do": "wait", "ms": 2400 },
+    { "do": "stopPullDown" },
+    { "do": "read", "expr": "village-selfPending-and-feed-dedup", "label": "下拉2次后同 id 计数" },
+    { "do": "probe", "selectors": [".post-card__audit"] },
+    { "do": "shot", "label": "b-after-refresh" },
+    { "do": "fixture", "phase": "teardown" }
+   ]
+  },
+  "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34": {
+   "page": "subpackages/village/village/index",
+   "caps": { "networkFault": true },
+   "netFault": { "mode": "fail-all", "statusCode": 500, "data": { "qaFault": "vi34-error-state" } },
+   "why": "七态逐例配方：① 冷启动 Loading 骨架（开页即探，一闪而过则如实记未采到，r14 pre 自述允许）；② 成功态（feed 卡片在）；③ 空态不可构造（广场有在册帖子，清数据属写库）；④ 错误态（netFault fail-all + 下拉重拉触发）；⑤ Refreshing（pullDown 调起到 stop 之间留帧）；⑥ Disabled 不可构造（app-config post_publish_open=true，改开关是后台写操作不在授权内）；⑦ Idle（静息态探针）。⚠ 判据台 action 正文在 ⑦ 处字符串截断（「…⑦ Idle（停止滚动 」无下文）⇒ ⑦ 按静息态执行并如实记该缺陷。",
+   "steps": [
+    { "do": "open", "page": "subpackages/village/village/index" },
+    { "do": "probe", "selectors": [".skeleton-line--w60", ".post-card", ".village-empty", ".featured-error"] },
+    { "do": "shot", "label": "s1-loading-or-s2-success" },
+    { "do": "wait", "ms": 2400 },
+    { "do": "probe", "selectors": [".skeleton-line--w60", ".post-card", ".village-empty", ".featured-error"] },
+    { "do": "shot", "label": "s2-success-idle" },
+    { "do": "armNetFault" },
+    { "do": "pullDown" },
+    { "do": "wait", "ms": 2600 },
+    { "do": "stopPullDown" },
+    { "do": "drainNet" },
+    { "do": "probe", "selectors": [".featured-error", ".featured-error__retry", ".skeleton-line--w60", ".post-card"] },
+    { "do": "shot", "label": "s4-error" },
+    { "do": "restoreNetFault" },
+    { "do": "pullDown" },
+    { "do": "wait", "ms": 2200 },
+    { "do": "stopPullDown" },
+    { "do": "probe", "selectors": [".post-card", ".featured-error"] },
+    { "do": "shot", "label": "s5-refreshing-recovered" },
+    { "do": "wait", "ms": 1200 },
+    { "do": "probe", "selectors": [".post-card", ".skeleton-line--w60", ".village-empty", ".featured-error"] },
+    { "do": "shot", "label": "s7-idle" }
+   ]
+  },
+  "次要20|OT05": {
+   "page": "subpackages/profile-extra/profile/other",
+   "query": "userId=10001",
+   "caps": { "nativeModal": true, "rapidTap": true },
+   "fixture": {
+    "why": "pre 要「未喜欢过」的目标（r14 实测 10001=未喜欢，recon GET /profile/10001=200）。腿内 tap like 会产生一条真实 like 写请求（POST /matches/like）⇒ teardown 用 POST /matches/cancel-like 把这条写撤掉，恢复「未喜欢」原态。",
+    "setup": [],
+    "teardown": [
+     { "name": "cancel-like-10001", "via": "api", "method": "POST", "path": "/api/v1/matches/cancel-like", "body": { "targetUserId": "10001" }, "expectStatus": [200, 204] }
+    ]
+   },
+   "modalScript": {
+    "showModal": { "answers": [ { "confirm": true } ] }
+   },
+   "why": "expected② 是条件式（「若弹匹配成功 modal」）：10001 未喜欢本人、target_user_id=100158 名单里也没有它 ⇒ 本腿上 modal 不应出现；驱动脚本仍按判据武装（答「确定」=去聊天），出现即被脚本化答复并留调用实参记录。动作 ③ 的复位靠重新 open 同页（同一 app 会话内 store 不销毁）。",
+   "steps": [
+    { "do": "open", "page": "subpackages/profile-extra/profile/other", "query": "userId=10001" },
+    { "do": "wait", "ms": 2600 },
+    { "do": "probe", "selectors": ["profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--like", "profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta"] },
+    { "do": "shot", "label": "a-before-like" },
+    { "do": "armModal" },
+    { "do": "tap", "selector": "profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--like" },
+    { "do": "wait", "ms": 1400 },
+    { "do": "drainModal" },
+    { "do": "probe", "selectors": ["profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--like"] },
+    { "do": "shot", "label": "b-after-like" },
+    { "do": "open", "page": "subpackages/profile-extra/profile/other", "query": "userId=10001" },
+    { "do": "wait", "ms": 2400 },
+    { "do": "rapidTap", "selector": "profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--like", "times": 5 },
+    { "do": "probe", "selectors": ["profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--like"] },
+    { "do": "shot", "label": "c-after-rapid5" },
+    { "do": "restoreModal" },
+    { "do": "fixture", "phase": "teardown" }
+   ]
+  },
+  "次要20|OT06": {
+   "page": "subpackages/profile-extra/profile/other",
+   "query": "userId=100155",
+   "caps": { "rapidTap": true },
+   "why": "两态逐例：态1=userId=100155（已喜欢未匹配，recon /matches/my-likes 在册）、态2=userId=10003（互喜，同源实测）——同一腿内两次深链各跑 rapidTap×5 + 打招呼键对照。游客轴不在本配方（页不在 guest-landing-policy.json，摘轴是落点裁定非能力问题）⇒ 本腿只判登录轴。④「5 次点击窗口内新增 POST /matches/like 条数」用 record 模式请求记账（透传原实现，零注入、零写入）。",
+   "steps": [
+    { "do": "armNetFault", "spec": { "mode": "record" } },
+    { "do": "open", "page": "subpackages/profile-extra/profile/other", "query": "userId=100155" },
+    { "do": "wait", "ms": 2600 },
+    { "do": "probe", "selectors": ["profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--like"] },
+    { "do": "shot", "label": "state1-100155-before" },
+    { "do": "rapidTap", "selector": "profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--like", "times": 5 },
+    { "do": "drainNet", "urlIncludes": "/matches/like" },
+    { "do": "probe", "selectors": ["profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--like", "profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--hello"] },
+    { "do": "shot", "label": "state1-after-rapid5" },
+    { "do": "open", "page": "subpackages/profile-extra/profile/other", "query": "userId=10003" },
+    { "do": "wait", "ms": 2600 },
+    { "do": "probe", "selectors": ["profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--like"] },
+    { "do": "shot", "label": "state2-10003-before" },
+    { "do": "rapidTap", "selector": "profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--like", "times": 5 },
+    { "do": "drainNet", "urlIncludes": "/matches/like" },
+    { "do": "tap", "selector": "profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--hello" },
+    { "do": "wait", "ms": 1400 },
+    { "do": "probe", "selectors": ["profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--hello"] },
+    { "do": "shot", "label": "state2-hello" },
+    { "do": "restoreNetFault" }
+   ]
+  },
+  "次要20|OT09": {
+   "page": "subpackages/profile-extra/profile/other",
+   "query": "userId=10001",
+   "caps": { "networkFault": true, "rapidTap": true },
+   "netFault": { "mode": "fail-all", "statusCode": 500, "data": { "qaFault": "ot09-send-fail" } },
+   "why": "pre 态2=已实名登录（recon 实测 A=100158 实名 APPROVED，other.vue openWhisperSheet 的 ensureCertified('realname') 放行）。sheet 弹出用真实 tap（CTA 心动卡钮，RelationshipCTA.vue:58 → @whisper → openWhisperSheet；选择器走组件穿透 profile-shell >>> public-profile >>> relationship-c-t-a —— REAL-OT-06：类名本身没错，错在页级 $ 探不进三层自定义组件子树）。输入四态用 WS el.input（组件子树）+ readValue 回填实测截断值；whisper-sheet 系列同理走 whisper-compose-sheet 组件穿透（组件挂在页级，other.json usingComponents）。发送全部在 netFault 窗口内做 ⇒ 走失败支路（showErrorToast(whisper.sendFailed)、sheet 不关、内容不丢），零后端写入零残留；成功发送的服务端回读不在本腿（付费 unlock 不可构造，行上如实记）。关闭三路：遮罩 tap（.whisper-mask）、右上 × tap（.whisper-sheet__close）、发送后自动关（失败支路下 sheet 不关是判点本身）。",
+   "steps": [
+    { "do": "open", "page": "subpackages/profile-extra/profile/other", "query": "userId=10001" },
+    { "do": "wait", "ms": 2600 },
+    { "do": "tap", "selector": "profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--whisper" },
+    { "do": "wait", "ms": 1200 },
+    { "do": "probe", "selectors": ["whisper-compose-sheet >>> .whisper-sheet__input", "whisper-compose-sheet >>> .whisper-sheet__send", "whisper-compose-sheet >>> .whisper-sheet", "whisper-compose-sheet >>> .whisper-mask"] },
+    { "do": "shot", "label": "a-sheet-open" },
+    { "do": "armNetFault" },
+    { "do": "tap", "selector": "whisper-compose-sheet >>> .whisper-sheet__send" },
+    { "do": "wait", "ms": 1400 },
+    { "do": "probe", "selectors": ["whisper-compose-sheet >>> .whisper-sheet__input", "whisper-compose-sheet >>> .whisper-sheet"] },
+    { "do": "shot", "label": "b-empty-send-fail" },
+    { "do": "input", "selector": "whisper-compose-sheet >>> .whisper-sheet__input", "value": "QA能力腿：正常短句" },
+    { "do": "readValue", "selector": "whisper-compose-sheet >>> .whisper-sheet__input" },
+    { "do": "tap", "selector": "whisper-compose-sheet >>> .whisper-sheet__send" },
+    { "do": "wait", "ms": 1400 },
+    { "do": "readValue", "selector": "whisper-compose-sheet >>> .whisper-sheet__input" },
+    { "do": "shot", "label": "c-normal-send-fail" },
+    { "do": "input", "selector": "whisper-compose-sheet >>> .whisper-sheet__input", "value": "超长输入：0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789QA" },
+    { "do": "readValue", "selector": "whisper-compose-sheet >>> .whisper-sheet__input" },
+    { "do": "shot", "label": "d-overlong-truncated" },
+    { "do": "input", "selector": "whisper-compose-sheet >>> .whisper-sheet__input", "value": "<img src=x onerror=1>『😀 空格』" },
+    { "do": "readValue", "selector": "whisper-compose-sheet >>> .whisper-sheet__input" },
+    { "do": "shot", "label": "e-special-chars" },
+    { "do": "rapidTap", "selector": "whisper-compose-sheet >>> .whisper-sheet__send", "times": 5 },
+    { "do": "drainNet", "urlIncludes": "/whispers" },
+    { "do": "shot", "label": "f-rapid5-fail" },
+    { "do": "restoreNetFault" },
+    { "do": "tap", "selector": "whisper-compose-sheet >>> .whisper-sheet__close" },
+    { "do": "wait", "ms": 900 },
+    { "do": "probe", "selectors": ["whisper-compose-sheet >>> .whisper-sheet", "whisper-compose-sheet >>> .whisper-sheet__input"] },
+    { "do": "shot", "label": "g-sheet-closed" }
+   ]
+  },
+  "次要21|OC09": {
+   "page": "subpackages/chat/official-chat/index",
+   "query": "code=official-assistant",
+   "caps": { "networkFault": true },
+   "netFault": { "mode": "fail-all", "statusCode": 500, "data": { "qaFault": "oc09-load-fail" } },
+   "why": "pre=「用 Network 拦截使 GET /official-accounts/{code}/messages 返回 5xx 或断网」——C3 通道就是这句判据的直译（fail-all 注入 500）。开页即失败 ⇒ 错误态 .retry-btn 在；带故障 tap 重试（新增 1 条被拦 GET，计数走 drainNet）；恢复后 tap 重试 ⇒ 正常渲染并滚底。发送失败回滚支路也在注入窗内做（如该页输入条在错误态不可达则如实记）。游客轴不在本配方（页不在 guest-landing-policy.json）⇒ 本腿只判登录轴。",
+   "steps": [
+    { "do": "armNetFault" },
+    { "do": "open", "page": "subpackages/chat/official-chat/index", "query": "code=official-assistant" },
+    { "do": "wait", "ms": 3000 },
+    { "do": "drainNet" },
+    { "do": "probe", "selectors": [".retry-btn", ".state-view"] },
+    { "do": "shot", "label": "a-error-state" },
+    { "do": "tap", "selector": ".retry-btn" },
+    { "do": "wait", "ms": 1800 },
+    { "do": "drainNet" },
+    { "do": "probe", "selectors": [".retry-btn"] },
+    { "do": "shot", "label": "b-retry-under-fault" },
+    { "do": "restoreNetFault" },
+    { "do": "tap", "selector": ".retry-btn" },
+    { "do": "wait", "ms": 2400 },
+    { "do": "drainNet" },
+    { "do": "probe", "selectors": [".retry-btn", ".state-view"] },
+    { "do": "shot", "label": "c-recovered" }
+   ]
+  },
+  "次要22|VB03": {
+   "page": "subpackages/vip/bills",
+   "caps": { "navSteps": true, "pullDown": true },
+   "why": "跨页时序判据 (a)(b)(c)（r14 §2.10）：(a) 进入账单页记 network 与列表；(b) 返回 VIP → 再进账单页（同一 app 会话 store 未销毁，openPage 不销毁应用实例）记请求数；(c) 在 (b) 态下拉刷新一次记请求数（bills.vue onPullDownRefresh 在册）。请求计数用 record 模式请求记账（CLI --net-count 的 uni.addInterceptor 在 evaluate 上下文装不上——「ERR uni is not defined」同一根因，探针实测；WS 通道在 wx.request 槽位拦截，全量可计）。档位=showcase（band real@ed1cd82c）。pre 的「先走完一次 mock 开通」实测不可构造：app-config commerce.enabled=false ⇒ 订单端点封存，改开关属后台写操作不在授权内 —— 行上如实记，(a)(b)(c) 的缓存时序判点不依赖开通成功（账单空态时计数同样可判）。",
+   "steps": [
+    { "do": "armNetFault", "spec": { "mode": "record" } },
+    { "do": "open", "page": "subpackages/vip/vip" },
+    { "do": "wait", "ms": 2400 },
+    { "do": "assertRoute", "routeIncludes": "subpackages/vip/vip" },
+    { "do": "shot", "label": "step0-vip" },
+    { "do": "open", "page": "subpackages/vip/bills" },
+    { "do": "wait", "ms": 2400 },
+    { "do": "drainNet", "urlIncludes": "/vip/bills" },
+    { "do": "assertRoute", "routeIncludes": "subpackages/vip/bills" },
+    { "do": "probe", "selectors": [".nav-bar__back"] },
+    { "do": "shot", "label": "a-bills-first-entry" },
+    { "do": "open", "page": "subpackages/vip/vip" },
+    { "do": "wait", "ms": 2000 },
+    { "do": "open", "page": "subpackages/vip/bills" },
+    { "do": "wait", "ms": 2400 },
+    { "do": "drainNet", "urlIncludes": "/vip/bills" },
+    { "do": "assertRoute", "routeIncludes": "subpackages/vip/bills" },
+    { "do": "shot", "label": "b-bills-second-entry" },
+    { "do": "pullDown" },
+    { "do": "wait", "ms": 2600 },
+    { "do": "stopPullDown" },
+    { "do": "drainNet", "urlIncludes": "/vip/bills" },
+    { "do": "probe", "selectors": [".nav-bar__back"] },
+    { "do": "shot", "label": "c-after-pulldown" },
+    { "do": "restoreNetFault" }
+   ]
+  }
+ }
+}

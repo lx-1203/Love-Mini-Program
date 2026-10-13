@@ -53,13 +53,13 @@
   {
    "claim": "VIP 三页落「我的」页是功能开关弹回，与身份无关",
    "file": "apps/client/src/subpackages/vip/index.vue",
-   "line": 50,
+   "line": 53,
    "needle": "featureFlags.membershipEnabled"
   },
   {
    "claim": "开关为假时的落点 = switchTab 到我的页",
    "file": "apps/client/src/subpackages/vip/index.vue",
-   "line": 63,
+   "line": 66,
    "needle": "ROUTES.TAB.PROFILE"
   },
   {
@@ -75,7 +75,7 @@
   "delay": "apps/client/src/constants/app.ts:40 LOGIN_REDIRECT_DELAY_MS = 500 ⇒ 判定窗取 500+900ms",
   "loginMarker": "apps/client/src/pages/login/index.vue:569 class=\"login-page__brand\"",
   "profileMarker": "apps/client/src/pages/profile/index.vue:1643 class=\"profile-page\"",
-  "vipFlag": "apps/client/src/subpackages/vip/index.vue:50 membershipEnabled 为假 ⇒ switchTab 到我的页（:63），与身份无关"
+  "vipFlag": "apps/client/src/subpackages/vip/index.vue:53 membershipEnabled 为假 ⇒ switchTab 到我的页（:66），与身份无关（2026-10-06 按行漂移重锚：工作树微信支付管道改动在 :36-38 净增 3 行，50→53、63→66；needle 逐字未动）"
  },
  "rows": [
   {

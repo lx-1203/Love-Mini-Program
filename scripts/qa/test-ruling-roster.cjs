@@ -105,7 +105,7 @@ console.log("== C 无名册 ⇒ 保守分类并明印；且新增一节流水不
   ok(n2 === n1, "C 多一节流水不增待办数", n1 + "→" + n2);
 }
 
-console.log("== D 真名册（盘上那份）：读得到且条数与尾部声明自洽 ==");
+console.log("== D 真名册（盘上那份）：读得到、来源=roster、且 §6 标题数与名册逐行复算的 open 数一致 ==");
 {
   const real = run("reports/audit/round-7/decisions-v33.md");
   const m = /GENREPORT_SECTION6_SELFCOUNT heading_number=(\d+) listed_items=(\d+) source=(\S+) crosscheck_classification=(\d+)/.exec(real.out);
@@ -113,9 +113,43 @@ console.log("== D 真名册（盘上那份）：读得到且条数与尾部声�
   if (m) {
     ok(m[3] === "roster", "D 真册来源=roster（不是退回分类）", m[3]);
     ok(m[1] === m[2], "D 真册标题数==列出条数", m[1] + "/" + m[2]);
-    ok(Number(m[1]) > 0, "D 真册 open 不为零", m[1]);
+    /* open 数不再钉死 >0（2026-10-06 全量采纳后名册合法归零，见 decisions-v33 §36.2）：
+       改成从真册自己**逐行复算** status=open 的行数，与生成器 §6 标题数对账——
+       生成器多报/少报任何一条都红，名册怎么变这条都不会假红。 */
+    const ledger = fs.readFileSync(path.join(REPO, "reports", "audit", "round-7", "decisions-v33.md"), "utf8").split(/\r?\n/);
+    const b = ledger.findIndex((l) => /^\s*PENDING_RULINGS_BEGIN/.test(l));
+    const e = ledger.findIndex((l, i) => i > b && /^\s*PENDING_RULINGS_END/.test(l));
+    const opens = ledger.slice(b + 1, e).filter((l) => /^\s*RULING id=/.test(l) && / status=open /.test(" " + l + " ")).length;
+    ok(Number(m[1]) === opens, "D 真册 §6 标题数==名册逐行复算的 open 数（不钉死非零）", `生成器=${m[1]} 复算=${opens}`);
+    ok(/尾部计数与实际行数一致/.test(real.rep) || opens === 0, "D 名册尾部计数与行数自洽（或 open=0 的合法归零）", "open=" + opens);
     console.log(`  info D crosscheck_classification=${m[4]}（分类器按标题判的数，与名册的差 = ${Math.abs(m[4] - m[1])}，差因是它读不到状态对账节的闭合）`);
   }
+}
+
+console.log("== E 合法归零名册：全 closed 且尾部自洽 ⇒ 来源=roster、§6 如实印 0，不退回未读名册 ==");
+{
+  const rel = ledger("all-closed.md", [
+    "RULING id=decisions#1 status=closed title=甲已按A落定 options=A(2026-10-06采纳) basis=\"x\"",
+    "RULING id=decisions#5 status=half-closed title=乙剩半轴 options=C已选定 basis=\"y\"",
+    "RULING id=decisions#14 status=closed title=丙已闭 options=B basis=\"z\"",
+  ], "open=0 half_closed=1 closed=2");
+  const { rep, code, out } = run(rel);
+  const heading = (rep.match(/^## 6\. 需你拍板 (\d+) 项/m) || [])[1];
+  ok(code === 0 && rep.length > 0, "E 生成器真的写了报告", "exit=" + code);
+  ok(heading === "0", "E §6 如实印 0（合法归零，不是解析事故）", "实际=" + heading);
+  ok(/source=roster/.test(rep), "E 来源仍是 roster（未退回标题分类）", (out.match(/source=\S+/) || [""])[0]);
+  ok(!/未读名册/.test(rep), "E 不印「未读名册」", "");
+}
+{
+  /* 反例：尾部计数不自洽的"零 open"仍旧必须退回并明说——归零豁免不许做成把事故洗绿的口子。 */
+  const rel = ledger("all-closed-bad-tail.md", [
+    "RULING id=decisions#1 status=closed title=甲 options=A basis=\"x\"",
+    "RULING id=decisions#5 status=closed title=乙 options=B basis=\"y\"",
+  ], "open=0 half_closed=0 closed=1");
+  const { rep } = run(rel);
+  const heading = sec6Number(rep);
+  ok(heading !== null && heading > 0, "E- 反例：尾部计数与行数不符 ⇒ 不许当合法归零，退回分类且非零", "实际=" + heading);
+  ok(/未读名册/.test(rep), "E- 反例明印「未读名册」", "");
 }
 
 console.log(`SUMMARY: assertion failures = ${fails}`);

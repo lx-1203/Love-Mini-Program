@@ -1,0 +1,13 @@
+{
+  "$comment": "次要22|VB03 的档位点名件（2026-10-06，uncovered10-disposition-r14.md §2.10 的 NEEDS_BAND_CHANGE 收账）：该判据要求「展示版」产物，普通 real 档落点不符（栈顶=pages/profile/index），showcase 档可表达且门上就是 band=real@ed1cd82c（REAL_BAND=/^real(@|$)/ 只看 mode 前缀，config/env.js 实测 VITE_API_MODE=real + VITE_SHOWCASE_MODE=true）。本计划只做一件事：给判据点名可交互元素 .nav-bar__back（账单页导航栏返回键，@tap=goBack，正是 action (b) 步「返回 VIP → 再进入账单页」的可归属物件；(c) 步下拉刷新由 --gestures 的 pullDown 下发、(a)/(b) 进入页由 nav 动线覆盖）。三档产物 wxml 逐字命中核过：mp-weixin / mp-weixin-real / mp-weixin-showcase 的 subpackages/vip/bills.wxml 各命中 class=\"nav-bar__back press-feedback\" 1 处。档位选择记 showcase：复测腿以 apps/client/dist/build/mp-weixin-showcase 为项目窗，行上 band 自证 real@ed1cd82c。0 项新载具能力、条目零增删。出处：reports/audit/round-7/uncovered10-disposition-r14.md §2.10/§3 第 10 行、ruling-closure-2026-10-06.md §3 剩余 9 条表。",
+  "A-add-tapTarget": [
+    {
+      "manifest": "次要22",
+      "id": "VB03",
+      "page": "subpackages/vip/bills",
+      "tapTarget": ".nav-bar__back",
+      "confirmedAt": "apps/client/src/subpackages/vip/bills.vue:174 class=\"nav-bar__back press-feedback\" @tap=\"goBack\"",
+      "note": "(b) 步「返回 VIP」的页内可交互元素；(c) 步下拉刷新走 --gestures pullDown，(a)/(b) 进页走 nav 动线——判据三步自此全部可归属"
+    }
+  ]
+}

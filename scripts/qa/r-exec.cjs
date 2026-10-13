@@ -494,6 +494,14 @@ const IDENT_DEFS = {
   A: { userId: '100158', nick: '曦风', body: { phone: '13800006666', password: 'Abc12345', deviceId: 'r1-exec-a' }, ep: '/api/v1/auth/phone-login' },
   B: { userId: '100159', nick: '小新生', body: { phone: '13800007777', password: 'NewUser@123', deviceId: 'r1-exec-b' }, ep: '/api/v1/auth/phone-login' },
   guest: { userId: '100151', nick: '阿辰', body: {}, ep: '/api/v1/auth/guest-login' },
+  /* 未成年形态（F04/VRN07，2026-10-10 词表入册）：实名未认证 + users.birth_date 为 NULL 的专号
+     （real-name.vue loadAdultGate：birthDate 缺失 ⇒ isAdult=false ⇒ minor-banner + 表单 disabled）。
+     ⚠ 账号尚未铺设：产品 API 全链路强制 ≥18（register 的 AgePolicy 拒未成年、PUT /profile/basic
+     birthDate 传值须 ≥18 且 null=不改、PUT /admin/users/{id} 只摸 user_basic_profiles.birthYear）
+     ⇒ 该形态只能由**授权 DB 夹具**造出（test-cap-recipes 在册裁定「VRN07=待授权 DB 夹具」）。
+     body 留空 = 无凭据可铸 ⇒ cli-automator mintPlanFor('minor') 当场拒跑并给出铺设配方，
+     绝不退回 A/B/guest 票顶替（同 B 号 r9 铺设前的口径）。铺设后回填 phone/password/userId。 */
+  minor: { userId: '', nick: '未成年夹具(待铺设)', body: {}, ep: '/api/v1/auth/phone-login' },
 };
 const tokenCache = {}; // kind -> {token, refreshToken, userId, expMs}
 async function mintToken(kind) {

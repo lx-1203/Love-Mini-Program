@@ -6,7 +6,17 @@
      缺省 judge    —— 离线：跑源码断言 + 读已量的运行时结果，出三态（DECIDED / BOOKED / *_FAIL）
      --mode measure —— 拿 UI 租约量运行时探针，写 runtime-holes-measured.json
      --selftest    —— 把每条判据各破坏一次，要求条条能红（红不了的负例等于没测）
-   Node 要 v22：PATH 上的缺省 node 是 DevTools 的 v16。 */
+   Node 要 v22：PATH 上的缺省 node 是 DevTools 的 v16。
+
+   落点（2026-10-06 采纳建议书 r10new#D，reports/audit/round-7/ruling-recommendations-2026-10-06.md）：
+     judge 分支的判决**默认写侧车** evidence-holes-verdict.sidecar.json，不再无条件覆写权威判决件
+     evidence-holes-verdict.json —— 此前每次裸跑（含 run-final-verify 的 --mode judge）都会把权威件
+     的 generatedAt 重打一遍，git status 里那份"永远在漂"的 M 就是这么来的（§37/§38 都记过）。
+     流程：**侧车 → 人工确认 → 并入权威件**。并入 = 显式传
+     `--out reports/audit/round-7/evidence-holes-verdict.json` 跑一次（显式入参是第一权威，
+     与 evidence-store-read.mjs 的入参口径同一律条）；面板 emit-round-report.mjs 本就走
+     `--out` 指到自己的侧车目录（:834 HOLES_SIDECAR），行为不变。全仓没有任何工具把权威件
+     当输入（triage-exec-failures.mjs:649 自己从行里算 evidenceHoles），所以改默认落点不改任何消费方。 */
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { acquireUi, releaseUi, renewUi, heldLeases } from "./ui-lease.mjs";
@@ -20,7 +30,8 @@ const SELFTEST = process.argv.includes("--selftest");
    只读一份会造成「载体里有洞、点名表里没有」这种假脱钩。 */
 const TRIAGES = (arg("triage", ".zcode/tmp/triage-r7-areal.json,.zcode/tmp/triage-r7-guest.json")).split(",").map((s) => s.trim()).filter(Boolean).map((s) => resolve(REPO, s));
 const MEASURED = resolve(REPO, arg("measured", "reports/audit/round-7/runtime-holes-measured.json"));
-const OUT = resolve(REPO, arg("out", "reports/audit/round-7/evidence-holes-verdict.json"));
+/* judge 缺省落侧车（r10new#D）：显式 --out 才允许写到权威件（人工确认后的并入动作）。 */
+const OUT = resolve(REPO, arg("out", "reports/audit/round-7/evidence-holes-verdict.sidecar.json"));
 const PROJECT = resolve(REPO, arg("project", "apps/client/dist/build/mp-weixin-real"));
 const OWNER = "r7-evidence-holes";
 const sleep = (ms) => { const e = Date.now() + ms; while (Date.now() < e) { /* 探针是同步 execFileSync，这里不需要事件循环 */ } };
@@ -142,7 +153,7 @@ if (verdict.length !== HOLES.length) problems.push(`守恒破：判决 ${verdict
 for (const v of verdict) if (v.status !== "DECIDED") problems.push(`${v.hole} 未判定（${v.status}）：${[...v.sourceMisses, v.runtime || ""].filter(Boolean).join("；")}`);
 
 writeFileSync(OUT, JSON.stringify({ generatedAt: new Date().toISOString(), holes: verdict.length, decided: verdict.filter((v) => v.status === "DECIDED").length, triageHoles: triHoles, rows: verdict }, null, 1));
-console.log(`EVIDENCE_HOLES 洞=${verdict.length} 已判定=${verdict.filter((v) => v.status === "DECIDED").length} triage点名=${triHoles.join(",") || "(无)"}`);
+console.log(`EVIDENCE_HOLES 洞=${verdict.length} 已判定=${verdict.filter((v) => v.status === "DECIDED").length} triage点名=${triHoles.join(",") || "(无)"} 判决落点=${OUT.split(/[\\/]/).pop()}${OUT.endsWith("sidecar.json") ? "（侧车：人工确认后用 --out 并入权威件）" : "（显式 --out）"}`);
 for (const v of verdict) console.log(`  ${v.status.padEnd(12)} ${v.hole} @ ${v.page} :: ${v.claim}`);
 if (problems.length) {
   console.log(`EVIDENCE_HOLES_RESULT=FAIL problems=${problems.length}`);

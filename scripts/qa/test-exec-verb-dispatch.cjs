@@ -195,10 +195,12 @@ t("非输入腿的载荷仍是 --wait 1（longpress 与 tap 同一工具同一�
   /isInput \? \["--value", "123456"\] : \["--wait", "1"\]/.test(src));
 t("done/unmet 记的是**实际动词**（tap: / longpress: 分得开，把长按冒充成点击就没法复盘了）",
   /done\.push\(verb \+ ":"/.test(src) && /unmet\.push\(verb \+ ":"/.test(src));
-t("pullDown 载荷问的是 uni.startPullDownRefresh，收尾问的是 uni.stopPullDownRefresh（照 r1-exec.cjs:1115-1126）",
-  pullDownSource().includes("uni.startPullDownRefresh") && stopRefreshSource().includes("uni.stopPullDownRefresh"));
-t("pullDown 不许静默成功：页面上没挂 uni 时返回 no-uni，没有页时返回 no-page，抛错返回 ERR",
-  /return 'no-uni'/.test(pullDownSource()) && /return 'no-page'/.test(pullDownSource()) && /ERR/.test(pullDownSource()));
+t("pullDown 载荷问的是 wx.startPullDownRefresh，收尾问的是 wx.stopPullDownRefresh（C6 修复后：evaluate 上下文里任何 uni 记号——连 typeof——都抛 ERR uni is not defined，实测 probe-pulldown-context.mjs；wx 主路径为探针4 实测 wx-ok）",
+  pullDownSource().includes("wx.startPullDownRefresh") && stopRefreshSource().includes("wx.stopPullDownRefresh"));
+t("C6 负例：pullDown/stopRefresh 载荷里一个 uni 记号都不许再有（历史读法 'uni-ok'/'no-uni' 的**读数兼容**保留在 pullDownVerdict，不是载荷）",
+  !/uni/.test(pullDownSource()) && !/uni/.test(stopRefreshSource()));
+t("pullDown 不许静默成功：页面上没挂下拉能力时返回 no-api，没有页时返回 no-page，抛错返回 ERR",
+  /return 'no-api'/.test(pullDownSource()) && /return 'no-page'/.test(pullDownSource()) && /ERR/.test(pullDownSource()));
 t("pullDownVerdict 把四种答案分开翻译（把 no-uni 读成「已下拉」就是凭空造绿）",
   [pullDownVerdict("uni-ok"), pullDownVerdict("no-uni"), pullDownVerdict("ERR x"), pullDownVerdict("")].map((v) => String(v).split("(")[0]).join("/") === "ok/unsupported/error/unknown");
 t("pullDown 的成功计数不混进 tapsDone（tapsDone 只数元素级下发，点击数不许虚报）",

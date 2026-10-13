@@ -30,6 +30,7 @@ import { join, dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
+import http from "node:http";
 import { guardUiLease } from "./ui-lease.mjs";
 /* 端口来源与 ws-channel-up / shoot-frameplan 同一份实现（配置文件 scripts/qa/ide-port.json 优先，
    env 只做显式覆盖，读不到才回落且留痕）。此前这里是 `process.env.WSX_PORT || "9420"`，
@@ -44,6 +45,19 @@ const IDE_WS_PORT = readIdePort().port;
    ——门只认 /^real(@|$)/ 的 band，没有 band 的行落在"既不算覆盖、也不算欠账"的暗面。
    "backend 字段没有门那边对应物"这一整类证据就这样隐身。 */
 import { readApiMode } from "./artifact-band.mjs";
+/* 能力原语模块（capability 车道 2026-10-06）：C1 nativeModal 驱动 / C2 逐例配方+可回滚夹具 /
+   C3 networkFault / C5 多步 nav 定序的纯函数与载荷源。判点逻辑与设备驱动同源，离线自测
+   scripts/qa/test-exec-capabilities.cjs 覆盖；设备可行性由四根探针实测
+   （probe-mock-channel*.mjs / probe-pulldown-context.mjs，读数见 capability-closure 报告 §1）。 */
+import {
+  parseModalScript, modalArmSource, modalAnswersSource, modalDrainSource, interpretModalDrain,
+  modalDriveNote, modalObservedNote,
+  parseNetFault, netFaultArmSource, netFaultMockSource, netFaultRestoreSource, netDrainSource, interpretNetDrain,
+  netFaultNote, countNetCalls,
+  recipeFor, validateFixture, validateRecipes, fixtureVerdict,
+  parseNavSteps, navStepVerdict, expandTemplate, templateUnresolved,
+  CHANNEL_WS, channelStamp,
+} from "./exec-capabilities.mjs";
 
 const require = createRequire(import.meta.url);
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -110,9 +124,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
    缺省成空串而不是某个"看起来对"的档位：忘了传就等于没盖，门那边会把它数成漏盖（见
    verify-real-coverage.mjs 的 REALCOV_BANDLESS_ROWS），不给一个假的 real。
    identity 是第 11 个入参、同样的缺省口径（空串=没盖），因为**档位只是入场券，认领看身份**：
-   门的两条轴各读一个字段（verify-real-coverage.mjs:237 judgedLogin=has("A")||has("B")、
-   :238 judgedGuest=has("guest")||has("not-logged-in")），两边都不读 prose、也不接受"随便一个非空串"。
-   盖法与 r-exec-cli.mjs:176 `identity: IDENTITY` 逐字同一套词表（A/B/guest/none，来自 --identity），
+   门的两条轴各读一个字段（verify-real-coverage.mjs judgedLogin=has("A")||has("B")||has("minor")、
+   judgedGuest=has("guest")||has("not-logged-in")），两边都不读 prose、也不接受"随便一个非空串"。
+   盖法与 r-exec-cli.mjs:176 `identity: IDENTITY` 逐字同一套词表（A/B/guest/minor/none，来自 --identity；
+   minor=未成年形态 2026-10-10 F04 入册，属登录轴，账号铺设前置见 r-exec.cjs:IDENT_DEFS.minor），
    本仓不另立第二个身份词表。gap-band2 的 F1 实测：只有 band 没有 identity ⇒ COVERED 202→202（+0）。
    第 12 个入参 session 是**会话证据**（{source, verify}，由 :294 的 mkRow 注入，函数体照旧保持纯）：
    identity 是人给的标签，session 是这条腿实际拿到的会话。旧 mintToken 只分 A/非 A（非 A 一律
@@ -364,14 +379,17 @@ async function wsPage() {
 /* 身份前置走 WS 而不是走桥：探针、tap 都发生在这个会话里，用另一条通道写 storage
    等于"在隔壁房间点灯，却说这边亮了"。evaluate 传函数 + 参数，automator 会序列化。 */
 async function wsBootSession(token) {
-  return await withRetry("bootSession", async (m) => await m.evaluate((t) => {
+  /* capability 车道 2026-10-06 补 await：真实档的 bootstrap() 是异步链路（session.ts:629 起手
+     Promise.all([getLoginHero, getSession])），旧版点火不等结果 ⇒ 紧跟的 verifyLogin 在
+     real 档恒 not-logged-in（mock 档 bootstrap 同步赋值所以从未暴露）。 */
+  return await withRetry("bootSession", async (m) => await m.evaluate(async (t) => {
     try {
       wx.setStorageSync("token", t);
       var app = getApp(); var vm = app["$vm"];
       var gp = (vm.$ && vm.$.appContext.config.globalProperties) || {};
       var p = vm["$pinia"] || gp["$pinia"];
-      var s = p._s.get("session"); if (s && s.bootstrap) { s.bootstrap(); }
-      return "boot-ok";
+      var s = p._s.get("session"); if (s && s.bootstrap) { await s.bootstrap(); }
+      return "boot-ok(awaited)";
     } catch (e) { return "ERR " + e.message; }
   }, token));
 }
@@ -414,8 +432,7 @@ async function probeSet(pageObj, selectors) {
   let consecErr = 0;
   for (const s of selectors) {
     try {
-      const list = await pageObj.$$(s);
-      const n = Array.isArray(list) ? list.length : (list ? 1 : 0);
+      const n = await deepCount(pageObj, s);
       out[s] = n > 0 ? "present(" + n + ")" : "absent";
       consecErr = 0;
     } catch (e) {
@@ -424,6 +441,36 @@ async function probeSet(pageObj, selectors) {
     }
   }
   return { map: out, broken: false };
+}
+/* 组件穿透查询（2026-10-10 REAL-OT-06）。背景：other 页的底部关系动作条在
+   page → profile-shell → public-profile → relationship-c-t-a（uni-app 把 RelationshipCTA
+   编译成全小写逐词连字标签，见 dist/build/mp-weixin-real/.../PublicProfile.json）三层自定义
+   组件子树内，页级 $/组成性探不到（b4/b4b 两轮 probe 全 absent 而帧上四钮可见的根因）。
+   约定：选择器含 ">>>" 时按段逐层下钻——每段都是 automator 文档化能力（自定义组件标签
+   选择器 / 类选择器），末段 $$ 计数（deepCount）或 $ 取元素（deepOne）；
+   不含 ">>>" 的选择器走原页级路径，既有配方行为不变。 */
+function deepSegs(selector) {
+  return String(selector).split(">>>").map((s) => s.trim()).filter(Boolean);
+}
+async function deepCount(pageObj, selector) {
+  const segs = deepSegs(selector);
+  if (segs.length <= 1) {
+    const list = await pageObj.$$(selector);
+    return Array.isArray(list) ? list.length : (list ? 1 : 0);
+  }
+  let el = await pageObj.$(segs[0]);
+  for (let i = 1; i < segs.length - 1 && el; i++) el = await el.$(segs[i]);
+  if (!el) return 0;
+  const list = await el.$$(segs[segs.length - 1]);
+  return Array.isArray(list) ? list.length : (list ? 1 : 0);
+}
+async function deepOne(pageObj, selector) {
+  const segs = deepSegs(selector);
+  if (segs.length <= 1) return await pageObj.$(selector);
+  let el = await pageObj.$(segs[0]);
+  for (let i = 1; i < segs.length - 1 && el; i++) el = await el.$(segs[i]);
+  if (!el) return null;
+  return await el.$(segs[segs.length - 1]);
 }
 /* 桥的折叠探针（与 r-exec-cli.mjs 同一形态）：只为保真对照而存在，跑完这轮就该退役 */
 function cliProbe(selectors) {
@@ -507,7 +554,475 @@ async function runTapCase(name, page, c, route, cls) {
   return { bucket: "executed", row: mkRow(name, page, c, "EXECUTED", routeAfter, "", observed, evid, miss) };
 }
 
-if (!existsSync(join(PROJECT, "app.json"))) { console.log("WSX_RESULT=FAIL reason=--project 不是已编译产物：" + PROJECT); process.exit(2); }
+/* ══════════════ 能力解锁腿的逐例配方解释器（capability 车道 2026-10-06）══════════════
+ * 只在显式 --recipes <file> 时激活：带配方的 case 走 runRecipeCase 的多步序列（逐步断言落点、
+ * 逐步留帧），其余 case 照旧走通用路径 —— 不带旗标时本文件的行为与此前逐字一致。
+ * 通道声明（C4）：配方行的 automationChannel 一律盖 "ws"（本腿的探针/驱动/注入全在 WS 通道；
+ * 出帧仍走桥，transport 字段原样保留 "ws+cli-shot"）。 */
+const RECIPES_FILE = opt("recipes", "") ? resolve(REPO, opt("recipes", "")) : "";
+const RECIPES = RECIPES_FILE && existsSync(RECIPES_FILE) ? JSON.parse(readFileSync(RECIPES_FILE, "utf8")) : null;
+if (RECIPES_FILE && !RECIPES) { console.log("WSX_RESULT=FAIL reason=--recipes 指向的文件读不到：" + RECIPES_FILE); process.exit(2); }
+/* 本腿铸到的 A/B/guest 票（夹具 API 操作子要用；main() 里 mintToken 成功后回填）。
+   identity=none（不铸票）时为空 ⇒ 带 api 夹具的配方在取夹具前先拒跑（不冒充已登录）。 */
+let LEG_TOKEN = "";
+
+function apiHttp(method, path, { token, body, idem } = {}) {
+  return new Promise((done) => {
+    const u = new URL("http://127.0.0.1:8080" + path);
+    const data = body ? JSON.stringify(body) : null;
+    const headers = { Accept: "application/json" };
+    if (data) { headers["Content-Type"] = "application/json"; headers["Content-Length"] = Buffer.byteLength(data); }
+    if (idem) headers["Idempotency-Key"] = idem;
+    if (token) headers.Authorization = "Bearer " + token;
+    const r = http.request({ hostname: u.hostname, port: u.port, path: u.pathname + u.search, method, headers, timeout: 20000 }, (res) => {
+      let b = ""; res.on("data", (c) => (b += c)); res.on("end", () => done({ status: res.statusCode, body: b }));
+    });
+    r.on("timeout", () => { r.destroy(); done({ status: 0, body: "TIMEOUT" }); });
+    r.on("error", (e) => done({ status: 0, body: "ERR:" + String(e && e.code) }));
+    if (data) r.write(data);
+    r.end();
+  });
+}
+let ADMIN_TOKEN_CACHE = null;
+async function adminToken() {
+  if (ADMIN_TOKEN_CACHE) return ADMIN_TOKEN_CACHE;
+  /* 凭据只运行期从 launcher 解析（先例 probe-admin-post-counts.mjs:36-39），绝不上命令行、绝不打印。 */
+  const launcher = readFileSync(resolve(REPO, "apps/api/restart-backend.ps1"), "utf8");
+  const envOf = (k) => { const m = launcher.match(new RegExp(k + " = '([^']*)'")); return m ? m[1] : ""; };
+  const username = envOf("ADMIN_OPENID"), password = envOf("ADMIN_PASSWORD");
+  if (!username || !password) throw new Error("launcher 里解析不到 ADMIN_OPENID/ADMIN_PASSWORD（不猜凭据）");
+  const r = await apiHttp("POST", "/api/v1/auth/admin/login", { body: { username, password }, idem: "qa-cap-" + Date.now() });
+  if (r.status !== 200) throw new Error("admin/login http " + r.status + " " + r.body.slice(0, 80));
+  const j = JSON.parse(r.body);
+  ADMIN_TOKEN_CACHE = (j.data && j.data.token) || j.token;
+  if (!ADMIN_TOKEN_CACHE) throw new Error("admin/login 响应里没有 token");
+  return ADMIN_TOKEN_CACHE;
+}
+/* pinia store 取用（与 wsBootSession 同一条取 store 的路）。 */
+const STORE_OP_SOURCE = {
+  "store-call": (storeName, callName, callArgs) => {
+    try {
+      var app = getApp(); var vm = app["$vm"];
+      var gp = (vm.$ && vm.$.appContext.config.globalProperties) || {};
+      var p = vm["$pinia"] || gp["$pinia"];
+      var st = p._s.get(storeName); if (!st) return JSON.stringify({ ok: false, err: "no store " + storeName });
+      var out = st[callName].apply(st, callArgs || []);
+      var norm = function (v) { try { return v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : String(v); } catch (e) { return String(v); } };
+      if (out && typeof out.then === "function") {
+        return out.then(function (v) { return JSON.stringify({ ok: true, value: norm(v) }); })
+          .catch(function (e) { return JSON.stringify({ ok: false, err: String(e && e.message) }); });
+      }
+      return JSON.stringify({ ok: true, value: norm(out) });
+    } catch (e) { return JSON.stringify({ ok: false, err: String(e && e.message) }); }
+  },
+  "store-patch": (storeName, patch) => {
+    try {
+      var app = getApp(); var vm = app["$vm"];
+      var gp = (vm.$ && vm.$.appContext.config.globalProperties) || {};
+      var p = vm["$pinia"] || gp["$pinia"];
+      var st = p._s.get(storeName); if (!st) return JSON.stringify({ ok: false, err: "no store " + storeName });
+      var ks = Object.keys(patch || {});
+      ks.forEach(function (k) { st[k] = patch[k]; });
+      return JSON.stringify({ ok: true, patched: ks });
+    } catch (e) { return JSON.stringify({ ok: false, err: String(e && e.message) }); }
+  },
+  "store-cleanup": (storeName, arrays, wantId) => {
+    try {
+      var app = getApp(); var vm = app["$vm"];
+      var gp = (vm.$ && vm.$.appContext.config.globalProperties) || {};
+      var p = vm["$pinia"] || gp["$pinia"];
+      var st = p._s.get(storeName); if (!st) return JSON.stringify({ ok: false, err: "no store " + storeName });
+      var removed = 0;
+      (arrays || []).forEach(function (a) {
+        var before = (st[a] || []).length;
+        st[a] = (st[a] || []).filter(function (x) { return String(x && ((x.id !== undefined && x.id !== null) ? x.id : (x.postId !== undefined ? x.postId : ""))) !== wantId; });
+        removed += before - (st[a] || []).length;
+      });
+      return JSON.stringify({ ok: true, removed: removed });
+    } catch (e) { return JSON.stringify({ ok: false, err: String(e && e.message) }); }
+  },
+};
+/* 具名读数程序（read 步的 expr 词表；配方里写名字、不写代码 —— 不给应用上下文喂任意脚本）。 */
+const READ_PROGRAMS = {
+  "village-selfPending-and-feed-dedup": () => {
+    try {
+      var app = getApp(); var vm = app["$vm"];
+      var gp = (vm.$ && vm.$.appContext.config.globalProperties) || {};
+      var p = vm["$pinia"] || gp["$pinia"];
+      var st = p._s.get("village"); if (!st) return "ERR no village store";
+      var wantId = String(globalThis.__qaCapturedPostId || "");
+      if (!wantId) return "ERR no captured post id（夹具 setup 没捕获到帖子 id）";
+      var countIn = function (arr) { var n = 0; (arr || []).forEach(function (x) { var v = x && (x.id !== undefined && x.id !== null ? x.id : (x.postId !== undefined ? x.postId : "")); if (String(v) === wantId) n++; }); return n; };
+      return JSON.stringify({ wantId: wantId, selfPending: countIn(st.selfPendingPosts), feed: countIn(st.posts), feedLen: (st.posts || []).length, selfPendingLen: (st.selfPendingPosts || []).length });
+    } catch (e) { return "ERR " + e.message; }
+  },
+  /* R2-PFI25-04/R2-02 定谳探针（2026-10-10）：渲染时读 profile store 语音态，
+     与同刻的 probe（.video-cta / .voice-preview__delete）配对 ⇒ 「store 有态而渲染无钮」
+     才是渲染链丢弃；「store 无态」则丢弃在更早处（实测在册：simulator_open_page 属 compiler
+     族=触发重编译重启 AppService，open 前的 store-patch 必灭——CON-EV-01「桥开页重启
+     AppService（包装器/缓冲全灭）」。语音 URL 只回长度+前缀，不整串回显。 */
+  "profile-voice-state": () => {
+    try {
+      var app = getApp(); var vm = app["$vm"];
+      var gp = (vm.$ && vm.$.appContext.config.globalProperties) || {};
+      var p = vm["$pinia"] || gp["$pinia"];
+      var st = p && p._s && p._s.get("profile"); if (!st) return "ERR no profile store";
+      var cs = getCurrentPages(); var top = cs.length ? cs[cs.length - 1].route : "";
+      var u = String(st.voiceStatusUrl || "");
+      return JSON.stringify({ route: top, voiceUrlLen: u.length, voiceUrlHead: u.slice(0, 40), voiceDuration: st.voiceStatusDuration || 0, hasBasicProfile: !!st.basicProfile });
+    } catch (e) { return "ERR " + e.message; }
+  },
+};
+/* AppService toast 钩子（载具 r1-exec.cjs:278-299 同源；探针4 实测本上下文 installed 且收流）。 */
+async function capInstallToastHook() {
+  try {
+    return await mini.evaluate(() => {
+      try {
+        if (globalThis.__qaHooked) return "already";
+        globalThis.__qaToasts = [];
+        const wrap = (name) => {
+          try {
+            const orig = wx[name] ? wx[name].bind(wx) : null;
+            if (!orig) return;
+            wx[name] = function (o) {
+              try { globalThis.__qaToasts.push({ api: name, title: o && o.title, ts: Date.now() }); } catch (e) { /* ignore */ }
+              return orig.apply(wx, arguments);
+            };
+          } catch (e) { /* ignore */ }
+        };
+        wrap("showToast"); wrap("hideToast"); wrap("showModal"); wrap("showLoading");
+        globalThis.__qaHooked = true;
+        return "installed";
+      } catch (e) { return "ERR " + e.message; }
+    });
+  } catch (e) { return "THREW " + String(e.message).slice(0, 60); }
+}
+async function capDrainToasts() {
+  try {
+    const r = await mini.evaluate(() => JSON.stringify((globalThis.__qaToasts || []).splice(0)));
+    const s = String(r === undefined ? "" : r);
+    const cut = s.indexOf("[");
+    const j = cut >= 0 ? JSON.parse(s.slice(cut)) : [];
+    return Array.isArray(j) ? j : [];
+  } catch { return []; }
+}
+/* C6 对齐的 pullDown 载荷：**一个 uni 记号都不许出现**（实测 evaluate 上下文里任何 uni 记号
+   —— 连 typeof —— 都报 "ERR uni is not defined"，这正是 VB03 腿 pullDown=error 的根因）。
+   主路径 wx.startPullDownRefresh（探针4 实测 wx-ok），页内 onPullDownRefresh 兜底。 */
+function capPullDownSource() {
+  return "() => { try { if (typeof wx !== 'undefined' && typeof wx.startPullDownRefresh === 'function') { wx.startPullDownRefresh(); return 'wx-ok'; } " +
+    "var cs = getCurrentPages(); var p = cs[cs.length - 1]; if (!p) return 'no-page'; " +
+    "if (typeof p.onPullDownRefresh === 'function') { p.onPullDownRefresh(); return 'page-handler-ok'; } return 'no-api'; } " +
+    "catch (e) { return 'ERR ' + e.message; } }";
+}
+function capStopPullDownSource() {
+  return "() => { try { if (typeof wx !== 'undefined' && typeof wx.stopPullDownRefresh === 'function') { wx.stopPullDownRefresh(); return 'wx-ok'; } return 'no-api'; } catch (e) { return 'ERR ' + e.message; } }";
+}
+async function capEval(source) {
+  /* source 是函数声明串（"() => …" 开头）—— automator 的 isFnStr 认它，App.callFunction 在应用侧执行。
+     绝不在 Node 侧 new Function 求值（那是把应用侧载荷跑在 Node 里）。 */
+  return await withRetry("capEval", async (m) => String(await m.evaluate(source)) || "");
+}
+function capPullDownVerdict(s) {
+  const t = String(s || "");
+  if (/wx-ok/.test(t)) return "ok";
+  if (/page-handler-ok/.test(t)) return "ok(直接调页内 onPullDownRefresh，非 wx 链路)";
+  if (/no-api/.test(t)) return "unsupported(该页没挂下拉刷新能力)";
+  if (/no-page/.test(t)) return "no-page";
+  if (/ERR/.test(t)) return "error";
+  return "unknown";
+}
+
+/* 逐例配方的一步执行。返回 {fatal?:string, assertFail?:string, note:string}。 */
+async function runRecipeStep(step, ctx) {
+  const note = (s) => ({ note: String(s).slice(0, 220) });
+  switch (step.do) {
+    case "open": {
+      const q = expandTemplate(step.query || "", ctx.captured);
+      openPage(step.page, q, { project: PROJECT });
+      await sleep(TAP_SETTLE + 600);
+      const route = await wsRoute();
+      return note("open " + step.page + (q ? "?" + q : "") + " ⇒ top=" + String(route || "(空)"));
+    }
+    case "wait": await sleep(Math.max(0, Math.min(Number(step.ms) || 0, 15000))); return note("wait " + step.ms + "ms");
+    case "probe": {
+      const p = await wsPage();
+      const pr = await probeSet(p, step.selectors || []);
+      return note("probe " + JSON.stringify(pr.map));
+    }
+    case "shot": {
+      const f = join(SHOT_DIR, ctx.name + "-" + ctx.c.id + "-" + String(step.label || "step") + ".png");
+      try {
+        rmSync(f, { force: true });
+        shot(f, { project: PROJECT });
+        const sz = existsSync(f) ? statSync(f).size : 0;
+        if (sz > 3000) { ctx.shots.push(relOf(f) + "(" + sz + "B)"); if (!ctx.evidence) ctx.evidence = relOf(f) + "(" + sz + "B)"; return note("shot " + String(step.label) + " ok " + sz + "B"); }
+        return note("shot " + String(step.label) + " 仅 " + sz + "B（不当证据）");
+      } catch (e) { return note("shot " + String(step.label) + " 失败:" + String(e.message).slice(0, 60)); }
+    }
+    case "tap": {
+      const p = await wsPage();
+      const el = await deepOne(p, step.selector);
+      if (!el) return { fatal: "tap 目标 " + step.selector + " 不在页上（WS $ 探不到 ⇒ 组件未挂载或前置缺失，通道欠款不是产品判决）" };
+      await el.tap();
+      return note("tap " + step.selector);
+    }
+    case "rapidTap": {
+      const p = await wsPage();
+      const el = await deepOne(p, step.selector);
+      if (!el) return { fatal: "rapidTap 目标 " + step.selector + " 不在页上" };
+      const times = Math.max(1, Math.min(Number(step.times) || 1, 20));
+      const stamps = [];
+      for (let k = 0; k < times; k++) {
+        try { await el.tap(); stamps.push(Date.now()); } catch (e) { return { fatal: "rapidTap 第 " + (k + 1) + "/" + times + " 次失败:" + String(e.message).slice(0, 60) }; }
+        if (step.gapMs) await sleep(Number(step.gapMs) || 0);
+      }
+      const span = stamps.length > 1 ? stamps[stamps.length - 1] - stamps[0] : 0;
+      return note("rapidTap×" + stamps.length + "/" + times + " " + step.selector + " 跨度=" + span + "ms");
+    }
+    case "input": {
+      const p = await wsPage();
+      const el = await deepOne(p, step.selector);
+      if (!el) return { fatal: "input 目标 " + step.selector + " 不在页上" };
+      if (typeof el.input !== "function") return { fatal: "元素 " + step.selector + " 不支持 input 动词（tag=" + String(el.tagName) + "）" };
+      await el.input(String(expandTemplate(step.value || "", ctx.captured)));
+      return note("input " + step.selector + " ← " + String(step.value || "").slice(0, 24) + "…(len=" + String(step.value || "").length + ")");
+    }
+    case "readValue": {
+      const p = await wsPage();
+      const el = await deepOne(p, step.selector);
+      if (!el) return { fatal: "readValue 目标 " + step.selector + " 不在页上" };
+      let v = null, via = "";
+      try { v = await el.value(); via = "value()"; } catch (e1) {
+        try { v = await el.attribute("value"); via = "attribute(value)"; } catch (e2) { return note("readValue " + step.selector + " 不可读（value/attribute 都不答 ⇒ 如实记，不猜截断值）"); }
+      }
+      return note("readValue " + step.selector + " [" + via + "]=" + JSON.stringify(v).slice(0, 120) + " len=" + String(v === null || v === undefined ? "" : v).length);
+    }
+    case "pullDown": {
+      const r = await capEval(capPullDownSource());
+      ctx.pullDowns.push(capPullDownVerdict(r));
+      return note("pullDown ⇒ " + capPullDownVerdict(r) + "(" + r.slice(0, 40) + ")");
+    }
+    case "stopPullDown": {
+      const r = await capEval(capStopPullDownSource());
+      return note("stopPullDown ⇒ " + r.slice(0, 40));
+    }
+    case "armModal": {
+      if (!ctx.recipe.modalScript) return { fatal: "armModal 步但配方没有 modalScript" };
+      const ms = parseModalScript(ctx.recipe.modalScript);
+      if (!ms.ok) return { fatal: "modalScript 解析失败：" + ms.reason };
+      const armAns = await capEval(modalAnswersSource(ms));
+      if (!/answers-armed/.test(armAns)) return { fatal: "modal answers 写袋失败：" + armAns.slice(0, 60) };
+      for (const api of ms.apis) {
+        await mini.mockWxMethod(api, modalArmSource(api));
+        ctx.modalArmed.push(api);
+      }
+      ctx.modalScript = ms;
+      return note("armModal " + ms.apis.join("/") + " answers=" + ms.apis.map((a) => ms.script[a].answers.length).join("/") + " ⇒ armed(" + armAns.slice(0, 14) + ")");
+    }
+    case "restoreModal": {
+      for (const api of ctx.modalArmed) { try { await mini.restoreWxMethod(api); } catch (e) { ctx.modalRestoreErr = String(e.message).slice(0, 50); } }
+      const n = ctx.modalArmed.length; ctx.modalArmed = [];
+      return note("restoreModal " + n + " 个 API" + (ctx.modalRestoreErr ? "（restore 报错:" + ctx.modalRestoreErr + "）" : " ⇒ ok"));
+    }
+    case "drainModal": {
+      const d = interpretModalDrain(await capEval(modalDrainSource()));
+      ctx.modalCalls = ctx.modalCalls.concat(d.calls);
+      const expect = Number(step.expect);
+      const okN = Number.isInteger(expect) ? d.calls.length >= expect : true;
+      return okN ? note("drainModal 实收=" + d.calls.length + " " + modalObservedNote(d))
+        : { assertFail: "drainModal 期望≥" + expect + " 次弹窗，实收 " + d.calls.length + " 次" };
+    }
+    case "armNetFault": {
+      const specIn = step.spec || ctx.recipe.netFault;
+      const nf = parseNetFault(specIn);
+      if (!nf.ok) return { fatal: "netFault 解析失败：" + nf.reason };
+      const arm = await capEval(netFaultArmSource(nf.spec));
+      if (!/net-armed/.test(arm)) return { fatal: "netFault 原引用抓取/写袋失败：" + arm.slice(0, 60) };
+      await mini.mockWxMethod("request", netFaultMockSource());
+      ctx.netSpec = nf.spec; ctx.netArmed = true;
+      return note("armNetFault mode=" + nf.spec.mode + (nf.spec.urlIncludes ? " url~=" + nf.spec.urlIncludes : "") + (nf.spec.statusCode ? " statusCode=" + nf.spec.statusCode : "") + " ⇒ armed(" + arm.slice(0, 12) + ")");
+    }
+    case "restoreNetFault": {
+      if (!ctx.netArmed) return note("restoreNetFault 跳过（本腿没有 arm 过）");
+      await mini.restoreWxMethod("request");
+      const cl = await capEval(netFaultRestoreSource());
+      ctx.netArmed = false;
+      return note("restoreNetFault ⇒ " + cl.slice(0, 30));
+    }
+    case "drainNet": {
+      const d = interpretNetDrain(await capEval(netDrainSource()));
+      const all = ctx.netCalls.concat(d.calls);
+      ctx.netCalls = all;
+      const filtered = step.urlIncludes ? d.calls.filter((c) => String(c.url || "").indexOf(step.urlIncludes) >= 0) : d.calls;
+      return note("drainNet 本窗=" + d.calls.length + (step.urlIncludes ? " 命中 " + step.urlIncludes + " = " + filtered.length + " [" + filtered.map((c) => String(c.method) + " " + String(c.url).slice(0, 60)).slice(0, 6).join(" | ") + "]" : ""));
+    }
+    case "assertRoute": {
+      const route = await wsRoute();
+      const v = navStepVerdict(step, route);
+      if (!v.ok) return { assertFail: v.text };
+      return note(v.text);
+    }
+    case "assertPresent": case "assertAbsent": {
+      const p = await wsPage();
+      const pr = await probeSet(p, [step.selector]);
+      const n = String(pr.map[step.selector] || "");
+      const present = n.startsWith("present");
+      const wantPresent = step.do === "assertPresent";
+      if (present !== wantPresent) return { assertFail: "assert" + (wantPresent ? "Present" : "Absent") + " " + step.selector + " 实测=" + (n || "no-answer") };
+      return note("assert" + (wantPresent ? "Present" : "Absent") + " " + step.selector + " ⇒ " + n);
+    }
+    case "fixture": {
+      const fx = ctx.recipe.fixture;
+      if (!fx) return note("fixture " + step.phase + " 跳过（配方无夹具）");
+      const list = step.phase === "setup" ? (fx.setup || []) : (fx.teardown || []);
+      const results = [];
+      for (const op of list) {
+        try {
+          const r = await runFixtureOp(op, ctx.captured, fx.why);
+          results.push(r);
+          ctx.fixtureOps.push(step.phase + ":" + op.name + "=" + (r.ok ? "ok" : "FAIL(" + String(r.err || r.status).slice(0, 60) + ")"));
+          if (r.ok && op.capture && op.capturePath) {
+            const v = String(op.capturePath).split(".").reduce((o, k) => (o == null ? undefined : o[k]), r.value);
+            if (v !== undefined) {
+              ctx.captured[op.capture] = v;
+              await capEval("() => { try { globalThis.__qaCapturedPostId = " + JSON.stringify(String(v)) + "; return 'captured'; } catch (e) { return 'ERR ' + e.message; } }");
+            }
+          }
+        } catch (e) { results.push({ ok: false, err: String(e.message).slice(0, 100) }); ctx.fixtureOps.push(step.phase + ":" + op.name + "=THREW(" + String(e.message).slice(0, 60) + ")"); }
+      }
+      ctx.fixture[step.phase] = (ctx.fixture[step.phase] || []).concat(results);
+      const fails = results.filter((r) => !r.ok);
+      if (step.phase === "setup" && fails.length) return { fatal: "夹具 setup 失败：" + fails.map((r) => String(r.err || r.status)).join("；") };
+      if (step.phase === "teardown" && fails.length) { ctx.fixtureResidue = true; return note("teardown **失败** " + fails.length + " 步（残留，须人工清理）：" + fails.map((r) => String(r.err || r.status)).join("；")); }
+      return note("fixture " + step.phase + " ok " + results.length + " 步" + (results.some((r) => r.captured) ? "（capture=" + JSON.stringify(ctx.captured).slice(0, 60) + "）" : ""));
+    }
+    case "read": {
+      const prog = READ_PROGRAMS[step.expr];
+      if (!prog) return { fatal: "read 步的具名程序不存在：" + String(step.expr) + "（词表 " + Object.keys(READ_PROGRAMS).join("/") + "）" };
+      const r = await capEval(prog.toString());
+      return note("read " + String(step.label || step.expr) + " ⇒ " + r.slice(0, 180));
+    }
+    default: return { fatal: "未知步骤 kind=" + step.do };
+  }
+}
+/* 夹具操作子（op.via → 设备/API 动作）。返回 {ok, err?, status?, body?, value?, captured?}。 */
+async function runFixtureOp(op, captured) {
+  const via = op.via;
+  if (via === "api") {
+    let path = expandTemplate(op.path, captured);
+    const unresolved = templateUnresolved(op.path, captured);
+    if (unresolved.length) return { ok: false, err: "path 占位符未解析：" + unresolved.join(",") + "（setup 没捕获到，teardown 不许凭空发）" };
+    const bodyRaw = op.body ? expandTemplate(JSON.stringify(op.body), captured) : null;
+    const body = bodyRaw && bodyRaw.indexOf("null") === 0 ? null : (bodyRaw ? JSON.parse(bodyRaw) : null);
+    const token = op.admin ? await adminToken() : LEG_TOKEN;
+    if (!token) return { ok: false, err: "没有可用票据（identity=" + IDENTITY + " 未铸票，admin=false 的 API 夹具不可跑）" };
+    const r = await apiHttp(String(op.method).toUpperCase(), path, { token, body, idem: "qa-fx-" + Date.now() + "-" + Math.floor(Math.random() * 1e6) });
+    const want = Array.isArray(op.expectStatus) ? op.expectStatus : [Number(op.expectStatus) || 200];
+    const ok = want.includes(r.status);
+    let value = null;
+    try { value = JSON.parse(r.body); } catch { /* 保留原文 */ }
+    return ok ? { ok: true, status: r.status, body: r.body.slice(0, 200), value } : { ok: false, status: r.status, err: r.body.slice(0, 120) || ("http " + r.status) };
+  }
+  if (via === "store-call" || via === "store-patch" || via === "store-cleanup") {
+    const src = STORE_OP_SOURCE[via];
+    let argList;
+    if (via === "store-call") {
+      const argsRaw = op.args ? expandTemplate(JSON.stringify(op.args), captured) : "[]";
+      const unresolved = templateUnresolved(JSON.stringify(op.args || []), captured);
+      if (unresolved.length) return { ok: false, err: "args 占位符未解析：" + unresolved.join(",") };
+      argList = JSON.parse(argsRaw);
+      /* {ts} 时间戳哨兵（夹具标记唯一化）——仅替换顶层字符串里的 {ts}。 */
+      argList = JSON.parse(JSON.stringify(argList).split("{ts}").join(String(Date.now())));
+    } else if (via === "store-patch") {
+      argList = [JSON.parse(expandTemplate(JSON.stringify(op.patch || {}), captured).split("{ts}").join(String(Date.now())))];
+    } else {
+      argList = [op.store, op.arrays, expandTemplate(op.byId, captured)];
+    }
+    /* evaluate 的 fn 与 args 必须同一次调用（automator 序列化 fn.toString() + args）⇒ 直接 sess() 取会话。 */
+    const m2 = await sess();
+    let out;
+    if (via === "store-call") out = await m2.evaluate(src, op.store, op.call, argList);
+    else if (via === "store-patch") out = await m2.evaluate(src, op.store, argList[0]);
+    else out = await m2.evaluate(src, op.store, argList[1], argList[2]);
+    const s = String(out === undefined ? "" : out);
+    const cut = s.indexOf("{");
+    let j = null; try { j = JSON.parse(cut >= 0 ? s.slice(cut) : s); } catch { return { ok: false, err: "store op 返回不可解析：" + s.slice(0, 80) }; }
+    if (!j || j.ok !== true) return { ok: false, err: (j && j.err) || "store op 未答 ok" };
+    return { ok: true, value: j.value, removed: j.removed, patched: j.patched };
+  }
+  return { ok: false, err: "未知夹具 via=" + via };
+}
+
+/* 一条配方 case 的完整执行 → 行。 */
+async function runRecipeCase(name, page, c, route) {
+  const recipe = recipeFor(RECIPES, name, c.id) || {};
+  const ctx = {
+    name, c, recipe, captured: {}, shots: [], evidence: "", pullDowns: [],
+    modalArmed: [], modalScript: null, modalCalls: [], modalRestoreErr: "",
+    netSpec: null, netArmed: false, netCalls: [],
+    fixture: {}, fixtureOps: [], fixtureResidue: false,
+    records: [], toasts: [],
+  };
+  const st = parseNavSteps(recipe.steps || []);
+  if (!st.ok) {
+    return { status: "SKIPPED", reason: "NOT_SHOOTABLE(recipe)：配方步骤解析失败 ⇒ 不上设备：" + st.reason, observed: "top=" + route + " | recipe-parse-fail", evid: "", miss: [] };
+  }
+  const wantsApiFixture = JSON.stringify(recipe.fixture || {}).indexOf('"via": "api"') >= 0 || JSON.stringify(recipe.fixture || {}).indexOf('"via":"api"') >= 0;
+  if (wantsApiFixture && !LEG_TOKEN) {
+    return { status: "SKIPPED", reason: "NOT_SHOOTABLE(fixture)：配方带 api 夹具但本腿 identity=" + IDENTITY + " 没有可用的产品票据 ⇒ 夹具跑不了就不跑（不冒充已登录）", observed: "top=" + route + " | no-token-for-fixture", evid: "", miss: [] };
+  }
+  let status = "EXECUTED", reason = "", fatal = "", assertFail = "";
+  for (let i = 0; i < st.steps.length; i++) {
+    const step = st.steps[i];
+    let r;
+    try { r = await runRecipeStep(step, ctx); }
+    catch (e) { r = { fatal: "step#" + (i + 1) + " " + step.do + " 抛错:" + String(e.message).replace(/\s+/g, " ").slice(0, 120) }; }
+    ctx.records.push({ do: step.do, label: step.label || step.selector || step.expr || step.phase || "", note: (r && r.note) || (r && (r.fatal || r.assertFail)) || "" });
+    if (r && r.assertFail) { assertFail = "step#" + (i + 1) + " " + step.do + "：" + r.assertFail; status = "FAILED"; break; }
+    if (r && r.fatal) { fatal = "step#" + (i + 1) + " " + step.do + "：" + r.fatal; status = "SKIPPED"; break; }
+  }
+  /* 收尾清场：无论哪条出口，mock 与夹具都必须恢复 —— 收尾失败如实点名，绝不静默。 */
+  if (ctx.netArmed) {
+    try { await mini.restoreWxMethod("request"); const cl = await capEval(netFaultRestoreSource()); ctx.records.push({ do: "(cleanup)", label: "restoreNetFault", note: cl }); ctx.netArmed = false; }
+    catch (e) { ctx.fixtureResidue = true; ctx.records.push({ do: "(cleanup)", label: "restoreNetFault", note: "THREW " + String(e.message).slice(0, 60) }); }
+  }
+  if (ctx.modalArmed.length) {
+    for (const api of ctx.modalArmed) { try { await mini.restoreWxMethod(api); } catch (e) { ctx.modalRestoreErr = String(e.message).slice(0, 50); } }
+    ctx.records.push({ do: "(cleanup)", label: "restoreModal", note: ctx.modalRestoreErr ? "restore 报错:" + ctx.modalRestoreErr : "ok" });
+    ctx.modalArmed = [];
+  }
+  ctx.toasts = await capDrainToasts();
+  const fv = fixtureVerdict(ctx.fixture);
+  if (ctx.fixtureResidue && status === "EXECUTED") reason = "";
+  const observed = [
+    "top=" + (await wsRoute() || route),
+    "dom(配方步): 见 stepsNote",
+    "modal[" + modalDriveNote(ctx.modalScript, { calls: ctx.modalCalls }, !ctx.modalArmed.length) + "]",
+    ctx.modalCalls.length ? modalObservedNote({ calls: ctx.modalCalls }) : "",
+    "netFault[" + netFaultNote(ctx.netSpec, { calls: ctx.netCalls }, !ctx.netArmed) + "]",
+    ctx.netCalls.length ? "net 拦截窗请求[" + ctx.netCalls.length + " 条: " + ctx.netCalls.slice(0, 8).map((x) => String(x.method) + " " + String(x.url).slice(0, 48)).join(" | ") + "]" : "",
+    ctx.pullDowns.length ? "pullDown 判点[" + ctx.pullDowns.join(", ") + "]" : "",
+    "fixture[" + fv.text + (ctx.fixtureOps.length ? " " + ctx.fixtureOps.join(" ") : "") + "]",
+    ctx.shots.length ? "frames[" + ctx.shots.join(" ") + "]" : "frames[无]",
+    ctx.toasts.length ? "toast[" + ctx.toasts.map((t) => String(t.api) + ":" + String(t.title).slice(0, 40)).slice(0, 6).join(" | ") + "]" : "toast[无]",
+  ].filter(Boolean).join(" | ");
+  const stepsNote = ctx.records.map((r, i) => "#" + (i + 1) + " " + r.do + (r.label ? "(" + r.label + ")" : "") + " :: " + r.note).join("；");
+  if (status === "SKIPPED" && fatal) reason = "NOT_SHOOTABLE(recipe-step)：多步序列在「" + fatal + "」处中止 ⇒ 已完成 " + (ctx.records.length - 1) + "/" + st.steps.length + " 步；这是通道/前置欠款，不是产品判决（已完成步的读数照实保留在 observed/stepsNote）";
+  if (status === "FAILED" && assertFail) reason = "配方断言判红：" + assertFail + "（逐步读数见 stepsNote；判定的是判据点名的对照，不是通道问题）";
+  const extra = {
+    automationChannel: channelStamp(CHANNEL_WS),
+    recipe: name + "|" + c.id,
+    stepsNote,
+    modalDrive: modalDriveNote(ctx.modalScript, { calls: ctx.modalCalls }, !ctx.modalArmed.length),
+    netFault: netFaultNote(ctx.netSpec, { calls: ctx.netCalls }, !ctx.netArmed),
+    fixture: fv.kind + (ctx.fixtureResidue ? "+RESIDUE" : "") + (ctx.fixtureOps.length ? "（" + ctx.fixtureOps.join(" ") + "）" : ""),
+    toast: ctx.toasts,
+    transport: "ws+cli-shot",
+  };
+  return { status, reason, observed, evid: ctx.evidence, miss: [], extra };
+}
+
 /* 身份标签先自证，位置在**建目录/取租约之前**（拒跑就要真的什么都没发生：不建 OUT_DIR、不碰
    tmp/qa/locks、一行不跑）。形状照 artifact-band.mjs:59 assertGuestCapable 与 r-exec-cli.mjs:265 那条前置。
    本轮实测的根因：mintToken 旧写法只分 "A" 与"不是 A"，非 A 一律 POST /auth/guest-login ⇒
@@ -541,8 +1056,8 @@ for (const [k, re] of [["redo-taps", /^action 含交互动词/], ["redo-real", /
 }
 const done = new Set((prior.results || []).map((r) => r.manifest + "|" + r.id));
 const rows = [];
-const stats = { executed: 0, failed: 0, skipTap: 0, skipReal: 0, skipRoute: 0, skipNoCrit: 0, skipMiss: 0, tapDeny: 0, tapNoTarget: 0, tapFail: 0, tapNoFrame: 0, pages: 0, probes: 0, shots: 0, openFailGroups: 0, openRetries: 0 };
-const SKIP_KEYS = ["skipTap", "skipReal", "skipRoute", "skipNoCrit", "skipMiss", "tapDeny", "tapNoTarget", "tapFail", "tapNoFrame"];
+const stats = { executed: 0, failed: 0, skipTap: 0, skipReal: 0, skipRoute: 0, skipNoCrit: 0, skipMiss: 0, tapDeny: 0, tapNoTarget: 0, tapFail: 0, tapNoFrame: 0, pages: 0, probes: 0, shots: 0, openFailGroups: 0, openRetries: 0, recipeExecuted: 0, recipeFailed: 0, recipeSkip: 0 };
+const SKIP_KEYS = ["skipTap", "skipReal", "skipRoute", "skipNoCrit", "skipMiss", "tapDeny", "tapNoTarget", "tapFail", "tapNoFrame", "recipeSkip"];
 const skipTotal = () => SKIP_KEYS.reduce((a, k) => a + stats[k], 0);
 
 function flush(cls) {
@@ -662,11 +1177,20 @@ async function main() {
        guest 走 guest-login、别的标签直接抛。 */
     try { minted = await mintToken(IDENTITY, REPO, "r7-ws-" + LABEL); t = minted.token; }
     catch (e) { console.log("WSX_RESULT=FAIL reason=铸 token 失败：" + String(e.message).slice(0, 130) + " ⇒ 一行都不跑"); process.exit(2); }
+    LEG_TOKEN = t; /* 能力腿的夹具 API 操作子用同一张票（runFixtureOp）。 */
     SESSION.source = String(minted.source || "");
     let b = await wsBootSession(t);
     if (b === undefined) { b = bootSession(t, { project: PROJECT }); console.log("[boot] WS 写会话没答，退回桥写入（下方 verify 仍以 WS 为准）"); }
     let v = await wsVerifyLogin();
     if (v === undefined) { v = "(WS 无答案，桥值=" + verifyLogin({ project: PROJECT }) + ")"; }
+    /* capability 车道 2026-10-06 补重试：bootstrap 的 /auth/me 是异步链路，个别窗口上首个读数
+       抢在会话落地之前（ boot-ok(awaited) 之后仍可能读到旧快照）。这里给最多 5×1.2s 的
+       重读窗口 —— 不改变判点：超时仍 not-logged-in ⇒ 照旧整批不跑（未登录画面不能当已登录证据）。 */
+    for (let i = 0; i < 5 && !/^logged-in/.test(String(v || "")); i++) {
+      await sleep(1200);
+      v = await wsVerifyLogin();
+      if (v === undefined) v = "";
+    }
     LOGIN_VERIFY = String(v);
     SESSION.verify = LOGIN_VERIFY;
     console.log("[boot] " + b + " identity=" + IDENTITY + " mint=" + SESSION.source + " 铸到userId=" + minted.userId + " verify=" + LOGIN_VERIFY);
@@ -743,6 +1267,28 @@ async function main() {
   }
 
   let budget = LIMIT > 0 ? LIMIT : Infinity;
+  /* ── 配方模式自证（只在 --recipes 时发生）：文件解析 + 对判据台交叉校验 + AppService toast 钩子 ── */
+  let RECIPE_MODE = false;
+  if (RECIPES) {
+    const corpus = new Map();
+    for (const name2 of files) {
+      try {
+        const mf = JSON.parse(readFileSync(join(OPS, name2 + ".json"), "utf8"));
+        const page = mf.page || "";
+        for (const c of (mf.cases || [])) corpus.set(name2 + "|" + c.id, { page, case: c });
+      } catch { /* 语料读不到的文件在校验里点名 */ }
+    }
+    const v = validateRecipes(RECIPES, new Map([...corpus].map(([k, val]) => [k, { page: val.page }])));
+    if (!v.ok) {
+      for (const p of v.problems) console.log("  WSX_RECIPE_BAD " + p);
+      console.log("WSX_RESULT=FAIL reason=配方文件对判据台的交叉校验失败（" + v.problems.length + " 条）⇒ 一行都不跑：配方键拼错/选择器没覆盖 tapTarget/夹具不可回滚都会静默少跑或多跑，先修配方再上腿");
+      process.exit(2);
+    }
+    RECIPE_MODE = true;
+    const hookR = await capInstallToastHook();
+    console.log("WSX_RECIPE_MODE on file=" + relOf(RECIPES_FILE) + " 配方=" + v.count + " 条（键全在判据台、tapTarget 全覆盖、夹具全可回滚）"
+      + " AppServiceToastHook=" + hookR + " automationChannel=" + channelStamp(CHANNEL_WS));
+  }
   let stopped = false;
   /* aborted=开页连续同因失败早停；openFailSigs=逐组的开页失败签名（一次成功即清空，早停只数"连续"） */
   let aborted = false;
@@ -822,6 +1368,24 @@ async function main() {
       const dom = pr.map;
       if (pr.broken) console.log("WSX_PROBE_BROKEN page=" + page + " ⇒ 该组探针不采信");
       for (const c of todo) {
+        /* 配方腿（--recipes 且该 case 有配方）：走多步序列解释器，逐步断言落点并逐步留帧（C5），
+           驱动/注入/夹具按配方武装（C1/C2/C3）。 */
+        if (RECIPE_MODE && recipeFor(RECIPES, name, c.id)) {
+          const rr = await runRecipeCase(name, page, c, route);
+          const rowR = mkRow(name, page, c, rr.status, route, rr.reason, rr.observed, rr.evid, rr.miss);
+          Object.assign(rowR, rr.extra || {});
+          if (Array.isArray(rowR.toast) && !rowR.toast.length) rowR.toast = ""; /* 空窗照旧行形状（空串=没采到，不读作没弹） */
+          rows.push(rowR);
+          if (rr.status === "EXECUTED") { stats.executed++; stats.recipeExecuted = (stats.recipeExecuted || 0) + 1; }
+          else if (rr.status === "FAILED") { stats.failed++; stats.recipeFailed = (stats.recipeFailed || 0) + 1; }
+          else { stats.recipeSkip = (stats.recipeSkip || 0) + 1; }
+          console.log("WSX_CAP " + name + "|" + c.id + " status=" + rr.status
+            + " steps=" + (rr.extra ? String(rr.extra.stepsNote || "").split("；").length : 0)
+            + " modal=" + (rr.extra ? rr.extra.modalDrive : "?") + " net=" + (rr.extra ? rr.extra.netFault : "?")
+            + " fixture=" + (rr.extra ? rr.extra.fixture : "?"));
+          if (--budget <= 0) { stopped = true; break; }
+          continue;
+        }
         const cls = classesOf(c.action + " " + c.expected);
         const observed = "top=" + (route || (routeKnown ? "?" : "(落点未取证)")) + (routeOk === false ? " ≠ " + page : "") +
           " | dom: " + (cls.length ? cls.map((s) => s + ":" + (dom[s] || "no-answer")).join(" ") : "(本条没点名类名)") +
@@ -889,7 +1453,16 @@ async function main() {
     "(交互动词未开tap=" + stats.skipTap + " requiresReal=" + stats.skipReal + " 落点未取证=" + stats.skipRoute +
     " 无可判物件=" + stats.skipNoCrit + " 出帧失败=" + stats.skipMiss +
     " tap禁触=" + stats.tapDeny + " tap无目标=" + stats.tapNoTarget + " tap失败=" + stats.tapFail + " tap无帧=" + stats.tapNoFrame +
+    " 配方中止=" + stats.recipeSkip +
     ") 页组=" + stats.pages + " 探针条数=" + stats.probes + " 出帧=" + stats.shots + " ws重试=" + wsErrs + " 连接次数=" + conns);
+  /* 能力腿专列读数（配方模式才有意义；缺省模式三个数恒 0，行形状不变）。 */
+  if (RECIPE_MODE) {
+    const capRows = rows.filter((r) => r.recipe);
+    const residue = capRows.filter((r) => /\+RESIDUE/.test(String(r.fixture || "")));
+    console.log("WSX_CAPS_SUMMARY 配方行=" + capRows.length + " EXECUTED=" + stats.recipeExecuted + " FAILED=" + stats.recipeFailed + " SKIPPED(中止)=" + stats.recipeSkip
+      + " 夹具残留行=" + residue.length + (residue.length ? "（" + residue.map((r) => r.manifest + "|" + r.id).join(",") + " ⇒ 须人工清理并在报告点名）" : "（全部回滚 clean）")
+      + " 通道=" + channelStamp(CHANNEL_WS) + "（automationChannel 字段随行落盘；出帧仍走桥 transport=ws+cli-shot）");
+  }
   const st = {};
   for (const r of all) st[r.status] = (st[r.status] || 0) + 1;
   console.log("WSX_STATUS_ALL " + Object.keys(st).sort().map((k) => k + "=" + st[k]).join(" "));

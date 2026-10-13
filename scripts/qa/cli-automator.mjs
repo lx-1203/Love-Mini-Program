@@ -292,11 +292,24 @@ export function mintPlanFor(kind, repoRoot, deviceId) {
   if (k === "guest") {
     return { kind: k, source: "guest-login", endpoint: "/api/v1/auth/guest-login", body: {}, expectUserId: "", credFrom: "(体验号，无需凭据)" };
   }
-  if (k !== "A" && k !== "B") {
-    throw new Error("MINT_UNSUPPORTED_IDENTITY kind=" + (k || "(空)") + " ⇒ 身份词表只有 A/B/guest（verify-real-coverage.mjs:237-238 也只认这几条轴）；"
+  if (k !== "A" && k !== "B" && k !== "minor") {
+    throw new Error("MINT_UNSUPPORTED_IDENTITY kind=" + (k || "(空)") + " ⇒ 身份词表只有 A/B/guest/minor（minor=未成年形态，verify-real-coverage.mjs axesOf 同步认它为登录轴）；"
       + "未知标签一律不铸，绝不退回 guest 顶替（那正是本轮那条假记账）");
   }
   const t = identityTable(repoRoot).get(k) || {};
+  /* 未成年形态（F04/VRN07，2026-10-10 入册）：实名未认证 + users.birth_date 为 NULL 的专号
+     （real-name.vue loadAdultGate：birthDate 缺失 ⇒ isAdult=false）。铺设前置与产品 API 不可造的
+     证据见 r-exec.cjs:IDENT_DEFS.minor 注释；凭据没回填前这一腿只能拒跑——同 B 号 r9 铺设前口径。 */
+  if (k === "minor") {
+    if (!t.phone || !t.password) {
+      throw new Error("MINOR_NOT_PROVISIONED ⇒ " + TABLE_FILE + " 的 IDENT_DEFS.minor 读不到 phone/password（未成年形态账号待授权铺设）。"
+        + "铺设配方：① 授权 DB 步造专号（实名表无行 + users.birth_date=NULL，产品 API 造不出——register/PUT profile 均强制 ≥18，admin PUT 只摸 user_basic_profiles.birthYear）；"
+        + "② 凭据回填 IDENT_DEFS.minor；③ node scripts/qa/cli-automator.mjs check-identity minor 转 ok 后才许上腿。"
+        + "把 minor 行盖成 A/B/guest 票都是伪造证据。");
+    }
+    return { kind: k, source: "phone-login", endpoint: "/api/v1/auth/phone-login", body: { phone: t.phone, password: t.password, deviceId: deviceId || "r-exec-minor" },
+      expectUserId: t.userId || "", credFrom: TABLE_FILE + ":IDENT_DEFS.minor" };
+  }
   if (k === "A") {
     const a = readCredA(repoRoot);
     const phone = a.phone || t.phone, password = a.password || t.password;

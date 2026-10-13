@@ -276,7 +276,8 @@ function runSelftest() {
     { n: "#2 普通点击判据一条都不该被拒（防降级闸不许把 624 条可发的交互全扣了）", got: verbRefusal("点 .save-btn 保存", true) === "" && verbRefusal("点 .save-btn 保存", false) === "", want: true },
     { n: "#2 pickElementVerb：长按只在旗标下顶掉 tap，输入腿口径一字不变", got: pickElementVerb("长按 .msg-row", ".msg-row", true) + "/" + pickElementVerb("长按 .msg-row", ".msg-row", false) + "/" + pickElementVerb("输入手机号", ".phone-input", true), want: "longpress/tap/input" },
     { n: "#2 pullDown 三态分得开：uni-ok=ok，no-uni=unsupported，ERR=error，取空=unknown（把 no-uni 读成已下拉就是凭空造绿）", got: [pullDownVerdict("uni-ok"), pullDownVerdict("no-uni"), pullDownVerdict("ERR x"), pullDownVerdict(""), pullDownVerdict("page-handler-ok"), pullDownVerdict("no-page")].map((v) => String(v).split("(")[0]).join("/"), want: "ok/unsupported/error/unknown/ok/no-page" },
-    { n: "#2 pullDownSource 问的是 uni.startPullDownRefresh（照 r1-exec.cjs:1115-1120，不是自造一套）", got: pullDownSource().includes("uni.startPullDownRefresh") && stopRefreshSource().includes("uni.stopPullDownRefresh"), want: true },
+    { n: "#2 pullDown 三态分得开（C6 后读法）：wx-ok 也=ok、no-api 与 no-uni 同桶 unsupported（历史产物行读法不漂）", got: [pullDownVerdict("wx-ok"), pullDownVerdict("no-api"), pullDownVerdict("page-handler-ok")].map((v) => String(v).split("(")[0]).join("/"), want: "ok/unsupported/ok" },
+    { n: "C6 pullDown 载荷里一个 uni 记号都不许再有（实测 evaluate 上下文任何 uni 记号连 typeof 都抛 ERR uni is not defined ⇒ VB03 腿 pullDown=error 的根因）；主路径 wx.startPullDownRefresh（探针4 实测 wx-ok）", got: !/uni/.test(pullDownSource()) && !/uni/.test(stopRefreshSource()) && pullDownSource().includes("wx.startPullDownRefresh") && stopRefreshSource().includes("wx.stopPullDownRefresh"), want: true },
     { n: "#1 钩子包住 showModal/showLoading（r1-exec.cjs:293 同列）⇒ modal 调用从此可观察", got: ["showToast", "hideToast", "showModal", "showLoading"].every((n) => nativeHookSource().includes("wrap('" + n + "')")), want: true },
     { n: "#1 钩子不许声称覆盖 showActionSheet（那条是 [NEW]，本车道不接 ⇒ 说了就是overclaim）", got: !/wrap\('showActionSheet'\)/.test(nativeHookSource()), want: true },
     { n: "#1 钩子原样透传（orig.apply）⇒ 装钩子不改变小程序行为", got: /orig\.apply\(wx, arguments\)/.test(nativeHookSource()) && /orig\.apply\(console, arguments\)/.test(nativeHookSource()), want: true },
@@ -475,25 +476,32 @@ function pickElementVerb(action, sel, gesturesOn) {
   return "tap";
 }
 /* longpress/pullDown 两条动线的载荷（纯字符串构造，可离线检查问了什么）。
-   pullDown 照 r1-exec.cjs:1115-1120：取栈顶页、有 uni.startPullDownRefresh 就调，返回 'uni-ok'/'no-uni'/'ERR …'，
-   绝不静默成功。stopRefresh 同款（:1121-1126），用来收尾避免刷新态吊在下一组上。 */
+   【C6 修复（capability 车道 2026-10-06）】pullDown 的 evaluate 载荷原来走 uni.startPullDownRefresh
+   （照 r1-exec.cjs:1115-1120 的 WS 动线），在 evaluate 上下文里报 `ERR uni is not defined`
+   —— 设备实测（probe-pulldown-context.mjs / probe-mock-channel2.mjs）：evaluate 上下文里
+   **任何 uni 记号（连 typeof）都抛 ReferenceError**，typeof 守卫救不了；同一根因也让
+   --net-count 的 install 报错（exec-network-observe 的 networkHookSource 带 uni.addInterceptor）。
+   修复：主路径换 wx.startPullDownRefresh（wx 在该上下文存在且是函数，探针实测 wx-ok），
+   页内 onPullDownRefresh 兜底；载荷里一个 uni 记号都不许再出现（负例进 --selftest 与
+   test-exec-verb-dispatch.cjs）。返回词 'uni-ok'/'no-uni' 保留在**读法**里（历史产物兼容），
+   新载荷写 'wx-ok'/'no-api'。 */
 function pullDownSource() {
-  return "() => { try { var c = getCurrentPages(); var p = c[c.length - 1]; if (!p) return 'no-page'; " +
-    "if (typeof uni !== 'undefined' && uni.startPullDownRefresh) { uni.startPullDownRefresh(); return 'uni-ok'; } " +
-    "if (typeof p.onPullDownRefresh === 'function') { p.onPullDownRefresh(); return 'page-handler-ok'; } return 'no-uni'; } " +
+  return "() => { try { if (typeof wx !== 'undefined' && typeof wx.startPullDownRefresh === 'function') { wx.startPullDownRefresh(); return 'wx-ok'; } " +
+    "var c = getCurrentPages(); var p = c[c.length - 1]; if (!p) return 'no-page'; " +
+    "if (typeof p.onPullDownRefresh === 'function') { p.onPullDownRefresh(); return 'page-handler-ok'; } return 'no-api'; } " +
     "catch (e) { return 'ERR ' + e.message; } }";
 }
 function stopRefreshSource() {
-  return "() => { try { if (typeof uni !== 'undefined' && uni.stopPullDownRefresh) { uni.stopPullDownRefresh(); return 'ok'; } return 'no-uni'; } " +
+  return "() => { try { if (typeof wx !== 'undefined' && typeof wx.stopPullDownRefresh === 'function') { wx.stopPullDownRefresh(); return 'ok'; } return 'no-api'; } " +
     "catch (e) { return 'ERR ' + e.message; } }";
 }
 /* pullDown 的返回值翻译成判点：三种答案必须分得开 —— 刷新真被调起 / 页面无下拉刷新能力 / 通道报错。
-   （把 'no-uni' 读成"已下拉"就是凭空造绿。） */
+   （把 no-api/no-uni 读成"已下拉"就是凭空造绿。） */
 function pullDownVerdict(r) {
   const s = String(r === undefined || r === null ? "" : r);
-  if (/uni-ok/.test(s)) return "ok";
+  if (/wx-ok|uni-ok/.test(s)) return "ok";
   if (/page-handler-ok/.test(s)) return "ok(直接调页内 onPullDownRefresh，非 uni 链路)";
-  if (/no-uni/.test(s)) return "unsupported(该页没挂下拉刷新能力)";
+  if (/no-api|no-uni/.test(s)) return "unsupported(该页没挂下拉刷新能力)";
   if (/no-page/.test(s)) return "no-page";
   if (/ERR/.test(s)) return "error";
   return "unknown";
