@@ -60,11 +60,33 @@
  *  （轴词表 never-on-real / login / guest，两轴同缺写 login+guest），排序=suite→id 固定 ⇒ diff 稳定。
  *  并且门对自己这本账下一条守恒断言：点名数必须等于 REALCOV_UNCOVERED，且每条点出来的都得是
  *  判据集里真实存在的用例；不闭合 ⇒ **以门自己的名字判红**（REALCOV_UNCOVERED_LEDGER=FAIL）。
- *  口径：判点一个字没动（下面 `const ok = uncovered === 0 && conserved;` 原样保留），
- *  台账只往退出口上叠一条**独立**的红——盘上正常时它恒真，读数与改前逐字相同。
+ *  口径：欠账那一侧的判点一个字没动，台账只往退出口上叠一条**独立**的红——盘上正常时它恒真，读数与改前逐字相同。
+ *  （2026-10-13 R3-01 补注：下面那行 ok 后来加了 `&& voidedN === 0`。这一句"判点没动"从此只对欠账那一侧成立；
+ *  待判决桶是第四只格子里唯一**只会把账变得更红、不会把账洗绿**的一只，见文件头那一节。）
+ *
+ *  待判决桶（2026-10-13 补，R3-01：门与本轮台账在四格上不一致）：本轮台账
+ *  （tour-ledger.json 的 `corrections`/`fixlane` 两节）明记 VI34「改记未有效判决」、VI25「原出列作废、
+ *  改记未有效判决/开放」、PFI25「红已撤、绿未证（按新证据回写）」、VB03「原 FAILED 出列 + 替换判点已判过、
+ *  原判据挂 needsUser F06」——四条**都没有有效判决行**，而本门按"real 档 + 判过"的算法把它们全记进 COVERED
+ *  （读数就是本门印出来的 REALCOV_COVERED 那一格）。把未有效判决算成覆盖，是这条门最不该有的那种绿，
+ *  而本轮验收正压在这条门的绿上。
+ *  现在第四只桶：REALCOV_VOIDED=n + 逐条点名（出处=台账行 handle、判词=台账自己的词、待拍板=needsUser 令牌）。
+ *  四条硬口径：
+ *  ① **这一格只能把用例从 COVERED 摘出去，不能摘进来**：台账 prose 只允许把状态写成 disputed；
+ *     唯一能把它放回 COVERED 的形状是行上**声明**的机读字段 `coverageEffect:"revalidated"`（今天的台账没有这种行
+ *     ⇒ 今天这一格只减不加，构造上不可能造假绿）。旧行被"作废/重开"（出列作废）因此**绝不**被读成重新入列。
+ *  ② 只摘"本门原已记成 COVERED"的那些：已经在欠账里的（OT05/OT06/OT09 同被台账点名）继续留在欠账，
+ *     两桶互斥 ⇒ 守恒等式只是多出第四项，一条都不重复计。
+ *  ③ 守恒改成四项：免检 + 覆盖 + 欠账 + 待判 = 判据条数；`uncovered===0 && voided===0 && conserved` 才绿。
+ *  ④ 判据点名的匹配只走一条路：台账行文本里的 `[A-Z]{1,4}\d{1,3}` 令牌 ∩ 判据集里真实存在的用例 id
+ *     （236 条 id 全局唯一，实测量过）。**约束（不藏）**：今天的 corrections 行形状是 `{id, applied}`，
+ *     没有结构化的 case/verdict 字段，所以"哪条用例被作废"这件事只能从台账自己写的 handle/prose 里取；
+ *     真给了机读字段（`cases`/`case` + `coverageEffect`）就优先按字段走，声明了判据集外的 id ⇒ 以本门名字判红，
+ *     因为那正是"解析器对什么都不响"的形状。
  *
  *  用法：node scripts/qa/verify-real-coverage.mjs [--round round-7]
- *       [--ops reports/audit/round-6/ops] [--dir reports/audit/round-7] [--selftest]
+ *       [--ops reports/audit/round-6/ops] [--dir reports/audit/round-7]
+ *       [--ledger reports/audit/ui-audit-2026-10-09/tour-ledger.json] [--selftest]
  */
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
@@ -76,6 +98,13 @@ function argv1(i) { return process.argv[i + 1]; }
 const ROUND = arg("round", "round-7");
 const OPS = resolve(REPO, arg("ops", "reports/audit/round-6/ops"));
 const DIR = resolve(REPO, arg("dir", "reports/audit/" + ROUND));
+/* 待判决桶的输入=本轮权威台账（只读，本门对盘上一个字节都不写）。
+   缺省指向 R3-01 那本账；`--ledger` 可换一轮。显式给的路径读不到 ⇒ 记一条 problem（以本门名字判红），
+   因为"我要看的台账不见了"与"这本台账不存在作废行"是两件事，混起来就是把红说成绿。
+   缺省路径不存在（旧脚本、旧 closure 记录里的调用形状）⇒ 桶为空、大声印出来，但不新增常红判点。 */
+const LEDGER_ARG = arg("ledger", "reports/audit/ui-audit-2026-10-09/tour-ledger.json");
+const LEDGER_EXPLICIT = process.argv.indexOf("--ledger") >= 0;
+const LEDGER = resolve(REPO, LEDGER_ARG);
 
 /** 权威用例集：ops 判据台里逐条点名 requiresReal 的那些（不从执行结果反推，
  *  否则"没跑 ⇒ 没行 ⇒ 不欠账"会自己把自己证明成满分）。 */
@@ -98,6 +127,8 @@ function requiredCases() {
           manifest: (j.suite || f.replace(/\.json$/, "")),
           id: String(c.id || c.caseId || ""),
           page: j.page || c.page || "",
+          /* 原判据文字（只给待判决桶的点名行做注脚用；不参与任何判点）。 */
+          title: String(c.title || ""),
           identities: ids,
           automatable: c.automatable,
           notAutomatableFrom: typeof c.notAutomatableFrom === "string" ? c.notAutomatableFrom : "",
@@ -316,6 +347,145 @@ function buildUncoveredLedger(m, ids, uncovered) {
   return { enumerated, axisOf, uncovered, problems, ok: problems.length === 0 };
 }
 
+/* ---------- 待判决桶（voided/pending）：门与台账必须说同一句话（2026-10-13 补，R3-01） ----------
+   判点还是那个判点（real 档 + 判过），这里只补一件以前根本没说过话的事：
+   **台账已经把这行的判决作废了，门却还在按"判过"给它记覆盖。**
+   台账自己的形状（实读 reports/audit/ui-audit-2026-10-09/tour-ledger.json）：
+   · corrections[i] = { id, applied }（另有可选的 evidence / open）
+   · fixlane[i]     = { id, run, result, ledgerEffect }
+   两节都**没有**结构化的"这条用例 / 这个判决效力"字段 ⇒ 用例号只能从台账自己写的行 handle 与正文里取
+   （见上面口径 ④）。取到之后只做一件事：把该用例从 covered 里摘出来，放进 voided。
+   状态机只有一格是"进 COVERED"的入口，而且它只能由**声明字段**打开：
+     prose / coverageEffect ∈ {voided,pending,not-validly-adjudicated} ⇒ state=disputed（只能摘）
+     coverageEffect === "revalidated"                              ⇒ state=revalidated（唯一能放回）
+   所以"一条旧行被作废/重开"（VI25 的「原出列作废」）落进 prose ⇒ 依旧是 disputed，
+   门不会把一次重开读成一次胜诉。这就是这条桶能红、且不会自己把自己洗绿的全部原因。 */
+const CASE_TOKEN_RE = /[A-Z]{1,4}\d{1,3}/g;
+const RULING_TOKEN_RE = /needsUser\s+([A-Za-z0-9][A-Za-z0-9._-]*)/g;
+/** 判词词表：只用台账自己写下的词，不翻译、不改写、不自创第四种说法。 */
+const VOID_KINDS = [
+  ["未有效判决", "not-validly-adjudicated(未有效判决)"],
+  ["未有效测试", "not-validly-tested(未有效测试)"],
+  ["出列", "off-list(出列)"],
+  ["作废", "voided(作废)"],
+  ["重跑", "re-run-pending(待重跑)"],
+  ["回写", "write-back-pending(待回写)"],
+  ["维持 UNCOVERED", "kept-uncovered(维持欠账)"],
+];
+/** 替换判点的形状：fixlane 那行**对本条用例**正面宣称「<用例号>=已判过」（VB03 台账原话），
+    而同一条用例的原判决已被 corrections 作废 ⇒ 门当初记的那笔覆盖靠的是替换判点，不是原判据。
+    必须锚在用例号上并排除否定式：PFI25 那行写的是「本行不得读作已修复/已判过」，
+    用宽松的 `已判过` 关键词会把这句**否定**读成胜诉声明——那正是 prose 解析唯一会害人的地方。 */
+const NEG_BEFORE_RE = /(不得|不许|不可|勿|没有|未证|无有效判决)/;
+function isReplacementClaim(caseId, text) {
+  const re = new RegExp(String(caseId).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*[=＝]\\s*已判过", "g");
+  for (const m of text.matchAll(re)) {
+    if (!NEG_BEFORE_RE.test(text.slice(Math.max(0, m.index - 24), m.index))) return true;
+  }
+  return false;
+}
+const DECL_VOID = ["voided", "pending", "not-validly-adjudicated"];
+const DECL_REVALIDATED = "revalidated";
+
+function ledgerRowText(r) {
+  return [r.id, r.applied, r.result, r.ledgerEffect, r.open, r.evidence, r.run]
+    .filter((x) => typeof x === "string").join(" ");
+}
+
+/** 台账一本 → 逐条用例的判决效力表。ids=判据集里的**用例 id**（不是 suite|id 全键）。 */
+function buildVoidBook(ledger, ids, titleById) {
+  const book = {
+    corrections: 0, fixlane: 0, byCase: new Map(), problems: [],
+  };
+  if (!ledger) return book;
+  const sections = [["corrections", ledger.corrections], ["fixlane", ledger.fixlane]];
+  for (const [sect, arr] of sections) {
+    const rows = Array.isArray(arr) ? arr : [];
+    book[sect] = rows.length;
+    for (const r of rows) {
+      if (!r || typeof r !== "object") continue;
+      const text = ledgerRowText(r);
+      /* 声明字段优先（今天的台账没有 ⇒ 走 prose 那条兜底路）；声明了判据集外的 id ⇒ problem，
+         因为"解析器对什么都不响"正是必须当场响起来的形状，不许静默落空。 */
+      const declared = [].concat(r.cases || [], r.case ? [r.case] : []).map(String).filter(Boolean);
+      for (const d of declared) if (!ids.has(d)) book.problems.push(`${sect} 行 ${r.id || "(无 handle)"} 声明的用例 ${d} 不在判据集里 ⇒ 这条作废无处落地，别把它读成"没有作废"`);
+      const named = new Set(declared.filter((d) => ids.has(d)));
+      for (const m of text.matchAll(CASE_TOKEN_RE)) if (ids.has(m[0])) named.add(m[0]);
+      if (!named.size) continue;
+      const eff = typeof r.coverageEffect === "string" ? r.coverageEffect : "";
+      if (eff && eff !== DECL_REVALIDATED && !DECL_VOID.includes(eff)) {
+        book.problems.push(`${sect} 行 ${r.id || "(无 handle)"} 的 coverageEffect="${eff}" 不在词表（${DECL_VOID.concat([DECL_REVALIDATED]).join("|")}）⇒ 不认这个声明，只按 prose 处理`);
+      }
+      /* 效力就一句话：**只有声明字段能把它放回 COVERED**，prose（含"原出列作废"那种重开行）一律只作废。 */
+      const state = eff === DECL_REVALIDATED ? "revalidated" : "disputed";
+      const rulings = [...text.matchAll(RULING_TOKEN_RE)].map((m) => m[1]);
+      const kinds = VOID_KINDS.filter(([zh]) => text.includes(zh)).map(([, en]) => en);
+      for (const cid of named) {
+        const replacement = sect === "fixlane" && isReplacementClaim(cid, text);
+        const e = book.byCase.get(cid) || { caseId: cid, state: "none", src: [], kinds: [], rulings: [], replacement: false, originalTitle: (titleById && titleById.get(cid)) || "" };
+        /* 行序=台账记账顺序 ⇒ 后写的行决定**效力**（所以声明 revalidated 的行能洗掉早先行），
+           但出处、判词、needsUser 一律留档：谁把这条摘下去的、它挂在等谁拍板，都得查得到。 */
+        e.state = state;
+        e.src.push({ sect, id: String(r.id || "(无 handle)") });
+        for (const k of kinds) if (!e.kinds.includes(k)) e.kinds.push(k);
+        for (const q of rulings) if (!e.rulings.includes(q)) e.rulings.push(q);
+        if (replacement) e.replacement = true;
+        book.byCase.set(cid, e);
+      }
+    }
+  }
+  return book;
+}
+
+/** 唯一改变 covered 的地方：把台账作废的那些**从 covered 摘到 voided**（互斥 ⇒ 守恒只多一项）。 */
+function applyVoidBook(m, book) {
+  const voided = [];
+  const kept = [];
+  for (const key of m.covered) {
+    const cid = splitKey(key)[1];
+    const e = book.byCase.get(cid);
+    if (e && e.state === "disputed") voided.push({ key, caseId: cid, entry: e });
+    else kept.push(key);
+  }
+  m.covered = kept;
+  const uncoveredSet = new Set([...m.neverOnReal, ...m.noA, ...m.noGuest]);
+  for (const v of voided) {
+    if (uncoveredSet.has(v.key)) book.problems.push(`${v.key} 既在欠账又在待判桶 ⇒ 两桶互斥被破坏（守恒会重复计）`);
+    if (!v.entry.src.length) book.problems.push(`${v.key} 被摘出 COVERED 却没有台账出处 ⇒ 出处不明的作废不认`);
+  }
+  book.voided = voided;
+  return voided;
+}
+
+/* 点名行的格式只有这一份：main 与 selftest 共用，免得两边各说一句话（那正是本轮那条"门与台账各写各的账"）。 */
+function voidLine(v) {
+  const e = v.entry;
+  return `VOIDED ${v.key} 台账行=${[...new Set(e.src.map((s) => s.sect + ":" + s.id))].join(" ")}`
+    + ` 判词=${e.kinds.join("+") || "(台账点到该用例却没写判词 ⇒ 保守按作废处理)"}`
+    + (e.rulings.length ? ` 待拍板=${e.rulings.join(",")}` : "")
+    + ` 效力=${e.state}`;
+}
+function voidNoteLine(v) {
+  const e = v.entry;
+  if (!e.replacement) return "";
+  return `  VOIDED_NOTE ${v.key} counted-via-replacement-assertion（算成判过靠的是替换判点）`
+    + (e.originalTitle ? ` 原判据=${e.originalTitle}` : " 原判据=(判据台未记 title)")
+    + (e.rulings.length ? `; original-criterion-pending-ruling ${e.rulings.join(",")}` : "; original-criterion-pending-ruling(台账未记 needsUser 令牌)");
+}
+
+/** 只读台账文件：absent / unparseable 都必须在读数里可见，不许和"这本账里没有作废行"长成同一个样子。 */
+function readLedgerFile() {
+  if (!existsSync(LEDGER)) {
+    const note = `台账不存在 ${LEDGER_ARG}`;
+    return { ledger: null, label: `${LEDGER_ARG}（不存在）`, problems: LEDGER_EXPLICIT ? [`${note} ⇒ 显式指定的判决效力来源读不到，这一格不能替门证明"没有作废"`] : [] , absent: true };
+  }
+  try {
+    return { ledger: JSON.parse(readFileSync(LEDGER, "utf8")), label: LEDGER_ARG, problems: [], absent: false };
+  } catch (e) {
+    return { ledger: null, label: `${LEDGER_ARG}（解析失败 ${String(e.message).slice(0, 60)}）`, problems: [`${LEDGER_ARG} 不是可读 JSON ⇒ 判决效力无从核对`], absent: true };
+  }
+}
+
 function selftest() {
   const req = [{ manifest: "M", id: "1" }, { manifest: "M", id: "2" }, { manifest: "M", id: "3" }];
   const ids = new Set(req.map((c) => c.manifest + "|" + c.id));
@@ -438,9 +608,87 @@ function selftest() {
       req: sessReq, ids: sessIds, rows: [sm("M|1", "B", "phone-login", "")],
       wantMissing: 0, wantCovered: 1, wantUnprovenRows: 1, wantProven: 0 },
   ];
-  for (const c of cases2.concat(cases3, blCases, idCases, sessCases)) {
+  /* ---------- 待判决桶（R3-01）自己的样本 ----------
+     这一组的形状全是本轮台账里真有的那四格（VI34 / VI25 / PFI25 / VB03）的等比例缩影，
+     用例号换成 V1..V3 以免与判据台真号纠缠。方向必须两头都锁死：
+     · 台账把一条判过的行作废 ⇒ 该条离开 COVERED、进待判桶（这是本轮那条假绿）；
+     · 一条**旧作废行被后续行重开**（含只写「原出列作废」的纯重开）⇒ 绝不许被读成"重新入列"；
+     · prose 洗不成绿，唯一能放回 COVERED 的形状是行上声明的 coverageEffect:"revalidated"；
+     · 本来就在欠账里的用例不许同时落进待判桶（两桶互斥，否则守恒重复计）；
+     · 台账读不到 / 点到判据集外的名字 ⇒ 桶可以空，但来源与自洽性必须响（"没读到"≠"没有作废"）。 */
+  const voidReq = [{ manifest: "M", id: "V1" }, { manifest: "M", id: "V2" }, { manifest: "M", id: "V3" }];
+  const voidIds = new Set(["M|V1", "M|V2", "M|V3"]);
+  const cr = (id, applied, extra) => Object.assign({ id, applied }, extra || {});
+  /* 参照系：三条判据在 real 档都被判满（与 blCases 第 2 例同一批行），桶的加减才有得对。 */
+  const vcRows = [rl("M|V1", "A"), rl("M|V1", "guest"), rl("M|V2", "A"), rl("M|V2", "guest"), rl("M|V3", "A"), rl("M|V3", "guest")];
+  const voidCases = [
+    { n: "台账改记「未有效判决」⇒ 该条离开 COVERED 进待判桶，另两条不动（本轮 VI34 的形状）",
+      req: voidReq, ids: voidIds, rows: vcRows,
+      ledger: { corrections: [cr("REAL-V1-04", "V1 原 EXECUTED 改记「未有效判决」（5 帧均为拦截页、探针全 absent）；重跑待 needsUser REAL-V1-04-Q")] },
+      wantMissing: 0, wantCovered: 2, wantVoided: 1, wantVoidKeys: ["M|V1"], wantVoidLineHas: "not-validly-adjudicated", wantLedgerOk: true },
+    { n: "旧作废行被后一行重开并改记未有效判决/开放（本轮 VI25 的形状）⇒ 仍不许回 COVERED",
+      req: voidReq, ids: voidIds, rows: vcRows,
+      ledger: { corrections: [cr("REAL-V1-01", "V1 出列作废"), cr("R2-V1-08", "V1 原出列作废、改记「未有效判决/开放」——无夹具 EXECUTED 无判据力；重跑随 needsUser REAL-V1-04-Q 拍板")] },
+      wantMissing: 0, wantCovered: 2, wantVoided: 1, wantVoidKeys: ["M|V1"], wantVoidLineHas: "off-list", wantLedgerOk: true },
+    { n: "纯重开（后一行只写「原出列作废」、没写任何新判据）⇒ 照样不许被读成胜诉（prose 洗不成绿）",
+      req: voidReq, ids: voidIds, rows: vcRows,
+      ledger: { corrections: [cr("REAL-V1-01", "V1 出列作废"), cr("R2-V1-08", "V1 原出列作废")] },
+      wantMissing: 0, wantCovered: 2, wantVoided: 1, wantVoidKeys: ["M|V1"], wantLedgerOk: true },
+    { n: "台账点到该用例、判词只有「重跑/按新证据回写」（本轮 PFI25：红已撤、绿未证）⇒ 保守摘出 COVERED",
+      req: voidReq, ids: voidIds, rows: vcRows,
+      ledger: { corrections: [cr("REAL-V2-05/F07", "V2 带 probe+shot 证据重跑（fixlane），成立与否按新证据回写")] },
+      wantMissing: 0, wantCovered: 2, wantVoided: 1, wantVoidKeys: ["M|V2"], wantVoidLineHas: "re-run-pending", wantLedgerOk: true },
+    { n: "台账点到该用例却一个字判词都没写⇒ 仍摘出（出处可查的沉默按作废处理，不按覆盖处理）",
+      req: voidReq, ids: voidIds, rows: vcRows,
+      ledger: { corrections: [cr("REAL-V2-09", "V2 见执行记录")] },
+      wantMissing: 0, wantCovered: 2, wantVoided: 1, wantVoidKeys: ["M|V2"], wantVoidLineHas: "保守按作废", wantLedgerOk: true },
+    { n: "声明 coverageEffect:\"revalidated\" 的行⇒ 这是唯一能把用例放回 COVERED 的形状（正向对照，桶不是单向棘轮）",
+      req: voidReq, ids: voidIds, rows: vcRows,
+      ledger: { corrections: [cr("REAL-V1-01", "V1 出列作废"), Object.assign(cr("REAL-V1-09", "V1 重跑落第一条有效判决行"), { coverageEffect: "revalidated" })] },
+      wantMissing: 0, wantCovered: 3, wantVoided: 0, wantLedgerOk: true },
+    { n: "VB03 形状：corrections 作废原判 + fixlane 自称已判过且挂 needsUser F06 ⇒ 待判桶带替换判点注记",
+      req: voidReq, ids: voidIds, rows: vcRows,
+      ledger: {
+        corrections: [cr("REAL-VB03-03", "V3 原 FAILED 出列作废（判据/配方错误：404 假象）；修正配方重跑见 fixlane 行")],
+        fixlane: [{ id: "REAL-VB03-03", run: "exec-fixlane-vb03/exec-results.json",
+          result: "M|V3 EXECUTED band=real@deadbeef；修正配方（封存弹回）7 步全过，flag 开关走向归 needsUser F06",
+          ledgerEffect: "V3=已判过（EXECUTED），原 FAILED 出列依据同时作废留档" }],
+      },
+      titles: new Map([["V3", "onShow 命中 store 缓存不重拉 → 下拉才更新（原判据）"]]),
+      wantMissing: 0, wantCovered: 2, wantVoided: 1, wantVoidKeys: ["M|V3"], wantLedgerOk: true,
+      wantVoidNoteHas: ["counted-via-replacement-assertion", "original-criterion-pending-ruling F06", "onShow 命中 store 缓存不重拉"] },
+    { n: "fixlane 把「已判过」写在否定式里（本轮 PFI25 现形：本行不得读作已修复/已判过）⇒ 不许贴替换判点注记，用例照旧摘出",
+      req: voidReq, ids: voidIds, rows: vcRows,
+      ledger: {
+        corrections: [cr("REAL-V2-05/F07", "V2 红已撤、绿未证：实带重跑未做，无有效判决行")],
+        fixlane: [{ id: "REAL-V2-05/F07", run: "exec-fixlane-v2/exec-results.json",
+          result: "M|V2 FAILED；【改判】V2 无有效判决行，本行不得读作 V2=已判过，也不计产品缺陷",
+          ledgerEffect: "V2 不得读作 V2=已判过" }],
+      },
+      wantMissing: 0, wantCovered: 2, wantVoided: 1, wantVoidKeys: ["M|V2"], wantVoidNoteAbsent: true, wantLedgerOk: true },
+    { n: "台账点到一条本来就在欠账里的用例⇒ 待判桶 0 条（两桶互斥，守恒不许重复计）",
+      req: voidReq, ids: voidIds,
+      rows: [rl("M|V1", "A", "mock@f1c7b96b"), rl("M|V2", "A"), rl("M|V2", "guest"), rl("M|V3", "A"), rl("M|V3", "guest")],
+      ledger: { corrections: [cr("F01/F02(V1)", "V1 配方需判据台重写，非执行可解；维持 UNCOVERED")] },
+      wantMissing: 1, wantCovered: 2, wantVoided: 0, wantLedgerOk: true },
+    { n: "台账读不到（absent）⇒ 桶为空、读数与改前相同，但来源那一行必须说\"没读到\"（缺账≠没作废）",
+      req: voidReq, ids: voidIds, rows: vcRows, ledger: null,
+      wantMissing: 0, wantCovered: 3, wantVoided: 0, wantLedgerOk: true },
+    { n: "声明字段点到判据集里不存在的用例⇒ 自洽性必须响（对什么都不响的解析器不可信）",
+      req: voidReq, ids: voidIds, rows: vcRows,
+      ledger: { corrections: [Object.assign(cr("REAL-ZZZ-01", "ZZ99 出列作废"), { cases: ["ZZ99"], coverageEffect: "voided" })] },
+      wantMissing: 0, wantCovered: 3, wantVoided: 0, wantLedgerOk: false, wantProblemHas: "不在判据集里" },
+    { n: "词表外的声明值（coverageEffect:\"washed\"）⇒ 不认这个声明，按 prose 保守作废处理且自洽性响",
+      req: voidReq, ids: voidIds, rows: vcRows,
+      ledger: { corrections: [Object.assign(cr("REAL-V1-11", "V1 说它算判过了"), { cases: ["V1"], coverageEffect: "washed" })] },
+      wantMissing: 0, wantCovered: 2, wantVoided: 1, wantVoidKeys: ["M|V1"], wantLedgerOk: false, wantProblemHas: "不在词表" },
+  ];
+  for (const c of cases2.concat(cases3, blCases, idCases, sessCases, voidCases)) {
     const R = reqOf(c);
     const m = judge(c.rows, R, c.ids || ids);
+    const caseIds = new Set(R.map((x) => String(x.id)));
+    const bk = buildVoidBook(c.ledger || null, caseIds, c.titles || new Map());
+    const vd = applyVoidBook(m, bk);
     const got = new Set([...m.neverOnReal, ...m.noA, ...m.noGuest]).size;
     if (got !== c.wantMissing) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} got=${got} want=${c.wantMissing}`); }
     const ge = m.automatableExempt.length, gc = m.covered.length;
@@ -459,9 +707,32 @@ function selftest() {
     if (c.wantUnprovenRows !== undefined && m.session.unproven.rows !== c.wantUnprovenRows) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 不可证行=${m.session.unproven.rows} want=${c.wantUnprovenRows}`); }
     if (c.wantUnprovenCases !== undefined && m.session.unproven.cases.size !== c.wantUnprovenCases) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 不可证判据=${m.session.unproven.cases.size} want=${c.wantUnprovenCases}`); }
     if (c.wantProven !== undefined && m.session.proven !== c.wantProven) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 已证行=${m.session.proven} want=${c.wantProven}`); }
-    /* 守恒在每个样本上都得成立：免检 + 覆盖 + 欠账 = 用例条数，一个都不许凭空消失或重复计。
+    /* 待判决桶：条数、点名、判词、注记四样都要对上——桶本身是新增的判点，它响不响就是这条门有没有被
+       台账洗绿的全部依据（上面那三条"必须能红"的样本全靠这几行咬住）。 */
+    if (c.wantVoided !== undefined && vd.length !== c.wantVoided) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 待判=${vd.length} want=${c.wantVoided}`); }
+    if (c.wantVoidKeys !== undefined) {
+      const gk = vd.map((v) => v.key).sort().join(" ");
+      if (gk !== [...c.wantVoidKeys].sort().join(" ")) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 待判点名=${gk || "(空)"} want=${c.wantVoidKeys.join(" ")}`); }
+    }
+    if (c.wantVoidLineHas !== undefined) {
+      const line = vd.map(voidLine).join(" | ");
+      if (!line.includes(c.wantVoidLineHas)) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 待判行缺字样「${c.wantVoidLineHas}」：${line || "(空)"}`); }
+    }
+    for (const needle of c.wantVoidNoteHas || []) {
+      const note = vd.map(voidNoteLine).join(" | ");
+      if (!note.includes(needle)) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 待判注记缺字样「${needle}」：${note || "(空)"}`); }
+    }
+    if (c.wantVoidNoteAbsent) {
+      const noted = vd.filter((v) => voidNoteLine(v)).map((v) => v.key);
+      if (noted.length) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 否定式里的「已判过」被读成了替换判点注记：${noted.join(" ")}`); }
+    }
+    if (c.wantProblemHas !== undefined && !bk.problems.some((p) => p.includes(c.wantProblemHas))) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 台账自洽性没报出「${c.wantProblemHas}」：${bk.problems.join("；") || "(一条没响)"}`); }
+    if (c.wantLedgerOk !== undefined && ((bk.problems.length === 0) !== c.wantLedgerOk)) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 台账自洽性=${bk.problems.length === 0 ? "OK" : "FAIL"} want=${c.wantLedgerOk ? "OK" : "FAIL"}`); }
+    /* 守恒在每个样本上都得成立：免检 + 覆盖 + 欠账 + 待判 = 用例条数，一个都不许凭空消失或重复计。
+       待判桶是 2026-10-13 补进来的第四格（R3-01）：它从 covered 里搬走的每一条都必须在这里现身，
+       搬不动的就是没搬（桶空转）；搬了却没在这里计数的就是凭空消失（守恒破口）。
        漏盖与漏身份都是**行轴**的读数，不参与这条等式（同一行既可能被认领也可能同时被数成漏盖/漏身份）。 */
-    if (ge + gc + got !== R.length) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 守恒 ${ge}+${gc}+${got}≠${R.length}`); }
+    if (ge + gc + got + vd.length !== R.length) { bad++; console.log(`  REALCOV_SAMPLE_BAD ${c.n} 守恒 ${ge}+${gc}+${got}+${vd.length}≠${R.length}`); }
     /* 台账守恒也在每个样本上跑一遍：上面每一例的形状（漏盖/漏身份/矛盾/免检/双轴缺…）都必须
        既点得出名、又与 uncovered 对得上。这一步只读不改判点，样本本身就是它的输入。 */
     {
@@ -500,7 +771,7 @@ function selftest() {
     if (sorted.join(" ") !== L.enumerated.join(" ")) { bad++; console.log(`  REALCOV_SAMPLE_BAD 台账 ${c.n} 顺序不稳 ${L.enumerated.join(" ")}`); }
   }
   const lgTotal = lgCases.length;
-  console.log(`REALCOV_SELFTEST=${bad === 0 ? "PASS" : "FAIL"} cases=${cases2.length + cases3.length + blCases.length + idCases.length + sessCases.length + lgTotal} bad=${bad} 台账负样本=${lgTotal}`);
+  console.log(`REALCOV_SELFTEST=${bad === 0 ? "PASS" : "FAIL"} cases=${cases2.length + cases3.length + blCases.length + idCases.length + sessCases.length + voidCases.length + lgTotal} bad=${bad} 台账负样本=${lgTotal} 待判决桶样本=${voidCases.length}（其中"必须能红"的负样本=${voidCases.filter((x) => x.wantVoided > 0 || x.wantLedgerOk === false).length}）`);
   process.exit(bad === 0 ? 0 : 1);
 }
 if (process.argv.includes("--selftest")) selftest();
@@ -510,6 +781,16 @@ if (!req.length) { console.log("REALCOV_RESULT=FAIL reason=判据台里一条 re
 const ids = new Set(req.map((c) => c.manifest + "|" + c.id));
 const rows = execRows();
 const m = judge(rows, req, ids);
+/* 待判决桶（R3-01，2026-10-13）：台账 corrections/fixlane 里已经把这几条判决作废的，门不许再替它记覆盖。
+   位置放在 judge 之后、任何读数之前 ⇒ 下面 COVERED / 守恒 / 欠账三个读数说的都是**摘完之后**的账。
+   用例号唯一全局（236 条 id 跨 manifest 零重号，实测量过）⇒ 按 id 匹配不会串账。 */
+const ledgerFile = readLedgerFile();
+const titleById = new Map(req.map((c) => [c.id, c.title]));
+const vbook = buildVoidBook(ledgerFile.ledger, new Set(req.map((c) => c.id)), titleById);
+const voided = applyVoidBook(m, vbook);
+const voidedN = voided.length;
+console.log(`REALCOV_LEDGER_SOURCE=${ledgerFile.label}（corrections=${vbook.corrections} 行 / fixlane=${vbook.fixlane} 行；只读，本门对盘上一个字节都不写）`
+  + (ledgerFile.absent ? " ⇒ 台账读不到：待判桶只能按\"没有可核对的作废行\"处理，**这不构成\"没有作废\"的证明**" : ""));
 console.log(`REALCOV_CASES=${req.length} EXEC_ROWS=${rows.length} 结果目录=${DIR.replace(REPO + "/", "")}`);
 console.log(`REALCOV_NEVER_ON_REAL=${m.neverOnReal.length} REAL_BAND_BUT_ALL_SKIPPED=${Object.keys(m.skippedOnly).length} JUDGED_MISSING_A=${m.noA.length} JUDGED_MISSING_GUEST=${m.noGuest.length}`);
 console.log(`REALCOV_IDENTITY_SCOPED 游客轴豁免=${m.scopedGuestExempt} 登录轴豁免=${m.scopedLoginExempt}（来源=ops 用例上的 c.identities，载体 tag-ops-identity-scope.mjs；豁免只减认领者，不减判据）`);
@@ -599,7 +880,12 @@ for (const r of rows) identHist.set(r.identity, (identHist.get(r.identity) || 0)
 const VOCAB = ["A", "B", "guest", "not-logged-in", "none"];
 console.log(`REALCOV_IDENT_VOCAB ${VOCAB.map((v) => v + "=" + (identHist.get(v) || 0)).join(" ")}（全扫描 ${rows.length} 行里各拼法实际出现次数）`
   + " ⇒ not-logged-in 有判点(:238)无生产者=死词；none 既不被两轴认领、旗标词表里却有(r-exec-cli.mjs --identity guest|none)⇒ 也是死词。本门不为此新增任何拼法。");
-console.log(`REALCOV_COVERED=${coveredN}`);console.log(`REALCOV_UNCOVERED=${uncovered}／${req.length}（阈值同旧：非免检欠账 =0 才绿）`);
+console.log(`REALCOV_COVERED=${coveredN}`);console.log(`REALCOV_UNCOVERED=${uncovered}／${req.length}（阈值同旧：非免检欠账 =0 才绿，且待判决 =0）`);
+/* 待判决桶点名（R3-01）：没有上限、逐条点名——一条说不出是哪本账哪一行把它作废的欠账，和当初那个
+   只印一个数的 uncovered 是同一种失败（读数无法派活，最后被当成噪音划掉）。 */
+console.log(`REALCOV_VOIDED=${voidedN}（台账行点到、本门原先却记成 COVERED 的那些 ⇒ 从覆盖里摘到这里；既不算覆盖也不算欠账，欠账阈值一个字没放松）`);
+for (const v of voided) { console.log(`  ${voidLine(v)}`); const nn = voidNoteLine(v); if (nn) console.log(nn); }
+if (voidedN) console.log(`  VOIDED_HINT 这一格的红按判词分头走：未有效判决/出列的 ⇒ 先拍台账点名的 needsUser 令牌，再重跑那条腿；re-run/write-back 的 ⇒ 重跑落一条有效判决行；想让门把一条用例放回 COVERED，只有一个形状有用——台账行上声明 coverageEffect:"revalidated"（prose 无论怎么写都洗不成绿，包括"原出列作废"这种重开行）。`);
 /* 欠账点名（2026-09-29）：把上面那个数摊开成一行一条，缺哪根轴写哪根轴。
    没有上限（不许"另 N 条未点名"）——一条点不出名的欠账就无法派活，而一本必须对得上数的账
    才允许被红。轴词表与判点的两条轴一一对应：
@@ -612,19 +898,28 @@ if (ledger.enumerated.length) {
   console.log(`  UNCOVERED 轴口径 never-on-real=real 档一行都没有；login=登录轴 A/B 无判过的行；guest=游客轴无判过的行 ⇒ 缺哪根轴去补哪条腿，别改标签、别把 mock 行改成 real 来"补数"`);
   for (const k of ledger.enumerated) console.log(`  UNCOVERED ${k} 缺=${ledger.axisOf(k)}`);
 }
-const sum = exemptN + coveredN + uncovered;
+const sum = exemptN + coveredN + uncovered + voidedN;
 const conserved = sum === req.length;
-console.log(`REALCOV_CONSERVATION=${conserved ? "OK" : "FAIL"} 免检=${exemptN} + 覆盖=${coveredN} + 欠账=${uncovered} = ${sum}／${req.length}`);
-if (!conserved) console.log(`  CONSERVATION_FAIL 差=${req.length - sum} ⇒ 有用例没被「免检/覆盖/欠账」任一格接住（或有重复计），这笔账不可信，门直接判红`);
-const ok = uncovered === 0 && conserved;
+console.log(`REALCOV_CONSERVATION=${conserved ? "OK" : "FAIL"} 免检=${exemptN} + 覆盖=${coveredN} + 欠账=${uncovered} + 待判=${voidedN} = ${sum}／${req.length}`);
+if (!conserved) console.log(`  CONSERVATION_FAIL 差=${req.length - sum} ⇒ 有用例没被「免检/覆盖/欠账/待判」任一格接住（或有重复计），这笔账不可信，门直接判红`);
+const ok = uncovered === 0 && voidedN === 0 && conserved;
 /* 台账守恒（门对自己那本账的断言，2026-09-29 补）：点名数与欠账数对不上、或点出了判据集外的用例
-   ⇒ **以门自己的名字判红**。上面那行 ok 一个字节没改（判点仍是"欠账 =0 且守恒"），
-   这里只往退出口叠一条独立的红：ledgerOk 恒真时 REALCOV_RESULT 与改前逐字相同，
+   ⇒ **以门自己的名字判红**。欠账那一侧的判点仍是"欠账 =0 且守恒"（2026-10-13 起 ok 另加了 `voidedN === 0`，
+   见文件头待判决桶那一节），这里只往退出口叠一条独立的红：ledgerOk 恒真时欠账读数与改前逐字相同，
    它响起来只有一个原因——这本账自己算错了，那比欠账更该先修。 */
 const ledgerOk = ledger.ok;
 console.log(`REALCOV_UNCOVERED_LEDGER=${ledgerOk ? "OK" : "FAIL"} 点名=${ledger.enumerated.length} 欠账=${uncovered} 判据外=${ledger.enumerated.filter((k) => !ids.has(k)).length}（台账守恒断言：点名逐行摊开后必须等于 REALCOV_UNCOVERED，且每条都在判据集里）`);
 for (const p of ledger.problems) console.log(`  UNCOVERED_LEDGER_BAD ${p}`);
-const pass = ok && ledgerOk;
-console.log(`REALCOV_RESULT=${pass ? "PASS" : "FAIL"}（真实模式覆盖守恒：跳过不算量到，单身份不算双身份；免检只免"本门不追"，不降阈值）`
-  + (ledgerOk ? "" : " ← 这一格的红是本门台账不闭合（REALCOV_UNCOVERED_LEDGER=FAIL），不是欠账新增，先修点名再谈欠账"));
+/* 待判桶自己的三条不变量（任一不成立 ⇒ 以本门名字判红，与 REALCOV_UNCOVERED_LEDGER 同构）：
+   ① 每条待判都得有台账出处（出处不明的作废不认）；② 待判与欠账两桶互斥（守恒不许重复计）；
+   ③ 声明字段点到的用例必须真实存在、词表外的 coverageEffect 值不认。另加一条来源断言：
+   显式 --ledger 指定的台账读不到/不是 JSON ⇒ 也红——那与"这本台账里没有作废行"是两句话，不许混。 */
+const voidProblems = ledgerFile.problems.concat(vbook.problems);
+const voidLedgerOk = voidProblems.length === 0;
+console.log(`REALCOV_VOIDED_LEDGER=${voidLedgerOk ? "OK" : "FAIL"} 待判=${voidedN} 台账点到判据内=${vbook.byCase.size} 台账行=corrections ${vbook.corrections}+fixlane ${vbook.fixlane}（自洽断言：每条待判都有出处、待判∩欠账=∅、声明字段不得点到判据集外的用例；缺省台账路径不存在只大声印、不新增常红判点）`);
+for (const p of voidProblems) console.log(`  VOIDED_LEDGER_BAD ${p}`);
+const pass = ok && ledgerOk && voidLedgerOk;
+console.log(`REALCOV_RESULT=${pass ? "PASS" : "FAIL"}（真实模式覆盖守恒：跳过不算量到，单身份不算双身份；免检只免"本门不追"，不降阈值；台账作废的不算覆盖${voidedN ? ` —— 另有 ${voidedN} 条待判决，见 REALCOV_VOIDED 点名` : ""}）`
+  + (ledgerOk ? "" : " ← 这一格的红是本门台账不闭合（REALCOV_UNCOVERED_LEDGER=FAIL），不是欠账新增，先修点名再谈欠账")
+  + (voidLedgerOk ? "" : " ← 这一格的红是判决效力没被核对上（REALCOV_VOIDED_LEDGER=FAIL）：台账读不到、或它点到判据外的用例，门不许把它读成「没有作废」"));
 process.exit(pass ? 0 : 1);
