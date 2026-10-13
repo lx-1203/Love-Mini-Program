@@ -1,0 +1,6 @@
+{
+ "route": "subpackages/circles/circles/circle-home",
+ "securityActions": "TAP .hero-actions[‹](返回钮)；TAP .feed-actions[256]——容器，子元素 .feed-action 绑 toggleLike(点赞)",
+ "guardPolicy": "删除/解绑/同意/写操作 SKIP(guard)；支付/VIP 封存验态",
+ "notes": "疑似点赞写：容器 tap 是否真触发 toggleLike 无法证实（帧摄于 tap 前），已标记待核；单操作无超时"
+}

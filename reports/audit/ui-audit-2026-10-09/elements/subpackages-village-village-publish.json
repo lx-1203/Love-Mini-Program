@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/village/village/publish",
+ "elementCount": 1,
+ "keyElements": "textarea=1｜关键类=publish-content__input",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-10-subpackages-village-village-publish.png"
+}

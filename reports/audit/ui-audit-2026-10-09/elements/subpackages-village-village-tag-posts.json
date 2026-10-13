@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/village/village/tag-posts",
+ "elementCount": 268,
+ "keyElements": "tab=39｜关键类=post-card__actions composer-bar__input composer-bar__input--pressed",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-13-subpackages-village-village-tag-posts.png"
+}

@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/campus/campus/topic-detail",
+ "elementCount": 2,
+ "keyElements": "｜关键类=-",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-08-subpackages-campus-campus-topic-detail.png"
+}

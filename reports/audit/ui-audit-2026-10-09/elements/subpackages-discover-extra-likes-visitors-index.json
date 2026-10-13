@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/discover-extra/likes-visitors/index",
+ "elementCount": 9,
+ "keyElements": "tab=10｜关键类=overview__item tabs__item tabs__item--active list__item",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-01-subpackages-discover-extra-likes-visitors-index.png"
+}

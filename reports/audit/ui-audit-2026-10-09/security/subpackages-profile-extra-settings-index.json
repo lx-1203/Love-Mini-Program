@@ -1,0 +1,6 @@
+{
+ "route": "subpackages/profile-extra/settings/index",
+ "securityActions": "SKIP(guard)x1(删除/解绑/同意类)",
+ "guardPolicy": "删除/解绑/同意/写操作 SKIP(guard)；支付/VIP 封存验态",
+ "notes": "单操作无超时"
+}

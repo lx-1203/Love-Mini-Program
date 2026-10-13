@@ -1,0 +1,170 @@
+{
+  "round": "ui-audit-v36",
+  "closureDir": "reports/audit/ui-audit-2026-10-09",
+  "generatedAt": "2026-10-09T17:31:27.437Z",
+  "head": "f9fd17b1",
+  "source": {
+    "pagesJson": "apps/client/src/pages.json",
+    "parseMethod": "Node22 v22.17.0：字符串感知剥离 /* */ 与 // 注释 → 字符串感知剥离尾逗号（#ifdef SHOWCASE 段末元素后有尾逗号）→ JSON.parse",
+    "mainCount": 8,
+    "subCount": 65,
+    "subPackageCount": 13,
+    "routeCount": 73,
+    "conditionalNote": "subpackages/setup/dev/index 与 subpackages/setup/showcase/index 在源文件中带 #ifdef DEV / #ifdef SHOWCASE 条件编译注释；本轮按 JSONC 字面内容计入全集（73 条含二者），巡检时若产物未注册按 NOT_REGISTERED 记账"
+  },
+  "channel": {
+    "wsPort": "9420",
+    "wsUp": true,
+    "machineLines": {
+      "wsUp": "WS_UP=OK port=9420 ownerPid=18000 等待=69s connectMs=130 page=pages/discover/index hits=11000010 单条查询=14.5ms",
+      "wsUpBand": "WS_UP_BAND=match port=9420 本腿要的档位 project=D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin VITE_API_MODE=mock MODE=mp-weixin-mock envSha8=f1c7b96b / 实例自报 apiMode=mock（env 档位比对=match）"
+    },
+    "backend8080": "real（本轮 ask 给定 UP）",
+    "ideColdStart": "check_wechatide_status success=true loginExpired=false（auth 用户 nickName=烙吢魺）",
+    "fallback": "无需降载"
+  },
+  "capture": [
+    {
+      "key": "screenshot",
+      "what": "模拟器整帧截图 1 张（出帧走 CLI 桥 simulator_screenshot，WS 截图实测 61s/张不可用）",
+      "artifact": "closureDir/shots/batch<N>/<route>.png"
+    },
+    {
+      "key": "console",
+      "what": "订阅 on('console') 全量收集（info/warn/error 分级标记），页面停留期统一截取",
+      "artifact": "closureDir/console/<route>.log"
+    },
+    {
+      "key": "interactive",
+      "what": "可交互元素清单：automation_element_action 可达节点（button/input/textarea/可点击 view 的 class 与文本），tap/trigger 面抽样记录",
+      "artifact": "closureDir/elements/<route>.json"
+    },
+    {
+      "key": "security",
+      "what": "安全动作探测：① 未登录/guest 直开该路由的准入行为 ② 页面 onLoad 期 storage 键嗅探（token/身份键明文落盘）③ 敏感入口存在性（支付/实名/位置）④ 路由参数注入容错（?id= 非法值不白屏）",
+      "artifact": "closureDir/security/<route>.json"
+    }
+  ],
+  "perBatchPolicy": {
+    "pageSize": 15,
+    "batchCount": 5,
+    "order": "按 pages.json 声明序：主包在前、分包按 subPackages 声明序",
+    "betweenPages": "每页采完 disconnect 本进程 ws 客户端（绝不 close——会带走整个自动化实例）；CLI 桥每页独立子进程天然隔离",
+    "stopRules": [
+      "连续 3 页 evaluate 不可达 ⇒ 本批记 NOT_SHOOTABLE 并跳下一批",
+      "任何页面出现明文 token/身份证号落盘 ⇒ 立即记 SECURITY_HIT 并继续（不中断批次）"
+    ]
+  },
+  "batches": [
+    {
+      "batch": 1,
+      "count": 15,
+      "routes": [
+        "pages/login/index",
+        "pages/register/index",
+        "pages/register/success",
+        "pages/discover/index",
+        "pages/home/index",
+        "pages/nearby/index",
+        "pages/messages/index",
+        "pages/profile/index",
+        "subpackages/village/village/index",
+        "subpackages/village/village/publish",
+        "subpackages/village/village/post",
+        "subpackages/village/village/detail",
+        "subpackages/village/village/tag-posts",
+        "subpackages/village/village/history",
+        "subpackages/circles/circles/index"
+      ]
+    },
+    {
+      "batch": 2,
+      "count": 15,
+      "routes": [
+        "subpackages/circles/circles/topics",
+        "subpackages/circles/circles/topic-detail",
+        "subpackages/circles/circles/post-topic",
+        "subpackages/circles/circles/circle-home",
+        "subpackages/campus/campus/hub",
+        "subpackages/campus/campus/index",
+        "subpackages/campus/campus/post-topic",
+        "subpackages/campus/campus/topic-detail",
+        "subpackages/campus/campus/certification",
+        "subpackages/discover-extra/discover/matching",
+        "subpackages/discover-extra/discover/match-success",
+        "subpackages/discover-extra/home/segment",
+        "subpackages/discover-extra/nearby/people",
+        "subpackages/discover-extra/discover/history",
+        "subpackages/discover-extra/likes/index"
+      ]
+    },
+    {
+      "batch": 3,
+      "count": 15,
+      "routes": [
+        "subpackages/discover-extra/likes-visitors/index",
+        "subpackages/tools/daily-question/index",
+        "subpackages/tools/love-center/index",
+        "subpackages/tools/help/index",
+        "subpackages/tools/security/index",
+        "subpackages/tools/search/index",
+        "subpackages/tools/heart-signals/index",
+        "subpackages/tools/activities/detail",
+        "subpackages/tools/love-center/nearby",
+        "subpackages/tools/love-center/mbti",
+        "subpackages/tools/love-center/consulting",
+        "subpackages/profile-extra/settings/index",
+        "subpackages/profile-extra/verification/index",
+        "subpackages/profile-extra/verification/real-name",
+        "subpackages/profile-extra/profile/visitors"
+      ]
+    },
+    {
+      "batch": 4,
+      "count": 15,
+      "routes": [
+        "subpackages/profile-extra/profile/other",
+        "subpackages/profile-extra/profile/location",
+        "subpackages/profile-extra/profile/privacy",
+        "subpackages/profile-extra/profile/album",
+        "subpackages/profile-extra/profile/favorites",
+        "subpackages/profile-extra/profile/tasks",
+        "subpackages/profile-extra/settings/dnd",
+        "subpackages/profile-extra/feedback/history",
+        "subpackages/chat/chat-session/index",
+        "subpackages/chat/official-chat/index",
+        "subpackages/setup/profile/index",
+        "subpackages/setup/campus/index",
+        "subpackages/setup/schedule/index",
+        "subpackages/setup/recommend-pref/index",
+        "subpackages/setup/interest/index"
+      ]
+    },
+    {
+      "batch": 5,
+      "count": 13,
+      "routes": [
+        "subpackages/setup/dev/index",
+        "subpackages/setup/showcase/index",
+        "subpackages/support/feedback/index",
+        "subpackages/discover/discussions/index",
+        "subpackages/discover/activities/index",
+        "subpackages/legal/privacy/index",
+        "subpackages/legal/agreement/index",
+        "subpackages/market/detail/index",
+        "subpackages/market/shop/index",
+        "subpackages/market/wallet/index",
+        "subpackages/vip/index",
+        "subpackages/vip/promo-code",
+        "subpackages/vip/bills"
+      ]
+    }
+  ],
+  "artifactLayout": {
+    "shots": "closureDir/shots/batch<N>/<route>.png",
+    "console": "closureDir/console/<route>.log",
+    "elements": "closureDir/elements/<route>.json",
+    "security": "closureDir/security/<route>.json",
+    "ledger": "closureDir/tour-ledger.json（每页一行：route/batch/四项采集状态/异常摘要）"
+  }
+}

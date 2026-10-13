@@ -1,0 +1,46 @@
+{
+ "round": "ui-audit-2026-10-09",
+ "gitSha": "f9fd17b1",
+ "identity": "A",
+ "identities": [
+  "A"
+ ],
+ "project": "apps/client/dist/build/mp-weixin-real",
+ "band": "real@f0677920",
+ "loginVerify": "logged-in userId=100158",
+ "updatedAt": "2026-10-09T20:05:22.727Z",
+ "admissible": true,
+ "outcome": "judged",
+ "runner": "scripts/qa/r-exec-ws.mjs（WS 取证 + 桥出帧，完整跑完）",
+ "results": [
+  {
+   "suite": "C-次要22",
+   "manifest": "次要22",
+   "id": "VB03",
+   "page": "subpackages/vip/bills",
+   "tier": "critical",
+   "band": "real@f0677920",
+   "identity": "A",
+   "loginVerify": "logged-in userId=100158",
+   "sessionSource": "phone-login",
+   "requiresReal": true,
+   "title": "MP-R2-次要22-010 部分开放：onShow 命中 store 缓存不重拉 → 开通后回账单页需下拉才更新（拆客户端请求数与服务端回读）",
+   "status": "FAILED",
+   "observed": "top=pages/profile/index | dom(配方步): 见 stepsNote | modal[off] | netFault[on(mode=record intercepted=0 restored=yes)] | fixture[（本条无夹具）] | frames[reports/screenshots/ui-audit-2026-10-09-exec-f9fd17b1/次要22-VB03-step0-vip.png(6691B)] | toast[无]",
+   "missingEvidence": [],
+   "failureReason": "配方断言判红：step#9 assertRoute：落点判点 want~=subpackages/vip/bills got=[pages/profile/index] ⇒ **未命中**（逐步读数见 stepsNote；判定的是判据点名的对照，不是通道问题）",
+   "route": "pages/profile/index",
+   "toast": "",
+   "console": "",
+   "evidence": "reports/screenshots/ui-audit-2026-10-09-exec-f9fd17b1/次要22-VB03-step0-vip.png(6691B)",
+   "durationMs": 0,
+   "transport": "ws+cli-shot",
+   "automationChannel": "ws",
+   "recipe": "次要22|VB03",
+   "stepsNote": "#1 armNetFault :: armNetFault mode=record ⇒ armed(net-armed)；#2 open :: open subpackages/vip/vip ⇒ top=subpackages/vip/vip；#3 wait :: wait 2400ms；#4 assertRoute :: 落点判点 want~=subpackages/vip/vip got=[subpackages/vip/vip] ⇒ 命中；#5 shot(step0-vip) :: shot step0-vip ok 6691B；#6 open :: open subpackages/vip/bills ⇒ top=pages/profile/index；#7 wait :: wait 2400ms；#8 drainNet :: drainNet 本窗=0 命中 /vip/bills = 0 []；#9 assertRoute :: 落点判点 want~=subpackages/vip/bills got=[pages/profile/index] ⇒ **未命中**；#10 (cleanup)(restoreNetFault) :: net-was-not-armed",
+   "modalDrive": "off",
+   "netFault": "on(mode=record intercepted=0 restored=yes)",
+   "fixture": "none"
+  }
+ ]
+}

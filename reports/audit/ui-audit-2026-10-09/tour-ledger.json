@@ -1,0 +1,1638 @@
+{
+ "round": 1,
+ "generatedAt": "2026-10-09T22:25:53.827Z",
+ "consoleMethod": "桥开页后装应用内 console 包装器 + 重放页生命周期 onLoad/onShow（AppService 随桥开页重启为实测根因，首帧加载原文不可得）；r1-recap2-*.log 为重放加载路径 console，不冒充首帧原文",
+ "consoleOriginal": "轮内原始 console 采集 73/73 全 0 字节（通道失效未采到）——r1-*.log 旧 0 字节文件保留原样作为失效证据，重采读数见各路由 consoleRecap",
+ "elementsMethod": "轮内采集：首-view outerWxml 或 源码类名定点计数（rows.elementCount/keyElements）",
+ "securityMethod": "轮内安全动作抽测（rows.actions）：tap 后回退；守卫=删除/解绑/同意/写操作/支付封存验态",
+ "corrections": [
+  {
+   "id": "CON-EV-01",
+   "applied": "73 路由 console 由「error=0,warn=0（未采到冒充清白）」回写为 consoleRecap 重采读数；旧 0 字节文件保留为失效证据"
+  },
+  {
+   "id": "CON-NET-02",
+   "applied": "real 腿全部 drainNet=0/intercepted=0 读数回写「通道失效未测」（mockWxMethod 拦截面失效）；网络判点全部未有效测试"
+  },
+  {
+   "id": "REAL-VB03-03",
+   "applied": "VB03 原 FAILED 出列作废（判据/配方错误：vip/vip 未注册 404 + automator 路径回显假象）；修正配方重跑见 fixlane 行"
+  },
+  {
+   "id": "REAL-VI34-04",
+   "applied": "VI34 原 EXECUTED 改记「未有效判决」（5 帧均为拦截页、7 态探针全 absent、判绿口径缺陷）；重跑待 needsUser REAL-VI34-04-Q"
+  },
+  {
+   "id": "REAL-PFI25-05/F07",
+   "applied": "PFI25 带 probe+shot 证据重跑（fixlane），产品缺陷成立与否按新证据回写"
+  },
+  {
+   "id": "F01/F02(OT05/OT06/OT09)",
+   "applied": "源码级实锤：other.vue 与 real 编译产物 other.wxml 均无 relationship-cta*（配方选择器指向当前代码不存在的组件）⇒ OT05/06/09 配方需判据台重写，非执行可解；维持 UNCOVERED"
+  },
+  {
+   "id": "R2-VI25-08",
+   "applied": "VI25 原出列作废、改记「未有效判决/开放」——b1c 无夹具 EXECUTED 无判据力（该页实为资料完成度拦截页替换内容，.post-card__audit:absent 无判据力）；夹具 create-pending-post 对 real 档响应形状解引用修复+重跑随 needsUser REAL-VI34-04-Q 拍板后执行"
+  },
+  {
+   "id": "R2-CON-01",
+   "applied": "MARK 预验重跑 PASS，独立证据件落盘 console-mark-r2con01.log（tmp/qa 与 closureDir 双份）；「页面真实加载期 console 永久缺席」能力边界保持入册"
+  },
+  {
+   "id": "R2-NEARBY-09",
+   "applied": "升级产品缺陷候选——应用内真实 switchTab 语义复测（wx.switchTab ok）仍弹回：nearby → pages/login/index → pages/discover/index（settle 后）；排除桥 open 机测假象。已立案：登录态下 tabBar「附近」页不可达，归因（定位权限/开城/业务开关）待产品排查",
+   "evidence": "tmp/qa/nearby-switchtab-probe.mjs 输出：BEFORE=pages/profile/index、SWITCHTAB=switchTab-ok、AFTER=pages/login/index、AFTER_SETTLE=pages/discover/index"
+  },
+  {
+   "id": "R2-NET-03",
+   "applied": "修配设计已验证可行：functionDeclaration 臂展（mockWxMethod(method, fn) 走 fn 注入路径）无崩溃，fail-all 拦截全效（应用内不可解析域名请求返回 SUCCESS 500 + QA_NET_FAULT 体），应用侧计数命中（__qaNet.count=1 + url 日志），restore ok（tmp/qa/netfault-fn-probe.mjs 输出）——r-exec-ws.mjs netFault 区应改用此臂展形态+应用侧 drainNet（现=已部分落地：exec-capabilities.mjs netFaultMockSource/ArmSource/DrainSource 即此设计）",
+   "evidence": "tmp/qa/netfault-fn-probe.mjs 四步全过（ARM=ok/APP_REQUEST=SUCCESS 500 QA_NET_FAULT/APP_COUNT count=1/RESTORE=ok）",
+   "open": "剩余结构性阻塞=桥 open 重启 AppService 使臂展丢失（页首请求不可拦截）；需判据台把网络判点改为「open 后臂展 + 页内重触发（如 retry/下拉）」或通道支持 WS 开页"
+  },
+  {
+   "id": "R2-OT-06(诊断增补)",
+   "applied": "CTA 探不到的通道级根因补全：①编译产物组件标签为路径形 components/profile/public/RelationshipCTA（非 relationship-c-t-a，配方 >>> 链的组件段无法命中）；②本 IDE automator 0.12.1 元素查询不穿透自定义组件（plain class/路径 tag/Element.$/$$ 全 null）；③带 query 的桥 open 会使 currentPage 回报 .html 后缀 webview 代理态且 $ 全超时（自动化层坏死）——而「基底页 + 应用内 wx.navigateTo」后自动化层健康（clean path、全树 outerWxml 13493B 可读、CTA 可见于树）",
+   "evidence": "tmp/qa/cta-selector-probe.mjs + tmp/qa/navto-cta-probe.mjs 输出（V0_OUTER_LEN=13493 hasCTA=true、CTX 实录组件内 relationship-cta__btn--like 节点）",
+   "open": "OT05/06/09 判过腿落地路径=执行器增加「基底页+应用内 navigateTo 开页」open 形态 + 组件树直调（AppService 侧 handler 触发）替代 DOM tap；已立案待工具车道"
+  }
+ ],
+ "routes": [
+  {
+   "route": "pages/login/index",
+   "batch": "1",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-01-pages-login-index.png",
+   "elements": {
+    "count": 22,
+    "key": "tab=8｜关键类=discover-header__tabs discover-header__tab discover-header__tab--active discover-header__tab-text discover-header__tab-text--active discover-header__tab-line",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "pages/login/index",
+    "file": "console/r1-recap2-01-pages-login-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "落点=pages/discover/index（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "pages/register/index",
+   "batch": "1",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-02-pages-register-index.png",
+   "elements": {
+    "count": 12,
+    "key": "input=5,picker=1,link=3｜关键类=field__input field__input--confirm agree__link to-login__link",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "pages/register/index",
+    "file": "console/r1-recap2-02-pages-register-index.log"
+   },
+   "securityActions": "TAP .sms-btn[获取验证码]",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "pages/register/success",
+   "batch": "1",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-03-pages-register-success.png",
+   "elements": {
+    "count": 2,
+    "key": "｜关键类=reg-success__row reg-success__row-icon reg-success__row-text reg-success__row-tag reg-success__btn reg-success__btn-text",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "pages/register/success",
+    "file": "console/r1-recap2-03-pages-register-success.log"
+   },
+   "securityActions": "TAP .reg-success__btn[完善我的资料 →]",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "pages/discover/index",
+   "batch": "1",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-04-pages-discover-index.png",
+   "elements": {
+    "count": 22,
+    "key": "tab=8｜关键类=discover-header__tabs discover-header__tab discover-header__tab--active discover-header__tab-text discover-header__tab-text--active discover-header__tab-line",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "pages/discover/index",
+    "file": "console/r1-recap2-04-pages-discover-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "pages/home/index",
+   "batch": "1",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-05-pages-home-index.png",
+   "elements": {
+    "count": 30,
+    "key": "cell=28｜关键类=today-card__actions today-card__btn today-card__btn--outline today-card__btn--love today-card__btn-heart-img invite-banner__btn",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "pages/home/index",
+    "file": "console/r1-recap2-05-pages-home-index.log"
+   },
+   "securityActions": "MISS .today-card__actions；MISS .today-card__btn",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "pages/nearby/index",
+   "batch": "1",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-06-pages-nearby-index.png",
+   "elements": {
+    "count": 22,
+    "key": "tab=8｜关键类=discover-header__tabs discover-header__tab discover-header__tab--active discover-header__tab-text discover-header__tab-text--active discover-header__tab-line",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "pages/nearby/index",
+    "file": "console/r1-recap2-06-pages-nearby-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "落点=pages/discover/index（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "pages/messages/index",
+   "batch": "1",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-07-pages-messages-index.png",
+   "elements": {
+    "count": 8,
+    "key": "｜关键类=quick-card__btn quick-card__btn-text",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "pages/messages/index",
+    "file": "console/r1-recap2-07-pages-messages-index.log"
+   },
+   "securityActions": "MISS .header__icon-btn--hover；TAP .quick-card__btn[去看看]",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "pages/profile/index",
+   "batch": "1",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-08-pages-profile-index.png",
+   "elements": {
+    "count": 50,
+    "key": "button=1,cell=8｜关键类=my-completion__btn my-completion__btn-text story-cards__row my-interaction__row my-interaction__row--pressed my-more__cell｜btn文案=[▦]",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "pages/profile/index",
+    "file": "console/r1-recap2-08-pages-profile-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/village/village/index",
+   "batch": "1",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-09-subpackages-village-village-index.png",
+   "elements": {
+    "count": 268,
+    "key": "tab=39｜关键类=post-card__actions composer-bar__input composer-bar__input--pressed",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/village/village/index",
+    "file": "console/r1-recap2-09-subpackages-village-village-index.log"
+   },
+   "securityActions": "MISS .post-card__actions；MISS .action-btn",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/village/village/publish",
+   "batch": "1",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-10-subpackages-village-village-publish.png",
+   "elements": {
+    "count": 1,
+    "key": "textarea=1｜关键类=publish-content__input",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/village/village/publish",
+    "file": "console/r1-recap2-10-subpackages-village-village-publish.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/village/village/post",
+   "batch": "1",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-11-subpackages-village-village-post.png",
+   "elements": {
+    "count": 2,
+    "key": "input=1,textarea=1｜关键类=post-title__input post-content__input",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/village/village/post",
+    "file": "console/r1-recap2-11-subpackages-village-village-post.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/village/village/detail",
+   "batch": "1",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-12-subpackages-village-village-detail.png",
+   "elements": {
+    "count": 2,
+    "key": "｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/village/village/detail",
+    "file": "console/r1-recap2-12-subpackages-village-village-detail.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/village/village/tag-posts",
+   "batch": "1",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-13-subpackages-village-village-tag-posts.png",
+   "elements": {
+    "count": 268,
+    "key": "tab=39｜关键类=post-card__actions composer-bar__input composer-bar__input--pressed",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/village/village/tag-posts",
+    "file": "console/r1-recap2-13-subpackages-village-village-tag-posts.log"
+   },
+   "securityActions": "MISS .post-card__actions；MISS .action-btn",
+   "notes": "落点=subpackages/village/village/index（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "subpackages/village/village/history",
+   "batch": "1",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-14-subpackages-village-village-history.png",
+   "elements": {
+    "count": 9,
+    "key": "源码定点计数：history-item=6,history-clear=1,history-back=1,history-count=1,clear-dialog=0",
+    "source": "源码类名定点计数"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/village/village/history",
+    "file": "console/r1-recap2-14-subpackages-village-village-history.log"
+   },
+   "securityActions": "SKIP(guard) .history-clear[清空记录](删除类)",
+   "notes": "单操作无超时；重探补读WXML(first-view@r1 open=OK)；元素经源码类名定点补测(open=OK)"
+  },
+  {
+   "route": "subpackages/circles/circles/index",
+   "batch": "1",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-15-subpackages-circles-circles-index.png",
+   "elements": {
+    "count": 31,
+    "key": "源码定点计数：circle-card=14,circle-card__action=14,circles-header__search=1,circles-header__back=1,circles-banner=1",
+    "source": "源码类名定点计数"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/circles/circles/index",
+    "file": "console/r1-recap2-15-subpackages-circles-circles-index.log"
+   },
+   "securityActions": "SKIP(guard) .circle-card__action[加入/已加入](mock×real档位错配下不冒写险)",
+   "notes": "单操作无超时；重探补读WXML(first-view@r0 open=OK)；元素经源码类名定点补测(open=OK)"
+  },
+  {
+   "route": "subpackages/circles/circles/topics",
+   "batch": "2",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-01-subpackages-circles-circles-topics.png",
+   "elements": {
+    "count": 15,
+    "key": "tab=12｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/circles/circles/topics",
+    "file": "console/r1-recap2-16-subpackages-circles-circles-topics.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/circles/circles/topic-detail",
+   "batch": "2",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-02-subpackages-circles-circles-topic-detail.png",
+   "elements": {
+    "count": 2,
+    "key": "｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/circles/circles/topic-detail",
+    "file": "console/r1-recap2-17-subpackages-circles-circles-topic-detail.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/circles/circles/post-topic",
+   "batch": "2",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-03-subpackages-circles-circles-post-topic.png",
+   "elements": {
+    "count": 4,
+    "key": "input=1,textarea=1,switch=1｜关键类=bottom-submit__btn bottom-submit__btn--disabled",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/circles/circles/post-topic",
+    "file": "console/r1-recap2-18-subpackages-circles-circles-post-topic.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/circles/circles/circle-home",
+   "batch": "2",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-04-subpackages-circles-circles-circle-home.png",
+   "elements": {
+    "count": 45,
+    "key": "button=1,tab=13,link=4｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/circles/circles/circle-home",
+    "file": "console/r1-recap2-19-subpackages-circles-circles-circle-home.log"
+   },
+   "securityActions": "TAP .hero-actions[‹](返回钮)；TAP .feed-actions[256]——容器，子元素 .feed-action 绑 toggleLike(点赞)",
+   "notes": "疑似点赞写：容器 tap 是否真触发 toggleLike 无法证实（帧摄于 tap 前），已标记待核；单操作无超时"
+  },
+  {
+   "route": "subpackages/campus/campus/hub",
+   "batch": "2",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-05-subpackages-campus-campus-hub.png",
+   "elements": {
+    "count": 31,
+    "key": "input=1,tab=7｜关键类=campus-guide__btn campus-guide__btn-text campus-search__input campus-hub__tabs campus-hub__tab campus-hub__tab-text",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/campus/campus/hub",
+    "file": "console/r1-recap2-20-subpackages-campus-campus-hub.log"
+   },
+   "securityActions": "SKIP(guard).campus-school-card__cta(写残留)",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/campus/campus/index",
+   "batch": "2",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-06-subpackages-campus-campus-index.png",
+   "elements": {
+    "count": 31,
+    "key": "input=1,tab=7｜关键类=campus-guide__btn campus-guide__btn-text campus-search__input campus-hub__tabs campus-hub__tab campus-hub__tab-text",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/campus/campus/index",
+    "file": "console/r1-recap2-21-subpackages-campus-campus-index.log"
+   },
+   "securityActions": "SKIP(guard).campus-school-card__cta(写残留)",
+   "notes": "落点=subpackages/campus/campus/hub（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "subpackages/campus/campus/post-topic",
+   "batch": "2",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-07-subpackages-campus-campus-post-topic.png",
+   "elements": {
+    "count": 9,
+    "key": "input=3,textarea=1,switch=1｜关键类=bottom-submit__btn bottom-submit__btn--disabled",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/campus/campus/post-topic",
+    "file": "console/r1-recap2-22-subpackages-campus-campus-post-topic.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/campus/campus/topic-detail",
+   "batch": "2",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-08-subpackages-campus-campus-topic-detail.png",
+   "elements": {
+    "count": 2,
+    "key": "｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/campus/campus/topic-detail",
+    "file": "console/r1-recap2-23-subpackages-campus-campus-topic-detail.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/campus/campus/certification",
+   "batch": "2",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-09-subpackages-campus-campus-certification.png",
+   "elements": {
+    "count": 5,
+    "key": "input=3｜关键类=info-card__item",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/campus/campus/certification",
+    "file": "console/r1-recap2-24-subpackages-campus-campus-certification.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/discover-extra/discover/matching",
+   "batch": "2",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-10-subpackages-discover-extra-discover-matching.png",
+   "elements": {
+    "count": 22,
+    "key": "tab=8｜关键类=discover-header__tabs discover-header__tab discover-header__tab--active discover-header__tab-text discover-header__tab-text--active discover-header__tab-line",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/discover-extra/discover/matching",
+    "file": "console/r1-recap2-25-subpackages-discover-extra-discover-matching.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "落点=pages/discover/index（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "subpackages/discover-extra/discover/match-success",
+   "batch": "2",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-11-subpackages-discover-extra-discover-match-success.png",
+   "elements": {
+    "count": 4,
+    "key": "｜关键类=success-nav__btn match-success__actions",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/discover-extra/discover/match-success",
+    "file": "console/r1-recap2-26-subpackages-discover-extra-discover-match-success.log"
+   },
+   "securityActions": "MISS .match-success__actions",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/discover-extra/home/segment",
+   "batch": "2",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-12-subpackages-discover-extra-home-segment.png",
+   "elements": {
+    "count": 12,
+    "key": "源码定点计数：segment-list=1,segment-row=9,segment-retry=0,segment-header__back=1,segment-page=1",
+    "source": "源码类名定点计数"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/discover-extra/home/segment",
+    "file": "console/r1-recap2-27-subpackages-discover-extra-home-segment.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时；元素经源码类名定点补测(重试0)"
+  },
+  {
+   "route": "subpackages/discover-extra/nearby/people",
+   "batch": "2",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-13-subpackages-discover-extra-nearby-people.png",
+   "elements": {
+    "count": 5,
+    "key": "tab=6｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/discover-extra/nearby/people",
+    "file": "console/r1-recap2-28-subpackages-discover-extra-nearby-people.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/discover-extra/discover/history",
+   "batch": "2",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-14-subpackages-discover-extra-discover-history.png",
+   "elements": {
+    "count": 1,
+    "key": "｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/discover-extra/discover/history",
+    "file": "console/r1-recap2-29-subpackages-discover-extra-discover-history.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/discover-extra/likes/index",
+   "batch": "2",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-15-subpackages-discover-extra-likes-index.png",
+   "elements": {
+    "count": 16,
+    "key": "input=1,tab=15｜关键类=likes-header__actions likes-search__input likes-card__row",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/discover-extra/likes/index",
+    "file": "console/r1-recap2-30-subpackages-discover-extra-likes-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/discover-extra/likes-visitors/index",
+   "batch": "3",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-01-subpackages-discover-extra-likes-visitors-index.png",
+   "elements": {
+    "count": 9,
+    "key": "tab=10｜关键类=overview__item tabs__item tabs__item--active list__item",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/discover-extra/likes-visitors/index",
+    "file": "console/r1-recap2-31-subpackages-discover-extra-likes-visitors-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/tools/daily-question/index",
+   "batch": "3",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-02-subpackages-tools-daily-question-index.png",
+   "elements": {
+    "count": 2,
+    "key": "｜关键类=lock-card__cta lock-card__cta-text",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/tools/daily-question/index",
+    "file": "console/r1-recap2-32-subpackages-tools-daily-question-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/tools/love-center/index",
+   "batch": "3",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-03-subpackages-tools-love-center-index.png",
+   "elements": {
+    "count": 3,
+    "key": "源码定点计数：love-center__test-list=1,love-center__test-arrow=1,love-center__quick-arrow=1",
+    "source": "源码类名定点计数"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/tools/love-center/index",
+    "file": "console/r1-recap2-33-subpackages-tools-love-center-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时；元素经源码类名定点补测"
+  },
+  {
+   "route": "subpackages/tools/help/index",
+   "batch": "3",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-04-subpackages-tools-help-index.png",
+   "elements": {
+    "count": 9,
+    "key": "源码定点计数：help-faq__item=6,help-contact__item=3",
+    "source": "源码类名定点计数"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/tools/help/index",
+    "file": "console/r1-recap2-34-subpackages-tools-help-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时；元素经源码类名定点补测"
+  },
+  {
+   "route": "subpackages/tools/security/index",
+   "batch": "3",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-05-subpackages-tools-security-index.png",
+   "elements": {
+    "count": 16,
+    "key": "源码定点计数：sec-item=8,sec-item--danger=1,sec-item__arrow=7",
+    "source": "源码类名定点计数"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/tools/security/index",
+    "file": "console/r1-recap2-35-subpackages-tools-security-index.log"
+   },
+   "securityActions": "SKIP(guard) .sec-item--danger[注销账号类]",
+   "notes": "单操作无超时；元素经源码类名定点补测"
+  },
+  {
+   "route": "subpackages/tools/search/index",
+   "batch": "3",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-06-subpackages-tools-search-index.png",
+   "elements": {
+    "count": 8,
+    "key": "input=1,tab=8｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/tools/search/index",
+    "file": "console/r1-recap2-36-subpackages-tools-search-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/tools/heart-signals/index",
+   "batch": "3",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-07-subpackages-tools-heart-signals-index.png",
+   "elements": {
+    "count": 19,
+    "key": "tab=10｜关键类=signal-tabs__item signal-tabs__item--active signal-card__actions signal-card__btn signal-card__btn--decline signal-card__btn-text",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/tools/heart-signals/index",
+    "file": "console/r1-recap2-37-subpackages-tools-heart-signals-index.log"
+   },
+   "securityActions": "TAP .signal-card__actions[拒绝]；TAP .signal-card__btn[接受]",
+   "notes": "守卫漏事故：拒绝/接受按钮被 tap（源码 index.vue:329-333 绑 handleDecline/handleAccept=关系写）——GUARD_RE 当时未含「接受|拒绝」，是否真触发取决于待处理信号是否存在（帧摄于 tap 前），已标记待核；GUARD_RE 已补两词；单操作无超时"
+  },
+  {
+   "route": "subpackages/tools/activities/detail",
+   "batch": "3",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-08-subpackages-tools-activities-detail.png",
+   "elements": {
+    "count": 6,
+    "key": "｜关键类=detail-meta__item",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/tools/activities/detail",
+    "file": "console/r1-recap2-38-subpackages-tools-activities-detail.log"
+   },
+   "securityActions": "TAP .detail-action-bar[分享]",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/tools/love-center/nearby",
+   "batch": "3",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-09-subpackages-tools-love-center-nearby.png",
+   "elements": {
+    "count": 13,
+    "key": "｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/tools/love-center/nearby",
+    "file": "console/r1-recap2-39-subpackages-tools-love-center-nearby.log"
+   },
+   "securityActions": "MISS .card-action--pressed",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/tools/love-center/mbti",
+   "batch": "3",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-10-subpackages-tools-love-center-mbti.png",
+   "elements": {
+    "count": 48,
+    "key": "cell=48｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/tools/love-center/mbti",
+    "file": "console/r1-recap2-40-subpackages-tools-love-center-mbti.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/tools/love-center/consulting",
+   "batch": "3",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-11-subpackages-tools-love-center-consulting.png",
+   "elements": {
+    "count": 2,
+    "key": "link=2｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/tools/love-center/consulting",
+    "file": "console/r1-recap2-41-subpackages-tools-love-center-consulting.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/profile-extra/settings/index",
+   "batch": "3",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-12-subpackages-profile-extra-settings-index.png",
+   "elements": {
+    "count": 5,
+    "key": "switch=2｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/profile-extra/settings/index",
+    "file": "console/r1-recap2-42-subpackages-profile-extra-settings-index.log"
+   },
+   "securityActions": "SKIP(guard)x1(删除/解绑/同意类)",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/profile-extra/verification/index",
+   "batch": "3",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-13-subpackages-profile-extra-verification-index.png",
+   "elements": {
+    "count": 6,
+    "key": "input=3｜关键类=form-item__input",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/profile-extra/verification/index",
+    "file": "console/r1-recap2-43-subpackages-profile-extra-verification-index.log"
+   },
+   "securityActions": "SKIP(guard)x1(删除/解绑/同意类)",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/profile-extra/verification/real-name",
+   "batch": "3",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-14-subpackages-profile-extra-verification-real-name.png",
+   "elements": {
+    "count": 5,
+    "key": "input=2｜关键类=form-item__input",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/profile-extra/verification/real-name",
+    "file": "console/r1-recap2-44-subpackages-profile-extra-verification-real-name.log"
+   },
+   "securityActions": "SKIP(guard)x1(删除/解绑/同意类)",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/profile-extra/profile/visitors",
+   "batch": "3",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-15-subpackages-profile-extra-profile-visitors.png",
+   "elements": {
+    "count": 44,
+    "key": "源码定点计数：visitors-card=22,visitors-card__avatar=22",
+    "source": "源码类名定点计数"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/profile-extra/profile/visitors",
+    "file": "console/r1-recap2-45-subpackages-profile-extra-profile-visitors.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时；元素经源码类名定点补测"
+  },
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "batch": "4",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-01-subpackages-profile-extra-profile-other.png",
+   "elements": {
+    "count": 5,
+    "key": "源码定点计数：other-more-item=3,other-more-item--danger=1,other-header__back-arrow=1",
+    "source": "源码类名定点计数"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/profile-extra/profile/other",
+    "file": "console/r1-recap2-46-subpackages-profile-extra-profile-other.log"
+   },
+   "securityActions": "SKIP(guard) .other-more-item--danger[拉黑/举报类]",
+   "notes": "单操作无超时；元素经源码类名定点补测"
+  },
+  {
+   "route": "subpackages/profile-extra/profile/location",
+   "batch": "4",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-02-subpackages-profile-extra-profile-location.png",
+   "elements": {
+    "count": 5,
+    "key": "｜关键类=location-card__row",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/profile-extra/profile/location",
+    "file": "console/r1-recap2-47-subpackages-profile-extra-profile-location.log"
+   },
+   "securityActions": "TAP .location-actions[重新定位]",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/profile-extra/profile/privacy",
+   "batch": "4",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-03-subpackages-profile-extra-profile-privacy.png",
+   "elements": {
+    "count": 2,
+    "key": "switch=2｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/profile-extra/profile/privacy",
+    "file": "console/r1-recap2-48-subpackages-profile-extra-profile-privacy.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/profile-extra/profile/album",
+   "batch": "4",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-04-subpackages-profile-extra-profile-album.png",
+   "elements": {
+    "count": 16,
+    "key": "cell=20｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/profile-extra/profile/album",
+    "file": "console/r1-recap2-49-subpackages-profile-extra-profile-album.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/profile-extra/profile/favorites",
+   "batch": "4",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-05-subpackages-profile-extra-profile-favorites.png",
+   "elements": {
+    "count": 4,
+    "key": "源码定点计数：favorite-card=2,favorite-card__body=2",
+    "source": "源码类名定点计数"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/profile-extra/profile/favorites",
+    "file": "console/r1-recap2-50-subpackages-profile-extra-profile-favorites.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时；元素经源码类名定点补测"
+  },
+  {
+   "route": "subpackages/profile-extra/profile/tasks",
+   "batch": "4",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-06-subpackages-profile-extra-profile-tasks.png",
+   "elements": {
+    "count": 4,
+    "key": "源码定点计数：task-item=4,task-item__check=0",
+    "source": "源码类名定点计数"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/profile-extra/profile/tasks",
+    "file": "console/r1-recap2-51-subpackages-profile-extra-profile-tasks.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时；元素经源码类名定点补测"
+  },
+  {
+   "route": "subpackages/profile-extra/settings/dnd",
+   "batch": "4",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-07-subpackages-profile-extra-settings-dnd.png",
+   "elements": {
+    "count": 27,
+    "key": "picker=2,switch=2｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/profile-extra/settings/dnd",
+    "file": "console/r1-recap2-52-subpackages-profile-extra-settings-dnd.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/profile-extra/feedback/history",
+   "batch": "4",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-08-subpackages-profile-extra-feedback-history.png",
+   "elements": {
+    "count": 6,
+    "key": "源码定点计数：filter-chip=4,record=2,record__detail=0",
+    "source": "源码类名定点计数"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/profile-extra/feedback/history",
+    "file": "console/r1-recap2-53-subpackages-profile-extra-feedback-history.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时；元素经源码类名定点补测(二次)"
+  },
+  {
+   "route": "subpackages/chat/chat-session/index",
+   "batch": "4",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-09-subpackages-chat-chat-session-index.png",
+   "elements": {
+    "count": 1,
+    "key": "｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/chat/chat-session/index",
+    "file": "console/r1-recap2-54-subpackages-chat-chat-session-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/chat/official-chat/index",
+   "batch": "4",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-10-subpackages-chat-official-chat-index.png",
+   "elements": {
+    "count": 13,
+    "key": "input=1,link=2｜关键类=input-bar__field input-bar__input",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/chat/official-chat/index",
+    "file": "console/r1-recap2-55-subpackages-chat-official-chat-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/setup/profile/index",
+   "batch": "4",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-11-subpackages-setup-profile-index.png",
+   "elements": {
+    "count": 9,
+    "key": "input=5,textarea=2,picker=4｜关键类=field__input",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/setup/profile/index",
+    "file": "console/r1-recap2-56-subpackages-setup-profile-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/setup/campus/index",
+   "batch": "4",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-12-subpackages-setup-campus-index.png",
+   "elements": {
+    "count": 22,
+    "key": "tab=8｜关键类=discover-header__tabs discover-header__tab discover-header__tab--active discover-header__tab-text discover-header__tab-text--active discover-header__tab-line",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/setup/campus/index",
+    "file": "console/r1-recap2-57-subpackages-setup-campus-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "落点=pages/discover/index（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "subpackages/setup/schedule/index",
+   "batch": "4",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-13-subpackages-setup-schedule-index.png",
+   "elements": {
+    "count": 1,
+    "key": "input=1｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/setup/schedule/index",
+    "file": "console/r1-recap2-58-subpackages-setup-schedule-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/setup/recommend-pref/index",
+   "batch": "4",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-14-subpackages-setup-recommend-pref-index.png",
+   "elements": {
+    "count": 22,
+    "key": "tab=8｜关键类=discover-header__tabs discover-header__tab discover-header__tab--active discover-header__tab-text discover-header__tab-text--active discover-header__tab-line",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/setup/recommend-pref/index",
+    "file": "console/r1-recap2-59-subpackages-setup-recommend-pref-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "落点=pages/discover/index（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "subpackages/setup/interest/index",
+   "batch": "4",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-15-subpackages-setup-interest-index.png",
+   "elements": {
+    "count": 3,
+    "key": "源码定点计数：interest-header=1,interest-header__row=1,interest-page=1",
+    "source": "源码类名定点计数"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/setup/interest/index",
+    "file": "console/r1-recap2-60-subpackages-setup-interest-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时；元素经源码类名定点补测"
+  },
+  {
+   "route": "subpackages/setup/dev/index",
+   "batch": "5",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-01-subpackages-setup-dev-index.png",
+   "elements": {
+    "count": 0,
+    "key": "｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/setup/dev/index",
+    "file": "console/r1-recap2-61-subpackages-setup-dev-index.log"
+   },
+   "securityActions": "SKIP(no-wxml:元素面不可读，安全抽测不做——不伪造)",
+   "notes": "帧显示 page not found（#ifdef 编译期剔除生效，mock 产物未注册该路由=预期 NOT_REGISTERED）；automator 仍回报请求路径故机读为「落点吻合」，以帧为准判 NAV_FAIL"
+  },
+  {
+   "route": "subpackages/setup/showcase/index",
+   "batch": "5",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-02-subpackages-setup-showcase-index.png",
+   "elements": {
+    "count": 0,
+    "key": "｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/setup/showcase/index",
+    "file": "console/r1-recap2-62-subpackages-setup-showcase-index.log"
+   },
+   "securityActions": "SKIP(no-wxml:元素面不可读，安全抽测不做——不伪造)",
+   "notes": "帧显示 page not found（#ifdef 编译期剔除生效，mock 产物未注册该路由=预期 NOT_REGISTERED）；automator 仍回报请求路径故机读为「落点吻合」，以帧为准判 NAV_FAIL"
+  },
+  {
+   "route": "subpackages/support/feedback/index",
+   "batch": "5",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-03-subpackages-support-feedback-index.png",
+   "elements": {
+    "count": 7,
+    "key": "源码定点计数：chip=3,field=3,history-header__btn=1",
+    "source": "源码类名定点计数"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/support/feedback/index",
+    "file": "console/r1-recap2-63-subpackages-support-feedback-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时；源码定点补测"
+  },
+  {
+   "route": "subpackages/discover/discussions/index",
+   "batch": "5",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-04-subpackages-discover-discussions-index.png",
+   "elements": {
+    "count": 2,
+    "key": "源码定点计数：feed-row=2,retry-link=0",
+    "source": "源码类名定点计数"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/discover/discussions/index",
+    "file": "console/r1-recap2-64-subpackages-discover-discussions-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时；源码定点补测"
+  },
+  {
+   "route": "subpackages/discover/activities/index",
+   "batch": "5",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-05-subpackages-discover-activities-index.png",
+   "elements": {
+    "count": 2,
+    "key": "｜关键类=view-toggle__btn view-toggle__btn--active",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/discover/activities/index",
+    "file": "console/r1-recap2-65-subpackages-discover-activities-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/legal/privacy/index",
+   "batch": "5",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-06-subpackages-legal-privacy-index.png",
+   "elements": {
+    "count": 0,
+    "key": "｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/legal/privacy/index",
+    "file": "console/r1-recap2-66-subpackages-legal-privacy-index.log"
+   },
+   "securityActions": "SKIP(no-wxml:元素面不可读，安全抽测不做——不伪造)",
+   "notes": "帧证实隐私政策全文渲染；纯静态页无可交互元素属预期（非空页误报）"
+  },
+  {
+   "route": "subpackages/legal/agreement/index",
+   "batch": "5",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-07-subpackages-legal-agreement-index.png",
+   "elements": {
+    "count": 0,
+    "key": "｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/legal/agreement/index",
+    "file": "console/r1-recap2-67-subpackages-legal-agreement-index.log"
+   },
+   "securityActions": "SKIP(no-wxml:元素面不可读，安全抽测不做——不伪造)",
+   "notes": "帧证实协议全文渲染；纯静态页无可交互元素属预期（非空页误报）"
+  },
+  {
+   "route": "subpackages/market/detail/index",
+   "batch": "5",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-08-subpackages-market-detail-index.png",
+   "elements": {
+    "count": 1,
+    "key": "源码定点计数：product-state--sealed=1,product-buybar__btn=0,product-main__price-row=0",
+    "source": "源码类名定点计数"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/market/detail/index",
+    "file": "console/r1-recap2-68-subpackages-market-detail-index.log"
+   },
+   "securityActions": "TAP(sealed-verify) MISS .product-buybar__btn",
+   "notes": "单操作无超时；源码定点补测"
+  },
+  {
+   "route": "subpackages/market/shop/index",
+   "batch": "5",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-09-subpackages-market-shop-index.png",
+   "elements": {
+    "count": 0,
+    "key": "｜关键类=-",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/market/shop/index",
+    "file": "console/r1-recap2-69-subpackages-market-shop-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "帧显示「功能封存中——该功能暂未开放」封存态（shop-card/category-item=0 与封存渲染一致）"
+  },
+  {
+   "route": "subpackages/market/wallet/index",
+   "batch": "5",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-10-subpackages-market-wallet-index.png",
+   "elements": {
+    "count": 1,
+    "key": "源码定点计数：wallet__sealed=1,wallet__balance-card=0",
+    "source": "源码类名定点计数"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/market/wallet/index",
+    "file": "console/r1-recap2-70-subpackages-market-wallet-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "单操作无超时；源码定点补测"
+  },
+  {
+   "route": "subpackages/vip/index",
+   "batch": "5",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-11-subpackages-vip-index.png",
+   "elements": {
+    "count": 50,
+    "key": "button=1,cell=8｜关键类=my-completion__btn my-completion__btn-text story-cards__row my-interaction__row my-interaction__row--pressed my-more__cell｜btn文案=[▦]",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/vip/index",
+    "file": "console/r1-recap2-71-subpackages-vip-index.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "落点=pages/profile/index（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "subpackages/vip/promo-code",
+   "batch": "5",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-12-subpackages-vip-promo-code.png",
+   "elements": {
+    "count": 50,
+    "key": "button=1,cell=8｜关键类=my-completion__btn my-completion__btn-text story-cards__row my-interaction__row my-interaction__row--pressed my-more__cell｜btn文案=[▦]",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/vip/promo-code",
+    "file": "console/r1-recap2-72-subpackages-vip-promo-code.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "落点=pages/profile/index（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "subpackages/vip/bills",
+   "batch": "5",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-13-subpackages-vip-bills.png",
+   "elements": {
+    "count": 50,
+    "key": "button=1,cell=8｜关键类=my-completion__btn my-completion__btn-text story-cards__row my-interaction__row my-interaction__row--pressed my-more__cell｜btn文案=[▦]",
+    "source": "outerWxml 首-view"
+   },
+   "consoleOriginal": "error=0,warn=0（原始通道未采到，读数作废）",
+   "consoleRecap": {
+    "lines": 0,
+    "errors": 0,
+    "warns": 0,
+    "landing": "subpackages/vip/bills",
+    "file": "console/r1-recap2-73-subpackages-vip-bills.log"
+   },
+   "securityActions": "（无主按钮候选）",
+   "notes": "落点=pages/profile/index（页内守卫/参数缺失重定向）；单操作无超时"
+  }
+ ],
+ "fixlane": [
+  {
+   "id": "REAL-VB03-03",
+   "run": "exec-fixlane-vb03/exec-results.json",
+   "result": "次要22|VB03 EXECUTED band=real@f0677920 ident=A lv=logged-in userId=100158 src=phone-login；修正配方（open subpackages/vip/bills → assertRoute 终态 pages/profile/index 封存弹回）7 步全过，帧 step0-bills-sealed-bounce.png 22739B；按「当前码即设计」把封存弹回行为入册，flag 开关走向归 needsUser F06",
+   "ledgerEffect": "VB03=已判过（EXECUTED），原 FAILED 出列依据（vip/vip 404 假象）同时作废留档"
+  },
+  {
+   "id": "REAL-PFI25-05/F07",
+   "run": "exec-fixlane-pfi25/exec-results.json",
+   "result": "PAGES-PROFILE-INDEX|PFI25 FAILED（第 3 次复现，b1/b1b/fixlane 确定性）；新增证据：pre-assert-voice-state 帧 22726B（A 用户页正常渲染、资料完整度 30%、无语音预览块）+ real 编译产物 pages/profile/index.wxml 含 voice-preview__delete 类名（模板在、wx:if 运行时为假）+ seed-voice fixture ok；倾向归因=store-patch 注入的语音态被渲染链路丢弃（fetchProfile 覆盖嫌疑），尚差渲染时 store 态探针定谳",
+   "ledgerEffect": "产品缺陷候选维持 critical 档且证据链升级（route+帧+类名+3 复现）；console 原文仍缺（r-exec-ws 不采 console，见 CON-EV-01 方法）"
+  },
+  {
+   "id": "CON-EV-01",
+   "run": "tmp/qa/console-recap2-summary.json + console/r1-recap2-*.log（R2-RECAP-10 补全：原引用未带路径。⚠ 盘上该件 landing 列=open 目标回显（生成器 tmp/qa/console-recollect2.mjs:63 原 rec.landing=route），**非实测落点**——vip/bills、pages/login/index、nearby、matching 等行与 tour/regression/fixlane 三处实测弹回不一致，下游不得把 landing 列当落点证据；生成器已修（2026-10-10）：landing 改开页后 getCurrentPages() 实测路由栈、回显移入 landingEcho，重采后本警告对新件失效）",
+   "result": "73/73 路由重采完成：桥开页→装应用内包装器→重放 onLoad/onShow→读缓冲；全部零输出（机制经 MARK 预验：console.warn/error 注入缓冲 2 条命中）；根因=桥开页重启 AppService（包装器/缓冲全灭实测 i=0|n=-1）+ WS 四种导航全失效（栈恒 1）⇒ 首帧加载原文在本通道结构性不可得，重放加载路径 console 为可达上限",
+   "ledgerEffect": "73 条 console 读数由「error=0,warn=0（未采到冒充）」回写为「重放加载路径 0 输出（实证零，方法与局限见 ledger.consoleMethod）」；旧 0 字节 r1-*.log 保留为失效证据",
+   "evidenceFile": "reports/audit/ui-audit-2026-10-09/console-mark-r2con01.log（R2-CON-01 重跑 MARK 预验原始输出：INSTALL=ALREADY、MARK=marked-4、READ 命中 QA_MARK_WARN/ERROR 各条=PASS；缓冲含早前会话 marker 两条亦如实呈现）"
+  },
+  {
+   "id": "CON-NET-02",
+   "run": "tmp/qa/netfault-probe.mjs",
+   "result": "mockWxMethod 存在但臂展抛 Cannot read properties of undefined (reading slice)（SDK 缺陷，与 r-exec-ws net-was-not-armed 同根）；拦截管道实测有效：臂展后应用内发不可解析域名请求返回 SUCCESS 500（mock 应答）⇒ 修法=换正确的 mock 应答形状/容错臂展+从应用侧读拦截计数，属 r-exec-ws.mjs:790-805 工具修配",
+   "ledgerEffect": "real 腿全部 drainNet=0/intercepted=0 读数回写「通道失效未测」；网络判点未有效测试"
+  },
+  {
+   "id": "F01/F02/REAL-OT-06(OT05/06/09)",
+   "run": "源码+编译产物核对",
+   "result": "apps/client/src/subpackages/profile-extra/profile/other.vue 与 real 产物 other.wxml（2424B 全文核对）均无 relationship-cta*——配方选择器指向当前代码不存在的组件，结构性错配实锤；OT05 另有 armModal 抛 showModal 语法错（C1 驱动缺陷）",
+   "ledgerEffect": "OT05/06/09 维持 UNCOVERED；补腿前置=判据台按现页面结构重写配方（非执行可解），已立案"
+  }
+ ],
+ "fixlaneGateReadout": {
+  "uncovered": "5/236",
+  "remaining": [
+   "次要20|OT05 缺=login",
+   "次要20|OT06 缺=login+guest",
+   "次要20|OT09 缺=login",
+   "次要20|VRN07 缺=login",
+   "次要21|OC09 缺=login+guest"
+  ],
+  "sessionContradictRows": 0
+ }
+}

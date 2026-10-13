@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/campus/campus/post-topic",
+ "elementCount": 9,
+ "keyElements": "input=3,textarea=1,switch=1｜关键类=bottom-submit__btn bottom-submit__btn--disabled",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-07-subpackages-campus-campus-post-topic.png"
+}

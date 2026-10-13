@@ -1,0 +1,6 @@
+{
+ "route": "subpackages/tools/heart-signals/index",
+ "securityActions": "TAP .signal-card__actions[拒绝]；TAP .signal-card__btn[接受]",
+ "guardPolicy": "删除/解绑/同意/写操作 SKIP(guard)；支付/VIP 封存验态",
+ "notes": "守卫漏事故：拒绝/接受按钮被 tap（源码 index.vue:329-333 绑 handleDecline/handleAccept=关系写）——GUARD_RE 当时未含「接受|拒绝」，是否真触发取决于待处理信号是否存在（帧摄于 tap 前），已标记待核；GUARD_RE 已补两词；单操作无超时"
+}

@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/tools/daily-question/index",
+ "elementCount": 2,
+ "keyElements": "｜关键类=lock-card__cta lock-card__cta-text",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-02-subpackages-tools-daily-question-index.png"
+}

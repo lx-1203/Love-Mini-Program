@@ -1,0 +1,7 @@
+{
+ "route": "pages/register/index",
+ "elementCount": 12,
+ "keyElements": "input=5,picker=1,link=3｜关键类=field__input field__input--confirm agree__link to-login__link",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-02-pages-register-index.png"
+}

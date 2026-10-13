@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/tools/love-center/nearby",
+ "elementCount": 13,
+ "keyElements": "｜关键类=-",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-09-subpackages-tools-love-center-nearby.png"
+}

@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/discover-extra/likes/index",
+ "elementCount": 16,
+ "keyElements": "input=1,tab=15｜关键类=likes-header__actions likes-search__input likes-card__row",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-15-subpackages-discover-extra-likes-index.png"
+}

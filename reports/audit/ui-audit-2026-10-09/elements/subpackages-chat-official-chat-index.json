@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/chat/official-chat/index",
+ "elementCount": 13,
+ "keyElements": "input=1,link=2｜关键类=input-bar__field input-bar__input",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-10-subpackages-chat-official-chat-index.png"
+}

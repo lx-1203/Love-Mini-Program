@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/setup/interest/index",
+ "elementCount": 3,
+ "keyElements": "源码定点计数：interest-header=1,interest-header__row=1,interest-page=1",
+ "source": "源码类名定点计数",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-15-subpackages-setup-interest-index.png"
+}

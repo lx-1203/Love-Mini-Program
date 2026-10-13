@@ -1,0 +1,6 @@
+{
+ "route": "subpackages/village/village/index",
+ "securityActions": "MISS .post-card__actions；MISS .action-btn",
+ "guardPolicy": "删除/解绑/同意/写操作 SKIP(guard)；支付/VIP 封存验态",
+ "notes": "单操作无超时"
+}

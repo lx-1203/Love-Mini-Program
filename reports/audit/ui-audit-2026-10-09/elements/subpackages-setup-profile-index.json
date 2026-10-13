@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/setup/profile/index",
+ "elementCount": 9,
+ "keyElements": "input=5,textarea=2,picker=4｜关键类=field__input",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-11-subpackages-setup-profile-index.png"
+}

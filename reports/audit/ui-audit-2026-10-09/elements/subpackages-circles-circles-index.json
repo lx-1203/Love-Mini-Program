@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/circles/circles/index",
+ "elementCount": 31,
+ "keyElements": "源码定点计数：circle-card=14,circle-card__action=14,circles-header__search=1,circles-header__back=1,circles-banner=1",
+ "source": "源码类名定点计数",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-15-subpackages-circles-circles-index.png"
+}

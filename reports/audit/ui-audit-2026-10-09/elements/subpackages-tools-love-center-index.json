@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/tools/love-center/index",
+ "elementCount": 3,
+ "keyElements": "源码定点计数：love-center__test-list=1,love-center__test-arrow=1,love-center__quick-arrow=1",
+ "source": "源码类名定点计数",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-03-subpackages-tools-love-center-index.png"
+}

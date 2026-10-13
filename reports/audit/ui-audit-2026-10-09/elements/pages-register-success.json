@@ -1,0 +1,7 @@
+{
+ "route": "pages/register/success",
+ "elementCount": 2,
+ "keyElements": "｜关键类=reg-success__row reg-success__row-icon reg-success__row-text reg-success__row-tag reg-success__btn reg-success__btn-text",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-03-pages-register-success.png"
+}

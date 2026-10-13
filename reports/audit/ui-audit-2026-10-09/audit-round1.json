@@ -1,0 +1,258 @@
+{
+ "consoleAudit": {
+  "items": [
+   {
+    "id": "CON-EV-01",
+    "area": "巡检证据/console 采集通道",
+    "what": "console 证据通道整体失效：closureDir/console 下 73/73 个路由日志全部 0 字节，而 tour-round1.json 全部 73 条记 \"consoleErrors\": \"error=0,warn=0\"、tour-round1.md 每批小结声称「console：15 份全量日志」。因此本轮「逐条核对 console error/warn」不可执行——73 路由的 console 清洁度是「未采到」，不是「已证清白」；tour-plan.json capture.console 承诺的 on('console') 全量收集没有兑现。同一计划 artifactLayout（tour-plan.json:163-169）承诺的 elements/、security/、tour-ledger.json 三类产物在 closureDir 也不存在（仅 screenshots/ 与空 console/ 落盘）。判：巡检证据缺陷（非产品缺陷）。",
+    "evidence": "实跑 `wc -c reports/audit/ui-audit-2026-10-09/console/*.log` ⇒ 73 个文件全 0 字节（total 0）；tour-round1.json:8（首条，73 条同）\"consoleErrors\": \"error=0,warn=0\"；tour-round1.md:45/79/124/172「console：15 份全量日志，批内 error=0 warn=0」；tour-plan.json:34-35（console 采集承诺）、163-169（elements/security/ledger 承诺）；ls 证实 elements/ security/ tour-ledger.json 不存在。",
+    "severity": "high"
+   },
+   {
+    "id": "CON-NET-02",
+    "area": "网络请求失败捕获/net-fault 注入通道",
+    "what": "网络失败面在本轮零有效证据，且 net-fault 注入钩子被正例证伪：OC09 腿在 armNetFault(mode=fail-all,statusCode=500) 已 armed 的窗口内打开官方助手页，页面照常拉全聊天历史并正常渲染（帧可见 8/26 起的多条历史消息+输入条），而 drainNet 本窗=0、intercepted=0、.retry-btn/.state-view absent ⇒ 钩子根本拦不到应用流量（r-exec-ws.mjs:790-805 走 mini.mockWxMethod(\"request\")，cleanup 却读 net-was-not-armed，状态失配）。因此所有 real 腿「零请求」读数（VI34/OT06/VB03 的 drainNet=0、intercepted=0）一律作废，网络向判据（零请求/错误态/重试重拉/发送失败回滚）本轮全部未实测。tour 本体（73 路由）则连网络采集键都没有（tour-plan.json capture 只有 screenshot/console/interactive/security）。判：QA 通道缺陷（md 已自认「钩子未随窗生效」并立案）。",
+    "evidence": "exec-realcov-b4/exec-results.json:116-129（OC09：netFault[on(mode=fail-all statusCode=500 intercepted=0 restored=yes)]、stepsNote #4 drainNet 本窗=0）；帧 reports/screenshots/ui-audit-2026-10-09-exec-f9fd17b1/次要21-OC09-a-error-state.png（35608B，本审查直读：寻觅助手会话+历史消息正常渲染）；tour-round1.md:163「cleanup 报 net-was-not-armed——钩子未随窗生效」、:165「net-fault 钩子切窗后不生效」；scripts/qa/r-exec-ws.mjs:790-805（armNetFault=capEval 抓原引用+mockWxMethod(\"request\")）；tour-plan.json:26-46（capture 四键无网络）。",
+    "severity": "high"
+   },
+   {
+    "id": "REAL-VB03-03",
+    "area": "REALCOV VB03（subpackages/vip/bills，real 带）",
+    "what": "VB03 被记 FAILED 并按「产品向判决」出列账（已判过），实为假红：① 配方 step#2 open 的是 subpackages/vip/vip——该路由不存在（real 产物 app.json 注册的是 vip/{index,promo-code,bills}），帧 次要22-VB03-step0-vip.png 左上角直书「subpackag… 404」；step#4 assertRoute「命中」是 automator 回报请求路径的已知假象（本轮 md:213 对 setup/dev 记过同款陷阱并改判）。② step#6 vip/bills 弹回 pages/profile/index 是编译期封存守卫的设计行为：real 产物 config/feature-flags.js 为 membershipEnabled:!1（与 mock 带同源，源 feature-flags.ts:29，仅 showcase.ts:69 置真），vip/bills.vue:37-42 flag=false 且无页栈时 switchTab 回「我的」。mock 带巡检三 vip 页弹回即此守卫（预期封存）。判：判据/配方错误（预期封存行为被记成产品红），VB03 的「已判过」出列不成立，仍属开放。复现：real@f0677920 identity=A(userId=100158) → 配方 次要22|VB03 → step0 帧即 404。",
+    "evidence": "exec-realcov-b5/exec-results.json:16-44（FAILED，stepsNote #2 open subpackages/vip/vip、#9 assertRoute want~=vip/bills got=pages/profile/index）；帧 reports/screenshots/ui-audit-2026-10-09-exec-f9fd17b1/次要22-VB03-step0-vip.png（6691B，本审查直读＝404 帧，与 setup-dev 的 page-not-found 帧 7112B 同量级）；node 解析 apps/client/dist/build/mp-weixin-real/app.json ⇒ vip subPackage pages=[index,promo-code,bills]；cat apps/client/dist/build/mp-weixin-real/config/feature-flags.js ⇒ membershipEnabled:!1；apps/client/src/config/feature-flags.ts:29、showcase.ts:69、subpackages/vip/bills.vue:37-42；tour-round1.md:206（误记「产品向判决」）、:213（automator 回报请求路径陷阱在册）。",
+    "severity": "high"
+   },
+   {
+    "id": "REAL-VI34-04",
+    "area": "REALCOV VI34（subpackages/village/village/index，real 带）",
+    "what": "VI34 记 EXECUTED 且被 md 称「最硬的一条」，证据实际无效：real 带 5 张状态帧（21174-21177B 近同尺寸=同一画面）直读显示的是「完善资料，解锁完整交友功能／当前完整度 30%／立即完善／先逛逛公开内容」资料完成度拦截页，不是村庄广场——7 态探针（.skeleton-line--w60/.post-card/.village-empty/.featured-error）在所有相位全 absent 的真因是页面内容被拦截层替换，七态一个都没证到；fail-all 注入下 intercepted=0（配合 CON-NET-02 钩子失效）使 Error/Refreshing 态更无从谈起。附带产品信号：30% 完整度的登录用户（userId=100158）在 real 带被挡在村庄页外，而 mock 带同页渲染 268 元素全量内容——拦截层对广场的适用性需产品确认（页面上「先逛逛公开内容」入口暗示应可放行）。探针全空仍判 EXECUTED 且 failureReason 留空，属判绿缺陷。",
+    "evidence": "帧 reports/screenshots/ui-audit-2026-10-09-exec-f9fd17b1/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI34-s2-success-idle.png 等 5 张（本审查直读＝完善资料拦截页）；exec-realcov-b1b/exec-results.json:86-101（status EXECUTED、failureReason \"\"、probes 全 absent、netFault intercepted=0、5 帧 21174-21177B）；tour-round1.md:35「最硬的一条」；对照 tour-round1.json:86-90（mock 带 village/index elementCount=268）。",
+    "severity": "high"
+   },
+   {
+    "id": "REAL-PFI25-05",
+    "area": "REALCOV PFI25（pages/profile/index，real 带）",
+    "what": "PFI25 FAILED 是本轮唯一记红的产品缺陷候选（删除语音入口：seed-voice 夹具成功后 .voice-preview__delete absent，b1/b1b 两轮一致，runner 判「判定的是判据点名的对照，不是通道问题」）。但证据链薄弱：该行 frames[无]（无帧）、console 字段空串（无 console 原文），唯一证据是一次选择器探针；而同带 OT05 已实证存在选择器与实际渲染不符的先例（见 REAL-OT-06）。按本审查标准（判产品缺陷须 route+console 原文+复现路径），PFI25 目前有 route+复现、缺 console 原文与帧，须补帧+选择器复核后才可定产品缺陷。判：产品缺陷候选（critical 档，待复核，账本按已判出列需加核）。复现：real@f0677920 identity=A(userId=100158) → fixture seed-voice(ok) → open pages/profile/index → wait 2200ms → assertPresent .voice-preview__delete=absent。",
+    "evidence": "exec-realcov-b1b/exec-results.json:16-44 与 exec-realcov-b1/exec-results.json:16-44（两次一致：fixture setup:seed-voice=ok、#4 assertPresent 实测=absent、frames[无]、\"console\": \"\"）；tour-round1.md:34（FAILED 计为已判过）。",
+    "severity": "high"
+   },
+   {
+    "id": "REAL-OT-06",
+    "area": "REALCOV OT05/OT06/OT09（subpackages/profile-extra/profile/other，real 带）",
+    "what": "三条 SKIPPED 的在册归因「种子用户 10001/100155 疑似不在当前 real 库 ⇒ CTA 渲染条件不满足」（md:165）被帧证伪：OT05 帧（?userId=10001）显示对方主页完整渲染（远山/25岁/北京/在线/兴趣标签/生活瞬间），且页面底部关系动作条可见——喜欢/打招呼/心动卡/关注四钮俱在；而探针 .relationship-cta__btn--like、.relationship-cta、.relationship-cta__btn--whisper 全部 absent ⇒ 是配方选择器与实际渲染的底部动作条类名不符（recipe 选择器缺陷），既非数据缺失也非产品缺 CTA。OT06（userId=100155）同探针同败、b4/b4b 两轮一致即「选择器确定性错配」。判：QA 配方/选择器缺陷（环境归因不成立）；OT05/06/09 实际仍未测，UNCOVERED 维持。",
+    "evidence": "帧 reports/screenshots/ui-audit-2026-10-09-exec-f9fd17b1/次要20-OT05-a-before-like.png（21137B，本审查直读：对方主页+底部四钮动作条）；exec-realcov-b4/exec-results.json:28-44（probe 两 selector absent 后 armModal 抛错 Uncaught Unexpected identifier 'showModal'——另一通道缺陷）、45-73（OT06 同 selector absent）、74-102（OT09 whisper selector absent）；exec-realcov-b4b 同结果复跑（diff 仅时间戳/帧字节数）；tour-round1.md:165（种子用户假说，被帧证伪）。",
+    "severity": "medium"
+   },
+   {
+    "id": "REAL-VI25-07",
+    "area": "REALCOV VI25（subpackages/village/village/index，real 带）",
+    "what": "VI25 账面已出列（md:38/208），实际无一次有效判决：配方腿夹具 create-pending-post 在 real 带确定性失败（Cannot read properties of undefined (reading 'content')），0/17 步中止（b1/b1b）；通用腿 b1c 记 EXECUTED 但无任何夹具前置，observed 仅 .post-card__audit:absent——结合 REAL-VI34-04，该页 real 带渲染的是资料完成度拦截页，徽标 absent 无判据意义；md:36 自己也注「判过≠判赢」。夹具失败=已立案通道缺陷（qa 夹具脚本对 real 档响应形状解引用错误）。判：QA 夹具缺陷 + 账本完整性问题，VI25 仍开放。",
+    "evidence": "exec-realcov-b1b/exec-results.json:45-73（SKIPPED，setup:create-pending-post=FAIL(Cannot read properties of undefined (reading 'content'))，0/17 步）；exec-realcov-b1c/exec-results.json:16-39（VI25 EXECUTED，observed 仅 .post-card__audit:absent，无夹具步）；tour-round1.md:36（「判过≠判赢」在册）、:38（却按出列记账）。",
+    "severity": "medium"
+   },
+   {
+    "id": "REAL-VRN07-08",
+    "area": "REALCOV VRN07（subpackages/profile-extra/verification/real-name，real 带）",
+    "what": "VRN07 SKIPPED 的环境性判定大方向成立（判据需「未成年」身份形态，身份词表 A/B/guest 无此形态，md:115 已立案待编排层），但其 observed 归因未闭环：行上记「实名表单对 identity A 不渲染」（real 带 .form-item__input absent；mock 带同页 tour 实测 input=2），这与 OT05 同型——在 OT05 已实证明选择器/探针错配先例的背景下，「表单不渲染」的产品解释未经帧核实（该腿无帧）。判：环境/判据身份形态缺失（维持 SKIPPED 正确），但归因表述应降级为未核实；另该行 band 盖章 \"[object Object]\"、identity 空（通用路径缺陷，见 REAL-STAMP-10）。",
+    "evidence": "exec-realcov-b3/exec-results.json:16-41（SKIPPED，pre: .form-item__input:absent，band 字段为对象/行内盖 \"[object Object]\" 由 md:117 记述）；tour-round1.md:115（未成年身份夹具缺失立案）；tour-round1.json:433-441（mock 带同页 input=2）。",
+    "severity": "medium"
+   },
+   {
+    "id": "TOUR-NEARBY-09",
+    "area": "巡检 NAV_FAIL 归因——pages/nearby/index",
+    "what": "pages/nearby/index 登录态直开落 discover，本轮自记「原因待人工判定（可能为定位权限/开城守卫）」。盘上核查：nearby 是 tabBar 页（pages.json tabBar list「附近」）；pages/nearby/index.vue 内无任何自重定向（grep switchTab/navigateBack/reLaunch 零命中）；mock 带 isMock ⇒ isGuest()=false（guest-access.ts:57-58），游客守卫不可能触发；守卫放行口径另有 usePageAccess.ts:79 无 token 放行在册。即盘上找不到产品侧弹回代码路径，怀疑是 tab 页 open 未生效、top 残留启停页 discover 的机测假象（WS 启动页=pages/discover/index）——但盘上件无法终判。判：待归因开放项（不记产品缺陷，需按 switchTab 语义复测一次定案）。",
+    "evidence": "tour-round1.json:53-61（NAV_FAIL、落点 discover、「原因待人工判定」）；apps/client/src/pages.json:415-421（tabBar 含 pages/nearby/index）；grep apps/client/src/pages/nearby/index.vue 无 switchTab/navigateBack/reLaunch 命中；apps/client/src/guards/guest-access.ts:57-58（useMock ⇒ 非游客）；tour-plan.json:19（WS 启动页 page=pages/discover/index）。",
+    "severity": "medium"
+   },
+   {
+    "id": "TOUR-GUARD-10",
+    "area": "巡检护栏/写操作泄漏——heart-signals",
+    "what": "守卫漏事故（在册）：巡检把 heart-signals 的 .signal-card__actions[拒绝] 与 .signal-card__btn[接受] 当安全抽测 tap 了，两钮源码绑定 handleDecline/handleAccept 属关系写（heart-signals/index.vue:329-333）；GUARD_RE 当时未含「接受|拒绝」两词。缓解：执行在 mock 带（无真实后端写）；是否真触发取决于当时是否存在待处理信号，帧摄于 tap 前无法证实，md 记「待核」；GUARD_RE 已补两词。同类待核项还有 circle-home 的 .feed-actions 容器 tap（子元素绑 toggleLike）。判：巡检流程缺陷（低危，护栏已修，触发与否待核仍开放）。",
+    "evidence": "tour-round1.json:363-371（actions TAP 拒绝/接受、守卫漏事故记述）；apps/client/src/subpackages/tools/heart-signals/index.vue:329-333（@tap=\"handleDecline/handleAccept\"）；tour-round1.md:126（事故入册+GUARD_RE 已补）、:63/80（circle-home 容器 tap 待核）；tour-plan.json:20-21（本轮通道 VITE_API_MODE=mock）。",
+    "severity": "low"
+   },
+   {
+    "id": "TOUR-EXPECT-11",
+    "area": "巡检 NAV_FAIL 预期项分类记录（含报告用语纠偏）",
+    "what": "下列 NAV_FAIL 判为预期行为（非缺陷），判据锚定：pages/login/index 登录态弹回 discover＝login 页 onShow 重定向（apps/client/src/pages/login/index.vue:89 switchTab discover；注：tour-round1.json:10/md:44 用的守卫名「loggedOutOnly」在代码中不存在，属报告用语与源码不符，机制以 ：75-89 为准）；village/tag-posts 缺 tag 参数回退广场、campus/index 未注册校区归并 hub＝参数/引导守卫（tour-round1.json:122-131/203-211，帧证）；setup/campus 与 setup/recommend-pref 登录态直开弹 discover＝onboarding 流终点设计（recommend-pref/index.vue:144 replaceAppPath(\"/pages/discover/index\")）；setup/dev、setup/showcase＝#ifdef DEV/SHOWCASE 编译期剔除的预期 NOT_REGISTERED（md:213，帧 404 为准）；mock 带 vip 三页弹回＝membershipEnabled 编译期封存守卫（vip/index.vue:53-66、feature-flags.ts:29；guest-landing-policy.json vipFlag 锚点同口径）；market shop/wallet/detail 封存态渲染＝预期封存（tour-round1.json:673-701，product-state--sealed/wallet__sealed 定点证实）；matching 登录态直开弹 discover＝设计内失败分支 goBack（matching.vue:73-82，直开无 deck 快照状态机 failed ⇒ 回 discover；「每日配额耗尽」假说未验证但弹回本身非缺陷）。此条为分类记录，无待办。",
+    "evidence": "apps/client/src/pages/login/index.vue:75-89；apps/client/src/subpackages/setup/recommend-pref/index.vue:144；apps/client/src/subpackages/vip/index.vue:53-66；apps/client/src/config/feature-flags.ts:29；apps/client/src/subpackages/discover-extra/discover/matching.vue:73-82；scripts/qa/guest-landing-policy.json anchors（vipFlag/loginMarker）；tour-round1.json:122-131/203-211/563-591/603-621/673-731；tour-round1.md:44/171/213-215。",
+    "severity": "low"
+   }
+  ],
+  "openCount": 10,
+  "notes": "审查范围与方法：只读核查 tour-round1.json（73 条）+ tour-round1.md + tour-plan.json + exec-realcov-b1/b1b/b1c/b3/b4/b4b/b4g/b5 八个结果件 + closureDir/console 73 个日志 + 4 张 exec 帧直读 + 相关源码锚点；未运行模拟器/未复现任何页面（只读审查员），所有复现路径引自盘上 exec-results 记录，帧结论为盘上 PNG 直读。\n\n两个前提澄清：① ask 称「历史轮 tour-round*.json 也在」不成立——closureDir 只有 tour-round1.json/md（find 全仓仅此一处 tour-round*.json；tmp/qa/checkpoints 下是旧代 tour-R1/R2/R6/R7 检查点，非本轮产物），故无历史轮可横向比对；② 「逐条核对 console error/warn 与网络请求失败」两项本体不可执行：console 证据件 73/73 全 0 字节（CON-EV-01），网络捕获件不存在且 net-fault 钩子被 OC09 正例证伪（CON-NET-02）——这两项的审查结论是「无法核对」，绝不读作「核对通过」。\n\nREALCOV 点名 9 项逐一判定：PFI25=产品红候选但证据链缺帧缺 console（REAL-PFI25-05）；VI25=夹具确定性失败+无前置 EXECUTED，账面出列无效（REAL-VI25-07）；VI34=帧实为资料完成度拦截页，七态证据无效（REAL-VI34-04）；OT05/06/09=选择器错配（种子用户假说被帧证伪，REAL-OT-06）；VRN07=环境/身份形态缺失成立但归因未闭环（REAL-VRN07-08）；OC09=net 钩子失效正例+会话前置缺失（并入 CON-NET-02）；VB03=假红（404 帧+编译期封存守卫，REAL-VB03-03）。即 md:208 的「UNCOVERED 5/236、四条已出列」账面中，VB03 出列依据是假红、VI25 出列依据无判据力、VI34 的「最硬一条」证据无效，实际仍开放/需重验的点名项多于账面。\n\n其它盘上事实：b4 与 b4b 为同结果复跑（diff 仅 updatedAt 与帧字节数），结论可复现；b1 为中止轮（outcome no-attempt「未产生新行」），有效配方轮=b1b；b4g 为 guest 轴腿，四条 SKIPPED 均有 identity-scope/strict-verbs 正当理由且 evidenceGaps 明示 toast/console/network 三通道未装——「零读数不得读作零发生」口径正确；r-exec-ws 通用路径 band 盖章 \"[object Object]\"/identity 空缺陷在册（md:40/117，影响 b1c VI34 与 b3 VRN07 行机读），未单列 item（已在 VRN07 行内引用）；register 页 sms-btn tap 向 real 8080 发测试验证码为 md:46 在册的 ops 同款动作，不另立案。\n\nopenCount=10：CON-EV-01、CON-NET-02、REAL-VB03-03、REAL-VI34-04、REAL-PFI25-05、REAL-OT-06、REAL-VI25-07、REAL-VRN07-08、TOUR-NEARBY-09、TOUR-GUARD-10 为开放项；TOUR-EXPECT-11 为分类记录（已闭环，不计开放）。"
+ },
+ "funcAudit": {
+  "items": [
+   {
+    "id": "F01",
+    "area": "REALCOV-OT05",
+    "what": "路由 subpackages/profile-extra/profile/other?userId=10001，元素 .relationship-cta__btn--like（点赞CTA）：真实登录轴 0 条判过行。期待行为=identity A 登录态打开他人主页渲染点赞 CTA、tap 触发关系写并断言回读。配方腿 b4/b4b 两次确定性 SKIPPED（CTA absent，种子用户 10001/100155 疑不在 real 库；armModal 另抛 Uncaught Unexpected identifier 'showModal' = C1 nativeModal 驱动缺陷）；游客腿按身份适用范围摘认领。门禁实跑缺=login。",
+    "evidence": "实跑 node scripts/qa/verify-real-coverage.mjs → \"UNCOVERED 次要20|OT05 缺=login\"；reports/audit/ui-audit-2026-10-09/exec-realcov-b4/b4b/exec-results.json OT05 行 status=SKIPPED、observed .relationship-cta__btn--like:absent；tour-round1.md:160-165 记两次复现一致。",
+    "severity": "high"
+   },
+   {
+    "id": "F02",
+    "area": "REALCOV-OT06",
+    "what": "路由 subpackages/profile-extra/profile/other?userId=100155，元素=rapidTap 连点目标 + armNetFault(record) 通道：SKIPPED——目标元素 absent、record 模式 intercepted=0（net-fault 钩子未生效）；游客腿动词拒发(strict-verbs)。期待行为=连点防抖与断网逐请求记录可注入、可断言。门禁缺=login+guest，双轴都无判过行。",
+    "evidence": "实跑 node scripts/qa/verify-real-coverage.mjs → \"UNCOVERED 次要20|OT06 缺=login+guest\"；exec-realcov-b4/exec-results.json OT06 行 stepsNote：armNetFault armed 后 open 成功但 intercepted=0；b4g 游客行动词拒发。",
+    "severity": "high"
+   },
+   {
+    "id": "F03",
+    "area": "REALCOV-OT09",
+    "what": "路由 subpackages/profile-extra/profile/other?userId=10001，元素 .relationship-cta__btn--whisper（悄悄话CTA）：tap 目标不在页上，配方腿 SKIPPED；游客腿身份适用范围外。期待行为=该 CTA 渲染并可 tap 触发悄悄话关系写。门禁缺=login。根因同 F01：种子前置在本 real 环境不成立。",
+    "evidence": "实跑 node scripts/qa/verify-real-coverage.mjs → \"UNCOVERED 次要20|OT09 缺=login\"；exec-realcov-b4/b4b OT09 行 stepsNote #3 tap(.relationship-cta__btn--whisper) 目标不在页。",
+    "severity": "high"
+   },
+   {
+    "id": "F04",
+    "area": "REALCOV-VRN07",
+    "what": "路由 subpackages/profile-extra/verification/real-name，元素 .form-item__input（实名表单）：identity A 下表单不渲染（未成年认证前置缺失，现身份词表 A/B/guest 无未成年形态），tap 无目标 SKIPPED。期待行为=可填实名表单渲染、提交并断言。门禁缺=login。另该通用路径行 identity 空、band 落成 \"[object Object]\"（盖章缺陷见 F16）。",
+    "evidence": "实跑 node scripts/qa/verify-real-coverage.mjs → \"UNCOVERED 次要20|VRN07 缺=login\"；exec-realcov-b3/exec-results.json VRN07 行 SKIPPED pre: .form-item__input:absent；tour-round1.md:115 如实留红记录。",
+    "severity": "high"
+   },
+   {
+    "id": "F05",
+    "area": "REALCOV-OC09",
+    "what": "路由 subpackages/chat/official-chat/index?code=official-assistant，元素 .retry-btn/.state-view + networkFault fail-all 注入：配方腿 SKIPPED——net-fault 切窗后不生效（drainNet=0、cleanup 报 net-was-not-armed）、.retry-btn absent（官方助手会话未建立）；游客腿 networkFault 动词在本仓执行器无通道、拒发。期待行为=断网注入下官方助手页呈现错误态+重试钮并可恢复。门禁缺=login+guest。",
+    "evidence": "实跑 node scripts/qa/verify-real-coverage.mjs → \"UNCOVERED 次要21|OC09 缺=login+guest\"；exec-realcov-b4/b4b OC09 行 stepsNote（armed 但 drainNet=0）；b4g OC09 行 failureReason NOT_SHOOTABLE(verb=networkFault)。",
+    "severity": "high"
+   },
+   {
+    "id": "F06",
+    "area": "REALCOV-VB03 断言未过",
+    "what": "路由 subpackages/vip/bills，元素=页面可达性（assertRoute）：real 档 + identity A 登录态（loginVerify=logged-in userId=100158）直开被弹回 pages/profile/index，step#9 want~=subpackages/vip/bills got=[pages/profile/index] 未命中，10 步 FAILED。期待行为=登录态账单页可达，进而验证判据本体（onShow 命中 store 缓存不重拉、开通后回账单页需下拉才更新）——页不可达则该功能主张完全无从验证。FAILED 被计「已判过」出列覆盖账，属产品向判决而非断言通过。",
+    "evidence": "exec-realcov-b5/exec-results.json VB03 行 status=FAILED、failureReason step#9 assertRoute 未命中（本 ask 中全文核读）；mock 侧 tour-round1.json:723-731 vip/bills 同弹回 pages/profile/index；帧 r1-b4-13-subpackages-vip-bills.png 实读为「我的」profile 页，弹回视觉证实。",
+    "severity": "high"
+   },
+   {
+    "id": "F07",
+    "area": "REALCOV-PFI25 断言未过",
+    "what": "路由 pages/profile/index，元素 .voice-preview__delete（语音删除钮）：seed-voice 夹具（store-patch voiceStatusUrl/Duration）setup ok 后 open+wait 2200ms 断言 absent，b1/b1b 双 FAILED。期待行为=语音预览删除钮渲染→tap 二次确认（modal 取消/确认）→刷新后真删。配方 why 自述根因：real 档 fetchProfile 不回填语音（stores/profile.ts real 分支无 voiceStatusUrl 映射）——语音删除功能在 real 档从未被执行，FAILED 计「已判过」出列。",
+    "evidence": "exec-realcov-b1/b1b exec-results.json PFI25 行 status=FAILED、failureReason step#4 assertPresent .voice-preview__delete 实测=absent（本 ask 中全文核读）；scripts/qa/case-recipes.json PFI25 配方 fixture.why 与 steps（step#4 即断言点）。",
+    "severity": "high"
+   },
+   {
+    "id": "F08",
+    "area": "REALCOV-VI25 夹具缺陷",
+    "what": "路由 subpackages/village/village/index，元素 .post-card__audit（审核中徽标）：配方夹具 create-pending-post（village store createPost，capturePath=id）确定性崩 \"Cannot read properties of undefined (reading 'content')\"，b1/b1b 双复现=已立案缺陷；通用路径腿只证「无夹具下徽标 absent」（台账自认 判过≠判赢）。期待行为=身份A新帖进审核流后列表显示审核徽标且下拉去重不丢——该行为真实覆盖为零。",
+    "evidence": "exec-realcov-b1/b1b VI25 行 status=SKIPPED 夹具 setup 失败；b1c VI25 行 EXECUTED 仅 .post-card__audit:absent；scripts/qa/case-recipes.json:52 create-pending-post 定义；tour-round1.md:36。",
+    "severity": "high"
+   },
+   {
+    "id": "F09",
+    "area": "console 采集通道",
+    "what": "计划件承诺 capture[console]「订阅 on('console') 全量收集（info/warn/error 分级）」（tour-plan.json:33-36），但 closureDir/console/ 下 73 个 .log 全部 0 字节；而 tour-round1.json 73 行全记 consoleErrors error=0,warn=0、批次小结称「15 份全量日志」。期待行为=每页 console 落盘支撑零错误断言；实测该断言无任何盘上证据（订阅疑似未生效或未写入文件）。",
+    "evidence": "本 ask 实跑 cd reports/audit/ui-audit-2026-10-09/console && find . -size +0c | wc -l → 0（73 文件全空）；对照 screenshots/ find . -size +0c | wc -l → 73（帧全部非空）；tour-round1.json 每行 consoleErrors 字段。",
+    "severity": "high"
+   },
+   {
+    "id": "F10",
+    "area": "页面覆盖-nearby",
+    "what": "路由 pages/nearby/index（tabBar「附近」页，pages.json:65-67 声明 enablePullDownRefresh）：登录态直开被弹回 pages/discover/index，巡检记「原因待人工判定（定位权限/开城守卫？）」，至今无归因结论；该页内容面（附近的人列表、下拉刷新）零覆盖，帧实为 discover 页（本 ask 读图证实）。期待行为=登录态 tab 直开渲染附近列表或给出明确守卫文案。",
+    "evidence": "tour-round1.json:53-61 NAV_FAIL 落点=pages/discover/index；screenshots/r1-b0-06-pages-nearby-index.png 实读=寻觅页（推荐/附近 tabs）；console/r1-b0-06-pages-nearby-index.log 0 字节，无归因线索。",
+    "severity": "medium"
+   },
+   {
+    "id": "F11",
+    "area": "页面覆盖-matching",
+    "what": "路由 subpackages/discover-extra/discover/matching：登录态直开弹回 pages/discover/index，巡检记「每日配额耗尽/未开卡守卫？——待人工归因」，无结论；匹配流程页内容零覆盖。期待行为=登录态可达匹配页并进入配额/匹配流程，或守卫弹回有明确归因入册。",
+    "evidence": "tour-round1.json:243-251 NAV_FAIL 落点=pages/discover/index；console/r1-b1-10-…-matching.log 0 字节；tour-round1.md:78 同记待人工归因。",
+    "severity": "medium"
+   },
+   {
+    "id": "F12",
+    "area": "守卫漏事故-heart-signals 未闭环",
+    "what": "路由 subpackages/tools/heart-signals/index，元素 .signal-card__btn--decline[拒绝]/.signal-card__btn--accept[接受]（apps/client/src/subpackages/tools/heart-signals/index.vue:328-333 实读确认 @tap=handleDecline/handleAccept 关系写）被 tap（GUARD_RE 当时未含「接受/拒绝」两词）。是否真触发取决于当时是否存在待处理信号，帧摄于 tap 前，「待核」至今无复核工件；且台账声称「GUARD_RE 已补两词」在盘上不可追溯——scripts/qa 与 .zcode/workflows/miniprogram-ui-audit-v36.dwf.ts:272 的护栏文字仍只有「删除/解绑/同意类」。期待行为=写类按钮 tap 前被护栏拦截，或事故有事后复核（real 8080 侧关系数据核对）与护栏修复的可追溯落盘。",
+    "evidence": "tour-round1.json:363-371 事故行；本 ask 实跑 grep \"接受.*拒绝|拒绝.*接受\" scripts/qa/*.mjs *.dwf.ts → 0 命中；grep -n 拒绝/接受 .zcode/workflows/miniprogram-ui-audit-v36.dwf.ts → 0 命中；sed -n '325,336p' heart-signals/index.vue 证实绑定。",
+    "severity": "high"
+   },
+   {
+    "id": "F13",
+    "area": "疑似写未核实-circle-home",
+    "what": "路由 subpackages/circles/circles/circle-home，元素 .feed-actions[256] 容器被 tap（子元素 .feed-action 绑 toggleLike 点赞写）：容器 tap 是否真触发 toggleLike 无法证实（帧摄于 tap 前），「待核」无后续复核。期待行为=候选元素应排除含绑定子按钮的容器，或事后核实未发生点赞写。",
+    "evidence": "tour-round1.json:183-191 actions 行与 notes「已标记待核」；tour-round1.md:80 批次 2 小结同记待核。",
+    "severity": "medium"
+   },
+   {
+    "id": "F14",
+    "area": "主按钮候选 MISS 未复测",
+    "what": "7 页 tap 候选 MISS 后仅如实记录、无替代探针或复测：pages/home/index .today-card__actions/.action-btn 双 MISS（关键 CTA today-card__btn--love、invite-banner__btn 未触达未断言——首页核心转化按钮）、pages/messages/index .header__icon-btn--hover、subpackages/discover-extra/discover/match-success .match-success__actions、subpackages/tools/love-center/nearby .card-action--pressed、subpackages/village/village/index .post-card__actions（批内两次 MISS，帖子卡操作行未巡）。期待行为=正则未命中的主按钮应以类名定点探针补测或列入下轮复测，而非只记 MISS。",
+    "evidence": "tour-round1.json:44-49（home）、66-70（messages）、254-260（match-success）、383-390（love-center/nearby）、83-90 与 122-130（village/index 双 MISS）；本 ask 统计脚本 missPages=7。",
+    "severity": "medium"
+   },
+   {
+    "id": "F15",
+    "area": "计划件工件布局未兑现",
+    "what": "tour-plan.json:163-169 artifactLayout 承诺 closureDir/elements/<route>.json（逐页可交互元素清单）、closureDir/security/<route>.json（guest 准入/storage 键嗅探/敏感入口/参数注入四项安全抽测）、closureDir/tour-ledger.json（逐页台账）；盘上三者均不存在，仅 console/（全空）与 screenshots/ 落盘。期待行为=四采集通道逐页落盘；安全抽测结果现仅有 actions 列内联摘要，stopRule② 的 SECURITY_HIT 无承载文件，guest 轴准入行为本轮无逐页证据（仅 REALCOV b4g 的 4 条游客腿）。",
+    "evidence": "本 ask 实跑 ls tour-ledger.json elements security → 三者 No such file or directory；tour-plan.json:26-47 capture 四通道定义与 :163-169 artifactLayout。",
+    "severity": "medium"
+   },
+   {
+    "id": "F16",
+    "area": "执行器盖章缺陷",
+    "what": "r-exec-ws 通用路径（无 --recipes）产出的行 band 落成 \"[object Object]\"、identity 空：exec-realcov-b1c VI34 通用行与 exec-realcov-b3 VRN07 行均如此；门禁 IDENTITYLESS 点名 exec-realcov-b1c=1、exec-realcov-b3=1、VI34 漏身份行=2、VRN07=1。期待行为=通用路径行 band/identity 与配方路径同构盖章（band=real@sha8 + identity 轴），否则 real 档行不被登录/游客轴认领、证据链蚀空。",
+    "evidence": "实跑 node scripts/qa/verify-real-coverage.mjs → \"REALCOV_IDENTITYLESS_ROWS=33… IDENTITYLESS SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34 漏身份行=2 / 次要20|VRN07 漏身份行=1 出处 exec-realcov-b1c=1 exec-realcov-b3=1\"；本 ask node 直读 b1c/b3 行 band 字段实为 {source,verify} 对象（字符串化缺陷）；tour-round1.md:40 已立案。",
+    "severity": "medium"
+   },
+   {
+    "id": "F17",
+    "area": "护栏 SKIP(guard) 功能面（既定口径未巡清单）",
+    "what": "13 页的写/危险类主按钮按护栏未做动作抽测，功能行为本轮零执行：settings/index 退出登录/删除账号面、tools/security/index .sec-item--danger 注销账号、profile/other 拉黑/举报、verification/index+real-name 提交认证/实名提交、village publish/post 与 circles/campus post-topic 发布提交、circles/index 加入圈子、campus hub 加入校区 CTA、profile/privacy 与 settings/dnd 开关（开关即写）、profile/tasks 领取、chat-session 发送。期待行为=这些行为由 REALCOV 配方、免检桶（automatable:false）或后续配方覆盖；本轮跳过属计划件既定护栏，入册备查。",
+    "evidence": "本 ask 统计 tour-round1.json actions 含 SKIP 的页=13（脚本输出 {skipPages:13,missPages:7,tapPages:8}）；逐页 actions 字段（tour-round1.json:139/149/349/419/429/459/100/110/180/199 等）；.zcode/workflows/miniprogram-ui-audit-v36.dwf.ts:272 护栏定义。",
+    "severity": "low"
+   }
+  ],
+  "openCount": 17,
+  "notes": "审查范围与对账结论：①路由全集对账 PASS——本 ask 用 node 解析 apps/client/src/pages.json：主包 8 + 13 分包 65 = 73 条（dev/index、showcase/index 按 #ifdef 字面计入），与 tour-plan.json source.routeCount=73 一致；tour-round1.json 73 条目、无重复、无遗漏（NAV_OK=61 / NAV_FAIL=12），其中 setup/dev 与 setup/showcase 两页帧显示 page not found=计划件预先声明的 NOT_REGISTERED 预期口径（#ifdef 编译期剔除），vip/index、vip/promo-code 旗标弹回方向与 guest-landing-policy 一致，均未计缺口（bills 的 real 腿失败另计 F06）。②REALCOV 点名 9 条核对：VI34 EXECUTED 22 步净故障注入+恢复、无 failureReason（PASS）；PFI25/VB03 FAILED（计「已判过」但断言未过，F07/F06）；VI25 配方夹具确定性失败、仅通用腿判过（F08）；OT05/OT06/OT09/VRN07/OC09 门禁实跑 UNCOVERED 维持 5 条（F01-F05）。门禁命令=node scripts/qa/verify-real-coverage.mjs（默认扫 reports/audit/round-7），读数 REALCOV_COVERED=203、UNCOVERED=5/236、CONSERVATION OK、LEDGER OK、RESULT=FAIL、SESSION_CONTRADICT=0——与 tour-round1.md 批次 5 收口读数一致。③未能找到的物料：ask 提及「历史轮 tour-round*.json 也在」，本 ask 全仓 find 仅得 reports/audit/ui-audit-2026-10-09/tour-round1.json 一份，未发现 round2+ 历史轮文件（亦无 tour-round1-regression.json，即工作流定义的复验轮尚未落盘）——如历史轮在别处命名，请指路。④所有结论均出自本 ask 实读文件与实跑命令（find/grep/node 门禁与统计、两张关键帧读图），未做任何文件修改。"
+ },
+ "visualAudit": {
+  "items": [
+   {
+    "id": "VIS-01",
+    "area": "PFI25 所在页 pages/profile/index（我的页头部）vs《全站设计规范与逐页设计稿说明.md》§3.8",
+    "what": "规范 §3.8 要求我的页头部为「薄荷绿渐变（#3DC994→#B8F0DE 方向）白字」，巡检帧 r1-b0-08 实测头部为平坦浅绿底（采样 #eaf8eb/#e9faf2/#f1fdf3，近白）+深色昵称（昵称区最深像素 #0d120e）。结构核验：本人态走 ProfileShell mode=mine → MyProfile（.my-profile 背景为硬编码 #EEF7F2，MyProfile.vue:66-68）；带渐变的 .profile-header-bg（--c-gradient-brand=#36C99A→#55D5A7，design-variables.scss:171）只存在于 pages/profile/index.vue:1827-1832 的非本人态 v-else 分支，本人态永不渲染渐变头部——即帧与代码一致，但两者均不符 §3.8；且渐变实值与规范写法两套色值并存。另 MyProfile.vue:68 以硬编码私有色值替代 var()，违 §1.1.3 一令牌一值。",
+    "evidence": "帧 reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-08-pages-profile-index.png；sharp 像素采样（node+sharp raw 通道，378x814）：header(188,66)=#eaf8eb、(40,90)=#e9faf2、(330,110)=#f8f8f8、(188,200)=#f1fdf3；昵称 bbox x110-185/y85-115 最深 #0d120e@(168,99)。代码：apps/client/src/components/profile/mine/MyProfile.vue:66-68、apps/client/src/pages/profile/index.vue:1827-1832、apps/client/src/theme/design-variables.scss:171。",
+    "severity": "medium"
+   },
+   {
+    "id": "VIS-02",
+    "area": "VI25/VI34 所在页 subpackages/village/village/index（村庄广场页）vs 全站规范 §1.1.1/§1.2/§1.1.3",
+    "what": "整页底色为纯白，违反 §1.1.1「主题底色统一浅绿 #EEF7F2，页面间不得出现白/灰断层（2026-08-31 用户验收定论）」与 §1.2 页面底色令牌。像素证据：帧左缘/卡片间隙带（x0-14, y300-700）65.4% 纯白、#EEF7F2±4 仅 0.2%；整页区域（y140-720）纯白 62.7%、令牌色 0.8%。结构证据：.village-page{background:#ffffff /* R16：纯白背景 */}（village/index.vue:918-922，.village-page 定高根节点），页头 .village-header 亦用 --c-bg-container 白底（同文件 :926）——代码为 R16 有意改白且系硬编码私有色值（违 §1.1.3），与 09-12 规范唯一口径冲突，立案供规范侧拍板。",
+    "evidence": "帧 reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-09-subpackages-village-village-index.png；node+sharp 逐像素扫描：margin 带 total=1400 中 white=65.4%/token=0.2%；whole total=54810 中 white=62.7%/token=0.8%。代码：apps/client/src/subpackages/village/village/index.vue:918-922、:926。",
+    "severity": "medium"
+   },
+   {
+    "id": "VIS-03",
+    "area": "OT05/OT06/OT09 所在页 subpackages/profile-extra/profile/other（他人主页）vs 全站规范 §1.1.1/§1.2",
+    "what": "他人主页整页底色为白：帧 r1-b3-01 五点采样（含页缘 x=8/x=10）全部 #ffffff，守卫文案文字灰 #636363。结构证据：.other-page{background:var(--c-bg-container,#ffffff)}（other.vue:484-487）——用「卡片容器白」令牌充当页面底色，应为 --c-bg-page #EEF7F2；错误态壳 .profile-shell 亦硬编码 #ffffff（ProfileShell.vue:130-132）。注意：本轮帧为无 userId 守卫态（「链接缺少用户参数，请从列表页重新进入」，与 tour-round1 台账 NAV_OK+守卫文案记录一致）；白底属页面根样式，带参完整态同样白底，不属于规范 §6 遗留差异#4「空态提示可再友好」已豁免范围。§3.9 完整构图（头图/浮动头像/底部三按钮）因帧为守卫态无法核验，如实记录。",
+    "evidence": "帧 reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-01-subpackages-profile-extra-profile-other.png；sharp 采样 (188,400)/(60,300)/(320,600)/(188,150)/(10,750) 全=#ffffff，文字最深 #636363@(274,239)。代码：apps/client/src/subpackages/profile-extra/profile/other.vue:484-487、apps/client/src/components/profile/ProfileShell.vue:130-132；守卫文案 i18n zh-CN.ts:1618 missingUserParam。",
+    "severity": "medium"
+   },
+   {
+    "id": "VIS-04",
+    "area": "VRN07 所在页 subpackages/profile-extra/verification/real-name（实名认证页）vs 全站规范 §1.1.1/§1.2",
+    "what": "页面背景为 绿→蓝 渐变而非全站统一浅绿：帧自上而下采样 #eaf5f7(y300)→#e9f4f8(y470)→#e4f2fd(y730，蓝相占优)，与页面底色 #EEF7F2（绿相）不符。结构证据：页根 background:linear-gradient(180deg, var(--c-bg-page) 0%, var(--c-tint-blue-50) 100%)（real-name.vue:600）。因走的是工程令牌（非私有色值），疑为有意的页面氛围选择，故记 low；但按 §1.1.1/§1.2「全站页面背景 #EEF7F2」口径仍属偏差。页内其余核验正常：提交钮实测 #3fcd9f≈--c-brand #36C99A（绿色=行动 §1.1.2 ✅）。",
+    "evidence": "帧 reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-14-subpackages-profile-extra-verification-real-name.png；sharp 采样 (8,300)=#eaf5f7、(370,470)=#e9f4f8、(188,730)=#e4f2fd、提交钮 (60,655)=#3fcd9f。代码：apps/client/src/subpackages/profile-extra/verification/real-name.vue:600。",
+    "severity": "low"
+   },
+   {
+    "id": "VIS-05",
+    "area": "关键页抽检 pages/discover/index（寻觅页·全轮落点页）匹配卡主视觉 vs 全站规范 §3.3/§5",
+    "what": "帧 r1-b0-04 中匹配卡照片/主视觉区完全空白：卡内上部区域（y220-440）亮度均值 242.1、标准差 3.71（近纯白平滑），而 dist 内置兜底主视觉 match-card-hero.jpg 同区亮度均值 202.1/标准差 42.7（丰富插画纹理，角点 #b6d3a2/#f7eedd）——两者完全不同，即人格照片与兜底主视觉均未渲染。按代码链 MatchCard.vue:30 photo=user.photo||user.avatar||MATCH_CARD.HERO、:67 SafeImage :fallback=HERO，空 photo 必落 HERO；HERO=static/assets/images/match/match-card-hero.jpg（images.ts:720，dist 产物确认存在）。单帧证据不排除瞬时加载态，但兜底链按设计不应落到空白，立案复核。另注（非布局偏差，仅记录）：dist 实际素材 640×1024，规范 §5 记 800×1280（同比缩放）。",
+    "evidence": "帧 reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-04-pages-discover-index.png；node+sharp 统计：hero 区 n=4950 mean=242.1 sd=3.71 min=187 max=255；对 apps/client/dist/build/mp-weixin/static/assets/images/match/match-card-hero.jpg（640x1024）resize 后同区 mean=202.1 sd=42.74。代码：apps/client/src/components/match/MatchCard.vue:29-30、:67；apps/client/src/config/images.ts:720；find 确认 dist 与 src/static 均有该文件。",
+    "severity": "medium"
+   },
+   {
+    "id": "VIS-06",
+    "area": "关键页抽检 pages/discover/index（寻觅页）底部动作区 vs 全站规范 §3.3/§1.1.2",
+    "what": "规范 §3.3 构图含「底部三按钮：跳过 64px 灰 / 打个招呼 白底粉气泡 / 喜欢 64px 粉色发光（#FF6891+粉色投影）」，帧 r1-b0-04 默认视口内三按钮不可见：y∈[680,790] 全宽扫描粉色像素（r>200 且 r-g>40）=0 个。结构证据：.match-card-area 改为 70vh/min-height 860rpx 大卡（discover/index.vue:504-512，MP-R1-REQ-04 注释自认有意改高）且节点位于 scroll-view 内，MatchActions 在卡后顺序渲染（index.vue:336-340）→ 被挤出默认视口/自绘 TabBar 之下。属代码内已注释的后续有意变更与 09-12 规范唯一口径的冲突；「喜欢」粉色主按钮不可见也削弱 §1.1.2「粉色=喜欢」的视觉角色落地。",
+    "evidence": "帧 r1-b0-04；node+sharp 扫描 y680-790 全宽 pink 命中=0（同为 discover 构图的 login 弹回帧 r1-b0-01 同参数亦 0）。代码：apps/client/src/pages/discover/index.vue:504-512（.match-card-area 70vh 注释块）、:336-340（MatchActions）。组件：apps/client/src/components/match/MatchActions.vue:29-59。",
+    "severity": "medium"
+   }
+  ],
+  "openCount": 6,
+  "notes": "核验方法与范围：以 deliverables/全站素材补齐-2026-09-12/全站设计规范与逐页设计稿说明.md（v1.0 2026-09-12，自declare「逐页对照验收唯一口径」）为主基准，对 9 条 REALCOV 点名页全部出帧核验（PFI25→r1-b0-08、VI25/VI34→r1-b0-09、OT05/06/09→r1-b3-01、VRN07→r1-b2-14、OC09→r1-b3-10、VB03→r1-b4-13），另抽检 discover（r1-b0-04）与 register（r1-b0-02）。像素证据全部由 node+sharp（仓库 node_modules 自带）对 PNG raw 通道只读采样/扫描取得，未修改任何仓库文件。判不清/通过项如实记录：①OC09 官方助手页核验通过——页面底实测 #eef7f2 与令牌完全一致，对方气泡纯白（§3.7 2026-08-09 定论），发送钮占位态为中性浅色（底带 x300-378/y700-765 饱和绿像素=0），无偏差立案；②VB03 帧 r1-b4-13 与 r1-b0-08 逐通道仅 1413/923076 字节差（0.15%，状态栏时钟），即台账「vip/bills 登录态被旗标弹回 profile（NAV_FAIL）」与帧一致，bills 本体在 mock 无独立帧可判；其 real 腿 FAILED 已在 tour-round1.md 批次5 记录，非视觉范畴；③PFI25 帧中「我的故事」右侧绿色悬浮+（#39c89a≈brand）为 GlobalPublishFab（profile/index.vue:1823-1824，v3 注释在案），§3.8 构图未载，判为规范后新增功能，不入缺陷；④注册页帧与《寻觅注册页-设计规范》四要素设计的差异（保留昵称/出生日期字段）属该规范 §0.5/§7 自declare 的后端契约冲突待拍板（设计先行、§0.7 明示工程零改动），不作为巡检偏差；⑤pages/login/index 帧实为登录态守卫弹回后的 discover 落点（台账口径），§3.1 登录页构图未能据帧核验，如实记录为未核验；⑥home 页背景粗扫 token±4=18.0%/white=33.5%（白卡多所致），未做间隙带专项采样，不下结论；⑦巡检自述的守卫类 NAV_FAIL（nearby/matching/setup×2 弹回、tag-posts 参数回退、dev/showcase NOT_REGISTERED、heart-signals GUARD_RE 漏tap事故）均为行为/流程范畴且有台账在案，不属本轮视觉对照重复立案；⑧历史轮对照：目录内仅 tour-round1.json/.md 一轮（tour-plan.json/md 为计划件），无更早 tour-round 可跨轮对比；⑨console 侧未复检（巡检台账记批内 error=0 warn=0，本轮以帧+源码为准）。"
+ }
+}

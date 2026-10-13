@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/tools/security/index",
+ "elementCount": 16,
+ "keyElements": "源码定点计数：sec-item=8,sec-item--danger=1,sec-item__arrow=7",
+ "source": "源码类名定点计数",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-05-subpackages-tools-security-index.png"
+}

@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/circles/circles/circle-home",
+ "elementCount": 45,
+ "keyElements": "button=1,tab=13,link=4｜关键类=-",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-04-subpackages-circles-circles-circle-home.png"
+}

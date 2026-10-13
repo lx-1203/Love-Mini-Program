@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/support/feedback/index",
+ "elementCount": 7,
+ "keyElements": "源码定点计数：chip=3,field=3,history-header__btn=1",
+ "source": "源码类名定点计数",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-03-subpackages-support-feedback-index.png"
+}

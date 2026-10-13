@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/circles/circles/post-topic",
+ "elementCount": 4,
+ "keyElements": "input=1,textarea=1,switch=1｜关键类=bottom-submit__btn bottom-submit__btn--disabled",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-03-subpackages-circles-circles-post-topic.png"
+}

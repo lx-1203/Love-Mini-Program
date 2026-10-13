@@ -1,0 +1,67 @@
+{
+ "round": "ui-audit-2026-10-09",
+ "gitSha": "f9fd17b1",
+ "identity": "A",
+ "identities": [
+  "?",
+  "A"
+ ],
+ "project": "apps/client/dist/build/mp-weixin-real",
+ "band": "real@f0677920",
+ "loginVerify": "logged-in userId=100158",
+ "updatedAt": "2026-10-09T18:50:50.773Z",
+ "admissible": true,
+ "outcome": "measured",
+ "runner": "scripts/qa/r-exec-ws.mjs（WS 取证 + 桥出帧，完整跑完）",
+ "results": [
+  {
+   "suite": "C-SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI25",
+   "page": "subpackages/village/village/index",
+   "tier": "critical",
+   "band": "real@f0677920",
+   "identity": "A",
+   "loginVerify": "logged-in userId=100158",
+   "sessionSource": "phone-login",
+   "requiresReal": true,
+   "title": "帖子卡「自己待审核新帖」置顶展示与按 id 去重（2026-09-05 R17 审核流）",
+   "status": "EXECUTED",
+   "observed": "top=subpackages/village/village/index | dom: .post-card__audit:absent | ws-route+ws-probe",
+   "missingEvidence": [],
+   "failureReason": "",
+   "route": "subpackages/village/village/index",
+   "toast": "",
+   "console": "",
+   "evidence": "reports/screenshots/ui-audit-2026-10-09-exec-f9fd17b1/SUBPACKAGES-VILLAGE-VILLAGE-INDEX-VI25-after.png(21165B)",
+   "durationMs": 0,
+   "transport": "ws+cli-shot"
+  },
+  {
+   "suite": "C-SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "manifest": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX",
+   "id": "VI34",
+   "page": "subpackages/village/village/index",
+   "tier": "normal",
+   "band": {
+    "source": "phone-login",
+    "verify": "logged-in userId=100158"
+   },
+   "identity": "",
+   "loginVerify": "",
+   "sessionSource": "",
+   "requiresReal": true,
+   "title": "频道内容七态演练：Idle/Loading/Success/Empty/Error/Disabled/Refreshing 逐项留证",
+   "status": "SKIPPED",
+   "observed": "top=subpackages/village/village/index | dom: .skeleton-line--w60:absent | ws-route+ws-probe",
+   "missingEvidence": "A",
+   "failureReason": "action 含交互动词 ⇒ 未开 --tap，交互型留待下一刀",
+   "route": "subpackages/village/village/index",
+   "toast": "",
+   "console": "",
+   "evidence": "real@f0677920",
+   "durationMs": 0,
+   "transport": "ws+cli-shot"
+  }
+ ]
+}

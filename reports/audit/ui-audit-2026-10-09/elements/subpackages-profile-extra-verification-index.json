@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/profile-extra/verification/index",
+ "elementCount": 6,
+ "keyElements": "input=3｜关键类=form-item__input",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-13-subpackages-profile-extra-verification-index.png"
+}

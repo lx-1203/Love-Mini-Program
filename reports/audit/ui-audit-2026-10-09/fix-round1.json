@@ -1,0 +1,47 @@
+{
+ "fix": {
+  "evidence": [
+   "REAL-OT-06 根因：`grep -c \"relationship-cta__btn--like\" scripts/qa/case-recipes.json` ⇒ 10；直读 apps/client/dist/build/mp-weixin-real/components/profile/public/RelationshipCTA.wxml ⇒ 四钮类名与配方一致（.relationship-cta__btn--like/--hello/--whisper/--follow、容器 .relationship-cta）⇒「类名错配」不成立；real 组件链 other.json(profile-shell,whisper-compose-sheet,bottom-sheet)→ProfileShell.json(public-profile)→PublicProfile.json(relationship-c-t-a，uni-app PascalCase 编译产物，PublicProfile.wxml 内 <relationship-c-t-a wx:if>) ⇒ 类在三层自定义组件子树内，页级 page.$$/page.$（r-exec-ws.mjs probeSet:428/wsTap:413）探不到=恒 absent，与 exec-realcov-b4 OT05 stepsNote「probe {…:absent}」而帧上四钮可见自洽",
+   "armModal 复现与修复：scripts/qa/exec-capabilities.mjs:62 原实现 split(\"__API__\").join(JSON.stringify(api)) 往已带双引号的模板 '\"__API__\"' 三处塞入 \"showModal\" ⇒ 生成 api:\"\"showModal\"\"，本车道 node 实跑 eval('(' + src + ')') 报 `Unexpected identifier 'showModal'` 与 exec-realcov-b4/exec-results.json OT05 行 step#5 报错逐字一致；改为裸 String(api) 后 showModal/showActionSheet 源均 new Function 解析 OK；test-exec-capabilities.cjs 新增回归钉「C1 mock 载荷可被解析为函数表达式」且全套 65 checks PASS",
+   "配方回写：case-recipes.json OT05/OT06/OT09 全部 .relationship-cta*/.whisper-* 选择器改组件穿透链（profile-shell >>> public-profile >>> relationship-c-t-a >>> …；whisper-compose-sheet >>> …，段名抄 mp-weixin-real 编译 json/wxml），覆盖 probe/tap/rapidTap/input/readValue；runner 新增 deepCount/deepOne/deepSegs（r-exec-ws.mjs，>>> 分段逐层 element.$ 下钻，末段 $$/$），assertPresent/assertAbsent 经 probeSet 自动覆盖；automator 0.12.1 out/Page.js/out/Element.js 实读证实客户端只透传 selector 无本地校验，>>> 为 miniprogram-automator 文档化跨组件选择器",
+   "离线门禁（本车道实跑）：node scripts/qa/test-cap-recipes.cjs ⇒ CAPRECIPES_TEST=PASS（checks=29，含对真判据台 validateRecipes 零问题——tapTarget 平铺类名作穿透链结尾被子串校验命中）；node scripts/qa/test-exec-capabilities.cjs ⇒ CAPS_TEST=PASS（checks=65）；node --check r-exec-ws.mjs ⇒ OK；node scripts/qa/verify-real-coverage.mjs ⇒ 守恒 OK（免检28+覆盖203+欠账5=236），UNCOVERED 5 条与改前一致",
+   "F04 归因核实：无泄漏探针 scripts/qa/probe-identity-shape.cjs（凭据运行期读 r-exec.cjs、不打凭据）实跑 real 8080 ⇒ A uid=100158 realName data.status=APPROVED + birthDate=2003-05-20（23岁）；B uid=100159 同 APPROVED+成年；guest 100151 同 APPROVED+成年；编译产物 mp-weixin-real/subpackages/profile-extra/verification/real-name.wxml 直读 ⇒ .form-item__input 页面级、表单在 verified(wx:if)/pending(wx:elif)/表单(wx:else) 三分支 else；real-name.vue:336-337 loadAdultGate birthDate 缺失⇒isAdult=false",
+   "F04 词表落盘与验证：r-exec.cjs IDENT_DEFS 增 minor 条目（凭据留空）；cli-automator.mjs mintPlanFor 词表扩为 A/B/guest/minor，minor 无凭据即抛 MINOR_NOT_PROVISIONED 并给铺设配方；verify-real-coverage.mjs axesOf 登录轴与 judgedLogin 认 minor；实跑 `node scripts/qa/cli-automator.mjs check-identity minor` ⇒ 拒跑+配方(exit 2)、`check-identity A` ⇒ ok(source=phone-login)、`check-identity B` ⇒ ok、`check-identity zzz` ⇒ MINT_UNSUPPORTED_IDENTITY 且文案更新为 A/B/guest/minor",
+   "顺带核实未越界：PFI25 的 .voice-preview__delete 在 pages/profile/index.wxml 页面级（无组件边界问题，仍归 REAL-PFI25-05 复核）；test-corpus-denominator.cjs 的 7 失败为改前既存——grep 实证该测试与本次 7 个改动文件零引用交集，失败集全在 round-7 帧删除集/exec-a-mock-final 台账域（该域多文件在会话开始前已被其它车道修改，见 git status 快照）"
+  ],
+  "fixedIds": [
+   "REAL-OT-06",
+   "F04"
+  ],
+  "filesChanged": [
+   "scripts/qa/exec-capabilities.mjs",
+   "scripts/qa/test-exec-capabilities.cjs",
+   "scripts/qa/case-recipes.json",
+   "scripts/qa/r-exec-ws.mjs",
+   "scripts/qa/r-exec.cjs",
+   "scripts/qa/cli-automator.mjs",
+   "scripts/qa/verify-real-coverage.mjs",
+   "scripts/qa/probe-identity-shape.cjs",
+   "reports/audit/ui-audit-2026-10-09/fix-lane.md"
+  ],
+  "lane": "fix",
+  "notes": "REAL-OT-06 修复口径修正：ask 归因是「配方类名与实际渲染类名确定性错配」，本车道从 real 编译产物实抄后发现类名本身一致，真正机制是页面级查询探不进 page→profile-shell→public-profile→relationship-c-t-a 三层自定义组件子树（CTA 编译标签为全小写逐词连字 relationship-c-t-a）。补法落地为：配方选择器改「>>>」组件穿透链（段名抄编译产物）+ runner 增加 deepCount/deepOne 穿透查询（平铺选择器行为不变），而非只换类名——只换类名修不了这条。armModal 缺陷独立复现并修复（exec-capabilities.mjs 双引号叠注入致 SyntaxError），新增解析回归钉。F04：词表（IDENT_DEFS.minor）、守卫（MINOR_NOT_PROVISIONED+铺号四步配方）、覆盖轴（axesOf/judgedLogin 认 minor）三处已入册；VRN07 判过的唯一剩余前置是授权 DB 夹具铺号，铺号+凭据回填+check-identity 转绿后即可交重跑腿；b3 归因从「未核实/不排除选择器错配」升级为「已核实：A 已实名走 verified 分支，非选择器错配」。移交 F01/F02/F03：重跑 OT05/OT06/OT09 即验穿透选择器与 armModal 修复的实带效果；若穿透链在带上仍探不到，优先核对段名与当版编译产物（uni-app 标签名随组件名走）。增量台账：reports/audit/ui-audit-2026-10-09/fix-lane.md。",
+  "skipped": [
+   {
+    "id": "REAL-OT-06:实带重跑",
+    "reason": "本车道无设备会话；穿透选择器与 armModal 修复的实带判定按 ask 既定移交 F01/F02/F03 重跑腿。离线侧已验证：test-cap-recipes PASS(29)/test-exec-capabilities PASS(65，含新回归钉)/node --check 过/eval 复现报错消失"
+   },
+   {
+    "id": "F04:VRN07重跑至判过",
+    "reason": "未成年形态账号（实名未认证+users.birth_date=NULL）在 real 库不存在，且产品 API 全链路不可造：register 的 AgePolicy 拒未成年（RealAuthService.registerUser MinorNotAllowedException）、PUT /profile/basic birthDate 传值须≥18 且 null=不改（ProfileUpdateService:210-219）、PUT /admin/users/{id} 只摸 user_basic_profiles.birthYear（AdminUserUpdateRequest）。唯一通路=授权 DB 夹具铺号（test-cap-recipes.cjs 在册裁定「VRN07=待授权 DB 夹具」），超出本车道权限。铺设四步配方已写入 MINOR_NOT_PROVISIONED 拒跑文案与 r-exec.cjs IDENT_DEFS.minor 注释"
+   },
+   {
+    "id": "F04:identity-A补帧",
+    "reason": "ask 点名的帧核实无法在本车道执行（无模拟器/设备会话）。已用更强证据替代完成归因核实：无泄漏活体探针实得 A=100158 realName data.status=APPROVED+birthDate=2003-05-20，编译产物 real-name.wxml 直读表单在 verified/pending/表单三分支的 else 且 .form-item__input 在页面级（唯一组件 skeleton-block）⇒ A 表单不渲染=A 已实名走 verified 分支，b3 归因成立、「同型选择器错配」假设被证伪。PNG 帧仍留待 F01/F02/F03 腿补拍"
+   }
+  ]
+ },
+ "verifiedIds": [
+  "REAL-OT-06"
+ ]
+}

@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/discover-extra/discover/match-success",
+ "elementCount": 4,
+ "keyElements": "｜关键类=success-nav__btn match-success__actions",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-11-subpackages-discover-extra-discover-match-success.png"
+}

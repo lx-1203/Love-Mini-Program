@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/vip/index",
+ "elementCount": 50,
+ "keyElements": "button=1,cell=8｜关键类=my-completion__btn my-completion__btn-text story-cards__row my-interaction__row my-interaction__row--pressed my-more__cell｜btn文案=[▦]",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-11-subpackages-vip-index.png"
+}

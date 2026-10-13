@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/tools/heart-signals/index",
+ "elementCount": 19,
+ "keyElements": "tab=10｜关键类=signal-tabs__item signal-tabs__item--active signal-card__actions signal-card__btn signal-card__btn--decline signal-card__btn-text",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-07-subpackages-tools-heart-signals-index.png"
+}

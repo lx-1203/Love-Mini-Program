@@ -1,0 +1,46 @@
+{
+ "round": "ui-audit-2026-10-09",
+ "gitSha": "f9fd17b1",
+ "identity": "A",
+ "identities": [
+  "A"
+ ],
+ "project": "apps/client/dist/build/mp-weixin-real",
+ "band": "real@f0677920",
+ "loginVerify": "logged-in userId=100158",
+ "updatedAt": "2026-10-09T22:28:33.949Z",
+ "admissible": true,
+ "outcome": "measured",
+ "runner": "scripts/qa/r-exec-ws.mjs（WS 取证 + 桥出帧，完整跑完）",
+ "results": [
+  {
+   "suite": "C-次要22",
+   "manifest": "次要22",
+   "id": "VB03",
+   "page": "subpackages/vip/bills",
+   "tier": "critical",
+   "band": "real@f0677920",
+   "identity": "A",
+   "loginVerify": "logged-in userId=100158",
+   "sessionSource": "phone-login",
+   "requiresReal": true,
+   "title": "MP-R2-次要22-010 部分开放：onShow 命中 store 缓存不重拉 → 开通后回账单页需下拉才更新（拆客户端请求数与服务端回读）",
+   "status": "EXECUTED",
+   "observed": "top=pages/profile/index | dom(配方步): 见 stepsNote | modal[off] | netFault[on(mode=record intercepted=0 restored=yes)] | fixture[（本条无夹具）] | frames[reports/screenshots/ui-audit-2026-10-09-exec-f9fd17b1/次要22-VB03-step0-bills-sealed-bounce.png(22739B)] | toast[无]",
+   "missingEvidence": [],
+   "failureReason": "",
+   "route": "pages/profile/index",
+   "toast": "",
+   "console": "",
+   "evidence": "reports/screenshots/ui-audit-2026-10-09-exec-f9fd17b1/次要22-VB03-step0-bills-sealed-bounce.png(22739B)",
+   "durationMs": 0,
+   "transport": "ws+cli-shot",
+   "automationChannel": "ws",
+   "recipe": "次要22|VB03",
+   "stepsNote": "#1 armNetFault :: armNetFault mode=record ⇒ armed(net-armed)；#2 open :: open subpackages/vip/bills ⇒ top=pages/profile/index；#3 wait :: wait 2600ms；#4 assertRoute :: 落点判点 want~=pages/profile/index got=[pages/profile/index] ⇒ 命中；#5 shot(step0-bills-sealed-bounce) :: shot step0-bills-sealed-bounce ok 22739B；#6 probe :: probe {\".my-completion__btn\":\"absent\"}；#7 restoreNetFault :: restoreNetFault ⇒ net-was-not-armed",
+   "modalDrive": "off",
+   "netFault": "on(mode=record intercepted=0 restored=yes)",
+   "fixture": "none"
+  }
+ ]
+}

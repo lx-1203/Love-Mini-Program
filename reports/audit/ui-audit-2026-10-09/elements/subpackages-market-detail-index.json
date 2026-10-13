@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/market/detail/index",
+ "elementCount": 1,
+ "keyElements": "源码定点计数：product-state--sealed=1,product-buybar__btn=0,product-main__price-row=0",
+ "source": "源码类名定点计数",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-08-subpackages-market-detail-index.png"
+}

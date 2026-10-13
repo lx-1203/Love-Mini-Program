@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/profile-extra/feedback/history",
+ "elementCount": 6,
+ "keyElements": "源码定点计数：filter-chip=4,record=2,record__detail=0",
+ "source": "源码类名定点计数",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-08-subpackages-profile-extra-feedback-history.png"
+}

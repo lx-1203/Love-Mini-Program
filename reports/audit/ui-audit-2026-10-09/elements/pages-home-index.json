@@ -1,0 +1,7 @@
+{
+ "route": "pages/home/index",
+ "elementCount": 30,
+ "keyElements": "cell=28｜关键类=today-card__actions today-card__btn today-card__btn--outline today-card__btn--love today-card__btn-heart-img invite-banner__btn",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-05-pages-home-index.png"
+}

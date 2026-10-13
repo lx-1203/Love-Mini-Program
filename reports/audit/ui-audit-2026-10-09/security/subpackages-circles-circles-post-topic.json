@@ -1,0 +1,6 @@
+{
+ "route": "subpackages/circles/circles/post-topic",
+ "securityActions": "（无主按钮候选）",
+ "guardPolicy": "删除/解绑/同意/写操作 SKIP(guard)；支付/VIP 封存验态",
+ "notes": "单操作无超时"
+}

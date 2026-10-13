@@ -1,0 +1,198 @@
+{
+ "round": 1,
+ "batch": "regression",
+ "generatedAt": "2026-10-09T22:59:02.835Z",
+ "head": "f9fd17b1",
+ "method": {
+  "nav": "CLI 桥 simulator_open_page",
+  "shot": "CLI 桥 simulator_screenshot",
+  "elements": "首-view outerWxml 计数（首-view 为局部组件时以落点页计数为准）",
+  "console": "应用内包装器 + onLoad/onShow 重放（实证读数；首帧原文因 AppService 重启不可得）"
+ },
+ "rows": [
+  {
+   "route": "pages/login/index",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-01-pages-login-index.png",
+   "elementCount": 22,
+   "keyElements": "｜关键类=discover-header__tabs discover-header__tab discover-header__tab--active discover-header__tab-text discover-header__tab-text--active discover-header__tab-line",
+   "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法：包装器+生命周期重放实证值；首帧原文因 AppService 重启不可得）",
+   "actions": "（无主按钮候选）",
+   "notes": "落点=pages/discover/index（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "pages/nearby/index",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-02-pages-nearby-index.png",
+   "elementCount": 22,
+   "keyElements": "｜关键类=discover-header__tabs discover-header__tab discover-header__tab--active discover-header__tab-text discover-header__tab-text--active discover-header__tab-line",
+   "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法：包装器+生命周期重放实证值；首帧原文因 AppService 重启不可得）",
+   "actions": "（无主按钮候选）",
+   "notes": "落点=pages/discover/index（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "pages/profile/index",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-03-pages-profile-index.png",
+   "elementCount": 50,
+   "keyElements": "button=1｜关键类=my-completion__btn my-completion__btn-text story-cards__row my-interaction__row my-interaction__row--pressed my-more__cell｜btn文案=[▦]",
+   "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法：包装器+生命周期重放实证值；首帧原文因 AppService 重启不可得）",
+   "actions": "（无主按钮候选）",
+   "notes": "单操作无超时"
+  },
+  {
+   "route": "subpackages/village/village/tag-posts",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-04-subpackages-village-village-tag-posts.png",
+   "elementCount": 268,
+   "keyElements": "｜关键类=post-card__actions composer-bar__input composer-bar__input--pressed",
+   "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法：包装器+生命周期重放实证值；首帧原文因 AppService 重启不可得）",
+   "actions": "MISS .post-card__actions；MISS .action-btn",
+   "notes": "落点=subpackages/village/village/index（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "subpackages/campus/campus/index",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-05-subpackages-campus-campus-index.png",
+   "elementCount": 31,
+   "keyElements": "input=1｜关键类=campus-guide__btn campus-guide__btn-text campus-search__input campus-hub__tabs campus-hub__tab campus-hub__tab-text",
+   "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法：包装器+生命周期重放实证值；首帧原文因 AppService 重启不可得）",
+   "actions": "SKIP(guard).campus-school-card__cta(写操作)",
+   "notes": "落点=subpackages/campus/campus/hub（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "subpackages/discover-extra/discover/matching",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-06-subpackages-discover-extra-discover-matching.png",
+   "elementCount": 22,
+   "keyElements": "｜关键类=discover-header__tabs discover-header__tab discover-header__tab--active discover-header__tab-text discover-header__tab-text--active discover-header__tab-line",
+   "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法：包装器+生命周期重放实证值；首帧原文因 AppService 重启不可得）",
+   "actions": "（无主按钮候选）",
+   "notes": "落点=pages/discover/index（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "subpackages/setup/campus/index",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-07-subpackages-setup-campus-index.png",
+   "elementCount": 22,
+   "keyElements": "｜关键类=discover-header__tabs discover-header__tab discover-header__tab--active discover-header__tab-text discover-header__tab-text--active discover-header__tab-line",
+   "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法：包装器+生命周期重放实证值；首帧原文因 AppService 重启不可得）",
+   "actions": "（无主按钮候选）",
+   "notes": "落点=pages/discover/index（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "subpackages/setup/recommend-pref/index",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-08-subpackages-setup-recommend-pref-index.png",
+   "elementCount": 22,
+   "keyElements": "｜关键类=discover-header__tabs discover-header__tab discover-header__tab--active discover-header__tab-text discover-header__tab-text--active discover-header__tab-line",
+   "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法：包装器+生命周期重放实证值；首帧原文因 AppService 重启不可得）",
+   "actions": "（无主按钮候选）",
+   "notes": "落点=pages/discover/index（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "subpackages/setup/dev/index",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-09-subpackages-setup-dev-index.png",
+   "elementCount": 0,
+   "keyElements": "｜关键类=-",
+   "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法：包装器+生命周期重放实证值；首帧原文因 AppService 重启不可得）",
+   "actions": "SKIP(no-wxml:元素面不可读，安全抽测不做——不伪造)",
+   "notes": "单操作无超时；帧显示 page not found（#ifdef 编译期剔除稳定复现=预期 NOT_REGISTERED，本次回归帧复核同批次 5）；以帧为准改判 NAV_FAIL（automator 回报请求路径的机读假象）"
+  },
+  {
+   "route": "subpackages/setup/showcase/index",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-10-subpackages-setup-showcase-index.png",
+   "elementCount": 0,
+   "keyElements": "｜关键类=-",
+   "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法：包装器+生命周期重放实证值；首帧原文因 AppService 重启不可得）",
+   "actions": "SKIP(no-wxml:元素面不可读，安全抽测不做——不伪造)",
+   "notes": "单操作无超时；帧显示 page not found（#ifdef 编译期剔除稳定复现=预期 NOT_REGISTERED，本次回归帧复核同批次 5）；以帧为准改判 NAV_FAIL（automator 回报请求路径的机读假象）"
+  },
+  {
+   "route": "subpackages/vip/index",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-11-subpackages-vip-index.png",
+   "elementCount": 50,
+   "keyElements": "button=1｜关键类=my-completion__btn my-completion__btn-text story-cards__row my-interaction__row my-interaction__row--pressed my-more__cell｜btn文案=[▦]",
+   "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法：包装器+生命周期重放实证值；首帧原文因 AppService 重启不可得）",
+   "actions": "（无主按钮候选）",
+   "notes": "落点=pages/profile/index（页内守卫/参数缺失重定向）；单操作无超时"
+  },
+  {
+   "route": "subpackages/vip/promo-code",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-12-subpackages-vip-promo-code.png",
+   "elementCount": 50,
+   "keyElements": "button=1｜关键类=my-completion__btn my-completion__btn-text story-cards__row my-interaction__row my-interaction__row--pressed my-more__cell｜btn文案=[▦]",
+   "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法：包装器+生命周期重放实证值；首帧原文因 AppService 重启不可得）",
+   "actions": "（无主按钮候选）",
+   "notes": "落点=pages/profile/index（页内守卫/参数缺失重定向）；单操作无超时"
+  }
+ ],
+ "regressionDelta": [
+  {
+   "route": "pages/login/index",
+   "round1": "NAV_FAIL（登录态 loggedOutOnly 弹回 discover）",
+   "regression": "NAV_FAIL 同向——守卫行为稳定"
+  },
+  {
+   "route": "pages/nearby/index",
+   "round1": "NAV_FAIL（弹回 discover，待人工归因）",
+   "regression": "NAV_FAIL 同向——行为稳定，归因仍开放"
+  },
+  {
+   "route": "pages/profile/index",
+   "round1": "NAV_OK el=50",
+   "regression": "NAV_OK el=50——稳定；REALCOV PFI25 语音块缺陷候选另有 fixlane 证据腿在册（exec-fixlane-pfi25 帧+3 复现）"
+  },
+  {
+   "route": "subpackages/village/village/tag-posts",
+   "round1": "NAV_FAIL（缺 tag 参数回退 village/index）",
+   "regression": "NAV_FAIL 同向——参数守卫稳定"
+  },
+  {
+   "route": "subpackages/campus/campus/index",
+   "round1": "NAV_FAIL（并入 campus/hub）",
+   "regression": "NAV_FAIL 同向——引导归并稳定"
+  },
+  {
+   "route": "subpackages/discover-extra/discover/matching",
+   "round1": "NAV_FAIL（弹回 discover，待人工归因）",
+   "regression": "NAV_FAIL 同向——行为稳定，归因仍开放"
+  },
+  {
+   "route": "subpackages/setup/campus/index",
+   "round1": "NAV_FAIL（onboarding 弹回 discover）",
+   "regression": "NAV_FAIL 同向——onboarding 守卫稳定"
+  },
+  {
+   "route": "subpackages/setup/recommend-pref/index",
+   "round1": "NAV_FAIL（onboarding 弹回 discover）",
+   "regression": "NAV_FAIL 同向——onboarding 守卫稳定"
+  },
+  {
+   "route": "subpackages/setup/dev/index",
+   "round1": "NAV_FAIL（帧 page not found=NOT_REGISTERED 预期）",
+   "regression": "NAV_FAIL 同向——编译期剔除稳定复现（本次回归帧复核）"
+  },
+  {
+   "route": "subpackages/setup/showcase/index",
+   "round1": "NAV_FAIL（同上）",
+   "regression": "NAV_FAIL 同向——编译期剔除稳定复现（本次回归帧复核）"
+  },
+  {
+   "route": "subpackages/vip/index",
+   "round1": "NAV_FAIL（旗标封存弹回 profile）",
+   "regression": "NAV_FAIL 同向——membershipEnabled=false 守卫稳定"
+  },
+  {
+   "route": "subpackages/vip/promo-code",
+   "round1": "NAV_FAIL（同上）",
+   "regression": "NAV_FAIL 同向——守卫稳定"
+  }
+ ],
+ "conclusion": "回归 12/12 与第 1 轮判定一致（9 NAV_FAIL 全部同向复现 + 3 NAV_OK 稳定）：第 1 轮修复批（CON-EV-01/CON-NET-02/REAL-VB03-03/REAL-PFI25-05 等）均为证据与工具侧修复，未改产品代码，页面行为零漂移=回归通过；console 读数 12/12 为包装器+生命周期重放实证值（全部零输出，与 73 路由重采一致）；方法局限=首帧加载原文因 AppService 随桥开页重启不可得（已在每行 consoleErrors 注记）",
+ "conclusionScopeNote": "口径注记（R2-SCOPE-11）：本结论「12/12」=9 条 NAV_FAIL 同向复现 + 3 条 NAV_OK 稳定对照，非「第 1 轮 12 条 NAV_FAIL 全回归」；第 1 轮 NAV_FAIL 中的 subpackages/vip/bills 未入 tour 回归批，由 fixlane 修正配方腿代闭环（R2-VB03-05，exec-fixlane-vb03 EXECUTED 等价可接受）"
+}

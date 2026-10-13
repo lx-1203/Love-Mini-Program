@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/discover/activities/index",
+ "elementCount": 2,
+ "keyElements": "｜关键类=view-toggle__btn view-toggle__btn--active",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-05-subpackages-discover-activities-index.png"
+}

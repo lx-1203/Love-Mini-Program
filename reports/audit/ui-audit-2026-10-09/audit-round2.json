@@ -1,0 +1,230 @@
+{
+ "consoleAudit": {
+  "items": [
+   {
+    "id": "R2-CON-01",
+    "area": "console 证据通道（r2 回归批 + 73 路由重采）",
+    "what": "console 通道现状＝重放路径实证零、首帧原文结构性不可得：r2 批 11 份日志各仅 101 字节方法行（「方法: bridge-open + wrapper + onLoad/onShow refire…」），consoleErrors 读数「wrapper-refire:lines=0,error=0,warn=0」是重放值；73 路由重采（console/r1-recap2-*.log，实数 73 份 + tmp/qa/console-recap2-summary.json 73 行全零）同样全零。相比第 1 轮「未采到冒充全量」这是诚实化改进（方法与局限已写入每行注记与 ledger.consoleMethod），页面真实加载期 console（含网络失败打点）在本通道永久缺席仍是能力边界。残余缺口：包装器机制有效性的 MARK 预验（「console.warn/error 注入缓冲 2 条命中」）仅 tour-ledger.json fixlane CON-EV-01 行文字在册，tmp/qa 与 audit 目录均无独立 MARK 证据件，机制有效性主张不可独立复核。判：证据通道局限已如实入册（改进），MARK 证据件缺失（开放、低）。本审查未复跑 MARK（只读审查，不碰活体通道）。",
+    "evidence": "实跑 `wc -c console/r2-*.log` ⇒ 11×101B；`cat console/r2-b0-02-pages-nearby-index.log` ⇒ 仅方法行一行；`ls console | grep -c r1-recap2` ⇒ 73；`cat tmp/qa/console-recap2-summary.json` ⇒ 73 行 consoleLines=0（无 MARK 行）；`grep -rln MARK reports/audit/ui-audit-2026-10-09/*.json *.md` ⇒ 仅 tour-ledger.json 文字；tour-round2.json:10/19（方法注记）；tour-ledger.json consoleMethod/consoleOriginal 字段。",
+    "severity": "medium"
+   },
+   {
+    "id": "R2-CON-02",
+    "area": "tour-round2.json 机读状态列（setup/dev、setup/showcase）",
+    "what": "tour-round2.json 第 84-101 行两行 status=\"NAV_OK\"（elementCount=0），但本批自身帧 r2-b0-08/09（7102B/7393B）直读仍为「subpackag… ot found」404 帧——同一已知 automator 回显请求路径假象（第 1 轮 md:213 在册）。改判只存在于 tour-round2.md:24（「机读 OK 假象已按帧改判」）与权威件（tour-ledger.json routes setup/dev 行 status=NAV_FAIL「以帧为准判」、tour-round1-regression.json:94-112 NAV_FAIL）——tour-round2.json 本体未回写。机读件若被下游单独消费会误判为路由已注册。判：记账一致性缺陷（权威判定正确，JSON 机读列未改）。",
+    "evidence": "tour-round2.json:83-101（两行 NAV_OK）；本审查直读 screenshots/r2-b0-08-subpackages-setup-dev-index.png＝page not found 帧；tour-round2.md:24；tour-ledger.json routes setup/dev 行（NAV_FAIL + 「以帧为准判 NAV_FAIL」）；tour-round1-regression.json:94-112（regression 批同页 NAV_FAIL + 帧复核注记）。",
+    "severity": "low"
+   },
+   {
+    "id": "R2-NET-03",
+    "area": "网络请求失败捕获/net-fault 通道（fix 车道定谳）",
+    "what": "第 1 轮 CON-NET-02 已定谳并回写：tmp/qa/netfault-probe.mjs（2676B，在盘）实测 mockWxMethod 存在但臂展抛 Cannot read properties of undefined (reading 'slice')（SDK 缺陷，与 r-exec-ws net-was-not-armed 同根）；拦截管道本身有效（臂展后应用内向不可解析域名发请求收到 SUCCESS 500 mock 应答）。ledger corrections 已把全部 real 腿 drainNet=0/intercepted=0 读数回写「通道失效未测」，网络判点全部未有效测试。修法（正确 mock 应答形状/容错臂展+从应用侧读拦截计数，r-exec-ws.mjs:790-805 工具修配）已立案未落地；r2 批与 9 条点名用例页零交集（tour-round2.md:4），本批无新网络证据。判：工具缺陷已定谳、修复待落地（开放）。本审查未复跑 probe（需活体 IDE 通道，只读审查不越界）——该项为「ledger 记载+脚本在盘」核验，非本审查实测。",
+    "evidence": "tour-ledger.json corrections[1]（CON-NET-02 applied 全文）与 fixlane CON-NET-02 行；tmp/qa/netfault-probe.mjs 存在（ls -la 2676B，Oct 10 06:07）；tour-round2.md:4（本批与点名页零交集）；exec-fixlane-vb03/exec-results.json:42（cleanup 仍读 net-was-not-armed＝SDK 缺陷残留读数）。",
+    "severity": "medium"
+   },
+   {
+    "id": "R2-PFI25-04",
+    "area": "REALCOV PFI25（pages/profile/index，real 带）",
+    "what": "PFI25 第 3 次确定性复现且证据链升级，产品缺陷候选成立：fixlane 腿 FAILED——fixture seed-voice=ok → probe {.voice-preview__delete/.voice-preview/.profile-complete-card 全 absent} → 帧 22726B（本审查直读＝A 用户「曉風QA鏈」资料页正常渲染、资料完整度 30%、无语音预览块，页面非拦截页非空白）；real 编译产物 pages/profile/index.wxml 含 voice-preview__delete 类名（本审查 grep=1，模板在、运行时 wx:if 为假）；该类页面级无组件边界（fix-lane.md:72，与 OT 组件边界问题不同型）。判：产品缺陷候选按 critical 档成立（已 seed 语音的 real 带资料页不渲染删除语音入口），根因倾向 store-patch 语音态被渲染链丢弃（fetchProfile 覆盖嫌疑），差渲染时 store 态探针定谳；console 原文仍缺（r-exec-ws 不采 console，行上已如实注记）。复现：real@f0677920 identity=A(userId=100158) → seed-voice(ok) → open pages/profile/index → wait 2200ms → assertPresent .voice-preview__delete=absent（b1/b1b/fixlane 三次一致）。",
+    "evidence": "exec-fixlane-pfi25/exec-results.json:16-44（FAILED，stepsNote #1-#6 全读数）；帧 reports/screenshots/ui-audit-2026-10-09-exec-f9fd17b1/PAGES-PROFILE-INDEX-PFI25-pre-assert-voice-state.png（本审查直读）；实跑 `grep -c voice-preview__delete apps/client/dist/build/mp-weixin-real/pages/profile/index.wxml` ⇒ 1；tour-ledger.json fixlane REAL-PFI25-05/F07 行；fix-lane.md:72。",
+    "severity": "high"
+   },
+   {
+    "id": "R2-VB03-05",
+    "area": "REALCOV VB03（subpackages/vip/bills，real 带）——闭环确认",
+    "what": "第 1 轮判定的假红已正确闭环：fix 车道修正配方（open subpackages/vip/bills → assertRoute 终态 pages/profile/index＝封存弹回）7 步全过记 EXECUTED，帧 22739B 本审查直读＝弹回落点「我的」页（曉風QA鏈，同 PFI25 帧同页）；「按当前码即设计」入册（real 产物 config/feature-flags.js membershipEnabled:!1，vip/bills.vue:37-42 守卫），flag 开关走向归 needsUser F06；原 FAILED（vip/vip 404 假象）作废留档。与我第 1 轮 REAL-VB03-03 判定一致。注意：fixlane 行 cleanup 仍读 net-was-not-armed（已知 SDK 缺陷残留，不影响本判点）。此项为闭环确认记录，不计开放。",
+    "evidence": "exec-fixlane-vb03/exec-results.json:16-44（EXECUTED，stepsNote #2 open bills ⇒ top=pages/profile/index、#4 assertRoute 命中、#5 帧 22739B）；帧 reports/screenshots/ui-audit-2026-10-09-exec-f9fd17b1/次要22-VB03-step0-bills-sealed-bounce.png（本审查直读）；tour-ledger.json corrections[2]（REAL-VB03-03 applied：原 FAILED 出列作废）与 fixlane VB03 行；apps/client/src/config/feature-flags.ts:29、subpackages/vip/bills.vue:37-42（第 1 轮已验）。",
+    "severity": "low"
+   },
+   {
+    "id": "R2-OT-06",
+    "area": "REALCOV OT05/OT06/OT09（profile/other，real 带）",
+    "what": "根因修正+修复已落盘，但判过腿未跑：fix-lane.md 推翻「类名错配」初判——RelationshipCTA.wxml 四钮类名与配方一致（本审查 grep 证实 --like/--hello/--whisper 各 1 命中），真因＝自定义组件边界（other.json 页级只注册 whisper-compose-sheet/profile-shell/bottom-sheet，本审查 cat 证实；CTA 在 profile-shell→public-profile→relationship-c-t-a 三层子树内，页级 $ 探不到，与 b4 帧上四钮可见自洽——即我第 1 轮「选择器与实际渲染不符」的方向正确、机制层级更深）。修复三件已验证：①exec-capabilities.mjs modalArmSource 改 String(api)（双双引号语法错修复，注释在册）；②case-recipes.json 29 处 >>> 组件穿透链；③r-exec-ws.mjs deepCount/deepOne/deepSegs 11 处接线。实带重跑明确不在 fix 车道（fix-lane.md:37）⇒ OT05/06/09 仍 UNCOVERED（fixlaneGateReadout remaining 含此三条，OT06 另缺 guest 轴）。判：修复落地、验证待重跑腿（开放）。",
+    "evidence": "实跑 grep RelationshipCTA.wxml（3 类名各 1）、cat other.json（3 组件注册）、`grep -c >>> scripts/qa/case-recipes.json` ⇒ 29、`grep -c deepCount|deepOne|deepSegs scripts/qa/r-exec-ws.mjs` ⇒ 11、sed -n '58,66p' scripts/qa/exec-capabilities.mjs（修复注释+新实现）；fix-lane.md:7-37；tour-ledger.json fixlaneGateReadout（remaining OT05 缺=login / OT06 缺=login+guest / OT09 缺=login）。",
+    "severity": "medium"
+   },
+   {
+    "id": "R2-VRN07-07",
+    "area": "REALCOV VRN07（verification/real-name，real 带）",
+    "what": "归因闭环+判过仍阻塞：fix 车道无泄漏探针实探 real 8080——A(uid=100158) realName status=APPROVED、birthDate=2003-05-20（23 岁成年）⇒ 实名页走 verified-card 分支、表单（wx:else）不渲染，b3 的 .form-item__input:absent 归因成立；我第 1 轮「不排除选择器错配」的保留被证伪（该页表单在页面级、探针通道无组件边界问题，fix-lane.md:47）。「未成年」形态产品 API 不可造（registerUser 触发 MinorNotAllowedException、ProfileUpdateService:210-219 限 ≥18、admin 接口只有 birthYear），唯一路径＝授权 DB 夹具铺号；词表已扩 minor（cli-automator mintPlanFor 凭据未回填当场拒跑 MINOR_NOT_PROVISIONED，实跑 `check-identity minor` ⇒ 拒跑 exit 2）。判：环境/授权夹具阻塞（开放——四步铺设缺前三步，fix 车道权限内不可达，skipped 如实）。",
+    "evidence": "fix-lane.md:39-69（identity 形态实探、编译产物三分支直读、产品 API 不可造证据、词表改动与实跑验证）；tour-ledger.json fixlaneGateReadout（VRN07 缺=login 仍在 remaining）；UNCOVERED 维持 5/236（fix-lane.md:64 守恒读数「免检 28+覆盖 203+欠账 5=236」）。",
+    "severity": "medium"
+   },
+   {
+    "id": "R2-VI25-08",
+    "area": "REALCOV VI25（village/index，real 带）——corrections 漏项",
+    "what": "VI25 是 fix 车道回写的唯一漏项：tour-ledger.json corrections 六条（CON-EV-01/CON-NET-02/REAL-VB03-03/REAL-VI34-04/REAL-PFI25-05/F07/F01-F02）无 VI25，全 ledger 文本 0 次提及 VI25（node 扫描证实）；fix-lane.md 亦未涉及其夹具缺陷。VI25 的「出列」依据仍是 exec-realcov-b1c 那行无夹具 EXECUTED——其夹具 create-pending-post 在 real 带确定性失败（Cannot read properties of undefined (reading 'content')，b1/b1b 0/17 步），且该页 real 带实际被资料完成度拦截页替换（REAL-VI34-04 修正确认）⇒ .post-card__audit:absent 无判据力。VI25 现状：不在 uncovered 5 条里、无有效判决、无 correction——三不管。判：账本完整性缺陷（开放，需补 correction 或重跑腿）。",
+    "evidence": "实跑 `node -e …j.corrections.forEach(c=>console.log(c.id))` ⇒ 六条无 VI25；`JSON.stringify(j).includes('VI25')` ⇒ false；exec-realcov-b1b/exec-results.json:45-73（夹具失败 0/17 步）；exec-realcov-b1c/exec-results.json:16-39（无夹具 EXECUTED）；对照 corrections[3]（REAL-VI34-04：同页 EXECUTED 改记「未有效判决」）。",
+    "severity": "medium"
+   },
+   {
+    "id": "R2-NEARBY-09",
+    "area": "NAV_FAIL 待归因——pages/nearby/index（第 3 次同向）",
+    "what": "nearby 登录态直开弹回 discover 第 3 次同向复现（r1 巡检→r1-regression→r2），归因仍开放：r2 行 notes 仅记「页内守卫/参数缺失重定向」，regression JSON:142-144 明记「行为稳定，归因仍开放」，fix 车道未处理。我第 1 轮盘上核查结论仍成立且无新反证：nearby 为 tabBar 页（pages.json:415-421）、nearby/index.vue 无自重定向代码路径（grep switchTab/navigateBack/reLaunch 零命中）、mock 带 isMock⇒isGuest()=false（guest-access.ts:57-58）守卫不触发——无产品侧弹回解释，疑为 tab 页 open 未生效的机测假象，但盘上件无法终判。判：待归因开放（不记产品缺陷，需按 switchTab 语义复测定案）。",
+    "evidence": "tour-round2.json:23-32（r2 NAV_FAIL 落 discover）；tour-round1-regression.json:140-144（regression 同向+「归因仍开放」）；tour-round2.md:24（「第 3 次同向」）；apps/client/src/pages.json:415-421、guards/guest-access.ts:57-58（第 1 轮已验，本轮无变化）。",
+    "severity": "medium"
+   },
+   {
+    "id": "R2-RECAP-10",
+    "area": "console 重采件数据质量——recap2 landing 字段",
+    "what": "tmp/qa/console-recap2-summary.json 73 行的 landing 字段全部＝请求路由本身，与 tour 三处实测弹回判定矛盾：如 vip/bills 行 landing=subpackages/vip/bills（tour/regression/fixlane 三处实测弹回 pages/profile/index）、pages/login/index 行 landing=login（登录态实测弹 discover）、nearby/matching 同理。可能解释：重放会话身份态与 tour 不同、或该字段是 open 目标回显而非实测落点。不影响 console 重放零读数本身（该表的本职），但下游若把 landing 列当落点证据会误判。另注：该文件在 tmp/qa/ 而非 closureDir，fixlane ledger 引用未带路径。判：数据质量缺陷（低，开放——需注明字段语义或改实测）。",
+    "evidence": "实读 tmp/qa/console-recap2-summary.json（73 行 landing==route，含 vip/bills、pages/login/index、pages/nearby/index、matching 行）；对照 tour-round1-regression.json:136-143（login/nearby 弹回判定）与 exec-fixlane-vb03（vip/bills 弹回实测）。",
+    "severity": "low"
+   },
+   {
+    "id": "R2-SCOPE-11",
+    "area": "回归批覆盖面——vip/bills 缺席 tour 回归",
+    "what": "第 1 轮 NAV_FAIL 共 12 条，r2 批只回归 11 条、r1-regression 批 12 行中 vip/bills 也不在（profile/index 作为 NAV_OK 稳定对照顶替其位）——vip/bills 的 mock 带 NAV 语义未进任何 tour 回归批，改由 fixlane 修正配方腿代为闭环（R2-VB03-05，封存弹回=设计）。闭环等价性可接受（修正腿恰以弹回终态为判点），且 tour-round2.md:4 已注明「VB03 不在本批」；但「回归 12/12」（regression JSON:196 结论）的 12 是「9 NAV_FAIL 同向+3 NAV_OK 稳定」的另一种 12，易与「第 1 轮 12 条 NAV_FAIL 全回归」混淆。判：口径注记问题（低，已闭环，不计开放）。",
+    "evidence": "实跑 `ls screenshots | grep -c r1-reg` ⇒ 12 且无 vip/bills（ls 输出核对）；tour-round1-regression.json rows 路由清单（12 行含 pages/profile/index、无 subpackages/vip/bills）；tour-round2.md:4-5（VB03 不在本批注记）；exec-fixlane-vb03（代闭环腿）。",
+    "severity": "low"
+   }
+  ],
+  "openCount": 9,
+  "notes": "审查范围与方法（本轮实读/实跑）：tour-round2.json（11 行）+ tour-round2.md + tour-round1-regression.json（12 行+delta）+ tour-ledger.json（routes 73/consoleMethod/consoleOriginal/corrections×6/fixlane×5/fixlaneGateReadout）+ fix-lane.md + fix-round1.json + exec-fixlane-pfi25、exec-fixlane-vb03 两腿全文 + console/r2-*.log 11 份（wc -c、cat）+ console/r1-recap2 计数与抽样 + tmp/qa/console-recap2-summary.json + 4 张帧直读（r2-b0-08、PFI25 pre-assert、VB03 sealed-bounce，及第 1 轮已读的 404/拦截页帧）+ 源码/产物锚点复核（RelationshipCTA.wxml grep、other.json cat、pages/profile/index.wxml grep、exec-capabilities.mjs:58-66、case-recipes >>> 计数、r-exec-ws deepCount 计数、tour-round1.json consoleErrors 回写抽查）。未做：未起模拟器/未复跑 netfault-probe 与 MARK（需活体 IDE 通道，只读审查不越界）——涉及项均已注明「非本审查实测」。\n\n本轮判定总纲：第 1 轮三路审查发现的修复是真实且可验证的——console 假「全量」已改为重放实证零+局限入册（CON-EV-01 闭环）、net 通道失效已定谳并把全部作废读数回写「未测」（CON-NET-02 闭环）、VB03 假红已按修正配方正确改判封存弹回=设计（REAL-VB03-03 闭环）、PFI25 证据链升级为「3 次复现+帧+模板类名」（产品缺陷候选维持 critical）、OT 组件边界根因+选择器穿透+armModal 修复全部落盘可验。页面行为零漂移（回归 12/12 同向）与「未改产品代码」一致。\n\nREALCOV 点名 9 项逐条状态（本轮口径）：PFI25=产品缺陷候选成立、差 store 探针定谳（item R2-PFI25-04，开放/high）；VI25=corrections 漏项、出列依据无效（R2-VI25-08，开放）；VI34=corrections 在册改记「未有效判决」、重跑挂 needsUser REAL-VI34-04-Q（本轮无新腿，开放承接）；OT05/OT06/OT09=修复落地、判过腿未跑（R2-OT-06，开放；OT06 另缺 guest 轴）；VRN07=归因闭环、阻塞于授权 DB 夹具铺 minor 号（R2-VRN07-07，开放）；OC09=阻塞于 net 通道修复（R2-NET-03）+官方助手会话前置+guest 轴，本轮无新腿（开放）；VB03=已按修正配方正确闭环（R2-VB03-05，闭合）。fixlaneGateReadout：UNCOVERED=5/236（OT05/OT06/OT09/VRN07/OC09），SESSION_CONTRADICT=0。\n\nopenCount=9：R2-CON-01、R2-CON-02、R2-NET-03、R2-PFI25-04、R2-OT-06、R2-VRN07-07、R2-VI25-08、R2-NEARBY-09、R2-RECAP-10。闭合/记录项不计：R2-VB03-05（闭环确认）、R2-SCOPE-11（口径注记）。\n\n承接项（第 1 轮在册、本轮未动、不重复计数）：heart-signals 守卫漏「是否真触发待核」仍开放（低）；r-exec-ws 通用路径 band 盖章 \"[object Object]\"/identity 空缺陷（md:40/117 在册）fix 车道未提及修复，仍开放（低）；ask 前提「历史轮 tour-round*.json 也在」本轮成立（round1 已被回写更新至 07:00、round1-regression、round2 三件并存）。"
+ },
+ "funcAudit": {
+  "items": [
+   {
+    "area": "REALCOV-VI34 判决作废",
+    "evidence": "本 ask node 直读 exec-realcov-b1/exec-results.json VI34 行：netFault[on(mode=fail-all statusCode=500 intercepted=0)]、stepsNote #11 drainNet 本窗=0、5 帧均 21176B、探针全 absent；tour-ledger.json corrections REAL-VI34-04 改记原文；本 ask 实跑 node scripts/qa/verify-real-coverage.mjs → REALCOV_COVERED=203 / UNCOVERED 5/236 无 VI34 / RESULT=FAIL。",
+    "id": "R2-01",
+    "severity": "high",
+    "what": "路由 subpackages/village/village/index，元素=断网态探针（.featured-error/.post-card/.skeleton-line--w60 等 7 态）：VI34 原 EXECUTED「最硬的一条」已被台账改记「未有效判决」（tour-ledger.json corrections REAL-VI34-04：5 帧均为拦截页、7 态探针全 absent、判绿口径缺陷，重跑挂 needsUser REAL-VI34-04-Q）。本 ask 直读 b1 行证实：netFault 标注 intercepted=0、drainNet=0（断网从未真注入），5 张状态帧字节数完全相同（21176B×5），即五个\"状态\"是同一屏。期待行为=断网注入后错误态出现、恢复后列表回归的可判红绿断言——该页真实档断言至今无一有效判决；且门禁仍把 VI34 计覆盖（UNCOVERED 维持 5 条不含 VI34），门禁与台账判决互相矛盾。"
+   },
+   {
+    "area": "REALCOV-PFI25 断言未过×3",
+    "evidence": "本 ask node 直读 exec-fixlane-pfi25/exec-results.json PFI25 行（status=FAILED、stepsNote/probe/帧证据全文）；tour-ledger.json fixlane REAL-PFI25-05/F07 节；对照 scripts/qa/case-recipes.json PFI25 配方 fixture.why（real 分支无语音字段映射自述）。",
+    "id": "R2-02",
+    "severity": "high",
+    "what": "路由 pages/profile/index，元素 .voice-preview__delete（语音预览删除钮）：fix-lane 带新证据重跑第 3 次 FAILED（b1/b1b/fixlane 确定性）——step#6 assertPresent absent，且 probe 三连 .voice-preview__delete/.voice-preview/.profile-complete-card 全 absent，pre-assert-voice-state 帧（22726B）显示 A 用户页正常渲染、无语音预览块；real 编译产物 pages/profile/index.wxml 含该类名（模板在、wx:if 运行时为假），seed-voice 夹具 setup ok。期待行为=语音预览删除钮渲染→二次确认→真删——功能在 real 档从未执行，产品缺陷候选维持 critical，倾向归因=store-patch 语音态被渲染链路丢弃（fetchProfile 覆盖嫌疑），尚差渲染时 store 态探针定谳。"
+   },
+   {
+    "area": "REALCOV-OT05/06/09 未判过",
+    "evidence": "本 ask 实跑 node scripts/qa/verify-real-coverage.mjs → \"UNCOVERED 次要20|OT05 缺=login / OT06 缺=login+guest / OT09 缺=login\"；reports/audit/ui-audit-2026-10-09/fix-lane.md REAL-OT-06 节（根因三层组件边界+armModal 双双引号逐字复现+filesChanged 8 文件+\"实带重跑…不在本车道\"）；tour-ledger.json fixlaneGateReadout.remaining 含三者。",
+    "id": "R2-03",
+    "severity": "high",
+    "what": "路由 subpackages/profile-extra/profile/other?userId=10001|100155，元素 .relationship-cta__btn--like/--whisper 与 rapidTap/net-record 目标：门禁实跑 UNCOVERED 维持（OT05 缺=login、OT06 缺=login+guest、OT09 缺=login）。fix-lane 已改判根因：类名在编译产物 RelationshipCTA.wxml 存在，但位于 page→profile-shell→public-profile→relationship-c-t-a 三层自定义组件边界后，页级 $$ 恒探不到；修复已落盘（case-recipes.json 选择器穿透链 >>>、r-exec-ws.mjs deepCount/deepOne/deepSegs、exec-capabilities.mjs:62 armModal 双引号修复，离线 test-cap-recipes 29 checks+test-exec-capabilities 65 checks 全绿）——但 fix-lane 明示「实带重跑（OT05/06/09 判过与否）不在本车道」，即修复后的真实腿至今未跑。期待行为=穿透选择器直达四 CTA、tap 触发关系写并断言回读。"
+   },
+   {
+    "area": "REALCOV-VRN07 未判过",
+    "evidence": "本 ask 实跑 node scripts/qa/verify-real-coverage.mjs → \"UNCOVERED 次要20|VRN07 缺=login\"；fix-lane.md F04 节（identity 形态探针三例 APPROVED+成年、real-name.wxml 三分支直读、MinorNotAllowedException 证据链、skipped 节「四步缺前三步」）；exec-realcov-b3/exec-results.json VRN07 行 pre: .form-item__input:absent。",
+    "id": "R2-04",
+    "severity": "high",
+    "what": "路由 subpackages/profile-extra/verification/real-name，元素 .form-item__input（实名表单）：门禁实跑 UNCOVERED 缺=login。归因本轮已核实闭环：A uid=100158 realName status=APPROVED、23 岁成年 ⇒ 表单走 verified 分支不渲染（b3 absent 归因成立，选择器错配被证伪）；未成年形态产品 API 不可造（注册 MinorNotAllowedException、资料更新 birthDate≥18、admin 接口摸不到 users.birth_date）＝需授权 DB 夹具铺「实名未认证+birth_date NULL」专号。编排词表已加 minor（r-exec.cjs IDENT_DEFS、cli-automator.mjs mint 拒跑 MINOR_NOT_PROVISIONED），但铺号→凭据回填→check-identity minor 转 ok→重跑腿四步缺前三步，本 round 无进展。期待行为=未成年形态下实名表单渲染并可填提交断言。"
+   },
+   {
+    "area": "REALCOV-OC09 未判过+net-fault 通道全局失效",
+    "evidence": "本 ask 实跑 node scripts/qa/verify-real-coverage.mjs → \"UNCOVERED 次要21|OC09 缺=login+guest\"；tour-ledger.json corrections CON-NET-02 回写条目；exec-realcov-b4/b4b OC09 行 stepsNote（drainNet=0、net-was-not-armed）；fix-lane.md 未含 r-exec-ws.mjs:790-805 修复项（filesChanged 8 项无此修）。",
+    "id": "R2-05",
+    "severity": "high",
+    "what": "路由 subpackages/chat/official-chat/index?code=official-assistant，元素 .retry-btn/.state-view + networkFault fail-all：门禁实跑 UNCOVERED 缺=login+guest。同根缺陷定谳：mockWxMethod 臂展抛 Cannot read properties of undefined (reading slice)（CON-NET-02，tmp/qa/netfault-probe.mjs 实测；修法点名 r-exec-ws.mjs:790-805，本 round 未修）；台账已把 real 腿全部 drainNet=0/intercepted=0 读数回写「通道失效未测」——VI34 状态机、OT06 record、OC09 fail-all 的网络判点全部未有效测试。期待行为=断网注入下官方助手页出错误态+重试钮并可恢复。"
+   },
+   {
+    "area": "round2 机读件与判定矛盾",
+    "evidence": "本 ask 直读 tour-round2.json:83-102（两行 status/notes 原文）；实读 screenshots/r2-b0-08-subpackages-setup-dev-index.png（顶部可见 \"…/subpackag… ot found\"）；node 读 tour-round1-regression.json 两行=NAV_FAIL；node 读 tour-ledger.json routes dev/index 条目 status=NAV_FAIL+以帧为准 note；tour-round2.md:18/24 矛盾原文。",
+    "id": "R2-06",
+    "severity": "medium",
+    "what": "路由 subpackages/setup/dev/index 与 subpackages/setup/showcase/index（机读结果件断言完整性）：tour-round2.json 该两行 status=NAV_OK（notes 仅「单操作无超时」），但其自家台账 tour-round2.md:24 明写「机读 OK 假象已按帧改判」且小结记 11 页全 NAV_FAIL=NOT_REGISTERED 第 3 次复现，回归件 tour-round1-regression.json 同两页=NAV_FAIL，tour-ledger.json routes 条目=NAV_FAIL。本 ask 实读帧 r2-b0-08-dev-index.png：页首通栏 \"…ot found\"——页面不存在实锤。期待行为=机读结果文件应承载与帧证据/台账一致的改判值；当前 round2.json 的 NAV_OK 行是已知假象的原样留存，任何按 JSON 消费的下游会读到错判。"
+   },
+   {
+    "area": "页面覆盖-nearby（第 3 次弹回未归因）",
+    "evidence": "tour-round2.json:23-32 行与 tour-round2.md:11/24（\"归因待人工，第 3 次同向\"原文）；对照 pages.json:65-67；console/r2-b0-02-pages-nearby-index.log 存在（重放读数 lines=0）。",
+    "id": "R2-07",
+    "severity": "medium",
+    "what": "路由 pages/nearby/index（tabBar「附近」页，pages.json:65-67 声明 enablePullDownRefresh）：round2 重巡第 3 次同向弹回 pages/discover/index，归因仍「待人工」（定位权限/开城守卫？无结论）；该页内容面（附近的人列表、下拉刷新）自 round1 起持续零覆盖。期待行为=登录态 tab 直开渲染附近列表，或弹回守卫归因入册并改巡检配方（带定位授权/开城前置）触达页面本体。"
+   },
+   {
+    "area": "页面覆盖-matching（第 3 次弹回未归因）",
+    "evidence": "tour-round2.json:53-62 行与 tour-round2.md:14/24；console/r2-b0-05-…-matching.log（lines=0，无归因线索）。",
+    "id": "R2-08",
+    "severity": "medium",
+    "what": "路由 subpackages/discover-extra/discover/matching：round2 第 3 次弹回 pages/discover/index，归因仍「待人工」（每日配额耗尽/未开卡守卫？）；匹配流程页内容面持续零覆盖。期待行为=登录态可达匹配页进入配额/匹配流程，或守卫归因入册并补前置配方触达页面本体。"
+   },
+   {
+    "area": "守卫漏事故复核未执行",
+    "evidence": "本 ask grep -i \"heart|circle-home|today-card|toggleLike\" fix-lane.md sort-round1.json audit-round1.json cov-legs-round1.json fix-round1.json → 仅在册与补法文字，无执行记录；tour-ledger.json fixlane 五条（REAL-VB03-03/REAL-PFI25-05/CON-EV-01/CON-NET-02/F01F02）无 heart-signals 项；tour-round2.md:26 \"本批无其它写类主按钮被 tap；无守卫漏\"只覆盖本批。",
+    "id": "R2-09",
+    "severity": "medium",
+    "what": "路由 subpackages/tools/heart-signals/index 与 subpackages/circles/circles/circle-home，元素 .signal-card__btn--decline/--accept（heart-signals/index.vue:328-333 绑 handleDecline/handleAccept 关系写）与 .feed-actions 容器（子元素绑 toggleLike）：round1 的 tap 是否真触发写，「待核」仍未复核——sort-round1.json:111 与 audit-round1.json:69-71 已给出补法（mock 带核对 tap 前帧与信号卡/点赞状态迁移，若发生写则回滚夹具并入册），但 fix-lane 与 round2 均无该复核的执行工件，两页亦不在 round2 的 11 页重巡清单。期待行为=按在册补法完成状态迁移核对并入册，闭掉两笔「待核」。"
+   },
+   {
+    "area": "console 首帧证据结构性缺失",
+    "evidence": "本 ask 实跑 cd reports/audit/ui-audit-2026-10-09/console && find . -name \"*recap2*\" -size +0c | wc -l → 73；find . -size +0c | wc -l → 97（另 24 份 r1 0 字节失效件+11 份 r2 等）；tour-ledger.json consoleMethod/consoleOriginal 与 corrections CON-EV-01 原文；tour-round2.json:6-11 method.console。",
+    "id": "R2-10",
+    "severity": "medium",
+    "what": "全部 73 路由的 console 断言证据缺口（诚实化已做、证据仍无）：原始通道 73/73 全 0 字节（已作废留档），重采走「桥开页+应用内包装器+onLoad/onShow 重放」，73 份 recap 日志全部零输出且机制经 MARK 预验有效——根因=桥开页重启 AppService（包装器/缓冲全灭）+WS 四种导航全失效，首帧加载原文在本通道结构性不可得（tour-ledger.json consoleMethod/consoleOriginal、CON-EV-01）。期待行为=「页面 console 零错误」这一断言需要能采到首帧原文的载具（真机/预览构建导出、或桥外常驻包装器）才算量到；现台账只如实记「重放加载路径 0 输出」，零错误结论依旧无证据。"
+   },
+   {
+    "area": "REALCOV-VB03 原断言未测",
+    "evidence": "本 ask node 直读 exec-fixlane-vb03/exec-results.json（status=EXECUTED、stepsNote 7 步、netFault intercepted=0、帧名 bills-sealed-bounce）；tour-ledger.json corrections REAL-VB03-03 与 fixlane REAL-VB03-03 节（needsUser F06 原文）；对照 scripts/qa/case-recipes.json 判据台与 tour-round1.md:206 原 VB03 判据主张。",
+    "id": "R2-11",
+    "severity": "medium",
+    "what": "路由 subpackages/vip/bills：原判据（onShow 命中 store 缓存不重拉→开通后回账单页需下拉才更新）仍未测——fix-lane 按「当前码即设计」改写配方为断言封存弹回（open bills → assertRoute 终态 pages/profile/index，7 步全过 EXECUTED 计已判过），原 FAILED 出列依据作废留档；flag 开关走向挂 needsUser F06。期待行为=flag 开启后 bills 可达并断言 onShow 缓存 vs 下拉刷新的回读差异；在 flag 关闭的当下，该点名断言无载体，改写后的\"判过\"覆盖的是弹回行为而非判据本体。"
+   },
+   {
+    "area": "安全采集通道交付缩水",
+    "evidence": "本 ask 实跑 cd reports/audit/ui-audit-2026-10-09 && grep -rln \"storage|token|嗅探\" security elements tour-ledger.json → 0 命中；grep -rln guest security/*.json → 0 命中；实读 security/pages-nearby-index.json 全文（仅 actions+guardPolicy+notes）；对照 tour-plan.json:43-44 四探针原文。",
+    "id": "R2-12",
+    "severity": "medium",
+    "what": "路由全集（安全抽测通道）：tour-plan.json:43-44 承诺四项探测——①未登录/guest 直开准入 ②页面 onLoad 期 storage 键嗅探（token/身份键明文落盘）③敏感入口存在性（支付/实名/位置）④路由参数注入容错；实际落盘的 security/*.json（73 份）内容仅=rows.actions 摘要+guardPolicy+notes（本 ask 抽读 security/pages-nearby-index.json 实证），grep storage|token|嗅探|guest 于 security/、elements/、tour-ledger.json 全域 0 命中；ledger securityMethod 自认口径已收窄为「安全动作抽测」。①由 b4g 游客腿+guest-landing-policy 部分代偿、④有 round1 行内「无参直开容错 OK」记录、③由封存态验帧代偿，②storage 明文嗅探无任何执行证据。期待行为=补齐②的逐页/抽样嗅探工件，或在计划件与台账正式改写判据口径（当前是计划承诺与交付件静默不符）。"
+   },
+   {
+    "area": "主按钮候选 MISS 未收口",
+    "evidence": "tour-round2.json:40（tag-posts 双 MISS）；本 ask 直读 elements/pages-home-index.json（elementCount=30、keyElements 含 today-card__btn--love/today-card__btn/invite-banner__btn、source=outerWxml 首-view）；round2 批次路由表（tour-round2.md:10-20）无 home/messages/match-success/love-center-nearby/village-index。",
+    "id": "R2-13",
+    "severity": "low",
+    "what": "路由 pages/home/index（today-card__btn--love、invite-banner__btn）、pages/messages/index（.header__icon-btn--hover）、discover/match-success（.match-success__actions）、love-center/nearby（.card-action--pressed）、village/index 与 tag-posts（.post-card__actions）：round1 记录的 7 页候选 MISS 本 round 无一对账复测（round2 仅重巡 11 条 NAV_FAIL 页，其中 tag-posts 又 MISS .post-card__actions/.action-btn 一次）；且新落盘的 elements/pages-home-index.json 证实 today-card__btn--love 等类名实际在页（elementCount=30、keyElements 在册）——候选正则漏检而非元素缺失。期待行为=以类名定点探针补测这些主按钮（今日卡喜欢/邀请横幅为首页核心转化 CTA），或明确记入下轮配方。"
+   },
+   {
+    "area": "guard SKIP(guard) 功能面（既定口径未巡）",
+    "evidence": "本 ask 统计 tour-round1.json actions 含 SKIP 的页=13（node 脚本输出 {skipPages:13,missPages:7,tapPages:8}）；tour-round2.md:26 与 :50（本批仅 campus/index 一处 SKIP(guard)，无写类 tap）；护栏口径 .zcode/workflows/miniprogram-ui-audit-v36.dwf.ts:272 与 tour-round2.md:5。",
+    "id": "R2-14",
+    "severity": "low",
+    "what": "13 页写/危险类主按钮零执行（口径内未巡清单，持续在册）：settings/index 退出登录/删除账号面、tools/security/index .sec-item--danger 注销、profile/other 拉黑/举报、verification 两页提交类、village/circles/campus 发布提交、circles/index 加入圈子、campus hub 加入校区、privacy/dnd 开关、profile/tasks 领取、chat-session 发送；round2 仅新增 campus/index school-card__cta 一处 SKIP，无任何写类按钮补测。期待行为=由 REALCOV 配方、免检桶或后续配方覆盖这些行为；保持护栏跳过属既定纪律，入册防止被误读为已验证。"
+   },
+   {
+    "area": "执行器盖章缺陷行未修",
+    "evidence": "本 ask 实跑 node scripts/qa/verify-real-coverage.mjs → \"REALCOV_IDENTITYLESS_ROWS=33… 出处 exec-realcov-b1c=1 exec-realcov-b3=1 … VI34 漏身份行=2 / VRN07 漏身份行=1\"；fix-lane.md filesChanged 8 项清单（无 mkRow/band 盖章修改）；exec-realcov-b1c VI34 通用行与 b3 VRN07 行 band 字段实为未字符串化的 {source,verify} 对象（本 ask node 直读）。",
+    "id": "R2-15",
+    "severity": "low",
+    "what": "路由不适用（执行器证据链）：r-exec-ws 通用路径行的 band 落成 \"[object Object]\"、identity 空的缺陷件（exec-realcov-b1c VI34 通用行、exec-realcov-b3 VRN07 行）原样在账，门禁重跑仍点名 IDENTITYLESS_ROWS=33（VI34 漏身份行=2、VRN07=1）；fix-lane 修了 armModal 与选择器穿透但未修通用路径盖章分支，旧缺陷行也未标废。期待行为=修复盖章分支并对 2 条缺陷行补盖章重跑或显式作废，防 real 档证据行继续不被身份轴认领。"
+   }
+  ],
+  "openCount": 15,
+  "notes": "对账基线（本 ask 实跑/实读）：①路由全集对账 PASS——node 解析 apps/client/src/pages.json=8 主包+65 分包=73 条，tour-ledger.json routes 恰 73 条逐页在册；tour-round2.json 为 11 条 NAV_FAIL 页的回归批（11/11 采完、帧全落盘），与 tour-round1-regression.json（12 行）判定零漂移；历史轮件现已齐（round1.json/.md、round1-regression.json、round2.json/.md、tour-ledger.json），上轮指出的 elements/（73 份）、security/（73 份）、tour-ledger.json 缺失已补齐——该两条不再列缺口。②REALCOV 点名 9 条现状：VI34 被台账改记「未有效判决」（R2-01）；PFI25 第 3 次 FAILED、缺陷候选升级（R2-02）；VB03 改写配方计判过但原判据未测、flag 挂 needsUser（R2-11）；OT05/06/09 修复落盘但实带重跑未做（R2-03）；VRN07 归因闭环但被未成年账号铺设阻塞（R2-04）；OC09 被 net-fault 通道缺陷阻塞（R2-05）。③门禁（本 ask 实跑 node scripts/qa/verify-real-coverage.mjs，默认扫 reports/audit/round-7）：REALCOV_UNCOVERED=5/236（OT05 缺login、OT06 缺login+guest、OT09 缺login、VRN07 缺login、OC09 缺login+guest）、COVERED=203、CONSERVATION OK、LEDGER OK、RESULT=FAIL、SESSION_CONTRADICT_ROWS=0——与 tour-ledger.json fixlaneGateReadout 一致；但门禁仍把 VI34/PFI25/VB03 计入覆盖侧，而台账已把 VI34 改记未有效判决、PFI25 是 FAIL×3，门禁账面比台账判决乐观（R2-01 已立案此矛盾）。④round2 有两处判定完整性问题：dev/showcase 机读 NAV_OK 与帧/台账/回归件的 NAV_FAIL 矛盾（R2-06，帧实读 page not found）；nearby/matching 三连弹回仍无归因（R2-07/08）。⑤上轮 heart-signals/circle-home「待核」仍开放（R2-09）；console 断言诚实化完成但首帧证据结构性缺失（R2-10）；安全通道②storage 嗅探无执行证据（R2-12）。⑥本 ask 未修改任何文件；全部证据出自上述实跑命令与实读文件。"
+ },
+ "visualAudit": {
+  "items": [
+   {
+    "id": "VIS-R2-01",
+    "area": "PFI25 所在页 pages/profile/index（我的页头部）——第 2 轮复现确认 vs《全站设计规范与逐页设计稿说明.md》§3.8",
+    "what": "第 1 轮发现（我的页头部为平坦浅绿底+深色昵称，非 §3.8 要求的薄荷绿渐变白字）在第 2 轮独立采帧中逐像素复现：r2-b0-10（vip/index 旗标弹回 profile 落点帧）与 r2-b0-11 头部采样 #eaf8eb/#e9faf2/#f1fdf3，昵称最深像素 #0d120e@(168,99)——与第 1 轮（r1-b0-08）数值完全一致（同坐标同色值）。代码链不变（同 HEAD f9fd17b1）：本人态走 MyProfile（背景硬编码 #EEF7F2，MyProfile.vue:66-68），带渐变的 .profile-header-bg 只在 pages/profile/index.vue:1827-1832 非本人态 v-else 分支，本人态永不渲染；渐变实值 #36C99A→#55D5A7（design-variables.scss:171）与规范写法 #3DC994→#B8F0DE 亦不一致。两轮两法（第 1 轮 WS 截图超时改 CLI 桥；第 2 轮桥开页+CLI 出帧）同结果=确定性偏差，非瞬时态。",
+    "evidence": "帧 reports/audit/ui-audit-2026-10-09/screenshots/r2-b0-10-subpackages-vip-index.png、r2-b0-11；node+sharp 像素采样：header(188,66)=#eaf8eb、(40,90)=#e9faf2、(188,200)=#f1fdf3；昵称 bbox x110-185/y85-115 最深 #0d120e@(168,99)——与 r1-b0-08 同坐标同值。代码：MyProfile.vue:66-68、pages/profile/index.vue:1827-1832、theme/design-variables.scss:171（第 1 轮已核，HEAD 同为 f9fd17b1）。",
+    "severity": "medium"
+   },
+   {
+    "id": "VIS-R2-02",
+    "area": "VI25/VI34 所在页 subpackages/village/village/index（村庄广场页，本帧为 tag-posts 缺参弹回落点）——第 2 轮复现确认 vs 全站规范 §1.1.1/§1.2/§1.1.3",
+    "what": "第 1 轮发现（整页纯白底、违反 §1.1.1「统一浅绿 #EEF7F2 无白/灰断层」验收定论）在第 2 轮复现：r2-b0-03 左缘/卡片间隙带（x0-14, y300-700）纯白 65.4%、#EEF7F2±4 仅 0.2%（n=1400）——与第 1 轮 r1-b0-09 同参数扫描数值完全相同（65.4%/0.2%）。代码不变：.village-page{background:#ffffff /* R16：纯白背景 */}（village/index.vue:918-922），页头 --c-bg-container 白底（:926）。两轮同读数=确定性偏差。",
+    "evidence": "帧 reports/audit/ui-audit-2026-10-09/screenshots/r2-b0-03-subpackages-village-village-tag-posts.png；node+sharp 逐像素扫描 margin 带 n=1400：white=65.4%/token=0.2%（r1 同法同值）。代码：apps/client/src/subpackages/village/village/index.vue:918-922、:926。",
+    "severity": "medium"
+   },
+   {
+    "id": "VIS-R2-03",
+    "area": "关键页抽检 pages/discover/index（寻觅页·全轮落点页，本轮 5 帧落点）匹配卡主视觉空白+§3.3 底部三按钮不可见——第 2 轮复现确认 vs §3.3/§1.1.2",
+    "what": "第 1 轮两项发现均复现：①匹配卡主视觉区空白——r2-b0-01 hero 区（y220-440）亮度均值 242.1/标准差 3.71，与第 1 轮逐位相同（dist 兜底素材同区 mean=202.1/sd=42.7，见第 1 轮证据），照片与兜底主视觉均未渲染；②底部三按钮（跳过/打招呼/喜欢粉色发光）不可见——y∈[680,790] 粉色像素（r>200 且 r-g>40）=0。且 r1-b0-04 与 r2-b0-01 逐通道字节差仅 1041/923076（0.11%，状态栏时钟），证明两轮独立采集（不同取证方法）渲染完全一致=确定性状态而非瞬时加载。本轮 discover 落点帧共 5 张（r2-b0-01/02/05/06/07：login、nearby、matching、setup/campus、recommend-pref 均弹回此处），同态同帧。代码链同第 1 轮：MatchCard.vue:29-30/:67、images.ts:720、discover/index.vue:504-512（.match-card-area 70vh）/:336-340（MatchActions）。",
+    "evidence": "帧 reports/audit/ui-audit-2026-10-09/screenshots/r2-b0-01-pages-login-index.png（及 r2-b0-02/05/06/07 同落点）；node+sharp：hero mean=242.1 sd=3.71；pink 扫描命中=0；r1-b0-04↔r2-b0-01 raw 逐通道 diff=1041/923076（0.11%）。代码：apps/client/src/components/match/MatchCard.vue:29-30、:67；apps/client/src/config/images.ts:720；apps/client/src/pages/discover/index.vue:504-512、:336-340。",
+    "severity": "medium"
+   },
+   {
+    "id": "VIS-R2-04",
+    "area": "巡检结果件 tour-round2.json 第 8/9 行（subpackages/setup/dev/index、setup/showcase/index）状态与自家帧证据矛盾（台账一致性缺陷）",
+    "what": "tour-round2.json 第 8/9 行 status=NAV_OK、notes 仅「单操作无超时」，但两行自带帧均显示「…/subpackag… not found」页面（page not found）：已直接查看 r2-b0-08（顶部截断文案「…subpackag…ot found」）与 r2-b0-09（「…xml not found」，top-strip 暗色文字像素 6545 个），页面主体空白。tour-round2.md:24 已按帧改判（「setup/dev+showcase 编译期剔除（帧 page not found 第 3 次复现=NOT_REGISTERED，机读 OK 假象已按帧改判）」），但机读结果件 tour-round2.json 未同步改判；而第 1 轮同两路由在 tour-round1.json 中已按同规则改为 NAV_FAIL（notes「以帧为准判 NAV_FAIL」）。同一帧为准规则跨结果件执行不一致：下游门禁若直接读 JSON 会把两条 NOT_REGISTERED 计成可达页。属可复现的结构性矛盾（帧+JSON 行+md 三方可证），非页面样式偏差，故 low。",
+    "evidence": "tour-round2.json rows[7]/rows[8] status=NAV_OK（node 读取原文件证实，rows[7].notes=\"单操作无超时\"）；帧 r2-b0-08/r2-b0-09 目视均为 page not found（r2-b0-09 top-strip y0-30 暗像素 6545，sharp 扫描）；tour-round2.md:24「机读 OK 假象已按帧改判」；对照 tour-round1.json 同路由行 status=NAV_FAIL+notes「以帧为准判 NAV_FAIL」。",
+    "severity": "low"
+   }
+  ],
+  "openCount": 4,
+  "notes": "第 2 轮范围与方法：tour-round2.json（round 2，batch 1/1，11 行，HEAD f9fd17b1 同第 1 轮，generatedAt 2026-10-09T23:07Z）为回归批，重采第 1 轮全部 NAV_FAIL/存疑页；方法为桥开页+CLI 出帧（method 字段自述）。11 帧全部为守卫/编译期剔除弹回落点，REALCOV 9 条点名用例所在页与本批零交集（tour-round2.md:4 自述，与行集核对一致）：①VB03（vip/bills）不在本批——vip/index 与 promo-code 两帧为旗标弹回 profile 落点（帧核验确为 profile 页，与台账一致），bills 本体仍无帧可判；②OT05/06/09（profile/other）、VRN07（real-name）、OC09（official-chat）本轮无新帧，第 1 轮 VIS-03（other 页容器白底）/VIS-04（real-name 蓝渐变）仅单轮证据维持原判，未升级；③VIS-01/VIS-02/VIS-05/VIS-06 四项第 1 轮发现本轮全部逐像素复现（详见 items，其中 discover 两帧跨轮字节差仅 0.11%=确定性渲染），视觉回归为零漂移结论与 tour-round2.md:28 自述一致。核验通过项：campus/hub 弹回落点（r2-b0-04）页底实测 #eef7f2 与令牌一致（360,300 采样）；r2 各弹回落点帧与第 1 轮对应帧状态/落点口径一致。未核验/不适用：本轮 console 为包装器+生命周期重放且全部零输出（tour-round2.json method 字段自述「首帧原文因 AppService 随桥开页重启不可得」），无首帧原文可对照，不作视觉结论；setup/dev、showcase 的 page-not-found 空白页本体无版式可对照规范（纯错误占位页）。像素证据全部由 node+sharp（仓库自带依赖）对 PNG raw 通道只读采样/扫描取得，未修改任何仓库文件；所有命令与数值已逐条写入各 item evidence。"
+ }
+}

@@ -1,0 +1,7 @@
+{
+ "route": "pages/messages/index",
+ "elementCount": 8,
+ "keyElements": "｜关键类=quick-card__btn quick-card__btn-text",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-07-pages-messages-index.png"
+}

@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/tools/search/index",
+ "elementCount": 8,
+ "keyElements": "input=1,tab=8｜关键类=-",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-06-subpackages-tools-search-index.png"
+}

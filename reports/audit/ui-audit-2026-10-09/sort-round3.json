@@ -1,0 +1,134 @@
+{
+ "executable": [
+  {
+   "area": "覆盖补腿",
+   "evidence": "ask 清单引 exec-r2-ot/exec-results.json:16-131（四行 SKIPPED 全录）、tour-ledger.json corrections R2-OT-06(诊断增补)（三层根因+V0_OUTER_LEN=13493 hasCTA=true）、fix-lane.md:37（风险预告应验）、tour-round3.md:26（欠账维持 5）；本 ask 实跑 ls ⇒ tmp/qa/cta-selector-probe.mjs（3314B）与 navto-cta-probe.mjs（3741B）在盘（未复跑——需活体通道，原审查同边界）。",
+   "id": "R3-OT-01",
+   "what": "OT05/06/09+OC09 四条 critical 腿第二次尝试落空（exec-r2-ot 穿透链全 SKIPPED，与 b4 帧四钮可见矛盾延续）：诊断增补定位三层通道根因（①IDE automator 0.12.1 元素查询不穿透自定义组件；②带 query 的桥 open 令 currentPage 回报 webview 代理态、$ 全超时；③「基底页+应用内 wx.navigateTo」后自动化层健康——全树 outerWxml 13493B、CTA 节点可见），修法（执行器增 navigateTo 开页形态+AppService handler 直调替代 DOM tap）立案待工具车道，UNCOVERED 维持 5/236；积极面：armModal 修复带内验证通过（OT05 armed=showModal answers=1）。这是当前 REALCOV 收口最大阻塞。补法：执行器落地「基底页+应用内 wx.navigateTo 开页形态＋AppService handler 直调替代 DOM tap」改造，按已实证健康路径重跑 OT05/06/09/OC09 四腿至判过。",
+   "severity": "high"
+  },
+  {
+   "area": "前端实现刀",
+   "evidence": "ask 清单引 tour-ledger.json corrections R2-NEARBY-09（BEFORE/SWITCHTAB/AFTER/AFTER_SETTLE 全链读数）、tour-round3.json:23-31/md:23、http.ts:493-494 与 login/index.vue:89（第 1 轮已验）；本 ask 实跑 ls ⇒ tmp/qa/nearby-switchtab-probe.mjs（2352B）在盘（原审查全文直读，本 ask 未复跑——活体通道）。",
+   "id": "R3-NEARBY-02",
+   "what": "nearby 产品缺陷候选成立（机测假象假说被应用内真实语义探针证伪）：tmp/qa/nearby-switchtab-probe.mjs 以真 wx.switchTab（success=switchTab-ok）切「附近」页，AFTER=pages/login/index、AFTER_SETTLE=pages/discover/index——真 switchTab 成功后仍被弹回（弹链 nearby→login→discover，与 http 401 兑底 http.ts:493-494 → login onShow 已登录 switchTab discover login/index.vue:89 机制链吻合）。登录态 tabBar「附近」页不可达＝产品缺陷候选（高）；归因（定位权限/开城/业务开关）待产品排查；探针 mock 带实证、real 带未测。补法：顺 401 兑底链排查登录态 nearby 的哪个请求/守卫触发弹回（定位权限/开城/业务开关三选一定位），修产品侧根因后以 switchTab 探针复测（AFTER=nearby 即闭案），并补 real 带行为验证。",
+   "severity": "high"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "本 ask 实跑 `grep -n voiceStatus apps/client/src/stores/profile.ts` ⇒ 赋值仅在 :401-402（mock 分支）、:886-926（动作方法），real load() 段零命中——与定谳一致；ask 清单引 tool-index.md:24（simulator_open_page=compiler 族）、fix-lane.md round-2 节、tour-ledger.json corrections REAL-PFI25-05/F07、exec-fixlane-pfi25/exec-results.json:40。",
+   "id": "R3-PFI25-03",
+   "what": "PFI25 撤红改判（产品缺陷候选撤销，待重跑定谳）：三次 FAILED 定谳为测试编排伪红——①源码实锤 real 分支不赋语音态（本 ask 复跑 grep 证实 voiceStatusUrl/Duration 仅 :401-402 mock 分支赋值，real load() 段零命中），「渲染链丢弃」不成立、产品侧无可修；②真丢弃点＝编排顺序：simulator_open_page 属 compiler 族⇒桥 open 重编译重启 AppService⇒原序 seed(step#1)→open(step#2) 的 store 补丁被清；③配方已重排（seed 后置+read(profile-voice-state) 渲染-存储同刻对照+死选择器摘除）。现状＝撤红与重排已落盘、实带重跑未跑，PFI25 无有效判决（红已撤、绿未证）。补法：实带重跑重排后的 PFI25 配方落定谳行——绿则闭案「编排伪红已修」，仍红则按新证据重立产品候选。",
+   "severity": "medium"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "ask 清单引 tour-ledger.json corrections R2-NET-03（applied+open 字段结构性阻塞说明）、exec-r2-ot/exec-results.json:115-130（OC09 旧行为 intercepted=0+net-was-not-armed）、fix-lane.md round-2 filesChanged；本 ask 实跑 ls ⇒ tmp/qa/netfault-fn-probe.mjs（3718B，Oct 10 08:03）在盘（原审查四步读数在案，本 ask 未复跑——活体通道）。",
+   "id": "R3-NET-04",
+   "what": "net-fault 通道 fn 臂展验证通过、集成与重跑未完：functionDeclaration 臂展形态端到端四步全过（ARM=ok／不可解析域名请求被拦返回 SUCCESS 500+QA_NET_FAULT／应用侧计数 __qaNet.count=1／RESTORE=ok），exec-capabilities.mjs netFault 三 Source 部分落地；结构性残留＝桥 open 重启 AppService 丢臂展⇒页首请求不可拦，需判据台把网络判点改为「open 后臂展+页内重触发（retry/下拉）」；本轮 exec-r2-ot 的 OC09 仍走旧臂展形态（intercepted=0）⇒ 网络判据依旧未有效测试。补法：完成 netFault 三 Source 集成（functionDeclaration 形态）＋判据台改「open 后臂展+页内重触发」判点形态，先以 VI34 重跑落第一条有效网络判决行。",
+   "severity": "medium"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "ask 清单引 tour-ledger.json corrections R2-VI25-08 全文、fixlaneGateReadout remaining 五条无 VI25/VI34、tour-round3.md:4/26（本批零交集、欠账维持 5）；第 1/2 轮读数（exec-realcov-b1b:45-73、corrections REAL-VI34-04）前两轮已验。",
+   "id": "R3-VI25-05",
+   "what": "VI25/VI34 作废出列已采纳回写（第 2 轮账本漏项发现被采纳：corrections 新增 VI25 原出列作废改记开放），夹具修复+重跑与 VI34 同挂 needsUser REAL-VI34-04-Q，本轮（r3）两页零新腿；账面现状＝UNCOVERED 5/236 不含二者（处 needsUser 第三态由 corrections 跟踪）——口径诚实但需跟催，否则两条案长期悬在账本外。补法：跟催 needsUser REAL-VI34-04-Q 拍板（拍板后立即执行 create-pending-post 响应形状修复＋VI25/VI34 重跑）；「needsUser 队列设时限」建议随 notes 转呈拍板人。",
+   "severity": "medium"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "ask 清单引 console-mark-r2con01.log（PASS 全文）、tour-round2.json rows dev/showcase status=NAV_FAIL、tour-round3.json:84-101（第 5 次同判定注记）、corrections R2-CON-01；本 ask 实跑 `wc -c console/r3-*.log` ⇒ 11×101B total 1111、ls ⇒ console-mark-r2con01.log（631B）在盘。",
+   "id": "R3-CON-06",
+   "what": "console 通道第 2 轮两项发现闭环确认（无独立待办）：①R2-CON-01 MARK 预验独立证据件已落盘（console-mark-r2con01.log 631B，INSTALL=ALREADY/marked-4/READ 缓冲 4 条含两对 QA_MARK/判定 PASS——与 ledger「warn+error 各 1 条命中」口径不悖），「首帧原文结构性不可得」能力边界保持入册；②R2-CON-02 tour-round2.json setup/dev、showcase 两行已回写 NAV_FAIL，机读件与权威判定对齐。r3 批 console 同口径延续（11×101B，本 ask 实跑复核）。补法：无需动作，仅留档；换载具决策另挂 needsUser R3-11。",
+   "severity": "low"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "原审查者实跑 verify-real-coverage.mjs ⇒ 「REALCOV_COVERED=203 / UNCOVERED=5/236（OT05/OT06/OT09/VRN07/OC09）/ CONSERVATION OK / LEDGER OK / RESULT=FAIL / SESSION_CONTRADICT_ROWS=0」（本 ask 未重跑，见 notes）；ask 清单引 corrections REAL-VI34-04、R2-VI25-08、REAL-PFI25-05/F07、REAL-VB03-03 原文（全文核读）、exec-fixlane-pfi25 FAILED 行。",
+   "id": "R3-01",
+   "what": "点名门禁 vs 台账判决分歧扩到 4 条（第 2 轮 R2-01 仅 VI34，门禁 voided 分桶未做后分歧面扩大）：①VI34 台账改记「未有效判决」重跑挂 REAL-VI34-04-Q、②VI25 原出列作废改开放、③PFI25 三次 FAILED 且根因翻转编排丢 seed、实带重跑未落行——门禁均计覆盖侧；④VB03 以替换断言（封存弹回）计已判过、原判据本体（onShow 缓存/下拉回读差异）未测、flag 挂 F06。期待＝门禁账面与台账一致或按新证据回写后重算守恒。补法：verify-real-coverage.mjs 建 voided/pending 分桶（读 ledger corrections 把未有效判决/待重跑行剔出 COVERED；VB03 注记「替换断言计、原判据挂 F06」），重算守恒式使门禁与台账一致。",
+   "severity": "high"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "ask 清单引 node 直读 exec-r2-ot 四行（均 NOT_SHOOTABLE(recipe-step) 不在页上）、corrections R2-OT-06(诊断增补)（tmp/qa 双探针证据、open 字段三条原文）、fix-round2.json fix.evidence 台账修正备注段；与 R3-OT-01 同主体。",
+   "id": "R3-02",
+   "what": "OT05/06/09+OC09 实带重跑仍全跳（与 R3-OT-01 同一缺陷主体的门禁/账面口径）：穿透链四腿全 SKIPPED（NOT_SHOOTABLE 不在页上）、OC09 另 netFault intercepted=0；根因三层补全（①编译标签是路径形 components/profile/public/RelationshipCTA 非 relationship-c-t-a，>>> 组件段命中不了；②automator 不穿透自定义组件；③带 query 桥 open＝webview 代理态 $ 全超时）；健康路径已实证（基底页+navigateTo：outerWxml 13493B、CTA 可见）但执行器改造未落地。另台账 corrections F01/F02 行仍写「other.vue/other.wxml 均无 relationship-cta*=结构性错配实锤」，与 fix 车道实读（组件存在且渲染）矛盾，修正文本未同步。补法：随 R3-OT-01 落地 navigateTo 开页+handler 直调后重跑四腿；同步把 ledger F01/F02 行的「结构性错配实锤」旧文本改为「三层组件/通道根因」，消除台账自相矛盾。",
+   "severity": "high"
+  },
+  {
+   "area": "前端实现刀",
+   "evidence": "ask 清单引 corrections R2-NEARBY-09（探针全链读数）、tour-round3.json:23-32/md:10/23、screenshots/r3-b0-02 落盘、pages.json:65-67；与 R3-NEARBY-02 同主体（第 4 次同向）。",
+   "id": "R3-04",
+   "what": "nearby 第 4 次同向弹回、产品缺陷候选成立（与 R3-NEARBY-02 同一缺陷主体的巡检面）：应用内真 switchTab 复测已排除桥 open 机测假象，登录态 tabBar「附近」页不可达成立，归因（定位权限/开城/业务开关）待产品排查；页面内容面四轮零覆盖。补法：同 R3-NEARBY-02——定位并修产品侧根因，switchTab 探针复测闭案后补 nearby 内容面巡检。",
+   "severity": "medium"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "ask 清单引 tour-round3.json:53-62/md:13/23（matching 弹回无缺陷 ID，对照 nearby 已挂 R2-NEARBY-09）、audit-round2.json:137-141（R2-08 开放原文）、四轮路由表 matching 行均 NAV_FAIL 落 discover；第 1 轮 TOUR-EXPECT-11 的「goBack=设计」分类（matching.vue:73-82）为待验证假说。",
+   "id": "R3-05",
+   "what": "matching 四连弹回 pages/discover/index 仍无归因、无探针、无缺陷 ID（对照 nearby 已升级 R2-NEARBY-09）：匹配流程页内容面四轮零覆盖；第 1 轮曾分类「直开无 deck 快照 goBack＝设计内失败分支」但「每日配额耗尽」假说未验证，两说均未在带内定谳。补法：照 nearby-switchtab-probe 模式做 matching 应用内导航复测（验证 goBack/配额假说定归因、挂缺陷 ID 或结案），并补前置配方（deck 快照夹具）触达页面本体完成内容面覆盖。",
+   "severity": "medium"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "本 ask 实跑 `grep -i \"heart-signals|circle-home|toggleLike\" audit-round2.json sort-round2.json cov-legs-round2.json fix-round2.json tour-round2-regression.json`（ask 清单原审查者实跑，本 ask 未重跑该 grep）⇒ 仅 audit-round2 承接文字（:145-148）无新执行工件；ask 清单引 index.vue:328-333 绑定、fix-round2.json/台账 corrections 7 条均无此二项。",
+   "id": "R3-06",
+   "what": "守卫漏待核项三轮承接未复核（第 1 轮 TOUR-GUARD-10 低危、连续三轮无执行工件）：heart-signals 拒绝/接受钮 tap 是否真触发关系写、circle-home .feed-actions 容器 tap 是否真触发 toggleLike，两笔「待核」悬置——在册补法（mock 带核对 tap 前帧与状态迁移，发生写则回滚夹具并入册）从未执行。补法：在 mock 带执行状态迁移核对（tap 前帧 vs 信号卡 accept/decline 态与点赞态读数），发生写则回滚夹具并入册，闭掉两笔待核；未发生则记「未触发」结案。",
+   "severity": "medium"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "ask 清单引 fix-round2.json fix.evidence 四条定谳/修复原文（全文核读）+verifiedIds=[R2-PFI25-04,R2-02,R2-RECAP-10]、对照 tour-ledger.json fixlane REAL-PFI25-05/F07 与 sort-round2.json:28/84（旧口径）、门禁 UNCOVERED 5 条无 PFI25；源码定谳本 ask 实跑复核一致（见 R3-PFI25-03）。",
+   "id": "R3-07",
+   "what": "PFI25 定谳翻转后判过腿未落行＋台账旧口径未同步：源码证伪「fetchProfile 覆盖」嫌疑、真丢弃点＝测试编排（compiler 族 open 清 seed），修复已落地（配方重排+read(profile-voice-state)+死选择器摘除+READ_PROGRAMS 扩展，离线全绿）但实带重跑未做（fix 车道无设备会话）；且 tour-ledger fixlane/sort-round2 仍挂「产品缺陷候选成立 critical」旧口径未随定谳更新。补法：实带重跑新配方落定谳读数行（随 R3-PFI25-03），并同步 ledger fixlane/sort 的 critical 候选旧口径为撤红改判（按重跑结论二择一：产品缺陷或编排缺陷）。",
+   "severity": "medium"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "ask 清单引 corrections R2-NET-03（open 字段原文）、netfault-fn-probe.mjs 四步读数（ledger 在案引用）、exec-r2-ot OC09 行 netFault[on intercepted=0]、fix-round2.json filesChanged（无 netFault 实带验证）；本 ask 实跑 ls ⇒ netfault-fn-probe.mjs 3718B 在盘。与 R3-NET-04 同主体。",
+   "id": "R3-08",
+   "what": "网络判点全部未有效测试（与 R3-NET-04 同一缺陷主体的判点面）：修配设计已验证可行（fn 臂展四步全过）且三 Source 部分落地，但结构性阻塞未解——桥 open 重启 AppService 丢臂展（页首请求不可拦），判据台「open 后臂展+页内重触发（retry/下拉）」改点未做，实带亦无验证腿。补法：判据台落地改点后至少一条网络判点（建议 VI34 重跑）落有效判决行。",
+   "severity": "medium"
+  },
+  {
+   "area": "前端实现刀",
+   "evidence": "本 ask 实跑 Read 匹配卡代码链三锚点全吻合：apps/client/src/components/match/MatchCard.vue:28-30（photo 兜底链 photo||avatar||IMAGE_PATHS.MATCH_CARD.HERO）与 ：64-73（SafeImage :fallback=HERO）、apps/client/src/pages/discover/index.vue:338-343（MatchActions pass/like/super-like）与 ：504-516（.match-card-area 70vh 卡区）；ask 清单引 audit-round2.json:215（视觉车道在册项）、r1-b0-04 vs r2-b0-01 帧对比（字节差 0.11%）、images.ts:720（本 ask 未单独开读，引用同链）。",
+   "id": "R3-09",
+   "what": "discover 匹配卡功能不可巡（跨车道在册确定性缺陷，五条弹回路由共同落点页）：匹配卡主视觉区空白（hero 区 y220-440 亮度 mean=242.1/sd=3.71，照片与兜底素材均未渲染）且底部跳过/打招呼/喜欢三钮不可见（y∈[680,790] 粉色像素=0）；两轮独立采集字节差仅 0.11%＝确定性状态；代码链已点名（MatchCard.vue:29-30/:67、images.ts:720、discover/index.vue:504-512/:336-340，本 ask 实读锚点吻合）。核心交互不可见即不可测。补法：按点名链修图像加载与操作钮渲染（photo 兜底链/SafeImage fallback/MatchActions 可见性），修后补功能断言腿（打招呼/喜欢 tap→回读）。",
+   "severity": "medium"
+  }
+ ],
+ "needsUser": [
+  {
+   "id": "R3-03",
+   "options": "(a) 授权在测试库铺「实名未认证+birth_date NULL」专号并回填 mint 凭据（四步照跑到判过）；(b) 判据降级——verified 分支渲染已实证结案，表单分支转组件级单测，UNCOVERED 销账改记「需 DB 授权」；(c) 维持 UNCOVERED 挂账。",
+   "why": "授权/数据去留（第 2 轮 R2-VRN07-07/R2-04 同一悬案，round3 零进展）：VRN07 未成年形态唯一可行路径＝授权 DB 夹具铺专号——产品 API 不可造（registerUser 触发 MinorNotAllowedException、ProfileUpdateService 限 ≥18、admin 接口摸不到 birth_date），铺号→凭据回填→check-identity minor→重跑四步缺前三步且 fix 车道权限内不可达；向用户/实名库写入绕过产品约束的测试专号需数据属主拍板。"
+  },
+  {
+   "id": "R3-10",
+   "options": "(a) 补做 storage 嗅探探针，73 页全量落证据件；(b) 折中——抽样高敏页（login/profile/wallet 等）补嗅探，其余页口径收窄；(c) 正式改写计划口径为「安全动作抽测」并入册，放弃 storage 明文嗅探主张。",
+   "why": "判据口径决策：tour-plan.json:43-44 承诺的安全采集通道②「页面 onLoad 期 storage 键嗅探（token/身份键明文落盘）」连续三轮与交付件静默不符（本 ask grep security/ elements/ 0 命中，ledger securityMethod 自认收窄为「安全动作抽测」）——补做嗅探还是正式收窄承诺口径，属安全判据范围决策，不应继续静默漂移。"
+  },
+  {
+   "id": "R3-11",
+   "options": "(a) 立项换载具（真机/预览构建导出首帧 console）补全量采集；(b) 正式接受重放路径为 console 判据上限并回写 tour-plan 口径入册；(c) 维持现状（不建议——能力边界与计划件口径将继续漂移）。",
+   "why": "判据口径/投入决策：console「页面真实加载期原文不可得」能力边界已诚实入册（MARK PASS 独立证据件在盘），但 73 页零错误主张只能落重放路径——是否投入换载具（真机/预览构建导出首帧 console）或正式接受重放路径为判据上限，三轮未拍板。"
+  },
+  {
+   "id": "F06",
+   "options": "(a) real/showcase 档开 membershipEnabled 后按原判据重测账单页功能本体；(b) 以封存弹回判据结案 VB03；(c) showcase 档代测功能本体、real 档只证封存；(d) 维持挂账。",
+   "why": "沿判（第 1 轮立项，本轮 R3-01④ 引用仍悬挂）：VB03 flag 开关走向未拍板——封存弹回已证为当前码设计并以替换断言计入覆盖，但原判据本体（onShow 缓存不重拉/下拉回读差异）从未验证；开与不开决定 VB03 是重测还是结案，也影响 R3-01 门禁分桶口径。"
+  },
+  {
+   "id": "REAL-VI34-04-Q",
+   "options": "(a) 广场放行——修拦截条件后按七态重跑 VI34；(b) 维持拦截——VI34 判据改为拦截页行为断言，另以完整度达标身份另测广场七态。",
+   "why": "沿判（第 1 轮立项，本轮 R3-VI25-05/R3-01① 引用仍悬挂）：资料完成度拦截层对村庄广场的适用性未拍板（real 带 30% 完整度用户被拦 vs mock 带 268 元素全量渲染+「先逛逛公开内容」暗示放行），是 VI34 七态重跑、VI25 夹具修复+重跑、R3-NET-04/R3-08 建议首条网络判点腿（VI34）的共同前提——已悬两轮，建议随拍板设时限。"
+  },
+  {
+   "id": "GUEST-VERB-Q",
+   "options": "(a) strict-verbs 白名单豁免只读注入动词，guest 轴照跑；(b) 维持拒发——OT06/OC09 判据收敛为 login 单轴，UNCOVERED 改记缺=login、guest 轴销账。",
+   "why": "沿判（第 1 轮立项，本轮门禁读数仍含 guest 轴缺口：OT06/OC09 缺=login+guest）：只读注入动词（networkFault fail-all/record，不产生写操作）是否豁免 strict-verbs 未拍板，决定 OT06/OC09 的 guest 轴随 R3-OT-01/R3-NET-04 通道修复后一并补测还是销账。"
+  }
+ ]
+}

@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/profile-extra/verification/real-name",
+ "elementCount": 5,
+ "keyElements": "input=2｜关键类=form-item__input",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-14-subpackages-profile-extra-verification-real-name.png"
+}

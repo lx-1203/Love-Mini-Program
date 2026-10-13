@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/village/village/post",
+ "elementCount": 2,
+ "keyElements": "input=1,textarea=1｜关键类=post-title__input post-content__input",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-11-subpackages-village-village-post.png"
+}

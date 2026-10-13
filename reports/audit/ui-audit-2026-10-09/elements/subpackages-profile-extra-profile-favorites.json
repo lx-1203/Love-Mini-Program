@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/profile-extra/profile/favorites",
+ "elementCount": 4,
+ "keyElements": "源码定点计数：favorite-card=2,favorite-card__body=2",
+ "source": "源码类名定点计数",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-05-subpackages-profile-extra-profile-favorites.png"
+}

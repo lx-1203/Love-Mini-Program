@@ -1,0 +1,6 @@
+{
+ "route": "subpackages/setup/showcase/index",
+ "securityActions": "SKIP(no-wxml:元素面不可读，安全抽测不做——不伪造)",
+ "guardPolicy": "删除/解绑/同意/写操作 SKIP(guard)；支付/VIP 封存验态",
+ "notes": "帧显示 page not found（#ifdef 编译期剔除生效，mock 产物未注册该路由=预期 NOT_REGISTERED）；automator 仍回报请求路径故机读为「落点吻合」，以帧为准判 NAV_FAIL"
+}

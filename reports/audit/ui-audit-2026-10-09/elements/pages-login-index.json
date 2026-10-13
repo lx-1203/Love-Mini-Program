@@ -1,0 +1,7 @@
+{
+ "route": "pages/login/index",
+ "elementCount": 22,
+ "keyElements": "tab=8｜关键类=discover-header__tabs discover-header__tab discover-header__tab--active discover-header__tab-text discover-header__tab-text--active discover-header__tab-line",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-01-pages-login-index.png"
+}

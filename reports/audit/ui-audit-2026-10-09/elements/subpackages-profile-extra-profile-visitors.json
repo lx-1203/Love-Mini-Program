@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/profile-extra/profile/visitors",
+ "elementCount": 44,
+ "keyElements": "源码定点计数：visitors-card=22,visitors-card__avatar=22",
+ "source": "源码类名定点计数",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-15-subpackages-profile-extra-profile-visitors.png"
+}

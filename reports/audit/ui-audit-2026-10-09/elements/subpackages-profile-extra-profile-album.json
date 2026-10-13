@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/profile-extra/profile/album",
+ "elementCount": 16,
+ "keyElements": "cell=20｜关键类=-",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-04-subpackages-profile-extra-profile-album.png"
+}

@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/setup/schedule/index",
+ "elementCount": 1,
+ "keyElements": "input=1｜关键类=-",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-13-subpackages-setup-schedule-index.png"
+}

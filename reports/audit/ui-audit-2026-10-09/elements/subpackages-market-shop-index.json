@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/market/shop/index",
+ "elementCount": 0,
+ "keyElements": "｜关键类=-",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-09-subpackages-market-shop-index.png"
+}

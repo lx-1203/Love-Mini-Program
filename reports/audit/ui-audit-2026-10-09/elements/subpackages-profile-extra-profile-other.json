@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/profile-extra/profile/other",
+ "elementCount": 5,
+ "keyElements": "源码定点计数：other-more-item=3,other-more-item--danger=1,other-header__back-arrow=1",
+ "source": "源码类名定点计数",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-01-subpackages-profile-extra-profile-other.png"
+}

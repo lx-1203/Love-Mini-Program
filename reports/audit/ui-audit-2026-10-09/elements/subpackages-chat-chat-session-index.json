@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/chat/chat-session/index",
+ "elementCount": 1,
+ "keyElements": "｜关键类=-",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-09-subpackages-chat-chat-session-index.png"
+}

@@ -1,0 +1,6 @@
+{
+ "route": "subpackages/legal/agreement/index",
+ "securityActions": "SKIP(no-wxml:元素面不可读，安全抽测不做——不伪造)",
+ "guardPolicy": "删除/解绑/同意/写操作 SKIP(guard)；支付/VIP 封存验态",
+ "notes": "帧证实协议全文渲染；纯静态页无可交互元素属预期（非空页误报）"
+}

@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/village/village/detail",
+ "elementCount": 2,
+ "keyElements": "｜关键类=-",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-12-subpackages-village-village-detail.png"
+}

@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/profile-extra/profile/location",
+ "elementCount": 5,
+ "keyElements": "｜关键类=location-card__row",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-02-subpackages-profile-extra-profile-location.png"
+}

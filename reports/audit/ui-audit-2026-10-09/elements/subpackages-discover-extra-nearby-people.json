@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/discover-extra/nearby/people",
+ "elementCount": 5,
+ "keyElements": "tab=6｜关键类=-",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-13-subpackages-discover-extra-nearby-people.png"
+}

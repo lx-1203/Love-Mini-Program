@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/discover-extra/home/segment",
+ "elementCount": 12,
+ "keyElements": "源码定点计数：segment-list=1,segment-row=9,segment-retry=0,segment-header__back=1,segment-page=1",
+ "source": "源码类名定点计数",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-12-subpackages-discover-extra-home-segment.png"
+}

@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/profile-extra/settings/dnd",
+ "elementCount": 27,
+ "keyElements": "picker=2,switch=2｜关键类=-",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-07-subpackages-profile-extra-settings-dnd.png"
+}

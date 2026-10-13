@@ -1,0 +1,732 @@
+[
+ {
+  "route": "pages/login/index",
+  "status": "NAV_FAIL",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-01-pages-login-index.png",
+  "elementCount": 22,
+  "keyElements": "tab=8（实为 discover 页内容）",
+  "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法：包装器+生命周期重放实证值；首帧原文因 AppService 重启不可得）",
+  "actions": "（无主按钮候选）",
+  "notes": "落点=pages/discover/index——登录态 loggedOutOnly 守卫弹回，与第 1 轮同向稳定"
+ },
+ {
+  "route": "pages/register/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-02-pages-register-index.png",
+  "elementCount": 12,
+  "keyElements": "input=5,picker=1,link=3｜关键类=field__input agree__link to-login__link",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "TAP .sms-btn[获取验证码]",
+  "notes": "tap 后回退（重新 open 本页）；该动作经 real 8080 后端发测试验证码（与 ops 用例同款动作）"
+ },
+ {
+  "route": "pages/register/success",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-03-pages-register-success.png",
+  "elementCount": 2,
+  "keyElements": "关键类=reg-success__row reg-success__btn",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "TAP .reg-success__btn[完善我的资料 →]",
+  "notes": "tap 后回退；按钮为导航类动作"
+ },
+ {
+  "route": "pages/discover/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-04-pages-discover-index.png",
+  "elementCount": 22,
+  "keyElements": "tab=8｜关键类=discover-header__tabs discover-header__tab discover-header__tab--active discover-header__tab-text",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "登录态落点页；tapCandidates 正则未命中 btn/cta 类主按钮，无安全抽测目标"
+ },
+ {
+  "route": "pages/home/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-05-pages-home-index.png",
+  "elementCount": 30,
+  "keyElements": "cell=28｜关键类=today-card__actions today-card__btn--love invite-banner__btn",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "MISS .today-card__actions；MISS .action-btn 候选类未在 DOM 解析到（页内用 cell 布局）",
+  "notes": "tap 候选 MISS 已如实记录，未重试伪造"
+ },
+ {
+  "route": "pages/nearby/index",
+  "status": "NAV_FAIL",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-02-pages-nearby-index.png",
+  "elementCount": 22,
+  "keyElements": "tab=8（实为 discover 页内容）",
+  "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法同上）",
+  "actions": "（无主按钮候选）",
+  "notes": "落点=pages/discover/index——与第 1 轮同向稳定；归因仍待人工"
+ },
+ {
+  "route": "pages/messages/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-07-pages-messages-index.png",
+  "elementCount": 8,
+  "keyElements": "关键类=quick-card__btn quick-card__btn-text",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "MISS .header__icon-btn--hover；TAP .quick-card__btn[去看看]",
+  "notes": "tap 后回退"
+ },
+ {
+  "route": "pages/profile/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-03-pages-profile-index.png",
+  "elementCount": 50,
+  "keyElements": "button=1｜关键类=my-completion__btn story-cards__row my-interaction__row my-more__cell",
+  "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法同上）",
+  "actions": "（无主按钮候选）",
+  "notes": "NAV_OK 稳定；REALCOV PFI25 语音块缺陷候选另有 fixlane 证据腿在册（exec-fixlane-pfi25：帧+编译类名+3 复现）"
+ },
+ {
+  "route": "subpackages/village/village/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-09-subpackages-village-village-index.png",
+  "elementCount": 268,
+  "keyElements": "tab=39｜关键类=post-card__actions composer-bar__input",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "MISS .post-card__actions；MISS .action-btn",
+  "notes": "REALCOV VI25/VI34 所在页；列表页元素量大"
+ },
+ {
+  "route": "subpackages/village/village/publish",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-10-subpackages-village-village-publish.png",
+  "elementCount": 1,
+  "keyElements": "textarea=1｜关键类=publish-content__input",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "发布页主按钮未在候选集（提交类按护栏不 tap，防写残留）"
+ },
+ {
+  "route": "subpackages/village/village/post",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-11-subpackages-village-village-post.png",
+  "elementCount": 2,
+  "keyElements": "input=1,textarea=1｜关键类=post-title__input post-content__input",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "发帖页，提交类按护栏不 tap"
+ },
+ {
+  "route": "subpackages/village/village/detail",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-12-subpackages-village-village-detail.png",
+  "elementCount": 2,
+  "keyElements": "关键类=-（无帖 id 参数下页面骨架）",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "无 id 参数直开，页面未报错未弹回（容错 OK）；内容为空属参数缺失预期"
+ },
+ {
+  "route": "subpackages/village/village/tag-posts",
+  "status": "NAV_FAIL",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-04-subpackages-village-village-tag-posts.png",
+  "elementCount": 268,
+  "keyElements": "关键类=post-card__actions composer-bar__input（实为 village/index 内容）",
+  "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法同上）",
+  "actions": "MISS .post-card__actions；MISS .action-btn",
+  "notes": "落点=subpackages/village/village/index——缺 tag 参数回退，参数守卫与第 1 轮同向稳定"
+ },
+ {
+  "route": "subpackages/village/village/history",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-14-subpackages-village-village-history.png",
+  "elementCount": 9,
+  "keyElements": "源码定点计数：history-item=6,history-clear=1,history-back=1,history-count=1",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "SKIP(guard) .history-clear[清空记录](删除类)",
+  "notes": "首轮 outerWxml 空返回（首 view 为局部组件），以源码类名定点计数补齐；帧显示 6 条记录"
+ },
+ {
+  "route": "subpackages/circles/circles/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-15-subpackages-circles-circles-index.png",
+  "elementCount": 31,
+  "keyElements": "源码定点计数：circle-card=14,circle-card__action=14,circles-header__search=1,circles-header__back=1",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "SKIP(guard) .circle-card__action[加入/已加入](mock×real 档位错配下不冒写险)",
+  "notes": "加入按钮指向真实后端写操作，按护栏不 tap"
+ },
+ {
+  "route": "subpackages/circles/circles/topics",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-01-subpackages-circles-circles-topics.png",
+  "elementCount": 15,
+  "keyElements": "tab=12（话题 chip 列表）",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "单操作无超时"
+ },
+ {
+  "route": "subpackages/circles/circles/topic-detail",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-02-subpackages-circles-circles-topic-detail.png",
+  "elementCount": 2,
+  "keyElements": "关键类=-（无 topic id 参数下页面骨架）",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "无 id 参数直开不报错不弹回（容错 OK），内容为空属参数缺失预期"
+ },
+ {
+  "route": "subpackages/circles/circles/post-topic",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-03-subpackages-circles-circles-post-topic.png",
+  "elementCount": 4,
+  "keyElements": "input=1,textarea=1,switch=1｜关键类=bottom-submit__btn bottom-submit__btn--disabled",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "提交钮为 disabled 态（未填写时），按护栏不 tap 发布类"
+ },
+ {
+  "route": "subpackages/circles/circles/circle-home",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-04-subpackages-circles-circles-circle-home.png",
+  "elementCount": 45,
+  "keyElements": "button=1,tab=13,link=4（摄影圈主页：加入圈子 CTA×2、动态 feed）",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "TAP .hero-actions[‹](返回钮)；TAP .feed-actions[256]——容器，子元素 .feed-action 绑 toggleLike(点赞)",
+  "notes": "疑似点赞写：容器 tap 是否真触发 toggleLike 无法证实（帧摄于 tap 前），已标记待核；加入圈子类已按写操作守卫跳过"
+ },
+ {
+  "route": "subpackages/campus/campus/hub",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-05-subpackages-campus-campus-hub.png",
+  "elementCount": 31,
+  "keyElements": "input=1,tab=7｜关键类=campus-guide__btn campus-search__input campus-hub__tabs",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "SKIP(guard).campus-school-card__cta(写残留：加入校区类)",
+  "notes": "单操作无超时"
+ },
+ {
+  "route": "subpackages/campus/campus/index",
+  "status": "NAV_FAIL",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-05-subpackages-campus-campus-index.png",
+  "elementCount": 31,
+  "keyElements": "input=1｜关键类=campus-guide__btn campus-hub__tabs（实为 hub 页内容）",
+  "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法同上）",
+  "actions": "SKIP(guard).campus-school-card__cta(写操作)",
+  "notes": "落点=subpackages/campus/campus/hub——引导归并与第 1 轮同向稳定"
+ },
+ {
+  "route": "subpackages/campus/campus/post-topic",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-07-subpackages-campus-campus-post-topic.png",
+  "elementCount": 9,
+  "keyElements": "input=3,textarea=1,switch=1｜关键类=bottom-submit__btn--disabled",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "提交钮 disabled（未填写时），按护栏不 tap 发布类"
+ },
+ {
+  "route": "subpackages/campus/campus/topic-detail",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-08-subpackages-campus-campus-topic-detail.png",
+  "elementCount": 2,
+  "keyElements": "关键类=-（无 topic id 参数下页面骨架）",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "无 id 参数直开容错 OK"
+ },
+ {
+  "route": "subpackages/campus/campus/certification",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-09-subpackages-campus-campus-certification.png",
+  "elementCount": 5,
+  "keyElements": "input=3｜关键类=info-card__item",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "校友认证页；提交类按护栏不 tap"
+ },
+ {
+  "route": "subpackages/discover-extra/discover/matching",
+  "status": "NAV_FAIL",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-06-subpackages-discover-extra-discover-matching.png",
+  "elementCount": 22,
+  "keyElements": "tab=8（实为 discover 页内容）",
+  "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法同上）",
+  "actions": "（无主按钮候选）",
+  "notes": "落点=pages/discover/index——与第 1 轮同向稳定；归因仍待人工"
+ },
+ {
+  "route": "subpackages/discover-extra/discover/match-success",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-11-subpackages-discover-extra-discover-match-success.png",
+  "elementCount": 4,
+  "keyElements": "关键类=success-nav__btn match-success__actions",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "MISS .match-success__actions",
+  "notes": "无 match 结果参数直开，页面不报错（容错 OK）；主按钮候选 MISS 如实记录"
+ },
+ {
+  "route": "subpackages/discover-extra/home/segment",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-12-subpackages-discover-extra-home-segment.png",
+  "elementCount": 12,
+  "keyElements": "源码定点计数：segment-list=1,segment-row=9,segment-retry=0,segment-header__back=1,segment-page=1",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "首轮 outerWxml 空返回（首-view 局部组件问题，同批次 1），以源码类名定点计数补齐；帧证实 9 行在线用户列表"
+ },
+ {
+  "route": "subpackages/discover-extra/nearby/people",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-13-subpackages-discover-extra-nearby-people.png",
+  "elementCount": 5,
+  "keyElements": "tab=6",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "单操作无超时"
+ },
+ {
+  "route": "subpackages/discover-extra/discover/history",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-14-subpackages-discover-extra-discover-history.png",
+  "elementCount": 1,
+  "keyElements": "关键类=-（空态/骨架）",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "单操作无超时；无浏览记录时空态属预期"
+ },
+ {
+  "route": "subpackages/discover-extra/likes/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-15-subpackages-discover-extra-likes-index.png",
+  "elementCount": 16,
+  "keyElements": "input=1,tab=15｜关键类=likes-header__actions likes-search__input likes-card__row",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "收到的喜欢页；卡片上的点赞类操作按写操作守卫不 tap"
+ },
+ {
+  "route": "subpackages/discover-extra/likes-visitors/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-01-subpackages-discover-extra-likes-visitors-index.png",
+  "elementCount": 9,
+  "keyElements": "tab=10｜关键类=overview__item tabs__item list__item",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "单操作无超时"
+ },
+ {
+  "route": "subpackages/tools/daily-question/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-02-subpackages-tools-daily-question-index.png",
+  "elementCount": 2,
+  "keyElements": "关键类=lock-card__cta lock-card__cta-text",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "单操作无超时"
+ },
+ {
+  "route": "subpackages/tools/love-center/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-03-subpackages-tools-love-center-index.png",
+  "elementCount": 3,
+  "keyElements": "源码定点计数：love-center__test-list=1,love-center__test-arrow=1,love-center__quick-arrow=1",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "首轮 outerWxml 空返回（首-view 局部组件问题），源码类名定点补测"
+ },
+ {
+  "route": "subpackages/tools/help/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-04-subpackages-tools-help-index.png",
+  "elementCount": 9,
+  "keyElements": "源码定点计数：help-faq__item=6,help-contact__item=3",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "同上定点补测"
+ },
+ {
+  "route": "subpackages/tools/security/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-05-subpackages-tools-security-index.png",
+  "elementCount": 16,
+  "keyElements": "源码定点计数：sec-item=8,sec-item--danger=1,sec-item__arrow=7",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "SKIP(guard) .sec-item--danger[注销账号类]",
+  "notes": "安全中心；危险项（注销类）按护栏跳过"
+ },
+ {
+  "route": "subpackages/tools/search/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-06-subpackages-tools-search-index.png",
+  "elementCount": 8,
+  "keyElements": "input=1,tab=8",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "单操作无超时"
+ },
+ {
+  "route": "subpackages/tools/heart-signals/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-07-subpackages-tools-heart-signals-index.png",
+  "elementCount": 19,
+  "keyElements": "tab=10｜关键类=signal-card__actions signal-card__btn--decline signal-card__btn",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "TAP .signal-card__actions[拒绝]；TAP .signal-card__btn[接受]",
+  "notes": "守卫漏事故：拒绝/接受按钮被 tap（heart-signals/index.vue:329-333 绑 handleDecline/handleAccept=关系写）——GUARD_RE 当时未含「接受/拒绝」两词；是否真触发取决于当时是否存在待处理信号（帧摄于 tap 前），已标记待核；GUARD_RE 已补两词供后续批次"
+ },
+ {
+  "route": "subpackages/tools/activities/detail",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-08-subpackages-tools-activities-detail.png",
+  "elementCount": 6,
+  "keyElements": "关键类=detail-meta__item",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "TAP .detail-action-bar[分享]",
+  "notes": "分享按钮 tap 后回退（无 id 参数下页面容错 OK）"
+ },
+ {
+  "route": "subpackages/tools/love-center/nearby",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-09-subpackages-tools-love-center-nearby.png",
+  "elementCount": 13,
+  "keyElements": "关键类=-",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "MISS .card-action--pressed",
+  "notes": "tap 候选 MISS 如实记录"
+ },
+ {
+  "route": "subpackages/tools/love-center/mbti",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-10-subpackages-tools-love-center-mbti.png",
+  "elementCount": 48,
+  "keyElements": "cell=48（MBTI 题组）",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "单操作无超时"
+ },
+ {
+  "route": "subpackages/tools/love-center/consulting",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-11-subpackages-tools-love-center-consulting.png",
+  "elementCount": 2,
+  "keyElements": "link=2",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "单操作无超时"
+ },
+ {
+  "route": "subpackages/profile-extra/settings/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-12-subpackages-profile-extra-settings-index.png",
+  "elementCount": 5,
+  "keyElements": "switch=2",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "SKIP(guard)x1(删除/解绑/同意类：退出登录/删除账号面)",
+  "notes": "设置页危险项全部按护栏跳过"
+ },
+ {
+  "route": "subpackages/profile-extra/verification/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-13-subpackages-profile-extra-verification-index.png",
+  "elementCount": 6,
+  "keyElements": "input=3｜关键类=form-item__input",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "SKIP(guard)x1(提交认证类)",
+  "notes": "认证入口页；提交类按护栏不 tap"
+ },
+ {
+  "route": "subpackages/profile-extra/verification/real-name",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-14-subpackages-profile-extra-verification-real-name.png",
+  "elementCount": 5,
+  "keyElements": "input=2｜关键类=form-item__input",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "SKIP(guard)x1(实名提交类)",
+  "notes": "REALCOV VRN07 所在页；mock 通道上表单渲染（input=2）；real 腿见批次 REALCOV 节"
+ },
+ {
+  "route": "subpackages/profile-extra/profile/visitors",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-15-subpackages-profile-extra-profile-visitors.png",
+  "elementCount": 44,
+  "keyElements": "源码定点计数：visitors-card=22,visitors-card__avatar=22",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "首轮 outerWxml 空返回，源码类名定点补测"
+ },
+ {
+  "route": "subpackages/profile-extra/profile/other",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-01-subpackages-profile-extra-profile-other.png",
+  "elementCount": 5,
+  "keyElements": "源码定点计数：other-more-item=3,other-more-item--danger=1,other-header__back-arrow=1",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "SKIP(guard) .other-more-item--danger[拉黑/举报类]",
+  "notes": "无 userId 参数直开显示守卫文案「链接缺少用户参数」（帧证实）；REALCOV OT05/06/09 所在页，real 腿见批次 REALCOV 节"
+ },
+ {
+  "route": "subpackages/profile-extra/profile/location",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-02-subpackages-profile-extra-profile-location.png",
+  "elementCount": 5,
+  "keyElements": "关键类=location-card__row",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "TAP .location-actions[重新定位]",
+  "notes": "定位重试按钮 tap 后回退，无写操作"
+ },
+ {
+  "route": "subpackages/profile-extra/profile/privacy",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-03-subpackages-profile-extra-profile-privacy.png",
+  "elementCount": 2,
+  "keyElements": "switch=2",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "隐私开关页，开关即写按护栏不 tap"
+ },
+ {
+  "route": "subpackages/profile-extra/profile/album",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-04-subpackages-profile-extra-profile-album.png",
+  "elementCount": 16,
+  "keyElements": "cell=20（相册九宫格）",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "单操作无超时"
+ },
+ {
+  "route": "subpackages/profile-extra/profile/favorites",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-05-subpackages-profile-extra-profile-favorites.png",
+  "elementCount": 4,
+  "keyElements": "源码定点计数：favorite-card=2,favorite-card__body=2",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "定点补测；guest-landing-policy 在册页"
+ },
+ {
+  "route": "subpackages/profile-extra/profile/tasks",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-06-subpackages-profile-extra-profile-tasks.png",
+  "elementCount": 4,
+  "keyElements": "源码定点计数：task-item=4",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "任务页；领取类操作按写守卫不 tap"
+ },
+ {
+  "route": "subpackages/profile-extra/settings/dnd",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-07-subpackages-profile-extra-settings-dnd.png",
+  "elementCount": 27,
+  "keyElements": "picker=2,switch=2",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "免打扰设置；开关即写按护栏不 tap"
+ },
+ {
+  "route": "subpackages/profile-extra/feedback/history",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-08-subpackages-profile-extra-feedback-history.png",
+  "elementCount": 6,
+  "keyElements": "源码定点计数：filter-chip=4,record=2,record__detail=0",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "二次定点计数与帧一致（4 chips+2 条记录）；guest-landing-policy 在册页"
+ },
+ {
+  "route": "subpackages/chat/chat-session/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-09-subpackages-chat-chat-session-index.png",
+  "elementCount": 1,
+  "keyElements": "关键类=-（无会话 id 参数下空态）",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "无会话参数直开容错 OK；发送类按护栏不 tap"
+ },
+ {
+  "route": "subpackages/chat/official-chat/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-10-subpackages-chat-official-chat-index.png",
+  "elementCount": 13,
+  "keyElements": "input=1,link=2｜关键类=input-bar__field input-bar__input",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "REALCOV OC09 所在页（官方助手会话默认建立）；real 腿见批次 REALCOV 节"
+ },
+ {
+  "route": "subpackages/setup/profile/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-11-subpackages-setup-profile-index.png",
+  "elementCount": 9,
+  "keyElements": "input=5,textarea=2,picker=4｜关键类=field__input",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "资料引导页；保存提交类按护栏不 tap"
+ },
+ {
+  "route": "subpackages/setup/campus/index",
+  "status": "NAV_FAIL",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-07-subpackages-setup-campus-index.png",
+  "elementCount": 22,
+  "keyElements": "tab=8（实为 discover 页内容）",
+  "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法同上）",
+  "actions": "（无主按钮候选）",
+  "notes": "落点=pages/discover/index——onboarding-only 守卫与第 1 轮同向稳定"
+ },
+ {
+  "route": "subpackages/setup/schedule/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-13-subpackages-setup-schedule-index.png",
+  "elementCount": 1,
+  "keyElements": "input=1",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "单操作无超时"
+ },
+ {
+  "route": "subpackages/setup/recommend-pref/index",
+  "status": "NAV_FAIL",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-08-subpackages-setup-recommend-pref-index.png",
+  "elementCount": 22,
+  "keyElements": "tab=8（实为 discover 页内容）",
+  "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法同上）",
+  "actions": "（无主按钮候选）",
+  "notes": "落点=pages/discover/index——onboarding-only 守卫同向稳定"
+ },
+ {
+  "route": "subpackages/setup/interest/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b3-15-subpackages-setup-interest-index.png",
+  "elementCount": 3,
+  "keyElements": "源码定点计数：interest-header=1,interest-header__row=1,interest-page=1",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "定点补测；guest-landing-policy 在册页"
+ },
+ {
+  "route": "subpackages/setup/dev/index",
+  "status": "NAV_FAIL",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-09-subpackages-setup-dev-index.png",
+  "elementCount": 0,
+  "keyElements": "关键类=-（帧 page not found）",
+  "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法同上）",
+  "actions": "SKIP(no-wxml:元素面不可读，安全抽测不做——不伪造)",
+  "notes": "#ifdef DEV 编译期剔除稳定复现（本次回归帧复核同批次 5）=预期 NOT_REGISTERED；以帧为准改判 NAV_FAIL（automator 回报请求路径的机读假象）"
+ },
+ {
+  "route": "subpackages/setup/showcase/index",
+  "status": "NAV_FAIL",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-10-subpackages-setup-showcase-index.png",
+  "elementCount": 0,
+  "keyElements": "关键类=-（帧 xml not found）",
+  "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法同上）",
+  "actions": "SKIP(no-wxml:元素面不可读，安全抽测不做——不伪造)",
+  "notes": "#ifdef SHOWCASE 编译期剔除稳定复现（本次回归帧复核）=预期 NOT_REGISTERED；同上改判 NAV_FAIL"
+ },
+ {
+  "route": "subpackages/support/feedback/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-03-subpackages-support-feedback-index.png",
+  "elementCount": 7,
+  "keyElements": "源码定点计数：chip=3,field=3,history-header__btn=1",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "反馈中心富表单页（帧证实）；提交类按护栏不 tap"
+ },
+ {
+  "route": "subpackages/discover/discussions/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-04-subpackages-discover-discussions-index.png",
+  "elementCount": 2,
+  "keyElements": "源码定点计数：feed-row=2,retry-link=0",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "帧证实讨论圈内容（2 话题+去寻觅 CTA）；反馈讨论建议/去寻觅为导航类未列入候选"
+ },
+ {
+  "route": "subpackages/discover/activities/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-05-subpackages-discover-activities-index.png",
+  "elementCount": 2,
+  "keyElements": "关键类=view-toggle__btn view-toggle__btn--active",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "单操作无超时"
+ },
+ {
+  "route": "subpackages/legal/privacy/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-06-subpackages-legal-privacy-index.png",
+  "elementCount": 0,
+  "keyElements": "关键类=-（纯静态富文本页）",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "SKIP(no-wxml:元素面不可读，安全抽测不做——不伪造)",
+  "notes": "帧证实隐私政策全文渲染（版本 2026-07-26~2026-10-10）；纯静态页 0 可交互元素属预期"
+ },
+ {
+  "route": "subpackages/legal/agreement/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-07-subpackages-legal-agreement-index.png",
+  "elementCount": 0,
+  "keyElements": "关键类=-（纯静态富文本页）",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "SKIP(no-wxml:元素面不可读，安全抽测不做——不伪造)",
+  "notes": "帧证实协议全文渲染；纯静态页 0 可交互元素属预期"
+ },
+ {
+  "route": "subpackages/market/detail/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-08-subpackages-market-detail-index.png",
+  "elementCount": 1,
+  "keyElements": "源码定点计数：product-state--sealed=1,product-buybar__btn=0",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "TAP(sealed-verify) MISS .product-buybar__btn（封存商品不渲染购买钮——比 toast 更强的封存证据，预期通过）",
+  "notes": "封存态验证：.product-state--sealed 在页；无参直开容错 OK"
+ },
+ {
+  "route": "subpackages/market/shop/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-09-subpackages-market-shop-index.png",
+  "elementCount": 0,
+  "keyElements": "关键类=-（封存态渲染：功能封存中）",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "帧显示「功能封存中——该功能暂未开放」；shop-card/category-item=0 与封存渲染一致"
+ },
+ {
+  "route": "subpackages/market/wallet/index",
+  "status": "NAV_OK",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-10-subpackages-market-wallet-index.png",
+  "elementCount": 1,
+  "keyElements": "源码定点计数：wallet__sealed=1,wallet__balance-card=0",
+  "consoleErrors": "error=0,warn=0",
+  "actions": "（无主按钮候选）",
+  "notes": "帧显示我的钱包「功能封存中」封存态"
+ },
+ {
+  "route": "subpackages/vip/index",
+  "status": "NAV_FAIL",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-11-subpackages-vip-index.png",
+  "elementCount": 50,
+  "keyElements": "button=1（实为 profile 页内容）",
+  "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法同上）",
+  "actions": "（无主按钮候选）",
+  "notes": "落点=pages/profile/index——membershipEnabled=false 旗标封存弹回（feature-flags.ts:29），与第 1 轮同向稳定；未触达支付拉起"
+ },
+ {
+  "route": "subpackages/vip/promo-code",
+  "status": "NAV_FAIL",
+  "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-reg-12-subpackages-vip-promo-code.png",
+  "elementCount": 50,
+  "keyElements": "button=1（实为 profile 页内容）",
+  "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0（方法同上）",
+  "actions": "（无主按钮候选）",
+  "notes": "落点=pages/profile/index——同上旗标守卫稳定"
+ },
+ {
+  "route": "subpackages/vip/bills",
+  "status": "NAV_OK",
+  "screenshot": "reports/screenshots/ui-audit-2026-10-09-exec-f9fd17b1/次要22-VB03-step0-bills-sealed-bounce.png",
+  "elementCount": 50,
+  "keyElements": ".my-completion__btn（封存弹回终态 pages/profile/index 的落点页可探物件）",
+  "consoleErrors": "重放通道未采（real 腿执行器不采 console，见 CON-EV-01 方法）",
+  "actions": "REAL-VB03-03 修正配方腿 EXECUTED：armNetFault(record) → open subpackages/vip/bills（已注册路由，替代原配方未注册的 vip/vip 404 目标）→ assertRoute 终态 pages/profile/index 命中 → shot step0-bills-sealed-bounce（22739B）→ probe 命中",
+  "notes": "按「当前码即设计」口径：membershipEnabled=false（feature-flags.ts:29）下 vip/bills 封存弹回 pages/profile/index 为设计行为，已 EXECUTED 入册（band=real@f0677920、identity=A、loginVerify=logged-in userId=100158、sessionSource=phone-login）；flag 开关走向归 needsUser F06 拍板；VB03 从本轮起以 EXECUTED 计已判过"
+ }
+]

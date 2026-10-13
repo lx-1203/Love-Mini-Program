@@ -1,0 +1,6 @@
+{
+ "route": "subpackages/circles/circles/index",
+ "securityActions": "SKIP(guard) .circle-card__action[加入/已加入](mock×real档位错配下不冒写险)",
+ "guardPolicy": "删除/解绑/同意/写操作 SKIP(guard)；支付/VIP 封存验态",
+ "notes": "单操作无超时；重探补读WXML(first-view@r0 open=OK)；元素经源码类名定点补测(open=OK)"
+}

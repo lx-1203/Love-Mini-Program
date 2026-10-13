@@ -1,0 +1,134 @@
+{
+ "covLegItems": [
+  {
+   "area": "覆盖补腿",
+   "evidence": "本 ask 实跑 `wc -c reports/audit/ui-audit-2026-10-09/console/r2-*.log` ⇒ 恰 11×101B（total 1111）；ask 清单引 tour-round2.json:10/19（方法注记）、tour-ledger.json consoleMethod/consoleOriginal、grep MARK 仅 tour-ledger.json 命中（本 ask 未复跑该 grep，MARK 证据件缺失为原审查者核查）。",
+   "id": "R2-CON-01",
+   "what": "console 通道现状＝重放路径实证零、首帧原文结构性不可得（r2 批 11 份日志各仅 101B 方法行——本 ask 实跑 wc -c 确认 11×101B；73 路由 recap2 全零）；相比第 1 轮「未采到冒充全量」已诚实化（方法与局限入册 consoleMethod），但 MARK 预验证据（「console.warn/error 注入缓冲 2 条命中」）仅 tour-ledger.json fixlane CON-EV-01 行文字在册，tmp/qa 与 audit 目录无独立证据件，机制有效性不可独立复核。补法：fix 车道重跑一次 MARK 预验并把原始输出落盘为独立证据件（tmp/qa/console-mark-*.log 或 closureDir 内），ledger fixlane CON-EV-01 行回填证据路径；「页面真实加载期 console 永久缺席」能力边界保持入册即可。",
+   "severity": "medium"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "本 ask 实跑 Read tour-round2.json:80-102 ⇒ 85/95 行 status=NAV_OK、elementCount=0、actions=SKIP(no-wxml)；本 ask 直读 screenshots/r2-b0-08-subpackages-setup-dev-index.png ⇒ page not found 帧；ask 清单引 tour-round2.md:24、tour-ledger.json routes setup/dev 行（NAV_FAIL 以帧为准）、tour-round1-regression.json:94-112。",
+   "id": "R2-CON-02",
+   "what": "tour-round2.json 机读列与权威判定矛盾：84-101 两行（setup/dev、setup/showcase）status=\"NAV_OK\"（elementCount=0），本 ask 直读 r2-b0-08 帧证实＝「/subpackag… ot found」404 帧——同一 automator 回显请求路径假象（第 1 轮 md:213 在册）；权威件（tour-ledger.json routes 行 NAV_FAIL「以帧为准判」、tour-round1-regression.json:94-112、tour-round2.md:24）已改判，唯 JSON 本体未回写，下游单独消费机读件会误判路由已注册。补法：把两行 status 回写 NAV_FAIL 并注记「404 帧、以帧为准」，与 tour-ledger.json/regression 权威判定对齐。",
+   "severity": "low"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "本 ask 实跑 `ls -la tmp/qa/netfault-probe.mjs` ⇒ 2676B（Oct 10 06:07）在盘；ask 清单引 tour-ledger.json corrections[1]（CON-NET-02 applied）、fix-lane.md 未含 r-exec-ws.mjs 修复项（R2-05）、exec-fixlane-vb03/exec-results.json:42（cleanup 仍读 net-was-not-armed）、tour-round2.md:4（r2 批与点名页零交集）。本 ask 未复跑 probe（需活体 IDE 通道，同原审查边界）。",
+   "id": "R2-NET-03",
+   "what": "net-fault 通道缺陷已定谳并回写（tmp/qa/netfault-probe.mjs 实测 mockWxMethod 臂展抛 Cannot read properties of undefined (reading 'slice')＝SDK 缺陷；拦截管道本身有效），但修法（正确 mock 应答形状/容错臂展＋从应用侧读拦截计数，r-exec-ws.mjs:790-805 工具修配）立案未落地，网络判点（VI34 状态机/OT06 record/OC09 fail-all）全部未有效测试，r2 批零新网络证据。补法：落地 r-exec-ws.mjs:790-805 修配并以 tmp/qa/netfault-probe.mjs 作回归基准验证，随后重跑全部网络判点腿（连带 R2-05/R2-01）。",
+   "severity": "medium"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "ask 清单引 exec-fixlane-vb03/exec-results.json:16-44（EXECUTED，#2 open bills ⇒ top=pages/profile/index、#4 assertRoute 命中、帧 22739B）、次要22-VB03-step0-bills-sealed-bounce.png、tour-ledger.json corrections[2]（原 FAILED 出列作废）、feature-flags.ts:29/bills.vue:37-42（第 1 轮已验，本 ask 复核过 =false）。",
+   "id": "R2-VB03-05",
+   "what": "闭环确认记录（无独立待办）：第 1 轮判定的 VB03 假红已正确闭环——fix 车道修正配方（open subpackages/vip/bills→assertRoute 终态 pages/profile/index＝封存弹回）7 步 EXECUTED，帧直读＝弹回落点「我的」页；「按当前码即设计」入册（real 产物 membershipEnabled:!1），原 FAILED（vip/vip 404 假象）作废留档。补法：无需动作，仅留档；唯一悬挂点 flag 开关走向沿 needsUser F06 拍板后处置，fixlane 行残留的 net-was-not-armed 读数随 R2-NET-03 通道修复自然消除。",
+   "severity": "low"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "本 ask 实跑 `grep -c \">>>\" scripts/qa/case-recipes.json` ⇒ 29；ask 清单引 RelationshipCTA.wxml 三类名各 1、other.json 仅注册 3 组件、exec-capabilities.mjs:58-66 修复注释、fix-lane.md:7-37、tour-ledger.json fixlaneGateReadout（remaining OT05 缺=login/OT06 缺=login+guest/OT09 缺=login）。",
+   "id": "R2-OT-06",
+   "what": "OT05/06/09 根因修正并修复落盘，但判过腿未跑（实带重跑明确不在 fix 车道，fix-lane.md:37）：真因＝自定义组件边界（CTA 在 page→profile-shell→public-profile→relationship-c-t-a 三层子树，页级 $ 探不到；RelationshipCTA.wxml 四钮类名与配方一致）；修复三件已验证（armModal String(api) 语法错修、case-recipes.json 29 处 >>> 穿透链——本 ask 实跑 grep=29、r-exec-ws.mjs deep 探针 11 处接线；离线 29+65 checks 全绿）。OT05/06/09 仍 UNCOVERED，OT06 另缺 guest 轴。补法：在实带重跑 OT05/06/09 配方腿（穿透选择器）至判过（tap→关系写→回读断言），OT06 guest 轴随 needsUser GUEST-VERB-Q 拍板；重跑排入补腿批次。",
+   "severity": "medium"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "本 ask 实跑 `grep -c \"VI25\" reports/audit/ui-audit-2026-10-09/tour-ledger.json` ⇒ 0（全 ledger 零提及实锤）；ask 清单引 corrections 六条清单（node 扫描）、exec-realcov-b1b/exec-results.json:45-73（夹具失败 0/17 步）、exec-realcov-b1c/exec-results.json:16-39（无夹具 EXECUTED）、corrections[3]（REAL-VI34-04 同页改记先例）。",
+   "id": "R2-VI25-08",
+   "what": "VI25 是 fix 车道回写唯一漏项（三不管）：tour-ledger.json corrections 六条无 VI25、全 ledger 文本 0 次提及（本 ask 实跑 grep=0）、不在 uncovered 5 条、无有效判决——其「出列」依据仍是 b1c 无夹具 EXECUTED（夹具 create-pending-post 在 real 带确定性失败 0/17 步），且该页实为资料完成度拦截页替换内容，.post-card__audit:absent 无判据力。补法：ledger 补 correction（VI25 原出列作废、改记「未有效判决/开放」）＋修 create-pending-post 对 real 档响应形状的解引用，重跑随 needsUser REAL-VI34-04-Q 拦截层口径拍板后执行。",
+   "severity": "medium"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "ask 清单引 tour-round2.json:23-32、tour-round1-regression.json:140-144（行为稳定归因仍开放）、tour-round2.md:24（第 3 次同向）、pages.json:415-421/guest-access.ts:57-58（第 1 轮已验，本轮无新反证）。",
+   "id": "R2-NEARBY-09",
+   "what": "nearby 登录态直开弹回 discover 第 3 次同向复现（r1 巡检→r1-regression→r2），归因仍开放：无产品侧弹回代码路径（tabBar 页、页内无自重定向、mock 带守卫不触发），疑为 tab 页 open 未生效的机测假象，盘上件无法终判。补法：按 tabBar 页语义用 switchTab 复测直开一次（排入 fix 车道或 regression 批），仍弹回则升级产品缺陷候选、不弹回则记机测通道假象并结案归因。",
+   "severity": "medium"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "ask 清单引 `ls screenshots | grep -c r1-reg` ⇒ 12 且无 vip/bills、tour-round1-regression.json rows 路由清单（12 行含 pages/profile/index 无 subpackages/vip/bills）、tour-round2.md:4-5（VB03 不在本批注记）、exec-fixlane-vb03（代闭环腿）。",
+   "id": "R2-SCOPE-11",
+   "what": "回归批口径注记问题（已闭环，不计开放缺陷）：第 1 轮 12 条 NAV_FAIL 中 vip/bills 未进任何 tour 回归批（r2 批 11 条、regression 批 12 行中由 profile/index 顶替），由 fixlane 修正配方腿代闭环（R2-VB03-05，等价可接受且 md:4 已注明）；但 regression JSON:196「回归 12/12」的 12 是「9 NAV_FAIL 同向+3 NAV_OK 稳定」，易与「第 1 轮 12 条 NAV_FAIL 全回归」混淆。补法：regression 结论行补一行口径注记（12=9 同向+3 稳定对照；vip/bills 由 fixlane 代闭环），防下游误读。",
+   "severity": "low"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "ask 清单引 node 直读 exec-realcov-b1/exec-results.json VI34 行（netFault intercepted=0、drainNet=0、5 帧 21176B×5、探针全 absent）、tour-ledger.json corrections REAL-VI34-04 原文；原审查者实跑 verify-real-coverage.mjs ⇒ REALCOV_COVERED=203/UNCOVERED 5/236 无 VI34/RESULT=FAIL（本 ask 未重跑该门禁，见 notes）。",
+   "id": "R2-01",
+   "what": "门禁与台账判决互相矛盾：VI34 原 EXECUTED 已被台账改记「未有效判决」（5 帧同为拦截页 21176B×5、7 态探针全 absent、netFault 从未真注入 intercepted=0/drainNet=0——直读 b1 行证实），但 verify-real-coverage.mjs 仍把 VI34 计入 COVERED=203（UNCOVERED 5/236 不含 VI34）——台账已作废的判决在门禁口径里仍是覆盖，下游看门禁会漏掉该页零有效判决的事实。补法：verify-real-coverage.mjs 增加 voided 分桶（读 ledger corrections 把作废/未有效判决行从 COVERED 剔除），使门禁 UNCOVERED 与台账一致；VI34 七态重跑随 needsUser REAL-VI34-04-Q 拍板。",
+   "severity": "high"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "原审查者实跑 verify-real-coverage.mjs ⇒ 「UNCOVERED 次要20|OT05 缺=login / OT06 缺=login+guest / OT09 缺=login」（本 ask 未重跑）；ask 清单引 fix-lane.md REAL-OT-06 节、tour-ledger.json fixlaneGateReadout.remaining；本 ask 实跑 grep >>> ⇒ 29（修复在盘佐证）。与 R2-OT-06 同主体，合并执行。",
+   "id": "R2-03",
+   "what": "OT05/06/09 门禁实跑 UNCOVERED 维持（OT05 缺=login、OT06 缺=login+guest、OT09 缺=login）＝修复后真实腿至今未跑（与 R2-OT-06 同一缺陷主体，覆盖缺口口径）：修复已落盘（>>> 穿透链、deep 探针、armModal 修复，离线全绿）但 fix-lane 明示实带重跑不在本车道。期待行为=穿透选择器直达四 CTA、tap 触发关系写并断言回读。补法：实带重跑 OT05/06/09 穿透腿至判过；OT06 guest 轴随 needsUser GUEST-VERB-Q 拍板。",
+   "severity": "high"
+  },
+  {
+   "area": "覆盖补腿",
+   "evidence": "原审查者实跑 verify-real-coverage.mjs ⇒ 「UNCOVERED 次要21|OC09 缺=login+guest」（本 ask 未重跑）；ask 清单引 tour-ledger.json corrections CON-NET-02、exec-realcov-b4/b4b OC09 stepsNote、fix-lane.md filesChanged 8 项无 r-exec-ws.mjs 修。与 R2-NET-03 同根，通道修复合并执行。",
+   "id": "R2-05",
+   "what": "OC09 UNCOVERED 缺=login+guest ＋ net-fault 通道全局失效未修（与 R2-NET-03 同根缺陷的判点面）：mockWxMethod 臂展抛 slice 解析错（tmp/qa/netfault-probe.mjs 定谳），修法点名 r-exec-ws.mjs:790-805 本 round 未修、fix-lane filesChanged 8 项无此修；台账已回写全部 real 腿网络读数「通道失效未测」——VI34 状态机、OT06 record、OC09 fail-all 网络判点全部未有效测试。期待行为=断网注入下官方助手页出错误态+重试钮并可恢复。补法：落地 r-exec-ws.mjs:790-805 修复（随 R2-NET-03）后重跑 OC09 fail-all 腿（错误态→retry 可见→恢复重拉），连带重跑 OT06 record/VI34 状态机；guest 轴随 needsUser GUEST-VERB-Q。",
+   "severity": "high"
+  }
+ ],
+ "legRows": [
+  {
+   "route": "pages/nearby/index",
+   "status": "NAV_FAIL",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r2-b0-02-pages-nearby-index.png",
+   "elementCount": 22,
+   "keyElements": "实为 discover 页内容（弹回落点）",
+   "consoleErrors": "wrapper-refire:lines=0,error=0,warn=0",
+   "actions": "R2-NEARBY-09 定谳：应用内真实 switchTab 语义复测（wx.switchTab ok）仍弹回 nearby → pages/login/index → pages/discover/index——排除桥 open 机测假象，按审查标准升级产品缺陷候选",
+   "notes": "已入台账 corrections（含探针输出四步证据）；归因（定位权限/开城/业务开关）待产品排查"
+  },
+  {
+   "route": "subpackages/profile-extra/profile/other",
+   "status": "NAV_OK",
+   "screenshot": "reports/screenshots/ui-audit-2026-10-09-exec-f9fd17b1/次要20-OT05-a-before-like.png",
+   "elementCount": 45,
+   "keyElements": "底部关系 CTA 四钮（喜欢/打招呼/心动卡/关注）帧上完整渲染",
+   "consoleErrors": "重放通道未采",
+   "actions": "R2-OT-06 诊断增补：穿透配方腿重跑仍全 SKIPPED（>>> 探不到）——帧实锤 CTA 已渲染但探不到；三层根因补全入台账",
+   "notes": "①编译产物组件标签为路径形 components/profile/public/RelationshipCTA（非配方里的 relationship-c-t-a，>>> 链组件段无法命中）；②本 IDE automator 0.12.1 元素查询不穿透自定义组件（plain class/路径 tag/Element.$/$$ 全 null 实测）；③带 query 的桥 open 使 currentPage 回报 .html 后缀 webview 代理态且 $ 全超时——而基底页+应用内 wx.navigateTo 后自动化层健康（clean path、全树 outerWxml 13493B 可读、CTA 可见于树）。OT05/06/09 判过腿落地路径=执行器增加基底页+navigateTo 开页形态+组件树直调；已立案待工具车道"
+  },
+  {
+   "route": "subpackages/vip/bills",
+   "status": "NAV_OK",
+   "screenshot": "reports/screenshots/ui-audit-2026-10-09-exec-f9fd17b1/次要22-VB03-step0-bills-sealed-bounce.png",
+   "elementCount": 50,
+   "keyElements": ".my-completion__btn（封存弹回终态落点页）",
+   "consoleErrors": "重放通道未采",
+   "actions": "R2-VB03-05 闭环确认：无需动作，仅留档——fixlane 修正配方腿 EXECUTED 已代闭环",
+   "notes": "唯一悬挂点=flag 开关走向沿 needsUser F06 拍板；fixlane 行残留的 net-was-not-armed 读数随 R2-NET-03 通道修复自然消除"
+  },
+  {
+   "route": "subpackages/village/village/index",
+   "status": "NAV_OK",
+   "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r2-b0-03-subpackages-village-village-tag-posts.png",
+   "elementCount": 268,
+   "keyElements": "VI25 关联页（拦截页替换内容——资料完成度 30% 拦截层使广场与 .post-card__audit 均不可见）",
+   "consoleErrors": "重放通道未采",
+   "actions": "R2-VI25-08 台账回写：VI25 原出列作废、改记「未有效判决/开放」——b1c 无夹具 EXECUTED 无判据力",
+   "notes": "全 ledger 文本 0 次提及 VI25 的漏项已补（corrections 第 7 条）；夹具 create-pending-post 对 real 档响应形状解引用修复+重跑随 needsUser REAL-VI34-04-Q 拍板后执行"
+  }
+ ],
+ "evidence": [
+  "R2-CON-01：tmp/qa/mark-evidence-r2.mjs 重跑 MARK 预验 PASS（INSTALL=ALREADY、MARK=marked-4、READ 命中 QA_MARK_WARN/ERROR），独立证据件双落盘 tmp/qa/console-mark-r2con01.log + reports/audit/ui-audit-2026-10-09/console-mark-r2con01.log；tour-ledger.json fixlane CON-EV-01 行回填 evidenceFile + 新增 R2-CON-01 correction",
+  "R2-CON-02：tour-round2.json dev/showcase 两行 status 回写 NAV_FAIL + 404 帧注记（与 tour-ledger.json/tour-round1-regression.json 权威判定对齐）",
+  "R2-SCOPE-11：tour-round1-regression.json 新增 conclusionScopeNote（12=9 同向+3 稳定对照；vip/bills 由 fixlane 代闭环）",
+  "R2-VI25-08：tour-ledger.json corrections 新增 R2-VI25-08（原出列作废→未有效判决/开放）；fixtures 修复与重跑待 needsUser REAL-VI34-04-Q",
+  "R2-NEARBY-09：tmp/qa/nearby-switchtab-probe.mjs 四步输出（BEFORE/SWITCHTAB=switchTab-ok/AFTER=login/AFTER_SETTLE=discover）→ tour-ledger.json corrections R2-NEARBY-09 升级产品缺陷候选",
+  "R2-NET-03：tmp/qa/netfault-fn-probe.mjs 四步全过（ARM=ok 无抛错/APP_REQUEST=SUCCESS 500 带 QA_NET_FAULT 体/APP_COUNT count=1 含 url 日志/RESTORE=ok）→ tour-ledger.json corrections R2-NET-03（修配可行已验证；剩余结构性阻塞=桥 open 重启 AppService 使臂展丢失，需判据台改「open 后臂展+页内重触发」或通道支持 WS 开页）",
+  "R2-OT-06：配方腿重跑 exec-r2-ot（穿透版仍全 SKIPPED）+ 帧次要20-OT05-a-before-like.png 实锤 CTA 已渲染 + 选择器形态实测（tmp/qa/cta-selector-probe.mjs：plain class/路径 tag 全 null、带 query 桥 open 后 currentPage=.html 代理态且 $ 全超时）+ 健康上下文对照（tmp/qa/navto-cta-probe.mjs：基底页+navigateTo 后 clean path、outerWxml 13493B、CTX 实录 relationship-cta__btn--like 节点）→ tour-ledger.json corrections R2-OT-06(诊断增补)",
+  "R2-VB03-05：确认无需动作（fixlane EXECUTED 已代闭环），已在本 rows 留档",
+  "台账终稿：reports/audit/ui-audit-2026-10-09/tour-ledger.json（corrections=11 条含本轮 5 条新增）；锁已释放；通道恢复 mock 原样（WS_UP=OK band=match ownerPid=33352）"
+ ]
+}

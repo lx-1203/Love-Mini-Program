@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/campus/campus/hub",
+ "elementCount": 31,
+ "keyElements": "input=1,tab=7｜关键类=campus-guide__btn campus-guide__btn-text campus-search__input campus-hub__tabs campus-hub__tab campus-hub__tab-text",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-05-subpackages-campus-campus-hub.png"
+}

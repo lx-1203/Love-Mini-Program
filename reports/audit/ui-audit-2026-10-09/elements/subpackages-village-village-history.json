@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/village/village/history",
+ "elementCount": 9,
+ "keyElements": "源码定点计数：history-item=6,history-clear=1,history-back=1,history-count=1,clear-dialog=0",
+ "source": "源码类名定点计数",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b0-14-subpackages-village-village-history.png"
+}

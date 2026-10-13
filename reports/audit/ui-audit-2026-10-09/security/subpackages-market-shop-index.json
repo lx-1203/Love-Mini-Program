@@ -1,0 +1,6 @@
+{
+ "route": "subpackages/market/shop/index",
+ "securityActions": "（无主按钮候选）",
+ "guardPolicy": "删除/解绑/同意/写操作 SKIP(guard)；支付/VIP 封存验态",
+ "notes": "帧显示「功能封存中——该功能暂未开放」封存态（shop-card/category-item=0 与封存渲染一致）"
+}

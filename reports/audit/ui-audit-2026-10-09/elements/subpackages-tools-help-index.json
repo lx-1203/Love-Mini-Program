@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/tools/help/index",
+ "elementCount": 9,
+ "keyElements": "源码定点计数：help-faq__item=6,help-contact__item=3",
+ "source": "源码类名定点计数",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b2-04-subpackages-tools-help-index.png"
+}

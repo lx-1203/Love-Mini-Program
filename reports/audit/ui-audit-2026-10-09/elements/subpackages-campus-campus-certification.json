@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/campus/campus/certification",
+ "elementCount": 5,
+ "keyElements": "input=3｜关键类=info-card__item",
+ "source": "outerWxml 首-view",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b1-09-subpackages-campus-campus-certification.png"
+}

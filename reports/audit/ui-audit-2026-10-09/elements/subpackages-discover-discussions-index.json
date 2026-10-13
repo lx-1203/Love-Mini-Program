@@ -1,0 +1,7 @@
+{
+ "route": "subpackages/discover/discussions/index",
+ "elementCount": 2,
+ "keyElements": "源码定点计数：feed-row=2,retry-link=0",
+ "source": "源码类名定点计数",
+ "screenshot": "reports/audit/ui-audit-2026-10-09/screenshots/r1-b4-04-subpackages-discover-discussions-index.png"
+}
