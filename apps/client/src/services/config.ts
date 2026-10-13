@@ -140,10 +140,25 @@ export interface UnlockGuideStepView {
  * 失败策略：后端不可达时抛 EnhancedApiError，由调用方（config/schools.ts 的
  * loadSchools）回退到本地默认值，并输出告警（infra R2-00122），避免静默降级。
  *
+ * R3-NEARBY-02（2026-10-13 产品诊断线）：本端点客户端按「公开配置」消费
+ * （pages/nearby/index.vue 的 onLoad/onShow 不经登录门直接调用），但后端两态
+ * SecurityConfig（SecurityConfig.java:194 / MockSecurityConfig.java:225
+ * `/api/v1/** → authenticated()`，permitAll 白名单只有 /config/legal 与
+ * /location/ip-city）都要求鉴权 ⇒ 无 token 时必得 401 → http 层
+ * redirectToLogin（services/http.ts:493）强踢登录页，把「附近」tab 打成
+ * nearby→login→discover。该读数是纯装饰数据且有本地静态兜底，不得驱动认证状态机，
+ * 故与 services/auth.ts:454 同口径加 skipAuthRefresh：401 直接抛给调用方 catch，
+ * 走 loadSchools 既有的静态回退，不再触发刷新与登录跳转。
+ * 带鉴权语义的正解是后端把 /api/v1/config/** 放行（API 车道决策），不在此处。
+ *
  * @returns 学校视图列表
  */
 export async function loadCampuses(): Promise<CampusView[]> {
-  return request<CampusView[]>({ url: "/config/campuses", method: "GET" });
+  return request<CampusView[]>({
+    url: "/config/campuses",
+    method: "GET",
+    skipAuthRefresh: true,
+  });
 }
 
 /**
