@@ -1,0 +1,89 @@
+{
+ "round": "ui-audit-2026-10-13",
+ "gitSha": "f314d391",
+ "identity": "A",
+ "identities": [
+  "A"
+ ],
+ "project": "apps/client/dist/build/mp-weixin-real",
+ "band": "real@f0677920",
+ "loginVerify": "logged-in userId=100158",
+ "updatedAt": "2026-10-13T12:25:00.185Z",
+ "admissible": true,
+ "outcome": "judged",
+ "runner": "scripts/qa/r-exec-ws.mjs（WS 取证 + 桥出帧，完整跑完）",
+ "results": [
+  {
+   "suite": "C-PAGES-PROFILE-INDEX",
+   "manifest": "PAGES-PROFILE-INDEX",
+   "id": "PFI25",
+   "page": "pages/profile/index",
+   "tier": "critical",
+   "band": "real@f0677920",
+   "identity": "A",
+   "loginVerify": "logged-in userId=100158",
+   "sessionSource": "phone-login",
+   "requiresReal": true,
+   "title": "删除语音：二次确认 + 「本地即删」是否真删（刷新后复现证伪）",
+   "status": "UNVERIFIED-INSTRUMENT",
+   "observed": "top=pages/profile/index | dom(配方步): 见 stepsNote | modal[on(armed=showModal answers=2 answered=0 restored=yes)] | netFault[off] | openForm[bridge（本腿没用 navigateTo 开页形态）] | fixture[夹具已回滚（setup 1 步 / teardown 0 步全成） setup:seed-voice=ok] | frames[reports/screenshots/ui-audit-2026-10-13-exec-f314d391/PAGES-PROFILE-INDEX-PFI25-a-before-delete.png(25238B)] | toast[无] | 复核腿 A/B：#0「重录」0→0 / #1「删除」0→1",
+   "missingEvidence": [],
+   "failureReason": "【载体欠款，不是产品判决】配方 step#10 tap 的选择器 .voice-preview__delete 在本页命中两枚兄弟按钮，automator 取第一个命中 ⇒ 打到的是「重录」而不是判据点名的「删除」。逐步读数见 tapOrderAb。（执行器自交的原始行是 status=FAILED / step#12 drainModal 期望≥1 实收 0，逐字保留在 rawExecutorRow，未改写。）",
+   "route": "pages/profile/index",
+   "toast": "",
+   "console": "",
+   "evidence": "reports/screenshots/ui-audit-2026-10-13-exec-f314d391/PAGES-PROFILE-INDEX-PFI25-a-before-delete.png(25238B)",
+   "durationMs": 0,
+   "transport": "ws+cli-shot",
+   "automationChannel": "ws",
+   "recipe": "PAGES-PROFILE-INDEX|PFI25",
+   "stepsNote": "#1 open :: open pages/profile/index ⇒ top=pages/profile/index；#2 wait :: wait 2200ms；#3 fixture(setup) :: fixture setup ok 1 步；#4 wait :: wait 800ms；#5 read(渲染时 store 语音态（与下步 probe 配对定谳）) :: read 渲染时 store 语音态（与下步 probe 配对定谳） ⇒ {\"route\":\"pages/profile/index\",\"voiceUrlLen\":39,\"voiceUrlHead\":\"https://qa-carrier.example/qa-voice.mp3\",\"voiceDuration\":3,\"hasBasicProfile\":true}；#6 probe :: probe {\".video-cta\":\"present(2)\",\".voice-preview\":\"present(1)\",\".voice-preview__delete\":\"present(2)\"}；#7 assertPresent(.voice-preview__delete) :: assertPresent .voice-preview__delete ⇒ present(2)；#8 shot(a-before-delete) :: shot a-before-delete ok 25238B；#9 armModal :: armModal showModal answers=2 ⇒ armed(answers-armed)；#10 tap(.voice-preview__delete) :: tap .voice-preview__delete；#11 wait :: wait 1100ms；#12 drainModal :: drainModal 期望≥1 次弹窗，实收 0 次；#13 (cleanup)(restoreModal) :: ok",
+   "modalDrive": "on(armed=showModal answers=2 answered=0 restored=yes)",
+   "netFault": "off",
+   "openForm": "bridge(没带 --navto-open ⇒ 新开的「基底页+navigateTo」通道本腿一字未用)",
+   "handlerCall": "off(没带 --handler-call ⇒ AppService 直调未装，DOM 取不到的动作就是取不到)",
+   "netArmWindow": "off",
+   "fixture": "clean（setup:seed-voice=ok）",
+   "instrumentFault": "recipe-tap-target-ambiguous",
+   "verdict": "UNVERIFIED-INSTRUMENT（配方的目标选择器不唯一；产品侧的二次确认实测**存在**且文案可读）",
+   "tapOrderAb": {
+    "how": "tmp/qa/v37-pfi25-taporder.mjs：桥 open 后在活应用上打 store 补丁（urlLen=39/dur=3），枚举两枚 .voice-preview__delete，给 wx.showModal 装一个『当场回 confirm:false（取消）』的计数桩（不弹真窗、不删任何东西），分别 tap 两枚各读一次计数",
+    "items": [
+     {
+      "idx": 0,
+      "text": "重录",
+      "ariaLabel": "重新录制语音",
+      "offset": "{\"left\":254.8000030517578,\"top\":1766.6624755859375}",
+      "modalCountBefore": "wrapped=true count=0 last=",
+      "modalCountAfter": "wrapped=true count=0 last=",
+      "voiceState": "{\"urlLen\":39,\"dur\":3}",
+      "stack": "pages/profile/index"
+     },
+     {
+      "idx": 1,
+      "text": "删除",
+      "ariaLabel": "删除语音状态",
+      "offset": "{\"left\":304.8000183105469,\"top\":1766.6624755859375}",
+      "modalCountBefore": "wrapped=true count=0 last=",
+      "modalCountAfter": "wrapped=true count=1 last=提示|确定删除当前语音状态吗？",
+      "voiceState": "{\"urlLen\":39,\"dur\":3}",
+      "stack": "pages/profile/index"
+     }
+    ],
+    "readback": "#0 「重录」aria=重新录制语音 → wrapped=true count=0 last= ⇒ wrapped=true count=0 last=；#1 「删除」aria=删除语音状态 → wrapped=true count=0 last= ⇒ wrapped=true count=1 last=提示|确定删除当前语音状态吗？",
+    "conclusion": "第一枚 tap 后 count=0（重新录音不弹确认，符合源）；第二枚 tap 后 count=1，桩读到的弹窗标题/正文=提示|确定删除当前语音状态吗？ ⇒ 判据要的二次确认在产品里存在，是 tap 打偏了",
+    "teardown": "clearVoiceStatus() called → {\"urlLen\":0,\"dur\":0}",
+    "nonDestructive": "全程只动本轮种下的会话态（store 补丁 + clearVoiceStatus 复位），没有点任何真确认、没有后端写入"
+   },
+   "whatWouldCloseIt": "把配方 step#10 的 tapTarget 收窄到唯一命中（例如按 aria-label=删除语音状态 取第二枚，或源侧给两枚分别加 .voice-preview__re-record / .voice-preview__delete 类名），再重跑同一条配方",
+   "rawExecutorRow": {
+    "status": "FAILED",
+    "failureReason": "配方断言判红：step#12 drainModal：drainModal 期望≥1 次弹窗，实收 0 次（逐步读数见 stepsNote；判定的是判据点名的对照，不是通道问题）",
+    "stepsNote": "#1 open :: open pages/profile/index ⇒ top=pages/profile/index；#2 wait :: wait 2200ms；#3 fixture(setup) :: fixture setup ok 1 步；#4 wait :: wait 800ms；#5 read(渲染时 store 语音态（与下步 probe 配对定谳）) :: read 渲染时 store 语音态（与下步 probe 配对定谳） ⇒ {\"route\":\"pages/profile/index\",\"voiceUrlLen\":39,\"voiceUrlHead\":\"https://qa-carrier.example/qa-voice.mp3\",\"voiceDuration\":3,\"hasBasicProfile\":true}；#6 probe :: probe {\".video-cta\":\"present(2)\",\".voice-preview\":\"present(1)\",\".voice-preview__delete\":\"present(2)\"}；#7 assertPresent(.voice-preview__delete) :: assertPresent .voice-preview__delete ⇒ present(2)；#8 shot(a-before-delete) :: shot a-before-delete ok 25238B；#9 armModal :: armModal showModal answers=2 ⇒ armed(answers-armed)；#10 tap(.voice-preview__delete) :: tap .voice-preview__delete；#11 wait :: wait 1100ms；#12 drainModal :: drainModal 期望≥1 次弹窗，实收 0 次；#13 (cleanup)(restoreModal) :: ok",
+    "evidence": "reports/screenshots/ui-audit-2026-10-13-exec-f314d391/PAGES-PROFILE-INDEX-PFI25-a-before-delete.png(25238B)"
+   }
+  }
+ ],
+ "laneNote": "reports/audit/ui-audit-2026-10-13/ui-channel-lane.md §REALCOV 可选腿",
+ "reverifiedBy": "tmp/qa/v37-pfi25-taporder.mjs（UI 通道腿，租约 ui-audit-v37.lock）"
+}
