@@ -32,6 +32,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.HttpClientErrorException;
@@ -122,6 +123,23 @@ public class GlobalExceptionHandler {
         // R4-00283：生产 profile 不原样透传异常消息（内部实现细节可能随消息外泄），
         // 统一脱敏为固定文案；开发 profile 保留原始消息便于联调
         String message = isProductionProfile() ? "请求参数错误" : ex.getMessage();
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", message);
+    }
+
+    /**
+     * 处理**缺参**异常（必填 request param 没带）。
+     * 实测起因：`GET /api/v1/config/legal` 不带 `type` 时走 Spring 默认的
+     * MissingServletRequestParameterException，本类原先没有对应 handler ⇒ 落到
+     * "Unhandled exception" 分支返回 500 INTERNAL_ERROR，而同一条目带**非法值**时
+     * 经上面的 IllegalArgumentException 正确返回 400。调用方因此分不清
+     * "我调错了"与"服务端坏了"，客户端的 500 重试逻辑会把一个永久错误当瞬时错误反复打。
+     * 与 IllegalArgumentException 同一条尺子：生产 profile 脱敏为固定文案。
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<Map<String, Object>> handleMissingRequestParam(
+            MissingServletRequestParameterException ex) {
+        log.warn("缺少必填请求参数: {}", ex.getParameterName());
+        String message = isProductionProfile() ? "请求参数错误" : "缺少必填参数: " + ex.getParameterName();
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", message);
     }
 
