@@ -113,7 +113,9 @@ class WxPayPropertiesFailFastTest {
         properties.setMchid("1900000001");
         properties.setMchSerialNo("SERIAL-001");
         properties.setApiV3Key("0123456789abcdef0123456789abcdef");
-        properties.setNotifyUrl("https://example.com/api/v1/vip/payment-callback");
+        // notify-url 必须等于回调的实际注册路径（BillingController 类级前缀 + 方法路径），
+        // 否则白名单放行的是另一个 URL，微信推送会被 authenticated() 拦成 401。
+        properties.setNotifyUrl("https://example.com/api/v1/vip/bills/payment-callback");
         properties.setRefundNotifyUrl("https://example.com/api/v1/refund/notify");
         // 代码内生成真实 RSA 密钥对：公钥作平台证书 PEM（X.509），私钥作商户私钥 PEM（PKCS#8），
         // 两者结构均合法，可被启动校验（WxPayBootstrapChecker 预热解析）接受

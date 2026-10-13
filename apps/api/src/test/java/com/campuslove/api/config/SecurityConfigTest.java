@@ -244,4 +244,57 @@ class SecurityConfigTest {
             }
         }
     }
+
+    /**
+     * 场景 12（2026-10-11 修复回归）：未登录 POST 微信支付回调 → 不被 security 拦截。
+     *
+     * <p>回调由微信服务器发起、不携带 JWT。若 permitAll 串与 BillingController 实际注册路径
+     * （类级前缀 + 方法路径）不一致，请求会落到 {@code /api/v1/**} 的 authenticated() 被 401
+     * 拒掉，端点内的验签/解密/IP 白名单/时间戳防重放四道防护全部执行不到——支付链路静默失效。</p>
+     */
+    @Test
+    void unauthenticated_accessToWechatPayCallback_shouldNotRequireAuth() throws Exception {
+        mockMvc.perform(post("/api/v1/vip/bills/payment-callback")
+                        .contentType("application/json")
+                        .header("Wechatpay-Signature", "test-signature")
+                        .header("Wechatpay-Timestamp", String.valueOf(System.currentTimeMillis() / 1000L))
+                        .header("Wechatpay-Nonce", "test-nonce")
+                        .header("Wechatpay-Serial", "test-serial")
+                        .content("{\"id\":\"test-notification-id\"}"))
+                .andExpect(result -> {
+                    int status = result.getResponse().getStatus();
+                    if (status == 401 || status == 403) {
+                        throw new AssertionError(
+                                "微信支付回调应 permitAll，不应被 security 拦截: " + status);
+                    }
+                });
+    }
+
+    /**
+     * 场景 13：白名单里的回调串必须等于控制器实际注册路径（防漂移）。
+     *
+     * <p>不需要容器与数据库：直接读 BillingController 的类级 {@code @RequestMapping} 与回调方法上的
+     * {@code @PostMapping} 拼出真实路径，再断言 mock 白名单包含该串。任何一侧改名而未同步另一侧时，
+     * 这条会先红——历史上就是这种漂移让真实回调被 401 拦在门外。</p>
+     */
+    @Test
+    void permitAllCallbackPath_matchesControllerRegistration() throws Exception {
+        String classPrefix = com.campuslove.api.vip.BillingController.class
+                .getAnnotation(org.springframework.web.bind.annotation.RequestMapping.class)
+                .value()[0];
+        String methodPath = null;
+        for (java.lang.reflect.Method m : com.campuslove.api.vip.BillingController.class.getDeclaredMethods()) {
+            org.springframework.web.bind.annotation.PostMapping post =
+                    m.getAnnotation(org.springframework.web.bind.annotation.PostMapping.class);
+            if (post != null && m.getName().equals("handleWechatPayCallback")) {
+                methodPath = post.value()[0];
+            }
+        }
+        String registered = classPrefix + methodPath;
+        org.junit.jupiter.api.Assertions.assertEquals("/api/v1/vip/bills/payment-callback", registered,
+                "BillingController 回调注册路径已变化，必须同步 SecurityConfig/MockSecurityConfig 白名单与本用例");
+        org.junit.jupiter.api.Assertions.assertTrue(
+                com.campuslove.api.config.MockSecurityConfig.PERMIT_PATHS.contains(registered),
+                "MockSecurityConfig 白名单应包含回调实际路径: " + registered);
+    }
 }

@@ -55,8 +55,11 @@ import org.springframework.web.bind.annotation.RestController;
  *       不再依赖可被「同 orderNo 换新 notificationId」绕过的双键查询。</li>
  * </ol>
  *
- * <p>安全放行：本端点由微信服务器调用（无 JWT），SecurityConfig permitAll 保留
- * （/api/v1/vip/payment-callback），防护全部在端点内完成。</p>
+ * <p>安全放行：本端点由微信服务器调用（无 JWT），SecurityConfig 与 MockSecurityConfig
+ * 均对实际注册路径 {@code /api/v1/vip/bills/payment-callback} permitAll（2026-10-11 修正：
+ * 历史上白名单写的是 {@code /api/v1/vip/payment-callback}，与类级前缀 + 方法路径拼出的
+ * 真实路径不等，回调会被 {@code /api/v1/**} 的 authenticated() 拦成 401），
+ * 防护全部在端点内完成。</p>
  */
 @Profile("real")
 @Validated

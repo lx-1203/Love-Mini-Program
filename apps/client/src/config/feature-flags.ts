@@ -24,7 +24,10 @@ export interface FeatureFlags {
 export const featureFlags: FeatureFlags = {
   // 2026-08-08 走查收尾（需求「会员先不上线」）：会员关闭显性入口，
   // 后端会员体系与解锁逻辑保留，后期一键开启；解锁功能仅保留交友币入口。
-  // 注意：real 模式下 VIP 支付仍提示"建设中"（后端未接入微信支付，见 vip/index.vue subscribe()）。
+  // 2026-10-11 更正：后端已接入微信支付 APIv3（apps/api/.../wxpay 与 vip/VipOrderService），
+  // vip/index.vue 的 real 分支走 subscribeReal() 真实下单 + uni.requestPayment。
+  // 「提示建设中」只在配置闸关闭时出现：下单返回 404（app.wechat-pay.enabled=false）
+  // 或 403 COMMERCE_DISABLED（商业化封存）时回退 vip.paymentNotReady 文案。
   // 2026-08-10：本周安排改为个人设置里的用户级开关（settings 页），不再全局硬关。
   membershipEnabled: false,
   heartSignalEnabled: true,

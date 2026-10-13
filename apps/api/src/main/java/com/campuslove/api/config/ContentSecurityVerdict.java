@@ -16,6 +16,18 @@ public record ContentSecurityVerdict(
     String source
 ) {
 
+    /**
+     * 规范化 suggest 为小写：调用方一律用 {@code "risky".equals(verdict.suggest())} 判定拦截，
+     * 而 wechat 侧日志判断用的是 equalsIgnoreCase。若上游返回 "Risky"/"RISKY"，
+     * 大小写敏感的 equals 会漏判，违规内容被放行（静默 fail-open）。在此收口一次，
+     * 避免逐个调用点改成 equalsIgnoreCase。
+     */
+    public ContentSecurityVerdict {
+        if (suggest != null) {
+            suggest = suggest.trim().toLowerCase(java.util.Locale.ROOT);
+        }
+    }
+
     /** 判定通过（内容可放行） */
     public static ContentSecurityVerdict pass() {
         return new ContentSecurityVerdict("pass", null, "local");

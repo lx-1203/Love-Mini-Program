@@ -65,14 +65,17 @@ public class MockSecurityConfig {
     private static final String ADMIN_ONLY_PATH_PATTERN_ACTUATOR = "/actuator/**";
     private static final String ADMIN_ONLY_PATH_PATTERN_SWAGGER = "/swagger-ui/**";
     private static final String ADMIN_ONLY_PATH_PATTERN_API_DOCS = "/v3/api-docs/**";
-    /** 不需要认证的路径模式（与 SecurityConfig 保持一致） */
-    private static final List<String> PERMIT_PATHS = List.of(
+    /** 不需要认证的路径模式（与 SecurityConfig 保持一致）；包内可见以便漂移守卫用例读取 */
+    static final List<String> PERMIT_PATHS = List.of(
             "/api/v1/auth/**",
             "/ws/**",
             "/api/v1/content-filter/check",
             "/api/v1/error-reports",
             // R4-00318：微信支付回调端点（微信服务器调用，无 JWT）
-            "/api/v1/vip/payment-callback",
+            // 路径与 BillingController 的类级前缀对齐：/api/v1/vip/bills + /payment-callback
+            "/api/v1/vip/bills/payment-callback",
+            // 2026-10-05：微信退款结果回调端点（同为微信服务器发起，无 JWT）
+            "/api/v1/refund/notify",
             // 2026-08-10：应用资产公开访问（装饰性图片，免登录；不注入 mock 用户）
             "/api/v1/media/app-assets/**",
             "/actuator/health",
@@ -192,6 +195,13 @@ public class MockSecurityConfig {
                 // D3 修复：客户端错误上报端点 permitAll 放行（与 real profile 对齐），
                 // 未登录阶段的上报能力需要保持，避免 401 级联噪音
                 .requestMatchers("/api/v1/error-reports").permitAll()
+                // 微信支付/退款回调端点 permitAll（与 real profile 对齐，2026-10-11 补齐）。
+                // 这两个端点由微信服务器发起、不带 JWT；此前 mock 链只在 /api/v1/** 上要求
+                // authenticated()，且 PERMIT_PATHS 会阻止 filter 伪造身份，导致回调在 mock 档
+                // 也被 401 拦截。真实控制器在 mock 档不注册（BillingController/WxPayRefundNotifyController
+                // 均为 @Profile("real")），放行后表现为 404 而非 401。
+                .requestMatchers("/api/v1/vip/bills/payment-callback").permitAll()
+                .requestMatchers("/api/v1/refund/notify").permitAll()
                 // Task 11.1：Swagger UI / OpenAPI 文档端点仅 ADMIN 可访问（与 real profile 一致）
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
                                  "/v3/api-docs/**", "/v3/api-docs.yaml").hasRole("ADMIN")

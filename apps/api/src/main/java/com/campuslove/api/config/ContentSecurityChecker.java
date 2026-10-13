@@ -7,8 +7,10 @@ package com.campuslove.api.config;
  * 本接口抽象统一入口，默认实现为本地敏感词过滤（{@link LocalContentSecurityChecker}，
  * 兜底保障）；配置了微信小程序凭据后由 {@link WeChatMsgSecCheckClient} 优先调用
  * 微信官方 msgSecCheck（有凭据才启用），微信侧不可用时自动降级本地过滤。
- * 现有 UGC 服务继续直接使用 {@link SensitiveWordFilter}（已覆盖 10+ 入口），
- * 本接口面向新接入入口与统一审计，不重写存量调用。</p>
+ * 现状（2026-10-05 接线后）：五个 UGC 服务（私聊、临时会话、圈子、资料、村庄帖子）
+ * 已在写路径上经 {@code rejectIfRisky} 调用本接口（共 9 处调用点，覆盖标题/正文/回复/
+ * 昵称/简介等字段）；同时这些服务仍保留各自的 {@link SensitiveWordFilter} 直接调用，
+ * 因此本接口是叠加在存量过滤之上的统一入口，而不是「只供新入口使用」。</p>
  *
  * <p>调用方约定：高风险（risky）内容必须拦截；review 内容允许通过但记录日志；
  * 检查失败（网络/超时）必须降级为本地过滤而非直接放行（fail-closed 语义）。</p>

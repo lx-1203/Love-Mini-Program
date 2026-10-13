@@ -209,15 +209,21 @@ export interface LegalTextView {
   version?: string | null;
 }
 
-/** 法定文本版本号获取失败时的兜底值 */
-export const DEFAULT_LEGAL_VERSION = "1.0.0";
+/**
+ * 法定文本版本号获取失败时的兜底值。
+ *
+ * 与服务端 `AgreementConsentService.DEFAULT_LEGAL_VERSION`（'v1.0.0'）保持同形：
+ * 该值会作为 `agreedLegalVersion` 上报并写入 user_agreement_consent，
+ * 两侧字面量不一致会让同一语义的同意留痕落进两种值，后续按版本对账/聚合需先归一。
+ */
+export const DEFAULT_LEGAL_VERSION = "v1.0.0";
 
 /**
  * 获取当前法定文本版本号（2026-10-05 合规接线：注册同意落库）。
  *
  * <p>调用 {@code GET /config/legal?type=user_agreement}（后端 permitAll，无需鉴权），
  * 读取返回体中的 {@code version} 字段；后端未升级（无 version 字段）时回退
- * {@code updatedAt}；请求失败/字段缺失时回退 {@code DEFAULT_LEGAL_VERSION}（'1.0.0'）。
+ * {@code updatedAt}；请求失败/字段缺失时回退 {@code DEFAULT_LEGAL_VERSION}（'v1.0.0'）。
  * 本函数任何情况下不抛错——注册主流程不应因版本号获取失败被阻断。</p>
  *
  * @returns 当前法定文本版本号（永远返回非空字符串）
