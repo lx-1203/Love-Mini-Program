@@ -64,7 +64,10 @@ const FNS = ["wantsInputLeg", "inputVerbOnly", "verbsNamed", "verbRefusal", "pic
   "specSatisfies", "parseRepeatSpec", "parseScrollSpec", "rapidVerdict", "rapidDeltas", "scrollVerdict", "pageScrollSource", "scrollOffsetStartSource", "interpretScrollOffsets", "pageScrollCallVerdict"];
 /* 这些常量是被抠出来的函数**引用**的：不一起带上，new Function 里就是自由标识符 ⇒ 一调就 ReferenceError
    （「抠了函数没抠依赖」是这类只读测试自己的假绿，必须当场判废而不是让它抛）。 */
-const RES = ["INPUTISH", "VERB_LONGPRESS_RE", "VERB_PULLDOWN_RE", "VERB_RAPID_RE", "VERB_SWIPE_RE", "VERB_MODAL_RE", "VERB_OFFLINE_RE", "VERB_SCROLL_RE"];
+const RES = ["INPUTISH", "VERB_LONGPRESS_RE", "VERB_PULLDOWN_RE", "VERB_RAPID_RE", "VERB_SWIPE_RE", "VERB_MODAL_RE", "VERB_OFFLINE_RE", "VERB_SCROLL_RE",
+  /* 2026-10-13 工具车道（R3-NET-04）的第五条诚实「不」用的复合正则：不带上它，
+     VERB_RULES 的数组体里就是自由标识符 ⇒ 组装当场失败（这正是「抠了表没抠依赖」的假绿形状）。 */
+  "VERB_FIRSTLOAD_RE"];
 function loadExec(src, label) {
   const f = {}, r = {};
   for (const n of FNS) f[n] = extract(src, n);
@@ -89,7 +92,7 @@ if (!src) { console.log("SUMMARY: assertion failures = 1"); console.log("VERB_TE
 console.log("被测文件=" + path.relative(REPO, LIVE) + " 行数=" + src.split(/\r\n|\n/).length);
 
 const M = loadExec(src, "live");
-t("执行器里取到本车道的 18 个纯函数与 8 条动词语料正则 + VERB_RULES（取不到就是没接线）", !!M, M ? "ok" : "见上面 missing");
+t("执行器里取到本车道的 18 个纯函数与 9 条动词语料正则 + VERB_RULES（取不到就是没接线）", !!M, M ? "ok" : "见上面 missing");
 if (!M) { console.log("SUMMARY: assertion failures = " + (fails + 1)); console.log("VERB_TEST=FAIL（口径取不到，后面的断言一条都没跑）"); process.exit(1); }
 const { verbsNamed, verbRefusal, pickElementVerb, pullDownSource, stopRefreshSource, pullDownVerdict } = M;
 const VERB_RAPID_RE = toRe(grabRe(src, "VERB_RAPID_RE"));
@@ -218,9 +221,75 @@ t("verbRefused 进了 skippedTotal()（两个 skipped 口径打架这件事本�
   (function () { const i = src.indexOf("const skippedTotal"); return /stats\.verbRefused/.test(src.slice(i, i + 500)); })());
 t("verbRefused 与 pullDowns/longpresses 都在 stats 初值里（不是只在外层赋值时才存在的野字段）",
   /verbRefused: 0/.test(src) && /pullDowns: 0/.test(src) && /longpresses: 0/.test(src));
-t("闸只在 STRICT_VERBS 下生效（非破坏性：不带旗标时旧腿的判决一字不变）",
-  /if \(STRICT_VERBS\) \{/.test(src) &&
-  /STRICT_VERBS = GESTURE_MODE \|\| RAPID_MODE \|\| SCROLL_MODE \|\| process\.argv\.includes\("--strict-verbs"\)/.test(src));
+/* ── 闸的开关条件：行为真值表（2026-10-13 续作车道；替换原来那串冻结字面量）──────────
+   这条断言的**名字**才是它的判据：不带任何旗标时，旧腿的判决一字不变。
+   原来钉的是一串字面量（`STRICT_VERBS = GESTURE_MODE || RAPID_MODE || SCROLL_MODE || argv…`），
+   那玩意儿对这个名字一条证据都不产生：
+     · 它证明不了「不带旗标时闸是关的」（右边写成 `= true` 才红，写成别的仍可能绿）；
+     · 它拦不住「新能力旗标忘了进链」（该红的没红）与「只读旗标被接进拒发链」（该拦的没拦）；
+     · 反过来，任何一次**合法**的加通道（--navto-open / --handler-call 就是）都会把它逼成假红，
+       于是下一个人顺手把字面量再抄一遍 —— 那是把测试越改越没证据的滑坡，本仓在这上面翻过车。
+   现在改成把活文件里那一串表达式**抠出来真求值**（表达式里只有旗标与 process.argv；
+   process 由测试注入假 argv —— 不 exec 活文件、不取租约、不碰设备）：
+     ① 链里出现的每个标识符都必须是已裁定的旗标 ⇒ 新增通道要先表态「能力」还是「读数」；
+     ② 每个进链旗标都必须真是 `process.argv.includes("--x")` 派生 ⇒ 硬编码旗标一票否决；
+     ③ 全关且 argv 里没有 --strict-verbs ⇒ 闸必须为假（非破坏性的本体）；
+     ④ 每条能力旗标单独打开 ⇒ 闸必须为真（capability 与「不许换动词」同批到货）；
+     ⑤ 每条只读旗标单独打开 ⇒ 闸必须为假（GEOM_POS 那条反向钉的一般化）；
+     ⑥ 只给 argv 塞 --strict-verbs ⇒ 闸必须为真（显式入口没被写死）。
+   ④⑤ 不是空转：由 §6 的 gate-hardcoded-true / gate-readonly-wired 两具变异体当场证明会红。 */
+const CAP_FLAGS = {
+  GESTURE_MODE: "--gestures", RAPID_MODE: "--rapid", SCROLL_MODE: "--scroll",
+  /* 2026-10-13 工具车道（R3-OT-01/R3-02）：换开页形态与 AppService 直调都是**替代动作通道**，
+     拿直调冒充点击、与拿一次 tap 冒充 rapidTap×5 是同一件事 ⇒ 与上面三条同批进链。 */
+  NAVTO_OPEN: "--navto-open", HANDLER_CALL: "--handler-call",
+};
+/* 只观察、不改判决的通道：单独打开时**不许**让闸开始扣交互行（否则「我多要了两个字段」就把
+   一整类可发交互判成 NOT_SHOOTABLE，那是另一种假账 —— 台账里 GEOM_POS 的反例就是这个）。 */
+const READONLY_FLAGS = { GEOM_POS: "--geom-pos", NET_COUNT: "--net-count", NATIVE_CAPTURE: "--native-capture" };
+function gateChain(s) { const m = /const STRICT_VERBS = ([^\n]*);/.exec(s); return m ? m[1] : null; }
+function gateTruth(s) {
+  const expr = gateChain(s);
+  if (!expr) return { ok: false, why: "抠不到 const STRICT_VERBS = … 这一行（闸的开关条件不在活文件里了）", ev: null, expr: null };
+  const all = Object.keys(CAP_FLAGS).concat(Object.keys(READONLY_FLAGS));
+  /* 成员访问（`process.argv.includes`）先抹掉再取标识符 —— 否则 argv/includes 会被当成「旗标」。 */
+  const used = [...new Set((expr.replace(/"[^"]*"/g, "").replace(/\.[A-Za-z_$][A-Za-z0-9_$]*/g, "")
+    .match(/\b[A-Za-z_$][A-Za-z0-9_$]*\b/g) || []))]
+    .filter((n) => n !== "process" && !/^(true|false|null|undefined)$/.test(n));
+  const unknown = used.filter((n) => !all.includes(n));
+  if (unknown.length) return { ok: false, why: "闸链里有未裁定的标识符 " + unknown.join(",") + "（新旗标要先说清是能力还是只读通道）", ev: null, expr };
+  const ev = (on, argv) => {
+    try {
+      return !!new Function(...all, "process", "return (" + expr + ");")(...all.map((n) => n === on),
+        { argv: argv || ["node", "r-exec-cli.mjs"] });
+    } catch (e) { return "ERR " + e.message; }
+  };
+  const bad = [];
+  for (const n of used) {
+    const lit = (CAP_FLAGS[n] || READONLY_FLAGS[n]).replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+    if (!new RegExp("const " + n + "\\s*=\\s*process\\.argv\\.includes\\(\"" + lit + "\"\\)").test(s))
+      bad.push(n + " 进链却不是 argv 派生（硬编码旗标 ⇒ 真值表是空谈）");
+  }
+  if (ev(null, []) !== false) bad.push("旗标全关时闸不为假（读到 " + ev(null, []) + " ⇒ 不带旗标的旧腿会被扣交互行，判决不再是「一字不变」）");
+  for (const n of Object.keys(CAP_FLAGS)) if (ev(n, []) !== true) bad.push(n + " 单独打开时闸没生效（能力到货了、「不许换动词」没到货）");
+  for (const n of Object.keys(READONLY_FLAGS)) if (ev(n, []) !== false) bad.push(n + " 是只读通道却进了拒发链（拿读数旗标去扣交互行）");
+  if (ev(null, ["node", "r-exec-cli.mjs", "--strict-verbs"]) !== true) bad.push("只给 --strict-verbs 时闸没生效（显式入口被写死/改掉了）");
+  return bad.length ? { ok: false, why: bad.join(" ｜ "), ev, expr } : { ok: true, why: "expr= " + expr, ev, expr };
+}
+t("闸只在 STRICT_VERBS 下生效（非破坏性：不带旗标时旧腿的判决一字不变）—— 行为真值表，不是字面量比对",
+  (function () {
+    if (!/if \(STRICT_VERBS\) \{/.test(src)) return false;
+    const g = gateTruth(src);
+    return g.ok;
+  })(),
+  (function () { const g = gateTruth(src); return g.ok ? g.why : "真值表不合格：" + g.why; })());
+t("非破坏性的另一半：不带旗标时这张动词表**根本没被查询**（运行时唯一的 verbRefusal(c.action…) 调用点就是闸体内的第一句 ⇒ R3-NET-04 新加的 netFaultFirstLoad 规则只动得到带旗标的腿，碰不到默认腿的判决）",
+  (function () {
+    const calls = (src.match(/verbRefusal\(c\.action/g) || []).length;
+    return calls === 1 &&
+      /if \(STRICT_VERBS\) \{\s*\n\s*const refuse = verbRefusal\(c\.action, GESTURE_MODE, CAPS\);/.test(src);
+  })(),
+  "运行时调用点=" + (src.match(/verbRefusal\(c\.action/g) || []).length + " 处");
 t("--gestures / --rapid / --scroll 三条都隐含 --strict-verbs（capability 与「不许换动词」必须同批到货；#10-c 把这条纪律从 gestures 扩到新增的两条通道）",
   (function () {
     const m = /const STRICT_VERBS = ([^\n]*);/.exec(src);
@@ -349,8 +418,11 @@ t("收尾：变异体不留盘（活文件全程未被改动）", !fs.existsSync
      M2 把 caps 那一维抹掉（通道等于没接）⇒ 「带旗标就放行」那条必须红；
      M3 把 specSatisfies 抹掉（只看旗标不看判据要求）⇒ 「次数/方向没点名仍拒发」必须红；
      M4 把 scrollVerdict 的「位置动没动」抹成恒真 ⇒ 「no-move 不算通过」必须红
-        （这一具最要紧：它就是「拿调用没抛冒充滚动成功」的形状，判点若取自回读就红不了）。
-   三具都只是被**文本扫描 + 现抠函数执行**（纯函数，不碰设备、不取租约），用完即删。 */
+        （这一具最要紧：它就是「拿调用没抛冒充滚动成功」的形状，判点若取自回读就红不了）；
+     M5/M6（2026-10-13 续作车道）对**闸的开关条件**那一维正反各下刀：
+        把链写成永真 ⇒「不带旗标判决不变」必须红；把只读的 GEOM_POS 接进链 ⇒ 同一维必须红
+        （那条断言已从冻结字面量改成行为真值表，没有这两具它就等于没被验证过）。
+   五具都只是被**文本扫描 + 现抠函数执行**（纯函数，不碰设备、不取租约），用完即删。 */
 const MUTANTS = [
   { key: "caps-off", file: path.join(REPO, ".zcode", "tmp", "mutant-exec-verb-caps-off.mjs"),
     make: (s) => s.replace("(!!on[r.needsCap] && specSatisfies(r.spec, s))", "false"),
@@ -361,6 +433,17 @@ const MUTANTS = [
   { key: "scroll-moved-always", file: path.join(REPO, ".zcode", "tmp", "mutant-exec-verb-scroll-always.mjs"),
     make: (s) => s.replace("const moved = at !== bt;", "const moved = true;"),
     want: (m) => /const moved = true;/.test(m) },
+  /* 2026-10-13 续作车道：闸的开关条件那条**行为真值表**自己的两具变异体（正反两面各一具）。
+     没有它们，「真值表」就只是一段没人验证过会不会红的代码 —— 而这条断言正是从「只会红一次的
+     字面量比对」改过来的，必须以更强的空转防护自证。 */
+  { key: "gate-hardcoded-true", file: path.join(REPO, ".zcode", "tmp", "mutant-exec-verb-gate-hardcoded.mjs"),
+    make: (s) => s.replace(/const STRICT_VERBS = [^\n]*;/, "const STRICT_VERBS = true;"),
+    /* want 只认**抠出来的那一行链**（活文件 :285 的自检里还抄着一份同样的字面量，
+       拿全文正则去判「改到了没有」会一直为真 —— 那又是一处假绿）。 */
+    want: (m) => gateChain(m) === "true" },
+  { key: "gate-readonly-wired", file: path.join(REPO, ".zcode", "tmp", "mutant-exec-verb-gate-readonly.mjs"),
+    make: (s) => s.replace("const STRICT_VERBS = GESTURE_MODE", "const STRICT_VERBS = GEOM_POS || GESTURE_MODE"),
+    want: (m) => (gateChain(m) || "").startsWith("GEOM_POS || ") },
 ];
 for (const mu of MUTANTS) {
   let written = false, m2src = "", MM = null;
@@ -391,6 +474,21 @@ for (const mu of MUTANTS) {
       t("空转防护 scroll-moved-always：把「位置动没动」抹成恒真 ⇒ no-move 被读成 moved（正是「调用没抛就算滚过」那个形状）",
         MM.scrollVerdict({ to: "bottom" }, { __viewport__: { t: 9 } }, { __viewport__: { t: 9 } }).ok === true &&
         scrollVerdict({ to: "bottom" }, { __viewport__: { t: 9 } }, { __viewport__: { t: 9 } }).ok === false);
+    }
+    if (mu.key === "gate-hardcoded-true") {
+      const gt = gateTruth(m2src);
+      t("空转防护 gate-hardcoded-true：把闸的开关条件写成永真 ⇒ 行为真值表立刻变红（证明活文件那条「不带旗标判决一字不变」不是空转，也不是新的字面量比对）",
+        gt.ok === false && /旗标全关时闸不为假/.test(gt.why), gt.ok ? "变异体竟然过了" : gt.why.slice(0, 160));
+      t("空转防护 gate-hardcoded-true：同一具变异体里动词口径一个字没变（红只许出现在闸这一维，否则测的就不是这一刀）",
+        MM.verbRefusal(RAPID_DND08, true) === verbRefusal(RAPID_DND08, true) && /if \(STRICT_VERBS\) \{/.test(m2src));
+    }
+    if (mu.key === "gate-readonly-wired") {
+      const gt = gateTruth(m2src);
+      t("空转防护 gate-readonly-wired：把只读的 --geom-pos 接进拒发链 ⇒ 同一张真值表变红（GEOM_POS 单独打开时闸必须仍为假）",
+        gt.ok === false && /只读通道却进了拒发链/.test(gt.why), gt.ok ? "变异体竟然过了" : gt.why.slice(0, 160));
+      t("空转防护 gate-readonly-wired：红只来自这一刀 —— 变异体的其余成员一条没动（五条能力旗标仍各自为真，而活文件的链里本来就没有 GEOM_POS）",
+        !!gt.ev && ["GESTURE_MODE", "RAPID_MODE", "SCROLL_MODE", "NAVTO_OPEN", "HANDLER_CALL"].every((n) => gt.ev(n, []) === true) &&
+        !/GEOM_POS/.test(gateChain(src) || ""));
     }
   }
   try { if (fs.existsSync(mu.file)) fs.unlinkSync(mu.file); } catch (e) { console.log("MUTANT_CLEANUP_ERR " + mu.key + " " + e.message); }

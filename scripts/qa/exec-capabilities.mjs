@@ -167,6 +167,72 @@ export function countNetCalls(calls, urlIncludes) {
   return (calls || []).filter((c) => !urlIncludes || String(c.url || "").indexOf(urlIncludes) >= 0).length;
 }
 
+/* ── C3-bis functionDeclaration 臂展集成（R3-NET-04 未落地的第三份 Source）──
+ * automator 0.12.1 的 MiniProgram.mockWxMethod(name, mock) 有两条分岔（见 SDK 源码 isFnStr）：
+ *   mock 是函数、或字符串 trim 后以 "function"/"() =>" 开头 ⇒ 发 {method, functionDeclaration: mock.toString()}
+ *   否则                                                  ⇒ 发 {method, result: mock}
+ * 走错分岔的后果不是报错而是**假零**：result 分支会把 wx.request 换成一个非函数值，
+ * 应用侧每次请求直接抛，臂展计数永远 0，读的人把它当「页没发请求」。
+ * tmp/qa/netfault-fn-probe.mjs 的四步实证用的就是 functionDeclaration 分支
+ * （ARM=ok / 不可解析域名返回 SUCCESS 500+QA_NET_FAULT / 应用侧 __qaNet.count=1 / RESTORE=ok），
+ * 本仓此前只把 mock 源**当字符串**递过去（依赖 SDK 的字符串嗅探），且装完不问回执 ——
+ * 「调用没抛」不等于「臂展在位」，这条正是本仓反复立案的那类假绿，故补齐：
+ *   ① asFunctionDeclaration：把载荷源编成真正的函数字面量再交给 SDK，分岔不再靠嗅探；
+ *   ② mockArmBranch：把「SDK 会走哪条分岔」做成纯函数，离线可证伪；
+ *   ③ netFaultArmReceiptSource：臂展后回读应用侧的真实状态（袋 + wx.request 是不是我们的 mock），
+ *      读不到回执就把这一腿记成 NOT_SHOOTABLE(netFault=arm-unverified)，绝不交出 intercepted=0 这个假零。
+ */
+export function mockArmBranch(mock) {
+  if (typeof mock === "function") return "functionDeclaration";
+  const s = String(mock === undefined || mock === null ? "" : mock).trim();
+  if (!s) return "result";
+  return s.startsWith("function") || s.startsWith("() =>") ? "functionDeclaration" : "result";
+}
+/* 载荷源 → 函数对象（与探针 new Function("return " + ARM_FN)() 同一写法）。
+   解析不进去就返回 null ⇒ 调用方必须报错，不许退回把源串当 result 发出去。 */
+export function asFunctionDeclaration(src) {
+  const s = String(src || "").trim();
+  if (!s) return null;
+  if (mockArmBranch(s) !== "functionDeclaration") return null;
+  try { return new Function("return (" + s + ")")(); } catch (e) { return null; }
+}
+/* 臂展回执：同时问三件事 —— spec 袋在不在、请求记账袋在不在、wx.request 是不是已被换成函数 mock。
+   只回一个布尔会把「臂展装上了但 spec 丢了」读成装上了。 */
+export function netFaultArmReceiptSource() {
+  return "() => { try { var sp = globalThis.__qaNetSpec; var calls = globalThis.__qaNetCalls; " +
+    "var t = typeof wx.request; var ours = t === 'function' && String(wx.request).indexOf('__qaNetCalls') >= 0; " +
+    "return JSON.stringify({ spec: sp && sp.mode ? String(sp.mode) : '', bag: Array.isArray(calls), requestType: t, mocked: ours }); } " +
+    "catch (e) { return JSON.stringify({ spec: '', bag: false, requestType: 'ERR', mocked: false, err: String((e && e.message) || e).slice(0, 80) }); } }";
+}
+export function interpretArmReceipt(raw) {
+  const s = String(raw === undefined || raw === null ? "" : raw).trim();
+  const cut = s.indexOf("{");
+  if (cut < 0) return { spec: "", bag: false, requestType: "unreadable", mocked: false, err: "回执串不可解析:" + s.slice(0, 40) };
+  try {
+    const j = JSON.parse(s.slice(cut));
+    return { spec: String(j.spec || ""), bag: !!j.bag, requestType: String(j.requestType || ""), mocked: !!j.mocked, err: String(j.err || "") };
+  } catch (e) { return { spec: "", bag: false, requestType: "unreadable", mocked: false, err: "回执解析失败:" + s.slice(0, 40) }; }
+}
+/* 回执裁决：mode 对 + 袋在 + wx.request 是我们的 mock ⇒ 才算 arm-verified。
+   其余一律 ok=false，并把差在哪一维写出来（restore 之后取回执也应读出 mocked=false）。 */
+export function armReceiptVerdict(wantMode, r) {
+  const got = r || {};
+  const bad = [];
+  if (!got.mocked) bad.push("wx.request 不是本通道的 mock（requestType=" + String(got.requestType || "?") + "）");
+  if (!got.bag) bad.push("应用侧请求记账袋 __qaNetCalls 不在（臂展随 AppService 重启没了）");
+  if (wantMode && got.spec !== String(wantMode)) bad.push("spec.mode=" + JSON.stringify(got.spec) + " ≠ 配方要的 " + JSON.stringify(String(wantMode)) + "（restore 或没写上）");
+  if (got.err) bad.push("回执本身报错:" + got.err);
+  if (bad.length) return { ok: false, text: "arm-unverified：" + bad.join("；") };
+  return { ok: true, text: "arm-verified(mode=" + got.spec + " mock=在 袋=在)" };
+}
+/* 臂展没被证实时这一腿的口吻（机读前缀沿用 NOT_SHOOTABLE(…)，与本仓既有拼写同形）。 */
+export function armUnshootableText(spec, verdict) {
+  return "NOT_SHOOTABLE(netFault=arm-unverified): " + String((verdict && verdict.text) || "没取到臂展回执") +
+    "（mode=" + String((spec && spec.mode) || "?") + "）⇒ 臂展没装上就发不出「故障中」这一前置，" +
+    "本腿的 intercepted 会是 0，但那个 0 是仪器读数不是产品结论；判据不许据此记 EXECUTED/FAILED，" +
+    "要它被自动判得先修通道（open 后重新 armNetFault + 页内重触发，见 R3-NET-04）或换载具/人工判";
+}
+
 /* ─────────────────────────── C2 逐例配方 + 可回滚夹具 ───────────────────────────
  * 配方文件 scripts/qa/case-recipes.json：键=判据台复合 id（与 verify-real-coverage 的 key 同源）。
  * 只读前置（query/page）与夹具（fixture）分开两块；夹具必须带 teardown —— 没有回滚计划的
@@ -231,7 +297,7 @@ export function templateUnresolved(tpl, captured) {
  * 每步一个 kind；judgment 步（assert*）失败 ⇒ 行记 FAILED 并带逐步读数；驱动步失败 ⇒ 行记
  * SKIPPED+NOT_SHOOTABLE（通道欠款），二者必须分得开 —— 与 r-exec-cli 的 FAILED/SKIPPED 分界同口径。
  */
-export const STEP_KINDS = ["open", "tap", "input", "readValue", "rapidTap", "callMethod", "probe", "pullDown", "stopPullDown",
+export const STEP_KINDS = ["open", "tap", "input", "readValue", "rapidTap", "callMethod", "callHandler", "probe", "pullDown", "stopPullDown",
   "armModal", "restoreModal", "drainModal", "armNetFault", "restoreNetFault", "drainNet",
   "shot", "wait", "assertRoute", "assertPresent", "assertAbsent", "fixture", "read"];
 
@@ -258,6 +324,277 @@ export function navStepsNote(steps, records) {
   const n = (steps || []).length;
   const done = (records || []).length;
   return "steps=" + done + "/" + n + (records || []).map((r, i) => "  #" + (i + 1) + " " + String(r.do) + (r.note ? " :: " + String(r.note).slice(0, 90) : "")).slice(0, 24).join("；");
+}
+
+/* ─────────────────────────── C7 开页形态：基底页 + 应用内 wx.navigateTo ───────────────────────────
+ * R3-OT-01 / R3-02（2026-10-13 工具车道）。台账的三层根因里，②③ 成立、① 被产物证伪：
+ *   ① 「编译标签是路径形 components/profile/public/RelationshipCTA」——**不成立**：
+ *      dist/build/mp-weixin-real/components/profile/public/PublicProfile.json 的 usingComponents
+ *      键就是 "relationship-c-t-a"（uni-app 把 RelationshipCTA 逐大写位连字），
+ *      配方现有穿透链 profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--like
+ *      与产物逐字吻合（tmp/qa/navto-cta-probe.mjs 里 "relationship-c-t-a" 探到 null 是因为它是
+ *      profile-shell 的孙节点、页级 $ 本来就打不到第三层，不是因为标签名写错）。
+ *   ② automator 0.12.1 元素查询不穿透自定义组件子树 ⇒ DOM tap 这条路对这四项动作结构性不可达
+ *      → 替代通道 C8（AppService 层直调 handler）。
+ *   ③ 带 query 的桥 open 令 currentPage 回报 webview 代理态、$ 全超时（自动化层坏死）
+ *      → 本节的「基底页 + 应用内 wx.navigateTo」（tmp/qa/navto-cta-probe.mjs 实证健康：
+ *         全树 outerWxml 13493B、CTA 节点可见）。
+ * 纪律：这条开页形态是**旗标选择**，不是替换默认路径 —— 不带 --navto-open 时 resolveOpenForm
+ *   永远回 via="bridge"，既有 1107 行的开页方式与行形状一字不变（与 --gestures/--native-capture 同律）。
+ */
+export const NAVTO_BASE_PAGE = "pages/discover/index";
+/* tabBar 页 wx.navigateTo 打不开（平台限制，不是本仓缺陷）：这些页只能退回桥 open。
+   来源：apps/client/src/pages.json 的 tabBar.list（首页/附近/发现/消息/我的）。 */
+export const TABBAR_PAGES = ["pages/home/index", "pages/nearby/index", "pages/discover/index", "pages/messages/index", "pages/profile/index"];
+export function isTabBarPage(page) { return TABBAR_PAGES.includes(String(page || "").trim()); }
+/* 纯函数：这一步 open 该怎么开。opts={navTo:bool, basePage?:string}（旗标由调用方传，
+   本函数不读 argv ⇒ 离线能把两种模式都跑出来，同 r-exec-cli 的 verbsNamed 体例）。 */
+export function resolveOpenForm(step, opts) {
+  const o = opts && typeof opts === "object" ? opts : {};
+  const page = String((step && step.page) || "").trim();
+  const query = String((step && step.query) || "");
+  if (!o.navTo) return { via: "bridge", page, query, url: "", base: "", kind: "flag-off", note: "桥 open(page,query)（缺省路径，与既有批次同形）" };
+  if (!page) return { via: "bridge", page, query, url: "", base: "", kind: "no-page", note: "配方这一步没有 page ⇒ 无从 navigateTo，退回桥 open 让既有报错说话" };
+  if (isTabBarPage(page)) return { via: "bridge", page, query, url: "", base: "", kind: "tabbar", note: "tabBar 页 wx.navigateTo 打不开（平台限制）⇒ 退回桥 open，本旗标对这一页无效果" };
+  const base = String(o.basePage || NAVTO_BASE_PAGE);
+  if (base === page) return { via: "bridge", page, query, url: "", base, kind: "base-is-target", note: "基底页与目标页同页 ⇒ navigateTo 只会叠一层自己，退回桥 open" };
+  const url = "/" + page + (query ? (page.indexOf("?") >= 0 ? "&" : "?") + query : "");
+  return { via: "navto", page, query, base, url, kind: "ok", note: "先桥 open 基底页 " + base + "（不带 query），再应用内 wx.navigateTo(\"" + url + "\")" };
+}
+/* navigateTo 载荷：只问 wx.navigateTo 一条（探针原形），success/fail 都回串 ⇒ 空读数与失败分得开。
+   载荷里不许出现 uni 记号（AppService 上下文实测 "ERR uni is not defined"，文件头设备事实）。 */
+export function navigateToSource(url) {
+  const u = String(url || "");
+  return "() => new Promise((res) => { try { if (!wx.navigateTo) { return res('no-api'); } " +
+    "wx.navigateTo({ url: " + JSON.stringify(u) + ", success: () => res('nav-ok'), " +
+    "fail: (e) => res('nav-fail ' + String((e && e.errMsg) || e).slice(0, 120)) }); } " +
+    "catch (e) { res('ERR ' + String((e && e.message) || e).slice(0, 120)); } } })";
+}
+/* 裁决：ok / nav-fail / unsupported / error / unknown 互不折叠。
+   空读数**不许**读成"页打开了"（桥有时只回 undefined，那一腿的落点必须由 assertRoute 再证）。 */
+export function navToVerdict(raw) {
+  const s = String(raw === undefined || raw === null ? "" : raw).trim();
+  if (/^nav-ok/.test(s)) return "ok";
+  if (/^nav-fail/.test(s)) return "nav-fail(" + s.slice(9).trim() + ")";
+  if (/^no-api/.test(s)) return "unsupported";
+  if (/^ERR/.test(s)) return "error(" + s.slice(4).trim() + ")";
+  if (!s) return "unknown(空读数 ⇒ 读作没落地，不许读成已打开)";
+  return "unknown(" + s.slice(0, 60) + ")";
+}
+/* 桥不会 await 返回 Promise 的 fn-source（本仓在册：r-exec-ws.mjs 的折叠探针注释、
+   r-exec-cli.mjs 的 cliProbe「先写袋、再同步等一会儿去读」）⇒ CLI 桥（automation_evaluate）
+   只能用「发起 + 稍后读回」这一形。nav-fired 只说明"调用发出去了"，落地与否由 route 回读判。 */
+export function navigateToSyncSource(url) {
+  const u = String(url || "");
+  return "() => { try { if (!wx.navigateTo) { return 'no-api'; } globalThis.__qaNav = globalThis.__qaNav || []; " +
+    "wx.navigateTo({ url: " + JSON.stringify(u) + ", success: () => { globalThis.__qaNav.push('ok'); }, " +
+    "fail: (e) => { globalThis.__qaNav.push('fail ' + String((e && e.errMsg) || e).slice(0, 120)); } }); return 'nav-fired'; } " +
+    "catch (e) { return 'ERR ' + String((e && e.message) || e).slice(0, 120); } }";
+}
+export function navReadSource() {
+  return "() => { try { var cs = getCurrentPages(); var top = cs && cs.length ? String((cs[cs.length - 1] || {}).route || '') : ''; " +
+    "return JSON.stringify({ nav: (globalThis.__qaNav || []).slice(-4), top: top }); } catch (e) { return JSON.stringify({ nav: [], top: '', err: String((e && e.message) || e).slice(0, 80) }); } }";
+}
+/* nav-fired 不是"到了页"，no-landing 也不是"没发起"：两问分开答，落地由 route 回读判。 */
+export function navSyncVerdict(raw) {
+  const s = String(raw === undefined || raw === null ? "" : raw).trim();
+  if (/^nav-fired/.test(s)) return "fired";
+  if (/^no-api/.test(s)) return "unsupported";
+  if (/^ERR/.test(s)) return "error(" + s.slice(4).trim() + ")";
+  if (!s) return "unknown(空读数 ⇒ 读作没发起，不许读成已发起)";
+  return "unknown(" + s.slice(0, 60) + ")";
+}
+export function interpretNavRead(raw) {
+  const s = String(raw === undefined || raw === null ? "" : raw).trim();
+  const cut = s.indexOf("{");
+  if (cut < 0) return { nav: [], top: "", err: "回读串不可解析:" + s.slice(0, 40) };
+  try {
+    const j = JSON.parse(s.slice(cut));
+    return { nav: Array.isArray(j.nav) ? j.nav : [], top: String(j.top || ""), err: String(j.err || "") };
+  } catch (e) { return { nav: [], top: "", err: "回读解析失败:" + s.slice(0, 40) }; }
+}
+/* 落地判定：期望页必须在栈顶（navigateTo 是压栈），回读对不上 ⇒ not-landed（通道欠款，不是产品判决）。 */
+export function navLandVerdict(wantPage, read) {
+  const r = read || { nav: [], top: "" };
+  const want = String(wantPage || "").replace(/^\//, "").split("?")[0];
+  if (r.err) return { ok: false, kind: "unreadable", text: "回读失败：" + r.err };
+  if (!r.top) return { ok: false, kind: "no-page", text: "getCurrentPages() 回读为空栈 ⇒ 没有任何页在栈顶，navigateTo 没落地" };
+  const hit = r.top.indexOf(want) >= 0;
+  const failed = (r.nav || []).filter((x) => String(x).indexOf("fail") === 0);
+  return { ok: hit, kind: hit ? "landed" : "not-landed",
+    text: (hit ? "已落在 " + r.top : "栈顶是 " + r.top + "，不是 " + want + "（not-landed）") +
+      "；navigateTo 回执[" + ((r.nav || []).join(",") || "无") + "]" +
+      (failed.length ? " ⇒ 应用侧明确拒了（常见原因：目标页在 tabBar 里、路径写错、页面未编译）" : "") };
+}
+/* 旗标没开时的显式宣告（与 --native-capture 的「空串读作没采、不读作没弹」同一句纪律）。 */
+export function openFormNote(via) {
+  return via === "navto"
+    ? "on(base+navigateTo ⇒ 带 query 的页不再走 webview 代理态；基底页=" + NAVTO_BASE_PAGE + ")"
+    : "off(没带 --navto-open ⇒ 新开的「基底页+应用内 wx.navigateTo」通道本腿**一字未用**，开页仍是桥 open(page,query)；" +
+      "带 query 的页若回报 webview 代理态、$ 全超时（R3-02 ③），那是既有已知通道欠款，不许读成「页上没东西」)";
+}
+
+/* ─────────────────────────── C8 handler 直调（AppService 层替代 DOM tap）───────────────────────────
+ * 配方步骤上的 step.handler = { method, routeIncludes, componentId?, args? }。
+ * 只在 --handler-call 下使用；且**只作为 DOM 目标取不到时的替代通道**（目标在页上就照旧 tap，
+ * 拿直调冒充点击同样是把判据点名的动作换成了别的动作）。
+ * 纪律：method 必须点名（不猜 handler 名）、routeIncludes 必须点名（不在这一页上就打 handler，
+ * 打的是上一页身上，那是比假绿更糟的东西）。
+ */
+export function parseHandlerCall(spec) {
+  if (!spec || typeof spec !== "object") return { ok: false, reason: "handler 缺失或不是对象（callHandler/替代通道必须点名打哪个 handler）" };
+  const method = String(spec.method || "").trim();
+  if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(method)) return { ok: false, reason: "handler.method 必须是合法 JS 标识符（收到 " + JSON.stringify(spec.method) + "，判据点名哪个动作，不许猜）" };
+  const routeIncludes = String(spec.routeIncludes || "").trim();
+  if (!routeIncludes) return { ok: false, reason: "handler.routeIncludes 必须点名目标页（不在页上就打 handler = 打在上一页身上）" };
+  const componentId = String(spec.componentId || "").trim();
+  const args = Array.isArray(spec.args) ? spec.args : [];
+  return { ok: true, spec: { method, routeIncludes, componentId, args, label: String(spec.label || method) } };
+}
+/* 载荷：先验路由，再按 vm → page →（点名了 componentId 才）selectComponent 三格找函数，
+   找到才调、并把这次调用记进 __qaHandler 袋（可 drain 复核）。
+   三格都要试是因为 uni-app Vue3 的 setup 绑定落在 page.$vm、Options API 方法落在 page 本身、
+   组件内方法要 selectComponent；哪一格命中由读数说话，不在测试里预设。 */
+export function handlerCallSource(spec) {
+  const h = spec && spec.spec ? spec.spec : spec || {};
+  const m = JSON.stringify(String(h.method || ""));
+  const route = JSON.stringify(String(h.routeIncludes || ""));
+  const args = JSON.stringify(Array.isArray(h.args) ? h.args : []);
+  const cid = String(h.componentId || "").trim();
+  const compBranch = cid
+    ? "else if (typeof p.selectComponent === 'function') { var c = p.selectComponent(" + JSON.stringify("#" + cid) + "); if (c && typeof c[" + m + "] === 'function') { t = c; via = 'component'; } } "
+    : "";
+  return "() => new Promise((res) => { try { var cs = getCurrentPages(); if (!cs || !cs.length) { return res('no-page'); } " +
+    "var p = cs[cs.length - 1]; var route = String((p && (p.route || p.__route__)) || ''); " +
+    "if (route.indexOf(" + route + ") < 0) { return res('wrong-page ' + route); } " +
+    "var bag = globalThis.__qaHandler = globalThis.__qaHandler || []; var args = " + args + "; var t = null; var via = ''; " +
+    "if (p.$vm && typeof p.$vm[" + m + "] === 'function') { t = p.$vm; via = 'vm'; } " +
+    "else if (typeof p[" + m + "] === 'function') { t = p; via = 'page'; } " + compBranch +
+    "if (!t) { return res('no-method ' + route); } " +
+    "var fin = function (x) { var n = ''; try { n = JSON.stringify(x).slice(0, 80); } catch (e) { n = String(x).slice(0, 80); } " +
+    "bag.push({ method: " + m + ", route: route, via: via, ts: Date.now(), ret: n }); return res('handler-ok via=' + via); }; " +
+    "var r0; try { r0 = t[" + m + "].apply(t, args); } catch (e) { return res('ERR ' + String((e && e.message) || e).slice(0, 120)); } " +
+    "if (r0 && typeof r0.then === 'function') { return r0.then(fin).catch(function (e) { res('ERR ' + String((e && e.message) || e).slice(0, 120)); }); } " +
+    "return fin(r0); } catch (e) { res('ERR ' + String((e && e.message) || e).slice(0, 120)); } } })";
+}
+/* 五态翻译（把 no-page/wrong-page/no-method 读成"打成功了"就是这条通道最坏的假绿）：
+   直调没发生 = 判据点名的动作没发生 = 通道欠款，行记 NOT_SHOOTABLE，绝不记 EXECUTED。 */
+export function handlerCallVerdict(raw) {
+  const s = String(raw === undefined || raw === null ? "" : raw).trim();
+  if (/^handler-ok/.test(s)) return "ok" + (s.indexOf(" ") >= 0 ? "(" + s.slice(s.indexOf(" ") + 1) + ")" : "");
+  if (/^no-page/.test(s)) return "no-page(取不到页实例 ⇒ 没打任何 handler)";
+  if (/^wrong-page/.test(s)) return "wrong-page(" + s.slice(11).trim() + " ⇒ 不在判据点名的页上，没打任何 handler)";
+  if (/^no-method/.test(s)) return "no-method(" + s.slice(10).trim() + " ⇒ 该 handler 在本载具不可直调（setup 未暴露），换点法或换载具)";
+  if (/^ERR/.test(s)) return "error(" + s.slice(4).trim() + ")";
+  if (!s) return "unknown(空读数 ⇒ 读作没打，不许读成打成功)";
+  return "unknown(" + s.slice(0, 60) + ")";
+}
+export function handlerCallOk(verdict) { return /^ok(\(|$)/.test(String(verdict || "")); }
+export function handlerDrainSource() {
+  return "() => { try { return JSON.stringify({ calls: (globalThis.__qaHandler || []).splice(0) }); } catch (e) { return JSON.stringify({ calls: [], err: String(e && e.message) }); } }";
+}
+/* 替代通道的行上口吻：明写"这是替代动作，不是判据点名的那个动作"。 */
+export function handlerNote(spec, verdict) {
+  const h = spec && spec.spec ? spec.spec : spec || {};
+  return "handler-call " + String(h.method || "?") + " ⇒ " + String(verdict || "unknown") +
+    "（AppService 层直调，替代 DOM tap；判据若点名的是「按钮真的可点/真的渲染」，直调不能代替 —— 行上如实记）";
+}
+
+/* ─────────────────────────── C9 netFault 臂展窗：open 后臂展 + 页内重触发 ───────────────────────────
+ * R3-NET-04 / R3-08。结构性事实（实测在册）：桥 open 属 compiler 族 ⇒ 重编译并重启 AppService
+ *   ⇒ 装上去的 wx.request mock 臂展随进程一起没（CON-EV-01「桥开页重启 AppService（包装器/缓冲全灭）」、
+ *   R2-PFI25-04 同一根因）。于是「arm 在 open 之前」的配方形状**必然** intercepted=0
+ *   （本轮 OC09 就是这么交出的旧行），把判据写成"进页即失败"在这个通道上永远验不到东西。
+ * 判点形状因此改成：**每次 open 之后重新臂展，再在页内重触发数据加载**（下拉 / 点 retry /
+ *   直调页自己的加载方法 = C8），然后 drainNet 取拦截计数。
+ * netFaultArmWindow 就是把这件事做成一个能离线证伪的纯函数。
+ */
+export const NET_RETRIGGER_KINDS = ["pullDown", "tap", "rapidTap", "input", "callHandler"];
+/* 逐个臂展窗判定：每一次 armNetFault 都必须「在同一段里」完成 臂展 → 页内重触发 → drainNet 取件，
+   段边界就是 open/openNavTo（桥 open 重编译重启 AppService，臂展活不过下一次 open）。
+   三种失败形状各不相折叠：
+     · arm-dropped-by-open —— 臂展之后、重触发之前先来了一次 open ⇒ 这一臂必死（OC09/OT06/VB03 旧形状）
+     · no-retrigger        —— 臂展了但页内没有任何重新拉数据的动作 ⇒ 页首请求早已发完，没有东西可拦
+     · no-drain            —— 拦了但没取件 ⇒ 计数无从可读
+   全绿才允许上腿；不绿就是配方形状错，执行器不许据此记产品判决。 */
+export function netFaultArmWindow(steps) {
+  const list = Array.isArray(steps) ? steps : [];
+  const armIdx = [], openIdx = [];
+  list.forEach((s, i) => {
+    if (!s || !s.do) return;
+    if (s.do === "armNetFault") armIdx.push(i);
+    if (s.do === "open" || s.do === "openNavTo") openIdx.push(i);
+  });
+  const base = { armIdx, openIdx, armed: armIdx.length > 0, arms: armIdx.length, opens: openIdx.length };
+  if (!armIdx.length) return Object.assign(base, { ok: null, kind: "not-armed", retrigger: "", drained: false, droppedArms: [], text: "本配方没有 armNetFault 步 ⇒ 无臂展窗可言（netFault 字段只是声明，没上腿）" });
+  const dropped = [], noRet = [], noDr = [];
+  armIdx.forEach((a) => {
+    const nextOpen = openIdx.filter((o) => o > a)[0];
+    const segEnd = nextOpen === undefined ? list.length : nextOpen;
+    const seg = list.slice(a + 1, segEnd);
+    const re = seg.find((s) => s && NET_RETRIGGER_KINDS.includes(s && s.do));
+    const dr = seg.find((s) => s && s.do === "drainNet");
+    if (nextOpen !== undefined && seg.length === 0) dropped.push(a);
+    else if (!re) noRet.push(a);
+    else if (!dr) noDr.push(a);
+  });
+  const out = Object.assign(base, { droppedArms: dropped, noRetriggerArms: noRet, noDrainArms: noDr });
+  if (dropped.length) {
+    return Object.assign(out, { ok: false, kind: "arm-dropped-by-open",
+      text: "armNetFault@#" + dropped.map((i) => i + 1).join(",") + " 之后、任何重触发之前就来了一次 open（open@#" + openIdx.map((i) => i + 1).join(",") +
+        "）：桥 open 重编译重启 AppService，臂展被洗掉 ⇒ 这一腿的 intercepted 恒等于仪器读数 0，不是「页没发请求」，更不是产品判红。判点形状要改成「每次 open 之后重新臂展 + 页内重触发」" });
+  }
+  if (noRet.length) {
+    return Object.assign(out, { ok: false, kind: "no-retrigger",
+      text: "armNetFault@#" + noRet.map((i) => i + 1).join(",") + " 之后同段内没有重触发步（词表 " + NET_RETRIGGER_KINDS.join("/") + "）：页首请求已在臂展前发完 ⇒ 没有东西可拦，intercepted=0 同样只是仪器读数" });
+  }
+  if (noDr.length) {
+    return Object.assign(out, { ok: false, kind: "no-drain",
+      text: "armNetFault@#" + noDr.map((i) => i + 1).join(",") + " 这一臂有重触发但没有同段 drainNet ⇒ 拦截计数没取件，这条网络判点无数可读（不许凭「调用发出去了」冒充「拦到了」）" });
+  }
+  return Object.assign(out, { ok: true, kind: "ok",
+    text: "臂展窗合法：每一臂（arm@#" + armIdx.map((i) => i + 1).join(",") + "）都在下一次 open 之前完成「页内重触发 + drainNet 取件」⇒ intercepted>0 才读得出网络判点" });
+}
+/* 「进页即失败」这一族判据在本通道结构性不可得（页首请求拦不到）⇒ 诚实的能力边界串。
+   与 r-exec-cli.mjs VERB_RULES 的 networkFault/netFaultFirstLoad 两条同一口径，不另立词表。 */
+export function firstLoadFaultGap(why) {
+  return "NOT_SHOOTABLE(netFault=first-load): 判据要的是「页面首次加载即处于故障中」，而桥 open=重编译重启 AppService ⇒ 臂展活不过 open（页首请求永远拦不到）" +
+    " ⇒ 本通道只能判「臂展后重触发」（下拉/点 retry/直调页加载方法），判不了首屏；要判首屏得换载具（真机 network 面板 / 预览构建）或人工判，" +
+    "不许记成产品 FAILED，也不许拿「重触发拦到 N 条」冒充「首屏拦到」" + (why ? "（本例：" + why + "）" : "");
+}
+export function armWindowNote(spec, w) {
+  if (!w || w.kind === "not-armed") return "off";
+  return "on(mode=" + String((spec && spec.mode) || "?") + " arms=" + w.arms + " opens=" + w.opens +
+    " 臂被open洗掉=" + (w.droppedArms || []).length + " 无重触发=" + (w.noRetriggerArms || []).length +
+    " 无取件=" + (w.noDrainArms || []).length + " ⇒ " + w.kind + ")";
+}
+
+/* 穿透链（REAL-OT-06 的 ">>>" 约定）的形状校验（纯函数）：
+   中间段必须写成**编译产物里的自定义组件标签名**（uni-app 把驼峰组件名逐大写位连字，
+   RelationshipCTA → "relationship-c-t-a"，见 dist/build/mp-weixin-real/components/profile/public/
+   PublicProfile.json 的 usingComponents 键），末段允许标签或类/选择器。
+   为什么要在离线就拦：R3-02 曾断言"标签是路径形 components/profile/public/RelationshipCTA"，
+   产物证伪了它；但两种错法都会让这一腿**永远**报「不在页上」——
+     · 段里出现 "/"（路径形）⇒ automator 的 $ 选择器没有这种语法，必然 null；
+     · 段里带 "." 或 "#"（把类名当组件段穿）⇒ 穿到一半就断，末段读数毫无意义。
+   拦下来的措辞只说通道形状不对，不许把它读成「组件不存在」。 */
+export const DEEP_CHAIN_SEP = ">>>";
+const TAG_FORM = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
+export function deepChainSegments(selector) {
+  return String(selector || "").split(DEEP_CHAIN_SEP).map((s) => s.trim()).filter(Boolean);
+}
+export function validateDeepChain(selector) {
+  const raw = String(selector || "").trim();
+  if (raw.indexOf(DEEP_CHAIN_SEP) < 0) return { ok: true, segs: [raw], note: "（非穿透链，走页级 $ 原路径）" };
+  const segs = deepChainSegments(raw);
+  if (segs.length < 2) return { ok: false, segs, reason: "穿透链只有 " + segs.length + " 段（" + raw + "）⇒ 分段符两侧没写东西" };
+  const bad = [];
+  segs.slice(0, segs.length - 1).forEach((s, i) => {
+    if (s.indexOf("/") >= 0) bad.push("step-seg#" + (i + 1) + "=\"" + s + "\" 是路径形：$ 选择器没有这种语法，编译产物里的自定义组件标签是连字形（RelationshipCTA→relationship-c-t-a）");
+    else if (!TAG_FORM.test(s)) bad.push("step-seg#" + (i + 1) + "=\"" + s + "\" 不是标签形（中间段必须是自定义组件的编译标签名，类名/属性选择器只能放末段）");
+  });
+  if (bad.length) return { ok: false, segs, reason: bad.join("；") + " ⇒ 这一段永远命中不了，属配方写法错误（通道欠款），不是「组件不存在」，更不是产品判决" };
+  return { ok: true, segs, note: "链形合法：" + segs.join(" > ") };
 }
 
 /* ─────────────────────────── C4 通道声明 ───────────────────────────
@@ -301,6 +638,33 @@ export function validateRecipes(recipes, corpus) {
       const nf = parseNetFault(r.netFault);
       if (!nf.ok) problems.push(key + " netFault 不合规矩：" + nf.reason);
     }
+    /* C8：点名了直调通道就必须点名打哪个 handler、在哪一页（猜出来的方法名会打在上一页身上）。 */
+    for (const s of (r.steps || [])) {
+      if (s && (s.do === "callHandler" || s.handler)) {
+        const hc = parseHandlerCall(s.handler || s);
+        if (!hc.ok) problems.push(key + " step#" + (r.steps.indexOf(s) + 1) + " 的 handler 直调不合规矩：" + hc.reason);
+      }
+    }
+    /* C9：臂展窗形状（R3-NET-04 的判点形态）。arm 在 open 之前 = 臂展被重编译洗掉 = intercepted 恒 0，
+       那是仪器读数不是产品结论 ⇒ 这种配方在这里就拒收，不许上腿交出一假零。 */
+    if (r.netFault || (r.steps || []).some((s) => s && s.do === "armNetFault")) {
+      const w = netFaultArmWindow(r.steps || []);
+      if (w.ok === false) problems.push(key + " 网络判点形状不合法（" + w.kind + "）：" + w.text);
+    }
+    /* C7/REAL-OT-06：穿透链的段形必须在离线就核（路径形/把类名当组件段 ⇒ 永远「不在页上」）。 */
+    const selBad = [];
+    (r.steps || []).forEach((s, i) => {
+      const list = s && s.do === "probe" ? (s.selectors || []) : (s && s.selector ? [s.selector] : []);
+      list.forEach((sel) => { const dc = validateDeepChain(sel); if (!dc.ok) selBad.push("step#" + (i + 1) + " " + dc.reason); });
+    });
+    if (selBad.length) problems.push(key + " 穿透链写法错（不是组件不存在）：" + selBad.join("；"));
+    /* C7：显式声明了 navigateTo 开页形态（step.via="navto"）的步，url/页必须点名得出。 */
+    (r.steps || []).forEach((s, i) => {
+      if (s && s.do === "open" && s.via === "navto") {
+        const f = resolveOpenForm(s, { navTo: true });
+        if (f.kind !== "ok") problems.push(key + " step#" + (i + 1) + " 声明 via=navto 但开页形态不成立（" + f.kind + "：" + f.note + "）");
+      }
+    });
   }
   return { ok: problems.length === 0, problems, count: keys.length };
 }

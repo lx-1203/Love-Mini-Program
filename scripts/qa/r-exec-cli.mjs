@@ -70,6 +70,9 @@ import { readApiMode, assertGuestCapable } from "./artifact-band.mjs";
    必须和离线负例**同一份代码**——判点逻辑抄第二份，离线测试验的就是那份抄本，
    真设备上"零条"到底是哪种零就又没人说得清了。 */
 import { networkHookSource, networkDrainSource, interpretInstallResult, parseNetworkBuffer, observeFromDrain, networkGap, STATE as NET_STATE } from "./exec-network-observe.mjs";
+/* 能力原语模块（同一份纯函数，判点逻辑与 WS 配方腿同源，不分抄第二份 —— r-exec-cli.mjs:68 那条老教训）。
+   2026-10-13 工具车道取的是：开页形态（C7）+ netFault 首屏能力边界（C9）+ 穿透链段形（REAL-OT-06）。 */
+import { resolveOpenForm, navigateToSyncSource, navReadSource, navSyncVerdict, interpretNavRead, navLandVerdict, openFormNote, isTabBarPage, NAVTO_BASE_PAGE } from "./exec-capabilities.mjs";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
@@ -128,9 +131,23 @@ const GEOM_POS = process.argv.includes("--geom-pos");
    缺省不带时本文件一次都不多发 install/drain 这两次 evaluate。 */
 const NET_COUNT = process.argv.includes("--net-count");
 const RAPID_GAP = parseInt(arg("rapid-gap", "0"), 10);
+/* 工具车道 2026-10-13（R3-OT-01/R3-02）的两条新通道旗标 —— 与上面每一条同样是**加法、默认关**：
+   · --navto-open   开页形态换成「先桥 open 基底页（不带 query）→ 应用内 wx.navigateTo」。
+                    立案依据：带 query 的桥 open 令 currentPage 回报 webview 代理态、$ 全超时（R3-02 ③），
+                    而 tmp/qa/navto-cta-probe.mjs 实证基底页+navigateTo 之后自动化层健康
+                    （全树 outerWxml 13493B、CTA 节点可见）。tabBar 页退回桥 open（平台限制）。
+   · --handler-call 允许在 AppService 层直调页/组件方法（DOM 目标取不到时的**替代**动作通道，
+                    R3-02 ②：automator 0.12.1 不穿透自定义组件子树）。本 CLI 腿的判据来自判据台，
+                    判据台没有 handler 字段 ⇒ 这一腿只宣告"通道存在但本批未用"，真接线在 WS 配方腿。
+   两条都进 --strict-verbs 的隐含链：能力与"不许换动词"必须同批到货（拿直调冒充点击，
+   与拿一次 tap 冒充 rapidTap×5 是同一件事）。 */
+const NAVTO_OPEN = process.argv.includes("--navto-open");
+const HANDLER_CALL = process.argv.includes("--handler-call");
+const NAVTO_BASE = arg("navto-base", "");
 /* --strict-verbs 的隐含条件从「只有 --gestures」扩到"任何一条新动词旗标"：
-   接了 rapidTap 却还允许把 rapidTap×5 降级成一次 tap，等于装着更差的能力跑（那是 #C-3 那批假绿本身）。 */
-const STRICT_VERBS = GESTURE_MODE || RAPID_MODE || SCROLL_MODE || process.argv.includes("--strict-verbs");
+   接了 rapidTap 却还允许把 rapidTap×5 降级成一次 tap，等于装着更差的能力跑（那是 #C-3 那批假绿本身）。
+   2026-10-13：--navto-open/--handler-call 也进这条链（handler 直调替代 DOM tap 是同一种冒充风险）。 */
+const STRICT_VERBS = GESTURE_MODE || RAPID_MODE || SCROLL_MODE || NAVTO_OPEN || HANDLER_CALL || process.argv.includes("--strict-verbs");
 const NATIVE_CAPTURE = process.argv.includes("--native-capture");
 /* 动词表的"这一腿开了哪几条通道"就是这一个对象：verbRefusal/verbsNamed 是纯函数、不读 argv，
    所以离线负例可以拿任意 caps 组合同步驱动各档模式（这与 GESTURE_MODE 走参数是同一个道理）。 */
@@ -142,7 +159,7 @@ const CAPS = { rapid: RAPID_MODE, scroll: SCROLL_MODE, geomPos: GEOM_POS };
    longpress、有没有采过 toast"在账本里又变成看不见的东西。不带旗标时名字一个字不变。 */
 const MODE_SUFFIX = (GESTURE_MODE ? "+gestures" : "") + (NATIVE_CAPTURE ? "+capture" : "")
   + (RAPID_MODE ? "+rapid" : "") + (SCROLL_MODE ? "+scroll" : "") + (GEOM_POS ? "+geompos" : "")
-  + (NET_COUNT ? "+net" : "");
+  + (NET_COUNT ? "+net" : "") + (NAVTO_OPEN ? "+navto" : "") + (HANDLER_CALL ? "+handler" : "");
 const MODE_LABEL = (process.argv.includes("--real-cases-only") ? "real-cases-only"
   : TAP_MODE ? (REAL_BAND ? "tap+real" : "tap") : (REAL_BAND ? "real" : "observe-only")) + MODE_SUFFIX;
 /* 禁触清单本体已收进 scripts/qa/deny-tap.cjs（唯一来源，见文件头）。这里曾另存过一份
@@ -265,7 +282,10 @@ function runSelftest() {
     { n: "#10c probeStartSource：不带 --geom-pos 时整段载荷与 2026-09-29 之前逐字相同（fields 只问 size、b 只留两元）", got: (function () { const s = probeStartSource([".a-b"], false); return s.includes("fields({ size: true },") && !s.includes("rect") && !s.includes("scrollOffset") && !s.includes("__hin") && /var boxes = \[\]; for \(var k = 0; k < arr\.length && k < 4; k\+\+\) \{ boxes\.push\(\[num\(arr\[k\] && arr\[k\]\.width\), num\(arr\[k\] && arr\[k\]\.height\)\]\); \} bag\[i\] = \{ c: arr\.length, b: boxes \};/.test(s); })(), want: true },
     { n: "#10c probeStartSource：带 --geom-pos 时才多问 rect/scrollOffset 并留 4 元 box（新读数是加法，不改计数口径）", got: (function () { const s = probeStartSource([".a-b"], true); return s.includes("size: true, rect: true, scrollOffset: true") && s.includes("arr[k].left") && s.includes("scr.push") && s.includes("b: boxes, s: scr"); })(), want: true },
     { n: "#10c 闸的调用点必须把本腿的 caps 传进去（漏传一个参数就等于接了新通道却还在全额拒发 ⇒ 静默退回旧行为，谁也看不出来）", got: (function () { const s = readFileSync(resolve(import.meta.dirname, "r-exec-cli.mjs"), "utf8"); return /verbRefusal\(c\.action, GESTURE_MODE, CAPS\)/.test(s) && /verbsNamed\(c\.action, GESTURE_MODE, CAPS\)/.test(s); })(), want: true },
-    { n: "#10c --rapid / --scroll 与 --gestures 同一条纪律：隐含 --strict-verbs（能力与不许换动词同批到货）", got: (function () { const s = readFileSync(resolve(import.meta.dirname, "r-exec-cli.mjs"), "utf8"); return /const STRICT_VERBS = GESTURE_MODE \|\| RAPID_MODE \|\| SCROLL_MODE \|\| process\.argv\.includes\("--strict-verbs"\)/.test(s); })(), want: true },
+    { n: "#10c --rapid / --scroll 与 --gestures 同一条纪律：隐含 --strict-verbs（能力与不许换动词同批到货；2026-10-13 起 --navto-open/--handler-call 也进这条链）", got: (function () { const s = readFileSync(resolve(import.meta.dirname, "r-exec-cli.mjs"), "utf8"); return /const STRICT_VERBS = GESTURE_MODE \|\| RAPID_MODE \|\| SCROLL_MODE \|\| NAVTO_OPEN \|\| HANDLER_CALL \|\| process\.argv\.includes\("--strict-verbs"\)/.test(s); })(), want: true },
+    { n: "R3-OT-01 开页旗标默认关：不带 --navto-open 时 resolveOpenForm 恒回 bridge（既有 1107 行的开页方式一字不变），带了才回 navto；tabBar 页任何时候都退回桥 open", got: (function () { const p = { page: "subpackages/profile-extra/profile/other", query: "userId=10001" }; return resolveOpenForm(p, { navTo: false }).via === "bridge" && resolveOpenForm(p, { navTo: true }).via === "navto" && resolveOpenForm({ page: "pages/discover/index" }, { navTo: true }).kind === "tabbar" && isTabBarPage(NAVTO_BASE_PAGE); })(), want: true },
+    { n: "R3-NET-04 首屏那一半是第五条诚实的「不」：netFaultFirstLoad 在全旗标下仍拒发，且只扣「故障 ∧ 进页那一刻」双点名的判据（只点名断网 / 只点名冷启动都不许被它误扣）", got: (function () { const caps = { rapid: true, scroll: true, geomPos: true }; return verbRefusal("（a）断网冷启动进页面观察错误盒 → tap .retry-btn", true, caps).includes("(verb=networkFault/netFaultFirstLoad)") && !/netFaultFirstLoad/.test(verbRefusal("断网执行确定", true, caps)) && !/netFaultFirstLoad/.test(verbRefusal("冷启动首屏渲染观察骨架屏", true, caps)); })(), want: true },
+    { n: "R3-NET-04 的旗标没开要把「没用过」喊出来（照 --native-capture 的先例：空读数读作没采，不读作没弹/没发）", got: (function () { const s = readFileSync(resolve(import.meta.dirname, "r-exec-cli.mjs"), "utf8"); return /RUNNER_OPEN_FORM=/.test(s) && /RUNNER_HANDLER_CALL=/.test(s) && /一字未用/.test(openFormNote("bridge")); })(), want: true },
     { n: "#10c 新动线只在各自旗标下碰设备（runScrollLeg 的唯一调用点在 if (SCROLL_MODE…) 之内；重复下发只从 RAPID_MODE 那一支取 times）", got: (function () { const s = readFileSync(resolve(import.meta.dirname, "r-exec-cli.mjs"), "utf8"); const iCall = s.lastIndexOf("= runScrollLeg(c);"); const iGuard = s.lastIndexOf("if (SCROLL_MODE &&", iCall); return iCall > 0 && iGuard > 0 && (iCall - iGuard) < 160 && s.lastIndexOf("= RAPID_MODE ? parseRepeatSpec(c.action) : null;") > 0; })(), want: true },
     { n: "#10c 全旗标开着也仍拒发：swipe / nativeModal / networkFault（不许因为加了三条通道就把没证过的原语一并放出去）", got: (function () { const caps = { rapid: true, scroll: true, geomPos: true }; const a = ["在卡片上向右拖动 >SWIPE_THRESHOLD 后松手", "在 showModal 点「取消」", "断网执行确定"]; return a.every((x, i) => verbRefusal(x, true, caps).startsWith("NOT_SHOOTABLE(verb=" + ["swipe", "nativeModal", "networkFault"][i] + ")")); })(), want: true },
     { n: "#10c swipe 的拒发理由点名「桥自述里有、argv 载荷未证」这一具体缺口（不是一句「做不到」糊过去）", got: (function () { const r = verbRefusal("在卡片上向右拖动超过阈值", true, { rapid: true, scroll: true }); return /cli-automator\.mjs:11-13/.test(r) && /print-argv|argv/.test(r) && /WS/.test(r); })(), want: true },
@@ -369,6 +389,10 @@ const VERB_OFFLINE_RE = /断网|网络中断|弱网|离线状态|故障注入|5x
    —— 与 rapidTap×5 被一次 tap 顶掉是同一个病，只是没人给它立过案。实测判据台 round-7/ops 1107 条：
    action 点名滚动、又没被别的动词扣住的交互行 = 33 条（H11,H47,N07,N11,N30,N33,CH22,CX15,CX20,PT33,…）。 */
 const VERB_SCROLL_RE = /滚动|滚到|滑到|回顶|到底部|pageScrollTo|scroll-view[^。；]{0,10}(?:滚|滑)/i;
+/* 网络故障的"首屏那一半"（R3-NET-04 / R3-08）：必须**同时**点名故障与"进页那一刻"才成立 ——
+   只点名故障的判据（「断网执行确定」）走上面 networkFault 那条；只点名冷启动的（「首屏渲染」）
+   与网络无关，不许被这条误扣（实测这条在全判据台命中 3 条：VI34/AC10/MS06，正是那一族）。 */
+const VERB_FIRSTLOAD_RE = /(?=[\s\S]*(?:断网|网络中断|弱网|离线状态|故障注入|5xx|返回 ?500|错误态|加载失败|请求失败))(?=[\s\S]*(?:开页即|进页即|进入页面即|载入即|加载时|首次加载|冷启动|重新进入页面|再次进入页面))/i;
 const VERB_RULES = [
   { verb: "longpress", re: VERB_LONGPRESS_RE, needsGesture: true,
     why: "判据点名长按；本通道的元素级动作只有带 --gestures 时才发 longpress（载具 r1-exec.cjs:1033+:1068）" },
@@ -383,7 +407,9 @@ const VERB_RULES = [
   { verb: "nativeModal", re: VERB_MODAL_RE,
     why: "判据要在原生 Modal/ActionSheet 里选「取消」或「确定」：原生弹层不在页面渲染树里，automation_element_action 只收 selector（cli-automator.mjs:162-164）⇒ 选择器进不去。--native-capture 能把「弹过哪个原生 API、标题是什么」采进 row.toast（观察半边），但「点哪个选项」的驱动半边仍是新代码，不在本车道" },
   { verb: "networkFault", re: /断网|网络中断|弱网|离线状态|故障注入|5xx|返回 ?500/i,
-    why: "判据点名断网/故障注入：本仓五条执行器里没有任何网络条件注入通道（审计 C21 (d)-c-2：mockWxMethod 只在 r1-exec.cjs:1134/r-exec.cjs:1551 用于 chooseImage）⇒ 属 [NEW]，不在本车道。逐请求**计数**是另一回事：#10-d 的通道已经接在 --net-count 上（走 uni.addInterceptor('request')，产物里确有 addInterceptor），所以 network 那一条不再恒欠——但它在**钩子装不上的上下文**里依然记 OFF 并逐行点名欠账，绝不交出一假零" },
+    why: "判据点名断网/故障注入：本仓五条执行器里没有任何网络条件注入通道（审计 C21 (d)-c-2：mockWxMethod 只在 r1-exec.cjs:1134/r-exec.cjs:1551 用于 chooseImage）⇒ 属 [NEW]，不在本车道。逐请求**计数**是另一回事：#10-d 的通道已经接在 --net-count 上（走 uni.addInterceptor('request')，产物里确有 addInterceptor），所以 network 那一条不再恒欠——但它在**钩子装不上的上下文**里依然记 OFF 并逐行点名欠账，绝不交出一假零。2026-10-13 补一层结构性边界（R3-NET-04）：WS 配方腿的臂展是 wx.request 槽位 mock，而桥 open 属 compiler 族（重编译重启 AppService）⇒ 臂展活不过 open，「页首请求处于故障中」在这一腿也拦不到，能判的只有「open 后重新 armNetFault + 页内重触发（下拉 / 点 retry / AppService 直调页加载方法）」那一半（判据台改判点形状见 exec-capabilities.mjs netFaultArmWindow / firstLoadFaultGap）" },
+  { verb: "netFaultFirstLoad", re: VERB_FIRSTLOAD_RE,
+    why: "判据同时点名「故障」与「进页那一刻/首屏/冷启动」⇒ 它要的是**页首请求被拦**。这件事在本仓任何一条桥载具上结构性不可得：桥 open 重编译并重启 AppService，装上去的 wx.request mock 随进程一起没（在册读数：CON-EV-01「桥开页重启 AppService（包装器/缓冲全灭）」、R2-PFI25-04 同一根因、exec-r2-ot OC09 行的 intercepted=0 + net-was-not-armed）；本 CLI 腿连臂展都没有（上面 networkFault 那条 [NEW] 依旧欠着）。⇒ 整条拒发：能自动判的只有「臂展后置 + 页内重触发」那一半，拿重触发的 intercepted>0 冒充首屏拦截就是本车道要拦的假绿。要判首屏得换载具（真机 network 面板 / 预览构建导出）或人工判，不许记成产品 FAILED" },
 ];
 /* 「旗标开了」不等于「判据的要求做得到」—— 这两条 spec 就是那条差别在代码里的形状：
    次数/方向抠不出来时**不许**把动词标成发得出去（那等于把一条猜出来的判据记成测过的）。 */
@@ -1363,6 +1389,19 @@ console.log("RUNNER_VERBS gestures=" + (GESTURE_MODE ? "on(longpress+pullDown �
   (STRICT_VERBS || !TAP_MODE ? "" :
     " ⇒ 注意：本腿仍是旧口径，rapidTap/滚动/拖动/原生Modal/断网/长按/下拉 这七类判据会被一次普通 tap 顶掉并记 EXECUTED，" +
     "那一类 EXECUTED 不许读成「点名动词已测」（c21 审计 E-II + 本轮 #10-c 补的滚动那一族；要它们不被冒充请带 --strict-verbs/--gestures/--rapid/--scroll）"));
+/* 2026-10-13 工具车道（R3-OT-01/R3-02/R3-NET-04）：两条新通道 + 首屏能力边界的显式宣告。
+   照上面 RUNNER_NATIVE_CAPTURE / RUNNER_NET_COUNT 的先例 —— **旗标没开就把「没用过」喊出来**，
+   否则行上的空读数会被下一轮人读成「试过、不管用」，那与假绿只差一次误读。 */
+console.log("RUNNER_OPEN_FORM=" + (NAVTO_OPEN ? "on" : "off") + " " + openFormNote(NAVTO_OPEN ? "navto" : "bridge") +
+  (NAVTO_OPEN ? " ⇒ 带 query 的页改走「桥 open 基底页（不带 query）+ 应用内 wx.navigateTo」；基底页=" + (NAVTO_BASE || NAVTO_BASE_PAGE) +
+    "；tabBar 页退回桥 open（平台限制，不是本仓缺陷）；evaluate 不 await ⇒ 发起后回读 route 判落地，没落地整组记 NOT_SHOOTABLE(openForm=navto)" : ""));
+console.log("RUNNER_HANDLER_CALL=" + (HANDLER_CALL ? "on" : "off") +
+  "(" + (HANDLER_CALL
+    ? "AppService 层直调页/组件方法这一原语在本 CLI 腿**没有调用点**（判据台没有 handler 字段，配方才有）⇒ 旗标开了也什么都不多发，真接线在 WS 配方腿 r-exec-ws.mjs 的 tap/rapidTap/callHandler"
+    : "没带 --handler-call ⇒ 替代动作通道未使用；automator 0.12.1 不穿透自定义组件子树（R3-02 ②）时组件内的钮照旧取不到，行记 NOT_SHOOTABLE，不许读成「组件不存在」）"));
+console.log("RUNNER_NET_FAULT_SHAPE=arm-after-open+retrigger ⇒ 「进页即处于故障」那一半在任何桥载具上结构性不可得（open=重编译重启 AppService 洗掉臂展），" +
+  "已作为第五条诚实的「不」进 VERB_RULES（verb=netFaultFirstLoad，与 rapidTap/swipe/nativeModal/networkFault 同表，不另立词表）；" +
+  "判据台改判点形状与臂展回执见 exec-capabilities.mjs netFaultArmWindow/armReceiptVerdict/firstLoadFaultGap");
 
 /* 每跑完一个页组就落一次盘：这条通道会偶发把进程带走（实测两次未捕获 socket 超时），
    跑了 40 分钟的成果不能跟着一起没了。最终那次写盘仍走下面的守恒检查。 */
@@ -1418,12 +1457,39 @@ for (const name of files) {
     /* 组边界清一次尺寸传递位：本页第一个探针还没打过，任何行都不许继承上一页最后一条的读数。 */
     CUR_GEOM = "";
     console.log("RUNNER_GROUP_START page=" + page + " 待跑=" + todo.length + " 累计=" + ((Date.now() - BOOT_T) / 60000).toFixed(1) + "min");
-    try { openPage(page, ROUTE_QUERY[page] || "", { project: PROJECT }); } catch (e) {
+    /* 开页形态（R3-OT-01/R3-02 ③）：不带 --navto-open 时下面第一句就是改动前那一句（逐字同形），
+       带了才换成「桥 open 基底页（不带 query）→ 应用内 wx.navigateTo」——带 query 的桥 open 会让
+       currentPage 回报 webview 代理态、$ 全超时（探针实证的健康路径：outerWxml 13493B、CTA 可见）。
+       桥的 evaluate 不 await 返回 Promise 的载荷（:953 折叠探针同一事实）⇒ 这里只能「发起 + 稍后回读」，
+       落地与否用 route 回读判（navLandVerdict），没落地就把这一组整批记 SKIPPED+NOT_SHOOTABLE，
+       绝不许留下"开页成功"的印象让后面 1100 条行接着算钱。 */
+    const OPEN_FORM = resolveOpenForm({ page, query: ROUTE_QUERY[page] || "" }, { navTo: NAVTO_OPEN, basePage: NAVTO_BASE || undefined });
+    let openNote = "";
+    try {
+      if (OPEN_FORM.via === "navto") {
+        openPage(OPEN_FORM.base, "", { project: PROJECT });
+        sleep(SETTLE);
+        const fired = navSyncVerdict(String(evaluate(navigateToSyncSource(OPEN_FORM.url), { project: PROJECT }) || ""));
+        sleep(SETTLE);
+        const land = navLandVerdict(page, interpretNavRead(String(evaluate(navReadSource(), { project: PROJECT }) || "")));
+        openNote = " via=navto base=" + OPEN_FORM.base + " url=" + OPEN_FORM.url + " fired=" + fired + " " + land.kind;
+        if (fired !== "fired" || !land.ok) {
+          for (const c of todo) rows.push(row(name, page, c, "SKIPPED", "", "NOT_SHOOTABLE(openForm=navto/" + (fired !== "fired" ? fired : land.kind) + ")): 基底页 " + OPEN_FORM.base + " 打开后应用内 wx.navigateTo 没把 " + page + " 压到栈顶（" + land.text + "）⇒ 目标页不在栈顶，本组一行都不发（这是通道欠款：R3-02 ③ 的替代开页法，不是产品判决，也不是「页上没东西」）", ""));
+          stats.skipMiss += todo.length;
+          console.log("RUNNER_GROUP_OPEN_SKIP page=" + page + openNote);
+          continue;
+        }
+      } else {
+        openPage(page, ROUTE_QUERY[page] || "", { project: PROJECT });
+        if (ROUTE_QUERY[page] && NAVTO_OPEN) openNote = " via=bridge(" + (OPEN_FORM.kind === "tabbar" ? "tabBar 页 navigateTo 打不开，退回桥 open" : OPEN_FORM.kind) + ")";
+      }
+    } catch (e) {
       for (const c of todo) rows.push(row(name, page, c, "FAILED", "", "open_page 失败：" + String(e.message).slice(0, 70), ""));
       stats.failed += todo.length;
       continue;
     }
     sleep(SETTLE);
+    if (openNote) console.log("RUNNER_GROUP_OPEN page=" + page + openNote);
     let route = String(routeStack({ project: PROJECT }) || "");
     /* 组基线排件（只在 --native-capture 下发生）：开页那一下的 onLoad 会弹自己的 toast/modal
        （游客闸门、守卫弹回、锁屏提示都是这一类），这些调用**不属于本页任何一条判据**。
