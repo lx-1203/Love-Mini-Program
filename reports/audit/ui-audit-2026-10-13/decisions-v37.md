@@ -8,14 +8,19 @@
 |---|---|---|---|
 | A 本轮分拣出的待拍板 **+ 本轮实测新增 1 条** | 7（6 条来自 `sort-round3.json` needsUser 数组长度，1 条来自 2026-10-13 带/不带 token 对照实测） | 只能你 | §A |
 | B 历史裁定册里仍是 half-closed | 4（`decisions-v33.md` 机器块 1050–1072 行尾行 `half_closed=4`） | 只能你 | §B |
-| C 「判据台未覆盖本条，缺的载体＝需人复判后指定」 | 17（`open-items.json` items 按 status 全文分组） | 你指定载体 / 你接受降级 | §C |
-| D 其它桶：decision 7、frame 4、unverified 1 | 12（同上 bucket 计数） | 混合，见 §D | §D |
+| C ~~17 条待指定载体~~ → **实测只剩 7 条未结案** | 51 → **7**（用台账自己的生成器 `emit-open-items.mjs` 重导，不沿用 09-27 快照） | 多数 QA 能自己推，仅 2 条要裁 | §C（含逐条实测的更正） |
+| D 旧「其它桶 12 条」 | 已随 C 一同失效（decision 7→0、frame 4→1） | — | §D |
 | E 账本自相矛盾（要定谁算数） | 5 处 | 只能你 | §E |
 | F QA 已自己闭掉、你不用管 | 见 §F | 已完成 | §F |
 
+> **本册有一处要认错**：初稿 §C/§D 是按 `open-items.json`（`generatedAt 2026-09-27`）写的，
+> 那份快照比台账落后 **45 条**。重导后未结案 51→7，「17 条等指定载体」这件事**不成立**：
+> 载体在、99 条谓词全成立、42 个负例注入点全部能红。更正过程与逐条实测写在 §C 开头，不删不改地留着，
+> 因为"我一开始把陈旧快照当成了现状"本身就是下一轮该防的信息。
+
 ---
 
-## A. 本轮新冒出来的 6 条（v3.6 跑完三轮才提出，且三轮都没推进）
+## A. 本轮要裁的 7 条（6 条来自 v3.6 三轮分拣 + 1 条本轮实测）
 
 ### A1 `R3-03` — VRN07 未成年形态要不要给它铺一个专用测试账号
 - **要裁的**：`VRN07`（实名/未成年分支）唯一可行路径是往测试库铺「实名未认证 + birth_date NULL」的专号并回填 mint 凭据。产品 API 造不出这个态（`registerUser` 会抛 `MinorNotAllowedException`），所以要么授权铺数据，要么改判据。
@@ -76,37 +81,83 @@
 
 ---
 
-## C. 17 条「已修复、待复验，但判据台未覆盖本条」—— 缺的是**载体**，不是修复
+## C. ⚠ 本组结论**更正**：账面不是 17 条待指定载体，而是只剩 7 条未结案
 
-这是账面最大的一坨。它们的共同状态是：`已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）`。
-**换句话说：代码可能早就对了，但没有任何机器判点能证明它对，所以永远闭不掉。** 要裁的是「用什么去证明」，不是「要不要修」。
+这一节最初是按 `reports/audit/round-7/open-items.json` 写的，那份件 `generatedAt=2026-09-27T04:53Z`。
+我用它的当刻没有复算——刚才用台账自己的生成器 `scripts/qa/emit-open-items.mjs`
+（读 `round-6/issue-matrix.md` 主表，不读任何旧清单）重导一份到
+`reports/audit/ui-audit-2026-10-13/open-items-v37.json`，实测：
 
-条目（17，含唯一一条 P1）：
-`MP-R2-POST-009`(P1) `MP-R2-PROFILE-023` `MP-R2-PROFILE-022` `MP-R2-POST-012` `MP-R2-PUB-113`
-`MP-R2VIS-PAGES-HOME-INDEX-001` `MP-R2VIS-PAGES-HOME-INDEX-002` `MP-R2-PAGES-LOGIN-INDEX-016`
-`MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003` `MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002`
-`MP-R2-POST-010` `MP-R2-POST-011` `MP-R2-POST-014` `MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-001`
-`MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-003` `MP-R2VIS-THEME-DESIGN-VARIABLES-001` `MP-R2VIS-THEME-DESIGN-VARIABLES-002`
+| | 旧快照 2026-09-27 | 本轮重导 2026-10-13 |
+|---|---|---|
+| 主表行数 | 171 | 171 |
+| 未结案 | **51** | **7** |
+| 分桶 | reverify 38 / frame 4 / decision 7 / unverified 1 / backend 1 | reverify 4 / frame 1 / unverified 1 / backend 1 |
+| 分类器守恒 | — | `OPEN_ITEMS_RESULT=OK（每行都有可重跑载体）`，未归类 0 |
 
-三种可选处置，可以按条目分别选：
-1. **指定载体**（你或我提名：某条真实档腿 / 某一帧 / 某条单测 / 某个静态判点），v3.7 就能把它纳入判据台并跑完；
-2. **降级为「保留-判据不成立」**，即承认这一条没有机器可判的表达方式，按台账词表标免检并记理由（与 `decisions#9` 的 B 选项同一条尺子）；
-3. **维持挂账**（每轮重述，不闭）。
+**旧账里那 17 条「判据台未覆盖本条 · 缺的载体＝需人复判后指定」，新账里 0 条还在**。
+两条线索合起来能解释为什么：矩阵里这些行的状态已是
+`已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）`，
+而判据台确实**逐条点名**它们——我按 ID grep `verify-source-shape.mjs`，抽样的 8 条全部命中；
+再实跑判据台（`--dry`，不改它测的东西）：
+`SRC_SHAPE total=99 成立=99 不成立=0 补丁=182（守恒：yes）`
+`SRC_SHAPE_NEG 注入点=42 已变红=42 咬不动=0 没挂负例的判据行=0` ⇒ `SRC_SHAPE_RESULT=OK`。
+三条谓词我还脱离判据台自己数了一遍（不用它的正则，防它空转）：
+- `MP-R2-POST-009` 要求 post.vue 出现 `joinedCircles.slice(0, 8)` → 实测 1 次，要求 1 ⇒ 成立；
+- `MP-R2VIS-THEME-DESIGN-VARIABLES-001` 要求 `$radius-*` 声明**恰好 7 条** → 实测 xs/sm/md/lg/xl/xxl/full = 7 ⇒ 成立；
+- `MP-R2-PAGES-LOGIN-INDEX-016` 要求 `t("login.phoneQuickLogin")` **恰好 2 次** → 实测 2 ⇒ 成立。
 
-⚠ 注意：`MP-R2-POST-009` 是全部账面里**唯一的 P1**，它现在的阻塞原因就是这个「没人指定载体」，不是缺陷没修。
+⇒ **「缺载体」这件事不成立**：载体在、谓词成立、还能红（42 个注入点全变红）。
+我先前把这 17 条列成"要你拍板"，是把一份两周前的快照当成了现状——这条更正要先认下来。
 
-出处：`reports/audit/round-7/open-items.json`（`generatedAt=2026-09-27T04:53Z`，故这是一份**约 2.5 周前的快照**；本轮会重取，但分组口径来自它）。
+顺带一个我自己的假阳性，也一并留着不删：我用正则扫「状态以`已修复`开头却仍含待/欠/字样」的盲区行，
+报出 1 条 `MP-R2VIS-PAGES-HOME-INDEX-006`。实读源码后**这条是我的扫描错了**：
+`TodayLoveProgress.vue:105` 已是 `margin: 0 var(--page-padding) 20rpx`，
+:106 的 `padding: 32rpx` 正是裁定过的左基线值（无需同批改），
+全件唯一的 `40rpx` 在 :107 的 `border-radius`，不是横向 margin——
+所以台账那句「全件无 40rpx 横向 margin」是对的。扫描器把"文字里出现 32rpx/未一并改"当成了欠账。
+
+### C-1 现在真正剩下的 7 条（这才是本轮该追的账）
+
+| id | sev | 桶 | 状态原文（截断） | 本轮能不能推 |
+|---|---|---|---|---|
+| `MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001` | P2 | reverify | 需帧复验（T5 定向巡检覆盖本页） | **能**：本轮定向帧腿 |
+| `MP-R2VIS-PAGES-MESSAGES-INDEX-001` | P2→P4 | reverify | 已修复待复验 | **能**：同上 |
+| `MP-R2VIS-PAGES-HOME-INDEX-005` | P4 | reverify | closer=待人裁决；缺的载体=渲染帧（静态判不了） | 半能：帧可拍，**裁决仍要你**（左基线族第三枚的归属） |
+| `MP-R6EVID-STATE-DUPBYTES-001` | P3 | reverify | 同页同身份两帧逐字节相同；采集侧已改判承接，**产品侧未定** | 半能：要定"状态确无差异"还是"交互未生效" |
+| `MP-R2-PAGES-MESSAGES-INDEX-014` | P1→P4 | unverified | 未取证 | **能**：证据洞车道重判一次 |
+| `MP-R2VIS-PAGES-MESSAGES-INDEX-005` | P1→P4 | backend | needs_backend，客户端侧不可行半段已按裁定删除 | 等后端腿：8080 本轮已 UP，可跑 |
+| `MP-R2VIS-TMP-TOUR-R2-004` | P1→P4 | frame | closer 无记录；缺渲染帧（静态判不了） | 挂 §B `decisions#9`（高 dpr 已裁长期 NOT_SHOOTABLE，只差按词表标免检） |
+
+### C-2 唯一还值得你裁的**口径**问题（代替原 §C 的 17 次指定）
+
+这 17 条（现已闭）里有一批是 `MP-R2VIS-*` 视觉类条目，闭案方式是把判据换成**源码结构谓词**，
+理由写在台账里（「帧与像素两侧都取不到该量」）。这个理由对 `$radius` 唯一声明源、
+aria-label 取同一个 i18n 键这类**确实是代码结构命题**的条目站得住。
+要裁的是原则边界：
+
+- (a) **允许**：凡"帧里不存在可对照的机器可判物件"，VIS 类条目可用源码谓词结案（现状即此，42 个负例注入点保证它还能红）。
+- (b) **分档允许**：结构/令牌/i18n 类可用谓词；凡主张是「看起来对齐/间距/层级」的，仍必须帧或量测。
+- (c) **不允许**：VIS 类一律要帧，则这 17 条要重新打开并排队拍摄（成本：每轮每档约 1023 帧、单道约 1h49m）。
+
+不裁的后果：下一轮遇到新的 VIS 条目时，"能不能用源码谓词闭案"仍然没有依据，
+只能一条条重新争一遍——这已经是本仓第三次在同一处口径上返工。
 
 ---
 
-## D. 其它桶（12 条，性质不一，逐条给方向即可）
+## D. 旧 §D（12 条 decision/frame/unverified）已随 §C 一同失效
 
-| 桶 | 条数 | 代表条目 | 要的是什么 |
-|---|---|---|---|
-| `decision` | 7 | `MP-R2-PAGES-MESSAGES-INDEX-020`（全清语义的后端同步）、`MP-R2-CIRCLES-INDEX-005`（滚动轴，与两条既有裁定打架）、`MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001`（500 还是 1000 字文案） | 产品口径决定；其中「500 字」那条已有 `decisions#7` 裁过以实现为准，若产品要 1000 字属**另开需求单** |
-| `frame` | 4 | `MP-R2VIS-TMP-TOUR-R2-004`（高 dpr 帧，已裁长期 NOT_SHOOTABLE，只差标免检＝§B #9）、`MP-R2VIS-PAGES-HOME-INDEX-003`（首页渲染帧） | 帧要在新档位重拍才能判；`TMP-TOUR-R2-004` 实质是 §B 的尾巴 |
-| `unverified` | 1 | 同页同身份的两张「不同状态」帧逐字节相同 | 要定：算采集侧问题还是产品状态确实无差异。承接已改判，产品侧未定 |
-| `backend` | 1 | 需后端重启才能判的 API 侧条目 | 8080 本轮已由你授权重启，重启后可判——**这条大概不需要你裁，等读数** |
+上一版这里列的是 `decision 7 / frame 4 / unverified 1 / backend 1`，同样取自那份 09-27 快照。
+按本轮重导（`emit-open-items.mjs` 读主表，实测 `OPEN_ITEMS_RESULT=OK`）：
+
+- **`decision` 桶 7 → 0**。我当时点名的三条例子（`MP-R2-PAGES-MESSAGES-INDEX-020` 全清语义、
+  `MP-R2-CIRCLES-INDEX-005` 滚动轴、`MP-R2VIS-…VILLAGE-PUBLISH-001` 500/1000 字文案）
+  都已不在未结案名单上；后者另有 `decisions#7` 裁过（以实现为准 500，产品若要 1000 字属另开需求单）。
+- **`frame` 桶 4 → 1**，剩 `MP-R2VIS-TMP-TOUR-R2-004`，它就是 §B `decisions#9` 的那半轴
+  （高 dpr 帧已裁长期 NOT_SHOOTABLE，只差按台账词表把两行标免检）。
+- **`unverified` 1 条、`backend` 1 条**仍在册，已列进 C-1；backend 那条现在**可跑**（8080 本轮已 UP）。
+
+⇒ 真正要裁的没有 12 条那么多。裁定集是：**§A 7 条 + §B 4 条半闭 + §C-2 一条口径 + §E 5 处矛盾**。
 
 ---
 
@@ -133,4 +184,4 @@
 
 ## 一句话版本
 
-**裁 A5 + A6 + A2/A3，就能解锁 4 条腿和一整条 console 口径；C 组那 17 条要么给载体要么准降级；E 组那 5 处矛盾请定"以谁为准"——其余我能自己闭的都在闭，且没有一条是靠改判据或改台账措闭的。**
+**裁 A5 + A6 + A2/A3，就能解锁 4 条腿和一整条 console 口径；台账实测只剩 7 条未结案（§C 更正：17 条待指定载体不成立）；E 组那 5 处矛盾请定"以谁为准"——其余我能自己闭的都在闭，且没有一条是靠改判据或改台账措闭的。**

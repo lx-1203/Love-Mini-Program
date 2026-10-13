@@ -1,0 +1,87 @@
+{
+ "generatedAt": "2026-10-13T11:37:42.237Z",
+ "ledgerRows": 171,
+ "open": 7,
+ "by": {
+  "reverify": 4,
+  "unverified": 1,
+  "backend": 1,
+  "frame": 1
+ },
+ "carrierByBucket": {
+  "code": "node scripts/qa/verify-fixes-against-artifact.cjs --baseline 094f7239",
+  "criteria": "node scripts/qa/verify-source-shape.mjs --dry",
+  "frame": "node scripts/qa/verify-frame-debt-triage.mjs && node scripts/qa/shoot-frameplan.mjs --plan reports/audit/round-7/frameplan-round7-final.json",
+  "probe": "node scripts/qa/verify-evidence-holes.mjs && node scripts/qa/verify-guest-landing.mjs --mode measure",
+  "reverify": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry",
+  "backend": "node scripts/qa/verify-backend-restarted.mjs",
+  "decision": "（无：这一桶要的是人的一次拍板，脚本只能把它钉在账上）",
+  "unverified": "node scripts/qa/verify-evidence-holes.mjs && node scripts/qa/readjudicate-evidence.mjs <exec-results> --ops reports/audit/round-6/ops",
+  "UNCLASSIFIED": "（无 —— 分类器需要补口径，不许塞进别的桶）"
+ },
+ "items": [
+  {
+   "bucket": "reverify",
+   "id": "MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001",
+   "page": "components/layout/AppShell",
+   "sev": "P2",
+   "status": "已修复待复验（需帧复验（T5 定向巡检覆盖本页））",
+   "owed": "(见处置)",
+   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
+  },
+  {
+   "bucket": "reverify",
+   "id": "MP-R2VIS-PAGES-HOME-INDEX-005",
+   "page": "pages/home/index",
+   "sev": "P4",
+   "status": "已修复待复验（去向：closer=待人裁决；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
+   "owed": "渲染帧（静态判不了",
+   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
+  },
+  {
+   "bucket": "reverify",
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-001",
+   "page": "pages/messages/index",
+   "sev": "P2→P4",
+   "status": "已修复待复验",
+   "owed": "(见处置)",
+   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
+  },
+  {
+   "bucket": "reverify",
+   "id": "MP-R6EVID-STATE-DUPBYTES-001",
+   "page": "pages/nearby/index（聚类另含 village/publish、village/post、campus/hub）",
+   "sev": "P3",
+   "status": "待复验（同页同身份的两个「不同状态」帧逐字节相同；采集侧已改判承接，产品侧未定）",
+   "owed": "(见处置)",
+   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
+  },
+  {
+   "bucket": "unverified",
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-014",
+   "page": "pages/messages/index",
+   "sev": "P1→P4",
+   "status": "未取证",
+   "owed": "(见处置)",
+   "rerun": "node scripts/qa/verify-evidence-holes.mjs && node scripts/qa/readjudicate-evidence.mjs <exec-results> --ops reports/audit/round-6/ops"
+  },
+  {
+   "bucket": "backend",
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
+   "page": "pages/messages/index",
+   "sev": "P1→P4",
+   "status": "待修复（去向：needs_backend，本轮不改后端夹具；客户端侧不可行半段已按裁定删除，见处置与 MessageDashboardService.java:44 的派生链）",
+   "owed": "(见处置)",
+   "rerun": "node scripts/qa/verify-backend-restarted.mjs"
+  },
+  {
+   "bucket": "frame",
+   "id": "MP-R2VIS-TMP-TOUR-R2-004",
+   "page": "tmp/tour-R2",
+   "sev": "P1→P4",
+   "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
+   "owed": "渲染帧（静态判不了",
+   "rerun": "node scripts/qa/verify-frame-debt-triage.mjs && node scripts/qa/shoot-frameplan.mjs --plan reports/audit/round-7/frameplan-round7-final.json"
+  }
+ ]
+}
