@@ -196,6 +196,7 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   { name: "用例可自动化预检 verify-case-automatable", args: ["scripts/qa/verify-case-automatable.mjs", "--results", WORKFLOW.matrixDir + "/interact/exec-results.json", "--json", ".zcode/tmp/case-automatable/preflight.json"], timeoutMs: 180000 }, // 该 --results 配对是唯一标题 100% 相等的组合；若该件被清理，门按设计退 2，正确处置是改指另一个标题相等配对，绝不是删旗标
   { name: "工作流干跑预检 dryrun-workflow", args: ["scripts/qa/dryrun-workflow.mjs", "--file", ".zcode/workflows/miniprogram-ui-audit-v37.dwf.ts", "--profile", "all"], timeoutMs: 300000 }, // D9：不带 --file 就是在干跑 v3.3，测不到本文件
   { name: "降级结论诚实性 verify-degraded-conclusion", args: ["scripts/qa/verify-degraded-conclusion.mjs"], timeoutMs: 180000 }, // D6 的第二条腿：干跑只问"跑到底没有"，这一条问"结论诚实不诚实"，并以 v3.6 为对照自证能红
+  { name: "门禁清单两载具一致 verify-gate-list-sync", args: ["scripts/qa/verify-gate-list-sync.cjs"], timeoutMs: 120000 }, // 本清单有 DSL 与 bash 两个载具、各自硬编码，谱系里实测漂移过一整边（一边 15 条、一边 18 步却都自称全清单）⇒ 一致性必须是能红的判据，不能靠人对眼
   { name: "判据台戳 verify-ops-stamp", args: ["scripts/qa/verify-ops-corpus-stamp.mjs", "--check"], timeoutMs: 180000 },
 ];
 

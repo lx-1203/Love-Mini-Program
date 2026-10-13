@@ -97,11 +97,18 @@ g run-qa-selftests        900 scripts/qa/run-qa-selftests.mjs
 echo "--- 工作流干跑预检（3 画像）---"
 g dryrun-workflow         300 scripts/qa/dryrun-workflow.mjs --profile all --file .zcode/workflows/miniprogram-ui-audit-v37.dwf.ts
 g verify-degraded-conclusion 180 scripts/qa/verify-degraded-conclusion.mjs
+g verify-gate-list-sync  120 scripts/qa/verify-gate-list-sync.cjs
 
-echo "--- 全量面板（不跳实时门，写进 sidecar 不覆写判决件）---"
-# 注意：面板内部会自己 spawn 那十条实时门，并且会重写
-# reports/audit/round-7/{evidence-holes-verdict,guest-landing-booked,cellplan-source-shape}.json。
-# 只在所有车道收工之后跑这一次；跑完必须再复量 verify-ledger / verify-state-truth。
+echo "--- 全量面板（本脚本这一发不跳实时门；DSL 侧同一发带 --dry，差异是有意的，见下）---"
+# 为什么两侧不一样：本脚本是"所有车道收工之后"由人跑一次的终局收口，可以取 UI 租约跑实时门；
+# DSL 的面板腿在 Promise.all 的门清单里，取租约会与巡检车道抢同一个模拟器 ⇒ 带 --dry。
+# 两侧共享的真判据不是"有没有 --dry"，而是**面板不许覆写下游要的权威件**——
+# 这一点由 .zcode/tmp 的清单同步检查按属性核对（它判的是 emit-round-report 传给子门的
+# --dry/--out 落点，不是本行有没有 --dry）。
+# 旧注释在这里写过"面板会重写 round-7/{evidence-holes-verdict,guest-landing-booked,
+# cellplan-source-shape}.json"——那句现在已经不成立（三处落点都改了：source-shape 带 --dry、
+# guest-landing 与 evidence-holes 的 --out 指到 --sidecar-dir），留着只会让下一程去修一个不存在的问题。
+# 跑完仍必须复量 verify-ledger / verify-state-truth（下面两行就是干这个的）。
 g emit-round-report      1800 scripts/qa/emit-round-report.mjs --round-dir reports/audit/round-7 --sidecar-dir "$OUT/panel" --report "$OUT/panel/round-7-report.md" --metrics "$OUT/panel/round-7-metrics.json"
 g verify-ledger-after-panel 120 scripts/qa/verify-ledger.mjs reports/audit/round-6
 g verify-state-truth-after-panel 180 scripts/qa/verify-state-truth.mjs reports/audit/round-7
