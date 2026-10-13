@@ -95,7 +95,8 @@ echo "--- QA 自测汇总器（19+ 条离线）---"
 g run-qa-selftests        900 scripts/qa/run-qa-selftests.mjs
 
 echo "--- 工作流干跑预检（3 画像）---"
-g dryrun-workflow         300 scripts/qa/dryrun-workflow.mjs --profile all
+g dryrun-workflow         300 scripts/qa/dryrun-workflow.mjs --profile all --file .zcode/workflows/miniprogram-ui-audit-v37.dwf.ts
+g verify-degraded-conclusion 180 scripts/qa/verify-degraded-conclusion.mjs
 
 echo "--- 全量面板（不跳实时门，写进 sidecar 不覆写判决件）---"
 # 注意：面板内部会自己 spawn 那十条实时门，并且会重写
