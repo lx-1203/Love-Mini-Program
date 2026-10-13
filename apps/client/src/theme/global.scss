@@ -251,6 +251,63 @@ scroll-view::-webkit-scrollbar {
   overflow: hidden;
 }
 
+/* ---------- 帖子配图九宫格（2026-10-13 用户反馈"论坛里有些图片横着、有些并排"） ----------
+   此前同一条帖子的配图在五处渲染器各定各的尺寸：详情页首图独占整行 400rpx 横幅、
+   其余并排小方格（这一屏内就同时出现"横的"和"并排的"）；feed 卡单图走 60% 宽 4:3、
+   多图走方格；首页社区流 88rpx、公开主页/我的动态 200rpx 一律一行三张。
+   口径只在本文件定义一次，页面侧只挂类名与张数修饰符，不再各自写宽高。
+   格子恒为 1:1 + aspectFill 居中裁切：张数只改变列数，不改变单格形状。 */
+.post-media-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.post-media-grid__cell {
+  position: relative;
+  box-sizing: border-box;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: var(--c-neutral-50, #f1f5f9);
+}
+
+/* 1 张＝两列网格的一格：与 2 张时的单格等大，所以单图不再被拉成横幅 */
+.post-media-grid--1 .post-media-grid__cell,
+.post-media-grid--2 .post-media-grid__cell,
+.post-media-grid--4 .post-media-grid__cell {
+  width: calc((100% - 8rpx) / 2);
+}
+
+.post-media-grid--3 .post-media-grid__cell,
+.post-media-grid--5 .post-media-grid__cell,
+.post-media-grid--6 .post-media-grid__cell,
+.post-media-grid--7 .post-media-grid__cell,
+.post-media-grid--8 .post-media-grid__cell,
+.post-media-grid--9 .post-media-grid__cell {
+  width: calc((100% - 16rpx) / 3);
+}
+
+.post-media-grid__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.post-media-grid__more {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 4rpx 12rpx;
+  border-radius: var(--r-full) 0 0 0;
+  background: var(--c-bg-overlay, rgba(15, 23, 42, 0.45));
+}
+
+.post-media-grid__more-text {
+  font-size: 20rpx;
+  color: var(--c-neutral-0, #fff);
+}
+
 .section-title-brand {
   position: relative;
   padding-left: 20rpx;

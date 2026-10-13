@@ -136,16 +136,24 @@ function openPost(postId: string): void {
           @tap="openPost(post.id)"
         >
           <text class="post-card__content">{{ post.content }}</text>
-          <view v-if="(post.images || []).length > 0" class="post-card__images">
-            <image
+          <view
+            v-if="(post.images || []).length > 0"
+            class="post-card__images post-media-grid"
+            :class="'post-media-grid--' + Math.min((post.images || []).length, 3)"
+          >
+            <view
               v-for="(img, idx) in (post.images || []).slice(0, 3)"
               :key="`${post.id}-${idx}`"
-              class="post-card__img"
-              :src="img"
-              mode="aspectFill"
-              lazy-load
-              alt=""
-            />
+              class="post-media-grid__cell"
+            >
+              <image
+                class="post-media-grid__img"
+                :src="img"
+                mode="aspectFill"
+                lazy-load
+                alt=""
+              />
+            </view>
           </view>
           <view class="post-card__footer">
             <view class="post-card__stat">
@@ -376,17 +384,9 @@ function openPost(postId: string): void {
   color: var(--c-text-secondary);
 }
 
+/* 图片九宫格：几何口径唯一来源 theme/global.scss .post-media-grid（原 200rpx 固定方图已并入统一口径） */
 .post-card__images {
-  display: flex;
-  gap: var(--sp-2);
   margin-top: var(--sp-3);
-}
-
-.post-card__img {
-  width: 200rpx;
-  height: 200rpx;
-  border-radius: var(--r-lg);
-  background: var(--c-bg-surface, #f1f5f9);
 }
 
 .post-card__footer {

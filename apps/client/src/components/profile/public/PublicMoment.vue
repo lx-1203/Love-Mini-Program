@@ -70,15 +70,23 @@ function relativeTime(iso?: string): string {
         </view>
       </view>
       <text class="public-moment__content">{{ post.content }}</text>
-      <view v-if="post.images && post.images.length > 0" class="public-moment__images">
-        <image
+      <view
+        v-if="post.images && post.images.length > 0"
+        class="public-moment__images post-media-grid"
+        :class="'post-media-grid--' + Math.min(post.images.length, 3)"
+      >
+        <view
           v-for="(img, idx) in post.images.slice(0, 3)"
           :key="`${post.id}-${idx}`"
-          class="public-moment__img"
-          :src="resolveMediaUrl(img)"
-          mode="aspectFill"
-          alt=""
-        />
+          class="post-media-grid__cell"
+        >
+          <image
+            class="post-media-grid__img"
+            :src="resolveMediaUrl(img)"
+            mode="aspectFill"
+            alt=""
+          />
+        </view>
       </view>
       <view class="public-moment__footer">
         <view class="public-moment__stat">
@@ -185,17 +193,9 @@ function relativeTime(iso?: string): string {
   color: #333333;
 }
 
+/* 图片九宫格：几何口径唯一来源 theme/global.scss .post-media-grid（原 200rpx/32rpx 自定尺寸已并入统一口径） */
 .public-moment__images {
-  display: flex;
-  gap: 12rpx;
   margin-top: 16rpx;
-}
-
-.public-moment__img {
-  width: 200rpx;
-  height: 200rpx;
-  border-radius: 32rpx;
-  background: #EEF2F0;
 }
 
 .public-moment__footer {

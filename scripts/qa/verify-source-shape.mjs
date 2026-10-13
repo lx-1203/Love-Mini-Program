@@ -908,11 +908,25 @@ const SPEC = [
   },
   {
     id: "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002",
-    file: "apps/client/src/subpackages/village/village/detail.vue",
-    claim: "两张图时等宽 50/50（首图不再独占整行），与 PostCard 两图口径同算法",
-    checks: [
-      { kind: "present", re: /:class="\{ 'post-images--two': currentPost\.images\.length === 2 \}"/ },
-      { kind: "present", re: /\.post-images--two \.post-image-wrap[\s\S]{0,200}width: calc\(\(100% - 12rpx\) \/ 2\)/ },
+    claim: "帖子配图五处同一口径：详情页挂 theme/global.scss 的统一九宫格（恒 1:1 方格，1/2/4 张两列等宽、3/5-9 张三列），首图不再独占整行",
+    files: [
+      {
+        file: "apps/client/src/subpackages/village/village/detail.vue",
+        checks: [
+          { kind: "present", re: /class="post-images post-media-grid"/ },
+          { kind: "present", re: /:class="'post-media-grid--' \+ Math\.min\(currentPost\.images\.length, POST_MAX_IMAGES\)"/ },
+          { kind: "absent", re: /post-images--two/g },
+          { kind: "absent", re: /\.post-image-wrap--first/g },
+        ],
+      },
+      {
+        file: "apps/client/src/theme/global.scss",
+        checks: [
+          { kind: "present", re: /\.post-media-grid__cell[\s\S]{0,200}aspect-ratio: 1/ },
+          { kind: "present", re: /\.post-media-grid--2 \.post-media-grid__cell[\s\S]{0,200}width: calc\(\(100% - 8rpx\) \/ 2\)/ },
+          { kind: "present", re: /\.post-media-grid--3 \.post-media-grid__cell[\s\S]{0,400}width: calc\(\(100% - 16rpx\) \/ 3\)/ },
+        ],
+      },
     ],
   },
   {

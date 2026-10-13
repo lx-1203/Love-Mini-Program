@@ -174,29 +174,28 @@ function openActivity(activityId: number | string) {
       <text class="post-card__content">{{ post.content }}</text>
     </view>
 
-    <!-- 图片展示 -->
+    <!-- 图片展示（口径见 theme/global.scss .post-media-grid：恒 1:1 方格 + aspectFill） -->
     <view
       v-if="post.images.length > 0"
-      class="post-card__images"
-      :class="'post-card__images--' + Math.min(post.images.length, MAX_POST_IMAGES)"
+      class="post-media-grid post-card__images"
+      :class="'post-media-grid--' + Math.min(post.images.length, MAX_POST_IMAGES)"
       @tap.stop="noop"
     >
       <view
         v-for="(img, idx) in post.images.slice(0, MAX_POST_IMAGES)"
         :key="img || idx"
-        class="post-card__image-wrap"
-        :class="{ 'post-card__image-wrap--single': post.images.length === 1 }"
+        class="post-media-grid__cell"
       >
         <image
-          class="post-card__image img-rounded"
+          class="post-media-grid__img"
           :src="resolveMediaUrl(img)"
           mode="aspectFill"
           lazy-load
           alt=""
         />
-      </view>
-      <view v-if="post.images.length > MAX_POST_IMAGES" class="post-card__image-more">
-        <text class="post-card__image-more-text">+{{ post.images.length - MAX_POST_IMAGES }}</text>
+        <view v-if="post.images.length > MAX_POST_IMAGES && idx === MAX_POST_IMAGES - 1" class="post-media-grid__more">
+          <text class="post-media-grid__more-text">+{{ post.images.length - MAX_POST_IMAGES }}</text>
+        </view>
       </view>
     </view>
 
@@ -454,65 +453,11 @@ function openActivity(activityId: number | string) {
   word-break: break-all;
 }
 
-/* ---------- 图片九宫格（mp-weixin 不支持 grid，改 flex-wrap + 按张数等分） ---------- */
+/* ---------- 图片九宫格：几何口径唯一来源 theme/global.scss .post-media-grid ----------
+   本件只保留卡片自己的外边距与无图占位分支；原先在此写死的
+   「单图 60% 宽 + 4:3 横幅」「--r-md 圆角」已并入统一口径（1:1 方格）。 */
 .post-card__images {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8rpx;
   margin-top: var(--sp-4);
-}
-
-.post-card__images--1 .post-card__image-wrap {
-  width: 60%;
-}
-
-.post-card__images--2 .post-card__image-wrap,
-.post-card__images--4 .post-card__image-wrap {
-  /* 2 列等宽：扣除行内 1 个间距后二等分 */
-  width: calc((100% - 8rpx) / 2);
-  box-sizing: border-box;
-}
-
-.post-card__images--3 .post-card__image-wrap,
-.post-card__images--5 .post-card__image-wrap,
-.post-card__images--6 .post-card__image-wrap,
-.post-card__images--7 .post-card__image-wrap,
-.post-card__images--8 .post-card__image-wrap,
-.post-card__images--9 .post-card__image-wrap {
-  /* 3 列等宽：扣除行内 2 个间距后三等分 */
-  width: calc((100% - 16rpx) / 3);
-  box-sizing: border-box;
-}
-
-.post-card__image-wrap {
-  position: relative;
-  aspect-ratio: 1;
-  overflow: hidden;
-  border-radius: var(--r-md);
-  background: var(--c-neutral-50);
-}
-
-.post-card__image-wrap--single {
-  aspect-ratio: 4 / 3;
-}
-
-.post-card__image {
-  width: 100%;
-  height: 100%;
-}
-
-.post-card__image-more {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  padding: 4rpx 12rpx;
-  border-radius: var(--r-full) 0 0 0;
-  background: var(--c-bg-overlay, rgba(15, 23, 42, 0.45));
-}
-
-.post-card__image-more-text {
-  font-size: 20rpx;
-  color: var(--c-neutral-0);
 }
 
 /* 2026-08-26 R3：无图帖子占位区（POST_PLACEHOLDER），单图占位 flex 下默认独占一行 */

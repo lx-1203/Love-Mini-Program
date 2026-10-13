@@ -214,15 +214,21 @@ function onAuthorTap(post: CommunityPostViewModel) {
             </view>
           </view>
           <text class="post-card__content">{{ post.content }}</text>
-          <view v-if="post.images.length" class="post-card__images">
-            <view v-for="(img, idx) in post.images.slice(0, 3)" :key="img" class="post-card__img-wrap">
+          <view
+            v-if="post.images.length"
+            class="post-card__images post-media-grid"
+            :class="'post-media-grid--' + Math.min(post.images.length, 3)"
+          >
+            <view v-for="(img, idx) in post.images.slice(0, 3)" :key="img" class="post-media-grid__cell">
               <!-- 2026-09-03（用户反馈①"论坛图片"）：原生 image 直接渲染。
                    原SafeImage 内层 image 因 scoped 类名失配未继承 88rpx 约束，
                    加载中按 320x240 默认尺寸渲染出大灰占位；改为父模板直写
-                   image（scoped 类命中）+ error 换本地 placeholder。 -->
+                   image（scoped 类命中）+ error 换本地 placeholder。
+                   2026-10-13：单格尺寸改由 theme/global.scss .post-media-grid 统一给出
+                   （原 88rpx 小方图与论坛卡/详情不同口径）。 -->
               <image
                 v-if="!isFailed(`img-${post.id}-${idx}`)"
-                class="post-card__img"
+                class="post-media-grid__img"
                 :src="resolveMediaUrl(img)"
                 mode="aspectFill"
                 lazy-load
@@ -230,7 +236,7 @@ function onAuthorTap(post: CommunityPostViewModel) {
               />
               <image
                 v-else
-                class="post-card__img"
+                class="post-media-grid__img"
                 :src="resolveMediaUrl(IMAGE_PATHS.POST_PLACEHOLDER)"
                 mode="aspectFill"
               />
@@ -491,36 +497,10 @@ function onAuthorTap(post: CommunityPostViewModel) {
   overflow: hidden;
 }
 
+/* 图片九宫格：几何口径唯一来源 theme/global.scss .post-media-grid
+   （原 88rpx 固定小方图 + min-height 防塌陷补丁一并撤掉——方格由 aspect-ratio 定高，不会塌） */
 .post-card__images {
-  display: flex;
-  gap: 8rpx;
   margin-top: 14rpx;
-  /* R20：图片行固定高度（无图时由数据侧保证至少 1 图；本行高度恒定防塌陷） */
-  min-height: 88rpx;
-}
-
-.post-card__img {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 10rpx;
-  background: #F0F2F5;
-}
-
-.post-card__img-wrap {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 10rpx;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-/* 图片加载失败占位：纯色块（与灰占位区分，标识为已降级终态） */
-.post-card__img--placeholder {
-  display: block;
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 10rpx;
-  background: #EAF6F1;
 }
 
 .post-card__meta {

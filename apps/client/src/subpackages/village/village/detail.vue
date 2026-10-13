@@ -28,6 +28,8 @@ import { openAppPath, openUserProfile } from "../../../utils/navigation";
 import { lightHaptic } from "../../../utils/haptic";
 // R4-00088：页面跳转路径统一走 ROUTES 常量
 import { ROUTES } from "../../../constants/routes";
+// 2026-10-13 统一配图口径：详情与列表同一张数上限（发布侧 POST_MAX_IMAGES 已限 9）
+import { POST_MAX_IMAGES } from "../../../constants/village";
 import SafeImage from "../../../components/common/SafeImage.vue";
 import EmptyState from "../../../components/common/EmptyState.vue";
 import PostReportDialog from "../../../components/social/PostReportDialog.vue";
@@ -830,21 +832,21 @@ onShareTimeline(() => {
         <view class="post-body" @longpress="handlePostLongpress">
           <text class="post-content">{{ currentPost.content }}</text>
 
-          <!-- 图片网格（理想图：1张大图 + 3张小图布局）
-               第五轮 P1 修复：SafeImage 的 custom-class 属于子组件内部元素，
-               无法命中本页 scoped 样式（.post-image.data-v-xxx 永不匹配），
-               导致图片无尺寸约束而塌陷不显示。改为「包裹 view 定尺寸 +
-               SafeImage 100% 填充」（与 PostCard/MatchCard 同模式）。 -->
+          <!-- 图片网格（口径见 theme/global.scss .post-media-grid）
+               2026-10-13 用户反馈"论坛里有些图片横着、有些并排"：原「首图独占整行 400rpx
+               横幅 + 其余并排小方格」在一屏内混出两种形状，现与 PostCard/首页社区流/
+               公开主页同一口径——恒 1:1 方格，张数只决定列数（1/2/4→2 列，3/5-9→3 列）。
+               第五轮 P1 修复保留：包裹 view 定尺寸 + SafeImage 以 custom-style 100% 填充
+               （SafeImage 的 custom-class 属子组件内部，命中不了本页 scoped 样式）。 -->
           <view
             v-if="currentPost.images.length > 0"
-            class="post-images"
-            :class="{ 'post-images--two': currentPost.images.length === 2 }"
+            class="post-images post-media-grid"
+            :class="'post-media-grid--' + Math.min(currentPost.images.length, POST_MAX_IMAGES)"
           >
             <view
-              v-for="(img, idx) in currentPost.images"
+              v-for="(img, idx) in currentPost.images.slice(0, POST_MAX_IMAGES)"
               :key="img || idx"
-              class="post-image-wrap press-feedback"
-              :class="{ 'post-image-wrap--first': idx === 0 }"
+              class="post-media-grid__cell press-feedback"
               hover-class="press-feedback--active"
               hover-stay-time="40"
               role="button"
@@ -859,6 +861,9 @@ onShareTimeline(() => {
                 custom-style="width:100%;height:100%"
                 alt=""
               />
+              <view v-if="currentPost.images.length > POST_MAX_IMAGES && idx === POST_MAX_IMAGES - 1" class="post-media-grid__more">
+                <text class="post-media-grid__more-text">+{{ currentPost.images.length - POST_MAX_IMAGES }}</text>
+              </view>
             </view>
           </view>
 
@@ -1998,41 +2003,15 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   margin-bottom: 20rpx;
 }
 
-/* 图片网格 */
-/* 理想图：图片网格（第1张大图 + 后续3列小图） */
+/* 图片网格：几何口径唯一来源 theme/global.scss .post-media-grid（本件只留卡片外边距）
+   原「首图 width:100%/height:400rpx 横幅 + 其余 220rpx 小方格」是"横着/并排"混排的源头，已删 */
 .post-images {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12rpx;
   margin-bottom: 20rpx;
 }
 
 /* 2026-08-08 频道化重构：帖子内活动卡间距 */
 .post-activity {
   margin-bottom: 20rpx;
-}
-
-/* 第五轮 P1 修复：定尺寸包裹层（scoped 类命中本页 view，SafeImage 以 100% 填充） */
-.post-image-wrap {
-  width: calc(33.33% - 8rpx);
-  height: 220rpx;
-  border-radius: var(--r-lg, 16rpx);
-  overflow: hidden;
-  background: $bg-page;
-}
-
-/* 第1张图占满整行（大图效果） */
-.post-image-wrap--first {
-  width: 100%;
-  height: 400rpx;
-}
-
-/* MP-R2VIS-VILLAGE-DETAIL-002：2 图特判——首图不再独占整行，两图等宽 50/50
-   （与 PostCard .post-card__images--2 同口径：1 个间距后二等分） */
-.post-images--two .post-image-wrap,
-.post-images--two .post-image-wrap--first {
-  width: calc((100% - 12rpx) / 2);
-  height: 220rpx;
 }
 
 /* 话题标签 */
