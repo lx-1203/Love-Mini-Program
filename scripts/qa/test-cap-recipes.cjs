@@ -18,7 +18,13 @@ const { execFileSync } = require("node:child_process");
 
 const REPO = path.resolve(__dirname, "..", "..");
 const OPS = path.join(REPO, "reports", "audit", "round-6", "ops");
-const RECIPES = JSON.parse(fs.readFileSync(path.join(REPO, "scripts", "qa", "case-recipes.json"), "utf8"));
+/* RECIPES_UNDER_TEST：与下面 CAPS_UNDER_TEST 同一条纪律 —— 空转防护要用**一次性变异副本**
+   跑同一套断言（活文件全程不改，用完即删），所以配方路径要能被外部指走；否则 §8 的负例
+   只能靠自己构造的假语料，那就退回「永远绿的测试」。 */
+const RECIPES_FILE = process.env.RECIPES_UNDER_TEST
+  ? path.resolve(REPO, process.env.RECIPES_UNDER_TEST)
+  : path.join(REPO, "scripts", "qa", "case-recipes.json");
+const RECIPES = JSON.parse(fs.readFileSync(RECIPES_FILE, "utf8"));
 const NODE = process.execPath;
 
 let fails = 0, checks = 0;
@@ -28,7 +34,236 @@ function t(name, cond, detail) {
   else console.log("ok   " + name + (detail === undefined ? "" : "  (" + String(detail).slice(0, 150) + ")"));
 }
 
-/* 判据台语料：manifest → {page, cases}。 */
+/* ══════════════════════════════════════════════════════════════════════════════
+   §8 用**编译产物**数选择器命中几枚（配方车道 2026-10-13，PFI25/v37 那条
+   UNVERIFIED-INSTRUMENT 直接要补的判点）。
+   ── 为什么要离线数产物 ──
+   配方里的 tap 走 r-exec-ws.mjs 的 deepOne ⇒ automator 的 page.$，**永远取第一个命中**（实测：
+   exec-v37-pfi25 的 step#6 probe 报 .voice-preview__delete present(2)，step#10 tap 打到 idx0「重录」，
+   于是 drainModal 收到 0 次弹窗 —— 产品行为没问题，是配方说不清自己点了谁）。设备腿一轮几十分钟，
+   这个错必须离线判红。数的是 apps/client/dist/build/mp-weixin-real 的 .wxml —— 跑的是产物，
+   不是 .vue 源，所以「源里看着唯一」不算数。
+   ── 下面这组纯函数只服务本文件的断言（载具解释器 r-exec-ws.mjs 不 import 它，本车道不碰执行器）──
+   支持形：tag / .class / #id / [attr] / [attr="v"] / :first-child / :last-child / :nth-child(k) /
+   后代与子代组合符（空格、>）/ 穿透链「>>>」（中间段=自定义组件标签，经该层 .json 的 usingComponents 解析）。
+   uni-app 会把 :class 编成 class="{{['a','b', c && 'd']}}"，所以类名 token 也从这种数组里取引号串。
+   ══════════════════════════════════════════════════════════════════════════════ */
+const BAND = path.join(REPO, "apps", "client", "dist", "build", "mp-weixin-real");
+const POSITION_PSEUDO = /:(?:first-child|last-child|nth-child\(\d+\))/;
+const ACTUATING = ["tap", "rapidTap", "input", "readValue"];
+function wxmlAttrs(raw) {
+  const attrs = {};
+  const re = /[-.\w:]+(?:\s*=\s*"[^"]*")?/g;
+  let m;
+  while ((m = re.exec(raw))) {
+    const p = /^([-.\w:]+)(?:\s*=\s*"([^"]*)")?$/.exec(m[0].trim());
+    if (p && !(p[1] in attrs)) attrs[p[1]] = p[2] === undefined ? "" : p[2];
+  }
+  return attrs;
+}
+function parseWxml(text) {
+  const nodes = [];
+  const stack = [];
+  let i = 0;
+  while (i < text.length) {
+    const lt = text.indexOf("<", i);
+    if (lt < 0) break;
+    if (text[lt + 1] === "!") { const end = text.indexOf(">", lt); i = end < 0 ? text.length : end + 1; continue; }
+    let j = lt + 1, quote = null;
+    while (j < text.length) {
+      const ch = text[j];
+      if (quote) { if (ch === quote) quote = null; }
+      else if (ch === '"' || ch === "'") quote = ch;
+      else if (ch === ">") break;
+      j++;
+    }
+    const raw = text.slice(lt + 1, j).trim();
+    i = j + 1;
+    if (!raw || raw[0] === "?") continue;
+    if (raw[0] === "/") { if (stack.length) stack.pop(); continue; }
+    const selfClose = /\/$/.test(raw);
+    const body = raw.replace(/\/$/, "");
+    const tag = /^([a-zA-Z][-.\w]*)/.exec(body);
+    if (!tag) continue;
+    const parent = stack[stack.length - 1] || null;
+    const node = { tag: tag[1], attrs: wxmlAttrs(body.slice(tag[1].length)), parent, children: [] };
+    if (parent) parent.children.push(node);
+    nodes.push(node);
+    if (!selfClose) stack.push(node);
+  }
+  return nodes;
+}
+function classTokens(v) {
+  const s = String(v === undefined ? "" : v);
+  if (s.indexOf("{{") >= 0) return [...s.matchAll(/'([^']*)'|"([^"]*)"/g)].map((m) => m[1] !== undefined ? m[1] : m[2]).filter(Boolean);
+  return s.split(/\s+/).filter(Boolean);
+}
+function simpleParts(s) {
+  const out = { tag: "", classes: [], id: "", attrs: [], pseudo: [] };
+  const head = /^[a-zA-Z][\w-]*/.exec(s);
+  let from = 0;
+  if (head && !/^[.#[]/.test(s)) { out.tag = head[0]; from = head[0].length; }
+  const re = /([.#][\w-]+|\[[^\]]+\]|:[\w-]+(?:\([^)]*\))?)/g;
+  let m;
+  while ((m = re.exec(s.slice(from)))) {
+    const t = m[1];
+    if (t[0] === ".") out.classes.push(t.slice(1));
+    else if (t[0] === "#") out.id = t.slice(1);
+    else if (t[0] === "[") out.attrs.push(t.slice(1, -1));
+    else if (t[0] === ":") out.pseudo.push(t.slice(1));
+  }
+  return out;
+}
+const FILE_CACHE = new Map();
+function wxmlNodes(file) {
+  if (!FILE_CACHE.has(file)) FILE_CACHE.set(file, fs.existsSync(file) ? parseWxml(fs.readFileSync(file, "utf8")) : null);
+  return FILE_CACHE.get(file);
+}
+function matchSimple(node, parts) {
+  if (parts.tag && parts.tag !== node.tag) return false;
+  const cls = classTokens(node.attrs.class);
+  if (!parts.classes.every((c) => cls.includes(c))) return false;
+  if (parts.id && String(node.attrs.id || "") !== parts.id) return false;
+  for (const a of parts.attrs) {
+    const p = /^([^=]+?)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"']+))$/.exec(a) || /^([-.\w:]+)$/.exec(a);
+    if (!p) return false;
+    const got = node.attrs[p[1]];
+    if (got === undefined) return false;
+    const want = p[2] !== undefined ? p[2] : p[3] !== undefined ? p[3] : p[4];
+    if (want !== undefined && got !== want) return false;
+  }
+  for (const p of parts.pseudo) {
+    const sib = node.parent ? node.parent.children : [node];
+    if (p === "last-child") { if (node !== sib[sib.length - 1]) return false; }
+    else if (p === "first-child") { if (node !== sib[0]) return false; }
+    else if (/^nth-child\(\d+\)$/.test(p)) { if (sib.indexOf(node) + 1 !== Number(/\((\d+)\)/.exec(p)[1])) return false; }
+    else return false;
+  }
+  return true;
+}
+function splitCombinators(seg) {
+  const parts = [];
+  let mode = "desc";
+  for (const tok of seg.trim().split(/\s+/)) {
+    if (tok === ">") { mode = "child"; continue; }
+    parts.push({ mode, sel: tok });
+    mode = "desc";
+  }
+  return parts;
+}
+function hitsIn(file, selector) {
+  const nodes = wxmlNodes(file);
+  if (!nodes) return null;
+  const chain = splitCombinators(selector);
+  if (!chain.length) return null;
+  const last = simpleParts(chain[chain.length - 1].sel);
+  return nodes.filter((n) => matchSimple(n, last) && (() => {
+    let cur = n;
+    for (let i = chain.length - 1; i > 0; i--) {
+      const head = simpleParts(chain[i - 1].sel);
+      const step = chain[i].mode === "child"
+        ? (!!cur.parent && matchSimple(cur.parent, head))
+        : (() => { for (let p = cur.parent; p; p = p.parent) if (matchSimple(p, head)) return true; return false; })();
+      if (!step) return false;
+      cur = cur.parent;
+    }
+    return true;
+  })());
+}
+function gateKey(node) {
+  const g = [];
+  for (let p = node; p; p = p.parent) {
+    if ("wx:if" in p.attrs) g.unshift("if@" + p.attrs["wx:if"]);
+    else if ("wx:elif" in p.attrs) g.unshift("elif@" + p.attrs["wx:elif"]);
+    else if ("wx:else" in p.attrs) g.unshift("else");
+  }
+  return g.join("|");
+}
+/* 返回 {count, file, dynamic（命中在 wx:for 模板里 ⇒ 条数不可由产物证明）,
+   exclusive（命中数>1 但两枚落在互斥 wx:if/wx:else 分支 ⇒ 产物条数会高估设备条数）, error} */
+function countSelector(page, selector) {
+  let file = path.join(BAND, String(page) + ".wxml");
+  if (!fs.existsSync(file)) return { error: "产物里没有 " + path.relative(BAND, file) };
+  const segs = String(selector).split(">>>").map((s) => s.trim()).filter(Boolean);
+  for (let i = 0; i < segs.length - 1; i++) {
+    if (!/^[a-zA-Z][\w-]*$/.test(segs[i])) return { error: "穿透链段 " + segs[i] + " 不是组件标签形，离线数不了" };
+    const json = file.replace(/\.wxml$/, ".json");
+    let uc = {};
+    try { uc = JSON.parse(fs.readFileSync(json, "utf8")).usingComponents || {}; } catch { /* 下面按解析不到处理 */ }
+    const next = uc[segs[i]];
+    if (!next) return { error: "段 " + segs[i] + " 在 " + path.relative(BAND, json) + " 的 usingComponents 里查不到" };
+    file = path.resolve(path.dirname(file), next + ".wxml");
+  }
+  const hits = hitsIn(file, segs[segs.length - 1]);
+  if (hits === null) return { error: "读不到 " + path.relative(BAND, file) };
+  const gates = hits.map(gateKey);
+  return {
+    count: hits.length,
+    file: path.relative(BAND, file),
+    dynamic: hits.some((h) => { for (let p = h; p; p = p.parent) if ("wx:for" in p.attrs) return true; return false; }),
+    exclusive: hits.length > 1 && gates.every((g) => g !== "") && new Set(gates).size === hits.length,
+  };
+}
+/* 一条配方的「命中数」判点（活语料与变异副本共用同一个函数，负例才不是另造一套判点）：
+   ① 动作步必须唯一致命中（0=死选择器，>1=歧义，wx:for=条数不可证）；
+   ② 写了 expectMatches 的步必须与产物实测条数一致（expectMatches 的轴=编译产物命中数，不是设备同刻读数）；
+   ③ 用位置伪类收窄的动作步，同配方必须有一步同时 probe 裸形与伪类形 ⇒ 设备读数自带「引擎认不认伪类」的判据。 */
+function matchCountProblems(recipes) {
+  const problems = [];
+  for (const [key, r] of Object.entries(recipes.recipes || {})) {
+    const steps = r.steps || [];
+    const pseudoPairNeeds = new Set();
+    for (let i = 0; i < steps.length; i++) {
+      const s = steps[i];
+      if (!s || !s.do) continue;
+      const isAct = ACTUATING.includes(s.do);
+      const single = s.selector && (isAct || s.do === "assertPresent" || s.do === "assertAbsent");
+      const list = s.do === "probe" ? (s.selectors || []) : (single ? [s.selector] : []);
+      for (const sel of list) {
+        const m = countSelector(r.page, sel);
+        if (m.error) {
+          if (isAct) problems.push(key + " step#" + (i + 1) + " 动作步 " + s.do + " 的选择器 " + sel + " 在产物里数不出来：" + m.error);
+          continue;
+        }
+        if (isAct) {
+          if (m.dynamic) problems.push(key + " step#" + (i + 1) + " 动作步 " + s.do + " 的选择器 " + sel + " 落在 wx:for 模板里（产物命中 " + m.count + " 枚模板节点，设备同刻条数不可由产物证明 ⇒ 寻址不唯一）");
+          else if (m.count !== 1 && m.exclusive) problems.push(key + " step#" + (i + 1) + " 动作步 " + s.do + " 的选择器 " + sel + " 产物命中 " + m.count + " 枚且分属互斥 wx:if/wx:else 分支：同刻至多 1 枚，但按类名首匹配仍可能打偏 ⇒ 本仓不默认放行，要收窄到可判别的那一枚");
+          else if (m.count !== 1) problems.push(key + " step#" + (i + 1) + " 动作步 " + s.do + " 的选择器 " + sel + " 在 " + m.file + " 命中 " + m.count + " 枚" + (m.count === 0 ? "（死选择器）" : "（PFI25/v37 的形状：automator 的 page.$ 取首命中，配方说不清点了谁；先收窄到唯一命中再上腿）"));
+        }
+        const map = s.do === "probe" && s.expectMatches && typeof s.expectMatches === "object" ? s.expectMatches : null;
+        const present = map ? Object.prototype.hasOwnProperty.call(map, sel) : s.expectMatches !== undefined;
+        if (present) {
+          const declared = map ? map[sel] : s.expectMatches;
+          if (typeof declared !== "number" || !Number.isInteger(declared) || declared < 0) {
+            problems.push(key + " step#" + (i + 1) + " " + sel + " 的 expectMatches 不是非负整数（值 " + String(declared) + "）⇒ 半填/没测到的字段不许读成通过");
+          } else if (declared !== m.count) {
+            problems.push(key + " step#" + (i + 1) + " " + sel + " 声明 expectMatches=" + declared + " 而产物实测 " + m.count + "（" + m.file + "）");
+          }
+        }
+      }
+      if (s.do === "probe" && s.expectMatches && typeof s.expectMatches === "object") {
+        const orphans = Object.keys(s.expectMatches).filter((k) => !(s.selectors || []).includes(k));
+        if (orphans.length) problems.push(key + " step#" + (i + 1) + " probe 的 expectMatches 点名了没被 probe 的选择器：" + orphans.join(",") + "（声明与读数必须成对）");
+      }
+      if (isAct && POSITION_PSEUDO.test(String(s.selector || ""))) {
+        pseudoPairNeeds.add(String(s.selector).replace(POSITION_PSEUDO, ""));
+      }
+    }
+    /* 位置伪类是这条配方**唯一**能离线证唯一的把手，可它在设备上的有效性本仓只有反面实测（桥通道
+       忽略位置伪类：scripts/qa/tour-cli-states.mjs:89），WS/automator 通道从未量过 ⇒ 配方必须自带
+       「裸形与伪类形并列 probe 且各带 expectMatches」的对照步：设备上那一步的 present(n) 就是
+       引擎认没认伪类的读数（认=1，不认=2 且当场可从行里读出，不必等 tap 打偏再猜）。 */
+    for (const bare of pseudoPairNeeds) {
+      const paired = steps.some((p) => p && p.do === "probe" && (p.selectors || []).includes(bare) &&
+        (p.selectors || []).some((x) => x !== bare && x.indexOf(bare) === 0 && POSITION_PSEUDO.test(x)) && p.expectMatches);
+      if (!paired) problems.push(key + " 有用位置伪类收窄的动作步（裸形 " + bare + "），却没有「裸形+伪类形并列且带 expectMatches」的对照 probe ⇒ 设备读数自证不了引擎认了这个伪类");
+    }
+  }
+  return problems;
+}
+const liveProblems = matchCountProblems(RECIPES);
+function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
+
 const corpus = new Map();
 for (const f of fs.readdirSync(OPS).filter((x) => x.endsWith(".json"))) {
   try {
@@ -393,6 +628,72 @@ async function main() {
   t("§7 新载荷源全部过 uni 关（本仓两条在册设备事实：evaluate 上下文里任何 uni 记号都抛 ERR uni is not defined）",
     [C.navigateToSource("/a"), C.navigateToSyncSource("/a"), C.navReadSource(), hSrc, C.handlerDrainSource(), C.netFaultArmReceiptSource()]
       .every((s) => !/\buni\b/.test(s)));
+
+  /* ── §8 产物命中数：判点自身先自证，再上活语料，最后拿真配方搬回旧形状 ── */
+  t("§8 编译产物在盘可数（" + path.relative(REPO, BAND) + "；只读，本车道不重编译）", fs.existsSync(path.join(BAND, "pages", "profile", "index.wxml")), "");
+  const c2 = countSelector("pages/profile/index", ".voice-preview__delete");
+  const c1 = countSelector("pages/profile/index", ".voice-preview__delete:last-child");
+  const c0 = countSelector("pages/profile/index", ".voice-preview__no-such-class-xyz");
+  const cCard = countSelector("pages/profile/index", ".voice-preview__card > .voice-preview__delete");
+  const cChain = countSelector("subpackages/profile-extra/profile/other", "profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--like");
+  /* 计数器的自证：三档不同的数（2 / 1 / 0）+ 子代组合符 + 穿透链下钻到组件文件。
+     钉住 2 不是随手写的期望值：exec-v37-pfi25 的 step#6 在同一份产物上设备读数就是 present(2)，
+     离线数与设备数同向 ⇒ 这条判点数的东西就是设备上那几枚节点。 */
+  t("§8 计数器不是恒真：同页三类选择器数出 2/1/0（.voice-preview__delete=" + c2.count + "（设备 step#6 实测 present(2) 同数）, :last-child=" + c1.count + ", 编造类名=" + c0.count + "）",
+    c2.count === 2 && c1.count === 1 && c0.count === 0, "files=" + c2.file + "/" + c1.file);
+  t("§8 计数器认得子代组合符（.voice-preview__card > .voice-preview__delete=" + cCard.count + " 枚，仍两枚 ⇒ 单靠父级收窄不解决 PFI25）",
+    cCard.count === 2, cCard.file);
+  t("§8 计数器能沿 usingComponents 下钻到组件文件（OT05 的穿透链末段在 " + cChain.file + " 命中 " + cChain.count + " 枚）",
+    cChain.count === 1 && /RelationshipCTA\.wxml$/.test(String(cChain.file)), cChain.error ? "error=" + cChain.error : cChain.file);
+  t("§8 活配方全体动作步在产物里唯一致命中，且 expectMatches 与产物实测一致（" + (RECIPES_FILE ? path.relative(REPO, RECIPES_FILE) : "") + "）",
+    liveProblems.length === 0, liveProblems.join(" ｜ ").slice(0, 280));
+  /* 负例 A（真配方搬回旧形状）：把 PFI25 的 tap 选择器脱掉 :last-child —— 这正是 v37 在盘的那一版。
+     这条是 §8 的承重墙：它证明唯一性判点会真红，而红只来自这一刀。 */
+  t("§8 负例（活配方搬回 v37 旧形状）：把 PFI25 的 tap .voice-preview__delete:last-child 脱掉伪类 ⇒ 必须判「命中 2 枚」，且只多出这一条",
+    (function () {
+      const mut = deepClone(RECIPES);
+      const st = mut.recipes["PAGES-PROFILE-INDEX|PFI25"].steps;
+      const tap = st.find((s) => s && s.do === "tap" && /:last-child/.test(String(s.selector || "")));
+      if (!tap) return false;
+      tap.selector = ".voice-preview__delete";
+      delete tap.expectMatches;
+      const before = matchCountProblems(RECIPES).length;
+      const after = matchCountProblems(mut);
+      return after.length === before + 1 && /PFI25/.test(after.join("")) && /命中 2 枚/.test(after.join(""));
+    })());
+  /* 负例 B：把对照 probe 里的伪类形摘掉（裸形读数还在，但「引擎认没认伪类」就没证据了）⇒ 必须红。 */
+  t("§8 负例：把 PFI25 各 probe 里的 .voice-preview__delete:last-child 摘掉 ⇒ 「用位置伪类收窄却没有裸形+伪类并列的对照读数」必须判红",
+    (function () {
+      const mut = deepClone(RECIPES);
+      mut.recipes["PAGES-PROFILE-INDEX|PFI25"].steps.forEach((p) => {
+        if (p && p.do === "probe") {
+          p.selectors = (p.selectors || []).filter((x) => x !== ".voice-preview__delete:last-child");
+          if (p.expectMatches && typeof p.expectMatches === "object") delete p.expectMatches[".voice-preview__delete:last-child"];
+        }
+      });
+      const after = matchCountProblems(mut);
+      return after.length === liveProblems.length + 1 && /位置伪类/.test(after.join(""));
+    })());
+  /* 负例 C：expectMatches 半填（本仓立过案的两条原病：没测的值写进判决字段、expected=undefined 上行）。 */
+  t("§8 负例：expectMatches 写成字符串 / 写成 undefined / 点名了没 probe 的选择器 ⇒ 三种都判红，不许读成通过（expected=undefined 那一类形状）",
+    (function () {
+      const m1 = deepClone(RECIPES);
+      m1.recipes["PAGES-PROFILE-INDEX|PFI25"].steps.find((s) => s.do === "probe" && s.expectMatches).expectMatches[".voice-preview__delete"] = "2";
+      const m2 = deepClone(RECIPES);
+      m2.recipes["PAGES-PROFILE-INDEX|PFI25"].steps.find((s) => s.do === "probe" && s.expectMatches).expectMatches[".voice-preview__delete"] = undefined;
+      const m3 = deepClone(RECIPES);
+      m3.recipes["PAGES-PROFILE-INDEX|PFI25"].steps.find((s) => s.do === "probe" && s.expectMatches).expectMatches[".ghost-class"] = 1;
+      const a = matchCountProblems(m1).join(""), b = matchCountProblems(m2).join(""), c = matchCountProblems(m3).join("");
+      return /不是非负整数/.test(a) && /不是非负整数/.test(b) && /没被 probe 的选择器/.test(c);
+    })());
+  /* 正例反面都要有牙：给一条本来没动作步的配方塞一个产物上不存在的选择器当 tap ⇒ 死选择器也要判红。 */
+  t("§8 负例：往 VI25 里插一步产物中命中 0 枚的 tap（死选择器）⇒ 与歧义同类拦下，不许「不在页上」到设备上才发现",
+    (function () {
+      const mut = deepClone(RECIPES);
+      mut.recipes["SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25"].steps.unshift({ do: "tap", selector: ".no-such-btn-xyz" });
+      const after = matchCountProblems(mut);
+      return after.length === liveProblems.length + 1 && /命中 0 枚/.test(after.join(""));
+    })());
 
   console.log("SUMMARY: assertion failures = " + fails);
   console.log("CAPRECIPES_TEST=" + (fails === 0 ? "PASS" : "FAIL") + "（checks=" + checks + "）");
