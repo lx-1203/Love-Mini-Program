@@ -47,7 +47,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Profile("real")
 @RestController
 @RequestMapping("/api/v1/admin/certifications")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'AUDITOR')")
 public class AdminCertificationController {
 
     private final CampusCertificationService certService;

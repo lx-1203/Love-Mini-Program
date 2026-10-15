@@ -18,7 +18,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -27,8 +26,10 @@ import org.springframework.web.server.ResponseStatusException;
  *
  * <p>核心职责：
  * <ol>
- *   <li>鉴权：按当前 JWT 中的 userId 校验文件归属，仅文件所有者或管理员可访问；
- *       否则抛出 {@link AccessDeniedException}（由 GlobalExceptionHandler 转 403）。</li>
+ *   <li>鉴权：按当前 JWT 中的 userId 校验文件归属；非本人时按<b>资源敏感度分档</b>授权
+ *       （见 {@link MediaTierPolicy}：内容档 ADMIN/SUPER_ADMIN/AUDITOR，
+ *       认证档（实名认证材料）仅 SUPER_ADMIN）；不满足则抛出
+ *       {@link AccessDeniedException}（由 GlobalExceptionHandler 转 403）。</li>
  *   <li>路径穿越（Path Traversal）防护：校验 subPath 不含 {@code ..}、绝对路径、
  *       反斜杠等危险字符；并对最终绝对路径做 {@code startsWith(storageRoot)} 二次校验。</li>
  *   <li>读取文件并返回 {@link MediaFile}（包含 {@link Resource} 与 {@link MediaType}）。</li>
@@ -50,9 +51,6 @@ import org.springframework.web.server.ResponseStatusException;
 public class MediaAccessService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaAccessService.class);
-
-    /** 管理员角色标识，与 JwtAuthenticationFilter 注入的 ROLE_ADMIN 一致 */
-    private static final String ROLE_ADMIN = "ROLE_ADMIN";
 
     /**
      * 应用资产目录名（2026-08-10，小程序主包瘦身）。
@@ -105,9 +103,10 @@ public class MediaAccessService {
      *
      * <p>处理流程：
      * <ol>
-     *   <li>从 {@link Authentication} 提取当前 userId 与是否 ADMIN</li>
-     *   <li>分级鉴权（infra R2-00013）：IMAGE（头像/帖子图/活动图）登录用户均可读；
-     *       语音/视频/身份证仅本人或 ADMIN；否则 403</li>
+     *   <li>先经 {@link #resolveAccessProfile} 一次解析出「访问分类 + 读取档位」</li>
+     *   <li>两档鉴权：本人恒可读；认证档（实名认证材料）仅 SUPER_ADMIN；
+     *       内容档中 IMAGE（头像/帖子图/活动图）登录用户均可读，
+     *       语音/视频需 ADMIN / SUPER_ADMIN / AUDITOR；否则 403</li>
      *   <li>路径穿越校验：subPath 不含 {@code ..}、{@code \}、绝对路径前缀</li>
      *   <li>构造磁盘绝对路径并 normalize，二次校验仍在 storageRoot 之下</li>
      *   <li>文件存在性校验，不存在则 404</li>
@@ -119,50 +118,106 @@ public class MediaAccessService {
      * @param subPath        subPath（如 {@code 202607/uuid.jpg}），不含 userId
      * @param authentication 当前请求的认证主体（由 SecurityContext 注入）
      * @return 已通过校验的 {@link MediaFile}，包含可读取的 Resource 与 MediaType
-     * @throws AccessDeniedException    当前用户无权访问该文件（非本人且非管理员，且非公开图片）
+     * @throws AccessDeniedException    当前用户无权访问该文件（未认证；或非本人且
+     *                                  不具备该档位要求的角色，且非公开图片）
      * @throws ResponseStatusException  路径非法或文件不存在（400/404）
      */
     public MediaFile loadMedia(Long targetUserId, String subPath, Authentication authentication) {
-        MediaCategory category = resolveCategory(targetUserId, subPath);
-        return loadMedia(targetUserId, subPath, authentication, category);
+        return loadMedia(targetUserId, subPath, authentication,
+                resolveAccessProfile(targetUserId, subPath));
     }
 
     /**
      * 加载并返回指定用户的媒体文件（带分类提示重载，2026-10-05 身份证照片越权面收敛）。
      *
      * <p>与 {@link #loadMedia(Long, String, Authentication)} 语义一致，但由调用方
-     * （MediaAccessController）先经 {@link #resolveCategory} 解析分类后传入，
-     * 避免同一请求重复查库；controller 侧前置校验与 service 侧强制校验使用同一分类结论。</p>
+     * 先解析出分类后传入，避免同一请求重复查库。注意：本重载<b>拿不到 DB 原始
+     * category 字符串</b>，档位只能由已解析分类推导（ID_CARD → 认证档，
+     * IMAGE/VOICE/VIDEO → 内容档），因此无法触发「DB 分类取值异常 → 认证档」
+     * 那条 fail-closed 分支。需要完整分级口径的调用方
+     * （如 MediaAccessController）应改用
+     * {@link #loadMedia(Long, String, Authentication, AccessProfile)}。</p>
      *
      * @param targetUserId   路径变量中的目标用户 ID（文件归属者）
      * @param subPath        subPath（如 {@code 202607/uuid.jpg}），不含 userId
      * @param authentication 当前请求的认证主体（由 SecurityContext 注入）
      * @param categoryHint   已解析的媒体分类（null 时内部按路径关键词兜底推断）
      * @return 已通过校验的 {@link MediaFile}，包含可读取的 Resource 与 MediaType
-     * @throws AccessDeniedException    当前用户无权访问该文件（非本人且非管理员，且非公开图片）
+     * @throws AccessDeniedException    当前用户无权访问该文件（未认证；或非本人且
+     *                                  不具备该档位要求的角色，且非公开图片）
      * @throws ResponseStatusException  路径非法或文件不存在（400/404）；分类查库故障时 503
      */
     public MediaFile loadMedia(Long targetUserId, String subPath, Authentication authentication,
                                MediaCategory categoryHint) {
+        MediaCategory effective = categoryHint != null
+                ? categoryHint
+                : probeMediaTypeByPath(subPath);
+        // 兼容旧签名：调用方只给了分类、没给 DB 原始 category 字符串时，
+        // 按已解析分类定档（ID_CARD → 认证档，IMAGE/VOICE/VIDEO → 内容档）
+        return loadMedia(targetUserId, subPath, authentication,
+                new AccessProfile(effective, MediaTierPolicy.tierForMediaCategory(effective.name())));
+    }
+
+    /**
+     * 加载并返回指定用户的媒体文件（按 {@link AccessProfile} 已解析的分类 + 档位）。
+     *
+     * <p>这是真正执行鉴权与文件加载的实现。授权判定（2026-10 分级改造）：
+     * <ol>
+     *   <li><b>本人短路（保持不变）</b>：{@code targetUserId == currentUserId} 恒可读，
+     *       两档都不例外——用户上传的文件自己永远能打开；</li>
+     *   <li><b>认证档（{@link MediaTierPolicy.Tier#VERIFICATION}）</b>：
+     *       仅 {@link MediaTierPolicy#canReadVerificationMedia(Authentication)}
+     *       （ROLE_SUPER_ADMIN）可读；「IMAGE 公开可读」分支在本档<b>不适用</b>，
+     *       避免分类异常的资产被顺带放开；</li>
+     *   <li><b>内容档（{@link MediaTierPolicy.Tier#CONTENT}）</b>：沿用既有契约——
+     *       IMAGE（头像/帖子图/相册）任意登录用户可读，VOICE/VIDEO 需
+     *       {@link MediaTierPolicy#canReadContentMedia(Authentication)}
+     *       （ROLE_ADMIN / ROLE_SUPER_ADMIN / ROLE_AUDITOR）。</li>
+     * </ol>
+     * </p>
+     *
+     * @param targetUserId   路径变量中的目标用户 ID（文件归属者）
+     * @param subPath        subPath（如 {@code 202607/uuid.jpg}），不含 userId
+     * @param authentication 当前请求的认证主体（由 SecurityContext 注入）
+     * @param profile        已解析的访问档案（分类 + 档位），null 时内部重新解析
+     * @return 已通过校验的 {@link MediaFile}，包含可读取的 Resource 与 MediaType
+     * @throws AccessDeniedException    未认证，或非本人且不具备该档位要求的角色
+     * @throws ResponseStatusException  路径非法或文件不存在（400/404）；分类查库故障时 503
+     */
+    public MediaFile loadMedia(Long targetUserId, String subPath, Authentication authentication,
+                               AccessProfile profile) {
         if (targetUserId == null) {
             throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
                     "userId 不能为空");
         }
-        // 分级鉴权：IMAGE 为社交公开资源（登录用户可读）；其余类型仅本人或管理员
         Long currentUserId = extractCurrentUserId(authentication);
-        boolean isAdmin = hasAdminRole(authentication);
         if (currentUserId == null) {
             // 未认证（无 token 或 token 无效）
             throw new AccessDeniedException(ErrorMessages.MEDIA_ACCESS_UNAUTHENTICATED);
         }
-        MediaCategory detectedType = categoryHint != null
-                ? categoryHint
+        AccessProfile effectiveProfile = profile != null
+                ? profile
+                : resolveAccessProfile(targetUserId, subPath);
+        MediaCategory detectedType = effectiveProfile.category() != null
+                ? effectiveProfile.category()
                 : probeMediaTypeByPath(subPath);
+        // 档位缺失（理论不可达）→ 按最严格的认证档处理（fail-closed）
+        MediaTierPolicy.Tier tier = effectiveProfile.tier() != null
+                ? effectiveProfile.tier()
+                : MediaTierPolicy.Tier.VERIFICATION;
+
         boolean isOwner = targetUserId.equals(currentUserId);
+        // 内容档公开读：与改造前完全一致（帖子配图/头像/相册对登录用户可见）
         boolean imagePublicRead = detectedType == MediaCategory.IMAGE;
-        if (!isOwner && !isAdmin && !imagePublicRead) {
-            LOGGER.warn("媒体访问被拒绝: targetUserId={}, currentUserId={}, isAdmin={}, type={}",
-                    targetUserId, currentUserId, isAdmin, detectedType);
+        // 两档判定唯一口径（controller / service 双层校验共用 MediaTierPolicy#canRead）
+        boolean permitted = MediaTierPolicy.canRead(
+                tier, isOwner, imagePublicRead, authentication);
+        if (!permitted) {
+            LOGGER.warn("媒体访问被拒绝: targetUserId={}, currentUserId={}, tier={}, type={}, "
+                            + "canReadContent={}, canReadVerification={}",
+                    targetUserId, currentUserId, tier, detectedType,
+                    MediaTierPolicy.canReadContentMedia(authentication),
+                    MediaTierPolicy.canReadVerificationMedia(authentication));
             throw new AccessDeniedException(ErrorMessages.MEDIA_ACCESS_FORBIDDEN);
         }
 
@@ -191,9 +246,21 @@ public class MediaAccessService {
         }
 
         MediaType mediaType = probeMediaType(target);
-        LOGGER.debug("媒体访问授权通过: targetUserId={}, currentUserId={}, isAdmin={}, path={}",
-                targetUserId, currentUserId, isAdmin, target);
+        LOGGER.debug("媒体访问授权通过: targetUserId={}, currentUserId={}, tier={}, type={}, path={}",
+                targetUserId, currentUserId, tier, detectedType, target);
         return new MediaFile(new FileSystemResource(target), mediaType);
+    }
+
+    /**
+     * 媒体访问档案：一次解析同时给出「访问分类」与「读取档位」。
+     *
+     * <p>Controller 与 Service 共用同一实例，保证前置审计与强制校验口径一致，
+     * 且同一请求只查一次库。</p>
+     *
+     * @param category 访问分类（IMAGE/VOICE/VIDEO/ID_CARD，驱动公开读与缓存策略）
+     * @param tier     读取档位（CONTENT/VERIFICATION，驱动两档角色授权）
+     */
+    public record AccessProfile(MediaCategory category, MediaTierPolicy.Tier tier) {
     }
 
     /**
@@ -264,24 +331,6 @@ public class MediaAccessService {
             }
         }
         return null;
-    }
-
-    /**
-     * 判断当前用户是否为管理员（拥有 ROLE_ADMIN 权限）。
-     *
-     * @param authentication 当前认证主体
-     * @return true 表示为管理员
-     */
-    private boolean hasAdminRole(Authentication authentication) {
-        if (authentication == null || authentication.getAuthorities() == null) {
-            return false;
-        }
-        for (GrantedAuthority authority : authentication.getAuthorities()) {
-            if (ROLE_ADMIN.equals(authority.getAuthority())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
@@ -386,9 +435,13 @@ public class MediaAccessService {
     }
 
     /**
-     * 解析媒体访问分类（2026-10-05 身份证照片越权面收敛）。
+     * 解析媒体访问分类（2026-10-05 身份证照片越权面收敛；2026-10 分级改造后为薄封装）。
      *
-     * <p>优先级：</p>
+     * <p>只关心「访问分类」（IMAGE/VOICE/VIDEO/ID_CARD）的调用方用本方法；
+     * 需要同时拿到<b>读取档位</b>（CONTENT/VERIFICATION）的调用方请用
+     * {@link #resolveAccessProfile}，两者同源于同一次查库，不会出现口径漂移。</p>
+     *
+     * <p>分类优先级（口径与改造前逐字一致）：</p>
      * <ol>
      *   <li>DB 分类（media_asset.category，按 URL 精确查询）：ID_CARD/VOICE/VIDEO
      *       直接生效——实名认证照片上传时显式登记，不再依赖路径关键词</li>
@@ -406,23 +459,74 @@ public class MediaAccessService {
      * @return 解析出的访问分类，永不为 null
      */
     public MediaCategory resolveCategory(Long targetUserId, String subPath) {
+        return resolveAccessProfile(targetUserId, subPath).category();
+    }
+
+    /**
+     * 解析媒体访问档案（访问分类 + 读取档位，2026-10 媒体读取两档分级改造）。
+     *
+     * <p><b>档位判定优先级</b>（真源见 {@link MediaTierPolicy}）：</p>
+     * <ol>
+     *   <li>(a) <b>DB 显式分类优先</b>：请求能映射到 {@code media_asset} 记录时，
+     *       按其 {@code category} 定档。ID_CARD（上传契约
+     *       {@code POST /api/v1/media/upload} 的 multipart 字段 category=ID_CARD
+     *       + 迁移 V2026.10.05.0001 对存量认证照片的回填）→ 认证档；
+     *       GENERAL/AVATAR/POST/VOICE/VIDEO → 内容档。</li>
+     *   <li>(b) <b>URL 路径关键词兜底</b>：DB 无记录（存量文件、mock profile）时
+     *       沿用 {@link #probeMediaTypeByPath} 的关键词识别。注意正常落盘路径是
+     *       {@code {userId}/{yyyyMM}/{uuid}.{ext}}（{@link LocalMediaStorageService}），
+     *       <b>不携带任何业务语义</b>，路径兜底只对早期非 UUID 命名的存量文件生效。</li>
+     *   <li>(c) <b>无法归类 → 认证档（fail-closed，方向不可逆）</b>：DB 有记录但
+     *       category 为空或不在已知枚举内（脏数据/未来新增未同步的取值），
+     *       以及两路信号皆缺失时，一律按最严格的认证档处理——
+     *       分类不明时宁可让有权角色吃 403，也不放开身份证照片。</li>
+     * </ol>
+     *
+     * <p>两路信号以 {@link MediaTierPolicy#strictest} 合并，<b>只收紧不放松</b>，
+     * 因此路径关键词命中的高敏感结论（历史 id-card/verification 目录）不会被
+     * DB 的普通分类洗白。</p>
+     *
+     * <p>访问分类（category）的计算口径与改造前逐字一致，因为它是「IMAGE 公开可读」
+     * 与响应缓存策略的唯一依据：帖子配图/头像/照片墙对任意登录用户可读的既有契约
+     * 不因本次分级而改变。真正收紧的是档位维度——认证档资源不再因
+     * 任何非 SUPER_ADMIN 角色（含校区 ADMIN 与新增的只读审核员 AUDITOR）而放开。</p>
+     *
+     * <p>fail-closed：DB 查询故障时抛 503（无法确认是否为高敏感分类时宁可拒绝服务，
+     * 不降级为公开可读）。mock profile（仓库为 null）直接走路径兜底。</p>
+     *
+     * @param targetUserId 文件归属者用户 ID
+     * @param subPath      子路径（不含 userId）
+     * @return 解析出的访问档案（分类 + 档位），永不为 null
+     */
+    public AccessProfile resolveAccessProfile(Long targetUserId, String subPath) {
         if (mediaAssetRepository != null && targetUserId != null
                 && subPath != null && !subPath.isBlank()) {
             try {
                 String url = MEDIA_URL_PREFIX + targetUserId + "/" + subPath;
                 List<MediaAsset> assets = mediaAssetRepository.findByUrlIn(List.of(url));
-                MediaCategory fromDb = assets.isEmpty()
-                        ? null : mapAccessCategory(assets.get(0).getCategory());
+                boolean registered = !assets.isEmpty();
+                String dbCategory = registered ? assets.get(0).getCategory() : null;
+                MediaCategory fromDb = mapAccessCategory(dbCategory);
                 // DB 显式登记为高敏感分类 → 直接采用
-                if (fromDb == MediaCategory.ID_CARD) {
-                    return MediaCategory.ID_CARD;
-                }
                 MediaCategory fromPath = probeMediaTypeByPath(subPath);
-                // 路径关键词命中 → 收紧（VOICE/VIDEO/ID_CARD，只收紧不放松）
-                if (fromPath != MediaCategory.IMAGE) {
-                    return fromPath;
+                MediaCategory category;
+                if (fromDb == MediaCategory.ID_CARD) {
+                    category = MediaCategory.ID_CARD;
+                } else if (fromPath != MediaCategory.IMAGE) {
+                    // 路径关键词命中 → 收紧（VOICE/VIDEO/ID_CARD，只收紧不放松）
+                    category = fromPath;
+                } else {
+                    category = fromDb != null ? fromDb : MediaCategory.IMAGE;
                 }
-                return fromDb != null ? fromDb : MediaCategory.IMAGE;
+                // 档位：DB 分类（已登记时）与路径分类两路信号取更严者
+                MediaTierPolicy.Tier dbTier = registered
+                        ? MediaTierPolicy.tierForStoredCategory(dbCategory)
+                        : null;
+                MediaTierPolicy.Tier pathTier =
+                        MediaTierPolicy.tierForMediaCategory(category.name());
+                return new AccessProfile(category, MediaTierPolicy.strictest(dbTier, pathTier));
+            } catch (ResponseStatusException ex) {
+                throw ex;
             } catch (RuntimeException e) {
                 // fail-closed：分类不确定时拒绝服务（避免 DB 故障窗口期把 ID_CARD 判为公开 IMAGE）
                 LOGGER.warn("媒体分类查询失败，fail-closed 拒绝访问: targetUserId={}, subPath={}, error={}",
@@ -432,7 +536,9 @@ public class MediaAccessService {
                         "媒体权限校验暂不可用，请稍后重试");
             }
         }
-        return probeMediaTypeByPath(subPath);
+        // 无 DB 可依（mock profile / 参数缺失）→ 纯路径兜底，行为与改造前一致
+        MediaCategory category = probeMediaTypeByPath(subPath);
+        return new AccessProfile(category, MediaTierPolicy.tierForMediaCategory(category.name()));
     }
 
     /**

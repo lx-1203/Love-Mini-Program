@@ -23,7 +23,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,7 +48,10 @@ import org.springframework.web.servlet.HandlerMapping;
  *       要求请求必须携带有效 JWT（支持 Authorization 头或 {@code ?token=xxx} 查询参数，
  *       详见 {@link com.campuslove.api.config.JwtAuthenticationFilter}）</li>
  *   <li>Controller 从 {@link SecurityContextHolder} 取 Authentication，传给 Service</li>
- *   <li>Service 校验 targetUserId 必须等于当前 userId，或当前用户为 ADMIN，否则 403</li>
+ *   <li>Service 校验 targetUserId 必须等于当前 userId；非本人时按<b>资源敏感度两档</b>
+ *       授权（真源 {@link MediaTierPolicy}）：内容档（帖子配图/头像/相册/语音/视频）
+ *       ADMIN / SUPER_ADMIN / AUDITOR 可读，其中 IMAGE 仍对任意登录用户公开可读；
+ *       认证档（实名认证材料：身份证/学生证/学信网截图）仅 SUPER_ADMIN 可读</li>
  * </ol>
  * </p>
  *
@@ -100,9 +102,6 @@ public class MediaAccessController {
      * 由 AUDIT appender 写入 {@code logs/audit.log}，便于安全合规追溯。</p>
      */
     private static final Logger AUDIT_LOG = LoggerFactory.getLogger("com.campuslove.api.audit");
-
-    /** Task 11.5：管理员角色标识，与 JwtAuthenticationFilter 注入的 ROLE_ADMIN 一致 */
-    private static final String ROLE_ADMIN = "ROLE_ADMIN";
 
     /** Task 11.5：身份证文件路径关键词（小写匹配） */
     private static final Pattern ID_CARD_PATTERN = Pattern.compile(
@@ -263,7 +262,7 @@ public class MediaAccessController {
     @GetMapping("/{userId}/**")
     @Operation(
             summary = "鉴权代理读取媒体文件",
-            description = "按 JWT 中的 userId 校验文件归属，仅文件所有者或 ADMIN 可访问。支持 ?token=xxx 查询参数模式（用于 <image src> 标签）。路径穿越防护：字符级 + 绝对路径双重校验。",
+            description = "按 JWT 中的 userId 校验文件归属；非本人时按资源敏感度两档授权：内容档（帖子配图/头像/相册/语音/视频）ADMIN/SUPER_ADMIN/AUDITOR 可读、IMAGE 对登录用户公开可读；实名认证材料（身份证/学生证）仅本人或 SUPER_ADMIN。支持 ?token=xxx 查询参数模式（用于 <image src> 标签）。路径穿越防护：字符级 + 绝对路径双重校验。",
             operationId = "getMedia"
     )
     @io.swagger.v3.oas.annotations.responses.ApiResponses({
@@ -279,32 +278,40 @@ public class MediaAccessController {
             HttpServletRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String subPath = extractSubPath(request, userId);
-        // Task 11.5 + 2026-10-05 收敛：媒体类型优先按 DB 分类（media_asset.category，
-        // 实名认证照片上传即登记 ID_CARD）解析，路径关键词仅作存量数据兜底。
-        MediaAccessService.MediaCategory mediaCategory =
-                mediaAccessService.resolveCategory(userId, subPath);
-        MediaType mediaType = MediaType.valueOf(mediaCategory.name());
+        // Task 11.5 + 2026-10-05 收敛 + 2026-10 两档分级：
+        // 一次解析同时得到「访问分类」（驱动公开读与缓存策略）与「读取档位」
+        // （CONTENT / VERIFICATION，驱动两档角色授权），controller 与 service 共用同一结论。
+        MediaAccessService.AccessProfile accessProfile =
+                mediaAccessService.resolveAccessProfile(userId, subPath);
+        MediaTierPolicy.Tier tier = accessProfile.tier();
+        MediaType mediaType = MediaType.valueOf(accessProfile.category().name());
         String mediaId = extractMediaId(subPath);
-        LOGGER.debug("媒体访问请求: userId={}, subPath={}, mediaType={}, mediaId={}, authenticated={}",
-                userId, subPath, mediaType, mediaId,
+        LOGGER.debug("媒体访问请求: userId={}, subPath={}, mediaType={}, tier={}, mediaId={}, authenticated={}",
+                userId, subPath, mediaType, tier, mediaId,
                 authentication != null && authentication.isAuthenticated());
 
         // Task 11.5：统一归属校验（含审计日志），实际访问控制仍由 service 强制执行
-        // （传入同一分类结论，controller/service 双层校验口径一致）
-        assertOwnership(userId, mediaId, mediaType, authentication);
+        // （传入同一档案，controller/service 双层校验口径一致）
+        assertOwnership(userId, mediaId, mediaType, tier, authentication);
 
         MediaAccessService.MediaFile mediaFile =
-                mediaAccessService.loadMedia(userId, subPath, authentication, mediaCategory);
+                mediaAccessService.loadMedia(userId, subPath, authentication, accessProfile);
 
         // 审计日志：访问成功
-        AUDIT_LOG.info("media.access.granted type={} targetUserId={} mediaId={} requesterId={} isAdmin={}",
-                mediaType, userId, mediaId, extractCurrentUserId(authentication), hasAdminRole(authentication));
+        AUDIT_LOG.info("media.access.granted type={} tier={} targetUserId={} mediaId={} requesterId={}"
+                        + " canReadContent={} canReadVerification={}",
+                mediaType, tier, userId, mediaId, extractCurrentUserId(authentication),
+                MediaTierPolicy.canReadContentMedia(authentication),
+                MediaTierPolicy.canReadVerificationMedia(authentication));
 
         // security_review 修复（R2-LOW-02）：按媒体类型差异化缓存策略——
         // IMAGE（公开社交资源）可私有缓存 1h；VOICE/VIDEO/ID_CARD（仅本人/管理员，
         // 高敏感）禁用缓存，避免共享设备浏览器缓存残留导致隐私泄露
         // R4-01851：缓存时长收敛为常量，调整无需改字符串字面量
+        // 2026-10 两档分级补充：认证档一律 no-store（即便其分类被兜底判为 IMAGE，
+        // 例如 media_asset.category 取值异常的 fail-closed 场景），绝不让实名材料进共享缓存
         String cacheControl = mediaType == MediaType.IMAGE
+                        && tier != MediaTierPolicy.Tier.VERIFICATION
                 ? "private, max-age=" + IMAGE_CACHE_MAX_AGE_SECONDS
                 : "no-store, no-cache, must-revalidate";
         return ResponseEntity.ok()
@@ -374,15 +381,21 @@ public class MediaAccessController {
     }
 
     /**
-     * Task 11.5：统一归属校验。
+     * Task 11.5 + 2026-10 两档分级：统一归属校验。
      *
-     * <p>对图片/语音/视频/身份证四类文件执行分级授权（infra R2-00013 修复）：
+     * <p>改造前只有一条 {@code hasAdminRole()}（仅 ROLE_ADMIN）同时决定内容类图片与
+     * 实名认证材料的可读性；现在按资源敏感度分两档，判定真源见 {@link MediaTierPolicy}：
      * <ul>
-     *   <li>{@link MediaType#IMAGE}（头像/帖子图/活动图）：任何已登录用户可读——
-     *       社交浏览场景（查看他人资料、帖子、活动）必须能加载图片，否则核心功能不可用</li>
-     *   <li>{@link MediaType#VOICE} / {@link MediaType#VIDEO}：仅本人或 ADMIN</li>
-     *   <li>{@link MediaType#ID_CARD}（身份证/学生证）：仅本人或 ADMIN，拒绝时审计标注</li>
-     *   <li>未认证一律拒绝</li>
+     *   <li><b>本人短路（保持不变）</b>：上传者永远可读自己的文件；</li>
+     *   <li>{@link MediaTierPolicy.Tier#VERIFICATION} 认证档（身份证/学生证/学信网截图）：
+     *       仅 ROLE_SUPER_ADMIN（{@link MediaTierPolicy#canReadVerificationMedia}），
+     *       校区 ADMIN 与只读审核员 AUDITOR 一律 403 并审计标注，
+     *       「IMAGE 公开可读」分支在本档<b>不适用</b>；</li>
+     *   <li>{@link MediaTierPolicy.Tier#CONTENT} 内容档（帖子配图/头像/相册/语音/视频）：
+     *       IMAGE 仍为社交公开资源、任何已登录用户可读（否则查看他人资料、帖子、活动
+     *       等核心功能不可用）；VOICE/VIDEO 需 ROLE_ADMIN / ROLE_SUPER_ADMIN /
+     *       ROLE_AUDITOR（{@link MediaTierPolicy#canReadContentMedia}）；</li>
+     *   <li>未认证一律拒绝。</li>
      * </ul>
      * </p>
      *
@@ -390,39 +403,48 @@ public class MediaAccessController {
      * 实际访问控制仍由 {@link MediaAccessService#loadMedia} 在文件加载阶段强制执行，
      * 形成双层防护，避免任一层的疏漏导致越权。</p>
      *
-     * <p>身份证（{@link MediaType#ID_CARD}）属于极高敏感数据，访问拒绝时会在审计日志中
-     * 显式标注，便于安全审计追溯越权尝试。</p>
+     * <p>认证档（{@link MediaType#ID_CARD}）属于极高敏感个人信息，访问拒绝时会在审计日志中
+     * 显式标注，便于安全审计追溯越权尝试（含「有权角色但档位不够」的情形，
+     * 例如 AUDITOR 尝试读取身份证照片）。</p>
      *
      * @param targetUserId   路径变量中的目标用户 ID（文件归属者）
      * @param mediaId        媒体文件标识（从 subPath 提取的 uuid 部分，可为空）
-     * @param mediaType      媒体类型（IMAGE/VOICE/VIDEO/ID_CARD）
+     * @param mediaType      媒体类型（IMAGE/VOICE/VIDEO/ID_CARD，驱动公开读与缓存）
+     * @param tier           读取档位（CONTENT/VERIFICATION，驱动两档角色授权）
      * @param authentication 当前请求的认证主体
-     * @throws AccessDeniedException 未认证或非本人/非管理员时抛出
+     * @throws AccessDeniedException 未认证，或非本人且不具备该档位要求的角色时抛出
      */
     private void assertOwnership(Long targetUserId, String mediaId, MediaType mediaType,
-                                  Authentication authentication) {
+                                  MediaTierPolicy.Tier tier, Authentication authentication) {
         Long currentUserId = extractCurrentUserId(authentication);
-        boolean isAdmin = hasAdminRole(authentication);
 
         if (currentUserId == null) {
             // 未认证访问尝试
-            AUDIT_LOG.warn("media.access.denied.unauthenticated type={} targetUserId={} mediaId={}",
-                    mediaType, targetUserId, mediaId);
+            AUDIT_LOG.warn("media.access.denied.unauthenticated type={} tier={} targetUserId={} mediaId={}",
+                    mediaType, tier, targetUserId, mediaId);
             throw new AccessDeniedException(ErrorMessages.MEDIA_ACCESS_UNAUTHENTICATED);
         }
 
-        // 分级授权：IMAGE（头像/帖子图/活动图）为社交公开资源，登录用户均可读；
-        // 语音/视频/身份证仅本人或管理员可读
         boolean isOwner = targetUserId.equals(currentUserId);
+        // 内容档公开读：与改造前一致（头像/帖子图/活动图对登录用户可见）
         boolean imagePublicRead = mediaType == MediaType.IMAGE;
-        if (!isOwner && !isAdmin && !imagePublicRead) {
-            // 越权访问尝试（非本人且非管理员，且非公开图片）
-            AUDIT_LOG.warn("media.access.denied.forbidden type={} targetUserId={} requesterId={} mediaId={}",
-                    mediaType, targetUserId, currentUserId, mediaId);
-            // 身份证越权访问尝试单独标注，便于安全审计高频告警
-            if (mediaType == MediaType.ID_CARD) {
-                AUDIT_LOG.error("media.access.idcard.breach.attempt targetUserId={} requesterId={} mediaId={}",
-                        targetUserId, currentUserId, mediaId);
+        // 两档判定唯一口径（与 service 层强制校验共用 MediaTierPolicy#canRead）
+        boolean permitted = MediaTierPolicy.canRead(
+                tier, isOwner, imagePublicRead, authentication);
+        if (!permitted) {
+            MediaTierPolicy.Tier effectiveTier =
+                    tier != null ? tier : MediaTierPolicy.Tier.VERIFICATION;
+            // 越权访问尝试（非本人，且不具备该档位要求的角色，且非公开图片）
+            AUDIT_LOG.warn("media.access.denied.forbidden type={} tier={} targetUserId={} "
+                            + "requesterId={} mediaId={}",
+                    mediaType, effectiveTier, targetUserId, currentUserId, mediaId);
+            // 认证资料越权访问尝试单独标注，便于安全审计高频告警
+            // （档位为认证档即标注，不再只看 mediaType——DB 分类异常被 fail-closed
+            // 收紧为认证档的资源同样要留痕）
+            if (effectiveTier == MediaTierPolicy.Tier.VERIFICATION) {
+                AUDIT_LOG.error("media.access.idcard.breach.attempt type={} targetUserId={} "
+                                + "requesterId={} mediaId={}",
+                        mediaType, targetUserId, currentUserId, mediaId);
             }
             throw new AccessDeniedException(
                     "无权访问该用户的" + mediaTypeLabel(mediaType) + "文件");
@@ -476,24 +498,6 @@ public class MediaAccessController {
             }
         }
         return null;
-    }
-
-    /**
-     * Task 11.5：判断当前用户是否为管理员。
-     *
-     * @param authentication 当前认证主体
-     * @return true 表示为管理员（拥有 ROLE_ADMIN）
-     */
-    private boolean hasAdminRole(Authentication authentication) {
-        if (authentication == null || authentication.getAuthorities() == null) {
-            return false;
-        }
-        for (GrantedAuthority authority : authentication.getAuthorities()) {
-            if (ROLE_ADMIN.equals(authority.getAuthority())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**

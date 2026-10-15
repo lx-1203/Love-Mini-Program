@@ -157,6 +157,12 @@ springdoc:
   paths-to-match: /api/v1/**,/api/ai/**
 
 app:
+  # 后台内容创作（官方小编代发）配置
+  # compose-author-user-id：后台「发布内容」页发帖与上传配图所归属的官方小编 users.id。
+  # 保持 0（未配置）时两个写端点返回 503 并给出中文指引——刻意不回退成当前登录管理员，
+  # 否则审计日志分不清「运营代发」和「管理员本人发言」，小程序里也会以管理员名义出内容。
+  admin:
+    compose-author-user-id: ${APP_ADMIN_COMPOSE_AUTHOR_USER_ID:0}
   # 媒体存储配置（Phase A - Task A3）
   # storageRoot: 本地存储根目录，相对路径基于应用工作目录
   # URL 访问路径前缀 /uploads/** 由 WebConfig 静态资源映射

@@ -91,6 +91,13 @@ public class ProfileUpdateService {
     @Autowired(required = false)
     private ContentSecurityChecker contentSecurityChecker;
 
+    /**
+     * 圈层树仓库（字段注入，required=false 与上面的增量接线同口径）。
+     * 用于「用户选定校区 → 回填 users.circle_path」；为 null 时跳过回填，行为与改动前一致。
+     */
+    @Autowired(required = false)
+    private com.campuslove.api.repository.circle.CircleLayerRepository circleLayerRepository;
+
     public ProfileUpdateService(
             UserRepository userRepository,
             UserFollowRepository userFollowRepository,
@@ -439,6 +446,11 @@ public class ProfileUpdateService {
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new IllegalStateException(ErrorMessages.USER_NOT_FOUND_CN_PREFIX + currentUserId));
         user.setProfileCompletion(queryService.calculateProfileCompletion(currentUserId));
+        // 圈层归属回填（2026-10-14）：选定校区后把该校区在 circle_layer 上的三级节点路径写进
+        // users.circle_path。此前这一列只由一次性回填脚本维护，于是新用户永远进不了圈层轴——
+        // 他们的帖子全部落「未归属」，按圈层收缩的后台管理员看不到任何本人内容。
+        // 校区名不在树上的（如未挂树的校区）保持 null，即未归属，而不是猜一个大区。
+        user.setCirclePath(circlePathOfCampus(profile.getCampusName()));
         user.setUpdatedAt(now);
         userRepository.save(user);
 
@@ -447,6 +459,22 @@ public class ProfileUpdateService {
                 profile.getCampusName(),
                 profile.getDepartmentName(),
                 profile.getVerificationStatus());
+    }
+
+    /**
+     * 校区名 → 圈层树三级节点的 {@code circle_path}（level=3 且 name 全等）。
+     *
+     * <p>规则与后台建号链路共用同一个仓库方法（{@code findFirstByLevelAndName}）；
+     * 未命中（校区没挂树）返回 null，由调用方按「未归属」处理，而不是猜一个大区。</p>
+     */
+    private String circlePathOfCampus(String campusName) {
+        if (circleLayerRepository == null || campusName == null || campusName.isBlank()) {
+            return null;
+        }
+        return circleLayerRepository.findFirstByLevelAndName(3, campusName.trim())
+                .map(com.campuslove.api.entity.circle.CircleLayer::getCirclePath)
+                .filter(path -> path != null && !path.isBlank())
+                .orElse(null);
     }
 
     // ---- 日程资料保存 ----

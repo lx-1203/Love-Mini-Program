@@ -42,7 +42,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Profile("real")
 @RestController
 @RequestMapping("/api/v1/admin/notify-config")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'AUDITOR')")
 public class AdminNotifyConfigController {
 
     private final NotifyConfigRepository notifyConfigRepository;

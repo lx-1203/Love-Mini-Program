@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Profile("real")
 @RestController
 @RequestMapping("/api/v1/admin")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'AUDITOR')")
 public class AdminMatchConfigController {
 
     private final AdminMatchConfigService matchConfigService;

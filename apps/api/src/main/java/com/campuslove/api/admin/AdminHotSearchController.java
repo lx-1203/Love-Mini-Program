@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Profile("real")
 @RestController
 @RequestMapping("/api/v1/admin/search/hot")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'AUDITOR')")
 @Validated
 public class AdminHotSearchController {
 

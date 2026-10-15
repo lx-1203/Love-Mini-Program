@@ -39,7 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Profile("real")
 @RestController
 @RequestMapping("/api/v1/admin/real-name-certifications")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'AUDITOR')")
 public class AdminRealNameController {
 
     private final RealNameCertificationService realNameCertificationService;

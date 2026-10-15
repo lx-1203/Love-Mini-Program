@@ -232,6 +232,17 @@ public class Post {
     @Column(name = "circle_id")
     private Long circleId;
 
+    /**
+     * 归属圈层路径（后台 RBAC 三级圈层的范围过滤键）。
+     *
+     * <p>物理列 {@code owner_circle_path varchar(256)} 早已存在，但此前没有实体映射：
+     * 写侧（后台建帖）落不进值，读侧只能靠原生 SQL 前缀匹配。取值形如
+     * {@code C1/R1/S1}，与 {@code circle_layer.circle_path} 前缀对齐，
+     * 可见性判定即 {@code WHERE owner_circle_path LIKE '<viewerPath>%'}。</p>
+     */
+    @Column(name = "owner_circle_path", length = 256)
+    private String ownerCirclePath;
+
     /** 记录创建时间（帖子发布时间，用于排序与展示） */
 
     @CreatedDate
@@ -444,6 +455,14 @@ public class Post {
 
     public void setCircleId(Long circleId) {
         this.circleId = circleId;
+    }
+
+    public String getOwnerCirclePath() {
+        return ownerCirclePath;
+    }
+
+    public void setOwnerCirclePath(String ownerCirclePath) {
+        this.ownerCirclePath = ownerCirclePath;
     }
 
     public LocalDateTime getCreatedAt() {

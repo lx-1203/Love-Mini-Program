@@ -155,6 +155,23 @@ public interface UserRepository extends JpaRepository<User, Long> {
     java.util.List<FieldCountProjection> countGroupByGradeLabel();
 
     /**
+     * 按角色（USER/GUEST/ADMIN/SUPER_ADMIN/AUDITOR）分组统计用户数。
+     * 用于管理后台首页「待办清单」（游客账号积压是运营待办项）。
+     *
+     * <p>GROUP BY 一次取回全部角色计数，避免「每种角色 count 一次」的 N+1 查询；
+     * 校区隔离口径与 {@link #countByCampusName} 一致——用户校区取自
+     * {@code user_campus_profile.campus_name}，而非 users.campus_name。</p>
+     *
+     * @param campusName 校区名（null 或空串表示全平台，不做校区过滤）
+     * @return 每种 role 对应的用户数
+     */
+    @Query("SELECT u.role AS field, COUNT(u) AS cnt FROM User u "
+            + "WHERE (:campusName IS NULL OR :campusName = '' "
+            + "OR EXISTS (SELECT 1 FROM UserCampusProfile p WHERE p.userId = u.id AND p.campusName = :campusName)) "
+            + "GROUP BY u.role")
+    java.util.List<FieldCountProjection> countGroupByRole(@Param("campusName") String campusName);
+
+    /**
      * 管理后台用户搜索（多条件分页）。
      * <p>所有筛选条件均可为 null（不参与筛选），按注册时间倒序排列。
      * 支持按 role（USER/ADMIN）、status（active/disabled）、注册时间范围、昵称匹配筛选。</p>
@@ -193,11 +210,49 @@ public interface UserRepository extends JpaRepository<User, Long> {
             Pageable pageable);
 
     /**
+     * 用户列表的<b>圈层数据域强制版</b>（RBAC 圈层授权轴，AdminScopeService）。
+     *
+     * <p>筛选条件与 {@link #searchForAdmin} 完全一致，额外强制：用户必须落在调用管理员
+     * （{@code :adminId}）在 {@code admin_layer} 绑定节点之下——用相关子查询 {@code EXISTS}
+     * 把绑定节点的 {@code circle_path} 当前缀匹配 {@code users.circle_path}，一次覆盖
+     * 「多节点绑定」而无需把变长前缀列表塞进查询。</p>
+     *
+     * <p>未归属（{@code circle_path IS NULL}）的用户：{@code NULL LIKE ...} 结果为 NULL，
+     * 被 {@code EXISTS} 天然排除，即局部圈层作用域读不到未归属用户（fail-closed）。
+     * SUPER_ADMIN 不走本方法，沿用 {@link #searchForAdmin}，行为逐字节不变。</p>
+     */
+    @Query("""
+            SELECT u FROM User u
+            WHERE (:role IS NULL OR u.role = :role)
+              AND (:status IS NULL OR u.status = :status)
+              AND (:createdAtFrom IS NULL OR u.createdAt >= :createdAtFrom)
+              AND (:createdAtTo IS NULL OR u.createdAt <= :createdAtTo)
+              AND (:nickname IS NULL OR :nickname = '' OR u.nickname LIKE CONCAT(:nickname, '%'))
+              AND (:campusName IS NULL OR :campusName = '' OR EXISTS (
+                    SELECT 1 FROM UserCampusProfile p
+                    WHERE p.userId = u.id AND p.campusName = :campusName))
+              AND EXISTS (
+                    SELECT 1 FROM AdminLayer al, CircleLayer cl
+                    WHERE al.circleLayerId = cl.id AND al.adminId = :adminId
+                      AND u.circlePath LIKE CONCAT(cl.circlePath, '%'))
+            ORDER BY u.createdAt DESC
+            """)
+    Page<User> searchForAdminScoped(
+            @Param("role") String role,
+            @Param("status") String status,
+            @Param("createdAtFrom") LocalDateTime createdAtFrom,
+            @Param("createdAtTo") LocalDateTime createdAtTo,
+            @Param("nickname") String nickname,
+            @Param("campusName") String campusName,
+            @Param("adminId") Long adminId,
+            Pageable pageable);
+
+    /**
      * 分页查询全部管理员（ADMIN + SUPER_ADMIN）。
      *
      * <p>修复：AdminUserController.listAdmins 原对 ADMIN/SUPER_ADMIN 各查一页后
      * 内存合并，单页最多返回 2×pageSize 条、跨页全局排序不成立、可能重复/遗漏。
-     * 本方法一次查询同时覆盖两类角色，保证分页语义正确。</p>
+     * 本方法一次查询同时覆盖三类角色（ADMIN / SUPER_ADMIN / AUDITOR），保证分页语义正确。</p>
      *
      * <p>R4-00384：昵称条件同样改为前缀匹配（命中索引，避免全表扫描）。</p>
      *
@@ -208,7 +263,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("""
             SELECT u FROM User u
-            WHERE u.role IN ('ADMIN', 'SUPER_ADMIN')
+            WHERE u.role IN ('ADMIN', 'SUPER_ADMIN', 'AUDITOR')
               AND (:nickname IS NULL OR :nickname = '' OR u.nickname LIKE CONCAT(:nickname, '%'))
               AND (:campusName IS NULL OR :campusName = '' OR EXISTS (
                     SELECT 1 FROM UserCampusProfile p

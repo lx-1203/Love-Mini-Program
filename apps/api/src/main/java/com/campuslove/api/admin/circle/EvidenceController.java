@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @Profile("real")
 @RestController
 @RequestMapping("/api/v1/admin/evidence")
-@PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'AUDITOR')")
 public class EvidenceController {
 
     private final AdminLayerRepository adminLayerRepository;

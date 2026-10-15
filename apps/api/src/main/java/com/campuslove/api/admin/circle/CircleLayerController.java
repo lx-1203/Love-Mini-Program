@@ -15,7 +15,9 @@ import org.springframework.web.bind.annotation.*;
 @Profile("real")
 @RestController
 @RequestMapping("/api/v1/admin/circle-layers")
-@PreAuthorize("hasRole('SUPER_ADMIN')")
+// 圈层结构（名称/层级/路径）对全体后台角色可读：校区管理员与审核员要在列表页按圈层
+// 下钻筛选，读不到树就等于该功能对他们不存在。真正的写操作逐个方法收紧到 SUPER_ADMIN。
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'AUDITOR')")
 public class CircleLayerController {
 
     private final CircleLayerRepository circleLayerRepository;
@@ -39,29 +41,35 @@ public class CircleLayerController {
     /** 获取某圈层的所有子孙圈层（Frame 04/05 圈层下钻） */
     @GetMapping("/{id}/descendants")
     public ApiResponse<List<CircleLayer>> getDescendants(@PathVariable Long id) {
-        var layer = circleLayerRepository.findById(id).orElseThrow();
+        var layer = circleLayerRepository.findById(id)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("圈层不存在: id=" + id));
         return ApiResponse.ok(circleLayerRepository.findAllDescendants(layer.getCirclePath()));
     }
 
-    /** 创建新圈层 */
+    /** 创建新圈层（仅超级管理员：改树形结构等于改所有人的数据域） */
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ApiResponse<CircleLayer> create(@RequestBody CircleLayer layer) {
-        // 自动生成 circle_path（根据 level 和 parent）
+        // 注意：circle_path 不会自动生成，必须由调用方给出（列 NOT NULL 且唯一），
+        // 形如 C1/R1/S1；parent 需以嵌套对象 {"parent":{"id":n}} 传入，实体没有 parentId 字段。
         CircleLayer saved = circleLayerRepository.save(layer);
         return ApiResponse.ok(saved);
     }
 
-    /** 更新圈层 */
+    /** 更新圈层（仅超级管理员） */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ApiResponse<CircleLayer> update(@PathVariable Long id, @RequestBody CircleLayer layer) {
         layer.setId(id);
         return ApiResponse.ok(circleLayerRepository.save(layer));
     }
 
-    /** 删除圈层（有子节点时拒绝） */
+    /** 删除圈层（有子节点时拒绝；仅超级管理员） */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ApiResponse<Void> delete(@PathVariable Long id) {
-        var layer = circleLayerRepository.findById(id).orElseThrow();
+        var layer = circleLayerRepository.findById(id)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("圈层不存在: id=" + id));
         var descendants = circleLayerRepository.findByCirclePathStartingWithOrderBySortAsc(layer.getCirclePath());
         if (descendants.size() > 1) {
             throw new IllegalArgumentException("该圈层下有子圈层，无法删除");

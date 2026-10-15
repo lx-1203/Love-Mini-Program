@@ -178,7 +178,23 @@ public class SecurityConfig {
                 .requestMatchers("/uploads/**").denyAll()
                 // 管理端点需要 ADMIN 角色，防止普通用户越权访问
                 // Task 2.4.1：路径统一升级为 /api/v1/admin/**
-                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                //
+                // 三级角色 AUDITOR（只读审核员）读写分离 —— 规则顺序至关重要：
+                // authorizeHttpRequests 按声明顺序取「首个」匹配规则，后面的规则不再参与判定，
+                // 因此四条「写方法」规则必须声明在通用 admin 规则之前；若把通用规则放前面，
+                // 写请求会先命中 hasAnyRole(ADMIN,SUPER_ADMIN,AUDITOR) 而放行，AUDITOR 的写拦截
+                // 只能退回到各 Controller 的 @PreAuthorize（且类级注解已放宽，无法兜住）。
+                // 读（GET/HEAD/OPTIONS 等）走下方通用规则，三类后台角色均可访问。
+                // 依据：已审计确认 admin/ 下无「GET 改库」端点，故按 HTTP 方法分级是安全的。
+                .requestMatchers(HttpMethod.POST, "/api/v1/admin/**")
+                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/v1/admin/**")
+                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/admin/**")
+                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/admin/**")
+                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
+                .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "AUDITOR")
                 // 公开端点：应用资产（/api/v1/media/app-assets/**）——小程序主包瘦身后
                 // 后端托管的装饰性图片（campus 场景/活动海报/插画等），免登录可看图。
                 // 注意：必须声明在 /api/v1/media/** 鉴权规则之前（Spring 按声明顺序取首个匹配）。

@@ -16,8 +16,10 @@ package com.campuslove.api.media;
  *   <li>{@link #POST} —— 帖子/动态图片</li>
  *   <li>{@link #VOICE} —— 语音</li>
  *   <li>{@link #VIDEO} —— 视频</li>
- *   <li>{@link #ID_CARD} —— 身份证/学生证等实名认证资料（极高敏感：
- *       仅本人与 ADMIN 可读，上传即登记 media_asset.category=ID_CARD）</li>
+ *   <li>{@link #ID_CARD} —— 身份证/学生证等实名认证资料（极高敏感：属<b>认证档</b>，
+ *       仅本人与 SUPER_ADMIN 可读（校区 ADMIN 与只读审核员 AUDITOR 均被排除，
+ *       判定真源见 {@link MediaTierPolicy}）；
+ *       上传即登记 media_asset.category=ID_CARD）</li>
  * </ul>
  */
 public enum MediaUploadCategory {
@@ -32,7 +34,7 @@ public enum MediaUploadCategory {
     VOICE,
     /** 视频 */
     VIDEO,
-    /** 身份证/学生证等实名认证资料（极高敏感，仅本人/ADMIN 可读） */
+    /** 身份证/学生证等实名认证资料（极高敏感，认证档：仅本人/SUPER_ADMIN 可读） */
     ID_CARD;
 
     /**

@@ -22,6 +22,8 @@ public record AdminUserDetailView(
         Integer followingCount,
         Integer followersCount,
         String campusName,
+        /** 学校之下的校区名（如「邯郸校区」）；未区分/未填时为 null。 */
+        String campusBranch,
         String verificationStatus,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,

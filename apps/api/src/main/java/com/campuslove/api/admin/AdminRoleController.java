@@ -37,10 +37,10 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 管理后台 - 角色管理控制器（eladmin 风格）。
  * <p>仅超级管理员可管理角色。角色与 user.role 字符串双轨对齐
- * （roles.code = SUPER_ADMIN / ADMIN），通过 role_menu 关联角色可见菜单。</p>
+ * （roles.code = SUPER_ADMIN / ADMIN / AUDITOR），通过 role_menu 关联角色可见菜单。</p>
  *
- * <p>R4-00391：角色编码仅允许系统识别的 {@link #SYSTEM_ROLE_CODES}（SUPER_ADMIN / ADMIN）——
- * 鉴权链路（SecurityConfig / AdminDataScope）只认 user.role 的这两个字符串，
+ * <p>R4-00391：角色编码仅允许系统识别的 {@link #SYSTEM_ROLE_CODES}（SUPER_ADMIN / ADMIN / AUDITOR）——
+ * 鉴权链路（SecurityConfig / AdminDataScope / JwtAuthenticationFilter）只认 user.role 的这三个字符串，
  * 创建任意新角色 code 对权限无任何作用（双轨假角色，运营配置误以为生效）。
  * 自定义角色编码一律拒绝并提示，保证角色模型与 user.role 单一来源对齐。</p>
  *
@@ -64,9 +64,10 @@ public class AdminRoleController {
 
     /**
      * R4-00391：系统识别的角色编码（与 user.role 单一来源对齐）。
-     * 鉴权链路仅认这两个字符串，其他自定义角色编码对权限无任何作用。
+     * 鉴权链路仅认这三个字符串，其他自定义角色编码对权限无任何作用。
+     * AUDITOR = 只读审核员（可见后台数据，写操作在 SecurityConfig 按 HTTP 方法拦截）。
      */
-    private static final Set<String> SYSTEM_ROLE_CODES = Set.of("SUPER_ADMIN", "ADMIN");
+    private static final Set<String> SYSTEM_ROLE_CODES = Set.of("SUPER_ADMIN", "ADMIN", "AUDITOR");
 
     public AdminRoleController(RoleRepository roleRepository,
                                RoleMenuRepository roleMenuRepository,
@@ -84,7 +85,7 @@ public class AdminRoleController {
     private void assertSystemRoleCode(String code) {
         if (!SYSTEM_ROLE_CODES.contains(code)) {
             throw new IllegalArgumentException(
-                    "角色编码 " + code + " 不受系统识别：权限模型仅支持 SUPER_ADMIN / ADMIN"
+                    "角色编码 " + code + " 不受系统识别：权限模型仅支持 SUPER_ADMIN / ADMIN / AUDITOR"
                             + "（user.role 单一来源），自定义编码创建后对权限无任何作用，已拒绝。");
         }
     }
@@ -253,9 +254,9 @@ public class AdminRoleController {
         if (roleOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        // 内置角色（SUPER_ADMIN/ADMIN）禁止删除，防止权限模型被破坏
+        // 内置角色（SUPER_ADMIN/ADMIN/AUDITOR）禁止删除，防止权限模型被破坏
         String code = roleOpt.get().getCode();
-        if ("SUPER_ADMIN".equalsIgnoreCase(code) || "ADMIN".equalsIgnoreCase(code)) {
+        if (SYSTEM_ROLE_CODES.contains(code == null ? "" : code.trim().toUpperCase())) {
             return ResponseEntity.status(409).build();
         }
         roleRepository.delete(roleOpt.get());

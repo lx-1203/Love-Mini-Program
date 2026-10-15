@@ -125,6 +125,17 @@ public class User {
     private String campusName;
 
     /**
+     * 所属圈层路径（后台 RBAC 三级圈层的范围过滤键）。
+     *
+     * <p>取值形如 {@code C1/R1/S1}，与 {@code circle_layer.circle_path} 对齐，
+     * 可见性判定为前缀匹配。普通用户的校区权威来源是
+     * {@code user_campus_profile.campus_name}，本列由该值映射得到；
+     * 未映射到任何圈层节点时为 null，表示「未归属圈层」。</p>
+     */
+    @Column(name = "circle_path", length = 256)
+    private String circlePath;
+
+    /**
      * 密码哈希（支持管理员与密码登录的普通用户）。
      *
      * <p>存储 BCrypt 哈希值（格式 {@code $2a$10$...}），cost factor 为 10。
@@ -358,6 +369,14 @@ public class User {
         this.campusName = campusName;
     }
 
+    public String getCirclePath() {
+        return circlePath;
+    }
+
+    public void setCirclePath(String circlePath) {
+        this.circlePath = circlePath;
+    }
+
     /**
      * 获取密码哈希（管理员账号及密码登录的普通用户有值）。
      * @return BCrypt 哈希字符串，微信登录用户返回 null
@@ -374,9 +393,26 @@ public class User {
         this.password = password;
     }
 
-    /** 是否为管理员（含超级管理员） */
+    /**
+     * 是否为后台账号（可登录管理后台：校区管理员 / 超级管理员 / 只读审核员）。
+     *
+     * <p>注意与 {@link #isWriteAdmin()} 的区分（三级角色 AUDITOR 引入）：本方法只回答
+     * 「是不是后台用户」，供后台登录链路（RealAuthService#loginAsAdmin）与账号管理使用；
+     * AUDITOR 虽通过本方法，但仅有只读权限，任何写权限判定一律走 {@link #isWriteAdmin()}，
+     * JwtAuthenticationFilter 也据后者决定是否授予 ROLE_ADMIN。</p>
+     */
     public boolean isAdmin() {
+        return isWriteAdmin() || isAuditor();
+    }
+
+    /** 是否为可写的管理端账号（ADMIN / SUPER_ADMIN）；AUDITOR 恒为 false */
+    public boolean isWriteAdmin() {
         return "ADMIN".equalsIgnoreCase(role) || "SUPER_ADMIN".equalsIgnoreCase(role);
+    }
+
+    /** 是否为只读审核员（AUDITOR）：可见后台数据，不得执行任何写操作 */
+    public boolean isAuditor() {
+        return "AUDITOR".equalsIgnoreCase(role);
     }
 
     /** 是否为超级管理员（infra R2-00025） */

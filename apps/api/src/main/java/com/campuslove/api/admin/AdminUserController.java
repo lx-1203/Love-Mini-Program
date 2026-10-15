@@ -51,9 +51,11 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>提供用户分页列表、详情、编辑、禁用、启用等接口。</p>
  * <p>权限说明：</p>
  * <ul>
- *   <li>URL 层：SecurityConfig 已配置 /api/admin/** 仅 ADMIN 角色可访问（real 模式）</li>
- *   <li>方法层：额外加 @PreAuthorize("hasRole('ADMIN')") 作为深度防御，
- *       需在 Phase 3 任务 17 启用 @EnableMethodSecurity 后生效</li>
+ *   <li>URL 层：SecurityConfig 已配置 /api/v1/admin/** GET 三类后台角色（ADMIN / SUPER_ADMIN /
+ *       AUDITOR）可读，写方法（POST/PUT/PATCH/DELETE）仅 ADMIN / SUPER_ADMIN（real 模式）</li>
+ *   <li>方法层：额外加 @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'AUDITOR')") 作为深度防御，
+ *       需在 Phase 3 任务 17 启用 @EnableMethodSecurity 后生效；本控制器内的写端点另有
+ *       @PreAuthorize("hasRole('SUPER_ADMIN')") 收紧</li>
  *   <li>mock 模式：MockSecurityConfig 全部放行，便于本地调试</li>
  *   <li>数据隔离：校区管理员（ADMIN + campusName 非空）仅能查看/编辑/
  *       禁用本校区用户，越权访问抛
@@ -68,7 +70,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Profile("real")
 @RestController
 @RequestMapping("/api/v1/admin/users")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'AUDITOR')")
 @Validated
 public class AdminUserController {
 
@@ -81,6 +83,23 @@ public class AdminUserController {
     private final AdminCampusScopeService campusScopeService;
     /** 校园数据范围校验（越权写/读拦截，与 AdminVillagePostController 一致） */
     private final AdminDataScope adminDataScope;
+    /**
+     * 圈层数据域（RBAC 第二授权轴：看「谁的」数据）。
+     *
+     * <p>用字段注入而非加构造参数：既有单测以固定签名的便捷构造器 new 出本控制器，
+     * 扩构造器会波及测试。生产环境由 Spring 注入非 null；测试/手工构造下为 null 时
+     * {@link #listUsers} 走「无圈层绑定 → 沿用旧校区作用域」的兼容分支，行为不变。</p>
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private AdminScopeService adminScopeService;
+
+    /**
+     * 圈层树仓库（同样字段注入，理由同上）：后台建号带校区时，把校区名换成
+     * {@code users.circle_path} 的三级节点路径。为 null 时跳过回填（账号仍可建，
+     * 只是落「未归属」），不阻断创建。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.repository.circle.CircleLayerRepository circleLayerRepository;
 
     public AdminUserController(
             UserRepository userRepository,
@@ -165,22 +184,64 @@ public class AdminUserController {
         // 创建路径必须使用 save 返回值（@Version 乐观锁 + ID 由 JPA 回填）
         User saved = userRepository.save(user);
 
+        // 校区归属（2026-10-14）：带校区建号时把「学校 + 校区 + 城市 + 院系」写进 user_campus_profile，
+        // 并按学校名回填 users.circle_path。不带校区的号在圈层轴上永远不可见（其发帖全落「未归属」，
+        // 按圈层收缩的后台管理员读不到本人内容），所以演示/验收账号一律带校区建。
+        // city 与 department 是该表非空列 ⇒ 要么整组给，要么整组不给，不写半行脏数据。
+        if (req.campusName() != null && !req.campusName().isBlank()) {
+            if (req.city() == null || req.city().isBlank()
+                    || req.department() == null || req.department().isBlank()) {
+                throw new IllegalArgumentException("带校区建号必须同时提供 city 与 department");
+            }
+            UserCampusProfile profile = new UserCampusProfile();
+            profile.setUserId(saved.getId());
+            profile.setCampusName(req.campusName().trim());
+            profile.setCampusBranch(req.campusBranch() == null || req.campusBranch().isBlank()
+                    ? null : req.campusBranch().trim());
+            profile.setCityName(req.city().trim());
+            profile.setDepartmentName(req.department().trim());
+            // 与用户自己在 App 里提交校园资料同口径：新建即 pending，由认证链路去核，不在这里冒充已认证
+            profile.setVerificationStatus("pending");
+            profile.setCreatedAt(now);
+            profile.setUpdatedAt(now);
+            userCampusProfileRepository.save(profile);
+
+            saved.setCirclePath(circlePathOfCampus(req.campusName()));
+            saved = userRepository.save(saved);
+        }
+
         return ApiResponse.ok(toSummaryView(saved));
+    }
+
+    /**
+     * 校区名 → 圈层树三级节点的 {@code circle_path}。
+     *
+     * <p>与 {@code ProfileUpdateService#circlePathOfCampus} 共用同一个仓库方法（规则只此一份）；
+     * 学校名没挂树时返回 null ⇒ 该账号落「未归属」，绝不猜一个大区。</p>
+     */
+    private String circlePathOfCampus(String campusName) {
+        if (circleLayerRepository == null || campusName == null || campusName.isBlank()) {
+            return null;
+        }
+        return circleLayerRepository.findFirstByLevelAndName(3, campusName.trim())
+                .map(com.campuslove.api.entity.circle.CircleLayer::getCirclePath)
+                .filter(path -> path != null && !path.isBlank())
+                .orElse(null);
     }
 
     /**
      * 创建管理员（商业模式：每个高校一个管理员）。
      *
-     * <p>仅超级管理员可调用。创建的管理员账号 role 为 ADMIN（校区管理员）或
-     * SUPER_ADMIN（全局超级管理员），管辖范围由 campusName 决定：
+     * <p>仅超级管理员可调用。创建的管理员账号 role 为 ADMIN（校区管理员）、
+     * SUPER_ADMIN（全局超级管理员）或 AUDITOR（只读审核员），管辖范围由 campusName 决定：
      * <ul>
-     *   <li>campusName 为空 —— 全局管理员，可管理全部校区数据</li>
+     *   <li>campusName 为空 —— 全局管理员，可管理全部校区数据（仅 SUPER_ADMIN 允许）</li>
      *   <li>campusName 非空 —— 校区管理员，仅能管理该校区用户/内容（数据隔离强制）</li>
      * </ul>
      * </p>
      *
      * <p>校验：手机号唯一、格式 11 位、密码 6-64 位、昵称 1-20 字；
-     * role 非 ADMIN/SUPER_ADMIN 时 400。</p>
+     * role 非 ADMIN/SUPER_ADMIN/AUDITOR 时 400。</p>
      *
      * @param req 创建管理员请求体
      * @return 创建成功后的管理员摘要
@@ -209,10 +270,14 @@ public class AdminUserController {
         if (userRepository.findByPhone(req.phone()).isPresent()) {
             throw new IllegalArgumentException(ErrorMessages.PHONE_ALREADY_REGISTERED);
         }
-        // 校区管理员必须指定管辖校区（否则与全局管理员语义冲突）
+        // 校区管理员必须指定管辖校区（否则与全局管理员语义冲突）。
+        // AUDITOR 同样强制指定校区：审核员没有「全局放行」语义（见 AdminDataScope），
+        // 无校区的审核账号将读不到任何数据，故从创建入口就拒绝这种账号。
         String campusName = normalize(req.campusName());
-        if ("ADMIN".equals(role) && campusName == null) {
-            throw new IllegalArgumentException(ErrorMessages.CAMPUS_ADMIN_CAMPUS_NAME_REQUIRED);
+        if (("ADMIN".equals(role) || "AUDITOR".equals(role)) && campusName == null) {
+            throw new IllegalArgumentException("AUDITOR".equals(role)
+                    ? "审核员（AUDITOR）必须指定管辖校区 campusName"
+                    : ErrorMessages.CAMPUS_ADMIN_CAMPUS_NAME_REQUIRED);
         }
         if ("SUPER_ADMIN".equals(role) && campusName != null) {
             throw new IllegalArgumentException(ErrorMessages.SUPER_ADMIN_NO_CAMPUS_NAME);
@@ -225,6 +290,10 @@ public class AdminUserController {
         user.setNickname(req.nickname().trim());
         user.setRole(role);
         user.setCampusName(campusName);
+        // 管理员自己也要挂上圈层：新建的校区管理员若 circle_path 为空，它在圈层轴上就是"无归属的
+        // 管理员"——既不能按圈层被复核，绑定 admin_layer 之前也演示不出"看谁的"这条轴（100168/100169
+        // 当初是手工补的，这里改成建号时就带上）。SUPER_ADMIN 无校区 ⇒ 自然保持 null。
+        user.setCirclePath(circlePathOfCampus(campusName));
         user.setStatus("active");
         user.setProfileCompletion(0);
         user.setFollowingCount(0);
@@ -329,9 +398,29 @@ public class AdminUserController {
         int safeSize = Math.max(1, Math.min(100, pageSize));
         Pageable pageable = PageRequest.of(safePage - 1, safeSize);
 
-        Page<User> result = userRepository.searchForAdmin(
-                normalizedRole, normalizedStatus, createdAtFrom, createdAtTo, normalizedNickname,
-                effectiveCampus, pageable);
+        // 圈层数据域（RBAC 第二轴）与校区数据隔离（旧轴）协同：
+        // - SUPER_ADMIN：逐字节沿用旧查询，行为完全不变；
+        // - 有圈层绑定的账号：以圈层为准（见下方裁定），仅调用方显式传 campusName 时收窄；
+        // - 无圈层绑定（或服务未注入）：沿用旧校区作用域，属增量迁移，不放大可见性。
+        Page<User> result;
+        boolean superAdmin = adminDataScope.isCurrentSuperAdmin();
+        java.util.List<String> prefixes =
+                adminScopeService == null ? java.util.List.of() : adminScopeService.currentPrefixes();
+        if (!superAdmin && !prefixes.isEmpty()) {
+            // 2026-10-14 裁定：绑定圈层后<b>以圈层为准</b>——不再用管理员自身的管辖校区当天花板。
+            // 否则「绑华东大区」与「绑本校」结果完全相同，圈层×角色正交模型形同虚设。
+            // 扩权是受控的：admin_layer 只有 SUPER_ADMIN 能写（见 AdminLayerController 类级鉴权）。
+            Long adminId = SecurityUtils.getCurrentUserId();
+            String scopedCampus = AdminDataScope.NO_CAMPUS_SCOPE.equals(normalize(campusName))
+                    ? null : normalize(campusName);
+            result = userRepository.searchForAdminScoped(
+                    normalizedRole, normalizedStatus, createdAtFrom, createdAtTo, normalizedNickname,
+                    scopedCampus, adminId, pageable);
+        } else {
+            result = userRepository.searchForAdmin(
+                    normalizedRole, normalizedStatus, createdAtFrom, createdAtTo, normalizedNickname,
+                    effectiveCampus, pageable);
+        }
 
         List<AdminUserSummaryView> items = result.getContent().stream()
                 .map(this::toSummaryView)
@@ -362,12 +451,13 @@ public class AdminUserController {
         }
         User user = userOpt.get();
 
-        // 数据隔离：校区管理员仅能查看本校区用户的详情（与 listUsers 隔离语义一致）
-        adminDataScope.assertCampusAccess(resolveUserCampus(id));
+        // 数据隔离：与 listUsers 同口径（已绑圈层者按圈层，未绑者按校区）
+        assertUserAccess(user);
 
         // 联表查询校园资料，补充校区与认证状态
         Optional<UserCampusProfile> campusOpt = userCampusProfileRepository.findByUserId(id);
         String campusName = campusOpt.map(UserCampusProfile::getCampusName).orElse(null);
+        String campusBranch = campusOpt.map(UserCampusProfile::getCampusBranch).orElse(null);
         String verificationStatus = campusOpt.map(UserCampusProfile::getVerificationStatus).orElse(null);
 
         UserBasicProfile basic = userBasicProfileRepository == null
@@ -388,6 +478,7 @@ public class AdminUserController {
                 user.getFollowingCount(),
                 user.getFollowersCount(),
                 campusName,
+                campusBranch,
                 verificationStatus,
                 user.getCreatedAt(),
                 user.getUpdatedAt(),
@@ -426,8 +517,8 @@ public class AdminUserController {
         }
         User user = userOpt.get();
 
-        // 数据隔离：校区管理员仅能编辑本校区用户
-        adminDataScope.assertCampusAccess(resolveUserCampus(id));
+        // 数据隔离：与 listUsers 同口径（已绑圈层者按圈层，未绑者按校区）
+        assertUserAccess(user);
 
         // 仅在字段非 null 时更新，允许部分更新语义
         if (req.nickname() != null) {
@@ -530,17 +621,21 @@ public class AdminUserController {
         User user = userOpt.orElseThrow(() ->
                 new IllegalStateException("userOpt 已确认非空但 orElseThrow 触发，数据不一致"));
 
-        // 数据隔离：校区管理员仅能禁用/启用本校区用户（SUPER_ADMIN 操作者不受限）
-        adminDataScope.assertCampusAccess(resolveUserCampus(id));
+        // 数据隔离：与 listUsers 同口径（SUPER_ADMIN 操作者不受限）
+        assertUserAccess(user);
 
         // 权限模型（商业模式：超级管理员管理校区管理员）：
         // - 任何人不允许禁用/启用 SUPER_ADMIN（防止超级管理员账号被锁）
         // - 校区管理员（ADMIN）不能禁用/启用任何管理员（仅 SUPER_ADMIN 可操作 ADMIN）
+        //   （三级角色 AUDITOR 同属后台账号，一并仅 SUPER_ADMIN 可禁用/启用，
+        //     否则校区管理员可锁掉审查自己的审核员账号）
         // - 任何人不允许操作自己的账号
         if ("SUPER_ADMIN".equalsIgnoreCase(user.getRole())) {
             return ResponseEntity.badRequest().body(Map.of("error", "不能禁用/启用超级管理员账号"));
         }
-        if ("ADMIN".equalsIgnoreCase(user.getRole()) && !isSuperAdminOperator(adminId)) {
+        boolean targetIsBackOfficeAccount = "ADMIN".equalsIgnoreCase(user.getRole())
+                || "AUDITOR".equalsIgnoreCase(user.getRole());
+        if (targetIsBackOfficeAccount && !isSuperAdminOperator(adminId)) {
             return ResponseEntity.badRequest().body(Map.of("error", "校区管理员无权禁用/启用其他管理员账号"));
         }
         if (user.getId() != null && user.getId().equals(adminId)) {
@@ -600,6 +695,26 @@ public class AdminUserController {
         // 兼容：管理员账号管辖校区（users.campus_name）
         Optional<User> userOpt = userRepository.findById(userId);
         return normalize(userOpt.map(User::getCampusName).orElse(null));
+    }
+
+    /**
+     * 校验当前管理员对目标用户的访问权（详情 / 编辑 / 禁用启用共用）。
+     *
+     * <p>2026-10-14 裁定「绑定圈层后以圈层为准」：守卫必须与 {@link #listUsers} 同一口径，
+     * 否则会出现「列表按大区放开、详情仍按校区拦截」的错配（看得到却点不开）。
+     * 已绑定圈层的账号一律走圈层轴；未绑定的沿用旧校区轴（增量迁移，不放大可见性）。</p>
+     *
+     * @param user 目标用户实体（调用方已加载，避免重复查库）
+     * @throws com.campuslove.api.common.OperationForbiddenException 越权时
+     */
+    private void assertUserAccess(User user) {
+        java.util.List<String> prefixes =
+                adminScopeService == null ? java.util.List.of() : adminScopeService.currentPrefixes();
+        if (!adminDataScope.isCurrentSuperAdmin() && !prefixes.isEmpty()) {
+            adminScopeService.assertInScope(user.getCirclePath());
+            return;
+        }
+        adminDataScope.assertCampusAccess(resolveUserCampus(user.getId()));
     }
 
     /**
@@ -704,5 +819,21 @@ record AdminCreateUserRequest(
         @NotBlank(message = ErrorMessages.PASSWORD_REQUIRED)
         @Size(min = 6, max = 64, message = ErrorMessages.PASSWORD_LENGTH_INVALID) String password,
         @NotBlank(message = ErrorMessages.NICKNAME_REQUIRED)
-        @Size(min = 1, max = 20, message = ErrorMessages.NICKNAME_LENGTH_INVALID) String nickname) {
+        @Size(min = 1, max = 20, message = ErrorMessages.NICKNAME_LENGTH_INVALID) String nickname,
+        /**
+         * 真实学校校名（须与 {@code circle_layer} 三级节点名一致，如「清华大学」）。
+         * 给了就顺手写 user_campus_profile 并回填 users.circle_path —— 否则后台建的号
+         * 在圈层轴上永远不可见（其发帖全部落「未归属」，按圈层收缩的管理员读不到）。
+         */
+        @Size(max = 100) String campusName,
+        /** 学校之下的校区名（展示用，如「邯郸校区」）；不要求挂树。 */
+        @Size(max = 64) String campusBranch,
+        /** 校区所在城市；缺省时按学校所在城市推断不了就留空由认证资料补。 */
+        @Size(max = 64) String city,
+        @Size(max = 100) String department) {
+
+    /** 兼容旧调用方（含 AdminUserControllerTest）的三参形态：不带校区即「未归属」，行为与加列前一致。 */
+    AdminCreateUserRequest(String phone, String password, String nickname) {
+        this(phone, password, nickname, null, null, null, null);
+    }
 }

@@ -89,6 +89,18 @@ public class VillagePostService {
     private final CampusCertificationRepository campusCertificationRepository;
 
     /**
+     * 圈层归属回填（2026-10-14）：把发帖人的 {@code users.circle_path} 写进
+     * {@code posts.owner_circle_path}，让<b>小程序新发的帖子</b>与后台圈层导航、
+     * 审核作用域同源——此前该列只由一次性回填脚本和后台代发链路写入，
+     * 于是新发帖一律落「未归属」，圈层树里看不到刚上传的内容。
+     *
+     * <p>可选注入：为 null 时行为与改动前逐字节一致（不回填），
+     * 口径同仓内其它增量接线（如 AdminScopeService 的 nullable 注入）。</p>
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.repository.UserRepository userRepository;
+
+    /**
      * Spring 注入构造器（多个构造器时必须显式 @Autowired 指定，
      * 否则 Spring 报 "No default constructor found"）。
      */
@@ -233,6 +245,9 @@ public class VillagePostService {
         // （AdminVillagePostController POST /{id}/audit）审核通过后才在各 feed 可见；
         // 详情页对非作者隐藏待审帖（VillageQueryService.getPost）。
         post.setAuditStatus(Post.AuditStatus.pending);
+        // 圈层归属：与后台代发链路同源（AdminContentComposeController#resolveOwnerCirclePath
+        // 读的是同一列 users.circle_path）；作者未归属任何圈层时保持 null，落「未归属」而不是丢帖。
+        post.setOwnerCirclePath(authorCirclePath(userId));
         post.setCreatedAt(now);
         post.setUpdatedAt(now);
 
@@ -255,6 +270,18 @@ public class VillagePostService {
         }
 
         return queryService.toPostDetailView(post, userId);
+    }
+
+    /** 2026-10-14 圈层归属回填：读发帖人自己的 users.circle_path。 */
+    private String authorCirclePath(Long userId) {
+        if (userRepository == null || userId == null) {
+            return null;
+        }
+        return userRepository.findById(userId)
+                .map(com.campuslove.api.entity.User::getCirclePath)
+                .filter(p -> !p.isBlank())
+                .map(String::trim)
+                .orElse(null);
     }
 
     /** 标签唯一约束冲突日志（R4-00328：重复标签不阻断发帖）。 */

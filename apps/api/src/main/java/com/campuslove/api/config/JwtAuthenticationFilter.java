@@ -36,7 +36,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * /api/v1/auth/third-party/bindings）能正确鉴权。</p>
  *
  * 修复：根据用户角色注入 ROLE_USER 或 ROLE_ADMIN，
- * 配合 SecurityConfig 中的 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN") 实现权限校验。
+ * 配合 SecurityConfig 中的 .requestMatchers("/api/v1/admin/**") 规则实现权限校验。
+ *
+ * <p>三级角色 AUDITOR（只读审核员）：仅注入 ROLE_AUDITOR（不注入 ROLE_ADMIN），
+ * 后台读写分离在 SecurityConfig 按 HTTP 方法完成。</p>
  *
  * <p>Task 0.5.3 安全加固：集成 {@link TokenBlacklistService}，对 token 的 jti 进行黑名单校验。
  * 当检测到 jti 已被撤销（用户已登出）时，清除 SecurityContext，
@@ -91,10 +94,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      *
      * @param exists     用户记录是否存在
      * @param disabled   用户是否被禁用
-     * @param admin      是否管理员
+     * @param admin      是否可写管理员（ADMIN / SUPER_ADMIN）
      * @param superAdmin 是否超级管理员
+     * @param auditor    是否只读审核员（AUDITOR）
      */
-    record UserAuthSnapshot(boolean exists, boolean disabled, boolean admin, boolean superAdmin) {
+    record UserAuthSnapshot(
+            boolean exists, boolean disabled, boolean admin, boolean superAdmin, boolean auditor) {
     }
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -131,13 +136,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private UserAuthSnapshot loadAuthSnapshot(Long userId) {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
-            return new UserAuthSnapshot(false, false, false, false);
+            return new UserAuthSnapshot(false, false, false, false, false);
         }
         return new UserAuthSnapshot(
                 true,
                 user.isDisabled(),
-                user.isAdmin(),
-                user.isSuperAdmin());
+                // 三级角色 AUDITOR：admin 取「可写管理员」而非 isAdmin()（含 AUDITOR），
+                // 否则只读审核员会被授予 ROLE_ADMIN，绕过写操作拦截
+                user.isWriteAdmin(),
+                user.isSuperAdmin(),
+                user.isAuditor());
     }
 
     @Override
@@ -246,6 +254,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 供敏感配置端点 @PreAuthorize("hasRole('SUPER_ADMIN')") 校验
             if (snapshot.superAdmin()) {
                 authorities.add(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"));
+            }
+            // 三级角色 AUDITOR（只读审核员）：仅授予 ROLE_AUDITOR，绝不授予 ROLE_ADMIN——
+            // 后台读权限由 SecurityConfig 的 hasAnyRole(...,"AUDITOR") 放行，
+            // 写权限（POST/PUT/PATCH/DELETE）由同一配置的 hasAnyRole("ADMIN","SUPER_ADMIN") 拦截
+            if (snapshot.auditor()) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_AUDITOR"));
+                log.debug("只读审核员登录，用户ID: {}", userId);
             }
 
             // 验证成功后设置 SecurityContextHolder

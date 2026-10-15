@@ -51,16 +51,19 @@ import org.springframework.web.bind.annotation.RestController;
  * 村落动态的精细化独立管理：审核、置顶/取消置顶、加精、删除、查看评论等，
  * 归属 /api/v1/admin/forum/village-posts 独立端点。</p>
  *
- * <p>数据隔离说明（商业模式：每个高校一个管理员）：</p>
+ * <p>数据隔离说明（两轴并存，圈层轴优先）：</p>
  * <ul>
- *   <li>posts 表无 campus_name 列，列表查询的校区隔离按<b>作者所属校区</b>过滤：
+ *   <li>posts 表无 campus_name 列，旧校区口径按<b>作者所属校区</b>过滤：
  *       作者校区取自 user_campus_profile.campus_name（普通用户校区，
  *       与 AdminUserController.searchForAdmin 语义一致）</li>
- *   <li>校区管理员（ADMIN + campusName 非空）强制按管辖校区过滤列表，
- *       忽略调用方传入的 campusName 参数；写操作与读操作（详情/评论/
- *       浏览记录）通过 {@link AdminDataScope#assertCampusAccess(String)}
- *       越权拦截（HTTP 403）</li>
- *   <li>全局管理员（SUPER_ADMIN 或 ADMIN 无校区）不做过滤</li>
+ *   <li><b>已在 admin_layer 绑定圈层的账号（2026-10-14 裁定：以圈层为准）</b>：
+ *       列表按 {@code posts.owner_circle_path} 前缀匹配绑定节点，详情/评论/浏览记录/
+ *       写操作按同一口径拦截（{@link AdminScopeService#assertInScope(String)}，HTTP 403）；
+ *       不再叠加管理员自身校区，只有调用方显式传 {@code campusName} 时才主动收窄</li>
+ *   <li><b>未绑定圈层的账号</b>：沿用旧校区轴——列表强制按管辖校区过滤并忽略传入的
+ *       campusName，读写通过 {@link AdminDataScope#assertCampusAccess(String)} 拦截；
+ *       属增量迁移，可见性不因新增轴而放大</li>
+ *   <li>全局管理员（SUPER_ADMIN）不做过滤</li>
  * </ul>
  *
  * <p>权限说明：URL 层 /api/admin/** 已限制 ADMIN 角色；
@@ -69,7 +72,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Profile("real")
 @RestController
 @RequestMapping("/api/v1/admin/forum/village-posts")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'AUDITOR')")
 @Validated
 public class AdminVillagePostController {
 
@@ -78,6 +81,8 @@ public class AdminVillagePostController {
     private final CommentRepository commentRepository;
     private final UserCampusProfileRepository userCampusProfileRepository;
     private final AdminDataScope adminDataScope;
+    /** 圈层数据域（RBAC 第二授权轴：看「谁的」数据）；与校区轴并存 */
+    private final AdminScopeService adminScopeService;
     /**
      * 2026-08-08 论坛互动真实化：帖子收藏 Repository（后台展示收藏数）。
      */
@@ -97,6 +102,7 @@ public class AdminVillagePostController {
             CommentRepository commentRepository,
             UserCampusProfileRepository userCampusProfileRepository,
             AdminDataScope adminDataScope,
+            AdminScopeService adminScopeService,
             PostFavoriteRepository postFavoriteRepository,
             PostViewHistoryRepository postViewHistoryRepository,
             com.campuslove.api.village.HotScoreScheduler hotScoreScheduler) {
@@ -105,19 +111,25 @@ public class AdminVillagePostController {
         this.commentRepository = commentRepository;
         this.userCampusProfileRepository = userCampusProfileRepository;
         this.adminDataScope = adminDataScope;
+        this.adminScopeService = adminScopeService;
         this.postFavoriteRepository = postFavoriteRepository;
         this.postViewHistoryRepository = postViewHistoryRepository;
         this.hotScoreScheduler = hotScoreScheduler;
     }
 
     /**
-     * 分页查询村落动态列表（审核状态/帖子状态/关键字/校区筛选）。
+     * 分页查询村落动态列表（审核状态/帖子状态/关键字/校区/圈层筛选）。
      *
      * @param auditStatus 审核状态：pending / approved / rejected，可选
      * @param status      帖子状态：active / deleted / hidden，可选
      * @param keyword     标题/内容模糊关键字，可选（原仅匹配内容，2026-09-24 补 title）
      * @param campusName  校区筛选（按作者所属校区过滤），可选；
      *                    校区管理员强制按其管辖校区过滤，忽略本参数
+     * @param circlePath  圈层前缀筛选，可选：按 posts.owner_circle_path 前缀
+     *                    （LIKE '前缀%'）匹配，选中大区（如 C1/R1）时其下全部
+     *                    学校（C1/R1/Sx）命中，与 EvidenceController 的
+     *                    viewer scope 前缀语义一致。仅为筛选条件，不改变
+     *                    数据可见性规则（校区隔离照常生效）；空/缺省不过滤
      * @param page        页码，1-based，默认 1
      * @param pageSize    每页大小，默认 20，最大 100
      * @return 分页村落动态列表（置顶优先，按创建时间倒序）
@@ -128,6 +140,7 @@ public class AdminVillagePostController {
             @RequestParam(name = "status", required = false) String status,
             @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "campusName", required = false) String campusName,
+            @RequestParam(name = "circlePath", required = false) String circlePath,
             @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
             @RequestParam(name = "pageSize", defaultValue = "20") @Min(1) @Max(100) int pageSize) {
         SecurityUtils.getCurrentUserId();
@@ -135,9 +148,12 @@ public class AdminVillagePostController {
         AuditStatus auditStatusEnum = parseAuditStatus(auditStatus);
         PostStatus postStatusEnum = parsePostStatus(status);
         String normalizedKeyword = normalize(keyword);
+        // 圈层前缀：非法值不做白名单校验（LIKE 前缀参数化传入，无注入面）；
+        // 仅按前缀匹配 owner_circle_path，不放宽任何数据可见性
+        String normalizedCirclePath = normalize(circlePath);
 
-        // 数据隔离：校区管理员强制按其管辖校区过滤，忽略调用方传入的 campusName，
-        // 防止校区管理员越权查看其他校区数据（与 AdminUserController.listUsers 一致）
+        // 数据隔离（旧「校区」轴）：校区管理员强制按其管辖校区过滤，忽略调用方传入的
+        // campusName，防止越权查看其他校区数据（与 AdminUserController.listUsers 一致）
         String effectiveCampus = adminDataScope.getCurrentAdminCampusName();
         if (effectiveCampus == null) {
             effectiveCampus = normalize(campusName);
@@ -147,8 +163,30 @@ public class AdminVillagePostController {
         int safeSize = Math.max(1, Math.min(100, pageSize));
         Pageable pageable = PageRequest.of(safePage - 1, safeSize);
 
-        Page<Post> result = postRepository.searchForVillageAdmin(
-                auditStatusEnum, postStatusEnum, normalizedKeyword, effectiveCampus, pageable);
+        // native 查询以字符串比对枚举列（列存储值即枚举 name，EnumType.STRING 口径）
+        String auditStatusName = auditStatusEnum == null ? null : auditStatusEnum.name();
+        String postStatusName = postStatusEnum == null ? null : postStatusEnum.name();
+
+        Page<Post> result;
+        boolean superAdmin = adminDataScope.isCurrentSuperAdmin();
+        java.util.List<String> prefixes = adminScopeService.currentPrefixes();
+        if (!superAdmin && !prefixes.isEmpty()) {
+            // 2026-10-14 裁定：绑定圈层后<b>以圈层为准</b>——不再用管理员自身的管辖校区当天花板。
+            // 否则「绑华东大区」与「绑本校」结果完全相同，圈层×角色正交模型形同虚设。
+            // 扩权是受控的：admin_layer 只有 SUPER_ADMIN 能写（见 AdminLayerController 类级鉴权）。
+            // 调用方显式传入的 campusName 仍然生效，保留运营主动收窄的能力。
+            Long adminId = SecurityUtils.getCurrentUserId();
+            String scopedCampus = normalize(campusName);
+            result = postRepository.searchForVillageAdminScoped(
+                    auditStatusName, postStatusName,
+                    normalizedKeyword, scopedCampus, normalizedCirclePath, adminId, pageable);
+        } else {
+            // SUPER_ADMIN 或「无圈层绑定的账号」：逐字节沿用旧查询，行为不变（增量迁移：
+            // 未绑定圈层的在用校区管理员仍按旧校区作用域可见，不会被误挡在门外）
+            result = postRepository.searchForVillageAdmin(
+                    auditStatusName, postStatusName,
+                    normalizedKeyword, effectiveCampus, normalizedCirclePath, pageable);
+        }
 
         // 批量预加载作者信息（昵称/头像），避免 N+1 查询
         Map<Long, User> authorMap = loadAuthorMap(
@@ -190,8 +228,8 @@ public class AdminVillagePostController {
             return ResponseEntity.notFound().build();
         }
         Post post = postOpt.get();
-        // 数据隔离：校区管理员仅能查看本校区作者帖子的详情（读操作越权拦截）
-        assertPostCampusAccess(post);
+        // 数据域越权拦截：与列表同口径（已绑圈层者按圈层，未绑者按校区），见 assertPostAccess
+        assertPostAccess(post);
         Map<Long, User> authorMap = loadAuthorMap(List.of(post.getAuthorId()));
         return ResponseEntity.ok(toDetailView(post, authorMap.get(post.getAuthorId())));
     }
@@ -220,7 +258,7 @@ public class AdminVillagePostController {
         }
         Post post = postOpt.get();
         // 数据隔离：校区管理员仅能审核本校区作者的帖子
-        assertPostCampusAccess(post);
+        assertPostAccess(post);
 
         AuditStatus newStatus = "approved".equals(req.decision())
                 ? AuditStatus.approved
@@ -293,7 +331,7 @@ public class AdminVillagePostController {
         Post post = postOpt.orElseThrow(() ->
                 new IllegalStateException("postOpt 已确认非空但 orElseThrow 触发，数据不一致"));
         // 数据隔离：校区管理员仅能操作本校区作者的帖子
-        assertPostCampusAccess(post);
+        assertPostAccess(post);
 
         post.setIsPinned(pinned);
         post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
@@ -328,7 +366,7 @@ public class AdminVillagePostController {
         Post post = postOpt.orElseThrow(() ->
                 new IllegalStateException("postOpt 已确认非空但 orElseThrow 触发，数据不一致"));
         // 数据隔离：校区管理员仅能删除本校区作者的帖子
-        assertPostCampusAccess(post);
+        assertPostAccess(post);
 
         post.setStatus(PostStatus.deleted);
         post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
@@ -362,7 +400,7 @@ public class AdminVillagePostController {
             return ResponseEntity.notFound().build();
         }
         Post post = postOpt.get();
-        assertPostCampusAccess(post);
+        assertPostAccess(post);
 
         double boost = req.boost();
         if (boost < 0 || boost > 100) {
@@ -399,7 +437,7 @@ public class AdminVillagePostController {
             return ResponseEntity.notFound().build();
         }
         Post post = postOpt.get();
-        assertPostCampusAccess(post);
+        assertPostAccess(post);
 
         post.setHotBanned(req.banned());
         post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
@@ -430,7 +468,7 @@ public class AdminVillagePostController {
             return ResponseEntity.notFound().build();
         }
         Post post = postOpt.get();
-        assertPostCampusAccess(post);
+        assertPostAccess(post);
 
         double newScore = hotScoreScheduler.recalcPostScore(post.getId());
 
@@ -462,7 +500,7 @@ public class AdminVillagePostController {
         // 帖子不存在时保持原语义返回空页，不额外做 404 拦截
         Optional<Post> postOpt = postRepository.findById(id);
         if (postOpt.isPresent()) {
-            assertPostCampusAccess(postOpt.get());
+            assertPostAccess(postOpt.get());
         }
 
         int safePage = Math.max(1, page);
@@ -508,7 +546,7 @@ public class AdminVillagePostController {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new com.campuslove.api.common.ResourceNotFoundException("Post not found: " + id));
         // 数据隔离：校区管理员仅能查看本校区作者帖子的浏览记录（读操作越权拦截）
-        assertPostCampusAccess(post);
+        assertPostAccess(post);
 
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(100, pageSize));
@@ -548,15 +586,25 @@ public class AdminVillagePostController {
     }
 
     /**
-     * 校验当前管理员对目标帖子的校区访问权（写操作越权拦截）。
-     * <p>posts 表无 campus_name 列，帖子所属校区按作者校区判定：
+     * 校验当前管理员对目标帖子的访问权（读详情与写操作的越权拦截）。
+     *
+     * <p>2026-10-14 裁定「绑定圈层后以圈层为准」：本方法必须与列表端点同一口径，
+     * 否则会出现「列表按大区放开、详情仍按校区拦截」的错配（看得到却点不开）。
+     * 因此已绑定圈层的账号一律走圈层轴；未绑定的账号沿用旧的校区轴（增量迁移，不放大可见性）。</p>
+     *
+     * <p>帖子所属校区按作者校区判定（posts 表无 campus_name 列）：
      * 优先取 user_campus_profile.campus_name（普通用户校区），
      * 其次取 users.campus_name（管理员账号管辖校区，兼容旧数据）。</p>
      *
      * @param post 目标帖子
-     * @throws com.campuslove.api.common.OperationForbiddenException 校区越权时
+     * @throws com.campuslove.api.common.OperationForbiddenException 越权时
      */
-    private void assertPostCampusAccess(Post post) {
+    private void assertPostAccess(Post post) {
+        java.util.List<String> prefixes = adminScopeService.currentPrefixes();
+        if (!adminDataScope.isCurrentSuperAdmin() && !prefixes.isEmpty()) {
+            adminScopeService.assertInScope(post.getOwnerCirclePath());
+            return;
+        }
         adminDataScope.assertCampusAccess(resolveAuthorCampus(post.getAuthorId()));
     }
 

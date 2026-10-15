@@ -323,7 +323,10 @@ public class AuthController {
                 log.warn("管理员登录成功但用户记录不存在，拒绝签发会话: userId={}", userId);
                 throw new com.campuslove.api.common.OperationForbiddenException("账号状态异常，请联系管理员");
             }
-            String role = admin.isSuperAdmin() ? "SUPER_ADMIN" : "ADMIN";
+            // AUDITOR 必须原样回传给前端：apps/admin 的 session.ts 用它算 canWrite，
+            // 若统一折叠成 "ADMIN"，只读审核员的前端会错误地显示写操作按钮。
+            String role = admin.isSuperAdmin() ? "SUPER_ADMIN"
+                    : admin.isAuditor() ? "AUDITOR" : "ADMIN";
             String username = admin.getOpenid() != null ? admin.getOpenid() : request.username();
             AdminLoginView view = new AdminLoginView(
                     session.token(),

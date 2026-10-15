@@ -34,6 +34,16 @@ public class UserCampusProfile {
     @Column(name = "city_name", nullable = false, length = 64)
     private String cityName;
 
+    /**
+     * 校区名（学校之下的分校区，如「邯郸校区」「广州校区南校园」）。
+     *
+     * <p>刻意与 {@link #campusName} 分列：{@code campusName} 在本仓同时是后台隔离键与
+     * 圈层树三级节点的匹配键，必须是<b>真实学校校名</b>；把校区词塞进那一列会让该用户与其
+     * 发帖在圈层轴上永远读不到（历史事故：种子里的「北校区 / 南校区」）。</p>
+     */
+    @Column(name = "campus_branch", length = 64)
+    private String campusBranch;
+
     /** 校区名称 */
     @Column(name = "campus_name", nullable = false, length = 128)
     private String campusName;
@@ -98,6 +108,14 @@ public class UserCampusProfile {
 
     public void setCityName(String cityName) {
         this.cityName = cityName;
+    }
+
+    public String getCampusBranch() {
+        return campusBranch;
+    }
+
+    public void setCampusBranch(String campusBranch) {
+        this.campusBranch = campusBranch;
     }
 
     public String getCampusName() {

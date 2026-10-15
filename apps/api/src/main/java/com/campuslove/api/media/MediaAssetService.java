@@ -74,7 +74,10 @@ public class MediaAssetService {
      * 记录一次上传（带业务分类重载，2026-10-05 身份证照片越权面收敛）。
      *
      * <p>category 取 {@link MediaUploadCategory} 名称（GENERAL/AVATAR/POST/VOICE/VIDEO/ID_CARD）。
-     * ID_CARD 分类在媒体访问侧走「仅本人/ADMIN」授权（DB 分类优先，路径关键词兜底）。</p>
+     * ID_CARD 分类在媒体访问侧走<b>认证档</b>授权（仅本人/SUPER_ADMIN，校区 ADMIN 与
+     * AUDITOR 均不放开，判定真源 {@link MediaTierPolicy}）；DB 分类优先，路径关键词兜底。
+     * 反之，category 为空或不在枚举内的记录会被访问侧 fail-closed 判为认证档，
+     * 因此新增分类时必须同步 {@link MediaTierPolicy#tierForStoredCategory}。</p>
      *
      * @param userId       上传者用户 ID
      * @param type         媒体类型（avatar/image/video/background）

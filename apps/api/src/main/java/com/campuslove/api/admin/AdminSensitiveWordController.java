@@ -56,7 +56,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Profile("real")
 @RestController
 @RequestMapping("/api/v1/admin/sensitive-words")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'AUDITOR')")
 public class AdminSensitiveWordController {
 
     /** 敏感词批量导入条数上限（R4-01822，与导入服务分批处理语义一致） */

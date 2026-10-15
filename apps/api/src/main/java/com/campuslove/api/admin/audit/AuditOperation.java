@@ -8,12 +8,24 @@ package com.campuslove.api.admin.audit;
 public enum AuditOperation {
 
     AUDIT_POST("审核帖子"),
+    /** 后台新建帖子（官方小编代发）；与「审核帖子」区分，否则审计日志分不清谁产的内容 */
+    CREATE_POST("新建帖子"),
     DELETE_POST("删除帖子"),
+    /**
+     * 发布全站广播公告（写入 official_messages，全部校区所有用户即时可见）。
+     * <p>单列一个操作码，而不是复用 UPDATE_CONFIG：审计日志里"改了条配置"和
+     * "向全校所有人推了一条公告"是完全不同量级的动作，事后追查不能靠猜。</p>
+     */
+    PUBLISH_ANNOUNCEMENT("发布全站公告"),
+    /** 下架全站广播公告（物理删除 official_messages 行，所有用户立即不再看到） */
+    TAKE_DOWN_ANNOUNCEMENT("下架全站公告"),
     DELETE_COMMENT("删除评论"),
     DISABLE_USER("禁用用户"),
     ENABLE_USER("启用用户"),
     EDIT_USER("编辑用户"),
     HANDLE_REPORT("处理举报"),
+    /** 处理反馈工单（更新工单状态 / 写回复摘要）；与「处理举报」区分，避免审计日志混淆两类工单 */
+    HANDLE_FEEDBACK("处理反馈"),
     REVIEW_CERTIFICATION("审核认证"),
     UPDATE_CONFIG("更新配置"),
     UPDATE_RULE("更新规则"),

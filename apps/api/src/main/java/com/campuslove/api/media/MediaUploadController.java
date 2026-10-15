@@ -55,7 +55,8 @@ public class MediaUploadController {
     /**
      * 媒体资产登记服务（可选注入，real profile 存在）。
      * 上传带业务分类（非 GENERAL）时登记 media_asset（category 落库），
-     * 供媒体访问侧按 DB 分类授权（ID_CARD 仅本人/ADMIN 可读）。
+     * 供媒体访问侧按 DB 分类授权（ID_CARD 属认证档：仅本人与 SUPER_ADMIN 可读，
+     * 校区 ADMIN / 只读审核员 AUDITOR 均不可读，见 {@link MediaTierPolicy}）。
      */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private MediaAssetService mediaAssetService;
@@ -109,7 +110,8 @@ public class MediaUploadController {
             @RequestParam(value = "durationMs", required = false)
             Integer durationMs,
             @Parameter(in = ParameterIn.QUERY, description = "业务分类（可选，缺省 GENERAL）：GENERAL/AVATAR/POST/VOICE/VIDEO/ID_CARD；"
-                    + "ID_CARD（实名认证照片）落库登记为高敏感分类，仅本人与 ADMIN 可读", example = "GENERAL")
+                    + "ID_CARD（实名认证照片）落库登记为认证档极高敏感分类，仅本人与 SUPER_ADMIN 可读"
+                    + "（校区 ADMIN / AUDITOR 均不放开，见 MediaTierPolicy）", example = "GENERAL")
             @RequestParam(value = "category", required = false, defaultValue = "GENERAL")
             String category) {
         Long userId = getCurrentUserId();
