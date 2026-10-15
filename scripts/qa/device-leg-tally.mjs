@@ -91,7 +91,11 @@ export function resultLine(counts, dirRel, band) {
  *  默认文件不存在/为空 ⇒ 全部行落 DEVICE-LEG|DLnn（形状合规、门读得动，但门不会替不存在的判据认领覆盖）。 */
 export function bindKey(label, bindings) {
   for (const b of bindings || []) {
-    if (b && b.match && String(label).includes(b.match) && b.manifest && b.id) return b;
+    // 只有显式 bound:true 才算绑定。实测过一个隐性形状：条目同时写 bound:false 与
+    // manifest/id 时，旧实现照旧返回它 ⇒ 一条"声明不绑"的行照样买到覆盖。
+    // 绑定文件本身没有校验器（一个存在但判据不对的 key 会静默生效），
+    // 所以这里唯一能守的就是尊重声明。
+    if (b && b.match && String(label).includes(b.match) && b.bound === true && b.manifest && b.id) return b;
   }
   return null;
 }

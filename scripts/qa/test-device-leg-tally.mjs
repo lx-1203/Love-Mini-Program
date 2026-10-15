@@ -71,7 +71,7 @@ writeFileSync(join(TMP, "ops", "fix-dl.json"), JSON.stringify({
   cases: [{ id: "DL01", requiresReal: true, identities: ["A"], title: "设备发的帖子 30 秒内在后台按同一 ID 读到" }],
 }, null, 1));
 writeFileSync(join(TMP, "ledger.json"), JSON.stringify({ corrections: [], fixlane: [] }));
-const BINDINGS = [{ match: "设备发的帖子", manifest: "FIXTURE-DL", id: "DL01", page: "subpackages/village/village/index" }];
+const BINDINGS = [{ match: "设备发的帖子", manifest: "FIXTURE-DL", id: "DL01", bound: true, page: "subpackages/village/village/index" }];
 
 /* ════ 1. 三档计数分得开（本模块存在的全部理由）════ */
 {
@@ -201,6 +201,11 @@ t("产品红行的 failureReason 不加仪表前缀（两档不许在台账里�
 t("bindKey 只认 label 子串命中且 manifest+id 齐备的条目（半条绑定不算绑定）",
   bindKey("设备发的帖子 …", [{ match: "设备发的帖子", manifest: "X" }]) === null
   && bindKey("设备发的帖子 …", BINDINGS).id === "DL01");
+t("bindKey 尊重显式声明：bound:false 且带 manifest/id 的条目**不得**买到覆盖",
+  bindKey("设备发的帖子 …", [{ match: "设备发的帖子", manifest: "FIXTURE-DL", id: "DL01", bound: false }]) === null);
+t("bindKey 不接受沉默默认：缺 bound 字段同样不绑（绑定文件没有校验器，一个存在但判据不对的 key 会静默生效）",
+  bindKey("设备发的帖子 …", [{ match: "设备发的帖子", manifest: "FIXTURE-DL", id: "DL01" }]) === null
+  && buildRows([{ label: "设备发的帖子 30 秒内在后台出现", tier: "pass", detail: "ok", page: "p" }], meta, [{ match: "设备发的帖子", manifest: "FIXTURE-DL", id: "DL01" }])[0].manifest === "DEVICE-LEG");
 
 /* 文件级头部：门只读 results[]，但 exec-frames-to-corpus.mjs:44-45 与下一轮人都要读头部那几格。 */
 const doc = buildExecFile(rows, meta);
