@@ -23,6 +23,16 @@ scripts-start-backend.cmd
 *.local
 .env
 !**/.env.example
+# 密钥轮换备份：上面的 `.env`/`*.bak` 都是字面名匹配，带 -rot 后缀的轮换件
+# （.env.bak-20261014-rot、scripts-start-backend.cmd.bak-20261014-rot）实测
+# `git check-ignore` 不命中 ⇒ broad add 会把明文 JWT/AES/DB 口令洗进提交。
+# 规则刻意收窄到"凭据载体的备份"：`*.bak-*` 这种宽写法会连带屏蔽 29 个已跟踪
+# 证据件（reports/audit/round-7/guest-landing-*.bak-*.json 等），本仓把这些当交付物。
+.env.bak*
+*.cmd.bak*
+*.bat.bak*
+*.ps1.bak*
+application*.yml.bak*
 # Flyway 本机凭据（模板 flyway.user.toml.example 保留）
 database/flyway/flyway.user.toml
 # 数据库备份目录（宿主机备份产物）
