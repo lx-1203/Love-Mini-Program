@@ -202,5 +202,12 @@
     "tcheckNegative": "省略 --file 时 REAL_EXIT=2（不经 pipe 实测；先前我用 $? 读到的 0 是 cut 的状态，不是 node 的），机读行 TCHECK_RESULT=NOFILE，自述理由=带缺省的 --file 已两次把工作流预检指向别的版本",
     "gateSync": "GATESYNC_RESULT=PASS 判点数=13 不一致=0（含「面板给 verify-evidence-holes 传 --out 侧车」「bash 不留旧说法」「两个载具都不许把条数写进措辞」）",
     "myOwnTrap": "我按计划书里的名字跑了 scripts/qa/tcheck-v38.cjs ⇒ MODULE_NOT_FOUND。计划书那个名字是意图名，实际载体早已提升为 scripts/qa/tcheck-workflow.cjs（已跟踪、--file 无缺省、DSL:286 与 sh:99 双载具都在跑它），而且 DSL:49-50 的注释恰好写的就是「tmp/ 被 any-depth 忽略，clean checkout 上不存在」这条陷阱——我自己踩的正是它已防住的那一个。计划书 P4 的这一条确实已交付，我不把它算成欠款。"
+  },
+  "coverageTrendAudit": {
+    "question": "计划书 Verification 第 4 条：UNCOVERED 相比 round-3 起点必须确实下降，且下降量要按 exec-* + 新鲜 band 戳计，不许用旧行凑数。",
+    "trendFromDisk": "236／236 → 25 → 14 → 10 → 5（值取自 .zcode/tmp/pre-wave-20261015 与 reports/audit/ui-audit-2026-10-16 下 13+8+3+1+1 处机读行，按文件分布列出：cov-now/realcov-before/gate-lane/relegs-lane=5；followups-v33/inflight-manifests-triage-r7/realcov-nominate-report=10；interact-leg-result-v33=14）",
+    "honestSplit": "下降发生在这一程的较早阶段（round-4a 腿 + 去向件/disposition 接线 + 覆盖门 EXPIRED 轴上线），不是最后两发 sweep 的成果：本程 pre-wave 基线 00:13 就已经是 5／236，sweep#1 与 sweep#2 之后仍是 5／236 ⇒ 最后这段对覆盖分子的净贡献是 0。这与本轮最大那条结论一致——欠账卡在夹具/前置可注入，不卡在腿多跑几遍（SKIPPED 一分不抵账）。",
+    "notOldRows": "第 4 条的后半（不许旧行凑数）是满足了，而且是反着满足的：新鲜度尺上线后判出 3 条 stale 与 4 条 VOIDED，把先前靠旧行撑着的绿摘掉了 3 枚，5／236 是在收紧之后的尺子下读出来的数。",
+    "itemVerdict": "第 4 条＝满足（相对 round-3 起点 10 降到 5），但要带口径引用：降幅不由本程最后两发产生。第 3 条＝满足：ADMAUD／ADMSCOPE／ADMWRITE／POSTDETAIL／DEVICELEG 五条机读行在 sweep#2 各出现 1 次，carrier-wiring 判域内不再是零。"
   }
 }
