@@ -83,13 +83,37 @@
     "七条被前置条件卡住用例的配方：他人主页目标 userId、实名页未成年账号+过期票、官方号失败态重试钮、VIP/账单弹回、游客点赞墙",
     "scripts/qa/gen-round8-report.mjs 轮次参数化：两个载具都裸调用它，而其默认 ledger 是 decisions-v33.md、默认 out 是 round-7/round8-final-report.md，正文还硬写 round-8（v3.3 续作轮，2026-09-29）——直接跑终验会覆掉九月那份历史交付物并冒充本轮报告。要求 out 无默认，并加能红的出处守卫"
   ],
+  "gateCensusExtra": {
+    "verify-lane-report-complete": "PASS 退出码=0 PROBLEMS=0",
+    "verify-real-coverage-disposition": "PASS 5 条欠账条条有在册去向；陈旧 5 条按 advisory 点名不判红；上游覆盖门照旧 FAIL UNCOVERED=5",
+    "verify-case-automatable": "ADVISORY 静态命中 102/1107（9.2%）；假阳性率 83.3%（85/102），其中『跑完且通过』硬口径只有 47.1%（48/102）；召回率 12.1% —— 预检自己承认：静态说有这条腿，多半不是执行器真能照做",
+    "prove-gates-can-fail": "PASS GATES_RED_PROVEN=4/4 VACUOUS=0 INCONCLUSIVE=0（台账词表/空扫描集/队列守恒空集/状态真值空集各自被人为判红）",
+    "verify-guest-landing-book": "OK 组=28（成员来自 ops 判据台的=28、只来自跑测的=0，即 #67 派生已在门侧落地）、稳定=28 降级=0、覆盖欠款行=445 全部有具名复测腿；BOOKED 不等于 CLOSED",
+    "emit-round-report-dry": "FAIL 自判 2 条：一条是 --dry 该有的诚实（不得宣称真实模式当前结论）；另一条是**面板读错账**——它拿 incident-destinations-round10.json 的行数与门点名数比不等，而该件 2026-10-06 就被 T7/r10new#A 裁定降级为归档，真值源是 real-coverage-disposition.json（RCD 今天读真值源报的是 PASS、5 条条条有去向）。已另开车道修：改指真值源 + 判点从行数相等改成集合归属，归档对账降为具名 advisory"
+  },
+  "admissionResult": {
+    "rowsAdded": 8,
+    "family": "MP-R7QA-*",
+    "DATA_ROWS": "245→253",
+    "verifyLedger": "PASS（OFF_SCHEMA=0 STATUS_VOCAB_BAD=0 MULTI_ID_FAMILIES=29 未新增 DUP_FAMILY ORPHAN_TRUE=71/RETIRED=71 未动）",
+    "openItemsAfter": "主表 187 / 未结案 24，但 emit-open-items 报 FAIL：8 条全落 UNCLASSIFIED —— 分类器只在**处置列**认出几个魔法词才归 code 桶，而这几条把落点条件写在 statusEvidence 列、处置列以『载体：』开头。这是分类器落后于账本现实，属于本轮自己造成的红，已另开车道按结构派生修（待修复 + 行内含 file:line 落点 ⇒ code），不改词表、不把 UNCLASSIFIED 变成可通过",
+    "toolBugFound": "admit-ledger-row.mjs --apply 对这张表**永远**失败（after 把 |---| 分隔行计入、before 不计 ⇒ 恒报 181≠180）。同一种『分隔行被当数据行 ⇒ 分母 +1 幻影』在本仓第三次出现。入册因此走受控 splice，入册前该工具的 11 列/ID 形状/status 词表校验已逐行跑过",
+    "claimsICorrected": [
+      "设备腿绑定件不再是空数组：41 条全 bound:false（抵零账结论不变，理由换了一个）；本程已修 bindKey 尊重 bound（4541fec0）",
+      "『band=[object Object] 共 10 行』复算只得到 2 行（exec-v38-realcov-login 是 351/351 字符串 band）⇒ 行内如实记『普查数与复算数不符（10 对 2），余 8 行未取证』",
+      "那批截图删除的归因给 bfdec13d 是错的——那枚提交是内容安全检查器；引用过这条归因的地方要重看"
+    ],
+    "declinedNotMissed": [
+      "『7/8 欠账被前置条件卡住』不是缺陷而是债的性质：矩阵没有『非缺陷排队项』这个桶（不立账 只留给 NOISE 节），已由 open-items 与 memory 供出",
+      "反馈工单页 hidden 是产品决议：路由按设计可达（menu.ts 自述只是不进侧边栏）"
+    ]
+  },
   "remainingToClose": [
-    "四条车道落盘，按 concern 分批入库",
-    "台账入册本程新登记的缺陷：必须等车道静默，覆盖门读同一本台账，不能与它的测量并发",
+    "五条在途车道收口：ws 参数错位 + arity 守卫 / 裁定包名册块 / 分类器与入册工具计数 / 面板真值源与默认靶 / 匹配卡空白定性",
     "bash 全清单终验：用 .zcode/tmp/pre-wave-20261015/run-sweep.sh 注入 SUPER_PASSWORD 与 ADMIN_BASE_URL=5173，口令不 inline",
-    "总报告：等报告器参数化落盘后再跑，§7 只认 summary.json 读数",
+    "总报告：车道落盘后由参数化生成器出，§7 只认 summary.json 读数；报告器与面板两条默认靶都要显式给",
     "证据提交，并在提交后复量 sha 敏感门、印 HEAD 前后",
-    "推送需用户明示"
+    "推送需用户明示；coverageEffect 写权需用户明示"
   ],
   "deliberatelyNotDone": [
     "未合并并存的两个发布页；未开会员/showcase 旗标；未把回复长度上限抬到服务端值",
