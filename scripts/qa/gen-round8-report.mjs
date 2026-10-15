@@ -277,7 +277,13 @@ if (g.gap) {
   const reds = g.gap.red || (g.gap.gates || []).filter((x) => x.exitCode !== 0).map((x) => x.name);
   L.push(`门禁并行实测 ${(g.gap.gates || []).length} 项，红 ${reds.length} 项：${reds.join("、") || "无"}。` +
     `（此句读的是**缺口账单件**，其 HEAD=${g.gap.head || "unknown"}；终局复量那一发在第 7 节，两份件不同源、` +
-    `口径以第 7 节为准。缺口账单那一发只有整条工作流真跑时才会重打，只跑终验脚本时它是上一程的旧件。）`);
+    `口径以第 7 节为准。` +
+    /* 从前这里写死一句"只有整条工作流真跑时才会重打，只跑终验脚本时它是上一程的旧件"。
+       那句话现在不成立了（emit-round-bill 已接进两个载具、每轮重打），留着会让下一程
+       怀疑一个其实新鲜的数。改成按两发的 HEAD 现算：同源就说同源，不同源才报谁先谁后。 */
+    (g.final && g.gap.head && (g.final.headAfter || g.final.headBefore)
+      ? `本件 HEAD 与终局复量${g.gap.head === (g.final.headAfter || g.final.headBefore) ? "同源（同一枚提交的两发读数）" : `不同源（终局那发在 ${g.final.headAfter || g.final.headBefore}）⇒ 本件是那一发之前的口径`}`
+      : "缺终局读数件，无法判定两发是否同源 ⇒ 本节只作旁证，不当作终局结论。") + ")");
   if (g.gap.dirty !== undefined) L.push(`- 起点 HEAD=${g.gap.head}，工作树脏 ${g.gap.dirty} 项。`);
   L.push("");
 } else {
