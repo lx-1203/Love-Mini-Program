@@ -440,15 +440,36 @@ for (const t of TOUR) {
   try { openPage("/subpackages/village/village/index", "", OPTS); } catch (e) { note(`   [note] 开村口失败 ${String((e && e.message) || e).slice(0, 80)}`); }
   await sleep(3200);
   CURRENT_PAGE = "subpackages/village/village/index";
-  const probeRaw = safeAct("设备侧 village store 真收到帖子列表（>=5 条）", () => String(evaluate(
+  const VPROBE =
     "() => { try { var app=getApp(); var vm=app.$vm; var gp=(vm.$&&vm.$.appContext.config.globalProperties)||{};"
     + " var p=vm.$pinia||gp.$pinia; var s=p._s.get('village'); if(!s) return 'NO-STORE';"
     + " var l=s.posts||[]; var f=l[0]||{}; return JSON.stringify({n:l.length, id:f.id||0, title:String(f.title||f.content||'').slice(0,24), loading:!!s.loading}); }"
-    + " catch(e){ return 'ERR '+e.message; } }", OPTS)));
+    + " catch(e){ return 'ERR '+e.message; } }";
+  const parseV = (raw) => { try { return JSON.parse(raw); } catch { return {}; } };
+  const firstRaw = safeAct("设备侧 village store 首读（等稳前那一发）", () => String(evaluate(VPROBE, OPTS)));
+  let probeRaw = firstRaw;
+  let vTries = 0;
+  if (probeRaw !== null) {
+    let st = parseV(probeRaw);
+    // 首读不可信：n=0 且 loading=true 只说明「还在路上」，量不出「后端没给数据」。
+    // 判据要的是 store 收没收到 ⇒ 读到落定（n>=5 或 loading 已收回）为止，最多 5 发 × 1.5s。
+    while (Number(st.n) < 5 && st.loading === true && vTries < 5) {
+      await sleep(1500); vTries++;
+      const again = safeAct(`设备侧 village store 等稳第 ${vTries} 发`, () => String(evaluate(VPROBE, OPTS)));
+      if (again === null) { probeRaw = null; break; }
+      probeRaw = again; st = parseV(probeRaw);
+    }
+  }
   if (probeRaw !== null) {
     const probe = probeRaw;
-    const st = (() => { try { return JSON.parse(probe); } catch { return {}; } })();
-    checkI("设备侧 village store 真收到帖子列表（>=5 条）", Number(st.n) >= 5, `n=${st.n ?? "-"} 探针=${probe.slice(0, 120)}`, instFault(probe));
+    const st = parseV(probe);
+    const firstSt = parseV(firstRaw);
+    const vDetail = `n=${st.n ?? "-"} 探针=${probe.slice(0, 120)}`
+      + (vTries > 0 && Number(st.n) >= 5
+        ? `（首读 n=${firstSt.n ?? "-"} loading=${firstSt.loading}，等稳 ${vTries} 发后才落上 ⇒ 首读不可信这条又中一次）` : "")
+      + (vTries > 0 && Number(st.n) < 5
+        ? `（已等稳 ${vTries} 发仍 n=${st.n ?? "-"} loading=${st.loading} ⇒ 这是落定后的读数，不是路上态）` : "");
+    checkI("设备侧 village store 真收到帖子列表（>=5 条）", Number(st.n) >= 5, vDetail, instFault(probe));
     if (st.id) {
       const numeric = /^\d+$/.test(String(st.id));
       const d = await apiFetch(`${API}/admin/forum/village-posts/${st.id}`, { headers: { Authorization: `Bearer ${(await adminToken()) || ""}` } });

@@ -36,7 +36,23 @@
     "7324cf6f feat(wf): v3.8 全量UI巡检闭环",
     "bbf6fc53 test(qa): 提名负例的尺子交给夹具自己声明",
     "fb4b8321 evidence(qa): round-4a 真档腿落盘 + v3.8 裁定包",
-    "ba68aaa7 evidence(qa): AUDITOR 写闸清点 + 圈层回滚件 + 证据洞判决"
+    "ba68aaa7 evidence(qa): AUDITOR 写闸清点 + 圈层回滚件 + 证据洞判决",
+    "feda2a85 evidence(qa): 本轮手驱动运行账（下一程不必再从 14 份车道 .md 反推跑到哪一格）",
+    "bbab0283 docs(qa): 设备腿判为收官载具——0 条可辩护绑定，并把这条判定连证据一起写进绑定件",
+    "4541fec0 fix(qa): 设备腿绑定必须显式声明 bound:true——旧实现会无视 bound:false 照样买到覆盖",
+    "89c769b4 fix(qa): 八条覆盖欠账逐例定处置，并修掉一条只有配方自己是证据的幻象参数",
+    "54866182 fix(qa): 总报告生成器不再有默认靶，并装上\"不许改写上一程交付物\"的出处守卫",
+    "94f8e689 docs(ledger): 本程八条 QA 工具缺陷入册（MP-R7QA-* 族）；verify-ledger 仍 PASS，245→253 行",
+    "e0911edc evidence(qa): 补齐门清点与入册结果，并把三处我自己报错的数字写进行账",
+    "e23e0385 fix(qa): WS 行构造器改成固定签名，11 处调用点补齐位数——旧写法还在伪造证据掩掉\"量不到\"",
+    "a2583abf docs(qa): 裁定包补上机器可读名册——报告 §6 从此数的是 31 条真实待裁，不是 10 个节标题",
+    "da792213 docs(qa): 本程收尾正文——总报告的 §2/§3/§8 位子由编排方写，数字一律指向盘上件",
+    "6ad70d9a fix(qa): 设备腿在采集这一侧脱敏，路由改等稳再判——本程自己那条腿就是被这两处绊住的",
+    "779b58b6 fix(qa): 分类器按结构派生落点而不是认处置列里的魔法词；入册工具的守恒计数不再算分隔行",
+    "7665d77b feat(qa): 补上本轮缺口账单与未结行的生产者——总报告 §1/§4 从\"未跑\"变成有出处派生",
+    "0a66b20d fix(qa): 报告 §1 那句\"缺口账单只有整条工作流真跑才重打\"已经不成立——改成按两发 HEAD 现算",
+    "97840b57 fix(client,qa): 匹配卡主视觉补一层包内兜底 + 面板的覆盖去向改读真值源并按轮派生路径",
+    "62fb9ffc evidence(qa): 记 sweep#1 读数、三处新待裁，并把两处我自己的错归到自己头上"
   ],
   "gatesMeasuredGreen": {
     "ADMAUD": "pass=17 fail=0（AUDITOR 读 200 / 写 403 / 超管对照 / 跨校区 403）",
@@ -67,7 +83,15 @@
   "openItems": {
     "ledgerRows": 179,
     "open": 16,
-    "by": { "reverify": 8, "unverified": 2, "probe": 2, "backend": 1, "frame": 1, "decision": 1, "code": 1 },
+    "by": {
+      "reverify": 8,
+      "unverified": 2,
+      "probe": 2,
+      "backend": 1,
+      "frame": 1,
+      "decision": 1,
+      "code": 1
+    },
     "note": "上一程机器读数是 7（入册前），入册后文字 16；本件记的是重新跑出的 179/16，不是沿用任何一方"
   },
   "rulings": {
@@ -132,5 +156,30 @@
     "未动 11 个 CRC32 与 flyway_schema_history 不符的历史迁移（按 database/flyway/sql/README.md，已应用件不可改）",
     "未删任何 .bak-20261014-rot（用户选 ignore 保留）；未把带活票的 verdict.txt、simulator-network.log 与 prestate SQL 提交进库",
     "未做 repo-wide restore、未用 broad add；git 一律显式 pathspec，其中一次靠新门把两份 prestate 快照从暂存区撤出"
-  ]
+  ],
+  "admissionResult2": {
+    "rowsAdded": 2,
+    "family": "MP-R7QA-（续）",
+    "ids": [
+      "MP-R7QA-MEDIA-BANDBLANK-001",
+      "MP-R7QA-SAFEIMG-EMPTYSRC-001"
+    ],
+    "DATA_ROWS": "253→255",
+    "verifyLedger": "PASS（OFF_SCHEMA=0 ROTATED_ROWS=0 STATUS_VOCAB_BAD=0 DATA_ROWS=255 矩阵文件=1；MULTI_ID_FAMILIES=29 未新增）",
+    "writerStatus": "admit-ledger-row.mjs 先 --dry 后 --apply，两条各落 1 行（主表 187→188→189）；上程修好的写入器本程确认可用（旧 manifest 记的 toolBugFound 已不复现）",
+    "selfCorrection": "两条 status 原文都写了「谓词可由 verify-source-shape.mjs 复现」；落盘后核该门 SPEC：它是按台账行号取判点的清单，本两行不在其中，所以那句话是对门覆盖的虚构，已就地改为「复现取数＝grep apiMode 零命中／读两个 fail 分支体」并显式声明该门量不到本行。把判点落进 SPEC 要等门禁在途结束后再动那个门（本轮 sweep 在跑，不改门）。",
+    "premisesRefutedBeforeFiling": [
+      "「REQ-04 vs 判据互斥」不是缺陷行而是待裁项，已在 newRulingsNeeded[0]（:119）在册 ⇒ 不重复立案",
+      "「bash 载具缺 --out 会覆写权威判决件」证伪：verify-evidence-holes.mjs:34 缺省已落 sidecar，:12-18 头注就是这笔账的既往修复；本轮那份 M 只有 generatedAt 一行（git diff 实测 1 insertion/1 deletion）",
+      "「media.ts 有个 apiMode 门被绕过」是我对本程 commit message 的误读：原文「不看 apiMode」＝缺门，全文件 grep apiMode 命中 0"
+    ],
+    "headAtAdmission": "62fb9ffc"
+  },
+  "postSweepDeviceLegRerun": {
+    "reason": "sweep#2 里 verify-device-leg exit=1（pass=39 fail=1），唯一 FAIL 是 village store n=0 loading=true。核该判点：开页后只有一次 sleep(3200) 的单发读，没有等稳环（同文件的路由判点本程已补过等稳，这条漏了），所以这一读量不出「后端没给数据」，属本程已三次命中的首读不可信类，不是产品缺陷。",
+    "fix": "给该判点补等稳环，形状与路由判点一致：n>=5 或 loading 已收回为止，最多 5 发 × 1.5s；detail 同时印首读与稳后读数，等稳次数>0 就当场声明首读不可信又中一次。",
+    "rerun": "DEVICELEG_RESULT=PASS pass=41 fail=0 unverified=0 band=real@f0677920；village 读数 n=20（首读 n=0 loading=true，等稳 1 发后才落上）；POST_ID=146 后台 http=200 ⇒ 设备首条卡片与后台同源这条也落了。",
+    "myOwnBadInvocation": "第一次补跑我手拼 env 时没做 SUPER_PASSWORD ← ADMIN_LOGIN_PASSWORD 的映射（那映射只在 run-sweep.mjs:38），于是 7 条 FAIL 全是超管票铸不出（SUPER_PASSWORD 长度=0 ⇒ http=400）往下传的级联；且那一次把 reports/audit/round-7/exec-v38-devicleg 的结果件覆写成了缺票读数。已按 run-sweep 的映射重跑，结果件现在是带票的那一发。",
+    "namedGateRunnerDebt": "run-named-gates.mjs 对 verify-device-leg 报 NAMED_GATES_RAN=0 同时 nonZero=0 —— 一条没跑却读起来像全绿，是本仓反复出现的 vacuous-green 形状。它的 DSL 路径已经指向 v38(:9)，所以问题在匹配/跳过口径（多半 requiresEnv 不满足就静默跳过且不计入 RAN）。本轮无预算追它，记为下一程欠账。"
+  }
 }
