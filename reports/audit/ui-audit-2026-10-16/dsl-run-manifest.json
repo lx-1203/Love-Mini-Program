@@ -1,0 +1,100 @@
+{
+  "round": "ui-audit-2026-10-16",
+  "workflowVersion": "3.8",
+  "workflowFile": ".zcode/workflows/miniprogram-ui-audit-v38.dwf.ts",
+  "drivenBy": "cli-session-subagents",
+  "note": "与 v3.7 那一程同样的事实：DWF 编排运行时在本会话够不到，所以 v3.8 也是手驱动的。本件由主会话在派发间隙写成，为的是下一程不必再从 14 个 lane .md 里反推本程跑到哪一格——上一程的 dsl-run-manifest.json 正是因为它写在各车道落盘之前，才把 gates=in-progress / admission=pending / report=pending 一路留成了过期读数。",
+  "startedAt": "2026-10-15T12:37:00Z",
+  "headAtStart": "e026d1e6",
+  "envAtStart": "MySQL 3306 UP；Redis 6379 DOWN；后端 8080 DOWN；无任何 94xx 自动化监听；无并发会话（.mimosa/hook-state 最新是 10-10）；heldLeases()=[]",
+  "envNow": {
+    "redis": "UP 6379（v5.0.14 @ D:/codex-tools/redis，requirepass 取 .env，--dir 落在 ASCII 临时目录，appendonly no；仓库根 appendonly.aof 已 redis-check-aof 验活并 cp -p 备份，本轮未启用那份 AOF）",
+    "backend": "UP 8080 profile=real，pid 4052 起于 2026-10-15T23:50，boot 27s；复用 10-14 23:39 那发 fat jar——实测 0 个 .java/.resources/.class 比它新，故未重建",
+    "devtools": "WS 9420=自动化实例（band=mp-weixin-real，WS_UP=OK 且 WS_UP_BAND_RESULT=match，envSha8=f0677920）；9430=CLI 桥，另一个 pid",
+    "adminDev": "UP 127.0.0.1:5173（该门默认 5177，跑门必须显式给 ADMIN_BASE_URL）"
+  },
+  "migrationPrecheck": {
+    "flyway": "V2026.10.14.0001–0007 全部已应用（success=1，installed 10-14 16:30→23:52），本轮 boot 不带新 schema 变更",
+    "roles": "SUPER_ADMIN 1 / ADMIN 4 / AUDITOR 1 / USER 138 / GUEST 148；AUDITOR=users 100169 openid=phone:13711110005",
+    "posts": "total 291（deleted 27 / audit pending 14）；写门自建自清，未留残帖"
+  },
+  "bandsRebuilt": {
+    "mock": "exit 0（build:mp-weixin:mock）",
+    "real": "exit 0（build-real-isolated --band real，自证 MODE=real / VITE_API_MODE=real / base=127.0.0.1:8080）",
+    "freshness": "verify-band-freshness FRESH_RESULT=PASS bands=3 markers=4；srcDirtyFiles=0",
+    "knownBound": "档位尺只是产物 config/env.js 的 sha8；整档重建后戳未变——所以『按戳新鲜』不等于『按内容新鲜』，已登记待裁"
+  },
+  "commits": [
+    "b2f38215 feat(db): 七支迁移入库（10-14 已实跑）",
+    "b5afba52 feat(api): AUDITOR 只读 + 圈层数据域（66 文件：51 处引入 AUDITOR / 39 处改 hasAnyRole / 6 新文件）",
+    "73988a95 fix(client): 401 不再静默回落 mock（新增 mockOn401Enabled，默认 false）",
+    "9403369d feat(admin): AUDITOR 前端 + feedback tickets 接线 + CapabilityOverview 四处证伪更正",
+    "555f0872 chore(qa): 提交前密钥预检 + 收窄的凭据备份 ignore 规则",
+    "0cd2ba44 docs(admin): 后台权限设计方案（§0 基线已过时，附实测更正）",
+    "2784c938 feat(qa): 五条后台/设备门可归因化 + 离线负例",
+    "6d02b30f fix(qa): 四条门的绿各自量到它声称的东西（EXPIRED 桶 / Redis 前置 / 同步门窗口 / 报告器实步）",
+    "7324cf6f feat(wf): v3.8 全量UI巡检闭环",
+    "bbf6fc53 test(qa): 提名负例的尺子交给夹具自己声明",
+    "fb4b8321 evidence(qa): round-4a 真档腿落盘 + v3.8 裁定包",
+    "ba68aaa7 evidence(qa): AUDITOR 写闸清点 + 圈层回滚件 + 证据洞判决"
+  ],
+  "gatesMeasuredGreen": {
+    "ADMAUD": "pass=17 fail=0（AUDITOR 读 200 / 写 403 / 超管对照 / 跨校区 403）",
+    "ADMSCOPE": "pass=17 fail=0（改绑 126→22→126；未绑定 fail-closed 11/291）",
+    "ADMWRITE": "pass=15 fail=0（公告写了 C 端读得到、下架立刻读不到、后台建帖落本校、上传裸 401 带票 200、总览自洽、验收帖自收尾）",
+    "POSTDETAIL": "pass=30 fail=0（真 Chrome；缺凭据时退 2 记 NOT-EVIDENCED，这条路径实测撞到过）",
+    "BACKEND_FRESH": "PASS apps/api脏项=0",
+    "RESTARTED": "PASS 可作前后端联通取证前提",
+    "EVIDENCE_HOLES": "PASS 三洞全 DECIDED（DC33/REG29/REG36）",
+    "STATE_TRUTH": "PASS 24/24 套匹配；我第一次调用漏传 round 目录，得到的是我自己读数的假红而非语料红",
+    "QUEUE_RECONCILE": "PASS GAP=0",
+    "LEDGER": "PASS（另有 5 条非 ID 截断串、71 条已登记退役——退役不等于通过）",
+    "OPS_STAMP": "PASS canon=4afc5c3d674f cases=1107",
+    "SRC_SHAPE": "--dry OK",
+    "DRYLEASE": "OK",
+    "DEGRADE": "PASS（v3.7 判诚实 + v3.6 对照被抓到）",
+    "GATESYNC": "PASS 判点=13 不一致=0",
+    "DRYRUN_v38": "3/3 画像 SURVIVED",
+    "TCHECK_v38": "0 条真实类型错误，27 个函数声明"
+  },
+  "gatesRed": {
+    "verify-real-coverage": "FAIL 免检28+覆盖196+欠账5+待判4+过期3=236 守恒 OK。本轮腿落盘 EXEC_ROWS 16096→16718 但分桶未动，唯一可归因变化是 LK04 从缺 login+guest 收窄为缺 guest",
+    "verify-evidence-corpus": "FAIL CORPUS_PROBLEMS=2：round-7/exec-a-mock-final 缺 5 帧、reports/screenshots/round-1/manifest.json 缺 144 帧。这是用户已裁删除集的在盘缺席，不是本轮新造的红；47/47 manifest 的 gitSha 全为过期，但按契约可解析的历史不判红",
+    "verify-provenance-all": "FAIL＝WORKFLOW.acceptedReds 里唯一具名已裁红",
+    "verify-carrier-wiring": "曾报死件=1（verify-staged-secrets.mjs 具名导出零消费方），v3.8 接线后复量已 PASS",
+    "run-qa-selftests": "FAILED=2（test-guest-landing 1 条、test-corpus-denominator 7 条）。两条都由实测前红链证明是本程之前既存的红，未被静默；本程自己打红的 nominate 负例已修，并加 7 条断言证明 EXPIRED 桶仍咬得动"
+  },
+  "openItems": {
+    "ledgerRows": 179,
+    "open": 16,
+    "by": { "reverify": 8, "unverified": 2, "probe": 2, "backend": 1, "frame": 1, "decision": 1, "code": 1 },
+    "note": "上一程机器读数是 7（入册前），入册后文字 16；本件记的是重新跑出的 179/16，不是沿用任何一方"
+  },
+  "rulings": {
+    "packet": "reports/audit/ui-audit-2026-10-16/decisions-v38.md",
+    "pending": 30,
+    "closed": 8,
+    "undecidable": 5,
+    "hardBlocker": "四条 VOIDED 用例唯一的复位形状，是台账行声明机读字段 coverageEffect 取值 revalidated（门 :449/:477/:504），而全台账该字段命中 0 次；PFI25 连 needsUser 令牌都没有，从来不是拍板问题"
+  },
+  "lanesInFlight": [
+    "scripts/qa/r-exec-ws.mjs 的 mkRow 参数错位：:1497/:1547 传 7 参而 row() 收 12 参，于是 session 挤进 band 槽、identity/loginVerify 丢失，产出 band 为 [object Object] 的行一条都不记账；另加 arity 守卫测试",
+    "scripts/qa/device-leg-case-bindings.json 诚实性：bindings 为空数组，使设备腿的行连新鲜度判点都到不了。要求逐条给出 ops 判据原文与腿步骤 file:line 的对应；绑不出来就判该腿为收官载具而非覆盖载具",
+    "七条被前置条件卡住用例的配方：他人主页目标 userId、实名页未成年账号+过期票、官方号失败态重试钮、VIP/账单弹回、游客点赞墙",
+    "scripts/qa/gen-round8-report.mjs 轮次参数化：两个载具都裸调用它，而其默认 ledger 是 decisions-v33.md、默认 out 是 round-7/round8-final-report.md，正文还硬写 round-8（v3.3 续作轮，2026-09-29）——直接跑终验会覆掉九月那份历史交付物并冒充本轮报告。要求 out 无默认，并加能红的出处守卫"
+  ],
+  "remainingToClose": [
+    "四条车道落盘，按 concern 分批入库",
+    "台账入册本程新登记的缺陷：必须等车道静默，覆盖门读同一本台账，不能与它的测量并发",
+    "bash 全清单终验：用 .zcode/tmp/pre-wave-20261015/run-sweep.sh 注入 SUPER_PASSWORD 与 ADMIN_BASE_URL=5173，口令不 inline",
+    "总报告：等报告器参数化落盘后再跑，§7 只认 summary.json 读数",
+    "证据提交，并在提交后复量 sha 敏感门、印 HEAD 前后",
+    "推送需用户明示"
+  ],
+  "deliberatelyNotDone": [
+    "未合并并存的两个发布页；未开会员/showcase 旗标；未把回复长度上限抬到服务端值",
+    "未动 11 个 CRC32 与 flyway_schema_history 不符的历史迁移（按 database/flyway/sql/README.md，已应用件不可改）",
+    "未删任何 .bak-20261014-rot（用户选 ignore 保留）；未把带活票的 verdict.txt、simulator-network.log 与 prestate SQL 提交进库",
+    "未做 repo-wide restore、未用 broad add；git 一律显式 pathspec，其中一次靠新门把两份 prestate 快照从暂存区撤出"
+  ]
+}
