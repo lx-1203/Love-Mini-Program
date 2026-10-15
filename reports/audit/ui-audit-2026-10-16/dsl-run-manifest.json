@@ -261,6 +261,23 @@
       "P0/P1/P2/P3/P4 已交付并入库；P6 终验+总报告+证据提交已落（805206bf, fd470e0d, ad145a07, 51f7fb26）；P7 裁定包已出（未自裁）",
       "P5 round-4：4a 影响面腿跑完并出读数；4b 全量 24 suite × 49–70 例＝10–16 小时未开跑——这是「完整运行完毕」真正没做完的那块，不是收尾细节",
       "计划书 Verification 第 4 条满足但要带口径：10→5 发生在较早阶段，最后两发净贡献 0（见 coverageTrendAudit）"
-    ]
+    ],
+    "finalProbe": {
+      "at": "479bc13f",
+      "legArtifact": {
+        "mtime": "2026-10-15T18:58:24.459Z",
+        "bytes": 30884,
+        "jwtMatches": 1,
+        "post146": 2,
+        "user100166": 45
+      },
+      "laneEditStillUncommitted": " 1 file changed, 5 insertions(+), 2 deletions(-)",
+      "reports": {
+        "jwt": "372B/22L",
+        "selftests": "1019B/25L",
+        "rows": "NOT_YET"
+      },
+      "verdict": "两条车道到本轮终点仍未交付可采信的读数：结果件是 02:58 那一发（JWT 命中仍 1 ⇒ 脱敏后的重跑没发生），selftests 名册行还没落盘。下一程按 parkedState.lanesInFlight 的验收单实测，别按报告字数或 lane 自述收口。"
+    }
   }
 }
