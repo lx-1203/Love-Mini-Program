@@ -47,6 +47,16 @@ function t(name, cond, got) {
    A04 是 automatable:false 的免检行：它必须既不算覆盖、也**不出现在点名台账里**
    （门注释里的老规矩：免检 ≠ 覆盖，也不等于欠账）。 */
 const BAND = "real@f00dfeed";
+/* 夹具自带"新鲜度尺"（--band-stamp=BAND）——2026-10-16 归因：门今天多了 EXPIRED 这只桶
+   （verify-real-coverage.mjs:244 resolveCurrentStamp + :1012 `ok` 要求 expiredN===0），
+   尺默认取在盘 real 产物 config/env.js 的 sha8（尺源=bundle:...，每次重建都换一个值）。
+   本夹具的行戳 real@f00dfeed 是一个**永远不会存在**的构造戳 ⇒ 门正确地拒绝给它记覆盖
+   ⇒ covered=0、基线红，四条负例因为基线已经红而失去可比性。
+   修法只有一条是对的：**夹具自己声明尺**（语料自洽），而不是
+   · 把行戳改成今天的现戳 —— 那等于把离线测试绑死在"此刻构建的是哪个包"上，谁重新构建一次它就过期；
+   · 更不许删门里的新鲜度判点。
+   尺声明的代价是"这条测试不再测新鲜度"，所以下面第 6) 节另加一组**反方向**断言，
+   证明同一个桶对本夹具照样咬得动（换一把尺去量同一批行 ⇒ 必须整批摘到 EXPIRED）。 */
 const OPS_FILES = {
   "fix-a.json": {
     suite: "FIXTURE-A", page: "pages/fixture-a/index",
@@ -78,23 +88,30 @@ const BASE_ROWS = [
 ];
 const without = (rows, manifest, id, pick) => rows.filter((r) => !(r.manifest === manifest && r.id === id && (!pick || pick(r))));
 
-function run(tag, rows) {
+function run(tag, rows, stamp, extra) {
   const legDir = resolve(TMP, `round-${tag}`, "exec-fixture-leg");
   mkdirSync(legDir, { recursive: true });
   const doc = JSON.stringify({ round: tag, results: rows }, null, 1);
   writeFileSync(resolve(legDir, "exec-results.json"), doc);
-  const r = spawnSync(NODE, [GATE, "--ops", resolve(TMP, "ops"), "--dir", resolve(TMP, `round-${tag}`)],
+  const stampArgs = stamp === null ? [] : ["--band-stamp", stamp === undefined ? BAND : stamp];
+  const r = spawnSync(NODE, [GATE, "--ops", resolve(TMP, "ops"), "--dir", resolve(TMP, `round-${tag}`)]
+    .concat(stampArgs, extra || []),
     { cwd: REPO, encoding: "utf8", timeout: 120000 });
   const out = (r.stdout || "") + (r.stderr || "");
   const num = (re) => { const m = out.match(re); return m ? Number(m[1]) : null; };
   /* 点名行按严格语法自己再数一遍：两空格 + UNCOVERED + <无空格 key> + 空格 + 缺=<轴>
      —— 轴口径说明那一行（含"缺哪根轴"却没有 " 缺="）不会被误收。 */
   const named = out.split(/\r?\n/).filter((l) => /^ {2}UNCOVERED \S+ 缺=\S+$/.test(l)).map((l) => l.trim());
+  const expiredNamed = out.split(/\r?\n/).filter((l) => /^ {2}EXPIRED \S+ /.test(l)).map((l) => l.trim());
   return {
-    tag, code: r.status, out, doc, named,
+    tag, code: r.status, out, doc, named, expiredNamed,
     uncovered: num(/^REALCOV_UNCOVERED=(\d+)/m),
     list: num(/^REALCOV_UNCOVERED_LIST=(\d+)/m),
     covered: num(/^REALCOV_COVERED=(\d+)/m),
+    expired: num(/^REALCOV_EXPIRED=(\d+)/m),
+    stampRaw: (out.match(/REALCOV_BAND_STAMP=(\S+)/) || [])[1] || null,
+    stampFromFlag: /REALCOV_BAND_STAMP=\S+ 尺源=--band-stamp/.test(out),
+    freshness: (out.match(/REALCOV_FRESHNESS=(\w+)/) || [])[1] || null,
     exempt: num(/^REALCOV_AUTOMATABLE_EXEMPT=(\d+)/m),
     cases: num(/^REALCOV_CASES=(\d+)/m),
     ledger: (out.match(/REALCOV_UNCOVERED_LEDGER=(\w+)/) || [])[1] || null,
@@ -113,6 +130,8 @@ t("基线：零欠账也必须印 REALCOV_UNCOVERED_LIST=0（绿的时候不许�
   /^REALCOV_UNCOVERED_LIST=0/m.test(base.out), base.out.split(/\r?\n/).find((l) => l.startsWith("REALCOV_UNCOVERED_LIST")) || "(没有这一行)");
 t("基线：一条点名都没有（点名不是凭空长出来的）", base.named.length === 0, base.named.join(" | "));
 t("基线：台账守恒 OK、账本守恒 OK", base.ledger === "OK" && base.conserved === "OK", `ledger=${base.ledger} conservation=${base.conserved}`);
+t("基线：新鲜度尺确实取的是夹具自己声明的 --band-stamp（不是今天碰巧构建出来的那个包）",
+  base.stampRaw === BAND && base.stampFromFlag && base.freshness === "MEASURED", `尺=${base.stampRaw} 尺源=${base.stampFromFlag ? "--band-stamp" : "其它"} FRESHNESS=${base.freshness}`);
 t("基线：免检行 A04 绝不进点名台账（豁免≠覆盖，也不等于欠账）",
   !/A04 缺=/.test(base.out), base.out.split(/\r?\n/).find((l) => l.includes("A04 缺=")) || "(没点它)");
 /* 对照：同一批行**一字不改**、只换一条腿目录再跑 ⇒ 必须仍是绿、仍零点名。
@@ -211,6 +230,39 @@ t("真盘：REALCOV_UNCOVERED_LEDGER=OK（门对自己那本账的守恒断言�
 t("真盘：每一行欠账都点得出名（无一行轴名为空）",
   realNamed.every((l) => / 缺=\S+$/.test(l)), realNamed.filter((l) => !/ 缺=\S+$/.test(l)).join(" | ") || "(全有点名)");
 console.log("INFO 真盘点名 " + realU + " 条：" + realNamed.map((l) => l.replace(/^UNCOVERED /, "")).join(" ｜ "));
+
+/* ---------------- 6) 反方向：夹具声明尺≠"免检新鲜度" ----------------
+   上面那条 --band-stamp 只是把**语料自己**说圆（行戳 f00dfeed 与尺 f00dfeed 同一把）。
+   如果我只是把门的判点关掉，基线同样会绿 —— 所以这里用同一批行、只换尺（或只换行上的戳），
+   证明门第 6 只桶（EXPIRED）对本夹具照样咬得动：
+   · 换尺：行戳不动、声明一把不同的尺 ⇒ 5 条覆盖必须整批摘到过期、exit=1、守恒仍 OK、欠账仍 0
+       （陈旧≠欠账：这只桶只减覆盖、不许把用例并入欠账，否则等于把第五只桶做成第二条欠账判点）；
+   · 无戳行：band 写裸 real ⇒ 有尺可比不了 ⇒ 同样摘走，不许"比不了就当新鲜"；
+   · 取不到尺：不给 --band-stamp 且把 real 产物指到一个空目录 ⇒ REALCOV_FRESHNESS=UNMEASURABLE
+     ⇒ **一条不摘**（门不许编一个比较把历史行全打红），基线仍绿。 */
+const EXPIRE_KEYS = ["FIXTURE-A|A01", "FIXTURE-A|A02", "FIXTURE-A|A03", "FIXTURE-B|B01", "FIXTURE-B|B02"];
+const swapRuler = run("mut-staleband", BASE_ROWS, "real@cafe0000");
+t("换一把尺量同一批行（行戳不变 real@f00dfeed、尺=real@cafe0000）⇒ 覆盖必须整批摘到过期：exit=1",
+  swapRuler.code === 1 && swapRuler.covered === 0 && swapRuler.expired === 5,
+  `exit=${swapRuler.code} covered=${swapRuler.covered} expired=${swapRuler.expired} 尺=${swapRuler.stampRaw}`);
+t("换尺后的 5 条过期点名逐字是基线那五条用例（陈旧只摘覆盖、不摘别的东西）",
+  swapRuler.expiredNamed.length === 5 && EXPIRE_KEYS.every((k) => swapRuler.expiredNamed.some((l) => l.startsWith("EXPIRED " + k + " "))),
+  "实点=" + (swapRuler.expiredNamed.join(" ｜ ") || "(零行)"));
+t("换尺后守恒仍 OK 且欠账仍 0（第五只桶与 VOIDED 同构：只减不加，不新建判点）",
+  swapRuler.conserved === "OK" && swapRuler.uncovered === 0 && swapRuler.ledger === "OK",
+  `conservation=${swapRuler.conserved} uncovered=${swapRuler.uncovered} ledger=${swapRuler.ledger}`);
+/* 行账只比 results 那一段：doc 里还带 round=tag，两个 tag 本来就不同（比对行账是噪音）。 */
+const onlyRows = (r) => JSON.stringify(JSON.parse(r.doc).results);
+t("换尺这一跑的行账与基线逐字相同 ⇒ 红只可能来自命令行上那把尺，不是我改了输入",
+  onlyRows(swapRuler) === onlyRows(base) && swapRuler.stampRaw !== base.stampRaw, "两份 exec-results.json 的 results 段一模一样才怪");
+const bareBand = run("mut-bareband", BASE_ROWS.map((r) => ({ ...r, band: "real" })));
+t("行上写裸 real（无可比戳）而尺已知 ⇒ 同样不许记覆盖：REALCOV_EXPIRED=5、covered=0",
+  bareBand.code === 1 && bareBand.covered === 0 && bareBand.expired === 5 && bareBand.conserved === "OK",
+  `exit=${bareBand.code} covered=${bareBand.covered} expired=${bareBand.expired} conservation=${bareBand.conserved}`);
+const noRuler = run("mut-noruler", BASE_ROWS, null, ["--real-bundle", resolve(TMP, "no-such-bundle")]);
+t("尺取不到（不给 --band-stamp 且 real 产物不在盘上）⇒ UNMEASURABLE、一条不摘、基线照样绿（宁可不判也不编比较）",
+  noRuler.freshness === "UNMEASURABLE" && noRuler.expired === 0 && noRuler.covered === 5 && noRuler.code === 0,
+  `FRESHNESS=${noRuler.freshness} exit=${noRuler.code} covered=${noRuler.covered} expired=${noRuler.expired} 尺=${noRuler.stampRaw}`);
 
 console.log(`SUMMARY: assertion failures = ${fail}`);
 console.log(`RCOV_SUMMARY cases=${checks} fail=${fail}`);
