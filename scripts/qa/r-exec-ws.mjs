@@ -334,9 +334,29 @@ const BAND_STR = (BAND.mode || "?") + "@" + (BAND.sha8 || "?");
    门那边会分别数成 REALCOV_BANDLESS_ROWS / REALCOV_IDENTITYLESS_ROWS。
    IDENTITY 是模块级 --identity 的值（:60，缺省 "A"），与 r-exec-cli.mjs:264 同一套旗标同一套词表。
    SESSION 是本腿**实际**拿到的会话证据（铸票端点 + store 实测串），boot 之后才填得上；
-   填不上就是空串 ⇒ 行没有可证会话 ⇒ 门数成"不可证"（REALCOV_SESSION_UNPROVEN_ROWS），不认领成已证。 */
+   填不上就是空串 ⇒ 行没有可证会话 ⇒ 门数成"不可证"（REALCOV_SESSION_UNPROVEN_ROWS），不认领成已证。
+   ── 位置错位缺陷（2026-10-16 修，两条车道从不同方向撞到同一处）─────────────────────
+   上一版是 `const mkRow = (...a) => row(...a, BAND_STR, IDENTITY, SESSION)`：那三个常量是**按位置**
+   接在实参后面的，所以"调用点少传一个入参"不报错，只把这一排整排往左滑——
+   少 2 个（即只传 7 个）时 session 对象落进 band 槽、identity/sessionSource/loginVerify 全丢，
+   而 BAND_STR 滑进 evid、IDENTITY 滑进 miss ⇒ 行上 band={"source":…,"verify":…}、identity=""、
+   evidence 里躺着一枚档位串（伪证据：rowMeasured() :175 把"evidence 非空"读成"这条量到了"，
+   于是零取证的开页失败批能被 :187 classifyBatch 判成 judged 而放行——这条被掩盖的正是 :132 说的
+   round-8 stage-8 形状）。门那边读成 String(r.band)="[object Object]" ⇒ REAL_BAND(:181) 不认，
+   整行对覆盖门不可见（盘上实测被吃掉的判据：round-7 exec-realcov-b1c 的 VI34、exec-realcov-b3 的 VRN07）。
+   修法照 r-exec-cli.mjs:860 的 row()（它闭包模块常量，所以调用点结构上就漏不掉）：
+   本包装**逐位写死形参**，band/identity/loginVerify/sessionSource 不再出现在调用点的入参面上
+   ⇒ 既漏不掉也滑不动；evid/miss 给缺省（""与[]）⇒ 万一将来又少传，滑位滑不到 band 上；
+   多于 9 个位置参数直接抛 ⇒ 想从调用点塞自己的档位会当场红，不会静默落账。
+   守卫与负例见 scripts/qa/test-exec-ws-row-arity.cjs（每个调用点的位数与产出字段都被钉住）。 */
 const SESSION = { source: "", verify: "" };
-const mkRow = (...a) => row(...a, BAND_STR, IDENTITY, SESSION);
+function mkRow(manifest, page, c, status, route, reason, observed, evid = "", miss = []) {
+  if (arguments.length > 9) {
+    throw new Error("WSX_ROW_ARITY mkRow 只收 9 个位置参数（manifest,page,c,status,route,reason,observed,evid,miss），" +
+      "实收 " + arguments.length + " ⇒ band/identity/loginVerify/sessionSource 由本包装注入，不接受调用点自带档位");
+  }
+  return row(manifest, page, c, status, route, reason, observed, evid, miss, BAND_STR, IDENTITY, SESSION);
+}
 /* 旗标 ↔ 档位的两种错配，都只报不改（改执行语义是设备腿的事，离线不许动）：
    · --real 而产物声明非 real ⇒ 这一腿跑的是 mock 载体上的"真实用例"，行仍按 real=false 的档位入账；
    · 产物声明 real 而没带 --real ⇒ requiresReal 整批会被记 SKIPPED
@@ -545,22 +565,22 @@ async function runTapCase(name, page, c, route, cls) {
   const denyWord = denyTapMatch(actionText);
   if (denyWord) {
     return { bucket: "tapDeny", row: mkRow(name, page, c, "SKIPPED", route, "动作命中不可逆清单（注销/解绑/清空/登出）⇒ 禁触，否则后面几百条共用的会话会被打掉" +
-      " | 命中词=" + denyWord + "（清单唯一来源 scripts/qa/deny-tap.cjs；「清空」按宾语判）", "top=" + route + " | deny-tap | action=" + actionText.slice(0, 60)) };
+      " | 命中词=" + denyWord + "（清单唯一来源 scripts/qa/deny-tap.cjs；「清空」按宾语判）", "top=" + route + " | deny-tap | action=" + actionText.slice(0, 60), "", []) };
   }
   if (!targets.length) {
-    return { bucket: "tapNoTarget", row: mkRow(name, page, c, "SKIPPED", route, "交互动词但 action 里没点名可点元素（没有 selector 就没法把这次点击归属到某个东西）⇒ 待把判据收紧", "top=" + route + " | dom: (action 无类名) | tap-skipped") };
+    return { bucket: "tapNoTarget", row: mkRow(name, page, c, "SKIPPED", route, "交互动词但 action 里没点名可点元素（没有 selector 就没法把这次点击归属到某个东西）⇒ 待把判据收紧", "top=" + route + " | dom: (action 无类名) | tap-skipped", "", []) };
   }
   const sel = targets[0];
   const pre = await probeSet(await wsPage(), [sel]);
   if (pre.map[sel] !== "absent" && String(pre.map[sel]).startsWith("present") === false) {
-    return { bucket: "tapNoTarget", row: mkRow(name, page, c, "SKIPPED", route, "目标元素探针无答案（" + pre.map[sel] + "）⇒ 通道没准备好，不盲点", "top=" + route + " | pre: " + sel + ":" + pre.map[sel] + " | tap-skipped") };
+    return { bucket: "tapNoTarget", row: mkRow(name, page, c, "SKIPPED", route, "目标元素探针无答案（" + pre.map[sel] + "）⇒ 通道没准备好，不盲点", "top=" + route + " | pre: " + sel + ":" + pre.map[sel] + " | tap-skipped", "", []) };
   }
   if (pre.map[sel] === "absent") {
-    return { bucket: "tapNoTarget", row: mkRow(name, page, c, "SKIPPED", route, "目标元素 " + sel + " 当前不在页上（可能要先展开/滚动/登录态）⇒ 不盲点，待补前置态", "top=" + route + " | pre: " + sel + ":absent | tap-skipped") };
+    return { bucket: "tapNoTarget", row: mkRow(name, page, c, "SKIPPED", route, "目标元素 " + sel + " 当前不在页上（可能要先展开/滚动/登录态）⇒ 不盲点，待补前置态", "top=" + route + " | pre: " + sel + ":absent | tap-skipped", "", []) };
   }
   const t = await wsTap(sel);
   if (t !== "tapped") {
-    return { bucket: "tapFail", row: mkRow(name, page, c, "SKIPPED", route, "tap 未成功：" + String(t) + " ⇒ 通道/元素问题，不算交互失败也不算通过", "top=" + route + " | tap=" + String(t) + " | tap-skipped") };
+    return { bucket: "tapFail", row: mkRow(name, page, c, "SKIPPED", route, "tap 未成功：" + String(t) + " ⇒ 通道/元素问题，不算交互失败也不算通过", "top=" + route + " | tap=" + String(t) + " | tap-skipped", "", []) };
   }
   await sleep(TAP_SETTLE);
   const routeAfter = String((await wsRoute()) || "");
@@ -1494,7 +1514,7 @@ async function main() {
         /* 原因保尾（缺陷②）：failReasonOf 掐掉命令回显、把 stdout/stderr 里的真原因留住，
            不再 slice(0,70) 把 145 行的 reason 截在半条 exe 路径上。 */
         const reason = "open_page 失败（重试 " + attempts + " 次仍失败）：" + failReasonOf(openErr);
-        for (const c of todo) rows.push(mkRow(name, page, c, "FAILED", "", reason, ""));
+        for (const c of todo) rows.push(mkRow(name, page, c, "FAILED", "", reason, "", "", []));
         stats.failed += todo.length;
         flush();
         if (v.abort) {
@@ -1541,14 +1561,14 @@ async function main() {
           " | ws-route+ws-probe" + (pr.broken ? " | probe-broken" : "");
         if (c.requiresReal === true && !REAL_MODE) {
           stats.skipReal++;
-          rows.push(mkRow(name, page, c, "SKIPPED", route, "requiresReal ⇒ 本切片只跑 mock 产物", observed));
+          rows.push(mkRow(name, page, c, "SKIPPED", route, "requiresReal ⇒ 本切片只跑 mock 产物", observed, "", []));
         } else if (routeOk === false) {
           stats.failed++;
-          rows.push(mkRow(name, page, c, "FAILED", route, "落在别的页（页内守卫或路由重定向），须人判（跑 scripts/qa/triage-cold-entry.mjs 可定位到具体守卫行）", observed));
+          rows.push(mkRow(name, page, c, "FAILED", route, "落在别的页（页内守卫或路由重定向），须人判（跑 scripts/qa/triage-cold-entry.mjs 可定位到具体守卫行）", observed, "", []));
         } else if (TAP_RE.test(String(c.action || ""))) {
           if (!TAP_MODE) {
             stats.skipTap++;
-            rows.push(mkRow(name, page, c, "SKIPPED", route, "action 含交互动词 ⇒ 未开 --tap，交互型留待下一刀", observed));
+            rows.push(mkRow(name, page, c, "SKIPPED", route, "action 含交互动词 ⇒ 未开 --tap，交互型留待下一刀", observed, "", []));
           } else {
             const r = await runTapCase(name, page, c, route, cls);
             if (r.bucket !== "executed") stats[r.bucket]++; else stats.executed++;
@@ -1556,10 +1576,10 @@ async function main() {
           }
         } else if (!cls.length && !FRAME_RE.test(String(c.evidence || ""))) {
           stats.skipNoCrit++;
-          rows.push(mkRow(name, page, c, "SKIPPED", route, "判据未点名可观测物件（既无类名也不要求出帧）⇒ 没有可判的东西，不能记 EXECUTED", observed));
+          rows.push(mkRow(name, page, c, "SKIPPED", route, "判据未点名可观测物件（既无类名也不要求出帧）⇒ 没有可判的东西，不能记 EXECUTED", observed, "", []));
         } else if (!routeKnown) {
           stats.skipRoute++;
-          rows.push(mkRow(name, page, c, "SKIPPED", route, "WS currentPage() 没给结果 ⇒ 不知是否已在 " + page + "，答案无法归属，待重跑", observed));
+          rows.push(mkRow(name, page, c, "SKIPPED", route, "WS currentPage() 没给结果 ⇒ 不知是否已在 " + page + "，答案无法归属，待重跑", observed, "", []));
         } else {
           const miss = [];
           let evid = "";
