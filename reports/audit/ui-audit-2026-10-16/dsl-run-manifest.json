@@ -209,5 +209,58 @@
     "honestSplit": "下降发生在这一程的较早阶段（round-4a 腿 + 去向件/disposition 接线 + 覆盖门 EXPIRED 轴上线），不是最后两发 sweep 的成果：本程 pre-wave 基线 00:13 就已经是 5／236，sweep#1 与 sweep#2 之后仍是 5／236 ⇒ 最后这段对覆盖分子的净贡献是 0。这与本轮最大那条结论一致——欠账卡在夹具/前置可注入，不卡在腿多跑几遍（SKIPPED 一分不抵账）。",
     "notOldRows": "第 4 条的后半（不许旧行凑数）是满足了，而且是反着满足的：新鲜度尺上线后判出 3 条 stale 与 4 条 VOIDED，把先前靠旧行撑着的绿摘掉了 3 枚，5／236 是在收紧之后的尺子下读出来的数。",
     "itemVerdict": "第 4 条＝满足（相对 round-3 起点 10 降到 5），但要带口径引用：降幅不由本程最后两发产生。第 3 条＝满足：ADMAUD／ADMSCOPE／ADMWRITE／POSTDETAIL／DEVICELEG 五条机读行在 sweep#2 各出现 1 次，carrier-wiring 判域内不再是零。"
+  },
+  "parkedState": {
+    "parkedAt": "51f7fb26",
+    "at": "2026-10-15T19:09:51Z",
+    "why": "目标轮次预算将尽（17/20）。两条车道仍在写产物，本轮不能宣称收口，故把在途状态与复核口径落盘，下一程照单验收而不是重写。",
+    "lanesInFlight": [
+      {
+        "id": "jwt-scrub",
+        "report": ".zcode/tmp/jwt-scrub-lane-report.md",
+        "reportBytes": 372,
+        "mayTouch": [
+          "scripts/verify-device-leg.mjs",
+          "scripts/qa/device-leg-tally.mjs",
+          "scripts/qa/test-device-leg-scrub.mjs",
+          "reports/audit/round-7/exec-v38-devicleg/exec-results.json"
+        ],
+        "acceptance": "必须同时满足：新 exec-results.json 里 JWT 形状命中数=0（旧件现为 1）、POST_ID 146 与 userId 100166 仍可读、DEVICELEG_RESULT=PASS pass=41 fail=0 band=real@f0677920、且证明「删掉那层屏就会红」的变异数字。任一项缺 ⇒ 判车道未完成，按其自述补做而不是采信。"
+      },
+      {
+        "id": "selftests",
+        "report": ".zcode/tmp/selftest-lane-report.md",
+        "reportBytes": 1019,
+        "rowsDraft": ".zcode/tmp/selftest-lane-rows.txt",
+        "mayTouch": [
+          "scripts/qa/run-qa-selftests.*",
+          "scripts/qa/test-*.mjs"
+        ],
+        "acceptance": "必须点名 2/55 具体是哪两条、每条定性为 真缺陷/前提过期/调用伪影 之一并带 file:line；单跑复现（test-evidence-store-axis 已知在并发下被自己 300s 上限杀掉，那不是真失败）。若它改过任何门或测试，必须给变异证明；否则把改动还原。"
+      }
+    ],
+    "guardrailsRestated": [
+      "本程不 add 不 commit 不 push 之外：车道被禁止动 git、禁止动台账（入册只走 scripts/qa/admit-ledger-row.mjs 由我把关）、禁止取设备租约占并发（腿写权给 jwt-scrub 一条）、禁止手改证据字节去喂绿门禁。",
+      "leg 结果件 exec-results.json 与 device-leg-* 帧目录一律保持 untracked（含活会话票）；覆盖门要的 exec-*/exec-results.json 形状与「不许入库」这两件事的冲突，留给用户裁决（问题 2）。"
+    ],
+    "stillBlocked": [
+      "31 条待拍板（decisions-v38.md 名册 43 条：open 31 / half-closed 4 / closed 8），一条未自裁",
+      "coverageEffect:\"revalidated\" 写权（收益要说准：开的是门侧 4 个 VOIDED key 的判决，不直接动 UNCOVERED=5）",
+      "leg 产物脱敏后入库 vs 永久排除",
+      "是否 push（本地 HEAD 已前进，未推）",
+      "E9 等稳判点尚未做成可红的门（只有 DSL 措辞纪律）",
+      "test-evidence-store-axis 单跑复现（即 selftests 车道的一部分）"
+    ],
+    "gitNow": {
+      "headNow": "51f7fb26",
+      "staged": "",
+      "dirtyCount": 31,
+      "legDiff": "scripts/verify-device-leg.mjs | 7 +++++--\n 1 file changed, 5 insertions(+), 2 deletions(-)"
+    },
+    "planItemsVerdict": [
+      "P0/P1/P2/P3/P4 已交付并入库；P6 终验+总报告+证据提交已落（805206bf, fd470e0d, ad145a07, 51f7fb26）；P7 裁定包已出（未自裁）",
+      "P5 round-4：4a 影响面腿跑完并出读数；4b 全量 24 suite × 49–70 例＝10–16 小时未开跑——这是「完整运行完毕」真正没做完的那块，不是收尾细节",
+      "计划书 Verification 第 4 条满足但要带口径：10→5 发生在较早阶段，最后两发净贡献 0（见 coverageTrendAudit）"
+    ]
   }
 }
