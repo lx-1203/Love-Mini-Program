@@ -300,5 +300,17 @@
     },
     "myOwnDiagnosisWasIncomplete": "我的判词只说「结果件写点没过屏」。真根因是两层叠出来的：屏比门窄——:498 把登录响应截到 150 字，票被切成 2 段，旧 SCRUB_JWT 只认 3 段，而密钥门的「JWT 段」尺认 2 段 ⇒ 照我的说法包上屏也照样漏。这类「脱敏尺与门禁尺不同形」就是假绿保证，我漏看了第二层。",
     "stillOpen": "exec-results.json 仍 untracked（用户裁问题 2 未决），故没对索引跑 verify-staged-secrets，行上也不声称已入库；lane 另记两条未验：SCRUB_TOKENISH 对含转义引号的序列化文本证明无效（本标本靠 JWT/bcrypt 值形状尺兜住），device-post.json 等同目录兄弟件不在范围内。"
+  },
+  "laneBAccepted": {
+    "at": "1d231f55",
+    "verdict": "采信并补一条我自己的错",
+    "verifiedByMe": [
+      "aggregator scripts/qa/run-qa-selftests.mjs:43 实读 timeout: 300000，而 test-evidence-store-axis 内部允许 900s ⇒ sweep 里那条 exit=null 是并发杀，不是失败（lane 单跑 154s PASS）",
+      "git ls-files --deleted -- reports = 0（我此前也独立量过一次），与 lane 报的 neverOpened=0 同向 ⇒ test-corpus-denominator 的断言 :169 前提已过期，且门本身仍能红（problems=1 exit=1），不是假绿门",
+      "55 分母=52 扫描（1 条 UI-bound 跳过）+ 3 条硬编码 GATE_SELFTESTS"
+    ],
+    "rowsAdmitted": "MP-R7QA-CORPUSDENOM-001（Evidence/P3/保留-判据不成立）与 MP-R7QA-GUESTLEG-TRIAGE-001（Architecture/P3/需裁决）已入册，台账 256→258，verify-ledger PASS、STATUS_VOCAB_BAD=0",
+    "myOwnMistake": "我上一发想把 lane 的 类别/severity 归一到本账口径，却按 cells[2]/cells[3] 动手——那是「页面/类别」两位，正确列位是 类别=第 4 格、severity=第 5 格（ID0、别名1、页面2、类别3、severity4、status5）。所幸 map 的键没命中，那一发是 no-op，没把行写成错值；这轮按正确列位改的。归一本身也要记账：lane 用了 minor/high 与本账 P1–P4 不同形。",
+    "laneChangedNoSource": "lane 自述未改任何源码/门/测试/台账/.gitignore，盘上核对一致（改动只落 .zcode/tmp/ 下新文件）；两条修复都留给 owner 设计决定，因为它拒绝把 coverMismatch 那条覆盖发现用「放宽预检」糊掉——这个 refusal 是对的。"
   }
 }
