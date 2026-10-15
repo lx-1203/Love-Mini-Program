@@ -108,6 +108,18 @@
       "反馈工单页 hidden 是产品决议：路由按设计可达（menu.ts 自述只是不进侧边栏）"
     ]
   },
+  "sweep1Reading": {
+    "preconditions": "redis=UP backend=200 admin_dev=200 automation_9420=UP，SWEEP_LEASES=[]",
+    "nonZeroSoFar": "verify-real-coverage FAIL（五桶守恒、欠账 5）、verify-provenance-all FAIL（已裁接受红）、verify-band-freshness FAIL problems=3、run-qa-selftests FAIL 2/55",
+    "bandFreshCause": "这一发是我自己造出来的顺序问题：MatchCard 修复动了 apps/client 源码，而两档产物是 23:59–00:05 建的 ⇒ 源码比产物新，门判红是对的。处置不是改门，是收口链里先重建两档、重架通道，再跑第二遍全清单。",
+    "selftestsThirdRed": "聚合器这一跑除既存两条外还报 test-evidence-store-axis exit=null（300 s 上限被杀、无自报断言计数）。它与我 02:11 启动的终验重叠，属并发争用的嫌疑而不是判点变红；第二遍终验里单独复跑定分界。",
+    "sidecarWriteAttribution": "reports/round-7/evidence-holes-verdict.sidecar.json 只变一行 generatedAt（02:12:55）——是我这遍终验写的，不是面板车道。真缺陷在 bash 载具自己身上：:62 那步 verify-evidence-holes --mode judge 没带 --out，于是终验会重写它要读的判决件；:109-111 的注释只在为面板开脱（面板确实带 --out），却没照到自己的步骤。修它要等这一遍跑完——正在执行的 bash 脚本不能中途改。"
+  },
+  "newRulingsNeeded": [
+    "REQ-04 基线与 MP-R3AUDIT-DISCOVER-MATCHCARD-BLANK-001 判据互斥：可见带 479px vs 内容 712px，卡必须 ≤视口 41.4% 才放得下三钮，而行与代码注释都写 ≥70%；设计原图画的是约 53% 的旧形状。要么重裁基线，要么裁那 185px 底部预留——不是 CSS 能两全的。同一预算还削掉卡的标签行与匹配度徽标（一个因三个症）。",
+    "面板去向轴切读真值源这件事，裁定 T7/r10new#A 自己标的是「属面板参数语义（判域），随撤 RCD_DUAL 一并做｜下轮」——本程由车道做了，属越权代办，如实报知；RCD_DUAL 是否撤、归档件是否删仍归门的主人。",
+    "入册车道要的那个机读字段 coverageEffect:\"revalidated\"（全台账命中 0）仍未获写权；四条 VOIDED 与它一并悬着。"
+  ],
   "remainingToClose": [
     "五条在途车道收口：ws 参数错位 + arity 守卫 / 裁定包名册块 / 分类器与入册工具计数 / 面板真值源与默认靶 / 匹配卡空白定性",
     "bash 全清单终验：用 .zcode/tmp/pre-wave-20261015/run-sweep.sh 注入 SUPER_PASSWORD 与 ADMIN_BASE_URL=5173，口令不 inline",
