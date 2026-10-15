@@ -43,10 +43,17 @@ if (lines.some((l) => l.startsWith("|") && l.split("|")[1]?.trim() === id)) errs
    插到"下一节表格"里会把行送进另一个口径。 */
 let end = hdr + 1;
 while (end < lines.length && (lines[end].startsWith("|") || lines[end].startsWith("|MP-"))) end++;
-/* 分隔行 |---|---| 也是以 | 开头且含 | ⇒ 旧版把它算进"主表行数"，
-   报出来的 171 里有一枚幻影行（emit-open-items 同一条错，两处已对齐修掉）。
-   这里的行数既用于回显也用于守恒断言，两边必须数同一批东西：真 MP 数据行。 */
-const bodyRows = lines.slice(hdr + 1, end).filter((l) => l.includes("|") && !(/^\|[\s|:-]*\|?$/.test(l) && /---/.test(l)));
+/* 「一行」的定义在这里只有一份：isDataRow(l)。
+   表格行 = 以 | 开头，且不是 |---|---| 那种分隔行。分隔行同样以 | 开头、同样含 |，
+   把它当数据行数进"主表行数"就是分母 +1 的幻影行（本仓已记过两次：
+   「分隔行被当数据行 ⇒ 分母 +1 幻影」，emit-open-items 里是同一条错）。
+   before / after / 守恒断言三处必须共用这一个定义。第一版只有 before 走它，
+   after 用的是第二套更宽的定义（`l.includes("|")`，不看分隔行），于是分隔行只进 after
+   不进 before ⇒ 180 行的真表插一行后报「插入后主表行数 181 ≠ 180」，
+   每一行都过不了守恒 —— 差得不写盘的那一步之外，这个工具在 issue-matrix.md 上永久不可用，
+   本轮 8 行因此是被受控 splice 插进去的，不是本工具插的。 */
+const isDataRow = (l) => l.startsWith("|") && !(/^\|[\s|:-]*\|?$/.test(l) && /---/.test(l));
+const bodyRows = lines.slice(hdr + 1, end).filter(isDataRow);
 /* 检查必须先于写入。第一版把 errs 的判断放在写盘之后，实测后果是：
    一条 status 不在词表里的行**已经被插进台账**，而屏幕上打的是 ADMIT_RESULT=FAIL ——
    一个"报了拒绝却已经把动作做完"的工具，比一个直接红掉的工具危险得多（它会让人以为台账是干净的）。 */
@@ -55,12 +62,16 @@ if (errs.length) {
   for (const e of errs) console.log("  ✗ " + e);
   process.exit(2);
 }
+let after = bodyRows.length + (APPLY ? 1 : 0);
 if (APPLY) {
   const next = [...lines.slice(0, end), ROW, ...lines.slice(end)];
-  const after = next.slice(hdr + 1, end + 1).filter((l) => l.includes("|")).length;
-  if (after !== bodyRows.length + 1) { console.log(`ADMIT_RESULT=FAIL reason=插入后主表行数 ${after} ≠ ${bodyRows.length + 1}（守恒不过就不落盘）`); process.exit(2); }
+  /* 插入点 end 落在旧表尾之后 ⇒ 新区间 [hdr+1, end+1) 覆盖原表全部行 + 新行（分隔行也在其中，
+     由同一个 isDataRow 滤掉）。守恒按"同一个定义数出来的两边"判：measured === before + 1。 */
+  const measured = next.slice(hdr + 1, end + 1).filter(isDataRow).length;
+  if (measured !== bodyRows.length + 1) { console.log(`ADMIT_RESULT=FAIL reason=插入后主表行数 ${measured} ≠ ${bodyRows.length + 1}（守恒不过就不落盘）`); process.exit(2); }
   writeFileSync(LEDGER, next.join("\n"));
+  after = measured;
 }
-console.log(`ADMIT ${APPLY ? "已落盘" : "干跑"} 主表行数 ${bodyRows.length} → ${bodyRows.length + (APPLY ? 1 : 0)}（表头在第 ${hdr + 1} 行，插入点第 ${end + 1} 行）`);
+console.log(`ADMIT ${APPLY ? "已落盘" : "干跑"} 主表行数 ${bodyRows.length} → ${after}（表头在第 ${hdr + 1} 行，插入点第 ${end + 1} 行）`);
 console.log(`  新号=${id} 列数=${cells.length} status=${status.slice(0, 24)} 词表=${VOCAB.length} 档`);
 console.log(APPLY ? "ADMIT_RESULT=OK" : "ADMIT_RESULT=DRY（加 --apply 才写台账）");

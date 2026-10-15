@@ -1,13 +1,15 @@
 {
- "generatedAt": "2026-09-27T04:53:28.852Z",
- "ledgerRows": 171,
- "open": 51,
+ "generatedAt": "2026-10-15T17:53:12.142Z",
+ "ledgerRows": 187,
+ "open": 24,
  "by": {
-  "reverify": 38,
-  "frame": 4,
-  "decision": 7,
-  "unverified": 1,
-  "backend": 1
+  "reverify": 8,
+  "unverified": 2,
+  "backend": 1,
+  "frame": 1,
+  "decision": 1,
+  "probe": 2,
+  "code": 9
  },
  "carrierByBucket": {
   "code": "node scripts/qa/verify-fixes-against-artifact.cjs --baseline 094f7239",
@@ -23,173 +25,11 @@
  "items": [
   {
    "bucket": "reverify",
-   "id": "MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-002",
-   "page": "subpackages/chat/chat-session/index（私信 stores/messages.ts 与临时 stores/chat/actions/messaging.ts 两条发送链路）",
-   "sev": "P2",
-   "status": "已修复待复验（客户端两条链路已接通且有静态判点；端到端观感欠帧，且需真实模式才能验后端确实落库）",
-   "owed": "(见处置)",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R7CLIENT-UPLOAD-EXT-001",
-   "page": "apps/client/src/utils/media.ts + services/api.ts + services/voice-upload.ts（共享上传路径，不属单页）",
-   "sev": "P3",
-   "status": "已修复待复验（客户端闸门已立且白名单单一来源；欠一次真上传正例帧与一条非法扩展名负例）",
-   "owed": "(见处置)",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-POST-009",
-   "page": "subpackages/village/village/post",
-   "sev": "P1",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
    "id": "MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001",
    "page": "components/layout/AppShell",
    "sev": "P2",
    "status": "已修复待复验（需帧复验（T5 定向巡检覆盖本页））",
    "owed": "(见处置)",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-PROFILE-023",
-   "page": "pages/profile/index",
-   "sev": "P2",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-PROFILE-022",
-   "page": "pages/profile/index（未登录态）",
-   "sev": "P2",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
-   "page": "subpackages/profile-extra/profile/other",
-   "sev": "P2",
-   "status": "已修复待复验（判据已按本轮重写为「两页 meta 顺序一致」并落地共用 formatter；挂载测已绿，重建产物后的两页真机帧未出，故不判结案）",
-   "owed": "①mock 档重建后重跑该 spec（必须仍 6/6，且 spec 是挂载测不是源码正则，重建不会让它假绿）；②出两帧——我的页（已填完资料态）与他人主页各一张，肉眼或裁切判点确认",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-PAGES-DISCOVER-INDEX-013",
-   "page": "pages/discover/index",
-   "sev": "P3",
-   "status": "已修复待复验（本轮收口落**工作树**，HEAD 874ff52f 未含此改动）",
-   "owed": "(见处置)",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-PAGES-HOME-INDEX-105",
-   "page": "pages/home/index",
-   "sev": "P3",
-   "status": "已修复待复验（去向：closer=已改工作树；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
-   "owed": "判据本身没点名可判的物件",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-PAGES-MESSAGES-INDEX-018",
-   "page": "pages/messages/index",
-   "sev": "P3",
-   "status": "已修复待复验（需帧复验（T5 定向巡检覆盖本页））",
-   "owed": "(见处置)",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-002",
-   "page": "pages/messages/index",
-   "sev": "P2→P3",
-   "status": "已修复待复验（静态判据不足（判据未点名可核验物件或压缩改名），需补判点或帧）",
-   "owed": "(见处置)",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2VIS-PAGES-PROFILE-INDEX-004",
-   "page": "pages/profile/index（消费页；**真实锚点 apps/client/src/components/profile/mine/MyHeader.vue**，页面文件内 grep `my-header__bio` 0 命中）",
-   "sev": "P3",
-   "status": "已修复待复验（本轮收口落**工作树**，HEAD 874ff52f 未含此改动）",
-   "owed": "(见处置)",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002",
-   "page": "subpackages/campus/campus/hub",
-   "sev": "P2→P3",
-   "status": "已修复待复验（工作树已删页头重复认证入口与两条样式规则；产物验证＝node 脚本在 apps/client/dist/build/mp-weixin/subpackages/campus/campus/hub.wxml 与 hub.wxss 里 grep campus-hub__cert-btn 必须 0 命中，未过之",
-   "owed": "(见处置)",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-CAMPUSPOST-010",
-   "page": "subpackages/campus/campus/post-topic",
-   "sev": "P3",
-   "status": "已修复待复验（源码级判点已过：上传段自带 catch ＋ 专属文案键在中英两份语料里；欠真机那一格「配图上传失败」的 toast 观感帧）",
-   "owed": "(见处置)",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-CIRCLES-INDEX-006",
-   "page": "subpackages/circles/circles/index",
-   "sev": "P3",
-   "status": "已修复待复验（静态判据不足（判据未点名可核验物件或压缩改名），需补判点或帧）",
-   "owed": "(见处置)",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-POST-012",
-   "page": "subpackages/village/village/post",
-   "sev": "P3",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-PUB-113",
-   "page": "subpackages/village/village/publish",
-   "sev": "P3",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2VIS-PAGES-HOME-INDEX-001",
-   "page": "pages/home/index",
-   "sev": "P1→P4",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2VIS-PAGES-HOME-INDEX-002",
-   "page": "pages/home/index",
-   "sev": "P1→P4",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
    "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
   },
   {
@@ -203,137 +43,11 @@
   },
   {
    "bucket": "reverify",
-   "id": "MP-R2VIS-PAGES-HOME-INDEX-006",
-   "page": "pages/home/index",
-   "sev": "P4",
-   "status": "已修复待复验（2026-09-26 工作树 `TodayLoveProgress.vue:105` 已改 `var(--page-padding)`；未进 HEAD，复验=重建后首页帧对 素材/理想效果图/首页.png 左基线 29.0rpx 量测）",
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-001",
+   "page": "pages/messages/index",
+   "sev": "P2→P4",
+   "status": "已修复待复验",
    "owed": "(见处置)",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-PAGES-LOGIN-INDEX-016",
-   "page": "pages/login/index",
-   "sev": "P4",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-CAMPUSINDEX-011",
-   "page": "subpackages/campus/campus/index",
-   "sev": "P4",
-   "status": "已修复待复验（去向：closer=closer 无记录；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
-   "owed": "判据本身没点名可判的物件",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-CAMPUSPOST-014",
-   "page": "subpackages/campus/campus/post-topic",
-   "sev": "P4",
-   "status": "已修复待复验（静态判据不足（判据未点名可核验物件或压缩改名），需补判点或帧）",
-   "owed": "(见处置)",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003",
-   "page": "subpackages/circles/circles/index",
-   "sev": "P2→P4",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-POSTTOPIC-012",
-   "page": "subpackages/circles/circles/post-topic",
-   "sev": "P4",
-   "status": "已修复待复验（需帧复验（T5 定向巡检覆盖本页））",
-   "owed": "(见处置)",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002",
-   "page": "subpackages/profile-extra/profile/other",
-   "sev": "P2→P4",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-VILLAGE-INDEX-011",
-   "page": "subpackages/village/village/index",
-   "sev": "P4",
-   "status": "已修复待复验（去向：closer=closer 无记录；判据台=产物已见；缺的载体=UI 帧；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
-   "owed": "UI 帧",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-POST-010",
-   "page": "subpackages/village/village/post",
-   "sev": "P2→P4",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-POST-011",
-   "page": "subpackages/village/village/post",
-   "sev": "P2→P4",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2-POST-014",
-   "page": "subpackages/village/village/post",
-   "sev": "P4",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-001",
-   "page": "subpackages/village/village/post",
-   "sev": "P2→P4",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-003",
-   "page": "subpackages/village/village/post",
-   "sev": "P3→P4",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2VIS-THEME-DESIGN-VARIABLES-001",
-   "page": "theme/design-variables.scss",
-   "sev": "P2→P4",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
-   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
-  },
-  {
-   "bucket": "reverify",
-   "id": "MP-R2VIS-THEME-DESIGN-VARIABLES-002",
-   "page": "theme/design-variables.scss",
-   "sev": "P2→P4",
-   "status": "已修复待复验（去向：判据台未覆盖本条（不在本轮修复波 116 条条目集内），缺的载体=需人复判后指定）",
-   "owed": "需人复判后指定",
    "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
   },
   {
@@ -347,48 +61,66 @@
   },
   {
    "bucket": "reverify",
-   "id": "MP-R7-GUEST-MATCHING-REDIRECT-RACE-001",
-   "page": "subpackages/discover-extra/discover/matching",
-   "sev": "P2",
-   "status": "已修复待复验",
-   "owed": "measure 腿该组从 MEASURED-DRIFT 转 CLOSED，且连测 3 次落点一致",
+   "id": "MP-R3AUDIT-CTA-PENETRATION-001",
+   "page": "用例页 subpackages/profile-extra/profile/other（OT05/OT06/OT09，query userId=10001）与 subpackages/chat/official-chat/index（OC09）；被测承载 apps/client/src/components/profile/public/RelationshipCTA.vue",
+   "sev": "P2（sort-round3 severity=high）",
+   "status": "已修复待复验（载体已落 HEAD：r-exec-cli.mjs 与 r-exec-ws.mjs 已实现 --navto-open「桥 open 基底页＋应用内 wx.navigateTo」开页形态，DOM 目标取不到时走 AppService handler 直调替代通道（STEP_KINDS 含 callHandle",
+   "owed": "(见处置)",
    "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
   },
   {
    "bucket": "reverify",
-   "id": "MP-R7-ADMIN-VILLAGE-COMMENTSCOLUMN-001",
-   "page": "admin/village-posts（apps/admin 内容管理列表页）",
-   "sev": "P3",
-   "status": "已修复待复验",
-   "owed": "apps/admin 起服后在内容管理列表页取一帧，肉眼确认「评论 n」与赞／藏／看同栏且数值与该帖真实评论数一致；或由人裁定后台列表不需要这一列（那要同时把本轮新加的两个 loc",
+   "id": "MP-R3AUDIT-NEARBY-TAB-BOUNCE-001",
+   "page": "pages/nearby/index",
+   "sev": "P2（sort-round3 severity=high）",
+   "status": "已修复待复验（源码级已修、行为未证：根因不是定位权限/开城/业务开关，而是本页 onLoad/onShow 无条件调 refreshSchools() → services/config.ts:loadCampuses()，该读既无 mock 短路也无登录门，后端两态都把 /api/v1/** 放在 authentic",
+   "owed": "(见处置)",
    "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
   },
   {
-   "bucket": "frame",
-   "id": "MP-R2VIS-PAGES-HOME-INDEX-003",
-   "page": "pages/home/index",
-   "sev": "P2→P3",
-   "status": "待修复（去向：closer=closer 无记录；判据台=需排UI帧；缺的载体=渲染帧（静态判不了）；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
-   "owed": "渲染帧（静态判不了",
-   "rerun": "node scripts/qa/verify-frame-debt-triage.mjs && node scripts/qa/shoot-frameplan.mjs --plan reports/audit/round-7/frameplan-round7-final.json"
+   "bucket": "reverify",
+   "id": "MP-R3AUDIT-NETFAULT-REARM-WINDOW-001",
+   "page": "判据台网络注入通道（承载 scripts/qa/exec-capabilities.mjs 与 scripts/qa/r-exec-ws.mjs、夹具 scripts/qa/case-recipes.json；观测面 subpackages/chat/official-chat/index 的 OC09 与 subpackages/village/village/index 的 VI34（广场七态））",
+   "sev": "P3（sort-round3 severity=medium）",
+   "status": "已修复待复验（载体已落 HEAD：commit d38b15be 把 networkFault 从「做不到」改成有载体——臂展回执 netFaultArmReceiptSource 读不到回执就记 NOT_SHOOTABLE(netFault=arm-unverified) 而不再交出 intercepted=0 这个",
+   "owed": "(见处置)",
+   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
   },
   {
-   "bucket": "frame",
-   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-004",
+   "bucket": "reverify",
+   "id": "MP-R3AUDIT-GATE-VOIDED-BUCKET-001",
+   "page": "scripts/qa/verify-real-coverage.mjs（覆盖门账面，非小程序页；被点名的四条判决面在 village/index、profile/index、subpackages/profile/other、subpackages/support/vip/bill-list）",
+   "sev": "P2（sort-round3 severity=high）",
+   "status": "已修复待复验（载体已落 HEAD：commit bdef64ef 给覆盖门加 voided/pending 分桶——台账判「未有效判决/出列作废」的用例从 COVERED 摘到 VOIDED，守恒改成「免检＋覆盖＋欠账＋待判＝判据条数」四项，绿条件加 voidedN===0；本车道按纪律没跑这条门 ⇒ 门禁读数与台账是",
+   "owed": "(见处置)",
+   "rerun": "node scripts/qa/verify-guest-landing.mjs --mode book && node scripts/qa/verify-source-shape.mjs --dry"
+  },
+  {
+   "bucket": "unverified",
+   "id": "MP-R2-PAGES-MESSAGES-INDEX-014",
    "page": "pages/messages/index",
-   "sev": "P3",
-   "status": "待修复（去向：closer=P4延后出本轮；判据台=判据不足；缺的载体=判据本身没点名可判的物件；详见 reports/audit/round-6/fixwave-verdicts.json 内本条 verdictWhy）",
-   "owed": "判据本身没点名可判的物件",
-   "rerun": "node scripts/qa/verify-frame-debt-triage.mjs && node scripts/qa/shoot-frameplan.mjs --plan reports/audit/round-7/frameplan-round7-final.json"
+   "sev": "P1→P4",
+   "status": "未取证",
+   "owed": "(见处置)",
+   "rerun": "node scripts/qa/verify-evidence-holes.mjs && node scripts/qa/readjudicate-evidence.mjs <exec-results> --ops reports/audit/round-6/ops"
   },
   {
-   "bucket": "frame",
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-001",
-   "page": "subpackages/village/village/detail",
-   "sev": "P2→P3",
-   "status": "待修复（去向：closer=已在码且早于基线；判据台=需排UI帧；缺的载体=真实档两态帧 + 间隙量测，源码级只能证前置不能证遮挡；详见处置）",
-   "owed": "真实档两态帧 + 间隙量测，源码级只能证前置不能证遮挡",
-   "rerun": "node scripts/qa/verify-frame-debt-triage.mjs && node scripts/qa/shoot-frameplan.mjs --plan reports/audit/round-7/frameplan-round7-final.json"
+   "bucket": "unverified",
+   "id": "MP-R3AUDIT-PFI25-VOICE-ORCHESTRATION-001",
+   "page": "pages/profile/index（PFI25 用例页；被测承载 apps/client/src/stores/profile.ts 的语音态）",
+   "sev": "P3（sort-round3 severity=medium，原挂 critical 已撤）",
+   "status": "未取证（红已撤、绿未证：三次 FAILED 定谳为测试编排伪红——simulator_open_page 属 compiler 族，桥 open 重编译重启 AppService 清空 pinia，原序 seed(step#1)→open(step#2) 的 store 补丁必灭；产品侧「渲染链丢弃／fetchProf",
+   "owed": "(见处置)",
+   "rerun": "node scripts/qa/verify-evidence-holes.mjs && node scripts/qa/readjudicate-evidence.mjs <exec-results> --ops reports/audit/round-6/ops"
+  },
+  {
+   "bucket": "backend",
+   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
+   "page": "pages/messages/index",
+   "sev": "P1→P4",
+   "status": "待修复（去向：needs_backend，本轮不改后端夹具；客户端侧不可行半段已按裁定删除，见处置与 MessageDashboardService.java:44 的派生链）",
+   "owed": "(见处置)",
+   "rerun": "node scripts/qa/verify-backend-restarted.mjs"
   },
   {
    "bucket": "frame",
@@ -401,84 +133,111 @@
   },
   {
    "bucket": "decision",
-   "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
-   "page": "pages/messages/index",
-   "sev": "P4→P3",
-   "status": "待修复（部分落地：toast 明示半段已在码且有判点；后端未读元数据同步与「全清」语义重复仍欠）",
+   "id": "MP-R3AUDIT-VI25-VI34-PARKED-001",
+   "page": "subpackages/village/village/index（VI25 发帖审核态与 VI34 广场七态同页；audit-round3.json:158 记本帧实为 tag-posts 缺参弹回落点）",
+   "sev": "P3（sort-round3 severity=medium）",
+   "status": "需裁决（去向：needsUser REAL-VI34-04-Q 未拍板——资料完成度拦截层对村庄广场到底适不适用，决定 VI34 七态重跑、VI25 夹具修复＋重跑与首条有效网络判决腿的共同前提；两条案已被台账 corrections 改记「未有效判决/开放」但一直悬在台账外 ⇒ 本行以 需裁决 开头，让它进未结案队列",
    "owed": "(见处置)",
    "rerun": "（无：这一桶要的是人的一次拍板，脚本只能把它钉在账上）"
   },
   {
-   "bucket": "decision",
-   "id": "MP-R2-CIRCLES-INDEX-005",
-   "page": "subpackages/circles/circles/index",
+   "bucket": "probe",
+   "id": "MP-R3AUDIT-MATCHING-DIRECT-OPEN-BOUNCE-001",
+   "page": "subpackages/discover-extra/discover/matching",
+   "sev": "P3（sort-round3 severity=medium）",
+   "status": "未取证（三轮四连弹回 pages/discover/index 至今无探针、无归因、无缺陷 ID：matching.vue:79-84 在 pages.length===1 时兜底 switchTab 到 discover 是源码可见的解释，但第 1 轮「直开无 deck 快照 goBack＝设计内失败分支」与「每日配",
+   "owed": "(见处置)",
+   "rerun": "node scripts/qa/verify-evidence-holes.mjs && node scripts/qa/verify-guest-landing.mjs --mode measure"
+  },
+  {
+   "bucket": "probe",
+   "id": "MP-R3AUDIT-TAPWRITE-GUARD-PENDING-001",
+   "page": "subpackages/tools/heart-signals/index ＋ subpackages/circles/circles/circle-home",
+   "sev": "P3（sort-round3 severity=medium，第 1 轮记低危）",
+   "status": "未取证（两笔「tap 是否真触发写」连续三轮无执行工件：heart-signals 拒绝/接受钮是否真发关系写、circle-home .feed-actions 容器 tap 是否真触发 toggleLike；在册补法（mock 带核对 tap 前帧与状态迁移、发生写则回滚夹具并入册）从未执行 ⇒ 缺的载体是状态迁移",
+   "owed": "(见处置)",
+   "rerun": "node scripts/qa/verify-evidence-holes.mjs && node scripts/qa/verify-guest-landing.mjs --mode measure"
+  },
+  {
+   "bucket": "code",
+   "id": "MP-R3AUDIT-DISCOVER-MATCHCARD-BLANK-001",
+   "page": "pages/discover/index（匹配卡本体 apps/client/src/components/match/MatchCard.vue；四条弹回路由的共同落点页）",
+   "sev": "P3（sort-round3 severity=medium）",
+   "status": "待修复（核心交互不可见即不可测：匹配卡主视觉区空白、底部跳过/打招呼/喜欢三钮在帧上取不到，两轮独立采集字节差仅 0.11% ⇒ 确定性状态而非偶发；改法在 photo 兜底链／SafeImage fallback／MatchActions 可见性三处点名链上，改后需补功能断言腿）",
+   "owed": "(见处置)",
+   "rerun": "node scripts/qa/verify-fixes-against-artifact.cjs --baseline 094f7239"
+  },
+  {
+   "bucket": "code",
+   "id": "MP-R7QA-WEXEC-ROWBUILDER-BAND-ARITY-001",
+   "page": "scripts/qa/r-exec-ws.mjs（WS 取证车道行构造器；受影响产物 exec-v38-realcov-login、exec-realcov-b1c、exec-realcov-b3）",
+   "sev": "P2",
+   "status": "待修复（载具源码修法只在工作树未提交、磁盘旧行仍带坏值 ⇒ 按在飞记账，不写已修复）",
+   "owed": "(见处置)",
+   "rerun": "node scripts/qa/verify-fixes-against-artifact.cjs --baseline 094f7239"
+  },
+  {
+   "bucket": "code",
+   "id": "MP-R7QA-DEVICELEG-UNBOUND-ZERO-DISCHARGE-001",
+   "page": "scripts/qa/device-leg-case-bindings.json ＋ device-leg-tally.mjs ＋ verify-real-coverage.mjs（设备腿判据覆盖放电链）",
+   "sev": "P2",
+   "status": "待修复（41／41 条目 bound:false 未解绑 ⇒ 覆盖放电仍为零；第二因 band 盖成 git HEAD 短号已在载具源码修但不并为本行结案）",
+   "owed": "(见处置)",
+   "rerun": "node scripts/qa/verify-fixes-against-artifact.cjs --baseline 094f7239"
+  },
+  {
+   "bucket": "code",
+   "id": "MP-R7QA-BAND-FRESHNESS-STAMP-SCOPE-001",
+   "page": "scripts/qa/artifact-band.mjs ＋ verify-real-coverage.mjs（新鲜度尺定义域）",
    "sev": "P3",
-   "status": "未取证/需裁决（图不背书：滚动架构无静态帧维度 + 两条既有裁定冲突需拍板）",
+   "status": "待修复（尺只取 config/env.js 内容哈希、全量重建不改该文件时戳不变 ⇒ 门把陈旧行读成 fresh，量测口径缺口）",
    "owed": "(见处置)",
-   "rerun": "（无：这一桶要的是人的一次拍板，脚本只能把它钉在账上）"
+   "rerun": "node scripts/qa/verify-fixes-against-artifact.cjs --baseline 094f7239"
   },
   {
-   "bucket": "decision",
-   "id": "MP-R2VIS-COMPONENTS-CHAT-CHATINPUT-A01",
-   "page": "components/chat/ChatInput.vue（消费侧 subpackages/chat/chat-session/index）",
-   "sev": "P4",
-   "status": "已修复待复验（裁决 2026-09-26：采 (A) 保留整件删除。三条可核对证据：① git ls-files 已无该文件 ⇒ 删除进了 HEAD 而非只在工作树；② 全仓 src + tests 对 ChatInput **0 命中**；③ 消费页 subpackages/chat/chat-session/ind",
+   "bucket": "code",
+   "id": "MP-R7QA-ADMIN-PWD-POLICY-ASYMMETRY-001",
+   "page": "scripts/verify-admin-auditor.mjs ＋ verify-admin-scope.mjs ＋ verify-admin-writes.mjs（后台门凭据策略；注意在 scripts/ 根、非 scripts/qa/）",
+   "sev": "P3",
+   "status": "待修复（同族门里两套口令策略并存；本轮经裁量刻意不统一、留账不冒充已修）",
    "owed": "(见处置)",
-   "rerun": "（无：这一桶要的是人的一次拍板，脚本只能把它钉在账上）"
+   "rerun": "node scripts/qa/verify-fixes-against-artifact.cjs --baseline 094f7239"
   },
   {
-   "bucket": "decision",
-   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
-   "page": "subpackages/campus/campus/hub",
-   "sev": "P3→P4",
-   "status": "已修复待复验（自裁 2026-09-27：统一到两级 campus.hub；键已迁、引用已改，欠 hub 页一帧）",
+   "bucket": "code",
+   "id": "MP-R7QA-DEVICELEG-EVIDENCE-NOCOMMIT-001",
+   "page": "reports/audit 下 device-leg-*-2026-10-14 证据目录 ＋ scripts/qa/verify-staged-secrets.mjs（设备腿证据入库）",
+   "sev": "P3",
+   "status": "待修复（检测侧已命名三类形状、生产侧未在采集时脱敏 ⇒ 证据只能留盘、进不了 git）",
    "owed": "(见处置)",
-   "rerun": "（无：这一桶要的是人的一次拍板，脚本只能把它钉在账上）"
+   "rerun": "node scripts/qa/verify-fixes-against-artifact.cjs --baseline 094f7239"
   },
   {
-   "bucket": "decision",
-   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
-   "page": "subpackages/circles/circles/circle-home",
-   "sev": "P3→P4",
-   "status": "已修复待复验（自裁 2026-09-27：演示公告入 i18n，文案内容零变化；欠的是渲染帧）",
+   "bucket": "code",
+   "id": "MP-R7QA-ROUND-REPORT-GEN-ARGWIRING-001",
+   "page": "scripts/qa/gen-round8-report.mjs ＋ scripts/qa/run-final-verify-v33.sh（全清单载具调报告生成器）",
+   "sev": "P2",
+   "status": "待修复（修法在工作树未提交、另一全清单载具是否带参未核 ⇒ 按在飞记账，不写已修复）",
    "owed": "(见处置)",
-   "rerun": "（无：这一桶要的是人的一次拍板，脚本只能把它钉在账上）"
+   "rerun": "node scripts/qa/verify-fixes-against-artifact.cjs --baseline 094f7239"
   },
   {
-   "bucket": "decision",
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
-   "page": "subpackages/village/village/post",
-   "sev": "P3→P4",
-   "status": "已修复待复验（自裁 2026-09-27：两入口统一到多数侧结构；欠帧）",
+   "bucket": "code",
+   "id": "MP-R7QA-SELFTEST-GUESTLANDING-MEMBERS-001",
+   "page": "scripts/qa/test-guest-landing.mjs（游客落地自测）",
+   "sev": "P3",
+   "status": "待修复（自测常红、根因让位给一项 ops 派生设计待办 ⇒ 记开放红，不作判据不成立撤）",
    "owed": "(见处置)",
-   "rerun": "（无：这一桶要的是人的一次拍板，脚本只能把它钉在账上）"
+   "rerun": "node scripts/qa/verify-fixes-against-artifact.cjs --baseline 094f7239"
   },
   {
-   "bucket": "decision",
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-001",
-   "page": "subpackages/village/village/publish",
-   "sev": "P3→P4",
-   "status": "未取证/需裁决（口径未定：提示元素与文案没有设计依据，两页字数阈值语义分歧属产品选择；行内已核的部分见处置）",
+   "bucket": "code",
+   "id": "MP-R7QA-SELFTEST-CORPUSDENOM-DELETEDAXIS-001",
+   "page": "scripts/qa/test-corpus-denominator.cjs（语料分母自测）",
+   "sev": "P3",
+   "status": "待修复（断言绑一次性工作树态、删除提交后算术上不可满足 ⇒ 开放红）",
    "owed": "(见处置)",
-   "rerun": "（无：这一桶要的是人的一次拍板，脚本只能把它钉在账上）"
-  },
-  {
-   "bucket": "unverified",
-   "id": "MP-R2-PAGES-MESSAGES-INDEX-014",
-   "page": "pages/messages/index",
-   "sev": "P1→P4",
-   "status": "未取证",
-   "owed": "(见处置)",
-   "rerun": "node scripts/qa/verify-evidence-holes.mjs && node scripts/qa/readjudicate-evidence.mjs <exec-results> --ops reports/audit/round-6/ops"
-  },
-  {
-   "bucket": "backend",
-   "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-005",
-   "page": "pages/messages/index",
-   "sev": "P1→P4",
-   "status": "待修复（去向：needs_backend，本轮不改后端夹具；客户端侧不可行半段已按裁定删除，见处置与 MessageDashboardService.java:44 的派生链）",
-   "owed": "(见处置)",
-   "rerun": "node scripts/qa/verify-backend-restarted.mjs"
+   "rerun": "node scripts/qa/verify-fixes-against-artifact.cjs --baseline 094f7239"
   }
  ]
 }

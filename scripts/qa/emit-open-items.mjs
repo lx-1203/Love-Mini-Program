@@ -26,7 +26,9 @@ for (const l of text.split(/\r?\n/)) {
      但任何拿"主表行数"做守恒或做口径的地方都会差一 ⇒ 只数真 MP 数据行。 */
   if (/^\|[\s|:-]*\|?$/.test(l) && /---/.test(l)) continue;
   const c = l.split("|").slice(1, -1).map((s) => s.trim());
-  if (c.length === 11) rows.push({ id: c[0], page: c[2], cat: c[3], sev: c[4], status: c[5], evidence: c[7], statusEvidence: c[8], action: c[10] });
+  /* raw 整行也留下：落地锚判据要看的是"这一行给不给得出落点"，不是落点写在哪一格
+     （round-7 把落点写在状态证据格、处置格开头只写「载体：」⇒ 只看处置格就漏了 8 行）。 */
+  if (c.length === 11) rows.push({ id: c[0], page: c[2], cat: c[3], sev: c[4], status: c[5], evidence: c[7], statusEvidence: c[8], action: c[10], raw: l });
 }
 if (rows.length < 100) { console.log(`OPEN_ITEMS=FAIL reason=主表只读到 ${rows.length} 行，定位失败`); process.exit(2); }
 
@@ -34,6 +36,27 @@ const OPEN_RE = /^待修复|^待复验|^已修复待复验|^未取证|^需裁决
 const open = rows.filter((r) => OPEN_RE.test(r.status));
 
 /* 归属靠字段，不靠我读句子：closer=… / 判据台=… / 缺的载体=… 是 round-6 定下的三格口径。 */
+/* 落地锚（landing anchor）= 行内任何一处能把欠账定位到具体代码位置的结构引用。三种形状：
+     1) 文件:行号  —— `scripts/qa/r-exec-ws.mjs:156`、`MatchCard.vue:30-31`（扩展名 + 冒号 + 数字）
+     2) 路径:数字  —— `apps/client/src/stores:587`（带斜杠的路径 + 冒号 + 数字，扩展名可省）
+     3) scripts/…  —— 直接点名 scripts/ 下的载体文件（脚本本身就是这次改动要落的载体）
+   为什么用它、而不是再加一个措辞词：code 桶第一版只认「处置格」里的
+   `本轮落地|已落|修法|改法|结案条件`，round-7 这 8 行把落点写进「状态证据」格、
+   处置格开头写成「载体：」⇒ 全部落进 UNCLASSIFIED。词表永远慢现实一轮，
+   而"这行到底欠不欠一次代码改动"是能从行结构读出来的：给得出 file:line / path:数字 /
+   scripts/… 就是欠代码，跟它落在哪一列、用哪个词无关。
+   这条判据只放宽"进 code 桶"这一侧：它排在 backend/decision/reverify/frame/criteria/probe
+   之后（那六桶先判、字节口径不动），也不接 `未取证`（那是欠一次取证、不是欠代码）。
+   旧措辞判据保留不删：删掉它会让上一轮靠措辞归好桶、这一轮还没补上锚点的行当场变新红
+   （收紧后莫名丢绿 = 同一类事故，本仓已记过）。真正什么都没给的行仍然落 UNCLASSIFIED
+   —— UNCLASSIFIED 仍然是红，而且必须是红。 */
+const LANDING_ANCHOR_RE = new RegExp(
+  [
+    String.raw`[\w.\-/@]+\.(?:mjs|cjs|js|ts|tsx|vue|json|md|java|sql|py|sh|css|scss|wxml|wxss|html)\s*[:：]\s*\d+`,
+    String.raw`(?:[\w.\-/@]+\/)+[\w.\-@]+\s*[:：]\s*\d+`,
+    String.raw`scripts\/[\w.\-/@]+`,
+  ].join("|"),
+);
 function classify(r) {
   const s = r.status + " " + r.action;
   if (/needs_backend/.test(s)) return "backend";
@@ -44,8 +67,8 @@ function classify(r) {
   if (/探针|载体=能问对物件/.test(s)) return "probe";
   /* 待修复 + 行内已给出改法与结案条件 ⇒ 欠的是这次代码改动本身。
      措辞既收「修法」也收「改法」：同一件事在两轮里被我写成过两个词，分类器跟着现实走，
-     不是让现实改词来配合分类器。 */
-  if (/^待修复/.test(r.status) && /本轮落地|已落|修法|改法|结案条件/.test(r.action)) return "code";
+     不是让现实改词来配合分类器。第二把尺子是行级落地锚：落点在哪个格都算。 */
+  if (/^待修复/.test(r.status) && (/本轮落地|已落|修法|改法|结案条件/.test(r.action) || LANDING_ANCHOR_RE.test(r.raw))) return "code";
   /* 裸「未取证」：既没指到帧也没指到探针，欠的是一次取证 —— 单独成桶，不塞进上面任何一类充数。 */
   if (/^未取证/.test(r.status)) return "unverified";
   return "UNCLASSIFIED";
