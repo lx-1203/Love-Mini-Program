@@ -48,6 +48,19 @@ whenToUse: 需要全量审查小程序所有页面/按钮/功能并循环修复�
 //   E7 唯一能抓"ask 返回 PromiseLike 却挂 .catch"与"重复 function 声明"的检查器住在
 //      .zcode/tmp/tcheck-v32.cjs —— tmp/ 是 any-depth 忽略规则，clean checkout 上它不存在。
 //      本版提升到 scripts/qa/tcheck-workflow.cjs，--file 无缺省值，并同时进两个载具。
+//   E9 判决不许建立在「固定 sleep 后单发读」上。本轮两条腿红（01-home 路由落在 discover、
+//      village store n=0）复核下来都是首读不可信，不是产品缺陷；只补等稳环（读到达标或读到
+//      状态自己收回 loading=false 为止，detail 同印首读与稳后读数）同一条腿就落 41 PASS/0 FAIL。
+//      ⚠ 截至本版这一条只是措辞纪律，没有可红的判点守着它：新门要同时进 DSL 与 sh 两个载具、
+//      给 _RESULT= 机读行、并在 prove-gates-can-fail 里证明它能红——本轮预算已尽，欠下一程。
+//   E10 腿的产物写点必须全部过同一枚凭据屏，"同一枚"是重点（另写一个就会漂移）。
+//      本程 tally 侧过了 scrubEvidence，而结果件 exec-results.json 没过：git add 之后被
+//      verify-staged-secrets 判出 1 段活会话票（掩码 eyJ****(len=108)）。危险是结构性的——
+//      覆盖门只认 exec-*/exec-results.json 这个形状，所以带票的那份正是下一程"必须 add"的那件。
+//      本轮该件保持 untracked，且没有手改它的字节去把门喂绿（改产物=造证据）。
+//   E11 按名字点门的 runner，一条没匹配上就必须响亮地失败。.zcode/tmp/pre-wave-20261015/
+//      run-named-gates.mjs 对 verify-device-leg 报 NAMED_GATES_RAN=0 且 nonZero=0——
+//      跑了 0 条却读起来像全绿。RAN=0 是红，不是"无事发生"。
 //   E8 maxRounds 3→4，但光加轮数进不去：v3.7 那句 executable=0 就 break 让真档欠账永远派不完
 //      （欠账归 area=覆盖补腿 与三只桶，不是代码修复项）。本版把循环入口换成"三桶合计是否为 0"，
 //      清单来自门自己的点名行，round-4 就是清零轮。
