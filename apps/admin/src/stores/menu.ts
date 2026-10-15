@@ -37,9 +37,22 @@ export interface AdminMenuNode {
   icon?: string;
   order?: number;
   /**
+   * 1 = 不在侧边栏展示（对齐 menus.hidden）。
+   *
+   * ⚠ 后端 GET /v1/admin/menus/current **不按 hidden 过滤**（MenuRepository 的两个查询里
+   * 都没有 hidden 条件），hidden 只是随节点一起下发的标记；也就是说「隐藏」这件事最终
+   * 由前端渲染层（Layout 的 visibleMenuTree）负责。刻意不能改成后端过滤：
+   * addDynamicRoutes() 遍历的就是这份树，节点一旦不下发，路由就不注册，
+   * 收藏的 URL 会掉进 404 —— 而 menus.hidden 的语义恰恰是「隐藏但可达」。
+   * 侧边栏过滤落地前，这里的值只影响 menus 表/接口的契约完整性。
+   */
+  hidden?: boolean;
+  /**
    * 仅超级管理员可见（本地兜底菜单标记）。
-   * 真实环境后端菜单树已按角色过滤（ADMIN 不关联系统管理菜单），
-   * 前端仅在本地静态兜底（mock/fallback）场景按此标记过滤，
+   * 真实环境后端菜单树已按角色过滤（ADMIN / AUDITOR 均不关联系统管理菜单，
+   * AUDITOR 的可见菜单在库里由 V2026.10.14.0001 直接复制 ADMIN 的 role_menus），
+   * 前端仅在本地静态兜底（mock/fallback）场景按此标记过滤 —— 判定条件是
+   * 「非 SUPER_ADMIN 即剔除」，因此新增的只读角色 AUDITOR 与 ADMIN 一样看不到系统管理。
    * 新增 SUPER_ADMIN 专属菜单时只需在 staticFallbackMenus 标记一处。
    */
   superAdminOnly?: boolean;
@@ -203,44 +216,113 @@ export const useMenuStore = defineStore("menu", () => {
    * 当后端 /v1/admin/menus/current 不可用（如 mock profile 未实现该端点）时，
    * 使用此静态菜单树完成动态路由注册与侧边栏渲染，保证管理后台页面可逐页验证。
    * 组件路径须与 src/router/index.ts 中的 componentMap 保持一致。
+   *
+   * ── 与真实环境对齐（V2026.10.14.0003 三组收缩）────────────────────────────
+   * 这份树刻意逐行照抄迁移后的 menus 表：**id / name / path 全部与库里一致**
+   * （库里是绝对 path，这里也用绝对 path），这样 dev 与真实环境的 URL 一模一样，
+   * 不会出现「dev 走 /config/app、线上走 /configs/global」这类漂移——
+   * 这是本方案点名的坑（旧兜底树是 4 组 17 项的自成一套结构，与库里的 6 组 44 行
+   * 早已对不上，改名/换 path 时只改一边，验收时两边结论互相打脸）。
+   *
+   * 三条不变式：
+   * 1) 可见项 = 内容 5 / 运营 5 / 权限 5(+能力总览)，与迁移的 A~D 段一一对应；
+   * 2) 未入选项保留在本树里并标 hidden: true —— 因为 addDynamicRoutes() 只认这棵树，
+   *    一旦从树里删掉，路由就不注册，直达链接变 404（"隐藏而非删除"的前提就破了）；
+   *    侧边栏过滤由 Layout 负责（见 AdminMenuNode.hidden 的注释）。
+   * 3) superAdminOnly 严格照抄 role_menus 实测：库里只绑 SUPER_ADMIN 的行才标——
+   *    101 数据看板、102/103/106/107、104/105/108、605 圈层管理、700 能力总览。
+   *    603 系统配置与 601/602 虽然挂在「权限」目录下，库里却连 ADMIN/AUDITOR 都绑了，
+   *    所以**不标**（真实环境里它们对非超管是「父目录不可见 → 被后端挂到根」的孤项，
+   *    dev 这边则留在目录里；两处都能打开页面，只是分组观感略有差异）。
+   *    Layout 会对非超管剔除 superAdminOnly 节点，并剔除被剔空的 DIR。
+   *
+   * id=900 是唯一的例外：views/config/ProfileConfig.vue 在 menus 表里**没有行**
+   * （componentMap 有、旧兜底树也有），真实环境根本注册不出这个路由。
+   * 这里给一个不会与库冲突的本地 id 并把 hidden 置上，仅作 dev 走查用。
    */
   const staticFallbackMenus: AdminMenuNode[] = [
+    /* ==================== 内容（看与审）—— 库里 id 200 ==================== */
     {
-      id: 1, parentId: null, title: "layout.navDashboard", name: "Dashboard", path: "/dashboard",
-      component: "views/Dashboard.vue", menuType: "MENU", type: "MENU",
-      children: [],
-    },
-    {
-      id: 10, parentId: null, title: "layout.groupContent", name: "Content", path: "/content",
+      id: 200, parentId: null, title: "layout.groupContent", name: "Content", path: "/content",
       menuType: "DIR", type: "DIR",
       children: [
-        { id: 11, parentId: 10, title: "layout.navUsers", name: "Users", path: "users", component: "views/content/Users.vue", menuType: "MENU", type: "MENU" },
-        { id: 12, parentId: 10, title: "layout.navVillagePosts", name: "VillagePosts", path: "posts", component: "views/forum/VillagePosts.vue", menuType: "MENU", type: "MENU" },
-        { id: 13, parentId: 10, title: "layout.navComments", name: "Comments", path: "comments", component: "views/forum/Comments.vue", menuType: "MENU", type: "MENU" },
-        { id: 14, parentId: 10, title: "layout.navReports", name: "Reports", path: "reports", component: "views/content/Reports.vue", menuType: "MENU", type: "MENU" },
-        { id: 15, parentId: 10, title: "layout.navFeedback", name: "Feedback", path: "feedback", component: "views/content/Feedback.vue", menuType: "MENU", type: "MENU" },
-        { id: 16, parentId: 10, title: "layout.navSensitiveWords", name: "SensitiveWords", path: "sensitive-words", component: "views/content/SensitiveWords.vue", menuType: "MENU", type: "MENU" },
-        { id: 17, parentId: 10, title: "layout.navCertifications", name: "Certifications", path: "certifications", component: "views/content/Certifications.vue", menuType: "MENU", type: "MENU" },
+        { id: 101, parentId: 200, title: "layout.navDashboard", name: "Dashboard", path: "/dashboard", component: "views/Dashboard.vue", menuType: "MENU", type: "MENU", order: 1, superAdminOnly: true },
+        { id: 301, parentId: 200, title: "layout.navVillagePosts", name: "VillagePosts", path: "/forum/village-posts", component: "views/forum/VillagePosts.vue", menuType: "MENU", type: "MENU", order: 2 },
+        { id: 305, parentId: 200, title: "layout.navComments", name: "Comments", path: "/forum/comments", component: "views/forum/Comments.vue", menuType: "MENU", type: "MENU", order: 3 },
+        { id: 201, parentId: 200, title: "layout.navUsers", name: "Users", path: "/content/users", component: "views/content/Users.vue", menuType: "MENU", type: "MENU", order: 4 },
+        { id: 206, parentId: 200, title: "layout.navMediaAssets", name: "MediaAssets", path: "/content/media-assets", component: "views/content/MediaAssets.vue", menuType: "MENU", type: "MENU", order: 5 },
+        /* —— 以下仍在树里（路由可达），只是不进侧边栏 —— */
+        { id: 202, parentId: 200, title: "layout.navCertifications", name: "Certifications", path: "/content/certifications", component: "views/content/Certifications.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+        { id: 203, parentId: 200, title: "layout.navReports", name: "Reports", path: "/content/reports", component: "views/content/Reports.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+        { id: 204, parentId: 200, title: "layout.navFeedback", name: "Feedback", path: "/content/feedback", component: "views/content/Feedback.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+        { id: 205, parentId: 200, title: "layout.navSensitiveWords", name: "SensitiveWords", path: "/content/sensitive-words", component: "views/content/SensitiveWords.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+        { id: 207, parentId: 200, title: "layout.navRealNameCertifications", name: "RealNameCertifications", path: "/content/real-name-certifications", component: "views/content/RealNameCertifications.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+        { id: 208, parentId: 200, title: "layout.navWhispers", name: "Whispers", path: "/content/whispers", component: "views/content/Whispers.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+      ],
+    },
+    /* ==================== 运营（发与管）—— 库里 id 400 ==================== */
+    {
+      id: 400, parentId: null, title: "layout.groupOperations", name: "Activity", path: "/activity",
+      menuType: "DIR", type: "DIR",
+      children: [
+        { id: 308, parentId: 400, title: "layout.navPostCompose", name: "PostCompose", path: "/forum/compose", component: "views/forum/PostCompose.vue", menuType: "MENU", type: "MENU", order: 1 },
+        { id: 604, parentId: 400, title: "layout.navOfficialAccounts", name: "OfficialAccounts", path: "/configs/official-accounts", component: "views/config/OfficialAccounts.vue", menuType: "MENU", type: "MENU", order: 2 },
+        { id: 209, parentId: 400, title: "layout.navConversations", name: "Conversations", path: "/content/conversations", component: "views/content/Conversations.vue", menuType: "MENU", type: "MENU", order: 3 },
+        // 库里 605 的 path 已由相对 'circle-layers' 归一为绝对 '/system/circle-layers'（URL 不变）
+        { id: 605, parentId: 400, title: "layout.navCircleLayers", name: "CircleLayers", path: "/system/circle-layers", component: "views/system/CircleLayers.vue", menuType: "MENU", type: "MENU", order: 4, superAdminOnly: true },
+        { id: 401, parentId: 400, title: "layout.navActivities", name: "Activities", path: "/activity/activities", component: "views/activity/Activities.vue", menuType: "MENU", type: "MENU", order: 5 },
+        { id: 402, parentId: 400, title: "layout.navEnrollments", name: "Enrollments", path: "/activity/enrollments", component: "views/activity/Enrollments.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+      ],
+    },
+    /* ==================== 权限（配置与追责）—— 库里 id 100，仅 SUPER_ADMIN ==================== */
+    {
+      id: 100, parentId: null, title: "layout.groupPermission", name: "System", path: "/system",
+      menuType: "DIR", type: "DIR",
+      children: [
+        { id: 106, parentId: 100, title: "layout.navAdmins", name: "Admins", path: "/system/admins", component: "views/system/Admins.vue", menuType: "MENU", type: "MENU", order: 1, superAdminOnly: true },
+        { id: 103, parentId: 100, title: "layout.navRoles", name: "Roles", path: "/system/roles", component: "views/system/Roles.vue", menuType: "MENU", type: "MENU", order: 2, superAdminOnly: true },
+        { id: 102, parentId: 100, title: "layout.navMenus", name: "Menus", path: "/system/menus", component: "views/system/Menus.vue", menuType: "MENU", type: "MENU", order: 3, superAdminOnly: true },
+        { id: 107, parentId: 100, title: "layout.navAuditLogs", name: "AuditLogs", path: "/system/audit-logs", component: "views/system/AuditLogs.vue", menuType: "MENU", type: "MENU", order: 4, superAdminOnly: true },
+        { id: 603, parentId: 100, title: "layout.navConfig", name: "Config", path: "/configs/global", component: "views/config/Config.vue", menuType: "MENU", type: "MENU", order: 5 },
+        { id: 700, parentId: 100, title: "layout.navCapability", name: "CapabilityOverview", path: "/system/capability", component: "views/system/CapabilityOverview.vue", menuType: "MENU", type: "MENU", order: 6, superAdminOnly: true },
+        { id: 104, parentId: 100, title: "layout.navSchools", name: "Schools", path: "/system/schools", component: "views/system/Schools.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true, superAdminOnly: true },
+        { id: 105, parentId: 100, title: "layout.navDicts", name: "Dicts", path: "/system/dicts", component: "views/system/Dicts.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true, superAdminOnly: true },
+        { id: 108, parentId: 100, title: "layout.navOnlineUsers", name: "OnlineUsers", path: "/system/online-users", component: "views/system/OnlineUsers.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true, superAdminOnly: true },
+      ],
+    },
+    /* ==================== 以下三个目录在库里已 hidden=1（退役），仅承载可达路由 ============ */
+    {
+      id: 300, parentId: null, title: "layout.groupForum", name: "Forum", path: "/forum",
+      menuType: "DIR", type: "DIR", hidden: true,
+      children: [
+        { id: 302, parentId: 300, title: "layout.navInterestCircles", name: "InterestCircles", path: "/forum/interest-circles", component: "views/forum/InterestCircles.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+        { id: 303, parentId: 300, title: "layout.navCircleTopics", name: "CircleTopics", path: "/forum/circle-topics", component: "views/forum/CircleTopics.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+        { id: 304, parentId: 300, title: "layout.navCampusTopics", name: "CampusTopics", path: "/forum/campus-topics", component: "views/forum/CampusTopics.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+        { id: 306, parentId: 300, title: "layout.navHotBoardManage", name: "HotBoardManage", path: "/forum/hot-board-manage", component: "views/forum/HotBoardManage.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+        { id: 307, parentId: 300, title: "layout.navHotSearchManage", name: "HotSearchManage", path: "/forum/hot-search-manage", component: "views/forum/HotSearchManage.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
       ],
     },
     {
-      id: 20, parentId: null, title: "layout.groupSystem", name: "System", path: "/system",
-      menuType: "DIR", type: "DIR",
+      id: 500, parentId: null, title: "layout.groupBusiness", name: "Business", path: "/business",
+      menuType: "DIR", type: "DIR", hidden: true,
       children: [
-        { id: 21, parentId: 20, title: "layout.navAuditLogs", name: "AuditLogs", path: "audit-logs", component: "views/system/AuditLogs.vue", menuType: "MENU", type: "MENU", superAdminOnly: true },
-        { id: 22, parentId: 20, title: "layout.navOnlineUsers", name: "OnlineUsers", path: "online-users", component: "views/system/OnlineUsers.vue", menuType: "MENU", type: "MENU", superAdminOnly: true },
-        { id: 23, parentId: 20, title: "layout.navAdmins", name: "Admins", path: "admins", component: "views/system/Admins.vue", menuType: "MENU", type: "MENU", superAdminOnly: true },
+        { id: 501, parentId: 500, title: "layout.navVipPlans", name: "VipPlans", path: "/business/vip-plans", component: "views/business/VipPlans.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+        { id: 502, parentId: 500, title: "layout.navVipBills", name: "VipBills", path: "/business/vip-bills", component: "views/business/VipBills.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+        { id: 503, parentId: 500, title: "layout.navPromoCodes", name: "PromoCodes", path: "/business/promo-codes", component: "views/business/PromoCodes.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+        { id: 504, parentId: 500, title: "layout.navWallets", name: "Wallets", path: "/business/wallets", component: "views/business/Wallets.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+        { id: 505, parentId: 500, title: "layout.navCoins", name: "Coins", path: "/business/coins", component: "views/business/Coins.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+        // 库里没有 id 506（历史空号），积分商城是 507
+        { id: 507, parentId: 500, title: "layout.navShop", name: "Shop", path: "/business/shop", component: "views/business/Shop.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
       ],
     },
     {
-      id: 30, parentId: null, title: "layout.groupConfigs", name: "ConfigCenter", path: "/config",
-      menuType: "DIR", type: "DIR",
+      id: 600, parentId: null, title: "layout.groupConfigs", name: "Configs", path: "/configs",
+      menuType: "DIR", type: "DIR", hidden: true,
       children: [
-        { id: 31, parentId: 30, title: "layout.navConfig", name: "Config", path: "app", component: "views/config/Config.vue", menuType: "MENU", type: "MENU" },
-        { id: 32, parentId: 30, title: "layout.navNotifyConfig", name: "NotifyConfig", path: "notify", component: "views/config/NotifyConfig.vue", menuType: "MENU", type: "MENU" },
-        { id: 33, parentId: 30, title: "layout.navMatchConfig", name: "MatchConfig", path: "match", component: "views/config/MatchConfig.vue", menuType: "MENU", type: "MENU" },
-        { id: 34, parentId: 30, title: "layout.navOfficialAccounts", name: "OfficialAccounts", path: "official-accounts", component: "views/config/OfficialAccounts.vue", menuType: "MENU", type: "MENU" },
-        { id: 35, parentId: 30, title: "layout.navProfileConfig", name: "ProfileConfig", path: "profile", component: "views/config/ProfileConfig.vue", menuType: "MENU", type: "MENU" },
+        { id: 601, parentId: 600, title: "layout.navNotifyConfig", name: "NotifyConfig", path: "/configs/notify", component: "views/config/NotifyConfig.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+        { id: 602, parentId: 600, title: "layout.navMatchConfig", name: "MatchConfig", path: "/configs/match", component: "views/config/MatchConfig.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
+        // dev-only：库里无此行，见上方注释
+        { id: 900, parentId: 600, title: "layout.navProfileConfig", name: "ProfileConfig", path: "/configs/profile", component: "views/config/ProfileConfig.vue", menuType: "MENU", type: "MENU", order: 91, hidden: true },
       ],
     },
   ];

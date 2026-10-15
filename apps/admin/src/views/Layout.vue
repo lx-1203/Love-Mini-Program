@@ -50,13 +50,12 @@ function menuLabel(title: string): string {
 /* ==================== 角色可见菜单（SUPER_ADMIN 专属过滤） ==================== */
 
 /**
- * 当前登录角色是否全局超级管理员。
- * 真实环境后端菜单树已按角色过滤（ADMIN 不关联系统管理菜单），
- * 下方过滤仅兜底本地静态菜单（mock/fallback）场景，避免校区管理员看到系统管理入口。
+ * 当前登录角色是否全局超级管理员（角色判定统一取自 session store 的 getter，
+ * 避免各处重复比较 role 字符串）。
+ * 真实环境后端菜单树已按角色过滤（ADMIN / AUDITOR 不关联系统管理菜单），
+ * 下方过滤仅兜底本地静态菜单（mock/fallback）场景，避免校区管理员、审核员看到系统管理入口。
  */
-const isSuperAdmin = computed(
-  () => String(sessionStore.user?.role || "").toUpperCase() === "SUPER_ADMIN",
-);
+const isSuperAdmin = computed(() => sessionStore.isSuperAdmin);
 
 /**
  * 过滤 SUPER_ADMIN 专属菜单（递归）：删除 superAdminOnly 标记的 MENU 节点
@@ -82,11 +81,39 @@ function filterSuperAdminOnlyMenus(nodes: AdminMenuNode[]): AdminMenuNode[] {
   return visible;
 }
 
-/** 侧边栏实际渲染的菜单树（校区管理员剔除 SUPER_ADMIN 专属菜单） */
+/**
+ * 剔除 menus.hidden=1 的节点（递归），并移除被清空的 DIR。
+ *
+ * <p>后端 /v1/admin/menus/current 不按 hidden 过滤（hidden 只是随节点下发的标记），
+ * 而 addDynamicRoutes() 需要看到全量节点才能注册路由——所以「隐藏」必须在侧边栏
+ * 这一层做：菜单里不出现，但收藏的 URL 依然可达。这正是 hidden 的设计语义。</p>
+ */
+function filterHiddenMenus(nodes: AdminMenuNode[]): AdminMenuNode[] {
+  const visible: AdminMenuNode[] = [];
+  for (const node of nodes) {
+    if (node.hidden === true) {
+      continue;
+    }
+    if (node.children && node.children.length > 0) {
+      const children = filterHiddenMenus(node.children);
+      if (node.type === "DIR" && children.length === 0) {
+        continue;
+      }
+      visible.push({ ...node, children });
+    } else {
+      visible.push(node);
+    }
+  }
+  return visible;
+}
+
+/** 侧边栏实际渲染的菜单树（先剔角色专属，再剔 hidden；两种角色都要过 hidden） */
 const visibleMenuTree = computed<AdminMenuNode[]>(() =>
-  isSuperAdmin.value
-    ? menuStore.menuTree
-    : filterSuperAdminOnlyMenus(menuStore.menuTree),
+  filterHiddenMenus(
+    isSuperAdmin.value
+      ? menuStore.menuTree
+      : filterSuperAdminOnlyMenus(menuStore.menuTree),
+  ),
 );
 
 /**
@@ -260,11 +287,14 @@ const displayName = computed(() =>
 /** 头像圆内展示的字符（显示名首字符，design Frame 顶栏右侧圆头像） */
 const avatarChar = computed(() => displayName.value.trim().charAt(0).toUpperCase() || "A");
 
-/** 当前管理员角色（识别 SUPER_ADMIN / ADMIN，未知角色直出原文） */
+/** 当前管理员角色（识别 SUPER_ADMIN / ADMIN / AUDITOR，未知角色直出原文） */
 const displayRole = computed(() => {
   const role = String(sessionStore.user?.role || "").toUpperCase();
   if (role === "SUPER_ADMIN") return t("users.roleSuperAdmin");
   if (role === "ADMIN") return t("users.roleAdmin");
+  // AUDITOR 为新增角色：i18n 语言包不在本任务写入范围，先用与 DB 菜单标题一致的中文标签兜底
+  // （待协调方补 users.roleAuditor 后改回 t(...)）
+  if (role === "AUDITOR") return "审核员";
   return role || "-";
 });
 

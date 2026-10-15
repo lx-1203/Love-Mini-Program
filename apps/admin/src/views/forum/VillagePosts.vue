@@ -13,7 +13,8 @@
  * 交互参考旧后台 Posts.vue：审核弹窗（通过/拒绝 + 拒绝备注必填）、
  * 置顶/取消置顶行内操作、删除走 ConfirmDialog、「查看评论」弹窗分页展示。
  */
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import {
@@ -29,13 +30,24 @@ import {
   type VillagePostSummary,
 } from "../../api/forum";
 import { ApiError } from "../../api/http";
+import { listSchools, type SchoolView } from "../../api/system";
+import { listAllLayers, buildLayerTree, type CircleLayer } from "../../api/circle";
+import { useSessionStore } from "../../stores/session";
 import Pagination from "../../components/Pagination.vue";
+import ScopeBanner from "../../components/ScopeBanner.vue";
 import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE, REMARK_MAX_LENGTH } from "../../utils/constants";
 
 const { t } = useI18n();
+const router = useRouter();
+const sessionStore = useSessionStore();
+
+/** 校区筛选仅对全局管理员有意义：后端对校区管理员强制按其校区过滤，忽略入参 */
+const isSuperAdmin = computed<boolean>(
+  () => String(sessionStore.user?.role || "").toUpperCase() === "SUPER_ADMIN",
+);
 
 // ===== 列表状态 =====
 const posts = ref<VillagePostSummary[]>([]);
@@ -46,6 +58,21 @@ const errorMsg = ref("");
 const auditStatusFilter = ref<"" | "pending" | "approved" | "rejected">("");
 const statusFilter = ref<"" | "active" | "deleted" | "hidden">("");
 const keyword = ref("");
+/** 校区筛选（按作者所属校区；仅全局管理员可见，校区管理员被后端强制过滤） */
+const campusFilter = ref("");
+const schoolOptions = ref<SchoolView[]>([]);
+/** ID 直达：列表按关键词搜不到指定帖时用 ID 精确进详情 */
+const jumpId = ref("");
+const jumpError = ref("");
+// ===== 圈层筛选（外层权责分层 / 内层按圈层展开） =====
+/** 圈层树（buildLayerTree 产出的根列表；选中节点按 circlePath 前缀过滤列表） */
+const circleTree = ref<CircleLayer[]>([]);
+/** 选中圈层的 circlePath（空串 = 全部圈层，不过滤） */
+const circlePathFilter = ref("");
+/** 选中圈层名称（仅用于工具栏回显） */
+const circleNameFilter = ref("");
+/** 圈层树面板是否展开（折叠式，默认收起） */
+const circleTreeVisible = ref(false);
 
 // ===== 分页状态 =====
 const page = ref(1);
@@ -68,6 +95,8 @@ async function fetchPosts(): Promise<void> {
       auditStatus: auditStatusFilter.value || undefined,
       status: statusFilter.value || undefined,
       keyword: keyword.value.trim() || undefined,
+      campusName: campusFilter.value || undefined,
+      circlePath: circlePathFilter.value || undefined,
     });
     if (isStale(seq)) return;
     posts.value = result.items;
@@ -97,7 +126,100 @@ function handleResetFilters(): void {
   auditStatusFilter.value = "";
   statusFilter.value = "";
   keyword.value = "";
+  campusFilter.value = "";
+  circlePathFilter.value = "";
+  circleNameFilter.value = "";
+  jumpId.value = "";
+  jumpError.value = "";
   handleSearch();
+}
+
+/**
+ * 加载校区下拉选项（GET /v1/admin/schools）。
+ * 失败不阻断列表：选项拉不到时下拉只剩「全部」，列表仍可用。
+ */
+async function loadSchoolOptions(): Promise<void> {
+  if (!isSuperAdmin.value) return;
+  try {
+    const result = await listSchools({ pageSize: 100, status: "enabled" });
+    schoolOptions.value = result.items ?? [];
+  } catch {
+    schoolOptions.value = [];
+  }
+}
+
+/**
+ * 加载圈层树（GET /v1/admin/circle-layers + buildLayerTree）。
+ * 失败不阻断列表：拉不到（如非 SUPER_ADMIN 无权限）时面板显示空态提示。
+ * 注意：后端 CircleLayer 实体序列化为嵌套 parent 对象而非 parentId 字段，
+ * 本地补齐 parentId 后再建树（api/circle.ts 归他人所有，不改）。
+ */
+async function loadCircleTree(): Promise<void> {
+  try {
+    const layers = await listAllLayers();
+    const normalized = layers.map((l) => ({
+      ...l,
+      parentId:
+        l.parentId ??
+        (l as CircleLayer & { parent?: { id?: number } | null }).parent?.id ??
+        null,
+    }));
+    circleTree.value = buildLayerTree(normalized);
+  } catch {
+    circleTree.value = [];
+  }
+}
+
+/** 圈层树扁平化为带缩进层级的可选项（C1 公司 → 大区 → 学校 三级） */
+interface CircleOption {
+  layer: CircleLayer;
+  depth: number;
+}
+const circleOptions = computed<CircleOption[]>(() => {
+  const out: CircleOption[] = [];
+  const walk = (nodes: CircleLayer[], depth: number): void => {
+    nodes.forEach((node) => {
+      out.push({ layer: node, depth });
+      if (node.children && node.children.length > 0) walk(node.children, depth + 1);
+    });
+  };
+  walk(circleTree.value, 0);
+  return out;
+});
+
+/**
+ * 选中圈层：按该层 circlePath 前缀过滤（选大区 C1/R1 时其下学校 C1/R1/Sx 全命中），
+ * 回到第一页重新查询。
+ */
+function selectCircleLayer(layer: CircleLayer): void {
+  circlePathFilter.value = layer.circlePath;
+  circleNameFilter.value = layer.name;
+  handleSearch();
+}
+
+/** 清除圈层筛选（「全部圈层」复位） */
+function clearCircleFilter(): void {
+  circlePathFilter.value = "";
+  circleNameFilter.value = "";
+  handleSearch();
+}
+
+/** 进入帖子详情页（独立路由，可深链、可从详情页返回时保留列表状态） */
+function openDetail(post: VillagePostSummary): void {
+  void router.push({ name: "VillagePostDetail", params: { id: String(post.id) } });
+}
+
+/** 按 ID 直达详情：后端 keyword 只匹配标题/正文，ID 检索走详情端点 */
+function handleJumpById(): void {
+  const raw = jumpId.value.trim();
+  jumpError.value = "";
+  if (raw === "") return;
+  const id = Number(raw);
+  if (!Number.isInteger(id) || id <= 0) {
+    jumpError.value = t("villagePosts.jumpIdInvalid");
+    return;
+  }
+  void router.push({ name: "VillagePostDetail", params: { id: String(id) } });
 }
 
 /** 分页变更回调 */
@@ -388,6 +510,8 @@ function postStatusLabel(status: string | null): string {
 
 onMounted(() => {
   void fetchPosts();
+  void loadSchoolOptions();
+  void loadCircleTree();
 });
 </script>
 
@@ -397,6 +521,8 @@ onMounted(() => {
       <text class="page-title">{{ t("layout.navVillagePosts") }}</text>
       <text class="page-subtitle">{{ t("villagePosts.subtitle") }}</text>
     </view>
+
+    <ScopeBanner />
 
     <view class="toolbar">
       <select v-model="auditStatusFilter" class="filter-select" @change="handleSearch">
@@ -411,6 +537,50 @@ onMounted(() => {
         <option value="hidden">{{ t("villagePosts.statusHidden") }}</option>
         <option value="deleted">{{ t("villagePosts.statusDeleted") }}</option>
       </select>
+      <select
+        v-if="isSuperAdmin"
+        v-model="campusFilter"
+        class="filter-select"
+        @change="handleSearch"
+      >
+        <option value="">{{ t("villagePosts.filterCampusAll") }}</option>
+        <option v-for="school in schoolOptions" :key="school.id" :value="school.name">
+          {{ school.name }}
+        </option>
+      </select>
+      <!-- 圈层筛选（折叠式三层树：公司 → 大区 → 学校；选中按 circlePath 前缀过滤） -->
+      <view class="circle-filter">
+        <button
+          class="filter-select circle-toggle"
+          type="button"
+          @click="circleTreeVisible = !circleTreeVisible"
+        >
+          {{ t("villagePosts.circleFilterLabel") }}：{{ circleNameFilter || t("villagePosts.filterCircleAll") }} {{ circleTreeVisible ? "▴" : "▾" }}
+        </button>
+        <view v-if="circleTreeVisible" class="circle-tree">
+          <button
+            class="circle-node"
+            :class="{ 'is-active': circlePathFilter === '' }"
+            type="button"
+            @click="clearCircleFilter"
+          >{{ t("villagePosts.filterCircleAll") }}</button>
+          <button
+            v-for="opt in circleOptions"
+            :key="opt.layer.id"
+            class="circle-node"
+            :class="{ 'is-active': circlePathFilter === opt.layer.circlePath }"
+            :style="{ paddingLeft: 12 + opt.depth * 18 + 'px' }"
+            type="button"
+            @click="selectCircleLayer(opt.layer)"
+          >
+            {{ opt.layer.name }}
+            <text class="circle-path">{{ opt.layer.circlePath }}</text>
+          </button>
+          <text v-if="circleOptions.length === 0" class="circle-empty">
+            {{ t("villagePosts.circleLoadFailed") }}
+          </text>
+        </view>
+      </view>
       <input
         v-model="keyword"
         class="search-input"
@@ -418,8 +588,19 @@ onMounted(() => {
         :placeholder="t('villagePosts.searchPlaceholder')"
         @keyup.enter="handleSearch"
       />
+      <input
+        v-model="jumpId"
+        class="search-input search-input--id"
+        type="text"
+        inputmode="numeric"
+        :placeholder="t('villagePosts.jumpIdPlaceholder')"
+        @keyup.enter="handleJumpById"
+      />
+      <button class="secondary-button" @click="handleJumpById">{{ t("villagePosts.jumpIdAction") }}</button>
       <button class="ghost-button" @click="handleResetFilters">{{ t("common.reset") }}</button>
     </view>
+
+    <text v-if="jumpError" class="error-message">{{ jumpError }}</text>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchPosts" />
 
@@ -472,6 +653,7 @@ onMounted(() => {
             </td>
             <td class="time-cell">{{ formatDateTime(post.createdAt) }}</td>
             <td class="action-cell">
+              <button class="action-button handle" @click="openDetail(post)">{{ t("common.view") }}</button>
               <button
                 v-if="post.auditStatus === 'pending'"
                 class="action-button audit"
@@ -810,5 +992,65 @@ onMounted(() => {
   padding: var(--admin-space-md);
   font-size: var(--admin-font-md);
   color: var(--admin-color-danger);
+}
+
+/* 圈层筛选（折叠树面板） */
+.circle-filter {
+  position: relative;
+}
+
+.circle-toggle {
+  cursor: pointer;
+}
+
+.circle-tree {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  min-width: 240px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--admin-color-bg, #fff);
+  border: 1px solid var(--admin-color-border-light);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: var(--admin-space-xs, 4px) 0;
+}
+
+.circle-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: var(--admin-font-md);
+  color: var(--admin-color-text);
+  cursor: pointer;
+}
+
+.circle-node:hover {
+  background: var(--admin-color-bg-hover);
+}
+
+.circle-node.is-active {
+  background: var(--admin-color-accent-soft);
+  color: var(--admin-color-accent);
+  font-weight: 600;
+}
+
+.circle-path {
+  font-size: var(--admin-font-xs);
+  color: var(--admin-color-text-quaternary);
+}
+
+.circle-empty {
+  display: block;
+  padding: var(--admin-space-md);
+  font-size: var(--admin-font-sm);
+  color: var(--admin-color-text-quaternary);
 }
 </style>

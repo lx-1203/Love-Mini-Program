@@ -38,6 +38,8 @@ export interface AdminUserDetail {
   followingCount: number;
   followersCount: number;
   campusName: string | null;
+  /** 学校之下的校区名（如「邯郸校区」）；未区分时为 null */
+  campusBranch?: string | null;
   verificationStatus: "draft" | "pending" | "verified" | "rejected" | null;
   createdAt: string;
   updatedAt: string;

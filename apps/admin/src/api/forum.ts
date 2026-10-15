@@ -192,6 +192,9 @@ export interface VillagePostListQuery {
   keyword?: string;
   /** 校区筛选（按作者所属校区过滤；校区管理员忽略本参数） */
   campusName?: string;
+  /** 圈层前缀筛选：按 posts.owner_circle_path 前缀匹配（LIKE '前缀%'），
+   *  传大区路径（如 C1/R1）时其下全部学校命中；空/缺省不过滤 */
+  circlePath?: string;
   /** 页码，1-based */
   page?: number;
   /** 每页条数 */

@@ -13,7 +13,7 @@ export interface AdminUser {
   id: number;
   username: string;
   displayName?: string;
-  role: "ADMIN" | "SUPER_ADMIN" | string;
+  role: "ADMIN" | "SUPER_ADMIN" | "AUDITOR" | string;
   /** 管辖校区名（校区管理员非空；全局超级管理员可为空） */
   campusName?: string;
   avatarUrl?: string | null;
@@ -33,7 +33,9 @@ export interface AdminUser {
  *   POST /api/v1/auth/admin/login（见 com.campuslove.api.auth.AuthController#adminLogin）
  *   请求体：{ username, password }
  *   返回：ApiResponse{ code, message, data: { token, user: { id, username, displayName, role, campusName } } }
- *   并要求用户 role = "ADMIN"（或 SUPER_ADMIN）才允许登录
+ *   并要求用户 role = "ADMIN" / "SUPER_ADMIN" / "AUDITOR" 才允许登录
+ *   （AUDITOR 为只读审核员：可进后台看数据，但所有写控件由 canWrite 关闭，
+ *    后端 SecurityConfig 亦按 HTTP 方法拒绝其 POST/PUT/PATCH/DELETE）
  *
  * localStorage key 约定（v2 与旧后台隔离）：
  *   - admin_v2_token：JWT
@@ -44,6 +46,25 @@ export const useSessionStore = defineStore("session", () => {
   const token = ref<string>("");
 
   const isLoggedIn = computed(() => !!user.value && !!token.value);
+
+  /** 当前登录角色（大写归一；未登录为空串） */
+  const currentRole = computed(() => String(user.value?.role || "").toUpperCase());
+
+  /** 是否超级管理员（可见系统管理菜单） */
+  const isSuperAdmin = computed(() => currentRole.value === "SUPER_ADMIN");
+
+  /** 是否只读审核员（AUDITOR：可看后台数据，不可写） */
+  const isAuditor = computed(() => currentRole.value === "AUDITOR");
+
+  /**
+   * 当前账号能否执行写操作（后台「新增/编辑/删除/审核」等控件的唯一开关）。
+   *
+   * 单一来源约定：视图一律 `v-if="sessionStore.canWrite"`，不要各自比较 role 字符串。
+   * 后端同样按 HTTP 方法分级拦截（/api/v1/admin/** 的 POST/PUT/PATCH/DELETE 仅
+   * ADMIN / SUPER_ADMIN，见 SecurityConfig），前端隐藏控件只是体验优化，
+   * 越权提交仍由后端 403 兜底。未知角色一律按只读处理（fail-closed）。
+   */
+  const canWrite = computed(() => currentRole.value === "ADMIN" || currentRole.value === "SUPER_ADMIN");
 
   /**
    * 从 localStorage 恢复管理员会话。
@@ -70,7 +91,7 @@ export const useSessionStore = defineStore("session", () => {
    *
    * 双环境策略：
    * - 开发环境：优先调用真实后端；后端不可达（网络层错误）时回退本地 dev 凭据分支。
-   * - 生产环境：强制调用后端，仅 role=ADMIN/SUPER_ADMIN 允许登录。
+   * - 生产环境：强制调用后端，仅 role=ADMIN/SUPER_ADMIN/AUDITOR 允许登录。
    *
    * 登录成功后将 token 与 user 写入 localStorage（admin_v2_token / admin_v2_user）。
    *
@@ -99,7 +120,7 @@ export const useSessionStore = defineStore("session", () => {
         const payload = data?.data ?? data;
         if (
           payload?.token && payload?.user
-          && ["ADMIN", "SUPER_ADMIN"].includes(String(payload.user.role || "").toUpperCase())
+          && ["ADMIN", "SUPER_ADMIN", "AUDITOR"].includes(String(payload.user.role || "").toUpperCase())
         ) {
           const loggedInUser = payload.user as AdminUser;
           user.value = loggedInUser;
@@ -199,6 +220,10 @@ export const useSessionStore = defineStore("session", () => {
     user,
     token,
     isLoggedIn,
+    currentRole,
+    isSuperAdmin,
+    isAuditor,
+    canWrite,
     bootstrap,
     login,
     logout,

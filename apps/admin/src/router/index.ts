@@ -32,6 +32,7 @@ type ComponentLoader = () => Promise<{ default: unknown }>;
 const componentMap: Record<string, ComponentLoader> = {
   "views/Dashboard.vue": () => import("../views/Dashboard.vue"),
   /* —— 系统管理（system） —— */
+  "views/system/CapabilityOverview.vue": () => import("../views/system/CapabilityOverview.vue"),
   "views/system/CircleLayers.vue": () => import("../views/system/CircleLayers.vue"),
   "views/system/Menus.vue": () => import("../views/system/Menus.vue"),
   "views/system/Roles.vue": () => import("../views/system/Roles.vue"),
@@ -49,8 +50,10 @@ const componentMap: Record<string, ComponentLoader> = {
   "views/content/SensitiveWords.vue": () => import("../views/content/SensitiveWords.vue"),
   "views/content/MediaAssets.vue": () => import("../views/content/MediaAssets.vue"),
   "views/content/Whispers.vue": () => import("../views/content/Whispers.vue"),
+  "views/content/Conversations.vue": () => import("../views/content/Conversations.vue"),
   /* —— 社区论坛（forum） —— */
   "views/forum/VillagePosts.vue": () => import("../views/forum/VillagePosts.vue"),
+  "views/forum/PostCompose.vue": () => import("../views/forum/PostCompose.vue"),
   "views/forum/InterestCircles.vue": () => import("../views/forum/InterestCircles.vue"),
   "views/forum/CircleTopics.vue": () => import("../views/forum/CircleTopics.vue"),
   "views/forum/CampusTopics.vue": () => import("../views/forum/CampusTopics.vue"),
@@ -102,8 +105,20 @@ const routes: RouteRecordRaw[] = [
     name: "Layout",
     component: () => import("../views/Layout.vue"),
     meta: { requiresAuth: true },
-    // children 由 addDynamicRoutes 在菜单加载后动态注册
-    children: [],
+    children: [
+      // 帖子详情：由列表页行内「查看」或 ID 直达进入的二级页。
+      // 刻意不进 componentMap / 后端菜单——菜单只登记列表页，详情页若出现在导航里
+      // 会多出一个无数据的空入口。id 限定为数字，非法深链落回 NotFound。
+      {
+        path: "forum/posts/:id(\\d+)",
+        name: "VillagePostDetail",
+        component: () => import("../views/forum/PostDetail.vue"),
+        // Layout 的面包屑直接用 meta.title 原文（后端菜单 title 也是中文字面量），
+        // 这里若放 i18n key 会被原样显示成 "postDetail.title"。
+        meta: { requiresAuth: true, title: "帖子详情" },
+      },
+    ],
+    // 其余业务子路由由 addDynamicRoutes 在菜单加载后动态注册
   },
   // 404 catch-all 从启动即注册：vue-router 4 按路径打分匹配（静态/动态路由恒优先于通配符），
   // 提前注册可让「整页刷新/深链直达业务路径」先落入 NotFound（requiresAuth 语义），

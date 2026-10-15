@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 /**
  * Admin v2 圈层管理视图（RBAC 三级圈层 - Frame 01/08）。
@@ -35,6 +34,9 @@ const selectedLayer = ref<CircleLayer | null>(null);
 const descendants = ref<CircleLayer[]>([]);
 const usersInCircle = ref<CircleUser[]>([]);
 const detailLoading = ref(false);
+/** 下钻接口失败原因：不能吞成空数组，否则「加载失败」会被显示成「无下属圈层」这个假答案 */
+const descendantsError = ref("");
+const usersError = ref("");
 
 // 圈层级别筛选
 const levelFilter = ref<CircleLevel | 0>(0); // 0=全部
@@ -85,12 +87,22 @@ async function loadAll() {
 async function selectLayer(layer: CircleLayer) {
   selectedLayer.value = layer;
   detailLoading.value = true;
+  descendantsError.value = "";
+  usersError.value = "";
   try {
     const [desc, users] = await Promise.all([
-      getLayerDescendants(layer.id).catch(() => []),
-      getUsersInCircle(layer.id).catch(() => []),
+      getLayerDescendants(layer.id).catch((e: unknown) => {
+        descendantsError.value = e instanceof Error ? e.message : "请求失败";
+        return [];
+      }),
+      getUsersInCircle(layer.id).catch((e: unknown) => {
+        usersError.value = e instanceof Error ? e.message : "请求失败";
+        return [];
+      }),
     ]);
-    descendants.value = desc;
+    // findAllDescendants 是「含自身」的前缀匹配（C1/R1/S1% 会命中自己），
+    // 后端语义用于内容范围过滤是对的，但「下属圈层」面板不该把自己列进去。
+    descendants.value = desc.filter((d) => d.id !== layer.id);
     usersInCircle.value = users;
   } finally {
     detailLoading.value = false;
@@ -136,6 +148,10 @@ function levelBadgeClass(level: CircleLevel): string {
         </div>
       </div>
       <div class="grade-table-header">管辖内容可见性（举报时可直接调阅用户产生内容）</div>
+      <p class="grade-legend">
+        下表逐格标注真实实现状态：<b>已生效</b>＝后端确实按该口径过滤，越权返回 403 或 0 行；
+        <b>设计口径</b>＝规格里规划、当前尚未接入该轴的过滤，不要当作既成事实对外承诺。
+      </p>
       <table class="grade-table">
         <thead>
           <tr>
@@ -151,22 +167,34 @@ function levelBadgeClass(level: CircleLevel): string {
           <tr>
             <td class="grade-table__level grade-table__level--l1">公司管理级</td>
             <td>全平台全部用户</td>
-            <td>✓ 全量</td><td>✓ 全量</td><td>✓ 全量</td><td>✓ 全量</td>
+            <td>✓ 全量<br><span class="cell-note cell-note--live">已生效</span></td>
+            <td>✓ 全量<br><span class="cell-note cell-note--partial">按角色分级</span></td>
+            <td>✓ 全量<br><span class="cell-note cell-note--live">已生效</span></td>
+            <td>—<br><span class="cell-note cell-note--todo">无接口</span></td>
           </tr>
           <tr>
             <td class="grade-table__level grade-table__level--l2">区域管理</td>
             <td>本区域用户</td>
-            <td>✓ 本区域</td><td>✓ 本区域</td><td>✓ 本区域</td><td>✓ 本区域</td>
+            <td>✓ 本区域<br><span class="cell-note cell-note--design">设计口径</span></td>
+            <td>✓ 本区域<br><span class="cell-note cell-note--design">设计口径</span></td>
+            <td>✓ 本区域<br><span class="cell-note cell-note--live">已生效</span></td>
+            <td>—<br><span class="cell-note cell-note--todo">无接口</span></td>
           </tr>
           <tr>
             <td class="grade-table__level grade-table__level--l3">学校管理</td>
             <td>本校用户</td>
-            <td>✓ 本校</td><td>✓ 本校</td><td>✓ 本校</td><td>✓ 本校</td>
+            <td>✓ 本校<br><span class="cell-note cell-note--partial">按校区非圈层</span></td>
+            <td>✓ 本校<br><span class="cell-note cell-note--design">设计口径</span></td>
+            <td>✓ 本校<br><span class="cell-note cell-note--live">已生效</span></td>
+            <td>—<br><span class="cell-note cell-note--todo">无接口</span></td>
           </tr>
         </tbody>
       </table>
       <p class="grade-footnote">
-        层级可见性：公司级 &gt; 区域级 &gt; 学校级。上层管理员默认可下钻查看其下级圈层内全部用户产生的聊天内容、上传图片、帖子与临时聊天，便于举报时直接调阅取证。
+        逐格口径：帖子列表与用户列表已按 owner_circle_path / circle_path 前缀过滤（越权 403 或 0 行）；
+        私信按「双方校区」过滤，尚未改成圈层前缀；上传图片按角色分内容图与认证材料两级
+        （认证材料仅公司管理级可读），但不做圈层过滤；临时聊天后端没有对应查询接口。
+        层级可见性：公司级 &gt; 区域级 &gt; 学校级。
       </p>
     </div>
 
@@ -284,6 +312,7 @@ function levelBadgeClass(level: CircleLevel): string {
           <section class="detail-section">
             <h4>下属圈层（Frame 04）</h4>
             <div v-if="detailLoading" class="loading-tip">加载中...</div>
+            <div v-else-if="descendantsError" class="error-tip">下属圈层加载失败：{{ descendantsError }}</div>
             <div v-else-if="descendants.length === 0" class="empty-tip">无下属圈层</div>
             <table v-else class="data-table">
               <thead>
@@ -313,6 +342,7 @@ function levelBadgeClass(level: CircleLevel): string {
           <section class="detail-section">
             <h4>管辖用户（Frame 05）</h4>
             <div v-if="detailLoading" class="loading-tip">加载中...</div>
+            <div v-else-if="usersError" class="error-tip">管辖用户加载失败：{{ usersError }}</div>
             <div v-else-if="usersInCircle.length === 0" class="empty-tip">无管辖用户</div>
             <table v-else class="data-table">
               <thead>
@@ -569,6 +599,7 @@ function levelBadgeClass(level: CircleLevel): string {
 }
 
 .loading-tip,
+.error-tip,
 .empty-tip {
   text-align: center;
   color: var(--admin-color-text-quaternary);
@@ -725,5 +756,19 @@ function levelBadgeClass(level: CircleLevel): string {
   line-height: 20px;
   color: var(--admin-color-text-tertiary);
 }
+.grade-legend {
+  margin: 0 0 var(--admin-space-sm);
+  font-size: var(--admin-font-sm);
+  line-height: 20px;
+  color: var(--admin-color-text-secondary);
+}
+.cell-note {
+  display: inline-block;
+  font-size: var(--admin-font-xs, 11px);
+  line-height: 16px;
+}
+.cell-note--live { color: var(--admin-color-success, #1a7f4b); }
+.cell-note--partial { color: var(--admin-color-warning, #9a6b15); }
+.cell-note--design { color: var(--admin-color-text-tertiary); }
+.cell-note--todo { color: var(--admin-color-danger, #c0392b); }
 </style>
-```

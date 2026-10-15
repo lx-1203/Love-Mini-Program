@@ -148,10 +148,15 @@ async function runBatch(action: "disable" | "enable"): Promise<void> {
   await fetchUsers();
 }
 
-// 用户详情弹窗状态
+// 用户详情抽屉状态（destroy-on-close=false，关闭后保留 detailUser，重开不闪空白）
 const detailVisible = ref(false);
 const detailUser = ref<AdminUserDetail | null>(null);
 const detailLoading = ref(false);
+
+// 「ID 直达」搜索框状态：后端列表接口无 phone/id 过滤参数，按数字 ID 只能在客户端
+// 直接调 getUserDetail 打开详情；手机号搜索需后端新增过滤参数，暂不实现。
+const idLookup = ref("");
+const idLookupLoading = ref(false);
 
 // ===== 新增用户 + 修改密码弹窗状态 =====
 /** 新增用户弹窗 */
@@ -279,6 +284,7 @@ function handleResetFilters() {
   searchQuery.value = "";
   roleFilter.value = "";
   statusFilter.value = "";
+  idLookup.value = "";
   handleSearch();
 }
 
@@ -479,6 +485,17 @@ function onAvatarError(e: Event) {
   img.style.display = "none";
 }
 
+/**
+ * 详情抽屉图片加载失败兜底——隐藏裂图而非显示 broken icon。
+ * 对齐 views/content/MediaAssets.vue 的 onImageError（visibility:hidden + data-failed 标记），
+ * 404 或 withMediaToken 改写后的 URL 不可达时触发。
+ */
+function onImageError(e: Event): void {
+  const img = e.target as HTMLImageElement;
+  img.style.visibility = "hidden";
+  img.dataset.failed = "1";
+}
+
 /** 认证状态文案映射（详情弹窗用） */
 function verificationLabel(status: AdminUserDetail["verificationStatus"]): string {
   switch (status) {
@@ -516,20 +533,59 @@ function roleBadgeClass(role: string): string {
 }
 
 /**
- * 打开用户详情弹窗（消费 getUserDetail）。
+ * 按 ID 打开用户详情抽屉（消费 getUserDetail）。
+ * 列表「查看」按钮与「ID 直达」搜索框共用；成功返回 true，失败关闭抽屉并写入 errorMsg。
  */
-async function handleViewDetail(user: AdminUserSummary) {
+async function openDetailById(id: number): Promise<boolean> {
   detailUser.value = null;
   detailVisible.value = true;
   detailLoading.value = true;
   try {
-    detailUser.value = await getUserDetail(user.id);
+    detailUser.value = await getUserDetail(id);
+    return true;
   } catch (err) {
     errorMsg.value = err instanceof ApiError ? err.message : t("users.loadDetailFailed");
     detailVisible.value = false;
+    return false;
   } finally {
     detailLoading.value = false;
   }
+}
+
+/**
+ * 打开用户详情抽屉（行操作「查看」）。
+ */
+function handleViewDetail(user: AdminUserSummary): void {
+  errorMsg.value = "";
+  void openDetailById(user.id);
+}
+
+/**
+ * 解析输入为正整数用户 ID：仅接受纯数字且落在安全整数区间，否则返回 null。
+ */
+function parseUserId(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!/^\d+$/.test(trimmed)) return null;
+  const id = Number(trimmed);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
+/**
+ * 「ID 直达」：输入数字用户 ID 后直接打开该用户详情抽屉（客户端跳转，不改列表筛选）。
+ * 说明：GET /v1/admin/users 仅支持 role/status/nickname/createdAtFrom/createdAtTo/campusName，
+ * 无 phone/id 过滤参数，故手机号检索需后端改动，当前不可实现。
+ */
+async function handleIdLookup(): Promise<void> {
+  if (idLookupLoading.value) return;
+  errorMsg.value = "";
+  const id = parseUserId(idLookup.value);
+  if (id === null) {
+    errorMsg.value = t("users.idLookupInvalid");
+    return;
+  }
+  idLookupLoading.value = true;
+  await openDetailById(id);
+  idLookupLoading.value = false;
 }
 
 function closeDetail() {
@@ -684,6 +740,21 @@ onMounted(() => {
       </select>
       <button class="primary-button" @click="handleSearch">{{ t("common.search") }}</button>
       <button class="ghost-button" @click="handleResetFilters">{{ t("common.reset") }}</button>
+      <!-- ID 直达搜索：后端列表接口无 phone/id 过滤参数，纯数字 ID 走客户端 getUserDetail 跳详情；
+           手机号检索需后端新增参数，暂不支持 -->
+      <view class="id-lookup">
+        <input
+          v-model="idLookup"
+          class="search-input id-lookup__input"
+          type="text"
+          inputmode="numeric"
+          :placeholder="t('users.idLookupPlaceholder')"
+          @keyup.enter="handleIdLookup"
+        />
+        <button class="ghost-button" :disabled="idLookupLoading" @click="handleIdLookup">
+          {{ idLookupLoading ? t("common.loading") : t("users.idLookupBtn") }}
+        </button>
+      </view>
       <!-- 新增用户 + 修改密码入口：仅超级管理员显示（后端 @PreAuthorize SUPER_ADMIN） -->
       <template v-if="currentAdminRole === 'SUPER_ADMIN'">
         <button class="primary-button" @click="openCreateUser">{{ t("users.actionCreateUser") }}</button>
@@ -887,16 +958,33 @@ onMounted(() => {
       </view>
     </view>
 
-    <!-- 用户详情弹窗 -->
-    <view v-if="detailVisible" class="modal-mask" @click.self="closeDetail">
-      <view class="modal detail-modal">
-        <text class="modal-title">{{ t("users.detailTitle") }}</text>
-        <view v-if="detailLoading" class="detail-loading">{{ t("common.loading") }}</view>
-        <view v-else-if="detailUser" class="detail-body">
-          <view class="detail-row">
-            <text class="detail-label">{{ t("users.genderLabel") }}</text>
-            <text class="detail-value">{{ detailUser.gender === "male" ? t("users.genderMale") : detailUser.gender === "female" ? t("users.genderFemale") : t("common.emptyPlaceholder") }}</text>
-          </view>
+    <!-- 用户详情抽屉：右侧约 520px，打开时保留列表页状态（不整页跳转）。
+         Esc / 遮罩点击可关闭（EP 默认行为，显式声明）；destroy-on-close=false 保留抽屉状态。 -->
+    <el-drawer
+      v-model="detailVisible"
+      class="detail-drawer"
+      direction="rtl"
+      size="520px"
+      :destroy-on-close="false"
+      :close-on-click-modal="true"
+      :close-on-press-escape="true"
+      @closed="detailUser = null"
+    >
+      <template #header>
+        <view class="drawer-header">
+          <text class="drawer-header__title">{{ t("users.detailTitle") }}</text>
+          <!-- 完整页入口：详情路由页属后续迭代（本次明确范围外），仅保留禁用按钮，不发明路由 -->
+          <button class="ghost-button drawer-header__full" disabled :title="t('users.openFullPageHint')">
+            {{ t("users.openFullPage") }}
+          </button>
+        </view>
+      </template>
+
+      <view v-if="detailLoading" class="detail-loading">{{ t("common.loading") }}</view>
+      <view v-else-if="detailUser" class="drawer-body">
+        <!-- 身份 -->
+        <view class="detail-section">
+          <text class="detail-section__title">{{ t("users.detailSectionIdentity") }}</text>
           <view class="detail-row">
             <text class="detail-label">{{ t("users.columnId") }}:</text>
             <text>{{ detailUser.id }}</text>
@@ -910,12 +998,44 @@ onMounted(() => {
             <text>{{ detailUser.phone || t("common.emptyPlaceholder") }}</text>
           </view>
           <view class="detail-row">
+            <text class="detail-label">{{ t("users.avatarLabel") }}:</text>
+            <img
+              v-if="detailUser.avatarUrl"
+              class="detail-avatar"
+              :src="withMediaToken(detailUser.avatarUrl)"
+              alt=""
+              @error="onImageError"
+            />
+            <text v-else>{{ t("common.emptyPlaceholder") }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.columnRole") }}:</text>
+            <text class="role-badge" :class="roleBadgeClass(detailUser.role)">{{ roleLabel(detailUser.role) }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.columnStatus") }}:</text>
+            <text class="status-badge" :class="`status-${detailUser.status}`">{{ statusLabel(detailUser.status) }}</text>
+          </view>
+        </view>
+
+        <!-- 资料 -->
+        <view class="detail-section">
+          <text class="detail-section__title">{{ t("users.detailSectionProfile") }}</text>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.genderLabel") }}:</text>
+            <text>{{ detailUser.gender === "male" ? t("users.genderMale") : detailUser.gender === "female" ? t("users.genderFemale") : t("common.emptyPlaceholder") }}</text>
+          </view>
+          <view class="detail-row">
             <text class="detail-label">{{ t("users.bioLabel") }}:</text>
             <text>{{ detailUser.bio || t("common.emptyPlaceholder") }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">{{ t("users.interestTagsLabel") }}:</text>
-            <text>{{ detailUser.interestTags.join("、") || t("common.emptyPlaceholder") }}</text>
+            <text class="detail-label">{{ t("users.gradeLabel") }}:</text>
+            <text>{{ detailUser.gradeLabel || t("common.emptyPlaceholder") }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.pronounsLabel") }}:</text>
+            <text>{{ detailUser.pronouns || t("common.emptyPlaceholder") }}</text>
           </view>
           <view class="detail-row">
             <text class="detail-label">{{ t("users.heightLabel") }}:</text>
@@ -938,15 +1058,17 @@ onMounted(() => {
             <text>{{ detailUser.expectedPartner || t("common.emptyPlaceholder") }}</text>
           </view>
           <view class="detail-row">
-            <text class="detail-label">{{ t("users.photoGalleryLabel") }}:</text>
-            <view class="detail-thumbs">
-              <img v-for="url in detailUser.photoGallery" :key="url" class="detail-thumb" :src="withMediaToken(url)" alt="" @error="onAvatarError" />
-              <text v-if="!detailUser.photoGallery.length">{{ t("common.emptyPlaceholder") }}</text>
-            </view>
+            <text class="detail-label">{{ t("users.interestTagsLabel") }}:</text>
+            <text>{{ detailUser.interestTags.join("、") || t("common.emptyPlaceholder") }}</text>
           </view>
+        </view>
+
+        <!-- 校区与认证 -->
+        <view class="detail-section">
+          <text class="detail-section__title">{{ t("users.detailSectionCampusVerification") }}</text>
           <view class="detail-row">
             <text class="detail-label">{{ t("users.campusLabel") }}:</text>
-            <text>{{ detailUser.campusName || t("common.emptyPlaceholder") }}</text>
+            <text>{{ detailUser.campusName || t("common.emptyPlaceholder") }}{{ detailUser.campusBranch ? ` · ${detailUser.campusBranch}` : "" }}</text>
           </view>
           <view class="detail-row">
             <text class="detail-label">{{ t("users.verificationLabel") }}:</text>
@@ -956,20 +1078,58 @@ onMounted(() => {
             <text class="detail-label">{{ t("users.columnProfileCompletion") }}:</text>
             <text>{{ detailUser.profileCompletion }}%</text>
           </view>
+        </view>
+
+        <!-- 社交 -->
+        <view class="detail-section">
+          <text class="detail-section__title">{{ t("users.detailSectionSocial") }}</text>
           <view class="detail-row">
             <text class="detail-label">{{ t("users.columnFollowing") }}:</text>
             <text>{{ t("users.followStats", { following: detailUser.followingCount, followers: detailUser.followersCount }) }}</text>
           </view>
+        </view>
+
+        <!-- 相册：所有用户媒体 URL 必须经 withMediaToken 拼 ?token=（裸 URL 实测 401），
+             加载失败经 onImageError 隐藏裂图 -->
+        <view class="detail-section">
+          <text class="detail-section__title">{{ t("users.detailSectionAlbum") }}</text>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.photoGalleryLabel") }}:</text>
+            <view class="detail-thumbs">
+              <img v-for="url in detailUser.photoGallery" :key="url" class="detail-thumb" :src="withMediaToken(url)" alt="" @error="onImageError" />
+              <text v-if="!detailUser.photoGallery.length">{{ t("common.emptyPlaceholder") }}</text>
+            </view>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.profileBackgroundLabel") }}:</text>
+            <img v-if="detailUser.profileBackgroundUrl" class="detail-photo" :src="withMediaToken(detailUser.profileBackgroundUrl)" alt="" @error="onImageError" />
+            <text v-else>{{ t("common.emptyPlaceholder") }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.halfBodyLabel") }}:</text>
+            <img v-if="detailUser.halfBodyPhotoUrl" class="detail-photo" :src="withMediaToken(detailUser.halfBodyPhotoUrl)" alt="" @error="onImageError" />
+            <text v-else>{{ t("common.emptyPlaceholder") }}</text>
+          </view>
+        </view>
+
+        <!-- 时间 -->
+        <view class="detail-section">
+          <text class="detail-section__title">{{ t("users.detailSectionTime") }}</text>
           <view class="detail-row">
             <text class="detail-label">{{ t("users.columnRegisteredAt") }}:</text>
             <text>{{ formatDate(detailUser.createdAt) }}</text>
           </view>
-        </view>
-        <view class="modal-actions">
-          <button class="ghost-button" @click="closeDetail">{{ t("common.close") }}</button>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("users.updatedAtLabel") }}:</text>
+            <text>{{ formatDate(detailUser.updatedAt) }}</text>
+          </view>
         </view>
       </view>
-    </view>
+
+      <template #footer>
+        <button class="ghost-button" @click="closeDetail">{{ t("common.close") }}</button>
+      </template>
+    </el-drawer>
 
     <!-- 新增用户弹窗 -->
     <view v-if="createVisible" class="modal-mask" @click.self="closeCreateUser">
@@ -1071,6 +1231,19 @@ onMounted(() => {
 .search-input:focus {
   outline: none;
   border-color: var(--admin-color-primary);
+}
+
+/* ID 直达搜索框（数字用户 ID → getUserDetail 直开详情抽屉） */
+.id-lookup {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+}
+
+.id-lookup__input {
+  flex: none;
+  width: 200px;
+  max-width: 200px;
 }
 
 .filter-select {
@@ -1324,8 +1497,36 @@ onMounted(() => {
   margin-bottom: var(--admin-space-md);
 }
 
-.detail-modal {
-  width: var(--admin-dialog-width-sm);
+/* ========== 用户详情抽屉（原详情弹窗改造） ========== */
+
+.detail-drawer :deep(.el-drawer__header) {
+  margin-bottom: 0;
+  padding-bottom: var(--admin-space-md);
+  border-bottom: 1px solid var(--admin-color-border-light);
+}
+
+.detail-drawer :deep(.el-drawer__footer) {
+  border-top: 1px solid var(--admin-color-border-light);
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+  width: 100%;
+}
+
+.drawer-header__title {
+  font-size: var(--admin-font-xxl);
+  font-weight: 600;
+  color: var(--admin-color-text-primary);
+}
+
+/* 完整页入口（禁用态，路由页属后续迭代） */
+.drawer-header__full {
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-sm);
 }
 
 .detail-loading {
@@ -1334,13 +1535,25 @@ onMounted(() => {
   color: var(--admin-color-text-quaternary);
 }
 
-.detail-body {
+.drawer-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xl);
+}
+
+.detail-section {
   display: flex;
   flex-direction: column;
   gap: var(--admin-space-md);
-  margin-bottom: var(--admin-space-lg);
-  max-height: 60vh;
-  overflow-y: auto;
+}
+
+.detail-section__title {
+  display: block;
+  font-size: var(--admin-font-lg);
+  font-weight: 600;
+  color: var(--admin-color-text-primary);
+  padding-bottom: var(--admin-space-xs);
+  border-bottom: 1px dashed var(--admin-color-border);
 }
 
 .detail-row {
@@ -1385,6 +1598,22 @@ onMounted(() => {
   height: 56px;
   object-fit: cover;
   border-radius: 8px;
+}
+
+/* 详情抽屉头像（withMediaToken 拼 token 后仍 404/失效时经 onImageError 隐藏） */
+.detail-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* 主页背景 / 半身照单图 */
+.detail-photo {
+  max-width: 100%;
+  max-height: 180px;
+  border-radius: 8px;
+  object-fit: cover;
 }
 /* ========== 批量选择（Frame 03 批量条） ========== */
 

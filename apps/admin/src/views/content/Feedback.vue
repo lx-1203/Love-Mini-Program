@@ -1,35 +1,62 @@
 <script setup lang="ts">
 /**
- * 反馈管理页（复制自旧后台 apps/admin，适配 admin-v2 目录结构）。
+ * 反馈管理页。
  *
- * - 通过 listAdminFeedback() 调用 GET /api/v1/admin/feedback 拉取真实反馈列表
- * - loading / empty / error 三态处理
- * - 处理（标记已处理）：ConfirmDialog 二次确认，支持自定义回复内容，
- *   调用 PUT /api/v1/admin/feedback/{id}/reply（replyFeedback）
+ * - 列表：走「分页工单」端点 GET /api/v1/admin/feedback/tickets（listFeedbackTickets），
+ *   支持分页 + 状态/类型筛选 + 按提交人所属校区隔离（校区管理员/有校区的 AUDITOR 只能看本校区）。
+ *   ⚠ 该端点返回**直出** AdminPageView {items,total,page,pageSize,totalPages}，
+ *     没有 {code,message,data} 信封，http 层的 get() 也不解包，故直接按分页对象取字段。
+ * - 处理：走 POST /api/v1/admin/feedback/tickets/{id}/handle（handleFeedbackTicket），
+ *   后端带 @Auditable(HANDLE_FEEDBACK) 审计 + 提交人校区越权校验（越权 403）。
+ * - 只读角色 AUDITOR：后台 URL 层对 POST /api/v1/admin/** 只放 ADMIN/SUPER_ADMIN，
+ *   故此处用 sessionStore.canWrite 隐藏「处理」按钮（绕过去后端也会 403）。
+ * - loading / empty / error 三态处理 + 请求竞态防护。
  */
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import {
-  listAdminFeedback,
-  replyFeedback,
-  type FeedbackRecordView,
+  listFeedbackTickets,
+  handleFeedbackTicket,
+  FEEDBACK_TICKET_STATUSES,
+  FEEDBACK_TICKET_TYPES,
+  type FeedbackTicketView,
   type FeedbackTicketType,
   type SubmissionStatus,
 } from "@/api/feedback";
 import { ApiError } from "@/api/http";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import Pagination from "@/components/Pagination.vue";
+import { useSessionStore } from "@/stores/session";
 import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import { formatDateTime } from "@/utils/format";
-import { TOAST_DURATION_MS, REMARK_MAX_LENGTH } from "@/utils/constants";
+import { TOAST_DURATION_MS, REMARK_MAX_LENGTH, DEFAULT_PAGE_SIZE } from "@/utils/constants";
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
-const feedbacks = ref<FeedbackRecordView[]>([]);
+/** 当前账号可写（ADMIN / SUPER_ADMIN）；AUDITOR 为 false */
+const canWrite = computed(() => sessionStore.canWrite);
+
+const feedbacks = ref<FeedbackTicketView[]>([]);
 const loading = ref(false);
 const errorMsg = ref("");
 
+/** 状态筛选，空串表示不限制（后端宽松解析：空值/非法值均视为不筛选） */
+const statusFilter = ref<SubmissionStatus | "">("");
+/** 类型筛选，空串表示不限制 */
+const typeFilter = ref<FeedbackTicketType | "">("");
+
+/** 当前页码（1-based，与后端 page 参数一致） */
+const page = ref(1);
+/** 每页大小（后端收敛到 [1,100]） */
+const pageSize = ref(DEFAULT_PAGE_SIZE);
+/** 总记录数 */
+const total = ref(0);
+/** 总页数 */
+const totalPages = ref(1);
+
 const showDetailModal = ref(false);
-const detailFeedback = ref<FeedbackRecordView | null>(null);
+const detailFeedback = ref<FeedbackTicketView | null>(null);
 
 const toastMessage = ref("");
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -56,21 +83,30 @@ function closeToast() {
 }
 
 /**
- * 拉取反馈列表。
- * 失败时设置 errorMsg，清空列表，方便模板渲染 error 三态。
+ * 拉取反馈工单分页列表。
+ * 失败时设置 errorMsg，清空列表与分页元信息，方便模板渲染 error 三态。
  */
-async function fetchFeedbacks() {
+async function fetchTickets() {
   loading.value = true;
   errorMsg.value = "";
   const seq = nextSeq();
   try {
-    const result = await listAdminFeedback();
+    const result = await listFeedbackTickets({
+      status: statusFilter.value,
+      type: typeFilter.value,
+      page: page.value,
+      pageSize: pageSize.value,
+    });
     if (isStale(seq)) return; // 丢弃过期响应
-    feedbacks.value = result;
+    feedbacks.value = result.items ?? [];
+    total.value = result.total;
+    totalPages.value = result.totalPages ?? 1;
   } catch (err) {
     if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("feedback.loadFailed");
     feedbacks.value = [];
+    total.value = 0;
+    totalPages.value = 1;
   } finally {
     if (!isStale(seq)) {
       loading.value = false;
@@ -78,36 +114,60 @@ async function fetchFeedbacks() {
   }
 }
 
-function handleView(feedback: FeedbackRecordView) {
+/** 筛选条件变更：回到第一页再拉取 */
+function handleSearch() {
+  page.value = 1;
+  void fetchTickets();
+}
+
+/** 重置筛选条件 */
+function handleResetFilters() {
+  statusFilter.value = "";
+  typeFilter.value = "";
+  handleSearch();
+}
+
+/** 翻页（Pagination 组件已更新 page，这里只负责发请求） */
+function handlePageChange() {
+  void fetchTickets();
+}
+
+function handleView(feedback: FeedbackTicketView) {
   detailFeedback.value = feedback;
   showDetailModal.value = true;
 }
 
 /** 处理确认弹窗状态 */
 const processVisible = ref(false);
-const processTarget = ref<FeedbackRecordView | null>(null);
-/** 回复接口调用中状态，传给 ConfirmDialog 的 confirming prop 禁用按钮 */
+const processTarget = ref<FeedbackTicketView | null>(null);
+/** 处理接口调用中状态，传给 ConfirmDialog 的 confirming prop 禁用按钮 */
 const processLoading = ref(false);
 /** 自定义回复内容（空时使用默认回复文案） */
 const replyContent = ref("");
 
-function handleProcess(feedback: FeedbackRecordView) {
+function handleProcess(feedback: FeedbackTicketView) {
   processTarget.value = feedback;
   replyContent.value = ""; // 每次打开弹窗重置自定义回复
   processVisible.value = true;
 }
 
-/** ConfirmDialog 确认回调，调用真实回复接口（支持自定义回复内容） */
+/** ConfirmDialog 确认回调，调用工单处理接口（状态推进为 REVIEWED，支持自定义回复摘要） */
 async function handleConfirmProcess() {
   const target = processTarget.value;
   if (!target) return;
   processLoading.value = true;
   try {
-    // 后端 PUT /v1/admin/feedback/{id}/reply 接收 reply 字段（见 api/feedback.ts replyFeedback），
-    // 此处支持运营自定义回复内容；留空时回退到默认回复文案。
+    // 后端 POST /v1/admin/feedback/tickets/{id}/handle 接收 { status, replySummary }：
+    // status 必填（@NotNull），此处「标记为已处理」→ REVIEWED；
+    // replySummary 留空时回退到默认回复文案。
+    // 注意：handle 端点不做截断（latest_reply_summary 列长 512），
+    // 这里按 REMARK_MAX_LENGTH 兜底裁剪，避免超长文本触发后端 500。
     const reply = replyContent.value.trim() || t("feedback.defaultReplyContent");
-    const updated = await replyFeedback(target.id, reply);
-    // 用后端返回的记录替换列表中的对应项，保证状态/回复摘要与服务端一致
+    const updated = await handleFeedbackTicket(target.id, {
+      status: "REVIEWED",
+      replySummary: reply.slice(0, REMARK_MAX_LENGTH),
+    });
+    // 用后端返回的工单替换列表中的对应项，保证状态/回复摘要与服务端一致
     const idx = feedbacks.value.findIndex((f) => f.id === updated.id);
     if (idx >= 0) feedbacks.value[idx] = updated;
     processVisible.value = false;
@@ -175,7 +235,7 @@ function formatDate(iso: string): string {
 }
 
 onMounted(() => {
-  void fetchFeedbacks();
+  void fetchTickets();
 });
 
 // 清理挂起的 toast 定时器，避免组件卸载后回调执行报错
@@ -203,7 +263,34 @@ onBeforeUnmount(() => {
     <!-- 三态：错误 -->
     <view v-if="errorMsg" class="error-banner">
       <text class="error-banner__text">{{ errorMsg }}</text>
-      <button class="error-banner__retry" @click="fetchFeedbacks">{{ t("feedback.retryButton") }}</button>
+      <button class="error-banner__retry" @click="fetchTickets">{{ t("feedback.retryButton") }}</button>
+    </view>
+
+    <!-- 筛选工具栏（状态 / 类型；后端对空值视为不限制） -->
+    <view class="toolbar">
+      <label class="filter-label">
+        <text class="filter-label__text">{{ t("feedback.filterStatus") }}</text>
+        <select v-model="statusFilter" class="filter-select" @change="handleSearch">
+          <option value="">{{ t("feedback.filterStatusAll") }}</option>
+          <option
+            v-for="opt in FEEDBACK_TICKET_STATUSES"
+            :key="opt.value"
+            :value="opt.value"
+          >{{ t(opt.labelKey) }}</option>
+        </select>
+      </label>
+      <label class="filter-label">
+        <text class="filter-label__text">{{ t("common.all") }}</text>
+        <select v-model="typeFilter" class="filter-select" @change="handleSearch">
+          <option value="">{{ t("feedback.filterStatusAll") }}</option>
+          <option
+            v-for="opt in FEEDBACK_TICKET_TYPES"
+            :key="opt.value"
+            :value="opt.value"
+          >{{ t(opt.labelKey) }}</option>
+        </select>
+      </label>
+      <button class="ghost-button" @click="handleResetFilters">{{ t("common.reset") }}</button>
     </view>
 
     <view class="table-container">
@@ -211,6 +298,7 @@ onBeforeUnmount(() => {
         <thead>
           <tr>
             <th scope="col">{{ t("feedback.columnId") }}</th>
+            <th scope="col">{{ t("feedback.columnUser") }}</th>
             <th scope="col">{{ t("feedback.columnType") }}</th>
             <th scope="col">{{ t("feedback.columnTitle") }}</th>
             <th scope="col">{{ t("feedback.columnStatus") }}</th>
@@ -222,15 +310,16 @@ onBeforeUnmount(() => {
         <tbody>
           <!-- 三态：加载中 -->
           <tr v-if="loading">
-            <td colspan="7" class="empty-cell">{{ t("common.loading") }}</td>
+            <td colspan="8" class="empty-cell">{{ t("common.loading") }}</td>
           </tr>
           <!-- 三态：空数据 -->
           <tr v-else-if="feedbacks.length === 0">
-            <td colspan="7" class="empty-cell">{{ t("feedback.noData") }}</td>
+            <td colspan="8" class="empty-cell">{{ t("feedback.noData") }}</td>
           </tr>
           <!-- 正常列表 -->
           <tr v-for="feedback in feedbacks" :key="feedback.id">
             <td>{{ feedback.id }}</td>
+            <td>{{ feedback.userId }}</td>
             <td>
               <span class="type-badge" :class="`type-${feedback.type}`">
                 {{ typeLabel(feedback.type) }}
@@ -246,12 +335,22 @@ onBeforeUnmount(() => {
             <td>{{ t("feedback.submittedAt", { time: formatDate(feedback.submittedAt) }) }}</td>
             <td class="action-cell">
               <button class="action-button view" @click="handleView(feedback)">{{ t("feedback.actionView") }}</button>
-              <button class="action-button process" @click="handleProcess(feedback)">{{ t("feedback.actionProcess") }}</button>
+              <!-- 只读角色 AUDITOR 隐藏写按钮（后端 POST /api/v1/admin/** 仅 ADMIN/SUPER_ADMIN） -->
+              <button v-if="canWrite" class="action-button process" @click="handleProcess(feedback)">{{ t("feedback.actionProcess") }}</button>
             </td>
           </tr>
         </tbody>
       </table>
     </view>
+
+    <Pagination
+      v-model:page="page"
+      :total-pages="totalPages"
+      :total="total"
+      :page-size="pageSize"
+      :disabled="loading"
+      @change="handlePageChange"
+    />
 
     <!-- 反馈详情弹窗 -->
     <view v-if="showDetailModal" class="modal-overlay" @click="showDetailModal = false">
@@ -264,6 +363,10 @@ onBeforeUnmount(() => {
           <view class="detail-row">
             <text class="detail-label">{{ t("feedback.detailId") }}</text>
             <text>{{ detailFeedback.id }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">{{ t("feedback.columnUser") }}</text>
+            <text>{{ detailFeedback.userId }}</text>
           </view>
           <view class="detail-row">
             <text class="detail-label">{{ t("feedback.detailType") }}</text>
@@ -560,6 +663,18 @@ onBeforeUnmount(() => {
   font-weight: 600;
   color: var(--admin-color-text-tertiary);
   min-width: 80px;
+}
+
+/* 筛选栏内的字段标签（工具栏容器 .toolbar / .filter-select / .ghost-button 复用 admin-common.css） */
+.filter-label {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+}
+
+.filter-label__text {
+  font-size: var(--admin-font-md);
+  color: var(--admin-color-text-tertiary);
 }
 
 /* 处理弹窗内的自定义回复输入 */

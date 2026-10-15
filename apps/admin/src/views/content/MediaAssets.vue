@@ -9,8 +9,11 @@
  *
  * 交互参考 VillagePosts.vue：审核弹窗（通过/拒绝 + 拒绝备注必填）、
  * 成功后自动加载下一条（连续审核），点击缩略图打开大图预览弹窗。
+ *
+ * 只读角色 AUDITOR（审核员）隐藏「审核」按钮 —— 写权限开关统一取 sessionStore.canWrite，
+ * 不在视图内比较 role 字符串；即便绕过 UI，后端也会 403。
  */
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import {
@@ -22,10 +25,15 @@ import {
 import { ApiError } from "../../api/http";
 import Pagination from "../../components/Pagination.vue";
 import ErrorState from "../../components/ErrorState.vue";
+import { useSessionStore } from "../../stores/session";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE, REMARK_MAX_LENGTH } from "../../utils/constants";
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
+
+/** 当前账号可写（ADMIN / SUPER_ADMIN）；AUDITOR 为 false */
+const canWrite = computed(() => sessionStore.canWrite);
 
 // ===== 列表状态 =====
 const assets = ref<MediaAssetSummary[]>([]);
@@ -347,7 +355,7 @@ onMounted(() => {
             <td class="action-cell">
               <button class="action-button audit" @click="openPreview(item)">{{ t("mediaAssets.actionPreview") }}</button>
               <button
-                v-if="item.auditStatus === 'pending'"
+                v-if="canWrite && item.auditStatus === 'pending'"
                 class="action-button audit"
                 @click="openAudit(item)"
               >{{ t("mediaAssets.actionAudit") }}</button>

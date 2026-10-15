@@ -66,6 +66,36 @@ export interface StatsOverview {
 }
 
 /**
+ * 社区运营总览（后台首页「待办清单」数据源，2026-10-06 新增）。
+ *
+ * 对应后端 CommunityOverviewView。校区口径：除 disabledOfficialAccountCount
+ * （官方账号是平台级全局资源，official_accounts 无校区列）外，其余计数都按当前
+ * 管理员管辖校区过滤——校区管理员只见本校区。
+ */
+export interface CommunityOverview {
+  /** 待审核帖子数（posts.audit_status=pending） */
+  pendingPostCount: number;
+  /** 置顶帖子数（posts.is_pinned=true） */
+  pinnedPostCount: number;
+  /** 帖子总数（含各状态，与后台帖子列表口径一致） */
+  totalPostCount: number;
+  /** 帖子按分类分布（key 为 PostCategory 枚举名：all/interest/sincere/...） */
+  postsByCategory: Record<string, number>;
+  /** 近 7 天发帖趋势（后端已按业务时区补 0，恒为 7 项，日期升序） */
+  postsLast7Days: DailyCount[];
+  /** 用户按角色分布（key 为 users.role 原值：USER/GUEST/SUPER_ADMIN/...） */
+  userCountsByRole: Record<string, number>;
+  /** 尚未归属圈子（owner_circle_path 为空）的帖子数 */
+  unassignedCirclePostCount: number;
+  /** 已停用官方号数（平台级全局计数） */
+  disabledOfficialAccountCount: number;
+  /** 待审核媒体资产数 */
+  pendingMediaCount: number;
+  /** 待处理举报数（reports.status=PENDING） */
+  openReportCount: number;
+}
+
+/**
  * 获取用户统计。
  * GET /api/v1/admin/stats/users
  */
@@ -87,6 +117,17 @@ export function getActiveStats(): Promise<ActiveStats> {
  */
 export function getMatchStats(): Promise<MatchStats> {
   return get<MatchStats>("/v1/admin/stats/matches");
+}
+
+/**
+ * 获取社区运营总览（首页「待办清单」）。
+ * GET /api/v1/admin/stats/community-overview
+ *
+ * 后端为单次聚合请求（内部走 GROUP BY / CASE 聚合 + 5 分钟进程内缓存），
+ * 前端不要再拆成多个 count 接口逐个拉取。
+ */
+export function getCommunityOverview(): Promise<CommunityOverview> {
+  return get<CommunityOverview>("/v1/admin/stats/community-overview");
 }
 
 /**
