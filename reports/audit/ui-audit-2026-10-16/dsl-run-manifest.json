@@ -181,5 +181,26 @@
     "rerun": "DEVICELEG_RESULT=PASS pass=41 fail=0 unverified=0 band=real@f0677920；village 读数 n=20（首读 n=0 loading=true，等稳 1 发后才落上）；POST_ID=146 后台 http=200 ⇒ 设备首条卡片与后台同源这条也落了。",
     "myOwnBadInvocation": "第一次补跑我手拼 env 时没做 SUPER_PASSWORD ← ADMIN_LOGIN_PASSWORD 的映射（那映射只在 run-sweep.mjs:38），于是 7 条 FAIL 全是超管票铸不出（SUPER_PASSWORD 长度=0 ⇒ http=400）往下传的级联；且那一次把 reports/audit/round-7/exec-v38-devicleg 的结果件覆写成了缺票读数。已按 run-sweep 的映射重跑，结果件现在是带票的那一发。",
     "namedGateRunnerDebt": "run-named-gates.mjs 对 verify-device-leg 报 NAMED_GATES_RAN=0 同时 nonZero=0 —— 一条没跑却读起来像全绿，是本仓反复出现的 vacuous-green 形状。它的 DSL 路径已经指向 v38(:9)，所以问题在匹配/跳过口径（多半 requiresEnv 不满足就静默跳过且不计入 RAN）。本轮无预算追它，记为下一程欠账。"
+  },
+  "coverageRedPriced": {
+    "headline": "REALCOV_UNCOVERED=5／236；REALCOV_RESULT=FAIL。变绿要同时清三条互不相同的轴，不是把腿多跑几遍：",
+    "axes": {
+      "UNCOVERED": 5,
+      "待判决_VOIDED": 4,
+      "过期_stale": 3
+    },
+    "pool": "REALCOV_AUTOMATABLE_EXEMPT=28（判点=ops 用例声明字段 c.automatable===false 严格判等，与 r-exec-ws.mjs:611 拒跑名单同字段同条件）；其中「real 档有行但全被 SKIPPED」=13 个 key——SKIPPED 一分不抵账，这 13 个才是 5 条欠账的候选池。点名出处=cellplan-round7-taptarget.json 与 cellplan-round8-unverifiable.json（MSG24/MSG26/VI28/PUB25/VRN11/AB09/AB10/TK10/FHT05/FB13…）",
+    "correctionOfMyOwnHandoff": "我在口头交接里说过「四条 VOIDED 台账行等 coverageEffect:revalidated 写权」。实测口径不对，已核：reports/audit/round-6/issue-matrix.md 里 coverageEffect 出现 0 次、VOIDED 字样只 1 次且那是行号 MP-R3AUDIT-GATE-VOIDED-BUCKET-001（:198，判的是门禁与台账分歧本身）。REALCOV_VOIDED 点名的 4 是「门侧 key 计数」，不是 4 条台账行。roster N1（decisions#49）要写权这件事仍然成立，但收益要说准：它开的是那 4 个 key 的判决，不会直接动 UNCOVERED=5。",
+    "ledgerConservation": "REALCOV_UNCOVERED_LEDGER=OK 点名=5 欠账=5 判据外=0（逐行摊开必等于 5，且每条都在判据集里）",
+    "measuredAt": "2026-10-16 复量，HEAD=805206bf，与 sweep#2 同档（real@f0677920）",
+    "notMeasured": "没有验「把这 13 个 key 的注入前置铺出来能抵几条」——那是 N1/A5/A6 裁定之后才可算的收益，本轮不预支。"
+  },
+  "definitionTrioVerified": {
+    "at": "HEAD=805206bf 之后复量（本轮最后一次定义级验证）",
+    "dryrun": "DRYRUN_RESULT=PASS 3/3 画像跑到底并产出总报告（permissive report=37/37/38 artifact=2，末相位=提交推送与总报告）",
+    "tcheck": "TCHECK_RESULT=PASS typescript 5.3.3 实编译，TCHECK_DIAGS=0 lines=1785 FUNCTIONS_DECLARED=27 DUP_FUNCTION=0 PROMISELIKE_CATCH=0 SHAPE_MISMATCH=0 NEVER=0",
+    "tcheckNegative": "省略 --file 时 REAL_EXIT=2（不经 pipe 实测；先前我用 $? 读到的 0 是 cut 的状态，不是 node 的），机读行 TCHECK_RESULT=NOFILE，自述理由=带缺省的 --file 已两次把工作流预检指向别的版本",
+    "gateSync": "GATESYNC_RESULT=PASS 判点数=13 不一致=0（含「面板给 verify-evidence-holes 传 --out 侧车」「bash 不留旧说法」「两个载具都不许把条数写进措辞」）",
+    "myOwnTrap": "我按计划书里的名字跑了 scripts/qa/tcheck-v38.cjs ⇒ MODULE_NOT_FOUND。计划书那个名字是意图名，实际载体早已提升为 scripts/qa/tcheck-workflow.cjs（已跟踪、--file 无缺省、DSL:286 与 sh:99 双载具都在跑它），而且 DSL:49-50 的注释恰好写的就是「tmp/ 被 any-depth 忽略，clean checkout 上不存在」这条陷阱——我自己踩的正是它已防住的那一个。计划书 P4 的这一条确实已交付，我不把它算成欠款。"
   }
 }
