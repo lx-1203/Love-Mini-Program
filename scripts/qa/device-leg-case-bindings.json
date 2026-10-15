@@ -1,0 +1,4 @@
+{
+  "_note": "设备腿（scripts/verify-device-leg.mjs）判定行 ↔ ops 判据台 requiresReal 用例的可选绑定表。只有当设备腿确实按 ops 同一判点跑过时才允许在此登记，覆盖率门（scripts/qa/verify-real-coverage.mjs execRows）才会给那格记账；未登记的行落 DEVICE-LEG|DLnn，形状合规但不认领任何判据。match=判定行 label 的子串。",
+  "bindings": []
+}
