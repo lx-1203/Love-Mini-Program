@@ -9,6 +9,11 @@
    ④ 判据的 identities 口径：本通道只配登录轴；配方必须声明为什么不含游客轴
       （OT06/OC09 的游客轴是落点裁定问题，配方文件 hygiene 字段点名了它）；
    ⑤ requiresReal 用例的配方不得在 mock 载体上跑（防 mock 冒充真实模式 —— 门的那句老话）。
+   §10（配方车道 2026-10-16）钉**深链参数真实度**：配方里每个 query 键都必须在该页源码的 onLoad 里被
+      真读过 —— 拦的是「幻象参数」（OC09 曾写 code=，而 index.vue:371 只读 query?.accountId），
+      以及「凭 ROUTE_QUERY 那张页粒度表猜参数」这条老路（本轮五页一条都不在表里）。
+   §11 钉 refusals 登记：做不到的用例必须点名缺的载具与出处，且同一条不许既有配方又有登记
+      （为了出绿硬写一条跑不通的配方，比记 SKIPPED 更坏）。
    跑法：node scripts/qa/test-cap-recipes.cjs
    聚合器认：SUMMARY: assertion failures = N + CAPRECIPES_TEST=PASS|FAIL。零设备、零落盘。 */
 "use strict";
@@ -304,6 +309,126 @@ const liveProblems = matchCountProblems(RECIPES);
 const liveChainProblems = handlerChainProblems(RECIPES);
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   §10 深链参数真实度（配方车道 2026-10-16，幻象参数那一类的离线闸门）。
+   ── 为什么要这一族判点 ──
+   执行器只有两条给页喂参数的路：CLI 的页粒度表 ROUTE_QUERY（scripts/qa/r-exec-cli.mjs:1224，
+   本轮逐条数过只有 6 条，profile-extra/profile/other、official-chat、verification/real-name、
+   vip/promo-code、vip/bills、discover-extra/likes 一条都不在里面）和配方的 step.query
+   （r-exec-ws.mjs:810 现读，exec-capabilities.mjs:355 解析）。表里没有 ⇒ 裸直达 ⇒
+   「元素静息态不存在」⇒ SKIPPED 不记账；配方里写了但**页源码不读那个键** ⇒ 幻象参数，
+   看着像前置其实什么都没注入（OC09 的 code= 就是这一类，页只读 query?.accountId，
+   此前只是被 index.vue:55 的默认值恰好兜住）。所以键名不许凭表、凭笔记，只许从
+   apps/client/src/<page>.vue 的 onLoad 现查，并且最好与产品自己发的深链逐字对上一半。
+   只读源码与产物，零设备、零落盘。 */
+const CLIENT_SRC = path.join(REPO, "apps", "client", "src");
+function srcFileForPage(page) {
+  const f = path.join(CLIENT_SRC, String(page) + ".vue");
+  return fs.existsSync(f) ? f : null;
+}
+/* 页源码里有没有真读过 query 的某个键：onLoad((query)=>{ query?.k / query.k })、
+   解构形 const { k } = query、以及 options 别名（uni-app 各页写法不一）都算读了。 */
+function pageReadsQueryKey(page, key) {
+  const file = srcFileForPage(page);
+  if (!file) return { ok: false, why: "找不到页源码 " + page + ".vue" };
+  const src = fs.readFileSync(file, "utf8");
+  const pats = [
+    new RegExp("\\bquery\\??\\s*\\.\\s*" + key + "\\b"),
+    new RegExp("\\boptions\\??\\s*\\.\\s*" + key + "\\b"),
+    new RegExp("const\\s*\\{[^}]*\\b" + key + "\\b[^}]*\\}\\s*=\\s*(query|options)"),
+    new RegExp("\\bquery\\s*\\[\\s*[\"']" + key + "[\"']\\s*\\]"),
+  ];
+  const hit = pats.findIndex((re) => re.test(src));
+  return hit >= 0
+    ? { ok: true, file: path.relative(REPO, file), line: src.slice(0, pats[hit].exec(src).index).split("\n").length }
+    : { ok: false, why: "页源码里没有任何一处读 query 的 " + key + "（幻象参数）", file: path.relative(REPO, file) };
+}
+/* 一条配方的全部深链参数（顶层 query 是文档位，真正被消费的是 step.query ——
+   r-exec-ws.mjs:810 只读 step.query；两处都查，写错的键名一个都不放过）。 */
+function recipeQueryPairs(r) {
+  const out = [];
+  const push = (str, where) => String(str || "").split("&").forEach((kv) => {
+    const m = /^([^=]+)=(.*)$/.exec(kv.trim());
+    if (m) out.push({ key: m[1], value: m[2], where });
+  });
+  push(r.query, "顶层 query");
+  (r.steps || []).forEach((s, i) => { if (s && s.query) push(s.query, "step#" + (i + 1) + " query"); });
+  return out;
+}
+function queryParamProblems(recipes) {
+  const problems = [];
+  for (const [key, r] of Object.entries(recipes.recipes || {})) {
+    for (const p of recipeQueryPairs(r)) {
+      const res = pageReadsQueryKey(r.page, p.key);
+      if (!res.ok) problems.push(key + " " + p.where + " 的参数 " + p.key + "=" + p.value + " 在 " + (res.file || r.page) + " 里没人读：" + res.why);
+    }
+  }
+  return problems;
+}
+/* 产品自己的深链字符串（同页若有 openAppPath(...?k=v) 在册，配方的键名与它逐字一致才算对齐）。 */
+function productDeepLinkHas(page, query) {
+  const hits = [];
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const fp = path.join(dir, e.name);
+      if (e.isDirectory()) { if (e.name !== "node_modules" && e.name !== "dist") walk(fp); continue; }
+      if (!/\.(vue|ts)$/.test(e.name)) continue;
+      const src = fs.readFileSync(fp, "utf8");
+      const relBase = path.posix.relative(CLIENT_SRC, fp.split("\\").join("/")).replace(/\.vue$|\.ts$/, "");
+      const routeTail = String(page).split("/").slice(1).join("/");
+      const re = new RegExp("[?]" + query.split("&")[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b");
+      if (re.test(src) && (src.includes("/" + page) || src.includes(routeTail) || src.includes(relBase.split("/").pop()))) {
+        hits.push(path.relative(REPO, fp));
+      }
+    }
+  };
+  walk(CLIENT_SRC);
+  return hits;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   §11 refusals 登记（写不出来 / 不该由配方判 的账）。
+   配方文件里的 refusals 段不是配方：它逐条写着「缺哪一件载具」，用来拦两件事——
+   ① 不许有人为了出绿给一条做不到的用例补一条跑不通的配方（同键同时在 recipes 与 refusals ⇒ 红）；
+   ② 登记必须点名缺件与出处（空话式「做不到」不算登记）。
+   verdict 只许两种形状：「写不出来」（缺载具，missingCarrier 必须点名牌子）/「需拍板」（不是仪器问题）。
+   ══════════════════════════════════════════════════════════════════════════════ */
+function refusalProblems(recipes) {
+  const problems = [];
+  const reg = recipes.refusals || {};
+  for (const [key, e] of Object.entries(reg)) {
+    if (key[0] === "_") continue;
+    if (!gateKeySet().has(key)) problems.push("refusals." + key + " 不在判据台里（键拼错 ⇒ 登记的是一条不存在的账）");
+    for (const f of ["preCondition", "whyNotInjectable", "missingCarrier", "verdict", "evidence"]) {
+      if (!String((e && e[f]) || "").trim()) problems.push("refusals." + key + " 缺 " + f + " 字段（登记必须点名前置/原因/缺件/裁定/出处）");
+    }
+    const v = String((e && e.verdict) || "");
+    if (!/(写不出来|需拍板)/.test(v)) problems.push("refusals." + key + " 的 verdict 不是两种形状之一：" + v);
+    /* 缺件必须点名牌子：一句「做不到」不叫登记 —— 要能顺着这串字找到那件该造的东西在哪、为什么不算已有。 */
+    const mc = String((e && e.missingCarrier) || "");
+    if (mc.replace(/\s/g, "").length < 40 || !/(\.ts|\.vue|\.mjs|\.cjs|\.json|:\d{2,})/.test(mc)) {
+      problems.push("refusals." + key + " 的 missingCarrier 没点名牌子（要长过一句空话，且带得出处的文件名/行号）：" + mc.slice(0, 60));
+    }
+    if ((recipes.recipes || {})[key]) problems.push("refusals." + key + " 同时也有配方 ⇒ 要么销账并附新载具出处，要么撤配方，不许两头挂");
+  }
+  return problems;
+}
+/* 判据台全集（manifest|id）：与下面 main() 里的 gateCorpus 同源同拼法，只多算一次、不共享状态。 */
+let _gateKeyCache = null;
+function gateKeySet() {
+  if (_gateKeyCache) return _gateKeyCache;
+  _gateKeyCache = new Set();
+  for (const f of fs.readdirSync(OPS).filter((x) => x.endsWith(".json"))) {
+    try {
+      const j = JSON.parse(fs.readFileSync(path.join(OPS, f), "utf8"));
+      for (const c of (j.cases || [])) _gateKeyCache.add(f.replace(/\.json$/, "") + "|" + c.id);
+    } catch { /* 解析失败的判据文件由别的门管 */ }
+  }
+  return _gateKeyCache;
+}
+const liveRefusalProblems = refusalProblems(RECIPES);
+const liveQueryProblems = queryParamProblems(RECIPES);
+
 const corpus = new Map();
 for (const f of fs.readdirSync(OPS).filter((x) => x.endsWith(".json"))) {
   try {
@@ -356,9 +481,12 @@ async function main() {
       const allowed = { "次要20|OT05": ["10001"], "次要20|OT06": ["100155", "10003"], "次要20|OT09": ["10001"] };
       t("配方 " + key + " 深链 userId=" + uid + " 在 r14 实测点名的目标表内", (allowed[key] || []).includes(uid), "allowed=" + (allowed[key] || []).join("/"));
     }
-    /* OC09 的 code 参数：必须是 recon 实测在册的 official-assistant。 */
+    /* OC09 的深链参数：值必须是 recon 在册的 official-assistant，键必须是页源码真读过的 accountId
+       （2026-10-16 配方车道：旧断言钉的是 code=official-assistant 这个**幻象参数**——
+       index.vue:367-373 的 onLoad 只读 query?.accountId，全文不读 query.code；
+       它此前只是被 index.vue:55 的默认值恰好兜住才没露相。键名真实性现在由 §10 逐例离线判红。） */
     if (key === "次要21|OC09") {
-      t("配方 OC09 的 code=official-assistant（recon GET /official-accounts 在册行）", /code=official-assistant/.test(q), q);
+      t("配方 OC09 的 accountId=official-assistant（值在册 + 键名与页源码一致，幻象参数 code= 已废）", /accountId=official-assistant/.test(q) && !/\bcode=official-assistant/.test(q), q);
     }
     /* VB03 的步骤形状：必须覆盖 (a) 首进 (b) 二次进入 (c) 下拉 三段（多步 nav 的判据 (a)(b)(c)）。
        R3-NET-04/R3-08 改判（2026-10-13 工具车道）：旧断言要求「逐段 drainNet 计数」（≥3 次），
@@ -795,6 +923,81 @@ async function main() {
       delete tap.expectMatches;
       const s8 = matchCountProblems(mut), s9 = handlerChainProblems(mut);
       return s8.length >= 1 && /命中 2 枚/.test(s8.join("")) && s9.length === liveChainProblems.length;
+    })());
+
+  /* ══════════════════════════════════════════════════════════════════════════════
+     §10 深链参数真实度（2026-10-16 配方车道）——拦的是「参数写了但页不读」这一类幻象前置。
+     ══════════════════════════════════════════════════════════════════════════════ */
+  const qKeysAll = [];
+  for (const [k, r] of Object.entries(RECIPES.recipes || {})) for (const p of recipeQueryPairs(r)) qKeysAll.push(k + " " + p.key + "=" + p.value);
+  t("§10 活配方全体深链参数键都被该页源码的 onLoad 读过（" + path.relative(REPO, RECIPES_FILE) + "；键名从 apps/client/src/<page>.vue 现查，不抄表不抄笔记）",
+    liveQueryProblems.length === 0, liveQueryProblems.join(" ｜ ").slice(0, 300) || ("检查过的参数=" + qKeysAll.join(", ")));
+  t("§10 判点有牙：把 OC09 的键名改回本轮真修掉的幻象形 code=official-assistant ⇒ 页源码没人读 code，当场判红",
+    (function () {
+      const mut = deepClone(RECIPES);
+      const st = mut.recipes["次要21|OC09"].steps.find((s) => s && s.do === "open");
+      if (!st) return false;
+      st.query = "code=official-assistant";
+      mut.recipes["次要21|OC09"].query = "code=official-assistant";
+      const after = queryParamProblems(mut);
+      return after.length === liveQueryProblems.length + 2 && /code=official-assistant/.test(after.join(""));
+    })());
+  /* OT05/OT06/OT09 的前置形状定谳：CTA 那一支挂在 targetUserId 上，而 targetUserId 只由 query.userId 填。
+     这就是「静息态不存在」不是「死选择器」的静态证据（配上 §8 的产物命中数一起读）。 */
+  const otherSrc = fs.readFileSync(path.join(CLIENT_SRC, "subpackages/profile-extra/profile/other.vue"), "utf8");
+  const readsUserId = pageReadsQueryKey("subpackages/profile-extra/profile/other", "userId");
+  t("§10 other.vue 确实读 query.userId 并把它当渲染门（v-if=\"targetUserId\" 在册 ⇒ 缺参=静息态没有 CTA，不是产品没做）",
+    readsUserId.ok === true && /v-if="targetUserId"/.test(otherSrc) && /targetUserId\.value\s*=\s*qUserId/.test(otherSrc),
+    readsUserId.ok ? ("读键处=" + readsUserId.file + ":" + readsUserId.line) : readsUserId.why);
+  t("§10 official-chat 的键名与产品自己发的深链逐字对齐（openAppPath(...?accountId=official-assistant) 在 src 里有同名串）",
+    (function () {
+      const hits = productDeepLinkHas("subpackages/chat/official-chat/index", "accountId=official-assistant");
+      return hits.length >= 1 && pageReadsQueryKey("subpackages/chat/official-chat/index", "accountId").ok === true;
+    })(), "产品同款深链文件数=" + productDeepLinkHas("subpackages/chat/official-chat/index", "accountId=official-assistant").length);
+  t("§10 键名不许凭表：ROUTE_QUERY 的**键表**里没有这五页（页粒度表帮不上忙；它在表体注释里提到 other 页，说的正是「这页要的是逐条目 precondition.query，不是 ROUTE_QUERY」）",
+    (function () {
+      const s = fs.readFileSync(path.join(REPO, "scripts", "qa", "r-exec-cli.mjs"), "utf8");
+      const i = s.indexOf("const ROUTE_QUERY"), j = s.indexOf("\n};", i);
+      if (i < 0 || j < 0) return false;
+      const body = s.slice(i, j);
+      /* 只取**键位**（紧跟冒号的引号串），注释里被点名讨论过的页不算表里有条目。 */
+      const keys = [...body.matchAll(/"((?:subpackages|pages)\/[^"]+)"\s*:/g)].map((m) => m[1]);
+      const pages = ["subpackages/profile-extra/profile/other", "subpackages/chat/official-chat/index", "subpackages/profile-extra/verification/real-name", "subpackages/vip/promo-code", "subpackages/vip/bills"];
+      return keys.length > 0 && keys.length <= 8 && pages.every((p) => !keys.includes(p));
+    })(), "ROUTE_QUERY 键数=" + (function () {
+      const s = fs.readFileSync(path.join(REPO, "scripts", "qa", "r-exec-cli.mjs"), "utf8");
+      const i = s.indexOf("const ROUTE_QUERY"), j = s.indexOf("\n};", i);
+      return [...s.slice(i, j).matchAll(/"((?:subpackages|pages)\/[^"]+)"\s*:/g)].length;
+    })());
+
+  /* ══════════════════════════════════════════════════════════════════════════════
+     §11 refusals 登记：做不到的账必须点名缺件，且不许与配方两头挂。
+     ══════════════════════════════════════════════════════════════════════════════ */
+  t("§11 活登记每条都点齐 前置/原因/缺件/裁定/出处 五字段，且 verdict 只有「写不出来」或「需拍板」两种形状",
+    liveRefusalProblems.length === 0, liveRefusalProblems.join(" ｜ ").slice(0, 300));
+  t("§11 exec-v38 那四条写不出来的用例都在册（VRN07 / PC06 / VB10 / LK04 的 guest 轴），一条都没被悄悄读成判决",
+    ["次要20|VRN07", "次要22|PC06", "次要22|VB10", "次要19|LK04"].every((k) => !!(RECIPES.refusals || {})[k]),
+    Object.keys(RECIPES.refusals || {}).filter((k) => k[0] !== "_").join(", "));
+  t("§11 三条「需拍板」的裁定文本各自点名了要拍的是什么（档位重编译 / 摘轴落点裁定 / 后台开关授权），不是笼统一句「做不到」",
+    ["次要22|PC06", "次要22|VB10", "次要19|LK04"].every((k) => /需拍板/.test(String(RECIPES.refusals[k].verdict))) &&
+    /重编译|档位/.test(RECIPES.refusals["次要22|PC06"].missingCarrier) &&
+    /摘轴|落点裁定/.test(RECIPES.refusals["次要19|LK04"].missingCarrier), "");
+  t("§11 判点有牙 A：给已登记的 VRN07 补一条假配方（为了出绿硬写）⇒ 同键两头挂，判红",
+    (function () {
+      const mut = deepClone(RECIPES);
+      mut.recipes["次要20|VRN07"] = { page: "subpackages/profile-extra/verification/real-name", steps: [{ do: "open", page: "subpackages/profile-extra/verification/real-name" }] };
+      const after = refusalProblems(mut);
+      return after.length === liveRefusalProblems.length + 1 && /两头挂/.test(after.join(""));
+    })());
+  t("§11 判点有牙 B：missingCarrier 抽成一句空话 / verdict 改成「可注入」/ 键拼错 ⇒ 三种形状各自判红且只多一条",
+    (function () {
+      const m1 = deepClone(RECIPES); m1.refusals["次要22|PC06"].missingCarrier = "做不到";
+      const m2 = deepClone(RECIPES); m2.refusals["次要22|PC06"].verdict = "可注入（配方已写）";
+      const m3 = deepClone(RECIPES); m3.refusals["次要20|VRN99"] = deepClone(RECIPES.refusals["次要20|VRN07"]); delete m3.refusals["次要20|VRN07"];
+      const a = refusalProblems(m1), b = refusalProblems(m2), c = refusalProblems(m3);
+      return a.length === liveRefusalProblems.length + 1 && /没点名牌子/.test(a.join("")) &&
+        b.length === liveRefusalProblems.length + 1 && /不是两种形状之一/.test(b.join("")) &&
+        c.length === liveRefusalProblems.length + 1 && /不在判据台里/.test(c.join(""));
     })());
 
   console.log("SUMMARY: assertion failures = " + fails);
