@@ -1657,7 +1657,21 @@ log(`提交后 HEAD=${finalHead}（起点 ${head}）；sha 敏感门复量 ${pos
  * 上面那发 persistJson 已经把带 headAfter / redsAfterCommit / panelNotMeasured 的终账写进
  * .zcode/tmp/final-verify/summary.json，这一发起读它并回填报告，所以 §7 与终账必然同源。
  */
-const reportGen = await runGate({ name: "总报告回填 gen-round8-report", args: ["scripts/qa/gen-round8-report.mjs", "--ledger", WORKFLOW.closureDir + "/decisions-v38.md", "--out", WORKFLOW.closureDir + "/round-final-report-v38.md", "--round", "v3.8", "--date", "2026-10-16", "--baseline", head, "--summary", ".zcode/tmp/final-verify/summary.json"], timeoutMs: 180000 });
+/**
+ * 【本轮账单生产者：排在总报告回填之前】成因实测：gen-round8-report.mjs 的 §1 读 --gapbill(:68)、
+ * §4 读 --openrows(:71)，不给就老实印「未跑」；而 `grep -rn gapbill scripts/` 只命中消费方自己
+ * ⇒ 本轮（v3.8）没有任何生产者，这两节永远填不上；盘上只有上一程 v3.3（2026-09）的
+ * reports/audit/round-7/{gapbill-v33,openrows-blockers-v33}.json —— 把那份指进来比印「未跑」更坏
+ * （拿九月的旧账当本轮现状）。emit-round-bill.mjs 一律现跑三门取 stdout 机器行派生（一个数都不手填，
+ * 落盘后自带出处回收），故位置必须在提交后读数落盘之后、报告回填之前——与 E3 同一条次序判据。
+ * 退出码 2 = 有一个源读不到 ⇒ 它自己不写盘；这里把它记成 blocker，§1/§4 继续停在「未跑」。
+ */
+const roundBill = await runGate({ name: "本轮账单 emit-round-bill", args: ["scripts/qa/emit-round-bill.mjs", "--closure", WORKFLOW.closureDir, "--tag", "v38", "--ledger", WORKFLOW.closureDir + "/decisions-v38.md", "--dir", WORKFLOW.execDir, "--ops", WORKFLOW.opsDir], timeoutMs: 420000 });
+gateToBoard(roundBill);
+log(`账单生产者 emit-round-bill exit=${roundBill.exitCode}（${roundBill.resultLine.slice(0, 170)}）`);
+if (roundBill.exitCode !== 0) blockers.push(`本轮缺口账单/未结行归置未生产成（exit=${roundBill.exitCode}）⇒ 终报 §1/§4 停在未跑；禁止把 round-7 那两份 v3.3 历史件当本轮输入指进来`);
+
+const reportGen = await runGate({ name: "总报告回填 gen-round8-report", args: ["scripts/qa/gen-round8-report.mjs", "--ledger", WORKFLOW.closureDir + "/decisions-v38.md", "--out", WORKFLOW.closureDir + "/round-final-report-v38.md", "--round", "v3.8", "--date", "2026-10-16", "--baseline", head, "--summary", ".zcode/tmp/final-verify/summary.json", "--gapbill", WORKFLOW.closureDir + "/gapbill-v38.json", "--openrows", WORKFLOW.closureDir + "/openrows-blockers-v38.json"], timeoutMs: 180000 });
 gateToBoard(reportGen);
 log(`报告生成器 gen-round8-report exit=${reportGen.exitCode}（${reportGen.resultLine.slice(0, 120)}）—— §7 只认这份读数，禁止手填数字`);
 if (reportGen.exitCode !== 0) blockers.push(`总报告回填未跑成（exit=${reportGen.exitCode}）⇒ §7 停在未跑，禁止手填数字代替读数`);

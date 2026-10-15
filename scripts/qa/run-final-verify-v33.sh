@@ -164,6 +164,15 @@ echo "GREEN/RED 计数：红=$FAIL  HEAD 前=$HEAD_BEFORE 后=$HEAD_AFTER（相�
 #（DSL :1048 一直在跑它，两载具就此不一致；现由 verify-gate-list-sync 的差集判据盯着）。
 # 位置必须在 summary.json 落盘之后：gen-round8-report 的 §7 读的就是这份文件，早一步就是拿旧读数回填。
 # 超时 180 秒 = 与 DSL 的 timeoutMs:180000 齐平；本步只读盘与写报告，不起进程、不取租约。
-g gen-round8-report      180 scripts/qa/gen-round8-report.mjs --ledger reports/audit/ui-audit-2026-10-16/decisions-v38.md --out reports/audit/ui-audit-2026-10-16/round-final-report-v38.md --round v3.8 --date 2026-10-16 --baseline "$HEAD_BEFORE" --summary "$OUT/summary.json"
+# 本轮账单生产者（§1/§4 的输入件）：必须排在 g gen-round8-report 之前，且与 DSL 载具同一条次序判据。
+# 成因实测：gen-round8-report.mjs 的 §1 读 --gapbill(:68)、§4 读 --openrows(:71)，不给就老实印「未跑」；
+# 而 `grep -rn gapbill scripts/` 只命中消费方自己 ⇒ 本轮没有任何生产者，两节永远填不上。盘上只有上一程
+# v3.3（2026-09）的 reports/audit/round-7/{gapbill-v33,openrows-blockers-v33}.json，把那份指进来比印
+# 「未跑」更坏（拿九月的旧账当本轮现状）。账单里一个数都不手填：三门现跑的 stdout 机器行 + 真值源
+# real-coverage-disposition.json + 裁定册的 PENDING_RULINGS 具名名册，落盘后自带出处回收。
+# exit=2 = 某个源读不到 ⇒ 它自己不写盘，§1/§4 继续停在「未跑」（.exit 会记下这一发是红的）。
+# 超时 420 秒：它现跑覆盖门两次（自己一次 + 去向册门内部再 spawn 一次，单发实测约 60–90 s）。
+g emit-round-bill        420 scripts/qa/emit-round-bill.mjs --closure reports/audit/ui-audit-2026-10-16 --tag v38 --ledger reports/audit/ui-audit-2026-10-16/decisions-v38.md --dir reports/audit/round-7 --ops reports/audit/round-6/ops
+g gen-round8-report      180 scripts/qa/gen-round8-report.mjs --ledger reports/audit/ui-audit-2026-10-16/decisions-v38.md --out reports/audit/ui-audit-2026-10-16/round-final-report-v38.md --round v3.8 --date 2026-10-16 --baseline "$HEAD_BEFORE" --summary "$OUT/summary.json" --gapbill reports/audit/ui-audit-2026-10-16/gapbill-v38.json --openrows reports/audit/ui-audit-2026-10-16/openrows-blockers-v38.json
 echo "汇总已写 $OUT/summary.json；总报告回填的读数与落点见 $OUT/gen-round8-report.log"
 echo "FINAL_VERIFY_DONE reds=$FAIL（注：红数只统计上面那一轮汇总，总报告回填排在其后，单独看它的 .exit）"
