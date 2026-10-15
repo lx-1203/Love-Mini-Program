@@ -49,6 +49,7 @@ import { guardUiLease } from "./qa/ui-lease.mjs";
 import { readApiMode } from "./qa/artifact-band.mjs";
 import {
   createTally, buildRows, buildExecFile, resultLine, exitCodeOf, looksInstrumentFault,
+  scrubEvidence,
 } from "./qa/device-leg-tally.mjs";
 
 const REPO = resolve(import.meta.dirname, "..");
@@ -72,18 +73,22 @@ const ORIGIN = "http://127.0.0.1:8080";
 const API = `${ORIGIN}/api/v1`;
 const EXPECT_SYNC = BAND === "real";
 
+/** 脱敏实现住在 device-leg-tally.mjs（与三档计数器同一处），
+ *  这样 scripts/qa/test-device-leg-tally.mjs 测的就是载具真正用的那套正则。 */
+const scrub = scrubEvidence;
+
 const lines = [];
 /** 三档账本：check=产品判点（PASS/FAIL 行格式逐字节不变，外部工具在 grep 它们）；
  *  uncheck=仪表/环境故障（UNVERIFIED-INSTRUMENT，永不进 failures）；
  *  checkI=二选一——fault 条件为真且没判绿 ⇒ 仪表档。计数器本体在 device-leg-tally.mjs（纯、可离线测）。 */
-const tally = createTally({ emit: (s) => { console.log(s); lines.push(s); } });
+const tally = createTally({ emit: (s) => { const t = scrub(s); console.log(t); lines.push(t); } });
 let finished = false;
 let CURRENT_PAGE = "";
 let LOGIN_VERIFY = "";   // verifyLogin 的实测串（行的会话证据，覆盖率门要读）
 let TOKEN_MINTED = false; // 真票确实是从 /auth/phone-login 铸的 ⇒ sessionSource
-const check = (label, ok, detail) => tally.check(label, ok, detail, CURRENT_PAGE);
-const checkI = (label, ok, detail, fault) => tally.checkFault(label, ok, detail, !!fault, CURRENT_PAGE);
-const uncheck = (label, detail) => tally.uncheck(label, detail, CURRENT_PAGE);
+const check = (label, ok, detail) => tally.check(scrub(label), ok, scrub(detail), CURRENT_PAGE);
+const checkI = (label, ok, detail, fault) => tally.checkFault(scrub(label), ok, scrub(detail), !!fault, CURRENT_PAGE);
+const uncheck = (label, detail) => tally.uncheck(scrub(label), scrub(detail), CURRENT_PAGE);
 /* 覆盖率门的 band 键 = mode@sha8（sha8 是在盘产物 config/env.js 内容的 sha256 前 8 位，
    与门侧"当前尺"、r-exec-cli/r-exec-ws 生产者同一把尺；import 处注释有全链路）。
    取不到就留空串并记一条 UNVERIFIED-INSTRUMENT：门读空 band 会大声数成 REALCOV_BANDLESS_*
@@ -91,7 +96,7 @@ const uncheck = (label, detail) => tally.uncheck(label, detail, CURRENT_PAGE);
    而读 real@unknown / real@<提交号> 只会静默失配 —— 绝不许为了"看起来盖了戳"编一枚。 */
 let BAND_STAMP = "";
 let BAND_STAMP_INFO = null;
-const note = (s) => { console.log(s); lines.push(s); };
+const note = (s) => { const t = scrub(s); console.log(t); lines.push(t); };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const abs = (...p) => join(REPO, ...p);
 /** 后端对写端点强制 Idempotency-Key（缺了直接 422「缺少 Idempotency-Key 请求头」），
@@ -209,7 +214,7 @@ const instFault = (s) => looksInstrumentFault(s);
  *  后续依赖该读数的判点必须跳过（拿 null 读数继续判 = 把仪表故障写成产品红）。 */
 function safeAct(label, fn) {
   try { return fn(); }
-  catch (e) { tally.uncheck(label, "通道/选择器未解析：" + String((e && e.message) || e).slice(0, 160), CURRENT_PAGE); return null; }
+  catch (e) { tally.uncheck(scrub(label), scrub("通道/选择器未解析：" + String((e && e.message) || e)).slice(0, 160), CURRENT_PAGE); return null; }
 }
 /** 可选绑定表（scripts/qa/device-leg-case-bindings.json）：只有设备腿确实按 ops 同一判点
  *  跑过的条目才允许对 manifest|id 记账；默认不存在 ⇒ 全部行落 DEVICE-LEG|DLnn
@@ -318,7 +323,7 @@ guardUiLease({ owner: "verify-device-leg-" + BAND, tag: "LEASE", failTag: "LEASE
 let ch = "";
 try { ch = String(evaluate("() => String(1+1)", OPTS)); } catch (e) { ch = "THROW " + e.message; }
 // 通道判点失败**按定义**就是仪表故障（evaluate 没答案 ≠ 产品有问题）⇒ 永远记 unverified，出口码 2
-tally.checkFault("自动化通道可用（evaluate 有答案）", ch === "2", ch, true);
+tally.checkFault(scrub("自动化通道可用（evaluate 有答案）"), ch === "2", scrub(ch), true);
 if (ch !== "2") {
   note("   [仪表故障] 自动化通道不可驱动 ⇒ 整腿未执行，记 UNVERIFIED-INSTRUMENT，不记产品 FAIL");
   finishLeg();
@@ -394,13 +399,34 @@ for (const t of TOUR) {
   await sleep(2600);
   let r = "";
   try { r = String(routeStack(OPTS)); } catch (e) { r = "THROW " + String((e && e.message) || e); }
+  /** 落点要"等稳"再判：登录成功后的默认落地是 discover（pages/login/index.vue:175
+   *  replaceAppPath(pending ?? "/pages/discover/index")，另有 :89/:120 与
+   *  guards/session-guard.ts:93 三处 switchTab/reLaunch 指向同一处），
+   *  所以开页后读一次就定罪，量到的很可能是**上一次**的落点而不是这一页的落点。
+   *  实测第一版本腿就因此把 01-home 记成 FAIL（routeStack=pages/discover/index），
+   *  而后续 4 个页面全 PASS——单点首读红 + 后面全绿，这个形状本身就是竞态的特征。
+   *  现在：最多再等 4 轮（每轮 ~1.5 s）直到路由真落上去；首读与稳态都写进判决行，
+   *  这样"竞态被等掉了"与"这页真的到不了"在账上是两种读法。 */
+  const want = t.route.replace(/^\//, "");
+  const firstRead = r;
+  let settled = r.includes(want);
+  for (let k = 0; k < 4 && !settled && !/^THROW/.test(r); k++) {
+    await sleep(1500);
+    let again = "";
+    try { again = String(routeStack(OPTS)); } catch { break; }
+    if (again === r) break;
+    r = again;
+    settled = r.includes(want);
+  }
+  const routeDetail = `routeStack=${String(r).slice(0, 90)}` +
+    (settled && !firstRead.includes(want) ? `（首读=${String(firstRead).slice(0, 60)}，等稳后才落上 ⇒ 首读不可信这条又中一次）` : "");
   const fr = shotAt(t.name + ".png");
   frames.push({ ...t, route: r, bytes: fr.bytes, geom: fr.geom, err: fr.err });
   // 开页抛异常 / routeStack 读不出 = 通道不可驱动（仪表档），不能记成"路由落错"（产品档）
   if (openErr || /^THROW/.test(r)) {
     uncheck(`${t.name} 路由落在 ${t.route}`, `开页/读栈失败：openErr=${openErr.slice(0, 120)} routeStack=${String(r).slice(0, 90)}`);
   } else {
-    check(`${t.name} 路由落在 ${t.route}`, r.includes(t.route.replace(/^\//, "")), `routeStack=${String(r).slice(0, 90)}`);
+    check(`${t.name} 路由落在 ${t.route}`, settled, routeDetail);
   }
   // 截图通道没回文件 = 仪表故障；通道正常但帧是空/小的才是产品判红
   if (fr.err) uncheck(`${t.name} 出帧已写出且非空帧（>=6KB）`, `出帧通道未回文件：${fr.err.slice(0, 120)}`);

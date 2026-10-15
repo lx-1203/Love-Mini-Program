@@ -89,6 +89,20 @@ export function resultLine(counts, dirRel, band) {
 /** 可选绑定表：把"设备腿确实按同一判点跑过"的条目对上 ops 判据台的 requiresReal 用例
  *  （门只给 manifest|id 命中判据集的行记账，见 verify-real-coverage.mjs:230-231 的 ids.has(key)）。
  *  默认文件不存在/为空 ⇒ 全部行落 DEVICE-LEG|DLnn（形状合规、门读得动，但门不会替不存在的判据认领覆盖）。 */
+/** 采集侧脱敏：证据件的判决行里会贴后端应答体，而登录/铸票应答里就是真票。
+ *  只替值、不动前缀与格式（外部工具 grep 的是 PASS··/FAIL·· 与「失败 N 项」）。
+ *  放在这个模块里而不是载具文件里，是为了让离线测试测的是**这套正则本身**，
+ *  不是某人重抄的一份。 */
+const SCRUB_TOKENISH = /"(?:token|accessToken|refresh_token|password|passwordHash|ADMIN_INITIAL_PASSWORD_HASH)"\s*:\s*"[^"]{8,}"/g;
+const SCRUB_JWT = /eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+/g;
+const SCRUB_BCRYPT = /\$2[aby]\$\d{2}\$[./A-Za-z0-9]{50,}/g;
+export function scrubEvidence(s) {
+  return String(s == null ? "" : s)
+    .replace(SCRUB_TOKENISH, (m) => m.replace(/"[^"]{8,}"$/, '"****(len=masked)"'))
+    .replace(SCRUB_JWT, (m) => m.slice(0, 6) + `****(len=${m.length})`)
+    .replace(SCRUB_BCRYPT, (m) => m.slice(0, 7) + `…(len=${m.length})`);
+}
+
 export function bindKey(label, bindings) {
   for (const b of bindings || []) {
     // 只有显式 bound:true 才算绑定。实测过一个隐性形状：条目同时写 bound:false 与
