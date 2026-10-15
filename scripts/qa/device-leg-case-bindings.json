@@ -1,4 +1,345 @@
 {
   "_note": "设备腿（scripts/verify-device-leg.mjs）判定行 ↔ ops 判据台 requiresReal 用例的可选绑定表。只有当设备腿确实按 ops 同一判点跑过时才允许在此登记，覆盖率门（scripts/qa/verify-real-coverage.mjs execRows）才会给那格记账；未登记的行落 DEVICE-LEG|DLnn，形状合规但不认领任何判据。match=判定行 label 的子串。",
-  "bindings": []
+  "_shapeWarning": "危险形状：device-leg-tally.mjs:92-97 的 bindKey() 只看 b.match && b.manifest && b.id，**从不读 b.bound**。所以 bound:false 的条目绝不能带 manifest/id 两个字段（本文件一律用 step/dl/reason，不用 manifest/id）。覆盖率门对判据集外的 key 只做 `if (!ids.has(r.key)) continue;`（verify-real-coverage.mjs judge()），既不点名也不判红——绑定表写错不会响，只能靠人逐行守。",
+  "_decision_2026_10_16_laneDLBind": {
+    "verdict": "设备腿今天不能消任何 real-mode 欠账：可辩护绑定 = 0 条。",
+    "gateBefore": "免检28 / 覆盖196 / 欠账5 / 待判4 / 过期3 = 236（CONSERVATION OK，--dir reports/audit/round-7 --ops reports/audit/round-6/ops --ledger reports/audit/ui-audit-2026-10-09/tour-ledger.json）",
+    "gateAfterThisFile": "对 reports/audit/round-7 真目录：本文件写入前后门输出逐字节相同（diff 为空），仍是 免检28/覆盖196/欠账5/待判4/过期3——因为本腿的 exec-v38-devicleg 台账在 round-7 下尚不存在（emitter 2026-10-16 才落地、腿未重跑）。用本文件把 41 行重建进 round-7 只读副本后：EXEC_ROWS 16718→16759、门会看的行仍 3635、认领 0 格 ⇒ 本文件里 41 条 bound:false 条目对门完全惰性（可复现：.zcode/tmp/lane-dlbind/gate-overlay-with-realbindingsfile.txt）。",
+    "proofOverlay": ".zcode/tmp/lane-dlbind/gate-overlay-unbound.txt：把 41 行按本文件重建进 round-7 覆盖副本后 EXEC_ROWS 16718→16759、门会看的行仍 3635 ⇒ 认领 0 格。",
+    "negativeControl": "三条反证（跑在 .zcode/tmp/lane-dlbind/round-7-overlay 这份 round-7 只读副本上，探针文件在 probes/）：① b-phantom.json 把公告那步指到判据集外的 次要22|PC99 ⇒ 五桶一动不动，且门全程不点名（只 continue）；② b-pc06.json 指到真实、只差登录轴的 次要22|PC06 ⇒ 覆盖 196→197、过期 3→2，证明机器是好的，缺的只是判据匹配；③ b-vi25.json 把村口 store 那步指到本腿确实进过的页上的真实 key SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25 ⇒ 五桶仍不动，因为它在待判桶、执行行无权放回。另：b-falsepositive.json 证明 bindKey() 无视 bound:false——带 manifest/id 的 bound:false 条目照样记账，所以本文件的 41 条一律不带 manifest/id。",
+    "whyNothingMatches": "先算可达集：五桶共 12 格，其中一条 identity=A 的 real 行**在机械上**有可能推动的只有 5 格（欠账 次要20|OT05/OT09/VRN07 与 过期 次要22|PC06/VB10——这 5 条都只要求登录轴）；次要20|OT06、次要21|OC09、次要19|LK04 未标 identities ⇒ 登录+游客双轴都要，而本腿整份账 identity 恒为 \"A\"（verify-device-leg.mjs:234 legMeta），永远只能推动半边；PFI25/VI25/VI34/VB03 在待判桶，只有台账行声明 coverageEffect:\"revalidated\" 才放得回，执行行无权放回（探针③实测为 0 变化）。再算判据集：那 5 格的 page 分别是 subpackages/profile-extra/profile/other（×2）、subpackages/profile-extra/verification/real-name、subpackages/vip/promo-code、subpackages/vip/bills——本腿 8 个落点（home/nearby/discover/messages/profile/village-index/official-chat/village-publish）一个都不在里面，且它们的 expected 全是页面渲染分支+请求计数+服务端回读的合取。⇒ 可辩护绑定 0 条。",
+    "recommendedRole": "把设备腿当**闭合专用载具（closure-only carrier）**：它证的是 前端↔后端↔后台 的同步脊柱（同 ID 写出+读回+撤回+自证伪），应作为 final verification 里一条独立具名证据（DEVICELEG_RESULT / verdict.txt / POST_ID），不进覆盖率门的分子。",
+    "whatWouldChangeThis": "只有当某条 ops 判据自己的 expected 被本腿逐字判过时才新增绑定——例如 official-chat 增一条「后台发布→设备侧渲染」判据、或本腿真进了 vip/promo-code 与 vip/bills 并按其 expected 的合取逐连词采证。届时必须同时满足三条：identity 命中 axesOf(c.identities)、loginVerify×sessionSource 经 sessionVerdict 判 proven、band=real@<当前 config/env.js sha8>。"
+  },
+  "_closestRejectedCandidates": [
+    {
+      "opsKey": "次要22|PC06",
+      "legStep": "（无——本腿不进 subpackages/vip/promo-code）",
+      "fails": "页面未进；判据要 INVALID/EXPIRED/合法码三态结果卡与兑换按钮不出现。身份轴(仅登录)与 band/session 三条本可通过——只差判点本身。"
+    },
+    {
+      "opsKey": "次要22|VB10",
+      "legStep": "（无——本腿不进 subpackages/vip/bills）",
+      "fails": "页面未进；判据要空账单 EmptyState 文案与 :key 稳定不串数据。"
+    },
+    {
+      "opsKey": "次要21|OC09",
+      "legStep": "公告已渲染进设备侧官方号会话（.chat-list 的 WXML 里就有这条）",
+      "fails": "同页不同判据：OC09 expected 是加载失败错误态+.retry-btn 真重拉+发送失败草稿回滚（需注入 5xx），本步走的是成功分支；且 OC09 无 identities 标注 ⇒ 登录+游客双轴都要，本腿只有 A。实测探针见 probes/b-oc09.json：欠账仍 5，只是点名从 缺=login+guest 变成 缺=guest。"
+    },
+    {
+      "opsKey": "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+      "legStep": "设备发的帖子 30 秒内在后台列表出现（同一条记录）",
+      "fails": "VI25 断设备侧列表首条徽标+按 id 去重次数=1，本腿断后台列表命中，页与断言都不是；且 VI25 现在在待判桶，执行行无权放回覆盖。"
+    },
+    {
+      "opsKey": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB25",
+      "legStep": "设备发的帖子 30 秒内在后台列表出现（同一条记录）",
+      "fails": "automatable===false 的免检格（执行腿被禁止跑它），记成覆盖直接把「免检」洗成「已测」。"
+    },
+    {
+      "opsKey": "SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH|PUB14",
+      "legStep": "点加图后 3 张图进了九宫格（页面自己的 images 收到选图结果）",
+      "fails": "expected 是合取（选图/压缩/九宫格与删除/满9张上限/隐私 errno 112 分叉），本步只覆盖一个连词且选图走替身；该格当前已在覆盖桶 ⇒ 记了净变化也是 0。"
+    },
+    {
+      "opsKey": "次要18|TD06",
+      "legStep": "设备首条卡片能在后台按同一个 ID 读到（数据同源，不是本地假数据）",
+      "fails": "TD06 的后台回读断的是 circles/topic-detail 的举报条数，不是 village 帖按 ID 的 admin 详情；页与断言均不同，且该格当前已在覆盖桶 ⇒ 净变化 0。"
+    },
+    {
+      "opsKey": "次要18|CH11",
+      "legStep": "公告已渲染进设备侧官方号会话（.chat-list 的 WXML 里就有这条）",
+      "fails": "requiresReal=false ⇒ 门的分母（236）里没有这条 key，绑上去 judge() 一样 continue，等于绑空气；且它断的是 circle-home 箭头的 noop 装饰项，不是官方号会话渲染。"
+    }
+  ],
+  "bindings": [
+    {
+      "match": "载具自证 MODE 与 --band 一致（跑错档位=整条腿白跑）",
+      "step": "载具自证 MODE 与 --band 一致（跑错档位=整条腿白跑）",
+      "dl": "DL01",
+      "bound": false,
+      "reason": "载具自证：判的是产物 config/env.js 里 MODE 字面量 ==--band。全 1107 条里提到构建模式的 4 条（REG09/TP03/TP04/CH02）判的都是**页面走了 mock 还是 real 分支**，不是档位戳自证；且 requiresReal 只在 TP04 一条上，它的 expected 是点赞请求数/回读条数。无一条=「构建档位自证」。"
+    },
+    {
+      "match": "real 档指向本机后端（不是 8081/占位符）",
+      "step": "real 档指向本机后端（不是 8081/占位符）",
+      "dl": "DL02",
+      "bound": false,
+      "reason": "载具配置自证（API_BASE_URL 指向 127.0.0.1:8080）；判据台是 C 端页面判据，没有任何一条以此为 expected。"
+    },
+    {
+      "match": "自动化通道可用（evaluate 有答案）",
+      "step": "自动化通道可用（evaluate 有答案）",
+      "dl": "DL03",
+      "bound": false,
+      "reason": "仪表可用性判点（evaluate 有答案），按本腿自己的三档口径连产品判决都不是，更不能替 ops 判据领钱。"
+    },
+    {
+      "match": "演示学员号能铸出真票（real 后端 phone-login）",
+      "step": "演示学员号能铸出真票（real 后端 phone-login）",
+      "dl": "DL04",
+      "bound": false,
+      "reason": "铸票判点在 /auth/phone-login 接口上。PAGES-LOGIN-INDEX 只有 1 条 requiresReal（LG30），其 expected 是验证码 toast+60s 倒计时禁用态+POST /sms/send-code 计数=1，且 automatable===false 已在免检桶（执行腿被禁止跑它）；没有任何一条 expected 等于「HTTP 200 且 userId 为数字」。"
+    },
+    {
+      "match": "设备会话=刚铸的那张真票（mock 载具做不到，这条在 mock 档必须反过来）",
+      "step": "设备会话=刚铸的那张真票（mock 载具做不到，这条在 mock 档必须反过来）",
+      "dl": "DL05",
+      "bound": false,
+      "reason": "会话接线判点（设备 store userId == 铸票 userId）；判据台无此 expected，登录页判据要的是画面分支而非票号对账。"
+    },
+    {
+      "match": "学员号可用产品接口选定校区（PUT /profile/campus）",
+      "step": "学员号可用产品接口选定校区（PUT /profile/campus）",
+      "dl": "DL06",
+      "bound": false,
+      "reason": "PUT /profile/campus 归属写入；全库 236 条 requiresReal 中 grep profile/campus 与「选定校区」= 0 命中。"
+    },
+    {
+      "match": "圈层树上有这个校区节点（没有就只能落未归属，断言要如实说明）",
+      "step": "圈层树上有这个校区节点（没有就只能落未归属，断言要如实说明）",
+      "dl": "DL07",
+      "bound": false,
+      "reason": "后台圈层树（/admin/circle-layers）可读性；判据台不含后台树结构判据（C 端页面轴）。"
+    },
+    {
+      "match": "选定校区后学员已挂上该校圈层节点（users.circle_path 由后端回填，不是脚本刷的）",
+      "step": "选定校区后学员已挂上该校圈层节点（users.circle_path 由后端回填，不是脚本刷的）",
+      "dl": "DL08",
+      "bound": false,
+      "reason": "users.circle_path 后端回填，经 /admin/evidence 回读；corpus 里 circle_path 回填类 expected = 0 命中。"
+    },
+    {
+      "match": "01-home 路由落在 /pages/home/index",
+      "step": "01-home 路由落在 /pages/home/index",
+      "dl": "DL09",
+      "bound": false,
+      "reason": "路由落点判点（routeStack 含该 route）。该 6 页上的 requiresReal 判据把路由栈只当**采证通道**（连点后栈深、返回是否多退一层），expected 断言的是渲染分支/请求条数，不是一条「route 命中」。拿它记账=把导航成功冒充页面判定。"
+    },
+    {
+      "match": "01-home 出帧已写出且非空帧（>=6KB）",
+      "step": "01-home 出帧已写出且非空帧（>=6KB）",
+      "dl": "DL10",
+      "bound": false,
+      "reason": "出帧字节数判点（>=6KB），纯仪表：证明截图通道落了盘，不证明画面内容。判据台没有任何 expected 是「帧不为空」。"
+    },
+    {
+      "match": "02-nearby 路由落在 /pages/nearby/index",
+      "step": "02-nearby 路由落在 /pages/nearby/index",
+      "dl": "DL11",
+      "bound": false,
+      "reason": "路由落点判点（routeStack 含该 route）。该 6 页上的 requiresReal 判据把路由栈只当**采证通道**（连点后栈深、返回是否多退一层），expected 断言的是渲染分支/请求条数，不是一条「route 命中」。拿它记账=把导航成功冒充页面判定。"
+    },
+    {
+      "match": "02-nearby 出帧已写出且非空帧（>=6KB）",
+      "step": "02-nearby 出帧已写出且非空帧（>=6KB）",
+      "dl": "DL12",
+      "bound": false,
+      "reason": "出帧字节数判点（>=6KB），纯仪表：证明截图通道落了盘，不证明画面内容。判据台没有任何 expected 是「帧不为空」。"
+    },
+    {
+      "match": "03-discover 路由落在 /pages/discover/index",
+      "step": "03-discover 路由落在 /pages/discover/index",
+      "dl": "DL13",
+      "bound": false,
+      "reason": "路由落点判点（routeStack 含该 route）。该 6 页上的 requiresReal 判据把路由栈只当**采证通道**（连点后栈深、返回是否多退一层），expected 断言的是渲染分支/请求条数，不是一条「route 命中」。拿它记账=把导航成功冒充页面判定。"
+    },
+    {
+      "match": "03-discover 出帧已写出且非空帧（>=6KB）",
+      "step": "03-discover 出帧已写出且非空帧（>=6KB）",
+      "dl": "DL14",
+      "bound": false,
+      "reason": "出帧字节数判点（>=6KB），纯仪表：证明截图通道落了盘，不证明画面内容。判据台没有任何 expected 是「帧不为空」。"
+    },
+    {
+      "match": "04-messages 路由落在 /pages/messages/index",
+      "step": "04-messages 路由落在 /pages/messages/index",
+      "dl": "DL15",
+      "bound": false,
+      "reason": "路由落点判点（routeStack 含该 route）。该 6 页上的 requiresReal 判据把路由栈只当**采证通道**（连点后栈深、返回是否多退一层），expected 断言的是渲染分支/请求条数，不是一条「route 命中」。拿它记账=把导航成功冒充页面判定。"
+    },
+    {
+      "match": "04-messages 出帧已写出且非空帧（>=6KB）",
+      "step": "04-messages 出帧已写出且非空帧（>=6KB）",
+      "dl": "DL16",
+      "bound": false,
+      "reason": "出帧字节数判点（>=6KB），纯仪表：证明截图通道落了盘，不证明画面内容。判据台没有任何 expected 是「帧不为空」。"
+    },
+    {
+      "match": "05-profile 路由落在 /pages/profile/index",
+      "step": "05-profile 路由落在 /pages/profile/index",
+      "dl": "DL17",
+      "bound": false,
+      "reason": "路由落点判点（routeStack 含该 route）。该 6 页上的 requiresReal 判据把路由栈只当**采证通道**（连点后栈深、返回是否多退一层），expected 断言的是渲染分支/请求条数，不是一条「route 命中」。拿它记账=把导航成功冒充页面判定。"
+    },
+    {
+      "match": "05-profile 出帧已写出且非空帧（>=6KB）",
+      "step": "05-profile 出帧已写出且非空帧（>=6KB）",
+      "dl": "DL18",
+      "bound": false,
+      "reason": "出帧字节数判点（>=6KB），纯仪表：证明截图通道落了盘，不证明画面内容。判据台没有任何 expected 是「帧不为空」。"
+    },
+    {
+      "match": "06-village-feed 路由落在 /subpackages/village/village/index",
+      "step": "06-village-feed 路由落在 /subpackages/village/village/index",
+      "dl": "DL19",
+      "bound": false,
+      "reason": "路由落点判点（routeStack 含该 route）。该 6 页上的 requiresReal 判据把路由栈只当**采证通道**（连点后栈深、返回是否多退一层），expected 断言的是渲染分支/请求条数，不是一条「route 命中」。拿它记账=把导航成功冒充页面判定。"
+    },
+    {
+      "match": "06-village-feed 出帧已写出且非空帧（>=6KB）",
+      "step": "06-village-feed 出帧已写出且非空帧（>=6KB）",
+      "dl": "DL20",
+      "bound": false,
+      "reason": "出帧字节数判点（>=6KB），纯仪表：证明截图通道落了盘，不证明画面内容。判据台没有任何 expected 是「帧不为空」。"
+    },
+    {
+      "match": "设备侧 village store 真收到帖子列表（>=5 条）",
+      "step": "设备侧 village store 真收到帖子列表（>=5 条）",
+      "dl": "DL21",
+      "bound": false,
+      "reason": "store.posts.length>=5 判点。同页 6 条候选（VI08/VI20/VI22/VI23/VI25/VI42）的 expected 各自是每日entry渲染/置顶折叠/错误态重试/上拉分页/自帖置顶去重/关注频道，没有一条=「真收到 >=5 条」。"
+    },
+    {
+      "match": "设备首条卡片能在后台按同一个 ID 读到（数据同源，不是本地假数据）",
+      "step": "设备首条卡片能在后台按同一个 ID 读到（数据同源，不是本地假数据）",
+      "dl": "DL22",
+      "bound": false,
+      "reason": "前↔后台同源判点（GET /admin/forum/village-posts/{id}）。判据台里唯一提到「后台/接口回读」的 次要18|TD06 断的是 circles/topic-detail 的举报条数，页与断言都不同；无一条要求按 ID 走 admin 视图回读。"
+    },
+    {
+      "match": "超管票可铸（公告由后台侧发出）",
+      "step": "超管票可铸（公告由后台侧发出）",
+      "dl": "DL23",
+      "bound": false,
+      "reason": "后台侧鉴权（/auth/admin/login），归 verify-admin-* 三条腿的轴；C 端判据台不认领后台铸票。"
+    },
+    {
+      "match": "后台发布 text 公告成功",
+      "step": "后台发布 text 公告成功",
+      "dl": "DL24",
+      "bound": false,
+      "reason": "官方号发布公告写接口。236 条 requiresReal 里 grep「公告/announce」= 0 命中；全 1107 条里唯一提到公告的是 次要18|CH11（circle-home 底部栏「置顶公告箭头」的 noop 装饰项，且 requiresReal=false ⇒ 不在这本账的分母里）。这条链路在 ops 判据台上根本没有格子。"
+    },
+    {
+      "match": "公告已渲染进设备侧官方号会话（.chat-list 的 WXML 里就有这条）",
+      "step": "公告已渲染进设备侧官方号会话（.chat-list 的 WXML 里就有这条）",
+      "dl": "DL25",
+      "bound": false,
+      "reason": "同页 official-chat 的 requiresReal 只有 OC08（按钮消息两路）/OC09（加载失败+重试真重拉）/OC11（深链参数核对），三条 expected 都不含「后台发布→设备侧渲染」。OC09 还需注入 5xx 且未标 identities ⇒ 登录+游客双轴都要，本腿一条 A 行既造不出错误态也补不齐游客轴。"
+    },
+    {
+      "match": "发布页正文可输入（真 textarea 被写进去了）",
+      "step": "发布页正文可输入（真 textarea 被写进去了）",
+      "dl": "DL26",
+      "bound": false,
+      "reason": "输入通道判点（真 textarea 写入返回 ok）。SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH 的 18 条判据 expected 全是校验/幂等/草稿/返回窗口行为，无一条=「能写进去」。"
+    },
+    {
+      "match": "输入框回读含 marker（内容真进了表单，不是只写了变量）",
+      "step": "输入框回读含 marker（内容真进了表单，不是只写了变量）",
+      "dl": "DL27",
+      "bound": false,
+      "reason": "DOM value 回读判点（marker 在输入框里），仍是通道证据，不是该页任何一条判据的 expected。"
+    },
+    {
+      "match": "能从后台图片资产台账取到一张真图当相册素材（不造空壳图）",
+      "step": "能从后台图片资产台账取到一张真图当相册素材（不造空壳图）",
+      "dl": "DL28",
+      "bound": false,
+      "reason": "素材准备判点（/admin/media-assets 台账取 approved 图）。判据台没有「素材来自台账」这条 expected。"
+    },
+    {
+      "match": "学员票读这张图：200 且字节数与台账一致（不是错误体的伪成功）",
+      "step": "学员票读这张图：200 且字节数与台账一致（不是错误体的伪成功）",
+      "dl": "DL29",
+      "bound": false,
+      "reason": "素材可读性+字节数一致（进程外侧同一把尺），属预检；corpus 无对应 expected。"
+    },
+    {
+      "match": "3 张真图已写进模拟器本地目录，字节数与服务端逐张一致",
+      "step": "3 张真图已写进模拟器本地目录，字节数与服务端逐张一致",
+      "dl": "DL30",
+      "bound": false,
+      "reason": "模拟器文件系统写入判点（wx.getFileSystemManager），仪表轴。"
+    },
+    {
+      "match": "选图替身装得上（wx.chooseImage 可覆盖）",
+      "step": "选图替身装得上（wx.chooseImage 可覆盖）",
+      "dl": "DL31",
+      "bound": false,
+      "reason": "本腿自己点名的**替身**（wx.chooseImage/requirePrivacyAuthorize 覆盖）——替身能装上是仪表事实，按定义不是任何产品判据的判决。"
+    },
+    {
+      "match": "点加图后 3 张图进了九宫格（页面自己的 images 收到选图结果）",
+      "step": "点加图后 3 张图进了九宫格（页面自己的 images 收到选图结果）",
+      "dl": "DL32",
+      "bound": false,
+      "reason": "最接近的一条：PUB14（选图/压缩/九宫格与删除/满 9 张上限/隐私 errno 112 分叉）。三条不过：① 它的 expected 是合取，本步只碰「九宫格收到 3 张」一个连词，且选图走的是替身而非系统相册；② PUB14 现在已在覆盖格里，记了也不动任何桶；③ PUB14 要 identities A+B 之外的删除/上限动作本腿一个都没做。"
+    },
+    {
+      "match": "设备发的帖子 30 秒内在后台列表出现（同一条记录）",
+      "step": "设备发的帖子 30 秒内在后台列表出现（同一条记录）",
+      "dl": "DL33",
+      "bound": false,
+      "reason": "后台列表按 marker 命中判点。语义最像的 VI25（自帖回流村口置顶+按 id 去重）断的是**设备侧列表**的徽标与出现次数=1，本腿没有那条判点，且 VI25 已在待判桶（只有台账声明 coverageEffect:\"revalidated\" 能放回）；PUB25 则是 automatable===false 的免检格，腿被禁止去跑它。"
+    },
+    {
+      "match": "后台读到的这条与设备发的一致（正文前缀=设备输入、作者为发帖学员）",
+      "step": "后台读到的这条与设备发的一致（正文前缀=设备输入、作者为发帖学员）",
+      "dl": "DL34",
+      "bound": false,
+      "reason": "正文前缀+作者昵称一致性（AdminPostSummaryView 字段），后台视图字段判点；C 端判据台无对应 expected。"
+    },
+    {
+      "match": "后台详情能读到这条帖（同 ID 回读）",
+      "step": "后台详情能读到这条帖（同 ID 回读）",
+      "dl": "DL35",
+      "bound": false,
+      "reason": "GET /admin/forum/village-posts/{id} 状态码判点，同上属后台轴。"
+    },
+    {
+      "match": "这条帖按作者本校圈层可被过滤到（C 端新发帖也进圈层轴）",
+      "step": "这条帖按作者本校圈层可被过滤到（C 端新发帖也进圈层轴）",
+      "dl": "DL36",
+      "bound": false,
+      "reason": "admin 列表 circlePath 过滤判点；corpus 里以圈层过滤为 expected 的 requiresReal 判据 = 0 条。"
+    },
+    {
+      "match": "同一把尺子量不到一个不存在的 marker（断言不是恒真）",
+      "step": "同一把尺子量不到一个不存在的 marker（断言不是恒真）",
+      "dl": "DL37",
+      "bound": false,
+      "reason": "本腿的**证伪对照**（断言不恒真）。它是给这条腿自己用的负例，不是任何用例的判点，记账等于把「尺子没坏」写成「格子量过了」。"
+    },
+    {
+      "match": "设备侧确有打到本机后端的请求（真链路，不是内存里的假数据）",
+      "step": "设备侧确有打到本机后端的请求（真链路，不是内存里的假数据）",
+      "dl": "DL38",
+      "bound": false,
+      "reason": "网络面板行数>=5 的真链路自证；判据台里以请求条数为 expected 的判据都锚在具体动作窗口（连点×N 的新增条数），不是整腿总行数。"
+    },
+    {
+      "match": "设备侧没有失败的接口请求",
+      "step": "设备侧没有失败的接口请求",
+      "dl": "DL39",
+      "bound": false,
+      "reason": "整腿接口卫生（0 行 fail）。大量判据把「console 无报错/无失败请求」写成合取里的**一个连词**——用一个连词去认领整条合取判据正是本仓最重罚的造假覆盖。"
+    },
+    {
+      "match": "设备控制台没有 error 级输出",
+      "step": "设备控制台没有 error 级输出",
+      "dl": "DL40",
+      "bound": false,
+      "reason": "同上：控制台卫生是连词级证据，不是任何一条 expected 的全部。"
+    },
+    {
+      "match": "验收公告已撤回（下架后 C 端读不到）",
+      "step": "验收公告已撤回（下架后 C 端读不到）",
+      "dl": "DL41",
+      "bound": false,
+      "reason": "自清理判点（DELETE 公告）。corpus 里「公告撤回」类 expected = 0 命中。"
+    }
+  ]
 }
