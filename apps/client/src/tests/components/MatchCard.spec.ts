@@ -84,4 +84,23 @@ describe("MatchCard", () => {
     });
     expect(wrapper.find(".custom-photo").exists()).toBe(true);
   });
+
+  /* MP-R3AUDIT-DISCOVER-MATCHCARD-BLANK-001（2026-10-16）改后功能断言腿：
+     匹配卡主视觉兜底底层必须常驻，且 src 必须是包内路径。
+     病灶：照片经 resolveMediaUrl 的 avatars/people → app-assets 改写变成 http 源后，
+     SafeImage 的 http 本地化（downloadFile）一失败就把 displaySrc 永久停在空串，
+     既不渲染原图也不切 fallback ⇒ 卡面只剩占位底色（巡检帧 hero 区 mean 242.1/sd 3.71）。
+     底层直出包内 HERO 后，主视觉不再依赖那条链路。 */
+  it("主视觉兜底底层常驻且 src 为包内路径（非 http 源）", () => {
+    const hero = mountCard().find(".match-card__hero");
+    expect(hero.exists()).toBe(true);
+    const src = hero.attributes("src") ?? "";
+    expect(src).toBe("/static/assets/images/match/match-card-hero.jpg");
+    expect(/^https?:\/\//.test(src)).toBe(false);
+  });
+
+  it("无照片无头像用户仍渲染主视觉底层", () => {
+    const wrapper = mountCard(makeUser({ photo: "", avatar: "" }));
+    expect(wrapper.find(".match-card__hero").exists()).toBe(true);
+  });
 });

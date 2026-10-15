@@ -20,7 +20,11 @@
  *    并在溯源表里记下用的是哪个解释器。
  *
  * 用法：node scripts/qa/emit-round-report.mjs [flags]
- *   --round-dir <dir>          默认 reports/audit/round-6
+ *   --round-dir <dir>          **必填，无缺省**（缺 ⇒ 印 EMIT_ROUNDDIR=MISSING + EMIT_RESULT=FAIL 并 exit 2）。
+ *                              旧的 round-6 缺省会连带 :104 的报告名缺省 ⇒ 裸跑一次就把本轮终报写进
+ *                              round-6 那份交付件上（覆写历史）。四个只读早退模式
+ *                              （--lease-probe-only / --dup-axis-selftest / --queue-dispo-selftest /
+ *                              --sha-class-selftest）不写盘，仍可在不给 --round-dir 时用旧缺省派生输入。
  *   --exec-results <file>      默认 <round-dir>/interact/exec-results.json
  *   --snapshot <file>          默认在 .zcode/tmp/round6-exec/ 找唯一 exec-results.snapshot-*.json
  *   --checkpoint <file>        默认 tmp/qa/checkpoints/exec-R<n>.json（按轮次名派生）
@@ -28,6 +32,9 @@
  *   --screenshot-manifest <f>  默认 <round-dir>/screenshot-manifest.json
  *   --report <file>            默认 <round-dir>/round-<n>-report.md（<n> 从 --round-dir 里派生）
  *   --metrics <file>           默认 <round-dir>/round-<n>-metrics.json（同上）
+ *                              两条落点都过落点溯源守卫：盘上那份的轮次号与本轮不符 ⇒
+ *                              EMIT_PROVENANCE 印 RED、EMIT_RESULT=FAIL 并 exit 3，一个字节都不写
+ *                              （照 gen-round8-report.mjs:379-397 的形状；读不出身份的不比、只如实印状态）
  *   --sidecar-dir <dir>        面板自产文件的落点（reports/ 之外），默认 .zcode/tmp/report-emitter。
  *                              放这里的有两个：分诊台 --out、verify-guest-landing --mode book 的 --out。
  *                              后者的 booked 落点必须在这个方向，否则面板每跑一次就重打一次权威判决件
@@ -47,6 +54,11 @@
  *   --dispo-matrix <file>      只改②那条轴读的台账矩阵（默认由该门自己定 round-6/issue-matrix.md）。
  *                              存在的理由：这条轴要能当场演示红与绿，而唯一"零矛盾"的输入是一份夹具；
  *                              它**不是**生产默认值 —— 报告路径不传它，判的还是权威台账。
+ *   --dispo-register <file>    只改「覆盖欠账去向成员判定」那一条轴读的真值源（默认 <round-dir>/real-coverage-disposition.json）。
+ *                              存在的理由同 --dispo-matrix：这条轴要能**当场演示红**（删掉门现点名的某条欠账的
+ *                              去向），而生产盘上的真值源是只读账本、不许为了证明红去改它。
+ *                              它**不是**生产默认值 —— 报告路径不传它，判的还是本轮真值源；一旦传了，
+ *                              EMIT_DESTINATIONS 那行会明印"（--dispo-register 覆写＝离线夹具，非生产默认）"。
  *   --sha-class-selftest       离线渲染/判决「语料 gitSha 拆类」这条轴（followups-v33.md §5 的补法）：把语料门
  *                              自己那行 `CORPUS_SHA_CLASS resolvableOlder/unresolvable/empty` 拆成三个具名读数，
  *                              并显式标出 resolvableOlder 是**预期随 HEAD 增长**的那一类。只 spawn 只读的
@@ -84,7 +96,28 @@ const flag = (n, d = null) => {
 };
 const has = (n) => argv.includes(`--${n}`);
 
-const ROUND_DIR = toRel(flag("round-dir", "reports/audit/round-6"));
+/* `--round-dir` **无缺省**（lane-panel-dest 2026-10-16）。
+   缺陷已被另一车道记档两次：run-round7-closeout.mjs:355 写着"必须点名本轮 --round-dir：不传时消费者整套
+   默认值都指 round-6"，而本文件 :87 那份 round-6 缺省就是它下一句 :104 的成因 —— 不带参数跑一次面板，
+   "本轮终报"会被写进 reports/audit/round-6/round-6-report.md，覆掉上一轮那份真交付件（名字撒谎 + 历史改写）。
+   形状照今天落地的 gen-round8-report.mjs:52（旗标返回 null）+ :58-61（缺旗标印机器行、exit 2 停手）。
+   四个只读早退模式不在射程内：`--lease-probe-only`(:124) / `--dup-axis-selftest`(:446) /
+   `--queue-dispo-selftest`(:620) / `--sha-class-selftest`(:658) 都在写盘之前 process.exit，
+   且不落任何报告（test-panel-sha-class-axis.cjs:95 就是**只带** --sha-class-selftest 起的，
+   给它加缺省拒绝会把那条现成的自检判红）⇒ 这些一路沿用旧 round-6 缺省并在 stdout 如实印出来源。 */
+const EARLY_MODES = ["lease-probe-only", "dup-axis-selftest", "queue-dispo-selftest", "sha-class-selftest"].filter(has);
+const ROUND_DIR_ARG = flag("round-dir");
+if (!ROUND_DIR_ARG && !EARLY_MODES.length) {
+  console.log("EMIT_ROUNDDIR=MISSING ⇒ 必须显式给 --round-dir reports/audit/<本轮>：本工具的 EXEC/SCREEN/OPS_DIR/报告名全部由它派生，" +
+    "而那份缺省整套指 round-6 ⇒ 裸跑会把本轮终报写进上一轮的交付件里（家规同 gen-round8-report.mjs:58-61 的 NOOUT/NOLEDGER、" +
+    "run-round7-closeout.mjs:355 的既有注记）。只读早退模式（--lease-probe-only / --dup-axis-selftest / " +
+    "--queue-dispo-selftest / --sha-class-selftest）不受此约束。");
+  console.log("EMIT_RESULT=FAIL 前置件缺失：--round-dir 未点名 ⇒ 一个字都不写（宁可停手也不覆写别人的轮次报告）");
+  process.exit(2);
+}
+const ROUND_DIR = toRel(ROUND_DIR_ARG || "reports/audit/round-6");
+if (!ROUND_DIR_ARG) console.log(`EMIT_ROUNDDIR=DEFAULT(${EARLY_MODES.join(",")} 只读早退模式，不写报告) 派生轮次目录=${ROUND_DIR}`);
+else console.log(`EMIT_ROUNDDIR=EXPLICIT ${ROUND_DIR}`);
 /* 台账目录不等于本轮目录：round-7 的条目登记在 round-6 那份"唯一权威台账"里，
    把 round-7 目录传给 verify-ledger 只会撞到"本范围无 issue-matrix.md ⇒ 判据空转"的守卫。
    所以单独开一个 --ledger-dir（默认仍是本轮目录，行为不变）。 */
@@ -739,6 +772,7 @@ if (ERRORS.length) {
     "## 体检失败清单", "", ...ERRORS.map((e, i) => `${i + 1}. ${e}`), "",
     "## 未判定 / 缺口", "", ...OPEN.map((o) => `- ${o.item} —— ${o.why}`), "",
   ];
+  guardOutTargets("preflight");
   mkdirSync(dirname(resolve(ROOT, OUT_REPORT)), { recursive: true });
   writeFileSync(resolve(ROOT, OUT_REPORT), short_.join("\n") + "\n", "utf8");
   writeFileSync(resolve(ROOT, OUT_METRICS), JSON.stringify({ schemaVersion: "round-report-metrics-1", generatedAt: new Date().toISOString(), preflightAbort: true, failures: ERRORS, openItems: OPEN, provenance: { files: PROV.files, commands: PROV.cmds } }, null, 2) + "\n", "utf8");
@@ -1787,6 +1821,38 @@ function metricsDoc() {
     openItems: OPEN,
   };
 }
+/* 落点溯源守卫（照 gen-round8-report.mjs:379-397 的形状；:87 的缺省拒绝挡住的是裸跑，
+   这一条挡住的是"点名了本轮 --round-dir 却把 --report/--metrics 指到别的轮"这一半）：
+   reports/audit/round-7/{round-7-report.md,round7-gatepanel.md} 这类文件既是被下游复量引用的交付件、
+   又在本仓的只读账上，覆写它 = 改写历史。判法只比**轮次号**这一件可比事实：
+   即将印出的 ROUND_NO（由 --round-dir 派生）vs 目标文件上已存在的轮次号（md 取正文首个 round-N，
+   metrics 取 roundDir 字段）。两侧任一读不到就不比（拿"没写"判别人错是另一类假红），
+   但状态一律印进 EMIT_PROVENANCE，绝不静默放行。判红 ⇒ exit 3 且**一个字节都不写**。
+   两个写盘点都要过它：① 这里的正式落盘，② :775 那一路"必需源体检失败"的短报告（它写的是同一对文件，
+   少了这道守卫就等于"输入一坏就绕过覆写保护"）。函数声明会提升 ⇒ 前一处也能调用。 */
+function outIdentityGuard(relPath, kind) {
+  const abs = resolve(ROOT, relPath);
+  if (!existsSync(abs)) return { file: relPath, kind, state: "ABSENT", prev: "" };
+  let txt = "";
+  try { txt = readFileSync(abs, "utf8"); } catch (e) { return { file: relPath, kind, state: "UNREADABLE", prev: "" }; }
+  let prev = "";
+  if (kind === "metrics") { try { prev = ((JSON.parse(txt).roundDir || "").match(/round-(\d+)/) || [])[1] || ""; } catch { prev = ""; } }
+  else prev = (txt.slice(0, 4000).match(/round-(\d+)/) || [])[1] || "";
+  if (!prev) return { file: relPath, kind, state: "UNTAGGED", prev: "" };
+  if (!ROUND_NO || ROUND_NO === "N") return { file: relPath, kind, state: "WANT_UNKNOWN", prev };
+  return { file: relPath, kind, state: prev === String(ROUND_NO) ? "OK" : "RED", prev };
+}
+function guardOutTargets(stage) {
+  const guards = [outIdentityGuard(OUT_REPORT, "report"), outIdentityGuard(OUT_METRICS, "metrics")];
+  const red = guards.filter((g) => g.state === "RED");
+  console.log(`EMIT_PROVENANCE stage=${stage} want_round=round-${ROUND_NO} ` + guards.map((g) => `${g.file}=${g.state}${g.prev ? `(盘上=round-${g.prev})` : ""}`).join(" "));
+  if (red.length) {
+    console.log(`EMIT_RESULT=FAIL 落点身份与本轮不符：${red.map((g) => `${g.file}（盘上那份是 round-${g.prev}，本轮是 round-${ROUND_NO}）`).join("；")}` +
+      ` ⇒ 拒绝覆写别的轮次的交付件（家规同 gen-round8-report.mjs:397）；把 --report/--metrics 换到本轮目录下再来`);
+    process.exit(3);
+  }
+}
+guardOutTargets("final");
 writeFileSync(resolve(ROOT, OUT_METRICS), JSON.stringify(metricsDoc(), null, 2) + "\n", "utf8");
 writeFileSync(resolve(ROOT, OUT_REPORT), L.join("\n") + "\n", "utf8");
 console.log(`REPORT_WRITTEN=${OUT_REPORT} lines=${L.length}`);
@@ -1801,37 +1867,134 @@ console.log(`EMIT_DISPO rows=${G.dispo.rows === null ? "未量" : G.dispo.rows} 
 for (const m of G.shaClass) console.log(shaClassMachineLine(m));
 for (const c of CONSERVE) console.log(`CONSERVE ${c.ok ? "OK" : "FAIL"} ${c.what} ${c.parts.join("+")}=${c.sum} vs ${c.whole}`);
 /* 覆盖欠账的去向件必须有人消费（用户 2026-09-30 裁定：建具名去向件 + 面板加读者）。
-   在此之前那 10 条去向只活在报表散文里，仓里没有任何工具读它 ⇒ "给了去向"这件事无法被机器核。
-   口径：件在、每行有去向且在词表内、有理由、且行数与本门实测 UNCOVERED 对得上 ⇒ 打具名行；
-   任一条不成立 ⇒ 进 ERRORS（缺一条就红），不许安静。 */
+   2026-10-06 T7 / r10new#A（reports/audit/round-7/ruling-closure-2026-10-06.md :94-104、:200「面板读者切换」行）
+   把这条读者**改读真值源**并留下"下轮做"的记档；本车道就是执行那条记档，两件事：
+
+   ① 读的是**真值源** `reports/audit/<本轮>/real-coverage-disposition.json`，路径按 --round-dir 派生
+      （与 OPS_DIR :99、核对门 verify-real-coverage-disposition.mjs:65 同一条派生规则 ⇒ 换轮自动跟着走）。
+      原先写死 `reports/audit/round-7/incident-destinations-round10.json`，而那份件已被同一条裁定降级为
+      **归档**（`$archived:true` + `$truthSource` 指向真值源；rows 一字未动，只留给 RCD_DUAL 与本读者对账）
+      ⇒ 面板拿归档当权威 = 审的是一本已被替代的账。归档仍在盘上比对（下面的 DUAL 段），不删任何件。
+
+   ② 判点从"行数相等"换成**成员判定**：门现点名的每一条 UNCOVERED 键都必须在真值源里有一条在册词表的去向，
+      缺哪条就按键名点哪条（尺子取自 verify-real-coverage-disposition.mjs:131/147/150 的 debt Map + UNDISPOSED）。
+      为什么"行数相等"这个形状本身是错的（本次实测）：归档 10 行 vs 门现量 UNCOVERED=5 ⇒ 报"有欠账没有去向"，
+      而那 5 条在真值源里**条条有在册去向**（同一天 RCD_RESULT=PASS）。行数既证不了"有"也证不了"没有"：
+      多出来的行是收账后的陈旧去向，少出来的行才可能是欠账，两者在"10≠5"里被抹成同一条红。
+
+   极性（词表权威在那条核对门 :71，本面板不新增词、也不接受册子自带词表覆盖它）：
+     门点名的欠账没有去向 ⇒ 红（blocking，与核对门同判）；去向词不在册 / 空理由 / 重复键 ⇒ 红；
+     门点名数与它自己的 REALCOV_UNCOVERED 不闭合 ⇒ 红（上游台账先坏，此刻任何"条条有去向"都不成立）；
+     门读数取不到 ⇒ membership=UNVERIFIED 当场点名，**既不判红也不判绿**（面板不替上游门发明结论，
+     也不把"没读到"读成"对过了"；这条轴不进 gatePanel ⇒ 上游门自己的红由它那一格记账，面板不重复计一次）；
+     陈旧去向 ⇒ advisory 点名计数不判红（同核对门 :22-28 的论证：离开 UNCOVERED 只可能是收账）；
+     **"有去向但不可派发"（NEEDS_CAPABILITY / NEEDS_BAND_CHANGE / NEEDS_IDENTITY_IMPOSSIBLE）不判红**
+       ——那是诚实状态不是事故，只进 tally 与 dispatchable 计数；把"不能马上派"做成红，最快变绿的路就是改词。
+   位置口径（与它的前身同一格：本块跑在报告与指标**已落盘之后**）：ERRORS 依然有效，因为它只喂最后那条
+   EMIT_RESULT 收尾判决；但 OPEN、报告正文、指标件都已经序列化，往 OPEN 里 push 等于写一份没人读的数组
+   ——所以本块一条 OPEN 都不塞，advisory 一律当场印成具名机器行（载具抓的是 stdout，run-final-verify 与
+   DSL 两侧都收这一发）。 */
 {
-  const DISPO_FILE = join(ROOT, "reports", "audit", "round-7", "incident-destinations-round10.json");
+  const REG_ARG = flag("dispo-register");
+  const AUTH_REL = toRel(pj(ROUND_DIR, "real-coverage-disposition.json"));
+  const ARCHIVE_REL = toRel(pj(ROUND_DIR, "incident-destinations-round10.json"));
+  const DISPO_FILE = REG_ARG ? toRel(REG_ARG) : AUTH_REL;
   const VOCAB = ["DISPATCHABLE_NOW", "NEEDS_BAND_CHANGE", "NEEDS_CAPABILITY", "NEEDS_IDENTITY_IMPOSSIBLE", "NOT_SHOOTABLE"];
-  const gm = ((G.realCoverage && G.realCoverage.body) || "").match(/REALCOV_UNCOVERED=(\d+)/);
+  const dispoBody = (G.realCoverage && G.realCoverage.body) || "";
+  const gm = dispoBody.match(/REALCOV_UNCOVERED=(\d+)/);
   const gateUncovered = gm ? Number(gm[1]) : null;
-  if (!existsSync(DISPO_FILE)) {
-    ERRORS.push(`覆盖欠账去向件不存在：${DISPO_FILE} —— 去向只写在散文里等于没人能核`);
+  /* 门的逐条点名行（`  UNCOVERED <key> 缺=<轴>`，生产者 verify-real-coverage.mjs:1006、消费者与核对门 :111 同一把正则） */
+  const debt = new Map();
+  for (const line of dispoBody.split(/\r?\n/)) {
+    const m = line.match(/^ {2}UNCOVERED (\S+) 缺=(\S+)$/);
+    if (m && m[1] !== "轴口径") debt.set(m[1], m[2]);
+  }
+  if (!existsSync(resolve(ROOT, DISPO_FILE))) {
+    ERRORS.push(`覆盖欠账去向真值源不存在：${DISPO_FILE} —— 去向只写在散文里等于没人能核（先跑 scripts/qa/emit-real-coverage-disposition.mjs --apply）`);
+    console.log(`EMIT_DESTINATIONS file=${DISPO_FILE} authority=${AUTH_REL} rows=? gate_uncovered=${gateUncovered === null ? "?" : gateUncovered} gate_named=${debt.size} membership=NOFILE ⇒ 件不存在，成员判定无从做起`);
   } else {
     try {
-      const j = JSON.parse(readFileSync(DISPO_FILE, "utf8"));
-      const rows = j.rows || [];
+      const j = JSON.parse(readFileSync(resolve(ROOT, DISPO_FILE), "utf8"));
+      const entries = Array.isArray(j.dispositions) ? j.dispositions : null;
+      if (!entries) throw new Error("册子里没有 dispositions 数组（结构不对 ⇒ 先确认它是一本册子，再谈空集算不算没去向）");
+      const byKey = new Map();
       const tally = {};
       const bad = [];
-      for (const r of rows) {
-        const dest = r.destination || r.disposition;
+      const dup = [];
+      for (const e of entries) {
+        const k = typeof e.case === "string" && e.case ? e.case : (typeof e.key === "string" ? e.key : "");
+        const dest = String(e.disposition || e.destination || "").trim();
         tally[dest || "(空)"] = (tally[dest || "(空)"] || 0) + 1;
-        if (!VOCAB.includes(dest)) bad.push(`${r.key || "?"}:去向不在词表(${dest || "空"})`);
-        /* 字段名必须照 L14 那份件的真实形状取（blocker/mustBeTrueToStopBeingDebt），
-           我第一版凭想象写成 reason/why ⇒ 10 条全被误判"缺理由"，把面板打红。 */
-        const why = r.blocker || r.mustBeTrueToStopBeingDebt || r.reason || r.why;
-        if (!String(why || "").trim()) bad.push(`${r.key || "?"}:缺理由(blocker 为空)`);
+        if (!VOCAB.includes(dest)) bad.push(`${k || "?"}:去向不在词表(${dest || "空"})`);
+        /* 字段名照两份件的真实形状取（真值源 blocker/basis；归档 blocker/mustBeTrueToStopBeingDebt）。
+           第一版凭想象写成 reason/why ⇒ 10 条全被误判"缺理由"，把面板打红。 */
+        const why = e.blocker || e.mustBeTrueToStopBeingDebt || e.basis || e.reason || e.why;
+        if (!String(why || "").trim()) bad.push(`${k || "?"}:缺理由(blocker/basis 皆为空)`);
+        if (!k) continue;
+        if (byKey.has(k)) dup.push(k);
+        else byKey.set(k, dest);
       }
       const dispatchable = tally.DISPATCHABLE_NOW || 0;
-      console.log(`EMIT_DESTINATIONS file=${relative(ROOT, DISPO_FILE).split(sep).join("/")} rows=${rows.length} gate_uncovered=${gateUncovered === null ? "?" : gateUncovered} dispatchable=${dispatchable} tally=${JSON.stringify(tally)}`);
-      if (gateUncovered !== null && rows.length !== gateUncovered) {
-        ERRORS.push(`去向件行数 ${rows.length} 与门实测 UNCOVERED=${gateUncovered} 不等 ⇒ 有欠账没有去向`);
-      }
+      const stale = [...byKey.keys()].filter((k) => !debt.has(k));
+      const missing = [...debt.keys()].filter((k) => !VOCAB.includes(String(byKey.get(k) || "").trim()));
+      const disposed = debt.size - missing.length;
+      const namedClosed = gateUncovered === null ? null : debt.size === gateUncovered;
+      const membership = gateUncovered === null ? "UNVERIFIED"
+        : !namedClosed ? "UPSTREAM_UNCLOSED" : missing.length ? "FAIL" : "OK";
+      console.log(`EMIT_DESTINATIONS file=${DISPO_FILE} authority=${AUTH_REL}${DISPO_FILE !== AUTH_REL ? "（--dispo-register 覆写＝离线夹具，非生产默认）" : ""}` +
+        ` rows=${entries.length} gate_uncovered=${gateUncovered === null ? "?" : gateUncovered} gate_named=${debt.size}` +
+        ` disposed=${disposed} missing=${missing.length} stale=${stale.length} dispatchable=${dispatchable}` +
+        ` tally=${JSON.stringify(tally)} membership=${membership}`);
+      for (const k of missing) console.log(`  UNDISPOSED ${k} 缺=${debt.get(k)} ⇒ 门现点名的这条欠账在真值源里没有在册去向（判红）`);
+      for (const k of stale) console.log(`  STALE_DESTINATION ${k} 在册去向=${byKey.get(k) || "(空)"} ⇒ 门现量已不欠这条 ⇒ 收账后的历史，advisory 不判红`);
+      for (const b of bad) console.log(`  DISPO_BAD ${b}`);
+      for (const d of dup) console.log(`  DUP_KEY ${d} ⇒ 一个键两条去向 = 有两笔判决没说清哪笔算数`);
+      if (gateUncovered === null) console.log(`  DISPO_ADVISORY membership=UNVERIFIED：verify-real-coverage 的读数取不到（body ${dispoBody ? "里没有 REALCOV_UNCOVERED 行" : "为空"}）⇒ 没读到的账不算对过，本面板不因此判绿、也不替上游门发明一条红`);
+      else if (!namedClosed) ERRORS.push(`上游门逐条点名 ${debt.size} 与它自己的 REALCOV_UNCOVERED=${gateUncovered} 不闭合 ⇒ 门的台账先红，此刻任何"条条有去向"都不成立（同核对门 :114 的尺子）`);
+      else if (missing.length) ERRORS.push(`覆盖欠账无去向 ${missing.length} 条：${missing.join("、")} ⇒ 真值源 ${DISPO_FILE} 缺这几条的去向（门现点名 UNCOVERED=${gateUncovered}；成员判定，与行数无关）`);
       for (const b of bad) ERRORS.push(`去向件不合规：${b}`);
+      if (dup.length) ERRORS.push(`去向件重复键 ${dup.length} 个：${dup.join("、")}`);
+
+      /* 两套账并存的对账：**降级成 advisory**（同一条 T7 裁定的另一半）。
+         归档件（$archived:true）留在盘上做逐键比对，本面板**不再因对账差异判红**：
+         权威是真值源，两边不一致时坏的是被替代的那本，红应该由权威那一侧的成员判定来说（上面已说）。
+         逐字一致时按 ruling-closure :104 与 :179 的记档印出"RCD_DUAL 退役条件已满足"——
+         **撤不撤 RCD_DUAL、归档件退不退是 owner 的裁定**，本车道一个字都不删（删证据不是车道的权）。 */
+      const dual = (() => {
+        if (!existsSync(resolve(ROOT, ARCHIVE_REL))) return { state: "absent" };
+        let a = null;
+        try { a = JSON.parse(readFileSync(resolve(ROOT, ARCHIVE_REL), "utf8")); }
+        catch (e) { return { state: "unreadable", why: String(e.message).slice(0, 80) }; }
+        const rows = Array.isArray(a.rows) ? a.rows : null;
+        if (!rows || !rows.every((r) => r && typeof r.key === "string")) return { state: "no-rows" };
+        const bm = new Map(rows.map((r) => [r.key, String(r.destination || r.disposition || "").trim()]));
+        return {
+          state: "compared", truth: byKey.size, archive: bm.size,
+          archived: a.$archived === true, archivedAt: a.$archivedAt || "",
+          truthSource: typeof a.$truthSource === "string" ? a.$truthSource : "",
+          onlyTruth: [...byKey.keys()].filter((k) => !bm.has(k)),
+          onlyArchive: [...bm.keys()].filter((k) => !byKey.has(k)),
+          diff: [...byKey.keys()].filter((k) => bm.has(k) && bm.get(k) !== byKey.get(k)).map((k) => `${k} 真值源=${byKey.get(k) || "(空)"} 归档=${bm.get(k) || "(空)"}`),
+        };
+      })();
+      const dualDiverged = dual.state === "compared" ? dual.onlyTruth.length + dual.onlyArchive.length + dual.diff.length : null;
+      console.log(`EMIT_DESTINATIONS_DUAL truth=${AUTH_REL} archive=${ARCHIVE_REL} 权威=truth（归档件不作为判定输入） 状态=${dual.state}` +
+        (dual.state === "compared"
+          ? ` 归档标记=${dual.archived ? "$archived:true" : "(无$archived)"}$archivedAt=${dual.archivedAt || "?"} $truthSource=${dual.truthSource || "(未记)"}` +
+            ` 真值源键=${dual.truth} 归档键=${dual.archive} 只在真值源=${dual.onlyTruth.length} 只在归档=${dual.onlyArchive.length} 去向不一致=${dual.diff.length}` +
+            ` 极性=advisory（对账差异不判红；欠账有没有去向由上面那条 membership 说）`
+          : dual.state === "absent" ? " ⇒ advisory：归档副本不在盘上（若它已被退役，这本对账就该由真值源独任）"
+            : dual.state === "no-rows" ? " ⇒ advisory：归档副本读不出 rows[]/key 形状（对账做不成，但真值源那份判定不受影响）"
+              : ` ⇒ advisory：归档副本读不出（${dual.why}）——归档坏不连带权威坏`));
+      for (const x of (dual.diff || [])) console.log(`  DUAL_WORD_DIFF ${x}`);
+      for (const x of (dual.onlyTruth || [])) console.log(`  DUAL_ONLY_TRUTH ${x}`);
+      for (const x of (dual.onlyArchive || [])) console.log(`  DUAL_ONLY_ARCHIVE ${x}`);
+      if (dual.state === "compared" && dualDiverged === 0) {
+        console.log("RCD_DUAL_RETIRE_READY=yes ⇒ 两份账逐键一致，这正是 ruling-closure-2026-10-06.md :104/:179 记档的撤门条件；" +
+          "撤 RCD_DUAL 与归档件退役归 owner 裁定，本面板不删任何件");
+      } else if (dual.state === "compared") {
+        console.log(`RCD_DUAL_RETIRE_READY=no（还有 ${dualDiverged} 处出入 ⇒ 按裁定"两份账下轮复跑一致后可撤 RCD_DUAL"，还不满足）`);
+      }
     } catch (e) { ERRORS.push(`去向件读不动：${String(e.message).slice(0, 80)}`); }
   }
 }

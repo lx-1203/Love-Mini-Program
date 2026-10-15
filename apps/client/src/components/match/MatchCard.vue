@@ -5,6 +5,7 @@ import SwipeContainer from "../common/swipe/SwipeContainer.vue";
 import SafeImage from "../common/SafeImage.vue";
 import MatchInfo from "./MatchInfo.vue";
 import { IMAGE_PATHS } from "../../config/images";
+import { resolveMediaUrl } from "../../utils/media";
 import type { MatchCardUser } from "../../types/match";
 
 const props = withDefaults(
@@ -28,6 +29,16 @@ const { t } = useI18n();
 /* 2026-09-12：无照片用户的卡片兜底从默认头像升级为匹配卡主视觉
    （match-card-hero，含底部文字预留层；有照片用户不受影响） */
 const photo = computed(() => props.user.photo || props.user.avatar || IMAGE_PATHS.MATCH_CARD.HERO);
+
+/* MP-R3AUDIT-DISCOVER-MATCHCARD-BLANK-001（2026-10-16）：主视觉兜底底层。
+   原图走 SafeImage 时，http 源会被本地化成 downloadFile（SafeImage.vue:136-213）；
+   该下载失败时只翻回 localizingHttp 标记，displaySrc 永久停在空串，而 onError 又被
+   同一标记抑制 ⇒ 既不渲染原图、也永不切 fallback，卡面只剩 .match-card 占位底色
+   （巡检帧 hero 区实测 mean 242.1 / sd 3.71 ≈ #EEF7F2，与兜底素材同区 mean 202.1 / sd 42.7 不符）。
+   本层直出包内 HERO：resolveMediaUrl 对 app-assets http 源恒返回 /static/{rel}
+   （utils/media.ts 的 http+APP_ASSET_PREFIX 分支），mock / real 两档都是包内路径，
+   不经过 downloadFile。原图加载成功时被不透明照片完全覆盖，健康路径零视觉变化。 */
+const heroBase = computed(() => resolveMediaUrl(IMAGE_PATHS.MATCH_CARD.HERO));
 
 const onlineText = computed(() => {
   if (props.user.onlineStatus === "online" || props.user.activeStatusText === "online" || props.user.activeStatusText === "just_now") return t("matchV1.online");
@@ -60,6 +71,13 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
     @swipe-right="emit('swipe-right')"
   >
     <view class="match-card">
+      <image
+        class="match-card__hero"
+        :src="heroBase"
+        mode="aspectFill"
+        alt=""
+      />
+
       <slot name="photo">
         <SafeImage
           class="match-card__photo"
@@ -128,6 +146,15 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
      --c-bg-page=#EEF7F2（原裸写 #eef3f1，G 通道相差 4） */
   background: var(--c-bg-page, #EEF7F2);
   box-shadow: 0 16rpx 40rpx rgba(26, 55, 48, 0.16);
+}
+
+.match-card__hero {
+  /* 兜底主视觉底层：与 .match-card__photo-root 同几何，DOM 在前 ⇒ 永远在照片之下 */
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .match-card__photo-root {
