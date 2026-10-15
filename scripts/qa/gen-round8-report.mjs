@@ -1,9 +1,41 @@
 /**
- * round-8 总报告生成器（v3.3 续作轮专用；数字全部从盘上现算，不手抄）：所有数字从盘上现算（git log / gapbill / openrows-blockers / decisions），
- * 不手填任何计数。终局复量落盘后重跑一次即可，报告不会与读数脱节。
- * 用法：node22 scripts/qa/gen-round8-report.mjs [--ledger <裁定册路径>] [--out <输出报告路径>]
- *       两个参数默认指向盘上真件；要试跑而不覆盖权威件，就显式把 --out 指到临时目录（L21 负例就是这么隔离的）。
- *       基线提交 a4c8f995 硬编码在本文件下方 commits 那一行，换轮次要改（这是换轮次的决定，不归生成器）。
+ * 收官闭环总报告生成器（**轮次无关**：轮次身份 / 日期 / 裁定册 / 落点全部由命令行给出，一个都不写死）。
+ *
+ * 用法（Node >= 20.11；PATH 上的 node 是 v16，会崩）：
+ *   node22 scripts/qa/gen-round8-report.mjs --out <本轮报告落点> --ledger <裁定册> \
+ *        [--round v3.8] [--date 2026-10-16] [--baseline <起始 sha>] [--summary <终局读数件>] \
+ *        [--gapbill <f>] [--openrows <f>] [--interact-leg <f>] [--interact-audit <f>] [--prose <f>]
+ * 退出码：0 已写盘（分桶守卫可以同时印 RED，那是读数不是崩溃）
+ *         2 生成器自己没跑成（缺 --out / 缺 --ledger / 裁定册读不到）
+ *         3 **溯源拒绝**：这一发会覆写别的轮次的交付件，或 --round 与裁定册自述的轮次不符
+ *
+ * 【--out 不给缺省值】带缺省的 --out 就是本缺陷本身：它原先默认
+ * `reports/audit/round-7/round8-final-report.md`，两个"全清单"载具都**不带参数**调它
+ * （run-final-verify-v33.sh 的 g 步骤、miniprogram-ui-audit-v38.dwf.ts 的报告回填），
+ * 于是今天的全清单一跑就会拿今天的读数盖掉 2026-09 那一份历史交付件，而本轮（v3.8）的总报告根本不存在。
+ * 同一条 bug class 本仓已踩过两次：dryrun-workflow.mjs:24 的缺省 --file 两次把工作流预检指到别的版本；
+ * 该病后来由 scripts/qa/tcheck-workflow.cjs 以"不给缺省、缺了就 exit 2 大声失败"收口（见其头注 :18-20）。
+ * 这里照抄那条家规：**没有 --out 就绝不猜一个落点写下去**。--ledger 同规。
+ *
+ * 【溯源守卫（可以变红）】写盘前比对"这一发即将印出的轮次身份"与"--out 上已存在那份文件的身份"
+ * （H1 里的 v-标签与日期、正文点名的裁定册路径）。两者任一可比字段不符 ⇒ GENREPORT_PROVENANCE=RED
+ * 并以 exit 3 拒绝写入；已存在但**读不出身份**（手写交付件）同样拒绝——不能证明是本轮的就不是本轮的。
+ * 这是真正防复发的条款：光加旗标只是把写错的地方换个位置，守卫才让它写错时响亮地失败。
+ * 第二轮复量同一轮 ⇒ 身份相同 ⇒ 照常覆盖，这正是"落盘后重跑一次即可"的既有契约。
+ *
+ * 【本轮身份对裁定册的交叉核对】轮次/日期优先吃 --round/--date；没给就从**裁定册自己的 H1** 现读
+ * （`# 裁定包 v3.8（2026-10-16）…` ⇒ v3.8 / 2026-10-16）：从盘上派生，不手抄。
+ * 给了 --round 且与裁定册自述不符 ⇒ 同样 exit 3：那正是"v3.8 的报告里装着 v3.3 的叙事"这一型的成因。
+ *
+ * 【叙事形状：选 (b) 生成器只产从盘上可导出的节】本生成器原先把上一程（v3.3）的历史散文写死在代码里
+ * ——死掉的会话 `dwfrun-e9907ebc`、F2 崩溃、`WF-V33-AUDIT-2026-09-29.md`、提交 `34b6fb3d`…——
+ * 于是任何别的轮换用它都会读到一段别人的故事。两条路里（a）把散文搬到每轮输入件、(b) 只产盘上可导出的节
+ * 加一段"叙事归收口车道"的明标桩：这里选 **(b)**。理由是 (a) 仍要求每轮把散文喂进来，忘了喂就回落到
+ * 上一轮的文本；(b) 做不到就**什么都不印**，形状与"没干活"不可混淆，且与既有约定（未量到 ⇒ 未跑，不留结论）
+ * 同一条口径。换轮次因此不再需要回来改这个文件。
+ * 本轮可导出的节 = 1 缺口账单 / 4 未结行与阻断 / 5 交互腿 / 6 拍板分桶 / 7 终局复量 / 以及 §0 身份自证；
+ * 叙事节 2、3、8 归收口车道（给了 --prose 就逐字并进来，没给就只印桩）。**生成器绝不代拟叙事。**
+ *
  * §6 的分桶口径（L21 修的就是这里）：裁定册 `## N.` 标题数会随编排方收账不断虚增（新增一节流水 ⇒ "需你拍板 N 项" 自动 +1），
  *       所以 §6 只列**真正待用户拍板**的节，其余按「已裁定 / 已闭或状态对账 / 流水与自我纠正」分桶并各自带条数。
  *       分桶是保守的：默认桶=待拍板，只有标题命中下方显式规则才移出，且每条移出项在报告里带一行移出依据；
@@ -12,23 +44,69 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { resolve, join } from "node:path";
+import { resolve, join, relative } from "node:path";
 
 const REPO = resolve(import.meta.dirname, "..", "..");
 const argv = process.argv.slice(2);
-const flag = (name, dflt) => { const i = argv.indexOf(name); return i >= 0 && argv[i + 1] ? argv[i + 1] : dflt; };
-const LEDGER_REL = flag("--ledger", "reports/audit/round-7/decisions-v33.md");
-const OUT_REL = flag("--out", "reports/audit/round-7/round8-final-report.md");
-const rd = (p, dflt) => { try { return JSON.parse(readFileSync(join(REPO, p), "utf8")); } catch { return dflt; } };
+/* 旗标一律**无缺省**（返回 null）：缺省值正是上一轮被覆写的成因，见头注。 */
+const flag = (name) => { const i = argv.indexOf("--" + name); return i >= 0 && argv[i + 1] ? argv[i + 1] : null; };
+/* 相对/绝对都收：载具（bash、DSL 的 closureDir）可能给绝对路径，join(REPO,"D:/…") 会拼出畸形路径。 */
+const P = (p) => (/^(?:[A-Za-z]:[\\/]|[\\/])/.test(p) ? p : join(REPO, p));
+const rel = (p) => relative(REPO, P(p)).split("\\").join("/");
+const finish = (status, reason, code) => { console.log(`GENREPORT_RESULT=${status} ${reason}`); process.exit(code); };
+
+const OUT_REL = flag("out");
+if (!OUT_REL) finish("NOOUT", "必须显式给 --out：带缺省的 --out 已把上一轮（round-7/v3.3）的权威件当成默认落点，这正是本缺陷（家规同 tcheck-workflow.cjs 的不给 --file 缺省）⇒ 用法 --out reports/audit/<本轮目录>/<本轮报告>.md", 2);
+const LEDGER_REL = flag("ledger");
+if (!LEDGER_REL) finish("NOLEDGER", "必须显式给 --ledger：默认值写的是另一轮的裁定册，读错册子等于把别人的待办数当本轮数 ⇒ 用法 --ledger reports/audit/<本轮目录>/decisions-<本轮>.md", 2);
+
+const rd = (p, dflt) => { if (!p) return dflt; try { return JSON.parse(readFileSync(P(p), "utf8")); } catch { return dflt; } };
+/* 只有 --summary 保留缺省，因为它是两个载具**自己每轮现写**的那份读数件（终局复量落盘点），
+   不是某一轮的历史交付件；其余全是历史件 ⇒ 无缺省，不给就当未跑。 */
+const SUMMARY_REL = flag("summary") || ".zcode/tmp/final-verify/summary.json";
 const g = {
-  gap: rd("reports/audit/round-7/gapbill-v33.json", null),
-  recheck: rd("reports/audit/round-7/gate-recheck-v33.json", null),
-  postCommit: rd("reports/audit/round-7/post-commit-gates-v33.json", null),
-  open: rd("reports/audit/round-7/openrows-blockers-v33.json", null),
-  final: rd(".zcode/tmp/final-verify/summary.json", null),
+  gap: rd(flag("gapbill"), null),
+  recheck: rd(flag("recheck"), null),
+  postCommit: rd(flag("postcommit"), null),
+  open: rd(flag("openrows"), null),
+  interact: rd(flag("interact-leg"), null),
+  interactAudit: rd(flag("interact-audit"), null),
+  final: rd(SUMMARY_REL, null),
 };
-const commits = execFileSync("git", ["log", "--format=%h\t%s", "a4c8f995..HEAD"], { cwd: REPO, encoding: "utf8" }).trim().split(/\r?\n/).reverse();
-const ledgerRaw = readFileSync(join(REPO, LEDGER_REL), "utf8");
+
+/* ── 轮次身份：命令行优先，缺则从裁定册 H1 现读（派生而非手写）────────────────── */
+const ID_RE = { v: /\bv\d+(?:\.\d+)?\b/i, date: /\d{4}-\d{2}-\d{2}/, tag: /\bround-\d+\b/i };
+const idSig = (text) => {
+  const h1 = String(text).split(/\r?\n/).find((l) => /^#\s/.test(l)) || "";
+  const ledgers = [...String(text).matchAll(/reports\/audit\/[^\s`"'()]*?decisions[^\s`"'()]*\.md/g)].map((m) => m[0]);
+  return {
+    round: (ID_RE.v.exec(h1) || [])[0]?.toLowerCase() || null,
+    date: (ID_RE.date.exec(h1) || [])[0] || null,
+    tag: (ID_RE.tag.exec(h1) || [])[0]?.toLowerCase() || null,
+    ledger: ledgers.length ? ledgers.sort((a, b) => ledgers.filter((x) => x === b).length - ledgers.filter((x) => x === a).length)[0] : null,
+    h1,
+  };
+};
+let ledgerRaw;
+try { ledgerRaw = readFileSync(P(LEDGER_REL), "utf8"); } catch (e) { finish("NOLEDGER", "裁定册读不到 " + rel(LEDGER_REL) + "：" + (e && e.code), 2); }
+const ledgerId = idSig(ledgerRaw);
+const ROUND = (flag("round") || ledgerId.round || "").toLowerCase() || null;
+const DATE = flag("date") || ledgerId.date || null;
+const ROUND_SRC = flag("round") ? "命令行" : ledgerId.round ? "裁定册H1派生" : "未指明";
+const DATE_SRC = flag("date") ? "命令行" : ledgerId.date ? "裁定册H1派生" : "未指明";
+
+/* ── 守卫一：--round/--date 与裁定册自述的轮次不得打架 ─────────────────────────
+   成因实测：本生成器原先硬编码 v3.3 身份，而载具拿的是 v3.8 的册子 ⇒ 报告与册子分属两轮。
+   两侧任一读不到就不比（不能拿"没写"去判别人错），但会在 §0 明印来源，绝不静默。 */
+const idConflicts = [];
+if (flag("round") && ledgerId.round && ROUND !== ledgerId.round) idConflicts.push(`--round=${ROUND} vs 裁定册自述=${ledgerId.round}`);
+if (flag("date") && ledgerId.date && DATE !== ledgerId.date) idConflicts.push(`--date=${DATE} vs 裁定册自述=${ledgerId.date}`);
+console.log(`GENREPORT_IDENTITY round=${ROUND || "(未指明)"} date=${DATE || "(未指明)"} round_src=${ROUND_SRC} ledger_round=${ledgerId.round || "(读不出)"} ledger_date=${ledgerId.date || "(读不出)"}`);
+if (idConflicts.length) {
+  console.log(`GENREPORT_PROVENANCE=RED kind=ledger out=${rel(OUT_REL)} conflicts=${idConflicts.join(" ")}`);
+  finish("IDENTITY", "拒绝生成：报告身份与裁定册分属两轮，写出来的就是「上一轮的叙事挂本轮标题」 ⇒ " + idConflicts.join(" "), 3);
+}
+
 const ledgerLines = ledgerRaw.split(/\r?\n/);
 const ledgerDigest = createHash("sha1").update(ledgerRaw).digest("hex").slice(0, 12);
 const ledgerBytes = Buffer.byteLength(ledgerRaw);
@@ -164,73 +242,82 @@ const closedClaim = (num) => {
   return line ? line.trim().slice(0, 78) : null;
 };
 
-const L = [];
-L.push("# round-8 收官闭环总报告（v3.3 续作轮，2026-09-29）", "");
-L.push("本轮不重跑已完成的轮次。起点是盘上事实：上一程 `dwfrun-e9907ebc` 在宿主会话转 `cold` 后停摆（`reportPersisted=false`，盘上只剩两条被门自己覆写的判决件，缺口账单无处续跑），所以本程把 v3.3 的六个阶段用子代理车道逐段执行，同时把工作流本身修到能安全续跑。", "");
+/* git 区间：原先写死 `a4c8f995..HEAD`（那是 v3.3 的起点，换轮次就是错的，本文件老注释自己也承认"换轮次要改"）。
+   现在归 --baseline：不给就**不算**（未跑，不留结论），绝不拿上一轮的起点当本轮区间。 */
+const BASELINE = flag("baseline");
+let commits = [];
+let gitErr = null;
+if (BASELINE) {
+  try {
+    commits = execFileSync("git", ["log", "--format=%h\t%s", `${BASELINE}..HEAD`], { cwd: REPO, encoding: "utf8" }).trim().split(/\r?\n/).filter(Boolean).reverse();
+  } catch (e) { gitErr = String((e && (e.stderr || e.message)) || e).split(/\r?\n/)[0].slice(0, 160); }
+}
+const HEAD_NOW = (() => { try { return execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: REPO, encoding: "utf8" }).trim(); } catch { return null; } })();
 
-L.push("## 1. 起点账单（唯一事实源，Node 22 实测）", "");
+/* 量不到的节一律走本仓既有约定：只印"未跑，故此处不留结论"，不留占位字段、不编数。 */
+const NOT_RUN = "**（未跑，故此处不留结论。）**";
+const proseStub = (no, title, who) => {
+  L.push(`## ${no}. ${title}`, "");
+  L.push(`${NOT_RUN} 本节属**收口车道的叙事**，生成器不代拟：它能落的只有盘上可导出的读数（见 §0/§1/§4/§5/§6/§7），"本轮改了什么、收了多少账"这类判断没有测量来源，写出来就是编。要并入车道撰写的文本，给生成器传 \`--prose <文件>\`，其内容会逐字追加在本节末尾。${who ? ` 上一轮（v3.3）同位置的那段散文已从代码里删除——它曾被硬编码进生成器，任何别的轮次用它都会读到别人的故事。` : ""}`, "");
+};
+
+const L = [];
+L.push(`# 收官闭环总报告${ROUND && DATE ? `（${ROUND}，${DATE}）` : "（轮次身份未指明）"}`, "");
+
+L.push("## 0. 本报告的身份（生成器自证，全部现读，供复核）", "");
+L.push(`- 轮次=\`${ROUND || "(未指明)"}\`（来源：${ROUND_SRC}）｜日期=\`${DATE || "(未指明)"}\`（来源：${DATE_SRC}）`);
+L.push(`- 裁定册=\`${rel(LEDGER_REL)}\` sha1=${ledgerDigest} bytes=${ledgerBytes}；册子 H1 自述轮次=\`${ledgerId.round || "(读不出)"}\` 日期=\`${ledgerId.date || "(读不出)"}\``);
+L.push(`- 落点=\`${rel(OUT_REL)}\`${existsSync(P(OUT_REL)) ? "（已存在 ⇒ 本轮复量覆盖，覆盖前已通过溯源守卫）" : "（新建）"}`);
+L.push(`- git 区间：${BASELINE ? `\`${BASELINE}..HEAD\`（HEAD=${HEAD_NOW}，提交 ${commits.length} 发）` : "未给 --baseline ⇒ 未跑，故此处不留结论"}${gitErr ? `（git 读取失败：${gitErr}）` : ""}`);
+L.push(`- 终局读数件=\`${rel(SUMMARY_REL)}\`${g.final ? `（headBefore=${g.final.headBefore || "?"} headAfter=${g.final.headAfter || "?"} producedBy=${g.final.producedBy || "?"}；**这一发是不是本轮的，由载具写入时机保证**）` : "（盘上没有）"}`);
+L.push(`- 溯源守卫：落盘前判定，判红即 exit 3 且不写任何字节；见进程末尾的 \`GENREPORT_PROVENANCE\` 机器行`, "");
+
+L.push("## 1. 起点账单（缺口账单件，Node 22 实测）", "");
 if (g.gap) {
-  const reds = g.gap.red || g.gap.gates.filter(x => x.exitCode !== 0).map(x => x.name);
-  L.push(`门禁并行实测 ${g.gap.gates.length} 项，红 ${reds.length} 项：${reds.join("、")}。` +
+  const reds = g.gap.red || (g.gap.gates || []).filter((x) => x.exitCode !== 0).map((x) => x.name);
+  L.push(`门禁并行实测 ${(g.gap.gates || []).length} 项，红 ${reds.length} 项：${reds.join("、") || "无"}。` +
     `（此句读的是**缺口账单件**，其 HEAD=${g.gap.head || "unknown"}；终局复量那一发在第 7 节，两份件不同源、` +
-    `口径以第 7 节为准。缺口账单那一发只有整条 v3.3 工作流真跑时才会重打，只跑终验脚本时它是上一程的旧件。）`, "");
-  L.push(`- 后端 8080 UP；起点自动化端口为空，本程用零点击冷启打通（9420/9430 实测 LISTENING）。`);
-  L.push(`- 起点 HEAD=${g.gap.head}，工作树脏 ${g.gap.dirty} 项。`);
-  L.push("- 纠正一处长期误读：PATH 上的 node 是 v16.13.1，会把 verify-source-shape.mjs:22 与 verify-evidence-holes.mjs:15（用 import.meta.dirname，需 >=20.11）崩成假红；钉死 Node 22 后这两条门为绿，账单由「5 红」收正为「3 红」。", "");
+    `口径以第 7 节为准。缺口账单那一发只有整条工作流真跑时才会重打，只跑终验脚本时它是上一程的旧件。）`);
+  if (g.gap.dirty !== undefined) L.push(`- 起点 HEAD=${g.gap.head}，工作树脏 ${g.gap.dirty} 项。`);
+  L.push("");
+} else {
+  L.push(NOT_RUN, "");
 }
 
-L.push("## 2. 工作流本身改了什么（本轮一等主要交付）", "");
-L.push("每条都有盘上证据，完整判定见 `.zcode/research/WF-V33-AUDIT-2026-09-29.md`。", "");
-L.push("1. `runGate` 与端口探针改用 `WORKFLOW.nodeBin`（假红来源）。");
-L.push("2. 账单阶段 `verify-source-shape` 加 `--dry`：不再覆写自己依赖的事实源。");
-L.push("3. 新增 `persistJson`：账单与终验复量落盘，宿主会话死掉也能续跑。");
-L.push("4. 新增 `scripts/qa/dryrun-workflow.mjs`（stub 宿主三画像 + 分支覆盖标记）。实测抓到 v3.3 原样复发的 F2：代理返回缺字段即炸在终报之前。修后 3/3 画像跑到「提交与总报告」；正向对照同一工具跑 v3.2 仍 CRASHED（exit 1，:1227）。");
-L.push("5. UI 腿提示词换成实测可通的零点击冷启（`check_wechatide_status` + `ws-channel-up --wait 150`），撤掉「需用户手动开开发者工具」这条假 fallback；`--wait 60` 会给误导性的 `WS_UP=FAIL`。");
-L.push("6. UI 腿加阳性对照硬前置：`wsApplied` 全空时 WS 派生的 `STATE_NOT_APPLIED` 一律记 `UNVERIFIED-INSTRUMENT`，不得记成产品失败（register 页 `.field__input` 三条就是这么被误判的，物件在源码与产物里都在）。");
-L.push("7. 车道提示词按实测 150 轮硬上限要求：先落骨架、逐行落盘、每批不超过 15 行。");
-L.push("8. 提交后复量 sha 敏感门并落 `post-commit-gates-v33.json`：本程 HEAD 连续推进，同一条 corpus 门的 `resolvableOlder` 从 42 读到 45，绿可能只是提交前快照。");
-L.push("9. `WORKFLOW.version` 不再是死配置键（F5 复判：九键里只有它 0 处消费）。");
-L.push("10. 新增 `scripts/qa/prove-gates-can-fail.mjs`：变异只打临时副本，四类变异 4/4 RED-PROVEN，已接进终验阶段。", "");
+proseStub(2, "工作流本身改了什么（生成器不产叙事）", true);
+proseStub(3, "工具与证据侧的实质修复（生成器不产叙事）", false);
 
-L.push("## 3. 工具与证据侧的实质修复", "");
-L.push("- 分诊台认得「选择器已改名」那一型：`unclassified` 1→0，但门仍 exit 2（剩 5 组落地对无裁定，未硬造分类、未塞手写表）。");
-L.push("- 语料门把 sha 读数拆成三类轴（可解析的旧 / 不可解析 / 空），实测 42+0+1=43 守恒，判红条件一字未改；新测试 34 断言 + 两次变异检验。");
-L.push("- 溯源门 `LITERAL_SHA` 1→0；那枚写死的 `deadbeef` 实为内嵌自检负例夹具，代价是 `PROV_PRODUCERS` 12→11（诚实数，已登记待拍板）。");
-L.push("- 4867 帧 `PRE_STAMP` 归因到生产者打的是「转换时刻 HEAD」而非采集带（同文件 `resultsGitSha` 早记着真带），按既有约定补每行 `bandSha`，夹具双向可证。");
-L.push("- 报告器把 observe-only 的 dom 结论计入四格取数；分句建模补上「变更动词切句」。同时纠正一条错误归因：§4.5 那条红不是四格空集，HEAD 真实读数是 85 而非 118。");
-L.push("- `verify-fixes-against-artifact.cjs` 两条守恒规则共用一个旗标导致空集自相矛盾，拆成分别归因，退出码与判决逐字不变。", "");
-
-L.push("## 4. 台账：能落的都落了，剩下的不是「没干活」", "");
-L.push("- 已落账 9 行：`已修复 118→127`、`已修复待复验 12→3`；独立复算 diff 恰 9 增 9 删，6 行受保护行与 HEAD 逐格相同；`verify-ledger`/`verify-state-truth`/`verify-queue-reconcile` 回读全 exit 0。");
-if (g.open) L.push(`- 剩余未结 ${g.open.openRowCount} 行，机械归置：现在可落账 ${g.open.landableNow} 条，需拍板 4 条、需环境 4 条（明细见 reports/audit/round-7/openrows-blockers-v33.json）。`);
-L.push("- 关键易误读点：交互腿那 49 个是「用例号」而非台账 `MP-*` 行号，两套命名空间，所以帧覆盖度不等于台账结案依据；页面级唯一命中的 `VILLAGE-PUBLISH-001` 缺的是设计依据与阈值语义，任何帧都答不了，故按不可落处理。", "");
-
-L.push("## 5. 真实模式交互腿（§4.1 的账）", "");
-const il = rd("reports/audit/round-7/interact-leg-result-v33.json", null);
-const iaudit = rd("reports/audit/round-7/interact-leg-audit-v33.json", null);
-if (il) {
-  const d = il.rows.reduce((a, r) => ((a[r.outcome || r.status] = (a[r.outcome || r.status] || 0) + 1), a), {});
-  L.push(`结果行数 ${il.rows.length}（计划 49 条真实模式交互用例全部试过，另补游客轴与对照行），分布：${Object.entries(d).map(([k, v]) => `${k} ${v}`).join(" / ")}。`);
-  L.push(`门复跑：${String((il.gateRerun && il.gateRerun.out) || "").split(/\r?\n/)[0] || "读数缺失"}；exit=${il.gateRerun ? il.gateRerun.exit : "?"}。`);
-  if (iaudit) L.push(`独立复核：${iaudit.verdict}（帧存在性、sha 一致、EXECUTED 前后必不同、UNCHANGED 前后必相同、每条有具名原因，均由主会话重算，不信车道自报）。`);
-  L.push("- WS 腿不通且根因被纠正：不是取页也不是等不够，而是 `connect()` 里 `MiniProgram.checkVersion()` 把 `(await send(\"Tool.getInfo\")).SDKVersion` 喂给 `licia/cmpVersion.js:4` 的 `v1.split('.')`；9421 只回 `{version}` 没有 SDKVersion ⇒ 握手当场抛。");
-  L.push("- CLI 桥腿可用：showcase 载体 band `real@ed1cd82c`（门 `REAL_BAND=/^real(@|$)/` 只看 mode），四步全绿并出帧。");
-  L.push("- 在册陷阱：`mp-weixin-real` 窗口已死却过地板——`open_project_window` 回 success/type:reuse、截图 11290B，画面实为「模拟器启动失败」。过字节数不等于可采。");
-  L.push("- 载具误挡：按载具口径复算 `DENY` 只命中 2/49（TD03、OT09），不是整批拦路虎；本轮未擅自改载具，待授权。", "");
+L.push("## 4. 台账：未结行与阻断（机械归置）", "");
+if (g.open) {
+  L.push(`- 剩余未结 ${g.open.openRowCount} 行，机械归置：现在可落账 ${g.open.landableNow} 条（明细见 \`${rel(flag("openrows"))}\`）。`);
+  if (g.open.blockers) L.push(`- 阻断归因：${JSON.stringify(g.open.blockers).slice(0, 400)}`);
+  L.push("");
 } else {
-  L.push("**（交互腿产物文件尚未落盘，此处不留结论。）**", "");
+  L.push(NOT_RUN, "");
+}
+
+L.push("## 5. 真实模式交互腿", "");
+if (g.interact) {
+  const rows = g.interact.rows || [];
+  const d = rows.reduce((a, r) => ((a[r.outcome || r.status] = (a[r.outcome || r.status] || 0) + 1), a), {});
+  L.push(`结果行数 ${rows.length}，分布：${Object.entries(d).map(([k, v]) => `${k} ${v}`).join(" / ") || "（无行）"}。`);
+  L.push(`门复跑：${String((g.interact.gateRerun && g.interact.gateRerun.out) || "").split(/\r?\n/)[0] || "读数缺失"}；exit=${g.interact.gateRerun ? g.interact.gateRerun.exit : "?"}。`);
+  if (g.interactAudit) L.push(`独立复核：${g.interactAudit.verdict}（由主会话重算，不信车道自报）。`);
+  L.push("");
+} else {
+  L.push(NOT_RUN, "");
 }
 
 L.push("## 6. 需你拍板 " + pendingView.length + " 项（本轮一律未自裁）", "");
 L.push(roster && roster.open
-  ? `> **本节读的是裁定册 §36 的具名机器名册**（\`PENDING_RULINGS\` 第 ${roster.beginLine}–${roster.endLine} 行，open=${roster.open.length} half-closed=${roster.halfClosed.length} closed=${roster.closed.length}；名册自带对账：${roster.selfCountAgree ? "尾部计数与实际行数一致" : "**尾部计数与行数不一致，名册需回修**"}）。标题分桶那一套仍照常算，用作**交叉核对**：分类器判 ${pending.length} 条 ⇒ 差 ${Math.abs(pending.length - roster.open.length)} 条，差因是分类器只读标题措辞、读不到状态对账节里的闭合（不是谁算错）。`
+  ? `> **本节读的是裁定册的具名机器名册**（\`PENDING_RULINGS\` 第 ${roster.beginLine}–${roster.endLine} 行，open=${roster.open.length} half-closed=${roster.halfClosed.length} closed=${roster.closed.length}；名册自带对账：${roster.selfCountAgree ? "尾部计数与实际行数一致" : "**尾部计数与行数不一致，名册需回修**"}）。标题分桶那一套仍照常算，用作**交叉核对**：分类器判 ${pending.length} 条 ⇒ 差 ${Math.abs(pending.length - roster.open.length)} 条，差因是分类器只读标题措辞、读不到状态对账节里的闭合（不是谁算错）。`
   : `> ⚠ **未读名册**：裁定册里没有 \`PENDING_RULINGS_BEGIN/END\` 块（或块未闭合：${roster && roster.broken ? "有 BEGIN 无 END，行 " + roster.beginLine : "整块缺失"}）⇒ 本节退回**标题语义分类**，那个数按构造只会偏保守（把已闭的算成待办），不得当成"真待办数"引用。`, "");
-L.push(`> 口径钉死：本节的分母是裁定册 \`${LEDGER_REL}\`（sha1=${ledgerDigest}，${ledgerBytes} 字节）里**全部 ${classified.length} 条 \`## N.\` 标题**；` +
+L.push(`> 口径钉死：本节的分母是裁定册 \`${rel(LEDGER_REL)}\`（sha1=${ledgerDigest}，${ledgerBytes} 字节）里**全部 ${classified.length} 条 \`## N.\` 标题**；` +
   `原先的写法直接把标题总数当待拍板数（结构派生计数会随收账虚增），现按语义分桶：**待拍板 ${bucketOf("pending").length} / 已裁定 ${bucketOf("ruled").length} / 已闭或状态对账 ${bucketOf("closed").length} / 流水与自我纠正 ${bucketOf("log").length}**，` +
   `守恒 ${BUCKETS.map((b) => bucketOf(b.key).length).join("+")}=${bucketSum}（应等于 ${classified.length}）。默认桶是待拍板，只有命中显式规则才移出，每条移出项在下面 6.2 附一行依据。`, "");
 for (const d of pendingView) L.push("- " + d.title);
 if (pending.length === 0) L.push("- **（本桶为空。若裁定册仍有 `## N.` 标题却一条待办都没有，这是分桶规则过度移出的形状，先按 6.2 逐条复核再采信。）**");
-L.push("", `GENREPORT_DECISION_BUCKETS ledger=${LEDGER_REL} sha1=${ledgerDigest} headings_total=${classified.length} pending=${bucketOf("pending").length} ruled=${bucketOf("ruled").length} closed=${bucketOf("closed").length} log=${bucketOf("log").length} sum=${bucketSum}`, "");
+L.push("", `GENREPORT_DECISION_BUCKETS ledger=${rel(LEDGER_REL)} sha1=${ledgerDigest} headings_total=${classified.length} pending=${bucketOf("pending").length} ruled=${bucketOf("ruled").length} closed=${bucketOf("closed").length} log=${bucketOf("log").length} sum=${bucketSum}`, "");
 L.push(`GENREPORT_SECTION6_SELFCOUNT heading_number=${pendingView.length} listed_items=${pendingView.length} source=${roster && roster.open ? "roster" : "heading-classification"} crosscheck_classification=${pending.length} matches_title=${pendingView.length === Number(L.filter((x) => /^## 6\. 需你拍板 (\d+) 项/.test(x)).map((x) => x.match(/^## 6\. 需你拍板 (\d+) 项/)[1])[0])}`, "");
 L.push(`GENREPORT_BUCKET_GUARD=${guardRed ? "RED" : "OK"} removed=${classified.length - pending.length}/${classified.length} pending_zero_guard=${pending.length === 0 && classified.length > 0 ? "TRIPPED" : "clear"} ask_override_held=${classified.filter((c) => c.heldByAskOverride).length}`, "");
 L.push(`GENREPORT_LEDGER_DECLARED marker_line=${declIdx + 1} marker_section=${declSection} latest_section=${newestSection} declared_lag=${newestSection - declSection} pending_declared=${declaredNums.length} diff_vs_generator=${diffVsLedger.length} diff_items=${diffVsLedger.map((p) => `#${p.num}`).join(",") || "无"}`, "");
@@ -248,7 +335,7 @@ if (held.length) {
   L.push("", "以下条目命中了移出规则但被反例守卫留在待拍板桶（标题里还有选择题措辞）：");
   for (const h of held) L.push(`- ${h.title}\n  ｜${h.basis}`);
 }
-L.push("", `全文与每条的可选方向见 \`${LEDGER_REL}\`。判据冲突、令牌值、测试数据去留、证据入库方式都是政策选择，我不替你写。`, "");
+L.push("", `全文与每条的可选方向见 \`${rel(LEDGER_REL)}\`。判据冲突、令牌值、测试数据去留、证据入库方式都是政策选择，我不替你写。`, "");
 
 L.push("### 6.3 与册内自述的对账（只印对照，不参与分桶）", "");
 if (declIdx >= 0) {
@@ -270,22 +357,54 @@ if (g.final) {
   for (const [k, v] of Object.entries(g.final.gates || {})) L.push(`${k} exit=${v}`);
   L.push("```");
   L.push(`红项：${(g.final.reds || []).join("、") || "无"}`);
+  if (g.final.redsAfterCommit) L.push(`提交后翻转红项：${(g.final.redsAfterCommit || []).join("、") || "无"}（headAfter=${g.final.headAfter}）`);
+  /* 这两发是**可选的独立复量件**（载具若有单独落盘就传进来）；不传就不印，本节只有 summary 那一发。 */
+  if (g.recheck) L.push(`门禁复量件（--recheck）：${JSON.stringify(g.recheck).slice(0, 500)}`);
+  if (g.postCommit) L.push(`提交后 sha 敏感门件（--postcommit，HEAD 一动读数就会变，绿可能是提交前快照）：${JSON.stringify(g.postCommit).slice(0, 500)}`);
 } else {
-  L.push("**（未跑，故此处不留结论。）** 全清单门禁终局复量（条数以 GATE_SUITE 为准，不写死数字）、反 vacuous-green 自检、QA 自测汇总器、不跳实时门的全量面板，统一由 `scripts/qa/run-final-verify-v33.sh` 产出（汇总写成 `.zcode/tmp/final-verify/summary.json`，本生成器直接读它）。跑完再执行 `node22 scripts/qa/gen-round8-report.mjs`，本节自动填真实读数，不手抄数字。");
+  L.push(`${NOT_RUN} 全清单门禁终局复量（条数以 GATE_SUITE 为准，不写死数字）、反 vacuous-green 自检、QA 自测汇总器、不跳实时门的全量面板，统一由 \`scripts/qa/run-final-verify-v33.sh\` 产出（汇总写成 \`${rel(SUMMARY_REL)}\`，本生成器直接读它）。跑完再执行 \`node22 scripts/qa/gen-round8-report.mjs --out <本轮落点> --ledger <本轮裁定册>\`，本节自动填真实读数，不手抄数字。`);
 }
 L.push("");
-L.push("## 8. 本轮把「排在后面做」的账收掉了多少（含纠出的文档错）", "");
-L.push("- `#51` / `#67`：**本程之前就已落盘入库**（commit `34b6fb3d`，备份 `.pre-ops-cellplan.bak` Sep 27 18:39）。ops 车道干跑实测 `A 组=8｜B 组=22｜已落地=30｜待改=0｜拒绝=0 → OPSCELL_RESULT=PASS exit 0`。`round7-NOTES.md` §104.3 记的 `A=9 / 31 行` 与盘上不符（那是旧态），所以本轮**没有重复 --apply**——拿旧文档重落一遍不是补完，是造假进度。");
-L.push("- 我自己在交接文档里写的「默认吃三份计划」是错的：`:33` 的默认表有**四份**（漏了 `cellplan-round7-recovered.json` 13 行）。已在 `followups-v33.md` 1.1 节逐字纠正。");
-L.push("- 167 行重判里的 `SELECTOR_MISSED=45` 只收进 **10** 条（9 条 add-tapTarget + 1 条 rename `TD07 .say-hello→.reply-say-hello`），守恒 286→286、全目录 1107 不变，幂等复跑 `已落地=10 待改=0`。拒 20 条分类点名：判据无点击步 12、两档静态不命中 2、多命中歧义 3、节点不挂事件 2、有 tap 无点击步 1。**方法论收获：四道闸本身会放行 28/30 —— 过闸是必要条件，不是充分条件。**");
-L.push("- `CH12` 判成 **EXECUTED**：prestate 三样同向实测（`isVerified=false`、目标 btn `present(1)`、两支徽章 absent），tap 回 `{success:true}`，600ms 内路由 `hub|certification`、栈深 1→2、落地页 `.cert-page/.cert-header/.cert-body` present，7 帧哈希且人眼确认不是「模拟器启动失败」页。未量到的写明：500ms 子句、console、身份 B 腿。");
-L.push("- 孤儿门禁接线：`verify-dry-no-lease` 与 `verify-case-automatable` 已接进 `GATE_SUITE`（唯一必然经过的调用点）并实跑为绿；`verify-openqueue-lanes` 判为**不该接**（打印 `OPENQ_RESULT=PARTIAL` 却 `exit=0`、写死 round-7、无条件覆写判决件），已留防再试注释，处置开成第 15 项。");
-L.push("- 仍然存在的红与风险：`verify-ops-corpus-stamp --check` 仍 exit 1（10 个漂移文件里只有 4 个是本程改的，另 6 个先于本程就不符，车道按边界没有越权重打别人的戳）；`tmp/qa/unverifiable-recheck-*.json` 三份已复制进 `reports/audit/round-7/` 脱离不可携状态。", "");
 
-writeFileSync(join(REPO, OUT_REL), L.join("\n") + "\n");
-console.log("WROTE " + OUT_REL + " ledger=" + LEDGER_REL);
+proseStub(8, "本轮把「排在后面做」的账收掉了多少（生成器不产叙事）", false);
+
+/* 车道叙事若真给了，逐字并进来；没给就只留上面的桩（形状 (b) 的另一半）。 */
+const PROSE_REL = flag("prose");
+if (PROSE_REL) {
+  try { L.push("## 附. 收口车道撰写的叙事（生成器原样并入，未改一字）", "", readFileSync(P(PROSE_REL), "utf8").trimEnd(), ""); }
+  catch (e) { L.push("## 附. 收口车道撰写的叙事", "", `**（--prose 指到 ${rel(PROSE_REL)} 却读不到：${e && e.code} ⇒ 此处不留结论。）**`, ""); }
+}
+
+/* ── 守卫二：溯源（这条才是防复发的牙齿）──────────────────────────────────────
+   写盘前读 --out 上已存在那份文件的身份（H1 的 v-标签/日期 + 正文点名的裁定册），与这一发即将印出的
+   身份逐字段比。可比字段任一不符 ⇒ GENREPORT_PROVENANCE=RED + exit 3，绝不"顺手"改写历史。
+   · 文件不存在 ⇒ 没有可比对象，放行（本轮第一次落盘）。
+   · 文件存在但读不出任何身份 ⇒ 照样拒绝：那是手写交付件，不能证明它属于本轮。
+   · 同一轮复量 ⇒ 三字段全等 ⇒ 放行，保留"落盘后重跑一次即可"的既有契约。
+   没有 --force 后门：本守卫拦的就是"以为自己在写本轮"，而写错的人从不觉得自己错。 */
+const aboutTo = { round: ROUND, date: DATE, ledger: rel(LEDGER_REL) };
+const guardLines = [];
+if (!existsSync(P(OUT_REL))) {
+  guardLines.push(`GENREPORT_PROVENANCE=ABSENT out=${rel(OUT_REL)} requested_round=${aboutTo.round || "-"} requested_date=${aboutTo.date || "-"} requested_ledger=${aboutTo.ledger} conflicts=none（落点上没有既有文件 ⇒ 本轮首次落盘，无可覆写的历史）`);
+} else {
+  const prev = idSig(readFileSync(P(OUT_REL), "utf8"));
+  const cmp = [];
+  if (!prev.round && !prev.date && !prev.ledger) cmp.push("existing=no-identity");
+  for (const f of ["round", "date", "ledger"]) if (prev[f] && aboutTo[f] && prev[f] !== aboutTo[f]) cmp.push(`${f}: existing=${prev[f]} requested=${aboutTo[f]}`);
+  guardLines.push(`GENREPORT_PROVENANCE=${cmp.length ? "RED" : "OK"} out=${rel(OUT_REL)} existing_round=${prev.round || "-"} requested_round=${aboutTo.round || "-"} existing_date=${prev.date || "-"} requested_date=${aboutTo.date || "-"} existing_ledger=${prev.ledger || "-"} requested_ledger=${aboutTo.ledger}${cmp.length ? " conflicts=" + cmp.join(" ") : " conflicts=none"}`);
+  if (cmp.length) {
+    for (const s of [...guardLines, ...L.filter((x) => /^GENREPORT_(IDENTITY|BUCKET|DECISION|SECTION6|LEDGER)/.test(x))]) console.log(s);
+    finish("PROVENANCE", "拒绝写入：--out 上那份文件属于别的轮次（或无身份可证），覆写它=改写历史交付件 ⇒ 把 --out 换到本轮 closureDir 下再来", 3);
+  }
+}
+
+writeFileSync(P(OUT_REL), L.join("\n") + "\n");
+console.log("WROTE " + rel(OUT_REL) + " ledger=" + rel(LEDGER_REL) + ` round=${ROUND || "(未指明)"} date=${DATE || "(未指明)"}`);
 console.log("commits=" + commits.length + " decisions=" + classified.length + " openRows=" + (g.open ? g.open.openRowCount : "n/a") + " finalReadings=" + (g.final ? "已填" : "未跑"));
-console.log(`GENREPORT_DECISION_BUCKETS ledger=${LEDGER_REL} sha1=${ledgerDigest} headings_total=${classified.length} pending=${bucketOf("pending").length} ruled=${bucketOf("ruled").length} closed=${bucketOf("closed").length} log=${bucketOf("log").length} sum=${bucketSum}`);
+console.log(`GENREPORT_IDENTITY round=${ROUND || "(未指明)"} date=${DATE || "(未指明)"} round_src=${ROUND_SRC} ledger_round=${ledgerId.round || "(读不出)"} ledger_date=${ledgerId.date || "(读不出)"}`);
+for (const s of guardLines) console.log(s);
+console.log(`GENREPORT_DECISION_BUCKETS ledger=${rel(LEDGER_REL)} sha1=${ledgerDigest} headings_total=${classified.length} pending=${bucketOf("pending").length} ruled=${bucketOf("ruled").length} closed=${bucketOf("closed").length} log=${bucketOf("log").length} sum=${bucketSum}`);
 console.log(`GENREPORT_BUCKET_GUARD=${guardRed ? "RED" : "OK"} removed=${classified.length - pending.length}/${classified.length} pending_zero_guard=${pending.length === 0 && classified.length > 0 ? "TRIPPED" : "clear"} ask_override_held=${classified.filter((c) => c.heldByAskOverride).length}`);
 console.log(`GENREPORT_SECTION6_SELFCOUNT heading_number=${pendingView.length} listed_items=${pendingView.length} source=${roster && roster.open ? "roster" : "heading-classification"} crosscheck_classification=${pending.length}`);
 console.log(`GENREPORT_LEDGER_DECLARED marker_line=${declIdx + 1} marker_section=${declSection} latest_section=${newestSection} declared_lag=${newestSection - declSection} pending_declared=${declaredNums.length} diff_vs_generator=${diffVsLedger.length}`);
+console.log(`GENREPORT_RESULT=OK out=${rel(OUT_REL)} round=${ROUND || "(未指明)"} date=${DATE || "(未指明)"} summary=${g.final ? "filled" : "not-run"}`);

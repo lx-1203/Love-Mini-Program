@@ -1657,7 +1657,7 @@ log(`提交后 HEAD=${finalHead}（起点 ${head}）；sha 敏感门复量 ${pos
  * 上面那发 persistJson 已经把带 headAfter / redsAfterCommit / panelNotMeasured 的终账写进
  * .zcode/tmp/final-verify/summary.json，这一发起读它并回填报告，所以 §7 与终账必然同源。
  */
-const reportGen = await runGate({ name: "总报告回填 gen-round8-report", args: ["scripts/qa/gen-round8-report.mjs"], timeoutMs: 180000 });
+const reportGen = await runGate({ name: "总报告回填 gen-round8-report", args: ["scripts/qa/gen-round8-report.mjs", "--ledger", WORKFLOW.closureDir + "/decisions-v38.md", "--out", WORKFLOW.closureDir + "/round-final-report-v38.md", "--round", "v3.8", "--date", "2026-10-16", "--baseline", head, "--summary", ".zcode/tmp/final-verify/summary.json"], timeoutMs: 180000 });
 gateToBoard(reportGen);
 log(`报告生成器 gen-round8-report exit=${reportGen.exitCode}（${reportGen.resultLine.slice(0, 120)}）—— §7 只认这份读数，禁止手填数字`);
 if (reportGen.exitCode !== 0) blockers.push(`总报告回填未跑成（exit=${reportGen.exitCode}）⇒ §7 停在未跑，禁止手填数字代替读数`);

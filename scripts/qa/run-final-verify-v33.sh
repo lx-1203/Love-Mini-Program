@@ -164,6 +164,6 @@ echo "GREEN/RED 计数：红=$FAIL  HEAD 前=$HEAD_BEFORE 后=$HEAD_AFTER（相�
 #（DSL :1048 一直在跑它，两载具就此不一致；现由 verify-gate-list-sync 的差集判据盯着）。
 # 位置必须在 summary.json 落盘之后：gen-round8-report 的 §7 读的就是这份文件，早一步就是拿旧读数回填。
 # 超时 180 秒 = 与 DSL 的 timeoutMs:180000 齐平；本步只读盘与写报告，不起进程、不取租约。
-g gen-round8-report      180 scripts/qa/gen-round8-report.mjs
+g gen-round8-report      180 scripts/qa/gen-round8-report.mjs --ledger reports/audit/ui-audit-2026-10-16/decisions-v38.md --out reports/audit/ui-audit-2026-10-16/round-final-report-v38.md --round v3.8 --date 2026-10-16 --baseline "$HEAD_BEFORE" --summary "$OUT/summary.json"
 echo "汇总已写 $OUT/summary.json；总报告回填的读数与落点见 $OUT/gen-round8-report.log"
 echo "FINAL_VERIFY_DONE reds=$FAIL（注：红数只统计上面那一轮汇总，总报告回填排在其后，单独看它的 .exit）"
