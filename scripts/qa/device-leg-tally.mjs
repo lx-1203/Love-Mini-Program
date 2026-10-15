@@ -94,7 +94,11 @@ export function resultLine(counts, dirRel, band) {
  *  放在这个模块里而不是载具文件里，是为了让离线测试测的是**这套正则本身**，
  *  不是某人重抄的一份。 */
 const SCRUB_TOKENISH = /"(?:token|accessToken|refresh_token|password|passwordHash|ADMIN_INITIAL_PASSWORD_HASH)"\s*:\s*"[^"]{8,}"/g;
-const SCRUB_JWT = /eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+/g;
+const SCRUB_JWT = /eyJ[A-Za-z0-9_-]{8,}(?:\.[A-Za-z0-9_-]+){1,2}/g;
+/* ↑ 2026-10-16 加固：旧尺只认三段齐的 `eyJ.a.b`，而密钥门 verify-staged-secrets.mjs:169
+   的 "JWT 段" 尺连**被 slice 截断成两段**的票都抓（实测判红的 exec-results.json:587 正是
+   `body=${lg.text.slice(0,150)}` 把票腰斩的产物）。遮蔽必须 ≥ 门的尺，否则"已脱敏"是假绿。
+   新尺 = eyJ + ≥8 位段 + 1~2 个续段，是旧尺的超集；纯整数 id / userId / band 串不含 eyJ 头，不受影响。 */
 const SCRUB_BCRYPT = /\$2[aby]\$\d{2}\$[./A-Za-z0-9]{50,}/g;
 export function scrubEvidence(s) {
   return String(s == null ? "" : s)
@@ -180,4 +184,17 @@ export function buildExecFile(rows, meta) {
     totals: { pass: meta.totals.pass, fail: meta.totals.fail, unverified: meta.totals.unverified },
     results: rows,
   };
+}
+
+/** 结果台账（exec-results.json）的唯一序列化出口：buildExecFile + JSON.stringify 之后、
+ *  落盘之前，整段文本再过一遍**同一个** scrubEvidence（单一遮蔽源，不自造第二套）。
+ *  为什么在序列化后的全文上屏而不是只屏行字段：文件头（legNote/sessionSource 等）与
+ *  行内 observed/failureReason 都可能被塞进票，写侧只留这一个出口才不会再出现
+ *  "tally 屏了、落盘没屏"的那次事故（2026-10-16，exec-results.json:587 一枚活 JWT）。
+ *  掩码形状 eyJ****(len=N) / ****(len=masked) 都待在原 JSON 字符串值内部，不引入裸引号，
+ *  JSON.parse 仍成立 ⇒ 覆盖率门 execRows() 照常读行。序列化后的文本里嵌套引号已被转义成
+ *  \"token\"，SCRUB_TOKENISH 的字面键名尺在这段上打不中——这是**已知限制**，
+ *  兜住它的是值形状尺 SCRUB_JWT/SCRUB_BCRYPT（与密钥门的 JWT/bcrypt 形状探测同轴）。 */
+export function renderExecFile(rows, meta) {
+  return scrubEvidence(JSON.stringify(buildExecFile(rows, meta), null, 1));
 }

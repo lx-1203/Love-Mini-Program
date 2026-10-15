@@ -279,5 +279,26 @@
       },
       "verdict": "两条车道到本轮终点仍未交付可采信的读数：结果件是 02:58 那一发（JWT 命中仍 1 ⇒ 脱敏后的重跑没发生），selftests 名册行还没落盘。下一程按 parkedState.lanesInFlight 的验收单实测，别按报告字数或 lane 自述收口。"
     }
+  },
+  "laneAAccepted": {
+    "at": "b29f832e",
+    "verdict": "采信（八项全部我在盘上自己量过，不按 lane 自述收）",
+    "measured": {
+      "artifactMtime": "2026-10-16T03:21:31+08:00",
+      "artifactBytes": 30701,
+      "rows": 41,
+      "jsonParse": "OK",
+      "jwt3seg": 0,
+      "jwt2seg": 0,
+      "maskedToken": "eyJraW****(len=108) 留存",
+      "postId146": "2 处在",
+      "userId100166": "44 处在",
+      "sink": "verify-device-leg.mjs:266 → device-leg-tally.mjs:198 renderExecFile",
+      "regex": "SCRUB_JWT 放宽为 {1,2} 段（旧尺超集）",
+      "selftest": "checks=21 fail=0 / DLSCRUB_TEST=PASS",
+      "mutations": "MUT-A 删写侧屏 1/21 红｜MUT-B 退裸 stringify 1/21 红｜MUT-D 退旧 3 段尺 2/21 红"
+    },
+    "myOwnDiagnosisWasIncomplete": "我的判词只说「结果件写点没过屏」。真根因是两层叠出来的：屏比门窄——:498 把登录响应截到 150 字，票被切成 2 段，旧 SCRUB_JWT 只认 3 段，而密钥门的「JWT 段」尺认 2 段 ⇒ 照我的说法包上屏也照样漏。这类「脱敏尺与门禁尺不同形」就是假绿保证，我漏看了第二层。",
+    "stillOpen": "exec-results.json 仍 untracked（用户裁问题 2 未决），故没对索引跑 verify-staged-secrets，行上也不声称已入库；lane 另记两条未验：SCRUB_TOKENISH 对含转义引号的序列化文本证明无效（本标本靠 JWT/bcrypt 值形状尺兜住），device-post.json 等同目录兄弟件不在范围内。"
   }
 }

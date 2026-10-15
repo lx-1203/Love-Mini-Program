@@ -48,7 +48,7 @@ import { guardUiLease } from "./qa/ui-lease.mjs";
    等于把上一轮"腿跑出 0 覆盖"那格失败换了个标签重演一遍。git HEAD 仍留档，但只当出处旁证。 */
 import { readApiMode } from "./qa/artifact-band.mjs";
 import {
-  createTally, buildRows, buildExecFile, resultLine, exitCodeOf, looksInstrumentFault,
+  createTally, buildRows, renderExecFile, resultLine, exitCodeOf, looksInstrumentFault,
   scrubEvidence,
 } from "./qa/device-leg-tally.mjs";
 
@@ -260,7 +260,10 @@ function finishLeg() {
     mkdirSync(dir, { recursive: true });
     const meta = legMeta();
     const rows = buildRows(tally.items, meta, loadBindings());
-    writeFileSync(join(dir, "exec-results.json"), JSON.stringify(buildExecFile(rows, meta), null, 1));
+    /* 落盘必须走 renderExecFile：它是 exec-results.json 唯一被屏的出口（序列化后整段过
+       同一个 scrubEvidence）。改回裸 JSON.stringify 会同时红两条自检
+       （scripts/qa/test-device-leg-scrub.mjs 的行为判点 + 源码锚判点）。 */
+    writeFileSync(join(dir, "exec-results.json"), renderExecFile(rows, meta));
     wroteDir = EXEC_REL;
   } catch (e) { note(`   [exec 台账落盘失败] ${String((e && e.message) || e).slice(0, 160)}`); }
   const rl = resultLine(tally.counts, wroteDir, BAND_STAMP);
