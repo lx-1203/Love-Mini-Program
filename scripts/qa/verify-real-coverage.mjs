@@ -84,13 +84,28 @@
  *     真给了机读字段（`cases`/`case` + `coverageEffect`）就优先按字段走，声明了判据集外的 id ⇒ 以本门名字判红，
  *     因为那正是"解析器对什么都不响"的形状。
  *
+ *  新鲜度桶（2026-10-15 lane-E 补，本轮那条真·假绿）：认领只认 band=real@sha8 里那条 sha8 等不等于**当前
+ *  real 产物的构建戳**（同一算法 artifact-band.mjs:22）。旧构建的行（盘上 real@ed1cd82c）今天照样能把
+ *  COVERED 顶成非零，而 Redis/8080 全死时"前后端连通"这半验收无从谈起 —— 于是加第五只互斥桶 EXPIRED，
+ *  与待判桶同构、也只从 covered 往外摘：`uncovered===0 && voided===0 && expired===0 && conserved` 才绿。
+ *  两条硬口径：① **stale≠live**：尺只读盘上 config/env.js，绝不探后端，后端掉线不把任何行判成过期；
+ *  连通那半另有一行 REALCOV_CONNECTIVITY 只报不判。② 尺取不到（bundle 不在盘、行也无 @戳）⇒
+ *  REALCOV_FRESHNESS=UNMEASURABLE，一条不摘、大声报，绝不编一个比较把历史行全打红（同"永久红会被绕过"）。
+ *
  *  用法：node scripts/qa/verify-real-coverage.mjs [--round round-7]
  *       [--ops reports/audit/round-6/ops] [--dir reports/audit/round-7]
  *       [--ledger reports/audit/ui-audit-2026-10-09/tour-ledger.json] [--selftest]
+ *       [--band-stamp real@<sha8>]（当前尺覆盖，工作流可传它自算的 bandStamp；不给则读 --real-bundle 现算）
+ *       [--real-bundle apps/client/dist/build/mp-weixin-real]（现算当前尺用的产物目录）
+ *       [--backend up|down|unknown]（只喂 REALCOV_CONNECTIVITY 那行；不影响覆盖/过期判定，默认 unknown）
  */
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+/* 档位戳的唯一算法：sha8 = 在盘产物 config/env.js 字节的 sha256 前 8 位。
+   生产者（r-exec-cli / r-exec-ws 的 BAND_STR=mode@sha8）与工作流 bandStamp（v3.7:552）读的是同一个函数，
+   本门拿它当"当前尺"去比行上的 band@sha8 ⇒ 新鲜度判点与盖戳判点同源，不会各算各的哈希。 */
+import { readApiMode } from "./artifact-band.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? argv1(i) : d; };
@@ -211,6 +226,80 @@ function axesOf(identities) {
   const ids = (identities || []).map(String).filter(Boolean);
   if (!ids.length) return { login: true, guest: true };
   return { login: ids.some((x) => x === "A" || x === "B" || x === "minor"), guest: ids.some((x) => x === "guest" || x === "none") };
+}
+
+/* ---------- 新鲜度尺（2026-10-15 lane-E 补，本轮那条真·假绿）----------
+   旧门只要行上 band 匹配 /^real(@|$)/ 就给它记覆盖，**从不比这条 band 的构建戳是不是当前产物**。
+   于是 2026-10-13 那批 exec-* 行（band=real@ed1cd82c，一个早已不在盘上的旧构建）今天照样让
+   COVERED 保持非零 —— 而后端 8080 与 Redis 6379 全死、前后端连通这一半验收根本无从谈起。
+   这一格把"陈旧(stale)"从"覆盖(covered)"里摘出来，做成第五只互斥桶（EXPIRED），与待判决桶同构：
+   · 判点=行上 real 段的 sha8 是否等于"当前尺"的 sha8（同源 artifact-band.mjs:22）；
+   · 尺的来源=优先 --band-stamp 覆盖，否则读在盘 real 产物 config/env.js 现算；两者都拿不到 ⇒
+     REALCOV_FRESHNESS=UNMEASURABLE：宁可不判，绝不编一个比较出来（旧行没有可比戳也走这一格，不据此撤认领）；
+   · **stale≠live**：这一格只看盘上的构建戳，绝不去探后端。后端此刻掉线不会把任何行判成过期
+     （否则就是把每条老行都打成新红，正撞文件头那句"永久红的门最后会被绕过去"）。
+     前后端连通那半（live）另有一行 REALCOV_CONNECTIVITY 大声报、只报不判，交给 probe-real-env.mjs 预检兜。 */
+const REAL_BUNDLE = arg("real-bundle", "apps/client/dist/build/mp-weixin-real");
+/** 当前尺：--band-stamp（工作流可传它自己算的 bandStamp）优先，否则读在盘 real 产物现算；都无 ⇒ null（UNMEASURABLE）。 */
+function resolveCurrentStamp() {
+  const o = arg("band-stamp", "");
+  if (o) {
+    const m = String(o).match(/@([0-9a-fA-F]{6,})/);
+    return { sha8: (m ? m[1] : String(o)).toLowerCase(), source: "--band-stamp", raw: String(o) };
+  }
+  try {
+    const band = readApiMode(resolve(REPO, REAL_BUNDLE));
+    if (band && band.sha8) return { sha8: String(band.sha8).toLowerCase(), source: "bundle:" + REAL_BUNDLE, raw: (band.mode || "?") + "@" + band.sha8 };
+  } catch { /* 读不到就走 UNMEASURABLE，不猜 */ }
+  return { sha8: null, source: "unmeasurable", raw: "" };
+}
+/** 行上 real 段的 sha8（`real@ed1cd82c` → ed1cd82c；`real@f0677920 / mock@...` 也先取 real 段；裸 `real` ⇒ null=无可比戳）。 */
+function rowRealSha8(band) { const m = String(band || "").match(/^real@([0-9a-fA-F]{6,})/); return m ? m[1].toLowerCase() : null; }
+/** 单行新鲜度：只有"当前尺已知 且 行带可比戳"才谈得上 fresh/stale；否则 unmeasurable（不据此撤认领）。 */
+function rowFreshness(band, cur) {
+  if (!cur.sha8) return "unmeasurable";
+  const rs = rowRealSha8(band);
+  if (!rs) return "unmeasurable";
+  return rs === cur.sha8 ? "fresh" : "stale";
+}
+/** 按当前尺把每条 real 档、判过、会话不矛盾的行分到 fresh/stale 两条身份集（与 judge 认领同一批行、同一套矛盾规则）。 */
+function buildFreshMap(rows, ids, cur) {
+  const map = new Map();
+  for (const r of rows) {
+    if (!ids.has(r.key)) continue;
+    if (!REAL_BAND.test(r.band) || !JUDGED.test(r.status)) continue;
+    if (sessionVerdict(r) === "contradict") continue; // 与 judge 同：矛盾行本就不记账，谈不上"新鲜记账"
+    const rec = map.get(r.key) || { fresh: new Set(), anyBands: new Set(), staleBands: new Set(), unmeasurableBands: new Set() };
+    rec.anyBands.add(String(r.band));
+    const fr = rowFreshness(r.band, cur);
+    if (fr === "fresh") rec.fresh.add(r.identity);
+    else if (fr === "stale") rec.staleBands.add(String(r.band));
+    else rec.unmeasurableBands.add(String(r.band));
+    map.set(r.key, rec);
+  }
+  return map;
+}
+/** 唯一改变 covered 的第二处（与 applyVoidBook 并列、互斥）：把"原已记成 COVERED、但认领它的身份全靠陈旧/无戳行"的用例从 covered 摘到 expired。
+   当前尺不可得 ⇒ 一律不摘（UNMEASURABLE 不造假比较）。 */
+function applyExpiry(m, req, freshMap, cur) {
+  const expired = [];
+  const kept = [];
+  const reqByKey = new Map(req.map((c) => [c.manifest + "|" + c.id, c]));
+  for (const key of m.covered) {
+    const c = reqByKey.get(key);
+    const ax = axesOf(c ? c.identities : []);
+    const f = freshMap.get(key) || { fresh: new Set(), staleBands: new Set(), unmeasurableBands: new Set() };
+    const loginFresh = f.fresh.has("A") || f.fresh.has("B") || f.fresh.has("minor");
+    const guestFresh = f.fresh.has("guest") || f.fresh.has("not-logged-in");
+    const missing = [];
+    if (ax.login && !loginFresh) missing.push("login");
+    if (ax.guest && !guestFresh) missing.push("guest");
+    if (cur.sha8 && missing.length) {
+      expired.push({ key, missing, staleBands: [...f.staleBands], unmeasurableBands: [...f.unmeasurableBands] });
+    } else kept.push(key);
+  }
+  m.covered = kept;
+  return expired;
 }
 
 function judge(rows, req, ids) {
@@ -789,6 +878,12 @@ const titleById = new Map(req.map((c) => [c.id, c.title]));
 const vbook = buildVoidBook(ledgerFile.ledger, new Set(req.map((c) => c.id)), titleById);
 const voided = applyVoidBook(m, vbook);
 const voidedN = voided.length;
+/* 新鲜度桶（第五只，与待判桶并列、互斥，均从 covered 摘出）：位置仍在 judge/void 之后、任何读数之前
+   ⇒ 下面 COVERED / 守恒 / 欠账说的都是"作废 + 过期都摘完"之后的账。尺取不到 ⇒ 一条不摘（UNMEASURABLE）。 */
+const cur = resolveCurrentStamp();
+const freshMap = buildFreshMap(rows, ids, cur);
+const expired = applyExpiry(m, req, freshMap, cur);
+const expiredN = expired.length;
 console.log(`REALCOV_LEDGER_SOURCE=${ledgerFile.label}（corrections=${vbook.corrections} 行 / fixlane=${vbook.fixlane} 行；只读，本门对盘上一个字节都不写）`
   + (ledgerFile.absent ? " ⇒ 台账读不到：待判桶只能按\"没有可核对的作废行\"处理，**这不构成\"没有作废\"的证明**" : ""));
 console.log(`REALCOV_CASES=${req.length} EXEC_ROWS=${rows.length} 结果目录=${DIR.replace(REPO + "/", "")}`);
@@ -880,12 +975,24 @@ for (const r of rows) identHist.set(r.identity, (identHist.get(r.identity) || 0)
 const VOCAB = ["A", "B", "guest", "not-logged-in", "none"];
 console.log(`REALCOV_IDENT_VOCAB ${VOCAB.map((v) => v + "=" + (identHist.get(v) || 0)).join(" ")}（全扫描 ${rows.length} 行里各拼法实际出现次数）`
   + " ⇒ not-logged-in 有判点(:238)无生产者=死词；none 既不被两轴认领、旗标词表里却有(r-exec-cli.mjs --identity guest|none)⇒ 也是死词。本门不为此新增任何拼法。");
-console.log(`REALCOV_COVERED=${coveredN}`);console.log(`REALCOV_UNCOVERED=${uncovered}／${req.length}（阈值同旧：非免检欠账 =0 才绿，且待判决 =0）`);
+console.log(`REALCOV_COVERED=${coveredN}`);console.log(`REALCOV_UNCOVERED=${uncovered}／${req.length}（阈值同旧：非免检欠账 =0 才绿，且待判决 =0 且过期 =0）`);
 /* 待判决桶点名（R3-01）：没有上限、逐条点名——一条说不出是哪本账哪一行把它作废的欠账，和当初那个
    只印一个数的 uncovered 是同一种失败（读数无法派活，最后被当成噪音划掉）。 */
 console.log(`REALCOV_VOIDED=${voidedN}（台账行点到、本门原先却记成 COVERED 的那些 ⇒ 从覆盖里摘到这里；既不算覆盖也不算欠账，欠账阈值一个字没放松）`);
 for (const v of voided) { console.log(`  ${voidLine(v)}`); const nn = voidNoteLine(v); if (nn) console.log(nn); }
 if (voidedN) console.log(`  VOIDED_HINT 这一格的红按判词分头走：未有效判决/出列的 ⇒ 先拍台账点名的 needsUser 令牌，再重跑那条腿；re-run/write-back 的 ⇒ 重跑落一条有效判决行；想让门把一条用例放回 COVERED，只有一个形状有用——台账行上声明 coverageEffect:"revalidated"（prose 无论怎么写都洗不成绿，包括"原出列作废"这种重开行）。`);
+/* 新鲜度桶点名（2026-10-15 lane-E）：与 VOIDED 同构的一只只减不加的桶——本门原记成 COVERED 的用例，
+   若认领它两条身份轴的 real 腿全部带着与当前产物不一致的 band@sha8（或缺可比戳）⇒ 从覆盖摘到这里。
+   它数的是"陈旧(stale)"，与"后端此刻活不活(live)"是两句话：尺只读盘上构建戳、不探后端，
+   后端掉线绝不把行判成过期；连通那半只在下面 REALCOV_CONNECTIVITY 大声报、只报不判。 */
+const connRaw = (arg("backend", "unknown") || "unknown").toLowerCase();
+const connLabel = connRaw === "up" || connRaw === "true" || connRaw === "1" ? "PROVEN" : (connRaw === "down" || connRaw === "false" || connRaw === "0" ? "DOWN" : "UNKNOWN");
+console.log(`REALCOV_BAND_STAMP=${cur.raw || "(取不到)"} 尺源=${cur.source}（当前 real 产物 config/env.js 内容 sha8，与行上 band=real@sha8 同一算法 artifact-band.mjs:22；比的就是这条 sha8）`);
+console.log(`REALCOV_FRESHNESS=${cur.sha8 ? "MEASURED" : "UNMEASURABLE"}（stale≠live：只比盘上构建戳、绝不探后端；尺取不到时一条不摘、按 UNMEASURABLE 大声报，绝不编一个比较把历史行全打红）`);
+console.log(`REALCOV_CONNECTIVITY=${connLabel}（live 半边=前后端连通性，独立于上面的 stale；这一行只报不判，**不因后端此刻不可达就撤任何覆盖**——探活/Redis 前置归 scripts/probe-real-env.mjs 预检，别让覆盖门替它背锅或洗地）`);
+console.log(`REALCOV_EXPIRED=${expiredN}（本门原记成 COVERED、认领它的 real 腿却全是旧构建戳或缺可比戳 ⇒ 从覆盖摘到这里；是"陈旧证据"不是"后端掉线"，既不降分母也不并入欠账，与 VOIDED 互斥）`);
+for (const e of expired) console.log(`  EXPIRED ${e.key} 现戳=${cur.sha8 || "?"} 陈旧行戳=${e.staleBands.join(",") || "(无)"} 缺戳行=${e.unmeasurableBands.join(",") || "(无)"} 缺=${e.missing.join("+")}`);
+if (expiredN) console.log(`  EXPIRED_HINT 重拍：在当前 real 产物（${cur.raw}）上把点名用例的 login/guest 腿重跑一遍；别让旧构建的行继续顶着 COVERED，也别改标签或把 mock 行改成 real 来"补数"。`);
 /* 欠账点名（2026-09-29）：把上面那个数摊开成一行一条，缺哪根轴写哪根轴。
    没有上限（不许"另 N 条未点名"）——一条点不出名的欠账就无法派活，而一本必须对得上数的账
    才允许被红。轴词表与判点的两条轴一一对应：
@@ -898,11 +1005,11 @@ if (ledger.enumerated.length) {
   console.log(`  UNCOVERED 轴口径 never-on-real=real 档一行都没有；login=登录轴 A/B 无判过的行；guest=游客轴无判过的行 ⇒ 缺哪根轴去补哪条腿，别改标签、别把 mock 行改成 real 来"补数"`);
   for (const k of ledger.enumerated) console.log(`  UNCOVERED ${k} 缺=${ledger.axisOf(k)}`);
 }
-const sum = exemptN + coveredN + uncovered + voidedN;
+const sum = exemptN + coveredN + uncovered + voidedN + expiredN;
 const conserved = sum === req.length;
-console.log(`REALCOV_CONSERVATION=${conserved ? "OK" : "FAIL"} 免检=${exemptN} + 覆盖=${coveredN} + 欠账=${uncovered} + 待判=${voidedN} = ${sum}／${req.length}`);
-if (!conserved) console.log(`  CONSERVATION_FAIL 差=${req.length - sum} ⇒ 有用例没被「免检/覆盖/欠账/待判」任一格接住（或有重复计），这笔账不可信，门直接判红`);
-const ok = uncovered === 0 && voidedN === 0 && conserved;
+console.log(`REALCOV_CONSERVATION=${conserved ? "OK" : "FAIL"} 免检=${exemptN} + 覆盖=${coveredN} + 欠账=${uncovered} + 待判=${voidedN} + 过期=${expiredN} = ${sum}／${req.length}`);
+if (!conserved) console.log(`  CONSERVATION_FAIL 差=${req.length - sum} ⇒ 有用例没被「免检/覆盖/欠账/待判/过期」任一格接住（或有重复计），这笔账不可信，门直接判红`);
+const ok = uncovered === 0 && voidedN === 0 && expiredN === 0 && conserved;
 /* 台账守恒（门对自己那本账的断言，2026-09-29 补）：点名数与欠账数对不上、或点出了判据集外的用例
    ⇒ **以门自己的名字判红**。欠账那一侧的判点仍是"欠账 =0 且守恒"（2026-10-13 起 ok 另加了 `voidedN === 0`，
    见文件头待判决桶那一节），这里只往退出口叠一条独立的红：ledgerOk 恒真时欠账读数与改前逐字相同，
@@ -919,7 +1026,7 @@ const voidLedgerOk = voidProblems.length === 0;
 console.log(`REALCOV_VOIDED_LEDGER=${voidLedgerOk ? "OK" : "FAIL"} 待判=${voidedN} 台账点到判据内=${vbook.byCase.size} 台账行=corrections ${vbook.corrections}+fixlane ${vbook.fixlane}（自洽断言：每条待判都有出处、待判∩欠账=∅、声明字段不得点到判据集外的用例；缺省台账路径不存在只大声印、不新增常红判点）`);
 for (const p of voidProblems) console.log(`  VOIDED_LEDGER_BAD ${p}`);
 const pass = ok && ledgerOk && voidLedgerOk;
-console.log(`REALCOV_RESULT=${pass ? "PASS" : "FAIL"}（真实模式覆盖守恒：跳过不算量到，单身份不算双身份；免检只免"本门不追"，不降阈值；台账作废的不算覆盖${voidedN ? ` —— 另有 ${voidedN} 条待判决，见 REALCOV_VOIDED 点名` : ""}）`
+console.log(`REALCOV_RESULT=${pass ? "PASS" : "FAIL"}（真实模式覆盖守恒：跳过不算量到，单身份不算双身份；免检只免"本门不追"，不降阈值；台账作废的不算覆盖${voidedN ? ` —— 另有 ${voidedN} 条待判决，见 REALCOV_VOIDED 点名` : ""}；旧构建戳认领的不算覆盖${expiredN ? ` —— 另有 ${expiredN} 条过期(stale)，见 REALCOV_EXPIRED 点名（陈旧≠后端掉线，连通性另见 REALCOV_CONNECTIVITY=${connLabel}）` : ""}${cur.sha8 ? "" : "；新鲜度尺不可得 ⇒ REALCOV_FRESHNESS=UNMEASURABLE，本轮不据此撤认领"}${expiredN || voidedN || uncovered || !conserved ? " ⇒ realcovClosed 必须为假，验收别压在这格绿上" : ""}`
   + (ledgerOk ? "" : " ← 这一格的红是本门台账不闭合（REALCOV_UNCOVERED_LEDGER=FAIL），不是欠账新增，先修点名再谈欠账")
   + (voidLedgerOk ? "" : " ← 这一格的红是判决效力没被核对上（REALCOV_VOIDED_LEDGER=FAIL）：台账读不到、或它点到判据外的用例，门不许把它读成「没有作废」"));
 process.exit(pass ? 0 : 1);

@@ -95,7 +95,8 @@ echo "--- QA 自测汇总器（19+ 条离线）---"
 g run-qa-selftests        900 scripts/qa/run-qa-selftests.mjs
 
 echo "--- 工作流干跑预检（3 画像）---"
-g dryrun-workflow         300 scripts/qa/dryrun-workflow.mjs --profile all --file .zcode/workflows/miniprogram-ui-audit-v37.dwf.ts
+g dryrun-workflow         300 scripts/qa/dryrun-workflow.mjs --profile all --file .zcode/workflows/miniprogram-ui-audit-v38.dwf.ts
+g tcheck-workflow         300 scripts/qa/tcheck-workflow.cjs --file .zcode/workflows/miniprogram-ui-audit-v38.dwf.ts
 g verify-degraded-conclusion 180 scripts/qa/verify-degraded-conclusion.mjs
 g verify-gate-list-sync  120 scripts/qa/verify-gate-list-sync.cjs
 
@@ -113,6 +114,37 @@ g emit-round-report      1800 scripts/qa/emit-round-report.mjs --round-dir repor
 g verify-ledger-after-panel 120 scripts/qa/verify-ledger.mjs reports/audit/round-6
 g verify-state-truth-after-panel 180 scripts/qa/verify-state-truth.mjs reports/audit/round-7
 
+echo "--- 后台/设备侧的实测门（串行段；这一批不进上面的并发口径）---"
+# 为什么这几把门排在串行段而不是并发清单（与 DSL 把它们放 PANEL_SUITE 是同一条理由，两边必须同判据）：
+#   ① 四把后台门读 SUPER_PASSWORD / ADMIN_LOGIN_* 这类口令（2026-10-14 轮换后脚本内已不内置默认值，
+#      scripts/verify-admin-auditor.mjs:25-26 实测：缺变量时门自己走 NOT-EVIDENCED 退 2，不记产品 FAIL）；
+#   ② verify-admin-writes 会写库（默认自清理，--keep-post 才留）；
+#   ③ verify-admin-post-detail 驱动 Chrome（puppeteer 单实例），且它的缺省 ADMIN_BASE_URL 是 5177（该脚本 :20），
+#      本轮 admin dev server 实测在 5173 ⇒ 必须显式导出 ADMIN_BASE_URL，否则 transport 命中、整条腿 NOT-EVIDENCED；
+#   ④ verify-device-leg 取全局唯一的 UI 租约（scripts/verify-device-leg.mjs:313 guardUiLease）并写一条真实 post
+#      —— 与上面 emit-round-report 那段同一把"取租约的步骤不入并发清单"的口径（见本文件 :103-107）。
+# 口令一律从环境读，本脚本不写、不嵌、不回显；没设就让它退 2 大声报，绝不为凑绿造假。
+# band 键与覆盖率门的尺同源：readApiMode(config/env.js) 的 mode@sha8（artifact-band.mjs:22），
+# 本批只读不自造，出处见 DSL 的 BAND_STAMP_RULE。
+export QA_UI_RESOURCE="${QA_UI_RESOURCE:-ui-audit-v38-dsl}"
+g verify-admin-auditor    420 scripts/verify-admin-auditor.mjs
+g verify-admin-scope      420 scripts/verify-admin-scope.mjs
+g verify-admin-writes     600 scripts/verify-admin-writes.mjs
+g verify-admin-post-detail 600 scripts/verify-admin-post-detail.mjs
+g verify-device-leg      1500 scripts/verify-device-leg.mjs --band real
+
+echo "--- 暂存区密钥预检（两个载具的判域不同：这里量的是「刚落地的这一发」）---"
+# DSL 侧这一把门夹在 git add 与 git commit 之间（读索引，exit!=0 一律不提交，fail-closed）。
+# 本脚本按文件头口径是"提交后跑一次"，那时索引必然等于 HEAD ⇒ 裸跑只会得到"索引为空，合法干净"
+# 那种毫无信息量的绿。所以这里显式 --against HEAD~1：判的是**刚才那一发提交带进去的字节**
+# （索引 vs 上一枚提交 = HEAD 这一发的全部 payload），与门头注 :10-11 给的用法一致。
+# 为什么这一发必须存在而不是只在 DSL 里：本仓漏过的形状是 .env.bak-20261014-rot 同时不被
+# .gitignore:24（字面 .env）与 :157（字面 *.bak）拦（见该脚本头注 4-8 行），屏蔽规则拦不住 git add -f，
+# 只有读索引/读提交内容的门拦得住；而"全清单"有两个载具，少一边就会在另一边自称全清单时漏跑
+# —— 这条判据现由 verify-gate-list-sync 的差集盯着，不许再靠人对眼。
+# 口令不回显：本门只印 path:line + 掩码值（该脚本 :36-38 的输出纪律），侧车同样只落掩码。
+g verify-staged-secrets   120 scripts/qa/verify-staged-secrets.mjs --against HEAD~1 --json "$OUT/staged-secrets-postcommit.json"
+
 echo "=== 汇总 ==="
 FAIL=0
 REDS=""
@@ -127,5 +159,11 @@ printf '{"headBefore":"%s","headAfter":"%s","gates":{%s},"reds":[%s]}\n' \
   "$(for f in "$OUT"/*.exit; do n=$(basename "$f" .exit); printf '"%s":%s,' "$n" "$(cat "$f")"; done | sed 's/,$//')" \
   "$(echo "$REDS" | sed 's/,$//')" > "$OUT/summary.json"
 echo "GREEN/RED 计数：红=$FAIL  HEAD 前=$HEAD_BEFORE 后=$HEAD_AFTER（相同则 sha 敏感门读数未受提交漂移影响）"
-echo "汇总已写 $OUT/summary.json；下一步跑： node22 scripts/qa/gen-round8-report.mjs"
-echo "FINAL_VERIFY_DONE reds=$FAIL"
+# 总报告回填：这一步此前**只是一句 echo**（"下一步跑 …"），等于清单里的一条门在 bash 载具没接线——
+# 收口者把本脚本当"全清单"跑完就撒手时，reports 里的 §7 还是上一轮的 summary 读数，且没有门能看见这次漏跑
+#（DSL :1048 一直在跑它，两载具就此不一致；现由 verify-gate-list-sync 的差集判据盯着）。
+# 位置必须在 summary.json 落盘之后：gen-round8-report 的 §7 读的就是这份文件，早一步就是拿旧读数回填。
+# 超时 180 秒 = 与 DSL 的 timeoutMs:180000 齐平；本步只读盘与写报告，不起进程、不取租约。
+g gen-round8-report      180 scripts/qa/gen-round8-report.mjs
+echo "汇总已写 $OUT/summary.json；总报告回填的读数与落点见 $OUT/gen-round8-report.log"
+echo "FINAL_VERIFY_DONE reds=$FAIL（注：红数只统计上面那一轮汇总，总报告回填排在其后，单独看它的 .exit）"
