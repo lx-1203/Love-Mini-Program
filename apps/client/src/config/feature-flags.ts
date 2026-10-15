@@ -19,6 +19,14 @@ export interface FeatureFlags {
   villageSameCityEnabled: boolean;
   /** 恋爱小纸条（悄悄话解锁）是否启用（B3：2026-08-13 上线，置 true 后原 WHISPER_ENABLED 常量废除） */
   whisperEnabled: boolean;
+  /**
+   * 401 时是否允许静默回落到 mock 假数据。
+   *
+   * <p>历史行为：真环境下 token 失效会直接返回 mockFixtures 的假资料，界面看起来
+   * "一切正常"，从而让「小程序与后台同一份数据」这类验收假通过。默认 false，
+   * 让 401 如实冒泡到调用方的 catch → toast。仅排查 mock 时才临时置 true。</p>
+   */
+  mockOn401Enabled: boolean;
 }
 
 export const featureFlags: FeatureFlags = {
@@ -35,4 +43,6 @@ export const featureFlags: FeatureFlags = {
   // 2026-08-13 B3：恋爱小纸条（悄悄话付费解锁）正式开放。
   // 置 false 时按钮置灰（仅提示），置 true 时走完整解锁流程（后端端点已就绪）。
   whisperEnabled: true,
+  // 真环境验收要求 401 如实暴露，不得被假数据掩盖（见字段注释）。
+  mockOn401Enabled: false,
 };

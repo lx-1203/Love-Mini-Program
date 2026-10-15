@@ -18,6 +18,7 @@ import type {
   WhisperSendRequest,
 } from "./generated/api-types-supplement";
 import { mockFixtures } from "./mocks/fixtures";
+import { featureFlags } from "@/config/feature-flags";
 import { appEnv, isDev, isMockMode } from "./env";
 import { getToken, request, setToken, setRefreshToken, clearTokens, withTimeout, normalizeApiPath, hashString } from "./http";
 // Task 33：路由路径常量化，避免硬编码字符串
@@ -52,6 +53,17 @@ function isUnauthorizedError(e: unknown): boolean {
   if (typeof e !== "object" || e === null) return false;
   const candidate = e as { status?: unknown; http_status?: unknown };
   return candidate.status === 401 || candidate.http_status === 401;
+}
+
+/**
+ * 401 时是否允许静默回落到 mock 假数据。
+ *
+ * 默认关闭：真环境下 token 失效却返回 mockFixtures 的假资料，会让界面看起来
+ * 一切正常，从而使「小程序与后台读同一份数据」这类验收假通过。
+ * 关闭后 401 如实冒泡到调用方既有的 catch（toast 呈现），不在此层自造提示。
+ */
+function shouldFallBackOn401(e: unknown): boolean {
+  return featureFlags.mockOn401Enabled && isUnauthorizedError(e);
 }
 
 /** 草稿相关 mock fixture（mockFixtures 未显式声明，按可选方法安全读取）。 */
@@ -367,7 +379,7 @@ export const clientApi = {
     try {
       return await request<Schemas["BasicProfile"]>({ url: "/profile/basic" });
     } catch (e) {
-      if (isUnauthorizedError(e)) return mockFixtures.getBasicProfile();
+      if (shouldFallBackOn401(e)) return mockFixtures.getBasicProfile();
       throw e;
     }
   },
@@ -378,7 +390,7 @@ export const clientApi = {
     try {
       return await request<ProfileStats>({ url: "/profile/stats" });
     } catch (e) {
-      if (isUnauthorizedError(e)) return mockFixtures.getProfileStats();
+      if (shouldFallBackOn401(e)) return mockFixtures.getProfileStats();
       throw e;
     }
   },
@@ -399,7 +411,7 @@ export const clientApi = {
     try {
       return await request<Schemas["CampusProfile"]>({ url: "/profile/campus" });
     } catch (e) {
-      if (isUnauthorizedError(e)) return mockFixtures.getCampusProfile();
+      if (shouldFallBackOn401(e)) return mockFixtures.getCampusProfile();
       throw e;
     }
   },
@@ -420,7 +432,7 @@ export const clientApi = {
     try {
       return await request<Schemas["ScheduleProfile"]>({ url: "/profile/schedule" });
     } catch (e) {
-      if (isUnauthorizedError(e)) return mockFixtures.getScheduleProfile();
+      if (shouldFallBackOn401(e)) return mockFixtures.getScheduleProfile();
       throw e;
     }
   },
