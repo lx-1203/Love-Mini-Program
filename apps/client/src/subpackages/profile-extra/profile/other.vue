@@ -178,11 +178,6 @@ async function handleLike(): Promise<void> {
     }
     return;
   }
-  if (false) {
-    lightHaptic();
-    uni.showToast({ title: t("profile.other.likeWaiting"), icon: "none" });
-    return;
-  }
   lightHaptic();
   liking.value = true;
   try {
