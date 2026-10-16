@@ -21,7 +21,18 @@ const REPO = resolve(import.meta.dirname, "..", "..");
 /* typescript 取自 apps/client 的依赖：路径从本文件位置推导（相对 REPO），不写盘符死路径。 */
 const ts = createRequire(import.meta.url)(resolve(REPO, "apps/client/node_modules/typescript"));
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
-const FILE = arg("file", ".zcode/workflows/miniprogram-qa-finish-v33.dwf.ts");
+/* --file 不给缺省值（谱系 D9）：缺省值原先是 v3.3 的路径，于是 v3.3–v3.6 那几条
+   「工作流干跑预检」门行在不带 --file 时干跑的是 v3.3，却挂着各自版本的名字——测不到本文件，
+   而这一门存在的理由恰恰是探"炸在终报之前"。gen-round8-report.mjs:16 早已把这同一形状记成
+   本仓踩过两次的 bug class，但缺省值一直活着。现在量不到靶就响亮失败（exit 2），
+   与 scripts/qa/tcheck-workflow.cjs 的 TCHECK_NOFILE 同律。 */
+const FILE = (() => {
+  const i = process.argv.indexOf("--file");
+  if (i >= 0 && process.argv[i + 1]) return process.argv[i + 1];
+  console.log("DRYRUN_NOFILE 本台不给 --file 缺省值：带缺省的 --file 已两次把工作流预检指到别的版本（D9 同一形状）");
+  console.log("DRYRUN_RESULT=NOFILE 用法 --profile all --file .zcode/workflows/<本版>.dwf.ts");
+  process.exit(2);
+})();
 const PROFILE_ARG = arg("profile", "all");
 const SRC = resolve(REPO, FILE);
 
