@@ -533,7 +533,7 @@ RULING id=decisions#33 status=open title=A4（F06）VIP 账单页 VB03 原判据
 RULING id=decisions#34 status=open title=A5（REAL-VI34-04-Q）资料完成度拦截对村庄广场适不适用——四条腿的共同前提 options=(a)放行，修 profile-guard.ts:18 后按七态重跑 VI34|(b)维持拦截，VI34 判据改成拦截页行为断言、另用完整身份测七态 premise=unchanged basis="decisions-v38.md §2 A5：两条 VOIDED 都挂它（realcov-before.log:80,81）；本程实跑 emit-open-items.mjs 得 decision:1，唯一一条即 MP-R3AUDIT-VI25-VI34-PARKED-001（需裁决，REAL-VI34-04-Q 未拍板）⇒ v3.7 那句 decision 桶 7→0（decisions-v37.md:246，史值）已被推翻；apps/client/src/guards/profile-guard.ts:14-19 LOCKED_PAGES 含 ROUTES.TAB.VILLAGE、:33 人话名村口/讨论圈，而 village/index.vue:35 只 import ensureCertified"
 RULING id=decisions#35 status=open title=A6（GUEST-VERB-Q）只读注入动词要不要豁免 strict-verbs options=(a)豁免 networkFault 的 fail-all/record 让游客轴照跑|(b)维持拒发并把 OT06/OC09 收敛为 login 单轴、销游客轴欠账 premise=unchanged basis="decisions-v38.md §2 A6：scripts/qa/r-exec-cli.mjs:409 仍把 networkFault 列为任何模式都发不出、:488 verbRefusal()、:150 STRICT_VERBS、:290 自测专门要求它继续被拒；账面 OT06/OC09 缺=login+guest（realcov-before.log:96,99）"
 RULING id=decisions#36 status=open title=A7（V37-CAMPUS-PUBLIC）后端到底把 /api/v1/config/campuses 列入 permitAll 吗 options=(a)放 /config/**|(b)不放、维持客户端豁免|(c)只放 /config/campuses 单条 premise=changed basis="decisions-v38.md §2 A7：SecurityConfig.java:210 仍是 /api/v1/** → authenticated()，permitAll 白名单里 /config/** 只有 :145 的 /api/v1/config/legal；MockSecurityConfig.java:225 同形；行号相对 v3.7 漂移（史值 194/225）因 b5afba52 在 :189-197 插了 AUDITOR 四条写方法规则。客户端半边已落 ⇒ 射程比 v3.7 小（本册 §7 H1）"
-RULING id=decisions#37 status=open title=A8（V37-NAVTO-SCOPING）--navto-open 按整条腿还是按单步生效 options=(a)接受旗标级并要求每行回显 open form|(b)改回步级，step.via 优先、旗标只作总闸|(c)维持现状 premise=unchanged basis="decisions-v38.md §2 A8：scripts/qa/exec-capabilities.mjs:352-363 resolveOpenForm(step,opts) 只读 step.page 与 step.query、从不读 step.via，:356 是纯旗标闸；r-exec-ws.mjs:794 传 Object.assign({}, step, {query})、:812 读 step.via 只用于生成一句备注不改分发"
+RULING id=decisions#37 status=half-closed title=A8（V37-NAVTO-SCOPING）--navto-open 按整条腿还是按单步生效 options=(a)接受旗标级并要求每行回显 open form|(b)改回步级，step.via 优先、旗标只作总闸|(c)维持现状 premise=unchanged basis="decisions-v38.md §2 A8：scripts/qa/exec-capabilities.mjs:352-363 resolveOpenForm(step,opts) 只读 step.page 与 step.query、从不读 step.via，:356 是纯旗标闸；r-exec-ws.mjs:794 传 Object.assign({}, step, {query})、:812 读 step.via 只用于生成一句备注不改分发"
 RULING id=decisions#38 status=open title=A9（V37-MS06-REFUSAL）首屏网络判点缺口该不该把整条腿扣住（现状=拒发） options=(a)维持整腿拒发|(b)降级为发但标 NOT-EVIDENCED|(c)逐案豁免 premise=changed basis="decisions-v38.md §2 A9：r-exec-cli.mjs:1403 把 netFaultFirstLoad 作第五条诚实的不进 VERB_RULES，:394 自述实测全判据台命中 3 条 VI34/AC10/MS06（v3.7 只点了 MS06 ⇒ 影响面比原述更大），:287 自测专门断言全旗标下仍拒发"
 RULING id=decisions#39 status=open title=A10（V37-R309-DISPOSITION）匹配卡那条判夹具不可达还是维持产品缺陷 options=(a)改判 NOT_SHOOTABLE（夹具/态不可达）|(b)维持产品缺陷（先给一条与素材 200＋三分支 v-if 都不矛盾的机制说明）|(c)撤行 premise=unchanged basis="decisions-v38.md §2 A10：行在 reports/audit/round-6/issue-matrix.md:201 MP-R3AUDIT-DISCOVER-MATCHCARD-BLANK-001（R3-09）；本轮未重拍 ⇒ 沿用 v3.7 三条反对读数（素材 200/47595B、三分支 v-if、配对帧实为 login 页）但不当现值"
 RULING id=decisions#40 status=open title=A11（V37-NTH-TAP）点不准同名多枚钮这笔账现在还剩什么 options=(a)继续补作者侧唯一类名并想法拉进组件子树|(b)补执行器（先证坐标 tap 可用）|(c)判据降级为接线正确并写清换了什么 premise=changed basis="decisions-v38.md §2 A11：round-7/c21-executor-capability-matrix.md:308 G-14 25 stamped rows、:307 G-13 42 stamped；RelationshipCTA.vue:43/52/58/64 四枚唯一修饰类已落、产物 dist/build/mp-weixin-real/.../RelationshipCTA.wxml 里同名类出现 1 次 ⇒ G-13 取代 G-14 成主瓶颈，选项 (a) 对 CTA 一族已完成（本册 §7 H2）"
@@ -601,3 +601,14 @@ decisions#30 #31 #32 #33 #34 #35 #36 #37 #38 #39 #40 #41 #42 #43 #44 #45 #46 #47
 | 6 | 这 63 个本地提交要不要 push | 推之前先做一轮 security 扫描 | 未推。扫描完成前 push 保持禁止 |
 
 口径修正：§0 与 §6 原来的「31 条待拍板」在本节之后是 28 条 open（closed 9、half-closed 6）。
+
+### §11.1 按第 1 项口径自证的四条实测现状（只报现状，不替用户选）
+
+| 裁定 | 盘上现状（我实测） | 我怎么处置 | 为什么不算「我已替你决定」 |
+|---|---|---|---|
+| A8 #37 --navto-open 作用域 | 现状已等于选项 (a)：每行都回显 openForm（r-exec-ws.mjs:1154、:1173），且 :1171 写明读法「没有 openForm=navto 就是没用过」 | half-closed，附上述行号 | 我没有选 (a)；是把「代码早就是 (a) 的形状」记下来。你若同意即闭案，若选 (b) 我照改 |
+| E5 #46 tour-ledger 是活账还是快照 | 未落地任一选项：文件头仍写 round:1 / generatedAt:2026-10-09，而正文已长到后续轮次的读数 | 保持 open | 两个选项都会改历史账本的头，方向由你定 |
+| G1 #47 加不加「撤销待重判」一档 | 未落地：normalize-ledger-status.mjs 里 grep 撤销待重判 命中 0 | 保持 open | 新增状态词要同改 VOCAB 与分类器，会动全账口径 |
+| G2 #48 「已修复待复验」一词三义拆不拆 | 未落地：词表仍只一枚 已修复待复验，无 带内复验／静态复量 之分 | 保持 open | 拆档会改写既有行的状态列，属账本迁移，需你点头 |
+
+另外 E3 #44 是**耦合项**：它的选项 (a) 原文写「配合 A3 的选择」，而 A3 未裁 ⇒ 不在可自证范围内，保持 open。
