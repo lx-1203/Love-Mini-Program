@@ -33,6 +33,20 @@
  *      这类占位。散文（去掉行尾注释后仍是多个空格分开的词且没引号）不判红。
  *      与键名无关的形状探测器独立生效：bcrypt `$2a$/$2b$/$2y$`、JWT `eyJ….….`、PEM 私钥头。
  *
+ *  腿产物屏（2026-10-16 裁定，见 PATH_RULES 里 "腿产物" 那一族）：**设备腿的输出件一律不许进版本库**。
+ *      为什么必须在仪器里做：覆盖门 scripts/qa/verify-real-coverage.mjs:161-162 只认
+ *      "`exec-` 开头的目录 + 里面有 exec-results.json" 这个形状才给读数 ⇒ 带票的那份正是下一程
+ *      "必须 git add"的那一件。这类件每轮现生成、目录名带时间戳或新腿名，所以"新引入"永远成立。
+ *      硬/软落在哪一侧（实测 git ls-files 定的，不是拍脑袋）：
+ *        · `exec-results.json` 家族：库里**已跟踪 82 份**（round-1/2/6/7 共 71、ui-audit-2026-10-09 共 11）
+ *          ⇒ 走既有"新引入才硬红"，改历史件是软提示、由内容屏兜底。若一律硬红：① 门永久红（永久红的门等于没有门）；
+ *            ② 更要命的是它会把"把这 82 份从库里撤出去"的 `git rm --cached` 一起判红 —— 撤红挡住了裁定要的迁移。
+ *        · `reports/audit/device-leg-<时间戳>/` 整目录：实测盘上 18 个目录、**0 个文件被跟踪** ⇒ 今天任何一次 staging 都是硬红。
+ *        · `reports/audit/round-N/exec-N/` 下的 png 帧：实测 0 张被跟踪（`exec-guest-real-guard-r10` 有 5 张，
+ *          正被 `.gitignore:80` 的 png 规则屏着看不见）⇒ 同样硬红。
+ *      三条都按"新引入 = 硬红"的既有制度写（alwaysHard=false），因为**屏不掉的才是制度**：恒红那一侧只留给
+ *      `.env` 家族、私钥材料、`prestate*.sql` 这类"根本不该进库、脱敏即作废"的件。
+ *
  *  输出纪律：任何一行只印 `path:line + 掩码值`（`$2b$10$…`、`eyJ****(len=)`、`KEY=****(len=)`），
  *  绝不回显原文；--json 侧车同样只落掩码值（默认 6 hex 截断指纹用于跨轮去重）。
  *  只读：不写工作树（除 --json 指定的侧车），不 add、不 commit、不碰索引。
@@ -79,6 +93,16 @@ const PATH_RULES = [
   [/application[^/]*\.yml$/, "Spring 配置", false],
   [/flyway\.user\.toml$/, "flyway 凭据", false],
   [/id_rsa|\.pem$|\.key$/, "私钥材料", true],
+  // ── 腿产物族（2026-10-16 裁定：设备腿输出件一律不入库；口径与硬/软的选择写在文件头"腿产物屏"一段）──
+  // 覆盖门 verify-real-coverage.mjs:161-162 只认领 exec-*/exec-results.json 这个形状，所以它是"下一程最可能被
+  // git add 的那一件"。库内已跟踪 82 份 ⇒ 按既有制度只判"新引入"为硬红（改历史件走软提示，由内容屏兜底），
+  // 这样既不永久红，也不把撤库的 `git rm --cached` 一起挡掉。
+  [/(^|\/)exec-results(\.rejected)?\.json$/, "腿结果台账（覆盖门唯一认领形状）", false],
+  // 设备腿输出目录整族：盘上 18 个目录、0 个被跟踪，内含 verdict.txt / simulator-network.log / 8 张帧图。
+  // 放在 verdict.txt 那两条之前，让"整目录"这个更具体的名头先命中（两条判据方向一致，只是标签更准）。
+  [/(^|\/)reports\/audit\/device-leg-[^/]*\//, "设备腿输出目录（票与帧同目录载体）", false],
+  // 腿帧图：实测 .gitignore:80 的 `*.png` 只是看不见，`git add -f` 一发就进库；库里 0 张被跟踪 ⇒ 新引入即硬红。
+  [/(^|\/)reports\/audit\/round-[^/]*\/exec-[^/]*\/.*\.png$/, "腿帧图（ignore 屏不住 -f）", false],
   // 实测 2026-10-16：设备腿产物里混着活会话票——8 份 verdict.txt 各 1 条 JWT、
   // 14 份 simulator-network.log 各 6~23 条（Authorization 头流水），全都没被跟踪，
   // 一次 `git add reports/` 就带进库。这两类是"判决载体 + 附带票"，
