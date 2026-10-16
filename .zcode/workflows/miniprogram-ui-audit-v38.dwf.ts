@@ -300,6 +300,7 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   { name: "降级结论诚实性 verify-degraded-conclusion", args: ["scripts/qa/verify-degraded-conclusion.mjs"], timeoutMs: 180000 }, // D6 的第二条腿：干跑只问"跑到底没有"，这一条问"结论诚实不诚实"，并以 v3.6 为对照自证能红
   { name: "门禁清单两载具一致 verify-gate-list-sync", args: ["scripts/qa/verify-gate-list-sync.cjs"], timeoutMs: 120000 }, // 本清单有 DSL 与 bash 两个载具、各自硬编码，谱系里实测漂移过一整边（一边 15 条、一边 18 步却都自称全清单）⇒ 一致性必须是能红的判据，不能靠人对眼
   { name: "判据台戳 verify-ops-stamp", args: ["scripts/qa/verify-ops-corpus-stamp.mjs", "--check"], timeoutMs: 180000 },
+  { name: "ESLint 进门只数 error lint-gate", args: ["scripts/qa/lint-gate.cjs"], timeoutMs: 300000 }, // 裁定 N7：lint 进门、**只计 error**（--quiet 语义），warning 报数而不染色（实测 2026-10-16：errors=2 / warnings=14103 / 650 文件）。显式预算 2 的具名理由写在 lint-gate.cjs 头注释：②③ apps/client/src/env.d.ts 的 JSX 兜底索引签名与运行时注入载荷，把 any 收窄就是改类型面行为，不能赌（本车道无 vue-tsc 全量回归在手）；① other.vue:181 的 if(false) 静态死块已实测修掉，3→2。它只读产品树、不取租约、不写库 ⇒ 属并发道 GATE_SUITE。timeoutMs 实测依据：同一 scope 冷跑 85 s / 热跑 24-26 s ⇒ 300000 ms ≈ 冷跑上界的 3.5 倍（本仓口径：比实测需求小的上限会读成假红，参见上面 band-freshness 那条"实测约需 99 s，180 s 太薄"）
 ];
 
 // ===== 面板腿（D5：一律 --dry；显式 --report/--metrics 以免轮次号从目录名派生出非数字）=====

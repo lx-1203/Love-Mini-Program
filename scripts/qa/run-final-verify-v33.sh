@@ -88,6 +88,11 @@ g verify-real-coverage-disposition 180 scripts/qa/verify-real-coverage-dispositi
 g verify-case-automatable 180 scripts/qa/verify-case-automatable.mjs --results reports/audit/round-6/interact/exec-results.json --json .zcode/tmp/case-automatable/final.json
 # r9 接线：判据台语料戳（--check 只读）。此前只有车道"自己记得跑"，而本轮有车道往 ops 写过行 ⇒ 必须有人必然经过。
 g verify-ops-stamp          180 scripts/qa/verify-ops-corpus-stamp.mjs --check
+# 裁定 N7：lint 进门禁普查，只计 ERRORS（--quiet 语义）——warning 报数但不染门色。
+# 实测 2026-10-16：errors=2 / warnings=14103 / 650 文件（旧台账里的 10358 是过期读数，已按本门实测作废）。
+# 300 秒的依据：同一 scope 冷跑 85 s、热跑 24-26 s；比实测需求小的上限会读成假红（本仓口径）。
+# 预算 2 的具名欠账与"只能往下改"的纪律写在 scripts/qa/lint-gate.cjs 的头注释里。
+g lint-gate                 300 scripts/qa/lint-gate.cjs
 
 echo "--- QA 自测汇总器（19+ 条离线）---"
 # r10 上调 600→900（只准往大调，方向与 DSL 齐平：DSL 给 900000ms 并写明"留的是负例批量起进程的余量"）。

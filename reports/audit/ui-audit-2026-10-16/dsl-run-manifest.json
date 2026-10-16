@@ -312,5 +312,13 @@
     "rowsAdmitted": "MP-R7QA-CORPUSDENOM-001（Evidence/P3/保留-判据不成立）与 MP-R7QA-GUESTLEG-TRIAGE-001（Architecture/P3/需裁决）已入册，台账 256→258，verify-ledger PASS、STATUS_VOCAB_BAD=0",
     "myOwnMistake": "我上一发想把 lane 的 类别/severity 归一到本账口径，却按 cells[2]/cells[3] 动手——那是「页面/类别」两位，正确列位是 类别=第 4 格、severity=第 5 格（ID0、别名1、页面2、类别3、severity4、status5）。所幸 map 的键没命中，那一发是 no-op，没把行写成错值；这轮按正确列位改的。归一本身也要记账：lane 用了 minor/high 与本账 P1–P4 不同形。",
     "laneChangedNoSource": "lane 自述未改任何源码/门/测试/台账/.gitignore，盘上核对一致（改动只落 .zcode/tmp/ 下新文件）；两条修复都留给 owner 设计决定，因为它拒绝把 coverMismatch 那条覆盖发现用「放宽预检」糊掉——这个 refusal 是对的。"
+  },
+  "n1LeverClaimRetracted": {
+    "myWrongClaim": "我在交接里说 N1（coverageEffect:revalidated 写权）是覆盖那条红「最大的单一杠杆」。两处都错了：",
+    "wrong1_destination": "这个字段写在 reports/audit/round-6/issue-matrix.md 上抵不了账——verify-real-coverage.mjs 全文不提 issue-matrix，VOIDED 只从 JSON 台账算（buildVoidBook :485/:878，LEDGER :97/:121），显式 --ledger 指到 markdown 会直接 VOIDED_LEDGER_BAD「不是可读 JSON」（本程实跑复现）。字段唯一有效落点是 tour-ledger.json 的 fixlane 条目（车道用临时副本证明：VB03 一条 revalidated 让 COVERED 196→197、VOIDED 4→3，守恒 OK）。",
+    "wrong2_lever": "四个 VOIDED key 一条都不合格：机械下限（新鲜 real@f0677920、判过、会话双证、登录轴）它们都过，但每条的合格读数恰好就是已被作废/或卡在未裁 needsUser 的那一发——VB03 卡 A4(F06)、PFI25 是 FAILED 待重跑、VI25/VI34 卡 A5(REAL-VI34-04-Q)。⇒ 真正的杠杆是 A4 与 A5 两条裁定，不是写权。",
+    "whatWasBuilt": "scripts/qa/apply-coverage-revalidation.mjs：带内戳运行时从 config/env.js 派生（拒手填）、默认 --dry、只有 --apply --attest \"理由\" 才写、写的是 JSON 台账 fixlane 的一条证据对象，不碰任何 status/散文、不开 issue-matrix 写权。四条拒绝证明全部 exit 2：只有 SKIPPED、band 不匹配、缺 exec-results.json、台账无此行。",
+    "coverageNow": "COVERED=196 / UNCOVERED=5 / VOIDED=4 / EXPIRED=3 守恒 OK，门仍 RED——本轮没有 --apply，因为没有一条真合格。这是读数，不是失误。",
+    "ledgerUntouched": "cmp 证实 tour-ledger.json 与 issue-matrix.md 与车道开工前备份逐字节相同；verify-ledger 仍 259 行 PASS。"
   }
 }

@@ -84,6 +84,46 @@ for (const [id, script] of [["queue-reconcile-empty", "scripts/verify-queue-reco
   record(id, script, true, base.exit, mut.exit, mut.out);
 }
 
+// —— 案例 5/6：lint 进门（裁定 N7：门色只看 error，warning 报数不染色）——
+// 5 = 新 error 越过**显式预算**必须红：预算若不 binding，这把门就是恒绿的装饰；
+// 6 = scope 里没有可 lint 文件时必须 NOT-EVIDENCED（空扫描集不许判绿，本仓反复吃过这条形状）。
+// 变异只落在 .zcode/tmp/ 的临时副本上，绝不往产品树里塞坏文件（跑完 TMP 整目录自清）。
+// 注：本仓 @typescript-eslint/no-unused-vars 是 **warn**，所以"未使用变量"在 N7 下不染门色——
+//     负例必须用 error 级规则（no-var / eqeqeq / no-console / no-debugger），否则证不出红。
+const LINT_NEG = join(TMP, "lintneg");
+const LINT_EMPTY = join(TMP, "lintempty");
+mkdirSync(LINT_NEG, { recursive: true });
+mkdirSync(LINT_EMPTY, { recursive: true });
+const NEG_FILE = join(LINT_NEG, "probe.js");
+writeFileSync(NEG_FILE, 'var LINTGATE_NEG_MARKER = 1;\nif (LINTGATE_NEG_MARKER == 1) {\n  console.log("neg");\n}\ndebugger;\n');
+writeFileSync(join(LINT_EMPTY, "note.txt"), "这个目录里没有任何可 lint 的文件\n");
+const baselineLint = runGate("scripts/qa/lint-gate.cjs", []);
+const mutLint = runGate("scripts/qa/lint-gate.cjs", [
+  "--scope", join(".zcode", "tmp", "prove-gates-can-fail", "lintneg"),
+  "--budget", "2",
+  "--json-out", join(".zcode", "tmp", "prove-gates-can-fail", "lintneg-report.json"),
+]);
+record(
+  "lint-error-budget-breach",
+  "lint-gate.cjs",
+  existsSync(NEG_FILE) && readFileSync(NEG_FILE, "utf8").includes("LINTGATE_NEG_MARKER"),
+  baselineLint.exit,
+  mutLint.exit,
+  mutLint.out
+);
+const mutLintEmpty = runGate("scripts/qa/lint-gate.cjs", [
+  "--scope", join(".zcode", "tmp", "prove-gates-can-fail", "lintempty"),
+  "--json-out", join(".zcode", "tmp", "prove-gates-can-fail", "lintempty-report.json"),
+]);
+record(
+  "lint-empty-scan-not-green",
+  "lint-gate.cjs",
+  existsSync(join(LINT_EMPTY, "note.txt")),
+  baselineLint.exit,
+  mutLintEmpty.exit,
+  mutLintEmpty.out
+);
+
 const vacuous = cases.filter(c => c.verdict.startsWith("VACUOUS"));
 const inconc = cases.filter(c => c.verdict.startsWith("INCONCLUSIVE"));
 const proven = cases.filter(c => c.verdict === "RED-PROVEN").length;
