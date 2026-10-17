@@ -191,7 +191,9 @@ t("两个载具都不许把门禁条数写进措辞（清单会长，条数是�
  * 为什么现有的两条都抓不到它：verify-carrier-wiring 判的是"声明了导出的模块有没有消费者"
  * （CLI 门没有导出，不在判域）；本门原先只比两份清单的差集（两边同时没有 = 一致 = 绿）。
  * ⇒ "两边都缺"是两者的共同盲区，只能新加判点。
- * 基线 15 是本轮登记 verify-rulings-landed 之后实测出来的孤儿门数，不放宽、不加豁免名单；
+ * 基线 3 是本轮再登记 12 条只读孤儿门之后重测的：剩下 verify-logged-in-landing（要 --exec）、
+ * verify-evidence-integrity（要 manifest）、verify-package-size（要构建目录）——裸跑按设计退 2
+ * 或红，那是缺输入不是坏门，硬塞进终验只会造出假红/假绿。目标不是维持 3，是接上输入压到 0。
  * 计数超过基线即红，目标是逐条登记或明写理由后把它压到 0。 */
 const orphanCarriers = new Set([...dslSet, ...shSet]);
 const orphanDirs = ["scripts/qa", "scripts"];
@@ -207,7 +209,7 @@ for (const d of orphanDirs) {
     if (!orphanCarriers.has(f)) orphans.push(`${d}/${f}`);
   }
 }
-const ORPHAN_BASELINE = 15;
+const ORPHAN_BASELINE = 3;
 console.log(`GATESYNC_ORPHANS=${orphans.length} baseline=${ORPHAN_BASELINE}（印 _RESULT= 却两边载具都不点名的 verify-* 门）`);
 for (const o of orphans) console.log(`  ORPHAN ${o}`);
 t(`孤儿门不得新增（现 ${orphans.length}，基线 ${ORPHAN_BASELINE}；这道判点专抓两份清单"同时缺"的共同盲区）`,

@@ -88,6 +88,21 @@ g verify-real-coverage-disposition 180 scripts/qa/verify-real-coverage-dispositi
 # 登记补漏（本轮）：这道门此前两个载具都不点名，"已裁的裁决有没有进代码"从来没有一发全清单作证。
 # 超时取 600，与 DSL 侧 timeoutMs 600000 同值——两侧不一致时门被杀掉会读成红而不是跳过。
 g verify-rulings-landed        600 scripts/qa/verify-rulings-landed.mjs
+# 本轮登记 12 条孤儿门（此前两个载具都不点名，从未进终验；只读、不取租约、不写库）。
+# 超时与 DSL 侧逐条同值。verify-package-size / verify-logged-in-landing / verify-evidence-integrity
+# 三条要输入参数，裸跑按设计退 2 或红，留在孤儿基线里，不硬塞进终验造假红。
+g verify-backend-restarted     120 scripts/qa/verify-backend-restarted.mjs
+g verify-case-selectors-exist  120 scripts/qa/verify-case-selectors-exist.mjs
+g verify-criteria-frame-debt   120 scripts/qa/verify-criteria-frame-debt.mjs
+g verify-disproof-anchors      120 scripts/qa/verify-disproof-anchors.mjs
+g verify-fixes-against-artifact 180 scripts/qa/verify-fixes-against-artifact.cjs
+g verify-frame-debt-coverage   120 scripts/qa/verify-frame-debt-coverage.mjs
+g verify-frame-debt-triage     120 scripts/qa/verify-frame-debt-triage.mjs
+g verify-guest-landing         120 scripts/qa/verify-guest-landing.mjs
+g verify-i18n-orphan           120 scripts/qa/verify-i18n-orphan.mjs
+g verify-openqueue-lanes       120 scripts/qa/verify-openqueue-lanes.mjs
+g verify-status-vs-disposition 120 scripts/qa/verify-status-vs-disposition.mjs
+g verify-tab-bar-single-source 120 scripts/qa/verify-tab-bar-single-source.mjs
 g verify-case-automatable 180 scripts/qa/verify-case-automatable.mjs --results reports/audit/round-6/interact/exec-results.json --json .zcode/tmp/case-automatable/final.json
 # r9 接线：判据台语料戳（--check 只读）。此前只有车道"自己记得跑"，而本轮有车道往 ops 写过行 ⇒ 必须有人必然经过。
 g verify-ops-stamp          180 scripts/qa/verify-ops-corpus-stamp.mjs --check

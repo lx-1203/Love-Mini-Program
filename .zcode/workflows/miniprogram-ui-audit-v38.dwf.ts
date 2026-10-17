@@ -305,6 +305,24 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   // 从来没有一发全清单替我们作证（本轮 grep 实测：载具文本里零命中，手跑它给 未落地=2）。
   // 它不取租约、不写库，可以进并发段。超时与 bash 步取同值（600s），因为被杀掉的门读起来是红不是跳过。
   { name: "裁决落地核验 verify-rulings-landed", args: ["scripts/qa/verify-rulings-landed.mjs"], timeoutMs: 600000 },
+  // 本轮登记 12 条孤儿门：它们此前在两个载具都不点名，从未参与一发终验（实测：印 _RESULT= 的
+  // 门/探针 45 个，被任一载具点名只有 25 个；登记 rulings-landed 之后仍剩 15 条）。
+  // 全部只读、不取租约、不写库 ⇒ 放并发段是对的。超时两侧同值，实测单条 0-10s，留 120/180s 余量。
+  // 剩下 3 条没登记：verify-logged-in-landing 要 --exec、verify-evidence-integrity 要 manifest、
+  // verify-package-size 要构建目录——裸跑按设计退 2 或红，那是"缺输入"不是"坏门"，
+  // 硬塞进终验只会造出一串假红或假绿，所以留在孤儿基线里由完备性判点看住。
+  { name: "后端重启核验 verify-backend-restarted", args: ["scripts/qa/verify-backend-restarted.mjs"], timeoutMs: 120000 },
+  { name: "选择器在册核验 verify-case-selectors-exist", args: ["scripts/qa/verify-case-selectors-exist.mjs"], timeoutMs: 120000 },
+  { name: "判据欠帧去向 verify-criteria-frame-debt", args: ["scripts/qa/verify-criteria-frame-debt.mjs"], timeoutMs: 120000 },
+  { name: "免罪锚点核验 verify-disproof-anchors", args: ["scripts/qa/verify-disproof-anchors.mjs"], timeoutMs: 120000 },
+  { name: "修复对照产物核验 verify-fixes-against-artifact", args: ["scripts/qa/verify-fixes-against-artifact.cjs"], timeoutMs: 180000 },
+  { name: "台账欠帧裸行 verify-frame-debt-coverage", args: ["scripts/qa/verify-frame-debt-coverage.mjs"], timeoutMs: 120000 },
+  { name: "欠帧分诊闸 verify-frame-debt-triage", args: ["scripts/qa/verify-frame-debt-triage.mjs"], timeoutMs: 120000 },
+  { name: "游客落地具名腿 verify-guest-landing", args: ["scripts/qa/verify-guest-landing.mjs"], timeoutMs: 120000 },
+  { name: "i18n 孤儿键 verify-i18n-orphan", args: ["scripts/qa/verify-i18n-orphan.mjs"], timeoutMs: 120000 },
+  { name: "未结 lane 复核 verify-openqueue-lanes", args: ["scripts/qa/verify-openqueue-lanes.mjs"], timeoutMs: 120000 },
+  { name: "状态与处置一致 verify-status-vs-disposition", args: ["scripts/qa/verify-status-vs-disposition.mjs"], timeoutMs: 120000 },
+  { name: "tabBar 单点化 verify-tab-bar-single-source", args: ["scripts/qa/verify-tab-bar-single-source.mjs"], timeoutMs: 120000 },
   { name: "用例可自动化预检 verify-case-automatable", args: ["scripts/qa/verify-case-automatable.mjs", "--results", WORKFLOW.matrixDir + "/interact/exec-results.json", "--json", ".zcode/tmp/case-automatable/preflight.json"], timeoutMs: 180000 }, // 该 --results 配对是唯一标题 100% 相等的组合；若该件被清理，门按设计退 2，正确处置是改指另一个标题相等配对，绝不是删旗标
   { name: "工作流干跑预检 dryrun-workflow", args: ["scripts/qa/dryrun-workflow.mjs", "--file", ".zcode/workflows/miniprogram-ui-audit-v38.dwf.ts", "--profile", "all"], timeoutMs: 300000 }, // D9：不带 --file 就是在干跑 v3.3，测不到本文件【E6：本版文件名自指已随版本翻转，与 bash:98 由 verify-gate-list-sync 的两把正则钉死】
   { name: "工作流真实类型检查 tcheck-workflow", args: ["scripts/qa/tcheck-workflow.cjs", "--file", ".zcode/workflows/miniprogram-ui-audit-v38.dwf.ts"], timeoutMs: 300000 }, // 【E7 提升】干跑台把宿主七件套当未解析名字放行 ⇒ 它永远看不见门面返回类型。本门用真实 typescript 程序 + 忠实门面声明跑类型检查，专抓两类实测烧过本文件的缺陷：PromiseLike 上挂 .catch（ask 的返回没有 .catch，守卫必须两参 .then(v,e)）与重复 function 声明（JS 静默让最后一个赢）。它原先只活在 .zcode/tmp/tcheck-v32.cjs（gitignore 的 any-depth tmp/ ⇒ clean checkout 就没了），现进 scripts/qa 并同时进两个载具。 --file 无缺省值：带缺省的 --file 已在本仓两次把预检测错工作流版本（D9 同一形状）

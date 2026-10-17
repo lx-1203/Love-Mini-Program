@@ -424,5 +424,18 @@
     "showcase": "showcase 档 config/env.js 哈希成 ed1cd82c、real 是 f0677920 ⇒ 同一把尺下 showcase 行永远缺可比戳，载具与尺结构性互斥 ⇒ 立案 MP-R7QA-SHOWCASE-CARRIER-RULER-001 并进 N4",
     "artifacts_untracked": "两片新 exec 目录保持 untracked；我独立复扫其 exec-results.json 的 JWT 形状命中 0（同批正例文件 exec-v37-nearby 命中 1，证明扫描器有效）",
     "ledger": "三条新行入册（ws tapTarget / depth-1 / showcase 尺），DATA_ROWS 262→265，verify-ledger PASS：OFF_SCHEMA=0 ROTATED=0 STATUS_VOCAB_BAD=0"
+  },
+  "orphanGateAudit": {
+    "at": "13fed077",
+    "census": "印 _RESULT= 的门/探针共 45 个，登记前被任一载具点名 25 个 ⇒ 孤儿 20（其中 4 个是 apps/client/scripts 下的构建器，不是门）⇒ 真孤儿门 16",
+    "ran_them_all": "15 条各跑一次（登记 rulings-landed 后剩 15）：12 条无参可跑且判据成立，3 条按设计要输入（logged-in-landing 要 --exec、evidence-integrity 要 manifest、package-size 要构建目录），裸跑退 2/红不是坏门",
+    "registered": 12,
+    "baseline_now": 3,
+    "fresh_red_found": "verify-frame-debt-coverage 手跑即红：FRAMECOV open=34 A配方SHOOT=3 B归置表=1 C显式登记=3 裸行=27 ⇒ 27 条未结判决既不会被拍帧也没有归置去处，此前从未在任何一发全清单露面。已立案 MP-R7QA-FRAMEDEBT-NAKED-27-001（P2）",
+    "second_finding": "verify-status-vs-disposition 给 DISPO_RESULT=ADVISORY 13 行第 6 列会被当结案读、处置列却还欠东西 ⇒ 立案 MP-R7QA-STATUS-DISPO-CONTRADICTION-13-001（P3）",
+    "my_own_phantom": "我一度把 verify-i18n-orphan 报成「机读行名坏了（N_RESULT=PASS）」——那是我摘要用的正则 [A-Z][A-Z_]*_RESULT= 匹配到了 I18N_RESULT 的尾巴。原样复核后是 I18N_RESULT=PASS，门没问题，是量的尺错。没立案。",
+    "my_own_regression": "登记时我给 GATE_SUITE 条目加了 note 字段，tcheck 立刻判 TCHECK_DIAGS=12 by_code=2353（note 只在 PANEL_SUITE 的类型里）。剥掉 12 处 note、PANEL 的 22 处原样保留，复量回到 0 诊断。信息没丢：说明写在块注释里。这正是 tcheck 这门存在的理由——干跑台看不见门面类型。",
+    "after": "GATESYNC_COUNTS dslScripts=46 bashSteps=46、GATESYNC_ORPHANS=3 baseline=3、GATESYNC_RESULT=PASS 判点 14 不一致 0、TCHECK_RESULT=PASS 0 诊断、DRYRUN_RESULT=PASS 3/3；台账 265→267 行 verify-ledger PASS",
+    "next": "三条要输入的门接上输入后压到 0；裸行 27 与 13 行矛盾按台账行逐条归置"
   }
 }
