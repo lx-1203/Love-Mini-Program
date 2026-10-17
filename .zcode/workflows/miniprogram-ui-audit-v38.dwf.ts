@@ -1631,10 +1631,12 @@ if (addRes.ok) {
    * 为什么 fail-closed：本仓的 .gitignore 只是"看不见"不是"不许提交"，
    *   实测 `.env.bak-20261014-rot` 同时漏过 .gitignore:24（字面 `.env`）与 :157（字面 `*.bak`）
    *   两道规则，只靠屏蔽拦不住一次 `git add -f`（出处：scripts/qa/verify-staged-secrets.mjs 头注 4-8 行）。
-   *   所以 exit 1（有判点）与 exit 2（门自己没跑成：git 不可达 / 不是仓库 / ref 解析不到 / diff 读不出）
-   *   都**不许提交** —— 把"量不到"当"没问题"放过去，就是这道门存在的理由的反面
-   *   （该脚本 :14-16 自己写的：退出码 0 干净 / 1 红线 / 2 门没跑成，"量不到的东西必须响亮地失败"）。
-   * 落点纪律：--json 侧车只落掩码值（该脚本 :36-38 的输出纪律），所以它可以进本轮 closureDir 并随证据一起提交。
+   *   所以 exit 1（有判点）与 exit 2（门自己没跑成：git 不可达 / 不是仓库 / ref 解析不到 / diff 读不出／
+   *     空索引 ⇒ NOT-EVIDENCED）都**不许提交** —— 把"量不到"当"没问题"放过去，就是这道门存在的理由的反面
+   *   （该脚本头注的退出码段自己写的："量不到的东西必须响亮地失败"；本版起 staged=0 也归入"量不到"）。
+   *   本相位不会误踩空索引那条：上面那句 gitTry(["add", "--", closureDir, issue-matrix]) 已经先暂存再判，
+   *   add 什么都没匹配到才可能 staged=0，那种情况下"本轮不提交"正是想要的结果。
+   * 落点纪律：--json 侧车只落掩码值（该脚本的输出纪律段），所以它可以进本轮 closureDir 并随证据一起提交。
    */
   const stagedSecrets = await runGate({
     name: "暂存区密钥预检 verify-staged-secrets",

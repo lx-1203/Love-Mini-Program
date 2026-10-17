@@ -13,8 +13,9 @@
  *  机器行：STAGEDSECRETS_RESULT=PASS|FAIL|NOT-EVIDENCED paths=N findings=N staged=N（<最吃重的理由，≤100 字>）
  *    paths= 是【路径屏命中数】，findings= 是全部判点，staged= 才是被检的暂存/基线文件数。
  *    三个数以前混过：paths=0 曾被读成「索引为空」，其实它是「没命中」。
- *  退出码：0 干净（含"索引为空"这种合法干净）；1 有红线判点；2 门自己没跑成
- *          （git 不在 PATH / 不是仓库 / ref 解析不到 / diff 读不出 / diff 非空却解析不出文件头）。
+ *  退出码：0 检过且无判点（staged>0）；1 有红线判点；2 门自己没跑成
+ *          （git 不在 PATH / 不是仓库 / ref 解析不到 / diff 读不出 / diff 非空却解析不出文件头／
+ *           默认暂存模式下 staged=0 ⇒ NOT-EVIDENCED：空索引＝一个文件都没检，不是清白）。
  *          本仓规矩：量不到的东西必须响亮地失败，不许空转判绿。
  *
  *  两道屏：
