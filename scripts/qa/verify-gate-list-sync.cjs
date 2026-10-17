@@ -209,7 +209,7 @@ for (const d of orphanDirs) {
     if (!orphanCarriers.has(f)) orphans.push(`${d}/${f}`);
   }
 }
-const ORPHAN_BASELINE = 3;
+const ORPHAN_BASELINE = 5;
 console.log(`GATESYNC_ORPHANS=${orphans.length} baseline=${ORPHAN_BASELINE}（印 _RESULT= 却两边载具都不点名的 verify-* 门）`);
 for (const o of orphans) console.log(`  ORPHAN ${o}`);
 t(`孤儿门不得新增（现 ${orphans.length}，基线 ${ORPHAN_BASELINE}；这道判点专抓两份清单"同时缺"的共同盲区）`,

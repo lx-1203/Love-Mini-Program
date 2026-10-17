@@ -305,9 +305,14 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   // 从来没有一发全清单替我们作证（本轮 grep 实测：载具文本里零命中，手跑它给 未落地=2）。
   // 它不取租约、不写库，可以进并发段。超时与 bash 步取同值（600s），因为被杀掉的门读起来是红不是跳过。
   { name: "裁决落地核验 verify-rulings-landed", args: ["scripts/qa/verify-rulings-landed.mjs"], timeoutMs: 600000 },
-  // 本轮登记 12 条孤儿门：它们此前在两个载具都不点名，从未参与一发终验（实测：印 _RESULT= 的
-  // 门/探针 45 个，被任一载具点名只有 25 个；登记 rulings-landed 之后仍剩 15 条）。
-  // 全部只读、不取租约、不写库 ⇒ 放并发段是对的。超时两侧同值，实测单条 0-10s，留 120/180s 余量。
+  // 本轮登记 10 条孤儿门进终验：它们此前在两个载具都不点名，从未参与一发终验（实测：印 _RESULT= 的
+  // 门/探针 45 个，登记前被任一载具点名的只有 25 个）。全部只读、不取租约、不写库 ⇒ 放并发段是对的。
+  // 曾登记 12 条，后撤 2 条（verify-guest-landing / verify-openqueue-lanes）：这两条会写在册产物，
+  // 而载具没传它们要的输入 —— 实跑一次就把 booked 的 carrier 写成 --project undefined、
+  // 把 cellplan 的精确值 width: 144rpx 换成散文（门自己还印 OK）。受损两件已按名从 HEAD 恢复。
+  // 契约补齐（缺输入退 2 且不写产物）后再登记，见台账 MP-R7QA-GUESTLANDING-FAIL-OPEN-001。
+  // 另 3 条从未登记：verify-logged-in-landing 要 --exec、verify-evidence-integrity 要 manifest、
+  // verify-package-size 要构建目录 —— 裸跑按设计退 2 或红，那是缺输入不是坏门，硬塞只会造假红。
   // 剩下 3 条没登记：verify-logged-in-landing 要 --exec、verify-evidence-integrity 要 manifest、
   // verify-package-size 要构建目录——裸跑按设计退 2 或红，那是"缺输入"不是"坏门"，
   // 硬塞进终验只会造出一串假红或假绿，所以留在孤儿基线里由完备性判点看住。
@@ -318,9 +323,7 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   { name: "修复对照产物核验 verify-fixes-against-artifact", args: ["scripts/qa/verify-fixes-against-artifact.cjs"], timeoutMs: 180000 },
   { name: "台账欠帧裸行 verify-frame-debt-coverage", args: ["scripts/qa/verify-frame-debt-coverage.mjs"], timeoutMs: 120000 },
   { name: "欠帧分诊闸 verify-frame-debt-triage", args: ["scripts/qa/verify-frame-debt-triage.mjs"], timeoutMs: 120000 },
-  { name: "游客落地具名腿 verify-guest-landing", args: ["scripts/qa/verify-guest-landing.mjs"], timeoutMs: 120000 },
   { name: "i18n 孤儿键 verify-i18n-orphan", args: ["scripts/qa/verify-i18n-orphan.mjs"], timeoutMs: 120000 },
-  { name: "未结 lane 复核 verify-openqueue-lanes", args: ["scripts/qa/verify-openqueue-lanes.mjs"], timeoutMs: 120000 },
   { name: "状态与处置一致 verify-status-vs-disposition", args: ["scripts/qa/verify-status-vs-disposition.mjs"], timeoutMs: 120000 },
   { name: "tabBar 单点化 verify-tab-bar-single-source", args: ["scripts/qa/verify-tab-bar-single-source.mjs"], timeoutMs: 120000 },
   { name: "用例可自动化预检 verify-case-automatable", args: ["scripts/qa/verify-case-automatable.mjs", "--results", WORKFLOW.matrixDir + "/interact/exec-results.json", "--json", ".zcode/tmp/case-automatable/preflight.json"], timeoutMs: 180000 }, // 该 --results 配对是唯一标题 100% 相等的组合；若该件被清理，门按设计退 2，正确处置是改指另一个标题相等配对，绝不是删旗标

@@ -98,9 +98,7 @@ g verify-disproof-anchors      120 scripts/qa/verify-disproof-anchors.mjs
 g verify-fixes-against-artifact 180 scripts/qa/verify-fixes-against-artifact.cjs
 g verify-frame-debt-coverage   120 scripts/qa/verify-frame-debt-coverage.mjs
 g verify-frame-debt-triage     120 scripts/qa/verify-frame-debt-triage.mjs
-g verify-guest-landing         120 scripts/qa/verify-guest-landing.mjs
 g verify-i18n-orphan           120 scripts/qa/verify-i18n-orphan.mjs
-g verify-openqueue-lanes       120 scripts/qa/verify-openqueue-lanes.mjs
 g verify-status-vs-disposition 120 scripts/qa/verify-status-vs-disposition.mjs
 g verify-tab-bar-single-source 120 scripts/qa/verify-tab-bar-single-source.mjs
 g verify-case-automatable 180 scripts/qa/verify-case-automatable.mjs --results reports/audit/round-6/interact/exec-results.json --json .zcode/tmp/case-automatable/final.json
