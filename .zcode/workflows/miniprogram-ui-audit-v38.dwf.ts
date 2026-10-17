@@ -53,6 +53,13 @@ whenToUse: 需要全量审查小程序所有页面/按钮/功能并循环修复�
 //      状态自己收回 loading=false 为止，detail 同印首读与稳后读数）同一条腿就落 41 PASS/0 FAIL。
 //      ⚠ 截至本版这一条只是措辞纪律，没有可红的判点守着它：新门要同时进 DSL 与 sh 两个载具、
 //      给 _RESULT= 机读行、并在 prove-gates-can-fail 里证明它能红——本轮预算已尽，欠下一程。
+//      【下一程已兑现（本版补记）】判点 = scripts/qa/verify-settle-discipline.mjs：
+//      静态扫 verify-device-leg 与 r-exec-ws 的 await sleep( 站点，按 guarded / single_read / other /
+//      arg_not_literal 四类分（尺与逐条基线判读写在该文件头注释），single_read 超过实测基线 7 ⇒ exit 1，
+//      载具缺失或零站点 ⇒ exit 2（量不到≠达标）；两载具都接线（GATE_SUITE 与 run-final-verify-v33.sh 的
+//      `g settle-discipline 60`），可红证明走 --selftest（注入一条 sleep+check ⇒ 7→8 红；撤掉 ⇒ 7 绿，
+//      变异 grep-back 验证落盘），并已在 prove-gates-can-fail 里作为一条案例进"每把门都能红"的总账。
+//      它不取租约、不写 DB ⇒ 排在并发道 GATE_SUITE。
 //   E10 腿的产物写点必须全部过同一枚凭据屏，"同一枚"是重点（另写一个就会漂移）。
 //      本程 tally 侧过了 scrubEvidence，而结果件 exec-results.json 没过：git add 之后被
 //      verify-staged-secrets 判出 1 段活会话票（掩码 eyJ****(len=108)）。危险是结构性的——
@@ -301,6 +308,7 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   { name: "门禁清单两载具一致 verify-gate-list-sync", args: ["scripts/qa/verify-gate-list-sync.cjs"], timeoutMs: 120000 }, // 本清单有 DSL 与 bash 两个载具、各自硬编码，谱系里实测漂移过一整边（一边 15 条、一边 18 步却都自称全清单）⇒ 一致性必须是能红的判据，不能靠人对眼
   { name: "判据台戳 verify-ops-stamp", args: ["scripts/qa/verify-ops-corpus-stamp.mjs", "--check"], timeoutMs: 180000 },
   { name: "ESLint 进门只数 error lint-gate", args: ["scripts/qa/lint-gate.cjs"], timeoutMs: 300000 }, // 裁定 N7：lint 进门、**只计 error**（--quiet 语义），warning 报数而不染色（实测 2026-10-16：errors=2 / warnings=14103 / 650 文件）。显式预算 2 的具名理由写在 lint-gate.cjs 头注释：②③ apps/client/src/env.d.ts 的 JSX 兜底索引签名与运行时注入载荷，把 any 收窄就是改类型面行为，不能赌（本车道无 vue-tsc 全量回归在手）；① other.vue:181 的 if(false) 静态死块已实测修掉，3→2。它只读产品树、不取租约、不写库 ⇒ 属并发道 GATE_SUITE。timeoutMs 实测依据：同一 scope 冷跑 85 s / 热跑 24-26 s ⇒ 300000 ms ≈ 冷跑上界的 3.5 倍（本仓口径：比实测需求小的上限会读成假红，参见上面 band-freshness 那条"实测约需 99 s，180 s 太薄"）
+  { name: "等稳纪律棘轮 verify-settle-discipline", args: ["scripts/qa/verify-settle-discipline.mjs"], timeoutMs: 60000 }, // 【E9 补判点】把"判决不许建立在固定 sleep 后单发读上"从散文变成能红的棘轮门：扫 verify-device-leg / r-exec-ws 两载具的 await sleep( 站点，分 guarded / single_read / other / arg_not_literal 四类，single_read 超过基线（实测 7，逐条判读见该文件头注释与 .zcode/tmp/settle-gate-lane-report.md）⇒ exit 1；载具缺失或零站点 ⇒ exit 2（量不到≠达标）。它只读两个脚本、不取租约、不写 DB ⇒ 属并发道 GATE_SUITE。timeoutMs 实测依据：判定跑 148/138/142 ms、--selftest（内含 3 发子进程）375/389/383 ms ⇒ 60000 ms 对最慢形态仍有 ~150 倍余量，且与 bash 侧 `g settle-discipline 60` 齐平
 ];
 
 // ===== 面板腿（D5：一律 --dry；显式 --report/--metrics 以免轮次号从目录名派生出非数字）=====

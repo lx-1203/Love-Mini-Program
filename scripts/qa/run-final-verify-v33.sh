@@ -93,6 +93,11 @@ g verify-ops-stamp          180 scripts/qa/verify-ops-corpus-stamp.mjs --check
 # 300 秒的依据：同一 scope 冷跑 85 s、热跑 24-26 s；比实测需求小的上限会读成假红（本仓口径）。
 # 预算 2 的具名欠账与"只能往下改"的纪律写在 scripts/qa/lint-gate.cjs 的头注释里。
 g lint-gate                 300 scripts/qa/lint-gate.cjs
+# E9 补判点（本轮三族仪表伪红同源：固定 sleep 后单发读下判决）：把措辞纪律变成能红的棘轮门。
+# 基线 = 实测 single_read 7 条（点名逐条判读写在脚本头注释），新增一条单发判决即 exit 1；
+# 载具缺失/零站点 exit 2（量不到≠达标）。只读两个脚本、不取租约、不写 DB ⇒ 排在并发段。
+# 超时 60 秒＝与 DSL timeoutMs:60000 齐平；实测 判定跑 148/138/142 ms、--selftest 375/389/383 ms。
+g settle-discipline          60 scripts/qa/verify-settle-discipline.mjs
 
 echo "--- QA 自测汇总器（19+ 条离线）---"
 # r10 上调 600→900（只准往大调，方向与 DSL 齐平：DSL 给 900000ms 并写明"留的是负例批量起进程的余量"）。
