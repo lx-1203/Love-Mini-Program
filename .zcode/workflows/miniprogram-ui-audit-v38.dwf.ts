@@ -301,6 +301,10 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   { name: "载体接线零消费者门 verify-carrier-wiring", args: ["scripts/qa/verify-carrier-wiring.mjs"], timeoutMs: 180000 },
   { name: "车道报告骨架完成度 verify-lane-report-complete", args: ["scripts/qa/verify-lane-report-complete.mjs", "--intake", WORKFLOW.legacyRoundDir + "/lane-report-intake-round-7.json", "--exemptions", WORKFLOW.legacyRoundDir + "/lane-report-exemptions-round-7.json"], timeoutMs: 90000 },
   { name: "真实档覆盖去向册 verify-real-coverage-disposition", args: ["scripts/qa/verify-real-coverage-disposition.mjs"], timeoutMs: 180000 },
+  // 登记（本轮补）：verify-rulings-landed 此前两个载具都不点名 ⇒ "裁决到底有没有落地"这句话
+  // 从来没有一发全清单替我们作证（本轮 grep 实测：载具文本里零命中，手跑它给 未落地=2）。
+  // 它不取租约、不写库，可以进并发段。超时与 bash 步取同值（600s），因为被杀掉的门读起来是红不是跳过。
+  { name: "裁决落地核验 verify-rulings-landed", args: ["scripts/qa/verify-rulings-landed.mjs"], timeoutMs: 600000 },
   { name: "用例可自动化预检 verify-case-automatable", args: ["scripts/qa/verify-case-automatable.mjs", "--results", WORKFLOW.matrixDir + "/interact/exec-results.json", "--json", ".zcode/tmp/case-automatable/preflight.json"], timeoutMs: 180000 }, // 该 --results 配对是唯一标题 100% 相等的组合；若该件被清理，门按设计退 2，正确处置是改指另一个标题相等配对，绝不是删旗标
   { name: "工作流干跑预检 dryrun-workflow", args: ["scripts/qa/dryrun-workflow.mjs", "--file", ".zcode/workflows/miniprogram-ui-audit-v38.dwf.ts", "--profile", "all"], timeoutMs: 300000 }, // D9：不带 --file 就是在干跑 v3.3，测不到本文件【E6：本版文件名自指已随版本翻转，与 bash:98 由 verify-gate-list-sync 的两把正则钉死】
   { name: "工作流真实类型检查 tcheck-workflow", args: ["scripts/qa/tcheck-workflow.cjs", "--file", ".zcode/workflows/miniprogram-ui-audit-v38.dwf.ts"], timeoutMs: 300000 }, // 【E7 提升】干跑台把宿主七件套当未解析名字放行 ⇒ 它永远看不见门面返回类型。本门用真实 typescript 程序 + 忠实门面声明跑类型检查，专抓两类实测烧过本文件的缺陷：PromiseLike 上挂 .catch（ask 的返回没有 .catch，守卫必须两参 .then(v,e)）与重复 function 声明（JS 静默让最后一个赢）。它原先只活在 .zcode/tmp/tcheck-v32.cjs（gitignore 的 any-depth tmp/ ⇒ clean checkout 就没了），现进 scripts/qa 并同时进两个载具。 --file 无缺省值：带缺省的 --file 已在本仓两次把预检测错工作流版本（D9 同一形状）

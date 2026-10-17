@@ -85,6 +85,9 @@ g verify-lane-report-complete 60 scripts/qa/verify-lane-report-complete.mjs --in
 # r10 接线（L19）：10 条真实档覆盖欠账的分流此前只有 50KB 散文（uncovered10-disposition-r14.md），
 # 没有任何门在核"条条有去向"。本门只审有没有账，结构上销不掉红（五词表里没有 DONE/CLOSED/EXEMPT）。
 g verify-real-coverage-disposition 180 scripts/qa/verify-real-coverage-disposition.mjs
+# 登记补漏（本轮）：这道门此前两个载具都不点名，"已裁的裁决有没有进代码"从来没有一发全清单作证。
+# 超时取 600，与 DSL 侧 timeoutMs 600000 同值——两侧不一致时门被杀掉会读成红而不是跳过。
+g verify-rulings-landed        600 scripts/qa/verify-rulings-landed.mjs
 g verify-case-automatable 180 scripts/qa/verify-case-automatable.mjs --results reports/audit/round-6/interact/exec-results.json --json .zcode/tmp/case-automatable/final.json
 # r9 接线：判据台语料戳（--check 只读）。此前只有车道"自己记得跑"，而本轮有车道往 ops 写过行 ⇒ 必须有人必然经过。
 g verify-ops-stamp          180 scripts/qa/verify-ops-corpus-stamp.mjs --check

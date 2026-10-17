@@ -186,5 +186,32 @@ t("bash 里不留「面板会重写判决件」的旧说法（三处落点已改
 const hardcodedCount = /"(十项|十二项|\d+\s*项)门禁/.test(dsl) || /"(十项|十二项|\d+\s*项)门禁/.test(sh);
 t("两个载具都不许把门禁条数写进措辞（清单会长，条数是承诺不是事实）", !hardcodedCount);
 
+/* 完备性判点（本轮补，ratchet）：凡 verify-*.{mjs,cjs} 且自己会印 *_RESULT= 的门，
+ * 必须至少在两个载具之一被点名。两边同时缺 ⇒ 这道门从来没参与过终验。
+ * 为什么现有的两条都抓不到它：verify-carrier-wiring 判的是"声明了导出的模块有没有消费者"
+ * （CLI 门没有导出，不在判域）；本门原先只比两份清单的差集（两边同时没有 = 一致 = 绿）。
+ * ⇒ "两边都缺"是两者的共同盲区，只能新加判点。
+ * 基线 15 是本轮登记 verify-rulings-landed 之后实测出来的孤儿门数，不放宽、不加豁免名单；
+ * 计数超过基线即红，目标是逐条登记或明写理由后把它压到 0。 */
+const orphanCarriers = new Set([...dslSet, ...shSet]);
+const orphanDirs = ["scripts/qa", "scripts"];
+const orphans = [];
+for (const d of orphanDirs) {
+  let list = [];
+  try { list = fs.readdirSync(path.join(REPO, d)); } catch { continue; }
+  for (const f of list) {
+    if (!/^verify-.+\.(mjs|cjs)$/.test(f)) continue;
+    let txt = "";
+    try { txt = fs.readFileSync(path.join(REPO, d, f), "utf8"); } catch { continue; }
+    if (!/_RESULT=/.test(txt)) continue;
+    if (!orphanCarriers.has(f)) orphans.push(`${d}/${f}`);
+  }
+}
+const ORPHAN_BASELINE = 15;
+console.log(`GATESYNC_ORPHANS=${orphans.length} baseline=${ORPHAN_BASELINE}（印 _RESULT= 却两边载具都不点名的 verify-* 门）`);
+for (const o of orphans) console.log(`  ORPHAN ${o}`);
+t(`孤儿门不得新增（现 ${orphans.length}，基线 ${ORPHAN_BASELINE}；这道判点专抓两份清单"同时缺"的共同盲区）`,
+  orphans.length <= ORPHAN_BASELINE);
+
 console.log(`GATESYNC_RESULT=${bad === 0 ? "PASS" : "FAIL"}（判点数=${checked}，不一致=${bad}）`);
 process.exit(bad === 0 ? 0 : 1);
