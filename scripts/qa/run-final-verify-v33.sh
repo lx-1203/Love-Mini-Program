@@ -103,6 +103,8 @@ g verify-status-vs-disposition 120 scripts/qa/verify-status-vs-disposition.mjs
 g verify-tab-bar-single-source 120 scripts/qa/verify-tab-bar-single-source.mjs
 # 再登记：取参已单源、带 undefined 即拒写，且这里显式传 --project（不靠缺省，见台账 FAIL-OPEN 行）
 g verify-guest-landing         120 scripts/qa/verify-guest-landing.mjs --project apps/client/dist/build/mp-weixin-real
+# push 前置凭据门：只读、不取租约；强制正例控制，抓不到已知票就退 2（扫不到 ≠ 没东西）。
+g verify-push-credentials      300 scripts/qa/verify-push-credentials.mjs
 g verify-case-automatable 180 scripts/qa/verify-case-automatable.mjs --results reports/audit/round-6/interact/exec-results.json --json .zcode/tmp/case-automatable/final.json
 # r9 接线：判据台语料戳（--check 只读）。此前只有车道"自己记得跑"，而本轮有车道往 ops 写过行 ⇒ 必须有人必然经过。
 g verify-ops-stamp          180 scripts/qa/verify-ops-corpus-stamp.mjs --check

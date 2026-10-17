@@ -330,6 +330,11 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   // "undefined + undefined" 写进在册件、门自己还印 OK（见台账 MP-R7QA-GUESTLANDING-FAIL-OPEN-001）。
   // 现在取参单源 + 带 undefined 即退 2 不写盘，且登记时显式传 --project，不再依赖缺省。
   { name: "游客落地具名腿 verify-guest-landing", args: ["scripts/qa/verify-guest-landing.mjs", "--project", "apps/client/dist/build/mp-weixin-real"], timeoutMs: 120000 },
+  // push 前置凭据门（用户裁定"推之前先做一轮 security 扫描"）：扫 origin/main..HEAD 会暴露的文件集，
+  // 六把形状尺 + 强制正例控制（抓不到已知那枚历史票就退 2，绝不把"扫不到"当"没东西"）。
+  // 登记即红：exec-v37-nearby 那枚历史票仍在跟踪里（P3，结案条件含 git rm --cached 与是否重写历史），
+  // 这道门要的就是"没处理之前每次终验都提醒一次"，而不是等谁手点。
+  { name: "提交前置凭据扫描 verify-push-credentials", args: ["scripts/qa/verify-push-credentials.mjs"], timeoutMs: 300000 },
   { name: "用例可自动化预检 verify-case-automatable", args: ["scripts/qa/verify-case-automatable.mjs", "--results", WORKFLOW.matrixDir + "/interact/exec-results.json", "--json", ".zcode/tmp/case-automatable/preflight.json"], timeoutMs: 180000 }, // 该 --results 配对是唯一标题 100% 相等的组合；若该件被清理，门按设计退 2，正确处置是改指另一个标题相等配对，绝不是删旗标
   { name: "工作流干跑预检 dryrun-workflow", args: ["scripts/qa/dryrun-workflow.mjs", "--file", ".zcode/workflows/miniprogram-ui-audit-v38.dwf.ts", "--profile", "all"], timeoutMs: 300000 }, // D9：不带 --file 就是在干跑 v3.3，测不到本文件【E6：本版文件名自指已随版本翻转，与 bash:98 由 verify-gate-list-sync 的两把正则钉死】
   { name: "工作流真实类型检查 tcheck-workflow", args: ["scripts/qa/tcheck-workflow.cjs", "--file", ".zcode/workflows/miniprogram-ui-audit-v38.dwf.ts"], timeoutMs: 300000 }, // 【E7 提升】干跑台把宿主七件套当未解析名字放行 ⇒ 它永远看不见门面返回类型。本门用真实 typescript 程序 + 忠实门面声明跑类型检查，专抓两类实测烧过本文件的缺陷：PromiseLike 上挂 .catch（ask 的返回没有 .catch，守卫必须两参 .then(v,e)）与重复 function 声明（JS 静默让最后一个赢）。它原先只活在 .zcode/tmp/tcheck-v32.cjs（gitignore 的 any-depth tmp/ ⇒ clean checkout 就没了），现进 scripts/qa 并同时进两个载具。 --file 无缺省值：带缺省的 --file 已在本仓两次把预检测错工作流版本（D9 同一形状）
