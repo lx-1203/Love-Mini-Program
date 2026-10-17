@@ -596,6 +596,90 @@
    "measured": "2026-09-28 实测：shoot-frameplan.mjs --dry @frameplan-round7-final.json = ATTRIBUTED=42/49、UNATTRIBUTED=7、DRY_REFUSED_GROUPS=6（本次点名回填 2 行前为 40/49、9、8）；本行 route=pages/nearby/index，分组 pages/nearby/index|unattributed 在 DRY_REFUSED_GROUPS 名单里。verify-frame-debt-coverage.mjs（无 --selftest）before/after 均为 open=17 A配方SHOOT=9 B归置=2 C显式登记=6 裸行=0、CONSERVATION in=17 out=17——本行台账状态是「已修复（源码级判点…」，落在 FRAMECOV_SRCONLY 桶（A配方SHOOT=35），不在 open=17 里，所以本次写盘不动那个数。",
    "note": "就地改写既有条目（kind 由 not_frame_observable_declared 改为 carrier_missing，原 reason 逐字留在文末）：verify-frame-debt-coverage.mjs:91 按 id 建 Map ⇒ 同 id 追加会被静默遮蔽，所以只 in-place。台账第 6 列一字未动，配方 disposition 未动（本 lane 禁改判决）。",
    "prevKind": "not_frame_observable_declared"
+  },
+  {
+   "id": "MP-R7QA-WEXEC-ROWBUILDER-BAND-ARITY-001",
+   "kind": "static_predicate",
+   "reason": "行构造器的参数个数与注入位是代码结构命题，帧与像素两侧都取不到 band/identity 是谁写进去的",
+   "nextCarrier": "scripts/qa/test-exec-ws-row-arity.cjs"
+  },
+  {
+   "id": "MP-R7QA-DEVICELEG-UNBOUND-ZERO-DISCHARGE-001",
+   "kind": "static_predicate",
+   "reason": "绑定表的 bound 旗标与放电链是代码结构判点，帧侧只看得出有没有抵账看不出为何不认",
+   "nextCarrier": "scripts/qa/test-device-leg-scrub.mjs ＋ scripts/qa/verify-real-coverage.mjs"
+  },
+  {
+   "id": "MP-R7QA-BAND-FRESHNESS-STAMP-SCOPE-001",
+   "kind": "needs_ruling",
+   "reason": "折宽那把尺的代价已被量成 11840 条带戳行同时失效（≈一次覆盖重跑），选 (a) 折宽还是 (b) 接受窄尺是口径裁定",
+   "nextCarrier": "decisions#51（N3）裁后再登记判点"
+  },
+  {
+   "id": "MP-R7QA-SHOWCASE-CARRIER-RULER-001",
+   "kind": "needs_ruling",
+   "reason": "showcase 的 env.js 哈希 ed1cd82c 与 real 的 f0677920 结构性不同，同一把尺下 showcase 行永远缺可比戳；要不要按模式各设一把尺是 N4 裁定",
+   "nextCarrier": "decisions#52（N4）"
+  },
+  {
+   "id": "MP-R7QA-LEG-SINGLEREAD-CLASS-001",
+   "kind": "static_predicate",
+   "reason": "判决是否来自等稳循环是代码结构命题；本轮已把这条做成可红的门并登进两载具（基线 7、超线即红）",
+   "nextCarrier": "scripts/qa/verify-settle-discipline.mjs"
+  },
+  {
+   "id": "MP-R7QA-COV-DEPTH1-BLIND-001",
+   "kind": "static_predicate",
+   "reason": "覆盖门的目录发现深度是代码结构判点，帧量不出它扫了几层目录",
+   "nextCarrier": "scripts/qa/verify-real-coverage.mjs 的 --selftest（现无参调用点为零，接上输入后进清单）"
+  },
+  {
+   "id": "MP-R7QA-DELETION-RULING-MARKER-001",
+   "kind": "not_frame_observable_declared",
+   "reason": "被删文件上不可能留行内标记，这是判点在删除类裁定上不可满足，与帧无关",
+   "nextCarrier": "scripts/qa/verify-rulings-landed.mjs --selftest"
+  },
+  {
+   "id": "MP-R7QA-FRAMEDEBT-NAKED-27-001",
+   "kind": "static_predicate",
+   "reason": "本行判的是台账归置完整性，量它的就是那道门本身；裸行数下降即结案",
+   "nextCarrier": "scripts/qa/verify-frame-debt-coverage.mjs"
+  },
+  {
+   "id": "MP-R7QA-STATUS-DISPO-CONTRADICTION-13-001",
+   "kind": "static_predicate",
+   "reason": "第 6 列与处置列是否互相打脸是账面结构判点，帧不参与",
+   "nextCarrier": "scripts/qa/verify-status-vs-disposition.mjs"
+  },
+  {
+   "id": "MP-R7QA-DEVICELEG-EVIDENCE-NOCOMMIT-001",
+   "kind": "static_predicate",
+   "reason": "禁令落在读索引的门上是代码结构判点；已登记并证明能红（植一条即 FAIL）",
+   "nextCarrier": "scripts/qa/test-leg-artifact-screen.mjs"
+  },
+  {
+   "id": "MP-R7QA-GUESTLANDING-FAIL-OPEN-001",
+   "kind": "harness_limit",
+   "reason": "该门缺输入时不拒且把 undefined 写进在册件，属执行器输入契约缺陷，不是帧可判项",
+   "nextCarrier": "补齐契约后重新登记进两载具（载具显式传 --project / --exec）"
+  },
+  {
+   "id": "MP-R7QA-WS-TAPTARGET-IGNORED-001",
+   "kind": "carrier_missing",
+   "reason": "两载具点击目标口径不同源，修在载具侧；结案要求 LK04 游客腿真点到 ops 声明的目标",
+   "nextCarrier": "scripts/qa/r-exec-ws.mjs 改用 tapTarget ＋ LK04 游客腿重跑"
+  },
+  {
+   "id": "MP-R3AUDIT-VI25-VI34-PARKED-001",
+   "kind": "needs_ruling",
+   "reason": "VI25/VI34 四条腿的共同前提是资料完成度拦截适不适用，未裁之前任何腿都不会给有效判决",
+   "nextCarrier": "decisions#34（A5）"
+  },
+  {
+   "id": "MP-R3AUDIT-CTA-PENETRATION-001",
+   "kind": "needs_ruling",
+   "reason": "结案要求 navto-open 旗标作用域与臂展回执形状先定，现挂 A8/A9 两条未裁",
+   "nextCarrier": "decisions#37（A8）/ decisions#38（A9）"
   }
  ],
  "statusTextContradictions": {
@@ -632,6 +716,27 @@
     "MP-R7-GUEST-MATCHING-REDIRECT-RACE-001",
     "MP-R7-ADMIN-VILLAGE-COMMENTSCOLUMN-001",
     "MP-R6-F1-NEARBY-IP-CITY-001"
+   ]
+  },
+  {
+   "at": "2026-10-17T14:02:36Z",
+   "from": ".zcode/tmp/derive-naked-dispositions.cjs 派生＋人工过一遍",
+   "count": 14,
+   "ids": [
+    "MP-R7QA-WEXEC-ROWBUILDER-BAND-ARITY-001",
+    "MP-R7QA-DEVICELEG-UNBOUND-ZERO-DISCHARGE-001",
+    "MP-R7QA-BAND-FRESHNESS-STAMP-SCOPE-001",
+    "MP-R7QA-SHOWCASE-CARRIER-RULER-001",
+    "MP-R7QA-LEG-SINGLEREAD-CLASS-001",
+    "MP-R7QA-COV-DEPTH1-BLIND-001",
+    "MP-R7QA-DELETION-RULING-MARKER-001",
+    "MP-R7QA-FRAMEDEBT-NAKED-27-001",
+    "MP-R7QA-STATUS-DISPO-CONTRADICTION-13-001",
+    "MP-R7QA-DEVICELEG-EVIDENCE-NOCOMMIT-001",
+    "MP-R7QA-GUESTLANDING-FAIL-OPEN-001",
+    "MP-R7QA-WS-TAPTARGET-IGNORED-001",
+    "MP-R3AUDIT-VI25-VI34-PARKED-001",
+    "MP-R3AUDIT-CTA-PENETRATION-001"
    ]
   }
  ]

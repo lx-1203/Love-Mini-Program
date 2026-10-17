@@ -11,8 +11,8 @@
 
 ## 1. 起点账单（缺口账单件，Node 22 实测）
 
-门禁并行实测 3 项，红 2 项：verify-real-coverage、emit-open-items。（此句读的是**缺口账单件**，其 HEAD=5d6ab952；终局复量那一发在第 7 节，两份件不同源、口径以第 7 节为准。本件 HEAD 与终局复量同源（同一枚提交的两发读数）)
-- 起点 HEAD=5d6ab952，工作树脏 39 项。
+门禁并行实测 3 项，红 2 项：verify-real-coverage、emit-open-items。（此句读的是**缺口账单件**，其 HEAD=eaa70f7a；终局复量那一发在第 7 节，两份件不同源、口径以第 7 节为准。本件 HEAD 与终局复量不同源（终局那发在 5d6ab952）⇒ 本件是那一发之前的口径)
+- 起点 HEAD=eaa70f7a，工作树脏 35 项。
 
 ## 2. 工作流本身改了什么（生成器不产叙事）
 
@@ -24,8 +24,8 @@
 
 ## 4. 台账：未结行与阻断（机械归置）
 
-- 剩余未结 36 行，机械归置：现在可落账 30 条（明细见 `reports/audit/ui-audit-2026-10-16/openrows-blockers-v38.json`）。
-- 阻断归因：{"code":15,"reverify":8,"decision":4,"probe":3,"unverified":2,"UNCLASSIFIED":2,"backend":1,"frame":1}
+- 剩余未结 37 行，机械归置：现在可落账 31 条（明细见 `reports/audit/ui-audit-2026-10-16/openrows-blockers-v38.json`）。
+- 阻断归因：{"code":16,"reverify":8,"decision":4,"probe":3,"unverified":2,"UNCLASSIFIED":2,"backend":1,"frame":1}
 
 ## 5. 真实模式交互腿
 
