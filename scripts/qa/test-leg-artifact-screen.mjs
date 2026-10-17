@@ -135,7 +135,10 @@ const readSide = (p) => { try { return JSON.parse(readFileSync(p, "utf8")); } ca
 const hitPathsOf = (r) => r.out.split(/\r?\n/).filter((l) => l.startsWith("HIT ")).map((l) => l.slice(4).split(" ")[0]);
 
 /* ---------- ② 真 add 的变红演示 ---------- */
-const base = runGate(GATE, "sidecar-baseline.json", scratch);   // ③ 先跑：scratch=真索引副本，没塞东西
+/* 基线不能是「什么都不塞」：scratch 是真索引副本，开发者当下暂存了什么就跟着变（上一轮它恰好非空才绿）。
+   门现在对 staged=0 退 2（空索引＝没判点可产，不是清白），所以基线要显式暂存一份与三条规则都无关的良性文件。 */
+stageInto(scratch, ["zz-legscreen-benign.txt"]);
+const base = runGate(GATE, "sidecar-baseline.json", scratch);   // ③ 先跑：scratch=真索引副本+一份良性文件，没塞腿产物
 stageInto(scratch, DEMO);
 stageInto(scratchB, [DEMO[0], DEMO[2]]);                        // 只塞"新规则独有"的两份
 const red = runGate(GATE, "sidecar-red.json", scratch);

@@ -10,7 +10,9 @@
  *  用法：node scripts/qa/verify-staged-secrets.mjs [--against <ref>] [--json <outpath>]
  *        默认判"当前暂存集"；--against <ref> 判 `git diff --cached <ref>`（索引 vs 该 ref）。
  *        除此之外没有别的旗标：未知旗标 = 判不动 = exit 2，不猜。
- *  机器行：STAGEDSECRETS_RESULT=PASS|FAIL paths=N findings=N（<最吃重的理由，≤100 字>）
+ *  机器行：STAGEDSECRETS_RESULT=PASS|FAIL|NOT-EVIDENCED paths=N findings=N staged=N（<最吃重的理由，≤100 字>）
+ *    paths= 是【路径屏命中数】，findings= 是全部判点，staged= 才是被检的暂存/基线文件数。
+ *    三个数以前混过：paths=0 曾被读成「索引为空」，其实它是「没命中」。
  *  退出码：0 干净（含"索引为空"这种合法干净）；1 有红线判点；2 门自己没跑成
  *          （git 不在 PATH / 不是仓库 / ref 解析不到 / diff 读不出 / diff 非空却解析不出文件头）。
  *          本仓规矩：量不到的东西必须响亮地失败，不许空转判绿。
@@ -340,11 +342,11 @@ async function main() {
     }
   }
 
-  return verdict({ die, soft, screened, broken, opt, t0, started: true, binaryFiles, mode: opt.against ? `--against ${base}` : "staged" });
+  return verdict({ die, soft, screened, broken, opt, t0, started: true, binaryFiles, stagedN: paths.length, mode: opt.against ? `--against ${base}` : "staged" });
 }
 
 /* ---------- 收口 ---------- */
-function verdict({ die, soft, screened, broken, opt, t0, started = false, binaryFiles = 0, mode = "staged" }) {
+function verdict({ die, soft, screened, broken, opt, t0, started = false, binaryFiles = 0, stagedN = -1, mode = "staged" }) {
   const pathsN = new Set(die.filter((d) => d.kind === "path").map((d) => d.path)).size;
   const contentN = die.length - pathsN;
   const reasonFor = (d) => (d.kind === "path" ? `${d.path} ${d.rule}` : `${d.path}:${d.line} ${d.rule}${d.key ? ` ${d.key}=${d.masked}` : ` ${d.masked}`}`);
@@ -364,17 +366,22 @@ function verdict({ die, soft, screened, broken, opt, t0, started = false, binary
   } else if (die.length) {
     code = 1; status = "FAIL";
     note = `${mode} 有 ${die.length} 条凭据判点：${first}`.slice(0, 100);
+  } else if (started && die.length === 0 && mode === "staged" && stagedN === 0) {
+    /* 空索引不是「干净」，是「一个文件都没检」。扫描集为空 ⇒ 响亮地退 2，
+       别让一轮没跑内容的预检在总报告里长成一道绿。 */
+    code = 2; status = "NOT-EVIDENCED";
+    note = `staged=0 ⇒ 索引为空，本门这一趟没有判点可产（不是清白）；要真筛就 --against <ref> 或直接暂存后要提交的文件`;
   } else {
     code = 0; status = "PASS";
     note = started
-      ? `索引侧无凭据判点（paths=0 时即索引为空，合法干净）${soft.length ? `，软提示 ${soft.length}` : ""}${screened.length ? `，已屏载体 ${screened.length}` : ""}`.slice(0, 100)
+      ? `${mode} 检了 ${stagedN} 个文件、无凭据判点${soft.length ? `，软提示 ${soft.length}` : ""}${screened.length ? `，路径屏命中 ${screened.length}` : ""}`.slice(0, 100)
       : `起步即失败：${broken[0] || "未起步"}`.slice(0, 100);
   }
 
   if (opt.json) {
     const side = {
       tool: "verify-staged-secrets.mjs", at: new Date().toISOString(), mode, against: opt.against || "(index vs HEAD)",
-      result: status, exit: code, paths: pathsN, contentFindings: contentN, findings: die.length, soft: soft.length,
+      result: status, exit: code, pathScreenHits: pathsN, contentFindings: contentN, findings: die.length, soft: soft.length, staged: stagedN,
       reason: note, binaryFiles,
       hits: die.map((d) => ({ path: d.path, line: d.line, kind: d.kind, rule: d.rule, key: d.key || null, masked: d.masked || null, len: d.len ?? null, fp6: d.fp6 || null })),
       softPaths: soft.map((s) => s.path), broken,
@@ -387,7 +394,7 @@ function verdict({ die, soft, screened, broken, opt, t0, started = false, binary
     } catch (e) { console.log("SIDECAR_WRITE_FAILED " + String(e.message).slice(0, 60)); }
   }
 
-  console.log(`STAGEDSECRETS_RESULT=${status} paths=${pathsN} findings=${die.length}（${note}） 耗时=${((Date.now() - t0) / 1000).toFixed(1)}s`);
+  console.log(`STAGEDSECRETS_RESULT=${status} paths=${pathsN} findings=${die.length} staged=${stagedN}（${note}） 耗时=${((Date.now() - t0) / 1000).toFixed(1)}s`);
   return code;
 }
 
