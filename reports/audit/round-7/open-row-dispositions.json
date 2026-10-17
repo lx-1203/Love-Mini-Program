@@ -782,6 +782,12 @@
    "kind": "static_predicate",
    "reason": "该件实测仍被跟踪（git ls-files --error-unmatch 命中）且未被 .gitignore 覆盖（check-ignore=NOT_IGNORED），三段 JWT 形状在该文件命中 1 行（只报命中数，未回显原文）。欠一条能红的扫描：全库被跟踪件的 JWT/bcrypt/PEM 三形状。",
    "nextCarrier": "①按删除语义移出跟踪（git rm --cached，属账主动作）②push 前是否重写历史——名册内无对应 id，需登记后裁③三形状扫描进门禁前置"
+  },
+  {
+   "id": "MP-R7QA-CLOSEDBUCKET-BLIND-82-001",
+   "kind": "needs_ruling",
+   "reason": "实测宽度：收口桶 89 行里 82 行在 A配方/B归置/C登记 三处都查不到 id（保留-判据不成立40＋并入-不另立案26＋不立账17＋回归核对5＋判据不成立1）。FRAMECOV 的 OPEN_STATUS(:30) 不含这五个词 ⇒ 它不看这些行；DISPO 只抓处置列还写着欠款的 ⇒ 散文引用或列位搬移就漏。欠两件：①要不要给收口桶加复核判点（只许扩管辖不许豁免，须带负例控制）归账主裁；②判点上线前 82 行的去向要逐条按行 ID 量过，本轮落不了这么多，故本条只记洞的宽度不记已修。",
+   "nextCarrier": "①裁后由 verify-frame-debt-coverage.mjs 新增收口桶复核判点；②去向分配单独一程派子代理，验收尺＝行 ID 在 A/B/C 命中（文件名命中不算，本轮我在这条上撤过一回）"
   }
  ],
  "statusTextContradictions": {
@@ -876,6 +882,14 @@
     "MP-R7QA-TRACKED-EXEC-JWT-001",
     "MP-R7QA-ORPHAN-GATE-RULINGS-LANDED-001",
     "MP-R7QA-BAND-SHAPE-NOT-EXPRESSED-001"
+   ]
+  },
+  {
+   "at": "2026-10-17T15:59:20.512Z",
+   "from": "本程立案：收口桶管辖空洞（起因＝HOME-103 改判 回归核对 后落进两门都不看的桶）",
+   "count": 1,
+   "ids": [
+    "MP-R7QA-CLOSEDBUCKET-BLIND-82-001"
    ]
   }
  ]
