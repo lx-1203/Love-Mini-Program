@@ -569,13 +569,14 @@ RULING id=decisions#65 status=open title=U2 R12 的「profile 未登录头部叠
 RULING id=decisions#66 status=open title=U3 A7 的两态实测（带 token 200／不带 401）今天是否仍成立（无法判定） options=没有可选项可裁：规则逐字没变不等于实测过——要么补一次带活 8080 的两态实测，要么把 10-13 那组读数永久标史值 premise=缺一个活的 8080（real profile）；本程未启停服务 basis="decisions-v38.md §8 U3：v3.7 在 decisions-v37.md:62-64 给过 2026-10-13 的实测，那是史值；今天 SecurityConfig.java:210 与 MockSecurityConfig.java:225 的规则本程逐字读过没变，但没变不等于实测过"
 RULING id=decisions#67 status=open title=U4 「实名未认证＋birth_date NULL」专号是否已被谁偷偷铺进库（无法判定） options=没有可选项可裁：要么给一次 DB 读权限，要么维持覆盖面上的未销账 premise=缺 DB 读权限（本程未连库） basis="decisions-v38.md §8 U4：只能证 scripts/build-demo-accounts.mjs 没有铺它（关键词 0 命中），且门今天仍报 UNCOVERED 次要20|VRN07 缺=login（realcov-before.log:98）⇒ 覆盖面上确实还没销账，但库里有没有专号是另一件事（与本块 A1 decisions#30 同一条欠账的两个面）"
 RULING id=decisions#68 status=open title=U5 把更多产物输入折进戳之后到底会过期多少条（无法判定） options=没有可选项可裁：若倾向 N3 的 (a)/(c)，这条要先补一次试算 premise=缺一次全量 real 重建＋覆盖门重跑（本程没有构建权限指令） basis="decisions-v38.md §8 U5：N3 给的 0.008% 是直接量出来的（2392B／30,090,489B），但折进去会让 196 条里多少条掉进 EXPIRED 算不出来，只能给成批这个定性"
-PENDING_RULINGS_END open=31 half_closed=4 closed=8
+RULING id=decisions#69 status=open title=Q1（RESHOOT-CREDIT）守卫弹回造成的 FAILED 算不算量到 options=(a)接受：FAILED 也是 JUDGED，弹回本身是被量到的产品事实，PC06/VB10 继续抵账（现 COVERED=198）|(b)不接受：这两行退回未取证并删除该腿目录（回到 196/3）|(c)接受但分档：抵账照计，行上另标 guard-bounce，使绿不被读成功能已验
+PENDING_RULINGS_END open=28 half_closed=7 closed=9
 ```
 
 ⚠ 三条使用限制，免得这块被读成"权威且自动正确"：
 ① **本块由车道手写维护**，它不会自己跟着新裁定更新 ⇒ 下一位若替用户做了选择，必须回来改 `status`，
 否则生成器会继续把它算进待办（宁可多报不可漏报）。
-② 计数口径：**`open=31` 是本块逐行数出来的**，它 = 待裁 30 条里除去 4 条 half-closed 的 26 条 ＋ 无法判定 5 条；
+② 计数口径：**`open=28` 是本块逐行数出来的**（2026-10-17 复算：E1 裁定以机器块为准；期间 #42 闭案、#37/#49/#55 转 half-closed，新增 #69 Q1），它 = 待裁 30 条里除去 4 条 half-closed 的 26 条 ＋ 无法判定 5 条；
 与本册 §9 那句「30 条待裁」不矛盾，与生成器按标题判的那个数**分母不同**（那个数读的是 `## N.` 标题，不是条目），
 两者并存可比、不许互相冒充。
 ③ 每条 `basis` 只给"依据在哪"（一律指回本册自己的节与册内已抄的 `文件:行`），不复述正文、不上升成我没查过的代码主张；

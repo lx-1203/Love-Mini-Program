@@ -407,5 +407,22 @@
       "U1": "要后台凭据；此刻起一次超管登录会和在跑的腿抢同一个按 IP 的令牌桶（容量 10/10s 补 1），故意不抢",
       "U2": "要模拟器帧，自动化租约正被另一条车道占用"
     }
+  },
+  "expiredReshootR1": {
+    "at": "c46c400f",
+    "result_i_verified_by_me": {
+      "COVERED": "196→198",
+      "EXPIRED": "3→1",
+      "UNCOVERED": "5→5（没动，符合预期）",
+      "CONSERVATION": "免检28+覆盖198+欠账5+待判4+过期1=236/236 OK",
+      "gate": "REALCOV_RESULT=FAIL 仍红"
+    },
+    "targeting": "只有 WS 载具能点到单条用例（r-exec-ws.mjs:84-90 --ids-file；执行过滤 :1476-1484 ⇒ 1 例的腿约 0.3 分钟）；r-exec-cli.mjs 无按例旗标，只有 --manifests（套件粒度：次要19=69 例、次要22=78 例）/--limit/--real-cases-only",
+    "bug_in_my_own_brief": "我给的任务书建议嵌套布局 exec-expired-reshoot-r1/{lk04-guest,...}——这种布局对门完全隐形：verify-real-coverage.mjs:158-162 只走一层目录。第一发复量数字一格没动，拍平叶子目录后才抵账。已立案 MP-R7QA-COV-DEPTH1-BLIND-001",
+    "contested": "PC06/VB10 之所以变成 COVERED，是因为当前 real 产物把 subpackages/vip/* 弹回 pages/profile/index（feature-flags.ts:40 membershipEnabled:false + promo-code.vue:33-41 / bills.vue:37-45），载具把这记成 FAILED「须人判」，而门把 FAILED 当 JUDGED ⇒ 绿是拿红证据抵的账。我没删也没背书，已作为 Q1（decisions#69）入名册等你裁；计划书禁止项「不开会员/showcase 旗标」意味着也不能靠开旗标把它变成真绿",
+    "lk04": "游客轴今天仍不可达：铸票正常（MINT guest OK userId=100151）、只读探针证明卡片渲染（.likes-card__name=1），但腿 SKIPPED tapNoTarget——WS 取 classesOf(c.action)[0] 打到密封解锁条，不读 ops 的 tapTarget（CLI 读）⇒ 立案 MP-R7QA-WS-TAPTARGET-IGNORED-001",
+    "showcase": "showcase 档 config/env.js 哈希成 ed1cd82c、real 是 f0677920 ⇒ 同一把尺下 showcase 行永远缺可比戳，载具与尺结构性互斥 ⇒ 立案 MP-R7QA-SHOWCASE-CARRIER-RULER-001 并进 N4",
+    "artifacts_untracked": "两片新 exec 目录保持 untracked；我独立复扫其 exec-results.json 的 JWT 形状命中 0（同批正例文件 exec-v37-nearby 命中 1，证明扫描器有效）",
+    "ledger": "三条新行入册（ws tapTarget / depth-1 / showcase 尺），DATA_ROWS 262→265，verify-ledger PASS：OFF_SCHEMA=0 ROTATED=0 STATUS_VOCAB_BAD=0"
   }
 }
