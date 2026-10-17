@@ -437,5 +437,24 @@
     "my_own_regression": "登记时我给 GATE_SUITE 条目加了 note 字段，tcheck 立刻判 TCHECK_DIAGS=12 by_code=2353（note 只在 PANEL_SUITE 的类型里）。剥掉 12 处 note、PANEL 的 22 处原样保留，复量回到 0 诊断。信息没丢：说明写在块注释里。这正是 tcheck 这门存在的理由——干跑台看不见门面类型。",
     "after": "GATESYNC_COUNTS dslScripts=46 bashSteps=46、GATESYNC_ORPHANS=3 baseline=3、GATESYNC_RESULT=PASS 判点 14 不一致 0、TCHECK_RESULT=PASS 0 诊断、DRYRUN_RESULT=PASS 3/3；台账 265→267 行 verify-ledger PASS",
     "next": "三条要输入的门接上输入后压到 0；裸行 27 与 13 行矛盾按台账行逐条归置"
+  },
+  "bandShapeCaveat": {
+    "at": "6bab07f6",
+    "found_by": "追一条我上一发没敢登记的原因（package-size 硬红）时撞出来的，不是计划内动作",
+    "measured": {
+      "main_pkg_real": "27.67MB vs 上限 2.00MB",
+      "total": "28.70MB vs 10.00MB",
+      "subpackages": "0.01–0.19MB 全在限内",
+      "avatars_in_band": "71 文件 951752B",
+      "people_in_band": "21 文件 999151B",
+      "gate_own_words": "2MB 门禁只适用于走 build:mp-weixin:real（含 prepare-static --real 与 prune）的产物"
+    },
+    "conclusion": "本程所有在 mp-weixin-real 上取帧/取读数的腿，跑的是未剪枝的开发形态包，不是发布形态产物。凡结论依赖『发布包里这张图还在不在』，在这台载具上不可证——包括 media.ts 那条 avatars/people 重写（它的动机正是 real 发布为守 2MB 剪包）与匹配卡空白一族。",
+    "what_i_did": "立案 MP-R7QA-BAND-SHAPE-NOT-EXPRESSED-001（P2，三条结案条件），并把这段弱点追加进 MP-R7QA-MEDIA-BANDBLANK-001 的 statusEvidence（把该行帧侧证据力明确降到其自述 0.75 之下）。没顺手登记 package-size：它现在只会对着错输入硬红，登记等于把我量错对象伪装成产品违规——这是我今天撤两条登记学到的规矩的直接应用。",
+    "also_for_rulings": "这条给 N3/N4 一个新输入：折宽哈希若不把发布形状（prune/prepare-static 模式或主包体积档）编成一个显式维度，仍然遮得住这一类；代价账也要重算，因为修它需要一次真 release 构建，而不只是换哈希范围。",
+    "untouched_still": [
+      "本程已入册的读数没有一条被改写或撤销——只是标了适用边界",
+      "今天没有再跑腿，所以没有新帧建立在这个误解之上"
+    ]
   }
 }
