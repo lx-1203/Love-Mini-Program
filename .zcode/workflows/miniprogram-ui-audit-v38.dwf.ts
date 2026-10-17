@@ -322,6 +322,7 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   { name: "免罪锚点核验 verify-disproof-anchors", args: ["scripts/qa/verify-disproof-anchors.mjs"], timeoutMs: 120000 },
   { name: "修复对照产物核验 verify-fixes-against-artifact", args: ["scripts/qa/verify-fixes-against-artifact.cjs"], timeoutMs: 180000 },
   { name: "台账欠帧裸行 verify-frame-debt-coverage", args: ["scripts/qa/verify-frame-debt-coverage.mjs"], timeoutMs: 120000 },
+  { name: "收口桶去向棘轮 verify-closed-bucket-destinations", args: ["scripts/qa/verify-closed-bucket-destinations.mjs"], timeoutMs: 60000 },
   { name: "欠帧分诊闸 verify-frame-debt-triage", args: ["scripts/qa/verify-frame-debt-triage.mjs"], timeoutMs: 120000 },
   { name: "i18n 孤儿键 verify-i18n-orphan", args: ["scripts/qa/verify-i18n-orphan.mjs"], timeoutMs: 120000 },
   { name: "状态与处置一致 verify-status-vs-disposition", args: ["scripts/qa/verify-status-vs-disposition.mjs"], timeoutMs: 120000 },

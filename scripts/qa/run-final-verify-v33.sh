@@ -97,6 +97,7 @@ g verify-criteria-frame-debt   120 scripts/qa/verify-criteria-frame-debt.mjs
 g verify-disproof-anchors      120 scripts/qa/verify-disproof-anchors.mjs
 g verify-fixes-against-artifact 180 scripts/qa/verify-fixes-against-artifact.cjs
 g verify-frame-debt-coverage   120 scripts/qa/verify-frame-debt-coverage.mjs
+g verify-closed-bucket-destinations 60 scripts/qa/verify-closed-bucket-destinations.mjs
 g verify-frame-debt-triage     120 scripts/qa/verify-frame-debt-triage.mjs
 g verify-i18n-orphan           120 scripts/qa/verify-i18n-orphan.mjs
 g verify-status-vs-disposition 120 scripts/qa/verify-status-vs-disposition.mjs
