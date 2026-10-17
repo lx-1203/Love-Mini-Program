@@ -199,6 +199,6 @@ echo "GREEN/RED 计数：红=$FAIL  HEAD 前=$HEAD_BEFORE 后=$HEAD_AFTER（相�
 # exit=2 = 某个源读不到 ⇒ 它自己不写盘，§1/§4 继续停在「未跑」（.exit 会记下这一发是红的）。
 # 超时 420 秒：它现跑覆盖门两次（自己一次 + 去向册门内部再 spawn 一次，单发实测约 60–90 s）。
 g emit-round-bill        420 scripts/qa/emit-round-bill.mjs --closure reports/audit/ui-audit-2026-10-16 --tag v38 --ledger reports/audit/ui-audit-2026-10-16/decisions-v38.md --dir reports/audit/round-7 --ops reports/audit/round-6/ops
-g gen-round8-report      180 scripts/qa/gen-round8-report.mjs --ledger reports/audit/ui-audit-2026-10-16/decisions-v38.md --out reports/audit/ui-audit-2026-10-16/round-final-report-v38.md --round v3.8 --date 2026-10-16 --baseline "$HEAD_BEFORE" --summary "$OUT/summary.json" --gapbill reports/audit/ui-audit-2026-10-16/gapbill-v38.json --openrows reports/audit/ui-audit-2026-10-16/openrows-blockers-v38.json
+g gen-round8-report      180 scripts/qa/gen-round8-report.mjs --ledger reports/audit/ui-audit-2026-10-16/decisions-v38.md --out reports/audit/ui-audit-2026-10-16/round-final-report-v38.md --round v3.8 --date 2026-10-16 --prose reports/audit/ui-audit-2026-10-16/closing-prose-v38.md --baseline "$HEAD_BEFORE" --summary "$OUT/summary.json" --gapbill reports/audit/ui-audit-2026-10-16/gapbill-v38.json --openrows reports/audit/ui-audit-2026-10-16/openrows-blockers-v38.json
 echo "汇总已写 $OUT/summary.json；总报告回填的读数与落点见 $OUT/gen-round8-report.log"
 echo "FINAL_VERIFY_DONE reds=$FAIL（注：红数只统计上面那一轮汇总，总报告回填排在其后，单独看它的 .exit）"
