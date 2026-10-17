@@ -431,7 +431,7 @@
     "ran_them_all": "15 条各跑一次（登记 rulings-landed 后剩 15）：12 条无参可跑且判据成立，3 条按设计要输入（logged-in-landing 要 --exec、evidence-integrity 要 manifest、package-size 要构建目录），裸跑退 2/红不是坏门",
     "registered": 12,
     "baseline_now": 3,
-    "fresh_red_found": "verify-frame-debt-coverage 手跑即红：FRAMECOV open=34 A配方SHOOT=3 B归置表=1 C显式登记=3 裸行=27 ⇒ 27 条未结判决既不会被拍帧也没有归置去处，此前从未在任何一发全清单露面。已立案 MP-R7QA-FRAMEDEBT-NAKED-27-001（P2）",
+    "fresh_red_found": "verify-frame-debt-coverage 手跑即红：FRAMECOV open=34 A配方SHOOT=3 B归置表=1 C显式登记=3 裸行=27 ⇒ 27 条未结判决既不会被拍帧也没有归置去处，此前从未在任何一发全清单露面。已立案 MP-R7QA-FRAMEDEBT-NAKED-27-001（P2）【2026-10-17 复量收口：同一条门现印 FRAMECOV open=38 A=3 B=1 C=34 裸行=0 ⇒ FRAMECOV_RESULT=PASS，落在 08aad7c9。中途 27→17→12→0 的全部过程见 MP-R7QA-FRAMEDEBT-NAKED-27-001 与 open-row-dispositions.json 的 $added 批次；两门的词表/阈值/判域未动，且其中一发是 12→撤回到 12（我自己两条过头条目被泳道复量否证后撤回，见 9fee9bee）】",
     "second_finding": "verify-status-vs-disposition 给 DISPO_RESULT=ADVISORY 13 行第 6 列会被当结案读、处置列却还欠东西 ⇒ 立案 MP-R7QA-STATUS-DISPO-CONTRADICTION-13-001（P3）",
     "my_own_phantom": "我一度把 verify-i18n-orphan 报成「机读行名坏了（N_RESULT=PASS）」——那是我摘要用的正则 [A-Z][A-Z_]*_RESULT= 匹配到了 I18N_RESULT 的尾巴。原样复核后是 I18N_RESULT=PASS，门没问题，是量的尺错。没立案。",
     "my_own_regression": "登记时我给 GATE_SUITE 条目加了 note 字段，tcheck 立刻判 TCHECK_DIAGS=12 by_code=2353（note 只在 PANEL_SUITE 的类型里）。剥掉 12 处 note、PANEL 的 22 处原样保留，复量回到 0 诊断。信息没丢：说明写在块注释里。这正是 tcheck 这门存在的理由——干跑台看不见门面类型。",
