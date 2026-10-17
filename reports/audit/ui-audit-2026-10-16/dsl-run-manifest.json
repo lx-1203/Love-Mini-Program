@@ -353,5 +353,36 @@
     "carrier_shaped_in_range": "apps/api/src/main/resources/application.yml（门的软档），六把尺零命中 ⇒ 值仍是占位/环境引用",
     "push_verdict": "就凭据面而言，push 的唯一实质暴露是那枚已过期的历史票；撤跟踪与是否重写历史仍待用户裁。本轮没把扫描器升级成门：另一条车道正在改 DSL 的 GATE_SUITE 与 run-final-verify-v33.sh，同一时间加未登记的消费方会让 verify-carrier-wiring 判红，两发编辑也会互相打脸。排在车道落地之后。",
     "band_freshness_hole_for_N3": "顺手量到一条给 N3 用的证据：FRESH_RESULT=PASS 的尺是「未提交改动 vs 产物」，本轮我在 fda617a8 提交了 other.vue 之后再没重建产物，工作树干净 ⇒ 门报 PASS 而产物其实比 HEAD 旧。加上尺本身只哈希 config/env.js 的 2392 字节，N3 的「接受 vs 折宽」现在有了两个方向的实测成本，不是空谈。本次那三枚腿证据不受影响（other.vue 删的是 if(false) 死分支，行为零变化）。"
+  },
+  "rulingMeasurements": {
+    "at": "a79771ae",
+    "when": "2026-10-17，真档 8080 在跑时实测",
+    "U3_A7": {
+      "question": "/api/v1/config/campuses 到底是不是 permitAll（A7 的事实半边，U3 问它今天是否仍成立）",
+      "measured": {
+        "no_token_401": "http=401（裸路径）",
+        "city_percent_encoded": "http=401",
+        "city_ascii_param": "http=401 ⇒ 参数与编码都不改变结论",
+        "public_alternative": "GET /api/v1/app-config/campuses = http=404（没有可用的公开同义路径）"
+      },
+      "code_evidence": "SecurityConfig 的 permitAll 名单在 120-138 行：auth/** sms/** ws/** content-filter/check app-config/** recommendations 两条 location/ip-city 等，**不含 /api/v1/config/campuses**",
+      "myOwnTrap": "第一次带 ?city=北京 打出 http=400，看着像另一个答案。那是 git-bash 把原始 UTF-8 塞进 URL 的产物，不是服务端判决——重新按 %E5%8C%97%E4%BA%AC 编码后是 401。凭一个 400 下结论会错。",
+      "implication": "A7 的事实半边答案是「后端没放行」⇒ 选项 (b) 维持客户端豁免有实证；也与 MP-R3AUDIT-NEARBY-TAB-BOUNCE-001 的根因互证（该读需登录态，未登录必 401 → http 层踢登录页）。仍未裁的是产品口径：该不该为它开公开端点，那是 A7 的实质，不是我这次测量的权限。"
+    },
+    "U5_N3": {
+      "question": "把新鲜度尺折宽（N3 选项 a）会让多少条现有认领失去可比戳",
+      "measured": {
+        "rows_real_current_f0677920": 11840,
+        "rows_real_stale_ed1cd82c": 238,
+        "credited_cases_now": 196
+      },
+      "reading": "折宽后新算出的 sha8 必然不等于任何已存的 sha8 ⇒ 11840 条带戳行按定义同时失效（其中抵账的是 196 个 case，其余是同一 case 的多发尝试行）。所以 N3(a) 的代价不是\"改几行\"，是一次覆盖性重跑；196 个 case 按 21-35s/例 量级估约 1.2-1.9 小时（不含游客双身份），而 N3(b) 接受 2392 字节那把尺则零成本、但承认产物里改 env.js 以外的东西不会触发过期。",
+      "plus_freshness_hole": "叠加本轮另测的一条：band-freshness 比的是「未提交改动 vs 产物」，工作树干净时它 PASS，即便产物比 HEAD 旧（other.vue 在 fda617a8 提交后再没重建）。⇒ 尺的覆盖面窄不只影响覆盖认领，也让\"这帧出自哪份代码\"的归因偏松。"
+    },
+    "notMeasured": [
+      "U1 反馈工单条数（要后台侧凭据，5173 dev server 当前没起，8080 的 admin 端点需超管票；起它属于环境动作，留给用户或后续）",
+      "U2 R12 未登录头部叠印终验（要帧，模拟器租约正被另一条车道用）",
+      "U4 专号是否已被铺进（DB 读，本轮没做）"
+    ]
   }
 }
