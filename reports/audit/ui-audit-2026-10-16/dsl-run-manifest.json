@@ -383,6 +383,29 @@
       "U1 反馈工单条数（要后台侧凭据，5173 dev server 当前没起，8080 的 admin 端点需超管票；起它属于环境动作，留给用户或后续）",
       "U2 R12 未登录头部叠印终验（要帧，模拟器租约正被另一条车道用）",
       "U4 专号是否已被铺进（DB 读，本轮没做）"
-    ]
+    ],
+    "U4_A1": {
+      "question": "U4：实名未认证＋birth_date NULL 的专号是否已被谁铺进库（A1 要不要授权写库铺号的前提）",
+      "method": "只读 SQL（口令走 MYSQL_PWD 环境注入，不上命令行；无 INSERT/UPDATE/DELETE）",
+      "measured": {
+        "users_total": 292,
+        "verification_status": {
+          "pending": 8,
+          "verified": 265
+        },
+        "birth_date_null_users": 150,
+        "both_conditions": 7
+      },
+      "implication": "A1 想要的态**已经在库里存在 7 条**，不需要新铺专号 ⇒ 「授权铺测试专号」这一支的前提被削弱；更便宜的路径是先看这 7 条能不能直接登录用。",
+      "not_verified": [
+        "本仓没有独立的“实名”字段：全库列名扫下来只有 user_campus_profile.verification_status 与 campus_certifications.student_id_card_url、love_verification_application.student_id_card_url 两处学生证上传，加 users.birth_date ⇒ “未实名”在数据层只能代理成校区认证态，代理对不对要人认。",
+        "这 7 条能不能登录（有无口令/openid/是否禁用/是否虚拟种子号）没查；不能登录就仍然测不了那一态。",
+        "没查这 7 条与 R3-03 用例页要求的关系（页上判点还依赖 profile-guard 与年龄计算，见 MP 行 R3-03 的处置）。"
+      ]
+    },
+    "U1_U2_deferred": {
+      "U1": "要后台凭据；此刻起一次超管登录会和在跑的腿抢同一个按 IP 的令牌桶（容量 10/10s 补 1），故意不抢",
+      "U2": "要模拟器帧，自动化租约正被另一条车道占用"
+    }
   }
 }
