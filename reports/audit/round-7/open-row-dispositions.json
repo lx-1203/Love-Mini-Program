@@ -683,33 +683,105 @@
   },
   {
    "id": "MP-R3AUDIT-NETFAULT-REARM-WINDOW-001",
-   "kind": "harness_limit",
-   "reason": "该行自陈的去向 + 行内点名的载具在磁盘上存在｜逐字取自本行结案条件：结案条件＝判据台按 C9 形状重排后至少一条网络判点（建议 VI34 重跑）落 EXECUTED 且带臂展回执；回执缺失一律 NOT_SHOOTABLE 不计覆盖（本车道未跑实带，不声称已有有效判决）",
-   "nextCarrier": "scripts/qa/exec-capabilities.mjs、scripts/qa/r-exec-ws.mjs"
+   "kind": "needs_ruling",
+   "reason": "臂展载体已落 HEAD（exec-capabilities.mjs:127-230 与 :503 的 C9 形状），但除 OC09 外的网络判点未逐条重排、实带无一条有效网络判决行；VI34 重跑的共同前提是一条待裁的用户拦截问题。",
+   "nextCarrier": "decisions#34(A5｜REAL-VI34-04-Q) 拍板后按 C9 形状重跑 VI34 落首条网络判决；缺口扣不扣整条腿另见 decisions#38(A9)"
   },
   {
    "id": "MP-R7QA-ROUND-REPORT-GEN-ARGWIRING-001",
-   "kind": "premise_expired",
-   "reason": 0,
-   "nextCarrier": "scripts/qa/gen-round8-report.mjs、scripts/qa/run-final-verify-v33.sh"
+   "kind": "static_predicate",
+   "reason": "立案前提已过期（两文件都已提交；两个载具都显式带 --ledger/--out；NOOUT 守卫在 HEAD:59），但『载具必须显式带 --out/--ledger』这条判据尚未进门禁 ⇒ 按谓词在册记账，不写已修复。",
+   "nextCarrier": "下一发全清单的 gen-round8-report.log 读数 + 建议把显式带参折进 scripts/qa/verify-carrier-wiring.mjs 判域（该门现判的是 export 有无消费者，判不到参数）"
   },
   {
    "id": "MP-R7QA-GUESTLEG-TRIAGE-001",
    "kind": "needs_ruling",
-   "reason": "该行自陈的去向 + 行内点名的载具在磁盘上存在｜逐字取自本行结案条件：单跑分诊：TRIAGE_RESULT=FAIL problems=1 ✗复测腿与债不同源(1组) recommend-pref booked 声称 11 行 vs 实测 4 行成员不同；gateFires unclassified=0 landingMissing=0 cover",
-   "nextCarrier": "scripts/qa/test-guest-landing.mjs、scripts/qa/triage-exec-failures.mjs"
+   "reason": "红只来自预检把分诊自身覆盖门判红（triage-exec-failures.mjs:1141 coverMismatch ⇒ exit2）误读为派生失败；两个候选处置（把 r10 归入 partial slice，或预检按 TRIAGE2.json 是否落盘判可用）都不削弱判据。",
+   "nextCarrier": "名册 decisions-v38.md 的 PENDING_RULINGS 块内无对应条目 ⇒ 需账主先登记一条裁定（本车道不新建 id）；recommend-pref 的 booked 11 行是否虚报归覆盖车道"
   },
   {
    "id": "MP-R7QA-ORPHAN-GATE-RULINGS-LANDED-001",
-   "kind": "premise_expired",
-   "reason": "实测 grep 命中 DSL=2 bash=1，该行登记时的「两个载具都找不到」不再成立；状态列不动，销案要由 verify-rulings-landed 自己出读数｜逐字取自本行结案条件：结案条件＝①把它同时登进两个载具（带自己的 _RESULT= 行，且 DSL 超时不得小于 bash 步），②再造一条完备性判点：凡 scripts/qa/verify-*.\\{mjs,cjs\\} 且会印 _RESULT= 的脚本，必须至少在一份载具里被点名，两边都缺即红——这一",
-   "nextCarrier": "scripts/qa/run-final-verify-v33.sh、.zcode/workflows/miniprogram-ui-audit-v38.dwf.ts"
+   "kind": "criteria_needs_tightening",
+   "reason": "立案前提已过期：两个载具现都点名它（run-final-verify-v33.sh:90 步长 600s；miniprogram-ui-audit-v38.dwf.ts:307 timeoutMs=600000，不小于 bash 步）。仍欠两件：完备性判点未建（verify-carrier-wiring.mjs 判的是 export 有无消费者，判不到『会印 _RESULT= 却没被任何载具点名』），且它自己现读 RULINGS_RESULT=FAIL 未落地=2（载体 e4495d67 落后 HEAD 90a742d8 共 274 提交）。",
+   "nextCarrier": "建『_RESULT= 打印件至少被一份载具点名』判点（须能红、带负例控制），再逐条处置那 2 条未落地：ChatInput 删除标记缺日期格式（属 MP-R7QA-DELETION-RULING-MARKER-001 的判点缺陷）、GATES.json 载体 SHA 过期（与 decisions#51/N3 同族）"
   },
   {
    "id": "MP-R7QA-BAND-SHAPE-NOT-EXPRESSED-001",
-   "kind": "harness_limit",
-   "reason": "该行自陈的去向 + 行内点名的载具在磁盘上存在｜逐字取自本行结案条件：结案条件＝①戳里带上发布形状这一维（例如把 prune/prepare-static 模式或主包体积档一并编进 sha8），使\"未剪枝的 real 档\"不再能被当成发布形态产物抵账；②本程在该档上取的所有帧与判过行按新口径重述，凡结论依赖\"发布包里有没有这张图\"的一律重跑或降级为",
-   "nextCarrier": "scripts/verify-package-size.mjs、scripts/qa/artifact-band.mjs"
+   "kind": "needs_ruling",
+   "reason": "戳的定义域本车道复量吻合：artifact-band.mjs:15 只读 config/env.js，:22 只对那份 src 取 sha256 前 8 位 ⇒ 剪枝与未剪枝两种产物共用同一枚戳（real 档主包实测 27.67MB vs 2MB 上限，avatars 71 文件/people 21 文件仍在包内）。这是 N3/N4 的输入，不是本车道能改的口径。",
+   "nextCarrier": "decisions#51(N3, half-closed) + decisions#52(N4)；裁后把发布形状编进戳，并本程该档所取帧凡依赖『包内有没有这张图』一律重跑或降为未取证"
+  },
+  {
+   "id": "MP-R3AUDIT-NEARBY-TAB-BOUNCE-001",
+   "kind": "carrier_missing",
+   "reason": "客户端半段已在 HEAD（services/config.ts 带 skipAuthRefresh），欠的是修复后档位重跑 nearby switchTab 探针：mock 与 real 两档各一次，要求 AFTER=AFTER_SETTLE=pages/nearby/index。帧侧表达不了这条时间轴——配方里 route-in/route-after-tap 两种判点 kind 在 scripts/tools/tests 全仓零消费者，写进配方只会得到一张没有判点的帧。",
+   "nextCarrier": "tmp/qa/nearby-switchtab-probe.mjs（2352B 在盘）两档重跑；后端是否 permitAll /api/v1/config/campuses 另挂 decisions#36(A7)，不挡这条腿"
+  },
+  {
+   "id": "MP-R3AUDIT-PFI25-VOICE-ORCHESTRATION-001",
+   "kind": "carrier_missing",
+   "reason": "三次 FAILED 已定谳为编排伪红，重排后的配方从未实带重跑 ⇒ 无有效判决；理想图列自述不适用（数据链路＋测试编排项），帧侧无对象。",
+   "nextCarrier": "实带重跑 PFI25（seed 后置 + read(profile-voice-state) 渲染-存储同刻对照）；『红已撤、绿未证』要不要单列一档挂 decisions#47(G1)"
+  },
+  {
+   "id": "MP-R3AUDIT-GATE-VOIDED-BUCKET-001",
+   "kind": "static_predicate",
+   "reason": "voided/pending 分桶已在 HEAD（bdef64ef），欠一条门读数：REALCOV_VOIDED≥4 且 VI34/VI25/PFI25/VB03 四条都落 VOIDED 而非 COVERED、四项守恒成立。本车道按纪律未跑该门，不声称已绿。",
+   "nextCarrier": "scripts/qa/verify-real-coverage.mjs 由覆盖门车道跑一次；VB03 那一格另需 decisions#33(A4) 拍板，E4/#45 是同一条的账面半边"
+  },
+  {
+   "id": "MP-R3AUDIT-MATCHING-DIRECT-OPEN-BOUNCE-001",
+   "kind": "carrier_missing",
+   "reason": "三轮四连弹回 pages/discover/index 至今无探针、无归因、无缺陷 ID；tmp/qa 下只有 nearby 一枚探针，matching 应用内导航探针与 deck 快照前置夹具都不存在。两说（直开无 deck 的设计内失败支 vs 每日配额耗尽）在带内无法择一。",
+   "nextCarrier": "新建 matching 探针（照 tmp/qa/nearby-switchtab-probe.mjs 形状）+ deck 快照夹具；落点判点须先有消费者，否则不得进配方"
+  },
+  {
+   "id": "MP-R3AUDIT-TAPWRITE-GUARD-PENDING-001",
+   "kind": "carrier_missing",
+   "reason": "两笔 tap 是否真触发写连续三轮无执行工件；源码绑定关系本车道复核吻合（heart-signals/index.vue:329/332 → :134/:146），但『有没有发写』不是帧量：request-count 判点 kind 全仓零消费者，配方亦无状态迁移回读步骤。",
+   "nextCarrier": "mock 带一次 tap 前后状态迁移/写请求核对：发生写则回滚夹具并把写路径入册，未发生则记『未触发』结案"
+  },
+  {
+   "id": "MP-R3AUDIT-DISCOVER-MATCHCARD-BLANK-001",
+   "kind": "needs_ruling",
+   "reason": "两轮独立采集字节差仅 0.11% ⇒ 确定性空白，但 R3-09 的处置（判夹具不可达 vs 维持产品缺陷）是一条在册未裁项；裁 (a) 之前拍它只会多一个『有帧即已验』的假结案，裁 (b) 之后本行应立即转 A。",
+   "nextCarrier": "decisions#39(A10｜V37-R309-DISPOSITION)；裁 (b) 后判点＝pages/discover/index 的 hero 区 pixel-region 非空白（现读 mean=242.1/sd=3.71）+ 跳过/打招呼/喜欢三钮 element-present"
+  },
+  {
+   "id": "MP-R7QA-ADMIN-PWD-POLICY-ASYMMETRY-001",
+   "kind": "static_predicate",
+   "reason": "同族三条门并存两套口令策略：内嵌默认口令形状 [A-Z][a-z]+@[0-9]{5,} 实测命中 auditor 2 行、scope 5 行、writes 2 行（只计数、未回显任何值）。本轮经裁量刻意不统一 ⇒ 留账不冒充已修。",
+   "nextCarrier": "待写谓词：scripts/verify-admin-*.mjs 内不得出现内嵌口令默认值（一律 process.env 必传）；采纳即同步三处调用约定并复跑三门"
+  },
+  {
+   "id": "MP-R7QA-SELFTEST-GUESTLANDING-MEMBERS-001",
+   "kind": "static_predicate",
+   "reason": "test-guest-landing.mjs:112 硬断言 锚点可核=11（不可核 0），而行内点名语料成员为 4；根因（成员账应由 ops 判据台派生）已转设计项，本行不代裁。本车道未跑该自测：它自己写文件（:63/:165/:302）。",
+   "nextCarrier": "落地『成员数由 ops 派生』后重跑 scripts/qa/test-guest-landing.mjs 转绿"
+  },
+  {
+   "id": "MP-R7QA-SELFTEST-CORPUSDENOM-DELETEDAXIS-001",
+   "kind": "static_predicate",
+   "reason": "断言分母取自 git ls-files --deleted 这一工作树瞬时态；本车道实测该集合现为 0 条 ⇒ 删除已入库、断言算术上无解（与行内 2026-10-17 SELFTEST_RESULT=FAIL 2/56、neverOpened=0/namedByGate=0 复量同因）。",
+   "nextCarrier": "改写 scripts/qa/test-corpus-denominator.cjs:124/160/331 的缺席基准为可复算口径（历史提交或清单），勿依赖 --deleted"
+  },
+  {
+   "id": "MP-R7QA-MEDIA-BANDBLANK-001",
+   "kind": "static_predicate",
+   "reason": "apps/client/src/utils/media.ts 全文 grep apiMode 命中 0 ⇒ 那条 avatars/people→app-assets 重写支确实没有分档条件；verify-source-shape.mjs 的 SPEC 现不含本行（grep 命中 0），故不能声称已被能量到。",
+   "nextCarrier": "写谓词「:217-233 支必须带分档门或包内存在性判定」并把本行落进 verify-source-shape.mjs SPEC；帧对照半边等 MP-R7QA-BAND-SHAPE-NOT-EXPRESSED-001 裁后重述"
+  },
+  {
+   "id": "MP-R7QA-SAFEIMG-EMPTYSRC-001",
+   "kind": "static_predicate",
+   "reason": "两个 fail 分支体本车道实读只写 localizingHttp=false，既不置 hasError 也不回填 displaySrc ⇒ 失败后永久空 src；SPEC 不含本行（grep 命中 0）。帧侧只能看到结果为空，看不到是哪个分支没收尾。",
+   "nextCarrier": "写谓词「copyFile/downloadFile 两个 fail 分支必须回落 displaySrc 或置 hasError，且 :256 早退须区分在途与已失败；回落不得把 fallback 的 @load 接回 onLoad」+ 落进 SPEC"
+  },
+  {
+   "id": "MP-R7QA-TRACKED-EXEC-JWT-001",
+   "kind": "static_predicate",
+   "reason": "该件实测仍被跟踪（git ls-files --error-unmatch 命中）且未被 .gitignore 覆盖（check-ignore=NOT_IGNORED），三段 JWT 形状在该文件命中 1 行（只报命中数，未回显原文）。欠一条能红的扫描：全库被跟踪件的 JWT/bcrypt/PEM 三形状。",
+   "nextCarrier": "①按删除语义移出跟踪（git rm --cached，属账主动作）②push 前是否重写历史——名册内无对应 id，需登记后裁③三形状扫描进门禁前置"
   }
  ],
  "statusTextContradictions": {
@@ -780,6 +852,30 @@
     "MP-R7QA-BAND-SHAPE-NOT-EXPRESSED-001",
     "MP-R7QA-MEDIA-BANDBLANK-001",
     "MP-R7QA-ORPHAN-GATE-RULINGS-LANDED-001"
+   ]
+  },
+  {
+   "at": "2026-10-17T15:50:35.971Z",
+   "from": ".zcode/tmp/debt-disposition-lane.md §3（17 条：就地富化 5 + 新增 12；证据由本程独立复量：6 个 SPEC 行 ID 命中、route-in/route-after-tap/request-count 消费者=0）",
+   "count": 17,
+   "ids": [
+    "MP-R3AUDIT-NEARBY-TAB-BOUNCE-001",
+    "MP-R3AUDIT-PFI25-VOICE-ORCHESTRATION-001",
+    "MP-R3AUDIT-NETFAULT-REARM-WINDOW-001",
+    "MP-R3AUDIT-GATE-VOIDED-BUCKET-001",
+    "MP-R3AUDIT-MATCHING-DIRECT-OPEN-BOUNCE-001",
+    "MP-R3AUDIT-TAPWRITE-GUARD-PENDING-001",
+    "MP-R3AUDIT-DISCOVER-MATCHCARD-BLANK-001",
+    "MP-R7QA-ADMIN-PWD-POLICY-ASYMMETRY-001",
+    "MP-R7QA-ROUND-REPORT-GEN-ARGWIRING-001",
+    "MP-R7QA-SELFTEST-GUESTLANDING-MEMBERS-001",
+    "MP-R7QA-SELFTEST-CORPUSDENOM-DELETEDAXIS-001",
+    "MP-R7QA-MEDIA-BANDBLANK-001",
+    "MP-R7QA-SAFEIMG-EMPTYSRC-001",
+    "MP-R7QA-GUESTLEG-TRIAGE-001",
+    "MP-R7QA-TRACKED-EXEC-JWT-001",
+    "MP-R7QA-ORPHAN-GATE-RULINGS-LANDED-001",
+    "MP-R7QA-BAND-SHAPE-NOT-EXPRESSED-001"
    ]
   }
  ]
