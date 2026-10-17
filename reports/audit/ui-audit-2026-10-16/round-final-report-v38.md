@@ -5,14 +5,14 @@
 - 轮次=`v3.8`（来源：命令行）｜日期=`2026-10-16`（来源：命令行）
 - 裁定册=`reports/audit/ui-audit-2026-10-16/decisions-v38.md` sha1=33870246701d bytes=95041；册子 H1 自述轮次=`v3.8` 日期=`2026-10-16`
 - 落点=`reports/audit/ui-audit-2026-10-16/round-final-report-v38.md`（已存在 ⇒ 本轮复量覆盖，覆盖前已通过溯源守卫）
-- git 区间：未给 --baseline ⇒ 未跑，故此处不留结论
-- 终局读数件=`.zcode/tmp/final-verify/summary.json`（headBefore=eaa70f7a headAfter=be59ce42 producedBy=?；**这一发是不是本轮的，由载具写入时机保证**）
+- git 区间：`c9e5d863..HEAD`（HEAD=c9e5d863，提交 0 发）
+- 终局读数件=`.zcode/tmp/final-verify/summary.json`（headBefore=c9e5d863 headAfter=c9e5d863 producedBy=?；**这一发是不是本轮的，由载具写入时机保证**）
 - 溯源守卫：落盘前判定，判红即 exit 3 且不写任何字节；见进程末尾的 `GENREPORT_PROVENANCE` 机器行
 
 ## 1. 起点账单（缺口账单件，Node 22 实测）
 
-门禁并行实测 3 项，红 2 项：verify-real-coverage、emit-open-items。（此句读的是**缺口账单件**，其 HEAD=be59ce42；终局复量那一发在第 7 节，两份件不同源、口径以第 7 节为准。本件 HEAD 与终局复量同源（同一枚提交的两发读数）)
-- 起点 HEAD=be59ce42，工作树脏 34 项。
+门禁并行实测 3 项，红 2 项：verify-real-coverage、emit-open-items。（此句读的是**缺口账单件**，其 HEAD=c9e5d863；终局复量那一发在第 7 节，两份件不同源、口径以第 7 节为准。本件 HEAD 与终局复量同源（同一枚提交的两发读数）)
+- 起点 HEAD=c9e5d863，工作树脏 37 项。
 
 ## 2. 工作流本身改了什么（生成器不产叙事）
 
@@ -24,8 +24,8 @@
 
 ## 4. 台账：未结行与阻断（机械归置）
 
-- 剩余未结 37 行，机械归置：现在可落账 31 条（明细见 `reports/audit/ui-audit-2026-10-16/openrows-blockers-v38.json`）。
-- 阻断归因：{"code":16,"reverify":8,"decision":4,"probe":3,"unverified":2,"UNCLASSIFIED":2,"backend":1,"frame":1}
+- 剩余未结 38 行，机械归置：现在可落账 32 条（明细见 `reports/audit/ui-audit-2026-10-16/openrows-blockers-v38.json`）。
+- 阻断归因：{"code":17,"reverify":8,"decision":4,"probe":3,"unverified":2,"UNCLASSIFIED":2,"backend":1,"frame":1}
 
 ## 5. 真实模式交互腿
 
@@ -139,7 +139,7 @@ verify-case-automatable exit=0
 verify-case-selectors-exist exit=0
 verify-criteria-frame-debt exit=0
 verify-degraded-conclusion exit=0
-verify-device-leg exit=2
+verify-device-leg exit=0
 verify-disproof-anchors exit=0
 verify-dry-no-lease exit=0
 verify-evidence-corpus exit=0
@@ -156,6 +156,7 @@ verify-ledger exit=0
 verify-openqueue-lanes exit=0
 verify-ops-stamp exit=0
 verify-provenance-all exit=1
+verify-push-credentials exit=1
 verify-queue-reconcile exit=0
 verify-real-coverage-disposition exit=0
 verify-real-coverage exit=1
@@ -167,7 +168,7 @@ verify-state-truth exit=0
 verify-status-vs-disposition exit=0
 verify-tab-bar-single-source exit=0
 ```
-红项：run-qa-selftests、verify-device-leg、verify-frame-debt-coverage、verify-provenance-all、verify-real-coverage、verify-rulings-landed
+红项：run-qa-selftests、verify-frame-debt-coverage、verify-provenance-all、verify-push-credentials、verify-real-coverage、verify-rulings-landed
 
 ## 8. 本轮把「排在后面做」的账收掉了多少（生成器不产叙事）
 
