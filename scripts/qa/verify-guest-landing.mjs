@@ -16,8 +16,13 @@ import { ROW_POLICY, mergeMeasuredLedger, shrinkRequested } from "./measured-led
 const REPO = resolve(import.meta.dirname, "..", "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
 const MODE = arg("mode", "book");
-const POLICY = resolve(REPO, arg("policy", "scripts/qa/guest-landing-policy.json"));
-const TRIAGE_RAW = arg("triage", ".zcode/tmp/triage-r7-guest.json");
+/* 与 PROJECT_ARG 同一规矩：解析用的值与写进在册件的值必须是同一个来源。
+   原缺陷：:374 用裸 arg("policy")/arg("triage")（无缺省），载具不带这两个旗标时
+   source 被写成 "undefined + undefined"，门仍印 OK 退 0（该行自 HEAD 起就带着它）。 */
+const POLICY_ARG = arg("policy", "scripts/qa/guest-landing-policy.json");
+const POLICY = resolve(REPO, POLICY_ARG);
+const TRIAGE_ARG = arg("triage", ".zcode/tmp/triage-r7-guest.json");
+const TRIAGE_RAW = TRIAGE_ARG;
 /* 默认值本身是个单份 scratch 文件：不显式传 --triage 时，账本成员名册就跟着"那一次跑到的切片"走
    （round-7 的 favorites/tasks/vip-promo-code 漏记就是这么来的）。这里只警告不改退出码 ——
    正在跑的腿不能因为一条新加的硬失败被带走，但警告行会进终报，收口时按并集显式传参。 */
@@ -25,7 +30,12 @@ if (MODE === "book" && !process.argv.includes("--triage"))
   console.log("GUEST_LAND_WARN=--triage 未显式给出 ⇒ 名册取自单份 scratch 默认（" + TRIAGE_RAW + "）；本轮多条执行腿必须 --triage a,b 传并集");
 const MEASURED = resolve(REPO, arg("measured", "reports/audit/round-7/guest-landing-measured.json"));
 const BOOK_OUT = resolve(REPO, arg("out", "reports/audit/round-7/guest-landing-booked.json"));
-const PROJECT = resolve(REPO, arg("project", "apps/client/dist/build/mp-weixin-real"));
+/* 单一来源：路径解析与写进在册件的 carrier 字符串必须读同一个值。
+   原缺陷：PROJECT 走 arg("project", 缺省)，而 :277/:371 用裸 arg("project")（无缺省）⇒
+   载具不带旗标时，实测头与复测腿账本的 carrier 被写成 "--project undefined"，
+   而门自己仍印 OK/退 0。本仓判例：断言旗标被收到，而不是断言旗标被传了。 */
+const PROJECT_ARG = arg("project", "apps/client/dist/build/mp-weixin-real");
+const PROJECT = resolve(REPO, PROJECT_ARG);
 const OWNER = arg("owner", "r7-guest-landing");
 /* 判定窗取自被测物而不是拍脑袋：LOGIN_REDIRECT_DELAY_MS=500 + 网络往返。
    首窗不够就复采到次窗，两窗都走（只记最后一次会把"弹得慢"误判成"没弹"）。 */
@@ -274,7 +284,7 @@ function measure(plan) {
   const shrink = shrinkRequested(shrinkGiven);
   if (shrinkIdx >= 0 && !shrink.ok) console.log("GUEST_LAND_SHRINK=REJECTED " + shrink.why + " ⇒ 本轮仍按 " + ROW_POLICY + " 合并");
   const runMeta = {
-    mode: "measure", generatedAt: new Date().toISOString(), project: arg("project"),
+    mode: "measure", generatedAt: new Date().toISOString(), project: PROJECT_ARG,
     band: (band.mode || "?") + "@" + (band.sha8 || "?"), guestCapable: cap.ok === true, repeat: REPEAT,
   };
   /* 写盘判点必须走 measured-ledger.mjs 的合并语义，而不是在这里再落一个空壳：
@@ -365,12 +375,20 @@ if (MODE === "measure") {
   acquireUi({ owner: OWNER, batch: "R7" });
   try { measure(plan); } finally { try { releaseUi({ owner: OWNER }); } catch (e) { /* 退出路径上的释放失败不该改判决 */ } }
 }
-writeFileSync(BOOK_OUT, JSON.stringify({
-  generatedAt: plan.generatedAt, source: `${arg("policy")} + ${arg("triage")}`,
+const bookedPayload = {
+  generatedAt: plan.generatedAt, source: `${POLICY_ARG} + ${TRIAGE_ARG}`,
   ruling: plan.pol.$ruling, groups: plan.groupCount, debtRows: plan.debtRows,
-  anchorsOk, anchorsBad, carrier: `scripts/qa/verify-guest-landing.mjs --mode measure --project ${arg("project")}`,
+  anchorsOk, anchorsBad, carrier: `scripts/qa/verify-guest-landing.mjs --mode measure --project ${PROJECT_ARG}`,
   measuredFile: "reports/audit/round-7/guest-landing-measured.json", rows: plan.rows,
-}, null, 1));
+};
+/* 缺省即危险：把 undefined 写进在册件比退 2 糟得多（下一程会拿一份来源不明的账当已证）。 */
+const bookedText = JSON.stringify(bookedPayload, null, 1);
+if (/\bundefined\b/.test(bookedText)) {
+  console.log("GUEST_LANDING_RESULT=REFUSED reason=在册件里出现 undefined，取参有洞，先不写盘");
+  console.log("  命中字段：" + bookedText.split(/\r?\n/).filter((l) => /\bundefined\b/.test(l)).slice(0, 3).join(" | ").slice(0, 200));
+  process.exit(2);
+}
+writeFileSync(BOOK_OUT, bookedText);
 /* 台账只读一次，landingStatus 与稳定性具名报数吃同一份对象（两处各读各的会造出两个口径）。 */
 const measuredDoc = existsSync(MEASURED) ? JSON.parse(readFileSync(MEASURED, "utf8")) : null;
 const st = landingStatus(plan, measuredDoc);
