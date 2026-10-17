@@ -320,5 +320,38 @@
     "whatWasBuilt": "scripts/qa/apply-coverage-revalidation.mjs：带内戳运行时从 config/env.js 派生（拒手填）、默认 --dry、只有 --apply --attest \"理由\" 才写、写的是 JSON 台账 fixlane 的一条证据对象，不碰任何 status/散文、不开 issue-matrix 写权。四条拒绝证明全部 exit 2：只有 SKIPPED、band 不匹配、缺 exec-results.json、台账无此行。",
     "coverageNow": "COVERED=196 / UNCOVERED=5 / VOIDED=4 / EXPIRED=3 守恒 OK，门仍 RED——本轮没有 --apply，因为没有一条真合格。这是读数，不是失误。",
     "ledgerUntouched": "cmp 证实 tour-ledger.json 与 issue-matrix.md 与车道开工前备份逐字节相同；verify-ledger 仍 259 行 PASS。"
+  },
+  "prePushCredentialScan": {
+    "at": "e69ce7be",
+    "when": "2026-10-17 复量（环境重启后）",
+    "env_brought_back_up": {
+      "backend_8080": "http=200，BACKEND_FRESH_RESULT=PASS apps/api脏项=0（运行实例=HEAD 那份）",
+      "mysql_3306": "UP",
+      "redis_6379": "UP（需 .env 里的口令）",
+      "automation": "WS_UP=OK port=9420 + WS_UP_BAND_RESULT=match",
+      "band_freshness": "FRESH_RESULT=PASS bands=3 真过期=0"
+    },
+    "method": "扫 origin/main..HEAD 改动过的文件（push 真正会暴露的那一集，417 个），六把形状尺（JWT/bcrypt/PEM/AKIA/gh token/slack），值一律掩码不回显",
+    "control_first": "正例控制先过：同一命令必须抓到已知那枚 exec-v37-nearby 的 247 字符票（CONTROL OK JWT=1@line63）。第一版扫描是坏的——我把 BRE 的 {8,} 传给了 grep -E，四条尺全部静默零命中，那是假干净的凭据扫描；改用脚本文件+正例控制才成立",
+    "findings": [
+      {
+        "f": "apps/api/src/main/java/com/campuslove/api/auth/AuthController.java:88",
+        "verdict": "良性",
+        "why": "Swagger @Parameter example=\"Bearer eyJhb…(len=43)\"，文档示例、无签名段"
+      },
+      {
+        "f": "apps/api/src/test/java/com/campuslove/api/wxpay/WxPayPropertiesFailFastTest.java:55",
+        "verdict": "良性",
+        "why": "测试故意写 BREAKOUTPEM 私钥首标记（原文不写：写了就会被本仓那道门按形状硬红，这是设计而非误报）\n!!!\n-----END 来断言 fail-fast，不是密钥"
+      },
+      {
+        "f": "reports/audit/round-7/exec-v37-nearby/exec-results.json:63",
+        "verdict": "已立案",
+        "why": "就是 MP-R7QA-TRACKED-EXEC-JWT-001（P3，实测 exp=2026-10-13T14:05Z 已过期）"
+      }
+    ],
+    "carrier_shaped_in_range": "apps/api/src/main/resources/application.yml（门的软档），六把尺零命中 ⇒ 值仍是占位/环境引用",
+    "push_verdict": "就凭据面而言，push 的唯一实质暴露是那枚已过期的历史票；撤跟踪与是否重写历史仍待用户裁。本轮没把扫描器升级成门：另一条车道正在改 DSL 的 GATE_SUITE 与 run-final-verify-v33.sh，同一时间加未登记的消费方会让 verify-carrier-wiring 判红，两发编辑也会互相打脸。排在车道落地之后。",
+    "band_freshness_hole_for_N3": "顺手量到一条给 N3 用的证据：FRESH_RESULT=PASS 的尺是「未提交改动 vs 产物」，本轮我在 fda617a8 提交了 other.vue 之后再没重建产物，工作树干净 ⇒ 门报 PASS 而产物其实比 HEAD 旧。加上尺本身只哈希 config/env.js 的 2392 字节，N3 的「接受 vs 折宽」现在有了两个方向的实测成本，不是空谈。本次那三枚腿证据不受影响（other.vue 删的是 if(false) 死分支，行为零变化）。"
   }
 }
