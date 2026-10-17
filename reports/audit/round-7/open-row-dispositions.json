@@ -680,6 +680,42 @@
    "kind": "needs_ruling",
    "reason": "结案要求 navto-open 旗标作用域与臂展回执形状先定，现挂 A8/A9 两条未裁",
    "nextCarrier": "decisions#37（A8）/ decisions#38（A9）"
+  },
+  {
+   "id": "MP-R3AUDIT-NETFAULT-REARM-WINDOW-001",
+   "kind": "harness_limit",
+   "reason": "该行自陈的去向 + 行内点名的载具在磁盘上存在｜逐字取自本行结案条件：结案条件＝判据台按 C9 形状重排后至少一条网络判点（建议 VI34 重跑）落 EXECUTED 且带臂展回执；回执缺失一律 NOT_SHOOTABLE 不计覆盖（本车道未跑实带，不声称已有有效判决）",
+   "nextCarrier": "scripts/qa/exec-capabilities.mjs、scripts/qa/r-exec-ws.mjs"
+  },
+  {
+   "id": "MP-R7QA-ROUND-REPORT-GEN-ARGWIRING-001",
+   "kind": "harness_limit",
+   "reason": "该行自陈的去向 + 行内点名的载具在磁盘上存在｜逐字取自本行结案条件：闭案条件＝生成器改动提交且两个全清单载具都带 --out/--ledger 指向本轮目录；当前未提交 ⇒ 若照旧跑全清单仍可能重写历史交付件或不产本轮报告；另一载具身份本车道未逐一核 ⇒ 记未取证",
+   "nextCarrier": "scripts/qa/gen-round8-report.mjs、scripts/qa/run-final-verify-v33.sh"
+  },
+  {
+   "id": "MP-R7QA-GUESTLEG-TRIAGE-001",
+   "kind": "needs_ruling",
+   "reason": "该行自陈的去向 + 行内点名的载具在磁盘上存在｜逐字取自本行结案条件：单跑分诊：TRIAGE_RESULT=FAIL problems=1 ✗复测腿与债不同源(1组) recommend-pref booked 声称 11 行 vs 实测 4 行成员不同；gateFires unclassified=0 landingMissing=0 cover",
+   "nextCarrier": "scripts/qa/test-guest-landing.mjs、scripts/qa/triage-exec-failures.mjs"
+  },
+  {
+   "id": "MP-R7QA-ORPHAN-GATE-RULINGS-LANDED-001",
+   "kind": "premise_expired",
+   "reason": "实测 grep 命中 DSL=2 bash=1，该行登记时的「两个载具都找不到」不再成立；状态列不动，销案要由 verify-rulings-landed 自己出读数｜逐字取自本行结案条件：结案条件＝①把它同时登进两个载具（带自己的 _RESULT= 行，且 DSL 超时不得小于 bash 步），②再造一条完备性判点：凡 scripts/qa/verify-*.\\{mjs,cjs\\} 且会印 _RESULT= 的脚本，必须至少在一份载具里被点名，两边都缺即红——这一",
+   "nextCarrier": "scripts/qa/run-final-verify-v33.sh、.zcode/workflows/miniprogram-ui-audit-v38.dwf.ts"
+  },
+  {
+   "id": "MP-R7QA-BAND-SHAPE-NOT-EXPRESSED-001",
+   "kind": "harness_limit",
+   "reason": "该行自陈的去向 + 行内点名的载具在磁盘上存在｜逐字取自本行结案条件：结案条件＝①戳里带上发布形状这一维（例如把 prune/prepare-static 模式或主包体积档一并编进 sha8），使\"未剪枝的 real 档\"不再能被当成发布形态产物抵账；②本程在该档上取的所有帧与判过行按新口径重述，凡结论依赖\"发布包里有没有这张图\"的一律重跑或降级为",
+   "nextCarrier": "scripts/verify-package-size.mjs、scripts/qa/artifact-band.mjs"
+  },
+  {
+   "id": "MP-R7QA-MEDIA-BANDBLANK-001",
+   "kind": "static_predicate",
+   "reason": "该行状态词自陈「源码级判点」，且 scripts/qa/verify-source-shape.mjs 的判点表里就含 media.ts ⇒ 判决面已存在、不需要帧｜逐字取自本行结案条件：结案条件＝mock 档下 avatars/people 两目录不再被送去 http 后端（改为分档门或包内存在性判定），并在 mock 与 real 两档各取一帧头像非空对照；两档未跑 ⇒ 绿未证，本行只声称源码判点成立 ｜ 2026-10-17 追加自证弱点：本行引用的包内在盘",
+   "nextCarrier": "scripts/qa/verify-source-shape.mjs"
   }
  ],
  "statusTextContradictions": {
@@ -737,6 +773,19 @@
     "MP-R7QA-WS-TAPTARGET-IGNORED-001",
     "MP-R3AUDIT-VI25-VI34-PARKED-001",
     "MP-R3AUDIT-CTA-PENETRATION-001"
+   ]
+  },
+  {
+   "at": "2026-10-17T14:45:31.555Z",
+   "from": ".zcode/tmp/admit-naked-dispositions.cjs（裸行→登记表：只认行内点名且磁盘存在的载具）",
+   "count": 6,
+   "ids": [
+    "MP-R3AUDIT-NETFAULT-REARM-WINDOW-001",
+    "MP-R7QA-ROUND-REPORT-GEN-ARGWIRING-001",
+    "MP-R7QA-GUESTLEG-TRIAGE-001",
+    "MP-R7QA-BAND-SHAPE-NOT-EXPRESSED-001",
+    "MP-R7QA-MEDIA-BANDBLANK-001",
+    "MP-R7QA-ORPHAN-GATE-RULINGS-LANDED-001"
    ]
   }
  ]
