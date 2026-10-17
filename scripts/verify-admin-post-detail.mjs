@@ -15,6 +15,10 @@
  *   3) 列表页「查看」按钮与「按 ID 打开」都能落到 /forum/posts/<id>
  *   4) 过程中所有 >=400 响应与 console error 全部计数并打印
  */
+
+import { supplyInstrumentEnv } from "./qa/admin-instrument-env.mjs";
+await supplyInstrumentEnv(); /* 缺的是仪器前提 ⇒ 该报 NOT-EVIDENCED；但载具被我这种后台起法没带环境时，红得不是产品 */
+
 import { mkdirSync, existsSync } from "node:fs";
 
 const BASE = process.env.ADMIN_BASE_URL || "http://127.0.0.1:5177";

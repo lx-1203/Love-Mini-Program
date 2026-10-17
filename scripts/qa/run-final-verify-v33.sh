@@ -157,15 +157,16 @@ echo "--- 后台/设备侧的实测门（串行段；这一批不进上面的并
 # 本批只读不自造，出处见 DSL 的 BAND_STAMP_RULE。
 # 口令一律从环境读，本脚本不写、不嵌、不回显；没设就让它退 2 大声报，绝不为凑绿造假。
 # 但"没设"与"我没带"是两件事：2026-10-17 实测本载具被后台起、没带环境 ⇒ 四把门整批 NOT-EVIDENCED，
-# 红数 6→10 而没有一条是产品判决。跑本载具前先补一次仪器前提：用 Node 侧解析 .env 的那把补给手
-# （在 scripts/qa 下，名字是 load-admin-instrument-env，后缀 .mjs；它只打 KEY=VALUE 给 shell export，值不回显）。
-# 实测补齐后：auditor 17/17、scope 17/17、writes 15/15、post-detail 30/30 全绿。
-# 映射出处：SUPER_PASSWORD←ADMIN_LOGIN_PASSWORD；post-detail 头注 :5 明写 username 是 users.openid
-#   ⇒ ADMIN_LOGIN_USERNAME←ADMIN_OPENID；ADMIN_BASE_URL 取端口实测（本轮它从注释里的 5173 漂到了 5177）。
-#   显式设过的环境变量一律优先，补给手不覆盖。
-# 为什么不在这里直接调它：本文件的同步门有一条「点名了却没执行的假步骤」尺（g 步骤之外出现的 scripts/ 路径一律判红，
-#   它当年抓的是拿 echo 顶替 g 的形状）。前置件若写成第四种调用形状，等于给那把尺开个新缺口。
-#   正解是让四把门自己 import 那个模块，已立案；在那之前这发照旧靠调用方带环境，门继续大声报 NOT-EVIDENCED。
+# 红数 6→10 而没有一条是产品判决（设备腿的 DL23 同因：failureReason 明写 SUPER_PASSWORD 长度=0 / password 不能为空）。
+# 一开始我想在载具正文里直接调一把 Node 侧的 .env 补给手，被自己的同步门打回：
+#   下面第 166 行那条尺抓的就是"正文点名了 scripts/ 路径、却不在 g 步骤里"的形状（当年抓 echo 顶替 g）。
+#   与其给那把尺开第四种调用形状的缺口，正解是让门自己带前提——现已落地：
+#   四把后台门与设备腿都静态 import qa 下那把 admin-instrument-env 模块，并在读凭据之前 await 它补给。
+#   纪律：显式设过的环境变量一律优先，模块只补缺的；.env 读不到就什么都不做，门照旧退 2 大声报，绝不为凑绿造默认值。
+#   验收＝把 12 个仪器键全剥光后跑四把门：auditor 17/17、scope 17/17、writes 15/15、post-detail 30/30 全绿
+#   （补给行印 补入=26 别名=3，值不回显）；设备腿那一处只证到"补给在第 34 行 < 凭据读取在第 66 行"，整腿等下一发全量再证。
+#   映射出处：SUPER_PASSWORD←ADMIN_LOGIN_PASSWORD；post-detail 头注 :5 明写 username 是 users.openid
+#   ⇒ ADMIN_LOGIN_USERNAME←ADMIN_OPENID；ADMIN_BASE_URL 取端口实测（本轮 5173 拒连、5177 通，与上一程注释记的方向相反）。
 export QA_UI_RESOURCE="${QA_UI_RESOURCE:-ui-audit-v38-dsl}"
 g verify-admin-auditor    420 scripts/verify-admin-auditor.mjs
 g verify-admin-scope      420 scripts/verify-admin-scope.mjs

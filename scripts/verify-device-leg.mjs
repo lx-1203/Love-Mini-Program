@@ -31,6 +31,10 @@
  * git HEAD 短号只作 provenance 字段。用提交号当 band 键 = 每一行都被门摘进 EXPIRED 桶，
  * 这条腿跑出 0 覆盖（本轮修的就是这一格，别再犯第二次）。
  */
+
+import { supplyInstrumentEnv } from "./qa/admin-instrument-env.mjs";
+await supplyInstrumentEnv(); /* DL23 这类失败是仪器前提没带（SUPER_PASSWORD 长度=0），不是产品判决：见 2026-10-17 第四发全量 */
+
 import { execSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";

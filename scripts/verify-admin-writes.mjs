@@ -8,6 +8,10 @@
  * 用法（需 real 后端 :8080 + MySQL）：node scripts/verify-admin-writes.mjs
  */
 
+import { supplyInstrumentEnv } from "./qa/admin-instrument-env.mjs";
+await supplyInstrumentEnv(); /* 缺的是仪器前提 ⇒ 该报 NOT-EVIDENCED；但载具被我这种后台起法没带环境时，红得不是产品 */
+
+
 const BASE = process.env.ADMIN_API_BASE || "http://127.0.0.1:8080/api/v1";
 const IMG = process.env.UPLOAD_TEST_IMAGE || "apps/api/uploads/100157/202609/5afeaa48-d457-4c34-97fc-578580e9313c.jpg";
 const STAMP = Date.now();

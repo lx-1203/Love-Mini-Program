@@ -14,6 +14,10 @@
  *   CAMPUS_ADMIN_PHONE / CAMPUS_ADMIN_PASSWORD / SUPER_USERNAME / SUPER_PASSWORD
  */
 
+import { supplyInstrumentEnv } from "./qa/admin-instrument-env.mjs";
+await supplyInstrumentEnv(); /* 缺的是仪器前提 ⇒ 该报 NOT-EVIDENCED；但载具被我这种后台起法没带环境时，红得不是产品 */
+
+
 const BASE = process.env.ADMIN_API_BASE || "http://127.0.0.1:8080/api/v1";
 // 注意：/auth/admin/login 的 username 走的是 users.openid 精确匹配
 // （RealAuthService.loginAsAdmin → findByOpenid），而 POST /admin/users/admins

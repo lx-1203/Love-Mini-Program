@@ -13,6 +13,10 @@
  * 用法：node scripts/verify-admin-scope.mjs   （需 real 后端 :8080 + SUPER_PASSWORD）
  */
 
+import { supplyInstrumentEnv } from "./qa/admin-instrument-env.mjs";
+await supplyInstrumentEnv(); /* 缺的是仪器前提 ⇒ 该报 NOT-EVIDENCED；但载具被我这种后台起法没带环境时，红得不是产品 */
+
+
 const BASE = process.env.ADMIN_API_BASE || "http://127.0.0.1:8080/api/v1";
 const SUPER = { username: "local-dev-admin-openid-123456", password: process.env.SUPER_PASSWORD || "" };
 const PKU_CAMPUS = "北京大学";
