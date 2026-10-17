@@ -153,9 +153,19 @@ echo "--- 后台/设备侧的实测门（串行段；这一批不进上面的并
 #      本轮 admin dev server 实测在 5173 ⇒ 必须显式导出 ADMIN_BASE_URL，否则 transport 命中、整条腿 NOT-EVIDENCED；
 #   ④ verify-device-leg 取全局唯一的 UI 租约（scripts/verify-device-leg.mjs:313 guardUiLease）并写一条真实 post
 #      —— 与上面 emit-round-report 那段同一把"取租约的步骤不入并发清单"的口径（见本文件 :103-107）。
-# 口令一律从环境读，本脚本不写、不嵌、不回显；没设就让它退 2 大声报，绝不为凑绿造假。
 # band 键与覆盖率门的尺同源：readApiMode(config/env.js) 的 mode@sha8（artifact-band.mjs:22），
 # 本批只读不自造，出处见 DSL 的 BAND_STAMP_RULE。
+# 口令一律从环境读，本脚本不写、不嵌、不回显；没设就让它退 2 大声报，绝不为凑绿造假。
+# 但"没设"与"我没带"是两件事：2026-10-17 实测本载具被后台起、没带环境 ⇒ 四把门整批 NOT-EVIDENCED，
+# 红数 6→10 而没有一条是产品判决。跑本载具前先补一次仪器前提：用 Node 侧解析 .env 的那把补给手
+# （在 scripts/qa 下，名字是 load-admin-instrument-env，后缀 .mjs；它只打 KEY=VALUE 给 shell export，值不回显）。
+# 实测补齐后：auditor 17/17、scope 17/17、writes 15/15、post-detail 30/30 全绿。
+# 映射出处：SUPER_PASSWORD←ADMIN_LOGIN_PASSWORD；post-detail 头注 :5 明写 username 是 users.openid
+#   ⇒ ADMIN_LOGIN_USERNAME←ADMIN_OPENID；ADMIN_BASE_URL 取端口实测（本轮它从注释里的 5173 漂到了 5177）。
+#   显式设过的环境变量一律优先，补给手不覆盖。
+# 为什么不在这里直接调它：本文件的同步门有一条「点名了却没执行的假步骤」尺（g 步骤之外出现的 scripts/ 路径一律判红，
+#   它当年抓的是拿 echo 顶替 g 的形状）。前置件若写成第四种调用形状，等于给那把尺开个新缺口。
+#   正解是让四把门自己 import 那个模块，已立案；在那之前这发照旧靠调用方带环境，门继续大声报 NOT-EVIDENCED。
 export QA_UI_RESOURCE="${QA_UI_RESOURCE:-ui-audit-v38-dsl}"
 g verify-admin-auditor    420 scripts/verify-admin-auditor.mjs
 g verify-admin-scope      420 scripts/verify-admin-scope.mjs
