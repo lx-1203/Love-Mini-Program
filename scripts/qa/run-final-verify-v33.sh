@@ -55,6 +55,13 @@ g verify-state-truth      180 scripts/qa/verify-state-truth.mjs reports/audit/ro
 g verify-queue-reconcile  120 scripts/verify-queue-reconcile.mjs reports/audit/round-7
 g verify-real-coverage    180 scripts/qa/verify-real-coverage.mjs
 g verify-source-shape     180 scripts/qa/verify-source-shape.mjs --dry
+# 本轮（MP-FIDELITY Phase A）新增两条：
+# verify-release-chain-steps 判的是"发布链这三步到底改的是哪一档的产物"（D-A0 实测三步缺省都指 mock），
+# 它读链自己 --dry 打出的 argv，不读我抄的第二份表；负例（--out 指向共享目录必须被拒）在门内部跑。
+# verify-env-release 加了 ENVCHECK_RESULT= 机读行之后就成孤儿候选，裸跑在本地必然红（loopback），
+# 所以登记的是它的 --self-test 形状：那条能红、且不依赖 .env.real 里有没有真域名。
+g verify-release-chain-steps 120 scripts/qa/verify-release-chain-steps.mjs
+g verify-env-release-selftest 60 scripts/verify-env-release.mjs --self-test
 g verify-evidence-corpus  600 scripts/qa/verify-evidence-corpus.mjs
 g verify-provenance-all   600 scripts/qa/verify-provenance-all.mjs
 g verify-band-freshness   420 scripts/qa/verify-band-freshness.mjs

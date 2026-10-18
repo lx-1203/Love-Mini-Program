@@ -41,6 +41,18 @@ const STAGE_ROOT = resolve(__dirname, "..");
 
 const mode = process.argv[2] || "--real";
 
+/** 引用扫描来源（2026-10-18 · MP-FIDELITY Phase A3）：
+ *   auto = 旧行为：`dist/build/mp-weixin` 存在就扫它，否则扫 src。这是跨档口径（D-A1）——
+ *          real 模式的保留集由**上一轮 mock 产物**决定，产物内容随构建顺序变；
+ *   src  = 只扫源码（.vue/.ts/.js/.json/.scss 字面量），确定性、与档位与构建顺序无关 ⇒ 发布链走这一支；
+ *   dist = 强制扫 distRoot，留给人工复现旧口径对照用。
+ * 注意 src 里含 pages.json，tabBar/背景图这类 JSON 驱动路径同样扫得到；tabbar 图标另有整目录兜底。 */
+const scanMode = (() => {
+  const i = process.argv.indexOf("--scan");
+  const v = i >= 0 ? String(process.argv[i + 1] || "") : "";
+  return v === "src" || v === "dist" || v === "auto" ? v : "auto";
+})();
+
 /** 用 child_process spawnSync（不走 NODE_OPTIONS shim 的 fs API 拦截）。
  * 沙箱实测：cp -a 全大目录 copy OK、rm -rf 单目录 OK、mv 单次 OK。
  * 但 cp -a 偶发 Windows "operation completed successfully" 误判为 stderr 失败，
@@ -232,7 +244,20 @@ function strip() {
   const stage = `${STAGE_ROOT}/static_prepare_${process.pid}_${Date.now()}`;
   const refs = new Set();
   const distRoot = resolve(__dirname, "../dist/build/mp-weixin");
-  const scanTargets = existsSync(distRoot) ? [distRoot] : [resolve(__dirname, "../src")];
+  const srcRoot = resolve(__dirname, "../src");
+  let scanTargets;
+  if (scanMode === "src") scanTargets = [srcRoot];
+  else if (scanMode === "dist") {
+    if (!existsSync(distRoot)) {
+      console.error(`[prepare-static] --scan dist 但 ${distRoot} 不存在 ⇒ 不猜、不回退到 src（那会让"我扫的是哪一档"读不出来）`);
+      process.exit(2);
+    }
+    scanTargets = [distRoot];
+  } else {
+    // 旧口径原样保留（跨档、随构建顺序变），只在 auto 下发生，并在机读行里标出来
+    scanTargets = existsSync(distRoot) ? [distRoot] : [srcRoot];
+  }
+  console.log(`PREPARESTATIC_SCAN mode=${scanMode} targets=${scanTargets.length} root=${scanTargets[0]}`);
   for (const dir of scanTargets) {
     (function scan(d) {
       for (const name of readdirSync(d)) {

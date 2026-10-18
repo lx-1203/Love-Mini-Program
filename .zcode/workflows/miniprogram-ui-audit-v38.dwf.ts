@@ -321,6 +321,13 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   { name: "选择器在册核验 verify-case-selectors-exist", args: ["scripts/qa/verify-case-selectors-exist.mjs"], timeoutMs: 120000 },
   { name: "判据欠帧去向 verify-criteria-frame-debt", args: ["scripts/qa/verify-criteria-frame-debt.mjs"], timeoutMs: 120000 },
   { name: "免罪锚点核验 verify-disproof-anchors", args: ["scripts/qa/verify-disproof-anchors.mjs"], timeoutMs: 120000 },
+  // 本轮（MP-FIDELITY Phase A）新增两条，与 bash 侧逐字同值（超时同值：120000 / 60000）。
+  // verify-release-chain-steps 判"发布链的后三步改的是哪一档产物"（D-A0：三步缺省都指 mock），
+  // 它读链自己 --dry 打的 argv，并在内部跑"--out 指向共享目录必须被拒"的负例。
+  // verify-env-release 印了 ENVCHECK_RESULT= 之后成了孤儿候选，而裸跑在本地必红（loopback），
+  // 所以点名的是它的 --self-test 形状：能红，且不依赖 .env.real 里是否已有真域名。
+  { name: "发布链步序与改道核验 verify-release-chain-steps", args: ["scripts/qa/verify-release-chain-steps.mjs"], timeoutMs: 120000 },
+  { name: "发布环境门自证 verify-env-release-selftest", args: ["scripts/verify-env-release.mjs", "--self-test"], timeoutMs: 60000 },
   { name: "修复对照产物核验 verify-fixes-against-artifact", args: ["scripts/qa/verify-fixes-against-artifact.cjs"], timeoutMs: 180000 },
   { name: "台账欠帧裸行 verify-frame-debt-coverage", args: ["scripts/qa/verify-frame-debt-coverage.mjs"], timeoutMs: 120000 },
   { name: "收口桶去向棘轮 verify-closed-bucket-destinations", args: ["scripts/qa/verify-closed-bucket-destinations.mjs"], timeoutMs: 60000 },

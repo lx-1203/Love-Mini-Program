@@ -19,38 +19,123 @@
  * 文件搬运全部走 spawnSync 系统命令（cp/mv/rm），不走 NODE_OPTIONS shim 拦截的
  * fs API（理由见 prepare-static.mjs 头注释）。
  *
- * 用法：node scripts/release-chain.mjs
+ * 用法：node scripts/release-chain.mjs [--allow-loopback] [--out <dir>] [--expect-band <sha8>] [--dry]
  * 取代 package.json `build:mp-weixin:real` 原来的 `&&` 长串（步骤与顺序逐项等价）。
+ *
+ * 2026-10-18（MP-FIDELITY Phase A2）补的两件事——都来自实测，不是假设：
+ *  1. **改道**：本链以前从不设 UNI_OUTPUT_DIR，`uni build --mode real` 落进平台默认的
+ *     dist/build/mp-weixin（mock 档的家）⇒ 跑一次发布链就把 mock 档产物原地换成 real，
+ *     所有读 mock 档的门禁从此量的是别人的字节。现在 --out 缺省 mp-weixin-real，
+ *     并且 sameOrInside 守卫**拒绝**任何指向共享目录的 --out（沿用 build-real-isolated.mjs:151-159 同一段逻辑）。
+ *  2. **后处理步改吃同一个目录**：add-lazy-code-loading / prune-unreferenced-static / verify-package-size
+ *     三个脚本的缺省目录都是 mp-weixin（mock），实测 mp-weixin-real/app.json 里 lazyCodeLoading 根本没有
+ *     ⇒ 所谓"发布形态"此前少跑了三步、还把裁剪与包体结论记在了别人的产物上。现在全部带 --dist/位置参数指向 --out。
+ *  3. loopback 豁免只在本链自己显式收到 --allow-loopback 时才向下传，且必须点名载具；
+ *     产物目录里落一张 LOOPBACK_WAIVER.json（shippable=false）作为凭证券。
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const clientDir = resolve(__dirname, "..");
 const SRC = join(clientDir, "src", "static");
 const STAGE_ROOT = clientDir;
+/** mock 档的共享目录：本链一步都不许写它（它是 mock 轮 before/after 配对证据的载体）。 */
+const SHARED_OUT = join(clientDir, "dist", "build", "mp-weixin");
+const RK = "RELEASECHAIN_RESULT";
 
-/** 链步骤表：与原 build:mp-weixin:real 的 && 串逐项等价（顺序敏感，勿乱动）。
+const argv = process.argv.slice(2);
+const flag = (k) => argv.includes("--" + k);
+const opt = (k, dflt) => {
+  const i = argv.indexOf("--" + k);
+  if (i < 0) return dflt;
+  const v = argv[i + 1];
+  return v === undefined || String(v).startsWith("--") ? dflt : v;
+};
+
+const allowLoopback = flag("allow-loopback");
+const expectBand = String(opt("expect-band", "")).trim();
+const dryRun = flag("dry");
+const outDir = resolve(opt("out", join(clientDir, "dist/build/mp-weixin-real")));
+
+/** Windows 上路径大小写不敏感，`--out .../MP-WEIXIN` 也是同一个目录；写进它的子目录同样污染该档 */
+function sameOrInside(target, dir) {
+  const norm = (p) => {
+    let s = resolve(p).replace(/\\/g, "/").replace(/\/+$/, "");
+    return process.platform === "win32" ? s.toLowerCase() : s;
+  };
+  const t = norm(target);
+  const d = norm(dir);
+  return t === d || t.startsWith(`${d}/`);
+}
+
+// <<OUTDIR_GUARD_BEGIN>>
+// 这段是「发布链不许把 real 产物写进 mock 共享目录」的唯一硬闸（删掉它 --self-test 的负例就转红）。
+if (sameOrInside(outDir, SHARED_OUT)) {
+  console.error(`${RK}=FAIL reason=拒绝把 real 产物构建到 mock 共享目录 ${SHARED_OUT}`);
+  console.error(`${RK}=FAIL hint=不传 --out（缺省 ${join(clientDir, "dist/build/mp-weixin-real")}）；共享目录只属于 mock 档（MODE:"mp-weixin-mock"），写进去会毒掉 mock 轮的配对证据`);
+  process.exit(1);
+}
+// <<OUTDIR_GUARD_END>>
+
+/** 产物指纹：构建前后共享目录必须一致，否则说明这一档覆盖了 mock 证据。 */
+function sharedFingerprint() {
+  if (!existsSync(SHARED_OUT)) return "absent";
+  const marker = join(SHARED_OUT, "config/env.js");
+  if (!existsSync(marker)) return "no-env-js";
+  const st = readFileSync(marker);
+  return `${st.length}:${createHash("sha256").update(st).digest("hex").slice(0, 8)}`;
+}
+
+/** band = mode@sha8（与 scripts/qa/artifact-band.mjs:14-24 同算法：对产物 config/env.js 整文件取 sha256 前 8 位）。 */
+function readBand(dir) {
+  const f = join(dir, "config/env.js");
+  if (!existsSync(f)) return { mode: "(无 env.js)", sha8: "" };
+  const buf = readFileSync(f);
+  const m = String(buf).match(/MODE:\s*"([^"]+)"/);
+  return { mode: m ? m[1] : "(MODE 未记)", sha8: createHash("sha256").update(buf).digest("hex").slice(0, 8) };
+}
+
+/** 链步骤表：与原 build:mp-weixin:real 的 && 串逐项等价（顺序敏感，勿乱动），
+ *  外加步 0 的档位目录碰撞守卫与三步后处理的 --dist 改道。
  * args[0] 与原命令一致相对 apps/client/ 解析（../../scripts/ 即仓库根 scripts/）。
  * snapshotBefore=true 的步骤（prepare-static --real）动手前打快照、武装还原 trap。 */
 const STEPS = [
+  { name: "check-band-outdir-collision", args: ["scripts/check-band-outdir-collision.mjs", "--mode", "real"], snapshotBefore: false },
   { name: "check-mp-image-styles", args: ["scripts/check-mp-image-styles.mjs", "--strict"], snapshotBefore: false },
   { name: "check-statusbar-offset", args: ["scripts/check-statusbar-offset.mjs"], snapshotBefore: false },
   { name: "check-tabbar-consistency", args: ["scripts/check-tabbar-consistency.mjs"], snapshotBefore: false },
   { name: "check-project-rules", args: ["scripts/check-project-rules.mjs"], snapshotBefore: false },
   { name: "inject-wx-appid", args: ["scripts/inject-wx-appid.mjs"], snapshotBefore: false },
-  { name: "prepare-static --real", args: ["scripts/prepare-static.mjs", "--real"], snapshotBefore: true },
+  // --scan src：保留集只从源码扫（prepare-static.mjs:234 的"从上一轮 mock 产物扫"是跨档口径，实测随构建顺序变）
+  { name: "prepare-static --real", args: ["scripts/prepare-static.mjs", "--real", "--scan", "src"], snapshotBefore: true },
   { name: "profile-svg-to-png", args: ["scripts/profile-svg-to-png.mjs"], snapshotBefore: false },
-  { name: "verify-env-release", args: ["../../scripts/verify-env-release.mjs"], snapshotBefore: false },
+  {
+    name: "verify-env-release",
+    args: allowLoopback
+      ? ["../../scripts/verify-env-release.mjs", "--allow-loopback", "--carrier", "release-chain", "--write-waiver-to", outDir]
+      : ["../../scripts/verify-env-release.mjs"],
+    snapshotBefore: false,
+  },
   { name: "uni build (via strip-mock)", args: ["scripts/strip-mock-for-mp.mjs", "uni build --platform mp-weixin --mode real"], snapshotBefore: false },
-  { name: "add-lazy-code-loading", args: ["scripts/add-lazy-code-loading.mjs"], snapshotBefore: false },
-  { name: "prune-unreferenced-static", args: ["scripts/prune-unreferenced-static.mjs"], snapshotBefore: false },
-  { name: "verify-package-size", args: ["../../scripts/verify-package-size.mjs"], snapshotBefore: false },
+  { name: "add-lazy-code-loading", args: ["scripts/add-lazy-code-loading.mjs", "--dist", outDir], snapshotBefore: false },
+  { name: "prune-unreferenced-static", args: ["scripts/prune-unreferenced-static.mjs", "--dist", outDir], snapshotBefore: false },
+  { name: "verify-package-size", args: ["../../scripts/verify-package-size.mjs", outDir], snapshotBefore: false },
 ];
 
-/** 全部步骤都以 apps/client 为 cwd（与原 && 串一致），脚本路径按原样拼接 */
+/** 全部步骤都以 apps/client 为 cwd（与原 && 串一致），脚本路径按原样拼接。
+ *  env 里带 UNI_OUTPUT_DIR（uni 的输出目录只能靠它改道，见 build-real-isolated.mjs:15）
+ *  与 .bin 路径（本脚本可能被 node 直接拉起，无 npm 上下文时 `uni` 这个 bin 解析不到）。 */
+const stepEnv = {
+  ...process.env,
+  UNI_OUTPUT_DIR: outDir,
+  PATH: [join(clientDir, "node_modules/.bin"), join(clientDir, "../../node_modules/.bin"), process.env.PATH]
+    .join(process.platform === "win32" ? ";" : ":"),
+};
+
 function resolveStep(step) {
   return { cwd: clientDir, argv: [process.execPath, join(clientDir, step.args[0]), ...step.args.slice(1)] };
 }
@@ -103,27 +188,38 @@ function restoreFromSnapshot(stage) {
 let snapshotStage = null;
 let snapshotValid = false;
 let exitCode = 0;
+const sharedBefore = sharedFingerprint();
+
+console.log(`[release-chain] out=${outDir} shared=${SHARED_OUT} loopbackWaiver=${allowLoopback ? "yes(点名载具 release-chain)" : "no"} expectBand=${expectBand || "(不比对)"} dry=${dryRun ? "yes" : "no"}`);
 
 for (const step of STEPS) {
   // prepare-static 动手前打快照（trap 武装）
   if (step.snapshotBefore) {
     snapshotStage = join(STAGE_ROOT, `static_release_guard_${process.pid}_${Date.now()}`);
-    try {
-      snapshotValid = snapshotStatic(snapshotStage);
-      if (snapshotValid) {
-        console.log(`[release-chain] 已快照 src/static（trap 武装）：${snapshotStage}`);
-      } else {
-        console.warn(`[release-chain] src/static 不存在，跳过快照（trap 未武装）`);
+    if (dryRun) {
+      console.log(`[release-chain] [dry] 跳过快照：${snapshotStage}`);
+    } else {
+      try {
+        snapshotValid = snapshotStatic(snapshotStage);
+        if (snapshotValid) {
+          console.log(`[release-chain] 已快照 src/static（trap 武装）：${snapshotStage}`);
+        } else {
+          console.warn(`[release-chain] src/static 不存在，跳过快照（trap 未武装）`);
+        }
+      } catch (e) {
+        console.error(`[release-chain] ${e.message}——中止链，src/static 未被触碰`);
+        process.exit(1);
       }
-    } catch (e) {
-      console.error(`[release-chain] ${e.message}——中止链，src/static 未被触碰`);
-      process.exit(1);
     }
   }
 
-  const { cwd, argv } = resolveStep(step);
+  const { cwd, argv: stepArgv } = resolveStep(step);
   console.log(`[release-chain] >>> ${step.name}`);
-  const r = spawnSync(argv[0], argv.slice(1), { cwd, stdio: "inherit" });
+  if (dryRun) {
+    console.log(`[release-chain] [dry] ${stepArgv[1]} ${stepArgv.slice(2).join(" ")}`);
+    continue;
+  }
+  const r = spawnSync(stepArgv[0], stepArgv.slice(1), { cwd, stdio: "inherit", env: stepEnv });
   if (r.error) {
     console.error(`[release-chain] ${step.name} 无法启动：${r.error.message}`);
     exitCode = 1;
@@ -148,7 +244,41 @@ for (const step of STEPS) {
 if (snapshotStage && existsSync(snapshotStage)) {
   rmSync(snapshotStage, { recursive: true, force: true });
 }
+
+const sharedAfter = sharedFingerprint();
+const sharedUntouched = sharedAfter === sharedBefore;
+
+if (exitCode === 0 && !dryRun) {
+  const band = readBand(outDir);
+  console.log(`RELEASECHAIN_BAND mode=${band.mode} sha8=${band.sha8} band=${band.mode}@${band.sha8}`);
+  if (band.mode !== "real") {
+    console.error(`[release-chain] 产物 MODE="${band.mode}" 不是 real ⇒ 这一档根本不是发布形态，后面所有"发布形态"结论都作废`);
+    exitCode = 1;
+  } else if (expectBand && band.sha8 !== expectBand) {
+    // band 一动，覆盖账上每一条 real@<旧sha8> 都变 EXPIRED；不许悄悄接受新 band。
+    console.error(`[release-chain] band 漂移：实测 sha8=${band.sha8} ≠ 期望 ${expectBand} ⇒ 凡引用旧 band 的判据本轮全部重认，不许静默放行`);
+    exitCode = 1;
+  }
+  if (allowLoopback && !existsSync(join(outDir, "LOOPBACK_WAIVER.json"))) {
+    console.error(`[release-chain] 豁免跑了但产物里没有 LOOPBACK_WAIVER.json ⇒ 这份"不可上线"没留痕`);
+    exitCode = 1;
+  } else if (allowLoopback) {
+    console.log(`RELEASECHAIN_SHIPPABLE=no（loopback 豁免产物，凭证券已落产物目录）`);
+  }
+}
+
+console.log(`RELEASECHAIN_SHARED sharedBefore=${sharedBefore} sharedAfter=${sharedAfter} untouched=${sharedUntouched ? "yes" : "NO"}`);
+if (exitCode === 0 && !sharedUntouched) {
+  console.error(`[release-chain] 共享 mock 目录的 config/env.js 被动过 ⇒ 这一档污染了 mock 轮证据，链判红`);
+  exitCode = 1;
+}
+
 if (exitCode === 0) {
-  console.log(`[release-chain] real 发布链全部通过（src/static 保持发布裁剪态，完整集合在 static-local-backup/full-static）`);
+  console.log(dryRun
+    ? `[release-chain] [dry] 步骤表核对完毕（未构建、未动 src/static）`
+    : `[release-chain] real 发布链全部通过（src/static 保持发布裁剪态，完整集合在 static-local-backup/full-static）`);
+  console.log(`${RK}=PASS steps=${STEPS.length} out=${outDir} dry=${dryRun ? "yes" : "no"} shippable=${allowLoopback ? "no" : "yes"}`);
+} else {
+  console.log(`${RK}=FAIL steps=${STEPS.length} exit=${exitCode} out=${outDir}`);
 }
 process.exit(exitCode);
