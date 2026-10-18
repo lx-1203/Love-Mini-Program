@@ -52,11 +52,14 @@ const viewModel = computed<HomeViewModel>(() => toHomeViewModel(homeFeed.value))
 const likeLoading = ref(false);
 
 // R3（MP-R3-HOME-006）：滚动时统计区会滑入状态栏/刘海与系统时间叠印——
-// 滚过阈值后在顶部显示遮罩（R4：加高至状态栏+28px 渐变，让数字随滚动淡出而非硬裁切）
+// 滚过阈值后在顶部显示遮罩。
+// R1-B24（R1-L01-D18）：遮罩高度收回状态栏以内。原 R4 的 statusBar+28px 让不透明段
+// （渐变前 82%）越界侵入内容区，滚到底时「附近的人」等分区标题上半被抹平；
+// 内容遮挡与状态栏避让不再混在同一个高度里。
 const statusBarPx = Number(uni.getSystemInfoSync().statusBarHeight ?? 0);
 const pageScrolled = ref(false);
 const topScrimStyle = computed(() => ({
-  height: `${statusBarPx + 28}px`,
+  height: `${statusBarPx}px`,
   opacity: pageScrolled.value ? "1" : "0",
 }));
 onPageScroll((e) => {
@@ -510,8 +513,11 @@ page {
   background: var(--c-bg-page, #EEF7F2);
   /* R3：env 兜底改为 --statusbar（开发者工具 env 恒 0，头部会叠印系统时间） */
   padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 20px);
-  /* 底部避开自定义 tabbar（--tabbar-height = 112rpx + 安全区） */
-  padding-bottom: calc(112rpx + env(safe-area-inset-bottom));
+  /* R1-B24（R1-L01-D25）：底部避让单点收给页尾 .home-section-gap 占位段（读 --tab-bar-total-h）。
+     此处原写 112rpx + 安全区，与占位段的 300rpx + 安全区叠成两层净空 → banner 下缘到 tabBar
+     之间约 185px 死白。显式归零，同时压掉根节点共用类 .page-bottom-safe 的同值 padding-bottom
+     （scoped .home-page 选择器权重更高）。 */
+  padding-bottom: 0;
 }
 
 .home-page__top-scrim {
@@ -526,15 +532,17 @@ page {
 }
 
 .home-section-gap {
-  /* 2026-09-03 R11 终极修 + 2026-09-03 收尾：custom-tabBar 恒在页面之上 + 中央浮岛圆形按钮 z-index 高，
-     底部 InviteBanner 必须留出净高让内容完整露出。统一收敛到设计 token
-     --tab-bar-clear-zone（= 300rpx + env(safe-area-inset-bottom)，见 theme/design-variables.scss；
-     MP-R2-PAGES-HOME-INDEX-007：兜底值与 token 本体对齐，消除 360rpx 时代残留）,
-     页面级共用工具类：.base-tabbar-clear-zone（styles/_components.scss）。 */
+  /* 2026-09-03 R11 终极修：custom-tabBar 恒在页面之上 + 中央浮岛圆形按钮 z-index 高，
+     底部 InviteBanner 必须留出净高让内容完整露出。
+     R1-B24（R1-L01-D25）：净空口径改与 tabBar 实高一致——读避让令牌 --tab-bar-total-h
+     （= 160rpx 面板 + 24rpx 浮岛越出 + 安全区，与 discover/messages 页底部避让同一条），
+     不再另立 --tab-bar-clear-zone 的 300rpx 一档；本页 .home-page 的 padding-bottom 已同步归零，
+     消除同一份净空撑两遍。残留多让的一个安全区源于 --tab-bar-total-h 本体把 env 写了两遍
+     （theme/design-variables.scss:462），该双计属共享令牌议题（R1-B01），本批不越界改。 */
   display: block;
   width: 100%;
   flex-shrink: 0;
-  height: var(--tab-bar-clear-zone, calc(300rpx + env(safe-area-inset-bottom)));
+  height: var(--tab-bar-total-h, calc(184rpx + env(safe-area-inset-bottom) + env(safe-area-inset-bottom)));
 }
 
 /* ========== 2026-09-02 R5：定位 BottomSheet 弹窗样式 ========== */

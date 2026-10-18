@@ -75,7 +75,6 @@ function closeGovernance() {
         :author-avatar="profile.basic.avatar"
         @open-post="emit('openPost', $event)"
       />
-      <view class="public-profile__spacer" />
 
       <RelationshipCTA
         :liked="profile.relation.liked"
@@ -102,7 +101,8 @@ function closeGovernance() {
 .public-profile {
   min-height: 100vh;
   background: #ffffff;
-  /* 2026-08-26 P0-2：底内边距覆盖固定底栏 RelationshipCTA + 安全区 + 流内 spacer(220rpx)，保证可完整下滑 */
+  /* 2026-10-19 R1-B19：底栏预留只留这一处来源（原「流内 spacer 220rpx + 本 padding」双算，合计约 500rpx 空带）。
+     固定底栏 RelationshipCTA 实测高 ≈133rpx（padding 20+20rpx + 按钮 92rpx）+ safe-area，此处 280rpx + safe-area 已含呼吸位。 */
   padding-bottom: calc(220rpx + env(safe-area-inset-bottom) + 60rpx);
 }
 
@@ -130,9 +130,5 @@ function closeGovernance() {
   font-size: 26rpx;
   color: #36C99A;
   font-weight: 700;
-}
-
-.public-profile__spacer {
-  height: 220rpx;
 }
 </style>

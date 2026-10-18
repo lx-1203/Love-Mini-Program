@@ -300,6 +300,7 @@ async function loadPage(force = false) {
     }),
   ]);
   avatarFailedIds.value = new Set();
+  warmAvatarFailedIds.value = new Set(); // R1-B25/D10：重载后升温行头像失败位同样清零，给坏链一次重试
   // 2026-08-31 待办：加载完成后标记全部会话已读（红点闭环：badge→进入→清除）
   void messagesStore.markAllSessionsRead();
 }
@@ -362,6 +363,12 @@ function formatTime(dateStr?: string | null): string {
 const avatarFailedIds = ref<Set<string>>(new Set());
 function onAvatarError(session: MessageSession): void {
   avatarFailedIds.value = new Set(avatarFailedIds.value).add(session.id);
+}
+
+/** R1-B25/D10：「正在升温」行头像走同一套失败位兜底（键为 userId，原实现无 @error 直接留空块） */
+const warmAvatarFailedIds = ref<Set<string>>(new Set());
+function onWarmAvatarError(person: RelationshipPersonView): void {
+  warmAvatarFailedIds.value = new Set(warmAvatarFailedIds.value).add(String(person.userId));
 }
 </script>
 
@@ -491,7 +498,16 @@ function onAvatarError(session: MessageSession): void {
           <view v-if="warmPeople.length > 0" class="section">
             <view class="section__head">
               <text class="section__title">正在升温</text>
-              <text class="section__more" @tap="goLikes">更多 ›</text>
+              <!-- R1-B25/D18（可达性）：「更多 ›」原先是裸 <text> 直接挂 @tap——无 role、无
+                   aria-label、无按压反馈，读屏播报为空且热区只有文字宽。改包一层 view 补
+                   role="button" + :aria-label + 全局 press-feedback（与同页空态 .empty-chat__cta 同口径），
+                   热区靠内边距撑开、负外边距保持视觉位置不变。文案走 i18n（common.more = 更多）。
+                   注：aria 目前只能复用既有键 common.moreAria（「更多」），带目的地的键
+                   （如「查看更多升温好友」）需 i18n 泳道在 locales/*.ts 新增，本泳道无权改。 -->
+              <view class="section__more-btn press-feedback" hover-class="press-feedback--active" role="button"
+                :aria-label="t('common.moreAria')" @tap="goLikes">
+                <text class="section__more">{{ t('common.more') }} ›</text>
+              </view>
             </view>
             <view class="warm-list">
               <view
@@ -502,7 +518,15 @@ function onAvatarError(session: MessageSession): void {
                 @tap="openWarmPerson(person)"
               >
                 <view class="warm-item__avatar-wrap">
-                  <image class="warm-item__avatar" :src="person.avatarUrl || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" />
+                  <!-- R1-B25/D10（素材缺失）：坏链头像此前没有 @error 兜底（同页最近聊天行的
+                       onAvatarError 有），真机上 avatarUrl 404 时整枚圆头像连同描边环留空。
+                       补同一套失败位机制，切 DEFAULT_AVATAR。 -->
+                  <image
+                    class="warm-item__avatar"
+                    :src="warmAvatarFailedIds.has(String(person.userId)) || !person.avatarUrl ? IMAGE_PATHS.DEFAULT_AVATAR : person.avatarUrl"
+                    mode="aspectFill"
+                    @error="onWarmAvatarError(person)"
+                  />
                   <view class="warm-item__heart-icon">
                     <image class="warm-item__heart-img" :src="IMAGE_PATHS.ICONS_V2.SPROUT" mode="aspectFit" />
                   </view>
@@ -600,7 +624,10 @@ function onAvatarError(session: MessageSession): void {
               >
                 <text v-if="act.icon && !isIconUrl(act.icon)" class="activity-rec-card__icon activity-rec-card__icon--emoji">{{ act.icon }}</text>
                 <image v-else-if="act.icon" class="activity-rec-card__icon" :src="act.icon" mode="aspectFit" alt="" />
-                <view v-else class="activity-rec-card__icon activity-rec-card__icon--placeholder" />
+                <!-- R1-B25/D14：act.icon 缺失时此前是一块 96rpx 纯色方块、零图形（帧底「有人喜欢你」卡左侧）。
+                     补一枚默认「热门」图标（PNG 素材，与本页其它 <image> 图标同口径），占位态不再是空色块。 -->
+                <image v-else class="activity-rec-card__icon activity-rec-card__icon--placeholder"
+                  :src="IMAGE_PATHS.ICONS_COMMON.FIRE" mode="aspectFit" alt="" />
                 <view class="activity-rec-card__body">
                   <text class="activity-rec-card__title">{{ act.title }}</text>
                   <text v-if="act.subtitle" class="activity-rec-card__subtitle">{{ act.subtitle }}</text>
@@ -622,18 +649,26 @@ function onAvatarError(session: MessageSession): void {
 .messages-page {
   min-height: 100vh;
   /* MP-R1-PAGES-MESSAGES-INDEX-106：消息页整页白底（v3.1 契约「发现/附近/消息白底」
-     节奏红线 + 消息.png 主视觉）——由下方 background 字面量兑现，白卡以描边/浅阴影分层。
+     节奏红线 + 消息.png 主视觉）——由下方 background 兑现，白卡以描边/浅阴影分层。
      原先另附的页面级 `--c-bg-page: #FFFFFF` 覆写已移除：本页面自身对该令牌零消费
      （grep 全页仅命中此处），其唯一存活效果是级进子组件后把 NotLoggedWaiting.vue:121
      的游客等待态底色由全局浅薄荷绿 #EEF7F2 拉成纯白，与 未登录等待页面.png 相悖
      （likes 页无此覆写故一直正确）。移除后白底裁决不变、游客态回到浅绿、暗色重新跟随
-     tokens.scss:234 的 --c-bg-page 深色值。 */
-  background: #FFFFFF;
+     tokens.scss:234 的 --c-bg-page 深色值。
+     R1-B25/D16（颜色 token）：白底裁决不动，但兑现方式由字面量 #FFFFFF 改读
+     --c-bg-container——浅色档该令牌同值 #FFFFFF（design-variables.scss 的 $bg-container），
+     逐像素零变化；暗色档它落到深色（tokens.scss 暗色块），页面底板不再与卡片色脱节。
+     同页 header 早已走该令牌，本次把根容器与下方 .messages-page__top-scrim 渐变对齐同一条。 */
+  background: var(--c-bg-container, #FFFFFF);
   display: flex;
   flex-direction: column;
-  /* MP-R2-PAGES-MESSAGES-INDEX-002：自定义 tabBar 为 fixed 悬浮层（实高 160rpx+safe），
-     原无底部避让——最后一条会话被遮且无法滚动出来；与 home/discover 页同口径预留 */
-  padding-bottom: calc(112rpx + env(safe-area-inset-bottom) + 16rpx);
+  /* MP-R2-PAGES-MESSAGES-INDEX-002：自定义 tabBar 为 fixed 悬浮层，原无底部避让——
+     最后一条会话被遮且无法滚动出来；与 home/discover 页同口径预留。
+     R1-B25/D12：此处此前自写 112rpx（+16rpx 余量 = 128rpx），比 tabBar 在屏上真正占掉的总高
+     矮一档，滚到底末卡仍被切。改读单一来源令牌 --tab-bar-total-h（theme/design-variables.scss
+     的避让口径 = 184rpx + 两倍安全区，与 discover/index.vue 底部避让同一条），
+     本页只保留 16rpx 呼吸位，高度不再两处各写一份。 */
+  padding-bottom: calc(var(--tab-bar-total-h, 184rpx + env(safe-area-inset-bottom) + env(safe-area-inset-bottom)) + 16rpx);
 }
 
 .messages-page__top-scrim {
@@ -642,8 +677,10 @@ function onAvatarError(session: MessageSession): void {
   left: 0;
   right: 0;
   z-index: 9;
-  /* MP-R1-PAGES-MESSAGES-INDEX-106：滚动遮罩随白底主视觉同步改白 */
-  background: linear-gradient(180deg, #FFFFFF 82%, rgba(255, 255, 255, 0));
+  /* MP-R1-PAGES-MESSAGES-INDEX-106：滚动遮罩随白底主视觉同步改白
+     R1-B25/D16：起点改读 --c-bg-container（浅色档同值 #FFFFFF，零变化），终点用 transparent
+     而非 rgba(255,255,255,0)——渐变按预乘 alpha 插值，不会串灰，且不再写死白色 */
+  background: linear-gradient(180deg, var(--c-bg-container, #FFFFFF) 82%, transparent);
   pointer-events: none;
   transition: opacity 160ms ease-out;
 }
@@ -757,7 +794,7 @@ function onAvatarError(session: MessageSession): void {
   flex-direction: column;
   gap: 16rpx;
   padding: 28rpx 24rpx;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx); /* R1-B25/D17：与活动卡同档，改读 --r-xl 以免档位调整时两卡分家 */
   background: var(--c-bg-container, #FFFFFF);
   box-shadow: 0 2rpx 12rpx rgba(54, 201, 154, 0.06);
 }
@@ -821,7 +858,7 @@ function onAvatarError(session: MessageSession): void {
 .assistant-card {
   margin: 0 32rpx 20rpx;
   padding: 28rpx;
-  border-radius: 24rpx;
+  border-radius: var(--r-xl, 24rpx); /* R1-B25/D17：同上，三枚卡同档一起挂令牌 */
   background: var(--c-bg-container, #FFFFFF);
   border: 1rpx solid var(--c-border-light, #EEF2F0);
   box-shadow: 0 2rpx 12rpx rgba(54, 201, 154, 0.06);
@@ -952,6 +989,16 @@ function onAvatarError(session: MessageSession): void {
   font-size: 26rpx;
   color: var(--c-text-tertiary, #9AA39F);
 }
+/* R1-B25/D18（可达性）：「更多 ›」的可点外壳。内边距把热区从「只有文字宽」向外各扩
+   14rpx（纵向）/10rpx（横向），等值负外边距保证行高与 .section__head 右缘（32rpx）逐像素不变。
+   注：抬到 44px 见标需 min-height≈88rpx，会把 .section__head 行高顶高一档（版式改动），本批不做 */
+.section__more-btn {
+  display: flex;
+  align-items: center;
+  padding: 14rpx 10rpx;
+  margin: -14rpx -10rpx;
+  border-radius: var(--r-sm, 8rpx);
+}
 .section__empty {
   padding: 40rpx 32rpx;
   text-align: center;
@@ -980,6 +1027,15 @@ function onAvatarError(session: MessageSession): void {
   position: relative;
   width: 100rpx;
   height: 100rpx;
+  /* R1-B25/D11（尺寸比例）：帧上该盒塌陷到不足一枚角标高（名字几乎贴住分区标题），与声明的
+     100rpx 不成比例。flex 子项默认 flex-shrink:1，在列向 .warm-item 里被压时先掉高度——
+     与同页 assistant-card__avatar-wrap 同口径钉死：flex-shrink:0 + min-*。 */
+  min-width: 100rpx;
+  min-height: 100rpx;
+  flex-shrink: 0;
+  /* R1-B25/D10（素材缺失）：头像图坏链/尚未回来时不再是一块空洞，垫品牌浅绿底 + 圆形裁切口径 */
+  border-radius: 50%;
+  background: var(--c-brand-50, #E8FAF3);
 }
 .warm-item__avatar {
   width: 100rpx;
@@ -1027,7 +1083,8 @@ function onAvatarError(session: MessageSession): void {
   align-items: center;
   gap: 20rpx;
   padding: 24rpx;
-  border-radius: 24rpx;
+  /* R1-B25/D17（圆角）：24rpx/16rpx 是 --r-xl/--r-lg 的字面量副本，档位调整时该卡不跟随 */
+  border-radius: var(--r-xl, 24rpx);
   background: var(--c-bg-container, #FFFFFF);
   border: 1rpx solid var(--c-border-light, #EEF2F0);
   box-shadow: 0 2rpx 12rpx rgba(54, 201, 154, 0.06);
@@ -1038,12 +1095,16 @@ function onAvatarError(session: MessageSession): void {
 .activity-rec-card__icon {
   width: 96rpx;
   height: 96rpx;
-  border-radius: 16rpx;
+  border-radius: var(--r-lg, 16rpx); /* R1-B25/D17：同上，走 --r-lg 档 */
   flex-shrink: 0;
   background: var(--c-brand-50, #E8FAF3);
 }
 .activity-rec-card__icon--placeholder {
   background: var(--c-brand-bg-tint, rgba(61, 201, 148, 0.08));
+  /* R1-B25/D14：占位分支现在渲染一枚默认图标；<image> 在 MP 是 content-box，
+     显式 border-box 让内边距只缩图形、不把盒子撑到 96rpx 之外 */
+  padding: 20rpx;
+  box-sizing: border-box;
 }
 /* 2026-09-06：emoji 文本图标（后端 icon 字段下发 emoji 时渲染为文字，不再当图片加载） */
 .activity-rec-card__icon--emoji {

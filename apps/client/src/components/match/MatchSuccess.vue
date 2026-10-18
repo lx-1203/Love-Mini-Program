@@ -122,13 +122,22 @@ function getScoreIcon(index: number): string {
             :key="`${reason.type}-${index}`"
             class="match-success__score-item"
           >
-            <view class="match-success__score-row">
+            <!-- R1-L06-D06（圆角 P2）：图标外面补一层圆角方块底衬，行首才有视觉锚点；
+                 理想图末行（生活方式）为粉底，其余三行绿底。 -->
+            <view
+              class="match-success__score-icon-box"
+              :class="index === displayReasons.length - 1 ? 'match-success__score-icon-box--pink' : 'match-success__score-icon-box--green'"
+            >
               <image class="match-success__score-icon" :src="getScoreIcon(index)" mode="aspectFit" alt="" />
-              <text class="match-success__score-label">{{ reason.text }}</text>
-              <text class="match-success__score-percent">匹配度 {{ getScorePercent(index) }}%</text>
             </view>
-            <view class="match-success__score-track">
-              <view class="match-success__score-fill" :style="{ width: getScorePercent(index) + '%' }"></view>
+            <text class="match-success__score-label">{{ reason.text }}</text>
+            <!-- R1-L06-D05（尺寸比例 P2）：百分比与其下的进度条收进右栏，
+                 不再让 __score-track 以 width:100% 横穿整张卡片压在标签行正下方。 -->
+            <view class="match-success__score-value">
+              <text class="match-success__score-percent">匹配度 {{ getScorePercent(index) }}%</text>
+              <view class="match-success__score-track">
+                <view class="match-success__score-fill" :style="{ width: getScorePercent(index) + '%' }"></view>
+              </view>
             </view>
           </view>
         </view>
@@ -171,13 +180,21 @@ function getScoreIcon(index: number): string {
 }
 
 .match-success {
-  min-height: 100%;
+  /* R1-L06-D01（位置 P1）：父级（page → .success-page）的 min-height:100% 无可解析的确定高度，
+     于是本根节点的 min-height:100% 也退化成 auto ⇒ __actions 的 margin-top:auto 吃不到剩余空间，
+     三枚动作悬在视口 62%~83% 处、下方残留约 15% 空带。改为组件根自证 100vh
+     （顶部 nav 是 position:fixed 不占流高，不会与 100vh 争高度），锚底链才成立。 */
+  flex: 1;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   /* R4：110rpx 起排使标题行与微信胶囊（状态栏下 47-83px real 带）叠压，下移至胶囊带以下 */
-  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 120rpx) 48rpx 80rpx;
+  /* R1-L06-D01：动作块底沿与 safe-area 间距按理想图收到 60rpx 一档 */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 120rpx) 48rpx calc(60rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
-  background: linear-gradient(180deg, #E8FBF2 0%, #F0FFF5 60%);
+  /* R1-L06-D02（颜色token P2）：删掉组件内第二条渐变 linear-gradient(180deg,#E8FBF2,#F0FFF5)（无粉色端）。
+     页面层 match-success.vue:182 的 var(--c-gradient-match)（theme/design-variables.scss:179/390）
+     是唯一来源；两层渐变在「分享喜悦」下方撞出一条可见横向色带接缝、接缝以下突然转粉。 */
 }
 
 .match-success__hero {
@@ -231,21 +248,24 @@ function getScoreIcon(index: number): string {
 .match-success__avatars {
   display: flex;
   align-items: center;
-  gap: 32rpx;
+  /* R1-L06-D03（尺寸比例 P1）：gap 32 → 0，交叠关系改由 __heart 的负 margin 给出。
+     原三列并列把「头像-心-头像」撕开一道约 176rpx 空槽，心形徽标落在槽里没有压盖任何头像。 */
+  gap: 0;
   margin-top: 64rpx;
   position: relative;
 }
 
 .match-success__avatar-wrap {
   position: relative;
-  /* R3（MSUCCESS-004）：160→192rpx，主视觉加权对齐理想图（庆祝时刻头像过弱） */
-  width: 192rpx;
-  height: 192rpx;
+  /* R3（MSUCCESS-004）：160→192rpx，主视觉加权对齐理想图（庆祝时刻头像过弱）
+     R1-L06-D03：192→232rpx（理想图头像直径各≈31% 屏宽，232/750≈31%） */
+  width: 232rpx;
+  height: 232rpx;
 }
 
 .match-success__avatar {
-  width: 192rpx;
-  height: 192rpx;
+  width: 232rpx;
+  height: 232rpx;
   border-radius: 50%;
   border: 6rpx solid #ffffff;
   box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.12);
@@ -266,14 +286,16 @@ function getScoreIcon(index: number): string {
 }
 
 .match-success__ripple--1 {
-  width: 200rpx;
-  height: 200rpx;
+  /* R1-L06-D03 连带：200→240rpx（原 200rpx 在头像提到 232rpx 后会缩到头像以内，涟漪不可见） */
+  width: 240rpx;
+  height: 240rpx;
   animation-delay: 0s;
 }
 
 .match-success__ripple--2 {
-  width: 240rpx;
-  height: 240rpx;
+  /* R1-L06-D03 连带：240→288rpx，与 232rpx 头像保持原 192rpx 档的外扩比例 */
+  width: 288rpx;
+  height: 288rpx;
   animation-delay: 1.2s;
 }
 
@@ -281,6 +303,9 @@ function getScoreIcon(index: number): string {
   /* R3（MSUCCESS-004）：100→136rpx，连接心形与头像比例对齐理想图 */
   width: 136rpx;
   height: 136rpx;
+  /* R1-L06-D03：136rpx 盒宽两侧各收 74rpx ⇒ 两枚头像内缘重叠量 = 136 - 74*2 = -12rpx，
+     与理想图量测一致；心形徽标坐正交叠点，靠 z-index:3 压住两头像。 */
+  margin: 0 -74rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -320,11 +345,14 @@ function getScoreIcon(index: number): string {
 }
 
 .match-success__score-title {
-  font-size: 26rpx;
+  /* R1-L06-D07（字号 P3）：26/500 → 32/700，与 26rpx 行文字拉开层级
+     （卡建议的 --t-title-sm 在本仓不存在，实际档位表为 --fs-*，32rpx 档即 --fs-2xl，
+     design-variables.scss:537） */
+  font-size: var(--fs-2xl, 32rpx);
   color: #5f6f6b;
   text-align: center;
   margin-bottom: 24rpx;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .match-success__score-list {
@@ -335,36 +363,63 @@ function getScoreIcon(index: number): string {
 }
 
 .match-success__score-item {
+  /* R1-L06-D05：两列结构——左「底衬图标 + 标签」｜右「百分比 + 其下进度条」，
+     替掉原「文字行 + 满宽条」的八段节奏。 */
   display: flex;
-  flex-direction: column;
-  /* V-02：标签行与进度条间距 8 → 10rpx，进度条更透气 */
-  gap: 10rpx;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
 }
 
-.match-success__score-row {
+.match-success__score-icon-box {
+  /* R1-L06-D06：64rpx 圆角方块底衬；理想图圆角 18-20rpx ⇒ 取现存 --r-lg 档（20rpx，
+     design-variables.scss:201/445），无需新 token。 */
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-lg, 20rpx);
   display: flex;
   align-items: center;
-  gap: 10rpx;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.match-success__score-icon-box--green {
+  background: var(--c-tint-green-50, #E8F5E9);
+}
+
+.match-success__score-icon-box--pink {
+  background: var(--c-tint-pink-50, #FCE4EC);
 }
 
 .match-success__score-icon {
-  width: 36rpx;
-  height: 36rpx;
-  text-align: center;
+  /* R1-L06-D06：裸图标 36 → 32rpx，坐进底衬正中 */
+  width: 32rpx;
+  height: 32rpx;
 }
 
 .match-success__score-label {
   flex: 1;
-  font-size: 26rpx;
+  min-width: 0;
+  font-size: var(--fs-md, 26rpx);
   color: #3a4a44;
   font-weight: 500;
 }
 
+.match-success__score-value {
+  /* R1-L06-D05：右栏定宽 = 卡内宽 590rpx（750 - 页边距 96 - 卡内衬 64）的约 45%，
+     与理想图「条只占右半栏」一致；进度条 width:100% 现在落进这一栏。 */
+  width: 264rpx;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
 .match-success__score-percent {
-  font-size: 26rpx;
+  display: block;
+  font-size: var(--fs-md, 26rpx);
   color: #36C99A;
   font-weight: 700;
-  min-width: 72rpx;
   text-align: right;
 }
 

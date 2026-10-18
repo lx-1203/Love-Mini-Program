@@ -156,7 +156,7 @@ onUnmounted(() => {
   }
   // MP-R2-PAGES-LOGIN-INDEX-015：短信倒计时定时器（MP-R2-PAGES-LOGIN-INDEX-006 的清理载体）
   // 随内联注册模式一并删除——本页已无 setInterval
-  stopSessionForwardWatch();
+  stopSessionForwardWatch?.();
 });
 
 

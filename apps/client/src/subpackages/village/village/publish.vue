@@ -14,6 +14,10 @@ import { ref, computed, watch, onUnmounted } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useCircleStore, type CircleItem } from "../../../stores/circle";
+// R1-B33/D18：「发布到」非圈子目标的头像位改取本人真实头像（原为 44rpx SCHOOL 象形图标，
+// 既非头像也非品牌图形）。单一数据源 = profile.avatarUrl：App.vue:217 在登录启动时已拉取一次，
+// 只读取、不请求、不改 store（与 HomeHeader.vue:34 同一口径，缺失时回落本地默认头像素材）。
+import { useProfileStore } from "../../../stores/profile";
 // MP-R1-PUB-016：字数上限与 store 校验同一来源（stores/village MAX_CONTENT_LENGTH=500），
 // 此前本地 POST_MAX_LENGTH=1000 与 store 校验 500 不一致，超 500 字发布必败且仅提交时提示
 import { useVillageStore, MAX_CONTENT_LENGTH } from "../../../stores/village";
@@ -49,6 +53,9 @@ const { styleVars: menuStyleVars } = useMenuButtonRect();
 const { t } = useI18n();
 const circleStore = useCircleStore();
 const villageStore = useVillageStore();
+const profileStore = useProfileStore();
+/** R1-B33/D18：本人头像（profile.avatarUrl 单一数据源）→ 缺省回落本地默认头像 */
+const selfAvatar = computed<string>(() => profileStore.avatarUrl || IMAGE_PATHS.DEFAULT_AVATAR);
 
 /** MP-R1-PUB-016：接近字数上限的提醒阈值（剩 50 字内计数变警示色） */
 const CONTENT_LENGTH_WARN_THRESHOLD = 50;
@@ -752,7 +759,7 @@ onUnmounted(() => {
           <view class="publish-to__avatar">
             <image v-if="isCircleTarget && targetCircle" class="publish-to__avatar-img" :src="IMAGE_PATHS.CIRCLE_COVERS.DEFAULT" mode="aspectFill" alt="" />
             <image v-else-if="isCircleTarget" class="publish-to__avatar-emoji" :src="IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON" mode="aspectFit" alt="" />
-            <image v-else class="publish-to__avatar-emoji" :src="IMAGE_PATHS.ICONS_EMOJI.SCHOOL" mode="aspectFit" alt="" />
+            <image v-else class="publish-to__avatar-img" :src="selfAvatar" mode="aspectFill" alt="" />
           </view>
           <view class="publish-to__info">
             <view class="publish-to__name-row">
@@ -822,7 +829,11 @@ onUnmounted(() => {
           <text class="publish-row__label">添加位置</text>
           <!-- R3：原「北京市 · 当前位置」语义混拼，改为可读的定位说明 -->
           <!-- MP-R1-PUBLISH-006：无定位缓存时不再宣称「自动定位」（原恒显示缺省「北京市 · 自动定位」） -->
-          <text class="publish-row__meta">{{ currentCity ? currentCityLabel : '选择位置' }}</text>
+          <!-- R1-B33/D16：无定位缓存时的 meta 原文案「选择位置」是动词口吻、承诺了一个已按需求
+               移除的选择交互（见紧邻上一行 2026-09-06「位置固定为当前城市…移除选择交互」注释），
+               真机点上去零响应=文案与能力相反。改取既有双语陈述键 village.post.locationHint
+               （zh-CN.ts:2017 / en-US.ts:2002，此前全库未引用）——不新增键、不自造跳地图选点行为。 -->
+          <text class="publish-row__meta">{{ currentCity ? currentCityLabel : t('village.post.locationHint') }}</text>
         </view>
         <!-- MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01：本行能力与 post.vue:164-168
              insertMention（真往正文插 @）不一致，且本页 openMentionPicker 只弹「即将开放」。
@@ -1003,7 +1014,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #ffffff; /* R16：纯白背景 */
+  /* R1-B33/D24：字面量令牌化。此处不采纳卡片建议的 --c-bg-page（$bg-page = #EEF7F2 带绿底），
+     那会推翻 R16「页面背景统一纯白」的既有裁定；等值档取 --c-bg-container（#FFFFFF），视觉零变化 */
+  background: var(--c-bg-container, #FFFFFF);
 }
 
 .publish-header {
@@ -1019,7 +1032,8 @@ onUnmounted(() => {
   padding: 16rpx 32rpx;
   padding-right: calc(var(--capsule-right, 7px) + 104px);
   background: #fff;
-  border-bottom: 1rpx solid #EEF2F0;
+  /* R1-B33/D24：#EEF2F0 与 --c-border-light（$border-light: #EEF2F0）逐位等值，令牌化零视觉变化 */
+  border-bottom: 1rpx solid var(--c-border-light, #EEF2F0);
   flex-shrink: 0;
 }
 .publish-header__close { width: 64rpx; height: 64rpx; display:flex; align-items:center; justify-content:center; flex-shrink: 0; }
@@ -1029,6 +1043,11 @@ onUnmounted(() => {
   font-weight: 700;
   color: var(--c-text-primary, #1A1E1C);
   /* R4：三栏弹性布局——标题在 [X] 与 [发布] 之间的剩余空间内居中（绝对居中会与发布按钮贴挤） */
+  /* R1-B33/D14 复核 R4 成立，故不改绝对居中：胶囊避让使 padding-right=calc(--capsule-right+104px)
+     ≈111px，375px 屏下内容盒右界 264px、「发布」占 200–264px；标题若按建议 left:50% 绝对居中，
+     四字 64px 宽将落在 155–219px，与按钮重叠 19px（避让区是微信原生胶囊硬约束，不能挪按钮）。
+     视觉中心 124px=33% 系此约束的必然结果，与理想图（无胶囊稿）的 50% 不可同时满足——需裁定：
+     要么接受标题偏左，要么把「发布」移入胶囊下（会被原生胶囊遮挡）。 */
   flex: 1;
   text-align: center;
 }
@@ -1042,12 +1061,16 @@ onUnmounted(() => {
 
 .publish-to { padding: 32rpx 32rpx 8rpx; }
 .publish-to__label { font-size: 26rpx; color: var(--c-text-secondary, #6B7571); margin-bottom: 16rpx; }
-.publish-to__card { display: flex; align-items: center; gap: 20rpx; padding: 24rpx; background: #fff; border-radius: var(--r-xl, 24rpx); border: 1rpx solid #EEF2F0; }
-.publish-to__avatar { width: 88rpx; height: 88rpx; border-radius: 50%; background: #E8FBF2; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.publish-to__card { display: flex; align-items: center; gap: 20rpx; padding: 24rpx; background: #fff; border-radius: var(--r-xl, 24rpx); border: 1rpx solid var(--c-border-light, #EEF2F0); } /* R1-B33/D24 */
+/* R1-B33/D19：头像位 88rpx → 112rpx 档。理想图头像约占卡高 70%：本卡高 = 24×2 padding + 112 = 160rpx，
+   头像/卡高 = 70%，与右侧两行文字（30 + 8 gap + 24 = 62rpx）等高有余量 */
+.publish-to__avatar { width: 112rpx; height: 112rpx; border-radius: 50%; background: #E8FBF2; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 .publish-to__avatar-img {
   border-radius: var(--r-full);
  width: 100%; height: 100%; }
-.publish-to__avatar-emoji { width: 44rpx; height: 44rpx; }
+/* R1-B33/D19：容器放大后同步放大占位象形图标（44→56rpx，保持原 1/2 圆径比例；
+   D18 已让本人头像走 __avatar-img 满幅分支，此处仅服务「已选圈子但无封面」分支） */
+.publish-to__avatar-emoji { width: 56rpx; height: 56rpx; }
 .publish-to__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8rpx; }
 .publish-to__name-row { display: flex; align-items: center; gap: 10rpx; }
 .publish-to__name { font-size: 30rpx; font-weight: 700; color: var(--c-text-primary, #1A1E1C); }
@@ -1062,7 +1085,7 @@ onUnmounted(() => {
 .publish-target-sheet__title { font-size: 30rpx; font-weight: 700; color: var(--c-text-primary, #1A1E1C); }
 /* R20：渠道分组标题（公域 / 校园私域 / 兴趣圈子） */
 .publish-target-sheet__group { display: block; padding: 20rpx 8rpx 8rpx; font-size: 22rpx; font-weight: 600; color: var(--c-brand, #36C99A); }
-.publish-target-sheet__option { display: flex; align-items: center; justify-content: space-between; padding: 24rpx 8rpx; border-bottom: 1rpx solid #F2F5F3; }
+.publish-target-sheet__option { display: flex; align-items: center; justify-content: space-between; padding: 24rpx 8rpx; border-bottom: 1rpx solid var(--c-divider-light, rgba(15, 23, 42, 0.06)); } /* R1-B33/D24 */
 .publish-target-sheet__name { font-size: 28rpx; color: var(--c-text-primary, #1A1E1C); }
 .publish-target-sheet__circle-opt { display: flex; align-items: center; }
 /* MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006：绿色「已加入」胶囊的样式规则随三段结构一并删除，
@@ -1074,12 +1097,19 @@ onUnmounted(() => {
 
 .publish-content { padding: 24rpx 32rpx; }
 .publish-content__input { width: 100%; min-height: 220rpx; font-size: 30rpx; color: var(--c-text-primary, #1A1E1C); line-height: 1.6; }
-.publish-content__count { text-align: right; font-size: 22rpx; color: var(--c-text-tertiary, #9AA39F); margin-top: 8rpx; }
+/* R1-B33/D20：计数 22rpx（11pt）在真机几乎糊成一团。卡片给的 var(--fs-sm) 实为 22rpx
+   （design-variables.scss:532），换过去是零变化——按 --fs-* 档位表取 24rpx 档 = --fs-base:533，
+   与同页次级文本（.publish-row__meta / .publish-to__subtitle 24rpx）同档。
+   正文 .publish-content__input 30rpx 恰为 --fs-xl 档，与理想图正文档一致，不动。 */
+.publish-content__count { text-align: right; font-size: var(--fs-base, 24rpx); color: var(--c-text-tertiary, #9AA39F); margin-top: 8rpx; }
 /* MP-R1-PUB-016：接近字数上限警示（颜色走 --c-warning token） */
 .publish-content__count--warning { color: var(--c-warning, #FF9F43); }
 
 .publish-images { display: flex; flex-wrap: wrap; gap: 16rpx; padding: 16rpx 32rpx; }
-.publish-image { width: 200rpx; height: 200rpx; border-radius: 16rpx; overflow: hidden; position: relative; background: #EAF6F1; }
+/* R1-B33/D17：一行四格栅格。单格 = (750 − 2×32 页边距 − 3×16 gap)/4 = 159.5rpx，取整 159rpx——
+   4×159 + 3×16 = 684rpx ≤ 内容宽 686rpx，留 2rpx 余量避免亚像素进位换成三格一行。
+   （原 200rpx 单格只容得下 3 格：3×200 + 2×16 = 632rpx，与理想图四格不符） */
+.publish-image { width: 159rpx; height: 159rpx; border-radius: 16rpx; overflow: hidden; position: relative; background: var(--c-brand-50, #E8FAF3); } /* R1-B33/D24：占位底色 #EAF6F1 就近取色，收敛到 --c-brand-50 */
 .publish-image__img { width: 100%; height: 100%; }
 .publish-image__remove { position: absolute; top: 6rpx; right: 6rpx; width: 40rpx; height: 40rpx; border-radius: 50%; background: rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; }
 .publish-image__remove-icon { width: 22rpx; height: 22rpx; color: #fff; }
@@ -1087,8 +1117,12 @@ onUnmounted(() => {
 .publish-image--add { display: flex; align-items: center; justify-content: center; background: #ffffff; border: 2rpx dashed #C7D8D2; box-sizing: border-box; }
 .publish-image__plus { font-size: 56rpx; color: var(--c-text-tertiary, #9AA39F); }
 
-.publish-rows { margin: 16rpx 32rpx; background: #fff; border-radius: var(--r-xl, 24rpx); border: 1rpx solid #EEF2F0; }
-.publish-row { display: flex; align-items: center; gap: 16rpx; padding: 26rpx 24rpx; border-bottom: 1rpx solid #F2F5F3; }
+/* R1-B33/D15：理想图这四行是「通栏列表 + 贯穿全宽的细分割线」，原容器却带
+   左右 32rpx margin + 24rpx 圆角 + 1rpx 描边，被切成一张圆角卡、分割线随之内缩。
+   去描边、去圆角、左右 margin 归零；页边距改由行自身 padding 承担（32rpx 与全页同栏），
+   仅保留行底部分割线（D24 同步令牌化为 --c-divider-light）。 */
+.publish-rows { background: var(--c-bg-container, #FFFFFF); }
+.publish-row { display: flex; align-items: center; gap: 16rpx; padding: 26rpx 32rpx; border-bottom: 1rpx solid var(--c-divider-light, rgba(15, 23, 42, 0.06)); }
 .publish-row__icon { width: 44rpx; height: 44rpx; color: var(--c-brand, #36C99A); text-align: center; }
 .publish-row__label { font-size: 28rpx; color: var(--c-text-primary, #1A1E1C); }
 .publish-row__meta { flex: 1; text-align: right; font-size: 24rpx; color: var(--c-text-tertiary, #9AA39F); }
@@ -1123,15 +1157,29 @@ onUnmounted(() => {
    .publish-image 的 16rpx 全表无等值档（--r-sm=8rpx / --r-lg=20rpx，台账处置列举例的
    「16→--r-lg」实为 16→20rpx 视觉变更，不采纳），按 nit 保留字面量。
    （原同批备注里那条 6rpx 圆角例外，属已删除的「已加入」胶囊规则，现已无对应样式） */
-.publish-tip { margin: 24rpx 32rpx; padding: 24rpx; background: #EAF9F3; border-radius: var(--r-lg, 20rpx); display: flex; align-items: flex-start; gap: 16rpx; }
+.publish-tip { margin: 24rpx 32rpx; padding: 24rpx; background: var(--c-brand-50, #E8FAF3); border-radius: var(--r-lg, 20rpx); display: flex; align-items: flex-start; gap: 16rpx; } /* R1-B33/D24：提示底 #EAF9F3 系就近取色，收敛到 --c-brand-50 */
 .publish-tip__text-wrap { flex: 1; display: flex; flex-direction: column; gap: 6rpx; }
 .publish-tip__title { font-size: 26rpx; font-weight: 700; color: var(--c-brand, #36C99A); display: flex; align-items: center; gap: 8rpx; }
 .publish-tip__title-icon { width: 28rpx; height: 28rpx; color: var(--c-brand, #36C99A); }
 .publish-tip__desc { font-size: 24rpx; color: var(--c-text-secondary, #6B7571); }
+/* R1-B33/D23：模板中 class=publish-tip__close 的可点关闭 × 此前无任何样式（该节点仅承载
+   一个 28rpx／14pt 图标），落在拇指可达区、误触即永久关掉提示。补齐 88rpx（44px）方形命中区，
+   与全页其余可点节点同规格。图标尺寸理想图未给量测依据，保持 28rpx 不动。 */
+.publish-tip__close { min-width: 88rpx; min-height: 88rpx; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .publish-tip__close-icon { width: 28rpx; height: 28rpx; color: var(--c-text-tertiary, #9AA39F); }
 
-.publish-body__bottom-space { height: 24rpx; }
+/* R1-B33/D22：尾部占位原只有 24rpx 且不含安全区 → 小贴士卡描述行贴屏幕底缘、下半截被
+   Home Indicator 吃掉。改按本页弹层既有写法（见 .publish-sheet__panel）承担安全区 + 48rpx 呼吸。
+   本页非 tabBar 页（由 village/index 导航进入），不需要 tabBar 避让；故刻意不引用
+   --tab-bar-total-h——该 token 的安全区双计属 R1-B01/D25 的地盘，在本页引用会把双计引进来。
+   卡片「若补上底部工具栏则改工具栏高度」那一支不适用：工具栏见 D21，未补。 */
+.publish-body__bottom-space { height: calc(env(safe-area-inset-bottom) + 48rpx); }
 
+/* R1-B33/D21（不修，保留待裁定）：以下 .publish-toolbar / .publish-tool* 是「有 CSS 无 DOM」的
+   存档样式，非遗漏——DOM 已按需求整体移除（见模板末尾 2026-09-06 注释「底部工具栏已按需求移除
+   （与上方行项重复，且无实际作用）」）。理想图五项里的「视频」「更多」在本页无任何实现与后端，
+   「位置」无选点交互（见添加位置行注释），补齐 DOM 属新建功能，须产品裁定 + 后端支撑；
+   本轮不凭空造一个没有后端的 UI，也不删除这段作为重建依据的样式。 */
 .publish-toolbar { display: flex; justify-content: space-around; padding: 16rpx 24rpx calc(env(safe-area-inset-bottom) + 12rpx); background: #fff; border-top: 1rpx solid #EEF2F0; flex-shrink: 0; }
 .publish-tool { display: flex; flex-direction: column; align-items: center; gap: 6rpx; }
 .publish-tool__icon { width: 40rpx; height: 40rpx; color: var(--c-text-secondary, #6B7571); }

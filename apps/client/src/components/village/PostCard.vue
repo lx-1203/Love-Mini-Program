@@ -59,6 +59,29 @@ const isAlumni = computed(
 );
 
 /**
+ * 校名胶囊文案（R1-L02-D05，2026-10-19）。
+ * 原实现只在 isAlumni 为真时出一枚「校友」芯片，非本校作者在真机上零认证标识；
+ * 现改为常显校名（校名缺失且为校友时回退「校友」，口径对齐 detail.vue:805）。
+ */
+const campusBadgeText = computed(
+  () => props.post.author.campusName?.trim() || (isAlumni.value ? t("village.alumni") : "")
+);
+
+/** 签名行文案（R1-L02-D05：校名已收进名字行胶囊，与校名重复的 headline 不再重复占一行） */
+const headlineText = computed(() => {
+  const headline = props.post.author.headline || "";
+  if (headline && headline === campusBadgeText.value) return "";
+  return headline || t("village.recentlyActive");
+});
+
+/**
+ * 图片格兜底 key（R1-L02-D01，2026-10-19）：帖 id + 下标，稳定且不与头像 key 撞车。
+ */
+function mediaFallbackKey(idx: number): string {
+  return `media-${props.post.id}-${idx}`;
+}
+
+/**
  * 空操作占位 handler（图片区/活动卡/评论预览/分享等仅阻断冒泡的区域用）。
  * MP-R1-NEARBY-001（2026-09-20）：卡片内交互统一 @tap.stop——uni-app Vue3 mp-weixin
  * 编译为标准 catchtap；原 @catchtap 会编译成非标准 bindcatchtap，handler 永不触发
@@ -148,12 +171,23 @@ function openActivity(activityId: number | string) {
         <view class="user-info">
           <view class="user-info__name-row">
             <text class="user-info__name">{{ post.author.name }}</text>
-            <text v-if="isAlumni" class="user-info__campus-badge">{{ t('village.alumni') }}</text>
+            <!-- R1-L02-D05（2026-10-19）：校名胶囊常显——本校绿描边、外校中性描边；
+                 原实现只在 isAlumni 时出一枚「校友」芯片，非本校作者零认证标识 -->
+            <view
+              v-if="campusBadgeText"
+              class="user-info__campus-badge"
+              :class="isAlumni ? 'user-info__campus-badge--mine' : 'user-info__campus-badge--other'"
+            >
+              <image class="user-info__campus-badge-icon" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" mode="aspectFit" alt="" />
+              <text class="user-info__campus-badge-text">{{ campusBadgeText }}</text>
+            </view>
           </view>
           <text v-if="authorMetaText(post.author)" class="user-info__meta">
             {{ authorMetaText(post.author) }}
           </text>
-          <text class="user-info__headline">{{ post.author.headline || t('village.recentlyActive') }}</text>
+          <!-- R1-L02-D05：校名与 headline 同源（real 档映射把 campusName 写进 headline）时
+               收起第三行，校名只在胶囊里出现一次 -->
+          <text v-if="headlineText" class="user-info__headline">{{ headlineText }}</text>
         </view>
       </view>
       <view
@@ -186,13 +220,19 @@ function openActivity(activityId: number | string) {
         :key="img || idx"
         class="post-media-grid__cell"
       >
+        <!-- R1-L02-D01（2026-10-19）：坏链/空串此前直接渲染成一块无任何内容的浅灰空格子
+             （帧上 2/2 帖子零配图）。补 @error 兜底，空源或加载失败即换 POST_PLACEHOLDER
+             图形；尺寸仍由 theme/global.scss 的 .post-media-grid__img 统一承载，不破版 -->
         <image
+          v-if="img && !isImageFailed(mediaFallbackKey(idx))"
           class="post-media-grid__img"
           :src="resolveMediaUrl(img)"
           mode="aspectFill"
           lazy-load
           alt=""
+          @error="onImageError(mediaFallbackKey(idx))"
         />
+        <image v-else class="post-media-grid__img" :src="IMAGE_PATHS.POST_PLACEHOLDER" mode="aspectFill" alt="" />
         <view v-if="post.images.length > MAX_POST_IMAGES && idx === MAX_POST_IMAGES - 1" class="post-media-grid__more">
           <text class="post-media-grid__more-text">+{{ post.images.length - MAX_POST_IMAGES }}</text>
         </view>
@@ -263,8 +303,16 @@ function openActivity(activityId: number | string) {
       <!-- 2026-09-05 R17：审核中徽标——自己刚发的帖在审核流期间 feed 内可见 -->
       <text v-if="post.auditStatus === 'pending'" class="post-card__audit">{{ t('village.auditPending') }}</text>
       <view class="post-card__actions">
-        <!-- 评论 -->
-        <view class="action-btn" @tap.stop="emit('open-detail', post.id)">
+        <!-- 评论
+             R1-L02-D08（2026-10-19）：4 枚此前都是裸 view，读屏播报为空；补 role/aria-label，
+             计数为 0（数字 v-if 不出）时仍能播报动作名。写法对齐同页 nearby/index.vue:406 与
+             tag-posts.vue:386-408 -->
+        <view
+          class="action-btn"
+          role="button"
+          :aria-label="t('village.tagPosts.commentAria')"
+          @tap.stop="emit('open-detail', post.id)"
+        >
           <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
           <text v-if="post.comments > 0" class="action-btn__count">{{ post.comments }}</text>
         </view>
@@ -272,12 +320,18 @@ function openActivity(activityId: number | string) {
         <view
           class="action-btn"
           :class="{ 'action-btn--liked': post.isLiked, 'action-btn--animating': likeAnimating }"
+          role="button"
+          :aria-label="t('village.tagPosts.likeAria')"
+          :aria-pressed="post.isLiked"
           @tap.stop="handleLike"
         >
           <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" alt="" />
           <text v-if="post.likes > 0" class="action-btn__count" :class="{ 'action-btn__count--liked': post.isLiked }">{{ post.likes }}</text>
         </view>
-        <!-- 分享 -->
+        <!-- 分享
+             R1-L02-D07 未修（@tap 仍是 noop 死按钮）：本卡片只有 emit 通道、附近页无分享处理
+             函数也无 onShareAppMessage，分享要接的是尚未落地的功能，不在本文件发明行为；
+             因此这枚也不补 role/aria-label——给死按钮播报「分享」是假可达 -->
         <view class="action-btn" @tap.stop="noop">
           <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
         </view>
@@ -285,6 +339,9 @@ function openActivity(activityId: number | string) {
         <view
           class="action-btn"
           :class="{ 'action-btn--collected': post.isFavorite }"
+          role="button"
+          :aria-label="t('nearby.bookmarkAria')"
+          :aria-pressed="post.isFavorite"
           @tap.stop="emit('favorite', post.id)"
         >
           <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.BOOKMARK" mode="aspectFit" alt="" />
@@ -392,13 +449,49 @@ function openActivity(activityId: number | string) {
   color: var(--c-text-primary);
 }
 
+/* R1-L02-D05（2026-10-19）：作者名行常显校名胶囊——本校绿描边 / 外校中性描边。
+   原分支只在 isAlumni 时渲染一枚实心「校友」芯片，非本校作者零认证标识。
+   描边色沿用本文件既有令牌（--c-brand-300 / --c-neutral-100），未新增 token。 */
 .user-info__campus-badge {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  flex-shrink: 0;
+  max-width: 220rpx;
   padding: 2rpx 10rpx;
   border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: 1rpx solid var(--c-brand-300, #86e8c8);
+}
+
+.user-info__campus-badge--mine {
+  border-color: var(--c-brand-300, #86e8c8);
+}
+
+.user-info__campus-badge--other {
+  border-color: var(--c-neutral-100, #eef1f6);
+}
+
+.user-info__campus-badge-icon {
+  width: 20rpx;
+  height: 20rpx;
+  flex-shrink: 0;
+}
+
+.user-info__campus-badge-text {
+  min-width: 0;
   font-size: 20rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-info__campus-badge--mine .user-info__campus-badge-text {
   color: var(--c-brand-500, #36C99A);
-  background: var(--c-bg-brand, #f0fdf9);
-  border: 1rpx solid var(--c-brand-100, #ccfbef);
+}
+
+.user-info__campus-badge--other .user-info__campus-badge-text {
+  color: var(--c-text-secondary);
 }
 
 .user-info__meta {
@@ -495,9 +588,11 @@ function openActivity(activityId: number | string) {
 /* MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001：原 .post-card__tag--pink 分支已删
    （奇偶配色无语义、理想图话题胶囊为单色绿族），粉色在站内回归「喜欢」专义 */
 
-/* ---------- 最新评论预览（QQ 频道风格） ---------- */
+/* ---------- 最新评论预览（QQ 频道风格） ----------
+   R1-L02-D09（2026-10-19）：块间距与正文/配图/活动/标签四段统一为 --sp-4
+   （原 --sp-3 让灰色评论块比上面几段明显紧一档） */
 .post-card__comments {
-  margin-top: var(--sp-3);
+  margin-top: var(--sp-4);
   border-radius: var(--r-md);
   background: var(--c-neutral-50, #f7f8fa);
   padding: var(--sp-2) var(--sp-3);

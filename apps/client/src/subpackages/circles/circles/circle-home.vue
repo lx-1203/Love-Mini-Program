@@ -445,8 +445,16 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
       <image class="circle-notfound__mascot" :src="NOT_FOUND_MASCOT" mode="aspectFit" />
       <text class="circle-notfound__title">圈子不存在或已解散</text>
       <text class="circle-notfound__desc">去看看别的圈子吧</text>
-      <view class="circle-notfound__btn press-feedback" hover-class="press-feedback--active" @tap="goBack">
-        <text class="circle-notfound__btn-text">返回</text>
+      <!-- R1-L05-D07：补 role/aria-label（对齐同包 tag-posts.vue:302 等返回按钮写法） -->
+      <view
+        class="circle-notfound__btn press-feedback"
+        hover-class="press-feedback--active"
+        role="button"
+        :aria-label="t('common.backAria')"
+        @tap="goBack"
+      >
+        <!-- R1-L05-D04：「返回」走既有 common.back（标题/描述两条仍缺词条） -->
+        <text class="circle-notfound__btn-text">{{ t("common.back") }}</text>
       </view>
     </view>
   </view>
@@ -637,7 +645,8 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 
 .circle-home {
   min-height: 100vh;
-  background-color: #f4f6f5;
+  /* R1-L05-D03：删掉第二套硬编码底色，与内层空态同一 token */
+  background-color: var(--c-bg-page, #eef7f2);
 }
 
 /* ===== MP-R4-CIRCLEHOME-01：未知圈空态 ===== */
@@ -646,15 +655,19 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  padding: 0 96rpx;
+  /* R1-L05-D10：100vh 未扣状态栏带（--statusbar 由本页根节点 menuStyleVars 注入） */
+  min-height: calc(100vh - var(--statusbar, env(safe-area-inset-top)));
+  /* R1-L05-D11：上下内衬受控对称，底部让开安全区（view 全局 border-box） */
+  padding: 96rpx 96rpx calc(96rpx + env(safe-area-inset-bottom));
   background: var(--c-bg-page, #eef7f2);
 }
 
 .circle-notfound__mascot {
-  width: 220rpx;
-  height: 220rpx;
-  margin-bottom: 32rpx;
+  /* R1-L05-D06：插画体量提到 280rpx（理想图 Hero 档） */
+  width: 280rpx;
+  height: 280rpx;
+  /* R1-L05-D05：插画→标题落到 24rpx 档 */
+  margin-bottom: 24rpx;
 }
 
 .circle-notfound__title {
@@ -667,11 +680,13 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 .circle-notfound__desc {
   font-size: 26rpx;
   color: var(--c-text-tertiary, #6b7571);
-  margin-bottom: 40rpx;
+  /* R1-L05-D05：描述→按钮 40rpx 不成档，提到 48rpx（与组内 12rpx 拉开） */
+  margin-bottom: 48rpx;
 }
 
 .circle-notfound__btn {
-  padding: 18rpx 64rpx;
+  /* R1-L05-D06：实高约 62rpx → 24rpx 上下内衬，落到主 CTA 档 88rpx */
+  padding: 24rpx 72rpx;
   border-radius: 999rpx;
   background: var(--c-brand, #36c99a);
 }

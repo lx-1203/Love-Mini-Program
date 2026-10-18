@@ -804,7 +804,8 @@ export const useMessagesStore = defineStore("messages", {
             if (!mockMessages[sessionId] && !knownSession) {
               throw new Error(t("chat.sessionNotExist"));
             }
-            this.currentMessages = mockMessages[sessionId] ? [...mockMessages[sessionId]] : [];
+            const mockList = mockMessages[sessionId];
+            this.currentMessages = mockList ? [...mockList] : [];
             const s = this.sessions.find((x) => x.id === sessionId);
             if (s) s.unreadCount = 0;
             this.messagePage = 0;

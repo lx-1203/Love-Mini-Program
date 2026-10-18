@@ -73,13 +73,15 @@ const schoolStats: Record<string, { members: string; posts: string; peers: strin
 };
 
 function statsOf(school: { id: string }): { members: string; posts: string; peers: string } {
-  const fallback = { members: "约1.0k 同学", posts: "约8k 动态", peers: "约 120 位同学" };
+  const fallback = { members: "约1.0k 同学", posts: "约8k 动态", peers: "等 120 位同学" };
   const stats = schoolStats[school.id];
   // MP-R2-CAMPUS-HUB-007：硬编码统计为演示估算值——统一加「约」语义标注，
   // 避免在 real 模式被当作真实统计（后端 campuses 接口就绪后替换本表）
+  // R1-L05-D16：「约」前缀只作用于纯数字统计字段（members/posts）；peers 原值已是
+  // 「等 N 位同学」，再加前缀会渲染成「约等 342 位同学」双重限定词语病
   if (!stats) return fallback;
   const prefixTilde = (v: string) => (v.startsWith("约") ? v : `约${v}`);
-  return { members: prefixTilde(stats.members), posts: prefixTilde(stats.posts), peers: prefixTilde(stats.peers) };
+  return { members: prefixTilde(stats.members), posts: prefixTilde(stats.posts), peers: stats.peers };
 }
 
 /** 我加入的（本校已认证）。
@@ -266,13 +268,11 @@ function goBack() {
       </view>
     </view>
 
-    <scroll-view
-      class="campus-hub__feed"
-      scroll-y
-      :enhanced="true"
-      :bounces="true"
-      :show-scrollbar="false"
-    >
+    <!-- R1-L05-D19：原内层 scroll-view(scroll-y)+外层 height:100%/overflow:hidden 吞掉页面滚动，
+         末卡在屏幕底边被硬裁、bottom 帧与 top 帧逐像素相同。改为普通 view 走页面级滚动；
+         该 scroll-view 未绑任何事件（无 @scrolltolower / scroll-top / scroll-into-view），
+         去掉后滚动语义与交互不变，仅高度约束交回页面 -->
+    <view class="campus-hub__feed">
     <!-- 空状态 -->
     <view v-if="filteredSchools.length === 0" class="campus-hub__empty">
       <text class="campus-hub__empty-text">{{ activeTab === 'joined' ? t('campus.hub.emptyJoined') : t('campus.hub.emptyRecommend') }}</text>
@@ -331,7 +331,7 @@ function goBack() {
       <text class="campus-hub__more-text">{{ t('campus.hub.moreHint') }}</text>
     </view>
     <view class="campus-hub__footer" />
-    </scroll-view>
+    </view>
   </view>
 </template>
 
@@ -365,23 +365,31 @@ function goBack() {
 .campus-hub {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  /* R1-L05-D19：原 height:100% + overflow:hidden 把滚动锁死在内层 scroll-view 里
+     （全局无 page{height:100%}，页面级滚动带不动内层容器 ⇒ bottom 帧=top 帧、末卡被屏底硬裁）。
+     列表已改为页面级滚动，容器随内容增长，只保留最小视口高度铺满底色 */
+  min-height: 100vh;
   background: var(--c-bg-page, #EEF7F2);
-  padding: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + 20rpx) 32rpx 0;
+  /* 底部留白含安全区，末卡/「查看更多」行不再与 home indicator 区域重叠 */
+  padding: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + 20rpx) 32rpx
+    calc(32rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
 .campus-hub__feed {
-  flex: 1;
-  min-height: 0;
+  /* R1-L05-D19：不再是定高滚动容器 ⇒ flex:1 0 auto（内容不足一屏时铺底色，超出时不收缩不被裁） */
+  flex: 1 0 auto;
 }
 
 /* ===== Header ===== */
 .campus-hub__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  /* R1-L05-D12：原 space-between + 整行 padding-right 让标题列被顶到屏宽约 26% 处悬空
+     （理想图：大标题贴左栅格起排）。改为从左往右排、右侧状态标记自己吸右，
+     padding-right 只作用到被 margin-left:auto 推到右侧的那一档 */
+  justify-content: flex-start;
+  gap: 16rpx;
   margin-bottom: 24rpx;
   /* 状态栏高度 + 右侧避让微信胶囊（--capsule-right/--statusbar 由 useMenuButtonRect 注入）
      R4：原 padding-right = capsule-right(7px)+8px 漏加胶囊本体 87px，认证按钮被胶囊压住 85%；
@@ -417,18 +425,23 @@ function goBack() {
 }
 
 .campus-hub__title {
-  font-size: 36rpx;
+  /* R1-L05-D13：主标题 36rpx 比理想图（≈48rpx）低一档，且与卡片校名 30rpx 只差 6rpx、层级被压平 */
+  font-size: var(--fs-6xl, 48rpx);
   font-weight: 800;
   color: var(--c-text-primary, #222222);
 }
 
 .campus-hub__subtitle {
-  font-size: 24rpx;
+  /* R1-L05-D13：副标题 24rpx → 28rpx（理想图约 28rpx） */
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 400;
   color: var(--c-text-tertiary, #8A9694);
 }
 
 .campus-hub__cert-badge {
+  /* R1-L05-D12：header 改左对齐后，右侧状态标记由 margin-left:auto 吸右，
+     仍落在 padding-right 预留的胶囊避让区内 */
+  margin-left: auto;
   padding: 12rpx 24rpx;
   border-radius: 999rpx;
   background: var(--c-bg-brand, #E8FAF3);
@@ -659,16 +672,20 @@ function goBack() {
 }
 
 .campus-school-card__badge--unverified {
-  /* 理想图：未认证 = 灰色圆角标签 + 白色字体 */
-  background: #9AA39F;
+  /* R1-L05-D15：理想图未认证 = 淡紫底 + 紫字。原 background 写成硬编码 #9AA39F（同组 verified/pending
+     都走 var()），既脱离 token 体系、又把紫档整体落到中灰档；灰底白字对比度不足。
+     改取既有 lavender 档位令牌（--c-lavender-50 #F5F3FF / --c-lavender-500 #8B5CF6）；
+     卡里建议的 --c-accent-50/--c-accent 在 design-variables.scss 中并不存在，故用同值既有令牌 */
+  background: var(--c-lavender-50, #F5F3FF);
 }
 
 .campus-school-card__badge--unverified .campus-school-card__badge-text {
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-lavender-500, #8B5CF6);
 }
 
 .campus-school-card__badge-text {
-  font-size: 20rpx;
+  /* R1-L05-D20：20rpx(≈10.8px CSS) 低于可读下限 ⇒ 提到 24rpx */
+  font-size: var(--fs-base, 24rpx);
   font-weight: 600;
 }
 
@@ -719,7 +736,8 @@ function goBack() {
 }
 
 .campus-school-card__peers {
-  font-size: 22rpx;
+  /* R1-L05-D20：22rpx 与徽标同样偏小、帧内糊成灰点 ⇒ 提到 26rpx */
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-tertiary, #9AA39F);
 }
 
@@ -780,7 +798,10 @@ function goBack() {
   margin: 0 40rpx 20rpx;
   height: 76rpx;
   border-radius: 999rpx;
-  background: var(--c-bg-page, #EEF7F2);
+  /* R1-L05-D14：原底色取 --c-bg-page，与页面容器（.campus-hub）同色 ⇒ 胶囊在帧里完全看不见、
+     999rpx 圆角等于没生效。改取容器白底并补 1rpx 描边，与页面底拉开一档 */
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-line, #EEF2F0);
   display: flex;
   align-items: center;
   padding: 0 28rpx;

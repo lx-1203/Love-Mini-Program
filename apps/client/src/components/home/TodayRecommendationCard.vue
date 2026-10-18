@@ -216,19 +216,21 @@ const distanceLine = computed(() => {
   gap: 8rpx;
   padding: 6rpx 16rpx;
   border-radius: 999rpx;
-  background: #36C99A;
+  /* R1-L01-D12：在线徽章与 MatchCard.match-card__online 统一为白底 + 绿点 + 绿字
+     （原为实底绿 + 白字，配色反转且裸写 #36C99A 未取 --c-brand） */
+  background: var(--c-overlay-bg-solid, rgba(255, 255, 255, 0.9));
 }
 
 .today-card__online-dot {
   width: 12rpx;
   height: 12rpx;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--c-brand, #36C99A);
 }
 
 .today-card__online-text {
   font-size: 20rpx;
-  color: #ffffff;
+  color: var(--c-brand, #36C99A);
   font-weight: 700;
 }
 
@@ -237,8 +239,10 @@ const distanceLine = computed(() => {
   position: absolute;
   right: 12rpx;
   bottom: 12rpx;
-  width: 112rpx;
-  height: 112rpx;
+  /* R1-L01-D14：徽章外径 112rpx → 140rpx，与 MatchCard .match-card__score-ring 同档，
+     容纳放大后的 32rpx 数字 / 22rpx 标签 */
+  width: 140rpx;
+  height: 140rpx;
   border-radius: 50%;
   background: #FF6B81;
   display: flex;
@@ -259,13 +263,13 @@ const distanceLine = computed(() => {
 }
 
 .today-card__match-score {
-  font-size: 22rpx;
+  font-size: 32rpx;
   font-weight: 800;
   color: #FFFFFF;
 }
 
 .today-card__match-label {
-  font-size: 18rpx;
+  font-size: 22rpx;
   color: rgba(255, 255, 255, 0.92);
 }
 

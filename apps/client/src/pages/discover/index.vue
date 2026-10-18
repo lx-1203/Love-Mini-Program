@@ -334,16 +334,24 @@ onUnload(() => {
             @swipe-right="handleLike"
           />
         </view>
-
-        <MatchActions
-          :busy="loading"
-          @pass="handleSwipeLeft"
-          @like="handleLike"
-          @super-like="handleSuperLike"
-        />
-
       </template>
     </scroll-view>
+
+    <!-- R1-B23（R1-L01-D01，P0 主 CTA 不可见）：三键整行从 scroll-view 内移到页面级停靠层。
+         原结构下 .match-card-area 的 70vh（实拍 606px）已超出 scroll 视口实高（≈500px），
+         MatchActions（128rpx 圆钮 + 标签 + 32rpx 上内边距 ≈105px）整行落在 scroll 内容末尾，
+         滚到底也只剩卡片下缘与 tabBar 之间约 17px，跳过/打个招呼/喜欢 三键不可见也不可点。
+         停靠后与理想图一致：三键恒定居于卡片与 tabBar 之间，不随卡片滚动。
+         v-if 与原 scroll-view 内 v-else 分支等价（loading 且 cards 为空时
+         visibleCards.length 必为 0，故无需再判 loading），事件与 props 一字未改。 -->
+    <view v-if="isMatchOpen && visibleCards.length > 0" class="match-actions-dock">
+      <MatchActions
+        :busy="loading"
+        @pass="handleSwipeLeft"
+        @like="handleLike"
+        @super-like="handleSuperLike"
+      />
+    </view>
 
     <!-- 未登录时：底部登录提示（不拦截全屏，卡片可预览） -->
     <view v-if="!sessionStore.isLoggedIn" class="discover-login-hint press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="goLogin">
@@ -383,6 +391,12 @@ onUnload(() => {
   min-height: 0;
 }
 
+/* R1-B23（R1-L01-D01）：三键停靠层——列向 flex 的固定尾节点，
+   与 .match-page 的 padding-bottom（--tab-bar-total-h + 48rpx 浮岛越出量）之间不再被 tabBar 原生层压住 */
+.match-actions-dock {
+  flex-shrink: 0;
+}
+
 .match-error {
   margin: 0 32rpx 16rpx;
   display: flex;
@@ -414,7 +428,9 @@ onUnload(() => {
 
 .discover-header {
   flex-shrink: 0;
-  padding: 24rpx 32rpx 16rpx;
+  /* R1-B23（R1-L01-D08）：左基线单点化——页头原裸写 32rpx，卡片区/配额行裸写 40rpx，
+     同列上下错位 8rpx（≈4px）。三处一并收敛到 var(--page-padding)（design-variables.scss:546 = 32rpx）。 */
+  padding: 24rpx var(--page-padding, 32rpx) 16rpx;
   background: var(--c-bg-container, #ffffff);
 }
 
@@ -422,8 +438,10 @@ onUnload(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* R20：--capsule-right 仅≈7px，需加胶囊本体宽度避免筛选按钮被胶囊叠压 */
-  padding-right: calc(var(--capsule-right, 7px) + 104px);
+  /* R1-B23（R1-L01-D05）：删掉整行的 padding-right: calc(var(--capsule-right) + 104px)。
+     该避让量把标题行整体左推约一个按钮宽，筛选钮中心落在 x≈250/400（屏宽 62%）、
+     距右缘约 150px，与理想图「筛选钮贴屏幕右缘、与标题同一水平线」不符。
+     胶囊避让改由 .discover-header__filter 自身的 margin-right 承担（见下）。 */
 }
 
 .discover-header__titles {
@@ -457,6 +475,12 @@ onUnload(() => {
   border-radius: 50%;
   background: var(--c-bg-container, #ffffff);
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  /* R1-B23（R1-L01-D05）：胶囊避让量只落在本按钮上（原写在整行 padding-right 上，
+     连带把标题行一起左推）。钮右缘距屏幕右缘 = 胶囊右缘间隙，与理想图贴右基线一致。
+     残余：胶囊下缘（statusbar+36px）与本钮上缘（statusbar+32.8px）尚有约 3px 交叠，
+     落在圆钮顶部弧带上，图标与点击中心不受影响；如需彻底错开需下移整行标题基线，
+     那会破掉理想图的「同一水平线」，故不在此轮处理。 */
+  margin-right: var(--capsule-right, 7px);
 }
 
 .discover-header__filter--pressed {
@@ -483,7 +507,11 @@ onUnload(() => {
 
 .discover-header__tab-text {
   font-size: 36rpx;
-  color: var(--c-text-tertiary, #9AA39F);
+  /* R1-B23（R1-L01-D07，可达性）：未选中态原取 --c-text-tertiary，兜底字面量 #9AA39F
+     与 --c-text-quaternary 同值，压白底实测对比度 ≈2.6:1（36rpx/500 非大字号，低于 WCAG AA 4.5:1），
+     真机上「附近」发虚。改用 --c-text-secondary（#4A524E，≈8:1；即便变量未注入，
+     兜底字面量本身也已过 AA），选中层级差继续由 font-weight（500 → 700）与下划线承担。 */
+  color: var(--c-text-secondary, #4A524E);
   font-weight: 500;
   line-height: 1.2;
 }
@@ -502,7 +530,8 @@ onUnload(() => {
 }
 
 .match-card-area {
-  margin: 0 40rpx;
+  /* R1-B23（R1-L01-D08）：40rpx → var(--page-padding)，与页头/配额行同一条左基线 */
+  margin: 0 var(--page-padding, 32rpx);
   /* MP-R1-PAGES-DISCOVER-INDEX-REQ-04：卡高原为固定 880rpx —— 375×820 实拍上仅占视口 53.9%，
      低于理想基线「沉浸式大图卡 ≥70% 视口」。改为视口比例 + 双兜底：
      70vh 让卡高随屏放大；min-height 860rpx 兜住矮屏（与 CardSwiper .card-area 同策略，
@@ -519,7 +548,8 @@ onUnload(() => {
 .discover-quota {
   display: flex;
   justify-content: center;
-  margin: 0 40rpx var(--sp-3, 12rpx);
+  /* R1-B23（R1-L01-D08）：40rpx → var(--page-padding)，与页头/卡片区同一条左基线 */
+  margin: 0 var(--page-padding, 32rpx) var(--sp-3, 12rpx);
 }
 
 .discover-quota__pill {

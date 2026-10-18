@@ -55,7 +55,11 @@ const distanceText = computed(() => {
     return value;
   }
   if (props.user.isSameSchool) return t("matchV1.sameSchool");
-  return "";
+  /* R1-L01-D03（2026-10-19）：原样返回空串 ⇒ 左上距离胶囊整块不渲染（既不显示也不占位），
+     与右上「在线」胶囊失衡；理想图《寻觅匹配卡片页面》左上为浅底粉字「5km」胶囊。
+     距离缺失时兜底为「附近」，复用既有键 discover.nearby（同目录 MatchScopeTabs.vue:19
+     已用同键、MatchActions.vue:35 等亦跨用 discover.*，双语均已存在，无需新 i18n 键）。 */
+  return t("discover.nearby");
 });
 
 const isOnline = computed(() => props.user.onlineStatus === "online" || props.user.activeStatusText === "online" || props.user.activeStatusText === "just_now");

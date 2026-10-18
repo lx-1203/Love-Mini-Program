@@ -399,8 +399,9 @@ export const useCampusStore = defineStore("campus", {
      */
     categoryLabelOf: (state) => (category: CampusTopicCategory): string => {
       const dynamic = state.dynamicCategoryMap;
-      if (dynamic && typeof dynamic[category] === "string") {
-        return dynamic[category];
+      const mapped = dynamic ? dynamic[category] : undefined;
+      if (typeof mapped === "string" && mapped) {
+        return mapped;
       }
       return CAMPUS_CATEGORY_MAP[category] ?? category;
     },
