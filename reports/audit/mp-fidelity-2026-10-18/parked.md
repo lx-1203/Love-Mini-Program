@@ -51,3 +51,16 @@ options=(a) 接受：FAILED 也是 JUDGED，弹回本身是被量到的产品事
 
 本轮已按约执行的两处实例：`prune` 删 64 个文件前先 `cp -a` 到 `archive/prune-backup/real-<stamp>/`；
 被我误触发的 plan 覆写的跟踪证据件先留 `.pre-import-accident-*.bak` 再**逐文件**从 HEAD 恢复，没有做目录级 restore。
+
+## R2b 这一发查出来的六件事（登记，不在本轮内自行销账）
+
+| id | 现象（实测读数） | 类别 | 本轮怎么处置 |
+|---|---|---|---|
+| D-N01 | `pages/login/index` 在登录身份 A 下**拍不到自己**：帧落点读成 `pages/discover/index`，且与寻觅页帧逐字节同图（191,452B / sha16=0b7373c4）。源码依据 `apps/client/src/pages/login/index.vue:87` 的 `if (sessionStore.isLoggedIn && !autoForwardedToMain) { … uni.switchTab("/pages/discover/index") }` | 规则相撞（要用户裁） | 本轮的取景裁定是「A 扫全部页，B/游客只扫 tabBar 页」，而覆盖判据要求 71 页各有自己的帧——**这两条对登录页互斥**。(a) 给登录/注册单开一发 B（未登录）取景，覆盖判据仍按 71；(b) 把登录页从覆盖分母里降级为「身份不可表达」，与 IDENTITY_BLOCKED 同列。我按 (a) 先做（不改分母、不豁免判据），但这是**偏离原裁定的动作**，须用户确认口径 |
+| D-N02 | `subpackages/discover-extra/discover/matching` reLaunch 后落点 `pages/discover/index`（191,469B）⇒ 这页要**正在匹配**的状态才进得去，身份轴表达不了它 | 需新建（前置状态入口） | 记为落点不符、不计覆盖；进 §4 目标功能清单：要么给 QA 一个"进入匹配中"的入口/参数，要么裁定它只能由寻觅页流程内触达 |
+| D-N03 | 我给账本加的身份派生第一版把 `isLoggedIn` 之后 240 字内出现 `switchTab` 就判"登录即转发页" ⇒ **pages/home/index、pages/discover/index 被误标成游客页**（3 页误标，分母 66→写错）。改成"同一条 `if(isLoggedIn&&…)` 块内"之后：转发页=1（只有登录页），tabBar A+B 回到 5 | 仪表缺陷（本轮已修） | 判点从"邻近"改成"同块"，并打印 `LEDGER_GUEST_ONLY` 逐条点名依据。假阳性是我自己量出来才发现的，不是泳道报的 |
+| D-N04 | `derive-baseline-ledger.mjs --out` 只按目录实现，传 .json 路径时 `mkdirSync` 撞在已存在的**文件**上抛 `EEXIST`，长得像权限问题 | 仪表缺陷（本轮已修） | 按后缀取父目录建；派生重跑 `BASELINELEDGER_RESULT=PASS routes=71 守恒=yes` |
+| D-N05 | 取景腿正式拍的帧**从没写过 `landingVerified`**（只有 --resume 分支写）⇒ 清单里 14/14 路由 `landing=null`，resume 的跳过条件恒不成立（补跑不收敛，每次全重拍），收口门也读不到落点证明。R2b 实测 18 张帧全是 `-` | 仪表缺陷（本轮已修） | 正式分支补 `landingVerified`，并加路由级 `landing`/`landingVerified` 汇总；落点读数不再只活在 stdout |
+| D-N06 | automator WS 成片超时的**根因已量到**：WS 的 `App.captureScreenshot` 每拍一张就在应用 `USER_DATA_PATH` 里留一个 `safeimg-<n>.jpg`，攒够就把整条截图流水线卡死，先报 `saveFile:fail exceeded the maximum size of the file storage limit`，之后全是 `timeout waiting for automator response`。探针实测：清之前 `before=108 / 599,890B`（还混着历史设备腿的 `devleg-*.jpg`），重启自动化实例 + 清空之后 `before=2`（含 `safeimg-483455531.jpg`）→ 当场补拍成功 9,652B。`getSavedFileList` 在这里是误导性读数（返 0，而目录里有 108 个文件） | 仪器缺陷（本轮已修） | 取景腿加 `cleanUserFiles()`：预热前清一次、每 8 张清一次、单张失败后先清再重试（重试上限 2→3）。`scripts/qa/probe-saved-files.mjs` 是这件事的能红探针（清理后补拍不成 ⇒ exit 1，"根因不是这个"就写在退出码上） |
+| D-N07 | 我自己造成的设备事故：为了排查上面的卡死，我调了 `close_project_window`，**把 9420 那条自动化通道整个打死**（`Failed connecting to ws…check if target project window is opened with automation enabled`）——这正是 `real-tour-cli.mjs:5-8` 记过的那个不可 CLI 恢复的口子。恢复靠 `ws-channel-up.mjs`（它自己会重架自动化实例：`WS_UP=OK port=9420 ownerPid=13356`，且 `WS_UP_BAND_RESULT=match` 证明架回来的是 real@f0677920 那一档） | 仪器操作纪律（已恢复） | 教训入册：`close_project_window` 不是"重开窗口"的同义词，它是拆通道；要刷新画面只用 `open_project_window`（reuse 语义）。恢复动作点名 `ws-channel-up.mjs`，别新造第二套 |
+| D-N08 | 在册口径「CLI 出图 193×413、2.6s/张，automator 378×814 ⇒ 禁止跨 harness 比像素」**两处与今测不符**：本轮同一台 IDE 上 `simulator_screenshot` 回 `{imageWidth:378, imageHeight:814}`、耗时 10.1/11.3s；而且它写出的文件**扩展名是 .png、内容是 JPEG**（magic=`ff d8 ff e0 … JFIF`，31,196B） | 文档过期 + 落盘格式与名不符 | 不据此解禁跨 harness 比对：**编码不同就已经不可比**（JPEG 有损，逐字节/内容 hash 与像素级色值都会漂），"禁比"这条裁定的结论仍成立，理由要换成"编码"而不是"分辨率"。取景仍钉在 WS/PNG；`verify-fix-visibility` 的 pngjs 路径遇到 CLI 帧会读错，所以帧目录里不许混进 CLI 件（本轮没混） |

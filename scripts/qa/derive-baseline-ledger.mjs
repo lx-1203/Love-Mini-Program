@@ -35,7 +35,12 @@ const arg = (k, dflt) => {
 };
 
 const project = resolve(arg("project", join(REPO, "apps/client/dist/build/mp-weixin-real")));
-const outDir = resolve(arg("out", join(REPO, "reports/audit/mp-fidelity-2026-10-18")));
+/* --out 既收目录也收文件名：上一发我按"目录"写死，第二次跑传了 .json 路径进去，
+   mkdirSync 撞在一个已存在的文件上抛 EEXIST ⇒ 生成器根本没跑成，而报错长得像权限问题。
+   后缀名一律按**文件**处理，取它的父目录建。 */
+const OUT_ARG = resolve(arg("out", join(REPO, "reports/audit/mp-fidelity-2026-10-18")));
+const outDir = /\.json$/i.test(OUT_ARG) ? dirname(OUT_ARG) : OUT_ARG;
+mkdirSync(outDir, { recursive: true });
 const appJson = join(project, "app.json");
 const specDoc = join(REPO, "deliverables/全站素材补齐-2026-09-12/全站设计规范与逐页设计稿说明.md");
 const imgRoot = join(REPO, "素材/理想效果图");
@@ -173,6 +178,26 @@ for (const tok of lockedTokens) {
 }
 for (const u of lockedUnresolved) console.log(`LOCKED_TOKEN_UNRESOLVED ${u} ⇒ 该 token 没有落成路由，宁可少标也不猜`);
 
+/* 身份前提不能由"是不是 tab 页"一句话定：R2b 实测 pages/login/index 在登录身份下被
+   pages/login/index.vue:87 的 `if (sessionStore.isLoggedIn && !autoForwardedToMain) { … uni.switchTab("/pages/discover/index") }`
+   直接转走，拍到的帧落点是 pages/discover/index（与寻觅页逐字节同图）。
+   ⇒ 转发页只能以未登录身份取景；声明 requiresAuth 的页反过来只能以登录身份取景。
+   判点取**同一条 if 的块内**：第一版我写成"isLoggedIn 之后 240 字里出现 switchTab"，
+   结果 pages/discover/index、pages/home/index 只因文件里有 `if (sessionStore.isLoggedIn) {` 就被打成游客页
+   ——邻近 ≠ 因果，把 66 页的分母改错了 3 页。 */
+const FORWARD_RE = /if\s*\(\s*[\w.]*isLoggedIn\s*&&[\s\S]{0,160}?(?:uni\.)?(?:switchTab|redirectTo)\s*\(/;
+const guestOnlyRoutes = new Set();
+const authRequiredRoutes = new Set();
+for (const r of routes) {
+  const f = join(REPO, "apps/client/src", `${r.route}.vue`);
+  if (!existsSync(f)) continue;
+  const src = readFileSync(f, "utf8");
+  if (FORWARD_RE.test(src)) guestOnlyRoutes.add(r.route);
+  if (/requiresAuth:\s*true/.test(src)) authRequiredRoutes.add(r.route);
+}
+console.log(`LEDGER_IDENTITY 派生：登录即转发页=${guestOnlyRoutes.size} 声明 requiresAuth 页=${authRequiredRoutes.size}（逐页读 apps/client/src/<route>.vue）`);
+for (const x of guestOnlyRoutes) console.log(`  LEDGER_GUEST_ONLY ${x}（依据：该页源码里 if(isLoggedIn&&…) 块内直接 switchTab/redirectTo）`);
+
 /* ── 逐页判决 ── */
 const rows = [];
 let nBaselined = 0, nNoBaseline = 0;
@@ -182,6 +207,13 @@ for (const r of routes) {
   let status;
   if (images.length) { status = "有基准"; nBaselined++; }
   else { status = "无基准"; nNoBaseline++; }
+  const identity = guestOnlyRoutes.has(r.route)
+    ? "B（登录即转发，只能未登录取景）"
+    : isTab(r.route)
+      ? "A + B（tabBar 页两身份都取）"
+      : authRequiredRoutes.has(r.route)
+        ? "A（页面声明 requiresAuth:true）"
+        : "A（页面未声明门槛 ⇒ 按登录态取，游客侧可达性未证）";
   rows.push({
     route: r.route,
     packageRoot: r.package,
@@ -189,7 +221,7 @@ for (const r of routes) {
     baselineImages: images.map((f) => `素材/理想效果图/${f}`),
     baselineStatus: status,
     specRows: rec ? rec.seqs : [],
-    identityPrecondition: isTab(r.route) ? "A + B（tabBar 页两身份都取）" : "A（非 tab 页需登录态）",
+    identityPrecondition: identity,
     lockedByProfileGuard: lockedRoutes.has(r.route),
   });
 }

@@ -74,6 +74,10 @@ g verify-sweep-coverage-selftest 60 scripts/qa/verify-sweep-coverage.mjs --self-
 # 夹具自己坏掉时蒙绿（这门的上一版就是这样：fixlist 被包成 {results:…}，touched 恒空、四例三例空转）。
 # 真批次的形态要 --prev/--cur/--fixlist 三件输入，裸跑退 2 是缺输入，故载具点自证。
 g verify-fix-visibility-selftest 60 scripts/qa/verify-fix-visibility.mjs --self-test
+# 保真收口门：八条判据（轮次/覆盖/末轮新增/改动可见/band/发布链/双载具/写回环）聚成一句"完没完"。
+# 它自己从不重测，只收集各生产者的话——所以载具里点的是 --self-test（六例，含"空表不许当绿"
+# 与变异翻绿）；真收口要按轮输入，由本轮手动跑，跑出来的 FAIL 逐条点名。
+g verify-fidelity-closeout-selftest 60 scripts/qa/verify-fidelity-closeout.mjs --self-test
 # 前后端↔后台连通门：登记 --dry 形状（只铸票 + 只读两端列表，一行都不写）。
 # 真往返（POST /posts → 后台按 id 读到 → DELETE → 计数回原）由本轮腿手动跑：
 # 它会写库，塞进终验载具等于每次全清单跑一遍都往 posts 表插一行——那正是"载具不许有写"的边界。

@@ -56,6 +56,30 @@ for (const r of wantRows) {
   pages.push({ route: r.route, images: r.baselineImages || [], frames: frames.map((f) => ({ state: f.state, path: f.path, hash: f.contentHash, bytes: f.bytes, query: (rec && rec.query) || "" })), identity: r.identityPrecondition });
 }
 
+/* 已修清单（--fixed <fixlist-R1.json> + --fixvis <fix-visibility.json>）：
+   下一轮泳道必须拿到"上一轮改了什么、改动在帧上是否可见"两件事，否则会出现两种坏结果：
+   把已修的当新增重报（账上重复计数），或看到画面变了就当修对了（自述不算数）。 */
+let FIXED_BY_ROUTE = new Map();
+const fixedP = arg("fixed", ""), fixvisP = arg("fixvis", "");
+if (fixedP && existsSync(resolve(fixedP))) {
+  const fl = JSON.parse(readFileSync(resolve(fixedP), "utf-8"));
+  const vis = fixvisP && existsSync(resolve(fixvisP)) ? JSON.parse(readFileSync(resolve(fixvisP), "utf-8")) : null;
+  const visKey = (r, st) => `${r}__${st}`;
+  const visByRoute = new Map();
+  if (vis) for (const row of (vis.rows || [])) {
+    if (!visByRoute.has(row.route)) visByRoute.set(row.route, []);
+    visByRoute.get(row.route).push(row);
+  }
+  for (const b of (fl.batches || [])) {
+    for (const r of (b.pages || [])) {
+      if (!FIXED_BY_ROUTE.has(r)) FIXED_BY_ROUTE.set(r, []);
+      FIXED_BY_ROUTE.get(r).push({ batch: b.batch_id, file: (b.files || []).join(","), defects: b.defects || [], axes: b.axes || [] });
+    }
+  }
+  console.log(`EMITLANES_FIXED 载入上一轮批次=${(fl.batches || []).length} 覆盖路由=${FIXED_BY_ROUTE.size}${vis ? " 像素对照行=" + (vis.rows || []).length : " 无像素对照"}`);
+  globalThis.__FIXVIS__ = vis ? new Map((vis.rows || []).map((x) => [visKey(x.route, x.state), x])) : new Map();
+}
+
 const lanes = [];
 for (let i = 0; i < pages.length; i += perLane) {
   const slice = pages.slice(i, i + perLane);
@@ -116,6 +140,24 @@ for (const l of lanes) {
     for (const f of p.frames) lines.push(`- 帧：\`${f.path}\`（sha16=\`${f.hash}\`，${f.bytes}B，状态=${f.state}）`);
   }
   lines.push(``);
+  if (FIXED_BY_ROUTE.size) {
+    lines.push(`## 上一轮已修了什么（来自 fixlist + 逐帧像素对照，不是泳道自述）`);
+    lines.push(`对每一页：先**用眼睛确认改动在帧上看得见**，再找新问题。`);
+    lines.push(`- 画面变了 ≠ 修对了：要看它是否真的对齐了理想图那条轴；没对齐就报**同一条轴的新缺陷**并写"上一轮修得不对"。`);
+    lines.push(`- 同一条轴、同一个现象、且画面确实没变的，**不要重报为新增**（那会让轮次之间重复计数）。`);
+    for (const p of l.pages) {
+      const fx = FIXED_BY_ROUTE.get(p.route) || [];
+      lines.push(``);
+      lines.push(`### ${p.route} 上一轮批次：${fx.length ? "" : "（无，这一页没动过）"}`);
+      for (const b of fx) lines.push(`- 批次 ${b.batch} 改 \`${b.file}\`，销的缺陷 ${b.defects.join(",")}${(b.axes || []).length ? "，轴 " + b.axes.join("/") : ""}`);
+      const V = globalThis.__FIXVIS__ || new Map();
+      for (const f of p.frames) {
+        const v = V.get(`${p.route}__${f.state}`);
+        if (v) lines.push(`- 帧 ${f.state}：改前 sha16=${v.prev || "-"} → 改后 sha16=${v.cur || "-"} ⇒ ${v.verdict}`);
+      }
+      if (fx.length && p.frames.every((f) => !V.has(`${p.route}__${f.state}`))) lines.push(`- ⚠ 这一页没有像素对照记录 ⇒ 改动是否上屏未知，先判"需复拍确认"，不要当成已修`);
+    }
+  }
   lines.push(`## 交付格式（写到这个路径，一件产物，不要写别的文件）`);
   lines.push(`\`${l.out_file}\``);
   lines.push(``);

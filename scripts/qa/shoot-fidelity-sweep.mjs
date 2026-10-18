@@ -133,11 +133,13 @@ if (dryRun) {
      整轮零帧（自己锁死自己，不是别人占用）。
    · 必须在 automator.connect **之前**：重开窗口会杀掉 9420 那条 WS 通道，
      先连后重开等于拿着一条已死的通道取景（reference-real-env：重建产物后必须重接设备腿）。 */
+let REATTACH = { exit: null, at: "", settle: 12 };
 {
   const re = spawnSync(process.execPath, [
     join(REPO, "scripts/qa/open-project-window.mjs"), "--project", PROJECT, "--settle", "12",
   ], { cwd: REPO, encoding: "utf8", env: { ...process.env, PATH: `${dirname(process.execPath)}${delimiter}${process.env.PATH || ""}` } });
   const out = `${re.stdout || ""}${re.stderr || ""}`;
+  REATTACH = { exit: re.status, at: new Date().toISOString(), settle: 12 };
   console.log(`SWEEP_REATTACH exit=${re.status} ${out.split(/\r?\n/).filter((l) => l.includes("OPENWIN")).join(" / ").slice(0, 220)}`);
   if (re.status !== 0) {
     console.log(`${RK}=NOT-EVIDENCED reason=reattach-failed exit=${re.status} hint=项目窗口没重开 ⇒ 会拍到改前编译的旧画面，整轮帧都是假证据`);
@@ -207,6 +209,40 @@ try {
 }
 
 const seen = new Map(); /* hash → 首个用到它的路由（跨页同图必须被数出来） */
+let shotsSinceClean = 0;
+const CLEAN_EVERY = Number(arg("clean-every", "8")); /* 每 8 张清一次应用本地文件：R2b 实测 ~18 张之后开始成片失败 */
+
+/* 清空应用本地文件（wx.env.USER_DATA_PATH）。
+   R2b 量到的真根因：WS 的 App.captureScreenshot 每拍一张就在 USER_DATA_PATH 里留一个
+   `safeimg-<n>.jpg`，累积到一定数量之后**整条截图流水线卡死**——表现是
+   `saveFile:fail exceeded the maximum size of the file storage limit`，然后其余全是
+   `timeout waiting for automator response`。实测证据链：
+     · 探针第一次：USER_DATA_PATH before=108 个文件 / 599,890B → 清空 → 当场补拍仍失败（要连同通道重启）
+     · 重启自动化实例（ws-channel-up）+ 清空之后：before=2（含 safeimg-483455531.jpg）→ 补拍成功 9,652B
+   ⇒ 取景必须周期性清它自己造的垃圾，且失败时先清再重试；否则一轮拍到 ~18 张就开始成片丢帧。
+   getSavedFileList 在这里是**误导性**的（它只列旧 saveFile 那套名册，实测返 0 而目录里有 108 个文件）。 */
+async function cleanUserFiles(tag) {
+  try {
+    const r = await mp.evaluate(() => {
+      try {
+        const fm = wx.getFileSystemManager();
+        const dir = wx.env.USER_DATA_PATH;
+        const names = fm.readdirSync(dir);
+        let bytes = 0, unlinked = 0, failed = 0;
+        for (const n of names) {
+          try { bytes += (fm.statSync(dir + "/" + n).size) || 0; } catch { /* 量不出就按 0 */ }
+          try { fm.unlinkSync(dir + "/" + n); unlinked++; } catch { try { fm.rmdirSync(dir + "/" + n, true); unlinked++; } catch { failed++; } }
+        }
+        return { ok: true, before: names.length, bytes, unlinked, failed, after: fm.readdirSync(dir).length };
+      } catch (e) { return { ok: false, err: String(e && e.message).slice(0, 120) }; }
+    });
+    console.log(`${tag}_CLEAN ${JSON.stringify(r)}`);
+    return r;
+  } catch (e) {
+    console.log(`${tag}_CLEAN_FAIL evaluate 失败：${String(e && e.message).slice(0, 110)}`);
+    return null;
+  }
+}
 
 /* 预热一次导航。实测两轮取景的超时都成串落在**最前面几帧**
    （login top×2 失败、login bottom×2 失败、discover top×2 失败，之后同一条通道连续成功）：
@@ -215,6 +251,7 @@ const seen = new Map(); /* hash → 首个用到它的路由（跨页同图必�
    先热一次，让第一页不再替全轮买单。（同 r-exec-cli.mjs 的 --guest-warmup 一个道理。） */
 try {
   const w0 = Date.now();
+  await cleanUserFiles("SWEEP_PREWARM");
   await mp.callWxMethod("reLaunch", { url: "/pages/home/index" });
   await sleep(Math.max(12000, SETTLE));
   let wp = ""; try { const c = await mp.currentPage(); wp = c && c.path ? String(c.path) : ""; } catch { /* 预热读数失败不影响正式拍 */ }
@@ -272,13 +309,16 @@ for (const r of targets) {
       /* 首帧实测会 timeout waiting for automator response（WS 通道 61s/帧、2/5 超时是这个项目的既有事实），
          所以每帧重试一次；两次都不中就如实记 pageError，不拿第二帧冒充第一帧。 */
       let size = 0, shotErr = "";
-      for (let attempt = 1; attempt <= 2; attempt++) {
+      for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           await mp.screenshot({ path: f });
           size = existsSync(f) ? statSync(f).size : 0;
           if (size > 0) { shotErr = ""; break; }
           shotErr = `第 ${attempt} 发出图 0B`;
         } catch (e) { shotErr = `第 ${attempt} 发异常 ${String(e && e.message).slice(0, 70)}`; }
+        /* 失败下一发之前先清本腿自己造的 safeimg-*：R2b 实测这一串超时的根因是应用本地文件配额，
+           不清就重试等于拿同一条卡死的流水线再撞三次。 */
+        if (attempt < 3) { await cleanUserFiles("SWEEP_SHOTRECOVER"); await sleep(6000); }
         if (attempt === 1) await sleep(2500);
       }
       if (size <= 0) { rec.errors.push(`${s.state}: ${shotErr}`); console.log(`SWEEP_FAIL ${r.route} ${s.state} ${shotErr}`); continue; }
@@ -292,16 +332,26 @@ for (const r of targets) {
         route: r.route, query: PARAMS[r.route] || "",
         state: s.state, path: relOf(f), bytes: size, contentHash: h,
         landingPath: actualPath, landingMismatch,
+        /* 落点已验 = 直接读到 currentPage 且等于目标页。这个字段是 --resume 的跳过条件，
+           也是收口门判"这张帧到底是不是那一页"的依据；R1/R2 只在恢复分支里写过它，
+           正式取景的帧全是 undefined ⇒ resume 永远不收敛、收口门读不到落点证明。 */
+        landingVerified: !landingMismatch && !String(actualPath).startsWith("(currentPage") && !!actualPath,
         belowFloor: size <= MIN_BYTES, dupAcrossRoutes, sameAsTop,
         dupOf: dupAcrossRoutes ? priorOwner : (sameAsTop ? `${r.route}__top` : ""),
       });
       if (h && !seen.has(h)) seen.set(h, r.route);
+      shotsSinceClean++;
+      if (shotsSinceClean >= CLEAN_EVERY) { await cleanUserFiles("SWEEP_PERIODIC"); shotsSinceClean = 0; }
       console.log(`SWEEP_FRAME ${r.route}__${s.state} bytes=${size} sha16=${h ? h.slice(0, 8) : "-"} 落点=${actualPath || "(空)"}${landingMismatch ? " ⇒落点不符" : ""}${size <= MIN_BYTES ? " 空白帧" : ""}${dupAcrossRoutes ? " 跨页同图(" + priorOwner + ")" : ""}${sameAsTop ? " 滚动后同图" : ""}`);
     } catch (e) {
       rec.errors.push(`${s.state}: ${String(e && e.message).slice(0, 120)}`);
       console.log(`SWEEP_FAIL ${r.route} ${s.state} ${String(e && e.message).slice(0, 120)}`);
     }
   }
+  /* 路由级落点读数：收口门与覆盖门都按路由判"这页有没有一张能当证据的帧"，
+     只有帧级字段就得让下游各自再聚合一遍（R2b 实测清单里 landing=null，落点读数只在 stdout 里活着）。 */
+  rec.landing = rec.frames.length ? String(rec.frames[0].landingPath || "") : "";
+  rec.landingVerified = rec.frames.some((f) => f.landingVerified === true);
   results.push(rec);
 }
 try { await mp.disconnect(); } catch { /* 断开失败不影响已落的帧 */ }
@@ -333,6 +383,8 @@ const manifest = {
   harness: "miniprogram-automator(实测出图 378x814，禁与 CLI 193x413 跨尺比像素)",
   consoleCapture: "unavailable：miniprogram-automator 0.12.1 的导出面没有 onConsole/onError（已 grep out/ 核实），本轮不假装采到 console",
   ledger: relOf(LEDGER),
+  /* 轮次有效性的唯一证明：收口门只认"取景前项目窗口真重开过"的轮（R2 整轮作废就是因为没这条）。 */
+  reattach: REATTACH,
   mergeNote: "本件按路由合并：同页以最近一次跑为准，未重跑的页保留原帧记录（补拍/复拍不抹证据）",
   totals: { routesInManifest: mergedResults.length, targetsThisRun: targets.length, frames: mergedResults.reduce((a, x) => a + (x.frames || []).length, 0) },
   results: mergedResults,

@@ -21,7 +21,7 @@
  * 退出码：0 往返成且守恒；1 任一环不中；2 前提不成立（凭据铸不出 / 备份写不进 / 只在 --dry 下拿不到票 ⇒ MISS）。
  */
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
-import { resolve, dirname, join } from "node:path";
+import { resolve, dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { supplyInstrumentEnv } from "./admin-instrument-env.mjs";
@@ -29,6 +29,7 @@ import { mintToken } from "./cli-automator.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "..", "..");
+const relOf = (p) => relative(REPO, resolve(p)).split(sep).join("/");
 const API = process.env.QA_API_BASE || "http://127.0.0.1:8080/api/v1";
 const RK = "ROUNDTRIP_RESULT";
 const MYSQLDUMP = process.env.MYSQLDUMP_BIN || "/d/mysql-8.0.45-winx64/bin/mysqldump.exe";
@@ -137,7 +138,7 @@ let exitCode = 0;
     process.exit(2);
   }
   writeFileSync(backupFile, dump.stdout);
-  console.log(`RT_BACKUP=${backupFile.replace(REPO + "/", "")} bytes=${dump.stdout.length} table=posts（口令经 MYSQL_PWD 传，不进命令行）`);
+  console.log(`RT_BACKUP=${relOf(backupFile)} bytes=${dump.stdout.length} table=posts（口令经 MYSQL_PWD 传，不进命令行）`);
 
   /* ── 写 ── */
   const tag = `QAFID-${round}-${stamp}`;
@@ -188,8 +189,28 @@ let exitCode = 0;
   for (const p of problems) console.error(`RT_PROBLEM ${p}`);
   console.log(`RT_CONSERVATION clientTotal ${clientTotalBefore}->${clientTotalAfter} adminTotal ${adminTotalBefore}->${adminTotalAfter} torn_down=${keep ? "kept" : (Number(delStatus) < 400 ? "yes" : "NO")}`);
   exitCode = problems.length ? 1 : 0;
+  /* --out：把判决落成盘上件，供 verify-fidelity-closeout 汇总（收口门一律不重测，只读生产者的话）。
+     字段是**白名单**：只有计数与状态码。上一程的教训是 exec-results.json 把会话 JWT 原样留在盘上、
+     而覆盖门偏要读这个文件名 ⇒ 泄漏件变成下一发要 git add 的那个文件。这里反过来：凭据根本不进对象。 */
+  const outP = arg("out", "");
+  if (outP) {
+    const rec = {
+      schema: "qafid-roundtrip-v1", at: new Date().toISOString(), round: ROUND, dry: false,
+      verdict: problems.length ? "FAIL" : "PASS",
+      created_id: postId || null, fields_same: parity.same, fields_total: parity.total,
+      client_read: cl.status, admin_read: ad.status, delete_status: String(delStatus),
+      client_total: [clientTotalBefore, clientTotalAfter], admin_total: [adminTotalBefore, adminTotalAfter],
+      conserved, torn_down: keep ? "kept" : (Number(delStatus) < 400 ? "yes" : "NO"),
+      backup: relOf(backupFile), problems,
+    };
+    const blob = JSON.stringify(rec, null, 2);
+    if (/token|authorization|bearer/i.test(blob)) { console.log(`${RK}=NOT-EVIDENCED reason=out-would-carry-credential ⇒ 结果件不落盘`); process.exit(2); }
+    mkdirSync(dirname(resolve(outP)), { recursive: true });
+    writeFileSync(resolve(outP), blob, "utf-8");
+    console.log(`RT_OUT=${relOf(outP)} bytes=${blob.length}（白名单字段，无凭据）`);
+  }
   console.log(problems.length
     ? `${RK}=FAIL created=${postId} fields=${parity.same}/${parity.total} problems=${problems.length}`
-    : `${RK}=PASS created=${postId} fields=${parity.same}/${parity.total} torn_down=${keep ? "kept(按要求保留，属残留)" : "yes"} conserved=yes backup=${backupFile.replace(REPO + "/", "")}`);
+    : `${RK}=PASS created=${postId} fields=${parity.same}/${parity.total} torn_down=${keep ? "kept(按要求保留，属残留)" : "yes"} conserved=yes backup=${relOf(backupFile)}`);
   process.exit(exitCode);
 })().catch((e) => { console.log(`${RK}=NOT-EVIDENCED reason=threw err=${String(e && e.message).slice(0, 160)}`); process.exit(2); });
