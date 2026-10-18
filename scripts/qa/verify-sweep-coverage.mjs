@@ -49,12 +49,17 @@ function judge(ledgerPath, manifestPath) {
     byRoute.set(rec.route, (rec.frames || []));
   }
   const hashOwners = new Map(); /* sha16 → [route] */
-  let blankPages = 0, noFramePages = 0, dupGroups = 0, dupFrames = 0;
+  let blankPages = 0, noFramePages = 0, dupGroups = 0, dupFrames = 0, mismatchFrames = 0;
   for (const route of want) {
     const frames = byRoute.get(route) || [];
     if (!frames.length) { noFramePages++; problems.push(`零帧页 ${route} ⇒ 这一页本轮没有画面，不许记覆盖`); continue; }
-    const good = frames.filter((f) => Number(f.bytes) > MIN_BYTES && !f.belowFloor);
-    if (!good.length) { blankPages++; problems.push(`空白页 ${route} 帧数=${frames.length} 全部 <=${MIN_BYTES}B 或标了 belowFloor ⇒ 渲染没起来`); }
+    const good = frames.filter((f) => Number(f.bytes) > MIN_BYTES && !f.belowFloor && !f.landingMismatch);
+    const mismatchedHere = frames.filter((f) => f.landingMismatch);
+    if (mismatchedHere.length) {
+      mismatchFrames += mismatchedHere.length;
+      problems.push(`落点不符页 ${route}：${mismatchedHere.map((f) => `${f.state}→${f.landingPath}`).join(", ")} ⇒ 这些帧不是该页画面，不计覆盖（R1 实测 pages/discover/index 拍到的是登录页，与 pages/login/index 逐字节相同）`);
+    }
+    if (!good.length) { blankPages++; problems.push(`空白页 ${route} 帧数=${frames.length} 全部 <=${MIN_BYTES}B / 标了 belowFloor / 落点不符 ⇒ 该页没有可用画面`); }
     for (const f of good) {
       const h = String(f.contentHash || "");
       if (!h) { problems.push(`${route} 有一帧没有 contentHash ⇒ 它没进守恒账（帧=${f.path}）`); continue; }
@@ -66,14 +71,14 @@ function judge(ledgerPath, manifestPath) {
     const uniq = [...new Set(owners)];
     if (uniq.length > 1) { dupGroups++; dupFrames += owners.length; problems.push(`跨页同图 sha16=${h.slice(0, 8)}… 覆盖 ${uniq.length} 页：${uniq.slice(0, 6).join(", ")}${uniq.length > 6 ? " …" : ""} ⇒ 至少 ${uniq.length - 1} 张不是它所在页的证据`); }
   }
-  const covered = want.filter((r) => { const f = byRoute.get(r) || []; return f.some((x) => Number(x.bytes) > MIN_BYTES && !x.belowFloor); }).length;
-  Object.assign(stats, { want: want.length, covered, blankPages, noFramePages, dupGroups, dupFrames, harness: manifest.harness || "(未记)" });
+  const covered = want.filter((r) => { const f = byRoute.get(r) || []; return f.some((x) => Number(x.bytes) > MIN_BYTES && !x.belowFloor && !x.landingMismatch); }).length;
+  Object.assign(stats, { want: want.length, covered, blankPages, noFramePages, dupGroups, dupFrames, mismatchFrames, harness: manifest.harness || "(未记)" });
   return { problems, stats };
 }
 
 function report(problems, stats) {
   for (const p of problems) console.error(`SWEEPCOVER_PROBLEM ${p}`);
-  if (stats) console.log(`SWEEPCOVER_STATS want=${stats.want} covered=${stats.covered} blankPages=${stats.blankPages} noFramePages=${stats.noFramePages} dupGroups=${stats.dupGroups} dupFrames=${stats.dupFrames} harness=${stats.harness}`);
+  if (stats) console.log(`SWEEPCOVER_STATS want=${stats.want} covered=${stats.covered} blankPages=${stats.blankPages} noFramePages=${stats.noFramePages} dupGroups=${stats.dupGroups} dupFrames=${stats.dupFrames} landingMismatchFrames=${stats.mismatchFrames} harness=${stats.harness}`);
   console.log(problems.length ? `${RK}=FAIL covered=${stats ? stats.covered : 0}/${stats ? stats.want : "?"} problems=${problems.length}` : `${RK}=PASS covered=${stats.covered}/${stats.want} 空白=0 跨页同图=0`);
   return problems.length ? 1 : 0;
 }
@@ -104,7 +109,8 @@ function selfTest() {
   const dup = mk("dup.json", { band: "real@deadbeef", harness: "automator", results: [{ route: "pages/a/index", frames: [{ bytes: 9000, contentHash: "same1111", path: "f/a.png" }] }, { route: "pages/b/index", frames: [{ bytes: 9000, contentHash: "same1111", path: "f/b.png" }] }, { route: "pages/c/index", frames: [{ bytes: 9000, contentHash: "cccc3333", path: "f/c.png" }] }] });
   const bandOff = mk("bandoff.json", { band: "real@OTHERWIFE", harness: "automator", results: [{ route: "pages/a/index", frames: [{ bytes: 9000, contentHash: "aaaa1111", path: "f/a.png" }] }, { route: "pages/b/index", frames: [{ bytes: 9000, contentHash: "bbbb2222", path: "f/b.png" }] }, { route: "pages/c/index", frames: [{ bytes: 9000, contentHash: "cccc3333", path: "f/c.png" }] }] });
 
-  const cases = [["好件", good, false], ["零帧页", missing, true], ["空白帧页", blank, true], ["跨页同图", dup, true], ["band 不符", bandOff, true]];
+  const landingBad = mk("landing.json", { band: "real@deadbeef", harness: "automator", results: [{ route: "pages/a/index", frames: [{ bytes: 9000, contentHash: "aaaa1111", path: "f/a.png" }] }, { route: "pages/b/index", frames: [{ bytes: 9000, contentHash: "bbbb2222", path: "f/b.png", landingMismatch: true, landingPath: "pages/login/index" }] }, { route: "pages/c/index", frames: [{ bytes: 9000, contentHash: "cccc3333", path: "f/c.png" }] }] });
+  const cases = [["好件", good, false], ["零帧页", missing, true], ["空白帧页", blank, true], ["跨页同图", dup, true], ["band 不符", bandOff, true], ["落点不符帧", landingBad, true]];
   let problems = 0;
   for (const [label, mp, mustFail] of cases) {
     const r = judge(lp, mp);
@@ -114,7 +120,7 @@ function selfTest() {
     if (!ok) problems++;
   }
   rmSync(scratch, { recursive: true, force: true });
-  console.log(problems ? `${SRK}=FAIL cases=5 problems=${problems}` : `${SRK}=PASS cases=5 负例可红=是`);
+  console.log(problems ? `${SRK}=FAIL cases=${cases.length} problems=${problems}` : `${SRK}=PASS cases=${cases.length} 负例可红=是`);
   return problems ? 1 : 0;
 }
 

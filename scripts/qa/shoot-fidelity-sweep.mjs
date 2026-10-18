@@ -23,7 +23,7 @@
  */
 import { createRequire } from "node:module";
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync, rmSync } from "node:fs";
-import { resolve, dirname, join } from "node:path";
+import { resolve, dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 
@@ -40,6 +40,10 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "..", "..");
 const require = createRequire(import.meta.url);
 const RK = "FIDELITYSWEEP_RESULT";
+/* manifest 里的 path 必须是「仓库相对 + 正斜杠」。Windows 上 REPO 是反斜杠形态，
+   `p.replace(REPO + "/", "")` 永不命中 ⇒ 绝对路径被写进清单（real-tour-cli.mjs:31-37 记过同一坑，
+   后果是判"断链帧"的解法两支都不匹配，整批帧被读成 UNRESOLVABLE）。 */
+const relOf = (p) => relative(REPO, p).split(sep).join("/");
 const WAIT = 9000;
 const MIN_BYTES = 3000; /* 与 real-tour-cli.mjs:210 同地板：小于此的帧不当证据 */
 
@@ -55,6 +59,7 @@ const SETTLE = Number(arg("settle", String(WAIT)));
 const ONLY = arg("only", "").split(",").map((s) => s.trim()).filter(Boolean);
 const LIMIT = Number(arg("limit", "0"));
 const dryRun = flag("dry");
+const resume = flag("resume");
 
 if (!LEDGER || !existsSync(LEDGER)) { console.log(`${RK}=NOT-EVIDENCED reason=no-ledger path=${LEDGER || "(没传 --ledger)"}`); process.exit(2); }
 if (!ROUND) { console.log(`${RK}=NOT-EVIDENCED reason=no-round（帧目录必须带轮次，否则下一轮会覆写上一轮）`); process.exit(2); }
@@ -77,6 +82,23 @@ if (!bandNow) { console.log(`${RK}=NOT-EVIDENCED reason=no-env-js dir=${PROJECT}
 if (ledger.bandStamp && ledger.bandStamp !== bandNow) {
   console.log(`${RK}=NOT-EVIDENCED reason=band-mismatch ledger=${ledger.bandStamp} artifact=${bandNow} ⇒ 账本与产物不是同一棵树，取景就是假证据`);
   process.exit(2);
+}
+
+/* 页参数（--params <json: {"route":"query"}>）。为什么需要它：
+   无参数 reLaunch 到 detail/circle-home/other 这类页，拍到的是"空壳/错误态"，
+   拿它去比对理想图只会造出垃圾缺陷（实测 profile/other 无参顶部帧只有 16.6KB）。
+   取值必须有出处，不许我编：
+     village/detail?id=352              ← scripts/mp-shoot-reference.cjs:25
+     circles/circle-home?circleId=3     ← reports/audit/round-6/ops 里 circleId=3 在用例中被引用
+     profile-extra/profile/other?userId=100159 ← 同语料；本腿登录身份铸到的是 100158，看别人主页要另一个 id
+   没给参数的页照旧走无参数路径，并在清单里记 query=""（空壳帧就如实是空壳帧）。 */
+let PARAMS = {};
+const paramsFile = arg("params", "");
+if (paramsFile) {
+  const p = resolve(paramsFile);
+  if (!existsSync(p)) { console.log(`${RK}=NOT-EVIDENCED reason=params-file-unreadable path=${paramsFile}`); process.exit(2); }
+  PARAMS = JSON.parse(readFileSync(p, "utf-8"));
+  console.log(`SWEEP_PARAMS 已载入 ${Object.keys(PARAMS).length} 条：${Object.keys(PARAMS).join(" ")}`);
 }
 
 let targets = rows.filter((r) => !ONLY.length || ONLY.includes(r.route));
@@ -141,13 +163,35 @@ try {
 
 const seen = new Map(); /* hash → 首个用到它的路由（跨页同图必须被数出来） */
 for (const r of targets) {
-  const rec = { route: r.route, harness: "automator", band: bandNow, identity: IDENTITY, frames: [], errors: [] };
+  const rec = { route: r.route, query: PARAMS[r.route] || "", harness: "automator", band: bandNow, identity: IDENTITY, frames: [], errors: [] };
   const shots = [{ state: "top", tokens: [`route:${r.route}`] }, { state: "bottom", tokens: [`route:${r.route}`, "scroll-bottom"] }];
   for (const s of shots) {
     const f = join(OUT_DIR, `${r.route.replace(/\//g, "__")}__${s.state}.png`);
+    /* --resume：已有一张过地板的同类帧就跳过。WS 通道单帧偶发 timeout（本轮 28 发里 5 发），
+       重跑整轮既浪费设备时间也会把上一发的好帧重新拍成另一个状态；补拍只补缺。 */
+    if (resume && existsSync(f) && statSync(f).size > MIN_BYTES) {
+      const h0 = hash16(f);
+      const prior0 = seen.get(h0);
+      rec.frames.push({ route: r.route, query: PARAMS[r.route] || "", state: s.state, path: relOf(f), bytes: statSync(f).size, contentHash: h0, belowFloor: false, dupAcrossRoutes: !!prior0 && prior0 !== r.route, sameAsTop: false, resumed: true, landingVerified: false, landingPath: "unverified(上一跑保留的旧帧，当跑未读落点)" });
+      if (h0 && !seen.has(h0)) seen.set(h0, r.route);
+      console.log(`SWEEP_RESUME_SKIP ${r.route}__${s.state} 已有 ${statSync(f).size}B 帧，不重拍`);
+      continue;
+    }
     try {
-      await mp.callWxMethod("reLaunch", { url: "/" + r.route });
+      await mp.callWxMethod("reLaunch", { url: "/" + r.route + (PARAMS[r.route] ? "?" + PARAMS[r.route] : "") });
       await sleep(SETTLE);
+      /* 落点核对（R1 实测出来的，不是臆想）：pages/discover/index 的顶部帧与 pages/login/index
+         逐字节相同（183416B / sha16=e4affee8）⇒ 那次导航其实停在登录页，而我的清单把它当成"寻觅页的证据"。
+         只靠跨页同图普查是间接证据（要两张恰好全等才报），落点必须直接读。
+         currentPage().path 是这一页真正在显示的路由；不等目标页 ⇒ 这张帧记 landingMismatch，
+         不许当该页画面证据（同 r-exec-ws.mjs routeOk===false ⇒ 判"落在别的页，须人判"的口径）。 */
+      let actualPath = "";
+      try {
+        const cp = await mp.currentPage();
+        actualPath = cp && cp.path ? String(cp.path).replace(/^\//, "") : "";
+      } catch (e) { actualPath = "(currentPage 读不到:" + String(e.message).slice(0, 40) + ")"; }
+      const landingMismatch = actualPath !== r.route;
+      if (landingMismatch) rec.errors.push(`落点不符 target=${r.route} actual=${actualPath}`);
       if (s.state === "bottom") {
         try { await mp.callWxMethod("pageScrollTo", { scrollTop: 99999, duration: 0 }); }
         catch { try { await mp.callWxMethod("pageScrollTo", { scrollTop: 20000, duration: 0 }); } catch (e2) { rec.errors.push("pageScrollTo 不可用:" + String(e2.message).slice(0, 60)); } }
@@ -174,13 +218,14 @@ for (const r of targets) {
          这是保真审计要的信号，不当"两个状态"记账。 */
       const sameAsTop = s.state === "bottom" && h && rec.frames.length && rec.frames[0].contentHash === h;
       rec.frames.push({
-        route: r.route,
-        state: s.state, path: f.replace(REPO + "/", "").split("\\").join("/"), bytes: size, contentHash: h,
+        route: r.route, query: PARAMS[r.route] || "",
+        state: s.state, path: relOf(f), bytes: size, contentHash: h,
+        landingPath: actualPath, landingMismatch,
         belowFloor: size <= MIN_BYTES, dupAcrossRoutes, sameAsTop,
         dupOf: dupAcrossRoutes ? priorOwner : (sameAsTop ? `${r.route}__top` : ""),
       });
       if (h && !seen.has(h)) seen.set(h, r.route);
-      console.log(`SWEEP_FRAME ${r.route}__${s.state} bytes=${size} sha16=${h ? h.slice(0, 8) : "-"}${size <= MIN_BYTES ? " 空白帧" : ""}${dupAcrossRoutes ? " 跨页同图(" + priorOwner + ")" : ""}${sameAsTop ? " 滚动后同图" : ""}`);
+      console.log(`SWEEP_FRAME ${r.route}__${s.state} bytes=${size} sha16=${h ? h.slice(0, 8) : "-"} 落点=${actualPath || "(空)"}${landingMismatch ? " ⇒落点不符" : ""}${size <= MIN_BYTES ? " 空白帧" : ""}${dupAcrossRoutes ? " 跨页同图(" + priorOwner + ")" : ""}${sameAsTop ? " 滚动后同图" : ""}`);
     } catch (e) {
       rec.errors.push(`${s.state}: ${String(e && e.message).slice(0, 120)}`);
       console.log(`SWEEP_FAIL ${r.route} ${s.state} ${String(e && e.message).slice(0, 120)}`);
@@ -190,30 +235,50 @@ for (const r of targets) {
 }
 try { await mp.disconnect(); } catch { /* 断开失败不影响已落的帧 */ }
 
+/* 清单按路由**合并**写，绝不整件覆写：本轮会有多次运行（补拍缺帧、重拍带参数的页、
+   之后 R2/R3 只复拍被改动的页）。原先每次重跑都把 14 页的清单压成"这一跑的 targets"，
+   实测第三次跑完清单只剩 3 页 —— 那是把已经拍好的证据从账上抹掉。
+   同一路由以本次为准（整页重拍），没被本次覆盖的路由原样保留。 */
+const manifestPath = join(OUT_DIR, "sweep-manifest.json");
+const merged = new Map();
+if (existsSync(manifestPath)) {
+  try {
+    const prev = JSON.parse(readFileSync(manifestPath, "utf-8"));
+    for (const rec of (prev.results || [])) if (rec && rec.route) merged.set(rec.route, rec);
+  } catch { console.log("SWEEP_MANIFEST_PREV=unreadable（旧清单解析不了，本次只写本次的页，不假装合并）"); }
+}
+for (const rec of results) merged.set(rec.route, rec);
+const mergedResults = [...merged.values()];
+
 const manifest = {
   schema: "mp-fidelity-sweep/v1", round: ROUND, band: bandNow, identity: IDENTITY,
   sessionSource: session.source, userId: session.userId,
   harness: "miniprogram-automator(实测出图 378x814，禁与 CLI 193x413 跨尺比像素)",
   consoleCapture: "unavailable：miniprogram-automator 0.12.1 的导出面没有 onConsole/onError（已 grep out/ 核实），本轮不假装采到 console",
-  ledger: LEDGER.replace(REPO + "/", ""),
-  totals: { targets: targets.length, frames: results.reduce((a, x) => a + x.frames.length, 0) },
-  results,
+  ledger: relOf(LEDGER),
+  mergeNote: "本件按路由合并：同页以最近一次跑为准，未重跑的页保留原帧记录（补拍/复拍不抹证据）",
+  totals: { routesInManifest: mergedResults.length, targetsThisRun: targets.length, frames: mergedResults.reduce((a, x) => a + (x.frames || []).length, 0) },
+  results: mergedResults,
 };
-writeFileSync(join(OUT_DIR, "sweep-manifest.json"), JSON.stringify(manifest, null, 2) + "\n", "utf-8");
+writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n", "utf-8");
 
-/* 收口读数：空白帧、跨页同图、零帧页都逐条点名（"全绿但读的是空数"是这个项目的老病）。 */
-const blank = results.flatMap((x) => x.frames.filter((f) => f.belowFloor));
-const dups = results.flatMap((x) => x.frames.filter((f) => f.dupAcrossRoutes));
-const stuck = results.flatMap((x) => x.frames.filter((f) => f.sameAsTop));
-const noFrame = results.filter((x) => !x.frames.some((f) => !f.belowFloor));
-const failedPages = results.filter((x) => x.errors.length);
+/* 收口读数一律看**合并后的整轮**（mergedResults），不看"这一跑的 targets"：
+   补拍跑只带 3 页，用它判覆盖会把另外 11 页读成不存在。
+   空白帧、跨页同图、滚动后同图、零独立画面页都逐条点名（"全绿但读的是空数"是这个项目的老病）。 */
+const blank = mergedResults.flatMap((x) => (x.frames || []).filter((f) => f.belowFloor));
+const dups = mergedResults.flatMap((x) => (x.frames || []).filter((f) => f.dupAcrossRoutes));
+const stuck = mergedResults.flatMap((x) => (x.frames || []).filter((f) => f.sameAsTop));
+const mismatched = mergedResults.flatMap((x) => (x.frames || []).filter((f) => f.landingMismatch));
+for (const m of mismatched) console.log(`SWEEP_LANDING_MISMATCH ${m.route}__${m.state} 落点=${m.landingPath} ⇒ 这张帧不是该页画面，不许当该页证据`);
+const noFrame = mergedResults.filter((x) => !(x.frames || []).some((f) => !f.belowFloor));
+const failedPages = mergedResults.filter((x) => (x.errors || []).length);
 for (const b of blank) console.log(`SWEEP_BLANK_FRAME ${b.route} ${b.path} bytes=${b.bytes}`);
 for (const d of dups) console.log(`SWEEP_DUP_ACROSS_ROUTES ${d.path} sha16=${String(d.contentHash).slice(0, 8)} 与更早页同图`);
 for (const s of stuck) console.log(`SWEEP_SCROLL_NOTHING_CHANGED ${s.path} 底部与顶部逐字节相同（滚动未改变画面，不许当两个状态）`);
 for (const n of noFrame) console.log(`SWEEP_NO_UNIQUE_FRAME ${n.route} ⇒ 这一页本轮没有独立画面，不许算进覆盖`);
-for (const fp of failedPages) console.log(`SWEEP_PAGE_ERROR ${fp.route} ${fp.errors.join(" | ").slice(0, 160)}`);
-console.log(`FIDELITYSWEEP_FRAMES frames=${manifest.totals.frames} blank=${blank.length} dupAcross=${dups.length} scrollStuck=${stuck.length} noUniqueFrame=${noFrame.length} pageErrors=${failedPages.length}`);
-const bad = noFrame.length + blank.length + failedPages.length;
-console.log(bad ? `${RK}=FAIL targets=${targets.length} frames=${manifest.totals.frames} blank=${blank.length} noUniqueFrame=${noFrame.length} pageErrors=${failedPages.length}`
-  : `${RK}=PASS targets=${targets.length} frames=${manifest.totals.frames} band=${bandNow} console=unavailable(如实)`);
+for (const fp of failedPages) console.log(`SWEEP_PAGE_ERROR ${fp.route} ${(fp.errors || []).join(" | ").slice(0, 160)}`);
+console.log(`FIDELITYSWEEP_FRAMES routesInManifest=${mergedResults.length} thisRunTargets=${targets.length} frames=${manifest.totals.frames} blank=${blank.length} dupAcross=${dups.length} scrollStuck=${stuck.length} landingMismatch=${mismatched.length} noUniqueFrame=${noFrame.length} pageErrors=${failedPages.length}`);
+const bad = noFrame.length + blank.length + failedPages.length + mismatched.length;
+console.log(bad ? `${RK}=FAIL routes=${mergedResults.length}/${rows.length} frames=${manifest.totals.frames} blank=${blank.length} noUniqueFrame=${noFrame.length} landingMismatch=${mismatched.length} pageErrors=${failedPages.length}`
+  : `${RK}=PASS routes=${mergedResults.length}/${rows.length} frames=${manifest.totals.frames} band=${bandNow} console=unavailable(如实)`);
 process.exit(bad ? 1 : 0);
