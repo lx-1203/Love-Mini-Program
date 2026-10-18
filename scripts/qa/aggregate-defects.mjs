@@ -160,6 +160,15 @@ if (existsSync(p0) && statSync(p0).isDirectory()) {
 else { console.log(`${RK}=NOT-EVIDENCED reason=lanes 路径不存在 ${lanesArg}`); process.exit(2); }
 if (!lanePaths.length) { console.log(`${RK}=NOT-EVIDENCED reason=没有泳道件可聚合（空扫描集）`); process.exit(2); }
 
+/* 任务书(*.brief.md)不是缺陷卡，必须排除。R1 实测：我传的是目录，里面 12 个 .md = 6 张卡 + 6 份任务书，
+   聚合器把任务书也吞进来了。这次没变成脏批次**纯属侥幸** —— 任务书里的示例字段是占位符
+   （axis="<词表内的一项>"），被 rejected 判点挡成 6 条。一旦任务书把示例写成合法轴（或以后模板改样），
+   那些示例就会成为一条真实批次去改代码。⇒ 排除按文件名谓词做，不依赖字段是否合法。 */
+const briefPaths = lanePaths.filter((p) => /\.brief\.md$/i.test(p));
+for (const b of briefPaths) lanePaths.splice(lanePaths.indexOf(b), 1);
+console.log(`AGGREGATE_SCOPE 读卡=${lanePaths.length} 排除任务书=${briefPaths.length}`);
+if (!lanePaths.length) { console.log(`${RK}=NOT-EVIDENCED reason=目录里只有任务书、没有缺陷卡`); process.exit(2); }
+
 const { problems, batches, rejected, all } = aggregate(lanePaths, round);
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, JSON.stringify({

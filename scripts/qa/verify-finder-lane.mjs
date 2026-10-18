@@ -50,11 +50,19 @@ function parseDefects(block) {
 }
 
 /** 源码证据复核：path:line（允许 apps/client/... 与 src/... 两种写法各试一次） */
+/* 扩展白名单含 wxss/wxml（R1 泳道诚实回报逼出来的洞）：custom-tab-bar 的缺陷真身就写在
+   apps/client/src/custom-tab-bar/index.wxss / .wxml，旧白名单不收它们 ⇒ 泳道只能改引"同缺陷的近端源码"
+   （驱动该样式的 js flag、或 scss 里的 token）。那不是编造，但证据从真身挪开了，
+   后续修批会照着不产生该现象的文件去改。收进白名单，证据才回到真身。 */
 function citationOk(cit) {
-  const m = String(cit || "").match(/([^\s:]+\.((vue)|(ts)|(js)|(mjs)|(cjs)|(scss)|(css)|(json))):(\d+)/);
+  /* 组序陷阱（R1 实测）：原先写成 `((vue)|(ts)|(js)|...)` 每支各带一个捕获组，
+     于是外层组和内层组都在数里 —— 我加 wxss/wxml 白名单时把组号挪了一位，
+     m[5] 从"行号"变成字符串 "js"，Number() 得 NaN，一条明明合法的门禁引用被误判成空行。
+     ⇒ 改成非捕获组 + 只留一个显式行号组，并且不再用位置索引猜第几组是行号。 */
+  const m = String(cit || "").match(/([^\s:]+\.(?:vue|ts|js|mjs|cjs|scss|css|json|wxss|wxml)):(\d+)/);
   if (!m) return { ok: false, why: "形状不是 path:line（可复核的扩展名 + 行号）" };
   const rel = m[1];
-  const line = Number(m[5] || m[0].split(":").pop());
+  const line = Number(m[2]);
   const cand = [join(REPO, rel), join(REPO, "apps/client", rel)].filter(existsSync);
   if (!cand.length) return { ok: false, why: `文件不在仓内 ${rel}` };
   const lines = readFileSync(cand[0], "utf-8").split(/\r?\n/);
@@ -89,20 +97,31 @@ function judge(lanePath, manifestPath) {
   const sections = lane.split(/\n(?=##\s+FRAME\s)/).filter((s) => /^##\s+FRAME\s/.test(s));
   if (!sections.length) return { problems: ["泳道件里一个 `## FRAME` 段都没有 ⇒ 配额无从谈起（空手交件）"], stats: null };
 
-  let framesSeen = 0, defectCount = 0, hashBad = 0, citeBad = 0, axisBad = 0, quotaViolations = 0, unlisted = 0;
+  let defectCount = 0, hashBad = 0, citeBad = 0, axisBad = 0, quotaViolations = 0, unlisted = 0;
+  /* 洞（R1 实测出来的）：泳道可以给同一帧写 N 个 `## FRAME` 段（L01 三帧写了 26 段），
+     于是"每帧≥1缺陷"这条配额数的是段数、永远响不了；一帧没审也可能被段数盖住。
+     ⇒ 先按帧路径**分组**，配额与 hash 归属都按去重后的帧判，段只是同一帧的多条记录。 */
+  const groups = new Map();
   for (const sec of sections) {
-    framesSeen++;
     const header = String(sec.split(/\r?\n/)[0] || "").replace(/^##\s+FRAME\s+/, "").trim();
-    const fields = parseFields(sec);
-    const defects = parseDefects(sec);
-    if (!framesByPath.has(header)) { unlisted++; problems.push(`FRAME 段指向清单里没有的帧：${header} ⇒ 帧路径必须逐字来自 sweep-manifest`); continue; }
+    if (!groups.has(header)) groups.set(header, []);
+    groups.get(header).push(sec);
+  }
+  let framesSeen = 0;
+  for (const [header, secs] of groups) {
+    if (!framesByPath.has(header)) { unlisted += secs.length; problems.push(`FRAME 段指向清单里没有的帧：${header}（${secs.length} 段）⇒ 帧路径必须逐字来自 sweep-manifest`); continue; }
+    framesSeen++;
     const truth = framesByPath.get(header);
+    const defects = secs.flatMap((s) => parseDefects(s));
+    const claimedHashes = secs.map((s) => String(parseFields(s).frame_hash || "").trim()).filter(Boolean);
     if (!defects.length) { quotaViolations++; problems.push(`${header} 这条帧零缺陷 ⇒ 配额未达（本门就是为这一条写的）`); continue; }
-    const claimedHash = String(fields.frame_hash || "").trim();
-    if (!claimedHash || !String(truth.contentHash || "").startsWith(claimedHash.slice(0, Math.min(claimedHash.length, 16))) || claimedHash.length < 8) {
-      hashBad++; problems.push(`${header} frame_hash=${claimedHash || "(空)"} 与清单实测 ${String(truth.contentHash).slice(0, 8)}… 不符 ⇒ 这条帧没被真打开过`);
+    const claimedHash = claimedHashes[0] || "";
+    if (!claimedHash || claimedHash.length < 8 || !String(truth.contentHash || "").startsWith(claimedHash.slice(0, Math.min(claimedHash.length, 16)))) {
+      hashBad++; problems.push(`${header} frame_hash=${claimedHash || "(空)"} 与清单实测 ${String(truth.contentHash).slice(0, 8)}… 不符 ⇒ 这条帧没被真打开过（或 hash 被逐段写成不同值）`);
       continue;
     }
+    const mismatchedSegHashes = claimedHashes.filter((h) => h.length >= 8 && !String(truth.contentHash).startsWith(h.slice(0, Math.min(h.length, 16))));
+    if (mismatchedSegHashes.length) { hashBad++; problems.push(`${header} 有 ${mismatchedSegHashes.length} 段写了与本帧清单不符的 hash ⇒ 同帧多段必须同 hash`); }
     for (const d of defects) {
       const axis = String(d.axis || "").trim();
       const sev = String(d.severity || "").trim();
@@ -190,6 +209,47 @@ function selfTest() {
 - fix_category: 单页
 - source_citation: ${goodCit}
 `;
+  /* 第 7 例（R1 实测出来的洞）：同一帧写 N 段、每段都带合格缺陷。
+     旧版数的是"段数"，于是 3 帧写 26 段时 frames=26=defects，配额判点永不响，
+     而另一帧完全没审也看不出来。现在按去重后的帧判 ⇒ 这一件必须红（另一帧没覆盖到，
+     且本件的"帧数"应当是 1 而不是 N）。 */
+  const manySections = `## FRAME ${FRAME_A}
+- frame_hash: ${HASH_A}
+- defect_id: MPFID-MANY-006
+- axis: 间距
+- severity: P1
+- fix_category: 单页
+- source_citation: ${goodCit}
+## FRAME ${FRAME_A}
+- frame_hash: ${HASH_A}
+- defect_id: MPFID-MANY-007
+- axis: 圆角
+- severity: P2
+- fix_category: 单页
+- source_citation: ${goodCit}
+## FRAME ${FRAME_A}
+- frame_hash: ${HASH_A}
+- defect_id: MPFID-MANY-008
+- axis: 字号
+- severity: P2
+- fix_category: 单页
+- source_citation: ${goodCit}
+`;
+  const wrongHashInOneSeg = `## FRAME ${FRAME_A}
+- frame_hash: ${HASH_A}
+- defect_id: MPFID-MANY-009
+- axis: 间距
+- severity: P1
+- fix_category: 单页
+- source_citation: ${goodCit}
+## FRAME ${FRAME_A}
+- frame_hash: 99999999
+- defect_id: MPFID-MANY-010
+- axis: 圆角
+- severity: P2
+- fix_category: 单页
+- source_citation: ${goodCit}
+`;
 
   const cases = [
     ["合规件必须绿", good, false],
@@ -198,19 +258,28 @@ function selfTest() {
     ["帧 hash 不符必须红", badHash, true],
     ["编造 citation 必须红", badCit, true],
     ["清单里没有的帧必须红", ghostFrame, true],
+    ["同帧多段里混一个错 hash 必须红", wrongHashInOneSeg, true],
   ];
   let problems = 0;
   for (const [label, body, mustFail] of cases) {
     const f = join(scratch, "lane.md");
     writeFileSync(f, body, "utf-8");
-    const { problems: ps } = judge(f, mp);
+    const { problems: ps, stats } = judge(f, mp);
     const red = ps.length > 0;
     const ok = red === mustFail;
-    console.log(`FINDERLANE_SELF ${label.padEnd(22)} 期望=${mustFail ? "红" : "绿"} 实测=${red ? `红(${ps.length})` : "绿"} ⇒ ${ok ? "判点承重" : "判点失效"}`);
+    console.log(`FINDERLANE_SELF ${label.padEnd(30)} 期望=${mustFail ? "红" : "绿"} 实测=${red ? `红(${ps.length})` : "绿"} ⇒ ${ok ? "判点承重" : "判点失效"}`);
     if (!ok) problems++;
   }
+  /* 洞的正面证据：同帧写 3 段，帧数必须是 1（旧版会数成 3，配额判点因此永不响） */
+  const f7 = join(scratch, "lane7.md");
+  writeFileSync(f7, manySections, "utf-8");
+  const r7 = judge(f7, mp);
+  const counted = r7.stats && r7.stats.framesSeen;
+  const ok7 = counted === 1;
+  console.log(`FINDERLANE_SELF ${"同帧 3 段只能数成 1 帧".padEnd(30)} 期望 frames=1 实测 frames=${counted} ⇒ ${ok7 ? "洞已堵" : "洞还在（按段数=配额可被绕）"}`);
+  if (!ok7) problems++;
   rmSync(scratch, { recursive: true, force: true });
-  console.log(problems ? `${SRK}=FAIL cases=6 problems=${problems}` : `${SRK}=PASS cases=6 负例可红=是`);
+  console.log(problems ? `${SRK}=FAIL cases=${cases.length + 1} problems=${problems}` : `${SRK}=PASS cases=${cases.length + 1} 负例可红=是`);
   return problems ? 1 : 0;
 }
 
