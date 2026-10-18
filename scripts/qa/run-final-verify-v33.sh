@@ -89,8 +89,10 @@ g verify-real-coverage-disposition 180 scripts/qa/verify-real-coverage-dispositi
 # 超时取 600，与 DSL 侧 timeoutMs 600000 同值——两侧不一致时门被杀掉会读成红而不是跳过。
 g verify-rulings-landed        600 scripts/qa/verify-rulings-landed.mjs
 # 本轮登记 12 条孤儿门（此前两个载具都不点名，从未进终验；只读、不取租约、不写库）。
-# 超时与 DSL 侧逐条同值。verify-package-size / verify-logged-in-landing / verify-evidence-integrity
-# 三条要输入参数，裸跑按设计退 2 或红，留在孤儿基线里，不硬塞进终验造假红。
+# 超时与 DSL 侧逐条同值。verify-logged-in-landing / verify-evidence-integrity 两条仍缺输入
+# （前者要本轮腿目录的 --exec、后者要 <manifest.json>），留在孤儿基线里，不硬塞进终验造假红。
+# verify-package-size 曾在这条排除名单里：2026-10-18 发布形态重建后输入真的在盘上，
+# 于是带 dist 路径登记（见下面 g 步骤），孤儿基线 4→3——基线只随"缺输入被补齐"下降。
 g verify-backend-restarted     120 scripts/qa/verify-backend-restarted.mjs
 g verify-case-selectors-exist  120 scripts/qa/verify-case-selectors-exist.mjs
 g verify-criteria-frame-debt   120 scripts/qa/verify-criteria-frame-debt.mjs
@@ -98,6 +100,7 @@ g verify-disproof-anchors      120 scripts/qa/verify-disproof-anchors.mjs
 g verify-fixes-against-artifact 180 scripts/qa/verify-fixes-against-artifact.cjs
 g verify-frame-debt-coverage   120 scripts/qa/verify-frame-debt-coverage.mjs
 g verify-closed-bucket-destinations 60 scripts/qa/verify-closed-bucket-destinations.mjs
+g verify-package-size        300 scripts/verify-package-size.mjs apps/client/dist/build/mp-weixin-real
 g verify-frame-debt-triage     120 scripts/qa/verify-frame-debt-triage.mjs
 g verify-i18n-orphan           120 scripts/qa/verify-i18n-orphan.mjs
 g verify-status-vs-disposition 120 scripts/qa/verify-status-vs-disposition.mjs

@@ -311,11 +311,12 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   // 而载具没传它们要的输入 —— 实跑一次就把 booked 的 carrier 写成 --project undefined、
   // 把 cellplan 的精确值 width: 144rpx 换成散文（门自己还印 OK）。受损两件已按名从 HEAD 恢复。
   // 契约补齐（缺输入退 2 且不写产物）后再登记，见台账 MP-R7QA-GUESTLANDING-FAIL-OPEN-001。
-  // 另 3 条从未登记：verify-logged-in-landing 要 --exec、verify-evidence-integrity 要 manifest、
-  // verify-package-size 要构建目录 —— 裸跑按设计退 2 或红，那是缺输入不是坏门，硬塞只会造假红。
-  // 剩下 3 条没登记：verify-logged-in-landing 要 --exec、verify-evidence-integrity 要 manifest、
-  // verify-package-size 要构建目录——裸跑按设计退 2 或红，那是"缺输入"不是"坏门"，
-  // 硬塞进终验只会造出一串假红或假绿，所以留在孤儿基线里由完备性判点看住。
+  // 还有 2 条没登记：verify-logged-in-landing 要 --exec、verify-evidence-integrity 要 manifest——
+  // 裸跑按设计退 2 或红，那是"缺输入"不是"坏门"，硬塞进终验只会造出一串假红或假绿，
+  // 所以留在孤儿基线里由完备性判点看住。
+  // verify-package-size 曾同属这一组：2026-10-18 按发布形态重建出 mp-weixin-real 档
+  // （prepare-static --real + real 构建，主包实测 1.73MB/上限 2.00MB）之后输入真的在盘上，
+  // 于是带路径登记进来，孤儿基线 4→3 —— 这是收紧而不是豁免：基线只许随缺输入的门被补齐而下降。
   { name: "后端重启核验 verify-backend-restarted", args: ["scripts/qa/verify-backend-restarted.mjs"], timeoutMs: 120000 },
   { name: "选择器在册核验 verify-case-selectors-exist", args: ["scripts/qa/verify-case-selectors-exist.mjs"], timeoutMs: 120000 },
   { name: "判据欠帧去向 verify-criteria-frame-debt", args: ["scripts/qa/verify-criteria-frame-debt.mjs"], timeoutMs: 120000 },
@@ -325,6 +326,7 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   { name: "收口桶去向棘轮 verify-closed-bucket-destinations", args: ["scripts/qa/verify-closed-bucket-destinations.mjs"], timeoutMs: 60000 },
   { name: "欠帧分诊闸 verify-frame-debt-triage", args: ["scripts/qa/verify-frame-debt-triage.mjs"], timeoutMs: 120000 },
   { name: "i18n 孤儿键 verify-i18n-orphan", args: ["scripts/qa/verify-i18n-orphan.mjs"], timeoutMs: 120000 },
+  { name: "包体上限门禁 verify-package-size", args: ["scripts/verify-package-size.mjs", "apps/client/dist/build/mp-weixin-real"], timeoutMs: 300000 },
   { name: "状态与处置一致 verify-status-vs-disposition", args: ["scripts/qa/verify-status-vs-disposition.mjs"], timeoutMs: 120000 },
   { name: "tabBar 单点化 verify-tab-bar-single-source", args: ["scripts/qa/verify-tab-bar-single-source.mjs"], timeoutMs: 120000 },
   // 再登记（本轮）：verify-guest-landing 曾因载具不传旗标而把 "--project undefined" 与

@@ -209,7 +209,11 @@ for (const d of orphanDirs) {
     if (!orphanCarriers.has(f)) orphans.push(`${d}/${f}`);
   }
 }
-const ORPHAN_BASELINE = 4;
+/* 棘轮：只许随"缺输入被补齐"下降。4→3 的实测出处（2026-10-18）：发布形态重建出
+   apps/client/dist/build/mp-weixin-real 后 verify-package-size 带路径登进两个载具，
+   PACKAGE_SIZE_RESULT=PASS（主包 1.73MB/上限 2.00MB、总包 2.75MB/10MB，档位 PACKAGE_SIZE_BAND=MODE:real）。
+   仍留 3 条：verify-logged-in-landing 要 --exec、verify-evidence-integrity 要 manifest。 */
+const ORPHAN_BASELINE = 3;
 console.log(`GATESYNC_ORPHANS=${orphans.length} baseline=${ORPHAN_BASELINE}（印 _RESULT= 却两边载具都不点名的 verify-* 门）`);
 for (const o of orphans) console.log(`  ORPHAN ${o}`);
 t(`孤儿门不得新增（现 ${orphans.length}，基线 ${ORPHAN_BASELINE}；这道判点专抓两份清单"同时缺"的共同盲区）`,
