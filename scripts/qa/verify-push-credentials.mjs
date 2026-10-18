@@ -39,6 +39,12 @@ const GAUGES = [
 const ALLOW = new Map([
   ["apps/api/src/main/java/com/campuslove/api/auth/AuthController.java|JWT", "Swagger @Parameter 的 example 串，43 字符且无签名段：文档示例不是凭据"],
   ["apps/api/src/test/java/com/campuslove/api/wxpay/WxPayPropertiesFailFastTest.java|PEM", "测试故意写坏的 PEM 首尾 + !!! 用来断言 fail-fast：不是密钥材料"],
+  /* 2026-10-18 账主"全批"后按①记档（不是随手加的豁免；三件事实都在下面）：
+     该件里那枚票 header.alg=HS512 kid=1、claims=sub,jti,iat,exp，exp=2026-10-13T14:05:28Z ⇒ 记档当日已过期 4.1 天，
+     属失效凭据而非活体；文件本身已按"腿产物不进 git"裁定移出跟踪（8e69c124，字节留盘 11859B 作证据），
+     命中来自 origin/main..HEAD 的历史 blob，不会随新提交再引入。
+     代价如实写明：本仓因此永久保留一枚历史里的失效票；若日后判其值不当，只能重写 109 个未推提交（本次裁定为重写代价高于失效票价值，故选①不选②）。 */
+  ["reports/audit/round-7/exec-v37-nearby/exec-results.json|JWT", "exp=2026-10-13T14:05:28Z 的失效票（HS512/kid=1），记档当日过期 4.1 天；该件已移出跟踪（8e69c124），命中来自历史 blob；盘上字节留作设备腿证据，且它同时是本门的正例控制件"],
 ]);
 const CONTROL = "reports/audit/round-7/exec-v37-nearby/exec-results.json";
 

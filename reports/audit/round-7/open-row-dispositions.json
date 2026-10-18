@@ -779,9 +779,9 @@
   },
   {
    "id": "MP-R7QA-TRACKED-EXEC-JWT-001",
-   "kind": "static_predicate",
-   "reason": "该件实测仍被跟踪（git ls-files --error-unmatch 命中）且未被 .gitignore 覆盖（check-ignore=NOT_IGNORED），三段 JWT 形状在该文件命中 1 行（只报命中数，未回显原文）。欠一条能红的扫描：全库被跟踪件的 JWT/bcrypt/PEM 三形状。",
-   "nextCarrier": "①按删除语义移出跟踪（git rm --cached，属账主动作）②push 前是否重写历史——名册内无对应 id，需登记后裁③三形状扫描进门禁前置"
+   "kind": "ruled_accepted",
+   "reason": "原判点成立（该件确曾被跟踪且内含票），现按账主裁定①结案：件移出跟踪 8e69c124、失效票记进 ALLOW；结案复量 PUSHCREDS_RESULT=PASS findings=0 soft=2 且正例控制仍 OK。",
+   "nextCarrier": "verify-push-credentials 的 ALLOW 名单（含 exp 与过期天数的记档理由）；若日后判该票价值高于代价，只剩重写 109 个未推提交这一条路，需重新立案"
   },
   {
    "id": "MP-R7QA-CLOSEDBUCKET-BLIND-82-001",
@@ -890,6 +890,14 @@
    "count": 1,
    "ids": [
     "MP-R7QA-CLOSEDBUCKET-BLIND-82-001"
+   ]
+  },
+  {
+   "at": "2026-10-18T03:17:44.266Z",
+   "from": "账主「全批」后按选项①结案（台账 MP-R7QA-TRACKED-EXEC-JWT-001 改判 回归核对）",
+   "count": 1,
+   "ids": [
+    "MP-R7QA-TRACKED-EXEC-JWT-001"
    ]
   }
  ]
