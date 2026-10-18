@@ -38,11 +38,22 @@ for (const rec of (manifest.results || [])) byRoute.set(rec.route, rec);
 
 const wantRows = (ledger.rows || []).filter((r) => flag("all") ? true : r.baselineStatus === "有基准");
 const pages = [];
+const excluded = [];
 for (const r of wantRows) {
   const rec = byRoute.get(r.route);
-  const frames = ((rec && rec.frames) || []).filter((f) => Number(f.bytes) > 3000 && f.contentHash);
+  const all = ((rec && rec.frames) || []);
+  /* 只把"落点已验且与目标页一致"的帧交给泳道。
+     为什么这条必须写死：R1 实测 pages/discover/index 的顶部帧与登录页逐字节相同
+     （那次导航停在登录页），而 --resume 保留的旧帧当跑没读落点（landingVerified:false）。
+     泳道拿这种图去比理想效果图，产出的必然是假缺陷；不如明写"这一页本轮未取证"。 */
+  const frames = all.filter((f) => Number(f.bytes) > 3000 && f.contentHash && !f.landingMismatch && f.landingVerified !== false);
+  const dropped = all.length - frames.length;
+  if (dropped > 0) {
+    const why = all.filter((f) => f.landingMismatch).length ? "落点不符" : "落点未验(resume旧帧)";
+    excluded.push({ route: r.route, dropped, why, states: all.filter((f) => !(Number(f.bytes) > 3000 && f.contentHash && !f.landingMismatch && f.landingVerified !== false)).map((f) => f.state) });
+  }
   if (!frames.length) continue;
-  pages.push({ route: r.route, images: r.baselineImages || [], frames: frames.map((f) => ({ state: f.state, path: f.path, hash: f.contentHash, bytes: f.bytes })), identity: r.identityPrecondition });
+  pages.push({ route: r.route, images: r.baselineImages || [], frames: frames.map((f) => ({ state: f.state, path: f.path, hash: f.contentHash, bytes: f.bytes, query: (rec && rec.query) || "" })), identity: r.identityPrecondition });
 }
 
 const lanes = [];
@@ -58,9 +69,13 @@ for (let i = 0; i < pages.length; i += perLane) {
   });
 }
 
+/* 分母与泳道取材用同一个谓词（可用 = 过地板 + 有 hash + 落点已验且相符），
+   否则守恒式左边少了 excluded，会把"被剔除的帧"读成"漏审"。 */
+const usable = (f) => Number(f.bytes) > 3000 && !!f.contentHash && !f.landingMismatch && f.landingVerified !== false;
+const scopedResults = (manifest.results || []).filter((r) => !flag("all") ? ((ledger.rows.find((x) => x.route === r.route) || {}).baselineStatus === "有基准") : true);
 const frameTotal = lanes.reduce((a, l) => a + l.frame_total, 0);
-const usableFrames = [...byRoute.values()].flatMap((r) => (r.frames || []).filter((f) => Number(f.bytes) > 3000 && f.contentHash)).length;
-const scopedFrames = flag("all") ? usableFrames : manifest.results.filter((r) => (ledger.rows.find((x) => x.route === r.route) || {}).baselineStatus === "有基准").flatMap((r) => (r.frames || []).filter((f) => Number(f.bytes) > 3000 && f.contentHash)).length;
+const scopedFrames = scopedResults.flatMap((r) => (r.frames || []).filter(usable)).length;
+const scopedAllFrames = scopedResults.flatMap((r) => (r.frames || []).length);
 const conserved = frameTotal === scopedFrames;
 
 mkdirSync(outDir, { recursive: true });
@@ -68,7 +83,8 @@ writeFileSync(join(outDir, `lanes-${round}.json`), JSON.stringify({
   schema: "mp-fidelity-lanes/v1", round, generatedAt: new Date().toISOString(),
   ledger: ledgerP.replace(REPO + "/", ""), manifest: manifestP.replace(REPO + "/", ""),
   band: manifest.band, perLane, lanes,
-  conservation: { laneFrameTotal: frameTotal, scopedFrames, conserved },
+  conservation: { laneFrameTotal: frameTotal, scopedFrames, scopedFramesAll: scopedAllFrames, conserved },
+  excludedFrames: excluded,
 }, null, 2) + "\n", "utf-8");
 
 /* 任务书正文：每泳道一份，帧路径/hash/理想图/输出路径/交付格式全部写死在里面。
@@ -128,6 +144,8 @@ for (const l of lanes) {
 }
 
 console.log(`EMITLANES_OUT=${outDir.replace(REPO + "/", "")} lanes=${lanes.length} pages=${pages.length} frames=${frameTotal}`);
+console.log(`EMITLANES_UNCAPTURED 可用帧=${frameTotal}/${scopedAllFrames} 被剔除帧=${scopedAllFrames - frameTotal}（落点未验或落点不符，这些页/状态本轮不许拿去比理想图，进报告"未取证"段）`);
+for (const x of excluded) console.log(`EMITLANES_EXCLUDED ${x.route} 剔除=${x.dropped} 原因=${x.why} 状态=${x.states.join(",")}`);
 for (const l of lanes) console.log(`  LANE ${l.lane_id} pages=${l.pages.length} frames=${l.frame_total} brief=tmp/qa/lanes/${round}/${l.lane_id}.brief.md out=${l.out_file}`);
 console.log(conserved ? `${RK}=PASS lanes=${lanes.length} frames=${frameTotal} scopedFrames=${scopedFrames} 守恒=yes` : `${RK}=FAIL laneFrameTotal=${frameTotal} scopedFrames=${scopedFrames} ⇒ 有帧没派给任何泳道（漏审）`);
 process.exit(conserved ? 0 : 1);
