@@ -2,11 +2,14 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { appTabs, type AppTab } from '../../config/navigation';
+import { IMAGE_PATHS } from '../../config/images';
 
 /**
  * H5 端 TabBar（纯匹配版五 Tab 同步防漂移）
- * 与 src/config/navigation.ts 的 appTabs 保持一致：发现 / 附近 / 匹配 / 消息 / 我的，
- * 「匹配」为中央绿色圆形浮岛 + 白色爱心。
+ * 与 src/config/navigation.ts 的 appTabs 保持一致：首页 / 附近 / 匹配 / 消息 / 我的。
+ * R2b-L01-D21 / R2b-L02-D05：中央「匹配」项回归理想图——与其余四项同尺寸、同基线的
+ * 描边爱心平铺，取消 128rpx 凸起彩色圆盘与 -40rpx 上凸（原浮岛白心 match-heart.png
+ * 去掉圆盘后在浅色底栏不可见，故改用已存在的描边爱心 discover 图标）。
  */
 interface Tab {
   key: string;
@@ -30,15 +33,26 @@ const emit = defineEmits<{
 
 const { t: tt } = useI18n();
 
-const defaultTabs: Tab[] = appTabs.map((tab: AppTab) => ({
-  key: tab.id,
-  iconPath: `/${tab.iconPath}`,
-  selectedIconPath: `/${tab.selectedIconPath}`,
-  // 优先使用 i18n 文案，回退到 navigation.ts 中的静态 label
-  label: tt(`tabs.${tab.id}`) || tab.label,
-  path: tab.path,
-  prominent: tab.prominent,
-}));
+const defaultTabs: Tab[] = appTabs.map((tab: AppTab) => {
+  // 中央「匹配」项（prominent）：H5 平铺形态改用描边爱心图标（默认灰描边 / 选中品牌绿），
+  // 与其余四项同尺寸同基线；navigation.ts 仍指向为浮岛设计的白心 match-heart.png（其它泳道）。
+  const iconPath = tab.prominent
+    ? IMAGE_PATHS.ICONS_TABBAR.DISCOVER_DEFAULT
+    : tab.iconPath;
+  const selectedIconPath = tab.prominent
+    ? IMAGE_PATHS.ICONS_TABBAR.DISCOVER_ACTIVE
+    : tab.selectedIconPath;
+  return {
+    key: tab.id,
+    iconPath: `/${iconPath}`,
+    selectedIconPath: `/${selectedIconPath}`,
+    // 优先使用 i18n 文案，回退到 navigation.ts 中的静态 label；
+    // R2b-L02-D17：中央项文案对齐理想图「匹配」（tabs.discover / navigation.ts 的「寻觅」由其它泳道同步）。
+    label: tab.prominent ? '匹配' : tt(`tabs.${tab.id}`) || tab.label,
+    path: tab.path,
+    prominent: tab.prominent,
+  };
+});
 
 const tabList = computed(() => props.tabs || defaultTabs);
 
@@ -139,23 +153,18 @@ const showDotBadge = computed(() => props.unreadDot && (!props.unreadCount || pr
   color: var(--c-brand, #36C99A);
 }
 
-/* 中央匹配浮岛（绿色圆形 + 白色爱心） */
+/* R2b-L01-D21 / R2b-L02-D05：中央「匹配」项不再做凸起浮岛。
+   原 .tab-icon-wrap--prominent 用 128rpx 圆盘 + margin-top:-40rpx 抬到 tabBar 上沿之外，
+   压住上沿并把标签挤到圆盘下方，与理想图「五项等大平铺、中央线性爱心同基线」不符。
+   现取消圆形色底 / 负 margin / 阴影 / 放大尺寸，中央项复用 .tab-icon-wrap 基样式（44rpx 图标 + 下方标签）。 */
 .tab-item--prominent {
   color: var(--c-brand, #36C99A);
 }
 
 .tab-icon-wrap--prominent {
-  width: 128rpx;
-  height: 128rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #FF6B81 0%, #FF8DA1 100%);
-  box-shadow: 0 8rpx 32rpx rgba(255, 107, 129, 0.35);
-  margin-top: -40rpx;
-}
-
-.tab-icon-wrap--prominent .tab-icon-image {
-  width: 72rpx;
-  height: 72rpx;
+  /* 与其余四项同尺寸同基线，无任何凸起底盘 */
+  background: none;
+  box-shadow: none;
 }
 
 .tab-badge {

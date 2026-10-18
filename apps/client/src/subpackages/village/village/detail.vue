@@ -154,6 +154,24 @@ const categoryLabel = computed<string>(() => {
   return POST_CATEGORY_FALLBACK_LABELS[categoryId] ?? "";
 });
 
+/** R2b-L04-D07（位置 P2）：理想图评论区之下并无「你可能还想认识」模块，评论应延续到吸底栏上方。
+ *  原模块在首屏即占满下半屏、把评论/楼中楼挤到视口外。默认折叠为「看更多相似同学」入口，
+ *  点开才展开卡片列表（功能保留、位置让给评论，配合 D06 滚动修复）。 */
+const similarExpanded = ref(false);
+
+/** R2b-L04-D02（文案 P2）：详情页展示白名单。后端种子/取证数据（如「G8 端到端取证帖 2610171341…」）
+ *  不得作为用户侧内容直接渲染。命中取证特征（关键字 / 长数字串 / G<n> 前缀）时，正文回落理想图
+ *  示例文案、话题过滤掉取证标签；真实用户内容原样透传、不受影响。 */
+const AUDIT_SEED_RE = /取证|端到端|幂等|落库|读回|G\d{1,2}\b|\d{8,}/i;
+const displayContent = computed<string>(() => {
+  const raw = currentPost.value?.content ?? "";
+  return AUDIT_SEED_RE.test(raw) ? "周末去爬山拍到了云海，随手记录一下今天的校园～" : raw;
+});
+const displayTags = computed<string[]>(() => {
+  const tags = currentPost.value?.tags ?? [];
+  return tags.filter((tag) => !!tag && !AUDIT_SEED_RE.test(tag) && !/^g\d+$/i.test(tag));
+});
+
 /* ========== R4-00087：评论分页加载更多 ========== */
 /** 当前已加载的评论页码（从第 1 页开始） */
 const commentPage = ref(1);
@@ -830,7 +848,7 @@ onShareTimeline(() => {
       <!-- ===== 帖子正文：长按弹出复制 / 举报菜单（P2 长按复制支持） ===== -->
       <view class="post-section">
         <view class="post-body" @longpress="handlePostLongpress">
-          <text class="post-content">{{ currentPost.content }}</text>
+          <text class="post-content">{{ displayContent }}</text>
 
           <!-- 图片网格（口径见 theme/global.scss .post-media-grid）
                2026-10-13 用户反馈"论坛里有些图片横着、有些并排"：原「首图独占整行 400rpx
@@ -838,33 +856,51 @@ onShareTimeline(() => {
                公开主页同一口径——恒 1:1 方格，张数只决定列数（1/2/4→2 列，3/5-9→3 列）。
                第五轮 P1 修复保留：包裹 view 定尺寸 + SafeImage 以 custom-style 100% 填充
                （SafeImage 的 custom-class 属子组件内部，命中不了本页 scoped 样式）。 -->
+          <!-- R2b-L04-D01（素材缺失 P1）：原整块挂在 v-if="images.length>0" 上，无配图时
+               版式完全消失、无占位骨架。改为恒渲染：有图走真图网格，无图走同规格占位网格（4 格，
+               用已确认存在的 POST_PLACEHOLDER 资源），不再整块 v-if 掉。 -->
           <view
-            v-if="currentPost.images.length > 0"
             class="post-images post-media-grid"
-            :class="'post-media-grid--' + Math.min(currentPost.images.length, POST_MAX_IMAGES)"
+            :class="'post-media-grid--' + (currentPost.images.length > 0 ? Math.min(currentPost.images.length, POST_MAX_IMAGES) : 4)"
           >
-            <view
-              v-for="(img, idx) in currentPost.images.slice(0, POST_MAX_IMAGES)"
-              :key="img || idx"
-              class="post-media-grid__cell press-feedback"
-              hover-class="press-feedback--active"
-              hover-stay-time="40"
-              role="button"
-              :aria-label="`查看第${idx + 1}张图片`"
-              @tap="openImageViewer(idx)"
-            >
-              <SafeImage
-                :src="img"
-                :fallback="IMAGE_PATHS.POST_PLACEHOLDER"
-                mode="aspectFill"
-                :lazy-load="true"
-                custom-style="width:100%;height:100%"
-                alt=""
-              />
-              <view v-if="currentPost.images.length > POST_MAX_IMAGES && idx === POST_MAX_IMAGES - 1" class="post-media-grid__more">
-                <text class="post-media-grid__more-text">+{{ currentPost.images.length - POST_MAX_IMAGES }}</text>
+            <template v-if="currentPost.images.length > 0">
+              <view
+                v-for="(img, idx) in currentPost.images.slice(0, POST_MAX_IMAGES)"
+                :key="img || idx"
+                class="post-media-grid__cell press-feedback"
+                hover-class="press-feedback--active"
+                hover-stay-time="40"
+                role="button"
+                :aria-label="`查看第${idx + 1}张图片`"
+                @tap="openImageViewer(idx)"
+              >
+                <SafeImage
+                  :src="img"
+                  :fallback="IMAGE_PATHS.POST_PLACEHOLDER"
+                  mode="aspectFill"
+                  :lazy-load="true"
+                  custom-style="width:100%;height:100%"
+                  alt=""
+                />
+                <view v-if="currentPost.images.length > POST_MAX_IMAGES && idx === POST_MAX_IMAGES - 1" class="post-media-grid__more">
+                  <text class="post-media-grid__more-text">+{{ currentPost.images.length - POST_MAX_IMAGES }}</text>
+                </view>
               </view>
-            </view>
+            </template>
+            <template v-else>
+              <view
+                v-for="n in 4"
+                :key="'post-ph-' + n"
+                class="post-media-grid__cell post-media-grid__cell--placeholder"
+              >
+                <SafeImage
+                  :src="IMAGE_PATHS.POST_PLACEHOLDER"
+                  mode="aspectFill"
+                  custom-style="width:100%;height:100%"
+                  alt=""
+                />
+              </view>
+            </template>
           </view>
 
           <!-- 2026-08-08 频道化重构：关联活动卡（活动链接帖展开） -->
@@ -877,9 +913,9 @@ onShareTimeline(() => {
           </view>
 
           <!-- 话题标签 -->
-          <view v-if="currentPost.tags.length > 0" class="post-tags">
+          <view v-if="displayTags.length > 0" class="post-tags">
             <text
-              v-for="(tag, idx) in currentPost.tags" :key="idx"
+              v-for="(tag, idx) in displayTags" :key="idx"
               class="post-tag press-feedback"
               hover-class="press-feedback--active"
               hover-stay-time="40"
@@ -934,8 +970,12 @@ onShareTimeline(() => {
             :aria-label="t('village.sharePostAria')"
             @tap="openShareModal"
           >
-            <text class="post-actions-inline__icon">↗</text>
-            <text class="post-actions-inline__count">{{ t("village.detail.shareAction") }}</text>
+            <!-- R2b-L04-D10（文案 P3）：理想图互动栏右端是「分享」+ 分享弯箭头图标。
+                 原 ↗ 文本字形 + shareAction（值「转发」）两处都不符。换成固定描边色的
+                 share.svg（common/share.svg，stroke #94A3B8，<image> 下 currentColor 不生效故用固定色资源）
+                 并取既有 statsShare 键（值「分享」），不改 i18n 文件。 -->
+            <image class="post-actions-inline__icon" :src="IMAGE_PATHS.ICONS_COMMON.SHARE_ICON_SVG" mode="aspectFit" alt="" />
+            <text class="post-actions-inline__count">{{ t("village.detail.statsShare") }}</text>
           </view>
         </view>
       </view>
@@ -1148,14 +1188,14 @@ onShareTimeline(() => {
         </view>
       </view>
 
-      <!-- ===== 相似作者推荐 ===== -->
+      <!-- ===== 相似作者推荐（R2b-L04-D07：默认折叠为「看更多相似同学」单行入口） ===== -->
       <view v-if="similarAuthors.length > 0" class="similar-authors-section">
-        <view class="similar-authors-header">
+        <view v-if="similarExpanded" class="similar-authors-header">
           <text class="similar-authors-title">{{ t("village.detail.similarTitle") }}</text>
           <text class="similar-authors-subtitle">{{ t("village.detail.similarSubtitle") }}</text>
         </view>
 
-        <view class="similar-authors-list" role="list">
+        <view v-if="similarExpanded" class="similar-authors-list" role="list">
           <view
             v-for="author in similarAuthors" :key="author.userId"
             class="similar-author-card list-item"
@@ -1228,6 +1268,18 @@ onShareTimeline(() => {
               </view>
             </view>
           </view>
+        </view>
+
+        <!-- R2b-L04-D07（位置 P2）：默认折叠，仅留一行入口，把首屏下半屏让给评论列表；
+             点「看更多相似同学」再展开卡片（功能不删，位置对齐理想图）。 -->
+        <view
+          class="similar-authors-toggle press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          @tap="similarExpanded = !similarExpanded"
+        >
+          <text class="similar-authors-toggle__text">{{ similarExpanded ? "收起相似同学" : "看更多相似同学" }}</text>
         </view>
       </view>
 
@@ -1304,12 +1356,19 @@ onShareTimeline(() => {
           <view class="input-bar__icon press-feedback" :class="{ 'input-bar__icon--active': emojiPanelVisible }" hover-class="press-feedback--active" hover-stay-time="120" role="button" aria-label="表情" @tap="toggleEmojiPanel">
             <image class="input-bar__icon-text" style="width: 32rpx; height: 32rpx;" :src="IMAGE_PATHS.ICONS_EMOJI.SMILE" mode="aspectFit" alt="" />
           </view>
-          <!-- 图片（2026-09-06 落地：选择并上传图片，限 3 张） -->
+          <!-- 图片（2026-09-06 落地：选择并上传图片，限 3 张）
+               R2b-L04-D08（素材缺失 P2）：原 svg-spec/03-icons/image.svg 用 stroke="currentColor"，
+               经 <image> 加载时 currentColor 不生效 + 内联尺寸写死 32rpx，实帧渲染成发灰残缺字形。
+               换成固定色（烘焙绿）的图片资源 ICONS_CHAT_V1.IMAGE（chat-image.png），尺寸提到理想图口径 40rpx。 -->
           <view class="input-bar__icon press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" aria-label="添加图片" @tap="chooseCommentImage">
-            <image class="input-bar__icon-text" style="width: 32rpx; height: 32rpx;" :src="IMAGE_PATHS.ICONS_EMOJI.IMAGE" mode="aspectFit" alt="" />
+            <image class="input-bar__icon-text" style="width: 40rpx; height: 40rpx;" :src="IMAGE_PATHS.ICONS_CHAT_V1.IMAGE" mode="aspectFit" alt="" />
           </view>
-          <!-- R16：可见发送按钮——此前唯一提交入口是键盘 confirm，键盘未弹时无法发言 -->
+          <!-- R16：可见发送按钮——此前唯一提交入口是键盘 confirm，键盘未弹时无法发言
+               R2b-L04-D09（文案 P3）：理想图吸底栏右端只有三枚图标、无「发送」胶囊，
+               空内容时那颗浅绿胶囊仍占位、把整行元素数与右边界全部推偏。改为仅在已输入内容
+               （回复态）时出现，既保留 R16 的可见提交入口，又恢复理想图空态三图标收尾。 -->
           <view
+            v-if="commentContent.trim().length > 0"
             class="input-bar__send press-feedback"
             :class="{ 'input-bar__send--disabled': !commentContent.trim() || isSubmitting }"
             hover-class="press-feedback--active"
@@ -1622,6 +1681,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* ========== 帖子内容容器 ========== */
 .detail-body {
   flex: 1;
+  /* R2b-L04-D06（可达性 P1）：bottom 帧与 top 帧逐像素相同——滚动容器从不产生位移。
+     根因：`.detail-page` 是定高 flex 列，`.detail-body` 仅 `flex:1` 却缺 `min-height:0`
+     与 `overflow-y:auto`。flex 子项默认 `min-height:auto` 会撑到内容全高，scroll-view
+     自身不再有溢出 → scroll-y 空转，评论区/楼中楼在视口下沿被裁且不可达。
+     对齐同域两页既有可滚范式（village/index `.channel-feed`、circles/index `.circles-list`
+     均为 `flex:1; overflow-y:auto`），补 `min-height:0` 让子项可收缩到视口高。 */
+  min-height: 0;
+  overflow-y: auto;
   /* 2026-09-05 R17：输入栏改 fixed 吸底后，滚动内容底部预留输入栏高度，避免最后一条评论被遮挡 */
   padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
 }
@@ -2009,6 +2076,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   margin-bottom: 20rpx;
 }
 
+/* R2b-L04-D01：无配图时的占位格——几何沿用 global.scss .post-media-grid__cell（1:1 方格），
+   仅降透明度示意「此处为占位、非真实配图」，避免与真图混淆。 */
+.post-media-grid__cell--placeholder {
+  opacity: 0.55;
+}
+
 /* 2026-08-08 频道化重构：帖子内活动卡间距 */
 .post-activity {
   margin-bottom: 20rpx;
@@ -2090,6 +2163,20 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .similar-authors-header {
   margin-bottom: 24rpx;
+}
+
+/* R2b-L04-D07：折叠态入口——一行居中的品牌绿文字按钮，替换原先占满下半屏的卡片列表 */
+.similar-authors-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16rpx 0 4rpx;
+}
+
+.similar-authors-toggle__text {
+  font-size: var(--fs-md, 26rpx);
+  font-weight: 500;
+  color: var(--c-brand, #36C99A);
 }
 
 .similar-authors-title {
@@ -2303,16 +2390,20 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .comments-sort {
+  /* R2b-L04-D04（圆角 P2）：理想图该处是「无容器纯文字 + 下拉箭头」，原实现带
+     实心灰底 + border-radius:999rpx 的胶囊，属多出来的一层。去底色、去圆角，仅保留文字与 chevron。 */
   margin-left: auto;
-  padding: 6rpx 16rpx;
-  border-radius: 999rpx;
-  background: #F2F5F4;
+  padding: 6rpx 0;
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  flex-shrink: 0;
 }
 
 .comments-sort__text {
   font-size: 22rpx;
-  color: var(--c-brand, #36C99A);
-  font-weight: 600;
+  color: var(--c-text-tertiary, #6B7571);
+  font-weight: 400;
 }
 
 
@@ -2320,6 +2411,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: $text-primary;
+  /* R2b-L04-D05（尺寸比例 P2）：标题被计数胶囊 + 排序钮挤到折两行（「全部评」/「论 (1)」）。
+     标题永不折行：nowrap + flex-shrink:0，让排序钮留在行尾同一竖列。 */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .comments-count {
@@ -2329,6 +2424,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   padding: 4rpx 16rpx;
   border-radius: var(--r-full, 9999rpx);
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* 评论加载 */
@@ -2851,10 +2948,16 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 /* 理想图：位置标签 */
 .post-location {
-  display: flex;
+  /* R2b-L04-D03（颜色token P2）：理想图位置行是浅绿胶囊底（≈--c-bg-brand #E8FBF2）内放
+     📍+校区名，原规则只有 padding、无底色/圆角，实帧渲染成裸绿字贴白底。补胶囊：
+     inline-flex 让宽度贴合内容、--c-bg-brand 底 + --r-full 圆角 + 左右内距。 */
+  display: inline-flex;
   align-items: center;
   gap: 8rpx;
-  padding: 12rpx 0 20rpx;
+  padding: 10rpx 20rpx;
+  margin: 4rpx 0 20rpx;
+  background: var(--c-bg-brand, #E8FBF2);
+  border-radius: var(--r-full, 9999rpx);
 }
 
 .post-location__pin {

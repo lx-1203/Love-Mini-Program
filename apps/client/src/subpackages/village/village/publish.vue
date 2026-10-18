@@ -146,7 +146,9 @@ const targetSubtitle = computed(() => {
   if (targetType.value === "campus") return "校园圈 · 所有校园成员可见";
   // R16：日常目标文案
   if (targetType.value === "friends") return "日常 · 仅互相喜欢或关注我的人可见";
-  return "默认公开 · 所有人可见";
+  // R2b-L03-D18（空态文案 P3）：原「默认公开 · 所有人可见」与下方「谁可以看 = 所有人可见」同屏重复，
+  // 且状态标签位已改由标题行的「公开可见」胶囊承担。subtitle 换成不重复的落点信息。
+  return "发布后进入广场";
 });
 
 /** R21：成员数短格式（1.2w / 8,932） */
@@ -759,12 +761,18 @@ onUnmounted(() => {
           <view class="publish-to__avatar">
             <image v-if="isCircleTarget && targetCircle" class="publish-to__avatar-img" :src="IMAGE_PATHS.CIRCLE_COVERS.DEFAULT" mode="aspectFill" alt="" />
             <image v-else-if="isCircleTarget" class="publish-to__avatar-emoji" :src="IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON" mode="aspectFit" alt="" />
-            <image v-else class="publish-to__avatar-img" :src="selfAvatar" mode="aspectFill" alt="" />
+            <!-- R2b-L03-D14（素材缺失 P1）：general 目标无头像时原 <image> 解析为空，只剩一颗空心淡绿圆。
+                 补两级：有头像渲染 img，无头像渲染 USER 占位字形（与 :761 同 56rpx 档），底色改中性 --c-neutral-50。 -->
+            <image v-else-if="selfAvatar" class="publish-to__avatar-img" :src="selfAvatar" mode="aspectFill" alt="" />
+            <image v-else class="publish-to__avatar-emoji" :src="IMAGE_PATHS.ICONS_EMOJI.USER" mode="aspectFit" alt="" />
           </view>
           <view class="publish-to__info">
             <view class="publish-to__name-row">
               <text class="publish-to__name">{{ targetTitle }}</text>
+              <!-- R2b-L03-D18（空态文案 P3）：原状态胶囊整枚 v-if="isCircleTarget"，general 目标下
+                   标题行右侧一整块空位。补一枚中性灰「公开可见」胶囊（复用 .publish-to__tag 结构 + --neutral 变体）。 -->
               <text v-if="isCircleTarget" class="publish-to__tag">圈内成员可见</text>
+              <text v-else class="publish-to__tag publish-to__tag--neutral">公开可见</text>
             </view>
             <text class="publish-to__subtitle">{{ targetSubtitle }}</text>
           </view>
@@ -821,7 +829,9 @@ onUnmounted(() => {
           <text class="publish-row__icon">#</text>
           <text class="publish-row__label">添加话题</text>
           <text class="publish-row__meta">已选 {{ topics.length }}/{{ POST_MAX_CUSTOM_TAGS }}</text>
-          <text class="publish-row__arrow">›</text>
+          <!-- R2b-L03-D19（位置 P3）：理想图四条功能行右缘是同一竖列。上一轮为「去可点假象」删掉了
+               位置/提及/谁可以看三行的箭头，只留本行 → 帧上「一个箭头 + 三行裸文本」参差。按既有裁定
+               （非交互行不保留箭头）统一为「都删」：本行箭头一并移除，meta 右对齐到同一竖列。 -->
         </view>
         <!-- 2026-09-06：位置固定为当前城市（默认定位，不可更改），移除选择交互 -->
         <view class="publish-row">
@@ -883,14 +893,19 @@ onUnmounted(() => {
       <!-- 发帖小贴士 -->
       <view v-if="tipVisible" class="publish-tip">
         <view class="publish-tip__text-wrap">
+          <!-- R2b-L03-D15（间距 P2）：✕ 原为 .publish-tip__text-wrap 的同级 flex 兄弟，
+               其 88rpx 命中区 + gap 从描述列吃掉约 52px，导致 24 字描述折成两行、卡片比理想图高一整行。
+               把 ✕ 移进标题行内（title 行 space-between），描述列恢复整卡宽度、单行显示。 -->
           <view class="publish-tip__title">
-            <image class="publish-tip__title-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
-            <text>发帖小贴士</text>
+            <view class="publish-tip__title-main">
+              <image class="publish-tip__title-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
+              <text>发帖小贴士</text>
+            </view>
+            <view class="publish-tip__close press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="tipVisible = false">
+              <image class="publish-tip__close-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
+            </view>
           </view>
           <text class="publish-tip__desc">真实分享校园生活，友善互动，让更多人认识有趣的你～</text>
-        </view>
-        <view class="publish-tip__close press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="tipVisible = false">
-          <image class="publish-tip__close-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
         </view>
       </view>
 
@@ -1064,7 +1079,7 @@ onUnmounted(() => {
 .publish-to__card { display: flex; align-items: center; gap: 20rpx; padding: 24rpx; background: #fff; border-radius: var(--r-xl, 24rpx); border: 1rpx solid var(--c-border-light, #EEF2F0); } /* R1-B33/D24 */
 /* R1-B33/D19：头像位 88rpx → 112rpx 档。理想图头像约占卡高 70%：本卡高 = 24×2 padding + 112 = 160rpx，
    头像/卡高 = 70%，与右侧两行文字（30 + 8 gap + 24 = 62rpx）等高有余量 */
-.publish-to__avatar { width: 112rpx; height: 112rpx; border-radius: 50%; background: #E8FBF2; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.publish-to__avatar { width: 112rpx; height: 112rpx; border-radius: 50%; background: var(--c-neutral-50, #F7FAF9); display:flex; align-items:center; justify-content:center; overflow:hidden; } /* R2b-L03-D14：占位底由硬编码 #E8FBF2 改中性 --c-neutral-50（无头像时是中性占位，非品牌绿） */
 .publish-to__avatar-img {
   border-radius: var(--r-full);
  width: 100%; height: 100%; }
@@ -1074,7 +1089,9 @@ onUnmounted(() => {
 .publish-to__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8rpx; }
 .publish-to__name-row { display: flex; align-items: center; gap: 10rpx; }
 .publish-to__name { font-size: 30rpx; font-weight: 700; color: var(--c-text-primary, #1A1E1C); }
-.publish-to__tag { padding: 2rpx 12rpx; border-radius: var(--r-sm, 8rpx); background: #E8FBF2; color: var(--c-brand, #36C99A); font-size: 20rpx; }
+.publish-to__tag { padding: 2rpx 12rpx; border-radius: var(--r-sm, 8rpx); background: var(--c-brand-50, #E8FAF3); color: var(--c-brand, #36C99A); font-size: 20rpx; } /* R2b-L03-D17：#E8FBF2 就近并入 --c-brand-50，与同页其余浅绿统一为单一来源 */
+/* R2b-L03-D18：general 目标「公开可见」中性灰变体（复用同结构，颜色走 --c-neutral-* 档） */
+.publish-to__tag--neutral { background: var(--c-neutral-100, #EEF2F0); color: var(--c-text-secondary, #6B7571); }
 .publish-to__subtitle { font-size: 24rpx; color: var(--c-text-tertiary, #9AA39F); }
 .publish-to__arrow { font-size: 36rpx; color: var(--c-text-quaternary, #C2CAC6); }
 
@@ -1109,12 +1126,12 @@ onUnmounted(() => {
 /* R1-B33/D17：一行四格栅格。单格 = (750 − 2×32 页边距 − 3×16 gap)/4 = 159.5rpx，取整 159rpx——
    4×159 + 3×16 = 684rpx ≤ 内容宽 686rpx，留 2rpx 余量避免亚像素进位换成三格一行。
    （原 200rpx 单格只容得下 3 格：3×200 + 2×16 = 632rpx，与理想图四格不符） */
-.publish-image { width: 159rpx; height: 159rpx; border-radius: 16rpx; overflow: hidden; position: relative; background: var(--c-brand-50, #E8FAF3); } /* R1-B33/D24：占位底色 #EAF6F1 就近取色，收敛到 --c-brand-50 */
+.publish-image { width: 159rpx; height: 159rpx; border-radius: var(--r-lg, 20rpx); overflow: hidden; position: relative; background: var(--c-brand-50, #E8FAF3); } /* R2b-L03-D20：原 16rpx 字面量改 --r-lg(20rpx)，与同页「发布到」卡/小贴士同档、对齐理想图量测；R1-B33/D24 占位底色收敛到 --c-brand-50 保留 */
 .publish-image__img { width: 100%; height: 100%; }
 .publish-image__remove { position: absolute; top: 6rpx; right: 6rpx; width: 40rpx; height: 40rpx; border-radius: 50%; background: rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; }
 .publish-image__remove-icon { width: 22rpx; height: 22rpx; color: #fff; }
 /* R21：添加图片块对齐 post 版虚线白底样式（原继承浅绿实心底，与理想图不符） */
-.publish-image--add { display: flex; align-items: center; justify-content: center; background: #ffffff; border: 2rpx dashed #C7D8D2; box-sizing: border-box; }
+.publish-image--add { display: flex; align-items: center; justify-content: center; background: #ffffff; border: 2rpx dashed var(--c-border-strong, #C2CAC6); box-sizing: border-box; } /* R2b-L03-D20：虚线格边框色 #C7D8D2 令牌化到 --c-border-strong（同族中性描边，视觉近等值） */
 .publish-image__plus { font-size: 56rpx; color: var(--c-text-tertiary, #9AA39F); }
 
 /* R1-B33/D15：理想图这四行是「通栏列表 + 贯穿全宽的细分割线」，原容器却带
@@ -1153,13 +1170,17 @@ onUnmounted(() => {
 .publish-sheet__confirm-text { font-size: var(--fs-base, 24rpx); font-weight: 700; color: var(--c-neutral-0, #FFFFFF); }
 
 /* MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-004：圆角字面量按「等值才换」收口——
-   本行 20rpx = --r-lg（design-variables.scss:194）等值，已令牌化；
-   .publish-image 的 16rpx 全表无等值档（--r-sm=8rpx / --r-lg=20rpx，台账处置列举例的
-   「16→--r-lg」实为 16→20rpx 视觉变更，不采纳），按 nit 保留字面量。
+   本行 20rpx = --r-lg（design-variables.scss:194）等值，已令牌化。
+   R2b-L03-D20 更正：.publish-image 原以「token 表里没有 16rpx 等值档」为由保留 16rpx 字面量，
+   但理想图九宫格圆角量测本就落在 --r-lg(20rpx) 档，取它是对齐基准而非等值替换，故已改 --r-lg；
+   同批虚线格边框色 #C7D8D2 亦令牌化到 --c-border-strong。
    （原同批备注里那条 6rpx 圆角例外，属已删除的「已加入」胶囊规则，现已无对应样式） */
 .publish-tip { margin: 24rpx 32rpx; padding: 24rpx; background: var(--c-brand-50, #E8FAF3); border-radius: var(--r-lg, 20rpx); display: flex; align-items: flex-start; gap: 16rpx; } /* R1-B33/D24：提示底 #EAF9F3 系就近取色，收敛到 --c-brand-50 */
 .publish-tip__text-wrap { flex: 1; display: flex; flex-direction: column; gap: 6rpx; }
-.publish-tip__title { font-size: 26rpx; font-weight: 700; color: var(--c-brand, #36C99A); display: flex; align-items: center; gap: 8rpx; }
+/* R2b-L03-D15：✕ 移入标题行内 → 标题行 space-between（左 [嫩芽+发帖小贴士] / 右 [✕]），
+   描述列不再被 ✕ 命中区挤占，恢复整卡宽度单行显示。 */
+.publish-tip__title { font-size: 26rpx; font-weight: 700; color: var(--c-brand, #36C99A); display: flex; align-items: center; justify-content: space-between; gap: 8rpx; }
+.publish-tip__title-main { display: flex; align-items: center; gap: 8rpx; }
 .publish-tip__title-icon { width: 28rpx; height: 28rpx; color: var(--c-brand, #36C99A); }
 .publish-tip__desc { font-size: 24rpx; color: var(--c-text-secondary, #6B7571); }
 /* R1-B33/D23：模板中 class=publish-tip__close 的可点关闭 × 此前无任何样式（该节点仅承载

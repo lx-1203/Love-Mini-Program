@@ -78,15 +78,41 @@ function refreshSchools(): void {
   });
 }
 
-/** 校园入口（前 4 所）。R3：用户本校置顶（原固定取前 4 所，本校不在首屏，与定位文案自相矛盾） */
+/** R2b-L02-D06：校园圈封面兜底——coverUrl 缺失时改用真实校园实景素材（与 campus/hub 同引
+ *  config/images.ts 的 IMAGE_PATHS.GENERATED 单一来源），不再退化为「白底 + 校名」空占位。
+ *  仅引用已确认存在的既有素材常量，未新增/硬编码 /static 路径。 */
+const CAMPUS_COVER: Record<string, string> = {
+  pku: IMAGE_PATHS.GENERATED.CAMPUS_GATE_LANDMARK,
+  thu: IMAGE_PATHS.GENERATED.CAMPUS_ARCH_LANDMARK,
+  ruc: IMAGE_PATHS.GENERATED.CAMPUS_LAKE_PAVILION,
+  fudan: IMAGE_PATHS.GENERATED.CAMPUS_PLAYGROUND,
+  sjtu: IMAGE_PATHS.GENERATED.CAMPUS_NIGHT,
+  tongji: IMAGE_PATHS.GENERATED.CAMPUS_CLASSROOM,
+  zju: IMAGE_PATHS.GENERATED.CAMPUS_CAFETERIA,
+  nju: IMAGE_PATHS.GENERATED.CAMPUS_RAIN,
+  whu: IMAGE_PATHS.GENERATED.CAMPUS_GATE,
+  sysu: IMAGE_PATHS.GENERATED.CAMPUS_LIBRARY,
+  szu: IMAGE_PATHS.GENERATED.CAMPUS_LAKE,
+};
+function campusCoverFor(school: School): string {
+  return school.coverUrl || CAMPUS_COVER[school.id] || IMAGE_PATHS.CIRCLE_COVERS.CAMPUS;
+}
+
+/** 校园入口（前 4 所）。R3：用户本校置顶（原固定取前 4 所，本校不在首屏，与定位文案自相矛盾）
+ *  R2b-L02-D06：为每所兜底真实封面（coverUrl 缺失 → 本地校园实景）。 */
 const schoolEntries = computed(() => {
   const pool = schoolPool.value;
   const myCampus = sessionStore.userSession?.campusName?.trim();
-  if (!myCampus) return pool.slice(0, 4);
-  const mine = pool.find((s) => s.name === myCampus);
-  const rest = pool.filter((s) => s.name !== myCampus);
-  const mineEntry: School = mine ?? { id: `session-${myCampus}`, name: myCampus };
-  return [mineEntry, ...rest].slice(0, 4);
+  let base: School[];
+  if (!myCampus) {
+    base = pool.slice(0, 4);
+  } else {
+    const mine = pool.find((s) => s.name === myCampus);
+    const rest = pool.filter((s) => s.name !== myCampus);
+    const mineEntry: School = mine ?? { id: `session-${myCampus}`, name: myCampus };
+    base = [mineEntry, ...rest].slice(0, 4);
+  }
+  return base.map((s) => ({ ...s, coverUrl: campusCoverFor(s) }));
 });
 
 // 第五轮 QA（补做）：校园圈入口卡片统一浅绿背景 + 学校名字（移除 school-main.png 封面插图、
@@ -429,7 +455,9 @@ function formatMemberCount(count: number): string {
           <view class="nearby-entry__icon nearby-entry__icon--circle">
             <image class="nearby-entry__img" :src="IMAGE_PATHS.NEARBY_ICONS.CIRCLE" mode="aspectFit" alt="" />
           </view>
-          <text class="nearby-entry__label">{{ t('nearby.hotCircles') }}</text>
+          <!-- R2b-L02-D02：入口标签用理想图短词「兴趣圈」（nearby.tabCircles），
+               长词「热门兴趣圈」仅留给下方分区②标题（:485 的 nearby.hotCircles 不动）。 -->
+          <text class="nearby-entry__label">{{ t('nearby.tabCircles') }}</text>
         </view>
         <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.campusCircles')" @tap="goCampusHub()">
           <view class="nearby-entry__icon nearby-entry__icon--campus">
@@ -441,7 +469,9 @@ function formatMemberCount(count: number): string {
           <view class="nearby-entry__icon nearby-entry__icon--activity">
             <image class="nearby-entry__img" :src="IMAGE_PATHS.NEARBY_ICONS.ACTIVITY" mode="aspectFit" alt="" />
           </view>
-          <text class="nearby-entry__label">{{ t('nearby.activitiesTitle') }}</text>
+          <!-- R2b-L02-D02：入口标签用理想图短词「活动」（nearby.tabActivities），
+               长词「附近活动」仅留给下方分区④标题（:572 的 nearby.activitiesTitle 不动）。 -->
+          <text class="nearby-entry__label">{{ t('nearby.tabActivities') }}</text>
         </view>
         <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.myConnections')" @tap="goConnections">
           <!-- 2026-08-25 P0：第 5 项改为"我的人脉"。
@@ -674,7 +704,15 @@ function formatMemberCount(count: number): string {
 .nearby-home {
   min-height: 100%;
   background: var(--c-bg-page, #EEF7F2);
-  padding: 24rpx 32rpx 0;
+  /* R2b-L02-D08：原 `padding: 24rpx 32rpx 0` 简写把底部归零，scoped 权重高于根节点
+     共用类 .page-bottom-safe（App.vue 给 112rpx+安全区），导致固定 TabBar 永久压住末屏
+     内容（第 3 张活动卡下缘 + 分区⑤「附近动态」整块不可见）。拆成 top/left/right，
+     底部单独避让，口径同 messages/index.vue:671（读 --tabbar-height + 呼吸位）。
+     仅改本页规则，未触碰共用类 .page-bottom-safe（其归属另一泳道）。 */
+  padding-top: 24rpx;
+  padding-left: 32rpx;
+  padding-right: 32rpx;
+  padding-bottom: calc(var(--tabbar-height, 112rpx + env(safe-area-inset-bottom)) + 24rpx);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -848,13 +886,12 @@ function formatMemberCount(count: number): string {
 
 .circle-scroll__list {
   display: flex;
-  gap: 12rpx;
-  /* MP-R2-PAGES-NEARBY-INDEX-003（P1，回归 MP-R1-NEARBY-005 / 基线验证点
-     nearby-interest-circle-4th-card-fully-visible）：横向 padding 归零。
-     原 16rpx×2 内缩 + 170rpx 卡在 750rpx 视口下需 748rpx，而可用宽只有
-     750 − 2×32（.nearby-home 横向 padding）= 686rpx → 第 4 卡右裁 46rpx。
-     现 4×160 + 3×12 = 676 ≤ 686（余 10rpx 抗 rpx 取整），
-     第 5 卡左缘落在 688rpx > 686 → 静止视口无残影（理想图亦为整 4 卡）。 */
+  /* R2b-L02-D09：可用宽 = 750 − 2×32(.nearby-home 左右内边距) = 686rpx。
+     原 gap:12 + 卡宽 160 → 4 卡右缘 676（余 10rpx），第 5 卡左缘 688 仅越界 2rpx，
+     rpx 取整后在视口右缘露出约 4px 残影。改 gap:24 + 卡宽 150：
+     4×150 + 3×24 = 672（第 4 卡右缘留 14rpx 余量，完整可见），
+     第 5 卡左缘 = 672 + 24 = 696 ≥ 686 + 10 → 静止位第 5 卡完全落在裁剪框外，无残影。 */
+  gap: 24rpx;
   padding: 0 0 8rpx;
 }
 
@@ -862,10 +899,10 @@ function formatMemberCount(count: number): string {
   /* 第五轮 R5：对齐理想图《附近的首页》——竖版 3:4 小海报卡
    * MP-R1-PAGES-NEARBY-INDEX-905 / MP-R2-PAGES-NEARBY-INDEX-003：尺寸按理想图实测
    * （素材/理想效果图/附近的首页.png 宽 852px，750rpx/852px=0.88rpx/px，
-   *  首行 4 卡实测 185×295px ≈ 163×260rpx）取 160×256rpx，
-   *  宽度让 4 卡完整落视口（见 .circle-scroll__list 算术），高度保竖版海报比例。 */
+   *  首行 4 卡实测 185×295px ≈ 163×260rpx）取 150×256rpx（R2b-L02-D09：由 160 收窄到 150，
+   *  配合 gap 24 让第 5 卡完全落在裁剪框外，见 .circle-scroll__list 算术），高度保竖版海报比例。 */
   position: relative;
-  width: 160rpx;
+  width: 150rpx;
   height: 256rpx;
   flex-shrink: 0;
   border-radius: 28rpx;
@@ -1219,7 +1256,9 @@ function formatMemberCount(count: number): string {
 .nearby-entry__icon {
   width: 88rpx;
   height: 88rpx;
-  border-radius: 50%;
+  /* R2b-L02-D01：理想图五宫格底板是圆角方形（实测≈25px 半径），非正圆。
+     取 24rpx 圆角档（--r-xl）。 */
+  border-radius: var(--r-xl, 24rpx);
   display: flex;
   align-items: center;
   justify-content: center;

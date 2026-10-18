@@ -57,7 +57,9 @@ Component({
       },
       {
         id: "discover",
-        label: "寻觅",
+        // R2b-L03-D13：标签对齐理想图「匹配」（原「寻觅」）。
+        // 唯一真相源 navigation.ts / pages.json tabBar.list 的同步由其它泳道负责。
+        label: "匹配",
         path: "pages/discover/index",
         iconPath: "/static/assets/icons/tabbar/match-heart.png",
         activeIconPath: "/static/assets/icons/tabbar/match-heart.png",
