@@ -317,6 +317,30 @@ function goLogin() {
 
 const circleCover = circleCoverFor;
 
+/**
+ * R2b-L04-D11（文案）：理想图 兴趣圈列表.png 卡片标题为「摄影圈 / 旅行圈 / 音乐圈 / 运动圈 /
+ * 美食圈 / 天文圈」，一律带「圈」后缀；数据源（CircleView.name）是「摄影 / 旅行 …」本体名，
+ * 于是真机六张卡全部读作分类名而非圈子名。
+ * 上一轮批次 R1-B29 记过这条文案轴（R1-L04-D11），但模板仍是 `{{ circle.name }}`，
+ * 帧上无变化 ⇒ 判为「上一轮修得不对」，本轮在展示层真正落地。
+ * 走展示层拼接而非改数据：圈子名是后端字段，改名会同时改到加入/搜索/主页等所有消费方。
+ * endsWith 守卫，避免数据侧将来自带后缀时拼成「摄影圈圈」。
+ */
+function circleTitle(name: string): string {
+  if (!name) return "";
+  return name.endsWith("圈") ? name : `${name}圈`;
+}
+
+/**
+ * R2b-L04-D19（文案）：理想图每张卡右侧描边胶囊内只有「加入」二字，
+ * 词条 circle.joinBtn 值是「+ 加入」，多出的「+ 」把按钮撑得比理想图胖。
+ * 词条文件不在本车道写集内，故在展示层剥除加号前缀（半角 + / 全角 ＋ 都覆盖）。
+ */
+function joinLabel(isJoined: boolean): string {
+  if (isJoined) return t("circle.joinedBtn");
+  return t("circle.joinBtn").replace(/^\s*[+＋]\s*/, "");
+}
+
 // 修复#3（第五轮 QA）：拉取逻辑已移入 onLoad（含 mock 放行），
 // 原 onMounted 的 token 守卫在 mock 会话下会拦截导致空态，已移除避免重复请求。
 
@@ -343,33 +367,62 @@ defineExpose({ toggleJoin });
     :tab-bar-safe="false"
     :fixed="true"
   >
-    <!-- 2026-08-25 P0：自定义头部（返回 + 标题"趣"下划线 + 搜索） -->
+    <!-- 2026-08-25 P0：自定义头部（返回 + 标题"趣"下划线 + 搜索）
+         R2b-L04-D16（位置）：理想图 兴趣圈列表.png 顶部区里，副标题与分类 chip 行「与标题同属
+         页头固定区」。原实现把 banner + tabs 写在 .circles-list 这个 scroll-view 内部
+         （旧 index.vue:386 起），而 AppShell 的 .shell__header 才是唯一吸顶的那一层 ⇒
+         bottom 帧里 ‹ 兴趣圈 🔍 还钉在顶上、分类行已整行滚出视口，滚动后无法切换分类，
+         页头与筛选行被拆成两套吸顶行为。
+         现把 banner + tabs 并入 #header 插槽（AppShell 已有 position:sticky + 状态栏内衬 +
+         通栏底色），页头固定区一次到位，不需要再给 tabs 单独算一条 sticky top 魔数。
+         搜索钮原在 #header-right 槽，槽体宽度会把并入的 chip 行挤窄，故一并移进标题行内，
+         胶囊避让（margin-right）随节点一起搬过来。 -->
     <template #header>
-      <view class="circles-header">
-        <view
-          class="circles-header__back press-feedback"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          role="button"
-          :aria-label="t('common.back')"
-          @tap="goBack"
-        >
-          <text class="circles-header__back-icon">‹</text>
+      <view class="circles-header" :style="menuStyleVars">
+        <view class="circles-header__row">
+          <view
+            class="circles-header__back press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('common.back')"
+            @tap="goBack"
+          >
+            <text class="circles-header__back-icon">‹</text>
+          </view>
+          <text class="circles-header__title">兴<text class="circles-header__under">趣</text>圈</text>
+          <view
+            class="circles-header__search press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="'搜索'"
+            @tap="goSearch"
+          >
+            <image class="circles-header__search-icon" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" alt="" />
+          </view>
         </view>
-        <text class="circles-header__title">兴<text class="circles-header__under">趣</text>圈</text>
-      </view>
-    </template>
-    <template #header-right>
-      <view
-        class="circles-header__search press-feedback"
-        :style="menuStyleVars"
-        hover-class="press-feedback--active"
-        hover-stay-time="120"
-        role="button"
-        :aria-label="'搜索'"
-        @tap="goSearch"
-      >
-        <image class="circles-header__search-icon" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" alt="" />
+        <!-- 推荐提示（对齐理想图：标题下灰字副标题，无卡片/emoji 装饰） -->
+        <view class="circles-banner">
+          <text class="circles-banner__title">{{ t("circle.circlesSubtitle") }}</text>
+        </view>
+        <!-- 2026-08-25 P0：7 个快捷分类 tab（规格书 14.5） -->
+        <scroll-view class="circles-tabs" scroll-x :show-scrollbar="false">
+          <view class="circles-tabs__list">
+            <view
+              v-for="tab in QUICK_TABS"
+              :key="tab.key"
+              class="circles-tab"
+              :class="{ 'circles-tab--active': activeQuickTab === tab.key }"
+              role="tab"
+              :aria-selected="activeQuickTab === tab.key ? 'true' : 'false'"
+              @tap="activeQuickTab = tab.key"
+            >
+              <image v-if="tab.iconSrc" class="circles-tab__icon" :src="tab.iconSrc" mode="aspectFit" alt="" />
+              <text v-else class="circles-tab__text">{{ t(tab.labelKey) }}</text>
+            </view>
+          </view>
+        </scroll-view>
       </view>
     </template>
     <!-- 统一页面状态容器：loading / error / empty / content 四态切换 -->
@@ -382,32 +435,9 @@ defineExpose({ toggleJoin });
       @empty-action="goLogin"
     >
       <template #default>
-        <!-- 兴趣圈列表 -->
+        <!-- 兴趣圈列表（R2b-L04-D16：banner + tabs 已上移到固定页头，这里只剩卡片流） -->
         <scroll-view class="circles-list" scroll-y :enhanced="true" :bounces="true" :show-scrollbar="false">
           <!-- 2026-08-25 P1：移除顶部"附近的人"绿色头部卡（规格书 14 无此模块，QA 反馈位置错误） -->
-
-          <!-- 推荐提示（对齐理想图：标题下灰字副标题，无卡片/emoji 装饰） -->
-          <view class="circles-banner">
-            <text class="circles-banner__title">{{ t("circle.circlesSubtitle") }}</text>
-          </view>
-
-          <!-- 2026-08-25 P0：7 个快捷分类 tab（规格书 14.5） -->
-          <scroll-view class="circles-tabs" scroll-x :show-scrollbar="false">
-            <view class="circles-tabs__list">
-              <view
-                v-for="tab in QUICK_TABS"
-                :key="tab.key"
-                class="circles-tab"
-                :class="{ 'circles-tab--active': activeQuickTab === tab.key }"
-                role="tab"
-                :aria-selected="activeQuickTab === tab.key ? 'true' : 'false'"
-                @tap="activeQuickTab = tab.key"
-              >
-                <image v-if="tab.iconSrc" class="circles-tab__icon" :src="tab.iconSrc" mode="aspectFit" alt="" />
-                <text v-else class="circles-tab__text">{{ t(tab.labelKey) }}</text>
-              </view>
-            </view>
-          </scroll-view>
 
           <!-- 兴趣圈卡片 -->
           <view class="circles-card-list" role="list">
@@ -423,7 +453,8 @@ defineExpose({ toggleJoin });
 
               <view class="circle-card__body">
                 <view class="circle-card__name-row">
-                  <text class="circle-card__name">{{ circle.name }}</text>
+                  <!-- R2b-L04-D11：标题按理想图补「圈」后缀（展示层拼接，见 script 的 circleTitle） -->
+                  <text class="circle-card__name">{{ circleTitle(circle.name) }}</text>
                   <view v-if="circle.memberCount >= HOT_THRESHOLD" class="circle-card__hot-badge">
                     <text class="circle-card__hot-text">{{ t("circle.hotBadge") }}</text>
                   </view>
@@ -458,11 +489,11 @@ defineExpose({ toggleJoin });
                 class="circle-card__action"
                 :class="{ 'circle-card__action--joined': circle.isJoined }"
                 role="button"
-                :aria-label="circle.isJoined ? t('circle.joinedBtn') : t('circle.joinBtn')"
+                :aria-label="joinLabel(circle.isJoined)"
                 @tap.stop="toggleJoin(circle.id, circle.isJoined)"
               >
                 <text class="circle-card__action-text">
-                  {{ circle.isJoined ? t("circle.joinedBtn") : t("circle.joinBtn") }}
+                  {{ joinLabel(circle.isJoined) }}
                 </text>
               </view>
             </view>

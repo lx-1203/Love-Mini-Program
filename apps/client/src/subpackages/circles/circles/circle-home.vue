@@ -783,10 +783,18 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 .info-card {
   position: relative;
   z-index: 3;
-  margin: -96rpx 24rpx 0;
+  /* R2b-L05-D05（圆角）：理想图屏高 27% 处那块「压在 Hero 上、左右上角为大圆角、带投影」的
+     白色内容面板，在本页 DOM 里就是这张 info-card（它已 margin-top:-96rpx 上抬压住 Hero、
+     也已带投影），缺的是两头上角的大圆角与通栏宽度——PIL 量理想图：面板左缘落到 x=0（通栏、
+     非两侧留 24rpx 的浮卡），左上角圆弧拟合半径 31px = 27.3rpx。
+     半径取档位令牌：色板只有 --r-xl 24rpx / --r-xxl 32rpx，27.3rpx 落在正中间，
+     取 --r-xxl（该档是这套令牌里唯一给「大圆角容器」用的档，且缺陷卡给的 40rpx 不在档位上、
+     是把目测值当实测值用，同样不采）。
+     通栏化后横向内缩从 margin 移进 padding（24rpx + 32rpx = 56rpx），内容栅格位置逐像素不变。 */
+  margin: -96rpx 0 0;
   background: #ffffff;
-  border-radius: 24rpx;
-  padding: 32rpx;
+  border-radius: var(--r-xxl, 32rpx) var(--r-xxl, 32rpx) 0 0;
+  padding: 32rpx 56rpx;
   box-shadow: 0 8rpx 32rpx rgba(31, 42, 37, 0.06);
 }
 
@@ -834,9 +842,18 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 .info-desc {
   font-size: 26rpx;
   color: #5d6c7b;
+  /* R2b-L05-D04（尺寸比例）：原 nowrap + ellipsis 把整句简介吃成一个省略号——
+     理想图「用镜头记录生活的美好瞬间」是 12 字整句单行完整显示，而 real 档圈子简介
+     普遍 15~20 字（如「分享光影与构图，一起扫街、看展、记录生活」），单行必然截断。
+     改两行截断：短简介仍按理想图单行完整显示，长简介不再丢半句。
+     （另一条建议「把简介压到 12 字内」属改数据文案，不在本页写集内。） */
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  word-break: break-all;
 }
 
 .info-meta {
@@ -876,13 +893,20 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 .info-join {
   flex-shrink: 0;
   align-self: center;
-  background: var(--c-brand-500, #36C99A);
+  /* R2b-L05-D03（颜色token）：实心主 CTA 底色不再取 --c-brand-500(#36C99A)。
+     理想图 圈子详情，摄影圈参考.png 右上「加入圈子」取色实测 rgb(51,160,110)=#33A06E
+     （缺陷卡记的 #30A070 同档），对品牌色阶做 CIE L*a*b* 距离：
+     600(#2AAE83) dE=7.3 ｜ 700(#1F8D6A) dE=10.5 ｜ 500(#36C99A) dE=16.0 ｜ 800 dE=24.1
+     ⇒ 单一来源档位是 --c-brand-600，500 档明度高、饱和度低一整档（整页 CTA 偏薄荷）。
+     缺陷建议的「在 --c-brand-700 与 --c-brand-800 之间新增档位」不可执行（theme/ 为只读集），
+     且按实测 700/800 都比 600 更远，故映射到既有最近档位令牌。按压态同步下移一档到 700。 */
+  background: var(--c-brand-600, #2AAE83);
   border-radius: 999rpx;
   padding: 18rpx 32rpx;
 }
 
 .info-join--active {
-  background: var(--c-brand-600, #2AAE83);
+  background: var(--c-brand-700, #1F8D6A);
 }
 
 .info-join-text {
@@ -900,14 +924,22 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 }
 
 .tag-chip {
-  background: #f1f4f3;
+  /* R2b-L05-D01（样式半）：理想图这排胶囊是压在 Hero 实景照上的深色半透明描边玻璃片——
+     PIL 量 圈子详情，摄影圈参考.png：胶囊底 rgb(29,40,39)、字为纯白。
+     原 #f1f4f3 浅灰底 + #5d6c7b 深灰字是「白卡上的浅灰标签」口径，与理想图色彩层级相反。
+     不自造色值，收进既有「图上徽标」成对令牌 --c-badge-on-image-bg / --c-badge-on-image-text
+     （design-variables.scss:751-752，即 --c-overlay-strong + --c-overlay-text-primary），
+     描边取同族 --c-overlay-border-light。
+     注：本行数据侧仍受 real 档无圈标签字段限制（见 script 的 circleTags），此处只对齐样式。 */
+  background: var(--c-badge-on-image-bg, rgba(15, 23, 42, 0.7));
+  border: 1rpx solid var(--c-overlay-border-light, rgba(255, 255, 255, 0.18));
   border-radius: 999rpx;
   padding: 10rpx 24rpx;
 }
 
 .tag-chip-text {
   font-size: 24rpx;
-  color: #5d6c7b;
+  color: var(--c-badge-on-image-text, rgba(255, 255, 255, 0.95));
 }
 
 /* ===== 4. Tab 栏 ===== */
@@ -915,11 +947,19 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   display: flex;
   align-items: center;
   background: #ffffff;
-  margin-top: 24rpx;
-  padding: 0 24rpx;
+  /* R2b-L05-D05：页签行是上方那块圆角面板的延续，同色同宽 ⇒ margin-top 归零，
+     不再留 24rpx 页面底色把面板与页签切成两段（理想图里它们是同一张 sheet） */
+  margin-top: 0;
+  /* R2b-L05-D06（位置，P1）：吸顶原先是 top:0，未扣状态栏高度 ⇒ bottom 帧里页签行贴到
+     屏幕 y=0，「动态」与状态栏时间挤在同一行、最右「成员」被微信胶囊压掉半截。
+     top 改扣 --statusbar（本页已有 useMenuButtonRect 经 menuStyleVars 注入到 .circle-home 根节点），
+     并给行尾留出胶囊避让内衬（避让口径同本页 .hero-actions-right 与 campus/hub.vue：
+     胶囊右缘间隙 + 胶囊本体 87px + 呼吸）。行自身仍保持通栏白底，滚动内容从带下方穿过。 */
   position: sticky;
-  top: 0;
+  top: calc(var(--statusbar, env(safe-area-inset-top)));
   z-index: 10;
+  padding: 0 calc(var(--capsule-right, 7px) + 104px) 0 24rpx;
+  box-sizing: border-box;
 }
 
 .tab-item {
@@ -1049,8 +1089,15 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 .feed-time {
   display: block;
   margin-top: 6rpx;
-  font-size: 22rpx;
-  color: #8595a4;
+  /* R2b-L05-D09（字号）：理想图时间行字高为昵称的 0.85 倍——PIL 量 圈子详情，摄影圈参考.png：
+     昵称「阿辰」墨迹高 21px、时间「30 分钟前」18px，比值 0.857。
+     本页昵称 .feed-nickname = 28rpx ⇒ 28 × 0.85 = 23.8rpx，落最近档位令牌 --fs-base(24rpx)。
+     原写死 22rpx(≈11px CSS) 使「9-09」这行灰字明显小于昵称一档、接近不可读。
+     缺陷建议的 var(--fs-sm, 26rpx) 不可照抄：--fs-sm 实值就是 22rpx（design-variables.scss:532），
+     写了等于没写，26rpx 是 --fs-md，两者都不是 0.85 档。
+     颜色同时从硬编码 #8595a4 收进 --c-text-tertiary，与同包 hub.vue 次级文字同一档。 */
+  font-size: var(--fs-base, 24rpx);
+  color: var(--c-text-tertiary, #6B7571);
 }
 
 .feed-more {
@@ -1196,12 +1243,13 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   justify-content: center;
   height: 88rpx;
   border-radius: 999rpx;
-  background: var(--c-brand-500, #36C99A);
+  /* R2b-L05-D03：底部同色主 CTA 与头部「加入圈子」同档，取 --c-brand-600（推导见 .info-join） */
+  background: var(--c-brand-600, #2AAE83);
 }
 
 .bottom-join--active,
 .bottom-post--active {
-  background: var(--c-brand-600, #2AAE83);
+  background: var(--c-brand-700, #1F8D6A);
 }
 
 .bottom-join-text,
