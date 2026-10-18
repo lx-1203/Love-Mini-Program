@@ -267,6 +267,17 @@ function finishLeg() {
     /* 落盘必须走 renderExecFile：它是 exec-results.json 唯一被屏的出口（序列化后整段过
        同一个 scrubEvidence）。改回裸 JSON.stringify 会同时红两条自检
        （scripts/qa/test-device-leg-scrub.mjs 的行为判点 + 源码锚判点）。 */
+    /* 覆写保护：这个目录名是固定的，下一发直接把上一发的行集盖掉 ⇒ "这轮少了一行/多了一行"
+       从此无法回答。2026-10-18 就栽过：第七发印 41 行、#20 后印 40 行，见证件已被我自己的重跑覆掉，
+       只能从代码分支反推机制。备份写进本轮**带时间戳**的腿目录——那个形状被暂存区密钥门按
+       "设备腿输出目录"那条规则硬屏，所以它既不会进 git，也不会把票带进历史。 */
+    const PREV = join(dir, "exec-results.json");
+    if (existsSync(PREV)) {
+      try {
+        copyFileSync(PREV, join(OUT_DIR, "exec-results.prev.json"));
+        note(`   上一发结果件已备份：${join(OUT_DIR, "exec-results.prev.json")}（该目录按禁令不进版本库）`);
+      } catch (e) { note(`   上一发结果件备份失败：${String((e && e.message) || e).slice(0, 90)} —— 仍照旧落盘，但这一发的对照件没了`); }
+    }
     writeFileSync(join(dir, "exec-results.json"), renderExecFile(rows, meta));
     wroteDir = EXEC_REL;
   } catch (e) { note(`   [exec 台账落盘失败] ${String((e && e.message) || e).slice(0, 160)}`); }
