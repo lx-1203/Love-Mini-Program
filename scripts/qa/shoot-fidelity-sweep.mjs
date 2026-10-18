@@ -23,7 +23,8 @@
  */
 import { createRequire } from "node:module";
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync, rmSync } from "node:fs";
-import { resolve, dirname, join, relative, sep } from "node:path";
+import { resolve, dirname, join, relative, sep, delimiter } from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 
@@ -175,6 +176,26 @@ try {
 }
 
 const seen = new Map(); /* hash → 首个用到它的路由（跨页同图必须被数出来） */
+/* 每一轮取景开场必须**重开项目窗口**。这不是保险，是补一个实测到的静默错：
+   IDE 渲染的是它已经加载进内存的那份产物，磁盘上重新构建不会刷新它
+   （open-project-window.mjs 的注释记着同一件事的另一个方向：切档位不重开窗，窗口里还是旧档 ⇒ 腿一行没跑就退 2）。
+   R2 实测代价：改完 12 页重拍，两条泳道独立量到"改动一条都没上屏"——
+   circle-home 帧底色还是旧硬编码 #F4F6F5、hub 标题列还是旧 space-between 几何，
+   而源码与 00:41 的 wxss 里改动确实都在 ⇒ 整轮帧是改前编译，全部作废重拍。
+   失败就中止：拿旧窗口拍出来的帧继续判"修没修好"，比不判更坏。 */
+{
+  const re = spawnSync(process.execPath, [
+    join(REPO, "scripts/qa/open-project-window.mjs"), "--project", PROJECT, "--settle", "12",
+  ], { cwd: REPO, encoding: "utf8", env: { ...process.env, PATH: `${dirname(process.execPath)}${delimiter}${process.env.PATH || ""}` } });
+  const out = `${re.stdout || ""}${re.stderr || ""}`;
+  console.log(`SWEEP_REATTACH exit=${re.status} ${out.split(/\r?\n/).filter((l) => l.includes("OPENWIN")).join(" / ").slice(0, 220)}`);
+  if (re.status !== 0) {
+    console.log(`${RK}=NOT-EVIDENCED reason=reattach-failed exit=${re.status} hint=项目窗口没重开 ⇒ 会拍到改前编译的旧画面，整轮帧都是假证据`);
+    try { const { releaseUi } = await import("./ui-lease.mjs"); releaseUi({ owner: LEASE_OWNER }); } catch { /* 释放失败已由锁的过期兜底 */ }
+    process.exit(2);
+  }
+}
+
 /* 预热一次导航。实测两轮取景的超时都成串落在**最前面几帧**
    （login top×2 失败、login bottom×2 失败、discover top×2 失败，之后同一条通道连续成功）：
    setStorage 之后第一次 reLaunch 要同时付"冷启动 + 应用 boot 拉数"的口，
