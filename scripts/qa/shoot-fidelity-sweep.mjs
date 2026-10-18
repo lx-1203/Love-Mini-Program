@@ -147,6 +147,8 @@ try {
   process.exit(2);
 }
 
+/* 预热与取景循环都必须在 connect 之后（mp 是 let 声明在连接处，提前用会 TDZ 直接抛）。
+   见下面 SWEEP_WARMUP：注释里写了它为什么必须存在。 */
 const results = [];
 /* 旧清单先读一次：--resume 跳过重拍时，要**沿用**该帧上跑已经拿到的落点读数。
    原先 resume 分支无条件写 landingVerified:false，结果实测把上一跑（带落点核对那跑）
@@ -173,6 +175,19 @@ try {
 }
 
 const seen = new Map(); /* hash → 首个用到它的路由（跨页同图必须被数出来） */
+/* 预热一次导航。实测两轮取景的超时都成串落在**最前面几帧**
+   （login top×2 失败、login bottom×2 失败、discover top×2 失败，之后同一条通道连续成功）：
+   setStorage 之后第一次 reLaunch 要同时付"冷启动 + 应用 boot 拉数"的口，
+   这一口超过了 automator 的命令超时 ⇒ 前几帧全记成仪器超时，而不是页面真的拍不到。
+   先热一次，让第一页不再替全轮买单。（同 r-exec-cli.mjs 的 --guest-warmup 一个道理。） */
+try {
+  const w0 = Date.now();
+  await mp.callWxMethod("reLaunch", { url: "/pages/home/index" });
+  await sleep(Math.max(12000, SETTLE));
+  let wp = ""; try { const c = await mp.currentPage(); wp = c && c.path ? String(c.path) : ""; } catch { /* 预热读数失败不影响正式拍 */ }
+  console.log(`SWEEP_WARMUP done ms=${Date.now() - w0} 落点=${wp || "(未读到)"}`);
+} catch (e) { console.log(`SWEEP_WARMUP failed ${String(e && e.message).slice(0, 80)} ⇒ 仍继续，但前几帧的超时读数要按仪器噪声读`); }
+
 for (const r of targets) {
   const rec = { route: r.route, query: PARAMS[r.route] || "", harness: "automator", band: bandNow, identity: IDENTITY, frames: [], errors: [] };
   const shots = [{ state: "top", tokens: [`route:${r.route}`] }, { state: "bottom", tokens: [`route:${r.route}`, "scroll-bottom"] }];
