@@ -53,6 +53,23 @@ const probePort = (port) => new Promise((res) => {
  *   ADMIN_BASE_URL ← 端口实测（该脚本 :20 的缺省是 5177，而本轮实测 5173 拒连、5177 通；上一程注释记的是反方向 ⇒ 取实测不取注释） */
 const ALIASES = [["SUPER_PASSWORD", "ADMIN_LOGIN_PASSWORD"], ["ADMIN_LOGIN_USERNAME", "ADMIN_OPENID"]];
 
+/** 同步版：给 CJS 侧的实跑件用（scripts/qa/g8-e2e.cjs 是 CommonJS，不能顶层 await，
+ *  也不能可靠地 require 一个带顶层 await 的 ESM）。它只做 .env 补键 + 别名，不做端口探测——
+ *  端口探测只有浏览器腿需要（post-detail 那类），G8 打的是后端 :8080，BASE 由它自己写死或从 env 取。
+ *  纪律与异步版完全一致：显式设过的键优先、值不回显、读不到就什么都不做。 */
+export function supplyCredentialsSync() {
+  const { merged, seen } = readDotEnv();
+  let loaded = 0, aliased = 0;
+  for (const [k, v] of Object.entries(merged)) {
+    if (v && process.env[k] === undefined) { process.env[k] = v; loaded++; }
+  }
+  for (const [dst, src] of ALIASES) {
+    if (process.env[dst] === undefined && merged[src]) { process.env[dst] = merged[src]; aliased++; }
+  }
+  console.log(`INSTRUMENT_ENV(sync) env_files=${seen.join(",") || "无"} 补入=${loaded} 别名=${aliased}（值不回显，端口未探）`);
+  return { loaded, aliased, files: seen };
+}
+
 export async function supplyInstrumentEnv({ log = true } = {}) {
   const { merged, seen } = readDotEnv();
   let loaded = 0, aliased = 0;

@@ -1,21 +1,21 @@
 {
   "schemaVersion": "gates-2",
   "gateSet": "真实模式三道 Gate G7/G8/G9 + 后端已重启前置件",
-  "gitSha": "e4495d67",
+  "gitSha": "57511b74",
   "gitShaSource": "运行时 git rev-parse --short HEAD（本文件不写死 SHA）",
-  "capturedAt": "2026-09-26T20:07:24.251Z",
-  "headSubject": "fix(qa,round-7): 更正交互普查的口径盲区，并把最后一批 lane 目标落盘",
+  "capturedAt": "2026-10-18T03:37:58.768Z",
+  "headSubject": "docs(qa): corpus-denominator 那行补上今日再复量——7 条断言里 6 条是前提腐烂、1 条是当下真问题，不许混着消",
   "supersedes": {
-    "gitSha": "1a1df78b",
-    "capturedAt": "2026-09-26T11:16:58.188Z",
-    "G8rings": "10/10"
+    "gitSha": "57511b74",
+    "capturedAt": "2026-10-18T03:35:21.070Z",
+    "G8rings": "7/10"
   },
   "precondition": {
     "check": "scripts/qa/verify-backend-restarted.mjs",
     "result": "PASS",
-    "jvmPid": 32156,
-    "jvmStartedAt": "2026-09-26 21:32:46",
-    "note": "RESTARTED_NEWEST_SOURCE=D:/6/恋爱小程序/apps/api/src/main/java/com/campuslove/api/location/LocationController.java mtime=2026-09-26T12:55:06.927Z ; RESTARTED_HEAD_COMMIT_TIME=2026-09-26T17:49:11.000Z ; RESTARTED_HEAD_DRIFT=content-identical（HEAD 提交晚于 JVM 只是记账，apps/api 相对 HEAD 干净且无 .java 比 JVM 新 ⇒ 不否决） ; RESTARTED_STALE_SOURCE=none  HEAD_NEWER_THAN_JVM=no  APPS_API_CLEAN_VS_HEAD=yes"
+    "jvmPid": 10708,
+    "jvmStartedAt": "2026-10-17 20:55:57",
+    "note": "RESTARTED_NEWEST_SOURCE=D:/6/恋爱小程序/apps/api/src/main/java/com/campuslove/api/admin/AdminUserController.java mtime=2026-10-14T15:37:56.814Z ; RESTARTED_HEAD_COMMIT_TIME=2026-10-18T03:29:08.000Z ; RESTARTED_HEAD_DRIFT=content-identical（HEAD 提交晚于 JVM 只是记账，apps/api 相对 HEAD 干净且无 .java 比 JVM 新 ⇒ 不否决） ; RESTARTED_STALE_SOURCE=none  HEAD_NEWER_THAN_JVM=no  APPS_API_CLEAN_VS_HEAD=yes"
   },
   "G7_RESULT": "PASS",
   "G8_RESULT": "PASS",
@@ -35,10 +35,10 @@
     "G9": {
       "result": "PASS",
       "exitCode": 0,
-      "probed": 455,
-      "ok": 455,
+      "probed": 443,
+      "ok": 443,
       "controlTable": {
-        "在盘且200": 455,
+        "在盘且200": 443,
         "在盘但失败": 0,
         "不在盘但200": 0,
         "不在盘且失败": 0
@@ -46,14 +46,18 @@
     }
   },
   "newDbKeysThisRound": {
-    "posts": 276,
-    "comments": 1244,
-    "campus_topics": 305,
-    "campus_replies": 37
+    "posts": 377,
+    "comments": 1287,
+    "campus_topics": 348,
+    "campus_replies": 80
   },
   "dbWriteDisclosure": "G8 每跑一次都会真写库（发帖/评论/点赞/校园话题/匿名回复），按既定裁定这些行保留不删；本载体的 newDbKeysThisRound 就是本轮新增主键的清单。",
   "notEvidenced": [
-    "wx.login 真机链路（本机无 secret，POST 必 502）"
+    {
+      "item": "wx.login 真机链路",
+      "status": "未证",
+      "reason": "本机无 secret，POST 必 502"
+    }
   ],
   "caveat": [
     "G8 环数已是 10（历史载体记 6），载体与报告都必须按当前环数读"

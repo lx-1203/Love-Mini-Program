@@ -5,12 +5,22 @@
 const fs = require("fs");
 const http = require("http");
 const crypto = require("crypto");
+/* 仪器前提：RING3/4/6 要管理员令牌，而令牌来自 ADMIN_OPENID/ADMIN_PASSWORD。
+   2026-10-18 实跑 G8=PARTIAL(7/10)，三条 MISS 全是「无管理员令牌」——那是"我没带环境"，不是产品判决
+   （同族错误见台账 MP-R7QA-DEVICELEG-* 与四把后台门的补给改造）。这里在 ADMIN_* 常量被读之前补上，
+   显式设过的键一律优先；require 不动那个 ESM 模块就照常往下跑，让环自己如实报缺，绝不假绿。 */
+try { require("./admin-instrument-env.mjs").supplyCredentialsSync(); }
+catch (e) { console.log("INSTRUMENT_ENV(sync)=UNAVAILABLE " + String(e && e.message).slice(0, 70) + " ⇒ 不补，环按无令牌如实记"); }
 
 const BASE = "http://127.0.0.1:8080/api/v1";
 const launcher = fs.readFileSync("apps/api/restart-backend.ps1", "utf8");
-const envOf = (k) => { const m = launcher.match(new RegExp(`${k} = '([^']*)'`)); return m ? m[1] : ""; };
-const ADMIN_OPENID = envOf("ADMIN_OPENID");
-const ADMIN_PASSWORD = envOf("ADMIN_PASSWORD");
+const envOf = (k) => { const m = launcher.match(new RegExp(`${k} = '([^']*)'`)); return m ? m[1] : (process.env[k] || ""); };
+const ADMIN_OPENID = process.env.ADMIN_OPENID || envOf("ADMIN_OPENID");
+/* 口令取当下有效的那一枚，不取 ps1 里的旧值：2026-10-14 口令轮换后 restart-backend.ps1 里的 ADMIN_PASSWORD
+   已不是后端认的那一枚（本轮实测三条 MISS 全成在"无管理员令牌"上，而同仓四把后台门用
+   ADMIN_LOGIN_PASSWORD/SUPER_PASSWORD 登录 /auth/admin/login 拿得到令牌并 17/17、30/30 全绿）。
+   顺序＝环境里的规范凭据优先、ps1 只当兜底；取不到就照旧如实记 MISS。 */
+const ADMIN_PASSWORD = process.env.ADMIN_LOGIN_PASSWORD || process.env.SUPER_PASSWORD || envOf("ADMIN_PASSWORD");
 const FALLBACK_OPENID = "local-dev-admin-openid-123456";
 
 function req(method, path, { token, body, idem } = {}) {
