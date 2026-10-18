@@ -34,13 +34,14 @@
  *     产物目录里落一张 LOOPBACK_WAIVER.json（shippable=false）作为凭证券。
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, rmSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const clientDir = resolve(__dirname, "..");
+const REPO_ROOT = resolve(clientDir, "..");
 const SRC = join(clientDir, "src", "static");
 const STAGE_ROOT = clientDir;
 /** mock 档的共享目录：本链一步都不许写它（它是 mock 轮 before/after 配对证据的载体）。 */
@@ -110,18 +111,32 @@ const STEPS = [
   { name: "check-tabbar-consistency", args: ["scripts/check-tabbar-consistency.mjs"], snapshotBefore: false },
   { name: "check-project-rules", args: ["scripts/check-project-rules.mjs"], snapshotBefore: false },
   { name: "inject-wx-appid", args: ["scripts/inject-wx-appid.mjs"], snapshotBefore: false },
+  /* profile-svg-to-png 必须在 prepare-static --real **之前**（D-A3，2026-10-18 实测）：
+     这条链以前是 prepare-static(6) → profile-svg-to-png(7)，而 prepare-static --real 会把
+     src/static 原地裁成"仅引用集"，紧下一步就报 `src 里缺这张 PNG（包会缺图）` 判红——
+     它量的是上一步刚刚剪过的目录。实测被剪的是 assets/profile/png/** 48 张 / 844K，
+     而这两个注册表（src/config/profile-svg.ts、src/config/profile-assets.ts）**没有任何 import 者**，
+     所以既不该为它们放宽判点，也不该把它们塞回保留集去顶 2MB 主包上限：
+     正确顺序是先在完整 src 上校验生成一致性，再裁剪。
+     "死资产进包 + 皮肤注册表没人用"本身另记一条保真缺陷，不由本次改序消化掉。 */
+  { name: "profile-svg-to-png", args: ["scripts/profile-svg-to-png.mjs"], snapshotBefore: false },
   // --scan src：保留集只从源码扫（prepare-static.mjs:234 的"从上一轮 mock 产物扫"是跨档口径，实测随构建顺序变）
   { name: "prepare-static --real", args: ["scripts/prepare-static.mjs", "--real", "--scan", "src"], snapshotBefore: true },
-  { name: "profile-svg-to-png", args: ["scripts/profile-svg-to-png.mjs"], snapshotBefore: false },
   {
     name: "verify-env-release",
+    /* 不在这里让门写凭证券：uni build（下一步）会重建整个 out 目录，先写进去的文件必被抹掉
+       —— 实测第 3 发就是这么红的（门打了 WAIVED，链末尾却查不到 LOOPBACK_WAIVER.json）。
+       证券改由本链在构建步之后自己落（writeWaiver），门禁那边只保留 --self-test 用的写盘能力。 */
     args: allowLoopback
-      ? ["../../scripts/verify-env-release.mjs", "--allow-loopback", "--carrier", "release-chain", "--write-waiver-to", outDir]
+      ? ["../../scripts/verify-env-release.mjs", "--allow-loopback", "--carrier", "release-chain"]
       : ["../../scripts/verify-env-release.mjs"],
     snapshotBefore: false,
   },
   { name: "uni build (via strip-mock)", args: ["scripts/strip-mock-for-mp.mjs", "uni build --platform mp-weixin --mode real"], snapshotBefore: false },
-  { name: "add-lazy-code-loading", args: ["scripts/add-lazy-code-loading.mjs", "--dist", outDir], snapshotBefore: false },
+  /* add-lazy-code-loading 收的是**位置参数**（:24 process.argv[2]），不是 --dist：
+     实测按 --dist 传会把 "--dist" 当目录名去拼 app.json 路径，报「缺少产物 app.json: …/--dist/app.json」。
+     prune 那边才是 --dist（本轮给它加的旗标）。两个形状各按各的传，别统一。 */
+  { name: "add-lazy-code-loading", args: ["scripts/add-lazy-code-loading.mjs", outDir], snapshotBefore: false },
   { name: "prune-unreferenced-static", args: ["scripts/prune-unreferenced-static.mjs", "--dist", outDir], snapshotBefore: false },
   { name: "verify-package-size", args: ["../../scripts/verify-package-size.mjs", outDir], snapshotBefore: false },
 ];
@@ -185,6 +200,50 @@ function restoreFromSnapshot(stage) {
   }
 }
 
+/** 预检状态（D-A4，2026-10-18 实测）：这条链**成功之后** src/static 是停在裁剪态的
+ *  （裁剪态就是发布形态的预期中间产物），于是第二发从第一步起就红：
+ *  profile-svg-to-png 报「src 里缺这张 PNG」——它量的是上一发留下的半棵树。
+ *  所以链开场必须先把 src/static 恢复到完整集合，才谈得上"可重复构建"。
+ *  恢复动作不另造机制，走 prepare-static 自己的 --dev 分支（它只做 restore()，
+ *  权威来源 static-local-backup/full-static 也是 strip() 自己写回去的那一份）。 */
+function countFiles(dir) {
+  let n = 0;
+  const stack = [dir];
+  while (stack.length) {
+    const d = stack.pop();
+    let names = [];
+    try { names = readdirSync(d); } catch { continue; }
+    for (const name of names) {
+      const p = join(d, name);
+      let st = null;
+      try { st = statSync(p); } catch { continue; }
+      if (st.isDirectory()) stack.push(p); else n++;
+    }
+  }
+  return n;
+}
+
+const BACKUP_FULL = join(clientDir, "static-local-backup", "full-static");
+let prestate = "skip(no-backup)";
+if (!dryRun) {
+  const srcN = countFiles(SRC);
+  const bakN = existsSync(BACKUP_FULL) ? countFiles(BACKUP_FULL) : 0;
+  if (bakN > srcN) {
+    prestate = `restore(src=${srcN} backup=${bakN})`;
+    console.log(`[release-chain] src/static 停在上一发的裁剪态（${srcN} 个文件 < 备份 ${bakN} 个）⇒ 先走 prepare-static --dev 恢复完整集合`);
+    const rr = spawnSync(process.execPath, [join(clientDir, "scripts/prepare-static.mjs"), "--dev"], { cwd: clientDir, stdio: "inherit", env: stepEnv });
+    if (rr.status !== 0) {
+      console.error(`[release-chain] 预检恢复失败（exit=${rr.status}）⇒ 中止，不带半棵树上构建`);
+      console.log(`${RK}=FAIL reason=prestate-restore-exit-${rr.status}`);
+      process.exit(1);
+    }
+    console.log(`RELEASECHAIN_PRESTATE=${prestate} restored=yes`);
+  } else {
+    prestate = `ok(src=${srcN} backup=${bakN})`;
+  }
+}
+console.log(`RELEASECHAIN_PRESTATE ${prestate}`);
+
 let snapshotStage = null;
 let snapshotValid = false;
 let exitCode = 0;
@@ -247,6 +306,35 @@ if (snapshotStage && existsSync(snapshotStage)) {
 
 const sharedAfter = sharedFingerprint();
 const sharedUntouched = sharedAfter === sharedBefore;
+
+/* 凭证券由链在构建之后落盘（门那边写的那份会被 uni build 重建目录抹掉，实测第 3 发因此判红）。
+   api 基底直接读产物 config/env.js —— 证券写的是"这份包里真正带着的地址"，不是我传给门的期望值。 */
+function writeWaiver() {
+  try {
+    const envJs = readFileSync(join(outDir, "config/env.js"), "utf-8");
+    const api = String((envJs.match(/VITE_API_BASE_URL:\s*"([^"]*)"/) || [, "(读不到)"])[1]);
+    const g = spawnSync("git", ["rev-parse", "HEAD"], { cwd: REPO_ROOT, encoding: "utf8" });
+    const git8 = g.status === 0 ? String(g.stdout || "").trim().slice(0, 8) : "unknown";
+    const body = {
+      schema: "loopback-waiver/v1",
+      shippable: false,
+      note: "本产物由点名载具豁免 https/loopback 判点后构建，仅供在座真机验证，不可上传发布。",
+      carrier: "release-chain",
+      apiBaseUrl: api,
+      git: git8,
+      at: new Date().toISOString(),
+      gate: "scripts/verify-env-release.mjs",
+      writtenBy: "apps/client/scripts/release-chain.mjs（构建之后落盘；门写的那份会被 uni build 重建目录抹掉）",
+    };
+    writeFileSync(join(outDir, "LOOPBACK_WAIVER.json"), JSON.stringify(body, null, 2) + "\n", "utf-8");
+    console.log(`RELEASECHAIN_ATTESTATION=${join(outDir, "LOOPBACK_WAIVER.json")} api=${api} shippable=no`);
+    return true;
+  } catch (e) {
+    console.error(`[release-chain] 凭证券写失败：${String(e && e.message).slice(0, 120)}`);
+    return false;
+  }
+}
+if (exitCode === 0 && !dryRun && allowLoopback) writeWaiver();
 
 if (exitCode === 0 && !dryRun) {
   const band = readBand(outDir);

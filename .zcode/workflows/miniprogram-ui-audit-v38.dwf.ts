@@ -328,6 +328,11 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   // 所以点名的是它的 --self-test 形状：能红，且不依赖 .env.real 里是否已有真域名。
   { name: "发布链步序与改道核验 verify-release-chain-steps", args: ["scripts/qa/verify-release-chain-steps.mjs"], timeoutMs: 120000 },
   { name: "发布环境门自证 verify-env-release-selftest", args: ["scripts/verify-env-release.mjs", "--self-test"], timeoutMs: 60000 },
+  // 找茬配额门的自证：六件合成夹具（合规必绿、零缺陷/散文轴/帧 hash 不符/编造 citation/幽灵帧必红）。
+  // 与 bash 侧同值 60000；判真泳道那条形态要 --lane/--manifest 输入，裸跑退 2 是缺输入不是坏门，不登记。
+  { name: "找茬配额门自证 verify-finder-lane-selftest", args: ["scripts/qa/verify-finder-lane.mjs", "--self-test"], timeoutMs: 60000 },
+  // 取景覆盖门自证：好件必绿；零帧页/空白帧页/跨页同图/band 与账本不同源 四种坏件必红（与 bash 侧同值 60000）。
+  { name: "取景覆盖门自证 verify-sweep-coverage-selftest", args: ["scripts/qa/verify-sweep-coverage.mjs", "--self-test"], timeoutMs: 60000 },
   { name: "修复对照产物核验 verify-fixes-against-artifact", args: ["scripts/qa/verify-fixes-against-artifact.cjs"], timeoutMs: 180000 },
   { name: "台账欠帧裸行 verify-frame-debt-coverage", args: ["scripts/qa/verify-frame-debt-coverage.mjs"], timeoutMs: 120000 },
   { name: "收口桶去向棘轮 verify-closed-bucket-destinations", args: ["scripts/qa/verify-closed-bucket-destinations.mjs"], timeoutMs: 60000 },

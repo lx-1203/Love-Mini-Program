@@ -1,0 +1,803 @@
+{
+  "schema": "mp-fidelity-baseline-ledger/v1",
+  "generatedAt": "2026-10-18T14:35:59.587Z",
+  "project": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
+  "bandStamp": "real@f0677920",
+  "totals": {
+    "routes": 71,
+    "baselined": 14,
+    "noBaseline": 57,
+    "specRows": 19,
+    "orphanSpecRows": 2,
+    "namedMissingImages": 0
+  },
+  "tabBarRoutes": [
+    "pages/home/index",
+    "pages/nearby/index",
+    "pages/discover/index",
+    "pages/messages/index",
+    "pages/profile/index"
+  ],
+  "lockedPageTokens": [
+    "ROUTES.LIKES.INDEX",
+    "ROUTES.LIKES.VISITORS_LIKES",
+    "ROUTES.HEART_SIGNALS",
+    "ROUTES.TAB.VILLAGE",
+    "ROUTES.TAB.CHAT"
+  ],
+  "rows": [
+    {
+      "route": "pages/login/index",
+      "packageRoot": "main",
+      "codeFile": "apps/client/src/pages/login/index.vue",
+      "baselineImages": [
+        "素材/理想效果图/登录页.png",
+        "素材/理想效果图/登录页面.png"
+      ],
+      "baselineStatus": "有基准",
+      "specRows": [
+        1
+      ],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "pages/register/index",
+      "packageRoot": "main",
+      "codeFile": "apps/client/src/pages/register/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "pages/register/success",
+      "packageRoot": "main",
+      "codeFile": "apps/client/src/pages/register/success.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "pages/discover/index",
+      "packageRoot": "main",
+      "codeFile": "apps/client/src/pages/discover/index.vue",
+      "baselineImages": [
+        "素材/理想效果图/寻觅匹配卡片页面.png"
+      ],
+      "baselineStatus": "有基准",
+      "specRows": [
+        5
+      ],
+      "identityPrecondition": "A + B（tabBar 页两身份都取）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "pages/home/index",
+      "packageRoot": "main",
+      "codeFile": "apps/client/src/pages/home/index.vue",
+      "baselineImages": [
+        "素材/理想效果图/首页.png"
+      ],
+      "baselineStatus": "有基准",
+      "specRows": [
+        4
+      ],
+      "identityPrecondition": "A + B（tabBar 页两身份都取）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "pages/nearby/index",
+      "packageRoot": "main",
+      "codeFile": "apps/client/src/pages/nearby/index.vue",
+      "baselineImages": [
+        "素材/理想效果图/附近的首页.png"
+      ],
+      "baselineStatus": "有基准",
+      "specRows": [
+        8
+      ],
+      "identityPrecondition": "A + B（tabBar 页两身份都取）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "pages/messages/index",
+      "packageRoot": "main",
+      "codeFile": "apps/client/src/pages/messages/index.vue",
+      "baselineImages": [
+        "素材/理想效果图/消息.png"
+      ],
+      "baselineStatus": "有基准",
+      "specRows": [
+        9
+      ],
+      "identityPrecondition": "A + B（tabBar 页两身份都取）",
+      "lockedByProfileGuard": true
+    },
+    {
+      "route": "pages/profile/index",
+      "packageRoot": "main",
+      "codeFile": "apps/client/src/pages/profile/index.vue",
+      "baselineImages": [
+        "素材/理想效果图/未登录个人主页.png",
+        "素材/理想效果图/已经填完资料的个人主页.png"
+      ],
+      "baselineStatus": "有基准",
+      "specRows": [
+        3,
+        10
+      ],
+      "identityPrecondition": "A + B（tabBar 页两身份都取）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/village/village/index",
+      "packageRoot": "subpackages/village",
+      "codeFile": "apps/client/src/subpackages/village/village/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": true
+    },
+    {
+      "route": "subpackages/village/village/publish",
+      "packageRoot": "subpackages/village",
+      "codeFile": "apps/client/src/subpackages/village/village/publish.vue",
+      "baselineImages": [
+        "素材/理想效果图/发布帖子页面.png"
+      ],
+      "baselineStatus": "有基准",
+      "specRows": [
+        16
+      ],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/village/village/post",
+      "packageRoot": "subpackages/village",
+      "codeFile": "apps/client/src/subpackages/village/village/post.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/village/village/detail",
+      "packageRoot": "subpackages/village",
+      "codeFile": "apps/client/src/subpackages/village/village/detail.vue",
+      "baselineImages": [
+        "素材/理想效果图/帖子.png"
+      ],
+      "baselineStatus": "有基准",
+      "specRows": [
+        15
+      ],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/village/village/tag-posts",
+      "packageRoot": "subpackages/village",
+      "codeFile": "apps/client/src/subpackages/village/village/tag-posts.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/village/village/history",
+      "packageRoot": "subpackages/village",
+      "codeFile": "apps/client/src/subpackages/village/village/history.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/circles/circles/index",
+      "packageRoot": "subpackages/circles",
+      "codeFile": "apps/client/src/subpackages/circles/circles/index.vue",
+      "baselineImages": [
+        "素材/理想效果图/兴趣圈列表.png"
+      ],
+      "baselineStatus": "有基准",
+      "specRows": [
+        12
+      ],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/circles/circles/topics",
+      "packageRoot": "subpackages/circles",
+      "codeFile": "apps/client/src/subpackages/circles/circles/topics.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/circles/circles/topic-detail",
+      "packageRoot": "subpackages/circles",
+      "codeFile": "apps/client/src/subpackages/circles/circles/topic-detail.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/circles/circles/post-topic",
+      "packageRoot": "subpackages/circles",
+      "codeFile": "apps/client/src/subpackages/circles/circles/post-topic.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/circles/circles/circle-home",
+      "packageRoot": "subpackages/circles",
+      "codeFile": "apps/client/src/subpackages/circles/circles/circle-home.vue",
+      "baselineImages": [
+        "素材/理想效果图/圈子详情，摄影圈参考.png"
+      ],
+      "baselineStatus": "有基准",
+      "specRows": [
+        13
+      ],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/campus/campus/hub",
+      "packageRoot": "subpackages/campus",
+      "codeFile": "apps/client/src/subpackages/campus/campus/hub.vue",
+      "baselineImages": [
+        "素材/理想效果图/校园圈.png"
+      ],
+      "baselineStatus": "有基准",
+      "specRows": [
+        14
+      ],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/campus/campus/index",
+      "packageRoot": "subpackages/campus",
+      "codeFile": "apps/client/src/subpackages/campus/campus/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/campus/campus/post-topic",
+      "packageRoot": "subpackages/campus",
+      "codeFile": "apps/client/src/subpackages/campus/campus/post-topic.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/campus/campus/topic-detail",
+      "packageRoot": "subpackages/campus",
+      "codeFile": "apps/client/src/subpackages/campus/campus/topic-detail.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/campus/campus/certification",
+      "packageRoot": "subpackages/campus",
+      "codeFile": "apps/client/src/subpackages/campus/campus/certification.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/discover-extra/discover/matching",
+      "packageRoot": "subpackages/discover-extra",
+      "codeFile": "apps/client/src/subpackages/discover-extra/discover/matching.vue",
+      "baselineImages": [
+        "素材/理想效果图/匹配中页面.png"
+      ],
+      "baselineStatus": "有基准",
+      "specRows": [
+        6
+      ],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/discover-extra/discover/match-success",
+      "packageRoot": "subpackages/discover-extra",
+      "codeFile": "apps/client/src/subpackages/discover-extra/discover/match-success.vue",
+      "baselineImages": [
+        "素材/理想效果图/匹配成功页面.png"
+      ],
+      "baselineStatus": "有基准",
+      "specRows": [
+        7
+      ],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/discover-extra/home/segment",
+      "packageRoot": "subpackages/discover-extra",
+      "codeFile": "apps/client/src/subpackages/discover-extra/home/segment.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/discover-extra/nearby/people",
+      "packageRoot": "subpackages/discover-extra",
+      "codeFile": "apps/client/src/subpackages/discover-extra/nearby/people.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/discover-extra/discover/history",
+      "packageRoot": "subpackages/discover-extra",
+      "codeFile": "apps/client/src/subpackages/discover-extra/discover/history.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/discover-extra/likes/index",
+      "packageRoot": "subpackages/discover-extra",
+      "codeFile": "apps/client/src/subpackages/discover-extra/likes/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/discover-extra/likes-visitors/index",
+      "packageRoot": "subpackages/discover-extra",
+      "codeFile": "apps/client/src/subpackages/discover-extra/likes-visitors/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": true
+    },
+    {
+      "route": "subpackages/tools/daily-question/index",
+      "packageRoot": "subpackages/tools",
+      "codeFile": "apps/client/src/subpackages/tools/daily-question/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/tools/love-center/index",
+      "packageRoot": "subpackages/tools",
+      "codeFile": "apps/client/src/subpackages/tools/love-center/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/tools/help/index",
+      "packageRoot": "subpackages/tools",
+      "codeFile": "apps/client/src/subpackages/tools/help/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/tools/security/index",
+      "packageRoot": "subpackages/tools",
+      "codeFile": "apps/client/src/subpackages/tools/security/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/tools/search/index",
+      "packageRoot": "subpackages/tools",
+      "codeFile": "apps/client/src/subpackages/tools/search/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/tools/heart-signals/index",
+      "packageRoot": "subpackages/tools",
+      "codeFile": "apps/client/src/subpackages/tools/heart-signals/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": true
+    },
+    {
+      "route": "subpackages/tools/activities/detail",
+      "packageRoot": "subpackages/tools",
+      "codeFile": "apps/client/src/subpackages/tools/activities/detail.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/tools/love-center/nearby",
+      "packageRoot": "subpackages/tools",
+      "codeFile": "apps/client/src/subpackages/tools/love-center/nearby.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/tools/love-center/mbti",
+      "packageRoot": "subpackages/tools",
+      "codeFile": "apps/client/src/subpackages/tools/love-center/mbti.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/tools/love-center/consulting",
+      "packageRoot": "subpackages/tools",
+      "codeFile": "apps/client/src/subpackages/tools/love-center/consulting.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/profile-extra/settings/index",
+      "packageRoot": "subpackages/profile-extra",
+      "codeFile": "apps/client/src/subpackages/profile-extra/settings/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/profile-extra/verification/index",
+      "packageRoot": "subpackages/profile-extra",
+      "codeFile": "apps/client/src/subpackages/profile-extra/verification/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/profile-extra/verification/real-name",
+      "packageRoot": "subpackages/profile-extra",
+      "codeFile": "apps/client/src/subpackages/profile-extra/verification/real-name.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/profile-extra/profile/visitors",
+      "packageRoot": "subpackages/profile-extra",
+      "codeFile": "apps/client/src/subpackages/profile-extra/profile/visitors.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/profile-extra/profile/other",
+      "packageRoot": "subpackages/profile-extra",
+      "codeFile": "apps/client/src/subpackages/profile-extra/profile/other.vue",
+      "baselineImages": [
+        "素材/理想效果图/他人显示主页.png"
+      ],
+      "baselineStatus": "有基准",
+      "specRows": [
+        11
+      ],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/profile-extra/profile/location",
+      "packageRoot": "subpackages/profile-extra",
+      "codeFile": "apps/client/src/subpackages/profile-extra/profile/location.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [
+        19
+      ],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/profile-extra/profile/privacy",
+      "packageRoot": "subpackages/profile-extra",
+      "codeFile": "apps/client/src/subpackages/profile-extra/profile/privacy.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/profile-extra/profile/album",
+      "packageRoot": "subpackages/profile-extra",
+      "codeFile": "apps/client/src/subpackages/profile-extra/profile/album.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/profile-extra/profile/favorites",
+      "packageRoot": "subpackages/profile-extra",
+      "codeFile": "apps/client/src/subpackages/profile-extra/profile/favorites.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/profile-extra/profile/tasks",
+      "packageRoot": "subpackages/profile-extra",
+      "codeFile": "apps/client/src/subpackages/profile-extra/profile/tasks.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/profile-extra/settings/dnd",
+      "packageRoot": "subpackages/profile-extra",
+      "codeFile": "apps/client/src/subpackages/profile-extra/settings/dnd.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/profile-extra/feedback/history",
+      "packageRoot": "subpackages/profile-extra",
+      "codeFile": "apps/client/src/subpackages/profile-extra/feedback/history.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/chat/chat-session/index",
+      "packageRoot": "subpackages/chat",
+      "codeFile": "apps/client/src/subpackages/chat/chat-session/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [
+        18
+      ],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/chat/official-chat/index",
+      "packageRoot": "subpackages/chat",
+      "codeFile": "apps/client/src/subpackages/chat/official-chat/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/setup/profile/index",
+      "packageRoot": "subpackages/setup",
+      "codeFile": "apps/client/src/subpackages/setup/profile/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/setup/campus/index",
+      "packageRoot": "subpackages/setup",
+      "codeFile": "apps/client/src/subpackages/setup/campus/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/setup/schedule/index",
+      "packageRoot": "subpackages/setup",
+      "codeFile": "apps/client/src/subpackages/setup/schedule/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/setup/recommend-pref/index",
+      "packageRoot": "subpackages/setup",
+      "codeFile": "apps/client/src/subpackages/setup/recommend-pref/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/setup/interest/index",
+      "packageRoot": "subpackages/setup",
+      "codeFile": "apps/client/src/subpackages/setup/interest/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/support/feedback/index",
+      "packageRoot": "subpackages/support",
+      "codeFile": "apps/client/src/subpackages/support/feedback/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/discover/discussions/index",
+      "packageRoot": "subpackages/discover",
+      "codeFile": "apps/client/src/subpackages/discover/discussions/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/discover/activities/index",
+      "packageRoot": "subpackages/discover",
+      "codeFile": "apps/client/src/subpackages/discover/activities/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/legal/privacy/index",
+      "packageRoot": "subpackages/legal",
+      "codeFile": "apps/client/src/subpackages/legal/privacy/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/legal/agreement/index",
+      "packageRoot": "subpackages/legal",
+      "codeFile": "apps/client/src/subpackages/legal/agreement/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/market/detail/index",
+      "packageRoot": "subpackages/market",
+      "codeFile": "apps/client/src/subpackages/market/detail/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/market/shop/index",
+      "packageRoot": "subpackages/market",
+      "codeFile": "apps/client/src/subpackages/market/shop/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/market/wallet/index",
+      "packageRoot": "subpackages/market",
+      "codeFile": "apps/client/src/subpackages/market/wallet/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/vip/index",
+      "packageRoot": "subpackages/vip",
+      "codeFile": "apps/client/src/subpackages/vip/index.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/vip/promo-code",
+      "packageRoot": "subpackages/vip",
+      "codeFile": "apps/client/src/subpackages/vip/promo-code.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    },
+    {
+      "route": "subpackages/vip/bills",
+      "packageRoot": "subpackages/vip",
+      "codeFile": "apps/client/src/subpackages/vip/bills.vue",
+      "baselineImages": [],
+      "baselineStatus": "无基准",
+      "specRows": [],
+      "identityPrecondition": "A（非 tab 页需登录态）",
+      "lockedByProfileGuard": false
+    }
+  ]
+}

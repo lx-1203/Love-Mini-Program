@@ -120,14 +120,32 @@ if (!outDir) problems.push("读不到链打印的 out= ⇒ 改道判点全部无
 else {
   notes.push(`out=${outDir}`);
   if (!/--allow-loopback\b/.test(dry.out) && !dry.out.includes("loopbackWaiver=yes")) problems.push(`链自身带了 --allow-loopback 却没打印 loopbackWaiver=yes ⇒ 豁免传没传读不出来（out=${outDir}）`);
-  for (const [name, line] of [["add-lazy-code-loading", lazy], ["prune-unreferenced-static", prune]]) {
-    if (line && !line.includes(`--dist ${outDir}`) && !line.includes(`--dist "${outDir}"`)) {
-      problems.push(`${name} 没带 --dist ${outDir} ⇒ 它会回到缺省的 mock 目录去改/删文件（D-A0 复发）`);
-    }
+  /* 改道形状按各自的真实签名判（实测统一写成 --dist 会把 add-lazy-code-loading 打成
+     "缺少产物 app.json: …/--dist/app.json"，那是传参形状错，不是门坏）：
+       add-lazy-code-loading:24  ⇒ 位置参数
+       prune-unreferenced-static ⇒ --dist（本轮新加的旗标，缺省目录曾硬编码 mock 档）
+       verify-package-size       ⇒ 位置参数 */
+  if (lazy) {
+    if (!lazy.includes(outDir)) problems.push(`add-lazy-code-loading 没把产物目录 ${outDir} 传下去 ⇒ 它会去改 mock 档的 app.json（D-A0 复发）`);
+    if (/--dist/.test(lazy)) problems.push("add-lazy-code-loading 被传了 --dist（它收位置参数，argv[2]）⇒ 会拼出 …/--dist/app.json 并报构建未成功");
+  }
+  if (prune && !prune.includes(`--dist ${outDir}`) && !prune.includes(`--dist "${outDir}"`)) {
+    problems.push(`prune-unreferenced-static 没带 --dist ${outDir} ⇒ 它会回到缺省的 mock 目录去删文件（D-A0 复发）`);
   }
   if (size && !size.includes(outDir)) problems.push(`verify-package-size 没带位置参数 ${outDir} ⇒ 它量的是缺省 mock 目录，包体结论记错对象`);
 }
 if (prep && !/--scan\s+src/.test(prep)) problems.push("prepare-static 没带 --scan src ⇒ 保留集又由上一轮别的档决定（D-A1 复发）");
+
+/* 判点 3b：D-A3 的顺序守卫 —— profile-svg-to-png 必须排在 prepare-static --real 之前。
+   实测过一遍反例：两步挨着时，prepare-static 剪掉 assets/profile/png/** 之后，
+   profile-svg-to-png 立刻报「src 里缺这张 PNG」⇒ 门量的是上一步刚改过的目录。
+   这条判点按 --dry 打印顺序取索引，不看正文注释（注释会说谎，argv 顺序不会）。 */
+const orderLines = dry.out.split(/\r?\n/).filter((l) => /\[release-chain\] >>> /.test(l)).map((l) => l.split(">>>")[1].trim());
+const idxSvg = orderLines.findIndex((l) => l.includes("profile-svg-to-png"));
+const idxPrep = orderLines.findIndex((l) => l.includes("prepare-static"));
+if (idxSvg < 0 || idxPrep < 0) problems.push(`步序里找不到 profile-svg-to-png 或 prepare-static（svg=${idxSvg} prep=${idxPrep}）⇒ 顺序判点失效`);
+else if (idxSvg > idxPrep) problems.push(`profile-svg-to-png 排在 prepare-static --real 之后（#${idxSvg + 1} > #${idxPrep + 1}）⇒ 它量的是刚被裁剪过的 src/static，必然假红（D-A3 复发）`);
+else notes.push(`步序 OK：profile-svg-to-png #${idxSvg + 1} 在 prepare-static #${idxPrep + 1} 之前`);
 if (envg && !/--carrier\s+release-chain/.test(envg)) problems.push("链向下传豁免却没点名载具 ⇒ 门那边会退 2，链却把 2 当成构建失败，谁也读不出是豁免匿名");
 
 /* ── 判点 5：负例承重 —— 指向 mock 共享目录必须被拒，且拒在写盘之前 ── */

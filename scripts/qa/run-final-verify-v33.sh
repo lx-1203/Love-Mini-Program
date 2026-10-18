@@ -62,6 +62,13 @@ g verify-source-shape     180 scripts/qa/verify-source-shape.mjs --dry
 # 所以登记的是它的 --self-test 形状：那条能红、且不依赖 .env.real 里有没有真域名。
 g verify-release-chain-steps 120 scripts/qa/verify-release-chain-steps.mjs
 g verify-env-release-selftest 60 scripts/verify-env-release.mjs --self-test
+# 找茬配额门：判"每帧≥1缺陷 + 帧 hash 归属 + citation 回抓 + 轴词表"。
+# 登记的是 --self-test 形状（六件合成夹具：合规件必绿、五种坏件必红）——
+# 判真泳道的形态要 --lane/--manifest 输入，裸跑退 2 属于"缺输入"，塞进来只会造出一条假红。
+g verify-finder-lane-selftest 60 scripts/qa/verify-finder-lane.mjs --self-test
+# 取景覆盖门：零帧页 / 空白帧页 / 跨页同图 / band 与账本不同源，四种坏件在自证里都必须红。
+# 判真批次的形态要 --ledger + --manifest（本轮新帧目录），裸跑退 2 是缺输入，故载具点的是自证。
+g verify-sweep-coverage-selftest 60 scripts/qa/verify-sweep-coverage.mjs --self-test
 g verify-evidence-corpus  600 scripts/qa/verify-evidence-corpus.mjs
 g verify-provenance-all   600 scripts/qa/verify-provenance-all.mjs
 g verify-band-freshness   420 scripts/qa/verify-band-freshness.mjs
