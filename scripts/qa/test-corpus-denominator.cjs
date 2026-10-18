@@ -121,9 +121,14 @@ function walkManifests(dir, out = []) {
 }
 function independentSets(repoRoot, rootRel) {
   const trackedList = git(repoRoot, "ls-files", "--", rootRel).split(/\r?\n/).filter(Boolean);
-  const absentList = git(repoRoot, "-c", "core.quotepath=off", "ls-files", "--deleted", "--", rootRel)
+  /* 2026-10-18：与门同源但**独立算**——缺席凭据取两源并集：
+     ①工作树瞬时 ls-files --deleted；②git log --diff-filter=D（被提交删掉的路径）。
+     账主把选定删除提交进去后 ① 归零，只靠 ① 就会把"按裁定删的"读成"拿不出凭据的"。 */
+  const transientList = git(repoRoot, "-c", "core.quotepath=off", "ls-files", "--deleted", "--", rootRel)
     .split(/\r?\n/).filter(Boolean).map(norm);
-  const absent = new Set(absentList);
+  const committedList = git(repoRoot, "-c", "core.quotepath=off", "log", "--diff-filter=D", "--name-only", "--pretty=format:", "--", rootRel)
+    .split(/\r?\n/).filter(Boolean).map(norm);
+  const absent = new Set([...transientList, ...committedList]);
   const named = new Set(); let items = 0, absentNamed = 0, namedAbsent = 0;
   for (const m of walkManifests(join(repoRoot, ...rootRel.split("/")))) {
     let j; try { j = JSON.parse(readFileSync(m, "utf8")); } catch { continue; }
@@ -141,7 +146,7 @@ function independentSets(repoRoot, rootRel) {
       if (!existsSync(abs)) { namedAbsent++; if (absent.has(k)) absentNamed++; }
     }
   }
-  return { trackedCount: trackedList.length, absentCount: absentList.length, named: named.size, items, absentNamed, namedAbsent };
+  return { trackedCount: trackedList.length, absentCount: absent.size, named: named.size, items, absentNamed, namedAbsent };
 }
 
 /* ================= A. 真仓全域：读数存在且等于独立复算 =================
@@ -157,7 +162,7 @@ const setEq = (gateVal, k) => gateVal === SETS0[k] || gateVal === SETS1[k];
 console.log(`A_DIAGNOSTIC 盘漂移=${drift ? "有" : "无"} 复算(跑前) absent=${SETS0.absentCount} namedAbsent=${SETS0.absentNamed} items=${SETS0.items} :: (跑后) absent=${SETS1.absentCount} namedAbsent=${SETS1.absentNamed} items=${SETS1.items} :: 门=${GA.trackedAbsent}/${GA.namedAbsent}/${GA.gateItems}`);
 ok(GA.hasDenomLines.length === 5, "A 门确实印出五行 CORPUS_DENOM_*（TRACKED/ABSENT/SCANNED/BLINDSPOT/AXIS，全是可 grep 的机器行）",
   "命中=" + GA.hasDenomLines.join(","));
-ok(setEq(GA.trackedAbsent, "absentCount"), `A 分母==独立复算的 git ls-files --deleted（在册缺席 ${SETS0.absentCount}~${SETS1.absentCount}）`,
+ok(setEq(GA.trackedAbsent, "absentCount"), `A 分母==独立复算的两源并集（瞬时 --deleted ∪ 提交删除；在册缺席 ${SETS0.absentCount}~${SETS1.absentCount}）`,
   `门=${GA.trackedAbsent} 复算=${SETS0.absentCount}/${SETS1.absentCount}`);
 ok(setEq(GA.namedByGate, "absentNamed"), "A 被门点名到的在册缺席==独立复算的交集",
   `门=${GA.namedByGate} 复算=${SETS0.absentNamed}/${SETS1.absentNamed}`);

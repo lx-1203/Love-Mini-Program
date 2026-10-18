@@ -762,8 +762,8 @@
   {
    "id": "MP-R7QA-SELFTEST-CORPUSDENOM-DELETEDAXIS-001",
    "kind": "static_predicate",
-   "reason": "断言分母取自 git ls-files --deleted 这一工作树瞬时态；本车道实测该集合现为 0 条 ⇒ 删除已入库、断言算术上无解（与行内 2026-10-17 SELFTEST_RESULT=FAIL 2/56、neverOpened=0/namedByGate=0 复量同因）。",
-   "nextCarrier": "改写 scripts/qa/test-corpus-denominator.cjs:124/160/331 的缺席基准为可复算口径（历史提交或清单），勿依赖 --deleted"
+   "reason": "已换成可复算凭据（两源并集：ls-files --deleted ∪ git log --diff-filter=D）；实测 absent=3970 门与独立复算逐字相同、CORPDEN_TEST=PASS、聚合 run-qa-selftests=PASS 53+3。",
+   "nextCarrier": "下一发全量载具把 verify-evidence-corpus 的 CORPUS_DENOM_ABSENT（含「凭据源=」那一段）记进总账；C3 类从未入库的缺席必须仍能判红"
   },
   {
    "id": "MP-R7QA-MEDIA-BANDBLANK-001",

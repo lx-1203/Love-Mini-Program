@@ -208,9 +208,21 @@ const DENOM = (() => {
         { cwd: repo, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }).split(/\r?\n/).filter(Boolean);
     } catch { return null; }
   };
-  const tracked = ls([]), absent = ls(["--deleted"]);
-  if (!tracked || !absent) return { ok: false, spec, why: "git ls-files 取不到（不是仓、就是 git 不可用）", tracked: null, absent: null, absentSet: new Set() };
-  return { ok: true, spec, why: "", tracked, absent, absentSet: new Set(absent.map(foldCase)) };
+  const tracked = ls([]), transientAbsent = ls(["--deleted"]);
+  if (!tracked || !transientAbsent) return { ok: false, spec, why: "git ls-files 取不到（不是仓、就是 git 不可用）", tracked: null, absent: null, absentSet: new Set() };
+  /* 2026-10-18 加第二道可复算凭据。`ls-files --deleted` 只能证明"工作树此刻少了几张"，证不了
+     "这几张是按裁定删的"——账主把那批删除提交进去之后它合法地归零，于是原本走 advisory 的缺席
+     全被判成拿不出凭据（实测 exec-a-mock-final 默认档 problems=1、5 帧转 blocking）。
+     `git log --diff-filter=D` 给得出后者：凡被某个提交删掉的路径＝可核的"选定删除"，与瞬时工作树无关。
+     两源取并集；从未入库过的缺席两边都给不出 ⇒ 那种格子照旧判红，advisory 不是万能豁免。 */
+  let deletedByCommit;
+  try {
+    deletedByCommit = execFileSync("git", ["-c", "core.quotepath=off", "log", "--diff-filter=D", "--name-only", "--pretty=format:", "--", spec || "."],
+      { cwd: repo, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }).split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+  } catch { deletedByCommit = null; }
+  if (deletedByCommit === null) return { ok: false, spec, why: "git log --diff-filter=D 取不到（历史不可读）", tracked: null, absent: null, absentSet: new Set() };
+  const absent = [...new Set([...transientAbsent, ...deletedByCommit])];
+  return { ok: true, spec, why: "", tracked, absent, transientAbsent: transientAbsent.length, deletedByCommit: deletedByCommit.length, absentSet: new Set(absent.map(foldCase)) };
 })();
 console.log(`CORPUS_MANIFESTS=${manifests.length} CORPUS_MANIFESTS_TOTAL=${manifestsAll.length} SCOPE=${scopeArg.join("+") || "全域"} HEAD=${HEAD || "?"}`);
 // 空扫描集不得判绿：首版在没有 manifest 时会安静地输出 CORPUS_PROBLEMS=0 并 PASS。
@@ -406,7 +418,7 @@ let delNamedPaths = 0;
 if (DENOM.ok) for (const k of namedPaths) if (DENOM.absentSet.has(k)) delNamedPaths++;
 const blindGap = DENOM.ok ? delTotal - delNamedPaths : null;
 console.log(`CORPUS_DENOM_TRACKED source=git:ls-files root=${DENOM.spec || "(仓库根)"} trackedFiles=${DENOM.ok ? trackedTotal : "(不可得)"} trackedFrames=${DENOM.ok ? trackedImgCount : "(不可得)"} trackedNonImage=${DENOM.ok ? trackedTotal - trackedImgCount : "(不可得)"}（分母取自 git 在册集合，**不是**盘上 readdir、也不是 manifest 点名的并集 —— 后两者都只会数"还看得见的那些"）`);
-console.log(`CORPUS_DENOM_ABSENT trackedAbsentFiles=${DENOM.ok ? delTotal : "(不可得:" + DENOM.why + ")"} trackedAbsentFrames=${DENOM.ok ? delImgCount : "(不可得)"} trackedAbsentNonImage=${DENOM.ok ? delTotal - delImgCount : "(不可得)"}（在册却在盘上缺席＝"选定删除"的可核凭据；非图扩展单独给数是为了对账：缺席里混着 .tsv/.json/.log 时这两个数不该相等）`);
+console.log(`CORPUS_DENOM_ABSENT trackedAbsentFiles=${DENOM.ok ? delTotal : "(不可得:" + DENOM.why + ")"} trackedAbsentFrames=${DENOM.ok ? delImgCount : "(不可得)"} trackedAbsentNonImage=${DENOM.ok ? delTotal - delImgCount : "(不可得)"} 凭据源=瞬时工作树=${DENOM.transientAbsent ?? "(不可得)"}+提交删除=${DENOM.deletedByCommit ?? "(不可得)"}→并集=${DENOM.ok ? delTotal : "(不可得)"}（在册却在盘上缺席＝"选定删除"的可核凭据；2026-10-18 起两源并集，删除被提交进去后单靠 --deleted 会归零；非图扩展单独给数是为了对账：缺席里混着 .tsv/.json/.log 时这两个数不该相等）`);
 console.log(`CORPUS_DENOM_SCANNED gateItems=${itemsOpened} gateNamedPaths=${namedPaths.size} gateNamedAbsent=${namedAbsentItems} :: vouchedByDeletionSet=${absentVouchedItems} notVouched=${absentUnvouchedItems}（对账 ${absentVouchedItems}+${absentUnvouchedItems}=${absentVouchedItems + absentUnvouchedItems} vs gateNamedAbsent=${namedAbsentItems}）`);
 console.log(`CORPUS_DENOM_BLINDSPOT absentNamedByGate=${DENOM.ok ? delNamedPaths : "(不可得)"} absentNeverOpenedByGate=${DENOM.ok ? blindGap : "(不可得)"} :: 在册缺席 ${DENOM.ok ? delTotal : "?"} 个路径里门结构上只遍历到 ${DENOM.ok ? delNamedPaths : "?"} 个 ⇒ 其余 ${DENOM.ok ? blindGap : "?"} 个既不进 PROBLEMS 也不进 advisory（它压根没打开过那个路径）——从前问题数报 0 并 PASS 时这一整批是静默的，本行就是它的具名读数`);
 console.log(`CORPUS_DENOM_AXIS advisoryFrames=${absentVouchedItems} advisoryPaths=${advisoryPaths.size} advisoryManifests=${advisoryManifests} blockingFrames=${absentUnvouchedItems} strict=${STRICT ? "on" : "off"}（advisory＝用户 2026-09-30 选定删除集的缺席，具名报数、默认不进 CORPUS_PROBLEMS；blocking＝拿不出这份凭据的缺席，照旧判红。两轴口径同 verify-case-automatable.mjs:332，不自创第二套语义）`);
