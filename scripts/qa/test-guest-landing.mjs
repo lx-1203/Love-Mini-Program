@@ -29,10 +29,18 @@ let checks = 0, fail = 0;
 if (existsSync(GUEST_LEG_corpus)) {
   const g = spawnSync(process.execPath, [resolve(REPO, "scripts/qa/triage-exec-failures.mjs"),
     "--results", GUEST_LEG_corpus, "--out", TRIAGE2], { cwd: REPO, encoding: "utf8", timeout: 300000 });
-  if (g.status !== 0 || !existsSync(TRIAGE2 + ".json")) {
-    console.log("FAIL 派生第二条游客腿的 triage 没成功 :: exit=" + g.status + " " + String(g.stdout + g.stderr).slice(0, 200));
+  /* 可用性判据＝派生件有没有落盘。triage 自己 exit≠0 是**覆盖门给的产品判决**（coverMismatch ⇒ 它判红是对的），
+     不是仪器失败；把两者写在同一个条件里，就造出过一条与产品无关的常红
+     （出处：台账 MP-R7QA-GUESTLEG-TRIAGE-001，2026-10-18 账主「全批」后选此项）。
+     它判红这件事仍然要印出来——取派生件不等于替它改判。 */
+  const landed = existsSync(TRIAGE2 + ".json");
+  if (!landed) {
+    console.log("FAIL 派生第二条游客腿的 triage 没落盘 :: exit=" + g.status + " " + String(g.stdout + g.stderr).slice(0, 200));
     fail++; checks++;
-  } else { renameSync(TRIAGE2 + ".json", TRIAGE2); }
+  } else {
+    if (g.status !== 0) console.log("NOTE triage 这一发判红（exit=" + g.status + "）＝覆盖门的产品判决，本测试只取它的派生件，不销它的判决");
+    renameSync(TRIAGE2 + ".json", TRIAGE2);
+  }
 }
 /* 并集组数：两语料各自 "page → landed" 的去重并（与载具的 SOURCES 轴同口径），
    用来替掉原先钉死的 26 / 239 / 27 —— 那些字面数每加一条合法裁定就必然假红。 */
