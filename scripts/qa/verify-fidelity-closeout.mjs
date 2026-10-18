@@ -128,6 +128,15 @@ function newestReportDir() {
   return cands.length ? join(base, cands[cands.length - 1]) : "";
 }
 const REPORT_DIR = resolve(arg("report-dir", "") || newestReportDir());
+/* 够不着名册按约定放在交付目录里，文件名固定；找不到就不传（覆盖门会照旧把那些页判红，
+   这是诚实的缺省——把名册"造出来"让门变绿才是造假）。 */
+const blockedFile = arg("blocked", "") ? resolve(arg("blocked", "")) : (existsSync(join(REPORT_DIR, "blocked-routes.json")) ? join(REPORT_DIR, "blocked-routes.json") : "");
+const blockedRoutes = new Set();
+if (blockedFile) {
+  try { for (const r of (JSON.parse(readFileSync(blockedFile, "utf-8")).rows || [])) if (r && r.route && r.reason && r.evidence) blockedRoutes.add(String(r.route)); }
+  catch { console.log("CLOSEOUT_BLOCKED_件 读不成 JSON ⇒ 当没有名册（不据此减少分母）"); }
+  console.log(`CLOSEOUT_BLOCKED 载入 ${relOf(blockedFile)} 有效行=${blockedRoutes.size}（每行都要 reason+evidence，缺任一不计）`);
+}
 /* 只在"旗标真的传了"时才 resolve：arg 的缺省是空串，resolve("") 会返回当前目录，
    于是"没传 --roundtrip"被读成"目录里那个读不成的 JSON"，MISS 与坏件分不出来。 */
 const pickFile = (k, cands) => { const a = arg(k, ""); if (a) return resolve(a); for (const c of cands) if (c && existsSync(c)) return resolve(c); return ""; };
@@ -179,6 +188,12 @@ let coverGateFails = 0; const coverNotes = [];
 const byRound = new Map();
 for (const rec of roundInfo) byRound.set(rec.round, [...(byRound.get(rec.round) || []), rec]);
 for (const [rd, recs] of byRound) {
+  /* 覆盖判据只加在**算数的轮**上（清单里重开窗得证的那些）。
+     R1/R1smoke/R2 是两条通道并集这套做法之前的历史轮，拿今天的尺去量它们必然红——
+     那不是"覆盖不齐"，是"判据与轮次不同源"。反过来，一个证明不了画面新鲜的轮
+     也没资格替覆盖作证，所以它两头都不计：既不进轮次数，也不进覆盖判据。 */
+  const rdValid = recs.some((r) => r.valid);
+  if (!rdValid) { coverNotes.push(`${rd}: 无重开窗证明 ⇒ 不计入轮次，也不参加覆盖判据（历史轮）`); continue; }
   const broken = recs.filter((r) => !r.manifest);
   if (broken.length) { coverGateFails++; coverNotes.push(`${rd}: ${broken.length} 件清单读不成 JSON（${broken.map((b) => relOf(b.manifestPath)).join(", ")}）`); }
   const usable = recs.filter((r) => r.manifest);
@@ -187,17 +202,20 @@ for (const [rd, recs] of byRound) {
     for (const r of routes) covered.add(r);
   }
   if (!usable.length) { coverNotes.push(`${rd}: 本轮没有可判的清单 ⇒ 不计覆盖`); continue; }
-  const s = spawnSync(process.execPath, [coverScript, "--ledger", LEDGER, "--manifest", usable.map((r) => r.manifestPath).join(",")], { cwd: REPO, encoding: "utf8" });
+  const s = spawnSync(process.execPath, [coverScript, "--ledger", LEDGER, "--manifest", usable.map((r) => r.manifestPath).join(","), ...(blockedFile ? ["--blocked", blockedFile] : [])], { cwd: REPO, encoding: "utf8" });
   const out = `${s.stdout || ""}${s.stderr || ""}`;
   const line = (out.match(/SWEEPCOVER_RESULT=\S+/) || ["(无结果行)"])[0];
   const st = (out.match(/SWEEPCOVER_STATS .*/) || ["(无统计行)"])[0].trim();
   if (!/SWEEPCOVER_RESULT=PASS/.test(line)) { coverGateFails++; coverNotes.push(`${rd}（并集 ${usable.length} 件）: ${line}`); }
   coverNotes.push(`${rd}（并集 ${usable.length} 件）: ${st}`);
 }
-const missing = wantRoutes.filter((r) => !covered.has(r));
+/* 分母守恒：covered + blocked + missing = want。blocked 只收"名册里带 reason+evidence 的行"，
+   而且真正的裁判还是覆盖门（它规定：名册里的页一旦真拍到可用帧就把那行判红）。 */
+const missing = wantRoutes.filter((r) => !covered.has(r) && !blockedRoutes.has(r));
+const blockedCount = wantRoutes.filter((r) => !covered.has(r) && blockedRoutes.has(r)).length;
 push("coverage", coverGateFails === 0 && missing.length === 0,
-  `并集覆盖=${covered.size}/${wantRoutes.length} 覆盖门红=${coverGateFails} 缺页=${missing.length}`,
-  "每轮并集覆盖门 PASS 且 71/71", "spawn verify-sweep-coverage --ledger --manifest <该轮两条通道的清单逗号拼接>");
+  `并集覆盖=${covered.size}/${wantRoutes.length} 够不着=${blockedCount} 缺页=${missing.length} 覆盖门红=${coverGateFails}`,
+  "每轮并集覆盖门 PASS 且 covered+够不着=71", "spawn verify-sweep-coverage --ledger --manifest <两条通道的清单> [--blocked 名册]");
 if (missing.length) console.log(`CLOSEOUT_MISSING_ROUTE ${missing.slice(0, 60).join(" ")}`);
 for (const n of coverNotes) console.log(`CLOSEOUT_COVER ${n}`);
 

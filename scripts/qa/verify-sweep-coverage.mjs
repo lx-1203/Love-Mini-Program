@@ -45,7 +45,7 @@ const flag = (k) => process.argv.includes("--" + k);
  * 那 57 页的件里 14 页是零帧。收口门第 2 条当时就是逐件 spawn 逐件要 PASS ⇒ 一条**恒红判据**，
  * 而恒红的门和零命中的仪表一样不测任何东西。这里改成并集判，一次传多件。
  */
-function judge(ledgerPath, manifestPaths) {
+function judge(ledgerPath, manifestPaths, blockedPath) {
   const problems = [];
   const stats = {};
   const files = (Array.isArray(manifestPaths) ? manifestPaths : [manifestPaths]).filter(Boolean);
@@ -79,13 +79,38 @@ function judge(ledgerPath, manifestPaths) {
     }
   }
   const hashOwners = new Map(); /* sha16 → [route] */
-  let blankPages = 0, noFramePages = 0, dupGroups = 0, dupFrames = 0, mismatchFrames = 0;
+  /* 「够不着页」命名桶（Phase D 的判据不可满足问题）：
+     subpackages/vip/{index,promo-code,bills} 在会员旗标关闭时必然跳回 pages/profile/index，
+     而"不开会员/showcase 旗标"是用户的长期约束 ⇒ 这三页在现行产品里取不到帧，
+     要求 71/71 有可用帧就是一条**构造上不可满足**的判据（恒红的门和零命中的仪表一样不测东西）。
+     这里不降阈值、不删分母：把它们移到第三桶，每行必须带 reason + evidence；
+     covered + blocked + 缺 = want，且**一旦哪天真拍到可用帧就自动从桶里掉出来**（否则豁免会变洗白）。 */
+  const blockedRows = new Map();
+  if (blockedPath && existsSync(blockedPath)) {
+    let bj = null;
+    try { bj = JSON.parse(readFileSync(blockedPath, "utf-8")); } catch { problems.push(`够不着名册读不成 JSON：${blockedPath}`); }
+    for (const r of ((bj && bj.rows) || [])) {
+      const route = String(r && r.route || "").trim();
+      if (!route) { problems.push("够不着名册里有一行没有 route ⇒ 不许按空路由豁免"); continue; }
+      if (!want.includes(route)) { problems.push(`够不着名册点名了不在账本里的路由 ${route} ⇒ 名册不能拿来豁免别的东西`); continue; }
+      const reason = String(r.reason || "").trim(), evidence = String(r.evidence || "").trim();
+      if (!reason || !evidence) { problems.push(`够不着行 ${route} 缺 ${!reason ? "reason" : "evidence"} ⇒ 没有出处的豁免等于没有豁免`); continue; }
+      blockedRows.set(route, { reason, evidence });
+    }
+    if (bj && bj.band && ledger.bandStamp && bj.band !== ledger.bandStamp) problems.push(`够不着名册的 band=${bj.band} 与账本 ${ledger.bandStamp} 不符 ⇒ 那份名册是别的档写的`);
+  }
+  let blankPages = 0, noFramePages = 0, dupGroups = 0, dupFrames = 0, mismatchFrames = 0, blockedPages = 0;
   const contributed = new Map(); /* 件 → 该件独自承重的路由数（空转的件必须点名） */
   for (const { path } of loaded) contributed.set(labelOf(path), 0);
   for (const route of want) {
     const frames = byRoute.get(route) || [];
-    if (!frames.length) { noFramePages++; problems.push(`零帧页 ${route} ⇒ 这一页本轮没有画面，不许记覆盖`); continue; }
     const good = frames.filter((f) => Number(f.bytes) > MIN_BYTES && !f.belowFloor && !f.landingMismatch);
+    /* 够不着桶先看一眼：真有可用帧就不许占桶（豁免会自动失效），没帧才谈得上"够不着"。 */
+    if (blockedRows.has(route)) {
+      if (good.length) { problems.push(`够不着名册里的 ${route} 这一轮**真拍到了** ${good.length} 张可用帧 ⇒ 把该行从名册删掉，豁免不许赖着`); blockedRows.delete(route); }
+      else { blockedPages++; console.error(`SWEEPCOVER_BLOCKED ${route} reason=${blockedRows.get(route).reason} evidence=${blockedRows.get(route).evidence}`); continue; }
+    }
+    if (!frames.length) { noFramePages++; problems.push(`零帧页 ${route} ⇒ 这一页本轮没有画面，不许记覆盖`); continue; }
     const mismatchedHere = frames.filter((f) => f.landingMismatch);
     if (mismatchedHere.length) {
       mismatchFrames += mismatchedHere.length;
@@ -113,7 +138,7 @@ function judge(ledgerPath, manifestPaths) {
     if (!mine.length) problems.push(`空转件 ${labelOf(path)}：该件 0 页有可用帧（results=${(m.results || []).length}）⇒ 这条通道这一轮没取到证，不许靠并集蒙过去`);
   }
   Object.assign(stats, {
-    want: want.length, covered: covered.length, blankPages, noFramePages, dupGroups, dupFrames, mismatchFrames,
+    want: want.length, covered: covered.length, blockedPages, blankPages, noFramePages, dupGroups, dupFrames, mismatchFrames,
     files: loaded.map(({ path, m }) => `${labelOf(path)}(${(m.results || []).length}页,${m.harness ? m.harness.split("(")[0] : "harness 未记"})`),
     contributed, harness: loaded.map(({ m }) => m.harness || "(未记)").join(" + "),
   });
@@ -122,7 +147,7 @@ function judge(ledgerPath, manifestPaths) {
 
 function report(problems, stats) {
   for (const p of problems) console.error(`SWEEPCOVER_PROBLEM ${p}`);
-  if (stats) console.log(`SWEEPCOVER_STATS want=${stats.want} covered=${stats.covered} blankPages=${stats.blankPages} noFramePages=${stats.noFramePages} dupGroups=${stats.dupGroups} dupFrames=${stats.dupFrames} landingMismatchFrames=${stats.mismatchFrames} files=${(stats.files || []).join("|") || "(无)"} harness=${stats.harness}`);
+  if (stats) console.log(`SWEEPCOVER_STATS want=${stats.want} covered=${stats.covered} blocked=${stats.blockedPages} covered+blocked=${stats.covered + stats.blockedPages}/${stats.want} blankPages=${stats.blankPages} noFramePages=${stats.noFramePages} dupGroups=${stats.dupGroups} dupFrames=${stats.dupFrames} landingMismatchFrames=${stats.mismatchFrames} files=${(stats.files || []).join("|") || "(无)"} harness=${stats.harness}`);
   console.log(problems.length ? `${RK}=FAIL covered=${stats ? stats.covered : 0}/${stats ? stats.want : "?"} problems=${problems.length}` : `${RK}=PASS covered=${stats.covered}/${stats.want} 空白=0 跨页同图=0`);
   return problems.length ? 1 : 0;
 }
@@ -188,6 +213,29 @@ function selfTest() {
     console.log(`SWEEPCOVER_SELF ${label.padEnd(22)} 期望=${mustFail ? "红" : "绿"} 实测=${red ? `红(${r.problems.length})` : "绿"} ⇒ ${ok ? "判点承重" : "判点失效"}`);
     if (!ok) problems++;
   }
+  /* ── 够不着桶必须能红（2026-10-19 新增的第三桶）──
+     这个桶是给"构造上取不到帧"的页用的（会员子系统在旗标关闭时整组重定向，而禁令是不开旗标）。
+     一旦它变成"随便往名单里塞一行就绿"，覆盖判据就废了，所以四条负例分别钉住：
+     有据才吸收、真拍到帧就失效、缺 evidence 判畸、点名不在账本里的路由判畸。 */
+  const blkOk = mk("block-ok.json", { band: "real@deadbeef", rows: [{ route: "pages/c/index", reason: "旗标关闭时被重定向", evidence: "实测落点 pages/profile/index，10,206B 三页同图" }] });
+  const blkStale = mk("block-stale.json", { band: "real@deadbeef", rows: [{ route: "pages/a/index", reason: "这一页其实拍得到", evidence: "partA 里就有它的 9000B 帧" }] });
+  const blkNoEv = mk("block-noevidence.json", { band: "real@deadbeef", rows: [{ route: "pages/c/index", reason: "就是想要豁免", evidence: "" }] });
+  const blkUnknown = mk("block-unknown.json", { band: "real@deadbeef", rows: [{ route: "pages/zz/index", reason: "顺手多塞一条", evidence: "出处：没有" }] });
+  const blkBand = mk("block-band.json", { band: "real@OTHERWIFE", rows: [{ route: "pages/c/index", reason: "别的一档的名册", evidence: "x" }] });
+  const blockCases = [
+    ["够不着桶·缺帧且有据⇒吸收", [partA], blkOk, false],
+    ["够不着桶·其实拍到了⇒失效", [partA, partB], blkStale, true],
+    ["够不着桶·缺 evidence⇒判畸", [partA], blkNoEv, true],
+    ["够不着桶·点名账本外路由⇒判畸", [partA], blkUnknown, true],
+    ["够不着桶·band 不是这一档⇒判畸", [partA], blkBand, true],
+  ];
+  for (const [label, mp, bp, mustFail] of blockCases) {
+    const r = judge(lp, mp, bp);
+    const red = r.problems.length > 0;
+    const ok = red === mustFail;
+    console.log(`SWEEPCOVER_SELF ${label.padEnd(22)} 期望=${mustFail ? "红" : "绿"} 实测=${red ? `红(${r.problems.length})` : "绿"} ⇒ ${ok ? "判点承重" : "判点失效"}`);
+    if (!ok) problems++;
+  }
   /* 变异证明：并集绿件里把 CLI 那帧的 bytes 抽到地板下 ⇒ 必须翻红。
      否则"绿"只是因为判据没真读帧——那正是本仓两次栽过的零命中仪表形状。 */
   const mutantPath = mk("part-b-mutant.json", { band: "real@deadbeef", harness: "wechatide CLI(193x413)", results: [
@@ -209,5 +257,7 @@ if (!ledgerPath || !manifestList.length || !existsSync(ledgerPath)) {
   console.log(`${RK}=NOT-EVIDENCED reason=需同时传 --ledger 与 --manifest（后者可逗号分隔多件）且件在盘上`);
   process.exit(2);
 }
-const { problems, stats } = judge(ledgerPath, manifestList);
+const blockedArg = arg("blocked", "");
+const { problems, stats } = judge(ledgerPath, manifestList, blockedArg ? resolve(blockedArg) : "");
+if (blockedArg) console.log(`SWEEPCOVER_名册 已载入够不着名册 ${blockedArg}（够不着桶只在"这一轮真没帧"时生效，拍到帧就自动失效）`);
 process.exit(report(problems, stats));

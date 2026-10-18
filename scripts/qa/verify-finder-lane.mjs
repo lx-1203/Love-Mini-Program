@@ -18,7 +18,7 @@
  *      node scripts/qa/verify-finder-lane.mjs --self-test
  * 退出码：0 配额与判点全中；1 有违规；2 输入读不到（泳道/清单缺，或字段格式整体不对）。
  */
-import { mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, existsSync, rmSync, statSync, readdirSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -87,7 +87,16 @@ function judge(lanePath, manifestPath) {
   const problems = [];
   if (!existsSync(lanePath)) return { problems: [`泳道件读不到 ${lanePath}`], stats: null };
   if (!existsSync(manifestPath)) return { problems: [`取景清单读不到 ${manifestPath}`], stats: null };
-  const lane = readFileSync(lanePath, "utf-8");
+  /* --lane 既收单张卡也收整轮的目录。原契约只收文件，我按 R1 的直觉传了目录 ⇒
+     readFileSync 抛 EISDIR，而这条腿的退出码被管道吃掉（tail 的 0 被当成门绿）。
+     收目录时把卡拼起来判，跨泳道的 defect_id 重复才能被同一把尺数出来；
+     任务书 *.brief.md 不是卡，必须按文件名排除（aggregate-defects 栽过同一处）。 */
+  let lane;
+  if (statSync(lanePath).isDirectory()) {
+    const cards = readdirSync(lanePath).filter((f) => f.endsWith(".md") && !/\.brief\.md$/i.test(f)).sort();
+    if (!cards.length) return { problems: [`泳道目录里一张卡都没有 ${lanePath}（空扫描集不得判"配额达标"）`], stats: null };
+    lane = cards.map((f) => readFileSync(join(lanePath, f), "utf-8")).join("\n");
+  } else lane = readFileSync(lanePath, "utf-8");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
   const framesByPath = new Map();
   for (const rec of (manifest.results || [])) {
@@ -108,9 +117,11 @@ function judge(lanePath, manifestPath) {
     groups.get(header).push(sec);
   }
   let framesSeen = 0;
+  const referenced = new Set(); /* 卡里真点到过的帧路径（用于"每帧至少一条"的分母） */
   for (const [header, secs] of groups) {
     if (!framesByPath.has(header)) { unlisted += secs.length; problems.push(`FRAME 段指向清单里没有的帧：${header}（${secs.length} 段）⇒ 帧路径必须逐字来自 sweep-manifest`); continue; }
     framesSeen++;
+    referenced.add(header);
     const truth = framesByPath.get(header);
     const defects = secs.flatMap((s) => parseDefects(s));
     const claimedHashes = secs.map((s) => String(parseFields(s).frame_hash || "").trim()).filter(Boolean);
@@ -136,13 +147,21 @@ function judge(lanePath, manifestPath) {
       defectCount++;
     }
   }
-  const stats = { framesSeen, defectCount, hashBad, citeBad, axisBad, quotaViolations, unlisted };
+  /* 分母必须是**清单里的可用帧**，不是"卡里提到了几张帧"。
+     R2b 实测：L02 交件只有一个 20 字节的标题（泳道却自述"21 张卡已交付"），
+     旧判点把 frames 读成 framesSeen ⇒ 那 4 张帧压根没进分母，配额"每帧≥1缺陷"照样 0 违规通过。
+     漏审与审过但没 finding 是两回事，前者必须当场红。 */
+  const usableFrames = [...framesByPath.entries()].filter(([, f]) => Number(f.bytes) > 3000 && !f.landingMismatch && !f.belowFloor);
+  const uncovered = usableFrames.filter(([p]) => !referenced.has(p));
+  for (const [p] of uncovered.slice(0, 12)) { quotaViolations++; problems.push(`帧未被任何缺陷卡覆盖：${p} ⇒ 本轮要求每张截图至少指出一个问题，这张一条都没有（漏审，不是"没问题"）`); }
+  if (uncovered.length > 12) problems.push(`…另有 ${uncovered.length - 12} 张同样未被覆盖（逐条已在上面截断，计数已并入配额）`);
+  const stats = { framesSeen, framesUsable: usableFrames.length, uncovered: uncovered.length, defectCount, hashBad, citeBad, axisBad, quotaViolations, unlisted };
   return { problems, stats };
 }
 
 function report(problems, stats, extra) {
   for (const p of problems) console.error(`FINDERLANE_PROBLEM ${p}`);
-  if (stats) console.log(`FINDERLANE_STATS frames=${stats.framesSeen} defects=${stats.defectCount} quota_violation=${stats.quotaViolations} hash_mismatch=${stats.hashBad} ungrepable_citations=${stats.citeBad} axis_invalid=${stats.axisBad} frames_not_in_manifest=${stats.unlisted}`);
+  if (stats) console.log(`FINDERLANE_STATS frames=${stats.framesSeen} 可用帧=${stats.framesUsable} 未被覆盖=${stats.uncovered} defects=${stats.defectCount} quota_violation=${stats.quotaViolations} hash_mismatch=${stats.hashBad} ungrepable_citations=${stats.citeBad} axis_invalid=${stats.axisBad} frames_not_in_manifest=${stats.unlisted}`);
   console.log(problems.length ? `${RK}=FAIL ${extra || ""} problems=${problems.length}` : `${RK}=PASS ${extra || ""} 配额=每帧≥1缺陷 且四条复核全中`);
   return problems.length ? 1 : 0;
 }

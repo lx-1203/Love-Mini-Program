@@ -1,0 +1,23 @@
+{
+  "schema": "mp-fidelity-blocked/v1",
+  "band": "real@f0677920",
+  "writtenAt": "2026-10-19T03:35:00.000Z",
+  "note": "这一份不是豁免名单，是「判据构造上不可满足」的登记件：每行必须说清为什么这一轮取不到帧。coverage 门只在这一轮真没可用帧时才把它们移进 blocked 桶；哪天真拍到帧，门会直接把这一行判红并要求删除（见 verify-sweep-coverage.mjs 的 SWEEPCOVER_BLOCKED/「豁免不许赖着」判点）。",
+  "rows": [
+    {
+      "route": "subpackages/vip/index",
+      "reason": "会员旗标关闭时该页被重定向走，页面本身在现行产品里不可达",
+      "evidence": "R2b CLI 巡检实测：帧落点读到 pages/profile/index（不是本页），图 10,206B；禁令出处＝用户长期约束「不开会员/showcase 旗标」（计划 §12 明确不做）"
+    },
+    {
+      "route": "subpackages/vip/promo-code",
+      "reason": "同 subpackages/vip/index：会员子系统整组在旗标关闭时不可达",
+      "evidence": "R2b CLI 巡检实测：帧落点读到 pages/profile/index，图 10,206B，与 vip/index 逐字节同图；禁令出处＝用户长期约束「不开会员/showcase 旗标」"
+    },
+    {
+      "route": "subpackages/vip/bills",
+      "reason": "同 subpackages/vip/index：会员子系统整组在旗标关闭时不可达",
+      "evidence": "R2b CLI 巡检实测：帧落点读到 pages/profile/index，图 10,206B，与上两页逐字节同图；禁令出处＝用户长期约束「不开会员/showcase 旗标」"
+    }
+  ]
+}

@@ -220,6 +220,11 @@ for (const r of routes) {
       : authRequiredRoutes.has(r.route)
         ? "A（页面声明 requiresAuth:true）"
         : "A（页面未声明门槛 ⇒ 按登录态取，游客侧可达性未证）";
+  /* identityPrecondition 是给人读的散文，identityAxis 是给机器判的标记。
+     把两者合一的代价实测过：取景腿曾按散文前缀（"A（…需登录态）"）反推档位 ⇒ 70/71 行都命中同一个前缀，
+     于是"这一页本来该用哪个身份拍"这条判点在 A 跑上恒为"对得上"（空读数），在 B 跑上恒为"错档"（假硬红）。
+     判点要落在声明字段上，不落在措辞上。 */
+  const axis = guestOnlyRoutes.has(r.route) ? "none" : isTab(r.route) ? "A+B" : authRequiredRoutes.has(r.route) ? "A" : "A?";
   rows.push({
     route: r.route,
     packageRoot: r.package,
@@ -228,9 +233,16 @@ for (const r of routes) {
     baselineStatus: status,
     specRows: rec ? rec.seqs : [],
     identityPrecondition: identity,
+    identityAxis: axis,
+    identityAxisSource: guestOnlyRoutes.has(r.route) ? "源码：if(isLoggedIn&&…) 块内 switchTab/redirectTo"
+      : isTab(r.route) ? "产物 app.json 的 tabBar.list"
+        : authRequiredRoutes.has(r.route) ? "源码：requiresAuth: true" : "未声明 ⇒ 记 A?（按登录态取，档位未经声明证明）",
     lockedByProfileGuard: lockedRoutes.has(r.route),
   });
 }
+const axisCount = {};
+for (const x of rows) axisCount[x.identityAxis] = (axisCount[x.identityAxis] || 0) + 1;
+console.log(`LEDGER_AXIS ${Object.entries(axisCount).map(([k, v]) => `${k}=${v}`).join(" ")}（A? = 页面没声明门槛，档位是默认假设不是证据）`);
 
 /* ── 与两份旧"8 页无基准"清单对照（只报分歧，不当真） ── */
 const derivedNoBaseline = new Set(rows.filter((x) => x.baselineStatus === "无基准").map((x) => x.route));

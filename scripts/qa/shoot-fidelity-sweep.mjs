@@ -273,6 +273,18 @@ function contentHash16(absPath) {
     return h.digest("hex").slice(0, 16);
   } catch { return ""; }
 }
+/* 每一帧必须记下"这一屏当时是谁"。R2b 实测：pages/profile/index 落点确实是 pages/profile/index，
+   但渲染的是**游客态**（pages/profile/index.vue:1647 把页面交给 NotLoggedProfile），
+   于是上一轮对"我的页"登录态做的四处修改在这批帧里根本不可见——泳道如实报了这点。
+   落点证明"到哪一页"，证明不了"以谁的身份"；这两个轴分开记，帧才说得出它表达了谁。
+   取的字段名逐个核过：isLoggedIn 是 store 的 getter（apps/client/src/stores/session.ts:339），
+   profileCompleted 是 session 上的字段（:45）。串内只用 ASCII：这段要经 IDE 命令行参数传，中文编码没量过。 */
+async function readSessionState() {
+  try {
+    const raw = await mp.evaluate("() => { try { var app=(typeof getApp==='function')?getApp():null; var vm=app&&app.$vm; if(!vm) return 'ERR no-vm'; var gp=(vm.$&&vm.$.appContext.config.globalProperties)||{}; var p=vm.$pinia||gp.$pinia; if(!p||!p._s||typeof p._s.get!=='function') return 'ERR no-registry'; var s=p._s.get('session'); if(!s) return 'NO-STORE'; return JSON.stringify({loggedIn:!!s.isLoggedIn, profileCompleted:!!s.profileCompleted, uid:String((s.userSession&&s.userSession.id)||'')}); } catch(e){ return 'ERR '+e.message; } }");
+    return String(raw || "");
+  } catch { return "(读不到)"; }
+}
 const seen = new Map(); /* hash → 首个用到它的路由（跨页同图必须被数出来） */
 let shotsSinceClean = 0;
 const CLEAN_EVERY = Number(arg("clean-every", "8")); /* 每 8 张清一次应用本地文件：R2b 实测 ~18 张之后开始成片失败 */
@@ -332,7 +344,7 @@ for (const r of targets) {
   const preNeed = pre.startsWith("none") ? "none" : /^A\s*\+\s*B/.test(pre) ? "A+B" : pre.startsWith("A（") ? "A" : pre.startsWith("B") ? "B" : "";
   const preconditionMismatch = !!preNeed && !(preNeed === IDENTITY || (preNeed === "A+B" && (IDENTITY === "A" || IDENTITY === "B")));
   if (preconditionMismatch) console.log(`SWEEP_PRECONDITION_MISMATCH ${r.route} 账本要=${preNeed} 本跑=${IDENTITY} ⇒ 大概率落点漂移，仍拍（判据交给落点核对），但这一页得按账本前提重拍`);
-  const rec = { route: r.route, query: PARAMS[r.route] || "", harness: "automator", band: bandNow, identity: IDENTITY, precondition: pre, preconditionNeed: preNeed || "(未标)", preconditionMismatch, frames: [], errors: [] };
+  const rec = { route: r.route, query: PARAMS[r.route] || "", harness: "automator", band: bandNow, identity: IDENTITY, sessionState: "(未读)", precondition: pre, preconditionNeed: preNeed || "(未标)", preconditionMismatch, frames: [], errors: [] };
   const shots = [{ state: "top", tokens: [`route:${r.route}`] }, { state: "bottom", tokens: [`route:${r.route}`, "scroll-bottom"] }];
   for (const s of shots) {
     const f = join(OUT_DIR, `${r.route.replace(/\//g, "__")}__${s.state}.png`);
@@ -382,6 +394,8 @@ for (const r of targets) {
         actualPath = cp && cp.path ? String(cp.path).replace(/^\//, "") : "";
       } catch (e) { actualPath = "(currentPage 读不到:" + String(e.message).slice(0, 40) + ")"; }
       const landingMismatch = actualPath !== r.route;
+      /* 每页读一次身份态（不是每帧）：这一趟导航之后页面是谁在显示，top/bottom 是同一个会话。 */
+      if (s.state === "top") rec.sessionState = await readSessionState();
       if (landingMismatch) rec.errors.push(`落点不符 target=${r.route} actual=${actualPath}`);
       if (s.state === "bottom") {
         try { await mp.callWxMethod("pageScrollTo", { scrollTop: 99999, duration: 0 }); }
