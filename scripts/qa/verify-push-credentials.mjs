@@ -88,8 +88,26 @@ try {
   console.log("PUSHCREDS_RESULT=NOT-EVIDENCED reason=git 区间读不出 " + String(e.message).split("\n")[0].slice(0, 90));
   process.exit(2);
 }
+/* "没有待推的提交"与"扫不到东西"是两件事，必须分开发：
+   commits=0 ⇒ 分支已与远端同步，本门无事可筛，这是事实而不是量不到 ⇒ 具名状态 NOTHING-TO-PUSH，退 0；
+   commits>0 却解析出 0 个文件 ⇒ 仍是量不到，保持退 2（本仓规矩：空扫描集不判绿）。 */
+let commits = null;
+try {
+  commits = Number(execFileSync("git", ["rev-list", "--count", RANGE], { cwd: REPO, encoding: "utf8" }).trim());
+} catch (e) {
+  console.log("PUSHCREDS_RESULT=NOT-EVIDENCED reason=待推提交数读不出 " + String(e.message).split("\n")[0].slice(0, 80));
+  process.exit(2);
+}
+if (!Number.isFinite(commits)) {
+  console.log("PUSHCREDS_RESULT=NOT-EVIDENCED reason=待推提交数不是个数（" + commits + "）⇒ 区间写法有问题");
+  process.exit(2);
+}
+if (commits === 0) {
+  console.log("PUSHCREDS_RESULT=NOTHING-TO-PUSH commits=0 range=" + RANGE + "（已与远端同步 ⇒ 无事可筛；上面正例控制仍抓到那枚已知票，尺没钝）");
+  process.exit(0);
+}
 if (!files.length) {
-  console.log("PUSHCREDS_RESULT=NOT-EVIDENCED reason=" + RANGE + " 解析出 0 个文件（空扫描集不判绿）");
+  console.log("PUSHCREDS_RESULT=NOT-EVIDENCED reason=" + RANGE + " 有 " + commits + " 个待推提交却解析出 0 个文件（空扫描集不判绿）");
   process.exit(2);
 }
 
