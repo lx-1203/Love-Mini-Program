@@ -148,6 +148,17 @@ try {
 }
 
 const results = [];
+/* 旧清单先读一次：--resume 跳过重拍时，要**沿用**该帧上跑已经拿到的落点读数。
+   原先 resume 分支无条件写 landingVerified:false，结果实测把上一跑（带落点核对那跑）
+   拍到的 19 张已验证帧全降级成"未验"，可用帧从 24 掉到 5 —— 那是把证据读没了，不是拍到新东西。 */
+const manifestPath = join(OUT_DIR, "sweep-manifest.json");
+const prevFramesByKey = new Map();
+if (existsSync(manifestPath)) {
+  try {
+    const prev = JSON.parse(readFileSync(manifestPath, "utf-8"));
+    for (const rec of (prev.results || [])) for (const f of (rec.frames || [])) prevFramesByKey.set(`${rec.route}__${f.state}`, f);
+  } catch { console.log("SWEEP_MANIFEST_PREV=unreadable（无法沿用旧落点读数）"); }
+}
 let mp = null;
 try {
   mp = await automator.connect({ wsEndpoint: WS });
@@ -169,13 +180,25 @@ for (const r of targets) {
     const f = join(OUT_DIR, `${r.route.replace(/\//g, "__")}__${s.state}.png`);
     /* --resume：已有一张过地板的同类帧就跳过。WS 通道单帧偶发 timeout（本轮 28 发里 5 发），
        重跑整轮既浪费设备时间也会把上一发的好帧重新拍成另一个状态；补拍只补缺。 */
-    if (resume && existsSync(f) && statSync(f).size > MIN_BYTES) {
+    const prevRec = prevFramesByKey.get(`${r.route}__${s.state}`);
+    /* --resume 的跳过条件收紧：只有"上一跑真读过落点且落点相符"的帧才不重拍。
+       原先只要文件在就跳过 ⇒ 通道超时后重跑会把没验过的帧永远留在"未验"状态，
+       补跑不收敛；而且我已经实测到它把已验证帧降级成未验证（清单可用帧 24→5）。
+       现在的语义：**攒已验证帧**，缺读数的就重拍，跑到落点全验为止。 */
+    if (resume && prevRec && prevRec.landingVerified === true && !prevRec.landingMismatch && existsSync(f) && statSync(f).size > MIN_BYTES) {
       const h0 = hash16(f);
       const prior0 = seen.get(h0);
-      rec.frames.push({ route: r.route, query: PARAMS[r.route] || "", state: s.state, path: relOf(f), bytes: statSync(f).size, contentHash: h0, belowFloor: false, dupAcrossRoutes: !!prior0 && prior0 !== r.route, sameAsTop: false, resumed: true, landingVerified: false, landingPath: "unverified(上一跑保留的旧帧，当跑未读落点)" });
+      rec.frames.push({
+        route: r.route, query: PARAMS[r.route] || "", state: s.state, path: relOf(f), bytes: statSync(f).size,
+        contentHash: h0, belowFloor: false, dupAcrossRoutes: !!prior0 && prior0 !== r.route, sameAsTop: false,
+        resumed: true, landingPath: prevRec.landingPath, landingMismatch: false, landingVerified: true,
+      });
       if (h0 && !seen.has(h0)) seen.set(h0, r.route);
-      console.log(`SWEEP_RESUME_SKIP ${r.route}__${s.state} 已有 ${statSync(f).size}B 帧，不重拍`);
+      console.log(`SWEEP_RESUME_SKIP ${r.route}__${s.state} 已有 ${statSync(f).size}B 且落点已验(${prevRec.landingPath})，不重拍`);
       continue;
+    }
+    if (resume && existsSync(f) && statSync(f).size > MIN_BYTES) {
+      console.log(`SWEEP_RESUME_RESHOOT ${r.route}__${s.state} 文件在但落点没读过 ⇒ 重拍以取落点读数`);
     }
     try {
       await mp.callWxMethod("reLaunch", { url: "/" + r.route + (PARAMS[r.route] ? "?" + PARAMS[r.route] : "") });
@@ -239,7 +262,6 @@ try { await mp.disconnect(); } catch { /* 断开失败不影响已落的帧 */ }
    为什么不是整页：一跑里某页可能顶部成功、底部超时——整页替换会把上一跑那张好底部帧丢掉
    （实测：修好落点核对后那一跑 frames 从 26 掉到 19，掉的正是这种"这跑没拍成"的帧）。
    同一状态以本次为准（重拍就是要换它），没重拍到的状态保留旧记录，前提那张文件还在盘上。 */
-const manifestPath = join(OUT_DIR, "sweep-manifest.json");
 const merged = new Map();
 if (existsSync(manifestPath)) {
   try {
