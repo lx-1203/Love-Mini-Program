@@ -333,6 +333,8 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   { name: "找茬配额门自证 verify-finder-lane-selftest", args: ["scripts/qa/verify-finder-lane.mjs", "--self-test"], timeoutMs: 60000 },
   // 取景覆盖门自证：好件必绿；零帧页/空白帧页/跨页同图/band 与账本不同源 四种坏件必红（与 bash 侧同值 60000）。
   { name: "取景覆盖门自证 verify-sweep-coverage-selftest", args: ["scripts/qa/verify-sweep-coverage.mjs", "--self-test"], timeoutMs: 60000 },
+  // 改前/改后像素对照自证：钉住 visible 计数，防"夹具自己坏掉时空转蒙绿"（与 bash 侧同值 60000）。
+  { name: "改动可见性门自证 verify-fix-visibility-selftest", args: ["scripts/qa/verify-fix-visibility.mjs", "--self-test"], timeoutMs: 60000 },
   // 前后端↔后台连通（只读形态：铸票 + 两端列表 200）。写回环那一半由本轮腿手动跑，不进载具——
   // 载具每跑一次就往 posts 表插一行，是"结果打印门不许写权威件/库"这条边界的另一种形态。
   { name: "后台往返预检 verify-admin-roundtrip-dry", args: ["scripts/qa/verify-admin-roundtrip.mjs", "--round", "CARRIER", "--dry"], timeoutMs: 120000 },

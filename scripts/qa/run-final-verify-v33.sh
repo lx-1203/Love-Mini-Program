@@ -69,6 +69,11 @@ g verify-finder-lane-selftest 60 scripts/qa/verify-finder-lane.mjs --self-test
 # 取景覆盖门：零帧页 / 空白帧页 / 跨页同图 / band 与账本不同源，四种坏件在自证里都必须红。
 # 判真批次的形态要 --ledger + --manifest（本轮新帧目录），裸跑退 2 是缺输入，故载具点的是自证。
 g verify-sweep-coverage-selftest 60 scripts/qa/verify-sweep-coverage.mjs --self-test
+# 改前/改后像素对照：泳道自述"已修"一律不采信，只问这一帧的字节还是不是上一轮那帧的字节
+# （同字节 ⇒ FIXNOTVISIBLE，缺陷重开）。自证里每例都钉住 visible 计数——只期望"不红"会让
+# 夹具自己坏掉时蒙绿（这门的上一版就是这样：fixlist 被包成 {results:…}，touched 恒空、四例三例空转）。
+# 真批次的形态要 --prev/--cur/--fixlist 三件输入，裸跑退 2 是缺输入，故载具点自证。
+g verify-fix-visibility-selftest 60 scripts/qa/verify-fix-visibility.mjs --self-test
 # 前后端↔后台连通门：登记 --dry 形状（只铸票 + 只读两端列表，一行都不写）。
 # 真往返（POST /posts → 后台按 id 读到 → DELETE → 计数回原）由本轮腿手动跑：
 # 它会写库，塞进终验载具等于每次全清单跑一遍都往 posts 表插一行——那正是"载具不许有写"的边界。
