@@ -28,7 +28,9 @@ import { removeCache } from "../../utils/cache-ttl";
 // 第五轮 QA 验收入口：dev-user=1 页面级兜底（onLoad 登录锁判断前注入 mock 会话）
 import { applyDevUserFromQuery } from "../../utils/dev-user";
 import { IMAGE_PATHS } from "../../config/images";
-import NotLoggedWaiting from "../../components/discover/NotLoggedWaiting.vue";
+// R2b-B24/D13·D18：游客态不再整页顶换成 NotLoggedWaiting（寻觅口径登录墙），改由本页
+// 自渲染「消息」标题/副标 + 摘要卡·会话列表灰态骨架 + 收进一张卡的登录浮层，
+// 故本文件不再引用该组件（它仍由 subpackages/discover-extra/likes/index.vue 宿主使用）。
 import Skeleton from "../../components/common/Skeleton.vue";
 import ErrorState from "../../components/common/ErrorState.vue";
 import PageStateContainer from "../../components/common/PageStateContainer.vue";
@@ -199,6 +201,27 @@ async function handleStartChat() {
       /* 用户取消 */
     },
   });
+}
+
+/**
+ * R2b-B24/D18（需新建·游客骨架）：游客态头部操作区统一跳登录。
+ * 搜索与「发起会话」都依赖登录后的真数据（会话列表 / 访客列表），游客点击只给登录出口，
+ * 不再露出点了没反应的功能壳——审计建议「操作区统一跳登录」的落点。
+ */
+function onSearchTap(): void {
+  if (!isUnlocked.value) {
+    goLogin();
+    return;
+  }
+  toggleSearch();
+}
+
+function onStartChatTap(): void {
+  if (!isUnlocked.value) {
+    goLogin();
+    return;
+  }
+  void handleStartChat();
 }
 
 function clearSearch() {
@@ -376,38 +399,45 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
   <view class="messages-page" :style="menuStyleVars">
     <!-- R5(INDEP-004)：滚动状态栏遮罩（与首页同款） -->
     <view class="messages-page__top-scrim" :style="topScrimStyle" />
-    <!-- MP-R1-PAGES-MESSAGES-INDEX-005：补 @go-phone-login 监听——组件 emit goPhoneLogin
-         此前无监听者，未登录态「手机号登录」按钮点击零响应 -->
-    <NotLoggedWaiting v-if="!sessionStore.isLoggedIn && !useMock()" @go-login="goLogin" @go-phone-login="goPhoneLogin" />
-    <template v-else>
-      <!-- ========== Header ========== -->
-      <view class="header">
-        <view class="header__left">
-          <view class="header__title-row">
-            <text class="header__title">{{ t('chat.headerTitle') }}</text>
-            <!-- 2026-08-25 P0：主标题后绿色小苗图标（规格书 8.1） -->
-            <image class="header__title-sprout" :src="IMAGE_PATHS.ICONS_V2.SPROUT" mode="aspectFit" alt="" />
-          </view>
-          <text class="header__subtitle">{{ t('chat.headerSubtitle') }}</text>
+    <!-- R2b-B24/D13（空态文案）：header 上移到登录判断之外，游客态同样渲染本页自己的
+         「消息」标题 + 副标（chat.headerTitle / chat.headerSubtitle 两个既有键，正是
+         消息.png 左栏顶部文案「消息」/「今天也有新的心动在发生」）。此前游客态整页被
+         NotLoggedWaiting 顶掉，画面只剩寻觅口径的「正在为你寻找 同频的那个人」，
+         用户看不出这一页登录后会给什么——本页自己的文案即宿主空态文案。
+         审计建议的那句原文「登录后即可查看谁在喜欢你和未读聊天」在 locales 里没有对应键，
+         按泳道规则不新增 locale 条目、也不硬编码，故宿主文案由 chat.headerTitle +
+         chat.headerSubtitle（消息口径）+ notLoggedWaiting.unlockHint（登录出口）三条既有键承担。
+         操作区两个按钮（MP-R1-PAGES-MESSAGES-INDEX-005 的 @go-phone-login 监听需求
+         随登录墙改到下方 .guest-state 的手机号登录按钮，行为不丢）。 -->
+    <!-- ========== Header ========== -->
+    <view class="header">
+      <view class="header__left">
+        <view class="header__title-row">
+          <text class="header__title">{{ t('chat.headerTitle') }}</text>
+          <!-- 2026-08-25 P0：主标题后绿色小苗图标（规格书 8.1） -->
+          <image class="header__title-sprout" :src="IMAGE_PATHS.ICONS_V2.SPROUT" mode="aspectFit" alt="" />
         </view>
-        <view class="header__right">
-          <!-- MP-R1-PAGES-MESSAGES-INDEX-102：补「+（发起会话）」入口（放大镜+加号双钮） -->
-          <view class="header__icon-btn" hover-class="header__icon-btn--hover" @tap="toggleSearch">
-            <image class="header__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.SEARCH" mode="aspectFit" />
-          </view>
-          <view class="header__icon-btn" hover-class="header__icon-btn--hover" role="button" :aria-label="t('chat.startChatAria')" @tap="handleStartChat">
-            <text class="header__icon-plus">＋</text>
-          </view>
+        <text class="header__subtitle">{{ t('chat.headerSubtitle') }}</text>
+      </view>
+      <view class="header__right">
+        <!-- MP-R1-PAGES-MESSAGES-INDEX-102：补「+（发起会话）」入口（放大镜+加号双钮） -->
+        <view class="header__icon-btn" hover-class="header__icon-btn--hover" @tap="onSearchTap">
+          <image class="header__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.SEARCH" mode="aspectFit" />
+        </view>
+        <view class="header__icon-btn" hover-class="header__icon-btn--hover" role="button" :aria-label="t('chat.startChatAria')" @tap="onStartChatTap">
+          <text class="header__icon-plus">＋</text>
         </view>
       </view>
+    </view>
 
-      <!-- ========== Search Bar ========== -->
-      <view v-if="searchActive" class="search-bar">
-        <input
+    <!-- ========== Search Bar ========== -->
+    <view v-if="searchActive && isUnlocked" class="search-bar">
+      <input
   cursor-spacing="20" v-model="searchKeyword" class="search-bar__input" placeholder="搜索聊天记录..." />
-        <text class="search-bar__clear" @tap="clearSearch">×</text>
-      </view>
+      <text class="search-bar__clear" @tap="clearSearch">×</text>
+    </view>
 
+    <template v-if="isUnlocked">
       <PageStateContainer :state="pageState" :error-text="messagesStore.errorMessage || '加载失败'" @retry="handleRetry">
         <template #loading>
           <Skeleton variant="list" :count="5" />
@@ -642,6 +672,68 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
         </template>
       </PageStateContainer>
     </template>
+
+    <!-- R2b-B24/D18（需新建·游客骨架）：游客态保留本页版式的骨架，登录墙从「整页替换」
+         降为一张卡内的登录浮层。骨架自上而下 = 标题+副标（上方 header，既有键）→ 两张
+         摘要卡灰态 → 会话列表灰态（沿用本页 loading 态同一个 Skeleton 组件，不新造实现），
+         灰态区任意点击统一跳登录（onSearchTap/onStartChatTap 之外，卡与列表在此兜住）。
+         灰态只放占位形状：游客没有真数据源，不给捏造计数（与 MP-R1-PAGES-MESSAGES-INDEX-011
+         「删除编造的 ?? 2 兜底」同口径），也因此不需要任何新 locale 键——本块用到的
+         notLoggedWaiting.unlockHint / wechatLogin / phoneLogin 与占位区 aria 复用的
+         nearby.loginToView（「登录后可查看更多内容」，两语均已存在）全部走既有键，
+         messages 命名空间没有等价的「登录后查看」键，按泳道规则不新增 locale 条目。
+         D16（间距）随本块一并解决：整页 NotLoggedWaiting 撤掉后，页面 padding-bottom
+         不再与该组件根容器自带的 60rpx 底部内边距叠加成 ~290rpx 死档。 -->
+    <view v-else class="guest-state">
+      <view class="guest-wall">
+        <text class="guest-wall__hint">{{ t('notLoggedWaiting.unlockHint') }}</text>
+        <view class="guest-wall__row">
+          <!-- MP-R1-PAGES-MESSAGES-INDEX-005：「手机号登录」出口保留（原经组件 emit 触发） -->
+          <view
+            class="guest-wall__btn guest-wall__btn--primary press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('notLoggedWaiting.wechatLogin')"
+            @tap="goLogin"
+          >
+            <text class="guest-wall__btn-text guest-wall__btn-text--primary">{{ t('notLoggedWaiting.wechatLogin') }}</text>
+          </view>
+          <view
+            class="guest-wall__btn guest-wall__btn--secondary press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('notLoggedWaiting.phoneLogin')"
+            @tap="goPhoneLogin"
+          >
+            <text class="guest-wall__btn-text">{{ t('notLoggedWaiting.phoneLogin') }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 摘要卡灰态：复用登录后那一版 .quick-cards/.quick-card 等宽半屏外壳 -->
+      <view class="quick-cards">
+        <view
+          v-for="i in 2"
+          :key="i"
+          class="quick-card"
+          hover-class="quick-card--hover"
+          role="button"
+          :aria-label="t('nearby.loginToView')"
+          @tap="goLogin"
+        >
+          <view class="quick-card__ph quick-card__ph--icon" />
+          <view class="quick-card__ph" />
+          <view class="quick-card__ph quick-card__ph--short" />
+        </view>
+      </view>
+
+      <!-- 会话列表灰态 -->
+      <view class="guest-list" role="button" :aria-label="t('nearby.loginToView')" @tap="goLogin">
+        <Skeleton variant="list" :count="4" />
+      </view>
+    </view>
   </view>
 </template>
 
@@ -667,8 +759,18 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
      R1-B25/D12：此处此前自写 112rpx（+16rpx 余量 = 128rpx），比 tabBar 在屏上真正占掉的总高
      矮一档，滚到底末卡仍被切。改读单一来源令牌 --tab-bar-total-h（theme/design-variables.scss
      的避让口径 = 184rpx + 两倍安全区，与 discover/index.vue 底部避让同一条），
-     本页只保留 16rpx 呼吸位，高度不再两处各写一份。 */
-  padding-bottom: calc(var(--tab-bar-total-h, 184rpx + env(safe-area-inset-bottom) + env(safe-area-inset-bottom)) + 16rpx);
+     本页只保留 16rpx 呼吸位，高度不再两处各写一份。
+     R2b-B24/D16（间距）两条叠底因由：
+     1) 回退值里 env(safe-area-inset-bottom) 被写了两遍（`184rpx + env() + env()`）——
+        var() 第二参是「令牌未定义时」的静态兜底，写成双份即比令牌本体多算一个安全区，
+        现去掉重复的一处，与 theme/design-variables.scss 的 --tab-bar-total-h 本体口径
+        （184rpx + 2env）分开看：令牌本体的双计属 R1-B01/D25 地盘（见
+        subpackages/village/village/publish.vue 的相关注释），不在本文件改。
+     2) 游客态原整页顶替的 NotLoggedWaiting.vue 根容器 .not-logged 自带 min-height:100vh
+        + 60rpx 底部内边距，与本行页面级 --tab-bar-total-h + 16rpx 叠成实测 ~290rpx 纯底色
+        死档（「稍后再看」到 TabBar 上沿）。随 D18 把登录墙降为卡内浮层后，游客态内容改走
+        本页正常文档流，底部只剩这一条不叠加的避让口径，死档消失。 */
+  padding-bottom: calc(var(--tab-bar-total-h, 184rpx + env(safe-area-inset-bottom)) + 16rpx);
 }
 
 .messages-page__top-scrim {
@@ -1317,5 +1419,77 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
   font-size: 26rpx;
   font-weight: 600;
   color: var(--c-text-brand, var(--c-brand, #36C99A));
+}
+
+/* ========== R2b-B24/D18 游客骨架（登录浮层 + 摘要卡·会话列表灰态） ==========
+   全部尺寸/配色沿用本页既有口径，不新造档位：卡壳= .assistant-card（32rpx 左右间距、
+   28rpx 内距、--r-xl 圆角、--c-border-light 描边），按钮高度= --btn-height-md，
+   胶囊圆角= .quick-card__btn / .empty-chat__cta 的 999rpx，主按钮渐变= 与
+   NotLoggedWaiting.vue 主按钮同一条 --c-brand → --c-brand-600，占位行高= Skeleton.vue
+   的 .skeleton-line（24rpx / --r-sm）。 */
+.guest-state {
+  display: flex;
+  flex-direction: column;
+}
+.guest-wall {
+  margin: 0 32rpx 20rpx;
+  padding: 28rpx;
+  border-radius: var(--r-xl, 24rpx);
+  background: var(--c-bg-surface, #EEF7F2);
+  border: 1rpx solid var(--c-border-light, #EEF2F0);
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+/* 提示文案颜色走 --c-text-secondary（R2b-L02/D12 同一裁决：浅底小字不用 --c-text-tertiary） */
+.guest-wall__hint {
+  font-size: 24rpx;
+  color: var(--c-text-secondary, #4A524E);
+}
+.guest-wall__row {
+  display: flex;
+  gap: 16rpx;
+}
+.guest-wall__btn {
+  flex: 1;
+  min-width: 0;
+  height: var(--btn-height-md, 96rpx);
+  border-radius: 999rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.guest-wall__btn--primary {
+  background: linear-gradient(135deg, var(--c-brand, #36C99A) 0%, var(--c-brand-600, #2AAE83) 100%);
+}
+.guest-wall__btn--secondary {
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-brand, #36C99A);
+}
+.guest-wall__btn-text {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--c-text-brand, var(--c-brand, #36C99A));
+}
+.guest-wall__btn-text--primary {
+  color: var(--c-neutral-0, #FFFFFF);
+}
+/* 摘要卡灰态占位：只放形状（图标位 64rpx 同 .quick-card__icon-wrap），无文案、无计数 */
+.quick-card__ph {
+  height: 24rpx;
+  border-radius: var(--r-sm, 8rpx);
+  background: var(--c-bg-surface, #EEF7F2);
+}
+.quick-card__ph--icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+}
+.quick-card__ph--short {
+  width: 60%;
+}
+/* 会话列表灰态：沿用本页 loading 态同一个 Skeleton 组件，左右间距同 .activity-list */
+.guest-list {
+  padding: 0 32rpx;
 }
 </style>

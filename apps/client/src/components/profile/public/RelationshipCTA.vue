@@ -17,9 +17,8 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "like"): void;
   (e: "message"): void;
-  /* MP-R1-OTHER-002：补回「送心动卡」（whisper）发射点——上游 other.vue 的
-     @whisper → WhisperComposeSheet 链路完整，唯一缺口是本组件无入口按钮 */
-  (e: "whisper"): void;
+  /* MP-R1-OTHER-002 的「送心动卡」入口在 R2b-L06-D22 里按理想图移出底栏：
+     理想图底栏只有 喜欢 / 打招呼 / 关注 三枚，入口改挂 PublicIdentity（WhisperComposeSheet 链路不变） */
   (e: "follow"): void;
 }>();
 
@@ -45,19 +44,13 @@ const helloLabel = computed(() => (props.matched ? "发消息" : "打招呼"));
         hover-class="relationship-cta__btn--pressed"
         @tap="emit('like')"
       >
-        <image class="relationship-cta__heart" :src="IMAGE_PATHS.ICONS_V2.HEART_WHITE" mode="aspectFit" alt="" />
+        <image class="relationship-cta__heart" :src="IMAGE_PATHS.ICONS_V2.HEART_PINK" mode="aspectFit" alt="" />
         <text class="relationship-cta__text relationship-cta__text--like">{{ likeLabel }}</text>
       </view>
 
       <view class="relationship-cta__btn relationship-cta__btn--hello" :class="{ 'relationship-cta__btn--matched': matched }" hover-class="relationship-cta__btn--pressed" @tap="emit('message')">
         <image class="relationship-cta__bubble" :src="IMAGE_PATHS.ICONS_EMOJI.COMMENT" mode="aspectFit" alt="" />
         <text class="relationship-cta__text">{{ helloLabel }}</text>
-      </view>
-
-      <!-- MP-R1-OTHER-002：送心动卡入口（点击唤起 other.vue 的 WhisperComposeSheet） -->
-      <view class="relationship-cta__btn relationship-cta__btn--whisper" hover-class="relationship-cta__btn--pressed" @tap="emit('whisper')">
-        <image class="relationship-cta__whisper-icon" :src="IMAGE_PATHS.ICONS_MATCH.HEART" mode="aspectFit" alt="" />
-        <text class="relationship-cta__text relationship-cta__text--whisper">心动卡</text>
       </view>
 
       <view
@@ -105,47 +98,31 @@ const helloLabel = computed(() => (props.matched ? "发消息" : "打招呼"));
 }
 
 .relationship-cta__btn--like {
-  flex: 1.1;
-  /* 理想图：喜欢按钮粉色渐变填充（--c-gradient-pink）+ 白字白心 */
-  background: var(--c-gradient-pink, linear-gradient(135deg, #FF8FB0 0%, #FF6B81 100%));
-  box-shadow: 0 8rpx 20rpx rgba(255, 107, 129, 0.35);
+  flex: 1;
+  /* R2b-L06-D21：理想图「喜欢」是浅粉底（#FDE7EE 档）+ 粉字 + 粉心、无描边，
+     整条只保留「打招呼」一枚实心强调。上一轮 R1-B20 反向改成了高饱和粉渐变实心 + 白字，
+     与右侧「心动卡」的粉描边形成两处粉色强强调 —— 本轮按理想图回退为浅粉 tint。 */
+  background: var(--c-tint-pink-50, #FCE4EC);
+  box-shadow: none;
 }
 
 .relationship-cta__btn--hello {
-  flex: 1.3;
-  background: #36C99A;
+  /* R2b-L06-D22：底栏回到理想图的 3 枚布局，主按钮「打招呼」权重最大 */
+  flex: 1.15;
+  background: var(--c-brand, #36C99A);
   box-shadow: 0 8rpx 20rpx rgba(54, 201, 154, 0.3);
-}
-
-/* MP-R1-OTHER-002：送心动卡按钮（白底粉描边，与"关注"描边样式区分度靠文案+图标） */
-.relationship-cta__btn--whisper {
-  flex: 1.1;
-  background: #ffffff;
-  border: 2rpx solid #FF6B81;
-}
-
-.relationship-cta__whisper-icon {
-  width: 30rpx;
-  height: 30rpx;
-}
-
-/* MP-R1-OTHER-101：提高特异性（双类链）——原单类规则声明在基础 .relationship-cta__text
-   （:166 白色）之前且同特异性，白色后到覆盖粉色 → 白底白字不可见，「心动卡」仅剩
-   爱心图标无法辨认 */
-.relationship-cta__text.relationship-cta__text--whisper {
-  color: #FF6B81;
 }
 
 /* MP-R1-REQ23-001：互喜态「发消息」绿主钮（与匹配成功页/匹配中心 CTA 状态机同口径） */
 .relationship-cta__btn--matched {
-  background: #36C99A;
-  border-color: #36C99A;
+  background: var(--c-brand, #36C99A);
+  border-color: var(--c-brand, #36C99A);
 }
 
 .relationship-cta__btn--follow {
-  flex: 1.1;
+  flex: 1;
   background: #ffffff;
-  border: 2rpx solid #36C99A;
+  border: 2rpx solid var(--c-line, #EEF2F0);
 }
 
 /* 2026-09-05 R18：已关注态（灰绿弱化，与白描边"关注"区分） */
@@ -161,7 +138,7 @@ const helloLabel = computed(() => (props.matched ? "发消息" : "打招呼"));
 .relationship-cta__heart {
   width: 30rpx;
   height: 30rpx;
-  color: #FF6B81;
+  color: var(--c-love, #FF6B81);
 }
 
 .relationship-cta__bubble {
@@ -173,7 +150,7 @@ const helloLabel = computed(() => (props.matched ? "发消息" : "打招呼"));
 .relationship-cta__star {
   width: 30rpx;
   height: 30rpx;
-  color: #36C99A;
+  color: var(--c-brand, #36C99A);
 }
 
 .relationship-cta__text {
@@ -182,11 +159,12 @@ const helloLabel = computed(() => (props.matched ? "发消息" : "打招呼"));
   color: #FFFFFF;
 }
 
-.relationship-cta__text--like {
-  color: #ffffff;
+/* R2b-L06-D21：浅粉底上的「喜欢」必须是粉字（原白字白心是为实心渐变底写的） */
+.relationship-cta__text.relationship-cta__text--like {
+  color: var(--c-love, #FF6B81);
 }
 
-.relationship-cta__text--follow {
-  color: #36C99A;
+.relationship-cta__text.relationship-cta__text--follow {
+  color: var(--c-brand, #36C99A);
 }
 </style>

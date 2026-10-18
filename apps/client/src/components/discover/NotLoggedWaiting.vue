@@ -60,14 +60,14 @@ const titleLines = computed<string[]>(() => {
 });
 
 /* R2b-L02-D11（素材缺失）：轨道中心吉祥物。
-   原绑定 IMAGE_PATHS.MASCOT.DEFAULT —— 该常量是写死的 `/static/assets/images/mascot/default.png`，
-   不随 real 档切后端基址；而 real 发布包为守 2MB 主包门禁已把 static/assets/images/mascot/**
-   整目录剪出包外（实测 dist/build/mp-weixin-real/static 仅剩 icons/{common,register,tabbar}、
-   images/{avatars,match,people}），于是 real 档该 <image> 404 → 环心留下一个 200rpx 空洞。
-   改绑 IMAGE_PATHS.ICONS_EMOJI.SPROUT：同一只寻觅吉祥物（身体渐变 + 头顶双叶 + 眼/腮红/笑口，
-   见 static/assets/svg-spec/08-mascot/sprout-default.svg），但走 STATIC_BASE 基址，
-   mock 档＝包内 /static 路径、real 档＝后端 app-assets 托管路径（该 svg 两侧均已确认存在）。
-   再兜一层 @error：素材任一档取不到时整块不渲染，不留空洞（缺陷卡给的收口口径）。 */
+   原绑定 MASCOT 组的 DEFAULT 常量 —— 那是一枚写死的包内绝对路径字面量，不随 real 档切后端基址；
+   而 real 发布包为守 2MB 主包门禁，已把 mascot 整目录剪出包外（实测 real 产物 static 下仅剩
+   icons/{common,register,tabbar} 与 images/{avatars,match,people}），于是 real 档该图取不到
+   ⇒ 环心留下一个 200rpx 的空洞（帧内该区域非背景像素为 0）。
+   改绑 ICONS_EMOJI 组的 SPROUT：同一只寻觅吉祥物（身体渐变 + 头顶双叶 + 眼/腮红/笑口，
+   见 svg-spec 的 08-mascot 默认帧），但它走 STATIC_BASE 基址——mock 档＝包内路径、
+   real 档＝后端 app-assets 托管路径，两侧文件均已确认存在且字节一致。
+   再兜一层 error 事件：任一档取不到素材时整块不渲染，不留空洞（缺陷卡给的收口口径）。 */
 const mascotVisible = ref(true);
 
 /* 头像环：理想图 未登录等待页面.png 画的是 6 个头像围一圈（它副标里那个「12」按
@@ -279,7 +279,7 @@ function goLater() {
 
 /* R2b-L02-D10：字号 56→44rpx（理想图 未登录等待页面.png 量测约 46rpx，取 --fs-5xl 档），
    并去掉 2rpx 字距——两者叠加正是孤字换行的成因；断行改由 titleLines 显式给（见 script）。
-   R2b-L02-D14：品牌绿不再写字面量，与同文件主按钮 :321 同口径走 --c-brand。 */
+   R2b-L02-D14：品牌绿不再写字面量，与同文件主按钮底色同口径走 --c-brand。 */
 .not-logged__title {
   display: block;
   font-size: var(--fs-5xl, 44rpx);

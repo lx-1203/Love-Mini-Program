@@ -64,8 +64,16 @@ function closeGovernance() {
 
     <template v-else-if="profile">
       <PublicHero :profile="profile" @tap-avatar="emit('tapAvatar')" />
-      <PublicIdentity :profile="profile" @like="emit('like')" @message="emit('message')" />
-      <PublicBio v-if="profile.intro.bio" :bio="profile.intro.bio" />
+      <PublicIdentity
+        :profile="profile"
+        @like="emit('like')"
+        @message="emit('message')"
+        @whisper="emit('whisper')"
+      />
+      <!-- R2b-L06-D18：简介卡不再按数据有无整块开关（空态文案在 PublicBio 内部），
+           兴趣 / 共同点 / 生活瞬间三节同样恒定渲染标题 + 空态或骨架，
+           保证他人主页有真实可滚动高度（原 bottom 帧与 top 帧 sha16 相同 = 页面根本滚不动）。 -->
+      <PublicBio :bio="profile.intro.bio" />
       <PublicInterest :tags="profile.intro.tags" />
       <PublicCommon :common-interests="profile.relation.commonInterests" />
       <PublicGallery :photos="profile.media.photos" @tap-photo="emit('tapPhoto', $event)" />
@@ -82,7 +90,6 @@ function closeGovernance() {
         :following="props.following"
         @like="emit('like')"
         @message="emit('message')"
-        @whisper="emit('whisper')"
         @follow="emit('follow')"
       />
       <GovernanceMenu
@@ -100,7 +107,9 @@ function closeGovernance() {
 <style scoped lang="scss">
 .public-profile {
   min-height: 100vh;
-  background: #ffffff;
+  /* R2b-L06-D15/D18：理想图的页面底是浅灰绿（卡片亮、页面暗），原实现是纯白
+     → 白卡与白底糊成一片、灰绿简介卡反而像禁用态。改走 --c-bg-page 档。 */
+  background: var(--c-bg-page, #EEF7F2);
   /* 2026-10-19 R1-B19：底栏预留只留这一处来源（原「流内 spacer 220rpx + 本 padding」双算，合计约 500rpx 空带）。
      固定底栏 RelationshipCTA 实测高 ≈133rpx（padding 20+20rpx + 按钮 92rpx）+ safe-area，此处 280rpx + safe-area 已含呼吸位。 */
   padding-bottom: calc(220rpx + env(safe-area-inset-bottom) + 60rpx);

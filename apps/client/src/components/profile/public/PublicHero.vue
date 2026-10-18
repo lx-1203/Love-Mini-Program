@@ -25,17 +25,19 @@ const emit = defineEmits<{ (e: "tapAvatar"): void }>();
     <view class="public-hero__bottom-gradient" />
 
     <view class="public-hero__avatar press-feedback" hover-class="press-feedback--active" @tap="emit('tapAvatar')">
-      <!-- 2026-09-02 R8：头像 SafeImage 兜底（失效回退默认头像，不消失） -->
+      <!-- 2026-09-02 R8：头像 SafeImage 兜底（失效回退默认头像，不消失）
+           R2b-L06-D11：无头像时不再落「姓名首字」字母占位圆（实帧渲染成一枚浅绿底 + 56rpx
+           绿色粗体「小」，整页主视觉人物缺失）。公共主页统一走 SafeImage 的真人像兜底素材
+           IMAGE_PATHS.DEFAULT_AVATAR（assets/default-avatar.jpg，SafeImage 默认 fallback 同图），
+           加载失败/在途都有骨架，不再出现"只有字母没有人脸"的空视觉。 -->
       <SafeImage
-        v-if="profile.basic.avatar"
         class="public-hero__avatar-img"
-        :src="profile.basic.avatar"
+        :src="profile.basic.avatar || IMAGE_PATHS.DEFAULT_AVATAR"
         custom-class="public-hero__avatar-img"
         mode="aspectFill"
         :fallback="IMAGE_PATHS.DEFAULT_AVATAR"
-        alt=""
+        :alt="`${profile.basic.name || 'TA'}的头像`"
       />
-      <text v-else class="public-hero__avatar-initial">{{ (profile.basic.name || "?").charAt(0) }}</text>
     </view>
   </view>
 </template>
@@ -86,7 +88,10 @@ const emit = defineEmits<{ (e: "tapAvatar"): void }>();
   width: 176rpx;
   height: 176rpx;
   border-radius: 50%;
-  border: 8rpx solid #36C99A;
+  /* R2b-L06-D10：理想图（他人显示主页.png 身份卡头像圆片）是「白色描边圆环 + 淡投影」，
+     环色与卡片同色、不与品牌色抢。原 8rpx 实心 #36C99A 在浅绿封面与白卡之上形成一圈
+     高饱和描边。改白色描边（与身份卡 #ffffff 同值），投影保留。 */
+  border: 8rpx solid #FFFFFF;
   box-shadow: 0 10rpx 28rpx rgba(0, 0, 0, 0.18);
   overflow: hidden;
   background: #E8FBF3;
@@ -101,11 +106,5 @@ const emit = defineEmits<{ (e: "tapAvatar"): void }>();
 
   width: 100%;
   height: 100%;
-}
-
-.public-hero__avatar-initial {
-  font-size: 56rpx;
-  font-weight: 800;
-  color: #36C99A;
 }
 </style>

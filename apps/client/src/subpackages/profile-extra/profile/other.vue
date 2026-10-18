@@ -21,7 +21,6 @@ import { useReportStore } from "../../../stores/report";
 import { ensureCertified } from "../../../guards/campus-gate";
 import WhisperComposeSheet from "../../../components/discover/WhisperComposeSheet.vue";
 import ProfileShell from "../../../components/profile/ProfileShell.vue";
-import BottomSheet from "../../../components/common/BottomSheet.vue";
 import { fetchPublicProfile } from "../../../api/profile";
 import type { UserProfileDTO } from "../../../types/profile";
 import { lightHaptic, successHaptic, errorHaptic } from "../../../utils/haptic";
@@ -41,24 +40,6 @@ const errorMessage = ref("");
 const missingParam = ref(false);
 const liking = ref(false);
 const whisperVisible = ref(false);
-/** 2026-09-02 R5：底部「更多操作」弹窗（通用 BottomSheet 演示：举报 / 拉黑 / 分享） */
-const moreSheetVisible = ref(false);
-
-function handleMoreShare() {
-  moreSheetVisible.value = false;
-  uni.showToast({ title: "分享入口待接入", icon: "none" });
-}
-function handleMoreReport() {
-  moreSheetVisible.value = false;
-  // 复用既有 handleReportUser（已实现举报流）
-  handleReportUser();
-}
-function handleMoreBlock() {
-  moreSheetVisible.value = false;
-  // 复用既有 handleBlockUser（拉黑二次确认 → store action）
-  handleBlockUser();
-}
-
 const alreadyLiked = computed(() =>
   likesStore.likes.some((item) => item.userId === targetUserId.value),
 );
@@ -438,10 +419,13 @@ onLoad((query) => {
       @sent="whisperVisible = false"
     />
 
-    <!-- 2026-09-02 R5：底部固定「更多操作」触发按钮 + BottomSheet 弹窗（演示通用组件） -->
-    <view v-if="!errorMessage && !loading" class="other-more-fab press-feedback" hover-class="press-feedback--active" role="button" aria-label="更多操作" @tap="moreSheetVisible = true">
-      <text class="other-more-fab-icon">⋯</text>
-    </view>
+    <!-- R2b-B30/D23（位置）：此处原有一枚 96rpx 品牌绿实心「⋯」悬浮按钮（FAB），
+         压在底栏上方 200rpx 的内容区右下，与页面自有底部动作条（ProfileShell →
+         RelationshipCTA fixed bottom:0）叠层，且是顶栏「···」的重复入口——同一页两个
+         更多入口。理想图 他人显示主页.png 裁决：全页唯一「···」入口在封面右上角，
+         页面右侧与底栏上方不得有悬浮按钮。顶栏避让已在 D17 修好（入口可见可点），
+         故按审计建议删除该 FAB，连同仅由它触发的 BottomSheet（举报/拉黑顶栏
+         openGovernanceMenu 已覆盖；分享为「入口待接入」空桩，不保留死壳）。 -->
 
     <!-- 2026-09-05 R18：生活瞬间全屏查看层（点击遮罩关闭） -->
     <view
@@ -453,24 +437,6 @@ onLoad((query) => {
     >
       <image class="photo-viewer__img" :src="photoViewerSrc" mode="aspectFit" alt="" />
     </view>
-
-    <BottomSheet
-      :visible="moreSheetVisible"
-      title="更多操作"
-      @close="moreSheetVisible = false"
-    >
-      <view class="other-more-list">
-        <view class="other-more-item press-feedback" hover-class="press-feedback--active" role="button" @tap="handleMoreShare">
-          <text class="other-more-item-text">分享给好友</text>
-        </view>
-        <view class="other-more-item press-feedback" hover-class="press-feedback--active" role="button" @tap="handleMoreReport">
-          <text class="other-more-item-text">举报用户</text>
-        </view>
-        <view class="other-more-item other-more-item--danger press-feedback" hover-class="press-feedback--active" role="button" @tap="handleMoreBlock">
-          <text class="other-more-item-text other-more-item-text--danger">拉黑用户</text>
-        </view>
-      </view>
-    </BottomSheet>
   </view>
 </template>
 
@@ -490,8 +456,16 @@ onLoad((query) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* R4：返回钮原 24rpx 起排侵入状态栏与系统文字叠印，接入 --statusbar 下移 */
-  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx) 28rpx 24rpx;
+  /* R4：返回钮原 24rpx 起排侵入状态栏与系统文字叠印，接入 --statusbar 下移。
+     R2b-B30/D17（层级遮挡）：右内边距此前只有 28rpx，未给微信右上角原生胶囊预留宽度，
+     .other-header__more（64rpx 圆底「···」，举报/拉黑唯一入口）整枚压在胶囊下——首屏
+     只见系统胶囊、入口不可见不可点。避让配方直接复用同域 match-success.vue 的
+     .success-nav（padding-right: calc(var(--capsule-right, 7px) + 104px)）这一条已验证
+     正确的口径，不新造数字：--capsule-right 由本文件顶部 useMenuButtonRect 在根节点
+     实测注入（胶囊右缘间隙，H5/非小程序端为 0），7px 是测量前的静态兜底，104px 是胶囊
+     本体缓冲；pages/messages/index.vue 的 .header、subpackages/campus/campus/hub.vue
+     头部同一条配方。左/底内边距维持原 28rpx / 24rpx 不变。 */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx) calc(var(--capsule-right, 7px) + 104px) 24rpx 28rpx;
   background: transparent;
 }
 
@@ -526,55 +500,6 @@ onLoad((query) => {
 .other-header__placeholder {
   width: 64rpx;
   height: 64rpx;
-}
-
-/* ========== 2026-09-02 R5：底部「更多操作」触发按钮 + BottomSheet 菜单 ========== */
-.other-more-fab {
-  position: fixed;
-  right: 32rpx;
-  bottom: calc(env(safe-area-inset-bottom) + 200rpx);
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: 50%;
-  background: var(--c-brand, #36C99A);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 12rpx 32rpx rgba(54, 201, 154, 0.32);
-  z-index: 100;
-}
-
-.other-more-fab-icon {
-  color: var(--c-neutral-0, #ffffff);
-  font-size: 48rpx;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.other-more-list {
-  padding: 8rpx 32rpx 32rpx;
-  display: flex;
-  flex-direction: column;
-}
-
-.other-more-item {
-  padding: 32rpx 16rpx;
-  border-bottom: 1rpx solid var(--c-line, #F2F5F3);
-  display: flex;
-  align-items: center;
-}
-
-.other-more-item:last-child {
-  border-bottom: none;
-}
-
-.other-more-item-text {
-  font-size: 30rpx;
-  color: var(--c-text-primary, #1A1E1C);
-}
-
-.other-more-item-text--danger {
-  color: var(--c-error, #FF6B81);
 }
 
 /* ========== 2026-09-05 R18：生活瞬间全屏查看层 ========== */
