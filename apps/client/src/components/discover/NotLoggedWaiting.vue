@@ -34,6 +34,7 @@
  *     只画 6 个头像；既有裁定 MP-R2-CIRCLES-INDEX-002（subpackages/circles/circles/index.vue:258-266、
  *     :440）口径为"取不到真值就不渲染，宁缺不展示伪造社交证明"，游客引导注册亦为用户既成裁定。
  */
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import { openAppPath } from "../../utils/navigation";
@@ -46,6 +47,28 @@ const emit = defineEmits<{
   (e: "goLogin"): void;
   (e: "goPhoneLogin"): void;
 }>();
+
+/* R2b-L02-D10（字号）：规格书 12.1 要求主标题两行断点＝「正在为你寻找 / 同频的那个人」。
+   此前把整串交给自然换行，56rpx + 2rpx 字距在 750−2×48rpx 容器里必然折成
+   「正在为你寻找 同频的那个 / 人」，第二行只剩孤字「人」。现按空白显式切分：
+   只有「恰好两段」的语种（zh-CN「正在为你寻找 同频的那个人」）才两行排版，
+   多段语种（en-US）保持单块自然换行，不产生「Looking / for someone…」这种碎行。 */
+const titleLines = computed<string[]>(() => {
+  const raw = String(t("notLoggedWaiting.title")).trim();
+  const parts = raw.split(/\s+/).filter(Boolean);
+  return parts.length === 2 ? parts : [raw];
+});
+
+/* R2b-L02-D11（素材缺失）：轨道中心吉祥物。
+   原绑定 IMAGE_PATHS.MASCOT.DEFAULT —— 该常量是写死的 `/static/assets/images/mascot/default.png`，
+   不随 real 档切后端基址；而 real 发布包为守 2MB 主包门禁已把 static/assets/images/mascot/**
+   整目录剪出包外（实测 dist/build/mp-weixin-real/static 仅剩 icons/{common,register,tabbar}、
+   images/{avatars,match,people}），于是 real 档该 <image> 404 → 环心留下一个 200rpx 空洞。
+   改绑 IMAGE_PATHS.ICONS_EMOJI.SPROUT：同一只寻觅吉祥物（身体渐变 + 头顶双叶 + 眼/腮红/笑口，
+   见 static/assets/svg-spec/08-mascot/sprout-default.svg），但走 STATIC_BASE 基址，
+   mock 档＝包内 /static 路径、real 档＝后端 app-assets 托管路径（该 svg 两侧均已确认存在）。
+   再兜一层 @error：素材任一档取不到时整块不渲染，不留空洞（缺陷卡给的收口口径）。 */
+const mascotVisible = ref(true);
 
 /* 头像环：理想图 未登录等待页面.png 画的是 6 个头像围一圈（它副标里那个「12」按
    MP-R2VIS-PAGES-MESSAGES-INDEX-002 的裁定属拼版值，不当人数依据），所以取素材池前 6 个，
@@ -90,7 +113,7 @@ function goLater() {
          不再用「整图打底 + 绝对定位压底」那一版（那一版没有整图就没有内容可压）。 -->
     <view class="not-logged__hero">
       <view class="not-logged__title-wrap">
-        <text class="not-logged__title">{{ t('notLoggedWaiting.title') }}</text>
+        <text v-for="(line, i) in titleLines" :key="i" class="not-logged__title">{{ line }}</text>
         <text class="not-logged__subtitle">{{ t('notLoggedWaiting.subtitle') }}</text>
       </view>
 
@@ -105,7 +128,14 @@ function goLater() {
           <image class="not-logged__orbit-avatar" :src="node.src" mode="aspectFill" />
           <image class="not-logged__orbit-badge" :src="IMAGE_PATHS.ICONS_COMMON.HEART_FILLED_SVG" mode="aspectFit" alt="" />
         </view>
-        <image class="not-logged__orbit-mascot" :src="IMAGE_PATHS.MASCOT.DEFAULT" mode="aspectFit" alt="" />
+        <image
+          v-if="mascotVisible"
+          class="not-logged__orbit-mascot"
+          :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT"
+          mode="aspectFit"
+          alt=""
+          @error="mascotVisible = false"
+        />
       </view>
 
       <text class="not-logged__hint">{{ t('notLoggedWaiting.unlockHint') }}</text>
@@ -247,13 +277,15 @@ function goLater() {
   margin-bottom: 32rpx;
 }
 
+/* R2b-L02-D10：字号 56→44rpx（理想图 未登录等待页面.png 量测约 46rpx，取 --fs-5xl 档），
+   并去掉 2rpx 字距——两者叠加正是孤字换行的成因；断行改由 titleLines 显式给（见 script）。
+   R2b-L02-D14：品牌绿不再写字面量，与同文件主按钮 :321 同口径走 --c-brand。 */
 .not-logged__title {
   display: block;
-  font-size: 56rpx;
+  font-size: var(--fs-5xl, 44rpx);
   font-weight: 800;
-  color: #36C99A;
+  color: var(--c-brand, #36C99A);
   line-height: 1.4;
-  letter-spacing: 2rpx;
 }
 
 .not-logged__subtitle {
@@ -294,10 +326,13 @@ function goLater() {
   text-align: center;
 }
 
-/* 2026-08-25 P0：解锁提示（规格书 12.5） */
+/* 2026-08-25 P0：解锁提示（规格书 12.5）
+   R2b-L02-D12（可达性）：#9AA39F 压在 #EEF7F2 页底上只有 ≈2.16:1，22rpx 小字读不出；
+   改 --c-text-secondary（#4A524E，≈7:1，过 WCAG AA 正文 4.5:1）并提到 24rpx（--fs-base 档）。
+   上一轮 R1-B25 销过 messages 的可达性轴但漏了这一处 ⇒ 本轮按阈值收口。 */
 .not-logged__hint {
-  font-size: 22rpx;
-  color: #9AA39F;
+  font-size: var(--fs-base, 24rpx);
+  color: var(--c-text-secondary, #4A524E);
   margin-bottom: 28rpx;
 }
 
@@ -327,7 +362,9 @@ function goLater() {
 
 .not-logged__btn--secondary {
   background: #FFFFFF;
-  border: 2rpx solid #36C99A;
+  /* R2b-L02-D14（颜色token）：描边品牌绿改走 --c-brand，与标题、主按钮同一真源，
+     主题 token 调整时不再脱色。 */
+  border: 2rpx solid var(--c-brand, #36C99A);
 }
 
 .not-logged__btn--ghost {
@@ -343,9 +380,16 @@ function goLater() {
   background: var(--c-divider-light, rgba(15, 23, 42, 0.06));
 }
 
+/* R2b-L02-D15（可达性）：主按钮压在品牌绿渐变上，微信字形用的是绿色版
+   ICONS_V2.WECHAT_GREEN_SVG ⇒ 图与底几乎同色（帧内图标区 3290px 里亮于 200 的像素仅 55 个）。
+   全仓没有反白微信素材（static/assets/icons/login/ 只有 wechat-green.svg 与 wechat.png，
+   IMAGE_PATHS 里也只有 WECHAT_GREEN_SVG 一枚微信键），不新增引用不存在的资源，
+   改按缺陷卡给的第二个口径：就地反白（brightness(0) 先把字形压成纯黑剪影再 invert 成白），
+   与同按钮的白字（--c-text-inverse 档）同对比档。本类只被主按钮使用，不影响次级/幽灵按钮。 */
 .not-logged__btn-icon {
   width: 32rpx;
   height: 32rpx;
+  filter: brightness(0) invert(1);
 }
 
 .not-logged__btn-text {

@@ -76,14 +76,23 @@ function onNearbyAvatarError(event: Event) {
           <text class="nearby-item__name">{{ item.name }}</text>
           <text class="nearby-item__distance">{{ item.distanceText }}</text>
         </view>
+        <!-- R2b-L01-D17：理想图「附近的人」行末是一块浅绿圆角矩形内联卡片
+             （圆角 24rpx、两行居中绿字 + 绿色双人图标，与头像同高、随横滑行滚动），
+             而非贴屏边的通栏 999rpx 胶囊。故把入口移进 .nearby-list 作为末位 item。
+             仍保留真实数量口径（MP-R2-PAGES-HOME-INDEX-005：不伪造人数）。 -->
+        <view
+          class="nearby-people__bar press-feedback"
+          hover-class="press-feedback--active"
+          role="button"
+          aria-label="查看全部附近的人"
+          @tap="$emit('more')"
+        >
+          <image class="nearby-people__bar-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.GROUP)" mode="aspectFit" />
+          <text class="nearby-people__bar-text">附近的人</text>
+          <text class="nearby-people__bar-count">{{ items.length }} 位</text>
+        </view>
       </view>
     </scroll-view>
-    <!-- 2026-09-02 R5：用户反馈「值得认识的人无法点击」→ hover-class 加 + catchtap 防冒泡 + 明确 role=button -->
-    <view v-if="items.length > 0" class="nearby-people__bar press-feedback" hover-class="press-feedback--active" role="button" aria-label="查看全部附近的人" @tap="$emit('more')">
-      <!-- MP-R2-PAGES-HOME-INDEX-005：展示真实数量（原 Math.max(…,4) 保底伪造人数，2 人时文案称 4 位） -->
-      <text class="nearby-people__bar-text">附近有 {{ items.length }} 位值得认识的人</text>
-      <text class="nearby-people__bar-arrow">›</text>
-    </view>
   </view>
 </template>
 
@@ -226,25 +235,42 @@ function onNearbyAvatarError(event: Event) {
   line-height: 1.3;
 }
 
+/* R2b-L01-D17：入口改为随行的内联圆角卡片——宽度对齐头像列(120rpx)、
+   圆角取 --radius-xl(24rpx)、浅绿底走 --c-bg-brand，竖向居中：双人图标 + 两行绿字。
+   flex 行默认 align-items:stretch，卡片自动撑到与头像列同高。 */
 .nearby-people__bar {
+  width: 120rpx;
+  flex-shrink: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 16rpx;
-  padding: 16rpx 20rpx;
-  border-radius: 999rpx;
-  background: #E8FBF2;
+  justify-content: center;
+  gap: 8rpx;
+  padding: 16rpx 8rpx;
+  border-radius: var(--radius-xl, 24rpx);
+  background: var(--c-bg-brand, #E8FBF2);
+  box-sizing: border-box;
+}
+
+.nearby-people__bar-icon {
+  width: 36rpx;
+  height: 36rpx;
+  color: var(--c-brand, #36C99A);
 }
 
 .nearby-people__bar-text {
-  font-size: 22rpx;
-  color: #36C99A;
+  font-size: var(--fs-sm, 22rpx);
+  color: var(--c-brand, #36C99A);
   font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
 }
 
-.nearby-people__bar-arrow {
-  font-size: 28rpx;
-  color: #36C99A;
+.nearby-people__bar-count {
+  font-size: var(--fs-xs, 20rpx);
+  color: var(--c-brand, #36C99A);
+  line-height: 1.2;
+  text-align: center;
 }
 </style>
 

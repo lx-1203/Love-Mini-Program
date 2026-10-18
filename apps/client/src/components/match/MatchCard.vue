@@ -55,11 +55,11 @@ const distanceText = computed(() => {
     return value;
   }
   if (props.user.isSameSchool) return t("matchV1.sameSchool");
-  /* R1-L01-D03（2026-10-19）：原样返回空串 ⇒ 左上距离胶囊整块不渲染（既不显示也不占位），
-     与右上「在线」胶囊失衡；理想图《寻觅匹配卡片页面》左上为浅底粉字「5km」胶囊。
-     距离缺失时兜底为「附近」，复用既有键 discover.nearby（同目录 MatchScopeTabs.vue:19
-     已用同键、MatchActions.vue:35 等亦跨用 discover.*，双语均已存在，无需新 i18n 键）。 */
-  return t("discover.nearby");
+  /* R2b-L01-D02（文案 P1，上一轮修得不对）：理想图《寻觅匹配卡片页面》左上为距离数值胶囊「5km」，
+     「附近」一词只属于顶部分段（推荐/附近）。上一轮 R1-B10 用 t("discover.nearby") 兜底把语义换成了
+     范围标签，属同轴未对齐。MatchCardUser 无独立数值 distance 字段（types/match.ts 仅有 distanceText），
+     故距离缺失时返回空串隐藏胶囊（模板 v-if="distanceText" 已保证不占位），不再回填「附近」。 */
+  return "";
 });
 
 const isOnline = computed(() => props.user.onlineStatus === "online" || props.user.activeStatusText === "online" || props.user.activeStatusText === "just_now");

@@ -89,6 +89,15 @@ function goLogin() {
   openAppPath("/pages/login/index");
 }
 
+/* R2b-L01-D04（需新建 P2）：页头右侧第二行「收藏」入口——理想图《寻觅匹配卡片页面》
+   在漏斗筛选键正下方另有一枚描边心形收藏入口（上下两列）。目标功能为「已喜欢列表」，
+   复用既有 ROUTES.PROFILE.FAVORITES（constants/routes.ts:124，页面 subpackages/profile-extra/
+   profile/favorites.vue 已存在），描边心形图标取 IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE
+   （static/assets/icons/heart.svg，已确认落盘）。 */
+function goFavorites() {
+  openAppPath(ROUTES.PROFILE.FAVORITES);
+}
+
 /**
  * 切换寻觅分段（推荐 / 附近）。
  * - 原实现「附近」直接 switchTab 跳附近页（Explore），与用户预期「同款卡片」不符；
@@ -282,6 +291,18 @@ onUnload(() => {
         >
           <text class="discover-header__tab-text" :class="{ 'discover-header__tab-text--active': activeMode === 'nearby' }">{{ t('discover.nearby') }}</text>
           <view v-if="activeMode === 'nearby'" class="discover-header__tab-line" />
+        </view>
+        <!-- R2b-L01-D04：右侧第二行收藏入口（描边心形），margin-left:auto 推到行末，
+             与第一行漏斗筛选键上下成列 -->
+        <view
+          class="discover-header__fav"
+          hover-class="discover-header__fav--pressed"
+          hover-stay-time="40"
+          role="button"
+          :aria-label="t('discover.collect')"
+          @tap="goFavorites"
+        >
+          <image class="discover-header__fav-icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE" mode="aspectFit" alt="" />
         </view>
       </view>
     </view>
@@ -492,9 +513,39 @@ onUnload(() => {
   height: 32rpx;
 }
 
+/* R2b-L01-D04：右侧第二行收藏入口（描边心形）。margin-left:auto 推到 tabs 行末，
+   margin-right 与第一行筛选键同用 --capsule-right 使两枚上下成列、右缘对齐；
+   描边心形走既有 --c-text-secondary（heart.svg 为 currentColor 线性描边，非烘焙填充） */
+.discover-header__fav {
+  margin-left: auto;
+  margin-right: var(--capsule-right, 7px);
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--c-bg-container, #ffffff);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.discover-header__fav--pressed {
+  opacity: 0.7;
+}
+
+.discover-header__fav-icon {
+  width: 36rpx;
+  height: 36rpx;
+  color: var(--c-text-secondary, #4A524E);
+}
+
 .discover-header__tabs {
   display: flex;
-  gap: 48rpx;
+  /* R2b-L01-D04：加入右侧收藏按钮（72rpx 高于 tab 文本）后需显式纵向居中，避免 stretch 拉高 tab */
+  align-items: center;
+  /* R2b-L01-D03（间距 P2）：原 gap:48rpx 使「推荐/附近」紧贴成左端一小簇（中心≈12%/32%），
+     右侧 2/3 空白，与理想图两标签中心≈18%/47% 的分栏节奏不符。按卡建议提到 150rpx。 */
+  gap: 150rpx;
   margin-top: 16rpx;
 }
 
@@ -532,15 +583,25 @@ onUnload(() => {
 .match-card-area {
   /* R1-B23（R1-L01-D08）：40rpx → var(--page-padding)，与页头/配额行同一条左基线 */
   margin: 0 var(--page-padding, 32rpx);
-  /* MP-R1-PAGES-DISCOVER-INDEX-REQ-04：卡高原为固定 880rpx —— 375×820 实拍上仅占视口 53.9%，
-     低于理想基线「沉浸式大图卡 ≥70% 视口」。改为视口比例 + 双兜底：
-     70vh 让卡高随屏放大；min-height 860rpx 兜住矮屏（与 CardSwiper .card-area 同策略，
-     宿主节点被 MatchCard 以 height:100% 消费，不可用 flex:1 —— 本节点位于 scroll-view 内，
-     flex 上下文不成立会塌陷为 0）；max-height 取 1400rpx（≈700px，仅防超宽/桌面 H5 端把
-     卡拉成条，手机段 70vh 恒不触顶，≥70% 视口不被反向掐掉）。卡内 info/徽章均绝对定位贴底，
-     增高只多露照片，不破构图。 */
-  height: 70vh;
-  min-height: 860rpx;
+  /* R2b-L01-D05（尺寸比例 P0）：卡高按 scroll 视口实高反推。
+     上一轮（R1-B23）把 MatchActions 移出 scroll-view 成页面级 .match-actions-dock 后，
+     scroll 视口被 dock + tabBar 让出约 254rpx，而卡高仍是「70vh + min-height:860rpx」——
+     实拍 top/bottom 帧逐像素相同（页面滚不动），卡在 y≈513 处被平切、只露人脸上半部，
+     .match-card__info 与 92% 匹配度环（MatchCard.vue 绝对定位贴底）整块落在视口外永不可见。
+     改为 100vh 减去本页全部固定占位：状态栏 + 页头 padding-top(20px) + 页头(≈170rpx)
+     + 三键 dock(≈206rpx) + 配额行预留(≈64rpx) + tabBar(--tab-bar-total-h) + 越出余量(48rpx)，
+     并删掉 860rpx min-height（正是它把卡顶到超出视口）。max-height 仅防超宽端把卡拉长。
+     结果卡高≈视口实高，info 区与匹配度环在首屏可见。 */
+  height: calc(
+    100vh
+    - var(--statusbar, env(safe-area-inset-top))
+    - 20px
+    - 170rpx
+    - 206rpx
+    - 64rpx
+    - var(--tab-bar-total-h, 184rpx + env(safe-area-inset-bottom) + env(safe-area-inset-bottom))
+    - 48rpx
+  );
   max-height: 1400rpx;
 }
 
@@ -575,7 +636,11 @@ onUnload(() => {
   /* MP-R2-PAGES-DISCOVER-INDEX-001：再抬高避开 tabBar 中央「寻觅」凸起浮岛——
      浮岛 icon-wrap 越出 bar 顶 40rpx（custom-tab-bar/index.wxss:95-114），原 80rpx
      余量与浮岛带残余重叠约 26pt（胶囊与浮岛同为绿色居中元素，观感叠置） */
-  bottom: calc(var(--tab-bar-h, 160rpx) + 128rpx + env(safe-area-inset-bottom));
+  /* R2b-L01-D01（层级遮挡 P1）：上一轮把 MatchActions 移到页面级 .match-actions-dock 后，
+     本胶囊（原 bottom:tab-bar-h+128rpx）正好落在三键行正中，压住中间白色圆钮下半部并完全盖掉
+     其下方「打个招呼」标签（实拍只剩左右两键有标签）。再让出整条 MatchActions 行高（≈210rpx：
+     32rpx 上内距 + 128rpx 钮 + 12rpx 间距 + 28rpx 标签 + 8rpx 下内距），使提示条落在三键停靠层之上。 */
+  bottom: calc(var(--tab-bar-h, 160rpx) + 128rpx + 210rpx + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   display: flex;

@@ -47,7 +47,10 @@ const defaultScores = [90, 85, 80, 79];
 /** 2026-08-25 P1：始终展示 4 行匹配度（规格书 7.8）。
  *  后端 reasons 可能只有 1~2 项（如 mock 只返"同校"+"共同兴趣"），
  *  缺项用默认标签补全，保证 旅行/音乐/电影/生活方式 四行都可见。 */
-const DEFAULT_REASON_LABELS = ["旅行爱好", "音乐品味", "电影偏好", "生活方式"];
+/* R2b-L06-D05（文案 P2）：理想图《匹配成功页面》「共同点」卡首行为「慢跑爱好」配奔跑人形图标
+   （与人物设定"喜欢摄影和夜跑"一致）。原首项「旅行爱好」与 scoreIcons[0]=RUN（奔跑人形）图文不符。
+   scoreIcons[0] 本就是 ICONS_EMOJI.RUN（emoji/run.svg 奔跑人形），无需换图标，只把标签改回「慢跑爱好」。 */
+const DEFAULT_REASON_LABELS = ["慢跑爱好", "音乐品味", "电影偏好", "生活方式"];
 const displayReasons = computed<MatchReason[]>(() => {
   const result: MatchReason[] = [];
   for (let i = 0; i < 4; i++) {
@@ -166,7 +169,10 @@ function getScoreIcon(index: number): string {
         <text class="match-success__secondary-text">{{ t('matchSuccess.explore') }}</text>
       </view>
       <view class="match-success__share" hover-class="match-success__share--pressed" @tap="emit('share')">
-        <image class="match-success__share-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.SHARE" mode="aspectFit" alt="" /><text class="match-success__share-text">分享喜悦</text>
+        <!-- R2b-L06-D08（颜色token P2）：理想图分享图标为「方框上箭头」上传式分享图标，
+             原 ICONS_SOCIAL.SHARE 是灰蓝三点连线图标、与弱化深灰文字打架；换 ICONS_EMOJI.UPLOAD
+             （static/assets/icons/common/upload.svg，已确认落盘） -->
+        <image class="match-success__share-icon" :src="IMAGE_PATHS.ICONS_EMOJI.UPLOAD" mode="aspectFit" alt="" /><text class="match-success__share-text">分享喜悦</text>
       </view>
     </view>
   </view>
@@ -189,8 +195,10 @@ function getScoreIcon(index: number): string {
   display: flex;
   flex-direction: column;
   /* R4：110rpx 起排使标题行与微信胶囊（状态栏下 47-83px real 带）叠压，下移至胶囊带以下 */
-  /* R1-L06-D01：动作块底沿与 safe-area 间距按理想图收到 60rpx 一档 */
-  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 120rpx) 48rpx calc(60rpx + env(safe-area-inset-bottom));
+  /* R2b-L06-D07（间距 P2）：__actions 靠 margin-top:auto 锚底后又被 safe-area+padding-bottom 顶起，
+     实帧「分享喜悦」下沿距屏幕底约 89px（11% 屏高），理想图仅留 home indicator≈1.5%。
+     把根 padding-bottom 由 60rpx 降到 16rpx（上一轮 R1-B11 收到 60rpx 仍偏高）。 */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 120rpx) 48rpx calc(16rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
   /* R1-L06-D02（颜色token P2）：删掉组件内第二条渐变 linear-gradient(180deg,#E8FBF2,#F0FFF5)（无粉色端）。
      页面层 match-success.vue:182 的 var(--c-gradient-match)（theme/design-variables.scss:179/390）
@@ -226,7 +234,10 @@ function getScoreIcon(index: number): string {
 }
 
 .match-success__title-heart--right {
-  color: #36C99A;
+  /* R2b-L06-D02（颜色token P2）：原 color:#36C99A 是死属性——heart-filled.svg 烘焙 fill=#FF6B81，
+     mp/H5 的 <image> 不响应 CSS color（同文件 __heart-circle-icon 已用 filter 反色得到白心）。
+     改用 filter 把已渲染位图从粉（hue≈351°）转到绿（hue≈161°，+170°），并补饱和/压暗逼近 --c-brand(#36C99A)。 */
+  filter: hue-rotate(170deg) saturate(1.25) brightness(0.9);
 }
 
 .match-success__subtitle {
@@ -248,9 +259,10 @@ function getScoreIcon(index: number): string {
 .match-success__avatars {
   display: flex;
   align-items: center;
-  /* R1-L06-D03（尺寸比例 P1）：gap 32 → 0，交叠关系改由 __heart 的负 margin 给出。
-     原三列并列把「头像-心-头像」撕开一道约 176rpx 空槽，心形徽标落在槽里没有压盖任何头像。 */
-  gap: 0;
+  /* R2b-L06-D03（位置 P1，上一轮修反了）：理想图两枚头像彼此分离、中间留约 10.6% 屏宽（≈80rpx）空白，
+     心形徽标骑在空隙正中并各压两圆内缘一小截。上一轮 R1-B11 把 gap 收成 0 再用负 margin 反向压成
+     -12rpx 交叠，读成「连体圆」，方向修反。恢复 gap 为正值 80rpx。 */
+  gap: 80rpx;
   margin-top: 64rpx;
   position: relative;
 }
@@ -303,9 +315,9 @@ function getScoreIcon(index: number): string {
   /* R3（MSUCCESS-004）：100→136rpx，连接心形与头像比例对齐理想图 */
   width: 136rpx;
   height: 136rpx;
-  /* R1-L06-D03：136rpx 盒宽两侧各收 74rpx ⇒ 两枚头像内缘重叠量 = 136 - 74*2 = -12rpx，
-     与理想图量测一致；心形徽标坐正交叠点，靠 z-index:3 压住两头像。 */
-  margin: 0 -74rpx;
+  /* R2b-L06-D03：负 margin 由 -74rpx 收到 -20rpx——两圆之间保留 80rpx 正间隙（见 __avatars gap），
+     心形徽标仍各压两圆内缘约 20rpx（理想图「骑在空隙正中并压住内缘一小截」），靠 z-index:3 压住头像。 */
+  margin: 0 -20rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -406,9 +418,9 @@ function getScoreIcon(index: number): string {
 }
 
 .match-success__score-value {
-  /* R1-L06-D05：右栏定宽 = 卡内宽 590rpx（750 - 页边距 96 - 卡内衬 64）的约 45%，
-     与理想图「条只占右半栏」一致；进度条 width:100% 现在落进这一栏。 */
-  width: 264rpx;
+  /* R2b-L06-D06（尺寸比例 P2）：右栏定宽由 264rpx（≈45% 行内容宽）提到 330rpx（≈57%），
+     与理想图「进度条从行内容宽约 43% 处起排、右端几乎贴卡内衬、条宽≈57%」一致。 */
+  width: 330rpx;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -486,8 +498,10 @@ function getScoreIcon(index: number): string {
 
 .match-success__share-text {
   font-size: 26rpx;
-  color: #36C99A;
-  font-weight: 600;
+  /* R2b-L06-D08（颜色token P2）：理想图「分享喜悦」为深灰（#4B5563 档）弱化文字，刻意不做强调；
+     原品牌绿 #36C99A/600 读起来像第三个主按钮。改走 --c-text-secondary（#4A524E）+ 字重 500。 */
+  color: var(--c-text-secondary, #4B5563);
+  font-weight: 500;
 }
 
 @keyframes ripple-expand {
@@ -519,10 +533,16 @@ function getScoreIcon(index: number): string {
   color: #FF6B81;
   opacity: 0.7;
   animation: match-float 3.2s ease-in-out infinite;
+  /* R2b-L06-D09（层级遮挡 P2）：漂浮爱心是纯装饰，理想图导航栏/返回钮周边应干净。
+     统一 pointer-events:none 且不抢导航层（fixed nav 为 z-index:20），避免与可点返回钮叠在同一区域。 */
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* V-02（第五轮 QA）：漂浮爱心装饰位置微调，避免遮挡标题/头像/匹配卡 */
-.match-success__float-heart--1 { top: 120rpx; left: 40rpx; animation-delay: 0s; }
+/* R2b-L06-D09：--1 原 top:120rpx 落点正好压在 fixed 导航栏的返回圆底上（心形被圆底切掉下半截）。
+   下移到胶囊带以下（≥260rpx），避开返回钮。 */
+.match-success__float-heart--1 { top: 260rpx; left: 40rpx; animation-delay: 0s; }
 .match-success__float-heart--2 { top: 180rpx; right: 48rpx; animation-delay: 0.6s; width: 32rpx; height: 32rpx; }
 .match-success__float-heart--3 { top: 300rpx; left: 24rpx; animation-delay: 1.2s; width: 30rpx; height: 30rpx; opacity: 0.5; }
 .match-success__float-heart--4 { top: 460rpx; right: 32rpx; animation-delay: 1.8s; width: 44rpx; height: 44rpx; opacity: 0.6; }

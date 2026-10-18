@@ -23,6 +23,13 @@ const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 const fallbackPartner = ref<MatchCardUser | null>(null);
 const loading = ref(false);
+/* R2b-L06-D04（素材缺失 P1）：右上相机图标加载失败兜底——原取 IMAGE_PATHS.LOGIN_SPLIT['r06_c01']
+   （登录总览图网格裁片，非本页图标）导致实帧该位是一枚空白白圆。换成 icons 目录线性相机图标后，
+   仍保留 @error 兜底：加载失败时隐藏 <image>，只留干净圆底，不再出现坏图占位。 */
+const navIconFailed = ref(false);
+function onNavIconError() {
+  navIconFailed.value = true;
+}
 
 const partner = computed(() => matchStore.matchedUser ?? fallbackPartner.value);
 const myAvatar = computed(
@@ -146,7 +153,14 @@ function handleScreenshot() {
           :aria-label="'截图'"
           @tap="handleScreenshot"
         >
-          <image class="success-nav__icon-img" :src="IMAGE_PATHS.LOGIN_SPLIT['r06_c01']" mode="aspectFit" alt="" />
+          <image
+            v-if="!navIconFailed"
+            class="success-nav__icon-img"
+            :src="IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON"
+            mode="aspectFit"
+            alt=""
+            @error="onNavIconError"
+          />
         </view>
         <view
           class="success-nav__btn press-feedback"
@@ -229,5 +243,9 @@ function handleScreenshot() {
 .success-nav__icon-img {
   width: 40rpx;
   height: 40rpx;
+  /* R2b-L06-D04：camera.svg 描边烘焙为 #94A3B8（浅灰蓝），mp <image> 不响应 CSS color；
+     用 filter 把已渲染位图压黑，与左侧返回箭头（#333A37 深色线性）成对，符合理想图深色图标 */
+  filter: brightness(0);
+  opacity: 0.82;
 }
 </style>

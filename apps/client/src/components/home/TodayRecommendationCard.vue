@@ -47,6 +47,24 @@ const distanceLine = computed(() => {
   if (item.constellation) parts.push(item.constellation);
   return parts.join(" · ");
 });
+
+/**
+ * R2b-L01-D12：理想图右栏自上而下有 meta/标签/签名/距离 多行。当数据把这些字段全抽空时，
+ * 右半会塌成约 200rpx 空白、两枚按钮被 margin-top:auto 推到底悬空。据此判定「有无资料」，
+ * 无资料时渲染一行明确空态文案占位，而不是留一片空白。
+ * （另一条建议「禁止推荐位取无资料的助手账号」属数据源/view-model 职责，不在本组件文件内。）
+ */
+const hasProfileInfo = computed(() => {
+  const item = props.item;
+  if (!item) return false;
+  return Boolean(
+    metaLine.value ||
+      (item.tags && item.tags.length) ||
+      item.bio ||
+      item.expectation ||
+      distanceLine.value
+  );
+});
 </script>
 
 <template>
@@ -82,25 +100,30 @@ const distanceLine = computed(() => {
           <text class="today-card__online-dot"></text>
           <text class="today-card__online-text">在线</text>
         </view>
-        <!-- R21：合拍度对齐理想图——实心粉圆徽章（mp-weixin 对内联 conic-gradient 支持不稳，
-             样式串曾被当文本渲染；理想图本就是实心圆徽章），定位右下 -->
+        <!-- R2b-L01-D13：合拍度改横向胶囊（理想图右下），首行白色 ♥ + 百分比、次行「合拍度」。
+             心形走已核实落盘的 MATCH_HEART 白色图片资源（本组件「喜欢」按钮同族）。 -->
         <view class="today-card__match-badge">
-          <view class="today-card__match-inner">
+          <view class="today-card__match-score-row">
+            <image class="today-card__match-heart" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_MATCH.MATCH_HEART)" mode="aspectFit" alt="" />
             <text class="today-card__match-score">{{ item.matchScore }}%</text>
-            <text class="today-card__match-label">合拍度</text>
           </view>
+          <text class="today-card__match-label">合拍度</text>
         </view>
       </view>
 
       <view class="today-card__info press-feedback" hover-class="press-feedback--active" @tap="$emit('view')" role="button" :aria-label="`查看${item.name}主页`">
         <text class="today-card__name">{{ item.name }}</text>
-        <text class="today-card__meta">{{ metaLine }}</text>
-        <view v-if="item.tags.length" class="today-card__tags">
-          <text v-for="tag in item.tags.slice(0, 4)" :key="tag" class="today-card__tag">{{ tag }}</text>
-        </view>
-        <text v-if="item.bio" class="today-card__bio">{{ item.bio }}</text>
-        <text v-if="item.expectation" class="today-card__expect">{{ item.expectation }}</text>
-        <text class="today-card__distance">{{ distanceLine }}</text>
+        <template v-if="hasProfileInfo">
+          <text class="today-card__meta">{{ metaLine }}</text>
+          <view v-if="item.tags.length" class="today-card__tags">
+            <text v-for="tag in item.tags.slice(0, 4)" :key="tag" class="today-card__tag">{{ tag }}</text>
+          </view>
+          <text v-if="item.bio" class="today-card__bio">{{ item.bio }}</text>
+          <text v-if="item.expectation" class="today-card__expect">{{ item.expectation }}</text>
+          <text class="today-card__distance">{{ distanceLine }}</text>
+        </template>
+        <!-- R2b-L01-D12：右栏资料字段全空时给明确空态，不再留一片空白让按钮悬空 -->
+        <text v-else class="today-card__empty-hint">TA 还没有填写资料</text>
         <view class="today-card__actions">
           <view class="today-card__btn today-card__btn--outline" @tap.stop="$emit('view')">看看TA</view>
           <view class="today-card__btn today-card__btn--love" :class="{ 'today-card__btn--loading': likeLoading }" @tap.stop="$emit('like')">
@@ -234,42 +257,45 @@ const distanceLine = computed(() => {
   font-weight: 700;
 }
 
-/* R21：合拍度实心粉圆徽章（理想图样式），定位右下 */
+/* R2b-L01-D13：合拍度徽章由 140rpx 正圆实心粉盘改为横向胶囊（理想图约 134×97rpx、圆角约半高），
+   首行「白色 ♥ + 百分比」、次行「合拍度」；底色去裸写 #FF6B81 改走 --c-love token。 */
 .today-card__match-badge {
   position: absolute;
   right: 12rpx;
   bottom: 12rpx;
-  /* R1-L01-D14：徽章外径 112rpx → 140rpx，与 MatchCard .match-card__score-ring 同档，
-     容纳放大后的 32rpx 数字 / 22rpx 标签 */
-  width: 140rpx;
-  height: 140rpx;
-  border-radius: 50%;
-  background: #FF6B81;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8rpx 20rpx rgba(255, 90, 145, 0.25);
-}
-
-.today-card__match-inner {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 50%;
-  background: #FF6B81;
+  min-width: 134rpx;
+  height: 96rpx;
+  padding: 0 16rpx;
+  border-radius: var(--radius-full, 9999rpx);
+  background: var(--c-love, #FF6B81);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2rpx;
+  box-shadow: 0 8rpx 20rpx rgba(255, 90, 145, 0.25);
+  box-sizing: border-box;
+}
+
+.today-card__match-score-row {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.today-card__match-heart {
+  width: 24rpx;
+  height: 24rpx;
 }
 
 .today-card__match-score {
-  font-size: 32rpx;
+  font-size: var(--fs-xl, 30rpx);
   font-weight: 800;
   color: #FFFFFF;
 }
 
 .today-card__match-label {
-  font-size: 22rpx;
+  font-size: var(--fs-xs, 20rpx);
   color: rgba(255, 255, 255, 0.92);
 }
 
@@ -289,6 +315,14 @@ const distanceLine = computed(() => {
   margin-top: 8rpx;
   font-size: 26rpx;
   color: #9AA39F;
+}
+
+/* R2b-L01-D12：无资料空态文案（占位，避免右半塌成空白、按钮悬空） */
+.today-card__empty-hint {
+  margin-top: 12rpx;
+  font-size: var(--fs-sm, 22rpx);
+  color: var(--c-text-tertiary, #9AA39F);
+  line-height: 1.5;
 }
 
 .today-card__tags {

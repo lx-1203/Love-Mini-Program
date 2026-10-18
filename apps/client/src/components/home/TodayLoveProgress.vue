@@ -37,28 +37,6 @@ function stepTitle(step: { id: string; title?: string }): string {
   return step.title || "任务";
 }
 
-/**
- * 2026-09-02 R5/R7：步骤文字说明（描述随状态动态变化）
- * 优先级：
- *   1. 已完成 → i18n Done 文案（鼓励性），即使后端 desc 非空也覆盖（避免后端静态文案与状态不一致）
- *   2. 未完成 → 优先用 view-model 后端 desc（个性化），否则 i18n Desc 文案
- * 这样确保「未完成→待做说明」「已完成→鼓励文案」状态联动真正可见。
- */
-function stepDescription(step: LoveProgressStepViewModel): string {
-  if (step.completed) {
-    return t(`home.loveStep${capitalize(step.id)}Done`);
-  }
-  if (step.description && step.description.trim().length > 0) {
-    return step.description;
-  }
-  return t(`home.loveStep${capitalize(step.id)}Desc`);
-}
-
-function capitalize(s: string): string {
-  if (!s) return s;
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 </script>
 
 <template>
@@ -89,11 +67,6 @@ function capitalize(s: string): string {
         <text class="love-step__title" :style="{ color: stepMeta(step.id).bg }">{{ stepTitle(step) }}</text>
         <text class="love-step__meta" :style="{ color: stepMeta(step.id).bg }">
           {{ step.completed ? '已完成' : stepMeta(step.id).todo }}
-        </text>
-        <!-- 2026-09-02 R5/R7：每个步骤补充文字说明（描述随状态动态变化）；
-             R21：限两行防溢出（此前第 4 卡「参与兴趣互动」被截断成「参与兴趣…」） -->
-        <text class="love-step__desc">
-          {{ stepDescription(step) }}
         </text>
       </view>
     </view>
@@ -163,9 +136,10 @@ function capitalize(s: string): string {
   background: linear-gradient(90deg, #36C99A 0%, #55D5A7 100%);
 }
 
+/* R2b-L01-D15：格与格之间留出理想图那种色块缝隙（16→20rpx，取 --sp-5 token） */
 .love-progress__steps {
   display: flex;
-  gap: 16rpx;
+  gap: var(--sp-5, 20rpx);
   margin-top: 32rpx;
 }
 
@@ -175,9 +149,11 @@ function capitalize(s: string): string {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6rpx;
+  /* R2b-L01-D15：内部 gap 6→12（--spacing-md）、padding 16rpx 8rpx→24rpx 16rpx
+     （--spacing-lg / --spacing-base），图标与标题间留白对齐理想图 */
+  gap: var(--spacing-md, 12rpx);
   /* 2026-09-02 R5：去掉固定 height（112rpx 把 desc 裁掉），完全自适应 */
-  padding: 16rpx 8rpx;
+  padding: var(--spacing-lg, 24rpx) var(--spacing-base, 16rpx);
   border-radius: 24rpx;
   box-sizing: border-box;
   /* 2026-09-02 R5 用户反馈「表签1234看不清」：加内部弹性布局，让 title/meta/desc 都清晰 */
@@ -220,21 +196,6 @@ function capitalize(s: string): string {
   font-size: 20rpx;
   font-weight: 400;
   text-align: center;
-}
-
-/* 2026-09-02 R5：步骤文字说明（描述每步具体含义 + 随状态变化） */
-.love-step__desc {
-  font-size: 18rpx;
-  font-weight: 400;
-  color: var(--c-text-tertiary, #94a3b8);
-  text-align: center;
-  line-height: 1.4;
-  padding: 0 6rpx;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  word-break: break-all;
 }
 
 /* 2026-09-02 R8：序号作为圆形主体（背景色=步骤色，白色大号数字，完全覆盖圆区，不叠加图标） */

@@ -16,7 +16,17 @@ const props = withDefaults(defineProps<{ subtitle?: string; school?: string; loc
 });
 defineEmits<{ (e: "schoolTap"): void; (e: "searchTap"): void; (e: "notifyTap"): void }>();
 
-const schoolText = () => props.locationText || props.school || "北京大学 · 3km";
+/**
+ * R2b-L01-D10：理想图页头右侧为「学校 · 距离数值」。
+ * 数据层（utils/location.buildLocationText，非本组件所有）把第二段回填成范围词「附近」，
+ * 语义错位。本组件内剥离尾部「· 附近」段；无真实距离时只保留前半段（学校/城市），
+ * 不再把「附近」当距离展示。「附近」一词只留给顶部 推荐/附近 分段。
+ * 注：要真正渲染「· 3km」需上层把距离数值透传下来（属另一车道，本组件无该数据源）。
+ */
+const schoolText = () => {
+  const raw = (props.locationText || props.school || "北京大学 · 3km").trim();
+  return raw.replace(/\s*·\s*附近\s*$/, "");
+};
 
 // 2026-09-03 遗留差异清零：通知角标"6"静态演示值 → 真实未读通知数（无未读时隐藏角标）
 const messagesStore = useMessagesStore();
@@ -126,15 +136,13 @@ function goMyProfile() {
   flex-shrink: 0;
 }
 
+/* R2b-L01-D11：理想图页头为无背景裸元素（浅绿渐变直接铺到标题行），
+   去掉原 999rpx 白胶囊 + 阴影，仅保留定位针与文字 */
 .header-location {
   display: flex;
   align-items: center;
   gap: 8rpx;
   height: 56rpx;
-  padding: 0 20rpx;
-  border-radius: 999rpx;
-  background: #ffffff;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
 }
 
 .header-location__pin {
@@ -153,13 +161,14 @@ function goMyProfile() {
   text-overflow: ellipsis;
 }
 
+/* R2b-L01-D11：去掉白圆碟（background/box-shadow/border-radius），仅保留铃铛裸图标。
+   R2b-L01-D09：铃铛 PNG（HOME_ICONS.HEADER_BELL，已核实落盘）此前压在白碟底上
+   （浅/白字形与白碟同色 → 整块看似空），移除白碟后落在浅绿渐变底即显现；
+   角标定位仍依赖本盒 position:relative，故保留宽高与 flex 居中。 */
 .header-icon {
   position: relative;
   width: 56rpx;
   height: 56rpx;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   justify-content: center;

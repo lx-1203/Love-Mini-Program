@@ -17,6 +17,17 @@ function formatMemberCount(count: number): string {
 }
 
 /**
+ * R2b-L01-D16：理想图兴趣封面白字为「摄影圈 / 旅行圈 / 音乐圈 / 美食圈」，
+ * 数据源常回「摄影/旅行/游戏」丢了「圈」后缀，读起来像标签而非圈子。
+ * 渲染处补后缀（已以「圈」结尾则不重复拼）。
+ */
+function circleLabel(name: string): string {
+  const n = (name || "").trim();
+  if (!n) return n;
+  return n.endsWith("圈") ? n : `${n}圈`;
+}
+
+/**
  * 字形/图标资源命名空间——一律不得当封面用。
  *
  * 判定不能只看「是否以 / 开头」：`/static/...` 里既混着字形小图标
@@ -95,7 +106,7 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
           </view>
           <!-- 文案区：名称/人数在图下方（参考图：不上图覆盖） -->
           <view class="interest-card__body">
-            <text class="interest-card__name">{{ item.name }}</text>
+            <text class="interest-card__name">{{ circleLabel(item.name) }}</text>
             <text class="interest-card__count">{{ formatMemberCount(item.memberCount) }} 人加入</text>
           </view>
           <view
