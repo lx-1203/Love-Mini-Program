@@ -25,8 +25,16 @@ import { createRequire } from "node:module";
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync, rmSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { guardUiLease } from "./ui-lease.mjs";
-import { hash16, judgeFrame, frameGroupKey, sigOf } from "./shoot-frameplan.mjs";
+import { createHash } from "node:crypto";
+
+/* 刻意 **不 import** shoot-frameplan.mjs 来复用 hash16/judgeFrame：
+   那个模块顶层就有租约与取景分支，import 它等于立刻上一台设备跑一整轮 plan
+   （本仓已在 apply-plan-additions.mjs:23-25 把这条写死，理由相同；我自己刚在这上面栽过一次：
+   取景腿被 import 触发、抢了租约、对着 mock 档跑了 31 组）。
+   这里只用到"sha256 前 16 位"这一件事，算法逐字对齐 shoot-frameplan.mjs:119 / verify-evidence-corpus.mjs:28。
+   judgeFrame 的 stateSig 词汇是为 frameplan 的步 token 设计的，喂路由名是误用，所以这里改用两个
+   对保真真正有意义的判点：跨页同图、以及滚动前后逐字节相同（= 底部压根没换画面）。 */
+const hash16 = (absPath) => createHash("sha256").update(readFileSync(absPath)).digest("hex").slice(0, 16);
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "..", "..");
@@ -83,8 +91,20 @@ if (dryRun) {
   process.exit(0);
 }
 
-/* 租约：拿不到就退，不自家排队（上一程"干跑抢了租约打死 16 条腿"的教训在案）。 */
-guardUiLease({ owner: "shoot-fidelity-sweep-" + ROUND, tag: "SWEEPLEASE", failTag: "FIDELITYSWEEP" });
+/* 租约：拿不到就退，不自家排队（上一程"干跑抢了租约打死 16 条腿"的教训在案）。
+   但本腿自己被 TaskStop/崩溃留下的**孤儿锁**要先清掉，否则下一发永远起不来：
+   走 sanctioned 的 reclaimOrphanUi（两票判死 + 把旧锁存档成 .orphan-<ts>），
+   并且用与下面 guardUiLease 完全相同的 owner 名 —— reclaim 把锁交给本进程，
+   acquireUi 的 `owner 相同且 pid===本进程` 那一条才会把它当成"我自己的续租"而不是占用。
+   绝不用 QA_SKIP_UI_LEASE=1 绕过（那不是接管，是同时上两台驱动）。 */
+import { guardUiLease, heldLeases, reclaimOrphanUi } from "./ui-lease.mjs";
+const LEASE_OWNER = "shoot-fidelity-sweep-" + ROUND;
+for (const h of heldLeases()) {
+  if (!h.orphan) continue;
+  const r = reclaimOrphanUi({ owner: LEASE_OWNER, file: h.file, confirm: "RECLAIM_ORPHAN", reason: "上一发持租进程已不存在（两票判死），锁无人续租；本腿接管以便取景能继续" });
+  console.log(`SWEEPLEASE_PRECLEAN from=${h.owner}@${h.pid} reclaimed=${r && r.reclaimed ? "yes" : "no"} backup=${r && r.backup ? String(r.backup).split(/[\\/]/).pop() : "-"}`);
+}
+guardUiLease({ owner: LEASE_OWNER, tag: "SWEEPLEASE", failTag: "FIDELITYSWEEP" });
 mkdirSync(OUT_DIR, { recursive: true });
 
 const automator = require(require.resolve("miniprogram-automator", { paths: [join(REPO, "apps/client"), REPO] }));
@@ -134,24 +154,33 @@ for (const r of targets) {
         await sleep(4000);
       }
       if (existsSync(f)) rmSync(f, { force: true });
-      await mp.screenshot({ path: f });
-      const size = existsSync(f) ? statSync(f).size : 0;
-      const h = size > 0 ? hash16(f) : "";
-      const prior = [...seen.entries()].filter(([hh]) => hh === h && h);
-      const verdict = judgeFrame({
-        stateSig: sigOf(s.tokens),
-        contentHash: h,
-        priors: results.flatMap((x) => x.frames.filter((fr) => fr.contentHash).map((fr) => ({ id: `${fr.route}__${fr.state}`, stateSig: fr.stateSig, contentHash: fr.contentHash }))),
-      });
-      const dupAcrossRoutes = prior.some(([, owner]) => owner !== r.route);
+      /* 首帧实测会 timeout waiting for automator response（WS 通道 61s/帧、2/5 超时是这个项目的既有事实），
+         所以每帧重试一次；两次都不中就如实记 pageError，不拿第二帧冒充第一帧。 */
+      let size = 0, shotErr = "";
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          await mp.screenshot({ path: f });
+          size = existsSync(f) ? statSync(f).size : 0;
+          if (size > 0) { shotErr = ""; break; }
+          shotErr = `第 ${attempt} 发出图 0B`;
+        } catch (e) { shotErr = `第 ${attempt} 发异常 ${String(e && e.message).slice(0, 70)}`; }
+        if (attempt === 1) await sleep(2500);
+      }
+      if (size <= 0) { rec.errors.push(`${s.state}: ${shotErr}`); console.log(`SWEEP_FAIL ${r.route} ${s.state} ${shotErr}`); continue; }
+      const h = hash16(f);
+      const priorOwner = h ? seen.get(h) : undefined;
+      const dupAcrossRoutes = !!h && !!priorOwner && priorOwner !== r.route;
+      /* 同一页滚动前后逐字节相同 ⇒ 底部没换画面（不可滚动页/懒加载没触发/滚动被吞），
+         这是保真审计要的信号，不当"两个状态"记账。 */
+      const sameAsTop = s.state === "bottom" && h && rec.frames.length && rec.frames[0].contentHash === h;
       rec.frames.push({
         route: r.route,
         state: s.state, path: f.replace(REPO + "/", "").split("\\").join("/"), bytes: size, contentHash: h,
-        stateSig: sigOf(s.tokens), verdict: verdict.verdict, verdictNote: String(verdict.note || "").slice(0, 160),
-        belowFloor: size <= MIN_BYTES, dupAcrossRoutes,
+        belowFloor: size <= MIN_BYTES, dupAcrossRoutes, sameAsTop,
+        dupOf: dupAcrossRoutes ? priorOwner : (sameAsTop ? `${r.route}__top` : ""),
       });
       if (h && !seen.has(h)) seen.set(h, r.route);
-      console.log(`SWEEP_FRAME ${r.route}__${s.state} bytes=${size} sha16=${h ? h.slice(0, 8) : "-"} verdict=${verdict.verdict}${size <= MIN_BYTES ? " 空白帧" : ""}${dupAcrossRoutes ? " 跨页同图" : ""}`);
+      console.log(`SWEEP_FRAME ${r.route}__${s.state} bytes=${size} sha16=${h ? h.slice(0, 8) : "-"}${size <= MIN_BYTES ? " 空白帧" : ""}${dupAcrossRoutes ? " 跨页同图(" + priorOwner + ")" : ""}${sameAsTop ? " 滚动后同图" : ""}`);
     } catch (e) {
       rec.errors.push(`${s.state}: ${String(e && e.message).slice(0, 120)}`);
       console.log(`SWEEP_FAIL ${r.route} ${s.state} ${String(e && e.message).slice(0, 120)}`);
@@ -175,14 +204,16 @@ writeFileSync(join(OUT_DIR, "sweep-manifest.json"), JSON.stringify(manifest, nul
 /* 收口读数：空白帧、跨页同图、零帧页都逐条点名（"全绿但读的是空数"是这个项目的老病）。 */
 const blank = results.flatMap((x) => x.frames.filter((f) => f.belowFloor));
 const dups = results.flatMap((x) => x.frames.filter((f) => f.dupAcrossRoutes));
+const stuck = results.flatMap((x) => x.frames.filter((f) => f.sameAsTop));
 const noFrame = results.filter((x) => !x.frames.some((f) => !f.belowFloor));
 const failedPages = results.filter((x) => x.errors.length);
-for (const b of blank) console.log(`SWEEP_BLANK_FRAME ${b.route ?? ""} ${b.path} bytes=${b.bytes}`);
+for (const b of blank) console.log(`SWEEP_BLANK_FRAME ${b.route} ${b.path} bytes=${b.bytes}`);
 for (const d of dups) console.log(`SWEEP_DUP_ACROSS_ROUTES ${d.path} sha16=${String(d.contentHash).slice(0, 8)} 与更早页同图`);
+for (const s of stuck) console.log(`SWEEP_SCROLL_NOTHING_CHANGED ${s.path} 底部与顶部逐字节相同（滚动未改变画面，不许当两个状态）`);
 for (const n of noFrame) console.log(`SWEEP_NO_UNIQUE_FRAME ${n.route} ⇒ 这一页本轮没有独立画面，不许算进覆盖`);
 for (const fp of failedPages) console.log(`SWEEP_PAGE_ERROR ${fp.route} ${fp.errors.join(" | ").slice(0, 160)}`);
-console.log(`FIDELITYSWEEP_FRAMES frames=${manifest.totals.frames} blank=${blank.length} dupAcross=${dups.length} noUniqueFrame=${noFrame.length} pageErrors=${failedPages.length}`);
-const bad = noFrame.length + blank.length;
-console.log(bad ? `${RK}=FAIL targets=${targets.length} frames=${manifest.totals.frames} blank=${blank.length} noUniqueFrame=${noFrame.length}`
+console.log(`FIDELITYSWEEP_FRAMES frames=${manifest.totals.frames} blank=${blank.length} dupAcross=${dups.length} scrollStuck=${stuck.length} noUniqueFrame=${noFrame.length} pageErrors=${failedPages.length}`);
+const bad = noFrame.length + blank.length + failedPages.length;
+console.log(bad ? `${RK}=FAIL targets=${targets.length} frames=${manifest.totals.frames} blank=${blank.length} noUniqueFrame=${noFrame.length} pageErrors=${failedPages.length}`
   : `${RK}=PASS targets=${targets.length} frames=${manifest.totals.frames} band=${bandNow} console=unavailable(如实)`);
 process.exit(bad ? 1 : 0);

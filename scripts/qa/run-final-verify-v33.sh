@@ -69,6 +69,10 @@ g verify-finder-lane-selftest 60 scripts/qa/verify-finder-lane.mjs --self-test
 # 取景覆盖门：零帧页 / 空白帧页 / 跨页同图 / band 与账本不同源，四种坏件在自证里都必须红。
 # 判真批次的形态要 --ledger + --manifest（本轮新帧目录），裸跑退 2 是缺输入，故载具点的是自证。
 g verify-sweep-coverage-selftest 60 scripts/qa/verify-sweep-coverage.mjs --self-test
+# 前后端↔后台连通门：登记 --dry 形状（只铸票 + 只读两端列表，一行都不写）。
+# 真往返（POST /posts → 后台按 id 读到 → DELETE → 计数回原）由本轮腿手动跑：
+# 它会写库，塞进终验载具等于每次全清单跑一遍都往 posts 表插一行——那正是"载具不许有写"的边界。
+g verify-admin-roundtrip-dry 120 scripts/qa/verify-admin-roundtrip.mjs --round CARRIER --dry
 g verify-evidence-corpus  600 scripts/qa/verify-evidence-corpus.mjs
 g verify-provenance-all   600 scripts/qa/verify-provenance-all.mjs
 g verify-band-freshness   420 scripts/qa/verify-band-freshness.mjs
