@@ -94,3 +94,29 @@ options=(a) 接受：FAILED 也是 JUDGED，弹回本身是被量到的产品事
 | `PublicMoment.vue:39` 空数据仍隐藏"最近动态" | 不在 FX3 可写集 | 与 B30 同页批次的下一轮 |
 | publish 的位置选择器（R2b-L03-D16） | 要 `uni.chooseLocation` + 后端 location 字段 | 需新建目标功能，已进 §4 清单 |
 | CommunityFeed 的 4 条（图格/工具图标/相对时间） | 根因分别在上游 view-model（每帖只发一张图）、`utils/media.ts` 的 `resolveMediaUrl`、`theme/global.scss` 的网格几何，均不在单页可写集 | 单开一条"素材解析"车道：这也是一条系统性缺陷（多个页的图标在真档下渲染为空白），不该按页修 |
+
+## R3 复拍：改动可见性当场判红 12/24 帧（这一条比"修了多少"重要）
+
+`FIDELITYSWEEP_RESULT=PASS 本跑 targets=12 全落帧且落点已验 band=real@f0677920`，reattach exit=0，
+构建在前（`RELEASECHAIN_RESULT=PASS steps=13`、`ENVCHECK… git=ac7805e0`），取景在后，链路顺序是对的。
+可是 `FIXVIS_RESULT=FAIL fixNotVisible=12（含时钟污染 12）`：24 张帧里 12 张**内容区逐像素与 R2b 一模一样**，
+只有状态栏在走。按页点名：
+
+| 页 | 未上屏的帧 | 对应批次 |
+|---|---|---|
+| subpackages/village/village/detail | top + bottom | R2b-B31（含那条 P0 滚不动：给 scroll-view 补 min-height:0/overflow-y） |
+| subpackages/village/village/publish | top + bottom | R2b-B32 |
+| subpackages/profile-extra/profile/other | top + bottom | R2b-B14…B21 + B30 整组他人主页 |
+| subpackages/circles/circles/index | top + bottom | R2b-B28（FX6） |
+| pages/home/index | bottom | R2b-B02…B09 |
+| pages/nearby/index | top | R2b-B25 |
+| subpackages/campus/campus/hub | bottom | R2b-B26（FX6） |
+| subpackages/circles/circles/circle-home | top | R2b-B27（FX6） |
+
+最刺眼的一条：**village/detail 的 P0 滚不动修了没生效**——那正是这条判据存在的理由。
+若没有内容区哈希，上一程我会拿着"整文件哈希变了"宣布修好，而那 100% 是时钟。
+
+下一步只有两条正路，不能靠改判据自解：
+① 先排除仪器/构建侧（产物里到底有没有这批改动：查编译出的 wxss/wxml 是否含新规则；
+   以及 IDE 是不是又吃了缓存）；② 排除后再判"修得不对"，把整批缺陷重开。
+在此之前，R2b 修复批次的**已修数不写进任何"完成"口径**。
