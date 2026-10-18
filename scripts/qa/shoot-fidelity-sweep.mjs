@@ -235,19 +235,26 @@ for (const r of targets) {
 }
 try { await mp.disconnect(); } catch { /* 断开失败不影响已落的帧 */ }
 
-/* 清单按路由**合并**写，绝不整件覆写：本轮会有多次运行（补拍缺帧、重拍带参数的页、
-   之后 R2/R3 只复拍被改动的页）。原先每次重跑都把 14 页的清单压成"这一跑的 targets"，
-   实测第三次跑完清单只剩 3 页 —— 那是把已经拍好的证据从账上抹掉。
-   同一路由以本次为准（整页重拍），没被本次覆盖的路由原样保留。 */
+/* 清单按 (路由, 状态) 合并，不按整页覆写。
+   为什么不是整页：一跑里某页可能顶部成功、底部超时——整页替换会把上一跑那张好底部帧丢掉
+   （实测：修好落点核对后那一跑 frames 从 26 掉到 19，掉的正是这种"这跑没拍成"的帧）。
+   同一状态以本次为准（重拍就是要换它），没重拍到的状态保留旧记录，前提那张文件还在盘上。 */
 const manifestPath = join(OUT_DIR, "sweep-manifest.json");
 const merged = new Map();
 if (existsSync(manifestPath)) {
   try {
     const prev = JSON.parse(readFileSync(manifestPath, "utf-8"));
-    for (const rec of (prev.results || [])) if (rec && rec.route) merged.set(rec.route, rec);
+    for (const rec of (prev.results || [])) if (rec && rec.route) merged.set(rec.route, { ...rec, frames: [...(rec.frames || [])], errors: [] });
   } catch { console.log("SWEEP_MANIFEST_PREV=unreadable（旧清单解析不了，本次只写本次的页，不假装合并）"); }
 }
-for (const rec of results) merged.set(rec.route, rec);
+for (const rec of results) {
+  const prevRec = merged.get(rec.route);
+  if (!prevRec) { merged.set(rec.route, rec); continue; }
+  const keep = (prevRec.frames || []).filter((pf) => !rec.frames.some((nf) => nf.state === pf.state) && existsSync(join(REPO, pf.path)));
+  const droppedButKept = keep.length;
+  const next = { ...rec, frames: [...rec.frames, ...keep], errors: [...(rec.errors || []), ...(droppedButKept ? [`(这跑没拍到的 ${droppedButKept} 个状态沿用上一跑的帧)`] : [])] };
+  merged.set(rec.route, next);
+}
 const mergedResults = [...merged.values()];
 
 const manifest = {
