@@ -16,7 +16,7 @@
  *      node scripts/qa/verify-fix-visibility.mjs --self-test
  * 退出码：0 无 FIXNOTVISIBLE；1 有 FIXNOTVISIBLE（可红）；2 输入读不到。
  */
-import { readFileSync, existsSync, writeFileSync, mkdirSync, rmSync, readdirSync } from "node:fs";
+import { readFileSync, existsSync, writeFileSync, mkdirSync, rmSync, readdirSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -239,6 +239,12 @@ if (flag("self-test")) process.exit(selfTest());
 const prevP = arg("prev", ""), curP = arg("cur", ""), flP = arg("fixlist", "");
 for (const [k, v] of [["prev", prevP], ["cur", curP], ["fixlist", flP]]) {
   if (!v || !existsSync(resolve(REPO, v))) { console.log(`${RK}=NOT-EVIDENCED reason=${k} 读不到 ${v || "(没传)"}`); process.exit(2); }
+  /* --prev/--cur 吃的是**清单文件**（sweep-manifest.json），不是帧目录。我实测传了目录，
+     existsSync 通过、readFileSync 抛 EISDIR，栈里看不出是"传错了角色"。目录是个目录，就说清楚。 */
+  if (statSync(resolve(REPO, v)).isDirectory()) {
+    console.log(`${RK}=NOT-EVIDENCED reason=${k} 传的是目录（要的是 sweep-manifest.json 那份清单，不是帧目录）path=${v}`);
+    process.exit(2);
+  }
 }
 const { rows, problems, stats } = judge(readFileSync(resolve(REPO, prevP), "utf-8"), readFileSync(resolve(REPO, curP), "utf-8"), JSON.parse(readFileSync(resolve(REPO, flP), "utf-8")));
 const outPath = resolve(arg("out", join(REPO, "reports/audit/mp-fidelity-2026-10-18/fix-visibility.json")));

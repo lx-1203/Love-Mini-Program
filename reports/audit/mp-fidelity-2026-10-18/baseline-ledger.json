@@ -1,6 +1,6 @@
 {
   "schema": "mp-fidelity-baseline-ledger/v1",
-  "generatedAt": "2026-10-18T18:06:58.516Z",
+  "generatedAt": "2026-10-18T18:56:53.237Z",
   "project": "D:\\6\\恋爱小程序\\apps\\client\\dist\\build\\mp-weixin-real",
   "bandStamp": "real@f0677920",
   "totals": {
@@ -38,7 +38,7 @@
       "specRows": [
         1
       ],
-      "identityPrecondition": "B（登录即转发，只能未登录取景）",
+      "identityPrecondition": "none（登录即转发 ⇒ 必须清会话取景；B=guest 票实测 loggedIn=true 仍会转发，不满足前提）",
       "lockedByProfileGuard": false
     },
     {

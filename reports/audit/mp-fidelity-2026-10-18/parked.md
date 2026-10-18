@@ -64,3 +64,20 @@ options=(a) 接受：FAILED 也是 JUDGED，弹回本身是被量到的产品事
 | D-N06 | automator WS 成片超时的**根因已量到**：WS 的 `App.captureScreenshot` 每拍一张就在应用 `USER_DATA_PATH` 里留一个 `safeimg-<n>.jpg`，攒够就把整条截图流水线卡死，先报 `saveFile:fail exceeded the maximum size of the file storage limit`，之后全是 `timeout waiting for automator response`。探针实测：清之前 `before=108 / 599,890B`（还混着历史设备腿的 `devleg-*.jpg`），重启自动化实例 + 清空之后 `before=2`（含 `safeimg-483455531.jpg`）→ 当场补拍成功 9,652B。`getSavedFileList` 在这里是误导性读数（返 0，而目录里有 108 个文件） | 仪器缺陷（本轮已修） | 取景腿加 `cleanUserFiles()`：预热前清一次、每 8 张清一次、单张失败后先清再重试（重试上限 2→3）。`scripts/qa/probe-saved-files.mjs` 是这件事的能红探针（清理后补拍不成 ⇒ exit 1，"根因不是这个"就写在退出码上） |
 | D-N07 | 我自己造成的设备事故：为了排查上面的卡死，我调了 `close_project_window`，**把 9420 那条自动化通道整个打死**（`Failed connecting to ws…check if target project window is opened with automation enabled`）——这正是 `real-tour-cli.mjs:5-8` 记过的那个不可 CLI 恢复的口子。恢复靠 `ws-channel-up.mjs`（它自己会重架自动化实例：`WS_UP=OK port=9420 ownerPid=13356`，且 `WS_UP_BAND_RESULT=match` 证明架回来的是 real@f0677920 那一档） | 仪器操作纪律（已恢复） | 教训入册：`close_project_window` 不是"重开窗口"的同义词，它是拆通道；要刷新画面只用 `open_project_window`（reuse 语义）。恢复动作点名 `ws-channel-up.mjs`，别新造第二套 |
 | D-N08 | 在册口径「CLI 出图 193×413、2.6s/张，automator 378×814 ⇒ 禁止跨 harness 比像素」**两处与今测不符**：本轮同一台 IDE 上 `simulator_screenshot` 回 `{imageWidth:378, imageHeight:814}`、耗时 10.1/11.3s；而且它写出的文件**扩展名是 .png、内容是 JPEG**（magic=`ff d8 ff e0 … JFIF`，31,196B） | 文档过期 + 落盘格式与名不符 | 不据此解禁跨 harness 比对：**编码不同就已经不可比**（JPEG 有损，逐字节/内容 hash 与像素级色值都会漂），"禁比"这条裁定的结论仍成立，理由要换成"编码"而不是"分辨率"。取景仍钉在 WS/PNG；`verify-fix-visibility` 的 pngjs 路径遇到 CLI 帧会读错，所以帧目录里不许混进 CLI 件（本轮没混） |
+
+## Phase G 写回环：判点跑通了，但它照出两件产品事实（登记，不自行销账）
+
+`ROUNDTRIP_RESULT=PASS created=396 fields=5/5 torn_down=yes conserved=yes`，
+备份 `database/backup/qafid-R2b-20261018T191822.sql`（142,272B，posts 表，口令经 MYSQL_PWD 传不落命令行）。
+过程里量到三件此前不知道的事：
+
+| id | 实测 | 性质 |
+|---|---|---|
+| D-N09 | `DELETE /admin/forum/village-posts/{id}` 是**软删除**：撤后按同一 id 回读仍 HTTP 200，`status="deleted"` | 需用户裁：审计留痕可以是理由，但"删除"在后台列表里到底该不该继续计数，是产品口径 |
+| D-N10 | 后台列表 `total` 把 `status=deleted` 的行算在内：连跑三次往返，347→348→349→350，而客户端 `total` 恒为 269 | 与 D-N09 同源的产品事实；后台计数与客户端计数不同尺，任何"两边总数对齐"的判据都不可能成立。我的收口判据已改成**只要求撤后该行不再是活行 + 客户端计数回原**，后台差如实报出 |
+| D-N11 | 两端字段**键形不同**：客户端把作者放在 `author.userId`（嵌套），后台放在 `authorId`（平铺）；`status` 只在后台一侧（客户端契约里没有治理字段） | 仪表缺陷（本轮已修）：原版按同名硬比，报成"字段对账 2/6"，看着像同步坏了，其实是我的对账表没有别名。改成别名映射后 5/5 |
+| D-N12 | 往返判点的输入自己也会造红：`title` 有服务端长度判点（5..30），我第一版把整枚 UTC 戳拼进标题 = 31 字符 ⇒ `400 Validation Failed`，长得像"链路不通"；另外 `MYSQLDUMP` 缺省值写成 git-bash 的 `/d/...`，Windows 上 Node 的 existsSync 恒 false ⇒ 这道"没备份不许真写"的门**因路径方言而恒红**（fail-closed 方向对，理由是假的） | 仪表缺陷（本轮已修） |
+
+**残留**：为证"删得掉"而产生的 3 行软删帖 `id=394,395,396`（status=deleted）仍在 posts 表里，
+按 D-N09 的语义它们不会从后台计数消失。要不要真删（`DELETE FROM posts WHERE id IN (394,395,396)`）
+是改数据的动作，我没有擅自做；备份已在 `database/backup/`，语句可回滚。

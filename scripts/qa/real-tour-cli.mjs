@@ -35,6 +35,27 @@ const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
    原先写的是 `file.replace(REPO + "/", "")`，而 file 由 join() 生成、分隔符是反斜杠，
    那次 replace 从来就没命中过，剩下 split/join 只是把反斜杠换成斜杠、留下绝对前缀。 */
 const relOf = (p) => relative(REPO, p).split(sep).join("/");
+/* 产物带戳：与 shoot-fidelity-sweep.mjs:73 bandOf / verify-fidelity-closeout.mjs 第 5 条同一算法
+   （读 <project>/config/env.js 的 MODE + 整本 sha256 前 8 位）。改一字节 ⇒ 戳变 ⇒ 这批帧与账本同时过期。
+   读不到就返回 ""，由下游按"没 band 不采信"处理——不在这里编一个好看的默认值。 */
+function bandOf(dir) {
+  const f = join(dir, "config", "env.js");
+  if (!existsSync(f)) return "";
+  const buf = readFileSync(f);
+  const m = String(buf).match(/MODE:\s*"([^"]+)"/);
+  return `${m ? m[1] : "?"}@${createHash("sha256").update(buf).digest("hex").slice(0, 8)}`;
+}
+/* 崩溃信息里**必须刮掉凭据**：ide() 抛的是 "…Command failed: <整条 argv>"，而 argv 里带着
+   `wx.setStorageSync('token', "eyJ…")` 的**明文会话票**。实测就发生过它被原样写进
+   tmp/qa/logs/tour-nobaseline-*.log（那一发已就地脱敏）。日志/台账一落盘，下一发就是把它 git add 起来的那一发。
+   定义必须在模块顶层：第一版我把它塞在 IIFE 体末尾，`.catch` 的作用域看不见 ⇒
+   ReferenceError 直接把真正的失败原因盖掉，排查反而更难。
+   刮法只认 JWT 形状与 setStorageSync 的值位，不做全文替换（全文替换会把读数一起抹掉）。 */
+function redact(s) {
+  return String(s || "")
+    .replace(/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, (m) => `<REDACTED-JWT-len${m.length}>`)
+    .replace(/(setStorageSync\('token',\s*)"[^"]*"/g, '$1"<REDACTED>"');
+}
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
 const TSV = arg("tsv", ".zcode/tmp/reverify/real-tour.tsv");
 const LABEL = arg("label", "round-6-real-tour");
@@ -219,7 +240,12 @@ function routeNow() {
   }
 
   const man = {
-    gitSha: GIT_SHA, workflowVersion: "3.2-cli", buildMode: BUILD_MODE,
+    gitSha: GIT_SHA, workflowVersion: "3.3-cli", buildMode: BUILD_MODE,
+    /* band 必须由**生产件自己**记，不能留给下游猜（2026-10-19 实测：manifest-detail.json 没有 band，
+       转成覆盖门清单的 tour-ledger-to-manifest.mjs 只有一条永远返回 "" 的死三元 ⇒ 顶层 band="(未记)"，
+       而覆盖门的 band 对源判点是"两边都有且不等才红"⇒ 一条来自 mock 树的帧能就这样混进 real 档的覆盖读数。
+       算法与取景腿 bandOf / 收口门第 5 条逐字同法：<project>/config/env.js 的 MODE@sha256(buf)前 8 位。 */
+    band: bandOf(PROJECT), projectDir: relOf(PROJECT),
     /* 这条巡检通道只出整页帧，不出放大辅助帧。字段必须**显式写成空数组**而不是缺字段：
        报告的前置体检区分"读不到字段"与"读到 0 张"，缺字段会被判成字段名改了，
        而这里的 0 才是事实（原因也写进 captureLimitations）。 */
@@ -252,4 +278,4 @@ function routeNow() {
   console.log(`REALTOUR_SHOTS=${shots.length}/${rows.length} FAILURES=${failures.length} gitSha=${GIT_SHA} out=${relOf(OUT_DIR)}`);
   if (!shots.length) { console.log("REALTOUR_RESULT=FAIL reason=一张帧都没落盘"); process.exit(1); }
   console.log(`REALTOUR_RESULT=${failures.length ? "PARTIAL（有失败条目，见 manifest.failures）" : "OK"}`);
-})().catch((e) => { console.log("REALTOUR_RESULT=FAIL fatal=" + e.message); process.exit(1); });
+})().catch((e) => { console.log("REALTOUR_RESULT=FAIL fatal=" + redact(e.message)); process.exit(1); });

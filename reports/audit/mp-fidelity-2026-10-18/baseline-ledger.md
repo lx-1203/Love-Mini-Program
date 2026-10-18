@@ -1,4 +1,4 @@
-# 页面 ↔ 理想效果图 基准账本（现场派生 · 2026-10-18T18:06:58.516Z）
+# 页面 ↔ 理想效果图 基准账本（现场派生 · 2026-10-18T18:56:53.237Z）
 
 派生自编译产物 `D:\6\恋爱小程序\apps\client\dist\build\mp-weixin-real/app.json`（band=real@f0677920）+ 规范文档 §2 的 19 行表 + `素材/理想效果图` 的 19 张实图。**不恢复旧 ideal-baseline.md**（那份只剩 .zcode/tmp 的陈旧副本）。
 
@@ -7,7 +7,7 @@
 
 | 路由 | 分包 | 理想图 | 基准状态 | 规范行 | 身份前提 |
 |---|---|---|---|---|---|
-| pages/login/index | main | 登录页.png / 登录页面.png | 有基准 | 1 | B（登录即转发，只能未登录取景） |
+| pages/login/index | main | 登录页.png / 登录页面.png | 有基准 | 1 | none（登录即转发 ⇒ 必须清会话取景；B=guest 票实测 loggedIn=true 仍会转发，不满足前提） |
 | pages/register/index | main | — | 无基准 | — | A（页面未声明门槛 ⇒ 按登录态取，游客侧可达性未证） |
 | pages/register/success | main | — | 无基准 | — | A（页面未声明门槛 ⇒ 按登录态取，游客侧可达性未证） |
 | pages/discover/index | main | 寻觅匹配卡片页面.png | 有基准 | 5 | A + B（tabBar 页两身份都取） |

@@ -15,7 +15,7 @@
  * 退出码：0 转成；2 输入读不到或 shots 为空（空扫描集不得占着"覆盖"这个词）。
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
-import { resolve, dirname, relative, sep } from "node:path";
+import { resolve, dirname, relative, sep, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 
@@ -52,11 +52,29 @@ for (const s of shots) {
     landingVerified: !!s.route,
   });
 }
-const band = /mp-weixin-real/.test(String(src.projectDir || "") + JSON.stringify(src.buildMode || "")) ? "" : "";
+/* band 的取法（2026-10-19 重写）：
+   原版这里是一条死三元 —— `/mp-weixin-real/.test(...) ? "" : ""`，两个分支都返回 ""，
+   于是顶层 band 恒为 "(未记)"，而覆盖门的 band 对源判点写的是"两边都有且不等才红" ⇒
+   这条通道永远不参加档位核对：一批发自 mock 树的帧能就这样混进 real 档的覆盖读数。
+   现在优先用生产件自己记的 band（real-tour-cli.mjs 3.3-cli 起会记），
+   旧件没记就按 --project / 件里的 projectDir 现算——算法与取景腿 bandOf、收口门第 5 条逐字同法。
+   两头都算不出来 ⇒ NOT-EVIDENCED 退 2：宁可不转，也不转出一份"档位未知"的清单。 */
+function bandOf(dir) {
+  const f = join(dir, "config", "env.js");
+  if (!existsSync(f)) return "";
+  const buf = readFileSync(f);
+  const m = String(buf).match(/MODE:\s*"([^"]+)"/);
+  return `${m ? m[1] : "?"}@${createHash("sha256").update(buf).digest("hex").slice(0, 8)}`;
+}
+const projCandidates = [arg("project", ""), src.projectDir ? resolve(REPO, String(src.projectDir)) : "", join(REPO, "apps/client/dist/build/mp-weixin-real")].filter(Boolean);
+const derivedBand = String(src.band || "").trim() || (projCandidates.map((p) => bandOf(p)).find((b) => b) || "");
+const bandSrc = String(src.band || "").trim() ? "生产件自记" : (derivedBand ? "转换时按产物现算（生产件没记 band）" : "(算不出)");
+if (!derivedBand) { console.log(`${RK}=NOT-EVIDENCED reason=no-band（件里没记、产物 env.js 也读不到 ⇒ 这批帧属于哪棵树无人知道）`); process.exit(2); }
 const out = {
   schema: "mp-fidelity-sweep/v1",
   round: ROUND,
-  band: src.band || band || "(未记)",
+  band: derivedBand,
+  bandProvenance: bandSrc,
   identity: (shots[0] && shots[0].identity) || "A",
   harness: src.harness || "wechatide CLI",
   consoleCapture: "CLI 通道另采 console（见生产件）",

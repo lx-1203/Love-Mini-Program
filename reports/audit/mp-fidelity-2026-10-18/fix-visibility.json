@@ -1,0 +1,283 @@
+{
+  "schema": "mp-fidelity-fix-visibility/v1",
+  "prev": "tmp/qa/frames/R1/real-f0677920/sweep-manifest.json",
+  "cur": "tmp/qa/frames/R2/real-f0677920/sweep-manifest.json",
+  "fixlist": "reports/audit/mp-fidelity-2026-10-18/fixlist-R1.json",
+  "stats": {
+    "visible": 5,
+    "notVisible": 10,
+    "untouched": 3,
+    "gaps": 6,
+    "routes": 14,
+    "clockOnly": 10,
+    "rawOnly": 0,
+    "cropTopPx": 40,
+    "contentDecoder": "pngjs"
+  },
+  "rows": [
+    {
+      "route": "pages/discover/index",
+      "state": "bottom",
+      "verdict": "FIX_VISIBLE",
+      "prev": "16a04e95",
+      "cur": "87e20079",
+      "prevContent": "3ecdf6577f3cb3f0",
+      "curContent": "ed2de71a36968430",
+      "contentMeasurable": true,
+      "batches": "R1-B10(apps/client/src/components/match/MatchCard.vue) R1-B23(apps/client/src/pages/discover/index.vue)"
+    },
+    {
+      "route": "pages/home/index",
+      "state": "top",
+      "verdict": "CLOCK_ONLY_CHANGE",
+      "prev": "ff52a99c",
+      "cur": "9028dc30",
+      "prevContent": "40b2011d5f1dc3bb",
+      "curContent": "40b2011d5f1dc3bb",
+      "contentMeasurable": true,
+      "batches": "R1-B04(apps/client/src/components/home/CommunityFeed.vue) R1-B05(apps/client/src/components/home/HomeHeader.vue) R1-B06(apps/client/src/components/home/InviteBanner.vue) R1-B07(apps/client/src/components/home/NearbyPeople.vue) R1-B08(apps/client/src/components/home/TodayLoveProgress.vue) R1-B09(apps/client/src/components/home/TodayRecommendationCard.vue) R1-B24(apps/client/src/pages/home/index.vue)"
+    },
+    {
+      "route": "pages/home/index",
+      "state": "bottom",
+      "verdict": "CLOCK_ONLY_CHANGE",
+      "prev": "93c3de5f",
+      "cur": "33dcf469",
+      "prevContent": "db79a8a70f1198db",
+      "curContent": "db79a8a70f1198db",
+      "contentMeasurable": true,
+      "batches": "R1-B04(apps/client/src/components/home/CommunityFeed.vue) R1-B05(apps/client/src/components/home/HomeHeader.vue) R1-B06(apps/client/src/components/home/InviteBanner.vue) R1-B07(apps/client/src/components/home/NearbyPeople.vue) R1-B08(apps/client/src/components/home/TodayLoveProgress.vue) R1-B09(apps/client/src/components/home/TodayRecommendationCard.vue) R1-B24(apps/client/src/pages/home/index.vue)"
+    },
+    {
+      "route": "pages/login/index",
+      "state": "top",
+      "verdict": "UNTOUCHED",
+      "prev": "",
+      "cur": "",
+      "prevContent": "",
+      "curContent": "ed2de71a36968430",
+      "contentMeasurable": false,
+      "batches": ""
+    },
+    {
+      "route": "pages/login/index",
+      "state": "bottom",
+      "verdict": "UNTOUCHED",
+      "prev": "",
+      "cur": "",
+      "prevContent": "",
+      "curContent": "ed2de71a36968430",
+      "contentMeasurable": false,
+      "batches": ""
+    },
+    {
+      "route": "pages/messages/index",
+      "state": "bottom",
+      "verdict": "NO_CUR",
+      "prev": "ed5d4e92",
+      "cur": "",
+      "prevContent": "de85de3909626062",
+      "curContent": "",
+      "contentMeasurable": false,
+      "batches": "R1-B25(apps/client/src/pages/messages/index.vue)"
+    },
+    {
+      "route": "pages/messages/index",
+      "state": "top",
+      "verdict": "NO_PREV",
+      "prev": "",
+      "cur": "e5fe0b5f",
+      "prevContent": "",
+      "curContent": "2341d05fe1222316",
+      "contentMeasurable": false,
+      "batches": "R1-B25(apps/client/src/pages/messages/index.vue)"
+    },
+    {
+      "route": "pages/nearby/index",
+      "state": "bottom",
+      "verdict": "NO_CUR",
+      "prev": "8ecef3e7",
+      "cur": "",
+      "prevContent": "ab21bb087112f137",
+      "curContent": "",
+      "contentMeasurable": false,
+      "batches": "R1-B02(apps/client/src/theme/global.scss) R1-B21(apps/client/src/components/village/PostCard.vue) R1-B26(apps/client/src/pages/nearby/index.vue)"
+    },
+    {
+      "route": "pages/nearby/index",
+      "state": "top",
+      "verdict": "NO_PREV",
+      "prev": "",
+      "cur": "39f9a1ca",
+      "prevContent": "",
+      "curContent": "b1f41abae1b87c9b",
+      "contentMeasurable": false,
+      "batches": "R1-B02(apps/client/src/theme/global.scss) R1-B21(apps/client/src/components/village/PostCard.vue) R1-B26(apps/client/src/pages/nearby/index.vue)"
+    },
+    {
+      "route": "pages/profile/index",
+      "state": "top",
+      "verdict": "FIX_VISIBLE",
+      "prev": "bb5e5b65",
+      "cur": "77fbd157",
+      "prevContent": "7d0780cad5650c7b",
+      "curContent": "c1551d9a50f81708",
+      "contentMeasurable": true,
+      "batches": "R1-B01(apps/client/src/theme/design-variables.scss) R1-B03(apps/client/src/components/common/GlobalPublishFab.vue) R1-B12(apps/client/src/components/profile/mine/MyCompletion.vue) R1-B13(apps/client/src/components/profile/mine/MyHeader.vue) R1-B14(apps/client/src/components/profile/mine/MyStory.vue) R1-B22(apps/client/src/custom-tab-bar/index.js)"
+    },
+    {
+      "route": "pages/profile/index",
+      "state": "bottom",
+      "verdict": "NO_PREV",
+      "prev": "",
+      "cur": "ac99c323",
+      "prevContent": "",
+      "curContent": "876848ae8f42cc5d",
+      "contentMeasurable": false,
+      "batches": "R1-B01(apps/client/src/theme/design-variables.scss) R1-B03(apps/client/src/components/common/GlobalPublishFab.vue) R1-B12(apps/client/src/components/profile/mine/MyCompletion.vue) R1-B13(apps/client/src/components/profile/mine/MyHeader.vue) R1-B14(apps/client/src/components/profile/mine/MyStory.vue) R1-B22(apps/client/src/custom-tab-bar/index.js)"
+    },
+    {
+      "route": "subpackages/campus/campus/hub",
+      "state": "bottom",
+      "verdict": "CLOCK_ONLY_CHANGE",
+      "prev": "76ca378e",
+      "cur": "5b8841e4",
+      "prevContent": "276d183319fb94ae",
+      "curContent": "276d183319fb94ae",
+      "contentMeasurable": true,
+      "batches": "R1-B27(apps/client/src/subpackages/campus/campus/hub.vue)"
+    },
+    {
+      "route": "subpackages/circles/circles/circle-home",
+      "state": "top",
+      "verdict": "FIX_VISIBLE",
+      "prev": "a4ae68b7",
+      "cur": "2937d8d5",
+      "prevContent": "04f893fa75d94460",
+      "curContent": "f52d1a3459410bab",
+      "contentMeasurable": true,
+      "batches": "R1-B28(apps/client/src/subpackages/circles/circles/circle-home.vue)"
+    },
+    {
+      "route": "subpackages/circles/circles/circle-home",
+      "state": "bottom",
+      "verdict": "FIX_VISIBLE",
+      "prev": "75972138",
+      "cur": "7ac8a531",
+      "prevContent": "04f893fa75d94460",
+      "curContent": "50588560008b34f4",
+      "contentMeasurable": true,
+      "batches": "R1-B28(apps/client/src/subpackages/circles/circles/circle-home.vue)"
+    },
+    {
+      "route": "subpackages/circles/circles/index",
+      "state": "top",
+      "verdict": "CLOCK_ONLY_CHANGE",
+      "prev": "f959e85c",
+      "cur": "386cc031",
+      "prevContent": "4b768d65c5012b10",
+      "curContent": "4b768d65c5012b10",
+      "contentMeasurable": true,
+      "batches": "R1-B29(apps/client/src/subpackages/circles/circles/index.vue)"
+    },
+    {
+      "route": "subpackages/discover-extra/discover/match-success",
+      "state": "bottom",
+      "verdict": "FIX_VISIBLE",
+      "prev": "03b5c8b9",
+      "cur": "255081eb",
+      "prevContent": "e737942ccfe230e8",
+      "curContent": "a7019414ee2b7d5a",
+      "contentMeasurable": true,
+      "batches": "R1-B11(apps/client/src/components/match/MatchSuccess.vue) R1-B30(apps/client/src/subpackages/discover-extra/discover/match-success.vue)"
+    },
+    {
+      "route": "subpackages/discover-extra/discover/match-success",
+      "state": "top",
+      "verdict": "NO_PREV",
+      "prev": "",
+      "cur": "880e6184",
+      "prevContent": "",
+      "curContent": "1ca27852113f548b",
+      "contentMeasurable": false,
+      "batches": "R1-B11(apps/client/src/components/match/MatchSuccess.vue) R1-B30(apps/client/src/subpackages/discover-extra/discover/match-success.vue)"
+    },
+    {
+      "route": "subpackages/discover-extra/discover/matching",
+      "state": "bottom",
+      "verdict": "UNTOUCHED",
+      "prev": "",
+      "cur": "",
+      "prevContent": "3ecdf6577f3cb3f0",
+      "curContent": "e72c2493049a4576",
+      "contentMeasurable": true,
+      "batches": ""
+    },
+    {
+      "route": "subpackages/profile-extra/profile/other",
+      "state": "top",
+      "verdict": "CLOCK_ONLY_CHANGE",
+      "prev": "dfe624b2",
+      "cur": "4fd06334",
+      "prevContent": "a9b18f24fa342949",
+      "curContent": "a9b18f24fa342949",
+      "contentMeasurable": true,
+      "batches": "R1-B15(apps/client/src/components/profile/public/PublicGallery.vue) R1-B16(apps/client/src/components/profile/public/PublicHero.vue) R1-B17(apps/client/src/components/profile/public/PublicIdentity.vue) R1-B18(apps/client/src/components/profile/public/PublicInterest.vue) R1-B19(apps/client/src/components/profile/public/PublicProfile.vue) R1-B20(apps/client/src/components/profile/public/RelationshipCTA.vue) R1-B31(apps/client/src/subpackages/profile-extra/profile/other.vue)"
+    },
+    {
+      "route": "subpackages/profile-extra/profile/other",
+      "state": "bottom",
+      "verdict": "CLOCK_ONLY_CHANGE",
+      "prev": "a1f8b8a8",
+      "cur": "68448988",
+      "prevContent": "4b854d70a48bf6a6",
+      "curContent": "4b854d70a48bf6a6",
+      "contentMeasurable": true,
+      "batches": "R1-B15(apps/client/src/components/profile/public/PublicGallery.vue) R1-B16(apps/client/src/components/profile/public/PublicHero.vue) R1-B17(apps/client/src/components/profile/public/PublicIdentity.vue) R1-B18(apps/client/src/components/profile/public/PublicInterest.vue) R1-B19(apps/client/src/components/profile/public/PublicProfile.vue) R1-B20(apps/client/src/components/profile/public/RelationshipCTA.vue) R1-B31(apps/client/src/subpackages/profile-extra/profile/other.vue)"
+    },
+    {
+      "route": "subpackages/village/village/detail",
+      "state": "top",
+      "verdict": "CLOCK_ONLY_CHANGE",
+      "prev": "bc9ef5f8",
+      "cur": "78b77aaf",
+      "prevContent": "80a97183acda4678",
+      "curContent": "80a97183acda4678",
+      "contentMeasurable": true,
+      "batches": "R1-B32(apps/client/src/subpackages/village/village/detail.vue)"
+    },
+    {
+      "route": "subpackages/village/village/detail",
+      "state": "bottom",
+      "verdict": "CLOCK_ONLY_CHANGE",
+      "prev": "bc9ef5f8",
+      "cur": "9ab48a73",
+      "prevContent": "80a97183acda4678",
+      "curContent": "80a97183acda4678",
+      "contentMeasurable": true,
+      "batches": "R1-B32(apps/client/src/subpackages/village/village/detail.vue)"
+    },
+    {
+      "route": "subpackages/village/village/publish",
+      "state": "top",
+      "verdict": "CLOCK_ONLY_CHANGE",
+      "prev": "d20eabca",
+      "cur": "40e2c9a4",
+      "prevContent": "521518efcd00cebb",
+      "curContent": "521518efcd00cebb",
+      "contentMeasurable": true,
+      "batches": "R1-B33(apps/client/src/subpackages/village/village/publish.vue)"
+    },
+    {
+      "route": "subpackages/village/village/publish",
+      "state": "bottom",
+      "verdict": "CLOCK_ONLY_CHANGE",
+      "prev": "d20eabca",
+      "cur": "40e2c9a4",
+      "prevContent": "521518efcd00cebb",
+      "curContent": "521518efcd00cebb",
+      "contentMeasurable": true,
+      "batches": "R1-B33(apps/client/src/subpackages/village/village/publish.vue)"
+    }
+  ]
+}

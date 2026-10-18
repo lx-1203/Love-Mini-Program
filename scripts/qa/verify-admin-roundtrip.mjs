@@ -32,7 +32,15 @@ const REPO = resolve(HERE, "..", "..");
 const relOf = (p) => relative(REPO, resolve(p)).split(sep).join("/");
 const API = process.env.QA_API_BASE || "http://127.0.0.1:8080/api/v1";
 const RK = "ROUNDTRIP_RESULT";
-const MYSQLDUMP = process.env.MYSQLDUMP_BIN || "/d/mysql-8.0.45-winx64/bin/mysqldump.exe";
+/* MYSQLDUMP 缺省值原来直接写成 git-bash 的 `/d/mysql-.../mysqldump.exe`：那是 **shell 的方言**，
+   Windows 上的 Node 看不见这个路径（existsSync 恒 false），于是这道"没备份不许真写"的门
+   不是因为没备份而红，而是因为路径写法而恒红——fail-closed 的方向是对的，理由却是假的。
+   这里把 `/x/...` 归一成 `X:/...`，两种写法都收。 */
+function normExe(p) {
+  const m = String(p || "").match(/^\/([a-zA-Z])\/(.*)$/);
+  return m ? `${m[1].toUpperCase()}:/${m[2]}` : p;
+}
+const MYSQLDUMP = normExe(process.env.MYSQLDUMP_BIN || "D:/mysql-8.0.45-winx64/bin/mysqldump.exe");
 
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] && !String(process.argv[i + 1]).startsWith("--") ? process.argv[i + 1] : d; };
 const flag = (k) => process.argv.includes("--" + k);
@@ -54,16 +62,22 @@ async function req(method, path, { token, body, idem } = {}) {
 }
 
 /** 两端字段对账（口径沿用 g8 的 countsParity：键集不许被截短）。 */
+/** 字段对账。keys 可以是裸键名，也可以是 {key, clientKey, adminKey} —— 两端**键形不同**时必须有别名，
+ *  否则对账会把"同一个事实写在两个地方"读成不一致：
+ *  实测客户端详情把作者放在 `author.userId`（嵌套），后台放在 `authorId`（平铺）；
+ *  而 `status`（审核态）只在后台一侧存在，客户端契约里根本没有这个字段（公开的客户端不该看见治理字段）。 */
 function fieldParity(clientRow, adminRow, keys) {
+  const read = (obj, path) => String(path || "").split(".").reduce((o, seg) => (o == null ? undefined : o[seg]), obj ?? undefined);
   const rows = [];
   let same = 0;
-  for (const k of keys) {
-    const a = clientRow && clientRow[k];
-    const b = adminRow && adminRow[k];
+  for (const spec of keys) {
+    const s = typeof spec === "string" ? { key: spec, clientKey: spec, adminKey: spec } : spec;
+    const a = read(clientRow, s.clientKey);
+    const b = read(adminRow, s.adminKey);
     const norm = (v) => (v === undefined || v === null ? "" : String(v));
-    const eq = norm(a) === norm(b);
+    const eq = norm(a) === norm(b) && norm(a) !== "";
     if (eq) same++;
-    rows.push({ key: k, client: norm(a).slice(0, 40), admin: norm(b).slice(0, 40), eq });
+    rows.push({ key: s.key, client: norm(a).slice(0, 40), admin: norm(b).slice(0, 40), eq, note: s.note || "" });
   }
   return { same, total: keys.length, rows };
 }
@@ -150,7 +164,10 @@ let exitCode = 0;
   const clientTotalBefore = await totalBefore(clientToken, "/posts?page=1&pageSize=50");
   const adminTotalBefore = await totalBefore(adminToken, "/admin/forum/village-posts?page=1&pageSize=50");
 
-  const payload = { title: `${tag} 往返取证帖`, content: `${tag}：客户端写→后台读→删除→计数回原，用于证"同步"而不是证"两边都能读"。`, category: "interest", targetType: "general", tags: ["qafid"] };
+  /* title 有服务端长度判点（Validation Failed: "title: 个数必须在5和30之间"）。
+     第一版我把整枚 UTC 戳拼进标题 ⇒ `QAFID-R2b-20261018T191408 往返取证帖` = 31 字符，被 400 打回，
+     而 400 长得像"接口不通"，差点被读成链路缺陷。完整 tag 留在 content 里，标题只放轮次。 */
+  const payload = { title: `QAFID-${round} 往返取证帖`, content: `${tag}：客户端写→后台读→删除→计数回原，用于证"同步"而不是证"两边都能读"。`, category: "interest", targetType: "general", tags: ["qafid"] };
   const c = await req("POST", "/posts", { token: clientToken, body: payload, idem: key });
   const postId = String(pick(c.json, ["data.id", "id", "data.postId"]) || "");
   console.log(`RT_CREATE POST /posts -> ${c.status} id=${postId || "(拿不到 id ⇒ 后面全不中)"}`);
@@ -160,34 +177,58 @@ let exitCode = 0;
     req("GET", `/posts/${postId}`, { token: clientToken }),
     req("GET", `/admin/forum/village-posts/${postId}`, { token: adminToken }),
   ]);
-  const clRow = pick(cl.json, ["data", ""]) || {};
-  const adRow = pick(ad.json, ["data", ""]) || {};
-  const parity = fieldParity(clRow, adRow, ["id", "title", "content", "authorId", "status", "createdAt"]);
-  console.log(`RT_READ client=${cl.status} admin=${ad.status} 字段对账=${parity.same}/${parity.total}`);
+  /* 两端响应的外壳不一样：客户端是 {data:{...}}，后台是**平铺**（实测 DETAIL 键名直接是
+     id/authorId/title/content/createdAt…，LIST 是 {items,total,page,pageSize,totalPages}）。
+     原先写成 pick(json,["data",""])，而 pick 把 "" 当成根上的一个键去查 ⇒ 后台那侧永远取到空对象，
+     字段对账就报 2/6、四条 FIELD_DIFF 全空——那看着像"后台读不到数据"，其实是我的解包假设错了。 */
+  const unwrap = (j) => (j && typeof j === "object" && j.data && typeof j.data === "object" ? j.data : j) || {};
+  const clRow = unwrap(cl.json);
+  const adRow = unwrap(ad.json);
+  const parity = fieldParity(clRow, adRow, [
+    "id", "title", "content", "createdAt",
+    { key: "authorId", clientKey: "author.userId", adminKey: "authorId" },
+  ]);
+  console.log(`RT_READ client=${cl.status} admin=${ad.status} 字段对账=${parity.same}/${parity.total}（键形已按两端契约映射；客户端无审核态字段，status 改在撤后从后台侧验）`);
   for (const r of parity.rows) if (!r.eq) console.log(`  FIELD_DIFF ${r.key} client="${r.client}" admin="${r.admin}"`);
 
   /* ── 撤 ── */
   let delStatus = "kept(--keep)";
   let clientTotalAfter = clientTotalBefore, adminTotalAfter = adminTotalBefore;
+  let afterRowStatus = "(未撤)", afterRowHttp = "";
   if (!keep) {
     const d = await req("DELETE", `/admin/forum/village-posts/${postId}`, { token: adminToken });
     delStatus = d.status;
     clientTotalAfter = await totalBefore(clientToken, "/posts?page=1&pageSize=50");
     adminTotalAfter = await totalBefore(adminToken, "/admin/forum/village-posts?page=1&pageSize=50");
+    /* 撤完必须**回读那一行**才知道"删除"在这套系统里是什么语义。
+       R2b 实测：DELETE 返 200，但再读后台详情仍是 HTTP 200、`status="deleted"`，
+       而后台列表 total 从 347 涨到 348 不回落 ⇒ 这是**软删除**，且后台计数把已删行算在内。
+       所以"计数回原"不是这套接口的承诺，判据不能押在它上面（押了就等于教产品去凑我的表）。 */
+    const after = await req("GET", `/admin/forum/village-posts/${postId}`, { token: adminToken });
+    afterRowHttp = after.status;
+    afterRowStatus = String(unwrap(after.json).status ?? "(无 status)");
+    console.log(`RT_AFTER_READ admin/${postId} http=${after.status} status=${afterRowStatus}`);
     console.log(`RT_DELETE admin/${postId} -> ${d.status}`);
   }
 
-  const conserved = keep || (clientTotalAfter === clientTotalBefore && adminTotalAfter === adminTotalBefore);
+  /* 守恒改成三条各自能名的判点：
+       ① 撤后那一行不再是活行（404/410，或 status 里带 deleted/removed/hidden）
+       ② 客户端列表计数回原（客户端只列活行，这条等号有意义）
+       ③ 后台列表计数差如实报出，并说明它含软删行——**不拿它当 PASS 条件，也不拿它当缺陷掩盖** */
+  const rowGone = keep || Number(afterRowHttp) >= 400 || /deleted|removed|hidden|archived|cancelled/i.test(afterRowStatus);
+  const clientConserved = keep || clientTotalAfter === clientTotalBefore;
+  const conserved = rowGone && clientConserved;
   const problems = [];
   if (!postId) problems.push("创建后拿不到 id");
   if (cl.status !== 200) problems.push(`客户端按 id 读不到自己刚写的行（${cl.status}）`);
   if (ad.status !== 200) problems.push(`后台按同一 id 读不到（${ad.status}）⇒ 前后端/后台同步未证`);
   if (parity.same !== parity.total) problems.push(`字段对账不齐 ${parity.same}/${parity.total}（逐条 FIELD_DIFF 已点名）`);
-  if (!keep && Number(delStatus) >= 400) problems.push(`删除没成（${delStatus}）⇒ 这条 QA 帖是残留，必须人工清理并在报告点名`);
-  if (!conserved) problems.push(`计数没回原 client ${clientTotalBefore}→${clientTotalAfter} / admin ${adminTotalBefore}→${adminTotalAfter}`);
+  if (!keep && Number(delStatus) >= 400) problems.push(`删除请求本身失败（${delStatus}）`);
+  if (!rowGone) problems.push(`撤后后台仍能把这一行当活行读到（http=${afterRowHttp} status=${afterRowStatus}）⇒ 写回环没闭合`);
+  if (!clientConserved) problems.push(`客户端计数没回原 ${clientTotalBefore}→${clientTotalAfter}`);
 
   for (const p of problems) console.error(`RT_PROBLEM ${p}`);
-  console.log(`RT_CONSERVATION clientTotal ${clientTotalBefore}->${clientTotalAfter} adminTotal ${adminTotalBefore}->${adminTotalAfter} torn_down=${keep ? "kept" : (Number(delStatus) < 400 ? "yes" : "NO")}`);
+  console.log(`RT_CONSERVATION clientTotal ${clientTotalBefore}->${clientTotalAfter}（等号有意义） adminTotal ${adminTotalBefore}->${adminTotalAfter}（含软删行，只如实报差 ${adminTotalAfter - adminTotalBefore}） rowGone=${rowGone ? "yes" : "NO"} torn_down=${keep ? "kept" : (Number(delStatus) < 400 && rowGone ? "yes" : "NO")}`);
   exitCode = problems.length ? 1 : 0;
   /* --out：把判决落成盘上件，供 verify-fidelity-closeout 汇总（收口门一律不重测，只读生产者的话）。
      字段是**白名单**：只有计数与状态码。上一程的教训是 exec-results.json 把会话 JWT 原样留在盘上、
@@ -195,12 +236,15 @@ let exitCode = 0;
   const outP = arg("out", "");
   if (outP) {
     const rec = {
-      schema: "qafid-roundtrip-v1", at: new Date().toISOString(), round: ROUND, dry: false,
+      schema: "qafid-roundtrip-v1", at: new Date().toISOString(), round, dry: false,
       verdict: problems.length ? "FAIL" : "PASS",
       created_id: postId || null, fields_same: parity.same, fields_total: parity.total,
       client_read: cl.status, admin_read: ad.status, delete_status: String(delStatus),
       client_total: [clientTotalBefore, clientTotalAfter], admin_total: [adminTotalBefore, adminTotalAfter],
-      conserved, torn_down: keep ? "kept" : (Number(delStatus) < 400 ? "yes" : "NO"),
+      /* 后台计数含软删行，所以这里记的是"差多少 + 为什么"，不是"是否等于零" */
+      admin_total_delta: adminTotalAfter - adminTotalBefore, admin_total_note: "后台列表 total 把 status=deleted 的行算在内（R2b 实测）⇒ 等号不是这套接口的承诺",
+      row_gone: rowGone, after_row_http: String(afterRowHttp), after_row_status: afterRowStatus,
+      conserved, torn_down: keep ? "kept" : (Number(delStatus) < 400 && rowGone ? "yes" : "NO"),
       backup: relOf(backupFile), problems,
     };
     const blob = JSON.stringify(rec, null, 2);

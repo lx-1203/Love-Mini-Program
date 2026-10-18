@@ -208,7 +208,13 @@ for (const r of routes) {
   if (images.length) { status = "有基准"; nBaselined++; }
   else { status = "无基准"; nNoBaseline++; }
   const identity = guestOnlyRoutes.has(r.route)
-    ? "B（登录即转发，只能未登录取景）"
+    ? /* 2026-10-19 更正：这一页的前提不是「B」而是「没有会话」。
+         B 在本案的词表里=guest-login，实测后端返回 loggedIn=true
+         （POST /api/v1/auth/guest-login → {"userId":"100151","loggedIn":true,"loginMethod":"guest",…}），
+         而登录页的转发判据读的正是 isLoggedIn ⇒ 拿 B 票去拍登录页照样被 switchTab 到 pages/discover/index。
+         原文写「B（登录即转发，只能未登录取景）」是自相矛盾的配方：前半句要未登录，后半句给的是一张登录态票。
+         R2b 那发 landingMismatch（top+bottom 都落 discover）就是照着原文办出来的后果。 */
+      "none（登录即转发 ⇒ 必须清会话取景；B=guest 票实测 loggedIn=true 仍会转发，不满足前提）"
     : isTab(r.route)
       ? "A + B（tabBar 页两身份都取）"
       : authRequiredRoutes.has(r.route)

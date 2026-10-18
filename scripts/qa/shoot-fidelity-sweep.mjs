@@ -17,8 +17,11 @@
  *      （实测 grep 过 out/ 的导出面），我不假装 hook 上了。
  *
  * 用法：node scripts/qa/shoot-fidelity-sweep.mjs --ledger <baseline-ledger.json> --round R1
- *        [--identity A] [--project <产物目录>] [--out <帧根目录>] [--only a,b] [--limit n]
+ *        [--identity A|B|none] [--project <产物目录>] [--out <帧根目录>] [--only a,b] [--limit n]
  *        [--settle 2600] [--harness automator] [--dry]
+ *        [--params <route→query 表，见 scripts/qa/fidelity-sweep-params.json>]
+ *   · none = 不铸票并清会话：登录即转发那类页（账本 identityPrecondition 现读 none）只有这一档拍得到；
+ *   · B 不是"未登录"：B=guest-login，后端实测 loggedIn=true，拿去拍登录页照样被转走。
  * 退出码：0 全数落帧；1 有页没落到帧或有空白/重复帧；2 前提不成立（账本读不到 / band 不符 / 租约被占 / 连不上）。
  */
 import { createRequire } from "node:module";
@@ -102,7 +105,7 @@ const paramsFile = arg("params", "");
 if (paramsFile) {
   const p = resolve(paramsFile);
   if (!existsSync(p)) { console.log(`${RK}=NOT-EVIDENCED reason=params-file-unreadable path=${paramsFile}`); process.exit(2); }
-  PARAMS = JSON.parse(readFileSync(p, "utf-8"));
+  PARAMS = Object.fromEntries(Object.entries(JSON.parse(readFileSync(p, "utf-8"))).filter(([k]) => !k.startsWith("_")));
   console.log(`SWEEP_PARAMS 已载入 ${Object.keys(PARAMS).length} 条：${Object.keys(PARAMS).join(" ")}`);
 }
 
@@ -169,13 +172,25 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 /* 身份 A 的会话：铸票走 cli-automator 的 mintToken（纯 HTTP 到 8080，读凭据声明表，绝不打印值），
    注入走 callWxMethod('setStorage')（与 mp-shoot-reference.cjs:39-40 同形状）。 */
 let session = { token: "", userId: "", source: "(未铸)" };
+/* identity=none ⇒ 不铸票、开场清会话。这一档是给"登录即转发"那类页用的（账本 pages/login/index 的
+   identityPrecondition 现读为 none）：B **不是**"未登录"——B=guest-login，实测后端返回 loggedIn=true
+   （POST /api/v1/auth/guest-login → {"userId":"100151","loggedIn":true,"loginMethod":"guest",…}），
+   拿 B 去拍登录页照样被 switchTab 转走 ⇒ R2b 那发 top/bottom 全落 pages/discover/index。
+   cli-automator 的 mintPlanFor 词表只认 A/B/guest/minor：none 必须**绕开铸票**，传下去会抛
+   MINT_UNSUPPORTED_IDENTITY ⇒ 整腿退 2（那是配方的错，不是设备的错）。 */
+const NO_SESSION = IDENTITY === "none";
 try {
   const { mintToken, assertIdentityProducible } = await import("./cli-automator.mjs");
-  const prod = assertIdentityProducible(IDENTITY, REPO);
+  const prod = NO_SESSION ? { ok: true } : assertIdentityProducible(IDENTITY, REPO);
   if (!prod.ok) { console.log(`${RK}=NOT-EVIDENCED reason=identity-not-producible identity=${IDENTITY} why=${prod.reason}`); process.exit(2); }
-  const minted = await mintToken(IDENTITY, REPO, "fidelity-" + ROUND);
-  session = { token: minted.token, userId: minted.userId, source: minted.source };
-  console.log(`[sweep] identity=${IDENTITY} mint=${session.source} userId=${session.userId} token长度=${String(minted.token).length}（值不落日志）`);
+  if (NO_SESSION) {
+    session = { token: "", userId: "(无会话)", source: "identity=none（不铸票，开场清空 token/refreshToken）" };
+    console.log(`[sweep] identity=none ⇒ 不铸票，取景前清会话（登录页要的就是"没有会话"那张画面）`);
+  } else {
+    const minted = await mintToken(IDENTITY, REPO, "fidelity-" + ROUND);
+    session = { token: minted.token, userId: minted.userId, source: minted.source };
+    console.log(`[sweep] identity=${IDENTITY} mint=${session.source} userId=${session.userId} token长度=${String(minted.token).length}（值不落日志）`);
+  }
 } catch (e) {
   console.log(`${RK}=NOT-EVIDENCED reason=mint-failed identity=${IDENTITY} err=${String(e && e.message).slice(0, 140)}`);
   process.exit(2);
@@ -203,11 +218,61 @@ try {
   mp.callWxMethod("setStorage", { key: "token", data: session.token });
   mp.callWxMethod("setStorage", { key: "refreshToken", data: "" });
   await sleep(1200);
+  /* 会话注入后**读回来**自证一次：写进去 ≠ 应用里真变成这个状态。
+     identity=none 那一发尤其要紧——token 要是没真清掉（bootstrap 又从别处填回来），
+     拍到的还是转发后的主界面，却被盖上 identity=none 的章 ⇒ 那是伪造溯源，比拍不到更坏。
+     读回失败（automator 返回值形状随版本漂）不等判红：落点核对已经在每张帧上做直接判定，
+     这里只把"读不到"如实印出来，不假装读到。 */
+  try {
+    const raw = await mp.callWxMethod("getStorageSync", "token");
+    const val = raw && typeof raw === "object" && ("value" in raw || "data" in raw) ? (raw.value ?? raw.data) : raw;
+    const len = String(val == null ? "" : val).length;
+    console.log(`SWEEP_SESSION_READBACK identity=${IDENTITY} token长度=${len} 期望=${NO_SESSION ? 0 : ">0"}`);
+    if (NO_SESSION && len > 0) {
+      console.log(`${RK}=NOT-EVIDENCED reason=session-not-cleared ⇒ 清会话没生效（storage 里还有 ${len} 字符的票），这一发拍不到"未登录的登录页"，不落帧退 2`);
+      try { await mp.disconnect(); } catch { /* 退 2 前断不开不算第二条错 */ }
+      process.exit(2);
+    }
+  } catch (e) {
+    console.log(`SWEEP_SESSION_READBACK=UNAVAILABLE err=${String(e && e.message).slice(0, 90)} ⇒ 落点核对仍是这张帧的判据`);
+  }
 } catch (e) {
   console.log(`${RK}=NOT-EVIDENCED reason=connect-failed ws=${WS} err=${String(e && e.message).slice(0, 140)} hint=先 node scripts/qa/ws-channel-up.mjs；重建过产物则须重接设备腿`);
   process.exit(2);
 }
 
+/* 内容区哈希：与 verify-fix-visibility.mjs 同一把尺（裁掉顶部 40px 的状态栏再比像素）。
+   为什么不 import 那一份：那个文件末尾就是 CLI 主块，import 它等于当场跑一次对照。
+   为什么必须要它（R2b 实测，是泳道先发现、我复核的）：
+     subpackages/village/village/detail 的 top/bottom 整文件哈希不同（ee98dc00 vs 885993d0）⇒ 旧判点 sameAsTop=false，
+     但按内容区逐像素比是 **0.000% 不同** ——差的那几个字节全在状态栏时钟上。
+     也就是说"底部根本没换画面"被我的字节尺读成了"换了画面"，滚动失效这条缺陷差点被我自己的仪表放过。
+     同一轮里 publish、profile/other 也是 0.000%。 */
+const CROP_TOP = Number(arg("crop-top", "40"));
+let _pngMod;
+function loadPng() {
+  if (_pngMod !== undefined) return _pngMod;
+  const cands = [];
+  try { cands.push(require.resolve("pngjs", { paths: [join(REPO, "apps/client"), REPO] })); } catch { /* 走下一步 */ }
+  try {
+    const pkg = require.resolve(`pngjs/package.json`, { paths: [join(REPO, "node_modules/.pnpm"), REPO] });
+    cands.push(pkg.replace(/[\\/]package\.json$/, ""));
+  } catch { /* 走下一步 */ }
+  for (const p of cands) { try { const m = require(p); _pngMod = m.PNG || m; return _pngMod; } catch { /* 试下一个 */ } }
+  _pngMod = null; return null;
+}
+function contentHash16(absPath) {
+  const PNG = loadPng();
+  if (!PNG || !existsSync(absPath)) return "";
+  try {
+    const png = PNG.sync.read(readFileSync(absPath));
+    const from = Math.max(0, Math.min(CROP_TOP, png.height - 1));
+    const h = createHash("sha256");
+    h.update(png.data.subarray(from * png.width * 4));
+    h.update(`|${png.width}x${png.height}@${from}`);
+    return h.digest("hex").slice(0, 16);
+  } catch { return ""; }
+}
 const seen = new Map(); /* hash → 首个用到它的路由（跨页同图必须被数出来） */
 let shotsSinceClean = 0;
 const CLEAN_EVERY = Number(arg("clean-every", "8")); /* 每 8 张清一次应用本地文件：R2b 实测 ~18 张之后开始成片失败 */
@@ -259,7 +324,15 @@ try {
 } catch (e) { console.log(`SWEEP_WARMUP failed ${String(e && e.message).slice(0, 80)} ⇒ 仍继续，但前几帧的超时读数要按仪器噪声读`); }
 
 for (const r of targets) {
-  const rec = { route: r.route, query: PARAMS[r.route] || "", harness: "automator", band: bandNow, identity: IDENTITY, frames: [], errors: [] };
+  /* 账本写的前提与本跑身份对不对得上，先在这里判一次并留在件上。
+     不拦停（拍到什么就是什么，落点核对会判），但让下一程一眼看见"这页本来就不该用这个身份拍"：
+     R2b 的 pages/login/index 就是被 identityPrecondition 的旧文案（"B=未登录"）骗着以 A/B 各拍了一遍，
+     两张帧全落 pages/discover/index。 */
+  const pre = String(r.identityPrecondition || "");
+  const preNeed = pre.startsWith("none") ? "none" : /^A\s*\+\s*B/.test(pre) ? "A+B" : pre.startsWith("A（") ? "A" : pre.startsWith("B") ? "B" : "";
+  const preconditionMismatch = !!preNeed && !(preNeed === IDENTITY || (preNeed === "A+B" && (IDENTITY === "A" || IDENTITY === "B")));
+  if (preconditionMismatch) console.log(`SWEEP_PRECONDITION_MISMATCH ${r.route} 账本要=${preNeed} 本跑=${IDENTITY} ⇒ 大概率落点漂移，仍拍（判据交给落点核对），但这一页得按账本前提重拍`);
+  const rec = { route: r.route, query: PARAMS[r.route] || "", harness: "automator", band: bandNow, identity: IDENTITY, precondition: pre, preconditionNeed: preNeed || "(未标)", preconditionMismatch, frames: [], errors: [] };
   const shots = [{ state: "top", tokens: [`route:${r.route}`] }, { state: "bottom", tokens: [`route:${r.route}`, "scroll-bottom"] }];
   for (const s of shots) {
     const f = join(OUT_DIR, `${r.route.replace(/\//g, "__")}__${s.state}.png`);
@@ -275,10 +348,20 @@ for (const r of targets) {
       const prior0 = seen.get(h0);
       rec.frames.push({
         route: r.route, query: PARAMS[r.route] || "", state: s.state, path: relOf(f), bytes: statSync(f).size,
-        contentHash: h0, belowFloor: false, dupAcrossRoutes: !!prior0 && prior0 !== r.route, sameAsTop: false,
-        resumed: true, landingPath: prevRec.landingPath, landingMismatch: false, landingVerified: true,
+        contentHash: h0, belowFloor: false, dupAcrossRoutes: !!prior0 && prior0 !== r.route,
+        /* 恢复分支以前硬写 sameAsTop:false ⇒ "跳过重拍的帧一律算滚得动"。
+           文件就在盘上，内容区哈希照样能算，别把这条信号丢掉。 */
+        contentRegionHash: contentHash16(f), sameAsTopBytes: false, sameAsTop: false,
+        /* 帧自带 identity：沿用的那张是上一跑（可能是另一个身份）拍的，不能跟着本跑的 IDENTITY 走 */
+        identity: prevRec.identity || IDENTITY, resumed: true, landingPath: prevRec.landingPath, landingMismatch: false, landingVerified: true,
       });
       if (h0 && !seen.has(h0)) seen.set(h0, r.route);
+      /* 沿用帧的"滚动没生效"也要能判：底部帧与顶部帧的内容区哈希都在盘上算得出来，
+         不比较就等于对沿用的帧一律放行。 */
+      if (s.state === "bottom" && rec.frames.length > 1) {
+        const t = rec.frames[0], b = rec.frames[rec.frames.length - 1];
+        if (t.contentRegionHash && b.contentRegionHash) b.sameAsTop = t.contentRegionHash === b.contentRegionHash;
+      }
       console.log(`SWEEP_RESUME_SKIP ${r.route}__${s.state} 已有 ${statSync(f).size}B 且落点已验(${prevRec.landingPath})，不重拍`);
       continue;
     }
@@ -327,16 +410,29 @@ for (const r of targets) {
       const dupAcrossRoutes = !!h && !!priorOwner && priorOwner !== r.route;
       /* 同一页滚动前后逐字节相同 ⇒ 底部没换画面（不可滚动页/懒加载没触发/滚动被吞），
          这是保真审计要的信号，不当"两个状态"记账。 */
-      const sameAsTop = s.state === "bottom" && h && rec.frames.length && rec.frames[0].contentHash === h;
+      /* 两级判"底部有没有换画面"：
+         · sameAsTopBytes = 整文件逐字节相同（旧判点，保留：下游 emit-fidelity-lanes 的发现式认这个名字）
+         · sameAsTop      = **内容区**（裁掉状态栏）逐像素相同 ⇒ 这才是"滚动没生效"
+         旧版只有第一级，所以 village/detail / publish / profile/other 这种"只有时钟在走"的帧被判成
+         "换了画面"（实测内容区不同占比 0.000%）。两级并存还让"字节相同但内容不同"无处藏身。
+         量不到内容哈希（pngjs 取不到/解码失败）时**不许默默判 false**：如实写 contentMeasurable:false。 */
+      const ch = contentHash16(f);
+      const topCh = rec.frames.length ? String(rec.frames[0].contentHash || "") : "";
+      const topChContent = rec.frames.length ? String(rec.frames[0].contentRegionHash || "") : "";
+      const sameAsTopBytes = !!(s.state === "bottom" && h && rec.frames.length && rec.frames[0].contentHash === h);
+      const contentMeasurable = !!(ch && topChContent);
+      const sameAsTop = s.state === "bottom" && (contentMeasurable ? ch === topChContent : sameAsTopBytes);
       rec.frames.push({
         route: r.route, query: PARAMS[r.route] || "",
         state: s.state, path: relOf(f), bytes: size, contentHash: h,
+        identity: IDENTITY,
         landingPath: actualPath, landingMismatch,
         /* 落点已验 = 直接读到 currentPage 且等于目标页。这个字段是 --resume 的跳过条件，
            也是收口门判"这张帧到底是不是那一页"的依据；R1/R2 只在恢复分支里写过它，
            正式取景的帧全是 undefined ⇒ resume 永远不收敛、收口门读不到落点证明。 */
         landingVerified: !landingMismatch && !String(actualPath).startsWith("(currentPage") && !!actualPath,
         belowFloor: size <= MIN_BYTES, dupAcrossRoutes, sameAsTop,
+        contentRegionHash: ch, sameAsTopBytes, scrollContentMeasurable: s.state === "bottom" ? contentMeasurable : undefined,
         dupOf: dupAcrossRoutes ? priorOwner : (sameAsTop ? `${r.route}__top` : ""),
       });
       if (h && !seen.has(h)) seen.set(h, r.route);
@@ -373,12 +469,24 @@ for (const rec of results) {
   const keep = (prevRec.frames || []).filter((pf) => !rec.frames.some((nf) => nf.state === pf.state) && existsSync(join(REPO, pf.path)));
   const droppedButKept = keep.length;
   const next = { ...rec, frames: [...rec.frames, ...keep], errors: [...(rec.errors || []), ...(droppedButKept ? [`(这跑没拍到的 ${droppedButKept} 个状态沿用上一跑的帧)`] : [])] };
+  /* 页级 identity 也按帧回读：沿用旧帧时这一页可能同时住着 A 与 B 两张（登录页 B、其余 A）。 */
+  const ids = [...new Set(next.frames.map((f) => f.identity).filter(Boolean))].sort();
+  next.identity = ids.length <= 1 ? (ids[0] || rec.identity) : ids.join("+");
   merged.set(rec.route, next);
 }
 const mergedResults = [...merged.values()];
 
+/* 顶层 identity 必须**从合并后的各页读回来**，不能写死本跑的 IDENTITY：
+   取景清单是按路由累积的，R2b 这一件里 13 页是 A 身份、登录页那一发是 none（清会话才拍得到登录页；
+   账本 identityPrecondition 现读为 none——原文案"=B"是错的，B=guest 票 loggedIn=true 照样被转发）。
+   写死 ⇒ 补拍那一跑会把整件的 provenance 冒充成补拍用的那个身份，
+   而 13 页的帧其实是 A 会话里出来的——那是伪造溯源，与本仓"值不落日志/档位不许混"同一条规矩。 */
+const identitiesInManifest = [...new Set(mergedResults.map((r) => r.identity).filter(Boolean))].sort();
+const manifestIdentity = identitiesInManifest.length <= 1 ? (identitiesInManifest[0] || IDENTITY) : identitiesInManifest.join("+");
+if (identitiesInManifest.length > 1) console.log(`SWEEP_IDENTITY_MIXED ${identitiesInManifest.join("+")}（逐页 identity 见 results[].identity，顶层不再冒充单一身份）`);
+
 const manifest = {
-  schema: "mp-fidelity-sweep/v1", round: ROUND, band: bandNow, identity: IDENTITY,
+  schema: "mp-fidelity-sweep/v1", round: ROUND, band: bandNow, identity: manifestIdentity,
   sessionSource: session.source, userId: session.userId,
   harness: "miniprogram-automator(实测出图 378x814，禁与 CLI 193x413 跨尺比像素)",
   consoleCapture: "unavailable：miniprogram-automator 0.12.1 的导出面没有 onConsole/onError（已 grep out/ 核实），本轮不假装采到 console",
@@ -407,7 +515,16 @@ for (const s of stuck) console.log(`SWEEP_SCROLL_NOTHING_CHANGED ${s.path} 底�
 for (const n of noFrame) console.log(`SWEEP_NO_UNIQUE_FRAME ${n.route} ⇒ 这一页本轮没有独立画面，不许算进覆盖`);
 for (const fp of failedPages) console.log(`SWEEP_PAGE_ERROR ${fp.route} ${(fp.errors || []).join(" | ").slice(0, 160)}`);
 console.log(`FIDELITYSWEEP_FRAMES routesInManifest=${mergedResults.length} thisRunTargets=${targets.length} frames=${manifest.totals.frames} blank=${blank.length} dupAcross=${dups.length} scrollStuck=${stuck.length} landingMismatch=${mismatched.length} noUniqueFrame=${noFrame.length} pageErrors=${failedPages.length}`);
-const bad = noFrame.length + blank.length + failedPages.length + mismatched.length;
-console.log(bad ? `${RK}=FAIL routes=${mergedResults.length}/${rows.length} frames=${manifest.totals.frames} blank=${blank.length} noUniqueFrame=${noFrame.length} landingMismatch=${mismatched.length} pageErrors=${failedPages.length}`
-  : `${RK}=PASS routes=${mergedResults.length}/${rows.length} frames=${manifest.totals.frames} band=${bandNow} console=unavailable(如实)`);
+/* 判红要看**两件事**，旧写法把它们混成一个数，读数就会骗人：
+   · 本跑自己那一发有没有落到帧（thisRunTargets 里出的问题）；
+   · 整轮的件里还留着什么坏帧（沿用上一跑、这跑没重拍的页，例如 matching 那张 identity=A 的旧帧）。
+   两件事都必须能红（严），但混在一起时"FAIL routes=14/71"看着像"71 页没拍完所以失败"——
+   而这条腿结构上就只扛账本里「有基准」那一档（现 14 页），另外 57 页归 CLI 巡检腿，71/71 由覆盖门按并集判。 */
+const targetRoutes = new Set(targets.map((t) => t.route));
+const badHere = blank.filter((f) => targetRoutes.has(f.route)).length + failedPages.filter((x) => targetRoutes.has(x.route)).length
+  + mismatched.filter((f) => targetRoutes.has(f.route)).length + noFrame.filter((x) => targetRoutes.has(x.route)).length;
+const badCarried = (blank.length + failedPages.length + mismatched.length + noFrame.length) - badHere;
+const bad = badHere + badCarried;
+console.log(bad ? `${RK}=FAIL 本跑 targets=${targets.length} 本跑问题=${badHere} 件里沿用的坏读数=${badCarried}｜manifest routes=${mergedResults.length}（本通道只扛「有基准」那档，71/71 由覆盖门按并集判）frames=${manifest.totals.frames} blank=${blank.length} noUniqueFrame=${noFrame.length} landingMismatch=${mismatched.length} pageErrors=${failedPages.length}`
+  : `${RK}=PASS 本跑 targets=${targets.length} 全落帧且落点已验｜manifest routes=${mergedResults.length} frames=${manifest.totals.frames} band=${bandNow} console=unavailable(如实)`);
 process.exit(bad ? 1 : 0);
