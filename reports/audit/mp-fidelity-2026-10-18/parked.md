@@ -81,3 +81,16 @@ options=(a) 接受：FAILED 也是 JUDGED，弹回本身是被量到的产品事
 **残留**：为证"删得掉"而产生的 3 行软删帖 `id=394,395,396`（status=deleted）仍在 posts 表里，
 按 D-N09 的语义它们不会从后台计数消失。要不要真删（`DELETE FROM posts WHERE id IN (394,395,396)`）
 是改数据的动作，我没有擅自做；备份已在 `database/backup/`，语句可回滚。
+
+## 修复三批判"没修成"的部分（跨车道与跨端边界，逐条留名不糊）
+
+| 项 | 卡住的根因 | 该谁做 |
+|---|---|---|
+| 中心 tab 的圆盘与标签 | `components/layout/TabBar.vue` 实测**没有任何 importer**（`pages.json` 里 `tabBar.custom:true` ⇒ 小程序走 `custom-tab-bar/index.wxml/wxss`）。标签已在 index.js 改成「匹配」，但圆盘视觉要改 wxml/wxss；同时 `config/navigation.ts:51`、i18n `tabs.discover`、`pages.json:425` 三处仍写「寻觅」 | 需一车道同批改 custom-tab-bar 的 wxml/wxss + 三个单一来源，**否则这条在真机上等于没修** |
+| `--tab-bar-total-h` 双算 safe-area | token 本体在 `theme/design-variables.scss:462` 里 `env()` 写了两遍；各消费页（messages/publish 等）只删了自己那一份 | 与上表 D-N01 同属"同批还是分票"的待裁项 |
+| `MyMore` 四个图标 + mascot 一组 | 素材文件在盘上但 `config/images.ts` 没有对应 `IMAGE_PATHS` 注册；而真档的 `prune-unreferenced-static` 会把整个 `assets/images/mascot/` 裁掉（实测真档 static 下 65 个文件里没有该目录） | 改 `config/images.ts` 的登记，另需核裁剪保留集是否按引用扫（prepare-static 已加 `--scan src`，但这一类是"注册缺失"而非"扫描漏"） |
+| 兴趣标签的理想配色 | `InterestTag` 的 variant 在别的车道文件里 | 下一批 |
+| 他人主页真实数据下的两行 | `online` / `distance` 后端 `UserProfileDTO` 没有字段；`commonInterests` 是 `List<String>`，副标题靠客户端 `"tag/subtitle"` 约定拆 | 后端加结构化 `commonPoints[{title,subtitle,icon}]`；本轮**没有编数据糊上**，缺就渲染明确占位文案 |
+| `PublicMoment.vue:39` 空数据仍隐藏"最近动态" | 不在 FX3 可写集 | 与 B30 同页批次的下一轮 |
+| publish 的位置选择器（R2b-L03-D16） | 要 `uni.chooseLocation` + 后端 location 字段 | 需新建目标功能，已进 §4 清单 |
+| CommunityFeed 的 4 条（图格/工具图标/相对时间） | 根因分别在上游 view-model（每帖只发一张图）、`utils/media.ts` 的 `resolveMediaUrl`、`theme/global.scss` 的网格几何，均不在单页可写集 | 单开一条"素材解析"车道：这也是一条系统性缺陷（多个页的图标在真档下渲染为空白），不该按页修 |
