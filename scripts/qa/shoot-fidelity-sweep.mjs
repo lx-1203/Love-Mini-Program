@@ -90,7 +90,11 @@ if (ledger.bandStamp && ledger.bandStamp !== bandNow) {
    拿它去比对理想图只会造出垃圾缺陷（实测 profile/other 无参顶部帧只有 16.6KB）。
    取值必须有出处，不许我编：
      village/detail?id=352              ← scripts/mp-shoot-reference.cjs:25
-     circles/circle-home?circleId=3     ← reports/audit/round-6/ops 里 circleId=3 在用例中被引用
+     circles/circle-home?circleId=8     ← GET /api/v1/circles 实测返回 8–15。
+        本腿第一轮用的是 circleId=3，出处是 round-6 ops 里一条**负例**引用的值：
+        它不在真实 id 域里 ⇒ circle-home 顶部帧只有 31,974B（空壳），
+        我还把它当成"P0 页面缺陷"报了出去。换成 8（摄影圈，与理想图同名）同一帧 159,723B ⇒
+        那条"缺陷"是我的仪表造的，不是产品的。参数取值必须核它在真实 id 域里存不存在。
      profile-extra/profile/other?userId=100159 ← 同语料；本腿登录身份铸到的是 100158，看别人主页要另一个 id
    没给参数的页照旧走无参数路径，并在清单里记 query=""（空壳帧就如实是空壳帧）。 */
 let PARAMS = {};
@@ -112,6 +116,33 @@ if (dryRun) {
   for (const r of targets.slice(0, 80)) console.log(`SWEEP_DRY ${r.route} baseline=${r.baselineStatus} identity=${r.identityPrecondition}`);
   console.log(`${RK}=DRY targets=${targets.length}（没连设备、没落一帧）`);
   process.exit(0);
+}
+
+/* 每一轮取景开场必须**重开项目窗口**。这不是保险，是补一个实测到的静默错：
+   IDE 渲染的是它已经加载进内存的那份产物，磁盘上重新构建不会刷新它
+   （open-project-window.mjs 的注释记着同一件事的另一个方向：切档位不重开窗，窗口里还是旧档 ⇒ 腿一行没跑就退 2）。
+   R2 实测代价：改完 12 页重拍，两条泳道独立量到"改动一条都没上屏"——
+   circle-home 帧底色还是旧硬编码 #F4F6F5、hub 标题列还是旧 space-between 几何，
+   而源码与 00:41 的 wxss 里改动确实都在 ⇒ 整轮帧是改前编译，全部作废重拍。
+   失败就中止：拿旧窗口拍出来的帧继续判"修没修好"，比不判更坏。
+
+   位置有两个硬约束，都实测踩过才写死的：
+   · 必须在 guardUiLease **之前**：open-project-window.mjs 自己也要拿租约，设备是单例。
+     R2b 实测把它放在下面 ⇒ 子进程看见本腿的活租约直接拒：
+     `SWEEP_REATTACH exit=2 OPENWIN_RESULT=FAIL reason=模拟器已被占用（shoot-fidelity-sweep-R2b@pid30636）`，
+     整轮零帧（自己锁死自己，不是别人占用）。
+   · 必须在 automator.connect **之前**：重开窗口会杀掉 9420 那条 WS 通道，
+     先连后重开等于拿着一条已死的通道取景（reference-real-env：重建产物后必须重接设备腿）。 */
+{
+  const re = spawnSync(process.execPath, [
+    join(REPO, "scripts/qa/open-project-window.mjs"), "--project", PROJECT, "--settle", "12",
+  ], { cwd: REPO, encoding: "utf8", env: { ...process.env, PATH: `${dirname(process.execPath)}${delimiter}${process.env.PATH || ""}` } });
+  const out = `${re.stdout || ""}${re.stderr || ""}`;
+  console.log(`SWEEP_REATTACH exit=${re.status} ${out.split(/\r?\n/).filter((l) => l.includes("OPENWIN")).join(" / ").slice(0, 220)}`);
+  if (re.status !== 0) {
+    console.log(`${RK}=NOT-EVIDENCED reason=reattach-failed exit=${re.status} hint=项目窗口没重开 ⇒ 会拍到改前编译的旧画面，整轮帧都是假证据`);
+    process.exit(2); /* 此刻还没拿租约，无需释放 */
+  }
 }
 
 /* 租约：拿不到就退，不自家排队（上一程"干跑抢了租约打死 16 条腿"的教训在案）。
@@ -176,25 +207,6 @@ try {
 }
 
 const seen = new Map(); /* hash → 首个用到它的路由（跨页同图必须被数出来） */
-/* 每一轮取景开场必须**重开项目窗口**。这不是保险，是补一个实测到的静默错：
-   IDE 渲染的是它已经加载进内存的那份产物，磁盘上重新构建不会刷新它
-   （open-project-window.mjs 的注释记着同一件事的另一个方向：切档位不重开窗，窗口里还是旧档 ⇒ 腿一行没跑就退 2）。
-   R2 实测代价：改完 12 页重拍，两条泳道独立量到"改动一条都没上屏"——
-   circle-home 帧底色还是旧硬编码 #F4F6F5、hub 标题列还是旧 space-between 几何，
-   而源码与 00:41 的 wxss 里改动确实都在 ⇒ 整轮帧是改前编译，全部作废重拍。
-   失败就中止：拿旧窗口拍出来的帧继续判"修没修好"，比不判更坏。 */
-{
-  const re = spawnSync(process.execPath, [
-    join(REPO, "scripts/qa/open-project-window.mjs"), "--project", PROJECT, "--settle", "12",
-  ], { cwd: REPO, encoding: "utf8", env: { ...process.env, PATH: `${dirname(process.execPath)}${delimiter}${process.env.PATH || ""}` } });
-  const out = `${re.stdout || ""}${re.stderr || ""}`;
-  console.log(`SWEEP_REATTACH exit=${re.status} ${out.split(/\r?\n/).filter((l) => l.includes("OPENWIN")).join(" / ").slice(0, 220)}`);
-  if (re.status !== 0) {
-    console.log(`${RK}=NOT-EVIDENCED reason=reattach-failed exit=${re.status} hint=项目窗口没重开 ⇒ 会拍到改前编译的旧画面，整轮帧都是假证据`);
-    try { const { releaseUi } = await import("./ui-lease.mjs"); releaseUi({ owner: LEASE_OWNER }); } catch { /* 释放失败已由锁的过期兜底 */ }
-    process.exit(2);
-  }
-}
 
 /* 预热一次导航。实测两轮取景的超时都成串落在**最前面几帧**
    （login top×2 失败、login bottom×2 失败、discover top×2 失败，之后同一条通道连续成功）：
