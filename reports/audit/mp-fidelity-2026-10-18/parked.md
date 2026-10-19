@@ -165,3 +165,19 @@ ProfileShell 再引 PublicProfile / PublicCommon / PublicGallery
 还有一条判据层面的教训：R2b 报的 4 页滚不动里，只有 profile/other 是"页高不足 100vh"这一类
 （它没有内层 scroll-view，R4 里 top≠bottom 也仍然成立与否要单独看），其余是把仪器边界当成了产品事实。
 凡判"某状态取不到证"，必须先证明**我驱动得了那个容器**，否则记的是仪器缺陷。
+
+## 发布形态的体积缺口（本轮暴露，需产品口径，不属我能拍板）
+
+主包 12.70MB / 微信上限 2.00MB。占量前几名全是**被源码字面量引用的位图**
+（campus-arch-landmark.jpg 705KB、circle-studybuddy.png 533KB、campus-rain 406KB…），
+不是这次补回来的 219 个图标（753KB，已限定 icons/ 与 svg-spec/ 且单个 ≤64KB）。
+
+此前 `PACKAGE_SIZE_RESULT=PASS 1.73MB` 的真实成因：更早几轮构建已经把 src/static 裁到只剩 129 个文件，
+字面量引用的图**已经被删了**，所以"包小"与"图标空白"是同一件事的两面。
+HEAD 跟踪 1344 个素材、备份树 27.5MB。
+
+三条候选路，取舍要用户定：
+  (a) 大位图走后端 app-assets/CDN，并让 utils/media.ts **不再把 app-assets 地址反写成 /static**
+      （它现在正是这么做的，等于强制包自带；后端实测 0 个图标、直连 401，需先把资产铺上去）
+  (b) 把这些图移进分包（分包上限另算，主包只留首屏必需）
+  (c) 资产瘦身（重压缩/降分辨率），代价是画质与理想图的还原度
