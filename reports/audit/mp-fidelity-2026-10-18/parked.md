@@ -120,3 +120,30 @@ options=(a) 接受：FAILED 也是 JUDGED，弹回本身是被量到的产品事
 ① 先排除仪器/构建侧（产物里到底有没有这批改动：查编译出的 wxss/wxml 是否含新规则；
    以及 IDE 是不是又吃了缓存）；② 排除后再判"修得不对"，把整批缺陷重开。
 在此之前，R2b 修复批次的**已修数不写进任何"完成"口径**。
+
+### 12 张未上屏帧的归因（第一版结论我自己证伪了，留下错与对的 trace）
+
+产物侧先排除"没编进去"，五处实测为**已在产物**：
+detail.wxss 含 min-height:0 + overflow-y:auto；publish.wxss 含新类 publish-to__tag--neutral；
+circles/index.wxss 含 circle-card__action-text；other.wxss 里被删的 other-more- 前缀已不存在；
+nearby/index.js 里 tabCircles 与 hotCircles 并存。
+
+我先前写的 A 类（"页面内容在 scroll-view 里 ⇒ pageScrollTo 滚不动"）**被 R3 自己的数据证伪**：
+R3 清单里 discover / nearby / circles-index / hub / circle-home 的 top≠bottom（内容区哈希不同）
+⇒ 这些页走的是页面级滚动，滚动确实发生了。A 类只成立在两页：detail 与 publish
+（主内容容器就是那个 scroll-view，R3 里它们 top/bottom 仍然逐字节相同）。
+
+| 类 | 帧 | 证据 | 性质 |
+|---|---|---|---|
+| A 仪器滚不动 | detail 2、publish 2 | 主容器是 scroll-view，R3 内 top/bottom 仍相同 | 取景腿判点缺陷：pageScrollTo 只滚页面；要证"滚不动"得驱动组件 scrollTop 或走 automation_element_action scrollTo |
+| B 未达分支 | home bottom、hub bottom、circle-home top | 同页 top 变了、bottom 没变 ⇒ 改动集中在上半屏或当前数据态不渲染的块 | 判据没错，但"用哪帧证哪条缺陷"没对上；需在能触发该分支的数据态重拍 |
+| C 待判：渲染陈旧 | nearby top、circles/index 2、other 2 | 改动已确认在产物里，帧却与 R2b 逐字节相同；other 那组是"页底色 token 换值 + 删掉整枚悬浮按钮"这种不可能看不见的路子 | 未定。一发就能二选一：整台 IDE 重启后重拍这三页——变＝R3 吃的是陈旧渲染（reattach 不足以刷新这几页）；不变＝改动被别处覆盖 |
+| D 真没修 | hub 的 .campus-hub__more-arrow 孤儿规则仍在产物里 | FX6 在 150 轮上限处停在半句调用上，D18 本该处理它 | FX6 半成品，按未闭合记 |
+
+other 的渲染链已核：other.vue:23 引 ProfileShell，产物 other.json 的 usingComponents 里确有 profile-shell，
+ProfileShell 再引 PublicProfile / PublicCommon / PublicGallery
+⇒ 我先前那句"被修的公共组件不在该页 usingComponents 里"是**只查了一层**造成的误判；
+嵌套一层就在链上，浅查组件图不足以判"改动无效"。
+
+要认的两条：① R2b 报的"这页滚不动"只有 detail/publish 需要按 scroll-view 手段重证，
+其余四页是我把仪器行为当成了产品行为；② 判"组件不在渲染链上"必须沿嵌套查到底。
