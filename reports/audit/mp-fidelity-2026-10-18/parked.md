@@ -147,3 +147,21 @@ ProfileShell 再引 PublicProfile / PublicCommon / PublicGallery
 
 要认的两条：① R2b 报的"这页滚不动"只有 detail/publish 需要按 scroll-view 手段重证，
 其余四页是我把仪器行为当成了产品行为；② 判"组件不在渲染链上"必须沿嵌套查到底。
+
+### C 类当场判掉：R3 那 12 张"未上屏"是我的仪表，不是代码（R4 复拍实量）
+
+两点同时成立，都能复现：
+1. **R3 吃的是陈旧渲染。** 零源码改动、只把 IDE 整台 quit + 重开 + 重架自动化通道，再拍同样 8 页：
+   R3→R4 的逐帧对照 `visible=16 notVisible=0 clockOnly=0` —— 8 页全变。
+   ⇒ 开场 reattach（open-project_window 的 reuse 语义）不足以刷新这几页，窗口复用 != 渲染重载。
+2. **R2b 的"滚不动"有两条是仪器。** 取景腿改用 Element.scrollTo 驱动页内 scroll-view 后，
+   detail/publish/circles-index/nearby 的 top≠bottom（内容区哈希不同、sameAsTop=false）：
+   它们本来就滚得动，是 `wx.pageScrollTo` 只滚页面、滚不动组件。
+
+修完这两条之后的真判据：**R2b→R4 `FIXVIS_RESULT=PASS visible=16 fixNotVisible=0 gaps=8`**
+⇒ R2b 修复批次的改动确实上屏。此前"已修数不写进完成口径"的限制解除，
+但 R3 这一发的 FAIL 读数留档不删：它是"门自己坏掉时把坏读数学成产品缺陷"的标本。
+
+还有一条判据层面的教训：R2b 报的 4 页滚不动里，只有 profile/other 是"页高不足 100vh"这一类
+（它没有内层 scroll-view，R4 里 top≠bottom 也仍然成立与否要单独看），其余是把仪器边界当成了产品事实。
+凡判"某状态取不到证"，必须先证明**我驱动得了那个容器**，否则记的是仪器缺陷。

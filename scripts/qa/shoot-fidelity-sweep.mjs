@@ -398,8 +398,26 @@ for (const r of targets) {
       if (s.state === "top") rec.sessionState = await readSessionState();
       if (landingMismatch) rec.errors.push(`落点不符 target=${r.route} actual=${actualPath}`);
       if (s.state === "bottom") {
-        try { await mp.callWxMethod("pageScrollTo", { scrollTop: 99999, duration: 0 }); }
-        catch { try { await mp.callWxMethod("pageScrollTo", { scrollTop: 20000, duration: 0 }); } catch (e2) { rec.errors.push("pageScrollTo 不可用:" + String(e2.message).slice(0, 60)); } }
+        /* R3 归因查出来的事实：wx.pageScrollTo 只滚**页面**。detail / publish 这类页的主内容是
+           一个 <scroll-view>（实量 detail.wxml 里 scroll-view class="detail-body"），
+           页面本身不滚 ⇒ 两张帧必然逐字节相同，而我把它当成"这页滚不动"的产品缺陷报了出去（R2b 4 页里 2 页是这种）。
+           所以底态现在两条腿都试，并**如实记下用的是哪条**：
+             pageScrollTo → 再试 automator 的 Element.scrollTo（out/Element.d.ts:scrollTo(x,y) 确实存在，
+             不换 harness，避免与 WS 通道抢同一条会话）
+           两条都没能让画面变化时，判点是"这一态取不到证"，不是"页面滚不动"——
+           仪器的边界不许记成产品的缺陷。 */
+        let scrollMethod = "none";
+        try { await mp.callWxMethod("pageScrollTo", { scrollTop: 99999, duration: 0 }); scrollMethod = "pageScrollTo"; }
+        catch { try { await mp.callWxMethod("pageScrollTo", { scrollTop: 20000, duration: 0 }); scrollMethod = "pageScrollTo(20000)"; } catch (e2) { rec.errors.push("pageScrollTo 不可用:" + String(e2.message).slice(0, 60)); } }
+        try {
+          const pg = await mp.currentPage();
+          const els = pg && typeof pg.$$ === "function" ? await pg.$$("scroll-view") : null;
+          if (Array.isArray(els) && els.length && typeof els[0].scrollTo === "function") {
+            for (const el of els.slice(0, 3)) { try { await el.scrollTo(0, 99999); } catch { /* 单个滚不动就试下一个 */ } }
+            scrollMethod += "+Element.scrollTo(" + Math.min(els.length, 3) + ")";
+          } else scrollMethod += "+elementScroll:N/A";
+        } catch (e) { scrollMethod += "+elementScroll:ERR(" + String(e && e.message).slice(0, 40) + ")"; }
+        rec.scrollMethod = scrollMethod;
         await sleep(4000);
       }
       if (existsSync(f)) rmSync(f, { force: true });
