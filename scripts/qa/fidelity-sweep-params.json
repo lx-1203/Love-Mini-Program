@@ -1,0 +1,9 @@
+{
+  "_note": "MP-FIDELITY 取景腿的直达参数表（tracked，取代此前那份 gitignored 的 tmp/qa/sweep-params.json——那份下一程读不到，等于没记）。R2b 那四条：值取自 2026-10-19 R2b 真落到帧的那一发，id=352 / userId=100159 是 real 档里真存在的数据，不是猜的；matching 那条的判据来源是页面自己的注释（matching.vue:120「dev-preview=1 直接停在匹配中页（QA 复验入口，规格书 06）」），不带它 ⇒ 页面在 onLoad 里 goBack()，帧拍到的是 pages/discover/index（R2b 实测 landingMismatch）。R6 追加两条（同一天实测，同样不是猜的）：campus/index 的 school=北京大学 取自后端 guest-login 直接返回的 campusName（100151/阿辰），依据是页面注释 campus/index.vue:69「无 school 参数时重定向到校园圈 Hub」⇒ 不带参数拍到的是 hub 不是本页（R6 实测两帧 landingMismatch）；tag-posts 的 tagName=运动 取自 GET /posts 实际返回的 tags 域（国风/电竞/运动），页面 tag-posts.vue:269 读的就是 query.tagName。仍未解决的一条：subpackages/tools/help/index 在 identity=A（已登录 100158）下两帧落点都是 pages/login/index，而该页源码里没有任何登录跳转、全仓也没有策略引用它（page-access/navigation 两处 grep 零命中）⇒ 这是缺陷、不是取景前提，登记给泳道，不许当『够不着』豁免掉。",
+  "subpackages/village/village/detail": "id=352",
+  "subpackages/circles/circles/circle-home": "circleId=8",
+  "subpackages/profile-extra/profile/other": "userId=100159",
+  "subpackages/discover-extra/discover/matching": "dev-preview=1",
+  "subpackages/campus/campus/index": "school=北京大学",
+  "subpackages/village/village/tag-posts": "tagName=运动"
+}

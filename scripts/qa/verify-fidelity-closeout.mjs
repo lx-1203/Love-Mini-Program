@@ -388,7 +388,13 @@ const derived = [];
 if (existsSync(FRAMES_ROOT)) {
   for (const rd of readdirSync(FRAMES_ROOT).sort()) {
     const bandDir = join(FRAMES_ROOT, rd);
-    if (!existsSync(bandDir)) continue;
+    /* 必须是目录：原版只判 existsSync，于是帧根目录下**任何一个杂散文件**都会走进内层
+       readdirSync(文件) 抛 ENOTDIR 把整个收口门崩掉（2026-10-20 实测：归位脚本留下的
+       sweep-manifest.json.pre-relocate.json 落在帧根，收口直接崩栈退 1，
+       读起来像"收口门坏了"，其实是一行留档件引发的）。量不到 ≠ 崩。 */
+    let st;
+    try { st = statSync(bandDir); } catch { continue; }
+    if (!st.isDirectory()) continue;
     for (const bd of readdirSync(bandDir)) {
       /* 两条通道各写各的件：automator 取景腿写 sweep-manifest.json，CLI 巡检腿写 tour-manifest.json。
          覆盖判据要的是"这页有没有画面"，两件的页必须并起来数——只认一件就会把 57 页无基准页永远读成零帧。 */
