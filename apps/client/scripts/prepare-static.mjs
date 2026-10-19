@@ -27,6 +27,7 @@
  *   node scripts/prepare-static.mjs --h5
  */
 import { existsSync, mkdirSync, cpSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { collectComputedRefs } from "./asset-computed-refs.mjs";
 import { spawnSync } from "node:child_process";
 import { dirname, join, resolve, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -343,6 +344,20 @@ function strip() {
   console.log(`PREPARESTATIC_COMPUTED 片段=${frags.size} 新增补收=${compAdded} 多义=${ambiguous.length} 引用了盘上没有的=${orphanRefs.length}`);
   for (const f of ambiguous.slice(0, 8)) console.log(`PREPARESTATIC_AMBIGUOUS ${f}（全留：删错的代价比留错大）`);
   for (const f of orphanRefs.slice(0, 12)) console.log(`PREPARESTATIC_ORPHAN_REF ${f}（代码引用它，备份与本树都没有 ⇒ 这是真·素材缺失，不许被裁剪顺手掩盖）`);
+  /* 补收"常量 + 尾串"拼出来的图标引用。这条是本轮审计的根因修复：
+     上一版扫描只认字面量整串 /static/... ，而 config/images.ts 是拿常量拼路径的，
+     于是 --real 把正在用的图标从 src/static 删了（assets/icons/common 实测备份 128 个、src 只剩 15 个），
+     后续三轮把它们统统记成"素材缺失"的产品缺陷。范围限定在 icons/ 与 svg-spec/ 小文件族，
+     大位图仍必须有字面量引用（理由与三代错法的实测数值都记在 asset-computed-refs.mjs 头上）。 */
+  const comp = collectComputedRefs(srcRoot, (rel) => {
+    const abs = join(full, rel);
+    try { return statSync(abs).size; } catch { return null; }
+  }, { maxBytes: 64 * 1024 });
+  for (const r of comp.refs) refs.add(r);
+  console.log("PREPARESTATIC_COMPUTED 补收=" + comp.refs.length + " 族外排除=" + comp.outOfFamily.length + " 超大拒收=" + comp.rejectedLarge.length + " 基址解不出=" + comp.unresolved + " 引用了盘上没有的=" + comp.orphans.length);
+  for (const o of comp.orphans.slice(0, 12)) console.log("PREPARESTATIC_ORPHAN_REF " + o + "（配置指向它，备份与本树都没有 ⇒ 真素材缺失，不许被裁剪顺手掩盖）");
+  if (comp.refs.length) { const hit = comp.refs.filter((x) => x.indexOf("icons/common/eye.svg") >= 0 || x.indexOf("icons/common/location.svg") >= 0); console.log("PREPARESTATIC_COMPUTED_样本 " + (hit.length ? hit.join(" ") : "(未含 eye/location，检查解析是否生效)")); }
+
   let kept = 0;
   try {
     mkdirSync(stage);

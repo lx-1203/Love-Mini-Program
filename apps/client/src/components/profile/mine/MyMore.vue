@@ -1,5 +1,11 @@
 ﻿<script setup lang="ts">
 import { IMAGE_PATHS } from "../../../config/images";
+// R2b-L03（2026-10-19 素材解析车道）：八个键的字形全部走 resolveMediaUrl 这一统一出口。
+// ICONS_PROFILE.*_SVG 本来就是包内路径（透传，逐字不变）；ICONS_EMOJI.* 是基址派生常量，
+// real 档求值是后端 app-assets 的 http URL，直接绑给 <image src> 会被基础库 3.16.2 拒载
+// （模拟器宽容、真机空白）——经 resolveMediaUrl 落回 /static/<rel>，而那四枚 SVG 已随
+// config/images.ts 的 IN_PACKAGE_ASSETS 双登记进包，于是两头都能出图。
+import { resolveMediaUrl } from "../../../utils/media";
 
 export interface MoreItem {
   key: string;
@@ -22,6 +28,22 @@ const ICONS: Record<string, { iconSrc?: string; image?: string; color: string }>
   posts: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.FILE_TEXT, color: "#FF9F43" },
   checkin: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.CHECK, color: "#36C99A" },
 };
+
+/** 取该键的字形 URL（无该键时返回空串，模板的 v-else 文字点兜底不变）。 */
+function iconUrl(key: string): string {
+  const entry = ICONS[key];
+  const raw = entry?.image || entry?.iconSrc || "";
+  return raw ? resolveMediaUrl(raw) : "";
+}
+
+function iconTint(key: string): string {
+  return ICONS[key]?.color || "#36C99A";
+}
+
+/** 该键是否有字形素材（决定画 <image> 还是画文字点兜底）。 */
+function hasIcon(key: string): boolean {
+  return iconUrl(key).length > 0;
+}
 </script>
 
 <template>
@@ -35,10 +57,9 @@ const ICONS: Record<string, { iconSrc?: string; image?: string; color: string }>
         hover-class="my-more__cell--pressed"
         @tap="emit('tap', item.key)"
       >
-        <view class="my-more__icon" :style="{ background: `${ICONS[item.key]?.color || '#36C99A'}22` }">
-          <image v-if="ICONS[item.key]?.image" class="my-more__icon-img" :src="ICONS[item.key]?.image ?? ''" mode="aspectFit" alt="" />
-          <image v-else-if="ICONS[item.key]?.iconSrc" class="my-more__icon-img" :src="ICONS[item.key]?.iconSrc ?? ''" mode="aspectFit" alt="" />
-          <text v-else class="my-more__icon-text" :style="{ color: ICONS[item.key]?.color || '#36C99A' }">•</text>
+        <view class="my-more__icon" :style="{ background: `${iconTint(item.key)}22` }">
+          <image v-if="hasIcon(item.key)" class="my-more__icon-img" :src="iconUrl(item.key)" mode="aspectFit" alt="" />
+          <text v-else class="my-more__icon-text" :style="{ color: iconTint(item.key) }">•</text>
         </view>
         <text class="my-more__label">{{ item.label }}</text>
       </view>

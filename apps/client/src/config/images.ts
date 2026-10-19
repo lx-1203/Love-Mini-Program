@@ -36,6 +36,71 @@ const AVATAR_BASE = IMAGES + '/avatars';
 const ICONS_BASE = STATIC_BASE + '/icons';
 const GENERATED_BASE = (REAL_ASSETS ? REAL_ASSETS + '/generated' : '/static/generated');
 
+/**
+ * 「必须随包」资产双登记表（2026-10-19 · 系统性缺陷车道：真档图标/图片渲染为空白）
+ * ─────────────────────────────────────────────────────────────────────────────
+ * 真档链 `build:mp-weixin:real` → release-chain.mjs 上有**两道按源码文本认引用**的过滤器，
+ * 它们的判据互不重叠，于是一种登记形态必在其中一道上落空（实测读数见下）：
+ *
+ *  ① prepare-static.mjs --real（scripts/prepare-static.mjs:274 的引用正则）
+ *     只认「整串以 `/static/` 开头且带扩展名的字面量」→ 它决定 src/static 留谁
+ *     （它把 src/static 原地换成裁剪态，见 release-chain.mjs:124 的 `--scan src`）。
+ *     经基址拼接出来的常量（`ICONS_BASE + '/home/toolbar/x.png'`）在它眼里等于没写
+ *     ⇒ 文件根本没进包。
+ *     实测：chain-R3-041020.log:197「本地保留 tabBar + 源码字面量引用 125 个文件」，
+ *     src/static 由 HEAD 的 1344 个文件被换成 129 个；`assets/icons/home/**`（HEAD 72 个文件）
+ *     一个都没留下 ⇒ 首页铃铛与社区动态三枚工具图标必为空白。
+ *
+ *  ② prune-unreferenced-static.mjs（scripts/prune-unreferenced-static.mjs:92 + :153-156）
+ *     把产物包内相对路径（`assets/images/mascot/default.png`）逐段后缀去命中源码字面量集合，
+ *     而整串 `/static/<rel>` 会被它的正则读成 `static/<rel>`，与 `<rel>` 的任何后缀都不等
+ *     ⇒ 「未被引用」，只要后端 app-assets 有同名副本就剪。
+ *     实测：chain-R3-041020.log:899-901「removed 64 files, 1138714B, keptMissingOnBackend=0」，
+ *     被剪清单（archive/prune-backup/real-20261018T201320/）里正是整个 `assets/images/mascot/`
+ *     与 MyMore 的四枚 `assets/images/profile-*.svg`。
+ *
+ * 结论：随包资产必须**同时**以两种形态出现在源码文本里——
+ *   pkg  = "/static/<rel>"  → 过 ①
+ *   tail = "/<rel>"         → 过 ②
+ * 本表逐条把两个形态写在一起（同一条目、不会漂移）。运行时取值仍按各组既有约定：
+ * 本地固定组（MASCOT / ICONS_PROFILE.*_SVG）直接取本表的 pkg，值与登记前逐字相同；
+ * 基址派生组（HOME_ICONS / POST_PLACEHOLDER / ICONS_EMOJI）保持 `STATIC_BASE` 拼接不变，
+ * 真档下常量仍是后端 app-assets URL，由 utils/media.ts 的 resolveMediaUrl 落回
+ * `/static/<rel>`——那条路径能否出图，取决于本表有没有把文件送进包。
+ *
+ * 只登记**确有消费方**的素材：主包门禁 2.00MB，上一发裁剪后实测 1.74MB
+ * （chain-R3-041020.log:906），本表合计新增约 145KB，留出的余量是给后续车道的，
+ * 不是可以随手填满的。内容级大图（`assets/images/posts/post-*.jpg` 共 556KB、
+ * `assets/images/covers/**` 等）不进本表——它们走 media.ts 的后端改写出口。
+ */
+export const IN_PACKAGE_ASSETS = {
+  /** 页头铃铛（HomeHeader.vue:78 经 resolveMediaUrl）——R2b-L01-D09 */
+  HEADER_BELL: { pkg: '/static/assets/icons/home/tabbar-top/icon_row1_07.png', tail: '/assets/icons/home/tabbar-top/icon_row1_07.png' },
+  /** 社区动态互动栏三枚（CommunityFeed.vue:247/251/255）——R2b-L01-D19 */
+  TB_LIKE: { pkg: '/static/assets/icons/home/toolbar/toolbar_row7_01.png', tail: '/assets/icons/home/toolbar/toolbar_row7_01.png' },
+  TB_COMMENT: { pkg: '/static/assets/icons/home/toolbar/toolbar_row7_02.png', tail: '/assets/icons/home/toolbar/toolbar_row7_02.png' },
+  TB_SHARE: { pkg: '/static/assets/icons/home/toolbar/toolbar_row7_03.png', tail: '/assets/icons/home/toolbar/toolbar_row7_03.png' },
+  /** 帖子图兜底占位（CommunityFeed / village PostCard / TodayRecommendationCard 共用）——R2b-L01-D18 */
+  POST_PLACEHOLDER: { pkg: '/static/assets/images/posts/post-placeholder.jpg', tail: '/assets/images/posts/post-placeholder.jpg' },
+  /** 吉祥物（NotLoggedWaiting / messages 空态 / MatchLoading 装饰爱心）——R2b-L02-D11、R2b-L07-D10 */
+  MASCOT_DEFAULT: { pkg: '/static/assets/images/mascot/default.png', tail: '/assets/images/mascot/default.png' },
+  MASCOT_STAR: { pkg: '/static/assets/images/mascot/star.png', tail: '/assets/images/mascot/star.png' },
+  MASCOT_SPARKLE: { pkg: '/static/assets/images/mascot/sparkle.png', tail: '/assets/images/mascot/sparkle.png' },
+  MASCOT_HEART_PINK_LARGE: { pkg: '/static/assets/images/mascot/heart_pink_large.png', tail: '/assets/images/mascot/heart_pink_large.png' },
+  MASCOT_HEART_GREEN: { pkg: '/static/assets/images/mascot/heart_green.png', tail: '/assets/images/mascot/heart_green.png' },
+  MASCOT_HEART_GRADIENT: { pkg: '/static/assets/images/heart-gradient.svg', tail: '/assets/images/heart-gradient.svg' },
+  /** 「更多功能」四宫格字形（MyMore.vue:16-19） */
+  PROFILE_FAVORITES_SVG: { pkg: '/static/assets/images/profile-favorite.svg', tail: '/assets/images/profile-favorite.svg' },
+  PROFILE_VISITORS_SVG: { pkg: '/static/assets/images/profile-visitors.svg', tail: '/assets/images/profile-visitors.svg' },
+  PROFILE_ALBUM_SVG: { pkg: '/static/assets/images/profile-album.svg', tail: '/assets/images/profile-album.svg' },
+  PROFILE_PRIVACY_SVG: { pkg: '/static/assets/images/profile-privacy.svg', tail: '/assets/images/profile-privacy.svg' },
+  /** MyMore.vue:20-23 的其余四枚（同一张卡，避免只修半张） */
+  EMOJI_USER_SVG: { pkg: '/static/assets/icons/common/user.svg', tail: '/assets/icons/common/user.svg' },
+  EMOJI_HEART_FILLED_SVG: { pkg: '/static/assets/icons/common/heart-filled.svg', tail: '/assets/icons/common/heart-filled.svg' },
+  EMOJI_FILE_TEXT_SVG: { pkg: '/static/assets/icons/common/file-text.svg', tail: '/assets/icons/common/file-text.svg' },
+  EMOJI_CHECK_SVG: { pkg: '/static/assets/icons/common/check.svg', tail: '/assets/icons/common/check.svg' },
+} as const;
+
 export const IMAGE_PATHS = {
   POST_PLACEHOLDER: IMAGES + '/posts/post-placeholder.jpg',
   DEFAULT_AVATAR: STATIC_BASE + '/default-avatar.jpg',
@@ -378,13 +443,19 @@ export const IMAGE_PATHS = {
   /**
    * 寻觅吉祥物 xunmi_mascot_design_system_v2（2026-09-02 R5：关系动态图标替换素材）
    * 路径指向本地 static 资源（base lib 3.16.2 强制 https，开发模式走本地避免 HTTP 警告）
+   *
+   * 2026-10-19 图标空白车道：本组里**有消费方且需要随包**的六枚改由 IN_PACKAGE_ASSETS 供值
+   * （pkg 串与登记前逐字相同），其余仍写本地字面量——那些素材后端 app-assets 也有一份，
+   * 随包要占 2MB 主包预算，没进包就让它显式待在后端出口，不静默进保留集。
    */
   MASCOT: {
-    /* MP-R2-PAGES-MESSAGES-INDEX-005：空态默认吉祥物收编（messages 页原硬编码路径） */
-    DEFAULT: '/static/assets/images/mascot/default.png',
-    /* MP-R2-MATCHING-004：匹配进度卡图标收编（matching 页原硬编码路径） */
-    STAR: '/static/assets/images/mascot/star.png',
-    SPARKLE: '/static/assets/images/mascot/sparkle.png',
+    /* MP-R2-PAGES-MESSAGES-INDEX-005：空态默认吉祥物收编（messages 页原硬编码路径）
+       —— R2b-L02-D11：真档下这一枚曾被 prune-unreferenced-static 剪出包外（中心空盘） */
+    DEFAULT: IN_PACKAGE_ASSETS.MASCOT_DEFAULT.pkg,
+    /* MP-R2-MATCHING-004：匹配进度卡图标收编（matching 页原硬编码路径）
+       —— R2b-L07-D10：star / sparkle 两枚同因（进度卡空圆） */
+    STAR: IN_PACKAGE_ASSETS.MASCOT_STAR.pkg,
+    SPARKLE: IN_PACKAGE_ASSETS.MASCOT_SPARKLE.pkg,
     HEART: '/static/assets/images/mascot/mascot_heart.png',         // 心动/喜欢
     CRUSH: '/static/assets/images/mascot/mascot_crush.png',         // 暗恋/心动
     LIKE: '/static/assets/images/mascot/mascot_like.png',           // 喜欢
@@ -403,10 +474,12 @@ export const IMAGE_PATHS = {
     STATUS_CRUSH: '/static/assets/images/mascot/status_crush.png',   // 心动状态
     // 匹配/加载装饰爱心素材（2026-09-17 R7：模板禁止硬编码 /static/，收敛到常量；
     // 与本组一致固定本地 /static 路径，不随 real 模式切后端基址）
+    // R2b-L07-D10：这三枚（漂浮爱心 ×8 + 中央白底心徽）在真档里被剪成静默空圆，
+    // 现随 IN_PACKAGE_ASSETS 双登记进包；HEART_PINK 仍走后端出口（无随包必要）。
     HEART_PINK: '/static/assets/images/mascot/heart_pink.png',             // 粉色小爱心
-    HEART_PINK_LARGE: '/static/assets/images/mascot/heart_pink_large.png', // 粉色大爱心
-    HEART_GREEN: '/static/assets/images/mascot/heart_green.png',           // 绿色小爱心
-    HEART_GRADIENT: '/static/assets/images/heart-gradient.svg',            // 渐变爱心装饰（MatchLoading 背景板）
+    HEART_PINK_LARGE: IN_PACKAGE_ASSETS.MASCOT_HEART_PINK_LARGE.pkg, // 粉色大爱心
+    HEART_GREEN: IN_PACKAGE_ASSETS.MASCOT_HEART_GREEN.pkg,           // 绿色小爱心
+    HEART_GRADIENT: IN_PACKAGE_ASSETS.MASCOT_HEART_GRADIENT.pkg,            // 渐变爱心装饰（MatchLoading 背景板）
   },
 
   /** TabBar 图标（tabbar 目录） */
@@ -492,11 +565,16 @@ export const IMAGE_PATHS = {
 
   /** 个人中心菜单图标（profile 目录，全部复用现有图标，避免下载新资源） */
   ICONS_PROFILE: {
-    /* MP-R2-PROFILE-010：MyMore 菜单图标收编（原页面硬编码 /static 路径） */
-    FAVORITES_SVG: '/static/assets/images/profile-favorite.svg',
-    VISITORS_SVG: '/static/assets/images/profile-visitors.svg',
-    ALBUM_SVG: '/static/assets/images/profile-album.svg',
-    PRIVACY_SVG: '/static/assets/images/profile-privacy.svg',
+    /* MP-R2-PROFILE-010：MyMore 菜单图标收编（原页面硬编码 /static 路径）
+       2026-10-19 图标空白车道：四枚字形改由 IN_PACKAGE_ASSETS 供值（pkg 串逐字不变）。
+       它们此前**登记齐全但仍在真档里渲染为空圆**——因为整串 /static 字面量过不了
+       prune-unreferenced-static.mjs 的后缀判点（同文件 :153-156），实测被剪清单见
+       apps/client/archive/prune-backup/real-20261018T201320/assets/images/profile-*.svg。
+       双登记后 tail 形式补上第二道判点，四枚随包。*/
+    FAVORITES_SVG: IN_PACKAGE_ASSETS.PROFILE_FAVORITES_SVG.pkg,
+    VISITORS_SVG: IN_PACKAGE_ASSETS.PROFILE_VISITORS_SVG.pkg,
+    ALBUM_SVG: IN_PACKAGE_ASSETS.PROFILE_ALBUM_SVG.pkg,
+    PRIVACY_SVG: IN_PACKAGE_ASSETS.PROFILE_PRIVACY_SVG.pkg,
     POSTS:        ICONS_BASE + '/social/heart-signal.svg', // 我的动态 → 复用 heart-signal
     FAVORITES:    ICONS_BASE + '/common/star.png',          // 我的收藏 → 复用 star
     MATCHES:      ICONS_BASE + '/social/match.svg',         // 我的匹配 → 复用 social.match

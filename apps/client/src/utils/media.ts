@@ -13,7 +13,10 @@
  * <p>{@code resolveMediaUrl(rawPath)} 是客户端所有图片 URL 的统一出口：
  * <ul>
  *   <li>用户上传的媒体路径（{@code /uploads/...}）→ 重写为鉴权代理 URL，附加 token</li>
- *   <li>静态资源（{@code /static/...}）→ 原样返回（无需鉴权）</li>
+ *   <li>静态资源（{@code /static/...}）→ 原样返回（无需鉴权）；例外：库内内容图
+ *       {@code /static/assets/images/{avatars,people}/**} 与 {@code posts/**}（real 档）
+ *       改指后端公开端点 app-assets——这些目录不会随 real 包发布（见 config/images.ts
+ *       的 IN_PACKAGE_ASSETS 双登记说明）</li>
  *   <li>绝对 URL（{@code http://} / {@code https://}）→ 原样返回</li>
  *   <li>data URI（{@code data:...}）→ 原样返回</li>
  *   <li>空值 → 返回空字符串</li>
@@ -225,6 +228,30 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
   ) {
     // clientEnv 惰性读取：部分单测 mock 了 config/env 且不提供该导出，
     // 而 mock-data.ts 在模块作用域就调用 resolveMediaUrl —— 取不到基址时退回本地路径。
+    const apiBaseUrl = clientEnv?.apiBaseUrl || "";
+    if (apiBaseUrl) {
+      const apiRoot = apiBaseUrl.replace(/\/api\/?$/, "");
+      return `${apiRoot}${APP_ASSET_PREFIX}${path.substring("/static/".length)}`;
+    }
+  }
+
+  // 2026-10-19 图标空白车道（R2b-L01-D18 / R2b-L04-D01 同因）：帖子配图与头像同形状——
+  // 库里存的是包内路径 `/static/assets/images/posts/post-<n>.jpg`（database/*.sql 实测 42 处），
+  // 而这条目录既没有源码字面量、也不是随包装饰素材（8 张共 556KB，塞进包直接顶穿 2MB 门禁），
+  // 于是 real 档里 resolveMediaUrl 原样返回本地路径 → 文件不在包内 → 社区动态/帖子详情
+  // 的配图格只剩 .post-media-grid__cell 的灰底。按 R13 的同一口径改走后端公开端点。
+  //
+  // 只在档位确实是 real 时改写：mock/dev/H5 三档由 prepare-static --dev 还原完整 static
+  // （HEAD 1344 个文件），本地路径本来就是通的，无端改指后端会把「不依赖后端」的档打回空白。
+  // 同目录下的 post-placeholder.jpg 不受影响：它是随包装饰素材（config/images.ts 的
+  // IN_PACKAGE_ASSETS 已把它送进包），源码常量在 real 档以 app-assets URL 形态进来时，
+  // 先被上面的 http 分支落回 `/static/…` 就返回了；即便被调用方二次 resolve，后端也托管
+  // 着同名文件（apps/api/uploads/app-assets/assets/images/posts/post-placeholder.jpg 实测存在），
+  // 两条路都能出图，不会回到空源。
+  if (
+    path.startsWith("/static/assets/images/posts/") &&
+    clientEnv?.apiMode === "real"
+  ) {
     const apiBaseUrl = clientEnv?.apiBaseUrl || "";
     if (apiBaseUrl) {
       const apiRoot = apiBaseUrl.replace(/\/api\/?$/, "");

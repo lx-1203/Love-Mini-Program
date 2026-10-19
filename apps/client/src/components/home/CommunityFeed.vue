@@ -141,6 +141,16 @@ function onAuthorTap(post: CommunityPostViewModel) {
   if (post.authorId == null) return;
   emit("openAuthor", post);
 }
+
+/**
+ * R2b-L01-D18（2026-10-19 素材解析车道）：resolveMediaUrl 对空值/空串返回 ""，
+ * 而 `:src=""` 在真档里就是那一格只剩 --c-neutral-50 底色的空白方格（帧上两帖全这样）。
+ * 取不到可用 URL 时当场落回 POST_PLACEHOLDER，让每一格都有终态；
+ * 该占位素材已随 config/images.ts 的 IN_PACKAGE_ASSETS 双登记进 real 包，不再是二次空源。
+ */
+function feedImageSrc(img: string): string {
+  return resolveMediaUrl(img) || resolveMediaUrl(IMAGE_PATHS.POST_PLACEHOLDER);
+}
 </script>
 
 <template>
@@ -229,7 +239,7 @@ function onAuthorTap(post: CommunityPostViewModel) {
               <image
                 v-if="!isFailed(`img-${post.id}-${idx}`)"
                 class="post-media-grid__img"
-                :src="resolveMediaUrl(img)"
+                :src="feedImageSrc(img)"
                 mode="aspectFill"
                 lazy-load
                 @error="onImageError(`img-${post.id}-${idx}`)"
