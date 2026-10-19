@@ -458,9 +458,20 @@ for (const t of TOUR) {
   try { openPage("/subpackages/village/village/index", "", OPTS); } catch (e) { note(`   [note] 开村口失败 ${String((e && e.message) || e).slice(0, 80)}`); }
   await sleep(3200);
   CURRENT_PAGE = "subpackages/village/village/index";
+  /* 探针逐级具名（2026-10-18）：原版把「_s 里没有 village」一律印成裸 'NO-STORE'，
+     哪一级断了全靠猜。实测 25 发历史 verdict：21 发同链路读到 n=20、4 发 NO-STORE、
+     1 发 ERR Cannot read properties of undefined (reading '$vm')——链路本身是通的，
+     NO-STORE 是暂态（逻辑层根/store 注册晚于读数窗口）。所以不可达时必须把
+     _s 的实际键名列表印出来，让下一发直接读出「刚重启(空 Map)/只有部分 store/键名对不上」。
+     前缀 NO-STORE / ERR 保持不动：device-leg-tally.mjs:39 的仪表故障正则按前缀认三态。
+     串内只用 ASCII：fn-source 走 IDE 命令行参数，中文编码没量过不赌。 */
   const VPROBE =
-    "() => { try { var app=getApp(); var vm=app.$vm; var gp=(vm.$&&vm.$.appContext.config.globalProperties)||{};"
-    + " var p=vm.$pinia||gp.$pinia; var s=p._s.get('village'); if(!s) return 'NO-STORE';"
+    "() => { try { var app=(typeof getApp==='function')?getApp():null; var vm=app&&app.$vm;"
+    + " if(!vm) return 'ERR getApp().$vm missing (logic-layer root not mounted)';"
+    + " var gp=(vm.$&&vm.$.appContext.config.globalProperties)||{}; var p=vm.$pinia||gp.$pinia;"
+    + " if(!p) return 'ERR pinia unreachable (vm.$pinia and gp.$pinia both empty)';"
+    + " if(!p._s||typeof p._s.get!=='function') return 'ERR pinia._s not a registry (unexpected shape)';"
+    + " var s=p._s.get('village'); if(!s) return 'NO-STORE '+(p._s.size? (p._s.size)+' stores='+JSON.stringify(Array.from(p._s.keys()).sort()) : 'pinia._s is an empty Map (logic layer restarted, no store registered yet)');"
     + " var l=s.posts||[]; var f=l[0]||{}; return JSON.stringify({n:l.length, id:f.id||0, title:String(f.title||f.content||'').slice(0,24), loading:!!s.loading}); }"
     + " catch(e){ return 'ERR '+e.message; } }";
   const parseV = (raw) => { try { return JSON.parse(raw); } catch { return {}; } };
@@ -469,9 +480,14 @@ for (const t of TOUR) {
   let vTries = 0;
   if (probeRaw !== null) {
     let st = parseV(probeRaw);
-    // 首读不可信：n=0 且 loading=true 只说明「还在路上」，量不出「后端没给数据」。
-    // 判据要的是 store 收没收到 ⇒ 读到落定（n>=5 或 loading 已收回）为止，最多 5 发 × 1.5s。
-    while (Number(st.n) < 5 && st.loading === true && vTries < 5) {
+    // 首读不可信，实测有两种形态（25 发历史 verdict 可查）：
+    // a) n=0 且 loading=true —— 「还在路上」，量不出「后端没给数据」；
+    // b) NO-STORE / ERR —— store 还没注册进 _s（逻辑层刚重启或分包 setup 未跑完；
+    //    2026-10-18 之前 4 发 NO-STORE、1 发 ERR $vm 未就绪，其余 21 发同链路 n=20）。
+    // 判据要的是 store 收没收到 ⇒ 读到落定为止，最多 5 发 × 1.5s（上限不动）。
+    // 落定后的读数（n<5 且 loading=false 且非暂态串）不重试，照旧如实判红。
+    while (Number(st.n) < 5 && vTries < 5 &&
+           (st.loading === true || /^(NO-STORE|ERR)\b/.test(probeRaw))) {
       await sleep(1500); vTries++;
       const again = safeAct(`设备侧 village store 等稳第 ${vTries} 发`, () => String(evaluate(VPROBE, OPTS)));
       if (again === null) { probeRaw = null; break; }
@@ -482,9 +498,13 @@ for (const t of TOUR) {
     const probe = probeRaw;
     const st = parseV(probe);
     const firstSt = parseV(firstRaw);
-    const vDetail = `n=${st.n ?? "-"} 探针=${probe.slice(0, 120)}`
+    const firstWasTransient = /^(NO-STORE|ERR)\b/.test(firstRaw);
+    const vDetail = `n=${st.n ?? "-"} 探针=${probe.slice(0, 200)}`
       + (vTries > 0 && Number(st.n) >= 5
-        ? `（首读 n=${firstSt.n ?? "-"} loading=${firstSt.loading}，等稳 ${vTries} 发后才落上 ⇒ 首读不可信这条又中一次）` : "")
+        ? (firstWasTransient
+          ? `（首读=${String(firstRaw).slice(0, 120)}，等稳 ${vTries} 发后才读到 store ⇒ 首读不可信这条又中一次）`
+          : `（首读 n=${firstSt.n ?? "-"} loading=${firstSt.loading}，等稳 ${vTries} 发后才落上 ⇒ 首读不可信这条又中一次）`)
+        : "")
       + (vTries > 0 && Number(st.n) < 5
         ? `（已等稳 ${vTries} 发仍 n=${st.n ?? "-"} loading=${st.loading} ⇒ 这是落定后的读数，不是路上态）` : "");
     checkI("设备侧 village store 真收到帖子列表（>=5 条）", Number(st.n) >= 5, vDetail, instFault(probe));

@@ -13,6 +13,22 @@
  *  1. 先修改 src/config/navigation.ts 中的 appTabs
  *  2. 再同步更新此文件中的 tabs 配置
  *  3. 同时更新 src/pages.json 中的 tabBar.list
+ *  4. 同时更新 i18n/locales/{zh-CN,en-US}.ts 的 tabs.<id>（H5 端与任何走 t() 的渲染读它）
+ *
+ *  「四处单一来源」＝ navigation.ts + 本文件 + pages.json + i18n tabs.*。四处只要有一个值不同，
+ *  真机上就等于没修：tabBar.custom:true ⇒ mp-weixin 只渲染本组件的 label，
+ *  而 H5 端由 uni-app 按 pages.json + i18n 自绘 tabBar，两侧各自的读者会各拿到一份值。
+ *  自检（2026-10-19 R6-L08 实测，四处已同值）：五枚 label 逐字为
+ *  首页 / 附近 / 匹配 / 消息 / 我的；中央项 id 仍是 discover，但文案是「匹配」，
+ *  「寻觅」只保留为**页面标题**（i18n discover.title、理想图《寻觅匹配卡片页面》左上角），
+ *  不是 tab 标签——两者不要混改。
+ *  可重跑核对：node apps/client/scripts/check-tabbar-consistency.mjs（路径/顺序/图标）
+ *  + node scripts/qa/verify-tab-bar-single-source.mjs（面板字面量相加 == --tab-bar-total-h）。
+ *
+ *  ⚠ 改完必须重建对应档位再看帧：apps/client/dist 下 mp-weixin / mp-weixin-showcase /
+ *  verify-mock 三档的 custom-tab-bar 至今是 2026-08-31 的旧版（label「寻觅」+ 已退役的
+ *  .tab-bar__item--prominent 圆盘规则仍在），只有 mp-weixin-real 是新版。
+ *  取景/真机复核若指向前三档，圆盘与「寻觅」会一直出现在帧里，与源码无关。
  *
  *  配置映射关系（navigation.ts → 本文件）：
  *    id           → id

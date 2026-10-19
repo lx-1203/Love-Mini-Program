@@ -15,6 +15,13 @@
    *  1. 先修改 src/config/navigation.ts 中的 appTabs
    *  2. 再同步更新此文件中的 tabBar.list
    *  3. 同时更新 src/custom-tab-bar/index.js 中的 tabs
+   *  4. 同时更新 src/i18n/locales/{zh-CN,en-US}.ts 的 tabs.<id>
+   *
+   *  R6-L08（2026-10-19）实测：四处 list[].text / label / tabs.* 已同值
+   *  （首页 / 附近 / 匹配 / 消息 / 我的）。本文件的 tabBar.list 在 mp-weixin 侧不参与绘制
+   *  （tabBar.custom:true ⇒ 渲染 custom-tab-bar/），但 H5 端 tabBar 由本文件 + i18n 自绘，
+   *  所以只改一侧必然出现「真机上等于没修」。中央项文案是「匹配」，
+   *  「寻觅」只是中央页的页头标题（i18n discover.title），两者口径不同、不得互改。
    *
    *  配置映射关系（navigation.ts → 本文件）：
    *    id             → (无，靠顺序对应)

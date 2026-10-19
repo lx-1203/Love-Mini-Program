@@ -21,18 +21,37 @@
  * 3) **自动回滚**——任一 spawnSync/cpSync 失败时清理 .next.* 中间态；若 SRC 已被 mv 到
  *    .bak.* 而提升失败，回滚 .bak.* -> SRC 保住原状态。
  *
+ * 2026-10-19（R6 · L02 构建车道）—— real 档按 **CDN 桶契约** 放行托管资产：
+ * `apps/client/config/cdn-buckets.json`（schema `mp-cdn-buckets/v1`，生产者 = L01，本车道只消费）
+ * 的 `cdnPrefixes` 命中的文件**不再复制进 src/static**，因此 uni build 根本不会把它们装进主包；
+ * 运行时由 utils/media.ts 解析成 `${apiRoot}/api/v1/media/app-assets/${去掉 static/}`。
+ * 三条硬前提（缺一条就大声红，不许静默把图弄丢）：
+ *   1. 契约语法/前缀合法（schema、前缀必须 `static/` 开头 `/` 结尾、cdn∩local 不相交）；
+ *   2. 命中文件在 `localPrefixes`/首屏保护名单之外（tabbar/register 图标、audio、default-avatar、
+ *      assets/profile 皮肤——契约想把它们划进 cdn ⇒ 整份契约拒收）；
+ *   3. `apps/api/uploads/app-assets/` 下**同名文件真实存在**（fs 探测；没探测到就红，不猜 HTTP）。
+ * 每个被放行的文件都落进机读记录 `tmp/build/cdn-offload-record.json`（prune 步据此出清单），
+ * 权威全量仍在 `static-local-backup/full-static` —— "删之前有具名备份"这条纪律不因放行而豁免。
+ * **契约不在盘上 ⇒ 一个字节都不额外处置**，行为与本次改动前逐字相同；`--dev/--h5` 走 restore()
+ * 分支，从不读契约 ⇒ mock/dev/showcase 三档零影响。
+ *
  * 用法：
  *   node scripts/prepare-static.mjs --dev
  *   node scripts/prepare-static.mjs --real
  *   node scripts/prepare-static.mjs --h5
+ *   node scripts/prepare-static.mjs --real --buckets <契约路径>   # 指向夹具做链路自证（默认真件）
+ *   node scripts/prepare-static.mjs --self-test                  # 不碰 src/static，只验桶判定纯函数
  */
-import { existsSync, mkdirSync, cpSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, cpSync, readdirSync, readFileSync, statSync, writeFileSync, rmSync } from "node:fs";
 import { collectComputedRefs } from "./asset-computed-refs.mjs";
 import { spawnSync } from "node:child_process";
 import { dirname, join, resolve, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const CLIENT_DIR = resolve(__dirname, "..");
+const REPO_ROOT = resolve(CLIENT_DIR, "..", "..");
 const SRC = resolve(__dirname, "../src/static");
 const BACKUP = resolve(__dirname, "../static-local-backup");
 /** 临时中间目录：放在 apps/client/ 根下、与 src 同盘但路径前缀避开 `src/static.*` 模式
@@ -41,6 +60,8 @@ const BACKUP = resolve(__dirname, "../static-local-backup");
 const STAGE_ROOT = resolve(__dirname, "..");
 
 const mode = process.argv[2] || "--real";
+/** --dry：只算不写（strip 的全判读照打，src/static 与记录都不动）。--dev/--h5 的 restore 分支不认它。 */
+const dryRun = process.argv.includes("--dry");
 
 /** 引用扫描来源（2026-10-18 · MP-FIDELITY Phase A3）：
  *   auto = 旧行为：`dist/build/mp-weixin` 存在就扫它，否则扫 src。这是跨档口径（D-A1）——
@@ -53,6 +74,197 @@ const scanMode = (() => {
   const v = i >= 0 ? String(process.argv[i + 1] || "") : "";
   return v === "src" || v === "dist" || v === "auto" ? v : "auto";
 })();
+
+/* ══ CDN 桶契约（mp-cdn-buckets/v1）══════════════════════════════════════════
+   路径口径全链统一：**包内相对路径**（以 `static/` 开头，去掉首个 `/` 前导）。
+   prepare-static 的世界里没有 `static/` 前缀（备份树/暂存树都是 static 目录的内容），
+   所以契约前缀进这里一律先剥 `static/` 得到 bucketRel。 */
+const BUCKETS_DEFAULT = join(CLIENT_DIR, "config", "cdn-buckets.json");
+const BUCKET_SCHEMA = "mp-cdn-buckets/v1";
+const APP_ASSET_ENDPOINT = "/api/v1/media/app-assets/";
+const BACKEND_ASSETS = resolve(REPO_ROOT, "apps/api/uploads/app-assets");
+const OFFLOAD_RECORD = join(REPO_ROOT, "tmp/build/cdn-offload-record.json");
+/** 契约路径可指到夹具（仅用于链路自证；默认真件，缺盘 ⇒ 不放行） */
+const bucketsArg = (() => {
+  const i = process.argv.indexOf("--buckets");
+  return i >= 0 && process.argv[i + 1] && !String(process.argv[i + 1]).startsWith("--")
+    ? resolve(process.argv[i + 1])
+    : BUCKETS_DEFAULT;
+})();
+
+/** 首屏/原生读取必需的本地前缀：契约若把它们划入 cdn ⇒ 整份契约拒收（退出码非 0）。 */
+const PROTECTED_LOCAL_PREFIXES = [
+  "static/assets/icons/tabbar/", // wx.setTabBarItem 原生读取，不走 HTTP
+  "static/assets/icons/register/", // 表单关键图标：弱网下不许空白
+  "static/assets/profile/", // 皮肤 PNG —— profile-svg-to-png 的校验对象在本步之前
+];
+const PROTECTED_FILE_RE = [/\/audio\//, /default-avatar\.(jpg|png|svg)$/i];
+
+function stripStaticPrefix(p) {
+  return String(p || "").replace(/^\/?static\//, "").replace(/^\/+/, "");
+}
+function normalizePrefix(p) {
+  return String(p || "").replace(/^\/+/, "").replace(/\\/g, "/");
+}
+/** 命中哪一个 cdn 桶（包内口径，含 `static/` 前缀）；没命中返回 null */
+function bucketOf(pkgPath, prefixes) {
+  const s = normalizePrefix(pkgPath);
+  return prefixes.find((p) => s.startsWith(p)) || null;
+}
+/** 首屏/本地必需判定：命中即"绝不出包"（loadBuckets 已在契约层拒收，这里是第二道闸） */
+function protectedHit(pkgPath) {
+  const s = normalizePrefix(pkgPath);
+  const hit = PROTECTED_LOCAL_PREFIXES.find((p) => s.startsWith(p));
+  if (hit) return "local-protected-prefix:" + hit;
+  if (PROTECTED_FILE_RE.some((re) => re.test(s))) return "local-protected-file";
+  return null;
+}
+
+/** 读 + 校验契约。返回 {absent:true} 或 {buckets:{...}}；校验不通过时把问题列出来。 */
+function loadBuckets(path) {
+  if (!existsSync(path)) return { absent: true, path };
+  let raw;
+  try {
+    raw = readFileSync(path, "utf-8");
+  } catch (e) {
+    return { problems: [`契约读不动：${e.message}`], path };
+  }
+  let doc;
+  try {
+    doc = JSON.parse(raw);
+  } catch (e) {
+    return { problems: [`契约不是合法 JSON：${e.message}`], path };
+  }
+  const problems = [];
+  if (doc.schema !== BUCKET_SCHEMA) problems.push(`schema=${JSON.stringify(doc.schema)}（应为 "${BUCKET_SCHEMA}"）⇒ 前后端字段口径不一致，拒绝按它放行`);
+  const arr = (k) => {
+    const v = doc[k];
+    if (!Array.isArray(v) || v.length === 0) { problems.push(`字段 ${k} 缺失或为空数组`); return []; }
+    return v.map(normalizePrefix).filter((p, i) => {
+      if (!p.startsWith("static/")) { problems.push(`${k}[${i}]=${JSON.stringify(v[i])} 不以 static/ 开头`); return false; }
+      if (!p.endsWith("/")) { problems.push(`${k}[${i}]=${JSON.stringify(v[i])} 不以 / 结尾（前缀必须是目录口径，否则 "covers" 会顺手吃掉 "covers-x.png"）`); return false; }
+      if (p === "static/") { problems.push(`${k}[${i}]="static/" 会扫走整包 ⇒ 拒绝`); return false; }
+      return true;
+    });
+  };
+  const cdnPrefixes = arr("cdnPrefixes");
+  const localPrefixes = arr("localPrefixes");
+  for (const c of cdnPrefixes) {
+    for (const l of localPrefixes) {
+      if (c.startsWith(l) || l.startsWith(c)) problems.push(`cdnPrefixes 与 localPrefixes 相互覆盖（${c} ∩ ${l}）⇒ 同一文件既该出包又该留包，拒绝`);
+    }
+    for (const pr of PROTECTED_LOCAL_PREFIXES) {
+      if (pr.startsWith(c) || c.startsWith(pr)) problems.push(`cdnPrefixes ${c} 覆盖首屏/本地必需前缀 ${pr} ⇒ 这些素材绝不出包，拒绝整份契约`);
+    }
+  }
+  if (problems.length) return { problems, path };
+  return {
+    buckets: {
+      path,
+      sha8: createHash("sha256").update(raw).digest("hex").slice(0, 8),
+      cdnPrefixes,
+      localPrefixes,
+      endpoint: APP_ASSET_ENDPOINT,
+    },
+  };
+}
+
+/** 三种"不许放行"的严重程度排序：先报保护命中（契约本身画错了），再报缺资产（后端没这份字节），
+ *  最后报首屏命中（pages.json/tabBar/入口页引用它）。返回空串 = 可以放行。 */
+function cdnRedReason(plan, firstHits) {
+  if (plan.violations.length) return "protected-asset-in-cdn-bucket";
+  if (plan.missing.length) return "backend-asset-missing";
+  if (firstHits.length) return "first-screen-asset-in-cdn-bucket";
+  return "";
+}
+
+/** 放行判据 + 后端探测（纯函数，--self-test 直接喂文件名）。
+ *  files = 包内口径路径（static/...）；returns { keep, offload, violations, missing }
+ *  - keep：留在包里的（含"后端没有 ⇒ 不许放行"的那些，同时进 missing 名单等判红）；
+ *  - violations：命中 cdn 桶但同时是首屏/本地必需 ⇒ 记为违例（契约层已拒收，这里是第二道闸）；
+ *  - offload：可以出包的（已确认 apps/api/uploads/app-assets/ 下有同名字节）。 */
+function planCdnOffload(files, buckets, backendDir) {
+  const keep = [], offload = [], violations = [], missing = [];
+  for (const f of files) {
+    const bucket = bucketOf(f, buckets.cdnPrefixes);
+    if (!bucket) { keep.push(f); continue; }
+    const prot = protectedHit(f);
+    if (prot) { violations.push({ file: f, why: `${prot} 命中 cdn 桶 ${bucket} ⇒ 首屏/本地必需素材绝不出包` }); keep.push(f); continue; }
+    const rel = stripStaticPrefix(f);
+    let backendBytes = null;
+    try { backendBytes = statSync(join(backendDir, rel)).size; } catch { backendBytes = null; }
+    if (backendBytes === null) { missing.push({ file: f, appAssetPath: rel, backendFile: join(backendDir, rel) }); keep.push(f); continue; }
+    offload.push({ packagePath: f, appAssetPath: rel, backendBytes });
+  }
+  return { keep, offload, violations, missing };
+}
+
+if (process.argv.includes("--self-test")) process.exit(cdnSelfTest());
+/** 不碰 src/static、不构建：只验"桶判定 + 契约拒收 + 后端探测"这套判据本身承不承重。
+ *  夹具名单一律取自 apps/api/uploads/app-assets 盘上的**真实文件名**，
+ *  因为"放行"与"缺资产"的唯一区别就是盘上有没有那一份字节。 */
+function cdnSelfTest() {
+  const RK = "CDNBUCKETS_RESULT";
+  const problems = [];
+  const B = { cdnPrefixes: ["static/generated/", "static/assets/images/covers/"], localPrefixes: ["static/assets/icons/", "static/assets/svg-spec/"], endpoint: APP_ASSET_ENDPOINT, sha8: "fixture", path: "<内存夹具>" };
+  const pick = (relDir) => {
+    try { return listFilesRecursive(join(BACKEND_ASSETS, relDir)).filter((n) => /\.(png|jpe?g|webp)$/i.test(n))[0] || null; } catch { return null; }
+  };
+  const genReal = pick("generated");
+  const coversReal = pick("assets/images/covers");
+  if (!genReal || !coversReal) problems.push(`夹具前提不成立：app-assets 盘上取不到样张（generated=${genReal} covers=${coversReal}）⇒ 放行/缺资产两种判读都无从验证`);
+  const files = [
+    genReal && "static/generated/" + genReal,
+    coversReal && "static/assets/images/covers/" + coversReal,
+    "static/assets/icons/tabbar/home.png", // 不在 cdn 桶 ⇒ 必须留包
+    "static/assets/images/posts/__x.jpg", // 不在夹具桶 ⇒ 必须留包，且不进 missing（不是待放行文件）
+    "static/generated/__cdn_no_such__.png", // 命中桶但后端没有 ⇒ 必须进 missing 名单等判红
+  ].filter(Boolean);
+  const plan = planCdnOffload(files, B, BACKEND_ASSETS);
+  if (genReal && !plan.offload.some((o) => o.packagePath === "static/generated/" + genReal)) problems.push(`正例转红：后端有 generated/${genReal} 却没判为放行`);
+  if (coversReal && !plan.offload.some((o) => o.packagePath === "static/assets/images/covers/" + coversReal)) problems.push("正例转红：covers 桶命中却没判为放行 ⇒ 前缀匹配失效");
+  if (plan.offload.some((o) => o.packagePath === "static/assets/icons/tabbar/home.png")) problems.push("夹具：tabbar 图标被判为放行 ⇒ 会误删首屏必需素材");
+  if (plan.missing.some((m) => m.file === "static/assets/images/posts/__x.jpg")) problems.push("夹具：桶外文件被记成缺资产 ⇒ 会把「没打算放行」读成「图丢了」");
+  if (!plan.missing.some((m) => m.file === "static/generated/__cdn_no_such__.png")) problems.push("负例不承重：后端不存在的桶内文件没进 missing 名单 ⇒ 会静默丢图");
+  /* 第二道闸：契约层已拒收"桶覆盖 tabbar"，这里绕开 loadBuckets 直接喂判定函数，
+     证明 planCdnOffload 自己也拦得住（防的是"契约由别处校验过"这个假设失效）。 */
+  const bad = { cdnPrefixes: ["static/assets/icons/tabbar/"], localPrefixes: [] };
+  const gate2 = planCdnOffload(["static/assets/icons/tabbar/home.png"], bad, BACKEND_ASSETS);
+  if (gate2.offload.length) problems.push("第二道闸失效：桶直接覆盖 tabbar 时仍被判放行");
+  if (!gate2.violations.length) problems.push("第二道闸失效：桶直接覆盖 tabbar 时没记违例");
+  /* 判红**接线**（strip 用的就是这一个 cdnRedReason，不在链里另算一遍，防"判据对了但没接线"） */
+  const r1 = cdnRedReason(plan, []);
+  if (r1 !== "backend-asset-missing") problems.push(`判红接线转红：夹具（桶内有 ghost）应判 backend-asset-missing，实得 "${r1}"`);
+  const cleanPlan = planCdnOffload(genReal ? ["static/generated/" + genReal] : [], B, BACKEND_ASSETS);
+  if (cdnRedReason(cleanPlan, []) !== "") problems.push("判红接线过宽：后端确有货的桶内文件也被判成要红 ⇒ 发布链会永远红");
+  if (cdnRedReason({ violations: [{ file: "x", why: "t" }], missing: [{ file: "y" }] }, []) !== "protected-asset-in-cdn-bucket") problems.push("判红优先级错：保护命中必须压过缺资产");
+  if (cdnRedReason({ violations: [], missing: [] }, [{ packagePath: "static/generated/z.png" }]) !== "first-screen-asset-in-cdn-bucket") problems.push("首屏命中没判红 ⇒ tabBar/入口页素材会被放行出包");
+  /* 契约层负例：四种非法契约都必须整份拒收（不是"忽略那一条"） */
+  mkdirSync(join(REPO_ROOT, "tmp/qa/fixtures"), { recursive: true });
+  const mk = (name, doc) => { const p = join(REPO_ROOT, "tmp/qa/fixtures", name); writeFileSync(p, JSON.stringify(doc), "utf-8"); return p; };
+  const badDocs = [
+    ["_selftest-buckets-bad-tabbar.json", { schema: BUCKET_SCHEMA, cdnPrefixes: ["static/assets/icons/tabbar/"], localPrefixes: ["static/assets/svg-spec/"] }, "把 tabbar 划进 cdn"],
+    ["_selftest-buckets-schema.json", { schema: "mp-cdn-buckets/v0", cdnPrefixes: ["static/generated/"], localPrefixes: ["static/assets/icons/"] }, "schema 不是 mp-cdn-buckets/v1"],
+    ["_selftest-buckets-overlap.json", { schema: BUCKET_SCHEMA, cdnPrefixes: ["static/assets/icons/"], localPrefixes: ["static/assets/icons/tabbar/"] }, "cdn 与 local 覆盖同一目录"],
+    ["_selftest-buckets-nostatic.json", { schema: BUCKET_SCHEMA, cdnPrefixes: ["generated/"], localPrefixes: ["static/assets/icons/"] }, "cdnPrefixes 不以 static/ 开头"],
+    ["_selftest-buckets-sweep.json", { schema: BUCKET_SCHEMA, cdnPrefixes: ["static/"], localPrefixes: ["static/assets/icons/"] }, "cdnPrefixes=\"static/\" 会扫走整包"],
+  ].map(([name, doc, label]) => {
+    const p = mk(name, doc);
+    const r = loadBuckets(p);
+    if (!r.problems || !r.problems.length) problems.push(`负例不承重：${label} 的契约竟被接受`);
+    return p;
+  });
+  /* 契约缺席必须读成"不放行"，而不是"空桶 ⇒ 整包清空" */
+  const absent = loadBuckets(join(REPO_ROOT, "tmp/qa/fixtures/_selftest-buckets-不在盘上.json"));
+  if (!absent.absent) problems.push("负例不承重：契约不在盘上却没判 absent ⇒ 会被当成空桶处理");
+  for (const p of badDocs) { try { rmSync(p, { force: true }); } catch { /* 夹具清理失败不影响判点 */ } }
+  for (const p of problems) console.error(`[cdn-buckets] ${p}`);
+  console.log(problems.length
+    ? `${RK}=FAIL problems=${problems.length}`
+    : `${RK}=PASS cases=8 放行判定=可(offload=${plan.offload.length}) 缺资产可红=是 契约拒收可红=是 首屏保护=未被放行`);
+  return problems.length ? 1 : 0;
+}
+
 
 /** 用 child_process spawnSync（不走 NODE_OPTIONS shim 的 fs API 拦截）。
  * 沙箱实测：cp -a 全大目录 copy OK、rm -rf 单目录 OK、mv 单次 OK。
@@ -159,6 +371,53 @@ function listFilesRecursive(dir, base = dir, out = []) {
   return out;
 }
 
+/** 首屏必需素材（判据 i/ii 的第二条）：tabBar 图标由 pages.json 原生读取（不经 media.ts），
+ *  入口页与 custom-tab-bar 是弱网下第一次渲染的对象。契约若把它们划进 cdn ⇒ 链大声红。
+ *  读的是 pages.json **文本**而不是 JSON.parse —— 本仓 pages.json 带注释，parse 会炸。 */
+function firstScreenRefs(srcRoot) {
+  const out = new Set();
+  const push = (txt) => {
+    const re = /['"]((?:\/?static\/|\.?\/?static\/)?[A-Za-z0-9/_ .\-]+\.(?:png|jpg|jpeg|svg|gif|webp))['"]/g;
+    let m;
+    while ((m = re.exec(String(txt))) !== null) out.add(normalizePrefix("/" + m[1].replace(/^\/?static/, "static")));
+  };
+  const collectFrom = (file) => {
+    let t = "";
+    try { t = readFileSync(file, "utf-8"); } catch { return; }
+    push(t);
+  };
+  collectFrom(join(srcRoot, "pages.json"));
+  let entry = "";
+  try {
+    const pj = readFileSync(join(srcRoot, "pages.json"), "utf-8");
+    entry = String((/"path"\s*:\s*"([^"]+)"/.exec(pj) || [, ""])[1]);
+  } catch { /* 读不到入口页就只保 tabBar */ }
+  if (entry) collectFrom(join(srcRoot, entry + ".vue"));
+  const ctb = join(srcRoot, "custom-tab-bar");
+  if (existsSync(ctb)) {
+    for (const rel of listFilesRecursive(ctb)) if (/\.(vue|ts|js|wxml|json)$/.test(rel)) collectFrom(join(ctb, rel));
+  }
+  return out;
+}
+
+/** 契约缺席/非法/命中保护名单/后端缺资产 —— 四种情形的统一出口。
+ *  返回 { buckets } 或在**任何写盘之前**判红（strip 在 stage 里构造，SRC 还没被碰）。 */
+function resolveBuckets(path, log) {
+  const loaded = loadBuckets(path);
+  if (loaded.absent) {
+    console.log(`PREPARESTATIC_CDN=ABSENT path=${path} ⇒ 不做任何额外放行（行为与契约落地前逐字一致）`);
+    return { buckets: null };
+  }
+  if (loaded.problems) {
+    console.error(`PREPARESTATIC_CDN=FAIL reason=contract-invalid path=${path}`);
+    for (const p of loaded.problems) console.error(`CDN_CONTRACT_PROBLEM ${p}`);
+    console.error("CDNBUCKETS_RESULT=FAIL 契约不合法 ⇒ 整份拒收，一个字节都不按它处置");
+    return { fatal: true };
+  }
+  log.push(`PREPARESTATIC_CDN_CONTRACT path=${loaded.buckets.path} sha8=${loaded.buckets.sha8} cdnBuckets=${loaded.buckets.cdnPrefixes.length} localBuckets=${loaded.buckets.localPrefixes.length}`);
+  return { buckets: loaded.buckets };
+}
+
 /** profile PNG 的权威来源（2026-09-30 r9 处置，reports/audit/round-7/followups-v33.md §9）。
  *
  * `src/static/assets/profile/png/**` 是 48 个**被 git 跟踪**的文件，而
@@ -244,6 +503,10 @@ function restore() {
   const missing = want.filter((r) => !existsSync(join(SRC, r)));
   console.log(`PREPARESTATIC_RESTORE_CHECK 备份=${want.length} 缺失=${missing.length}`);
   for (const r of missing.slice(0, 10)) console.log(`PREPARESTATIC_RESTORE_MISSING ${r}`);
+  if (dryRun) {
+    console.log(`PREPARESTATIC_RESTORE=DRY 缺失=${missing.length}（未做目录交换、未复制任何文件）`);
+    return;
+  }
   if (want.length && missing.length / want.length < 0.01) {
     console.log(`PREPARESTATIC_RESTORE=noop reason=src 已是全量（缺的 ${missing.length} 个都在源码引用之外）⇒ 不做目录交换，Windows 上那次 mv 会撞 busy`);
     return;
@@ -358,7 +621,91 @@ function strip() {
   for (const o of comp.orphans.slice(0, 12)) console.log("PREPARESTATIC_ORPHAN_REF " + o + "（配置指向它，备份与本树都没有 ⇒ 真素材缺失，不许被裁剪顺手掩盖）");
   if (comp.refs.length) { const hit = comp.refs.filter((x) => x.indexOf("icons/common/eye.svg") >= 0 || x.indexOf("icons/common/location.svg") >= 0); console.log("PREPARESTATIC_COMPUTED_样本 " + (hit.length ? hit.join(" ") : "(未含 eye/location，检查解析是否生效)")); }
 
+  /* ── CDN 桶放行：命中契约 cdnPrefixes 且后端 app-assets 有同名字节的，**不再复制进 src/static**
+     ⇒ uni build 根本不会把它们装进主包（不是"装完再删"，删的是复制这一步）。
+     四种情形一律在 SRC 被动之前判红：契约非法 / 命中首屏-本地必需 / 后端缺资产 / 记录写不进盘。 */
+  const cdnLog = [];
+  const { buckets, fatal } = resolveBuckets(bucketsArg, cdnLog);
+  if (fatal) process.exit(1);
+  const offloadSet = new Set();
+  let offloadEntries = [];
+  if (buckets) {
+    const inBackup = new Set(allFiles.map((r) => "static/" + r));
+    /** 候选 = "会被复制进包"的那一份引用集（保留集 ∩ 备份）。桶判定只对它们做：
+     *  桶外的一律留包，桶内且后端有同名文件的才出包，桶内但后端没有的 → missing 名单 → 判红。 */
+    const candidates = [...refs].map(normalizePrefix).filter((f) => inBackup.has(f));
+    const plan = planCdnOffload(candidates, buckets, BACKEND_ASSETS);
+    const first = firstScreenRefs(srcRoot);
+    const firstHits = plan.offload.filter((o) => first.has(o.packagePath));
+    const reason = cdnRedReason(plan, firstHits);
+    if (reason) {
+      console.error(`CDN_OFFLOAD=FAIL reason=${reason} contract=${buckets.path}@${buckets.sha8}`);
+      for (const v of plan.violations) console.error(`CDN_PROTECTED_HIT ${v.file} ⇒ ${v.why}`);
+      for (const m of plan.missing) console.error(`CDN_BACKEND_MISSING ${m.file} ⇒ 期望 app-assets/${m.appAssetPath}（fs 探测 ${m.backendFile} 不存在）`);
+      for (const o of firstHits) console.error(`CDN_FIRST_SCREEN_HIT ${o.packagePath} ⇒ pages.json/tabBar/入口页直接引用它，出包就等于首屏空白`);
+      console.error(`[prepare-static] 一个文件都不按契约处置：src/static **未被触碰**（宁可链停，也不静默把图弄丢）`);
+      console.log("CDNBUCKETS_RESULT=FAIL reason=" + reason);
+      process.exit(1);
+    }
+    let offloadBytes = 0;
+    let byteMismatch = 0;
+    for (const o of plan.offload) {
+      const srcFile = join(full, o.appAssetPath);
+      let packageBytes = 0;
+      try { packageBytes = statSync(srcFile).size; } catch { continue; }
+      if (packageBytes !== o.backendBytes) byteMismatch++;
+      offloadSet.add(o.packagePath);
+      offloadEntries.push({
+        packagePath: o.packagePath,
+        appAssetPath: o.appAssetPath,
+        packageBytes,
+        backendBytes: o.backendBytes,
+        bytesMatch: packageBytes === o.backendBytes,
+      });
+      offloadBytes += packageBytes;
+    }
+    console.log(`PREPARESTATIC_CDN=APPLIED contract=${buckets.path}@${buckets.sha8} 候选=${candidates.length} 去重候选=${new Set(candidates).size} 桶判定(offload=${plan.offload.length}/缺资产=${plan.missing.length}/保护命中=${plan.violations.length}) 实际放行=${offloadEntries.length} 出包字节=${offloadBytes} 后端字节不一致=${byteMismatch} 首屏样本=${first.size}`);
+    for (const m of plan.missing) console.error(`CDN_BACKEND_MISSING ${m.file} ⇒ 期望 app-assets/${m.appAssetPath}`);
+    for (const o of plan.offload) {
+      if (!offloadEntries.some((e) => e.packagePath === o.packagePath)) {
+        console.error(`CDN_OFFLOAD=FAIL reason=offload-entry-dropped ${o.packagePath} ⇒ 桶判定要放行它，但备份里取不到字节（静默丢弃=丢图，宁可红）`);
+        process.exit(1);
+      }
+    }
+    const mismatchNames = offloadEntries.filter((e) => !e.bytesMatch).slice(0, 8);
+    for (const e of mismatchNames) console.warn(`CDN_BYTE_MISMATCH_ITEM ${e.packagePath} 包内=${e.packageBytes}B app-assets=${e.backendBytes}B`);
+    if (byteMismatch) console.warn(`CDN_BYTE_MISMATCH=${byteMismatch} ⇒ 包内字节与 app-assets 字节不等长（服务的是另一份图，不是"丢了"，但要看一眼）`);
+    /* 本地桶读数：留包侧必须还有东西，否则"localPrefixes 存在但整目录空了"就是误删的形状 */
+    for (const lp of buckets.localPrefixes) {
+      const n = allFiles.filter((r) => ("static/" + r).startsWith(lp)).length;
+      console.log(`PREPARESTATIC_LOCAL ${lp} 备份内文件=${n}`);
+    }
+  }
+  if (offloadSet.size) {
+    const tabbarInBucket = [...offloadSet].filter((f) => f.startsWith("static/assets/icons/tabbar/"));
+    if (tabbarInBucket.length) {
+      console.error(`CDN_OFFLOAD=FAIL reason=tabbar-icon-offloaded ${tabbarInBucket.join(" ")}`);
+      process.exit(1);
+    }
+  }
+
   let kept = 0;
+  let offloaded = 0;
+  /* --dry：把 strip 的全部判读算完并打印，但**不建 stage、不复制、不 promote、不写记录**
+     —— 用于"只读量一次现状"（本仓纪律：恢复/裁剪类动作先问到底缺不缺，先看会剪成什么样）。 */
+  if (dryRun) {
+    const keepList = [...refs].map(normalizePrefix).filter((f) => !offloadSet.has(f) && allFiles.includes(f.replace(/^static\//, "")));
+    const keepBytes = keepList.reduce((a, f) => { try { return a + statSync(join(full, f.slice("static/".length))).size; } catch { return a; } }, 0);
+    const tabbarN = existsSync(join(full, "assets/icons/tabbar")) ? listFilesRecursive(join(full, "assets/icons/tabbar")).length : 0;
+    console.log(`PREPARESTATIC_DRY mode=real scan=${scanMode} 保留(不含tabbar)=${keepList.length} 保留字节=${keepBytes} tabBar整目录=${tabbarN} CDN放行=${offloadEntries.length} 放行字节=${offloadEntries.reduce((a, e) => a + e.packageBytes, 0)} 契约=${buckets ? buckets.path + "@" + buckets.sha8 : "(缺席)"}`);
+    console.log(`PREPARESTATIC_DRY src/static=${SRC}（未触碰） 备份=${full}`);
+    const biggest = keepList.map((f) => ({ f, b: (() => { try { return statSync(join(full, f.slice("static/".length))).size; } catch { return 0; } })() })).sort((a, b) => b.b - a.b).slice(0, 8);
+    for (const x of biggest) console.log(`PREPARESTATIC_DRY_保留大户 ${x.f} ${(x.b / 1024).toFixed(0)}KB`);
+    for (const e of offloadEntries.slice(0, 8)) console.log(`PREPARESTATIC_DRY_放行 ${e.packagePath} ${e.packageBytes}B → ${APP_ASSET_ENDPOINT}${e.appAssetPath}`);
+    if (offloadEntries.length > 8) console.log(`PREPARESTATIC_DRY_放行 …另 ${offloadEntries.length - 8} 个未逐条点名`);
+    console.log("PREPARESTATIC_RESULT=DRY（没动盘）");
+    return;
+  }
   try {
     mkdirSync(stage);
     // tabBar 图标（小目录 13 个，用单文件 cpSync 循环避免 spawnSync Windows 子进程抖动）
@@ -370,6 +717,8 @@ function strip() {
     }
     // 源码字面量引用的 /static/**——单文件 cpSync（不被 shim 拦截）
     for (const ref of refs) {
+      const pkgPath = normalizePrefix(ref);
+      if (offloadSet.has(pkgPath)) { offloaded++; continue; } // CDN 放行：根本不复制进包（运行时走 app-assets）
       const from = join(full, ref.slice("/static/".length));
       if (existsSync(from)) {
         const to = join(stage, ref.slice("/static/".length));
@@ -380,7 +729,27 @@ function strip() {
     }
     const png = seedProfilePngFromAuthority(stage, { onlyExisting: true });
     console.log(`[prepare-static] real 模式 profile PNG 权威对齐：换成权威来源 ${png.seeded} 个 / 字节相同跳过 ${png.skippedSame} 个（顺序 ${png.from}）`);
-    atomicPromote(stage, `real 模式：本地保留 tabBar + 源码字面量引用 ${kept} 个文件`);
+    /* 机读记录：prune 步据此把"为什么这些文件不在包里 + 它们在哪个端点"写成产物内清单。
+       写在 promote **之前**：写不进盘就当没放行（宁可不省体积，也不要"文件不见了但没人能解释"）。 */
+    if (buckets) {
+      const record = {
+        schema: "mp-cdn-offload-record/v1",
+        writtenBy: "apps/client/scripts/prepare-static.mjs --real",
+        at: new Date().toISOString(),
+        contract: { path: buckets.path, sha8: buckets.sha8, schema: BUCKET_SCHEMA },
+        cdnPrefixes: buckets.cdnPrefixes,
+        localPrefixes: buckets.localPrefixes,
+        appAssetEndpoint: APP_ASSET_ENDPOINT,
+        backendAssetsDir: BACKEND_ASSETS,
+        scanMode,
+        totals: { files: offloadEntries.length, packageBytes: offloadEntries.reduce((a, e) => a + e.packageBytes, 0) },
+        entries: offloadEntries,
+      };
+      mkdirSync(dirname(OFFLOAD_RECORD), { recursive: true });
+      writeFileSync(OFFLOAD_RECORD, JSON.stringify(record, null, 2) + "\n", "utf-8");
+      console.log(`CDN_OFFLOAD_RECORD=${OFFLOAD_RECORD} files=${record.totals.files} packageBytes=${record.totals.packageBytes} contractSha8=${buckets.sha8}`);
+    }
+    atomicPromote(stage, `real 模式：本地保留 tabBar + 源码字面量引用 ${kept} 个文件${offloaded ? `（CDN 放行 ${offloaded} 个，不进包）` : ""}`);
     console.log(`[prepare-static] real 模式：其余由后端 app-assets 托管`);
     console.log(`[prepare-static] 完成（模式 ${mode}）`);
   } catch (e) {

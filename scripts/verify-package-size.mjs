@@ -13,19 +13,34 @@
  * 因此跳过 MOCK_DATA_VALUE_RE 检查；且 dev 构建经 prepare-static --dev 恢复 7.7MB
  * 本地装饰图（mock 模式无后端，图片需随包携带），主包必然超过微信 2MB 上限——
  * 这是开发调试形态，不代表发布形态，故主包断言降级为警告；总包与 en-US 检查仍严格。
- * 发布形态由 real 构建（build:mp-weixin:real，无 --allow-mock）执行严格主包 ≤2MB 门禁。
+ * 发布形态（real 档）由本门按**同一组阈值**判主包 ≤2MB：它量的对象是
+ * `build:mp-weixin:real`（= release-chain：prepare-static --real 按 CDN 桶契约"不复制进包"
+ * → uni build → prune 兜底出包 + 落 CDN_OFFLOAD_MANIFEST.json）之后的产物。
+ * 措辞口径（本仓登记的"同一输出两头打脸"这条的修法，只改话术、不动阈值与退出码）：
+ *   · 阈值 2.00MB/10MB 与退出码在任何档位都不变；
+ *   · 档位不是 real、或没走 release-chain ⇒ 这组数字**不能**被引用为"发布形态达标"；
+ *   · real 档里 CDN 桶出包必须有清单解释（见 PACKAGE_SIZE_CDN 行）——
+ *     体积下来但不说清"哪些文件为什么不进了"，本门按不成立处理，不接受"反正数字小了"。
  */
 import { readFileSync, existsSync, statSync, readdirSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
 const allowMock = args.includes("--allow-mock");
+/* 位置参数取"第一个不带 -- 的"，而不是死认 args[0] —— 本门现在多了 --buckets 旗标，
+   写死 args[0] 会让"旗标在前、目录在后"的调用把 "--buckets" 当目录名去拼 app.json。 */
 const distRoot = resolve(
-  (allowMock ? args.find((a) => !a.startsWith("--")) : args[0]) ||
+  args.find((a) => !a.startsWith("--")) ||
     join(__dirname, "../apps/client/dist/build/mp-weixin")
 );
+const clientDir = join(__dirname, "../apps/client");
+const BUCKETS_PATH = (() => {
+  const i = args.indexOf("--buckets");
+  return i >= 0 && args[i + 1] && !String(args[i + 1]).startsWith("--") ? resolve(args[i + 1]) : join(clientDir, "config/cdn-buckets.json");
+})();
 
 if (!existsSync(distRoot)) {
   console.error(`[verify-size] 构建产物不存在: ${distRoot}`);
@@ -104,15 +119,126 @@ console.log("[verify-size] ===== mp-weixin 包体积验收 =====");
 console.log(`  被测物: ${distRoot}`);
 console.log(`PACKAGE_SIZE_BAND=${bandMode}`);
 // 这句说明原先是常量，real 档也照印"不是发布形态"，与 :16「发布形态由 real 构建执行严格 ≤2MB 门禁」互相打脸。
+// 现在按档位条件化：real 档说"我是发布形态门禁的调用对象（并按 CDN 清单核算）"，
+// 其它档说"以上数字只代表上面那个档"。阈值、判定、退出码一字未动。
 const bandNote = bandMode.startsWith("MODE:未知")
   ? "← 档位未知（读不到 config/env.js）⇒ 以下数字不能作为任何口径的达标依据"
   : /MODE:real\b/.test(bandMode)
-    ? "← 本档是发布形态门禁的调用对象；但只有走 build:mp-weixin:real（含 prepare-static --real 与 prune）出的档才是发布形态，这份 prune 过没有本门不判"
+    ? "← 本档是发布形态门禁的调用对象；只有走 build:mp-weixin:real（含 prepare-static --real 与 prune）出的档才是发布形态，这份 prune 过没有本门不判；CDN 桶出包的核算见下面 PACKAGE_SIZE_CDN 行"
     : "← 以上数字只代表上面那个档，不是发布形态";
 console.log(`  主包: ${mb(mainBytes)}  (上限 ${mb(MAIN_PACKAGE_LIMIT)})  ${bandNote}`);
 console.log(`  总包: ${mb(totalBytes)}  (上限 ${mb(TOTAL_LIMIT)})`);
 for (const [root, bytes] of Object.entries(subBytes)) {
   console.log(`  分包 ${root}: ${mb(bytes)}`);
+}
+/* 全量文件名单提前取一次：CDN 核算与后面的 mp4/en-US 检查用的是同一棵树（口径不许两头各算各的） */
+const allFiles = readdirRecursive(distRoot);
+const relativeOf = (f) => f.slice(distRoot.length + 1);
+
+/* ── CDN 桶核算（只在 real 档生效；--allow-mock 与非 real 档一个字节都不判 ⇒ mock/dev/showcase 零影响）
+   判的是"体积下来的方式说不说得清"，不是"数字够不够小"：
+     1) 契约非法 ⇒ 不成立；2) 桶里还剩文件没出包 ⇒ 契约没被执行；
+     3) 桶空了却没有清单 ⇒ 无法区分"放行"与"图被删了"（本仓 96d4c172/aa6c4708 两轮事故的形状）；
+     4) 清单把首屏/本地必需素材（tabbar/register 图标、audio、default-avatar、profile 皮肤、
+        localPrefixes）列为出包 ⇒ 误删包内素材，直接红；
+     5) 清单条目在后端 app-assets 已不存在 ⇒ 运行时那张图必然 404。 */
+const isRealBand = /MODE:real\b/.test(bandMode) && !allowMock;
+const CDN = (() => {
+  const PROTECTED_PREFIXES = ["static/assets/icons/tabbar/", "static/assets/icons/register/", "static/assets/profile/"];
+  const PROTECTED_RE = [/\/audio\//, /default-avatar\.(jpg|png|svg)$/i];
+  const norm = (p) => String(p || "").replace(/^\/+/, "").replace(/\\/g, "/");
+  const isProtected = (p) => PROTECTED_PREFIXES.some((x) => p.startsWith(x)) || PROTECTED_RE.some((re) => re.test(p));
+  const out = { applied: false, problems: [], notes: [] };
+  if (!existsSync(BUCKETS_PATH)) {
+    if (isRealBand) out.notes.push(`PACKAGE_SIZE_CDN=ABSENT path=${BUCKETS_PATH} ⇒ 没有契约就没有放行，主包按 src 全量核算`);
+    return out;
+  }
+  let doc = null, raw = "";
+  try { raw = readFileSync(BUCKETS_PATH, "utf8"); doc = JSON.parse(raw); }
+  catch (e) { if (isRealBand) out.problems.push(`契约读不动/非法 JSON（${BUCKETS_PATH}）：${String(e.message).slice(0, 100)}`); return out; }
+  const bad = [];
+  if (doc.schema !== "mp-cdn-buckets/v1") bad.push(`schema=${JSON.stringify(doc.schema)}（应为 mp-cdn-buckets/v1）`);
+  const cdn = Array.isArray(doc.cdnPrefixes) ? doc.cdnPrefixes.map(norm) : (bad.push("cdnPrefixes 缺失"), []);
+  const local = Array.isArray(doc.localPrefixes) ? doc.localPrefixes.map(norm) : (bad.push("localPrefixes 缺失"), []);
+  for (const c of cdn) if (!c.startsWith("static/") || !c.endsWith("/") || c === "static/") bad.push(`cdnPrefixes 口径非法：${JSON.stringify(c)}`);
+  for (const l of local) if (!l.startsWith("static/") || !l.endsWith("/")) bad.push(`localPrefixes 口径非法：${JSON.stringify(l)}`);
+  for (const c of cdn) for (const l of local) if (c.startsWith(l) || l.startsWith(c)) bad.push(`cdn/local 覆盖同一目录：${c} ∩ ${l}`);
+  for (const c of cdn) for (const p of PROTECTED_PREFIXES) if (p.startsWith(c) || c.startsWith(p)) bad.push(`cdn 桶覆盖首屏必需前缀：${c} ⊇ ${p}`);
+  out.applied = isRealBand;
+  if (bad.length) { out.problems.push(...bad); return out; }
+  out.sha8 = createHash("sha256").update(raw).digest("hex").slice(0, 8);
+  out.cdn = cdn; out.local = local;
+
+  const files = allFiles.map((f) => norm(relativeOf(f)));
+  const bytesOf = (f) => statSync(f).size;
+  // 桶内残留（还在包里 = 契约没被执行）
+  const residual = [];
+  let residualBytes = 0;
+  for (const f of allFiles) {
+    const p = norm(relativeOf(f));
+    const c = cdn.find((x) => p.startsWith(x));
+    if (!c || isProtected(p)) continue;
+    residual.push(p); residualBytes += bytesOf(f);
+  }
+  out.residual = residual.length; out.residualBytes = residualBytes;
+  // 本地桶读数（首屏/图标不许被顺手带走）
+  out.localCounts = local.map((l) => ({ prefix: l, files: files.filter((p) => p.startsWith(l)).length }));
+  // 清单
+  const manifestPath = join(distRoot, "CDN_OFFLOAD_MANIFEST.json");
+  if (!existsSync(manifestPath)) {
+    out.manifest = null;
+    if (residual.length === 0) {
+      out.problems.push(`cdn 桶内一个文件都没有，但产物里没有 CDN_OFFLOAD_MANIFEST.json ⇒ 说不清"这些文件为什么不在包里"`);
+      out.problems.push(`这正是"体积绿了因为图被删了"的形状（本仓 96d4c172 删掉 350 个在用素材 / aa6c4708 让裁剪不再删图标后 1.73MB 变 12.19MB 的因果）：没有清单，本门不接受"数字小了"作为达标依据`);
+    } else {
+      out.problems.push(`cdn 桶仍有 ${residual.length} 个文件（${(residualBytes / 1024).toFixed(0)}KB）装在主包里，且没有清单：契约未被执行`);
+    }
+    return out;
+  }
+  let mf = null;
+  try { mf = JSON.parse(readFileSync(manifestPath, "utf8")); } catch (e) { out.problems.push(`CDN_OFFLOAD_MANIFEST.json 解析失败：${String(e.message).slice(0, 100)}`); return out; }
+  if (mf.schema !== "mp-cdn-offload-manifest/v1") out.problems.push(`清单 schema=${JSON.stringify(mf.schema)}（应为 mp-cdn-offload-manifest/v1）`);
+  if (mf.contract && mf.contract.sha8 && out.sha8 && mf.contract.sha8 !== out.sha8) {
+    out.problems.push(`清单按契约 ${mf.contract.sha8} 出包，当前契约是 ${out.sha8} ⇒ 口径漂移，这份清单解释的不是这一份包`);
+  }
+  const entries = Array.isArray(mf.entries) ? mf.entries : [];
+  out.entries = entries.length;
+  out.manifestBand = mf.band || "(未记)";
+  out.manifestAt = mf.at || "(未记)";
+  out.manifestFor = mf.dist || "(未记)";
+  out.offloadBytes = entries.reduce((a, e) => a + (Number(e.packageBytes) || 0), 0);
+  const endpoint = mf.appAssetEndpoint || "/api/v1/media/app-assets/";
+  const protectedLeak = entries.filter((e) => isProtected(norm(e.packagePath)));
+  if (protectedLeak.length) {
+    out.problems.push(`清单把 ${protectedLeak.length} 个首屏/本地必需素材列为出包（误删包内素材）：${protectedLeak.slice(0, 5).map((e) => e.packagePath).join(" ")}`);
+  }
+  const localLeak = entries.filter((e) => local.some((l) => norm(e.packagePath).startsWith(l)));
+  if (localLeak.length) out.problems.push(`清单把 ${localLeak.length} 个 localPrefixes 文件列为出包：${localLeak.slice(0, 5).map((e) => e.packagePath).join(" ")}`);
+  if (residual.length) {
+    out.problems.push(`cdn 桶仍有 ${residual.length} 个文件（${(residualBytes / 1024).toFixed(0)}KB）没出包，最大几个：${residual.slice(0, 5).join(" ")}`);
+  }
+  // 清单指向的后端文件必须还在盘上（fs 探测；匿名 GET 200 由 verify-app-assets-coverage 量）
+  const backendRoot = resolve(__dirname, "../apps/api/uploads/app-assets");
+  const gone = entries.filter((e) => !e.appAssetPath || !existsSync(join(backendRoot, String(e.appAssetPath).replace(/^\/+/, ""))));
+  if (gone.length) {
+    out.problems.push(`清单里 ${gone.length} 个文件在 apps/api/uploads/app-assets 下已不存在 ⇒ 运行时 ${endpoint}<rel> 必 404：${gone.slice(0, 5).map((e) => e.packagePath).join(" ")}`);
+  }
+  for (const lc of out.localCounts) {
+    if (lc.files === 0 && entries.length > 0) {
+      out.notes.push(`PACKAGE_SIZE_LOCAL_WARN ${lc.prefix} 包内 0 个文件，而本清单确有放行条目 ⇒ 本地桶空了，人工看一眼是不是误删（本条只警告：真正判红的是"清单把本地必需素材列为出包"）`);
+    }
+  }
+  return out;
+})();
+
+if (isRealBand) {
+  for (const n of CDN.notes) console.log(`  ${n}`);
+  console.log(`  PACKAGE_SIZE_CDN contract=${existsSync(BUCKETS_PATH) ? CDN.sha8 || "非法" : "(无契约)"} 清单条目=${CDN.entries ?? "-"} 出包字节=${CDN.offloadBytes ? mb(CDN.offloadBytes) : "-"} 桶内残留=${CDN.residual ?? "-"} 本地桶读数=${(CDN.localCounts || []).map((l) => `${l.prefix}=${l.files}`).join(" ") || "-"}`);
+  if (CDN.entries != null) console.log(`  PACKAGE_SIZE_CDN_MANIFEST band=${CDN.manifestBand} 为哪一档=${CDN.manifestFor} 落盘于=${CDN.manifestAt} ⇒ 清单是别的档/别的时间落的，本门只按"条目能被盘上事实复核"给绿`);
+  if (CDN.offloadBytes) {
+    console.log(`  口径说明：主包 ${mb(mainBytes)} 是**清单外**的实测字节；把清单里 ${(CDN.offloadBytes / 1024 / 1024).toFixed(2)}MB 按"仍随包"计则为 ${mb(mainBytes + CDN.offloadBytes)}（微信量的是包内字节，两种口径不许混用）`);
+  }
+  for (const p of CDN.problems) failures.push(`CDN 放行不成立：${p}`);
 }
 
 if (mainBytes > MAIN_PACKAGE_LIMIT) {
@@ -132,7 +258,6 @@ if (totalBytes > TOTAL_LIMIT) {
 }
 
 // 无 mp4
-const allFiles = readdirRecursive(distRoot);
 const mp4s = allFiles.filter((f) => f.toLowerCase().endsWith(".mp4"));
 if (mp4s.length > 0) {
   failures.push(`产物仍含 ${mp4s.length} 个 mp4（登录视频未移除）: ${mp4s[0]}`);

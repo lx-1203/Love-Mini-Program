@@ -13,11 +13,16 @@
  * <p>{@code resolveMediaUrl(rawPath)} 是客户端所有图片 URL 的统一出口：
  * <ul>
  *   <li>用户上传的媒体路径（{@code /uploads/...}）→ 重写为鉴权代理 URL，附加 token</li>
- *   <li>静态资源（{@code /static/...}）→ 原样返回（无需鉴权）；例外：库内内容图
- *       {@code /static/assets/images/{avatars,people}/**} 与 {@code posts/**}（real 档）
- *       改指后端公开端点 app-assets——这些目录不会随 real 包发布（见 config/images.ts
- *       的 IN_PACKAGE_ASSETS 双登记说明）</li>
- *   <li>绝对 URL（{@code http://} / {@code https://}）→ 原样返回</li>
+ *   <li>静态资源（{@code /static/...}）→ 由 {@code apps/client/config/cdn-buckets.json} 分桶：
+ *       <b>real 档</b>命中 {@code cdnPrefixes} 的目录（generated/、assets/images/{covers,posters,
+ *       avatars,people,posts}/）不随主包发布，运行时解析成后端公开端点
+ *       {@code ${apiRoot}/api/v1/media/app-assets/{去掉 static/ 前缀的 rel}}；命中 {@code localPrefixes}
+ *       （assets/icons/、assets/svg-spec/）与未登记的目录留包内、原样返回。
+ *       <b>mock / dev / showcase / H5 档</b>一律留包内（这些档由 {@code prepare-static --dev/--h5}
+ *       还原完整 static 树，本地路径本来就是通的，且设计上不依赖后端）</li>
+ *   <li>绝对 URL（{@code http://} / {@code https://}）→ 原样返回；例外：{@code http} 形态的
+ *       app-assets URL 在非 real 档、以及 real 档的 {@code localPrefixes} rel，仍落回
+ *       {@code /static/{rel}}（包内那份才是这些档的唯一来源）</li>
  *   <li>data URI（{@code data:...}）→ 原样返回</li>
  *   <li>空值 → 返回空字符串</li>
  * </ul>
@@ -49,6 +54,10 @@ import { ensurePrivacyAuthorized } from "./privacy";
 // 2026-08-16：pexels 外链本地化兜底（mp 端无法加载外链图，见 image-local.ts），
 // 与 SafeImage 的 toLocalImage(resolveMediaUrl(raw)) 语义一致
 import { toLocalImage, toLocalMockMedia } from "./image-local";
+// R6/L01（2026-10-19）：资产分桶单一真源。运行时（本文件与 config/images.ts）与构建期
+// （scripts/prepare-static.mjs、scripts/prune-unreferenced-static.mjs）读同一份 JSON，
+// 避免「运行时指后端、构建期把文件剪出包」这类两侧判据不重叠导致的空白图。
+import cdnBuckets from "../../config/cdn-buckets.json";
 
 /**
  * 上传文件存储路径前缀。
@@ -73,6 +82,118 @@ const MEDIA_PROXY_PREFIX = "/api/v1/media/";
  * （免登录、免 token，静态装饰图经种子脚本入库，后台可审核下线）。</p>
  */
 const APP_ASSET_PREFIX = "/api/v1/media/app-assets/";
+
+/* ========== R6/L01：资产分桶单一真源（config/cdn-buckets.json） ========== */
+
+/** 包内路径前缀（运行时形态，带前导斜杠） */
+const PKG_PATH_PREFIX = "/static/";
+/** 桶键前缀（清单形态，无前导斜杠：`static/assets/icons/`） */
+const PKG_KEY_PREFIX = "static/";
+
+/**
+ * 取清单里的某一桶前缀列表。
+ *
+ * 清单是外部 JSON（L02 车道的构建期也读它），字段缺失/类型漂移时退回空数组，
+ * 空数组 = 什么都不改写 = 全部留包内（保守方向，绝不会把图指到 404）。
+ *
+ * 结果按 kind 缓存：resolveMediaUrl 是每张图每次渲染都会走的热路径
+ * （PostCard 九宫格 N×M 次），清单本身是构建期常量，没必要每次重新过滤数组。
+ */
+const bucketCache = new Map<string, string[]>();
+function bucketPrefixes(kind: "cdnPrefixes" | "localPrefixes"): string[] {
+  const cached = bucketCache.get(kind);
+  if (cached) {
+    return cached;
+  }
+  const raw = (cdnBuckets as unknown as Record<string, unknown>)[kind];
+  const list = Array.isArray(raw)
+    ? raw.filter((item): item is string => typeof item === "string" && item.length > 0)
+    : [];
+  bucketCache.set(kind, list);
+  return list;
+}
+
+/** 任意包内形态（`/static/x` 或 `static/x`）归一化为清单使用的 `static/x` 键 */
+function toBucketKey(pkgPath: string): string {
+  return pkgPath.startsWith("/") ? pkgPath.slice(1) : pkgPath;
+}
+
+/** 桶键（`static/...`）是否命中给定前缀集合 */
+function matchesBucket(key: string, prefixes: string[]): boolean {
+  return prefixes.some((prefix) => key.startsWith(prefix));
+}
+
+/**
+ * 该包内路径是否属于「real 档不随主包发布、改走后端 app-assets」的桶。
+ *
+ * localPrefixes 先判：与 cdnPrefixes 正常不重叠，但万一清单被写出重叠项，
+ * 包内一定有的那份（icons / svg-spec）优先本地，避免无谓依赖后端。
+ */
+function isCdnPackageKey(key: string): boolean {
+  if (matchesBucket(key, bucketPrefixes("localPrefixes"))) {
+    return false;
+  }
+  return matchesBucket(key, bucketPrefixes("cdnPrefixes"));
+}
+
+/** 是否 real 档（惰性读 clientEnv：部分单测只 mock 了 config/env 的部分导出） */
+function isRealApiMode(): boolean {
+  return clientEnv?.apiMode === "real";
+}
+
+/**
+ * 后端公开端点基址（含结尾斜杠），取法与 config/images.ts 的 real 基址一致：
+ * `apiBaseUrl` 去掉可能的 `/api` 尾 + `/api/v1/media/app-assets/`。
+ * 取不到基址时返回空串，调用方退回包内路径。
+ */
+function appAssetsBaseUrl(): string {
+  const apiBaseUrl = clientEnv?.apiBaseUrl || "";
+  if (!apiBaseUrl) {
+    return "";
+  }
+  return `${apiBaseUrl.replace(/\/api\/?$/, "")}${APP_ASSET_PREFIX}`;
+}
+
+/**
+ * real 档 + 命中 cdn 桶 → 后端 app-assets 绝对 URL；其余情况原样返回。
+ *
+ * 幂等：入参不是 `/static/` 形态、非 real 档、未命中桶、取不到 apiRoot 时均为 no-op，
+ * 因此 resolveMediaUrl 的输出可以再喂给自身而不改变结果。
+ */
+function cdnize(pkgPath: string): string {
+  if (!pkgPath.startsWith(PKG_PATH_PREFIX)) {
+    return pkgPath;
+  }
+  if (!isRealApiMode() || !isCdnPackageKey(toBucketKey(pkgPath))) {
+    return pkgPath;
+  }
+  const base = appAssetsBaseUrl();
+  if (!base) {
+    return pkgPath;
+  }
+  return `${base}${toBucketKey(pkgPath).slice(PKG_KEY_PREFIX.length)}`;
+}
+
+/** 从任意含 app-assets 前缀的字符串里取 rel（去掉查询串）；取不到返回空串 */
+function extractAppAssetRel(value: string): string {
+  const idx = value.indexOf(APP_ASSET_PREFIX);
+  if (idx < 0) {
+    return "";
+  }
+  const rel = value.substring(idx + APP_ASSET_PREFIX.length).split("?")[0] ?? "";
+  // 反斜杠与多余前导斜杠容错：库里/历史常量偶见 `assets\images\...` 或 `/assets/...`
+  return rel.replace(/\\/g, "/").replace(/^\/+/, "");
+}
+
+/** rel → 包内路径（`/static/{rel}`） */
+function relToPackagePath(rel: string): string {
+  return `/${PKG_KEY_PREFIX}${rel}`;
+}
+
+/** rel（不带 static/ 前缀）是否属于 cdn 桶 */
+function isCdnRel(rel: string): boolean {
+  return rel.length > 0 && isCdnPackageKey(`${PKG_KEY_PREFIX}${rel}`);
+}
 
 /**
  * 判断路径是否为「已上传到服务器」的远程媒体 URL。
@@ -145,16 +266,18 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
   // 2026-08-16：pexels 外链在 mp 端无法加载（渲染层网络错误），统一本地化兜底；
   // 命中时直接返回本地包内路径（与 SafeImage 语义一致），不再走后续鉴权/静态重写。
   // 非 pexels URL 原样返回，行为不变。
+  // R6/L01：兜底落点同样过 cdnize —— real 档下它可能落在 cdn 桶里（如 posts/、avatars/），
+  // 那就不该指回包内路径（文件不随 real 主包发布）。
   const localized = toLocalImage(path);
   if (localized !== path) {
-    return localized;
+    return cdnize(localized);
   }
 
   // 2026-08-23：mock 演示媒体（/uploads/mock/*）在 mp 端因 HTTP 无法加载，
   // 统一本地化到包内 static 资源，避免 HTTP 拦截导致图片不渲染/布局撑大。
   const mockLocal = toLocalMockMedia(path);
   if (mockLocal !== path) {
-    return mockLocal;
+    return cdnize(mockLocal);
   }
 
   // 绝对 URL / data URI / blob URL → 原样返回（无需鉴权）
@@ -165,32 +288,43 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
     path.startsWith("blob:") ||
     path.startsWith("wxfile://")
   ) {
-    // 2026-09-03 修复（首页头像/图标无法显示）：mp base lib 3.16.2 拒绝 http 图片。
-    // real 构建下 IMAGE_PATHS 常量直出后端 app-assets（http://host/api/v1/media/app-assets/...），
-    // 开发态 http 后端会被微信拒载 → 统一本地化为 /static/{rel}（dev 构建产物含全量 static）；
-    // https（生产合法域名）原样返回，不影响真机。
+    // 历史包袱说明（勿再看成规则）：2026-09-03 那版注释断言「基础库 3.16.2 拒绝 http 图片」，
+    // 于是把 http 形态的 app-assets URL 一律反写成 `/static/{rel}`。该断言已被 2026-09-22 的
+    // wx.getImageInfo 探针（libVersion 3.17.1）证伪，而这条反写恰恰是主包瘦不下去的根因：
+    // 只要它存在，cdn 桶里的图就被强制随包（实测 real 产物 static 12.19MB / 上限 2.00MB）。
+    // 现口径：real 档 + rel 命中 cdn 桶 ⇒ 保持后端 URL 不反写；其余情况（非 real 档、
+    // 以及 real 档的 localPrefixes/未登记 rel）仍落回 `/static/{rel}` 用包内那份。
     if (path.startsWith("http://") && path.includes(APP_ASSET_PREFIX)) {
-      const idx = path.indexOf(APP_ASSET_PREFIX) + APP_ASSET_PREFIX.length;
-      const rel = path.substring(idx).split("?")[0] ?? "";
+      const rel = extractAppAssetRel(path);
       if (rel.length > 0) {
-        return `/static/${rel}`;
+        if (isRealApiMode() && isCdnRel(rel)) {
+          return path;
+        }
+        return relToPackagePath(rel);
       }
     }
     return path;
   }
 
-  // 已经是鉴权代理 URL → 统一本地化为 /static/ 资源（mp 端强制 https，开发场景不走 8080 HTTP）
+  // 相对形态的鉴权代理/公开资产路径（`/api/v1/media/app-assets/...`）
+  // 必须在 MEDIA_PROXY_PREFIX 之前判：app-assets 也含 `/api/v1/media/`，
+  // 落到下面会被当成用户媒体去拼 token。
   if (path.includes(APP_ASSET_PREFIX)) {
-    // 2026-09-02 R5：基础库 3.16.2 强制 https，无论 mock/real 模式，
-    // /api/v1/media/app-assets/{rel} 一律本地化为 /static/{rel}（避免 HTTP 警告 + 加载失败）。
-    // 后端仍可保留该端点给其他用途（如后台管理端），小程序端完全不依赖。
-    const idx = path.indexOf(APP_ASSET_PREFIX) + APP_ASSET_PREFIX.length;
-    const rel = path.substring(idx).split("?")[0] ?? "";
-    if (rel.length > 0) {
-      return `/static/${rel}`;
+    const rel = extractAppAssetRel(path);
+    if (rel.length === 0) {
+      // rel 为空（仅前缀无内容）→ 返回原路径（避免空本地路径）
+      return path;
     }
-    // rel 为空（仅前缀无内容）→ 返回原路径（仍走 8080 HTTP，但避免空本地路径）
-    return path;
+    // real 档 + cdn 桶：补全 apiRoot 成绝对后端 URL。
+    // 不补全会被 mp 当成包内文件（实测 getImageInfo: file not found）。
+    if (isRealApiMode() && isCdnRel(rel)) {
+      const base = appAssetsBaseUrl();
+      if (base) {
+        return `${base}${rel}`;
+      }
+    }
+    // 其余档（mock/dev/showcase/H5）保持原行为：本地化为包内路径
+    return relToPackagePath(rel);
   }
 
   // MP-R5-MEDIAAUTH（2026-09-13）：用户上传媒体（头像/照片墙）现为
@@ -217,55 +351,20 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
     return appendTokenIfMissing(proxyUrl);
   }
 
-  // R13（2026-09-22）：库内存的是小程序包内路径 `/static/assets/images/{avatars,people}/*`
-  // （users.avatar_url 265 条 + media_asset 2 条）。real 构建为守 2MB 主包门禁会把这些
-  // 「非源码字面量引用」的内容图剪出包外（avatars+people 约 4MB），本地路径随即失效，
-  // 头像在真机上全部渲染为空白。二者均已注册在后端公开 app-assets 端点，
-  // 故仅对这两个内容目录改走后端，其余 /static/ 仍按下方走本地包内资源。
-  if (
-    path.startsWith("/static/assets/images/avatars/") ||
-    path.startsWith("/static/assets/images/people/")
-  ) {
-    // clientEnv 惰性读取：部分单测 mock 了 config/env 且不提供该导出，
-    // 而 mock-data.ts 在模块作用域就调用 resolveMediaUrl —— 取不到基址时退回本地路径。
-    const apiBaseUrl = clientEnv?.apiBaseUrl || "";
-    if (apiBaseUrl) {
-      const apiRoot = apiBaseUrl.replace(/\/api\/?$/, "");
-      return `${apiRoot}${APP_ASSET_PREFIX}${path.substring("/static/".length)}`;
-    }
+  // R13（2026-09-22）+ 2026-10-19 posts 分支 + 2026-08-10 体积优化：
+  // 原先三处「哪个目录走后端」的判据都硬编码在本文件里（avatars/people 无条件改写、
+  // posts 仅 real 改写、其余一律本地），与构建期裁剪脚本的目录清单互不相认，
+  // 于是同一张图可以「运行时指后端、构建期判它包内自带」或反过来 —— 图标空白的病灶之一。
+  // R6/L01（2026-10-19）：判据收敛到 apps/client/config/cdn-buckets.json 一份清单，
+  // 运行时（本文件 + config/images.ts）与构建期（prepare-static / prune-unreferenced-static）
+  // 读同一份。语义：real 档命中 cdnPrefixes 的包内路径改指后端公开端点，
+  // 其余档（mock / dev / showcase / H5）与 localPrefixes（icons / svg-spec）留包内。
+  if (path.startsWith(PKG_PATH_PREFIX)) {
+    return cdnize(path);
   }
 
-  // 2026-10-19 图标空白车道（R2b-L01-D18 / R2b-L04-D01 同因）：帖子配图与头像同形状——
-  // 库里存的是包内路径 `/static/assets/images/posts/post-<n>.jpg`（database/*.sql 实测 42 处），
-  // 而这条目录既没有源码字面量、也不是随包装饰素材（8 张共 556KB，塞进包直接顶穿 2MB 门禁），
-  // 于是 real 档里 resolveMediaUrl 原样返回本地路径 → 文件不在包内 → 社区动态/帖子详情
-  // 的配图格只剩 .post-media-grid__cell 的灰底。按 R13 的同一口径改走后端公开端点。
-  //
-  // 只在档位确实是 real 时改写：mock/dev/H5 三档由 prepare-static --dev 还原完整 static
-  // （HEAD 1344 个文件），本地路径本来就是通的，无端改指后端会把「不依赖后端」的档打回空白。
-  // 同目录下的 post-placeholder.jpg 不受影响：它是随包装饰素材（config/images.ts 的
-  // IN_PACKAGE_ASSETS 已把它送进包），源码常量在 real 档以 app-assets URL 形态进来时，
-  // 先被上面的 http 分支落回 `/static/…` 就返回了；即便被调用方二次 resolve，后端也托管
-  // 着同名文件（apps/api/uploads/app-assets/assets/images/posts/post-placeholder.jpg 实测存在），
-  // 两条路都能出图，不会回到空源。
-  if (
-    path.startsWith("/static/assets/images/posts/") &&
-    clientEnv?.apiMode === "real"
-  ) {
-    const apiBaseUrl = clientEnv?.apiBaseUrl || "";
-    if (apiBaseUrl) {
-      const apiRoot = apiBaseUrl.replace(/\/api\/?$/, "");
-      return `${apiRoot}${APP_ASSET_PREFIX}${path.substring("/static/".length)}`;
-    }
-  }
-
-  // 2026-08-10 包体积优化：/static/ 装饰资产（banner/poster/campus/avatars 等）
-  // 2026-09-02 R5：mp base lib 3.16.2 强制 https，无论 mock/real 模式，/static/ 全部走本地（不走 8080）
-  if (path.startsWith("/static/")) {
-    return path;
-  }
-
-  // 其他相对路径（如 /static/assets/icons/...、/static/audio/...）→ 原样返回，由 uni-app 解析为本地资源
+  // 其他相对路径（如 assets/icons/...、audio/... 这类无前导斜杠的形态）→ 原样返回，
+  // 由 uni-app 解析为本地资源
   return path;
 }
 

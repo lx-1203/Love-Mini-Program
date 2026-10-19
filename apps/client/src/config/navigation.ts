@@ -6,12 +6,19 @@
  *   - src/pages.json (uni-app 原生配置，JSON 格式，需手动同步)
  *   - src/custom-tab-bar/index.js (微信小程序自定义 TabBar，JS 文件，需手动同步)
  *   - src/components/layout/TabBar.vue (H5 端 TabBar 组件，从此文件导入)
+ *   - src/i18n/locales/{zh-CN,en-US}.ts 的 tabs.<id>（走 t() 的渲染读它）
  *
  * 修改 Tab 配置时，请先修改此文件，再同步更新上述文件。
  *
  * 纯匹配版（2026-08-14）：五 Tab 顺序 首页 / 附近 / 匹配 / 消息 / 我的。
  * R2b-L01-D21 / R2b-L02-D05 / R2b-L03-D13：「匹配」不再做绿色圆形浮岛凸起，
  * 与其余四项等大平铺（44rpx 线性爱心 + 下方标签，同基线）。
+ *
+ * R6-L08（2026-10-19）四处单一来源实测：本文件 / custom-tab-bar/index.js / pages.json
+ * 的 tabBar.list / i18n tabs.* 五枚 label 已逐字同值（首页/附近/匹配/消息/我的），
+ * 「寻觅」仅剩页面标题（i18n discover.title）一处口径，属中央页页头而非 tab 标签。
+ * 注：TabBar.vue 在 src 下唯一的 importer 是 components/layout/layout.stories.ts
+ * （Storybook 载具，非 mp/H5 运行时）⇒ 改它不会上真机，运行时口径看 custom-tab-bar/。
  */
 
 import { IMAGE_PATHS } from './images';

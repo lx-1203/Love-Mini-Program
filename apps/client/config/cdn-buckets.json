@@ -1,0 +1,15 @@
+{
+  "schema": "mp-cdn-buckets/v1",
+  "cdnPrefixes": [
+    "static/generated/",
+    "static/assets/images/covers/",
+    "static/assets/images/posters/",
+    "static/assets/images/avatars/",
+    "static/assets/images/people/",
+    "static/assets/images/posts/"
+  ],
+  "localPrefixes": [
+    "static/assets/icons/",
+    "static/assets/svg-spec/"
+  ]
+}

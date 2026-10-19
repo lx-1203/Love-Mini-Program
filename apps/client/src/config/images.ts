@@ -17,24 +17,86 @@
  * 2026-08-29 真机 2MB 门禁（主包素材全量迁后端）：
  * real 模式下基址直出后端 app-assets（免登录端点），
  * 全站 IMAGE_PATHS 常量自动指向后端托管资源；dev/mock 仍为 /static 本地包内路径。
+ *
+ * 2026-10-19 R6/L01（体积下不来的根因收口）：**不再按「整包 assets/images 一刀切」**。
+ * 哪个目录能出后端，唯一判据是 `apps/client/config/cdn-buckets.json` 的 `cdnPrefixes`
+ * —— 与 utils/media.ts 运行时改写、与构建期 prepare-static/prune-unreferenced-static
+ * 读的是同一份清单。于是：
+ *   - 命中 cdnPrefixes 的目录（generated/、assets/images/{covers,posters,avatars,people,posts}/）
+ *     在 real 档直出后端 URL，构建期不随主包发布；
+ *   - 命中 localPrefixes 的目录（assets/icons/、assets/svg-spec/）恒为包内 `/static/...`，
+ *     real 档也不出后端（221 个图标共 771,964B，包内一定有一份，指后端只是白拿网络依赖）；
+ *   - 两个清单都没登记的目录（activities/products/banners/register/match/home-split/mascot…）
+ *     按契约「否则留包内」，real 档也是 `/static/...`。
+ * 这样同一张图不可能既被判为包内、又被直出成 URL、再被 media.ts 反写回 /static（旧三条分支
+ * 互不认账时正是这么漏的）。非 real 档（mock/dev/showcase/H5）三个分支都不触发，逐字保持 /static。
  */
-const APP_ASSETS_BASE = "/api/v1/media/app-assets";
+import cdnBuckets from "../../config/cdn-buckets.json";
+
+const APP_ASSETS_ENDPOINT = "/api/v1/media/app-assets";
+/** real 档的后端公开端点绝对前缀（不含结尾斜杠）；非 real 档为空串 */
 const REAL_ASSETS = (() => {
   try {
     // 环境判定：与 services/env.ts 的 VITE_API_MODE 对齐（real → 后端托管基址）
     const mode = String(import.meta.env.VITE_API_MODE);
     const base = String(import.meta.env.VITE_API_BASE_URL);
     if (mode === "real" && base) {
-      return base.replace(/\/api\/?$/, "") + APP_ASSETS_BASE;
+      return base.replace(/\/api\/?$/, "") + APP_ASSETS_ENDPOINT;
     }
   } catch (_e) { /* 忽略：按本地处理 */ }
   return "";
 })();
-const STATIC_BASE = (REAL_ASSETS ? REAL_ASSETS + "/assets" : "/static/assets");
-const IMAGES = STATIC_BASE + '/images';
-const AVATAR_BASE = IMAGES + '/avatars';
-const ICONS_BASE = STATIC_BASE + '/icons';
-const GENERATED_BASE = (REAL_ASSETS ? REAL_ASSETS + '/generated' : '/static/generated');
+
+/** 取清单里的某一桶前缀列表；缺失/类型漂移时退回空数组（保守：全部留包内） */
+function bucketPrefixes(kind: "cdnPrefixes" | "localPrefixes"): string[] {
+  const raw = (cdnBuckets as unknown as Record<string, unknown>)[kind];
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((item): item is string => typeof item === "string" && item.length > 0);
+}
+
+/**
+ * 目录（包内相对路径，形如 `assets/images/covers`）是否属于 real 档可出后端的桶。
+ * localPrefixes 先判：清单正常不重叠，但真写出重叠时以「包内一定有的那份」为准。
+ */
+function isCdnDir(pkgRelDir: string): boolean {
+  const key = `static/${pkgRelDir}/`;
+  if (bucketPrefixes("localPrefixes").some((prefix) => key.startsWith(prefix))) return false;
+  return bucketPrefixes("cdnPrefixes").some((prefix) => key.startsWith(prefix));
+}
+
+/**
+ * 目录基址：real 档且该目录登记在 cdnPrefixes → 后端 app-assets 前缀；否则包内 `/static/...`。
+ *
+ * 返回串不带结尾斜杠，用法与旧基址一致（`POSTS_DIR + '/post-1.jpg'`）。
+ */
+function assetDir(pkgRelDir: string): string {
+  if (REAL_ASSETS && isCdnDir(pkgRelDir)) {
+    return `${REAL_ASSETS}/${pkgRelDir}`;
+  }
+  return `/static/${pkgRelDir}`;
+}
+
+/* ===== cdnPrefixes 命中的目录（real 档出后端） ===== */
+const POSTS_DIR = assetDir('assets/images/posts');
+const COVERS_DIR = assetDir('assets/images/covers');
+const POSTERS_DIR = assetDir('assets/images/posters');
+const AVATAR_BASE = assetDir('assets/images/avatars');
+const PEOPLE_DIR = assetDir('assets/images/people');
+const GENERATED_BASE = assetDir('generated');
+
+/* ===== 未登记 / localPrefixes 命中的目录（任何档都留包内） ===== */
+const ASSETS_DIR = assetDir('assets');
+const IMAGES_DIR = assetDir('assets/images');
+const ACTIVITIES_DIR = assetDir('assets/images/activities');
+const PRODUCTS_DIR = assetDir('assets/images/products');
+const BANNERS_DIR = assetDir('assets/images/banners');
+const REGISTER_DIR = assetDir('assets/images/register');
+const MATCH_DIR = assetDir('assets/images/match');
+const HOME_SPLIT_DIR = assetDir('assets/images/home-split');
+const MASCOT_DIR = assetDir('assets/images/mascot');
+const ICONS_BASE = assetDir('assets/icons');
+const SVG_SPEC_DIR = assetDir('assets/svg-spec');
+const PROFILE_SVG_DIR = assetDir('assets/profile/svg');
 
 /**
  * 「必须随包」资产双登记表（2026-10-19 · 系统性缺陷车道：真档图标/图片渲染为空白）
@@ -64,14 +126,23 @@ const GENERATED_BASE = (REAL_ASSETS ? REAL_ASSETS + '/generated' : '/static/gene
  *   tail = "/<rel>"         → 过 ②
  * 本表逐条把两个形态写在一起（同一条目、不会漂移）。运行时取值仍按各组既有约定：
  * 本地固定组（MASCOT / ICONS_PROFILE.*_SVG）直接取本表的 pkg，值与登记前逐字相同；
- * 基址派生组（HOME_ICONS / POST_PLACEHOLDER / ICONS_EMOJI）保持 `STATIC_BASE` 拼接不变，
- * 真档下常量仍是后端 app-assets URL，由 utils/media.ts 的 resolveMediaUrl 落回
- * `/static/<rel>`——那条路径能否出图，取决于本表有没有把文件送进包。
+ * 基址派生组（HOME_ICONS / ICONS_EMOJI / ICONS_COMMON…）由 assetDir() 出值——
+ * 它们全落在 `cdn-buckets.json` 的 localPrefixes（`static/assets/icons/`、
+ * `static/assets/svg-spec/`）里，于是任何档都是包内 `/static/...`，
+ * 不再出现「常量直出后端 URL、再由 utils/media.ts 反写回 /static」这种两侧都认的样子。
+ *
+ * 2026-10-19 R6/L01 与单一真源对齐：**登记范围 = 非 cdnPrefixes 的目录**。
+ * 命中 cdnPrefixes 的目录（generated/、assets/images/{covers,posters,avatars,people,posts}/）
+ * 在 real 档不随主包发布、运行时由 media.ts 解析成后端 app-assets URL，
+ * 所以本表**不得**再登记其中的文件——原 `POST_PLACEHOLDER`（`assets/images/posts/`，33,754B）
+ * 已按此删除：它既被登记成「必须随包」又被基址直出成后端 URL，两条判据打架；
+ * 该 rel 逐字节实测由后端托管（见 tmp/qa/lanes/R6/L01-media.md 的桶表），走后端不空源。
+ * 内容级大图（`assets/images/posts/post-*.jpg` 共 556KB、`assets/images/covers/**` 等）
+ * 同理不进本表。
  *
  * 只登记**确有消费方**的素材：主包门禁 2.00MB，上一发裁剪后实测 1.74MB
  * （chain-R3-041020.log:906），本表合计新增约 145KB，留出的余量是给后续车道的，
- * 不是可以随手填满的。内容级大图（`assets/images/posts/post-*.jpg` 共 556KB、
- * `assets/images/covers/**` 等）不进本表——它们走 media.ts 的后端改写出口。
+ * 不是可以随手填满的。
  */
 export const IN_PACKAGE_ASSETS = {
   /** 页头铃铛（HomeHeader.vue:78 经 resolveMediaUrl）——R2b-L01-D09 */
@@ -80,8 +151,6 @@ export const IN_PACKAGE_ASSETS = {
   TB_LIKE: { pkg: '/static/assets/icons/home/toolbar/toolbar_row7_01.png', tail: '/assets/icons/home/toolbar/toolbar_row7_01.png' },
   TB_COMMENT: { pkg: '/static/assets/icons/home/toolbar/toolbar_row7_02.png', tail: '/assets/icons/home/toolbar/toolbar_row7_02.png' },
   TB_SHARE: { pkg: '/static/assets/icons/home/toolbar/toolbar_row7_03.png', tail: '/assets/icons/home/toolbar/toolbar_row7_03.png' },
-  /** 帖子图兜底占位（CommunityFeed / village PostCard / TodayRecommendationCard 共用）——R2b-L01-D18 */
-  POST_PLACEHOLDER: { pkg: '/static/assets/images/posts/post-placeholder.jpg', tail: '/assets/images/posts/post-placeholder.jpg' },
   /** 吉祥物（NotLoggedWaiting / messages 空态 / MatchLoading 装饰爱心）——R2b-L02-D11、R2b-L07-D10 */
   MASCOT_DEFAULT: { pkg: '/static/assets/images/mascot/default.png', tail: '/assets/images/mascot/default.png' },
   MASCOT_STAR: { pkg: '/static/assets/images/mascot/star.png', tail: '/assets/images/mascot/star.png' },
@@ -102,8 +171,8 @@ export const IN_PACKAGE_ASSETS = {
 } as const;
 
 export const IMAGE_PATHS = {
-  POST_PLACEHOLDER: IMAGES + '/posts/post-placeholder.jpg',
-  DEFAULT_AVATAR: STATIC_BASE + '/default-avatar.jpg',
+  POST_PLACEHOLDER: POSTS_DIR + '/post-placeholder.jpg',
+  DEFAULT_AVATAR: ASSETS_DIR + '/default-avatar.jpg',
 
   AVATARS: {
     AVATAR_1: AVATAR_BASE + '/avatar-1.jpg',
@@ -163,62 +232,62 @@ export const IMAGE_PATHS = {
     AVATAR_47: AVATAR_BASE + '/avatar-47.jpg',
     AVATAR_48: AVATAR_BASE + '/avatar-48.jpg',
     AVATAR_49: AVATAR_BASE + '/avatar-49.jpg',
-    DEFAULT: STATIC_BASE + '/default-avatar.jpg',
+    DEFAULT: ASSETS_DIR + '/default-avatar.jpg',
   },
 
   /** v3.1 人物素材（素材/人物 9 张，docs/design/people-fixture.json 映射） */
   PEOPLE: {
-    CARD_1: IMAGES + '/people/person-01.png',
-    CARD_2: IMAGES + '/people/person-02.png',
-    CARD_3: IMAGES + '/people/person-03.png',
-    CARD_4: IMAGES + '/people/person-04.png',
-    CARD_5: IMAGES + '/people/person-05.png',
-    CARD_6: IMAGES + '/people/person-06.png',
-    CARD_7: IMAGES + '/people/person-07.png',
-    CARD_8: IMAGES + '/people/person-08.png',
-    CARD_9: IMAGES + '/people/person-09.png',
-    AVATAR_1: IMAGES + '/avatars/person-01-avatar.png',
-    AVATAR_2: IMAGES + '/avatars/person-02-avatar.png',
-    AVATAR_3: IMAGES + '/avatars/person-03-avatar.png',
-    AVATAR_4: IMAGES + '/avatars/person-04-avatar.png',
-    AVATAR_5: IMAGES + '/avatars/person-05-avatar.png',
-    AVATAR_6: IMAGES + '/avatars/person-06-avatar.png',
-    AVATAR_7: IMAGES + '/avatars/person-07-avatar.png',
-    AVATAR_8: IMAGES + '/avatars/person-08-avatar.png',
-    AVATAR_9: IMAGES + '/avatars/person-09-avatar.png',
+    CARD_1: PEOPLE_DIR + '/person-01.png',
+    CARD_2: PEOPLE_DIR + '/person-02.png',
+    CARD_3: PEOPLE_DIR + '/person-03.png',
+    CARD_4: PEOPLE_DIR + '/person-04.png',
+    CARD_5: PEOPLE_DIR + '/person-05.png',
+    CARD_6: PEOPLE_DIR + '/person-06.png',
+    CARD_7: PEOPLE_DIR + '/person-07.png',
+    CARD_8: PEOPLE_DIR + '/person-08.png',
+    CARD_9: PEOPLE_DIR + '/person-09.png',
+    AVATAR_1: AVATAR_BASE + '/person-01-avatar.png',
+    AVATAR_2: AVATAR_BASE + '/person-02-avatar.png',
+    AVATAR_3: AVATAR_BASE + '/person-03-avatar.png',
+    AVATAR_4: AVATAR_BASE + '/person-04-avatar.png',
+    AVATAR_5: AVATAR_BASE + '/person-05-avatar.png',
+    AVATAR_6: AVATAR_BASE + '/person-06-avatar.png',
+    AVATAR_7: AVATAR_BASE + '/person-07-avatar.png',
+    AVATAR_8: AVATAR_BASE + '/person-08-avatar.png',
+    AVATAR_9: AVATAR_BASE + '/person-09-avatar.png',
   },
 
   POSTS: {
-    CAMPUS_LIBRARY: IMAGES + '/posts/campus-library.jpg',
-    POST_PLACEHOLDER: IMAGES + '/posts/post-placeholder.jpg',
-    POST_1: IMAGES + '/posts/post-1.jpg',
-    POST_2: IMAGES + '/posts/post-2.jpg',
-    POST_3: IMAGES + '/posts/post-3.jpg',
-    POST_4: IMAGES + '/posts/post-4.jpg',
-    POST_5: IMAGES + '/posts/post-5.jpg',
-    POST_6: IMAGES + '/posts/post-6.jpg',
-    POST_7: IMAGES + '/posts/post-7.jpg',
-    POST_8: IMAGES + '/posts/post-8.jpg',
+    CAMPUS_LIBRARY: POSTS_DIR + '/campus-library.jpg',
+    POST_PLACEHOLDER: POSTS_DIR + '/post-placeholder.jpg',
+    POST_1: POSTS_DIR + '/post-1.jpg',
+    POST_2: POSTS_DIR + '/post-2.jpg',
+    POST_3: POSTS_DIR + '/post-3.jpg',
+    POST_4: POSTS_DIR + '/post-4.jpg',
+    POST_5: POSTS_DIR + '/post-5.jpg',
+    POST_6: POSTS_DIR + '/post-6.jpg',
+    POST_7: POSTS_DIR + '/post-7.jpg',
+    POST_8: POSTS_DIR + '/post-8.jpg',
   },
 
   ACTIVITIES: {
-    ACTIVITY_1: IMAGES + '/activities/activity-1.jpg',
-    ACTIVITY_2: IMAGES + '/activities/activity-2.jpg',
-    ACTIVITY_3: IMAGES + '/activities/activity-3.jpg',
-    ACTIVITY_4: IMAGES + '/activities/activity-4.jpg',
-    ACTIVITY_5: IMAGES + '/activities/activity-5.jpg',
-    ACTIVITY_6: IMAGES + '/activities/activity-6.jpg',
-    ACTIVITY_SPORTS: IMAGES + '/activities/activity-sports.jpg',
-    ACTIVITY_STUDY: IMAGES + '/activities/activity-study.jpg',
+    ACTIVITY_1: ACTIVITIES_DIR + '/activity-1.jpg',
+    ACTIVITY_2: ACTIVITIES_DIR + '/activity-2.jpg',
+    ACTIVITY_3: ACTIVITIES_DIR + '/activity-3.jpg',
+    ACTIVITY_4: ACTIVITIES_DIR + '/activity-4.jpg',
+    ACTIVITY_5: ACTIVITIES_DIR + '/activity-5.jpg',
+    ACTIVITY_6: ACTIVITIES_DIR + '/activity-6.jpg',
+    ACTIVITY_SPORTS: ACTIVITIES_DIR + '/activity-sports.jpg',
+    ACTIVITY_STUDY: ACTIVITIES_DIR + '/activity-study.jpg',
   },
 
   PRODUCTS: {
-    FOOD_1: IMAGES + '/products/food-1.jpg',
-    FOOD_2: IMAGES + '/products/food-2.jpg',
-    MERCH_1: IMAGES + '/products/merch-1.jpg',
-    MERCH_2: IMAGES + '/products/merch-2.jpg',
-    TICKET_1: IMAGES + '/products/ticket-1.jpg',
-    TICKET_2: IMAGES + '/products/ticket-2.jpg',
+    FOOD_1: PRODUCTS_DIR + '/food-1.jpg',
+    FOOD_2: PRODUCTS_DIR + '/food-2.jpg',
+    MERCH_1: PRODUCTS_DIR + '/merch-1.jpg',
+    MERCH_2: PRODUCTS_DIR + '/merch-2.jpg',
+    TICKET_1: PRODUCTS_DIR + '/ticket-1.jpg',
+    TICKET_2: PRODUCTS_DIR + '/ticket-2.jpg',
   },
 
 
@@ -252,10 +321,10 @@ export const IMAGE_PATHS = {
   },
 
   POSTERS: {
-    LOGIN: IMAGES + '/posters/login-poster.png',
-    LOGIN_ILLUSTRATION: IMAGES + '/posters/login-illustration.jpg', // 2026-08-20：改为校园插画（原 png 为图标设计板，非登录背景）
-    HOME: IMAGES + '/posters/home-poster.jpg',
-    NOT_LOGGED_WAITING: IMAGES + '/posters/notlogged-waiting.png',
+    LOGIN: POSTERS_DIR + '/login-poster.png',
+    LOGIN_ILLUSTRATION: POSTERS_DIR + '/login-illustration.jpg', // 2026-08-20：改为校园插画（原 png 为图标设计板，非登录背景）
+    HOME: POSTERS_DIR + '/home-poster.jpg',
+    NOT_LOGGED_WAITING: POSTERS_DIR + '/notlogged-waiting.png',
   },
 
   /**
@@ -279,8 +348,8 @@ export const IMAGE_PATHS = {
   },
 
   BANNERS: {
-    VILLAGE: IMAGES + '/banners/village-banner.jpg',
-    HOME: IMAGES + '/banners/home-banner.jpg',
+    VILLAGE: BANNERS_DIR + '/village-banner.jpg',
+    HOME: BANNERS_DIR + '/home-banner.jpg',
   },
 
   /** 通用图标（common 目录） */
@@ -544,7 +613,7 @@ export const IMAGE_PATHS = {
     EDIT: ICONS_BASE + '/v2/edit.png',
     BELL: ICONS_BASE + '/v2/bell.png',
     SLIDERS: ICONS_BASE + '/v2/sliders.png',
-      DIAMOND_FILTER: IMAGES + '/diamond-filter.svg',
+      DIAMOND_FILTER: IMAGES_DIR + '/diamond-filter.svg',
     VERIFY: ICONS_BASE + '/v2/verify.png',
     ONLINE: ICONS_BASE + '/v2/online.png',
     // 品牌色变体
@@ -560,7 +629,7 @@ export const IMAGE_PATHS = {
     /* 2026-08-25 P0：登录页微信绿色气泡 SVG（自绘，参见 报告/2026-08-25-逐页差异规格书.md 2.9） */
     WECHAT_GREEN_SVG: ICONS_BASE + '/login/wechat-green.svg',
     /* 2026-08-25 P0：登录页主标题后绿色小苗图标（复用吉祥物 sprout，渲染最稳） */
-    SPROUT: IMAGES + '/mascot/sprout.png',
+    SPROUT: MASCOT_DIR + '/sprout.png',
   },
 
   /** 个人中心菜单图标（profile 目录，全部复用现有图标，避免下载新资源） */
@@ -679,17 +748,17 @@ export const IMAGE_PATHS = {
     DOUBLE_HEART:ICONS_BASE + '/common/heart-filled.svg',   // 💞 恋爱咨询
     SPEECH:      ICONS_BASE + '/chat.svg',                  // 🗣️ 社交咨询
     // ===== 2026-08-25 emoji→SVG 全量替换补充映射（映射表 v1，P0/P1）=====
-    STAR:        STATIC_BASE + '/svg-spec/03-icons/star.svg',        // ☆ 空星（悄悄话/未赞）
-    CLOSE:       STATIC_BASE + '/svg-spec/03-icons/close.svg',       // ✕ 关闭
+    STAR:        SVG_SPEC_DIR + '/03-icons/star.svg',        // ☆ 空星（悄悄话/未赞）
+    CLOSE:       SVG_SPEC_DIR + '/03-icons/close.svg',       // ✕ 关闭
     CHECK:       ICONS_BASE + '/common/check.svg',                   // ✓ 对勾
-    COMMENT:     STATIC_BASE + '/svg-spec/03-icons/comment.svg',     // 💬 聊天气泡
-    IMAGE:       STATIC_BASE + '/svg-spec/03-icons/image.svg',       // 🖼 图片/相册
-    EDIT:        STATIC_BASE + '/svg-spec/03-icons/edit.svg',        // ✎ / ✏ 铅笔编辑
+    COMMENT:     SVG_SPEC_DIR + '/03-icons/comment.svg',     // 💬 聊天气泡
+    IMAGE:       SVG_SPEC_DIR + '/03-icons/image.svg',       // 🖼 图片/相册
+    EDIT:        SVG_SPEC_DIR + '/03-icons/edit.svg',        // ✎ / ✏ 铅笔编辑
     PLAY:        ICONS_BASE + '/common/play.svg',                    // ▶ 播放
     SCHOOL:      ICONS_BASE + '/common/school.svg',                  // 🏫 学校
-    SPROUT:      STATIC_BASE + '/svg-spec/08-mascot/sprout-default.svg', // 🌱 寻觅品牌嫩芽
-    LEAF:        STATIC_BASE + '/svg-spec/09-decorations/leaf-2.svg',    // 🌿 叶子
-    STATUS_ONLINE: STATIC_BASE + '/svg-spec/04-avatars/status-online.svg', // 🟢 在线
+    SPROUT:      SVG_SPEC_DIR + '/08-mascot/sprout-default.svg', // 🌱 寻觅品牌嫩芽
+    LEAF:        SVG_SPEC_DIR + '/09-decorations/leaf-2.svg',    // 🌿 叶子
+    STATUS_ONLINE: SVG_SPEC_DIR + '/04-avatars/status-online.svg', // 🟢 在线
     GENDER_FEMALE: ICONS_BASE + '/emoji/gender-female.svg',          // ♀ 女（新下载）
     GENDER_MALE:   ICONS_BASE + '/emoji/gender-male.svg',            // ♂ 男（新下载）
     RUN:         ICONS_BASE + '/emoji/run.svg',                      // 🏃 跑步（新下载）
@@ -697,7 +766,7 @@ export const IMAGE_PATHS = {
     CIRCLE_CAMERA:  ICONS_BASE + '/common/camera.svg',   // 📷 摄影
     CIRCLE_TRAVEL:  ICONS_BASE + '/common/travel.svg',   // 🧳 / ✈️ 旅行
     CIRCLE_MUSIC:   ICONS_BASE + '/common/music.svg',    // 🎵 音乐
-    CIRCLE_SPORT:   STATIC_BASE + '/profile/svg/v2/interest/sport.svg', // ⚽ / 🏀 运动 / 篮球（2026-08-31 修正：指向实际存在的 sport.svg）
+    CIRCLE_SPORT:   PROFILE_SVG_DIR + '/v2/interest/sport.svg', // ⚽ / 🏀 运动 / 篮球（2026-08-31 修正：指向实际存在的 sport.svg）
     CIRCLE_FOOD:    ICONS_BASE + '/common/food.svg',     // 🍜 美食
     CIRCLE_GAME:    ICONS_BASE + '/common/gamepad.svg',  // 🎮 游戏
     CIRCLE_BOOK:    ICONS_BASE + '/common/book.svg',     // 📚 阅读 / 考研
@@ -712,53 +781,58 @@ export const IMAGE_PATHS = {
   /** 首页拆分素材（素材/首页/最终/拆分图标-精修版）
    *  2026-09-29 主包体积车道：本组当前 0 消费方（全仓 grep `HOME_SPLIT` 只命中本定义），
    *  原先写成完整 `/static/...` 字面量 → 被 prepare-static.mjs strip() 的 /static/** 字面量
-   *  正则命中，把 200,028B（12 张 PNG）拖进发布形态主包保留集。改走本文件既有基址约定
-   *  （IMAGES = STATIC_BASE + '/images'，2026-08-29「主包素材全量迁后端」）：
-   *  mock/dev 运行时取值与改前逐字相同（`/static/assets/images/home-split/...`），
-   *  real 档取值改指后端公开端点 /api/v1/media/app-assets/（12 张均已托管，字节一致），
-   *  于是发布包不再随包这 200,028B。 */
+   *  正则命中，把 200,028B（12 张 PNG）拖进发布形态主包保留集，故改走基址拼接。
+   *
+   *  2026-10-19 R6/L01 校正：基址不再「real 档一刀切指后端」，改由 cdn-buckets.json 判桶。
+   *  `static/assets/images/home-split/` **不在** cdnPrefixes 里（契约清单只有 generated/ 与
+   *  assets/images/{covers,posters,avatars,people,posts}/），因此本组任何档都求值为
+   *  `/static/assets/images/home-split/...`（= 包内路径，按契约「否则留包内」）。
+   *  ⚠️ 已知隐患（登记给体积车道，不在本车道可写集）：这 12 张既无源码 `/static` 字面量、
+   *  又没进 cdnPrefixes，构建期若被 prune 剪掉而运行时又指 `/static`，就是空白图。
+   *  当前 0 消费方 ⇒ 不会真的显示，但要么把它列入 cdnPrefixes（后端已托管、字节一致，
+   *  见 tmp/qa/lanes/R6/L01-media.md §5），要么给它补 IN_PACKAGE_ASSETS 式双登记。 */
   HOME_SPLIT: {
-    CIRCLE_PHOTO: IMAGES + '/home-split/circle/circle_row6_01.png',
-    CIRCLE_TRAVEL: IMAGES + '/home-split/circle/circle_row6_02.png',
-    CIRCLE_MUSIC: IMAGES + '/home-split/circle/circle_row6_03.png',
-    CIRCLE_FOOD: IMAGES + '/home-split/circle/circle_row6_04.png',
-    CIRCLE_SPORTS: IMAGES + '/home-split/circle/circle_row6_05.png',
-    CIRCLE_READING: IMAGES + '/home-split/circle/circle_row6_06.png',
-    JOIN_BTN: IMAGES + '/home-split/circle/circle_row6_07.png',
-    MEMBER_BADGE: IMAGES + '/home-split/circle/circle_row6_08.png',
-    HOT_BADGE: IMAGES + '/home-split/circle/circle_row6_09.png',
-    LIKE: IMAGES + '/home-split/toolbar/toolbar_row7_01.png',
-    COMMENT: IMAGES + '/home-split/toolbar/toolbar_row7_02.png',
-    SHARE: IMAGES + '/home-split/toolbar/toolbar_row7_03.png',
+    CIRCLE_PHOTO: HOME_SPLIT_DIR + '/circle/circle_row6_01.png',
+    CIRCLE_TRAVEL: HOME_SPLIT_DIR + '/circle/circle_row6_02.png',
+    CIRCLE_MUSIC: HOME_SPLIT_DIR + '/circle/circle_row6_03.png',
+    CIRCLE_FOOD: HOME_SPLIT_DIR + '/circle/circle_row6_04.png',
+    CIRCLE_SPORTS: HOME_SPLIT_DIR + '/circle/circle_row6_05.png',
+    CIRCLE_READING: HOME_SPLIT_DIR + '/circle/circle_row6_06.png',
+    JOIN_BTN: HOME_SPLIT_DIR + '/circle/circle_row6_07.png',
+    MEMBER_BADGE: HOME_SPLIT_DIR + '/circle/circle_row6_08.png',
+    HOT_BADGE: HOME_SPLIT_DIR + '/circle/circle_row6_09.png',
+    LIKE: HOME_SPLIT_DIR + '/toolbar/toolbar_row7_01.png',
+    COMMENT: HOME_SPLIT_DIR + '/toolbar/toolbar_row7_02.png',
+    SHARE: HOME_SPLIT_DIR + '/toolbar/toolbar_row7_03.png',
   },
 
   /** 兴趣圈大封面摄影图（static/assets/images/covers/，参考图风格） */
   CIRCLE_COVERS: {
     /* 2026-09-12 素材补齐：摄影/旅行/音乐/运动换 AI 摄影级新封面（750x562 JPEG，
        与理想图 兴趣圈列表.png 的摄影感风格对齐）；FOOD 沿用旧素材 */
-    PHOTO:     IMAGES + '/covers/circle-cover-photography.jpg',
-    TRAVEL:    IMAGES + '/covers/circle-cover-travel.jpg',
-    MUSIC:     IMAGES + '/covers/circle-cover-music.jpg',
-    FOOD:      IMAGES + '/covers/circle-food.png',
-    SPORTS:    IMAGES + '/covers/circle-cover-sports.jpg',
+    PHOTO:     COVERS_DIR + '/circle-cover-photography.jpg',
+    TRAVEL:    COVERS_DIR + '/circle-cover-travel.jpg',
+    MUSIC:     COVERS_DIR + '/circle-cover-music.jpg',
+    FOOD:      COVERS_DIR + '/circle-food.png',
+    SPORTS:    COVERS_DIR + '/circle-cover-sports.jpg',
     /* 校园圈兜底封面（campus/hub.vue：无地标专属封面的学校使用） */
-    CAMPUS:    IMAGES + '/covers/campus-circle-cover.jpg',
+    CAMPUS:    COVERS_DIR + '/campus-circle-cover.jpg',
     // 第五轮 QA 一致性收敛：原 GAME/READING/PET 是宽幅场景大图（600KB+ AI 摄影），
     // 与理想图 素材/理想效果图/兴趣圈列表.png 的方形场景缩略风格（Style A）不同，
     // 改用本地 AI 生成的方形居中场景图（与 ideal style 一致：摄影感/场景图优先）。
-    GAME:      IMAGES + '/covers/Cozy_flat_lay_of_video_game_co_2026-08-21T03-34-01.png',
-    READING:   IMAGES + '/covers/A_person_reading_a_book_in_a_c_2026-08-21T03-35-17.png',
-    PET:       IMAGES + '/covers/A_cute_golden_retriever_dog_lo_2026-08-21T03-36-28.png',
-    STUDY:     IMAGES + '/covers/circle-studybuddy.png',
-    POSTGRAD:  IMAGES + '/covers/circle-postgraduate.png',
-    ASTRONOMY: IMAGES + '/covers/circle-sky.png',
-    DEFAULT:   IMAGES + '/covers/circle-photo.png',
+    GAME:      COVERS_DIR + '/Cozy_flat_lay_of_video_game_co_2026-08-21T03-34-01.png',
+    READING:   COVERS_DIR + '/A_person_reading_a_book_in_a_c_2026-08-21T03-35-17.png',
+    PET:       COVERS_DIR + '/A_cute_golden_retriever_dog_lo_2026-08-21T03-36-28.png',
+    STUDY:     COVERS_DIR + '/circle-studybuddy.png',
+    POSTGRAD:  COVERS_DIR + '/circle-postgraduate.png',
+    ASTRONOMY: COVERS_DIR + '/circle-sky.png',
+    DEFAULT:   COVERS_DIR + '/circle-photo.png',
   },
 
   /** 注册页素材（2026-09-12 注册页设计包落地，750x480 / 600x600 JPEG @2x） */
   REGISTER: {
-    HERO:      IMAGES + '/register/reg-hero-illustration.jpg',
-    SUCCESS:   IMAGES + '/register/reg-success-illustration.jpg',
+    HERO:      REGISTER_DIR + '/reg-hero-illustration.jpg',
+    SUCCESS:   REGISTER_DIR + '/reg-success-illustration.jpg',
   },
 
   /**
@@ -795,7 +869,7 @@ export const IMAGE_PATHS = {
 
   /** 匹配卡素材（2026-09-12：无照片用户的卡片兜底主视觉，640x1024 JPEG） */
   MATCH_CARD: {
-    HERO:      IMAGES + '/match/match-card-hero.jpg',
+    HERO:      MATCH_DIR + '/match-card-hero.jpg',
   },
 
   /** 登录页拆分素材（素材/登录页/拆分图标_登录页；文件前缀 登录页_） */

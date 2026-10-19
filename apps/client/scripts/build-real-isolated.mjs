@@ -32,6 +32,8 @@
  *         [--expect-showcase-mode [<V>]]  要求 VITE_SHOWCASE_MODE 存在且等于 V（不给 V 则要求 "true"）
  *         [--check-only]                  不构建，只复核 --out 目录里已有的产物
  *         [--full-chain]                  额外跑写死共享目录之外的那串门禁
+ *         [--buckets <p>]                 real 档构建后那步 CDN 桶出包用的契约路径
+ *                                         （缺省 apps/client/config/cdn-buckets.json；不在盘上 ⇒ prune 打 PRUNE_CDN=ABSENT，只做原有清理）
  *         [--self-test]                   在本文件自己的临时复制件上证明「拒绝写共享目录」那道闸是承重的
  * 退出码：0=PASS，1=FAIL（构建失败、产物模式不对、或试图把非 mock 档构建进 mock 共享目录）。
  */
@@ -144,6 +146,11 @@ const expectMode = optFlag("expect-mode", band.expectMode);
 const expectApiMode = optFlag("expect-api-mode", band.expectApiMode);
 const expectShowcaseMode = flag("expect-showcase-mode") ? String(optFlag("expect-showcase-mode", "true")) : band.expectShowcaseMode;
 const outDir = opt("out", join(clientDir, "dist/build", band.outName));
+/** R6/L02：CDN 桶契约（real 档构建后处理用它把托管资产请出主包，见下面 cdn-offload 步） */
+const bucketsPath = (() => {
+  const i = argv.indexOf("--buckets");
+  return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--") ? resolve(argv[i + 1]) : join(clientDir, "config/cdn-buckets.json");
+})();
 
 if (flag("self-test")) process.exit(selfTest());
 
@@ -242,6 +249,23 @@ if (!checkOnly) {
 }
 
 const after = sharedFingerprint();
+/* ── R6/L02：real 档构建后的 CDN 桶出包步 ──────────────────────────────────────
+   为什么这个载具也要跑：`dist/build/mp-weixin-real` 是 release-chain 与isolated 两条载具**共用**的
+   目录，体积门读的就是它。utils/media.ts 的 cdnize() 在 real 档把 cdn 桶路径一律改写成后端
+   app-assets URL —— 也就是说这些位图**在运行时从来不会被读包内那一份**，留在包里只是死重量，
+   还会让"主包体积"这个读数与发布形态对不上。
+   这一步只动产物目录（prune 自带 PRUNE_BACKUP= 具名备份 + MODE:"real" 断言），
+   **不碰 src/static**（那是别的车道的地盘），也不碰 showcase/mock 档。
+   --check-only 与 --band showcase 一律跳过；契约不在盘上时 prune 打 PRUNE_CDN=ABSENT 只做原有清理。 */
+if (ok && !checkOnly && bandName === "real") {
+  console.log(`[${LABEL}] cdn-offload: prune-unreferenced-static --dist ${outDir} --buckets ${bucketsPath}`);
+  ok = run("cdn-offload", process.execPath, [
+    join(clientDir, "scripts/prune-unreferenced-static.mjs"),
+    "--dist", outDir,
+    "--buckets", bucketsPath,
+  ]);
+  if (!ok) console.error(`[${LABEL}] cdn-offload 未成功退出 ⇒ 桶放行没跑成，这份产物的"主包体积"不代表发布形态`);
+}
 const envjs = join(outDir, "config/env.js");
 const problems = [];
 

@@ -61,6 +61,9 @@ const allowLoopback = flag("allow-loopback");
 const expectBand = String(opt("expect-band", "")).trim();
 const dryRun = flag("dry");
 const outDir = resolve(opt("out", join(clientDir, "dist/build/mp-weixin-real")));
+/** CDN 桶契约：显式传给三步（prepare-static --real 出包判定 / prune 兜底+清单 / 体积门核算），
+ *   argv 里看得见路径，比"各自默认同一处"更可判读；缺省就是 L01 生产的那份真件。 */
+const bucketsPath = resolve(opt("buckets", join(clientDir, "config/cdn-buckets.json")));
 
 /** Windows 上路径大小写不敏感，`--out .../MP-WEIXIN` 也是同一个目录；写进它的子目录同样污染该档 */
 function sameOrInside(target, dir) {
@@ -121,7 +124,8 @@ const STEPS = [
      "死资产进包 + 皮肤注册表没人用"本身另记一条保真缺陷，不由本次改序消化掉。 */
   { name: "profile-svg-to-png", args: ["scripts/profile-svg-to-png.mjs"], snapshotBefore: false },
   // --scan src：保留集只从源码扫（prepare-static.mjs:234 的"从上一轮 mock 产物扫"是跨档口径，实测随构建顺序变）
-  { name: "prepare-static --real", args: ["scripts/prepare-static.mjs", "--real", "--scan", "src"], snapshotBefore: true },
+  // --buckets：CDN 桶契约（命中前缀的文件不复制进 src/static ⇒ 根本不进主包；缺盘则该步行为不变）
+  { name: "prepare-static --real", args: ["scripts/prepare-static.mjs", "--real", "--scan", "src", "--buckets", bucketsPath], snapshotBefore: true },
   {
     name: "verify-env-release",
     /* 不在这里让门写凭证券：uni build（下一步）会重建整个 out 目录，先写进去的文件必被抹掉
@@ -137,8 +141,8 @@ const STEPS = [
      实测按 --dist 传会把 "--dist" 当目录名去拼 app.json 路径，报「缺少产物 app.json: …/--dist/app.json」。
      prune 那边才是 --dist（本轮给它加的旗标）。两个形状各按各的传，别统一。 */
   { name: "add-lazy-code-loading", args: ["scripts/add-lazy-code-loading.mjs", outDir], snapshotBefore: false },
-  { name: "prune-unreferenced-static", args: ["scripts/prune-unreferenced-static.mjs", "--dist", outDir], snapshotBefore: false },
-  { name: "verify-package-size", args: ["../../scripts/verify-package-size.mjs", outDir], snapshotBefore: false },
+  { name: "prune-unreferenced-static", args: ["scripts/prune-unreferenced-static.mjs", "--dist", outDir, "--buckets", bucketsPath], snapshotBefore: false },
+  { name: "verify-package-size", args: ["../../scripts/verify-package-size.mjs", outDir, "--buckets", bucketsPath], snapshotBefore: false },
 ];
 
 /** 全部步骤都以 apps/client 为 cwd（与原 && 串一致），脚本路径按原样拼接。
@@ -343,9 +347,37 @@ if (exitCode === 0 && !dryRun) {
     console.error(`[release-chain] 产物 MODE="${band.mode}" 不是 real ⇒ 这一档根本不是发布形态，后面所有"发布形态"结论都作废`);
     exitCode = 1;
   } else if (expectBand && band.sha8 !== expectBand) {
-    // band 一动，覆盖账上每一条 real@<旧sha8> 都变 EXPIRED；不许悄悄接受新 band。
+    // band 一动，覆盖账上每一条 real@<旧 band> 都变 EXPIRED；不许悄悄接受新 band。
     console.error(`[release-chain] band 漂移：实测 sha8=${band.sha8} ≠ 期望 ${expectBand} ⇒ 凡引用旧 band 的判据本轮全部重认，不许静默放行`);
     exitCode = 1;
+  }
+  /* ── CDN 桶收口读数（步表一字未动：步序由 scripts/qa/verify-release-chain-steps.mjs 按 --dry argv 核，
+     加一步要两边同步，所以这里的收口账本挂在本链末尾，与 LOOPBACK_WAIVER.json 同一先例）。
+     量两件盘上事实：① 契约在不在、sha8 是多少；② 产物里那份"这些文件为什么不在包里"的机器可读清单
+     是否真落盘、条目数与出包字节。契约在而清单缺 ⇒ 链判红：
+     "包变小了但没人能解释图去哪了"正是 96d4c172（删掉 350 个在用素材）/ aa6c4708（1.73MB 假达标变 12.19MB）
+     两轮事故的形状，因果不许再被弄反。 */
+  const manifestPath = join(outDir, "CDN_OFFLOAD_MANIFEST.json");
+  const recordPath = join(REPO_ROOT, "tmp/build/cdn-offload-record.json");
+  const readJson = (f) => { try { return JSON.parse(readFileSync(f, "utf-8")); } catch { return null; } };
+  const sha8 = (f) => { try { return createHash("sha256").update(readFileSync(f)).digest("hex").slice(0, 8); } catch { return "(读不到)"; } };
+  const record = readJson(recordPath);
+  const manifest = readJson(manifestPath);
+  if (band.mode !== "real") {
+    console.log(`RELEASECHAIN_CDN=SKIP 档位不是 real（${band.mode}）⇒ 桶放行只作用于发布形态，别的档一个字节都不改`);
+  } else if (!existsSync(bucketsPath)) {
+    console.log(`RELEASECHAIN_CDN=ABSENT path=${bucketsPath} ⇒ 没有桶契约，real 档按 src 全量装包（主包体积由本链末尾的体积门判）`);
+  } else if (!manifest) {
+    console.error(`RELEASECHAIN_CDN=FAIL reason=manifest-missing 契约=${bucketsPath}@${sha8(bucketsPath)} 期望清单=${manifestPath} 出包记录=${record ? `files=${record.totals && record.totals.files}` : "(无)"}`);
+    console.error(`RELEASECHAIN_CDN=FAIL hint=cdn 桶放行必须留下机器可读清单（每条指向 /api/v1/media/app-assets/<rel>）⇒ 否则"包小了"与"图没了"读不出区别`);
+    exitCode = 1;
+  } else {
+    const drift = !manifest.contract || manifest.contract.sha8 !== sha8(bucketsPath);
+    console.log(`RELEASECHAIN_CDN=${drift ? "DRIFT" : "OK"} 清单契约=${manifest.contract && manifest.contract.sha8} 当前=${sha8(bucketsPath)} 条目=${(manifest.entries || []).length} 出包字节=${manifest.totals && manifest.totals.packageBytes} manifest=${manifestPath}`);
+    if (drift) {
+      console.error(`RELEASECHAIN_CDN=FAIL reason=contract-drift ⇒ 产物里的清单解释的不是这一份契约，包内文件与端点无从一一对应`);
+      exitCode = 1;
+    }
   }
   if (allowLoopback && !existsSync(join(outDir, "LOOPBACK_WAIVER.json"))) {
     console.error(`[release-chain] 豁免跑了但产物里没有 LOOPBACK_WAIVER.json ⇒ 这份"不可上线"没留痕`);
