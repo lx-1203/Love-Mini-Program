@@ -150,6 +150,13 @@ g lint-gate                 300 scripts/qa/lint-gate.cjs
 # 超时 60 秒＝与 DSL timeoutMs:60000 齐平；实测 判定跑 148/138/142 ms、--selftest 375/389/383 ms。
 g settle-discipline          60 scripts/qa/verify-settle-discipline.mjs
 
+# R6 资产 CDN 化派生两条（用户裁定"大位图走后端 app-assets"）：接线三件套的第①点，
+# 另两点在 DSL 的 GATE_SUITE 与 run-qa-selftests 的 GATE_SELFTESTS。都只读（HTTP+fs / 全程 SELECT），
+# 不取模拟器租约、不写库 ⇒ 放并发段。120 s 两侧齐平，依据：11 桶 1052 件实测约 10 s、卫生门 3560 格约 4 s。
+# 前置不齐落 NOT-EVIDENCED 退 2（后端没起 / .env 缺 DB_*），那是"未取证"第四格，不记绿也不记产品红。
+g verify-app-assets-coverage 120 scripts/qa/verify-app-assets-coverage.mjs --base http://127.0.0.1:8080
+g verify-data-hygiene        120 scripts/qa/verify-data-hygiene.mjs
+
 echo "--- QA 自测汇总器（19+ 条离线）---"
 # r10 上调 600→900（只准往大调，方向与 DSL 齐平：DSL 给 900000ms 并写明"留的是负例批量起进程的余量"）。
 # 实测依据：编排方 13:15 用 600 秒的临时载具跑出 exit=124（被掐死，不是被测物红），而收件数已从 36 涨到 43。

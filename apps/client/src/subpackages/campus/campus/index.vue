@@ -35,7 +35,9 @@ const RECOMMEND_CIRCLES = [
   { id: "photography", nameKey: "campus.index.circleNames.photography", cover: resolveMediaUrl("/static/assets/images/covers/circle-photo.png") },
   { id: "travel", nameKey: "campus.index.circleNames.travel", cover: resolveMediaUrl("/static/assets/images/covers/circle-travel.png") },
   { id: "music", nameKey: "campus.index.circleNames.music", cover: resolveMediaUrl("/static/assets/images/covers/circle-music.png") },
-  { id: "sports", nameKey: "campus.index.circleNames.sports", cover: resolveMediaUrl("/static/assets/images/covers/circle-sports.png") },
+  // L11（2026-10-19）：运动圈改指满幅正确资产 circle-cover-sports.jpg（circle-sports.png 两版都带白带，
+  // 见 topics.vue 同处注释）；本行与 topics.vue CIRCLE_COVER.sports 保持同一真源。
+  { id: "sports", nameKey: "campus.index.circleNames.sports", cover: resolveMediaUrl("/static/assets/images/covers/circle-cover-sports.jpg") },
   { id: "food", nameKey: "campus.index.circleNames.food", cover: resolveMediaUrl("/static/assets/images/covers/circle-food.png") },
   { id: "gaming", nameKey: "campus.index.circleNames.gaming", cover: resolveMediaUrl("/static/assets/images/covers/Cozy_flat_lay_of_video_game_co_2026-08-21T03-34-01.png") },
   { id: "reading", nameKey: "campus.index.circleNames.reading", cover: resolveMediaUrl("/static/assets/images/covers/A_person_reading_a_book_in_a_c_2026-08-21T03-35-17.png") },

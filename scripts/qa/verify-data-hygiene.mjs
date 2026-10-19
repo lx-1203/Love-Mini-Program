@@ -190,9 +190,18 @@ function hitOf(value) {
   }
 
   if (selfTest) {
+    const realDirty = dirty.length;
     // 注入发生在内存结果里，MySQL 一行没动（上面全程 SELECT）。
     dirty.push({ table: "posts", id: "SELFTEST", col: "title", token: "取证", snippet: "G8 端到端取证帖 SELFTEST，用于验证门会红" });
     console.log("SELF_TEST 已注入 1 条合成脏行（posts#SELFTEST title，内存态，未写库）");
+    /* 自证轴必须"退出码 0 + 自报 PASS 行"才进得了 run-qa-selftests 的 GATE_SELFTESTS（它按这两样判承重）。
+       原版注入后直接落到下面的 FAIL 分支 exit 1 ⇒ 这条能红证明永远消费不到（本仓登记过同族缺陷：
+       门的 --selftest 全仓零调用点）。改成自己判"红得起来没有"，真件读数另起一行、不发 _RESULT=，
+       免得载具按 _RESULT= 归因时把自证读成本轮的卫生判决。 */
+    const reddened = dirty.length === realDirty + 1;
+    console.log(`HYGIENE_SELFTEST ${reddened ? "PASS" : "FAIL"} cases=1 bad=${reddened ? 0 : 1} 注入前=${realDirty} 注入后=${dirty.length}（全程只 SELECT，未写库）`);
+    console.log(`HYGIENE_REAL cells=${cells} dirty=${realDirty}（真件由常态跑法判，本行不发判决）`);
+    process.exit(reddened ? 0 : 1);
   }
 
   if (asJson) console.log(JSON.stringify({ verdict: dirty.length ? "FAIL" : "PASS", cells, dirty, pending }, null, 2));

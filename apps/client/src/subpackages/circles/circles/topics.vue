@@ -157,7 +157,10 @@ const CIRCLE_COVER = {
   photo: resolveMediaUrl("/static/assets/images/covers/circle-photo.png"),
   travel: resolveMediaUrl("/static/assets/images/covers/circle-travel.png"),
   music: resolveMediaUrl("/static/assets/images/covers/circle-music.png"),
-  sports: resolveMediaUrl("/static/assets/images/covers/circle-sports.png"),
+  // L11（2026-10-19）：circle-sports.png 两版都不合格（包内 185×195 左侧 30% 全白条；
+  // 750 版下方 22.7% 是白页底），改指已落盘的满幅正确资产 circle-cover-sports.jpg，
+  // 与 config/images.ts CIRCLE_COVERS.SPORTS 同图，消除两页封面不一致。
+  sports: resolveMediaUrl("/static/assets/images/covers/circle-cover-sports.jpg"),
   food: resolveMediaUrl("/static/assets/images/covers/circle-food.png"),
   sky: resolveMediaUrl("/static/assets/images/covers/circle-sky.png"),
   // 第五轮 QA：游戏/阅读/宠物改用 Style A AI 生成图（与理想图风格一致）

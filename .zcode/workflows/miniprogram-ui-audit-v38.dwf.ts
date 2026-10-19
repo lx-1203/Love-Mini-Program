@@ -305,6 +305,13 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   // 从来没有一发全清单替我们作证（本轮 grep 实测：载具文本里零命中，手跑它给 未落地=2）。
   // 它不取租约、不写库，可以进并发段。超时与 bash 步取同值（600s），因为被杀掉的门读起来是红不是跳过。
   { name: "裁决落地核验 verify-rulings-landed", args: ["scripts/qa/verify-rulings-landed.mjs"], timeoutMs: 600000 },
+  // R6 资产 CDN 化（用户裁定"大位图走后端 app-assets"）派生的两条门，接线三件套的第②点（第①点在
+  // run-final-verify-v33.sh 的 g 清单，第③点在 run-qa-selftests 的 GATE_SELFTESTS —— 只接两处就等于
+  // "写了没人跑"，本仓登记过一次同族事故：某门 --selftest 有 11 例判据边界而全仓零调用点）。
+  // 两条都只读（一条 HTTP+fs、一条全程 SELECT），不取模拟器租约、不写库 ⇒ 放并发段成立。
+  // 超时两侧取同值 120 s：实测 6 桶 166 件 1.7 s、11 桶 1052 件约 10 s；比需求小的上限会读成假红。
+  { name: "后端资产覆盖与同字节 verify-app-assets-coverage", args: ["scripts/qa/verify-app-assets-coverage.mjs", "--base", "http://127.0.0.1:8080"], timeoutMs: 120000 },
+  { name: "用户可见文案卫生 verify-data-hygiene", args: ["scripts/qa/verify-data-hygiene.mjs"], timeoutMs: 120000 },
   // 本轮登记 10 条孤儿门进终验：它们此前在两个载具都不点名，从未参与一发终验（实测：印 _RESULT= 的
   // 门/探针 45 个，登记前被任一载具点名的只有 25 个）。全部只读、不取租约、不写库 ⇒ 放并发段是对的。
   // 曾登记 12 条，后撤 2 条（verify-guest-landing / verify-openqueue-lanes）：这两条会写在册产物，

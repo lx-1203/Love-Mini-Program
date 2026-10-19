@@ -84,15 +84,51 @@ function stubAll() {
 }
 
 function restoreAll() {
+  /* 逐文件重试 + 回读校验，且**只有全部落定才删备份**（2026-10-19 实测事故改的）。
+     原版一次瞬时失败就三件事同时坏：①for 循环里 writeFileSync 抛 ⇒ 后面 7 个文件根本没被还原，
+     整棵 src 停在桩态（en-US.ts 实测 4,886 行只剩 2 行，桩头还写着"请勿提交"，谁顺手 add -A 就毁了）；
+     ②异常从 finally 里逃出去，把构建本来的退出码顶掉（那次 "DONE Build complete" 之后红成 exit=1 就是它）；
+     ③rmSync 在抛点之后没执行，备份其实还在盘上，但没有任何一行话告诉下一位"备份在这里"。
+     errno -4094（UNKNOWN）在本机是瞬时锁：事后 touch 同一个文件立刻成功，所以重试是对的处置，
+     但重试不能当兜底——最终没还原成的，必须点名、给具名路径的还原命令、并保住备份。 */
+  const pending = [];
+  let ok = 0;
   for (const rel of STUB_TARGETS) {
     const file = join(SRC, rel);
     const backup = join(BACKUP_DIR, rel.replaceAll("/", "__"));
-    if (existsSync(backup)) {
-      writeFileSync(file, readFileSync(backup, "utf-8"));
+    if (!existsSync(backup)) {
+      if (existsSync(file) && readFileSync(file, "utf-8").includes("AUTO-GENERATED STUB")) {
+        pending.push(`${rel}（备份缺失且盘上是桩 ⇒ 只能从 HEAD 逐具名路径还原）`);
+      }
+      continue;
     }
+    const want = readFileSync(backup);
+    let done = false;
+    for (let attempt = 1; attempt <= 4 && !done; attempt++) {
+      try {
+        writeFileSync(file, want);
+        done = Buffer.compare(readFileSync(file), want) === 0;
+      } catch (e) {
+        if (attempt === 4) console.error(`[strip-mock] 第 ${attempt} 发仍失败 ${rel}: ${String(e.message).slice(0, 90)}`);
+      }
+      if (!done && attempt < 4) {
+        const until = Date.now() + 400 * attempt;
+        while (Date.now() < until) { /* 让 Windows 释放句柄 */ }
+      }
+    }
+    if (done) ok++;
+    else pending.push(`${rel}（写 4 发均未回读一致）`);
   }
-  rmSync(BACKUP_DIR, { recursive: true, force: true });
-  console.log("[strip-mock] originals restored");
+  if (!pending.length) {
+    rmSync(BACKUP_DIR, { recursive: true, force: true });
+    console.log(`STRIPMOCK_RESTORE=OK files=${STUB_TARGETS.length} verified=${ok} 备份目录已清`);
+    console.log("[strip-mock] originals restored");
+    return true;
+  }
+  console.error(`STRIPMOCK_RESTORE=FAIL verified=${ok}/${STUB_TARGETS.length} 备份保住=${BACKUP_DIR}`);
+  for (const p of pending) console.error(`STRIPMOCK_PENDING ${p}`);
+  console.error(`STRIPMOCK_FIX 逐具名路径还原（本仓禁全仓 restore）：从 ${BACKUP_DIR} 复制回 src，或 git checkout -- <上面点名的路径>`);
+  return false;
 }
 
 const buildCmd = process.argv.slice(2).join(" ").trim();
@@ -125,9 +161,20 @@ try {
 } catch (err) {
   failed = true;
   console.error("[strip-mock] 构建失败:", err.message);
-} finally {
-  restoreAll();
+}
+let restored = true;
+try {
+  restored = restoreAll();
+} catch (e) {
+  /* 还原器自己抛 ⇒ 更要大声：源码可能停在桩态，而"桩文件被提交"是本仓最贵的一类事故 */
+  console.error(`STRIPMOCK_RESTORE=THREW err=${String(e && e.message).slice(0, 120)} 备份目录=${BACKUP_DIR}`);
+  restored = false;
 }
 
+if (!restored) {
+  console.error("STRIPMOCK_RESULT=FAIL reason=restore-pending ⇒ 源码仍有桩未还原，禁止提交，按上面 STRIPMOCK_FIX 行逐具名路径处理");
+  process.exit(3);
+}
+console.log(`STRIPMOCK_RESULT=${failed ? "FAIL_BUILD" : "PASS"} 桩=${STUB_TARGETS.length} 还原已回读校验`);
 if (failed) process.exit(1);
 console.log("[strip-mock] 完成：mock/en-US 已桩化构建并恢复源码");

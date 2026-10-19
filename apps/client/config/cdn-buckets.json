@@ -2,14 +2,20 @@
   "schema": "mp-cdn-buckets/v1",
   "cdnPrefixes": [
     "static/generated/",
-    "static/assets/images/covers/",
-    "static/assets/images/posters/",
-    "static/assets/images/avatars/",
-    "static/assets/images/people/",
-    "static/assets/images/posts/"
+    "static/assets/images/",
+    "static/assets/message/",
+    "static/assets/icons/home/",
+    "static/assets/icons/match/",
+    "static/assets/icons/v2/",
+    "static/assets/icons/emoji/",
+    "static/assets/icons/login/",
+    "static/assets/icons/social/",
+    "static/assets/icons/nearby/"
   ],
   "localPrefixes": [
-    "static/assets/icons/",
+    "static/assets/icons/tabbar/",
+    "static/assets/icons/register/",
+    "static/assets/icons/common/",
     "static/assets/svg-spec/"
   ]
 }

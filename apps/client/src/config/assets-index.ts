@@ -18,6 +18,13 @@
 /** 校园场景图片 */
 /**
  * 2026-08-29 真机 2MB 门禁：real 模式下 /static 基址直出后端 app-assets（与 config/images.ts 同规则）。
+ *
+ * 2026-10-19 L10 修复双层 `static/`（原缺陷：real 档拼出
+ * `{apiRoot}/api/v1/media/app-assets/static//generated/…` ⇒ 后端 HTTP 400，去掉空段也是 404）：
+ * app-assets 的 rel 口径由 utils/media.ts 单一规定 = **包内路径去掉 `static/` 前缀**
+ * （`/static/generated/x.jpg` → `generated/x.jpg`），本文件不得自行再补 `static/` 段。
+ * 拼接约定：S **不带尾斜杠**，下方常量值一律自带前导 `/`（旧写法 S 带尾斜杠 + 常量带前导斜杠，
+ * 会额外产生 `//` 空路径段，Spring 的严格路径匹配直接 400）。
  */
 const APP_ASSETS_BASE = "/api/v1/media/app-assets";
 const REAL_STATIC = (() => {
@@ -25,12 +32,13 @@ const REAL_STATIC = (() => {
     const mode = String(import.meta.env.VITE_API_MODE);
     const base = String(import.meta.env.VITE_API_BASE_URL);
     if (mode === "real" && base) {
-      return base.replace(/\/api\/?$/, "") + APP_ASSETS_BASE + "/static";
+      // 与 media.ts appAssetBase() 同式：apiRoot 去 /api 尾 + 端点前缀，其后直接接 rel（无 static/ 段）
+      return base.replace(/\/api\/?$/, "") + APP_ASSETS_BASE;
     }
   } catch (_e) { /* 本地兜底 */ }
   return "/static";
 })();
-const S = REAL_STATIC + "/";
+const S = REAL_STATIC;
 
 export const CAMPUS_IMAGES = {
   gate: S + "/generated/images/campus/campus-gate.jpg",

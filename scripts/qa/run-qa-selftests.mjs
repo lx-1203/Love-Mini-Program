@@ -81,6 +81,14 @@ const GATE_SELFTESTS = [
   // verify-lane-report-complete 的 --selftest 钉的是"只认「（待填」"这条判据边界（11 例，不读磁盘）：
   // 待补/TODO/半角括号/含"待"字的正常句/反引号引用一律不许判红。它建好时零调用点，正是本清单要收的形状。
   { name: "verify-lane-report-complete", cmd: ["scripts/qa/verify-lane-report-complete.mjs", "--selftest"], want: /LR_SELFTEST=PASS cases=(\d+) bad=0/ },
+  // R6 接线三件套的第③点。两条门的自证旗标拼写不一致（一条 --selftest、一条 --self-test），
+  // 这里按各自实际拼写点名，不顺手统一 —— 统一会打断已经接好的另一侧。
+  // assetcov：真起一个临时 HTTP 服务注入 6 类坏件（缺件 404/字节不符/桶空/清单空/产物 http 引用/量不到三例），
+  // 每类都跑"注入⇒红"与"撤掉⇒绿"，所以它证的是判据会红，不是"今天盘上干净"。
+  { name: "verify-app-assets-coverage", cmd: ["scripts/qa/verify-app-assets-coverage.mjs", "--selftest"], want: /ASSETCOV_SELFTEST 用例=(\d+) 通过=\d+ 失败=0/ },
+  // data-hygiene 的 --self-test 原版注入后直接落 FAIL 分支 exit 1 ⇒ 永远进不了本清单（这里要求
+  // 退出码 0 + 自报 PASS 行才判承重）。已改成自己判"红得起来没有"，真件读数另印 HYGIENE_REAL 不发判决。
+  { name: "verify-data-hygiene", cmd: ["scripts/qa/verify-data-hygiene.mjs", "--self-test"], want: /HYGIENE_SELFTEST PASS cases=1 bad=0/ },
 ];
 let gateRan = 0, gateFailed = 0;
 for (const g of GATE_SELFTESTS) {
