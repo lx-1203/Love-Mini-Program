@@ -56,7 +56,7 @@ export const ACTIVITY_IMAGES = {
 export const HOME_POSTER = S + "/assets/images/posters/login-poster.png";
 
 /** 本次生成的登录页海报（无文字背景） */
-export const GENERATED_LOGIN_POSTER = S + "/generated/images/posters/login-poster.png";
+export const GENERATED_LOGIN_POSTER = S + "/generated/images/posters/login-poster.jpg";
 
 /** 本次生成的首页海报（无文字背景） */
 export const GENERATED_HOME_POSTER = S + "/generated/images/posters/home-poster.jpg";

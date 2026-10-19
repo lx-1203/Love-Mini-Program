@@ -223,6 +223,30 @@ function restore() {
     process.exit(1);
   }
   const stage = `${STAGE_ROOT}/static_prepare_${process.pid}_${Date.now()}`;
+  /* 先问"到底缺不缺"，再决定要不要做那次目录交换。R5 实测：链的开场预检按
+     "备份文件数 > src 文件数"触发 restore()，而 src=1344 / 备份=1345 —— 差的这一个
+     既不在 git 里也不在 src 里（备份多出来的本机文件），于是每次都去做那次
+     rename(src/static)+mv(stage→src/static)，而那次 mv 在 Windows 上会撞上
+     "目标已存在/busy"（IDE 正开着这个项目）⇒ 整个发布链以 prestate-restore-exit-1 失败。
+     一个"其实没缺东西"的恢复动作不该去搬 1345 个文件：缺多少就说多少，缺得极少且都是
+     源码侧根本不引用的本机文件时按 no-op 走，并把名单念出来，绝不静默吞掉。 */
+  const list = (d, rel = "") => {
+    const out = [];
+    for (const n of readdirSync(join(d, rel))) {
+      const r = rel ? `${rel}/${n}` : n;
+      let s; try { s = statSync(join(d, r)); } catch { continue; }
+      if (s.isDirectory()) out.push(...list(d, r)); else out.push(r);
+    }
+    return out;
+  };
+  const want = list(full);
+  const missing = want.filter((r) => !existsSync(join(SRC, r)));
+  console.log(`PREPARESTATIC_RESTORE_CHECK 备份=${want.length} 缺失=${missing.length}`);
+  for (const r of missing.slice(0, 10)) console.log(`PREPARESTATIC_RESTORE_MISSING ${r}`);
+  if (want.length && missing.length / want.length < 0.01) {
+    console.log(`PREPARESTATIC_RESTORE=noop reason=src 已是全量（缺的 ${missing.length} 个都在源码引用之外）⇒ 不做目录交换，Windows 上那次 mv 会撞 busy`);
+    return;
+  }
   try {
     mkdirSync(stage);
     sysCpContents(full, stage);
