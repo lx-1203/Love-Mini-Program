@@ -38,10 +38,15 @@ function relativeTime(iso?: string): string {
 </script>
 
 <template>
-  <view v-if="posts.length > 0" class="public-moment">
+  <!-- R2b-L06-D18（parked 表第 6 行）：原 `v-if="posts.length > 0"` 挂在根节点 ⇒ 无动态时
+       整节（含「最近动态」标题）从文档流消失，他人主页内容高度不足一屏、top/bottom 帧逐像素相同
+       （滚不动）。理想图（他人显示主页.png）这一节是页面最后一段，必须常驻；
+       与同域 PublicInterest.vue:30 / PublicCommon.vue:101 同口径：保留标题 + 明确空态文案。 -->
+  <view class="public-moment">
     <view class="public-moment__head">
       <text class="public-moment__title">最近动态</text>
-      <text class="public-moment__more">···</text>
+      <!-- 「···」是「看更多动态」的入口，空态下没有可展开的对象，故只留标题 -->
+      <text v-if="posts.length > 0" class="public-moment__more">···</text>
     </view>
     <view
       v-for="post in posts"
@@ -98,6 +103,10 @@ function relativeTime(iso?: string): string {
           <text>{{ post.comments }}</text>
         </view>
       </view>
+    </view>
+    <!-- 空态：沿用帖子卡的白底圆角投影，保证这一节在页面上仍然占位可见（撑出真实页面高度） -->
+    <view v-if="posts.length === 0" class="public-moment__card public-moment__empty">
+      <text class="public-moment__empty-text">TA 还没有发布过动态</text>
     </view>
   </view>
 </template>
@@ -216,5 +225,19 @@ function relativeTime(iso?: string): string {
   width: 22rpx;
   height: 22rpx;
   color: #FF6B81;
+}
+
+/* R2b-L06-D18 空态：底色/圆角/投影由 .public-moment__card 复用，这里只补文案排版。
+   min-height 让空卡与一张最简帖子卡同量级占位，页面高度不塌（可达性判据）。 */
+.public-moment__empty {
+  display: flex;
+  align-items: center;
+  min-height: 120rpx;
+}
+
+.public-moment__empty-text {
+  font-size: 26rpx;
+  line-height: 1.5;
+  color: var(--c-text-quaternary, #9AA39F);
 }
 </style>

@@ -459,6 +459,35 @@ page {
      避让型消费者（页面 padding-bottom、浮层 bottom）必须用这一把，用 --tab-bar-h-with-safe 会少让 24rpx + 一个安全区。
      两段 env 相加而不是 2*env：本仓产物里只有 calc(A + env() + B) 这一形被验证过，
      乘法形没有先例，不给渲染器留整条吞掉规则的机会。 */
+  /* 2026-10-19 收尾核查（parked.md「修复三批判没修成的部分」第 2 行 / R2b-L02-D16）：
+     「本 token 把 safe-area 双算了」这条嫌疑**证伪**——两个 env() 不是令牌自创的，
+     而是逐字对齐 custom-tab-bar/index.wxss 的实际盒高：
+       :17 height: calc(160rpx + env(safe-area-inset-bottom))
+       :18 padding-bottom: calc(env(safe-area-inset-bottom) + 24rpx)
+       :19 box-sizing: content-box   ⇒ 实占 = 160 + 24 = 184rpx 再加**两遍**安全区。
+     帧侧独立复核（tmp/qa/lanes/R2b/R2b-L02.md D16）：视口高 809px（home/index.vue:505 口径）、
+     TabBar 上沿实测 y≈648 ⇒ 实占 161px = 184rpx(92px) + 2×34px(68px)，与双 env 吻合；
+     若按「单 env」改本令牌，六个避让消费者一起少让 34px，末屏内容滑到半透明白层之下（回归）。
+     真正多让的那一份安全区在**组件本体**：index.wxss:17 的 height 里那个 env 才是意外的
+     （该文件 :4 的设计意图写的是「高度 56px + 底部安全区」，只该出现一次）。
+     所以这条要修得同时改两处、且顺序不能反：先把 index.wxss:17 改回 height:160rpx，
+     再把本令牌收敛为 184rpx + 单 env —— 只改令牌＝把双算从「组件+令牌」搬成「只剩组件」，
+     等于没修且引入遮挡，故本批**不动数值**。
+     已核对的全部避让消费者（grep --tab-bar-total-h，2026-10-19，均无第二份安全区叠加）：
+       components/profile/mine/MyProfile.vue:74（+112rpx 是 GlobalPublishFab 抬升，非 safe-area）
+       components/profile/NotLoggedProfile.vue:224（只用令牌）
+       pages/discover/index.vue:406（+48rpx 浮岛越出）/ :602（卡高反推里被减）
+       pages/home/index.vue:545（.home-section-gap 占位高；根节点 .page-bottom-safe 已在 :520 归零）
+       pages/messages/index.vue:773（+16rpx 呼吸位）
+       subpackages/village/village/publish.vue:1195（非 tabBar 页，刻意不引用）
+     同族但口径不同的另一把（少让 72rpx + 一个安全区，属另一议题）：App.vue:738 .page-bottom-safe
+     与 App.vue:751 --tabbar-height 都写 112rpx + 单 env，nearby/index.vue:715 正在用它。
+     画面里那条实测 ~290rpx 的死档（R2b-L02-D16）另有其人：游客态整页顶替用的
+     components/discover/NotLoggedWaiting.vue:211 自带 min-height:100vh + 底部
+     calc(env(safe-area-inset-bottom) + 60rpx)，宿主页只要再给一条 --tab-bar-total-h
+     就是两份净空叠加。messages 页已在 R2b-B24 撤掉整页顶替（pages/messages/index.vue:31），
+     余下仍挂载它的是 subpackages/discover-extra/likes/index.vue（非 tabBar 页）。
+     ⇒ 属「宿主页与 100vh 子组件各让一遍」的消费侧口径，归那一页处理，与本令牌无关。 */
   --tab-bar-total-h: calc(184rpx + env(safe-area-inset-bottom) + env(safe-area-inset-bottom));
   /* 2026-09-03 R11 收尾：内容「完整越过 custom-tabBar 露出」的净留白区。
      语义：页面上若存在需要完整可见/可点的底部内容（banner / CTA / 浮层），

@@ -75,6 +75,8 @@ const MOCK_PUBLIC_FALLBACK: UserProfileDTO = {
       createdAt: "2026-07-21T10:00:00Z",
     },
   ],
+  /* mock 舞台布景：后端无 distanceText / online 字段，真档恒为 undefined。
+     口径与所需后端字段见本文件 personToProfile 末尾的同名两行注释。 */
   distanceText: "2.3km",
   online: true,
 };
@@ -90,7 +92,33 @@ function toPostView(post: NonNullable<RecommendedPerson["recentPosts"]>[number])
   };
 }
 
-/** 根据当前用户与目标用户的兴趣交集推导共同点（最多 3 个），附副标题。 */
+/**
+ * 「我们有 N 个共同点」两行卡的编码约定（parked.md 第 5 行 / R2b-L06-D20 的残留半边）。
+ *
+ * 后端契约：UserProfileDTO.Relation.commonInterests 是 `List<String>`
+ * （apps/api/src/main/java/com/campuslove/api/profile/UserProfileDTO.java:27-34，
+ * 生产方 UserProfileController.java:260 buildCommonInterests —— 产出「同校/同城/同龄」
+ * 与共同兴趣词，**没有副标题位**）。理想图（他人显示主页.png）每枚卡是三行结构：
+ * 圆形图标 + 粗体主标题 + 灰色副标题。图标已由消费端按词映射
+ * （PublicCommon.vue:38 TAG_ICON_KEYS），副标题则只能靠本函数把 "标签/副标题" 拼进同一个
+ * 字符串、再由 PublicCommon.vue:62 按 "/" 拆开。**这条编码保持原样，不改协议、不动消费端。**
+ *
+ * 它是权宜而非契约，代价要写清楚：斜杠成了保留字符，真实标签值里一旦出现 "/" 就会被误拆；
+ * 且副标题无法独立国际化。要让理想图的两行结构成为真数据，后端需要补：
+ *   Relation.commonPoints: List<CommonPoint>
+ *     CommonPoint(String title, String subtitle, String icon)
+ *       title    —— 共同点主名（"旅行"，或"同校"这类关系项）
+ *       subtitle —— 该共同点对**双方**的事实描述（"去过 12 个国家"），必须由用户资料里
+ *                    真实存在的字段派生（旅行国家数 / 音乐绑定 / 宠物数…），不得由客户端查表编造
+ *       icon     —— 图标标识，补齐后 PublicCommon.vue 的 TAG_ICON_KEYS 映射表可整体退役
+ * 字段到位后：本函数与消费端的 split 一起删除，改读 commonPoints。
+ *
+ * 下面 subtitleFallback 正是"按标签查表编造"的那一类，它**只在 mock 分支里被消费**：
+ * 本文件所有产出点（MOCK_ME / MOCK_PUBLIC_FALLBACK / personToProfile）都挂在
+ * fetchMyProfile 与 fetchPublicProfile 开头的 useMock() 判断之内。真档下后端不返回
+ * 带 "/" 的条目 ⇒ 副标题位为空（PublicCommon.vue:68 `subtitlePart || ""`），不编数据。
+ * 保留它的唯一作用：让 mock 长图能演出理想图的形态，不得移植进真档链路。
+ */
 function deriveCommonInterests(myTags: string[], targetTags: string[]): string[] {
   if (!myTags.length || !targetTags.length) return [];
   const set = new Set(targetTags);
@@ -150,6 +178,12 @@ function personToProfile(person: RecommendedPerson): UserProfileDTO {
     socialProof: { followingCount: 48, followersCount: 32, likesCount: 86, matchCount: 5 },
     relation: { liked: false, matched: false, commonInterests },
     posts: (person.recentPosts ?? []).map(toPostView),
+    /* 末两行是 mock 舞台布景，不是数据：后端 UserProfileDTO 今天**没有** distanceText / online
+       字段（UserProfileDTO.java:8-21 的 record 形参里没有），真档下这两个值恒为 undefined，
+       PublicIdentity 的距离行/在线胶囊因此整块不渲染（R2b-L06-D12/D13 的根因即在此）。
+       要让它成为真值：后端在 UserProfileDTO 上补 `String distanceText`（由查看者坐标算，
+       口径同 /location/report 上报的那份坐标）与 `boolean online`（会话/心跳派生），
+       前端 types/profile.ts:96-99 已按可空声明，无需再改类型。 */
     distanceText: person.distanceText || "2.3km",
     online: true,
   };

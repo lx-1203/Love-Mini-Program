@@ -8,8 +8,19 @@
 import { request, getToken } from "../services/http";
 import { TENCENT_MAP_KEY, isDev } from "../config/env";
 
-/** 默认位置文案（校园 + 距离） */
-export const DEFAULT_LOCATION_TEXT = "北京大学 · 附近";
+/**
+ * 位置完全取不到时的中性文案。
+ * R2b-L02-D04（parked.md 收尾）：这里原写「北京大学 · 附近」——把一个具体校名
+ * 当成"谁都是"的默认值渲染，属编数据。现改抄 i18n 既有同义键
+ * locationPage.addressUnavailable（zh-CN.ts:1749「地址解析不可用」/
+ * en-US.ts:1700 "Address lookup unavailable"），与 profile/location.vue:50
+ * 在"无城市且无校区"分支里用的那条文案同词，两页不再各说各话。
+ * 注：本工具是纯函数、拿不到 i18n 实例，故只镜像中文档；调用方若要跟随语言，
+ * 请自行按 t("locationPage.addressUnavailable") 分支，不要依赖本常量的字面值。
+ * 刻意保持**非空串**：HomeHeader.vue:27 的取值链是 `locationText || school || "北京大学 · 3km"`，
+ * 传空串会把它自带的假校名＋假距离顶出来，比中性文案更糟。
+ */
+export const DEFAULT_LOCATION_TEXT = "地址解析不可用";
 
 /**
  * IP 推断城市与本次真实坐标的最大可信距离（km）。
@@ -174,13 +185,30 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
 }
 
 /**
- * 构建位置展示文案。
- * 优先使用城市名，否则使用校园名，最终兜底默认值。
+ * 构建位置展示文案：**只输出拿得到的地名**，不再补第二段。
+ * 优先使用城市名，否则使用校园名，最终兜底中性文案。
  * LBS Phase 2：不再硬编码距离，由后端真实计算。
+ *
+ * R2b-L02-D04（parked.md 收尾）：理想图（附近的首页.png / 首页.png）第二段是**距离半径**
+ * 「北京大学 · 3km」，而本函数此前一律回填范围词「附近」去占那个距离位——语义错位
+ * （HomeHeader.vue:21-28 已在组件侧把「· 附近」剥掉，等于自证这一段不是距离）。
+ * 客户端**没有任何**可当"距离/半径"的真实值：
+ *   - LocationResult.cityDistanceKm 量的是「IP 归属城市中心 ↔ 本次 GPS 坐标」的城市可信度
+ *     （见本文件 CITY_COORD_MAX_KM 与 :101 附近的赋值），不是"离我多远的人"，
+ *     把它印成「N km」就是拿不同源的数字冒充距离——属编数据，不做。
+ *   - 后端 UserProfileDTO（apps/api/src/main/java/com/campuslove/api/profile/UserProfileDTO.java）
+ *     没有 distance / distanceText 字段；RecommendedPerson.distanceText 只在 mock 映射里被消费
+ *     （api/profile.ts 的 personToProfile）。
+ * ⇒ 要渲染理想图那一段，需要后端补一个真实字段：附近页的检索半径（例如 /nearby 汇总响应里的
+ *   radiusKm，或本人坐标到推荐结果的聚合距离），到位后由**调用页**拼 `${city} · ${radiusKm}km`。
+ *   字段落地前宁缺：只显地名，不显假距离。
+ * 消费方（grep buildLocationText）：pages/home/index.vue:71/79/254、
+ *   pages/nearby/index.vue:146/157、subpackages/profile-extra/profile/location.vue:47/49。
+ *   三处都是整串直显或在其后追加「 · 服务器所在城市」标注，没有按「·」拆段的，去掉尾段不破坏解析。
  */
 export function buildLocationText(city: string, campusName?: string | null): string {
-  if (city) return `${city} · 附近`;
-  if (campusName) return `${campusName} · 附近`;
+  if (city) return city;
+  if (campusName) return campusName;
   return DEFAULT_LOCATION_TEXT;
 }
 
