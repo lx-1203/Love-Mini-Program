@@ -6,6 +6,9 @@
 import { ref, computed, onUnmounted } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
+// R6 §1.6 铁律 3：本页图片绑定改为统一经 resolveMediaUrl 解析
+// （mock 档留包内 /static、real 档按 cdn-buckets 出后端 app-assets URL、/uploads/** 补鉴权 token）
+import { resolveMediaUrl } from "../../../utils/media";
 import { useCircleStore } from "../../../stores/circle";
 import { useVillageStore } from "../../../stores/village";
 import { useActivityStore, type ActivityItem } from "../../../stores/activity";
@@ -678,7 +681,7 @@ onLoad((query) => {
             v-for="(img, idx) in images" :key="idx"
             class="image-item"
           >
-            <image class="image-item__img" :src="img" mode="aspectFill"
+            <image class="image-item__img" :src="resolveMediaUrl(img)" mode="aspectFill"
         lazy-load alt="" />
             <view class="image-item__remove" @tap="removeImage(idx)">
               <text class="remove-icon">×</text>
@@ -718,7 +721,7 @@ onLoad((query) => {
       <view class="activity-picker__content" @tap.stop="noop">
         <view class="activity-picker__header">
           <text class="activity-picker__title">{{ t('circle.postTopicActivityPick') }}</text>
-          <image class="activity-picker__close" role="button" :aria-label="t('common.closeAria')" @tap="showActivityPicker = false" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG" mode="aspectFit" alt="" />
+          <image class="activity-picker__close" role="button" :aria-label="t('common.closeAria')" @tap="showActivityPicker = false" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG)" mode="aspectFit" alt="" />
         </view>
         <scroll-view scroll-y class="activity-picker__list" :show-scrollbar="false">
           <view v-if="loadingActivities" class="activity-picker__loading">

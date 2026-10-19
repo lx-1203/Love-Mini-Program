@@ -374,7 +374,9 @@ onLoad((query) => {
         :aria-label="t('common.back')"
         @tap="goBack"
       >
-        <text class="other-header__back-arrow">‹</text>
+        <view class="other-header__back-circle">
+          <text class="other-header__back-arrow">‹</text>
+        </view>
       </view>
       <view
         v-if="targetUserId"
@@ -385,7 +387,9 @@ onLoad((query) => {
         :aria-label="t('chat.nav.report')"
         @tap="openGovernanceMenu"
       >
-        <text class="other-header__more-dots">···</text>
+        <view class="other-header__more-circle">
+          <text class="other-header__more-dots">···</text>
+        </view>
       </view>
       <view v-else class="other-header__placeholder" />
     </view>
@@ -447,8 +451,16 @@ onLoad((query) => {
   background: var(--c-bg-container, #ffffff);
 }
 
+/* R6-B58/D05（可达性 P1，2026-10-20）：原 `position: absolute` 挂在 .other-page 上、
+   随整页滚出（帧实测：bottom 帧 x=8..60 / y=46..105 内返回钮亮/暗像素 = 0，只剩状态栏
+   字点；两帧 sha16 不同、姓名字形从 y=362 移到 y≈35 ⇒ 实际滚动 ≈320px）⇒ 滚到底后本页
+   0 个返回入口，右上「···」（举报/拉黑/关注唯一入口）也一并离屏。
+   按 defect 建议改法第一条把整条头改 `position: fixed`，沿用同一条已验证避让配方
+   （--statusbar / --capsule-right，同域 pages/messages/index.vue .header、
+   campus/campus/hub.vue 头部口径）；z-index 30 已高于 ProfileShell 内容层，
+   圆底用 --c-overlay-bg-light 半透明白（滚到白卡上仍可辨，见 D13 同域取值）。 */
 .other-header {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -464,20 +476,34 @@ onLoad((query) => {
      正确的口径，不新造数字：--capsule-right 由本文件顶部 useMenuButtonRect 在根节点
      实测注入（胶囊右缘间隙，H5/非小程序端为 0），7px 是测量前的静态兜底，104px 是胶囊
      本体缓冲；pages/messages/index.vue 的 .header、subpackages/campus/campus/hub.vue
-     头部同一条配方。左/底内边距维持原 28rpx / 24rpx 不变。 */
-  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx) calc(var(--capsule-right, 7px) + 104px) 24rpx 28rpx;
+     头部同一条配方。左内边距 28rpx→16rpx：R6-B58/D05 同批把热区撑到 88rpx 后，
+     圆底（64rpx）在热区内居中，左右各差 12rpx，减掉这 12rpx 让圆底左缘仍落在 28rpx。 */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx) calc(var(--capsule-right, 7px) + 104px) 24rpx 16rpx;
   background: transparent;
 }
 
 .other-header__back,
 .other-header__more {
-  width: 64rpx;
-  height: 64rpx;
+  /* R6-B58/D05 同批 + R6-B55/D17 点名的同域顺手项：热区提到 88rpx（仓内口径
+     AppShell.vue:334），64rpx 半透明白圆底移进 __circle，视觉尺寸一格不动。 */
+  width: 88rpx;
+  height: 88rpx;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2));
+  flex-shrink: 0;
+}
+
+.other-header__back-circle,
+.other-header__more-circle {
+  width: 64rpx;
+  height: 64rpx;
   border-radius: 50%;
+  background: var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .other-header__back--pressed,
@@ -498,8 +524,10 @@ onLoad((query) => {
 }
 
 .other-header__placeholder {
-  width: 64rpx;
-  height: 64rpx;
+  /* 与 .other-header__more 同宽的占位（无 userId 时保持 space-between 几何不跳） */
+  width: 88rpx;
+  height: 88rpx;
+  flex-shrink: 0;
 }
 
 /* ========== 2026-09-05 R18：生活瞬间全屏查看层 ========== */

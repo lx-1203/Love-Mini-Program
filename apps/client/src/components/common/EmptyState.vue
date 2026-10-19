@@ -123,6 +123,17 @@ function handleAction() {
   justify-content: center;
   /* 80rpx/40rpx 无对应 sp token（sp 阶梯为 4/8/12/16/20/24/32/48rpx），固定布局尺寸保留 */
   padding: 80rpx 40rpx;
+  /* R6-L05-D02（位置 P2）：空态块贴顶不居中——实测图标顶 y=167、按钮底 y=311，
+     其下留白 487px，视觉重心只占帧高 29%。原声明只有 padding，无任何高度约束。
+     按缺陷卡给的口径补组件这一半：`flex:1` 让本组件在「flex 列 + 有高度」的父级里
+     撑满可用区，配合上面的 justify-content:center 即垂直居中。
+     ⚠️ 另一半在宿主：父级必须给可解析高度（circles/campus topic-detail 页里
+     :810-842 那条 `.empty-state{flex:1;justify-content:center}` 是模板无对应节点的死样式，
+     实际走本组件）⇒ 登记给页面车道，本车道不改 subpackages/**。
+     刻意不自证 min-height:xxvh —— 本组件有 30+ 消费点（含卡片内的小面积空态），
+     给一个全局视口高度会把小空态撑成大块，属用新缺陷换旧缺陷。 */
+  flex: 1 0 auto;
+  box-sizing: border-box;
 }
 .empty-icon {
   /* 固定布局尺寸（图标 120rpx），无对应 token */
@@ -146,6 +157,15 @@ function handleAction() {
   padding: var(--sp-4) 40rpx; /* 40rpx 无对应 sp token，固定布局尺寸保留 */
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-brand);
+  /* R6-L05-D06（尺寸比例 P2）：空态唯一可点元素实测 62×35px = 123×69rpx，
+     热区高 69rpx 比同页自述标准（topic-detail.vue:792「热区高度 ≥ 44px / min-height:88rpx」）
+     少 19rpx；高度此前只由 padding 撑出，无 min-height。
+     补 min-height:88rpx(44px) 并用 flex 居中保持文字视觉位置不变。 */
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 .empty-action__text {
   font-size: var(--fs-base);

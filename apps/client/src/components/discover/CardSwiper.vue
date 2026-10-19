@@ -45,6 +45,8 @@ import WhisperUnlockSheet from "./WhisperUnlockSheet.vue";
 import { openAppPath } from "../../utils/navigation";
 import { lightHaptic, mediumHaptic, heavyHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
+// R6-L10-D05：素材出口统一过解析器（见下方 emojiIcons 注释）
+import { resolveMediaUrl } from "../../utils/media";
 import { isDev } from "../../config/env";
 import { computeSwipeRotate, resolveSwipeEnd } from "../common/swipe/SwipeGesture";
 // 悄悄话付费解锁（与 CardDetailOverlay 共用同一套交友币逻辑）
@@ -89,21 +91,27 @@ const { t } = useI18n();
 const coinsStore = useCoinsStore();
 
 /** Emoji 替换 SVG 图标路径 */
+/* R6-L10-D05（素材缺失 P1）：本表 14 个值全部裸绑给 <image :src>，而 real 发布包不随包
+   icons/{v2,match,home,social,emoji,login,nearby} 与 images/**（实测
+   apps/client/dist/build/mp-weixin-real/static/assets/icons 下只剩 common/register/tabbar）
+   ⇒ 三枚动作钮（× / ☆ / ♥）与「80% 匹配」胶囊里的 ♥ 在帧上只有文字、没有图标。
+   按 §1.6 铁律 3 在出口统一过 resolveMediaUrl：命中 cdnPrefixes 的子目录在 real 档改写成
+   后端 app-assets 绝对 URL（盘上逐枚核对存在），localPrefixes（icons/common）幂等原样返回。 */
 const emojiIcons = {
-  location: IMAGE_PATHS.ICONS_EMOJI.LOCATION,
-  heartMatch: IMAGE_PATHS.ICONS_MATCH.HEART,
-  star: IMAGE_PATHS.ICONS_MATCH.STAR,
-  x: IMAGE_PATHS.ICONS_MATCH.X,
-  graduation: IMAGE_PATHS.ICONS_COMMON.GRADUATION_SVG,
-  heart: IMAGE_PATHS.ICONS_EMOJI.HEART,
-  chat: IMAGE_PATHS.ICONS_EMOJI.CHAT,
-  group: IMAGE_PATHS.ICONS_EMOJI.GROUP,
-  message: IMAGE_PATHS.ICONS_SOCIAL.MESSAGE,
-  lock: IMAGE_PATHS.ICONS_EMOJI.LOCK,
-  ruler: IMAGE_PATHS.ICONS_EMOJI.RULER,
-  briefcase: IMAGE_PATHS.ICONS_COMMON.BRIEFCASE_SVG,
-  money: IMAGE_PATHS.ICONS_EMOJI.MONEY,
-  ring: IMAGE_PATHS.ICONS_COMMON.RING_SVG,
+  location: resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LOCATION),
+  heartMatch: resolveMediaUrl(IMAGE_PATHS.ICONS_MATCH.HEART),
+  star: resolveMediaUrl(IMAGE_PATHS.ICONS_MATCH.STAR),
+  x: resolveMediaUrl(IMAGE_PATHS.ICONS_MATCH.X),
+  graduation: resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.GRADUATION_SVG),
+  heart: resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.HEART),
+  chat: resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CHAT),
+  group: resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.GROUP),
+  message: resolveMediaUrl(IMAGE_PATHS.ICONS_SOCIAL.MESSAGE),
+  lock: resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LOCK),
+  ruler: resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.RULER),
+  briefcase: resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.BRIEFCASE_SVG),
+  money: resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.MONEY),
+  ring: resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.RING_SVG),
 } as const;
 
 const props = withDefaults(
@@ -506,6 +514,32 @@ const identityDistance = computed(() => {
   if (!label) return "";
   return `${t('discover.distancePrefix')}${label}`;
 });
+
+/**
+ * R6-L10-D09（空态文案 P2）：左上角距离角标此前 `v-if="identityDistance"`，
+ * 取不到距离时整条槽位直接消失（帧上只留右上「在线」），而本页标题是「附近的人」、
+ * 取数也按 distanceMax 过滤 ⇒ 用户无法判断这张卡「近」在哪里。
+ * 缺失时不再删槽，改落一句可读弱态「同城 · 距离未知」
+ * （两枚键都在 discover 段内已存在：zh-CN.ts:955 sameCity / :1041 distanceUnknown，
+ * 不新增 i18n 键、不编造具体公里数）。
+ */
+const identityDistanceText = computed(
+  () => identityDistance.value || `${t('discover.sameCity')} · ${t('discover.distanceUnknown')}`
+);
+/** 弱态标记：真值缺失时角标改中性底，与「有距离」的在线绿档分层 */
+const isDistanceFallback = computed(() => identityDistance.value === "");
+
+/**
+ * R6-L10-D06（颜色token P2）：中间动作钮的底色此前只有一档暖橙
+ * （`linear-gradient(135deg,#FFB066,#FF8A3D)`，两枚都是表外私有色值），
+ * 但该钮的语义由 `starAction` 决定：本页（nearby.vue:207-215 未覆盖）默认是
+ * `superLike`「超级喜欢」，规范 §1.2 把它判给互动蓝 --c-status-info #4D8DFF；
+ * 暖橙按 :2180 注释是 v3 冻结的「☆ 悄悄话」专用色 ⇒ 语义与配色串档。
+ * 现按语义分档：whisper 才挂暖橙（且改由令牌派生），superLike 走互动蓝。
+ */
+const starActionClass = computed(() =>
+  props.starAction === "whisper" ? "card-action--super-whisper" : "card-action--super-like"
+);
 
 /** 学历展示文案（与 CardDetailOverlay 对齐） */
 const educationLabel = computed(() => {
@@ -1083,6 +1117,18 @@ defineExpose({ onTouchMove });
           </view>
         </view>
 
+        <!-- R6-L10-D07（层级遮挡 P1）：蒙面遮挡层自绘。
+             原实现靠 :deep(.card__bg--masked){ filter: blur(28rpx) brightness(0.72) }，
+             帧上实测照片未被模糊也未被压暗——眉毛、眼窝、耳部高光、头皮胡茬等 ≤3px 细节
+             全部清晰可辨（帧宽 390px ⇒ 28rpx=14.6px，任何小于 14px 的细节都应被高斯抹平），
+             而同帧仍显示「互发喜欢解锁头像」提示条 ⇒ 画面与文案自相矛盾。
+             同文件 :1101 早已自证「mp-weixin 下即使 :deep(...) 拉伸失效」，filter 是同一类跨组件失效。
+             现按缺陷卡口径在卡片内自绘一层压暗遮罩盖住 SafeImage：两层 --c-overlay-strong
+             (rgba(15,23,42,.7)) 叠加 = 有效遮挡 0.91，身份细节不可辨；
+             H5 端下方 :deep filter 仍生效，两端都遮得住。z-index 2 与 .card__bg-tint 同位、
+             DOM 在其之前，信息区(3)/提示条(4)照常浮在遮挡层之上。 -->
+        <view v-if="masked" class="card__mask-scrim" aria-hidden="true" />
+
         <!-- 渐变遮罩（Phase D2 · 下半区加强渐变以提升文字可读性） -->
         <view class="card__overlay" />
 
@@ -1130,9 +1176,14 @@ defineExpose({ onTouchMove });
 
         <!-- 顶部信息条（纯匹配版）：左上距离 / 右上在线 -->
         <view class="card__identity">
-          <view v-if="identityDistance" class="card__distance-badge" role="img" :aria-label="identityDistance">
+          <view
+            class="card__distance-badge"
+            :class="{ 'card__distance-badge--fallback': isDistanceFallback }"
+            role="img"
+            :aria-label="identityDistanceText"
+          >
             <image class="card__distance-badge-icon" :src="emojiIcons.location" mode="aspectFit" alt="" />
-            <text class="card__distance-badge-text">{{ identityDistance }}</text>
+            <text class="card__distance-badge-text">{{ identityDistanceText }}</text>
           </view>
           <view v-if="activeStatusLabel" class="card__online-badge" role="img" :aria-label="activeStatusLabel">
             <view class="card__online-dot" />
@@ -1288,7 +1339,7 @@ defineExpose({ onTouchMove });
         <image class="card-action__icon" :src="emojiIcons.x" mode="aspectFit" alt="" />
         <text class="card-action__label">{{ t('discover.skip') }}</text>
       </view>
-      <view class="card-action card-action--super press-feedback" hover-class="card-action--pressed" hover-stay-time="120" @tap.stop="onStarTap" role="button" :aria-label="props.starAction === 'whisper' ? t('discover.whisperLabel') : t('discover.superLike')">
+      <view class="card-action card-action--super press-feedback" :class="starActionClass" hover-class="card-action--pressed" hover-stay-time="120" @tap.stop="onStarTap" role="button" :aria-label="props.starAction === 'whisper' ? t('discover.whisperLabel') : t('discover.superLike')">
         <image class="card-action__icon" :src="emojiIcons.star" mode="aspectFit" alt="" />
         <text class="card-action__label">{{ props.starAction === 'whisper' ? t('discover.whisperLabel') : t('discover.superLike') }}</text>
       </view>
@@ -1551,6 +1602,22 @@ defineExpose({ onTouchMove });
 :deep(.card__bg--masked) {
   filter: blur(28rpx) brightness(0.72);
   transform: scale(1.08);
+}
+
+/* R6-L10-D07：卡片内自绘的蒙面压暗遮罩（mp-weixin 下 filter 不生效时的真遮挡）。
+   两层同名令牌叠加：0.7 + 0.7×0.3 = 有效不透明度 0.91。 */
+.card__mask-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: var(--c-overlay-strong, rgba(15, 23, 42, 0.7));
+}
+.card__mask-scrim::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--c-overlay-strong, rgba(15, 23, 42, 0.7));
 }
 
 /* 蒙面解锁规则提示条（替代突兀的大号问号，明确解锁条件） */
@@ -1820,6 +1887,15 @@ defineExpose({ onTouchMove });
   font-size: var(--fs-sm);
   color: var(--c-text-inverse);
   font-weight: 600;
+}
+
+/* R6-L10-D09：距离真值缺失时的弱态档。
+   刻意不照缺陷卡「字色走 --c-text-placeholder」执行 —— #9AA39F 压在本角标的
+   在线绿底 --c-overlay-online-bg(rgba(16,185,129,.95)) 或照片任意底色上都达不到 4.5:1，
+   那等于把一条「空态文案」缺陷换成一条「可达性」缺陷。
+   弱态改由「中性深色底 + 同档白字」表达：与有真距离时的绿档分层，字仍可读。 */
+.card__distance-badge--fallback {
+  background: var(--c-overlay-strong, rgba(15, 23, 42, 0.7));
 }
 
 /* ========== Phase D2 · 照片墙分页指示器（点状） ========== */
@@ -2176,9 +2252,17 @@ defineExpose({ onTouchMove });
   background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
 }
 
-.card-action--super {
-  /* v3 冻结：☆ 悄悄话 = 暖橙（白底/深色卡片上均醒目，不与 ❤️ 粉色抢视觉） */
-  background: linear-gradient(135deg, #FFB066 0%, #FF8A3D 100%);
+/* R6-L10-D06：.card-action--super 不再自带底色，
+   改由语义档 .card-action--super-like / .card-action--super-whisper 决定 */
+.card-action--super-like {
+  background: var(--c-status-info);
+}
+
+/* R6-L10-D06：悄悄话 → 保留 v3 冻结暖橙，但两枚色值改由令牌派生
+   （--c-warning #F59E0B → --c-secondary-action #FF9F43），
+   消掉原 #FFB066/#FF8A3D 两笔表外私有色值（§1.1 规则 3「一令牌一值」） */
+.card-action--super-whisper {
+  background: linear-gradient(135deg, var(--c-warning) 0%, var(--c-secondary-action) 100%);
 }
 
 .card-action--skip {

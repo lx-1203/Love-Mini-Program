@@ -16,6 +16,11 @@ import { openAppPath } from "../../../utils/navigation";
 import { ROUTES } from "../../../constants/routes";
 import { IMAGE_PATHS } from "../../../config/images";
 import { circleCoverFor } from "../../../config/circle-covers";
+// R6-L04-D16/D18（规范文档 §1.6 铁律 3「裸 :src 一律包 resolveMediaUrl / SafeImage」）：
+// 本页 5 处 :src 此前全部裸绑（含 circleCover() 的封面与好友头像组），
+// real 档下 IMAGE_PATHS 已是后端 app-assets 绝对 URL、mock 档是包内 /static 路径，
+// 只有经 resolveMediaUrl 才能两档同口径（并覆盖 /uploads/** 鉴权重写与 pexels 本地化兜底）。
+import { resolveMediaUrl } from "../../../utils/media";
 import AppShell from "../../../components/layout/AppShell.vue";
 import PageStateContainer from "../../../components/common/PageStateContainer.vue";
 // MP-R2-CIRCLES-INDEX-001（跨轮别名 MP-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001）：
@@ -399,7 +404,7 @@ defineExpose({ toggleJoin });
             :aria-label="'搜索'"
             @tap="goSearch"
           >
-            <image class="circles-header__search-icon" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" alt="" />
+            <image class="circles-header__search-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SEARCH)" mode="aspectFit" alt="" />
           </view>
         </view>
         <!-- 推荐提示（对齐理想图：标题下灰字副标题，无卡片/emoji 装饰） -->
@@ -418,7 +423,7 @@ defineExpose({ toggleJoin });
               :aria-selected="activeQuickTab === tab.key ? 'true' : 'false'"
               @tap="activeQuickTab = tab.key"
             >
-              <image v-if="tab.iconSrc" class="circles-tab__icon" :src="tab.iconSrc" mode="aspectFit" alt="" />
+              <image v-if="tab.iconSrc" class="circles-tab__icon" :src="resolveMediaUrl(tab.iconSrc)" mode="aspectFit" alt="" />
               <text v-else class="circles-tab__text">{{ t(tab.labelKey) }}</text>
             </view>
           </view>
@@ -447,8 +452,14 @@ defineExpose({ toggleJoin });
               :style="{ animationDelay: index * 60 + 'ms' }"
               @tap="goToCircleHome(circle)"
             >
+              <!-- R6-L04-D16/D18：改前此处是裸绑 circleCover(circle.name)（未经 resolveMediaUrl）。
+                   素材侧实测：摄影/旅行/音乐/运动命中的是 covers/circle-cover-*.jpg 四张，
+                   盘上存在且后端 200（curl 实测），PIL 量得 meanS=0.112–0.142、meanLum=208–219，
+                   而美食/阅读/宠物等走 circle-*.png，meanS=0.34–0.60、meanLum=69–147
+                   ⇒ 帧上「前四张发白」不是没加载，是这四张素材本身是淡彩占位插画、与理想图
+                   同位实拍图不对题。圈名→封面的映射在 config/circle-covers.ts（非本车道写集）。 -->
               <view class="circle-card__cover-wrap">
-                <image class="circle-card__cover" :src="circleCover(circle.name)" mode="aspectFill" lazy-load alt="" />
+                <image class="circle-card__cover" :src="resolveMediaUrl(circleCover(circle.name))" mode="aspectFill" lazy-load alt="" />
               </view>
 
               <view class="circle-card__body">
@@ -461,9 +472,14 @@ defineExpose({ toggleJoin });
                 </view>
                 <text class="circle-card__desc">{{ circle.description }}</text>
                 <view class="circle-card__meta">
-                  <image class="circle-card__meta-icon" :src="IMAGE_PATHS.ICONS_EMOJI.GROUP" mode="aspectFit" alt="" />
-                  <!-- R3：文案精简（人加入→人），避免被「加入」按钮列省略号吃掉动态数（judged：统计行不可读） -->
-                  <text class="circle-card__count">{{ t("circle.cardStats", { members: formatMemberCount(circle.memberCount), posts: circle.topicCount }) }}</text>
+                  <image class="circle-card__meta-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.GROUP)" mode="aspectFit" alt="" />
+                  <!-- R6-L04-D15（文案 P3）：理想图逐字为「1.2w 人加入 · 362 条动态」，
+                       R3 那轮为了躲省略号把动词删成「1.2w 人」，语义丢失（"人"≠"已加入的人"）。
+                       词条 circle.cardStats（zh-CN.ts:3755）值里就没有「加入」二字，而 i18n/** 不在
+                       本车道写集内 ⇒ 改用同包 circle-home.vue:499-500 已在用的 memberUnit+topicUnit
+                       组合口径（同字段两页同构），宽度由 .circle-card__count 的 ellipsis 兜底，
+                       不再靠删文案让位。 -->
+                  <text class="circle-card__count">{{ formatMemberCount(circle.memberCount) }} {{ t("circle.memberUnit") }} · {{ circle.topicCount }} {{ t("circle.topicUnit") }}</text>
                 </view>
                 <!-- 2026-08-25 P0：等 N 位朋友已加入 + 头像组（规格书 14.6）
                      MP-R2-CIRCLES-INDEX-002：数字改由后端 friendJoinedCount 驱动；
@@ -474,7 +490,7 @@ defineExpose({ toggleJoin });
                       v-for="(av, i) in friendAvatars(circle.id)"
                       :key="i"
                       class="circle-card__friends-avatar"
-                      :src="av"
+                      :src="resolveMediaUrl(av)"
                       mode="aspectFill"
                       alt=""
                     />
@@ -602,11 +618,19 @@ defineExpose({ toggleJoin });
 
 .circle-card__hot-badge {
   /* 就近成对声明（裁决 MP-R2-CIRCLES-INDEX-007）：不收编语义不同的 --c-badge-on-image-*，也不自造暗色令牌 */
-  --hot-badge-bg: rgba(255, 77, 92, 0.92);
-  --hot-badge-text: #FFFFFF;
+  /* R6-L04-D14（P1）：深浅关系整个做反了。改前 bg=rgba(255,77,92,.92)（帧上实测填充 #FF5967）
+     + 白字，是「高饱和红块压白字」；理想图 兴趣圈列表.png 同位角标实测底 #FEF0F1、字色 #F73C4F，
+     即「浅粉底 + 红字」。现按理想图的反色关系落到 romance 色阶：
+     --c-romance-50=#FFECEF（≈理想图 #FEF0F1）、--c-romance-700=#CC4A5F。
+     字色取 700 而非 500（#FF6B81 压 #FFECEF 只有 2.41:1），实测 3.93:1，
+     优于理想图自带的 #F73C4F/3.32:1，角标是 22rpx 小字、不该反向掉档。
+     深色档 --c-romance-50 由 styles/tokens.scss:276 覆为 #2D1F24，成对关系仍成立。 */
+  --hot-badge-bg: var(--c-romance-50, #FFECEF);
+  --hot-badge-text: var(--c-romance-700, #CC4A5F);
   padding: 2rpx 14rpx;
   border-radius: 999rpx;
   background: var(--hot-badge-bg);
+  border: 1rpx solid var(--c-romance-100, #FFD9DF);
   flex-shrink: 0;
 }
 
@@ -763,11 +787,31 @@ defineExpose({ toggleJoin });
 }
 
 /* ===== 2026-08-25 P0：自定义头部（兴趣<under>趣</under>圈 + 搜索） ===== */
+/* R6-L04-D12（P0）：原实现是「行 flex + align-items:center」，把 #header 插槽里的
+   三个块（标题行 / 副标题 .circles-banner / chip 行 .circles-tabs）并排成一行。
+   三个子项都没有显式宽度，于是各自被压到 min-content：CJK 文本可在字间断行，
+   副标题「找到与你志趣相投的人」在帧上排成 x=163–175px（≈24rpx 一个字的列宽）、
+   y≈95–214px 的竖排单字列；chip 行整体右移到 x=361rpx 起、只剩 3/7 枚可见。
+   页头固定区的正确语义是「自上而下三段」，故改列方向并让子项撑满。 */
 .circles-header {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+/* R6-L04-D12 同因第二处：.circles-header__row 在改前**没有任何样式**
+   （全文件仅模板 :382 引用它一次），三个子节点按块级流竖排
+   （back 与 search 都是 display:flex 的块），于是搜索钮掉到标题下一行左侧；
+   理想图 兴趣圈列表.png 是「‹ 兴趣圈 …………… 🔍」同一行、搜索钮在行右端。 */
+.circles-header__row {
+  display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 16rpx;
-  flex: 1;
+  width: 100%;
   min-width: 0;
 }
 
@@ -829,7 +873,10 @@ defineExpose({ toggleJoin });
      campus/hub.vue:383-389「认证按钮被胶囊压住 85%」、pages/nearby/index.vue:624-626）。
      避让口径对齐 hub/topics：预留 = 胶囊间隙 + 胶囊本体 87px + 呼吸（合计 +104px）。
      落实后按钮右缘距屏右 14 + 7 + 104 = 125px，胶囊左缘 94px → 净空 31px（≥10px）。
-     --capsule-right 由 useMenuButtonRect 在本节点 :style 实测注入，测量前/非小程序端回退 7px。 */
+     --capsule-right 由 useMenuButtonRect 在本节点 :style 实测注入，测量前/非小程序端回退 7px。
+     R6-L04-D12：改列方向后本钮与 ‹/标题同处 .circles-header__row 一行，补 margin-left:auto
+     把它推到行右端（理想图 兴趣圈列表.png 页头右上角），避让量仍按上式保留。 */
+  margin-left: auto;
   margin-right: calc(var(--capsule-right, 7px) + 104px);
 }
 
@@ -850,13 +897,16 @@ defineExpose({ toggleJoin });
 
 .circles-tabs__list {
   display: inline-flex;
-  gap: 16rpx;
+  /* R6-L04-D13：改列方向后本行独占一行、自左 gutter 起（原被行 flex 挤到 x=361rpx 起、
+     只露 3/7 枚）。间距与内衬各收 4rpx，使 6 枚文字 chip 在 750rpx 屏宽内
+     （AppShell gutter 2×32rpx ⇒ 可用 686rpx）首屏全部露出，第 7 枚「更多」起横滚。 */
+  gap: 12rpx;
   padding-right: 16rpx;
 }
 
 .circles-tab {
   flex-shrink: 0;
-  padding: 12rpx 28rpx;
+  padding: 12rpx 22rpx;
   border-radius: 999rpx;
   /* 非活跃分类 chips 浅灰胶囊底（对齐理想图，避免白底融入页面）
      R13：原取 --c-bg-page 与页面同色，胶囊完全不可见——改用卡片面底色 */

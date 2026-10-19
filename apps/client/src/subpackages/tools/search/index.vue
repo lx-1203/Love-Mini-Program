@@ -326,7 +326,13 @@ function goToActivity(activityId: number) {
         </view>
       </view>
 
+      <!-- R6-L09-D21（空态文案 P2）：原门槛「热搜与历史同时为 0 才显示空态」在 real 档永远不成立
+           （后端 /api/v1/search/hot 无数据 ⇒ 热搜 0 条，取景残留 1 条历史 chip 就把空态挡死了）
+           ⇒ 按区块各自兜底：两区块皆空 → EmptyState；仅热搜为空 → 补一句本页既有的引导文案
+           search.emptyHint（zh-CN.ts:2886「输入关键词，搜索感兴趣的人、标签和学校」，未新增 i18n 键）。
+           热搜条目本身（卡建议的「热搜 10 条」）属后端数据缺口，见交件报告 NEEDS-DATA。 -->
       <EmptyState v-if="searchStore.hotSearches.length === 0 && searchStore.history.length === 0" type="no-data" :message="t('search.emptyHint')" hide-sub />
+      <text v-else-if="searchStore.hotSearches.length === 0" class="suggest-hint">{{ t("search.emptyHint") }}</text>
     </view>
 
     <!-- 搜索结果 -->
@@ -443,6 +449,13 @@ function goToActivity(activityId: number) {
 <style scoped lang="scss">
 .search-page {
   min-height: 100vh;
+  /* R6-L09-D20（可达性 P1）：改纵向 flex —— 未搜索态的 suggest 区（.suggest-wrap）此前只有
+     padding: 24rpx 的自然高，实测内容止于 y=198、下方 616px（≈1230rpx）全是 #EEF7F2 空底，
+     bottom 帧与 top 帧逐字节同图。suggest 区改为吃满剩余视口并垂直居中
+     （与仓内既有裁定同口径：LockScreen「内容堆在屏幕上半区、下半屏空白」定性为缺陷）。
+     注：热搜条目 0 条属后端数据缺口，见交件报告 NEEDS-DATA —— 本改动只消掉「空底」，不伪造内容。 */
+  display: flex;
+  flex-direction: column;
   background: var(--c-bg-page);
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -467,6 +480,7 @@ function goToActivity(activityId: number) {
 .search-header {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 12rpx;
   padding: 16rpx 24rpx;
   background: var(--c-bg-container, #ffffff);
@@ -479,10 +493,16 @@ function goToActivity(activityId: number) {
   /* R12-IND-SEARCH-001：输入条右端延伸进胶囊下方，预留胶囊宽度 */
   margin-right: calc(var(--capsule-right, 7px) + 96px);
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   height: 72rpx;
-  background: var(--c-bg-container, #F2F3F5);
+  /* R6-L09-D17（颜色token P2）：原引卡片令牌 --c-bg-container（真值 #FFFFFF）压在同样白底的
+     sticky 头部上 ⇒ 输入区与头部同色、圆角容器边界 0 像素。规范 §1.2「输入底 --c-bg-surface
+     #F3FAF6：输入框·浅底块」才是这里的语义令牌；再加一条浅描边保证深色主题下也浮得出来。
+     （原兜底 #F2F3F5 与 --c-bg-container 真值不符，是第二笔兜底债，一并归正。） */
+  background: var(--c-bg-surface, #F3FAF6);
+  border: 1rpx solid var(--c-border-light, #EEF2F0);
   border-radius: 36rpx;
   padding: 0 24rpx;
   gap: 12rpx;
@@ -495,8 +515,16 @@ function goToActivity(activityId: number) {
 }
 
 .search-input {
+  /* R6-L09-D16（尺寸比例 P1）：mp-weixin 的原生 <input> 不靠 `flex: 1` 撑开——
+     实测渲染宽度只有 ~66px，14 字的 placeholder「搜索感兴趣的人、标签和学校」
+     （zh-CN.ts:2877）在 x=119 处被切齐，右边 120px 全白。
+     补齐 mp-weixin 需要的三件套：显式宽度 + flex-basis:0 + min-width:0，
+     让输入框吃满 .search-box 的可用宽度（父级也已补 min-width:0）。 */
   flex: 1;
-  font-size: 28rpx;
+  flex-basis: 0;
+  min-width: 0;
+  width: 100%;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-primary, #1f2329);
 }
 
@@ -507,7 +535,7 @@ function goToActivity(activityId: number) {
 }
 
 .search-cancel {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   color: var(--color-primary, #ff6b81);
   flex-shrink: 0;
   /* MP-R1-SEARCH-301：常驻「取消」与微信胶囊矩形相交（胶囊距右缘 7~94px、
@@ -518,7 +546,20 @@ function goToActivity(activityId: number) {
 }
 
 .suggest-wrap {
+  /* R6-L09-D20：未搜索态撑满头部/分组 tab 之外的剩余视口，内容垂直居中 */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   padding: 24rpx;
+}
+
+/* R6-L09-D21：仅热搜为空时给一句引导（既有 i18n 文案，非新增键） */
+.suggest-hint {
+  margin-top: 24rpx;
+  font-size: var(--fs-md, 26rpx);
+  color: var(--c-text-secondary, #4e5969);
+  text-align: center;
 }
 
 .section {
@@ -533,7 +574,10 @@ function goToActivity(activityId: number) {
 }
 
 .section-title {
-  font-size: 30rpx;
+  /* R6-L09-D19（字号 P2）：原裸值 30rpx（实测落画 13px），既不走令牌也比规范 §1.3
+     区块标题 18-20px 小 5-7px，与条目正文（--fs-md 26rpx）只差 4rpx、层级不分。
+     同页其余 15 处裸 rpx 字号一并换成 --fs-* 令牌。 */
+  font-size: var(--fs-3xl, 36rpx);
   font-weight: 600;
   color: var(--c-text-primary, #1f2329);
 }
@@ -544,7 +588,7 @@ function goToActivity(activityId: number) {
 }
 
 .section-clear {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-tertiary, #8f959e);
 }
 
@@ -564,7 +608,7 @@ function goToActivity(activityId: number) {
 }
 
 .hot-rank {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   font-weight: 600;
   color: var(--c-text-tertiary, #8f959e);
 }
@@ -574,7 +618,7 @@ function goToActivity(activityId: number) {
 }
 
 .hot-word {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-primary, #1f2329);
 }
 
@@ -599,7 +643,7 @@ function goToActivity(activityId: number) {
 }
 
 .history-word {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-secondary, #4e5969);
 }
 
@@ -612,7 +656,7 @@ function goToActivity(activityId: number) {
 }
 
 .result-meta__text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-tertiary, #8f959e);
 }
 
@@ -630,12 +674,14 @@ function goToActivity(activityId: number) {
 }
 
 .load-more__text {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-tertiary, #8f959e);
 }
 
 /* ========== v3 搜索分组 ========== */
 .search-tabs {
+  /* R6-L09-D20：.search-page 改纵向 flex 后，头部与分组条按内容高，不参与伸缩 */
+  flex-shrink: 0;
   display: flex;
   gap: 16rpx;
   padding: 12rpx 24rpx;
@@ -644,6 +690,13 @@ function goToActivity(activityId: number) {
 }
 
 .search-tab {
+  /* R6-L09-D18（可达性 P2）：切「标签/学校」是本页主路径，实测热区只有 56×31px（62rpx），
+     低于仓内自陈触控下限 AppShell.vue:334「min-height: 88rpx(44px)」⇒ 与返回键同口径补 min-height，
+     视觉 pill 尺寸不变（文字改由 flex 居中） */
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 12rpx 32rpx;
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-container, #F2F3F5);
@@ -654,7 +707,7 @@ function goToActivity(activityId: number) {
 }
 
 .search-tab__text {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   font-weight: 600;
   color: var(--c-text-primary, #222222);
 }
@@ -695,18 +748,18 @@ function goToActivity(activityId: number) {
 }
 
 .user-row__name, .school-row__name {
-  font-size: 28rpx;
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
   color: var(--c-text-primary, #222222);
 }
 
 .user-row__meta, .school-row__meta {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-secondary, #666666);
 }
 
 .user-row__arrow, .school-row__arrow {
-  font-size: 24rpx;
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-secondary, #666666);
   flex-shrink: 0;
 }
@@ -735,7 +788,7 @@ function goToActivity(activityId: number) {
 }
 
 .campus-preview__title {
-  font-size: 26rpx;
+  font-size: var(--fs-md, 26rpx);
   font-weight: 700;
   color: var(--c-text-primary, #222222);
   display: block;
@@ -764,12 +817,12 @@ function goToActivity(activityId: number) {
 }
 
 .campus-person__name {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-primary, #222222);
 }
 
 .campus-preview__empty-text {
-  font-size: 22rpx;
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-secondary, #666666);
 }
 

@@ -966,7 +966,16 @@ async function loadPeerOnlineStatus(): Promise<void> {
 
 /**
 
-/** 认识天数（来自关系信息；无关系时按 1 天兜底） */
+/** 认识天数（来自关系信息；无关系时按 1 天兜底）
+ *  R6-B37/D03（文案 P2，2026-10-20）：这条兜底与「离线」都是**页面无据断言**——
+ *  sessionId 为空（本帧就是 missingSessionId 错误态，会话根本没解析成功）时返回 1，
+ *  于是错误页上照样出「认识 1 天」（帧实测 x147-192/y51-61）；同帧「离线」（x99-124/y62-70）
+ *  由 :1953 的 `:online="peerOnlineStatus === 'online'"` 把初值 null（:944，batch 接口从未成功）
+ *  折叠成 false 后由 ChatHeader.vue:79 `{{ online ? "在线" : "离线" }}` 无条件渲染。
+ *  口径应与 :990 relationshipInfo 的「整区隐藏、宁缺毋造」一致 ⇒ 需要组件把
+ *  online/relationDays 收成正值才能整段不渲染（withDefaults 的 online=false /
+ *  relationDays=1 会在组件内把 null 再编回来），页面侧改 null 仍会渲染成
+ *  「认识  天」/「离线」。已登记 NOT-FIXABLE-HERE → F2（components/chat/ChatHeader.vue）。 */
 const relationDays = computed(() => {
   if (!sessionId.value) return 1;
   const session = messagesStore.sessions.find((s) => s.id === sessionId.value);
@@ -2146,9 +2155,26 @@ defineExpose({ noop });
       <text class="unread-hint__text">{{ t('chat.newMessageHint') }} ↓</text>
     </view>
 
-    <!-- 输入区（微信风格：输入框 + 破冰建议 + 更多操作） -->
+    <!-- 输入区（微信风格：输入框 + 破冰建议 + 更多操作）
+         R6-B37/D02（空态文案 P1，2026-10-20）：错误态下此处原样二次渲染 2048 行已经渲染过的
+         pageErrorMessage（帧实测同字串两条：x15-248/y107-118 与 x17-250/y755-766），
+         把白色输入条整块占死、既没有输入框也没有出口。按规范 §3「错误态只允许一处提示」——
+         唯一一条错误文案留在消息流区（:2048），此处改为动作：复用页面既有 goBack
+         （navigateBack，栈底兜底 switchTab 到 /pages/messages/index），文案取既有 common.back，
+         不新增 locale、不重复句子。 -->
     <view class="chat-input-area" :class="{ 'chat-input-area--keyboard-up': keyboardHeight > 0 }">
-      <view v-if="pageErrorMessage" class="meta-copy meta-copy--padded">{{ pageErrorMessage }}</view>
+      <view v-if="pageErrorMessage" class="chat-input-error">
+        <view
+          class="chat-input-error__btn press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('common.backAria')"
+          @tap="goBack"
+        >
+          <text class="chat-input-error__btn-text">{{ t("common.back") }}</text>
+        </view>
+      </view>
       <template v-else>
         <!-- 引用上下文卡片（来自兴趣圈"打招呼"） -->
         <view v-if="quoteContext" class="quote-card card-base">
@@ -2617,6 +2643,32 @@ defineExpose({ noop });
 
 .chat-input-area--keyboard-up {
   padding-bottom: var(--sp-3);
+}
+
+/* R6-B37/D02：错误态输入区动作行（替代二次渲染的错误文案）。
+   按钮热区按仓内口径 AppShell.vue:334 取 min-height 88rpx。 */
+.chat-input-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+}
+
+.chat-input-error__btn {
+  min-height: 88rpx;
+  padding: 0 var(--sp-8);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-bg-brand);
+}
+
+.chat-input-error__btn-text {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--c-brand-700);
 }
 
 .meta-copy--padded {

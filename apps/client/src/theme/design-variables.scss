@@ -843,6 +843,18 @@ page {
      不复用 --c-error-bg-tint 是因为那是半透明值，叠在卡片白底上会偏色——这里要的是逐字同色。 */
   --c-error-bg-solid: #fef5f6;
   --c-error-border-tint: rgba(229, 69, 77, 0.2);
+  // R6-F1（2026-10-20）· 令牌根因：--c-error-soft 全仓定义处=0，唯一使用点是
+  // subpackages/tools/security/index.vue:942 的「踢下线」胶囊底色（此前只靠它的 fallback 活着）。
+  // 处置=补定义并归口到既有档，理由：本仓 `*-soft` 这一族的既有语义是「浅底**不透明**色」
+  // （--c-tint-pink-soft / --c-tint-blue-soft / --c-bg-brand-soft 全是实心浅底），
+  // 而错误色的这一档**已经存在**——就是上面为同一目的新增的 --c-error-bg-solid(#fef5f6)。
+  // 所以这里不新造第二个红，只做别名。
+  // ⚠️ 读数变化（如实记）：该处此前吃 fallback #fee2e2（Tailwind red-100，与同一文件
+  // `var(--c-error, ...)` 假定的 #f43f5e 是另一套调色板，都不是本仓 $error #E5454D），
+  // 改后为 #fef5f6（本仓错误色同族档）。两者都是极浅红底，差一档明度。
+  // 注：本块刻意用 // 而不是 /* */ —— 后者会被原样编进 app.wxss，
+  // 让任何按「定义处计数」判未定义名的门把一个注释里的假声明数成真定义。
+  --c-error-soft: var(--c-error-bg-solid); // #fef5f6 —— 错误色浅底不透明档（= --c-error-bg-solid）
   /* 错误色（红 #EF4444）tint（用于 Toast/Tag 等组件，与 --c-error 略有差异） */
   --c-red-bg-tint: rgba(239, 68, 68, 0.1);
   --c-red-border-tint: rgba(239, 68, 68, 0.2);

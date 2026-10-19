@@ -458,12 +458,20 @@ function formatSubmissionTime(iso: string): string {
         id="feedback-content"
         v-model="form.content"
         class="field field--textarea"
+        :placeholder="t('feedback.labelContent')"
         :maxlength="FEEDBACK_CONTENT_MAX"
         :aria-label="t('feedback.labelContent')"
         aria-required="true"
         :aria-describedby="errorMessage ? 'feedback-error' : undefined"
         aria-errormessage="feedback-error"
       />
+      <!-- R6-L15-D26（空态文案 P1）：正文 textarea 原先既无 placeholder 也无字数提示，
+           实测薄荷底 y=322..463（284rpx 高）内部墨迹像素 = 0（同法测标题框 ink=507、微信号框 ink=1212）
+           ⇒ 画面上是一整块空白灰框。①  placeholder 先接既有键 feedback.labelContent（"反馈内容"），
+           ② 补字数计数（maxlength 此前只存在于脚本里，用户看不到）。
+           卡给的完整引导句「请描述遇到的问题或建议，10-500 字」需要新增 i18n 键
+           feedback.placeholderContent ⇒ i18n/** 归 F7，已在交件报告登记，本车道不造串。 -->
+      <text class="field-counter">{{ form.content.length }}/{{ FEEDBACK_CONTENT_MAX }}</text>
       <label class="sr-only" for="feedback-wechat">{{ t('feedback.labelContactWechat') }}</label>
       <input
   cursor-spacing="20"
@@ -520,24 +528,27 @@ function formatSubmissionTime(iso: string): string {
               <image class="image-cell__remove-icon" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_WHITE_SVG" mode="aspectFit" alt="" />
             </view>
           </view>
-          <!-- 添加图片占位（+ 号按钮） -->
+          <!-- 添加图片占位（相机图标） -->
           <view
             v-if="canAddImage"
             class="image-cell image-cell--add press-feedback"
             :class="{ 'image-cell--uploading': isUploading }"
             hover-class="press-feedback--active"
             hover-stay-time="120"
+            role="button"
+            :aria-label="t('feedback.imageUpload')"
             @tap="handleAddImage"
           >
             <view v-if="isUploading" class="image-cell__spinner" />
-            <template v-else>
-              <image
-                class="image-cell__plus-icon"
-                :src="IMAGE_PATHS.ICONS_COMMON.CAMERA"
-                mode="aspectFit" alt=""
-              />
-              <text class="image-cell__plus-text">{{ t("feedback.imageUpload") }}</text>
-            </template>
+            <image
+              v-else
+              class="image-cell__plus-icon"
+              :src="IMAGE_PATHS.ICONS_COMMON.CAMERA"
+              mode="aspectFit" alt=""
+            />
+            <!-- R6-L15-D28（文案 P3）：删掉格内「上传图片」四字 —— 它与上方分组标题
+                 image-upload__title 在同一张卡里逐字重复（中间只隔一行副标题）。
+                 格内只留相机图标，读屏语义改由 role=button + aria-label 承担（既有 i18n 键）。 -->
           </view>
         </view>
       </view>
@@ -551,21 +562,29 @@ function formatSubmissionTime(iso: string): string {
     <!-- 功能10：提交记录列表 + 历史入口 -->
     <SectionCard :title="t('feedback.historyTitle')" compact>
       <view class="history-header">
-        <text class="history-header__hint">{{ t("feedback.historyEmptyDesc") }}</text>
+        <!-- R6-L15-D30（空态文案 P2）：hint 只在**非空态**显示 —— 空态下它（"提交反馈后将在此处显示"）
+             与 EmptyState 主标题（"暂无反馈记录"）、副标题（"这里空空如也"）三句同义叠在一屏里。 -->
+        <text v-if="feedbackStore.submissions.length > 0" class="history-header__hint">{{ t("feedback.historyEmptyDesc") }}</text>
+        <view v-else class="history-header__spacer" />
         <view
           class="history-header__btn press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"
+          role="button"
+          :aria-label="t('feedback.history')"
           @tap="goHistory"
         >
           <text class="history-header__btn-text">{{ t("feedback.history") }}</text>
         </view>
       </view>
 
+      <!-- R6-L15-D30：传 hide-sub（EmptyState.vue:26-27 的既有出口，R10-P2-008 专为此语义重复而加），
+           空态只留一句主标题 -->
       <EmptyState
         v-if="feedbackStore.submissions.length === 0"
         :title="t('feedback.historyEmpty')"
         type="no-data"
+        hide-sub
       />
 
       <view
@@ -621,7 +640,17 @@ function formatSubmissionTime(iso: string): string {
   padding: 18rpx;
   box-sizing: border-box;
   border-radius: var(--r-lg, 18rpx);
-  background: var(--c-bg-page);
+  /* R6-L15-D27（颜色token P2）：表单控件底色取规范 §1.2 输入底 --c-bg-surface(#F3FAF6)，
+     原 --c-bg-page(#EEF7F2) 与页面底逐字同值 ⇒ 白卡上的输入框"没有底"（实测三框内部均 #EEF7F2） */
+  background: var(--c-bg-surface, #F3FAF6);
+}
+
+/* R6-L15-D26：正文字数计数（maxlength 此前只在脚本里，画面上看不到上限） */
+.field-counter {
+  display: block;
+  text-align: right;
+  font-size: var(--fs-sm, 22rpx);
+  color: var(--c-text-tertiary);
 }
 
 .field--textarea {
@@ -681,7 +710,8 @@ function formatSubmissionTime(iso: string): string {
   height: 180rpx;
   border-radius: var(--r-lg, 16rpx);
   overflow: hidden;
-  background: var(--c-bg-page);
+  /* R6-L15-D27：上传占位格与输入框同口径，取输入底令牌而非页面底 */
+  background: var(--c-bg-surface, #F3FAF6);
   border: 1rpx dashed var(--c-border-default, rgba(15, 23, 42, 0.08));
   display: flex;
   align-items: center;
@@ -734,11 +764,6 @@ function formatSubmissionTime(iso: string): string {
   opacity: 0.55;
 }
 
-.image-cell__plus-text {
-  font-size: var(--fs-sm, 22rpx);
-  color: var(--c-text-tertiary);
-}
-
 .image-cell__spinner {
   width: 40rpx;
   height: 40rpx;
@@ -770,7 +795,20 @@ function formatSubmissionTime(iso: string): string {
   flex: 1;
 }
 
+/* R6-L15-D30：空态下顶掉 hint 的占位，保持「历史记录」按钮仍贴右 */
+.history-header__spacer {
+  flex: 1;
+}
+
 .history-header__btn {
+  /* R6-L15-D31（可达性 P2）：「历史记录」是去反馈列表的唯一入口，实测浅绿药丸只有
+     63×28px（高 56rpx），比仓内自陈热区标准 AppShell.vue:334「≥88rpx(44px)」少 16px；
+     同页分类 chip 已按 .chip{min-height:88rpx} 达标 ⇒ 本处是漏项。视觉药丸尺寸不变 */
+  min-height: 88rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 10rpx 20rpx;
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-brand);

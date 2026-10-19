@@ -88,6 +88,15 @@ const userAvatar = computed(() =>
   profileStore.avatarUrl ? resolveMediaUrl(profileStore.avatarUrl) : resolveMediaUrl("/static/assets/images/avatars/avatar-2.jpg"),
 );
 
+/* R6-B38/D05（素材缺失 P1，2026-10-20）：英雄区吉祥物（:421）与 5 枚助手头像（:451）
+ * 原先把 IMAGE_PATHS.MASCOT.SMILE='/static/assets/images/mascot/mascot_smile.png'
+ * （config/images.ts:537 字面量）裸绑给 <image>，未过 resolveMediaUrl ⇒ real 发布包内
+ * static/assets/images/ 整目录不存在（本仓 src/static 下实测也没有 mascot/），
+ * 帧上量到 5 个纯 #e8e8e8 灰盘 + 英雄区 80px 空圆洞。同文件 :88 的 userAvatar
+ * 早已是这个写法，此处按同一口径补单一来源 computed：素材由后端 app-assets 托管
+ * （apps/api/uploads/app-assets/assets/images/mascot/mascot_smile.png 实测在盘）。 */
+const mascotSmileSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MASCOT.SMILE));
+
 /* -------- 发送（R16 2026-09-07：接真实后端 POST /official-accounts/{code}/messages）-------- *
  * 此前为纯本地 echo 桩：消息不落库、刷新即消失，且 Date.now() 作 id 同毫秒碰撞。
  * 现改为 async：本地先插 pending 消息 → POST → 用后端返回（[用户消息, 助手回复]，direction 区分）替换 →
@@ -418,7 +427,7 @@ onLoad((query) => {
           <image class="hero-deco hero-deco-2" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
           <image class="hero-deco hero-deco-3" :src="IMAGE_PATHS.ICONS_EMOJI.LEAF" mode="aspectFit" alt="" />
           <image class="hero-deco hero-deco-4" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
-          <image class="hero-mascot" :src="IMAGE_PATHS.MASCOT.SMILE" mode="aspectFill" />
+          <image class="hero-mascot" :src="mascotSmileSrc" mode="aspectFill" />
           <view class="hero-greeting">
             <text>Hi~ 我是寻觅助手</text>
             <image class="hero-greeting-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
@@ -448,7 +457,7 @@ onLoad((query) => {
 
               <!-- ===== 助手消息（左对齐） ===== -->
               <view v-if="!isUserMsg(msg)" class="msg-row msg-row--left">
-                <image class="msg-avatar" :src="IMAGE_PATHS.MASCOT.SMILE" mode="aspectFill" />
+                <image class="msg-avatar" :src="mascotSmileSrc" mode="aspectFill" />
                 <view class="msg-content">
                   <!-- 纯文本消息：body 中可能含 emoji（mock/后端），由 EmojiText 自动转 SVG -->
                   <view v-if="msg.messageType === 'text'" class="bubble bubble--assistant">
@@ -601,12 +610,21 @@ onLoad((query) => {
   height: 80rpx;
   display: flex;
   align-items: center;
+  /* R6-B38/D07（位置 P2，2026-10-20）：.nav-left 原先只有 align-items:center，
+     缺 justify-content ⇒ 箭头墨迹贴死在 80rpx 热区左缘（实测 x13 起，热区应 x12-52 居中）。 */
+  justify-content: center;
 }
 .nav-right {
   justify-content: flex-end;
 }
+/* R6-B38/D07：原 .nav-back-icon 只给 font-size:42rpx 未收 line-height ⇒ 默认行高把字形
+   压低（实测箭头中心 y67 vs 标题中心 y41 / 系统胶囊中心 y43，低 26px≈52rpx）。
+   配方直接复用同仓 components/chat/ChatHeader.vue:103-107 的既有修法（line-height:1 +
+   负 margin 微调），让返回钮与标题/胶囊同一视觉行。 */
 .nav-back-icon {
   font-size: 42rpx;
+  line-height: 1;
+  margin-top: -8rpx;
   color: #36C99A;
 }
 .nav-more-icon {
@@ -748,9 +766,17 @@ onLoad((query) => {
   color: #FF9F43;
 }
 
-/* ===== 消息滚动区 ===== */
+/* ===== 消息滚动区 =====
+   R6-B38/D09（可达性 P1，2026-10-20）：flex 子项缺 min-height:0 ⇒ mp-weixin 下容器高度按
+   内容撑开后被 overflow:hidden 裁掉，首屏被截断的历史气泡（bottom 帧顶部 y185-215 那半条）
+   不可达、pageScrollTo 与手势都推不动（top/bottom 两帧 contentHash 同为 0891255b62ec6a7a）。
+   同仓 chat-session/index.vue:2571-2577 早已写了这条铁律配方（flex:1 + min-height:0）。
+   box-sizing 同 defect 建议的 border-box 复位：全局复位名单在 theme/global.scss（本泳道禁改），
+   故先在页内把 scroll-view 自身复位，避免 padding/width 再被内容撑开。 */
 .chat-scroll {
   flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
   overflow: hidden;
 }
 .chat-list {
@@ -998,20 +1024,29 @@ onLoad((query) => {
   color: #bbb;
   font-size: 28rpx;
 }
-/* P2 修复：输入栏「发送」按钮（品牌绿胶囊，与输入区同高居中） */
+/* P2 修复：输入栏「发送」按钮（品牌绿胶囊，与输入区同高居中）
+   R6-B38/D08（颜色token P2，2026-10-20）：#36C99A 与下面的 #C7E9DC 都是硬写字面量，
+   仓内已有档位令牌 ⇒ 常态底改 var(--c-brand-500)（真值同为 #36C99A，零像素变化）。 */
 .input-bar__send {
   height: 72rpx;
   padding: 0 32rpx;
   border-radius: 999rpx;
-  background: #36C99A;
+  background: var(--c-brand-500);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
-/* R21：空输入禁用态（与私聊页一致） */
+/* R21：空输入禁用态（与私聊页一致）
+   R6-B38/D08：原 #C7E9DC 底 + #FFFFFF 字实测对比度 1.30:1，28rpx 正文完全读不出。
+   按建议改法取「--c-status-disabled(#DCE5E2) 底 + --c-text-secondary(#4A524E) 字」
+   这一档（实测计算 ≈6.3:1，≥4.5:1），两个值都是 theme/design-variables.scss:333/363
+   既有令牌，不新增令牌。 */
 .input-bar__send--disabled {
-  background: #C7E9DC;
+  background: var(--c-status-disabled);
+}
+.input-bar__send--disabled .input-bar__send-text {
+  color: var(--c-text-secondary);
 }
 .input-bar__send-text {
   font-size: 28rpx;

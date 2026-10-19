@@ -140,7 +140,19 @@ function onAnswersScrollLower(): void {
     <scroll-view class="dq-body" scroll-y @scrolltolower="onAnswersScrollLower">
       <!-- 未签到提示 -->
       <view v-if="!checkInStore.checkedIn" class="lock-card">
-        <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" custom-class="lock-card__icon" mode="aspectFit" />
+        <!-- R6-L08-D14（素材缺失 P1）：两处根因一并修 ——
+             ① SafeImage 根容器 `.safe-image` 是 width/height:100%（SafeImage.vue:306-312），
+               而 scoped 的 .lock-card__icon 只落到**内层** image ⇒ 父高 auto 时 100% 退化成 0×0，
+               80rpx 图标整块不渲染（实测白卡内 y99-347 区间零墨像素，496rpx 高的空白带）。
+               改由组件既有的 `root-class` 出口给根容器显式 80rpx 宽高（对齐 _image-base 基线）。
+             ② 原绑 ICONS_COMMON.CLOSE（×号）与「签到后解锁」语义不符 ⇒ 改 ICONS_COMMON.LOCK_SVG。 -->
+        <SafeImage
+          :src="IMAGE_PATHS.ICONS_COMMON.LOCK_SVG"
+          root-class="lock-card__icon-root"
+          custom-class="lock-card__icon"
+          mode="aspectFit"
+          :alt="t('dailyQuestion.lockTitle')"
+        />
         <text class="lock-card__title">{{ t("dailyQuestion.lockTitle") }}</text>
         <text class="lock-card__desc">{{ t("dailyQuestion.lockDesc") }}</text>
         <view
@@ -153,6 +165,23 @@ function onAnswersScrollLower(): void {
         >
           <text class="lock-card__cta-text">{{ isCheckingIn ? "签到中…" : "去签到" }}</text>
         </view>
+      </view>
+
+      <!-- R6-L08-D17（可达性 P2）：锁定态原先整页只有这一张 70vh 的卡，卡下方 y668-814（274rpx）
+           是纯页面底 ⇒ 「底部无任何可达内容」。按缺陷卡给的三个出口之一补「返回入口」
+           （既有 i18n 键 dailyQuestion.back + 既有 goBack()，不造新文案）：
+           卡高保留 R4 既有的垂直居中裁定（原「上贴头部、下方 60% 空白」已被那次裁定定性为缺陷），
+           另两个候选（今日题目预览占位）会拆掉签到门槛，未采。 -->
+      <view
+        v-if="!checkInStore.checkedIn"
+        class="lock-back press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('dailyQuestion.back')"
+        @tap="goBack"
+      >
+        <text class="lock-back__text">{{ t('dailyQuestion.back') }}</text>
       </view>
 
       <!-- 已签到：显示问题内容 -->
@@ -405,6 +434,14 @@ function onAnswersScrollLower(): void {
   border: var(--c-border-card);
 }
 
+/* R6-L08-D14：SafeImage 根容器（.safe-image 默认 100%/100%）必须由宿主给出显式尺寸，
+   否则在 auto 高的 flex 父级里退化成 0×0 —— 这就是图标整块不渲染的那一半根因 */
+.lock-card__icon-root {
+  width: 80rpx;
+  height: 80rpx;
+  flex-shrink: 0;
+}
+
 .lock-card__icon {
   width: 80rpx;
   height: 80rpx;
@@ -420,7 +457,9 @@ function onAnswersScrollLower(): void {
 
 .lock-card__desc {
   font-size: var(--fs-md);
-  color: var(--c-text-tertiary);
+  /* R6-L08-D15（可达性 P2）：--c-text-tertiary 实测 #8A92A0 压在纯白卡上只有 3.13:1
+     （26rpx=13px 不享 WCAG 大字号豁免）⇒ 卡内必读说明提到 --c-text-secondary(#4A524E, 7.5:1) */
+  color: var(--c-text-secondary, #4A524E);
   text-align: center;
   line-height: 1.6;
 }
@@ -430,7 +469,9 @@ function onAnswersScrollLower(): void {
   margin-top: var(--sp-4);
   min-width: 320rpx;
   padding: 20rpx 48rpx;
-  background: var(--c-brand);
+  /* R6-L08-D16（可达性 P2）：白字压品牌绿实测 2.10:1（#ffffff on #31C897）——
+     §1.2 的 --c-text-inverse 适用前提是深底，brand-500 属浅绿主色 ⇒ 底改深档承载白字 */
+  background: var(--c-brand-600, #2AAE83);
   border-radius: var(--r-pill, 999rpx);
   text-align: center;
 }
@@ -442,7 +483,27 @@ function onAnswersScrollLower(): void {
 .lock-card__cta-text {
   font-size: var(--fs-lg);
   font-weight: 600;
-  color: #ffffff;
+  color: var(--c-text-inverse, #ffffff);
+}
+
+/* R6-L08-D17：锁定态卡下的次级出口（返回）——把「卡下方 274rpx 纯页面底」换成可点内容 */
+.lock-back {
+  margin: var(--sp-5) auto var(--sp-8);
+  min-width: 320rpx;
+  min-height: 88rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--sp-6);
+  border-radius: var(--r-pill, 999rpx);
+  border: 2rpx solid var(--c-border-default, rgba(15, 23, 42, 0.08));
+  background: var(--c-bg-container, #ffffff);
+}
+
+.lock-back__text {
+  font-size: var(--fs-lg);
+  color: var(--c-text-secondary, #4A524E);
 }
 
 /* ========== 问题卡片 ========== */

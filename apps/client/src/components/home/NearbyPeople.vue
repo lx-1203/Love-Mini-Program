@@ -10,6 +10,19 @@ defineEmits<{ (e: "more"): void; (e: "select", userId: number): void }>();
 const defaultAvatar = resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR);
 
 /**
+ * R6-L02-D03（文案 P2）：真档「附近的人」昵称直接渲染成「演示·浙江大学 / 演示·武汉 /
+ * 演示·南开」——把 QA/种子数据的取证前缀当用户名给真实用户看（同型问题另见
+ * R6-L07-D05 / R6-L07-D07，那两处在 subpackages 页里）。
+ * 本组件是用户可见出口，渲染前剥掉前缀；**根因在 seed 数据**（去前缀 + 回填真实昵称
+ * 归数据治理/后端车道，本车道不改 stores/services/后端），这里只做「用户可见处不得出现
+ * 演示字样」的兜底。剥完为空时不编造名字（宁缺不造，同 MP-R2VIS-PAGES-MESSAGES-INDEX-002 口径）。
+ */
+const DEMO_NAME_PREFIX = /^\s*(?:演示|示例|测试|QA|qa)\s*[·・•\-–—/|]\s*/;
+function userVisibleName(raw: string | undefined | null): string {
+  return String(raw ?? "").replace(DEMO_NAME_PREFIX, "").trim();
+}
+
+/**
  * 2026-09-03 R11：头像加载失败时回退到默认头像
  *
  * <p>uni-app 编译器对 `@error="func($event)"` 在 setup 中会丢函数引用（实测
@@ -50,7 +63,7 @@ function onNearbyAvatarError(event: Event) {
     <view v-else-if="items.length === 0" class="nearby-people__empty">附近暂时没有可匹配的人，去看看推荐吧</view>
     <scroll-view v-else scroll-x class="nearby-scroll" :show-scrollbar="false">
       <view class="nearby-list">
-        <view v-for="item in items" :key="item.userId" class="nearby-item press-feedback" hover-class="press-feedback--active" role="button" :aria-label="`查看 ${item.name} 主页`" @tap="$emit('select', item.userId)">
+        <view v-for="item in items" :key="item.userId" class="nearby-item press-feedback" hover-class="press-feedback--active" role="button" :aria-label="`查看 ${userVisibleName(item.name)} 主页`" @tap="$emit('select', item.userId)">
           <view class="nearby-item__avatar-wrap">
             <!-- 2026-09-03 R11 终极修：直接用 <image> 解决 SafeImage 父容器 0×0 限制；
                  通过 dataset.fallbackApplied 标记避免重复降级（uni-app 编译器对
@@ -73,7 +86,7 @@ function onNearbyAvatarError(event: Event) {
             </view>
             <view v-if="item.online" class="nearby-item__online"></view>
           </view>
-          <text class="nearby-item__name">{{ item.name }}</text>
+          <text class="nearby-item__name">{{ userVisibleName(item.name) }}</text>
           <text class="nearby-item__distance">{{ item.distanceText }}</text>
         </view>
         <!-- R2b-L01-D17：理想图「附近的人」行末是一块浅绿圆角矩形内联卡片

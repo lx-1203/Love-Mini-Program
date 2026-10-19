@@ -819,7 +819,16 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 .hero {
   position: relative;
   width: 750rpx;
-  height: 480rpx;
+  /* R6-L01-D03/D04（R6/F7，2026-10-20）：高度必须随状态栏一起长。
+     文字块锚在 `statusbar + 208rpx`（.hero__txt），实测自高约 150rpx
+     （eyebrow 19rpx×1.4 + margin 10 + title 52rpx×1.2 + sub margin 12 + 25rpx×1.55），
+     即底边 ≈ statusbar + 358rpx；而卡片顶边 = hero 高 − 骑压 64rpx。
+     写死 480rpx 时卡片顶边恒为 416rpx ⇒ iPhone 刘海档（statusbar 88rpx）文字底边 446rpx
+     压在卡片下面 30rpx ⇒ 副标题被横向裁掉一排（帧 real-f0677920/pages__register__index__top.png
+     与 bottom.png 同象，正是本缺陷）。骑压量 64rpx 是设计稿口径，不动它，改让 hero 承接状态栏：
+     顶边变为 statusbar + 416rpx，余量恒 58rpx，与状态栏高度无关；statusbar=0 的机型求值
+     与改前逐字相同（480rpx），版式不变。 */
+  height: calc(480rpx + var(--statusbar, env(safe-area-inset-top)));
 }
 
 .hero__img {

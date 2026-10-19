@@ -25,8 +25,18 @@ interface Props {
   variant?: 'standard' | 'immersive' | 'minimal';
   /** 标题 */
   title?: string;
-  /** 副标题 */
+  /**
+   * 副标题：渲染在**标题之下**（R6-L14-D13）。
+   * 此前 subtitle 被塞进 eyebrow 槽位渲染在标题之上，而 9 个宿主传的都是描述性副标题
+   * （setup.campus.pageSubtitle / setup.schedule.pageSubtitle / feedback.pageSubtitle /
+   * help.subtitle / security.subtitle / discussions.subtitle / activities.sectionSubtitle /
+   * feedback.historyEmptyDesc）⇒ 实测「认证后解锁同校专属匹配与校友圈子」(y108-118)
+   * 压在「校园认证」(y128-148) 之上，页头层级倒置。
+   * 需要「标题上方小标签」的语义请改用下面的 eyebrow。
+   */
   subtitle?: string;
+  /** 眉标（eyebrow）：渲染在标题**之上**的小标签，如「XUNMI · CAMPUS」 */
+  eyebrow?: string;
   /** 是否显示返回按钮 */
   showBack?: boolean;
   /** 背景变体 */
@@ -47,6 +57,7 @@ const props = withDefaults(defineProps<Props>(), {
   variant: 'standard',
   title: '',
   subtitle: '',
+  eyebrow: '',
   showBack: false,
   bgVariant: 'default',
   bgImage: '',
@@ -213,8 +224,11 @@ function focusMainContent(): void {
             />
             <text class="shell__back-text">{{ t('common.back') }}</text>
           </view>
-          <text v-if="subtitle" class="shell__eyebrow">{{ subtitle }}</text>
+          <!-- R6-L14-D13：页头层级＝眉标(可选) → 标题 → 副标题。
+               原 :216 把 subtitle 渲染在 title 之前，实测说明文字压在大标题上方（层级倒置）。 -->
+          <text v-if="eyebrow" class="shell__eyebrow">{{ eyebrow }}</text>
           <text v-if="title" class="shell__title">{{ title }}</text>
+          <text v-if="subtitle" class="shell__subtitle">{{ subtitle }}</text>
         </view>
       </slot>
       <view class="shell__header-right">
@@ -366,6 +380,16 @@ function focusMainContent(): void {
   font-size: var(--fs-5xl, 44rpx);
   font-weight: 700;
   color: var(--c-text-primary, #222222);
+}
+
+/* R6-L14-D13：副标题档（标题之下）。字号/色阶沿用原 eyebrow 档，
+   只是位置从「标题之上」改为「标题之下」，与 9 个宿主传入的描述性文案语义一致。 */
+.shell__subtitle {
+  display: block;
+  color: var(--c-text-secondary, #666666);
+  font-size: var(--fs-base, 24rpx);
+  line-height: 1.5;
+  margin-top: 8rpx;
 }
 
 .shell__body {

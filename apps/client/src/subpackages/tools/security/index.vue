@@ -27,6 +27,8 @@ import { useSessionStore } from "../../../stores/session";
 // 3-B/C/D/E 账号安全 real 链路：change-phone / change-password / devices / deactivate
 import { useMock } from "../../../stores/helpers/use-mock";
 import { request, clearTokens } from "../../../services/http";
+// R6-L09-D08：real 档包内素材分桶解析（裸绑常量会把已裁剪的路径直出 /static/…）
+import { resolveMediaUrl } from "../../../utils/media";
 
 /** 安全中心访问要求（需登录，无需资料完善） */
 usePageAccess(profilePageRequirements);
@@ -111,6 +113,47 @@ function persistKickedDevice(id: string): void {
 }
 
 /**
+ * 本机设备型号（R6-L09-D13 抽出复用：mock 初始列表与 real 设备列表都要给「当前设备」这一行
+ * 一个能认出是哪台机器的名字，2026-08-15 起走 uni.getDeviceInfo，低版本基础库回退旧 API）。
+ */
+function currentDeviceModel(): string {
+  try {
+    const uniAny = uni as unknown as Record<string, unknown>;
+    if (typeof uniAny.getDeviceInfo === "function") {
+      const device = (uniAny.getDeviceInfo as () => Record<string, unknown>)();
+      return String(device?.model || device?.deviceModel || "");
+    }
+    const sys = uni.getSystemInfoSync();
+    return sys?.model || sys?.deviceModel || "";
+  } catch (_e) {
+    // 系统信息读取失败时降级为空型号
+    return "";
+  }
+}
+
+/**
+ * R6-L09-D13（文案 P2）：设备行的主标题。
+ *
+ * 缺陷实况：real 档两帧合计 9 行设备，主标题逐字都是「手机号登录」（`platformLabel(item.platform)`
+ * 只映射登录方式），副行只有时间 ⇒ 点「下线」前根本判断不出是哪台设备。
+ * 处置（只用后端已下发的字段，不伪造）：
+ * - 当前设备（本会话，活跃度最高恒排首位）→ 用本机 `uni.getDeviceInfo().model` 真型号；
+ * - 其余设备 → 「登录方式 · deviceId 末四位」，后端 deviceId 缺失或为 "unknown" 时不拼尾号；
+ * - `location` 字段后端 View 里根本没有（RealDeviceView:180-185 只有 id/deviceId/platform/
+ *   lastActiveAt/revoked/createdAt）⇒ 「未知位置」占位需要 ① 后端补字段（NEEDS-DATA）
+ *   ② i18n 新增键（i18n/** 归 F7），本车道不糊字符串、不私加文案。
+ */
+function deviceRowLabel(platform: string, deviceId: string, isCurrent: boolean): string {
+  const method = platformLabel(platform);
+  if (isCurrent) {
+    const model = currentDeviceModel();
+    return model ? `${method} · ${model}` : method;
+  }
+  const tail = deviceId && deviceId !== "unknown" ? deviceId.slice(-4) : "";
+  return tail ? `${method} · ${tail}` : method;
+}
+
+/**
  * 初始设备列表。
  * R4-00063：移除伪造设备（iPhone 15 Pro / 小米 14 / iPad Air 等假数据），
  * 仅展示真实当前设备（2026-08-15：改用 uni.getDeviceInfo 读取型号，规避
@@ -118,19 +161,7 @@ function persistKickedDevice(id: string): void {
  * 后端设备管理接口就绪后可替换为 GET /security/devices 返回的完整设备列表。
  */
 function buildInitialDevices(): DeviceItem[] {
-  let model = "";
-  try {
-    const uniAny = uni as unknown as Record<string, unknown>;
-    if (typeof uniAny.getDeviceInfo === "function") {
-      const device = (uniAny.getDeviceInfo as () => Record<string, unknown>)();
-      model = String(device?.model || device?.deviceModel || "");
-    } else {
-      const sys = uni.getSystemInfoSync();
-      model = sys?.model || sys?.deviceModel || "";
-    }
-  } catch (_e) {
-    // 系统信息读取失败时降级为空型号
-  }
+  const model = currentDeviceModel();
   const all: DeviceItem[] = [
     { id: "d-current", device: model || t("security.unknownDevice"), location: "", lastActive: t("security.currentDevice"), isCurrent: true },
   ];
@@ -216,7 +247,8 @@ async function loadDevices(): Promise<void> {
     devices.value = list.map((item, index) => ({
       // 展示 ID 与后端记录 ID 保持一致（下线接口按 id 吊销）
       id: String(item.id),
-      device: platformLabel(item.platform),
+      // R6-L09-D13：主标题带上「本机型号 / deviceId 末四位」，不再 9 行同名
+      device: deviceRowLabel(item.platform, item.deviceId, index === 0 && !item.revoked),
       location: "",
       // 按活跃时间倒序，首条即当前会话（真实会话活跃度最高）
       lastActive: item.revoked
@@ -559,7 +591,14 @@ async function submitDeleteAccount(): Promise<void> {
           @tap="onThirdPartyBindTap"
         >
           <view class="sec-item__icon-wrap" :style="{ background: 'var(--c-tint-green-soft, #E8FAF3)' }">
-            <image class="sec-item__icon" :src="IMAGE_PATHS.ICONS_V2.WECHAT_GREEN_SVG" mode="aspectFit" alt="" />
+            <!-- R6-L09-D08（素材缺失 P1）：裸绑 IMAGE_PATHS.ICONS_V2.WECHAT_GREEN_SVG 出的是
+                 `/static/assets/icons/login/wechat-green.svg`，而 src/static 下 icons/login 目录
+                 在发布形态已被裁掉（实测 dist/build/mp-weixin-real/static/assets/icons/ 只剩
+                 common/register/tabbar）⇒ 80rpx 圆底里 0 墨迹。该目录**已登记**在
+                 config/cdn-buckets.json 的 cdnPrefixes（`static/assets/icons/login/`），且后端
+                 apps/api/uploads/app-assets/assets/icons/login/wechat-green.svg 逐枚在盘 ⇒
+                 缺的只是消费点这一层解析器（与 F2/LockScreen、F1 根因①同一口径），不是缺素材。 -->
+            <image class="sec-item__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_V2.WECHAT_GREEN_SVG)" mode="aspectFit" alt="" />
           </view>
           <view class="sec-item__info">
             <text class="sec-item__label">{{ t('thirdPartyLogin.bindWechat') }}</text>
@@ -860,9 +899,11 @@ async function submitDeleteAccount(): Promise<void> {
 }
 
 .sec-item--danger {
+  /* R6-L09-D12（位置 P1）：原覆写 `flex-direction: column; align-items: flex-start`
+     把行内最后一个子节点（:672 的 `›` 箭头）挤到第二行的**起始侧** ——
+     实测 bottom 帧说明文字 y=752（x=37-216）之后，y=774-779 只剩一坨 4px 宽的墨迹贴在 x=37-40，
+     而其余 8 行的箭头都正常贴右（x=340）。去掉 column 覆写，行内保持 row + 居中即可。 */
   justify-content: center;
-  flex-direction: column;
-  align-items: flex-start;
 }
 
 .sec-item__icon-wrap {
@@ -909,7 +950,7 @@ async function submitDeleteAccount(): Promise<void> {
 }
 
 .sec-item__label {
-  font-size: var(--f-md);
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 600;
   color: var(--c-text-primary);
 }
@@ -919,12 +960,12 @@ async function submitDeleteAccount(): Promise<void> {
 }
 
 .sec-item__desc {
-  font-size: var(--f-xs);
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-tertiary);
 }
 
 .sec-item__badge {
-  font-size: var(--f-xs);
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-brand-600);
   background: var(--c-tint-brand, #E8FAF3);
   padding: 4rpx 14rpx;
@@ -932,19 +973,31 @@ async function submitDeleteAccount(): Promise<void> {
 }
 
 .sec-item__arrow {
-  font-size: var(--f-lg);
+  font-size: var(--fs-2xl, 32rpx);
   color: var(--c-text-tertiary);
 }
 
 .sec-item__kick {
-  padding: 10rpx 24rpx;
+  /* R6-L09-D15（可达性 P2）：「下线」是本页唯一会吊销会话的危险操作，实测热区却只有 29×31px
+     （58×62rpx）—— 两个方向都低于仓内自陈触控下限 AppShell.vue:334「≥88rpx(44px)」。
+     min-height + 加大内边距把热区撑到规范档（视觉 pill 仍靠圆角保持胶囊形） */
+  min-height: 88rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14rpx 28rpx;
   border-radius: var(--r-full);
-  background: var(--c-error-soft, #fee2e2);
+  /* R6-L09-D14（颜色token P2）：删掉行内兜底 `#fee2e2`（Tailwind red-200，§1.2 表内无此值）。
+     根因是 `--c-error-soft` 全仓无定义 ⇒ 每处都落到私值，违反 §1.1 第 3 条「一令牌一值」；
+     令牌定义侧已由 F1 车道补上（theme/design-variables.scss:857 `--c-error-soft: var(--c-error-bg-solid)`），
+     本车道只把页面侧的兜底字面量清掉，页面只引令牌。 */
+  background: var(--c-error-soft);
   flex-shrink: 0;
 }
 
 .sec-item__kick-text {
-  font-size: var(--f-xs);
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-error, #f43f5e);
 }
 
@@ -971,14 +1024,14 @@ async function submitDeleteAccount(): Promise<void> {
 }
 
 .sec-modal__title {
-  font-size: var(--f-lg);
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: var(--c-text-primary);
   text-align: center;
 }
 
 .sec-modal__body {
-  font-size: var(--f-sm);
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-secondary);
   line-height: 1.7;
 }
@@ -988,7 +1041,7 @@ async function submitDeleteAccount(): Promise<void> {
   background: var(--c-bg-page, #f4f6fa);
   border-radius: var(--r-md);
   padding: 0 24rpx;
-  font-size: var(--f-md);
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-primary);
 }
 
@@ -997,7 +1050,7 @@ async function submitDeleteAccount(): Promise<void> {
 }
 
 .sec-modal__error {
-  font-size: var(--f-xs);
+  font-size: var(--fs-sm, 22rpx);
   color: var(--c-error, #f43f5e);
 }
 
@@ -1014,7 +1067,7 @@ async function submitDeleteAccount(): Promise<void> {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--f-md);
+  font-size: var(--fs-lg, 28rpx);
   font-weight: 600;
 }
 

@@ -27,6 +27,8 @@ import { useCircleStore } from "../../../stores/circle";
 import { useActivityStore } from "../../../stores/activity";
 import { useDailyQuestionStore } from "../../../stores/daily-question";
 import { openAppPath, consumeTabQuery, openUserProfile } from "../../../utils/navigation";
+// R6-L04-D02 同族收口（本批 R6-L03-D01/D03 附带）：模板 6 处裸绑 :src 统一过解析器（§1.6 铁律 3）
+import { resolveMediaUrl } from "../../../utils/media";
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 // 2026-08-10 切换提速：村子页频道数据 30s TTL（onShow 免重复全量重拉）
 import { isCacheFresh, setCachedValue } from "../../../utils/cache-ttl";
@@ -82,6 +84,26 @@ const { activities } = storeToRefs(activityStore);
 
 /* ========== 锁定状态 ========== */
 const isUnlocked = computed(() => sessionStore.isProfileComplete);
+/**
+ * R6-L03-D01（P1 可达性）：session 是否还在水合。
+ *
+ * 病灶：本页门槛只读 `isProfileComplete`，而它在 bootstrap 落定前恒为 false
+ * （`userSession=null` ⇒ `isLoggedIn=false` ⇒ `isProfileComplete=false`）。于是**已登录且已完善**
+ * 的用户在冷启动窗口里也会先吃一帧 LockScreen，且 LockScreen 内部按 `isLoggedIn`
+ * 分派文案（components/common/LockScreen.vue:56-72），这一帧拿到的就是「登录后解锁完整交友功能」
+ * +「立即登录并完善」（帧实测标题 y=330..360 / 主按钮 y=548..594）——一个未登录话术盖在
+ * 即将放行的会话上。
+ * 修法：水合期间渲染骨架（同页 :808 既有 Skeleton 口径），水合结束后再分派 锁定 / 内容。
+ * 判据取 store 既有状态，不自造第三个标志位：`loading` 由 session.bootstrap() 首尾置位
+ * （stores/session.ts:605-606 + finally），`userSession` 落定即视为已水合。
+ *
+ * 同时说明卡片另一半：「门槛判定拆成『未登录 / 已登录未完善』两支」**在本仓已经是既成事实**，
+ * 且做在组件里而非页面里（LockScreen.vue:56 `loggedIn` → :60/:67/:72 三处文案与主按钮分派），
+ * 页面侧再拆一次属于重复实现，本车道不重复。
+ */
+const sessionHydrating = computed(
+  () => sessionStore.loading && !sessionStore.userSession,
+);
 // MP-R8-LOCK-001（2026-09-16）：优先 /profile/basic 服务端权威值（与我的页 MP-R7-PROFILE-004 同口径），
 // 无值时回退会话快照；并在挂载时懒加载一次（store 内 60s TTL 缓存，不产生重复请求）
 const completionPercent = computed(() => {
@@ -579,9 +601,20 @@ onShareAppMessage(() => ({
 
 <template>
   <view class="village-page page-bottom-safe" :style="menuStyleVars">
-    <!-- 未完善资料：显示锁定页面 -->
+    <!-- R6-L03-D01：session 水合完成前渲染骨架，不出「未登录」文案的锁定页 -->
+    <view
+      v-if="sessionHydrating"
+      class="village-hydrating"
+      role="status"
+      aria-live="polite"
+      :aria-label="t('common.loading')"
+    >
+      <Skeleton variant="list" :count="4" />
+    </view>
+
+    <!-- 未登录 / 已登录未完善：锁定页（两支文案由 LockScreen 内部按 isLoggedIn 分派） -->
     <LockScreen
-      v-if="!isUnlocked"
+      v-else-if="!isUnlocked"
       :completion-percent="completionPercent"
     />
 
@@ -603,7 +636,7 @@ onShareAppMessage(() => ({
             :aria-label="t('search.placeholder')"
             @tap="openAppPath(ROUTES.SEARCH)"
           >
-            <image class="village-search__icon" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" alt="" />
+            <image class="village-search__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SEARCH)" mode="aspectFit" alt="" />
             <text class="village-search__placeholder">{{ t('search.placeholder') }}</text>
           </view>
         </view>
@@ -649,7 +682,7 @@ onShareAppMessage(() => ({
               :aria-label="t('village.dailyQuestion')"
               @tap="openAppPath(ROUTES.DAILY_QUESTION)"
             >
-              <image class="village-daily-entry__icon" :src="IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL" mode="aspectFit" alt="" />
+              <image class="village-daily-entry__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_SOCIAL.HEART_SIGNAL)" mode="aspectFit" alt="" />
               <view class="village-daily-entry__info">
                 <view class="village-daily-entry__title-row">
                   <text class="village-daily-entry__title">{{ t('village.dailyQuestion') }}</text>
@@ -675,7 +708,7 @@ onShareAppMessage(() => ({
             >
               <view class="discover-banner__content">
                 <view class="discover-banner__left">
-                  <image class="discover-banner__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
+                  <image class="discover-banner__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LOCATION)" mode="aspectFit" alt="" />
                   <view class="discover-banner__text-wrap">
                     <text class="discover-banner__title">{{ t('home.nearbyPeople') }}</text>
                     <text class="discover-banner__subtitle">{{ t('village.discoverBannerSubtitle') }}</text>
@@ -727,7 +760,7 @@ onShareAppMessage(() => ({
                 @tap="goToInterestCircle(cat.id)"
               >
                 <view class="interest-grid__icon-wrap">
-                  <image class="interest-grid__icon" :src="cat.icon" mode="aspectFit" lazy-load alt="" />
+                  <image class="interest-grid__icon" :src="resolveMediaUrl(cat.icon)" mode="aspectFit" lazy-load alt="" />
                 </view>
                 <text class="interest-grid__name">{{ cat.name }}</text>
               </view>
@@ -759,7 +792,7 @@ onShareAppMessage(() => ({
                       <image
                         v-if="topic.author.avatar"
                         class="topic-item__avatar"
-                        :src="topic.author.avatar"
+                        :src="resolveMediaUrl(topic.author.avatar)"
                         mode="aspectFill"
                         lazy-load
                         alt=""
@@ -768,7 +801,7 @@ onShareAppMessage(() => ({
                       <text class="topic-item__author-name">{{ topic.author.name }}</text>
                     </view>
                     <view class="topic-item__stats">
-                      <image class="topic-item__stats-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
+                      <image class="topic-item__stats-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CHAT)" mode="aspectFit" alt="" />
                       <text class="topic-item__stats-count">{{ topic.replyCount }}</text>
                     </view>
                   </view>
@@ -905,11 +938,19 @@ onShareAppMessage(() => ({
 /* ================================================================
    圈子页 - 整体布局（2026-08-08 频道化重构）
    ================================================================ */
+/* R6-L03-D01：session 水合期间的骨架容器（与 :808 feed 骨架同款 Skeleton，
+   这里只需给它一块可滚的铺满区，避免水合帧读起来像"白屏"）。 */
+.village-hydrating {
+  flex: 1;
+  min-height: 0;
+  padding: 32rpx;
+  overflow: hidden;
+}
+
 .village-page {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  /* MP-R1-VILLAGE-INDEX-201：必须定高（height:100% 而非 min-height:100%）——
+  width: 100%;  /* MP-R1-VILLAGE-INDEX-201：必须定高（height:100% 而非 min-height:100%）——
      min-height 让容器随内容增长，flex:1 的 .channel-feed scroll-view 失去高度约束
      → 整页 window 滚动：头部（标题/搜索/频道 Tab）滚出视口不可达、:891 的 sticky
      最近滚动容器变为永不滚动的 .village-page 而失效、feed 内容顶入状态栏与胶囊

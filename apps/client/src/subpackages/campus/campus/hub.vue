@@ -7,8 +7,11 @@
  * 点击学校：已认证本校 → 私域（campus/index?school=）；其他 → 公开浏览。
  */
 import { ref, computed } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { onShow, onPageScroll } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
+// R6 §1.6 铁律 3：本页图片绑定改为统一经 resolveMediaUrl 解析
+// （mock 档留包内 /static、real 档按 cdn-buckets 出后端 app-assets URL、/uploads/** 补鉴权 token）
+import { resolveMediaUrl } from "../../../utils/media";
 import { useI18n } from "vue-i18n";
 import { useCampusStore } from "../../../stores/campus";
 import { useSessionStore } from "../../../stores/session";
@@ -24,6 +27,21 @@ const { t } = useI18n();
 const campusStore = useCampusStore();
 const sessionStore = useSessionStore();
 const { styleVars: menuStyleVars } = useMenuButtonRect();
+
+/**
+ * R6-L05-D29（尺寸比例 P2）：常驻吸顶带吃掉 16% 视口。
+ * 实测本帧与 top 帧在 y=0..100 区间 37329/37800 像素逐字节相同（98.8%）
+ * ⇒ 状态栏 + 标题 + 副标题 + 20rpx 下衬整块在滚动后仍留在屏上（≈130px，理想图换算后 ≈90px）。
+ * 滚动过阈值后收副标题、并把「胶囊呼吸量 20px」并掉一份（胶囊已由 padding-right
+ * calc(--capsule-right + 104px) 做横向避让，纵向再留 20px 是重复计费），
+ * 使常驻带降到 ≈96px。本页是 window 滚动（R1-L05-D19 已移除内层 scroll-view），
+ * 故用页面级 onPageScroll 而非 scroll 事件。
+ */
+const headerCompact = ref(false);
+onPageScroll((e) => {
+  const next = e.scrollTop > 24;
+  if (next !== headerCompact.value) headerCompact.value = next;
+});
 const { certificationStatus, certificationInfo, isVerified } = storeToRefs(campusStore);
 
 /** 2026-08-20：校园圈搜索关键词（参考图顶部搜索框对齐） */
@@ -231,13 +249,13 @@ function goBack() {
         <text class="campus-hub__cert-error-retry-text">{{ t('common.retry') }}</text>
       </view>
     </view>
-    <view class="campus-hub__header">
+    <view class="campus-hub__header" :class="{ 'campus-hub__header--compact': headerCompact }">
       <view class="campus-hub__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.back')" @tap="goBack">
         <text class="campus-hub__back-text">&#x2039;</text>
       </view>
       <view class="campus-hub__title-col">
         <text class="campus-hub__title">{{ t('campus.hub.title') }}</text>
-        <text class="campus-hub__subtitle">{{ t('campus.hub.subtitle') }}</text>
+        <text v-show="!headerCompact" class="campus-hub__subtitle">{{ t('campus.hub.subtitle') }}</text>
       </view>
       <!-- 页头不再放重复的认证入口（MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002）：
            认证动作只保留下方引导横幅那一处；这里只在已认证时挂状态标记。 -->
@@ -249,7 +267,7 @@ function goBack() {
     <!-- 加入引导 -->
     <view class="campus-guide card-base">
       <view class="campus-guide__icon">
-        <image class="campus-guide__icon-img" :src="IMAGE_PATHS.ICONS_COMMON.GRADUATION_CAP_SVG" mode="aspectFit" alt="" />
+        <image class="campus-guide__icon-img" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.GRADUATION_CAP_SVG)" mode="aspectFit" alt="" />
       </view>
       <view class="campus-guide__body">
         <text class="campus-guide__title">{{ t('campus.hub.guideTitle') }}</text>
@@ -274,7 +292,7 @@ function goBack() {
     <!-- 2026-08-20：搜索框（参考图对齐） -->
     <view class="campus-search">
       <view class="campus-search__icon">
-        <image class="campus-search__icon-text" :src="IMAGE_PATHS.ICONS_EMOJI.SEARCH" mode="aspectFit" alt="" />
+        <image class="campus-search__icon-text" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.SEARCH)" mode="aspectFit" alt="" />
       </view>
       <input
   cursor-spacing="20"
@@ -334,7 +352,7 @@ function goBack() {
       <!-- 封面恒有兜底 URL（script 里 schools 的第三层兜底是常量），所以「无封面」分支永远进不去；
            原来的 v-else 校名文本 + 那条条件类一起删掉，渲染结果与删前逐像素相同（--img 类此前恒为真）。 -->
       <view class="campus-school-card__cover campus-school-card__cover--img">
-        <image class="campus-school-card__cover-img" :src="school.coverUrl" mode="aspectFill" alt="" />
+        <image class="campus-school-card__cover-img" :src="resolveMediaUrl(school.coverUrl)" mode="aspectFill" alt="" />
       </view>
 
       <!-- 内容 -->
@@ -353,9 +371,9 @@ function goBack() {
         <!-- 成员头像预览 -->
         <view class="campus-school-card__members">
           <view class="campus-school-card__avatar-stack">
-            <image class="campus-school-card__avatar" :src="IMAGE_PATHS.AVATARS.AVATAR_1" mode="aspectFill" />
-            <image class="campus-school-card__avatar campus-school-card__avatar--2" :src="IMAGE_PATHS.AVATARS.AVATAR_2" mode="aspectFill" />
-            <image class="campus-school-card__avatar campus-school-card__avatar--3" :src="IMAGE_PATHS.AVATARS.AVATAR_3" mode="aspectFill" />
+            <image class="campus-school-card__avatar" :src="resolveMediaUrl(IMAGE_PATHS.AVATARS.AVATAR_1)" mode="aspectFill" />
+            <image class="campus-school-card__avatar campus-school-card__avatar--2" :src="resolveMediaUrl(IMAGE_PATHS.AVATARS.AVATAR_2)" mode="aspectFill" />
+            <image class="campus-school-card__avatar campus-school-card__avatar--3" :src="resolveMediaUrl(IMAGE_PATHS.AVATARS.AVATAR_3)" mode="aspectFill" />
           </view>
           <text class="campus-school-card__peers">{{ school.stats.peers }}</text>
         </view>
@@ -462,14 +480,27 @@ function goBack() {
   top: 0;
   z-index: var(--z-header, 10);
   background: var(--c-neutral-0, #FFFFFF);
-  margin: 0 -32rpx 24rpx;
+  /* R6-L05-D28（层级遮挡 P2）：改前是 margin: 0 -32rpx 24rpx —— 底部那 24rpx 是**外边距**，
+     不透明背景铺不到那里，于是滚动时上一张卡的封面会从这条 12px 透明带里露出来
+     （bottom 帧实测 y=134-139、x=28-105 一条 #A2CC6B→#69A824 照片残边，上沿紧贴头部白底）。
+     现把这 24rpx 并进 padding-bottom（20rpx→44rpx），常驻带整块不透明，残边消失、间距不变。 */
+  margin: 0 -32rpx;
   /* 上：状态栏 + 胶囊带（20px 为原容器内衬里的胶囊呼吸量）+ 20rpx 呼吸
      右：避让微信胶囊（--capsule-right/--statusbar 由 useMenuButtonRect 注入）
      R4：原 padding-right = capsule-right(7px)+8px 漏加胶囊本体 87px，认证按钮被胶囊压住 85%
      MP-R1-CAMPUS-HUB-004：状态栏只计一份——避让位已从容器 padding-top 迁入本带，不再叠加 */
   padding: calc(var(--statusbar, env(safe-area-inset-top)) + 20px + 20rpx)
-    calc(var(--capsule-right, 7px) + 104px) 20rpx 32rpx;
+    calc(var(--capsule-right, 7px) + 104px) 44rpx 32rpx;
   box-sizing: border-box;
+  transition: padding-top 0.2s ease;
+}
+
+/* R6-L05-D29（尺寸比例 P2）：滚动后收起副标题（见模板 v-show）并把纵向那份 20px 胶囊呼吸量
+   去掉——胶囊本体已由 padding-right calc(--capsule-right + 104px) 做**横向**避让，
+   纵向再计一份是重复计费。常驻带由 ≈130px（258rpx）降到 ≈96px（≈192rpx），
+   对齐理想图 校园圈.png 页头换算后 ≈90px，满足「常驻带 ≤ 100px」。 */
+.campus-hub__header--compact {
+  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx);
 }
 
 .campus-hub__back {
@@ -479,8 +510,14 @@ function goBack() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--c-bg-container, #FFFFFF);
-  border: 1rpx solid var(--c-line, #EEF2F0);
+  /* R6-L05-D26（可达性 P2）：白底白钮——改前 background 取 --c-bg-container(#FFFFFF)、
+     描边取 --c-line(#EEF2F0)，而头部 background 本身就是 #FFFFFF，
+     实测 x=8-56 / y=40-120 整块只有 20 个平均亮度 <200 的像素（全靠被切掉大半的「‹」提示）。
+     现底色下沉到页面底、描边换成品牌绿 200 阶：与头部白底最大通道差
+     #A3EBCF vs #FFFFFF = (92,20,48)/255，远超判据要求的 ≥20/255。 */
+  background: var(--c-bg-page, #EEF7F2);
+  border: 2rpx solid var(--c-brand-200, #A3EBCF);
+  box-sizing: border-box;
 }
 
 .campus-hub__back-text {
@@ -703,7 +740,15 @@ function goBack() {
 .campus-school-card__name-row {
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  /* R6-L05-D25 / R6-L05-D30（文案 P2）：改前不换行，badge 又 flex-shrink:0 不让位，
+     于是长校名被压成省略号——top 帧「中国人民大学圈」只剩「中国人民大…」（名墨块 x=117-176，
+     badge 起点 x=195），bottom 帧「上海交通大学圈」同样受害，滚到底 40% 的卡主名带省略号。
+     现允许**整行换行**：名称放不下时 badge 让到第二行，名称独占首行全宽
+     （卡内可用宽 ≈496rpx，8 字 ×30rpx = 240rpx，绰绰有余）。
+     注意这不是把校名折成两行——MP-R8-CAMPUS-001 修的「人民大/学」内部折行仍由
+     .campus-school-card__name 的 white-space:nowrap 挡住，此处只让 badge 换行。 */
+  flex-wrap: wrap;
+  gap: 8rpx 12rpx;
 }
 
 /* R10-P2-007：校名行禁折行（超长省略），badge 不参与收缩 */

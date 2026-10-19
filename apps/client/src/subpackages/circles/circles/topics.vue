@@ -25,8 +25,10 @@ import { resolveMediaUrl } from "../../../utils/media";
 // SubTask 5.5.2：列表页图片 @error 占位图通用方案
 import { useImageFallback } from "../../../composables/useImageFallback";
 
-/** Emoji 替换 SVG 图标路径 */
-const chatIcon = IMAGE_PATHS.ICONS_EMOJI.CHAT;
+/** Emoji 替换 SVG 图标路径
+ *  R6-L04-D22（§1.6 铁律 3）：改前是裸常量，直接进 EmptyState 的 image 入参与模板绑定；
+ *  现统一在单一来源处过一次 resolveMediaUrl（mock 档留包内 /static、real 档按 cdn 桶出后端 URL）。 */
+const chatIcon = resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CHAT);
 
 const { t } = useI18n();
 const statusBarHeightPx = useStatusBarHeight();
@@ -40,6 +42,13 @@ const { onImageError, isImageFailed } = useImageFallback();
 const circleId = ref("");
 /** 当前兴趣圈名称 */
 const circleName = ref("");
+/**
+ * R6-L04-D19（P1 · 可达性）：入口没带 circleId 时，本页此前仍把「话题壳」整块渲染出来
+ * —— 兜底标题「话题列表」+ 5 枚可点 tab + 空态 + 「去发布」钮，但 onLoad 的 :319 分支
+ * 根本不请求 ⇒ 从任何直开入口进来都是**死页**（且「去发布」会把空 circleId 再带进发布页，
+ * 死页向外扩散）。现改为：不渲染话题壳，只留可返回的头部 + 一条明确占位，并把用户送回兴趣圈列表。
+ */
+const missingCircleContext = ref(false);
 
 /**
  * R4-00101：昵称首字符兜底（author.name 为空/null 时返回占位符，
@@ -110,8 +119,11 @@ function goToAuthorProfile(authorId: string) {
 
 /**
  * 发布新话题
+ * R6-L04-D19：改前无 circleId 时本页仍会把空 circleId 拼进发布页 URL（死页向外扩散）。
+ * 头部「写话题」钮不在话题壳的 v-if 之内（回流前 1.2s 内可点），故在此直接断掉空上下文跳转。
  */
 function goToPostTopic() {
+  if (missingCircleContext.value) return;
   openAppPath(`/subpackages/circles/circles/post-topic?circleId=${circleId.value}`);
 }
 
@@ -338,6 +350,18 @@ onLoad((query) => {
   } else {
     // infra R2-00075: circleId 缺失时给出错误态提示，避免直开链接白屏
     uni.showToast({ title: t("storeErrors.circle.circleIdInvalid"), icon: "none" });
+    // R6-L04-D19：提示之外还要把页面从「死壳」切到「占位 + 回流」态。
+    // 延时 1.2s 是让上面那条 toast 有被读完的时间；redirectTo 失败（栈异常）再退 reLaunch。
+    missingCircleContext.value = true;
+    setTimeout(() => {
+      const url = "/subpackages/circles/circles/index";
+      uni.redirectTo({
+        url,
+        fail: () => {
+          uni.reLaunch({ url }).catch(() => {});
+        },
+      });
+    }, 1200);
   }
 });
 
@@ -364,7 +388,7 @@ defineExpose({ goToAuthorProfile });
           :aria-label="'写话题'"
           @tap="goToPostTopic"
         >
-          <image class="topics-header__icon-text" :src="IMAGE_PATHS.ICONS_EMOJI.EDIT" mode="aspectFit" alt="" />
+          <image class="topics-header__icon-text" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.EDIT)" mode="aspectFit" alt="" />
         </view>
         <view
           class="topics-header__icon-btn press-feedback"
@@ -379,9 +403,21 @@ defineExpose({ goToAuthorProfile });
       </view>
     </view>
 
+    <!-- R6-L04-D19：无 circleId 时整块话题壳（圈头部 / tab 行 / 列表）不渲染，
+         只留上方可返回的头部与下面这条占位；onLoad 已排定 1.2s 后回流兴趣圈列表。 -->
+    <view v-if="missingCircleContext" class="topics-missing">
+      <EmptyState
+        type="no-data"
+        :image="chatIcon"
+        :title="t('storeErrors.circle.circleIdInvalid')"
+        hide-sub
+      />
+    </view>
+
+    <template v-if="!missingCircleContext">
     <!-- 兴趣圈详情头部（v3 Nearby 冻结） -->
     <view v-if="circle" class="circle-hero">
-      <image v-if="circleCover(circle)" class="circle-hero__bg" :src="circleCover(circle)" mode="aspectFill" alt="" />
+      <image v-if="circleCover(circle)" class="circle-hero__bg" :src="resolveMediaUrl(circleCover(circle))" mode="aspectFill" alt="" />
       <view class="circle-hero__bg-mask" />
       <view class="circle-hero__icon">
         <!-- R21（2026-09-09）：优先真实封面图（此前 📷 emoji 命中相机 SVG，hero 呈灰色相机占位），
@@ -389,14 +425,14 @@ defineExpose({ goToAuthorProfile });
         <image
           v-if="circleCover(circle)"
           class="circle-hero__icon-img circle-hero__icon-img--cover"
-          :src="circleCover(circle)"
+          :src="resolveMediaUrl(circleCover(circle))"
           mode="aspectFill"
           alt=""
         />
         <image
           v-else-if="resolveCircleIcon(circle.icon)"
           class="circle-hero__icon-img"
-          :src="resolveCircleIcon(circle.icon)"
+          :src="resolveMediaUrl(resolveCircleIcon(circle.icon))"
           mode="aspectFit"
           alt=""
         />
@@ -405,10 +441,14 @@ defineExpose({ goToAuthorProfile });
       <view class="circle-hero__body">
         <view class="circle-hero__name-row">
           <text class="circle-hero__name">{{ circle.name }}</text>
-          <text v-if="circle.memberCount >= 7000" class="circle-hero__hot">热门</text>
+          <!-- R6-L04-D20 同轴补漏（泳道未点名，但同属「字面量未走 t()」）：热门角标改 circle.hotBadge -->
+          <text v-if="circle.memberCount >= 7000" class="circle-hero__hot">{{ t('circle.hotBadge') }}</text>
         </view>
-        <!-- 2026-08-25 P0：规格书 15.6 格式 "1.2w 人加入 · 362 条动态" -->
-        <text class="circle-hero__meta">{{ formatMemberCount(circle.memberCount) }} 人加入 · {{ circle.topicCount }} 条动态</text>
+        <!-- 2026-08-25 P0：规格书 15.6 格式 "1.2w 人加入 · 362 条动态"
+             R6-L04-D20（文案 P2）：改前是硬编码中文字面量，切语言漏网。
+             词条 circle.memberUnit（zh-CN.ts:3723「人加入」）/ circle.topicUnit（:3724「条动态」）
+             早已存在且被 circle-home.vue:499-500 使用 ⇒ 本页只是没接上，非需新建词条。 -->
+        <text class="circle-hero__meta">{{ formatMemberCount(circle.memberCount) }} {{ t('circle.memberUnit') }} · {{ circle.topicCount }} {{ t('circle.topicUnit') }}</text>
         <text class="circle-hero__desc">{{ circle.description }}</text>
         <!-- 2026-08-25 P0：等 N 位朋友已加入 + 头像组（规格书 15.7） -->
         <view v-if="circle" class="circle-hero__friends">
@@ -417,12 +457,14 @@ defineExpose({ goToAuthorProfile });
               v-for="(av, i) in friendAvatars(circle.id)"
               :key="i"
               class="circle-hero__friends-avatar"
-              :src="av"
+              :src="resolveMediaUrl(av)"
               mode="aspectFill"
               alt=""
             />
           </view>
-          <text class="circle-hero__friends-text">等 {{ friendJoinCount(circle.id, circle.memberCount) }} 位朋友已加入</text>
+          <!-- R6-L04-D20：改前是硬编码「等 N 位朋友已加入」；词条 circle.friendsJoined
+               （zh-CN.ts:3727 / en-US.ts:3663）已存在且 index.vue:487 已在用 ⇒ 本页接上同一 key。 -->
+          <text class="circle-hero__friends-text">{{ t('circle.friendsJoined', { count: friendJoinCount(circle.id, circle.memberCount) }) }}</text>
         </view>
       </view>
       <view
@@ -462,7 +504,7 @@ defineExpose({ goToAuthorProfile });
     <!-- 错误状态 -->
     <view v-else-if="errorMessage && currentTopics.length === 0" class="topics-state">
       <view class="error-icon">
-        <image class="error-icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.WARNING" mode="aspectFit" alt="" />
+        <image class="error-icon-img" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.WARNING)" mode="aspectFit" alt="" />
       </view>
       <text class="topics-state__text">{{ errorMessage }}</text>
       <view class="topics-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="onRefresh">
@@ -480,10 +522,17 @@ defineExpose({ goToAuthorProfile });
       @refresherrefresh="onRefresh"
       @scrolltolower="onLoadMore"
     >
-      <!-- 2026-08-21：置顶规则条（参考图对齐） -->
-      <view v-if="detailTab === 'feed' || detailTab === 'hot'" class="topic-rule press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="goCircleDetail(circleId)">
-        <text class="topic-rule__pin">置顶</text>
-        <text class="topic-rule__text">【圈规】文明发言，友善交流，共同维护圈子氛围</text>
+      <!-- R6-L04-D22（空态文案 P3）：改前条件只看 tab、不看列表 ⇒ 空态下这条「置顶【圈规】…」
+           仍常驻顶部，读起来像「有内容但被折叠」。补 listForTab.length > 0，空列表即收起。
+           R6-L04-D20（文案 P2）：整句与「置顶」二字改前都是硬编码中文字面量。
+           词条 circle.home.pinnedNotice（zh-CN.ts:3744）/ circle.home.pinnedBadge（:3743）
+           已存在且由 circle-home.vue 的置顶公告条使用 ⇒ 接同一 key，两页圈规同源。
+           ⚠ 展示句因此从「文明发言，友善交流，共同维护圈子氛围」变为
+              「【圈规】友善交流，尊重原创，分享美好瞬间」，若要保留原句需新增 circle.ruleText
+              词条（i18n/** 非本车道写集），已在报告里登记待裁。 -->
+      <view v-if="(detailTab === 'feed' || detailTab === 'hot') && listForTab.length > 0" class="topic-rule press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="goCircleDetail(circleId)">
+        <text class="topic-rule__pin">{{ t('circle.home.pinnedBadge') }}</text>
+        <text class="topic-rule__text">{{ t('circle.home.pinnedNotice') }}</text>
         <text class="topic-rule__arrow">›</text>
       </view>
 
@@ -518,7 +567,7 @@ defineExpose({ goToAuthorProfile });
             v-for="(img, idx) in topic.images"
             :key="img || idx"
             class="topic-card__image"
-            :src="img"
+            :src="resolveMediaUrl(img)"
             mode="aspectFill"
             lazy-load
             alt=""
@@ -546,7 +595,7 @@ defineExpose({ goToAuthorProfile });
             <text class="topic-card__name">{{ topic.author.name }}</text>
           </view>
           <view class="topic-card__meta">
-            <image class="topic-card__reply-icon" :src="chatIcon" mode="aspectFit" alt="" />
+            <image class="topic-card__reply-icon" :src="resolveMediaUrl(chatIcon)" mode="aspectFit" alt="" />
             <text class="topic-card__replies">{{ topic.replyCount }}</text>
             <text class="topic-card__time">{{ formatCircleTime(topic.createdAt) }}</text>
           </view>
@@ -595,6 +644,7 @@ defineExpose({ goToAuthorProfile });
       <!-- 底部留白 -->
       <view class="feed-bottom-spacer" />
     </scroll-view>
+    </template>
 
     <!-- 2026-08-27 兴趣圈修复：固定底部操作栏（加入圈子 + 发布动态），对齐理想图 -->
     <view v-if="circle" class="circle-bottom">
@@ -617,7 +667,7 @@ defineExpose({ goToAuthorProfile });
         :aria-label="'写话题'"
         @tap="goToPostTopic"
       >
-        <image class="circle-bottom__fab-icon" :src="IMAGE_PATHS.ICONS_EMOJI.EDIT" mode="aspectFit" alt="" />
+        <image class="circle-bottom__fab-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.EDIT)" mode="aspectFit" alt="" />
       </view>
     </view>
   </view>
@@ -834,8 +884,24 @@ defineExpose({ goToAuthorProfile });
 /* ========== 话题列表 ========== */
 .topics-list {
   flex: 1;
+  /* R6-L04-D21（可达性 P1）：.topics-page 是 height:100% + overflow:hidden 的定高 flex 列，
+     flex 子项默认 min-height:auto ⇒ 内容超过视口时 .topics-list 会被撑高而不是内滚，
+     @scrolltolower（onLoadMore→fetchTopics(page+1)）与 refresher 双双拿不到内滚区。
+     与同族根因（campus/index.vue .topic-scroll、campus/certification.vue .cert-body、
+     campus/post-topic.vue .post-body、campus/topic-detail.vue .detail-body）同口径补 min-height:0。 */
+  min-height: 0;
   overflow-y: auto;
   padding: var(--sp-5) 0;
+}
+
+/* R6-L04-D19：无 circleId 直开时的占位容器——EmptyState 自身只有 padding、不带高度约束，
+   居中必须由父级给（同 R6-L05-D02 / R6-L06-D12 的判据），故这里给 flex:1 + 双向居中。 */
+.topics-missing {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .topic-card {

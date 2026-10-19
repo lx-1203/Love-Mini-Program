@@ -100,7 +100,15 @@ function openDiscussion(item: Awaited<ReturnType<typeof clientApi.getDiscussionR
         >
           <StatusState tone="warning" :label="item.heatLabel" />
           <text class="row-title">{{ item.title }}</text>
-          <text class="row-subtitle">{{ item.summary }}</text>
+          <!-- R6-L16-D04（P2 文案）：帧上实测本帧 6 行里 3 行、top 帧 7/10 行的标题与摘要逐字相同
+               （如「大提琴独奏练习中，想找人一起合奏」两行一模一样）——SectionCard/feed-row 的
+               「标题+摘要」两级结构退化成同一句印两遍，零信息增量。
+               渲染侧加去重守卫：摘要与标题同文（trim 后逐字相等）时不渲染摘要行。
+               数据侧（契约 summary 未取真正正文摘要）另登记 NEEDS-DATA，由 F10 车道清。 -->
+          <text
+            v-if="item.summary && item.summary.trim() !== (item.title || '').trim()"
+            class="row-subtitle"
+          >{{ item.summary }}</text>
         </view>
       </view>
     </SectionCard>

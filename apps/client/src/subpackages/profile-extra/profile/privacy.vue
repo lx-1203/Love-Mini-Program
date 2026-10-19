@@ -72,7 +72,13 @@ function goBack() {
       <view class="privacy-page__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
         <text class="privacy-page__back-text">‹</text>
       </view>
-      <text class="privacy-page__title">{{ t('profile.privacyPermission') }}</text>
+      <!-- R6-B59/D14（需新建 P2）：页头信息层补上 locale 里早已配好、但全页无消费方的
+           副标题 profile.privacyPermissionDesc（zh-CN.ts:1732「控制你的信息展示范围」/
+           en-US.ts:1681），未新增任何文案。 -->
+      <view class="privacy-page__titles">
+        <text class="privacy-page__title">{{ t('profile.privacyPermission') }}</text>
+        <text class="privacy-page__subtitle">{{ t('profile.privacyPermissionDesc') }}</text>
+      </view>
       <view class="privacy-page__header-spacer" />
     </view>
 
@@ -124,6 +130,11 @@ function goBack() {
   background: linear-gradient(135deg, var(--c-brand-500, #36C99A) 0%, var(--c-brand-400, #6fe0b0) 100%);
 }
 
+/* R6-B59/D13（颜色token P3，2026-10-20）：返回钮圆底原引 --c-overlay-white-bg-tint，
+   该令牌真值是 rgba(255,255,255,0.08)（design-variables.scss:914），而这里写的兜底 0.2
+   永不生效 ⇒ 实测圆底 #4ACFA4 vs 头图 #3ACA9C 只差 Δ(16,5,8)，"可点圆钮"压成脏印。
+   改引同域 other.vue:479 已用的 --c-overlay-bg-light（0.2 档，:739），不改 theme/**、
+   不提浓度、不留假兜底。 */
 .privacy-page__back {
   width: 64rpx;
   height: 64rpx;
@@ -131,7 +142,7 @@ function goBack() {
   align-items: center;
   justify-content: center;
   border-radius: var(--r-circle, 50%);
-  background: var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.2));
+  background: var(--c-overlay-bg-light);
 }
 
 .privacy-page__back-text {
@@ -140,18 +151,37 @@ function goBack() {
   line-height: 1;
 }
 
+.privacy-page__titles {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+  min-width: 0;
+}
+
+/* R6-B57/D10 同族顺手项：同域三页页头标题原为 44/36/30rpx 三档，按建议统一到 var(--fs-4xl)；
+   顺带修掉原 `var(--fs-xl, 34rpx)` 的假兜底（--fs-xl 真值是 30rpx，兜底却写 34rpx）。 */
 .privacy-page__title {
-  font-size: var(--fs-xl, 34rpx);
+  font-size: var(--fs-4xl);
   font-weight: 700;
   color: var(--c-text-inverse, #ffffff);
+}
+
+.privacy-page__subtitle {
+  font-size: var(--fs-sm);
+  color: var(--c-text-inverse, #ffffff);
+  opacity: 0.85;
 }
 
 .privacy-page__header-spacer {
   width: 64rpx;
 }
 
+/* R6-B59/D11（间距 P2，2026-10-20）：卡横向 margin 原取 --sp-4（真值 16rpx），
+   实测白卡 x=9..369 ⇒ 左右各 18/16rpx，是同域 location(34rpx)/album(32rpx) 的一半，
+   规范 §1.4 页边距是 --page-padding=32rpx ⇒ 横向换成该令牌，纵向保留 --sp-5。 */
 .privacy-page__section {
-  margin: var(--sp-5) var(--sp-4);
+  margin: var(--sp-5) var(--page-padding);
   background: var(--c-bg-container, #ffffff);
   border-radius: var(--r-xl, 24rpx);
   box-shadow: var(--card-shadow, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
@@ -178,14 +208,18 @@ function goBack() {
   gap: 6rpx;
 }
 
+/* R6-B59/D12（字号 P2，2026-10-20）：设置行主文字原落 --fs-base=24rpx(12px)「标签/时间戳」档、
+   说明行 --fs-xs=20rpx(10px)「角标/法务」档（实测字形带高 11px / 9px），列表行主文字按规范
+   §1.3 该走 30/28rpx；同时 :188 那条 `var(--fs-xs, 24rpx)` 的兜底 24rpx 与令牌真值 20rpx
+   不符（实际渲的是真值），属假兜底 ⇒ 一并去掉。 */
 .privacy-item__title {
-  font-size: var(--fs-base, 28rpx);
+  font-size: var(--fs-xl);
   font-weight: 600;
   color: var(--c-text-primary, #333A37);
 }
 
 .privacy-item__desc {
-  font-size: var(--fs-xs, 24rpx);
+  font-size: var(--fs-lg);
   color: var(--c-text-tertiary, #9AA39F);
   line-height: 1.5;
 }

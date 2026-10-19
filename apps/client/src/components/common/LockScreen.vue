@@ -9,10 +9,13 @@
  * - 权益清单具象化完善资料的收益，提升转化意愿。
  *
  * 布局说明：原实现依赖父容器高度（height:100%），而宿主页面仅设置 min-height:100%，
- * 百分比高度退化为 auto，导致内容堆在屏幕上半区、下半屏空白。
- * 现改为 min-height:100vh 全屏铺满，内容纵向居中，底部提示贴近屏底。
+ * 百分比高度退化为 auto，导致内容堆在屏幕上半区、下半屏空白；2026-08-09 改成
+ * min-height:100vh 后又带来新问题（R6-L09-D25 / R6-L08-D10）——相对定位的 100vh 容器会随页滚，
+ * 关闭键漂移进微信胶囊带、宿主额外安全区把底部提示顶出首屏。
+ * 现改为固定铺满视口的模态层（position:fixed + 四边 0），内容纵向居中、
+ * 底部提示贴近屏底、超长内容由内容区内部滚动。
  */
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
 // R4-00229：路径走 ROUTES / SUBPACKAGE_ROUTES 常量
@@ -20,6 +23,12 @@ import { ROUTES, SUBPACKAGE_ROUTES } from "../../constants/routes";
 // 2026-08-09：未登录「立即登录并完善」→ 登录成功后自动进入资料完善页
 import { openAppPath, replaceAppPath, isTabPath, setPendingLoginRedirect } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
+// R6-B06（根因①消费点侧）：所有 IMAGE_PATHS 一律过 resolveMediaUrl 再绑给 <image :src>。
+// real 发布包里 icons/{v2,social,emoji,login,home,match,nearby} 与 images/** 均不随包
+// （实测 apps/client/dist/build/mp-weixin-real/static/assets 下只剩 icons/{common,register,tabbar}
+// 与 profile/svg、svg-spec），裸绑常量 = 直接 404 空白；解析器按 cdn-buckets.json 把它改写成
+// 后端 app-assets URL（§1.6 铁律 3）。包内命中的目录（icons/common、svg-spec）幂等原样返回。
+import { resolveMediaUrl } from "../../utils/media";
 // compat 的 getCurrentPagePath（含 H5/MP 平台差异处理），用于判断是否处于 Tab 页（底部有 TabBar）
 import { getCurrentPagePath } from "../../compat";
 
@@ -28,18 +37,34 @@ const { t } = useI18n();
 const props = defineProps<{
   /** 当前资料完善度百分比（已登录未完善时展示进度） */
   completionPercent?: number;
+  /**
+   * R6-L09-D27（文案）：宿主按页覆盖主标题。
+   * 本组件此前把「登录后解锁完整交友功能」这一句通稿铺给 5 个宿主
+   * （village 广场 / 喜欢与访客 / 心动信号 / 会话 / 官方号），
+   * 心动信号页 14 条墨迹带里 0 处出现页名 ⇒ 画面与页面语义脱节。
+   * 不传时保持原通用口径，行为逐字不变。
+   */
+  titleOverride?: string;
+  /** R6-L09-D27：宿主按页覆盖副标题（一句说明「这里为什么锁、解锁后拿到什么」） */
+  subtitleOverride?: string;
+  /** R6-L09-D27：宿主按页覆盖权益清单（不传则用通用三条） */
+  benefitsOverride?: string[];
 }>();
 
 const sessionStore = useSessionStore();
 /** 是否已登录：决定主文案 / 主按钮 / 行为分支 */
 const loggedIn = computed(() => sessionStore.isLoggedIn);
 
-/** 主标题：未登录侧重登录授权，已登录未完善侧重完善资料 */
-const title = computed(() => t(loggedIn.value ? "lock.titleLoggedIn" : "lock.titleLoggedOut"));
+/** 主标题：未登录侧重登录授权，已登录未完善侧重完善资料；宿主可按页覆盖 */
+const title = computed(
+  () => props.titleOverride || t(loggedIn.value ? "lock.titleLoggedIn" : "lock.titleLoggedOut")
+);
 
-/** 副标题：具象化说明完善后可获得的能力 */
-const subtitle = computed(() =>
-  t(loggedIn.value ? "lock.subtitleLoggedIn" : "lock.subtitleLoggedOut")
+/** 副标题：具象化说明完善后可获得的能力；宿主可按页覆盖 */
+const subtitle = computed(
+  () =>
+    props.subtitleOverride ||
+    t(loggedIn.value ? "lock.subtitleLoggedIn" : "lock.subtitleLoggedOut")
 );
 
 /** 主按钮文案 */
@@ -59,12 +84,37 @@ const progressText = computed(() => {
   return "";
 });
 
-/** 权益清单：具象化完善资料的收益 */
-const benefits = computed(() => [
-  t("lock.benefitMatch"),
-  t("lock.benefitCampus"),
-  t("lock.benefitChat"),
-]);
+/** 权益清单：具象化完善资料的收益；宿主可按页覆盖 */
+const benefits = computed(() =>
+  props.benefitsOverride && props.benefitsOverride.length > 0
+    ? props.benefitsOverride
+    : [t("lock.benefitMatch"), t("lock.benefitCampus"), t("lock.benefitChat")]
+);
+
+/* ========== 素材出口：一律过 resolveMediaUrl（R6-B06，见文件头注释） ========== */
+const closeIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG));
+const lockIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.LOCK_SVG));
+const checkIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.CHECK_CIRCLE_SVG));
+/**
+ * 漂浮爱心（R6-L03-D02 / R6-L08-D09 / R6-L09-D22）：ICONS_SOCIAL.LIKE_FILLED 常量是
+ * `/static/assets/icons/social/like-filled.svg`，该目录在 cdn-buckets.json 的 cdnPrefixes 里
+ * ⇒ real 档不随包，裸绑必空（帧上粉色像素 0 个）。过解析器后 real 档落后端
+ * app-assets/assets/icons/social/like-filled.svg（盘上已确认存在），mock 档落包内同名文件。
+ */
+const heartIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED));
+/**
+ * 同校头像（R6-L09-D26）：原绑 IMAGE_PATHS.AVATARS.AVATAR_1/2，实盘逐张打开是
+ * 航拍树冠 / 暗水面礁石（apps/api/uploads/app-assets/assets/images/avatars/avatar-1.jpg 平均色
+ * #3C3A21），不是人像 ⇒ 锁屏「和你一样的同学在寻觅」这层叙事崩掉。
+ * 改绑同一摄影体系的**人像裁切**档 PEOPLE.AVATAR_1/2（person-01-avatar.png ~ person-09-avatar.png，
+ * 后端 app-assets 盘上 9 张齐全，全站人卡同源），缺图时由 @error 整块隐藏不留灰洞。
+ */
+const avatarLeftSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.PEOPLE.AVATAR_1));
+const avatarRightSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.PEOPLE.AVATAR_2));
+/** 头像取不到时不留空洞（与漂浮爱心同口径） */
+const avatarLeftVisible = ref(true);
+const avatarRightVisible = ref(true);
+const heartsVisible = ref(true);
 
 /**
  * 是否处于 Tab 页（底部有固定 TabBar）。
@@ -132,7 +182,7 @@ function browsePublic() {
     >
       <image
         class="lock-screen__close-icon"
-        :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG"
+        :src="closeIconSrc"
         mode="aspectFit"
         alt=""
       />
@@ -145,47 +195,50 @@ function browsePublic() {
         <view class="illustration__ring">
           <image
             class="illustration__lock"
-            :src="IMAGE_PATHS.ICONS_COMMON.LOCK_SVG"
+            :src="lockIconSrc"
             mode="aspectFit"
             alt=""
           />
           <view class="illustration__badge">
             <image
               class="illustration__badge-icon"
-              :src="IMAGE_PATHS.ICONS_COMMON.CHECK_CIRCLE_SVG"
+              :src="checkIconSrc"
               mode="aspectFit"
               alt=""
             />
           </view>
         </view>
-        <view class="illustration__avatar illustration__avatar--left">
+        <view v-if="avatarLeftVisible" class="illustration__avatar illustration__avatar--left">
           <image
             class="illustration__avatar-img"
-            :src="IMAGE_PATHS.AVATARS.AVATAR_1"
+            :src="avatarLeftSrc"
             mode="aspectFill"
             alt=""
+            @error="avatarLeftVisible = false"
           />
         </view>
-        <view class="illustration__avatar illustration__avatar--right">
+        <view v-if="avatarRightVisible" class="illustration__avatar illustration__avatar--right">
           <image
             class="illustration__avatar-img"
-            :src="IMAGE_PATHS.AVATARS.AVATAR_2"
+            :src="avatarRightSrc"
             mode="aspectFill"
             alt=""
+            @error="avatarRightVisible = false"
           />
         </view>
-        <view class="illustration__heart illustration__heart--1">
+        <view v-if="heartsVisible" class="illustration__heart illustration__heart--1">
           <image
             class="illustration__heart-img"
-            :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED"
+            :src="heartIconSrc"
             mode="aspectFit"
             alt=""
+            @error="heartsVisible = false"
           />
         </view>
-        <view class="illustration__heart illustration__heart--2">
+        <view v-if="heartsVisible" class="illustration__heart illustration__heart--2">
           <image
             class="illustration__heart-img"
-            :src="IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED"
+            :src="heartIconSrc"
             mode="aspectFit"
             alt=""
           />
@@ -201,7 +254,7 @@ function browsePublic() {
           <view v-for="benefit in benefits" :key="benefit" class="benefit">
             <image
               class="benefit__icon"
-              :src="IMAGE_PATHS.ICONS_COMMON.CHECK_CIRCLE_SVG"
+              :src="checkIconSrc"
               mode="aspectFit"
               alt=""
             />
@@ -237,10 +290,24 @@ function browsePublic() {
    权限拦截全屏引导页
    - 修复（2026-08-09）：原 height:100% 依赖父容器确定高度，而宿主页面
      仅有 min-height:100%（height 不定），百分比高度退化为 auto，
-     内容堆在屏幕上半区、下半屏空白。现改用 min-height:100vh 全屏铺满。
+     内容堆在屏幕上半区、下半屏空白。
+   - R6-L09-D25（位置 P1）+ R6-L08-D10（可达性 P2）：上一版用
+     `position: relative; min-height: 100vh`，于是
+       ① 唯一的退出「×」键挂在会滚的容器上（bottom 帧实测上移 69px，
+          挤进微信胶囊 y=56-71 横带）——本组件自标 role="dialog" aria-modal="true"，
+          模态层不该随背景滚；
+       ② 宿主 likes-visitors/index.vue:317 又额外给 paddingTop=statusBar+sp-6，
+          与组件自己的 100vh 叠加 ⇒ 总高超视口，底部提示要滚 90px 才露出。
+     现改为铺满视口的固定层（5 个宿主均为 v-if/v-else 独占渲染，见
+     grep "<LockScreen" 的 5 处调用点，不存在与页面正文并排渲染的宿主），
+     关闭键与底部提示恒在屏内，内容超长时由 __body 内部滚动。
    ================================================================ */
 .lock-screen {
-  position: relative;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -368,11 +435,13 @@ function browsePublic() {
   height: 40rpx;
 }
 
-/* ========== 主体内容区：纵向铺满并居中 ========== */
+/* ========== 主体内容区：纵向铺满并居中（固定层内部可滚，见 .lock-screen 注释） ========== */
 .lock-screen__body {
   position: relative;
   z-index: 1;
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -409,7 +478,13 @@ function browsePublic() {
   height: 120rpx;
 }
 
-/* 完成对勾徽章：右下角白色圆底 + 绿色对勾 */
+/* 完成对勾徽章：右下角白色圆底 + 绿色对勾
+   R6-L08-D12（颜色token P2）：原写 `border: 6rpx solid var(--c-gradient-brand)`，
+   而 --c-gradient-brand 的值是 linear-gradient(...)（theme/design-variables.scss:171），
+   它是 <background-image> 值、不是 <color>，用作 border-color 属非法声明
+   ⇒ 整条 border 不生效（帧上实测 y341 一行从环绿 #4FD3A5 直接进白 #FEFEFE，
+   出白圆后 x272 起即页面底 #EEF7F2，白底外没有任何品牌绿环带）。
+   改纯色令牌 var(--c-brand)（#36C99A）；渐变只留给 background 用。 */
 .illustration__badge {
   position: absolute;
   right: -12rpx;
@@ -418,7 +493,7 @@ function browsePublic() {
   height: 76rpx;
   border-radius: var(--r-circle);
   background: var(--c-bg-container);
-  border: 6rpx solid var(--c-gradient-brand);
+  border: 6rpx solid var(--c-brand);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -594,9 +669,14 @@ function browsePublic() {
   opacity: 0.6;
 }
 
+/* R6-L08-D13（可达性 P2）：次入口原取 --c-text-tertiary，浅色系档是 #6B7571、
+   暗色档 tokens.scss:245 是 #8A92A0，帧内字形实测 #808D88 压在 --c-bg-page #EEF7F2 上
+   对比度 2.87:1，字号 --fs-md=26rpx(13px) 不享 WCAG 大字号豁免 ⇒ 游客唯一非登录出口读不出。
+   与同页正文（.lock-screen__subtitle / .benefit__text 均为 --c-text-secondary）同档：
+   #4A524E 压 #EEF7F2 实测 7.37:1。 */
 .lock-screen__btn-link-text {
   font-size: var(--fs-md);
-  color: var(--c-text-tertiary);
+  color: var(--c-text-secondary, #4A524E);
 }
 
 /* ========== 底部补充提示 ========== */

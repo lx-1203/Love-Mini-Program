@@ -22,10 +22,19 @@ defineEmits<{ (e: "schoolTap"): void; (e: "searchTap"): void; (e: "notifyTap"): 
  * 语义错位。本组件内剥离尾部「· 附近」段；无真实距离时只保留前半段（学校/城市），
  * 不再把「附近」当距离展示。「附近」一词只留给顶部 推荐/附近 分段。
  * 注：要真正渲染「· 3km」需上层把距离数值透传下来（属另一车道，本组件无该数据源）。
+ *
+ * R6-F2③（2026-10-20，去编造）：第三段兜底原写死 `"北京大学 · 3km"` ——
+ * 一所没跟任何用户绑定的学校 + 一个凭空公里数，纯编造数据（真档无定位/无校区时就直接把
+ * 「北京大学 · 3km」印在页头上）。现按「取不到真值渲染明确可读的空态」处理：
+ * 不显示技术串文（如「地址解析不可用」，那是 utils/location 的 DEFAULT_LOCATION_TEXT，
+ * 归 F1 车道收口），也不造一个学校名。
+ * 文案暂与本文件其余 UI 串文（首页/定位/通知/我的）保持同一硬编码口径，
+ * 待 i18n 车道补 home.locationEmpty 键后一并接线（本车道禁改 i18n/**）。
  */
+const LOCATION_EMPTY_TEXT = "未设置位置";
 const schoolText = () => {
-  const raw = (props.locationText || props.school || "北京大学 · 3km").trim();
-  return raw.replace(/\s*·\s*附近\s*$/, "");
+  const raw = (props.locationText || props.school || "").trim();
+  return raw.replace(/\s*·\s*附近\s*$/, "") || LOCATION_EMPTY_TEXT;
 };
 
 // 2026-09-03 遗留差异清零：通知角标"6"静态演示值 → 真实未读通知数（无未读时隐藏角标）

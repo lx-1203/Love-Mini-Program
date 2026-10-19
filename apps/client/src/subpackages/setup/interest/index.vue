@@ -8,6 +8,9 @@ import { onLoad } from "@dcloudio/uni-app";
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import { useI18n } from "vue-i18n";
 import { clientApi } from "../../../services/api";
+// R6-B66/D22（素材缺失）：返回键由「字符按 40rpx 渲染」换成包内已登记 SVG/PNG 素材，
+// 与同域 tasks/album/visitors/favorites 页头同一枚 ICONS_COMMON.BACK（localPrefixes 已登记）。
+import { IMAGE_PATHS } from "../../../config/images";
 import TagSelector from "../../../components/profile/TagSelector.vue";
 import type { ProfileTagGroupKey } from "../../../config/profile-tags";
 
@@ -87,14 +90,28 @@ function goBack() {
 <template>
   <view class="interest-page" :style="menuStyleVars">
     <view class="interest-header">
-      <view class="interest-header__row">
-        <view class="interest-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.back')" @tap="goBack">
-          <text class="interest-header__back-icon">‹</text>
+      <!-- R6-B66/D23（位置，2026-10-20）：原 .interest-header__row 把返回键与标题组排成
+           一行 ⇒ 实测标题左缘 x=56、副标题 x=55，而本页其余内容（"选择你的标签"、chip、
+           保存按钮）左缘都是 x=16（= 页面 padding-left 32rpx）⇒ 标题与正文左轴差 40px。
+           按建议改法把返回键移出标题行、做成标题上方的独立行，标题/副标题回到 16px 主轴。
+           R6-B66/D24（可达性）：返回键热区由 64rpx 提到 88rpx（仓内口径 AppShell.vue:334），
+           视觉圆底仍 64rpx（.interest-header__back__circle），靠外层热区 + 负 margin 保持
+           圆底原位不偏移；D22：箭头改用包内素材，不再用字符。 -->
+      <view
+        class="interest-header__back press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('common.back')"
+        @tap="goBack"
+      >
+        <view class="interest-header__back-circle">
+          <image class="interest-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
         </view>
-        <view class="interest-header__texts">
-          <text class="interest-header__title">{{ t('interestSelect.title') }}</text>
-          <text class="interest-header__sub">{{ t('interestSelect.subtitle') }}</text>
-        </view>
+      </view>
+      <view class="interest-header__texts">
+        <text class="interest-header__title">{{ t('interestSelect.title') }}</text>
+        <text class="interest-header__sub">{{ t('interestSelect.subtitle') }}</text>
       </view>
     </view>
 
@@ -129,14 +146,22 @@ function goBack() {
   margin-bottom: 24rpx;
 }
 
-/* MP-R1-REQ24-INTEREST-001：返回键（返回键+标题组同行） */
-.interest-header__row {
+/* MP-R1-REQ24-INTEREST-001：返回键
+   R6-B66/D23：原 __row 一行布局已删除，返回键独立成行（标题回到正文左轴）。
+   R6-B66/D24：外层 .interest-header__back 是热区（88rpx=44px，AppShell.vue:334 口径），
+   内层圆底保持 64rpx 视觉不变；margin-left: -12rpx 让圆底左缘仍落在 32rpx 页边距上。 */
+.interest-header__back {
+  width: 88rpx;
+  height: 88rpx;
+  margin-left: -12rpx;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.interest-header__back {
+.interest-header__back-circle {
   width: 64rpx;
   height: 64rpx;
   border-radius: 50%;
@@ -145,13 +170,12 @@ function goBack() {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
+/* R6-B66/D22：字符箭头换成包内素材（ICONS_COMMON.BACK），尺寸与同域页头同档 */
 .interest-header__back-icon {
-  font-size: 40rpx;
-  line-height: 1;
-  color: var(--c-text-primary, #222222);
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .interest-header__texts {
@@ -171,11 +195,16 @@ function goBack() {
   color: var(--c-text-secondary, #666666);
 }
 
+/* R6-B66/D21（颜色token，2026-10-20）：主按钮原写死
+   linear-gradient(135deg, #36C99A 0%, #36C99A 100%) —— 两端同值＝纯色平铺，
+   而同为注册流程的 schedule / recommend-pref 两页主按钮走 --c-gradient-brand
+   （#36C99A→#55D5A7，design-variables.scss:171/386）⇒ 走完三步时最后一步的
+   主按钮色相与前两页不一致。改引同一令牌，不在页面重抄渐变。 */
 .interest-save {
   margin-top: 32rpx;
   padding: 24rpx 0;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, #36C99A 0%, #36C99A 100%);
+  background: var(--c-gradient-brand);
   text-align: center;
 }
 
@@ -186,9 +215,10 @@ function goBack() {
 }
 
 
-/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
+/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调）
+   R6-B65/D17 同族顺手项：裸字面量换 --c-bg-container（渲染值同为 #FFFFFF，零像素变化）。 */
 page {
-  background: #ffffff;
+  background: var(--c-bg-container);
 }
 
 </style>

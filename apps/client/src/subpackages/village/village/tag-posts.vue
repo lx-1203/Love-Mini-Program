@@ -103,6 +103,9 @@ const isLoadingMore = ref(false);
 /**
  * 当前页码（R4-00093：改为 1 基分页，与 /posts 契约分页口径一致；
  * 此前 0 基导致与契约约定漂移，联调易出错）
+ * R6-L04-D01 补充：本页**内部状态**是 1 基，但 `/post-tags/posts` 端点本身是 0 基
+ * （见 loadPosts 内注释），换算只做在请求出口（`page=${currentPageNum - 1}`），
+ * 不要把这里改回 0 基——mock 分支的起点算式与 hasMore 判定都以 1 基为准。
  */
 const page = ref(1);
 /** 是否还有更多 */
@@ -145,7 +148,18 @@ async function loadPosts(reset = true) {
       return;
     }
 
-    // Real 模式：调用后端 API GET /api/post-tags/posts
+    // R6-L04-D01（P0，本条唯一病灶就在这一行的基址换算）：
+    // 后端 `GET /api/v1/post-tags/posts` 是 **0 基**契约——PostTagController.java:63 javadoc
+    // 逐字「页码（从 0 开始，默认 0）」、:71 `defaultValue = "0"` + `@Min(0)`，
+    // RealPostTagService.java:103-105 直接 `PageRequest.of(page, size, …)`（Spring 0 基）。
+    // 同族 `/posts*`（VillageController.java:77/186/261/382 `defaultValue = "1"` + `@Min(1)`
+    // + 参数名 pageSize）才是 1 基。R4-00093 把「1 基」当成全站口径一并写进本请求，
+    // ⇒ 首屏把 1 原样送出 = 跳过 0 基首页。真接口复核（identity A 铸票后 curl，读数见
+    // tmp/qa/lanes/R6fix/F4-report.md）：
+    //   ?tagName=运动&page=0&size=20 → 200，2 条（id 406,398）
+    //   ?tagName=运动&page=1&size=20 → 200，`[]`（2 字节）  ← 帧上恒空态的直接成因
+    // 修法：页面内部状态继续保持 1 基（与 mock 分支 / hasMore 判定 / R4-00093 口径一致），
+    // 只在**本端点出口**换算成 0 基偏移。端点侧统一为 1 基属后端契约改动 ⇒ 已登记 F9 车道。
     // R4-00092：响应类型补充可选互动字段（后端返回时直接映射回显，
     // 缺失时兜底 false，保证「点赞/收藏/置顶回显」真实化）
     const data = await request<Array<{
@@ -157,7 +171,7 @@ async function loadPosts(reset = true) {
       createdAt: string; isHot: boolean; isAlumni: boolean;
       isLiked?: boolean; isFollowed?: boolean; isShared?: boolean; isFavorite?: boolean;
     }>>({
-      url: `/post-tags/posts?tagName=${encodeURIComponent(tagName.value)}&page=${currentPageNum}&size=${PAGE_SIZE}`,
+      url: `/post-tags/posts?tagName=${encodeURIComponent(tagName.value)}&page=${currentPageNum - 1}&size=${PAGE_SIZE}`,
       method: "GET",
     });
 
@@ -261,6 +275,15 @@ function goBack() {
   }
 }
 
+/**
+ * 空态出口：去发帖（R6-L04-D05）。
+ * 目标页取本页同族、且在村口页实际在用的发布页路由（village/index.vue:390 亦走
+ * ROUTES.VILLAGE.POST），不新造路径。
+ */
+function goToPublish(): void {
+  openAppPath(ROUTES.VILLAGE.POST);
+}
+
 onLoad((query) => {
   /* MP-R7-GUEST-LANDING：游客入口即拦。本页原先两条路径都会把游客留在内容页：
      ① 无 tagName ⇒ toast 后 goBack()（:258 navigateBack / :260 reLaunch 到村口列表，都是内容页）；
@@ -323,8 +346,11 @@ onShareTimeline(() => ({
       </view>
 
       <!-- 错误状态 -->
+      <!-- R6-L04-D02（P1 素材缺失）：本页 5 处状态/互动图标此前是裸 `:src`（未过 resolveMediaUrl），
+           违反 §1.6 铁律 3「裸 :src 一律包 resolveMediaUrl / SafeImage」。真档下 assets/icons 一旦
+           被 cdn-buckets 划到后端出图，裸绑包内路径就是空白。统一改为过解析器。 -->
       <view v-else-if="errorMessage && posts.length === 0" class="feed-state">
-        <image class="feed-state__icon" :src="stateIcons.error" mode="aspectFit" alt="" />
+        <image class="feed-state__icon" :src="resolveMediaUrl(stateIcons.error)" mode="aspectFit" alt="" />
         <text class="feed-state__text">{{ errorMessage }}</text>
         <view class="feed-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="onRefresh">
           <text class="feed-state__btn-text">{{ t("common.retry") }}</text>
@@ -333,9 +359,22 @@ onShareTimeline(() => ({
 
       <!-- 空状态 -->
       <view v-else-if="!loading && posts.length === 0" class="feed-state">
-        <image class="feed-empty__icon" :src="stateIcons.empty" mode="aspectFit" alt="" />
+        <image class="feed-empty__icon" :src="resolveMediaUrl(stateIcons.empty)" mode="aspectFit" alt="" />
         <text class="feed-empty__title">{{ t("village.emptyPosts") }}</text>
         <text class="feed-empty__desc">{{ t("village.tagPosts.emptyDesc") }}</text>
+        <!-- R6-L04-D05（P1 可达性）：空列表此前既无翻页也无终止信号、更无任何出口（死屏）。
+             补一条「去发布」可达入口；文案复用既有键 circle.topicsEmptyAction（逐字「去发布」），
+             不新增 i18n 键（locales 不在本车道可写集）。 -->
+        <view
+          class="feed-state__btn press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('circle.topicsEmptyAction')"
+          @tap="goToPublish"
+        >
+          <text class="feed-state__btn-text">{{ t("circle.topicsEmptyAction") }}</text>
+        </view>
       </view>
 
       <!-- 帖子卡片列表 -->
@@ -391,7 +430,7 @@ onShareTimeline(() => ({
               :aria-label="t('village.tagPosts.commentAria')"
               @tap.stop="goToDetail(post.id)"
             >
-              <image class="action-btn__icon" :src="stateIcons.comment" mode="aspectFit" alt="" />
+              <image class="action-btn__icon" :src="resolveMediaUrl(stateIcons.comment)" mode="aspectFit" alt="" />
               <text v-if="post.comments > 0" class="action-btn__count">{{ post.comments }}</text>
             </view>
             <view
@@ -403,7 +442,7 @@ onShareTimeline(() => ({
               :aria-pressed="post.isLiked"
               @tap.stop="toggleLike(post)"
             >
-              <image class="action-btn__icon" :src="post.isLiked ? stateIcons.heartFilled : stateIcons.heart" mode="aspectFit" alt="" />
+              <image class="action-btn__icon" :src="resolveMediaUrl(post.isLiked ? stateIcons.heartFilled : stateIcons.heart)" mode="aspectFit" alt="" />
               <text v-if="post.likes > 0" class="action-btn__count">{{ post.likes }}</text>
             </view>
             <view
@@ -414,7 +453,7 @@ onShareTimeline(() => ({
               :aria-label="t('village.tagPosts.shareAria')"
               @tap.stop="handleSharePost(post)"
             >
-              <image class="action-btn__icon" :src="stateIcons.share" mode="aspectFit" alt="" />
+              <image class="action-btn__icon" :src="resolveMediaUrl(stateIcons.share)" mode="aspectFit" alt="" />
               <text v-if="post.shares > 0" class="action-btn__count">{{ post.shares }}</text>
             </view>
           </view>
@@ -503,8 +542,14 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 /* ========== 状态提示 ========== */
+/* R6-L04-D03（P2 位置）：原 `flex: 1` 写在 scroll-view 的直接子节点上——mp-weixin 的
+   scroll-view 不是 flex 容器，子节点不参与主轴分配 ⇒ justify-content:center 无空间可用，
+   空态整块吊在屏顶（帧实测 y=215–256px，而 feed 可视区中心应 ≈y=456px，下半屏 558px 全空）。
+   改为让状态块自己占满 scroll-view 可视高度再居中；.post-feed 有确定高度
+   （:462 定高修复，MP-R1-TAGPOSTS-102），故百分比高度可解。 */
 .feed-state {
-  flex: 1;
+  min-height: 100%;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -532,9 +577,11 @@ $red-badge: var(--c-error, #FF4757);
   color: var(--c-text-tertiary);
 }
 
+/* R6-L04-D04：加载/错误提示与 .feed-empty__desc 同属正文级，一并离开 $text-tertiary，
+   依据与对比度复算见 .feed-empty__desc 上方注释。 */
 .feed-state__text {
   font-size: var(--fs-lg, 28rpx);
-  color: $text-tertiary;
+  color: $text-secondary;
   text-align: center;
   line-height: 1.6;
 }
@@ -571,9 +618,15 @@ $red-badge: var(--c-error, #FF4757);
   color: $text-primary;
 }
 
+/* R6-L04-D04（P2 颜色token）：副文案是正文级说明，原走 $text-tertiary——而本文件 :449 把
+   $text-tertiary 映射到 --c-text-quaternary（#9AA39F），压 --c-bg-page #EEF7F2 上复算对比度
+   2.37:1（WCAG 相对亮度法，与卡片实测 2.35:1 同档），远低于 4.5:1。
+   按卡片裁定「$text-tertiary 只留给角标/时间戳」，正文级两处（本行副文案 + 同组
+   .feed-state__text 加载/错误提示）一并改走 --c-text-secondary（#4A524E）
+   ⇒ 复算对比度 7.38:1，过 AA。 */
 .feed-empty__desc {
   font-size: var(--fs-md, 26rpx);
-  color: $text-tertiary;
+  color: $text-secondary;
 }
 
 /* ========== 帖子卡片 ========== */

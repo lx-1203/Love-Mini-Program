@@ -262,6 +262,18 @@ function visibleReplies(comment: CommentItem): CommentItem[] {
 const failedImageKeys = ref<Set<string>>(new Set());
 
 /**
+ * R6-L03-D20（P3 素材缺失）：三点菜单由字符 `···` 换成标准图标后的 **@error 兜底标记**。
+ * 判点：`IMAGE_PATHS.ICONS_COMMON.MORE` = `assets/icons/v2/more.png`，而 `static/assets/icons/v2/`
+ * 这一族**包内 0 个文件**（本车道 `find apps/client/src/static -iname "more*"` 无命中），
+ * real 档由后端出图（`curl /api/v1/media/app-assets/assets/icons/v2/more.png` → 200 / 330B / image/png 已验）；
+ * 同目录的 `more.svg` 在后端仍是 `fill="currentColor"`（curl 首行实测）⇒ `<image>` 载入独立 SVG
+ * 时描边/填充 0 墨迹，不可用。故走 PNG + 两级兜底：出图失败即回落到原字形，
+ * 保证非 real 档（mock/dev/showcase 走包内树）不留空白。
+ * 包内副本缺失本身另登记 需新建（见交件报告），本车道不造路径、不拿别的图凑。
+ */
+const moreIconFailed = ref(false);
+
+/**
  * SubTask 5.5.2：图片 @error 回调。
  *
  * <p>将失败图片的 key 加入集合，触发模板 v-if 切换为占位元素（首字 / 默认占位图）。
@@ -781,7 +793,7 @@ onShareTimeline(() => {
     <!-- 顶部导航栏 -->
     <view class="detail-header">
       <view class="detail-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.backAria')" @tap="goBack">
-        <image class="back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+        <image class="back-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.BACK)" mode="aspectFit" alt="" />
       </view>
       <text class="detail-header__title">{{ t("village.detailTitle") }}</text>
       <!-- 理想图：右侧三点菜单（···），点击弹出操作菜单（举报/复制等） -->
@@ -793,7 +805,18 @@ onShareTimeline(() => {
         :aria-label="t('village.reportPostAria')"
         @tap="handlePostLongpress"
       >
-        <text class="detail-header__menu-dots">···</text>
+        <!-- R6-L03-D20：`···` 是 U+00B7 文本字符（帧实测墨迹高仅 5px=10rpx），违反 §1.1 规则 4
+             「emoji/字符图形一律替换为标准 SVG」。换成已登记的 ICONS_COMMON.MORE 走解析器，
+             失败回落字形（判点与实测见 script 里 moreIconFailed 的注释）。 -->
+        <image
+          v-if="!moreIconFailed"
+          class="detail-header__menu-icon"
+          :src="resolveMediaUrl(IMAGE_PATHS.ICONS_V2.MORE)"
+          mode="aspectFit"
+          alt=""
+          @error="moreIconFailed = true"
+        />
+        <text v-else class="detail-header__menu-dots">···</text>
       </view>
     </view>
 
@@ -819,7 +842,7 @@ onShareTimeline(() => {
           <view class="author-inline__name-row">
             <text class="author-inline__name">{{ currentPost.author.name }}</text>
             <view v-if="currentPost.isAlumni" class="author-inline__badge">
-              <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="author-inline__badge-icon" mode="aspectFit" />
+              <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SCHOOL)" custom-class="author-inline__badge-icon" mode="aspectFit" />
               <text class="author-inline__badge-text">{{ currentPost.author.campusName || t("village.alumni") }}</text>
             </view>
           </view>
@@ -875,7 +898,7 @@ onShareTimeline(() => {
                 @tap="openImageViewer(idx)"
               >
                 <SafeImage
-                  :src="img"
+                  :src="resolveMediaUrl(img)"
                   :fallback="IMAGE_PATHS.POST_PLACEHOLDER"
                   mode="aspectFill"
                   :lazy-load="true"
@@ -894,7 +917,7 @@ onShareTimeline(() => {
                 class="post-media-grid__cell post-media-grid__cell--placeholder"
               >
                 <SafeImage
-                  :src="IMAGE_PATHS.POST_PLACEHOLDER"
+                  :src="resolveMediaUrl(IMAGE_PATHS.POST_PLACEHOLDER)"
                   mode="aspectFill"
                   custom-style="width:100%;height:100%"
                   alt=""
@@ -926,7 +949,7 @@ onShareTimeline(() => {
 
         <!-- 2026-08-26 P0：理想图位置标签（绿色定位 + 学校 + 距离） -->
         <view v-if="currentPost.author.campusName" class="post-location">
-          <image class="post-location__pin" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
+          <image class="post-location__pin" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LOCATION)" mode="aspectFit" alt="" />
           <text class="post-location__text">{{ currentPost.author.campusName }}</text>
           <text class="post-location__distance"><!-- MP-R2-DETAIL-001：写死假距离移除（无数据绑定、无 i18n） --></text>
         </view>
@@ -945,7 +968,7 @@ onShareTimeline(() => {
             <!-- R16：红心按点赞态切换实心/空心（此前无条件实心且 <image> 不吃 currentColor，状态不可见） -->
             <image
               class="post-actions-inline__icon"
-              :src="currentPost.isLiked ? IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED : IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE"
+              :src="resolveMediaUrl(currentPost.isLiked ? IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED : IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE)"
               mode="aspectFit"
               alt=""
             />
@@ -959,7 +982,7 @@ onShareTimeline(() => {
             :aria-label="t('village.detail.statsComment')"
             @tap="focusCommentInput"
           >
-            <image class="post-actions-inline__icon" :src="IMAGE_PATHS.ICONS_EMOJI.COMMENT" mode="aspectFit" alt="" />
+            <image class="post-actions-inline__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.COMMENT)" mode="aspectFit" alt="" />
             <text class="post-actions-inline__count">{{ currentPost.comments }}</text>
           </view>
           <view
@@ -974,7 +997,7 @@ onShareTimeline(() => {
                  原 ↗ 文本字形 + shareAction（值「转发」）两处都不符。换成固定描边色的
                  share.svg（common/share.svg，stroke #94A3B8，<image> 下 currentColor 不生效故用固定色资源）
                  并取既有 statsShare 键（值「分享」），不改 i18n 文件。 -->
-            <image class="post-actions-inline__icon" :src="IMAGE_PATHS.ICONS_COMMON.SHARE_ICON_SVG" mode="aspectFit" alt="" />
+            <image class="post-actions-inline__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SHARE_ICON_SVG)" mode="aspectFit" alt="" />
             <text class="post-actions-inline__count">{{ t("village.detail.statsShare") }}</text>
           </view>
         </view>
@@ -1075,7 +1098,7 @@ onShareTimeline(() => {
                    hover-stay-time="40"
                    @tap.stop="handleCommentLike(comment.id)"
                  >
-                   <image class="comment-heart__icon" :src="comment.isLiked ? IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED : IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE" mode="aspectFit" alt="" />
+                   <image class="comment-heart__icon" :src="resolveMediaUrl(comment.isLiked ? IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED : IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE)" mode="aspectFit" alt="" />
                  </view>
                  <text v-if="comment.likes > 0" class="comment-heart__count">{{ comment.likes }}</text>
                </view>
@@ -1142,7 +1165,7 @@ onShareTimeline(() => {
                      hover-stay-time="40"
                      @tap.stop="handleCommentLike(reply.id)"
                    >
-                     <image class="comment-heart__icon" :src="reply.isLiked ? IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED : IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE" mode="aspectFit" alt="" />
+                     <image class="comment-heart__icon" :src="resolveMediaUrl(reply.isLiked ? IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED : IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE)" mode="aspectFit" alt="" />
                    </view>
                    <text v-if="reply.likes > 0" class="comment-heart__count">{{ reply.likes }}</text>
                  </view>
@@ -1218,7 +1241,7 @@ onShareTimeline(() => {
                 <text v-else class="similar-author-avatar__char">{{ initialOf(author.name) }}</text>
                 <!-- 头像左上角身份徽章（校友） -->
                 <view v-if="author.isAlumni" class="similar-author-avatar__badge">
-                  <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="similar-author-avatar__badge-icon" mode="aspectFit" />
+                  <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SCHOOL)" custom-class="similar-author-avatar__badge-icon" mode="aspectFit" />
                 </view>
               </view>
               <view class="similar-author-info">
@@ -1226,7 +1249,7 @@ onShareTimeline(() => {
                   <text class="similar-author-name">{{ author.name }}</text>
                   <!-- 同校标签 -->
                   <view v-if="author.isAlumni" class="identity-tag identity-tag--alumni">
-                    <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="identity-tag__icon" mode="aspectFit" />
+                    <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SCHOOL)" custom-class="identity-tag__icon" mode="aspectFit" />
                     <text class="identity-tag__text">{{ t("village.alumni") }}</text>
                   </view>
                 </view>
@@ -1306,13 +1329,24 @@ onShareTimeline(() => {
     </view>
 
     <!-- 帖子不存在 -->
-    <EmptyState
-      v-else
-      :title="t('village.detail.postNotExist')"
-      :action-text="t('village.detail.backToVillage')"
-      type="no-data"
-      @action="goBack"
-    />
+    <!-- R6-L03-D21（P2 位置）：卡片给的「detail 页专用 .detail-empty 容器」这一支。
+         帧实测空态组吊在屏幕上部（图标 y≈176..230 / 标题 242..253 / 按钮 288..322），
+         其下到 home indicator（y≈795）473px=938rpx 全白。原结构里 EmptyState 是
+         .detail-page(flex 列, height:100%) 的裸子节点，无任何可用区约束。
+         补一层宿主容器把「可视区剩余高度」显式交给空态，配合组件自带的
+         flex:1 0 auto + justify-content:center 即垂直居中。
+         R6-L03-D19（P2 空态文案）：同时补 hide-sub —— 原只传 title/action-text/type，
+         组件默认副标题「这里空空如也」(EmptyState.vue:82 presetSubMap['no-data']) 与
+         「帖子不存在或已被删除」叠成两行废话；错误态按组件规范只留一句。 -->
+    <view v-else class="detail-empty">
+      <EmptyState
+        :title="t('village.detail.postNotExist')"
+        :action-text="t('village.detail.backToVillage')"
+        :hide-sub="true"
+        type="no-data"
+        @action="goBack"
+      />
+    </view>
 
     <!-- 底部互动栏 -->
     <!-- 理想图：底部输入栏（说点什么... + @ + 表情 + 图片） -->
@@ -1321,7 +1355,7 @@ onShareTimeline(() => {
       <view v-if="replyingTo" class="reply-mode-bar">
         <text class="reply-mode-bar__text">{{ t("village.detail.replyingTo", { name: replyingTo.author.name }) }}</text>
         <view class="reply-mode-bar__cancel press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('village.detail.cancelReply')" @tap="cancelReply">
-          <image class="reply-mode-bar__cancel-text" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
+          <image class="reply-mode-bar__cancel-text" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CLOSE)" mode="aspectFit" alt="" />
         </view>
       </view>
       <!-- 2026-09-06：待发送图片缩略图（可移除） -->
@@ -1354,14 +1388,14 @@ onShareTimeline(() => {
           </view>
           <!-- 表情（2026-09-06 落地：表情面板） -->
           <view class="input-bar__icon press-feedback" :class="{ 'input-bar__icon--active': emojiPanelVisible }" hover-class="press-feedback--active" hover-stay-time="120" role="button" aria-label="表情" @tap="toggleEmojiPanel">
-            <image class="input-bar__icon-text" style="width: 32rpx; height: 32rpx;" :src="IMAGE_PATHS.ICONS_EMOJI.SMILE" mode="aspectFit" alt="" />
+            <image class="input-bar__icon-text" style="width: 32rpx; height: 32rpx;" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.SMILE)" mode="aspectFit" alt="" />
           </view>
           <!-- 图片（2026-09-06 落地：选择并上传图片，限 3 张）
                R2b-L04-D08（素材缺失 P2）：原 svg-spec/03-icons/image.svg 用 stroke="currentColor"，
                经 <image> 加载时 currentColor 不生效 + 内联尺寸写死 32rpx，实帧渲染成发灰残缺字形。
                换成固定色（烘焙绿）的图片资源 ICONS_CHAT_V1.IMAGE（chat-image.png），尺寸提到理想图口径 40rpx。 -->
           <view class="input-bar__icon press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" aria-label="添加图片" @tap="chooseCommentImage">
-            <image class="input-bar__icon-text" style="width: 40rpx; height: 40rpx;" :src="IMAGE_PATHS.ICONS_CHAT_V1.IMAGE" mode="aspectFit" alt="" />
+            <image class="input-bar__icon-text" style="width: 40rpx; height: 40rpx;" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_CHAT_V1.IMAGE)" mode="aspectFit" alt="" />
           </view>
           <!-- R16：可见发送按钮——此前唯一提交入口是键盘 confirm，键盘未弹时无法发言
                R2b-L04-D09（文案 P3）：理想图吸底栏右端只有三枚图标、无「发送」胶囊，
@@ -1399,7 +1433,7 @@ onShareTimeline(() => {
       aria-label="关闭大图"
       @tap="closeImageViewer"
     >
-      <image class="image-viewer__img" :src="imageViewerSrc" mode="aspectFit" alt="" />
+      <image class="image-viewer__img" :src="resolveMediaUrl(imageViewerSrc)" mode="aspectFit" alt="" />
     </view>
 
     <!-- ===== 转发确认弹窗 ===== -->
@@ -1594,10 +1628,19 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* 理想图：右侧三点菜单 */
 .detail-header__menu {
   min-width: 80rpx;
+  /* R6-L03-D20 附带：卡片要求的「命中区补到 ≥88rpx」。原声明只有 min-width，
+     字符 `···` 的墨迹高实测仅 10rpx ⇒ 纵向命中区全靠 8rpx 上下内边距，远低于
+     同仓 AppShell.vue:333-335 自述的 88rpx 下限。 */
+  min-height: 88rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 8rpx 16rpx;
+}
+
+.detail-header__menu-icon {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .detail-header__menu-dots {
@@ -2773,6 +2816,20 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 /* ========== 帖子不存在 ========== */
+/* R6-L03-D21 宿主容器：把 scroll-view/骨架之外的剩余可视区整块交给空态。
+   .detail-page 已是 flex 列 + height:100% + overflow:hidden（MP-R1-DETAIL-201），
+   这里只需再声明一次 flex:1 0 auto + 居中，EmptyState 组件自带的高度约束即可生效。
+   （注：紧随其后的 .empty-state* 三条是本组件化之前的死样式，全页模板已无对应节点，
+   本车道按「不动别人判据、不顺手删无关样式」原则保留，仅在此登记。） */
+.detail-empty {
+  flex: 1 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
 .empty-state {
   flex: 1;
   display: flex;

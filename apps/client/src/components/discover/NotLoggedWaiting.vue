@@ -37,6 +37,11 @@
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
+// R6-B10（根因①消费点侧）：本文件此前 4 枚功能图标 / 微信图标 / 头像环全部裸绑常量，
+// 而 real 发布包不随包 icons/{v2,social,emoji,login,home,match,nearby} 与 icons 根目录散图
+// （实测 apps/client/dist/build/mp-weixin-real/static/assets/icons 下只剩 common/register/tabbar）
+// ⇒ 裸绑即 404 空白。按 §1.6 铁律 3 全部改过 resolveMediaUrl（对已是后端绝对 URL 的常量幂等）。
+import { resolveMediaUrl } from "../../utils/media";
 import { openAppPath } from "../../utils/navigation";
 import { ROUTES } from "../../constants/routes";
 import { useMenuButtonRect } from "../../composables/useMenuButtonRect";
@@ -70,6 +75,36 @@ const titleLines = computed<string[]>(() => {
    再兜一层 error 事件：任一档取不到素材时整块不渲染，不留空洞（缺陷卡给的收口口径）。 */
 const mascotVisible = ref(true);
 
+/* ========== R6-B10（R6-L08-D05 / D06）素材出口：一律过 resolveMediaUrl ========== */
+/**
+ * D05（P1）：4 枚功能图标里「聊天互动」实测 x131-174 非背景像素 = 0。
+ * 原绑 IMAGE_PATHS.ICONS_EMOJI.CHAT = `/static/assets/icons/chat.svg`，
+ * 而 icons **根目录**既不在 cdn-buckets 的 cdnPrefixes、也不在 localPrefixes
+ * ⇒ 解析器对它是 no-op、real 档仍指包内，而该文件已被裁剪出包
+ * （实测 real 产物 icons 下只剩 common/register/tabbar）⇒ 光加解析器救不回来，
+ * 必须换绑一个**桶内**同义素材：ICONS_SOCIAL.COMMENT（`/static/assets/icons/social/comment.svg`，
+ * social/ 命中 cdnPrefixes ⇒ real 档解析到后端 app-assets，盘上文件已核对存在；
+ * mock/dev 档由 prepare-static --dev 从 full-static 还原包内同名文件），语义仍是「聊天互动」气泡。
+ */
+const featureIconSrcs = computed(() => [
+  resolveMediaUrl(IMAGE_PATHS.ICONS_V2.SPROUT),
+  resolveMediaUrl(IMAGE_PATHS.ICONS_SOCIAL.COMMENT),
+  resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG),
+  resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.HEART_FILLED_SVG),
+]);
+/**
+ * D06（P1）：主按钮「微信一键登录」左侧 32rpx 图标位空白，且空图标盒 + 12rpx gap
+ * 把文字块整体顶偏右 10px(20rpx)。根因＝ICONS_V2.WECHAT_GREEN_SVG
+ * (`/static/assets/icons/login/wechat-green.svg`) 裸绑，login/ 在 cdnPrefixes 内
+ * 但 real 包内无该目录 ⇒ 过解析器后落后端（app-assets/assets/icons/login/wechat-green.svg
+ * 盘上已核对存在）；再按缺陷卡「图标缺失时不给 flex 占位」补 @error 整块摘除，
+ * 让标签回到按钮中心。
+ */
+const wechatIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_V2.WECHAT_GREEN_SVG));
+const wechatIconVisible = ref(true);
+const mascotSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.SPROUT));
+const orbitBadgeSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.HEART_FILLED_SVG));
+
 /* 头像环：理想图 未登录等待页面.png 画的是 6 个头像围一圈（它副标里那个「12」按
    MP-R2VIS-PAGES-MESSAGES-INDEX-002 的裁定属拼版值，不当人数依据），所以取素材池前 6 个，
    不把 9 个全塞进去。容器是正方形 ⇒ 半径用同一个百分比表达横竖两个方向，
@@ -86,7 +121,9 @@ const ORBIT_RADIUS_PCT = 37.5;
 const orbitNodes = ORBIT_AVATARS.map((src, i) => {
   const angle = (i / ORBIT_AVATARS.length) * Math.PI * 2 - Math.PI / 2;
   return {
-    src,
+    // R6-B10：出口统一过解析器（people/avatars 组在 real 档本就出后端绝对 URL，此处幂等；
+    // mock/dev 档则由解析器保持包内 /static 路径，两侧同一条码）
+    src: resolveMediaUrl(src),
     style:
       `left:${(50 + Math.cos(angle) * ORBIT_RADIUS_PCT).toFixed(2)}%;` +
       `top:${(50 + Math.sin(angle) * ORBIT_RADIUS_PCT).toFixed(2)}%`,
@@ -126,12 +163,12 @@ function goLater() {
           :style="node.style"
         >
           <image class="not-logged__orbit-avatar" :src="node.src" mode="aspectFill" />
-          <image class="not-logged__orbit-badge" :src="IMAGE_PATHS.ICONS_COMMON.HEART_FILLED_SVG" mode="aspectFit" alt="" />
+          <image class="not-logged__orbit-badge" :src="orbitBadgeSrc" mode="aspectFit" alt="" />
         </view>
         <image
           v-if="mascotVisible"
           class="not-logged__orbit-mascot"
-          :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT"
+          :src="mascotSrc"
           mode="aspectFit"
           alt=""
           @error="mascotVisible = false"
@@ -142,19 +179,19 @@ function goLater() {
 
       <view class="not-logged__features">
         <view class="not-logged__feature">
-          <image class="not-logged__feature-icon" :src="IMAGE_PATHS.ICONS_V2.SPROUT" mode="aspectFit" alt="" />
+          <image class="not-logged__feature-icon" :src="featureIconSrcs[0]" mode="aspectFit" alt="" />
           <text class="not-logged__feature-label">{{ t('notLoggedWaiting.feature1') }}</text>
         </view>
         <view class="not-logged__feature">
-          <image class="not-logged__feature-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CHAT" mode="aspectFit" alt="" />
+          <image class="not-logged__feature-icon" :src="featureIconSrcs[1]" mode="aspectFit" alt="" />
           <text class="not-logged__feature-label">{{ t('notLoggedWaiting.feature2') }}</text>
         </view>
         <view class="not-logged__feature">
-          <image class="not-logged__feature-icon" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG" mode="aspectFit" alt="" />
+          <image class="not-logged__feature-icon" :src="featureIconSrcs[2]" mode="aspectFit" alt="" />
           <text class="not-logged__feature-label">{{ t('notLoggedWaiting.feature3') }}</text>
         </view>
         <view class="not-logged__feature">
-          <image class="not-logged__feature-icon" :src="IMAGE_PATHS.ICONS_COMMON.HEART_FILLED_SVG" mode="aspectFit" alt="" />
+          <image class="not-logged__feature-icon" :src="featureIconSrcs[3]" mode="aspectFit" alt="" />
           <text class="not-logged__feature-label">{{ t('notLoggedWaiting.feature4') }}</text>
         </view>
       </view>
@@ -168,7 +205,14 @@ function goLater() {
           :aria-label="t('notLoggedWaiting.wechatLogin')"
           @tap="goWechatLogin"
         >
-          <image class="not-logged__btn-icon" :src="IMAGE_PATHS.ICONS_V2.WECHAT_GREEN_SVG" mode="aspectFit" alt="" />
+          <image
+            v-if="wechatIconVisible"
+            class="not-logged__btn-icon"
+            :src="wechatIconSrc"
+            mode="aspectFit"
+            alt=""
+            @error="wechatIconVisible = false"
+          />
           <text class="not-logged__btn-text not-logged__btn-text--primary">{{ t('notLoggedWaiting.wechatLogin') }}</text>
         </view>
         <view
@@ -403,8 +447,12 @@ function goLater() {
   color: #FFFFFF;
 }
 
+/* R6-L08-D07（可达性 P2）：幽灵按钮「稍后再看」是登录墙唯一的退出路径，
+   原写死 #9AA39F（= --c-text-placeholder 档，规范 §1.2 明令该档仅限 placeholder）
+   压在 #EEF7F2 页底上：帧内字形实测 #9BA4A0，对比度 2.37:1，30rpx/15px 不享大字号豁免。
+   与同文件 :335 .not-logged__hint 已确立的口径同档 —— --c-text-secondary(#4A524E) 7.37:1。 */
 .not-logged__btn-text--ghost {
-  color: #9AA39F;
+  color: var(--c-text-secondary, #4A524E);
   font-weight: 500;
 }
 </style>

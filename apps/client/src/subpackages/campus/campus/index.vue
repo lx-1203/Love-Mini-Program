@@ -262,10 +262,10 @@ onMounted(async () => {
           :aria-label="t('common.back')"
           @tap="goBack"
         >
-          <image class="campus-back__icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+          <image class="campus-back__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.BACK)" mode="aspectFit" alt="" />
         </view>
         <view class="header-school">
-          <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="school-icon" mode="aspectFit" />
+          <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SCHOOL)" custom-class="school-icon" mode="aspectFit" />
           <text class="school-name">{{ viewSchool || certificationInfo?.schoolName || t('campus.index.defaultSchool') }}</text>
           <view class="cert-badge" :class="certStatusClass(certificationStatus)">
             <text class="cert-badge__text">{{ certStatusText(certificationStatus) }}</text>
@@ -291,7 +291,7 @@ onMounted(async () => {
 
     <!-- 未认证用户引导卡片 -->
     <view v-if="!isVerified" class="cert-guide-card card-base">
-      <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="cert-guide-card__icon" mode="aspectFit" />
+      <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SCHOOL)" custom-class="cert-guide-card__icon" mode="aspectFit" />
       <view class="cert-guide-card__body">
         <text class="cert-guide-card__title">{{ t('campus.index.certGuideTitle') }}</text>
         <text class="cert-guide-card__desc">{{ t('campus.index.certGuideDesc') }}</text>
@@ -309,7 +309,7 @@ onMounted(async () => {
       </view>
       <view class="cert-recommend__grid">
         <view v-for="item in RECOMMEND_CIRCLES" :key="item.id" class="cert-recommend__item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goCircles">
-          <image class="cert-recommend__cover" :src="item.cover" mode="aspectFill" alt="" />
+          <image class="cert-recommend__cover" :src="resolveMediaUrl(item.cover)" mode="aspectFill" alt="" />
           <text class="cert-recommend__label">{{ t(item.nameKey) }}</text>
         </view>
       </view>
@@ -346,7 +346,7 @@ onMounted(async () => {
            errorMessage 会把认证状态拉取失败的文案渲染进话题错误槽，且该槽「重试」
            只重拉话题，文案与动作错位（store 串扰路径见 campus.ts fetchCertificationStatus） -->
       <view v-else-if="topicsError && topics.length === 0" class="campus-state" role="status" aria-live="polite">
-        <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CLOSE" custom-class="campus-state__icon" mode="aspectFit" />
+        <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.CLOSE)" custom-class="campus-state__icon" mode="aspectFit" />
         <text class="campus-state__text">{{ topicsError }}</text>
         <view class="campus-state__btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="retryCampusTopics">
           <text class="campus-state__btn-text">{{ t('campus.index.retry') }}</text>
@@ -355,7 +355,7 @@ onMounted(async () => {
 
       <!-- R4-00108：空态（无加载/错误时的空列表提示） -->
       <view v-else-if="topics.length === 0" class="campus-state" role="status" aria-live="polite">
-        <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION" custom-class="campus-state__icon" mode="aspectFit" />
+        <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.NOTIFICATION)" custom-class="campus-state__icon" mode="aspectFit" />
         <text class="campus-state__text">{{ t('campus.index.emptyTopics') }}</text>
       </view>
 
@@ -379,14 +379,14 @@ onMounted(async () => {
               <SafeImage
                 v-if="!topic.isAnonymous && topic.author?.avatar"
                 custom-class="topic-card__avatar"
-                :src="topic.author.avatar"
+                :src="resolveMediaUrl(topic.author.avatar)"
                 mode="aspectFill"
               />
               <text class="topic-card__author">
                 {{ topic.isAnonymous ? t('campus.index.anonymousAuthor') : topic.author.name }}
               </text>
               <view class="topic-card__replies">
-                <SafeImage :src="IMAGE_PATHS.ICONS_SOCIAL.COMMENT" custom-class="replies-icon" mode="aspectFit" />
+                <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_SOCIAL.COMMENT)" custom-class="replies-icon" mode="aspectFit" />
                 <text class="replies-count">{{ topic.replyCount }}</text>
               </view>
             </view>
@@ -405,7 +405,7 @@ onMounted(async () => {
 
     <!-- 底部FAB -->
     <view v-if="isOwnCertifiedView" class="campus-fab press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goToPostTopic">
-      <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.EDIT" custom-class="campus-fab__icon" mode="aspectFit" />
+      <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.EDIT)" custom-class="campus-fab__icon" mode="aspectFit" />
     </view>
   </view>
 </template>

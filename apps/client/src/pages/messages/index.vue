@@ -733,6 +733,14 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
       <view class="guest-list" role="button" :aria-label="t('nearby.loginToView')" @tap="goLogin">
         <Skeleton variant="list" :count="4" />
       </view>
+      <!-- R6-L02-D08（R6/F7，2026-10-20）：滚动到底有一句「为什么这里没有内容」的可见说明。
+           原缺陷是顶/底两帧逐字节相同、灰条之下什么都没有了——游客确实没有会话数据源
+           （会话端点受登录门保护，捏造示例会话＝编数据，本仓红线，见 :675-686 的 R2b 裁决），
+           所以这里不补假列表，只把"到此为止 + 登录可解锁"这件事从只有 aria-label
+           升成肉眼可见的一行，用的仍是既有键 nearby.loginToView（两语都已存在，0 新增词条）。 -->
+      <view class="guest-end" role="status" aria-live="polite" @tap="goLogin">
+        <text class="guest-end__text">{{ t('nearby.loginToView') }}</text>
+      </view>
     </view>
   </view>
 </template>
@@ -1491,5 +1499,19 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
 /* 会话列表灰态：沿用本页 loading 态同一个 Skeleton 组件，左右间距同 .activity-list */
 .guest-list {
   padding: 0 32rpx;
+}
+
+/* R6-L02-D08：灰态列表末尾的「到此为止」一行——字号/字色与 .guest-wall__hint 同档
+   （:1453-1456），保持游客区只有两种文本层级；44rpx 上内衬兼作可点热区下沿。 */
+.guest-end {
+  display: flex;
+  justify-content: center;
+  padding: 44rpx 32rpx 8rpx;
+}
+
+.guest-end__text {
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--c-text-secondary, #4A524E);
 }
 </style>

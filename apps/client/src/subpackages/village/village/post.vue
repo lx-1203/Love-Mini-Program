@@ -24,7 +24,7 @@ import { IMAGE_PATHS } from "../../../config/images";
 // MP-R2-POST-006：本地/已上传路径判定
 // MP-R2-POST-012（两页一致）：选图改走 utils/media 统一封装——隐私授权 + 取消静默 +
 // 单张 ≤10MB 大小校验；原裸 uni.chooseImage 缺大小校验且把用户主动取消误报为失败
-import { isUploadedMediaUrl, chooseImages } from "../../../utils/media";
+import { isUploadedMediaUrl, chooseImages, resolveMediaUrl } from "../../../utils/media";
 import { compressImages } from "../../../utils/compress-image";
 import {
   POST_MAX_LENGTH,
@@ -52,8 +52,15 @@ const villageStore = useVillageStore();
 const circleStore = useCircleStore();
 const { t } = useI18n();
 
-/** 标题（2026-09-05 R17 小红书化：独立可编辑标题，20 字内） */
-const TITLE_MAX_LENGTH = 20;
+/**
+ * 标题（2026-09-05 R17 小红书化：独立可编辑标题）
+ * R6-L03-D17（P3 字号/单一来源）：删掉此本地页写死的 `TITLE_MAX_LENGTH = 20`，
+ * 改用共享常量 POST_TITLE_MAX_LENGTH（constants/village.ts:24 = 30）——
+ * 本文件 :36 早已 import 它、:594 提交裁切也用它，输入框上限却是另一套 20，
+ * 同一页两个标题上限（20 vs 30）⇒「输入框拦得住的」与「提交时裁的」不同源。
+ * 后端契约同向：CreatePostRequest.java:17 `@Size(min = 5, max = 30) String title`，
+ * 30 才是契约值，20 是页内私设。
+ */
 const title = ref("");
 /** 正文内容 */
 const content = ref("");
@@ -724,7 +731,7 @@ async function submitPublish() {
         :aria-label="t('common.closeAria')"
         @tap="requestLeave"
       >
-        <image class="post-header__x" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
+        <image class="post-header__x" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CLOSE)" mode="aspectFit" alt="" />
       </view>
       <text class="post-header__title">{{ t("village.post.headerTitle") }}</text>
       <view
@@ -753,18 +760,18 @@ async function submitPublish() {
             <image
               v-if="isCircleTarget && targetCircle"
               class="post-to__avatar-img"
-              :src="IMAGE_PATHS.CIRCLE_COVERS.DEFAULT"
+              :src="resolveMediaUrl(IMAGE_PATHS.CIRCLE_COVERS.DEFAULT)"
               mode="aspectFill"
               alt=""
             />
             <image
               v-else-if="isCircleTarget"
               class="post-to__avatar-emoji"
-              :src="IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON"
+              :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON)"
               mode="aspectFit"
               alt=""
             />
-            <image v-else class="post-to__avatar-emoji" :src="IMAGE_PATHS.ICONS_EMOJI.SCHOOL" mode="aspectFit" alt="" />
+            <image v-else class="post-to__avatar-emoji" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.SCHOOL)" mode="aspectFit" alt="" />
           </view>
           <view class="post-to__info">
             <view class="post-to__name-row">
@@ -796,7 +803,7 @@ async function submitPublish() {
               <image
                 v-if="targetType === 'general'"
                 class="post-target-sheet__check"
-                :src="IMAGE_PATHS.ICONS_EMOJI.CHECK"
+                :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CHECK)"
                 mode="aspectFit"
                 alt=""
               />
@@ -815,7 +822,7 @@ async function submitPublish() {
               <image
                 v-if="targetType === 'campus'"
                 class="post-target-sheet__check"
-                :src="IMAGE_PATHS.ICONS_EMOJI.CHECK"
+                :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CHECK)"
                 mode="aspectFit"
                 alt=""
               />
@@ -851,7 +858,7 @@ async function submitPublish() {
                 <image
                   v-if="isCircleTarget && targetId === Number(circle.id)"
                   class="post-target-sheet__check"
-                  :src="IMAGE_PATHS.ICONS_EMOJI.CHECK"
+                  :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CHECK)"
                   mode="aspectFit"
                   alt=""
                 />
@@ -870,13 +877,13 @@ async function submitPublish() {
   cursor-spacing="20"
           v-model="title"
           class="post-title__input"
-          :maxlength="TITLE_MAX_LENGTH"
+          :maxlength="POST_TITLE_MAX_LENGTH"
           placeholder="填写标题会有更多赞哦～"
           placeholder-class="post-title__placeholder"
           :aria-label="'标题'"
         />
         <view class="post-title__count">
-          <text>{{ title.length }}/{{ TITLE_MAX_LENGTH }}</text>
+          <text>{{ title.length }}/{{ POST_TITLE_MAX_LENGTH }}</text>
         </view>
       </view>
 
@@ -899,7 +906,7 @@ async function submitPublish() {
       <!-- 图片上传/预览区 -->
       <view class="post-images">
         <view v-for="(img, idx) in images" :key="idx" class="post-image">
-          <image class="post-image__img" :src="img" mode="aspectFill" alt="" />
+          <image class="post-image__img" :src="resolveMediaUrl(img)" mode="aspectFill" alt="" />
           <view
             class="post-image__remove press-feedback"
             hover-class="press-feedback--active"
@@ -907,7 +914,7 @@ async function submitPublish() {
             role="button"
             @tap="removeImage(idx)"
           >
-            <image class="post-image__remove-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
+            <image class="post-image__remove-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CLOSE)" mode="aspectFit" alt="" />
           </view>
         </view>
         <view
@@ -947,7 +954,7 @@ async function submitPublish() {
           role="button"
           @tap="customLocation = location; locationSheetOpen = true"
         >
-          <image class="post-row__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
+          <image class="post-row__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LOCATION)" mode="aspectFit" alt="" />
           <text class="post-row__label">添加位置</text>
           <text class="post-row__meta">{{ location || '选择或输入位置' }}</text>
           <text class="post-row__arrow">›</text>
@@ -971,7 +978,7 @@ async function submitPublish() {
           role="button"
           @tap="visibilitySheetOpen = true"
         >
-          <image class="post-row__icon" :src="IMAGE_PATHS.ICONS_EMOJI.EYE" mode="aspectFit" alt="" />
+          <image class="post-row__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.EYE)" mode="aspectFit" alt="" />
           <text class="post-row__label">谁可以看</text>
           <text class="post-row__meta">{{ visibilityText }}</text>
           <text class="post-row__arrow">›</text>
@@ -997,7 +1004,7 @@ async function submitPublish() {
       <view v-if="tipVisible" class="post-tip">
         <view class="post-tip__text-wrap">
           <view class="post-tip__title">
-            <image class="post-tip__title-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
+            <image class="post-tip__title-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.SPROUT)" mode="aspectFit" alt="" />
             <text>发帖小贴士</text>
           </view>
           <text class="post-tip__desc">真实分享校园生活，友善互动，让更多人认识有趣的你～</text>
@@ -1009,7 +1016,7 @@ async function submitPublish() {
           role="button"
           @tap="tipVisible = false"
         >
-          <image class="post-tip__close-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
+          <image class="post-tip__close-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CLOSE)" mode="aspectFit" alt="" />
         </view>
       </view>
 
@@ -1025,7 +1032,7 @@ async function submitPublish() {
         role="button"
         @tap="chooseImage"
       >
-        <image class="post-tool__icon" :src="IMAGE_PATHS.ICONS_EMOJI.IMAGE" mode="aspectFit" alt="" />
+        <image class="post-tool__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.IMAGE)" mode="aspectFit" alt="" />
         <text class="post-tool__label">图片</text>
       </view>
       <view
@@ -1046,7 +1053,7 @@ async function submitPublish() {
         role="button"
         @tap="customLocation = location; locationSheetOpen = true"
       >
-        <image class="post-tool__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
+        <image class="post-tool__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LOCATION)" mode="aspectFit" alt="" />
         <text class="post-tool__label">位置</text>
       </view>
       <view
@@ -1066,7 +1073,7 @@ async function submitPublish() {
         role="button"
         @tap="visibilitySheetOpen = true"
       >
-        <image class="post-tool__icon" :src="IMAGE_PATHS.ICONS_EMOJI.EYE" mode="aspectFit" alt="" />
+        <image class="post-tool__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.EYE)" mode="aspectFit" alt="" />
         <text class="post-tool__label">更多</text>
       </view>
     </view>
@@ -1187,7 +1194,7 @@ async function submitPublish() {
           <image
             v-if="visibility === opt.value"
             class="post-sheet__check"
-            :src="IMAGE_PATHS.ICONS_EMOJI.CHECK"
+            :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CHECK)"
             mode="aspectFit"
             alt=""
           />

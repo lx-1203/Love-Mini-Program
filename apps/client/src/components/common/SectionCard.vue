@@ -25,12 +25,16 @@ defineProps<{
 <style scoped lang="scss">
 // P3 修复：复用 _components.scss 的设计令牌，避免与其他 .card 类重复定义
 // 共享样式位置：src/styles/_components.scss 中的 .base-card
+// R6-B07（R6-L09-D11 / R6-L15-D03 / R6-L15-D12 / R6-L15-D29）：圆角原写 var(--r-xl)
+//   （=24rpx=12px），但规范 §1.4 给「卡片」的语义令牌是 --card-radius=40rpx=20px，
+//   --r-xl 只是通用半径档、不承担卡片语义 ⇒ 实测弧跨 ≈9px、规范要 20px。
+//   改用 var(--card-radius)（theme/design-variables.scss:699 已定义，40rpx）。
 .card {
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
   padding: var(--sp-8);
-  border-radius: var(--r-xl);
+  border-radius: var(--card-radius, 40rpx);
   background: var(--c-bg-container);
   border: var(--c-border-card);
   box-shadow: var(--c-elevation-1);

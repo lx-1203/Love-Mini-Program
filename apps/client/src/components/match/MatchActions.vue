@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
+// R6-L10/L01 根因①（消费点侧）：ICONS_V2 组常量是 `/static/assets/icons/v2/*.png`，
+// v2/ 在 cdn-buckets.json 的 cdnPrefixes 内 ⇒ real 发布包不随该目录
+// （实测 real 产物 static/assets/icons 只剩 common/register/tabbar），裸绑即 404：
+// 帧上「跳过」「打个招呼」两枚圆钮内为空、只剩白圆底。按 §1.6 铁律 3 过解析器。
+import { resolveMediaUrl } from "../../utils/media";
 
 withDefaults(
   defineProps<{
@@ -19,9 +24,11 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const icons = {
-  pass: IMAGE_PATHS.ICONS_V2.X_GRAY,
-  like: IMAGE_PATHS.ICONS_V2.HEART_WHITE,
-  superLike: IMAGE_PATHS.ICONS_V2.CHAT_PINK,
+  /** R6-L01-D07/D08：三枚动作图标全部过解析器（HEART_WHITE 同属 v2/，此前只是恰好
+   *  因白色在浅底上不可辨而看起来「正常」） */
+  pass: resolveMediaUrl(IMAGE_PATHS.ICONS_V2.X_GRAY),
+  like: resolveMediaUrl(IMAGE_PATHS.ICONS_V2.HEART_WHITE),
+  superLike: resolveMediaUrl(IMAGE_PATHS.ICONS_V2.CHAT_PINK),
 } as const;
 </script>
 

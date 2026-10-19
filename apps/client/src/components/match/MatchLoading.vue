@@ -134,7 +134,12 @@ const PROGRESS = [
 
 .match-loading {
   position: relative;
-  min-height: 100%;
+  /* R6-L07-D02（可达性 P2）：原 `min-height: 100%` 依赖父级给出可解析高度，
+     而父链（page → .matching-page）只有 min-height:100% ⇒ 百分比退化为 auto，
+     内容只占视口上沿约 45%、其下整片空渐变，bottom 取景帧与 top 逐像素同图
+     （129554B vs 130328B，画面一致，无第二屏可滚）。
+     改自证 100vh（同页 MatchSuccess.vue:194 已用此修法），:host 同步。 */
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;

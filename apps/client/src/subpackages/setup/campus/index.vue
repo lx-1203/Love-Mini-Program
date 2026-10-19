@@ -229,7 +229,9 @@ function skip() {
           :aria-label="t('setup.campus.privacyAria')"
           @tap="showPrivacyInfo"
         >
-          <text class="card-header__help-icon">?</text>
+          <view class="card-header__help-circle">
+            <text class="card-header__help-icon">?</text>
+          </view>
         </view>
       </view>
 
@@ -322,8 +324,24 @@ function skip() {
   color: var(--c-text-primary);
 }
 
-/* 隐私说明「?」图标：小号圆形按钮，点击弹窗说明 */
+/* 隐私说明「?」图标：小号圆形按钮，点击弹窗说明
+   R6-B65/D14（可达性 P2，2026-10-20）：可点元素原先只有 40rpx×40rpx（=20px），
+   实测墨迹 52×64rpx，两种口径都低于仓内自陈热区标准 AppShell.vue:334 的 88rpx（44px），
+   而它是本页唯一的信息披露入口。修法按 defect 给的「外层 88rpx 热区 + 视觉尺寸不变」：
+   .card-header__help 只承担热区（88×88rpx，透明底），40rpx 圆底与描边移进
+   .card-header__help-circle；margin-left: -24rpx 让圆底左缘仍落在原位置（gap 不变）。 */
 .card-header__help {
+  width: 88rpx;
+  height: 88rpx;
+  margin-left: -24rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.card-header__help-circle {
   width: 40rpx;
   height: 40rpx;
   border-radius: var(--r-circle, 50%);
@@ -421,9 +439,13 @@ function skip() {
 }
 
 
-/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
+/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调）
+   R6-B65/D17（颜色token P3，2026-10-20）：这一档原先是裸字面量 `#ffffff`——
+   规范 §1.1 第 3 条要求「一令牌一值，页面只准 var(--*)」，且 theme/design-variables.scss:376
+   已有 --c-bg-container（$bg-container #FFFFFF）。改成引该令牌，渲染值逐字不变（#FFFFFF），
+   只把「页面底色这一档」交回令牌承载。 */
 page {
-  background: #ffffff;
+  background: var(--c-bg-container);
 }
 
 </style>

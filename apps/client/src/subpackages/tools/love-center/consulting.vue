@@ -19,6 +19,8 @@ import AppShell from "../../../components/layout/AppShell.vue";
 import { lightHaptic } from "../../../utils/haptic";
 import { contentPageUrls } from "../../../config/content-pages";
 import { IMAGE_PATHS } from "../../../config/images";
+// R6-L10-D16：封存态次级出口跳「帮助与客服」，路由走全站常量
+import { ROUTES } from "../../../constants/routes";
 import { useAppConfigStore } from "../../../stores/app-config";
 // R4-00976：toast 时长走统一常量（TOAST_DURATION.NORMAL_MS = 2000ms）
 import { TOAST_DURATION } from "../../../constants/limits";
@@ -68,6 +70,22 @@ function handleSignup() {
   lightHaptic();
   uni.showToast({ title: t("contentPages.consulting.signupSuccess"), icon: "none", duration: TOAST_DURATION.NORMAL_MS });
 }
+
+/**
+ * R6-L10-D14：封存态下课程预览的「报名」——不跳交易链路，只给既有封存提示文案。
+ */
+function onSealedSignup() {
+  lightHaptic();
+  uni.showToast({ title: t("commerce.sealedToast"), icon: "none", duration: TOAST_DURATION.NORMAL_MS });
+}
+
+/**
+ * R6-L10-D16：封存态的次级出口 —— 帮助与客服（本页唯一现在可用的真实出口）。
+ */
+function goHelpCenter() {
+  lightHaptic();
+  uni.navigateTo({ url: ROUTES.HELP });
+}
 </script>
 
 <template>
@@ -75,12 +93,55 @@ function handleSignup() {
     <!-- 后台配置 H5 URL：web-view 加载（封存态优先，不下发外部付费内容） -->
     <web-view v-if="!commerceSealed && webUrl" :src="webUrl" class="content-webview" />
 
-    <!-- R10-P1-002：商业化封存态（commerce.consult=false）→ 封存卡，与 market/ADR-2 一致 -->
+    <!-- R10-P1-002：商业化封存态（commerce.consult=false）→ 封存说明 + 课程预览 -->
     <AppShell v-else-if="commerceSealed" :title="t('contentPages.consulting.title')" show-back>
       <view class="consult-sealed" aria-live="polite">
         <image class="consult-sealed__icon" :src="IMAGE_PATHS.ICONS_COMMON.LOCK_SVG" mode="aspectFit" alt="" />
         <text class="consult-sealed__title">{{ t('commerce.sealedTitle') }}</text>
         <text class="consult-sealed__desc">{{ t('commerce.sealedDesc') }}</text>
+        <!-- R6-L10-D16（可达性 P1）：原封存卡只有 lock 图标 + 两行字，整页唯一可交互节点是
+             AppShell 返回钮 ⇒ 死端。补既有出口：跳「帮助与客服」（ROUTES.HELP + 既有 i18n 键
+             help.navTitle，未新增文案）。卡另建议的「开放提醒订阅」需要订阅链路与新 i18n 键，
+             属需新建目标功能，见交件报告。 -->
+        <view
+          class="consult-sealed__action press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('help.navTitle')"
+          @tap="goHelpCenter"
+        >
+          <text class="consult-sealed__action-text">{{ t('help.navTitle') }}</text>
+        </view>
+      </view>
+
+      <!-- R6-L10-D14（需新建 P1）：已实现的 3 门课程不再整段藏掉 —— 封存态保留课程预览，
+           「报名」置灰、点击给既有 commerce.sealedToast（不接支付、不改 isCommerceOn 语义）。
+           同时消掉 D15/D16 的两半：内容补足后卡下不再有 460px（视口 60%）纯页面底，
+           页面也第一次有了可滚内容（原 bottom 帧与 top 帧 contentHash 逐字相同）。 -->
+      <view class="content-section">
+        <text class="content-section__title">{{ t('contentPages.consulting.subtitle') }}</text>
+        <view class="course-list" role="list">
+          <view v-for="course in courses" :key="course.id" class="course-card">
+            <view class="course-card__info">
+              <text class="course-card__title">{{ t(course.titleKey) }}</text>
+              <text class="course-card__desc">{{ t(course.descKey) }}</text>
+              <view class="course-card__meta">
+                <text class="course-card__lecturer">{{ t(course.lecturerKey) }}</text>
+                <text class="course-card__price">{{ priceLabel(course.price) }}</text>
+              </view>
+            </view>
+            <view
+              class="course-card__signup course-card__signup--sealed"
+              role="button"
+              :aria-disabled="'true'"
+              :aria-label="t('contentPages.consulting.signup')"
+              @tap="onSealedSignup"
+            >
+              <text class="course-card__signup-text">{{ t('contentPages.consulting.signup') }}</text>
+            </view>
+          </view>
+        </view>
       </view>
     </AppShell>
 
@@ -129,7 +190,8 @@ function handleSignup() {
 }
 
 .content-section {
-  margin: var(--sp-5) var(--sp-4);
+  /* R6-L10-D10 同族：左右外边距取规范页边距 --page-padding(32rpx)，不用 --sp-4(16rpx) */
+  margin: var(--sp-5) var(--page-padding, 32rpx);
 }
 
 .content-section__title {
@@ -147,11 +209,31 @@ function handleSignup() {
   align-items: center;
   justify-content: center;
   gap: var(--sp-3);
-  margin: var(--sp-6) var(--sp-4);
+  margin: var(--sp-6) var(--page-padding, 32rpx);
   padding: calc(var(--sp-8) + var(--sp-4)) var(--sp-5);
-  border-radius: var(--r-xl, 24rpx);
+  /* R6-L10-D17（圆角 P2）：卡片语义令牌 --card-radius(40rpx=20px)，原 --r-xl=24rpx 实测 12px 只有一半 */
+  border-radius: var(--card-radius, 40rpx);
   background: var(--c-bg-container, #ffffff);
   box-shadow: var(--card-shadow, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
+}
+
+/* R6-L10-D16：封存卡内的次级出口（帮助与客服） */
+.consult-sealed__action {
+  min-height: 88rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--sp-3);
+  padding: 0 var(--sp-6);
+  border-radius: var(--r-full);
+  border: 2rpx solid var(--c-brand-500, #36C99A);
+}
+
+.consult-sealed__action-text {
+  font-size: var(--fs-lg, 28rpx);
+  font-weight: 600;
+  color: var(--c-brand-700, #1f8d6a);
 }
 
 .consult-sealed__icon {
@@ -186,7 +268,8 @@ function handleSignup() {
   align-items: center;
   gap: var(--sp-3);
   padding: var(--sp-4) var(--sp-5);
-  border-radius: var(--r-xl, 24rpx);
+  /* R6-L10-D17：卡内其余卡同口径（缺陷卡原话「同页课程卡也是同一个 24rpx，一旦解封将整页同偏」） */
+  border-radius: var(--card-radius, 40rpx);
   background: var(--c-bg-container, #ffffff);
   box-shadow: var(--card-shadow, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
 }
@@ -238,6 +321,16 @@ function handleSignup() {
   background: var(--c-gradient-brand, linear-gradient(135deg, #36C99A, #6fe0b0));
   padding: 12rpx var(--sp-5);
   border-radius: var(--r-full);
+}
+
+/* R6-L10-D14：封存态课程预览的报名件 —— 保留形状、去掉行动色，明示「不可点进交易」 */
+.course-card__signup--sealed {
+  background: var(--c-bg-surface, #F3FAF6);
+}
+
+.course-card__signup--sealed .course-card__signup-text {
+  color: var(--c-text-tertiary, #9aa1ab);
+  font-weight: 400;
 }
 
 .course-card__signup-text {

@@ -21,6 +21,7 @@ import { IMAGE_PATHS } from "../../../config/images";
 import {
   useVillageStore,
   formatRelativeTime,
+  PAGE_SIZE,
   type PostHistoryItem,
 } from "../../../stores/village";
 import EmptyState from "../../../components/common/EmptyState.vue";
@@ -53,7 +54,14 @@ function goBack() {
 
 /** 上拉加载中 */
 const isLoadingMore = ref(false);
-/** 是否还有更多（浏览记录无分页计数，按当前列表与总览近似判断） */
+/**
+ * 是否还有更多
+ * R6-L04-D11（P2 可达性）：原初值 true 且只在 onLoadMore 里翻转，而本页当时走 window 滚动、
+ * scroll-view 的 @scrolltolower 永不触发 ⇒ hasMore 恒 true ⇒「没有更多」终止态整条链路不可达
+ * （bottom 帧实测：最后一张卡止于 y≈468px，其下 346px 全为页面底色，0 条终止提示）。
+ * 现改为「首屏 fetch 后按已取回条数直接判定」——不足一页即到底；配合 D10 把滚动收回
+ * scroll-view 内部，@scrolltolower 也重新可达。
+ */
 const hasMore = ref(true);
 /** 清空确认弹窗 */
 const showClearDialog = ref(false);
@@ -75,6 +83,11 @@ function onImageError(key: string): void {
 /** 首次加载 / 下拉刷新 */
 async function loadHistory(reset = true): Promise<void> {
   await villageStore.fetchPostHistory(reset);
+  // R6-L04-D11：store 的 fetchPostHistory 返回 void 且不落 total，这里按「已取回条数 < 一页
+  // 即到底」判定（与 stores/village/index.ts:1040-1047 的取数语义一致，PAGE_SIZE 同源常量）。
+  if (reset) {
+    hasMore.value = historyPosts.value.length >= PAGE_SIZE;
+  }
 }
 
 function onRefresh(): void {
@@ -152,7 +165,7 @@ onUnmounted(() => {
       :aria-label="t('common.back')"
       @tap="goBack"
     >
-      <image class="history-back__icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+      <image class="history-back__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.BACK)" mode="aspectFit" alt="" />
     </view>
 
     <!-- 顶部操作栏 -->
@@ -215,7 +228,16 @@ onUnmounted(() => {
             <text class="history-item__time">{{ formatRelativeTime(item.viewedAt) }}</text>
           </view>
           <text class="history-item__title">{{ item.post.title || t("village.history.untitled") }}</text>
-          <text class="history-item__summary">{{ item.post.content }}</text>
+          <!-- R6-L04-D06（P2 文案）：真档三张卡实测「标题行 = 摘要行」逐字相同
+               （curl GET /api/v1/posts/history?page=1&pageSize=20 →
+               {"post":{"title":"汉服出行日，路上好多同袍","summary":"汉服出行日，路上好多同袍"}}，
+               后端 PostSummaryView.summary = truncate(content,120)，而种子数据 title 与 content 同值）。
+               同一卡里印两遍零信息增量 ⇒ 摘要行只在真的提供新增信息时才渲染。
+               数据侧（title 与 content 同值的种子）另登记 NEEDS-DATA，由 F10 车道清。 -->
+          <text
+            v-if="item.post.content && item.post.content.trim() !== (item.post.title || '').trim()"
+            class="history-item__summary"
+          >{{ item.post.content }}</text>
           <view class="history-item__stats">
             <text class="history-item__stat">{{ t("village.history.likes", { n: item.post.likes }) }}</text>
             <text class="history-item__stat">{{ t("village.history.favorites", { n: item.post.favorites }) }}</text>
@@ -277,8 +299,18 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
+/* R6-L04-D10（P1 层级遮挡）：原实现是 `min-height: 100vh` + `.history-list{height:calc(100vh - 88rpx)}`
+   ——页面因此走 window 滚动，工具栏不是吸顶层，bottom 帧实测「清空记录」胶囊整行顶到屏幕最上沿
+   （白底从 y=0 起，胶囊落 y=13–25px，正压系统状态栏 y=0–29px，帧上读作「22:39 条记录」）。
+   改法按同仓既有范式（tag-posts.vue:458-464 / campus/index MP-R2-CAMPUSINDEX-001）：
+   页面根改成**定高 flex 列 + overflow:hidden**，滚动只留在 .history-list 内部 ⇒ 返回键与工具栏
+   固定在 padding-top 让出的状态栏之下，永不随内容滚走。
+   padding-top 保留（继续承担状态栏 + 20px 内衬），--statusbar 由 :284 的 useMenuButtonRect 注入。 */
 .history-page {
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
   /* MP-R1-HISTORY-201：navigationStyle=custom 下整页自 y=0 布局，返回键顶入状态栏、
      工具栏按钮进入胶囊带；下移一个状态栏 + 20px，让首行内容落在胶囊之下 */
   padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 20px);
@@ -359,8 +391,13 @@ onUnmounted(() => {
 }
 
 /* 列表 */
+/* R6-L04-D10 / D11：原 `height: calc(100vh - 88rpx)` 少扣了状态栏内衬 + 返回键 + 工具栏，
+   容器高度大于可视剩余区域 ⇒ 页面退化成 window 滚动，scroll-view 内部零滚动、
+   @scrolltolower 与终止态双双不可达。改 flex:1 由定高父级给出确定高度，min-height:0
+   解锁 flex 子项收缩（mp-weixin 同 H5 一致生效）。 */
 .history-list {
-  height: calc(100vh - 88rpx);
+  flex: 1;
+  min-height: 0;
 }
 
 .history-item {
@@ -446,9 +483,15 @@ onUnmounted(() => {
   margin-top: 12rpx;
 }
 
+/* R6-L04-D07（P2 颜色token）+ R6-L04-D08（P3 字号）：
+   互动计数「赞/藏/看/评」是**要读的数据**，原 22rpx(=11px) 落在规范 §1.3「极小档只给角标·法务」，
+   且 `var(--c-text-tertiary, #bbb)` 的兜底 #bbb 比令牌本身(--c-text-tertiary #6B7571)更浅、
+   深色档还会再掉一档 ⇒ 帧上实测最暗字形 #848D89 / 众数 #C7C9C8，压白卡对比度 3.41:1 < 4.5:1。
+   改：字号提到 --fs-base(24rpx=12px) 与作者名/时间戳同族；颜色走 --c-text-secondary
+   （#4A524E 压白底 ≈7.6:1），并去掉比令牌更浅的字面兜底。 */
 .history-item__stat {
-  font-size: 22rpx;
-  color: var(--c-text-tertiary, #bbb);
+  font-size: var(--fs-base, 24rpx);
+  color: var(--c-text-secondary);
 }
 
 /* 加载更多 */
@@ -459,9 +502,12 @@ onUnmounted(() => {
   padding: 24rpx 0;
 }
 
+/* R6-L04-D07 同族：原写 `var(--text-tertiary, #bbb)`——全仓 `--text-tertiary:` 定义 **0 处**
+   （本车道 grep apps/client/src 实测；只有 --c-text-tertiary），即这条声明恒等于走 #bbb 字面量。
+   D11 的终止提示就是这一行，改吃可读令牌并去掉死兜底。 */
 .history-load-more__text {
-  font-size: 24rpx;
-  color: var(--text-tertiary, #bbb);
+  font-size: var(--fs-base, 24rpx);
+  color: var(--c-text-secondary);
 }
 
 .history-bottom-spacer {

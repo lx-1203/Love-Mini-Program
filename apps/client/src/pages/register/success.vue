@@ -164,7 +164,10 @@ function goBrowse() {
   width: 100%;
   height: 96rpx;
   margin-top: 56rpx;
-  border-radius: 24rpx;
+  /* R6-L01-D05/D06（R6/F7，2026-10-20）：主 CTA 胶囊化，与全站主按钮同调
+     （login/index.vue:1038/1084/1165 的 .btn-primary 就是 var(--r-full)）。
+     原 24rpx 圆角矩形在 96rpx 高的按钮上视觉偏方（实测 24rpx < 高度一半 48rpx ⇒ 非胶囊）。 */
+  border-radius: var(--r-full);
   background: linear-gradient(135deg, var(--c-brand, #36c99a) 0%, var(--c-brand-400, #55d5a7) 100%);
   box-shadow: 0 8rpx 32rpx rgba(54, 201, 154, 0.28);
 }

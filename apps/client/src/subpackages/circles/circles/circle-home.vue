@@ -442,7 +442,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   <!-- MP-R4-CIRCLEHOME-01：real 模式缺参/无效圈 id → 真实空态（不再静默渲染演示圈+演示动态） -->
   <view v-if="isUnknownCircle" class="circle-home" :style="menuStyleVars">
     <view class="circle-notfound">
-      <image class="circle-notfound__mascot" :src="NOT_FOUND_MASCOT" mode="aspectFit" />
+      <image class="circle-notfound__mascot" :src="resolveMediaUrl(NOT_FOUND_MASCOT)" mode="aspectFit" />
       <text class="circle-notfound__title">圈子不存在或已解散</text>
       <text class="circle-notfound__desc">去看看别的圈子吧</text>
       <!-- R1-L05-D07：补 role/aria-label（对齐同包 tag-posts.vue:302 等返回按钮写法） -->
@@ -467,7 +467,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   <view v-else class="circle-home" :style="menuStyleVars">
     <!-- 1. Hero 头图 -->
     <view class="hero">
-      <image class="hero-img" :src="coverImage" mode="aspectFill" />
+      <image class="hero-img" :src="resolveMediaUrl(coverImage)" mode="aspectFill" />
       <view class="hero-actions">
         <view class="hero-btn" hover-class="hero-btn--active" @tap="goBack">
           <!-- R3：灰 chevron 在深色封面上不可见，改白色粗 chevron 文字 -->
@@ -477,7 +477,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
           <!-- MP-R1-CIRCLEHOME-004（2026-09-20）：「分享」接通原生分享
                （button open-type="share" 触发本页 onShareAppMessage），不再是无事件死按钮 -->
           <button class="hero-btn hero-btn--share" open-type="share" hover-class="hero-btn--active" aria-label="分享圈子">
-            <image class="hero-btn-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.SHARE" mode="aspectFit" />
+            <image class="hero-btn-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_SOCIAL.SHARE)" mode="aspectFit" />
           </button>
         </view>
       </view>
@@ -488,7 +488,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
     <!-- 2. 圈子信息卡 -->
     <view class="info-card">
       <view class="info-main">
-        <image class="info-avatar" :src="coverImage" mode="aspectFill" />
+        <image class="info-avatar" :src="resolveMediaUrl(coverImage)" mode="aspectFill" />
         <view class="info-body">
           <view class="info-title-row">
             <text class="info-name">{{ circle.name }}</text>
@@ -505,7 +505,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
                 v-for="(avatar, idx) in friendAvatars"
                 :key="idx"
                 class="info-friend-avatar"
-                :src="avatar"
+                :src="resolveMediaUrl(avatar)"
                 mode="aspectFill"
               />
             </view>
@@ -547,7 +547,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
     <view v-if="pinnedNotice" class="pinned-card">
       <text class="pinned-badge">{{ t("circle.home.pinnedBadge") }}</text>
       <text class="pinned-text">{{ pinnedNotice }}</text>
-      <image class="pinned-arrow" :src="IMAGE_PATHS.ICONS_COMMON.ARROW_RIGHT" mode="aspectFit" />
+      <image class="pinned-arrow" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.ARROW_RIGHT)" mode="aspectFit" />
     </view>
 
     <!-- 6. 动态 feed（仅动态 tab；其余 tab 骨架空态） -->
@@ -557,19 +557,19 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
       </view>
       <view v-for="item in displayFeed" :key="item.id" class="feed-card" hover-class="feed-card--hover" @tap="openFeedDetail(item)">
         <view class="feed-author">
-          <image class="feed-avatar" :src="item.avatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" />
+          <image class="feed-avatar" :src="resolveMediaUrl(item.avatar || IMAGE_PATHS.DEFAULT_AVATAR)" mode="aspectFill" />
           <view class="feed-author-body">
             <view class="feed-author-row">
               <text class="feed-nickname">{{ item.nickname }}</text>
               <view v-if="item.school" class="feed-school">
-                <image class="feed-school-icon" :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG" mode="aspectFit" />
+                <image class="feed-school-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SCHOOL_SVG)" mode="aspectFit" />
                 <text class="feed-school-text">{{ item.school }}</text>
               </view>
             </view>
             <text class="feed-time">{{ item.timeText }}</text>
           </view>
           <!-- MP-R1-J20-004/REQ20-004：补 @tap（原死按钮零反馈），.stop 防止冒泡到卡片 openFeedDetail 双触发 -->
-          <image class="feed-more" :src="IMAGE_PATHS.ICONS_V2.MORE_SVG" mode="aspectFit" @tap.stop="onFeedMore" />
+          <image class="feed-more" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_V2.MORE_SVG)" mode="aspectFit" @tap.stop="onFeedMore" />
         </view>
 
         <view class="feed-content">
@@ -583,7 +583,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
             v-for="(img, idx) in item.images"
             :key="idx"
             class="feed-image"
-            :src="img"
+            :src="resolveMediaUrl(img)"
             mode="aspectFill"
           />
         </view>
@@ -592,7 +592,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
           <view class="feed-action" @tap="toggleLike(item)">
             <image
               class="feed-action-icon"
-              :src="item.liked ? IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED : IMAGE_PATHS.ICONS_SOCIAL.LIKE"
+              :src="resolveMediaUrl(item.liked ? IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED : IMAGE_PATHS.ICONS_SOCIAL.LIKE)"
               mode="aspectFit"
             />
             <text class="feed-action-text" :class="{ 'feed-action-text--active': item.liked }">
@@ -601,7 +601,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
           </view>
           <!-- MP-R1-J20-004/REQ20-004：评论 action 补 @tap（原死按钮零反馈）——跳话题详情互动 -->
           <view class="feed-action" @tap.stop="openFeedDetail(item)">
-            <image class="feed-action-icon" :src="IMAGE_PATHS.ICONS_SOCIAL.COMMENT" mode="aspectFit" />
+            <image class="feed-action-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_SOCIAL.COMMENT)" mode="aspectFit" />
             <text class="feed-action-text">{{ item.comments }}</text>
           </view>
         </view>
@@ -610,7 +610,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
       <!-- 7. 查看全部话题（保留原 topics 链路） -->
       <view class="topics-link" hover-class="topics-link--active" @tap="goToTopics">
         <text class="topics-link-text">{{ t("circle.home.viewAllTopics") }}</text>
-        <image class="topics-link-arrow" :src="IMAGE_PATHS.ICONS_COMMON.ARROW_RIGHT" mode="aspectFit" />
+        <image class="topics-link-arrow" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.ARROW_RIGHT)" mode="aspectFit" />
       </view>
     </template>
 
@@ -630,7 +630,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
         <text class="bottom-post-text">{{ t("circle.home.postInCircle") }}</text>
       </view>
       <view class="bottom-fab" hover-class="bottom-fab--active" @tap="goToPostTopic">
-        <image class="bottom-fab-icon" :src="IMAGE_PATHS.ICONS_COMMON.EDIT" mode="aspectFit" />
+        <image class="bottom-fab-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.EDIT)" mode="aspectFit" />
       </view>
     </view>
 

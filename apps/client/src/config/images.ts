@@ -95,6 +95,25 @@ const MATCH_DIR = assetDir('assets/images/match');
 const HOME_SPLIT_DIR = assetDir('assets/images/home-split');
 const MASCOT_DIR = assetDir('assets/images/mascot');
 const ICONS_BASE = assetDir('assets/icons');
+/* R6/F7（2026-10-20，R6-L11-D01/D02/D03、R6-L01-D01/D02、R6-L01-D09）：
+ * icons 的**已登记子目录**必须按子目录取基址，不能从未登记的根目录拼串。
+ * 实测两侧判据原本是不重叠的：
+ *   - 契约：`cdn-buckets.json` 把 `static/assets/icons/{home,match,v2,emoji,login,social,nearby}/`
+ *     划进 cdnPrefixes ⇒ prepare-static --real 根本不把这些目录复制进 src/static
+ *     （盘上证据：src/static/assets/icons/ 现只剩 common/register/tabbar + 14 枚根文件，
+ *     social/ v2/ login/ home/ 目录在 static-local-backup/full-static 里，不在 src/static）；
+ *   - 运行时：这些键此前由 ICONS_BASE 直接拼上 `'/v2/sliders.png'` 这类子目录串，而 ICONS_BASE 求值走的是**根目录**
+ *     （根未登记 ⇒ 任何档都是 `/static/assets/icons`）⇒ real 档拿到包内路径，
+ *     而包内根本没有该目录 ⇒ 空白。产物侧的记账证实这是漏判而非设计：
+ *     `dist/build/mp-weixin-real/CDN_OFFLOAD_MANIFEST.json` 里 icons 族 80 个条目
+ *     （social 12 / v2 27 / home 28 / login 2 / match 8 / emoji 3）都是按「运行时指后端」出包的。
+ * 逐子目录走 assetDir() 后：real 档解析成后端 app-assets URL（匿名 GET 已逐枚实测 200），
+ * mock/dev/showcase/H5 档 assetDir() 求值与原来的拼串**逐字相同**（`/static/assets/icons/<sub>/…`），
+ * 取值零变化。本批改 social / login / v2 三个目录（本批缺陷所需），逐目录收全，
+ * 不留同目录半截基址；home / match / emoji / nearby 四个登记目录同型待接（见交件）。 */
+const ICONS_SOCIAL_DIR = assetDir('assets/icons/social');
+const ICONS_LOGIN_DIR = assetDir('assets/icons/login');
+const ICONS_V2_DIR = assetDir('assets/icons/v2');
 const SVG_SPEC_DIR = assetDir('assets/svg-spec');
 const PROFILE_SVG_DIR = assetDir('assets/profile/svg');
 
@@ -168,6 +187,26 @@ export const IN_PACKAGE_ASSETS = {
   EMOJI_HEART_FILLED_SVG: { pkg: '/static/assets/icons/common/heart-filled.svg', tail: '/assets/icons/common/heart-filled.svg' },
   EMOJI_FILE_TEXT_SVG: { pkg: '/static/assets/icons/common/file-text.svg', tail: '/assets/icons/common/file-text.svg' },
   EMOJI_CHECK_SVG: { pkg: '/static/assets/icons/common/check.svg', tail: '/assets/icons/common/check.svg' },
+  /**
+   * R6/F7（2026-10-20）：`assets/icons/` **根目录**的 6 枚同判据双登记（R6-L11-D03 / R6-L02-D04
+   * / R6-L02-D05 / R6-L02-D07 / R6-L01-D09）。根目录既不在 cdnPrefixes 也不在 localPrefixes
+   * ⇒ real 档按契约留包内，但盘上实测它们**发不出去**：
+   * `dist/build/mp-weixin-real/static/assets/icons/` 只剩 common/register/tabbar，
+   * 而 `archive/prune-backup/real-20261019T142618/assets/icons/` 里正好躺着这 14 枚根文件
+   * （bookmark/cake/chat/fire/gift/group/heart/location/microphone/plus/search/smile/
+   * sparkles/thumbs-up）⇒ 是 prune-unreferenced-static.mjs 按「无 raw 引用」剪掉的，不是桶出包
+   * （CDN_OFFLOAD_MANIFEST.json 里 0 条 assets/icons/ 根条目，逐条 grep 已证）。
+   * 剪的判点是 PATH_RE 需要「目录/文件」两级字面量，而这些键在源码里只以
+   * `ICONS_BASE + '/gift.svg'` 的**拼接**形态出现 ⇒ 单文件名进不了 raw 集合。
+   * 本条按上方 :124-126 既有纪律同时给 pkg 与 tail 两个形态，6 枚合计 2.0KB（逐枚 230–416B），
+   * 对 real 档 1.54MB/2.00MB 的实测读数无影响。只登记本批缺陷消费到的 6 枚，
+   * 其余 8 枚同型待接（见交件）。 */
+  ICONS_GIFT_SVG: { pkg: '/static/assets/icons/gift.svg', tail: '/assets/icons/gift.svg' },
+  ICONS_CHAT_SVG: { pkg: '/static/assets/icons/chat.svg', tail: '/assets/icons/chat.svg' },
+  ICONS_GROUP_SVG: { pkg: '/static/assets/icons/group.svg', tail: '/assets/icons/group.svg' },
+  ICONS_SEARCH_SVG: { pkg: '/static/assets/icons/search.svg', tail: '/assets/icons/search.svg' },
+  ICONS_HEART_SVG: { pkg: '/static/assets/icons/heart.svg', tail: '/assets/icons/heart.svg' },
+  ICONS_LOCATION_SVG: { pkg: '/static/assets/icons/location.svg', tail: '/assets/icons/location.svg' },
 } as const;
 
 export const IMAGE_PATHS = {
@@ -447,18 +486,18 @@ export const IMAGE_PATHS = {
   /** 社交图标（social 目录）
    * Phase 9 选图研究：全部切换为 SVG（lucide 风格，currentColor 可主题化），png 历史资产不再引用 */
   ICONS_SOCIAL: {
-    CHECKIN: ICONS_BASE + '/social/checkin.svg',
-    COMMENT: ICONS_BASE + '/social/comment.svg',
-    FOLLOW: ICONS_BASE + '/social/follow.svg',
-    HEART_SIGNAL: ICONS_BASE + '/social/heart-signal.svg',
-    LIKE: ICONS_BASE + '/social/like.svg',
-    LIKE_FILLED: ICONS_BASE + '/social/like-filled.svg',
-    MATCH: ICONS_BASE + '/social/match.svg',
-    MESSAGE: ICONS_BASE + '/social/message.svg',
-    PASS: ICONS_BASE + '/social/pass.svg',
-    SHARE: ICONS_BASE + '/social/share.svg',
-    SUPER_LIKE: ICONS_BASE + '/social/super-like.svg',
-    VISITOR: ICONS_BASE + '/social/visitor.svg',
+    CHECKIN: ICONS_SOCIAL_DIR + '/checkin.svg',
+    COMMENT: ICONS_SOCIAL_DIR + '/comment.svg',
+    FOLLOW: ICONS_SOCIAL_DIR + '/follow.svg',
+    HEART_SIGNAL: ICONS_SOCIAL_DIR + '/heart-signal.svg',
+    LIKE: ICONS_SOCIAL_DIR + '/like.svg',
+    LIKE_FILLED: ICONS_SOCIAL_DIR + '/like-filled.svg',
+    MATCH: ICONS_SOCIAL_DIR + '/match.svg',
+    MESSAGE: ICONS_SOCIAL_DIR + '/message.svg',
+    PASS: ICONS_SOCIAL_DIR + '/pass.svg',
+    SHARE: ICONS_SOCIAL_DIR + '/share.svg',
+    SUPER_LIKE: ICONS_SOCIAL_DIR + '/super-like.svg',
+    VISITOR: ICONS_SOCIAL_DIR + '/visitor.svg',
   },
 
   /** 附近页入口图标 */
@@ -570,13 +609,13 @@ export const IMAGE_PATHS = {
   /** 纯匹配版动作图标（v2 图标资源：freesvglab flat + 素材回退，固定色 PNG） */
   ICONS_MATCH: {
     /** 喜欢（心动粉 #FF6B81） */
-    HEART: ICONS_BASE + '/v2/heart-pink.png',
+    HEART: ICONS_V2_DIR + '/heart-pink.png',
     /** 超级喜欢（消息蓝 #4D8DFF） */
-    STAR: ICONS_BASE + '/v2/star-blue.png',
+    STAR: ICONS_V2_DIR + '/star-blue.png',
     /** 跳过（次文字灰 #666666） */
-    X: ICONS_BASE + '/v2/x-gray.png',
+    X: ICONS_V2_DIR + '/x-gray.png',
     /** 匹配爱心（白色，供浮岛/图标使用） */
-    MATCH_HEART: ICONS_BASE + '/v2/heart-white.png',
+    MATCH_HEART: ICONS_V2_DIR + '/heart-white.png',
   },
 
   /** 寻觅 V1 图标（icons/match 目录，构建期 SVG→PNG） */
@@ -597,37 +636,37 @@ export const IMAGE_PATHS = {
 
   /** v2 核心图标（icons/v2 目录：freesvglab flat-icon + 素材回退，96px 固定色 PNG） */
   ICONS_V2: {
-    DISCOVER: ICONS_BASE + '/v2/discover.png',
-    NEARBY: ICONS_BASE + '/v2/nearby.png',
-    HEART: ICONS_BASE + '/v2/heart.png',
-    CHAT: ICONS_BASE + '/v2/chat.png',
-    PROFILE: ICONS_BASE + '/v2/profile.png',
-    STAR: ICONS_BASE + '/v2/star.png',
-    X: ICONS_BASE + '/v2/x.png',
-    SEARCH: ICONS_BASE + '/v2/search.png',
-    MORE: ICONS_BASE + '/v2/more.png',
+    DISCOVER: ICONS_V2_DIR + '/discover.png',
+    NEARBY: ICONS_V2_DIR + '/nearby.png',
+    HEART: ICONS_V2_DIR + '/heart.png',
+    CHAT: ICONS_V2_DIR + '/chat.png',
+    PROFILE: ICONS_V2_DIR + '/profile.png',
+    STAR: ICONS_V2_DIR + '/star.png',
+    X: ICONS_V2_DIR + '/x.png',
+    SEARCH: ICONS_V2_DIR + '/search.png',
+    MORE: ICONS_V2_DIR + '/more.png',
     // SVG 变体（2026-09-17 R7：circle-home「更多」按钮，固定本地 /static 路径）
     MORE_SVG: '/static/assets/icons/v2/more.svg',
-    BACK: ICONS_BASE + '/v2/back.png',
-    PLUS: ICONS_BASE + '/v2/plus.png',
-    EDIT: ICONS_BASE + '/v2/edit.png',
-    BELL: ICONS_BASE + '/v2/bell.png',
-    SLIDERS: ICONS_BASE + '/v2/sliders.png',
+    BACK: ICONS_V2_DIR + '/back.png',
+    PLUS: ICONS_V2_DIR + '/plus.png',
+    EDIT: ICONS_V2_DIR + '/edit.png',
+    BELL: ICONS_V2_DIR + '/bell.png',
+    SLIDERS: ICONS_V2_DIR + '/sliders.png',
       DIAMOND_FILTER: IMAGES_DIR + '/diamond-filter.svg',
-    VERIFY: ICONS_BASE + '/v2/verify.png',
-    ONLINE: ICONS_BASE + '/v2/online.png',
+    VERIFY: ICONS_V2_DIR + '/verify.png',
+    ONLINE: ICONS_V2_DIR + '/online.png',
     // 品牌色变体
-    HEART_PINK: ICONS_BASE + '/v2/heart-pink.png',
-    CHAT_WHITE: ICONS_BASE + '/v2/chat-white.png',
-    CHAT_PINK: ICONS_BASE + '/v2/chat-pink.png',
-    CHAT_GREEN: ICONS_BASE + '/v2/chat-green.png',
-    X_WHITE: ICONS_BASE + '/v2/x-white.png',
-    HEART_WHITE: ICONS_BASE + '/v2/heart-white.png',
-    HEART_BRAND: ICONS_BASE + '/v2/heart-brand.png',
-    STAR_BLUE: ICONS_BASE + '/v2/star-blue.png',
-    X_GRAY: ICONS_BASE + '/v2/x-gray.png',
+    HEART_PINK: ICONS_V2_DIR + '/heart-pink.png',
+    CHAT_WHITE: ICONS_V2_DIR + '/chat-white.png',
+    CHAT_PINK: ICONS_V2_DIR + '/chat-pink.png',
+    CHAT_GREEN: ICONS_V2_DIR + '/chat-green.png',
+    X_WHITE: ICONS_V2_DIR + '/x-white.png',
+    HEART_WHITE: ICONS_V2_DIR + '/heart-white.png',
+    HEART_BRAND: ICONS_V2_DIR + '/heart-brand.png',
+    STAR_BLUE: ICONS_V2_DIR + '/star-blue.png',
+    X_GRAY: ICONS_V2_DIR + '/x-gray.png',
     /* 2026-08-25 P0：登录页微信绿色气泡 SVG（自绘，参见 报告/2026-08-25-逐页差异规格书.md 2.9） */
-    WECHAT_GREEN_SVG: ICONS_BASE + '/login/wechat-green.svg',
+    WECHAT_GREEN_SVG: ICONS_LOGIN_DIR + '/wechat-green.svg',
     /* 2026-08-25 P0：登录页主标题后绿色小苗图标（复用吉祥物 sprout，渲染最稳） */
     SPROUT: MASCOT_DIR + '/sprout.png',
   },
@@ -644,18 +683,18 @@ export const IMAGE_PATHS = {
     VISITORS_SVG: IN_PACKAGE_ASSETS.PROFILE_VISITORS_SVG.pkg,
     ALBUM_SVG: IN_PACKAGE_ASSETS.PROFILE_ALBUM_SVG.pkg,
     PRIVACY_SVG: IN_PACKAGE_ASSETS.PROFILE_PRIVACY_SVG.pkg,
-    POSTS:        ICONS_BASE + '/social/heart-signal.svg', // 我的动态 → 复用 heart-signal
+    POSTS:        ICONS_SOCIAL_DIR + '/heart-signal.svg', // 我的动态 → 复用 heart-signal
     FAVORITES:    ICONS_BASE + '/common/star.png',          // 我的收藏 → 复用 star
-    MATCHES:      ICONS_BASE + '/social/match.svg',         // 我的匹配 → 复用 social.match
-    VISITORS:     ICONS_BASE + '/social/visitor.svg',       // 访客记录 → 复用 social.visitor
+    MATCHES:      ICONS_SOCIAL_DIR + '/match.svg',         // 我的匹配 → 复用 social.match
+    VISITORS:     ICONS_SOCIAL_DIR + '/visitor.svg',       // 访客记录 → 复用 social.visitor
     EYE:          ICONS_BASE + '/common/eye.svg',           // 浏览记录 → eye（与访客/动态图标区分）
     CLOCK:        ICONS_BASE + '/common/clock.svg',         // 浏览记录 → clock（R4：与访客记录 eye 撞形，改时间语义）
     ALBUM:        ICONS_BASE + '/common/album.svg',         // 我的相册 → album（R4：与我的动态 pulse 撞形）
-    NETWORK:      ICONS_BASE + '/social/follow.svg',        // 我的人脉 → 人物+加号（R3 修正：原 LOGIN_SPLIT r10_c02 实为 WiFi 图）
-    PHOTO_WALL:   ICONS_BASE + '/social/heart-signal.svg',  // 相册 → 复用 heart-signal（暂用占位）
+    NETWORK:      ICONS_SOCIAL_DIR + '/follow.svg',        // 我的人脉 → 人物+加号（R3 修正：原 LOGIN_SPLIT r10_c02 实为 WiFi 图）
+    PHOTO_WALL:   ICONS_SOCIAL_DIR + '/heart-signal.svg',  // 相册 → 复用 heart-signal（暂用占位）
     VERIFICATION: ICONS_BASE + '/common/check.png',         // 恋爱认证 → 复用 check
     LAB:          ICONS_BASE + '/common/ai.png',            // 情感实验室 → 复用 ai
-    SHARE:        ICONS_BASE + '/social/share.svg',         // 推荐给好友 → 复用 social.share
+    SHARE:        ICONS_SOCIAL_DIR + '/share.svg',         // 推荐给好友 → 复用 social.share
     SETTINGS:     ICONS_BASE + '/common/settings.png',      // 设置 → 复用 common.settings
     INFO:         ICONS_BASE + '/common/notification.png',  // 关于我们 → 复用 notification
   },

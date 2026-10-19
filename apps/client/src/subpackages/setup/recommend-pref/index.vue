@@ -231,10 +231,22 @@ onMounted(() => {
         </view>
       </SectionCard>
 
-      <!-- 校园优先 -->
+      <!-- 校园优先
+           R6-B68/D11（文案，2026-10-20）：开关行标签与卡片标题都是 recommendPref.campusPriority*
+           两把 key、值逐字相同（zh-CN.ts:3248 campusPriorityTitle="校园优先" / :3250
+           campusPriorityLabel="校园优先"）⇒ 同一卡内同一串出现两次。卡片标题已说明主题，
+           故删掉行内可见标签（不新增 i18n 文案、不改 locale），改由 role=switch + aria-label
+           承载无障碍名称，开关本身仍是唯一可点控件。 -->
       <SectionCard :title="t('recommendPref.campusPriorityTitle')" :subtitle="t('recommendPref.campusPrioritySubtitle')" compact>
-        <view class="toggle-row press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="campusPriority = !campusPriority">
-          <text class="toggle-label">{{ t('recommendPref.campusPriorityLabel') }}</text>
+        <view
+          class="toggle-row press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="40"
+          role="switch"
+          :aria-checked="campusPriority ? 'true' : 'false'"
+          :aria-label="t('recommendPref.campusPriorityTitle')"
+          @tap="campusPriority = !campusPriority"
+        >
           <view class="toggle-switch" :class="{ 'toggle-switch--on': campusPriority }">
             <view class="toggle-knob" />
           </view>
@@ -294,15 +306,21 @@ onMounted(() => {
   gap: 16rpx;
 }
 
+/* R6-B68/D09（可达性，2026-10-20）：7 个单选项全部用本类，实测高 36px=72rpx，
+   低于仓内自陈热区口径 AppShell.vue:334 `min-height: 88rpx`（44px）；本页是注册引导
+   第 3 步的**必填**选择 ⇒ 由固定 height 改 min-height: 88rpx，内容仍居中。
+   R6-B68/D10（颜色token）：未选中描边原用 --c-border-light（#EEF2F0），实测与白卡
+   #FFFFFF 最大通道差仅 7~8（对比度≈1.05:1），肉眼看不出是可点选项；描边语义应取
+   --c-border-default（#DDE3E0，规范 §1.2 的"边框"档）。 */
 .option-item {
   display: flex;
   align-items: center;
   justify-content: center;
   min-width: 120rpx;
-  height: 72rpx;
+  min-height: 88rpx;
   padding: 0 28rpx;
   border-radius: var(--r-lg, 18rpx);
-  border: 2rpx solid var(--c-border-light);
+  border: 2rpx solid var(--c-border-default);
   background: var(--c-bg-container);
   transition: all var(--d-normal, 200ms) ease;
 }
@@ -323,16 +341,17 @@ onMounted(() => {
 
 // ==================== 校园优先开关 ====================
 
+/* R6-B68/D13（可达性，2026-10-20）：整行是唯一可点区（@tap 在 .toggle-row），
+   实测行高≈38px=76rpx，低于仓内口径 AppShell.vue:334 的 88rpx ⇒ 补 min-height: 88rpx，
+   轨道视觉尺寸（88×48rpx）不动。D11 删掉行内标签后，开关右对齐与标题下沿留白由
+   justify-content 承担。 */
 .toggle-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
+  min-height: 88rpx;
+  box-sizing: border-box;
   padding: 12rpx 0;
-}
-
-.toggle-label {
-  font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-primary);
 }
 
 .toggle-switch {
@@ -365,9 +384,10 @@ onMounted(() => {
 }
 
 
-/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
+/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调）
+   R6-B65/D17 同族顺手项：裸字面量换 --c-bg-container（渲染值同为 #FFFFFF，零像素变化）。 */
 page {
-  background: #ffffff;
+  background: var(--c-bg-container);
 }
 
 </style>

@@ -93,14 +93,25 @@ page {
   --radius-xs: var(--r-xs); // 4rpx
   --radius-sm: var(--r-sm); // 8rpx
   --radius-md: var(--r-md); // 12rpx
-  --radius-lg: var(--r-lg); // 16rpx
+  --radius-lg: var(--r-lg); // 20rpx（值注 2026-10-20 校正：$radius-lg 自 Wave-2 收敛起是 20rpx，旧注 16rpx 是失效复制值）
   --radius-xl: var(--r-xl); // 24rpx
-  --radius-2xl: var(--r-xxl); // 28rpx
+  --radius-2xl: var(--r-xxl); // 32rpx（同上：$radius-xxl 现值 32rpx，旧注 28rpx 已失效）
   --radius-full: var(--r-full); // 9999rpx
   --radius-circle: 50%; // 圆形保留 50%
   // Phase P2.2 · radius 短别名（与 --r-* 对齐，便于业务代码引用）
   --r-pill: var(--r-full); // 9999rpx 胶囊形
   --r-circle: 50%; // 圆形
+  // R6-F1（2026-10-20）· 令牌根因：--r-2xl 全仓定义处=0，却有 4 处使用点
+  // （components/discover/CardSwiper.vue:2229、components/discover/WhisperUnlockSheet.vue:333、
+  //  subpackages/market/wallet/index.vue:291 与 :350）。那四处此前靠各自的 fallback 32rpx
+  // 才没塌成直角，属于「靠兜底活着的未定义名」。
+  // 处置=**补定义**而不是改使用点，两条理由：
+  //   ① 使用点全在 .vue 页面/组件里，属并行修车道（F2/F3）的可写集，本车道改不得；
+  //   ② 本文件上方已有 `--radius-2xl: var(--r-xxl)` 这条同向先例——「2xl 写法 = --r-xxl」
+  //      是本仓既有推法，且 4 处使用点的 fallback 逐字就是 32rpx = $radius-xxl，
+  //      所以补的是**别名归口**，不是新造一档。
+  // 收敛方向（另批，改 .vue 时顺手）：把 4 处使用点直接写 --r-xxl，然后删掉这一行。
+  --r-2xl: var(--r-xxl); // 32rpx（= --r-xxl；与上方 --radius-2xl 同源，不新增档位）
 
   // ---------- 字号语义别名 ----------
   --font-size-xs: var(--fs-xs); // 20rpx
@@ -113,6 +124,23 @@ page {
   --font-size-3xl: var(--fs-3xl); // 36rpx
   --font-size-4xl: var(--fs-4xl); // 40rpx
   --font-size-5xl: var(--fs-5xl); // 44rpx
+  // R6-F1（2026-10-20）· 令牌根因：`--f-*` 短名族全仓**定义处=0**，却有 36 处使用点
+  // （--f-sm 14 / --f-md 9 / --f-xs 7 / --f-lg 6）。与 --r-2xl 不同，这些使用点**不带 fallback**
+  // （写作 `font-size: var(--f-md);`），于是整条声明在计算值阶段被判无效、字号**退回继承值**——
+  // 实测同一张卡的 .sec-item__label(subpackages/tools/security/index.vue:912 用 --f-md) 与
+  // .sec-item__desc(:922 用 --f-xs) 渲染成同一字号，层级直接消失。
+  // 消费点全在 .vue（F2/F3 可写集）⇒ 本车道只能补令牌本体这一侧。
+  // 值不新造：`--f-*` 与 theme/design-variables.scss 的 --fs-* 标准档**逐字同名**
+  // （xs/sm/md/lg ⇒ 20/22/26/28rpx），按本文件既有的「短别名 = 指向单一真源」范式
+  // （见上方 --r-pill: var(--r-full)）做别名。
+  // ⚠️ 刻意**不**定义 --f-2xl：它唯一的使用点 pages/profile/index.vue:3820 写的是
+  // `var(--f-2xl, 56rpx)`，56rpx 对应 --fs-7xl（大标题档）而不是 --fs-2xl(32rpx)。
+  // 按同名补会把那处从 56rpx 缩到 32rpx = 制造回归；留空则那处继续吃 56rpx fallback，
+  // 行为逐字不变。那处到底要 56rpx 还是 32rpx ⇒ 报告里登记 NEEDS-RULING。
+  --f-xs: var(--fs-xs); // 20rpx
+  --f-sm: var(--fs-sm); // 22rpx
+  --f-md: var(--fs-md); // 26rpx
+  --f-lg: var(--fs-lg); // 28rpx
 
   // ---------- 阴影语义别名 ----------
   --shadow-xs: var(--s-xs);

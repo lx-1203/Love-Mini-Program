@@ -69,12 +69,26 @@ function goBack() {
  * - 已上传的格子：filled=true + url
  * - 空格子：filled=false + url=""
  * 顺序：已上传照片在前，空位在后
+ *
+ * R6-B55/D15（素材缺失 P1，2026-10-20）：real 档第 2、3 格内 #36C99A 像素成片
+ * （cell2 单格 1443 个、字形 x=153..225 / x=271..342、跨 y=106..206），第 1 格才是真人照片
+ * ——photoGallery 里存着功能图标路径，被 :472 的 resolveMediaUrl 当照片原样渲染。
+ * 与 setup/profile/index.vue 的 R6-L14-D10 同一条判据、同一个前缀规则：
+ * 命中 `/assets/icons/` 的条目一律降级为空槽（走 :482 的「+」分支），
+ * 禁止把功能图标当内容素材；脏数据源头（store/后端入库）不在本泳道可写集，已另登记。
  */
+function isPhotoAssetPath(raw: string): boolean {
+  const value = String(raw ?? "").split("?")[0] ?? "";
+  if (!value) return false;
+  return !/\/assets\/icons\//.test(value);
+}
+
 const photoCells = computed<Array<{ index: number; url: string; filled: boolean }>>(() => {
   const cells: Array<{ index: number; url: string; filled: boolean }> = [];
   for (let i = 0; i < PHOTO_GALLERY_MAX; i++) {
     const url = photoGallery.value[i] ?? "";
-    cells.push({ index: i, url, filled: url.length > 0 });
+    const usable = isPhotoAssetPath(url) ? url : "";
+    cells.push({ index: i, url: usable, filled: usable.length > 0 });
   }
   return cells;
 });
@@ -412,7 +426,9 @@ onShow(() => {
         :aria-label="t('common.back')"
         @tap="goBack"
       >
-        <image class="album-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+        <view class="album-header__back-circle">
+          <image class="album-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+        </view>
       </view>
       <text class="album-header__title">{{ t("profile.albumTitle") }}</text>
       <text class="album-header__count" v-if="photoCount > 0">
@@ -573,15 +589,33 @@ onShow(() => {
   align-items: baseline;
   justify-content: space-between;
   /* MP-R1-ALBUM-101：「4 / 6」计数与微信胶囊叠压——头部行已注入 --capsule-right
-     但从未消费（useMenuButtonRect 标准配方），按配方预留右侧安全距离 */
-  padding-right: calc(var(--capsule-right, 96px) + 24rpx);
+     但从未消费（useMenuButtonRect 标准配方），按配方预留右侧安全距离
+     R6-B55/D16（层级遮挡 P1，2026-10-20）：上面那条配方写歪了——--capsule-right 的
+     真值是"胶囊右缘间隙"≈7px（composables/useMenuButtonRect.ts:21 FALLBACK_GAP=7），
+     这里兜底却写 96px、并把胶囊本体当成不用计，实测只预留 7+12=19px ⇒ 计数右缘落到
+     x≈359，正压在实测 x=298..357 / y=56..71 的原生胶囊下（计数确实渲染了：同帧
+     :490「添加照片」与 :500 长按提示都在画面上 ⇒ photoCount>0 成立）。
+     换成同域 other.vue:468 / match-success 已验证的原式 calc(--capsule-right, 7px) + 104px。 */
+  padding-right: calc(var(--capsule-right, 7px) + 104px);
   margin-bottom: var(--section-gap);
 }
 
-/* 2026-08-09：返回键（圆角图标按钮） */
+/* 2026-08-09：返回键（圆角图标按钮）
+   R6-B55/D17（可达性 P2）：热区由 64rpx 提到 88rpx（AppShell.vue:334 口径；实测白圆
+   32×32px=64rpx，只有标准的 73%，而本页 navigationStyle=custom 无系统返回栏、这枚圆
+   是唯一退出口）。64rpx 视觉圆底移进 __back-circle，一格不动。 */
 .album-header__back {
   flex-shrink: 0;
   align-self: center;
+  width: 88rpx;
+  height: 88rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.album-header__back-circle {
   width: 64rpx;
   height: 64rpx;
   border-radius: var(--r-full);
@@ -597,8 +631,10 @@ onShow(() => {
   height: 40rpx;
 }
 
+/* R6-B57/D10 同族顺手项：profile-extra 域三页页头标题原为 44 / 36 / 30rpx 三档
+   （相册 --fs-5xl、位置裸 36rpx、隐私 --fs-xl），按建议收敛到同一档 var(--fs-4xl)=40rpx。 */
 .album-header__title {
-  font-size: var(--fs-5xl);
+  font-size: var(--fs-4xl);
   font-weight: 700;
   color: var(--c-text-primary);
 }

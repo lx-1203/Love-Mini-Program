@@ -1,9 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { IMAGE_PATHS } from '../../config/images';
+import { resolveMediaUrl } from '../../utils/media';
 
 const props = defineProps<{
-  tone?: 'brand' | 'success' | 'warning';
+  /**
+   * 语义档。R6-L16-D01（素材缺失 P2）：本组件此前只有 brand/success/warning 三档，
+   * 且 warning 硬映射到 ICONS_COMMON.CLOSE（✕ 形）——discussions 页用它表达
+   * 「热度上升 / 13 人参与」，画面就把热度画成了一个叉（语义相反）。
+   * 新增 heat 档，指向仓内既有且**包内可渲染**的火苗素材
+   * （`static/assets/icons/common/fire.png`，localPrefixes 目录 ⇒ real 档随包，非新造路径）。
+   */
+  tone?: 'brand' | 'success' | 'warning' | 'heat';
   label: string;
 }>();
 
@@ -15,8 +23,11 @@ const iconSrc = computed(() => {
     brand: IMAGE_PATHS.ICONS_COMMON.CHECK,
     success: IMAGE_PATHS.ICONS_COMMON.CHECK,
     warning: IMAGE_PATHS.ICONS_COMMON.CLOSE,
+    heat: IMAGE_PATHS.ICONS_COMMON.FIRE,
   };
-  return map[props.tone || 'brand'];
+  // §1.6 铁律 3：出口统一过解析器（icons/common 属 localPrefixes，解析后逐字不变，
+  // 但素材日后改挂 cdn 目录时不必再回头改消费点）
+  return resolveMediaUrl(map[props.tone || 'brand']);
 });
 </script>
 
@@ -66,6 +77,14 @@ const iconSrc = computed(() => {
 }
 
 .pill--warning {
+  background: var(--c-warning-bg-tint, rgba(245, 158, 11, 0.12));
+  color: var(--c-warning);
+}
+
+/* R6-L16-D01：heat 档沿用提醒色阶（discussions 帧实测底 #FEF5E6 / 字墨心 #F49600
+   正是 --c-warning-bg-tint 与 --c-warning 两枚令牌），只把图标语义从 ✕ 换成火苗，
+   配色不动 ⇒ 不会与同页其他 warning pill 形成断层。 */
+.pill--heat {
   background: var(--c-warning-bg-tint, rgba(245, 158, 11, 0.12));
   color: var(--c-warning);
 }

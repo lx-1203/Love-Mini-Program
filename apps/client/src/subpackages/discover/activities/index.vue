@@ -19,6 +19,9 @@ import { useActivityStore, type ActivityItem } from "../../../stores/activity";
 import { openAppPath } from "../../../utils/navigation";
 import { debounce } from "../../../utils/debounce";
 import { IMAGE_PATHS } from "../../../config/images";
+// R6-L16-D06 / D11（P1 素材缺失）：本页 5 处图标位裸绑 :src，未过 resolveMediaUrl
+// （§1.6 铁律 3）。真档下 assets/icons 目录若被 cdn-buckets 划到后端出图，裸绑包内路径即空白。
+import { resolveMediaUrl } from "../../../utils/media";
 
 /** Emoji 替换 SVG 图标路径 */
 const emojiIcons = {
@@ -438,11 +441,11 @@ defineExpose({ toggleEnroll });
 
             <view class="row-detail">
               <view class="row-detail-item">
-                <image class="row-icon" :src="emojiIcons.location" mode="aspectFit" lazy-load alt="" />
+                <image class="row-icon" :src="resolveMediaUrl(emojiIcons.location)" mode="aspectFit" lazy-load alt="" />
                 <text class="row-detail-text">{{ item.location }}</text>
               </view>
               <view class="row-detail-item">
-                <image class="row-icon" :src="emojiIcons.schedule" mode="aspectFit" lazy-load alt="" />
+                <image class="row-icon" :src="resolveMediaUrl(emojiIcons.schedule)" mode="aspectFit" lazy-load alt="" />
                 <text class="row-detail-text">{{ item.scheduleText }}</text>
               </view>
             </view>
@@ -562,7 +565,7 @@ defineExpose({ toggleEnroll });
         <view v-if="selectedDate" class="selected-date-panel">
           <view class="selected-date-header">
             <view class="selected-date-header__label-row">
-              <image class="selected-date-header__icon" :src="IMAGE_PATHS.ICONS_EMOJI.CALENDAR" mode="aspectFit" alt="" />
+              <image class="selected-date-header__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CALENDAR)" mode="aspectFit" alt="" />
               <text class="selected-date-header__label">{{ formatDateLabel(selectedDate) }}</text>
             </view>
             <text class="selected-date-header__count">{{ t("activities.activityCount", { n: selectedDateActivities.length }) }}</text>
@@ -594,11 +597,11 @@ defineExpose({ toggleEnroll });
 
             <view class="row-detail">
               <view class="row-detail-item">
-                <image class="row-icon" :src="emojiIcons.location" mode="aspectFit" lazy-load alt="" />
+                <image class="row-icon" :src="resolveMediaUrl(emojiIcons.location)" mode="aspectFit" lazy-load alt="" />
                 <text class="row-detail-text">{{ item.location }}</text>
               </view>
               <view class="row-detail-item">
-                <image class="row-icon" :src="emojiIcons.schedule" mode="aspectFit" lazy-load alt="" />
+                <image class="row-icon" :src="resolveMediaUrl(emojiIcons.schedule)" mode="aspectFit" lazy-load alt="" />
                 <text class="row-detail-text">{{ item.scheduleText }}</text>
               </view>
             </view>
@@ -687,6 +690,13 @@ defineExpose({ toggleEnroll });
 }
 
 .view-toggle__btn {
+  /* R6-L16-D09（P2 可达性）：实测切换钮品牌绿块高 28px=56rpx（10rpx×2 内边距 + 24rpx 字），
+     低于同仓 AppShell.vue:333-335 自证的 88rpx 触摸下限。视觉高度不变，用 min-height +
+     flex 居中把命中区撑到 88rpx。 */
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 10rpx 28rpx;
   border-radius: var(--r-full, 9999rpx);
   transition: all var(--d-normal, 200ms) ease;
@@ -747,8 +757,14 @@ defineExpose({ toggleEnroll });
   display: flex;
   flex-direction: column;
   gap: 12rpx;
-  padding: 24rpx;
-  border-radius: var(--r-lg, 20rpx);
+  /* R6-L16-D10（P3 间距）：原 padding:24rpx ⇒ 实测卡内墨色起 x=29..30、卡左缘 x=17，
+     内缩 12-13px=24-26rpx，只有令牌 --card-padding(32rpx, design-variables.scss:698) 的 3/4；
+     同页「下一步」卡走 SectionCard(:32 var(--sp-8)=32rpx) 实测内缩 16px ⇒ 两类卡不齐。
+     R6-L16-D07（P2 圆角）：原 var(--r-lg,20rpx) ⇒ 边缘扫描实测半径 ≈9-10px=18-20rpx，
+     只有规范 §1.4「卡片圆角 --card-radius 40rpx=20px」的一半；同页 SectionCard 走 --r-xl(24rpx)，
+     两类卡圆角还互不相同。两条一并改吃卡片单一来源令牌。 */
+  padding: var(--card-padding, 32rpx);
+  border-radius: var(--card-radius, 40rpx);
   background: var(--c-bg-container);
   box-shadow: var(--s-sm);
 }
@@ -781,8 +797,13 @@ defineExpose({ toggleEnroll });
   border-radius: 999rpx;
   font-size: var(--fs-xs, 20rpx);
   line-height: 1.4;
-  color: var(--c-primary, #36C99A);
-  background: color-mix(in srgb, var(--c-primary, #36C99A) 12%, transparent);
+  /* R6-L16-D08（P3 颜色token）：原写 `var(--c-primary, #36C99A)`——全仓 `--c-primary:` 定义
+     **0 处**（本车道 grep apps/client/src 实测；theme 只有 --c-brand/--c-brand-500），
+     画面之所以还绿，纯靠这两处硬编码 fallback ⇒ 品牌色调整/换肤时这个标签不会跟。
+     改吃真实令牌；顺带把 color-mix(…12%) 换成同族 --c-brand-50（全仓 color-mix 仅 3 处，
+     且 WXSS 对 color-mix 支持不齐，令牌档更稳）。 */
+  color: var(--c-brand, #36C99A);
+  background: var(--c-brand-50, #E8FAF3);
 }
 
 .row-enrollment {
@@ -837,7 +858,11 @@ defineExpose({ toggleEnroll });
 
 .enroll-btn {
   width: 100%;
-  height: 64rpx;
+  /* R6-L16-D09（P2 可达性）：原 height:64rpx ⇒ 描边行检测实测按钮上边 y=237..239、下边 y=268
+     = 盒高 32px = 64rpx，比同仓 AppShell.vue:333-335 自述的 88rpx(44px) 下限小 24rpx。
+     改 min-height 撑命中区（border-box 下 2rpx 描边不额外吃高度）。 */
+  min-height: 88rpx;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1121,6 +1146,12 @@ defineExpose({ toggleEnroll });
 }
 
 .quick-filter {
+  /* R6-L16-D09 现象列的第三处：实测筛选 chip 高约 29px=58rpx，同样低于 88rpx 下限 ⇒ 一并撑起来 */
+  min-height: 88rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 12rpx 32rpx;
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-container, #ffffff);

@@ -303,7 +303,7 @@ onShareAppMessage(() => {
           >
             <image
               class="topic-image"
-              :src="img"
+              :src="resolveMediaUrl(img)"
               mode="aspectFill"
               lazy-load alt=""
             />

@@ -7,20 +7,48 @@
 
 import { request, getToken } from "../services/http";
 import { TENCENT_MAP_KEY, isDev } from "../config/env";
+// R6-F1（2026-10-20）：空态文案改走 i18n 单一真源，不再由本文件持有硬编码字面量。
+// i18n/index.ts 只依赖 vue-i18n 与 locales/*.ts（两份语言包 0 import），与本文件无循环依赖。
+import { t } from "../i18n";
 
 /**
- * 位置完全取不到时的中性文案。
- * R2b-L02-D04（parked.md 收尾）：这里原写「北京大学 · 附近」——把一个具体校名
- * 当成"谁都是"的默认值渲染，属编数据。现改抄 i18n 既有同义键
- * locationPage.addressUnavailable（zh-CN.ts:1749「地址解析不可用」/
- * en-US.ts:1700 "Address lookup unavailable"），与 profile/location.vue:50
- * 在"无城市且无校区"分支里用的那条文案同词，两页不再各说各话。
- * 注：本工具是纯函数、拿不到 i18n 实例，故只镜像中文档；调用方若要跟随语言，
- * 请自行按 t("locationPage.addressUnavailable") 分支，不要依赖本常量的字面值。
- * 刻意保持**非空串**：HomeHeader.vue:27 的取值链是 `locationText || school || "北京大学 · 3km"`，
- * 传空串会把它自带的假校名＋假距离顶出来，比中性文案更糟。
+ * 「位置完全取不到」时的**用户可见空态**文案。
+ *
+ * R6-F1（2026-10-20，替换旧常量 DEFAULT_LOCATION_TEXT）：
+ * 旧实现是 `export const DEFAULT_LOCATION_TEXT = <一句技术诊断语>`（值形如「地址/解析/不可用」
+ * 三段工程词，是给工程师看的失败原因），被 buildLocationText 当兜底直接铺到首页/附近页页头
+ * 与「我的位置」卡主值位（R6 台账：R6-L02 页头串文、R6-L12 位置卡塌陷）。现改为：
+ *   ① 取值走 i18n（本文件不再持有面向用户的字面量）；
+ *   ② 文案按全站既有空态口吻「暂无 + 名词」（暂无数据 / 暂无访客 / 暂无帖子）；
+ *   ③ 保持**非空串**（见下方 LOCATION_EMPTY_FALLBACK 的注释，这条不能破）。
+ *
+ * ⚠️ 键位：`locationPage.locationEmpty` 需 i18n 车道在
+ *   src/i18n/locales/zh-CN.ts 的 locationPage 节（现只有 serverCityTag / addressUnavailable）
+ *   加 `"locationEmpty": "暂无位置信息"`、en-US.ts 同节加 `"locationEmpty": "No location yet"`。
+ *   该目录不在本车道可写集 ⇒ 见交件「需别的车道接手」。键未登记期间由下面的兜底 literal
+ *   顶上（vue-i18n 对缺失键返回**键名本身**，不拦就会把 "locationPage.locationEmpty" 铺到页头，
+ *   比原技术串更糟），所以这里必须按「取到没取到」判一次。
+ *
+ * ⚠️ 同源第二路径（本车道改不到，已登记）：subpackages/profile-extra/profile/location.vue:50
+ *   在「无城市且无校区」分支里显式 `t("locationPage.addressUnavailable")`，取的就是
+ *   zh-CN.ts:1749 那条工程诊断语——与本文件旧常量的值同词。只改本文件**不会**让那一处变干净，
+ *   那一处要由 F2/F3 车道把 key 换成 locationPage.locationEmpty（或 i18n 车道直接改该键值）。
  */
-export const DEFAULT_LOCATION_TEXT = "地址解析不可用";
+const LOCATION_EMPTY_KEY = "locationPage.locationEmpty";
+/**
+ * 键未登记期间的兜底，与将要登记的 zh 值逐字相同。
+ * 刻意保持**非空串**：HomeHeader.vue:27 的取值链是 `locationText || school || <假校名＋假距离>`，
+ * 传空串会把那条编造的「某大学 · 某距离」顶出来，比中性空态更糟。
+ * 与 F2 车道的配合：F2 把那条编造兜底摘掉（改显空态/隐藏整段）后，
+ * 本串才是页头真正落到的最后一道；两边都留着时，本串永远排在假校名后面。
+ */
+const LOCATION_EMPTY_FALLBACK = "暂无位置信息";
+
+/** 取「位置取不到」的用户可见空态文案（i18n 单一真源，缺失键时退回同值兜底）。 */
+export function defaultLocationText(): string {
+  const text = t(LOCATION_EMPTY_KEY).trim();
+  return text.length === 0 || text === LOCATION_EMPTY_KEY ? LOCATION_EMPTY_FALLBACK : text;
+}
 
 /**
  * IP 推断城市与本次真实坐标的最大可信距离（km）。
@@ -186,7 +214,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
 
 /**
  * 构建位置展示文案：**只输出拿得到的地名**，不再补第二段。
- * 优先使用城市名，否则使用校园名，最终兜底中性文案。
+ * 优先使用城市名，否则使用校园名，最终兜底走 i18n 用户空态（见 defaultLocationText）。
  * LBS Phase 2：不再硬编码距离，由后端真实计算。
  *
  * R2b-L02-D04（parked.md 收尾）：理想图（附近的首页.png / 首页.png）第二段是**距离半径**
@@ -209,7 +237,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
 export function buildLocationText(city: string, campusName?: string | null): string {
   if (city) return city;
   if (campusName) return campusName;
-  return DEFAULT_LOCATION_TEXT;
+  return defaultLocationText();
 }
 
 /**

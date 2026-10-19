@@ -176,6 +176,12 @@ check("公告下架后 C 端立刻读不到（下架真的生效）",
 
 // ===== 2. 后台建帖：校区 ADMIN 发 → 圈层落到本校 → C 端读得到 =====
 const title = `后台发布验收${STAMP}`;
+/* 建帖前先取一次总览总数：下面 §4 那句"总数已含新建帖"必须拿**本次的前后差**来判。
+   原版写死 `total >= 265` —— 那是把某一天的库状态当判点，任何一次授权清数据都会把它变成假红
+   （2026-10-19 实测：用户裁定真删 165 条取证残留帖后 total 落到 197，门当场红，而红的是地板不是产品）。
+   相对不变量才是这句话本来的意思，且它比绝对地板更严：本次建的那一条必须真的被计进总数。 */
+const ovBefore = await get("/admin/stats/community-overview", supTok);
+const totalBefore = Number(ovBefore.json?.data?.totalPostCount ?? ovBefore.json?.totalPostCount ?? NaN);
 const created = await post("/admin/posts", {
   title, content: `这是一条由后台校区管理员发布的验收帖，时间戳 ${STAMP}。`,
   category: "campus", targetType: "general", images: [], tags: ["后台验收"],
@@ -242,9 +248,15 @@ check("社区总览返回完整字段",
   ov.status === 200 && Number.isFinite(total) && Number.isFinite(pending)
   && Array.isArray(d.postsLast7Days) && d.postsLast7Days.length === 7 && d.postsByCategory && typeof d.postsByCategory === "object",
   `status=${ov.status} keys=${Object.keys(d).slice(0, 8).join(",")}`);
-check("总览数值自洽（待审 ≤ 总数，且总数已含新建帖）",
-  pending >= 0 && pending <= total && total >= 265,
+check("总览数值自洽（待审 ≤ 总数）", pending >= 0 && pending <= total,
   `pending=${pending} total=${total}`);
+if (Number.isFinite(totalBefore)) {
+  check("总数已含本次新建的那一条（相对不变量，替代写死的绝对地板）",
+    total >= totalBefore + 1, `建帖前=${totalBefore} 建帖后=${total}`);
+} else {
+  skips += 1; // 建帖前那发总览没拿到数 ⇒ 前后差没有对象，记 skip 不记产品红（与 §0 的仪器前提同尺）
+  console.log("SKIP  总览前后差断言：建帖前那发 community-overview 没读到 totalPostCount，没有可比对象");
+}
 
 // ===== 5. 圈层前缀过滤：越深结果越少（单调，能证伪） =====
 const cnt = async (p) => {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
 // R20（2026-09-08）：var(--statusbar, env(safe-area-inset-top)) 在模拟器/无刘海机型为 0，
@@ -43,9 +44,17 @@ function onAvatarTap() {
   }, 300);
 }
 
-const ringSrc = IMAGE_PATHS.MESSAGE_ICONS.AVATAR_RING;
-const onlineSrc = IMAGE_PATHS.MESSAGE_ICONS.ONLINE;
-const heartSrc = IMAGE_PATHS.MESSAGE_ICONS.HEART;
+/* R6-L14-D01（素材缺失 P1）：MESSAGE_ICONS 整组是 `/static/assets/message/...` 字面量，
+   而 `static/assets/message/` 在 cdn-buckets.json 的 cdnPrefixes 里 ⇒ real 发布包整目录不随包
+   （实测 apps/client/dist/build/mp-weixin-real/static/assets 下无 message/），
+   裸绑常量必 404：帧上标题右侧心形位 x128-146 墨迹像素 = 0。
+   本文件 :58 的头像已经过 resolveMediaUrl，这三枚漏了 ⇒ 按 §1.6 铁律 3 补齐。
+   注：解析后落后端 app-assets/assets/message/svg/icon/heart.svg，该素材 stroke 写的是
+   currentColor（盘上已核对），经 <image> 加载时前景取不到 CSS color —— 出图后的实际墨色
+   取决于 F1 车道的 SVG 烘焙，本条只解「0 墨迹」。 */
+const ringSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MESSAGE_ICONS.AVATAR_RING));
+const onlineSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MESSAGE_ICONS.ONLINE));
+const heartSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MESSAGE_ICONS.HEART));
 </script>
 
 <template>

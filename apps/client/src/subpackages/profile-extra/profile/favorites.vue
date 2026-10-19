@@ -18,11 +18,25 @@
       <SkeletonBlock variant="list" :rows="3" :label="t('common.loading')" />
     </view>
 
-    <view v-else-if="favorites.length === 0" class="favorites-empty card-base">
-      <image class="favorites-empty__icon" :src="IMAGE_PATHS.ICONS_EMOJI.BOOKMARK" mode="aspectFit" alt="" />
-      <text class="favorites-empty__title">{{ t('profile.favoritesEmpty') }}</text>
-      <text class="favorites-empty__desc">{{ t('profile.favoritesEmptyDesc') }}</text>
-    </view>
+    <!-- R6-B56/D01（素材缺失 P1）+ R6-B56/D02（可达性 P2，2026-10-20）：
+         原自绘空态卡有两个毛病——① 80rpx 图标位绑裸常量 IMAGE_PATHS.ICONS_EMOJI.BOOKMARK
+         （=/static/assets/icons/bookmark.svg，images.ts:679 未过 resolveMediaUrl；real 包内
+         icons/ 只剩 common/register/tabbar，根级那枚不在包里 ⇒ 实测 x=20..360/y=118..210
+         色差命中 0 像素，图标位空占着，文字整体下沉 27px）；② 副标题把用户指向"帖子页"
+         却 0 个可点热区（实测卡内 y=246..284 色差命中 0）。
+         按两条 defect 的建议改法：改复用 EmptyState（自带 120rpx 图标 + hasAction 分支 +
+         按钮 min-height 88rpx 已在组件侧修好），图标换 real 包内实存的
+         ICONS_COMMON.STAR（dist 实测 static/assets/icons/common/star.png 在包），
+         动作文案复用既有键 village.history.backToVillage（"去广场逛逛"），跳村口列表页。
+         未新增 locale、未造素材路径。 -->
+    <EmptyState
+      v-else-if="favorites.length === 0"
+      :image="IMAGE_PATHS.ICONS_COMMON.STAR"
+      :title="t('profile.favoritesEmpty')"
+      :description="t('profile.favoritesEmptyDesc')"
+      :action-text="t('village.history.backToVillage')"
+      @action="goVillage"
+    />
 
     <scroll-view v-else scroll-y class="favorites-list">
       <view
@@ -63,8 +77,13 @@ import { useI18n } from "vue-i18n";
 import { useVillageStore } from "../../../stores/village";
 import { IMAGE_PATHS } from "../../../config/images";
 import SafeImage from "../../../components/common/SafeImage.vue";
+// R6-B56/D01+D02：空态改复用统一 EmptyState（图标 + 文案 + 动作按钮三段齐）
+import EmptyState from "../../../components/common/EmptyState.vue";
 import { resolveMediaUrl } from "../../../utils/media";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
+// R6-B56/D02：空态动作入口跳村口列表页（同域其他页一致走 openAppPath）
+import { openAppPath } from "../../../utils/navigation";
+import { ROUTES } from "../../../constants/routes";
 // R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 const { styleVars: menuStyleVars } = useMenuButtonRect();
@@ -83,6 +102,11 @@ function goBack() {
 function openPost(id: string) {
   villageStore.setCurrentPost(id);
   uni.navigateTo({ url: `/subpackages/village/village/detail?id=${id}` });
+}
+
+/** R6-B56/D02：空态动作——副标题指的路径给出真入口（村口帖子列表） */
+function goVillage() {
+  openAppPath(ROUTES.TAB.VILLAGE);
 }
 
 async function unfavorite(id: string) {

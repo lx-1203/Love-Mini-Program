@@ -14,6 +14,9 @@ import { ref, onMounted } from "vue";
 // onMounted 不再执行——需 onShow 重拉实名门槛
 import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
+// R6 §1.6 铁律 3：本页图片绑定改为统一经 resolveMediaUrl 解析
+// （mock 档留包内 /static、real 档按 cdn-buckets 出后端 app-assets URL、/uploads/** 补鉴权 token）
+import { resolveMediaUrl } from "../../../utils/media";
 import { useI18n } from "vue-i18n";
 // 修复 no-duplicate-imports：合并 ../../stores/campus 的重复 import
 import { useCampusStore, CERT_STATUS_MAP, type CertificationStatus } from "../../../stores/campus";
@@ -282,7 +285,7 @@ onShow(() => {
         :class="statusCardClass(certificationStatus)"
       >
         <!-- 2026-09-04 QA 修复：statusIcon() 返回的是图片路径，原 <text> 会把 URL 当文字渲染；改为 <image> -->
-        <image class="status-card__icon-img" :src="statusIcon(certificationStatus)" mode="aspectFit" />
+        <image class="status-card__icon-img" :src="resolveMediaUrl(statusIcon(certificationStatus))" mode="aspectFit" />
         <view class="status-card__body">
           <text class="status-card__title">{{ CERT_STATUS_MAP[certificationStatus] }}</text>
           <text v-if="certificationStatus === 'pending'" class="status-card__desc">
@@ -309,7 +312,7 @@ onShow(() => {
 
         <!-- 说明卡片 -->
         <view class="info-card">
-          <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.SCHOOL" custom-class="info-card__icon" mode="aspectFit" />
+          <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SCHOOL)" custom-class="info-card__icon" mode="aspectFit" />
           <text class="info-card__title">{{ t("campus.certification.whyCertifyTitle") }}</text>
           <view class="info-card__list" role="list">
             <text class="info-card__item">{{ t("campus.certification.whyCertifyItem1") }}</text>
@@ -351,7 +354,7 @@ onShow(() => {
             </text>
 
             <view v-if="!studentCardUrl" class="upload-area press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="uploadStudentCard">
-              <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CAMERA" custom-class="upload-icon" mode="aspectFit" />
+              <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.CAMERA)" custom-class="upload-icon" mode="aspectFit" />
               <text class="upload-text">{{ t("campus.certification.uploadText") }}</text>
               <text class="upload-sub">{{ t("campus.certification.uploadSub") }}</text>
             </view>
@@ -359,7 +362,7 @@ onShow(() => {
             <view v-else class="upload-preview">
               <image
                 class="upload-preview__img"
-                :src="studentCardUrl"
+                :src="resolveMediaUrl(studentCardUrl)"
                 mode="aspectFill" lazy-load alt=""
               />
               <view class="upload-preview__actions">
@@ -395,7 +398,7 @@ onShow(() => {
             </text>
 
             <view v-if="!chsiScreenshotUrl" class="upload-area press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="uploadChsiScreenshot">
-              <SafeImage :src="IMAGE_PATHS.ICONS_COMMON.CAMERA" custom-class="upload-icon" mode="aspectFit" />
+              <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.CAMERA)" custom-class="upload-icon" mode="aspectFit" />
               <text class="upload-text">{{ t("campus.certification.chsiUploadText") }}</text>
               <text class="upload-sub">{{ t("campus.certification.chsiUploadSub") }}</text>
             </view>
@@ -403,7 +406,7 @@ onShow(() => {
             <view v-else class="upload-preview">
               <image
                 class="upload-preview__img"
-                :src="chsiScreenshotUrl"
+                :src="resolveMediaUrl(chsiScreenshotUrl)"
                 mode="aspectFill" lazy-load alt=""
               />
               <view class="upload-preview__actions">
@@ -469,7 +472,12 @@ onShow(() => {
      头部常驻（对齐 campus/index 定高修复模式）。 */
   height: 100%;
   overflow: hidden;
-  background: #ffffff; /* R16：纯白背景 */
+  /* R6-L06-D13（颜色token P2）：改前是私有纯白 #ffffff，与规范文档 §1.1 原则1
+     「主题底色统一浅绿 #EEF7F2，页面间不得出现白/灰断层」冲突。
+     实测帧左缘 x=5 从 y=101 一路 #FFFFFF 到 y=778、y=784 起突变为 #EEF7F2
+     ⇒ 一条横向白/绿断层（scoped 的 page{} 在 mp-weixin 不生效，容器外仍是全局浅绿）。
+     现收回令牌，白卡由 .form-section / .info-card 的 --c-bg-container 继续承担，层次反而清楚。 */
+  background: var(--c-bg-page, #EEF7F2);
 }
 
 /* ========== 顶部导航栏 ========== */
@@ -514,6 +522,16 @@ onShow(() => {
 /* ========== 内容区 ========== */
 .cert-body {
   flex: 1;
+  /* R6-L06-D15（P0 · 可达性）：.cert-page 是 height:100% + overflow:hidden 的定高 flex 列，
+     flex 子项默认 min-height:auto ⇒ .cert-body 被内容撑高、拿不到有界高度，既不内滚也被父级裁掉。
+     实测 top/bottom 两帧逐字节相同（md5 前缀同为 4d9dadf78a9779fb、79994B），
+     x=189 列白卡止于 y=780，其下的「学信网验证码」输入框、提交按钮（:425-436）与隐私提示（:439）
+     全部裁在视口外且滚不到 ⇒ 用户填完表单也点不到提交。 */
+  min-height: 0;
+  /* R6-L06-D14（P1 · 尺寸比例）：全局 border-box 复位只覆盖 view/text/image
+     （theme/global.scss:1-3），scroll-view 仍是 content-box ⇒ 内容盒 = 100% + 2×24rpx，
+     右内缩 12px 整个顶出视口（实测卡底分隔带 y=277 一路 #F3F3F4 铺到 x=377 不收口，应止于 x=366）。 */
+  box-sizing: border-box;
   padding: var(--sp-6);
 }
 
@@ -691,8 +709,13 @@ onShow(() => {
   font-size: var(--fs-lg);
   color: var(--c-text-primary);
   border-radius: var(--r-md);
-  background: #ffffff; /* R16：纯白背景 */
-  border: 2rpx solid transparent;
+  /* R6-L06-D16（P1 · 颜色token）：改前 background:#ffffff + border:2rpx solid transparent，
+     落在同样 #FFFFFF 的 .form-section 卡上 ⇒ 输入框完全没有边界。
+     实测沿 x=189 从 y=315 扫到 y=380（容差 2/2/2）零条边缘、整段恒为 #FFFFFF，
+     只剩一行占位文字飘在白底上，用户看不出哪里能点。
+     现按规范文档 §1.2 的输入角色令牌收口：底 --c-bg-surface(#F3FAF6)、框 --c-border-default。 */
+  background: var(--c-bg-surface, #F3FAF6);
+  border: 2rpx solid var(--c-border-default, #DDE3E0);
 }
 
 /* ========== 上传区域 ========== */
@@ -879,9 +902,10 @@ onShow(() => {
 }
 
 
-/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
-page {
-  background: #ffffff;
-}
+/* R6-L06-D13：删掉这段 scoped `page{}` 影子源。
+   1) `<style scoped>` 里的 `page` 选择器在 mp-weixin 不落地（编译后带 data-v 属性选择器，
+      page 节点上没有该属性），改前它从未生效过——帧上容器外仍是全局浅绿 #EEF7F2；
+   2) 即便在 H5 端生效，它也是「整页纯白」这条与 §1.1 原则1 相冲突的第二个私有纯白来源。
+   底色单一来源现在只剩 .cert-page 一处（已改 var(--c-bg-page)）。 */
 
 </style>

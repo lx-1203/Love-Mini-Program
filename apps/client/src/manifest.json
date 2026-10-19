@@ -39,7 +39,15 @@
         "desc": "用于展示附近的人、同校匹配与距离信息"
       }
     },
-    "requiredPrivateInfos": ["getLocation"],
+    /*
+     * 2026-10-20 R6/F7（R6-L12-D08 · 主控裁定归本车道必办）：追加 chooseLocation。
+     * subpackages/profile-extra/profile/location.vue:104 真实调用 uni.chooseLocation（「地图选点」），
+     * 而本数组此前只有 getLocation ⇒ 微信按 app.json 声明放行隐私接口，未声明直接 fail，
+     * 该入口在真机是死的（同上方 :33-35 注释自证的规则：开发者工具不校验、真机必现）。
+     * 体积影响：requiredPrivateInfos 只写进 app.json 的几个字符串，不引入任何字节资产，
+     * 发布链的 scripts/verify-package-size.mjs 判据是包内文件字节，与此项无耦合。
+     */
+    "requiredPrivateInfos": ["getLocation", "chooseLocation"],
     /*
      * 2026-10-05 合规接线：开启隐私接口检查（__usePrivacyCheck__: true）。
      * - 授权回调处理：App.vue onLaunch 已通过 wx.onNeedPrivacyAuthorization

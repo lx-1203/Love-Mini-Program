@@ -93,6 +93,45 @@ const displayTitle = computed<string>(() => {
   return legalText.value?.title || t(`${props.i18nPrefix}.title`);
 });
 
+/** 交给 AppShell 的页头标题（i18n 口径，与卡片头二选一，见 cardTitle） */
+const shellTitle = computed<string>(() => t(`${props.i18nPrefix}.title`));
+
+/**
+ * 卡片头标题。
+ *
+ * R6-L16-D13 / R6-L16-D18（位置 P2）：同一句「隐私政策 / 用户协议」在 43px 内排两次
+ * ——页头 AppShell title 实测 y=115..128（44rpx 档），卡片头 legal-header__title 实测
+ * y=171..183（--fs-2xl=32rpx 档），读起来像标题被重复印。
+ * 缺陷卡给的二选一是「不传 AppShell title」或「卡片头不再重复标题」：
+ * 前者会让胶囊下方/导航区失去标题，故取后者 —— 卡片头只在后端标题与页头 i18n
+ * 标题**不同文**时才渲染（真档后端 title 与 i18n 逐字相同 ⇒ 卡片头不再出，
+ * 元信息行仍在；mock 或后台改过标题时两张脸各自成立，不吞信息）。
+ */
+const cardTitle = computed<string>(() =>
+  displayTitle.value && displayTitle.value !== shellTitle.value ? displayTitle.value : ""
+);
+
+/**
+ * 「最后更新」一行。
+ *
+ * R6-L16-D12（文案 P1）：帧上放大读出「最后更新：2026-07-26: 2026-10-19」——
+ * i18n 值本身自带日期（zh-CN.ts:4739 `"lastUpdated": "最后更新：2026-07-26"`），
+ * 模板 :171 又在其后拼 `: {{ displayUpdatedAt }}`（后端 updatedAt=2026-10-19）
+ * ⇒ 合规页同时印两个互相矛盾的日期 + 一个多余半角冒号。
+ * 单一来源口径按缺陷卡：日期一律由后端 displayUpdatedAt 出。
+ * i18n 侧去日期不在本车道可写集（i18n/** 归 F1/文案车道，已登记），
+ * 故消费点先兜住：把标签里烘着的日期剥掉再拼真值，i18n 改干净后本逻辑自动等价。
+ */
+const updatedAtText = computed<string>(() => {
+  const raw = t(`${props.i18nPrefix}.lastUpdated`);
+  if (!displayUpdatedAt.value) return raw;
+  const label = raw
+    .replace(/\d{4}[-/]\d{1,2}[-/]\d{1,2}/g, "")
+    .replace(/[:：\s]+$/, "")
+    .trim();
+  return `${label}：${displayUpdatedAt.value}`;
+});
+
 /** 版本号（后端返回时展示，否则展示本地 fallback 标识） */
 const displayVersion = computed<string>(() => {
   if (!legalText.value?.version) return "";
@@ -120,6 +159,9 @@ const displayUpdatedAt = computed<string>(() => {
 const showMeta = computed<boolean>(() => {
   return displayVersion.value !== "" || displayUpdatedAt.value !== "";
 });
+
+/** 卡片头整体是否还有内容可渲染（标题 + 版本 + 更新时间全空时不留一条空带） */
+const showHeader = computed<boolean>(() => !!cardTitle.value || showMeta.value);
 
 /**
  * 点击"我已阅读"按钮：轻触反馈 + 返回上一页。
@@ -158,17 +200,17 @@ function handleRetry(): void {
 
 <template>
   <!-- MP-R1-APPSHELL-101：传 fixed 吸顶（滚动时正文不入状态栏区） -->
-  <AppShell :title="t(`${i18nPrefix}.title`)" :show-tab-bar="false" show-back fixed>
+  <AppShell :title="shellTitle" :show-tab-bar="false" show-back fixed>
     <view class="legal-page">
-      <!-- 顶部标题区 -->
-      <view class="legal-header">
-        <text class="legal-header__title">{{ displayTitle }}</text>
+      <!-- 顶部标题区：R6-L16-D13/D18 —— 卡片头标题与页头同文时不再重排（见 cardTitle 注释） -->
+      <view v-if="showHeader" class="legal-header">
+        <text v-if="cardTitle" class="legal-header__title">{{ cardTitle }}</text>
         <view v-if="showMeta" class="legal-header__meta">
           <text v-if="displayVersion" class="legal-header__version">
             {{ displayVersion }}
           </text>
           <text v-if="displayUpdatedAt" class="legal-header__updated">
-            {{ t(`${i18nPrefix}.lastUpdated`) }}: {{ displayUpdatedAt }}
+            {{ updatedAtText }}
           </text>
         </view>
       </view>
@@ -335,7 +377,9 @@ function handleRetry(): void {
   display: block;
   font-size: var(--fs-md);
   color: var(--c-text-primary);
-  line-height: 1.8;
+  /* R6-L16-D14（字号 P3）之「行高」那一半：规范 §1.3 行高表给法务的是 1.75，
+     原写 1.8（实测行距 23-24px 与 :338 一致）。字号一半登记为 NEEDS-RULING，见报告。 */
+  line-height: 1.75;
   white-space: pre-wrap;
   word-break: break-word;
 }

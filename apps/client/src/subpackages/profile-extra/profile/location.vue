@@ -40,6 +40,23 @@ const cityFromIp = ref(false);
    丢弃后不走 buildLocationText（那条链会落到硬编码「北京大学 · 附近」），只剩坐标行。 */
 const cityDistant = ref(false);
 const shownCity = computed(() => (cityDistant.value ? "" : city.value));
+const coords = ref<{ latitude: number; longitude: number } | null>(null);
+const locating = ref(false);
+/** 物理地址文本（chooseLocation 返回 address；或校区/城市文本） */
+const addressText = ref("");
+
+/* R6-B57/D07（空态文案 P1，2026-10-20）：原实现在"城市/校区/坐标/物理地址全拿不到"时
+   把一句工程诊断语铺到卡片主值位（帧实测卡内只有「当前位置」+ 粗体「地址解析不可用」，
+   坐标行/校区行/地址行三行 v-if 全部塌陷，卡高只剩 154rpx）。现拆成两层：
+   ① 主值位 = 用户可读空态（走 i18n，键在 zh-CN.ts:1750 / en-US.ts:1701 均已登记）；
+   ② 失败原因降级为次级说明（addressUnavailable，实测值已由 F1 换成用户口吻
+      「暂时获取不到位置」），并给出**可行动**指引，指向页内真实存在的两颗按钮
+      （:203「地图选点」/:210「重新定位」，逐字对齐按钮文案）。
+   指引这句沿用本页既有的页内字面量风格（本页「当前位置」「所属校区」「物理地址」
+   「轻点下方按钮，在地图上选择新位置」都是模板字面量），未新增 locale 键。 */
+const hasAnyLocationFact = computed(
+  () => Boolean(shownCity.value || campusName.value || coords.value || addressText.value),
+);
 const displayText = computed(() => {
   if (shownCity.value) {
     return cityFromIp.value
@@ -47,12 +64,13 @@ const displayText = computed(() => {
       : buildLocationText(shownCity.value, campusName.value);
   }
   if (campusName.value) return buildLocationText("", campusName.value);
-  return t("locationPage.addressUnavailable");
+  return t("locationPage.locationEmpty");
 });
-const coords = ref<{ latitude: number; longitude: number } | null>(null);
-const locating = ref(false);
-/** 物理地址文本（chooseLocation 返回 address；或校区/城市文本） */
-const addressText = ref("");
+/** 坐标行的占位：拿不到坐标也要留行（用户要知道"这一栏存在但暂时为空"，不是整行消失） */
+const coordText = computed(() => {
+  if (!coords.value) return "经度 — · 纬度 —";
+  return `经度 ${coords.value.longitude.toFixed(4)} · 纬度 ${coords.value.latitude.toFixed(4)}`;
+});
 
 /** 地图中心：优先已选/定位坐标，无则默认北京中心（北京大学一带），避免地图空白 */
 const DEFAULT_CENTER = { latitude: 39.9042, longitude: 116.4074 };
@@ -164,7 +182,12 @@ onLoad(() => {
           <view class="location-card__info">
             <text class="location-card__label">当前位置</text>
             <text class="location-card__value">{{ displayText }}</text>
-            <text v-if="coords" class="location-card__coords">经度 {{ coords.longitude.toFixed(4) }} · 纬度 {{ coords.latitude.toFixed(4) }}</text>
+            <!-- R6-B57/D07：坐标行不再整行消失，拿不到时留「—」占位（不编造数值） -->
+            <text class="location-card__coords">{{ coordText }}</text>
+            <!-- R6-B57/D07：空态时给次级说明 + 可行动指引（指引对象是页内真实按钮文案） -->
+            <text v-if="!hasAnyLocationFact" class="location-card__hint">
+              {{ t("locationPage.addressUnavailable") }}，可点下方「重新定位」，或用「地图选点」手动选位置
+            </text>
           </view>
         </view>
         <view v-if="campusName" class="location-card__campus">
@@ -248,8 +271,12 @@ onLoad(() => {
   height: 40rpx;
 }
 
+/* R6-B57/D10（字号 P2，2026-10-20）：页头标题原裸写 font-size: 36rpx——36rpx 是 --fs-3xl 的
+   值却被硬编码、不入档位（规范 §1.1 第 3 条「一令牌一值，页面只准 var(--*)」），并且
+   profile-extra 同域三页页头各写一档（相册 --fs-5xl 44rpx / 本页 36rpx / 隐私 --fs-xl 30rpx）。
+   按建议改法三页统一收敛到 var(--fs-4xl)=40rpx（本页 + album.vue + privacy.vue 同批已改）。 */
 .location-header__title {
-  font-size: 36rpx;
+  font-size: var(--fs-4xl);
   font-weight: 700;
   color: var(--c-text-primary, #1A1E1C);
 }
@@ -313,6 +340,13 @@ onLoad(() => {
 .location-card__coords {
   font-size: 22rpx;
   color: var(--c-text-tertiary, #94A39F);
+}
+
+/* R6-B57/D07：次级说明（失败原因 + 可行动指引），字阶/色阶按规范 §1.3 取档位令牌 */
+.location-card__hint {
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--c-text-tertiary);
 }
 
 .location-card__campus {
@@ -399,9 +433,13 @@ onLoad(() => {
   color: var(--c-text-tertiary, #9AA39F);
 }
 
+/* R6-B57/D09（可达性 P2，2026-10-20）：实测胶囊高 30px=60rpx（源码 64rpx 与实测差 4rpx
+   为抗锯齿），低于仓内自陈热区口径 AppShell.vue:334 的 88rpx；它是本页唯一「手动改位置」
+   入口（chooseLocation 那条路的入口钮，manifest 声明缺失另由 F8/R6-B25 接手）。
+   同页「重新定位」实测 98rpx、「返回首页」94rpx 已达标 ⇒ 提到同档 88rpx。 */
 .location-map__pick {
   flex-shrink: 0;
-  height: 64rpx;
+  height: 88rpx;
   padding: 0 28rpx;
   border-radius: 999rpx;
   background: var(--c-brand, #36C99A);

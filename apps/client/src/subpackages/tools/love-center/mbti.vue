@@ -271,7 +271,13 @@ function goBack() {
 .content-page {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  /* R6-L10-D13（可达性 P1）：原 `min-height: 100%` 不锁视口高 ⇒ 内部 scroll-view 的
+     `flex:1; height:0`（:314-317）失去约束，整页转为**页面级滚动**：绿色导航条（含返回键）
+     随内容一起滚出视口，16 格网格第 1 行顶到状态栏「22:52」同一水平线、第 2 行第 4 格被微信
+     胶囊压住，且滚到底后页内没有任何返回出口。改固定视口高（同 nearby.vue:221 形态），
+     导航与返回键常驻、滚动锁在 scroll-view 内部。 */
+  height: 100vh;
+  overflow: hidden;
   background: var(--c-bg-page, #f4f6fa);
 }
 
@@ -317,7 +323,10 @@ function goBack() {
 }
 
 .content-section {
-  margin: var(--sp-5) var(--sp-4);
+  /* R6-L10-D10（间距 P2）：左右外边距 16rpx(--sp-4) → 规范页边距 --page-padding(32rpx)。
+     实测标题左缘/网格首列左缘/题目卡左缘全部落在 x≈8px，只有规范 16.6px 的一半；
+     且右侧末枚维度 chip 已顶到屏幕边缘（x≈390、0 留白），左右不对称。 */
+  margin: var(--sp-5) var(--page-padding, 32rpx);
 }
 
 .content-section__title {
@@ -391,7 +400,9 @@ function goBack() {
 }
 
 .type-cell__name {
-  font-size: 18rpx;
+  /* R6-L10-D12（字号 P2）：18rpx=9.4px 比全站最小令牌 --fs-xs(20rpx=10.4px) 还小 1px，
+     属未登记字号；而这 16 个中文人格名是网格内唯一的语义承载 ⇒ 归到 --fs-xs 档 */
+  font-size: var(--fs-xs, 20rpx);
   color: var(--c-text-secondary, #5b6470);
   text-align: center;
   line-height: 1.3;
@@ -426,6 +437,13 @@ function goBack() {
 }
 
 .quiz-option {
+  /* R6-L10-D11（可达性 P1）：8 个单选项是测试主流程的必经点击点，实测行高只有
+     31px=60rpx（上下 padding 12rpx + 24rpx 文字行 + 2rpx 边框），比组件规范最小按钮
+     --btn-height-sm(80rpx) 还矮 20rpx、比同页提交按钮 88rpx 矮 28rpx ⇒ 补 min-height 并垂直居中 */
+  min-height: 88rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
   padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-lg, 20rpx);
   border: 2rpx solid var(--c-border-light, #eef0f4);

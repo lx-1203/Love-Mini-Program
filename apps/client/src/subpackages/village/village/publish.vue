@@ -38,7 +38,7 @@ import { STORAGE_KEYS } from "../../../constants/storage-keys";
 import { POST_DRAFT_SAVE_DEBOUNCE_MS } from "../../../constants/chat";
 import { IMAGE_PATHS } from "../../../config/images";
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
-import { chooseImages, isUploadedMediaUrl } from "../../../utils/media";
+import { chooseImages, isUploadedMediaUrl, resolveMediaUrl } from "../../../utils/media";
 import { compressImages } from "../../../utils/compress-image";
 // R20（2026-09-08）：publish-header 原用 var(--statusbar, env(safe-area-inset-top))（模拟器/无刘海机型=0），
 // 系统时间与「发布动态」标题叠印 → 改 JS 注入 statusBarHeight
@@ -743,7 +743,7 @@ onUnmounted(() => {
     <!-- 顶部导航（R20：padding-top 注入状态栏高度，标题不再与系统时间叠印） -->
     <view class="publish-header" :style="{ paddingTop: statusBarHeightPx + 10 + 'px' }">
       <view class="publish-header__close press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.closeAria')" @tap="requestLeave">
-        <image class="publish-header__x" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
+        <image class="publish-header__x" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CLOSE)" mode="aspectFit" alt="" />
       </view>
       <text class="publish-header__title">发布动态</text>
       <!-- MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005：页内唯一无按压反馈的 @tap view
@@ -759,12 +759,12 @@ onUnmounted(() => {
         <text class="publish-to__label">发布到</text>
         <view class="publish-to__card press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="targetOpen = !targetOpen">
           <view class="publish-to__avatar">
-            <image v-if="isCircleTarget && targetCircle" class="publish-to__avatar-img" :src="IMAGE_PATHS.CIRCLE_COVERS.DEFAULT" mode="aspectFill" alt="" />
-            <image v-else-if="isCircleTarget" class="publish-to__avatar-emoji" :src="IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON" mode="aspectFit" alt="" />
+            <image v-if="isCircleTarget && targetCircle" class="publish-to__avatar-img" :src="resolveMediaUrl(IMAGE_PATHS.CIRCLE_COVERS.DEFAULT)" mode="aspectFill" alt="" />
+            <image v-else-if="isCircleTarget" class="publish-to__avatar-emoji" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON)" mode="aspectFit" alt="" />
             <!-- R2b-L03-D14（素材缺失 P1）：general 目标无头像时原 <image> 解析为空，只剩一颗空心淡绿圆。
                  补两级：有头像渲染 img，无头像渲染 USER 占位字形（与 :761 同 56rpx 档），底色改中性 --c-neutral-50。 -->
-            <image v-else-if="selfAvatar" class="publish-to__avatar-img" :src="selfAvatar" mode="aspectFill" alt="" />
-            <image v-else class="publish-to__avatar-emoji" :src="IMAGE_PATHS.ICONS_EMOJI.USER" mode="aspectFit" alt="" />
+            <image v-else-if="selfAvatar" class="publish-to__avatar-img" :src="resolveMediaUrl(selfAvatar)" mode="aspectFill" alt="" />
+            <image v-else class="publish-to__avatar-emoji" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.USER)" mode="aspectFit" alt="" />
           </view>
           <view class="publish-to__info">
             <view class="publish-to__name-row">
@@ -801,9 +801,9 @@ onUnmounted(() => {
       <!-- 图片九宫格 -->
       <view class="publish-images">
         <view v-for="(img, idx) in images" :key="idx" class="publish-image">
-          <image class="publish-image__img" :src="img" mode="aspectFill" alt="" />
+          <image class="publish-image__img" :src="resolveMediaUrl(img)" mode="aspectFill" alt="" />
           <view class="publish-image__remove press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="removeImage(idx)">
-            <image class="publish-image__remove-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
+            <image class="publish-image__remove-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CLOSE)" mode="aspectFit" alt="" />
           </view>
         </view>
         <view v-if="images.length < POST_MAX_IMAGES" class="publish-image publish-image--add press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="chooseImage">
@@ -835,7 +835,7 @@ onUnmounted(() => {
         </view>
         <!-- 2026-09-06：位置固定为当前城市（默认定位，不可更改），移除选择交互 -->
         <view class="publish-row">
-          <image class="publish-row__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
+          <image class="publish-row__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LOCATION)" mode="aspectFit" alt="" />
           <text class="publish-row__label">添加位置</text>
           <!-- R3：原「北京市 · 当前位置」语义混拼，改为可读的定位说明 -->
           <!-- MP-R1-PUBLISH-006：无定位缓存时不再宣称「自动定位」（原恒显示缺省「北京市 · 自动定位」） -->
@@ -862,7 +862,7 @@ onUnmounted(() => {
              不改值），保留 press-feedback/chevron 构成「可点假象」——降级为只读信息行，
              可见范围随「发布到」目标推导（对齐「添加位置」行的只读形态） -->
         <view class="publish-row">
-          <image class="publish-row__icon" :src="IMAGE_PATHS.ICONS_EMOJI.EYE" mode="aspectFit" alt="" />
+          <image class="publish-row__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.EYE)" mode="aspectFit" alt="" />
           <text class="publish-row__label">谁可以看</text>
           <text class="publish-row__meta">{{ visibilityText }}</text>
         </view>
@@ -898,11 +898,11 @@ onUnmounted(() => {
                把 ✕ 移进标题行内（title 行 space-between），描述列恢复整卡宽度、单行显示。 -->
           <view class="publish-tip__title">
             <view class="publish-tip__title-main">
-              <image class="publish-tip__title-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
+              <image class="publish-tip__title-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.SPROUT)" mode="aspectFit" alt="" />
               <text>发帖小贴士</text>
             </view>
             <view class="publish-tip__close press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="tipVisible = false">
-              <image class="publish-tip__close-icon" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
+              <image class="publish-tip__close-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CLOSE)" mode="aspectFit" alt="" />
             </view>
           </view>
           <text class="publish-tip__desc">真实分享校园生活，友善互动，让更多人认识有趣的你～</text>
@@ -924,13 +924,13 @@ onUnmounted(() => {
         <view class="publish-target-sheet__option press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="chooseGeneral">
           <text class="publish-target-sheet__name">个人动态</text>
           <text class="publish-target-sheet__desc">默认公开，所有人可见</text>
-          <image v-if="targetType === 'general'" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
+          <image v-if="targetType === 'general'" class="publish-target-sheet__check" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CHECK)" mode="aspectFit" alt="" />
         </view>
         <text class="publish-target-sheet__group">校园私域 · 同校可见</text>
         <view class="publish-target-sheet__option press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="chooseCampus">
           <text class="publish-target-sheet__name">校园圈</text>
           <text class="publish-target-sheet__desc">仅认证同校同学可见</text>
-          <image v-if="targetType === 'campus'" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
+          <image v-if="targetType === 'campus'" class="publish-target-sheet__check" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CHECK)" mode="aspectFit" alt="" />
         </view>
         <template v-if="circlesLoading">
           <text class="publish-target-sheet__hint">兴趣圈子加载中…</text>
@@ -961,7 +961,7 @@ onUnmounted(() => {
           >
             <text class="publish-target-sheet__name">{{ circle.name }}</text>
             <text class="publish-target-sheet__desc">已加入 · {{ formatMemberShort(circle.memberCount) }} 成员</text>
-            <image v-if="isCircleTarget && targetId === Number(circle.id)" class="publish-target-sheet__check" :src="IMAGE_PATHS.ICONS_EMOJI.CHECK" mode="aspectFit" alt="" />
+            <image v-if="isCircleTarget && targetId === Number(circle.id)" class="publish-target-sheet__check" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CHECK)" mode="aspectFit" alt="" />
           </view>
         </template>
         <template v-else>

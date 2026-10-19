@@ -32,7 +32,7 @@
  *   不再误报「保存失败」诱导重复提交。
  */
 import { computed, onMounted, reactive, ref, onUnmounted } from "vue";
-import { onLoad } from "@dcloudio/uni-app";
+import { onLoad, onPageScroll } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import SetupProgress from "../../../components/setup/SetupProgress.vue";
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../../constants/routes";
@@ -70,6 +70,24 @@ const heroStyle = computed<string>(() => {
   if (sb <= 0) return "";
   const base = (480 / 750) * (getWindowWidth() || 375);
   return `height: ${Math.round((base + sb) * 100) / 100}px;`;
+});
+
+/**
+ * R6-B67/D11（位置 P2，2026-10-20）：本页原先只有随流滚出的 .hero 页头——
+ * 滚动后标题墨迹实测 y=18..32，与状态栏时钟同一行（帧 subpackages__setup__profile__index__bottom.png），
+ * 且此时页内无任何常驻返回入口。heroStyle 的状态栏内边距只在首屏起作用，
+ * 滚过英雄区就失效。修法按 defect 给的「切吸顶标题栏」分支：
+ * 滚动越过英雄区内的返回/标题避让位后，浮出一条带 --statusbar 内边距 + 不透明底的吸顶条。
+ * 阈值取 88rpx（= 英雄区内返回钮距页面顶部的状态栏外偏移，实测 44px）——
+ * 返回钮正是在这一刻开始进入状态栏带。配方与 campus/campus/hub.vue:479 的
+ * `position: sticky/fixed + calc(var(--statusbar)+…) + calc(var(--capsule-right,7px)+104px)` 一致。
+ */
+const STICKY_HEADER_AT_PX = Math.round((88 / 750) * (getWindowWidth() || 375));
+const stickyHeaderVisible = ref(false);
+
+onPageScroll((event) => {
+  const next = event.scrollTop >= STICKY_HEADER_AT_PX;
+  if (next !== stickyHeaderVisible.value) stickyHeaderVisible.value = next;
 });
 
 const profileStore = useProfileStore();
@@ -440,11 +458,26 @@ async function deletePhotoAt(index: number): Promise<void> {
 const avatarDisplayUrl = computed<string>(() => resolveMediaUrl(profileStore.avatarUrl));
 /** 头像上传中（照片墙上传时头像不显示遮罩） */
 const isAvatarUploading = computed<boolean>(() => isMediaUploading.value && photoUploadingIndex.value === -1);
-/** 照片墙展示地址（6 槽，未占位为空串） */
+/** 照片墙展示地址（6 槽，未占位为空串）
+ *  R6-B67/D10（素材缺失 P1，2026-10-20）：real 档实测第 2、3 槽出的不是人像，而是一枚
+ *  芯色 #36C99A 的定位针（帧 subpackages__setup__profile__index__top.png，墨迹 x157-230 /
+ *  x250-323、y540-632）——photoGallery 里混进了功能图标路径，槽位却照单当照片渲染。
+ *  按 defect 建议「取数处加一道非 assets/icons/ 前缀校验」：命中图标前缀的条目一律视为空槽，
+ *  落模板 v-else 的「+」空位分支（禁止把功能图标当内容素材）。
+ *  数据源头（stores/profile.ts:166-171 的种子、后端 photoGallery 落库）不在本泳道可写集，
+ *  已另登记 NOT-FIXABLE-HERE。 */
+function isPhotoAssetPath(raw: string | undefined): boolean {
+  const value = String(raw ?? "").split("?")[0] ?? "";
+  if (!value) return false;
+  // 功能图标（包内 /static/assets/icons/** 或后端 app-assets 的同名子树）不是人像照片
+  return !/\/assets\/icons\//.test(value);
+}
+
 const photoDisplayUrls = computed<string[]>(() => {
   const list: string[] = [];
   for (let i = 0; i < 6; i++) {
-    list.push(i < profileStore.photoGallery.length ? resolveMediaUrl(profileStore.photoGallery[i]) : "");
+    const raw = i < profileStore.photoGallery.length ? profileStore.photoGallery[i] : undefined;
+    list.push(isPhotoAssetPath(raw) ? resolveMediaUrl(raw) : "");
   }
   return list;
 });
@@ -674,6 +707,22 @@ async function save() {
 
 <template>
   <view class="edit-page" :style="menuStyleVars">
+    <!-- R6-B67/D11：滚动过英雄区避让位后出现的吸顶标题条（不透明底 + --statusbar 内边距，
+         标题墨迹恒在状态栏带之下；返回入口与页内 .hero__back 同一动作，同一素材档）。 -->
+    <view v-if="stickyHeaderVisible" class="sticky-bar">
+      <view
+        class="sticky-bar__back press-feedback"
+        role="button"
+        :aria-label="t('setup.profile.backAria')"
+        hover-class="press-feedback--active"
+        hover-stay-time="40"
+        @tap="goBack"
+      >
+        <image class="sticky-bar__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+      </view>
+      <text class="sticky-bar__title">{{ t("setup.profile.pageTitle") }}</text>
+    </view>
+
     <!-- 页头：注册页同款插图全出血 + 底部渐隐；heroStyle=状态栏高度内联兜底（MP-R7-EDITPAGE-3） -->
     <view class="hero" :style="heroStyle">
       <image class="hero__img" :src="IMAGE_PATHS.REGISTER.HERO" mode="aspectFill" alt="" />
@@ -1080,6 +1129,45 @@ async function save() {
 }
 
 /* ---------------- 页头（与注册页同构） ---------------- */
+/* ---------------- R6-B67/D11：吸顶标题条（滚动后常驻，避免标题压状态栏） ---------------- */
+.sticky-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-header, 100);
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  box-sizing: border-box;
+  /* 上：状态栏 + 一行热区呼吸；右：避让微信原生胶囊（配方同 campus/campus/hub.vue:479） */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 12rpx) calc(var(--capsule-right, 7px) + 104px) 12rpx 24rpx;
+  background: var(--c-bg-container, #ffffff);
+  border-bottom: 1rpx solid var(--c-border-light, #eef2f0);
+}
+
+.sticky-bar__back {
+  width: 88rpx;
+  height: 88rpx;
+  box-sizing: border-box;
+  border-radius: var(--r-full, 9999rpx);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sticky-bar__back-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.sticky-bar__title {
+  font-size: var(--fs-2xl, 32rpx);
+  font-weight: 700;
+  color: var(--c-text-primary, #1a1e1c);
+}
+
 .hero {
   position: relative;
   width: 750rpx;
@@ -1372,13 +1460,18 @@ async function save() {
   animation: spin 0.8s linear infinite;
 }
 
-/* ---------------- 底部说明 ---------------- */
+/* ---------------- 底部说明 ----------------
+   R6-B67/D12（字号 P3，2026-10-20）：原写 font-size: 21rpx —— 落在 --fs-xs(20rpx)
+   与 --fs-sm(22rpx) 两档之间，非档位且是硬编码字面量（theme/design-variables.scss:560-561）；
+   正文色取 --c-text-placeholder（=--c-text-quaternary #9AA39F，对白底对比度≈2.6:1，
+   低于 4.5:1）承载法务说明。按建议改法升到 --fs-sm，正文色换 --c-text-tertiary
+   （#6B7571，对白底≈4.8:1）。 */
 .safety-note {
   display: block;
   margin: 28rpx 48rpx 0;
-  font-size: 21rpx;
+  font-size: var(--fs-sm);
   line-height: 1.75;
-  color: var(--c-text-placeholder, #9aa39f);
+  color: var(--c-text-tertiary);
   text-align: center;
 }
 

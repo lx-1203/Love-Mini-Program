@@ -17,6 +17,9 @@
  */
 import { ref, computed, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
+// R6 §1.6 铁律 3：本页图片绑定改为统一经 resolveMediaUrl 解析
+// （mock 档留包内 /static、real 档按 cdn-buckets 出后端 app-assets URL、/uploads/** 补鉴权 token）
+import { resolveMediaUrl } from "../../../utils/media";
 // 修复 no-duplicate-imports：合并 ../../stores/campus 的重复 import
 import { useCampusStore, CAMPUS_CATEGORY_MAP, type CampusTopicCategory, type CampusTopicItem } from "../../../stores/campus";
 import { useMock } from "../../../stores/helpers/use-mock";
@@ -533,7 +536,7 @@ function goBack() {
         <view class="images-list">
           <!-- MP-R2-CAMPUSPOST-014：key 用临时路径（本页生命周期内稳定唯一），删中间图后其后项不再整体重绑 -->
           <view v-for="(img, idx) in images" :key="img" class="image-item">
-            <image class="image-item__img" :src="img" mode="aspectFill" lazy-load alt="" />
+            <image class="image-item__img" :src="resolveMediaUrl(img)" mode="aspectFill" lazy-load alt="" />
             <view class="image-item__remove press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" aria-label="删除图片" @tap="removeImage(idx)">
               <text class="image-item__remove-icon">×</text>
             </view>
