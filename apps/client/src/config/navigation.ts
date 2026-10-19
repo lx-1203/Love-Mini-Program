@@ -9,8 +9,9 @@
  *
  * 修改 Tab 配置时，请先修改此文件，再同步更新上述文件。
  *
- * 纯匹配版（2026-08-14）：五 Tab 顺序 发现 / 附近 / 匹配 / 消息 / 我的，
- * 「匹配」为中央核心入口（prominent=true，绿色圆形浮岛 + 白色爱心）。
+ * 纯匹配版（2026-08-14）：五 Tab 顺序 首页 / 附近 / 匹配 / 消息 / 我的。
+ * R2b-L01-D21 / R2b-L02-D05 / R2b-L03-D13：「匹配」不再做绿色圆形浮岛凸起，
+ * 与其余四项等大平铺（44rpx 线性爱心 + 下方标签，同基线）。
  */
 
 import { IMAGE_PATHS } from './images';
@@ -27,8 +28,9 @@ export interface AppTab {
 }
 
 /**
- * Tab 顺序（寻觅 v3）：首页、附近、寻觅、消息、我的
- * 注意：APP 启动默认页仍是「寻觅」（pages.json 中 pages 数组第一项为
+ * Tab 顺序（寻觅 v3）：首页、附近、匹配、消息、我的
+ * （第三项 id 仍为 discover、文案已由「寻觅」统一为「匹配」，见 R2b-L02-D17）
+ * 注意：APP 启动默认页仍是第三项 discover（pages.json 中 pages 数组第一项为
  * pages/discover/index），tab 顺序与启动页互不影响。
  */
 export const appTabs: AppTab[] = [
@@ -48,12 +50,16 @@ export const appTabs: AppTab[] = [
   },
   {
     id: "discover",
-    label: "寻觅",
+    // R2b-L02-D17 / R2b-L03-D13：中央项标签统一为「匹配」（原「寻觅」）。
+    // mp-weixin 运行时实际渲染的是 custom-tab-bar/index.js 的 label，本文件按单一真相源同步。
+    label: "匹配",
     path: "/pages/discover/index",
-    iconPath: IMAGE_PATHS.ICONS_TABBAR.MATCH_HEART,
-    selectedIconPath: IMAGE_PATHS.ICONS_TABBAR.MATCH_HEART_ACTIVE,
-    // 中央核心入口：绿色圆形浮岛 + 白色爱心（custom-tab-bar/index.js 同步 prominent）
-    prominent: true,
+    // R2b-L01-D21 / R2b-L02-D05：中央项平铺后改用描边爱心 default / active 两态
+    // （match-heart.png 是为绿色圆盘底设计的 #E0E0E0 实心白心，白底上不可见）
+    iconPath: IMAGE_PATHS.ICONS_TABBAR.DISCOVER_DEFAULT,
+    selectedIconPath: IMAGE_PATHS.ICONS_TABBAR.DISCOVER_ACTIVE,
+    // 凸起浮岛档已退役：五项等大同基线（custom-tab-bar/index.js 同步 prominent: false）
+    prominent: false,
   },
   {
     id: "chat",

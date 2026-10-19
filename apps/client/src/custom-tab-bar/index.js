@@ -23,7 +23,9 @@
  *                               类错误；pages.json 的 tabBar.pagePath 则不带前导斜杠)
  *    iconPath     → iconPath    (注意：静态资源路径前加 /)
  *    selectedIconPath → activeIconPath (注意：静态资源路径前加 /)
- *    prominent    → prominent
+ *    prominent    → prominent   (R2b-L01-D21 / R2b-L02-D05 / R2b-L03-D13 起中央项不再做
+ *                               凸起浮岛，五项等大同基线；本字段仅保留 schema 对齐，
+ *                               index.wxml / index.wxss 均已不消费它)
  *
  * ============================================================
  */
@@ -57,14 +59,18 @@ Component({
       },
       {
         id: "discover",
-        // R2b-L03-D13：标签对齐理想图「匹配」（原「寻觅」）。
-        // 唯一真相源 navigation.ts / pages.json tabBar.list 的同步由其它泳道负责。
+        // R2b-L02-D17 / R2b-L03-D13：本 label 是 mp-weixin 运行时唯一上屏的中央项文案
+        // （pages.json tabBar.custom:true ⇒ 微信渲染本组件，list[].text 不参与绘制）。
+        // 取理想图口径「匹配」；navigation.ts / pages.json tabBar.list / i18n tabs.* 同值。
         label: "匹配",
         path: "pages/discover/index",
-        iconPath: "/static/assets/icons/tabbar/match-heart.png",
-        activeIconPath: "/static/assets/icons/tabbar/match-heart.png",
-        // 中央核心入口：绿色圆形浮岛 + 白色爱心（导航唯一凸起项）
-        prominent: true,
+        // R2b-L01-D21 / R2b-L02-D05：中央项改平铺 44rpx 线性爱心。
+        // 原 match-heart.png 是 #E0E0E0 实心白心（为绿色圆盘底而设计），平铺到白底上几乎不可见，
+        // 故与 H5 端 TabBar.vue 同口径改用 tabbar 家族描边爱心的 default / active 两态。
+        iconPath: "/static/assets/icons/tabbar/discover.png",
+        activeIconPath: "/static/assets/icons/tabbar/discover-active.png",
+        // 凸起浮岛档已退役（五项等大同基线）；字段保留仅为与 navigation.ts 的 schema 对齐
+        prominent: false,
       },
       {
         id: "chat",

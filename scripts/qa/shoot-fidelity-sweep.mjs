@@ -164,6 +164,21 @@ for (const h of heldLeases()) {
   console.log(`SWEEPLEASE_PRECLEAN from=${h.owner}@${h.pid} reclaimed=${r && r.reclaimed ? "yes" : "no"} backup=${r && r.backup ? String(r.backup).split(/[\\/]/).pop() : "-"}`);
 }
 guardUiLease({ owner: LEASE_OWNER, tag: "SWEEPLEASE", failTag: "FIDELITYSWEEP" });
+/* 重开窗口之后还要清一次**编译缓存**。R4→R5 之间查出来的第二层陈旧：
+   泳道核对发现 R2b/R3/R4 三发都仍在渲染「寻觅」，而它们要量那份产物里 custom-tab-bar 早已是「匹配」
+   —— 标签文案这类改动经不经过 IDE 的编译缓存，重开项目窗口并不能刷新它（quit + 重开都活下来了）。
+   工具是 debug_clear_cache，可选值里只有 cleanCompileCache 是我要的：
+   cleanStorageCache / clearAuth / clearSession 会把模拟器登录态打掉，
+   而本腿开场是自己注入 token 的，动了它们就等于换了一台设备状态来取景。
+   失败不静默：清不掉就如实打一行，让"这一轮到底刷新了没有"看得见。 */
+try {
+  const { ideCall } = await import("./cli-automator.mjs");
+  const r = ideCall("debug_clear_cache", ["--action", "cleanCompileCache"], { project: PROJECT, timeoutMs: 90000, requireSkillDir: false });
+  console.log(`SWEEP_CACHE action=cleanCompileCache ok=${r && r.success !== false ? "yes" : "no"} 详情=${JSON.stringify(r).slice(0, 120)}`);
+} catch (e) {
+  console.log(`SWEEP_CACHE action=cleanCompileCache FAILED err=${String(e && e.message).slice(0, 140)} ⇒ 编译缓存没刷新，文案类改动可能仍读成旧渲染`);
+}
+
 mkdirSync(OUT_DIR, { recursive: true });
 
 const automator = require(require.resolve("miniprogram-automator", { paths: [join(REPO, "apps/client"), REPO] }));

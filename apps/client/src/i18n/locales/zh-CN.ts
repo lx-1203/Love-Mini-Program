@@ -491,9 +491,9 @@ export default {
   },
   "tabs": {
     "home": "首页",
-    "discover": "寻觅",
+    "discover": "匹配",
     "nearby": "附近",
-    "match": "寻觅",
+    "match": "匹配",
     "chat": "消息",
     "profile": "我的",
     "publish": "发布"

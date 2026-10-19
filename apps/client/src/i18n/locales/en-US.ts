@@ -377,9 +377,9 @@ export default {
   },
   tabs: {
     home: "Home",
-    discover: "Discover",
+    discover: "Match", // R2b-L02-D17 / R2b-L03-D13：与 mp 运行时标签「匹配」同口径（原 Discover）
     nearby: "Nearby",
-    match: "Discover", // legacy: prefer tabs.discover
+    match: "Match", // legacy: prefer tabs.discover
     chat: "Messages",
     profile: "Me",
     publish: "Post",

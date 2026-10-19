@@ -1,10 +1,12 @@
 <!-- P6 a11y：TabBar 添加 role=tablist / role=tab / aria-selected / aria-label
      微信小程序原生 wxml 支持 role 与 aria-* 属性，可直接渲染到 DOM -->
+<!-- R2b-L01-D21 / R2b-L02-D05 / R2b-L03-D13：中央项不再挂 tab-bar__item--prominent，
+     五项统一为 44rpx 图标 + 下方标签同基线平铺（凸起浮岛档已在 index.wxss 删除） -->
 <view class="tab-bar {{hidden ? 'tab-bar--hidden' : ''}}" role="tablist" aria-label="主导航">
   <view
     wx:for="{{tabs}}"
     wx:key="id"
-    class="tab-bar__item {{item.prominent ? 'tab-bar__item--prominent' : ''}} {{index === selected ? 'tab-bar__item--active' : ''}}"
+    class="tab-bar__item {{index === selected ? 'tab-bar__item--active' : ''}}"
     data-index="{{index}}"
     bindtap="switchTab"
     role="tab"

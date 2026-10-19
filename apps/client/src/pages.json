@@ -422,9 +422,9 @@
       },
       {
         "pagePath": "pages/discover/index",
-        "text": "寻觅",
-        "iconPath": "static/assets/icons/tabbar/match-heart.png",
-        "selectedIconPath": "static/assets/icons/tabbar/match-heart-active.png"
+        "text": "匹配",
+        "iconPath": "static/assets/icons/tabbar/discover.png",
+        "selectedIconPath": "static/assets/icons/tabbar/discover-active.png"
       },
       {
         "pagePath": "pages/messages/index",
