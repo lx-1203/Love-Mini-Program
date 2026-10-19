@@ -243,6 +243,9 @@ function strip() {
   const full = join(BACKUP, "full-static");
   const stage = `${STAGE_ROOT}/static_prepare_${process.pid}_${Date.now()}`;
   const refs = new Set();
+  const frags = new Set();
+  const consts = new Map();
+  const constsExpr = [];
   const distRoot = resolve(__dirname, "../dist/build/mp-weixin");
   const srcRoot = resolve(__dirname, "../src");
   let scanTargets;
@@ -274,10 +277,48 @@ function strip() {
           const re = /['"`]?(\/static\/[A-Za-z0-9/_ .\-]+\.(?:png|jpg|jpeg|svg|gif|webp|wav|mp3))['"`]?/g;
           let m;
           while ((m = re.exec(scanText)) !== null) refs.add(m[1]);
+          /* 同一趟顺带收两类"看不见"的材料：相对片段与常量表（下面才求值成完整路径） */
+          const fre = /['"`](\/[A-Za-z0-9/_.\-]+\.(?:png|jpg|jpeg|svg|gif|webp|wav|mp3))['"`]/g;
+          let fm;
+          while ((fm = fre.exec(scanText)) !== null) { if (!fm[1].startsWith("/static/")) frags.add(fm[1]); }
+          const cre = /(?:const|let|var)\s+([A-Za-z0-9_$]+)\s*=\s*(?:'([^']*)'|"([^"]*)"|`([^`]*)`|(?:[A-Za-z][A-Za-z0-9_$.]*)\s*\+\s*'([^']*)')/g;
+          let cm;
+          while ((cm = cre.exec(text)) !== null) {
+            const val = cm[2] ?? cm[3] ?? cm[4];
+            if (val !== undefined) consts.set(cm[1], val);
+            else constsExpr.push({ name: cm[1], tail: cm[5] });
+          }
         }
       }
     })(dir);
   }
+  /* ── 拼接路径的补收（这条是本轮审计的根因修复）──
+     字面量那条正则只认整串 '/static/...'，而 config/images.ts 这套单一来源是拿常量拼路径的
+     （ICONS_BASE + '/common/eye.svg'，ICONS_BASE 又是 STATIC_BASE + '/icons'，STATIC_BASE 还可能被 CDN 前缀顶掉）。
+     这类引用对正则完全隐形 ⇒ strip 会把**正在用的文件从 src/static 删掉**：
+     实测 assets/icons/common/ 备份里有 128 个、src 里只剩 15 个，真机档因此缺一百多枚图标，
+     而后面三轮把它们统统记成"素材缺失"的产品缺陷（三条泳道各自独立报过一次）。
+     求值常量表很脆（三元、模板串、跨文件 import 都会漏），所以换成**拿备份目录当事实**：
+     片段能在备份里唯一对上文件就算引用；对上多个就全留（宁可留错也不删正在用的），
+     一个都对不上的就是"代码引用了盘上没有的文件"——那是真缺陷，单列点名而不是悄悄删掉。 */
+  const allFiles = [];
+  (function walk(d, rel) {
+    for (const n of readdirSync(d)) {
+      const p = join(d, n), r = rel ? rel + "/" + n : n;
+      let s; try { s = statSync(p); } catch { continue; }
+      if (s.isDirectory()) walk(p, r); else allFiles.push(r);
+    }
+  })(full, "");
+  let compAdded = 0; const ambiguous = []; const orphanRefs = [];
+  for (const frag of frags) {
+    const hits = allFiles.filter((r) => r.endsWith(frag.slice(1)) || ("/" + r).endsWith(frag));
+    if (!hits.length) { orphanRefs.push(frag); continue; }
+    if (hits.length > 1) ambiguous.push(frag + "×" + hits.length);
+    for (const h of hits) { if (!refs.has("/static/" + h)) { refs.add("/static/" + h); compAdded++; } }
+  }
+  console.log(`PREPARESTATIC_COMPUTED 片段=${frags.size} 新增补收=${compAdded} 多义=${ambiguous.length} 引用了盘上没有的=${orphanRefs.length}`);
+  for (const f of ambiguous.slice(0, 8)) console.log(`PREPARESTATIC_AMBIGUOUS ${f}（全留：删错的代价比留错大）`);
+  for (const f of orphanRefs.slice(0, 12)) console.log(`PREPARESTATIC_ORPHAN_REF ${f}（代码引用它，备份与本树都没有 ⇒ 这是真·素材缺失，不许被裁剪顺手掩盖）`);
   let kept = 0;
   try {
     mkdirSync(stage);
