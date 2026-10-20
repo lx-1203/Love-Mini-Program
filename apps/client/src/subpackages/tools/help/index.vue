@@ -18,10 +18,23 @@ import { lightHaptic } from "../../../utils/haptic";
 import { openAppPath } from "../../../utils/navigation";
 import { ROUTES } from "../../../constants/routes";
 import { usePageAccess } from "../../../composables/usePageAccess";
-import { chatPageRequirements } from "../../../config/page-access";
+import { helpPageRequirements } from "../../../config/page-access";
 
-/** 帮助页访问要求（复用聊天页要求，需登录） */
-usePageAccess(chatPageRequirements);
+/**
+ * 帮助页访问要求：免登录可看（R7 裁定「页面放开、点击时再拦」）。
+ *
+ * 本页内容是 6 组静态 i18n FAQ + 常量客服邮箱，零用户数据，不该要求登录。
+ * 这里刻意使用**独立**的 helpPageRequirements，不复用聊天页那枚 ——
+ * 复用（原实现 `usePageAccess(chatPageRequirements)`）把「需要登录」这一项带了进来，
+ * 使帮助页被当成受保护页，R6 实测两帧 landingMismatch。
+ * 两个 CTA（在线客服 / 意见反馈）的目标页各自有门槛，未登录点击时仍会被拦到登录。
+ *
+ * ⚠ 本注释里不许出现「requiresAuth 紧跟冒号再跟 true」那种写法（冒号后有无空格都算命中）：
+ * scripts/qa/derive-baseline-ledger.mjs:196 是对着**本页 .vue 源码全文**正则派生取景身份档的，
+ * 命中就把这页钉成 A（登录态取景）。改前实测：本文件里写过那个字面量时，
+ * 该页 identityAxis 由 A?（未声明门槛）被误判成 A。
+ */
+usePageAccess(helpPageRequirements);
 
 const { t } = useI18n();
 

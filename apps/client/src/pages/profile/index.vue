@@ -3817,7 +3817,15 @@ onUnload(() => {
 }
 
 .invite-modal__code {
-  font-size: var(--f-2xl, 56rpx);
+  /* R7 令牌裁定（原 NEEDS-RULING：--f-2xl 补不补）——走「删使用点改用已有令牌」：
+     --f-2xl 全仓定义处=0，这一处是它唯一的使用点（产物 pages/profile/index.wxss 里
+     该条 font-size 取的是「--f-2xl 带 56rpx fallback」，即整条声明靠 fallback 活着）。
+     按 --f-* 短名族的同名序列补成 var(--fs-2xl)=32rpx 会把这处从 56rpx 缩到 32rpx，
+     而同弹窗的 .invite-modal__title 就是 28rpx —— 邀请码只比自己的标题大 4rpx，层级塌掉；
+     且 19 张理想效果图里没有任何一帧拍到邀请码弹窗，"设计要 32rpx"没有依据。
+     56rpx 才是这里的既有档位：本文件 :2446 的 .profile-bg__name 用的就是 --fs-7xl(56rpx)。
+     ⇒ 指回那个真令牌，渲染值逐字不变（56rpx），未定义名就此归零。fallback 保留同一值。 */
+  font-size: var(--fs-7xl, 56rpx);
   font-weight: 800;
   letter-spacing: 8rpx;
   color: var(--c-brand-600);

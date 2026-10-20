@@ -22,6 +22,7 @@ import { readFileSync, existsSync, readdirSync, mkdirSync, writeFileSync, statSy
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
+import { stripComments } from "./strip-js-comments.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "..", "..");
@@ -191,7 +192,10 @@ const authRequiredRoutes = new Set();
 for (const r of routes) {
   const f = join(REPO, "apps/client/src", `${r.route}.vue`);
   if (!existsSync(f)) continue;
-  const src = readFileSync(f, "utf8");
+  /* 判点不许读注释（2026-10-20 实测）：原版直接在含注释的原文上匹配 /requiresAuth:\s*true/，
+     于是有人在注释里写一句"复用 requiresAuth: true 的要求"，这页就被钉成登录档、取景前提跟着错。
+     同一族的方向相反的病见 scripts/qa/strip-js-comments.mjs 头注释——收成一份实现，别再各写各的。 */
+  const src = stripComments(readFileSync(f, "utf8"));
   if (FORWARD_RE.test(src)) guestOnlyRoutes.add(r.route);
   if (/requiresAuth:\s*true/.test(src)) authRequiredRoutes.add(r.route);
 }

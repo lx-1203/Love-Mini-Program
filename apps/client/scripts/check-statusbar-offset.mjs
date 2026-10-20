@@ -22,6 +22,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
+/* 注释剥离收成一份共享实现（scripts/qa/strip-js-comments.mjs）：本文件原版那两条 replace
+   会把行注释里的 `/uploads/**` 当成块注释起点，吞掉后面真实的 import ⇒ 三条假红。
+   同一族病在 derive-baseline-ledger 里以反方向出现（把注释当代码读），复制一次就会以另一种形态复发。 */
+import { stripComments } from "../../../scripts/qa/strip-js-comments.mjs";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const SRC = path.resolve(__dirname, "../src");
@@ -55,40 +59,6 @@ const HOST_INJECTED_ALLOW = new Set(
   ].map((p) => p.replaceAll("/", path.sep))
 );
 
-/** 剥除注释内容后再匹配，避免文档/说明文字里的字面量误报 */
-function stripComments(src) {
-  /* 单遍扫描，状态机版（2026-10-20 实测假红改的）。
-     原版是两条 replace：先剥块注释、再剥行注释，于是**行注释里出现的"斜杠星"序列**会被当成
-     块注释起点，一路吞到下一个"星斜杠"才停。触发件是 hub.vue:13 那句行注释里的
-     `…、/uploads/** 补鉴权 token）` —— 其中的前两个斜杠加星号构成块注释起点，把 14–42 行
-     （含 `import { useMenuButtonRect }` 与它的调用）整段抹掉，规则二于是报
-     "用 var(--statusbar 但无 JS 注入源"，而文件里注入源好端端在。
-     判据本身一条没动：仍然要求"有 var 使用 ⇒ 必须有注入源"，只是不再把行注释里的斜杠当块注释起点。
-     保留原语义：注释字符按空白抹掉、不删行，行号与长度对得上（守卫按 index 回切片做上下文判断）。 */
-  const out = src.split("");
-  let st = 0; // 0=代码 1=行注释 2=块注释 3=单引号串 4=双引号串 5=反引号串
-  for (let i = 0; i < src.length; i++) {
-    const c = src[i];
-    const n = src[i + 1];
-    if (st === 0) {
-      if (c === "/" && n === "/") { st = 1; out[i] = " "; out[i + 1] = " "; i++; continue; }
-      if (c === "/" && n === "*") { st = 2; out[i] = " "; out[i + 1] = " "; i++; continue; }
-      if (c === "'") st = 3;
-      else if (c === '"') st = 4;
-      else if (c === "`") st = 5;
-      continue;
-    }
-    if (c === "\n") { if (st === 1) st = 0; continue; } // 换行只结束行注释；块注释跨行不收口
-    if (st === 1) { out[i] = " "; continue; }
-    if (st === 2 && c === "*" && n === "/") { st = 0; out[i] = " "; out[i + 1] = " "; i++; continue; }
-    if ((st === 3 && c === "'") || (st === 4 && c === '"') || (st === 5 && c === "`")) { st = 0; continue; }
-    // 字符串内部原样保留（字面量要能被后面的规则判到）；块注释一律抹成空白
-    if (st === 3 || st === 4 || st === 5) continue;
-    if (st === 2) { if (c !== "\n") out[i] = " "; continue; }
-    if (c !== "\n" && c !== " " && c !== "\t") out[i] = " ";
-  }
-  return out.join("");
-}
 
 const BARE_ENV = /(?<!var\(--statusbar,\s*)env\(safe-area-inset-top\)/g;
 const CUSTOM_VAR = /--statusbar-(?!inset)[a-z-]+/g;

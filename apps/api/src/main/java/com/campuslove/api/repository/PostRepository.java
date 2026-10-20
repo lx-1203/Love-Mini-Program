@@ -151,13 +151,20 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * @param pendingAudit 待审核枚举值（调用方传入 {@code AuditStatus.pending}）
      * @param campusName   校区名（null/空表示全平台，与 {@link #searchForAdmin} 同口径）
      * @return 单行三元组列表
+     *
+     * <p><b>2026-10-20 R7 口径对齐</b>：总数排除软删行（{@code status='deleted'}），与
+     * {@link #searchForAdminPaged} 的默认屏一致。原版三条 COUNT 全无 status 过滤，
+     * 于是"后台列表 198 条"与"社区总览 200 条"同时成立——差的那 2 条是已删除行，
+     * 运营在总览上看到的数在管理界面里翻不到。后台删除是软删（D-N09 在册），
+     * 所以虚高只会一直存在，直到这里显式过滤。</p>
      */
     @Query("""
             SELECT COUNT(p),
                    SUM(CASE WHEN p.auditStatus = :pendingAudit THEN 1 ELSE 0 END),
                    SUM(CASE WHEN p.isPinned = true THEN 1 ELSE 0 END)
             FROM Post p
-            WHERE (:campusName IS NULL OR :campusName = '' OR EXISTS (
+            WHERE p.status <> 'deleted'
+              AND (:campusName IS NULL OR :campusName = '' OR EXISTS (
                     SELECT 1 FROM UserCampusProfile ucp
                     WHERE ucp.userId = p.authorId AND ucp.campusName = :campusName))
             """)
@@ -261,23 +268,30 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     /**
      * 管理后台 - 多条件分页查询帖子。
      * <p>所有筛选条件均可为 null（不参与筛选），按创建时间倒序排列。</p>
-     * <p>此查询不限制 PostStatus，便于管理员查看包含已删除/隐藏在内的所有帖子。</p>
+     * <p><b>2026-10-20 R7 口径修正</b>：默认屏不再无限制地包含软删行——调用方在<b>没有</b>
+     * 传 status 筛选时必须用 {@code excludeStatus} 排除 {@code deleted}（后台删除是软删，
+     * D-N09/D-N10：已删行继续进列表与总数 = 运营看见虚高数、且与客户端 total 永远不同尺）。
+     * 显式传 {@code status=deleted}（后台「已删除」筛选项，见 admin-legacy Posts.vue）时
+     * {@code excludeStatus} 传 null，deleted 行照旧列得出，误删可找回。
+     * {@code hidden} 是治理态（审核拒绝/手动隐藏），不属"已删除"，仍照常列出与计数。</p>
      * <p>数据隔离（商业模式：每个高校一个管理员）：posts 表无 campus_name 列，
      * campusName 非空时按<b>作者所属校区</b>过滤（EXISTS 子查询关联
      * {@code UserCampusProfile.campusName}，与 AdminUserController 语义一致）。</p>
      *
-     * @param auditStatus 审核状态筛选（pending/approved/rejected），null 表示不筛选
-     * @param status      帖子状态筛选（active/deleted/hidden），null 表示不筛选
-     * @param category    帖子分类筛选，null 表示不筛选
-     * @param authorId    作者用户 ID 筛选，null 表示不筛选
-     * @param campusName  校区筛选（按作者所属校区过滤），null/空表示不筛选
-     * @param pageable    分页参数
+     * @param auditStatus   审核状态筛选（pending/approved/rejected），null 表示不筛选
+     * @param status        帖子状态筛选（active/deleted/hidden），null 表示不筛选
+     * @param excludeStatus 需要排除的帖子状态（软删口径），null 表示不排除
+     * @param category      帖子分类筛选，null 表示不筛选
+     * @param authorId      作者用户 ID 筛选，null 表示不筛选
+     * @param campusName    校区筛选（按作者所属校区过滤），null/空表示不筛选
+     * @param pageable      分页参数
      * @return 分页帖子列表
      */
     @Query("""
             SELECT p FROM Post p
             WHERE (:auditStatus IS NULL OR p.auditStatus = :auditStatus)
               AND (:status IS NULL OR p.status = :status)
+              AND (:excludeStatus IS NULL OR p.status <> :excludeStatus)
               AND (:category IS NULL OR p.category = :category)
               AND (:authorId IS NULL OR p.authorId = :authorId)
               AND (:campusName IS NULL OR :campusName = '' OR EXISTS (
@@ -288,6 +302,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> searchForAdmin(
             @Param("auditStatus") AuditStatus auditStatus,
             @Param("status") PostStatus status,
+            @Param("excludeStatus") PostStatus excludeStatus,
             @Param("category") PostCategory category,
             @Param("authorId") Long authorId,
             @Param("campusName") String campusName,
@@ -299,9 +314,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * （posts 表无 campus_name 列，校区隔离按作者所属校区过滤：
      * 作者校区取自 user_campus_profile.campus_name，与 AdminUserController 语义一致），
      * 且置顶帖子优先展示（isPinned DESC）。</p>
+     * <p><b>2026-10-20 R7 口径修正</b>：{@code status} 为空（默认屏）时排除 {@code deleted} 行，
+     * 显式 {@code status=deleted}（后台「已删除」筛选项）时照旧列得出——见
+     * {@link #searchForAdmin} 的同段说明。value 与 countQuery 两条 WHERE 逐字相同，
+     * 故 items 与 total 永远同一筛选口径。</p>
      *
      * @param auditStatus 审核状态筛选（pending/approved/rejected），null 表示不筛选
-     * @param status      帖子状态筛选（active/deleted/hidden），null 表示不筛选
+     * @param status      帖子状态筛选（active/deleted/hidden），null 表示不筛选，
+     *                    但 null 时软删行（deleted）不进列表也不进总数
      * @param keyword     标题/内容模糊关键字，可空。
      *                    <p>原实现只 LIKE {@code p.content}，注释据此写「村落动态帖子无标题字段」——
      *                    但 posts.title 列真实存在（{@code Post.java}）且客户端发帖必填 5–30 字
@@ -324,6 +344,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                     SELECT p.* FROM posts p
                     WHERE (:auditStatus IS NULL OR p.audit_status = :auditStatus)
                       AND (:status IS NULL OR p.status = :status)
+                      AND (:status IS NOT NULL OR p.status <> 'deleted')
                       AND (:keyword IS NULL OR :keyword = ''
                            OR p.content LIKE CONCAT('%', :keyword, '%')
                            OR p.title LIKE CONCAT('%', :keyword, '%'))
@@ -338,6 +359,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                     SELECT COUNT(*) FROM posts p
                     WHERE (:auditStatus IS NULL OR p.audit_status = :auditStatus)
                       AND (:status IS NULL OR p.status = :status)
+                      AND (:status IS NOT NULL OR p.status <> 'deleted')
                       AND (:keyword IS NULL OR :keyword = ''
                            OR p.content LIKE CONCAT('%', :keyword, '%')
                            OR p.title LIKE CONCAT('%', :keyword, '%'))
@@ -376,6 +398,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                     SELECT p.* FROM posts p
                     WHERE (:auditStatus IS NULL OR p.audit_status = :auditStatus)
                       AND (:status IS NULL OR p.status = :status)
+                      AND (:status IS NOT NULL OR p.status <> 'deleted')
                       AND (:keyword IS NULL OR :keyword = ''
                            OR p.content LIKE CONCAT('%', :keyword, '%')
                            OR p.title LIKE CONCAT('%', :keyword, '%'))
@@ -395,6 +418,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                     SELECT COUNT(*) FROM posts p
                     WHERE (:auditStatus IS NULL OR p.audit_status = :auditStatus)
                       AND (:status IS NULL OR p.status = :status)
+                      AND (:status IS NOT NULL OR p.status <> 'deleted')
                       AND (:keyword IS NULL OR :keyword = ''
                            OR p.content LIKE CONCAT('%', :keyword, '%')
                            OR p.title LIKE CONCAT('%', :keyword, '%'))

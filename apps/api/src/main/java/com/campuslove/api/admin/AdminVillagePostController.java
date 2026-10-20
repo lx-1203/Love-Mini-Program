@@ -121,7 +121,9 @@ public class AdminVillagePostController {
      * 分页查询村落动态列表（审核状态/帖子状态/关键字/校区/圈层筛选）。
      *
      * @param auditStatus 审核状态：pending / approved / rejected，可选
-     * @param status      帖子状态：active / deleted / hidden，可选
+     * @param status      帖子状态：active / deleted / hidden，可选；
+     *                    <b>不传时默认屏排除 deleted</b>（后台删除是软删，已删行不该进
+     *                    items/total；要看回收站请显式传 status=deleted，仍列得出）
      * @param keyword     标题/内容模糊关键字，可选（原仅匹配内容，2026-09-24 补 title）
      * @param campusName  校区筛选（按作者所属校区过滤），可选；
      *                    校区管理员强制按其管辖校区过滤，忽略本参数

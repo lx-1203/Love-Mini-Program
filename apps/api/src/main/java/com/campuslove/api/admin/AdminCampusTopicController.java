@@ -86,7 +86,9 @@ public class AdminCampusTopicController {
      * 分页查询校园圈话题列表（关键字/状态/校区筛选）。
      *
      * @param keyword    标题/内容模糊关键字，可选
-     * @param status     话题状态：active / deleted / hidden，可选
+     * @param status     话题状态：active / deleted / hidden，可选；
+     *                   <b>不传时默认屏排除 deleted</b>（后台删除是软删，已删话题不该进
+     *                   items/total；要看回收站请显式传 status=deleted，仍列得出）
      * @param campusName 校区筛选（按学校名匹配后以 schoolId 过滤），可选；
      *                   校区管理员强制按其管辖校区过滤，忽略本参数
      * @param page       页码，1-based，默认 1
@@ -119,8 +121,12 @@ public class AdminCampusTopicController {
         int safeSize = Math.max(1, Math.min(100, pageSize));
         Pageable pageable = PageRequest.of(safePage - 1, safeSize);
 
+        // 2026-10-20 R7 口径修正：不传 status 时默认屏排除软删话题（与 village-posts 同口径）；
+        // 显式 status=deleted 时不排除，回收站仍列得出来
         Page<CampusTopic> result = campusTopicRepository.searchForAdmin(
-                schoolId, topicStatusEnum, normalizedKeyword, pageable);
+                schoolId, topicStatusEnum,
+                topicStatusEnum == null ? TopicStatus.deleted : null,
+                normalizedKeyword, pageable);
 
         // 批量预加载作者昵称与学校名，避免 N+1 查询
         Map<Long, String> authorNicknameMap = loadAuthorNicknames(result.getContent());

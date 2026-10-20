@@ -133,10 +133,14 @@ page {
   // 值不新造：`--f-*` 与 theme/design-variables.scss 的 --fs-* 标准档**逐字同名**
   // （xs/sm/md/lg ⇒ 20/22/26/28rpx），按本文件既有的「短别名 = 指向单一真源」范式
   // （见上方 --r-pill: var(--r-full)）做别名。
-  // ⚠️ 刻意**不**定义 --f-2xl：它唯一的使用点 pages/profile/index.vue:3820 写的是
-  // `var(--f-2xl, 56rpx)`，56rpx 对应 --fs-7xl（大标题档）而不是 --fs-2xl(32rpx)。
-  // 按同名补会把那处从 56rpx 缩到 32rpx = 制造回归；留空则那处继续吃 56rpx fallback，
-  // 行为逐字不变。那处到底要 56rpx 还是 32rpx ⇒ 报告里登记 NEEDS-RULING。
+  // ⚠️ --f-2xl 仍然**不**定义（R7 已裁，原 NEEDS-RULING 结案）：它唯一的使用点
+  // pages/profile/index.vue 的 .invite-modal__code 写的是 `var(--f-2xl, 56rpx)`，
+  // 56rpx 对应 --fs-7xl（大标题档）而不是 --fs-2xl(32rpx)。按同名补会把那处从 56rpx 缩到
+  // 32rpx，而同一弹窗的 .invite-modal__title 就是 28rpx ⇒ 邀请码只比自己的标题大 4rpx，层级塌掉；
+  // 且 19 张理想效果图无一帧拍到邀请码弹窗，缩号没有设计依据。
+  // R7 处置=**删使用点**而不是补定义：那处已改写为 var(--fs-7xl, 56rpx)（渲染值逐字不变），
+  // 于是 --f-2xl 的使用点归零 ⇒ 本族到此只保留与 --fs-* 逐字同名的 xs/sm/md/lg 四枚，
+  // 不再留一枚「名字说 2xl、值却是 7xl」的假档位（那才是下一次有人"照序列修正"时的回归源头）。
   --f-xs: var(--fs-xs); // 20rpx
   --f-sm: var(--fs-sm); // 22rpx
   --f-md: var(--fs-md); // 26rpx

@@ -82,7 +82,9 @@ public class AdminPostController {
      * 分页查询帖子列表（支持审核状态/帖子状态/分类/作者/校区筛选）。
      *
      * @param auditStatus 审核状态：pending / approved / rejected，可选
-     * @param status      帖子状态：active / deleted / hidden，可选
+     * @param status      帖子状态：active / deleted / hidden，可选；
+     *                    <b>不传时默认屏排除 deleted</b>（软删行不进 items 也不进 total，
+     *                    要看回收站请显式传 status=deleted）
      * @param category    分类：all/interest/sincere/hometown/anonymous/latest/campus，可选
      * @param authorId    作者用户 ID，可选
      * @param campusName  校区筛选（按作者所属校区过滤），可选；
@@ -117,8 +119,13 @@ public class AdminPostController {
         int safeSize = Math.max(1, Math.min(100, pageSize));
         Pageable pageable = PageRequest.of(safePage - 1, safeSize);
 
+        // 2026-10-20 R7 口径修正：后台删除是软删（status 置 deleted），调用方没指定 status 筛选时
+        // 默认屏不得把已删行算进 total、也不得列进 items（否则运营看见虚高数，且与客户端 total 不同尺）；
+        // 显式 status=deleted（后台「已删除」筛选项）时不排除，误删仍找得回
         Page<Post> result = postRepository.searchForAdmin(
-                auditStatusEnum, postStatusEnum, categoryEnum, authorId, effectiveCampus, pageable);
+                auditStatusEnum, postStatusEnum,
+                postStatusEnum == null ? PostStatus.deleted : null,
+                categoryEnum, authorId, effectiveCampus, pageable);
 
         // 批量预加载作者昵称，避免 N+1 查询
         Map<Long, String> authorNicknameMap = loadAuthorNicknames(result.getContent());
