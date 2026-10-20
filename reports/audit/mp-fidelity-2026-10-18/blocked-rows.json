@@ -1,0 +1,24 @@
+{
+ "schema": "mp-fidelity-blocked-rows/v1",
+ "rows": [
+  {
+   "defect_id": "R8-L01-D09",
+   "bucket": "需后端列",
+   "reason": "理想图那排 4 张相册缩略图要 item.photos[]，而后端 TodayRecommendationView 只有单值 photoUrl；前端补渲即为编造数据",
+   "evidence": "apps/api/src/main/java/com/campuslove/api/home/HomeController.java:120-138（单值 String photoUrl）+ apps/client/src/services/generated/api-types-supplement.ts:283-298（前端镜像同形）",
+   "unblocks_when": "TodayRecommendationView 出 List<String> photos 并由 mapper 透传（源同 UserProfileController.java:162 的 basic.photoGallery 解析）",
+   "round": "R8",
+   "writtenAt": "2026-10-20T21:10:47.708Z"
+  },
+  {
+   "defect_id": "R8-L12-D01",
+   "bucket": "数据脏（非前端可辨）",
+   "reason": "第 2/3 格不是路径没拦住，是用户真上传了两枚 81x81 定位针 PNG；FXA 已在 image-local.ts:141-145 补登 photo-2/3.jpg，但那对本页数据形态无效——本页走 /api/v1/media/… 而非 /uploads/mock/ 命名空间",
+   "evidence": "apps/api/uploads/100158/202610/ 下两枚逐字节相同的 81x81 图（md5 17f5630eede532a166fad6de65553807）、photoGalleryItems[].auditStatus 皆 approved ⇒ 前端无任何可辨信号；album.vue:510 取数链为 resolveMediaUrl(cell.url)",
+   "unblocks_when": "数据侧清洗该两条 media，或后端给 photo_gallery 条目补 asset_kind / width / height 列",
+   "round": "R8",
+   "writtenAt": "2026-10-20T21:10:47.708Z"
+  }
+ ],
+ "note": "不是豁免名单：每行都要 reason + evidence + unblocks_when。被登记的缺陷仍是开放缺陷，复拍照原样判；哪天画面变了而它还挂着，就是这条登记过期，须删。"
+}

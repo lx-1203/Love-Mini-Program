@@ -163,6 +163,16 @@ for (const l of lanes) {
 }
 
 console.log(`${RK}_UNASSIGNED 本轮不派批次=${notChosen.length} 行=${notChosen.reduce((a, b) => a + b.rows.length, 0)}（都不含 ${SEV}，且非共享/根因）`);
+/* 落一份"到底派了谁"的件。必要性是实测出来的：把整份 fixlist 喂给 verify-fix-visibility
+   会把本轮**有意没派**的批次一起算进去，那些页的画面本来就不会变 ⇒
+   R8 实测被读成 fixNotVisible=42，看着像 42 条修复失败，其实是分派范围与判点范围不同源。 */
+writeFileSync(join(OUT, "dispatch-manifest.json"), JSON.stringify({
+  schema: "mp-fidelity-fixdispatch/v1", round: ROUND, fixlist: rel(fixlistP), severity: SEV,
+  dispatchedBatches: chosen.map((b) => b.id), dispatchedRows: dispatched,
+  unassignedBatches: notChosen.map((b) => b.id), unassignedRows: notChosen.reduce((a, b) => a + b.rows.length, 0),
+  lanes: lanes.map((l) => ({ lane: l.name, serial: !!l.first, batches: l.bins.map((b) => b.id), files: l.bins.flatMap((b) => b.files) })),
+}, null, 1), "utf8");
+console.log(`${RK}_MANIFEST ${rel(join(OUT, "dispatch-manifest.json"))} 派发批次=${chosen.length} 未派批次=${notChosen.length}`);
 for (const s of summary) console.log(`  LANE ${s.name}: ${s.line} brief=${rel(join(OUT, s.brief))}`);
 console.log(`${RK}=PASS 车道=${lanes.length} 缺陷行=${dispatched} 可改文件=${owner.size} 互斥=成立 out=${rel(OUT)}`);
 
