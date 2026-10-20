@@ -435,17 +435,26 @@ function handleMenuTap(item: MenuItem) {
 
 <template>
   <view class="settings-page" :style="menuStyleVars">
-    <!-- 顶部安全区占位（必须先于 nav-bar：navigationStyle=custom 下导航栏若顶到 y=0
-         会与系统时间/刘海叠印，返回键看似"消失"） -->
-    <view class="safe-top" />
+    <!-- R8-L09-D10 / R8-L09-D11（层级遮挡 P1）：整块头部常驻吸顶。
+         原 nav-bar 是 position:relative ⇒ 自然流滚动到底帧整条白底导航随文档移出（顶帧实测
+         y=46-87），列表内容直接顶进系统状态栏带（「免打扰」墨迹 y=10-36 与时钟 x=0-32/y=17-28
+         叠印、页标题「设置」滚失），且「本周安排」行开关（实测 x=287-370 / y=49-99）被固定胶囊
+         （实测 x=265-369 / y=25-94）压住 82×45px。现把「状态栏带 + 88rpx 导航」包进
+         position:sticky 的 .page-header（不透明底承接滚动内容）——头部下缘即 statusbar+44px
+         = 胶囊底沿，两帧都不再有节点进入胶囊带（safe-top 本身保持全站 `+ 0rpx` 口径，见 :780）。 -->
+    <view class="page-header">
+      <!-- 顶部安全区占位（必须先于 nav-bar：navigationStyle=custom 下导航栏若顶到 y=0
+           会与系统时间/刘海叠印，返回键看似"消失"） -->
+      <view class="safe-top" />
 
-    <!-- 顶部导航栏 -->
-    <view class="nav-bar">
-      <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="40">
-        <text class="nav-bar__back-icon">‹</text>
+      <!-- 顶部导航栏 -->
+      <view class="nav-bar">
+        <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="40">
+          <text class="nav-bar__back-icon">‹</text>
+        </view>
+        <text class="nav-bar__title">{{ t('settings.navTitle') }}</text>
+        <view class="nav-bar__placeholder" />
       </view>
-      <text class="nav-bar__title">{{ t('settings.navTitle') }}</text>
-      <view class="nav-bar__placeholder" />
     </view>
 
     <!-- 任务 E4：反馈与帮助（一级菜单顶部入口） -->
@@ -700,17 +709,32 @@ function handleMenuTap(item: MenuItem) {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: linear-gradient(180deg, var(--c-bg-page, #f8fafc) 0%, var(--c-tint-blue-50, #eef2ff) 100%);
+  /* R8-L09-D07（颜色 token P2）：原写 linear-gradient(180deg, --c-bg-page, --c-tint-blue-50)，
+     同帧左缘实测 y=150 → #EAF3F1（浅绿）、y=700 → #E9F5F7（b 比 r 高 14）——一屏之内从规范浅绿
+     漂到蓝底，正是 §1.1 原则1 禁止的页面间断层。收成单色 var(--c-bg-page)（#EEF7F2）。 */
+  background: var(--c-bg-page, #EEF7F2);
   box-sizing: border-box;
   position: relative;
 }
 
 /* ==================== 顶部导航栏 ==================== */
+/* R8-L09-D10/D11：状态栏带 + 导航整块吸顶，不透明底承接滚动内容 */
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--c-bg-container, #FFFFFF);
+  flex-shrink: 0;
+}
+
 .nav-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24rpx;
+  /* R8-L09-D09 收尾：同页 gutter 三套口径里的第二套——.nav-bar 原裸写 24rpx(12px)，
+     而 .section 已收到 --page-padding(32rpx=16px)，返回钮会比下方卡片左缘再外突 4px。
+     统一取同一令牌，页头与分组卡左缘对齐（.menu-item 的 28rpx 是卡内文气，不属 gutter，不动）。 */
+  padding: 0 var(--page-padding, 32rpx);
   height: 88rpx;
   background: var(--c-bg-container, #FFFFFF);
   box-shadow: var(--s-xs, 0 1rpx 2rpx var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)));
@@ -752,7 +776,13 @@ function handleMenuTap(item: MenuItem) {
 
 /* ==================== 安全区占位 ==================== */
 .safe-top {
-  /* --statusbar 兜底：开发者工具 var(--statusbar, env(safe-area-inset-top)) 恒 0，仅 env 会叠印状态栏 */
+  /* --statusbar 兜底：开发者工具 var(--statusbar, env(safe-area-inset-top)) 恒 0，仅 env 会叠印状态栏
+     R8-L09-D10/D11：胶囊避让由「吸顶头部整块常驻」兑现，不靠把 safe-top 抬高。
+     头部总高 = statusbar + .nav-bar 88rpx(=44px)，微信胶囊（32px 高、居中于 44px 导航带）
+     底沿 = statusbar + 44px ⇒ 头部下缘正好压在胶囊底沿上，滚动内容一律从胶囊下方经过。
+     此处若再补 88rpx（上一发改动），导航标题会落到 y=statusbar+44..88、比胶囊低 44px
+     且头部白带翻倍——与全站口径冲突（verification/index.vue:805、real-name.vue:654、
+     vip/index.vue:771、market/detail/index.vue:465 一律 `+ 0rpx`），故收回到 0rpx。 */
   height: calc(var(--statusbar, env(safe-area-inset-top)) + 0rpx);
   flex-shrink: 0;
 }
@@ -767,7 +797,10 @@ function handleMenuTap(item: MenuItem) {
 .section {
   position: relative;
   z-index: 1;
-  margin: 24rpx 24rpx 0;
+  /* R8-L09-D09（间距 P2）：水平外边距原为裸 24rpx ⇒ 分组卡实测左缘 x=13 / 右缘 x=365，
+     比全站 --page-padding（32rpx=16px，design-variables.scss:575）少 4px，与同页 .nav-bar
+     的 24rpx、.menu-item 的 28rpx 凑成三套 gutter。按建议改法收到 --page-padding。 */
+  margin: 24rpx var(--page-padding, 32rpx) 0;
 }
 
 .section__title {
@@ -860,7 +893,10 @@ function handleMenuTap(item: MenuItem) {
 
 .menu-item__arrow {
   font-size: var(--fs-3xl, 36rpx);
-  color: var(--c-border-strong, #C2CAC6);
+  /* R8-L09-D08（可达性 P2）：原取 var(--c-border-strong, #C2CAC6) —— 一个描边令牌被当文字色用，
+     18px 细体描出来实测最深像素 #D5DBD8，落在白卡上只有 1.4:1，「可进入」提示整页几乎不可见。
+     按建议改法升到文字档 --c-text-tertiary（#6B7571，对 #FFFFFF 卡底计算值 4.76:1 ≥ 4.5:1）。 */
+  color: var(--c-text-tertiary, #6B7571);
   font-weight: 300;
   line-height: 1;
 }
@@ -869,7 +905,7 @@ function handleMenuTap(item: MenuItem) {
 .logout-btn {
   position: relative;
   z-index: 1;
-  margin: 32rpx 24rpx 0;
+  margin: 32rpx var(--page-padding, 32rpx) 0;
   padding: 28rpx;
   background: var(--c-bg-container, #FFFFFF);
   border-radius: var(--r-xl, 24rpx);

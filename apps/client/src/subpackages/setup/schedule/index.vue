@@ -96,54 +96,97 @@ async function save() {
 
 <template>
   <AppShell :title="t('setup.schedule.pageTitle')" :subtitle="t('setup.schedule.pageSubtitle')" :show-tab-bar="false" show-back>
-    <SectionCard :title="t('setup.schedule.prefTitle')" compact>
-      <input
-  cursor-spacing="20" v-model="form.preferredCampusArea" class="field" :placeholder="t('setup.schedule.placePlaceholder')" :aria-label="t('setup.schedule.placePlaceholder')" />
-      <!-- review #66：原模板仅绑定 preferredTimeWindows[0]，其余时段无法编辑；
-           现按数组渲染全部时段输入框，提交时完整保留。
-           2026-08-10 功能补齐：新增「+ 添加时段」按钮与删除按钮，初始为空也可新增。 -->
-      <view
-        v-for="(_win, idx) in form.preferredTimeWindows"
-        :key="idx"
-        class="time-window-field"
+    <!-- R8-L12-D06（位置）+ R8-L12-D07（尺寸比例）：主 CTA 原作为 SectionCard 的最后一个
+         body 子节点（原 :141），既没吸底（BottomActionBar.vue:82 的 .bar--fixed 分支需要宿主
+         显式传 fixed）又被卡体 --sp-7 内边距二次缩进 ⇒ 实测落在 y364-406、x32-345，
+         悬在视口 45% 高度、按钮下方还压着 15px 白卡内边距，其下 393px（48% 视口）全是空底。
+         现：① BottomActionBar 移出卡片成为其后继兄弟节点并传 fixed（贴视口底 + 安全区，
+         落回拇指可及区，横向也回到 --page-padding 一档而非卡内缩进）；
+         ② 按本页实际职责（常去区域 / 空闲时段两类输入，见文件头 R6-B69/D01 说明）把原来
+         一整张「偏好设置」卡拆成两张分区卡，内容列纵向占比向 campus / recommend-pref 两步看齐；
+         ③ 卡片与吸底条之间补 cta-spacer，吸底条不再盖住末行。
+         两张卡套一层普通 view 作纵向堆叠容器——不给 SectionCard 标签本身写宿主页 scoped 类，
+         因为 uni-app mp-weixin 把子组件编译成自定义组件，宿主 scoped 选择器落在组件根上不可靠
+         （SafeImage 同型前例，见共享基件车道结论）。 -->
+    <view class="card-stack">
+      <SectionCard :title="t('setup.schedule.prefTitle')" compact>
+        <input
+          cursor-spacing="20" v-model="form.preferredCampusArea" class="field" :placeholder="t('setup.schedule.placePlaceholder')" :aria-label="t('setup.schedule.placePlaceholder')" />
+      </SectionCard>
+
+      <!-- R8-L12-D07：分区二「空闲时段」。标题/副标题走仓内既有 i18n 键 homeSetup.scheduleTitle /
+           scheduleSubtitle（zh-CN.ts:4795-4796，view-models/home.ts:97-98 已用同一对键描述这一步），
+           语义与本页职责逐字对应。本车道可改文件只有这两个 .vue（任务书硬规矩 1），
+           locale 文件属并行车道，故复用既有键、不自造文案、不编造后端数据。 -->
+      <SectionCard
+        :title="t('homeSetup.scheduleTitle')"
+        :subtitle="t('homeSetup.scheduleSubtitle')"
+        compact
       >
-        <view class="time-window-row">
-          <input
-  cursor-spacing="20"
-            v-model="form.preferredTimeWindows[idx]"
-            class="field time-window-input"
-            maxlength="60"
-            :placeholder="idx === 0 ? t('setup.schedule.timeWindowPlaceholder') : t('setup.schedule.timeWindowPlaceholderExtra')"
-            :aria-label="idx === 0 ? t('setup.schedule.timeWindowPlaceholder') : t('setup.schedule.timeWindowPlaceholderExtra')"
-          />
-          <view
-            v-if="form.preferredTimeWindows.length > 1"
-            class="time-window-remove press-feedback"
-            hover-class="press-feedback--active"
-            role="button"
-            :aria-label="t('setup.schedule.removeTimeWindow')"
-            @tap="removeTimeWindow(idx)"
-          >
-            <image class="time-window-remove__text" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
+        <!-- review #66：原模板仅绑定 preferredTimeWindows[0]，其余时段无法编辑；
+             现按数组渲染全部时段输入框，提交时完整保留。
+             2026-08-10 功能补齐：新增「+ 添加时段」按钮与删除按钮，初始为空也可新增。 -->
+        <view
+          v-for="(_win, idx) in form.preferredTimeWindows"
+          :key="idx"
+          class="time-window-field"
+        >
+          <view class="time-window-row">
+            <input
+              cursor-spacing="20"
+              v-model="form.preferredTimeWindows[idx]"
+              class="field time-window-input"
+              maxlength="60"
+              :placeholder="idx === 0 ? t('setup.schedule.timeWindowPlaceholder') : t('setup.schedule.timeWindowPlaceholderExtra')"
+              :aria-label="idx === 0 ? t('setup.schedule.timeWindowPlaceholder') : t('setup.schedule.timeWindowPlaceholderExtra')"
+            />
+            <view
+              v-if="form.preferredTimeWindows.length > 1"
+              class="time-window-remove press-feedback"
+              hover-class="press-feedback--active"
+              role="button"
+              :aria-label="t('setup.schedule.removeTimeWindow')"
+              @tap="removeTimeWindow(idx)"
+            >
+              <image class="time-window-remove__text" :src="IMAGE_PATHS.ICONS_EMOJI.CLOSE" mode="aspectFit" alt="" />
+            </view>
           </view>
         </view>
-      </view>
-      <view
-        class="time-window-add press-feedback"
-        hover-class="press-feedback--active"
-        hover-stay-time="50"
-        role="button"
-        :aria-label="t('setup.schedule.addTimeWindow')"
-        @tap="addTimeWindow"
-      >
-        <text class="time-window-add__text">＋ {{ t('setup.schedule.addTimeWindow') }}</text>
-      </view>
-      <BottomActionBar :primary-label="t('setup.schedule.saveButton')" @primary="save" />
-    </SectionCard>
+        <view
+          class="time-window-add press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="50"
+          role="button"
+          :aria-label="t('setup.schedule.addTimeWindow')"
+          @tap="addTimeWindow"
+        >
+          <text class="time-window-add__text">＋ {{ t('setup.schedule.addTimeWindow') }}</text>
+        </view>
+      </SectionCard>
+    </view>
+
+    <!-- R8-L12-D06：吸底条脱离文档流，正文侧自行留位（BottomActionBar.vue:18 的约定） -->
+    <view class="cta-spacer" />
+    <BottomActionBar :primary-label="t('setup.schedule.saveButton')" fixed @primary="save" />
   </AppShell>
 </template>
 
 <style scoped lang="scss">
+/* R8-L12-D07：两张分区卡的纵向堆叠容器（普通页面级 view，scoped 选择器必定命中）。
+   卡间留 --sp-6(24rpx)，与仓内多卡页的卡片节奏一致。 */
+.card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6, 24rpx);
+}
+
+/* R8-L12-D06：吸底 BottomActionBar 走 position:fixed 脱离文档流，
+   正文尾部自行留出吸底条高度（88rpx 按钮 + 上下 --sp-4 内边距）+ 机型安全区，
+   否则「+ 添加时段」盒会被 CTA 盖住。 */
+.cta-spacer {
+  height: calc(152rpx + env(safe-area-inset-bottom));
+}
+
 /* R6-B69/D02（颜色token，2026-10-20）：输入框底色原写 var(--c-bg-page)（#EEF7F2），
    与页面底逐字同值、落在白卡上等于"没有输入底"。规范 §1.2 的输入底令牌是
    --c-bg-surface（#F3FAF6，theme/design-variables.scss:377），--c-bg-page 只留给页面/AppShell。 */

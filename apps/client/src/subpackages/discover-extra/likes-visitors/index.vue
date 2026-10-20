@@ -21,19 +21,20 @@ import { useVipStore } from "../../../stores/vip";
 import { featureFlags } from "../../../config/feature-flags";
 import { usePageAccess } from "../../../composables/usePageAccess";
 import { likesPageRequirements } from "../../../config/page-access";
-import { openAppPath } from "../../../utils/navigation";
-// 2026-08-09：路由常量化（他人主页 / 聊天会话）
-import { ROUTES } from "../../../constants/routes";
+import { openAppPath, replaceAppPath, setPendingLoginRedirect } from "../../../utils/navigation";
+// 2026-08-09：路由常量化（他人主页 / 聊天会话 / 登录 / 资料完善）
+import { ROUTES, SUBPACKAGE_ROUTES } from "../../../constants/routes";
 import { IMAGE_PATHS } from "../../../config/images";
 import { resolveMediaUrl } from "../../../utils/media";
-// 2026-08-09 免踢登录：未登录切换进本页不跳登录页，由 LockScreen（未登录版）引导
+// 2026-08-09 免踢登录：未登录切换进本页不跳登录页，由本页登录引导引导（R8-L06-D04 起为骨架下的 .guest-guide）
 import { useSessionStore } from "../../../stores/session";
 // 批次 A / ADR-2：解锁属商业化能力（commerce.coin 子闸），封存态禁用解锁入口
 import { useAppConfigStore } from "../../../stores/app-config";
 // 2026-09-04 视觉验收：var(--statusbar, env(safe-area-inset-top)) 在模拟器/部分机型为 0，标题与状态栏叠印，
 // 与 AppShell 2026-08-29 修复同源——改用 statusBarHeight 注入
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
-import LockScreen from "../../../components/common/LockScreen.vue";
+// R8-L06-D04：游客不再整页换成 LockScreen（它是 position:fixed 满屏模态，会把骨架整块盖掉），
+// 改为骨架常驻 + 列表区 .guest-guide 登录引导，故本文件不再引该组件。
 import SafeImage from "../../../components/common/SafeImage.vue";
 import EmptyState from "../../../components/common/EmptyState.vue";
 import Skeleton from "../../../components/common/Skeleton.vue";
@@ -57,10 +58,18 @@ const commerceCoinOn = computed(() => appConfig.isCommerceOn("coin"));
 
 usePageAccess(likesPageRequirements);
 
-/** 是否解锁：未登录 → 展示 LockScreen（未登录版）引导，不渲染列表、不发鉴权请求 */
+/** 是否解锁：未登录 → 骨架常驻、列表区换成登录引导，仍不发鉴权请求 */
 const isUnlocked = computed(() => sessionStore.isLoggedIn);
-/** 完善度（已登录未完善时 LockScreen 展示进度） */
-const completionPercent = computed(() => sessionStore.profileCompletion);
+/**
+ * R8-L06-D04：游客引导图 —— 用列表未解锁角标同一枚锁图标（IMAGE_PATHS.ICONS_EMOJI.LOCK，
+ * 本文件 :423 已在用，real 档随包/后端双份在盘），过 resolveMediaUrl 出出口，不新增素材。
+ */
+const guestLockIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LOCK));
+/** R8-L06-D04：登录出口，口径同 LockScreen.onPrimary（登录后自动续到资料完善页） */
+function goLogin(): void {
+  setPendingLoginRedirect(SUBPACKAGE_ROUTES.SETUP_PROGRESS.PROFILE);
+  replaceAppPath(ROUTES.LOGIN);
+}
 
 const { likedBy, visitors, loading } = storeToRefs(likesStore);
 
@@ -126,7 +135,7 @@ onMounted(() => {
 });
 
 onShow(() => {
-  // 2026-08-09 免踢登录：未登录展示 LockScreen 引导，不发起鉴权请求（避免 401 被全局处理强拉登录页）
+  // 2026-08-09 免踢登录：未登录只渲染骨架 + 登录引导，不发起鉴权请求（避免 401 被全局处理强拉登录页）
   if (!isUnlocked.value) return;
   // R4-00020 修复：原条件反置（loading 时重复请求、加载完成后永不刷新）。
   // 改为仅在未加载中时补拉，避免重复请求。
@@ -328,9 +337,13 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
     class="likes-visitors-page"
     :style="{ paddingTop: `calc(${statusBarHeightPx}px + var(--sp-6))` }"
   >
-    <!-- 2026-08-09 免踢登录：未登录切换进本页展示引导页，点击按钮才跳登录 -->
-    <LockScreen v-if="!isUnlocked" :completion-percent="completionPercent" />
-    <template v-else>
+    <!-- R8-L06-D04（可达性 P1）：原 <LockScreen v-if="!isUnlocked"> + <template v-else>
+         把页头、双 Tab、概览三格、列表整块挡在登录判定之后，而 LockScreen 自身是
+         position:fixed 铺满视口的模态层（LockScreen.vue:339-343）⇒ 实机档两帧除状态栏
+         时钟与爱心浮动（全帧仅 597 px 不同、集中在 y<188）外逐像素相同，可滚区 0px，
+         页自述的 3 格概览数字与 2 个 Tab 标签命中数 0。
+         改法按缺陷卡：骨架（页头 + 曝光条 + 概览栏 + 双 Tab）常驻渲染，
+         只有列表区在游客态换成条目级登录引导（见下方 .guest-guide）。 -->
     <!-- 顶部标题栏（2026-08-09：左侧补返回键，navigationStyle: custom 无系统返回栏） -->
     <view class="page-header">
       <view class="page-header__top">
@@ -389,9 +402,27 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
       </view>
     </view>
 
+    <!-- R8-L06-D04：游客态列表区登录引导（骨架之下的唯一分支，条目级操作换成登录出口） -->
+    <view v-if="!isUnlocked" class="guest-guide" role="status" :aria-label="t('lock.titleLoggedOut')">
+      <image class="guest-guide__icon" :src="guestLockIconSrc" mode="aspectFit" alt="" />
+      <text class="guest-guide__title">{{ t('lock.titleLoggedOut') }}</text>
+      <text class="guest-guide__desc">{{ t('lock.subtitleLoggedOut') }}</text>
+      <view
+        class="guest-guide__btn press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('lock.primaryLoggedOut')"
+        @tap="goLogin"
+      >
+        <text class="guest-guide__btn-text">{{ t('lock.primaryLoggedOut') }}</text>
+      </view>
+      <text class="guest-guide__hint">{{ t('lock.footerTip') }}</text>
+    </view>
+
     <!-- 错误态 -->
     <!-- MP-R1-LSV-001：补 @retry="retryLoad"（原重试按钮点击零响应） -->
-    <ErrorState v-if="errorMessage && currentList.length === 0" :message="errorMessage" @retry="retryLoad" />
+    <ErrorState v-else-if="errorMessage && currentList.length === 0" :message="errorMessage" @retry="retryLoad" />
 
     <!-- 加载中 -->
     <view v-else-if="loading" class="list">
@@ -454,7 +485,6 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
 
     <!-- 底部安全区占位（避免内容被固定按钮遮挡） -->
     <view v-if="hasLockedItems && commerceCoinOn" class="unlock-bar-spacer" />
-    </template>
   </view>
 </template>
 
@@ -508,6 +538,62 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
 .page-header__subtitle {
   font-size: var(--fs-sm);
   color: var(--c-text-tertiary);
+}
+
+/* ========== R8-L06-D04（可达性 P1）：游客登录引导（占列表区，骨架之上不再整页被顶替） ========== */
+.guest-guide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-8) var(--sp-6);
+  border-radius: var(--r-lg);
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
+  box-sizing: border-box;
+}
+
+.guest-guide__icon {
+  width: 96rpx;
+  height: 96rpx;
+}
+
+.guest-guide__title {
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  color: var(--c-text-primary);
+  text-align: center;
+}
+
+.guest-guide__desc {
+  font-size: var(--fs-base);
+  color: var(--c-text-secondary);
+  text-align: center;
+}
+
+/* 主出口钮面取 --c-brand-800（白字 6.45:1），与 LockScreen.vue:717 同一档结论，
+   不用渐变（渐变浅端压白字实测 1.97:1，R8-L07-D03 已判） */
+.guest-guide__btn {
+  margin-top: var(--sp-4);
+  min-height: 88rpx;
+  padding: 0 var(--sp-8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-full);
+  background: var(--c-brand-800, #156B51);
+}
+
+.guest-guide__btn-text {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--c-text-inverse, #FFFFFF);
+}
+
+.guest-guide__hint {
+  font-size: var(--fs-sm);
+  color: var(--c-text-secondary);
+  text-align: center;
 }
 
 /* ========== 提升曝光入口 ========== */

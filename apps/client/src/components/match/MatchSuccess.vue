@@ -40,7 +40,15 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const scoreIcons = [IMAGE_PATHS.ICONS_EMOJI.RUN, IMAGE_PATHS.ICONS_EMOJI.MUSIC, IMAGE_PATHS.ICONS_EMOJI.BOOK, IMAGE_PATHS.ICONS_EMOJI.FOOD];
+/* R8-L06-D02（素材缺失 P2）：首行图标原绑 ICONS_EMOJI.RUN = static/assets/icons/emoji/run.svg。
+   emoji/ 只登记在 cdn-buckets.json 的 cdnPrefixes，不在 localPrefixes（icons/{tabbar,register,common}），
+   real 档按引用裁剪后包内根本没有 emoji/ 目录（实测 dist/build/mp-weixin-real/static/assets/icons/
+   只剩 common/register/tabbar + 根上几枚）⇒ 裸绑 404 ⇒ 首行底衬 ink=0，而 2/3/4 行走
+   common/{music,book,food}.svg（包内）故有墨 —— 与 R6-L09-D01 同族机制。
+   改指同族、三档树均在盘的 ICONS_COMMON.HIKING_SVG（common/hiking.svg，人形行进=慢跑语义）。
+   另：common/book.svg、food.svg 同样不带显式 width/height 却能渲染 ⇒ 「缺宽高=0×0」不是本帧根因，
+   run.svg 补宽高归素材车道（已在交件报告登记 HANDOFF）。 */
+const scoreIcons = [IMAGE_PATHS.ICONS_COMMON.HIKING_SVG, IMAGE_PATHS.ICONS_EMOJI.MUSIC, IMAGE_PATHS.ICONS_EMOJI.BOOK, IMAGE_PATHS.ICONS_EMOJI.FOOD];
 // 2026-08-25 P0：默认匹配度与参考图对齐（90/85/80/79），最后一项"生活方式 79%"而非 95%
 const defaultScores = [90, 85, 80, 79];
 
@@ -48,8 +56,8 @@ const defaultScores = [90, 85, 80, 79];
  *  后端 reasons 可能只有 1~2 项（如 mock 只返"同校"+"共同兴趣"），
  *  缺项用默认标签补全，保证 旅行/音乐/电影/生活方式 四行都可见。 */
 /* R2b-L06-D05（文案 P2）：理想图《匹配成功页面》「共同点」卡首行为「慢跑爱好」配奔跑人形图标
-   （与人物设定"喜欢摄影和夜跑"一致）。原首项「旅行爱好」与 scoreIcons[0]=RUN（奔跑人形）图文不符。
-   scoreIcons[0] 本就是 ICONS_EMOJI.RUN（emoji/run.svg 奔跑人形），无需换图标，只把标签改回「慢跑爱好」。 */
+   （与人物设定"喜欢摄影和夜跑"一致）。原首项「旅行爱好」与首行图标图文不符，故标签改回「慢跑爱好」。
+   图标本体已由 R8-L06-D02 换到包内可渲染的 common/hiking.svg（见下方 scoreIcons 注释）。 */
 const DEFAULT_REASON_LABELS = ["慢跑爱好", "音乐品味", "电影偏好", "生活方式"];
 const displayReasons = computed<MatchReason[]>(() => {
   const result: MatchReason[] = [];
@@ -197,8 +205,12 @@ function getScoreIcon(index: number): string {
   /* R4：110rpx 起排使标题行与微信胶囊（状态栏下 47-83px real 带）叠压，下移至胶囊带以下 */
   /* R2b-L06-D07（间距 P2）：__actions 靠 margin-top:auto 锚底后又被 safe-area+padding-bottom 顶起，
      实帧「分享喜悦」下沿距屏幕底约 89px（11% 屏高），理想图仅留 home indicator≈1.5%。
-     把根 padding-bottom 由 60rpx 降到 16rpx（上一轮 R1-B11 收到 60rpx 仍偏高）。 */
-  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 120rpx) 48rpx calc(16rpx + env(safe-area-inset-bottom));
+     把根 padding-bottom 由 60rpx 降到 16rpx（上一轮 R1-B11 收到 60rpx 仍偏高）。
+     R8-L06-D08（间距 P2）：16rpx 再被 env(safe-area-inset-bottom)=34px 顶起 ⇒ 实帧墨迹下沿距画布底
+     50px（14rpx+7px __share 下内衬+34px env），理想图仅 19px。锚底链要生效必须只留常量：
+     padding-bottom 归到 24rpx（12px）⇒ 7+12=19px 正合理想实测落点（env 一档由 home indicator
+     让位改由 __share 自身内衬吸收，与理想图同口径）。 */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 120rpx) 48rpx 24rpx;
   box-sizing: border-box;
   /* R1-L06-D02（颜色token P2）：删掉组件内第二条渐变 linear-gradient(180deg,#E8FBF2,#F0FFF5)（无粉色端）。
      页面层 match-success.vue:182 的 var(--c-gradient-match)（theme/design-variables.scss:179/390）
@@ -212,7 +224,11 @@ function getScoreIcon(index: number): string {
 }
 
 .match-success__title {
-  font-size: 72rpx;
+  /* R8-L06-D04（字号 P1）：72rpx 档实测字面高 35px、单字步进 35px，比理想图折算（26.6px / 28px 步进）
+     大 25%~31%，并把标题压到胶囊带下仅 29px 起排。档位表里 56rpx 有现成令牌
+     --fs-7xl（design-variables.scss:571「大标题 28pt = 56rpx」，缺陷卡写的 --fs-5xl 实值只有 44rpx=22px
+     会小过理想图），取 --fs-7xl 后字面高≈28px、步进≈28px 对齐理想图折算。 */
+  font-size: var(--fs-7xl, 56rpx);
   font-weight: 700;
   color: #36C99A;
 }
@@ -259,10 +275,14 @@ function getScoreIcon(index: number): string {
 .match-success__avatars {
   display: flex;
   align-items: center;
-  /* R2b-L06-D03（位置 P1，上一轮修反了）：理想图两枚头像彼此分离、中间留约 10.6% 屏宽（≈80rpx）空白，
-     心形徽标骑在空隙正中并各压两圆内缘一小截。上一轮 R1-B11 把 gap 收成 0 再用负 margin 反向压成
-     -12rpx 交叠，读成「连体圆」，方向修反。恢复 gap 为正值 80rpx。 */
-  gap: 80rpx;
+  /* R2b-L06-D03（位置 P1，上一轮修反了）：理想图两枚头像彼此分离、中间留约 10.6% 屏宽空白，
+     心形徽标骑在空隙正中并各压两圆内缘一小截。上一轮把 gap 收成 0 再用负 margin 压成交叠，方向修反。
+     R8-L06-D01（位置 P1）：gap 80rpx 档整行 232+80+(136−2×20)+80+232 = 720rpx > 内容盒 654rpx
+     （750 − 2×48 内衬）⇒ 实帧左头像外沿 x=13、右头像外沿 x=366 双双溢出，徽标两侧各留 31px 空档。
+     gap 收到 40rpx（232+40+96+40+232 = 640rpx ≤ 654rpx）行宽回到内容盒内；
+     配合 __heart 的负 margin 由 −20rpx 提到 −60rpx，两圆内缘间距 = 2×40+16 = 96rpx，
+     徽标圆 120rpx 各压内缘 12rpx ⇒ 既分离又骑压，与理想图空档折算 68rpx 同档。 */
+  gap: 40rpx;
   margin-top: 64rpx;
   position: relative;
 }
@@ -315,9 +335,13 @@ function getScoreIcon(index: number): string {
   /* R3（MSUCCESS-004）：100→136rpx，连接心形与头像比例对齐理想图 */
   width: 136rpx;
   height: 136rpx;
-  /* R2b-L06-D03：负 margin 由 -74rpx 收到 -20rpx——两圆之间保留 80rpx 正间隙（见 __avatars gap），
-     心形徽标仍各压两圆内缘约 20rpx（理想图「骑在空隙正中并压住内缘一小截」），靠 z-index:3 压住头像。 */
-  margin: 0 -20rpx;
+  /* R2b-L06-D03：负 margin 曾由 −74rpx 收到 −20rpx（当时 gap=80rpx，徽标浮在空档里没压到内缘）。
+     R8-L06-D01 连带：gap 收为 40rpx 后把负 margin 提到 −60rpx，徽标圆（120rpx）各压两枚头像内缘
+     约 12rpx（=6px），行总宽 560rpx 仍收在内容盒 654rpx 内、两圆之间还留 96rpx 净距不失分离。
+     另补 position:relative —— 原 z-index:3 写在静态 flex 项上根本不入层叠上下文，
+     一旦与后画的右头像交叠就会被盖住，吸顶/交叠都必须先定位。 */
+  margin: 0 -60rpx;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -460,7 +484,12 @@ function getScoreIcon(index: number): string {
 .match-success__primary {
   padding: 24rpx 0;
   border-radius: 999rpx;
-  background: linear-gradient(135deg, #36C99A 0%, #22a976 100%);
+  /* R8-L06-D03（颜色token P1）：主按钮原画成 135° 渐变（#36C99A→#22a976，实帧左上 #35C898 →
+     右下 #24AC79，ΔB31 的斜向明暗），理想图同区六个取样点全落 #1DB97D~#23BB7D（Δ≤4）是一条平色。
+     改单色：档位表无 #21BA7B 令牌，取最接近理想实测且最接近原渐变中值的 --c-brand-600 #2AAE83
+     （与理想实测 Δ(9,16,8)；缺陷卡另一建议 var(--c-brand)=#36C99A 与理想 Δ(21,15,31) 更远，
+     且白字对比只有 2.10:1，--c-brand-600 抬到 2.81:1）。渐变整条去掉 ⇒ 不再有色带。 */
+  background: var(--c-brand-600, #2AAE83);
   text-align: center;
 }
 
@@ -473,7 +502,12 @@ function getScoreIcon(index: number): string {
 .match-success__secondary {
   padding: 22rpx 0;
   border-radius: 999rpx;
-  border: 2rpx solid #dce5e2;
+  /* R8-L06-D06（颜色token P1）：次按钮原只写 2rpx 描边 #dce5e2（1px，压在浅底上不可见），
+     自身没有底色 ⇒ 实帧按钮内部取样 #F6F5F6~#FAF3F7 与按钮外页面底 #F5F5F7 同值（Δ≤3），
+     读成「只有一行字」。理想图同区是 #FFFFFF 卡片白、外底 #F2F6F2（明度差 13）。
+     补 --c-bg-container 白底 + 全站卡片阴影，并把与底色撞色的描边换成同族白卡语义（去掉边框）。 */
+  background: var(--c-bg-container, #ffffff);
+  box-shadow: var(--card-shadow, 0 8rpx 24rpx rgba(15, 23, 42, 0.06));
   text-align: center;
 }
 

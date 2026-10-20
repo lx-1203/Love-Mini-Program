@@ -63,9 +63,18 @@ const props = withDefaults(defineProps<{
   src: string;
   fallback?: string;
   mode?: string;
+  /** 应用到内层 <image> 的类。
+   * ⚠️ MP-R8-FXA（尺寸传递根因，见文末 :host 注释）：本值经 prop 传进组件，编译后落在
+   * 组件自己的 data-v 作用域（SafeImage.wxml: class="['data-v-<组件hash>','safe-image__img',customClass]"），
+   * 而宿主页 scoped 样式编译成 `.xxx.data-v-<页面hash>` ⇒ 跨组件边界永远匹配不到。
+   * 要给组件定尺寸，请用「原生 class / style 写在 <SafeImage> 标签上」（编译后落在宿主节点，
+   * 配合文末 :host 规则生效；仓内已验证消费点：components/match/MatchCard.vue、
+   * components/profile/public/PublicHero.vue）。本 prop 保留「给内层图追加类」原义，
+   * 既有调用点行为逐字不变。 */
   customClass?: string;
   /** 2026-08-08 走查 P0-1：应用到根容器 <view class="safe-image"> 的类。
-   * 背景大图场景需拉伸根容器（其默认无尺寸，内层 image 填不满 0 高度容器）。 */
+   * 背景大图场景需拉伸根容器（其默认无尺寸，内层 image 填不满 0 高度容器）。
+   * 同 customClass：宿主页 scoped 类因同一 data-v 边界无法命中本值，仅适合组件内部/绝对拉伸用法。 */
   rootClass?: string;
   customStyle?: string | Record<string, string | number>;
   lazyLoad?: boolean;
@@ -303,6 +312,45 @@ function onLoad() {
 </script>
 
 <style scoped>
+/* ================================================================
+   MP-R8-FXA（R8-L05-D01 / D03 / D12 根因 · 共享件尺寸传递机制）
+
+   真根因（编译产物为证，非推测）：
+   1. 宿主页 `<SafeImage custom-class="school-icon" />` 里的 custom-class 是 **prop**，
+      由 uni-app 经 u-p 传进组件，绑到组件内层 <image> 上；该节点带的是 SafeImage
+      自己的作用域标记（dist/build/mp-weixin/components/common/SafeImage.wxml:
+      class="['data-v-00127654','safe-image__img',f,g]"）。
+   2. 而宿主页 scoped 样式编译出来是「页面 hash」的复合选择器
+      （dist/build/mp-weixin/subpackages/campus/campus/index.wxss:
+      `.school-icon.data-v-094e836b{width:40rpx;height:40rpx}`）。
+      组件内部任何节点都不带 data-v-094e836b ⇒ 该规则命中 0 个节点。
+      ⇒ 上一轮改把类挪到 root-class 依然无效（同一个边界，同样命中 0 个节点）。
+   3. 结果：根 <view class="safe-image"> 恒为 width/height:100%，而宿主节点没有可命中的
+      尺寸声明 ⇒ 徽章槽渲染 0 像素；折叠后的根仍是 flex item，width:100% 反过来把兄弟
+      （作者名）挤到 x≈168px（R8-L05-D12 topic-card__footer）。
+
+   唯一可跨边界的宿主面 = 组件标签自身（宿主节点）。已验证：
+   dist/build/mp-weixin/components/match/MatchCard.wxml:
+     `<safe-image class="match-card__photo data-v-47c19cce" …>`
+   dist/build/mp-weixin/components/profile/public/PublicHero.wxml:
+     `<safe-image class="public-hero__bg data-v-69ca1cfd" …>`
+   ——原生 class/style 写在标签上会连同「外层作用域的 data-v」一起落到宿主节点，
+   外层 scoped 规则可以命中它（PublicHero 正是靠这条活路径定尺寸的）。
+
+   本组件侧补上缺失的一半：给宿主节点一个「块级 + 撑满父级」的默认盒，且默认值写在
+   `:host`（特异度 0,1,0）——低于任何宿主页 scoped 规则（.x.data-v-yyy = 0,2,0），
+   也低于宿主标签上的内联 style ⇒
+     · 既有 ~全部调用点：宿主没写尺寸时，:host 的 100%/100% = 今天根 <view> 的取值，渲染逐像素不变；
+     · 页面车道只需把 `custom-class="x"` 改成标签上的原生 `class="x"`（或 `style="width:…;height:…"`），
+       同一份 `x{width:40rpx;height:40rpx}` 立刻生效，槽位不再塌陷。
+   H5 端 Vue scoped 会把 `:host` 编译成 `:host[data-v-*]`，无 Shadow DOM 时永不命中 ⇒ H5 行为不变。
+   ================================================================ */
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .safe-image {
   position: relative;
   display: inline-block;

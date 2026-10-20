@@ -38,6 +38,17 @@ const villageStore = useVillageStore();
 
 const inputFocused = ref(true);
 
+/* R8-L08-D01（尺寸比例 P1）：输入框可见占位串改由本页已有的三个分组键拼出。
+   search.placeholder「搜索感兴趣的人、标签和学校」13 字 × 实测 13.1px/字 ≈ 170px，
+   而合并避让后（R7-L08-D01/D03）文本区只有 145px ⇒ 整句在 x=231 被啃掉末两字，
+   以连词「和」收尾（第三个检索对象「学校」整体丢失）。i18n 文案文件不在本车道可改清单内，
+   故不新增键、不动 zh-CN.ts:2878，只用既有键（zh-CN.ts:2879-2881）拼出
+   「用户/标签/学校」（en-US.ts:2721-2723 → "Users/Tags/Schools"）≈ 93px，
+   在 169px（本次回收 22px 后）文本区内完整可见；长句仍保留给 aria-label 与下方 emptyHint。 */
+const searchPlaceholderHint = computed(() =>
+  [t("search.tabUsers"), t("search.tabTags"), t("search.tabSchools")].join("/"),
+);
+
 // MP-R2-SEARCH-002：触底加载下一页（store 已实现 loadMore/hasMore，页面此前无触发器，
 // 第 2 页永远无法到达）
 onReachBottom(() => {
@@ -236,7 +247,12 @@ function goToActivity(activityId: number) {
     <view class="search-header" :style="{ paddingTop: `calc(${statusBarHeightPx}px + 16rpx)` }">
       <!-- R10-P2-008：补返回入口（此前仅靠手势返回） -->
       <view class="search-back press-feedback" hover-class="press-feedback--active" role="button" :aria-label="t('common.back')" @tap="goBack">
-        <image class="search-back__icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+        <!-- R8-L08-D02（可达性 P2）：字形改吃仓内既有深色变体 icons/v2/back.png（stroke #333333）。
+             原 icons/common/back.png 的描边是 #94A3B8 蓝灰，压在 #EEF7F2 圆底上只有 2.35:1
+             （帧上实测最暗墨迹 #9BA9BC 更低，2.19:1），低于非文本控件 3:1 线，4×9px 淡弧像噪点。
+             #333333 对圆底 #EEF7F2 = 11.6:1、对白底 #FFFFFF = 12.6:1，两份都在同页色板内。
+             素材三棵树（src/static、static-local-backup、api/uploads/app-assets）md5 一致，未新增素材。 -->
+        <image class="search-back__icon" :src="IMAGE_PATHS.ICONS_V2.BACK" mode="aspectFit" alt="" />
       </view>
       <view class="search-box" role="search" :aria-label="t('search.placeholder')">
         <image class="search-icon" :src="IMAGE_PATHS.ICONS_COMMON.SEARCH" mode="aspectFit" alt="" />
@@ -244,7 +260,7 @@ function goToActivity(activityId: number) {
   cursor-spacing="20"
           v-model="searchStore.keyword"
           class="search-input"
-          :placeholder="t('search.placeholder')"
+          :placeholder="searchPlaceholderHint"
           :focus="inputFocused"
           :confirm-type="'search'"
           @input="onSearchInput"
@@ -463,8 +479,15 @@ function goToActivity(activityId: number) {
 .search-back {
   /* R10-P2-008：返回按钮（与全站圆角返回键一致） */
   flex-shrink: 0;
-  width: 64rpx;
-  height: 64rpx;
+  /* R8-L08-D02（可达性 P2）：本页自陈触控下限是 88rpx（.search-tab:699 同口径，
+     AppShell.vue:334「min-height: 88rpx(44px)」），而返回键只有 64rpx：
+     帧上实测圆底 32px(64rpx) vs 下方「用户」选中胶囊 42px(83rpx)，同一页两个并排顶级
+     导航控件差 10px ⇒ 返回键比同页 Tab 小一档。按同一口径补到 88rpx（min-* 兜住下限），
+     圆底与热区一起长，头部行高由 72rpx 的输入胶囊抬到 88rpx，画面必然移动。 */
+  width: 88rpx;
+  height: 88rpx;
+  min-width: 88rpx;
+  min-height: 88rpx;
   border-radius: var(--r-full, 999rpx);
   background: var(--c-bg-page, #EEF7F2);
   display: flex;
@@ -473,8 +496,10 @@ function goToActivity(activityId: number) {
 }
 
 .search-back__icon {
-  width: 36rpx;
-  height: 36rpx;
+  /* R8-L08-D02：圆底从 64rpx 长到 88rpx 后，36rpx 的淡弧在帧上只有 4×9px，
+     与圆底同步放大到 40rpx，配合深色描边变体才看得出是个返回键 */
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .search-header {
@@ -487,8 +512,12 @@ function goToActivity(activityId: number) {
      的 margin-right ⇒ 同一份避让叠加两遍吃掉 ~206px，输入框实测只剩 x=54..131（宽 ~77px），
      14 字 placeholder 在 x=121 被切断只显示「搜索感」，框右缘与「取消」之间 ~108px 纯白死区。
      避让改由头部行右内边距统一承担（行内所有子节点整体落在胶囊左侧），
-     两个子节点的 margin-right 全部删除，把 ~107px 还给输入框。 */
-  padding: var(--sp-4) calc(var(--capsule-right, 7px) + 96px) var(--sp-4) var(--sp-6);
+     两个子节点的 margin-right 全部删除，把 ~107px 还给输入框。
+     R8-L08-D01（尺寸比例 P1）：合并后仍按 96px 常量预留 = 实测 103px，而本帧系统胶囊墨迹
+     实起于 x=298（屏宽 378 ⇒ 胶囊占位 378-298 = 80px），「取消」止于 x=276 ⇒ 行尾 22px(44rpx)
+     是纯白死区，没还给输入框。常量按实测胶囊几何改 73px（73px + --capsule-right 兜底 7px
+     = 80px，正好贴胶囊左缘），22px 全部并入 .search-box（flex:1）⇒ 文本可用宽 145px→167px。 */
+  padding: var(--sp-4) calc(var(--capsule-right, 7px) + 73px) var(--sp-4) var(--sp-6);
   background: var(--c-bg-container, #ffffff);
   position: sticky;
   top: 0;
@@ -532,6 +561,9 @@ function goToActivity(activityId: number) {
   width: 100%;
   font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-primary, #1f2329);
+  /* R8-L08-D01：占位/关键词超出可用宽时按省略号收口，不再出现以连词「和」结尾的半截句
+     （en-US.ts:2720 "Search post title, content or topic" 35 字符同样需要这个收口） */
+  text-overflow: ellipsis;
 }
 
 .search-clear-img {

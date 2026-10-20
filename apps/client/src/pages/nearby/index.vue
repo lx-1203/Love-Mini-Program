@@ -13,6 +13,14 @@ import { storeToRefs } from "pinia";
 import PostCard from "../../components/village/PostCard.vue";
 import SkeletonBlock from "../../components/common/SkeletonBlock.vue";
 import NearbySection from "../../components/nearby/NearbySection.vue";
+// R8-L02-D04（需新建）：分区①「附近的人」在两张入口条下方补 §3.5 要求的距离/同城分段 + 人卡横滑。
+// 人卡数据不另立真相源：取二级页 subpackages/discover-extra/nearby/people.vue:74 同一条路径
+// （clientApi.getRecommendations + mapToDiscoverCard，距离口径 NEARBY_MAX_DISTANCE_KM=20），
+// 头像走共享件 SafeImage（失败兜底默认头像），与 people.vue:224 同一口径。
+import SafeImage from "../../components/common/SafeImage.vue";
+import { clientApi } from "../../services/api";
+import { mapToDiscoverCard, NEARBY_MAX_DISTANCE_KM } from "../../stores/discover/utils";
+import type { DiscoverCard } from "../../stores/discover/types";
 import { useVillageStore, type PostItem } from "../../stores/village";
 import { useCircleStore } from "../../stores/circle";
 import { circleCoverFor } from "../../config/circle-covers";
@@ -143,11 +151,34 @@ const protectedBlocked = computed(() => !sessionStore.isLoggedIn && !canFetchPro
 
 /** 首页子标题：北京大学 · 3km */
 
+/**
+ * R8-L02-D03（空态文案）：定位行两态的可恢复出口。
+ * 空态判定按 buildLocationText（utils/location.ts:237）的取值顺序来：
+ * city → 有城市；campusName → 有本校名；两者都无 → 落到 locationPage.locationEmpty
+ * 「暂无位置信息」——帧上 y≈113-128 那行就是这一支，此前右侧什么都没有、
+ * 整行也不是可点件，用户无法从这一行恢复定位或换城市。
+ * locationCity 只在定位真的拿到城市时写入，绝不用前端默认值冒充（红线：不编后端数据）。
+ */
+const locationCity = ref("");
+const ownCampusName = computed(() => sessionStore.userSession?.campusName?.trim() || "");
+const locationIsEmpty = computed(() => !locationCity.value && !ownCampusName.value);
+
+/** 定位行整行可点：空态→重走定位授权与逆地理（fetchCurrentLocation 内部即授权链路）；
+ *  有值→进「我的位置」页换城市（与 pages/home/index.vue:271 同一 ROUTES.PROFILE.LOCATION 出口）。 */
+function onLocationRowTap() {
+  if (locationIsEmpty.value) {
+    void initLocation();
+    return;
+  }
+  openAppPath(ROUTES.PROFILE.LOCATION);
+}
+
 const homeSubtitle = ref(buildLocationText("", sessionStore.userSession?.campusName));
 
 async function initLocation() {
   const loc = await fetchCurrentLocation();
   if (loc) {
+    locationCity.value = loc.city || "";
     // MP-R6-F1-NEARBY-IP-CITY-001：citySource==="ip" 时，城市是后端按**请求方 IP 归属地**推断的
     // （逆地理拿不到城市时的兜底，见 utils/location.ts:44-56），与用户真实所在城市可能差出一个省。
     // 这样的城市只够用来标注，不能当同城过滤键，也不能写进 NEARBY_CITY——
@@ -178,11 +209,96 @@ async function initLocation() {
   }
 }
 
+/**
+ * R8-L02-D04（需新建）：分区①的「距离 / 同城」分段 + 人卡横滑预览。
+ * - 数据只走二级页同一条受保护端点（getRecommendations），并按本页既有守卫
+ *   canFetchProtected()（:66，real 未登录一律不发，避免 401 → http 层强踢登录页）；
+ *   被门挡住的分支渲染登录引导空态（同分区②/④的 nearby-home__empty--guide 口径），
+ *   而不是把「未取」伪装成「无内容」，更不是捏造人卡。
+ * - 预览上限 8 张（横滑一屏 3.5 张的口径）；整屏列表仍由 goPeople 的二级页承接，
+ *   入口条与导航出口一条都不删，功能不丢。
+ */
+const peopleScope = ref<"nearby" | "city">("nearby");
+const peoplePreview = ref<DiscoverCard[]>([]);
+const peopleLoading = ref(false);
+const peopleFailed = ref(false);
+/** 竞态 token：切段时旧响应不得覆盖新列表（同 people.vue:66 loadToken 口径） */
+let peopleToken = 0;
+
+async function loadPeoplePreview(scope: "nearby" | "city" = peopleScope.value) {
+  if (!canFetchProtected()) {
+    peoplePreview.value = [];
+    peopleLoading.value = false;
+    peopleFailed.value = false;
+    return;
+  }
+  const token = ++peopleToken;
+  peopleLoading.value = true;
+  peopleFailed.value = false;
+  try {
+    const people = await clientApi.getRecommendations(
+      scope === "nearby" ? { distanceMax: NEARBY_MAX_DISTANCE_KM } : {},
+    );
+    if (token !== peopleToken) return;
+    const seen = new Set<string>();
+    const cards: DiscoverCard[] = [];
+    for (const p of people) {
+      const card = mapToDiscoverCard(p);
+      const key = card.userId ? String(card.userId) : `name:${card.name}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      cards.push(card);
+    }
+    peoplePreview.value = cards.slice(0, 8);
+  } catch {
+    if (token !== peopleToken) return;
+    peopleFailed.value = true;
+    peoplePreview.value = [];
+  } finally {
+    if (token === peopleToken) peopleLoading.value = false;
+  }
+}
+
+function switchPeopleScope(scope: "nearby" | "city") {
+  if (peopleScope.value === scope) return;
+  peopleScope.value = scope;
+  void loadPeoplePreview(scope);
+}
+
+/** 人卡次行：距离段展示后端 distanceText（口径同 people.vue:129 formatDistance），
+ *  同城段优先展示后端 campusName；后端没给的就留空，不拼假值。 */
+function formatDistanceText(raw?: string): string {
+  if (!raw) return "";
+  return /^\d+(\.\d+)?$/.test(raw) ? `${raw}km` : raw;
+}
+function personMetaText(person: DiscoverCard): string {
+  if (peopleScope.value === "nearby") return formatDistanceText(person.distanceText);
+  return person.campusName || formatDistanceText(person.distanceText);
+}
+function openPersonProfile(userId: string) {
+  openUserProfile(userId);
+}
+
+/**
+ * R8-L02-D05（层级遮挡）：状态栏 + 胶囊带等高的固定导航底板高度。
+ * 本页页头写在 scroll-view 内、且 scroll-view 没有可解析的固定高度
+ * （.nearby-home__scroll 只有 flex:1 + min-height:0，根容器只有 min-height:100%）
+ * ⇒ 实际滚动发生在页面级：滚到底时第 4 张兴趣圈卡升入胶囊带（帧上圈名与「6,533 人加入」
+ * 落在 x≈262-345 / y≈20-40，胶囊占 x≈272-370 / y≈28-60），文字右半被胶囊压住不可读。
+ * 高度按实测胶囊口径 = 状态栏 + 胶囊上间距 4 + 胶囊高 32 + 4 呼吸 = statusBar + 40px；
+ * 值取 JS 注入的 useStatusBarHeight()（本仓已证实 env()/--statusbar 在模拟档恒 0，见 :40）。
+ */
+const navBandStyle = computed(() => ({
+  height: `${statusBarHeightPx.value + 40}px`,
+}));
+
 onLoad(() => {
   loadNearbyData();
   void initLocation();
   // MP-R1-PAGES-NEARBY-INDEX-018：校区列表走后端，静态表只作首帧兜底
   refreshSchools();
+  // R8-L02-D04：分区①人卡预览随首屏一起取数（内部按登录门自决，未登录不发受保护请求）
+  void loadPeoplePreview();
 });
 
 onShow(() => {
@@ -407,8 +523,10 @@ function campusChipKey(schoolName: string): string {
 /** 成员数格式化 */
 function formatMemberCount(count: number): string {
   if (count >= 10000) return `${(count / 10000).toFixed(1)}w`;
-  // R21：对齐理想图（1.2w / 8,932）——千位以下展示精确人数（千分位），不再用英文 k 单位
-  if (count >= 1000) return count.toLocaleString("en-US");
+  // R8-L02-D02（文案）：撤销 R21 的千分位。同排四张卡因此出现「1.2w / 8,932 / 8,123 / 6,533」
+  // 两种量纲混排——理想图的精确值写作 8602（不带分隔符），R21 以「对齐理想图」为名加的
+  // toLocaleString("en-US") 恰好把理想图没有的逗号加了进来，同一条轴修反了。
+  // ≥1w 折「w」的口径保留（那是理想图自身的写法），千位段回到裸数字。
   return String(count);
 }
 </script>
@@ -418,6 +536,12 @@ function formatMemberCount(count: number): string {
     class="nearby-home page-bottom-safe"
     :style="[{ paddingTop: statusBarHeightPx + 12 + 'px' }, menuStyleVars]"
   >
+    <!-- R8-L02-D05（层级遮挡）：与状态栏+胶囊带等高的固定导航底板（高度口径见 script 的 navBandStyle）。
+         本页页头在 scroll-view 内且滚动发生在页面级 ⇒ 滚到底时兴趣圈卡升入胶囊带被胶囊压住；
+         这块实色底板吃掉 y=0 → 胶囊底缘，让正文永远停在胶囊带下方；页头自身再抬到它之上
+         （.nearby-home__header 的 position/z-index），故首屏页头不被遮挡、两态互不打架。
+         pointer-events:none ⇒ 不吃走其下任何可点件的热区。 -->
+    <view class="nearby-home__nav-band" :style="navBandStyle" />
     <scroll-view scroll-y class="nearby-home__scroll" :show-scrollbar="false">
       <!-- 顶部：绿定位针 + 附近 + 放大镜 + 发帖
            MP-R1-PAGES-NEARBY-INDEX-904：回归理想图形态（右上仅放大镜图标，
@@ -437,9 +561,23 @@ function formatMemberCount(count: number): string {
             </view>
           </view>
         </view>
-        <view class="nearby-home__subtitle-row">
+        <!-- R8-L02-D03（空态文案）：定位行升级为整行可点件（热区口径同本页 goSearch
+             那颗 .nearby-home__search-btn 的 88rpx 最小可点件），右侧补一个动作值：
+             空态「· 重试 ›」重走定位授权与逆地理，有城市/本校名时「· 切换城市 ›」进
+             「我的位置」页。两枚动作文案都取既有键（common.retry / village.sameCityChange，
+             zh/en 双语都已存在，0 新增词条），定位值本身仍只显后端/系统真给的 city 或 campus。 -->
+        <view
+          class="nearby-home__subtitle-row"
+          role="button"
+          :aria-label="locationIsEmpty ? t('common.retry') : t('village.sameCityChange')"
+          hover-class="press-feedback--active"
+          hover-stay-time="40"
+          @tap="onLocationRowTap"
+        >
           <image class="nearby-home__pin nearby-home__pin--sm" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
           <text class="nearby-home__subtitle">{{ homeSubtitle }}</text>
+          <text v-if="locationIsEmpty" class="nearby-home__location-action">· {{ t('common.retry') }} ›</text>
+          <text v-else class="nearby-home__location-action">· {{ t('village.sameCityChange') }} ›</text>
         </view>
       </view>
 
@@ -509,6 +647,89 @@ function formatMemberCount(count: number): string {
             <text class="people-entry__arrow">›</text>
           </view>
         </view>
+
+        <!-- R8-L02-D04（需新建）：§3.5 要求的「距离/同城」分段控件 + 人卡横滑列表，
+             补在两张入口条下方——该分区此前只有两个跳转条、内容区在 DOM 里根本不存在。
+             四态齐备（同分区②/④既有三态口径）：登录门 → 引导空态、加载中 → SkeletonBlock、
+             取回但为空/失败 → 空态文案 + 重试、有数据 → 人卡横滑。整屏列表出口（goPeople）保留。 -->
+        <view class="people-segment" role="tablist" :aria-label="t('nearby.peopleTabsAria')">
+          <view
+            class="people-segment__item"
+            :class="{ 'people-segment__item--active': peopleScope === 'nearby' }"
+            role="tab"
+            :aria-selected="peopleScope === 'nearby'"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
+            @tap="switchPeopleScope('nearby')"
+          >
+            <text class="people-segment__text">{{ t('nearby.peopleNearby') }}</text>
+          </view>
+          <view
+            class="people-segment__item"
+            :class="{ 'people-segment__item--active': peopleScope === 'city' }"
+            role="tab"
+            :aria-selected="peopleScope === 'city'"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
+            @tap="switchPeopleScope('city')"
+          >
+            <text class="people-segment__text">{{ t('nearby.peopleCity') }}</text>
+          </view>
+        </view>
+
+        <view v-if="protectedBlocked" class="nearby-home__empty nearby-home__empty--guide">
+          <text class="nearby-home__empty-text">{{ t('nearby.loginToView') }}</text>
+          <view
+            class="nearby-home__empty-action press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
+            role="button"
+            :aria-label="t('discover.card.goLogin')"
+            @tap="goLogin"
+          >
+            <text class="nearby-home__empty-action-text">{{ t('discover.card.goLogin') }}</text>
+          </view>
+        </view>
+        <view v-else-if="peopleLoading && peoplePreview.length === 0" class="nearby-home__empty">
+          <SkeletonBlock variant="list" :rows="1" :label="t('nearby.loading')" />
+        </view>
+        <view v-else-if="peoplePreview.length === 0" class="nearby-home__empty nearby-home__empty--guide">
+          <text class="nearby-home__empty-text">{{ peopleFailed ? t('nearby.loadFailed') : t('nearby.peopleEmpty') }}</text>
+          <view
+            class="nearby-home__empty-action press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
+            role="button"
+            :aria-label="t('common.retry')"
+            @tap="loadPeoplePreview(peopleScope)"
+          >
+            <text class="nearby-home__empty-action-text">{{ t('common.retry') }}</text>
+          </view>
+        </view>
+        <scroll-view v-else scroll-x class="people-scroll" :show-scrollbar="false">
+          <view class="people-scroll__list">
+            <view
+              v-for="person in peoplePreview"
+              :key="person.id"
+              class="person-mini press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="40"
+              role="button"
+              :aria-label="person.name"
+              @tap="openPersonProfile(person.userId)"
+            >
+              <!-- 头像尺寸落在本页自有节点 .person-mini__avatar-wrap 上，SafeImage 靠
+                   宿主 :host 的 100%/100% 填满（共享件车道 FXA 已证：custom-class 传的类名
+                   落在组件内部节点、不带宿主页 data-v ⇒ 宿主 scoped 规则永不命中，
+                   故本页一律用「宿主盒定尺寸 + 组件填满」这条运行时真正生效的路径）。 -->
+              <view class="person-mini__avatar-wrap">
+                <SafeImage :src="person.avatar" mode="aspectFill" :lazy-load="false" alt="" />
+              </view>
+              <text class="person-mini__name">{{ person.name }}</text>
+              <text class="person-mini__meta">{{ personMetaText(person) }}</text>
+            </view>
+          </view>
+        </scroll-view>
       </NearbySection>
 
       <!-- ② 热门兴趣圈（开放加入，无需校园认证） -->
@@ -568,7 +789,14 @@ function formatMemberCount(count: number): string {
            数据源：config/schools.ts 的 School 接口无成员数字段，
            subpackages/campus/campus/hub.vue:62-73 schoolStats 是带「约」标注的硬编码
            演示表（其注释 MP-R2-CAMPUS-HUB-007 自述「后端 campuses 接口就绪后替换」），
-           复制到本页即成第二真相源 → 暂展示真实的 school.city，同学数待后端补字段。 -->
+           复制到本页即成第二真相源 → 暂展示真实的 school.city，同学数待后端补字段。
+           R8-L02-D07（文案）复核并登记为「未修（缺列）」：本页取数路径 config/schools.ts:13
+           的 School 与后端 services/config.ts:36 的 CampusView 都只有 id/name/city 三键，
+           /api/v1/config/campuses 没有任何学校维度的成员数（全库 memberCount 只挂在
+           InterestCircleSummary / 兴趣圈 schema 上，见 api-types.ts:1081）⇒
+           缺的是后端列 campuses.member_count（或 /config/campuses 的 studentCount），
+           前端不拿 city 冒充、也不捏一个「N 位同学」。city 行按现状保留（它是后端真给的值，
+           删掉换成空白会把真信息换成空槽，属另一条轴的裁决）。 -->
       <NearbySection :title="t('nearby.campusCircles')" :more-text="t('nearby.viewAll')" @more="goCampusHub()">
         <view class="campus-cards">
           <view
@@ -738,17 +966,40 @@ function formatMemberCount(count: number): string {
   min-height: 0;
 }
 
+/* R8-L02-D05（层级遮挡）：状态栏 + 胶囊带等高的固定导航底板（高度由 script 的
+   navBandStyle 以 JS 实测值注入，写在标签 style 上 ⇒ 走的是运行时真正生效的那条路径，
+   不依赖 env()/CSS 变量——本仓已证实两者在模拟档恒 0，见 :40 的 R20 记录）。
+   实色取页面底 --c-bg-page：首屏这块带的底色本来就是它，故 top 态逐像素不变；
+   底态滚进来的正文被它整块吃掉，不再与系统胶囊（x≈272-370 / y≈28-60）叠压。
+   pointer-events:none ⇒ 热区全部留给其下的可点件。 */
+.nearby-home__nav-band {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  background: var(--c-bg-page, #EEF7F2);
+  pointer-events: none;
+}
+
 /* 修复图片过大问题：全局约束附近页所有图片容器 */
 .nearby-home image {
   max-width: 100%;
   max-height: 400rpx;
 }
 
+/* R8-L02-D05：页头抬到固定导航底板（.nearby-home__nav-band，z-index:5）之上——
+   静态元素不参与 z-index 竞争，故必须先给 position:relative。 */
 .nearby-home__header {
+  position: relative;
+  z-index: 6;
   margin-bottom: 8rpx;
-  /* 右侧避让微信胶囊（--capsule-right≈7px 间隙 + 胶囊 87px + 120px 缓冲），
-     「发动态」胶囊与系统胶囊保持充足间距 */
-  padding-right: calc(var(--capsule-right, 7px) + 120px);
+  /* R8-L02-D01（位置）：删除 `padding-right: calc(var(--capsule-right, 7px) + 120px)`。
+     页头行的顶缘由根节点 :419 的 paddingTop（statusBar+12）+ .nearby-home 的 24rpx 决定，
+     实测落在 y≈70-95，而系统胶囊实测 y≈28-66 —— 页头整体已在胶囊下方，横向再让 120px
+     是第二次让位：把「发动态」右缘顶到 x≈228（帧宽 378 的 60%），右侧空出约 124px≈246rpx。
+     回到根容器的 32rpx 页边距口径（.nearby-home :729 padding-right:32rpx），
+     「发动态」即右对齐到页面右缘 x≈352，与理想图一致。胶囊避让由 padding-top（纵向）承担。 */
 }
 
 .nearby-home__title-row {
@@ -822,11 +1073,14 @@ function formatMemberCount(count: number): string {
   color: var(--c-text-inverse, #FFFFFF);
 }
 
+/* R8-L02-D03：定位行改可点件——热区抬到本页 goSearch 那颗 .nearby-home__search-btn
+   （:800 起）同级的 88rpx 最小可点件口径，内容仍靠左、视觉位置只随热区下移居中。 */
 .nearby-home__subtitle-row {
   display: flex;
   align-items: center;
   gap: 8rpx;
   margin-top: 8rpx;
+  min-height: 88rpx;
 }
 
 .nearby-home__subtitle {
@@ -834,11 +1088,113 @@ function formatMemberCount(count: number): string {
   color: var(--c-text-secondary, #666666);
 }
 
+/* 定位行动作值（空态「重试」/有值「切换城市」）：24rpx 同正文字号、加粗以区别于只读正文。
+   色取 --c-text-secondary #4A524E —— 相对亮度 0.0803：压页面底 --c-bg-page #EEF7F2（0.8957）
+   = 7.26:1，压白底 = 8.06:1，两档都过 4.5:1。不取 --c-text-tertiary #6B7571（0.1704）：
+   它对 #EEF7F2 只有 4.29:1、对白底 4.76:1，跨两种底色时低于门槛。
+   也不用品牌绿：本页的绿色只留给既有品牌件（.nearby-home__publish 那颗实色胶囊）。 */
+.nearby-home__location-action {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--c-text-secondary, #4A524E);
+}
+
 /* 附近的人 */
 .people-entry-list {
   display: flex;
   flex-direction: column;
   gap: 16rpx;
+}
+
+/* ========== R8-L02-D04：分区①「距离/同城」分段控件 + 人卡横滑 ========== */
+.people-segment {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+
+/* 热区 88rpx = 本页既有最小可点件口径（同 .nearby-home__search-btn 的 88rpx） */
+.people-segment__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  padding: 0 32rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-border-light, #EEF2F0);
+}
+
+.people-segment__text {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--c-text-secondary, #4A524E);
+}
+
+/* 选中态：白字压 --c-brand-800 #156B51（相对亮度 0.1127）⇒ 1.05/0.1627 = 6.45:1，
+   过 4.5:1；不压 --c-brand #36C99A / --c-brand-600 #2AAE83（白字分别只有 1.9/2.8:1）。
+   本页品牌绿实色底一律取 brand-800 这一档。 */
+.people-segment__item--active {
+  background: var(--c-brand-800, #156B51);
+  border-color: var(--c-brand-800, #156B51);
+}
+
+.people-segment__item--active .people-segment__text {
+  color: var(--c-text-inverse, #FFFFFF);
+}
+
+.people-scroll {
+  width: 100%;
+  margin-top: 16rpx;
+}
+
+.people-scroll__list {
+  display: flex;
+  gap: 16rpx;
+  padding: 0 0 8rpx;
+}
+
+.person-mini {
+  width: 200rpx;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8rpx;
+  padding: 16rpx;
+  border-radius: 20rpx;
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-border-light, #EEF2F0);
+  box-sizing: border-box;
+}
+
+/* 头像尺寸写在本页自有节点上，SafeImage 靠宿主 :host 的 100%/100% 填满
+   （200 − 2×16 内衬 = 168rpx）——custom-class 那条路在本仓被证伪：类名落在组件内部节点、
+   不带宿主页 data-v，宿主 scoped 规则永不命中。 */
+.person-mini__avatar-wrap {
+  width: 168rpx;
+  height: 168rpx;
+  border-radius: 16rpx;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--c-bg-surface, #EEF7F2);
+}
+
+.person-mini__name {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--c-text-primary, #1A1E1C);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-mini__meta {
+  font-size: 22rpx;
+  color: var(--c-text-secondary, #4A524E);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .people-entry {
@@ -997,6 +1353,12 @@ function formatMemberCount(count: number): string {
   gap: 16rpx;
 }
 
+/* R8-L02-D06（颜色token）：校园圈卡按理想图归一为「白底 + 近黑标题 + 灰副标」，
+   品牌绿只留给状态胶囊这一枚（原卡底 --c-brand-50 / 校名 --c-brand-600 / 次行 --c-brand-700
+   三层同色系绿压在一张卡上，层级读不出来）。
+   注：卡底在本帧实走 .campus-entry--img 那一条（campusCoverFor 恒给非空 coverUrl），
+   缺陷行读 :1011 记的 --c-brand-50 是被 --img 覆盖的那一半——两条一并改成白底，
+   不论 coverUrl 有没有值都不会再出现绿底卡。 */
 .campus-entry {
   position: relative;
   flex: 1;
@@ -1007,14 +1369,13 @@ function formatMemberCount(count: number): string {
   gap: 8rpx;
   padding: 12rpx 12rpx 16rpx;
   border-radius: 20rpx;
-  /* 统一浅绿背景（不再每校一色渐变） */
-  background: var(--c-brand-50, #E6F6EF);
-  border: 1rpx solid var(--c-brand-100, #D3EDE0);
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-border-light, #EEF2F0);
   overflow: hidden;
 }
 
 .campus-entry--img {
-  background: var(--c-neutral-100, #F2F4F3);
+  background: var(--c-bg-container, #FFFFFF);
 }
 
 .campus-entry__cover-img {
@@ -1032,27 +1393,35 @@ function formatMemberCount(count: number): string {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #FFFFFF;
+  background: var(--c-bg-surface, #EEF7F2);
   flex-shrink: 0;
   overflow: hidden;
   padding: 0 6rpx;
   box-sizing: border-box;
 }
 
+/* R8-L02-D06：封面位兜底的校名同样退出品牌绿（原 --c-brand-600 实值 #2AAE83 压白底 2.81:1、
+   压浅绿底更低，本就不到 4.5:1），改近黑正文色；白底兜底位也随之换成页面浅绿底，
+   避免「白卡上贴一块白」读不出边界。 */
 .campus-entry__badge-text {
   font-size: 20rpx;
   font-weight: 700;
-  color: var(--c-brand-600, #1F9A75);
+  color: var(--c-text-primary, #1A1E1C);
   line-height: 1.3;
   text-align: center;
   white-space: nowrap;
 }
 
-/* 校名 / 次行（同学数无全站数据源，暂由真实 city 字段占位，见模板注释） */
+/* 校名 / 次行（同学数无全站数据源，次行仍由真实 city 字段占位——见模板注释与 R8-L02-D07 登记）
+   R8-L02-D06：两层文字退出品牌绿系，改「近黑标题 + 灰副标」。
+   --c-text-primary #1A1E1C 相对亮度 0.0123 ⇒ 压白底 16.85:1；
+   --c-text-secondary #4A524E 相对亮度 0.0803 ⇒ 压白底 8.06:1。
+   次行不取 --c-text-tertiary #6B7571：它压白底 4.76:1 勉强过线、压本卡兜底浅绿底
+   #EEF7F2（0.8957）只有 4.29:1 ⇒ 低于 4.5:1，按「算不过就换档」的口径取 secondary。 */
 .campus-entry__name {
   font-size: 22rpx;
   font-weight: 700;
-  color: var(--c-brand-600, #1F9A75);
+  color: var(--c-text-primary, #1A1E1C);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1060,26 +1429,29 @@ function formatMemberCount(count: number): string {
 
 .campus-entry__desc {
   font-size: 20rpx;
-  color: var(--c-brand-700, #2E8B6A);
+  color: var(--c-text-secondary, #4A524E);
   min-height: 26rpx;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* 状态胶囊＝本卡唯一的绿色位：浅绿底 + 深绿字。
+   --c-brand-800 #156B51（0.1127）压 --c-brand-50 #E8FAF3（0.9200）
+   = 0.9700/0.1627 = 5.96:1 ≥ 4.5:1；原 --c-brand-600 #2AAE83（0.3240）压白底只有 2.81:1、
+   压浅绿底 2.59:1，两档都不达标，故胶囊字色一并降到 brand-800。 */
 .campus-entry__status {
   flex-shrink: 0;
   align-self: flex-start;
   padding: 6rpx 16rpx;
   border-radius: 999rpx;
-  /* 浅绿底上状态胶囊用白底 + 深绿字 */
-  background: #FFFFFF;
+  background: var(--c-brand-50, #E8FAF3);
 }
 
 .campus-entry__status-text {
   font-size: 20rpx;
   font-weight: 600;
-  color: var(--c-brand-600, #1F9A75);
+  color: var(--c-brand-800, #156B51);
 }
 
 /* R7-L02-D04：分区④三张活动卡在帧上是直角矩形，而同页同族的 .people-entry（:827）

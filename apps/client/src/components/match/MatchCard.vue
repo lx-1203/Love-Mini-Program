@@ -266,13 +266,14 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
   display: flex;
   align-items: center;
   justify-content: center;
-  /* MP-R1-PAGES-DISCOVER-INDEX-011：等值渐变 token --c-gradient-romance
-     （design-variables.scss:167 即 #FF6B81→#FF8DA1，与 Common Button.vue:244 同写法） */
-  background: var(--c-gradient-romance, linear-gradient(135deg, #FF6B81 0%, #FF8DA1 100%));
-  /* 豁免（011 口径「确无对应 token 者以注释声明」）：rgba(255,90,145,.3) 与 --s-romance/-md
-     （rgba(255,107,129,.25/.30)、模糊 32rpx）几何与色相均不等值，换用会改变徽章投影；
-     新增等值 token 需改 theme/design-variables.scss（非本泳道写集）→ 需他人配合 */
-  box-shadow: 0 8rpx 20rpx rgba(255, 90, 145, 0.3);
+  /* MP-R1-PAGES-DISCOVER-INDEX-011：等值渐变 token 写法保持，
+     R8-L01-D07（颜色族错配 P1）：档口由 --c-gradient-romance(#FF6B81→#FF8DA1) 换成
+     --c-gradient-brand(#36C99A→#55D5A7, design-variables.scss:171) —— 匹配度属「成功/在线」语义绿系，
+     与 XunmiMatchRing.vue:44 的 conic 绿环同两档，romance 粉只留给「喜欢」指示。 */
+  background: var(--c-gradient-brand, linear-gradient(135deg, #36C99A 0%, #55D5A7 100%));
+  /* R8-L01-D07：投影同步换绿系，消掉 rgba(255,90,145,.3) 这笔粉投影字面量
+     —— 直接取既有令牌 --s-brand（= $shadow-brand, design-variables.scss:508），不再需要新增 token。 */
+  box-shadow: var(--s-brand, 0 8rpx 32rpx rgba(54, 201, 154, 0.25));
 }
 
 .match-card__score-ring-inner {
@@ -281,8 +282,11 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
   width: 132rpx;
   height: 132rpx;
   border-radius: 50%;
-  /* MP-R1-PAGES-DISCOVER-INDEX-011：等值 scrim token --c-black-shadow-lg=rgba(0,0,0,.12) */
-  background: var(--c-black-shadow-lg, rgba(0, 0, 0, 0.12));
+  /* R8-L01-D07 连带项：绿环中心的底由黑色 scrim 换成白罩档 --c-overlay-bg-solid（同 TodayRecommendationCard.vue:244 口径）。
+     原因：换绿后若沿用 --c-black-shadow-lg(rgba(0,0,0,.12))，中心实测 #2FB188，
+     白字只有 2.71:1（连大字号 3:1 线都不过），深色字压中绿也只有 6.2:1 一档、发闷；
+     白罩后中心实测 ≈#ECFAF5，配 --c-brand-800 文字 = 5.96:1（≥4.5:1），环体读成「绿环 + 白心 + 绿字」。 */
+  background: var(--c-overlay-bg-solid, rgba(255, 255, 255, 0.9));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -292,14 +296,17 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
 .match-card__score-value {
   font-size: 40rpx;
   font-weight: 700;
-  color: var(--c-neutral-0, #ffffff);
+  /* R8-L01-D07：白字改 --c-brand-800 #156B51（对 0.9 白罩中心实测 5.96:1 ≥4.5:1；
+     原白字在绿心白罩上只有 1.07:1，换绿即不可读） */
+  color: var(--c-brand-800, #156B51);
   line-height: 1.1;
 }
 
 .match-card__score-label {
   font-size: 22rpx;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.95);
+  /* R8-L01-D07：同上，rgba(255,255,255,0.95) 字面量 → 同档绿深令牌（小字号需 ≥4.5:1） */
+  color: var(--c-brand-800, #156B51);
 }
 
 .match-card__info {

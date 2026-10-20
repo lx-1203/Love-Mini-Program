@@ -48,13 +48,16 @@ onUnmounted(() => {
 /** 匹配度进度（旅行/音乐/电影/生活方式 四维）。
  * MP-R1-MATCHING-REQ-01：冻结契约 §12「匹配中进度为视觉模拟，不显示虚假算法百分比」——
  * 删除写死的 90/85/80/79 数值与 totalPercent（均值+5 的假数据），进度条改为纯视觉
- * 律动动画（indeterminate），标题接 matching.searching 冻结文案。 */
+ * 律动动画（indeterminate），标题接 matching.searching 冻结文案。
+ * R8-L05-D17：pulse 是「律动档位」（a/b/c/d 四档错相错幅），不是百分比、不携带任何数值语义，
+ * 与 §12 不冲突；此前四行共用同一条 match-loading-bar-pulse 且无 delay，
+ * 任何时刻四条必然等长（top 帧四条同收 x≈228、bottom 帧同收 x≈238），整卡读成一根条复制四遍。 */
 const PROGRESS = [
-  { labelKey: "matching.dimTravel", icon: IMAGE_PATHS.MASCOT.STAR },
+  { labelKey: "matching.dimTravel", icon: IMAGE_PATHS.MASCOT.STAR, pulse: "a" },
   // R4：heart_pink.png 为全透明空文件（行图标渲染空白圆），换 lucide music 图标
-  { labelKey: "matching.dimMusic", icon: IMAGE_PATHS.ICONS_EMOJI.MUSIC },
-  { labelKey: "matching.dimMovie", icon: IMAGE_PATHS.MASCOT.SPARKLE },
-  { labelKey: "matching.dimLifestyle", icon: IMAGE_PATHS.ICONS_V2.SPROUT },
+  { labelKey: "matching.dimMusic", icon: IMAGE_PATHS.ICONS_EMOJI.MUSIC, pulse: "b" },
+  { labelKey: "matching.dimMovie", icon: IMAGE_PATHS.MASCOT.SPARKLE, pulse: "c" },
+  { labelKey: "matching.dimLifestyle", icon: IMAGE_PATHS.ICONS_V2.SPROUT, pulse: "d" },
 ];
 
 /* real 档下 `assets/images/`（含 mascot/ 与根上的 heart-gradient.svg）命中 cdn-buckets.json 的
@@ -130,7 +133,11 @@ const heartGradientSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART
         </view>
         <text class="match-loading__row-label">{{ t(p.labelKey) }}</text>
         <view class="match-loading__row-bar">
-          <view class="match-loading__row-bar-inner match-loading__row-bar-inner--pulse" />
+          <!-- R8-L05-D17：每行按档位绑定错相/错幅的律动 class（a~d），四条不再同长 -->
+          <view
+            class="match-loading__row-bar-inner match-loading__row-bar-inner--pulse"
+            :class="'match-loading__row-bar-inner--' + p.pulse"
+          />
         </view>
       </view>
     </view>
@@ -196,7 +203,12 @@ const heartGradientSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART
      独立一行 ⇒ 上移到胶囊下缘（状态栏+4+32px）之下、正文之上的独立带，
      并同步把根容器 padding-top 撑到该带之下，保证不与任何文字重叠。 */
   top: calc(var(--statusbar, env(safe-area-inset-top)) + 44px);
-  right: 140rpx;
+  /* R8-L05-D16（位置 P2）：right 140rpx → 与页面内容同轴 --page-padding(=32rpx, design-variables.scss:575)。
+     140rpx 是 R4「横向让位微信胶囊」留下的：帧上本胶囊右缘实测 x≈310px、距屏右缘 135rpx，
+     而理想图该胶囊贴右缘约 38rpx ⇒ 横向偏内 97rpx；微信胶囊占 x≈288..370，本胶囊右缘 310 仍在同一
+     x 区间内，横向让位既没避干净也已不必要——R7-L05-D08 已把它抬到胶囊下方的独立带（top 见上），
+     纵向避让由那条 top 承担。 */
+  right: var(--page-padding, 32rpx);
   padding: 14rpx 30rpx;
   border-radius: 999rpx;
   /* MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-001：
@@ -291,8 +303,11 @@ const heartGradientSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART
 }
 .match-loading__avatar--blur {
   border-radius: var(--r-full);
-
-  filter: blur(6rpx);
+  /* R8-L05-D19（素材缺失 P2）：6rpx 模糊把人像糊成一团无辨读性的深墨绿块
+     （帧上实测该圆最亮处只到 ≈#6E766C，读成「图片加载失败」而不是「待揭晓」）。
+     模糊收到 2rpx —— 五官轮廓保留、身份仍不可辨（未解锁语义不变），亮度靠罩层抬回来。
+     素材侧不动：partner 位继续用后端 partnerAvatar，缺图走 DEFAULT_AVATAR，不引新图。 */
+  filter: blur(2rpx);
 }
 .match-loading__avatar-mask {
   position: absolute;
@@ -301,7 +316,9 @@ const heartGradientSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART
   right: 0;
   bottom: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.35);
+  /* R8-L05-D19：罩层 0.35 → 同族白罩令牌 --c-overlay-bg-strong(rgba(255,255,255,0.6))，
+     人像底图亮度按 0.6/0.4 混白抬升（深底 #4A524E → ≈#B6B9B7），既不再发黑也仍读得出是一张照片。 */
+  background: var(--c-overlay-bg-strong, rgba(255, 255, 255, 0.6));
 }
 .match-loading__avatar-hint {
   position: absolute;
@@ -322,9 +339,11 @@ const heartGradientSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART
   width: 168rpx;
   height: 168rpx;
   border-radius: 50%;
-  border: 8rpx solid #ffffff;
+  /* R8-L05-D18 同批收尾：这两枚与令牌等值的字面量一并换档（#ffffff=--c-neutral-0、#eaf3ef≈--c-brand-50），
+     不留「同页同族两处写法」的尾巴 */
+  border: 8rpx solid var(--c-neutral-0, #FFFFFF);
   box-shadow: 0 14rpx 36rpx rgba(30, 80, 65, 0.16);
-  background: #eaf3ef;
+  background: var(--c-brand-50, #E8FAF3);
 }
 
 .match-loading__heart {
@@ -346,13 +365,17 @@ const heartGradientSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART
   margin-top: 28rpx;
   font-size: 34rpx;
   font-weight: 800;
-  color: #222222;
+  /* R8-L05-D18①：#222222（表外）→ 主文本令牌 --c-text-primary #1A1E1C（浅渐变底上 15.6:1） */
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .match-loading__subtitle {
   margin-top: 10rpx;
   font-size: 24rpx;
-  color: #8a9694;
+  /* R8-L05-D18②：#8a9694（色板无此档）→ 令牌化。缺陷卡给的「最近档」是 --c-text-tertiary #6B7571，
+     但按本页底实测（--c-gradient-match 两端 #E8FAF3 / #FDF2F8） tertiary 只有 4.40 / 4.36:1，
+     24rpx 小字不足 4.5:1 ⇒ 取同族再深一档 --c-text-secondary #4A524E = 7.44 / 7.37:1（FXA 同口径：算过再落）。 */
+  color: var(--c-text-secondary, #4A524E);
 }
 
 /* ========== 匹配度进度卡片 ========== */
@@ -361,14 +384,16 @@ const heartGradientSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART
   margin-top: 40rpx;
   padding: 28rpx 28rpx 20rpx;
   border-radius: 28rpx;
-  background: #ffffff;
+  /* R8-L05-D18③：#ffffff → 卡片面令牌 --c-bg-container */
+  background: var(--c-bg-container, #FFFFFF);
   box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.05);
 }
 
 .match-loading__progress-header {
   font-size: 26rpx;
   font-weight: 600;
-  color: #333333;
+  /* R8-L05-D18④：#333333 → --c-text-primary（白卡上 16.8:1） */
+  color: var(--c-text-primary, #1A1E1C);
   margin-bottom: 16rpx;
   padding-left: 4rpx;
 }
@@ -385,7 +410,8 @@ const heartGradientSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART
   width: 56rpx;
   height: 56rpx;
   border-radius: 50%;
-  background: #E8F8F5;
+  /* R8-L05-D18⑤：#E8F8F5（与 brand-50 差一档的表外浅绿）→ --c-brand-50 #E8FAF3 */
+  background: var(--c-brand-50, #E8FAF3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -400,7 +426,8 @@ const heartGradientSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART
 .match-loading__row-label {
   width: 120rpx;
   font-size: 24rpx;
-  color: #333333;
+  /* R8-L05-D18⑥：#333333 → --c-text-primary（白卡上 16.8:1） */
+  color: var(--c-text-primary, #1A1E1C);
   flex-shrink: 0;
 }
 
@@ -408,7 +435,8 @@ const heartGradientSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART
   flex: 1;
   height: 14rpx;
   border-radius: 999rpx;
-  background: #F0F0F0;
+  /* R8-L05-D18⑦：#F0F0F0 → 浅底令牌 --c-border-light #EEF2F0 */
+  background: var(--c-border-light, #EEF2F0);
   overflow: hidden;
 }
 
@@ -423,13 +451,57 @@ const heartGradientSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART
 /* MP-R1-MATCHING-REQ-01：纯视觉律动（indeterminate），不携带任何数值语义 */
 .match-loading__row-bar-inner--pulse {
   width: 40%;
-  animation: match-loading-bar-pulse 1.8s ease-in-out infinite;
+  animation: match-loading-bar-pulse-a 2.1s ease-in-out infinite;
 }
 
-@keyframes match-loading-bar-pulse {
-  0% { width: 24%; }
-  50% { width: 72%; }
-  100% { width: 24%; }
+/* R8-L05-D17（尺寸比例 P2）：四行此前共用同一条关键帧、无 animation-delay ⇒ 任何时刻四条等长
+   （top 帧四条右缘同收 x≈228、bottom 帧同收 x≈238，两帧不同相位仍完全同长），
+   整卡读成「一根条复制四遍」。改成 a~d 四档：各自幅度带（18-56 / 26-68 / 34-80 / 42-90%，
+   与理想图 90/85/80/79 那种阶梯读感同向）+ 各自周期与负延迟错相，
+   任一时刻四条长度必不相同，且上下滚动两帧的相位也不同。档位是律动参数，不是百分比数据。 */
+.match-loading__row-bar-inner--a {
+  animation-name: match-loading-bar-pulse-a;
+  animation-duration: 2.1s;
+  animation-delay: 0s;
+}
+.match-loading__row-bar-inner--b {
+  animation-name: match-loading-bar-pulse-b;
+  animation-duration: 2.6s;
+  animation-delay: -0.7s;
+}
+.match-loading__row-bar-inner--c {
+  animation-name: match-loading-bar-pulse-c;
+  animation-duration: 3.1s;
+  animation-delay: -1.5s;
+}
+.match-loading__row-bar-inner--d {
+  animation-name: match-loading-bar-pulse-d;
+  animation-duration: 3.6s;
+  animation-delay: -2.4s;
+}
+
+@keyframes match-loading-bar-pulse-a {
+  0% { width: 18%; }
+  50% { width: 56%; }
+  100% { width: 18%; }
+}
+
+@keyframes match-loading-bar-pulse-b {
+  0% { width: 26%; }
+  50% { width: 68%; }
+  100% { width: 26%; }
+}
+
+@keyframes match-loading-bar-pulse-c {
+  0% { width: 34%; }
+  50% { width: 80%; }
+  100% { width: 34%; }
+}
+
+@keyframes match-loading-bar-pulse-d {
+  0% { width: 42%; }
+  50% { width: 90%; }
+  100% { width: 42%; }
 }
 
 /* MP-R1-MATCHING-REQ-01：总进度（89% 假数据）渲染与样式已随契约 §12 一并移除 */

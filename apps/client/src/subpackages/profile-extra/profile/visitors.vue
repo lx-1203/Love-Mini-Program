@@ -25,7 +25,8 @@ import { useI18n } from "vue-i18n";
 import { useLikesStore } from "../../../stores/likes";
 import { openAppPath } from "../../../utils/navigation";
 // 2026-08-09：他人主页路由常量化（访客点击 → 他人主页页）
-import { ROUTES } from "../../../constants/routes";
+// R8-L09-D23：空态补的「编辑资料」入口需要 setup 分包路由，同一 import 语句内取 SUBPACKAGE_ROUTES
+import { ROUTES, SUBPACKAGE_ROUTES } from "../../../constants/routes";
 // 2026-09-04 视觉验收：statusBarHeight 注入，var(--statusbar, env(safe-area-inset-top)) 模拟器为 0 会压刘海
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
@@ -214,6 +215,16 @@ function handleItemClick(item: VisitorItem): void {
 }
 
 /**
+ * 空态「编辑资料」入口（R8-L09-D23）：跳个人资料编辑页，与 settings/index.vue:101 同一目标路由。
+ * 必须带 ?entry=edit（MP-R7-EDITPAGE 已证：裸路径会进注册向导模式，保存后被 redirectTo 投递到
+ * 校园认证/时间安排下一步）。用 openAppPath 而非裸 uni.navigateTo——与本页 :213 的既有跳转同范式。
+ */
+function goCompleteProfile(): void {
+  lightHaptic();
+  openAppPath(`${SUBPACKAGE_ROUTES.SETUP_PROGRESS.PROFILE}?entry=edit`);
+}
+
+/**
  * 重试加载（错误状态下点击重试按钮）
  */
 function handleRetry(): void {
@@ -272,16 +283,34 @@ onPullDownRefresh(async () => {
     </view>
 
     <!-- 空状态
-         MP-R1-PROFILE-EXTRA-001：custom-class 跨组件作用域不生效导致图标零尺寸，改原生 image -->
-    <view v-else-if="visitors.length === 0" class="visitors-empty card-base">
-      <image
-        class="visitors-empty__icon"
-        :src="IMAGE_PATHS.ICONS_SOCIAL.VISITOR"
-        mode="aspectFit"
-        alt=""
-      />
-      <text class="visitors-empty__title">{{ t("profile.visitorsEmpty") }}</text>
-      <text class="visitors-empty__subtitle">{{ t("profile.visitorsEmptyDesc") }}</text>
+         MP-R1-PROFILE-EXTRA-001：custom-class 跨组件作用域不生效导致图标零尺寸，改原生 image
+         R8-L09-D24（尺寸比例 P2）：外层 .visitors-empty-slot 吃掉头部以下的剩余视口并把卡片居中，
+         不再让空态卡停在 y=119..282、下面 532px 全是页面底。 -->
+    <view v-else-if="visitors.length === 0" class="visitors-empty-slot">
+      <view class="visitors-empty card-base">
+        <image
+          class="visitors-empty__icon"
+          :src="IMAGE_PATHS.ICONS_SOCIAL.VISITOR"
+          mode="aspectFit"
+          alt=""
+        />
+        <text class="visitors-empty__title">{{ t("profile.visitorsEmpty") }}</text>
+        <text class="visitors-empty__subtitle">{{ t("profile.visitorsEmptyDesc") }}</text>
+        <!-- R8-L09-D23（可达性 P2）：副标「完善资料，让更多人发现你」指示的动作在页面上没有
+             任何入口，整页唯一可点节点只剩返回钮 ⇒ 补一枚跳「编辑资料」的次级按钮，
+             路由复用 settings/index.vue:101 已在用的 SUBPACKAGE_ROUTES.SETUP_PROGRESS.PROFILE，
+             文案复用 profile.editProfile（zh-CN.ts:1506「编辑资料」），未新增 i18n 键、未编造数据。 -->
+        <view
+          class="visitors-empty__btn press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('profile.editProfile')"
+          @tap="goCompleteProfile"
+        >
+          <text class="visitors-empty__btn-text">{{ t("profile.editProfile") }}</text>
+        </view>
+      </view>
     </view>
 
     <!-- 访客列表（按时间分组） -->
@@ -331,8 +360,13 @@ onPullDownRefresh(async () => {
 .visitors-page {
   display: flex;
   flex-direction: column;
-  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
-  min-height: 100%;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域
+     R8-L09-D24（尺寸比例 P2）：上面这条把宿主高度写成了不可解析的 min-height:100%——
+     页面根节点没有确定高度，100% 便无从算起，于是子级的 flex:1 与居中全部失效
+     （与 village/history 同一根因，本轮已证）。本页 navigationStyle=custom、
+     box-sizing:border-box，100vh 即整块可视区，故取 min-height:100vh 兜底：
+     内容更长时仍可自然增长，不会截断列表。 */
+  min-height: 100vh;
   background: var(--c-gradient-page);
   padding: var(--sp-6) var(--sp-8);
   padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-6));
@@ -342,7 +376,12 @@ onPullDownRefresh(async () => {
 .visitors-header {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
+  /* R8-L09-D22（位置 P2）：原 justify-content: space-between 配 v-if 计数节点——
+     空列表时该行只剩「返回钮 + 标题」两个子元素，space-between 把标题推到
+     padding-right:96px 预留带（:348）的左边界，实测标题墨迹中心 x=226.5 而视口中线 189，
+     右偏 37.5px 且脱离左轨。改为 flex-start 让标题恒贴左轨（返回钮之后 sp-4），
+     计数节点自己 margin-left:auto 顶到右端——非空态的视觉分布不变，空态不再孤儿化。 */
+  justify-content: flex-start;
   margin-bottom: var(--section-gap);
   /* MP-R1-VISITORS-002：右侧计数被微信胶囊遮挡，预留胶囊宽度（约 96px） */
   padding-right: 96px;
@@ -377,12 +416,16 @@ onPullDownRefresh(async () => {
 }
 
 .visitors-header__title {
+  /* R8-L09-D22：flex-start 后标题紧随返回钮，补一档间距贴左轨成列 */
+  margin-left: var(--sp-4);
   font-size: var(--fs-5xl);
   font-weight: 700;
   color: var(--c-text-primary);
 }
 
 .visitors-header__count {
+  /* R8-L09-D22：原来靠 space-between 分布，现由计数自己顶右（非空态位置不变） */
+  margin-left: auto;
   font-size: var(--fs-md);
   color: var(--c-text-tertiary);
 }
@@ -446,13 +489,26 @@ onPullDownRefresh(async () => {
 }
 
 /* ========== 空状态 ========== */
+/* R8-L09-D24（尺寸比例 P2）：空态卡原先直接是 .visitors-page 的 flex 子级，
+   宿主 min-height:100% 不可解析 ⇒ 卡片按内容高停在 y=119..282，其下 532px（占 814px
+   视口 65%）全是裸页面底。补一层宿主：flex:1 吃掉头部以下的剩余高度 + 两轴居中，
+   卡片自身保持满宽（不再随 align-items:center 收缩成内容宽）。 */
+.visitors-empty-slot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
 .visitors-empty {
+  width: 100%;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--sp-5);
   padding: var(--sp-10);
-  margin-top: var(--sp-5);
 }
 
 .visitors-empty__icon {
@@ -471,6 +527,27 @@ onPullDownRefresh(async () => {
   font-size: var(--fs-md);
   color: var(--c-text-tertiary);
   text-align: center;
+}
+
+/* R8-L09-D23（可达性 P2）：空态次级入口。白底 + 品牌绿描边 + --c-brand-800(#156B51) 文字，
+   实测文字/白底对比度 6.46:1（--c-brand #36C99A 上压白字只有 2.11:1，故不走本页主按钮的实底
+   配方，取描边次级档）；字号 --fs-lg(28rpx) 与同分包主按钮文字口径（album.vue .album-add-btn__text
+   R8-L10-D11 同档）对齐。 */
+.visitors-empty__btn {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3) var(--sp-8);
+  background: var(--c-bg-container, #FFFFFF);
+  border: 2rpx solid var(--c-brand);
+  border-radius: var(--r-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.visitors-empty__btn-text {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--c-brand-800);
 }
 
 /* ========== 访客列表 ========== */

@@ -156,16 +156,25 @@ onUnmounted(() => {
 
 <template>
   <view class="history-page" :style="menuStyleVars">
-    <!-- 2026-08-09：返回键（常驻，navigationStyle: custom 无系统返回栏） -->
-    <view
-      class="history-back press-feedback"
-      hover-class="press-feedback--active"
-      hover-stay-time="120"
-      role="button"
-      :aria-label="t('common.back')"
-      @tap="goBack"
-    >
-      <image class="history-back__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.BACK)" mode="aspectFit" alt="" />
+    <!-- 页头行（返回键 + 标题）
+         R8-L03-D15（P2 文案）：此前页头只有 .history-back 一个节点，帧实测导航带 y36..105
+         整条为页面底色 #EEF7F2、除返回键外 0 个文字墨迹 ⇒ 本页无标题；补同族页标题
+         「浏览记录」（既有键 village.history.title，locales 不在本车道可写集，不新增）。
+         R8-L03-D17（P2 位置）：返回键 64rpx 圆钮原先无任何左内缩，白色圆底左缘实测 x=1
+         被屏幕左缘裁齐 ⇒ 整行按全站页边距基线内缩 var(--page-padding)=32rpx
+         （与同页工具栏 :172 的 32rpx 内缩同口径）。 -->
+    <view class="history-head">
+      <view
+        class="history-back press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('common.back')"
+        @tap="goBack"
+      >
+        <image class="history-back__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.BACK)" mode="aspectFit" alt="" />
+      </view>
+      <text class="history-head__title">{{ t("village.history.title") }}</text>
     </view>
 
     <!-- 顶部操作栏 -->
@@ -318,8 +327,18 @@ onUnmounted(() => {
   background: var(--c-bg-page, #f5f6fa);
 }
 
-/* 2026-08-09：返回键（圆角图标按钮） */
+/* 页头行：返回键 + 标题同一行（R8-L03-D15 / D17），左右内缩走 --page-padding 基线 */
+.history-head {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 0 var(--page-padding, 32rpx);
+  margin-bottom: var(--section-gap, 24rpx);
+}
+
+/* 2026-08-09：返回键（圆角图标按钮）。内缩已由 .history-head 的 padding 承担（R8-L03-D17） */
 .history-back {
+  flex-shrink: 0;
   width: 64rpx;
   height: 64rpx;
   border-radius: var(--r-full);
@@ -328,7 +347,13 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: var(--section-gap);
+}
+
+/* R8-L03-D15：fs-2xl/600 + --c-text-primary（与同族页头标题同档） */
+.history-head__title {
+  font-size: var(--fs-2xl, 32rpx);
+  font-weight: 600;
+  color: var(--c-text-primary);
 }
 
 .history-back__icon {
@@ -336,12 +361,16 @@ onUnmounted(() => {
   height: 40rpx;
 }
 
-/* 顶部操作栏 */
+/* 顶部操作栏
+   R8-L03-D18（P2 间距）：工具栏自带白底但无下外缩，bottom 帧实测「共 4 条记录 / 清空记录」
+   与第一条记录卡连成一整块白（y110..267 连续白色 157px），而卡与卡之间只有 16rpx 浅绿缝
+   ⇒ 工具栏被读成列表首行。补 var(--section-gap) 下间隔，把它与列表断开。 */
 .history-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 24rpx 32rpx;
+  margin-bottom: var(--section-gap, 24rpx);
   background: var(--c-bg-container);
 }
 
@@ -350,15 +379,22 @@ onUnmounted(() => {
   color: var(--c-text-secondary);
 }
 
+/* R8-L03-D16（P2 颜色token）：破坏性动作「清空记录」此前吃 romance 粉
+   （--c-romance-bg-tint / --c-romance-500，帧实测粉色墨迹 x304..351 / y128..141）——
+   romance 是「喜欢」语义色（§1.1 色义分工），用在删除入口上与同页绿色主色并置成粉绿撞色。
+   改错误色档，并与仓内既有破坏性胶囊同口径
+   （campus/index.vue:528/535、market/wallet/index.vue:231/236 = --c-error-bg-tint + --c-error）。 */
 .history-clear {
   padding: 8rpx 24rpx;
   border-radius: 24rpx;
-  background: var(--c-romance-bg-tint);
+  background: var(--c-error-bg-tint, rgba(229, 69, 77, 0.1));
+  border: 1rpx solid var(--c-error-border-tint, rgba(229, 69, 77, 0.2));
 }
 
 .history-clear__text {
   font-size: 24rpx;
-  color: var(--c-romance-500);
+  font-weight: 600;
+  color: var(--c-error, #E5454D);
 }
 
 /* 加载状态 */
@@ -400,12 +436,17 @@ onUnmounted(() => {
   min-height: 0;
 }
 
+/* R8-L03-D14（P2 圆角）：.history-item 此前只有 padding/margin-bottom/background，
+   既无 border-radius 也无左右外缩 ⇒ 帧上白色卡区横跨 x1..376（满屏 378px）四角直角，
+   与同仓所有列表卡（--card-radius 40rpx=20px 圆角 + 32rpx 侧缩，见 tag-posts.vue .post-card）
+   不同形。补圆角与左右外缩，首尾各留 16rpx 使卡片彼此/与工具栏之间的浅绿缝一致。 */
 .history-item {
   display: flex;
   gap: 20rpx;
   padding: 28rpx 32rpx;
-  margin-bottom: 16rpx;
+  margin: 16rpx var(--page-padding, 32rpx);
   background: var(--c-bg-container);
+  border-radius: var(--card-radius, 40rpx);
 }
 
 .history-item__avatar {

@@ -11,6 +11,8 @@ import { IMAGE_PATHS } from "../../../config/images";
 import SafeImage from "../../../components/common/SafeImage.vue";
 import EmptyState from "../../../components/common/EmptyState.vue";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
+// R8-L06-D20：空态出口路由常量化（与 LockScreen / segment / people 同口径）
+import { ROUTES } from "../../../constants/routes";
 // infra R2-00069: 统一错误分类 toast
 import { showErrorToast } from "../../../utils/error-toast";
 // R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
@@ -129,6 +131,16 @@ onMounted(() => {
 });
 
 /**
+ * R8-L06-D20（空态文案 P2）：空态出口。
+ * 描述文案「快去寻觅页发现有趣的TA吧」此前没有任何对应可点件（EmptyState 未传
+ * actionText ⇒ 组件 .empty-action 分支恒不渲染），y335 以下 465px 无任何交互。
+ * 补 actionText 并 switchTab 到寻觅 Tab，与文案形成闭环。
+ */
+function goDiscoverTab() {
+  uni.switchTab({ url: ROUTES.TAB.DISCOVER });
+}
+
+/**
  * 页面卸载时清理页面进入动画定时器，避免内存泄漏。
  */
 // R4-00158：页面卸载时清理 discover store 定时器/请求资源
@@ -232,13 +244,27 @@ onUnload(() => {
     </view>
 
     <!-- 空状态 -->
-    <EmptyState
+    <!-- R8-L06-D17（位置 P1）：EmptyState 组件自带的 flex:1 0 auto 在本页吃不到剩余空间——
+         宿主 .history-page 只声明 min-height:100%（父级无确定高度 ⇒ 退化 auto），
+         于是空态块（图标顶 y235 → 描述底 y335，仅 100px）贴顶、其下 465px（57% 帧高）全空。
+         两步收口：① 宿主 min-height 改 100vh（同 MatchSuccess.vue:194 已验证写法）；
+         ② 按 village/detail.vue:2823 .detail-empty 的既有配方给空态补一层可解析高度的宿主容器。
+         R8-L06-D19（素材缺失 P2）：删掉显式 :image=ICONS_COMMON.NOTIFICATION（一枚蓝灰铃铛，
+         语义是「消息」，帧上墨迹 #96A5B9/#C1CDD4 不在 §1.2 任何档），改走 type="no-data"
+         预设 = common/box.svg 空箱（仓内既有素材，且预设分支带 .empty-icon--preset 归色 filter）。
+         R8-L06-D20：补 actionText + @action，见 goDiscoverTab。 -->
+    <view
       v-if="historyCards.length === 0 && !discoverStore.loading && !discoverStore.errorMessage"
-      type="no-data"
-      :image="IMAGE_PATHS.ICONS_COMMON.NOTIFICATION"
-      :title="t('discoverHistory.emptyTitle')"
-      :description="t('discoverHistory.emptyDesc')"
-    />
+      class="history-empty"
+    >
+      <EmptyState
+        type="no-data"
+        :title="t('discoverHistory.emptyTitle')"
+        :description="t('discoverHistory.emptyDesc')"
+        :action-text="t('home.matchEntry')"
+        @action="goDiscoverTab"
+      />
+    </view>
   </view>
 </template>
 
@@ -258,8 +284,11 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .history-page {
   display: flex;
   flex-direction: column;
-  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
-  min-height: 100%;
+  /* R8-L06-D17：原 min-height:100% 在 mp-weixin 页面根节点上无可解析父高（page 本身
+     height:auto），整条 flex 列退化成内容高 ⇒ EmptyState 的 flex:1 无剩余空间可分，
+     空态贴顶。改 100vh 自证视口高（同 MatchSuccess.vue:194 已验证写法，本页无 fixed
+     导航与之争高），列表态内容超过 100vh 时照常随页滚。 */
+  min-height: 100vh;
   background: linear-gradient(180deg, var(--c-tint-green-50) 0%, $bg-page 50%);
   padding-bottom: 40rpx;
 }
@@ -294,7 +323,11 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .back-icon {
   font-size: var(--fs-3xl, 36rpx);
-  color: $green-primary;
+  /* R8-L06-D18（颜色 token P2）：返回箭头原取 $green-primary(--c-brand #3CCA9C)，
+     与同页主标题「今日已看」同色抢强调位，违反 §1.1.2「绿色=行动」；
+     同一分包其余两页返回符号均为深色（segment.vue:197、people.vue:281 --c-text-primary）
+     ⇒ 与分包口径对齐，绿色只留给可点行动件（挽回按钮）。 */
+  color: var(--c-text-primary, #1A1E1C);
   font-weight: 600;
 }
 
@@ -527,6 +560,19 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 /* ===== 空状态 ===== */
+/* R8-L06-D17 宿主容器（配方同 village/detail.vue:2823 .detail-empty）：
+   .history-page 已是 flex 列 + min-height:100vh，本层再声明 flex:1 0 auto + 居中，
+   把「视口减去页头/统计栏」的剩余高度整块交给空态 ⇒ EmptyState 自带
+   flex:1 0 auto + justify-content:center 才真正生效，空态落在可视区中部。 */
+.history-empty {
+  flex: 1 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;

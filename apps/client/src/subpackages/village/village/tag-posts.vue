@@ -322,12 +322,43 @@ onShareTimeline(() => ({
   <view class="tag-posts-page" :style="menuStyleVars">
     <!-- 顶部导航栏 -->
     <view class="tag-header">
+      <!-- R8-L03-D12（P2 素材缺失）：返回位此前是一枚 28rpx 白字「返回」（帧实测 x8..40 是
+           四个汉字宽度的文字块），与相邻 history/detail/campus 页头的 BACK 箭头不同形。
+           换成仓内既有 BACK 素材（IMAGE_PATHS.ICONS_V2.BACK，与 ICONS_COMMON.BACK 同图形、
+           深墨 #333 描边；已用 PNG 逐像素核过两枚墨色：common/back.png 折线是 #94A2B7 蓝灰
+           压白底仅 1.6:1（location.vue:174 的 R7-L10-D09 就是为此换掉的），v2/back.png 是
+           #333333），40rpx 盒 + aspectFit 与 history.vue:168 同规格，并给白色圆底承托深色墨迹。
+           aria-label 保留。 -->
       <view class="tag-header__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
-        <text class="back-icon">{{ t("common.back") }}</text>
+        <image class="tag-header__back-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_V2.BACK)" mode="aspectFit" alt="" />
       </view>
-      <!-- R11-N4：缺参时 tagName 为空会渲染裸「#」，改为占位标题 -->
-      <text class="tag-header__title">{{ tagName ? "#" + tagName : t("village.tagFallbackTitle") }}</text>
+      <!-- R11-N4：缺参时 tagName 为空会渲染裸「#」，改为占位标题
+           （键路径修正：village.tagFallbackTitle 在 locales/zh-CN.ts 里不存在，
+           实际键是 village.tagPosts.tagFallbackTitle，原写法会把键名当文案渲染） -->
+      <text class="tag-header__title">{{ tagName ? "#" + tagName : t("village.tagPosts.tagFallbackTitle") }}</text>
       <view class="tag-header__spacer" />
+    </view>
+
+    <!-- R8-L03-D10（P2 需新建）：标签页此前导航带之下 y98 直接进列表，与 circle-home 同族页
+         相比少一整个信息层。补标签头卡＝#标签名 + 该标签下帖子数 + 内容入口按钮。
+         数据全部来自本页既有状态（tagName / posts.length），按钮走既有 goToPublish()
+         （→ ROUTES.VILLAGE.POST，R6-L04-D05 已裁定同族出口）；「关注/参与标签」后端无字段，
+         不在前端编造 ⇒ 入口取真实可用的「去发布」。文案复用既有键，locales 不在本车道可写集。 -->
+    <view class="tag-hero">
+      <view class="tag-hero__main">
+        <text class="tag-hero__name">{{ tagName ? "#" + tagName : t("village.tagPosts.tagFallbackTitle") }}</text>
+        <text v-if="!loading" class="tag-hero__count">{{ t("village.history.count", { n: posts.length }) }}</text>
+      </view>
+      <view
+        class="tag-hero__btn press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('circle.topicsEmptyAction')"
+        @tap="goToPublish"
+      >
+        <text class="tag-hero__btn-text">{{ t("circle.topicsEmptyAction") }}</text>
+      </view>
     </view>
 
     <!-- 帖子列表 -->
@@ -504,35 +535,98 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 /* ========== 顶部导航栏 ========== */
+/* R8-L03-D08（P2 颜色token）：导航带此前 135deg 从 #46CFA1 渐变到 #EA9DA7——
+   brand 绿与 romance 粉压在同一元素上（违反 §1.1 色义分工），且以 SCSS 变量 $green-primary
+   起头未走 var(--c-*) 令牌。粉端整段删除，改为 brand 同族深档渐变 + var(--c-*) 令牌。
+   端点深浅不是随手挑的：缺陷行 R8-L03-D11 要求白字 ≥4.5:1，WCAG 相对亮度复算
+   ——brand-500 #36C99A=2.24:1、brand-600=2.81:1、brand-700 #1F8D6A=4.14:1 均不达标
+   （正是缺陷行建议的「brand-600→brand-700」，复算后仍不够），
+   brand-800 #156B51=6.45:1、brand-900 #0B4A38=10.24:1 全带最低 6.45:1 ⇒ 取 800→900。 */
 .tag-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: calc(var(--statusbar, env(safe-area-inset-top)) + 24rpx) 32rpx 24rpx;
-  background: linear-gradient(135deg, $green-primary 0%, var(--c-brand-300, #75E1B7) 50%, var(--c-romance-300, #FF8DA1) 100%);
+  background: linear-gradient(135deg, var(--c-brand-800, #156B51) 0%, var(--c-brand-900, #0B4A38) 100%);
 }
 
+/* R8-L03-D12：白色圆底承托深墨 BACK 箭头（与 history/detail 的 64rpx 圆钮同规格） */
 .tag-header__back {
-  padding: 8rpx 0;
-  min-width: 80rpx;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-bg-container, #ffffff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.back-icon {
-  font-size: var(--fs-lg, 28rpx);
-  color: var(--c-overlay-bg-solid, var(--c-overlay-bg-solid, rgba(255,255,255,0.9)));
-  font-weight: 500;
+.tag-header__back-icon {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .tag-header__title {
   font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
-  /* R4-02540：品牌渐变底上的反色文字改用 --c-text-inverse（深色模式自动适配） */
+  /* R4-02540：品牌渐变底上的反色文字改用 --c-text-inverse（深色模式自动适配）
+     R8-L03-D11：底档加深到 brand-800/900 后，白字复算 6.45..10.24:1，过 4.5:1 */
   color: var(--c-text-inverse);
   text-shadow: 0 2rpx 8rpx var(--c-black-shadow-md, var(--c-black-shadow-md, rgba(0,0,0,0.1)));
 }
 
 .tag-header__spacer {
-  min-width: 80rpx;
+  min-width: 64rpx;
+}
+
+/* ========== 标签头卡（R8-L03-D10 新建） ========== */
+.tag-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin: var(--section-gap, 24rpx) var(--page-padding, 32rpx) 0;
+  padding: 28rpx;
+  background: var(--c-bg-container, #ffffff);
+  border-radius: var(--card-radius, 40rpx);
+  box-shadow: var(--s-card-soft, 0 1rpx 2rpx var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)), 0 4rpx 12rpx var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04)));
+}
+
+.tag-hero__main {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.tag-hero__name {
+  font-size: var(--fs-2xl, 32rpx);
+  font-weight: 700;
+  color: var(--c-text-primary);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tag-hero__count {
+  /* §1.3：帖子数是要读的数据，取 --fs-base(24rpx=12px) 档，与 history.vue:348 .history-count 同口径 */
+  font-size: var(--fs-base, 24rpx);
+  color: var(--c-text-secondary);
+}
+
+.tag-hero__btn {
+  flex-shrink: 0;
+  padding: 14rpx 28rpx;
+  border-radius: var(--r-full, 9999rpx);
+  /* 白字压 brand-500 仅 2.24:1（复算），主操作用档取同族 brand-800 ⇒ 6.45:1 过 AA */
+  background: var(--c-brand-800, #156B51);
+}
+
+.tag-hero__btn-text {
+  font-size: var(--fs-base, 24rpx);
+  font-weight: 600;
+  color: var(--c-text-inverse);
 }
 
 /* ========== 帖子列表容器 ========== */
@@ -630,11 +724,14 @@ $red-badge: var(--c-error, #FF4757);
 }
 
 /* ========== 帖子卡片 ========== */
+/* R8-L03-D13（P2 间距）：左右外缩 24rpx（帧上白卡 x13..365，两侧各 13px≈26rpx）比 §1.4
+   页边距基线 32rpx 少 8rpx，上下 16rpx 也低于 --section-gap 24rpx（实测卡间隙 9px=18rpx）。
+   改吃令牌，与 circles/detail、同页新建的标签头卡（.tag-hero）同一基线。 */
 .post-card {
   display: flex;
   flex-direction: column;
   gap: 18rpx;
-  margin: 16rpx 24rpx;
+  margin: var(--section-gap, 24rpx) var(--page-padding, 32rpx);
   padding: 28rpx;
   /* R4-02540：卡片底色改用 --c-bg-container（深色模式自动适配） */
   background: var(--c-bg-container);

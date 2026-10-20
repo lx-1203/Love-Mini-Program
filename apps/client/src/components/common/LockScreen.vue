@@ -31,6 +31,8 @@ import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
 // compat 的 getCurrentPagePath（含 H5/MP 平台差异处理），用于判断是否处于 Tab 页（底部有 TabBar）
 import { getCurrentPagePath } from "../../compat";
+// R8-L07-D02（层级遮挡 P2）：组件自带 --statusbar 注入（见下方 rootStyleVars）
+import { useStatusBarHeight } from "../../composables/useStatusBarHeight";
 
 const { t } = useI18n();
 
@@ -92,16 +94,29 @@ const benefits = computed(() =>
 );
 
 /* ========== 素材出口：一律过 resolveMediaUrl（R6-B06，见文件头注释） ========== */
+/* R8-L08-D03（颜色token P2 · heart-signals）+ R8-L02-D18（可达性 P2 · village）：
+   本组件三枚图标出口的描线色都写死在 SVG 源文件里，页面令牌覆盖不到，
+   而本车道只许改组件（不许动 static/** 素材），故改指「同语义、描线色已在 §1.2 色板内」的
+   既有素材（均已核：dist/build/mp-weixin-real/static/assets 与 apps/api/uploads/app-assets 双份在盘）：
+   · lock.svg  stroke="#94A3B8"（非色板档）→ register/lock.svg stroke="#4A524E" = --c-text-secondary，
+     压 280rpx --c-gradient-brand 环（#36C99A→#55D5A7）实测 3.85:1（深端）~4.86:1（浅端），
+     过非文本 3:1 门槛；原 #94A3B8 压环色 #4FD3A5 只有 1.37:1。
+   · check-circle.svg stroke="#94A3B8" → register/check-green.svg stroke="#36C99A" = --c-brand，
+     勾选语义全站为品牌绿；环上徽章的 6rpx --c-brand 描边（:503 上一轮刚改）与勾本身终于同色。
+   × close.svg 无同语义的色板档素材可换 ⇒ 落在样式侧 filter（见 .lock-screen__close-icon）。 */
 const closeIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG));
-const lockIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.LOCK_SVG));
-const checkIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.CHECK_CIRCLE_SVG));
+const lockIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.REGISTER_ICONS.LOCK));
+const checkIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.REGISTER_ICONS.CHECK_GREEN));
 /**
- * 漂浮爱心（R6-L03-D02 / R6-L08-D09 / R6-L09-D22）：ICONS_SOCIAL.LIKE_FILLED 常量是
- * `/static/assets/icons/social/like-filled.svg`，该目录在 cdn-buckets.json 的 cdnPrefixes 里
- * ⇒ real 档不随包，裸绑必空（帧上粉色像素 0 个）。过解析器后 real 档落后端
- * app-assets/assets/icons/social/like-filled.svg（盘上已确认存在），mock 档落包内同名文件。
+ * 漂浮爱心（R6-L03-D02 / R6-L08-D09 / R6-L09-D22 · R8-L07-D01 颜色token P2）：
+ * 上一档取 ICONS_SOCIAL.LIKE_FILLED，该文件第 1 行写死 fill="#EF4444" —— §1.2 色板里没有的
+ * 正红（帧上左颗 24×20px / 右颗 17×15px 区域众数色实测 #EF4444，211 px 命中），
+ * 而规范给「喜欢」的色档是 romance-500 #FF6B81（差 R-16/G+25/B+61）。
+ * 本组件不许动素材，故改指仓内既有的同图形档 ICONS_COMMON.HEART_FILLED_SVG
+ * （common/heart-filled.svg，fill/stroke 逐字 = #FF6B81，即 §1.2 色板档），
+ * 色值来自资产本身而非组件内字面量，图标形状/位置/尺寸不变。
  */
-const heartIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED));
+const heartIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.HEART_FILLED_SVG));
 /**
  * 同校头像（R6-L09-D26）：原绑 IMAGE_PATHS.AVATARS.AVATAR_1/2，实盘逐张打开是
  * 航拍树冠 / 暗水面礁石（apps/api/uploads/app-assets/assets/images/avatars/avatar-1.jpg 平均色
@@ -121,6 +136,23 @@ const heartsVisible = ref(true);
  * Tab 页中引导页底部需为 TabBar 预留空间，避免底部提示被遮挡。
  */
 const isTabHost = isTabPath(getCurrentPagePath() ?? "");
+
+/**
+ * R8-L07-D02（层级遮挡 P2 · likes-visitors）：× 关闭钮的 top 写的是
+ * `calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-3))`，
+ * 但 env() 在本拍摄环境恒 0，而 --statusbar 是「宿主页」经 <page-meta :page-style> 注入的变量——
+ * likes-visitors/index.vue:33-35 上一轮已改走 useStatusBarHeight，组件这一半却没跟上，
+ * 于是 --statusbar 在组件作用域里解析不到、回落到 env()=0 ⇒ top=12px，
+ * 半透明白圆顶边落在系统状态栏文字带内（帧上「0:58」字形 x=12..24/y=18..26 与圆底 x=14..56/y=8..47
+ * 交叠 11×9px，× 被挤到时间右侧读成「0:58×」）。
+ * 修法在组件这一半：自己测状态栏高度并把 --statusbar 以内联自定义属性挂在模态层根节点上，
+ * 5 个宿主（village / likes-visitors / heart-signals / messages / 官方号）同口径一次覆盖，
+ * 不依赖宿主是否注入；与 AppShell.vue:329、daily-question/index.vue:356 同源同一 API。
+ */
+const statusBarHeight = useStatusBarHeight();
+const rootStyleVars = computed<Record<string, string>>(() => ({
+  "--statusbar": `${statusBarHeight.value}px`,
+}));
 
 /**
  * 主操作：
@@ -158,6 +190,7 @@ function browsePublic() {
 <template>
   <view
     class="lock-screen"
+    :style="rootStyleVars"
     role="dialog"
     aria-modal="true"
     :aria-label="title"
@@ -440,6 +473,17 @@ function browsePublic() {
 .lock-screen__close-icon {
   width: 40rpx;
   height: 40rpx;
+  /* R8-L08-D03（颜色token P2 · heart-signals）：close.svg 第 2 行写死 stroke="#94A3B8"，
+     既不在 §1.2 色板、又因写在 SVG 里而无法被页面令牌覆盖
+     —— × 字形最暗 #99A8BC 压半透明白圆 #E4F6F0 只有 2.19:1，低于非文本 3:1 门槛。
+     本车道不许动 static/** 素材 ⇒ 按缺陷卡给的第二条口径在组件内加 filter，
+     与 EmptyState.vue:163 同口径：grayscale(1) 抹掉蓝偏（#94A3B8 → 亮度 161 的灰），
+     brightness(0.7) 压到 ≈#717171，压 #E4F6F0 实测 4.34:1 ≥ 3:1。
+     同批的 lock/check 两枚已在 script 侧改指同语义色板档素材（REGISTER_ICONS.LOCK /
+     REGISTER_ICONS.CHECK_GREEN），三枚出口一次覆盖。 */
+  /* #ifdef MP-WEIXIN */
+  filter: grayscale(1) brightness(0.7);
+  /* #endif */
 }
 
 /* ========== 主体内容区：纵向铺满并居中（固定层内部可滚，见 .lock-screen 注释） ========== */
@@ -485,17 +529,30 @@ function browsePublic() {
   height: 120rpx;
 }
 
-/* 完成对勾徽章：右下角白色圆底 + 绿色对勾
+/* 完成对勾徽章：白色圆底 + 绿色对勾 + 绿色描边
    R6-L08-D12（颜色token P2）：原写 `border: 6rpx solid var(--c-gradient-brand)`，
    而 --c-gradient-brand 的值是 linear-gradient(...)（theme/design-variables.scss:171），
    它是 <background-image> 值、不是 <color>，用作 border-color 属非法声明
    ⇒ 整条 border 不生效（帧上实测 y341 一行从环绿 #4FD3A5 直接进白 #FEFEFE，
    出白圆后 x272 起即页面底 #EEF7F2，白底外没有任何品牌绿环带）。
-   改纯色令牌 var(--c-brand)（#36C99A）；渐变只留给 background 用。 */
+   改纯色令牌 var(--c-brand)（#36C99A）；渐变只留给 background 用。
+
+   R8-L02-D19（层级遮挡 P2 · village）+ R8-L08-D04（层级遮挡 P2 · heart-signals）同一条碰撞：
+   徽章原挂环右下 `right:-12rpx; bottom:-12rpx` ⇒ 按两套坐标算落在盒内 x296..372 / y246..322；
+   右侧同校头像 `bottom:0; right:40rpx`（112rpx + 8rpx 白描边）落在 x288..400 / y288..400，
+   两盒交叠 76×34rpx ⇒ 帧上白色对勾圆徽章直接压在右头像照片上缘（x≈228..266/y≈288..322），
+   人像头部被整块切掉；且两块同为 position:absolute 都没写 z-index，
+   头像节点（模板 :220）排在徽章节点（:202）之后 ⇒ 后画者压上，
+   绿环带在底部断成不闭合弧（实测只到 x215..263/y288..325 = 49×38px，比声明的 44px 少 6px 竖口）。
+   改法取缺陷卡给的「徽章挂环正下」：left:50% 居中到环底缘（x162..238），
+   左头像 x40..152、右头像 x288..400 —— 两侧包围盒都不再与徽章相交（不靠 z-index 硬压，
+   几何上真正分开）；同时按 L08-D04 补 z-index:2 兜住绘制顺序，避免后续节点再盖上来。 */
 .illustration__badge {
   position: absolute;
-  right: -12rpx;
-  bottom: -12rpx;
+  left: 50%;
+  bottom: -14rpx;
+  transform: translateX(-50%);
+  z-index: 2;
   width: 76rpx;
   height: 76rpx;
   border-radius: var(--r-circle);
@@ -643,11 +700,21 @@ function browsePublic() {
   gap: var(--sp-4);
 }
 
+/* R8-L07-D03（可达性 P1 · likes-visitors，village / heart-signals / messages / 官方号同源）：
+   主出口「立即登录并完善」白字压 --c-gradient-brand（= linear-gradient(135deg,#36C99A,#55D5A7)，
+   design-variables.scss:171）。钮面 280×47px 众数实测 #45CFA0（另见 #49D0A2/#4BD1A3 渐变段），
+   白字对其只有 1.97:1；文字实测 15.3px/字 ≈ 30rpx（声明 --fs-2xl=32rpx=16.1px），
+   bold 16px 不享 WCAG 大字号（≥18.66px bold）豁免 ⇒ 4.5:1 门槛差 2.5 倍。
+   同一缺陷 R6 只修了 daily-question 页内那颗 CTA，LockScreen 这颗仍走渐变。
+   渐变终点侧的 brand-600(#2AAE83)=2.81:1、brand-700(#1F8D6A)=4.14:1 都够不到 4.5:1，
+   故取同族深档 --c-brand-800(#156B51) 纯色 ⇒ 白字 6.45:1，与 §1.2 色板同族、与
+   daily-question/index.vue:484 的「深档承载白字」结论同向（该页取 brand-600，实测仍不达标，
+   已在报告登记给对应页面车道）。 */
 .lock-screen__btn {
   width: 100%;
   height: var(--btn-height-md);
   border-radius: var(--r-full);
-  background: var(--c-gradient-brand);
+  background: var(--c-brand-800);
   border: none;
   display: flex;
   align-items: center;
@@ -687,12 +754,20 @@ function browsePublic() {
 }
 
 /* ========== 底部补充提示 ========== */
+/* R8-L02-D21（间距 P2 · village）：下边距原写 calc(env(safe-area-inset-bottom) + var(--sp-6))，
+   而本项目 env() 在拍摄环境恒为 0（该事实已在 pages/messages/index.vue:64 记录并改用 JS 注入）
+   ⇒ 实际只剩 --sp-6 = 24rpx = 12px，帧上该行文字底缘 y≈772、Home Indicator 顶缘 y≈786，
+   净空仅 14px≈28rpx，文字几乎坐在系统手势条上（要求 ≥68rpx）。
+   改读注入变量 --safe-bottom（无注入时回落 env()），并给一个不依赖 env 的静态下限 72rpx：
+   0 + 72rpx = 36px ⇒ 净空 ≈38px ≥ 68rpx 门槛；真机有安全区时 env 再叠加，不会被削减。
+   72rpx 无对应 sp 档（阶梯 4/8/12/16/20/24/32/48rpx），属固定安全区尺寸，按本文件既有口径保留字面量。 */
 .lock-screen__footer {
   position: relative;
   z-index: 1;
   display: flex;
   justify-content: center;
-  padding: var(--sp-4) var(--sp-8) calc(env(safe-area-inset-bottom) + var(--sp-6));
+  padding: var(--sp-4) var(--sp-8)
+    calc(var(--safe-bottom, env(safe-area-inset-bottom)) + 72rpx);
 }
 
 /* Tab 页宿主：底部为固定 TabBar 预留空间，避免提示被遮挡 */
@@ -700,8 +775,17 @@ function browsePublic() {
   padding-bottom: calc(env(safe-area-inset-bottom) + 112rpx);
 }
 
+/* R8-L08-D05（可达性 P2 · heart-signals bottom）：本行原取 --c-text-tertiary。
+   帧上实测墨迹 x=85..293（208px）/18 字 = 11.6px/字 ≈ 24rpx（对应 --fs-base），
+   字形最暗 #76807B 压页面底 #EEF7F2 只有 3.74:1，连令牌名义值 #6B7571 也只有 4.36:1，
+   两档都够不到 4.5:1。同一次 R6-L08-D13 修复已把 18 行之上的 .lock-screen__btn-link-text
+   升到 --c-text-secondary（:686 注释自证「实测 #808D88 → 2.87:1 ⇒ 改 7.37:1」），
+   但没带上这句 .lock-screen__footer-text ⇒ 同组件同一档文案两种结论。
+   按缺陷卡给的取一：升色不升字号（升 --fs-md 会把这行提示撑大、改变底部构图），
+   与 .lock-screen__subtitle / .benefit__text / .lock-screen__btn-link-text 同档 #4A524E，
+   压 #EEF7F2 实测 7.37:1 ≥ 4.5:1。 */
 .lock-screen__footer-text {
   font-size: var(--fs-base);
-  color: var(--c-text-tertiary);
+  color: var(--c-text-secondary, #4A524E);
 }
 </style>

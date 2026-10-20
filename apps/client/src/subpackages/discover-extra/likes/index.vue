@@ -599,19 +599,21 @@ onShareAppMessage(() => {
 </script>
 
 <template>
-  <view class="likes-page" :style="menuStyleVars">
-    <!-- 未完善资料：显示锁定页面 -->
-    <!-- MP-R1-LIKES-102：补 @go-phone-login 监听——组件 emit goPhoneLogin 此前无监听者，
-         未登录态「手机号登录」按钮点击零响应 -->
-    <NotLoggedWaiting v-if="!sessionStore.isLoggedIn" @go-login="goLogin" @go-phone-login="goPhoneLogin" />
+  <view
+    class="likes-page"
+    :class="{ 'likes-page--guest': !sessionStore.isLoggedIn }"
+    :style="menuStyleVars"
+  >
+    <!-- R8-L06-D23（可达性 P1）：原 <NotLoggedWaiting v-if="!isLoggedin"> + <template v-else>
+         把整页（含页头返回件）顶替成登录墙 ⇒ 顶帧导航带 x0~290/y40~100 非背景像素仅 7 个、
+         且全在 x=0 那条画布边缘伪影上（对照 segment 顶帧同区域 1743 个），等于没有页头；
+         底帧主标题第一行被画布上沿裁掉，第二行压在状态栏下沿。
+         改法按缺陷卡：页头（返回键 + 标题）移出登录判定常驻，登录墙嵌回页头之下的内容区。 -->
+    <!-- 页面顶部渐变氛围（仅登录态，游客态页头吸顶需要纯净同色底带，见 .likes-page--guest） -->
+    <view v-if="sessionStore.isLoggedIn" class="likes-header-overlay" />
 
-    <!-- 已完善资料：显示正常内容 -->
-    <template v-else>
-      <!-- 页面顶部渐变氛围 -->
-      <view class="likes-header-overlay" />
-      
-      <!-- 页面头部 -->
-      <view class="likes-header">
+    <!-- 页面头部 -->
+    <view class="likes-header">
         <view class="likes-header__left">
           <!-- 2026-08-09：返回键（navigationStyle: custom 全局无系统返回栏） -->
           <view
@@ -626,7 +628,7 @@ onShareAppMessage(() => {
           </view>
           <text class="likes-header__title">{{ t('likes.title') }}</text>
         </view>
-        <view class="likes-header__actions">
+        <view v-if="sessionStore.isLoggedIn" class="likes-header__actions">
           <!-- 心动信号入口 -->
           <view
             v-if="hasHeartSignal"
@@ -657,6 +659,13 @@ onShareAppMessage(() => {
         </view>
       </view>
 
+      <!-- 未完善资料：登录墙嵌回页头之下的内容区（R8-L06-D23） -->
+      <!-- MP-R1-LIKES-102：补 @go-phone-login 监听——组件 emit goPhoneLogin 此前无监听者，
+           未登录态「手机号登录」按钮点击零响应 -->
+      <NotLoggedWaiting v-if="!sessionStore.isLoggedIn" @go-login="goLogin" @go-phone-login="goPhoneLogin" />
+
+      <!-- 已完善资料：显示正常内容 -->
+      <template v-else>
       <!-- 功能2：搜索输入框（300ms 防抖） -->
       <view class="likes-search">
         <view class="likes-search__box">
@@ -1056,6 +1065,32 @@ onShareAppMessage(() => {
      放不下的 actions 自动换到第二行（margin-left:auto 保持右对齐） */
   flex-wrap: wrap;
   row-gap: var(--sp-3);
+}
+
+/* R8-L06-D23（可达性 P1）：游客态页头吸顶。
+   底帧原状：登录墙整页占位，滚到底后主标题第一行被画布上沿裁掉、第二行 y34~46 压在
+   状态栏下沿（页头不存在 ⇒ 没有东西挡住上滚内容）。
+   配方同 profile-extra/profile/visitors.vue:352 与 circles/circle-home.vue:985：
+   sticky top:0 + 不透明同色头部带 + 状态栏内衬由页头自己给（页面 padding-top 归零），
+   左右负外边距吃掉 .likes-page 的 32rpx 内衬，让滚动内容不从页头两侧缝隙穿出来。
+   页底同步换成 --c-bg-page 实色（与头部带同色，不劈缝），游客态氛围渐变已整块不渲染。 */
+.likes-page--guest {
+  background: var(--c-bg-page, #EEF7F2);
+  padding-top: 0;
+}
+
+.likes-page--guest .likes-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header, 10);
+  background: var(--c-bg-page, #EEF7F2);
+  margin-left: calc(var(--sp-8) * -1);
+  margin-right: calc(var(--sp-8) * -1);
+  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-6));
+  padding-bottom: var(--sp-4);
+  padding-left: var(--sp-8);
+  padding-right: calc(var(--capsule-right, 7px) + 96px + var(--sp-8));
+  box-sizing: border-box;
 }
 
 /* 2026-08-09：返回键 + 标题（左组合） */

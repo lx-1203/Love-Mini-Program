@@ -190,8 +190,12 @@ function goHelpCenter() {
 }
 
 .content-section {
-  /* R6-L10-D10 同族：左右外边距取规范页边距 --page-padding(32rpx)，不用 --sp-4(16rpx) */
-  margin: var(--sp-5) var(--page-padding, 32rpx);
+  /* R6-L10-D10 同族：左右外边距取规范页边距 --page-padding(32rpx)，不用 --sp-4(16rpx)。
+     R8-L09-D01（位置 P1）：本页在 AppShell 自带的 32rpx gutter（AppShell.vue:297
+     `.shell--standard { padding: 0 32rpx }`）之外又叠了一次 --page-padding ⇒ 双重页边距，
+     实帧封存卡/课程卡列左缘 x=32 而 AppShell 大标题墨迹左缘 x=17，整列右移 15px、
+     左右留白 32/31px 是规范页边距的两倍 ⇒ 水平 gutter 归零交回 AppShell 单一来源。 */
+  margin: var(--sp-5) 0;
 }
 
 .content-section__title {
@@ -209,7 +213,8 @@ function goHelpCenter() {
   align-items: center;
   justify-content: center;
   gap: var(--sp-3);
-  margin: var(--sp-6) var(--page-padding, 32rpx);
+  /* R8-L09-D01（位置 P1）：同上，水平 32rpx 由 AppShell gutter 唯一提供，此处只留纵向间距 */
+  margin: var(--sp-6) 0;
   padding: calc(var(--sp-8) + var(--sp-4)) var(--sp-5);
   /* R6-L10-D17（圆角 P2）：卡片语义令牌 --card-radius(40rpx=20px)，原 --r-xl=24rpx 实测 12px 只有一半 */
   border-radius: var(--card-radius, 40rpx);
@@ -240,7 +245,14 @@ function goHelpCenter() {
   width: 96rpx;
   height: 96rpx;
   margin-bottom: var(--sp-2);
-  opacity: 0.85;
+  /* R8-L09-D04（颜色token P2）：锁描边烘焙色 #94A3B8（static/assets/icons/common/lock.svg:1）
+     是 §1.2 之外的 slate 蓝灰，再被 opacity:0.85 压到白底上实测 #A2AFC2、对比只剩 2.3:1。
+     mp 的 <image> 不响应 CSS color，故按全站既有做法对已渲染位图做「去饱和 + 压暗」落到
+     --c-text-tertiary 档：saturate(0) → 161 灰阶，×0.71 → ≈#737373（对白底 4.74:1，过 4.5:1），
+     并去掉 :243 那条 opacity 补偿（它就是被用来「显淡」的，留着会把压暗又拉回去）。
+     素材本身描边改走令牌属资产车道，见交件 HANDOFF。
+     （原 opacity: 0.85 一行已删除 —— 它只负责把图标压淡，留着会把上面的压暗又拉回去。） */
+  filter: saturate(0) brightness(0.71);
 }
 
 .consult-sealed__title {
@@ -267,7 +279,10 @@ function goHelpCenter() {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding: var(--sp-4) var(--sp-5);
+  /* R8-L09-D03（间距 P2）：卡内水平内衬原 var(--sp-5)=20rpx(10px)，只有规范
+     --card-padding(32rpx=16px) 的 62.5% ⇒ 实帧卡白底左缘 x=32、首行标题墨迹左缘 x=42
+     （卡内文字贴边），「报名」胶囊右缘 x=336 距卡缘 346 同样只剩 10px。换成 --card-padding。 */
+  padding: var(--sp-4) var(--card-padding, 32rpx);
   /* R6-L10-D17：卡内其余卡同口径（缺陷卡原话「同页课程卡也是同一个 24rpx，一旦解封将整页同偏」） */
   border-radius: var(--card-radius, 40rpx);
   background: var(--c-bg-container, #ffffff);
@@ -312,13 +327,26 @@ function goHelpCenter() {
 .course-card__price {
   font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
-  color: var(--c-error, #e5454d);
+  /* R8-L09-D02（颜色token P1）：价格原直接命中 --c-error(#E5454D) ⇒ 全站错误红被当作商品价色，
+     与 §1.2 的角色定义冲突（同页真错误提示会失去辨识度）。价格不是错误态，改走商品/金额语义
+     的浪漫色系令牌。缺陷卡给的两档实测白底对比都不够正文用（--c-romance-500 #FF6B81 = 2.73:1、
+     --c-brand-600 #2AAE83 = 2.81:1，28rpx=14px 不享大字号豁免），故取同族最深的 --c-romance-700
+     #CC4A5F = 4.46:1（对白卡 #FFF 计算 L=0.1856），既退出 --c-error 角色又保住可读性。 */
+  color: var(--c-romance-700, #CC4A5F);
   flex-shrink: 0;
 }
 
 .course-card__signup {
   flex-shrink: 0;
   background: var(--c-gradient-brand, linear-gradient(135deg, #36C99A, #6fe0b0));
+  /* R8-L09-D05（可达性 P1）：原只有 padding: 12rpx var(--sp-5)，实帧「报名」胶囊 41×29px
+     （高 29px≈58rpx），比全站 88rpx=44px 最小触摸目标矮 15px，而同页封存卡的「帮助与客服」
+     在 :222 已是 min-height:88rpx ⇒ 同页两枚按钮热区不一致。按 :222 同口径补齐热区并居中。 */
+  min-height: 88rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 12rpx var(--sp-5);
   border-radius: var(--r-full);
 }
@@ -326,11 +354,18 @@ function goHelpCenter() {
 /* R6-L10-D14：封存态课程预览的报名件 —— 保留形状、去掉行动色，明示「不可点进交易」 */
 .course-card__signup--sealed {
   background: var(--c-bg-surface, #F3FAF6);
+  /* R8-L09-D06（颜色token P2）连带：补控件轮廓，避免封存件只靠字色表达状态 */
+  border: 2rpx solid var(--c-border-default, #DDE3E0);
 }
 
 .course-card__signup--sealed .course-card__signup-text {
-  color: var(--c-text-tertiary, #9aa1ab);
-  font-weight: 400;
+  /* R8-L09-D06（颜色token P2）：封存态「报名」二字原声明走 --c-text-tertiary（回退值写成 #9aa1ab），
+     实帧墨迹众数 #9AA39F —— 正是 §1.2 的 placeholder 专用档 --c-text-quaternary 同值，
+     在 --c-bg-surface #F3FAF6 上只有 2.4:1（连 --c-text-tertiary 真值 #6B7571 同底也只有 4.50:1，
+     贴着下限）⇒ 一个仍可点（@tap 给 sealedToast）的控件被画成占位符灰。
+     提到 --c-text-secondary #4A524E 后同底 = 7.60:1，封存状态改由「浅底 + 描边 + 无行动色」表达。 */
+  color: var(--c-text-secondary, #4A524E);
+  font-weight: 500;
 }
 
 .course-card__signup-text {

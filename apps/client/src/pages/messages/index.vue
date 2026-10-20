@@ -713,11 +713,18 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
         </view>
       </view>
 
-      <!-- 摘要卡灰态：复用登录后那一版 .quick-cards/.quick-card 等宽半屏外壳 -->
+      <!-- 摘要卡灰态：R8-L02-D10（空态文案）——形状保留（64rpx 图标圆位仍走
+           .quick-card__ph--icon），原来那两条 24rpx 纯灰条改由 .quick-card__body 的
+           真实文本槽承担：标题位取既有键（messages.likedMe=「喜欢你的」/
+           messages.chatDesc=「未读消息」，正是这两张卡登录后口径上的名字），
+           计数位取既有键 nearby.loginToView（「登录后可查看更多内容」）——
+           游客确实没有这两项计数（喜欢数/待回复数走受保护端点，捏造数字＝编数据，
+           本仓红线见 :675-686 的 R2b 裁决），故计数位写「登录后可见」而不是假数字。
+           三条键 zh/en 双语都已存在，0 新增词条。
+           卡宽实算：750 − 2×32(.quick-cards padding) − 20(gap) = 678 → 每卡 339rpx，
+           减左右 24rpx 内衬 = 291rpx 文本位；22rpx 字号 × 10 字 = 220rpx ⇒ 计数行单行放得下。 -->
       <view class="quick-cards">
         <view
-          v-for="i in 2"
-          :key="i"
           class="quick-card"
           hover-class="quick-card--hover"
           role="button"
@@ -725,13 +732,30 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
           @tap="goLogin"
         >
           <view class="quick-card__ph quick-card__ph--icon" />
-          <view class="quick-card__ph" />
-          <view class="quick-card__ph quick-card__ph--short" />
+          <view class="quick-card__body">
+            <text class="quick-card__title">{{ t('messages.likedMe') }}</text>
+            <text class="quick-card__desc">{{ t('nearby.loginToView') }}</text>
+          </view>
+        </view>
+        <view
+          class="quick-card"
+          hover-class="quick-card--hover"
+          role="button"
+          :aria-label="t('nearby.loginToView')"
+          @tap="goLogin"
+        >
+          <view class="quick-card__ph quick-card__ph--icon" />
+          <view class="quick-card__body">
+            <text class="quick-card__title">{{ t('messages.chatDesc') }}</text>
+            <text class="quick-card__desc">{{ t('nearby.loginToView') }}</text>
+          </view>
         </view>
       </view>
 
-      <!-- 会话列表灰态 -->
+      <!-- 会话列表灰态：R8-L02-D10 同轴——4 行灰条此前既无标题也无说明，
+           补一行分区名（messages.private=「私信」/「Private」，双语既有键）点明这些位置对应会话。 -->
       <view class="guest-list" role="button" :aria-label="t('nearby.loginToView')" @tap="goLogin">
+        <text class="guest-list__label">{{ t('messages.private') }}</text>
         <Skeleton variant="list" :count="4" />
       </view>
       <!-- R6-L02-D08（R6/F7，2026-10-20）：滚动到底有一句「为什么这里没有内容」的可见说明。
@@ -796,8 +820,18 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
   transition: opacity 160ms ease-out;
 }
 
-/* ========== Header ========== */
+/* R8-L02-D11（层级遮挡）：页头此前是「无 position 的静态元素」，而 .messages-page__top-scrim
+   是 position:fixed + z-index:9 —— 静态元素永不参与 z-index 竞争，只要遮罩 opacity=1
+   （滚动后必然为 1）就把升入该带的页头整块压成半透明白纱：底帧里「消息」标题上缘被裁、
+   字形只剩约 40% 不透明度、副标与状态栏时钟同带不可读。
+   修法按任务书两案取「页头抬到遮罩之上」这一半：页头本身带不透明 --c-bg-container 底，
+   升到 z-index:10（> 遮罩 9）后自身 100% 实色，同时顺势充当本页的固定导航底板——
+   滚上来的正文被页头实底遮住，永远停在胶囊/状态带下方。
+   遮罩本体保持 top:0 → 状态栏+胶囊带（statusBarPx+28，见 :51 topScrimStyle），
+   它现在只负责页头之上那一条，职责与层级各归其位。 */
 .header {
+  position: relative;
+  z-index: 10;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -805,7 +839,13 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
      styleVars 绑定注入（本页未用 page-meta——项目内 page-meta 有限制，见 village/detail.vue 注释），
      修复自定义导航与状态栏叠印及 --capsule-right 回落猜测值 7px 的问题 */
   padding: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + 24rpx) 32rpx 16rpx;
-  padding-right: calc(var(--capsule-right, 7px) + 104px);
+  /* R8-L02-D08（位置）：删除 `padding-right: calc(var(--capsule-right, 7px) + 104px)`。
+     本页页头是「标题行 + 副标」两行的左对齐块，其顶缘由上一行的 padding-top 决定：
+     statusBar(实测≈47) + 20px + 24rpx ⇒ 标题行落在 y≈85-120，而胶囊带实测 y≈28-60
+     ——页头整体已在胶囊下方，横向再让 104px 属重复让位，把「+」右缘顶到 x≈250
+     （帧宽 378 的 66%），右侧空出约 91px。回到根 padding 的 32rpx 页边距口径
+     （与本页 .quick-cards :897 / .search-bar :875 的 32rpx 同一条），右缘即贴 x≈341。
+     避让胶囊的职责由上面的 padding-top（纵向）与本行右边距（页边距）分担，不再横向缓冲。 */
   background: var(--c-bg-container, #FFFFFF);
 }
 .header__left {
@@ -847,7 +887,10 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
   width: 72rpx;
   height: 72rpx;
   border-radius: 50%;
-  background: var(--c-bg-surface, #EEF7F2);
+  /* R8-L02-D09（颜色token）：删除 `background: var(--c-bg-surface, #EEF7F2)`。
+     理想图页头此处是「裸图标」，没有任何圆底；浅绿圆底（#EEF7F2 压在 #FFFFFF 页头上，
+     两色相差仅 5 灰阶）把两枚钮读成 72rpx 实心圆点，视觉权重反超标题「消息」。
+     72rpx 盒体与 flex 居中保留 ⇒ 热区口径不变（同页 .header__right 的 16rpx 间距也不动）。 */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -858,6 +901,16 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
 .header__icon-img {
   width: 40rpx;
   height: 40rpx;
+  /* R8-L02-D09 另一半：描线归一到近黑。素材 static/assets/icons/search.svg:2 把
+     stroke="#94A3B8" 写死在 SVG 里（该文件属别的车道，本车道不可写），宿主页的
+     color/token 覆盖不到它；而 #94A3B8 压在白页头上（去掉浅绿圆底后即为白底）
+     实测相对亮度比 = 1.05 / 0.4102 = 2.56:1，低于非文本 3:1 门槛。
+     改在「运行时真正生效的路径」上出解：宿主节点给 image 加 filter: brightness(0)，
+     把描线压成 #000000 ⇒ 对 #FFFFFF = 21:1（同钮右缘的「＋」字形取 --c-text-primary
+     #1A1E1C = 16.85:1，两枚同档近黑、与理想图裸图标口径一致）。
+     filter 对本仓 mp-weixin 运行时的 image 已被验证生效（EmptyState.vue:163 正是靠
+     filter 给同一批 SVG 染色后才在帧上读出灰调）。 */
+  filter: brightness(0);
 }
 /* MP-R1-PAGES-MESSAGES-INDEX-102：「+（发起会话）」按钮字形 */
 .header__icon-plus {
@@ -1483,7 +1536,9 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
 .guest-wall__btn-text--primary {
   color: var(--c-neutral-0, #FFFFFF);
 }
-/* 摘要卡灰态占位：只放形状（图标位 64rpx 同 .quick-card__icon-wrap），无文案、无计数 */
+/* 摘要卡灰态占位：R8-L02-D10 起只保留「图标位」形状（64rpx 圆，同 .quick-card__icon-wrap），
+   文案位改由 .quick-card__body 的真实标题/计数文本槽承担（见模板同轴注释）。
+   .quick-card__ph 本体是 --icon 的 height/border-radius/底色来源，不可删。 */
 .quick-card__ph {
   height: 24rpx;
   border-radius: var(--r-sm, 8rpx);
@@ -1494,12 +1549,20 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
   height: 64rpx;
   border-radius: 50%;
 }
-.quick-card__ph--short {
-  width: 60%;
-}
-/* 会话列表灰态：沿用本页 loading 态同一个 Skeleton 组件，左右间距同 .activity-list */
+/* 会话列表灰态：沿用本页 loading 态同一个 Skeleton 组件，左右间距同 .activity-list；
+   R8-L02-D10 补分区名，字号/字色取本页既有文本层级（同 .quick-card__title 的
+   28rpx / 700 / --c-text-primary），让「这 4 行灰条＝会话」在屏幕上读得出来。 */
 .guest-list {
   padding: 0 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.guest-list__label {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 /* R6-L02-D08：灰态列表末尾的「到此为止」一行——字号/字色与 .guest-wall__hint 同档

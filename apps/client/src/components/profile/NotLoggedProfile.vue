@@ -59,7 +59,8 @@ const MORE_ITEMS: MoreItem[] = [
 
 <template>
   <view class="not-logged-profile">
-    <!-- 2026-08-26 P0：顶部 ‹ 返回 + 应用图标 + 设置（规格书 11.1 / 11.2） -->
+    <!-- 2026-08-26 P0：顶部 ‹ 返回 + 应用中心 + 设置（规格书 11.1 / 11.2）
+         R8-L02-D17（层级遮挡 P1）：本行改 position:sticky 吸顶（见样式），滚动时给内容让出胶囊带。 -->
     <view class="nlp-topbar">
       <view
         class="nlp-topbar__btn press-feedback"
@@ -69,9 +70,13 @@ const MORE_ITEMS: MoreItem[] = [
         :aria-label="'返回'"
         @tap="goBack"
       >
-        <text class="nlp-topbar__icon">‹</text>
+        <text class="nlp-topbar__glyph nlp-topbar__glyph--back">‹</text>
       </view>
       <view class="nlp-topbar__right">
+        <!-- R8-L02-D12（素材缺失 P2）：右上第一枚原绑 ICONS_EMOJI.MOBILE（common/mobile.svg 手机轮廓），
+             与理想图的四方格不同形，且「手机」在本页没有任何指向（无设备/绑定入口）。
+             改复用已登录态 MyHeader.vue:6 同一枚「▦」四方格字形（文本 glyph，不引新素材、
+             不踩 real 档 icons/emoji 未打包那条 404 路径），MOBILE 素材从本页摘除。 -->
         <view
           class="nlp-topbar__btn press-feedback"
           hover-class="press-feedback--active"
@@ -80,7 +85,7 @@ const MORE_ITEMS: MoreItem[] = [
           :aria-label="'应用中心'"
           @tap="emit('goLogin')"
         >
-          <image class="nlp-topbar__icon" :src="IMAGE_PATHS.ICONS_EMOJI.MOBILE" mode="aspectFit" alt="" />
+          <text class="nlp-topbar__glyph">▦</text>
         </view>
         <view
           class="nlp-topbar__btn press-feedback"
@@ -90,7 +95,7 @@ const MORE_ITEMS: MoreItem[] = [
           :aria-label="'设置'"
           @tap="emit('goLogin')"
         >
-          <image class="nlp-topbar__icon" :src="IMAGE_PATHS.ICONS_EMOJI.SETTINGS" mode="aspectFit" alt="" />
+          <image class="nlp-topbar__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.SETTINGS" mode="aspectFit" alt="" />
         </view>
       </view>
     </view>
@@ -107,6 +112,20 @@ const MORE_ITEMS: MoreItem[] = [
       <view class="nlp-header__info">
         <text class="nlp-header__title">点击登录</text>
         <text class="nlp-header__sub">登录后遇见心动的TA</text>
+      </view>
+      <!-- R8-L02-D14（需新建 P1）：游客态头部右侧原只有一枚 44rpx「›」，模板里根本没有「编辑资料」
+           节点 ⇒ 理想图/规范要求的白底绿字入口在本页完全缺失，游客无法从「我的」进入资料填写。
+           补同档入口（复用已登录态 MyHeader.vue:277-293 的 .my-header__edit 胶囊口径，热区提到
+           全站 88rpx 触控下限），游客点击走本页既有 emit('goLogin') 门禁，不新造链路、不编造字段。 -->
+      <view
+        class="nlp-header__edit press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="'编辑资料'"
+        @tap.stop="emit('goLogin')"
+      >
+        <text class="nlp-header__edit-text">编辑资料</text>
       </view>
       <text class="nlp-header__arrow">›</text>
     </view>
@@ -202,10 +221,11 @@ const MORE_ITEMS: MoreItem[] = [
       <MyMore :items="MORE_ITEMS" @tap="emit('goLogin')" />
     </view>
 
-    <!-- R2b-L03-D07（层级遮挡）：登录 CTA 不再 fixed。 -->
-    <view class="nlp-footer-btn" @tap="emit('goLogin')">
-      <text class="nlp-footer-btn__text">登录</text>
-    </view>
+    <!-- R2b-L03-D07（层级遮挡）：登录 CTA 不再 fixed。
+         R8-L02-D16（位置 P1）：这条文档流通栏实心绿「登录」条理想图里并不存在——
+         它与头部「点击登录」是同一动作的两处入口，并把页面整体拉长约 124rpx，
+         使「更多功能」卡被顶到接近首屏折叠线以下。按缺陷卡建议移除通栏条，
+         登录入口收敛为头部「点击登录」+ R8-L02-D14 新增的「编辑资料」胶囊。 -->
   </view>
 </template>
 
@@ -215,22 +235,35 @@ const MORE_ITEMS: MoreItem[] = [
   background: linear-gradient(180deg, #E8FBF3 0%, #EEF7F2 40%);
   /* R12-IND-PROFILE-INDEX-001/MP-R1-PAGES-PROFILE-INDEX-002：未登录态此前固定
      32rpx 顶距，顶部三枚 64rpx 圆钮直接顶入状态栏/胶囊带（真机截图与时钟同高实证）；
-     对齐已登录态 MyHeader.vue:96-98 口径让位状态栏。--statusbar 已由页面根注入。 */
-  /* MP-R2-PROFILE-024 → R2b-L03-D07：底部留白收敛为「仅 tabBar 高度」。
-     原口径是给一颗 fixed 登录条让位（custom-tab-bar 面板 184rpx+2env + CTA 抬升 16rpx
-     + 钮高 92rpx = 292rpx+2env，再叠 108rpx），而那颗 fixed 条在长图里正好永久压在
-     「我的故事」宫格下半截上。CTA 已改回文档流末尾的常规块 ⇒ 只需清到 tabBar 顶缘。
-     回退值同步去掉重复的 env()（真值走 --tab-bar-total-h，见 theme/design-variables.scss:462）。 */
-  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 32rpx) 24rpx var(--tab-bar-total-h, calc(184rpx + env(safe-area-inset-bottom)));
+     对齐已登录态 MyHeader.vue:96-98 口径让位状态栏。--statusbar 已由页面根注入。
+     R8-L02-D17 连带：状态栏那一档让位从本页根 padding-top 挪进 .nlp-topbar 自己的 padding-top
+     （topbar 已改 sticky top:0，吸顶后它上沿贴在视口 y=0，让位必须由它自己吃，
+     否则吸顶时返回钮会印进状态栏带 —— 等于换个元素再犯同一条）。
+     MP-R2-PROFILE-024 → R2b-L03-D07：底部留白收敛为「仅 tabBar 高度」（原口径是给一颗 fixed
+     登录条让位 = 292rpx+2env 再叠 108rpx，而那颗条在长图里永久压在「我的故事」宫格下半截上）；
+     CTA 已移除 ⇒ 只需清到 tabBar 顶缘，回退值不再重复 env()（真值走 --tab-bar-total-h，
+     见 theme/design-variables.scss:462）。 */
+  padding: 32rpx 24rpx var(--tab-bar-total-h, calc(184rpx + env(safe-area-inset-bottom)));
 }
 
-/* 2026-08-26 P0：顶部 ‹ 返回 + 应用图标 + 设置（规格书 11.1 / 11.2）
-   R12-IND-PROFILE-INDEX-001：右侧按钮组横向避让微信胶囊（约 96px 量级） */
+/* 2026-08-26 P0：顶部 ‹ 返回 + 应用中心 + 设置（规格书 11.1 / 11.2）
+   R12-IND-PROFILE-INDEX-001：右侧按钮组横向避让微信胶囊（约 96px 量级）
+   R8-L02-D17（层级遮挡 P1）：本行原为文档流元素 ⇒ 滚到「我的故事」时第 4 枚虚线卡的
+   「添加故事」标签升到 y≈32-46，与系统胶囊（x≈272-370 / y≈28-60）几乎完全重叠、右半被盖住
+   （同一轴 R2b-L03-D07 把 fixed 登录条改文档流后换个元素复发）。修法落在「页头的定位契约」上：
+   topbar 改 position:sticky 吸顶（top:0 + z-index 高于卡片层），并把自身背景补成不透明的页面顶色
+   var(--c-bg-brand)=#E8FBF2（与本页渐变起点 #E8FBF3 Δ≤3，肉眼接缝不可见）——
+   吸顶高度 = --statusbar + 16rpx 上衬 + 64rpx 钮 + 24rpx 下衬 ≈ 状态栏下 52px，
+   覆盖整条胶囊带，滚动内容改从底板下沿穿过，不再印进状态栏/胶囊里。 */
 .nlp-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16rpx calc(var(--capsule-right, 7px) + 96px) 24rpx 8rpx;
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 16rpx) calc(var(--capsule-right, 7px) + 96px) 24rpx 8rpx;
+  background: var(--c-bg-brand, #E8FBF3);
 }
 
 .nlp-topbar__right {
@@ -250,16 +283,31 @@ const MORE_ITEMS: MoreItem[] = [
   flex-shrink: 0;
 }
 
-.nlp-topbar__icon {
-  font-size: 32rpx;
+/* R8-L02-D13（颜色token P2）：返回 ‹ 原 #36C99A 品牌绿，是整排最重的墨，
+   理想图恰好相反（返回件弱化、右侧两枚为重黑）。‹ 与 ▦ 都是文本字形，直接走令牌：
+   返回 → --c-text-tertiary #6B7571（弱化档），右侧 → --c-text-primary #1A1E1C（重黑档）。 */
+.nlp-topbar__glyph {
+  font-size: 30rpx;
   line-height: 1;
-  color: #36C99A;
+  color: var(--c-text-primary, #1A1E1C);
 }
 
-.nlp-topbar__btn:nth-child(2) .nlp-topbar__icon,
-.nlp-topbar__btn:nth-child(3) .nlp-topbar__icon {
-  font-size: 28rpx;
-  color: #6B7571;
+.nlp-topbar__glyph--back {
+  font-size: 32rpx;
+  color: var(--c-text-tertiary, #6B7571);
+}
+
+/* R8-L02-D13 连带：设置那一枚是 <image> 外链 SVG，mp 的 image 不响应 CSS color
+   （原 :259-263 的 nth-child 染色从落不了画，且 nth-child(3) 根本不匹配 —— 两枚图钮在
+   __right 子容器里，不是 .nlp-topbar 的第 2/3 子元素）。素材烘焙描边 #94A3B8，
+   用 filter 对已渲染位图做「去饱和 + 压暗」逼近 --c-text-primary：
+   saturate(0) → 161 灰阶，再 ×0.34 → ≈#373737（对 #1A1E1C 同档，浅绿底上 ≥11:1）。
+   尺寸此前靠 flex 收缩被动铺满 64rpx 圆钮（实测 32px 出血），现按同页已登录态
+   MyHeader 的 34rpx/56rpx 比例给 40rpx，与左侧 ▦ 字形同重量。 */
+.nlp-topbar__icon-img {
+  width: 40rpx;
+  height: 40rpx;
+  filter: saturate(0) brightness(0.34);
 }
 
 .nlp-header {
@@ -308,6 +356,29 @@ const MORE_ITEMS: MoreItem[] = [
 .nlp-header__arrow {
   font-size: 44rpx;
   color: #36C99A;
+}
+
+/* R8-L02-D14：头部白底绿字「编辑资料」胶囊。
+   底/影走令牌 --c-bg-container + --card-shadow（与同页 .nlp-card 同族），
+   字色不走 --c-brand/--c-brand-700（#1F8D6A 对白底只有 4.14:1），取 --c-brand-800 #156B51
+   = 6.45:1，仍是「绿字」且达 WCAG 4.5:1 正文下限；热区补全站 88rpx 口径。 */
+.nlp-header__edit {
+  flex-shrink: 0;
+  min-height: 88rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 26rpx;
+  border-radius: 999rpx;
+  background: var(--c-bg-container, #ffffff);
+  box-shadow: var(--card-shadow, 0 8rpx 24rpx rgba(15, 23, 42, 0.06));
+}
+
+.nlp-header__edit-text {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--c-brand-800, #156B51);
 }
 
 .nlp-card {
@@ -591,23 +662,7 @@ const MORE_ITEMS: MoreItem[] = [
   margin: 0 calc(var(--page-padding, 32rpx) * -1);
 }
 
-/* R2b-L03-D07（层级遮挡）：登录 CTA 从 position: fixed 改为文档流末尾的常规块。
-   原 bottom = 2×安全区 + 200rpx 的悬浮条在长图里永久压在「我的故事」宫格下半截上
-   （上一轮 R1-B03 修的是 GlobalPublishFab，该组件带 v-if="isOwnProfile" 游客态不渲染，
-   于是同一轴换了个元素继续存在）。让位间距一并挪到上方 padding-bottom 口径里。 */
-.nlp-footer-btn {
-  margin-top: 32rpx;
-  height: 92rpx;
-  border-radius: 999rpx;
-  background: var(--c-brand, #36C99A);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nlp-footer-btn__text {
-  font-size: 30rpx;
-  font-weight: 700;
-  color: #ffffff;
-}
+/* R2b-L03-D07 → R8-L02-D16：整条通栏「登录」CTA 已从模板移除（理想图无此条、
+   与头部入口重复、并把「更多功能」卡顶到折叠线以下），故 .nlp-footer-btn 两条样式一并删除。
+   页面底部让位仍由根节点 padding-bottom: var(--tab-bar-total-h) 承担（见 :224 口径）。 */
 </style>

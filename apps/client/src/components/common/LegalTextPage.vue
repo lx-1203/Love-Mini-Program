@@ -281,16 +281,24 @@ function handleRetry(): void {
   flex-direction: column;
   /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
   min-height: 100%;
+  /* R8-L13-D12/D16：.legal-footer 出流吸底后按等高占位补白，
+     避免滚到文末时最后一段正文被固定条压住（钮高 --btn-height-md 96rpx + 上下内距）。 */
+  padding-bottom: 200rpx;
+  box-sizing: border-box;
   background: var(--c-bg-page);
 }
 
 /* ========== 顶部标题区 ========== */
+/* R8-L13-D13：与 .legal-content 连成同一张白卡（上圆角、左右同吃 --page-padding），
+   原先它是全宽白条、正文是绿裸文，两截不同底 —— 现两截同色同列。 */
 .legal-header {
-  padding: var(--sp-6) var(--sp-6) var(--sp-4);
+  margin: var(--sp-4) var(--page-padding, 32rpx) 0;
+  padding: var(--sp-6) var(--page-padding, 32rpx) var(--sp-4);
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
   background: var(--c-bg-container);
+  border-radius: var(--card-radius, 40rpx) var(--card-radius, 40rpx) 0 0;
   border-bottom: 1rpx solid var(--c-border-light, rgba(15, 23, 42, 0.04));
 }
 
@@ -367,9 +375,20 @@ function handleRetry(): void {
 }
 
 /* ========== 正文 scroll-view ========== */
+/* R8-L13-D13（颜色token P2）+ R8-L13-D14（间距 P2）：
+   原规则只有 flex/padding/box-sizing，没有 background ⇒ 正文直接摊在页面底 --c-bg-page
+   (#EEF7F2) 上，夹在白色 .legal-header 与白色 .legal-footer 之间成「白条+绿裸文+白条」三明治
+   （实测 y=200..814 三点同证 #EEF7F2）。补 --c-bg-container 与 header 连成一张白卡，
+   并按 §1.4 上 --card-radius/--card-shadow，与全站「浅绿底 + 白卡」同构。
+   左右内距原写 var(--sp-6)=24rpx=12px（design-variables.scss:552），比全站标准内容列
+   x=33..345 各宽 4px ⇒ 页边距必须吃页面令牌 --page-padding（:575，32rpx=16px），不是间距阶梯。 */
 .legal-content {
   flex: 1;
-  padding: var(--sp-6);
+  margin: 0 var(--page-padding, 32rpx);
+  padding: var(--page-padding, 32rpx);
+  background: var(--c-bg-container);
+  border-radius: 0 0 var(--card-radius, 40rpx) var(--card-radius, 40rpx);
+  box-shadow: var(--s-card-soft);
   box-sizing: border-box;
 }
 
@@ -385,9 +404,24 @@ function handleRetry(): void {
 }
 
 /* ========== 底部"我已阅读"按钮 ========== */
+/* R8-L13-D12 / R8-L13-D16（可达性 P1×2 · privacy + agreement 两页同根因）：
+   原 .legal-footer 只有 padding，没有任何吸底约束 ⇒ 它排在文档流末尾；
+   而 .legal-page 的 min-height:100% 在本运行时无可解析的确定父高（退化成 auto），
+   于是子级 .legal-content{flex:1} 不参与剩余空间分配、scroll-view 被 2000px 正文撑高，
+   footer 被顶到最后一屏 ⇒ 首屏（top 帧）整张 378×814 品牌绿像素只有 2 个（返回箭头），
+   「我已阅读并同意」0 像素可见，用户必须逐屏滚完全文才碰得到唯一确认出口。
+   改法走缺陷卡给的第一条：出流吸底（不依赖 flex:1 是否解析，确定性强）。
+   R8-L13-D17（颜色token P3）：同一改动顺带消掉「不贴边的白色横带」——
+   left:0/right:0 让白底满宽（原来 x=1..15 与 x=363..376 各留 16px 浅绿缝、两端锯齿断层），
+   内距改吃 --page-padding 使按钮列与全站标准内容列 x=33..345 对齐。 */
 .legal-footer {
-  padding: var(--sp-4) var(--sp-6)
-    calc(env(safe-area-inset-bottom) + var(--sp-4));
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  padding: var(--sp-4) var(--page-padding, 32rpx)
+    calc(env(safe-area-inset-bottom) + var(--sp-6));
   background: var(--c-bg-container);
   border-top: 1rpx solid var(--c-border-light, rgba(15, 23, 42, 0.04));
 }

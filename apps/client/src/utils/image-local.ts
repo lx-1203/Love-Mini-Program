@@ -125,7 +125,24 @@ const MOCK_MEDIA_LOCAL_MAP: Record<string, string> = {
   "topic-food-1.jpg":   IMAGE_PATHS.CIRCLE_COVERS.FOOD,
   "topic-food-2.jpg":   IMAGE_PATHS.CIRCLE_COVERS.FOOD,
   // 个人资料/认证（photo-* / half / bg / student-card）
+  /* R8-L12-D01（素材缺失 P1 · apps/client/src/pages/…/setup/profile/index.vue 照片墙）：
+     后端 mock 的照片墙数组逐条是 photo-1/photo-2/photo-3（apps/api/src/main/java/com/
+     campuslove/api/mock/MockRuntimeState.java:78-80），而本表过去只登记了 photo-1.jpg ⇒
+     photo-2/photo-3 落到 `local ?? path` 原样返回，继续走 http 鉴权代理，被基础库拒绝渲染，
+     最终由 SafeImage 降级出「绿色定位针」占位（帧上第 2/3 槽墨迹 #36C99A）。
+     上一轮把守卫加在 profile/index.vue:473 只匹配 `/assets/icons/`，同样没命中本形态 ⇒
+     画面逐像素未变。修法落在真正的运行路径上：本函数被 utils/media.ts:278 的
+     resolveMediaUrl 调用（SafeImage → resolveOnce → resolveMediaUrl），补表即生效。
+     目标档 IMAGE_PATHS.PEOPLE.CARD_2/CARD_3（config/images.ts:322-323 已登记）在
+     dist/build/mp-weixin-real 走后端 app-assets/assets/images/people/person-0{2,3}.png
+     （盘上已确认存在），photo-1 同一目录、帧上已证明可达。photo-4~6 一并登记：仅在
+     后端将来真的返回该路径时才生效，不编造任何数据。 */
   "photo-1.jpg":        IMAGE_PATHS.PEOPLE.CARD_1,
+  "photo-2.jpg":        IMAGE_PATHS.PEOPLE.CARD_2,
+  "photo-3.jpg":        IMAGE_PATHS.PEOPLE.CARD_3,
+  "photo-4.jpg":        IMAGE_PATHS.PEOPLE.CARD_4,
+  "photo-5.jpg":        IMAGE_PATHS.PEOPLE.CARD_5,
+  "photo-6.jpg":        IMAGE_PATHS.PEOPLE.CARD_6,
   "half.jpg":           IMAGE_PATHS.PEOPLE.CARD_1,
   "bg.jpg":             IMAGE_PATHS.GENERATED.HOME_POSTER,
   "student-card-1.jpg": IMAGE_PATHS.GENERATED.CAMPUS_LIBRARY,

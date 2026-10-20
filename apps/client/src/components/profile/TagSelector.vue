@@ -342,7 +342,9 @@ const selectedTags = computed(() => {
 .tag-selector__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-2);
+  /* R8-L12-D12（可达性 P1）：行/列间距 var(--sp-2)=8rpx（4px）时相邻热区只隔 4px，
+     本页是「至少 3 个」的必选步骤且 chip 是唯一可点控件 ⇒ 提到 --sp-3（12rpx=6px）拉开热区。 */
+  gap: var(--sp-3);
 }
 
 /* 单个 chip */
@@ -350,15 +352,28 @@ const selectedTags = computed(() => {
   display: flex;
   align-items: center;
   gap: 6rpx;
-  padding: var(--sp-1) var(--sp-3);
+  /* R8-L12-D12：纵向 padding --sp-1(4rpx=2px) → --sp-3(12rpx)，并补 88rpx 全站最小触控目标，
+     实测热区由 27-28px(54-56rpx，仅口径的 62%) 抬到 44px=88rpx；box-sizing 让 padding/min-height
+     同侧计算，不给文案再撑出第二行。 */
+  box-sizing: border-box;
+  min-height: 88rpx;
+  padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-full);
-  background: var(--c-bg-page);
+  /* R8-L12-D10（颜色token P1）：未选中底原取 --c-bg-page，与宿主 interest/index.vue:131 的页面底
+     同为 --c-bg-page #EEF7F2 ⇒ 逐通道差 0，10 枚 chip 与背景零色差，只剩 1rpx 描边区分。
+     改 --c-bg-container（白卡浮在浅绿页上），描边保留 --c-border-default。 */
+  background: var(--c-bg-container);
   border: 1rpx solid var(--c-border-default);
 }
 
 .tag-chip--selected {
-  background: var(--c-bg-brand);
-  border-color: var(--c-brand-200);
+  /* R8-L12-D10 连带：缺陷同条指出「未选中/已选中两态之间也只剩 5 个通道的明度差」
+     （#EEF7F2 vs --c-bg-brand #E8FBF2）。未选中改白底后，选中态用 --c-brand-100 #D1F5E7
+     （对白底 Δ(46,10,24)）并配 --c-brand-300 描边，两态一眼可分；
+     文字由 --c-brand-700 #1F8D6A（在浅绿底上只有 3.84:1）提到 --c-brand-800 #156B51
+     = 5.50:1，达 WCAG 4.5:1 正文下限。 */
+  background: var(--c-brand-100);
+  border-color: var(--c-brand-300);
 }
 
 .tag-chip--hover {
@@ -378,7 +393,8 @@ const selectedTags = computed(() => {
 }
 
 .tag-chip--selected .tag-chip__text {
-  color: var(--c-brand-700);
+  /* R8-L12-D10 连带：见上方 .tag-chip--selected 注释（3.84:1 → 5.50:1） */
+  color: var(--c-brand-800);
   font-weight: 600;
 }
 

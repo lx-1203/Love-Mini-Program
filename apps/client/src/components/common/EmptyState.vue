@@ -49,8 +49,20 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 /** 预设类型 → 图标映射 */
+/* R8-L04-D04（素材缺失 P2）+ R8-L05-D11（需新建 P2）：
+   `no-data` 过去映射 ICONS_COMMON.SEARCH（= /common/search.**png**，一枚放大镜）。
+   放大镜的语义是「搜索无结果」，而 no-data 是全站默认态（props.type 默认值），
+   circles/campus topic-detail 的「话题不存在或已被删除」、各处「暂无内容」都走它 ⇒
+   帧上（x≈189/y≈150、y≈375..425）出现一枚与文案无关的放大镜。
+   改指仓内既有素材 ICONS_COMMON.BOX_SVG（/common/box.svg，lucide 开口空箱＝
+   「空/无数据」通用图形，dist 包内 icons/common 与后端 app-assets 双份在盘），
+   同时把位图档换成矢量档（L05-D11「该资产是位图 PNG」那一半随之消失）。
+   —— 不新建素材：本仓硬规矩只许用既有资产；已核 src/static 全量，
+   除 box/package 外没有更贴「空数据」语义的现成插画，故取 box。
+   私有色 #94A3B8 的归一仍走文末 .empty-icon--preset 的 filter（R7-L13-D03 已批口径，
+   本车道不推翻该判定；<image> 无法用 currentColor 给外链 SVG 上色，filter 是组件内唯一杠杆）。 */
 const presetIconMap: Record<string, string> = {
-  'no-data': IMAGE_PATHS.ICONS_COMMON.SEARCH,
+  'no-data': IMAGE_PATHS.ICONS_COMMON.BOX_SVG,
   'no-match': IMAGE_PATHS.ICONS_COMMON.CLOSE,
   'no-chat': IMAGE_PATHS.ICONS_COMMON.NOTIFICATION,
   'network': IMAGE_PATHS.ICONS_COMMON.CLOSE,
@@ -67,7 +79,7 @@ const presetSubMap: Record<string, string> = {
 // R16（2026-09-07）：iconSrc 统一过 resolveMediaUrl——此前原样渲染 IMAGE_PATHS，
 // real 模式下 app-assets 托管地址/相对路径未重写会导致空态图标 404 加载异常
 const iconSrc = computed(() =>
-  resolveMediaUrl(props.image || presetIconMap[props.type] || IMAGE_PATHS.ICONS_COMMON.SEARCH),
+  resolveMediaUrl(props.image || presetIconMap[props.type] || IMAGE_PATHS.ICONS_COMMON.BOX_SVG),
 );
 
 const titleText = computed(() => {
@@ -150,7 +162,7 @@ function handleAction() {
 }
 
 /* R7-L13-D03（颜色 token P3 · 【R6 已批过，未落地】）：
-   预设图标三枚（common/search.png、close.png、notification.png）素材本体自带私有色值
+   预设图标三枚（R8 起为 common/box.svg 与 close.png、notification.png，描线/像素主色同为
    #94A3B8（蓝灰，实测帧上 120rpx 图标渲染为 #91A0B6 最暗值），§1.2 全量色板无该档 ⇒
    在白卡上发蓝发飘，与同空态标题 --c-text-tertiary #6B7571 不同系。
    R6 那一轮把改动落在 static/assets/icons/common/search.**svg** 上，而 ICONS_COMMON.SEARCH

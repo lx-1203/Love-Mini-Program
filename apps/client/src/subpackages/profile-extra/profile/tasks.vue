@@ -209,14 +209,29 @@ function taskStatusText(task: TaskItem): string {
   return isTaskClaimed(task) ? t("profile.taskDone") : t("profile.taskGo");
 }
 
+/**
+ * 任务是否「已完成」（含已完成待领取）。
+ * R8-L11-D04（文案 P2）：后端 claimable=true 的语义就是「任务已做完、奖励待领取」
+ * （:164 的 completed 亦如此判、:208 的状态文案据此显示「领取」），而旧 doneCount/earnedPoints
+ * 只认 claimed ⇒ 同一帧内第 3 卡按钮是绿底「领取」胶囊，页头却写「0/4 已完成」、积分卡写
+ * 「累计获得 0 积分 / 0%」、进度条 0 填充，画面自相矛盾。完成度与进度改按 claimable||claimed
+ * 计数（建议改法第一条；「已领取 N/4」那条要动 i18n 键，不在本泳道可写集）；
+ * 按钮态仍按 claimable / claimed 区分，两套语义不再打架。mock 无 claimable 字段，退化为 done。
+ */
+function isTaskFinished(task: TaskItem): boolean {
+  return task.claimable === true || isTaskClaimed(task);
+}
+
+/** 已完成任务（含待领取）——完成度、积分、进度条三处同源的单一筛选 */
+const finishedTasks = computed(() => tasks.value.filter((task) => isTaskFinished(task)));
 /** 全部任务可获积分总和 */
 const totalPoints = computed(() => tasks.value.reduce((sum, task) => sum + task.points, 0));
-/** 已获得积分（real 按 claimed 计；mock 按 done 计） */
+/** 已获得积分（real 按已完成/待领取计；mock 按 done 计） */
 const earnedPoints = computed(() =>
-  tasks.value.filter((task) => isTaskClaimed(task)).reduce((sum, task) => sum + task.points, 0)
+  finishedTasks.value.reduce((sum, task) => sum + task.points, 0)
 );
 /** 已完成/已领取任务数 */
-const doneCount = computed(() => tasks.value.filter((task) => isTaskClaimed(task)).length);
+const doneCount = computed(() => finishedTasks.value.length);
 
 /**
  * 返回上一页（自定义导航栏返回键，navigationStyle: custom 无系统返回栏）。
@@ -235,19 +250,47 @@ const progressPercent = computed(() =>
   totalPoints.value > 0 ? Math.round((earnedPoints.value / totalPoints.value) * 100) : 0
 );
 
-/** 任务图标（按任务 id 映射） */
+/**
+ * 任务图标（按任务 id / 后端 code 映射）。
+ *
+ * R8-L11-D01（素材缺失 P1）：real 档 :166 把 id 取成后端 code（apps/api/…/tasks 的四个 code：
+ * daily-checkin / complete-profile / campus-verify / first-post，见 RealTaskService），而旧
+ * switch 只匹配 mock 的 checkin / profile / verify ⇒ 三条全部落到 default 的 sparkles 兜底，
+ * 帧上四枚图标位实测只有 2 种图形（三枚同一张 17×14 sparkles + 一枚 heart），
+ * check-circle / user / graduation-cap 三枚 0 像素可见。现按 code 逐条补 case，
+ * default 只在真正未知的任务上兜底。
+ *
+ * R8-L11-D02（颜色 token P2）：原四枚（sparkles / heart / user / graduation-cap /
+ * check-circle 全部 stroke="#94A3B8" 蓝灰，实测墨迹 #95A4B9 / #A5B5C4 / #ACBDC9）坐在
+ * 72rpx 的 --c-bg-brand 薄荷胶囊（实测底 #E8FBF2）里，蓝灰字形与品牌绿底不同色族；
+ * R7 只在 EmptyState 内中和了同名图标，本页 :416 是裸 <image> 直引 SVG，无从 currentColor
+ * 上色。改按建议改法第一条换仓内既有、已按 --c-brand(#36C99A) 上色的图标（四枚全部落在
+ * cdn-buckets.json 的 localPrefixes：assets/svg-spec/、assets/icons/register/、
+ * assets/icons/tabbar/ ⇒ real 档恒走包内路径，实测 dist/build/mp-weixin-real/static/assets/icons
+ * 三目录俱在，不会 404），四枚图形互不相同、且与薄荷底同色族；未新增任何素材。
+ * 色值逐枚核过：check-green.svg / 03-icons/edit.svg / 03-icons/star.svg 均 fill|stroke #36C99A，
+ * tabbar/chat-active.png 像素主色 rgb(54,201,154)=#36C99A。
+ */
 function taskIcon(taskId: string): string {
   switch (taskId) {
     case "profile":
-      return IMAGE_PATHS.ICONS_COMMON.USER_SVG;
+    case "complete-profile":
+      // ✎ 完善资料（svg-spec/03-icons/edit.svg，stroke #36C99A）
+      return IMAGE_PATHS.ICONS_EMOJI.EDIT;
     case "checkin":
-      return IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE;
+    case "daily-checkin":
+      // ✓ 每日签到（assets/icons/register/check-green.svg，#36C99A）
+      return IMAGE_PATHS.REGISTER_ICONS.CHECK_GREEN;
     case "first-post":
-      return IMAGE_PATHS.ICONS_EMOJI.HEART;
+      // 💬 发布首条动态（tabbar/chat-active.png，#36C99A 实心底）
+      return IMAGE_PATHS.ICONS_TABBAR.CHAT_ACTIVE;
     case "verify":
-      return IMAGE_PATHS.ICONS_COMMON.GRADUATION_CAP_SVG;
+    case "campus-verify":
+      // ☆ 校园认证（svg-spec/03-icons/star.svg，stroke #36C99A）
+      return IMAGE_PATHS.ICONS_EMOJI.STAR;
     default:
-      return IMAGE_PATHS.ICONS_EMOJI.SPARKLES;
+      // 未知任务兜底同样取品牌绿档，不再回到蓝灰 sparkles
+      return IMAGE_PATHS.ICONS_EMOJI.STAR;
   }
 }
 

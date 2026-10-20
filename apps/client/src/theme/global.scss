@@ -142,7 +142,12 @@ scroll-view::-webkit-scrollbar {
 .card-base {
   position: relative;
   background: var(--c-bg-container);
-  border-radius: var(--r-lg);
+  /* R8-L11-D03（圆角 P2）：原取 --r-lg = 20rpx（design-variables.scss:445/$radius-lg），
+     只有 §1.4 卡片标准圆角的一半——tasks 页 5 张卡逐行拟合左上曲率半径 ≈7.5-10px(15-20rpx)。
+     卡片标准档在本仓已有专用令牌 --card-radius: 40rpx（design-variables.scss:699「20px @2x 设计基准」），
+     .card-base 作为全站共享卡片基类应吃它而不是通用 --r-lg；本行是全局唯一出口，
+     改这一处即同时抬齐 campus / profile-extra / village 等所有走 .card-base 的卡片。 */
+  border-radius: var(--card-radius, 40rpx);
   border: var(--card-border);
   box-shadow: var(--s-card-soft);
   padding: var(--sp-4);

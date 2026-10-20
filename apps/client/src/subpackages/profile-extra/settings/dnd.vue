@@ -317,21 +317,29 @@ onMounted(() => {
     <!-- MP-R1-DND-002：safe-top 必须先于自绘导航（对照 settings/index.vue:426 注释）——
          navigationStyle=custom 下页面从 y=0 渲染，原顺序使 88rpx 高不透明 nav-bar 顶进
          状态栏，返回键/标题与系统时间/胶囊叠印；--statusbar 已注入但 DOM 顺序放错形同虚设 -->
-    <!-- 顶部安全区占位 -->
-    <view class="safe-top" />
+    <!-- R8-L11-D07（层级遮挡 P1）：整块头部常驻吸顶。原顺序是 safe-top(仅状态栏高) +
+         nav-bar(position:relative)，本页为自然流文档滚动 ⇒ bottom 帧里导航整条滚出，
+         第一组开关行顶到 y=27，与固定胶囊（实测 x≈296..352 / y≈44..77）在 x=297..347 ×
+         y=49..57 叠印，开关不可点、状态不可读。改为把「状态栏带 + 88rpx 导航」包进一个
+         position:sticky 的 .page-header（不透明底承接滚动内容）——头部下缘即 statusbar+44px
+         = 胶囊底沿，两帧都不再有任何节点进入胶囊带（.safe-top 保持全站 `+ 0rpx` 口径，见 :598）。 -->
+    <view class="page-header">
+      <!-- 顶部安全区占位 -->
+      <view class="safe-top" />
 
-    <!-- 顶部导航栏 -->
-    <view class="nav-bar">
-      <view
-        class="nav-bar__back press-feedback"
-        @tap="goBack"
-        hover-class="nav-bar__back--hover"
-        hover-stay-time="100"
-      >
-        <text class="nav-bar__back-icon">‹</text>
+      <!-- 顶部导航栏 -->
+      <view class="nav-bar">
+        <view
+          class="nav-bar__back press-feedback"
+          @tap="goBack"
+          hover-class="nav-bar__back--hover"
+          hover-stay-time="100"
+        >
+          <text class="nav-bar__back-icon">‹</text>
+        </view>
+        <text class="nav-bar__title">{{ t("dnd.pageName") }}</text>
+        <view class="nav-bar__placeholder" />
       </view>
-      <text class="nav-bar__title">{{ t("dnd.pageName") }}</text>
-      <view class="nav-bar__placeholder" />
     </view>
 
     <!-- 加载状态 -->
@@ -355,23 +363,32 @@ onMounted(() => {
 
     <!-- 内容区 -->
     <view v-else class="content">
-      <!-- 总开关分组 -->
+      <!-- 总开关分组
+           R8-L11-D06（文案 P2）：分组标题与卡内行标题同取 t("dnd.enable")，画面上一字不差
+           重复两遍（实测 y=106..116 灰与 y=143..154 黑同为「开启免打扰」）。按建议改法第二条
+           去掉重复的 section__title，卡内「开启免打扰 + 说明」即本组唯一标题。
+           （另一条「分组标题保留、行标题改开关动作语义」需要新 i18n 键，不在本泳道可写集。） -->
       <view class="section">
-        <view class="section__title">
-          <text class="section__title-text">{{ t("dnd.enable") }}</text>
-        </view>
         <view class="card">
           <view class="switch-row">
             <view class="switch-row__left">
               <text class="switch-row__label">{{ t("dnd.enable") }}</text>
               <text class="switch-row__desc">{{ t("dnd.enableDesc") }}</text>
             </view>
-            <switch
-              class="switch-row__control switch-row__control--enabled"
-              :checked="form.enabled"
-              :color="SWITCH_ACTIVE_COLOR"
-              @change="handleToggleEnabled"
-            />
+            <!-- R8-L11-D05（可达性 P1）：原生 switch 关闭态轨道实测 #FFFFFF，坐在 #FFFFFF
+                 卡底上对比度 1.0:1，只剩一圈 #D8D8D8 发丝描边（1.06:1），用户无法从控件本身
+                 判断状态。本页不得改自绘控件（tests/native-switch-naming.spec.ts:59 钉死全仓
+                 9 枚原生 switch 的数量与 authored class），故按建议改法第二条给原生 switch
+                 补一层可辨底色轨道槽（--c-neutral-300 #C2CAC6，对白轨道 1.55:1、对白卡底
+                 1.55:1，两态都成立）。 -->
+            <view class="switch-row__well">
+              <switch
+                class="switch-row__control switch-row__control--enabled"
+                :checked="form.enabled"
+                :color="SWITCH_ACTIVE_COLOR"
+                @change="handleToggleEnabled"
+              />
+            </view>
           </view>
           <view class="status-row">
             <text class="status-row__label">{{ t("dnd.currentStatus") }}</text>
@@ -466,22 +483,23 @@ onMounted(() => {
         </view>
       </view>
 
-      <!-- 紧急消息穿透 -->
+      <!-- 紧急消息穿透
+           R8-L11-D06：同上一条——分组标题与行标题同取 t("dnd.tip")，实测 y=727..737(110 墨点)
+           与 y=770..781(117 墨点) 逐字重复「紧急消息仍会通知，避免错过重要信息」⇒ 去掉 section__title。 -->
       <view class="section">
-        <view class="section__title">
-          <text class="section__title-text">{{ t("dnd.tip") }}</text>
-        </view>
         <view class="card">
           <view class="switch-row switch-row--no-border">
             <view class="switch-row__left">
               <text class="switch-row__label">{{ t("dnd.tip") }}</text>
             </view>
-            <switch
-              class="switch-row__control switch-row__control--urgent"
-              :checked="form.allowUrgent"
-              :color="SWITCH_ACTIVE_COLOR"
-              @change="handleToggleAllowUrgent"
-            />
+            <view class="switch-row__well">
+              <switch
+                class="switch-row__control switch-row__control--urgent"
+                :checked="form.allowUrgent"
+                :color="SWITCH_ACTIVE_COLOR"
+                @change="handleToggleAllowUrgent"
+              />
+            </view>
           </view>
         </view>
       </view>
@@ -521,6 +539,15 @@ onMounted(() => {
 }
 
 /* ==================== 顶部导航栏 ==================== */
+/* R8-L11-D07：状态栏带 + 导航整块吸顶，不透明底承接滚动内容 */
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--c-bg-container, #FFFFFF);
+  flex-shrink: 0;
+}
+
 .nav-bar {
   display: flex;
   align-items: center;
@@ -567,7 +594,12 @@ onMounted(() => {
 
 /* ==================== 安全区占位 ==================== */
 .safe-top {
-  
+  /* R8-L11-D07：胶囊避让由「吸顶头部整块常驻」兑现，不靠把 safe-top 抬高。
+     头部总高 = statusbar + .nav-bar 88rpx(=44px)，胶囊（32px 高、居中于 44px 导航带）底沿
+     = statusbar + 44px ⇒ 头部下缘正压在胶囊底沿上，bottom 帧滚动内容一律从胶囊下方经过。
+     上一发在此再补 88rpx，会把导航标题推到 y=statusbar+44..88（比胶囊低 44px、白带翻倍），
+     与全站口径冲突（verification/index.vue:805、vip/index.vue:771、market/detail:465 均 `+ 0rpx`）
+     ⇒ 收回 0rpx。--statusbar 由 :316 的 menuStyleVars 注入（useMenuButtonRect.ts:51 给 px 真值）。 */
   height: calc(var(--statusbar, env(safe-area-inset-top)) + 0rpx);
   flex-shrink: 0;
 }
@@ -674,6 +706,22 @@ onMounted(() => {
   gap: 8rpx;
   flex: 1;
   padding-right: 16rpx;
+}
+
+/* R8-L11-D05（可达性 P1）：原生 switch 关闭态轨道实测 #FFFFFF，与白卡底同值（1.0:1），
+   只剩 #D8D8D8 发丝描边（1.06:1）⇒ 控件本身读不出状态。这里不换成自绘控件
+   （tests/native-switch-naming.spec.ts:59 钉死全仓 9 枚原生 <switch> 的数量与 authored class，
+   换掉即破测试），按建议改法第二条给原生 switch 补一层可辨轨道底：
+   --c-neutral-300 #C2CAC6 对白轨道 1.55:1、对白卡底 1.55:1，且 ON 态（#36C99A 轨道）
+   与 OFF 态（白轨道）在同一底上都能成形。 */
+.switch-row__well {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-neutral-300, #C2CAC6);
 }
 
 .switch-row__label {

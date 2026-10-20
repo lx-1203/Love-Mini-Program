@@ -102,6 +102,15 @@ const emojiIcons = {
   heartMatch: resolveMediaUrl(IMAGE_PATHS.ICONS_MATCH.HEART),
   star: resolveMediaUrl(IMAGE_PATHS.ICONS_MATCH.STAR),
   x: resolveMediaUrl(IMAGE_PATHS.ICONS_MATCH.X),
+  /* R8-L08-D10：三枚主操作钮的图标改绑 v2 深墨档（#333333，盘上/后端均存在，见 images.ts:692/695/696）。
+     原绑的 ICONS_MATCH.{STAR,X,HEART} 三枚墨色与各自钮底色同档：
+     star-blue #4D8DFF 压 --c-status-info #4D8DFF = 1.01:1、heart-pink #FF6FA3 压 romance 渐变 #FE7288 ≈ 1.01:1、
+     x-gray #8A9694 压 slate 底 ≈ 1.36:1 ⇒ 帧上三枚圆钮的 44rpx 图标带零有效像素。
+     深墨 #333333 对三枚底色实测 4.86 / 3.93 / 4.60~5.11:1，全部 ≥3:1。
+     旧键保留不动：emojiIcons.heartMatch 还服务 :1291 的「80% 匹配」胶囊（粉底白字区），改绑会连带错。 */
+  actionX: resolveMediaUrl(IMAGE_PATHS.ICONS_V2.X),
+  actionStar: resolveMediaUrl(IMAGE_PATHS.ICONS_V2.STAR),
+  actionHeart: resolveMediaUrl(IMAGE_PATHS.ICONS_V2.HEART),
   graduation: resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.GRADUATION_SVG),
   heart: resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.HEART),
   chat: resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CHAT),
@@ -1336,15 +1345,15 @@ defineExpose({ onTouchMove });
     <!-- 底部横向操作（寻觅 v3）：× 跳过 / ☆ 悄悄话 / ♥ 喜欢 -->
     <view v-if="currentCard" class="card-actions">
       <view class="card-action card-action--skip press-feedback" hover-class="card-action--pressed" hover-stay-time="120" @tap.stop="onReject" role="button" :aria-label="t('discover.skip')">
-        <image class="card-action__icon" :src="emojiIcons.x" mode="aspectFit" alt="" />
+        <image class="card-action__icon" :src="emojiIcons.actionX" mode="aspectFit" alt="" />
         <text class="card-action__label">{{ t('discover.skip') }}</text>
       </view>
       <view class="card-action card-action--super press-feedback" :class="starActionClass" hover-class="card-action--pressed" hover-stay-time="120" @tap.stop="onStarTap" role="button" :aria-label="props.starAction === 'whisper' ? t('discover.whisperLabel') : t('discover.superLike')">
-        <image class="card-action__icon" :src="emojiIcons.star" mode="aspectFit" alt="" />
+        <image class="card-action__icon" :src="emojiIcons.actionStar" mode="aspectFit" alt="" />
         <text class="card-action__label">{{ props.starAction === 'whisper' ? t('discover.whisperLabel') : t('discover.superLike') }}</text>
       </view>
       <view class="card-action card-action--like press-feedback" hover-class="card-action--pressed" hover-stay-time="120" @tap.stop="onLike" role="button" :aria-label="t('discover.like')">
-        <image class="card-action__icon" :src="emojiIcons.heartMatch" mode="aspectFit" alt="" />
+        <image class="card-action__icon" :src="emojiIcons.actionHeart" mode="aspectFit" alt="" />
         <text class="card-action__label">{{ t('discover.like') }}</text>
       </view>
     </view>
@@ -2239,7 +2248,8 @@ defineExpose({ onTouchMove });
   align-items: center;
   justify-content: center;
   gap: 6rpx;
-  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.25);
+  /* R8-L08-D11：表外 slate 字面量 → §1.2 阴影令牌（--c-shadow-float，design-variables.scss:408） */
+  box-shadow: var(--c-shadow-float, 0 10rpx 28rpx rgba(30, 80, 65, 0.12));
   transition: transform var(--d-normal, 200ms) ease, opacity var(--d-normal, 200ms) ease;
 }
 
@@ -2265,15 +2275,20 @@ defineExpose({ onTouchMove });
   background: linear-gradient(135deg, var(--c-warning) 0%, var(--c-secondary-action) 100%);
 }
 
+/* R8-L08-D11/D13：跳过钮底色原为 rgba(15,23,42,0.55)（Tailwind slate 家族字面量，§1.2 色板无此档），
+   压浅绿页底实测混出 #727C84 冷蓝灰 —— 与同排 brand/romance 两枚并置成第三种色温。
+   改 §1.2 中性档 --c-neutral-400 #9AA39F：对页底 #EEF7F2 = 2.37:1（可辨边）、
+   对深墨图标 #333333 = 4.86:1、对 --c-text-primary 标签 = 6.51:1，三档全部达标。
+   描边由 rgba 字面量换成同族白罩令牌 --c-overlay-bg-mid。 */
 .card-action--skip {
-  background: rgba(15, 23, 42, 0.55);
-  border: 2rpx solid rgba(255, 255, 255, 0.35);
+  background: var(--c-neutral-400, #9AA39F);
+  border: 2rpx solid var(--c-overlay-bg-mid, rgba(255, 255, 255, 0.4));
 }
 
 .card-action--whisper {
   /* 2026-08-23：与 skip / like 等大（116rpx），消除三按钮大小不一 */
-  background: rgba(15, 23, 42, 0.45);
-  border: 2rpx solid rgba(255, 255, 255, 0.3);
+  background: var(--c-neutral-300, #C2CAC6);
+  border: 2rpx solid var(--c-overlay-bg-mid, rgba(255, 255, 255, 0.4));
 }
 
 .card-action--whisper--disabled {
@@ -2286,9 +2301,14 @@ defineExpose({ onTouchMove });
 }
 
 .card-action__label {
-  font-size: 20rpx;
+  /* R8-L08-D13：20rpx(=10.1px) 的白字（rgba(255,255,255,0.95)）压三枚底色实测 3.18 / 2.58 / 4.18:1，
+     全部低于行内阈值 4.5:1。字号升到 §1.4 --fs-sm 档（22rpx），字色换成色板纯色 --c-text-primary #1A1E1C，
+     实测对 skip #9AA39F = 6.51:1、对 super --c-status-info #4D8DFF = 5.27:1、
+     对 like romance 渐变两端 = 6.85~6.16:1、对 whisper 暖橙两端 = 7.85~8.25:1，四档均 ≥4.5:1。
+     「超级喜欢」四字 88rpx 仍窄于 116rpx 圆钮在该行高处的 ~109rpx 弦宽，不出框。 */
+  font-size: var(--fs-sm, 22rpx);
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 /* ========== 认证详情弹窗（设计需求） ========== */

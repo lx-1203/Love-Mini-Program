@@ -43,7 +43,7 @@ interface Props {
   bgVariant?: 'default' | 'gradient' | 'image';
   /** 背景图（bgVariant='image' 时生效） */
   bgImage?: string;
-  /** 头部是否固定 */
+  /** 头部是否固定（吸顶）。R8-L07-D15：默认改成 true，见 fixed 字段注释 */
   fixed?: boolean;
   /** 是否适配顶部安全区（默认 true） */
   safeArea?: boolean;
@@ -61,7 +61,13 @@ const props = withDefaults(defineProps<Props>(), {
   showBack: false,
   bgVariant: 'default',
   bgImage: '',
-  fixed: false,
+  /* R8-L07-D15：吸顶改成默认行为。此前 fixed 默认 false，而 security/index.vue:540、
+     love-center/index.vue:115、help/index.vue:88 等宿主都只传 show-back 没传 fixed
+     ⇒ :331 的 .is-fixed 吸顶分支不生效，滚到底时列表首行齐根切在视口上沿、
+     「下线」胶囊(y24..39)与系统状态栏图标(y14..30)叠印。已显式传 fixed 的四个宿主
+     (feedback/index、LegalTextPage、activities、circles) 行为不变；需要非吸顶的页面
+     显式传 :fixed="false" 退出。 */
+  fixed: true,
   safeArea: true,
   tabBarSafe: true,
   /* MP-R2-APP-001：默认 undefined → 不影响 tabBarSafe 旧行为 */
@@ -265,7 +271,15 @@ function focusMainContent(): void {
   /* 2026-08-31 滚动断层修复：禁止锁死 height:100%——
      根元素被钉在一屏高后，超屏内容既撑不开页面滚动高度（页面无法上下滚动），
      又会露出系统默认底色（与主题浅绿断层）。仅保留 min-height 让内容自然撑高。 */
-  min-height: 100%;
+  /* R8-L11-D10：min-height:100% 在 mp-weixin 里不可解析（祖先无确定高度 ⇒ 百分比高度算成 auto），
+     于是宿主链给不出确定高度，子级 EmptyState 的 flex:1 伸展拿不到可用区，空态照旧贴顶
+     （帧上实测空态中心 y≈312，可用区中心 y≈506）。改成视口口径 min-height:100vh：
+     仍是 min-height（内容超屏照样撑开、滚动不断层），但值可解析；再把 .shell 立成 flex 列，
+     .shell__body 才能用 flex:1 拿到「视口 − 头部 − 底部留白」的确定高度，空态居中自此成立。
+     顺带让 .shell__footer 的 margin-top:auto（:422，此前非 flex 父级下是死样式）真正生效。 */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
   // 默认页面背景
   background: var(--c-bg-page, #EEF7F2);
@@ -396,6 +410,9 @@ function focusMainContent(): void {
   display: flex;
   flex-direction: column;
   gap: 24rpx;
+  /* R8-L11-D10：配合 .shell 的 flex 列 + 可解析 min-height，把「视口 − 头部 − 底部安全区」
+     这段确定高度交给子级，EmptyState(:142 flex:1 0 auto) 的居中才有伸展对象。 */
+  flex: 1 1 auto;
   /* P6 a11y：让 id=shell-main-content 可被 focus（outline 通过全局 :focus-visible 处理） */
   outline: none;
 }
@@ -404,13 +421,25 @@ function focusMainContent(): void {
 .shell__skip-link {
   position: absolute;
   top: 0;
-  left: 0;
+  /* R8-L11-D09：隐藏口径从「left:0 + 依赖全局 clip:rect(0,0,0,0)」改成 mp 可靠的一档。
+     mp-weixin 的 WXSS 不支持 clip（styles/a11y.scss:23 那条只在 H5 生效），于是 1px×1px 的盒子
+     只裁掉了宽度、没裁掉笔画 ⇒ 帧最左缘 x=0..1 / y=28..50 残留三段灰色笔画（#7F8481 / #999E9C），
+     压在「返回」胶囊上方。改成整节点移出视口左缘（left:-9999px + 1px 见方 + overflow:hidden），
+     焦点态再移回来，H5 键盘可达性不变，mp 端零像素。 */
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
   z-index: 9999;
   background: var(--c-brand, #36C99A);
   color: var(--c-text-inverse, #ffffff);
   padding: 16rpx 24rpx;
   border-radius: 0 0 var(--r-md, 12rpx) 0;
   font-size: var(--fs-sm, 22rpx);
+}
+
+.shell__skip-link:focus {
+  left: 0;
 }
 
 .shell__skip-link-text {

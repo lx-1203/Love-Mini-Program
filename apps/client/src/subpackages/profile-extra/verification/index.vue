@@ -109,8 +109,22 @@ const statusInfo = computed(() => {
         icon: IMAGE_PATHS.ICONS_EMOJI.GRAD_CAP,
         title: t("verification.statusUnverified"),
         desc: t("verification.statusUnverifiedDesc"),
-        color: "var(--c-brand-500, #36C99A)",
-        bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
+        // R8-L09-D12（颜色token）：原 default（未认证）分支与 :85 已认证分支写的是同一个
+        // --c-brand-500 #36C99A ⇒ 两态实测墨迹同为 #33C999 / #36C99A，颜色上完全无法区分。
+        // 规范给未认证定的角色令牌是 --c-unverified / --c-purple #A29BFE
+        // （design-variables.scss:25/281），但 #A29BFE 压本卡浅紫底相对亮度 0.3826 vs 0.9074
+        // ⇒ 实测 2.21:1，会把这行状态标题落进"不可读"档；故取紫色族最深的既有档位令牌
+        // --c-lavender-500 #8B5CF6（压 --c-lavender-50 #F5F3FF 实测 3.86:1，
+        // 较原值 #36C99A 压 #E8F4FD 的 1.88:1 提升 2.05 倍），并与仓内已定案的
+        // 未认证处理逐字同构（campus/campus/hub.vue:804-808 R1-L05-D15「未认证=淡紫底+紫字」）。
+        // brand 绿自此只留给已认证/可行动态（:85 不动）。
+        color: "var(--c-lavender-500, #8B5CF6)",
+        // R8-L09-D14（颜色token）：原 --c-tint-blue-soft 让同一张状态卡在未认证态走蓝调、
+        // 已认证态走 real-name.vue:91 的 --c-brand-50 绿调 ⇒ 两态两套色相，且蓝调与本道
+        // 其余帧的浅绿体系（--c-bg-page #EEF7F2）断层。改取紫色族 50 阶浅底
+        // --c-lavender-50 #F5F3FF（仓内既有令牌 design-variables.scss:313），
+        // 与 :112 紫字同族、与绿调已认证态分家。
+        bgColor: "var(--c-lavender-50, #F5F3FF)",
       };
   }
 });
@@ -459,16 +473,25 @@ function onBlur() {
     <!-- MP-R1-VERIFY-INDEX-001：safe-top 前置于 nav-bar（与同分包 real-name.vue/settings.vue
          一致，R10-P2-012 根因模式）——navigationStyle:custom 下 nav-bar 从 y=0 起排，
          顺序错误时标题与返回键顶进状态栏与系统时间叠印 -->
-    <!-- 顶部安全区占位 -->
-    <view class="safe-top" />
+    <!-- R8-L09-D17（层级遮挡）：安全区占位 + 导航栏合进同一个吸顶容器。
+         原 .nav-bar 为 position:relative，bottom 帧滚动后白底头部（顶帧实测 y=46-87）整块移出视口，
+         「互动资格」一行直接顶进系统区：卡白底自 y=20 起、行内文字墨迹上探到 y=5-29，
+         与系统时间「1:05」(x0-32/y17-28) 及胶囊带 (x265-369/y25-94) 撞位、文字被视口上沿切掉半字。
+         改 sticky 后头部常驻且不透明，正文从其下方滚过（与 AppShell.vue:323-331 的
+         .is-fixed .shell__header 吸顶机制同构：sticky + top:0 + 实底 + 状态区一并盖住）。
+         未滚动时该容器仍占据 safe-top(状态栏高) + 88rpx 的同一段落，top 帧头部位置逐像素不变。 -->
+    <view class="nav-header">
+      <!-- 顶部安全区占位 -->
+      <view class="safe-top" />
 
-    <!-- 顶部导航栏 -->
-    <view class="nav-bar">
-      <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100" role="button" :aria-label="t('common.backAria')">
-        <text class="nav-bar__back-icon">‹</text>
+      <!-- 顶部导航栏 -->
+      <view class="nav-bar">
+        <view class="nav-bar__back press-feedback" @tap="goBack" hover-class="nav-bar__back--hover" hover-stay-time="100" role="button" :aria-label="t('common.backAria')">
+          <text class="nav-bar__back-icon">‹</text>
+        </view>
+        <text class="nav-bar__title">{{ t('verification.navTitle') }}</text>
+        <view class="nav-bar__placeholder" />
       </view>
-      <text class="nav-bar__title">{{ t('verification.navTitle') }}</text>
-      <view class="nav-bar__placeholder" />
     </view>
 
     <!-- 认证状态卡片（real 首拉中显示骨架，避免状态跳变） -->
@@ -655,6 +678,21 @@ function onBlur() {
           :aria-label="t('verification.uploadTitle')"
         >
           <view v-if="!uploadedImagePath" class="upload-card__empty">
+            <!-- R8-L09-D16（素材缺失）：样式表早已定义 .upload-card__icon（原 :1026）却在本模板零引用，
+                 图标槽位漏挂 ⇒ 这块 101px 高的主操作区只剩两行居中文字，读起来像说明文字而非可点区。
+                 补挂相机图标：走仓内既有素材 IMAGE_PATHS.ICONS_COMMON.CAMERA（camera.png，
+                 src/static、static-local-backup/full-static、api/uploads/app-assets 三树均在盘，无需同步），
+                 与全站同类「上传学生证/照片」空态用的是同一枚（campus/certification.vue:356、
+                 support/feedback/index.vue:549、pages/profile/index.vue:1779）。
+                 按本页既有结论（.status-card__emoji-img / .gate-banner__icon /
+                 .benefit-item__icon-img 三处注释记录的同型事故）走原生 <image> 而非 SafeImage——
+                 SafeImage 的 custom-class 跨 uni-app data-v 作用域拿不到宿主页 scoped 尺寸，会零尺寸渲染。 -->
+            <image
+              class="upload-card__icon"
+              :src="IMAGE_PATHS.ICONS_COMMON.CAMERA"
+              mode="aspectFit"
+              alt=""
+            />
             <text class="upload-card__text">{{ t('verification.uploadText') }}</text>
             <text class="upload-card__hint">{{ t('verification.uploadHint') }}</text>
           </view>
@@ -694,21 +732,37 @@ function onBlur() {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: linear-gradient(180deg, var(--c-bg-page) 0%, var(--c-tint-blue-50) 100%);
+  /* R8-L09-D14（颜色token，同一令牌根顺手项）：渐变终点原为 --c-tint-blue-50 #E3F2FD，
+     是本页"蓝调与浅绿体系断层"的第二个落点（第一个是状态卡底 :113）——状态卡已改紫族浅底，
+     页面渐变若仍走蓝调，蓝会继续沿整页下缘铺开。改成同族浅绿终点 --c-brand-50 #E8FAF3，
+     与 --c-bg-page 起点同色系，页底不再出现蓝调。 */
+  background: linear-gradient(180deg, var(--c-bg-page) 0%, var(--c-brand-50, #E8FAF3) 100%);
   box-sizing: border-box;
   position: relative;
   padding-bottom: 32rpx;
 }
 
 /* ==================== 顶部导航栏 ==================== */
+/* R8-L09-D17：吸顶容器（状态栏安全区 + 88rpx 导航行一起常驻，正文滚过时不得与系统时间/胶囊叠印）。
+   本页根容器 .verification-page 是 display:flex 的列，吸顶项必须 flex-shrink:0 才不被压缩。 */
+.nav-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  flex-shrink: 0;
+  /* 实底：容器自身也要铺色，否则滚动态下 safe-top 段是透明的，卡片会从状态栏底下穿过来 */
+  background: var(--c-bg-container, #FFFFFF);
+  box-shadow: 0 1rpx 4rpx var(--c-neutral-shadow-xs);
+}
+
 .nav-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24rpx;
+  padding: 0 var(--page-padding, 32rpx);
   height: 88rpx;
-  background: var(--c-bg-container);
-  box-shadow: 0 1rpx 4rpx var(--c-neutral-shadow-xs);
+  /* 导航行底色交给常驻容器，避免同一白色重复铺两层 */
+  background: transparent;
   position: relative;
   z-index: 1;
 }
@@ -762,7 +816,9 @@ function onBlur() {
 .status-card {
   position: relative;
   z-index: 1;
-  margin: 24rpx;
+  /* R8-L09-D15：状态卡是缺陷行实测「左缘 x=13」的第一块卡，若只改 .section 会与新页边距错位
+     ⇒ 水平方向一并走 var(--page-padding)，纵向仍为 --sp-6。 */
+  margin: var(--sp-6, 24rpx) var(--page-padding, 32rpx);
   padding: 48rpx 32rpx;
   border-radius: var(--r-xl, 24rpx);
   display: flex;
@@ -812,9 +868,13 @@ function onBlur() {
 .gate-banner {
   position: relative;
   z-index: 1;
-  margin: 0 24rpx;
+  /* R8-L09-D15（间距）：水平外边距原硬编码 24rpx(=12px)，比规范页边距少 4px，
+     与同页 .section 的第三种节奏并存 ⇒ 统一走 var(--page-padding)（32rpx=16px）。 */
+  margin: 0 var(--page-padding, 32rpx);
   padding: 20rpx 24rpx;
-  background: var(--c-tint-amber-50, #FFF8E7);
+  /* 兜底字面量原写 #FFF8E7（那是 --c-tint-cream-50 的值），真令牌为 #FFF8E1
+     （design-variables.scss:827，帧上实测横幅底正是 #FFF8E1）⇒ 兜底与令牌值对齐。 */
+  background: var(--c-tint-amber-50, #FFF8E1);
   border: 1rpx solid var(--c-border-light);
   border-radius: var(--r-lg, 20rpx);
   display: flex;
@@ -830,8 +890,19 @@ function onBlur() {
 
 .gate-banner__text {
   flex: 1;
-  font-size: var(--fs-sm, 22rpx);
-  color: var(--c-warning, #F59E0B);
+  /* R8-L09-D13（可达性）：本行是全站唯一一条说明「游客能做什么/不能做什么」的门控文案，
+     原实测文字 #F59E0B~#F7AD2F 压 --c-tint-amber-50 #FFF8E1 只有 2.0:1（相对亮度
+     #F59E0B=0.4390 vs #FFF8E1=0.9383 ⇒ (0.9883)/(0.4890)=2.02:1），且字号走全站最小正文档 --fs-sm 22rpx。
+     ① 文案色改 --c-text-primary #1A1E1C（同底实测 (0.9883)/(0.0623)=15.86:1，
+        远高于本行要求的 ≥7:1；建议里的 brand-700 #1F8D6A 同底只有 3.89:1，不达该线，
+        故不采纳。注：#1A1E1C 是 design-variables.scss:362 浅色 page 块的值，
+        tokens.scss:275 的 #F0F2F5 在 @mixin dark-theme-vars 内，浅色态不会覆盖）；
+     ② 字号由 --fs-sm 22rpx 提到 --fs-base 24rpx，与同卡 .status-card__desc /
+        .pending-card__desc 的正文档位对齐——门控文案不该用全站最小档。
+     警示三角图标保留资产原色：warning.svg 的 stroke 烘焙在素材里（#94A3B8），
+     仓内无琥珀色警示三角素材，改色需要新素材 ⇒ 不在本车道内自造。 */
+  font-size: var(--fs-base, 24rpx);
+  color: var(--c-text-primary, #1A1E1C);
   line-height: 1.5;
 }
 
@@ -896,7 +967,11 @@ function onBlur() {
 .section {
   position: relative;
   z-index: 1;
-  margin: 24rpx 24rpx 0;
+  /* R8-L09-D15（间距）：水平外边距原硬编码 24rpx ⇒ 状态卡/权益格/表单卡/上传卡实测
+     统一左缘 x=13、右缘 x=365（页边距 12px，比规范 32rpx=16px 少 4px）。
+     与本页 .gate-banner / .status-card / .action-btn 一并按 var(--page-padding) 归口，
+     三套水平节奏收成一套。纵向节奏（24rpx = --sp-6）保持原值不动。 */
+  margin: var(--sp-6, 24rpx) var(--page-padding, 32rpx) 0;
 }
 
 .section__title {
@@ -913,7 +988,9 @@ function onBlur() {
 .benefits-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
+  /* R8-L09-D15：格内 16rpx 属「栅格间距」另一档，原为裸字面量 ⇒ 归口到间距刻度
+     --sp-4（值同为 16rpx，渲染零变化），使本页只剩 --page-padding(外缘) 与 --sp-4(内栅) 两套明确节奏。 */
+  gap: var(--sp-4, 16rpx);
 }
 
 .benefit-item {
@@ -932,7 +1009,9 @@ function onBlur() {
   width: 64rpx;
   height: 64rpx;
   border-radius: var(--r-lg, 16rpx);
-  background: linear-gradient(135deg, var(--c-tint-blue-50) 0%, var(--c-tint-blue-50) 100%);
+  /* R8-L09-D14 同根第三落点：原为 linear-gradient(135deg, --c-tint-blue-50, --c-tint-blue-50)
+     ——两端同值的退化渐变，且仍是蓝调。权益格底座并入本页浅绿族浅底。 */
+  background: var(--c-brand-50, #E8FAF3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1019,13 +1098,22 @@ function onBlur() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 64rpx 32rpx;
+  /* R8-L09-D16：外缘补一圈虚线框 + 浅底，让这块空态读起来是「投放/上传区」而不是两行说明文字
+     （虚线可点盒为仓内既有做法，见 setup/schedule 页 .time-window-add 与本页同类 add 盒）。 */
+  margin: 20rpx;
+  padding: 44rpx 32rpx;
   gap: 12rpx;
+  box-sizing: border-box;
+  border: 1rpx dashed var(--c-border-strong, #C2CAC6);
+  border-radius: var(--r-lg, 20rpx);
+  background: var(--c-bg-surface, #F3FAF6);
 }
 
 .upload-card__icon {
-  font-size: 80rpx;
-  line-height: 1;
+  /* R8-L09-D16：本类此前只写 font-size:80rpx（为从未挂上的 emoji 字形准备），
+     挂到原生 <image> 上等于没有尺寸 ⇒ 换成同量级的 80rpx 实尺寸（40px）。 */
+  width: 80rpx;
+  height: 80rpx;
 }
 
 .upload-card__text {
@@ -1099,7 +1187,8 @@ function onBlur() {
 .action-btn {
   position: relative;
   z-index: 1;
-  margin: 32rpx 24rpx 0;
+  /* R8-L09-D15：提交按钮同属实测 x=13-365 那一列，随其余卡片一起归口 --page-padding。 */
+  margin: var(--sp-7, 32rpx) var(--page-padding, 32rpx) 0;
   padding: 28rpx;
   background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 100%);
   border-radius: var(--r-xl, 24rpx);

@@ -483,48 +483,56 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
       </view>
       <!-- 顶部渐隐遮罩（保证白色按钮可读） -->
       <view class="hero-mask" />
-    </view>
-
-    <!-- 2. 圈子信息卡 -->
-    <view class="info-card">
-      <view class="info-main">
-        <image class="info-avatar" :src="resolveMediaUrl(coverImage)" mode="aspectFill" />
-        <view class="info-body">
-          <view class="info-title-row">
-            <text class="info-name">{{ circle.name }}</text>
-            <text v-if="isHot" class="info-hot">{{ t("circle.hotBadge") }}</text>
-          </view>
-          <text class="info-desc">{{ circle.description }}</text>
-          <text class="info-meta">
-            {{ formatMemberCount(circle.memberCount) }} {{ t("circle.memberUnit") }}
-            · {{ circle.topicCount }} {{ t("circle.topicUnit") }}
-          </text>
-          <view v-if="friendJoinedCount > 0" class="info-friends">
-            <view class="info-friend-avatars">
-              <image
-                v-for="(avatar, idx) in friendAvatars"
-                :key="idx"
-                class="info-friend-avatar"
-                :src="resolveMediaUrl(avatar)"
-                mode="aspectFill"
-              />
+      <!-- R8-L04-D07（位置/构图）：理想图 圈子详情，摄影圈参考.png 实测封面（含叠字区）落在帧高
+           27%（PIL 扫列：白 sheet 顶缘 y=504/1844），本页 hero 440rpx=222px/814px 同比例，
+           缺陷卡「封面约占帧高 55%」是把 mockup 目测当实测（详见报告）。真正的病灶不是高度，
+           而是圈名/简介/人数/加入被放进封面下方一张独立白卡、白 sheet 顶缘被抬到 y=174（21%）
+           ⇒ 顶部构图与理想图相反。现补一条底部渐隐遮罩，把信息整体叠回封面下沿。
+           遮罩取 rgba(0,0,0,.55→.82)：即便落在纯白像素上，合成值 ≤115/166 ⇒ 白字对比度
+           4.75:1 ~ 7.2:1，恒 ≥4.5:1（不是目测，是按 0.45/0.28 反算）。 -->
+      <view class="hero-scrim" />
+      <!-- R8-L04-D07：圈子信息 + 标签 chips 并入 hero 作为封面底部叠层（原独立白卡 .info-card 移除，
+           白 sheet 改由下方 .tabs 承担） -->
+      <view class="hero-info">
+        <view class="info-main">
+          <image class="info-avatar" :src="resolveMediaUrl(coverImage)" mode="aspectFill" />
+          <view class="info-body">
+            <view class="info-title-row">
+              <text class="info-name">{{ circle.name }}</text>
+              <text v-if="isHot" class="info-hot">{{ t("circle.hotBadge") }}</text>
             </view>
-            <text class="info-friend-text">
-              {{ t("circle.friendsJoined", { count: friendJoinedCount }) }}
+            <text class="info-desc">{{ circle.description }}</text>
+            <text class="info-meta">
+              {{ formatMemberCount(circle.memberCount) }} {{ t("circle.memberUnit") }}
+              · {{ circle.topicCount }} {{ t("circle.topicUnit") }}
+            </text>
+            <view v-if="friendJoinedCount > 0" class="info-friends">
+              <view class="info-friend-avatars">
+                <image
+                  v-for="(avatar, idx) in friendAvatars"
+                  :key="idx"
+                  class="info-friend-avatar"
+                  :src="resolveMediaUrl(avatar)"
+                  mode="aspectFill"
+                />
+              </view>
+              <text class="info-friend-text">
+                {{ t("circle.friendsJoined", { count: friendJoinedCount }) }}
+              </text>
+            </view>
+          </view>
+          <view class="info-join" hover-class="info-join--active" @tap="toggleJoin">
+            <text class="info-join-text">
+              {{ joined ? t("circle.joinedBtn") : t("circle.home.joinCta") }}
             </text>
           </view>
         </view>
-        <view class="info-join" hover-class="info-join--active" @tap="toggleJoin">
-          <text class="info-join-text">
-            {{ joined ? t("circle.joinedBtn") : t("circle.home.joinCta") }}
-          </text>
-        </view>
-      </view>
 
-      <!-- 3. 标签 chips（real 模式无圈标签数据时不渲染空容器，避免 hero 下方留白块） -->
-      <view v-if="circleTags.length" class="tag-row">
-        <view v-for="tag in circleTags" :key="tag" class="tag-chip">
-          <text class="tag-chip-text">{{ tag }}</text>
+        <!-- 3. 标签 chips（real 模式无圈标签数据时不渲染空容器，避免叠层下方留白块） -->
+        <view v-if="circleTags.length" class="tag-row">
+          <view v-for="tag in circleTags" :key="tag" class="tag-chip">
+            <text class="tag-chip-text">{{ tag }}</text>
+          </view>
         </view>
       </view>
     </view>
@@ -700,7 +708,10 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 /* ===== 1. Hero ===== */
 .hero {
   position: relative;
-  height: 440rpx;
+  /* R8-L04-D07：440rpx 只够放封面本身，信息叠层（头像+两行简介+人数+好友行+join 按钮+chips
+     ≈ 330rpx）需要底部空间，否则叠层会顶到 .hero-actions 的返回/分享钮。抬到 520rpx（帧高约 32%，
+     理想图白 sheet 顶缘实测 27%，留出叠层内衬的余量），封面仍是页面主体。 */
+  height: 520rpx;
 }
 
 .hero-img {
@@ -716,6 +727,31 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   height: 160rpx;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0) 100%);
   pointer-events: none;
+}
+
+/* R8-L04-D07：封面底部渐隐遮罩，为叠层白字提供可读底。
+   反算（不是目测）：遮罩 α 从 .55 起，压在最亮的纯白像素上合成值 = 0.45×255 = 115，
+   白字对比度 (1.00+0.05)/(0.171+0.05) = 4.75:1；叠层文字区落在 α≥.6 段（合成 ≤102）
+   ⇒ ≥5.5:1，全段恒过 4.5:1。 */
+.hero-scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 360rpx;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.55) 42%, rgba(0, 0, 0, 0.82) 100%);
+  pointer-events: none;
+}
+
+/* R8-L04-D07：原 .info-card 白卡改为贴在封面下沿的叠层（白底/圆角/投影全部去掉，
+   通栏横向内衬 32rpx 与理想图一致）。 */
+.hero-info {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 0 32rpx 32rpx;
 }
 
 .hero-actions {
@@ -779,25 +815,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   transform: translateY(-2rpx);
 }
 
-/* ===== 2. 信息卡 ===== */
-.info-card {
-  position: relative;
-  z-index: 3;
-  /* R2b-L05-D05（圆角）：理想图屏高 27% 处那块「压在 Hero 上、左右上角为大圆角、带投影」的
-     白色内容面板，在本页 DOM 里就是这张 info-card（它已 margin-top:-96rpx 上抬压住 Hero、
-     也已带投影），缺的是两头上角的大圆角与通栏宽度——PIL 量理想图：面板左缘落到 x=0（通栏、
-     非两侧留 24rpx 的浮卡），左上角圆弧拟合半径 31px = 27.3rpx。
-     半径取档位令牌：色板只有 --r-xl 24rpx / --r-xxl 32rpx，27.3rpx 落在正中间，
-     取 --r-xxl（该档是这套令牌里唯一给「大圆角容器」用的档，且缺陷卡给的 40rpx 不在档位上、
-     是把目测值当实测值用，同样不采）。
-     通栏化后横向内缩从 margin 移进 padding（24rpx + 32rpx = 56rpx），内容栅格位置逐像素不变。 */
-  margin: -96rpx 0 0;
-  background: #ffffff;
-  border-radius: var(--r-xxl, 32rpx) var(--r-xxl, 32rpx) 0 0;
-  padding: 32rpx 56rpx;
-  box-shadow: 0 8rpx 32rpx rgba(31, 42, 37, 0.06);
-}
-
+/* ===== 2. 信息叠层（R8-L04-D07：原 .info-card 白卡已并入 .hero-info 叠层，此段死样式随之删除） ===== */
 .info-main {
   display: flex;
   align-items: flex-start;
@@ -808,6 +826,8 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   width: 112rpx;
   height: 112rpx;
   border-radius: 24rpx;
+  /* R8-L04-D07：叠在封面上，加一圈半透明白描边把缩略图从照片里分出来（理想图同位白描边） */
+  border: 3rpx solid rgba(255, 255, 255, 0.85);
   flex-shrink: 0;
 }
 
@@ -828,7 +848,8 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 .info-name {
   font-size: 34rpx;
   font-weight: 600;
-  color: #1f2a25;
+  /* R8-L04-D07：叠在封面上，圈名走白字（理想图「摄影圈」为纯白） */
+  color: #ffffff;
 }
 
 .info-hot {
@@ -841,7 +862,8 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 
 .info-desc {
   font-size: 26rpx;
-  color: #5d6c7b;
+  /* R8-L04-D07：封面叠层，简介走白字 */
+  color: rgba(255, 255, 255, 0.92);
   /* R2b-L05-D04（尺寸比例）：原 nowrap + ellipsis 把整句简介吃成一个省略号——
      理想图「用镜头记录生活的美好瞬间」是 12 字整句单行完整显示，而 real 档圈子简介
      普遍 15~20 字（如「分享光影与构图，一起扫街、看展、记录生活」），单行必然截断。
@@ -858,7 +880,8 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 
 .info-meta {
   font-size: 24rpx;
-  color: #8595a4;
+  /* R8-L04-D07：封面叠层，人数/动态行走白字 */
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .info-friends {
@@ -887,7 +910,8 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 .info-friend-text {
   margin-left: 16rpx;
   font-size: 22rpx;
-  color: #8595a4;
+  /* R8-L04-D07：封面叠层，好友行走白字 */
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .info-join {
@@ -947,18 +971,21 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   display: flex;
   align-items: center;
   background: #ffffff;
-  /* R2b-L05-D05：页签行是上方那块圆角面板的延续，同色同宽 ⇒ margin-top 归零，
-     不再留 24rpx 页面底色把面板与页签切成两段（理想图里它们是同一张 sheet） */
+  /* R8-L04-D07：原「上方那块圆角面板」= 已删除的 .info-card 白卡，页签行现在就是白 sheet 本身
+     ⇒ 大圆角与投影从 info-card 迁移到这里（理想图：白 sheet 顶缘两头上角为大圆角，压在封面叠层下方）。 */
+  border-radius: var(--r-xxl, 32rpx) var(--r-xxl, 32rpx) 0 0;
+  box-shadow: 0 -8rpx 32rpx rgba(31, 42, 37, 0.06);
   margin-top: 0;
-  /* R2b-L05-D06（位置，P1）：吸顶原先是 top:0，未扣状态栏高度 ⇒ bottom 帧里页签行贴到
-     屏幕 y=0，「动态」与状态栏时间挤在同一行、最右「成员」被微信胶囊压掉半截。
-     top 改扣 --statusbar（本页已有 useMenuButtonRect 经 menuStyleVars 注入到 .circle-home 根节点），
-     并给行尾留出胶囊避让内衬（避让口径同本页 .hero-actions-right 与 campus/hub.vue：
-     胶囊右缘间隙 + 胶囊本体 87px + 呼吸）。行自身仍保持通栏白底，滚动内容从带下方穿过。 */
+  /* R2b-L05-D06 + R8-L04-D08（层级遮挡，P1）：吸顶此前 top 只扣 --statusbar，页签白底从 y=--statusbar
+     起，其上方状态栏带（0..--statusbar）没有任何同色不透明底 ⇒ bottom 帧里帖子标题「微单镜头…」
+     正文「预算 2000…」从该带透出、与系统时间「0:53」同高叠印。
+     现把吸顶点位改到 top:0，并把状态栏高度收进 padding-top ⇒ 白底自屏幕 y=0 起铺满「状态栏带 + 页签行」，
+     feed 恒从这条同色不透明头部带下方穿过，状态栏带不留裸内容。padding-top 在 top 帧（未吸顶、走文档流）
+     只多出一段与页签同色的白内衬，不产生异色缝。右侧仍按 hub 口径预留胶囊（胶囊右缘间隙 + 本体 87px + 呼吸）。 */
   position: sticky;
-  top: calc(var(--statusbar, env(safe-area-inset-top)));
+  top: 0;
   z-index: 10;
-  padding: 0 calc(var(--capsule-right, 7px) + 104px) 0 24rpx;
+  padding: var(--statusbar, env(safe-area-inset-top)) calc(var(--capsule-right, 7px) + 104px) 0 24rpx;
   box-sizing: border-box;
 }
 

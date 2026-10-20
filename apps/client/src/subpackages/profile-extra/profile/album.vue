@@ -65,24 +65,35 @@ function goBack() {
 }
 
 /**
+ * 非照片素材判据（R8-L10-D10 · 素材缺失 P1）。
+ *
+ * R6-B55/D15（2026-10-20）：real 档第 2、3 格内 #36C99A 像素成片
+ * （cell2 单格 1443 个、字形 x=153..225 / x=271..342、跨 y=106..206），第 1 格才是真人照片
+ * ——photoGallery 里存着功能图标路径，被 :504 的 resolveMediaUrl 当照片原样渲染。
+ * 当时与 setup/profile/index.vue 的 R6-L14-D10 共用同一条判据：只拦 `/assets/icons/` 一段。
+ * R8 复拍帧上第 2、3 格仍是整格绿色定位针 ⇒ 该前缀逐字不命中本形态（针形素材落在
+ * `assets/home/icons/`、`assets/svg-spec/03-icons/` 这类目录，文件名以 .svg 结尾）。
+ * 故按建议改法把判据换成「扩展名 + 目录段」双拦：
+ *  - `.svg` 结尾一律不是照片——用户上传只会是 jpg/png/heic/webp，包内功能图标才是 svg；
+ *  - 路径出现 `icons` / `svg-spec` 目录段的也一律降级为空槽（走 :514 的「+」分支）。
+ * 目录段按 `(^|/)name(/|$)` 匹配，`assets/home/icons/…`、`assets/icons/common/…`、
+ * `assets/svg-spec/…` 三种形态全覆盖；用户上传的 `/uploads/100/202607/xxx.jpg` 不含这些段，原样放行。
+ * 脏数据源头（store 侧 photoGallery 清洗 / 后端入库列）不在本泳道可写集，已另登记 HANDOFF。
+ */
+const NON_PHOTO_ASSET_RE = /(^|\/)(icons|svg-spec)(\/|$)|\.svg$/i;
+
+function isPhotoAssetPath(raw: string): boolean {
+  const value = String(raw ?? "").split("?")[0] ?? "";
+  if (!value) return false;
+  return !NON_PHOTO_ASSET_RE.test(value);
+}
+
+/**
  * 照片格子列表（始终渲染 6 格）
  * - 已上传的格子：filled=true + url
  * - 空格子：filled=false + url=""
  * 顺序：已上传照片在前，空位在后
- *
- * R6-B55/D15（素材缺失 P1，2026-10-20）：real 档第 2、3 格内 #36C99A 像素成片
- * （cell2 单格 1443 个、字形 x=153..225 / x=271..342、跨 y=106..206），第 1 格才是真人照片
- * ——photoGallery 里存着功能图标路径，被 :472 的 resolveMediaUrl 当照片原样渲染。
- * 与 setup/profile/index.vue 的 R6-L14-D10 同一条判据、同一个前缀规则：
- * 命中 `/assets/icons/` 的条目一律降级为空槽（走 :482 的「+」分支），
- * 禁止把功能图标当内容素材；脏数据源头（store/后端入库）不在本泳道可写集，已另登记。
  */
-function isPhotoAssetPath(raw: string): boolean {
-  const value = String(raw ?? "").split("?")[0] ?? "";
-  if (!value) return false;
-  return !/\/assets\/icons\//.test(value);
-}
-
 const photoCells = computed<Array<{ index: number; url: string; filled: boolean }>>(() => {
   const cells: Array<{ index: number; url: string; filled: boolean }> = [];
   for (let i = 0; i < PHOTO_GALLERY_MAX; i++) {
@@ -96,8 +107,14 @@ const photoCells = computed<Array<{ index: number; url: string; filled: boolean 
 /** 是否有空位可继续上传 */
 const hasEmptySlot = computed(() => photoGallery.value.length < PHOTO_GALLERY_MAX);
 
-/** 已上传照片数量 */
-const photoCount = computed(() => photoGallery.value.length);
+/**
+ * 已上传照片数量。
+ * R8-L10-D10：原实现取 photoGallery.value.length——脏条目（功能图标）也被算成一张照片，
+ * 于是帧上第 2、3 格已降级为空槽，页头却仍写「3 / 6」、说明卡仍写「已上传 3 张」，
+ * 一格照片配三个计数口径。改为按 photoCells 的 filled（同一判据过滤后）计数，
+ * 页头、说明卡、空态分支三处自动同源于画面。
+ */
+const photoCount = computed(() => photoCells.value.filter((cell) => cell.filled).length);
 
 /** R7-L10-D15：说明卡里的体积上限由 PHOTO_SIZE_LIMIT 换算而来，避免文案与 :191 拦截值漂移 */
 const photoSizeLimitMb = computed(() => Math.round(PHOTO_SIZE_LIMIT / 1024 / 1024));
@@ -430,7 +447,11 @@ onShow(() => {
         @tap="goBack"
       >
         <view class="album-header__back-circle">
-          <image class="album-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+          <!-- R8-L10-D12（可达性 P2）：唯一退出口原为 40rpx 的 ICONS_COMMON.BACK 栅格图
+               （common/back.svg 的 png 化，stroke #94A3B8 蓝灰、24 viewBox 里折线只占 x9..15，
+               留白过大 ⇒ 压白底对比度≈1.6:1，近不可辨）。照抄同域 location.vue:183-184/313-318
+               R7 已验证配方：页内「‹」文字字形 + --c-text-primary + 52rpx，64rpx 圆底不动。 -->
+          <text class="album-header__back-glyph">‹</text>
         </view>
       </view>
       <text class="album-header__title">{{ t("profile.albumTitle") }}</text>
@@ -659,9 +680,14 @@ onShow(() => {
   justify-content: center;
 }
 
-.album-header__back-icon {
-  width: 40rpx;
-  height: 40rpx;
+/* R8-L10-D12：原 .album-header__back-icon（40rpx×40rpx 蓝灰 png）换成 52rpx 深色「‹」字形。
+   52rpx 高于字号档位上限 --fs-5xl=44rpx，按同域 location.vue:313 / other.vue:515 的既有口径
+   保留为固定布局尺寸（不写 var(--fs-5xl, 52rpx) 那种永不生效的假兜底）。 */
+.album-header__back-glyph {
+  font-size: 52rpx;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--c-text-primary);
 }
 
 /* R6-B57/D10 同族顺手项：profile-extra 域三页页头标题原为 44 / 36 / 30rpx 三档
@@ -862,7 +888,10 @@ onShow(() => {
 
 .album-add-btn__text {
   color: var(--c-text-inverse);
-  font-size: var(--fs-md);
+  /* R8-L10-D11（字号 P2）：主 CTA 文字原为 --fs-md(26rpx=13px) 的标签档，比同分包主按钮
+     口径小一档（location.vue .location-btn__text 为裸 28rpx）。--fs-lg 在 design-variables.scss:564
+     逐字 = 28rpx，故按令牌取 --fs-lg，既对齐同域 28rpx 又不再裸写死值。 */
+  font-size: var(--fs-lg);
   font-weight: 600;
 }
 

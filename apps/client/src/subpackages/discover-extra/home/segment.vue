@@ -109,6 +109,20 @@ function formatDistance(raw?: string): string {
 function isOnline(status?: string): boolean {
   return status === "online" || status === "just_now";
 }
+/**
+ * R8-L06-D10（文案 P3）：meta 行句式同构。
+ * 原模板把分隔符写成条件拼接（item.campusName && item.distanceText ? ' · ' : ''），
+ * distanceText 为空时整段消失 ⇒ 首帧 8 行里只有「浙江大学 · 230km」一行带距离，
+ * 其余 7 行只有校名，同一列表两种句式。缺失时回落到「附近」占位（既有 i18n 档
+ * home.segmentNearby，中英双档齐全），距离真值存在时照常展示，不编造具体公里数。
+ */
+function metaText(item: DiscoverCard): string {
+  const campus = (item.campusName || "").trim();
+  const distance = formatDistance(item.distanceText);
+  if (campus && distance) return `${campus} · ${distance}`;
+  if (campus) return `${campus} · ${t("home.segmentNearby")}`;
+  return distance;
+}
 function openProfile(userId: string) {
   openAppPath(`/subpackages/profile-extra/profile/other?userId=${encodeURIComponent(userId)}`);
 }
@@ -150,12 +164,18 @@ function openProfile(userId: string) {
         <view class="segment-row__info">
           <view class="segment-row__name-row">
             <text class="segment-row__name">{{ item.name }}</text>
-            <text v-if="isOnline(item.activeStatusText)" class="segment-row__online-wrap">
-              <image class="segment-row__online-dot" :src="IMAGE_PATHS.ICONS_EMOJI.STATUS_ONLINE" mode="aspectFit" alt="" />
+            <!-- R8-L06-D09（素材缺失 P1）：绿点整帧不出现，两个叠加成因都在本行——
+                 ① 外层是 <text>：mp-weixin 的 text 组件只接受字符串/text 子节点，
+                    嵌进去的 <image> 不渲染（同行「在线」二字正常，圆点位恒白 #FFFFFF）；
+                 ② status-online.svg 只有 viewBox、无 width/height，<image> 取不到固有尺寸。
+                 按缺陷卡给的第二条口径改纯 CSS 圆点（不引图、不动全站共用素材），
+                 外层同步换成 <view>，色档取 --c-brand-700（#1F8D6A 压白 4.14:1，过非文本 3:1）。 -->
+            <view v-if="isOnline(item.activeStatusText)" class="segment-row__online-wrap">
+              <view class="segment-row__online-dot" />
               <text class="segment-row__online">{{ t('cardDetail.onlineLabel') }}</text>
-            </text>
+            </view>
           </view>
-          <text class="segment-row__meta">{{ item.campusName || '' }}{{ item.campusName && item.distanceText ? ' · ' : '' }}{{ formatDistance(item.distanceText) }}</text>
+          <text class="segment-row__meta">{{ metaText(item) }}</text>
         </view>
         <text class="segment-row__arrow">›</text>
       </view>
@@ -176,7 +196,20 @@ function openProfile(userId: string) {
   display: flex;
   align-items: center;
   gap: var(--sp-3, 24rpx);
-  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 16rpx) 24rpx 24rpx;
+  /* R8-L06-D12（层级遮挡 P2）：页头原随流滚动 —— 底帧页头整条消失，第一张卡被画布
+     上沿裁到只剩 y0~21，第二张卡 y34~96 正压进系统胶囊带（x298~357 / y56~71），
+     卡右侧 › 箭头（顶帧同位墨迹 x345~348）被胶囊盖掉。
+     改 sticky top:0：负外边距吃掉 .segment-page 的 24rpx 上内衬与 32rpx 左右内衬，
+     让不透明头部带从 y=0 铺满整幅（滚动内容不从两侧缝隙穿过页头），状态栏内衬
+     由本行 padding-top 自证（statusbar + 40rpx = 原 24rpx 页内衬 + 16rpx 头内衬，
+     顶帧标题位置逐像素不变）。列表容器无需 scroll-padding-top：本页无 scroll-into-view。 */
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header, 10);
+  background: var(--c-bg-page, #EEF7F2);
+  margin: -24rpx -32rpx 0;
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 40rpx) 32rpx 16rpx;
+  box-sizing: border-box;
 }
 
 .segment-header__back {
@@ -241,7 +274,9 @@ function openProfile(userId: string) {
   gap: 20rpx;
   padding: 20rpx 24rpx;
   background: var(--c-bg-container, #ffffff);
-  border-radius: 18rpx;
+  /* R8-L06-D14（圆角 P3）：18rpx 不在规范圆角阶梯上（同页 people.vue:373 行为 20rpx）
+     ⇒ 收敛到 --r-lg(20rpx)，两页同一档。 */
+  border-radius: var(--r-lg, 20rpx);
   border: 1rpx solid var(--c-line, #EEF2F0);
 }
 
@@ -280,14 +315,21 @@ function openProfile(userId: string) {
 }
 
 .segment-row__online-dot {
+  /* R8-L06-D09：纯 CSS 圆点（见模板注释），16rpx=8px 直径由页面自有节点给尺寸 */
   width: 16rpx;
   height: 16rpx;
+  border-radius: 50%;
+  background: var(--c-brand-700, #1F8D6A);
   flex-shrink: 0;
 }
 
 .segment-row__online {
-  font-size: 20rpx;
-  color: var(--c-brand-600, #36C99A);
+  /* R8-L06-D11（字号 P2）：20rpx=10px 汉字在 378px 画布上笔画粘连，低于 §1.3 标签档 12px
+     ⇒ 提到 --fs-base(24rpx=12px)。同色档随之重算：原 --c-brand-600(#2AAE83) 压白卡
+     实测 2.81:1，12px 正文不享 WCAG 大字号豁免（需 ≥4.5:1）；--c-brand-700 只有 4.14:1
+     仍不达标 ⇒ 取同族深档 --c-brand-800(#156B51)，压白实测 6.45:1。 */
+  font-size: var(--fs-base, 24rpx);
+  color: var(--c-brand-800, #156B51);
 }
 
 .segment-row__meta {

@@ -234,28 +234,55 @@ function formatMemberCount(count: number): string {
 /** 热门徽标阈值（成员数达到即显示「热门」） */
 const HOT_THRESHOLD = 8000;
 
-/** 2026-08-25 P0：快捷分类 tab（规格书 14.5） */
-type QuickTab = "all" | "photo" | "travel" | "music" | "sports" | "food" | "more";
-const QUICK_TABS: { key: QuickTab; labelKey: string; keyword: string | null; iconSrc?: string }[] = [
+/** 2026-08-25 P0：快捷分类 tab（规格书 14.5）
+ *  R8-L03-D24（需新建）：原第 7 项 key:"more" 是一枚 keyword:null 的横滚 chip（点它 = 回到全量，
+ *  与「全部」重复、无独立功能），且在 bottom 帧被视口右缘裁断只露 26px——理想图 兴趣圈列表.png
+ *  行末那枚带绿点的 ☰ 是「按条件筛选」入口，本页此前无落点。现删掉 more chip，改在行尾常驻一枚
+ *  不参与横滚的筛选按钮（见模板 .circles-tabs-row + .circles-filter-btn）。 */
+type QuickTab = "all" | "photo" | "travel" | "music" | "sports" | "food";
+const QUICK_TABS: { key: QuickTab; labelKey: string; keyword: string | null }[] = [
   { key: "all", labelKey: "circle.tabAll", keyword: null },
   { key: "photo", labelKey: "circle.catPhoto", keyword: "摄影" },
   { key: "travel", labelKey: "circle.catTravel", keyword: "旅行" },
   { key: "music", labelKey: "circle.catMusic", keyword: "音乐" },
   { key: "sports", labelKey: "circle.catSports", keyword: "运动" },
   { key: "food", labelKey: "circle.catFood", keyword: "美食" },
-  { key: "more", labelKey: "common.more", keyword: null, iconSrc: IMAGE_PATHS.ICONS_EMOJI.LIST },
 ];
 const activeQuickTab = ref<QuickTab>("all");
 
-/** 按 quick tab 过滤后的列表（与 category query 互不干扰） */
+/**
+ * R8-L03-D24：筛选模式。只用既有前端字段（isJoined / memberCount），不向后端要新列——
+ * 后端 CircleView 无「排序 / 条件筛选」入参（见 index.vue:177-185 记的字段清单），
+ * 故筛选在前端做，避免编造后端数据。
+ */
+type FilterMode = "all" | "joined" | "popular";
+const FILTER_LABELS = ["全部圈子", "只看已加入", "按人数排序"] as const;
+const filterMode = ref<FilterMode>("all");
+function openFilter() {
+  uni.showActionSheet({
+    itemList: [...FILTER_LABELS],
+    success: (res) => {
+      filterMode.value =
+        res.tapIndex === 1 ? "joined" : res.tapIndex === 2 ? "popular" : "all";
+    },
+  });
+}
+
+/** 按 quick tab + 筛选模式过滤后的列表（与 category query 互不干扰） */
 const tabFilteredCircles = computed(() => {
-  if (activeQuickTab.value === "all" || activeQuickTab.value === "more") {
-    return filteredCircles.value;
+  let list = filteredCircles.value;
+  if (activeQuickTab.value !== "all") {
+    const tab = QUICK_TABS.find((t) => t.key === activeQuickTab.value);
+    if (tab?.keyword) list = list.filter((c) => (c.name || "").includes(tab.keyword!));
   }
-  const tab = QUICK_TABS.find((t) => t.key === activeQuickTab.value);
-  if (!tab?.keyword) return filteredCircles.value;
-  return filteredCircles.value.filter((c) => (c.name || "").includes(tab.keyword!));
+  if (filterMode.value === "joined") {
+    list = list.filter((c) => c.isJoined);
+  } else if (filterMode.value === "popular") {
+    list = [...list].sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0));
+  }
+  return list;
 });
+
 
 /**
  * 2026-08-25 P0：等 N 位朋友已加入的头像与计数（规格书 14.6）
@@ -411,23 +438,39 @@ defineExpose({ toggleJoin });
         <view class="circles-banner">
           <text class="circles-banner__title">{{ t("circle.circlesSubtitle") }}</text>
         </view>
-        <!-- 2026-08-25 P0：7 个快捷分类 tab（规格书 14.5） -->
-        <scroll-view class="circles-tabs" scroll-x :show-scrollbar="false">
-          <view class="circles-tabs__list">
-            <view
-              v-for="tab in QUICK_TABS"
-              :key="tab.key"
-              class="circles-tab"
-              :class="{ 'circles-tab--active': activeQuickTab === tab.key }"
-              role="tab"
-              :aria-selected="activeQuickTab === tab.key ? 'true' : 'false'"
-              @tap="activeQuickTab = tab.key"
-            >
-              <image v-if="tab.iconSrc" class="circles-tab__icon" :src="resolveMediaUrl(tab.iconSrc)" mode="aspectFit" alt="" />
-              <text v-else class="circles-tab__text">{{ t(tab.labelKey) }}</text>
+        <!-- 2026-08-25 P0：快捷分类 tab（规格书 14.5）
+             R8-L03-D24：横滚 chips 与行末常驻筛选按钮并成一行——scroll-view 占 flex:1 横滚，
+             按钮 flex-shrink:0 固定在行尾、不参与横滚（对齐理想图 兴趣圈列表.png 行末 ☰）。 -->
+        <view class="circles-tabs-row">
+          <scroll-view class="circles-tabs" scroll-x :show-scrollbar="false">
+            <view class="circles-tabs__list">
+              <view
+                v-for="tab in QUICK_TABS"
+                :key="tab.key"
+                class="circles-tab"
+                :class="{ 'circles-tab--active': activeQuickTab === tab.key }"
+                role="tab"
+                :aria-selected="activeQuickTab === tab.key ? 'true' : 'false'"
+                @tap="activeQuickTab = tab.key"
+              >
+                <text class="circles-tab__text">{{ t(tab.labelKey) }}</text>
+              </view>
             </view>
+          </scroll-view>
+          <!-- R8-L03-D24：按条件筛选入口（吸顶头内、行尾常驻）。已启用非「全部」筛选时右上角绿点提示。 -->
+          <view
+            class="circles-filter-btn press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="'筛选'"
+            @tap="openFilter"
+          >
+            <image class="circles-filter-btn__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LIST)" mode="aspectFit" alt="" />
+            <view v-if="filterMode !== 'all'" class="circles-filter-btn__dot" />
           </view>
-        </scroll-view>
+        </view>
+
       </view>
     </template>
     <!-- 统一页面状态容器：loading / error / empty / content 四态切换 -->
@@ -665,8 +708,13 @@ defineExpose({ toggleJoin });
   min-width: 0;
 }
 
+/* R8-L03-D19（位置）：改前 flex:1 让圈名吃掉整行剩余宽度，把「热门」角标推到行尾——
+   实测圈名墨迹 x96..146、角标 x271..296，中间空出 125px(248rpx)，角标改与右侧「加入」按钮
+   成一组，脱离圈名。理想图角标紧贴圈名右缘。改 flex:0 1 auto + max-width：
+   角标按 .circle-card__name-row 的 gap:10rpx 紧跟圈名；圈名过长时才收缩并省略（min-width:0 生效前提）。 */
 .circle-card__name-row .circle-card__name {
-  flex: 1;
+  flex: 0 1 auto;
+  max-width: 320rpx;
   min-width: 0;
 }
 
@@ -695,15 +743,13 @@ defineExpose({ toggleJoin });
   font-size: var(--fs-base);
   color: var(--c-text-tertiary);
   line-height: 1.5;
-  /* 2026-08-27：描述改为最多 2 行（不再单行硬截断），避免内容被生硬切断 */
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  /* R8-L03-D23（尺寸比例）：2026-08-27 改的两行截断让「描述占两行」的卡比邻居高出一截——
+     bottom 帧实测五张卡 122/104/108/103/104px（首卡比邻卡高 18px=36rpx），列表节奏不齐。
+     恢复单行 ellipsis：所有卡的描述行恒为一行文本高，卡高由「封面 144rpx / 正文四行」取大决定，
+     逐卡一致。长描述退化为省略号（列表页本就只作预览，完整简介在圈子主页 .info-desc 两行展示）。 */
   overflow: hidden;
-  /* #ifndef H5 */
-  /* mp-weixin: -webkit-line-clamp 支持有限，max-height 兜底防止溢出 */
-  max-height: 3em;
-  /* #endif */
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .circle-card__meta {
@@ -867,17 +913,16 @@ defineExpose({ toggleJoin });
   flex-shrink: 0;
   /* MP-R2-CIRCLES-INDEX-001（跨轮别名 MP-R1-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001）：
      全局 navigationStyle=custom，原生胶囊常驻右上（右缘间隙 --capsule-right≈7px + 本体 87px，
-     纵向 statusBar+4 ~ +36px）。本按钮此前无任何避让：右缘落在屏右 28rpx(≈14px) 处、
-     顶部落在 statusBar+8px（AppShell.vue:99-105 inline padding-top + :306-314 吸顶头），
-     与胶囊投影带横纵双向重叠 → 真机放大镜被胶囊整体压住不可点（同病灶已两次实证：
-     campus/hub.vue:383-389「认证按钮被胶囊压住 85%」、pages/nearby/index.vue:624-626）。
-     避让口径对齐 hub/topics：预留 = 胶囊间隙 + 胶囊本体 87px + 呼吸（合计 +104px）。
-     落实后按钮右缘距屏右 14 + 7 + 104 = 125px，胶囊左缘 94px → 净空 31px（≥10px）。
+     纵向 statusBar+4 ~ +36px）。避让是必须的（此前无避让时放大镜被胶囊整体压住不可点），
+     但避让量此前算多了 ⇒ R8-L03-D22（位置）：改前 margin-right = --capsule-right + 104px，
+     104 = 胶囊本体 87 + 间隙 7 + 呼吸 10，而 --capsule-right 本身已是那 7px 间隙 ⇒ 间隙被计了两次，
+     再加页头 gutter，实测按钮右缘距胶囊左缘 33~57px，落在导航带中段成为悬空元素（既不对齐标题左基线、
+     也不贴右缘）。理想图 兴趣圈列表.png 放大镜在页头最右端。现把预留量收敛为胶囊本体足迹（87px）一份，
+     不再叠加重复的间隙/呼吸 ⇒ 按钮右缘紧贴胶囊左缘（净空约 16px），锚定到右侧、不再悬空。
      --capsule-right 由 useMenuButtonRect 在本节点 :style 实测注入，测量前/非小程序端回退 7px。
-     R6-L04-D12：改列方向后本钮与 ‹/标题同处 .circles-header__row 一行，补 margin-left:auto
-     把它推到行右端（理想图 兴趣圈列表.png 页头右上角），避让量仍按上式保留。 */
+     R6-L04-D12：本钮与 ‹/标题同处 .circles-header__row 一行，margin-left:auto 把它推到行右端。 */
   margin-left: auto;
-  margin-right: calc(var(--capsule-right, 7px) + 104px);
+  margin-right: calc(var(--capsule-right, 7px) + 87px);
 }
 
 .circles-header__search-icon {
@@ -886,13 +931,54 @@ defineExpose({ toggleJoin });
   color: var(--c-text-tertiary, #6B7571);
 }
 
-/* ===== 2026-08-25 P0：7 个快捷分类 tab ===== */
+/* ===== 2026-08-25 P0：快捷分类 tab + 行尾筛选按钮 ===== */
+/* R8-L03-D24：横滚 chips（flex:1）+ 常驻筛选按钮（flex-shrink:0）并成一行 */
+.circles-tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: var(--sp-2);
+}
+
 .circles-tabs {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   /* MP-R2VIS-COMPONENTS-LAYOUT-APPSHELL-001：横向内缩归零（首枚 chip 与卡框同基线，
      尾部间距由 .circles-tabs__list 的 padding-right 承担），见 .circles-banner 上方说明 */
   padding: 0;
-  margin-top: var(--sp-2);
+  margin-top: 0;
+}
+
+/* R8-L03-D24：行尾常驻筛选按钮（对齐理想图 兴趣圈列表.png 的 ☰ 圆钮 + 绿点）。
+   尺寸/底色沿用同页 .circles-header__back 的圆形按钮口径（64rpx 圆 + 卡面底 + 细描边），
+   不新造令牌。启用筛选时右上角一枚品牌绿实心点作状态提示。 */
+.circles-filter-btn {
+  position: relative;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-border-light, #EEF2F0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.circles-filter-btn__icon {
+  width: 34rpx;
+  height: 34rpx;
+}
+
+.circles-filter-btn__dot {
+  position: absolute;
+  top: 2rpx;
+  right: 2rpx;
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: var(--c-brand-500, #36C99A);
+  border: 2rpx solid var(--c-bg-container, #FFFFFF);
 }
 
 .circles-tabs__list {
@@ -909,8 +995,12 @@ defineExpose({ toggleJoin });
   padding: 12rpx 22rpx;
   border-radius: 999rpx;
   /* 非活跃分类 chips 浅灰胶囊底（对齐理想图，避免白底融入页面）
-     R13：原取 --c-bg-page 与页面同色，胶囊完全不可见——改用卡片面底色 */
-  background: var(--c-bg-container, #FFFFFF);
+     R13：原取 --c-bg-page 与页面同色，胶囊完全不可见——改用卡片面底色
+     R8-L03-D21（颜色token）：R13 选的 --c-bg-container 实测 #FFFFFF，与卡片底色逐字同值
+     （色差 0，帧上仅靠 1rpx 边框区分）。改 --c-bg-surface：浅色档实测 #F3FAF6（R243 G250 B246），
+     相对卡面 #FFFFFF 拉开一档浅灰绿（理想图同位实测 #F5F6F6 vs #FEFEFE，明度差约 10 级，同量级）；
+     深色档由 tokens.scss:271 覆为 #222831，仍比卡面 --c-bg-container #1A1F26 亮一档，成对关系不反。 */
+  background: var(--c-bg-surface, #F3FAF6);
   border: 1rpx solid var(--c-line, #EEF2F0);
   display: flex;
   align-items: center;

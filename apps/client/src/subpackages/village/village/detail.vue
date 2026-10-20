@@ -31,7 +31,8 @@ import { ROUTES } from "../../../constants/routes";
 // 2026-10-13 统一配图口径：详情与列表同一张数上限（发布侧 POST_MAX_IMAGES 已限 9）
 import { POST_MAX_IMAGES } from "../../../constants/village";
 import SafeImage from "../../../components/common/SafeImage.vue";
-import EmptyState from "../../../components/common/EmptyState.vue";
+// R8-L03-D07：本页唯一的通用 EmptyState 消费点（帖子未找到态）已换成专用 not-found 版式，
+// 组件与 import 一并移除（strict noUnusedLocals 下保留未用导入会直接编不过）。
 import PostReportDialog from "../../../components/social/PostReportDialog.vue";
 // 2026-08-08 频道化重构：帖子详情页活动卡（活动链接帖展开）
 import ActivityCard from "../../../components/village/ActivityCard.vue";
@@ -708,6 +709,46 @@ function sendMessageToSimilarAuthor(userId: string) {
 }
 
 
+/**
+ * R8-L03-D06（P1 素材缺失）：裸路由（无 ?id=）进入本页时的种子兜底。
+ *
+ * 只在 currentPost 为空时调用 ⇒ 不会复活 store 残留（infra R2-00072 的隐私口径原样保留），
+ * 也不会覆盖带 id 进来的帖子。种子取「今日广场」feed 首条：
+ * real 档走既有 GET /api/v1/posts（villageStore.fetchPosts），mock 档走 mockPosts fixtures，
+ * 全部字段来自后端既有契约，前端不编造任何数据；feed 为空 / 请求失败时保持原
+ * 「帖子不存在」toast + 未找到版式，绝不伪造详情内容。
+ * 之后与 :719-736 的「列表缓存先渲染 + setCurrentPost 拉详情」同一条已验证路径。
+ */
+async function bootstrapFromFeed(): Promise<void> {
+  detailLoading.value = true;
+  try {
+    if (villageStore.posts.length === 0) {
+      await villageStore.fetchPosts();
+    }
+  } catch (_e) {
+    // 取数失败：落回下方未找到分支（toast + 版式），不伪造内容
+  }
+  const seed = villageStore.posts[0];
+  detailLoading.value = false;
+  if (!seed) {
+    villageStore.clearCurrentPost();
+    uni.showToast({ title: t("village.detail.postNotExist"), icon: "none" });
+    return;
+  }
+  villageStore.currentPost = seed;
+  villageStore.comments = [];
+  commentPage.value = 1;
+  noMoreComments.value = false;
+  void villageStore
+    .setCurrentPost(String(seed.id))
+    .then(() => {
+      if (currentPost.value) {
+        void villageStore.fetchComments(currentPost.value.id);
+        void villageStore.fetchSimilarAuthors(currentPost.value.id);
+      }
+    });
+}
+
 onLoad((query) => {
   // 支持通过 URL id 参数加载帖子（从通知、分享等入口进入）
   const postId = query?.id;
@@ -740,9 +781,16 @@ onLoad((query) => {
 
   // infra R2-00072: 无 query.id 时不再静默依赖 store 残留 currentPost
   // （直开分享链接可能展示他人帖子），无可用帖子时清空并提示错误态
+  //
+  // R8-L03-D06（P1 素材缺失）：本路由以裸路径进入（取景/深链无 ?id=）时，原实现直接落进
+  // :1341 的「帖子不存在」分支——top 帧内容区 y130..783（占屏 80%）只渲染未找到态的 3 个元素，
+  // 理想图的 7 个模块 0 命中，底部输入栏（v-if="currentPost"）同步消失。
+  // 兜底：currentPost 为空（无残留，不违反 R2-00072 的隐私口径）时，取「今日广场」feed
+  // 的第一条真实帖子作为种子渲染详情。数据一律来自既有 GET /api/v1/posts
+  // （mock 档为 mockPosts fixtures），前端不编造任何字段；feed 为空或取数失败时
+  // 仍回到原 toast + 未找到版式，行为可证明。
   if (!currentPost.value) {
-    villageStore.clearCurrentPost();
-    uni.showToast({ title: t("village.detail.postNotExist"), icon: "none" });
+    void bootstrapFromFeed();
     return;
   }
 
@@ -1339,13 +1387,50 @@ onShareTimeline(() => {
          组件默认副标题「这里空空如也」(EmptyState.vue:82 presetSubMap['no-data']) 与
          「帖子不存在或已被删除」叠成两行废话；错误态按组件规范只留一句。 -->
     <view v-else class="detail-empty">
-      <EmptyState
-        :title="t('village.detail.postNotExist')"
-        :action-text="t('village.detail.backToVillage')"
-        :hide-sub="true"
-        type="no-data"
-        @action="goBack"
-      />
+      <!-- R8-L03-D07（P2 需新建）：未找到态此前直接复用通用 EmptyState 的 no-data 预设
+           （一枚图标 + 单行灰字 + 一颗绿色胶囊「返回广场」），与详情页版式零继承——
+           导航栏以下全空。改为本页专用 not-found 版式：
+           ① 保留顶部导航（:794 .detail-header 在本分支之外，一直渲染）；
+           ② 作者占位骨架继承详情页的「头像 + 姓名行 + 元信息行」结构；
+           ③ 主句 + 说明副标题；
+           ④ 双动作：返回（goBack，栈底 reLaunch 兜底）/ 返回广场（ROUTES.TAB.VILLAGE，
+              与 :310 goBack 的兜底目标同一路径，不新造路由）。
+           文案全部复用既有键（locales 不在本车道可写集）：
+           village.detail.postNotExist / share.shareVillage / common.back /
+           village.detail.backToVillage。 -->
+      <view class="notfound-card">
+        <view class="notfound-card__author">
+          <view class="notfound-card__avatar" />
+          <view class="notfound-card__lines">
+            <view class="notfound-card__line notfound-card__line--name" />
+            <view class="notfound-card__line notfound-card__line--meta" />
+          </view>
+        </view>
+        <text class="notfound-card__title">{{ t("village.detail.postNotExist") }}</text>
+        <text class="notfound-card__desc">{{ t("share.shareVillage") }}</text>
+        <view class="notfound-card__actions">
+          <view
+            class="notfound-card__btn notfound-card__btn--ghost press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('common.back')"
+            @tap="goBack"
+          >
+            <text class="notfound-card__btn-text notfound-card__btn-text--ghost">{{ t("common.back") }}</text>
+          </view>
+          <view
+            class="notfound-card__btn press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t('village.detail.backToVillage')"
+            @tap="openAppPath(ROUTES.TAB.VILLAGE)"
+          >
+            <text class="notfound-card__btn-text">{{ t("village.detail.backToVillage") }}</text>
+          </view>
+        </view>
+      </view>
     </view>
 
     <!-- 底部互动栏 -->
@@ -2828,6 +2913,104 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+/* R8-L03-D07：详情页专用 not-found 版式（替代通用 no-data 预设）。
+   卡宽与正文卡同档（--page-padding 侧缩 + --card-radius 圆角 + --c-bg-container 白底），
+   作者占位骨架用 --c-bg-surface / --c-neutral-100 中性档，不引入新素材。 */
+.notfound-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
+  box-sizing: border-box;
+  align-self: stretch;
+  margin: 0 var(--page-padding, 32rpx);
+  padding: 40rpx 32rpx;
+  background: var(--c-bg-container, #ffffff);
+  border-radius: var(--card-radius, 40rpx);
+}
+
+.notfound-card__author {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  width: 100%;
+}
+
+.notfound-card__avatar {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-bg-surface, #f2f4f3);
+  flex-shrink: 0;
+}
+
+.notfound-card__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.notfound-card__line {
+  height: 24rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-neutral-100, #eef0f5);
+}
+
+.notfound-card__line--name {
+  width: 40%;
+}
+
+.notfound-card__line--meta {
+  width: 66%;
+}
+
+.notfound-card__title {
+  margin-top: 8rpx;
+  font-size: var(--fs-2xl, 32rpx);
+  font-weight: 700;
+  color: var(--c-text-primary);
+  text-align: center;
+}
+
+.notfound-card__desc {
+  font-size: var(--fs-base, 24rpx);
+  line-height: 1.6;
+  color: var(--c-text-secondary);
+  text-align: center;
+}
+
+.notfound-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-top: 12rpx;
+}
+
+.notfound-card__btn {
+  padding: 16rpx 36rpx;
+  border-radius: var(--r-full, 9999rpx);
+  /* 主按钮底取 brand 同族深档：白字压 --c-brand-500 复算仅 2.24:1、
+     --c-brand-700 = 4.14:1 都达不到 4.5:1，--c-brand-800 #156B51 = 6.45:1 过 AA */
+  background: var(--c-brand-800, #156B51);
+}
+
+.notfound-card__btn--ghost {
+  background: transparent;
+  border: 2rpx solid var(--c-border-default, #d8e0dc);
+}
+
+.notfound-card__btn-text {
+  font-size: var(--fs-base, 24rpx);
+  font-weight: 600;
+  color: var(--c-text-inverse);
+}
+
+.notfound-card__btn-text--ghost {
+  color: var(--c-text-secondary);
 }
 
 .empty-state {

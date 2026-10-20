@@ -18,7 +18,7 @@ import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 // 2026-09-04 视觉验收：var(--statusbar, env(safe-area-inset-top)) 在模拟器/部分机型为 0，tabs 行上移进胶囊区被遮挡
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
-import { IMAGE_PATHS } from "../../../config/images";
+// R8-L06-D13：在线绿点改纯 CSS 圆点后本页不再引 IMAGE_PATHS（noUnusedLocals 门禁）
 // R10-P3-016：标签 value → 展示文案统一映射（utils/tag-label 单一映射源）
 import { tagLabelsFor } from "../../../utils/tag-label";
 
@@ -227,10 +227,15 @@ function switchScope(next: "nearby" | "city") {
           <view class="people-row__name-row">
             <text class="people-row__name">{{ item.name }}</text>
             <text v-if="item.age" class="people-row__age">{{ item.age }}</text>
-            <text v-if="isOnline(item.activeStatusText)" class="people-row__online-wrap">
-              <image class="people-row__online-dot" :src="IMAGE_PATHS.ICONS_EMOJI.STATUS_ONLINE" mode="aspectFit" alt="" />
+            <!-- R8-L06-D13（素材缺失 P1）：与 R8-L06-D09 同一枚绿点、同一双成因——
+                 mp-weixin 的 <text> 只接受字符串/text 子节点，嵌进来的 <image> 整块不渲染
+                 （帧上「在线」二字 x185~203 有墨迹、其左 x168~184 恒白 #FFFFFF，8 行全如此），
+                 且 status-online.svg 无 width/height 取不到固有尺寸。
+                 本页与 segment 一并改纯 CSS 圆点（不动 4 个消费点共用的 static 素材）。 -->
+            <view v-if="isOnline(item.activeStatusText)" class="people-row__online-wrap">
+              <view class="people-row__online-dot" />
               <text class="people-row__online">{{ t('cardDetail.onlineLabel') }}</text>
-            </text>
+            </view>
           </view>
           <text class="people-row__meta">{{ item.campusName || '' }}{{ item.campusName && item.distanceText ? ' · ' : '' }}{{ formatDistance(item.distanceText) }}</text>
           <view v-if="item.tags && item.tags.length" class="people-row__tags">
@@ -301,7 +306,9 @@ function switchScope(next: "nearby" | "city") {
 .people-tab {
   flex: 1;
   padding: 18rpx 0;
-  border-radius: 18rpx;
+  /* R8-L06-D14（圆角 P3）：18rpx 是阶梯外私有值（本页 .people-row:373 用 20rpx，
+     segment.vue 同抄一枚）⇒ 收敛到 --r-lg(20rpx)。 */
+  border-radius: var(--r-lg, 20rpx);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -422,14 +429,20 @@ function switchScope(next: "nearby" | "city") {
 }
 
 .people-row__online-dot {
+  /* R8-L06-D13：纯 CSS 圆点（见模板注释），色档取 --c-brand-700(#1F8D6A)，
+     压白卡实测 4.14:1，过非文本图形 3:1 门槛（原 SVG 内写死的 #36C99A 只有 2.10:1）。 */
   width: 16rpx;
   height: 16rpx;
+  border-radius: 50%;
+  background: var(--c-brand-700, #1F8D6A);
   flex-shrink: 0;
 }
 
 .people-row__online {
-  font-size: 20rpx;
-  color: var(--c-brand-600, #36C99A);
+  /* 与 segment.vue:288 同一元素同批收口（R8-L06-D11 口径）：20rpx=10px 汉字笔画粘连
+     ⇒ --fs-base(24rpx=12px)；原 --c-brand-600 压白 2.81:1 不达 4.5:1 ⇒ 同族 --c-brand-800 6.45:1。 */
+  font-size: var(--fs-base, 24rpx);
+  color: var(--c-brand-800, #156B51);
 }
 
 .people-row__meta {
@@ -443,11 +456,16 @@ function switchScope(next: "nearby" | "city") {
 }
 
 .people-row__tag {
-  padding: 6rpx 16rpx;
+  /* R8-L06-D16（字号 P2）：20rpx=10px 字面（实测墨迹 12px 高、字面 ≈10px）低于 §1.3
+     标签档 12px，而标签是本页信息密度最高的一行 ⇒ 提到 --fs-base(24rpx)，
+     padding 纵向 6→8rpx 保住 36rpx 行高不塌。
+     同档重算颜色：原 --c-tag-green-text(#279B70) 压 --c-tag-green-bg(#EAF8F2) 实测 3.20:1，
+     12px 正文不享 WCAG 大字号豁免 ⇒ 换同族深档 --c-brand-800(#156B51)，5.90:1。 */
+  padding: 8rpx 16rpx;
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-tag-green-bg, #EAF8F2);
-  color: var(--c-tag-green-text, #279B70);
-  font-size: 20rpx;
+  color: var(--c-brand-800, #156B51);
+  font-size: var(--fs-base, 24rpx);
 }
 
 .people-row__arrow {
