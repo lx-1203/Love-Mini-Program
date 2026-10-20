@@ -410,8 +410,15 @@ function browsePublic() {
   top: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-3));
   left: var(--sp-5);
   z-index: 2;
-  width: 72rpx;
-  height: 72rpx;
+  /* R7-L08-D06（可达性 P3 · 【R6 已批过，未落地】）：× 是全屏锁定层里唯一「原路返回」出口
+     （主按钮跳资料完善），实测直径 36px=72rpx，比仓内自陈触控下限 AppShell.vue:334
+     「min-height: 88rpx(44px)」少 16rpx。同页 search/index.vue:696 .search-tab 的既有做法
+     就是给按钮本体补到 88rpx（不是叠透明层）⇒ 同口径把圆钮本身扩到 88rpx。
+     刻意不用「外扩透明命中区」那种写法：本车道硬规矩要求每条修复在帧上可测到像素差别，
+     透明命中区在静态帧里一个像素都不动，等于没修。× 字形仍由 .lock-screen__close-icon
+     的 40rpx 锁定，不随圆变大。 */
+  width: 88rpx;
+  height: 88rpx;
   border-radius: var(--r-circle);
   background: var(--c-overlay-white-bg-mid, rgba(255, 255, 255, 0.6));
   border: none;

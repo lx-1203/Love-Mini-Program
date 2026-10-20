@@ -13,7 +13,7 @@ import { useI18n } from "vue-i18n";
 import { useProfileStore } from "../../../stores/profile";
 import { designTokens } from "../../../theme/tokens";
 // infra R2-00084: 路由路径常量化
-import { ROUTES } from "../../../constants/routes";
+import { ROUTES, SUBPACKAGE_ROUTES } from "../../../constants/routes";
 // 2026-09-04 视觉验收：statusBarHeight 注入，var(--statusbar, env(safe-area-inset-top)) 模拟器为 0 会压刘海
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 
@@ -63,14 +63,41 @@ function goBack() {
     uni.switchTab({ url: ROUTES.TAB.PROFILE }); // infra R2-00084
   }
 }
+
+/* R7-L10-D11：三个入口行的跳转，全部走 ROUTES / SUBPACKAGE_ROUTES 常量（infra R2-00084），
+   目的地与跳转方式逐条对齐 subpackages/profile-extra/settings/index.vue 已有的同类调用
+   （:379+428 → ROUTES.SECURITY、:122 → SUBPACKAGE_ROUTES.LEGAL.PRIVACY），非新建页面。 */
+function goSecurity() {
+  uni.navigateTo({ url: ROUTES.SECURITY });
+}
+
+function goPrivacyPolicy() {
+  uni.navigateTo({ url: SUBPACKAGE_ROUTES.LEGAL.PRIVACY });
+}
+
+function goLocation() {
+  uni.navigateTo({ url: ROUTES.PROFILE.LOCATION });
+}
+
+function goHelp() {
+  uni.navigateTo({ url: ROUTES.HELP });
+}
 </script>
 
 <template>
   <view class="privacy-page">
     <!-- 顶部栏（statusBarHeight 注入，避免模拟器 env()=0 压刘海） -->
     <view class="privacy-page__header" :style="{ paddingTop: `calc(var(--sp-4) + ${statusBarHeightPx}px)` }">
+      <!-- R7-L10-D13（可达性 P3，同域 album.vue R6-B55/D17 配方）：热区 64rpx→88rpx
+           （AppShell.vue:334 口径；帧实测圆底 x≈16..36/y≈58..90 仅 20px 见方），
+           64rpx 视觉圆底移进 __back-circle，尺寸一格不动；圆底浓度按建议提档——
+           但方向取深色遮罩档 --c-overlay-strong(0.7) 而不是更浓的白：原 20% 白圆底实测
+           只比绿头亮约 (37,10,19)，而按"白底提到 0.5/0.6"再配白 ‹ 字形会让字形和芯片
+           同色相撞（≈1.2:1）；深芯片 + 白字形在白 ‹ 与绿头之间同时拉开两级对比。 -->
       <view class="privacy-page__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
-        <text class="privacy-page__back-text">‹</text>
+        <view class="privacy-page__back-circle">
+          <text class="privacy-page__back-text">‹</text>
+        </view>
       </view>
       <!-- R6-B59/D14（需新建 P2）：页头信息层补上 locale 里早已配好、但全页无消费方的
            副标题 profile.privacyPermissionDesc（zh-CN.ts:1732「控制你的信息展示范围」/
@@ -89,25 +116,111 @@ function goBack() {
           <text class="privacy-item__title">{{ t('profile.allowSameSchoolRecommend') }}</text>
           <text class="privacy-item__desc">{{ t('profile.allowSameSchoolRecommendDesc') }}</text>
         </view>
-        <switch
-          class="privacy-item__switch privacy-item__switch--allow"
-          :checked="allowRecommend"
-          :color="designTokens.color.brand[500]"
-          @change="onAllowRecommendChange"
-        />      </view>
+        <!-- R7-L10-D12：本枚是帧上 OFF 态的那一枚（「允许推荐给本校学生」默认关），
+             与第二枚同样套品牌描边芯片，OFF/ON 两态都在白卡上可辨。 -->
+        <view class="privacy-item__switch-chip">
+          <switch
+            class="privacy-item__switch privacy-item__switch--allow"
+            :checked="allowRecommend"
+            :color="designTokens.color.brand[500]"
+            @change="onAllowRecommendChange"
+          />
+        </view>
+      </view>
 
       <view class="privacy-item">
         <view class="privacy-item__info">
           <text class="privacy-item__title">{{ t('profile.receiveSameSchoolInfo') }}</text>
           <text class="privacy-item__desc">{{ t('profile.receiveSameSchoolInfoDesc') }}</text>
         </view>
-        <switch
-          class="privacy-item__switch privacy-item__switch--receive"
-          :checked="receiveInfo"
-          :color="designTokens.color.brand[500]"
-          @change="onReceiveInfoChange"
-        />
+        <!-- R7-L10-D12（可达性 P2）：原生 switch 的 OFF 态轨道色由平台写死（`color` prop
+             只作用于 ON 态），实测 x=296..330/y=138..146 轨道仅 (243..246) 灰、白滑块压白卡，
+             整控件与背景 Δlum≤12 ⇒ 按建议改法「给 OFF 态加品牌化轨道底色/描边」在页面侧
+             套一层品牌绿描边的薄荷底芯片，任意状态都能在白卡上读成"这里有枚可点开关"。 -->
+        <view class="privacy-item__switch-chip">
+          <switch
+            class="privacy-item__switch privacy-item__switch--receive"
+            :checked="receiveInfo"
+            :color="designTokens.color.brand[500]"
+            @change="onReceiveInfoChange"
+          />
+        </view>
       </view>
+    </view>
+
+    <!-- R7-L10-D11（空态文案 P2）：开关卡以下 y=250..800 整屏空薄荷底（550px≈1100rpx），
+         页面只有两枚开关 + 120rpx footer-space，靠 min-height:100vh 撑白 ⇒ 半成品观感。
+         按建议改法第一条补「既有后域能力入口行」，三条全部指向仓内真实路由、全部复用
+         locale 里已有的键（除第三行目的地标题——它沿用 location.vue:174 自己页头的
+         「我的位置」字面量，本页无对应键、不新增 locale）：
+         ① profile.safetyCenter → ROUTES.SECURITY（subpackages/tools/security/index：
+            登录设备下线 + 第三方账号解绑，均为已上线真实能力）；
+         ② security.privacyPolicy → SUBPACKAGE_ROUTES.LEGAL.PRIVACY（legal 分包真实页）；
+         ③ 我的位置 → ROUTES.PROFILE.LOCATION（重新定位 / 地图选点真实链路）。
+         下方说明块只陈述代码里已写明的事实（MP-R1-PRIVACY-001：开关当前仅本机持久化，
+         后端偏好接口未接入），不承诺尚不存在的服务端行为、不编造数据。 -->
+    <text class="privacy-page__group-title">{{ t('settings.privacySection') }}</text>
+    <view class="privacy-page__section privacy-page__section--entries">
+      <view
+        class="privacy-entry press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('profile.safetyCenter')"
+        @tap="goSecurity"
+      >
+        <view class="privacy-entry__info">
+          <text class="privacy-entry__title">{{ t('profile.safetyCenter') }}</text>
+          <text class="privacy-entry__desc">{{ t('profile.safetyCenterDesc') }}</text>
+        </view>
+        <text class="privacy-entry__arrow">›</text>
+      </view>
+      <view
+        class="privacy-entry press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('security.privacyPolicy')"
+        @tap="goPrivacyPolicy"
+      >
+        <view class="privacy-entry__info">
+          <text class="privacy-entry__title">{{ t('security.privacyPolicy') }}</text>
+          <text class="privacy-entry__desc">{{ t('security.privacyPolicyDesc') }}</text>
+        </view>
+        <text class="privacy-entry__arrow">›</text>
+      </view>
+      <view
+        class="privacy-entry press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        aria-label="我的位置"
+        @tap="goLocation"
+      >
+        <view class="privacy-entry__info">
+          <text class="privacy-entry__title">我的位置</text>
+          <text class="privacy-entry__desc">调整定位与地图选点</text>
+        </view>
+        <text class="privacy-entry__arrow">›</text>
+      </view>
+      <view
+        class="privacy-entry press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('profile.helpSupport')"
+        @tap="goHelp"
+      >
+        <view class="privacy-entry__info">
+          <text class="privacy-entry__title">{{ t('profile.helpSupport') }}</text>
+          <text class="privacy-entry__desc">{{ t('profile.helpSupportDesc') }}</text>
+        </view>
+        <text class="privacy-entry__arrow">›</text>
+      </view>
+    </view>
+
+    <view class="privacy-page__note">
+      <text class="privacy-page__note-text">两项开关目前仅在本机保存，后端同校推荐策略接入后才会改变实际推荐结果；位置与账号设备权限请从上方入口分别管理。</text>
     </view>
 
     <!-- 底部留白 -->
@@ -136,13 +249,26 @@ function goBack() {
    改引同域 other.vue:479 已用的 --c-overlay-bg-light（0.2 档，:739），不改 theme/**、
    不提浓度、不留假兜底。 */
 .privacy-page__back {
-  width: 64rpx;
-  height: 64rpx;
+  /* R7-L10-D13：热区 88rpx（AppShell.vue:334 口径），圆底移入 __back-circle */
+  width: 88rpx;
+  height: 88rpx;
+  box-sizing: border-box;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.privacy-page__back-circle {
+  width: 64rpx;
+  height: 64rpx;
+  box-sizing: border-box;
   border-radius: var(--r-circle, 50%);
-  background: var(--c-overlay-bg-light);
+  background: var(--c-overlay-strong);
+  border: 2rpx solid var(--c-overlay-border-stronger);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .privacy-page__back-text {
@@ -174,7 +300,8 @@ function goBack() {
 }
 
 .privacy-page__header-spacer {
-  width: 64rpx;
+  /* R7-L10-D13 同批：与 88rpx 返回热区同宽，标题组仍在绿色页头里居中 */
+  width: 88rpx;
 }
 
 /* R6-B59/D11（间距 P2，2026-10-20）：卡横向 margin 原取 --sp-4（真值 16rpx），
@@ -222,6 +349,88 @@ function goBack() {
   font-size: var(--fs-lg);
   color: var(--c-text-tertiary, #9AA39F);
   line-height: 1.5;
+}
+
+/* R7-L10-D12（可达性 P2）：OFF 态原生开关轨道是平台写死的近白色，压白卡 Δlum≤12 不可辨，
+   页面侧套一层品牌档芯片（薄荷底 + 品牌绿描边），ON/OFF 两态都在白卡上立得住。 */
+.privacy-item__switch-chip {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--r-full);
+  background: var(--c-brand-50);
+  border: 2rpx solid var(--c-brand-300);
+  box-sizing: border-box;
+}
+
+/* R7-L10-D11（空态文案 P2）：补充入口分组 */
+.privacy-page__group-title {
+  margin: var(--sp-6) var(--page-padding) var(--sp-3);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--c-text-secondary);
+}
+
+.privacy-page__section--entries {
+  /* 上方分组标题已带 --sp-3 下边距，这里不再叠 .privacy-page__section 的 --sp-5 上边距 */
+  margin-top: 0;
+}
+
+.privacy-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+  border-bottom: 1rpx solid var(--c-divider-light, #f0f0f0);
+}
+
+.privacy-entry:last-child {
+  border-bottom: none;
+}
+
+.privacy-entry__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.privacy-entry__title {
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  color: var(--c-text-primary);
+}
+
+.privacy-entry__desc {
+  font-size: var(--fs-lg);
+  color: var(--c-text-tertiary);
+  line-height: 1.5;
+}
+
+.privacy-entry__arrow {
+  flex-shrink: 0;
+  font-size: var(--fs-3xl);
+  color: var(--c-text-tertiary);
+  line-height: 1;
+}
+
+/* R7-L10-D11：说明块——陈述代码里已写明的事实（MP-R1-PRIVACY-001 仅本机持久化），
+   同时消解 y=250 以下的整屏空薄荷底。 */
+.privacy-page__note {
+  margin: var(--sp-5) var(--page-padding) 0;
+  padding: var(--sp-5);
+  border-radius: var(--r-xl, 24rpx);
+  background: var(--c-brand-50);
+}
+
+.privacy-page__note-text {
+  font-size: var(--fs-lg);
+  line-height: 1.6;
+  color: var(--c-text-secondary);
 }
 
 .privacy-page__footer-space {

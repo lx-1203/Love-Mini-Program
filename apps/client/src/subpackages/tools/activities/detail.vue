@@ -474,7 +474,11 @@ onShareTimeline(() => ({
 }
 
 .detail-header__title {
-  font-size: var(--fs-xl, 34rpx);
+  /* R7-L08-D07（字号 P2）：页面主标题原取 var(--fs-xl)=30rpx（15px，§1.3 的「正文/辅助」档），
+     顶部绿导航栏里「活动详情」墨迹只有 12px，页头层级塌到正文档。
+     升到 §1.3 大标题档 --fs-5xl（44rpx=22px）并与兄弟工具页 heart-signals
+     .page-header__title（index.vue:446）同口径；字重保持 700。 */
+  font-size: var(--fs-5xl, 44rpx);
   font-weight: 700;
   color: var(--c-text-inverse, #ffffff);
 }
@@ -520,7 +524,11 @@ onShareTimeline(() => ({
   margin: var(--sp-5) var(--sp-4);
   padding: var(--sp-5);
   background: var(--c-bg-container, #ffffff);
-  border-radius: var(--r-xl, 24rpx);
+  /* R7-L08-D08（圆角 P3·R6 已批未落地）：两张白卡（标题/元信息卡、活动介绍卡）共用本类，
+     原 var(--r-xl)=24rpx（12px，§1.4 的小卡/输入档）实测圆角比全站卡片令牌小 8px，
+     卡片观感偏「贴纸」。改引 §1.4 卡片圆角令牌 --card-radius（40rpx=20px，design-variables.scss:699），
+     与首页/寻觅页大卡同代。 */
+  border-radius: var(--card-radius, 40rpx);
   box-shadow: var(--card-shadow, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
 }
 

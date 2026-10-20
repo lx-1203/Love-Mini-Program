@@ -11,8 +11,14 @@ import { useDailyQuestionStore, formatAnswerTime } from "../../../stores/daily-q
 import { useCheckInStore } from "../../../stores/checkin";
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import { IMAGE_PATHS } from "../../../config/images";
-import SafeImage from "../../../components/common/SafeImage.vue";
+import { resolveMediaUrl } from "../../../utils/media";
 import EmptyState from "../../../components/common/EmptyState.vue";
+
+/**
+ * R7-L07-D03/D04：锁定卡锁图标出口（与 LockScreen.vue:96 同一条素材、同一个解析器）。
+ * 素材仍为仓内既有 common/lock.svg，未新增、未生成任何图片。
+ */
+const lockIconSrc = resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.LOCK_SVG);
 
 const { t } = useI18n();
 const dailyQuestionStore = useDailyQuestionStore();
@@ -145,11 +151,20 @@ function onAnswersScrollLower(): void {
                而 scoped 的 .lock-card__icon 只落到**内层** image ⇒ 父高 auto 时 100% 退化成 0×0，
                80rpx 图标整块不渲染（实测白卡内 y99-347 区间零墨像素，496rpx 高的空白带）。
                改由组件既有的 `root-class` 出口给根容器显式 80rpx 宽高（对齐 _image-base 基线）。
-             ② 原绑 ICONS_COMMON.CLOSE（×号）与「签到后解锁」语义不符 ⇒ 改 ICONS_COMMON.LOCK_SVG。 -->
-        <SafeImage
-          :src="IMAGE_PATHS.ICONS_COMMON.LOCK_SVG"
-          root-class="lock-card__icon-root"
-          custom-class="lock-card__icon"
+             ② 原绑 ICONS_COMMON.CLOSE（×号）与「签到后解锁」语义不符 ⇒ 改 ICONS_COMMON.LOCK_SVG。
+        -->
+        <!-- R7-L07-D03/D04（素材缺失 P2·R6 已批未落地）：上面 ① 的 root-class 方案在屏幕上没落地，
+             根因不在素材本体，而在 SafeImage 容器：
+             · .lock-card 是 flex 列 + auto 高，组件根 .safe-image{width:100%;height:100%} 的高度退化为 0；
+             · R6 传的 root-class="lock-card__icon-root" / custom-class="lock-card__icon" 都是**本页 scoped 类**，
+               mp-weixin 下子组件内部节点不带本页 data-v 散列 ⇒ 这两条 80rpx 声明一条也匹配不上，盒子仍是 0×0。
+             同仓同源素材 common/lock.svg 用「页内裸 image + 显式 80rpx」在 real 档渲染正常
+             （LockScreen.vue:196-201，R7 real 帧 heart-signals top 绿环内那枚锁形就是它，实测有墨迹），
+             证明该 SVG 可光栅化、缺的只是宿主侧显式盒尺寸 ⇒ 改回与 LockScreen 同口径的裸 image。
+             素材不变（仓内既有 common/lock.svg），未新增/下载/生成任何图片。 -->
+        <image
+          class="lock-card__icon"
+          :src="lockIconSrc"
           mode="aspectFit"
           :alt="t('dailyQuestion.lockTitle')"
         />
@@ -434,15 +449,10 @@ function onAnswersScrollLower(): void {
   border: var(--c-border-card);
 }
 
-/* R6-L08-D14：SafeImage 根容器（.safe-image 默认 100%/100%）必须由宿主给出显式尺寸，
-   否则在 auto 高的 flex 父级里退化成 0×0 —— 这就是图标整块不渲染的那一半根因 */
-.lock-card__icon-root {
-  width: 80rpx;
-  height: 80rpx;
-  flex-shrink: 0;
-}
-
+/* R7-L07-D03/D04：R6 的 SafeImage 根容器尺寸出口（.lock-card__icon-root）在 mp-weixin 下
+   选择器匹配不到子组件内部节点，随该方案一并移除，避免留下无消费者的孤儿类。 */
 .lock-card__icon {
+  /* 显式 80rpx 盒尺寸直接落在本页裸 image 上（对齐 LockScreen .illustration__lock 口径） */
   width: 80rpx;
   height: 80rpx;
   margin-bottom: var(--sp-3);

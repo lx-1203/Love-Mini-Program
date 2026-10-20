@@ -168,8 +168,20 @@ onLoad(() => {
 <template>
   <view class="location-page" :style="menuStyleVars">
     <view class="location-header">
+      <!-- R7-L10-D09（可达性 P3，R6-B57/D09 已批未落地）与 R7-L10-D10（可达性 P3，
+           R6-B57/D10 同批已批未落地）一起按 album.vue R6-B55/D17 的已验证配方重做：
+           ① 热区 64rpx→88rpx（AppShell.vue:334 仓内口径；本页 navigationStyle:custom，
+              这枚是唯一返回出口），64rpx 视觉圆底移进 __back-circle，尺寸不动；
+           ② 图标从 ICONS_COMMON.BACK 换成页内文字字形——那张 png 是 common/back.svg 的
+              栅格化（stroke #94A3B8 蓝灰，24  viewBox 里折线只占 x9..15 / y6..18，留白过大），
+              压白色页头实测字形 (183,193,207)~(215,221,229)、对比度≈1.6:1、可见带高≈8px；
+              仓内 real 包 icons/common 目录逐枚核过 stroke 色值，没有深色返回素材可换，
+              故按同域 other.vue:378 / privacy.vue:73 已用的「‹ 字形 + --c-text-primary」
+              范式落地：52rpx 深色字形 + 薄荷底描边圆钮，对比度与可点示能同时解决。 -->
       <view class="location-header__back press-feedback" hover-class="press-feedback--active" role="button" :aria-label="t('common.backAria')" @tap="goBack">
-        <image class="location-header__back-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.BACK)" mode="aspectFit" alt="" />
+        <view class="location-header__back-circle">
+          <text class="location-header__back-glyph">‹</text>
+        </view>
       </view>
       <text class="location-header__title">我的位置</text>
       <view class="location-header__placeholder" />
@@ -204,25 +216,36 @@ onLoad(() => {
       <!-- 2026-09-03 项5：真实地图（位置信息下方、按钮上方）。原生 map 组件 = 腾讯地图底座（合规）；
            未授权定位时展示默认中心 + 引导选点；H5 端降级为提示占位 -->
       <view class="location-map">
-        <!-- #ifdef MP-WEIXIN -->
-        <map
-          class="location-map__canvas"
-          :latitude="mapCenter.latitude"
-          :longitude="mapCenter.longitude"
-          :markers="mapMarkers"
-          :scale="15"
-          :enable-scroll="true"
-          :enable-zoom="true"
-          :show-compass="false"
-        />
-        <!-- #endif -->
-        <!-- #ifndef MP-WEIXIN -->
-        <view class="location-map__canvas location-map__canvas--h5">
-          <text class="location-map__h5-text">地图仅在小程序端展示</text>
+        <!-- R7-L10-D08（圆角 P3）：原生 map 层不吃父容器/自身的 border-radius+overflow，
+             帧实测左上角 x=20/y=263 直接是地图红色像素 (217,69,70)、角部无 12px 缺角。
+             圆角改由一层真实 view 卡片 __frame 承担：它自带背景 + 24rpx 圆角（普通 view，
+             圆角确实渲染），12rpx 内衬把方形地图让开角部弧线（r=24rpx 时几何下限≈7rpx），
+             地图四角落在卡片内，不再与上方 32rpx 圆角白卡视觉断裂。 -->
+        <view class="location-map__frame">
+          <!-- #ifdef MP-WEIXIN -->
+          <map
+            class="location-map__canvas"
+            :latitude="mapCenter.latitude"
+            :longitude="mapCenter.longitude"
+            :markers="mapMarkers"
+            :scale="15"
+            :enable-scroll="true"
+            :enable-zoom="true"
+            :show-compass="false"
+          />
+          <!-- #endif -->
+          <!-- #ifndef MP-WEIXIN -->
+          <view class="location-map__canvas location-map__canvas--h5">
+            <text class="location-map__h5-text">地图仅在小程序端展示</text>
+          </view>
+          <!-- #endif -->
         </view>
-        <!-- #endif -->
         <view class="location-map__tip-row">
-          <text class="location-map__tip">轻点下方按钮，在地图上选择新位置</text>
+          <!-- R7-L10-D07（文案 P3）：原「轻点下方按钮」方位指错——唯一打开选点器的
+               「地图选点」钮与提示文字同行、在文字右侧（帧实测 y=483..527 / x=294..356），
+               文字下方那枚是「重新定位」（GPS 重定位，不是地图选点）。按建议改法第一条
+               把方位词与实际可点对象对齐。 -->
+          <text class="location-map__tip">轻点右侧「地图选点」，在地图上选择新位置</text>
           <view class="location-map__pick press-feedback" hover-class="press-feedback--active" role="button" aria-label="在地图上选点" @tap="pickFromMap">
             <text class="location-map__pick-text">地图选点</text>
           </view>
@@ -258,17 +281,40 @@ onLoad(() => {
   border-bottom: 1rpx solid var(--c-line, #EEF2F0);
 }
 
+/* R7-L10-D09（可达性 P3）：热区 64rpx→88rpx（AppShell.vue:334 口径，本页唯一返回出口）；
+   64rpx 视觉圆底移入 __back-circle —— album.vue:607-627 同款配方。 */
 .location-header__back {
-  width: 64rpx;
-  height: 64rpx;
+  width: 88rpx;
+  height: 88rpx;
+  box-sizing: border-box;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.location-header__back-icon {
-  width: 40rpx;
-  height: 40rpx;
+.location-header__back-circle {
+  width: 64rpx;
+  height: 64rpx;
+  box-sizing: border-box;
+  border-radius: var(--r-full, 9999rpx);
+  /* 页头本身是白底，圆底取页面薄荷档 + 卡片描边，才能在白头上读成"可点圆钮" */
+  background: var(--c-bg-page, #EEF7F2);
+  border: var(--c-border-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* R7-L10-D10（可达性 P3）：原 40rpx 蓝灰 PNG 字形（素材留白过大，实测可见带高≈8px、
+   对比度≈1.6:1）换成 52rpx 深色 ‹ 字形压白/薄荷底。52rpx 高于字号档位上限 --fs-5xl=44rpx，
+   按同域 other.vue:515 `.other-header__back-arrow`（同一枚 ‹、同样 52rpx）的既有口径保留为
+   固定布局尺寸，不写 var(--fs-5xl, 52rpx) 那种永不生效的假兜底。 */
+.location-header__back-glyph {
+  font-size: 52rpx;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--c-text-primary);
 }
 
 /* R6-B57/D10（字号 P2，2026-10-20）：页头标题原裸写 font-size: 36rpx——36rpx 是 --fs-3xl 的
@@ -282,8 +328,10 @@ onLoad(() => {
 }
 
 .location-header__placeholder {
-  width: 64rpx;
-  height: 64rpx;
+  /* R7-L10-D09 同批：与 88rpx 返回热区同宽，保证 space-between 下标题仍居中 */
+  width: 88rpx;
+  height: 88rpx;
+  flex-shrink: 0;
 }
 
 .location-body {
@@ -400,11 +448,23 @@ onLoad(() => {
   gap: 12rpx;
 }
 
+/* R7-L10-D08：真正承担圆角的一层（普通 view，border-radius 会渲染） */
+.location-map__frame {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12rpx;
+  border-radius: 24rpx;
+  background: var(--c-bg-container, #ffffff);
+  border: var(--c-border-card);
+  overflow: hidden;
+}
+
 .location-map__canvas {
   width: 100%;
   height: 440rpx;
-  border-radius: 24rpx;
-  overflow: hidden;
+  /* R7-L10-D08：这两条原样挂在这里是死声明——原生 map 层不被自身/父级 border-radius +
+     overflow 裁剪（帧实测角部仍是地图像素），圆角已由外层 .location-map__frame 承担，
+     地图作为方形内衬图落在卡片里，声明与实渲一致。 */
   background: var(--c-bg-page, #E8EEF2);
 }
 

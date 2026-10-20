@@ -59,7 +59,16 @@ const helloLabel = computed(() => (props.matched ? "发消息" : "打招呼"));
         hover-class="relationship-cta__btn--pressed"
         @tap="emit('follow')"
       >
-        <image class="relationship-cta__star" :src="IMAGE_PATHS.ICONS_EMOJI.STAR" mode="aspectFit" alt="" />
+        <!-- R7-L10-D06（颜色 token P3 · 【R6 已批过，未落地】）：原来这枚星标是
+             <image src="ICONS_EMOJI.STAR">（assets/svg-spec/03-icons/star.svg）。
+             mp 的 <image> 载独立 SVG 时 CSS color 传不进去（同 R6/F1 对 33 枚 SVG 的结论），
+             包内那份 SVG 的描边按 currentColor 解析成默认黑 ⇒ 帧上实测星标像素 (81,81,81)/(88,88,88) 深灰，
+             而下方「关注」文字是品牌绿，同一枚钮两种色，且理想图（他人显示主页.png 底栏第三枚，
+             理想 x≈820 实测 (33,184,127)）是绿星标。
+             本车道不许改素材，故把描线星改成仓内既有范式「文字字形 + 令牌色」（同
+             matching.vue 的 ‹ 、other.vue 顶栏的 ···）：☆ 与理想图同为空心五角描线星，
+             color 直接吃 --c-brand，染色这一步不再依赖 <image>。 -->
+        <text class="relationship-cta__star" aria-hidden="true">☆</text>
         <text class="relationship-cta__text relationship-cta__text--follow">{{ followLabel }}</text>
       </view>
     </view>
@@ -148,8 +157,10 @@ const helloLabel = computed(() => (props.matched ? "发消息" : "打招呼"));
 }
 
 .relationship-cta__star {
-  width: 30rpx;
-  height: 30rpx;
+  /* R7-L10-D06：由 <image>（30rpx 见框）改为文字字形，尺寸改由字号锁定；
+     品牌绿仍走 --c-brand 令牌，与下方 .relationship-cta__text--follow 同色同档。 */
+  font-size: 32rpx;
+  line-height: 1;
   color: var(--c-brand, #36C99A);
 }
 

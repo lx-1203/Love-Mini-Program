@@ -97,7 +97,14 @@ function handleAction() {
     :aria-label="titleText"
   >
     <XunmiMascot v-if="mascot" :mood="mascot" size="lg" animated />
-    <image v-else class="empty-icon" :src="iconSrc" mode="aspectFit" alt="" />
+    <image
+      v-else
+      class="empty-icon"
+      :class="{ 'empty-icon--preset': !props.image }"
+      :src="iconSrc"
+      mode="aspectFit"
+      alt=""
+    />
     <text class="empty-msg">{{ titleText }}</text>
     <text v-if="descriptionText" class="empty-sub">{{ descriptionText }}</text>
     <view
@@ -140,6 +147,20 @@ function handleAction() {
   width: 120rpx;
   height: 120rpx;
   margin-bottom: var(--sp-4);
+}
+
+/* R7-L13-D03（颜色 token P3 · 【R6 已批过，未落地】）：
+   预设图标三枚（common/search.png、close.png、notification.png）素材本体自带私有色值
+   #94A3B8（蓝灰，实测帧上 120rpx 图标渲染为 #91A0B6 最暗值），§1.2 全量色板无该档 ⇒
+   在白卡上发蓝发飘，与同空态标题 --c-text-tertiary #6B7571 不同系。
+   R6 那一轮把改动落在 static/assets/icons/common/search.**svg** 上，而 ICONS_COMMON.SEARCH
+   这个键（config/images.ts:415）指过去的是 **.png**，运行时加载的从来不是那份 SVG ⇒
+   帧上零差别。素材是位图、本车道不许改图，故按缺陷卡给的第二条口径在 image 上加 filter
+   统一色相：grayscale(1) 抹掉蓝偏后按 #94A3B8→#6B7571 的亮度比压暗（107..117 / 161 ≈ 0.70），
+   落点即三级文本色档。只对「走预设图标映射」的分支生效（:class 上的 --preset），
+   业务侧显式传 image 的彩色插画不染色。 */
+.empty-icon--preset {
+  filter: grayscale(1) brightness(0.7);
 }
 .empty-msg {
   font-size: var(--fs-lg);

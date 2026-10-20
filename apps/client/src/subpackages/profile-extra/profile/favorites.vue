@@ -29,9 +29,16 @@
          ICONS_COMMON.STAR（dist 实测 static/assets/icons/common/star.png 在包），
          动作文案复用既有键 village.history.backToVillage（"去广场逛逛"），跳村口列表页。
          未新增 locale、未造素材路径。 -->
+    <!-- R7-L10-D16（颜色token P3，2026-10-21）：空态主视觉落外来色——原 ICONS_COMMON.STAR
+         是 /static/assets/icons/common/star.png，由 common/star.svg 栅格化而来，描边写死
+         #94A3B8（= 帧实测字形像素 (148,162,184) 蓝灰档），与本页薄荷绿底 + 白卡 + 品牌绿
+         按钮（同帧实测 (54,201,154)）不同色系。换成仓内既有、已登记、且真在 real 包内的
+         品牌绿星标：ICONS_EMOJI.STAR = assets/svg-spec/03-icons/star.svg（描边 #36C99A，
+         即 --c-brand 真值；dist/build/mp-weixin-real/static/assets/svg-spec/03-icons/star.svg
+         实存，且 svg-spec 属 localPrefixes 恒走包内路径，不会 404）。未新增素材、未改组件。 -->
     <EmptyState
       v-else-if="favorites.length === 0"
-      :image="IMAGE_PATHS.ICONS_COMMON.STAR"
+      :image="IMAGE_PATHS.ICONS_EMOJI.STAR"
       :title="t('profile.favoritesEmpty')"
       :description="t('profile.favoritesEmptyDesc')"
       :action-text="t('village.history.backToVillage')"
@@ -135,6 +142,16 @@ onShow(() => {
   min-height: 100vh;
   background: var(--c-bg-page, #EEF7F2);
   padding: 0 var(--sp-6, 24rpx);
+  /* R7-L10-D17（位置 P2，2026-10-21）：空态内容块偏上——帧实测星标 y=140..200、按钮底
+     y=296，内容中心 y≈218 比视口中心 407 高约 190px，y=300..800 整屏空白。
+     EmptyState 组件侧的 `flex:1 0 auto + justify-content:center`（EmptyState.vue:119-135，
+     R6-L05-D02 那一半已落地，注释里点名"另一半在宿主：父级必须给可解析高度"）一直缺宿主这一半：
+     本页根节点是普通块级流，flex 属性无从生效 ⇒ 补 flex 列 + 已有的 min-height:100vh 作为
+     可解析高度，空态即落在可用区垂直居中；顺带让 .favorites-list 的 flex:1 真正生效。
+     R6 那轮"已批未落地"的原因就是只改了组件、没改宿主页面。 */
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 .favorites-header {

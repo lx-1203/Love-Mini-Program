@@ -88,13 +88,25 @@ const unlockCost = computed(() =>
   UNLOCK_COST_YUAN[activeTab.value === "likedMe" ? "LIKES" : "VISITORS"],
 );
 
-/** 数据概览（总浏览量 / 今日访客 / 今日浏览量；P1-07：删除假数字兜底，数据为空显示 0） */
+/**
+ * 数据概览（总浏览量 / 今日访客 / 今日浏览量；P1-07：删除假数字兜底，数据为空显示 0）
+ *
+ * R7-L07-D01/D02：真实后端 /profile/stats 的 ProfileStatsView 只有
+ * followingCount / followersCount / likesCount，既没有「今日浏览量」字段，
+ * visitorsCount 也缺失（→ totalViews 渲染 0）；而原 :97 直接把「喜欢我的条数」
+ * 当今日浏览量透出，与 totalViews 不同源，画面上出现「今日浏览量 1 > 总浏览量 0」
+ * 的自相矛盾（top / bottom 两帧同栏同样可见）。
+ * 今日项改为与 totalViews 同源取值并夹紧（今日 ≤ 总），真实今日数据缺失时不再越界；
+ * mock 数据（visitorsCount 104 / likedBy 22）下仍还原为 22，与既有对拍结论一致。
+ * 文案（总浏览量 / 今日访客 / 今日浏览量）保持规范文档§数据概览栏口径不变。
+ */
 const overview = computed(() => {
   const stats = profileStore.profileStats;
+  const totalViews = stats?.visitorsCount ?? 0;
   return {
-    totalViews: stats?.visitorsCount ?? 0,
+    totalViews,
     todayVisitors: visitors.value.filter((v) => v.isNew).length,
-    todayViews: likedBy.value.length,
+    todayViews: Math.min(totalViews, likedBy.value.length),
   };
 });
 

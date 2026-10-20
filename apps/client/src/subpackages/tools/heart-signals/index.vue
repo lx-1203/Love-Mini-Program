@@ -47,6 +47,32 @@ const completionPercent = computed(() => {
 });
 
 /**
+ * R7-L08-D05（文案 P2·R6 已批未落地）：LockScreen.vue:47-51 的 titleOverride / subtitleOverride /
+ * benefitsOverride 三个「按页覆盖」出口由 R6-L09-D27 建好，但全仓零消费点，本页锁定态吃的仍是通稿
+ * 「完善资料，解锁完整交友功能」⇒ R7 real 帧整页 14 条墨迹带里 0 处出现页名「心动信号」，
+ * 锁定态与页面语义脱节。这里把机制接上，三句全部由**既有 i18n 键**组装（不造新串、不动 i18n/**）：
+ * · 主标题：lock.titleLoggedIn / lock.titleLoggedOut 共用的尾串「完整交友功能」换成 heartSignals.pageName
+ *   （登录态分支与 LockScreen.vue:59-61 内部判定同口径；尾串不命中时 replace 自然回落通稿，
+ *    非中文档不会出现半截拼接痕迹）；
+ * · 副标题：lock.unlockHintModal 的 {name} 插值 heartSignals.pageName；
+ * · 权益清单：本页语义三条（精准匹配 → 双向心动 → 私信聊天），逐条取既有键。
+ */
+const lockTitle = computed(() =>
+  t(sessionStore.isLoggedIn ? "lock.titleLoggedIn" : "lock.titleLoggedOut").replace(
+    "完整交友功能",
+    t("heartSignals.pageName"),
+  ),
+);
+const lockSubtitle = computed(() =>
+  t("lock.unlockHintModal", { name: t("heartSignals.pageName") }),
+);
+const lockBenefits = computed(() => [
+  t("lock.benefitMatch"),
+  t("heartSignals.navSubtitle"),
+  t("lock.benefitChat"),
+]);
+
+/**
  * R4-00024：按状态分组（对齐契约 likes.yaml status enum=[pending,accepted,declined]）。
  * - 原分组 [pending,accepted,expired]：expired 契约中不存在（后端按契约返回时恒空），
  *   declined 信号无任何展示分支被静默丢弃；
@@ -216,9 +242,13 @@ function countdownWidth(signal: { expiresAt: string; createdAt?: string }): numb
 <template>
   <view class="heart-signals-page" :style="menuStyleVars">
     <!-- 未完善资料：锁定页 -->
+    <!-- R7-L08-D05：接上 LockScreen 的按页覆盖口（见脚本 lockTitle/lockSubtitle/lockBenefits） -->
     <LockScreen
       v-if="!isUnlocked"
       :completion-percent="completionPercent"
+      :title-override="lockTitle"
+      :subtitle-override="lockSubtitle"
+      :benefits-override="lockBenefits"
     />
 
     <template v-else>

@@ -307,23 +307,30 @@ onShareAppMessage(() => {
       <view class="body-footer" />
     </scroll-view>
 
-    <!-- 加载失败错误态（review #18：与"话题不存在"区分，提供重试） -->
-    <EmptyState
-      v-else-if="!loading && errorMessage"
-      type="network"
-      :title="errorMessage || t('storeErrors.campus.loadTopicDetailFailed')"
-      :action-text="t('common.retry')"
-      @action="retryLoad"
-    />
+    <!-- 加载失败错误态（review #18：与"话题不存在"区分，提供重试）
+         R7-L05-D05：两条页面级 EmptyState 各套一个 .empty-state 宿主 view——
+         mp-weixin 下 <EmptyState> 编译成自定义组件节点，页面样式打不进它的根，
+         组件自带的 flex:1 只在「父级是 flex 且有可解析高度」时才生效 ⇒ R6 只修了组件半边。
+         宿主 view 是本页真实节点，flex:1 + justify-content:center 直接把空态块推到可用区居中。 -->
+    <view v-else-if="!loading && errorMessage" class="empty-state">
+      <EmptyState
+        type="network"
+        :title="errorMessage || t('storeErrors.campus.loadTopicDetailFailed')"
+        :action-text="t('common.retry')"
+        @action="retryLoad"
+      />
+    </view>
 
     <!-- 话题不存在 -->
-    <EmptyState
-      v-else-if="!loading"
-      :title="t('campus.topicDetail.notExistText')"
-      :action-text="t('campus.topicDetail.backText')"
-      type="no-data"
-      @action="goBack"
-    />
+    <view v-else-if="!loading" class="empty-state">
+      <EmptyState
+        :title="t('campus.topicDetail.notExistText')"
+        :hide-sub="true"
+        :action-text="t('campus.topicDetail.backText')"
+        type="no-data"
+        @action="goBack"
+      />
+    </view>
 
     <!-- 底部回复栏 -->
     <view v-if="currentTopic" class="detail-footer">
@@ -710,8 +717,19 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 /* ========== 空状态 ========== */
+/* R7-L05-D05（位置 P2）：这条从写下那天起就是死样式——模板里没有 .empty-state 节点，
+   空态走的是 <EmptyState> 组件（其根类名是 .empty），所以 R6 给组件补的 flex:1 落地后
+   页面这一半仍没接上：宿主自定义组件节点拿不到可解析高度 ⇒ 空态块贴顶，
+   实测 top 帧内容只占到 y≈300/814（≈30%），其下整片空白。
+   现在模板真的有了这个宿主节点（:315/:325 两条 v-else-if 分支），本条转为活样式，
+   并按本页定高列里 .detail-body(:440 flex:1) 的既有取高方式补 min-height:0——定高 flex 列里子项默认 min-height:auto
+   会拿不到有界高度。 */
 .empty-state {
-  flex: 1;
+  /* basis 取 auto 而非 0%：万一宿主 page 的 height:100% 在某档不解析（容器塌成内容高），
+     0% basis + min-height:0 会让空态整块塌成 0 高——那是拿一条缺陷换另一条。
+     auto basis 下有界容器照样被 grow 撑满并居中，无界容器最差退化为改前形态。 */
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;

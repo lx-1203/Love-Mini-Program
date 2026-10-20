@@ -728,7 +728,13 @@ onShow(() => {
   padding: 60rpx var(--sp-5);
   border-radius: var(--r-lg);
   border: 2rpx dashed var(--c-border-default);
-  background: #ffffff; /* R16：纯白背景 */
+  /* R7-L05-D09（颜色token P3）：R6-L06-D13 只收了 .cert-page/.form-input 两处私有纯白，
+     这两处漏收——白卡（.form-section = --c-bg-container #FFFFFF）内再叠一层裸 #ffffff，
+     实测帧 x=189/y=575-680 上传框与卡片同色，只剩一圈虚线，深色模式下也不会反色。
+     取本页输入角色同一来源 --c-bg-surface（浅档 #F3FAF6 / 深档 #222831）：
+     刻意不取 --c-neutral-0/--c-bg-container——那两个令牌浅档逐字等于 #FFFFFF，
+     换过去画面一个像素都不会动（硬规矩 4 FIXNOTVISIBLE），且「白卡里再铺一层白」的层次问题原样保留。 */
+  background: var(--c-bg-surface, #F3FAF6);
 }
 
 /* #ifdef H5 */
@@ -759,7 +765,10 @@ onShow(() => {
 .upload-preview {
   border-radius: var(--r-lg);
   overflow: hidden;
-  background: #ffffff; /* R16：纯白背景 */
+  /* R7-L05-D09：同 .upload-area 的漏收项（原 background:#ffffff「R16：纯白背景」）。
+     预览态 = 320rpx 图 + 下方操作条，操作条此前直接铺裸白；收回 --c-bg-surface
+     与本页其余底色同源，深色模式随令牌反色（深档 #222831）。 */
+  background: var(--c-bg-surface, #F3FAF6);
 }
 
 .upload-preview__img {

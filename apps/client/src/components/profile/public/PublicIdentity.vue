@@ -8,8 +8,9 @@ const props = defineProps<{ profile: UserProfileDTO; online?: boolean }>();
 const emit = defineEmits<{
   (e: "like"): void;
   (e: "message"): void;
-  /** R2b-L06-D22：底栏恢复理想图的 3 枚布局后，「送心动卡」入口降级到身份卡右侧
-   *  （D14 的胶囊组下方）。上游 other.vue 的 @whisper → WhisperComposeSheet 链路不变。 */
+  /** R2b-L06-D22：底栏恢复理想图的 3 枚布局后，「送心动卡」入口降级到身份卡。
+   *  R7-L10-D04：身份卡右侧按理想图只留两枚胶囊，该入口再收进「打招呼」长按，
+   *  上游 other.vue 的 @whisper → WhisperComposeSheet 链路不变。 */
   (e: "whisper"): void;
 }>();
 
@@ -58,14 +59,20 @@ const genderIconSrc = computed(() => {
           <image class="public-identity__pill-icon" :src="IMAGE_PATHS.ICONS_V2.HEART_PINK" mode="aspectFit" alt="" />
           <text class="public-identity__pill-text public-identity__pill-text--like">喜欢</text>
         </view>
-        <view class="public-identity__pill public-identity__pill--hello" hover-class="public-identity__pill--pressed" @tap="emit('message')">
+        <view
+          class="public-identity__pill public-identity__pill--hello"
+          hover-class="public-identity__pill--pressed"
+          @tap="emit('message')"
+          @longpress="emit('whisper')"
+        >
           <image class="public-identity__pill-icon" :src="IMAGE_PATHS.ICONS_V2.CHAT_GREEN" mode="aspectFit" alt="" />
           <text class="public-identity__pill-text public-identity__pill-text--hello">打招呼</text>
         </view>
-        <!-- R2b-L06-D22：底栏的「心动卡」按理想图撤出后，入口降级为身份卡内的次级文字链 -->
-        <view class="public-identity__whisper" hover-class="public-identity__whisper--pressed" @tap="emit('whisper')">
-          <text class="public-identity__whisper-text">送心动卡</text>
-        </view>
+        <!-- R7-L10-D04（文案 P3）：理想图（素材/理想效果图/他人显示主页.png）身份卡右侧
+             只有浅粉「喜欢」+ 浅绿「打招呼」上下两枚胶囊，规范 §3.9 同口径；实帧多出第三行
+             「送心动卡」下划线文字链，把两枚的动作区切成三段。按缺陷卡建议把该入口并进
+             「打招呼」长按（emit('whisper') 链路不变，other.vue → WhisperComposeSheet 照旧），
+             身份卡回到理想图的两枚胶囊。 -->
       </view>
     </view>
     <!-- R2b-L06-D13：理想图姓名下方两行（「21岁 · 北京大学 · 北京」/「2.3km」）。
@@ -231,19 +238,8 @@ const genderIconSrc = computed(() => {
   color: var(--c-brand, #36C99A);
 }
 
-.public-identity__whisper {
-  padding: 4rpx 12rpx;
-}
-
-.public-identity__whisper--pressed {
-  opacity: 0.6;
-}
-
-.public-identity__whisper-text {
-  font-size: var(--fs-xs, 20rpx);
-  color: var(--c-text-tertiary, #6B7571);
-  text-decoration: underline;
-}
+/* R7-L10-D04：.public-identity__whisper / --whisper--pressed / --whisper-text 三条规则
+   随「送心动卡」文字链一并删除（入口已并入打招呼长按），不留无节点可选的死选择器。 */
 
 /* 基本信息行：13px 文字，· 分隔 */
 .public-identity__meta-row {

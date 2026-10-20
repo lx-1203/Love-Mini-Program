@@ -65,6 +65,16 @@ const showPhoneLogin = ref(false);
  */
 const showDevUserEntry = computed(() => isDev || isMockMode());
 
+/**
+ * R7-L01-D01：微信端「验证码或密码登录」文字兜底入口的可见性。
+ * 它服务的是 DevTools/自动化下 open-type=getPhoneNumber 回调不触发的死点（MP-R1-PAGES-LOGIN-INDEX-201），
+ * 素材/理想效果图/登录页面.png 按钮区只有「微信一键登录 / 手机号登录 / 稍后再看」三档 + 协议行，
+ * 第四档位置为空 ⇒ 真实档（isDev=false 且 apiMode≠mock）取景帧上这一整行必须缺席，
+ * 否则既多出设计稿外的文字（D01），又用它的 margin-top/padding/min-height 撑坏按钮列节奏（D02）。
+ * 判据与 showDevUserEntry 同口径：dev / mock 档保留（表单链路仍可达），real 档不出图。
+ */
+const showPhoneLoginFallback = computed(() => isDev || isMockMode());
+
 /** 登录成功跳转定时器引用，用于卸载时清理 */
 let loginNavTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -636,6 +646,7 @@ function openPrivacyPolicy() {
                DevTools/自动化下 open-type=getPhoneNumber 回调不触发（测试环境死点），
                且快捷授权被拒/失败才自动展开表单；文字入口保证表单链路任何环境可达。 -->
           <view
+            v-if="showPhoneLoginFallback"
             class="login-sms-fallback press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="40"
@@ -773,13 +784,19 @@ function openPrivacyPolicy() {
             </view>
           </view>
         </view>
-      <view class="terms-wrap">
+      <!-- R7-L01-D03：勾选热区从 34rpx 圆点提到整行。未勾选时所有登录入口都被 agreeFirst
+           守卫拦截（:229 等 5 处），原先全行唯一可点区只有那枚圆点，远低于微信
+           《小程序体验设计规范》/ WCAG 2.5.5 的 88rpx 最小热区口径 ⇒ 卡住主流程。
+           整行补 @tap（圆点自身 .stop 防双触发，两个协议链接补 .stop 防误勾选）；
+           checkbox 语义（role/aria-checked/aria-label）仍留在圆点上，行只作热区，
+           避免同一控件出现两个 checkbox 节点。 -->
+      <view class="terms-wrap" @tap="onAgreeTap">
         <view
           class="checkbox press-feedback"
           :class="{ 'checkbox--checked': agreed }"
           hover-class="press-feedback--active"
           hover-stay-time="40"
-          @tap="onAgreeTap"
+          @tap.stop="onAgreeTap"
           role="checkbox"
           :aria-checked="agreed ? 'true' : 'false'"
           :aria-label="t('login.agreedPrefix')"
@@ -788,9 +805,9 @@ function openPrivacyPolicy() {
         </view>
         <view class="terms-text-wrap">
           <text class="terms-text">{{ t('login.agreedPrefix') }}</text>
-          <text class="terms-link" @tap="openUserAgreement" role="link" :aria-label="t('login.userAgreementLink')">{{ t('login.userAgreementLink') }}</text>
+          <text class="terms-link" @tap.stop="openUserAgreement" role="link" :aria-label="t('login.userAgreementLink')">{{ t('login.userAgreementLink') }}</text>
           <text class="terms-text">{{ t('login.and') }}</text>
-          <text class="terms-link" @tap="openPrivacyPolicy" role="link" :aria-label="t('login.privacyPolicyLink')">{{ t('login.privacyPolicyLink') }}</text>
+          <text class="terms-link" @tap.stop="openPrivacyPolicy" role="link" :aria-label="t('login.privacyPolicyLink')">{{ t('login.privacyPolicyLink') }}</text>
         </view>
       </view>
 
@@ -1110,14 +1127,18 @@ function openPrivacyPolicy() {
   letter-spacing: 2rpx;
 }
 
-/* MP-R1-PAGES-LOGIN-INDEX-201：微信端「手机号登录」低调文字兜底入口 */
+/* MP-R1-PAGES-LOGIN-INDEX-201：微信端「手机号登录」低调文字兜底入口
+   R7-L01-D02：原 margin-top:var(--sp-3) + padding:var(--sp-2)0 + min-height:64rpx 三股
+   垂直盒叠加，实测在「手机号快捷登录」与「稍后再看」之间撑出 89rpx（同列 --sp-4 节奏的 5 倍），
+   把「稍后再看」整档压沉。本行只作文字入口，纵向间距一律交给 .login-quick 的 gap:var(--sp-4)
+   单点决定，自身不再贡献任何垂直外边距/内边距/最小高。 */
 .login-sms-fallback {
-  margin-top: var(--sp-3, 24rpx);
+  margin-top: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--sp-2, 16rpx) 0;
-  min-height: 64rpx;
+  padding: 0;
+  min-height: 0;
 }
 
 .login-sms-fallback-text {
@@ -1273,6 +1294,9 @@ function openPrivacyPolicy() {
   /* 2026-08-14：登录协议行同时服务微信快捷登录与手机号登录，置底与按钮区拉开间距 */
   margin-top: var(--sp-5, 20rpx);
   padding: 0 var(--sp-8);
+  /* R7-L01-D03：本行现为勾选热区，纵向净高抬到 88rpx 最小可点件口径
+     （原行高仅约 34rpx 圆点高，整行可点区不足口径一半）。视觉件尺寸未变。 */
+  min-height: 88rpx;
   width: 100%;
 }
 

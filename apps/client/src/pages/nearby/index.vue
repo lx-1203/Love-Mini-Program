@@ -611,7 +611,17 @@ function formatMemberCount(count: number): string {
           @tap="goActivityDetail(String(activity.id))"
         >
           <view class="activity-entry__icon-wrap">
-            <image class="activity-entry__icon" :src="IMAGE_PATHS.ICONS_EMOJI.FIRE" mode="aspectFit" alt="" />
+            <!-- R7-L02-D03【R6 已批过、帧上未落地】：原取 ICONS_EMOJI.FIRE，该键在
+                 config/images.ts:720 由 ICONS_BASE 拼成 `/static/assets/icons/fire.svg`（icons **根目录**）。
+                 根目录既不在 cdn-buckets.json 的 cdnPrefixes 也不在 localPrefixes，且 R6/F7 的
+                 pkg/tail 双登记（images.ts:204-209）只补了 gift/chat/group/search/heart/location 六枚，
+                 fire.svg 正是同注释点名的「其余 8 枚同型待接」之一 ⇒ 盘上 src/static 有、产物
+                 dist/build/mp-weixin-real/static/assets/icons/ 实测只剩 chat/gift/group/heart/location/search.svg
+                 + common/register/tabbar 三个子目录，根级 fire.svg 不存在 → <image> 404，
+                 三行 72rpx 杏色底板全空。改指同图形的已出包件 NEARBY_ICONS.DYNAMIC
+                 （= `/static/assets/icons/common/fire.svg`，localPrefixes 命中，产物实测在包，
+                 real 档与 mock 档求值逐字相同），两档都出图。 -->
+            <image class="activity-entry__icon" :src="IMAGE_PATHS.NEARBY_ICONS.DYNAMIC" mode="aspectFit" alt="" />
           </view>
           <view class="activity-entry__body">
             <text class="activity-entry__title">{{ activity.title }}</text>
@@ -708,11 +718,16 @@ function formatMemberCount(count: number): string {
      共用类 .page-bottom-safe（App.vue 给 112rpx+安全区），导致固定 TabBar 永久压住末屏
      内容（第 3 张活动卡下缘 + 分区⑤「附近动态」整块不可见）。拆成 top/left/right，
      底部单独避让，口径同 messages/index.vue:671（读 --tabbar-height + 呼吸位）。
-     仅改本页规则，未触碰共用类 .page-bottom-safe（其归属另一泳道）。 */
+     仅改本页规则，未触碰共用类 .page-bottom-safe（其归属另一泳道）。
+     R7-L02-D05：避让口径由 --tabbar-height（App.vue:751 = 112rpx + 单 env）改读单一来源
+     避让令牌 --tab-bar-total-h（theme/design-variables.scss:491 = 184rpx + 双 env，源头是
+     custom-tab-bar/index.wxss:17-19 的 height:160rpx+env 配 content-box padding-bottom:env+24rpx）。
+     原口径比真实 tabBar 实占少让 72rpx + 一个安全区 ⇒ 底部帧分区⑤首张帖卡被固定条压到只剩
+     一条上缘、滚到底也抬不出来。+24rpx 呼吸位保留，写法同 discover/index.vue:406。 */
   padding-top: 24rpx;
   padding-left: 32rpx;
   padding-right: 32rpx;
-  padding-bottom: calc(var(--tabbar-height, 112rpx + env(safe-area-inset-bottom)) + 24rpx);
+  padding-bottom: calc(var(--tab-bar-total-h, 184rpx + env(safe-area-inset-bottom) + env(safe-area-inset-bottom)) + 24rpx);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -775,13 +790,15 @@ function formatMemberCount(count: number): string {
   height: 24rpx;
 }
 
-/* 放大镜按钮：mp 端点击热区 ≥ 80rpx（图标本身 44rpx） */
+/* 放大镜按钮：R7-L02-D02 热区由 80rpx 抬到全站 88rpx 最小可点件口径
+   （同行「发动态」胶囊与五宫格底板 :1257 均为 88rpx，本枚是页头唯一低于口径的可点件）。
+   44rpx 字形尺寸不动，只放大热区。 */
 .nearby-home__search-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 80rpx;
-  height: 80rpx;
+  width: 88rpx;
+  height: 88rpx;
   flex-shrink: 0;
 }
 
@@ -1065,6 +1082,8 @@ function formatMemberCount(count: number): string {
   color: var(--c-brand-600, #1F9A75);
 }
 
+/* R7-L02-D04：分区④三张活动卡在帧上是直角矩形，而同页同族的 .people-entry（:827）
+   是 20rpx 圆角 + 卡片阴影——同页同族两套口径。补齐与 .people-entry 逐字相同的两键。 */
 .activity-entry {
   display: flex;
   align-items: center;
@@ -1073,6 +1092,8 @@ function formatMemberCount(count: number): string {
   color: var(--c-text-inverse, #FFFFFF);
   background: var(--c-bg-container, #FFFFFF);
   border: 1rpx solid var(--c-line, #EEF2F0);
+  border-radius: 20rpx;
+  box-shadow: var(--c-shadow-card, 0 4px 16px rgba(30, 80, 65, 0.08));
   margin-bottom: 16rpx;
 }
 .activity-entry__icon-wrap {
@@ -1081,7 +1102,10 @@ function formatMemberCount(count: number): string {
   border-radius: 20rpx;
   position: relative;
   z-index: 1;
-  flex-shrink: 0;
+  /* R7-L02-D03：align-items/justify-content 此前挂在非 flex 容器上（整条规则无
+     display:flex），出包后 40rpx 图标不会在 72rpx 杏色底板里居中。补容器声明，
+     口径同 .people-entry__icon-wrap（:838-845）。 */
+  display: flex;
   align-items: center;
   justify-content: center;
   background: var(--c-apricot-100, #FFEDD5);
@@ -1275,6 +1299,29 @@ function formatMemberCount(count: number): string {
 .nearby-entry__img {
   width: 44rpx;
   height: 44rpx;
+}
+
+/* R7-L02-D01：五宫格五枚字形在帧上全是同一支中性灰描线（源文件 stroke：common/user.svg、
+   common/school.svg、common/schedule.svg、common/fire.svg 均 #94A3B8，只有 group.svg #36C99A），
+   坐在各自 pastel 底板（:1269-1273）上对比度实测 2.08:1，理想图的四色语义分层整块丢失。
+   素材文件不在本车道可改清单内（烘 stroke 需动 static/assets/icons/**.svg 或 images.ts 的
+   pkg/tail 登记），故在消费侧按理想图逐枚烘语义色：先 brightness(0) 把任意源色归一成纯黑剪影
+   （字形/尺寸/透明度不变），再走 invert→sepia→saturate→hue-rotate→brightness 链解到目标色。
+   四条链是用 CSS 滤镜矩阵（sRGB、逐级 8bit 截断）对目标色解出来的，逐条实测残差 0：
+     PEOPLE/CIRCLE → #36C99A、CAMPUS → #0EA5E9、ACTIVITY → #F97316、DYNAMIC(我的人脉) → #4F6EF7
+   与卡片建议改法给定的五支色逐枚一致；mock / real 两档同一份 CSS，不引新素材、不改引用路径。 */
+.nearby-entry__icon--people .nearby-entry__img,
+.nearby-entry__icon--circle .nearby-entry__img {
+  filter: brightness(0) invert(72.8%) sepia(100%) saturate(297%) hue-rotate(97.3deg) brightness(78.8%);
+}
+.nearby-entry__icon--campus .nearby-entry__img {
+  filter: brightness(0) invert(47.1%) sepia(100%) saturate(491%) hue-rotate(155.7deg) brightness(93.6%);
+}
+.nearby-entry__icon--activity .nearby-entry__img {
+  filter: brightness(0) invert(28.8%) sepia(100%) saturate(585%) hue-rotate(347.2deg) brightness(149.6%);
+}
+.nearby-entry__icon--dynamic .nearby-entry__img {
+  filter: brightness(0) invert(35%) sepia(100%) saturate(991%) hue-rotate(209.7deg) brightness(96.9%);
 }
 
 .nearby-entry__label {

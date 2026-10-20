@@ -328,11 +328,11 @@ function goToActivity(activityId: number) {
 
       <!-- R6-L09-D21（空态文案 P2）：原门槛「热搜与历史同时为 0 才显示空态」在 real 档永远不成立
            （后端 /api/v1/search/hot 无数据 ⇒ 热搜 0 条，取景残留 1 条历史 chip 就把空态挡死了）
-           ⇒ 按区块各自兜底：两区块皆空 → EmptyState；仅热搜为空 → 补一句本页既有的引导文案
-           search.emptyHint（zh-CN.ts:2886「输入关键词，搜索感兴趣的人、标签和学校」，未新增 i18n 键）。
-           热搜条目本身（卡建议的「热搜 10 条」）属后端数据缺口，见交件报告 NEEDS-DATA。 -->
-      <EmptyState v-if="searchStore.hotSearches.length === 0 && searchStore.history.length === 0" type="no-data" :message="t('search.emptyHint')" hide-sub />
-      <text v-else-if="searchStore.hotSearches.length === 0" class="suggest-hint">{{ t("search.emptyHint") }}</text>
+           ⇒ 按区块各自兜底。热搜条目本身（卡建议的「热搜 10 条」）属后端数据缺口，见交件报告 NEEDS-DATA。
+           R7-L08-D04（空态文案 P3）：「仅热搜为空」的分支原来是一行裸 text.suggest-hint 灰字（13px，
+           实测墨迹 y=507..516），不走规范 §1.5 的空态组件形态（插画+主文案），比同页结果空态(:345)弱一档
+           ⇒ 两个分支合并为同一枚 EmptyState（type=no-data + hide-sub），热搜为空一律给组件形态。 -->
+      <EmptyState v-if="searchStore.hotSearches.length === 0" type="no-data" :message="t('search.emptyHint')" hide-sub />
     </view>
 
     <!-- 搜索结果 -->
@@ -481,8 +481,14 @@ function goToActivity(activityId: number) {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  gap: 12rpx;
-  padding: 16rpx 24rpx;
+  gap: var(--sp-3);
+  /* R7-L08-D01/D03（尺寸比例 P1）：微信胶囊右避让在整行只计一次。
+     此前 .search-box(:494) 与 .search-cancel(:545) 各挂了一份 calc(--capsule-right + 96px)=103px
+     的 margin-right ⇒ 同一份避让叠加两遍吃掉 ~206px，输入框实测只剩 x=54..131（宽 ~77px），
+     14 字 placeholder 在 x=121 被切断只显示「搜索感」，框右缘与「取消」之间 ~108px 纯白死区。
+     避让改由头部行右内边距统一承担（行内所有子节点整体落在胶囊左侧），
+     两个子节点的 margin-right 全部删除，把 ~107px 还给输入框。 */
+  padding: var(--sp-4) calc(var(--capsule-right, 7px) + 96px) var(--sp-4) var(--sp-6);
   background: var(--c-bg-container, #ffffff);
   position: sticky;
   top: 0;
@@ -490,8 +496,8 @@ function goToActivity(activityId: number) {
 }
 
 .search-box {
-  /* R12-IND-SEARCH-001：输入条右端延伸进胶囊下方，预留胶囊宽度 */
-  margin-right: calc(var(--capsule-right, 7px) + 96px);
+  /* R7-L08-D01/D03：胶囊避让（原 R12-IND-SEARCH-001 的 margin-right）已上移到 .search-header
+     的右内边距，整行只计一次；此处只负责吃满返回键与「取消」之间的剩余宽度 */
   flex: 1;
   min-width: 0;
   display: flex;
@@ -536,13 +542,16 @@ function goToActivity(activityId: number) {
 
 .search-cancel {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--color-primary, #ff6b81);
+  /* R7-L08-D02（颜色token P3）：原引 `var(--color-primary, #ff6b81)`——
+     ①--color-primary 是 tokens.scss:38 的 legacy 别名，不在规范 §1.2 令牌表内；
+     ②兜底值 #ff6b81 与心动粉 --c-romance-500 同值，legacy 变量一失效「取消」就翻成粉色操作字，
+       违反 §1.1「绿=行动、粉=喜欢，两色禁混用」与 §1.2 粉色禁用于操作态。
+     「取消」是返回行的次要操作（与左侧返回键同一动作），按规范 §1.2 次文本档改走
+     --c-text-secondary，并删掉粉色兜底。 */
+  color: var(--c-text-secondary);
   flex-shrink: 0;
-  /* MP-R1-SEARCH-301：常驻「取消」与微信胶囊矩形相交（胶囊距右缘 7~94px、
-     top≈statusbar+4 高 32px，头部行 padding-top 仅状态栏+16rpx 落在胶囊带内）。
-     右侧按 --capsule-right 配方避让（与 .search-box 的 R12-IND-SEARCH-001 口径对齐），
-     使取消完整落在胶囊左侧可点 */
-  margin-right: calc(var(--capsule-right, 7px) + 96px);
+  /* R7-L08-D01/D03：MP-R1-SEARCH-301 的胶囊避让改由 .search-header 右内边距统一计一次，
+     此处不再叠加第二份 margin-right（原第二份 103px 是输入框被挤到 77px 的直接原因） */
 }
 
 .suggest-wrap {
@@ -554,13 +563,7 @@ function goToActivity(activityId: number) {
   padding: 24rpx;
 }
 
-/* R6-L09-D21：仅热搜为空时给一句引导（既有 i18n 文案，非新增键） */
-.suggest-hint {
-  margin-top: 24rpx;
-  font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-secondary, #4e5969);
-  text-align: center;
-}
+/* R7-L08-D04：原 `.suggest-hint`（13px 一行灰字）的裸文案已由 EmptyState 组件形态承接，规则删除 */
 
 .section {
   margin-bottom: 40rpx;

@@ -682,7 +682,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* #endif */
 
 .post-header__submit--disabled {
-  background: var(--c-overlay-white-bg-stronger);
+  /* R7-L05-D04（可达性 P3 · bottom 帧复现）：改前禁用底 = --c-overlay-white-bg-stronger
+     = rgba(255,255,255,0.4) 半透明白压在绿→粉渐变头部上，再叠 80% 白文字（见下条），
+     两层半透明白互相同明度 → top/bottom 两帧顶栏右侧「发布」二字都读不出。
+     禁用 ≠ 不可读：改取实底中性灰绿 --c-neutral-100(#EEF2F0)，
+     与启用态的 --c-overlay-bg-pure(rgba(255,255,255,0.95)) 仍可分辨（不发亮、无投影），
+     但不再随头部渐变换底色，任意头部色下都是同一块确定底。 */
+  background: var(--c-neutral-100, #EEF2F0);
   box-shadow: none;
 }
 
@@ -693,7 +699,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .post-header__submit--disabled .submit-text {
-  color: var(--c-overlay-white-text-strong);
+  /* R7-L05-D03（可达性 P3）：禁用态文字改前取 --c-overlay-white-text-strong
+     = rgba(255,255,255,0.8)，压在 rgba(255,255,255,0.4) 的胶囊底上，实测帧内
+     「发布」与胶囊几乎同明度。改走次级文字令牌 --c-text-secondary(#4A524E)：
+     落在本条上方刚改的实底 #EEF2F0 上对比度 ≈7.4:1（≥4.5:1），
+     且深色档令牌反色后仍是「浅字/深底」的同向关系，不会再次同明度。 */
+  color: var(--c-text-secondary, #4A524E);
 }
 
 .post-body {

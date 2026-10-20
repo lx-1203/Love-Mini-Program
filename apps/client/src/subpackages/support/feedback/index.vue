@@ -447,6 +447,7 @@ function formatSubmissionTime(iso: string): string {
         v-model="form.title"
         class="field"
         :placeholder="t('feedback.placeholderTitle')"
+        placeholder-class="field-placeholder"
         :aria-label="t('feedback.labelTitle')"
         aria-required="true"
         :aria-describedby="errorMessage ? 'feedback-error' : undefined"
@@ -459,6 +460,7 @@ function formatSubmissionTime(iso: string): string {
         v-model="form.content"
         class="field field--textarea"
         :placeholder="t('feedback.labelContent')"
+        placeholder-class="field-placeholder"
         :maxlength="FEEDBACK_CONTENT_MAX"
         :aria-label="t('feedback.labelContent')"
         aria-required="true"
@@ -479,6 +481,7 @@ function formatSubmissionTime(iso: string): string {
         v-model="form.contactWechat"
         class="field"
         :placeholder="t('feedback.placeholderContactWechat')"
+        placeholder-class="field-placeholder"
         :aria-label="t('feedback.labelContactWechat')"
         :aria-describedby="errorMessage ? 'feedback-error' : undefined"
         aria-errormessage="feedback-error"
@@ -553,10 +556,17 @@ function formatSubmissionTime(iso: string): string {
         </view>
       </view>
 
+      <!-- R7-L13-D04（位置 P3）：主 CTA「提交」原未传 fixed ⇒ 走内容流，
+           bottom 帧实测悬在视口中部 y=461..501、吸底位 y≥770 零墨迹，长表单填完要滚回顶部才能提交。
+           BottomActionBar.vue:11-19 的吸底变体（传 fixed）是既有出口，本页接上；
+           出流后由下面的 .action-bar-spacer 在原位保留同等高度，避免卡片塌陷、末行被吸底条遮挡。 -->
       <BottomActionBar
+        fixed
         :primary-label="isSubmitting ? t('common.submitting') : t('common.submit')"
         @primary="submit"
       />
+      <!-- 吸底条出流占位：88rpx 按钮 + 上下 16rpx 内边距（BottomActionBar .bar--fixed） -->
+      <view class="action-bar-spacer" aria-hidden="true" />
     </SectionCard>
 
     <!-- 功能10：提交记录列表 + 历史入口 -->
@@ -606,6 +616,10 @@ function formatSubmissionTime(iso: string): string {
         <text class="submission__time">{{ formatSubmissionTime(item.submittedAt) }}</text>
       </view>
     </SectionCard>
+
+    <!-- R7-L13-D04：本页 AppShell 传了 :show-tab-bar="false" ⇒ bodyPaddingBottom 为 0，
+         启用吸底条后必须自行给滚动内容留底部安全区，否则「提交记录」末行被 fixed 条盖住 -->
+    <view class="fixed-bar-clear" aria-hidden="true" />
   </AppShell>
 </template>
 
@@ -618,14 +632,28 @@ function formatSubmissionTime(iso: string): string {
 
 .chip {
   /* P6 a11y：触控目标 ≥88rpx（44px @2x），通过 min-height + 垂直 padding 满足 */
+  /* R7-L13-D01（可达性 P2·R6 已批未落地）：上一轮只写了 min-height:88rpx，画面上没落地——
+     本框未设 box-sizing，若 min-height 真参与计算，盒高至少 88+16×2=120rpx，
+     而帧上药丸墨迹只有 y=224..260≈36px（=72rpx，正好等于 padding 32rpx + 文本行 40rpx）
+     ⇒ 那条 min-height 在运行时整条没参与盒计算（R6 改的口径没落到屏幕）。
+     这里改成「显式 height + box-sizing:border-box」，并把垂直 padding 与 label 行高配平成
+     24+40+24=88rpx：无论渲染器认不认 min-height，墨迹高度都由确定的 padding+行高兜住，
+     画面药丸 +16rpx≈8px，与 AppShell.vue:334「≥88rpx(44px)」同口径。 */
+  height: 88rpx;
   min-height: 88rpx;
-  padding: 16rpx 28rpx;
+  box-sizing: border-box;
+  padding: 24rpx 28rpx;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-brand);
   color: var(--c-brand-700);
+}
+
+/* R7-L13-D01：label 行高定死 40rpx，与 .chip 的 24rpx×2 padding 配平成 88rpx 触控高度 */
+.chip__label {
+  line-height: 40rpx;
 }
 
 .chip--active {
@@ -860,5 +888,27 @@ function formatSubmissionTime(iso: string): string {
 .submission__time {
   font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-tertiary);
+}
+
+/* R7-L13-D04：吸底条出流后的原位占位（88rpx 按钮 + .bar--fixed 上下 16rpx 内边距） */
+.action-bar-spacer {
+  height: 120rpx;
+}
+
+/* R7-L13-D04：滚动内容底部安全区，避免末行被 fixed 条遮挡 */
+.fixed-bar-clear {
+  height: calc(env(safe-area-inset-bottom) + 120rpx);
+}
+</style>
+
+<!-- R7-L13-D02（颜色 token P3·R6 已批未落地）：三处表单占位符实测是 mp-weixin 输入控件
+     UA 默认 #808080 系纯中性灰（#898B8B / #848484 / #8C8D8C），§1.2 占位令牌
+     --c-text-placeholder（light 档实值 #9AA39F，theme/design-variables.scss:373 = $text-quaternary）
+     完全没落到画面上。占位符节点由输入控件内部渲染，不带 scoped 的 data-v 散列类，
+     写在 scoped 块里的 placeholder 类选择器匹配不上（这正是上一轮「声明了但屏幕无变化」的原因），
+     故按微信官方要求（placeholder-class 必须是 wxss 里真实存在的类）放在本页非 scoped 样式块。 -->
+<style lang="scss">
+.field-placeholder {
+  color: var(--c-text-placeholder, #9AA39F);
 }
 </style>

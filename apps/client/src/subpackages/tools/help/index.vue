@@ -201,7 +201,11 @@ function copyEmail(): void {
 }
 
 .help-faq__question-text {
-  font-size: var(--f-md);
+  /* R7-L07-D06/D07（字号 P3）：FAQ 主问句是可点主内容（整卡 role=button），原来落
+     var(--f-md)（tokens.scss:146 → --fs-md=26rpx=13px），而规范 §1.3 把 13px 档指定给
+     「标签 · 时间戳」，正文/列表主文字应为 --fs-xl/2xl=15/16px ⇒ 主问句升到 --fs-xl(30rpx=15px)，
+     与答案 --f-sm(22rpx=11px) 拉开一档层级；同时改用标准令牌名 --fs-*，不再走 --f-* 短名族。 */
+  font-size: var(--fs-xl);
   font-weight: 600;
   color: var(--c-text-primary);
   flex: 1;

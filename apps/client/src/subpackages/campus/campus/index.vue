@@ -952,11 +952,19 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .cert-recommend__grid {
   display: flex;
+  /* R7-L05-D01（尺寸比例 P2）：改前只有 display:flex;gap:16rpx 且不换行，
+     8 片被 flex:1 均分 → 实测每片 ≈73rpx(38px) 宽 × 120rpx 高，封面竖裁到不可辨识
+     （帧上「摄影/旅行/音乐/…」糊成一排色块）。
+     按缺陷卡口径改「每屏 4 片两行换行」：basis 22% 保证一行只放得下 4 片
+     （5×22%=110% 必先换行），grow:1 让 4 片铺满整行 → 单片实测 ≈158rpx 宽
+     （帧上可用内宽 ≈682rpx，(682-3×16)/4），宽高比由 0.61 变 1.32，缩略图可辨识。
+     刻意不用 calc()——rpx 参与 calc 在部分基础库版本上不落地，百分比方案无平台风险。 */
+  flex-wrap: wrap;
   gap: 16rpx;
 }
 
 .cert-recommend__item {
-  flex: 1;
+  flex: 1 1 22%;
   border-radius: 16rpx;
   overflow: hidden;
   position: relative;
@@ -973,17 +981,32 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .cert-recommend__label {
   position: absolute;
-  left: 8rpx;
-  /* MP-R2-CAMPUSINDEX-012：只锚左边时，长推荐位名会横穿瓷片右缘；
-     补齐右边界后靠省略号收口（瓷片宽度由 grid 决定，不动版式） */
-  right: 8rpx;
+  /* R7-L05-D02（可达性 P3）：改前标签是「纯白 --c-neutral-0 + text-shadow」直接压在封面上，
+     浅色封面（美食/宠物/阅读三片实测为浅底）下白字与亮底几乎同明度，帧上读不清。
+     现按仓内既有封面叠字范式（components/village/HotTopicsSection.vue:203 的底部渐变蒙层）
+     收口：铺满瓷片底缘 + 由 --c-overlay-strong(rgba(15,23,42,0.7)) 渐变到透明，
+     浅色封面下合成底色 ≈ #50534F，白字对比度 ≥4.5:1；文字色改走覆盖层前景令牌。
+   L4 复核追加（沿用上一发的蒙层方案，只补一个色标）：HotTopicsSection 的蒙层垫在
+     ≥240rpx 高的封面上，线性淡出到顶不影响文字；本瓷片只有 120rpx 高，蒙层实测
+     26+31+6=63rpx，两档写法下文字上半段（y=26..37）落在淡出区、alpha 只到 ≈0.45，
+     压在浅金毛犬/浅食物底图上合成 ≈#7B7979 → 白字对比度 ≈4.2:1，够不到缺陷卡要求的
+     4.5:1（R8 复拍按文字所在像素量，会再次判不达标）。改三档：0%→60% 保持满强 0.7
+     覆盖整条文字带（6..37rpx），60%→100% 才淡出 ⇒ 字身恒定垫在 0.7 上，≈7.8:1。
+     ⚠️ MP-R2-CAMPUSINDEX-012（长推荐位名横穿瓷片右缘）的收口未回退：改后仍是左右双锚
+     （left:0/right:0 + 横向 padding 8rpx）+ overflow:hidden + text-overflow:ellipsis，
+     只是锚点从 8rpx 内缩改为 0 满幅、由 padding 承担同一 8rpx 内边距，勿再改回单边锚。 */
+  display: block;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 26rpx 8rpx 6rpx;
+  background: linear-gradient(to top, var(--c-overlay-strong, rgba(15, 23, 42, 0.7)) 0%, var(--c-overlay-strong, rgba(15, 23, 42, 0.7)) 60%, var(--c-gradient-mask-transparent, rgba(0, 0, 0, 0)) 100%);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  bottom: 8rpx;
   font-size: 22rpx;
   font-weight: 700;
-  color: var(--c-neutral-0, #FFFFFF);
+  color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
   text-shadow: 0 2rpx 8rpx var(--c-overlay-strong, rgba(15, 23, 42, 0.7));
 }
 

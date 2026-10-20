@@ -495,12 +495,25 @@ onLoad((query) => {
   flex-shrink: 0;
 }
 
+/* R7-L10-D01（可达性 P1，R6-B58/D01 已批未落地，2026-10-21 重做）：头图是深色照片
+   （帧实测 y=26..86 lum 69..119），而这两枚控件原为"深灰字形 + 20% 白圆底"——
+   ① 箭头 color 取 --c-text-primary(#1A1E1C) 深字压深图，实测热区 x=4..70/y=26..86 内
+      连一个 lum<190 的字形像素都没有，对比度≈1:1；
+   ② 圆底 --c-overlay-bg-light 真值 rgba(255,255,255,0.2)（design-variables.scss:739），
+      实测 x≈232..268/y≈62..96 只比背景亮约 30，「···」（举报/拉黑/关注唯一入口）不可辨。
+   上一轮按"提白底浓度"方向没落地：白字 + 半透明白底本身互撞（0.6 白底上的白字仍≈1.6:1）。
+   这轮按 defect 建议的反色令牌方向做实：圆底换深色遮罩档 --c-overlay-strong
+   （rgba(15,23,42,0.7)，:730）+ --c-overlay-border-stronger（:737）描一圈，字形换
+   --c-text-inverse（rgba(255,255,255,0.95)，:749）——深色芯片在任何底色（深头图 /
+   头部 position:fixed 滚到白卡上，见 R6-B58/D05）上都能同时保住"圆底可辨 + 字形可辨"。 */
 .other-header__back-circle,
 .other-header__more-circle {
   width: 64rpx;
   height: 64rpx;
   border-radius: 50%;
-  background: var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2));
+  background: var(--c-overlay-strong);
+  border: 2rpx solid var(--c-overlay-border-stronger);
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -513,13 +526,13 @@ onLoad((query) => {
 
 .other-header__back-arrow {
   font-size: 52rpx;
-  color: var(--c-text-primary, #333A37);
+  color: var(--c-text-inverse);
   line-height: 1;
 }
 
 .other-header__more-dots {
   font-size: 36rpx;
-  color: var(--c-text-primary, #333A37);
+  color: var(--c-text-inverse);
   line-height: 1;
 }
 

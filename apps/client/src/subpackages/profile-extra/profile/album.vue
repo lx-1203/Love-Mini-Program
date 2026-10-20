@@ -99,6 +99,9 @@ const hasEmptySlot = computed(() => photoGallery.value.length < PHOTO_GALLERY_MA
 /** 已上传照片数量 */
 const photoCount = computed(() => photoGallery.value.length);
 
+/** R7-L10-D15：说明卡里的体积上限由 PHOTO_SIZE_LIMIT 换算而来，避免文案与 :191 拦截值漂移 */
+const photoSizeLimitMb = computed(() => Math.round(PHOTO_SIZE_LIMIT / 1024 / 1024));
+
 /**
  * 从 uni.chooseImage 返回值构造类 File 对象。
  *
@@ -517,6 +520,36 @@ onShow(() => {
       <text class="album-tip__text">{{ t("profile.albumPreviewLongPress") }}</text>
     </view>
 
+    <!-- R7-L10-D15（间距 P2，2026-10-21）：帧上长按提示行 y=412 以下到 y=810 整块空白
+         （398px≈796rpx，近半屏），6 格墙 + 按钮 + 提示只占屏高一半。按建议改法第一条
+         「补照片使用说明」加一张规则卡；卡内四条全部取自本页既有真实约束，不编造数据：
+         ① PHOTO_GALLERY_MAX=6（:34，hasEmptySlot :506 决定添加按钮去留）；
+         ② PHOTO_SIZE_LIMIT=10MB（:37，:191 上传前实测拦截）；
+         ③ 轻点→本页全屏查看层 handlePhotoTap/.album-viewer，长按→设为头像/删除；
+         ④ 设为头像走 profileStore.uploadAvatar（POST /profile/avatar 审核链路，:263 注释）。
+         「最近上传」时间行没有数据源（photoGallery 只有 URL 数组，无上传时间字段）⇒ 不做，
+         不拿假时间轴填空白。 -->
+    <view v-if="photoCount > 0" class="album-rules card-base">
+      <text class="album-rules__title">照片使用说明</text>
+      <text class="album-rules__summary">已上传 {{ photoCount }} 张，剩余 {{ PHOTO_GALLERY_MAX - photoCount }} 个空位</text>
+      <view class="album-rules__row">
+        <text class="album-rules__bullet">•</text>
+        <text class="album-rules__text">最多 {{ PHOTO_GALLERY_MAX }} 张，已满时需先删除旧照片才能继续添加</text>
+      </view>
+      <view class="album-rules__row">
+        <text class="album-rules__bullet">•</text>
+        <text class="album-rules__text">单张不超过 {{ photoSizeLimitMb }}MB，超出会在上传前提示</text>
+      </view>
+      <view class="album-rules__row">
+        <text class="album-rules__bullet">•</text>
+        <text class="album-rules__text">轻点照片可全屏查看，长按照片可设为头像或删除</text>
+      </view>
+      <view class="album-rules__row">
+        <text class="album-rules__bullet">•</text>
+        <text class="album-rules__text">设为头像会重新走头像审核链路，通过后对外展示</text>
+      </view>
+    </view>
+
     <!-- MP-R1-ALBUM-001：包内 /static 路径的自建全屏查看层（uni.previewImage 不支持包内路径） -->
     <view v-if="viewerVisible" class="album-viewer" @tap="closeViewer">
       <image class="album-viewer__img" :src="viewerUrls[viewerCurrent]" mode="aspectFit" />
@@ -810,12 +843,16 @@ onShow(() => {
 }
 
 /* ========== 底部添加按钮 ========== */
+/* R7-L10-D14（颜色token P3，2026-10-21）：主 CTA 与空位格、页面底三色几乎同值——
+   帧实测按钮底 #E8F9F2 / 空位格 #E8FAF3 / 页面底 #ECF7F1，Δ≤4/255，只靠 1px 描边可辨
+   （R10-P3-022 那次只把白底换成 brand-50，层次仍然没拉开）。按建议改法第一条走"品牌绿实底
+   白字"，与本页 .album-empty__btn / .album-error__retry 两个已验证的绿色主按钮同一配方，
+   与 --c-brand-50 空位格拉开整整一档明度。 */
 .album-add-btn {
   margin-top: var(--sp-6);
   padding: var(--sp-4) var(--sp-8);
-  /* R10-P3-022：白底淡边弱可点击感 → 品牌描边 + 浅绿底 */
-  background: var(--c-brand-50, #E8FAF3);
-  border: 2rpx solid var(--c-brand, #36C99A);
+  background: var(--c-brand);
+  border: 2rpx solid var(--c-brand);
   border-radius: var(--r-full);
   display: flex;
   align-items: center;
@@ -824,7 +861,7 @@ onShow(() => {
 }
 
 .album-add-btn__text {
-  color: var(--c-brand);
+  color: var(--c-text-inverse);
   font-size: var(--fs-md);
   font-weight: 600;
 }
@@ -838,5 +875,47 @@ onShow(() => {
 .album-tip__text {
   font-size: var(--fs-sm);
   color: var(--c-text-tertiary);
+}
+
+/* ========== R7-L10-D15：照片使用说明卡（消解下半屏空白带） ========== */
+.album-rules {
+  margin-top: var(--sp-8);
+  padding: var(--sp-8) var(--sp-8) var(--sp-10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.album-rules__title {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--c-text-primary);
+}
+
+.album-rules__summary {
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--c-text-secondary);
+}
+
+.album-rules__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+}
+
+.album-rules__bullet {
+  flex-shrink: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--c-brand);
+}
+
+.album-rules__text {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--c-text-secondary);
 }
 </style>

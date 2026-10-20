@@ -199,14 +199,32 @@ export const IN_PACKAGE_ASSETS = {
    * 剪的判点是 PATH_RE 需要「目录/文件」两级字面量，而这些键在源码里只以
    * `ICONS_BASE + '/gift.svg'` 的**拼接**形态出现 ⇒ 单文件名进不了 raw 集合。
    * 本条按上方 :124-126 既有纪律同时给 pkg 与 tail 两个形态，6 枚合计 2.0KB（逐枚 230–416B），
-   * 对 real 档 1.54MB/2.00MB 的实测读数无影响。只登记本批缺陷消费到的 6 枚，
-   * 其余 8 枚同型待接（见交件）。 */
+   * 对 real 档 1.54MB/2.00MB 的实测读数无影响。
+   * 2026-10-21 接完同型其余 8 枚（bookmark/cake/fire/microphone/plus/smile/sparkles/thumbs-up，
+   * 合计 2,617B，逐枚 230–388B）。盘上实测：`src/static/assets/icons/` 根 14 枚、
+   * `dist/build/mp-weixin-real/static/assets/icons/` 根只有 6 枚，且
+   * `CDN_OFFLOAD_MANIFEST.json` 里 assets/icons/ 根条目 0 条 ⇒ 缺席 8 枚是 prune 剪的。
+   * 剪因同 :199-200：这些键在源码里只以 `ICONS_BASE + '/cake.svg'` 出现，字面量段是**单段**
+   * `cake.svg`，PATH_RE 要「目录/文件」两级 ⇒ 进不了 raw 集合；而 `'/common/fire.svg'` 那类
+   * 两级串能进（所以 common/ 的 fire.svg  twin 一直在包里）。本条登记的是**根**那枚 fire.svg，
+   * 消费方是 search/index.vue:289 与 config/circle-icons.ts:40（CIRCLE_FIRE）；
+   * nearby/index.vue:622 用的 common/ twin 不动。运行时取值一律不变——`ICONS_EMOJI.*` 8 枚
+   * 仍是基址拼单段串的纯字符串（消费方直接绑 :src / resolveMediaUrl），
+   * 本表条目只承担「把两级字面量写进源码文本」这一道判据，与上方 6 枚同一形态。 */
   ICONS_GIFT_SVG: { pkg: '/static/assets/icons/gift.svg', tail: '/assets/icons/gift.svg' },
   ICONS_CHAT_SVG: { pkg: '/static/assets/icons/chat.svg', tail: '/assets/icons/chat.svg' },
   ICONS_GROUP_SVG: { pkg: '/static/assets/icons/group.svg', tail: '/assets/icons/group.svg' },
   ICONS_SEARCH_SVG: { pkg: '/static/assets/icons/search.svg', tail: '/assets/icons/search.svg' },
   ICONS_HEART_SVG: { pkg: '/static/assets/icons/heart.svg', tail: '/assets/icons/heart.svg' },
   ICONS_LOCATION_SVG: { pkg: '/static/assets/icons/location.svg', tail: '/assets/icons/location.svg' },
+  ICONS_BOOKMARK_SVG: { pkg: '/static/assets/icons/bookmark.svg', tail: '/assets/icons/bookmark.svg' },
+  ICONS_CAKE_SVG: { pkg: '/static/assets/icons/cake.svg', tail: '/assets/icons/cake.svg' },
+  ICONS_FIRE_SVG: { pkg: '/static/assets/icons/fire.svg', tail: '/assets/icons/fire.svg' },
+  ICONS_MICROPHONE_SVG: { pkg: '/static/assets/icons/microphone.svg', tail: '/assets/icons/microphone.svg' },
+  ICONS_PLUS_SVG: { pkg: '/static/assets/icons/plus.svg', tail: '/assets/icons/plus.svg' },
+  ICONS_SMILE_SVG: { pkg: '/static/assets/icons/smile.svg', tail: '/assets/icons/smile.svg' },
+  ICONS_SPARKLES_SVG: { pkg: '/static/assets/icons/sparkles.svg', tail: '/assets/icons/sparkles.svg' },
+  ICONS_THUMBS_UP_SVG: { pkg: '/static/assets/icons/thumbs-up.svg', tail: '/assets/icons/thumbs-up.svg' },
 } as const;
 
 export const IMAGE_PATHS = {

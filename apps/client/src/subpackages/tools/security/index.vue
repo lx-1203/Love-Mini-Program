@@ -607,7 +607,11 @@ async function submitDeleteAccount(): Promise<void> {
           <text class="sec-item__arrow">›</text>
         </view>
 
-        <view class="sec-item">
+        <!-- R7-L08-D08（可达性 P3）：本行是「当前环境不支持 Apple 登录」的死行（无 @tap、
+             无 role=button、无 press-feedback），原来却在行尾渲染了与其余 8 个可点导航行同款
+             的 › 箭头（实测该行 y=483-523 右侧有箭头墨迹）⇒ 有箭头却点不动，属误导性死控件。
+             按规范「› 只用于可点导航行」删掉本行箭头，右侧留白即为不可点语义。 -->
+        <view class="sec-item sec-item--disabled" aria-disabled="true">
           <view class="sec-item__icon-wrap sec-item__apple-icon-wrap" aria-hidden="true">
             <view class="sec-item__apple-icon" />
           </view>
@@ -615,7 +619,6 @@ async function submitDeleteAccount(): Promise<void> {
             <text class="sec-item__label">{{ t('thirdPartyLogin.bindApple') }}</text>
             <text class="sec-item__desc">{{ t('thirdPartyLogin.appleNotSupported') }}</text>
           </view>
-          <text class="sec-item__arrow">›</text>
         </view>
       </view>
     </SectionCard>
@@ -924,6 +927,17 @@ async function submitDeleteAccount(): Promise<void> {
 /* Apple 图标（内联 SVG 背景，避免额外图片资源；圆形深色底 + 白色 logo） */
 .sec-item__apple-icon-wrap {
   background: var(--c-neutral-900);
+}
+
+/* R7-L08-D08（可达性 P3）：不可点的「绑定 Apple」行走全站既有的「置灰 = 封存/不可用」口径
+   （同 love-center/index.vue 的 love-center__board--sealed），配合本行删掉的 › 箭头，
+   让「有箭头却点不动」的误导控件变成明确的不可用语义。 */
+.sec-item--disabled .sec-item__apple-icon-wrap {
+  opacity: 0.5;
+}
+
+.sec-item--disabled .sec-item__label {
+  color: var(--c-text-tertiary);
 }
 
 .sec-item__apple-icon {

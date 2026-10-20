@@ -112,7 +112,11 @@ onShareAppMessage(() => {
 </script>
 
 <template>
-  <AppShell :title="t('home.loveConsulting')" show-back>
+  <AppShell :title="t('showcase.groups.home.items.loveCenter.title')" show-back>
+    <!-- R7-L07-D05（文案 P2）：页头标题原引 home.loveConsulting=「恋爱咨询」，与下方第二个板块
+         标题(:141 同键）逐字重复，且本页实为「恋爱中心」聚合页（快捷入口/恋爱咨询/恋爱测试）
+         ⇒ 页头改走既有「恋爱中心」键（showcase.groups.home.items.loveCenter.title，zh-CN.ts:2344
+         「恋爱中心」/ en-US.ts:2251 "Love Center"，非新增键），板块标题保留「恋爱咨询」 -->
     <view class="love-center">
     <!-- 任务 E3：快捷入口（附近的人 / MBTI 人格测试 / 恋爱咨询课程） -->
     <view class="love-center__section">

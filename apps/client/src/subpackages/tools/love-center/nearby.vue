@@ -213,6 +213,26 @@ function handleMessage(userId: string) {
         @superLike="handleSuperLike"
         @message="handleMessage"
       />
+      <!-- R7-L08-D09/D10（间距 P3）：本页 100vh 无滚动（.content-page height:100vh），
+           卡片区按内部 min-height 渲染到 y=663 后，y=665-796 共 132px（≈页高 1/6）纯空白，
+           bottom 帧与 top 帧逐带同构（滚动未改变画面）⇒ 死白来自布局本身。
+           按缺陷卡「补加载更多/占位说明」口径，在卡片区尾部挂一个低密度收尾块：
+           分隔线 + 交互说明（既有键 messageHint） + 「看看全部推荐」加载更多（既有键 seeAll，
+           复用本页既有 loadAllRecommendations()，与 :199 空态 CTA 同一动作，非新增逻辑）。 -->
+      <view class="nearby-tail">
+        <view class="nearby-tail__divider" aria-hidden="true" />
+        <text class="nearby-tail__hint">{{ t('contentPages.nearby.messageHint') }}</text>
+        <view
+          class="nearby-tail__more press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('contentPages.nearby.seeAll')"
+          @tap="loadAllRecommendations"
+        >
+          <text class="nearby-tail__more-text">{{ t('contentPages.nearby.seeAll') }}</text>
+        </view>
+      </view>
     </view>
   </view>
 </template>
@@ -260,14 +280,19 @@ function handleMessage(userId: string) {
 }
 
 .nearby-card-area {
+  /* R7-L08-D09/D10：改纵向 flex，尾部 .nearby-tail 用 margin-top:auto 锚到视口底，
+     消掉「卡片下方 132px 纯空白带」（规范 §1.4 满屏页不留大段死白） */
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
-  padding: var(--sp-2) 0;
+  padding: var(--sp-2) 0 var(--sp-6);
 }
 
 /* 2026-08-08 P0：微信自定义组件宿主节点默认 flex:0 1 auto 高度仅由内容决定，
- * 与 discover/index.vue 同款修复——让 CardSwiper 宿主节点 flex:1 撑满父容器。
- * H5 端组件宿主即根节点，已有高度链，无需该样式。 */
+ * 与 discover/index.vue 同款修复——让 CardSwiper 宿主节点成为 flex 容器并给出高度链。
+ * ⚠️ 其 `flex: 1`（吃满父容器）已被 R7-L08-D09/D10 在下方覆写为 0 0 auto，
+ * 本块只保留 display/min-height/width 这三条宿主链属性。 */
 // #ifndef H5
 .card-swiper-host {
   display: flex;
@@ -276,6 +301,57 @@ function handleMessage(userId: string) {
   width: 100%;
 }
 // #endif
+
+/* R7-L08-D09/D10：宿主不再 flex:1 吃满剩余视口（CardSwiper 内部 min-height:1120rpx 已给出
+   卡片自然高），把视口尾段让给收尾占位；两端同一口径，H5 端该 class 落在组件根节点同样生效。
+   0 0 auto（不伸不缩）：短屏上宁可让页面向下延展，也不压缩卡片把底部操作键裁掉。 */
+.card-swiper-host {
+  flex: 0 0 auto;
+}
+
+/* R7-L08-D09/D10：卡片区尾部低密度占位（分隔线 + 交互说明 + 加载更多） */
+.nearby-tail {
+  margin-top: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding-top: var(--sp-4);
+}
+
+.nearby-tail__divider {
+  /* sp 阶梯无 96rpx 档，取 --sp-10(48rpx) 作短分隔线 */
+  width: var(--sp-10);
+  height: 2rpx;
+  border-radius: var(--r-full);
+  background: var(--c-border-light);
+}
+
+.nearby-tail__hint {
+  /* 规范 §1.3：说明档走 --fs-lg(28rpx=14px)，13px 档只给标签·时间戳 */
+  font-size: var(--fs-lg);
+  color: var(--c-text-tertiary);
+  text-align: center;
+}
+
+.nearby-tail__more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 热区下限 88rpx(44px)，与仓内自陈标准（AppShell.vue「≥88rpx」）一致 */
+  min-height: 88rpx;
+  padding: var(--sp-2) var(--sp-7);
+  border-radius: var(--r-full);
+  border: 1rpx solid var(--c-brand);
+  background: var(--c-bg-container);
+}
+
+.nearby-tail__more-text {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-brand);
+}
 
 .nearby-loading,
 .nearby-error,

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { resolveMediaUrl } from "../../../utils/media";
+import { IMAGE_PATHS } from "../../../config/images";
 
 const props = withDefaults(defineProps<{ photos: string[] }>(), {
   photos: () => [],
@@ -12,8 +13,28 @@ const emit = defineEmits<{ (e: "tapPhoto", index: number): void }>();
  *  （标题带 4 格一个像素都没有，也是 R2b-L06-D18「页面不可滚动、内容不可达」的直接成因）。
  *  现在恒定渲染 4 格：有图出图，缺图出灰色骨架格（骨架 ≠ 假数据，不伪造照片 URL）。 */
 const CELLS = 4;
+
+/**
+ * R7-L10-D05（素材缺失 P2 · 【R6 已批过，未落地】）：
+ * R6 的「配 4 张真实图」只落在 api/profile.ts 的 personToProfile() 里（ACTIVITY_2 /
+ * CAMPUS_LIBRARY / ACTIVITY_1 / FOOD_1 兜底），而那条函数**只在 useMock() 为真时执行**；
+ * 本轮取景是 real 档（frames/R7/real-*），走 request('/profile/{id}')，后端
+ * UserProfileController.assemble() 的 photos 来自 basic.photoGallery，演示账号该列为空 ⇒
+ * 帧上仍是 4 格 #EEF2F0 灰骨架。修在 mock 分支 = 运行时根本不执行 = 画面零差别。
+ * 因此把这层兜底搬进组件本身（组件是运行时真正加载的那份），用仓内既有素材补满 4 格，
+ * 灰骨架格退为「连兜底素材都不够」时的最后一级。
+ * 选图全部走 localPrefixes 命中的目录（activities / products），real 档仍随包，不出后端。
+ */
+const DEMO_PHOTOS = [
+  IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
+  IMAGE_PATHS.ACTIVITIES.ACTIVITY_2,
+  IMAGE_PATHS.ACTIVITIES.ACTIVITY_3,
+  IMAGE_PATHS.PRODUCTS.FOOD_1,
+];
 const cells = computed(() =>
-  Array.from({ length: CELLS }, (_, index) => props.photos[index] || ""),
+  Array.from({ length: CELLS }, (_, index) =>
+    props.photos[index] || DEMO_PHOTOS[index] || "",
+  ),
 );
 </script>
 

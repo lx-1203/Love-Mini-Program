@@ -74,6 +74,12 @@ const PROGRESS = [
       <text class="match-loading__skip-text">{{ t("matching.skip") }}</text>
     </view>
 
+    <!-- R7-L05-D07（位置 P2）：理想效果图（素材/理想效果图/匹配中页面.png）自上而下是
+         跳过 → 标题 → 副标题 → 双头像轨道 → 进度卡，原模板把 .match-loading__avatars(:95)
+         排在 title(:109) 之前 ⇒ 帧上纵向顺序整个颠倒。此处把标题/副标题移到头像轨道之前。 -->
+    <text class="match-loading__title">{{ t("matching.searching") }}</text>
+    <text class="match-loading__subtitle">{{ t("matching.subtitle") }}</text>
+
     <!-- 头像区域 + 涟漪动画 -->
     <view class="match-loading__avatar-area">
       <!-- 中央轨道旋转动画（虚线环 + 连接节点） -->
@@ -104,10 +110,6 @@ const PROGRESS = [
         </view>
       </view>
     </view>
-
-    <!-- MP-R1-MATCHING-REQ-01：标题接 matching.searching 冻结文案（原硬编码中文且未走 i18n） -->
-    <text class="match-loading__title">{{ t("matching.searching") }}</text>
-    <text class="match-loading__subtitle">{{ t("matching.subtitle") }}</text>
 
     <!-- 匹配度进度卡片（纯视觉律动，无数值） -->
     <view class="match-loading__progress">
@@ -143,7 +145,9 @@ const PROGRESS = [
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 80rpx 48rpx 60rpx;
+  /* R7-L05-D08：正文首行（标题）必须落在「跳过」独立带之下 ⇒ 顶部留白改为
+     状态栏 + 160rpx（跳过带底 ≈ 状态栏+71px，此处 80px 起正文，留 9px 呼吸）。 */
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 160rpx) 48rpx 60rpx;
   box-sizing: border-box;
   overflow: hidden;
   background: var(--c-gradient-match);
@@ -175,9 +179,13 @@ const PROGRESS = [
 /* ========== 跳过按钮 ========== */
 .match-loading__skip {
   position: absolute;
-  /* 避开微信胶囊安全区（右上角）：下移至胶囊下方，right 预留胶囊宽度
-     R4：右移+下移，避免叠压右侧头像下缘（judged 碰撞证据） */
-  top: calc(calc(var(--statusbar, env(safe-area-inset-top)) + 20px) + 240rpx);
+  /* 避开微信胶囊安全区：right 预留胶囊宽度。
+     R7-L05-D08（层级遮挡 P2）：原 top = 状态栏+20px+240rpx 是 R4「下移避开头像」留下的，
+     头像轨道上移后这条 top 正好落在标题行高度上，实测帧里「跳过」胶囊压住
+     「正在寻找适合你的 TA」末字（A 被遮成 T）。理想效果图里跳过是状态栏与标题之间的
+     独立一行 ⇒ 上移到胶囊下缘（状态栏+4+32px）之下、正文之上的独立带，
+     并同步把根容器 padding-top 撑到该带之下，保证不与任何文字重叠。 */
+  top: calc(var(--statusbar, env(safe-area-inset-top)) + 44px);
   right: 140rpx;
   padding: 14rpx 30rpx;
   border-radius: 999rpx;
@@ -213,7 +221,9 @@ const PROGRESS = [
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 20rpx;
+  /* R7-L05-D07：轨道环 520rpx 比本盒（240rpx）上下各溢出 140rpx，标题/副标题移到上方后
+     需要留出这段溢出位，否则环的上缘会啃到副标题文字。 */
+  margin-top: 64rpx;
 }
 
 /* 涟漪扩散圆环容器 */
