@@ -28,6 +28,7 @@ import { removeCache } from "../../utils/cache-ttl";
 // 第五轮 QA 验收入口：dev-user=1 页面级兜底（onLoad 登录锁判断前注入 mock 会话）
 import { applyDevUserFromQuery } from "../../utils/dev-user";
 import { IMAGE_PATHS } from "../../config/images";
+import { resolveMediaUrl } from "../../utils/media";
 // R2b-B24/D13·D18：游客态不再整页顶换成 NotLoggedWaiting（寻觅口径登录墙），改由本页
 // 自渲染「消息」标题/副标 + 摘要卡·会话列表灰态骨架 + 收进一张卡的登录浮层，
 // 故本文件不再引用该组件（它仍由 subpackages/discover-extra/likes/index.vue 宿主使用）。
@@ -415,7 +416,7 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
         <view class="header__title-row">
           <text class="header__title">{{ t('chat.headerTitle') }}</text>
           <!-- 2026-08-25 P0：主标题后绿色小苗图标（规格书 8.1） -->
-          <image class="header__title-sprout" :src="IMAGE_PATHS.ICONS_V2.SPROUT" mode="aspectFit" alt="" />
+          <image class="header__title-sprout" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_V2.SPROUT)" mode="aspectFit" alt="" />
         </view>
         <text class="header__subtitle">{{ t('chat.headerSubtitle') }}</text>
       </view>
@@ -462,7 +463,7 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
           <view class="quick-cards">
             <view class="quick-card" hover-class="quick-card--hover" @tap="goLikes">
               <view class="quick-card__icon-wrap quick-card__icon-wrap--pink">
-                <image class="quick-card__icon-img" :src="IMAGE_PATHS.MASCOT.HEART_GREEN" mode="aspectFit" />
+                <image class="quick-card__icon-img" :src="resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART_GREEN)" mode="aspectFit" />
               </view>
               <view class="quick-card__body">
                 <text class="quick-card__title">有人喜欢你</text>
@@ -474,7 +475,7 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
             </view>
             <view v-if="waitingReplyCount > 0" class="quick-card" hover-class="quick-card--hover" @tap="goReply">
               <view class="quick-card__icon-wrap quick-card__icon-wrap--green">
-                <image class="quick-card__icon-img" :src="IMAGE_PATHS.MASCOT.CHAT_HI" mode="aspectFit" />
+                <image class="quick-card__icon-img" :src="resolveMediaUrl(IMAGE_PATHS.MASCOT.CHAT_HI)" mode="aspectFit" />
               </view>
               <view class="quick-card__body">
                 <text class="quick-card__title">正在等待回复</text>
@@ -558,7 +559,7 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
                     @error="onWarmAvatarError(person)"
                   />
                   <view class="warm-item__heart-icon">
-                    <image class="warm-item__heart-img" :src="IMAGE_PATHS.ICONS_V2.SPROUT" mode="aspectFit" />
+                    <image class="warm-item__heart-img" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_V2.SPROUT)" mode="aspectFit" />
                   </view>
                 </view>
                 <text class="warm-item__name">{{ person.name }}</text>

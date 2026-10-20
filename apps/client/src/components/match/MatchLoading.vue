@@ -2,8 +2,9 @@
 // MP-R2-MATCHING-011：启用 virtualHost 使宿主节点不产生包裹元素，
 // 组件根 min-height:100% 高度链成立（背景覆盖全视口，消除底部色差带）
 defineOptions({ options: { virtualHost: true } });
-import { onMounted, onUnmounted } from "vue";
+import { computed, onMounted, onUnmounted } from "vue";
 import { IMAGE_PATHS } from "../../config/images";
+import { resolveMediaUrl } from "../../utils/media";
 // MP-R2-MATCHING-006：用户可见文案 i18n 化
 import { useI18n } from "vue-i18n";
 const { t } = useI18n();
@@ -55,19 +56,28 @@ const PROGRESS = [
   { labelKey: "matching.dimMovie", icon: IMAGE_PATHS.MASCOT.SPARKLE },
   { labelKey: "matching.dimLifestyle", icon: IMAGE_PATHS.ICONS_V2.SPROUT },
 ];
+
+/* real 档下 `assets/images/`（含 mascot/ 与根上的 heart-gradient.svg）命中 cdn-buckets.json 的
+ * cdnPrefixes ⇒ 这些光栅件不随小程序包发布，裸绑 /static 会在 real 档渲染为空白图。按既有 mascot
+ * 修法（official-chat/index.vue:98 的 mascotSmileSrc computed）补 resolveMediaUrl 这一跳：real 档
+ * 解析成后端 app-assets URL，mock/dev 档幂等回原 /static 路径。PROGRESS 里的 ICONS_EMOJI.MUSIC
+ * 属 localPrefixes（icons/common），resolveMediaUrl 原样返回，不受影响。 */
+const decoHeartPinkSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART_PINK_LARGE));
+const decoHeartGreenSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART_GREEN));
+const heartGradientSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART_GRADIENT));
 </script>
 
 <template>
   <view class="match-loading">
     <!-- 粉色爱心装饰 - 用图片替换emoji -->
-    <image class="match-loading__deco match-loading__deco--1" :src="IMAGE_PATHS.MASCOT.HEART_PINK_LARGE" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--2" :src="IMAGE_PATHS.MASCOT.HEART_PINK_LARGE" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--3" :src="IMAGE_PATHS.MASCOT.HEART_PINK_LARGE" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--4" :src="IMAGE_PATHS.MASCOT.HEART_GREEN" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--5" :src="IMAGE_PATHS.MASCOT.HEART_PINK_LARGE" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--6" :src="IMAGE_PATHS.MASCOT.HEART_PINK_LARGE" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--7" :src="IMAGE_PATHS.MASCOT.HEART_GREEN" mode="aspectFit" />
-    <image class="match-loading__deco match-loading__deco--8" :src="IMAGE_PATHS.MASCOT.HEART_PINK_LARGE" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--1" :src="decoHeartPinkSrc" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--2" :src="decoHeartPinkSrc" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--3" :src="decoHeartPinkSrc" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--4" :src="decoHeartGreenSrc" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--5" :src="decoHeartPinkSrc" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--6" :src="decoHeartPinkSrc" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--7" :src="decoHeartGreenSrc" mode="aspectFit" />
+    <image class="match-loading__deco match-loading__deco--8" :src="decoHeartPinkSrc" mode="aspectFit" />
 
     <!-- 右上角跳过 -->
     <view class="match-loading__skip" hover-class="match-loading__skip--pressed" @tap="emit('skip')">
@@ -101,7 +111,7 @@ const PROGRESS = [
       <view class="match-loading__avatars">
         <image class="match-loading__avatar" :src="myAvatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" alt="" />
         <view class="match-loading__heart" @animationend="onHeartAnimationEnd">
-          <image class="match-loading__heart-img" :src="IMAGE_PATHS.MASCOT.HEART_GRADIENT" mode="aspectFit" alt="" />
+          <image class="match-loading__heart-img" :src="heartGradientSrc" mode="aspectFit" alt="" />
         </view>
         <view class="match-loading__avatar-wrap">
           <image class="match-loading__avatar match-loading__avatar--blur" :src="partnerAvatar || IMAGE_PATHS.DEFAULT_AVATAR" mode="aspectFill" alt="" />
@@ -116,7 +126,7 @@ const PROGRESS = [
       <view class="match-loading__progress-header">{{ t("matching.progressTitle") }}</view>
       <view v-for="p in PROGRESS" :key="p.labelKey" class="match-loading__row">
         <view class="match-loading__row-icon-wrap">
-          <image class="match-loading__row-icon-img" :src="p.icon" mode="aspectFit" />
+          <image class="match-loading__row-icon-img" :src="resolveMediaUrl(p.icon)" mode="aspectFit" />
         </view>
         <text class="match-loading__row-label">{{ t(p.labelKey) }}</text>
         <view class="match-loading__row-bar">
