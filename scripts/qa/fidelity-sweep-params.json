@@ -5,5 +5,6 @@
   "subpackages/profile-extra/profile/other": "userId=100159",
   "subpackages/discover-extra/discover/matching": "dev-preview=1",
   "subpackages/campus/campus/index": "school=北京大学",
-  "subpackages/village/village/tag-posts": "tagName=运动"
+  "subpackages/village/village/tag-posts": "tagName=运动",
+  "subpackages/circles/circles/topics": "circleId=8&circleName=%E6%91%84%E5%BD%B1"
 }

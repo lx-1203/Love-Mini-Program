@@ -6,9 +6,11 @@
    （游客被引导到登录页是产品裁定，不是缺陷，所以不给游客排非 tab 页）。
    用法：node scripts/qa/gen-tour-tsv.mjs --project <产物目录> --out <tsv 路径> [--identities A,B] */
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve, join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = resolve(import.meta.dirname, "..", "..");
+/* import.meta.dirname 要 Node>=20.11；本仓 shell 是 DevTools 附带 v16 ⇒ 与姊妹脚本同款 fileURLToPath 写法 */
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
 const PROJECT = resolve(ROOT, arg("project", "apps/client/dist/build/mp-weixin-real"));
 const OUT = resolve(ROOT, arg("out", ".zcode/tmp/tour.tsv"));
