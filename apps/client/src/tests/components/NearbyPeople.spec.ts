@@ -46,7 +46,16 @@ describe("NearbyPeople - MP-R2-PAGES-HOME-INDEX-111 空态分支", () => {
     const wrapper = mountNearby({ items: people, loading: false });
     expect(wrapper.findAll(".nearby-item").length).toBe(2);
     expect(wrapper.find(".nearby-people__empty").exists()).toBe(false);
-    expect(wrapper.find(".nearby-people__bar").text()).toContain("附近有 2 位值得认识的人");
+    /* R2b-L01-D17（fb7815af，2026-10-19）：理想图「附近的人」行末是一块浅绿圆角**内联卡片**，
+       两行居中文案 = 「附近的人」+ 真实数量，原来那句贴屏边通栏胶囊的
+       「附近有 N 位值得认识的人」已按理想图换形 ⇒ 旧期望是过期口径。
+       换形不等于换口径：MP-R2-PAGES-HOME-INDEX-005「不伪造人数」这条铁律仍由下面两行钉住——
+       计数节点必须逐字等于 items.length 的原值（谁改回 Math.max(items.length, 4) 或写死数字，
+       第二行立刻红），文案节点必须是理想图那一句（谁把通栏胶囊句子塞回来，第一行红）。 */
+    const bar = wrapper.find(".nearby-people__bar");
+    expect(bar.exists()).toBe(true);
+    expect(bar.find(".nearby-people__bar-text").text()).toBe("附近的人");
+    expect(bar.find(".nearby-people__bar-count").text()).toBe(`${people.length} 位`);
   });
 
   it("loading 期间已有数据 → 列表照常渲染（骨架分支不误吞数据）", () => {

@@ -22,12 +22,17 @@
  * 哪个目录能出后端，唯一判据是 `apps/client/config/cdn-buckets.json` 的 `cdnPrefixes`
  * —— 与 utils/media.ts 运行时改写、与构建期 prepare-static/prune-unreferenced-static
  * 读的是同一份清单。于是：
- *   - 命中 cdnPrefixes 的目录（generated/、assets/images/{covers,posters,avatars,people,posts}/）
- *     在 real 档直出后端 URL，构建期不随主包发布；
- *   - 命中 localPrefixes 的目录（assets/icons/、assets/svg-spec/）恒为包内 `/static/...`，
- *     real 档也不出后端（221 个图标共 771,964B，包内一定有一份，指后端只是白拿网络依赖）；
- *   - 两个清单都没登记的目录（activities/products/banners/register/match/home-split/mascot…）
+ *   - 命中 cdnPrefixes 的目录在 real 档直出后端 URL，构建期不随主包发布。清单自 3af02dd4
+ *     （发布链第一次整条跑通、主包 1.54MB/2.00MB、12.66MB 素材改由后端托管）起是 10 桶：
+ *     `static/generated/`、**`static/assets/images/`（整目录，含 mascot/activities/products/
+ *     banners/register/match/home-split 等旧「未登记」目录）**、`static/assets/message/`、
+ *     `static/assets/icons/{home,match,v2,emoji,login,social,nearby}/`；
+ *   - 命中 localPrefixes 的目录（assets/icons/{tabbar,register,common}/、assets/svg-spec/）恒为
+ *     包内 `/static/...`，real 档也不出后端（221 个图标共 771,964B，包内一定有一份，指后端只是白拿网络依赖）；
+ *   - 两个清单都没登记的目录（`assets/icons/` 根、`assets/profile/`、audio、default-avatar…）
  *     按契约「否则留包内」，real 档也是 `/static/...`。
+ * 判据仍是这一份清单，只是桶位从 6 个扩到 10 个：**改清单必须同时改这里的枚举**，
+ * 否则下一次有人照本段注释写「mascot 未登记 ⇒ 留包内」就又红了（2026-10-21 media.spec 三红的根因）。
  * 这样同一张图不可能既被判为包内、又被直出成 URL、再被 media.ts 反写回 /static（旧三条分支
  * 互不认账时正是这么漏的）。非 real 档（mock/dev/showcase/H5）三个分支都不触发，逐字保持 /static。
  */
@@ -84,7 +89,12 @@ const AVATAR_BASE = assetDir('assets/images/avatars');
 const PEOPLE_DIR = assetDir('assets/images/people');
 const GENERATED_BASE = assetDir('generated');
 
-/* ===== 未登记 / localPrefixes 命中的目录（任何档都留包内） ===== */
+/* ===== 基址组（逐个目录由 assetDir() 按清单判桶，real 档命中 cdnPrefixes 者直出后端）：
+ *   命中 cdnPrefixes（real 档出后端、构建期不随包）：assets/images/ 及其全部子目录
+ *     （activities/products/banners/register/match/home-split/mascot/covers/posters/avatars/people/posts）、
+ *     icons/{social,login,v2,home,match,emoji,nearby}/、message/、generated/；
+ *   命中 localPrefixes 或未登记（任何档都留包内）：assets 根、icons 根、
+ *     icons/{common,register,tabbar}/、svg-spec/、profile/。===== */
 const ASSETS_DIR = assetDir('assets');
 const IMAGES_DIR = assetDir('assets/images');
 const ACTIVITIES_DIR = assetDir('assets/images/activities');
@@ -164,25 +174,39 @@ const PROFILE_SVG_DIR = assetDir('assets/profile/svg');
  * 不是可以随手填满的。
  */
 export const IN_PACKAGE_ASSETS = {
-  /** 页头铃铛（HomeHeader.vue:78 经 resolveMediaUrl）——R2b-L01-D09 */
-  HEADER_BELL: { pkg: '/static/assets/icons/home/tabbar-top/icon_row1_07.png', tail: '/assets/icons/home/tabbar-top/icon_row1_07.png' },
-  /** 社区动态互动栏三枚（CommunityFeed.vue:247/251/255）——R2b-L01-D19 */
-  TB_LIKE: { pkg: '/static/assets/icons/home/toolbar/toolbar_row7_01.png', tail: '/assets/icons/home/toolbar/toolbar_row7_01.png' },
-  TB_COMMENT: { pkg: '/static/assets/icons/home/toolbar/toolbar_row7_02.png', tail: '/assets/icons/home/toolbar/toolbar_row7_02.png' },
-  TB_SHARE: { pkg: '/static/assets/icons/home/toolbar/toolbar_row7_03.png', tail: '/assets/icons/home/toolbar/toolbar_row7_03.png' },
-  /** 吉祥物（NotLoggedWaiting / messages 空态 / MatchLoading 装饰爱心）——R2b-L02-D11、R2b-L07-D10 */
-  MASCOT_DEFAULT: { pkg: '/static/assets/images/mascot/default.png', tail: '/assets/images/mascot/default.png' },
-  MASCOT_STAR: { pkg: '/static/assets/images/mascot/star.png', tail: '/assets/images/mascot/star.png' },
-  MASCOT_SPARKLE: { pkg: '/static/assets/images/mascot/sparkle.png', tail: '/assets/images/mascot/sparkle.png' },
-  MASCOT_HEART_PINK_LARGE: { pkg: '/static/assets/images/mascot/heart_pink_large.png', tail: '/assets/images/mascot/heart_pink_large.png' },
-  MASCOT_HEART_GREEN: { pkg: '/static/assets/images/mascot/heart_green.png', tail: '/assets/images/mascot/heart_green.png' },
-  MASCOT_HEART_GRADIENT: { pkg: '/static/assets/images/heart-gradient.svg', tail: '/assets/images/heart-gradient.svg' },
-  /** 「更多功能」四宫格字形（MyMore.vue:16-19） */
-  PROFILE_FAVORITES_SVG: { pkg: '/static/assets/images/profile-favorite.svg', tail: '/assets/images/profile-favorite.svg' },
-  PROFILE_VISITORS_SVG: { pkg: '/static/assets/images/profile-visitors.svg', tail: '/assets/images/profile-visitors.svg' },
-  PROFILE_ALBUM_SVG: { pkg: '/static/assets/images/profile-album.svg', tail: '/assets/images/profile-album.svg' },
-  PROFILE_PRIVACY_SVG: { pkg: '/static/assets/images/profile-privacy.svg', tail: '/assets/images/profile-privacy.svg' },
-  /** MyMore.vue:20-23 的其余四枚（同一张卡，避免只修半张） */
+  /**
+   * 吉祥物唯一真源（2026-10-21 测试红三件 media.spec#2/#3 + not-logged-waiting-orbit 车道收口）：
+   * 默认那尊 = `assets/svg-spec/08-mascot/sprout-default.svg`，不是 `assets/images/mascot/default.png`。
+   * 三条证据：
+   *   ① 契约：`cdn-buckets.json` 的 cdnPrefixes 自 3af02dd4 起是 `static/assets/images/`（整目录），
+   *      而 `static/assets/svg-spec/` 在 localPrefixes——同一张图不许两侧都认（本表铁律，见 :156-158 的
+   *      POST_PLACEHOLDER 先例）。
+   *   ② 盘上实测 real 包：`apps/client/dist/build/mp-weixin-real/static/assets/` 下只有
+   *      `icons、profile、svg-spec`（外加根上的 default-avatar.jpg/.png）——`images/` 整目录不在包里，
+   *      `svg-spec/08-mascot/sprout-default.svg` 在。指 PNG 的裸绑（pages/messages/index.vue:450）
+   *      在 real 档必然空白。
+   *   ③ 车道裁定：c56f6d2d 修「未登录等待卡中心空盘」（R2b-L02-D11 的后续）时，选的就是改绑
+   *      `ICONS_EMOJI.SPROUT`（同一枚 SVG），理由写在 NotLoggedWaiting.vue:68-75。
+   * 本条目因此按 SVG 登记（pkg 在 localPrefixes 内，任何档都在包里，裸绑与 resolveMediaUrl 两条路都不空源），
+   * `IMAGE_PATHS.MASCOT.DEFAULT` 与 `ICONS_EMOJI.SPROUT` 同值，三处（本表/契约/组件）自此一致。
+   */
+  MASCOT_DEFAULT: { pkg: '/static/assets/svg-spec/08-mascot/sprout-default.svg', tail: '/assets/svg-spec/08-mascot/sprout-default.svg' },
+  /* ── 以下 13 条登记于 2026-10-19 图标空白车道，同日 22:27 被 3af02dd4 把契约从 6 桶扩到 10 桶
+     （cdnPrefixes 新增 `static/assets/images/`、`static/assets/message/`、`static/assets/icons/{home,match,v2,emoji,login,social,nearby}/`）
+     之后**逐条失效并删除**（2026-10-21）：命中 cdnPrefixes 的文件 prepare-static.mjs --real 根本不复制进
+     src/static（实测 real 包内 `assets/` 只剩 icons/{common,register,tabbar} + svg-spec + profile + audio），
+     于是「必须随包」这一侧的声称不可能兑现——留着就是同一张图两侧都认，正是 media.spec.ts:257-260
+     那条双登记表 ↔ localPrefixes 对齐判点在红的东西。删除不改动任何运行时取值：九枚仍取同一条
+     `/static/...` 字面量（改为在 IMAGE_PATHS 里就地写死，逐字相同），real 档经 resolveMediaUrl 指后端
+     （后端 `apps/api/uploads/app-assets/` 里这 13 枚逐一在盘，3af02dd4 读数 缺资产=0）。
+     被删清单：HEADER_BELL、TB_LIKE/TB_COMMENT/TB_SHARE（`static/assets/icons/home/` 进桶）、
+     MASCOT_STAR/SPARKLE/HEART_PINK_LARGE/HEART_GREEN（`assets/images/mascot/` 进桶）、
+     MASCOT_HEART_GRADIENT 与 PROFILE_{FAVORITES,VISITORS,ALBUM,PRIVACY}_SVG（`assets/images/` 进桶）。
+     ⚠️ 登记给渲染车道（不在本车道可写集，也不属任何在红判点）：MatchLoading.vue:52/55/63-70/104 与
+     pages/messages/index.vue:465 是**裸绑 IMAGE_PATHS.MASCOT.***、没过 resolveMediaUrl，real 档这些
+     PNG 会取包内不存在的文件；R6 交件对这类消费点的定性是「≥19 处裸绑 :src 没过解析器」。 */
+  /** 「更多功能」八宫格里 MyMore.vue:20-23 的那四枚（同一张卡，避免只修半张）；
+   *  :16-19 那四枚 `assets/images/profile-*.svg` 已随上方 13 条一起出表（见被删清单）。 */
   EMOJI_USER_SVG: { pkg: '/static/assets/icons/common/user.svg', tail: '/assets/icons/common/user.svg' },
   EMOJI_HEART_FILLED_SVG: { pkg: '/static/assets/icons/common/heart-filled.svg', tail: '/assets/icons/common/heart-filled.svg' },
   EMOJI_FILE_TEXT_SVG: { pkg: '/static/assets/icons/common/file-text.svg', tail: '/assets/icons/common/file-text.svg' },
@@ -573,15 +597,22 @@ export const IMAGE_PATHS = {
    * 2026-10-19 图标空白车道：本组里**有消费方且需要随包**的六枚改由 IN_PACKAGE_ASSETS 供值
    * （pkg 串与登记前逐字相同），其余仍写本地字面量——那些素材后端 app-assets 也有一份，
    * 随包要占 2MB 主包预算，没进包就让它显式待在后端出口，不静默进保留集。
+   * 2026-10-21 收口：六枚里只有 DEFAULT 还留在本表（且它的值已换成 localPrefixes 内的 SVG，见
+   * IN_PACKAGE_ASSETS.MASCOT_DEFAULT），其余五枚在 3af02dd4 把 `assets/images/` 整目录划进
+   * cdnPrefixes 之后不可能随包 ⇒ 退回就地字面量，值逐字不变。
    */
   MASCOT: {
     /* MP-R2-PAGES-MESSAGES-INDEX-005：空态默认吉祥物收编（messages 页原硬编码路径）
-       —— R2b-L02-D11：真档下这一枚曾被 prune-unreferenced-static 剪出包外（中心空盘） */
+       —— 2026-10-21 收口到 svg-spec 那尊（见 IN_PACKAGE_ASSETS.MASCOT_DEFAULT 三条证据）：
+       `assets/images/mascot/` 自 3af02dd4 起整目录命中 cdnPrefixes ⇒ 不在 real 包内，
+       而本页 :450 是裸绑 :src、没过 resolveMediaUrl，指 PNG 在 real 档必空白。 */
     DEFAULT: IN_PACKAGE_ASSETS.MASCOT_DEFAULT.pkg,
     /* MP-R2-MATCHING-004：匹配进度卡图标收编（matching 页原硬编码路径）
-       —— R2b-L07-D10：star / sparkle 两枚同因（进度卡空圆） */
-    STAR: IN_PACKAGE_ASSETS.MASCOT_STAR.pkg,
-    SPARKLE: IN_PACKAGE_ASSETS.MASCOT_SPARKLE.pkg,
+       —— R2b-L07-D10：star / sparkle 两枚同因（进度卡空圆）。
+       这两枚所在目录已被 3af02dd4 划进 cdnPrefixes，real 档不可能随包 ⇒ 双登记已删，
+       字面量逐字不变地写在这里（值不变），real 档由 resolveMediaUrl 指后端。 */
+    STAR: '/static/assets/images/mascot/star.png',
+    SPARKLE: '/static/assets/images/mascot/sparkle.png',
     HEART: '/static/assets/images/mascot/mascot_heart.png',         // 心动/喜欢
     CRUSH: '/static/assets/images/mascot/mascot_crush.png',         // 暗恋/心动
     LIKE: '/static/assets/images/mascot/mascot_like.png',           // 喜欢
@@ -600,12 +631,14 @@ export const IMAGE_PATHS = {
     STATUS_CRUSH: '/static/assets/images/mascot/status_crush.png',   // 心动状态
     // 匹配/加载装饰爱心素材（2026-09-17 R7：模板禁止硬编码 /static/，收敛到常量；
     // 与本组一致固定本地 /static 路径，不随 real 模式切后端基址）
-    // R2b-L07-D10：这三枚（漂浮爱心 ×8 + 中央白底心徽）在真档里被剪成静默空圆，
-    // 现随 IN_PACKAGE_ASSETS 双登记进包；HEART_PINK 仍走后端出口（无随包必要）。
+    // R2b-L07-D10（这三枚漂浮爱心 ×8 + 中央白底心徽）的 IN_PACKAGE_ASSETS 双登记已于
+    // 2026-10-21 删除：`assets/images/` 整目录在 3af02dd4 之后命中 cdnPrefixes，real 档根本
+    // 不随包，「随包」那条声称兑不了现（同 HEART_PINK 的处置——它一直是就地字面量、走后端出口）。
+    // 字面量逐字不变，值不变。
     HEART_PINK: '/static/assets/images/mascot/heart_pink.png',             // 粉色小爱心
-    HEART_PINK_LARGE: IN_PACKAGE_ASSETS.MASCOT_HEART_PINK_LARGE.pkg, // 粉色大爱心
-    HEART_GREEN: IN_PACKAGE_ASSETS.MASCOT_HEART_GREEN.pkg,           // 绿色小爱心
-    HEART_GRADIENT: IN_PACKAGE_ASSETS.MASCOT_HEART_GRADIENT.pkg,            // 渐变爱心装饰（MatchLoading 背景板）
+    HEART_PINK_LARGE: '/static/assets/images/mascot/heart_pink_large.png', // 粉色大爱心
+    HEART_GREEN: '/static/assets/images/mascot/heart_green.png',           // 绿色小爱心
+    HEART_GRADIENT: '/static/assets/images/heart-gradient.svg',            // 渐变爱心装饰（MatchLoading 背景板）
   },
 
   /** TabBar 图标（tabbar 目录） */
@@ -696,11 +729,15 @@ export const IMAGE_PATHS = {
        它们此前**登记齐全但仍在真档里渲染为空圆**——因为整串 /static 字面量过不了
        prune-unreferenced-static.mjs 的后缀判点（同文件 :153-156），实测被剪清单见
        apps/client/archive/prune-backup/real-20261018T201320/assets/images/profile-*.svg。
-       双登记后 tail 形式补上第二道判点，四枚随包。*/
-    FAVORITES_SVG: IN_PACKAGE_ASSETS.PROFILE_FAVORITES_SVG.pkg,
-    VISITORS_SVG: IN_PACKAGE_ASSETS.PROFILE_VISITORS_SVG.pkg,
-    ALBUM_SVG: IN_PACKAGE_ASSETS.PROFILE_ALBUM_SVG.pkg,
-    PRIVACY_SVG: IN_PACKAGE_ASSETS.PROFILE_PRIVACY_SVG.pkg,
+       双登记后 tail 形式补上第二道判点，四枚随包。
+       2026-10-21 再更正：`assets/images/` 整目录已进 cdnPrefixes（3af02dd4），real 包里根本
+       没有 `assets/images/`（实测 dist/build/mp-weixin-real/static/assets/ 只剩 icons/profile/svg-spec）
+       ⇒ 「随包」这条兑现不了，本表四条已删（留着即 media.spec 的「同一张图不能两侧都认」在红）。
+       值逐字不变；MyMore.vue:36 过 resolveMediaUrl ⇒ real 档取后端那份（后端 4 枚逐一在盘）。*/
+    FAVORITES_SVG: '/static/assets/images/profile-favorite.svg',
+    VISITORS_SVG: '/static/assets/images/profile-visitors.svg',
+    ALBUM_SVG: '/static/assets/images/profile-album.svg',
+    PRIVACY_SVG: '/static/assets/images/profile-privacy.svg',
     POSTS:        ICONS_SOCIAL_DIR + '/heart-signal.svg', // 我的动态 → 复用 heart-signal
     FAVORITES:    ICONS_BASE + '/common/star.png',          // 我的收藏 → 复用 star
     MATCHES:      ICONS_SOCIAL_DIR + '/match.svg',         // 我的匹配 → 复用 social.match

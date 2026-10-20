@@ -106,8 +106,12 @@ describe("cdn-buckets 清单自洽（契约形状）", () => {
 });
 
 describe("resolveMediaUrl：real 档按 cdnPrefixes 出后端", () => {
-  /* 六个桶各取一个真实 rel（均来自 apps/client/src/static，后端 200 且字节一致，
-     实测表见 tmp/qa/lanes/R6/L01-media.md） */
+  /* 按目录取样的真实 rel（均来自 apps/client/src/static，后端 200 且字节一致，
+     实测表见 tmp/qa/lanes/R6/L01-media.md；契约里 `static/assets/images/`、`static/generated/`
+     这类整目录桶一次覆盖多个子目录）。后四枚是 3af02dd4 把契约从 6 桶扩到 10 桶
+     （`static/assets/images/` 整目录 + `static/assets/icons/home/` 等）之后**新出包的**，
+     逐枚 sha1 与后端 apps/api/uploads/app-assets 同字节实测一致；它们进这张表是为了钉住
+     「扩桶」这件事本身——谁把某个目录从 cdnPrefixes 里摘回去、或把包内声称加回来，这里就红。 */
   const BUCKET_SAMPLES = [
     "/static/generated/images/campus/campus-gate.jpg",
     "/static/assets/images/covers/circle-studybuddy.png",
@@ -115,6 +119,11 @@ describe("resolveMediaUrl：real 档按 cdnPrefixes 出后端", () => {
     "/static/assets/images/avatars/avatar-39.jpg",
     "/static/assets/images/people/person-01.png",
     "/static/assets/images/posts/post-1.jpg",
+    // ↓ 3af02dd4 扩桶新增的桶位（旧 6 桶口径下这四枚都算「未登记 ⇒ 留包内」，那是过期的）
+    "/static/assets/images/activities/activity-1.jpg",
+    "/static/assets/images/register/reg-hero-illustration.jpg",
+    "/static/assets/images/mascot/default.png",
+    "/static/assets/icons/home/toolbar/toolbar_row7_01.png",
   ];
 
   it("命中桶的包内路径 → 后端 app-assets 绝对 URL", () => {
@@ -129,12 +138,18 @@ describe("resolveMediaUrl：real 档按 cdnPrefixes 出后端", () => {
   it("localPrefixes 与未登记目录留包内（icons / svg-spec / mascot）", () => {
     withApiMode("real", () => {
       for (const pkg of [
+        // localPrefixes：icons/common、icons/register、icons/tabbar、svg-spec
         "/static/assets/icons/common/user.svg",
-        "/static/assets/icons/home/toolbar/toolbar_row7_01.png",
+        "/static/assets/icons/register/alert.svg",
+        "/static/assets/icons/tabbar/chat.png",
         "/static/assets/svg-spec/03-icons/star.svg",
-        "/static/assets/images/mascot/default.png",
-        "/static/assets/images/activities/activity-1.jpg",
-        "/static/assets/images/register/reg-hero-illustration.jpg",
+        /* 吉祥物默认那尊 = svg-spec/08-mascot 的 SVG（唯一真源，见 IN_PACKAGE_ASSETS.MASCOT_DEFAULT
+           的三条证据）；PNG 那枚 `assets/images/mascot/default.png` 已进 cdn 桶，
+           它在上面 BUCKET_SAMPLES 里被正向钉住，不能再出现在这张包内名单里。 */
+        "/static/assets/svg-spec/08-mascot/sprout-default.svg",
+        // 两表都没登记 ⇒ 留包内
+        "/static/assets/icons/gift.svg",
+        "/static/audio/voice-demo-1.wav",
         "/static/default-avatar.png",
       ]) {
         expect(hitsCdn(pkg)).toBe(false);
@@ -152,9 +167,18 @@ describe("resolveMediaUrl：real 档按 cdnPrefixes 出后端", () => {
       expect(resolveMediaUrl(`${APP_ASSETS}assets/icons/common/user.svg`)).toBe(
         "/static/assets/icons/common/user.svg"
       );
-      expect(resolveMediaUrl(`${APP_ASSETS}assets/images/mascot/default.png`)).toBe(
-        "/static/assets/images/mascot/default.png"
+      /* 吉祥物的唯一真源是 svg-spec/08-mascot 那尊（localPrefixes ⇒ 包内一定有，
+         dist/build/mp-weixin-real/static/assets/svg-spec/08-mascot/sprout-default.svg 实测在包里），
+         所以它的 http 形态照样反写回 /static。 */
+      expect(resolveMediaUrl(`${APP_ASSETS}assets/svg-spec/08-mascot/sprout-default.svg`)).toBe(
+        "/static/assets/svg-spec/08-mascot/sprout-default.svg"
       );
+      /* 而 `assets/images/mascot/default.png` 自 3af02dd4 起在 `static/assets/images/` 桶内：
+         包内那份已经不随主包发布，反写它 = real 档空白（消息页空态就是这么坏的），
+         所以这一支必须**不**反写。谁再把它加回「包内声称」，这一行就红。 */
+      const mascotPkgUrl = `${APP_ASSETS}assets/images/mascot/default.png`;
+      expect(resolveMediaUrl(mascotPkgUrl)).toBe(mascotPkgUrl);
+      expect(resolveMediaUrl(mascotPkgUrl)).not.toBe("/static/assets/images/mascot/default.png");
     });
   });
 
@@ -192,6 +216,10 @@ describe("resolveMediaUrl：非 real 档保持原行为（一律包内）", () =
         "/static/assets/images/people/person-01.png",
         "/static/assets/images/posts/post-1.jpg",
         "/static/generated/images/campus/campus-gate.jpg",
+        // 扩桶后进桶的三枚：mock 档照样不许指后端（后端可能根本没起）
+        "/static/assets/images/activities/activity-1.jpg",
+        "/static/assets/images/mascot/default.png",
+        "/static/assets/icons/home/toolbar/toolbar_row7_01.png",
       ]) {
         expect(resolveMediaUrl(pkg)).toBe(pkg);
       }
@@ -248,10 +276,20 @@ describe("config/images.ts 与 cdn-buckets 不打架（同一张图不能两侧�
       // localPrefixes / 未登记目录 → 包内
       expect(realPaths.ICONS_COMMON.USER_SVG).toBe("/static/assets/icons/common/user.svg");
       expect(realPaths.ICONS_EMOJI.STAR).toBe("/static/assets/svg-spec/03-icons/star.svg");
-      expect(realPaths.ACTIVITIES.ACTIVITY_1).toBe("/static/assets/images/activities/activity-1.jpg");
+      /* 吉祥物唯一真源：localPrefixes 里那尊 SVG，任何档都在包里，且与 ICONS_EMOJI.SPROUT
+         同值（NotLoggedWaiting.vue:105 绑的就是后者）⇒ 本表 / 契约 / 组件三处一致。 */
+      expect(realPaths.MASCOT.DEFAULT).toBe("/static/assets/svg-spec/08-mascot/sprout-default.svg");
+      expect(realPaths.MASCOT.DEFAULT).toBe(realPaths.ICONS_EMOJI.SPROUT);
+      /* 3af02dd4 把 `static/assets/images/` 整目录划进 cdnPrefixes ⇒ activities / home-split /
+         mascot 这些旧「未登记 ⇒ 留包内」的基址组在 real 档直出后端。下面两条钉的是扩桶后的口径，
+         谁把目录摘回包内（或让 assetDir 不看清单），这两行先红。 */
+      expect(realPaths.ACTIVITIES.ACTIVITY_1).toBe(`${assets}assets/images/activities/activity-1.jpg`);
       expect(realPaths.HOME_SPLIT.CIRCLE_PHOTO).toBe(
-        "/static/assets/images/home-split/circle/circle_row6_01.png"
+        `${assets}assets/images/home-split/circle/circle_row6_01.png`
       );
+      // 同一枚吉祥物光栅版仍在桶内（它不是包内资产，别拿它当包内证据）
+      expect(hitsCdn(realPaths.MASCOT.STAR)).toBe(true);
+      // MESSAGE_ICONS 是就地字面量（不随档位改值），出后端由 resolveMediaUrl 按 message/ 桶负责
       expect(realPaths.MESSAGE_ICONS.HEART).toBe("/static/assets/message/svg/icon/heart.svg");
       // 双登记表与 localPrefixes 对齐：不得登记任何 cdn 桶里的文件
       for (const entry of Object.values(realInPkg)) {

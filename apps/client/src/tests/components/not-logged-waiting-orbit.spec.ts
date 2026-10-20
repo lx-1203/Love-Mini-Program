@@ -50,6 +50,14 @@ describe("未登录等待卡的头像环（MP-R2VIS-PAGES-MESSAGES-INDEX-004）"
     const mascot = w.findAll(".not-logged__orbit-mascot");
     expect(mascot).toHaveLength(1);
     expect(mascot[0].attributes("src")).toBe(IMAGE_PATHS.MASCOT.DEFAULT);
+    /* 2026-10-21 收口：上一行只保证「组件跟常量一致」——两者被一起挪回
+       `assets/images/mascot/default.png` 时它照样绿，而那一枚自 3af02dd4 起在
+       `static/assets/images/` 桶内、real 包里根本没有（实测
+       dist/build/mp-weixin-real/static/assets/ 只剩 icons/profile/svg-spec），中心又会空盘。
+       这一行把真值钉死在 localPrefixes 的包内那尊 SVG 上（与 config/images.ts 的
+       IN_PACKAGE_ASSETS.MASCOT_DEFAULT、组件里的 ICONS_EMOJI.SPROUT 三处同值）：
+       常量或组件任何一侧改成桶内光栅图，这里都红。 */
+    expect(mascot[0].attributes("src")).toBe("/static/assets/svg-spec/08-mascot/sprout-default.svg");
   });
 
   it("内容顺序按理想图排：标题 → 环 → 解锁提示 → 4 个 icon → 按钮", () => {

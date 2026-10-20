@@ -8,7 +8,9 @@
  *   2) "后端没给中心坐标"被当成"距离 0"从而放行；
  *   3) 城市来自 GPS 时被误标不可信（那会连带改坏 home/nearby 的既有行为）。
  * 文件末尾另起一节钉 location.vue 的同源渲染——判据的前半（逆地理失败 ⇒ 只剩坐标 +
- * 「地址解析不可用」；ip 城市 ⇒ 显式标注；选点回来的地址不再背 ip 的出处）只在那儿可测。
+ * 用户可读空态；ip 城市 ⇒ 显式标注；选点回来的地址不再背 ip 的出处）只在那儿可测。
+ * 主值位那句话自 R6-L12-D07（2026-10-20）起是「暂无位置信息」，「地址解析不可用」这条
+ * 工程诊断语被降级为次级说明——本 spec 跟着改的是文案，不是距离守卫那半条判据。
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
@@ -136,7 +138,7 @@ describe("location.vue 的城市与坐标同源渲染", () => {
     });
   }
 
-  it("IP 城市超出 100km ⇒ 城市不渲染，只剩坐标 + 「地址解析不可用」", async () => {
+  it("IP 城市超出 100km ⇒ 城市不渲染，只剩坐标 + 用户可读空态（诊断语已撤出主值位）", async () => {
     stubGetLocation(NANJING);
     stubChooseLocation({ ...NANJING, address: PICKED_ADDRESS });
     requestMock.mockResolvedValue({ city: "杭州", ...HANGZHOU });
@@ -145,7 +147,20 @@ describe("location.vue 的城市与坐标同源渲染", () => {
     await wrapper.find(".location-btn--primary").trigger("tap");
     await flushPromises();
 
-    expect(wrapper.find(".location-card__value").text()).toBe("地址解析不可用");
+    /* 主值位那句话换过口径：R6-L12-D07（批次 R6-B57，P1 空态文案，
+       reports/audit/mp-fidelity-2026-10-18/defects-R6.md:1348-1353）判定「地址解析不可用」是
+       给工程师看的失败原因、不该占据卡片主值位，要求换成可行动空态并把诊断语降级为次级说明
+       ⇒ location.vue:67 取 t("locationPage.locationEmpty")（zh-CN.ts:1750「暂无位置信息」）。
+       本判据（LOCATION-001 距离守卫）那半句一个字没动：超距的 IP 城市仍然不许渲染。
+       下面这四行合起来仍然判得住红：
+         · 诊断语回到主值位 → 第 1/2 行红；
+         · 距离守卫失效、把「杭州」当城市铺出来 → 第 3/4 行红；
+         · 硬编码假城市回流 → 最后一行红（原样保留）。 */
+    const value = wrapper.find(".location-card__value");
+    expect(value.text()).toBe("暂无位置信息");
+    expect(value.text()).not.toContain("地址解析");
+    expect(value.text()).not.toContain("杭州");
+    expect(wrapper.find(".location-card").text()).not.toContain("杭州");
     expect(wrapper.find(".location-card__coords").text()).toContain("纬度 32.0415");
     // 兜底文案会把一个硬编码假城市写进与坐标同源的行里，这里必须一次不出现
     expect(wrapper.html()).not.toContain("北京大学 · 附近");

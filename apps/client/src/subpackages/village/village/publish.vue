@@ -1126,7 +1126,7 @@ onUnmounted(() => {
 /* R1-B33/D17：一行四格栅格。单格 = (750 − 2×32 页边距 − 3×16 gap)/4 = 159.5rpx，取整 159rpx——
    4×159 + 3×16 = 684rpx ≤ 内容宽 686rpx，留 2rpx 余量避免亚像素进位换成三格一行。
    （原 200rpx 单格只容得下 3 格：3×200 + 2×16 = 632rpx，与理想图四格不符） */
-.publish-image { width: 159rpx; height: 159rpx; border-radius: var(--r-lg, 20rpx); overflow: hidden; position: relative; background: var(--c-brand-50, #E8FAF3); } /* R2b-L03-D20：原 16rpx 字面量改 --r-lg(20rpx)，与同页「发布到」卡/小贴士同档、对齐理想图量测；R1-B33/D24 占位底色收敛到 --c-brand-50 保留 */
+.publish-image { width: 159rpx; height: 159rpx; border-radius: 16rpx; overflow: hidden; position: relative; background: var(--c-brand-50, #E8FAF3); } /* 16rpx 字面量按判据「不等值即不替换」以 nit 保留（2026-10-06 用户全量采纳裁定建议书 #1：--r-lg 以实现为准 20rpx，本行「不做 16→20rpx 视觉替换」，见 reports/audit/round-7/ledger-plan-ruling-closure-2026-10-06.json 与 tests/design-token-rulings.spec.ts:131）；R1-B33/D24 占位底色收敛到 --c-brand-50 保留 */
 .publish-image__img { width: 100%; height: 100%; }
 .publish-image__remove { position: absolute; top: 6rpx; right: 6rpx; width: 40rpx; height: 40rpx; border-radius: 50%; background: rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; }
 .publish-image__remove-icon { width: 22rpx; height: 22rpx; color: #fff; }
@@ -1171,9 +1171,14 @@ onUnmounted(() => {
 
 /* MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-004：圆角字面量按「等值才换」收口——
    本行 20rpx = --r-lg（design-variables.scss:194）等值，已令牌化。
-   R2b-L03-D20 更正：.publish-image 原以「token 表里没有 16rpx 等值档」为由保留 16rpx 字面量，
-   但理想图九宫格圆角量测本就落在 --r-lg(20rpx) 档，取它是对齐基准而非等值替换，故已改 --r-lg；
-   同批虚线格边框色 #C7D8D2 亦令牌化到 --c-border-strong。
+   R2b-L03-D20 的「.publish-image 也取 --r-lg」建议**不予采纳**：该改动实为 16→20rpx 的视觉替换，
+   而 2026-10-06 用户全量采纳的裁定建议书 #1（reports/audit/round-7/ruling-recommendations-2026-10-06.md
+   + ledger-plan-ruling-closure-2026-10-06.json 对 PUBLISH-004 处置列的裁定块）已把这条写死：
+   「16→--r-lg」的等值替换要求作废、--r-lg 以实现为准 20rpx，但 publish.vue 的 16rpx 字面量
+   以 nit 保留、不做 16→20rpx 视觉替换。修车道不得单方面挪动已采纳的裁定 ⇒ 本行按裁定回 16rpx，
+   由 tests/design-token-rulings.spec.ts「16rpx 字面量仍在位」判点钉住。
+   若理想图量测（R2b-L03-D20 自述「约 20rpx」）要推翻这条裁定，须另立裁决行由用户裁，不在本车道。
+   同批虚线格边框色 #C7D8D2 令牌化到 --c-border-strong 那条与本裁定无冲突，保留。
    （原同批备注里那条 6rpx 圆角例外，属已删除的「已加入」胶囊规则，现已无对应样式） */
 .publish-tip { margin: 24rpx 32rpx; padding: 24rpx; background: var(--c-brand-50, #E8FAF3); border-radius: var(--r-lg, 20rpx); display: flex; align-items: flex-start; gap: 16rpx; } /* R1-B33/D24：提示底 #EAF9F3 系就近取色，收敛到 --c-brand-50 */
 .publish-tip__text-wrap { flex: 1; display: flex; flex-direction: column; gap: 6rpx; }
