@@ -250,7 +250,7 @@ async function loadPeoplePreview(scope: "nearby" | "city" = peopleScope.value) {
       cards.push(card);
     }
     peoplePreview.value = cards.slice(0, 8);
-  } catch {
+  } catch (e) {
     if (token !== peopleToken) return;
     peopleFailed.value = true;
     peoplePreview.value = [];
