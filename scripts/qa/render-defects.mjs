@@ -9,14 +9,23 @@
  * 用法：node scripts/qa/render-defects.mjs --lanes tmp/qa/lanes/R1 --fixlist reports/.../fixlist-R1.json
  *        --round R1 --out reports/.../defects-R1.md
  * 退出码：0 写成就 0；1 卡片里有点名不到的缺陷（fixlist 与卡对不上）——那是账目错，不许静默出 md。
+ *
+ * 段内继承（R6.7 登记、R7 落地）：R6 的卡在同一 ## FRAME 段里只给第一条抄 frame_hash，
+ * 第二条 defect_id 起不再重复——旧渲染器据此拒出 defects-R6.md（frame_hash空=95）。
+ * 帧路径→哈希在取景清单里是一对一的，同段继承不是造见证，但成品必须标"继承"二字，
+ * 不许把派生值冒充逐条抄录；整段一个哈希都没有的仍然 NOT-EVIDENCED（不编）。
+ * --self-test 用合成卡自证两条：同段两条 ⇒ 第二条继承出册；整段无哈希 ⇒ 仍然退 1。
  */
-import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { resolve, dirname, join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "..", "..");
+const SELF = fileURLToPath(import.meta.url);
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 && process.argv[i + 1] && !String(process.argv[i + 1]).startsWith("--") ? process.argv[i + 1] : d; };
+const flag = (k) => process.argv.includes("--" + k);
 const rel = (p) => p.split(sep).join("/");
 const RK = "RENDERDEFECTS_RESULT";
 
@@ -24,6 +33,7 @@ const lanesDir = resolve(arg("lanes", ""));
 const fixlistPath = arg("fixlist", "");
 const ROUND = arg("round", "");
 const outPath = resolve(arg("out", ""));
+if (flag("self-test")) selfTest();
 if (!lanesDir || !existsSync(lanesDir) || !ROUND || !outPath) {
   console.log(`${RK}=NOT-EVIDENCED reason=bad-args lanes=${arg("lanes", "")} round=${ROUND || "(没传)"} out=${arg("out", "")}`);
   process.exit(1);
@@ -37,13 +47,20 @@ const FIELDS = ["frame_hash", "defect_id", "page", "axis", "severity", "fix_cate
 const ALIAS = { 修复类别: "fix_category", 源码证据: "source_citation" };
 const rows = [];
 const files = readdirSync(lanesDir).filter((f) => f.endsWith(".md") && !/\.brief\.md$/i.test(f)).sort();
+let inheritedCount = 0;
 for (const f of files) {
   const txt = readFileSync(join(lanesDir, f), "utf8").replace(/\r\n/g, "\n");
-  let rec = null, lastFrame = "";
-  const flush = () => { if (rec) rows.push(rec); rec = null; };
+  let rec = null, lastFrame = "", sectionHash = "";
+  const flush = () => {
+    if (!rec) return;
+    /* 同段继承：rec 诞生于当前段（rec.frame === lastFrame）且本段出现过哈希 ⇒ 挂上并打标；
+       跨段的残条（字段越过了下一个 ## FRAME 头）不继承下一段的哈希——那不是它看过的图。 */
+    if (!rec.frame_hash && sectionHash && rec.frame === lastFrame) { rec.frame_hash = sectionHash; rec.hashInherited = true; inheritedCount++; }
+    rows.push(rec); rec = null;
+  };
   for (const line of txt.split("\n")) {
     const fm = line.match(/^##\s*FRAME\s+(\S+)/);
-    if (fm) { lastFrame = fm[1]; continue; }
+    if (fm) { lastFrame = fm[1]; sectionHash = ""; continue; }
     const kv = line.match(/^-\s*([^:]+?)\s*:\s*(.*)$/);
     if (!kv) continue;
     const key = ALIAS[kv[1].trim()] || kv[1].trim();
@@ -53,6 +70,7 @@ for (const f of files) {
        再见到第二个就是下一条开始了。 */
     if (rec && ((key === "frame_hash" && rec.frame_hash) || (key === "defect_id" && rec.defect_id))) flush();
     if (!rec) rec = { lane: f.replace(/\.md$/, ""), frame: lastFrame, defect_id: "", frame_hash: "" };
+    if (key === "frame_hash" && val) sectionHash = val;
     if (!rec[key]) rec[key] = val;
   }
   flush();
@@ -91,7 +109,7 @@ for (const r of rows) { const k = r.page || "(未点名页面)"; if (!byPage.has
 const L = [];
 L.push(`# ${ROUND} 逐帧缺陷清单（由泳道缺陷卡逐字渲染，生成器 scripts/qa/render-defects.mjs）`);
 L.push(``);
-L.push(`- 缺陷条数=${rows.length}　涉及页面=${byPage.size}　涉及帧=${frameSet.size}　泳道卡=${files.length}`);
+L.push(`- 缺陷条数=${rows.length}　涉及页面=${byPage.size}　涉及帧=${frameSet.size}　泳道卡=${files.length}${inheritedCount ? `　段内继承哈希=${inheritedCount}（同段第二条起未重复抄录，非逐条见证）` : ""}`);
 L.push(`- 严重度分布：${Object.entries(sevCount).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k}=${v}`).join("　")}`);
 L.push(`- 轴分布：${Object.entries(axisCount).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k}=${v}`).join("　")}`);
 if (fixlistPath) L.push(`- 批次归属：${batchOf.size} 个批次收录，**卡上有而 fixlist 没有的=${unbatched}**${unbatched ? "（这是账目错，见退出码）" : ""}`);
@@ -101,7 +119,7 @@ for (const [page, list] of [...byPage.entries()].sort()) {
   for (const r of list) {
     L.push(``);
     L.push(`### ${r.defect_id}　${r.severity || "?"} / ${r.axis || "?"}　批次 ${batchOf.get(r.defect_id) || "-"}`);
-    L.push(`- 帧：\`${r.frame}\`（sha16=\`${r.frame_hash || "-"}\`）`);
+    L.push(`- 帧：\`${r.frame}\`（sha16=\`${r.frame_hash || "-"}\`${r.hashInherited ? "，自同段前条继承" : ""}）`);
     if (r.source_citation) L.push(`- 源码证据：\`${r.source_citation}\``);
     if (r.理想图依据) L.push(`- 理想图依据：${r.理想图依据}`);
     if (r.现象) L.push(`- 现象：${r.现象}`);
@@ -111,5 +129,45 @@ for (const [page, list] of [...byPage.entries()].sort()) {
   L.push(``);
 }
 writeFileSync(outPath, L.join("\n") + "\n", "utf8");
-console.log(`${RK}=WROTE file=${rel(REPO === outPath.slice(0, REPO.length) ? outPath.slice(REPO.length + 1) : outPath)} 条数=${rows.length} 页面=${byPage.size} 帧=${frameSet.size} 无批次=${unbatched}`);
+console.log(`${RK}=WROTE file=${rel(REPO === outPath.slice(0, REPO.length) ? outPath.slice(REPO.length + 1) : outPath)} 条数=${rows.length} 页面=${byPage.size} 帧=${frameSet.size} 无批次=${unbatched} 段内继承哈希=${inheritedCount}`);
 if (unbatched) { console.log(`${RK}=PARTIAL reason=${unbatched} 条缺陷卡在泳道里写了但 fixlist 没收录 ⇒ 聚合与卡片不是同一份事实`); process.exit(1); }
+
+/* ── 自测：合成卡自证"继承出册"与"无哈希仍拒"两条都活着（spawn 自证，不占真卡目录）── */
+function selfTest() {
+  const root = join(REPO, "tmp", "qa", `selftest-render-defects-${Date.now()}`);
+  const lanesA = join(root, "A"), lanesB = join(root, "B");
+  mkdirSync(lanesA, { recursive: true }); mkdirSync(lanesB, { recursive: true });
+  writeFileSync(join(lanesA, "card.md"), [
+    "# 合成卡甲（同段两条、哈希只抄一遍——R6 卡的实形）",
+    "## FRAME tmp/x__top.png",
+    "- frame_hash: aaaa1111bbbb2222",
+    "- defect_id: T1-D01",
+    "- page: p1",
+    "- axis: 间距",
+    "- severity: P2",
+    "- defect_id: T1-D02",
+    "- page: p1",
+    "- axis: 字号",
+    "- severity: P3",
+    "",
+  ].join("\n"), "utf8");
+  writeFileSync(join(lanesB, "card.md"), [
+    "# 合成卡乙（整段无哈希——继承不许变成编造）",
+    "## FRAME tmp/y__top.png",
+    "- defect_id: T2-D01",
+    "- page: p2",
+    "- axis: 文案",
+    "- severity: P2",
+    "",
+  ].join("\n"), "utf8");
+  const run = (lanes, out) => spawnSync(process.execPath, [SELF, "--lanes", lanes, "--round", "T", "--out", out], { encoding: "utf8" });
+  const outA = join(root, "a.md");
+  const rA = run(lanesA, outA);
+  const mdA = existsSync(outA) ? readFileSync(outA, "utf8") : "";
+  const okA = rA.status === 0 && /段内继承哈希=1(?!\d)/.test(String(rA.stdout)) && mdA.includes("自同段前条继承") && (mdA.match(/aaaa1111bbbb2222/g) || []).length === 2;
+  const rB = run(lanesB, join(root, "b.md"));
+  const okB = rB.status === 1 && /frame_hash空=1(?!\d)/.test(String(rB.stdout));
+  rmSync(root, { recursive: true, force: true });
+  console.log(`RENDERDEFECTS_SELFTEST=${okA && okB ? "PASS" : "FAIL"} 继承出册=${okA ? "OK" : "BAD"} 无哈希仍拒=${okB ? "OK" : "BAD"}（甲 exit=${rA.status} 乙 exit=${rB.status}）`);
+  process.exit(okA && okB ? 0 : 1);
+}
