@@ -18,13 +18,14 @@ const reasons: MatchReason[] = [
   { type: "same_school", text: "同校" },
 ];
 
-function mountSuccess() {
+function mountSuccess(extra: Record<string, unknown> = {}, list: MatchReason[] = reasons) {
   return mount(MatchSuccess, {
     props: {
       myAvatar: "/static/assets/default-avatar.jpg",
       partnerAvatar: "/static/assets/default-avatar.jpg",
       partnerName: "林晓",
-      reasons,
+      reasons: list,
+      ...extra,
     },
     global: { plugins: [i18n], stubs },
   });
@@ -34,11 +35,42 @@ describe("MatchSuccess", () => {
   it("渲染双头像、关系建立理由与两个 CTA", () => {
     const wrapper = mountSuccess();
     expect(wrapper.findAll(".match-success__avatar")).toHaveLength(2);
-    // 2026-08-25 P1 契约演进（规格书 7.8）：理由 chips 改为匹配度评分卡，
-    // 且始终补全为 4 行（.match-success__score-item），传入的 reasons 渲染在前排。
-    expect(wrapper.findAll(".match-success__score-item")).toHaveLength(4);
+    // R10-L06-D01（文案 P0）反转了 2026-08-25 的「补满 4 行」契约：
+    // 缺项用 DEFAULT_REASON_LABELS 填出来的行是向用户虚构共同点，故行数=真理由数。
+    expect(wrapper.findAll(".match-success__score-item")).toHaveLength(2);
     expect(wrapper.text()).toContain("摄影");
     expect(wrapper.text()).toContain("同校");
+    expect(wrapper.find(".match-success__primary").exists()).toBe(true);
+    expect(wrapper.find(".match-success__secondary").exists()).toBe(true);
+  });
+
+  it("不得出现补位用的假共同点", () => {
+    const text = mountSuccess().text();
+    for (const invented of ["慢跑爱好", "音乐品味", "电影偏好", "生活方式"]) {
+      expect(text).not.toContain(invented);
+    }
+  });
+
+  it("匹配度只有一个数字，且来自 props.matchScore 真值", () => {
+    const wrapper = mountSuccess({ matchScore: 87 });
+    const percents = wrapper.findAll(".match-success__score-percent");
+    expect(percents).toHaveLength(1);
+    expect(percents[0]!.text()).toBe("匹配度 87%");
+    // 旧实现写死 [90,85,80,79]——任何一个都不许再出现在画面上
+    for (const fake of ["90%", "85%", "80%", "79%"]) {
+      expect(wrapper.text()).not.toContain(fake);
+    }
+  });
+
+  it("拿不到 matchScore 时隐藏匹配度，不用常量冒充", () => {
+    expect(mountSuccess().text()).not.toContain("匹配度");
+    expect(mountSuccess({ matchScore: Number.NaN }).text()).not.toContain("匹配度");
+  });
+
+  it("没有真理由时整张共同点卡隐藏（ops 用例 :172 预期）", () => {
+    const wrapper = mountSuccess({}, []);
+    expect(wrapper.find(".match-success__score-card").exists()).toBe(false);
+    // 页面不得塌陷：两个 CTA 仍可达
     expect(wrapper.find(".match-success__primary").exists()).toBe(true);
     expect(wrapper.find(".match-success__secondary").exists()).toBe(true);
   });

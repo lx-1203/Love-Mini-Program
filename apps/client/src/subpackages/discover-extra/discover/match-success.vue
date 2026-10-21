@@ -180,6 +180,7 @@ function handleScreenshot() {
       :partner-avatar="partnerAvatar"
       :partner-name="partner?.name ?? t('discover.partnerDefaultName')"
       :reasons="reasons"
+      :match-score="partner?.matchScore"
       @chat="goChat"
       @explore="keepExploring"
       @share="handleShare"

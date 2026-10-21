@@ -23,12 +23,15 @@ const props = withDefaults(
     partnerAvatar: string;
     partnerName: string;
     reasons: MatchReason[];
+    /** 后端真实匹配度（0-100）。缺省 ⇒ 不显示匹配度数字，见 scorePercent。 */
+    matchScore?: number;
   }>(),
   {
     myAvatar: "",
     partnerAvatar: "",
     partnerName: "",
     reasons: () => [],
+    matchScore: undefined,
   }
 );
 
@@ -49,31 +52,23 @@ const { t } = useI18n();
    另：common/book.svg、food.svg 同样不带显式 width/height 却能渲染 ⇒ 「缺宽高=0×0」不是本帧根因，
    run.svg 补宽高归素材车道（已在交件报告登记 HANDOFF）。 */
 const scoreIcons = [IMAGE_PATHS.ICONS_COMMON.HIKING_SVG, IMAGE_PATHS.ICONS_EMOJI.MUSIC, IMAGE_PATHS.ICONS_EMOJI.BOOK, IMAGE_PATHS.ICONS_EMOJI.FOOD];
-// 2026-08-25 P0：默认匹配度与参考图对齐（90/85/80/79），最后一项"生活方式 79%"而非 95%
-const defaultScores = [90, 85, 80, 79];
 
-/** 2026-08-25 P1：始终展示 4 行匹配度（规格书 7.8）。
- *  后端 reasons 可能只有 1~2 项（如 mock 只返"同校"+"共同兴趣"），
- *  缺项用默认标签补全，保证 旅行/音乐/电影/生活方式 四行都可见。 */
-/* R2b-L06-D05（文案 P2）：理想图《匹配成功页面》「共同点」卡首行为「慢跑爱好」配奔跑人形图标
-   （与人物设定"喜欢摄影和夜跑"一致）。原首项「旅行爱好」与首行图标图文不符，故标签改回「慢跑爱好」。
-   图标本体已由 R8-L06-D02 换到包内可渲染的 common/hiking.svg（见下方 scoreIcons 注释）。 */
-const DEFAULT_REASON_LABELS = ["慢跑爱好", "音乐品味", "电影偏好", "生活方式"];
-const displayReasons = computed<MatchReason[]>(() => {
-  const result: MatchReason[] = [];
-  for (let i = 0; i < 4; i++) {
-    const src = props.reasons[i];
-    result.push({
-      type: (src?.type ?? `default-${i}`) as MatchReason["type"],
-      text: src?.text ?? DEFAULT_REASON_LABELS[i] ?? "共同点",
-    });
-  }
-  return result;
+/* R10-L06-D01（文案 P0）：原实现在此写死 defaultScores=[90,85,80,79] 并用
+   DEFAULT_REASON_LABELS 把 reasons 补满四行——那四个数是《匹配成功页面》设计稿里的示例占位值，
+   对任何匹配对象都成立，等于向用户伪造契合度（冻结契约 MP-R1-MATCHING-REQ-01 明令禁止假百分比）。
+   现改为：共同点只渲染后端真给的理由（拿不到 ⇒ 整卡隐藏，与 ops 用例
+   SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json:172 的「理由卡整块隐藏」预期一致），
+   匹配度只渲染 props.matchScore 这一个真值（由 view-models/match.ts:40 从 commonCircleCount 派生）。 */
+const displayReasons = computed<MatchReason[]>(() =>
+  (props.reasons || []).filter((r) => r && typeof r.text === "string" && r.text.trim().length > 0)
+);
+
+const scorePercent = computed<number | null>(() => {
+  const raw = Number(props.matchScore);
+  if (!Number.isFinite(raw)) return null;
+  const clamped = Math.min(100, Math.max(0, Math.round(raw)));
+  return clamped;
 });
-
-function getScorePercent(index: number): number {
-  return defaultScores[index % defaultScores.length] ?? 0;
-}
 
 function getScoreIcon(index: number): string {
   return scoreIcons[index % scoreIcons.length] ?? '';
@@ -124,9 +119,16 @@ function getScoreIcon(index: number): string {
         </view>
       </view>
 
-      <!-- 2026-08-25 P1：始终展示 4 行（displayReasons 已补全缺项） -->
+      <!-- R10-L06-D01（文案 P0）：匹配度从「每行一个假分数」改成「卡头一个真分数」。
+           后端只有一个整体 matchScore，按行重复它同样是伪造 per-dimension 数值，故进度条只留一条。 -->
       <view v-if="displayReasons.length > 0" class="match-success__score-card">
-        <text class="match-success__score-title">{{ t('matchSuccess.scoreTitle') }}</text>
+        <view class="match-success__score-head">
+          <text class="match-success__score-title">{{ t('matchSuccess.scoreTitle') }}</text>
+          <text v-if="scorePercent !== null" class="match-success__score-percent">匹配度 {{ scorePercent }}%</text>
+        </view>
+        <view v-if="scorePercent !== null" class="match-success__score-track">
+          <view class="match-success__score-fill" :style="{ width: scorePercent + '%' }"></view>
+        </view>
         <view class="match-success__score-list">
           <view
             v-for="(reason, index) in displayReasons"
@@ -134,7 +136,7 @@ function getScoreIcon(index: number): string {
             class="match-success__score-item"
           >
             <!-- R1-L06-D06（圆角 P2）：图标外面补一层圆角方块底衬，行首才有视觉锚点；
-                 理想图末行（生活方式）为粉底，其余三行绿底。 -->
+                 理想图末行为粉底，其余绿底。 -->
             <view
               class="match-success__score-icon-box"
               :class="index === displayReasons.length - 1 ? 'match-success__score-icon-box--pink' : 'match-success__score-icon-box--green'"
@@ -142,14 +144,6 @@ function getScoreIcon(index: number): string {
               <image class="match-success__score-icon" :src="getScoreIcon(index)" mode="aspectFit" alt="" />
             </view>
             <text class="match-success__score-label">{{ reason.text }}</text>
-            <!-- R1-L06-D05（尺寸比例 P2）：百分比与其下的进度条收进右栏，
-                 不再让 __score-track 以 width:100% 横穿整张卡片压在标签行正下方。 -->
-            <view class="match-success__score-value">
-              <text class="match-success__score-percent">匹配度 {{ getScorePercent(index) }}%</text>
-              <view class="match-success__score-track">
-                <view class="match-success__score-fill" :style="{ width: getScorePercent(index) + '%' }"></view>
-              </view>
-            </view>
           </view>
         </view>
       </view>
@@ -380,27 +374,34 @@ function getScoreIcon(index: number): string {
   box-shadow: 0 8rpx 32rpx rgba(54, 201, 154, 0.10);
 }
 
+.match-success__score-head {
+  /* R10-L06-D01：卡头一行——左标题、右唯一那个真匹配度。 */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
 .match-success__score-title {
   /* R1-L06-D07（字号 P3）：26/500 → 32/700，与 26rpx 行文字拉开层级
      （卡建议的 --t-title-sm 在本仓不存在，实际档位表为 --fs-*，32rpx 档即 --fs-2xl，
      design-variables.scss:537） */
   font-size: var(--fs-2xl, 32rpx);
   color: #5f6f6b;
-  text-align: center;
-  margin-bottom: 24rpx;
   font-weight: 700;
 }
 
 .match-success__score-list {
   display: flex;
   flex-direction: column;
-  /* V-02（第五轮 QA）：4 行匹配度行距加宽，避免进度条视觉粘连 */
+  /* V-02（第五轮 QA）：行距加宽，避免相邻行视觉粘连 */
   gap: 24rpx;
 }
 
 .match-success__score-item {
-  /* R1-L06-D05：两列结构——左「底衬图标 + 标签」｜右「百分比 + 其下进度条」，
-     替掉原「文字行 + 满宽条」的八段节奏。 */
+  /* R10-L06-D01：行内只剩「底衬图标 + 真实共同点文案」——每行一个假分数已删。 */
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -441,16 +442,6 @@ function getScoreIcon(index: number): string {
   font-weight: 500;
 }
 
-.match-success__score-value {
-  /* R2b-L06-D06（尺寸比例 P2）：右栏定宽由 264rpx（≈45% 行内容宽）提到 330rpx（≈57%），
-     与理想图「进度条从行内容宽约 43% 处起排、右端几乎贴卡内衬、条宽≈57%」一致。 */
-  width: 330rpx;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10rpx;
-}
-
 .match-success__score-percent {
   display: block;
   font-size: var(--fs-md, 26rpx);
@@ -460,8 +451,10 @@ function getScoreIcon(index: number): string {
 }
 
 .match-success__score-track {
+  /* R10-L06-D01：整卡唯一一条进度条，宽度即真 matchScore。 */
   width: 100%;
   height: 12rpx;
+  margin-bottom: 24rpx;
   background: #F0F0F0;
   border-radius: 999rpx;
   overflow: hidden;
