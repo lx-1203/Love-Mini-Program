@@ -31,7 +31,24 @@ function onNavIconError() {
   navIconFailed.value = true;
 }
 
-const partner = computed(() => matchStore.matchedUser ?? fallbackPartner.value);
+/* R10-L06-D02（文案 P1）：matchedUser 可能带空昵称（右侧头像有真图、全页却只显示「TA」），
+   此时以按 userId 补拉到的资料为准展示。 */
+const partner = computed(() => {
+  const stored = matchStore.matchedUser;
+  const fb = fallbackPartner.value;
+  if (stored && !(stored.name || "").trim() && fb && (fb.name || "").trim()) return fb;
+  return stored ?? fb;
+});
+/**
+ * R10-L06-D02（文案 P1）：partner 缺 name 时不再静默落 i18n「TA」（=匿名冒充），
+ * 改为可见的加载状态文案：补拉中⇒「对方昵称加载中…」，补拉失败/无结果⇒「对方昵称加载失败」，
+ * 同时 goChat 禁用「立即聊天」（见 goChat 守卫）。
+ */
+const partnerName = computed(() => {
+  const name = (partner.value?.name || "").trim();
+  if (name) return name;
+  return loading.value ? "对方昵称加载中…" : "对方昵称加载失败";
+});
 const myAvatar = computed(
   () =>
     // R10-P1-004：avatarUrl 为服务端原始路径（/uploads/...），必须经统一媒体出口解析；
@@ -77,8 +94,12 @@ onLoad((query) => {
   if (qUserId && matchStore.matchedUser && String(matchStore.matchedUser.userId) !== qUserId) {
     matchStore.reset();
   }
-  if (!matchStore.matchedUser) {
-    const userId = typeof query?.userId === "string" ? query.userId : "";
+  // R10-L06-D02（文案 P1）：补拉触发从「无 matchedUser」扩到「matchedUser 缺昵称」——
+  // store 残留对象带真头像但 name 空时，此前永远不补拉，全页静默显示「TA」。
+  const stored = matchStore.matchedUser;
+  const needLookup = !stored || !(stored.name || "").trim();
+  if (needLookup) {
+    const userId = qUserId || String(stored?.userId ?? "");
     if (userId) {
       void loadFallbackPartner(userId);
     }
@@ -99,7 +120,12 @@ async function loadFallbackPartner(userId: string) {
 }
 
 function goChat() {
-  if (!partner.value) return;
+  // R10-L06-D02（文案 P1）：无对象或昵称取不到 ⇒ 身份不明，禁用「立即聊天」出口
+  // （MatchSuccess.vue:159 的聊天钮无 disabled prop，禁用落在页面侧行为守卫 + toast 回执）。
+  if (!partner.value || !(partner.value.name || "").trim()) {
+    uni.showToast({ title: "对方昵称加载失败，暂时无法发起聊天", icon: "none" });
+    return;
+  }
   matchStore.markChatReady();
   openAppPath(
     `${ROUTES.CHAT.SESSION}?userId=${encodeURIComponent(partner.value.userId)}`
@@ -178,7 +204,7 @@ function handleScreenshot() {
     <MatchSuccess
       :my-avatar="myAvatar"
       :partner-avatar="partnerAvatar"
-      :partner-name="partner?.name ?? t('discover.partnerDefaultName')"
+      :partner-name="partnerName"
       :reasons="reasons"
       :match-score="partner?.matchScore"
       @chat="goChat"

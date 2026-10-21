@@ -388,18 +388,29 @@ onShareAppMessage(() => {
       <view class="body-footer" />
     </scroll-view>
 
-    <!-- MP-R1-TOPICDETAIL-001：加载失败错误态（与"话题不存在"区分，提供重试） -->
+    <!-- MP-R1-TOPICDETAIL-001：加载失败错误态（与"话题不存在"区分，提供重试）
+         R10-L04-D04（位置 P2）：把模板上真实存在的宿主 class `empty-state` 挂到组件标签自身
+         （已知机制 §1：跨 SafeImage/EmptyState 作用域边界的唯一宿主面就是组件标签节点），
+         于是本文件 :810 那条 `flex:1 + justify-content:center` 从死样式变成生效规则。 -->
     <EmptyState
       v-else-if="!loading && errorMessage"
+      class="empty-state"
       type="network"
       :title="errorMessage || t('circle.topicDetailNotExist')"
       :action-text="t('common.retry')"
       @action="retryLoad"
     />
 
-    <!-- 话题不存在 -->
+    <!-- 话题不存在
+         R10-L04-D07（文案 P3）：组件已为本页备好 hide-sub（EmptyState.vue:92「R10-P2-008：
+         hideSub 允许只留一句」），这里补传 ⇒ 主标题「话题不存在或已被删除」不再与
+         预设副标题「这里空空如也」重复；动作文案「返回」本身就是回列表的指引。
+         用显式 :hide-sub="true"（同族页 campus/topic-detail.vue:328 同口径），
+         不留给 mp 编译器对裸布尔属性的解释空间。 -->
     <EmptyState
       v-else-if="!loading"
+      class="empty-state"
+      :hide-sub="true"
       :title="t('circle.topicDetailNotExist')"
       :action-text="t('circle.topicDetailBack')"
       type="no-data"
@@ -436,8 +447,12 @@ onShareAppMessage(() => {
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
-  min-height: 100%;
+  /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域
+     R10-L04-D04（位置 P2）修正这条口径：本页 navigationStyle 是 custom，100vh 就等于可视区，
+     而 `min-height:100%` 在祖先（page/body）无确定高时退化成 auto ⇒ 整条 flex 列高度不可解析，
+     空态的 flex:1 无处伸展（实测空态块中心 y=240，而页头下内容区中线 451，偏上 211px≈419rpx）。
+     与 AppShell R8 同口径改 100vh（已知机制 §3），既有内容态只是把内滚交给 .detail-body，不产生新遮挡。 */
+  min-height: 100vh;
   background: linear-gradient(180deg, var(--c-bg-brand) 0%, var(--c-bg-page) 20%);
 }
 
@@ -454,27 +469,38 @@ onShareAppMessage(() => {
 .detail-header__back {
   padding: var(--sp-3) var(--sp-5);
   border-radius: var(--r-full);
-  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
+  /* R10-L04-D06（可达性 P1）：改前 rgba(255,255,255,.25) 半透明白胶囊叠在页头
+     --c-gradient-brand（实测 #48D0A1）上 → 胶囊成 #D1F3E8，白字压它只有 1.19:1，
+     文字与胶囊边界一起消失。改用仓内既有的「图上徽标成对令牌」深玻璃档
+     --c-badge-on-image-bg（rgba(15,23,42,.7)）：叠后 ≈#204E4D，
+     文字（--c-badge-on-image-text）8.4:1、胶囊边界压头图 4.78:1，两项同过（≥4.5 / ≥3）。
+     页头渐变本身按 §11.3 的在册方向不动（那是页头语言，不是本条判点）。 */
+  background: var(--c-badge-on-image-bg);
   transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
 .detail-header__back:active {
   transform: scale(0.96);
-  background: var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
+  background: var(--c-overlay-stronger);
 }
 /* #endif */
 
 .back-icon {
   font-size: var(--fs-lg);
-  color: var(--c-neutral-0);
+  /* R10-L04-D06：成对令牌的另一半（深底白字档 rgba(255,255,255,.95)），
+     不再用 --c-neutral-0 直接压半透明白。 */
+  color: var(--c-badge-on-image-text);
   font-weight: 500;
 }
 
 .detail-header__title {
   font-size: var(--fs-xl);
   font-weight: 700;
-  color: var(--c-neutral-0);
+  /* R10-L04-D06 同带在册项：标题同为 var(--c-neutral-0) 白字压 mint 页头 = 2.10:1，
+     与返回控件是一条判线（卡要求「把返回文字做到 ≥4.5」，标题留在 2.1 会立刻被复判打回）。
+     页头渐变是定值 mint→brand-300（非用户图），深墨 --c-text-primary 压两档分别 8.00 / 9.74:1。 */
+  color: var(--c-text-primary);
 }
 
 .detail-header__spacer {
@@ -484,6 +510,10 @@ onShareAppMessage(() => {
 /* ========== 内容区 ========== */
 .detail-body {
   flex: 1;
+  /* R10-L04-D04 配套（防回归）：.detail-page 有了 100vh 可解析高度后，flex 子项默认
+     min-height:auto 会让长话题把列撑高、页脚回复栏被顶出视口 —— 与同族根因
+     （topics.vue:892 .topics-list）同口径补 min-height:0，把滚动交给 scroll-view 自身。 */
+  min-height: 0;
   padding: var(--sp-6);
 }
 
@@ -807,11 +837,18 @@ onShareAppMessage(() => {
 }
 
 /* ========== 空状态 ========== */
+/* R10-L04-D04（位置 P2）：这条规则此前是死样式 —— 模板渲染的是 <EmptyState> 组件
+   （组件根类名 .empty），页面上没有 `.empty-state` 节点，所以「flex:1 + 居中」从未生效
+   （已知机制 §3 第 2 形态）。现在两个 EmptyState 标签自身挂上了 class="empty-state"，
+   规则落到宿主节点；配合 .detail-page 改 min-height:100vh 给出可解析高度，
+   空态才真正在「页头以下到页面底」之间垂直居中（不再是偏上 419rpx 的贴顶块）。
+   align-items 从 center 改 stretch：让组件继续占满整幅、由它自己的内部居中负责水平排版，
+   避免宿主把组件压成内容宽后出现新的换行错位。 */
 .empty-state {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   gap: var(--sp-6);
 }

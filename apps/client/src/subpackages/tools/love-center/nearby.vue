@@ -267,16 +267,20 @@ function handleMessage(userId: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 64rpx;
-  height: 64rpx;
+  /* R10-L08-D12（可达性 P2）：左上返回圆底原写死 64rpx，帧上实测 31×32px，
+     低于同页 .nearby-tail__more 自陈的 88rpx 热区下限（:347），
+     也低于同帧卡下三枚动作钮（CardSwiper.vue:2243 的 116rpx）⇒ 同一屏两类必点控件差近一倍。
+     提到 88rpx（44px）与仓内自陈标准同档，图标同步 32→40rpx 保持视觉占比。 */
+  width: 88rpx;
+  height: 88rpx;
   border-radius: 50%;
   background: var(--c-neutral-0);
   box-shadow: var(--s-sm);
 }
 
 .content-header__back-icon {
-  width: 32rpx;
-  height: 32rpx;
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .nearby-card-area {
@@ -350,7 +354,15 @@ function handleMessage(userId: string) {
 .nearby-tail__more-text {
   font-size: var(--fs-sm);
   font-weight: 600;
-  color: var(--c-brand);
+  /* R10-L08-D14（颜色 token P1）：这行「查看全部推荐」是本页批量出口的唯一说明，
+     原色 --c-brand(#36C99A，design-variables.scss:270=500 档) 压白底钮面（.nearby-tail__more :351
+     的 background: var(--c-bg-container)）
+     = 1.05/0.49891 = 2.10:1（帧上标签墨迹实测 #3BCA9C ⇒ 2.06:1），22rpx=11px 不享任何豁免
+     ⇒ 几乎读不出来。取同族深档 --c-brand-800(#156B51，:18，L=0.11276) ⇒ 1.05/0.16276 = 6.45:1。
+     卡上另一候选 --c-brand-700(#1F8D6A，L=0.20381) 压白只有 1.05/0.25381 = 4.14:1，
+     不达 4.5:1（任务书 §2 的算术表已把这一档判掉）⇒ 不采。
+     钮面描边按卡保留 --c-brand：1rpx 装饰性描边不参与文本判点，且它标出的是可点边界而非唯一信号。 */
+  color: var(--c-brand-800, #156B51);
 }
 
 .nearby-loading,

@@ -912,13 +912,18 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
   padding-top: 8rpx;
 }
 .header__icon-btn {
-  width: 72rpx;
-  height: 72rpx;
+  /* R10-L02-D07（P2 可达性）：搜索与「＋」两枚 .header__icon-btn 原为 72rpx(36px) 热区，
+     低于 88rpx 下限，而两枚是本页唯一的搜索与发起会话入口。盒体提到 88rpx，
+     图标 .header__icon-img(40rpx) 与 flex 居中不动 ⇒ 视觉尺寸不变、热区达标。
+     （R8-L02-D09 曾保留 72rpx 并注「热区口径不变」，本轮按可达性下限上调，间距仍不动。） */
+  width: 88rpx;
+  height: 88rpx;
   border-radius: 50%;
   /* R8-L02-D09（颜色token）：删除 `background: var(--c-bg-surface, #EEF7F2)`。
      理想图页头此处是「裸图标」，没有任何圆底；浅绿圆底（#EEF7F2 压在 #FFFFFF 页头上，
      两色相差仅 5 灰阶）把两枚钮读成 72rpx 实心圆点，视觉权重反超标题「消息」。
-     72rpx 盒体与 flex 居中保留 ⇒ 热区口径不变（同页 .header__right 的 16rpx 间距也不动）。 */
+     72rpx 盒体与 flex 居中保留（R8 当时口径）⇒ 视觉权重不反超标题；盒体现已由 R10-L02-D07
+     上调为 88rpx 达热区下限，flex 居中与同页 .header__right 的 16rpx 间距仍不动。 */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1560,16 +1565,23 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
   justify-content: center;
 }
 .guest-wall__btn--primary {
-  background: linear-gradient(135deg, var(--c-brand, #36C99A) 0%, var(--c-brand-600, #2AAE83) 100%);
+  /* R10-L02-D05（P1 颜色token）：主登录钮原为 brand-500→brand-600 渐变，白字实算 2.10–2.81:1
+     （§2 表：brand-600 白字 2.81 不达标、brand-500 白字 1.9 不达标），26rpx 粗体不享大字号豁免。
+     收成 --c-brand-800 纯色（白字 6.45:1），与 LockScreen/附近发动态同档。本页主入口。 */
+  background: var(--c-brand-800, #156b51);
 }
 .guest-wall__btn--secondary {
   background: var(--c-bg-container, #FFFFFF);
-  border: 1rpx solid var(--c-brand, #36C99A);
+  /* R10-L02-D06（P1 颜色token）：次按钮描边原 --c-brand(#36C99A) 压白底 2.10:1，文字见下。
+     描边改 --c-brand-800(#156B51，6.45:1)，与主/次同档，让备选登录入口的文字与边界都可辨。 */
+  border: 1rpx solid var(--c-brand-800, #156b51);
 }
 .guest-wall__btn-text {
   font-size: 26rpx;
   font-weight: 600;
-  color: var(--c-text-brand, var(--c-brand, #36C99A));
+  /* R10-L02-D06 另一半：次按钮文字原 --c-text-brand(#36C99A) 压白底 2.10:1 → --c-brand-800(6.45:1)。
+     主按钮文字由 .guest-wall__btn-text--primary(:1575) 覆盖为 --c-neutral-0，本行改动只作用于次按钮。 */
+  color: var(--c-brand-800, #156b51);
 }
 .guest-wall__btn-text--primary {
   color: var(--c-neutral-0, #FFFFFF);

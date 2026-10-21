@@ -702,27 +702,36 @@ defineExpose({ goToAuthorProfile });
 .topics-header__back {
   padding: var(--sp-3) var(--sp-5);
   border-radius: var(--r-full);
-  background: var(--c-overlay-white-bg-mid-strong, var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)));
+  /* R10-L04-D01（可达性 P1）：页头带是定值 --c-gradient-brand（实测 #49D0A1，不是用户头图），
+     改前 rgba(255,255,255,.25) 白胶囊 + 白字 = 1.94:1（文字与边界一起消失）。
+     按卡「加同色深色叠层」这一支落到仓内成对令牌 --c-badge-on-image-bg（rgba(15,23,42,.7)）：
+     叠后 ≈#214E4D，白字 8.4:1、胶囊压页头 4.78:1，文字 ≥4.5 与非文本 ≥3 同时成立。
+     页头渐变底不动（§11.3 在册：mint 页头语言不归本条判点）。 */
+  background: var(--c-badge-on-image-bg);
   transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
 .topics-header__back:active {
   transform: scale(0.96);
-  background: var(--c-overlay-white-bg-stronger, var(--c-overlay-white-bg-stronger, rgba(255, 255, 255, 0.4)));
+  background: var(--c-overlay-stronger);
 }
 /* #endif */
 
 .back-icon {
   font-size: var(--fs-lg);
-  color: var(--c-neutral-0);
+  /* R10-L04-D01：成对令牌的另一半（深底白字 rgba(255,255,255,.95)）＝8.4:1 */
+  color: var(--c-badge-on-image-text);
   font-weight: 500;
 }
 
 .topics-header__title {
   font-size: var(--fs-xl);
   font-weight: 700;
-  color: var(--c-neutral-0);
+  /* R10-L04-D01（页名「摄影」白字压 mint 1.94:1）：卡给了两条路——压深页头 / 深色前景。
+     页头渐变是全站语言（§11.3 在册方向），这里取后者：--c-text-primary #1A1E1C
+     压 #49D0A1 = 8.67:1、压渐变深端 #36C99A = 8.00:1，全程 ≥4.5。 */
+  color: var(--c-text-primary);
 }
 
 .topics-header__spacer {
@@ -742,7 +751,11 @@ defineExpose({ goToAuthorProfile });
   width: 56rpx;
   height: 56rpx;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.22);
+  /* R10-L04-D01：同返回钮——改前 rgba(255,255,255,.22) 白胶囊里放的是 #36C99A 描边的
+     铅笔 SVG（static/assets/svg-spec/03-icons/edit.svg，色值写死在素材里、CSS 改不动），
+     压半透明白只有 1.3:1。深玻璃档下铅笔 4.41:1、白「···」8.4:1（非文本 ≥3 亦成立）。
+     素材按硬规矩 5「只用仓内既有」不动，只换它脚下的叠层。 */
+  background: var(--c-badge-on-image-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -751,7 +764,7 @@ defineExpose({ goToAuthorProfile });
 
 .topics-header__icon-text {
   font-size: 28rpx;
-  color: #ffffff;
+  color: var(--c-badge-on-image-text);
   font-weight: 600;
   line-height: 1;
 }
@@ -1087,9 +1100,16 @@ defineExpose({ goToAuthorProfile });
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 84rpx;
+  /* R10-L04-D02（尺寸比例 P1）：写死 84rpx=42px，比 88rpx(44px) 热区标准少 4rpx
+     （帧上实心 40–42px）。提到 88rpx 达标；.circle-bottom 的 padding 16rpx 与
+     .feed-bottom-spacer(260rpx) 已留足避让，不会因为 +4rpx 遮末行。 */
+  height: 88rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-gradient-float-btn);
+  /* R10-L04-D02 同档：--c-gradient-float-btn 展开是 135° 的 #36C99A→#36C99A（视觉即实色），
+     白字压它 2.05:1 —— 卡里「全页没有达标替代出口」的另一半原因就在这。
+     按 §11.3 引的 R9 在册方向（主 CTA 收成 --c-brand-800，白字 6.45:1）同档收口；
+     这不是把「共享主 CTA 渐变翻成实色」的回归，值本来就没有双色渐变。 */
+  background: var(--c-brand-800, #156B51);
   box-shadow: var(--s-brand-md);
   transition: all var(--d-fast, 120ms) ease;
 }
@@ -1118,10 +1138,15 @@ defineExpose({ goToAuthorProfile });
 
 .circle-bottom__fab {
   flex-shrink: 0;
-  width: 84rpx;
-  height: 84rpx;
+  /* R10-L04-D02（尺寸比例 P1）：卡的「底部 FAB 同步对齐同一档」——84→88rpx，
+     与同排 .circle-bottom__join 同高，固定栏两枚动作都到 44px 热区标准。 */
+  width: 88rpx;
+  height: 88rpx;
   border-radius: var(--r-circle, 50%);
-  background: var(--c-gradient-float-btn);
+  /* 同档收口：改前底 = --c-gradient-float-btn（视觉实色 #36C99A），
+     而里面的铅笔是 static/assets/svg-spec/03-icons/edit.svg、描边写死 #36C99A
+     ⇒ 图标与底色同值几乎不可辨。换 --c-brand-800 后铅笔 3.07:1（非文本 ≥3 成立）。 */
+  background: var(--c-brand-800, #156B51);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1234,8 +1259,19 @@ defineExpose({ goToAuthorProfile });
 .circle-hero__join {
   flex-shrink: 0;
   padding: 12rpx 28rpx;
+  /* R10-L04-D02（尺寸比例 P1）：卡点名「头部另有一枚同样偏小的『+ 加入』」——
+     12rpx 内衬 + 24rpx 字≈58rpx 高，也够不到 44px 档。补 min-height:88rpx 并 flex 居中，
+     文字视觉位置不变（已知机制 §9 同款口径），热区与底部 CTA 同档。 */
+  min-height: 88rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, #36C99A 0%, #36C99A 100%);
+  /* 改前 linear-gradient(135deg,#36C99A,#36C99A)（视觉实色）压 --c-text-inverse
+     rgba(255,255,255,.95) = 2.05:1（卡测 3.2–3.5 是取到边缘的结果，同样不达 4.5）
+     ⇒ 收成 --c-brand-800，白字 6.45:1，与底部主 CTA 同档同色，全页有了达标出口。 */
+  background: var(--c-brand-800, #156B51);
 }
 
 .circle-hero__join--joined {
@@ -1297,16 +1333,25 @@ defineExpose({ goToAuthorProfile });
   margin-top: 14rpx;
   padding: 10rpx 28rpx;
   border-radius: var(--r-full, 9999rpx);
-  /* R21（2026-09-09）：粉色渐变与全站绿色主题冲突 → 改品牌绿描边胶囊（加入按钮同款语言） */
+  /* R10-L04-D03（可达性 P1）：每条帖子唯一动作胶囊「认识 TA」。
+     卡给的改法是「定位该胶囊透明度来源（父级 opacity 或覆盖样式）并去掉」——
+     这条查无实据：本文件从 .topics-page → .topics-list → .topic-card → .topic-card__meet
+     整条链都没有 opacity/覆盖（只有 .circle-hero__bg:1167、.error-icon、.topics-empty__icon
+     三处 opacity，都不在这条祖先链上），R10 编译产物 apps/client/dist/build/mp-weixin/
+     subpackages/circles/circles/topics.wxss 里这两条规则也是原样落地、无透明度。
+     帧上读到 #A9E7D3 是 22rpx=11px 细笔画 + 2rpx 描边被取样平均的结果，不是淡出。
+     判点本身成立且更直接：声明色 #2DB98A 压白卡 = 2.49:1、描边 --c-brand-500 真值 #36C99A = 2.10:1，
+     两项都远低于 4.5 / 3 ⇒ 按已知机制 §2 的实算档收成 brand-800 #156B51（6.45:1），
+     卡的建议值 brand-600(2.81)/brand-700(4.14) 都不达标，不采纳。 */
   background: #ffffff;
-  border: 2rpx solid var(--c-brand-500, #2DB98A);
+  border: 2rpx solid var(--c-brand-800, #156B51);
 }
 
 .topic-card__meet-text {
   font-size: 22rpx;
   font-weight: 700;
-  /* R21：描边胶囊 → 深绿文字 */
-  color: #2DB98A;
+  /* R10-L04-D03：同上，字色与描边同档深绿（压白 6.45:1），胶囊读得出「可点」。 */
+  color: var(--c-brand-800, #156B51);
 }
 
 .detail-members {

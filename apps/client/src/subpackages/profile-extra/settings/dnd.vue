@@ -686,7 +686,10 @@ onMounted(() => {
    此处保留 .card 类名以兼容模板引用，但使用统一的设计令牌 */
 .card {
   background: var(--c-bg-container);
-  border-radius: var(--r-xl);
+  /* R10-L11-D05（圆角 P2）：var(--r-xl)=24rpx=12px，比全站卡片基类 .card-base（R8-L11-D03 已抬到
+     --card-radius 40rpx，global.scss:150）低一档：dnd 卡左上角曲率半径实测 12px、tasks 卡 20px，
+     同站两页卡片差 8px ⇒ 归 var(--card-radius, 40rpx) 与 .card-base 同轨。 */
+  border-radius: var(--card-radius, 40rpx);
   box-shadow: var(--s-card-soft);
   overflow: hidden;
 }
@@ -876,6 +879,10 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* R10-L11-D04（可达性 P1）：重复方式选「自定义」时星期芯片是唯一可点控件，
+     原 padding:20rpx 0 + --fs-md 只撑出实测 37px=74rpx(<88rpx)。按卡改法（同 EmptyState.vue:207）
+     补 min-height:88rpx 并靠既有 flex 两轴居中保持文字视觉位置不变；box-sizing 已 border-box。 */
+  min-height: 88rpx;
   padding: 20rpx 0;
   background: var(--c-bg-page);
   border-radius: var(--r-lg, 16rpx);
@@ -897,7 +904,10 @@ onMounted(() => {
 
 /* ==================== 保存按钮 ==================== */
 .save-btn {
-  margin: 40rpx 24rpx 0;
+  /* R10-L11-D06（位置 P2）：上轮 R9-L11-D06 只把 .section 水平外边距归口 --page-padding(:668)，
+     这颗主操作键 margin 仍写死 24rpx=12px：实测绿键左缘 x=13/卡片左缘 x=17 ⇒ 两侧各外扩 4px、
+     与正上方卡片群不同轨 ⇒ 水平外边距跟着归 --page-padding(32rpx=16px)，纵向 40rpx 不动。 */
+  margin: 40rpx var(--page-padding, 32rpx) 0;
   padding: 28rpx;
   /* 同根顺手项（与 R9-L09-D06 同型，本页 .save-btn 原取 --c-brand #36C99A 实底压
      --c-text-inverse rgba(255,255,255,0.95)，合成字色 #F5FCFA 对 #36C99A 仅 2.02:1，

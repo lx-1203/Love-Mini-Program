@@ -134,7 +134,10 @@ function goBrowse() {
   padding: 24rpx 0;
 
   & + & {
-    border-top: 2rpx solid var(--c-border-light, #eef2f0);
+    /* R10-L01-D08（P2 颜色token）：已解锁清单三行分隔原取最浅档 --c-border-light(#EEF2F0) 压白卡仅 1.13:1，
+       两条线几乎与白底同值、三行读成一整段连续文字，「并列清单项」的分组信息丢失。抬到 --c-border-default(#DDE3E0)
+       （卡的第一建议；三档描边里的常规分隔档）。 */
+    border-top: 2rpx solid var(--c-border-default, #dde3e0);
   }
 }
 
@@ -168,7 +171,11 @@ function goBrowse() {
      （login/index.vue:1038/1084/1165 的 .btn-primary 就是 var(--r-full)）。
      原 24rpx 圆角矩形在 96rpx 高的按钮上视觉偏方（实测 24rpx < 高度一半 48rpx ⇒ 非胶囊）。 */
   border-radius: var(--r-full);
-  background: linear-gradient(135deg, var(--c-brand, #36c99a) 0%, var(--c-brand-400, #55d5a7) 100%);
+  /* R10-L01-D07（P1 颜色token）：主 CTA 原为 --c-brand→--c-brand-400 的 135° 渐变，两端实测白字 2.10/1.85:1，
+     「完善我的资料 →」整行压在同明度绿上、本页唯一下一步入口读不出。卡给两选一：
+     渐变 700→800 或去渐变走纯 brand-800。按任务书 §2 计算，brand-700 端白字仅 4.14:1 不达 AA ⇒ 取纯 --c-brand-800
+     (#156B51，白字 6.45:1)。此钮是本页局部按钮、非 BottomActionBar 共享主 CTA，不触 §11.3 的「共享渐变勿翻实色」。 */
+  background: var(--c-brand-800, #156b51);
   box-shadow: 0 8rpx 32rpx rgba(54, 201, 154, 0.28);
 }
 
@@ -178,7 +185,9 @@ function goBrowse() {
   font-size: 30rpx;
   font-weight: 700;
   letter-spacing: 0.8rpx;
-  color: #ffffff;
+  /* R10-L01-D07：字色由写死 #ffffff 归口到 --c-text-inverse（当前为图片遮罩白字档 rgba(255,255,255,.95)），
+     保持「彩色底上白前景走反色令牌」的语义，压 brand-800 仍 ≈6.2:1。 */
+  color: var(--c-text-inverse, #ffffff);
 }
 
 .reg-success__alt {

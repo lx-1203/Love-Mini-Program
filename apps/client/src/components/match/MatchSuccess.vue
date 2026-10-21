@@ -253,7 +253,10 @@ function getScoreIcon(index: number): string {
 .match-success__subtitle {
   margin-top: 12rpx;
   font-size: 32rpx;
-  color: #999999;
+  /* R10-L06-D03（颜色token P1）：副标题原写死 #999999，压实测页底 #EDF8F4 只有 2.62:1
+     （32rpx=16px 正文档，不享大字号豁免），比理想图同句浅约两个色阶。
+     改 --c-text-secondary #4A524E（压同底实测 7.42:1），与理想图深灰档对齐。 */
+  color: var(--c-text-secondary, #4A524E);
   line-height: 1.5;
   text-align: center;
   max-width: 560rpx;
@@ -262,7 +265,10 @@ function getScoreIcon(index: number): string {
 .match-success__subtitle--hint {
   margin-top: 4rpx;
   font-size: 28rpx;
-  color: #36C99A;
+  /* R10-L06-D04（颜色token P1）：「快去打个招呼吧~」原 #36C99A 压 #EDF8F4 = 1.94:1，
+     且 §1.1.2 规定绿色=行动，这句话不是可点件却占用了行动色。
+     与上一行同收 --c-text-secondary（7.42:1），绿色只留给下方「立即聊天」。 */
+  color: var(--c-text-secondary, #4A524E);
   font-weight: 500;
 }
 
@@ -445,7 +451,11 @@ function getScoreIcon(index: number): string {
 .match-success__score-percent {
   display: block;
   font-size: var(--fs-md, 26rpx);
-  color: #36C99A;
+  /* R10-L06-D05（颜色token P1）：卡里唯一的读数文字原取 #36C99A 压白卡 = 2.10:1。
+     按卡取 --c-brand-800 #156B51（白底 6.45:1；卡建议的 brand-700 只有 4.14:1 仍不足，不停在那档）。
+     §11.2 口径：本读数已是 R10-L06-D01 收口后的唯一真值（props.matchScore 派生），
+     本次只动色档，没有恢复每行一个百分比，也不动 displayReasons 的判据。 */
+  color: var(--c-brand-800, #156B51);
   font-weight: 700;
   text-align: right;
 }
@@ -478,11 +488,15 @@ function getScoreIcon(index: number): string {
   padding: 24rpx 0;
   border-radius: 999rpx;
   /* R8-L06-D03（颜色token P1）：主按钮原画成 135° 渐变（#36C99A→#22a976，实帧左上 #35C898 →
-     右下 #24AC79，ΔB31 的斜向明暗），理想图同区六个取样点全落 #1DB97D~#23BB7D（Δ≤4）是一条平色。
-     改单色：档位表无 #21BA7B 令牌，取最接近理想实测且最接近原渐变中值的 --c-brand-600 #2AAE83
-     （与理想实测 Δ(9,16,8)；缺陷卡另一建议 var(--c-brand)=#36C99A 与理想 Δ(21,15,31) 更远，
-     且白字对比只有 2.10:1，--c-brand-600 抬到 2.81:1）。渐变整条去掉 ⇒ 不再有色带。 */
-  background: var(--c-brand-600, #2AAE83);
+     右下 #24AC79，ΔB31 的斜向明暗），理想图同区六个取样点全落 #1DB97D~#23BB7D（Δ≤4）是一条平色
+     ⇒ 渐变整条去掉改单色，不再有色带。R8 当时选的 --c-brand-600 #2AAE83 只把白字抬到 2.81:1，
+     色档位由下面 R10-L06-D06 接管（同轴未修净，不是回归）。 */
+  background: var(--c-brand-800, #156B51);
+  /* R10-L06-D06（颜色token P1）：底色压到 --c-brand-800 #156B51 ⇒ 白字 6.45:1
+     （已知机制 §2 采用档，R9 对 BottomActionBar.vue:104 做的是同一条裁定）。
+     本按钮在 R8 就已按理想图实测收成单色，本次只是把已实色的档位压深，
+     不属于 §11.3 点名的「把主 CTA 渐变翻成实色」。
+     代价：比理想图实测的 #21BA7B 深两档，属"可达性 > 位图像素"的在册取舍。 */
   text-align: center;
 }
 
@@ -506,7 +520,10 @@ function getScoreIcon(index: number): string {
 
 .match-success__secondary-text {
   font-size: 28rpx;
-  color: #8a9694;
+  /* R10-L06-D07（颜色token P2）：「继续探索」原写死 #8a9694 压白按钮 = 3.06:1，
+     落在 3–4.5 的次级文字带、比主按钮还难读。改 --c-text-tertiary #6B7571
+     （design-variables.scss:125 真值，白底 4.76:1）⇒ 过 4.5:1 且仍弱于主按钮白字 6.45:1。 */
+  color: var(--c-text-tertiary, #6B7571);
 }
 
 .match-success__share-icon {

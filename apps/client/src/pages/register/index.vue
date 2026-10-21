@@ -883,7 +883,10 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 
 .hero__txt {
   position: absolute;
-  left: 48rpx;
+  /* R10-L01-D05（P2 间距）：表头文字块原 left:48rpx、下方 .card 左右 margin 40rpx，
+     同页内相差 8rpx 且都不等于规范页边距 32rpx → 两处统一 --page-padding(32rpx)，
+     使「XUNMI · CAMPUS / 创建账号」与白卡、login 按钮同一条左基准线。 */
+  left: var(--page-padding, 32rpx);
   /* MP-R2-PAGES-REGISTER-INDEX-002：同 hero__back，状态栏动态补偿 */
   top: calc(var(--statusbar, env(safe-area-inset-top)) + 208rpx);
   display: flex;
@@ -892,10 +895,13 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 }
 
 .hero__eyebrow {
-  font-size: 19rpx;
+  /* R10-L01-D06（P2 字号）：眉标原 19rpx(9.5px) 比最小档 20rpx 还小 1rpx、字号表外孤值 → 回 --fs-xs(20rpx)。 */
+  font-size: var(--fs-xs, 20rpx);
   font-weight: 800;
   letter-spacing: 4rpx;
-  color: var(--c-brand-700, #1f8d6a);
+  /* R10-L01-D06 另一半：字色原 --c-brand-700(#1F8D6A) 压头图薄荷底(实测 231,248,240) 实算 3.87:1，
+     全大写小字近乎虚影 → --c-brand-800(#156B51，压同底约 5.9:1，真值 design-variables.scss:18)。 */
+  color: var(--c-brand-800, #156b51);
   margin-bottom: 10rpx;
 }
 
@@ -917,7 +923,9 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 .card {
   position: relative;
   z-index: 2;
-  margin: -64rpx 40rpx 0;
+  /* R10-L01-D05：卡片左右 margin 40rpx → --page-padding(32rpx)，与表头 .hero__txt(:886) 同左基准；
+     上移 -64rpx（骑跨头图）不动。 */
+  margin: -64rpx var(--page-padding, 32rpx) 0;
   background: var(--c-bg-container, #ffffff);
   border-radius: 40rpx;
   padding: 40rpx;
@@ -1099,7 +1107,10 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
   height: 88rpx;
   padding: 0 24rpx;
   border-radius: 999rpx;
-  background: var(--c-brand, #36c99a);
+  /* R10-L01-D04（P1 颜色token）：「获取验证码」胶囊原底 --c-brand(#36C99A) + 近白字(:1112) 实算 2.10:1，
+     是本页唯一发码入口，白字与绿底同明度档、五个字不可辨。底改 --c-brand-800(#156B51，白字 6.45:1)。
+     倒计时/发送中两态（.sms-btn--cd/--sending 的深色字 :1126/:1130 与浅底 :1118/:1122）不动。 */
+  background: var(--c-brand-800, #156b51);
   flex-shrink: 0;
   transition: background 0.2s ease;
 }

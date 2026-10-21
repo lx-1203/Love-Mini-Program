@@ -377,7 +377,12 @@ function focusMainContent(): void {
 
 .shell__back-text {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-brand, #36C99A);
+  /* R10-L07-D07（颜色token P1）：「‹ 返回」文字原取 --c-brand #36C99A 压在 :365 的
+     --c-bg-container 白胶囊上，实帧采样 (57,202,156) ⇒ 2.09:1，12px 不享大字号豁免。
+     按卡走 --c-brand-800 #156B51（白底 6.45:1，design-variables.scss:18 真值）；
+     卡上同时点名 brand-700 #1F8D6A 只有 4.14:1 仍不达，故不停在 700 档。
+     本胶囊是 love-center / help / security 三页共用页头，三页同面同治。 */
+  color: var(--c-brand-800, #156B51);
   font-weight: 500;
 }
 
@@ -391,7 +396,13 @@ function focusMainContent(): void {
 
 .shell__title {
   display: block;
-  font-size: var(--fs-5xl, 44rpx);
+  /* R10-L07-D08 + R10-L13-D09（字号 P2，同一条根因两张卡）：页头主标题原取 --fs-5xl 44rpx=22px，
+     落在 §1.3 的「卡片大标题」档，比页头档下限 26px 小 4px，与同页区块标题（--fs-3xl=18px）
+     只差 4px，层级塌成一档（恋爱中心/帮助与客服/安全中心/用户协议四帧同病，实测字高 21px）。
+     升到令牌档 --fs-7xl 56rpx=28px（design-variables.scss:572，§1.3 页头档 26–28px 的上限）：
+     两卡建议的 52rpx 在档位表里没有对应令牌（--fs-6xl 只有 48rpx=24px，仍在档外），
+     本仓字号统一走 --fs-* 令牌 ⇒ 取可解析的 7xl 档而不是硬写 52rpx。 */
+  font-size: var(--fs-7xl, 56rpx);
   font-weight: 700;
   color: var(--c-text-primary, #222222);
 }

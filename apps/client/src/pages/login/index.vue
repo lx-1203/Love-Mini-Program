@@ -966,7 +966,10 @@ function openPrivacyPolicy() {
   margin-top: 10rpx;
   font-size: 30rpx;
   font-weight: 700;
-  color: var(--c-brand);
+  /* R10-L01-D01（P1 颜色token）：副句原取 --c-brand(#36C99A) 压页面底 #EEF7F2 实算 1.93:1，
+     强光/低视力下「慢慢成为特别的人」整行消失。换 --c-brand-800(#156B51，压 #EEF7F2 实算 5.92:1，
+     真值取 design-variables.scss:18)，brand-500 仅留作装饰色块。30rpx/700 非大字号，需 ≥4.5。 */
+  color: var(--c-brand-800, #156b51);
 }
 
 .hero-desc-discover {
@@ -1053,7 +1056,10 @@ function openPrivacyPolicy() {
   width: 100%;
   height: var(--btn-height-md);
   border-radius: var(--r-full);
-  background: var(--c-brand);
+  /* R10-L01-D02（P1 颜色token）：主 CTA 底原取 --c-brand(#36C99A)，第 1093 行白字（--c-text-inverse）
+     实算 2.10:1，「微信一键登录」六字与绿底同明度档、只剩一颗无字绿胶囊。底改 --c-brand-800(#156B51，
+     白字 6.45:1)，与 BottomActionBar 主 CTA(R9 已落档) 一致。本页唯一主操作。 */
+  background: var(--c-brand-800, #156b51);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1412,13 +1418,18 @@ function openPrivacyPolicy() {
 
 .terms-text {
   font-size: var(--fs-xs);
-  color: var(--c-text-quaternary);
+  /* R10-L01-D03（P2 颜色token）：法务必读行原取 --c-text-quaternary(#9AA39F) 压 #EEF7F2 仅 2.37:1。
+     卡上建议 text-tertiary(#6B7571)=4.36:1，但按任务书 §2「对比度要算」这档对 20rpx 小字仍 <4.5 AA，
+     属 §2 点名的「建议改法本身不达标」，故取 --c-text-secondary(#4A524E，压 #EEF7F2 实算 7.38:1) 而非卡上的 tertiary。 */
+  color: var(--c-text-secondary, #4a524e);
   line-height: 1.7;
 }
 
 .terms-link {
   font-size: var(--fs-xs);
-  color: var(--c-brand);
+  /* R10-L01-D03 另一半：两个协议链接原 --c-brand(#36C99A) 仅 1.93:1 → --c-brand-800(5.92:1)。
+     勾选框视觉尺寸(34rpx)不动，本块只改前景字色。 */
+  color: var(--c-brand-800, #156b51);
   line-height: 1.7;
 }
 

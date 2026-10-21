@@ -624,7 +624,10 @@ onShareAppMessage(() => {
             :aria-label="t('common.back')"
             @tap="goBack"
           >
-            <image class="likes-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+            <!-- R10-L06-D26（可达性 P2）：原 IMAGE_PATHS.ICONS_COMMON.BACK 位图烘焙 #A4B1C2，
+                 压白圆实测 2.18:1 不达非文本 3:1，且同分包 history/segment/people 的返回件均为
+                 深色字形 ⇒ 统一改深色文本「‹」（压白圆 = --c-text-primary #1A1E1C，远高于 3:1）。 -->
+            <text class="likes-header__back-icon">‹</text>
           </view>
           <text class="likes-header__title">{{ t('likes.title') }}</text>
         </view>
@@ -662,7 +665,7 @@ onShareAppMessage(() => {
       <!-- 未完善资料：登录墙嵌回页头之下的内容区（R8-L06-D23） -->
       <!-- MP-R1-LIKES-102：补 @go-phone-login 监听——组件 emit goPhoneLogin 此前无监听者，
            未登录态「手机号登录」按钮点击零响应 -->
-      <NotLoggedWaiting v-if="!sessionStore.isLoggedIn" @go-login="goLogin" @go-phone-login="goPhoneLogin" />
+      <NotLoggedWaiting v-if="!sessionStore.isLoggedIn" class="likes-page__guest-wall" @go-login="goLogin" @go-phone-login="goPhoneLogin" />
 
       <!-- 已完善资料：显示正常内容 -->
       <template v-else>
@@ -1077,6 +1080,21 @@ onShareAppMessage(() => {
 .likes-page--guest {
   background: var(--c-bg-page, #EEF7F2);
   padding-top: 0;
+  /* R10-L06-D25（间距 P2）：游客页原页高 = 页头 + 100vh 登录墙 + 双份底部占位
+     （页面侧 160rpx 解锁栏占位是登录态专属，登录墙自己已给 env+60rpx），
+     滚到底末屏剩 221px 死带（27% 帧高）⇒ 页高收口为一屏、底部安全区只留一份，
+     墙体超出视口部分裁掉，不再产生可滚动的死区。 */
+  padding-bottom: calc(env(safe-area-inset-bottom) + var(--sp-4));
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* R10-L06-D25：登录墙宿主节点全幅铺满（负边距吃掉 .likes-page 的 32rpx 侧内衬，
+   墙内自带 48rpx 内衬，尺寸类只写在组件标签自身——§1 跨边界唯一有效面）。 */
+.likes-page__guest-wall {
+  display: block;
+  margin-left: calc(var(--sp-8) * -1);
+  margin-right: calc(var(--sp-8) * -1);
 }
 
 .likes-page--guest .likes-header {
@@ -1115,8 +1133,10 @@ onShareAppMessage(() => {
 }
 
 .likes-header__back-icon {
-  width: 40rpx;
-  height: 40rpx;
+  /* R10-L06-D26：位图改深色字形后的排布（同 people.vue:284-288 返回钮口径） */
+  font-size: 40rpx;
+  line-height: 1;
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .likes-header__title {
@@ -1132,7 +1152,9 @@ onShareAppMessage(() => {
   background-clip: text;
   // #endif
   // #ifndef H5
-  color: var(--c-brand);
+  /* R10-L06-D21（颜色token P1）：mp 分支原取 --c-brand #36C99A 压 #EEF7F2 仅 1.93:1
+     （44rpx/700 大字 3:1 未达），页标题不吃行动绿 ⇒ 落文字主色（与 1125 行声明一致）。 */
+  color: var(--c-text-primary);
   // #endif
 }
 

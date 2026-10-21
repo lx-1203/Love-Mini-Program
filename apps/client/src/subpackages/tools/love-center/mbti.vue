@@ -296,9 +296,21 @@ function goBack() {
 }
 
 .content-header__title {
-  font-size: var(--fs-xl, 34rpx);
+  /* R10-L08-D17（字号 P2）：本页导航标题原取 --fs-xl(30rpx=15px)，且兜底字面量写成 34rpx
+     （--fs-xl 真值是 30rpx，design-variables.scss:565）——同角色标题在 activities/detail.vue:511
+     是 --fs-5xl(44rpx)，两页差 7px，且都低于 §1.3 的 26-28px 主标题档。
+     与 detail.vue 同口径提到 --fs-5xl，兜底字面量同时改回该令牌真值 44rpx。
+     R10-L08-D16（颜色 token P1）：标题原 --c-text-inverse 白字压本栏 brand-500→brand-400
+     渐变（实测 #49D0A2）= 1.89:1，连大字号 3:1 线都不到。与 detail.vue:513 完全同口径改深墨
+     --c-brand-900(#0B4A38，L=0.05254)：
+       压深端 #36C99A(L=0.44891) ⇒ 0.49891/0.10254 = 4.87:1
+       压浅端 #55D5A7(L=0.52310) ⇒ 0.57310/0.10254 = 5.59:1
+     44rpx(22px)/700 享大字号豁免（门槛 3:1），两档同时过正文线 4.5:1。
+     栏底不压深（那会把 pages.json:52 navigationBarTextStyle=black 的系统黑字拖到 3.26:1 以下，
+     也会糊掉微信胶囊）——理由与算式见 detail.vue:466-472 的同一条裁定。 */
+  font-size: var(--fs-5xl, 44rpx);
   font-weight: 700;
-  color: var(--c-text-inverse, #ffffff);
+  color: var(--c-brand-900, #0B4A38);
 }
 
 .content-header__back {
@@ -417,7 +429,10 @@ function goBack() {
 
 .quiz-item {
   padding: var(--sp-4);
-  border-radius: var(--r-xl, 24rpx);
+  /* R10-L08-D20（圆角 P2）：四张白底问题卡原吃 --r-xl(24rpx=12px，帧上实测曲率约 8px)，
+     而 §1.4 给白卡的圆角令牌是 --card-radius(40rpx=20px，design-variables.scss:699)，
+     同 lane activities/detail.vue:575 的白卡已取该档 ⇒ 同角色两页取档不一。改引卡片档令牌。 */
+  border-radius: var(--card-radius, 40rpx);
   background: var(--c-bg-container, #ffffff);
   box-shadow: var(--card-shadow, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
 }
@@ -472,7 +487,16 @@ function goBack() {
   justify-content: center;
   height: 88rpx;
   border-radius: var(--r-full);
-  background: var(--c-gradient-brand, linear-gradient(135deg, #36C99A, #6fe0b0));
+  /* R10-L08-D19（颜色 token P1）：本页唯一主操作「提交并查看结果」，标签 .quiz-submit__text
+     是 --c-text-inverse(rgba(255,255,255,.95))/--fs-xl 15px/600 ⇒ 不享大字号豁免，门槛 4.5:1。
+     原钮面 --c-gradient-brand（design-variables.scss:171 = linear-gradient(135deg,#36C99A,#55D5A7)），
+     帧上实测钮面 #4ED2A4 ⇒ 白字 1.73:1，比同 lane 两页 CTA 低 4 倍。
+     收成同族深档 --c-brand-800(#156B51，:18，L=0.11276)：纯白 1.05/0.16276=6.45:1、
+     按 .95 实际标签色合成 6.01:1 —— 与 R9 收敛后的 BottomActionBar.vue:104、
+     activities/detail.vue 报名钮、本批 daily-question 去签到钮同档。
+     这不是「把渐变翻成实色」的回归：任务书 §11.3 否掉的是反向操作（把已收成实色的共享主 CTA
+     再翻回渐变），本条正是 §11.3 记录的同一收敛方向（--c-gradient-brand 在 12 处消费者上全部 <4.5:1）。 */
+  background: var(--c-brand-800, #156B51);
   margin-top: var(--sp-4);
 }
 

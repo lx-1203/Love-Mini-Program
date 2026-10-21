@@ -135,6 +135,7 @@ onMounted(() => {
  * 描述文案「快去寻觅页发现有趣的TA吧」此前没有任何对应可点件（EmptyState 未传
  * actionText ⇒ 组件 .empty-action 分支恒不渲染），y335 以下 465px 无任何交互。
  * 补 actionText 并 switchTab 到寻觅 Tab，与文案形成闭环。
+ * （R10-L06-D20 已把该文案改写为「快去寻觅页看看，发现有趣的 TA 吧」——上面引的是 R8 当时的原文。）
  */
 function goDiscoverTab() {
   uni.switchTab({ url: ROUTES.TAB.DISCOVER });
@@ -154,7 +155,9 @@ onUnload(() => {
     <!-- 顶部导航 -->
     <view class="header">
       <view class="back-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="goBack">
-        <text class="back-icon">←</text>
+        <!-- R10-L06-D19（文案 P3）：原「←」(U+2190) 与同分包 segment.vue:135 / people.vue:163
+             的「‹」不一致，同一分包两种返回符号 ⇒ 统一为「‹」。 -->
+        <text class="back-icon">‹</text>
       </view>
       <text class="page-title">{{ t("discoverHistory.navTitle") }}</text>
       <view class="header-placeholder" />
@@ -342,7 +345,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   background-clip: text;
   // #endif
   // #ifndef H5
-  color: var(--c-brand); // mp-weixin 降级：使用纯色（取渐变中间色）
+  /* R10-L06-D15（颜色token P1）：mp 降级原取 --c-brand #36C99A 压顶部渐变 #E8F5E9 仅 1.87:1，
+     38rpx/700 按大字 3:1 也不达，且本页最大标题用行动绿与「去寻觅」抢强调位（违反 §1.1.2
+     「绿色=行动」）。⇒ 标题落文字主色，绿色只保留给行动件。 */
+  color: var(--c-text-primary, #1A1E1C);
   // #endif
 }
 
@@ -379,13 +385,19 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   background-clip: text;
   // #endif
   // #ifndef H5
-  color: var(--c-brand); // mp-weixin 降级：使用纯色（取渐变中间色）
+  /* R10-L06-D16（颜色token P1）：三个统计数字原取 --c-brand #36C99A 压白卡仅 2.10:1
+     （44rpx/800 大字 3:1 未达）。⇒ 取 --c-brand-800 #156B51，白底实测 6.45:1
+     （§2 已核算采用档，design-variables.scss:267），绿色语义保留给数值。 */
+  color: var(--c-brand-800, #156B51);
   // #endif
 }
 
 .stat-label {
   font-size: var(--fs-base, 24rpx);
-  color: $text-tertiary;
+  /* R10-L06-D17（颜色token P1）：统计标签原走 $text-tertiary=--c-neutral-400 #9AA39F，
+     压白卡仅 2.59:1（24rpx/500 < 4.5）。这三个标签是数字的唯一释义 ⇒ 提到
+     --c-text-tertiary #6B7571（白底 4.76:1，design-variables.scss:105/364），仍为灰档。 */
+  color: var(--c-text-tertiary, #6B7571);
   font-weight: 500;
 }
 

@@ -758,7 +758,7 @@ export default {
       typesTitle: "The 16 Types at a Glance",
       typesDesc: "Learn about the four personality dimensions and understand yourself and others.",
       dimensionEI: "Extraversion/Introversion",
-      dimensionSN: "Intuition/Sensing",
+      dimensionSN: "Sensing/Intuition",
       dimensionTF: "Thinking/Feeling",
       dimensionJP: "Judging/Perceiving",
       testTitle: "Quick Test (4 questions)",

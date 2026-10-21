@@ -331,6 +331,7 @@ onShow(() => {
   cursor-spacing="20"
               v-model="schoolName"
               class="form-input"
+              placeholder-class="cert-form-placeholder"
               :placeholder="t('campus.certification.placeholderSchool')" :aria-label="t('campus.certification.placeholderSchool')"
             />
           </view>
@@ -342,6 +343,7 @@ onShow(() => {
   cursor-spacing="20"
               v-model="major"
               class="form-input"
+              placeholder-class="cert-form-placeholder"
               :placeholder="t('campus.certification.placeholderMajor')" :aria-label="t('campus.certification.placeholderMajor')"
             />
           </view>
@@ -354,7 +356,12 @@ onShow(() => {
             </text>
 
             <view v-if="!studentCardUrl" class="upload-area press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="uploadStudentCard">
-              <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.CAMERA)" custom-class="upload-icon" mode="aspectFit" />
+              <!-- R10-L05-D11（P2 · 素材缺失）：尺寸只能写在组件标签上（已知机制 §1）——
+                   custom-class 的值被绑进 SafeImage 内部节点（带组件自己的 data-v），
+                   宿主页 scoped 的 .upload-icon{width/height:56rpx} 命中 0 个节点 ⇒ 槽位塌陷、
+                   图标区整块空白（camera.png 本身在 real 包内是在盘的，不是素材缺失）。
+                   现把类挪到宿主节点：class="upload-icon"。 -->
+              <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.CAMERA)" class="upload-icon" mode="aspectFit" />
               <text class="upload-text">{{ t("campus.certification.uploadText") }}</text>
               <text class="upload-sub">{{ t("campus.certification.uploadSub") }}</text>
             </view>
@@ -386,6 +393,7 @@ onShow(() => {
   cursor-spacing="20"
               v-model="chsiCode"
               class="form-input"
+              placeholder-class="cert-form-placeholder"
               :placeholder="t('campus.certification.placeholderChsiCode')" :aria-label="t('campus.certification.placeholderChsiCode')"
             />
           </view>
@@ -398,7 +406,12 @@ onShow(() => {
             </text>
 
             <view v-if="!chsiScreenshotUrl" class="upload-area press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="uploadChsiScreenshot">
-              <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.CAMERA)" custom-class="upload-icon" mode="aspectFit" />
+              <!-- R10-L05-D11（P2 · 素材缺失）：尺寸只能写在组件标签上（已知机制 §1）——
+                   custom-class 的值被绑进 SafeImage 内部节点（带组件自己的 data-v），
+                   宿主页 scoped 的 .upload-icon{width/height:56rpx} 命中 0 个节点 ⇒ 槽位塌陷、
+                   图标区整块空白（camera.png 本身在 real 包内是在盘的，不是素材缺失）。
+                   现把类挪到宿主节点：class="upload-icon"。 -->
+              <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.CAMERA)" class="upload-icon" mode="aspectFit" />
               <text class="upload-text">{{ t("campus.certification.chsiUploadText") }}</text>
               <text class="upload-sub">{{ t("campus.certification.chsiUploadSub") }}</text>
             </view>
@@ -490,7 +503,13 @@ onShow(() => {
   z-index: var(--z-header);
 }
 
+/* R10-L05-D09（P1 · 可达性）：实测帧「返回」胶囊仅 88×60rpx（30px 高），低于 88rpx/44px
+   热区标准。补齐 min-height 并立成 flex，让文字在新高度里垂直居中。 */
 .cert-header__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
   padding: var(--sp-3) var(--sp-5);
   border-radius: var(--r-full);
   background: var(--c-overlay-white-bg-mid-strong);
@@ -503,16 +522,23 @@ onShow(() => {
 }
 /* #endif */
 
+/* R10-L05-D09：改前 --c-text-inverse = rgba(255,255,255,.95)（design-variables.scss:749），
+   压在 25% 白胶囊合成底 #9FE7CC 上 ≈1.4:1。改走深色墨 --c-text-primary #1A1E1C
+   （design-variables.scss:121），对 #9FE7CC 11.9:1。 */
 .back-icon {
   font-size: var(--fs-base);
-  color: var(--c-text-inverse);
+  color: var(--c-text-primary);
   font-weight: 500;
 }
 
+/* R10-L05-D09：同因，页名「学生认证」白字压渐变中段实测 #6DDEB3 仅 ≈1.6:1；
+   32rpx/16px 粗体够不上 18.66px 大字豁免。改 --c-text-primary 后对 #6DDEB3 10.2:1
+   （与 R10-L05-D07 卡头自陈的 post-topic 口径同值）。
+   同域 topic-detail 的 R10-L05-D07 按同一口径收口（post-topic 已是深色）。 */
 .cert-header__title {
   font-size: var(--fs-2xl);
   font-weight: 700;
-  color: var(--c-text-inverse);
+  color: var(--c-text-primary);
 }
 
 .cert-header__spacer {
@@ -746,6 +772,9 @@ onShow(() => {
 /* #endif */
 
 .upload-icon {
+  /* R10-L05-D11：本类现在挂在 <SafeImage> 标签（宿主节点）上，
+     才能命中已知机制 §1 的 data-v 边界；顺带固定不被 flex 压缩。 */
+  flex-shrink: 0;
   width: 56rpx;
   height: 56rpx;
 }
@@ -828,7 +857,12 @@ onShow(() => {
   width: 100%;
   padding: var(--sp-7) 0;
   border-radius: var(--r-xl);
-  background: var(--c-gradient-float-btn);
+  /* R10-L05-D10（P1 · 可达性）：改前 --c-gradient-float-btn（实测帧 x12–365 / y680–730
+     压实底 #36C99A），白字 rgba(255,255,255,.95) 仅 2.02:1，「提交审核」读不出 ⇒ 认证流程断在这里。
+     按已知机制 §2 的已采信档收成 --c-brand-800 #156B51（theme/design-variables.scss:18），
+     白字 .95 合成后 6.01:1；不取 brand-700 #1F8D6A（4.14:1 仍不达标）。
+     与 R9 对 BottomActionBar.vue:104 的同一条处置同口径（§11.3：主 CTA 走实色深绿是裁定不是回归）。 */
+  background: var(--c-brand-800);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -917,4 +951,18 @@ onShow(() => {
    2) 即便在 H5 端生效，它也是「整页纯白」这条与 §1.1 原则1 相冲突的第二个私有纯白来源。
    底色单一来源现在只剩 .cert-page 一处（已改 var(--c-bg-page)）。 */
 
+</style>
+
+<!-- R10-L05-D12（P2 · 可达性）：三个 input 此前没有显式 placeholder 样式，
+     帧内实测走 UA 默认灰 #A1A4A3，压字段底 --c-bg-surface #F3FAF6 仅 2.35:1，
+     「请输入你的学校全称/专业/在线验证码」这类填写指引读不清。
+     占位符节点由输入控件内部渲染、不带 scoped 的 data-v 散列类 ⇒ scoped 块里写
+     placeholder 类选择器匹配不上（同 R7-L13-D02 在 feedback/index.vue:904 的实测结论），
+     故按微信官方要求放在本页非 scoped 样式块。取 --c-text-secondary #4A524E
+     （design-variables.scss:122）对 #F3FAF6 = 7.60:1，高于卡片要求的 4.5:1；
+     刻意不取 --c-text-placeholder(#9AA39F)，那个对字段底只有 2.44:1。 -->
+<style lang="scss">
+.cert-form-placeholder {
+  color: var(--c-text-secondary, #4A524E);
+}
 </style>

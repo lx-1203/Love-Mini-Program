@@ -356,14 +356,57 @@ function removeTopic(index: number) {
 function openMentionPicker() {
   uni.showToast({ title: t("village.post.mentionHint"), icon: "none" });
 }
-/** R9-L02-D25：底栏「位置」项的说明串。与「添加位置」行内 meta 同一来源（单一来源，
- *  避免底栏与行文字两处口径分叉）。位置在本页钉死当前城市（:856 行已移除选点交互），
- *  点按按同页 :868-875 已认可的 tap-to-explain 形态报出真实状态，不伪造选点弹层。 */
-const locationRowText = computed<string>(() =>
-  currentCity ? currentCityLabel : t("village.post.locationHint")
-);
-function showLocationHint(): void {
+/* ---------- R10-L02-D14（P1）：位置选择接真实能力 ----------
+ * 原状态：无城市缓存时「添加位置」行只剩一句「位置选择即将开放」，整行无 @tap、无选择器，
+ * 底栏「位置」也只弹同一句 toast ⇒ 用户发帖带不了位置（R9-L02-D25 当时按「本页无选点能力」
+ * 退成 tap-to-explain）。本轮把真实选点接上：微信原生地图选点 uni.chooseLocation。
+ * 依据（全部仓内既有，不新增依赖）：
+ *  - manifest.json:50 requiredPrivateInfos 已声明 ["getLocation","chooseLocation"]（R6/F7 落的地基），
+ *    未声明时微信真机直接 fail ⇒ 本能力在小程序端是通的；
+ *  - 活例 subpackages/profile-extra/profile/location.vue:122 pickFromMap（同 API、同条件编译范式）。
+ * 小程序端以外的平台没有原生选点 ⇒ 保留既有陈述键 village.post.locationHint
+ * （该键全仓仅此一处消费，摘掉引用会让 scripts/qa/verify-i18n-orphan.mjs 的孤儿棘轮 1257 上跳）。 */
+let hasNativeLocationPicker = false;
+// #ifdef MP-WEIXIN
+hasNativeLocationPicker = true;
+// #endif
+/** 「添加位置」行与底栏「位置」项共用的展示串（保持单一来源，两处口径不分叉）：
+ *  已选位置 > 缓存城市（既有 nearby:city 链路）> 平台能力提示。 */
+const locationRowText = computed<string>(() => {
+  const picked = location.value.trim();
+  if (picked) return picked;
+  if (currentCity) return currentCityLabel;
+  return hasNativeLocationPicker ? "点击选择位置" : t("village.post.locationHint");
+});
+/** 选点结果写 location.value —— 与 snapshotDraft 的 location 字段 / restoreDraft 的
+ *  draft.location 分支（既有链路，本车道未改）同源，选完即上屏、离页不丢。 */
+function pickLocationFromMap(): void {
+  // #ifdef MP-WEIXIN
+  uni.chooseLocation({
+    success: (res: UniApp.ChooseLocationSuccess) => {
+      const text = String(res?.name || res?.address || "").trim();
+      if (!text) {
+        uni.showToast({ title: "未获取到选点结果，请重新选择", icon: "none" });
+        return;
+      }
+      location.value = text;
+      /* 帖子表没有位置列：apps/api/.../entity/Post.java 的 @Column 全表（title/content/images/
+         tags/category/visibility/circle_id…）与 CreatePostRequest 记录均无 location/city 字段，
+         前端不许编造 ⇒ 所选位置只进本页表单与草稿，不随本条对外发布。当场说清去向，
+         并在行下渲染常驻说明 + 清除入口（见模板 .publish-location-note），不留「选了就会发出去」
+         的空头承诺（同页「圈子发帖暂不支持话题，所选话题不会随本条发布」hint 的既有诚实范式）。 */
+      uni.showToast({ title: "位置已选择（暂不随本条帖子对外展示）", icon: "none" });
+    },
+    fail: (_err: unknown) => {
+      // 与 profile-extra/profile/location.vue 的 pickFromMap 同口径：主动返回与权限被拒都走 fail，
+      // 一律给可见反馈，不静默（静默=死按钮）
+      uni.showToast({ title: "未选择位置，请检查定位权限后重试", icon: "none" });
+    },
+  });
+  // #endif
+  // #ifndef MP-WEIXIN
   uni.showToast({ title: locationRowText.value, icon: "none" });
+  // #endif
 }
 /** R9-L02-D25：底栏「谁可以看」项。可见范围由「发布到」目标推导（:863 只读行同源），
  *  点按回答当前值。理想图第 5 枚「更多」在本页无任何可执行项（无后端、无弹层），
@@ -850,20 +893,36 @@ onUnmounted(() => {
                删箭头等于把可点线索一起删掉：四行外观同构后用户分不清哪行能点。修正方向取反——
                交互行恢复 ›（与 .publish-to__card 的 › 同竖列），三行只读行保持无箭头；
                只读行标签不降到 --c-text-quaternary（#9AA39F 压白 2.59:1，28rpx 正文字不达 4.5:1），
-               「可点 / 只读」的区分由箭头承担。 -->
+               「可点 / 只读」的区分由箭头承担。
+               R10-L02-D14 更新：本组「位置」行已接微信原生地图选点 ⇒ 转为交互行并按同一口径恢复 ›；
+               仍是只读的只剩「提及」（只弹说明）与「谁可以看」（随目标推导）。 -->
           <text class="publish-row__arrow">›</text>
         </view>
-        <!-- 2026-09-06：位置固定为当前城市（默认定位，不可更改），移除选择交互 -->
-        <view class="publish-row">
+        <!-- R10-L02-D14：本行恢复为交互行——2026-09-06「位置固定为当前城市、移除选择交互」的
+             前提（本页无选点能力）已被 uni.chooseLocation 推翻，manifest :50 早已声明该隐私接口。
+             行内 meta 三态：已选位置 / 缓存城市 / 可点 prompt（不再只剩「即将开放」一句）。
+             › 给真可点的那一行，与 R9-L02-D27 对立行的箭头口径一致。 -->
+        <view
+          class="publish-row press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="'添加位置'"
+          @tap="pickLocationFromMap"
+        >
           <image class="publish-row__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LOCATION)" mode="aspectFit" alt="" />
           <text class="publish-row__label">添加位置</text>
           <!-- R3：原「北京市 · 当前位置」语义混拼，改为可读的定位说明 -->
           <!-- MP-R1-PUBLISH-006：无定位缓存时不再宣称「自动定位」（原恒显示缺省「北京市 · 自动定位」） -->
-          <!-- R1-B33/D16：无定位缓存时的 meta 原文案「选择位置」是动词口吻、承诺了一个已按需求
-               移除的选择交互（见紧邻上一行 2026-09-06「位置固定为当前城市…移除选择交互」注释），
-               真机点上去零响应=文案与能力相反。改取既有双语陈述键 village.post.locationHint
-               （zh-CN.ts:2017 / en-US.ts:2002，此前全库未引用）——不新增键、不自造跳地图选点行为。 -->
+          <!-- R1-B33/D16 的「位置选择即将开放」陈述串在小程序端已不是唯一状态（见上方三态），
+               仍保留给无原生选点的平台作为诚实说明。 -->
           <text class="publish-row__meta">{{ locationRowText }}</text>
+          <text class="publish-row__arrow">›</text>
+        </view>
+        <!-- R10-L02-D14：后端 posts 表无位置列 ⇒ 所选位置只落草稿，当场明示 + 给真能生效的清除入口 -->
+        <view v-if="location" class="publish-location-note">
+          <text class="publish-location-note__text">位置仅保存在草稿，暂不随本条帖子对外展示</text>
+          <text class="publish-location-note__clear" @tap="location = ''">清除位置</text>
         </view>
         <!-- MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01：本行能力与 post.vue:164-168
              insertMention（真往正文插 @）不一致，且本页 openMentionPicker 只弹「即将开放」。
@@ -938,7 +997,8 @@ onUnmounted(() => {
          五项全部复用页内既有 handler，不新增后端字段、不引仓外素材：
            图片→chooseImage（与九宫格 ＋ 同源）；话题→话题弹层（圈子目标下 createTopic 请求体无
            tags，与 :837 行同 v-if）；提及→openMentionPicker。
-         位置/可见范围在本页是只读信息（位置钉死当前城市 :856、可见范围随「发布到」目标推导 :884），
+         位置在 R10-L02-D14 起接微信原生地图选点（与「添加位置」行同一个 pickLocationFromMap，
+         不再是只弹说明的假入口）；可见范围仍是只读（随「发布到」目标推导 :884），
          点按按同页 :868-875 已认可的 tap-to-explain 形态报出真实状态——不造空壳选点弹层，
          也不摆一个点不动的死按钮。理想图第 5 枚「更多」在本页没有任何可执行项，第 5 枚因此
          取本页唯一剩下的真实设置「谁可以看」，沿用其 EYE 图标与同一竖列。 -->
@@ -972,7 +1032,7 @@ onUnmounted(() => {
         hover-stay-time="120"
         role="button"
         :aria-label="'添加位置'"
-        @tap="showLocationHint"
+        @tap="pickLocationFromMap"
       >
         <image class="publish-tool__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LOCATION)" mode="aspectFit" alt="" />
         <text class="publish-tool__label">位置</text>
@@ -1142,7 +1202,10 @@ onUnmounted(() => {
   border-bottom: 1rpx solid var(--c-border-light, #EEF2F0);
   flex-shrink: 0;
 }
-.publish-header__close { width: 64rpx; height: 64rpx; display:flex; align-items:center; justify-content:center; flex-shrink: 0; }
+/* R10-L02-D16（P2 可达性）：关闭钮是不发布离开页面的显式出口，原热区 64rpx=32px 低于 88rpx 下限。
+   只放大容器（88rpx=44px，与本文件 .publish-tip__close 同规格），36rpx 字形不动 ⇒ 视觉大小不变、
+   可点面积 +96%。flex-shrink 已有，页头因此整体长高 24rpx（标题/发布按钮仍垂直居中）。 */
+.publish-header__close { width: 88rpx; height: 88rpx; display:flex; align-items:center; justify-content:center; flex-shrink: 0; }
 .publish-header__x { width: 36rpx; height: 36rpx; color: var(--c-text-primary, #1A1E1C); }
 .publish-header__title {
   font-size: 32rpx;
@@ -1157,7 +1220,11 @@ onUnmounted(() => {
   flex: 1;
   text-align: center;
 }
-.publish-header__submit { padding: 12rpx 36rpx; border-radius: var(--r-full, 999rpx); background: var(--c-brand, #36C99A); flex-shrink: 0; }
+/* R10-L02-D13（P1 颜色token）：本页唯一主操作。原底 --c-brand #36C99A 压白字 28rpx/14px 实测
+   2.10:1（design-variables.scss 真值算得，非 .vue 字面量），白字读不出。改深档 --c-brand-800
+   #156B51（$brand-800 见 theme/design-variables.scss:18）⇒ 白字 6.45:1，与 R9 收口的
+   BottomActionBar.vue:104 全站深档白字口径一致。禁用态规则在下方同特异度后置，仍覆盖本行。 */
+.publish-header__submit { padding: 12rpx 36rpx; border-radius: var(--r-full, 999rpx); background: var(--c-brand-800, #156B51); flex-shrink: 0; }
 /* R3：禁用态白字对浅绿底对比度仅 1.36:1（judged 证据），文字改深绿保证可辨认 */
 .publish-header__submit--disabled { background: #C7E9DC; }
 .publish-header__submit--disabled .publish-header__submit-text { color: #2A7A5E; }
@@ -1240,6 +1307,13 @@ onUnmounted(() => {
    与 .publish-to__arrow 的 quaternary 档刻意分开（meta 与箭头分档，R9-L02-D26 的裁定方向）。 */
 .publish-row__arrow { font-size: 32rpx; color: var(--c-text-tertiary, #6B7571); }
 
+/* R10-L02-D14：位置行的常驻说明条（仅在已选位置后出现）。文字取 --c-text-secondary #6B7571
+   压白 4.76:1（22rpx 小字按 4.5:1 判，不取 --c-text-tertiary #9AA39F=2.59:1）；
+   「清除位置」取 --c-brand-800 #156B51 压白 6.45:1（与本页主 CTA 同深档，非装饰性绿字）。 */
+.publish-location-note { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; padding: 8rpx 32rpx 20rpx; }
+.publish-location-note__text { flex: 1; min-width: 0; font-size: var(--fs-xs, 22rpx); color: var(--c-text-secondary, #6B7571); }
+.publish-location-note__clear { flex-shrink: 0; padding: 8rpx 12rpx; font-size: var(--fs-base, 24rpx); color: var(--c-brand-800, #156B51); }
+
 /* W2-PUBLISH-TOPIC：已选话题 chips（与 post.vue .post-topics 同口径，token 强制） */
 .publish-topics { display: flex; flex-wrap: wrap; gap: 12rpx; padding: 0 32rpx; }
 .publish-topics__hint { width: 100%; font-size: var(--fs-xs, 22rpx); color: var(--c-text-tertiary, #9AA39F); }
@@ -1279,9 +1353,15 @@ onUnmounted(() => {
 .publish-tip__text-wrap { flex: 1; display: flex; flex-direction: column; gap: 6rpx; }
 /* R2b-L03-D15：✕ 移入标题行内 → 标题行 space-between（左 [嫩芽+发帖小贴士] / 右 [✕]），
    描述列不再被 ✕ 命中区挤占，恢复整卡宽度单行显示。 */
-.publish-tip__title { font-size: 26rpx; font-weight: 700; color: var(--c-brand, #36C99A); display: flex; align-items: center; justify-content: space-between; gap: 8rpx; }
+/* R10-L02-D17（P2 颜色token）：小贴士卡底是 --c-brand-50 #E8FAF3，标题原取 --c-brand #36C99A
+   压其上仅 1.94:1，26rpx/13px 粗体不享大字号豁免 ⇒ 读不清。改 --c-brand-800 #156B51 = 5.96:1。
+   卡上给的第二个选项 --c-text-secondary #6B7571 压 brand-50 实测 4.40:1，不达 4.5:1，**不采纳**
+   （已知机制 §2「对比度要算不要看着改」的同型坑）。 */
+.publish-tip__title { font-size: 26rpx; font-weight: 700; color: var(--c-brand-800, #156B51); display: flex; align-items: center; justify-content: space-between; gap: 8rpx; }
 .publish-tip__title-main { display: flex; align-items: center; gap: 8rpx; }
-.publish-tip__title-icon { width: 28rpx; height: 28rpx; color: var(--c-brand, #36C99A); }
+/* 与标题同档：嫩芽图标是「这是小贴士」的图形线索，属非文本 UI（≥3:1），
+   原 --c-brand 压 brand-50 只有 1.94:1，随标题一并收深（brand-800 压 brand-50 = 5.96:1）。 */
+.publish-tip__title-icon { width: 28rpx; height: 28rpx; color: var(--c-brand-800, #156B51); }
 .publish-tip__desc { font-size: 24rpx; color: var(--c-text-secondary, #6B7571); }
 /* R1-B33/D23：模板中 class=publish-tip__close 的可点关闭 × 此前无任何样式（该节点仅承载
    一个 28rpx／14pt 图标），落在拇指可达区、误触即永久关掉提示。补齐 88rpx（44px）方形命中区，
@@ -1300,11 +1380,15 @@ onUnmounted(() => {
 
 /* R9-L02-D25（原 R1-B33/D21「有 CSS 无 DOM，不修待裁定」结案）：DOM 见 </scroll-view> 之后的
    .publish-toolbar。补的五枚全部接页内既有 handler（图片→chooseImage、话题→话题弹层、
-   提及→openMentionPicker、位置/谁可以看→tap-to-explain），没有为「视频」「更多」这类本页
+   提及→openMentionPicker、位置→原生地图选点（R10-L02-D14 起）、谁可以看→tap-to-explain），没有为「视频」「更多」这类本页
    无后端、无实现的项凭空造按钮：理想图第 5 枚「更多」由本页唯一剩下的真实设置「谁可以看」顶上。
    以下样式即原存档样式，本轮起有真实消费者。 */
 .publish-toolbar { display: flex; justify-content: space-around; padding: 16rpx 24rpx calc(env(safe-area-inset-bottom) + 12rpx); background: #fff; border-top: 1rpx solid #EEF2F0; flex-shrink: 0; }
-.publish-tool { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6rpx; }
+/* R10-L02-D18（P2 可达性）：底栏五枚是本页图片/话题/位置/提及/谁可以看的唯一常驻入口排，
+   原无最小高度——40rpx 图标 + 6rpx gap + 20rpx 标签 ≈70rpx（35px）低于 88rpx（44px）拇指下限。
+   补 min-height:88rpx 并 justify-content:center 让内容在扩出的热区内垂直居中
+   （容器已是 display:flex + column，align-items 有生效前提，见已知机制 §7.4）。 */
+.publish-tool { flex: 1; min-height: 88rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6rpx; }
 /* R9-L02-D25：color 曾挂在本类上，而本页补 DOM 后这里的消费者是 <image>（图片节点不吃 color，
    与 D29 同型零消费者）——颜色移到 #/@ 文本 glyph 的修饰类，位图图标本身由素材着色。
    font-size / line-height 供 glyph 与 40rpx 图标同档居中（与 post.vue:1654-1664 同口径）。 */

@@ -842,7 +842,7 @@ export default {
       "typesTitle": "16 型人格速览",
       "typesDesc": "了解四种性格维度，认识自己和他人。",
       "dimensionEI": "外向/内向",
-      "dimensionSN": "直觉/实感",
+      "dimensionSN": "实感/直觉",
       "dimensionTF": "思考/情感",
       "dimensionJP": "判断/知觉",
       "testTitle": "简化测试（4 题）",
@@ -2892,7 +2892,7 @@ export default {
   },
   "lock": {
     "thisFeature": "此功能",
-    "unlockHintModal": "完成资料完善即可解锁 {name}",
+    "unlockHintModal": "完成资料完善即可解锁{name}",
     "completionProgress": "当前完善度 {n}%",
     "completionProgressEncourage": "当前完善度 {n}%，继续加油～",
     "defaultSubtitleModal": "完善资料，开启更多校园恋爱功能",
@@ -3701,7 +3701,7 @@ export default {
     "rewindUsedUp": "今日挽回次数已用完",
     "rewindingLabel": "挽回中...",
     "emptyTitle": "还没有浏览记录",
-    "emptyDesc": "快去寻觅页发现有趣的TA吧"
+    "emptyDesc": "快去寻觅页看看，发现有趣的 TA 吧"
   },
   "feedbackHistory": {
     "filterAll": "全部",

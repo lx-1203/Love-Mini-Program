@@ -76,24 +76,32 @@ const coordText = computed(() => {
 const DEFAULT_CENTER = { latitude: 39.9042, longitude: 116.4074 };
 const mapCenter = computed(() => coords.value ?? DEFAULT_CENTER);
 
-/** marker：使用本地定位 pin PNG（marker iconPath 仅支持本地/网络位图） */
-const mapMarkers = computed(() => [
-  {
-    id: 0,
-    latitude: mapCenter.value.latitude,
-    longitude: mapCenter.value.longitude,
-    iconPath: resolveMediaUrl(IMAGE_PATHS.HOME_ICONS.LOCATION_PIN),
-    width: 36,
-    height: 36,
-    callout: {
-      content: addressText.value || shownCity.value || "当前位置",
-      display: "ALWAYS",
-      borderRadius: 10,
-      padding: 8,
-      fontSize: 12,
+/** marker：使用本地定位 pin PNG（marker iconPath 仅支持本地/网络位图）
+ *  R10-L10-D09（空态文案 P1）：hasAnyLocationFact 为 false 时——城市/校区/坐标/物理地址全空，
+ *  白卡写「暂无位置信息」/「经度 — · 纬度 —」——地图下方不能再钉一枚写死 DEFAULT_CENTER
+ *  (39.9042/116.4074) 的红针 + ALWAYS 气泡「当前位置」，否则空态与地图在同一帧互相打脸：
+ *  用户看地图会判定"我已定位成功"，既不会点「重新定位」也不会点「地图选点」。
+ *  按卡上第一条建议：无定位事实 ⇒ mapMarkers 返回空数组，地图只留默认中心视图，不出针、不出气泡。 */
+const mapMarkers = computed(() => {
+  if (!hasAnyLocationFact.value) return [];
+  return [
+    {
+      id: 0,
+      latitude: mapCenter.value.latitude,
+      longitude: mapCenter.value.longitude,
+      iconPath: resolveMediaUrl(IMAGE_PATHS.HOME_ICONS.LOCATION_PIN),
+      width: 36,
+      height: 36,
+      callout: {
+        content: addressText.value || shownCity.value || "当前位置",
+        display: "ALWAYS",
+        borderRadius: 10,
+        padding: 8,
+        fontSize: 12,
+      },
     },
-  },
-]);
+  ];
+});
 
 async function loadLocation() {
   locating.value = true;
@@ -374,20 +382,24 @@ onLoad(() => {
 }
 
 .location-card__label {
-  font-size: 24rpx;
-  color: var(--c-text-tertiary, #9AA39F);
+  /* R10-L10-D10（字号 P3）：24rpx 裸值落 --fs-base 档 ⇒ 归令牌；清掉写成 #9AA39F 的假兜底
+     （--c-text-tertiary 真值 #6B7571，见 design-variables.scss:125），同域 album.vue 同角色行已归 var。 */
+  font-size: var(--fs-base);
+  color: var(--c-text-tertiary);
 }
 
 .location-card__value {
-  font-size: 32rpx;
+  /* R10-L10-D10：32rpx 裸值落 --fs-2xl 档 ⇒ 归令牌 */
+  font-size: var(--fs-2xl);
   font-weight: 700;
   color: var(--c-text-primary, #1A1E1C);
   word-break: break-all;
 }
 
 .location-card__coords {
-  font-size: 22rpx;
-  color: var(--c-text-tertiary, #94A39F);
+  /* R10-L10-D10：22rpx 裸值落 --fs-sm 档 ⇒ 归令牌；清掉写成 #94A39F 的假兜底 */
+  font-size: var(--fs-sm);
+  color: var(--c-text-tertiary);
 }
 
 /* R6-B57/D07：次级说明（失败原因 + 可行动指引），字阶/色阶按规范 §1.3 取档位令牌 */
@@ -429,7 +441,8 @@ onLoad(() => {
 .location-card__address-label {
   flex-shrink: 0;
   font-size: 24rpx;
-  color: var(--c-text-tertiary, #9AA39F);
+  /* R10-L10-D10：清掉写成 #9AA39F 的假兜底 */
+  color: var(--c-text-tertiary);
 }
 
 .location-card__address-value {
@@ -476,7 +489,8 @@ onLoad(() => {
 
 .location-map__h5-text {
   font-size: 26rpx;
-  color: var(--c-text-tertiary, #9AA39F);
+  /* R10-L10-D10：清掉 #9AA39F 假兜底（此行仅 H5 分支渲染，mp 帧不变） */
+  color: var(--c-text-tertiary);
 }
 
 .location-map__tip-row {
@@ -489,8 +503,13 @@ onLoad(() => {
 .location-map__tip {
   flex: 1;
   min-width: 0;
-  font-size: 22rpx;
-  color: var(--c-text-tertiary, #9AA39F);
+  /* R10-L10-D11（可达性 P1）：本页唯一手动选点指引「轻点右侧「地图选点」…」压在 --c-bg-page
+     #EEF7F2 薄荷底上，原 --c-text-tertiary #6B7571 实算 4.33:1（<正文级 4.5:1），且兜底还写成
+     更浅的 #9AA39F（2.37:1）。按 R9-L10-D18 同口径升到 --c-text-secondary #4A524E（同底 7.37:1），
+     字号从 22rpx 提到 var(--fs-base) 起步，并删掉假兜底。同页压在白卡上的 .location-card__hint
+     仍留 --c-text-tertiary（白底 4.76:1 达标），两行不再一处达标一处不达标。 */
+  font-size: var(--fs-base);
+  color: var(--c-text-secondary);
 }
 
 /* R6-B57/D09（可达性 P2，2026-10-20）：实测胶囊高 30px=60rpx（源码 64rpx 与实测差 4rpx

@@ -354,6 +354,12 @@ function onAnswersScrollLower(): void {
   justify-content: space-between;
   /* --statusbar 由 useMenuButtonRect 注入（开发者工具 env 恒 0），避免标题与系统时间叠印 */
   padding: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-4)) var(--sp-8) var(--sp-6);
+  /* R10-L07-D03（颜色 token P1）：本栏底色**刻意不压深**，可读性由下方 .dq-header__title /
+     .back-icon 改深墨承接（算式见那两条规则）。与同 lane activities/detail.vue:466-472 同一裁定：
+     pages.json:49/52 是 navigationStyle=custom + navigationBarTextStyle=black ⇒ 状态栏黑字黑图标
+     直接渲染在本栏之上（real 帧 top 左上角「14:04」即黑），把栏底压到 --c-brand-800 后
+     黑字只有 0.16276/0.05=3.26:1、压到 brand-900 只剩 2.05:1，等于把系统状态栏一起拖下门槛；
+     微信胶囊（深色描边/白底）也落在本栏右段，同理。 */
   background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 100%);
   z-index: var(--z-header);
 }
@@ -372,14 +378,24 @@ function onAnswersScrollLower(): void {
 
 .back-icon {
   font-size: var(--fs-base);
-  color: var(--c-text-inverse);
+  /* R10-L07-D03（颜色 token P1）：原 --c-text-inverse（= rgba(255,255,255,.95)，
+     design-variables.scss:369/749）压本栏渐变：帧上「返回」处底采样 #48D0A2 ⇒ 1.94:1。
+     改深墨档 --c-brand-900(#0B4A38，L=0.05254，design-variables.scss:19)：
+       压深端 #36C99A(L=0.44891) ⇒ 0.49891/0.10254 = 4.87:1
+       压浅端 #75E1B7(L=0.61054) ⇒ 0.66054/0.10254 = 6.44:1
+     两端均 ≥4.5:1（13px 文字不享大字号豁免）。品牌色阶不随主题翻转
+     （styles/tokens.scss 的 dark-theme-vars 不覆盖 --c-brand-900），故深色档下同样成立；
+     不用 --c-text-primary 的理由同 activities/detail.vue:509（它在深色档翻成近白）。 */
+  color: var(--c-brand-900, #0B4A38);
   font-weight: 500;
 }
 
 .dq-header__title {
   font-size: var(--fs-2xl);
   font-weight: 700;
-  color: var(--c-text-inverse);
+  /* R10-L07-D03（颜色 token P1）：16px 页名不享 WCAG 大字号豁免 ⇒ 门槛 4.5:1，
+     原白字压渐变实测 1.81:1（帧上标题处底 #59D6AA）。改档与算式见 .back-icon。 */
+  color: var(--c-brand-900, #0B4A38);
 }
 
 .dq-header__spacer {
@@ -444,7 +460,11 @@ function onAnswersScrollLower(): void {
   min-height: 70vh;
   padding: 60rpx var(--sp-10);
   background: var(--c-bg-container);
-  border-radius: var(--r-xxl);
+  /* R10-L07-D06（圆角 P2）：这张 341px 宽、min-height:70vh 的整屏大卡原吃 --r-xxl(32rpx=16px)，
+     比 §1.4 的卡片语义圆角 --card-radius(40rpx=20px，design-variables.scss:699) 小 4px，
+     与同批 love-center 宫格卡 / help·security 的 SectionCard 不同档 ⇒ 同屏两种卡片圆角并存。
+     改引卡片档令牌，与同域卡片同档。 */
+  border-radius: var(--card-radius, 40rpx);
   box-shadow: var(--s-card-soft);
   border: var(--c-border-card);
 }
@@ -478,10 +498,24 @@ function onAnswersScrollLower(): void {
 .lock-card__cta {
   margin-top: var(--sp-4);
   min-width: 320rpx;
+  /* R10-L07-D05（可达性 P1）：本钮是本题唯一解锁动作（页内第二个按钮只有「返回」，
+     签到无替代出口），实测 159×38px=315×75rpx，只有 88rpx(44px) 热区下限的 86%。
+     原样式只有 padding:20rpx 48rpx + 14px 文字，没有 min-height
+     ——同文件次级出口 .lock-back(:537) 反而写了 88rpx ⇒ 主次倒挂。补齐同档下限。 */
+  min-height: 88rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 20rpx 48rpx;
-  /* R6-L08-D16（可达性 P2）：白字压品牌绿实测 2.10:1（#ffffff on #31C897）——
-     §1.2 的 --c-text-inverse 适用前提是深底，brand-500 属浅绿主色 ⇒ 底改深档承载白字 */
-  background: var(--c-brand-600, #2AAE83);
+  /* R10-L07-D04（颜色 token P1，R9-L07-D04 同一实体在册复核）：白字压 --c-brand-600
+     实测底 (42,174,131)=#2AAE83 与令牌逐字对上（L=0.32400）⇒ 1.05/0.37400=2.81:1，
+     既不达 4.5:1 也不达 3.0:1（14px/600 不享大字号豁免）。
+     按任务书第 2 节的算术表取同族深档 --c-brand-800(#156B51，design-variables.scss:18，
+     L=0.11276) ⇒ 纯白 1.05/0.16276=6.45:1；标签实际色 rgba(255,255,255,.95) 合成后 6.01:1，
+     与 R9 收敛后的 BottomActionBar.vue:104、本批 activities/detail.vue 报名钮同档。
+     （不取卡上另一候选 brand-700：白字压 #1F8D6A 只有 4.14:1，仍不达线。） */
+  background: var(--c-brand-800, #156B51);
   border-radius: var(--r-pill, 999rpx);
   text-align: center;
 }

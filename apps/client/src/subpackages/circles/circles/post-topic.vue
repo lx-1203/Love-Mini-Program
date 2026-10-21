@@ -812,14 +812,22 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .back-icon {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-inverse);
+  /* R10-L04-D08（可达性 P1）：页头是 135° 薄荷→粉渐变，--c-text-inverse 现等于
+     rgba(255,255,255,.95)（decisions-v33 §2 归口，见 theme/design-variables.scss:369），
+     白字压浅薄荷只有 1.65:1 ⇒ 图标随标题一起融进底色。改深墨：压渐变实测 #67DCB1 = 10.0:1，
+     压 rgba(255,255,255,.25) 胶囊（≈#D1F3E8）= 14.2:1。卡要求「标题/图标全程可读」，故一并处理。 */
+  color: var(--c-text-primary);
   font-weight: 500;
 }
 
 .post-header__title {
   font-size: 34rpx;
   font-weight: 700;
-  color: var(--c-text-inverse);
+  /* R10-L04-D08（可达性 P1）：标题落在渐变最浅的一段（实测 #67DCB1–#6DDEB3），
+     白字 1.65:1 几乎融进底色。按卡的建议改法取深墨 --c-text-primary #1A1E1C：
+     压 #67DCB1 = 10.0:1、压 brand-300 #75E1B7 = 9.13:1、压 romance-300 #FF8DA1 = 7.68:1，
+     沿整条 135° 渐变全程 ≥4.5。不压深渐变本身（页头渐变是全站语言，非 §11.3 的共享主 CTA）。 */
+  color: var(--c-text-primary);
 }
 
 .post-header__submit {
@@ -846,12 +854,16 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .submit-text {
   font-size: var(--fs-md, 26rpx);
-  color: $green-primary;
+  /* R10-L04-D08 同带修复：$green-primary=--c-brand 真值 #36C99A 压 rgba(255,255,255,.95) 钮面 = 2.10:1
+     （已知机制 §2：brand-600 2.81 / brand-700 4.14 都不达标）⇒ 取 brand-800 = 6.45:1。 */
+  color: var(--c-brand-800, #156B51);
   font-weight: 600;
 }
 
 .post-header__submit--disabled .submit-text {
-  color: var(--c-overlay-white-text-strong);
+  /* 禁用态原本是 rgba(255,255,255,.8) 压 rgba(255,255,255,.4) 胶囊 ⇒ 逐像素糊掉（≈1.1:1）。
+     改深墨次要色压半透明白胶囊（≈#9BE9CF）= 5.1:1，仍靠「无阴影 + 半透底」表达禁用。 */
+  color: var(--c-text-secondary);
 }
 
 .post-body {
@@ -965,7 +977,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .target-chip--active {
   background: $green-light;
-  border-color: $green-primary;
+  /* R10-L04-D09（颜色token P1）：描边随文字同档，选中轮廓在浅绿底上也成立
+     （#36C99A 压页面底 #EEF7F2 只有 1.93:1，低于非文本 3:1）。 */
+  border-color: var(--c-brand-800, #156B51);
 }
 
 .target-chip__text {
@@ -975,7 +989,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .target-chip--active .target-chip__text {
-  color: $green-primary;
+  /* R10-L04-D09（颜色token P1）：已选中的「校园圈」字取 $green-primary=--c-brand
+     真值 #36C99A（theme/design-variables.scss:15）压 $green-light=--c-brand-50 #E8FAF3
+     = 1.94:1（帧测一致），而未选中的「兴趣圈」是 #5F6763 深灰 ≈5.3:1
+     ⇒ 选中项反而比未选中更看不清。按已知机制 §2 实算：brand-700 压浅绿底 3.82:1 仍不达标，
+     取 brand-800 = 5.96:1 ≥4.5；浅绿底（选中提示语言）按卡的口径保留不动。 */
+  color: var(--c-brand-800, #156B51);
   font-weight: 700;
 }
 
@@ -996,7 +1015,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .category-chip--active {
   background: $green-light;
-  border-color: $green-primary;
+  border-color: var(--c-brand-800, #156B51);
 }
 
 .category-chip__text {
@@ -1006,7 +1025,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .category-chip--active .category-chip__text {
-  color: $green-primary;
+  /* R10-L04-D09 同族：兴趣分类 chip 与「发布到」chip 是同一套选中语言，
+     22rpx=11px 小字更要 ≥4.5 ⇒ 同一档 brand-800（压 $green-light 5.96:1）。 */
+  color: var(--c-brand-800, #156B51);
   font-weight: 700;
 }
 
@@ -1227,7 +1248,11 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   width: 100%;
   padding: 28rpx 0;
   border-radius: var(--r-xl, 24rpx);
-  background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
+  /* R10-L04-D10 同元素在册修复（方向对齐 §11.3 引的 R9 裁定：主 CTA 由 mint 渐变收成 brand-800）：
+     原 135° mint 渐变（#36C99A→brand-300 #75E1B7）压白字实测 1.94~2.10:1，
+     已知机制 §2 算过 brand-600 2.81 / brand-700 4.14 都不达标 ⇒ 取 brand-800，白字 6.45:1。
+     本页主提交钮的可读出口必须由它承担（禁用态只能靠轮廓，见下），故一并收成深绿实色。 */
+  background: var(--c-brand-800, #156B51);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1243,7 +1268,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* #endif */
 
 .bottom-submit__btn--disabled {
-  background: $border-light;
+  /* R10-L04-D10（颜色token P2）：禁用底原取 $border-light=#EEF2F0，铺在页面底 #EEF7F2 上
+     实测只差 1.03:1 ⇒ 圆角轮廓完全消失，整颗钮看着像一截裸文字（帧 y719–763）。
+     按卡的建议改用专用禁用档 --c-status-disabled #DCE5E2（对页面底 1.18:1，仍偏轻），
+     光换底色达不到「≥1.5:1 的形」⇒ 再补一条 --c-neutral-400 描边（对页面底 2.37:1），
+     让禁用钮保留可见轮廓；注：§2 否掉的是「--c-status-disabled 作开关底 + 白前景 1.29:1」，
+     与本处「半透语义底 + 深墨字 + 描边」不是同一判点。 */
+  background: var(--c-status-disabled, #DCE5E2);
+  border: 2rpx solid var(--c-neutral-400, #9AA39F);
   box-shadow: none;
 }
 
@@ -1254,7 +1286,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .bottom-submit__btn--disabled .bottom-submit__text {
-  color: $text-tertiary;
+  /* 禁用态文字随新底色重算：$text-tertiary #6B7571 压 #DCE5E2 只有 3.71:1，
+     收深一档到 $text-secondary #4A524E = 6.27:1（禁用态仍靠平色+无阴影表达，不靠糊字）。 */
+  color: $text-secondary;
 }
 
 /* ================================================================

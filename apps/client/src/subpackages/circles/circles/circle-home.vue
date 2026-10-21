@@ -25,8 +25,8 @@
  *
  * 2026-09-12 封面修复：圈名→封面统一走 config/circle-covers（circleCoverFor）。
  */
-import { computed, ref, watch } from "vue";
-import { onLoad, onShareAppMessage } from "@dcloudio/uni-app";
+import { computed, getCurrentInstance, nextTick, ref, watch } from "vue";
+import { onLoad, onPageScroll, onReady, onShareAppMessage } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useCircleStore, type CircleItem } from "../../../stores/circle";
@@ -86,6 +86,42 @@ const circle = computed<CircleItem>(() => {
  *  「未就绪」不能当「不存在」——先走骨架态，拉取落定后才允许判定未知圈，
  *  否则分享卡片直达有效圈子会先闪「圈子不存在或已解散」。 */
 const circlesFetchSettled = ref(useMock());
+
+/* R10-L03-D19（间距 P2）：.tabs 就是白 sheet 本身，它把 --statusbar 无条件计进 padding-top。
+ * 未吸顶时（顶帧，页签仍在文档流里）这段内衬只是 hero 下沿与页签墨迹之间一条 58px(≈115rpx)
+ * 的纯白空带 ≈ 理想图同位 24px 的 2.4 倍；但它又不能在吸顶后删掉——R8-L04-D08（P1 层级遮挡）
+ * 正是靠这条内衬把状态栏带铺成同色不透明底，防止 feed 从系统时间/微信胶囊下面透出来。
+ * ⇒ 按卡片第一方案改成「仅 sticky 生效时才预留」：滚动越过页签在文档流里的 offsetTop 才补上。
+ * 机制与 hub.vue:40-44 的 headerCompact 同款（本页同样是 window 滚动，无内层 scroll-view）。
+ * 放在 circlesFetchSettled 之后：骨架期 .tabs 不在文档流里，量不到就得等它落定后复量。 */
+const tabsPinned = ref(false);
+/** 吸顶阈值：优先实测 .tabs 的 offsetTop；测不到时兜底 = hero 高度 440rpx（见 .hero），375 视口 ≈220px */
+const tabsPinTopPx = ref(220);
+
+function measureTabsPinTop(): void {
+  const instance = getCurrentInstance();
+  const query = instance ? uni.createSelectorQuery().in(instance) : uni.createSelectorQuery();
+  query
+    .select(".tabs")
+    .boundingClientRect((res) => {
+      const info = Array.isArray(res) ? res[0] : res;
+      const top = info?.top ?? 0;
+      if (top > 0) tabsPinTopPx.value = top;
+    })
+    .exec();
+}
+
+onReady(() => {
+  measureTabsPinTop();
+});
+watch(circlesFetchSettled, (settled) => {
+  if (settled) nextTick(measureTabsPinTop);
+});
+onPageScroll((e) => {
+  const next = e.scrollTop >= tabsPinTopPx.value;
+  if (next !== tabsPinned.value) tabsPinned.value = next;
+});
+
 const isUnknownCircle = computed<boolean>(() => {
   if (useMock()) return false;
   if (!circleId.value) return true;
@@ -537,8 +573,8 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
       </view>
     </view>
 
-    <!-- 4. 多 Tab 栏 -->
-    <view class="tabs">
+    <!-- 4. 多 Tab 栏（R10-L03-D19：状态栏内衬只在吸顶后出现，见 script 的 tabsPinned） -->
+    <view class="tabs" :class="{ 'tabs--pinned': tabsPinned }">
       <view
         v-for="key in TAB_KEYS"
         :key="key"
@@ -618,7 +654,10 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
       <!-- 7. 查看全部话题（保留原 topics 链路） -->
       <view class="topics-link" hover-class="topics-link--active" @tap="goToTopics">
         <text class="topics-link-text">{{ t("circle.home.viewAllTopics") }}</text>
-        <image class="topics-link-arrow" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.ARROW_RIGHT)" mode="aspectFit" />
+        <!-- R10-L03-D20：箭头原为 ICONS_COMMON.ARROW_RIGHT 位图（颜色写死在素材里，
+             本车道不能改素材），卡片要求「箭头同色」⇒ 改用与文案同墨色的 CSS 字形 › ，
+             与本页 hero 返回 ‹（:474）、hub.vue:254 同口径。 -->
+        <text class="topics-link-chevron">&#x203A;</text>
       </view>
     </template>
 
@@ -931,14 +970,20 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
      600(#2AAE83) dE=7.3 ｜ 700(#1F8D6A) dE=10.5 ｜ 500(#36C99A) dE=16.0 ｜ 800 dE=24.1
      ⇒ 单一来源档位是 --c-brand-600，500 档明度高、饱和度低一整档（整页 CTA 偏薄荷）。
      缺陷建议的「在 --c-brand-700 与 --c-brand-800 之间新增档位」不可执行（theme/ 为只读集），
-     且按实测 700/800 都比 600 更远，故映射到既有最近档位令牌。按压态同步下移一档到 700。 */
-  background: var(--c-brand-600, #2AAE83);
+     且按实测 700/800 都比 600 更远，故映射到既有最近档位令牌。按压态同步下移一档到 700。
+     —— R10-L03-D17 / R10-L04-D12 覆盖（P1 · 颜色token ×2）：上面这条是「贴理想图取色」的
+     色彩保真裁定，但 600 压白字只有 2.81:1（帧上 hero 钮实测 (42,174,131)），
+     底部同色主 CTA 同值，两个主行动按钮的文案都不达标。可达性优先于取色保真，
+     且 R9 已把全站共享主 CTA（BottomActionBar.vue:104）收进 --c-brand-800（白字 6.45:1），
+     ⇒ 本页 hero 与底栏两处一起同步到 800，按压态随之从 700 下移到 900。
+     卡里建议的 700（4.14:1）按已知机制 §2 仍不达 4.5，不采纳。 */
+  background: var(--c-brand-800, #156B51);
   border-radius: 999rpx;
   padding: 18rpx 32rpx;
 }
 
 .info-join--active {
-  background: var(--c-brand-700, #1F8D6A);
+  background: var(--c-brand-900, #0B4A38);
 }
 
 .info-join-text {
@@ -989,12 +1034,23 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
      正文「预算 2000…」从该带透出、与系统时间「0:53」同高叠印。
      现把吸顶点位改到 top:0，并把状态栏高度收进 padding-top ⇒ 白底自屏幕 y=0 起铺满「状态栏带 + 页签行」，
      feed 恒从这条同色不透明头部带下方穿过，状态栏带不留裸内容。padding-top 在 top 帧（未吸顶、走文档流）
-     只多出一段与页签同色的白内衬，不产生异色缝。右侧仍按 hub 口径预留胶囊（胶囊右缘间隙 + 本体 87px + 呼吸）。 */
+     只多出一段与页签同色的白内衬，不产生异色缝。右侧仍按 hub 口径预留胶囊（胶囊右缘间隙 + 本体 87px + 呼吸）。
+     R10-L03-D19 补充：这段状态栏内衬改为「只在吸顶态补」（见下方 .tabs--pinned）——
+     顶帧未吸顶时它就是 hero 与页签之间一条多余的白空带。 */
   position: sticky;
   top: 0;
   z-index: 10;
-  padding: var(--statusbar, env(safe-area-inset-top)) calc(var(--capsule-right, 7px) + 104px) 0 24rpx;
+  padding: 0 calc(var(--capsule-right, 7px) + 104px) 0 24rpx;
   box-sizing: border-box;
+}
+
+/* R10-L03-D19（间距 P2）：状态栏内衬从上面的 padding 里挪出来，只在吸顶态补。
+ * 未吸顶时页签回到离白 sheet 顶缘 ≈48rpx（只剩 .tab-item 的 24rpx 上内衬 + 文案行高），
+ * 顶帧那条 58px 纯白带（理想图同位 24px 的 2.4 倍）随之收回；
+ * 吸顶后 padding-top = --statusbar 原样恢复 ⇒ R8-L04-D08 的状态栏带遮盖不受影响。
+ * 本页 --statusbar 由 useMenuButtonRect 注入（:45），不是 env() 的 0（已知机制 §4）。 */
+.tabs--pinned {
+  padding-top: var(--statusbar, env(safe-area-inset-top));
 }
 
 .tab-item {
@@ -1025,7 +1081,13 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 }
 
 .tab-item--active .tab-text {
-  color: var(--c-brand-500, #36C99A);
+  /* R10-L03-D18 + R10-L04-D15（同一病灶的两条卡，P1 · 颜色token）：改前 --c-brand-500
+     #36C99A 压白 = 2.06:1（帧上实测 (53,201,154)），而未选中项 #5d6c7b 反而已到 5.36:1
+     ⇒ 选中态比未选还淡，第一眼分不出当前在哪个 tab。
+     卡里建议的 brand-600（2.81）/brand-700（4.14）按已知机制 §2 的白底算档都到不了 4.5:1，
+     故与 R9（BottomActionBar.vue:104）同口径取 --c-brand-800 #156B51 = 6.45:1；
+     未选中 #5d6c7b（5.36:1）按卡要求保持不动。 */
+  color: var(--c-brand-800, #156B51);
   font-weight: 600;
 }
 
@@ -1035,7 +1097,8 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   width: 48rpx;
   height: 6rpx;
   border-radius: 3rpx;
-  background: var(--c-brand-500, #36C99A);
+  /* R10-L03-D18：下划线同色（非文本对比同样 2.06 → 6.45）。 */
+  background: var(--c-brand-800, #156B51);
 }
 
 /* ===== 5. 置顶公告 ===== */
@@ -1214,7 +1277,10 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 
 .feed-action-text {
   font-size: 24rpx;
-  color: #8595a4;
+  /* R10-L03-D21（P2 · 颜色token）：改前写死私有 #8595a4，压白 3.08:1（帧上字心 (158,172,191)），
+     24rpx 次级数据低于 4.5:1。同页时间行（.feed-time）早已走 --c-text-tertiary，互动行是漏改项
+     ⇒ 按卡片口径统一到同一条令牌 #6B7571（design-variables.scss:364 = $text-tertiary）= 4.76:1。 */
+  color: var(--c-text-tertiary, #6B7571);
 }
 
 .feed-action-text--active {
@@ -1239,13 +1305,17 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 
 .topics-link-text {
   font-size: 26rpx;
-  color: var(--c-brand-500, #36C99A);
+  /* R10-L03-D20 + R10-L04-D16（同一病灶两条卡，P1/P2 · 颜色token）：改前 --c-brand-500
+     #36C99A 压白 = 2.06:1，入口淡到像说明文字，而它是该 tab 下唯一的「查看更多」出口。
+     卡里建议的 600/700（2.81 / 4.14）按已知机制 §2 都不到 4.5:1 ⇒ 取 --c-brand-800 = 6.45:1。 */
+  color: var(--c-brand-800, #156B51);
   font-weight: 600;
 }
 
-.topics-link-arrow {
-  width: 28rpx;
-  height: 28rpx;
+.topics-link-chevron {
+  font-size: 28rpx;
+  line-height: 1;
+  color: var(--c-brand-800, #156B51);
 }
 
 /* 空 tab 骨架空态 */
@@ -1291,13 +1361,15 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   justify-content: center;
   height: 88rpx;
   border-radius: 999rpx;
-  /* R2b-L05-D03：底部同色主 CTA 与头部「加入圈子」同档，取 --c-brand-600（推导见 .info-join） */
-  background: var(--c-brand-600, #2AAE83);
+  /* R2b-L05-D03：底部同色主 CTA 与头部「加入圈子」同档（推导见 .info-join）。
+     R10-L03-D17 / R10-L04-D12：与 hero 一起从 600（白字 2.81:1）下沉到 800（6.45:1），
+     底栏这颗是该页唯一常驻主操作，同帧两处同步，视觉语义不变。 */
+  background: var(--c-brand-800, #156B51);
 }
 
 .bottom-join--active,
 .bottom-post--active {
-  background: var(--c-brand-700, #1F8D6A);
+  background: var(--c-brand-900, #0B4A38);
 }
 
 .bottom-join-text,
@@ -1311,15 +1383,27 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   width: 88rpx;
   height: 88rpx;
   border-radius: 50%;
-  background: var(--c-brand-50, #E8FAF3);
-  border: 2rpx solid var(--c-brand-200, #A3EBCF);
+  /* R10-L04-D13（P2 · 可达性）：改前淡薄荷圆底 --c-brand-50 #E8FAF3 + 40rpx 铅笔，
+     帧上铅笔最暗只到 #9AAABD，非文本对比仅 2.19:1 ⇒ 发帖入口找不到。
+     卡里两条建议在本车道都落不了地：① 「换品牌绿线性铅笔」——仓内没有品牌绿铅笔素材，
+     common/edit.png、common/pencil.svg、svg-spec/03-icons/edit.svg 的线色全是 #94A3B8
+     （压 #E8FAF3 只有 2.37:1，压 brand-600 更糊），且硬规矩 5 不许造图；
+     ② 「给 image 加 filter/蒙层」——mp-weixin 的 <image> 不吃 CSS filter，
+     且 check-mp-image-styles 这类平台规则本就禁止在这类节点上堆渲染技巧。
+     ⇒ 取等效可达方案：把圆底翻成深墨绿 --c-brand-900 #0B4A38，让既有浅色铅笔
+     对底达到 (0.442922+0.05)/(0.052525+0.05) = 4.32:1 ≥ 3:1，图标形状与语义都不动。 */
+  background: var(--c-brand-900, #0B4A38);
+  border: 2rpx solid var(--c-brand-900, #0B4A38);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .bottom-fab--active {
-  background: var(--c-brand-100, #D1F5E7);
+  /* 按压态再深一档（--c-neutral-900 #1A1E1C），铅笔对底升到 7.11:1，
+     保持「按下比常驻更深」的既有反馈语义。 */
+  background: var(--c-neutral-900, #1A1E1C);
+  border-color: var(--c-neutral-900, #1A1E1C);
 }
 
 .bottom-fab-icon {

@@ -122,3 +122,30 @@ JS 注入）。凡靠它做状态栏让位的，实际让位 = 0 ⇒ 控件压�
   `check-statusbar-offset`、`check-tabbar-consistency`、`check-band-outdir-collision`。
 - 这几条**不在** `vue-tsc` 与 `vitest` 的覆盖范围里。交件前自查一遍比等发布链拦下来便宜：
   一次失败要重走 13 步。
+
+## 11. R10 派单前已定案、修车道**不许照卡上"建议改法"执行**的三处
+
+派发器把每条卡的 `建议改法` 原样发给泳道，但下面三条的建议改法对着真实数据/真实契约是错的。
+判点成立、级别成立，**只有改法不成立**——按卡改会把缺陷改得更糟。
+
+1. **`R10-L10-D15`（album 照片墙假计数）与 `R10-L12-D01`（setup/profile 照片墙）：不要动判据。**
+   两卡都建议把 `isPhotoAssetPath` 从黑名单翻成白名单（`.jpg/.png` 扩展名，或 `assets/images/portraits` 照片子树）。
+   实测脏条目真身是 `/api/v1/media/100158/202610/019a7479-….png` —— 它**就是 `.png`**，扩展名白名单当场放行；
+   而按照片子树放行会**连用户唯一那张真照片一起判成非照片**（它也住在 `/api/v1/media/…` 下）。
+   根因是本工作流早先的上传腿把 81×81 的 `qa-upload.png` 传成了照片并写进 `photo_gallery`，属数据污染。
+   已按 `R10-data-disposition.md` 走备份 + `ROLLBACK` 预演 + `COMMIT` 清掉引用 ⇒ **这两条不在本轮派发集内**，
+   也不要改 `album.vue` 的 `NON_PHOTO_ASSET_RE` 或 `setup/profile/index.vue` 的同族正则。
+
+2. **`R10-L06-D01`（匹配成功页伪造匹配度）已修，别在别的卡里把它改回去。**
+   `MatchSuccess.vue` 的 `defaultScores=[90,85,80,79]` 与 `DEFAULT_REASON_LABELS` 补位已删除，
+   匹配度改成卡头一个真值（`props.matchScore`，由 `view-models/match.ts:40` 从 `commonCircleCount` 派生）。
+   若同页还有卡要求"共同点卡要凑满 4 行 / 每行都要有百分比"——那是理想图《匹配成功页面》里的**示例占位值**，
+   与冻结契约 MP-R1-MATCHING-REQ-01（禁假百分比）冲突，**以契约为准**：真理由为空 ⇒ 整卡隐藏，
+   这正是 ops 用例 `SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json:172` 点名的预期落点。
+   也不要为此给 `scripts/qa/r-exec-cli.mjs` 的 `ROUTE_QUERY` 加 match-success 行——那张表是页粒度的，
+   钉了 `userId=` 就把 :172 的"参数缺失 ⇒ 卡隐藏"落点换掉了（表内注释里"故意不落行"那两条就是这个道理）。
+
+3. **共享主 CTA 渐变不要再翻成实色。**
+   `--c-gradient-brand` 在 12 处消费者上算出来全部 <4.5:1，R9 已把 `BottomActionBar.vue:104` 收成
+   `--c-brand-800`（白字 6.45:1，`theme/design-variables.scss` 真值算得）。本轮若见"按钮不是渐变"的卡，
+   那是 R9 的在册设计裁定，不是回归——按 §9 的在册项处理，别重报也别回退。

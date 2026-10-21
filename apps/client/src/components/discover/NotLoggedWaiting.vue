@@ -244,15 +244,24 @@ function goLater() {
 .not-logged {
   position: relative;
   width: 100%;
-  min-height: 100vh;
+  /* R10-L06-D23（位置 P1）：唯一存活宿主 subpackages/discover-extra/likes/index.vue:665
+     的页头（返回键 + 「匹配列表」标题）在流内常驻（游客态还 sticky 吸顶，:1082），
+     本组件再吃满 100vh ⇒ 整页 = 1 屏 + 页头，第三按钮「稍后再看」的 96rpx 热区
+     被顶出画布下沿约 19px（实帧墨迹 y800–812，正被 home indicator y805–808 压字）。
+     高度改成「视口 − 页头带」：页头高走 --nlw-header-offset，宿主未注入时取实测默认 100px
+     （= 状态栏 44 + 页头上下内衬 12+8 + 返回件行高约 36）。 */
+  min-height: calc(100vh - var(--nlw-header-offset, 100px));
   overflow: hidden;
   background: var(--c-bg-page);
   display: flex;
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
-  /* 内容改成正常流 ⇒ 上下留白由容器给（原来由那张整图海报撑开） */
-  padding: calc(var(--statusbar, env(safe-area-inset-top)) + 72rpx) 48rpx calc(env(safe-area-inset-bottom) + 60rpx);
+  /* 内容改成正常流 ⇒ 上下留白由容器给（原来由那张整图海报撑开）
+     R10-L06-D23 连带：删掉这里的 --statusbar 一档 —— 宿主吸顶页头自己已经给过状态栏让位
+     （likes/index.vue:1089 padding-top: calc(var(--statusbar, env(...)) + var(--sp-6))），
+     组件再加一次就是已知机制 §4 点名的"避让补两遍"，正是本条 44px 溢出的主要来源。 */
+  padding: 72rpx 48rpx calc(env(safe-area-inset-bottom) + 60rpx);
 }
 
 .not-logged__hero {
@@ -365,8 +374,11 @@ function goLater() {
 }
 
 .not-logged__feature-label {
-  font-size: 22rpx;
-  color: #6B7571;
+  /* R10-L06-D24（颜色token P2）：4 个功能标签原 22rpx/11px 写死 #6B7571 压 #EEF7F2 = 4.36:1，
+     既落在 3–4.5 的次级文字带、字号又低于小字档。按卡收口：字号提 --fs-base（24rpx=12px），
+     色档改 --c-text-secondary #4A524E（压 #EEF7F2 实测 7.37:1，同文件 .not-logged__hint 已用此档）。 */
+  font-size: var(--fs-base, 24rpx);
+  color: var(--c-text-secondary, #4A524E);
   text-align: center;
 }
 
@@ -400,8 +412,14 @@ function goLater() {
 }
 
 .not-logged__btn--primary {
-  background: linear-gradient(135deg, var(--c-brand, #36C99A) 0%, var(--c-brand-600, #2AAE83) 100%);
-  box-shadow: 0 8rpx 24rpx rgba(54, 201, 154, 0.32);
+  /* R10-L06-D22（颜色token P1）：登录墙主行动。原两端 --c-brand #36C99A / --c-brand-600 #2AAE83
+     压白字实测 2.17:1 / 2.74:1，整条不达 4.5:1（已知机制 §2：白字压 brand-600 只有 2.81:1，
+     连 brand-700 #1F8D6A 也只有 4.14:1，同样不达 ⇒ 端点只能落在 brand-800 档或更深）。
+     按卡「渐变两端都压到 --c-brand-800」收口：起点 --c-brand-800 #156B51（白字 6.45:1）、
+     终点 --c-brand-900 #0B4A38（白字 10.24:1），两端均 ≥4.5:1。
+     保留渐变形态（§11.3：主 CTA 渐变不要再翻成实色），只把色档整体压深。 */
+  background: linear-gradient(135deg, var(--c-brand-800, #156B51) 0%, var(--c-brand-900, #0B4A38) 100%);
+  box-shadow: 0 8rpx 24rpx rgba(21, 107, 81, 0.32);
 }
 
 .not-logged__btn--secondary {

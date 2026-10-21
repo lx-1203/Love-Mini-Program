@@ -418,6 +418,12 @@ function skip() {
 
 /* ========== 跳过入口（强化：醒目文字按钮 + 箭头，置于主按钮上方） ========== */
 .skip-bar {
+  /* R10-L12-D04（可达性 P1）：非学生用户在本页唯一出口（主按钮在 3 个字段填全前一直禁用 :307），
+     原纵向 padding --sp-4(8rpx)+--sp-2(4rpx) 整行实测 ~48–56rpx(<88rpx)。按本页帮助徽标
+     (.card-header__help :331-335) 同款手法补 min-height:88rpx + box-sizing:border-box；
+     既有 flex 两轴居中 ⇒ 文字视觉位置不变、热区抬到 44px。 */
+  min-height: 88rpx;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -439,13 +445,12 @@ function skip() {
 }
 
 
-/* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调）
-   R6-B65/D17（颜色token P3，2026-10-20）：这一档原先是裸字面量 `#ffffff`——
-   规范 §1.1 第 3 条要求「一令牌一值，页面只准 var(--*)」，且 theme/design-variables.scss:376
-   已有 --c-bg-container（$bg-container #FFFFFF）。改成引该令牌，渲染值逐字不变（#FFFFFF），
-   只把「页面底色这一档」交回令牌承载。 */
+/* R10-L12-D03（颜色token P2）：R16（2026-09-07）为对齐"他人显示主页"理想图把页面底定成纯白
+   --c-bg-container #FFFFFF，但底部动作条区是 --c-bg-page #EEF7F2（BottomActionBar.vue:90），
+   帧上"保存并继续"条上缘可见一条白→浅绿横向断层、页头区整片白底与全站浅绿底不符。
+   与规范 §1.1（页面底取 --c-bg-page，全站 AppShell/动作条同档）冲突 ⇒ 按卡上定档回退到 --c-bg-page。 */
 page {
-  background: var(--c-bg-container);
+  background: var(--c-bg-page, #EEF7F2);
 }
 
 </style>

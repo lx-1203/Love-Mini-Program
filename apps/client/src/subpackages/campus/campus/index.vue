@@ -254,6 +254,11 @@ onMounted(async () => {
     <view class="campus-header">
       <view class="header-top">
         <!-- 2026-08-09：返回键（渐变背景上使用半透明底） -->
+        <!-- R10-L05-D02（P2 · 可达性）：改前这里是 <image src=ICONS_COMMON.BACK>，
+             素材本身是 #94A2B7 浅灰折线（§9 已在全站素材在册项里登记：back.png 压白仅 1.6:1，
+             修它要同步三棵树，不在本车道可改文件内）。本页能做的可见修复：
+             改用深色文字字形（卡片建议的「或改用深色字形」分支），与 hub.vue:254 的 &#x2039; 同口径，
+             墨色 --c-text-primary #1A1E1C 压 20% 白圆合成底 #75DDB9 = 10.3:1。 -->
         <view
           class="campus-back press-feedback"
           hover-class="press-feedback--active"
@@ -262,7 +267,7 @@ onMounted(async () => {
           :aria-label="t('common.back')"
           @tap="goBack"
         >
-          <image class="campus-back__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.BACK)" mode="aspectFit" alt="" />
+          <text class="campus-back__icon">&#x2039;</text>
         </view>
         <view class="header-school">
           <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SCHOOL)" custom-class="school-icon" mode="aspectFit" />
@@ -375,10 +380,17 @@ onMounted(async () => {
             <view class="topic-card__footer">
               <!-- MP-R1-CAMPUSINDEX-003：头像经 SafeImage（内部 resolveMediaUrl 重写
                    /uploads 相对路径为鉴权代理 URL）——原裸 <image> 直连后端 authorAvatar 原文，
-                   真实用户上传头像（/uploads/ 形态）在 mp-weixin 必然加载失败 -->
+                   真实用户上传头像（/uploads/ 形态）在 mp-weixin 必然加载失败
+                   R10-L05-D03（P2 · 素材缺失）：帧上这个 40rpx 头像位整块空白、作者名被
+                   space-between 推到卡片水平中心。根因是尺寸走 custom-class 跨不过 data-v 边界
+                   （已知机制 §1）：宿主 scoped 的 .topic-card__avatar{width/height:40rpx} 命中 0 个节点，
+                   根节点退化成 :host 的 width:100% 空盒。现把类挪到组件标签（宿主节点）上，
+                   头像位重新有 40×40 的确定锚点；src 取不到时由 SafeImage 的
+                   fallback=/static/assets/default-avatar.jpg 兜底（real 包内在盘：
+                   dist/build/mp-weixin-real/static/assets/default-avatar.jpg）。 -->
               <SafeImage
                 v-if="!topic.isAnonymous && topic.author?.avatar"
-                custom-class="topic-card__avatar"
+                class="topic-card__avatar"
                 :src="resolveMediaUrl(topic.author.avatar)"
                 mode="aspectFill"
               />
@@ -386,7 +398,15 @@ onMounted(async () => {
                 {{ topic.isAnonymous ? t('campus.index.anonymousAuthor') : topic.author.name }}
               </text>
               <view class="topic-card__replies">
-                <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_SOCIAL.COMMENT)" custom-class="replies-icon" mode="aspectFit" />
+                <!-- R10-L05-D04（P2 · 可达性）：两处一起修——
+                     ① 图标：原 IMAGE_PATHS.ICONS_SOCIAL.COMMENT = assets/icons/social/comment.svg，
+                        该目录不在 real 包内（实测 ls dist/build/mp-weixin-real/static/assets/icons/
+                        只有根 14 枚 + common/ register/ tabbar/，无 social/）⇒ real 档就是空槽，
+                        卡里「缺图标时胶囊退化成孤立数字」正是这个。换成仓内已在 real 包落地的
+                        svg-spec/03-icons/comment.svg（IMAGE_PATHS.ICONS_EMOJI.COMMENT，同族气泡图形），
+                        并把尺寸从 custom-class 挪到组件标签（已知机制 §1）。
+                     ② 计数：见 .replies-count（1.94:1 → 5.96:1）。 -->
+                <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.COMMENT)" class="replies-icon" mode="aspectFit" />
                 <text class="replies-count">{{ topic.replyCount }}</text>
               </view>
             </view>
@@ -456,8 +476,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* 2026-08-09：返回键（渐变背景上半透明白底） */
 .campus-back {
   flex-shrink: 0;
-  width: 64rpx;
-  height: 64rpx;
+  /* R10-L05-D02（P2 · 可达性）：实测 64rpx（帧内 28px），低于 88rpx/44px 热区标准，
+     且页内没有第二个返回控件 ⇒ 扩到 88rpx（与 hub.vue 的 R10-L04-D19 同口径）。 */
+  width: 88rpx;
+  height: 88rpx;
   border-radius: var(--r-full);
   /* MP-R1-CAMPUSINDEX-004：裸 rgba 改既有 overlay token */
   background: var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2));
@@ -467,8 +489,11 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .campus-back__icon {
-  width: 40rpx;
-  height: 40rpx;
+  /* R10-L05-D02：节点已从 <image> 换成 <text> 字形（见模板注释），改按字形取尺寸与墨色。
+     压 20% 白圆合成底 #75DDB9 实测 10.3:1（改前浅灰折线只有 ≈1.4:1）。 */
+  font-size: 48rpx;
+  line-height: 1;
+  color: var(--c-text-primary);
 }
 
 .header-school {
@@ -512,7 +537,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .cert-badge__text {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-text-inverse);
+  /* R10-L05-D17（P2 · 可达性）：改前 --c-text-inverse = rgba(255,255,255,.95)，
+     压在 25% 白（--cert-badge / --unverified 走 --c-overlay-bg-light 20% 白）与页头渐变的
+     合成底 #97E3C4 上实测 ≈1.4:1，22rpx 的认证状态读不出。
+     四种状态底（20%/25% 白、--c-state-ongoing-bg、--c-red-border-tint）都是浅档 ⇒
+     统一改深色墨 --c-text-primary #1A1E1C，最淡的一档对 #97E3C4 = 11.3:1。
+     刻意不采纳卡里的「删掉徽章」方案：徽章是页头唯一的状态标记，hub.vue:260 已裁定
+     页头不再放认证**入口**，但状态标记要留（MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002 同源）。 */
+  color: var(--c-text-primary);
   font-weight: 600;
 }
 
@@ -596,6 +628,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .cert-guide-card__btn {
+  /* R10-L05-D01（P1 · 可达性）：实测 120×76rpx，低于 88rpx/44px 热区标准 ⇒ 补 min-height。
+     立成 flex 让 26rpx 标签在新高度里垂直居中；box-sizing 保证 padding 不再把高度撑出去。 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 88rpx;
   padding: 16rpx 32rpx;
   border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
@@ -612,7 +651,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .cert-guide-card__btn-text {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-inverse);
+  /* R10-L05-D01：改前 --c-text-inverse = rgba(255,255,255,.95) 压 #36C99A→#75E1B7 渐变
+     （帧上实测底 #4ACFA3–#68DCB1）合成对比只有 1.6–1.8:1，而这是本页唯一的认证入口。
+     按卡的第一方案把标签换成深色墨 --c-text-primary #1A1E1C：对 #36C99A 8.0:1、
+     对最浅一端 #75E1B7 10.6:1，全程 ≥4.5；底保持原渐变不动
+     （§11.3：主 CTA 渐变不在本轮翻成实色）。 */
+  color: var(--c-text-primary);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -806,6 +850,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   font-weight: 500;
 }
 .topic-card__avatar {
+  /* R10-L05-D03：本类现在挂在 <SafeImage> 标签（宿主节点）上才命中（已知机制 §1）。
+     宿主补 overflow:hidden —— 组件根 .safe-image 自己那份 overflow:hidden 只裁到方角，
+     圆形要靠宿主这一层把 40×40 的方图裁成圆。 */
+  overflow: hidden;
   width: 40rpx;
   height: 40rpx;
   border-radius: 50%;
@@ -823,13 +871,20 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .replies-icon {
+  /* R10-L05-D04：类现在挂在 <SafeImage> 标签上才命中（已知机制 §1）；
+     flex-shrink:0 保证 24rpx 锚点不被计数挤掉。 */
+  flex-shrink: 0;
   width: 24rpx;
   height: 24rpx;
 }
 
 .replies-count {
   font-size: var(--fs-base, 24rpx);
-  color: $green-primary;
+  /* R10-L05-D04（P2 · 可达性）：改前 $green-primary = var(--c-brand) #36C99A 压
+     胶囊底 $green-light = --c-brand-50 #E8FAF3 实测 1.94:1。
+     卡里建议的 brand-600（2.81）/brand-700（4.14）按已知机制 §2 都不到 4.5:1，
+     故取 --c-brand-800 #156B51 = 5.96:1（压 #E8FAF3，design-variables.scss:18）。 */
+  color: var(--c-brand-800, #156B51);
   font-weight: 600;
 }
 

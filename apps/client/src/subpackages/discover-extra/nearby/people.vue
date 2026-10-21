@@ -131,6 +131,20 @@ function formatDistance(raw?: string): string {
   return /^\d+(\.\d+)?$/.test(raw) ? `${raw}km` : raw;
 }
 
+/**
+ * R10-L06-D14（文案 P2）：meta 行复用 segment.vue:119-125 metaText 口径——
+ * 本页排序正是按 distanceText（load() 内 :91-96），此前模板只拼 campusName，
+ * distanceText 从不露出（实帧 6 行全只剩校名）。距离真值存在显示「学校 · 230km」，
+ * 缺失回落既有 i18n 档 home.segmentNearby（「附近」，中英双档齐全），不编造具体公里数。
+ */
+function metaText(item: DiscoverCard): string {
+  const campus = (item.campusName || "").trim();
+  const distance = formatDistance(item.distanceText);
+  if (campus && distance) return `${campus} · ${distance}`;
+  if (campus) return `${campus} · ${t("home.segmentNearby")}`;
+  return distance;
+}
+
 /** 在线识别：online / just_now 均视为在线 */
 function isOnline(status?: string): boolean {
   return status === "online" || status === "just_now";
@@ -237,7 +251,8 @@ function switchScope(next: "nearby" | "city") {
               <text class="people-row__online">{{ t('cardDetail.onlineLabel') }}</text>
             </view>
           </view>
-          <text class="people-row__meta">{{ item.campusName || '' }}{{ item.campusName && item.distanceText ? ' · ' : '' }}{{ formatDistance(item.distanceText) }}</text>
+          <!-- R10-L06-D14：三段条件拼接改走 metaText（口径同 segment.vue:186 meta 行） -->
+          <text class="people-row__meta">{{ metaText(item) }}</text>
           <view v-if="item.tags && item.tags.length" class="people-row__tags">
             <text v-for="(tag, idx) in rowTags(item).slice(0, 3)" :key="idx" class="people-row__tag">{{ tag }}</text>
           </view>
@@ -306,6 +321,10 @@ function switchScope(next: "nearby" | "city") {
 .people-tab {
   flex: 1;
   padding: 18rpx 0;
+  /* R10-L06-D13（可达性 P1）：原框高实测 65rpx（18rpx*2 padding + 26rpx 文本），低于
+     88rpx 热区口径，且本页 tab 是「同城的人」唯一切换入口 ⇒ 补 min-height:88rpx，
+     既有 flex 居中保持文字基线不动。 */
+  min-height: 88rpx;
   /* R8-L06-D14（圆角 P3）：18rpx 是阶梯外私有值（本页 .people-row:373 用 20rpx，
      segment.vue 同抄一枚）⇒ 收敛到 --r-lg(20rpx)。 */
   border-radius: var(--r-lg, 20rpx);
@@ -317,7 +336,10 @@ function switchScope(next: "nearby" | "city") {
 }
 
 .people-tab--active {
-  border-color: var(--c-brand-500, #36C99A);
+  /* R10-L06-D12（颜色token P1）：选中态原描边 --c-brand-500 #36C99A 压 #E8FAF3 仅 1.94:1、
+     文字 --c-brand-600 #2AAE83 仅 2.59:1，选中/未选中两档信号全不达（正文 4.5 / 非文本 3:1）
+     ⇒ 描边与文字同收 --c-brand-800 #156B51（§2 核算档，压 #E8FAF3 约 6:1）。 */
+  border-color: var(--c-brand-800, #156B51);
   background: var(--c-brand-50, #E8FAF3);
 }
 
@@ -328,7 +350,8 @@ function switchScope(next: "nearby" | "city") {
 }
 
 .people-tab--active .people-tab__text {
-  color: var(--c-brand-600, #36C99A);
+  /* R10-L06-D12：同 active 框，文字取 --c-brand-800（见上） */
+  color: var(--c-brand-800, #156B51);
 }
 
 .people-state {

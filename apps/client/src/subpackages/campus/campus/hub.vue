@@ -504,8 +504,13 @@ function goBack() {
 }
 
 .campus-hub__back {
-  width: 64rpx;
-  height: 64rpx;
+  /* R10-L04-D19（P2 · 可达性）：实测 64rpx（32×32px），只有 88rpx/44px 热区标准的 73%。
+     本页只有这一个返回控件（系统返回是兜底），扩到 88rpx。
+     父级 .campus-hub__header 已是 display:flex + align-items:center ⇒ 扩大后钮心自动
+     与标题行垂直居中，不需要再加 margin。flex-shrink:0 防止被标题列挤压回 64rpx。 */
+  flex-shrink: 0;
+  width: 88rpx;
+  height: 88rpx;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -665,7 +670,11 @@ function goBack() {
 
 .campus-hub__tab-text--active {
   font-weight: 700;
-  color: var(--c-brand, #36C99A);
+  /* R10-L04-D18（P1 · 可达性）：改前 --c-brand #36C99A 压白底实测 2.10:1，
+     比同排未选段 --c-text-tertiary #6B7571（4.76:1）还淡 ⇒ 分段控件读不出当前态。
+     卡里建议的 brand-600（2.81）/brand-700（4.14）按已知机制 §2 的白底算档都不到 4.5:1，
+     故与 R9 同口径取 --c-brand-800 #156B51 = 6.45:1（design-variables.scss:18）。 */
+  color: var(--c-brand-800, #156B51);
 }
 
 .campus-hub__tab-indicator {
@@ -676,7 +685,8 @@ function goBack() {
   width: 48rpx;
   height: 6rpx;
   border-radius: 3rpx;
-  background: var(--c-brand, #36C99A);
+  /* R10-L04-D18：下划线与选中字同色（非文本对比同样从 2.06 提到 6.45）。 */
+  background: var(--c-brand-800, #156B51);
 }
 
 /* ===== Empty State ===== */
@@ -800,12 +810,19 @@ function goBack() {
   /* R1-L05-D15：理想图未认证 = 淡紫底 + 紫字。原 background 写成硬编码 #9AA39F（同组 verified/pending
      都走 var()），既脱离 token 体系、又把紫档整体落到中灰档；灰底白字对比度不足。
      改取既有 lavender 档位令牌（--c-lavender-50 #F5F3FF / --c-lavender-500 #8B5CF6）；
-     卡里建议的 --c-accent-50/--c-accent 在 design-variables.scss 中并不存在，故用同值既有令牌 */
-  background: var(--c-lavender-50, #F5F3FF);
+     卡里建议的 --c-accent-50/--c-accent 在 design-variables.scss 中并不存在，故用同值既有令牌
+     R10-L04-D20（P2 · 可达性）：按卡的后半方案把底加深一档到 --c-lavender-100 #EDE9FE
+     （design-variables.scss:314，仍是淡紫语义不变），配下沉后的紫字，
+     对比从 3.86:1 提到 5.99:1。 */
+  background: var(--c-lavender-100, #EDE9FE);
 }
 
 .campus-school-card__badge--unverified .campus-school-card__badge-text {
-  color: var(--c-lavender-500, #8B5CF6);
+  /* R10-L04-D20：改前 --c-lavender-500 #8B5CF6 压 #F5F3FF 实测 3.86:1（次级文字档不达标）。
+     卡里建议的 lavender-700 档在本仓不存在（design-variables.scss:313-315 只发了 50/100/500，
+     且我没有改全站令牌文件的权限），故按同族落档取实色 #6D28D9：
+     压 lavender-50 = 6.48:1、压 lavender-100 = 5.99:1，均 ≥4.5，语义仍是「未认证 = 紫」。 */
+  color: #6D28D9;
 }
 
 .campus-school-card__badge-text {
@@ -870,18 +887,28 @@ function goBack() {
 /* 推荐 tab「申请加入」= 白底绿描边绿字（对齐理想图层级：仅「去认证」实心）
    R2b-L05-D16：描边/文字与实心档同步收敛到 --c-brand-600（见 .campus-guide__btn 的取色推导） */
 .campus-school-card__cta--outline {
+  /* R10-L04-D17（P1 · 可达性）：描边同文字一起下沉（2rpx 细线压白属于非文本对比，
+     改前 brand-600 只有 2.81:1 <3:1）。 */
   background: var(--c-neutral-0, #FFFFFF) !important;
-  border: 2rpx solid var(--c-brand-600, #2AAE83) !important;
+  border: 2rpx solid var(--c-brand-800, #156B51) !important;
   box-shadow: none !important;
 }
 
 .campus-school-card__cta--outline .campus-school-card__cta-text {
-  color: var(--c-brand-600, #2AAE83);
+  /* R10-L04-D17：改前 --c-brand-600 #2AAE83 压白 = 2.81:1。卡里建议的 brand-700
+     按已知机制 §2 实测 4.14:1 仍不达 4.5，故取 --c-brand-800 #156B51 = 6.45:1。 */
+  color: var(--c-brand-800, #156B51);
 }
 
 .campus-school-card__cta {
   flex-shrink: 0;
   align-self: center;
+  /* R10-L04-D17：实测整颗只有 131×71rpx（66×36px），高度差 88rpx 标准 17rpx。
+     补 min-height 并立成 flex，让 24rpx 文字在新高度里垂直居中。 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
   padding: 14rpx 28rpx;
   border-radius: 999rpx;
   /* 理想图：绿色圆角矩形按钮（进入 / 申请加入）；R2b-L05-D16 取深一档品牌绿 */

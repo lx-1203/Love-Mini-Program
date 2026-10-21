@@ -411,7 +411,12 @@ const MORE_ITEMS: MoreItem[] = [
   flex-shrink: 0;
   font-size: 30rpx;
   font-weight: 800;
-  color: var(--c-brand, #36C99A);
+  /* R10-L02-D08（颜色token P1）：0% 是整张完整度卡唯一的进度读数，原 --c-brand #36C99A
+     压白卡 = 2.10:1（design-variables.scss:15 $brand-500，L=0.44898 ⇒ 1.05/0.49898）。
+     取同族最深档 --c-brand-800 #156B51（L=0.11272 ⇒ 1.05/0.16272 = 6.45:1 ≥ 正文 4.5:1），
+     与本文件 :381 .nlp-header__edit-text 同值（同一页两处品牌绿文字取同一档）、
+     与 R9 的 BottomActionBar.vue:104 同档，绿色角色不变。 */
+  color: var(--c-brand-800, #156B51);
 }
 
 /* R2b-L03-D05（颜色token）：轨道底不再复用「占位块字面量」，令牌化为 --c-brand-50 */
@@ -441,7 +446,11 @@ const MORE_ITEMS: MoreItem[] = [
   flex-shrink: 0;
   padding: 12rpx 26rpx;
   border-radius: 999rpx;
-  background: var(--c-brand, #36C99A);
+  /* R10-L02-D09（颜色token P1）：这是完整度卡唯一的主行动，白字 22rpx 压 --c-brand #36C99A
+     仅 2.10:1（正文级需 4.5:1）。底色收 --c-brand-800 #156B51 ⇒ 纯白 6.45:1、
+     与本页页头「编辑」文字/百分比读数同一档品牌绿，实心主 CTA 角色不变
+     （§11.3：共享主 CTA 渐变不再翻回实色，这里本来就是实色底，只深不浅）。 */
+  background: var(--c-brand-800, #156B51);
   display: inline-flex;
 }
 
@@ -532,7 +541,11 @@ const MORE_ITEMS: MoreItem[] = [
   position: relative;
   /* 第 4 枚的 3rpx 虚线边必须算在等分宽内，否则盒宽溢出 6rpx ⇒ 最后一枚又被顶出去 */
   box-sizing: border-box;
-  height: 300rpx;
+  /* R10-L02-D10（尺寸比例 P2）：原 300rpx 在 378px 帧上单枚实测 163.5×300rpx = 82×150px
+     （1:1.83），每卡比理想图高约 30px，四张叠加页头后把「我的互动」整段挤出首屏。
+     收到 240rpx（=120px，缺陷卡给的落点）⇒ 163.5×240 = 1:1.47，回到竖版封面档，
+     等分口径（flex:1 1 0 + gap 16rpx）不动，四枚仍恰好铺满 702rpx 内容盒。 */
+  height: 240rpx;
   border-radius: 24rpx;
   /* R2b-L03-D05（颜色token）：占位块底色由品牌浅绿字面量改中性灰 token */
   background: var(--c-neutral-50, #F2F5F3);
@@ -646,7 +659,11 @@ const MORE_ITEMS: MoreItem[] = [
 
 .nlp-interaction__value {
   font-size: 26rpx;
-  color: #9AA39F;
+  /* R10-L02-D11（颜色token P2）：「0人」是每行唯一的计数数据，原硬写 #9AA39F
+     （= --c-text-quaternary 真值，design-variables.scss:126）压白底仅 2.59:1，
+     低于非文字 3:1 底线。改 --c-text-secondary #4A524E = 8.06:1（L=0.08029 ⇒ 1.05/0.13029），
+     与左侧标签 #333A37 拉开一档层级，数据位不再是「灰到读不出」。 */
+  color: var(--c-text-secondary, #4A524E);
 }
 
 .nlp-interaction__arrow {

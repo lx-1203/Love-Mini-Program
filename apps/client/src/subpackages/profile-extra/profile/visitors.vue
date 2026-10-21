@@ -514,7 +514,13 @@ onPullDownRefresh(async () => {
 .visitors-empty__icon {
   width: 120rpx;
   height: 120rpx;
-  opacity: 0.5;
+  /* R10-L09-D11（颜色token P2）：删掉裸 opacity:0.5 —— 图标不该用 opacity 表达状态
+     （同域 consulting 已删该写法），且 0.5 把 visitor.svg 的 #94A3B8 stroke 混到近白、
+     落到白卡上比任何文字档都浅。按卡上「去掉 opacity」这条落地：图标以素材自身 tone 渲染。
+     未再加 saturate/brightness 滤镜去把它压到 --c-text-tertiary 档，因为 mp 原生 <image>
+     的 CSS filter 兼容性不可靠（§10 平台规则），且素材底色（#94A3B8）由 icons/social/*.svg
+     资产自身持有、属共享资产（改色要跨三树同步、越出本车道 5 文件白名单），
+     已在 §9 在册（lock.svg 同族硬编码 #94A3B8），不在本车道重造。 */
 }
 
 .visitors-empty__title {
@@ -534,6 +540,11 @@ onPullDownRefresh(async () => {
    配方，取描边次级档）；字号 --fs-lg(28rpx) 与同分包主按钮文字口径（album.vue .album-add-btn__text
    R8-L10-D11 同档）对齐。 */
 .visitors-empty__btn {
+  /* R10-L09-D10（可达性 P1）：本页唯一"编辑资料"出口，实测高 ~62rpx（12/32rpx padding +
+     --fs-lg 28rpx 一行）低于仓内 88rpx 热区口径。与 consulting.vue:227 同口径补 min-height:88rpx +
+     box-sizing:border-box，display:flex 已两轴居中 ⇒ 文字视觉位置不动、热区抬高到 44px。 */
+  min-height: 88rpx;
+  box-sizing: border-box;
   margin-top: var(--sp-3);
   padding: var(--sp-3) var(--sp-8);
   background: var(--c-bg-container, #FFFFFF);

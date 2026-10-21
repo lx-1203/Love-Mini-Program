@@ -85,8 +85,13 @@ const emit = defineEmits<{ (e: "tapAvatar"): void }>();
   position: absolute;
   left: 40rpx;
   bottom: -40rpx;
-  width: 176rpx;
-  height: 176rpx;
+  /* R10-L10-D02（尺寸比例 P2）：原 176rpx 在 378px 帧上外径实测 85×90px（含 8rpx 白描边），
+     比 §3.9 规定的 72px 大一档（+18~23%），理想图同区域头像占屏宽 ≈16.7%、本帧 ≈22.5%。
+     收 144rpx（=72.6px，global.scss:2 的 border-box ⇒ 描边含在内）对齐 §3.9，8rpx 白描边保留。
+     bottom:-40rpx 不动 ⇒ 头像下探进身份卡的绝对量（112rpx）与上一轮一致，不制造新的骑压错位；
+     身份卡侧的配套改动见 PublicIdentity.vue:100（R10-L10-D01）。 */
+  width: 144rpx;
+  height: 144rpx;
   border-radius: 50%;
   /* R2b-L06-D10：理想图（他人显示主页.png 身份卡头像圆片）是「白色描边圆环 + 淡投影」，
      环色与卡片同色、不与品牌色抢。原 8rpx 实心 #36C99A 在浅绿封面与白卡之上形成一圈

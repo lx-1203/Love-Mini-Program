@@ -174,8 +174,16 @@ function handleAction() {
 .empty-icon--preset {
   filter: grayscale(1) brightness(0.7);
 }
+/* R10-L10-D20（字号 P2 · favorites，同源复现于全部空态消费点）：
+   主标题原取 --fs-lg=28rpx=14px、副标题 --fs-base=24rpx=12px ⇒ 两行只差 4rpx，
+   帧上（favorites bottom：主句墨迹 y≈207..219 / 副句 y≈228..239，实测 13px vs 12px）
+   没有任何一句读起来是「标题」，本页唯一的状态宣告与补充说明同权重。
+   §1.3 字阶：辅助/小字档 12–13px、正文 15/16px（--fs-xl/2xl）。空态主句是本页的
+   状态宣告，按正文档取 --fs-xl=30rpx=15px，与 --fs-base 副句拉开 3 档（24→26→28→30），
+   层级立住；字号仅 +2rpx，图标 120rpx 与按钮 min-height 88rpx 未动 ⇒ 不引入溢出/遮挡。
+   颜色与字重保持 R9-L10-D18 已定的 --c-text-secondary/600（那一轮改的是可达性轴，本条是字号轴）。 */
 .empty-msg {
-  font-size: var(--fs-lg);
+  font-size: var(--fs-xl);
   font-weight: 600;
   color: var(--c-text-secondary);
 }
@@ -199,7 +207,16 @@ function handleAction() {
   margin-top: var(--sp-6);
   padding: var(--sp-4) 40rpx; /* 40rpx 无对应 sp token，固定布局尺寸保留 */
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-brand);
+  /* R10-L04-D05（可达性 P1 · circles/topic-detail）+ R10-L05-D08（P1 · campus/topic-detail）
+     + R10-L06-D18（P1 · discover/history）三卡同根因：空态唯一出口的按钮底取 --c-brand
+     #36C99A（design-variables.scss:270），前景 .95 白 ⇒ 2.02–2.10:1（帧上实测 fill #36C99A、
+     字 #F3F8F6，history 药丸 x153–225/y531–573），整页唯一可点件读不出。
+     卡上建议的 brand-700 #1F8D6A 按 §2 算法只有 4.14:1，仍不达 4.5:1（R8 已实测否掉一次），
+     故与 L05-D08 建议的深档一致取同族最深可用档 --c-brand-800 #156B51（:18）：
+     L=0.11271 ⇒ .95 白合成后 6.01:1、纯白 6.45:1，≥4.5:1。
+     与 BottomActionBar.vue:108、LegalTextPage.vue:477、LockScreen.vue:745 的主 CTA 同一档，
+     全站「深绿实心 + 白字」口径归一；只动本组件，30+ 消费点同收益。 */
+  background: var(--c-brand-800);
   /* R6-L05-D06（尺寸比例 P2）：空态唯一可点元素实测 62×35px = 123×69rpx，
      热区高 69rpx 比同页自述标准（topic-detail.vue:792「热区高度 ≥ 44px / min-height:88rpx」）
      少 19rpx；高度此前只由 padding 撑出，无 min-height。
@@ -213,6 +230,10 @@ function handleAction() {
 .empty-action__text {
   font-size: var(--fs-base);
   font-weight: 600;
-  color: var(--c-text-inverse, #FFFFFF);
+  /* 前景归位到 --c-neutral-0（#FFFFFF，design-variables.scss:350）：
+     --c-text-inverse 自 decisions-v33 §2 起即「图片遮罩白字」rgba(255,255,255,.95)
+     （:369 → :749），用作按钮前景属令牌误配，且那 5% 透明白把对比度从 6.45:1 削到 6.01:1。
+     与 LegalTextPage.vue:487 / LockScreen.vue:761 的主 CTA 前景同口径（均 --c-neutral-0）。 */
+  color: var(--c-neutral-0, #FFFFFF);
 }
 </style>

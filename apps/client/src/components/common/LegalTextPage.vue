@@ -302,16 +302,26 @@ function handleRetry(): void {
 
 /* ========== 顶部标题区 ========== */
 /* R8-L13-D13：与 .legal-content 连成同一张白卡（上圆角、左右同吃 --page-padding），
-   原先它是全宽白条、正文是绿裸文，两截不同底 —— 现两截同色同列。 */
+   原先它是全宽白条、正文是绿裸文，两截不同底 —— 现两截同色同列。
+   R10-L13-D08（颜色token P3）：这一段此前是唯一没有投影的一段——上半无阴影、下半有阴影，
+   一张卡被"有没有影子"从中间分成两截，且两段都不吃 §1.4 的 --card-shadow。
+   现两段共用同一枚 --card-shadow（design-variables.scss:424），与 SectionCard.vue:48 同族，
+   本域卡片投影收口成单一来源。
+   R10-L13-D10（间距 P3 · agreement bottom 帧）：header 与 content 已合成一张白卡
+   （同底色、上下圆角相接），这里保留的 border-bottom:1rpx 等于在「最后更新」元信息行与
+   正文之间画一条内部分隔线，把连卡从中间切成两截、与 R8-L13-D13 的连卡口径自相矛盾 ⇒ 删线。
+   删线后元信息与正文的间距改由 header 的 padding-bottom 承担：原 --sp-4(16rpx=8px)
+   + content 的 padding-top --page-padding(32rpx=16px) = 24px 偏紧，padding-bottom 提到
+   --sp-6(24rpx=12px) ⇒ 间距 28px，读起来仍是"同一段落前的呼吸位"而不是两个区块。 */
 .legal-header {
   margin: var(--sp-4) var(--page-padding, 32rpx) 0;
-  padding: var(--sp-6) var(--page-padding, 32rpx) var(--sp-4);
+  padding: var(--sp-6) var(--page-padding, 32rpx) var(--sp-6);
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
   background: var(--c-bg-container);
   border-radius: var(--card-radius, 40rpx) var(--card-radius, 40rpx) 0 0;
-  border-bottom: 1rpx solid var(--c-border-light, rgba(15, 23, 42, 0.04));
+  box-shadow: var(--card-shadow);
 }
 
 .legal-header__title {
@@ -400,16 +410,28 @@ function handleRetry(): void {
   padding: var(--page-padding, 32rpx);
   background: var(--c-bg-container);
   border-radius: 0 0 var(--card-radius, 40rpx) var(--card-radius, 40rpx);
-  box-shadow: var(--s-card-soft);
+  /* R10-L13-D08：与 .legal-header 改用同一枚 §1.4 --card-shadow（原 --s-card-soft 是
+     第三套卡片投影档，与 header「无阴影」、SectionCard「--c-elevation-1」并存取档不一）。
+     两段同 token ⇒ 「一张卡上半无投影、下半有投影」消失，投影只有一把尺。 */
+  box-shadow: var(--card-shadow);
   box-sizing: border-box;
 }
 
+/* R10-L13-D07（字号 P3 · privacy top 帧）：法务正文原取 --fs-md=26rpx=13px，
+   §1.3 两档都不贴（极小档 10/11px 只给「角标·法务」脚注、正文/数据行 15/16px）。
+   卡给的两个方向里，11px 那一档是给页脚一行免责小字的，而本页正文是用户签署同意前
+   必须通读的整篇政策（2000px 长文、唯一可读内容、--fs-md 已连吃三轮 NEEDS-RULING），
+   按「可读正文」定档取 --fs-xl=30rpx=15px（design-variables.scss:565），
+   颜色不动（--c-text-primary #1A1E1C 压白卡本就达标，本条是纯字号轴）；
+   行高保持 R6-L16-D14 已裁的 1.75，
+   长文仍随页滚动（.legal-content flex:1 + 页面滚动，R8-L13-D12 已定），不新增裁切。 */
 .legal-content__text {
   display: block;
-  font-size: var(--fs-md);
+  font-size: var(--fs-xl);
   color: var(--c-text-primary);
   /* R6-L16-D14（字号 P3）之「行高」那一半：规范 §1.3 行高表给法务的是 1.75，
-     原写 1.8（实测行距 23-24px 与 :338 一致）。字号一半登记为 NEEDS-RULING，见报告。 */
+     原写 1.8（实测行距 23-24px 与 :338 一致）。
+     当年登记为 NEEDS-RULING 的「字号」一半已由 R10-L13-D07 在本文件 :420-430 定档（--fs-xl 15px）。 */
   line-height: 1.75;
   white-space: pre-wrap;
   word-break: break-word;

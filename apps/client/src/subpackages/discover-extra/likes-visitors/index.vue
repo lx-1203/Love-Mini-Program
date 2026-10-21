@@ -514,8 +514,11 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
 
 .page-header__back {
   flex-shrink: 0;
-  width: 64rpx;
-  height: 64rpx;
+  /* R10-L07-D01（可达性 P1）：原 64rpx(32px) 圆钮只有 88rpx(44px) 热区口径的 73%，
+     且本页 navigationStyle=custom、无原生导航、游客态唯一离页出口就是它 ⇒ 提到 88rpx
+     达标热区（内层 .page-header__back-icon 仍 40rpx，钮面视觉由背景圆撑大）。 */
+  width: 88rpx;
+  height: 88rpx;
   border-radius: var(--r-full);
   background: var(--c-bg-container);
   border: var(--c-border-card);
@@ -652,7 +655,10 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
 }
 
 .overview__label {
-  font-size: var(--fs-xs);
+  /* R10-L07-D02（字号 P2）：三栏说明字原走 --fs-xs=20rpx(10px)，属「角标·法务」档，
+     且只有同卡数字（--fs-3xl 18px）的 55%，三栏读数失去说明层级 ⇒ 提到 --fs-base
+     (24rpx=12px)，对齐 §1.3 小字档。 */
+  font-size: var(--fs-base);
   color: var(--c-text-tertiary);
 }
 

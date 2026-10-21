@@ -265,7 +265,12 @@ function amountText(item: { type?: string; amount: number }): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(var(--sp-4) + var(--statusbar, env(safe-area-inset-top))) var(--sp-4) var(--sp-3);
+  /* R10-L14-D10（位置 P3）：横向内缩原取 --sp-4 = 16rpx = 8px，帧内返回盘左缘落 x≈9，
+     而本页封存卡左缘是 15.5px（R9-L14-D16 刚收到 --page-padding）⇒ 卡比自己的页头向右缩 7px，
+     页头与卡不成一条竖边；同域三页页头内缩 8/12/16px 三套值。
+     横向改 --page-padding（32rpx=16px）⇒ 与 shop 页头同档、与本页卡缘成同一条竖边。
+     纵向 top 的 calc 不动（状态栏让位由 menuStyleVars 注入 --statusbar，已知机制 §4）。 */
+  padding: calc(var(--sp-4) + var(--statusbar, env(safe-area-inset-top))) var(--page-padding, 32rpx) var(--sp-3);
   background: var(--c-brand-800, #156B51);
 }
 
@@ -275,6 +280,7 @@ function amountText(item: { type?: string; amount: number }): string {
    --c-bg-container 白底 + --c-border-card（design-variables.scss:541 / 128）。
    白盘对 brand-800 = 1.05/0.16269 = 6.45:1 ≥ 非文本 3:1。 */
 .wallet__back {
+  position: relative;
   width: 64rpx;
   height: 64rpx;
   display: flex;
@@ -283,6 +289,20 @@ function amountText(item: { type?: string; amount: number }): string {
   border-radius: var(--r-circle, 50%);
   background: var(--c-bg-container, #ffffff);
   border: var(--c-border-card);
+
+  /* R10-L14-D07（可达性 P1）：本页 navigationStyle 为 custom（pages.json:49）没有系统返回箭头，
+     封存分支（:212-216）内又没有任何其他控件 ⇒ 这枚 64rpx=32.3px 的白盘是唯一退出控件，
+     点不中就走不出「我的钱包」。上一轮 R9-B49 给同域 shop/detail 补过命中盒（shop:437 /
+     detail:444），本页独独漏了这条轴 ⇒ 同口径补透明伪元素：视觉圆仍 64rpx，
+     四边各 -12rpx ⇒ 命中盒 88rpx=44.4px（全站最小可点档）。 */
+  &::after {
+    content: "";
+    position: absolute;
+    top: -12rpx;
+    right: -12rpx;
+    bottom: -12rpx;
+    left: -12rpx;
+  }
 }
 
 /* R9-L14-D14：与 shop:435 同档，40rpx=20px 的 BACK 素材 */
@@ -390,7 +410,12 @@ function amountText(item: { type?: string; amount: number }): string {
 }
 
 .wallet__sealed-desc {
-  font-size: var(--fs-sm, 24rpx);
+  /* R10-L14-D08（字号 P2）：这句「为什么这页是空的」是本页唯一的解释行，
+     原 --fs-sm 实值 22rpx=11.1px（design-variables.scss:561；行内 24rpx 是过期字面量兜底，
+     已知机制 §2 点名不要信 .vue 里的过期 fallback），与角标/法务同档、比同屏封存标题小 4px。
+     R9-L14-D11 的卡建议原文写「三页同改」，实际只落了 shop:759 / detail:563 两页 ⇒ 本页补上，
+     与两页逐字同写法：--fs-md 26rpx=13.1px，并清掉过期 fallback。 */
+  font-size: var(--fs-md);
   color: var(--c-text-tertiary, #94a3b8);
   text-align: center;
   line-height: 1.6;

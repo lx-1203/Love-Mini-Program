@@ -422,14 +422,21 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .back-icon {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-inverse);
+  /* R10-L05-D07（P1 · 可达性）：改前 --c-text-inverse = rgba(255,255,255,.95)
+     （design-variables.scss:749）压 25% 白胶囊（--c-overlay-white-bg-mid-strong :917）
+     与页头渐变的合成底，是整条导航带里最淡的一处。按同域 post-topic / certification
+     的口径统一改深色墨 --c-text-primary #1A1E1C。 */
+  color: var(--c-text-primary);
   font-weight: 500;
 }
 
 .detail-header__title {
   font-size: 34rpx;
   font-weight: 700;
-  color: var(--c-text-inverse);
+  /* R10-L05-D07：「话题详情」白字压渐变中段实测底 #6DDEB3 ≈1.6:1，
+     34rpx/17px 粗体够不上 18.66px 的大字豁免 ⇒ 改 --c-text-primary 后 10.2:1
+     （与卡片自陈的 post-topic 口径同值）。用户因此能认出自己在哪一页。 */
+  color: var(--c-text-primary);
 }
 
 .detail-header__spacer {

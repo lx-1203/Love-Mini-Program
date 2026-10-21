@@ -665,11 +665,16 @@ defineExpose({ toggleJoin });
      + 白字，是「高饱和红块压白字」；理想图 兴趣圈列表.png 同位角标实测底 #FEF0F1、字色 #F73C4F，
      即「浅粉底 + 红字」。现按理想图的反色关系落到 romance 色阶：
      --c-romance-50=#FFECEF（≈理想图 #FEF0F1）、--c-romance-700=#CC4A5F。
-     字色取 700 而非 500（#FF6B81 压 #FFECEF 只有 2.41:1），实测 3.93:1，
-     优于理想图自带的 #F73C4F/3.32:1，角标是 22rpx 小字、不该反向掉档。
-     深色档 --c-romance-50 由 styles/tokens.scss:276 覆为 #2D1F24，成对关系仍成立。 */
+     字色取 700 而非 500（#FF6B81 压 #FFECEF 只有 2.41:1），
+     深色档 --c-romance-50 由 styles/tokens.scss:276 覆为 #2D1F24，成对关系仍成立。
+     R10-L03-D16（颜色token P2）更正：R6 那句「实测 3.93:1 优于理想图」不成立 ——
+     角标是 --fs-xs 20rpx=10px 极小字，10px 只能按正文档 ≥4.5 判，3.93 落在不合格的 3–4.5 次级档。
+     romance 族在 theme/design-variables.scss:36-43 止于 700、没有 800 档，
+     而补令牌得改令牌文件（不在本车道可改文件集）⇒ 取既有「浅底深字」暗红令牌
+     --c-text-error-dark #991b1b（同文件 :819）压 #FFECEF = 7.32:1。
+     卡的口径「底与红语义不动」照办：浅粉底、红族字、1rpx romance-100 描边都保留。 */
   --hot-badge-bg: var(--c-romance-50, #FFECEF);
-  --hot-badge-text: var(--c-romance-700, #CC4A5F);
+  --hot-badge-text: var(--c-text-error-dark, #991b1b);
   padding: 2rpx 14rpx;
   border-radius: 999rpx;
   background: var(--hot-badge-bg);
@@ -774,8 +779,14 @@ defineExpose({ toggleJoin });
 }
 
 .circle-card__count {
-  /* MP-R1-CIRCLE-005：fs-sm→fs-xs，375px 下「N 人 · N 条动态」不再被省略号截断 */
-  font-size: var(--fs-xs);
+  /* R10-L03-D15（字号 P2）：MP-R1-CIRCLE-005 当年为「375px 不被省略号截断」把字号
+     fs-sm→fs-xs，实测令牌真值 --fs-xs=20rpx=10px（不是本文件里的 22rpx 兜底），
+     低于列表数据小字档 12–13px —— 以缩字换宽度，统计行读不动。
+     现恢复 --fs-base 24rpx=12px：宽度由「省略号 + 按钮列已收窄（.circle-card__action
+     水平内衬 sp-4）」两道兜底承接，不再牺牲字号。
+     预算核对（375px/750rpx 档）：卡宽 686 − 卡内衬 2×20 − 封面 144 − 列间距 16 = 486rpx 正文，
+     「加入」钮实测占 ~120rpx ⇒ 统计行约 350rpx；「1.2w 人加入 · 6 条动态」在 24rpx 下 ≈ 300rpx ⇒ 不截断。 */
+  font-size: var(--fs-base);
   color: var(--c-text-tertiary);
   /* R21：省略号必须落在文本节点自身（meta 容器上的 text-overflow 对 flex 子项无效），
      否则统计行在「加入」按钮列被硬裁成半字 */
@@ -798,8 +809,13 @@ defineExpose({ toggleJoin });
   /* 理想图：浅绿描边胶囊按钮（背景透明、绿字），简洁清爽
      MP-R1-CIRCLES-INDEX-002：底色随主题翻转 */
   background: var(--c-bg-container, #FFFFFF);
-  border: 2rpx solid var(--c-brand-500, #2DB98A);
-  color: var(--c-brand-500, #2DB98A);
+  /* R10-L03-D14（颜色token P1）：卡面主操作「加入」的字与 2rpx 描边同取 --c-brand-500，
+     真值 #36C99A（theme/design-variables.scss:15，.vue 里那句 #2DB98A 是过期兜底、不是真值）
+     压白底 = 2.10:1 —— 文字低于 4.5、非文本描边低于 3，主操作既读不清也看不出边界。
+     按已知机制 §2 的实算：brand-600 2.81 / brand-700 4.14 仍不达标 ⇒ 取 brand-800 #156B51
+     （对白 6.45:1，描边同为 6.45:1）。保留「透明底 + 描边胶囊」的理想图语言，不改成实心钮。 */
+  border: 2rpx solid var(--c-brand-800, #156B51);
+  color: var(--c-brand-800, #156B51);
   flex-shrink: 0;
   transition: all var(--d-normal, 200ms) ease;
 }
@@ -986,13 +1002,20 @@ defineExpose({ toggleJoin });
   /* R6-L04-D13：改列方向后本行独占一行、自左 gutter 起（原被行 flex 挤到 x=361rpx 起、
      只露 3/7 枚）。间距与内衬各收 4rpx，使 6 枚文字 chip 在 750rpx 屏宽内
      （AppShell gutter 2×32rpx ⇒ 可用 686rpx）首屏全部露出，第 7 枚「更多」起横滚。 */
-  gap: 12rpx;
+  /* R10-L03-D12（层级遮挡 P1）：R6 那次「收 4rpx」没有动 gap（仍是 12rpx），
+     实测 6 枚 chip 需要 6×(22×2+52)+5×12+16=652rpx，而行可用宽只有
+     686 − 64（.circles-filter-btn） − 12（.circles-tabs-row gap）= 610rpx
+     ⇒ 第 6 枚「美食」在 x≈313 被横滚容器裁断、后半压进筛选圆钮（帧上只剩「美」+半个「食」）。
+     现 gap 12→8、chip 水平内衬 22→16（见 .circles-tab）：
+     6×(16×2+52)+5×8+16 = 560rpx ≤ 610rpx，余 50rpx 余量 ⇒ 6 枚首屏完整可读可点。 */
+  gap: 8rpx;
   padding-right: 16rpx;
 }
 
 .circles-tab {
   flex-shrink: 0;
-  padding: 12rpx 22rpx;
+  /* R10-L03-D12：水平内衬 22→16rpx（纵向 12rpx 不动，chip 高度与热区不变） */
+  padding: 12rpx 16rpx;
   border-radius: 999rpx;
   /* 非活跃分类 chips 浅灰胶囊底（对齐理想图，避免白底融入页面）
      R13：原取 --c-bg-page 与页面同色，胶囊完全不可见——改用卡片面底色
@@ -1008,8 +1031,14 @@ defineExpose({ toggleJoin });
 }
 
 .circles-tab--active {
-  background: var(--c-brand, #36C99A);
-  border-color: var(--c-brand, #36C99A);
+  /* R10-L03-D13（颜色token P1）：选中态白字压在 --c-brand（真值 #36C99A，见
+     theme/design-variables.scss:15 —— 不是 .vue 里那句 #222222/#36C99A 兜底）= 2.10:1，
+     26rpx/700 不属大字号 ⇒ 低于正文 4.5，低视力用户读不出「当前选中哪个分类」。
+     按已知机制 §2 的实算档：brand-600 白字 2.81 / brand-700 4.14 都不达标，
+     brand-800 #156B51 = 6.45:1 才过线（与 R9 把 BottomActionBar 主 CTA 收成 brand-800 同一裁定）。
+     底与描边同档，选中态由「浅灰胶囊 → 深绿胶囊」区分，未选中文字仍是 --c-text-primary。 */
+  background: var(--c-brand-800, #156B51);
+  border-color: var(--c-brand-800, #156B51);
 }
 
 .circles-tab__text {
@@ -1063,7 +1092,9 @@ defineExpose({ toggleJoin });
 }
 
 .circle-card__friends-text {
-  font-size: 22rpx;
+  /* R10-L03-D15（字号 P2）同病：硬编码 22rpx=11px 也低于列表小字档 12–13px。
+     归到 --fs-base 24rpx=12px 令牌档（同页统计行同口径），省略号兜底已在下方保留。 */
+  font-size: var(--fs-base);
   color: var(--c-text-tertiary, #9AA39F);
   /* R20：好友行单行省略，防止「等 N 位朋友已加入」被硬裁切 */
   flex: 1;

@@ -240,7 +240,12 @@ function goHelp() {
   align-items: center;
   justify-content: space-between;
   padding: calc(var(--sp-4) + var(--statusbar, env(safe-area-inset-top))) var(--sp-4) var(--sp-3);
-  background: linear-gradient(135deg, var(--c-brand-500, #36C99A) 0%, var(--c-brand-400, #6fe0b0) 100%);
+  /* R10-L10-D12（可达性 P1）：原 brand-500→brand-400 浅绿头，副标题（0.85 白 #E1F7EF）压上
+     实算 1.88:1、帧上几乎糊成一条绿底浅痕。按卡上第一条改法把页头渐变换成同族深档
+     --c-brand-700 #1F8D6A → --c-brand-800 #156B51（design-variables.scss:17/18），
+     白字 4.14:1 / 6.45:1；副标题落在渐变下半（brand-800 一侧）实测 ≈6:1，主标题（--fs-4xl
+     粗体，大字号 3:1 地板）即便落在 brand-700 上半也过线。这是页头渐变、非共享主 CTA ⇒ 不触 §11.3。 */
+  background: linear-gradient(135deg, var(--c-brand-700, #1F8D6A) 0%, var(--c-brand-800, #156B51) 100%);
 }
 
 /* R6-B59/D13（颜色token P3，2026-10-20）：返回钮圆底原引 --c-overlay-white-bg-tint，
@@ -294,9 +299,11 @@ function goHelp() {
 }
 
 .privacy-page__subtitle {
-  font-size: var(--fs-sm);
-  color: var(--c-text-inverse, #ffffff);
-  opacity: 0.85;
+  /* R10-L10-D12（可达性 P1）：去掉 opacity:0.85（正是它把白字压成 0.85 混色 → 1.88:1 不可读），
+     字号从 --fs-sm(22rpx) 提到 --fs-lg(28rpx)。纯白 --c-text-inverse 落在深绿头的下半档
+     （--c-brand-800 一侧 6.45:1）即可读。 */
+  font-size: var(--fs-lg);
+  color: var(--c-text-inverse);
 }
 
 .privacy-page__header-spacer {
@@ -310,7 +317,9 @@ function goHelp() {
 .privacy-page__section {
   margin: var(--sp-5) var(--page-padding);
   background: var(--c-bg-container, #ffffff);
-  border-radius: var(--r-xl, 24rpx);
+  /* R10-L10-D14（圆角 P2）：var(--r-xl,24rpx)=12px 比同分包他人主页那批卡"方"一档，
+     低于 §1.4 卡片圆角 40rpx(20px) ⇒ 与 .privacy-page__note 一并归 var(--card-radius,40rpx)。 */
+  border-radius: var(--card-radius, 40rpx);
   box-shadow: var(--card-shadow, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
   overflow: hidden;
 }
@@ -423,8 +432,13 @@ function goHelp() {
 .privacy-page__note {
   margin: var(--sp-5) var(--page-padding) 0;
   padding: var(--sp-5);
-  border-radius: var(--r-xl, 24rpx);
-  background: var(--c-brand-50);
+  /* R10-L10-D14（圆角 P2）：var(--r-xl,24rpx)=12px 低于 §1.4 卡片 40rpx ⇒ 归 --card-radius(40rpx) */
+  border-radius: var(--card-radius, 40rpx);
+  /* R10-L10-D13（颜色token P2）：原底 --c-brand-50 #E8FAF3 与页面底 --c-bg-page #EEF7F2
+     ΔR6/ΔG3/ΔB1 肉眼不可辨 ⇒ 这圈"说明卡"在画面上等于不存在，四行灰字像直接浮在薄荷底上。
+     按卡上第一条改法与上方两张真白卡取同一容器配方：白底 + 卡片阴影，容器边界立刻立起来。 */
+  background: var(--c-bg-container);
+  box-shadow: var(--card-shadow, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
 }
 
 .privacy-page__note-text {

@@ -87,18 +87,34 @@ const genderIconSrc = computed(() => {
       </template>
       <text v-else class="public-identity__meta-item public-identity__meta-item--empty">资料暂未完善</text>
     </view>
-    <!-- 距离行（理想图第三行）：只出距离，「在线」不再在此重复渲染（R2b-L06-D12）。
-         后端 /profile/{id} 目前不下发 distanceText/online 字段，真机常为空 → 见修复报告。 -->
-    <view v-if="distanceText" class="public-identity__distance-row">
-      <text class="public-identity__distance-text">{{ distanceText }}</text>
+    <!-- R10-L10-D03（需新建 P1）：第三行不再按 distanceText 有无整块开关。
+         先纠正本文件旧注释的事实错误：后端 /profile/{id} **已经**有这两列
+         （apps/api/.../profile/UserProfileDTO.java:36 `String distanceText` / :56 `Boolean online`，
+         UserProfileController.java:179-195 仅在查看者未上报坐标、或两点超 300km 判为 GPS 漂移时给 null），
+         ⇒ 真机上缺的是「值」不是「列」，前端不许编造距离（§6/§8），但必须给出「这格暂时取不到」的信号。
+         落法：与 :88「资料暂未完善」同口径恒渲染，空值固定占位「距离待更新」。
+         「在线」胶囊维持 :20 的真值链（后端回 false ⇒ 该用户此刻不在线 ⇒ 不渲染是正确行为），
+         卡上建议的「缺省兜底 true」等于给离线用户伪造在线状态，未采纳 ⇒ 该半条登记未修。 -->
+    <view class="public-identity__distance-row">
+      <text class="public-identity__distance-text">{{ distanceText || "距离待更新" }}</text>
     </view>
   </view>
 </template>
 
 <style scoped lang="scss">
 .public-identity {
-  margin: -72rpx 40rpx 0;
-  padding: 148rpx 32rpx 28rpx;
+  /* R10-L10-D07（间距 P2）：横向外边距原 40rpx，而本页其余五张卡（PublicBio:14 /
+     PublicInterest:36 / PublicCommon:107 / PublicGallery:70）都是 24rpx，两档都不等于
+     §1.4 的 --page-padding = 32rpx ⇒ 卡缘不成一条竖边。本车道可改文件集只有这一份，
+     按缺陷卡落点把身份卡收到 var(--page-padding)（帧上身份卡左缘 21px→16px，
+     与页头返回键、shop/wallet 同页边距档取齐）；其余五张卡不在本轮派发集内（见交付「跨车道遗留」）。 */
+  margin: -72rpx var(--page-padding, 32rpx) 0;
+  /* R10-L10-D01（位置 P1）：padding-top 148rpx 把 __main 推到 y≈716rpx（卡顶 568 + 148），
+     而头像下缘在 680rpx ⇒ 姓名/资料整块落在头像之外，身份卡读成「头像→姓名→资料」竖排，
+     不是 §3.9 的「头像在左 + 右侧文字」两栏。卡顶到头像下缘的可见带 = 568..680 = 112rpx，
+     姓名行 38rpx 居中于该带 ⇒ 起点 568+(112-38)/2 ≈ 605 ⇒ padding-top 40rpx。
+     头像骑压量（bottom:-40rpx，绝对下探 112rpx）不动，见 PublicHero.vue:84。 */
+  padding: 40rpx 32rpx 28rpx;
   border-radius: 40rpx;
   background: #ffffff;
   box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
@@ -111,6 +127,14 @@ const genderIconSrc = computed(() => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 24rpx;
+  /* R10-L10-D01（位置 P1）：D01 的第二半 —— 只收 padding-top 会让姓名行横着插进头像里。
+     头像左缘 40rpx + 144rpx（border-box，含描边）= 右缘 184rpx；本行内容原本从
+     卡左缘 32 + 卡内衬 32 = 64rpx 起排 ⇒ 需再让 184 - 64 + 12（留缝）= 132rpx。
+     缺陷卡给的 ≈120rpx 是按旧 176rpx 头像算的（右缘 216 ⇒ 起点 192 也够），
+     但 D02 已把头像收到 144rpx，120rpx 只剩 8rpx 缝、且与 D07 的卡左缘 32rpx 叠加后
+     会重新咬上头像 ⇒ 按真实几何取 132rpx（起点 196rpx，离头像右缘 12rpx）。
+     右侧胶囊列走 justify-content:space-between，仍贴卡内右缘，不受本行左内衬影响。 */
+  padding-left: 132rpx;
 }
 
 .public-identity__info {
@@ -205,7 +229,13 @@ const genderIconSrc = computed(() => {
   align-items: center;
   justify-content: center;
   gap: 6rpx;
-  height: 56rpx;
+  /* R10-L10-D08（可达性 P2）：身份卡「喜欢」「打招呼」是首屏两枚主操作，原 56rpx=28.3px
+     只有同页底栏同名两枚按钮（RelationshipCTA.vue:97 的 92rpx）的六成，
+     帧内可见带实测 ≈30px / ≈20px（含内衬不足 88rpx 档的一半）。
+     提到 88rpx=44.4px（= 全站最小可点档，与 shop/detail 的命中盒同档）；
+     图标 28rpx / 文字 --fs-sm 均不动，靠既有 flex 居中吸收多出的 16rpx 上下留白，
+     胶囊宽度由 padding 0 20rpx 决定 ⇒ 视觉体量变大但不改字号、不改配色角色。 */
+  height: 88rpx;
   padding: 0 20rpx;
   border-radius: 999rpx;
 }
@@ -234,8 +264,17 @@ const genderIconSrc = computed(() => {
 }
 
 .public-identity__pill-text--like {
-  /* R9-L10-D05（可达性 P2）：--c-love #FF6B81 压 --c-tint-pink-50 #FCE4EC = 2.27:1（22rpx 标签需 4.5:1）。
-     调色板里最深档 --c-romance-700 #CC4A5F 只有 3.70:1，不够 ⇒ 取深一档玫红 #B3264A，实测 5.30:1。 */
+  /* R10-L10-D04（颜色token P2）：判点成立（#B3264A 是 R9 自造的私有色），但卡上两条改法
+     对着真实令牌表都不达标 ⇒ 本条登记「未修」，色值维持 R9 档，理由写在这里当登记处：
+     ① 选项「--c-romance-700 #CC4A5F 配更深一档 tint 底」实测：压现底 --c-tint-pink-50 #FCE4EC
+        = 3.70:1、压 romance-50 #FFECEF = 3.93:1（底更深只会更低），全部 <4.5:1 ⇒
+        照改等于把 R9-L10-D05 刚修好的可达性轴退回去（已知机制 §2「对比度要算，不要看着改」）。
+        现值 #B3264A（L=0.11465）压 #FCE4EC = 5.30:1，是这一格目前唯一的达标档。
+     ② 粉族到 700 就是表内最深档（design-variables.scss:43 $romance-700，无 800/900），
+        要在浅粉底上同时满足「禁私有色 + ≥4.5:1」必须新增一枚 --c-romance-800（≈#B3264A），
+        那是 theme/design-variables.scss，不在本车道可改文件集（硬规矩 1）。
+     ⇒ 缺的东西点名：theme 粉族深档令牌 --c-romance-800。补齐后本行换成 var(--c-romance-800) 即可。
+     （R9-L10-D05 原注：--c-love #FF6B81 压 #FCE4EC = 2.27:1，22rpx 标签不达 4.5:1，故当时取深色。） */
   color: #B3264A;
 }
 

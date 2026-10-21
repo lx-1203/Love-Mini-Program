@@ -30,7 +30,16 @@ const { t } = useI18n();
 const icons = {
   location: IMAGE_PATHS.ICONS_EMOJI.LOCATION,
   schedule: IMAGE_PATHS.ICONS_COMMON.SCHEDULE_SVG,
-  back: IMAGE_PATHS.ICONS_COMMON.BACK,
+  /* R10-L08-D09（可达性 P1）：页头底是 brand-500→brand-400 亮绿渐变（.detail-header 的 background），
+     原返回箭头吃 ICONS_COMMON.BACK（common/back.png 折线 #94A2B7，见 R8 在册项），
+     帧上最暗墨迹 #8BA8B6 压绿底实测 1.30:1，低于非文本控件 3:1 线 ⇒ 页内返回出口找不到
+     （微信胶囊只有「更多/关闭」）。换同图形、单色 #333333 的 v2 档（与同 lane
+     subpackages/tools/search/index.vue:255 同口径，real 帧已实证该素材在包内可渲染）：
+       箭头落在 .detail-header__back 的 rgba(255,255,255,.2) 圆底上
+       ⇒ 深端底 #36C99A 合成 (94,212,174) L=0.5244，#333333 L=0.0331 ⇒ 6.91:1
+       ⇒ 浅端底 #55D5A7 合成 (119,221,185) L=0.5934 ⇒ 7.74:1
+     两档均 ≥3:1（非文本）且 ≥4.5:1，与本页标题墨色（.detail-header__title 的 --c-brand-900）同族。 */
+  back: IMAGE_PATHS.ICONS_V2.BACK,
 } as const;
 
 const activityStore = useActivityStore();
@@ -475,7 +484,9 @@ onShareTimeline(() => ({
 .detail-header__back-icon {
   width: 36rpx;
   height: 36rpx;
-  color: var(--c-text-inverse, #ffffff);
+  /* R10-L08-D09：删去原 `color: var(--c-text-inverse)` —— 本节点是裸 <image>，
+     PNG 自带墨色（v2/back.png 单色 #333333），CSS color 对它无效，留着只是「声明与实际不符」。
+     对比度算式见 :33 图标取值处。 */
 }
 
 .detail-header__title {
@@ -515,7 +526,21 @@ onShareTimeline(() => ({
 .detail-cover {
   position: relative;
   width: 100%;
-  height: 360rpx;
+  /* R10-L08-D11（间距 P2）：帧上「活动介绍」卡止于 y≈470、底部操作栏起于 y≈690，
+     中间 220px（≈440rpx）是纯 #EEF7F2 空底，信息区只占屏高约 58%。
+     卡上给的三个「补模块」候选在本帧的实数据上全部渲染不出东西，逐一核过：
+       · 报名截止 = activity.date —— 示例活动恒为 ""（buildSampleActivities 内 :67/:79/:91/:106 四处写死空串），
+         real 档由 data.activityDate 映射（stores/activity.ts:358），本帧走的是示例回退分支 ⇒ v-if 不成立；
+       · 已报名头像组 = participantAvatars —— stores/activity.ts:33 可选、:400 mock 归一为 []，
+         示例活动根本没这个键 ⇒ 渲染 0 枚头像；
+       · 主办方 —— ActivityItem（stores/activity.ts:19-40）与后端 ActivityRecommendation
+         都没有组织者列，前端编造违反硬规矩 6 ⇒ 不采。
+     于是按同一张卡给出的第二条口径处理：不留整块空底，把富余高度让给本页唯一的全出血模块
+     （封面），使内容重新铺满视口。360rpx(180px) → 640rpx(320px) 吃掉 150px 死白
+     （其余 70px 是 .detail-footer-space 的既有避让位），封面占屏 39%，
+     落在 design-variables.scss:588-591 自陈的「交友 App 范式 40-50% 屏高全出血」档内；
+     mode=aspectFill（模板 :355）⇒ 只是多裁一段原图，不拉伸、不新增素材。 */
+  height: 640rpx;
   background: linear-gradient(135deg, var(--c-brand-200), var(--c-brand-300));
 }
 
@@ -585,8 +610,15 @@ onShareTimeline(() => ({
 }
 
 .detail-status__text {
-  font-size: var(--fs-xs, 20rpx);
-  color: var(--c-brand-700);
+  /* R10-L08-D10（字号 P2）：这枚「报名中」是本页唯一的活动状态标识，原取 --fs-xs(20rpx=10px)
+     落进 §1.3 只给角标·法务的极小档，比同帧下方「时间/地点」值行（.detail-meta__value
+     = --fs-base 24rpx=13px）还小一档 ⇒ 状态标签比正文还小。升到与 .detail-meta__value 同档。
+     墨色 --c-brand-700(#1F8D6A) 压本底 --c-bg-brand(#E8FBF2)：
+       L(#1F8D6A)=0.20381、L(#E8FBF2)=0.92567 ⇒ (0.97567/0.25381)=3.84:1，
+     24rpx(13px)/600 不享大字号豁免 ⇒ 一并提到 --c-brand-800(#156B51，L=0.11276)
+       ⇒ (0.97567/0.16276)=6.00:1 ≥4.5:1。 */
+  font-size: var(--fs-base, 24rpx);
+  color: var(--c-brand-800, #156B51);
   font-weight: 600;
 }
 

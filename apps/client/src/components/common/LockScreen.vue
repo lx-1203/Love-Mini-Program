@@ -681,8 +681,10 @@ function browsePublic() {
    --fs-base 24rpx 不享大字号豁免 ⇒ 差 4.5:1 两倍多；本行还是画面里唯一的完善度数值。
    缺陷卡给的两条实算：--c-brand-800 #156B51 L=0.11271 ⇒ 5.75:1（下段 5.91:1）够；
    --c-text-secondary #4A524E L=0.08037 ⇒ 7.18:1（下段 7.37:1）更高，
-   且同组件 :753 .lock-screen__btn-link-text 与 :789 .lock-screen__footer-text 已在
-   R6-L08-D13 / R8-L08-D05 升到这一档 —— 取它能消掉「同一组件两档结论」的残留，故选它。 */
+   且同组件 :837 .lock-screen__footer-text 已在 R8-L08-D05 升到这一档 —— 取它能消掉
+   「同一组件两档结论」的残留，故选它。
+   （R10-L02-D12 之后 .lock-screen__btn-link-text 改吃 --c-brand-800（:800-804），
+     那是「像不像可点」轴要的链接色，与本行的「唯一数值读数」轴不冲突，两档都 ≥4.5:1。） */
 .lock-screen__progress {
   font-size: var(--fs-base);
   color: var(--c-text-secondary);
@@ -760,8 +762,25 @@ function browsePublic() {
 }
 
 /* 次按钮：文字链接（先逛逛公开内容） */
+/* R10-L02-D12（可达性 P2 · village bottom）+ R10-L08-D07（P2 · heart-signals bottom）同根因：
+   游客唯一的公开内容出口可点体太小——village 帧点击盒只有 44rpx(22px) 高
+   （padding var(--sp-2)=4px 上下 + 26rpx 文本行），heart-signals 帧实测墨迹 x=147–232、
+   y=590–601（86×12px）⇒ 热区约 170×32rpx，不到 88rpx(44px) 下限的一半，
+   而同帧主 CTA 钮高实测 46px(91rpx) 达标，两者差近 3 倍。
+   按两张卡的改法合并落地：纵向 padding 由 --sp-2 提到 --sp-6（4rpx→24rpx），
+   补 min-height:88rpx + display:flex 居中（卡名口径 = 与 .empty-action 的 88rpx 同一把尺），
+   横向 padding 由 --sp-6 提到 --sp-8，并给本体 align-self:stretch ——
+   父级 .lock-screen__action 的 align-items:center 会把本体收成文字宽（帧上热区只有 86px），
+   拉满后热区宽 = 该列的 560rpx，文字仍由 justify-content:center 居中、位置随高度自然下沉
+   ≈6px ⇒ 帧上可核。 */
 .lock-screen__btn-link {
-  padding: var(--sp-2) var(--sp-6);
+  align-self: stretch;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-6) var(--sp-8);
+  box-sizing: border-box;
   transition: opacity var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -769,14 +788,19 @@ function browsePublic() {
   opacity: 0.6;
 }
 
-/* R6-L08-D13（可达性 P2）：次入口原取 --c-text-tertiary，浅色系档是 #6B7571、
-   暗色档 tokens.scss:245 是 #8A92A0，帧内字形实测 #808D88 压在 --c-bg-page #EEF7F2 上
-   对比度 2.87:1，字号 --fs-md=26rpx(13px) 不享 WCAG 大字号豁免 ⇒ 游客唯一非登录出口读不出。
-   与同页正文（.lock-screen__subtitle / .benefit__text 均为 --c-text-secondary）同档：
-   #4A524E 压 #EEF7F2 实测 7.37:1。 */
+/* R6-L08-D13（可达性 P2）把本行从 --c-text-tertiary（帧内 #808D88 压 --c-bg-page #EEF7F2
+   只有 2.87:1）升到 --c-text-secondary #4A524E（7.37:1），读得出，但 R10-L02-D12 判的是
+   「像不像可点」那一半：升到 --c-text-secondary 后它与 .lock-screen__subtitle /
+   .benefit__text 逐字同色同档，游客唯一的非登录出口在画面上和普通正文没有任何区别。
+   R10-L02-D12 给的三条（下划线 / 箭头 / 品牌深色）取前两条里的「品牌深色 + 下划线」：
+   --c-brand-800 #156B51（design-variables.scss:18）压页面底 #EEF7F2 实测
+   L=0.112709 vs 0.911098 ⇒ 5.91:1，仍 ≥4.5:1，不重开 R6 那一条；
+   下划线补出链接形态。不加箭头/图标：本车道不许新增素材，行内 <image> 会改写这一行的
+   布局并把热区高度重新拉回文本行高。 */
 .lock-screen__btn-link-text {
   font-size: var(--fs-md);
-  color: var(--c-text-secondary, #4A524E);
+  color: var(--c-brand-800);
+  text-decoration: underline;
 }
 
 /* ========== 底部补充提示 ========== */

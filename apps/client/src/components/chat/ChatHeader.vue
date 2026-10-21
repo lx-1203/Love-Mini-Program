@@ -134,8 +134,13 @@ const heartSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MESSAGE_ICONS.HEART)
   border-bottom: 1rpx solid #EEF2F0;
 }
 .chat-header__back {
-  width: 56rpx;
-  height: 56rpx;
+  /* R10-L11-D09（可达性 P1）：热区 56rpx=28px，比 44px（88rpx）下限少 16px。
+     只扩盒不缩图标（__back-text 的 56rpx 字号不动），min-* 与 width/height 同档，
+     避免被父级 flex 压缩后再掉回阈值以下。 */
+  width: 88rpx;
+  height: 88rpx;
+  min-width: 88rpx;
+  min-height: 88rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -218,8 +223,15 @@ const heartSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MESSAGE_ICONS.HEART)
   color: #999999;
 }
 .chat-header__more {
-  width: 56rpx;
-  height: 56rpx;
+  /* R10-L11-D09（可达性 P1）：这枚 more 是页面 @more="openNavMenu" 会话菜单的唯一出口，
+     原 56rpx×56rpx=28×28px 热区低于 44px 下限、又只留系统胶囊 4px 缝，手指极易打到胶囊。
+     盒抬到 88rpx（44×44px）只扩热区：「···」字号（__more-text 40rpx）不动；
+     与胶囊的 4px 视觉间隙也不动 —— 本盒是 flex 行末项，右缘由 .chat-header 的 padding-right
+     （headerStyle 注入 windowWidth − rect.left + 4px）钉死，加宽只会向左长，不会顶进胶囊。 */
+  width: 88rpx;
+  height: 88rpx;
+  min-width: 88rpx;
+  min-height: 88rpx;
   display: flex;
   align-items: center;
   justify-content: center;
