@@ -24,7 +24,13 @@ const { t } = useI18n();
 const webUrl = ref("");
 
 /** 返回按钮图标 */
-const backIcon = IMAGE_PATHS.ICONS_COMMON.BACK;
+/* R10-L08-D09 同根因、不同页（FXJ 交件时点名「没有对应缺陷卡」而留下的一处）：
+   本页页头是 .content-header 的 brand-500→brand-400 亮绿渐变（:295），
+   而 ICONS_COMMON.BACK 的折线是 #94A2B7 —— 压亮绿底实测 1.23:1（深端）/1.60:1（浅端），
+   低于非文本控件 3:1 线 ⇒ 页内返回出口在画面上找不到（微信胶囊只有「更多/关闭」）。
+   与同 lane activities/detail.vue:42、search/index.vue:255 同口径换单色 #333333 的 v2 档：
+   #333333 压 #36C99A = 6.00:1、压 #6fe0b0 = 7.80:1。素材三棵树均在盘 ⇒ 硬规矩 7 不适用。 */
+const backIcon = IMAGE_PATHS.ICONS_V2.BACK;
 
 onLoad(() => {
   webUrl.value = contentPageUrls.mbtiUrl ?? "";

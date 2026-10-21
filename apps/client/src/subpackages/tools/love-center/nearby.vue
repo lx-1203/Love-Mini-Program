@@ -31,7 +31,12 @@ const discoverStore = useDiscoverStore();
 const sessionStore = useSessionStore();
 
 /** 返回按钮图标 */
-const backIcon = IMAGE_PATHS.ICONS_COMMON.BACK;
+/* R10-L08-D09 同根因、不同页（FXJ 交件时点名「没有对应缺陷卡」而留下的一处）：
+   本页 .content-header 无自身底色，落在 .content-page 的 --c-bg-page（design-variables.scss:127 = #EEF7F2），
+   ICONS_COMMON.BACK 的折线 #94A2B7 压 #EEF7F2 实测 2.37:1，低于非文本控件 3:1 线。
+   与同 lane activities/detail.vue:42、love-center/mbti.vue 同口径换单色 #333333 的 v2 档 ⇒ 11.56:1。
+   素材三棵树均在盘 ⇒ 硬规矩 7 不适用。 */
+const backIcon = IMAGE_PATHS.ICONS_V2.BACK;
 
 /** 卡片数据（与寻觅一致：推荐接口 → DiscoverCard） */
 const cards = ref<DiscoverCard[]>([]);
