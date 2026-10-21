@@ -67,6 +67,12 @@ let inheritedCount = 0;
 for (const f of files) {
   const txt = readFileSync(join(lanesDir, f), "utf8").replace(/\r\n/g, "\n");
   let rec = null, lastFrame = "", sectionHash = "";
+  /* 段级账：一个 ## FRAME 段到底有没有产出过缺陷行。
+     早先按"出现没有 defect_id 的 rec"判空段，会把 L10 那种「先写 CLEAN 风格段头
+     （frame/frame_hash/compared_to/axes）+ 再写逐条缺陷（每条又抄一遍 frame_hash）」
+     误判成 10 个空段——明明 20 条缺陷都在。空段的判据只认段级：本段零缺陷行才算。 */
+  let section = null;
+  const sections = [];
   let clean = null;
   const flushClean = () => {
     if (clean && clean.frame && clean.frame_hash) cleanRows.push(clean);
@@ -78,13 +84,13 @@ for (const f of files) {
     /* 同段继承：rec 诞生于当前段（rec.frame === lastFrame）且本段出现过哈希 ⇒ 挂上并打标；
        跨段的残条（字段越过了下一个 ## FRAME 头）不继承下一段的哈希——那不是它看过的图。 */
     if (!rec.frame_hash && sectionHash && rec.frame === lastFrame) { rec.frame_hash = sectionHash; rec.hashInherited = true; inheritedCount++; }
-    if (!rec.defect_id && rec.frame_hash && rec.frame) unadjudicated.push(rec);
-    else rows.push(rec);
+    if (rec.defect_id) { rows.push(rec); if (section) section.defects++; }
+    else if (rec.frame_hash && section && !section.hash) section.hash = rec.frame_hash;
     rec = null;
   };
   for (const line of txt.split("\n")) {
     const fm = line.match(/^##\s*FRAME\s+(\S+)/);
-    if (fm) { flushClean(); flush(); lastFrame = fm[1]; sectionHash = ""; continue; }
+    if (fm) { flushClean(); flush(); if (section) sections.push(section); section = { lane: f.replace(/\.md$/, ""), frame: fm[1], hash: "", defects: 0 }; lastFrame = fm[1]; sectionHash = ""; continue; }
     if (CLEAN_RE.test(line)) {
       flushClean();
       flush();
@@ -120,6 +126,8 @@ for (const f of files) {
   }
   flush();
   flushClean();
+  if (section) { sections.push(section); section = null; }
+  for (const s of sections) if (s.defects === 0 && s.hash) unadjudicated.push(s);
 }
 /* CLEAN 段畸形要**先**问：一张卡里只有"没哈希的 CLEAN 段"时，下面那条空卡红会先跳出来，
    把真正的原因（车道写了交代却给不出看了哪张图）盖掉——红的可解释性比红的条数重要。 */

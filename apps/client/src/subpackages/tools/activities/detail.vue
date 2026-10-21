@@ -454,7 +454,12 @@ onShareTimeline(() => ({
   align-items: center;
   justify-content: space-between;
   padding: calc(var(--sp-4) + var(--statusbar, env(safe-area-inset-top))) var(--sp-4) var(--sp-3);
-  background: linear-gradient(135deg, var(--c-brand-500, #36C99A) 0%, var(--c-brand-400, #6fe0b0) 100%);
+  /* R9-L08-D06（可达性 P2）：本栏底色**刻意不压深**。可读性由 .detail-header__title 改深墨承接
+     （算式见该规则）。理由：pages.json:49/52 是 navigationStyle=custom + navigationBarTextStyle=black
+     ⇒ 状态栏的黑字/黑图标直接渲染在本栏之上；把栏底压到 brand-800 后，栏右上角（承载信号/电量的
+     区段）对黑只有 0.16269/0.05=3.25:1，会把系统状态栏一起拖到门槛边缘，属新的连带缺陷。
+     全站同款亮绿导航栏（mbti/privacy/wallet 等 4 处）未在本车道范围，见 HANDOFF。 */
+  background: linear-gradient(135deg, var(--c-brand-500, #36C99A) 0%, var(--c-brand-400, #55D5A7) 100%);
 }
 
 .detail-header__back {
@@ -477,10 +482,24 @@ onShareTimeline(() => ({
   /* R7-L08-D07（字号 P2）：页面主标题原取 var(--fs-xl)=30rpx（15px，§1.3 的「正文/辅助」档），
      顶部绿导航栏里「活动详情」墨迹只有 12px，页头层级塌到正文档。
      升到 §1.3 大标题档 --fs-5xl（44rpx=22px）并与兄弟工具页 heart-signals
-     .page-header__title（index.vue:446）同口径；字重保持 700。 */
+     .page-header__title（index.vue:446）同口径；字重保持 700。
+     R9-L08-D06（可达性 P2）：原白字（--c-text-inverse，design-variables.scss:369 =
+     --c-overlay-text-primary rgba(255,255,255,.95)，:749）压本栏
+     linear-gradient(135deg,#36C99A 0%,#55D5A7 100%)（:171 同值族）：
+       #36C99A L=0.2126*0.03689+0.7152*0.58414+0.0722*0.32314=0.44891
+         ⇒ 纯白 1.05/0.49891=2.10:1；按 rgba(.95) 合成 #F5FCFA(L=0.95935)
+         ⇒ 1.00935/0.49891=2.02:1；浅端 #55D5A7 L=0.52310 ⇒ 1.83:1。
+     44rpx(22px)/700 属 WCAG 大字号（门槛 3:1），2.02 仍差一档。
+     取缺陷卡第二条「标题改深墨压浅绿头」：--c-brand-900 #0B4A38（design-variables.scss:268；
+     品牌色阶不随主题翻转，styles/tokens.scss:235 的 dark-theme-vars 不覆盖它）
+       L=0.2126*0.00335+0.7152*0.06847+0.0722*0.03954=0.05254
+       ⇒ 压 brand-500 端 0.49891/0.10254=4.87:1，压浅端 #55D5A7 0.57310/0.10254=5.59:1，
+     过 3:1（大字号）且过 4.5:1（正文线）。
+     不用 --c-text-primary 的原因：它在 dark-theme-vars 里翻成 #F0F2F5（tokens.scss:275），
+     深色模式下会在这条**不翻转**的亮绿栏上又变回 ≈2:1 的白字。不改栏底的理由见上一条规则注释。 */
   font-size: var(--fs-5xl, 44rpx);
   font-weight: 700;
-  color: var(--c-text-inverse, #ffffff);
+  color: var(--c-brand-900, #0B4A38);
 }
 
 .detail-header__spacer {
@@ -701,7 +720,18 @@ onShareTimeline(() => ({
   justify-content: center;
   height: 88rpx;
   border-radius: var(--r-full);
-  background: var(--c-gradient-brand, linear-gradient(135deg, #36C99A 0%, #75E1B7 100%));
+  /* R9-L08-D05（可达性 P1）：本页唯一转化动作「立即报名」。
+     原钮面 var(--c-gradient-brand)（design-variables.scss:171 = linear-gradient(135deg,#36C99A,#55D5A7)），
+     标签 .detail-signup-btn__text 为 --c-text-inverse（design-variables.scss:369 = --c-overlay-text-primary
+     rgba(255,255,255,.95)，:749），--fs-xl=30rpx=15px/600 不享大字号豁免 ⇒ 门槛 4.5:1。
+     算式：底 #36C99A L=0.44891 ⇒ 1.05/0.49891=2.10:1；浅端 #55D5A7 L=0.52310 ⇒ 1.83:1；
+     再按标签实际色 rgba(255,255,255,.95) 合成 #F5FCFA(L=0.95935) ⇒ 1.00935/0.49891=2.02:1
+     （＝评审实测 ≈2.0:1），差 4.5:1 门槛 2.2 倍。
+     brand-600(2.81:1)/brand-700(4.14:1) 两档都不够 ⇒ 取同族深档 --c-brand-800(#156B51，
+     design-variables.scss:18) 纯色，与 LockScreen.vue:743（R8-L07-D03）同口径：
+       L=0.2126*0.00750+0.7152*0.14712+0.0722*0.08227=0.11269 ⇒ 纯白 1.05/0.16269=6.45:1
+       实际白字 rgba(255,255,255,.95) 合成 #F3F8F6 L=0.92843 ⇒ 0.97843/0.16269=6.01:1 ≥4.5:1 */
+  background: var(--c-brand-800, #156B51);
 }
 
 /* 收尾轮：退出报名按钮（次级样式，避免与报名主按钮混淆） */

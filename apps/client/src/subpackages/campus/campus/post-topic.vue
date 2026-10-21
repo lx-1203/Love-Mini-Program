@@ -653,14 +653,22 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .back-icon {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-inverse);
+  /* R9-L05-D07（可达性 P2）：改前取 --c-text-inverse（= --c-overlay-text-primary
+     rgba(255,255,255,.95)），压在 header 渐变 60% 档 #75E1B7/#9CE5CD 上实测 1.45:1。
+     按令牌真值（apps/client/src/theme/design-variables.scss:121 $text-primary #1A1E1C）改走
+     --c-text-primary：对最亮段 #9CE5CD(L=0.6751) = (0.7251)/(0.058804) = 12.33:1，
+     对渐变起点 --c-brand #36C99A(L=0.44892) = 0.49892/0.058804 = 8.49:1，
+     对终点 --c-romance-300 #FF8DA1(L=0.42882) = 0.47882/0.058804 = 8.14:1 —— 全段 ≥8:1。
+     底部 25% 白的「取消」胶囊叠后为 #68D6A9(L=0.5390) ⇒ 10.02:1。 */
+  color: var(--c-text-primary, #1A1E1C);
   font-weight: 500;
 }
 
 .post-header__title {
   font-size: var(--fs-xl, 34rpx);
   font-weight: 700;
-  color: var(--c-text-inverse);
+  /* R9-L05-D07：同 .back-icon，标题「发布话题」落在渐变中段（最亮 #9CE5CD）⇒ 12.33:1。 */
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .post-header__submit {
@@ -717,11 +725,19 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16rpx;
+  gap: 12rpx;
   padding: 22rpx 28rpx;
   margin-bottom: 20rpx;
   border-radius: var(--r-xl, 24rpx);
   border: 2rpx solid var(--c-warning-border-tint);
+  /* R9-L05-D06（可达性 P1）：条底仍保留 warning tint（rgba(245,158,11,.1) 压在 .post-page
+     顶部渐变 13.5% 处的浅绿 (236,248,242) ⇒ 合成 (237,239,219)，L=0.84859），
+     warning 的「强度提示」改由这条左轨承担。
+     左轨取 warning 深色档 --c-text-warning-dark #92400E（design-variables.scss:820，L=0.09809）：
+     对条底 (0.89859)/(0.14809) = 6.07:1 ≥ 非文本 3:1；若直接用 --c-warning #F59E0B 只有 1.84:1，故不取。
+     左轨 6rpx 比原 2rpx 多占 2px，同步把 gap 由 16rpx 收到 12rpx 还这 2px ⇒ 正文可用宽不变，
+     整句仍是单行（不引入新的折行/增高）。 */
+  border-left: 6rpx solid var(--c-text-warning-dark, #92400E);
   background: var(--c-warning-bg-tint);
 }
 
@@ -730,14 +746,21 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   min-width: 0;
   font-size: var(--fs-base, 24rpx);
   line-height: 1.5;
-  color: var(--c-warning);
+  /* R9-L05-D06：改前 --c-warning #F59E0B 压上面那条 tint 底 = 1.84:1（复算：
+     (0.84859+0.05)/(0.43894+0.05) = 1.838），正文级 24rpx 整句读不到。
+     改走 --c-text-primary #1A1E1C（L=0.008804）⇒ (0.89859)/(0.058804) = 15.28:1 ≥ 4.5:1。 */
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .cert-banner__btn {
   flex-shrink: 0;
   padding: 12rpx 24rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-warning);
+  /* R9-L05-D06：改前底 --c-warning #F59E0B 配 --c-text-inverse(rgba(255,255,255,.95)) 的
+     「去认证」实测 2.07:1，与上面那句一起不可读。实底改取 warning 深色档 #92400E：
+     白字合成色 (250,245,243) L=0.92115 ⇒ (0.97115)/(0.14809) = 6.56:1 ≥ 4.5:1；
+     按钮底对条底 (0.89859)/(0.14809) = 6.07:1 ≥ 非文本 3:1。不新造色值，仍是同族 warning。 */
+  background: var(--c-text-warning-dark, #92400E);
   display: flex;
   align-items: center;
   justify-content: center;

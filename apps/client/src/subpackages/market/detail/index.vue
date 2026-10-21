@@ -436,6 +436,19 @@ watch(commerceSealed, (sealed) => {
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-container);
   border: var(--c-border-card);
+  position: relative;
+
+  /* R9-L14-D04（可达性 P2）：视觉圆保持 64rpx（32.3px），命中盒用透明伪元素扩到 88rpx
+     （44.4px，≥ 组件库最小档 --btn-height-sm 80rpx，design-variables.scss:665）；
+     top/bottom 各 −12rpx 恰好填满 88rpx 高的 .nav-bar，不外扩出导航条。 */
+  &::after {
+    content: "";
+    position: absolute;
+    top: -12rpx;
+    right: -12rpx;
+    bottom: -12rpx;
+    left: -12rpx;
+  }
 
   &--hover {
     background: var(--c-bg-page);
@@ -496,10 +509,15 @@ watch(commerceSealed, (sealed) => {
 }
 
 .product-state__btn {
-  min-height: 80rpx;
+  /* R9-L14-D02（尺寸比例 P2）：原 80rpx=40.3px（组件库小档 --btn-height-sm），
+     低于 88rpx 触控下限 ⇒ 取 --btn-height-md 96rpx（design-variables.scss:666）。 */
+  min-height: var(--btn-height-md, 96rpx);
   padding: 0 var(--sp-8);
   border-radius: var(--r-full);
-  background: var(--c-brand);
+  /* R9-L14-D01（可达性 P1）：原钮底 --c-brand #36C99A，0.95 白字实测 2.02:1（帧 2.03:1），
+     13.1px 正文级需 4.5:1。--c-brand-700 #1F8D6A 只有 4.14:1（仍不达），故取
+     --c-brand-800 #156B51：0.95 白 = 6.01:1，纯白参照 6.45:1（design-variables.scss:18）。 */
+  background: var(--c-brand-800, #156B51);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -513,8 +531,16 @@ watch(commerceSealed, (sealed) => {
 
 /* ==================== 批次 A / ADR-2：商业化封存态 ==================== */
 .product-state--sealed {
+  /* R9-L14-D05（位置 P3）：同域 shop 是 351×174 白卡顶部锚定（y131–304）、wallet 是 359×125 白卡，
+     只有 detail 是通栏居中且无容器 ⇒ 补同款白卡与顶部落位（flex:0 0 auto + 60rpx 上边距），
+     左右边距/圆角取 shop 同值（--page-padding 32rpx / --r-xxl 32rpx）。 */
+  flex: 0 0 auto;
   gap: var(--sp-3);
-  padding: 160rpx 48rpx;
+  margin: 60rpx var(--page-padding);
+  padding: 80rpx 48rpx;
+  border-radius: var(--r-xxl, 32rpx);
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
 }
 
 .product-state__sealed-icon {
@@ -530,8 +556,12 @@ watch(commerceSealed, (sealed) => {
 }
 
 .product-state__sealed-desc {
-  font-size: var(--fs-sm, 24rpx);
-  color: var(--c-text-tertiary, #94a3b8);
+  /* R9-L14-D03（颜色 token P2）：--c-text-tertiary #6B7571 直接铺在页底 #EEF7F2 上实测 4.36:1
+     （<4.5:1；本页无卡才掉档）。改 --c-text-secondary #4A524E = 7.37:1。
+     R9-L14-D11（字号 P2）：--fs-sm 实值 22rpx（11.1px，.vue 里 24rpx 是过期字面量）⇒ 提一档
+     --fs-md 26rpx=13.1px，与 shop 封存说明同步。 */
+  font-size: var(--fs-md);
+  color: var(--c-text-secondary, #4A524E);
   text-align: center;
   line-height: 1.6;
 }

@@ -282,8 +282,20 @@ function handleRetry(): void {
   /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
   min-height: 100%;
   /* R8-L13-D12/D16：.legal-footer 出流吸底后按等高占位补白，
-     避免滚到文末时最后一段正文被固定条压住（钮高 --btn-height-md 96rpx + 上下内距）。 */
-  padding-bottom: 200rpx;
+     避免滚到文末时最后一段正文被固定条压住（钮高 --btn-height-md 96rpx + 上下内距）。
+     R9-L13-D08/D10（间距 P2 · privacy + agreement 同根因）：上一版占位写死 200rpx，
+     而吸底条实高 = --sp-4(16) + --btn-height-md(96) + --sp-6(24) + 上描边 1rpx
+     = 137rpx（design-variables.scss:550/552/666 三枚令牌真值，env=0 档）
+     ⇒ 滚到底时白卡圆角底与白底吸底条之间露出 200−137 = 63rpx(~32px) 的
+     --c-bg-page 绿带，把「一张白卡」切成两截（bottom 帧实测）。
+     现改为与吸底条同源算式（含真机安全区，两侧同步增长），占位恒等于条高，
+     差值 0 ⇒ 绿缝消失；不再出现「补多/补少」两轮来回。
+     直接写 calc（与本文件 .legal-footer 的 padding 同一种写法，env/var 均为已在跑的组合），
+     不经自定义属性中转，避免中转变量在 WXSS 里解析失败时整条 padding 退化成 0。 */
+  padding-bottom: calc(
+    var(--btn-height-md, 96rpx) + var(--sp-4) + var(--sp-6) + 1rpx +
+      env(safe-area-inset-bottom)
+  );
   box-sizing: border-box;
   background: var(--c-bg-page);
 }
@@ -430,7 +442,17 @@ function handleRetry(): void {
   width: 100%;
   height: var(--btn-height-md, 96rpx);
   border-radius: var(--r-xl, 24rpx);
-  background: var(--c-brand);
+  /* R9-L13-D07/D09（可达性 P2 · privacy + agreement 同根因）：钮底原取 --c-brand #36C99A，
+     文字取 --c-text-inverse（= --c-overlay-text-primary，rgba(255,255,255,.95)，
+     design-variables.scss:369）⇒ #36C99A L=0.44896，白 L=1 ⇒ 1.05/0.49896 = 2.10:1，
+     28rpx(=--fs-lg 14px) 粗体不享大字号豁免，差 4.5:1 一倍多；
+     且 --c-text-inverse 的语义是「图片遮罩白字」，用作按钮前景属令牌误配。
+     实算同族深档：白压 brand-600 #2AAE83 = 2.81:1、brand-700 #1F8D6A = 4.14:1 均不达标，
+     brand-800 #156B51（:18）L=0.11271 ⇒ 1.05/0.16271 = 6.45:1 ≥ 4.5:1，采用；
+     与 LockScreen.vue:717 的白字深档主 CTA 同一结论（那里 6.45:1 已落地）。
+     前景同时归位到 --c-neutral-0（#FFFFFF，LockScreen.vue:733 同口径），
+     不再借用图片遮罩档。 */
+  background: var(--c-brand-800);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -440,7 +462,7 @@ function handleRetry(): void {
 .legal-footer__btn-text {
   font-size: var(--fs-lg);
   font-weight: 600;
-  color: var(--c-text-inverse, #ffffff);
+  color: var(--c-neutral-0, #ffffff);
   letter-spacing: 2rpx;
 }
 </style>

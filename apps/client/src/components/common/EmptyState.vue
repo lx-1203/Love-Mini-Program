@@ -179,9 +179,19 @@ function handleAction() {
   font-weight: 600;
   color: var(--c-text-secondary);
 }
+/* R9-L10-D18（可达性 P1 · favorites）+ R9-L04-D06（可达性 P2 · topic-detail）：
+   副标题（favorites「在帖子页点收藏，喜欢的帖子会出现在这里」＝本页唯一功能指引，
+   topic-detail「这里空空如也」）原取 --c-text-quaternary #9AA39F（design-variables.scss:126），
+   落在页面底 --c-bg-page #EEF7F2（:127）上：
+     亮度 #9AA39F L=0.35571 / #EEF7F2 L=0.91111 ⇒ (0.96111)/(0.40571) = 2.37:1
+   --fs-base 24rpx 不享大字号豁免，2.37:1 低于正文 4.5:1、也低于次级文字 3:1 下限。
+   升到 --c-text-secondary #4A524E（:122）L=0.080366 ⇒ 0.96111/0.130366 = 7.37:1。
+   组件级一处改，30+ 消费点（含 favorites / topic-detail 两帧）同收益；
+   缺陷卡另给的「本页传 hide-sub」属宿主页可写集（本车道只许改组件），
+   语义重复那一半由页面车道决定，颜色轴在此收口。 */
 .empty-sub {
   font-size: var(--fs-base);
-  color: var(--c-text-quaternary);
+  color: var(--c-text-secondary);
   margin-top: var(--sp-2);
   text-align: center;
 }

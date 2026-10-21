@@ -45,6 +45,16 @@ const emit = defineEmits<{
 /** 我的相册：横排最多 3 张缩略图 */
 const albumThumbs = computed(() => props.photos.slice(0, 3));
 
+/* R9-L02-D16（素材缺失 P1）：stories 为空时原来只剩一枚虚线「添加故事」卡（帧宽 70px），
+   理想图的三卡结构整块缺席。三个分类名/量词与游客态同一份口径
+   （NotLoggedProfile.vue:43-47 STORIES，理想图来源），计数是空态真值 0，
+   不引入任何后端不存在的字段。 */
+const STORY_CATEGORY_PLACEHOLDERS = [
+  { name: "生活日常", unit: "篇" },
+  { name: "旅行足迹", unit: "个地方" },
+  { name: "我的心愿", unit: "个愿望" },
+] as const;
+
 /** 点击帖子卡片 → 帖子详情页 */
 function openPost(postId: string): void {
   if (!postId) return;
@@ -59,24 +69,40 @@ function openPost(postId: string): void {
     <!-- ===== 我的故事卡（R16：真实「日常」内容 + 添加故事虚线卡常驻） ===== -->
     <view class="story-cards">
       <scroll-view scroll-x class="story-cards__scroll" :show-scrollbar="false">
-        <view class="story-cards__row">
-          <view
-            v-for="(story, storyIdx) in props.stories"
-            :key="story.id"
-            class="story-card press-feedback"
-            hover-class="press-feedback--active"
-            hover-stay-time="120"
-            role="button"
-            :aria-label="story.title"
-            @tap="emit('tapPhoto', storyIdx)"
-          >
-            <image class="story-card__img" :src="story.cover" mode="aspectFill" lazy-load alt="" />
-            <view class="story-card__mask" />
-            <view class="story-card__label">
-              <text class="story-card__title">{{ story.title }}</text>
-              <text v-if="story.dateText" class="story-card__count">{{ story.dateText }}</text>
+        <view class="story-cards__row" :class="{ 'story-cards__row--empty': props.stories.length === 0 }">
+          <template v-if="props.stories.length > 0">
+            <view
+              v-for="(story, storyIdx) in props.stories"
+              :key="story.id"
+              class="story-card press-feedback"
+              hover-class="press-feedback--active"
+              hover-stay-time="120"
+              role="button"
+              :aria-label="story.title"
+              @tap="emit('tapPhoto', storyIdx)"
+            >
+              <image class="story-card__img" :src="story.cover" mode="aspectFill" lazy-load alt="" />
+              <view class="story-card__mask" />
+              <view class="story-card__label">
+                <text class="story-card__title">{{ story.title }}</text>
+                <text v-if="story.dateText" class="story-card__count">{{ story.dateText }}</text>
+              </view>
             </view>
-          </view>
+          </template>
+          <!-- R9-L02-D16：无日常时保留三枚固定分类位（0 计数），不是可点入口 -->
+          <template v-else>
+            <view
+              v-for="cat in STORY_CATEGORY_PLACEHOLDERS"
+              :key="cat.name"
+              class="story-card story-card--placeholder"
+            >
+              <view class="story-card__placeholder-body">
+                <text class="story-card__placeholder-plus">＋</text>
+                <text class="story-card__placeholder-name">{{ cat.name }}</text>
+                <text class="story-card__placeholder-count">0{{ cat.unit }}</text>
+              </view>
+            </view>
+          </template>
           <view
             class="story-add press-feedback"
             hover-class="press-feedback--active"
@@ -211,6 +237,20 @@ function openPost(postId: string): void {
   padding-bottom: 4rpx;
 }
 
+/* R9-L02-D16：空态四枚等分（3 分类位 + 添加卡）全部在首屏内，口径同 NotLoggedProfile 的
+   游客态故事宫格；有真实日常时仍走上一条横向滚动的 208rpx 卡。 */
+.story-cards__row--empty {
+  display: flex;
+  width: 100%;
+}
+
+.story-cards__row--empty .story-card,
+.story-cards__row--empty .story-add {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+}
+
 .story-card {
   position: relative;
   flex-shrink: 0;
@@ -259,6 +299,40 @@ function openPost(postId: string): void {
 .story-card__count {
   font-size: var(--fs-xs, 20rpx);
   color: rgba(255, 255, 255, 0.85);
+}
+
+/* R9-L02-D16：空态三分类位 —— 与「添加故事」同尺寸，虚线只留给添加入口，分类位用实线浅边 */
+.story-card--placeholder {
+  border: 2rpx solid #E3EAE7;
+  background: var(--c-bg-container, #ffffff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.story-card__placeholder-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  padding: 0 12rpx;
+}
+
+.story-card__placeholder-plus {
+  font-size: 40rpx;
+  line-height: 1;
+  color: var(--c-text-tertiary);
+}
+
+.story-card__placeholder-name {
+  font-size: var(--fs-sm, 22rpx);
+  font-weight: 700;
+  color: var(--c-text-secondary);
+}
+
+.story-card__placeholder-count {
+  font-size: var(--fs-xs, 20rpx);
+  color: var(--c-text-tertiary);
 }
 
 /* 添加故事：虚线加号卡 */

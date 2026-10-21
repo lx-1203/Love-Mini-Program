@@ -430,6 +430,18 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+
+  /* R9-L14-D09（可达性 P2）：视觉圆/热区原同为 64rpx=32.3px（<88rpx 下限）；白色圆视觉保持
+     64rpx，透明伪元素把命中盒扩到 88rpx（同 detail/index.vue:431 一处口径）。 */
+  &::after {
+    content: "";
+    position: absolute;
+    top: -12rpx;
+    right: -12rpx;
+    bottom: -12rpx;
+    left: -12rpx;
+  }
 }
 
 .shop-header__back-icon {
@@ -448,7 +460,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   background-clip: text;
   // #endif
   // #ifndef H5
-  color: var(--c-brand); // mp-weixin 降级：使用纯色（取渐变中间色）
+  /* R9-L14-D06（颜色 token P1）：原 --c-brand #36C99A 叠页头浅绿渐变（#E8F5E9→#EEF7F2）
+     实测 1.87:1（帧 1.90:1），22.2px/800 大字连 3:1 底线都不到。--c-brand-700 只 3.68:1
+     （够大字号但仍偏弱），改 --c-brand-800 #156B51 = 5.74:1，同时满足 3:1（大字）与 4.5:1。 */
+  color: var(--c-brand-800, #156B51); // mp-weixin 降级：使用纯色（取品牌深档）
   // #endif
 }
 
@@ -711,9 +726,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 /* ========== 批次 A / ADR-2：商业化封存态 ========== */
 .shop-sealed {
-  margin: 60rpx 24rpx;
+  /* R9-L14-D07（间距 P3）：原 24rpx=12px 左右边距比本页页头 32rpx 内容边向左越出
+     ⇒ 改 var(--page-padding) 与页头同边（卡左缘 16px，落位同 detail 新增白卡）。
+     R9-L14-D08（圆角 P3）：--r-xl 24rpx=12px 与 wallet 同状态卡 32rpx 差 4px ⇒ 取 --r-xxl 32rpx。 */
+  margin: 60rpx var(--page-padding);
   padding: 80rpx 48rpx;
-  border-radius: var(--r-xl, 24rpx);
+  border-radius: var(--r-xxl, 32rpx);
   background: var(--c-bg-container, #ffffff);
   border: var(--c-border-card);
   display: flex;
@@ -735,8 +753,11 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .shop-sealed__desc {
-  font-size: var(--fs-sm, 24rpx);
-  color: var(--c-text-tertiary, #94a3b8);
+  /* R9-L14-D11（字号 P2）：--fs-sm 实值 22rpx=11.1px（.vue 兜底 24rpx 是过期字面量），
+     这句「为什么这页是空的」唯一解释落在全站最小档 ⇒ 提一档 --fs-md 26rpx=13.1px；
+     同值同步到 detail/index.vue:533（三页同改）。 */
+  font-size: var(--fs-md);
+  color: var(--c-text-tertiary, #6B7571);
   text-align: center;
   line-height: 1.6;
 }

@@ -84,8 +84,18 @@ const iconSrc = computed(() => {
 /* R6-L16-D01：heat 档沿用提醒色阶（discussions 帧实测底 #FEF5E6 / 字墨心 #F49600
    正是 --c-warning-bg-tint 与 --c-warning 两枚令牌），只把图标语义从 ✕ 换成火苗，
    配色不动 ⇒ 不会与同页其他 warning pill 形成断层。 */
+/* R9-L13-D03（可达性 P2 · discussions）：上面那条「配色不动」就是本行的病灶——
+   文字 --c-warning #F59E0B 压 --c-warning-bg-tint 实测不合格。
+   底的真值不是 .vue 兜底里的 12%：design-variables.scss:838 是 rgba(245,158,11,0.1)，
+   叠白 = (254,245.3,230.6) #FEF5E6，L=0.92340；文字 #F59E0B L=0.43902
+   ⇒ (0.97340)/(0.48902) = 1.99:1，11px 标签需 4.5:1（连非文字 3:1 都不到）。
+   缺陷卡给的两条取值实算都不达标：--c-accent-400 #F97316 压同一底 = 2.56:1；
+   改中性白底则 #F59E0B 压白 = 2.15:1。故取仓内既有的深档文字令牌
+   --c-text-warning-dark #92400E（:820，Toast.vue:313 / setup/showcase:370 同口径在跑），
+   L=0.09811 ⇒ 0.97340/0.14811 = 6.57:1 ≥ 4.5:1，同色系不发飘。
+   只改 heat 一档：warning 档未被本批缺陷卡覆盖，改它会静默改动其他页帧。 */
 .pill--heat {
-  background: var(--c-warning-bg-tint, rgba(245, 158, 11, 0.12));
-  color: var(--c-warning);
+  background: var(--c-warning-bg-tint, rgba(245, 158, 11, 0.1));
+  color: var(--c-text-warning-dark, #92400e);
 }
 </style>

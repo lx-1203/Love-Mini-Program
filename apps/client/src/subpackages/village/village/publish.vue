@@ -356,6 +356,21 @@ function removeTopic(index: number) {
 function openMentionPicker() {
   uni.showToast({ title: t("village.post.mentionHint"), icon: "none" });
 }
+/** R9-L02-D25：底栏「位置」项的说明串。与「添加位置」行内 meta 同一来源（单一来源，
+ *  避免底栏与行文字两处口径分叉）。位置在本页钉死当前城市（:856 行已移除选点交互），
+ *  点按按同页 :868-875 已认可的 tap-to-explain 形态报出真实状态，不伪造选点弹层。 */
+const locationRowText = computed<string>(() =>
+  currentCity ? currentCityLabel : t("village.post.locationHint")
+);
+function showLocationHint(): void {
+  uni.showToast({ title: locationRowText.value, icon: "none" });
+}
+/** R9-L02-D25：底栏「谁可以看」项。可见范围由「发布到」目标推导（:863 只读行同源），
+ *  点按回答当前值。理想图第 5 枚「更多」在本页无任何可执行项（无后端、无弹层），
+ *  不摆一个点不动的死按钮，改挂本页唯一剩下的真实设置「谁可以看」并沿用其 EYE 图标。 */
+function showVisibilityHint(): void {
+  uni.showToast({ title: visibilityText.value, icon: "none" });
+}
 /**
  * 2026-09-03（审查报告 P3-7）：可见范围轮换与后端 visibility 枚举强联动。
  * MP-R1-VILLAGE-PUBLISH-103：「谁可以看」行已降级为只读信息行（轮换列表均为单值、
@@ -829,9 +844,14 @@ onUnmounted(() => {
           <text class="publish-row__icon">#</text>
           <text class="publish-row__label">添加话题</text>
           <text class="publish-row__meta">已选 {{ topics.length }}/{{ POST_MAX_CUSTOM_TAGS }}</text>
-          <!-- R2b-L03-D19（位置 P3）：理想图四条功能行右缘是同一竖列。上一轮为「去可点假象」删掉了
-               位置/提及/谁可以看三行的箭头，只留本行 → 帧上「一个箭头 + 三行裸文本」参差。按既有裁定
-               （非交互行不保留箭头）统一为「都删」：本行箭头一并移除，meta 右对齐到同一竖列。 -->
+          <!-- R9-L02-D27（位置 P2）：R2b-L03-D19 为消「一个箭头 + 三行裸文本」的参差把四行 › 全删，
+               削掉的却是本组唯一真可点的那一行——「添加话题」有 @tap + role="button"（:842 打开
+               话题弹层），其余三行是只读信息（位置钉死当前城市 / 提及只弹说明 / 可见范围随目标推导）。
+               删箭头等于把可点线索一起删掉：四行外观同构后用户分不清哪行能点。修正方向取反——
+               交互行恢复 ›（与 .publish-to__card 的 › 同竖列），三行只读行保持无箭头；
+               只读行标签不降到 --c-text-quaternary（#9AA39F 压白 2.59:1，28rpx 正文字不达 4.5:1），
+               「可点 / 只读」的区分由箭头承担。 -->
+          <text class="publish-row__arrow">›</text>
         </view>
         <!-- 2026-09-06：位置固定为当前城市（默认定位，不可更改），移除选择交互 -->
         <view class="publish-row">
@@ -843,7 +863,7 @@ onUnmounted(() => {
                移除的选择交互（见紧邻上一行 2026-09-06「位置固定为当前城市…移除选择交互」注释），
                真机点上去零响应=文案与能力相反。改取既有双语陈述键 village.post.locationHint
                （zh-CN.ts:2017 / en-US.ts:2002，此前全库未引用）——不新增键、不自造跳地图选点行为。 -->
-          <text class="publish-row__meta">{{ currentCity ? currentCityLabel : t('village.post.locationHint') }}</text>
+          <text class="publish-row__meta">{{ locationRowText }}</text>
         </view>
         <!-- MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01：本行能力与 post.vue:164-168
              insertMention（真往正文插 @）不一致，且本页 openMentionPicker 只弹「即将开放」。
@@ -911,6 +931,75 @@ onUnmounted(() => {
 
       <view class="publish-body__bottom-space" />
     </scroll-view>
+
+    <!-- R9-L02-D25（素材缺失 P1）：底部工具栏按既有 .publish-toolbar/.publish-tool* 样式（见样式段）
+         补 DOM——此前只有 CSS 没有节点（模板末尾还留着「已按需求移除」的旧注释），理想图那一整条
+         一键入口在页面上不存在，用户拿不到图片/话题/位置/提及入口。
+         五项全部复用页内既有 handler，不新增后端字段、不引仓外素材：
+           图片→chooseImage（与九宫格 ＋ 同源）；话题→话题弹层（圈子目标下 createTopic 请求体无
+           tags，与 :837 行同 v-if）；提及→openMentionPicker。
+         位置/可见范围在本页是只读信息（位置钉死当前城市 :856、可见范围随「发布到」目标推导 :884），
+         点按按同页 :868-875 已认可的 tap-to-explain 形态报出真实状态——不造空壳选点弹层，
+         也不摆一个点不动的死按钮。理想图第 5 枚「更多」在本页没有任何可执行项，第 5 枚因此
+         取本页唯一剩下的真实设置「谁可以看」，沿用其 EYE 图标与同一竖列。 -->
+    <view class="publish-toolbar">
+      <view
+        class="publish-tool press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="'添加图片'"
+        @tap="chooseImage"
+      >
+        <image class="publish-tool__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.IMAGE)" mode="aspectFit" alt="" />
+        <text class="publish-tool__label">图片</text>
+      </view>
+      <view
+        v-if="!isCircleTarget"
+        class="publish-tool press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="'添加话题'"
+        @tap="topicSheetOpen = true"
+      >
+        <text class="publish-tool__icon publish-tool__icon--glyph">#</text>
+        <text class="publish-tool__label">话题</text>
+      </view>
+      <view
+        class="publish-tool press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="'添加位置'"
+        @tap="showLocationHint"
+      >
+        <image class="publish-tool__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LOCATION)" mode="aspectFit" alt="" />
+        <text class="publish-tool__label">位置</text>
+      </view>
+      <view
+        class="publish-tool press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="'提及好友'"
+        @tap="openMentionPicker"
+      >
+        <text class="publish-tool__icon publish-tool__icon--glyph">@</text>
+        <text class="publish-tool__label">提及</text>
+      </view>
+      <view
+        class="publish-tool press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="'谁可以看'"
+        @tap="showVisibilityHint"
+      >
+        <image class="publish-tool__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.EYE)" mode="aspectFit" alt="" />
+        <text class="publish-tool__label">谁可以看</text>
+      </view>
+    </view>
 
     <!-- MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A05：目标选择弹层自 scroll-view 内迁出到页面根，
          与下方话题弹层同层（position:fixed 面板嵌在 scroll-view 内会随内容滚动/被裁切），
@@ -1020,7 +1109,9 @@ onUnmounted(() => {
       </view>
     </view>
 
-    <!-- 2026-09-06：底部工具栏已按需求移除（与上方行项重复，且无实际作用） -->
+    <!-- R9-L02-D25：2026-09-06 的「底部工具栏已按需求移除（与上方行项重复，且无实际作用）」注释
+         随本轮补 DOM 一并作废——理想图有这一条，且它与上方行项并不等价（行项是只读状态行，
+         底栏是滚动时始终可达的一键入口）。工具栏节点见 </scroll-view> 之后。 -->
   </view>
 </template>
 
@@ -1142,8 +1233,12 @@ onUnmounted(() => {
 .publish-row { display: flex; align-items: center; gap: 16rpx; padding: 26rpx 32rpx; border-bottom: 1rpx solid var(--c-divider-light, rgba(15, 23, 42, 0.06)); }
 .publish-row__icon { width: 44rpx; height: 44rpx; color: var(--c-brand, #36C99A); text-align: center; }
 .publish-row__label { font-size: 28rpx; color: var(--c-text-primary, #1A1E1C); }
-.publish-row__meta { flex: 1; text-align: right; font-size: 24rpx; color: var(--c-text-tertiary, #9AA39F); }
-.publish-row__arrow { font-size: 32rpx; color: var(--c-text-quaternary, #C2CAC6); }
+.publish-row__meta { flex: 1; text-align: right; font-size: 24rpx; color: var(--c-text-tertiary, #6B7571); }
+/* R9-L02-D27：› 恢复给唯一交互行后重新接线（此前无 DOM 消费者）。色档必须 ≥3:1（它是「这行能点」
+   的唯一图形线索，属非文本 UI）：--c-text-quaternary #9AA39F 压白仅 2.59:1，不取；--c-text-tertiary
+   #6B7571 = 4.76:1（design-variables.scss:125/364 真值，非 .vue 里的过期字面量）达标。
+   与 .publish-to__arrow 的 quaternary 档刻意分开（meta 与箭头分档，R9-L02-D26 的裁定方向）。 */
+.publish-row__arrow { font-size: 32rpx; color: var(--c-text-tertiary, #6B7571); }
 
 /* W2-PUBLISH-TOPIC：已选话题 chips（与 post.vue .post-topics 同口径，token 强制） */
 .publish-topics { display: flex; flex-wrap: wrap; gap: 12rpx; padding: 0 32rpx; }
@@ -1195,21 +1290,28 @@ onUnmounted(() => {
 .publish-tip__close-icon { width: 28rpx; height: 28rpx; color: var(--c-text-tertiary, #9AA39F); }
 
 /* R1-B33/D22：尾部占位原只有 24rpx 且不含安全区 → 小贴士卡描述行贴屏幕底缘、下半截被
-   Home Indicator 吃掉。改按本页弹层既有写法（见 .publish-sheet__panel）承担安全区 + 48rpx 呼吸。
+   Home Indicator 吃掉。改为 48rpx 呼吸位。
    本页非 tabBar 页（由 village/index 导航进入），不需要 tabBar 避让；故刻意不引用
    --tab-bar-total-h——该 token 的安全区双计属 R1-B01/D25 的地盘，在本页引用会把双计引进来。
-   卡片「若补上底部工具栏则改工具栏高度」那一支不适用：工具栏见 D21，未补。 */
-.publish-body__bottom-space { height: calc(env(safe-area-inset-bottom) + 48rpx); }
+   R9-L02-D25：底栏已补（见下一段），且它是 .publish-page 这条 flex 列的末位子节点（非 fixed），
+   安全区由 .publish-toolbar 自己的 padding-bottom 承担 ⇒ 本占位去掉 env(safe-area-inset-bottom)，
+   否则滚动到底会多留一整条安全区（双计）。 */
+.publish-body__bottom-space { height: 48rpx; }
 
-/* R1-B33/D21（不修，保留待裁定）：以下 .publish-toolbar / .publish-tool* 是「有 CSS 无 DOM」的
-   存档样式，非遗漏——DOM 已按需求整体移除（见模板末尾 2026-09-06 注释「底部工具栏已按需求移除
-   （与上方行项重复，且无实际作用）」）。理想图五项里的「视频」「更多」在本页无任何实现与后端，
-   「位置」无选点交互（见添加位置行注释），补齐 DOM 属新建功能，须产品裁定 + 后端支撑；
-   本轮不凭空造一个没有后端的 UI，也不删除这段作为重建依据的样式。 */
+/* R9-L02-D25（原 R1-B33/D21「有 CSS 无 DOM，不修待裁定」结案）：DOM 见 </scroll-view> 之后的
+   .publish-toolbar。补的五枚全部接页内既有 handler（图片→chooseImage、话题→话题弹层、
+   提及→openMentionPicker、位置/谁可以看→tap-to-explain），没有为「视频」「更多」这类本页
+   无后端、无实现的项凭空造按钮：理想图第 5 枚「更多」由本页唯一剩下的真实设置「谁可以看」顶上。
+   以下样式即原存档样式，本轮起有真实消费者。 */
 .publish-toolbar { display: flex; justify-content: space-around; padding: 16rpx 24rpx calc(env(safe-area-inset-bottom) + 12rpx); background: #fff; border-top: 1rpx solid #EEF2F0; flex-shrink: 0; }
-.publish-tool { display: flex; flex-direction: column; align-items: center; gap: 6rpx; }
-.publish-tool__icon { width: 40rpx; height: 40rpx; color: var(--c-text-secondary, #6B7571); }
-.publish-tool__label { font-size: 20rpx; color: var(--c-text-tertiary, #9AA39F); }
+.publish-tool { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6rpx; }
+/* R9-L02-D25：color 曾挂在本类上，而本页补 DOM 后这里的消费者是 <image>（图片节点不吃 color，
+   与 D29 同型零消费者）——颜色移到 #/@ 文本 glyph 的修饰类，位图图标本身由素材着色。
+   font-size / line-height 供 glyph 与 40rpx 图标同档居中（与 post.vue:1654-1664 同口径）。 */
+.publish-tool__icon { width: 40rpx; height: 40rpx; font-size: var(--fs-xl, 30rpx); line-height: 40rpx; text-align: center; }
+.publish-tool__icon--glyph { color: var(--c-text-secondary, #4A524E); }
+/* 20rpx 小字：--c-text-tertiary #6B7571 压白 4.76:1 ≥ 4.5:1（design-variables.scss:125/364 真值） */
+.publish-tool__label { font-size: 20rpx; color: var(--c-text-tertiary, #6B7571); }
 
 
 /* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */

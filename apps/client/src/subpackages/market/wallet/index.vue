@@ -150,7 +150,9 @@ function amountText(item: { type?: string; amount: number }): string {
     <!-- 顶部栏 -->
     <view class="wallet__header">
       <view class="wallet__back press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.backAria')" @tap="goBack">
-        <text class="wallet__back-text">‹</text>
+        <!-- R9-L14-D14：字形 ‹（36rpx 白字，帧内仅剩约 10×10px 细笔画）换成与
+             shop:278 / detail:299 同档的 40rpx BACK 素材，同域两页控件取档一致 -->
+        <image class="wallet__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
       </view>
       <text class="wallet__title">{{ t('wallet.title') }}</text>
       <view class="wallet__header-spacer" />
@@ -251,14 +253,27 @@ function amountText(item: { type?: string; amount: number }): string {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* R9-L14-D12：页头由 135° 渐变 #36C99A→#55D5A7 收成 --c-brand-800 #156B51 纯色。
+   0.95 白（--c-text-inverse=rgba(255,255,255,0.95)，design-variables.scss:369/749）
+   压 brand-500 仅 2.03:1、压 brand-400 仅 1.78:1，整段不达正文级 4.5:1；
+   brand-600 #2AAE83=2.81:1、brand-700 #1F8D6A=4.14:1 也够不到，
+   故按 LockScreen.vue:736 同源结论取同族最深档：brand-800 相对亮度 L=0.11269，
+   0.95 白合成 #F3F8F6 L=0.92669 ⇒ 0.97669/0.16269 = 6.00:1（纯白 6.45:1）≥ 4.5:1，
+   且整条页头同一底色，标题横向任意位置比值不变（原渐变右端更差）。
+   只改本站点消费侧，不动全局令牌。 */
 .wallet__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: calc(var(--sp-4) + var(--statusbar, env(safe-area-inset-top))) var(--sp-4) var(--sp-3);
-  background: linear-gradient(135deg, var(--c-brand-500, #36C99A) 0%, var(--c-brand-400, #6fe0b0) 100%);
+  background: var(--c-brand-800, #156B51);
 }
 
+/* R9-L14-D13：底盘原走 --c-overlay-white-bg-tint 实值 0.08 白
+   （design-variables.scss:914；圆盘合成 #46CDA2，对页头 #36C99A 仅 1.06:1，
+   帧内盘内没有任何 >248 的像素 ⇒ 圆盘不可见），改与 shop/detail 同档的
+   --c-bg-container 白底 + --c-border-card（design-variables.scss:541 / 128）。
+   白盘对 brand-800 = 1.05/0.16269 = 6.45:1 ≥ 非文本 3:1。 */
 .wallet__back {
   width: 64rpx;
   height: 64rpx;
@@ -266,18 +281,22 @@ function amountText(item: { type?: string; amount: number }): string {
   align-items: center;
   justify-content: center;
   border-radius: var(--r-circle, 50%);
-  background: var(--c-overlay-white-bg-tint, rgba(255, 255, 255, 0.2));
+  background: var(--c-bg-container, #ffffff);
+  border: var(--c-border-card);
 }
 
-.wallet__back-text {
-  font-size: var(--fs-3xl, 40rpx);
-  color: var(--c-text-inverse, #ffffff);
-  line-height: 1;
+/* R9-L14-D14：与 shop:435 同档，40rpx=20px 的 BACK 素材 */
+.wallet__back-icon {
+  width: 40rpx;
+  height: 40rpx;
 }
 
+/* R9-L14-D15：页标题 --fs-xl 实值 30rpx=15.1px，与正文档同级 ⇒ 提到与 shop:439
+   同档的 --fs-5xl 44rpx=22.2px / 800（design-variables.scss:569），
+   深绿底白字 6.00:1 不受字号档位影响 */
 .wallet__title {
-  font-size: var(--fs-xl, 34rpx);
-  font-weight: 700;
+  font-size: var(--fs-5xl, 44rpx);
+  font-weight: 800;
   color: var(--c-text-inverse, #ffffff);
 }
 
@@ -344,8 +363,10 @@ function amountText(item: { type?: string; amount: number }): string {
 }
 
 /* ========== 批次 A / ADR-2：商业化封存态 ========== */
+/* R9-L14-D16：左右外边距原为 --sp-4 16rpx=8px（只有页边距 --page-padding 32rpx=16px
+   的一半，帧内卡左缘 10px），与 shop 卡 12px 不成档 ⇒ 收到 --page-padding */
 .wallet__sealed {
-  margin: var(--sp-10) var(--sp-4);
+  margin: var(--sp-10) var(--page-padding);
   padding: var(--sp-8) var(--sp-6);
   border-radius: var(--r-2xl, 32rpx);
   background: var(--c-bg-container, #ffffff);

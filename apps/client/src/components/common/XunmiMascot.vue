@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { resolveMediaUrl } from "../../utils/media";
 
 /** 旧 mood 名 -> V2 文件名映射（向后兼容） */
 /** 旧 mood 名 -> V2 文件名映射（向后兼容） */
@@ -114,7 +115,10 @@ const resolvedMood = computed(() => {
   return LEGACY_MAP[m] ?? m;
 });
 
-const imgSrc = computed(() => `/static/assets/images/mascot/${resolvedMood.value}.png`);
+/* assets/images/ 在 cdn-buckets.json 的 cdnPrefixes 内 ⇒ real 档不随包，
+   直拼 /static 会整枚空白（R9 实测 messages 助手卡头像槽 x≈35-100/y285-340 采样全白）。
+   走 resolveMediaUrl 才在 real 档解析成后端 app-assets URL。 */
+const imgSrc = computed(() => resolveMediaUrl(`/static/assets/images/mascot/${resolvedMood.value}.png`));
 const sizeRpx = computed(() =>
   props.mini ? SIZE_RPX_MINI[props.size] : SIZE_RPX[props.size]
 );

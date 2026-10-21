@@ -12,7 +12,7 @@
  * 推荐偏好；非学生：基本资料→日程→推荐偏好）。完成度链路：
  * 基本资料30 + 校园30(学生) + 日程20 = 80 → profileCompleted=true → 解锁全部功能。
  */
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { IMAGE_PATHS } from "../../../config/images";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
@@ -63,6 +63,21 @@ function removeTimeWindow(idx: number) {
 
 // MP-R2-SCHEDULE-001：保存防重入标志（原连点并发两次 PUT）
 const saving = ref(false);
+
+/**
+ * R9-L12-D11（颜色token P2）：主 CTA 原无论空态与否都取 --c-gradient-brand 全亮（帧上
+ * y729-773 实测 #4BD0A3），而同流程 campus 在 0/3 时是 --c-status-disabled 灰钮，
+ * 两页对「未完成」的状态色口径相反，用户无法从按钮判断能否继续。
+ * 这里给出与 save() 既有校验（见下 :85-94 两处 toast 守卫）同源的可用性判据：
+ * 常去区域非空 且 至少一个非空时段。判据只看用户已填内容，不引入任何后端字段。
+ * 直接复用 BottomActionBar 既有禁用档（BottomActionBar.vue:120，底 #DCE5E2 / 字 #4A524E，
+ * 6.27:1），save() 的两条 toast 守卫保留为兜底，不删。
+ */
+const canSave = computed(
+  () =>
+    form.preferredCampusArea.trim().length > 0 &&
+    (form.preferredTimeWindows || []).some((w: string) => !!w && w.trim().length > 0),
+);
 
 async function save() {
   if (saving.value) return;
@@ -165,9 +180,21 @@ async function save() {
       </SectionCard>
     </view>
 
-    <!-- R8-L12-D06：吸底条脱离文档流，正文侧自行留位（BottomActionBar.vue:18 的约定） -->
+    <!-- R8-L12-D06：吸底条脱离文档流，正文侧自行留位（BottomActionBar.vue:18 的约定）
+         R9-L12-D10（文案 P2）：原 label 取 setup.schedule.saveButton「保存并进入应用」，
+         但 save() 实际 replaceAppPath 到 SETUP_PROGRESS.RECOMMEND_PREF（注册第 4 步），
+         按钮承诺的终点与真实去向不一致。setup.schedule 文案块（zh-CN.ts:3219-3232）里没有
+         「保存并继续」这一档，locale 属并行车道不可改，故复用同一 setup 命名空间下
+         上一步 campus（campus/index.vue:306 同一个键、同一语义「保存后进下一步」）
+         的 saveLabel「保存并继续」（zh-CN.ts:3208）。
+         R9-L12-D11：空态禁用档由 canSave 判据给出，口径与 campus 一致。 -->
     <view class="cta-spacer" />
-    <BottomActionBar :primary-label="t('setup.schedule.saveButton')" fixed @primary="save" />
+    <BottomActionBar
+      :primary-label="t('setup.campus.saveLabel')"
+      :disabled="!canSave || saving"
+      fixed
+      @primary="save"
+    />
   </AppShell>
 </template>
 
@@ -259,7 +286,11 @@ async function save() {
 }
 
 .time-window-add__text {
-  color: var(--c-brand, #36C99A);
+  /* R9-L12-D09（可达性 P1）：原 --c-brand #36C99A 压白卡 2.12:1（帧上 y429-440 的浅绿字），
+     14px 功能标签远低于正文 4.5:1，而这是「再加一个时段」的唯一入口。
+     改 --c-brand-800 #156B51：对 --c-bg-container #FFFFFF 6.45:1
+     （L=0.1127 ⇒ (1.0+0.05)/(0.1127+0.05)=6.45），虚线盒保留不动。 */
+  color: var(--c-brand-800, #156B51);
   font-size: var(--fs-lg);
   font-weight: 500;
 }

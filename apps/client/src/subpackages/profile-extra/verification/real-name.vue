@@ -87,7 +87,14 @@ const statusInfo = computed(() => {
         icon: IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE,
         title: t("realName.statusVerified"),
         desc: t("realName.statusVerifiedDesc"),
-        color: "var(--c-brand-500, #36C99A)",
+        /* R9-L09-D07（颜色token P1）：原 --c-brand-500 #36C99A 压同卡 --c-brand-50 #E8FAF3
+           只有 1.94:1（帧上标题墨迹 y197-211 众数色 #36C99A），低于正文 4.5:1 ⇒ 用户进来
+           分不清「已认证/未认证」。改 --c-brand-800 #156B51（L=0.1127）：
+           对 #E8FAF3（L=0.9200）(0.9200+0.05)/(0.1127+0.05)=0.97/0.1627=5.96:1，过 AA；
+           brand-700 #1F8D6A 对 #E8FAF3 仅 3.82:1，不达标，故不进这一档。
+           同一 statusInfo.color 槽的另一支（unverified，:125，压 --c-tint-blue-soft #E8F4FF）
+           原为 1.89:1，同根一并压到 brand-800（5.78:1），避免下一轮以「同轴新实例」再挂一条。 */
+        color: "var(--c-brand-800, #156B51)",
         bgColor: "var(--c-brand-50, #E8FAF3)",
       };
     case "pending":
@@ -113,7 +120,9 @@ const statusInfo = computed(() => {
         icon: IMAGE_PATHS.ICONS_EMOJI.CHECK_CIRCLE,
         title: t("realName.statusUnverified"),
         desc: t("realName.statusUnverifiedDesc"),
-        color: "var(--c-brand-500, #36C99A)",
+        /* R9-L09-D07 同根（见 :90 处的说明）：未认证态标题原 brand-500 压 #E8F4FF 仅 1.89:1，
+           一并改品牌深档，5.78:1 过 AA。 */
+        color: "var(--c-brand-800, #156B51)",
         bgColor: "var(--c-tint-blue-soft, #E8F4FF)",
       };
   }
@@ -597,7 +606,11 @@ function onBlur() {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: linear-gradient(180deg, var(--c-bg-page) 0%, var(--c-tint-blue-50) 100%);
+  /* R9-L09-D08（颜色token P2）：180° 渐变终点原 --c-tint-blue-50 #E3F2FD（帧上 y480-520 实测
+     #E7F4F9，信息卡以下 380px 整片偏蓝，与全站浅绿体系断层）。终点改 --c-brand-50 #E8FAF3，
+     与同分包 verification/index.vue:739 R8-L09-D14 已改的那一页逐字同口径（起点同为
+     --c-bg-page #EEF7F2），页底不再出现蓝调。 */
+  background: linear-gradient(180deg, var(--c-bg-page) 0%, var(--c-brand-50, #E8FAF3) 100%);
   box-sizing: border-box;
   position: relative;
   padding-bottom: 32rpx;
@@ -926,7 +939,14 @@ function onBlur() {
   z-index: 1;
   margin: 32rpx 24rpx 0;
   padding: 28rpx;
-  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 100%);
+  /* 同根顺手项（与 R9-L09-D06 同型）：原 brand→brand-300 渐变压 --c-text-inverse 只有
+     ~1.83:1（95% 白字最亮端 2.02:1）。本页提交按钮与认证页同口径压深成 brand-900→brand-800，
+     最亮端 #156B51 对 95% 白字 6.01:1、最暗端 #0B4A38 9.42:1，页内渐变，不动全站令牌。 */
+  background: linear-gradient(
+    135deg,
+    var(--c-brand-900, #0B4A38) 0%,
+    var(--c-brand-800, #156B51) 100%
+  );
   border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 4rpx 16rpx var(--c-brand-border-tint-stronger);
   display: flex;

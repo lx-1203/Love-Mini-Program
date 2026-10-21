@@ -48,10 +48,37 @@ import { fetchCurrentLocation, buildLocationText, reportLocation } from "../../u
 // R20（2026-09-08）：var(--statusbar, env(safe-area-inset-top)) 在模拟器为 0，标题行顶进状态栏
 // （「发动态」与系统时间/胶囊同排叠压）→ JS 注入 statusBarHeight
 import { useStatusBarHeight } from "../../composables/useStatusBarHeight";
+// R9-L02-D01：胶囊实测矩形的底缘（getMenuButtonRect 是 useMenuButtonRect 内部同一个 API），
+// 页头纵向避让必须按「胶囊底缘 + 12px」算，只按状态栏算会让 88rpx 页头行整条压进胶囊带。
+import { getMenuButtonRect } from "../../compat";
 // 同步自定义 TabBar 选中状态（tab 顺序：首页0/附近1/匹配2/消息3/我的4）
 useTabBar(1);
 
 const statusBarHeightPx = useStatusBarHeight();
+
+/**
+ * R9-L02-D01（层级遮挡）：页头行的纵向起点。
+ *
+ * 帧实测（real-f0677920 / pages__nearby__index__top）：胶囊 y≈48-74、x≈292-368；
+ * 「发动态」药丸被同一条轴压进胶囊带——药丸上沿 y≈63 落在胶囊底缘 74 之上，白字顶部笔画
+ * 被胶囊吃掉。原口径 paddingTop = statusBar + 12 ⇒ 页头行（88rpx=44px 高）从 statusBar+12
+ * 起排、药丸垂直居中正好停在胶囊带上。:997 注释里「页头已在胶囊下方、横向缓冲属重复让位」
+ * 的前提被本帧推翻：删掉的是横向 104px，纵向避让从未补上。
+ *
+ * 正确口径 = 胶囊实测底缘 + 12px（取不到胶囊时退标准胶囊：statusBar + 4 + 32）。
+ * 底缘由 getMenuButtonRect() 实测；statusBar 由 useStatusBarHeight() 注入（env()/--statusbar
+ * 在本运行档恒 0，不能写 CSS 变量）。
+ */
+const capsuleBottomPx = (() => {
+  try {
+    const rect = getMenuButtonRect();
+    if (rect && rect.bottom > 0) return rect.bottom;
+  } catch (_e) {
+    // 低版本基础库无胶囊 API，走下面的标准胶囊兜底
+  }
+  return statusBarHeightPx.value + 4 + 32;
+})();
+const headerTopPadPx = computed(() => Math.max(statusBarHeightPx.value + 12, capsuleBottomPx + 12));
 
 const { t } = useI18n();
 const sessionStore = useSessionStore();
@@ -534,7 +561,7 @@ function formatMemberCount(count: number): string {
 <template>
   <view
     class="nearby-home page-bottom-safe"
-    :style="[{ paddingTop: statusBarHeightPx + 12 + 'px' }, menuStyleVars]"
+    :style="[{ paddingTop: headerTopPadPx + 'px' }, menuStyleVars]"
   >
     <!-- R8-L02-D05（层级遮挡）：与状态栏+胶囊带等高的固定导航底板（高度口径见 script 的 navBandStyle）。
          本页页头在 scroll-view 内且滚动发生在页面级 ⇒ 滚到底时兴趣圈卡升入胶囊带被胶囊压住；
@@ -1062,9 +1089,20 @@ function formatMemberCount(count: number): string {
 }
 
 .nearby-home__publish {
-  padding: 12rpx 28rpx;
+  /* R9-L02-D03（尺寸比例）：原 24rpx 文字（行高≈34rpx）+ 上下 12rpx padding ≈ 58rpx，
+     帧实测药丸总高 30px≈60rpx（上沿 11px 被胶囊吃掉），低于本页 :1044 自述的 88rpx
+     最小可点件口径。改 flex 居中 + min-height:88rpx，胶囊与同行 88rpx 的
+     .nearby-home__search-btn 等高，热区补齐 30rpx（≈34%）。 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  padding: 0 28rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-brand, #36C99A);
+  /* R9-L02-D02（可达性）：白字压 --c-brand #36C99A 实测 2.08:1（L=0.4501 对白 1.0），
+     远低于正文 4.5:1。钮面升 --c-brand-800 #156B51：白字 6.45:1，
+     与 LockScreen 主 CTA 同档（同仓既有裁决）。 */
+  background: var(--c-brand-800, #156B51);
 }
 
 .nearby-home__publish-text {
@@ -1574,9 +1612,16 @@ function formatMemberCount(count: number): string {
 
 .nearby-login-guide__btn {
   flex-shrink: 0;
-  padding: 12rpx 32rpx;
+  /* R9-L02-D06（可达性/尺寸）：原 24rpx 文字 + 12rpx 上下 padding ≈ 53rpx（帧实测 24px≈48rpx）
+     低于 88rpx 口径，且白字压 --c-brand #36C99A = 2.08:1。与 D02/D03 一并归一：
+     热区抬到 min-height:88rpx，钮面升 --c-brand-800 #156B51（白字 6.45:1）。 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  padding: 0 32rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-brand, #36C99A);
+  background: var(--c-brand-800, #156B51);
 }
 
 .nearby-login-guide__btn-text {
@@ -1661,12 +1706,15 @@ function formatMemberCount(count: number): string {
 }
 
 /* V-08（第五轮 QA）：5 功能入口 icon 底色五色系对齐（粉/绿/蓝/橙/紫），
-   原 people/circle 同为绿色系易混淆，people 改暖粉珊瑚色 */
-.nearby-entry__icon--people { background: var(--c-tint-pink-soft, #FFF0F3); }
-.nearby-entry__icon--circle { background: var(--c-bg-brand, #E8F5E4); }
-.nearby-entry__icon--campus { background: var(--c-tint-blue-soft, #EEF3FF); }
-.nearby-entry__icon--activity { background: var(--c-tint-cream-50, #FFF5E6); }
-.nearby-entry__icon--dynamic { background: var(--c-lavender-100, #F0EEFF); }
+   原 people/circle 同为绿色系易混淆，people 改暖粉珊瑚色。
+   R9-L02-D04（颜色token）：五枚底板统一为中性 --c-bg-surface #F3FAF6——帧上五块彩色底板并排，
+   色彩层级被底板抢掉、读不出「同一组入口」；色系语义保留在下方按枚烘色的图标滤镜里
+   （:1685-1697 的 filter 链，逐枚仍是绿/绿/蓝/橙/紫）。 */
+.nearby-entry__icon--people { background: var(--c-bg-surface, #F3FAF6); }
+.nearby-entry__icon--circle { background: var(--c-bg-surface, #F3FAF6); }
+.nearby-entry__icon--campus { background: var(--c-bg-surface, #F3FAF6); }
+.nearby-entry__icon--activity { background: var(--c-bg-surface, #F3FAF6); }
+.nearby-entry__icon--dynamic { background: var(--c-bg-surface, #F3FAF6); }
 
 .nearby-entry__img {
   width: 44rpx;

@@ -1,12 +1,43 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
 // R20（2026-09-08）：var(--statusbar, env(safe-area-inset-top)) 在模拟器/无刘海机型为 0，
 // 头部会顶进状态栏与系统时间叠印 → 改用 JS 注入的 statusBarHeight
 import { useStatusBarHeight } from "../../composables/useStatusBarHeight";
+// R9-L11-D12：胶囊（菜单按钮）实测矩形，头部右侧按胶囊左缘让位
+import { getMenuButtonRect, getWindowWidth } from "../../compat";
 
 const statusBarHeightPx = useStatusBarHeight();
+
+/* R9-L11-D12（层级遮挡 P1，2026-10-18）：自绘「···」more 盒原右缘=378−12=366px，
+   整枚被微信原生胶囊（实测 x=288..369 / y=50..76）盖住，父级 @more="openNavMenu"
+   在画面上没有任何可点区域。env()/静态 rpx 在不同机型上与胶囊宽度不成比例
+   （见已知机制 §4：本运行档 env 恒 0），故按实测胶囊左缘注入右 padding：
+   paddingRight = windowWidth − rect.left + 4px（4px 视觉间隙）。测得即生效，
+   测不到时退回样式表里的 184rpx 兜底（既有值，不改设计稿位移量级）。 */
+const capsulePadRightPx = ref(0);
+onMounted(() => {
+  try {
+    const rect = getMenuButtonRect();
+    const windowWidth = getWindowWidth();
+    if (rect && windowWidth && rect.left > 0) {
+      capsulePadRightPx.value = Math.max(0, windowWidth - rect.left) + 4;
+    }
+  } catch {
+    capsulePadRightPx.value = 0;
+  }
+});
+
+const headerStyle = computed(() => {
+  const style: Record<string, string> = {
+    paddingTop: Math.max(statusBarHeightPx.value, 20) + "px",
+  };
+  if (capsulePadRightPx.value > 0) {
+    style.paddingRight = capsulePadRightPx.value + "px";
+  }
+  return style;
+});
 
 const props = withDefaults(
   defineProps<{
@@ -58,7 +89,7 @@ const heartSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MESSAGE_ICONS.HEART)
 </script>
 
 <template>
-  <view class="chat-header" role="banner" :style="{ paddingTop: Math.max(statusBarHeightPx, 20) + 'px' }">
+  <view class="chat-header" role="banner" :style="headerStyle">
     <view class="chat-header__back" hover-class="chat-header__hover" @tap="emit('back')">
       <text class="chat-header__back-text">‹</text>
     </view>
@@ -91,6 +122,12 @@ const heartSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.MESSAGE_ICONS.HEART)
   gap: 16rpx;
   padding: 20rpx 24rpx;
   padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx);
+  /* R9-L11-D12（层级遮挡 P1）：右侧自绘「···」more 盒原右缘=378−12=366px，整枚落在
+     微信原生胶囊 x=288..369 / y=50..76 之下（父级 @more="openNavMenu" 无可达出口）。
+     运行时由 headerStyle 按实测胶囊左缘注入 padding-right（windowWidth − rect.left + 4px，
+     本帧=378−288+4=94px ⇒ more 盒右缘=284px，与胶囊留 4px）；此处 184rpx 仅作测量失败兜底
+     （184rpx=92.7px ⇒ 右缘 285.3px，仍在胶囊左缘 288px 之外）。 */
+  padding-right: 184rpx;
   /* 2026-08-26：背景统一为页面底（--c-bg-page #EEF7F2），
      避免顶部纯白与下方内容浅灰绿拼接成"上下背景不一致" */
   background: var(--c-bg-page, #EEF7F2);

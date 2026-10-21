@@ -569,6 +569,23 @@ function browsePublic() {
   height: 48rpx;
 }
 
+/* R9-L08-D04（可达性 P2 · heart-signals）：checkIconSrc（:109）指向 REGISTER_ICONS.CHECK_GREEN，
+   该 SVG 第 1 行写死 stroke="#36C99A"（= --c-brand），同一枚素材被两处消费——
+   徽章白圆内的 .illustration__badge-icon 与权益清单三条前的 .benefit__icon：
+     #36C99A L=0.44896 压 --c-bg-container 白 L=1 ⇒ 1.05/0.49896 = 2.10:1
+                          压浅绿页底 #EEF7F2 L=0.91111 ⇒ 0.96111/0.49896 = 1.93:1
+   两处都低于非文字 3:1；R8-L08-D03 为让勾与环同色把描线定成 brand-500，浅/白底上反而更糊。
+   本车道不许动 static/** 素材，盘上也没有 #156B51/#1F8D6A 描线的勾素材
+   （已 grep static/assets 全量 *.svg），故按缺陷卡第二条口径在组件内压深，
+   与 :484 的 .lock-screen__close-icon 同一种 filter 杠杆：brightness(0.53) 把
+   (54,201,154) 逐通道乘成 (28.6,106.5,81.6) ≈ #1D6B52，L=0.11382
+   ⇒ 压白 1.05/0.16382 = 6.41:1、压 #EEF7F2 0.96111/0.16382 = 5.87:1，两处均 ≥3:1，
+   并与 :717 主 CTA 的 brand-800 同族。图标形状/尺寸/位置不变，仅换墨色。 */
+.illustration__badge-icon,
+.benefit__icon {
+  filter: brightness(0.53);
+}
+
 /* 同校头像：环左右两侧，暗示「同校匹配」 */
 .illustration__avatar {
   position: absolute;
@@ -657,9 +674,18 @@ function browsePublic() {
   line-height: 1.5;
 }
 
+/* R9-L02-D21（可达性 P1 · village）+ R9-L08-D03（可达性 P2 · heart-signals）同一条：
+   「当前完善度 N%」原取 var(--c-brand) #36C99A（design-variables.scss:15），L=0.44896，
+   压 --c-gradient-page（:181，#DFF3EA→#EEF7F2）：
+     底中段 #E8F5EE L=0.88632 ⇒ 0.93632/0.49896 = 1.88:1（下段 #EEF7F2 也只有 1.93:1）
+   --fs-base 24rpx 不享大字号豁免 ⇒ 差 4.5:1 两倍多；本行还是画面里唯一的完善度数值。
+   缺陷卡给的两条实算：--c-brand-800 #156B51 L=0.11271 ⇒ 5.75:1（下段 5.91:1）够；
+   --c-text-secondary #4A524E L=0.08037 ⇒ 7.18:1（下段 7.37:1）更高，
+   且同组件 :753 .lock-screen__btn-link-text 与 :789 .lock-screen__footer-text 已在
+   R6-L08-D13 / R8-L08-D05 升到这一档 —— 取它能消掉「同一组件两档结论」的残留，故选它。 */
 .lock-screen__progress {
   font-size: var(--fs-base);
-  color: var(--c-brand);
+  color: var(--c-text-secondary);
   text-align: center;
 }
 

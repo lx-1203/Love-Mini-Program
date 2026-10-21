@@ -1056,7 +1056,11 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 
 .field__hint {
   font-size: 24rpx;
-  color: var(--c-text-placeholder, #9aa39f);
+  /* R9-L01-D04（可达性/颜色token）：原 --c-text-placeholder #9AA39F（L≈0.365）压输入框底
+     --c-bg-surface #F3FAF6（L=0.9408）= 0.9908/0.4150 = 2.39:1（帧实测最暗像素 #A8B1AD
+     压实测底 #F3FAF6 只有 2.07:1），连非文本 3:1 都不到——18 周岁门槛是本页唯一合规提示。
+     换 --c-text-tertiary #6B7571（L=0.1704）= 0.9908/0.2204 = 4.50:1 ≥ 4.5:1（正文口径）。 */
+  color: var(--c-text-tertiary, #6b7571);
   flex-shrink: 0;
   margin-left: 12rpx;
 }
@@ -1081,13 +1085,18 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
   color: var(--c-error, #e5454d);
 }
 
-/* ---------------- 验证码按钮（高 64rpx · 圆角 999rpx） ---------------- */
+/* ---------------- 验证码按钮（高 88rpx · 圆角 999rpx） ----------------
+   R9-L01-D03（可达性/尺寸）：原 height:64rpx，帧实测「获取验证码」胶囊 87×31px＝173×62rpx
+   （取景档 1rpx≈0.504px），比 88rpx 最小可点件口径少 26rpx。该钮是取短信验证码的唯一触发点
+   （handleSendSms 内有 smsSending/smsCountdown/submitting 前置互斥，页面另无第二条发码路径），
+   点不中就走不完注册 ⇒ 直接抬到 88rpx。所在 .field 高 96rpx、上下 2rpx 描边，
+   内容区 92rpx ⇒ 88rpx 钮在行内仍留 2rpx 上下余量，行高与其它字段行逐像素不变。 */
 .sms-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   min-width: 176rpx;
-  height: 64rpx;
+  height: 88rpx;
   padding: 0 24rpx;
   border-radius: 999rpx;
   background: var(--c-brand, #36c99a);

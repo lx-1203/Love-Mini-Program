@@ -2300,6 +2300,9 @@ onUnload(() => {
   border-radius: var(--r-full);
   background: var(--c-brand-50, #f0fdf9);
   border: 1rpx solid var(--c-brand-200, #99f6e0);
+  /* R9-L02-D19：角标不再被压缩（原帧上「仅语音 · 无视频」折成两行并压住提示语） */
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .voice-only-tag__text {
@@ -3435,12 +3438,21 @@ onUnload(() => {
   display: flex;
   align-items: baseline;
   gap: var(--sp-3);
+  /* R9-L02-D19（位置）：原来一行塞标题 + 角标 + 长提示语，且不换行 ⇒ 三个都是可压缩项：
+     帧上「语音介绍」被断成「语音介 / 绍」两行、角标「仅语音 · 无视频」压住提示语左半、
+     提示语右半出卡缘被裁，「最长 60 秒」这条录制约束读不到。
+     允许换行 + 标题/角标不收缩后：标题整词一行、角标完整，提示语整条落到第二行
+     （max-width 内正常折行），三件都不再互相覆盖。 */
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .section-header__title {
   font-size: var(--fs-xl);
   font-weight: 700;
   color: var(--c-text-primary);
+  /* R9-L02-D19：标题不再让位给角标/提示语（原先 flex-shrink 默认 1，4 字被折成 2 行） */
+  flex-shrink: 0;
 }
 
 .section-header__count {

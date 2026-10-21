@@ -543,7 +543,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
         v-for="key in TAB_KEYS"
         :key="key"
         class="tab-item"
-        :class="{ 'tab-item--active': activeTab === key }"
+        :class="{ 'tab-item--active': activeTab === key, 'tab-item--wide': key === 'members' }"
         @tap="activeTab = key"
       >
         <text class="tab-text">{{ tabLabel(key) }}</text>
@@ -708,10 +708,11 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 /* ===== 1. Hero ===== */
 .hero {
   position: relative;
-  /* R8-L04-D07：440rpx 只够放封面本身，信息叠层（头像+两行简介+人数+好友行+join 按钮+chips
-     ≈ 330rpx）需要底部空间，否则叠层会顶到 .hero-actions 的返回/分享钮。抬到 520rpx（帧高约 32%，
-     理想图白 sheet 顶缘实测 27%，留出叠层内衬的余量），封面仍是页面主体。 */
-  height: 520rpx;
+  /* R9-L04-D02（尺寸比例 P2）：520rpx=262px 时白 sheet 顶缘在帧高 814px 的 32.2%（实测帧
+     subpackages__circles__circles__circle-home__top.png），理想图实测 27%（≈220px≈436rpx）
+     ⇒ 上一轮为塞两行简介把封面抬高是过修正。本轮回落到 440rpx=220px=27.0%，与理想图同位；
+     叠层可读性改由 .hero-scrim 加深承担，不再靠抬高整块封面给它腾地方。 */
+  height: 440rpx;
 }
 
 .hero-img {
@@ -729,17 +730,24 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   pointer-events: none;
 }
 
-/* R8-L04-D07：封面底部渐隐遮罩，为叠层白字提供可读底。
-   反算（不是目测）：遮罩 α 从 .55 起，压在最亮的纯白像素上合成值 = 0.45×255 = 115，
-   白字对比度 (1.00+0.05)/(0.171+0.05) = 4.75:1；叠层文字区落在 α≥.6 段（合成 ≤102）
-   ⇒ ≥5.5:1，全段恒过 4.5:1。 */
+/* R8-L04-D07 / R9-L04-D01：封面底部渐隐遮罩，为叠层白字提供可读底。
+   R9-L04-D01（可达性 P1）改前：高 360rpx=180px、α 在 42% 才到 .55，叠层顶端（帧 y≈153，
+   即遮罩内 60/180=33% 处）只有 α≈0.44 ⇒ 白字对亮封面 3.0~3.4:1，圈名/首行简介 <4.5:1。
+   现遮罩铺满整块封面（440rpx=220px，顶端 α=0 不压最亮部），并加陡：α 到 30%（y≈66）即 .62。
+   叠层文字顶端在第 47.3%（220-116=104px / 220）⇒ α = .62+.24×(47.3-30)/70 = .679；
+   即便叠层再长两行（顶端落到第 30% 处）α 仍 = .62。
+   最坏底取纯白 255 像素：合成 255×(1-.679)=81.9≈82（L=0.08427）——
+     圈名 #fff            ⇒ (1.05)/(0.13427) = 7.82:1
+     简介 rgba(255,255,255,.92) 合成 241 ⇒ (0.9296)/(0.13427) = 6.92:1
+     人数 rgba(255,255,255,.85) 合成 229 ⇒ (0.8335)/(0.13427) = 6.21:1
+   全段 ≥6.2:1（实测封面底 130–143 时更高，>10:1）。 */
 .hero-scrim {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 360rpx;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.55) 42%, rgba(0, 0, 0, 0.82) 100%);
+  height: 440rpx;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.62) 30%, rgba(0, 0, 0, 0.86) 100%);
   pointer-events: none;
 }
 
@@ -991,16 +999,29 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 
 .tab-item {
   position: relative;
-  flex: 1;
+  /* R9-L04-D03：由 flex:1(=1 1 0% 等宽) 改为 1 1 auto，槽宽先按文案内容定基、再按权重分余量 */
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 24rpx 0 20rpx;
 }
 
+/* R9-L04-D03（位置 P2）：改前 5 个 flex:1(=1 1 0%) 等宽槽，页签行可用宽
+   378 − 24rpx(12px 左) − (capsule-right 7px + 104px) ≈ 255px ⇒ 每槽 51px(≈101rpx)；
+   末位「成员 1.2w」28rpx 下约 122rpx ⇒ 折行，该 tab 比其余四项高一整行、基线不齐。
+   修法两件：①文案 nowrap；②.flex-basis 由 0 改 auto（先按内容定基），
+   成员槽再给 flex-grow:2 ⇒ 基准宽合计≈188px、余量≈67px 按 1:1:1:1:2 分，
+   成员槽≈62+22=84px(168rpx) > 122rpx 需求，其余四槽≈41px 仍容得下两字 56rpx。 */
+.tab-item--wide {
+  /* 注意必须写 2 1 auto：裸 flex:2 会同时把 basis 归 0，本槽又退回 min-content(62px) 贴死 */
+  flex: 2 1 auto;
+}
+
 .tab-text {
   font-size: 28rpx;
   color: #5d6c7b;
+  white-space: nowrap;
 }
 
 .tab-item--active .tab-text {

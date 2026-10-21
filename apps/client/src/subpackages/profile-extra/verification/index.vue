@@ -929,7 +929,16 @@ function onBlur() {
   width: 48rpx;
   height: 48rpx;
   border-radius: var(--r-circle, 50%);
-  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 100%);
+  /* R9-L09-D05（颜色token P2）：原 brand→brand-300 渐变，序号 11px 白字（.process-step__badge-text
+     取的 --c-text-inverse = rgba(255,255,255,0.95)）压在 #4DD2A5 一类的浅绿上只有 1.85:1
+     （渐变两端 2.10/1.59）。改成同页主按钮那一档深绿渐变 brand-900→brand-800：
+     最亮端 #156B51 对 95% 白字 6.01:1（#F3F8F6 压 #156B51），最暗端 #0B4A38 9.42:1，
+     两端都过 4.5:1。 */
+  background: linear-gradient(
+    135deg,
+    var(--c-brand-900, #0B4A38) 0%,
+    var(--c-brand-800, #156B51) 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1190,7 +1199,16 @@ function onBlur() {
   /* R8-L09-D15：提交按钮同属实测 x=13-365 那一列，随其余卡片一起归口 --page-padding。 */
   margin: var(--sp-7, 32rpx) var(--page-padding, 32rpx) 0;
   padding: 28rpx;
-  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 100%);
+  /* R9-L09-D06（颜色token P1）：原 brand(#36C99A)→brand-300(#75E1B7) 渐变，帧上 365×46px
+     按钮实测底 #50D4A6→#59D6AA、文案核心 #F7FEFB ⇒ 1.83:1，本页唯一提交出口看不清。
+     建议里的 brand-700 终点不达标（95% 白字压 #1F8D6A 仅 3.89:1），故两端一起压深：
+     brand-900→brand-800，最亮端 #156B51 对 95% 白字 6.01:1（#F3F8F6 vs #156B51）、
+     最暗端 #0B4A38 9.42:1，渐变内每一像素都过 4.5:1。 */
+  background: linear-gradient(
+    135deg,
+    var(--c-brand-900, #0B4A38) 0%,
+    var(--c-brand-800, #156B51) 100%
+  );
   border-radius: var(--r-xl, 24rpx);
   box-shadow: 0 4rpx 16rpx var(--c-brand-border-tint-stronger);
   display: flex;

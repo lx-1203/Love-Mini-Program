@@ -247,6 +247,19 @@ function formatBadge(badge: number | string): string {
 
 .base-tabs--pill .base-tab-label {
   font-size: var(--fs-md, 26rpx);
+  /* R9-L06-D09（尺寸比例 P2 · likes）：equal-split=true 时每枚 tab 拿的是
+     `flex:1 1 0`（模板 :52 的内联样式）≈1/3 容器宽；likes 页 third=「喜欢我的」4 字、
+     second=「我发出的喜欢」5 字，26rpx 下光字形就需 104 / 130rpx，而内容盒
+     （1/3 宽 − pill 内距 2×--sp-7 − badge 32rpx+8rpx）只剩 ~88rpx ⇒ 这两个 label
+     各折成两行，前两枚 pill 高度约为第三枚的 1.7 倍（帧测）。
+     补单行 + 溢出省略：三枚回到等高；min-width:0 是让 flex 项能收缩到 min-content 以下
+     （否则 nowrap 会把 pill 顶宽、挤掉邻居），ellipsis 需要 overflow:hidden 才出省略号。
+     不放开 flex 基宽（改成 1 1 auto 会改掉 equalSplit 对全站 pill 消费点的等分语义）。 */
+  display: block;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .base-tabs--pill .base-tab-item.is-active {

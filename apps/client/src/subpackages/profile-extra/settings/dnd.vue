@@ -459,11 +459,12 @@ onMounted(() => {
         </view>
       </view>
 
-      <!-- 自定义星期（仅 CUSTOM 模式显示） -->
+      <!-- 自定义星期（仅 CUSTOM 模式显示）
+           R9-L11-D05（文案 P3）：分组标题原取 t("dnd.repeatCustom")「自定义」，与紧邻其上的
+           第 4 行单选标签逐字重复（帧上单选 y≈522、标题 y≈563，相距 41px）。dnd 文案块
+           （zh-CN.ts:3279-3307）没有「自定义星期」这类区分键，locale 属并行车道不可改，
+           故按建议改法第二条删掉分组标题——CUSTOM 已由上方单选的选中态表意。 -->
       <view v-if="form.repeatMode === 'CUSTOM'" class="section">
-        <view class="section__title">
-          <text class="section__title-text">{{ t("dnd.repeatCustom") }}</text>
-        </view>
         <view class="card">
           <view class="weekday-grid">
             <view
@@ -661,7 +662,10 @@ onMounted(() => {
 
 /* ==================== 分组 ==================== */
 .section {
-  margin: 24rpx 24rpx 0;
+  /* R9-L11-D06（间距 P2）：原 `margin: 24rpx 24rpx 0` ⇒ 水平页边距 12px，白卡左缘实测 x=13，
+     比规范 --page-padding(32rpx=16px，design-variables.scss:575) 少 4px，与 tasks/history
+     的 x=16 跨页不同轴。水平方向归口 --page-padding（渲染 16px），纵向 --sp-6 保持原值。 */
+  margin: var(--sp-6, 24rpx) var(--page-padding, 32rpx) 0;
   position: relative;
   z-index: 1;
 }
@@ -711,9 +715,13 @@ onMounted(() => {
 /* R8-L11-D05（可达性 P1）：原生 switch 关闭态轨道实测 #FFFFFF，与白卡底同值（1.0:1），
    只剩 #D8D8D8 发丝描边（1.06:1）⇒ 控件本身读不出状态。这里不换成自绘控件
    （tests/native-switch-naming.spec.ts:59 钉死全仓 9 枚原生 <switch> 的数量与 authored class，
-   换掉即破测试），按建议改法第二条给原生 switch 补一层可辨轨道底：
-   --c-neutral-300 #C2CAC6 对白轨道 1.55:1、对白卡底 1.55:1，且 ON 态（#36C99A 轨道）
-   与 OFF 态（白轨道）在同一底上都能成形。 */
+   换掉即破测试），按建议改法第二条给原生 switch 补一层可辨轨道底。
+   R9-L11-D04（可达性 P1）：R8 取 --c-neutral-300 #C2CAC6 只到 1.67:1（帧上 x≈300..353 /
+   y≈116..145 实测 142 像素），仍低于非文本 3:1。本轮槽底再深一档到 --c-neutral-500
+   #6B7571（L=0.1704）：对白卡 #FFFFFF 为 (1.0+0.05)/(0.1704+0.05)=1.05/0.2204=4.76:1，
+   对 OFF 态白轨道同为 4.76:1，过 3:1 非文本地板；ON 态绿轨 #36C99A（L=0.4489）对槽底
+   由 1.26:1 升到 (0.4489+0.05)/(0.1704+0.05)=0.4989/0.2204=2.26:1，
+   开关状态另由白色滑块位置表意，不靠绿轨与槽底之差。 */
 .switch-row__well {
   flex-shrink: 0;
   display: flex;
@@ -721,7 +729,7 @@ onMounted(() => {
   justify-content: center;
   padding: 6rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-neutral-300, #C2CAC6);
+  background: var(--c-neutral-500, #6B7571);
 }
 
 .switch-row__label {
@@ -786,7 +794,12 @@ onMounted(() => {
 
 .time-row__value {
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-brand);
+  /* R9-L11-D07（颜色token P1）：原 --c-brand #36C99A 压白卡 2.10:1，低于正文 4.5:1，
+     而 22:00/08:00 是本页唯一必读数据（08:00/20:00 这类近字形尤其难分）。
+     改 --c-brand-800 #156B51：相对亮度 L=0.1128，对 --c-bg-container #FFFFFF
+     (L=1.0) 为 (1.0+0.05)/(0.1128+0.05)=1.05/0.1628=6.45:1，过 AA。
+     绿色仍留在时间选择行的语义里，只是压到过 AA 的那一档。 */
+  color: var(--c-brand-800, #156B51);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -886,7 +899,11 @@ onMounted(() => {
 .save-btn {
   margin: 40rpx 24rpx 0;
   padding: 28rpx;
-  background: var(--c-brand);
+  /* 同根顺手项（与 R9-L09-D06 同型，本页 .save-btn 原取 --c-brand #36C99A 实底压
+     --c-text-inverse rgba(255,255,255,0.95)，合成字色 #F5FCFA 对 #36C99A 仅 2.02:1，
+     白字在浅绿上糊成一片）。页内实底改 --c-brand-800 #156B51：对 95% 白字 6.01:1，
+     过 AA；不碰全站令牌。 */
+  background: var(--c-brand-800, #156B51);
   border-radius: var(--r-xl, 24rpx);
   display: flex;
   align-items: center;

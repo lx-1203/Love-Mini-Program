@@ -126,7 +126,10 @@ const genderIconSrc = computed(() => {
 }
 
 .public-identity__name {
-  font-size: 44rpx;
+  /* R9-L10-D03（字号 P2）：原 44rpx 在本帧渲染成 ≈19.3px/378px=5.1% 屏宽，比基准
+     4% 放大约一档半；降到 --fs-2xl=32rpx（≈16.1px/378px=4.3%）。注：--fs-3xl 实值
+     36rpx（design-variables.scss:567），不是缺陷卡里写的 40rpx。 */
+  font-size: var(--fs-2xl, 32rpx);
   font-weight: 700;
   color: #333A37;
   line-height: 1.2;
@@ -231,11 +234,15 @@ const genderIconSrc = computed(() => {
 }
 
 .public-identity__pill-text--like {
-  color: var(--c-love, #FF6B81);
+  /* R9-L10-D05（可达性 P2）：--c-love #FF6B81 压 --c-tint-pink-50 #FCE4EC = 2.27:1（22rpx 标签需 4.5:1）。
+     调色板里最深档 --c-romance-700 #CC4A5F 只有 3.70:1，不够 ⇒ 取深一档玫红 #B3264A，实测 5.30:1。 */
+  color: #B3264A;
 }
 
 .public-identity__pill-text--hello {
-  color: var(--c-brand, #36C99A);
+  /* R9-L10-D05：--c-brand #36C99A 压 #E8FBF3 = 1.96:1；--c-brand-700 #1F8D6A 仅 3.85:1（仍不达标），
+     取 --c-brand-800 #156B51 = 6.00:1（design-variables.scss:18）。 */
+  color: var(--c-brand-800, #156B51);
 }
 
 /* R7-L10-D04：.public-identity__whisper / --whisper--pressed / --whisper-text 三条规则
@@ -256,7 +263,10 @@ const genderIconSrc = computed(() => {
 }
 
 .public-identity__meta-item--empty {
-  color: var(--c-text-quaternary, #9AA39F);
+  /* R9-L10-D04（可达性 P1）：「资料暂未完善」是解释年龄/学校/城市整排缺席的唯一正文行，
+     原 --c-text-quaternary #9AA39F 压白卡 = 2.59:1（低于 3:1 非文字底线，更低于 4.5:1 正文线）。
+     改 tertiary #6B7571：对 #FFFFFF = 4.76:1（design-variables.scss:125），达正文级。 */
+  color: var(--c-text-tertiary, #6B7571);
 }
 
 .public-identity__meta-sep {

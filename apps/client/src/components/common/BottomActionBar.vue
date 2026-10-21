@@ -102,7 +102,10 @@ const barClass = computed(() => ({
 }
 
 .bar__primary {
-  background: var(--c-gradient-brand);
+  /* 白字压 --c-gradient-brand（#36C99A→#55D5A7）实测 1.83–2.10:1，7+ 宿主共用的主 CTA 全不达标。
+     改同族最深档纯色：.95 白合成 #F3F8F6 压 #156B51 = 6.00:1（纯白 6.45:1）≥4.5:1。
+     不压全局 --c-gradient-brand：它还是页头/装饰面，改全站令牌会改每一页的观感（另行裁定）。 */
+  background: var(--c-brand-800, #156B51);
   color: var(--c-text-inverse, #FFFFFF);
   box-shadow: var(--s-brand);
 }

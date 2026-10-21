@@ -14,7 +14,6 @@ import { useSessionStore } from "../../stores/session";
 import { useLikesStore } from "../../stores/likes";
 import { useMessagesStore, type MessageSession } from "../../stores/messages";
 import { usePageAccess } from "../../composables/usePageAccess";
-import XunmiMascot from "../../components/common/XunmiMascot.vue";
 import { messagesPageRequirements } from "../../config/page-access";
 import { useTabBar } from "../../composables/useTabBar";
 // MP-R1-PAGES-MESSAGES-INDEX-010：本页 header 依赖的 --statusbar/--capsule-right 此前从未注入
@@ -99,12 +98,28 @@ const activityRecommendations = computed(() =>
     }))
 );
 /**
- * 2026-09-06 修复渲染层图片 404：后端 assistant.icon 可能下发的是 emoji 文本
- * （❤️/🌿/💬）而非图片 URL，直接塞进 <image src> 会按相对路径请求页面域
- * （pages/messages/❤️ → net::ERR）。非 URL 图标改走 <text> 渲染。
+ * 2026-09-06 修复渲染层图片 404：后端 assistant.icon 可能下发的是 emoji 文本而非图片 URL，
+ * 直接塞进 <image src> 会按相对路径请求页面域（pages/messages/❤️ → net::ERR）。
+ * 本函数只负责区分「URL / 非 URL」；非 URL 的渲染口径见下方 activityIconFor（R9-L02-D14
+ * 起不再走 <text>，改为按语义映射包内图标）。
  */
 function isIconUrl(value: string): boolean {
   return /^(https?:\/\/|\/|\.\.?\/|wxfile:|data:)/.test(value);
+}
+/**
+ * R9-L02-D14（素材缺失）：后端 assistant.icon 非 URL 时是 emoji 文本（帧上是 🏀 / 🚴 / ❤️），
+ * 直接 <text> 上屏会与同页线性图标两种口径，且 ❤️ 与页头摘要卡「有人喜欢你」同义重复。
+ * 这里按语义映射到既有包内图标（不下载、不新增素材）：
+ *   心形 → IMAGE_PATHS.MASCOT.HEART_GREEN（同页 :466 已出图）；
+ *   其余（球类/骑行/户外）→ IMAGE_PATHS.NEARBY_ICONS.ACTIVITY（calendar，包内 icons/common 桶）；
+ *   空值/兜底 → IMAGE_PATHS.ICONS_COMMON.FIRE（R1-B25/D14 原占位图标）。
+ */
+function activityIconFor(icon: string): string {
+  if (!icon) return resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.FIRE);
+  if (/[\u2764\u{1F496}-\u{1F49F}\u{1F5A4}]/u.test(icon)) {
+    return resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART_GREEN);
+  }
+  return resolveMediaUrl(IMAGE_PATHS.NEARBY_ICONS.ACTIVITY);
 }
 /**
  * 2026-09-03（真实数据要求）：移除硬编码假用户回退（小林/小雨/小周/阿杰）——
@@ -491,8 +506,13 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
           <view class="assistant-card" hover-class="assistant-card--hover" @tap="openAssistant">
             <view class="assistant-card__main">
               <view class="assistant-card__avatar-wrap">
-                <!-- 2026-08-29：换用品牌吉祥物「寻觅芽」（素材库 V2 mascot_smile，与等待页/空态同一 IP 形象） -->
-                <XunmiMascot mood="mascot_smile" size="md" mini class="assistant-card__avatar" />
+                <!-- 2026-08-29：换用品牌吉祥物「寻觅芽」（素材库 V2 mascot_smile，与等待页/空态同一 IP 形象）
+                     R9-L02-D08（素材缺失）：XunmiMascot 内部直拼 `/static/assets/images/mascot/*.png`
+                     （XunmiMascot.vue:117），而 `static/assets/images/` 命中 config/cdn-buckets.json 的
+                     cdnPrefixes ⇒ real 档包内被剪、运行时只有经 resolveMediaUrl 解析成后端
+                     app-assets URL 才取得到；裸路径在 real 档整枚空白（帧实测卡内 x≈35-100 纯白）。
+                     本页改直挂 <image>，与同页 :466/:478/:562 三枚已正常出图的 <image> 同口径。 -->
+                <image class="assistant-card__avatar" :src="resolveMediaUrl(IMAGE_PATHS.MASCOT.SMILE)" mode="aspectFit" alt="" />
                 <!-- R21：角标数据源改为 会话未读+通知未读 合计（原 totalUnreadCount 不含通知，
                      补种未读通知后仍不显示） -->
                 <view v-if="messagesStore.totalUnreadCount + messagesStore.unreadNotificationCount > 0" class="assistant-card__badge">
@@ -515,7 +535,10 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
             <view v-if="assistantActivityCount > 0" class="assistant-card__activity">
               <view class="assistant-card__activity-item">
                 <view class="assistant-card__activity-text-wrap">
-                  <image class="assistant-card__activity-icon" :src="IMAGE_PATHS.ICONS_EMOJI.LEAF" mode="aspectFit" alt="" />
+                  <!-- R9-L02-D11（素材缺失）：原 IMAGE_PATHS.ICONS_EMOJI.LEAF 在 real 档无对应素材
+                       （icons/emoji/ 里没有 leaf.svg），帧上只剩一枚约 10×8px 灰色残形。
+                       改用同页 :562 已验证出图的 ICONS_V2.SPROUT（包内 v2 桶，resolveMediaUrl 后仍是 /static）。 -->
+                  <image class="assistant-card__activity-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_V2.SPROUT)" mode="aspectFit" alt="" />
                   <text class="assistant-card__activity-text">今天附近有 {{ assistantActivityCount }} 场活动适合你参加</text>
                 </view>
               </view>
@@ -653,12 +676,11 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
                 hover-class="activity-rec-card--hover"
                 @tap="openActivity(act.targetUrl)"
               >
-                <text v-if="act.icon && !isIconUrl(act.icon)" class="activity-rec-card__icon activity-rec-card__icon--emoji">{{ act.icon }}</text>
-                <image v-else-if="act.icon" class="activity-rec-card__icon" :src="act.icon" mode="aspectFit" alt="" />
-                <!-- R1-B25/D14：act.icon 缺失时此前是一块 96rpx 纯色方块、零图形（帧底「有人喜欢你」卡左侧）。
-                     补一枚默认「热门」图标（PNG 素材，与本页其它 <image> 图标同口径），占位态不再是空色块。 -->
+                <!-- R9-L02-D14（素材缺失）：非 URL 的 act.icon（emoji 文本）不再直接 <text> 上屏，
+                     统一走 activityIconFor 映射到既有包内图标；URL 图标保持原口径。 -->
+                <image v-if="act.icon && isIconUrl(act.icon)" class="activity-rec-card__icon" :src="act.icon" mode="aspectFit" alt="" />
                 <image v-else class="activity-rec-card__icon activity-rec-card__icon--placeholder"
-                  :src="IMAGE_PATHS.ICONS_COMMON.FIRE" mode="aspectFit" alt="" />
+                  :src="activityIconFor(act.icon)" mode="aspectFit" alt="" />
                 <view class="activity-rec-card__body">
                   <text class="activity-rec-card__title">{{ act.title }}</text>
                   <text v-if="act.subtitle" class="activity-rec-card__subtitle">{{ act.subtitle }}</text>
@@ -828,9 +850,15 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
    升到 z-index:10（> 遮罩 9）后自身 100% 实色，同时顺势充当本页的固定导航底板——
    滚上来的正文被页头实底遮住，永远停在胶囊/状态带下方。
    遮罩本体保持 top:0 → 状态栏+胶囊带（statusBarPx+28，见 :51 topScrimStyle），
-   它现在只负责页头之上那一条，职责与层级各归其位。 */
+   它现在只负责页头之上那一条，职责与层级各归其位。
+   R9-L02-D13（层级遮挡）：上一轮只抬了 z-index，但 .header 仍是 position:relative ⇒
+   随页面一起滚走，无法充当固定导航底板：底帧「正在升温」标题升到 y≈60-68，落在遮罩
+   渐变尾段（82%→100%，75px 高）里被冲淡、上缘被裁。现补 position:sticky; top:0，
+   让这块不透明 --c-bg-container 页头在整个滚动过程中常驻 y=0 起的顶部，正文滚上来时
+   停在页头底缘之下，既不再进入胶囊带也不经过遮罩渐变尾段。 */
 .header {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 10;
   display: flex;
   align-items: flex-start;
@@ -959,7 +987,11 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
   gap: 16rpx;
   padding: 28rpx 24rpx;
   border-radius: var(--r-xl, 24rpx); /* R1-B25/D17：与活动卡同档，改读 --r-xl 以免档位调整时两卡分家 */
-  background: var(--c-bg-container, #FFFFFF);
+  /* R9-L02-D09（颜色token）：卡底由纯白改成品牌浅绿 --c-bg-brand（#E8FBF2），
+     与理想图「浅绿填充」的摘要卡同档。字色按 design-variables.scss 真值核算：
+     标题 --c-text-primary #1A1E1C（L=0.0123）压 #E8FBF2（L=0.9286）= 0.9786/0.0623 = 15.7:1；
+     副标 --c-text-secondary #4A524E（.vue 里的 #6B7571 是过期兜底）压 #E8FBF2 = 7.51:1。 */
+  background: var(--c-bg-brand, #E8FBF2);
   box-shadow: 0 2rpx 12rpx rgba(54, 201, 154, 0.06);
 }
 .quick-card--hover {
@@ -975,10 +1007,12 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
   justify-content: center;
 }
 .quick-card__icon-wrap--pink {
-  background: rgba(255, 107, 129, 0.12);
+  /* R9-L02-D09：原 rgba(255,107,129,.12) 粉底与右卡 rgba(54,201,154,.12) 绿底不同族；
+     两枚统一到 --c-brand-100 #D1F5E7（同档浅绿，压卡底 #E8FBF2 仍可辨）。 */
+  background: var(--c-brand-100, #D1F5E7);
 }
 .quick-card__icon-wrap--green {
-  background: rgba(54, 201, 154, 0.12);
+  background: var(--c-brand-100, #D1F5E7);
 }
 .quick-card__icon-emoji {
   font-size: 32rpx;
@@ -1040,6 +1074,11 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
   width: 88rpx;
   height: 88rpx;
   flex-shrink: 0;
+  /* R9-L02-D08：头像槽补品牌浅绿底 + 圆形裁切（同页 .warm-item__avatar-wrap :1200 口径）——
+     图像即便再次取不到也不再是一枚纯白空洞；正常出图时 aspectFit 的留白边由浅绿底承接。
+     不加 overflow:hidden：未读角标定位在 wrap 外沿（top/right:-6rpx），裁了会被切掉。 */
+  border-radius: 50%;
+  background: var(--c-brand-50, #E8FAF3);
 }
 .assistant-card__avatar {
   width: 88rpx;
@@ -1105,8 +1144,13 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
 }
 .assistant-card__activity {
   margin-top: 20rpx;
-  padding-top: 20rpx;
-  border-top: 1rpx solid var(--c-border-light, #EEF2F0);
+  /* R9-L02-D12（颜色token/层级）：原只有 1rpx 上分隔线、无填充无圆角无内边距，两行活动文案
+     直接坐在白卡底上，与理想图的「推送子卡」差一整档。改为品牌浅绿子卡：填充
+     --c-bg-brand #E8FBF2 + 20rpx 圆角 + 20rpx 内边距，去掉上边框；字色 --c-text-secondary
+     #4A524E 压 #E8FBF2 = 7.51:1（正文口径 ≥4.5:1）。 */
+  padding: 20rpx;
+  border-radius: 20rpx;
+  background: var(--c-bg-brand, #E8FBF2);
   display: flex;
   flex-direction: column;
   gap: 10rpx;
@@ -1270,14 +1314,8 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
   padding: 20rpx;
   box-sizing: border-box;
 }
-/* 2026-09-06：emoji 文本图标（后端 icon 字段下发 emoji 时渲染为文字，不再当图片加载） */
-.activity-rec-card__icon--emoji {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 48rpx;
-  line-height: 1;
-}
+/* R9-L02-D14：emoji 文本图标分支已删除（改映射包内图标），.activity-rec-card__icon--emoji
+   随之成为死样式一并移除。 */
 .activity-rec-card__body {
   flex: 1;
   min-width: 0;

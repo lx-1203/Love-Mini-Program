@@ -1,14 +1,14 @@
 # R9 逐帧缺陷清单（由泳道缺陷卡逐字渲染，生成器 scripts/qa/render-defects.mjs）
 
-- 缺陷条数=140　涉及页面=50　涉及帧=100　泳道卡=10　段内继承哈希=28（同段第二条起未重复抄录，非逐条见证）
-- 严重度分布：P2=102　P3=24　P1=14
-- 轴分布：可达性=45　颜色token=26　字号=12　文案=11　位置=11　素材缺失=10　尺寸比例=8　间距=7　层级遮挡=6　圆角=4
-- 空帧段（开了 FRAME 头但既无缺陷也无 CLEAN 交代，**不算已审**）=10　涉及车道：R9-L10
-- 批次归属：140 个批次收录，**卡上有而 fixlist 没有的=0**
+- 缺陷条数=199　涉及页面=68　涉及帧=136　泳道卡=14　段内继承哈希=38（同段第二条起未重复抄录，非逐条见证）
+- 严重度分布：P2=145　P3=32　P1=22
+- 轴分布：可达性=63　颜色token=46　文案=16　字号=16　位置=15　素材缺失=11　间距=10　尺寸比例=9　层级遮挡=7　圆角=6
+- 空帧段（开了 FRAME 头但既无缺陷也无 CLEAN 交代，**不算已审**）=0
+- 批次归属：199 个批次收录，**卡上有而 fixlist 没有的=0**
 
 ## pages/discover/index（3 条）
 
-### R9-L01-D07　P2 / 颜色token　批次 R9-B09
+### R9-L01-D07　P2 / 颜色token　批次 R9-B11
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__discover__index__top.png`（sha16=`eb8080d9a8cab5bd`）
 - 源码证据：`apps/client/src/components/match/MatchCard.vue:289`
 - 理想图依据：素材/理想效果图/寻觅匹配卡片页面.png 卡片右下「92% 匹配度」圆环（环体绿、内圈透出卡片底部深色渐变、数字与「匹配度」为白字）
@@ -16,7 +16,7 @@
 - 建议改法：内圈底改回 transparent 让第177-190行 `.match-card__overlay` 的深渐变透出，value/label 恢复 `--c-text-inverse` 白字（白字压 #221D12 约 15:1，无需白罩即过 4.5:1，第285-288行担心的 2.71:1 是「白字压绿心」那一档，透出深底后不存在）
 - 修复类别：CSS/token
 
-### R9-L01-D08　P2 / 尺寸比例　批次 R9-B17
+### R9-L01-D08　P2 / 尺寸比例　批次 R9-B21
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__discover__index__bottom.png`（sha16=`1ef8682937bd0314`）
 - 源码证据：`apps/client/src/pages/discover/index.vue:595`
 - 理想图依据：素材/理想效果图/寻觅匹配卡片页面.png 主卡整块（规范§3.3 记「全屏卡片」）
@@ -24,7 +24,7 @@
 - 建议改法：重算本行 calc 里让给页头(170rpx)/配额行(64rpx)/越出余量(48rpx)的三档，使卡高回到视口实高 ≈58%（≈930rpx），与理想图 1.35 比例一致
 - 修复类别：单页
 
-### R9-L01-D09　P2 / 层级遮挡　批次 R9-B17
+### R9-L01-D09　P2 / 层级遮挡　批次 R9-B21
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__discover__index__top.png`（sha16=`eb8080d9a8cab5bd`）
 - 源码证据：`apps/client/src/pages/discover/index.vue:643`
 - 理想图依据：素材/理想效果图/寻觅匹配卡片页面.png 卡片下缘——理想图卡底边界完整无叠压，三键行在卡下留空
@@ -34,7 +34,7 @@
 
 ## pages/home/index（2 条）
 
-### R9-L01-D10　P2 / 文案　批次 R9-B16
+### R9-L01-D10　P2 / 文案　批次 R9-B20
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__home__index__top.png`（sha16=`5ab3a4ae0b24e0a8`）
 - 源码证据：`apps/client/src/i18n/locales/zh-CN.ts:666`
 - 理想图依据：素材/理想效果图/首页.png「今日恋爱进度」卡四步骤标题行（自左至右：完善资料 / 认识新的人 / 回复悄悄话 / 参与兴趣互动）
@@ -42,7 +42,7 @@
 - 建议改法：两枚键值补回理想图档「认识新的人」「参与兴趣互动」，并同步 TodayLoveProgress.vue:23 注释的用词
 - 修复类别：单页
 
-### R9-L01-D11　P2 / 尺寸比例　批次 R9-B08
+### R9-L01-D11　P2 / 尺寸比例　批次 R9-B09
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__home__index__bottom.png`（sha16=`beda2ccc2319f138`）
 - 源码证据：`apps/client/src/components/home/CommunityFeed.vue:403`
 - 理想图依据：素材/理想效果图/首页.png 底部「社区动态」区——三张帖子卡并排铺满内容宽（实测单卡占屏宽 ≈29.6%）
@@ -52,7 +52,7 @@
 
 ## pages/login/index（2 条）
 
-### R9-L01-D01　P2 / 尺寸比例　批次 R9-B18
+### R9-L01-D01　P2 / 尺寸比例　批次 R9-B22
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__login__index__top.png`（sha16=`923ef07e744d621a`）
 - 源码证据：`apps/client/src/pages/login/index.vue:868`
 - 理想图依据：素材/理想效果图/登录页面.png 中部纯插画区（品牌区之下、slogan「遇见同频的人」之上），理想图为 1024 方图（另见 素材/理想效果图/登录页.png 全幅：前景草地占下方约 1/4、两人坐姿含小腿）
@@ -60,7 +60,7 @@
 - 建议改法：把 hero 定高按理想图比例抬到 ≈626rpx（同步第899行 image 高），或改 `mode="aspectFit"`＋等高容器，让前景草地与坐姿小腿入画
 - 修复类别：CSS/token
 
-### R9-L01-D02　P2 / 可达性　批次 R9-B18
+### R9-L01-D02　P2 / 可达性　批次 R9-B22
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__login__index__bottom.png`（sha16=`6cfd4ef1adc1b200`）
 - 源码证据：`apps/client/src/pages/login/index.vue:1272`
 - 理想图依据：素材/理想效果图/登录页面.png 按钮列下方区域（本行是 MP-R7-GUEST-LANDING-REGENTRY-001 新增的默认态唯一注册出口，见本文件第697-701行注释）
@@ -70,7 +70,7 @@
 
 ## pages/messages/index（8 条）
 
-### R9-L02-D08　P1 / 素材缺失　批次 R9-B19
+### R9-L02-D08　P1 / 素材缺失　批次 R9-B23
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__messages__index__top.png`（sha16=`b5dcf93967863d8b`）
 - 源码证据：`apps/client/src/pages/messages/index.vue:495`
 - 理想图依据：素材/理想效果图/消息.png 左栏「寻觅助手」卡左侧一枚绿色嫩芽吉祥物头像（浅绿圆角底）
@@ -78,7 +78,7 @@
 - 建议改法：核对 XunmiMascot.vue:117 的 imgSrc 在 mp-weixin 下的解析，必要时本页改直挂 <image>（同 :466 口径）并补浅绿底容器。
 - 修复类别：单页
 
-### R9-L02-D09　P2 / 颜色token　批次 R9-B19
+### R9-L02-D09　P2 / 颜色token　批次 R9-B23
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__messages__index__top.png`（sha16=`b5dcf93967863d8b`）
 - 源码证据：`apps/client/src/pages/messages/index.vue:978`
 - 理想图依据：素材/理想效果图/消息.png 顶部两枚摘要卡：卡底浅绿填充、两枚图标底板同为浅绿（心形为绿色）
@@ -86,7 +86,7 @@
 - 建议改法：--pink 变体改与 --green 同档浅绿，.quick-card 卡底改 var(--c-bg-brand)。
 - 修复类别：CSS/token
 
-### R9-L02-D10　P2 / 位置　批次 R9-B19
+### R9-L02-D10　P2 / 位置　批次 R9-B23
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__messages__index__top.png`（sha16=`b5dcf93967863d8b`）
 - 源码证据：`apps/client/src/pages/messages/index.vue:1005`
 - 理想图依据：素材/理想效果图/消息.png 两枚摘要卡右下「去看看 / 去回复」小胶囊均与卡缘留出一档内缩
@@ -94,7 +94,7 @@
 - 建议改法：给 .quick-card__btn 补 margin-right:24rpx 或把两枚按钮包进与卡内边距同宽的容器，统一内缩一档。
 - 修复类别：单页
 
-### R9-L02-D11　P2 / 素材缺失　批次 R9-B19
+### R9-L02-D11　P2 / 素材缺失　批次 R9-B23
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__messages__index__top.png`（sha16=`b5dcf93967863d8b`）
 - 源码证据：`apps/client/src/pages/messages/index.vue:518`
 - 理想图依据：素材/理想效果图/消息.png 活动提示行首为一枚绿色嫩芽 🌱
@@ -102,7 +102,7 @@
 - 建议改法：该 <image> 换 ICONS_V2.SPROUT，或补 LEAF 素材并加 @error 兜底。
 - 修复类别：单页
 
-### R9-L02-D12　P2 / 颜色token　批次 R9-B19
+### R9-L02-D12　P2 / 颜色token　批次 R9-B23
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__messages__index__top.png`（sha16=`b5dcf93967863d8b`）
 - 源码证据：`apps/client/src/pages/messages/index.vue:1109`
 - 理想图依据：素材/理想效果图/消息.png 助手卡下半的活动提示是一枚浅绿填充圆角子卡（内含两行文案 + 右下红色计数角标）
@@ -110,7 +110,7 @@
 - 建议改法：该块加 background: var(--c-bg-brand) + border-radius:20rpx + padding:20rpx，去掉上边框。
 - 修复类别：CSS/token
 
-### R9-L02-D13　P2 / 层级遮挡　批次 R9-B19
+### R9-L02-D13　P2 / 层级遮挡　批次 R9-B23
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__messages__index__bottom.png`（sha16=`80f9072269819af8`）
 - 源码证据：`apps/client/src/pages/messages/index.vue:833`
 - 理想图依据：素材/理想效果图/消息.png 左栏各分区标题始终整行可读，不与状态栏/胶囊带重叠
@@ -118,7 +118,7 @@
 - 建议改法：页头改 position:sticky;top:0（或 fixed + 占位），使实底色真正常驻状态带；遮罩保留在页头之下。
 - 修复类别：单页
 
-### R9-L02-D14　P2 / 素材缺失　批次 R9-B19
+### R9-L02-D14　P2 / 素材缺失　批次 R9-B23
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__messages__index__bottom.png`（sha16=`80f9072269819af8`）
 - 源码证据：`apps/client/src/pages/messages/index.vue:656`
 - 理想图依据：无该模块基准（活动推荐按 :6 页面顺序与组件规范比）：本页其余图标均为 PNG/SVG 素材件（:466/:518/:562/:660）
@@ -126,7 +126,7 @@
 - 建议改法：act.icon 非 URL 时按语义映射到既有 PNG 图标集（活动/球类/心形），emoji 不再直接渲染。
 - 修复类别：单页
 
-### R9-L02-D15　P2 / 素材缺失　批次 R9-B19
+### R9-L02-D15　P2 / 素材缺失　批次 R9-B23
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__messages__index__bottom.png`（sha16=`80f9072269819af8`）
 - 源码证据：`apps/client/src/pages/messages/index.vue:557`
 - 理想图依据：素材/理想效果图/消息.png「正在升温」4 枚 + 「最近聊天」4 行均为互不相同的人物头像
@@ -136,7 +136,7 @@
 
 ## pages/nearby/index（7 条）
 
-### R9-L02-D01　P1 / 层级遮挡　批次 R9-B20
+### R9-L02-D01　P1 / 层级遮挡　批次 R9-B24
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__nearby__index__top.png`（sha16=`1f9c99bc5ab4f7c2`）
 - 源码证据：`apps/client/src/pages/nearby/index.vue:993`
 - 理想图依据：素材/理想效果图/附近的首页.png 右上角「发动态」为独立、完整、可读的绿色胶囊
@@ -144,7 +144,7 @@
 - 建议改法：:537 的 paddingTop 由 statusBar+12 抬到 statusBar+胶囊高+12（或给 .nearby-home__header 加 margin-top≈40rpx），使页头行顶缘落在胶囊底缘之下。
 - 修复类别：单页
 
-### R9-L02-D02　P1 / 可达性　批次 R9-B20
+### R9-L02-D02　P1 / 可达性　批次 R9-B24
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__nearby__index__top.png`（sha16=`1f9c99bc5ab4f7c2`）
 - 源码证据：`apps/client/src/pages/nearby/index.vue:1067`
 - 理想图依据：素材/理想效果图/附近的首页.png「发动态」绿底白字两字可读
@@ -152,7 +152,7 @@
 - 建议改法：钮面改 var(--c-brand-800,#156B51)（白字 6.45:1），与 LockScreen 主 CTA 同档。
 - 修复类别：CSS/token
 
-### R9-L02-D03　P2 / 尺寸比例　批次 R9-B20
+### R9-L02-D03　P2 / 尺寸比例　批次 R9-B24
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__nearby__index__top.png`（sha16=`1f9c99bc5ab4f7c2`）
 - 源码证据：`apps/client/src/pages/nearby/index.vue:1065`
 - 理想图依据：素材/理想效果图/附近的首页.png 右上「发动态」胶囊高度与放大镜按钮同排且明显厚于一行的 1/3
@@ -160,7 +160,7 @@
 - 建议改法：.nearby-home__publish 加 min-height:88rpx + align-items:center，或按 :1047 search-btn 范式用 padding 撑热区。
 - 修复类别：CSS/token
 
-### R9-L02-D04　P2 / 颜色token　批次 R9-B20
+### R9-L02-D04　P2 / 颜色token　批次 R9-B24
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__nearby__index__top.png`（sha16=`1f9c99bc5ab4f7c2`）
 - 源码证据：`apps/client/src/pages/nearby/index.vue:1665`
 - 理想图依据：素材/理想效果图/附近的首页.png 五宫格区——五枚底板同为一张中性浅灰绿底，色彩只出现在图标本身（仅第 5 枚偏淡蓝紫）
@@ -168,7 +168,7 @@
 - 建议改法：五枚底板统一 var(--c-bg-surface)，保留 :1665-1669 的色系只作用于图标。
 - 修复类别：CSS/token
 
-### R9-L02-D05　P2 / 素材缺失　批次 R9-B03
+### R9-L02-D05　P2 / 素材缺失　批次 R9-B04
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__nearby__index__top.png`（sha16=`1f9c99bc5ab4f7c2`）
 - 源码证据：`apps/client/src/components/common/GlobalPublishFab.vue:86`
 - 理想图依据：素材/理想效果图/附近的首页.png 右下角（tabBar 上方）一枚绿色圆形 ＋ 悬浮发帖按钮
@@ -176,7 +176,7 @@
 - 建议改法：与个人页同口径在 nearby 根节点挂 GlobalPublishFab。
 - 修复类别：单页
 
-### R9-L02-D06　P2 / 可达性　批次 R9-B20
+### R9-L02-D06　P2 / 可达性　批次 R9-B24
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__nearby__index__bottom.png`（sha16=`95cdb0d85e9c77da`）
 - 源码证据：`apps/client/src/pages/nearby/index.vue:1577`
 - 理想图依据：素材/理想效果图/附近的首页.png 附近动态区为帖子卡（含关注按钮），按钮件均为完整胶囊
@@ -184,7 +184,7 @@
 - 建议改法：min-height:88rpx 且钮面升 --c-brand-800，与 D02/D03 一并归一。
 - 修复类别：CSS/token
 
-### R9-L02-D07　P3 / 颜色token　批次 R9-B20
+### R9-L02-D07　P3 / 颜色token　批次 R9-B24
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__nearby__index__bottom.png`（sha16=`95cdb0d85e9c77da`）
 - 源码证据：`apps/client/src/pages/nearby/index.vue:1464`
 - 理想图依据：无基准条目（活动分区为逐页说明既有模块），依据=组件规范：文字色须有消费者
@@ -194,7 +194,7 @@
 
 ## pages/profile/index（5 条）
 
-### R9-L02-D16　P1 / 素材缺失　批次 R9-B12
+### R9-L02-D16　P1 / 素材缺失　批次 R9-B14
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__profile__index__top.png`（sha16=`aa4bf3f96461e09f`）
 - 源码证据：`apps/client/src/components/profile/mine/MyStory.vue:64`
 - 理想图依据：素材/理想效果图/未登录个人主页.png 与 已经填完资料的个人主页.png 的「我的故事」区均为 3 枚分类卡（生活日常/旅行足迹/我的心愿，含 0 计数）+ 1 枚虚线添加卡
@@ -202,7 +202,7 @@
 - 建议改法：stories.length===0 时渲染三枚固定分类占位卡（含 0 计数），添加卡常驻。
 - 修复类别：单页
 
-### R9-L02-D17　P2 / 位置　批次 R9-B21
+### R9-L02-D17　P2 / 位置　批次 R9-B25
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__profile__index__top.png`（sha16=`aa4bf3f96461e09f`）
 - 源码证据：`apps/client/src/pages/profile/index.vue:2594`
 - 理想图依据：素材/理想效果图/已经填完资料的个人主页.png 右上角两枚功能图标贴页面右缘同栏
@@ -210,7 +210,7 @@
 - 建议改法：删 :2594，回到 32rpx 页边距口径，纵向避让由 :2580 的 top 承担。
 - 修复类别：单页
 
-### R9-L02-D18　P2 / 文案　批次 R9-B21
+### R9-L02-D18　P2 / 文案　批次 R9-B25
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__profile__index__top.png`（sha16=`aa4bf3f96461e09f`）
 - 源码证据：`apps/client/src/pages/profile/index.vue:1980`
 - 理想图依据：素材/理想效果图/已经填完资料的个人主页.png 简介位为「热爱生活，喜欢探索世界 ✨」这类可读中文签名
@@ -218,7 +218,7 @@
 - 建议改法：种子 bio 换可读中文；渲染前对 bio 内的 ISO 时间做 formatDateTime 归一。
 - 修复类别：单页
 
-### R9-L02-D19　P1 / 位置　批次 R9-B21
+### R9-L02-D19　P1 / 位置　批次 R9-B25
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__profile__index__bottom.png`（sha16=`0fd7ee7cb53721a6`）
 - 源码证据：`apps/client/src/pages/profile/index.vue:1683`
 - 理想图依据：无该分区基准图（个人页两张理想图无语音介绍块），依据=组件规范：分区标题整词不成半行、提示语不得被裁切
@@ -226,7 +226,7 @@
 - 建议改法：标题 flex-shrink:0、行加 flex-wrap:wrap，提示语换第二行整行显示（或移到 CTA 下方）。
 - 修复类别：单页
 
-### R9-L02-D20　P3 / 文案　批次 R9-B16
+### R9-L02-D20　P3 / 文案　批次 R9-B20
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__profile__index__bottom.png`（sha16=`0fd7ee7cb53721a6`）
 - 源码证据：`apps/client/src/i18n/locales/zh-CN.ts:1689`
 - 理想图依据：无基准，依据=同页取档：分区标题「语音介绍」(:1684 走 profile.voiceStatus)
@@ -236,7 +236,7 @@
 
 ## pages/register/index（2 条）
 
-### R9-L01-D03　P1 / 可达性　批次 R9-B22
+### R9-L01-D03　P1 / 可达性　批次 R9-B26
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__register__index__top.png`（sha16=`87480776e88e4d3e`）
 - 源码证据：`apps/client/src/pages/register/index.vue:1090`
 - 理想图依据：无基准，依据=规范文档§1.4 间距/控件档 + 本仓已落地口径（login/index.vue:1297-1299「88rpx 最小可点件」、register/index.vue:1237-1250 `.agree__hit` 88rpx 透明热区层）
@@ -244,7 +244,7 @@
 - 建议改法：`.sms-btn` 高度抬到 88rpx；若要保持 64rpx 视觉档，照本文件第1242-1250行 `.agree__hit` 的做法加 `padding:28rpx`＋等量负 margin 的透明热区层，视觉尺寸不动
 - 修复类别：CSS/token
 
-### R9-L01-D04　P2 / 颜色token　批次 R9-B22
+### R9-L01-D04　P2 / 颜色token　批次 R9-B26
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__register__index__bottom.png`（sha16=`5c22b1524a526cea`）
 - 源码证据：`apps/client/src/pages/register/index.vue:1059`
 - 理想图依据：无基准，依据=规范文档§1.2 配色（次级文字需可读）+ §1.3 字体层级（辅助文字档）
@@ -254,7 +254,7 @@
 
 ## pages/register/success（2 条）
 
-### R9-L01-D05　P2 / 颜色token　批次 R9-B23
+### R9-L01-D05　P2 / 颜色token　批次 R9-B27
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__register__success__top.png`（sha16=`c2d830050ea522d7`）
 - 源码证据：`apps/client/src/pages/register/success.vue:156`
 - 理想图依据：无基准，依据=规范文档§1.2 配色（次级文字对比下限）+ `src/components/common/` StatusState/Tag 口径（状态标签须自成一眼可辨的一档）
@@ -262,7 +262,7 @@
 - 建议改法：标签字色换 `--c-text-tertiary`(#6B7571，白底 4.6:1)，或与行首 ✓ 同族走 `--c-brand-700`(#1F8D6A)
 - 修复类别：CSS/token
 
-### R9-L01-D06　P2 / 可达性　批次 R9-B23
+### R9-L01-D06　P2 / 可达性　批次 R9-B27
 - 帧：`tmp/qa/frames/R9/real-f0677920/pages__register__success__bottom.png`（sha16=`c2d830050ea522d7`）
 - 源码证据：`apps/client/src/pages/register/success.vue:184`
 - 理想图依据：无基准，依据=规范文档§1.4 控件档 + 组件规范 BottomActionBar/Button（次级出口需自成可点件）
@@ -272,7 +272,7 @@
 
 ## subpackages/campus/campus/certification（2 条）
 
-### R9-L05-D11　P2 / 可达性　批次 R9-B24
+### R9-L05-D11　P2 / 可达性　批次 R9-B28
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__campus__campus__certification__top.png`（sha16=`f292a7c1f9ae4e47`）
 - 源码证据：`apps/client/src/subpackages/campus/campus/certification.vue:515`
 - 理想图依据：无基准，依据=规范 §1.2 主文本档 + 同域基准 校园圈.png 页头深字；实测帧 x=200,y=40 页头底 #6ADDB2，标题字身 near-#FFFFFF
@@ -280,7 +280,7 @@
 - 建议改法：与 D01/D07/D08 同批收口 campus 子包页头文字档
 - 修复类别：CSS/token
 
-### R9-L05-D12　P2 / 可达性　批次 R9-B24
+### R9-L05-D12　P2 / 可达性　批次 R9-B28
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__campus__campus__certification__bottom.png`（sha16=`b311668e91808a1a`）
 - 源码证据：`apps/client/src/subpackages/campus/campus/certification.vue:496`
 - 理想图依据：无基准，依据=规范 §1.2（白纱底只用于覆盖层前景，状态/导航胶囊须给可读底或深字）；实测帧胶囊合成底 #8DE2C5（x=22..30,y=62..78 取色），字身 --c-text-inverse
@@ -290,7 +290,7 @@
 
 ## subpackages/campus/campus/hub（2 条）
 
-### R9-L04-D10　P2 / 颜色token　批次 R9-B25
+### R9-L04-D10　P2 / 颜色token　批次 R9-B29
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__campus__campus__hub__top.png`（sha16=`947914d6efd127b3`）
 - 源码证据：`apps/client/src/subpackages/campus/campus/hub.vue:572`
 - 理想图依据：校园圈.png（认证引导横幅为整块均匀浅绿底）+ 规范 §3.12「横幅 --c-brand-bg-tint 绿浅底」
@@ -298,7 +298,7 @@
 - 建议改法：改纯色 `background: var(--c-brand-bg-tint)`（或 --c-brand-50），去掉到 #FFFFFF 的渐变与私色 fallback。
 - 修复类别：CSS/token
 
-### R9-L04-D11　P2 / 位置　批次 R9-B25
+### R9-L04-D11　P2 / 位置　批次 R9-B29
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__campus__campus__hub__bottom.png`（sha16=`902a03e6cdf474d3`）
 - 源码证据：`apps/client/src/subpackages/campus/campus/hub.vue:750`
 - 理想图依据：校园圈.png（每张学校卡的「未认证」状态徽标与校名同处一行、行内右靠）
@@ -308,7 +308,7 @@
 
 ## subpackages/campus/campus/index（5 条）
 
-### R9-L05-D01　P2 / 可达性　批次 R9-B26
+### R9-L05-D01　P2 / 可达性　批次 R9-B30
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__campus__campus__index__top.png`（sha16=`480a7b8a9cd0b8a2`）
 - 源码证据：`apps/client/src/subpackages/campus/campus/index.vue:488`
 - 理想图依据：无基准，依据=同域基准 素材/理想效果图/校园圈.png 页头（深黑标题压浅底）+ 规范 §1.2 主文本档；实测帧 x=45,y=70 页头底 #76DDB9，「北京大学」字身取到 #FFFFFF
@@ -316,7 +316,7 @@
 - 建议改法：页头文字改走 --c-text-primary（或把渐变 60% 档换成 brand-600/700 深档 + 白字），使 ≥4.5:1
 - 修复类别：CSS/token
 
-### R9-L05-D02　P2 / 可达性　批次 R9-B26
+### R9-L05-D02　P2 / 可达性　批次 R9-B30
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__campus__campus__index__top.png`（sha16=`480a7b8a9cd0b8a2`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/campus/campus/index.vue:510`
 - 理想图依据：无基准，依据=规范 §1.2 状态胶囊口径 + 同域基准 校园圈.png「未认证」胶囊（浅紫底+紫字，非白纱底+白字）；实测帧 x=150 胶囊带 y=57..80 合成底 #8AE5C2，字身峰值 #E4F8F1
@@ -324,7 +324,7 @@
 - 建议改法：未认证态改浅紫底 + --c-purple 深字（与 D03 同一处改法），文字色不再走 --c-text-inverse
 - 修复类别：CSS/token
 
-### R9-L05-D03　P2 / 颜色token　批次 R9-B26
+### R9-L05-D03　P2 / 颜色token　批次 R9-B30
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__campus__campus__index__bottom.png`（sha16=`95edecb3b0185d28`）
 - 源码证据：`apps/client/src/subpackages/campus/campus/index.vue:510`
 - 理想图依据：无基准，依据=规范 §1.2「兴趣紫 --c-purple #A29BFE · 用途：未认证 · 兴趣分类」+ 同域基准 校园圈.png 中「未认证」胶囊实测浅紫底紫字；帧上该胶囊为白纱底白字
@@ -332,7 +332,7 @@
 - 建议改法：.cert-badge--unverified 底改 --c-purple 的浅底档、文字改 --c-purple（已认证/审核中/驳回同族一并按 §1.2 对号）
 - 修复类别：CSS/token
 
-### R9-L05-D04　P2 / 字号　批次 R9-B26
+### R9-L05-D04　P2 / 字号　批次 R9-B30
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__campus__campus__index__bottom.png`（sha16=`95edecb3b0185d28`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/campus/campus/index.vue:943`
 - 理想图依据：无基准，依据=规范 §1.3「标题 --fs-3xl/4xl = 18/20px（36/40rpx）· 700 · 用途：区块标题」；帧上「热门兴趣圈」为 30rpx 字面量，比同页卡内话题标题（--fs-2xl 32rpx，index.vue:762）还小
@@ -340,7 +340,7 @@
 - 建议改法：改 var(--fs-3xl, 36rpx)/700，与同域其它区块标题取同一档
 - 修复类别：CSS/token
 
-### R9-L05-D05　P3 / 圆角　批次 R9-B26
+### R9-L05-D05　P3 / 圆角　批次 R9-B30
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__campus__campus__index__bottom.png`（sha16=`95edecb3b0185d28`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/campus/campus/index.vue:968`
 - 理想图依据：无基准，依据=规范 §1.4 圆角档 4/8/12/20/24/32/9999rpx（design-variables.scss:198-204 同值）；帧上 8 片推荐瓷片圆角按 code 落地为 16rpx（8px 小圆角），与同页卡片 var(--r-xl) 24rpx 不同族
@@ -350,7 +350,7 @@
 
 ## subpackages/campus/campus/post-topic（2 条）
 
-### R9-L05-D06　P1 / 可达性　批次 R9-B27
+### R9-L05-D06　P1 / 可达性　批次 R9-B31
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__campus__campus__post-topic__top.png`（sha16=`47f8a8372531f852`）
 - 源码证据：`apps/client/src/subpackages/campus/campus/post-topic.vue:733`
 - 理想图依据：无基准，依据=规范 §1.2 文字档（警告色只作中强度提示，正文须落 --c-text-primary/secondary）；实测帧门槛条底 #EFEEDA（= --c-warning-bg-tint 0.1 压在 #EEF7F2 上的合成值）、字身 #F59E0B → 1.83:1
@@ -358,7 +358,7 @@
 - 建议改法：条底保留 warning tint，文字改 --c-text-primary（≥12:1），仅左侧图标/描边用 warning 作强度提示
 - 修复类别：CSS/token
 
-### R9-L05-D07　P2 / 可达性　批次 R9-B27
+### R9-L05-D07　P2 / 可达性　批次 R9-B31
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__campus__campus__post-topic__bottom.png`（sha16=`47f8a8372531f852`）
 - 源码证据：`apps/client/src/subpackages/campus/campus/post-topic.vue:656`
 - 理想图依据：无基准，依据=规范 §1.2 文字档 + 同域基准 校园圈.png 页头取色；实测帧 x=40,y=70 页头底 #9CE5CD，「取消」字身取到 #FFFFFF
@@ -368,7 +368,7 @@
 
 ## subpackages/campus/campus/topic-detail（3 条）
 
-### R9-L05-D08　P2 / 可达性　批次 R9-B28
+### R9-L05-D08　P2 / 可达性　批次 R9-B32
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__campus__campus__topic-detail__top.png`（sha16=`36e67d0abedc621f`）
 - 源码证据：`apps/client/src/subpackages/campus/campus/topic-detail.vue:432`
 - 理想图依据：无基准，依据=规范 §1.2 主文本档 + 同域基准 校园圈.png 页头深字；实测帧 x=200,y=40 页头底 #6ADDB2，标题字身 near-#FFFFFF
@@ -376,7 +376,7 @@
 - 建议改法：与 D01/D07 同批改页头文字档（统一 --c-text-primary 或加深渐变段）
 - 修复类别：CSS/token
 
-### R9-L05-D09　P3 / 字号　批次 R9-B28
+### R9-L05-D09　P3 / 字号　批次 R9-B32
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__campus__campus__topic-detail__bottom.png`（sha16=`36e67d0abedc621f`）
 - 源码证据：`apps/client/src/subpackages/campus/campus/topic-detail.vue:430`
 - 理想图依据：无基准，依据=规范 §1.3 字阶（--fs-xl 30 / --fs-2xl 32 / --fs-3xl 36rpx，无 34 档）+ 同域两页取档对照：post-topic.vue:661 var(--fs-xl,34rpx)=实跑 30rpx、certification.vue:513 var(--fs-2xl)=32rpx、本页 34rpx 字面量
@@ -384,7 +384,7 @@
 - 建议改法：三页页头统一 var(--fs-2xl, 32rpx)，并清掉与令牌值不一致的 fallback 字面量
 - 修复类别：CSS/token
 
-### R9-L05-D10　P3 / 文案　批次 R9-B28
+### R9-L05-D10　P3 / 文案　批次 R9-B32
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__campus__campus__topic-detail__bottom.png`（sha16=`36e67d0abedc621f`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/campus/campus/topic-detail.vue:329`
 - 理想图依据：无基准，依据=组件规范 src/components/common/EmptyState.vue（actionText 传入即渲染动作按钮）；帧上页头 x=27..50 一个「返回」胶囊、y=468..509 一个「返回」按钮，同名同页
@@ -392,9 +392,45 @@
 - 建议改法：空态动作改「回到校园圈」并 navigateBack 到校园列表，或与页头合并只留一个出口
 - 修复类别：单页
 
+## subpackages/chat/chat-session/index（2 条）
+
+### R9-L11-D12　P1 / 层级遮挡　批次 R9-B01
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__chat__chat-session__index__top.png`（sha16=`91d95c102be9017e`）
+- 源码证据：`apps/client/src/components/chat/ChatHeader.vue:184`
+- 理想图依据：无基准，依据=规范文档§1.6 渲染铁律（系统胶囊带不得被页面控件占位）+ components/chat/ChatHeader 的 more 入口规范
+- 现象：ChatHeader 自带「···」more 盒 56rpx=28px，头部右 padding 仅 24rpx=12px（:93），盒右缘=378−12=366，落在 x≈338..366 / y≈50..78；微信原生胶囊实测白底 x=288..369 / y=50..76，整枚 more 被系统胶囊盖住（335..370 区只剩胶囊 target 的 6 个灰像素，没有页面 40rpx #666 三点）。用户点不到父级 `@more="openNavMenu"`，页面自带的会话更多菜单没有任何替代出口。
+- 建议改法：头部右侧预留胶囊宽（padding-right≈180rpx）或删掉自绘 more、把操作并入胶囊/长按菜单。
+- 修复类别：CSS/token
+
+### R9-L11-D13　P2 / 颜色token　批次 R9-B33
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__chat__chat-session__index__bottom.png`（sha16=`91d95c102be9017e`）
+- 源码证据：`apps/client/src/subpackages/chat/chat-session/index.vue:2671`
+- 理想图依据：无基准，依据=规范文档§1.2 配色表（brand-700 用于深色文字）+ 文本 4.5:1
+- 现象：错误态唯一出口「返回」14px/600 用 `--c-brand-700`（声明 #1F8D6A，实测墨迹最深 #138662）坐在 `--c-bg-brand` #E8FBF2 胶囊（实测 x=161..217 / y=733..776）上，按声明 token 为 3.85:1、按实测墨迹约 4.2:1，都低于 4.5:1；按钮热区 43px 已接近 44px 标准，问题在标签对比。
+- 建议改法：文字改 `--c-text-primary` 或加深到 #146B4F 级，保持 `--c-bg-brand` 胶囊。
+- 修复类别：CSS/token
+
+## subpackages/chat/official-chat/index（2 条）
+
+### R9-L11-D14　P2 / 颜色token　批次 R9-B34
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__chat__official-chat__index__top.png`（sha16=`cc89b1646e6102ac`）
+- 源码证据：`apps/client/src/subpackages/chat/official-chat/index.vue:1024`
+- 理想图依据：无基准，依据=规范文档§1.2 占位色 `--c-text-placeholder` 与§1.3 字号层级
+- 现象：输入框唯一提示「对我说点什么吧～」14px 声明 `color:#bbb`（:1024），坐在 #F5F6F8 输入底（:1014）上；实测主墨 #B4B4B5，对比度约 1.9:1（纯 #BBB 仅 1.79:1），远低于 4.5:1，输入区几乎没有可读指引。
+- 建议改法：占位改 `--c-text-tertiary` #6B7571（对 #F5F6F8 约 4.5:1）或更深一档。
+- 修复类别：CSS/token
+
+### R9-L11-D15　P2 / 可达性　批次 R9-B34
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__chat__official-chat__index__bottom.png`（sha16=`cc89b1646e6102ac`）
+- 源码证据：`apps/client/src/subpackages/chat/official-chat/index.vue:1031`
+- 理想图依据：无基准，依据=components/layout/AppShell.vue:361-363 热区 ≥88rpx 的全站口径
+- 现象：发送键 `.input-bar__send` 高 72rpx=36px（实测灰胶囊约 56×36px，x≈316..372 / y≈745..781），表情/加号钮 64rpx=32px（:967），均低于 88rpx（44px）；发送另有键盘 `confirm-type="send"`（:556）兜底，故按 P2 记，但表情/加号没有替代出口。
+- 建议改法：发送键与两枚图标钮的点击盒统一抬到 88rpx（视觉尺寸可保持 36/32px）。
+- 修复类别：CSS/token
+
 ## subpackages/circles/circles/circle-home（3 条）
 
-### R9-L04-D01　P1 / 可达性　批次 R9-B29
+### R9-L04-D01　P1 / 可达性　批次 R9-B35
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__circles__circles__circle-home__top.png`（sha16=`8bf16be2a935322b`）
 - 源码证据：`apps/client/src/subpackages/circles/circles/circle-home.vue:742`
 - 理想图依据：圈子详情，摄影圈参考.png（头图底部叠层：白字圈名「摄影圈」+ 简介压在深色照片上，对比充足）
@@ -402,7 +438,7 @@
 - 建议改法：把 hero-scrim 抬高/加陡（如 height 440rpx、α 从 30% 起即 ≥.6），或在 .hero-info 顶部再叠一层实底 rgba(0,0,0,.5) 内衬，使圈名/简介整段落到 α≥.6 段。
 - 修复类别：单页
 
-### R9-L04-D02　P2 / 尺寸比例　批次 R9-B29
+### R9-L04-D02　P2 / 尺寸比例　批次 R9-B35
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__circles__circles__circle-home__top.png`（sha16=`8bf16be2a935322b`）
 - 源码证据：`apps/client/src/subpackages/circles/circles/circle-home.vue:714`
 - 理想图依据：圈子详情，摄影圈参考.png（白 sheet 顶缘实测约帧高 27%）
@@ -410,7 +446,7 @@
 - 建议改法：头图回落到 ≈440–460rpx（约帧高 27%），叠层内衬改用更紧的 gap/单行简介，避免为塞内容抬高整块封面。
 - 修复类别：单页
 
-### R9-L04-D03　P2 / 位置　批次 R9-B29
+### R9-L04-D03　P2 / 位置　批次 R9-B35
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__circles__circles__circle-home__bottom.png`（sha16=`95a2a925ce9e0493`）
 - 源码证据：`apps/client/src/subpackages/circles/circles/circle-home.vue:1001`
 - 理想图依据：圈子详情，摄影圈参考.png（tab 行「动态/精华/活动/作品墙/成员 1.2w」五项均单行等高）
@@ -420,7 +456,7 @@
 
 ## subpackages/circles/circles/index（2 条）
 
-### R9-L03-D01　P2 / 颜色token　批次 R9-B30
+### R9-L03-D01　P2 / 颜色token　批次 R9-B36
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__circles__circles__index__top.png`（sha16=`9e1cfbaf3c804436`）
 - 源码证据：`apps/client/src/subpackages/circles/circles/index.vue:1003`
 - 理想图依据：兴趣圈列表.png 分类行——非选中「摄影/旅行/音乐/运动/美食」各为一枚清晰浅灰胶囊（实测灰底与白/浅绿底明显分层）
@@ -428,7 +464,7 @@
 - 建议改法：非选中 chip 底改与页头浅绿拉开一档的档（如 --c-neutral-100 或加深描边到 --c-border-default），使胶囊轮廓在 #EEF7F2 上可见。
 - 修复类别：CSS/token
 
-### R9-L03-D02　P3 / 素材缺失　批次 R9-B30
+### R9-L03-D02　P3 / 素材缺失　批次 R9-B36
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__circles__circles__index__bottom.png`（sha16=`e50bfe4b870b9e7f`）
 - 源码证据：`apps/client/src/subpackages/circles/circles/index.vue:470`
 - 理想图依据：兴趣圈列表.png 行末 ☰ 圆钮右上角常驻一枚绿色小圆点（提示可筛选）
@@ -438,7 +474,7 @@
 
 ## subpackages/circles/circles/post-topic（2 条）
 
-### R9-L04-D08　P2 / 颜色token　批次 R9-B31
+### R9-L04-D08　P2 / 颜色token　批次 R9-B37
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__circles__circles__post-topic__top.png`（sha16=`b5a4c3972a9c92d4`）
 - 源码证据：`apps/client/src/subpackages/circles/circles/post-topic.vue:796`
 - 理想图依据：无基准，依据=规范文档 §1.1 原则2「绿色=行动，粉色=喜欢，两色禁止混用」
@@ -446,7 +482,7 @@
 - 建议改法：头图去掉 --c-romance-300 粉端，改纯品牌绿档（如 --c-brand→--c-brand-600 或复用同域 topics-header 的 --c-gradient-brand）。
 - 修复类别：CSS/token
 
-### R9-L04-D09　P3 / 字号　批次 R9-B31
+### R9-L04-D09　P3 / 字号　批次 R9-B37
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__circles__circles__post-topic__bottom.png`（sha16=`b5a4c3972a9c92d4`）
 - 源码证据：`apps/client/src/subpackages/circles/circles/post-topic.vue:820`
 - 理想图依据：无基准，依据=规范文档 §1.3 辅助/正文档 + 同域两页取档一致性（topics.vue:723、topic-detail.vue:475 导航标题均 --fs-xl=30rpx）
@@ -456,7 +492,7 @@
 
 ## subpackages/circles/circles/topic-detail（2 条）
 
-### R9-L04-D06　P2 / 可达性　批次 R9-B02
+### R9-L04-D06　P2 / 可达性　批次 R9-B03
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__circles__circles__topic-detail__top.png`（sha16=`7ae10a8a294757cd`）
 - 源码证据：`apps/client/src/components/common/EmptyState.vue:184`
 - 理想图依据：无基准，依据=组件规范 EmptyState（次级说明行应达 --c-text-tertiary 档）+ 规范 §1.2 文本色板
@@ -464,7 +500,7 @@
 - 建议改法：本页对 EmptyState 传 `hide-sub`（标题已表意），或把 `.empty-sub` 提到 `--c-text-tertiary`(#6B7571，≈3.9:1)。
 - 修复类别：CSS/token
 
-### R9-L04-D07　P2 / 位置　批次 R9-B32
+### R9-L04-D07　P2 / 位置　批次 R9-B38
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__circles__circles__topic-detail__bottom.png`（sha16=`2a541a84e68a5780`）
 - 源码证据：`apps/client/src/subpackages/circles/circles/topic-detail.vue:401`
 - 理想图依据：无基准，依据=组件规范 EmptyState（注释 line 152 明示组件不自证居中，居中由消费页容器负责）
@@ -474,7 +510,7 @@
 
 ## subpackages/circles/circles/topics（2 条）
 
-### R9-L04-D04　P3 / 颜色token　批次 R9-B33
+### R9-L04-D04　P3 / 颜色token　批次 R9-B39
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__circles__circles__topics__top.png`（sha16=`44c31b2c50cdef39`）
 - 源码证据：`apps/client/src/subpackages/circles/circles/topics.vue:773`
 - 理想图依据：无基准，依据=规范文档 §1.1 原则3「一令牌一值，禁止私有色值」+ §1.2 边框档 --c-border-light/default/strong
@@ -482,7 +518,7 @@
 - 建议改法：改 `border:1rpx solid var(--c-brand-100)`（或既有浅绿描边令牌），去掉硬编码 #B8EDDA。
 - 修复类别：CSS/token
 
-### R9-L04-D05　P3 / 颜色token　批次 R9-B33
+### R9-L04-D05　P3 / 颜色token　批次 R9-B39
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__circles__circles__topics__bottom.png`（sha16=`2b6cfc903a61e6c7`）
 - 源码证据：`apps/client/src/subpackages/circles/circles/topics.vue:1309`
 - 理想图依据：无基准，依据=规范文档 §1.2 品牌绿阶（500 #36C99A / 600 #2AAE83 / 700 #1F8D6A，无 #2DB98A 档）
@@ -492,7 +528,7 @@
 
 ## subpackages/discover-extra/discover/history（2 条）
 
-### R9-L06-D07　P3 / 文案　批次 R9-B34
+### R9-L06-D07　P3 / 文案　批次 R9-B40
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__discover__history__top.png`（sha16=`8bf7c00620c94dc0`）
 - 源码证据：`apps/client/src/subpackages/discover-extra/discover/history.vue:157`
 - 理想图依据：无基准，依据=同分包 segment.vue:135、people.vue:163、match-success.vue:145 返回符号均为 "‹"（U+2039 单尖左引号），本页用 "←"（U+2190 左箭头），同域不一致
@@ -500,7 +536,7 @@
 - 建议改法：将 history.vue:157 的 "←" 改为 "‹"，与分包其余页统一。
 - 修复类别：单页
 
-### R9-L06-D08　P3 / 颜色token　批次 R9-B34
+### R9-L06-D08　P3 / 颜色token　批次 R9-B40
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__discover__history__bottom.png`（sha16=`8bf7c00620c94dc0`）
 - 源码证据：`apps/client/src/subpackages/discover-extra/discover/history.vue:345`
 - 理想图依据：无基准，依据=规范文档 §1.1 "绿色=行动"，页标题为信息性文本非可点行动件；同分包 segment/people 标题均取 --c-text-primary
@@ -510,7 +546,7 @@
 
 ## subpackages/discover-extra/discover/match-success（2 条）
 
-### R9-L06-D01　P2 / 文案　批次 R9-B11
+### R9-L06-D01　P2 / 文案　批次 R9-B13
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__discover__match-success__top.png`（sha16=`7c3d52aa912654ce`）
 - 源码证据：`apps/client/src/components/match/MatchSuccess.vue:98`
 - 理想图依据：匹配成功页面.png 副标题区域，理想原文为"你和 星野 互相喜欢了彼此"
@@ -518,7 +554,7 @@
 - 建议改法：将 zh-CN.ts:462 的 matchedWith 值改为"你和 {name} 互相喜欢了彼此"，同步 en-US.ts:347。
 - 修复类别：单页
 
-### R9-L06-D02　P2 / 颜色token　批次 R9-B11
+### R9-L06-D02　P2 / 颜色token　批次 R9-B13
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__discover__match-success__bottom.png`（sha16=`e6189fd0d0cfb735`）
 - 源码证据：`apps/client/src/components/match/MatchSuccess.vue:465`
 - 理想图依据：匹配成功页面.png 共同点卡 4 行进度条区域，理想图轨道为可辨识的浅灰色圆角条（约 #E5E5E5 档，与白卡明度差 >=10）
@@ -528,7 +564,7 @@
 
 ## subpackages/discover-extra/discover/matching（6 条）
 
-### R9-L05-D13　P2 / 层级遮挡　批次 R9-B10
+### R9-L05-D13　P2 / 层级遮挡　批次 R9-B12
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__discover__matching__top.png`（sha16=`554662e108a8d0d7`）
 - 源码证据：`apps/client/src/components/match/MatchLoading.vue:565`
 - 理想图依据：匹配中页面.png 轨道外环顶点 y=476、头像组中心 y=755 ⇒ 节点轨迹半径 279px=245rpx（环径 ≈490rpx），其最高点 y=476 落在副标题（y=400..427）之下；本帧外环 520rpx、节点半径 260rpx（MatchLoading.vue:565）
@@ -536,7 +572,7 @@
 - 建议改法：节点半径 260rpx 收到 220rpx（或把 avatar-area 的 margin-top:64rpx 抬到 100rpx+），使节点轨迹最高点退到标题带 y=142 之下；「跳过→标题→副标题→轨道」这个顺序是对的，不要回退
 - 修复类别：CSS/token
 
-### R9-L05-D14　P2 / 素材缺失　批次 R9-B10
+### R9-L05-D14　P2 / 素材缺失　批次 R9-B12
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__discover__matching__top.png`（sha16=`554662e108a8d0d7`，自同段前条继承）
 - 源码证据：`apps/client/src/components/match/MatchLoading.vue:349`
 - 理想图依据：匹配中页面.png 中央爱心区——爱心垫一枚白色圆碟，实测碟径 100px(88rpx)、爱心 63px(55rpx)；本帧 x=150..230 / y=240..330 区域近白像素仅 100 个（全部来自两侧头像白描边），无碟形
@@ -544,7 +580,7 @@
 - 建议改法：.match-loading__heart 加 width/height 88rpx + background: var(--c-bg-container) + border-radius 50%，内图保持 80rpx
 - 修复类别：CSS/token
 
-### R9-L05-D15　P2 / 可达性　批次 R9-B10
+### R9-L05-D15　P2 / 可达性　批次 R9-B12
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__discover__matching__top.png`（sha16=`554662e108a8d0d7`，自同段前条继承）
 - 源码证据：`apps/client/src/components/match/MatchLoading.vue:212`
 - 理想图依据：匹配中页面.png 右上「跳过」胶囊（理想图胶囊含绿点图标 + 文字，实测高 22px 文字 + 内边距）；本帧胶囊实测 x=308..360 / y=89..120 = 53×32px = 105×63rpx
@@ -552,7 +588,7 @@
 - 建议改法：padding 改 22rpx 30rpx（使总高 ≥88rpx），并按理想图补一枚 --c-brand 圆点前缀图标
 - 修复类别：CSS/token
 
-### R9-L05-D16　P2 / 颜色token　批次 R9-B10
+### R9-L05-D16　P2 / 颜色token　批次 R9-B12
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__discover__matching__bottom.png`（sha16=`0a042af52c5f0749`）
 - 源码证据：`apps/client/src/components/match/MatchLoading.vue:554`
 - 理想图依据：匹配中页面.png 轨道节点为品牌绿系；规范 §1.1 原则 3「一令牌一值，禁止私有色值」+ §1.2 主色 --c-brand #36C99A（色板无 #4CDC9D 档）
@@ -560,7 +596,7 @@
 - 建议改法：改 var(--c-brand, #36C99A)（需更亮就补 brand-400 令牌再引用），不留字面量
 - 修复类别：CSS/token
 
-### R9-L05-D17　P2 / 字号　批次 R9-B10
+### R9-L05-D17　P2 / 字号　批次 R9-B12
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__discover__matching__bottom.png`（sha16=`0a042af52c5f0749`，自同段前条继承）
 - 源码证据：`apps/client/src/components/match/MatchLoading.vue:366`
 - 理想图依据：匹配中页面.png 标题「正在寻找有缘的Ta...」实测字身带 42px 高 = 37rpx（同法量本页标题得 16px=32rpx，量法一致）
@@ -568,7 +604,7 @@
 - 建议改法：改 var(--fs-3xl, 36rpx)/800，与理想图 37rpx 取同一档
 - 修复类别：CSS/token
 
-### R9-L05-D18　P3 / 颜色token　批次 R9-B10
+### R9-L05-D18　P3 / 颜色token　批次 R9-B12
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__discover__matching__bottom.png`（sha16=`0a042af52c5f0749`，自同段前条继承）
 - 源码证据：`apps/client/src/components/match/MatchLoading.vue:531`
 - 理想图依据：匹配中页面.png 轨道环/涟漪为品牌绿淡档；规范 §1.1 原则 3 要求引用 var(--c-*)，同族已有 --c-brand-border-tint（design-variables.scss:830 系）
@@ -578,7 +614,7 @@
 
 ## subpackages/discover-extra/home/segment（2 条）
 
-### R9-L06-D03　P2 / 字号　批次 R9-B35
+### R9-L06-D03　P2 / 字号　批次 R9-B41
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__home__segment__top.png`（sha16=`0e740d3636de7ed0`）
 - 源码证据：`apps/client/src/subpackages/discover-extra/home/segment.vue:336`
 - 理想图依据：无基准，依据=规范文档 §1.3 正文/标签最小档 12px（24rpx）
@@ -586,7 +622,7 @@
 - 建议改法：将 .segment-row__meta font-size 由 22rpx 提到 var(--fs-base, 24rpx)，与同页 __online 同档。
 - 修复类别：CSS/token
 
-### R9-L06-D04　P2 / 间距　批次 R9-B35
+### R9-L06-D04　P2 / 间距　批次 R9-B41
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__home__segment__bottom.png`（sha16=`766e5077bd99cfbf`）
 - 源码证据：`apps/client/src/subpackages/discover-extra/home/segment.vue:295`
 - 理想图依据：无基准，依据=同分包 people.vue .people-row__info gap 同为 6rpx 但行内含标签第三行使视觉更拥挤，segment 仅两行时 3px 间距导致姓名行与 meta 行粘连
@@ -596,7 +632,7 @@
 
 ## subpackages/discover-extra/likes-visitors/index（2 条）
 
-### R9-L07-D01　P2 / 字号　批次 R9-B36
+### R9-L07-D01　P2 / 字号　批次 R9-B42
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__likes-visitors__index__top.png`（sha16=`b49e1aeac05ceb62`）
 - 源码证据：`apps/client/src/subpackages/discover-extra/likes-visitors/index.vue:708`
 - 理想图依据：无基准，依据=规范§1.3「极小 --fs-xs/sm=10/11px」为角标下限；本页角标用裸 18rpx 落在令牌刻度之外
@@ -604,7 +640,7 @@
 - 建议改法：把 .tabs__badge-text 的 font-size 由 18rpx 改为 var(--fs-xs)，与其余角标同档
 - 修复类别：CSS/token
 
-### R9-L07-D02　P2 / 可达性　批次 R9-B36
+### R9-L07-D02　P2 / 可达性　批次 R9-B42
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__likes-visitors__index__bottom.png`（sha16=`b49e1aeac05ceb62`）
 - 源码证据：`apps/client/src/subpackages/discover-extra/likes-visitors/index.vue:540`
 - 理想图依据：无基准，依据=规范§1.2 次级文字应达 4.5:1（本页为可读副标题而非纯装饰）
@@ -614,7 +650,7 @@
 
 ## subpackages/discover-extra/likes/index（2 条）
 
-### R9-L06-D09　P2 / 尺寸比例　批次 R9-B01
+### R9-L06-D09　P2 / 尺寸比例　批次 R9-B02
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__likes__index__top.png`（sha16=`5f99122f06103359`）
 - 源码证据：`apps/client/src/components/common/BaseTabs.vue:52`
 - 理想图依据：无基准，依据=BaseTabs 组件规范（pill 变体 + equal-split 时标签应单行），实帧"喜欢我的"和"我发出的喜欢"均折行为两行，标签高度不一致
@@ -622,7 +658,7 @@
 - 建议改法：在 .base-tabs--pill .base-tab-label 补 white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 或在 likes 页取消 equal-split 改用自然宽度。
 - 修复类别：单页
 
-### R9-L06-D10　P2 / 颜色token　批次 R9-B37
+### R9-L06-D10　P2 / 颜色token　批次 R9-B43
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__likes__index__bottom.png`（sha16=`05f7a071fe010a7d`）
 - 源码证据：`apps/client/src/subpackages/discover-extra/likes/index.vue:1693`
 - 理想图依据：无基准，依据=规范文档 §1.1 文字对比度（UI 控件标签 >=3:1）；--c-brand 实测约 #3CCA9C 压白底 #FFFFFF 对比度约 2.1:1，低于 3:1
@@ -632,7 +668,7 @@
 
 ## subpackages/discover-extra/nearby/people（2 条）
 
-### R9-L06-D05　P2 / 颜色token　批次 R9-B38
+### R9-L06-D05　P2 / 颜色token　批次 R9-B44
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__nearby__people__top.png`（sha16=`77d4b5482333bfb4`）
 - 源码证据：`apps/client/src/subpackages/discover-extra/nearby/people.vue:331`
 - 理想图依据：无基准，依据=规范文档 §1.1 文字对比度要求（正文级 >=4.5:1）；--c-brand-600 实测 #2AAE83 压 --c-brand-50 #E8FAF3 对比度约 2.7:1，远低于 4.5:1
@@ -640,7 +676,7 @@
 - 建议改法：将激活态文字色改 --c-brand-800（#156B51，压 #E8FAF3 约 5.9:1），与同页 __online 文字色同档。
 - 修复类别：CSS/token
 
-### R9-L06-D06　P2 / 字号　批次 R9-B38
+### R9-L06-D06　P2 / 字号　批次 R9-B44
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover-extra__nearby__people__bottom.png`（sha16=`f2869c394c6f4e00`）
 - 源码证据：`apps/client/src/subpackages/discover-extra/nearby/people.vue:449`
 - 理想图依据：无基准，依据=规范文档 §1.3 正文/标签最小档 12px（24rpx）
@@ -650,7 +686,7 @@
 
 ## subpackages/discover/activities/index（2 条）
 
-### R9-L13-D05　P2 / 颜色token　批次 R9-B39
+### R9-L13-D05　P2 / 颜色token　批次 R9-B45
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover__activities__index__top.png`（sha16=`3e9ee3b4d5ea01cb`）
 - 源码证据：`apps/client/src/subpackages/discover/activities/index.vue:686`
 - 理想图依据：无基准，依据=§1.2（输入底 --c-bg-surface 与页底 --c-bg-page 需可辨）+ 组件规范；分段控件轨道须可识别
@@ -658,7 +694,7 @@
 - 建议改法：轨道底改与页底可辨的档（如 `--c-brand-50` 或加 `--border-subtle` 描边），使控件边界达非文字 3:1。
 - 修复类别：CSS/token
 
-### R9-L13-D06　P2 / 可达性　批次 R9-B39
+### R9-L13-D06　P2 / 可达性　批次 R9-B45
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover__activities__index__bottom.png`（sha16=`d89190aac3dc63c7`）
 - 源码证据：`apps/client/src/subpackages/discover/activities/index.vue:805`
 - 理想图依据：无基准，依据=§1.2 + 组件规范；分类标签文字应达次级文字对比
@@ -668,7 +704,7 @@
 
 ## subpackages/discover/discussions/index（2 条）
 
-### R9-L13-D03　P2 / 可达性　批次 R9-B06
+### R9-L13-D03　P2 / 可达性　批次 R9-B07
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover__discussions__index__top.png`（sha16=`2e993507837aa1ff`）
 - 源码证据：`apps/client/src/components/common/StatusState.vue:89`
 - 理想图依据：无基准，依据=§1.2 + 组件规范；热度药丸文字应达次级文字对比
@@ -676,7 +712,7 @@
 - 建议改法：heat 档文字改吃更深档（如 warning-700 / `--c-accent-400` 级）或把底换成中性 `--c-neutral-50`，使药丸文字 ≥4.5:1。
 - 修复类别：CSS/token
 
-### R9-L13-D04　P3 / 间距　批次 R9-B40
+### R9-L13-D04　P3 / 间距　批次 R9-B46
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__discover__discussions__index__bottom.png`（sha16=`2be496e85ee5f070`）
 - 源码证据：`apps/client/src/subpackages/discover/discussions/index.vue:174`
 - 理想图依据：无基准，依据=§1.4（间距 4/8/12/16/20/24/32/48rpx 阶梯 + 分隔线 1rpx 令牌）
@@ -686,7 +722,7 @@
 
 ## subpackages/legal/agreement/index（2 条）
 
-### R9-L13-D09　P2 / 可达性　批次 R9-B04
+### R9-L13-D09　P2 / 可达性　批次 R9-B05
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__legal__agreement__index__top.png`（sha16=`0694d5b059b42f6d`）
 - 源码证据：`apps/client/src/components/common/LegalTextPage.vue:443`
 - 理想图依据：无基准，依据=§1.2 + 组件规范；唯一确认出口 CTA 文字应达 4.5:1
@@ -694,7 +730,7 @@
 - 建议改法：与 D07 同源——CTA 底改 brand-700/800 深档或前景换成与绿底成对的高对比令牌。
 - 修复类别：CSS/token
 
-### R9-L13-D10　P2 / 间距　批次 R9-B04
+### R9-L13-D10　P2 / 间距　批次 R9-B05
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__legal__agreement__index__bottom.png`（sha16=`3606cb2af6df8e2a`）
 - 源码证据：`apps/client/src/components/common/LegalTextPage.vue:286`
 - 理想图依据：无基准，依据=§1.4 + §1.1 原则1；文末白卡与吸底白条之间不应露绿断层
@@ -704,7 +740,7 @@
 
 ## subpackages/legal/privacy/index（2 条）
 
-### R9-L13-D07　P2 / 可达性　批次 R9-B04
+### R9-L13-D07　P2 / 可达性　批次 R9-B05
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__legal__privacy__index__top.png`（sha16=`3d026c7523caf2cb`）
 - 源码证据：`apps/client/src/components/common/LegalTextPage.vue:443`
 - 理想图依据：无基准，依据=§1.2 + 组件规范；唯一确认出口 CTA 文字应达 4.5:1
@@ -712,7 +748,7 @@
 - 建议改法：CTA 底改 `--c-brand-700`/`--c-brand-800` 深档（白字对比升至 ≥4.5:1），或前景改与绿底成对的高对比档。
 - 修复类别：CSS/token
 
-### R9-L13-D08　P2 / 间距　批次 R9-B04
+### R9-L13-D08　P2 / 间距　批次 R9-B05
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__legal__privacy__index__bottom.png`（sha16=`073ed19b6d95bf92`）
 - 源码证据：`apps/client/src/components/common/LegalTextPage.vue:286`
 - 理想图依据：无基准，依据=§1.4 + §1.1 原则1；文末白卡与吸底白条之间不应露绿断层
@@ -720,9 +756,177 @@
 - 建议改法：占位收到与吸底条等高（约 136rpx + 安全区）或直接把正文容器底部内距并入吸底条避让值，消除绿缝。
 - 修复类别：单页
 
+## subpackages/market/detail/index（5 条）
+
+### R9-L14-D01　P1 / 可达性　批次 R9-B47
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__market__detail__index__top.png`（sha16=`9fa9901577209d44`）
+- 源码证据：`apps/client/src/subpackages/market/detail/index.vue:511`
+- 理想图依据：无基准页；依据=§1.3 正文档（--fs-md 26rpx=13px 属正文级，需 4.5:1）+ §1.2 主色/文字令牌
+- 现象：封存态唯一的内容级出口「返回」钮文字为 0.95 白叠 #36C99A，仅 2.03:1（13.1px 正文级需 4.5:1，不到一半）；13.1px 细笔画下弱视或强光环境读不出「返回」，用户只看见一块绿，不知道点它会离开此页。
+- 建议改法：钮底换 --c-brand-700 深档并把标签提到 ≥18.66px/700（大字号 3:1），或改白底 + --c-text-primary 深字（约 15:1）。
+- 修复类别：CSS/token
+
+### R9-L14-D02　P2 / 尺寸比例　批次 R9-B47
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__market__detail__index__top.png`（sha16=`9fa9901577209d44`，自同段前条继承）
+- 源码证据：`apps/client/src/subpackages/market/detail/index.vue:499`
+- 理想图依据：无基准页；依据=组件规范 Button 默认 md=96rpx（design-variables.scss:666）+ 88rpx 触控下限
+- 现象：返回钮 min-height 80rpx=40.3px，帧内实测 55×39px，落在组件库 Button 的小档 80rpx（design-variables.scss:665）而非默认 96rpx；高度低于 88rpx 下限，封存页页内只有这一个出口（导航返回仍在，故不判 P1）。
+- 建议改法：改用 --btn-height-md 96rpx，或至少 min-height 88rpx。
+- 修复类别：CSS/token
+
+### R9-L14-D03　P2 / 颜色token　批次 R9-B47
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__market__detail__index__top.png`（sha16=`9fa9901577209d44`，自同段前条继承）
+- 源码证据：`apps/client/src/subpackages/market/detail/index.vue:534`
+- 理想图依据：无基准页；依据=§1.2 三级文本 --c-text-tertiary #6B7571 + §1.1 页底 --c-bg-page #EEF7F2
+- 现象：封存说明 22rpx=11.1px、--c-text-tertiary #6B7571 直接铺在页底 #EEF7F2（帧内 238,247,242）上=4.36:1，低于 4.5:1；同一文案在 shop/wallet 落在白卡上是 4.76:1，只有 detail 因无卡掉档。
+- 建议改法：说明改 --c-text-secondary #4A524E（在该页底约 7.36:1），或按 D05 补白卡容器。
+- 修复类别：CSS/token
+
+### R9-L14-D04　P2 / 可达性　批次 R9-B47
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__market__detail__index__bottom.png`（sha16=`cedcf8e2e96a5a17`）
+- 源码证据：`apps/client/src/subpackages/market/detail/index.vue:431`
+- 理想图依据：无基准页；依据=88rpx 触控下限 + 组件库最小按钮档 80rpx（design-variables.scss:665）
+- 现象：导航返回键 64rpx=32.3px 方热区（白色导航上只剩 1rpx 描边圈，直径 30px），低于 88rpx 下限，也小于组件库最小档 80rpx；封存页无滚动内容，退出只能靠它或系统手势（有替代出口，故记 P2）。
+- 建议改法：命中盒提到 88rpx（视觉圆可保持 64rpx，用 ::after 扩热区）。
+- 修复类别：CSS/token
+
+### R9-L14-D05　P3 / 位置　批次 R9-B47
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__market__detail__index__bottom.png`（sha16=`cedcf8e2e96a5a17`，自同段前条继承）
+- 源码证据：`apps/client/src/subpackages/market/detail/index.vue:515`
+- 理想图依据：无基准页；依据=同域 shop/wallet 封存态容器（白卡）与组件规范 PageStateContainer（padding 48rpx 32rpx 的状态容器）
+- 现象：同一封存墙在 detail 是通栏居中（锁 355–405、块心 429）、无白色卡容器；shop 是 351×174 白卡顶部锚定（y131–304），wallet 是 359×125 白卡（y115–239）。同一状态两套容器、三种落位，用户从「逛逛」进详情会看到整块容器消失。
+- 建议改法：抽公共封存组件（或至少给 detail 补同样的白卡与统一垂直落位）；若产品认定详情页就该通栏，需在规范 §3 补登记口径。
+- 修复类别：单页
+
+## subpackages/market/shop/index（6 条）
+
+### R9-L14-D06　P1 / 颜色token　批次 R9-B48
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__market__shop__index__top.png`（sha16=`75e612276d28f4f0`）
+- 源码证据：`apps/client/src/subpackages/market/shop/index.vue:451`
+- 理想图依据：无基准页；依据=§1.2 主色 --c-brand #36C99A + §1.1 浅绿页底；大字号 3:1 底线
+- 现象：页标题「逛逛」#36C99A（帧内 51,200,152）叠在页头浅绿渐变 #E8F5E9→#EEF7F2（帧内 233,245,235）上只有 1.90:1（令牌算 1.87:1），22.2px/800 的大字连 3:1 底线都不到；这是页面上唯一说明"这是逛逛"的字，弱视用户读不出。
+- 建议改法：标题改 --c-text-primary（在 #E8F5E9 上约 15:1），或压到品牌深档并实测 ≥3:1。
+- 修复类别：CSS/token
+
+### R9-L14-D07　P3 / 间距　批次 R9-B48
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__market__shop__index__top.png`（sha16=`75e612276d28f4f0`，自同段前条继承）
+- 源码证据：`apps/client/src/subpackages/market/shop/index.vue:714`
+- 理想图依据：无基准页；依据=§1.4 页边距 --page-padding 32rpx=16px（design-variables.scss:575）
+- 现象：封存卡左右外边距写死 24rpx=12px（帧内卡左缘 14px），比本页页头 32rpx=16px 的内容边（返回圆左缘 17px）向左越出 3px，也不等于 --page-padding；卡与自己的页头左缘不齐，且每侧比 wallet 卡（8px 边距）多缩 4px（整卡窄 8px）。
+- 建议改法：改 margin: 60rpx var(--page-padding)，让卡与页头同边。
+- 修复类别：CSS/token
+
+### R9-L14-D08　P3 / 圆角　批次 R9-B48
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__market__shop__index__top.png`（sha16=`75e612276d28f4f0`，自同段前条继承）
+- 源码证据：`apps/client/src/subpackages/market/shop/index.vue:716`
+- 理想图依据：无基准页；依据=同域 wallet 封存卡 --r-2xl→--r-xxl=32rpx（styles/tokens.scss:114）与 §1.4 圆角档
+- 现象：本卡圆角 --r-xl=24rpx=12px（帧角扫描 r≈12px），wallet 同一封存墙的卡是 32rpx=16px（r≈16px）；同一状态两套圆角，两页并排能看出 4px 差。
+- 建议改法：三页封存卡统一取 --card-radius 40rpx 或统一 --r-xxl 32rpx。
+- 修复类别：CSS/token
+
+### R9-L14-D09　P2 / 可达性　批次 R9-B48
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__market__shop__index__bottom.png`（sha16=`75e612276d28f4f0`）
+- 源码证据：`apps/client/src/subpackages/market/shop/index.vue:425`
+- 理想图依据：无基准页；依据=88rpx 触控下限 + 组件库最小按钮档 80rpx（design-variables.scss:665）
+- 现象：返回键 64rpx=32.3px 热区（帧内白色圆 30px），低于 88rpx，也小于组件库最小档 80rpx；同域 detail 同值（detail/index.vue:431），一次可改两处。
+- 建议改法：命中盒提到 88rpx，视觉圆可保持 64rpx。
+- 修复类别：CSS/token
+
+### R9-L14-D10　P2 / 可达性　批次 R9-B48
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__market__shop__index__bottom.png`（sha16=`75e612276d28f4f0`，自同段前条继承）
+- 源码证据：`apps/client/src/subpackages/market/shop/index.vue:278`
+- 理想图依据：无基准页；依据=共享 BACK 素材（config/images.ts:442）+ 非文本 3:1
+- 现象：共享 BACK 素材按 40rpx=20px 渲染后，帧内最深像素 (152,167,187)=#98A7BB，对白底只有 2.45:1（<3:1）；返回箭头边界不可辨，白色圆底上等于一个浅灰虚影。
+- 建议改法：换 --c-text-secondary 级深色箭头（≥3:1），或给 40rpx 图标加深色描边版本。
+- 修复类别：CSS/token
+
+### R9-L14-D11　P2 / 字号　批次 R9-B48
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__market__shop__index__bottom.png`（sha16=`75e612276d28f4f0`，自同段前条继承）
+- 源码证据：`apps/client/src/subpackages/market/shop/index.vue:738`
+- 理想图依据：无基准页；依据=§1.3 字号层级（--fs-xs/sm 10/11px 仅供角标/法务，小字档是 --fs-md/base 13/12px）
+- 现象：封存说明 --fs-sm 令牌实值 22rpx=11.1px（.vue fallback 写 24rpx，比实际大 2rpx），帧内字高约 8px；这句"为什么这页是空的"的唯一解释落在全站最小字号档，和角标/法务同级。
+- 建议改法：说明改 --fs-md 26rpx=13px（或 --fs-base 24rpx=12px），三页同改。
+- 修复类别：CSS/token
+
+## subpackages/market/wallet/index（5 条）
+
+### R9-L14-D12　P1 / 颜色token　批次 R9-B49
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__market__wallet__index__top.png`（sha16=`230553c2e5869ea4`）
+- 源码证据：`apps/client/src/subpackages/market/wallet/index.vue:281`
+- 理想图依据：无基准页；依据=§1.2 主色 --c-brand #36C99A / $brand-400 #55D5A7 + §1.3 正文 15/16px 需 4.5:1
+- 现象：页标题「我的钱包」为 0.95 白叠页头渐变 #36C99A→#55D5A7：左端 2.03:1、标题实际位置（帧内 (70,207,160)）1.90:1、右端 1.74:1，15.1px/700 属正文级要求 4.5:1，整段不达；用户读不出当前是哪一页，只能靠封存墙猜。
+- 建议改法：页头压到 brand-700 深档并把标题提到大字档（≥3:1），或标题改 --c-text-primary 深字。
+- 修复类别：CSS/token
+
+### R9-L14-D13　P2 / 颜色token　批次 R9-B49
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__market__wallet__index__top.png`（sha16=`230553c2e5869ea4`，自同段前条继承）
+- 源码证据：`apps/client/src/subpackages/market/wallet/index.vue:269`
+- 理想图依据：无基准页；依据=同域 shop/detail 返回键容器 --c-bg-container + --c-border-card（shop/index.vue:428-429、detail/index.vue:437-438）
+- 现象：返回键底盘用 --c-overlay-white-bg-tint 实值 0.08 白（design-variables.scss:914），叠在页头绿上实测 1.05:1；帧内盘内除字形外没有任何 >248 的像素，圆盘完全不可见。上一轮只把 fallback 收敛到 0.2，令牌仍是 0.08，渲染仍取 0.08 —— 画面未变，等于没修。
+- 建议改法：改 --c-bg-container 白底 + --c-border-card（与 shop/detail 同档），或把令牌与 fallback 同值一起改到 0.2 以上。
+- 修复类别：CSS/token
+
+### R9-L14-D14　P3 / 素材缺失　批次 R9-B49
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__market__wallet__index__top.png`（sha16=`230553c2e5869ea4`，自同段前条继承）
+- 源码证据：`apps/client/src/subpackages/market/wallet/index.vue:153`
+- 理想图依据：无基准页；依据=共享 BACK 素材口径（shop/index.vue:278、detail/index.vue:299、config/images.ts:442）
+- 现象：返回键仍是文本字形 ‹（--fs-3xl 36rpx=18.1px 白字），帧内只剩约 10×10px 的细笔画且偏左；shop/detail 同控件用 40rpx=20px 的 BACK 素材，同域两页取档不一（素材缺失轴）。
+- 建议改法：换 <image class="wallet__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit"> 40rpx，与 shop:278/detail:299 一致。
+- 修复类别：CSS/token
+
+### R9-L14-D15　P2 / 字号　批次 R9-B49
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__market__wallet__index__bottom.png`（sha16=`230553c2e5869ea4`）
+- 源码证据：`apps/client/src/subpackages/market/wallet/index.vue:279`
+- 理想图依据：无基准页；依据=§1.3 字体层级（页面主标题 26–28px；正文 --fs-xl/2xl 15/16px）
+- 现象：页标题 --fs-xl 实值 30rpx=15.1px（帧内字盒 55×11px），与 §1.3 正文档 15/16px 同级；同域 shop 页标题 44rpx=22.2px，wallet 的页标题比正文没有任何层级差。
+- 建议改法：页标题提到 --fs-4xl 40rpx=20px 或与 shop 统一 44rpx。
+- 修复类别：CSS/token
+
+### R9-L14-D16　P2 / 间距　批次 R9-B49
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__market__wallet__index__bottom.png`（sha16=`230553c2e5869ea4`，自同段前条继承）
+- 源码证据：`apps/client/src/subpackages/market/wallet/index.vue:348`
+- 理想图依据：无基准页；依据=§1.4 页边距 --page-padding 32rpx=16px（design-variables.scss:575）
+- 现象：封存卡左右外边距 sp-4=16rpx=8px（帧内卡左缘 10px），只有页边距 32rpx 的一半，每侧比 shop 卡 12px 少缩 4px（整卡宽 8px，更贴屏边）；卡与页头 8px 内缩对齐，但与全站页边距不成档。
+- 建议改法：改 margin: var(--sp-10) var(--page-padding)，与 shop 统一到 16px 页边距。
+- 修复类别：CSS/token
+
+## subpackages/profile-extra/feedback/history（4 条）
+
+### R9-L11-D08　P2 / 位置　批次 R9-B10
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__feedback__history__top.png`（sha16=`6538a10450b67a77`）
+- 源码证据：`apps/client/src/components/layout/AppShell.vue:280`
+- 理想图依据：无基准，依据=components/common/EmptyState 组件规范（空态在可用区垂直居中）+ 规范文档§3
+- 现象：空态块实测 icon x=151..227 / y=270..339、标题 y=339..350、描述 y=360..371，整块中心 y≈320.5；筛选条底 y=210 到视口底 814 的可用区中心 y=512（组件盒自 222 起算则 518），空态仍比中心高 192–198px，下方留白约 440px。上一轮把 `.shell` 改成 `min-height:100vh` + flex 列（:280/:415），但 EmptyState（EmptyState.vue:154 `flex:1 0 auto`）在本帧没有伸展，R8-L11-D10 未修对。
+- 建议改法：给 `.shell__body` 一条确定高度（如 `min-height: calc(100vh - 头部高度)`）或对空态宿主显式 `height:100%` + `justify-content:center`。
+- 修复类别：CSS/token
+
+### R9-L11-D09　P2 / 颜色token　批次 R9-B10
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__feedback__history__top.png`（sha16=`6538a10450b67a77`）
+- 源码证据：`apps/client/src/components/layout/AppShell.vue:380`
+- 理想图依据：无基准，依据=规范文档§1.2 主色文本对比 ≥4.5:1
+- 现象：「‹ 返回」12px/500 用 `--c-brand` #36C99A（实测墨迹最深 #2EC796）坐在白色胶囊 #FFFFFF（实测白面 x=17..81 / y=54..94）上，对比度 2.10:1，低于 4.5:1；胶囊盒按 `min-height:88rpx` 取 44px（白面实测 64×41，含 1rpx 边），热区已达标，但标签本身读不清。
+- 建议改法：返回文字改 `--c-brand-700` 或 `--c-text-primary`，保持白胶囊。
+- 修复类别：CSS/token
+
+### R9-L11-D10　P2 / 可达性　批次 R9-B50
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__feedback__history__bottom.png`（sha16=`6538a10450b67a77`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/feedback/history.vue:401`
+- 理想图依据：无基准，依据=components/layout/AppShell.vue:361-363 热区 ≥88rpx 的全站口径
+- 现象：四枚筛选 chip 实测全部 16..59 × 175..210（35px=70rpx），反馈 71..117 × 177..208（32px=64rpx），建议/活动提案同为 32px；均低于 88rpx（44px），芯片间距仅 12rpx，点选时容易落空，且没有替代筛选出口。
+- 建议改法：`.filter-chip` 补 `min-height:88rpx`（文字视觉保持 13px，用 padding 撑高）。
+- 修复类别：CSS/token
+
+### R9-L11-D11　P2 / 颜色token　批次 R9-B50
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__feedback__history__bottom.png`（sha16=`6538a10450b67a77`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/feedback/history.vue:418`
+- 理想图依据：无基准，依据=规范文档§1.2 配色表 + §1.3（13px 标签档）
+- 现象：选中 chip「全部」白字 `--c-text-inverse` #FFFFFF 坐在 `--c-brand` #36C99A（:408/:418）上，13px/600，对比度 2.10:1，低于 4.5:1；同帧未选中 chip 的 #4A524E on #FFFFFF 为 8.05:1，选中态反而更难读。
+- 建议改法：选中态改深绿底（brand-700/800）或改浅绿底 + 深绿字，保持与未选中态的层级差。
+- 修复类别：CSS/token
+
 ## subpackages/profile-extra/profile/album（2 条）
 
-### R9-L10-D15　P2 / 可达性　批次 R9-B41
+### R9-L10-D15　P2 / 可达性　批次 R9-B51
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__album__top.png`（sha16=`5965abd5c8c35140`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/profile-extra/profile/album.vue:880`
 - 理想图依据：无基准，依据=design-variables.scss 真值 $brand-500 #36C99A 文字对比口径
@@ -730,7 +934,7 @@
 - 建议改法：与 D08 同一 token 级修法（品牌绿实底配字统一加深），勿两页各修各的
 - 修复类别：CSS/token
 
-### R9-L10-D16　P2 / 可达性　批次 R9-B41
+### R9-L10-D16　P2 / 可达性　批次 R9-B51
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__album__bottom.png`（sha16=`42f47fe6aea8ede8`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/profile-extra/profile/album.vue:805`
 - 理想图依据：无基准，依据=非文字控件对比 ≥3:1 口径（components/common 组件规范）
@@ -740,7 +944,7 @@
 
 ## subpackages/profile-extra/profile/favorites（4 条）
 
-### R9-L10-D17　P2 / 位置　批次 R9-B42
+### R9-L10-D17　P2 / 位置　批次 R9-B52
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__favorites__top.png`（sha16=`32aa057e9674e49b`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/profile-extra/profile/favorites.vue:152`
 - 理想图依据：无基准，依据=EmptyState 组件规范（flex:1 撑满宿主可用区垂直居中，EmptyState.vue:147-154 自述）
@@ -748,7 +952,7 @@
 - 建议改法：核实 flex:1 是否作用到 EmptyState 根节点（scoped 穿透/根类名），不足则宿主给 .favorites-page 内 EmptyState 包一层 flex:1 容器实测居中后复拍
 - 修复类别：单页
 
-### R9-L10-D18　P1 / 可达性　批次 R9-B02
+### R9-L10-D18　P1 / 可达性　批次 R9-B03
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__favorites__top.png`（sha16=`32aa057e9674e49b`，自同段前条继承）
 - 源码证据：`apps/client/src/components/common/EmptyState.vue:184`
 - 理想图依据：无基准，依据=design-variables.scss 真值 $text-quaternary #9AA39F/$bg-page #EEF7F2 正文对比口径
@@ -756,7 +960,7 @@
 - 建议改法：EmptyState 描述统一 --c-text-secondary（组件级一处修，30+ 消费点同收益）
 - 修复类别：CSS/token
 
-### R9-L10-D19　P2 / 可达性　批次 R9-B42
+### R9-L10-D19　P2 / 可达性　批次 R9-B52
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__favorites__bottom.png`（sha16=`32aa057e9674e49b`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/profile-extra/profile/favorites.vue:165`
 - 理想图依据：无基准，依据=仓内热区口径 AppShell.vue:334（88rpx），同域 location/privacy/album 返回钮均已按此修到 88rpx 热区
@@ -764,7 +968,7 @@
 - 建议改法：热区撑到 88rpx、64rpx 圆底移进内层 circle（照抄 privacy.vue:254-267 配方）
 - 修复类别：单页
 
-### R9-L10-D20　P3 / 位置　批次 R9-B42
+### R9-L10-D20　P3 / 位置　批次 R9-B52
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__favorites__bottom.png`（sha16=`32aa057e9674e49b`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/profile-extra/profile/favorites.vue:175`
 - 理想图依据：无基准，依据=同域一致性：location「我的位置」/album「我的相册」/privacy「隐私权限设置」页题均居中、--fs-4xl
@@ -774,7 +978,7 @@
 
 ## subpackages/profile-extra/profile/location（4 条）
 
-### R9-L10-D08　P2 / 可达性　批次 R9-B43
+### R9-L10-D08　P2 / 可达性　批次 R9-B53
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__location__top.png`（sha16=`5b6a325d22add24f`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/profile-extra/profile/location.vue:539`
 - 理想图依据：无基准，依据=design-variables.scss 真值 $brand-500 #36C99A 与正文/标签对比口径
@@ -782,7 +986,7 @@
 - 建议改法：品牌绿实底钮文字统一改深色档或绿底加深到 ≥3:1 档（同根因连带 album D15、EmptyState 钮，一次 token 级修）
 - 修复类别：CSS/token
 
-### R9-L10-D09　P2 / 可达性　批次 R9-B43
+### R9-L10-D09　P2 / 可达性　批次 R9-B53
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__location__top.png`（sha16=`5b6a325d22add24f`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/profile-extra/profile/location.vue:397`
 - 理想图依据：无基准，依据=正文级文字对比口径（次级 3:1–4.5:1 记 P2）
@@ -790,7 +994,7 @@
 - 建议改法：该指引句提到 --c-text-secondary #4A524E（7.3:1）
 - 修复类别：CSS/token
 
-### R9-L10-D10　P2 / 文案　批次 R9-B43
+### R9-L10-D10　P2 / 文案　批次 R9-B53
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__location__top.png`（sha16=`5b6a325d22add24f`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/profile-extra/profile/location.vue:89`
 - 理想图依据：无基准，依据=规范文档口径：空态不得呈现误导性定位
@@ -798,7 +1002,7 @@
 - 建议改法：无真实坐标时 callout 改「示例位置（未定位）」或隐藏 callout，仅留中心点
 - 修复类别：单页
 
-### R9-L10-D11　P3 / 圆角　批次 R9-B43
+### R9-L10-D11　P3 / 圆角　批次 R9-B53
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__location__bottom.png`（sha16=`ea26fa16539f1f30`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/profile-extra/profile/location.vue:456`
 - 理想图依据：无基准，依据=同页同级卡片应同档（components/common 卡片规范取 --r-xl 24rpx 或 --r-2xl 32rpx 一档）
@@ -808,7 +1012,7 @@
 
 ## subpackages/profile-extra/profile/other（7 条）
 
-### R9-L10-D01　P2 / 位置　批次 R9-B15
+### R9-L10-D01　P2 / 位置　批次 R9-B17
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__other__top.png`（sha16=`ac224f6208a3bf01`，自同段前条继承）
 - 源码证据：`apps/client/src/components/profile/public/PublicIdentity.vue:101`
 - 理想图依据：他人显示主页.png 身份卡区——「星野 ♀ 在线」姓名行紧贴头像右侧、与头像垂直中线同排，「喜欢」胶囊同行最右
@@ -816,7 +1020,7 @@
 - 建议改法：头像移入卡内左列（负 margin 跨卡缘），姓名行与头像并排、右侧动作胶囊顶对齐姓名行
 - 修复类别：单页
 
-### R9-L10-D02　P2 / 尺寸比例　批次 R9-B14
+### R9-L10-D02　P2 / 尺寸比例　批次 R9-B16
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__other__top.png`（sha16=`ac224f6208a3bf01`，自同段前条继承）
 - 源码证据：`apps/client/src/components/profile/public/PublicHero.vue:88`
 - 理想图依据：他人显示主页.png 头像圆片≈135px/678px 屏宽≈19.9%（≈150rpx 含白环）
@@ -824,7 +1028,7 @@
 - 建议改法：头像档降到 ≈144rpx+6rpx 环（总≈156rpx），与基准 19.9% 屏宽对齐
 - 修复类别：单页
 
-### R9-L10-D03　P2 / 字号　批次 R9-B15
+### R9-L10-D03　P2 / 字号　批次 R9-B17
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__other__top.png`（sha16=`ac224f6208a3bf01`，自同段前条继承）
 - 源码证据：`apps/client/src/components/profile/public/PublicIdentity.vue:129`
 - 理想图依据：他人显示主页.png 姓名字形≈27px/678px 屏宽≈4.0%（≈30rpx 档）
@@ -832,7 +1036,7 @@
 - 建议改法：姓名字号降至 --fs-3xl(40rpx) 以下一档（≈32rpx），与基准 4% 屏宽占比对齐
 - 修复类别：单页
 
-### R9-L10-D04　P1 / 可达性　批次 R9-B15
+### R9-L10-D04　P1 / 可达性　批次 R9-B17
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__other__top.png`（sha16=`ac224f6208a3bf01`，自同段前条继承）
 - 源码证据：`apps/client/src/components/profile/public/PublicIdentity.vue:259`
 - 理想图依据：无基准页此项；依据=design-variables.scss 正文级文字对比口径（本域正文 4.5:1）
@@ -840,7 +1044,7 @@
 - 建议改法：可读性空态文案改 --c-text-tertiary #6B7571（4.33:1）以上档；quaternary 只留给纯装饰（同规则连带 PublicCommon.vue:190）
 - 修复类别：CSS/token
 
-### R9-L10-D05　P2 / 可达性　批次 R9-B15
+### R9-L10-D05　P2 / 可达性　批次 R9-B17
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__other__top.png`（sha16=`ac224f6208a3bf01`，自同段前条继承）
 - 源码证据：`apps/client/src/components/profile/public/PublicIdentity.vue:238`
 - 理想图依据：他人显示主页.png 身份卡右侧「喜欢/打招呼」两枚浅底胶囊
@@ -848,7 +1052,7 @@
 - 建议改法：胶囊文字取品牌绿深档（--c-brand-700 级 ≥4.5:1）或 tint 底加深一档，两枚同修
 - 修复类别：CSS/token
 
-### R9-L10-D06　P2 / 层级遮挡　批次 R9-B44
+### R9-L10-D06　P2 / 层级遮挡　批次 R9-B54
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__other__bottom.png`（sha16=`1f8ff2414d95d3ef`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/profile-extra/profile/other.vue:463`
 - 理想图依据：他人显示主页.png 为整页静态稿，返回/更多控件只浮在封面照片上，不与姓名文字叠压
@@ -856,7 +1060,7 @@
 - 建议改法：芯片滚入白卡区后加不透明底衬或滚动超过头像区后头部换实底条，保证任何滚动位置不与卡内文字叠压
 - 修复类别：单页
 
-### R9-L10-D07　P2 / 间距　批次 R9-B13
+### R9-L10-D07　P2 / 间距　批次 R9-B15
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__other__bottom.png`（sha16=`1f8ff2414d95d3ef`，自同段前条继承）
 - 源码证据：`apps/client/src/components/profile/public/PublicGallery.vue:71`
 - 理想图依据：他人显示主页.png「生活瞬间」区——标题与 4 张照片直接排在页面底上，照片行无包卡、左右缘与标题对齐
@@ -866,7 +1070,7 @@
 
 ## subpackages/profile-extra/profile/privacy（3 条）
 
-### R9-L10-D12　P2 / 可达性　批次 R9-B45
+### R9-L10-D12　P2 / 可达性　批次 R9-B55
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__privacy__top.png`（sha16=`a778d1b79657f0a0`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/profile-extra/profile/privacy.vue:298`
 - 理想图依据：无基准，依据=design-variables.scss 真值渐变亮端 $brand-400 #55D5A7 与文字对比口径
@@ -874,7 +1078,7 @@
 - 建议改法：副标题改深绿压浅端或渐变限定在 brand-500 深档，保证 ≥4.5:1
 - 修复类别：CSS/token
 
-### R9-L10-D13　P2 / 可达性　批次 R9-B45
+### R9-L10-D13　P2 / 可达性　批次 R9-B55
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__privacy__top.png`（sha16=`a778d1b79657f0a0`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/profile-extra/profile/privacy.vue:410`
 - 理想图依据：无基准，依据=次级文字 3:1–4.5:1 记 P2 口径
@@ -882,7 +1086,7 @@
 - 建议改法：行副题提到 --c-text-secondary，tertiary 留给纯计数类
 - 修复类别：CSS/token
 
-### R9-L10-D14　P3 / 字号　批次 R9-B45
+### R9-L10-D14　P3 / 字号　批次 R9-B55
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__privacy__bottom.png`（sha16=`dc8d9a0beccaa9c2`，自同段前条继承）
 - 源码证据：`apps/client/src/subpackages/profile-extra/profile/privacy.vue:371`
 - 理想图依据：无基准，依据=同域区块标题档（PublicGallery.vue:80 区块题 30rpx/800）
@@ -890,9 +1094,295 @@
 - 建议改法：区块题对齐同域 30rpx/800 + --c-text-primary
 - 修复类别：单页
 
+## subpackages/profile-extra/profile/tasks（3 条）
+
+### R9-L11-D01　P2 / 颜色token　批次 R9-B56
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__tasks__top.png`（sha16=`0491fe980e843020`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/profile/tasks.vue:562`
+- 理想图依据：无基准，依据=规范文档§1.2 文本层级/配色表（品牌绿用于强调，正文对比须 ≥4.5:1）与§1.3（15px 属正文档）
+- 现象：积分卡右上「11%」实测墨迹 x=316..344 / y=117..127（高 11px，字号 30rpx=15px/700），颜色为 `--c-brand` #36C99A（实测最深 #34C899），坐在白卡 #FFFFFF 上对比度 2.10:1，低于 4.5:1；同卡「+5 积分」11px 同色（:629-631）也是 2.10:1，整张积分卡的读数都靠这档低对比绿字。
+- 建议改法：百分比改 `--c-text-primary` 或更深的 brand-800（≥4.5:1），「+N 积分」改 `--c-text-secondary`。
+- 修复类别：CSS/token
+
+### R9-L11-D02　P2 / 可达性　批次 R9-B56
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__tasks__top.png`（sha16=`0491fe980e843020`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/profile/tasks.vue:514`
+- 理想图依据：无基准，依据=components/layout/AppShell.vue:361-363 全站口径（可点控件热区 ≥88rpx=44px）
+- 现象：左上返回键盒尺寸 64rpx×64rpx=32px（实测白圆面 30×30px，x=17..46 / y=58..87），热区 32px 比 88rpx 少 12px；页头右侧被系统胶囊占据，页面没有第二个可见返回出口。
+- 建议改法：热区盒抬到 88rpx（白圆视觉可保持 64rpx，用 padding 扩热区）。
+- 修复类别：CSS/token
+
+### R9-L11-D03　P2 / 字号　批次 R9-B56
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__tasks__bottom.png`（sha16=`55d29a56aef6a948`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/profile/tasks.vue:530`
+- 理想图依据：无基准，依据=规范文档§1.3「页面主标题 26–28px」
+- 现象：「任务中心」实测墨迹 x=88..173 / y=61..81（高 20px），对应 `--fs-5xl` 44rpx=22px；规范页头主标题为 26–28px，本页小 4–6px，也与同帧「1/4 已完成」13px 的层级压缩在一起。
+- 建议改法：页头标题改 52–56rpx（26–28px，如 `--fs-6xl/--fs-7xl`）。
+- 修复类别：CSS/token
+
+## subpackages/profile-extra/profile/visitors（2 条）
+
+### R9-L09-D09　P2 / 可达性　批次 R9-B57
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__visitors__top.png`（sha16=`25f237fc2582632b`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/profile/visitors.vue:538`
+- 理想图依据：无基准页，依据=components/layout/AppShell.vue 返回钮 min-height/min-width 88rpx 全站口径 + §1.4
+- 现象：空态唯一行动「编辑资料」胶囊实测 85×30px（170×60rpx，绿色描边 bbox y505..535、x147..231），padding 只有 12rpx 竖档且整条 :536 规则没有 min-height，热区比 88rpx 最小档矮 28rpx；同页 consulting 的「报名」胶囊上一轮已按 88rpx 补齐，这里仍是 60rpx。
+- 建议改法：.visitors-empty__btn 补 min-height: 88rpx、box-sizing: border-box（可加 min-width: 160rpx），保持 r-full 胶囊。
+- 修复类别：单页
+
+### R9-L09-D10　P3 / 位置　批次 R9-B57
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__visitors__bottom.png`（sha16=`ee8ac3bf23ca2bba`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/profile/visitors.vue:266`
+- 理想图依据：无基准页，依据=同分包 settings/index 与 verification/index 页头的既有取档（16px 白底导航条 + 标题居中于 x=188.5）
+- 现象：页头标题「谁看过我」墨迹 y66..85、左缘 x=56（四字宽 84px≈22px 字），紧跟返回钮左对齐、且页头没有白色导航底（y44..88 实测为页面渐变 #E4F4EC）；同分包设置页标题 16px 居中 x174..203、认证页 x159..218 居中于 188.5 ⇒ 同一分包三页里只有访客页走「大字号左对齐 + 渐变页头」另一档。
+- 建议改法：页头改三栏（返回钮 64rpx / 标题 flex:1 text-align:center / 右侧 64rpx 占位）并补白底 88rpx 导航条，与 settings/index.vue:455 同口径。
+- 修复类别：单页
+
+## subpackages/profile-extra/settings/dnd（4 条）
+
+### R9-L11-D04　P2 / 可达性　批次 R9-B58
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__settings__dnd__top.png`（sha16=`44aab9d64c9e2ec3`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/settings/dnd.vue:724`
+- 理想图依据：无基准，依据=规范文档§1.2 禁用/描边令牌 + WCAG 非文本对照 3:1（开关边界须可辨 ON/OFF）
+- 现象：关闭态总开关只剩槽底 `--c-neutral-300` #C2CAC6（x≈300..353 / y≈116..145 内实测 142 像素）对白卡 #FFFFFF 为 1.67:1，仍低于 3:1；内部白轨道 #FFFFFF 与卡片同值，滑块只靠 1rpx 灰边分离。上一轮 R8-L11-D05 把 1.0:1 抬到 1.67:1，方向对但仍未过 3:1。
+- 建议改法：槽底加深到 ≥3:1（如 `--c-text-tertiary` #6B7571 或 #8A948F）或补 2rpx #6B7571 描边。
+- 修复类别：CSS/token
+
+### R9-L11-D05　P3 / 文案　批次 R9-B58
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__settings__dnd__top.png`（sha16=`44aab9d64c9e2ec3`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/settings/dnd.vue:465`
+- 理想图依据：无基准，依据=规范文档§1.3 分层层级（分组标题与行标题不得同字重复）
+- 现象：重复方式第 4 行单选「自定义」（y≈522，取 `t("dnd.repeatCustom")`，:66/:453）与紧接其下的分组标题「自定义」（y≈563，:465）一字不差重复，两处相距 41px；R8-L11-D06 只删了 enable/tip 两处重复标题，这一处仍在（同轴新实例）。
+- 建议改法：分组标题改「自定义星期」等区分语义，或删掉分组标题（选中态已表意）。
+- 修复类别：单页
+
+### R9-L11-D06　P2 / 间距　批次 R9-B58
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__settings__dnd__bottom.png`（sha16=`27f6018484f1315f`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/settings/dnd.vue:664`
+- 理想图依据：无基准，依据=规范文档§1.4 页边距 `--page-padding` 32rpx=16px
+- 现象：卡片左缘实测 x=13（白面从 x=13 起，12px 处是边/阴影），来自 `.section { margin: 24rpx 24rpx 0 }` 的 12px；规范页边距 16px，tasks/history 卡片实测均为 x=16，同站跨页差 4px。
+- 建议改法：`.section` 水平 margin 改 32rpx，与 `--page-padding` 对齐。
+- 修复类别：CSS/token
+
+### R9-L11-D07　P1 / 颜色token　批次 R9-B58
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__settings__dnd__bottom.png`（sha16=`27f6018484f1315f`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/settings/dnd.vue:789`
+- 理想图依据：无基准，依据=规范文档§1.2 主色仅作强调 + §1.3（14px 正文档须 4.5:1）
+- 现象：「开始时间 22:00 / 结束时间 08:00」14px/600 用 `--c-brand` #36C99A（22:00 墨迹 x=307..342 / y=263..272），白卡 #FFFFFF 上对比度 2.10:1，低于 4.5:1；用户读不出自己配置的核心时段（08:00 与 20:00 这类近字形尤其难分），这是本页唯一必读数据。
+- 建议改法：时间值改 `--c-text-primary` 或深绿（≥4.5:1），绿色只留给箭头/选中态。
+- 修复类别：CSS/token
+
+## subpackages/profile-extra/settings/index（2 条）
+
+### R9-L09-D03　P2 / 圆角　批次 R9-B59
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__settings__index__top.png`（sha16=`ad76d40e96c60844`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/settings/index.vue:819`
+- 理想图依据：无基准页，依据=规范文档 §1.4「卡片圆角 --card-radius 40rpx=20px」
+- 现象：帮助/账号管理/社交资产/通知设置等 7 组菜单卡圆角取 --r-xl=24rpx=12px；帧上首卡左上角实测 x=200 处白起于 y=127、x=17（卡缘内 1px）处起于 y=134，弧高 7px 对应 r≈12px，恰好是规范卡片圆角 20px 的 60%，与同批已按 20px 修的课程卡两档。
+- 建议改法：.menu-group（及 :851 的退出按钮同族）圆角改 var(--card-radius, 40rpx)，与 §1.4 一档。
+- 修复类别：CSS/token
+
+### R9-L09-D04　P2 / 颜色token　批次 R9-B59
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__settings__index__bottom.png`（sha16=`30df810982037672`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/settings/index.vue:926`
+- 理想图依据：无基准页，依据=规范文档 §1.2 颜色角色表 + 正文级 4.5:1
+- 现象：「退出登录」15px 文本取 --c-error #E5454D 直接压白卡 = 3.97:1（帧上红色墨迹 y703–714、x161–217），低于 4.5:1；这是页内唯一的退出账号入口，却用了只该表达错误态的中间红。
+- 建议改法：文字加深到同族 5:1 以上档（如 #C4343C ≈5.4:1），保留 --c-error 给错误提示本身。
+- 修复类别：CSS/token
+
+## subpackages/profile-extra/verification/index（2 条）
+
+### R9-L09-D05　P2 / 颜色token　批次 R9-B60
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__verification__index__top.png`（sha16=`2ec5823044d4c56e`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/verification/index.vue:932`
+- 理想图依据：无基准页，依据=规范文档 §1.2（brand-500 #36C99A / brand-300 #75E1B7）+ 文字 4.5:1
+- 现象：认证流程三步序号徽标（48rpx 圆底）底取 brand(#36C99A)→brand-300(#75E1B7) 渐变、序号是 11px 白字（:943 --c-text-inverse）；帧上徽标底实测 #4DD2A5，白字对比仅 1.85:1（渐变两端 2.10:1 / 1.59:1），序号基本看不清，只剩一个浅绿圆点。
+- 建议改法：徽标底改 brand-800 #156B51 实底（白字 6.45:1），或用 brand-100 浅底 + brand-800 序号，别在浅绿渐变上压白字。
+- 修复类别：CSS/token
+
+### R9-L09-D06　P1 / 颜色token　批次 R9-B60
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__verification__index__bottom.png`（sha16=`07f0990d0c634ccb`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/verification/index.vue:1193`
+- 理想图依据：无基准页，依据=规范文档 §1.2（brand→brand-300 渐变）+ 正文级 4.5:1
+- 现象：「提交认证申请」主按钮 365×46px 底色取 brand(#36C99A)→brand-300(#75E1B7) 渐变，白字对比仅 1.83:1（帧上按钮 y706–752 实测底 #50D4A6→#59D6AA、文字核心 #F7FEFB）；这是本页唯一提交出口，用户拿不到"看清主操作并确认提交"这一步——弱视/强光下按钮文案与底色糊成一片。
+- 建议改法：按钮底改 brand-800 #156B51 实底（白字 6.45:1）或 brand-700→brand-600 加深渐变，仍保不住就改白底 + brand-800 字描边档。
+- 修复类别：CSS/token
+
+## subpackages/profile-extra/verification/real-name（2 条）
+
+### R9-L09-D07　P1 / 颜色token　批次 R9-B61
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__verification__real-name__top.png`（sha16=`e60322dc37963e62`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/verification/real-name.vue:90`
+- 理想图依据：无基准页，依据=规范文档 §1.2 brand-500 #36C99A 为点缀色 + 文字 4.5:1（18px/700 亦需 3:1）
+- 现象：已认证态状态标题「已实名认证」用 --c-brand-500 #36C99A 压同卡片的 --c-brand-50 #E8FAF3（:91）底色，对比只有 1.88:1（帧上标题墨迹 y197–211、x165–213，众数色 #36C99A）；用户进来分不清自己「已认证」还是「未认证」，拿不到"确认实名状态"这个页面第一眼信息。
+- 建议改法：状态标题色改 brand-800 #156B51（6.45:1）或 brand-700 #1F8D6A（对 brand-50 约 4.1:1 仍紧，建议 brand-800），底色不动。
+- 修复类别：CSS/token
+
+### R9-L09-D08　P2 / 颜色token　批次 R9-B61
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__verification__real-name__bottom.png`（sha16=`e60322dc37963e62`）
+- 源码证据：`apps/client/src/subpackages/profile-extra/verification/real-name.vue:600`
+- 理想图依据：无基准页，依据=规范文档 §1.1「主题底色统一浅绿 #EEF7F2，页面间不得出现断层」+ §1.2 令牌表（无蓝色页面底）
+- 现象：页容器底是 180° 渐变 --c-bg-page #EEF7F2 → --c-tint-blue-50 #E3F2FD；帧上 y480–520 实测 #E7F4F9（蓝通道最高），信息卡以下 380px 整片偏蓝，与全站浅绿主题断层；同分包的认证页上一轮已把同类页底改成绿调 brand-50 #E8FAF3，只剩这一页还是蓝调。
+- 建议改法：渐变终点改 --c-brand-50 #E8FAF3（与 verification/index.vue:739 同口径），或整页平铺 --c-bg-page。
+- 修复类别：CSS/token
+
+## subpackages/setup/campus（4 条）
+
+### R9-L12-D05　P2 / 可达性　批次 R9-B62
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__campus__index__top.png`（sha16=`b69353c3b1c88d24`）
+- 源码证据：`apps/client/src/subpackages/setup/campus/index.vue:425`
+- 理想图依据：无基准，依据=仓内自陈热区口径 `AppShell.vue:334` `min-height:88rpx`（44px）
+- 现象：「非学生？跳过此步，稍后认证 ›」是三项学校资料未填时唯一的前进出口，但 `.skip-bar` 只有 `padding:16rpx 0 8rpx` 包 26rpx 文本（`campus:420-426`），整行实测约 28–31px=55–62rpx；帧上文字墨迹仅 13px 高（y682–694），低于 88rpx/44px，点按容错很窄（主按钮此时是禁用态，见 y711–756 的灰钮）。学生仍可先填三项走主按钮，故本条按 P2，不上 P1。
+- 建议改法：给 `.skip-bar` 补 `min-height:88rpx; box-sizing:border-box`，视觉不变、热区抬到 44px。
+- 修复类别：单页
+
+### R9-L12-D06　P2 / 颜色token　批次 R9-B62
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__campus__index__top.png`（sha16=`b69353c3b1c88d24`）
+- 源码证据：`apps/client/src/subpackages/setup/campus/index.vue:409`
+- 理想图依据：无基准，依据=规范文档 §1.2 品牌浅底令牌 `--c-bg-brand` #E8FBF2 + 本页 `.value-card` 自身声明（`campus:408-411`）
+- 现象：「完成校园认证，解锁…」价值提示卡声明 `background:var(--c-bg-brand)` #E8FBF2 + `--c-brand-200` 描边，但帧上该卡实测纯白 #FFFFFF（(30,610)、(200,650) 均 #FFFFFF，卡体 y591–659），与上方学校资料白卡（y271–590）零区分；SectionCard 是子组件，宿主 scoped `.value-card` 落在组件根上不生效（`schedule:108-110` 已记录同型坑），绿色提示卡退化成第三张白卡。
+- 建议改法：在 SectionCard 插槽内包一层页内 `view` 承色，或给 SectionCard 增 background/border prop；不要对组件根写宿主 scoped 类。
+- 修复类别：单页
+
+### R9-L12-D07　P2 / 颜色token　批次 R9-B62
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__campus__index__bottom.png`（sha16=`0dad61822ad70b55`）
+- 源码证据：`apps/client/src/subpackages/setup/campus/index.vue:381`
+- 理想图依据：无基准，依据=规范文档 §1.2「输入底 `--c-bg-surface` #F3FAF6」+ 同流程 schedule 输入框（`schedule:199`）
+- 现象：城市/学校/专业三个选择器字段 `.field` 背景取 `--c-bg-page` #EEF7F2，与页面底同值；帧上字段实测 #EEF7F2，而同流程 schedule 的输入框已是 #F3FAF6（帧 y250 实测 #F3FAF6），两页同角色输入底不同档，且偏离 §1.2 的输入底令牌。
+- 建议改法：改 `background: var(--c-bg-surface)`，与 schedule 对齐；如需更明显可用 `--c-border-card` 描边补足边界。
+- 修复类别：CSS/token
+
+### R9-L12-D08　P2 / 可达性　批次 R9-B62
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__campus__index__bottom.png`（sha16=`0dad61822ad70b55`）
+- 源码证据：`apps/client/src/subpackages/setup/campus/index.vue:430`
+- 理想图依据：无基准，依据=规范文档 §1.2 品牌绿阶 + §1.3 辅助文字 4.5:1
+- 现象：跳过入口文字取 `--c-brand-700` #1F8D6A 压页面底 #EEF7F2，实测 3.79:1；26rpx=13px 的链接文字落在 3:1–4.5:1 的次级带（帧 y682–694 的绿字在浅绿底上发灰），低于正文 4.5:1。
+- 建议改法：改 `--c-brand-800`（#156B51，对 #EEF7F2≈5.9:1），保留下划线语义。
+- 修复类别：CSS/token
+
+## subpackages/setup/interest（4 条）
+
+### R9-L12-D15　P2 / 位置　批次 R9-B63
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__interest__index__top.png`（sha16=`e0d4e0a2cf021ee3`）
+- 源码证据：`apps/client/src/subpackages/setup/interest/index.vue:203`
+- 理想图依据：无基准，依据=同流程另三步主 CTA 落点（campus 711–756、schedule 729–773、recommend 696–739，均占视口 86–95%）
+- 现象：「完成选择」在普通文档流里紧随 10 枚 chip（`.interest-save` 只有 margin-top:32rpx，无 fixed、无 margin-top:auto），帧上按钮落在 y400–442（视口 49–54%），其下到 home 条还有 372px（46% 视口）纯空底；同流程另三步主 CTA 都在 86–95%，唯此页悬在半屏。
+- 建议改法：给 `.interest-page` 的按钮前加 `flex:1` 占位，或改用 BottomActionBar `fixed` 吸底，与另三步对齐。
+- 修复类别：单页
+
+### R9-L12-D16　P2 / 可达性　批次 R9-B18
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__interest__index__top.png`（sha16=`e0d4e0a2cf021ee3`）
+- 源码证据：`apps/client/src/components/profile/TagSelector.vue:366`
+- 理想图依据：无基准，依据=WCAG 1.4.11 非文字 3:1 + 规范文档 §1.2 边框档
+- 现象：R8-L12-D10 已把未选中 chip 底从 `--c-bg-page` 改成 `--c-bg-container` 白（`TagSelector:365`），但白色压 #EEF7F2 页底只有 1.10:1，chip 边界仍靠 1rpx `--c-border-default` 描边（`TagSelector:366`，对白 1.40:1、对页底 1.19:1）；三档都 <3:1，帧上 10 枚 chip 只剩一层几乎看不出边界的白色药丸，不像可点的胶囊。上一轮把底色换成白只改了明度方向，没把边界做到可辨。
+- 建议改法：未选中描边提到 `--c-border-strong` #C2CAC6 并加一层 `--s-card-sm` 阴影，或给 chip 一个可见浅底；要严格达 3:1 需描边到 ≈#8A938F 档。
+- 修复类别：CSS/token
+
+### R9-L12-D17　P2 / 可达性　批次 R9-B18
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__interest__index__bottom.png`（sha16=`a34e2c4f31f44fde`）
+- 源码证据：`apps/client/src/components/profile/TagSelector.vue:314`
+- 理想图依据：无基准，依据=规范文档 §1.2 文本色阶 + §1.3 极小字 4.5:1
+- 现象：已选区空态「暂未选择任何标签」取 `--c-text-quaternary` #9AA39F 压 `--c-bg-secondary` #D1F5E7 浅绿盒（帧 (200,230) 实测 #D1F5E7），实测 2.21:1；20rpx=10px 的提示几乎与底同色，用户看不出这块是「已选标签」的占位区。
+- 建议改法：空态文字改 `--c-text-secondary` #4A524E（对 #D1F5E7 6.87:1），或把已选区底降到 `--c-brand-50` #E8FAF3 再配 tertiary。
+- 修复类别：CSS/token
+
+### R9-L12-D18　P3 / 文案　批次 R9-B20
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__interest__index__bottom.png`（sha16=`a34e2c4f31f44fde`）
+- 源码证据：`apps/client/src/i18n/locales/zh-CN.ts:3065`
+- 理想图依据：无基准，依据=组件规范 TagSelector 头部（`selectedTags`/`selectedCount` 两把 key 并列输出）
+- 现象：已选区头部同时渲染 `selectedTags`「已选标签」与 `selectedCount`「已选 {n}/{max}」（`zh-CN.ts:3065-3066`，模板 `TagSelector.vue:178-183`），帧上读作「已选标签 已选 0/5」，同一行把「已选」说了两遍；加上页面自带的「选择兴趣/选择你的兴趣…」与组件自带的「选择你的标签/…」，十枚 chip 被推到 y294 才出现。
+- 建议改法：`selectedCount` 改「{n}/{max}」去掉「已选」，或隐藏 `selectedTags` 标签；页面层与组件层标题二选一。
+- 修复类别：单页
+
+## subpackages/setup/profile（4 条）
+
+### R9-L12-D01　P2 / 可达性　批次 R9-B64
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__profile__index__top.png`（sha16=`24d3e9bea76c511d`）
+- 源码证据：`apps/client/src/subpackages/setup/profile/index.vue:1610`
+- 理想图依据：无基准，依据=规范文档 §1.2 文本色板 + §1.3 极小字档（22rpx 属极小字，仍需 4.5:1）
+- 现象：「照片墙」右侧常驻说明「最多 6 张，点击空位添加」取 `--c-text-placeholder`=#9AA39F，压在白卡 #FFFFFF 上实测 2.59:1（帧 y≈505 该行，11px）；低于 4.5:1，低视力用户在满屏绿色照片旁几乎读不到「最多 6 张」这条约束。
+- 建议改法：改 `color: var(--c-text-tertiary)`（#6B7571，白底 4.76:1）或 `--c-text-secondary`，与左侧「照片墙」标签同档。
+- 修复类别：CSS/token
+
+### R9-L12-D02　P2 / 可达性　批次 R9-B64
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__profile__index__top.png`（sha16=`24d3e9bea76c511d`）
+- 源码证据：`apps/client/src/subpackages/setup/profile/index.vue:1549`
+- 理想图依据：无基准，依据=规范文档 §1.2「主色/主色深」档 + §1.3 极小字档（20rpx 徽标仍需 4.5:1）
+- 现象：头像下沿「更换头像」徽标的 20rpx 白字压在徽标底 `--c-brand` #36C99A 上（`profile:1542` background、`1549` color:#ffffff），实测 2.12:1；帧 y≈443–458 处白字与绿底几乎融在一起，而这是「头像可更换」的唯一视觉提示。
+- 建议改法：徽标底改 `--c-brand-800`（#156B51，白字 5.50:1）或 `--c-brand-700` 并把字号提到 `--fs-sm`，保证白字可读。
+- 修复类别：CSS/token
+
+### R9-L12-D03　P2 / 可达性　批次 R9-B64
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__profile__index__bottom.png`（sha16=`e6c9fc34535b7d28`）
+- 源码证据：`apps/client/src/subpackages/setup/profile/index.vue:1473`
+- 理想图依据：无基准，依据=规范文档 §1.3「极小/法务」行高 1.75 + 正文 4.5:1
+- 现象：页脚法务行「资料仅用于校园身份核验与匹配推荐，保存后即时生效」取 `--c-text-tertiary` #6B7571，压的是页面底 `--c-bg-page` #EEF7F2（不是白卡），实测 4.36:1；R6-B67/D12 当初按白底 4.76:1 定的 tertiary，落到浅绿页底上仍低于 4.5:1（帧 y≈754–765，11px）。
+- 建议改法：该行改 `--c-text-secondary`（#4A524E，对 #EEF7F2≈8.1:1），或把说明收进白卡内再保留 tertiary。
+- 修复类别：CSS/token
+
+### R9-L12-D04　P2 / 颜色token　批次 R9-B64
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__profile__index__bottom.png`（sha16=`e6c9fc34535b7d28`）
+- 源码证据：`apps/client/src/subpackages/setup/profile/index.vue:1738`
+- 理想图依据：无基准，依据=规范文档 §1.1 原则 3「一令牌一值」+ §1.2 品牌绿阶（#1F8D6A 即 brand-700，应走 `var(--c-brand-700)` 而非裸写）
+- 现象：身份选中项「在校学生 / 毕业生」标题写死 `color:#1f8d6a`（非令牌），压白色选中卡 `#FFFFFF`，实测 4.14:1（28rpx=14px 正文级选项标题）；同页其它选中态都走 `--c-brand`/`--c-brand-700`，这一处成了页内私有绿，且低于 4.5:1。
+- 建议改法：改 `color: var(--c-brand-800)`（#156B51，白底 5.50:1），删除 #1f8d6a。
+- 修复类别：CSS/token
+
+## subpackages/setup/recommend-pref（3 条）
+
+### R9-L12-D12　P2 / 可达性　批次 R9-B65
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__recommend-pref__index__top.png`（sha16=`501518f400e5e07e`）
+- 源码证据：`apps/client/src/subpackages/setup/recommend-pref/index.vue:323`
+- 理想图依据：无基准，依据=WCAG 1.4.11 非文字 3:1 + 规范文档 §1.2 边框档（`--c-border-default` #DDE3E0 / `--c-border-strong` #C2CAC6）
+- 现象：推荐时间/推荐范围共 7 个选项里的 5 个未选中态 `.option-item` 是白底 + 2rpx #DDE3E0 描边压白卡，描边对白实测 1.40:1，低于非文字 3:1；帧上 10:00/14:00/18:00 与「同城/不限」只剩一圈几乎看不见的浅灰，用户难以认出它们是可点选项。
+- 建议改法：未选中描边提到 `--c-border-strong` #C2CAC6 并给选项 `--c-bg-surface` 底；要严格达 3:1 需描边到 ≈#8A938F 档。
+- 修复类别：CSS/token
+
+### R9-L12-D13　P3 / 文案　批次 R9-B65
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__recommend-pref__index__top.png`（sha16=`501518f400e5e07e`）
+- 源码证据：`apps/client/src/subpackages/setup/recommend-pref/index.vue:179`
+- 理想图依据：无基准，依据=同域四步页一致性（`campus:217`、`schedule:98` 均向 AppShell 传 subtitle）
+- 现象：AppShell 只传了 `:title`，页头「推荐偏好」下直接接第 3/4 步卡（帧标题墨迹止于 y128，卡片从 y145 起）；同流程 campus/schedule 都有副标题，四步里唯此页没有一句说明这一步在设置什么。
+- 建议改法：补一句副标题（如「决定每天何时、优先向哪些范围的人推荐」），与另三步同构。
+- 修复类别：单页
+
+### R9-L12-D14　P2 / 文案　批次 R9-B19
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__recommend-pref__index__bottom.png`（sha16=`92b0b371140c9c05`）
+- 源码证据：`apps/client/src/components/setup/SetupProgress.vue:67`
+- 理想图依据：无基准，依据=实际链路 campus:190 → SCHEDULE → schedule:86 → RECOMMEND_PREF 与学生四步定义（`SetupProgress.vue:67-72`）
+- 现象：步进器第 3 步叫「推荐偏好」，学生四步是 基本信息/校园认证/推荐偏好/完成；但校园认证保存后先跳 SCHEDULE，时间安排页又没有步进器（schedule 模板无 SetupProgress），用户实际走的第 4 个屏幕被标成「第 3/4 步」，插入的时间安排步在进度里整段缺席。
+- 建议改法：学生分支改 5 步（基本信息/校园认证/时间安排/推荐偏好/完成），schedule 页补同一个 SetupProgress，或至少在 campus 的下一步文案里点出时间安排。
+- 修复类别：单页
+
+## subpackages/setup/schedule（3 条）
+
+### R9-L12-D09　P1 / 可达性　批次 R9-B66
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__schedule__index__top.png`（sha16=`7cb32534255f9a16`）
+- 源码证据：`apps/client/src/subpackages/setup/schedule/index.vue:262`
+- 理想图依据：无基准，依据=规范文档 §1.2 `--c-brand` #36C99A 与 §1.3 `--fs-lg` 28rpx 正文档；WCAG 正文 4.5:1
+- 现象：「＋ 添加时段」是增加第二个空闲时段的唯一入口，文字取 `--c-brand` #36C99A 压白卡，实测 2.12:1（帧 y429–440 的浅绿字在白底上几乎看不清）；28rpx=14px 的功能标签远低于 4.5:1，默认只有一个空窗口，用户拿不到「再加一个时段」这个动作的可靠可读入口。
+- 建议改法：文字改 `--c-brand-700`/`--c-brand-800` 或 `--c-text-primary`，保留虚线盒；或做成白底品牌描边的实心按钮。
+- 修复类别：CSS/token
+
+### R9-L12-D10　P2 / 文案　批次 R9-B66
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__schedule__index__bottom.png`（sha16=`7cb32534255f9a16`）
+- 源码证据：`apps/client/src/subpackages/setup/schedule/index.vue:86`
+- 理想图依据：无基准，依据=同流程真实跳转（campus:190 → SCHEDULE → schedule:86 RECOMMEND_PREF）
+- 现象：主 CTA 文案是「保存并进入应用」（`i18n/locales/zh-CN.ts:3226` saveButton），但 `save()` 实际 `replaceAppPath` 到 `SETUP_PROGRESS.RECOMMEND_PREF`；下一屏仍是推荐偏好（第 3/4 步），不是应用，按钮承诺的终点与真实去向不一致。
+- 建议改法：文案改「保存并继续」/「下一步」，把「进入应用」留给 recommend-pref 的最后一步。
+- 修复类别：单页
+
+### R9-L12-D11　P2 / 颜色token　批次 R9-B66
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__setup__schedule__index__bottom.png`（sha16=`7cb32534255f9a16`）
+- 源码证据：`apps/client/src/subpackages/setup/schedule/index.vue:170`
+- 理想图依据：无基准，依据=同流程 campus 的未完成态（`campus:305-309` 传 `:disabled="!isComplete"`，按钮取 `--c-status-disabled` #DCE5E2）
+- 现象：常去区域与空闲时段都为空（帧 y222–378 两个输入只有 placeholder），主 CTA 仍取 `--c-gradient-brand` 全亮（实测 #4BD0A3，y729–773），没有 `:disabled`；同流程 campus 在 0/3 时是 `--c-status-disabled` #DCE5E2 灰钮，两页对「未完成」的状态色口径相反，用户无法从按钮判断能否继续。
+- 建议改法：给 BottomActionBar 传 `:disabled="!canSave"`（area 非空且至少一个非空时段），复用组件既有禁用档。
+- 修复类别：单页
+
 ## subpackages/support/feedback/index（2 条）
 
-### R9-L13-D01　P2 / 可达性　批次 R9-B46
+### R9-L13-D01　P2 / 可达性　批次 R9-B67
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__support__feedback__index__top.png`（sha16=`5107cf609d2bd501`）
 - 源码证据：`apps/client/src/subpackages/support/feedback/index.vue:651`
 - 理想图依据：无基准，依据=§1.2（次级文字档）+ 组件规范；分类选择器未选中态文字应达正文对比
@@ -900,7 +1390,7 @@
 - 建议改法：未选中态文字加深到 `--c-brand-800` #156B51 或改用 `--c-text-secondary`，把该标签对比抬到 ≥4.5:1。
 - 修复类别：CSS/token
 
-### R9-L13-D02　P2 / 间距　批次 R9-B46
+### R9-L13-D02　P2 / 间距　批次 R9-B67
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__support__feedback__index__bottom.png`（sha16=`403550d2f86e2e56`）
 - 源码证据：`apps/client/src/subpackages/support/feedback/index.vue:569`
 - 理想图依据：无基准，依据=§1.4 间距 + 组件规范；吸底条出流后占位应只在文末留一份
@@ -910,7 +1400,7 @@
 
 ## subpackages/tools/activities/detail（2 条）
 
-### R9-L08-D05　P1 / 可达性　批次 R9-B47
+### R9-L08-D05　P1 / 可达性　批次 R9-B68
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__activities__detail__top.png`（sha16=`7fecf6e746e9d78f`）
 - 源码证据：`apps/client/src/subpackages/tools/activities/detail.vue:704`
 - 理想图依据：无基准，依据=规范文档§1.1/§1.2（行动色须承载白字）+ 本页唯一主转化控件
@@ -918,7 +1408,7 @@
 - 建议改法：报名钮底色改 --c-brand-800（#156B51，白字 6.45:1），与 LockScreen 那颗同口径。
 - 修复类别：CSS/token
 
-### R9-L08-D06　P2 / 可达性　批次 R9-B47
+### R9-L08-D06　P2 / 可达性　批次 R9-B68
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__activities__detail__bottom.png`（sha16=`cbb9ef1b176105cf`）
 - 源码证据：`apps/client/src/subpackages/tools/activities/detail.vue:457`
 - 理想图依据：无基准，依据=规范文档§1.2（导航栏标题须可读）+ 本页绿头规范
@@ -928,7 +1418,7 @@
 
 ## subpackages/tools/daily-question/index（2 条）
 
-### R9-L07-D03　P2 / 颜色token　批次 R9-B48
+### R9-L07-D03　P2 / 颜色token　批次 R9-B69
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__daily-question__index__top.png`（sha16=`ee4ec6aa73db10bf`）
 - 源码证据：`apps/client/src/subpackages/tools/daily-question/index.vue:21`
 - 理想图依据：无基准，依据=规范§1.1 第3条禁私有色值；LockScreen.vue:101 已把同语义锁从 #94A3B8 改到 register/lock.svg #4A524E(=--c-text-secondary)
@@ -936,7 +1426,7 @@
 - 建议改法：lockIconSrc 改指 IMAGE_PATHS.REGISTER_ICONS.LOCK（register/lock.svg #4A524E），与 LockScreen 同档同色
 - 修复类别：单页
 
-### R9-L07-D04　P2 / 可达性　批次 R9-B48
+### R9-L07-D04　P2 / 可达性　批次 R9-B69
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__daily-question__index__bottom.png`（sha16=`0245f165e274c05d`）
 - 源码证据：`apps/client/src/subpackages/tools/daily-question/index.vue:484`
 - 理想图依据：无基准，依据=规范§1.2「--c-text-inverse 适用前提是深底」；同仓 LockScreen 主钮取 brand-800(白字 6.45:1) 为达标档
@@ -946,7 +1436,7 @@
 
 ## subpackages/tools/heart-signals/index（2 条）
 
-### R9-L08-D03　P2 / 可达性　批次 R9-B05
+### R9-L08-D03　P2 / 可达性　批次 R9-B06
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__heart-signals__index__top.png`（sha16=`90ef6c3e7ac09fab`）
 - 源码证据：`apps/client/src/components/common/LockScreen.vue:662`
 - 理想图依据：无基准，依据=规范文档§1.2（前景色须与所在底档成对）+ LockScreen 组件规范
@@ -954,7 +1444,7 @@
 - 建议改法：该档改走 --c-brand-800（#156B51，压浅绿底约 5.2:1）或与 subtitle 同档 --c-text-secondary，勿用 brand-500 做浅底前景。
 - 修复类别：CSS/token
 
-### R9-L08-D04　P2 / 可达性　批次 R9-B05
+### R9-L08-D04　P2 / 可达性　批次 R9-B06
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__heart-signals__index__bottom.png`（sha16=`03cbfedae5fb415d`）
 - 源码证据：`apps/client/src/components/common/LockScreen.vue:109`
 - 理想图依据：无基准，依据=规范文档§1.2（非文本图形 ≥3:1）+ LockScreen 组件规范
@@ -964,7 +1454,7 @@
 
 ## subpackages/tools/help/index（2 条）
 
-### R9-L07-D07　P2 / 字号　批次 R9-B49
+### R9-L07-D07　P2 / 字号　批次 R9-B70
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__help__index__top.png`（sha16=`c5d576223bd02ee8`）
 - 源码证据：`apps/client/src/subpackages/tools/help/index.vue:274`
 - 理想图依据：无基准，依据=规范§1.3「正文·列表主文字 --fs-xl/2xl=15/16px」；本页 index.vue:204-207 注释自认列表主文字应 15px
@@ -972,7 +1462,7 @@
 - 建议改法：.help-contact__label 字号由 var(--f-md) 改 var(--fs-xl)，与 FAQ 主问句同档同族
 - 修复类别：CSS/token
 
-### R9-L07-D08　P2 / 可达性　批次 R9-B49
+### R9-L07-D08　P2 / 可达性　批次 R9-B70
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__help__index__bottom.png`（sha16=`b596819e2d946f4d`）
 - 源码证据：`apps/client/src/subpackages/tools/help/index.vue:291`
 - 理想图依据：无基准，依据=规范§1.2 次级文字应 4.5:1、§1.1 第3条禁私有色值（回落值 #E8FAF3 实为私值兜底）
@@ -980,9 +1470,27 @@
 - 建议改法：先在 theme 定义 --c-tint-brand 令牌，再把角标文字色由 --c-brand-600 升到 --c-brand-700(#1F8D6A) 或对底改浅档使对比≥4.5
 - 修复类别：CSS/token
 
+## subpackages/tools/love-center/consulting（2 条）
+
+### R9-L09-D01　P2 / 字号　批次 R9-B71
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__love-center__consulting__top.png`（sha16=`1073ffe89b654b7b`）
+- 源码证据：`apps/client/src/subpackages/tools/love-center/consulting.vue:307`
+- 理想图依据：无基准页，依据=规范文档 §1.3（小字 --fs-md/base 13/12px；10/11px 只给角标·法务）+ §1.4 卡片内衬 16px
+- 现象：三张课程卡的副标题（如「掌握高情商沟通，让相处更舒服」）取 var(--fs-xs)=20rpx=10px，帧上墨迹带只有 10px 高（y458–467/538–548/619–629）；同一行左下的「讲师：林老师」在 :320 也是 20rpx=10px，一屏 6 处正文级说明落到规范里只给角标/法务的极小档。
+- 建议改法：副标题提到 --fs-md(26rpx=13px)、讲师提到 --fs-sm(22rpx=11px) 或统一 12px，行高保持 1.5。
+- 修复类别：CSS/token
+
+### R9-L09-D02　P2 / 颜色token　批次 R9-B71
+- 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__love-center__consulting__bottom.png`（sha16=`1073ffe89b654b7b`）
+- 源码证据：`apps/client/src/subpackages/tools/love-center/consulting.vue:335`
+- 理想图依据：无基准页，依据=规范文档 §1.2 颜色角色表 + 正文级 4.5:1
+- 现象：三处价格 ¥99/¥129/¥159 取 --c-romance-700 #CC4A5F，压白卡只有 4.46:1（帧上价格墨迹 y478–488、x272–295 一带为 #D5697B 抗锯齿色，核心值即 #CC4A5F），比 4.5:1 低 0.04；上一轮 D02 把 --c-error 换成这一档并自称「保住可读性」，14px/700 不享大字号豁免，仍没过线。
+- 建议改法：价格再深一档（同族 romance-800 量级或 brand-800 #156B51，6.45:1），或把价格提到 18px/700 走大字号 3:1 档并保持角色色。
+- 修复类别：CSS/token
+
 ## subpackages/tools/love-center/index（2 条）
 
-### R9-L07-D05　P2 / 字号　批次 R9-B50
+### R9-L07-D05　P2 / 字号　批次 R9-B72
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__love-center__index__top.png`（sha16=`5b6a7d59fca2be13`）
 - 源码证据：`apps/client/src/subpackages/tools/love-center/index.vue:300`
 - 理想图依据：无基准，依据=规范§1.3「辅助 --fs-lg/xl=14/15px 用于说明」「小字 --fs-md/base=13/12px 用于标签·时间戳」
@@ -990,7 +1498,7 @@
 - 建议改法：.love-center__board-desc 字号由 var(--fs-md) 升到 var(--fs-lg)(28rpx=14px)
 - 修复类别：CSS/token
 
-### R9-L07-D06　P3 / 间距　批次 R9-B50
+### R9-L07-D06　P3 / 间距　批次 R9-B72
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__love-center__index__bottom.png`（sha16=`5b6a7d59fca2be13`）
 - 源码证据：`apps/client/src/subpackages/tools/love-center/index.vue:211`
 - 理想图依据：无基准，依据=规范§1.4「区块间距 --section-gap=24rpx=12px」
@@ -1000,7 +1508,7 @@
 
 ## subpackages/tools/love-center/mbti（3 条）
 
-### R9-L08-D09　P3 / 字号　批次 R9-B51
+### R9-L08-D09　P3 / 字号　批次 R9-B73
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__love-center__mbti__top.png`（sha16=`25ad39235b9aff45`）
 - 源码证据：`apps/client/src/subpackages/tools/love-center/mbti.vue:299`
 - 理想图依据：无基准，依据=规范文档§1.3（同域工具页绿头标题取档需一致）
@@ -1008,7 +1516,7 @@
 - 建议改法：本页页头标题字号对齐兄弟页 --fs-5xl，或反向把整域工具页头统一到一个档并登记规范。
 - 修复类别：单页
 
-### R9-L08-D10　P2 / 可达性　批次 R9-B51
+### R9-L08-D10　P2 / 可达性　批次 R9-B73
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__love-center__mbti__bottom.png`（sha16=`28f384cb578d4d54`）
 - 源码证据：`apps/client/src/subpackages/tools/love-center/mbti.vue:475`
 - 理想图依据：无基准，依据=规范文档§1.2（行动色承载白字需成对）+ mbti 提交控件
@@ -1016,7 +1524,7 @@
 - 建议改法：提交钮底色改 --c-brand-800（白字 6.45:1），与全站深档承载白字一致。
 - 修复类别：CSS/token
 
-### R9-L08-D11　P2 / 可达性　批次 R9-B51
+### R9-L08-D11　P2 / 可达性　批次 R9-B73
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__love-center__mbti__top.png`（sha16=`25ad39235b9aff45`）
 - 源码证据：`apps/client/src/subpackages/tools/love-center/mbti.vue:399`
 - 理想图依据：无基准，依据=规范文档§1.2（16 型代码是网格内主要语义色块）+ mbti 网格组件
@@ -1026,7 +1534,7 @@
 
 ## subpackages/tools/love-center/nearby（2 条）
 
-### R9-L08-D07　P2 / 可达性　批次 R9-B07
+### R9-L08-D07　P2 / 可达性　批次 R9-B08
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__love-center__nearby__top.png`（sha16=`8ff9d0c4a6c5f215`）
 - 源码证据：`apps/client/src/components/discover/CardSwiper.vue:2114`
 - 理想图依据：无基准，依据=规范文档§1.2（前景须与所在底成对）+ CardSwiper 组件规范
@@ -1034,7 +1542,7 @@
 - 建议改法：匹配胶囊文字改深墨 --c-text-primary（压 romance 两端 ≥6:1，与刚改过的动作钮标签同口径），或胶囊底压深一档。
 - 修复类别：CSS/token
 
-### R9-L08-D08　P2 / 可达性　批次 R9-B52
+### R9-L08-D08　P2 / 可达性　批次 R9-B74
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__love-center__nearby__bottom.png`（sha16=`4e81ae57e64c6238`）
 - 源码证据：`apps/client/src/subpackages/tools/love-center/nearby.vue:353`
 - 理想图依据：无基准，依据=规范文档§1.1/§1.2（绿=行动但浅底上不能作前景字色）+ nearby 尾部组件
@@ -1044,7 +1552,7 @@
 
 ## subpackages/tools/search/index（2 条）
 
-### R9-L08-D01　P2 / 位置　批次 R9-B53
+### R9-L08-D01　P2 / 位置　批次 R9-B75
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__search__index__top.png`（sha16=`0613c74027cb0c7c`）
 - 源码证据：`apps/client/src/subpackages/tools/search/index.vue:520`
 - 理想图依据：无基准，依据=规范文档§1.4（控件间距需留呼吸位）+ search 页头部几何；「取消」为返回行次要操作，须完整落在微信胶囊左侧
@@ -1052,7 +1560,7 @@
 - 建议改法：右内边距常量再留一档呼吸位（如 73px→84~88px），使「取消」止于胶囊左缘前 ≥16rpx，不与胶囊相切。
 - 修复类别：单页
 
-### R9-L08-D02　P2 / 可达性　批次 R9-B53
+### R9-L08-D02　P2 / 可达性　批次 R9-B75
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__search__index__bottom.png`（sha16=`0613c74027cb0c7c`）
 - 源码证据：`apps/client/src/subpackages/tools/search/index.vue:741`
 - 理想图依据：无基准，依据=规范文档§1.1/§1.2（绿=行动档须能承载白字）+ search-tabs 组件规范
@@ -1062,7 +1570,7 @@
 
 ## subpackages/tools/security/index（2 条）
 
-### R9-L07-D09　P2 / 尺寸比例　批次 R9-B54
+### R9-L07-D09　P2 / 尺寸比例　批次 R9-B76
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__security__index__top.png`（sha16=`d19a32292a332099`）
 - 源码证据：`apps/client/src/subpackages/tools/security/index.vue:981`
 - 理想图依据：无基准，依据=徽标为单行状态标签；.sec-item__label-row 为 flex(index.vue:961) 时徽标须 nowrap+不收缩
@@ -1070,7 +1578,7 @@
 - 建议改法：.sec-item__badge 增补 white-space:nowrap; flex-shrink:0（必要时设备名 ellipsis）
 - 修复类别：单页
 
-### R9-L07-D10　P2 / 可达性　批次 R9-B54
+### R9-L07-D10　P2 / 可达性　批次 R9-B76
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__tools__security__index__bottom.png`（sha16=`0088a3cb837f736e`）
 - 源码证据：`apps/client/src/subpackages/tools/security/index.vue:973`
 - 理想图依据：无基准，依据=规范§1.2 危险操作行主文字属可读正文级，应≥4.5:1
@@ -1080,7 +1588,7 @@
 
 ## subpackages/village/village/detail（2 条）
 
-### R9-L03-D03　P2 / 文案　批次 R9-B55
+### R9-L03-D03　P2 / 文案　批次 R9-B77
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__detail__top.png`（sha16=`ceaa757f2d23d42a`）
 - 源码证据：`apps/client/src/subpackages/village/village/detail.vue:1410`
 - 理想图依据：无基准（帖子.png 为正常详情态）；依据=规范文档§3.13 + 组件规范（未找到态说明行须为可读中文）
@@ -1088,7 +1596,7 @@
 - 建议改法：把该行改指一个真实存在的未找到说明键（如 village.detail 下新增/复用一句人话副标题），别再引用跨命名空间的 share.* 键。
 - 修复类别：单页
 
-### R9-L03-D04　P3 / 颜色token　批次 R9-B55
+### R9-L03-D04　P3 / 颜色token　批次 R9-B77
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__detail__bottom.png`（sha16=`ceaa757f2d23d42a`）
 - 源码证据：`apps/client/src/subpackages/village/village/detail.vue:2930`
 - 理想图依据：无基准；依据=组件规范（卡片须与页面底有分层：--card-shadow 或描边）
@@ -1098,7 +1606,7 @@
 
 ## subpackages/village/village/history（2 条）
 
-### R9-L03-D09　P3 / 圆角　批次 R9-B56
+### R9-L03-D09　P3 / 圆角　批次 R9-B78
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__history__top.png`（sha16=`05870786a445bddd`）
 - 源码证据：`apps/client/src/subpackages/village/village/history.vue:389`
 - 理想图依据：无基准；依据=组件规范（破坏性动作胶囊须与仓内既有同口径）
@@ -1106,7 +1614,7 @@
 - 建议改法：三页破坏性胶囊圆角统一取一档（建议 --r-full 真做成胶囊，或统一 --r-lg 20rpx），并修正 history 注释里对不上的「同口径」引用。
 - 修复类别：CSS/token
 
-### R9-L03-D10　P3 / 颜色token　批次 R9-B56
+### R9-L03-D10　P3 / 颜色token　批次 R9-B78
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__history__bottom.png`（sha16=`d5a06a540468c9ac`）
 - 源码证据：`apps/client/src/subpackages/village/village/history.vue:374`
 - 理想图依据：无基准；依据=规范文档§1.1 原则1（主题底色统一浅绿，页面间不得出现白/灰断层）
@@ -1116,7 +1624,7 @@
 
 ## subpackages/village/village/index（4 条）
 
-### R9-L02-D21　P1 / 可达性　批次 R9-B05
+### R9-L02-D21　P1 / 可达性　批次 R9-B06
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__index__top.png`（sha16=`46fc616f48c95b39`）
 - 源码证据：`apps/client/src/components/common/LockScreen.vue:662`
 - 理想图依据：无基准页，依据=组件规范 LockScreen.vue 自身裁定链（:746-754、:778-790 两次按 4.5:1 抬档）+ 全站设计规范 §1.2 色板
@@ -1124,7 +1632,7 @@
 - 建议改法：与 :753/:789 同档升 --c-text-secondary，或数字用 --c-brand-800。
 - 修复类别：CSS/token
 
-### R9-L02-D22　P2 / 颜色token　批次 R9-B05
+### R9-L02-D22　P2 / 颜色token　批次 R9-B06
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__index__top.png`（sha16=`46fc616f48c95b39`）
 - 源码证据：`apps/client/src/components/common/LockScreen.vue:717`
 - 理想图依据：无基准页，依据=全站主 CTA 取档一致性（附近页发动态 :1067、附近动态去登录 :1579、个人页去完善均为 --c-brand #36C99A）
@@ -1132,7 +1640,7 @@
 - 建议改法：把 nearby :1067 / :1579 / profile 去完善一并升 --c-brand-800，全站单一主按钮档。
 - 修复类别：CSS/token
 
-### R9-L02-D23　P1 / 层级遮挡　批次 R9-B05
+### R9-L02-D23　P1 / 层级遮挡　批次 R9-B06
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__index__bottom.png`（sha16=`74e6232829082c4c`）
 - 源码证据：`apps/client/src/components/common/LockScreen.vue:339`
 - 理想图依据：无基准页，依据=逐页说明该页应有村庄正文（集市/帖子流）+ 组件规范 LockScreen 模态层口径
@@ -1140,7 +1648,7 @@
 - 建议改法：村庄宿主把门槛降为页内非模态引导卡（或让 __body 承接页面滚动），使 top/bottom 两态能呈现正文。
 - 修复类别：单页
 
-### R9-L02-D24　P2 / 文案　批次 R9-B05
+### R9-L02-D24　P2 / 文案　批次 R9-B06
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__index__bottom.png`（sha16=`74e6232829082c4c`）
 - 源码证据：`apps/client/src/components/common/LockScreen.vue:184`
 - 理想图依据：无基准页，依据=组件规范：出口文案须与落点一致（:8 自述「保留游客浏览路径」）
@@ -1150,7 +1658,7 @@
 
 ## subpackages/village/village/post（2 条）
 
-### R9-L03-D05　P2 / 素材缺失　批次 R9-B57
+### R9-L03-D05　P2 / 素材缺失　批次 R9-B79
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__post__top.png`（sha16=`35038011c2b19ecb`）
 - 源码证据：`apps/client/src/subpackages/village/village/post.vue:1046`
 - 理想图依据：无基准；依据=规范文档§5.2（发帖页底部工具栏图标须走工程 lucide SVG）+ §1.1 原则4（禁 emoji/裸字符）
@@ -1158,7 +1666,7 @@
 - 建议改法：按 §5.2 把 # / @ 换成同族 lucide SVG 资源（话题=hash 图标、提及=at 图标），与图片/位置/更多统一走 ICONS 体系。
 - 修复类别：需新建目标功能
 
-### R9-L03-D06　P2 / 颜色token　批次 R9-B57
+### R9-L03-D06　P2 / 颜色token　批次 R9-B79
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__post__bottom.png`（sha16=`7ae242fdc821a4d5`）
 - 源码证据：`apps/client/src/subpackages/village/village/post.vue:1591`
 - 理想图依据：无基准；依据=组件规范（提示卡须与页面底分层）
@@ -1168,7 +1676,7 @@
 
 ## subpackages/village/village/publish（5 条）
 
-### R9-L02-D25　P1 / 素材缺失　批次 R9-B58
+### R9-L02-D25　P1 / 素材缺失　批次 R9-B80
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__publish__top.png`（sha16=`5763384a98343041`）
 - 源码证据：`apps/client/src/subpackages/village/village/publish.vue:1209`
 - 理想图依据：素材/理想效果图/发布帖子页面.png 底部一整条五枚工具栏（图片/视频 · 话题 · 位置 · 提及 · 更多，图标+文字+顶部分割线）
@@ -1176,7 +1684,7 @@
 - 建议改法：按 :1209-1212 既有样式补 DOM（五枚复用页内 chooseImage/topicSheet/openMentionPicker 等现成 handler），或正式裁掉该模块并回写页面顺序注释。
 - 修复类别：单页
 
-### R9-L02-D26　P2 / 可达性　批次 R9-B58
+### R9-L02-D26　P2 / 可达性　批次 R9-B80
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__publish__top.png`（sha16=`5763384a98343041`）
 - 源码证据：`apps/client/src/subpackages/village/village/publish.vue:1145`
 - 理想图依据：素材/理想效果图/发布帖子页面.png 四行右列值（已选 0 / 5、北京大学·未名湖校区、圈内成员可见）为可读中灰
@@ -1184,7 +1692,7 @@
 - 建议改法：升 --c-text-secondary #4A524E（对白底 8.06:1），与同页 :1146 箭头档分开。
 - 修复类别：CSS/token
 
-### R9-L02-D27　P2 / 位置　批次 R9-B58
+### R9-L02-D27　P2 / 位置　批次 R9-B80
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__publish__top.png`（sha16=`5763384a98343041`）
 - 源码证据：`apps/client/src/subpackages/village/village/publish.vue:831`
 - 理想图依据：素材/理想效果图/发布帖子页面.png 四条功能行右缘同为「值 + ›」且落在同一竖列
@@ -1192,7 +1700,7 @@
 - 建议改法：恢复交互行的 ›（同右列同竖列），三行只读行改用 --c-text-quaternary 弱化标签色以示不可点。
 - 修复类别：单页
 
-### R9-L02-D28　P2 / 文案　批次 R9-B58
+### R9-L02-D28　P2 / 文案　批次 R9-B80
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__publish__bottom.png`（sha16=`0111aacf2022965c`）
 - 源码证据：`apps/client/src/subpackages/village/village/publish.vue:798`
 - 理想图依据：素材/理想效果图/发布帖子页面.png 计数位「0/1000」
@@ -1200,7 +1708,7 @@
 - 建议改法：store 校验与本页上限同步抬到 1000；若后端维持 500，则回写逐页说明并撤掉理想图该读数依据。
 - 修复类别：单页
 
-### R9-L02-D29　P3 / 颜色token　批次 R9-B58
+### R9-L02-D29　P3 / 颜色token　批次 R9-B80
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__publish__bottom.png`（sha16=`0111aacf2022965c`）
 - 源码证据：`apps/client/src/subpackages/village/village/publish.vue:1132`
 - 理想图依据：无基准条目，依据=组件规范：对 <image> 节点声明 color 属无效声明（同仓 nearby/index.vue:1056 已按此口径清理）
@@ -1210,7 +1718,7 @@
 
 ## subpackages/village/village/tag-posts（2 条）
 
-### R9-L03-D07　P3 / 圆角　批次 R9-B59
+### R9-L03-D07　P3 / 圆角　批次 R9-B81
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__tag-posts__top.png`（sha16=`725704e164bf3844`）
 - 源码证据：`apps/client/src/subpackages/village/village/tag-posts.vue:738`
 - 理想图依据：无基准；依据=规范文档§1.4（卡片圆角统一 --card-radius 40rpx）
@@ -1218,24 +1726,11 @@
 - 建议改法：列表 `.post-card` 圆角对齐 --card-radius 40rpx（或整页统一取一档），消除同页卡角双标。
 - 修复类别：CSS/token
 
-### R9-L03-D08　P3 / 文案　批次 R9-B59
+### R9-L03-D08　P3 / 文案　批次 R9-B81
 - 帧：`tmp/qa/frames/R9/real-f0677920/subpackages__village__village__tag-posts__bottom.png`（sha16=`2b11d497e6be9db1`）
 - 源码证据：`apps/client/src/subpackages/village/village/tag-posts.vue:500`
 - 理想图依据：无基准；依据=组件规范/同域一致性（终止提示全站统一用全角破折号）
 - 现象：列表尾「-- 没有更多了 --」用半角连字符 `--`（t village.tagPosts.noMore，zh-CN.ts:2066），而兄弟页同义串用全角破折号「— 没有更多了 —」（zh-CN.ts:1908 noMorePosts、:3850 topicsLoadMoreEnd）——帧底实测为半角两横，标点全半角与他页不一致。
 - 建议改法：把 village.tagPosts.noMore 值改为全角破折号「— 没有更多了 —」，与仓内其余终止提示同档。
 - 修复类别：单页
-
-## 空帧段（未交代，不算已审）（10 段）
-
-- `R9-L10` 帧 `tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__other__top.png`（sha16=`ac224f6208a3bf01`）—— 本段一条缺陷都没写，也没有合规 CLEAN 卡 ⇒ 该帧漏审
-- `R9-L10` 帧 `tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__other__bottom.png`（sha16=`1f8ff2414d95d3ef`）—— 本段一条缺陷都没写，也没有合规 CLEAN 卡 ⇒ 该帧漏审
-- `R9-L10` 帧 `tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__location__top.png`（sha16=`5b6a325d22add24f`）—— 本段一条缺陷都没写，也没有合规 CLEAN 卡 ⇒ 该帧漏审
-- `R9-L10` 帧 `tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__location__bottom.png`（sha16=`ea26fa16539f1f30`）—— 本段一条缺陷都没写，也没有合规 CLEAN 卡 ⇒ 该帧漏审
-- `R9-L10` 帧 `tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__privacy__top.png`（sha16=`a778d1b79657f0a0`）—— 本段一条缺陷都没写，也没有合规 CLEAN 卡 ⇒ 该帧漏审
-- `R9-L10` 帧 `tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__privacy__bottom.png`（sha16=`dc8d9a0beccaa9c2`）—— 本段一条缺陷都没写，也没有合规 CLEAN 卡 ⇒ 该帧漏审
-- `R9-L10` 帧 `tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__album__top.png`（sha16=`5965abd5c8c35140`）—— 本段一条缺陷都没写，也没有合规 CLEAN 卡 ⇒ 该帧漏审
-- `R9-L10` 帧 `tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__album__bottom.png`（sha16=`42f47fe6aea8ede8`）—— 本段一条缺陷都没写，也没有合规 CLEAN 卡 ⇒ 该帧漏审
-- `R9-L10` 帧 `tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__favorites__top.png`（sha16=`32aa057e9674e49b`）—— 本段一条缺陷都没写，也没有合规 CLEAN 卡 ⇒ 该帧漏审
-- `R9-L10` 帧 `tmp/qa/frames/R9/real-f0677920/subpackages__profile-extra__profile__favorites__bottom.png`（sha16=`32aa057e9674e49b`）—— 本段一条缺陷都没写，也没有合规 CLEAN 卡 ⇒ 该帧漏审
 
