@@ -5,8 +5,8 @@ ADMINBROWSER_USERS ok tbody行=20
 ADMINBROWSER_SHOT 02-users.png
 ADMINBROWSER_SHOT 03-media-assets.png
 ADMINBROWSER_MEDIA img总数=20 真解码=20 裂图=0
-ADMINBROWSER_COUNTS overview.totalPostCount=197 posts.total=197（status=200） village-posts.total=197（status=200）
+ADMINBROWSER_COUNTS overview.totalPostCount=195 posts.total=195（status=200） village-posts.total=195（status=200）
 ADMINBROWSER_SHOT 04-village-posts.png
 ADMINBROWSER_SHOT 05-after-pin-toggle.png（点击了「取消置顶」）
-ADMINBROWSER_PIN xhr=[{"url":"http://127.0.0.1:5177/api/v1/admin/forum/village-posts/146/unpin","status":200}]
+ADMINBROWSER_PIN xhr=[{"url":"http://127.0.0.1:5177/api/v1/admin/forum/village-posts/197/unpin","status":200}]
 ADMINBROWSER_PIN_RESTORE ok（二次点击还原置顶态）

@@ -25,10 +25,20 @@ const OUT = arg("json", "");
 const POSTS = process.argv.reduce((a, v, i, all) => (v === "--post" && all[i + 1] ? a.concat(all[i + 1]) : a), []);
 
 const launcher = readFileSync(resolve(REPO, "apps/api/restart-backend.ps1"), "utf8");
-const envOf = (k) => { const m = launcher.match(new RegExp(`${k} = '([^']*)'`)); return m ? m[1] : ""; };
-const ADMIN_PASSWORD = envOf("ADMIN_PASSWORD");
+/* 先读真环境，再回落到 launcher 文本：这份探针原本只解析载具脚本里的 `K = 'v'` 形态，
+   所以 `set -a && source .env` 注入的值根本进不来（实测导出后仍 401，就是这一条造成的）。 */
+const envOf = (k) => {
+  if (process.env[k]) return String(process.env[k]);
+  const m = launcher.match(new RegExp(`${k} = '([^']*)'`));
+  return m ? m[1] : "";
+};
+/* .env 里的 ADMIN_PASSWORD 是 bcrypt 哈希，不是口令：拿它当 password 发出去必然 401
+   （实测两条 username 都是 INVALID_CREDENTIALS，而同一时刻 admin-browser-verify 与
+   verify-admin-roundtrip 用 ADMIN_LOGIN_PASSWORD 都登进了 —— 说明是这条探针的凭据管道过期）。
+   ADMIN_LOGIN_PASSWORD 才是明文，别名 SUPER_PASSWORD 是载具那边同一映射，一并接。 */
+const ADMIN_PASSWORD = envOf("ADMIN_LOGIN_PASSWORD") || envOf("SUPER_PASSWORD") || envOf("ADMIN_PASSWORD");
 const ADMIN_OPENID = envOf("ADMIN_OPENID");
-if (!ADMIN_PASSWORD) { console.log("PROBE_RESULT=FAIL reason=launcher 里没解析到 ADMIN_PASSWORD（不猜凭据）"); process.exit(2); }
+if (!ADMIN_PASSWORD) { console.log("PROBE_RESULT=FAIL reason=launcher 里没解析到 ADMIN_LOGIN_PASSWORD/SUPER_PASSWORD/ADMIN_PASSWORD（不猜凭据）"); process.exit(2); }
 
 function req(method, path, { token, body, idem } = {}) {
   return new Promise((done) => {
