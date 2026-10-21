@@ -109,3 +109,16 @@ JS 注入）。凡靠它做状态栏让位的，实际让位 = 0 ⇒ 控件压�
 `static/assets/icons/common/lock.svg:1` 硬编码 `stroke="#94A3B8"`；
 `users#100158` 的 `photoGallery` 里有两枚 81×81 定位针 PNG（盘上 md5 `17f5630e…`、
 `audit_status` 都是 approved）——那是数据脏，前端没有任何可辨信号，不要为此写前端判据。
+
+## 10. 平台兼容性规则是 error 级，类型与单测都不覆盖（两次被同一条咬）
+
+发布链第 5 步 `check-project-rules` 会把"目标基础库能不能解析"当 error 判，绕不过去：
+
+- **禁止可选 catch 绑定**：写 `} catch {` ⇒ error（改 `} catch (e) {`）。
+  R8 的 FXB 与 R9 的 FXB 各带进一处（`nearby/index.vue`、`chat/ChatHeader.vue`），
+  两次都是 vue-tsc 与 1380 条测试全绿、却在第 5 步退 1。改完记得复跑
+  `cd apps/client && node scripts/check-project-rules.mjs`（期望 `0 errors`）。
+- 同族的 error 级判点还有：`check-mp-image-styles`（禁 `object-fit`/`image-rendering: crisp-edges`）、
+  `check-statusbar-offset`、`check-tabbar-consistency`、`check-band-outdir-collision`。
+- 这几条**不在** `vue-tsc` 与 `vitest` 的覆盖范围里。交件前自查一遍比等发布链拦下来便宜：
+  一次失败要重走 13 步。

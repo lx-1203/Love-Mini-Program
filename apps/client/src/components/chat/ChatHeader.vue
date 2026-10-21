@@ -24,7 +24,7 @@ onMounted(() => {
     if (rect && windowWidth && rect.left > 0) {
       capsulePadRightPx.value = Math.max(0, windowWidth - rect.left) + 4;
     }
-  } catch {
+  } catch (e) {
     capsulePadRightPx.value = 0;
   }
 });
