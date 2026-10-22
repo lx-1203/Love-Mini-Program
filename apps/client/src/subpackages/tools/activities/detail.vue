@@ -794,7 +794,7 @@ onShareTimeline(() => ({
 .detail-meta__label {
   font-size: var(--fs-base, 24rpx);
   /* R11-L08-D16（颜色token P3）：兜底字面量原写 #9aa1ab —— 既不在 §1.2 色板、也不等于本令牌
-     真值 #6B7571（design-variables.scss:364 --c-text-tertiary:#{$text-tertiary}），本页三处
+     真值 #6B7571（design-variables.scss:364 --c-text-tertiary 解析为 #6B7571），本页三处
      （:788/:827 与搜索页同角色）各写一个假真值，令牌一旦失效就翻成不同灰。全部改回真值。 */
   color: var(--c-text-tertiary, #6B7571);
   flex-shrink: 0;
