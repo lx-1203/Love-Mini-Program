@@ -34,7 +34,7 @@ import { getCurrentPagePath } from "../../compat";
 // R8-L07-D02（层级遮挡 P2）：组件自带 --statusbar 注入（见下方 rootStyleVars）
 import { useStatusBarHeight } from "../../composables/useStatusBarHeight";
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const props = defineProps<{
   /** 当前资料完善度百分比（已登录未完善时展示进度） */
@@ -123,9 +123,20 @@ const heartIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.HEA
  * #3C3A21），不是人像 ⇒ 锁屏「和你一样的同学在寻觅」这层叙事崩掉。
  * 改绑同一摄影体系的**人像裁切**档 PEOPLE.AVATAR_1/2（person-01-avatar.png ~ person-09-avatar.png，
  * 后端 app-assets 盘上 9 张齐全，全站人卡同源），缺图时由 @error 整块隐藏不留灰洞。
+ *
+ * R12-L02-D08（素材缺失 P3 · village top 帧）：改绑后帧上仍是「深绿黑团块 / 暗底竖形亮条」。
+ * 本轮逐张目检实锤根因：AVATAR_1 是电车车厢里坐着女生的**大远景**（暗色车厢内景占画面大半，
+ * 人只占两三成），AVATAR_2 是持花女生的**全身**站姿（暗门口前白裤拉成一条竖形亮条）——
+ * 素材文件本身已是真人像，败在 56px 圆泡里景别太远读不出人。九张 person-0X-avatar 全系
+ * 目检+三棵树 md5 比对（src/static 与 app-assets 9/9 逐字节一致）：仅 AVATAR_3（窗边持书
+ * 男生，上半身近景、面部清晰）与 AVATAR_8（街头白衫女生，中近景）无水印且景别够近
+ * （AVATAR_7/09 右下有水印字样，按硬规矩禁用；AVATAR_4/5 也是全身远景）。
+ * 改绑 AVATAR_8（左）/ AVATAR_3（右）：仍是同源人像档，键已在 images.ts:328-335 注册，
+ * 运行时取值与解析路径不变，仅换指向的素材文件。 PEOPLE.AVATAR_1/2 的另两组消费者
+ * （NotLoggedWaiting.vue:113、circles/index.vue:306）不在本卡范围，不动。
  */
-const avatarLeftSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.PEOPLE.AVATAR_1));
-const avatarRightSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.PEOPLE.AVATAR_2));
+const avatarLeftSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.PEOPLE.AVATAR_8));
+const avatarRightSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.PEOPLE.AVATAR_3));
 /** 头像取不到时不留空洞（与漂浮爱心同口径） */
 const avatarLeftVisible = ref(true);
 const avatarRightVisible = ref(true);
@@ -181,7 +192,25 @@ function goBack() {
   }
 }
 
-/** 「先逛逛公开内容」：切换到公开 Tab（匹配推荐页），保留游客浏览路径 */
+/**
+ * R12-L02-D09（可达性 P1 · village bottom 帧）：备选路径文案原是 t('lock.secondary')
+ * ＝ zh「先逛逛公开内容」/ en "Browse public content first"，而 browsePublic() 的真实行为
+ * 是切到公开 Tab（匹配推荐页 DISCOVER）、离开村社——未完善用户在村社页拿不到任何一条
+ * 村社公开内容，也没有别的站内入口，「公开内容」的标签承诺兑现不了（真公开只读帖流
+ * 需帖子接口公开可读，卡上自证另行立项）。按卡上短期口径把文案诚实化：
+ * zh「先去逛逛匹配推荐」/ en "Browse match recommendations"，行为与去向逐字对齐。
+ * ⚠️ 对卡上「抽 i18n 键」形态的偏离说明：键位落点 i18n/locales/*.ts 不在本车道可写集
+ * （硬规矩 1），本波各车道 brief 的「可改文件」并集也不含任何 i18n 文件（已逐份核对）
+ * ——先在组件内按 locale 出双语诚实文案；lock.secondary 目前仅本组件消费（全仓 grep 证，
+ * zh-CN.ts:2911 / en-US.ts:2990 的旧值待文案车道改键值后，把本 computed 换回 t() 收编）。
+ */
+const secondaryText = computed(() =>
+  String(locale.value).startsWith("en")
+    ? "Browse match recommendations"
+    : "先去逛逛匹配推荐"
+);
+
+/** 备选路径（文案见 secondaryText，R12-L02-D09 诚实化）：切换到公开 Tab（匹配推荐页），保留游客浏览路径 */
 function browsePublic() {
   uni.switchTab({ url: ROUTES.TAB.DISCOVER });
 }
@@ -306,7 +335,7 @@ function browsePublic() {
           <text class="lock-screen__btn-text">{{ primaryText }}</text>
         </button>
         <view class="lock-screen__btn-link" @tap="browsePublic">
-          <text class="lock-screen__btn-link-text">{{ t('lock.secondary') }}</text>
+          <text class="lock-screen__btn-link-text">{{ secondaryText }}</text>
         </view>
       </view>
     </view>

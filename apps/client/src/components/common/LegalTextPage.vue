@@ -40,7 +40,7 @@ const props = defineProps<{
 /** 加载状态枚举（避免使用魔法字符串） */
 type LoadState = "loading" | "success" | "error" | "empty";
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 /** 当前加载状态 */
 const loadState = ref<LoadState>("loading");
@@ -144,6 +144,25 @@ const updatedAtText = computed<string>(() => {
  */
 const isLocalFallback = computed<boolean>(() => legalText.value?.version === "local-fallback");
 
+/**
+ * 兜底披露药丸文案（R12-L13-D11 · 文案 P3 · agreement/privacy top 帧）。
+ *
+ * 药丸文字原是模板里硬编码的中文状态字面量——en-US 语景（H5/APP 端注册了 en-US，
+ * i18n/index.ts:19-20）在同一位置看到中文，是本页唯一不走 i18n 的上屏文字。
+ * 卡上建议「抽 i18n 键 + 模板 t()」，但键位落点 i18n/locales/zh-CN.ts / en-US.ts
+ * 不在本车道可写集（硬规矩 1），本波各车道 brief 的「可改文件」并集也不含任何
+ * i18n 文件（已逐份核对）——键抽取仍登记给文案车道收编；此处先以 locale 分支出
+ * 双语文案：zh 侧逐字保持「本地兜底文本 · 非正式版本」（披露药丸不许撤，R12-L13-D09
+ * 红线），en 侧取卡上给的 "Local fallback text · unofficial"。
+ * mp-weixin 端 locale 恒为 zh-CN（i18n/index.ts:22 自证），小程序上屏逐像素不变；
+ * 文案车道落地 legal.localFallbackBadge 后，把本 computed 换回 t() 并删掉字面量。
+ */
+const fallbackBadgeText = computed<string>(() =>
+  String(locale.value).startsWith("en")
+    ? "Local fallback text · unofficial"
+    : "本地兜底文本 · 非正式版本"
+);
+
 /** 版本号（仅后端 CMS 返回时展示；兜底态不印假版本号，改由提示药丸披露状态） */
 const displayVersion = computed<string>(() => {
   if (!legalText.value?.version) return "";
@@ -224,10 +243,11 @@ function handleRetry(): void {
       <view v-if="showHeader" class="legal-header">
         <text v-if="cardTitle" class="legal-header__title">{{ cardTitle }}</text>
         <view v-if="showMeta" class="legal-header__meta">
-          <!-- R11-L13-D19：兜底态必须上屏披露（原文案走 i18n，本行是状态标识、
-               非业务文案；i18n 键抽取登记给文案车道，见交件） -->
+          <!-- R11-L13-D19：兜底态必须上屏披露（本行是状态标识、非业务文案）。
+               R12-L13-D11：文案不再硬编码在模板，走 fallbackBadgeText（locale 分支）；
+               i18n 键抽取仍登记给文案车道，见交件。 -->
           <text v-if="isLocalFallback" class="legal-header__fallback">
-            本地兜底文本 · 非正式版本
+            {{ fallbackBadgeText }}
           </text>
           <text v-if="displayVersion" class="legal-header__version">
             {{ displayVersion }}

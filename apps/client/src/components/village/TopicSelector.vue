@@ -197,7 +197,9 @@ function clearAll(): void {
           {{ t('topicSelector.selectedTopics') }}
         </text>
         <text class="topic-selector__selected-count">
-          {{ t('topicSelector.selectedCount', { n: modelValue.length, max: MAX_TOPIC_SELECTION }) }}
+          <!-- R12-L05-D08（文案 P3）：标题「已选话题」已含「已选」，计数位改纯 n/max，
+               去掉 i18n 串（zh-CN selectedCount="已选 {n}/{max}"）重复的「已选」前缀 -->
+          {{ modelValue.length }}/{{ MAX_TOPIC_SELECTION }}
         </text>
         <view
           v-if="modelValue.length > 0"
@@ -254,7 +256,10 @@ function clearAll(): void {
           @tap="toggleTopic(topic.name)"
         >
           <text class="topic-chip__text">#{{ topicLabel(topic) }}</text>
-          <text class="topic-chip__count">{{ topic.usageCount }}</text>
+          <!-- R12-L05-D07（需新建 P1）：usageCount 全部来自前端写死常量
+               （config/popular-topics.ts，后端无话题热度真相源）⇒ 按 §12.4 撤掉数字只留话题名，
+               不许换一组新常量接着编；话题表补 usage_count 列 + 查询接口后再接真值。 -->
+          <!-- 已随本卡撤下：<text class="topic-chip__count">{{ topic.usageCount }}</text> -->
         </view>
       </view>
       <view v-else class="topic-selector__empty">
@@ -427,11 +432,6 @@ function clearAll(): void {
 .topic-chip--selected .topic-chip__text {
   color: var(--c-brand-700);
   font-weight: 600;
-}
-
-.topic-chip__count {
-  font-size: var(--fs-xs);
-  color: var(--c-text-quaternary);
 }
 
 .topic-chip__remove {

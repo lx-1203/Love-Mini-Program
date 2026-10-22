@@ -20,6 +20,21 @@ const genderIconSrc = computed(() => {
 const school = computed(() => props.user.school || "");
 const secondary = computed(() => props.user.gradeLabel || props.user.occupation || "");
 
+// R12-L01-D09（文案 P1）：种子 persona 的 name 自带「·校名」后缀（view-models/match.ts:30
+// 原样直传 card.name），而校名已由下方 school-row 整行承载 ⇒ 名字行在客户端侧撤掉重复校名。
+// age/gender 仍缺后端真值列，模板 :58-59 的 v-if 分支保持不进——不在前端编造（§12.4）。
+const displayName = computed(() => {
+  const raw = props.user.name || "";
+  const schoolName = school.value;
+  if (schoolName && raw.length > schoolName.length + 1) {
+    const head = raw.slice(0, raw.length - schoolName.length);
+    if (/^[·・•]$/.test(head)) {
+      return raw.slice(0, raw.length - schoolName.length - 1);
+    }
+  }
+  return raw;
+});
+
 function activeLabel(status?: string): string {
   if (!status || status === "offline") return "";
   // MP-R2-PAGES-DISCOVER-INDEX-013：展示文案改走 t()（与同仓 MatchCard.vue:33 /
@@ -54,7 +69,7 @@ const verified = computed(
   <view class="match-info">
     <slot name="basic">
       <view class="match-info__name-row">
-        <text class="match-info__name">{{ user.name }}</text>
+        <text class="match-info__name">{{ displayName }}</text>
         <text v-if="user.age" class="match-info__age">{{ user.age }}</text>
         <view v-if="genderIconSrc" class="match-info__gender" :class="`match-info__gender--${user.gender}`">
           <image class="match-info__gender-symbol" :src="genderIconSrc" mode="aspectFit" alt="" />

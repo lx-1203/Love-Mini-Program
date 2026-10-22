@@ -497,7 +497,10 @@ onShareTimeline(() => ({
         <text class="load-more__text">{{ t("village.tagPosts.loadMore") }}</text>
       </view>
       <view v-else-if="!hasMore && posts.length > 0" class="load-more">
-        <text class="load-more__text">{{ t("village.tagPosts.noMore") }}</text>
+        <!-- R12-L03-D06（P3 文案）：原用 village.tagPosts.noMore＝「-- 没有更多了 --」（半角连字符），
+             与同域 index.vue:901 / history.vue:265 的 village.noMorePosts＝「— 没有更多了 —」（全角破折号）
+             取档不一。locales 不在本车道可写集 ⇒ 模板直接复用 village.noMorePosts 与同域同档。 -->
+        <text class="load-more__text">{{ t("village.noMorePosts") }}</text>
       </view>
 
       <!-- 底部留白 -->
@@ -617,7 +620,15 @@ $red-badge: var(--c-error, #FF4757);
 
 .tag-hero__btn {
   flex-shrink: 0;
-  padding: 14rpx 28rpx;
+  /* R12-L03-D07（P1 可达性）：原纵向 padding 14rpx + 24rpx 文本 ≈62rpx(31px) 热区，
+     低于 88rpx(44px) 口径，且本按钮是标签页常驻的唯一发布出口 ⇒ 按 detail.vue .notfound-card__btn
+     同款修法：min-height:88rpx + 纵向 padding 归零、flex 居中，热区达标且文字基线不塌。 */
+  min-height: 88rpx;
+  box-sizing: border-box;
+  padding: 0 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--r-full, 9999rpx);
   /* 白字压 brand-500 仅 2.24:1（复算），主操作用档取同族 brand-800 ⇒ 6.45:1 过 AA */
   background: var(--c-brand-800, #156B51);

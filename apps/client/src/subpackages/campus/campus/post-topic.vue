@@ -168,10 +168,14 @@ const MAX_IMAGES = UI_LIMITS.PHOTO_GALLERY_MAX;
  * （CampusController.java:452-457、:462-464），建记录时更是硬编码
  * `setIsAnonymous(false)`（RealCampusService.java:159、:196）→ real 下开了匿名
  * 也会以本人昵称公开。原 `campus.postTopic.anonymousDesc` 承诺「将显示为"匿名校友"」
- * 是一句服务端会当场打破的承诺，故 real + 开启匿名时原地替换为「暂不会生效」的说明
- * （复用同一行文案位，不增行、不改卡片高度）。mock 分支本地真实生效，保留原文案。
+ * 是一句服务端会当场打破的承诺。
+ * R12-L05-D09（P1）：原实现只在「real + 开关已打开」时才替换文案，real 帧上开关未开时
+ * 承诺原文照常展示（且开关可开）。按 §12「没有真相源的承诺只许撤」改为：real 档无条件
+ * 展示「暂未开放匿名发布」的说明文案，并把开关一并禁用（可开但永不生效的开关本身就是
+ * 假操作承诺）；mock 分支本地真实生效，保留原文案与可用开关。落地 is_anonymous 列后
+ * 随全链路一并恢复。
  */
-const anonymousBlocked = computed(() => !isMockMode && isAnonymous.value);
+const anonymousBlocked = computed(() => !isMockMode);
 
 /**
  * switch 品牌色：小程序 switch 的 color 为原生属性，不支持 CSS 变量，
@@ -499,11 +503,14 @@ function goBack() {
       <!-- 标题输入 -->
       <view class="title-section">
         <text class="section-label">{{ t('campus.postTopic.labelTitle') }}</text>
+        <!-- R12-L05-D06（P3 可达性）：.title-input 自身 font-weight:600 + 深色，占位继承后
+             与真实已填文本不可区分；占位降为 400 + placeholder 色令牌，与内容 textarea 同档 -->
         <input
   cursor-spacing="20"
           v-model="title"
           class="title-input"
           :placeholder="t('campus.postTopic.placeholderTitle')"
+          placeholder-style="color:var(--c-text-placeholder);font-weight:400"
           maxlength="50" :aria-label="t('campus.postTopic.placeholderTitle')"
         />
       </view>
@@ -566,13 +573,14 @@ function goBack() {
         <view class="option-row">
           <view class="option-info">
             <text class="option-label">{{ t('campus.postTopic.labelAnonymous') }}</text>
-            <!-- MP-R1-CAMPUSPOSTTOPIC-202：real 下匿名不落库（后端硬编码 false），
-                 开启后原地把承诺文案替换为不可生效说明（同一文案位，不改卡片结构） -->
+            <!-- MP-R1-CAMPUSPOSTTOPIC-202 + R12-L05-D09：real 档匿名不落库（后端硬编码 false），
+                 承诺文案无条件替换为「暂未开放」说明，开关同批禁用（mock 保持原样） -->
             <text class="option-desc" :class="{ 'option-desc--warn': anonymousBlocked }">{{ anonymousBlocked ? t('campus.postTopic.anonymousUnsupported') : t('campus.postTopic.anonymousDesc') }}</text>
           </view>
           <switch
             class="option-switch"
             :checked="isAnonymous"
+            :disabled="anonymousBlocked"
             :color="brandColor"
             @change="toggleAnonymous"
           />
@@ -742,8 +750,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12rpx;
-  padding: 22rpx 28rpx;
+  /* R12-L05-D05（P3 间距）：R9 注释声称的「整句仍是单行」在 real 帧（378px 宽）被证伪——
+     第二行只剩孤字「证」。正文 24 字 × --fs-base 24rpx = 576rpx，原可用宽 ≈540rpx，
+     缺口恰 1 字（24rpx）。这里把横幅水平内衬 28→20rpx（+16rpx）、gap 12→8rpx（+4rpx）、
+     按钮水平 padding 24→16rpx（+16rpx），合计还 36rpx ≈ 1.5 字宽给文本 ⇒ 回到单行，
+     横幅不增高；按钮 16rpx 侧衬仍满胶囊形（文案「去认证」3 字 nowrap 不受影响）。 */
+  gap: 8rpx;
+  padding: 22rpx 20rpx;
   margin-bottom: 20rpx;
   border-radius: var(--r-xl, 24rpx);
   border: 2rpx solid var(--c-warning-border-tint);
@@ -775,7 +788,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
      前进出口（表单本身填不动），必须达到 88rpx。补 min-height + 盒模型，标签一并提到 24rpx。 */
   min-height: 88rpx;
   box-sizing: border-box;
-  padding: 12rpx 24rpx;
+  /* R12-L05-D05：水平 24→16rpx，还 16rpx 宽给横幅正文保单行（见 .cert-banner 注释） */
+  padding: 12rpx 16rpx;
   border-radius: var(--r-full, 9999rpx);
   /* R9-L05-D06：改前底 --c-warning #F59E0B 配 --c-text-inverse(rgba(255,255,255,.95)) 的
      「去认证」实测 2.07:1，与上面那句一起不可读。实底改取 warning 深色档 #92400E：

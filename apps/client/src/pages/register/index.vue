@@ -921,7 +921,13 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 
 .hero__sub {
   margin-top: 12rpx;
-  font-size: 25rpx;
+  /* R12-L01-D04（P3 字号）：原写死 25rpx，是 --fs-base(24) 与 --fs-md(26) 之间的档外孤值
+     （同页 :1358 R11 已把 21rpx 孤值归档，同型问题）。归口 --fs-base（24rpx）：
+     副标属正文档位系（与 .agree__text 24rpx 同档），26 留给 .to-login__text 等动作行。
+     注：缺陷卡把两档名字写反了（卡面「--fs-md（24rpx）或 --fs-base（26rpx）」），
+     令牌真值以 design-variables.scss:562-563 为准（--fs-base=24 / --fs-md=26），
+     按 §2「算真值不信卡面」取值 24rpx、名从真值。 */
+  font-size: var(--fs-base, 24rpx);
   line-height: 1.55;
   color: var(--c-text-secondary, #4a524e);
 }
@@ -1358,10 +1364,13 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
   /* R11-L01-D08（P2 字号）：原写死 21rpx，是夹在 --fs-xs(20) 与 --fs-sm(22) 之间的档外值，
      与相邻 .agree__text 的 24rpx 两档字高不齐。归口到 --fs-sm（22rpx），
      法务行统一只走 --fs-xs/--fs-sm 两档（本行取大的一档，与 .agree__text 的 24rpx 同属正文档位系）。
-     注：本行字色 --c-text-placeholder 压页底 2.37:1 是另一条（不在本卡判点内），未动。 */
+     R12-L01-D05（P1 颜色token）：R11 注「字色 2.37:1 是另一条，未动」的那半条本波收口——
+     原 --c-text-placeholder（真值 #9AA39F）压页底 #EEF7F2 实算 2.37:1，成年声明与保密承诺
+     这条法定告知在低视力/户外强光下读不出。提档 --c-text-secondary（真值 #4A524E，
+     design-variables.scss:363），压 #EEF7F2 实算 7.38:1 ≥ 4.5:1，与登录页协议行同档。 */
   font-size: var(--fs-sm, 22rpx);
   line-height: 1.75;
-  color: var(--c-text-placeholder, #9aa39f);
+  color: var(--c-text-secondary, #4a524e);
   text-align: center;
 }
 

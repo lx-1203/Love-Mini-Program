@@ -335,7 +335,9 @@ function switchScope(next: "nearby" | "city") {
 }
 
 .people-header__title {
-  font-size: 32rpx;
+  /* R12-L06-D08（字号 P2）：原 32rpx=16px 仅及 §1.3 页面主标题 26-28px 档六成
+     （同分包 segment 44rpx / history 38rpx 三页三档）⇒ 收到 52rpx=26px 档下限。 */
+  font-size: 52rpx;
   font-weight: 800;
   color: var(--c-text-primary, #222222);
 }
@@ -435,7 +437,9 @@ function switchScope(next: "nearby" | "city") {
   padding: 22rpx 24rpx;
   margin-bottom: 16rpx;
   background: var(--c-bg-container, #FFFFFF);
-  border-radius: 20rpx;
+  /* R12-L06-D09（圆角 P2）：裸值 20rpx=10px 只有 §1.4 卡片档 40rpx=20px 一半且不走令牌
+     （同页 .people-tab 至少 var(--r-lg) 兜底）⇒ 收口 var(--card-radius, 40rpx)。 */
+  border-radius: var(--card-radius, 40rpx);
   border: 1rpx solid var(--c-line, #EEF2F0);
 }
 

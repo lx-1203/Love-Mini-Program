@@ -116,8 +116,24 @@ const targetName = computed(() => {
   return cat ? cat.name : t("circle.postTopicCategoryHint");
 });
 
+/**
+ * R12-L04-D07（P1 · 需新建）：后端圈子话题路由只收数字兴趣圈 ID（@PathVariable Long，
+ * 见提交守卫 :401 处在册注释），“兴趣圈”目标解析出的是兴趣分类 slug（study/sports/…），
+ * real 模式选中必被守卫拦截 toast、请求根本发不出——“发布到兴趣圈”整条承诺兑现不了。
+ * 按已知机制 §12：没有映射就不承诺——real 档把「兴趣圈」降级为只读禁用态（点按提示
+ * 「请从具体兴趣圈进入发布」，复用在册词条 circle.postTopicEnterFromCircle），mock 档
+ * 本地可发、保持原样。落地「兴趣分类 → 数字圈 ID」映射（或话题路由支持 slug）后随
+ * 全链路恢复；不许在前端编一组 slug→id 常量绕过。
+ */
+const interestTargetBlocked = computed(() => !useMock());
+
 /** 切换发布目标（切回校园圈时清空兴趣分类选择） */
 function selectPublishTarget(target: "campus" | "interest") {
+  if (target === "interest" && interestTargetBlocked.value) {
+    // R12-L04-D07：real 档兴趣分类无数字圈 ID 映射，目标只读，不放行选择
+    uni.showToast({ title: t("circle.postTopicEnterFromCircle"), icon: "none" });
+    return;
+  }
   publishTarget.value = target;
   if (target === "campus") {
     interestCategory.value = "";
@@ -558,11 +574,12 @@ onLoad((query) => {
           </view>
           <view
             class="target-chip press-feedback"
-            :class="{ 'target-chip--active': publishTarget === 'interest' }"
+            :class="{ 'target-chip--active': publishTarget === 'interest', 'target-chip--disabled': interestTargetBlocked }"
             hover-class="press-feedback--active"
             hover-stay-time="120"
             role="radio"
             :aria-checked="publishTarget === 'interest'"
+            :aria-disabled="interestTargetBlocked"
             :aria-label="t('circle.postTopicTargetInterestAria')"
             @tap="selectPublishTarget('interest')"
           >
@@ -796,6 +813,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .post-header__back {
+  /* R12-L04-D06（P2 可达性）：改前纵向 padding 仅 12rpx ⇒ 实测高 ≈60rpx < 88rpx 命中档，
+     而这是发布表单页唯一的页内返回出口（替代出口只剩系统手势）。补 min-height:88rpx
+     并用 flex 居中吸收增高，与 campus/topic-detail 返回钮热区归一（同 EmptyState.vue:224 口径）。 */
+  min-height: 88rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 12rpx 20rpx;
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-overlay-white-bg-mid-strong);
@@ -954,6 +979,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   /* R10-L04-D09（颜色token P1）：描边随文字同档，选中轮廓在浅绿底上也成立
      （#36C99A 压页面底 #EEF7F2 只有 1.93:1，低于非文本 3:1）。 */
   border-color: var(--c-brand-800, #156B51);
+}
+
+/* R12-L04-D07：real 档「兴趣圈」目标缺「分类 slug → 数字圈 ID」映射，降级只读禁用态
+   （半透明 + 取消按压反馈语义由 @tap 守卫承担）；mock 档不挂此类、行为不变 */
+.target-chip--disabled {
+  opacity: 0.5;
 }
 
 .target-chip__text {

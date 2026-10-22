@@ -37,6 +37,15 @@ const replyContent = ref("");
 const isSubmitting = ref(false);
 /** 话题 ID */
 const topicId = ref("");
+/**
+ * R12-L05-D11（P2 文案）：缺参直开（深链/分享卡没带 id）时 fetch 从未发起，
+ * errorMessage 恒 null、currentTopic 恒 null ⇒ 旧逻辑落进「话题不存在或已被删除」
+ * 分支，把「链接没带参数」谎报成「内容已删除」且唯一出口是离开。缺参单列成
+ * 「话题 ID 无效」态（复用在册词条 storeErrors.campus.topicIdInvalid），
+ * 不与「不存在」混用；真实请求失败（http 非 2xx 一律 reject）仍由 store 写
+ * errorMessage 走带「重试」的错误态，不受本分支影响。
+ */
+const paramMissing = ref(false);
 /** 是否匿名回复 */
 const isAnonymousReply = ref(false);
 
@@ -146,8 +155,9 @@ onLoad((query) => {
     void campusStore.fetchCampusTopicDetail(topicId.value);
     void campusStore.fetchCampusReplies(topicId.value, 1);
   } else {
-    // infra R2-00076: topicId 缺失时给出错误态提示，避免直开链接白屏
-    uni.showToast({ title: t("storeErrors.campus.topicIdInvalid"), icon: "none" });
+    // infra R2-00076 + R12-L05-D11：缺参不再只 toast + 落「话题不存在」空态——
+    // 改落常驻「话题 ID 无效」态（见 paramMissing 注释），画面可读、出口仍是返回
+    paramMissing.value = true;
   }
 });
 
@@ -306,6 +316,18 @@ onShareAppMessage(() => {
       <!-- 底部留白 -->
       <view class="body-footer" />
     </scroll-view>
+
+    <!-- R12-L05-D11：缺参直开 ≠「话题不存在」——没发过请求就不能下「已被删除」的结论；
+         用在册词条「话题 ID 无效」单独成态，出口保持「返回」（无 id 可重试） -->
+    <view v-else-if="!loading && paramMissing" class="empty-state">
+      <EmptyState
+        type="no-data"
+        :title="t('storeErrors.campus.topicIdInvalid')"
+        :hide-sub="true"
+        :action-text="t('campus.topicDetail.backText')"
+        @action="goBack"
+      />
+    </view>
 
     <!-- 加载失败错误态（review #18：与"话题不存在"区分，提供重试）
          R7-L05-D05：两条页面级 EmptyState 各套一个 .empty-state 宿主 view——

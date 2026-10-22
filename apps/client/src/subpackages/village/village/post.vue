@@ -954,7 +954,11 @@ async function submitPublish() {
           role="button"
           @tap="customLocation = location; locationSheetOpen = true"
         >
-          <image class="post-row__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LOCATION)" mode="aspectFit" alt="" />
+          <!-- R12-L03-D03（颜色token P2）：位置图标原走 ICONS_EMOJI.LOCATION 彩色 emoji 位图族，
+               与理想图「绿色线性图钉」不符 ⇒ 换仓内既有绿色单色 SVG 线性图钉
+               （config/images.ts MESSAGE_ICONS.LOCATION，stroke/fill #3CC99A 单色），
+               与话题 #、提及 @ 同族单色，不改资产文件。 -->
+          <image class="post-row__icon" :src="resolveMediaUrl(IMAGE_PATHS.MESSAGE_ICONS.LOCATION)" mode="aspectFit" alt="" />
           <text class="post-row__label">添加位置</text>
           <text class="post-row__meta">{{ location || '选择或输入位置' }}</text>
           <text class="post-row__arrow">›</text>
@@ -1053,7 +1057,7 @@ async function submitPublish() {
         role="button"
         @tap="customLocation = location; locationSheetOpen = true"
       >
-        <image class="post-tool__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LOCATION)" mode="aspectFit" alt="" />
+        <image class="post-tool__icon" :src="resolveMediaUrl(IMAGE_PATHS.MESSAGE_ICONS.LOCATION)" mode="aspectFit" alt="" />
         <text class="post-tool__label">位置</text>
       </view>
       <view

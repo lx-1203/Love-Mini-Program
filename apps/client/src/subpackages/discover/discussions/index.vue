@@ -50,10 +50,12 @@ function openPath(url: string) {
  * R8-L13-D05（P2 文案）：feed-row「标题 + 摘要」两级结构在帧上退化成同一句印两遍
  * （top 帧 y=523..554 粗体标题 / y=564..594 正文，逐字相同，只差句尾「…」与「。」）。
  * R6-L16-D04 的守卫是 `summary.trim() !== title.trim()`，标题被模板/契约截断成
- * 带省略号的形态时两串永不全等 ⇒ 守卫恒不触发。本函数按缺陷行的口径重做：
- * ① 去掉所有空白与句末标点（。．!！?？~～…·、，,;；:：）后判相等；
- * ② 一方以另一方为前缀（标题是摘要的截断形态）同样判同文。
- * 命中即不渲染摘要行；任一侧为空串时不判同文，保持原有渲染，避免把有信息的摘要吃掉。
+ * 带省略号的形态时两串永不全等 ⇒ 守卫恒不触发。
+ * R12-L13-D05（P2）：上一轮补的 `startsWith` 前缀分支做过头——「标题是摘要的截断前缀」
+ * 也被判同文，一旦后端 summary 比标题长（真摘要），整条更长摘要被吃掉、屏幕只剩截断标题，
+ * 与本注释自称的「避免把有信息的摘要吃掉」相反。截断形态的互补属 R12-L13-D04 的
+ * 正文列（后端缺 content 字段，在册），不在前端猜前缀 ⇒ 去重只保留归一化后全等一种判据。
+ * 任一侧为空串时不判同文，保持原有渲染。
  */
 const TRAILING_PUNCT = /[。．.!！?？~～…·、，,;；:：]+$/u;
 function normalizeForDedup(text: string): string {
@@ -63,7 +65,7 @@ function isDuplicateSummary(title?: string, summary?: string): boolean {
   const a = normalizeForDedup(title || "");
   const b = normalizeForDedup(summary || "");
   if (!a || !b) return false;
-  return a === b || b.startsWith(a) || a.startsWith(b);
+  return a === b;
 }
 
 /**

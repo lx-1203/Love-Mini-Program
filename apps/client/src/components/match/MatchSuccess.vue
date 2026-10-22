@@ -225,11 +225,16 @@ function getScoreIcon(index: number): string {
 .match-success__title-heart {
   width: 40rpx;
   height: 40rpx;
-  color: #FF9DB5;
+  /* R12-L06-D03（颜色token P2）：原写死 #FF9DB5（不在任何令牌档）。heart-filled.svg
+     烘焙 fill=#FF6B81（= --c-romance-500 真值，design-variables.scss:41），<image> 不响应
+     CSS color（同文件 --right 的 R2b-L06-D02 注同证）⇒ 此 color 一直是死属性，帧上左心
+     实际渲染色已是心动粉档。仅作源码卫生归口令牌、删私有色字面量；不加 filter——画面已是
+     目标色，任何调档都是负收益。 */
+  color: var(--c-romance-500, #FF6B81);
 }
 
 .match-success__title-heart--left {
-  color: #FF9DB5;
+  color: var(--c-romance-500, #FF6B81);
 }
 
 .match-success__title-heart--right {

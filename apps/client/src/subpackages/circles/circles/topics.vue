@@ -299,15 +299,20 @@ const pinnedNotice = computed<string>(() => (useMock() ? t("circle.home.pinnedNo
  * R11-L04-D05（P2 · 位置）：页签行吸顶态。
  * 改前 .topics-page 是 height:100% + overflow:hidden 的定高列，头部（导航带 + 封面卡 + 页签行）
  * 挂在滚动区之外 ⇒ top/bottom 两帧头部位置完全一致，固定带占到 y=242（≈480rpx，屏高 29%），
- * 单屏只剩 2.5 张话题卡。现头部随内滚区一起滚走、只让 .circle-tabs 吸顶
- * （同 circle-home.vue:1040-1054 的 position:sticky + 吸顶态补 --statusbar 内衬方案）。
- * 本页滚动容器是 scroll-view（MP-R1-TOPICS-101 定高内滚是 @scrolltolower/refresher 的前提，
- * 且本页在 pages.json 未开 enablePullDownRefresh），故挂 @scroll 而非 onPageScroll。
+ * 单屏只剩 2.5 张话题卡。现头部随内滚区一起滚走、只让 .circle-tabs 吸顶。
+ * R12-L04-D02（P1）：本页滚动容器是 scroll-view，sticky 在其内不生效（circle-home 的
+ * sticky 能吸靠的是 window 滚动），故吸顶改由 onScroll 阈值驱动的 position:fixed 承担——
+ * 本 ref 只当阈值状态机用：true ⇒ 页签行 fixed 顶 y=0 + --statusbar 内衬 + 等高占位。
+ * scroll-view 本身保留：MP-R1-TOPICS-101 定高内滚是 @scrolltolower/refresher 的前提，
+ * 且本页在 pages.json 未开 enablePullDownRefresh，故挂 @scroll 而非 onPageScroll。
  */
 const tabsPinned = ref(false);
 /** 吸顶阈值：优先实测 .circle-tabs 在 scrollTop=0 时的视口 top（= 封面高 + 下边距），
  *  测不到时兜底 220px（375 视口下 hero 440rpx≈220px；circle-home.vue:98-99 同一套「实测优先」） */
 const tabsPinTopPx = ref(220);
+/** R12-L04-D02：页签行原位实测高（px）——吸顶时行 fixed 离流，等高占位用它防内容上跳。
+ *  测不到时兜底 37px（14+40+20rpx ≈ 37px，与 .circle-tab 内衬/行高同口径）。 */
+const tabsBarHeightPx = ref(37);
 function measureTabsPinTop(): void {
   const instance = getCurrentInstance();
   const query = instance ? uni.createSelectorQuery().in(instance) : uni.createSelectorQuery();
@@ -317,6 +322,9 @@ function measureTabsPinTop(): void {
       const info = Array.isArray(res) ? res[0] : res;
       const top = info?.top ?? 0;
       if (top > 0) tabsPinTopPx.value = top;
+      const height = info?.height ?? 0;
+      // 只在未吸顶态采高（吸顶态行带 --statusbar 内衬，采到会偏高一段状态栏）
+      if (height > 0 && !tabsPinned.value) tabsBarHeightPx.value = height;
     })
     .exec();
 }
@@ -557,25 +565,38 @@ defineExpose({ goToAuthorProfile });
              是 estimateFriendJoinedCount()（memberCount/1000，RealCircleService.java:187-195），
              不是好友加入数；没有真相源就不承诺。恢复需真实的好友-圈子加入统计列（见 <script> 说明）。 -->
       </view>
+      <!-- R12-L04-D01（P3 文案）：hero 加入钮原读 circle.joinBtn（「+ 加入」），与同域
+           circle-home 同一动作的「加入圈子」（circle.home.joinCta）取档不一 ⇒ 统一整句档；
+           底栏加入钮（:756/:759）同批换，词条本身不改（circles/index.vue 仍消费「+ 加入」并自行去 +） -->
       <view
         class="circle-hero__join press-feedback"
         :class="{ 'circle-hero__join--joined': circle.isJoined }"
         hover-class="press-feedback--active"
         hover-stay-time="40"
         role="button"
-        :aria-label="circle.isJoined ? t('circle.joinedBtn') : t('circle.joinBtn')"
+        :aria-label="circle.isJoined ? t('circle.joinedBtn') : t('circle.home.joinCta')"
         @tap.stop="toggleJoin"
       >
-        <text class="circle-hero__join-text">{{ circle.isJoined ? t('circle.joinedBtn') : t('circle.joinBtn') }}</text>
+        <text class="circle-hero__join-text">{{ circle.isJoined ? t('circle.joinedBtn') : t('circle.home.joinCta') }}</text>
       </view>
       </view>
     </view>
 
     <!-- 详情 Tab：动态 / 精华 / 活动 / 作品墙 / 成员（2026-08-25 P0 补作品墙，规格书 15.10）
-         R11-L04-D05：页签行是本页唯一吸顶的头部元素（top:0 + 吸顶态补 --statusbar 内衬，
-         同 circle-home.vue:1040-1054 / R2b-L05-D06 / R8-L04-D08 的在册方案：白底自屏幕 y=0 铺满
-         「状态栏带 + 页签行」，feed 恒从这条不透明带下方穿过，不与系统时间叠印）。 -->
+         R12-L04-D02（P1 · 层级遮挡）：本页滚动容器是 scroll-view，position:sticky 在 scroll-view
+         内不生效（circle-home 能吸是因为它是 window 滚动、无内层 scroll-view，
+         见 circle-home.vue:95 在册注释）——R11-L04-D05 照搬的 sticky 方案在本页是死代码，
+         real 滚动帧页签行随 hero 滚走、第一张卡「认识 TA」胶囊逃到帧顶与状态栏叠印。
+         改为 onScroll 阈值驱动的 fixed 吸顶：tabsPinned 时页签行 position:fixed 顶到屏幕 y=0、
+         补 --statusbar 内衬（白底自 y=0 铺满「状态栏带 + 页签行」，feed 从带下穿过），
+         原位渲染等高占位（含同款 margin-bottom）防内容在过阈值瞬间上跳。 -->
+    <view v-if="tabsPinned" class="circle-tabs-placeholder" :style="{ height: tabsBarHeightPx + 'px' }" />
     <view class="circle-tabs" :class="{ 'circle-tabs--pinned': tabsPinned }" role="tablist" :aria-label="t('circle.detailTabsAria')">
+      <!-- R12-L04-D03（P2 可达性）：吸顶带内补返回槽位——滚动后 hero 连同原导航带已滚走，
+           页内返回出口归零（只剩系统手势）；返回钮仅吸顶态渲染，与页签同行、88rpx 命中区 -->
+      <view v-if="tabsPinned" class="circle-tabs__back press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('common.backAria')" @tap="goBack">
+        <text class="circle-tabs__back-icon">‹</text>
+      </view>
       <view v-for="tab in detailTabs" :key="tab.key"
         class="circle-tab press-feedback"
         :class="{ 'circle-tab--active': detailTab === tab.key }"
@@ -753,10 +774,10 @@ defineExpose({ goToAuthorProfile });
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
-        :aria-label="circle.isJoined ? t('circle.joinedBtn') : t('circle.joinBtn')"
+        :aria-label="circle.isJoined ? t('circle.joinedBtn') : t('circle.home.joinCta')"
         @tap="toggleJoin"
       >
-        <text class="circle-bottom__join-text">{{ circle.isJoined ? t('circle.joinedBtn') : t('circle.joinBtn') }}</text>
+        <text class="circle-bottom__join-text">{{ circle.isJoined ? t('circle.joinedBtn') : t('circle.home.joinCta') }}</text>
       </view>
       <view
         class="circle-bottom__fab press-feedback"
@@ -1483,8 +1504,9 @@ defineExpose({ goToAuthorProfile });
    否则顶帧多一条纯白带）。右侧胶囊避让按同一档常量给（circle-home.vue:1043 同式）：
    只在吸顶态给会在跨过阈值时把五个页签横向抖一下。 */
 .circle-tabs {
-  position: sticky;
-  top: 0;
+  /* R12-L04-D02（P1）：原 position:sticky top:0 在本页滚动容器（scroll-view）内不生效，
+     是死代码（circle-home 能吸靠的是 window 滚动）。吸顶改由 .circle-tabs--pinned 的
+     position:fixed 承担，由 onListScroll 的阈值状态驱动；文档流态保持普通块。 */
   z-index: 10;
   box-sizing: border-box;
   display: flex;
@@ -1496,9 +1518,39 @@ defineExpose({ goToAuthorProfile });
   background: var(--c-bg-page, #F5FAF8);
 }
 
-/* 吸顶态才补状态栏内衬（circle-home.vue:1052 .tabs--pinned 同族） */
+/* R12-L04-D02：fixed 吸顶态——顶到屏幕 y=0（越过 scroll-view 边界），补 --statusbar 内衬
+   ⇒ 白底自 y=0 铺满「状态栏带 + 页签行」，feed 从带下穿过、不与系统时间叠印
+   （--statusbar 由页面根节点 JS 实测注入，非 env() 恒 0 档）。 */
 .circle-tabs--pinned {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin-bottom: 0;
   padding-top: var(--statusbar, env(safe-area-inset-top));
+}
+
+/* R12-L04-D02：吸顶时行离流的等高占位（高度=实测原位高，JS 注入），含同款 margin-bottom
+   ⇒ 过阈值瞬间文档流少的那一行由占位补齐，feed 不上跳。 */
+.circle-tabs-placeholder {
+  margin-bottom: 20rpx;
+}
+
+/* R12-L04-D03：吸顶带内的返回槽位（仅吸顶态渲染），88rpx 命中区与全站页头返回钮同档 */
+.circle-tabs__back {
+  flex-shrink: 0;
+  min-height: 88rpx;
+  min-width: 88rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.circle-tabs__back-icon {
+  font-size: 44rpx;
+  line-height: 1;
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .circle-tab {

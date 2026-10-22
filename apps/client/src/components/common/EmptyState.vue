@@ -61,11 +61,22 @@ const { t } = useI18n();
    除 box/package 外没有更贴「空数据」语义的现成插画，故取 box。
    私有色 #94A3B8 的归一仍走文末 .empty-icon--preset 的 filter（R7-L13-D03 已批口径，
    本车道不推翻该判定；<image> 无法用 currentColor 给外链 SVG 上色，filter 是组件内唯一杠杆）。 */
+/* R12-L11-D08（素材缺失 P3 · chat-session top 帧）：`network` 预设过去复用 CLOSE
+   （close.png，一枚大号灰 ✕）——「出错/缺会话」的示意拿「可关闭」图形顶替，帧上
+   y≈388-460 就是这枚 ✕，用户第一读感是"能关掉"而不是"出错了"，与 no-data 的立方体、
+   no-chat 的铃铛也不成语义体系。换指仓内既有、三棵树齐备的警示三角
+   ICONS_COMMON.WARNING_SVG（/common/warning.svg，lucide alert-triangle：三角 + 感叹线 =
+   「出错/注意」通用图形；src/static、static-local-backup/full-static、apps/api/uploads/
+   app-assets 三份已核在盘，icons/common 前缀走包内幂等解析，运行时取值方式与其余
+   预设一致，统一色相仍走 .empty-icon--preset 的 filter）。本组件 type="network" 的
+   唯一消费者是 subpackages/chat/chat-session/index.vue:2090 错误态空态（其余 network
+   空态走 ErrorState 组件，不经本映射，已 grep 证）。`no-match` 仍保留 CLOSE——
+   那是「无匹配」语义，不在本卡范围，不动。 */
 const presetIconMap: Record<string, string> = {
   'no-data': IMAGE_PATHS.ICONS_COMMON.BOX_SVG,
   'no-match': IMAGE_PATHS.ICONS_COMMON.CLOSE,
   'no-chat': IMAGE_PATHS.ICONS_COMMON.NOTIFICATION,
-  'network': IMAGE_PATHS.ICONS_COMMON.CLOSE,
+  'network': IMAGE_PATHS.ICONS_COMMON.WARNING_SVG,
 };
 
 /** 预设类型 → 副标题 i18n key 映射 */

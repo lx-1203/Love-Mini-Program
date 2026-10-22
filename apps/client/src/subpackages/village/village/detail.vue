@@ -2921,7 +2921,11 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 /* R8-L03-D07：详情页专用 not-found 版式（替代通用 no-data 预设）。
    卡宽与正文卡同档（--page-padding 侧缩 + --card-radius 圆角 + --c-bg-container 白底），
-   作者占位骨架用 --c-bg-surface / --c-neutral-100 中性档，不引入新素材。 */
+   作者占位骨架用 --c-bg-surface / --c-neutral-100 中性档，不引入新素材。
+   R12-L03-D05（P3 颜色token）：本页 .detail-page 根把 --c-bg-container 重声明为 #FFFFFF、
+   页底亦白 ⇒ 白卡压白页四边界 0px 可辨、读作悬浮裸文本；卡内作者骨架也取 --c-bg-surface
+   近白档，若卡底改 --c-bg-surface 会连骨架一起隐没 ⇒ 按缺陷卡第二形态补 1rpx
+   --c-border-light（#EEF2F0）描边，白底上卡形成形且不影响卡内对比。 */
 .notfound-card {
   display: flex;
   flex-direction: column;
@@ -2932,6 +2936,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   margin: 0 var(--page-padding, 32rpx);
   padding: 40rpx 32rpx;
   background: var(--c-bg-container, #ffffff);
+  border: 1rpx solid var(--c-border-light, #eef2f0);
   border-radius: var(--card-radius, 40rpx);
 }
 

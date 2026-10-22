@@ -233,31 +233,19 @@ const feedItems = ref<FeedItem[]>([
   },
 ]);
 
-/** 朋友头像组（本地 mock —— TODO(后端): 好友关系接口）。
- *  MP-R1-CIRCLEHOME-003（2026-09-20）：按圈 id 稳定取不同头像，修复三头像同图。 */
-const FRIEND_AVATAR_POOL = [
-  IMAGE_PATHS.PEOPLE.AVATAR_1,
-  IMAGE_PATHS.PEOPLE.AVATAR_2,
-  IMAGE_PATHS.PEOPLE.AVATAR_3,
-];
-const friendAvatars = computed<string[]>(() => {
-  const seed = circle.value.id.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  return [
-    FRIEND_AVATAR_POOL[seed % 3] ?? IMAGE_PATHS.DEFAULT_AVATAR,
-    FRIEND_AVATAR_POOL[(seed + 1) % 3] ?? IMAGE_PATHS.DEFAULT_AVATAR,
-    FRIEND_AVATAR_POOL[(seed + 2) % 3] ?? IMAGE_PATHS.DEFAULT_AVATAR,
-  ];
-});
-
-/** 朋友加入数展示（MP-R1-CIRCLEHOME-003）：真实字段优先；mock 种子圈缺该字段时
- *  按圈 id 稳定推导 5~12（与列表页 friendJoinCount 同规则），修复「等 0 位朋友已加入」。 */
-const friendJoinedCount = computed<number>(() => {
-  const raw = circle.value.friendJoinedCount;
-  if (raw != null && raw > 0) return raw;
-  if (!useMock()) return 0;
-  const seed = circle.value.id.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  return 5 + (seed % 8);
-});
+/**
+ * R12-L04-D08（P0 · 假好友计数行）：原 FRIEND_AVATAR_POOL + friendAvatars（按圈 id
+ * 字符码对 3 张公共头像取模，无门控的「编造好友脸」）与 friendJoinedCount（读
+ * friendJoinedCount 估算列；real 无真值时才退 0，mock 按 id 哈希编 5~12）已整块删除，
+ * 模板 :551 起的展示行同批撤下——与 topics.vue:556-558（R11-L04-D01）同口径。
+ * 该字段真身是 estimateFriendJoinedCount()（memberCount/1000 四舍五入夹 [3,99]，
+ * RealCircleService.java:187-195），与「我的好友里有谁加入了这个圈」无关；
+ * 按 §12.4 合法形态之二处置：没有真相源的内容整块撤下、降级为不承诺，不接替代表达式。
+ *
+ * 缺列登记（沿用 topics.vue:269-283 在册项，要恢复这一行时需后端新增）：
+ * 以 viewer 为锚的真实好友-圈子加入统计（friends ⋈ circle_members 关联计数）
+ * + 好友头像 id 列；而不是由 memberCount 估算的 friendJoinedCount。
+ */
 
 /**
  * ISO 时间 → 相对时间文案（x 分钟前 / x 小时前 / x 天前 / 日期）。
@@ -548,20 +536,13 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
               {{ formatMemberCount(circle.memberCount) }} {{ t("circle.memberUnit") }}
               · {{ circle.topicCount }} {{ t("circle.topicUnit") }}
             </text>
-            <view v-if="friendJoinedCount > 0" class="info-friends">
-              <view class="info-friend-avatars">
-                <image
-                  v-for="(avatar, idx) in friendAvatars"
-                  :key="idx"
-                  class="info-friend-avatar"
-                  :src="resolveMediaUrl(avatar)"
-                  mode="aspectFill"
-                />
-              </view>
-              <text class="info-friend-text">
-                {{ t("circle.friendsJoined", { count: friendJoinedCount }) }}
-              </text>
-            </view>
+            <!-- R12-L04-D08（P0）：原「好友头像组 + 等 N 位朋友已加入」整行撤下，与
+                 topics.vue:556-558（R11-L04-D01）同口径——头像组原由圈 id 字符码对 3 张
+                 公共头像取模拼出（无 mock/real 门控），计数读 friendJoinedCount，而该字段
+                 是 estimateFriendJoinedCount()（memberCount/1000 夹 [3,99]，
+                 RealCircleService.java:187-195），不是好友加入数。没有真相源就不承诺，
+                 不接任何替代表达式。恢复需后端新增「以 viewer 为锚的好友-圈子加入统计
+                 + 好友头像 id 列」（缺列登记沿用 topics.vue:269-283 在册项）。 -->
           </view>
           <view class="info-join" hover-class="info-join--active" @tap="toggleJoin">
             <text class="info-join-text">
@@ -939,35 +920,8 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   color: rgba(255, 255, 255, 0.85);
 }
 
-.info-friends {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  margin-top: 4rpx;
-}
-
-.info-friend-avatars {
-  display: flex;
-}
-
-.info-friend-avatar {
-  width: 40rpx;
-  height: 40rpx;
-  border-radius: 50%;
-  border: 3rpx solid #ffffff;
-  margin-right: -12rpx;
-}
-
-.info-friend-avatar:first-child {
-  margin-left: 0;
-}
-
-.info-friend-text {
-  margin-left: 16rpx;
-  font-size: 22rpx;
-  /* R8-L04-D07：封面叠层，好友行走白字 */
-  color: rgba(255, 255, 255, 0.85);
-}
+/* R12-L04-D08：.info-friends / .info-friend-avatars / .info-friend-avatar /
+   .info-friend-text 四条死样式随展示行整块删除（R12-L04-D08 P0 撤除，见模板注释） */
 
 .info-join {
   flex-shrink: 0;
@@ -1042,13 +996,17 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
      正文「预算 2000…」从该带透出、与系统时间「0:53」同高叠印。
      现把吸顶点位改到 top:0，并把状态栏高度收进 padding-top ⇒ 白底自屏幕 y=0 起铺满「状态栏带 + 页签行」，
      feed 恒从这条同色不透明头部带下方穿过，状态栏带不留裸内容。padding-top 在 top 帧（未吸顶、走文档流）
-     只多出一段与页签同色的白内衬，不产生异色缝。右侧仍按 hub 口径预留胶囊（胶囊右缘间隙 + 本体 87px + 呼吸）。
+     只多出一段与页签同色的白内衬，不产生异色缝。
      R10-L03-D19 补充：这段状态栏内衬改为「只在吸顶态补」（见下方 .tabs--pinned）——
-     顶帧未吸顶时它就是 hero 与页签之间一条多余的白空带。 */
+     顶帧未吸顶时它就是 hero 与页签之间一条多余的白空带。
+     R12-L04-D09（P2 间距）：右侧胶囊预留（capsule-right + 104px ≈ 111px）同理拆到吸顶态——
+     未吸顶时页签行在文档流里、位于 hero 下方，胶囊根本压不到它，恒定预留把五签压进左半边
+     （real 帧「成员 1.2w」右缘只到 ≈71% 帧宽，理想图 ≈94%）。基态右衬回到与左衬对称的
+     24rpx，吸顶后（页签带顶到屏幕顶、与胶囊同带）再补回预留 ⇒ 两态互不越界。 */
   position: sticky;
   top: 0;
   z-index: 10;
-  padding: 0 calc(var(--capsule-right, 7px) + 104px) 0 24rpx;
+  padding: 0 24rpx;
   box-sizing: border-box;
 }
 
@@ -1056,9 +1014,11 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
  * 未吸顶时页签回到离白 sheet 顶缘 ≈48rpx（只剩 .tab-item 的 24rpx 上内衬 + 文案行高），
  * 顶帧那条 58px 纯白带（理想图同位 24px 的 2.4 倍）随之收回；
  * 吸顶后 padding-top = --statusbar 原样恢复 ⇒ R8-L04-D08 的状态栏带遮盖不受影响。
- * 本页 --statusbar 由 useMenuButtonRect 注入（:45），不是 env() 的 0（已知机制 §4）。 */
+ * 本页 --statusbar 由 useMenuButtonRect 注入（:45），不是 env() 的 0（已知机制 §4）。
+ * R12-L04-D09：右侧胶囊预留同批挪进吸顶态（见 .tabs 注释），未吸顶不再恒吃 111px。 */
 .tabs--pinned {
   padding-top: var(--statusbar, env(safe-area-inset-top));
+  padding-right: calc(var(--capsule-right, 7px) + 104px);
 }
 
 .tab-item {

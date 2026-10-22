@@ -4,7 +4,7 @@
  *
  * 从消息页「喜欢与访客」入口进入，与普通会话列表完全隔离：
  * - 双 Tab：「喜欢我的」/「我的访客」，选中态下划线高亮
- * - 数据概览栏：总浏览量 / 今日访客 / 今日浏览量
+ * - 数据概览栏：今日访客（R12-L07-D01：「总浏览量 / 今日浏览量」无后端真相源，按 §12 撤承诺整格撤除，只留真值格）
  * - 未解锁态：头像模糊 + 锁标识，昵称隐藏，仅展示少量基础标签
  * - 底部固定「解锁全部」按钮：VIP 免费放行，非 VIP 消耗交友币（幂等扣费）
  * - 顶部轻量「提升曝光」入口（不弹窗、不打断浏览，跳转 VIP 页）
@@ -114,26 +114,19 @@ const unlockCost = computed(() =>
 );
 
 /**
- * 数据概览（总浏览量 / 今日访客 / 今日浏览量；P1-07：删除假数字兜底，数据为空显示 0）
+ * 数据概览（今日访客，单格）
  *
- * R7-L07-D01/D02：真实后端 /profile/stats 的 ProfileStatsView 只有
- * followingCount / followersCount / likesCount，既没有「今日浏览量」字段，
- * visitorsCount 也缺失（→ totalViews 渲染 0）；而原 :97 直接把「喜欢我的条数」
- * 当今日浏览量透出，与 totalViews 不同源，画面上出现「今日浏览量 1 > 总浏览量 0」
- * 的自相矛盾（top / bottom 两帧同栏同样可见）。
- * 今日项改为与 totalViews 同源取值并夹紧（今日 ≤ 总），真实今日数据缺失时不再越界；
- * mock 数据（visitorsCount 104 / likedBy 22）下仍还原为 22，与既有对拍结论一致。
- * 文案（总浏览量 / 今日访客 / 今日浏览量）保持规范文档§数据概览栏口径不变。
+ * R12-L07-D01（P1）：本栏原三项中「总浏览量 / 今日浏览量」两项无后端真相源——
+ * /profile/stats 的 ProfileStatsView 只有 followingCount / followersCount / likesCount，
+ * visitorsCount 缺失 ⇒ totalViews 恒 0；「今日浏览量 = Math.min(totalViews, likedBy.length)」
+ * 是把「喜欢我的条数」夹进总浏览量编出的假读数（mock 值下显示 22=喜欢数）。
+ * 按 §12「无真相源只有两合法形态」中的撤承诺：字段落地之前两项整格撤除，
+ * 只保留有真相源（fetchVisitors 返回记录的 isNew 标记计数）的「今日访客」。
+ * 不许在前端换常量/挪写死表续编；后端补 visitorsCount 与按日浏览计数字段后再接真字段恢复。
  */
-const overview = computed(() => {
-  const stats = profileStore.profileStats;
-  const totalViews = stats?.visitorsCount ?? 0;
-  return {
-    totalViews,
-    todayVisitors: visitors.value.filter((v) => v.isNew).length,
-    todayViews: Math.min(totalViews, likedBy.value.length),
-  };
-});
+const overview = computed(() => ({
+  todayVisitors: visitors.value.filter((v) => v.isNew).length,
+}));
 
 /** 当前 Tab 列表数据 */
 const currentList = computed(() =>
@@ -385,19 +378,13 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
       <text class="exposure-bar__arrow">›</text>
     </view>
 
-    <!-- 数据概览栏 -->
+    <!-- 数据概览栏（R12-L07-D01：撤「总浏览量 / 今日浏览量」两格——ProfileStatsView 无
+         visitorsCount / 按日浏览计数字段，原值一恒 0、一是把喜欢数夹进浏览量的假读数；
+         只保留有 fetchVisitors 记录 isNew 标记作真相源的「今日访客」。§12 撤承诺形态。 -->
     <view class="overview">
-      <view class="overview__item">
-        <text class="overview__value">{{ overview.totalViews }}</text>
-        <text class="overview__label">{{ t('likesVisitors.overviewTotalViews') }}</text>
-      </view>
       <view class="overview__item">
         <text class="overview__value">{{ overview.todayVisitors }}</text>
         <text class="overview__label">{{ t('likesVisitors.overviewTodayVisitors') }}</text>
-      </view>
-      <view class="overview__item">
-        <text class="overview__value">{{ overview.todayViews }}</text>
-        <text class="overview__label">{{ t('likesVisitors.overviewTodayViews') }}</text>
       </view>
     </view>
 
@@ -564,7 +551,9 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
 
 .page-header__subtitle {
   font-size: var(--fs-sm);
-  color: var(--c-text-tertiary);
+  /* R12-L07-D02（颜色token P2）：24rpx=12px 次级文字取 tertiary 在页底仅 4.1-4.3:1 < 4.5:1，
+     提到 secondary（#4A524E，压页底 ≈7.4:1），与同页 guest-guide__desc 用墨档对齐。 */
+  color: var(--c-text-secondary);
 }
 
 /* ========== R8-L06-D04（可达性 P1）：游客登录引导（占列表区，骨架之上不再整页被顶替） ========== */

@@ -667,7 +667,12 @@ onLoad((query) => {
   font-size: 42rpx;
   line-height: 1;
   margin-top: -8rpx;
-  color: #36C99A;
+  /* R12-L11-D10（可达性 P1）：#36C99A 压页底 #EEF7F2 实测 1.93:1，低于非文本 3:1 地板，
+     且这是本页唯一显式返回出口（无系统导航栏）。归口 --c-brand-800（#156B51，
+     design-variables.scss:18 真值），对 #EEF7F2 ≈5.2:1；与 chat-session 错误态页头
+     （同域已改 --c-brand-800 并注明不复制低对比读数）取档对齐。
+     line-height/margin 配方不动（R6-B38/D07 在册修法）。 */
+  color: var(--c-brand-800, #156B51);
 }
 .nav-more-icon {
   font-size: 40rpx;
@@ -688,7 +693,9 @@ onLoad((query) => {
 .nav-title {
   font-size: 34rpx;
   font-weight: 700;
-  color: #222;
+  /* R12-L11-D11（颜色token P3）：私有色 #222 归口 --c-text-primary
+     （真值 #1A1E1C，design-variables.scss:121）；本页其余私有色随同文件令牌化批次再清。 */
+  color: var(--c-text-primary, #1A1E1C);
 }
 /* 2026-08-26 P1：V-08 官方小标签样式。
    参考图：白底 + 薄荷绿描边 + 深绿文本的小标签（不再是绿色渐变胶囊）。 */
@@ -1096,11 +1103,14 @@ onLoad((query) => {
 }
 .input-bar__input {
   font-size: 28rpx;
-  color: #333;
+  /* R12-L11-D12（颜色token P3）：输入文字私有色 #333 归口 --c-text-primary（#1A1E1C）。 */
+  color: var(--c-text-primary, #1A1E1C);
   width: 100%;
 }
 .input-placeholder {
-  color: #bbb;
+  /* R12-L11-D12（颜色token P3）：占位符私有色 #bbb 归口 --c-text-placeholder
+     （真值 --c-text-quaternary #9AA39F，design-variables.scss:126/:373）。 */
+  color: var(--c-text-placeholder, #9AA39F);
   font-size: 28rpx;
 }
 /* P2 修复：输入栏「发送」按钮（品牌绿胶囊，与输入区同高居中）

@@ -558,9 +558,13 @@ onShow(async () => {
   color: var(--c-text-primary);
 }
 
+/* R12-L11-D03（可达性 P2）：「0/4 已完成」原 --c-text-tertiary #6B7571 直接压页底
+   --c-bg-page #EEF7F2（.tasks-header 无卡底），对比 4.36:1 落在 3:1–4.5:1 区间记 P2。
+   升一档 --c-text-secondary #4A524E（design-variables.scss:122/:363）对 #EEF7F2 约 7.4:1，
+   字号 --fs-md 不动。 */
 .tasks-header__count {
   font-size: var(--fs-md);
-  color: var(--c-text-tertiary);
+  color: var(--c-text-secondary, #4A524E);
 }
 
 /* ==================== 积分概览卡片 ==================== */
@@ -582,10 +586,14 @@ onShow(async () => {
   color: var(--c-text-primary);
 }
 
+/* R12-L11-D02（可达性 P1）：完成度百分比原 --c-brand #36C99A 压白卡，15px/700 不达
+   WCAG 大字豁免（≥18.66px/700），实测 2.10:1；进度条 0 填充时它是本页唯一进度读数。
+   按 §2 在册算法收 --c-brand-800 #156B51（design-variables.scss:18/:267，对白 6.45:1），
+   与同页 .task-item__status--go / --done 文字（R11 已收同档）归口。字号字重不动。 */
 .tasks-summary__percent {
   font-size: var(--fs-xl);
   font-weight: 700;
-  color: var(--c-brand);
+  color: var(--c-brand-800, #156B51);
 }
 
 .tasks-summary__bar {
@@ -652,9 +660,13 @@ onShow(async () => {
   color: var(--c-text-primary);
 }
 
+/* R12-L11-D01（可达性 P1）：任务卡奖励值「+N 积分」原 --c-brand #36C99A 压白卡，
+   --fs-sm 11px/600 实测 2.10:1，四行绿字是任务决策数据，全部不过线。
+   收 --c-brand-800 #156B51（对白 6.45:1），与同页 .task-item__status--done 文字同一档（R11 同轴漏网补齐）。
+   字号字重不动。 */
 .task-item__points {
   font-size: var(--fs-sm);
-  color: var(--c-brand);
+  color: var(--c-brand-800, #156B51);
   font-weight: 600;
 }
 

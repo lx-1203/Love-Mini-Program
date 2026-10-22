@@ -618,7 +618,11 @@ function formatMemberCount(count: number): string {
         </view>
         <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.hotCircles')" @tap="goCircleList">
           <view class="nearby-entry__icon nearby-entry__icon--circle">
-            <image class="nearby-entry__img" :src="IMAGE_PATHS.NEARBY_ICONS.CIRCLE" mode="aspectFit" alt="" />
+            <!-- R12-L02-D02（素材语义）：原 NEARBY_ICONS.CIRCLE（group.svg 双人像）与「兴趣圈」
+                 语义错位，理想图此位是盾形对勾——换绑既有 REGISTER_ICONS.SHIELD
+                 （register/shield.svg，盾形+对勾，本地 /static 固定路径，不随 real 档切基址）。
+                 字形色仍由 :1733 的 filter 链统一烘成 #36C99A，五宫格底板/布局/其余三枚不动。 -->
+            <image class="nearby-entry__img" :src="IMAGE_PATHS.REGISTER_ICONS.SHIELD" mode="aspectFit" alt="" />
           </view>
           <!-- R2b-L02-D02：入口标签用理想图短词「兴趣圈」（nearby.tabCircles），
                长词「热门兴趣圈」仅留给下方分区②标题（:485 的 nearby.hotCircles 不动）。 -->
@@ -632,7 +636,12 @@ function formatMemberCount(count: number): string {
         </view>
         <view class="nearby-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.activitiesTitle')" @tap="goActivityList">
           <view class="nearby-entry__icon nearby-entry__icon--activity">
-            <image class="nearby-entry__img" :src="IMAGE_PATHS.NEARBY_ICONS.ACTIVITY" mode="aspectFit" alt="" />
+            <!-- R12-L02-D02（素材语义）：原 NEARBY_ICONS.ACTIVITY（common/schedule.svg 日历）
+                 读作「日程」而非「活动」，理想图此位是礼盒——换绑既有 ICONS_EMOJI.GIFT
+                 （assets/icons/gift.svg 礼盒，已走 :238 ICONS_GIFT_SVG 的 pkg+tail 双登记，
+                 与同组 GROUP/LOCATION 同一已验证可渲染路径）。字形色仍由 filter 链烘成
+                 #F97316 橙（同原日历色），布局不动。 -->
+            <image class="nearby-entry__img" :src="IMAGE_PATHS.ICONS_EMOJI.GIFT" mode="aspectFit" alt="" />
           </view>
           <!-- R2b-L02-D02：入口标签用理想图短词「活动」（nearby.tabActivities），
                长词「附近活动」仅留给下方分区④标题（:572 的 nearby.activitiesTitle 不动）。 -->
@@ -1399,7 +1408,12 @@ function formatMemberCount(count: number): string {
    不论 coverUrl 有没有值都不会再出现绿底卡。 */
 .campus-entry {
   position: relative;
-  flex: 1;
+  /* R12-L02-D03（尺寸比例）：原 flex:1 把四张卡均分压到 ~163rpx 宽，封面仅 132rpx，
+     卡内纵向三段（封面/校名+次行/状态胶囊）被压扁，与理想图（单卡约 250rpx 宽、
+     卡图约 260rpx 高、一屏约 3.5 张、末张被右缘裁切）不符。改定宽 248rpx（flex 不再均分、
+     不收缩），一行放不下四张 ⇒ 第 3/4 张溢出由 scroll-view 视口右缘裁切（本页滚动发生在
+     scroll-view 内、x 向不可滚 ⇒ 溢出即裁切，无横向滚动条）。 */
+  flex: 0 0 248rpx;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -1418,7 +1432,8 @@ function formatMemberCount(count: number): string {
 
 .campus-entry__cover-img {
   width: 100%;
-  height: 132rpx;
+  /* R12-L02-D03：封面高随卡宽同步 132→260rpx（理想图卡图比例），flex-shrink 不变 */
+  height: 260rpx;
   border-radius: 16rpx;
   flex-shrink: 0;
 }
@@ -1426,7 +1441,8 @@ function formatMemberCount(count: number): string {
 /* 浅绿底卡上的白底封面位展示学校名字（coverUrl 未上传时的诚实兜底，
    不复用 hub.vue 的硬编码封面表，避免第二真相源） */
 .campus-entry__badge {
-  height: 132rpx;
+  /* R12-L02-D03：与 __cover-img 同一封面槽位（coverUrl 缺失时的兜底形态），高度同步 260rpx */
+  height: 260rpx;
   border-radius: 16rpx;
   display: flex;
   align-items: center;
