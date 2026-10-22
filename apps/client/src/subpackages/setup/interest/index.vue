@@ -2,7 +2,7 @@
 /**
  * 兴趣选择（v3.1 契约 11 / 14）：注册引导可跳过；主动进入必须 ≥3 个才能保存。
  */
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 // MP-R9-STATUS-005：注入 --statusbar（DevTools env 恒 0，标题叠印状态栏）
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
@@ -13,12 +13,25 @@ import { clientApi } from "../../../services/api";
 import { IMAGE_PATHS } from "../../../config/images";
 import TagSelector from "../../../components/profile/TagSelector.vue";
 import type { ProfileTagGroupKey } from "../../../config/profile-tags";
+// R11-L12-D19/D20/D22：主 CTA 换成共享吸底动作条（同域 schedule/campus 同一组件）
+import BottomActionBar from "../../../components/common/BottomActionBar.vue";
 
 const { t } = useI18n();
 const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 const selected = ref<Partial<Record<ProfileTagGroupKey, string[]>>>({ interest: [] });
 const saving = ref(false);
+
+/**
+ * R11-L12-D20（颜色token P2）：帧上 0 个标签已选时主按钮仍取满亮品牌渐变（#46CC9E），
+ * 用颜色承诺「现在就能完成」，实际点下去被 :39 的 <3 守卫弹 toast 拒绝——同流程另两步
+ * 未完成时是 #DCE5E2 灰档（campus/schedule 帧实测），色档口径与本页相反。
+ * 现按选中数派生可保存态，交给 BottomActionBar 的 --c-status-disabled 灰档
+ * （#DCE5E2 底 + --c-text-secondary 字 = 6.15:1，组件 :123-127 已定档），与另两步同轨。
+ * 页面副标题「至少 3 个」与 TagSelector 的「已选 N/5」同时在屏，灰态不是无提示的死路。
+ */
+const interestCount = computed(() => selected.value.interest?.length ?? 0);
+const canSave = computed(() => interestCount.value >= 3);
 
 onLoad(async () => {
   try {
@@ -119,9 +132,20 @@ function goBack() {
          interest 一组，原全量渲染 4 组使其余 3 组可见可选、保存即静默丢弃 -->
     <TagSelector v-model="selected" :groups="['interest']" />
 
-    <view class="interest-save press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('interestSelect.save')" @tap="handleSave">
-      <text class="interest-save__text">{{ saving ? t('common.loading') : t('interestSelect.save') }}</text>
-    </view>
+    <!-- R11-L12-D22（位置 P2）：原自建按钮盒只在文档流里 margin-top:32rpx，帧上按钮占
+         y=399..443（视口 54%），其下 371px=46% 视口是纯 #EEF7F2 空底 ⇒ 拇指自然位点不到
+         本页唯一主操作。换成同域 schedule/campus 的 BottomActionBar（fixed 吸底 +
+         safe-area 内边距），正文尾部用 .cta-spacer 让位。
+         R11-L12-D19（可达性 P1）：自建按钮原走 --c-gradient-brand，帧实测底 #46CC9E、
+         白字 #FDFEFE = 2.00:1；BottomActionBar 主键已按 R9 定档 --c-brand-800 #156B51
+         （纯白 6.45:1，组件 :104-110），本页不再自抄渐变。 -->
+    <view class="cta-spacer" />
+    <BottomActionBar
+      :primary-label="saving ? t('common.loading') : t('interestSelect.save')"
+      :disabled="!canSave || saving"
+      fixed
+      @primary="handleSave"
+    />
   </view>
 </template>
 
@@ -195,24 +219,17 @@ function goBack() {
   color: var(--c-text-secondary, #666666);
 }
 
-/* R6-B66/D21（颜色token，2026-10-20）：主按钮原写死
-   linear-gradient(135deg, #36C99A 0%, #36C99A 100%) —— 两端同值＝纯色平铺，
-   而同为注册流程的 schedule / recommend-pref 两页主按钮走 --c-gradient-brand
-   （#36C99A→#55D5A7，design-variables.scss:171/386）⇒ 走完三步时最后一步的
-   主按钮色相与前两页不一致。改引同一令牌，不在页面重抄渐变。 */
-.interest-save {
-  margin-top: 32rpx;
-  padding: 24rpx 0;
-  border-radius: var(--r-full, 9999rpx);
-  background: var(--c-gradient-brand);
-  text-align: center;
+/* R11-L12-D22：吸底 CTA 脱离文档流后，正文尾部自行留出
+   88rpx 按钮 + 上下 --sp-4 内边距 + 机型安全区（与 schedule/index.vue:213 同值）。
+   本页根容器是 flex 列，补 flex-shrink:0 防止内容变长时占位被压缩。 */
+.cta-spacer {
+  height: calc(152rpx + env(safe-area-inset-bottom));
+  flex-shrink: 0;
 }
 
-.interest-save__text {
-  font-size: 30rpx;
-  font-weight: 800;
-  color: #ffffff;
-}
+/* R11-L12-D19/D22 连带删除：原 .interest-save / .interest-save__text 两个类随自建按钮盒
+   一并出表——按钮已换 BottomActionBar（:122-124 → 模板 CTA 段），留着重叠规则只会让下一轮
+   误判「渐变按钮还在」。原 R6-B66/D21 的渐变口径由组件 --c-brand-800 承担。 */
 
 
 /* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调）

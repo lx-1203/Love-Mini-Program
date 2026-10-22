@@ -23,15 +23,12 @@ const props = withDefaults(
     partnerAvatar: string;
     partnerName: string;
     reasons: MatchReason[];
-    /** 后端真实匹配度（0-100）。缺省 ⇒ 不显示匹配度数字，见 scorePercent。 */
-    matchScore?: number;
   }>(),
   {
     myAvatar: "",
     partnerAvatar: "",
     partnerName: "",
     reasons: () => [],
-    matchScore: undefined,
   }
 );
 
@@ -57,18 +54,13 @@ const scoreIcons = [IMAGE_PATHS.ICONS_COMMON.HIKING_SVG, IMAGE_PATHS.ICONS_EMOJI
    DEFAULT_REASON_LABELS 把 reasons 补满四行——那四个数是《匹配成功页面》设计稿里的示例占位值，
    对任何匹配对象都成立，等于向用户伪造契合度（冻结契约 MP-R1-MATCHING-REQ-01 明令禁止假百分比）。
    现改为：共同点只渲染后端真给的理由（拿不到 ⇒ 整卡隐藏，与 ops 用例
-   SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json:172 的「理由卡整块隐藏」预期一致），
-   匹配度只渲染 props.matchScore 这一个真值（由 view-models/match.ts:40 从 commonCircleCount 派生）。 */
+   SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCH-SUCCESS.json:172 的「理由卡整块隐藏」预期一致）。
+   R11-L06-D05 / §12.3：props.matchScore 由 view-models/match.ts:40 的 computeMatchScore
+   （constants/match.ts 的 80+n×5 常量式）派生，同样不是后端真分，故本页不再渲染任何百分比
+   与进度条；真分列就绪前登记缺列，不换常量继续编。 */
 const displayReasons = computed<MatchReason[]>(() =>
   (props.reasons || []).filter((r) => r && typeof r.text === "string" && r.text.trim().length > 0)
 );
-
-const scorePercent = computed<number | null>(() => {
-  const raw = Number(props.matchScore);
-  if (!Number.isFinite(raw)) return null;
-  const clamped = Math.min(100, Math.max(0, Math.round(raw)));
-  return clamped;
-});
 
 function getScoreIcon(index: number): string {
   return scoreIcons[index % scoreIcons.length] ?? '';
@@ -120,14 +112,11 @@ function getScoreIcon(index: number): string {
       </view>
 
       <!-- R10-L06-D01（文案 P0）：匹配度从「每行一个假分数」改成「卡头一个真分数」。
-           后端只有一个整体 matchScore，按行重复它同样是伪造 per-dimension 数值，故进度条只留一条。 -->
+           R11-L06-D05 / §12.3：后端没有匹配度真分列，卡头那个数也只是 80+n×5 常量式的产物，
+           故连卡头百分比与进度条一并撤掉；共同点卡只保留后端真理由，理由为空整卡隐藏。 -->
       <view v-if="displayReasons.length > 0" class="match-success__score-card">
         <view class="match-success__score-head">
           <text class="match-success__score-title">{{ t('matchSuccess.scoreTitle') }}</text>
-          <text v-if="scorePercent !== null" class="match-success__score-percent">匹配度 {{ scorePercent }}%</text>
-        </view>
-        <view v-if="scorePercent !== null" class="match-success__score-track">
-          <view class="match-success__score-fill" :style="{ width: scorePercent + '%' }"></view>
         </view>
         <view class="match-success__score-list">
           <view
@@ -347,6 +336,10 @@ function getScoreIcon(index: number): string {
   justify-content: center;
   z-index: 3;
   flex-shrink: 0;
+  /* R11-L06-D03（位置 P2）：行内 align-items:center 把徽标锁在两圆水平中线上，
+     而理想图徽标中心在两圆下缘交点（实测应再下沉≈95rpx）。translateY 只移位不改行高，
+     两圆间距/负 margin 压内缘的既有几何不受影响。 */
+  transform: translateY(96rpx);
 }
 
 .match-success__heart-circle {
@@ -448,34 +441,8 @@ function getScoreIcon(index: number): string {
   font-weight: 500;
 }
 
-.match-success__score-percent {
-  display: block;
-  font-size: var(--fs-md, 26rpx);
-  /* R10-L06-D05（颜色token P1）：卡里唯一的读数文字原取 #36C99A 压白卡 = 2.10:1。
-     按卡取 --c-brand-800 #156B51（白底 6.45:1；卡建议的 brand-700 只有 4.14:1 仍不足，不停在那档）。
-     §11.2 口径：本读数已是 R10-L06-D01 收口后的唯一真值（props.matchScore 派生），
-     本次只动色档，没有恢复每行一个百分比，也不动 displayReasons 的判据。 */
-  color: var(--c-brand-800, #156B51);
-  font-weight: 700;
-  text-align: right;
-}
-
-.match-success__score-track {
-  /* R10-L06-D01：整卡唯一一条进度条，宽度即真 matchScore。 */
-  width: 100%;
-  height: 12rpx;
-  margin-bottom: 24rpx;
-  background: #F0F0F0;
-  border-radius: 999rpx;
-  overflow: hidden;
-}
-
-.match-success__score-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #36C99A 0%, #22a976 100%);
-  border-radius: 999rpx;
-  transition: width 0.8s ease-out;
-}
+/* R11-L06-D05 / §12.3：match-success__score-percent / score-track / score-fill 三条
+   假匹配度样式随百分比与进度条一并删除；真分列就绪后再按 §3.2 重建。 */
 
 .match-success__actions {
   margin-top: auto;
@@ -489,21 +456,19 @@ function getScoreIcon(index: number): string {
   border-radius: 999rpx;
   /* R8-L06-D03（颜色token P1）：主按钮原画成 135° 渐变（#36C99A→#22a976，实帧左上 #35C898 →
      右下 #24AC79，ΔB31 的斜向明暗），理想图同区六个取样点全落 #1DB97D~#23BB7D（Δ≤4）是一条平色
-     ⇒ 渐变整条去掉改单色，不再有色带。R8 当时选的 --c-brand-600 #2AAE83 只把白字抬到 2.81:1，
-     色档位由下面 R10-L06-D06 接管（同轴未修净，不是回归）。 */
-  background: var(--c-brand-800, #156B51);
-  /* R10-L06-D06（颜色token P1）：底色压到 --c-brand-800 #156B51 ⇒ 白字 6.45:1
-     （已知机制 §2 采用档，R9 对 BottomActionBar.vue:104 做的是同一条裁定）。
-     本按钮在 R8 就已按理想图实测收成单色，本次只是把已实色的档位压深，
-     不属于 §11.3 点名的「把主 CTA 渐变翻成实色」。
-     代价：比理想图实测的 #21BA7B 深两档，属"可达性 > 位图像素"的在册取舍。 */
+     ⇒ 渐变整条去掉改单色，不再有色带。
+     R11-L06-D02（颜色token P2）：R10 把单色一路压到 --c-brand-800 #156B51，比理想图 #21BC7A
+     深两档（ΔL≈40）。现按卡回到 §1.2 主按钮档 --c-brand #36C99A；白字在该底上只有约 1.9:1，
+     故字色改同族最深档 --c-brand-900 #0B4A38（对 #36C99A 实算 4.87:1 ≥4.5:1，30rpx/800 正文档）。
+     这是"达标的理想同色档 + 深色字"，不是把主 CTA 渐变翻回实色（§11.3 的在册项）。 */
+  background: var(--c-brand, #36C99A);
   text-align: center;
 }
 
 .match-success__primary-text {
   font-size: 30rpx;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--c-brand-900, #0B4A38);
 }
 
 .match-success__secondary {

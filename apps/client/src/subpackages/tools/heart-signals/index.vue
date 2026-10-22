@@ -64,7 +64,14 @@ const lockTitle = computed(() =>
   ),
 );
 const lockSubtitle = computed(() =>
-  t("lock.unlockHintModal", { name: t("heartSignals.pageName") }),
+  // R11-L08-D07（文案 P2）：副标题原不分身份一律取 lock.unlockHintModal
+  // （zh-CN.ts:2895「完成资料完善即可解锁{name}」），而主标题已按 isLoggedIn 二选一
+  // （未登录 = zh-CN.ts:2908「登录后解锁…」）⇒ 同一屏上面要求先登录、下面却让游客「完善资料」，
+  // 游客没有资料可完善，该指引在帧上不可执行。组件本就备有 subtitleLoggedOut（:2909 正确分支），
+  // 这里与 lockTitle 同口径：未登录取 subtitleLoggedOut，已登录未完善才取 unlockHintModal。
+  t(sessionStore.isLoggedIn ? "lock.unlockHintModal" : "lock.subtitleLoggedOut", {
+    name: t("heartSignals.pageName"),
+  }),
 );
 const lockBenefits = computed(() => [
   t("lock.benefitMatch"),

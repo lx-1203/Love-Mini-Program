@@ -27,6 +27,8 @@ import SetupProgress from "../../../components/setup/SetupProgress.vue";
 import { useProfileStore } from "../../../stores/profile";
 import { SUBPACKAGE_ROUTES } from "../../../constants/routes";
 import { replaceAppPath } from "../../../utils/navigation";
+// R11-L12-D10：行尾箭头由字符 › 换成包内既有素材（与同域 profile 的 8 个滚轮字段同一枚）
+import { IMAGE_PATHS } from "../../../config/images";
 // MP-R7-GUEST-LANDING：游客进入引导流程同样必须被送到登录/注册（裁定：setup 不豁免）
 import { guideGuestToLogin } from "../../../guards/guest-access";
 import { lightHaptic, successHaptic } from "../../../utils/haptic";
@@ -248,7 +250,7 @@ function skip() {
             <text :class="['field__text', !form.city && 'field__text--placeholder']">
               {{ form.city || t('setup.campus.placeholderCity') }}
             </text>
-            <text class="field__arrow">›</text>
+            <image class="field__arrow" :src="IMAGE_PATHS.REGISTER_ICONS.CHEVRON_RIGHT" mode="aspectFit" alt="" />
           </view>
         </picker>
       </view>
@@ -267,7 +269,7 @@ function skip() {
             <text :class="['field__text', !form.campusName && 'field__text--placeholder']">
               {{ form.campusName || t('setup.campus.placeholderSchool') }}
             </text>
-            <text class="field__arrow">›</text>
+            <image class="field__arrow" :src="IMAGE_PATHS.REGISTER_ICONS.CHEVRON_RIGHT" mode="aspectFit" alt="" />
           </view>
         </picker>
       </view>
@@ -285,7 +287,7 @@ function skip() {
             <text :class="['field__text', !form.department && 'field__text--placeholder']">
               {{ form.department || t('setup.campus.placeholderMajor') }}
             </text>
-            <text class="field__arrow">›</text>
+            <image class="field__arrow" :src="IMAGE_PATHS.REGISTER_ICONS.CHEVRON_RIGHT" mode="aspectFit" alt="" />
           </view>
         </picker>
       </view>
@@ -299,12 +301,21 @@ function skip() {
     <!-- 2026-08-07 审查重构：跳过入口强化（醒目文字按钮，置于主按钮上方） -->
     <view class="skip-bar" role="button" :aria-label="skipLabel" @tap="skip">
       <text class="skip-bar__text">{{ skipLabel }}</text>
-      <text class="skip-bar__arrow">›</text>
+      <image class="skip-bar__arrow" :src="IMAGE_PATHS.REGISTER_ICONS.CHEVRON_RIGHT" mode="aspectFit" alt="" />
     </view>
 
+    <!-- R11-L12-D11（位置 P2）：吸底 CTA 脱离文档流，正文尾部自行留出
+         88rpx 按钮 + 上下 --sp-4 内边距 + 机型安全区（与 schedule:213 同档）。
+         R11-L12-D09（可达性 P1）：原 :disabled="!isComplete || saving" 在三项未选全时
+         把按钮压成 #DCE5E2 且 bar 的 @tap 守卫永久吞掉点击 ⇒ save() 里
+         setup.campus.errIncomplete 的提示成为不可达死代码，用户点灰钮没有任何反馈。
+         按卡去掉 :disabled（与 profile:1092「置灰仍可点、给定位提示」同口径）：
+         按钮常亮 88rpx 可点，缺项时由 save() 内的 toast 守卫给出反馈；防重复提交
+         仍由 save() 开头的 saving 守卫与 saving 置位承担。 -->
+    <view class="cta-spacer" />
     <BottomActionBar
       :primary-label="saving ? t('setup.campus.saveSaving') : t('setup.campus.saveLabel')"
-      :disabled="!isComplete || saving"
+      fixed
       @primary="save"
     />
   </AppShell>
@@ -378,7 +389,11 @@ function skip() {
   padding: 0 var(--sp-4);
   box-sizing: border-box;
   border-radius: var(--r-lg);
-  background: var(--c-bg-page);
+  /* R11-L12-D08（颜色token P2）：原 background:var(--c-bg-page) 与 :453 的页面底逐字同值
+     （#EEF7F2）⇒ 输入框在白卡上「没有自己的底」，只靠描边分区；同域 schedule/index.vue:226
+     与 setup/profile 同类字段已按 §1.2 走 --c-bg-surface（#F3FAF6，design-variables.scss:377）。
+     本页是 R6-B69/D02 在 schedule 上已修掉的同一写法的最后一个落点 ⇒ 同档归口。 */
+  background: var(--c-bg-surface, #F3FAF6);
   border: var(--c-border-card);
 }
 
@@ -399,9 +414,14 @@ function skip() {
 }
 
 .field__arrow {
-  font-size: var(--fs-2xl);
-  color: var(--c-text-tertiary);
-  line-height: 1;
+  /* R11-L12-D10（素材缺失 P2）：原为字符 ›（--fs-2xl），换包内既有
+     /static/assets/icons/register/chevron-right.svg（config/images.ts:961 已登记，
+     同域 profile/index.vue:888 的 .field__chevron 用的就是这枚，32rpx + opacity .6）。
+     图像尺寸写在 <image> 上才生效，故本类只留几何。 */
+  width: 32rpx;
+  height: 32rpx;
+  flex-shrink: 0;
+  opacity: 0.6;
 }
 
 /* ========== 价值提示（填补下半屏空白） ========== */
@@ -439,9 +459,18 @@ function skip() {
 }
 
 .skip-bar__arrow {
-  font-size: var(--fs-lg);
-  color: var(--c-brand-700);
-  line-height: 1;
+  /* R11-L12-D10：:302 跳过入口的字符 › 一并换成 chevron-right.svg（同一枚素材、同源色 #4A524E），
+     尺寸取下一档 28rpx 以匹配 --fs-lg 文字行高。 */
+  width: 28rpx;
+  height: 28rpx;
+  flex-shrink: 0;
+}
+
+/* R11-L12-D11：吸底 BottomActionBar 走 position:fixed 脱离文档流，
+   正文尾部留出「88rpx 按钮 + 上下 --sp-4 内边距 + 机型安全区」，否则末行会被 CTA 盖住。
+   与同域 schedule/index.vue:213 的 .cta-spacer 同值。 */
+.cta-spacer {
+  height: calc(152rpx + env(safe-area-inset-bottom));
 }
 
 

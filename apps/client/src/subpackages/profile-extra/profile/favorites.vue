@@ -9,7 +9,10 @@
         :aria-label="t('common.back')"
         @tap="goBack"
       >
-        <image class="favorites-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+        <!-- R11-L10-D19：热区 88rpx，64rpx 白圆底移进 __back-circle（同域 location.vue:294-315 配方） -->
+        <view class="favorites-header__back-circle">
+          <image class="favorites-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+        </view>
       </view>
       <text class="favorites-header__title">{{ t('profile.favoritesTitle', { n: favorites.length }) }}</text>
     </view>
@@ -139,16 +142,18 @@ onShow(() => {
 
 <style scoped lang="scss">
 .favorites-page {
-  min-height: 100vh;
+  /* R11-L10-D18（位置 P2）：R7-L10-D17 补的 min-height:100vh 在本帧读数里未生效——
+     内容中心仍在 y≈218、可用区中心 y=407。mp-weixin 下 min-height 不给 flex 子项
+     可解析高度，改明确 height:100vh（页面根节点，navigationStyle=custom 即整屏），
+     EmptyState 的 flex:1 0 auto 才有伸展对象；头部照常占位，空态落在剩余可用区居中。 */
+  height: 100vh;
   background: var(--c-bg-page, #EEF7F2);
-  padding: 0 var(--sp-6, 24rpx);
-  /* R7-L10-D17（位置 P2，2026-10-21）：空态内容块偏上——帧实测星标 y=140..200、按钮底
-     y=296，内容中心 y≈218 比视口中心 407 高约 190px，y=300..800 整屏空白。
-     EmptyState 组件侧的 `flex:1 0 auto + justify-content:center`（EmptyState.vue:119-135，
-     R6-L05-D02 那一半已落地，注释里点名"另一半在宿主：父级必须给可解析高度"）一直缺宿主这一半：
-     本页根节点是普通块级流，flex 属性无从生效 ⇒ 补 flex 列 + 已有的 min-height:100vh 作为
-     可解析高度，空态即落在可用区垂直居中；顺带让 .favorites-list 的 flex:1 真正生效。
-     R6 那轮"已批未落地"的原因就是只改了组件、没改宿主页面。 */
+  /* R11-L10-D21（间距 P3）：横向内衬原 --sp-6=24rpx，比 §1.4 页边距档少 8rpx；
+     与 privacy.vue:318 同角色容器同取 --page-padding=32rpx。纵向不动页头。 */
+  padding: 0 var(--page-padding, 32rpx);
+  /* R7-L10-D17 在宿主侧补的 flex 列保留；但它同时依赖的 min-height:100vh 在 mp-weixin 下
+     给不出可解析高度（R11-L10-D18 复拍内容中心仍是 y≈218），已由上面的 height:100vh 取代。
+     .favorites-list 的 flex:1 继续随 flex 列生效。 */
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -162,13 +167,30 @@ onShow(() => {
 }
 
 .favorites-header__back {
+  /* R11-L10-D19（可达性 P1）：原热区 64rpx=32px，仅为 88rpx 口径的 73%；本页无系统
+     返回栏（navigationStyle=custom），这枚白圆是唯一退出口 ⇒ 热区提到 88rpx，
+     视觉圆底尺寸不动、移入 __back-circle。 */
+  width: 88rpx;
+  height: 88rpx;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.favorites-header__back-circle {
   width: 64rpx;
   height: 64rpx;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--r-circle, 50%);
   background: var(--c-bg-container, #FFFFFF);
+  /* 白圆压薄荷页底只有 ≈1.08:1；补卡片描边让「可点圆钮」的边界可见
+     （同域 album.vue:672-681 / location.vue:304-315 的圆底均带此描边）。 */
+  border: var(--c-border-card);
 }
 
 .favorites-header__back-icon { width: 36rpx; height: 36rpx; }

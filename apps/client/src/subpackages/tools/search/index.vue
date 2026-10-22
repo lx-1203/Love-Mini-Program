@@ -137,6 +137,28 @@ const schoolResults = computed(() => {
   return SCHOOLS.filter((s) => (t(s.nameKey ?? s.name) || s.name).toLowerCase().includes(kw)).slice(0, 20);
 });
 
+/* R11-L08-D04（空态文案 P1）：预检索态给一条**不带承诺**的检索起点。
+   卡上建议「热搜为空时用分组默认词（用户/标签/学校各取既有键）兜底成热搜列表」——那是把三枚
+   分组标签当检索词、再套 .hot-rank 那套 1..n 名次号，等于给「热搜」这个承诺造一份没有真相源的榜单，
+   正命中任务书 §12.4 禁止的第三种形态（换一组新常量 / 挪写死表造数 ⇒ 假修），故**不照卡执行**。
+   改成只消费本页既有的名录：config/schools.ts 的 SCHOOLS 静态校园目录——同页「学校」分组的结果集
+   （schoolResults 上面那条）就是它（本页从不调 loadSchools()，那条也只是 return 一份新数组、
+   不改写 SCHOOLS，故这里如实按「仓内既有静态目录」算，不冒充后端同步数据）。
+   标题走既有键 search.tabSchools（「学校」），不写名次、不写「热搜」、不承诺热度。
+   热搜条目本身仍是后端 /api/v1/search/hot 返回空 ⇒ 属数据缺口，见交件 NEEDS-DATA 登记。 */
+const PRE_SEARCH_ENTRY_COUNT = 8;
+const preSearchSchoolEntries = computed(() => SCHOOLS.slice(0, PRE_SEARCH_ENTRY_COUNT));
+/** 热搜与历史各自为空才需要名录兜底；任一有真数据即让位给真数据 */
+const showPreSearchEntries = computed(
+  () => searchStore.hotSearches.length === 0 && searchStore.history.length === 0,
+);
+
+/** 点学校名：切到「学校」分组并按该校名过滤（schoolResults 为本地 computed，即时出结果） */
+function onTapSchoolEntry(schoolName: string) {
+  activeTab.value = "schools";
+  searchStore.setKeyword(schoolName);
+}
+
 /** 打开校园主页：展开内联预览（认证/活跃/活动/兴趣圈 + 推荐用户） */
 async function openCampusProfile(schoolName: string) {
   if (campusExpanded.value === schoolName) {
@@ -346,9 +368,48 @@ function goToActivity(activityId: number) {
            （后端 /api/v1/search/hot 无数据 ⇒ 热搜 0 条，取景残留 1 条历史 chip 就把空态挡死了）
            ⇒ 按区块各自兜底。热搜条目本身（卡建议的「热搜 10 条」）属后端数据缺口，见交件报告 NEEDS-DATA。
            R7-L08-D04（空态文案 P3）：「仅热搜为空」的分支原来是一行裸 text.suggest-hint 灰字（13px，
-           实测墨迹 y=507..516），不走规范 §1.5 的空态组件形态（插画+主文案），比同页结果空态(:345)弱一档
+           实测墨迹 y=507..516），不走规范 §1.5 的空态组件形态（插画+主文案），比同页结果空态弱一档
            ⇒ 两个分支合并为同一枚 EmptyState（type=no-data + hide-sub），热搜为空一律给组件形态。 -->
-      <EmptyState v-if="searchStore.hotSearches.length === 0" type="no-data" :message="t('search.emptyHint')" hide-sub />
+      <!-- R11-L08-D04（空态文案 P1）：热搜与历史都为空时，用既有校园名录给一条可点的检索起点
+           （详见 script 内同 id 注释：不照卡用「分组默认词造热搜」，那条撞 §12.4 假修线）。
+           标题只写分组本名「学校」，不冒充热搜、不排名次。上两条在册裁定不动：空态组件照旧渲染。 -->
+      <view v-if="showPreSearchEntries" class="section">
+        <view class="section-head">
+          <text class="section-title">{{ t("search.tabSchools") }}</text>
+        </view>
+        <view class="entry-list">
+          <view
+            v-for="s in preSearchSchoolEntries"
+            :key="s.id"
+            class="entry-item press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="120"
+            role="button"
+            :aria-label="t(s.nameKey ?? s.name)"
+            @tap="onTapSchoolEntry(t(s.nameKey ?? s.name))"
+          >
+            <text class="entry-word">{{ t(s.nameKey ?? s.name) }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- R11-L08-D03（素材缺失 P2）：引导态配图与结果空态分离。
+           卡建议「给 EmptyState 增/接 type="search-empty"」——EmptyState.vue 不在本车道可改清单内
+           （只许改本页），而组件已开 `image` prop（EmptyState.vue:23「显式图标 URL（优先级最高）」，
+           :82 props.image 排在 presetIconMap 之前）⇒ 用宿主页传图这条既有合法接口，等价落地。
+           素材取仓内既有 icons/v2/search.png（同目录 v2/search.svg 描边 #333333，src/static 与
+           apps/api/uploads/app-assets 两棵树都在盘；同页返回键用的 IMAGE_PATHS.ICONS_V2.BACK
+           即同目录同口径，本帧已证明它在 real 档出图），
+           未新增/未下载/未生成素材；EmptyState 内部一律过 resolveMediaUrl ⇒ real 档不空槽。
+           同页三处结果空态（用户 / 学校 / 标签分组）继续吃 type="no-data" 的空箱，
+           两态配图自此可区分。 -->
+      <EmptyState
+        v-if="searchStore.hotSearches.length === 0"
+        type="no-data"
+        :image="IMAGE_PATHS.ICONS_V2.SEARCH"
+        :message="t('search.emptyHint')"
+        hide-sub
+      />
     </view>
 
     <!-- 搜索结果 -->
@@ -516,8 +577,15 @@ function goToActivity(activityId: number) {
      R8-L08-D01（尺寸比例 P1）：合并后仍按 96px 常量预留 = 实测 103px，而本帧系统胶囊墨迹
      实起于 x=298（屏宽 378 ⇒ 胶囊占位 378-298 = 80px），「取消」止于 x=276 ⇒ 行尾 22px(44rpx)
      是纯白死区，没还给输入框。常量按实测胶囊几何改 73px（73px + --capsule-right 兜底 7px
-     = 80px，正好贴胶囊左缘），22px 全部并入 .search-box（flex:1）⇒ 文本可用宽 145px→167px。 */
-  padding: var(--sp-4) calc(var(--capsule-right, 7px) + 73px) var(--sp-4) var(--sp-6);
+     = 80px，正好贴胶囊左缘），22px 全部并入 .search-box（flex:1）⇒ 文本可用宽 145px→167px。
+     R11-L08-D01（层级遮挡 P2）：73px 那一发按的是 R8 帧的胶囊左缘 x=298，R11 同页帧胶囊左缘
+     实测在 x=293 ⇒ 占位 85px，80px 的预留短 5px：「取消」墨迹 x=274..301 的末字右半约 9px
+     落进胶囊白底（帧上「消」只剩左半）。常量按本轮实测提到 85px（85 + --capsule-right 兜底 7px
+     = 92px ⇒ 内容右缘落在 x=286，胶囊左缘 x=293，留 7px 呼吸），12px 由 .search-box（flex:1）
+     承担 ⇒ 输入文本可用宽 167px→155px，仍容得下 R8-L08-D01 拼出的 ~93px 占位串（用户/标签/学校）。
+     不改成全站那发 calc(--capsule-right + 104px)：本帧要 111px，比胶囊实占 85px 多 26px 死区，
+     等于把 R8-L08-D01 刚消掉的行尾白洞再挖一遍（§4「同一份避让不要计两遍」同族）。 */
+  padding: var(--sp-4) calc(var(--capsule-right, 7px) + 85px) var(--sp-4) var(--page-padding);
   background: var(--c-bg-container, #ffffff);
   position: sticky;
   top: 0;
@@ -584,6 +652,14 @@ function goToActivity(activityId: number) {
   flex-shrink: 0;
   /* R7-L08-D01/D03：MP-R1-SEARCH-301 的胶囊避让改由 .search-header 右内边距统一计一次，
      此处不再叠加第二份 margin-right（原第二份 103px 是输入框被挤到 77px 的直接原因） */
+  /* R11-L08-D01（层级遮挡 P2）第二半：本节点 flex-shrink:0 + CJK 逐字可折行，一旦某档语言把
+     common.cancel 撑长（en-US "Cancel" 14px 档 ≈44px），墨迹就会爬进行右内边距那条胶囊带。
+     给墨迹一个上限并让它整体落在胶囊左侧：5em(=70px @ --fs-lg 28rpx) 容得下中英两档现值，
+     超出部分按省略号收口（同 .search-input 的 R8-L08-D01 已批口径），不再靠行尾内边距兜底。 */
+  max-width: 5em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .suggest-wrap {
@@ -592,7 +668,33 @@ function goToActivity(activityId: number) {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 24rpx;
+  /* R11-L08-D05（间距 P2）：横向内衬 24rpx 是裸值，比规范 §1.4 页边距 --page-padding(32rpx)
+     少 8rpx ⇒ 与同页其余内容容器各写一档。纵向 24rpx 有 --sp-6 可引，一并归令牌。 */
+  padding: var(--sp-6) var(--page-padding);
+}
+
+/* R11-L08-D04（空态文案 P1）：预检索兜底条目（校园名录 chip）。
+   配方与同页 .hot-item/.history-item 同一档（白底胶囊 + 12/24rpx 内衬），只多一条描边，
+   因为它是本页在 real 档唯一可点的预检索入口，需要在 #EEF7F2 页底上读得出「可点」。 */
+.entry-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.entry-item {
+  display: flex;
+  align-items: center;
+  background: var(--c-bg-container, #FFFFFF);
+  border: 1rpx solid var(--c-border-default, #DDE3E0);
+  border-radius: 30rpx;
+  padding: 12rpx 24rpx;
+  min-height: 56rpx;
+}
+
+.entry-word {
+  font-size: var(--fs-md, 26rpx);
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 /* R7-L08-D04：原 `.suggest-hint`（13px 一行灰字）的裸文案已由 EmptyState 组件形态承接，规则删除 */
@@ -683,11 +785,18 @@ function goToActivity(activityId: number) {
 }
 
 .result-wrap {
-  padding: 16rpx 0;
+  /* R11-L08-D05（间距 P2）：本页横向内衬改由「每棵子树的最外层容器」单点承担，
+     此前 .result-wrap(0) / .result-meta(24) / .skeleton-wrap(24) / .post-list(24) /
+     .group-list(24) 各写一档，且 .group-list>.skeleton-wrap 那一发是 24+24 双份内衬
+     （骨架行与出数据后的行左缘对不上）。现在结果子树只有本节点写一次 --page-padding(32rpx)，
+     四个子节点的横向归零 ⇒ 与 .suggest-wrap / .search-tabs / .search-header 同一根左缘线。
+     纵向 16rpx 保持原档（页边距令牌只管横向）。 */
+  padding: 16rpx var(--page-padding);
 }
 
 .result-meta {
-  padding: 8rpx 24rpx 16rpx;
+  /* R11-L08-D05：横向内衬上移到 .result-wrap，此处归零，避免同一侧计两遍 */
+  padding: 8rpx 0 16rpx;
 }
 
 .result-meta__text {
@@ -696,11 +805,14 @@ function goToActivity(activityId: number) {
 }
 
 .skeleton-wrap {
-  padding: 0 24rpx;
+  /* R11-L08-D05：同上，横向归零（本节点同时挂在 .group-list 与 .result-wrap 两种深度下，
+     归零后两处的左缘都只由最外层给一次，不再一个 32rpx 一个 64rpx） */
+  padding: 0;
 }
 
 .post-list {
-  padding: 0 24rpx;
+  /* R11-L08-D05：横向内衬上移到 .result-wrap，此处归零 */
+  padding: 0;
 }
 
 .load-more {
@@ -719,8 +831,13 @@ function goToActivity(activityId: number) {
   flex-shrink: 0;
   display: flex;
   gap: 16rpx;
-  padding: 12rpx 24rpx;
-  background: #ffffff;
+  /* R11-L08-D05（间距 P2）：横向内衬 24rpx → 页边距令牌，与头部行/正文区左缘对齐 */
+  padding: 12rpx var(--page-padding);
+  /* R11-L08-D02（颜色token P2）第一半：裸值 #ffffff → 令牌。真值同为 #FFFFFF
+     （design-variables.scss:128 $bg-container），这一发本身零像素，是把「非令牌裸值」归位；
+     真正让分组控件读出来的是下面 .search-tab 那一发（未选中档此前也吃 --c-bg-container，
+     与容器同色 ⇒ 边界 0 像素）。 */
+  background: var(--c-bg-container);
   border-bottom: 1rpx solid var(--c-line, #EEF2F0);
 }
 
@@ -734,11 +851,25 @@ function goToActivity(activityId: number) {
   justify-content: center;
   padding: 12rpx 32rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-bg-container, #F2F3F5);
+  /* R11-L08-D02（颜色token P2）第二半：未选中档原引 --c-bg-container（真值 #FFFFFF，
+     兜底字面量 #F2F3F5 是第二笔过期债）⇒ 与刚改的分组条底色同色，帧上两枚未选中 Tab
+     只剩黑字、没有胶囊，与左侧实心选中项并置后读成「一个按钮 + 两段说明文字」。
+     按同页 .search-box（R6-L09-D17 已批口径：输入/浅底块走 --c-bg-surface + 浅描边）
+     同一配方归位：--c-bg-surface #F3FAF6（:129）+ --c-border-default #DDE3E0（:190）。
+     描边取 --c-border-default 而非卡建议的 --c-border-light #EEF2F0：后者对白只有 1.13:1，
+     前者 1.30:1，同页 .user-row/.school-row 的描边也是这一档；两档都达不到非文本 3:1
+     （浅色系令牌里没有任何一档对白能到 3:1，最深档 --c-border-strong #C2CAC6 只有 1.67:1），
+     故这一发的判点是「控件边界从 0 像素变成看得见」，不是 3:1 达标，3:1 那一列留待令牌侧。
+     前景未动：--c-text-primary #1A1E1C 压 #F3FAF6 = 15.9:1，远高于 4.5:1。 */
+  background: var(--c-bg-surface, #F3FAF6);
+  border: 1rpx solid var(--c-border-default, #DDE3E0);
 }
 
 .search-tab--active {
   background: var(--c-brand, #36C99A);
+  /* R11-L08-D02：选中档继承上面的描边会在实心胶囊外圈留一圈灰边，与「实心」读法冲突 ⇒ 收掉，
+     透明描边保留占位，几何逐像素不变（同 .search-tab 的 88rpx 下限） */
+  border-color: transparent;
 }
 
 .search-tab__text {
@@ -752,7 +883,8 @@ function goToActivity(activityId: number) {
 }
 
 .group-list {
-  padding: 16rpx 24rpx;
+  /* R11-L08-D05：横向内衬上移到 .result-wrap，此处只留纵向档（用户/学校两分组的行容器） */
+  padding: 16rpx 0;
 }
 
 .user-row, .school-row {

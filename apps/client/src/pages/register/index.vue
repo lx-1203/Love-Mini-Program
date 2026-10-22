@@ -523,6 +523,8 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
       </view>
 
       <!-- 手机号 -->
+      <!-- R11-L01-D05：字段名不能只靠 placeholder 承载（聚焦/填值后即消失），每行补可见 label -->
+      <text class="field__label">手机号</text>
       <view
         class="field"
         :class="{
@@ -556,6 +558,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
       </view>
 
       <!-- 短信验证码 -->
+      <text class="field__label">短信验证码</text>
       <view
         class="field"
         :class="{
@@ -600,6 +603,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
       </view>
 
       <!-- 设置密码 -->
+      <text class="field__label">设置密码</text>
       <view
         class="field"
         :class="{
@@ -653,6 +657,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
       </view>
 
       <!-- 确认密码 -->
+      <text class="field__label">确认密码</text>
       <view
         class="field"
         :class="{
@@ -696,6 +701,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
         <view class="card__cap-line" />
       </view>
 
+      <text class="field__label">昵称</text>
       <view
         class="field"
         :class="{
@@ -724,6 +730,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
         <text class="field-error__text">{{ errors.nickname }}</text>
       </view>
 
+      <text class="field__label">出生日期</text>
       <view
         class="field"
         :class="{
@@ -1003,8 +1010,26 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
   color: var(--c-text-primary, #1a1e1c);
 }
 
+/* R11-L01-D05（可达性 P1）第二半：字段名此前全靠 placeholder 承载，六个输入行没有一条
+   独立 label ⇒ 一旦聚焦/填值，字段身份就消失。每行补一条可见 label（卡口径：--fs-md）。
+   字色走 --c-text-secondary（#4A524E 压白卡 #FFFFFF 8.06:1），比 .card__cap 分组标题
+   （24rpx/700）低一档，不抢分组层级。 */
+.field__label {
+  display: block;
+  margin: 0 0 12rpx 4rpx;
+  font-size: var(--fs-md, 26rpx);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--c-text-secondary, #4a524e);
+}
+
 .field__ph {
-  color: var(--c-text-placeholder, #9aa39f);
+  /* R11-L01-D05（可达性 P1）第一半：placeholder 原取 --c-text-placeholder（$text-quaternary
+     #9AA39F）压输入底 --c-bg-surface（真值 $bg-surface #F3FAF6，不是 .field 那句旧字面量
+     #f7faf9 —— 任务书 §2 明令以 design-variables.scss 为准），实算 2.44:1，六行未聚焦时全发灰。
+     提到 --c-text-tertiary（#6B7571 压 #F3FAF6 = 4.50:1，本文件 .field__hint 在
+     R9-L01-D04 已把这一对算过并落定同档），placeholder 与本行提示走同一可读档。 */
+  color: var(--c-text-tertiary, #6b7571);
   font-weight: 400;
 }
 
@@ -1210,6 +1235,16 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 .submit-btn--disabled {
   background: var(--c-status-disabled, #dce5e2);
   box-shadow: none;
+
+  /* R11-L01-D06（可达性 P1）：禁用档原只翻底（#DCE5E2），字色仍继承 .submit-btn__text 的
+     --c-text-inverse 白 ⇒ 白压 #DCE5E2 实算 1.28:1，「注 册」两字与灰底同色、整条主操作读不出。
+     卡建议的 --c-text-tertiary #6B7571 压 #DCE5E2 按 design-variables.scss 真值实算只有 3.71:1
+     （卡写"≥4.5:1"不成立，任务书 §2 判法：算出来改，不照抄），故再收一档到
+     --c-text-secondary #4A524E = 6.27:1，30rpx/700 的字在灰底上明确可读。
+     只挂在 --disabled 修饰下，formComplete 后的品牌底白字不受影响。 */
+  .submit-btn__text {
+    color: var(--c-text-secondary, #4a524e);
+  }
 }
 
 .submit-btn--loading {
@@ -1320,7 +1355,11 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 .safety-note {
   display: block;
   margin: 28rpx 48rpx 0;
-  font-size: 21rpx;
+  /* R11-L01-D08（P2 字号）：原写死 21rpx，是夹在 --fs-xs(20) 与 --fs-sm(22) 之间的档外值，
+     与相邻 .agree__text 的 24rpx 两档字高不齐。归口到 --fs-sm（22rpx），
+     法务行统一只走 --fs-xs/--fs-sm 两档（本行取大的一档，与 .agree__text 的 24rpx 同属正文档位系）。
+     注：本行字色 --c-text-placeholder 压页底 2.37:1 是另一条（不在本卡判点内），未动。 */
+  font-size: var(--fs-sm, 22rpx);
   line-height: 1.75;
   color: var(--c-text-placeholder, #9aa39f);
   text-align: center;
@@ -1342,7 +1381,11 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 .to-login__link {
   font-size: 26rpx;
   font-weight: 600;
-  color: var(--c-brand, #36c99a);
+  /* R11-L01-D07（可达性 P1）：本页回到登录流的唯一出口，原 --c-brand #36C99A 压页底
+     --c-bg-page #EEF7F2 实算 1.93:1（与 login/index.vue .btn-text-link 记的同值同缺陷），
+     帧上淡到与背景融在一起。收 --c-brand-800 #156B51 = 5.91:1，
+     与登录页 .terms-link（R10-L01-D03 已收口）同档。 */
+  color: var(--c-brand-800, #156b51);
 }
 
 /* ---------------- 动效 ---------------- */

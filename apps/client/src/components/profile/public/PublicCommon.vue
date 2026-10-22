@@ -187,6 +187,9 @@ const count = computed(() => points.value.length);
 
 .public-common__empty {
   font-size: 26rpx;
-  color: var(--c-text-quaternary, #9AA39F);
+  /* R11-L10-D05（可达性 P1）：--c-text-quaternary #9AA39F 压白卡只有 2.59:1，
+     既低于正文 4.5:1 也低于 3:1 非文字底线。改与本页卡内副标题同档
+     --c-text-tertiary #6B7571（白底 4.76:1），与 PublicIdentity「资料暂未完善」上一轮同一条改法。 */
+  color: var(--c-text-tertiary, #6B7571);
 }
 </style>

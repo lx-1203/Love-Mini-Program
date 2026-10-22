@@ -125,8 +125,15 @@ async function save() {
          （SafeImage 同型前例，见共享基件车道结论）。 -->
     <view class="card-stack">
       <SectionCard :title="t('setup.schedule.prefTitle')" compact>
+        <!-- R11-L12-D13（可达性）：本框原先只有灰占位文「常去区域」（zh-CN.ts:3223），
+             输入后占位消失、画面上再无任何文字说明这一栏是什么；占位本身 #A0A2A1 压
+             #F3FAF6 也只有 2.42:1，不足以承载字段语义。现按卡在框上方补一行可见标签，
+             文案复用 setup.schedule 命名空间既有 key placePlaceholder（locale 属并行车道，
+             不自造文案）；字段名从占位提升为常驻标签后，框内占位不再重复同一串，留空。
+             档位与 campus .form-row__label 同值（--fs-sm / --c-text-secondary / 500）。 -->
+        <text class="field-label">{{ t('setup.schedule.placePlaceholder') }}</text>
         <input
-          cursor-spacing="20" v-model="form.preferredCampusArea" class="field" :placeholder="t('setup.schedule.placePlaceholder')" :aria-label="t('setup.schedule.placePlaceholder')" />
+          cursor-spacing="20" v-model="form.preferredCampusArea" class="field" :placeholder="''" :aria-label="t('setup.schedule.placePlaceholder')" />
       </SectionCard>
 
       <!-- R8-L12-D07：分区二「空闲时段」。标题/副标题走仓内既有 i18n 键 homeSetup.scheduleTitle /
@@ -212,6 +219,14 @@ async function save() {
    否则「+ 添加时段」盒会被 CTA 盖住。 */
 .cta-spacer {
   height: calc(152rpx + env(safe-area-inset-bottom));
+}
+
+/* R11-L12-D13：可见字段名，档位与同流程 campus 的 .form-row__label 逐条同值。
+   间距交给父级 .card__body 的 gap（SectionCard 已是 flex 列 + gap），这里不再写 margin。 */
+.field-label {
+  font-size: var(--fs-sm);
+  color: var(--c-text-secondary);
+  font-weight: 500;
 }
 
 /* R6-B69/D02（颜色token，2026-10-20）：输入框底色原写 var(--c-bg-page)（#EEF7F2），

@@ -320,8 +320,14 @@ function goBack() {
 }
 
 .content-header__back {
-  width: 64rpx;
-  height: 64rpx;
+  /* R11-L08-D23（可达性 P1）：本域 navigationStyle=custom，页内没有第二个返回出口，
+     而这枚钮原写死 64rpx(32.3px)——帧上实测半透明白圆底 31×31px(62rpx)，比 88rpx 下限少 26rpx，
+     比同帧底部「提交并查看结果」钮（:494 的 88rpx，实测 44px 高）矮 1.4 倍。
+     补到 88rpx 并写死 min-*，与 nearby.vue:279 同档；图标同步 36→40rpx（40/88 视觉占比）。 */
+  width: 88rpx;
+  height: 88rpx;
+  min-width: 88rpx;
+  min-height: 88rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -330,8 +336,13 @@ function goBack() {
 }
 
 .content-header__back-icon {
-  width: 36rpx;
-  height: 36rpx;
+  width: 40rpx;
+  height: 40rpx;
+  /* R11-L08-D26（颜色token P3）：此处原挂 `color: var(--c-text-inverse, #ffffff)`，
+     但节点是裸 <image>（src=IMAGE_PATHS.ICONS_V2.BACK，单色 #333333 位图），CSS color 对位图
+     无效 ⇒ 声明与实际渲染不符（帧上折线为深墨）。同一条孤儿声明在 activities/detail.vue 已由
+     R10-L08-D09 删除。删掉不产生任何像素变化（删前删后都是深墨），故按硬规矩 4 登记为「未修」，
+     见交件 R11-L08-D26：处置建议放在源码卫生批次，不在本轮虚计为已修。 */
   color: var(--c-text-inverse, #ffffff);
 }
 
@@ -349,7 +360,11 @@ function goBack() {
 
 .content-section__title {
   display: block;
-  font-size: var(--fs-lg, 32rpx);
+  /* R11-L08-D24（字号 P2）：「16 型人格速览」「简化测试（4 题）」两个区块标题原取 --fs-lg
+     （真值 28rpx=14.1px；兜底字面量另写 32rpx，与真值不符），帧上墨迹带高仅 12-13px，
+     与下面类型卡代码行（--fs-base 12.1px）只差 2px ⇒ 区块级与卡内标签几乎不分层。
+     升到 §1.3 区块标题档 --fs-3xl(36rpx=18px)，兜底字面量同步改成令牌真值 36rpx。 */
+  font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
   color: var(--c-text-primary, #1f2937);
   margin-bottom: var(--sp-2);
@@ -406,7 +421,10 @@ function goBack() {
   align-items: center;
   gap: 4rpx;
   padding: var(--sp-3) 0;
-  border-radius: var(--r-lg, 20rpx);
+  /* R11-L08-D25（圆角 P2）：同一屏两批白底容器取两档——类型卡原用 --r-lg(20rpx=10px)，
+     而下方四张问题卡 :441 已按 §1.4 收敛到 --card-radius(40rpx=20px) ⇒ 同页同角色两种圆角。
+     统一引用 §1.4 的卡片圆角令牌（两页同改，不留一页两档）。 */
+  border-radius: var(--card-radius, 40rpx);
   background: var(--c-bg-container, #ffffff);
   box-shadow: var(--card-shadow, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
 }
@@ -477,7 +495,10 @@ function goBack() {
 }
 
 .quiz-option__text {
-  font-size: var(--fs-base, 24rpx);
+  /* R11-L08-D27（字号 P2）：8 个单选项是测试唯一的决策输入，文字原取 --fs-base（真值 24rpx=12.1px，
+     低于 §1.3 正文线），帧上 8 行墨迹带高全部 11px，落进「标签·时间戳」档；88rpx 行高与 12px 字
+     留白过大，读起来像占位框。提到 --fs-xl(30rpx=15px)，与题干 --fs-lg(14px) 拉开层级。 */
+  font-size: var(--fs-xl, 30rpx);
   color: var(--c-text-primary, #1f2937);
 }
 
@@ -513,7 +534,12 @@ function goBack() {
 }
 
 .content-footer-space {
-  height: calc(120rpx + env(safe-area-inset-bottom));
+  /* R11-L08-D28（间距 P2）：原 height: calc(120rpx + env(...)) —— 模拟器 env()=0 时兑现 60px，
+     与 :506 的 margin-top(var(--sp-4)) 和滚动容器尾部凑成钮下 89px 无令牌归属的空段；
+     真机上这 60px 还会与 safe-area 叠加成 96px 的另一档。收成单一定义
+     calc(var(--sp-8) + env(safe-area-inset-bottom, 0px))：--sp-8=32rpx(16px)，
+     取景档兑现 16px、真机叠加安全区，钮下不再有阶梯外的空段。 */
+  height: calc(var(--sp-8) + env(safe-area-inset-bottom, 0px));
 }
 
 /* ========== 2026-08-13：测试结果弹层 ========== */

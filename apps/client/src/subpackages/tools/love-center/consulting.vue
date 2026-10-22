@@ -7,7 +7,8 @@
  * 与 market 三页（ADR-2）表现一致；此前封存态下仍展示 ¥ 课程可报名。
  *
  * 支持后台配置 H5 URL：onLoad 读取 contentPageUrls.consultingUrl，
- * 非空则渲染 <web-view>；为空则展示本地示例课程列表。
+ * 非空则渲染 <web-view>；为空则只落一句「内容筹备中」弱态文案（R11-L09-D01 起，
+ * 原「本地示例课程列表」已撤除——课程与价目都不再有前端常量真相源）。
  *
  * R10-P2-014：导航从绿色实心渐变头改为全站统一 AppShell（白底 + 居中标题 + 返回），
  * 同时消除该模块的状态栏叠印（R10-P1-003 家族：原 env-only 避让在 DevTools 恒 0）。
@@ -22,8 +23,6 @@ import { IMAGE_PATHS } from "../../../config/images";
 // R6-L10-D16：封存态次级出口跳「帮助与客服」，路由走全站常量
 import { ROUTES } from "../../../constants/routes";
 import { useAppConfigStore } from "../../../stores/app-config";
-// R4-00976：toast 时长走统一常量（TOAST_DURATION.NORMAL_MS = 2000ms）
-import { TOAST_DURATION } from "../../../constants/limits";
 
 const { t } = useI18n();
 const appConfig = useAppConfigStore();
@@ -44,44 +43,22 @@ onLoad(() => {
 });
 
 /**
- * R4-00032: 本地示例课程价格（元）集中配置，调价只需改此处。
- * 后续接入真实报名/支付链路后，价格应改由后端课程配置下发，此常量即移除。
+ * R11-L09-D01（P0 / 需新建）的处置：**撤除无真相源的课程与价目表**，不接任何前端常量。
+ *
+ * 原实现（本轮已删）：`COURSE_PRICES {99,129,159}` + 三条 `courses`（课程名/讲师/描述全取
+ * i18n contentPages.consulting.course*）、`priceLabel()` 拼 ¥ 数字、`handleSignup()` 只弹 toast。
+ * 页面从不请求课程接口（onLoad 只读 contentPageUrls.consultingUrl）⇒ 用户看到的是一张
+ * 「可下单的价目表」，但没有任何一门课、任何一个价格有后端真相源，且 `handleSignup` 不产生任何
+ * 订单。按任务书 §12.4 的合法形态二（把没有真值支撑的内容撤掉/降级为不承诺）整段撤除：
+ * · 不再渲染 ¥ 价目、课程名、讲师名、课程描述、「报名」控件（P0 的承载面）；
+ * · 保留后台配置的真内容出口 web-view（`contentPageUrls.consultingUrl`，非空即加载）与
+ *   封存卡（R10-P1-002 的在册表现，§12.1 已判不是缺陷）；
+ * · 课程区改落一句既有的弱态文案 home.consultingHint（"咨询/课程内容筹备中，敬请期待"，
+ *   zh-CN.ts:654），不承诺课程、不承诺价格。
+ * 需新建（交业主侧）：后端课程配置/价目真相源列（course.id/course.title/course.price/
+ * course.lecturer/registration_deadline），接口就绪后按真字段恢复课程卡与报名链路。
  */
-const COURSE_PRICES = {
-  communication: 99,   // 恋爱沟通课
-  dating: 129,         // 脱单攻略课
-  intimacyRepair: 159, // 亲密关系修复课
-} as const;
 
-/** 本地示例课程（文案走 i18n contentPages.consulting.course*） */
-const courses = [
-  { id: "c-1", titleKey: "contentPages.consulting.course1.title", lecturerKey: "contentPages.consulting.course1.lecturer", descKey: "contentPages.consulting.course1.desc", price: COURSE_PRICES.communication },
-  { id: "c-2", titleKey: "contentPages.consulting.course2.title", lecturerKey: "contentPages.consulting.course2.lecturer", descKey: "contentPages.consulting.course2.desc", price: COURSE_PRICES.dating },
-  { id: "c-3", titleKey: "contentPages.consulting.course3.title", lecturerKey: "contentPages.consulting.course3.lecturer", descKey: "contentPages.consulting.course3.desc", price: COURSE_PRICES.intimacyRepair },
-] as const;
-
-/** 课程价格文案（¥{price}） */
-function priceLabel(price: number): string {
-  return t("contentPages.consulting.pricePrefix", { price });
-}
-
-/** 报名课程：toast 提示（真实报名/支付链路接入后端） */
-function handleSignup() {
-  lightHaptic();
-  uni.showToast({ title: t("contentPages.consulting.signupSuccess"), icon: "none", duration: TOAST_DURATION.NORMAL_MS });
-}
-
-/**
- * R6-L10-D14：封存态下课程预览的「报名」——不跳交易链路，只给既有封存提示文案。
- */
-function onSealedSignup() {
-  lightHaptic();
-  uni.showToast({ title: t("commerce.sealedToast"), icon: "none", duration: TOAST_DURATION.NORMAL_MS });
-}
-
-/**
- * R6-L10-D16：封存态的次级出口 —— 帮助与客服（本页唯一现在可用的真实出口）。
- */
 function goHelpCenter() {
   lightHaptic();
   uni.navigateTo({ url: ROUTES.HELP });
@@ -115,33 +92,14 @@ function goHelpCenter() {
         </view>
       </view>
 
-      <!-- R6-L10-D14（需新建 P1）：已实现的 3 门课程不再整段藏掉 —— 封存态保留课程预览，
-           「报名」置灰、点击给既有 commerce.sealedToast（不接支付、不改 isCommerceOn 语义）。
-           同时消掉 D15/D16 的两半：内容补足后卡下不再有 460px（视口 60%）纯页面底，
-           页面也第一次有了可滚内容（原 bottom 帧与 top 帧 contentHash 逐字相同）。 -->
+      <!-- R11-L09-D01（P0）：课程卡与 ¥ 价目表整段撤除（三档价、三条课程、三位讲师均无后端
+           真相源，页面也从不请求课程接口，见脚本注释）。按 §12.4 第二种合法形态降级为
+           「不承诺」：只留区块标题 + 一句既有弱态文案 home.consultingHint
+           （"咨询/课程内容筹备中，敬请期待"），不留空、不再出现 ¥ 数字或可报名控件。
+           上一轮 R6-L10-D14 的「封存态保留课程预览」被本条 P0 覆盖：预览的每一行都是示例常量。 -->
       <view class="content-section">
         <text class="content-section__title">{{ t('contentPages.consulting.subtitle') }}</text>
-        <view class="course-list" role="list">
-          <view v-for="course in courses" :key="course.id" class="course-card">
-            <view class="course-card__info">
-              <text class="course-card__title">{{ t(course.titleKey) }}</text>
-              <text class="course-card__desc">{{ t(course.descKey) }}</text>
-              <view class="course-card__meta">
-                <text class="course-card__lecturer">{{ t(course.lecturerKey) }}</text>
-                <text class="course-card__price">{{ priceLabel(course.price) }}</text>
-              </view>
-            </view>
-            <view
-              class="course-card__signup course-card__signup--sealed"
-              role="button"
-              :aria-disabled="'true'"
-              :aria-label="t('contentPages.consulting.signup')"
-              @tap="onSealedSignup"
-            >
-              <text class="course-card__signup-text">{{ t('contentPages.consulting.signup') }}</text>
-            </view>
-          </view>
-        </view>
+        <text class="consult-hint">{{ t('home.consultingHint') }}</text>
       </view>
     </AppShell>
 
@@ -150,21 +108,8 @@ function goHelpCenter() {
       <scroll-view scroll-y class="content-scroll" :show-scrollbar="false">
         <view class="content-section">
           <text class="content-section__title">{{ t('contentPages.consulting.subtitle') }}</text>
-          <view class="course-list" role="list">
-            <view v-for="course in courses" :key="course.id" class="course-card">
-              <view class="course-card__info">
-                <text class="course-card__title">{{ t(course.titleKey) }}</text>
-                <text class="course-card__desc">{{ t(course.descKey) }}</text>
-                <view class="course-card__meta">
-                  <text class="course-card__lecturer">{{ t(course.lecturerKey) }}</text>
-                  <text class="course-card__price">{{ priceLabel(course.price) }}</text>
-                </view>
-              </view>
-              <view class="course-card__signup press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('contentPages.consulting.signup')" @tap="handleSignup">
-                <text class="course-card__signup-text">{{ t('contentPages.consulting.signup') }}</text>
-              </view>
-            </view>
-          </view>
+          <!-- R11-L09-D01（P0）：同封存分支，课程/价目表撤除，只留弱态文案 -->
+          <text class="consult-hint">{{ t('home.consultingHint') }}</text>
         </view>
         <view class="content-footer-space" />
       </scroll-view>
@@ -177,7 +122,9 @@ function goHelpCenter() {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: var(--c-bg-page, #f4f6fa);
+  /* R11-L09-D05（颜色token P3）：兜底原写 slate 私值 #f4f6fa（不在 §1.2 色表），
+     改回 --c-bg-page 真值 #EEF7F2（design-variables.scss:127）。 */
+  background: var(--c-bg-page, #EEF7F2);
 }
 
 .content-webview {
@@ -200,10 +147,22 @@ function goHelpCenter() {
 
 .content-section__title {
   display: block;
-  font-size: var(--fs-lg, 32rpx);
+  /* R11-L09-D02（字号 P2）：区块标题原取 --fs-lg（真值 28rpx=14px），与同页课程卡标题只差 1px，
+     区块级/条目级塌成同一档。升到 §1.3 区块标题档 --fs-3xl(36rpx=18px)；
+     兜底字面量同步改成令牌真值 36rpx（原 32rpx 与真值不符）。
+     R11-L09-D05（颜色token P3）：兜底 #1f2937 是 slate 私值，改回 --c-text-primary 真值 #1A1E1C。 */
+  font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1f2937);
+  color: var(--c-text-primary, #1A1E1C);
   margin-bottom: var(--sp-4);
+}
+
+/* R11-L09-D01：课程区撤除后的弱态文案（既有 i18n 键 home.consultingHint，不新增文案） */
+.consult-hint {
+  display: block;
+  font-size: var(--fs-lg, 28rpx);
+  color: var(--c-text-secondary, #4A524E);
+  line-height: 1.6;
 }
 
 /* ========== R10-P1-002：商业化封存卡（对齐 market/ADR-2 表现） ========== */
@@ -258,121 +217,19 @@ function goHelpCenter() {
 .consult-sealed__title {
   font-size: var(--fs-xl, 34rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1f2937);
+  /* R11-L09-D05：兜底 slate #1f2937 → §1.2 真值 #1A1E1C */
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .consult-sealed__desc {
   font-size: var(--fs-sm, 26rpx);
-  color: var(--c-text-secondary, #5b6470);
+  /* R11-L09-D05：兜底 slate #5b6470 → §1.2 真值 #4A524E */
+  color: var(--c-text-secondary, #4A524E);
   text-align: center;
   line-height: 1.6;
 }
 
-/* ========== 课程列表 ========== */
-.course-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-}
-
-.course-card {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  /* R8-L09-D03（间距 P2）：卡内水平内衬原 var(--sp-5)=20rpx(10px)，只有规范
-     --card-padding(32rpx=16px) 的 62.5% ⇒ 实帧卡白底左缘 x=32、首行标题墨迹左缘 x=42
-     （卡内文字贴边），「报名」胶囊右缘 x=336 距卡缘 346 同样只剩 10px。换成 --card-padding。 */
-  padding: var(--sp-4) var(--card-padding, 32rpx);
-  /* R6-L10-D17：卡内其余卡同口径（缺陷卡原话「同页课程卡也是同一个 24rpx，一旦解封将整页同偏」） */
-  border-radius: var(--card-radius, 40rpx);
-  background: var(--c-bg-container, #ffffff);
-  box-shadow: var(--card-shadow, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
-}
-
-.course-card__info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-  min-width: 0;
-}
-
-.course-card__title {
-  font-size: var(--fs-lg, 28rpx);
-  font-weight: 700;
-  color: var(--c-text-primary, #1f2937);
-}
-
-.course-card__desc {
-  font-size: var(--fs-xs, 22rpx);
-  color: var(--c-text-secondary, #5b6470);
-  line-height: 1.5;
-}
-
-.course-card__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-2);
-}
-
-.course-card__lecturer {
-  font-size: var(--fs-xs, 20rpx);
-  color: var(--c-text-tertiary, #9aa1ab);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.course-card__price {
-  font-size: var(--fs-lg, 28rpx);
-  font-weight: 700;
-  /* R8-L09-D02（颜色token P1）：价格原直接命中 --c-error(#E5454D) ⇒ 全站错误红被当作商品价色，
-     与 §1.2 的角色定义冲突（同页真错误提示会失去辨识度）。价格不是错误态，改走商品/金额语义
-     的浪漫色系令牌。缺陷卡给的两档实测白底对比都不够正文用（--c-romance-500 #FF6B81 = 2.73:1、
-     --c-brand-600 #2AAE83 = 2.81:1，28rpx=14px 不享大字号豁免），故取同族最深的 --c-romance-700
-     #CC4A5F = 4.46:1（对白卡 #FFF 计算 L=0.1856），既退出 --c-error 角色又保住可读性。 */
-  color: var(--c-romance-700, #CC4A5F);
-  flex-shrink: 0;
-}
-
-.course-card__signup {
-  flex-shrink: 0;
-  background: var(--c-gradient-brand, linear-gradient(135deg, #36C99A, #6fe0b0));
-  /* R8-L09-D05（可达性 P1）：原只有 padding: 12rpx var(--sp-5)，实帧「报名」胶囊 41×29px
-     （高 29px≈58rpx），比全站 88rpx=44px 最小触摸目标矮 15px，而同页封存卡的「帮助与客服」
-     在 :222 已是 min-height:88rpx ⇒ 同页两枚按钮热区不一致。按 :222 同口径补齐热区并居中。 */
-  min-height: 88rpx;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12rpx var(--sp-5);
-  border-radius: var(--r-full);
-}
-
-/* R6-L10-D14：封存态课程预览的报名件 —— 保留形状、去掉行动色，明示「不可点进交易」 */
-.course-card__signup--sealed {
-  background: var(--c-bg-surface, #F3FAF6);
-  /* R8-L09-D06（颜色token P2）连带：补控件轮廓，避免封存件只靠字色表达状态 */
-  border: 2rpx solid var(--c-border-default, #DDE3E0);
-}
-
-.course-card__signup--sealed .course-card__signup-text {
-  /* R8-L09-D06（颜色token P2）：封存态「报名」二字原声明走 --c-text-tertiary（回退值写成 #9aa1ab），
-     实帧墨迹众数 #9AA39F —— 正是 §1.2 的 placeholder 专用档 --c-text-quaternary 同值，
-     在 --c-bg-surface #F3FAF6 上只有 2.4:1（连 --c-text-tertiary 真值 #6B7571 同底也只有 4.50:1，
-     贴着下限）⇒ 一个仍可点（@tap 给 sealedToast）的控件被画成占位符灰。
-     提到 --c-text-secondary #4A524E 后同底 = 7.60:1，封存状态改由「浅底 + 描边 + 无行动色」表达。 */
-  color: var(--c-text-secondary, #4A524E);
-  font-weight: 500;
-}
-
-.course-card__signup-text {
-  font-size: var(--fs-base, 24rpx);
-  font-weight: 600;
-  color: var(--c-text-inverse, #ffffff);
-}
+/* ========== 课程列表（R11-L09-D01 撤除，样式一并删除，避免留下无消费者的行动色/价目样式） ========== */
 
 .content-footer-space {
   height: calc(120rpx + env(safe-area-inset-bottom));

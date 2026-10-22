@@ -121,25 +121,78 @@ function findFromStore(id: string): ActivityItem | null {
 /** 首次拉取是否失败（用于展示错误态与重试） */
 const loadError = ref(false);
 
-/** 解析并展示活动内容（同步报名状态：isSignedUp 与 activity.isEnrolled 保持一致） */
-function resolveActivity(id: string): void {
+/**
+ * R11-L08-D12（文案 P1）：URL 带了 id、列表与详情接口都取不到 ⇒ 落「未找到该活动」错误态。
+ * 原实现在这里 `samples.find(...) ?? samples[0]`：任意未知 id（含真实但后端已下架的 id）
+ * 都被静默画成第一条示例「新人礼遇」，用户拿不到该活动的任何字段，
+ * 全页唯一披露只有封面左上角一枚 --fs-xs(10px) 小徽标。
+ */
+const notFound = ref(false);
+
+/** 错误态文案（拉取失败 / 该 id 不存在，两态复用同一 detail-error 槽，均取既有 i18n 键） */
+const errorText = computed(() =>
+  notFound.value
+    ? t("storeErrors.activity.loadDetailFailed")
+    : t("storeErrors.activity.loadActivitiesFailed"),
+);
+
+/** 无 id 裸开（分享链接缺参、取景直开）时展示的内置示例入口 id */
+const DEMO_ENTRY_ID = "sample-new-user-gift";
+
+/** 命中内置示例 id 才渲染示例内容（精确匹配，不再兜底到第一条）；命中即返回 true */
+function applySample(id: string): boolean {
+  const matched = buildSampleActivities().find((s) => s.id === id);
+  if (!matched) return false;
+  activity.value = matched;
+  isSample.value = true;
+  isSignedUp.value = !!matched.isEnrolled;
+  loadError.value = false;
+  notFound.value = false;
+  return true;
+}
+
+/**
+ * 解析并展示活动内容（同步报名状态：isSignedUp 与 activity.isEnrolled 保持一致）。
+ *
+ * R11-L08-D12 的取数顺序（列表 → 详情接口 → 示例 id 精确命中 → 错误态）：
+ * 1. store 列表按 id 命中 ⇒ 真实活动（原行为不变）；
+ * 2. 列表没有这个 id ⇒ 打**在册的真详情接口** GET /api/v1/activities/{id}
+ *    （`stores/activity.ts:328 fetchActivityDetail`，字段由后端 `ActivityDetailView.java:12-25`
+ *    的 title/location/scheduleText/description/enrollmentCount/participantAvatars/
+ *    activityDate/status/isEnrolled/category/coverImage 下发）⇒ 真实活动；
+ * 3. 详情接口也没有 ⇒ 只有**内置示例 id 精确命中**才渲染示例内容
+ *    （含 :99-112 那枚在册落点 id=2001「城市露营计划」，官方助手卡片指向它，不能断）；
+ * 4. 其余一律 notFound 错误态 + 重试，不再画示例。
+ * 无 id 裸开仍展示示例入口（第 3 步的 DEMO_ENTRY_ID），但示例内容现在带**整页可见的披露行**
+ * （模板 .detail-sample-note，与封面小徽标同时存在）⇒ 不再是「静默」落示例。
+ */
+async function resolveActivity(id: string): Promise<void> {
   const fromStore = findFromStore(id);
   if (fromStore) {
     activity.value = fromStore;
     isSample.value = false;
     isSignedUp.value = !!fromStore.isEnrolled;
     loadError.value = false;
+    notFound.value = false;
     return;
   }
-  // store 未匹配：回退到示例活动（id 精确匹配示例；任意未知 id 展示第一个示例）
-  const samples = buildSampleActivities();
-  const matched = samples.find((s) => s.id === id) ?? samples[0];
-  if (matched) {
-    activity.value = matched;
-    isSample.value = true;
-    isSignedUp.value = !!matched.isEnrolled;
-    loadError.value = false;
+  if (id) {
+    const detail = await activityStore.fetchActivityDetail(id);
+    if (detail) {
+      activity.value = detail;
+      isSample.value = false;
+      isSignedUp.value = !!detail.isEnrolled;
+      loadError.value = false;
+      notFound.value = false;
+      return;
+    }
   }
+  if (applySample(id)) return;
+  if (!id && applySample(DEMO_ENTRY_ID)) return;
+  activity.value = null;
+  // 列表本身就拉失败过时（网络因），错误文案留给 loadActivitiesFailed；
+  // 只有列表成功而该 id 确实取不到时，才是「该活动取不到详情」（内容因）
+  notFound.value = !loadError.value;
 }
 
 onLoad((options) => {
@@ -152,35 +205,36 @@ onLoad((options) => {
     // H5 端 showShareMenu 不支持时静默降级
   }
   if (activityStore.activities.length > 0) {
-    resolveActivity(id);
+    void resolveActivity(id);
     return;
   }
-  // store 尚无数据：拉取一次后再解析（失败时仍可回退示例内容，并标记错误态供重试）
+  // store 尚无数据：拉取一次后再解析（失败时标记错误态供重试；R11-L08-D12 后不再回退示例内容）
   void activityStore
     .fetchActivities()
     .then(() => resolveActivity(id))
     .catch(() => {
       loadError.value = true;
-      resolveActivity(id);
+      void resolveActivity(id);
     });
 });
 
 /** 重试：清空错误态后重新拉取 */
 function retryLoad() {
   loadError.value = false;
+  notFound.value = false;
   void activityStore
     .fetchActivities()
     .then(() => resolveActivity(activityId.value))
     .catch(() => {
       loadError.value = true;
-      resolveActivity(activityId.value);
+      void resolveActivity(activityId.value);
     });
 }
 
 onMounted(() => {
   // 兜底：若 onLoad 的异步拉取未完成，页面挂载后再尝试解析一次
   if (!activity.value && activityId.value) {
-    resolveActivity(activityId.value);
+    void resolveActivity(activityId.value);
   }
 });
 
@@ -189,15 +243,43 @@ const coverImage = computed<string>(() => {
   return activity.value?.coverImage || IMAGE_PATHS.ACTIVITIES.ACTIVITY_1;
 });
 
-/** 活动状态文案（open=报名中 / ongoing=进行中 / ended、closed=已结束 / 其余=预告） */
+/**
+ * 活动状态文案（open=报名中 / ongoing=进行中 / ended、closed=已结束 / upcoming=预告）
+ *
+ * R11-L08-D17（空态文案 P2）：原来 status 缺失时兜底 `t("activities.statusUpcoming")`，
+ * 于是「示例常量 status:'open'」与「详情接口没映射 status 的真活动」都会被画成一枚状态胶囊。
+ * 示例活动不是真活动、其 status 是 .vue 里的字面量（无真相源），真活动缺列时更不该编一个「预告」
+ * ⇒ 这两种情况一律不渲染该胶囊（模板 v-if="statusText"），状态只在后端确实下发了枚举时上屏。
+ */
 const statusText = computed(() => {
-  if (!activity.value) return "";
+  if (!activity.value || isSample.value) return "";
   const status = activity.value.status;
   if (status === "open") return t("activities.statusOpen");
   if (status === "ongoing") return t("activities.statusOngoing");
   if (status === "ended" || status === "closed") return t("home.activityStatusClosed");
-  return t("activities.statusUpcoming");
+  if (status === "upcoming") return t("activities.statusUpcoming");
+  return "";
 });
+
+/**
+ * R11-L08-D15 / R11-L08-D17：报名决策的第二条依据，只接后端真字段。
+ * · 人数 = `enrollCount`（后端 `ActivityDetailView.enrollmentCount`，stores/activity.ts:359 映射，
+ *   报名成功后 :269-274 本地自增/自减同步）；
+ * · 日期 = `date`（后端 `activityDate` 列，stores/activity.ts:358 映射，示例活动恒 ""）。
+ * 两行都只在**真实活动**（非示例内容）下渲染：示例常量项的 enrollCount 是写死的 0/12、
+ * date 是空串，把它们画成「12人已报名」等于给一个不存在的活动编一个报名数（硬规矩 6）。
+ * 卡上建议的「报名截止」这一列后端没有（`activityDate` 是活动当天日期，不是截止日），
+ * 按 §12.4 第④条登记 NEEDS-DATA，不改名借用。
+ */
+const activityDateLabel = computed<string>(() => {
+  const raw = activity.value?.date ?? "";
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+  if (!m) return "";
+  return t("activities.dateLabel", { month: Number(m[2] ?? 0), day: Number(m[3] ?? 0) });
+});
+
+/** 报名人数行是否可渲染：真实活动 + 后端给了数（示例内容恒不渲染，见上） */
+const showEnrollCount = computed(() => !isSample.value && !!activity.value);
 
 /**
  * P8-2.3：报名成功后向官方助手（寻觅助手）本地会话存储追加一条「报名成功」消息。
@@ -366,9 +448,27 @@ onShareTimeline(() => ({
           <text v-if="activity.category" class="detail-category-tag">
             {{ t(`activities.category.${activity.category}`) }}
           </text>
-          <view class="detail-status">
+          <view v-if="statusText" class="detail-status">
             <text class="detail-status__text">{{ statusText }}</text>
           </view>
+        </view>
+
+        <!-- R11-L08-D12（文案 P1）：示例内容的整页可见披露行。
+             原全页唯一披露是封面左上角一枚 --fs-xs(10px) 小徽标（模板 :356），
+             下方标题卡/介绍卡不再区分示例与真实 ⇒ 示例常量读起来就是该活动的真信息。
+             这行把同一枚在册键 activities.sampleBadge 提到正文级字号挂在标题下方，
+             与「报名中」状态标签同屏（R11-L08-D17 的「状态标签成为孤句」由这行一并承接）。
+             整句免责说明（如「以下为示例内容，非该活动的真实信息」）缺 i18n 键，
+             zh-CN.ts 不在本车道可写集 ⇒ 见交件 NEEDS-COPY。 -->
+        <view v-if="isSample" class="detail-sample-note" role="note">
+          <text class="detail-sample-note__text">{{ t('activities.sampleBadge') }}</text>
+        </view>
+
+        <!-- R11-L08-D15 / R11-L08-D17：真实活动的报名人数 + 活动日期（后端真字段，见脚本注释）。
+             示例内容不渲染此块（无真相源的数字不上屏）。 -->
+        <view v-if="showEnrollCount" class="detail-capacity">
+          <text class="detail-capacity__count">{{ activity.enrollCount }}{{ t('activities.enrolledLabel') }}</text>
+          <text v-if="activityDateLabel" class="detail-capacity__date">{{ activityDateLabel }}</text>
         </view>
 
         <!-- 时间 / 地点 -->
@@ -396,10 +496,10 @@ onShareTimeline(() => ({
       <view class="detail-footer-space" />
     </scroll-view>
 
-    <!-- 加载/兜底状态 -->
-    <view v-else-if="loadError" class="detail-loading">
+    <!-- 加载/兜底状态：R11-L08-D12 起该槽同时承接「列表拉取失败」与「该 id 取不到活动」两态 -->
+    <view v-else-if="notFound || loadError" class="detail-loading">
       <view class="detail-error">
-        <text class="detail-loading__text">{{ t('storeErrors.activity.loadActivitiesFailed') }}</text>
+        <text class="detail-loading__text">{{ errorText }}</text>
         <view class="detail-error__retry press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.retry')" @tap="retryLoad">
           <text class="detail-error__retry-text">{{ t('common.retry') }}</text>
         </view>
@@ -472,8 +572,15 @@ onShareTimeline(() => ({
 }
 
 .detail-header__back {
-  width: 64rpx;
-  height: 64rpx;
+  /* R11-L08-D11（可达性 P1）：本页 navigationStyle=custom，页内没有第二个返回出口，
+     而这枚钮原写死 64rpx(32.3px)——帧上实测半透明白圆底 34×34px，比同帧底部两枚动作钮
+     （分享/报名，实测 88rpx=42px 高）差 1.37 倍，也低于仓内自陈的 88rpx 热区下限
+     （love-center/nearby.vue:279-280 同口径 width/height:88rpx + 图标 40rpx）。
+     min-width/min-height 一并写死，防父级压缩。 */
+  width: 88rpx;
+  height: 88rpx;
+  min-width: 88rpx;
+  min-height: 88rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -482,8 +589,9 @@ onShareTimeline(() => ({
 }
 
 .detail-header__back-icon {
-  width: 36rpx;
-  height: 36rpx;
+  /* 与钮同批放大（64→88rpx 后视觉占比保持 nearby.vue:286-289 的 40/88 档） */
+  width: 40rpx;
+  height: 40rpx;
   /* R10-L08-D09：删去原 `color: var(--c-text-inverse)` —— 本节点是裸 <image>，
      PNG 自带墨色（v2/back.png 单色 #333333），CSS color 对它无效，留着只是「声明与实际不符」。
      对比度算式见 :33 图标取值处。 */
@@ -514,7 +622,8 @@ onShareTimeline(() => ({
 }
 
 .detail-header__spacer {
-  width: 64rpx;
+  /* R11-L08-D11 连带：与左侧返回钮同宽，标题才继续居中（钮 64→88rpx 后不同步会把标题推歪 12px） */
+  width: 88rpx;
 }
 
 /* ========== 内容区 ========== */
@@ -565,8 +674,12 @@ onShareTimeline(() => ({
 }
 
 .detail-section {
-  margin: var(--sp-5) var(--sp-4);
-  padding: var(--sp-5);
+  /* R11-L08-D14（间距 P2）：两张白卡原 margin 横向取 --sp-4(16rpx=8.1px)、padding 取 --sp-5(20rpx=10.1px)，
+     帧上实测卡缘 x=10、卡内文字左缘 x=27 ⇒ 页边距只有 §1.4 标准的一半、内衬比标准少 6px；
+     同域 love-center/mbti.vue:347 的同角色容器已按 R6-L10-D10 取 --page-padding(32rpx)（帧上卡缘 x=18）
+     ⇒ 同域两页同一角色容器取档不一。两笔都换成 §1.4 的语义令牌。 */
+  margin: var(--sp-5) var(--page-padding, 32rpx);
+  padding: var(--card-padding, 32rpx);
   background: var(--c-bg-container, #ffffff);
   /* R7-L08-D08（圆角 P3·R6 已批未落地）：两张白卡（标题/元信息卡、活动介绍卡）共用本类，
      原 var(--r-xl)=24rpx（12px，§1.4 的小卡/输入档）实测圆角比全站卡片令牌小 8px，
@@ -622,6 +735,40 @@ onShareTimeline(() => ({
   font-weight: 600;
 }
 
+/* R11-L08-D12：示例内容的正文级披露行（封面那枚 --fs-xs 小徽标保留，两处同时在场） */
+.detail-sample-note {
+  margin-top: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md, 12rpx);
+  background: var(--c-bg-surface, #F3FAF6);
+  border: 1rpx solid var(--c-border-strong, #C2CAC6);
+}
+
+.detail-sample-note__text {
+  font-size: var(--fs-base, 24rpx);
+  font-weight: 600;
+  color: var(--c-text-secondary, #4A524E);
+}
+
+/* R11-L08-D15 / D17：真实活动的报名人数 + 活动日期行（后端真字段，示例内容不出） */
+.detail-capacity {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+}
+
+.detail-capacity__count {
+  font-size: var(--fs-base, 24rpx);
+  font-weight: 600;
+  color: var(--c-text-secondary, #4A524E);
+}
+
+.detail-capacity__date {
+  font-size: var(--fs-base, 24rpx);
+  color: var(--c-text-tertiary, #6B7571);
+}
+
 .detail-meta {
   display: flex;
   flex-direction: column;
@@ -646,7 +793,10 @@ onShareTimeline(() => ({
 
 .detail-meta__label {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-tertiary, #9aa1ab);
+  /* R11-L08-D16（颜色token P3）：兜底字面量原写 #9aa1ab —— 既不在 §1.2 色板、也不等于本令牌
+     真值 #6B7571（design-variables.scss:364 --c-text-tertiary:#{$text-tertiary}），本页三处
+     （:788/:827 与搜索页同角色）各写一个假真值，令牌一旦失效就翻成不同灰。全部改回真值。 */
+  color: var(--c-text-tertiary, #6B7571);
   flex-shrink: 0;
 }
 
@@ -666,7 +816,11 @@ onShareTimeline(() => ({
 
 .detail-intro {
   display: block;
-  font-size: var(--fs-base, 26rpx);
+  /* R11-L08-D13（字号 P2）：本页唯一成段阅读文本原取 --fs-base（令牌真值 24rpx=12.1px，
+     design-variables.scss:562；兜底字面量还另写 26rpx，与真值不符），帧上两行墨迹带高 11px，
+     与「时间/地点」值行同档、比卡内大标题(.detail-title --fs-2xl 16px)低两档 ⇒ 正文落进 §1.3
+     的标签档。提到 --fs-xl(30rpx=15px)，行高保持 1.7；兜底字面量同步改成令牌真值 30rpx。 */
+  font-size: var(--fs-xl, 30rpx);
   color: var(--c-text-secondary, #5b6470);
   line-height: 1.7;
 }
@@ -685,7 +839,8 @@ onShareTimeline(() => ({
 
 .detail-loading__text {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-tertiary, #9aa1ab);
+  /* R11-L08-D16：兜底同上，改回 --c-text-tertiary 真值 #6B7571（原 #9aa1ab 为 slate 残留） */
+  color: var(--c-text-tertiary, #6B7571);
 }
 
 /* 加载失败错误态 */
@@ -781,7 +936,8 @@ onShareTimeline(() => ({
 .detail-quit-btn__text {
   font-size: var(--fs-lg, 32rpx);
   font-weight: 600;
-  color: var(--c-text-tertiary, #64748B);
+  /* R11-L08-D16 同族：本处兜底原写 slate 的 #64748B，一并改回令牌真值 #6B7571 */
+  color: var(--c-text-tertiary, #6B7571);
 }
 
 .detail-signup-btn__text {

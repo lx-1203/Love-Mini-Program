@@ -80,10 +80,26 @@ const activeTab = ref<"likedMe" | "visitors">("likedMe");
 
 const errorMessage = computed(() => likesStore.errorMessage);
 
-/** Tab 配置（下划线高亮，badge 展示新访客数） */
+/**
+ * Tab 配置（下划线高亮，badge 展示新访客数）。
+ * R11-L07-D01（可达性 P0）：游客态（!isUnlocked）两个 badge 一律不渲染——原「喜欢我的」
+ * 右侧红底「1」取自 likedBy.value.length（mock 人格池，非本人数据），游客拿不到任何
+ * 喜欢记录，却与同屏概览的 0/0/0 直接矛盾（假计数 + 张冠李戴）。登录后再按真实
+ * likedBy / visitors 计数。列表本身在游客态已被 :406 登录引导整块替换，badge 无真值来源。
+ */
 const tabItems = computed(() => [
-  { key: "likedMe" as const, label: t("likesVisitors.tabLikedMe"), badge: likedBy.value.length || undefined },
-  { key: "visitors" as const, label: t("likesVisitors.tabVisitors"), badge: visitors.value.filter((v) => v.isNew).length || undefined },
+  {
+    key: "likedMe" as const,
+    label: t("likesVisitors.tabLikedMe"),
+    badge: isUnlocked.value ? likedBy.value.length || undefined : undefined,
+  },
+  {
+    key: "visitors" as const,
+    label: t("likesVisitors.tabVisitors"),
+    badge: isUnlocked.value
+      ? visitors.value.filter((v) => v.isNew).length || undefined
+      : undefined,
+  },
 ]);
 
 /**
@@ -492,7 +508,13 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
 .likes-visitors-page {
   min-height: 100vh;
   background: var(--c-gradient-page);
-  padding: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-6)) var(--sp-7) calc(env(safe-area-inset-bottom) + var(--sp-8));
+  /* R11-L07-D08（间距 P3）：原 padding 简写里的 padding-top
+     calc(var(--statusbar, env(...)) + var(--sp-6)) 被 :354 行内 statusBarHeightPx 注入
+     永久压过（行内优先级更高），是从不落画的孤儿声明 ⇒ 拆成右/下/左三条，
+     顶部只留行内注入这一个来源（本条按卡定义即无像素变化，纯来源收口）。 */
+  padding-right: var(--sp-7);
+  padding-bottom: calc(env(safe-area-inset-bottom) + var(--sp-8));
+  padding-left: var(--sp-7);
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
@@ -533,7 +555,9 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
 }
 
 .page-header__title {
-  font-size: var(--fs-4xl);
+  /* R11-L07-D03（字号 P2）：原 --fs-4xl（真值 40rpx=20px）比 §1.3 页头档下限 26px 低 6px，
+     同域另四页走 AppShell .shell__title 的 --fs-7xl(56rpx=28px)⇒ 收成同档。 */
+  font-size: var(--fs-7xl, 56rpx);
   font-weight: 800;
   color: var(--c-text-primary);
 }
@@ -548,9 +572,16 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* R11-L07-D07（空态文案 P2）：游客引导卡之下原有约 357px（视口 44%）纯页面底，
+     而空态分支挂在 v-else-if 被 :406 的 v-if 短路，永远命中不到 ⇒ 把本卡按卡给的第二条
+     口径撑到列表区高度：占满概览/Tab 之后的剩余视口，内容纵中，半屏空白消失。 */
+  flex: 1 1 auto;
+  justify-content: center;
   gap: var(--sp-3);
   padding: var(--sp-8) var(--sp-6);
-  border-radius: var(--r-lg);
+  /* R11-L07-D05（圆角 P2）：原 --r-lg(20rpx=10px) 只有规范卡片档 40rpx=20px 的一半，
+     与同页概览卡又各自一档 ⇒ 统一 --card-radius(40rpx)。 */
+  border-radius: var(--card-radius, 40rpx);
   background: var(--c-bg-container);
   border: var(--c-border-card);
   box-sizing: border-box;
@@ -575,7 +606,11 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
 }
 
 /* 主出口钮面取 --c-brand-800（白字 6.45:1），与 LockScreen.vue:717 同一档结论，
-   不用渐变（渐变浅端压白字实测 1.97:1，R8-L07-D03 已判） */
+   不用渐变（渐变浅端压白字实测 1.97:1，R8-L07-D03 已判）。
+   R11-L07-D06（颜色token P2）核过建议改法后**不采纳**：卡建议的 --c-brand #36C99A 压白
+   ≈1.9:1、退档 --c-brand-600 #2AAE83 压白 2.81:1（本任务书 §2 实测表两行均已否掉），
+   换过去等于把 6.45:1 的主 CTA 做成不达 4.5:1；且 R9 已把主 CTA 收成 brand-800 立为在册
+   设计裁定（任务书 §11.3：别回退）。故维持深档，本条按「建议改法不成立」登记未修。 */
 .guest-guide__btn {
   margin-top: var(--sp-4);
   min-height: 88rpx;
@@ -633,7 +668,9 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
 .overview {
   display: flex;
   padding: var(--sp-5) var(--sp-3);
-  border-radius: var(--r-xl);
+  /* R11-L07-D02（圆角 P2）：原 --r-xl 真值 24rpx=12px，只有规范卡片档 40rpx=20px 的六成，
+     帧上四角明显比同域 love-center 卡更方 ⇒ 统一 --card-radius(40rpx)。 */
+  border-radius: var(--card-radius, 40rpx);
   background: var(--c-bg-container);
   border: var(--c-border-card);
   box-shadow: var(--s-card-soft);
@@ -674,7 +711,11 @@ function timeOf(item: LikeRecord | VisitorRecord): string | undefined {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: var(--sp-3) var(--sp-2);
+  /* R11-L07-D04（可达性 P1）：原上下 padding 各 12rpx + 28rpx 文本行 ≈63rpx=31px，
+     低于 88rpx 热区下限，而双 Tab 是本页切换列表的唯一控件（无替代出口）
+     ⇒ min-height 撑到 88rpx，纵向 padding 提到 --sp-5(20rpx)，文字基线由 flex 居中保位。 */
+  min-height: 88rpx;
+  padding: var(--sp-5) var(--sp-2);
 }
 
 .tabs__text {

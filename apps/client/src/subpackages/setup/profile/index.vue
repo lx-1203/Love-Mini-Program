@@ -805,7 +805,7 @@ async function save() {
             <text class="photo-grid__mask-text">{{ t("setup.profile.uploadingMedia") }}</text>
           </view>
           <view v-else-if="url" class="photo-grid__del">
-            <text class="photo-grid__del-text">×</text>
+            <image class="photo-grid__del-text" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_WHITE_SVG" mode="aspectFit" alt="" />
           </view>
         </view>
       </view>
@@ -983,7 +983,12 @@ async function save() {
         <image class="field__chevron" :src="ICONS.CHEVRON_RIGHT" mode="aspectFit" alt="" />
       </view>
 
-      <!-- 籍贯省 -->
+      <!-- 籍贯省
+           R11-L12-D05（文案 P1）：本页字段只有图标 + 占位文，字段名仅进 aria-label、画面上不渲染；
+           籍贯市与未来城市的占位文逐字相同（zh-CN.ts:3138 / :3140 都是「如：广州」），
+           用户无法区分两框 → 按卡给三行补可见字段名，复用已在 aria-label 引用的既有 key，
+           不自造文案（locale 属并行车道）。 -->
+      <text class="field-label">{{ t("setup.profile.labelHometownProvince") }}</text>
       <view
         class="field"
         :class="{ 'field--focus': focusField === 'hometownProvince' }"
@@ -1005,6 +1010,7 @@ async function save() {
       </view>
 
       <!-- 籍贯市 -->
+      <text class="field-label">{{ t("setup.profile.labelHometownCity") }}</text>
       <view
         class="field"
         :class="{ 'field--focus': focusField === 'hometownCity' }"
@@ -1026,6 +1032,7 @@ async function save() {
       </view>
 
       <!-- 未来城市 -->
+      <text class="field-label">{{ t("setup.profile.labelFutureCity") }}</text>
       <view class="field" :class="{ 'field--focus': focusField === 'futureCity' }">
         <image class="field__icon" :src="ICONS.BUILDING" mode="aspectFit" alt="" />
         <input
@@ -1301,6 +1308,19 @@ async function save() {
   background: var(--c-border-light, #eef2f0);
 }
 
+/* R11-L12-D05：可见字段名。档位与同流程 campus 的 .form-row__label 逐条同值
+   （--fs-sm 22rpx / --c-text-secondary #4A524E / 字重 500），左缘与输入框对齐、下留 8rpx。
+   只挂在籍贯省/籍贯市/未来城市三行之上——这三行才有「占位文同值、无法分辨」的问题，
+   其余字段的占位文各自唯一，不在本条判据内。 */
+.field-label {
+  display: block;
+  margin: 0 0 8rpx;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--c-text-secondary);
+}
+
 /* ---------------- 字段（高 96rpx · 圆角 24rpx，与注册页同构） ---------------- */
 .field {
   display: flex;
@@ -1310,7 +1330,11 @@ async function save() {
   padding: 0 28rpx;
   margin-bottom: 24rpx;
   background: var(--c-bg-surface, #f7faf9);
-  border: 2rpx solid var(--c-border-light, #eef2f0);
+  /* R11-L12-D06（颜色token）：描边原取 --c-border-light #EEF2F0，压在输入底 --c-bg-surface
+     #F3FAF6 上三通道最大差仅 16（1.02:1），帧上绕框一圈取样全是过渡值、框线不存在。
+     规范 §1.2 的「边框」档是 --c-border-default #DDE3E0，同域 recommend-pref/index.vue:323
+     同类控件已取该档。 */
+  border: 2rpx solid var(--c-border-default, #dde3e0);
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -1421,7 +1445,12 @@ async function save() {
   color: var(--c-error, #e5454d);
 }
 
-/* ---------------- 主按钮（高 96rpx · 圆角 24rpx，与注册页同构） ---------------- */
+/* ---------------- 主按钮（高 96rpx · 圆角 24rpx，与注册页同构） ----------------
+   R11-L12-D04（可达性 P1）：底原为 --c-gradient-brand 那枚 135deg #36C99A→#55D5A7 渐变，
+   帧上实测中段 #48D0A1、白字 1.86:1，而标签 30rpx=15px bold 不满足 WCAG 大字豁免
+   （≥18.66px bold），必须按正文 4.5:1 判。改 --c-brand-800 #156B51：对纯白
+   6.45:1（L=0.1127 ⇒ 1.05/0.1627），与 BottomActionBar.vue 的共享主 CTA 同档（§11.3）。
+   阴影同步换成同色系，否则深绿底仍压着一圈亮薄荷光晕。 */
 .submit-btn {
   display: flex;
   align-items: center;
@@ -1430,8 +1459,8 @@ async function save() {
   height: 96rpx;
   margin-top: 40rpx;
   border-radius: 24rpx;
-  background: linear-gradient(135deg, var(--c-brand, #36c99a) 0%, #55d5a7 100%);
-  box-shadow: 0 8rpx 32rpx rgba(54, 201, 154, 0.28);
+  background: var(--c-brand-800, #156B51);
+  box-shadow: 0 8rpx 32rpx rgba(21, 107, 81, 0.28);
   transition: transform 0.1s ease, opacity 0.1s ease;
 }
 
@@ -1616,20 +1645,36 @@ async function save() {
   gap: 16rpx;
 }
 
+/* R11-L12-D01（尺寸比例，2026-10-22）：槽位原是「宽随屏浮动 + 高写死 200rpx」两轴不同源
+   ⇒ 帧上实测 90px×101px（宽高比 0.89 竖长），6 格全部变形，`mode="aspectFill"` 按短边裁切，
+   用户上传的方图上下被削。现按仓内照片墙既有口径取正方形：mp-weixin **不支持** aspect-ratio
+   （`styles/_mixins.scss:133` 明写、同域 `subpackages/profile-extra/profile/album.vue:788` 同法），
+   故用百分比 padding-top 撑高——百分比 padding 相对**含块宽度**解析，
+   `calc((100% - 32rpx) / 3)` 与下面 .photo-grid__slot 的 width 表达式逐字同式 ⇒ 两轴同源同值。
+   代价是盒内容高归 0，因此铺满型的子节点一律改绝对定位（绝对定位子的含块是父的 padding 盒，
+   正好等于这个正方形）——与 album-cell / album-cell__img 同一结构。 */
 .photo-grid__slot {
   position: relative;
   width: calc((100% - 32rpx) / 3);
-  height: 200rpx;
+  padding-top: calc((100% - 32rpx) / 3);
+  box-sizing: border-box;
   border-radius: 24rpx;
   overflow: hidden;
 }
 
 .photo-grid__img {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
 }
 
 .photo-grid__add {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1640,10 +1685,27 @@ async function save() {
   background: var(--c-bg-surface, #f7faf9);
 }
 
+/* R11-L12-D02（素材缺失）：原 `+` / `×` 都是文本字符（:802/:808），同域 schedule 删除钮早已走
+   IMAGE_PATHS 注册资产（schedule/index.vue:166）⇒ 同一注册流程两套图标实现。处置分两半，理由不同：
+   · 叉号 → 换成注册资产 ICONS_COMMON.CLOSE_WHITE_SVG（images.ts:525，
+     assets/icons/common/close-white.svg，stroke #FFFFFF，键注「白色 ✕（深色背景关闭）」；
+     real 产物包内实测在册）。不用卡上点名的 ICONS_EMOJI.CLOSE：那枚描边 #94A3B8
+     （assets/svg-spec/03-icons/close.svg:1），压在本格 rgba(15,23,42,.55) 深色圆底上等于把现在的
+     纯白 ✕ 降一档墨色，是反向改动 ⇒ 取同语义的白色档。
+   · 加号 → **不换资产**，仍用文本，但按 R11-L10-D15（album.vue:832-841，已落盘的在本轮裁定）
+     把墨色改 --c-brand-800 #156B51：仓内加号类素材（7 个文件）逐枚量过，没有一枚能在本格
+     --c-bg-surface #F3FAF6 上达到非文字件 ≥3:1——assets/icons/plus.svg、
+     assets/svg-spec/03-icons/plus.svg、assets/message/svg/icon/add.svg 三枚都是 stroke #36C99A
+     （1.99:1）；icons/common/add.svg 是 #94A3B8（2.37:1）；common/add-white.svg 只能在深色底用；
+     两枚 PNG（common/add.png、v2/plus.png）是浅灰/实心位图。换成其中任何一枚都是把 D02 换成一条
+     对比度更差的卡（§2 的「建议改法本身不达标」），而造 #156B51 的加号 SVG 属「生成素材」，
+     硬规矩 5 禁止。故只做墨色对齐：56rpx / 400 / #156B51（6.45:1），与照片墙同族页 album 的加号
+     逐条同值。资产化那一半登记未修（缺一枚深绿加号 SVG）。 */
 .photo-grid__plus {
   font-size: 56rpx;
-  font-weight: 300;
-  color: var(--c-text-placeholder, #9aa39f);
+  font-weight: 400;
+  line-height: 1;
+  color: var(--c-brand-800, #156B51);
 }
 
 .photo-grid__del {
@@ -1659,10 +1721,11 @@ async function save() {
   background: rgba(15, 23, 42, 0.55);
 }
 
+/* R11-L12-D02：叉号由文本字符改为注册资产 image（描边 #FFFFFF 的 close-white.svg），
+   尺寸按 40rpx 圆底的内衬取 22rpx（原 28rpx 字符墨迹 ≈ 20px 的视觉体量）。 */
 .photo-grid__del-text {
-  font-size: 28rpx;
-  line-height: 1;
-  color: #ffffff;
+  width: 22rpx;
+  height: 22rpx;
 }
 
 /* ---------------- 你的身份（注册页字段语言的单选卡） ---------------- */

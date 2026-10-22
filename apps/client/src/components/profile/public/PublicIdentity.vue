@@ -14,10 +14,22 @@ const emit = defineEmits<{
   (e: "whisper"): void;
 }>();
 
-/** 在线状态：唯一来源（profile.online → prop → 默认为在线）。
+/** 在线状态：唯一来源（profile.online → prop）。
  *  R2b-L06-D12：此前画面上的「在线」胶囊其实来自第三行 distance-row（margin-top:16rpx 另起一行），
- *  姓名行的胶囊另有 v-if 分支，同一状态两个渲染源 → 位置漂移 + 文案重复。现在只保留姓名行这一处。 */
-const online = computed(() => props.profile.online ?? props.online ?? true);
+ *  姓名行的胶囊另有 v-if 分支，同一状态两个渲染源 → 位置漂移 + 文案重复。现在只保留姓名行这一处。
+ *  R11-L10-D01（素材缺失 P1）：原来的 `?? true` 把「后端没给值」也渲染成「在线」，
+ *  而本帧后端显式给 false（有设备会话但当前不活跃）时 v-if 整块塌陷、不留占位。
+ *  改为三态真值：true=在线，false=离线，null/undefined=未知；三态都恒渲染一枚胶囊，
+ *  不再用「在线」兜底编造状态，也不让这一格无声消失。 */
+const onlineState = computed<"online" | "offline" | "unknown">(() => {
+  const value = props.profile.online ?? props.online;
+  if (value === true) return "online";
+  if (value === false) return "offline";
+  return "unknown";
+});
+const onlineLabel = computed(() =>
+  onlineState.value === "online" ? "在线" : onlineState.value === "offline" ? "离线" : "未知",
+);
 
 /** 距离文案（理想图第三行本体只有 "2.3km"，「在线」不再在此重复 —— 见 D12） */
 const distanceText = computed(() => props.profile.distanceText ?? "");
@@ -42,9 +54,16 @@ const genderIconSrc = computed(() => {
           <view v-if="genderIconSrc" class="public-identity__gender" :class="`public-identity__gender--${profile.basic.gender}`">
             <image class="public-identity__gender-symbol" :src="genderIconSrc" mode="aspectFit" alt="" />
           </view>
-          <view v-if="online" class="public-identity__online">
+          <!-- R11-L10-D01：性别缺失时不再整块塌陷，给一枚恒渲染的「未填写」占位徽
+               （与 :88「资料暂未完善」/ :99「距离待更新」同一口径，不编造性别）。 -->
+          <view v-else class="public-identity__gender public-identity__gender--unknown" role="img" aria-label="性别未填写">
+            <text class="public-identity__gender-unknown-text">未填写</text>
+          </view>
+          <!-- R11-L10-D01：在线胶囊恒渲染；true=在线 / false=离线 / 无值=未知，
+               颜色与文案都跟随后端真值，缺值时不再整块消失。 -->
+          <view class="public-identity__online" :class="`public-identity__online--${onlineState}`">
             <text class="public-identity__online-dot"></text>
-            <text class="public-identity__online-text">在线</text>
+            <text class="public-identity__online-text">{{ onlineLabel }}</text>
           </view>
         </view>
         <text v-if="profile.relation.matchScore" class="public-identity__match">
@@ -93,8 +112,8 @@ const genderIconSrc = computed(() => {
          UserProfileController.java:179-195 仅在查看者未上报坐标、或两点超 300km 判为 GPS 漂移时给 null），
          ⇒ 真机上缺的是「值」不是「列」，前端不许编造距离（§6/§8），但必须给出「这格暂时取不到」的信号。
          落法：与 :88「资料暂未完善」同口径恒渲染，空值固定占位「距离待更新」。
-         「在线」胶囊维持 :20 的真值链（后端回 false ⇒ 该用户此刻不在线 ⇒ 不渲染是正确行为），
-         卡上建议的「缺省兜底 true」等于给离线用户伪造在线状态，未采纳 ⇒ 该半条登记未修。 -->
+         「在线」胶囊按 R11-L10-D01 改为三态恒渲染（true=在线 / false=离线 / 无值=未知）；
+         仍不采纳「缺省兜底 true」——那等于给离线用户伪造在线状态。 -->
     <view class="public-identity__distance-row">
       <text class="public-identity__distance-text">{{ distanceText || "距离待更新" }}</text>
     </view>
@@ -184,6 +203,22 @@ const genderIconSrc = computed(() => {
   color: #ffffff;
 }
 
+/* R11-L10-D01：性别缺失时的中性占位徽（不再是彩色圆形徽，也不伪造 ♂/♀）。
+   深灰字压浅灰底 ≥4.5:1，与在线胶囊同高（40rpx）以保持姓名行基线一致。 */
+.public-identity__gender--unknown {
+  width: auto;
+  padding: 0 12rpx;
+  border-radius: 999rpx;
+  background: var(--c-line, #EEF2F0);
+}
+
+.public-identity__gender-unknown-text {
+  font-size: 20rpx;
+  line-height: 1;
+  font-weight: 500;
+  color: var(--c-text-secondary, #4A524E);
+}
+
 .public-identity__online {
   display: inline-flex;
   align-items: center;
@@ -204,6 +239,23 @@ const genderIconSrc = computed(() => {
   font-size: 20rpx;
   color: #36C99A;
   font-weight: 500;
+}
+
+/* R11-L10-D01：离线/未知两态用中性灰（复用 --c-line 令牌），与「在线」绿区分；
+   文字取二级文本色 #4A524E 压 #EEF2F0 ≈ 7.1:1，不引入新的低对比读数。 */
+.public-identity__online--offline,
+.public-identity__online--unknown {
+  background: var(--c-line, #EEF2F0);
+}
+
+.public-identity__online--offline .public-identity__online-dot,
+.public-identity__online--unknown .public-identity__online-dot {
+  background: var(--c-text-secondary, #4A524E);
+}
+
+.public-identity__online--offline .public-identity__online-text,
+.public-identity__online--unknown .public-identity__online-text {
+  color: var(--c-text-secondary, #4A524E);
 }
 
 .public-identity__match {

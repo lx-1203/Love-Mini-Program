@@ -158,7 +158,7 @@ function copyEmail(): void {
           :aria-label="t('help.contactEmail')"
           @tap="copyEmail"
         >
-          <view class="help-contact__icon-wrap" :style="{ background: 'var(--c-tint-green-soft, #E8FAF3)' }">
+          <view class="help-contact__icon-wrap" :style="{ background: 'var(--c-bg-brand)' }">
             <image class="help-contact__icon" :src="IMAGE_PATHS.ICONS_EMOJI.MAIL" mode="aspectFit" alt="" />
           </view>
           <view class="help-contact__info">
@@ -271,13 +271,18 @@ function copyEmail(): void {
 }
 
 .help-contact__label {
-  font-size: var(--f-md);
+  /* R11-L07-D20（字号 P2）：「在线客服/意见反馈/客服邮箱」三行列表主标题原取 var(--f-md)
+     （tokens.scss:146 → --fs-md 26rpx=13px，§1.3 的「标签·时间戳」档），比同页已升档的
+     FAQ 问句（:208 --fs-xl 15px）矮一档 ⇒ 同类控件两档并存。改与 FAQ 问句同档。 */
+  font-size: var(--fs-xl);
   font-weight: 600;
   color: var(--c-text-primary);
 }
 
 .help-contact__desc {
-  font-size: var(--f-xs);
+  /* R11-L07-D24（字号 P2）：三条说明行原取 var(--f-xs)=20rpx=10px（§1.3 只授给角标/法务的
+     极小档，比说明档下限 14px 小 4px），bottom 帧上读不出。升到 --fs-lg(28rpx=14px) 说明档。 */
+  font-size: var(--fs-lg);
   color: var(--c-text-tertiary);
 }
 
@@ -287,15 +292,26 @@ function copyEmail(): void {
 }
 
 .help-contact__copy {
-  font-size: var(--f-xs);
-  color: var(--c-brand-600);
-  background: var(--c-tint-brand, #E8FAF3);
+  /* R11-L07-D21（可达性 P1）：「复制」控件原 font-size --f-xs(20rpx=10px) + 墨色 --c-brand-600
+     #2AAE83 压 --c-tint-brand 兜底私值 #E8FAF3，实测 2.59:1（低于 4.5:1，也低于非文本 3:1）
+     ⇒ 用户看不清这枚控件写的是什么。字号提到 --fs-sm(22rpx)，墨色取 --c-brand-800 #156B51：
+       L(#156B51)=0.11269、L(#E8FBF2)=0.92559 ⇒ 0.97559/0.16269 = 6.00:1 ≥4.5:1。
+  R11-L07-D22（颜色token P3）：底色原引未注册的 --c-tint-brand（令牌侧无定义，帧上由私值
+     #E8FAF3 渲染）⇒ 改引已注册的 --c-bg-brand（design-variables.scss:379，#E8FBF2）并去掉
+     行内十六进制兜底；令牌侧补 --c-tint-brand 定义属 theme/ 车道，见交件偏离说明。 */
+  font-size: var(--fs-sm);
+  color: var(--c-brand-800);
+  background: var(--c-bg-brand);
   padding: 8rpx 20rpx;
   border-radius: var(--r-full);
 }
 
 .help-footer {
-  padding: 32rpx 24rpx 16rpx;
+  /* R11-L07-D23（间距 P2）：页脚原 padding 底部只有 16rpx(8px) 且不含 safe-area，
+     而本页 AppShell 未开 tabBarSafe（容器底距为 0）⇒ bottom 帧上页脚一行被 home indicator
+     压住并裁掉半截字高。底部改 calc(env(safe-area-inset-bottom) + var(--sp-6))：
+     取景档 env()=0 时仍兑现 --sp-6(24rpx=12px)，比原 8px 抬 4px；真机再叠加安全区。 */
+  padding: 32rpx 24rpx calc(env(safe-area-inset-bottom) + var(--sp-6));
   display: flex;
   justify-content: center;
 }

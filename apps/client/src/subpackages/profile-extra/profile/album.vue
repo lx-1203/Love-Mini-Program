@@ -691,9 +691,12 @@ onShow(() => {
 }
 
 /* R6-B57/D10 同族顺手项：profile-extra 域三页页头标题原为 44 / 36 / 30rpx 三档
-   （相册 --fs-5xl、位置裸 36rpx、隐私 --fs-xl），按建议收敛到同一档 var(--fs-4xl)=40rpx。 */
+   （相册 --fs-5xl、位置裸 36rpx、隐私 --fs-xl），按建议收敛到同一档 var(--fs-4xl)=40rpx。
+   R11-L10-D07（字号 P2）：40rpx=20px 仍是 §1.3 区块标题档，低于页头 26–28px；
+   按卡上「同域 location/album/privacy 三页同批取齐」升 --fs-7xl=56rpx（与 AppShell
+   .shell__title 页头档同值，design-variables.scss:572），不再用区块标题档充当页头。 */
 .album-header__title {
-  font-size: var(--fs-4xl);
+  font-size: var(--fs-7xl);
   font-weight: 700;
   color: var(--c-text-primary);
 }
@@ -722,7 +725,7 @@ onShow(() => {
 
 .album-error__retry {
   padding: var(--sp-3) var(--sp-6);
-  background: var(--c-brand);
+  background: var(--c-brand-800, #156B51);
   border-radius: var(--r-full);
 }
 
@@ -763,7 +766,7 @@ onShow(() => {
 
 .album-empty__btn {
   padding: var(--sp-3) var(--sp-8);
-  background: var(--c-brand);
+  background: var(--c-brand-800, #156B51);
   border-radius: var(--r-full);
   margin-top: var(--sp-3);
 }
@@ -828,8 +831,10 @@ onShow(() => {
 
 .album-cell__plus {
   font-size: 56rpx;
-  /* R10-P3-022：浅灰加号在白底上看不见 → 品牌绿 */
-  color: var(--c-brand, #36C99A);
+  /* R10-P3-022：浅灰加号在白底上看不见 → 品牌绿；
+     R11-L10-D15（颜色token P2）：品牌绿压同族浅绿格底只有 1.94:1，
+     改 --c-brand-800 #156B51 压 --c-brand-50 #E8FAF3 ≈6.0:1（非文字图形件 ≥3:1）。 */
+  color: var(--c-brand-800, #156B51);
   font-weight: 400;
   line-height: 1;
 }
@@ -874,11 +879,15 @@ onShow(() => {
    （R10-P3-022 那次只把白底换成 brand-50，层次仍然没拉开）。按建议改法第一条走"品牌绿实底
    白字"，与本页 .album-empty__btn / .album-error__retry 两个已验证的绿色主按钮同一配方，
    与 --c-brand-50 空位格拉开整整一档明度。 */
+/* R11-L10-D14（可达性 P1）：主 CTA 原为白字压 --c-brand #36C99A，实测 2.10:1；
+   按卡改 --c-brand-800 #156B51（白字 6.45:1，design-variables.scss:18 真值）。
+   卡上把 .album-empty__btn / .album-error__retry 说成已同档，盘上两处仍是 --c-brand，
+   故同批一并归 brand-800，三颗主按钮与 EmptyState.vue:219 的主 CTA 真正同档。 */
 .album-add-btn {
   margin-top: var(--sp-6);
   padding: var(--sp-4) var(--sp-8);
-  background: var(--c-brand);
-  border: 2rpx solid var(--c-brand);
+  background: var(--c-brand-800, #156B51);
+  border: 2rpx solid var(--c-brand-800, #156B51);
   border-radius: var(--r-full);
   display: flex;
   align-items: center;
@@ -903,7 +912,10 @@ onShow(() => {
 
 .album-tip__text {
   font-size: var(--fs-sm);
-  color: var(--c-text-tertiary);
+  /* R11-L10-D16（可达性 P2）：本页唯一删除/设头像手势说明原取 --c-text-tertiary
+     #6B7571 压 --c-bg-page #EEF7F2 仅 4.36:1（<正文 4.5:1）；与同域 location.vue
+     .location-map__tip 同角色指引行同档升 --c-text-secondary #4A524E（同底 7.37:1）。 */
+  color: var(--c-text-secondary);
 }
 
 /* ========== R7-L10-D15：照片使用说明卡（消解下半屏空白带） ========== */
@@ -916,13 +928,15 @@ onShow(() => {
 }
 
 .album-rules__title {
-  font-size: var(--fs-lg);
+  /* R11-L10-D17（字号 P2）：正文级说明卡原整卡落在 --fs-sm(22rpx=11px) 角标档；
+     卡内标题升 --fs-xl(30rpx)、规则/汇总正文升 --fs-lg(28rpx)，正文级内容不再取全站最小字级。 */
+  font-size: var(--fs-xl);
   font-weight: 700;
   color: var(--c-text-primary);
 }
 
 .album-rules__summary {
-  font-size: var(--fs-sm);
+  font-size: var(--fs-lg);
   line-height: 1.6;
   color: var(--c-text-secondary);
 }
@@ -935,7 +949,8 @@ onShow(() => {
 
 .album-rules__bullet {
   flex-shrink: 0;
-  font-size: var(--fs-sm);
+  /* R11-L10-D17：项目符号与同排规则正文同档，避免 11px 点落在 14px 行里错位 */
+  font-size: var(--fs-lg);
   line-height: 1.6;
   color: var(--c-brand);
 }
@@ -943,7 +958,7 @@ onShow(() => {
 .album-rules__text {
   flex: 1;
   min-width: 0;
-  font-size: var(--fs-sm);
+  font-size: var(--fs-lg);
   line-height: 1.6;
   color: var(--c-text-secondary);
 }

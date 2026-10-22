@@ -865,7 +865,19 @@ function openPrivacyPolicy() {
   width: 100%;
   /* 2026-09-03 修复插画不显示：容器只有 min-height 无确定高度时，
      内部 height:100% 的 image 解析为 0（空屏）。改为确定高度。 */
-  height: 520rpx;
+  /* R11-L01-D01（尺寸比例 P2）：素材真身不是方图——apps/client/src/static/assets/images/posters/
+     login-illustration.jpg 的 SOF 帧实测 750w×1000h（卡上"正方形构图"的前提不成立）。
+     旧 520rpx 槽走居中 aspectFill ⇒ 只取源 y 240..760；两人坐在 y≈844 的草坪线上，
+     画面就在这里断在腿根，整条前景草坪带一条都进不来（帧上读成"半身头像条"）。
+     卡给的 750rpx 整槽不用：本页纵向没有那么多余量——实测 520rpx 时协议行已在 y≈737、
+     系统 home 条在 y≈800（帧内逐行扫描），余量 55px 左右；+230rpx(115px) 会把
+     :702 的唯一注册入口「去注册」和协议行一起推出首屏。
+     改为「窗口抬到 600rpx + 图像下移取景」：窗口 600rpx（+80rpx，协议行落到 y≈777 仍在首屏内），
+     图像按原生比例 750×1000rpx 定位到 top:-360rpx ⇒ 可见源 y 360..960：
+     两人自头顶(y≈507)到坐地(y≈844)全身入画，草坪带 y 844..960 一并进画，
+     被砍掉的只是顶部 y 0..360 那段信息量最低的空天空/飘叶。
+     （取景窗口按像素裁片实测确认，见交付说明；容器高度不跟图像高走，overflow:hidden 负责裁。） */
+  height: 600rpx;
   overflow: hidden;
 }
 
@@ -889,14 +901,27 @@ function openPrivacyPolicy() {
 
 .login-page__hero::after {
   bottom: 0;
+  /* R11-L01-D01（同条第二半）：下沿渐隐原与上沿同为 100rpx。取景框下移后，
+     窗口最底 100rpx 压的是源 y 860..960 的草坪（见 .hero-image），不是旧画面里的天空，
+     100rpx 会把刚抢回来的草坪带整段糊掉 ⇒ 下沿收到 48rpx（只糊最外一圈、消除硬缝）。
+     上沿 100rpx 不动：它压在源 y 360..460 的天际线上，是承接页底、软化切口的过渡带。 */
+  height: 48rpx;
   background: linear-gradient(180deg, rgba(238, 247, 242, 0) 0%, var(--c-bg-page) 100%);
 }
 
 .hero-image {
-  width: 100%;
   /* 2026-09-03：mp-weixin 原生 image 的 height:100% 在该上下文解析为 0，
-     必须给显式高度（与容器 520rpx 一致）；display:block 消除 inline 基线空隙 */
-  height: 520rpx;
+     必须给显式高度；display:block 消除 inline 基线空隙。
+     R11-L01-D01：高度不再是"与容器等高"的 600rpx，而是素材原生 1000rpx，靠 top:-360rpx
+     把取景框下移（等价于"窗口下移"而非"图放大"：750rpx 宽 = 素材原生 750px 宽，1:1 不重采样，
+     人物像素尺寸与旧帧完全一致，只换取景范围）。宿主 .login-page__hero 已是 position:relative，
+     多出的 400rpx（-360..640）由宿主 overflow:hidden 裁掉。
+     取景终点 = 360+600 = 源 y 960，仍在草坪带内（草坪 844..1000），下沿渐隐压在草地上、无硬缝。 */
+  position: absolute;
+  left: 0;
+  top: -360rpx;
+  width: 100%;
+  height: 1000rpx;
   display: block;
   /* 理想图：插画全幅无边（不留两侧白边） */
 }
@@ -1091,6 +1116,17 @@ function openPrivacyPolicy() {
 .btn-icon-wechat {
   width: 32rpx;
   height: 32rpx;
+  /* R11-L01-D02（颜色token P2）：判点成立——#07C160 的微信标压在 .btn-icon-wrap
+     （rgba(255,255,255,.25) 覆在本块 :1074 的 --c-brand-800 #156B51 上，合成 #4A907C）上，
+     按 design-variables.scss 真值实算 1.58:1（卡按 #4F5D54 底算得 2.88:1，两档都 <3:1，
+     品牌标识别度确实丢失）。但卡给的第二条"把底提到 --c-overlay-bg-solid（90% 白）"是反向的：
+     #07C160 压 90% 白合成底只有 2.05:1、压纯白上限 2.39:1 ⇒ 这枚绿标在任何浅色底上
+     都不可能到 3:1，照它改等于把缺陷改得更糟（任务书 §2「对比度要算，不要看着改」）。
+     改走仓内已落地的同族口径：components/discover/NotLoggedWaiting.vue:454 对同一枚
+     WECHAT_GREEN_SVG 就地反白（R2b-L02-D15，同一判点、已上屏）。反白后白形压 #4A907C = 3.77:1 ≥3:1，
+     与同按钮 --c-text-inverse 白字同档。不新增素材、不换常量、不改底。
+     （mp-weixin 侧 filter 会编进 wxss：dist 里 AvatarFrame/MatchSuccess 等同族规则并存。） */
+  filter: brightness(0) invert(1);
 }
 
 .btn-primary-text {
@@ -1275,7 +1311,12 @@ function openPrivacyPolicy() {
 
 .btn-text {
   width: 100%;
-  height: 80rpx;
+  /* R11-L01-D03（可达性 P1）：本类是「没有账号？去注册」的实体热区（:702-712 的默认态唯一
+     注册入口，按 :697-701 的在册说明内联注册模式已删），原高 80rpx < 88rpx 最小可点件口径。
+     抬到 88rpx（卡给的第一条口径；字号/字色不动，另由 D04 单独收口字色）。
+     本类同时服务 :774 的「去注册」与 :782 的「返回微信登录」文字钮，三条同属文字按钮，
+     一并抬到同一口径，不留第二处 80rpx 死区。 */
+  height: 88rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1289,7 +1330,11 @@ function openPrivacyPolicy() {
 
 .btn-text-link {
   font-size: var(--fs-md);
-  color: var(--c-text-quaternary);
+  /* R11-L01-D04（可达性 P1）：字色原取 --c-text-quaternary（$text-quaternary #9AA39F）
+     压页底 --c-bg-page（#EEF7F2）实算 2.37:1，链接比同页 .terms-link 还暗两档。
+     收 --c-brand-800（#156B51，压 #EEF7F2 5.91:1），与本文件 .terms-link
+     在 R10-L01-D03 已收口的档位对齐。 */
+  color: var(--c-brand-800, #156b51);
 }
 
 .terms-wrap {

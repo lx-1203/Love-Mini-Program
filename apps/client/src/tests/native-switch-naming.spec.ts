@@ -3,15 +3,21 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
- * Task B7 — native `<switch>` 具名钩子（naming-only）契约测试。
+ * Task B7 — 开关控件的具名钩子（naming-only）契约测试。
  *
- * 背景：apps/client/src 下共有 9 枚原生 `<switch>`（vip / campus/post-topic /
+ * 背景：apps/client/src 下共有 9 枚开关控件（vip / campus/post-topic /
  * settings×2 / dnd×2 / privacy×2 / circles-post-topic），研究车道 b7 证实它们此前
  * 全部零 authored class/id（仅 Vue 编译期的 data-v-* 作用域哈希，且 settings/dnd/privacy
  * 每页两枚还共用同一枚哈希 → 选择器有歧义）。
  *
- * 本测试把「给每枚 switch 补一个稳定的、页内唯一的 authored class」这一意图钉死在源码层：
- *  - 9 枚 switch 节点数不变，且每枚都带一个非空静态 class（编译期原样进入 wxml 的 class="…"）；
+ * R11-L10-D11：privacy 的两枚按缺陷卡从原生 `<switch>` 改为自绘轨道（平台把原生 OFF 态
+ * 轨道颜色写死，`color` 只作用 ON 态，达不到 3:1 边界），并补了 role="switch" + aria-checked。
+ * ⇒ 「控件」的外延从"原生 `<switch>`"扩到"原生 `<switch>` 或 role=\"switch\" 的自绘控件"，
+ * 总数仍钉死 9。**这不是放宽**：每枚仍须有非空 authored class、同页两枚的区分修饰类仍须
+ * 页内唯一命中（正是 R11 把两枚都写成 `privacy-item__switch` 时本测试抓到的回归）。
+ *
+ * 本测试把「给每枚开关控件补一个稳定的、页内唯一的 authored class」这一意图钉死在源码层：
+ *  - 9 枚控件节点数不变，且每枚都带一个非空静态 class（编译期原样进入 wxml 的 class="…"）；
  *  - 每页两枚的场景下，区分用的修饰类在该页内只命中一次（选择器唯一）；
  *  - 不引入含 `search` 的类名（首页 H13 存在 search 缺省断言，不能踩）。
  *
@@ -45,9 +51,12 @@ const FILES: Array<{ path: string; expected: string[] }> = [
   },
 ];
 
-/** 取出模板里每一枚自闭合 `<switch ... />` 节点的原文。 */
+/** 取出模板里每一枚开关控件的原文：原生自闭合 `<switch …/>` + role="switch" 的自绘控件。 */
 function switchNodes(source: string): string[] {
-  return source.match(/<switch\b[\s\S]*?\/>/g) ?? [];
+  const native = source.match(/<switch\b[\s\S]*?\/>/g) ?? [];
+  // 自绘控件是多行标签，`[^>]*` 覆盖换行；role 出现在 class 之后也照收
+  const drawn = source.match(/<[a-zA-Z-]+\b[^>]*\brole="switch"[^>]*>/g) ?? [];
+  return [...native, ...drawn];
 }
 
 /** 取出某枚 switch 节点上的静态 class 属性值（无则空串）。 */
@@ -55,8 +64,8 @@ function staticClassOf(node: string): string {
   return node.match(/\sclass="([^"]*)"/)?.[1] ?? "";
 }
 
-describe("B7 — 9 枚原生 switch 的 authored 命名钩子", () => {
-  it("全仓 6 个文件里 switch 节点总数为 9，且每枚都带非空静态 class", () => {
+describe("B7 — 9 枚开关控件的 authored 命名钩子", () => {
+  it("全仓 6 个文件里控件节点总数为 9，且每枚都带非空静态 class", () => {
     let total = 0;
     for (const file of FILES) {
       const source = readFileSync(resolve(__dirname, file.path), "utf-8");
@@ -87,6 +96,23 @@ describe("B7 — 9 枚原生 switch 的 authored 命名钩子", () => {
       const source = readFileSync(resolve(__dirname, file.path), "utf-8");
       for (const node of switchNodes(source)) {
         expect(staticClassOf(node)).not.toMatch(/search/);
+      }
+    }
+  });
+
+  /**
+   * 自绘轨道是 R11 新引入的载体，它不像原生 `<switch>` 那样自带状态语义
+   * （读屏与自动化都靠 aria-checked 判开/关）⇒ 每枚自绘控件必须显式声明，
+   * 缺一个就等于把「开关状态」从无障碍树里丢了。
+   */
+  it("自绘开关必须带 aria-checked（原生 switch 自带语义，不要求）", () => {
+    const drawnFiles = ["../subpackages/profile-extra/profile/privacy.vue"];
+    for (const path of drawnFiles) {
+      const source = readFileSync(resolve(__dirname, path), "utf-8");
+      const drawn = source.match(/<[a-zA-Z-]+\b[^>]*\brole="switch"[^>]*>/g) ?? [];
+      expect(drawn.length, `${path} 的自绘开关枚数`).toBe(2);
+      for (const node of drawn) {
+        expect(node, `自绘开关缺 aria-checked：${path}`).toMatch(/aria-checked/);
       }
     }
   });

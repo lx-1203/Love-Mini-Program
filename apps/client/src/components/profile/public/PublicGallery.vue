@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { resolveMediaUrl } from "../../../utils/media";
-import { IMAGE_PATHS } from "../../../config/images";
 
 const props = withDefaults(defineProps<{ photos: string[] }>(), {
   photos: () => [],
@@ -15,26 +14,14 @@ const emit = defineEmits<{ (e: "tapPhoto", index: number): void }>();
 const CELLS = 4;
 
 /**
- * R7-L10-D05（素材缺失 P2 · 【R6 已批过，未落地】）：
- * R6 的「配 4 张真实图」只落在 api/profile.ts 的 personToProfile() 里（ACTIVITY_2 /
- * CAMPUS_LIBRARY / ACTIVITY_1 / FOOD_1 兜底），而那条函数**只在 useMock() 为真时执行**；
- * 本轮取景是 real 档（frames/R7/real-*），走 request('/profile/{id}')，后端
- * UserProfileController.assemble() 的 photos 来自 basic.photoGallery，演示账号该列为空 ⇒
- * 帧上仍是 4 格 #EEF2F0 灰骨架。修在 mock 分支 = 运行时根本不执行 = 画面零差别。
- * 因此把这层兜底搬进组件本身（组件是运行时真正加载的那份），用仓内既有素材补满 4 格，
- * 灰骨架格退为「连兜底素材都不够」时的最后一级。
- * 选图全部走 localPrefixes 命中的目录（activities / products），real 档仍随包，不出后端。
+ * R11-L10-D03（素材缺失 P0）：R7 曾把仓内活动/商品装饰素材（ACTIVITY_1/2/3、FOOD_1）
+ * 作为 DEMO_PHOTOS 兜底塞进他人主页「生活瞬间」，real 档该账号 photoGallery 为空 ⇒
+ * 四格全是素材库图，却被当作当事人生活照呈现（用户据此判断对方长相/兴趣即被误导）。
+ * 素材库图不得以本人照片身份出现：删掉这层兜底，无照片时回到 :60 的灰骨架 +
+ * 「暂无照片」，宁缺毋造（与 PublicIdentity「资料暂未完善/距离待更新」同口径）。
  */
-const DEMO_PHOTOS = [
-  IMAGE_PATHS.ACTIVITIES.ACTIVITY_1,
-  IMAGE_PATHS.ACTIVITIES.ACTIVITY_2,
-  IMAGE_PATHS.ACTIVITIES.ACTIVITY_3,
-  IMAGE_PATHS.PRODUCTS.FOOD_1,
-];
 const cells = computed(() =>
-  Array.from({ length: CELLS }, (_, index) =>
-    props.photos[index] || DEMO_PHOTOS[index] || "",
-  ),
+  Array.from({ length: CELLS }, (_, index) => props.photos[index] || ""),
 );
 </script>
 

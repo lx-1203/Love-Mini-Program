@@ -11,7 +11,6 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useProfileStore } from "../../../stores/profile";
-import { designTokens } from "../../../theme/tokens";
 // infra R2-00084: 路由路径常量化
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../../constants/routes";
 // 2026-09-04 视觉验收：statusBarHeight 注入，var(--statusbar, env(safe-area-inset-top)) 模拟器为 0 会压刘海
@@ -42,16 +41,18 @@ const receiveInfo = computed({
   },
 });
 
-/** switch change 事件处理（允许推荐给本校学生） */
-function onAllowRecommendChange(e: Event) {
-  const detail = (e as unknown as { detail?: { value?: boolean } }).detail;
-  allowRecommend.value = !!detail?.value;
+/**
+ * R11-L10-D11：自绘开关的点击切换。
+ * 仍走上面的 computed setter（本机持久化 + 「已在本机保存」提示口径完全不变），
+ * 只替换原生 switch 的不可控 OFF 轨道，不改任何数据来源。
+ */
+function toggleAllowRecommend(): void {
+  allowRecommend.value = !allowRecommend.value;
 }
 
-/** switch change 事件处理（接收同校信息） */
-function onReceiveInfoChange(e: Event) {
-  const detail = (e as unknown as { detail?: { value?: boolean } }).detail;
-  receiveInfo.value = !!detail?.value;
+/** switch 点击切换（接收同校信息） */
+function toggleReceiveInfo(): void {
+  receiveInfo.value = !receiveInfo.value;
 }
 
 /** 返回上一页 */
@@ -116,15 +117,22 @@ function goHelp() {
           <text class="privacy-item__title">{{ t('profile.allowSameSchoolRecommend') }}</text>
           <text class="privacy-item__desc">{{ t('profile.allowSameSchoolRecommendDesc') }}</text>
         </view>
-        <!-- R7-L10-D12：本枚是帧上 OFF 态的那一枚（「允许推荐给本校学生」默认关），
-             与第二枚同样套品牌描边芯片，OFF/ON 两态都在白卡上可辨。 -->
-        <view class="privacy-item__switch-chip">
-          <switch
-            class="privacy-item__switch privacy-item__switch--allow"
-            :checked="allowRecommend"
-            :color="designTokens.color.brand[500]"
-            @change="onAllowRecommendChange"
-          />
+        <!-- R7-L10-D12：本枚是帧上 OFF 态的那一枚（「允许推荐给本校学生」默认关）。
+             R11-L10-D11（可达性 P2）：原生 switch 的 OFF 轨道由平台写死（color 只作用 ON 态），
+             芯片环改变不了轨道/滑块同为近白；改自绘开关——OFF 轨道 #DCE5E2 + 深描边、
+             白滑块同描边，ON 轨道 --c-brand-800 + 白滑块，边界均 ≥3:1。 -->
+        <view
+          class="privacy-item__switch privacy-item__switch--allow"
+          role="switch"
+          :aria-checked="allowRecommend ? 'true' : 'false'"
+          :aria-label="t('profile.allowSameSchoolRecommend')"
+          @tap="toggleAllowRecommend"
+        >
+          <view class="privacy-item__switch-chip">
+            <view class="privacy-toggle" :class="{ 'privacy-toggle--on': allowRecommend }">
+              <view class="privacy-toggle__knob" />
+            </view>
+          </view>
         </view>
       </view>
 
@@ -135,15 +143,20 @@ function goHelp() {
         </view>
         <!-- R7-L10-D12（可达性 P2）：原生 switch 的 OFF 态轨道色由平台写死（`color` prop
              只作用于 ON 态），实测 x=296..330/y=138..146 轨道仅 (243..246) 灰、白滑块压白卡，
-             整控件与背景 Δlum≤12 ⇒ 按建议改法「给 OFF 态加品牌化轨道底色/描边」在页面侧
-             套一层品牌绿描边的薄荷底芯片，任意状态都能在白卡上读成"这里有枚可点开关"。 -->
-        <view class="privacy-item__switch-chip">
-          <switch
-            class="privacy-item__switch privacy-item__switch--receive"
-            :checked="receiveInfo"
-            :color="designTokens.color.brand[500]"
-            @change="onReceiveInfoChange"
-          />
+             整控件与背景 Δlum≤12。
+             R11-L10-D11：按卡「弃用原生 switch、改自绘轨道」落地，两枚同款。 -->
+        <view
+          class="privacy-item__switch privacy-item__switch--receive"
+          role="switch"
+          :aria-checked="receiveInfo ? 'true' : 'false'"
+          :aria-label="t('profile.receiveSameSchoolInfo')"
+          @tap="toggleReceiveInfo"
+        >
+          <view class="privacy-item__switch-chip">
+            <view class="privacy-toggle" :class="{ 'privacy-toggle--on': receiveInfo }">
+              <view class="privacy-toggle__knob" />
+            </view>
+          </view>
         </view>
       </view>
     </view>
@@ -231,7 +244,8 @@ function goHelp() {
 <style scoped lang="scss">
 .privacy-page {
   min-height: 100vh;
-  background: var(--c-bg-page, #f4f6fa);
+  /* R11-L10-D13（颜色token P3）：清掉写成蓝灰 #f4f6fa 的假兜底（--c-bg-page 真值 #EEF7F2） */
+  background: var(--c-bg-page);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
@@ -291,9 +305,11 @@ function goHelp() {
 }
 
 /* R6-B57/D10 同族顺手项：同域三页页头标题原为 44/36/30rpx 三档，按建议统一到 var(--fs-4xl)；
-   顺带修掉原 `var(--fs-xl, 34rpx)` 的假兜底（--fs-xl 真值是 30rpx，兜底却写 34rpx）。 */
+   顺带修掉原 `var(--fs-xl, 34rpx)` 的假兜底（--fs-xl 真值是 30rpx，兜底却写 34rpx）。
+   R11-L10-D12（字号 P2）：40rpx=20px 仍是区块标题档，比页头 26–28px 低 6–8px；
+   按卡升到页头档 --fs-7xl=56rpx（与 AppShell .shell__title 同值），副标题留 --fs-lg。 */
 .privacy-page__title {
-  font-size: var(--fs-4xl);
+  font-size: var(--fs-7xl);
   font-weight: 700;
   color: var(--c-text-inverse, #ffffff);
 }
@@ -356,8 +372,21 @@ function goHelp() {
 
 .privacy-item__desc {
   font-size: var(--fs-lg);
-  color: var(--c-text-tertiary, #9AA39F);
+  /* R11-L10-D13（颜色token P3）：原兜底 #9AA39F 是 quaternary 档（tertiary 真值 #6B7571），
+     删除假兜底，与 location.vue:386/:400/:444 已清口径一致。 */
+  color: var(--c-text-tertiary);
   line-height: 1.5;
+}
+
+/* R11-L10-D11（可达性 P2）：触控外圈 min 88rpx（视觉芯片仍 56rpx 高，热区不外扩观感），
+   点芯片/轨道任意位置都命中。 */
+.privacy-item__switch {
+  flex-shrink: 0;
+  min-width: 88rpx;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* R7-L10-D12（可达性 P2）：OFF 态原生开关轨道是平台写死的近白色，压白卡 Δlum≤12 不可辨，
@@ -372,6 +401,45 @@ function goHelp() {
   background: var(--c-brand-50);
   border: 2rpx solid var(--c-brand-300);
   box-sizing: border-box;
+}
+
+/* R11-L10-D11：自绘轨道。OFF：#DCE5E2 底 + --c-text-tertiary 描边（压芯片 4.4:1、
+   压白卡 4.76:1）；滑块白底 + 同色描边（与轨道底 3.7:1）。ON：--c-brand-800 底/描边，
+   白滑块与轨道 6.45:1。卡上建议的「--c-status-disabled 底 + --c-border-default 描边」
+   实算描边只有 1.3:1（--c-border-default 是 12% 黑），故描边取 tertiary 深档。 */
+.privacy-toggle {
+  position: relative;
+  width: 88rpx;
+  height: 48rpx;
+  box-sizing: border-box;
+  border-radius: var(--r-full);
+  background: var(--c-status-disabled);
+  border: 2rpx solid var(--c-text-tertiary);
+  transition: background-color var(--d-normal, 200ms), border-color var(--d-normal, 200ms);
+}
+
+.privacy-toggle__knob {
+  position: absolute;
+  top: 50%;
+  left: 4rpx;
+  width: 34rpx;
+  height: 34rpx;
+  box-sizing: border-box;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: var(--c-bg-container);
+  border: 2rpx solid var(--c-text-tertiary);
+  transition: left var(--d-normal, 200ms), border-color var(--d-normal, 200ms);
+}
+
+.privacy-toggle--on {
+  background: var(--c-brand-800);
+  border-color: var(--c-brand-800);
+}
+
+.privacy-toggle--on .privacy-toggle__knob {
+  left: calc(100% - 38rpx);
+  border-color: var(--c-brand-800);
 }
 
 /* R7-L10-D11（空态文案 P2）：补充入口分组 */

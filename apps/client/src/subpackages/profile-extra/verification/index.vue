@@ -129,11 +129,30 @@ const statusInfo = computed(() => {
   }
 });
 
-/** 认证权益列表（B4 强化，2026-08-13：新增第 5 项「互动资格」） */
+/**
+ * 认证权益列表（B4 强化，2026-08-13：新增第 5 项「互动资格」）
+ *
+ * R11-L09-D13（P0 / 需新建，§12.4 形态②「把没有真值支撑的那块内容撤掉/降级为不承诺」）：
+ * 本表原第 2、3 项承诺的是「按认证态施加的推荐排序加权」——
+ *   · benefitMatchTitle/Desc = 「匹配加权 / 匹配概率提升 1.5 倍」
+ *   · benefitTrustTitle/Desc = 「信任优先 / 认证用户优先推荐排序」
+ * 这两句在 real 档没有任何真相源，逐条核过：
+ *   `apps/api/…/discover/RecommendationRanker.java:615-616` 只把认证徽章解析成
+ *   `machineVerified/humanVerified` 两个布尔，:690-691 原样塞进 RecommendedPersonView 当展示字段；
+ *   同文件里与 verified 相关的分支只有 `loadBadgeLevelMap`（:817-852，school>email>idcard>none
+ *   的徽章级别），全仓 grep「verified × rank/score/boost/weight/sort/multipl」没有任何一处
+ *   按认证态改排序或乘系数 ⇒ 「优先展示/优先排序/1.5 倍」三句都是同一个不存在的机制的承诺。
+ *   客户端侧真字段只用于渲染徽章文字（`components/discover/CardDetailOverlay.vue:319-321`），
+ *   即「专属标识 / 个人主页展示认证徽章」那一项是有真相源的，保留。
+ * 处置：两项整格撤下（不是换一组数字、也不是换成另一句加权说法——那是 §12.4 明令禁止的第三种形态）。
+ *   卡上建议的「改成『认证用户在推荐中优先展示』」这一条**没有采纳**：那句话与已被撤下的
+ *   「优先推荐排序」是同一个未实现机制，换了措辞仍然是无真相源的承诺。
+ * 待后端补列后再接回（缺列登记见 FXK 交件「缺列 / 移交登记」第 1 条）：
+ *   认证态排序权重/倍率的真相源（app_switch 或 discover 侧系数列）+ 实际倍率回写文案。
+ * 本表消费点两处（verified 分支与 else 分支各一个 benefits-grid）同源同时收口，不会只改一屏。
+ */
 const benefits = computed(() => [
   { icon: IMAGE_PATHS.ICONS_EMOJI.TARGET, title: t("verification.benefitBadgeTitle"), desc: t("verification.benefitBadgeDesc") },
-  { icon: IMAGE_PATHS.ICONS_EMOJI.SCORE, title: t("verification.benefitTrustTitle"), desc: t("verification.benefitTrustDesc") },
-  { icon: IMAGE_PATHS.ICONS_EMOJI.ROCKET, title: t("verification.benefitMatchTitle"), desc: t("verification.benefitMatchDesc") },
   { icon: IMAGE_PATHS.ICONS_EMOJI.GIFT, title: t("verification.benefitPerksTitle"), desc: t("verification.benefitPerksDesc") },
   { icon: IMAGE_PATHS.ICONS_EMOJI.CHAT, title: t("verification.benefitInteractTitle"), desc: t("verification.benefitInteractDesc") },
 ]);
@@ -145,9 +164,20 @@ const processSteps = computed(() => [
   { step: "3", title: t("verification.processStep3Title"), desc: t("verification.processStep3Desc") },
 ]);
 
+/**
+ * R11-L09-D21（文案 P2）：空态横幅写死的「大小 ≤ 5MB」（:3426 verification.uploadHint）
+ * 原先在本页没有执行点——success 只读 tempFilePaths[0]，从不读 tempFiles[i].size，
+ * 超限图会一路走到提交、失败只以通用 toast 出现。
+ * 这里按提示原文的同一口径（5MB）落成拦截；上限与文案不再各说各话。
+ */
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
 /** 选择学生证图片
  *
  * Task 0.2.4：调用 chooseImage 前先调用 ensurePrivacyAuthorized 检查隐私授权。
+ * R11-L09-D21：选图回调按 tempFiles[0].size 执行横幅承诺的 5MB 上限
+ * （locale 属并行车道/不在本泳道可写集，故不新增「学生证照片需 ≤ 5MB」专用键，
+ *  复用同一句 uploadHint 作为拒收提示，约束与文案同源；专用键已登记移交）。
  */
 async function chooseImage() {
   lightHaptic();
@@ -166,6 +196,19 @@ async function chooseImage() {
     sizeType: ["compressed"],
     sourceType: ["album", "camera"],
     success: (res) => {
+      // R11-L09-D21：先按 size 拦超限图（横幅承诺的 5MB 在此执行），拦下不赋值、不报「已上传」
+      // uni 的 tempFiles 在 legacy 类型里是「单项 | 数组」联合，两种形态都取首项再读 size。
+      const tempFiles = res.tempFiles;
+      const firstFile = Array.isArray(tempFiles) ? tempFiles[0] : tempFiles;
+      const pickedSize = (firstFile as { size?: number } | undefined)?.size;
+      if (typeof pickedSize === "number" && pickedSize > MAX_IMAGE_BYTES) {
+        uni.showToast({
+          title: t("verification.uploadHint"),
+          icon: "none",
+          duration: QUICK_TOAST_MS,
+        });
+        return;
+      }
       // 修复（严格模式 noUncheckedIndexedAccess）：res.tempFilePaths[0] 索引访问返回 string | undefined，
       // 此处兜底空字符串，避免在异常（空数组）情况下赋值 undefined 给 ref<string>。
       uploadedImagePath.value = res.tempFilePaths[0] ?? "";
@@ -709,10 +752,18 @@ function onBlur() {
         </view>
       </view>
 
-      <!-- 提交按钮 -->
+      <!-- 提交按钮
+           R11-L09-D15（可达性 P2）：本页唯一提交出口原为裸 <view @tap>，既无 role 也无 aria-label，
+           提交中态只靠 :1224 的 opacity:0.6 表达 ⇒ 读屏用户在表单末尾读不到这个动作节点。
+           补齐按钮语义（role/aria-label）与两轴状态（aria-disabled/aria-busy=submitting），
+           标签随可见文案同源切换，不新增文案。 -->
       <view
         class="action-btn press-feedback"
         :class="{ 'action-btn--disabled': submitting }"
+        role="button"
+        :aria-label="submitting ? t('verification.submittingBtn') : t('verification.submitBtn')"
+        :aria-disabled="submitting ? 'true' : undefined"
+        :aria-busy="submitting ? 'true' : undefined"
         @tap="submitVerification"
         hover-class="action-btn--hover"
         hover-stay-time="100"
@@ -1017,7 +1068,11 @@ function onBlur() {
 .benefit-item__icon {
   width: 64rpx;
   height: 64rpx;
-  border-radius: var(--r-lg, 16rpx);
+  /* R11-L09-D14（颜色token P3）：同一个 --r-lg 在本页四处兜底写了两种值——
+     :879 门控横幅 / :1009 权益卡 / :1117 上传框写 20rpx，本行原写 16rpx。
+     令牌真值 = design-variables.scss:201 $radius-lg: 20rpx ⇒ 兜底必须等于真值，
+     否则令牌一旦解析失败，这四块圆角分叉成 8px/10px 两档。归口 20rpx。 */
+  border-radius: var(--r-lg, 20rpx);
   /* R8-L09-D14 同根第三落点：原为 linear-gradient(135deg, --c-tint-blue-50, --c-tint-blue-50)
      ——两端同值的退化渐变，且仍是蓝调。权益格底座并入本页浅绿族浅底。 */
   background: var(--c-brand-50, #E8FAF3);
@@ -1033,9 +1088,9 @@ function onBlur() {
   height: 40rpx;
 }
 
-.benefit-item__emoji {
-  font-size: var(--fs-2xl, 32rpx);
-}
+/* R11-L09-D14（同卡第二条）：.benefit-item__emoji 是孤儿样式——模板自 MP-R1-VERIFY-INDEX-102 起
+   渲染的是 :532/.584 的 <image class="benefit-item__icon-img">，全文件 grep 零个 benefit-item__emoji
+   引用 ⇒ 删除这条只有 font-size 的死规则（改它零像素，留着只会让下一轮误判「emoji 字形还在」）。 */
 
 .benefit-item__title {
   font-size: var(--fs-lg, 28rpx);

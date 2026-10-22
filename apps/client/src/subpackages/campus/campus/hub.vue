@@ -74,33 +74,14 @@ const schools = SCHOOLS.map((s) => ({
   coverUrl: CAMPUS_COVER[s.id] || s.coverUrl || IMAGE_PATHS.CIRCLE_COVERS.CAMPUS,
 }));
 
-/** 校园圈展示数据（对齐理想图 校园圈.png 数据行口径「3.2k 位同学 · 2.8w 条动态」）
- *  R2b-L05-D11（回退上一轮两处偏离理想图的改动）：
- *   1) 回退 R3 的「文案精简（位同学→同学、条动态→动态）」——量词「位/条」是理想图原文，
- *      精简后读作「3.2k 同学」，与理想图不一致；当初的换行动机（「态」字孤行）已由
- *      .campus-school-card__stats 的 white-space: nowrap 单行方案承担，无需再靠删字解决。
- *   2) 删除 R1-L05-D16 引入的 prefixTilde「约」前缀——理想图统计串无「约」，
- *      且该前缀只加在 members/posts 上，peers 不加，同一行内口径不一致。
- *  MP-R2-CAMPUS-HUB-007 的「本表为演示估算值」语义保留在本注释与下方 TODO：
- *  后端 campuses 接口就绪后整表由接口数据替换，届时不再有估算值问题。 */
-const schoolStats: Record<string, { members: string; posts: string; peers: string }> = {
-  pku: { members: "3.2k 位同学", posts: "2.8w 条动态", peers: "等 342 位同学" },
-  thu: { members: "2.6k 位同学", posts: "2.1w 条动态", peers: "等 256 位同学" },
-  ruc: { members: "2.1k 位同学", posts: "9.8k 条动态", peers: "等 301 位同学" },
-  fudan: { members: "1.8k 位同学", posts: "1.5w 条动态", peers: "等 210 位同学" },
-  sjtu: { members: "2.4k 位同学", posts: "1.9w 条动态", peers: "等 278 位同学" },
-  tongji: { members: "1.7k 位同学", posts: "1.3w 条动态", peers: "等 194 位同学" },
-  zju: { members: "1.4k 位同学", posts: "1.1w 条动态", peers: "等 163 位同学" },
-  nju: { members: "1.6k 位同学", posts: "1.2w 条动态", peers: "等 187 位同学" },
-  whu: { members: "1.9k 位同学", posts: "1.4w 条动态", peers: "等 225 位同学" },
-  sysu: { members: "1.3k 位同学", posts: "9.5k 条动态", peers: "等 152 位同学" },
-  szu: { members: "1.2k 位同学", posts: "8.6k 条动态", peers: "等 138 位同学" },
-};
-
-function statsOf(school: { id: string }): { members: string; posts: string; peers: string } {
-  const fallback = { members: "1.0k 位同学", posts: "8k 条动态", peers: "等 120 位同学" };
-  return schoolStats[school.id] ?? fallback;
-}
+/** R11-L04-D15（P0 · 假计数，按 §12.4 合法形态之二处置）：
+ *  学校卡原先的「3.2k 位同学 · 2.8w 条动态」「等 342 位同学」是按校 id 硬编码的字面量表
+ *  （11 校 + 一组对所有表外学校共用的 fallback 常量），不是后端读数；列表超过 11 所即出现
+ *  多卡同数。后端 /config/campuses 的 CampusView 只有 id/name/city
+ *  （services/config.ts:36-43），没有成员数/动态数/好友数列。
+ *  没有真值支撑的数字连同成员头像预览整块撤下——不换一组新常量、不挪写死表、不按 id 造数；
+ *  后端补列后再按接口数据渲染。
+ *  R11-L04-D19（k/w 混档）与 D15 同源：该行不再渲染，读者不会再在同一列看到两档缩写。 */
 
 /** R2b-L05-D11：理想图卡片标题为「北京大学圈 / 清华大学圈」带「圈」后缀，
  *  而数据源（config/schools.ts SCHOOLS[].name）是校名本体「北京大学」——后缀属展示层，
@@ -164,7 +145,7 @@ const filteredSchools = computed(() => {
   const list = kw
     ? base.filter((sc) => sc.name.includes(kw) || sc.id.includes(kw.toLowerCase()))
     : base;
-  return list.map((sc) => ({ ...sc, stats: statsOf(sc) }));
+  return list;
 });
 
 /**
@@ -367,16 +348,7 @@ function goBack() {
             <text class="campus-school-card__badge-text">{{ joinedBadge.text }}</text>
           </view>
         </view>
-        <text class="campus-school-card__stats">{{ school.stats.members }} · {{ school.stats.posts }}</text>
-        <!-- 成员头像预览 -->
-        <view class="campus-school-card__members">
-          <view class="campus-school-card__avatar-stack">
-            <image class="campus-school-card__avatar" :src="resolveMediaUrl(IMAGE_PATHS.AVATARS.AVATAR_1)" mode="aspectFill" />
-            <image class="campus-school-card__avatar campus-school-card__avatar--2" :src="resolveMediaUrl(IMAGE_PATHS.AVATARS.AVATAR_2)" mode="aspectFill" />
-            <image class="campus-school-card__avatar campus-school-card__avatar--3" :src="resolveMediaUrl(IMAGE_PATHS.AVATARS.AVATAR_3)" mode="aspectFill" />
-          </view>
-          <text class="campus-school-card__peers">{{ school.stats.peers }}</text>
-        </view>
+        <!-- R11-L04-D15：在位同学/动态数/好友数无后端列，整块不渲染（原先的字面量表已删除） -->
       </view>
 
       <!-- 操作按钮（描边样式） -->
@@ -444,7 +416,8 @@ function goBack() {
   /* R2b-L05-D10（颜色token）：页面底从 --c-bg-page(#EEF7F2 薄荷) 改纯白。
      理想图 校园圈.png 页面底取色实测 rgb(254,254,254)=#FEFEFE，卡片同为白底、
      靠 1rpx 描边 + 投影分层；原整页薄荷使卡内白卡与页面几乎同色、卡边界只能靠阴影勉强看出。
-     薄荷档保留给引导卡（.campus-guide 的 --c-brand-50 渐变）与徽标底色（--c-brand-50）。
+     薄荷档保留给引导卡（.campus-guide 的 --c-brand-bg-tint 单色底；R11-L04-D16 已去掉
+     原来的 --c-brand-50 → #FFFFFF 渐变）与徽标底色（--c-brand-50）。
      与同文件 .campus-school-card 的 --c-neutral-0 取同一令牌，保持本页白档单一来源。 */
   background: var(--c-neutral-0, #FFFFFF);
   /* R2b-L05-D14（层级遮挡）：状态栏避让不再写在容器 padding-top 上——页面级滚动会把这段
@@ -574,7 +547,11 @@ function goBack() {
   gap: 20rpx;
   padding: 28rpx;
   border-radius: 22rpx;
-  background: linear-gradient(135deg, var(--c-brand-50, #EAF8F2) 0%, #FFFFFF 100%);
+  /* R11-L04-D16（颜色token P2）：改前是 135° 渐变（--c-brand-50 → #FFFFFF 字面量），
+     帧上左缘 #E9FAF4、右缘 #FCFFFD——右半褪成纯白，「去认证」钮坐在白底上，
+     横幅左右不再是同一块氛围面。规范 §3.12 要求统一绿浅底 ⇒ 收成单色品牌底纹令牌，
+     去掉 #FFFFFF 私有字面量（渐变写法一并去掉，不再靠两端同色伪装纯色）。 */
+  background: var(--c-brand-bg-tint, #E8FAF3);
   border: 1rpx solid var(--c-line, #EEF2F0);
   margin-bottom: 32rpx;
 }
@@ -586,7 +563,12 @@ function goBack() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--c-bg-container, #FFFFFF);
+  /* R11-L04-D17（颜色token P2）：改前 background: var(--c-bg-container,#FFFFFF) 的白色托盘
+     压在横幅浅绿底上只有 1.04:1，托盘轮廓读不出来（只剩一枚深灰图形悬在浅底上）。
+     理想图该位置没有托盘 ⇒ 托盘整体撤掉，学士帽直接落在横幅底纹上。
+     图标本身是 graduation-cap.svg 的硬编码 stroke #94A3B8（素材非本车道可改），
+     「学士帽着品牌绿」需换/改素材，已在交件里登记。 */
+  background: transparent;
   flex-shrink: 0;
 }
 
@@ -758,7 +740,12 @@ function goBack() {
      注意这不是把校名折成两行——MP-R8-CAMPUS-001 修的「人民大/学」内部折行仍由
      .campus-school-card__name 的 white-space:nowrap 挡住，此处只让 badge 换行。 */
   flex-wrap: wrap;
-  gap: 8rpx 12rpx;
+  /* R11-L04-D18（位置 P2）：帧上 7 字校名（中国人民大学圈 / 上海交通大学圈）的「未认证」
+     胶囊掉到第二行，5 张卡 2 张换档。卡内可用宽实测约 294rpx（封面 160 + gap 20 + 卡内衬 40
+     + 页边距 64 之后，再让出右侧「申请加入」胶囊 152rpx），原 7×30rpx 名 + 12rpx gap +
+     100rpx 胶囊 ≈ 322rpx，越界一整档 ⇒ 校名收 28rpx、胶囊左右内衬 14→8rpx、行内 gap 收 8rpx：
+     7×28 + 8 + 88 = 292rpx，7 字名与胶囊回到首行；wrap 仍保留给更长的兜底名。 */
+  gap: 8rpx;
 }
 
 /* R10-P2-007：校名行禁折行（超长省略），badge 不参与收缩 */
@@ -767,7 +754,8 @@ function goBack() {
 }
 
 .campus-school-card__name {
-  font-size: 30rpx;
+  /* R11-L04-D18：30rpx → 28rpx，给同排胶囊让出 14rpx（见 .campus-school-card__name-row） */
+  font-size: 28rpx;
   font-weight: 700;
   /* 2026-08-27：白卡上名称用正文主色 */
   color: var(--c-text-primary, #222222);
@@ -782,7 +770,8 @@ function goBack() {
 
 /* ===== Badge ===== */
 .campus-school-card__badge {
-  padding: 4rpx 14rpx;
+  /* R11-L04-D18：左右内衬 14rpx → 8rpx（每颗省 12rpx），7 字校名 + 胶囊同排 */
+  padding: 4rpx 8rpx;
   border-radius: 999rpx;
   /* MP-R8-CAMPUS-001：badge 固定不收缩，宽度让给校名 */
   flex-shrink: 0;

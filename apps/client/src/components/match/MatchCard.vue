@@ -64,6 +64,13 @@ const distanceText = computed(() => {
 
 const isOnline = computed(() => props.user.onlineStatus === "online" || props.user.activeStatusText === "online" || props.user.activeStatusText === "just_now");
 
+/* R11-L01-D15（可达性 P1）：推荐接口不下发 distanceText（MatchCardUser 只有这一列），
+   原实现缺数据即整块隐藏左上胶囊 ⇒ 「离我多远」这项判据凭空消失、页头也没有替代出口。
+   后端补列之前，先在原位落一枚「距离未知」占位胶囊（discover.distanceUnknown 为既有键），
+   不编造公里数；有真值时文案与样式逐像素不变。 */
+const hasDistance = computed(() => distanceText.value.length > 0);
+const distanceDisplay = computed(() => distanceText.value || t("discover.distanceUnknown"));
+
 </script>
 
 <template>
@@ -97,9 +104,9 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
 
       <view class="match-card__overlay" />
 
-      <!-- 距离标签：左上角粉色胶囊 + 白字 -->
-      <view v-if="distanceText" class="match-card__distance">
-        <text class="match-card__distance-text">{{ distanceText }}</text>
+      <!-- 距离标签：左上角粉色胶囊 + 白字；无真值时落「距离未知」占位（R11-L01-D15） -->
+      <view class="match-card__distance" :class="{ 'match-card__distance--unknown': !hasDistance }">
+        <text class="match-card__distance-text">{{ distanceDisplay }}</text>
       </view>
 
       <!-- 在线状态：右上角绿色胶囊 + 白字 -->
@@ -212,6 +219,12 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
   color: var(--c-love, #FF6B81);
 }
 
+/* R11-L01-D15：未知态改中性字色（--c-text-secondary 压 90% 白胶囊最坏合成 ≈#E6E6E6
+   实算 6.45:1 ≥4.5:1），不与有真值的粉字混同；胶囊位置/尺寸不变 */
+.match-card__distance--unknown .match-card__distance-text {
+  color: var(--c-text-secondary, #4A524E);
+}
+
 .match-card__online {
   position: absolute;
   top: 28rpx;
@@ -243,7 +256,10 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
 .match-card__online-text {
   font-size: 22rpx;
   font-weight: 700;
-  color: var(--c-brand, #36C99A);
+  /* R11-L01-D14（颜色token P1）：--c-brand #36C99A 压 90% 白胶囊实测 2.11:1，
+     卡片唯一的在线状态读不出来。按 §2 实测档取 --c-brand-800（#156B51，白底 6.45:1；
+     卡上建议的 brand-700 只有 4.14:1 仍不达标）。绿点保留 --c-brand 作氛围色。 */
+  color: var(--c-brand-800, #156B51);
 }
 
 /* 匹配度徽章：右下角实心粉圆（R21：conic-gradient 在 mp-weixin 内联样式不稳，弃用） */
@@ -314,11 +330,17 @@ const isOnline = computed(() => props.user.onlineStatus === "online" || props.us
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 40rpx 32rpx 170rpx;
+  /* R11-L01-D16（间距 P2）：原来预留 170rpx 给右侧绝对定位的匹配度环，
+     但环在右、文字在左并无争位关系，底部拖出约 85rpx 空带。
+     现底部内衬降到 --sp-7(32rpx)，文字贴卡底。 */
+  padding: 40rpx 32rpx var(--sp-7, 32rpx);
 }
 
 .match-card :deep(.match-info) {
+  /* R11-L01-D16：文字列收到约 60%（内容盒 686rpx → 412rpx），
+     让右下 160rpx 匹配度环不再与简介末行争同一带 */
   width: 100%;
+  max-width: 60%;
 }
 </style>
 

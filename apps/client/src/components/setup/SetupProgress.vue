@@ -10,10 +10,13 @@
  * - 当前步骤高亮显示（品牌色 + 脉冲动画）
  * - 未到达步骤灰色显示
  *
- * 身份分支（2026-08-07 注册流程重构）：
- * - variant="full"（默认，5 步）：基本信息 → 校园认证 → 推荐偏好 → 课表导入 → 完成
- * - variant="student"（4 步）：基本信息 → 校园认证 → 推荐偏好 → 完成（课表导入移出主流程）
- * - variant="non-student"（3 步）：基本信息 → 推荐偏好 → 完成（跳过校园认证）
+ * 身份分支（R11-L12-D15 按真实链路修正）：
+ * - variant="full"（默认，5 步）：基本信息 → 校园认证 → 时间安排 → 推荐偏好 → 完成
+ * - variant="student"（5 步）：基本信息 → 校园认证 → 时间安排 → 推荐偏好 → 完成
+ * - variant="non-student"（4 步）：基本信息 → 时间安排 → 推荐偏好 → 完成（跳过校园认证）
+ * 依据：campus/index.vue:190 保存后跳 SCHEDULE，schedule/index.vue:101 保存后跳 RECOMMEND_PREF
+ * ⇒「时间安排」是注册链路真实存在的第 3 屏，原两张表把它漏掉，推荐偏好页因此把
+ * 4/5 报成 3/4（非学生 3/4 报成 2/3）。
  *
  * mp-weixin 兼容性：
  * - 不使用 :hover 伪类
@@ -34,7 +37,8 @@ import { IMAGE_PATHS } from "../../config/images";
  * 组件 props。
  */
 const props = withDefaults(defineProps<{
-  /** 当前步骤（1-based，1~totalSteps） */
+  /** 当前步骤（1-based）。full=真实链路编号；student/non-student 仍兼容 2026-08-07
+   *  旧表编号（见 LEGACY_STEP_MAP），组件内映射到含「时间安排」的真实链路。 */
   currentStep: number;
   /** 总步骤数（仅 variant="full" 时生效，默认 5） */
   totalSteps?: number;
@@ -47,44 +51,66 @@ const props = withDefaults(defineProps<{
 
 const { t } = useI18n();
 
-/**
- * 完整 5 步定义（与 i18n key 对齐）：
- * 基本信息 → 校园认证 → 推荐偏好 → 课表导入 → 完成。
- * 与 subpackages/setup/{profile,campus,recommend-pref,schedule}/index.vue 的历史链路一致。
- */
-const STEP_DEFS_FULL = [
-  { key: "stepBasicInfo", descKey: "stepBasicInfoDesc" },
-  { key: "stepCampus", descKey: "stepCampusDesc" },
-  { key: "stepRecommend", descKey: "stepRecommendDesc" },
-  { key: "stepSchedule", descKey: "stepScheduleDesc" },
-  { key: "stepComplete", descKey: "stepCompleteDesc" },
-] as const;
+type SetupVariant = "full" | "student" | "non-student";
+interface SetupStepDef {
+  key: string;
+  descKey: string;
+  /**
+   * 可选：标签实际取的 i18n key。
+   * R11-L12-D15：`setupProgress.stepSchedule` 现值是「课表导入」（zh-CN.ts:3095），
+   * 与真实页面页头 `setup.schedule.pageTitle`「时间安排」不一致；locale 不在本车道
+   * 可改文件集，故这里复用既有 pageTitle 键覆盖，不新增文案、不改 zh-CN.ts。
+   */
+  labelKey?: string;
+}
+
+/** 真实注册链路里的「时间安排」步（schedule/index.vue，非“课表导入”）。 */
+const STEP_SCHEDULE: SetupStepDef = {
+  key: "stepSchedule",
+  descKey: "stepScheduleDesc",
+  labelKey: "setup.schedule.pageTitle",
+};
 
 /**
- * 学生 4 步定义（2026-08-07 流程重构：课表导入移出主流程，改为注册后可选工具）：
- * 基本信息 → 校园认证 → 推荐偏好 → 完成
+ * 完整 5 步定义（与真实页面链路对齐）：
+ * 基本信息 → 校园认证 → 时间安排 → 推荐偏好 → 完成。
+ * 依据：campus:190 → SCHEDULE；schedule:101 → RECOMMEND_PREF；推荐偏好保存 → discover（完成）。
  */
-const STEP_DEFS_STUDENT = [
+const STEP_DEFS_FULL: ReadonlyArray<SetupStepDef> = [
   { key: "stepBasicInfo", descKey: "stepBasicInfoDesc" },
   { key: "stepCampus", descKey: "stepCampusDesc" },
+  STEP_SCHEDULE,
   { key: "stepRecommend", descKey: "stepRecommendDesc" },
   { key: "stepComplete", descKey: "stepCompleteDesc" },
-] as const;
+];
 
 /**
- * 非学生 3 步定义（2026-08-07 流程重构：跳过校园认证）：
- * 基本信息 → 推荐偏好 → 完成
+ * 学生 5 步定义（R11-L12-D15：补回真实存在的「时间安排」屏）：
+ * 基本信息 → 校园认证 → 时间安排 → 推荐偏好 → 完成
  */
-const STEP_DEFS_NON_STUDENT = [
+const STEP_DEFS_STUDENT: ReadonlyArray<SetupStepDef> = [
   { key: "stepBasicInfo", descKey: "stepBasicInfoDesc" },
+  { key: "stepCampus", descKey: "stepCampusDesc" },
+  STEP_SCHEDULE,
   { key: "stepRecommend", descKey: "stepRecommendDesc" },
   { key: "stepComplete", descKey: "stepCompleteDesc" },
-] as const;
+];
+
+/**
+ * 非学生 4 步定义（跳过校园认证，但同样必须包含「时间安排」）：
+ * 基本信息 → 时间安排 → 推荐偏好 → 完成
+ */
+const STEP_DEFS_NON_STUDENT: ReadonlyArray<SetupStepDef> = [
+  { key: "stepBasicInfo", descKey: "stepBasicInfoDesc" },
+  STEP_SCHEDULE,
+  { key: "stepRecommend", descKey: "stepRecommendDesc" },
+  { key: "stepComplete", descKey: "stepCompleteDesc" },
+];
 
 /**
  * 当前身份分支的步骤定义。
  */
-const stepDefs = computed<ReadonlyArray<{ key: string; descKey: string }>>(() => {
+const stepDefs = computed<ReadonlyArray<SetupStepDef>>(() => {
   switch (props.variant) {
     case "student":
       return STEP_DEFS_STUDENT;
@@ -105,14 +131,33 @@ const effectiveTotal = computed<number>(() => {
 });
 
 /**
+ * 旧表编号 → 真实链路位置。
+ * R11-L12-D15：三个消费页（profile:753 / campus:219 / recommend-pref:33）仍按
+ * 2026-08-07 的缺「时间安排」旧表传 currentStep：
+ * - 学生旧表 [基本信息, 校园认证, 推荐偏好, 完成]，推荐偏好=3；
+ * - 非学生旧表 [基本信息, 推荐偏好, 完成]，推荐偏好=2。
+ * 补入「时间安排」后必须把旧编号映射到新位置，否则推荐偏好页会被标成
+ * 「时间安排」并继续少算一步。页面文件不在本车道可改集（硬规矩 1），
+ * 因此把兼容映射收在组件内，所有消费页立刻得到正确的 n/total 与当前步骤名。
+ */
+const LEGACY_STEP_MAP: Record<Exclude<SetupVariant, "full">, Record<number, number>> = {
+  student: { 1: 1, 2: 2, 3: 4, 4: 5 },
+  "non-student": { 1: 1, 2: 3, 3: 4 },
+};
+
+/**
  * 安全的当前步骤（clamp 到 [1, effectiveTotal]，非数字时回退到 1）。
  */
 const safeCurrentStep = computed<number>(() => {
   const raw = Number(props.currentStep);
   if (!Number.isFinite(raw)) return 1;
+  const step = Math.floor(raw);
+  const variant = props.variant;
+  const mapped =
+    variant === "full" ? step : (LEGACY_STEP_MAP[variant][step] ?? step);
   const min = 1;
   const max = effectiveTotal.value;
-  return Math.min(max, Math.max(min, Math.floor(raw)));
+  return Math.min(max, Math.max(min, mapped));
 });
 
 /**
@@ -132,7 +177,7 @@ const renderSteps = computed(() => {
     }
     return {
       stepNo,
-      labelKey: def.key,
+      labelKey: def.labelKey ?? `setupProgress.${def.key}`,
       descKey: def.descKey,
       status,
     };
@@ -154,7 +199,7 @@ const currentStepText = computed(() => {
  */
 const currentStepLabel = computed(() => {
   const def = stepDefs.value[safeCurrentStep.value - 1];
-  return def ? t(`setupProgress.${def.key}`) : "";
+  return def ? t(def.labelKey ?? `setupProgress.${def.key}`) : "";
 });
 </script>
 
@@ -203,7 +248,7 @@ const currentStepLabel = computed(() => {
         class="setup-progress__label-item"
         :class="[`setup-progress__label-item--${step.status}`]"
       >
-        <text class="setup-progress__label-text">{{ t(`setupProgress.${step.labelKey}`) }}</text>
+        <text class="setup-progress__label-text">{{ t(step.labelKey) }}</text>
       </view>
     </view>
   </view>
@@ -235,8 +280,12 @@ const currentStepLabel = computed(() => {
   gap: var(--sp-1);
 }
 
+/* R11-L12-D03（字号 P2）：原 --fs-xs=20rpx=10px（全站「角标/法务」档），
+   而「第 n/4 步」是用户判断进度的一级导航文字；与下方步骤名一起提到
+   --fs-base=24rpx=12px（§1.3「标签」档），仍低于当前步骤名 --fs-md=26rpx，
+   两行主次保留、只把 10px 的角标档抬到可读档。 */
 .setup-progress__current {
-  font-size: var(--fs-xs);
+  font-size: var(--fs-base);
   color: var(--c-text-tertiary);
   font-weight: 500;
 }
@@ -363,8 +412,10 @@ const currentStepLabel = computed(() => {
   text-align: right;
 }
 
+/* R11-L12-D03：步骤名是这条进度条唯一可读的导航文字，从 --fs-xs（10px 角标档）
+   提到 --fs-base（24rpx=12px）；四枚标签仍为单行（4 字 × 12px = 48px < 等分宽度）。 */
 .setup-progress__label-text {
-  font-size: var(--fs-xs);
+  font-size: var(--fs-base);
   color: var(--c-text-tertiary);
   font-weight: 500;
 }

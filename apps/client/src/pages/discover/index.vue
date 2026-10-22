@@ -648,9 +648,15 @@ onUnload(() => {
   gap: 16rpx;
   padding: 16rpx 40rpx;
   /* MP-R1-PAGES-DISCOVER-INDEX-011：渐变第二色与阴影改走品牌绿系 token
-     （原裸写 #4DD0A8 / rgba(54,201,154,.35)；--c-brand-400=#55D5A7 与 --s-float-btn
-     的几何/色值与原写法同档，登录提示本就是悬浮胶囊 CTA） */
-  background: linear-gradient(135deg, var(--c-brand, #36C99A), var(--c-brand-400, #55D5A7));
+     （原裸写 #4DD0A8 / rgba(54,201,154,.35)；--s-float-btn 的几何/色值与原写法同档，
+     登录提示本就是悬浮胶囊 CTA） */
+  /* R11-L01-D13（可达性 P1）：这条胶囊是游客在本页唯一的登录召唤，28rpx 白字压
+     --c-brand→--c-brand-400 渐变，两端按 design-variables.scss 真值（$brand-500 #36C99A /
+     $brand-400 #55D5A7）实算 2.11:1 与 1.83:1 ⇒ 字与底同明度档、五个字发糊。
+     底收 --c-brand-800（$brand-800 #156B51，白字 6.45:1，任务书 §2 表里唯一"采用"档），
+     与 login/index.vue .btn-primary(R10-L01-D02 已落同档)、register/success.vue 主 CTA 一致。
+     本件是 discover 页局部提示胶囊、非 BottomActionBar 共享主 CTA ⇒ 不触 §11.3「共享渐变勿翻实色」。 */
+  background: var(--c-brand-800, #156b51);
   border-radius: 999rpx;
   box-shadow: var(--s-float-btn, 0 8rpx 32rpx rgba(54, 201, 154, 0.32));
   z-index: 100;

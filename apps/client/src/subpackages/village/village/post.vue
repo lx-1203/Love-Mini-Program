@@ -1603,7 +1603,12 @@ async function submitPublish() {
 .post-tip__title {
   font-size: var(--fs-md, 26rpx);
   font-weight: 700;
-  color: var(--c-brand, #36C99A);
+  /* R11-L03-D02（P1 颜色 token）：原取 --c-brand #36C99A 压在本卡 :1591 的 --c-brand-50 浅绿底上，
+     实测 1.94:1（按 theme/design-variables.scss 真值 $brand-500 #36C99A / $brand-50 #E8FAF3 算得，
+     不信 .vue 里 #EAF9F3 那个过期兜底字面量），既不达正文 4.5:1 也不达 3:1 ⇒ 标题读不出。
+     改深档 --c-brand-800 $brand-800 #156B51（对 #E8FAF3 浅绿底 5.96:1，对白白字档 6.45:1，
+     与任务书 §2 实测表「采用 --c-brand-800 #156B51」同档），本页主色文字同档。 */
+  color: var(--c-brand-800, #156B51);
   display: flex;
   align-items: center;
   gap: 8rpx;

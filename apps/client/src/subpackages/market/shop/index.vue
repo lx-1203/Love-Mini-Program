@@ -275,7 +275,14 @@ function goToDetail(itemId: string) {
           :aria-label="t('common.back')"
           @tap="goBack"
         >
-          <image class="shop-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+          <!-- R11-L14-D09（可达性 P1）：描线换档——原 ICONS_COMMON.BACK（common/back.png，
+               折线 #94A2B7/#9AA8BC 压白盘实测 2.4:1，已知机制 §9 在册的全站低对比素材），
+               本页这枚是封存卡外唯一的出口 ⇒ 按卡上「BACK 素材换成 --c-text-primary 档描线」
+               取仓内既有 REGISTER_ICONS.BACK（static/assets/icons/register/back.svg，
+               stroke="#1A1E1C" 正是 --c-text-primary 真值 design-variables.scss:121）。
+               不编辑共享位图（改它要同步三棵树且全站 20+ 页头同变，不属本车道），
+               该 SVG 已实测在 real 包内：dist/build/mp-weixin-real/static/assets/icons/register/back.svg。 -->
+          <image class="shop-header__back-icon" :src="IMAGE_PATHS.REGISTER_ICONS.BACK" mode="aspectFit" alt="" />
         </view>
         <text class="shop-header__title">{{ t('shop.pageTitle') }}</text>
       </view>
@@ -402,7 +409,15 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   width: 100%;
   /* mp-weixin 不支持 100vh（含导航栏高度），改用 100% 配合页面根元素铺满可视区域 */
   min-height: 100%;
-  background: linear-gradient(180deg, var(--c-tint-green-50) 0%, $bg-page 40%);
+  /* R11-L14-D10（颜色 token P3，2026-10-21）：原渐变起点 --c-tint-green-50 实值 #E8F5E9
+     （design-variables.scss:823），帧上页头/状态栏实测 #E9F5EA–#EAF6EC，与全站页底
+     --c-bg-page #EEF7F2 不是一条值（R 差 5、B 差 8）⇒ 页头与页身之间有一道肉眼可分的浅绿台阶。
+     同域两页早已是平铺 --c-bg-page（detail/index.vue:413、wallet/index.vue:252），本页是三者中
+     唯一还挂着 tint-green 起点的 ⇒ 归位到同一枚 --c-bg-page：台阶消失且同域同写法。
+     ⚠️ 卡上「清掉 tokens.scss:320 同名冲突定义」那一半不在 FXD 可写集，且该条实为
+     @mixin 深色档（tokens.scss:303 起「深色补充」节内），浅色态不生效 ⇒ 它不是本帧浅色台阶的成因，
+     已知机制 §2 已警告过「取错档会算错」。见交付登记。 */
+  background: var(--c-bg-page);
 }
 
 /* ========== 页面标题 ========== */
@@ -426,21 +441,30 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   height: 64rpx;
   border-radius: var(--r-full);
   background: var(--c-bg-container, #ffffff);
-  border: var(--c-border-card);
+  /* R11-L14-D09（可达性 P1，2026-10-21）：白盘叠浅绿页头实测盘缘 #E6EEE9/#EBF4EC
+     对白盘仅 1.12–1.18:1 ⇒ 底盘边界在帧上完全不可辨，而这枚是本页唯一出口
+     （热区已由下方 ::after 扩到 88rpx=44.4px，坏的是可见性不是热区）。
+     原 --c-border-card = 1rpx solid rgba(15,23,42,0.08)（叠白盘合成≈#ECECEE，压页底≈1.08:1，等于没描边）
+     ⇒ 按卡上第二条口径「给盘加可见描边 ≥3:1」改 2rpx 实线 --c-neutral-500 #6B7571
+     （design-variables.scss:94/356 既有中性档；压归位后的页底 --c-bg-page #EEF7F2
+     = L 0.170388 vs 0.910454 ⇒ 0.960454/0.220388 = 4.36:1 ≥ 3:1 非文本控件下限）。 */
+  border: 2rpx solid var(--c-neutral-500, #6B7571);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
 
   /* R9-L14-D09（可达性 P2）：视觉圆/热区原同为 64rpx=32.3px（<88rpx 下限）；白色圆视觉保持
-     64rpx，透明伪元素把命中盒扩到 88rpx（同 detail/index.vue:431 一处口径）。 */
+     64rpx，透明伪元素把命中盒扩到 88rpx（同 detail/index.vue:431 一处口径）。
+     R11-L14-D09：描边抬到 2rpx 后 padding 盒=64−2×2=60rpx，而 ::after 的定位基准正是
+     padding 盒 ⇒ 原 −12rpx 只剩 84rpx=42.3px（跌破 44px）；四边补到 −14rpx ⇒ 60+28=88rpx。 */
   &::after {
     content: "";
     position: absolute;
-    top: -12rpx;
-    right: -12rpx;
-    bottom: -12rpx;
-    left: -12rpx;
+    top: -14rpx;
+    right: -14rpx;
+    bottom: -14rpx;
+    left: -14rpx;
   }
 }
 
@@ -728,9 +752,17 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .shop-sealed {
   /* R9-L14-D07（间距 P3）：原 24rpx=12px 左右边距比本页页头 32rpx 内容边向左越出
      ⇒ 改 var(--page-padding) 与页头同边（卡左缘 16px，落位同 detail 新增白卡）。
-     R9-L14-D08（圆角 P3）：--r-xl 24rpx=12px 与 wallet 同状态卡 32rpx 差 4px ⇒ 取 --r-xxl 32rpx。 */
+     R9-L14-D08（圆角 P3）：--r-xl 24rpx=12px 与 wallet 同状态卡 32rpx 差 4px ⇒ 取 --r-xxl 32rpx。
+     R11-L14-D08（间距 P2，2026-10-21）：内衬原 80rpx 48rpx（上下 40.3px、左右 24.2px），
+     与 wallet:390 var(--sp-8) var(--sp-6)=32rpx/24rpx 不同档 ⇒ 帧上内容墨迹块相同
+     但本页卡高 177px vs wallet 129px（单侧上下差 48rpx、左右差 24rpx），且 48rpx 横向
+     比 EmptyState 组件规范 40rpx 又多 8rpx。按卡上「三页统一走 var(--card-padding) 一档」
+     的首选项收到 --card-padding（design-variables.scss:698 =32rpx 单值，非私有一页一值），
+     纵向与 wallet 的 --sp-8(32rpx) 同档，把卡高拉回 wallet 量级。
+     ⚠️ 三页完全对齐还依赖 wallet(:390 --sp-8 --sp-6) 与 detail(:540 80rpx 48rpx) 同步，
+     二者不在 FXD 可写集 ⇒ 见交付里的跨车道登记。 */
   margin: 60rpx var(--page-padding);
-  padding: 80rpx 48rpx;
+  padding: var(--card-padding);
   border-radius: var(--r-xxl, 32rpx);
   background: var(--c-bg-container, #ffffff);
   border: var(--c-border-card);
@@ -755,9 +787,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .shop-sealed__desc {
   /* R9-L14-D11（字号 P2）：--fs-sm 实值 22rpx=11.1px（.vue 兜底 24rpx 是过期字面量），
      这句「为什么这页是空的」唯一解释落在全站最小档 ⇒ 提一档 --fs-md 26rpx=13.1px；
-     同值同步到 detail/index.vue:533（三页同改）。 */
+     同值同步到 detail/index.vue:533（三页同改）。
+     R11-L14-D12（颜色 token P3，2026-10-21）：同一句 sealedDesc 三页取了两档——
+     本页/wallet 走 --c-text-tertiary（帧实测 #6C7672 对白卡 4.70:1），
+     detail:564 已改 --c-text-secondary（#4E5652，7.56:1），比值差 2.86 ⇒ 同域同状态同一行两档色。
+     与 detail 对齐为 --c-text-secondary（#4A524E，对白卡 8.05:1；原兜底 #6B7571 是
+     tertiary 档真值，一并改到 secondary 真值，避免已知机制 §2 点名的过期字面量兜底）。 */
   font-size: var(--fs-md);
-  color: var(--c-text-tertiary, #6B7571);
+  color: var(--c-text-secondary, #4A524E);
   text-align: center;
   line-height: 1.6;
 }

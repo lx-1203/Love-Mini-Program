@@ -795,9 +795,6 @@ export default {
       course1: { title: "Love Communication", lecturer: "Instructor: Ms. Lin", desc: "Master high-EQ communication for more comfortable interactions" },
       course2: { title: "Finding a Partner", lecturer: "Instructor: Mr. Chen", desc: "Start by understanding yourself to find the right one" },
       course3: { title: "Relationship Repair", lecturer: "Instructor: Counselor Mr. Wang", desc: "Resolve conflicts and rebuild trust and intimacy" },
-      pricePrefix: "${price}",
-      signup: "Sign Up",
-      signupSuccess: "Sign-up successful. Please check the course notifications.",
     },
   },
 
@@ -2869,10 +2866,6 @@ export default {
     statusUnverifiedDesc: "Complete campus verification\nUnlock exclusive benefits and trust badge",
     benefitBadgeTitle: "Exclusive Badge",
     benefitBadgeDesc: "Display verification badge on profile",
-    benefitTrustTitle: "Trust Priority",
-    benefitTrustDesc: "Verified users get priority in recommendations",
-    benefitMatchTitle: "Match Boost",
-    benefitMatchDesc: "Match probability increased by 1.5x",
     benefitPerksTitle: "Exclusive Benefits",
     benefitPerksDesc: "Unlock verified-only features",
     /* B4 verification page enhancement (2026-08-13): 5th benefit "Interaction Access" */
@@ -3701,7 +3694,6 @@ export default {
     /* pages/circles/post-topic.vue */
     postTopicNavTitle: "New Topic",
     postTopicBack: "Back",
-    postTopicSubmit: "Post",
     postTopicTitlePlaceholder: "Topic title",
     postTopicTitleAria: "Topic title",
     postTopicContentPlaceholder: "Share your thoughts...",

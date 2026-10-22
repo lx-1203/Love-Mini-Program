@@ -41,6 +41,8 @@ import { chatPageRequirements } from "../../../config/page-access";
 import { useSessionStore } from "../../../stores/session";
 import { useProfileStore } from "../../../stores/profile";
 import LockScreen from "../../../components/common/LockScreen.vue";
+// R11-L11-D16：错误态改用统一状态组件（图标 + 居中），不再贴页头渲染裸文本
+import EmptyState from "../../../components/common/EmptyState.vue";
 import { IMAGE_PATHS } from "../../../config/images";
 import { ROUTES } from "../../../constants/routes";
 import { STORAGE_KEYS } from "../../../constants/storage-keys";
@@ -516,6 +518,12 @@ function jumpToLatest() {
   unreadHintVisible.value = false;
   nearBottom = true;
   scrollToBottom();
+}
+
+/** R11-L11-D17：错误态的第二个出口——消息列表 tab。
+ *  复用 openAppPath（内部识别 tab 页走 switchTab），不再是「整页只有一个返回」。 */
+function goMessageList() {
+  openAppPath("/pages/messages/index");
 }
 
 /** 返回上一页（自定义导航栏） */
@@ -1956,7 +1964,14 @@ defineExpose({ noop });
     <!-- 2026-08-09 免踢登录：未登录切换进本页展示引导页，点击按钮才跳登录 -->
     <LockScreen v-if="!isUnlocked" :completion-percent="completionPercent" />
     <template v-else>
+    <!-- R11-L11-D15（空态文案 P0）：错误态整条身份带不渲染。
+         ChatHeader 无条件渲染「认识 N 天 / 离线」+ 头像与昵称，而这些值在
+         sessionId 缺失时都是前端兜底（relationDays 返回 1、peerAvatarSrc 回 AVATAR_3、
+         pageTitle 回「聊天」）⇒ 会话根本不存在，页头却断言了一段关系。
+         按 :998 relationshipInfo 已确立的「宁缺毋造」口径：错误态只留返回键，
+         头像/昵称/认识天数/在线状态一起撤下。 -->
     <ChatHeader
+      v-if="!pageErrorMessage"
       :avatar="peerAvatarSrc"
       :nickname="pageTitle"
       :online="peerOnlineStatus === 'online'"
@@ -1966,6 +1981,20 @@ defineExpose({ noop });
       @avatar-tap="openAvatarMenu"
       @avatar-pat="handleAvatarPat"
     />
+    <!-- R11-L11-D15：错误态专用页头——只有 88rpx 返回热区，无身份带、无「···」；
+         状态栏让位沿用本页根节点注入的 --statusbar（useMenuButtonRect）。 -->
+    <view v-else class="chat-error-header">
+      <view
+        class="chat-error-header__back press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('common.backAria')"
+        @tap="goBack"
+      >
+        <text class="chat-error-header__back-text">‹</text>
+      </view>
+    </view>
 
     <!-- MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-101：关系状态区
          （spec §2.2 四段结构第二段，位于顶部导航与消息流之间）。
@@ -2054,7 +2083,12 @@ defineExpose({ noop });
       @scroll="onScroll"
       @scrolltoupper="onScrollToUpper"
     >
-      <view v-if="pageErrorMessage" class="meta-copy meta-copy--padded">{{ pageErrorMessage }}</view>
+      <!-- R11-L11-D16（位置 P2）：错误提示原为贴页头左缘 8px 的裸文本，其下 608px
+           全是空底。改用统一空态组件（图标 + 主句）在消息流区垂直居中，
+           与「返回 / 消息」两个出口分开：提示在空消息区中央，动作在底部固定条。 -->
+      <view v-if="pageErrorMessage" class="chat-error-state">
+        <EmptyState type="network" :title="pageErrorMessage" hide-sub />
+      </view>
       <!-- 2026-09-03 骨架屏升级：聊天气泡交替骨架替代文字 loading -->
       <view v-else-if="messagesStore.loading" class="meta-copy meta-copy--padded">
         <SkeletonBlock variant="chat" :rows="4" :label="t('chat.loadingSessionDetail')" />
@@ -2163,6 +2197,9 @@ defineExpose({ noop });
          （navigateBack，栈底兜底 switchTab 到 /pages/messages/index），文案取既有 common.back，
          不新增 locale、不重复句子。 -->
     <view class="chat-input-area" :class="{ 'chat-input-area--keyboard-up': keyboardHeight > 0 }">
+      <!-- R11-L11-D17（素材缺失 P1）：错误态输入区不再只挂一枚「返回」。
+           保留返回，并排补「消息」出口（openAppPath → /pages/messages/index），
+           让「会话不存在/标识缺失」的用户能重新选人，而不是只剩一条回去的路。 -->
       <view v-if="pageErrorMessage" class="chat-input-error">
         <view
           class="chat-input-error__btn press-feedback"
@@ -2173,6 +2210,16 @@ defineExpose({ noop });
           @tap="goBack"
         >
           <text class="chat-input-error__btn-text">{{ t("common.back") }}</text>
+        </view>
+        <view
+          class="chat-input-error__btn press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('messages.title')"
+          @tap="goMessageList"
+        >
+          <text class="chat-input-error__btn-text">{{ t("messages.title") }}</text>
         </view>
       </view>
       <template v-else>
@@ -2573,6 +2620,48 @@ defineExpose({ noop });
   overflow: hidden;
 }
 
+/* R11-L11-D15：错误态专用页头（无身份带）。
+   状态栏让位沿用根节点注入的 --statusbar（useMenuButtonRect，§4 的实测值注入路径），
+   下缘与 ChatHeader 同为 1rpx 浅线，返回键热区 88rpx（=44px 最小可点档）。 */
+.chat-error-header {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 20rpx 24rpx;
+  padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + 20rpx);
+  background: var(--c-bg-page, #EEF7F2);
+  border-bottom: 1rpx solid #EEF2F0;
+}
+
+.chat-error-header__back {
+  width: 88rpx;
+  height: 88rpx;
+  min-width: 88rpx;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-error-header__back-text {
+  font-size: 56rpx;
+  line-height: 1;
+  margin-top: -8rpx;
+  /* 与底部错误态返回键同档取 --c-brand-800：--c-brand 压 #EEF7F2 仅约 2.1:1，
+     新建的错误态页头不复制这条低对比读数。 */
+  color: var(--c-brand-800, #156B51);
+}
+
+/* R11-L11-D16：错误提示占满消息滚动区并垂直居中（EmptyState 自带 flex:1 +
+   justify-content:center，宿主只需给可解析高度；与 .chat-list--empty 同一机制）。 */
+.chat-error-state {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
 /* 顶部导航：返回箭头 + 居中标题（微信聊天页风格） */
 
 
@@ -2651,6 +2740,7 @@ defineExpose({ noop });
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: var(--sp-6);
   min-height: 88rpx;
 }
 
@@ -2665,10 +2755,13 @@ defineExpose({ noop });
   background: var(--c-bg-brand);
 }
 
+/* R11-L11-D18（可达性 P2）：原 --c-brand-700 #1F8D6A 压 --c-bg-brand 实测 4.23:1，
+   14px/600 不享大字号豁免；抬到 --c-brand-800 #156B51（同底约 5.9:1，
+   配方同 dnd.vue 与 AppShell 的深绿键），底 --c-bg-brand 不动。 */
 .chat-input-error__btn-text {
   font-size: var(--fs-lg);
   font-weight: 600;
-  color: var(--c-brand-700);
+  color: var(--c-brand-800, #156B51);
 }
 
 .meta-copy--padded {

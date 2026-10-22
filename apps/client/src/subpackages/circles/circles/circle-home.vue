@@ -170,9 +170,11 @@ interface FeedItem {
   title?: string;
   content: string;
   images: string[];
-  likes: number;
+  /** R11-L04-D14：后端 CircleTopicView 无 likeCount/likedByMe 列 ⇒ 真实数据这两个字段缺省，
+   *  互动栏不渲染点赞位；只有 mock 演示数据带真实写的数字。 */
+  likes?: number;
   comments: number;
-  liked: boolean;
+  liked?: boolean;
 }
 
 const feedItems = ref<FeedItem[]>([
@@ -292,9 +294,10 @@ watch(
         title: tp.title,
         content: tp.content,
         images: (tp.images ?? []).slice(0, 3).map((img) => resolveMediaUrl(img)),
-        likes: 0,
+        // R11-L04-D14（按 §12.4 合法形态之二）：后端 CircleTopicView 只有 replyCount，
+        // 没有 likeCount/likedByMe 列 ⇒ 不再写死 0/false 冒充「零赞」，两个字段缺省，
+        // 模板据此撤掉点赞位；等后端补列再接（见交件缺列清单）。
         comments: tp.replyCount ?? 0,
-        liked: false,
       }));
   },
   { immediate: true }
@@ -424,8 +427,11 @@ function goToPostTopic(): void {
 
 /**
  * 点赞（本地态翻转 —— TODO(后端): 点赞接口回填）
+ * R11-L04-D14：真实数据没有点赞列，item.likes 缺省时点赞位不渲染，本函数也不会被调到；
+ * 这里保留守卫，避免将来接线时对 undefined 做 += 得到 NaN。
  */
 function toggleLike(item: FeedItem): void {
+  if (item.likes === undefined) return;
   item.liked = !item.liked;
   item.likes += item.liked ? 1 : -1;
 }
@@ -633,7 +639,9 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
         </view>
 
         <view class="feed-actions">
-          <view class="feed-action" @tap="toggleLike(item)">
+          <!-- R11-L04-D14（层级遮挡/假计数同族）：后端无点赞列 ⇒ 真实话题不再渲染「♥ 0」，
+               只有 mock 演示数据（likes 有值）保留点赞位 -->
+          <view v-if="item.likes !== undefined" class="feed-action" @tap="toggleLike(item)">
             <image
               class="feed-action-icon"
               :src="resolveMediaUrl(item.liked ? IMAGE_PATHS.ICONS_SOCIAL.LIKE_FILLED : IMAGE_PATHS.ICONS_SOCIAL.LIKE)"

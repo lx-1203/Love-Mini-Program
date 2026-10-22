@@ -33,6 +33,7 @@ import {
   toSubmissionStatusTone,
 } from "../../../view-models/feedback";
 import { errorHaptic, lightHaptic } from "../../../utils/haptic";
+import { ROUTES } from "../../../constants/routes";
 import type { SubmissionDetailView } from "../../../services/generated/api-types-supplement";
 // MP-R1-FEEDBACK-001：记录时间本地化格式化（复用项目统一时间工具，替代原始 ISO 串）
 import { formatDateTime, getCurrentLocale } from "../../../utils/time";
@@ -70,6 +71,15 @@ const FILTER_OPTIONS = computed<{ value: FilterType; label: string }[]>(() => [
 
 const { t } = useI18n();
 const feedbackStore = useFeedbackStore();
+
+/**
+ * R11-L11-D12：页头副标题只陈述本页真实操作（按类型筛选、点行展开详情），
+ * 不再复用空态描述 historyEmptyDesc——原实现让同一句「提交反馈后将在此处显示」
+ * 在页头与空态各出现一次，页头没有承担说明职责。
+ * locale 不在本车道可写集（feedback.historySubtitle 需同批改 zh-CN/en-US），
+ * 故沿用本仓页内字面量口径（location.vue / privacy.vue 同类说明行同为字面量）。
+ */
+const HISTORY_SUBTITLE = "按类型筛选，点开记录查看详情";
 
 /** 当前激活的筛选类型 */
 const activeFilter = ref<FilterType>("all");
@@ -192,6 +202,22 @@ function handleRetry(): void {
 }
 
 /**
+ * R11-L11-D14：页头改为一行式后，返回件由页面自己渲染（AppShell 默认头部被 header 槽替换），
+ * 回退口径沿用 AppShell.handleBack：无上一页时回个人页 Tab，再失败回首页。
+ */
+function goBack(): void {
+  uni.navigateBack({
+    delta: 1,
+    fail: () => {
+      uni.switchTab({
+        url: ROUTES.TAB.PROFILE,
+        fail: () => uni.reLaunch({ url: ROUTES.TAB.HOME }),
+      });
+    },
+  });
+}
+
+/**
  * MP-R1-FEEDBACK-001：记录时间本地化展示（原直接渲染原始 ISO 字符串）。
  * 复用 utils/time 的 formatDateTime（'full' 预设：YYYY-MM-DD HH:mm）。
  *
@@ -265,10 +291,33 @@ onShow(() => {
 <template>
   <AppShell
     :title="t('feedback.historyTitle')"
-    :subtitle="t('feedback.historyEmptyDesc')"
+    :subtitle="HISTORY_SUBTITLE"
     :show-tab-bar="false"
-    show-back
   >
+    <!-- R11-L11-D14：一行式页头——返回件与标题同排（原先 AppShell 默认头部把返回胶囊
+         单独顶在标题上一行，与同域 tasks / dnd / official-chat 一行式页头两套档）。
+         用 AppShell 既有 header 槽承载，不改共享组件。 -->
+    <template #header>
+      <view class="history-header">
+        <view
+          class="history-header__back press-feedback"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          :aria-label="t('common.back')"
+          @tap="goBack"
+        >
+          <view class="history-header__back-circle">
+            <text class="history-header__back-glyph">‹</text>
+          </view>
+        </view>
+        <view class="history-header__titles">
+          <text class="history-header__title">{{ t("feedback.historyTitle") }}</text>
+          <text class="history-header__subtitle">{{ HISTORY_SUBTITLE }}</text>
+        </view>
+      </view>
+    </template>
+
     <!-- 类型筛选 Tab -->
     <view class="filter-bar">
       <view
@@ -389,6 +438,66 @@ onShow(() => {
 </template>
 
 <style scoped lang="scss">
+/* ========== 一行式页头（R11-L11-D14） ========== */
+.history-header {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 热区 88rpx（AppShell.vue:334 仓内口径），64rpx 白圆底移进 __back-circle */
+.history-header__back {
+  width: 88rpx;
+  height: 88rpx;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.history-header__back-circle {
+  width: 64rpx;
+  height: 64rpx;
+  box-sizing: border-box;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-bg-container, #ffffff);
+  border: var(--c-border-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.history-header__back-glyph {
+  font-size: 52rpx;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--c-text-primary);
+}
+
+.history-header__titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* 页头主标题档 --fs-7xl=56rpx（与 AppShell .shell__title 同档），副标题留在 --fs-base */
+.history-header__title {
+  font-size: var(--fs-7xl, 56rpx);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--c-text-primary);
+}
+
+.history-header__subtitle {
+  margin-top: 4rpx;
+  font-size: var(--fs-base, 24rpx);
+  line-height: 1.5;
+  color: var(--c-text-secondary);
+}
+
 /* ========== 类型筛选条 ========== */
 .filter-bar {
   display: flex;
@@ -397,16 +506,27 @@ onShow(() => {
   margin-bottom: var(--sp-4);
 }
 
+/* R11-L11-D11（可达性 P1）：四枚筛选芯片实测高 62-64rpx，低于 88rpx 热区门槛，
+   且本排是页内唯一筛选出口。补 min-height + 纵向 padding 到 --sp-4，字号 26rpx 不动。 */
 .filter-chip {
-  padding: 12rpx 22rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 88rpx;
+  padding: var(--sp-4) 22rpx;
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-container);
   border: 1rpx solid var(--c-border-light, rgba(15, 23, 42, 0.04));
 }
 
+/* R11-L11-D13（可达性 P1）：选中态原为白字压 --c-brand #36C99A（实测 2.10:1），
+   改「浅底 + 深字」——--c-bg-brand #E8FBF2 底 + --c-brand-800 #156B51 字，
+   实算 (0.9256+0.05)/(0.1128+0.05)≈6.0:1。描边取同一深档（压浅底 ≈6.0:1、压白 ≈6.45:1），
+   选中与未选白底芯片之间除浅底外还有 ≥3:1 的边界，不靠 1.94:1 的品牌绿细线。 */
 .filter-chip--active {
-  background: var(--c-brand);
-  border-color: var(--c-brand);
+  background: var(--c-bg-brand);
+  border-color: var(--c-brand-800);
 }
 
 .filter-chip__text {
@@ -415,7 +535,7 @@ onShow(() => {
 }
 
 .filter-chip--active .filter-chip__text {
-  color: var(--c-text-inverse, #ffffff);
+  color: var(--c-brand-800);
   font-weight: 600;
 }
 

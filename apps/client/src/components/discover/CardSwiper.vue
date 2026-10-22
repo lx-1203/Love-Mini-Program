@@ -78,11 +78,6 @@ import {
   NEXT_CARD_TRANSLATE_Y_STATIC,
   NEXT_CARD_OPACITY_DRAGGING,
   NEXT_CARD_OPACITY_STATIC,
-  DEFAULT_MATCH_SCORE,
-  MATCH_HIGH_THRESHOLD,
-  MATCH_SCORE_BASE,
-  MATCH_SCORE_STEP,
-  MATCH_SCORE_MAX,
   DEFAULT_AGE_FALLBACK,
 } from "../../constants/match";
 
@@ -99,7 +94,6 @@ const coinsStore = useCoinsStore();
    后端 app-assets 绝对 URL（盘上逐枚核对存在），localPrefixes（icons/common）幂等原样返回。 */
 const emojiIcons = {
   location: resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LOCATION),
-  heartMatch: resolveMediaUrl(IMAGE_PATHS.ICONS_MATCH.HEART),
   star: resolveMediaUrl(IMAGE_PATHS.ICONS_MATCH.STAR),
   x: resolveMediaUrl(IMAGE_PATHS.ICONS_MATCH.X),
   /* R8-L08-D10：三枚主操作钮的图标改绑 v2 深墨档（#333333，盘上/后端均存在，见 images.ts:692/695/696）。
@@ -107,7 +101,7 @@ const emojiIcons = {
      star-blue #4D8DFF 压 --c-status-info #4D8DFF = 1.01:1、heart-pink #FF6FA3 压 romance 渐变 #FE7288 ≈ 1.01:1、
      x-gray #8A9694 压 slate 底 ≈ 1.36:1 ⇒ 帧上三枚圆钮的 44rpx 图标带零有效像素。
      深墨 #333333 对三枚底色实测 4.86 / 3.93 / 4.60~5.11:1，全部 ≥3:1。
-     旧键保留不动：emojiIcons.heartMatch 还服务 :1291 的「80% 匹配」胶囊（粉底白字区），改绑会连带错。 */
+     R11-L08-D18：原 heartMatch 键只服务卡片「80% 匹配」胶囊，该胶囊读数已整块撤除，键一并删除。 */
   actionX: resolveMediaUrl(IMAGE_PATHS.ICONS_V2.X),
   actionStar: resolveMediaUrl(IMAGE_PATHS.ICONS_V2.STAR),
   actionHeart: resolveMediaUrl(IMAGE_PATHS.ICONS_V2.HEART),
@@ -295,9 +289,13 @@ const cardAvatarFrameId = computed<AvatarFrameId>(() => {
   return "default";
 });
 
-/** 蒙面模式下展示的昵称（隐藏真实昵称） */
+/** 蒙面模式下展示的昵称（隐藏真实昵称）
+ *  R11-L08-D19（文案 P1）：原写死四个 ASCII 问号「????」，帧上占满卡片第一视觉锚点，
+ *  读不出是缺字段/素材失败还是刻意匿名，且与「互发喜欢解锁头像」重复。改引全站既有脱敏口径
+ *  likesVisitors.nameHidden（「匿名用户」/「Anonymous」），不新增 i18n 键、不编造姓名。
+ */
 const displayName = computed<string>(() =>
-  props.masked ? "????" : (currentCard.value?.name ?? "")
+  props.masked ? t("likesVisitors.nameHidden") : (currentCard.value?.name ?? "")
 );
 
 /**
@@ -347,23 +345,11 @@ const extractAge = (card?: DiscoverCard): string => {
 // R10-P3-016：标签 value → 展示文案统一映射（utils/tag-label）
 const displayTags = computed(() => tagLabelsFor(currentCard.value?.tags, t));
 
-/** 匹配度分数（基于共同兴趣圈数量计算） */
-const matchScore = computed(() => {
-  const card = currentCard.value;
-  if (!card) return DEFAULT_MATCH_SCORE;
-  const base = card.commonCircleCount ?? 1;
-  return Math.min(MATCH_SCORE_MAX, MATCH_SCORE_BASE + base * MATCH_SCORE_STEP);
-});
-
-/**
- * 匹配度强调文案（粉圈小字：>=85 高匹配，否则仅「匹配」）
- */
-const matchLabel = computed<string>(() =>
-  matchScore.value >= MATCH_HIGH_THRESHOLD ? t('discover.matchHighLabel') : t('discover.matchLabel')
-);
-
-/** 匹配度粉圈无障碍描述 */
-const matchBadgeAria = computed<string>(() => `${matchScore.value}%${matchLabel.value}`);
+/* R11-L08-D18（文案 P0）/ §12.3：原 matchScore = min(98, 80 + n×5) 是 constants/match.ts:92/95/98
+   写死的常量式，不是任何兼容性计算；stores/discover/utils.ts:51 把缺失的共同圈归一为 0 时
+   读数仍恒等于底数 80，帧上「80% 匹配」即此裸常量。后端没有匹配度/兼容性真分列之前，
+   本卡不显示任何百分比或「匹配」判词（同 MatchSuccess，两处同批撤除）；真分列由业主侧补。
+   共同圈数本身（commonCircleCount）仍在数据里，但不拿它换算成百分比。 */
 
 /**
  * 学校/学历文案（昵称行）：优先校区名，其次 headline 拆分，再回退学历层级。
@@ -1238,11 +1224,15 @@ defineExpose({ onTouchMove });
           <text class="card__masked-hint-text">{{ t('discover.maskUnlockHint') }}</text>
         </view>
 
-        <!-- 卡片内容（2026-08-14 改版：匹配度粉圈置顶 → 身份 → 标签上移 → 基础资料 → 简介 → 期待画像；删除动态/留言） -->
+        <!-- 卡片内容（2026-08-14 改版：匹配度粉圈置顶 → 身份 → 标签上移 → 基础资料 → 简介 → 期待画像；
+             R11-L08-D18/D29 起匹配度读数撤除，内容止于简介） -->
         <view class="card__content">
-          <!-- ② 昵称ID + 年龄 + 学校/学历（蒙面时昵称隐藏为 ????；同校文案已删除，大学名保留） -->
+          <!-- ② 昵称ID + 年龄 + 学校/学历（蒙面时昵称落既有脱敏口径「匿名用户」；同校文案已删除，大学名保留） -->
           <view class="card__name-row">
-            <text class="card__name">{{ displayName }}</text>
+            <text
+              class="card__name"
+              :aria-label="masked ? t('discover.maskUnlockHint') : displayName"
+            >{{ displayName }}</text>
             <text class="card__age">{{ extractAge(currentCard) }}{{ t('discover.ageUnit') }}</text>
             <text v-if="schoolLabel" class="card__school">{{ schoolGradeLabel }}</text>
             <!-- Phase D3 · 集成 VerificationBadge（学校/邮箱/实名徽章） -->
@@ -1263,10 +1253,12 @@ defineExpose({ onTouchMove });
             </view>
           </view>
 
-          <!-- ③ 距离 · 活跃状态（决策辅助，匹配度已上移为粉圈） -->
-          <view class="card__meta-row">
+          <!-- ③ 距离 · 活跃状态（决策辅助，匹配度已上移为粉圈）
+               R11-L08-D21（文案 P2）：activeStatusLabel 已在右上绿胶囊渲染一次，
+               蒙面/纯匹配版不再在 meta 行重复同值同义的「● 在线」，整行随之收起。 -->
+          <view v-if="identityDistance || (!masked && activeStatusLabel)" class="card__meta-row">
             <text v-if="identityDistance" class="card__meta">{{ identityDistance }}</text>
-            <text v-if="activeStatusLabel" class="card__meta card__meta--active">
+            <text v-if="!masked && activeStatusLabel" class="card__meta card__meta--active">
               {{ activeStatusLabel }}
             </text>
           </view>
@@ -1295,12 +1287,9 @@ defineExpose({ onTouchMove });
             </view>
           </view>
 
-          <!-- ⑨ 匹配度（置底，设计稿：♥ 80% 与你很合拍） -->
-          <view class="card__match-badge" role="img" :aria-label="matchBadgeAria">
-            <image class="card__match-badge__heart" :src="emojiIcons.heartMatch" mode="aspectFit" alt="" />
-            <text class="card__match-badge__value">{{ matchScore }}%</text>
-            <text class="card__match-badge__label">{{ matchLabel }}</text>
-          </view>
+          <!-- ⑨ 匹配度：R11-L08-D18/D29 后整块撤除。
+               原「♥ 80% 匹配」胶囊是 80+n×5 常量式产物、且位置在左下（§3.3 要求右下绿环），
+               后端无匹配度真分列前不显示任何百分比；真值就绪后再按 §3.3 位置重建。 -->
         </view>
       </view>
     </view>
@@ -2088,39 +2077,7 @@ defineExpose({ onTouchMove });
   opacity: 0.85;
 }
 
-/* ========== 匹配度（纯匹配版置底：♥ 80% 与你很合拍，粉色胶囊） ========== */
-.card__match-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 10rpx;
-  align-self: flex-start;
-  padding: 12rpx 26rpx;
-  border-radius: var(--r-full);
-  background: linear-gradient(135deg, var(--c-romance-400) 0%, var(--c-romance-500) 100%);
-  border: 3rpx solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 8rpx 24rpx rgba(255, 104, 145, 0.45);
-  flex-shrink: 0;
-}
-
-.card__match-badge__heart {
-  width: 28rpx;
-  height: 28rpx;
-  margin-right: 6rpx;
-}
-
-.card__match-badge__value {
-  font-size: var(--fs-2xl);
-  font-weight: 800;
-  color: #ffffff;
-  line-height: 1;
-}
-
-.card__match-badge__label {
-  font-size: var(--fs-sm, 22rpx);
-  font-weight: 700;
-  color: #ffffff;
-  line-height: 1;
-}
+/* ========== 匹配度（R11-L08-D18/D29：假百分比胶囊整块撤除，样式一并删除） ========== */
 
 /* ========== 精简卡片蒙层（2026-08-08：昵称年龄学校学历 / 距离活跃 / 标签上移 / 简介 / 期待画像） ========== */
 /* 行 1：昵称 + 年龄 + 学校/学历（学校为浅色半透明胶囊，防长校名溢出） */

@@ -149,6 +149,18 @@ function metaText(item: DiscoverCard): string {
 function isOnline(status?: string): boolean {
   return status === "online" || status === "just_now";
 }
+/**
+ * R11-L06-D13（文案 P2）：顶帧 7 行里 3 行把 QA 种子取证前缀当人名渲染
+ * （「演示·中山大学 / 演示·武汉大学 / 演示·南开大学」，且同三行缺 age 槽位、标签全同）。
+ * 渲染昵称前剥取证前缀，判据与 components/home/NearbyPeople.vue:20 DEMO_NAME_PREFIX 同源
+ * （该组件文件不在本车道，页内自备同口径正则）；剥空留空不编造名字（宁缺不造）。
+ * age/标签缺失是真数据缺值（后端该行为空），不补假值占位——行式（姓名行+meta行）本身同构；
+ * 前缀与同标签三连的根因均归 seed 数据治理车道。
+ */
+const DEMO_NAME_PREFIX = /^\s*(?:演示|示例|测试|QA|qa)\s*[·・•\-–—/|]\s*/;
+function displayName(raw?: string): string {
+  return String(raw ?? "").replace(DEMO_NAME_PREFIX, "").trim();
+}
 function openProfile(userId: string) {
   openUserProfile(userId);
 }
@@ -226,7 +238,7 @@ function switchScope(next: "nearby" | "city") {
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
-        :aria-label="item.name"
+        :aria-label="displayName(item.name)"
         @tap="openProfile(item.userId)"
       >
         <!-- 2026-09-02 R5：SafeImage 兜底（图片失败 fallback 默认头像）
@@ -239,7 +251,7 @@ function switchScope(next: "nearby" | "city") {
         </view>
         <view class="people-row__info">
           <view class="people-row__name-row">
-            <text class="people-row__name">{{ item.name }}</text>
+            <text class="people-row__name">{{ displayName(item.name) }}</text>
             <text v-if="item.age" class="people-row__age">{{ item.age }}</text>
             <!-- R8-L06-D13（素材缺失 P1）：与 R8-L06-D09 同一枚绿点、同一双成因——
                  mp-weixin 的 <text> 只接受字符串/text 子节点，嵌进来的 <image> 整块不渲染
@@ -286,17 +298,37 @@ function switchScope(next: "nearby" | "city") {
 }
 
 .people-header__back {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 50%;
+  /* R11-L06-D11（可达性 P1）：帧上返回白块实测 30×30px（源码 64rpx），低于 88rpx 热区口径，
+     返回是本页唯一退出件（帧上胶囊无返回箭头；R10-L06-D13 收了 tab 漏了它）。与 segment.vue
+     R11-L06-D07 同法取同一档：热区 88rpx，视觉 64rpx 白圆（含描边）挪 ::before 居中，
+     字形 position:relative 提到伪元素之上。
+     布局补偿（按卡「视觉尺寸不动」）：四边 -12rpx 负外边距抵掉热区外扩，元素占位仍是
+     64rpx，::before(left/top 12rpx) 落在原圆钮的同一像素位 ⇒ 标题与右侧 spacer 不移位。 */
+  position: relative;
+  width: 88rpx;
+  height: 88rpx;
+  margin: -12rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.people-header__back::before {
+  content: '';
+  position: absolute;
+  left: 12rpx;
+  top: 12rpx;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
   background: var(--c-bg-container, #FFFFFF);
   border: 1rpx solid var(--c-line, #EEF2F0);
+  box-sizing: border-box;
 }
 
 .people-header__back-text {
+  /* R11-L06-D11：::before 为定位盒，会盖过普通流字形，需让 ‹ 入定位层 */
+  position: relative;
   font-size: 40rpx;
   color: var(--c-text-primary, #222222);
   line-height: 1;
@@ -338,9 +370,12 @@ function switchScope(next: "nearby" | "city") {
 .people-tab--active {
   /* R10-L06-D12（颜色token P1）：选中态原描边 --c-brand-500 #36C99A 压 #E8FAF3 仅 1.94:1、
      文字 --c-brand-600 #2AAE83 仅 2.59:1，选中/未选中两档信号全不达（正文 4.5 / 非文本 3:1）
-     ⇒ 描边与文字同收 --c-brand-800 #156B51（§2 核算档，压 #E8FAF3 约 6:1）。 */
+     ⇒ 描边与文字同收 --c-brand-800 #156B51（§2 核算档，压 #E8FAF3 约 6:1）。
+     R11-L06-D12（颜色token P2）：选中底色原 --c-brand-50 #E8FAF3 与页面底 #EEF7F2 亮度比
+     仅 1.01:1（ΔE≈3），「浅底」不成立块边界 ⇒ 底色提到同族 --c-brand-100 #D1F5E7
+     （design-variables.scss:11），与页面底拉开可见色阶；文字/描边在 #D1F5E7 上复算 5.49:1。 */
   border-color: var(--c-brand-800, #156B51);
-  background: var(--c-brand-50, #E8FAF3);
+  background: var(--c-brand-100, #D1F5E7);
 }
 
 .people-tab__text {
@@ -469,7 +504,10 @@ function switchScope(next: "nearby" | "city") {
 }
 
 .people-row__meta {
-  font-size: 22rpx;
+  /* R11-L06-D14（字号 P2）：22rpx=11px 低于 §1.3 列表辅文下限；同页 .people-row__online
+     已按同口径提到 --fs-base(24rpx)（:497 自证），meta 漏收 ⇒ 同档补齐，
+     卡内字号收成 30/26/24/24rpx，与 segment.vue:364 同元素同批改。 */
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-secondary, #666666);
 }
 

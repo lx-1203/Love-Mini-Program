@@ -231,7 +231,10 @@ onLoad(() => {
              地图四角落在卡片内，不再与上方 32rpx 圆角白卡视觉断裂。 -->
         <view class="location-map__frame">
           <!-- #ifdef MP-WEIXIN -->
+          <!-- R11-L10-D08（空态文案 P2）：无坐标时不再按写死 DEFAULT_CENTER(39.9042/116.4074)
+               渲染一整幅北京街景（非北京用户会读成"定位已成功"）；有坐标后才出实景。 -->
           <map
+            v-if="coords"
             class="location-map__canvas"
             :latitude="mapCenter.latitude"
             :longitude="mapCenter.longitude"
@@ -241,6 +244,12 @@ onLoad(() => {
             :enable-zoom="true"
             :show-compass="false"
           />
+          <view v-else class="location-map__guide">
+            <text class="location-map__guide-title">尚未取得你的位置</text>
+            <text class="location-map__guide-desc">
+              定位成功后这里会显示你周边的地图，也可点右侧「地图选点」手动选择
+            </text>
+          </view>
           <!-- #endif -->
           <!-- #ifndef MP-WEIXIN -->
           <view class="location-map__canvas location-map__canvas--h5">
@@ -330,7 +339,10 @@ onLoad(() => {
    profile-extra 同域三页页头各写一档（相册 --fs-5xl 44rpx / 本页 36rpx / 隐私 --fs-xl 30rpx）。
    按建议改法三页统一收敛到 var(--fs-4xl)=40rpx（本页 + album.vue + privacy.vue 同批已改）。 */
 .location-header__title {
-  font-size: var(--fs-4xl);
+  /* R11-L10-D07（字号 P2）：页头主标题 40rpx=20px 落在 §1.3 区块标题档；
+     按卡升到页头档 56rpx（--fs-7xl，与 AppShell .shell__title 同值），
+     同域 album/privacy 三页同批取齐。 */
+  font-size: var(--fs-7xl);
   font-weight: 700;
   color: var(--c-text-primary, #1A1E1C);
 }
@@ -352,7 +364,9 @@ onLoad(() => {
 
 .location-card {
   padding: 40rpx 32rpx;
-  border-radius: 32rpx;
+  /* R11-L10-D09（圆角 P2）：本页唯一信息卡原裸写 32rpx(16px)，既非 §1.4 卡片档 40rpx
+     也不在 --r-* 阶梯上；与 privacy.vue:322/:436 同取 --card-radius(40rpx)。 */
+  border-radius: var(--card-radius, 40rpx);
   background: var(--c-bg-container, #ffffff);
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.06);
   display: flex;
@@ -466,7 +480,8 @@ onLoad(() => {
   width: 100%;
   box-sizing: border-box;
   padding: 12rpx;
-  border-radius: 24rpx;
+  /* R11-L10-D09：24rpx 裸值登记到 --r-xl（真值 24rpx，零像素归一） */
+  border-radius: var(--r-xl, 24rpx);
   background: var(--c-bg-container, #ffffff);
   border: var(--c-border-card);
   overflow: hidden;
@@ -491,6 +506,34 @@ onLoad(() => {
   font-size: 26rpx;
   /* R10-L10-D10：清掉 #9AA39F 假兜底（此行仅 H5 分支渲染，mp 帧不变） */
   color: var(--c-text-tertiary);
+}
+
+/* R11-L10-D08：无坐标时的引导卡（占位高度与地图等同，不拿默认中心视图冒充"你的位置"） */
+.location-map__guide {
+  width: 100%;
+  height: 440rpx;
+  box-sizing: border-box;
+  padding: 0 var(--sp-8);
+  border-radius: var(--r-lg);
+  background: var(--c-bg-page);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+}
+
+.location-map__guide-title {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--c-text-primary);
+}
+
+.location-map__guide-desc {
+  font-size: var(--fs-base);
+  line-height: 1.5;
+  color: var(--c-text-secondary);
+  text-align: center;
 }
 
 .location-map__tip-row {
@@ -521,7 +564,9 @@ onLoad(() => {
   height: 88rpx;
   padding: 0 28rpx;
   border-radius: 999rpx;
-  background: var(--c-brand, #36C99A);
+  /* R11-L10-D06（可达性 P1）：原白字压 --c-brand #36C99A 实测 2.10:1；
+     与 .location-btn--primary 同批改 --c-brand-800 #156B51（白字 6.45:1）。 */
+  background: var(--c-brand-800, #156B51);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -549,7 +594,9 @@ onLoad(() => {
 }
 
 .location-btn--primary {
-  background: var(--c-brand, #36C99A);
+  /* R11-L10-D06：同页两颗改位置主按钮统一深绿实心 + 白字（6.45:1），
+     与白底「返回首页」（17.17:1）不再是同页三钮两档。 */
+  background: var(--c-brand-800, #156B51);
 }
 
 .location-btn__text {

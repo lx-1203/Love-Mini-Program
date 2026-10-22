@@ -1396,8 +1396,12 @@ onShareTimeline(() => {
            ④ 双动作：返回（goBack，栈底 reLaunch 兜底）/ 返回广场（ROUTES.TAB.VILLAGE，
               与 :310 goBack 的兜底目标同一路径，不新造路由）。
            文案全部复用既有键（locales 不在本车道可写集）：
-           village.detail.postNotExist / share.shareVillage / common.back /
-           village.detail.backToVillage。 -->
+           village.detail.postNotExist / profile.shareVillage / common.back /
+           village.detail.backToVillage。
+           R11-L03-D03（文案 P1）：副标题原写 t("share.shareVillage")，而词条实际挂在
+           profile 命名空间（zh-CN.ts:1685 / en-US.ts:1630 的 shareVillage），share.* 不存在
+           ⇒ i18n 回落键名，画面上是一串用户读不懂的「share.shareVillage」。改指真键
+           profile.shareVillage（中文「校园村口，看看大家在聊什么」），不再回落键名。 -->
       <view class="notfound-card">
         <view class="notfound-card__author">
           <view class="notfound-card__avatar" />
@@ -1407,7 +1411,7 @@ onShareTimeline(() => {
           </view>
         </view>
         <text class="notfound-card__title">{{ t("village.detail.postNotExist") }}</text>
-        <text class="notfound-card__desc">{{ t("share.shareVillage") }}</text>
+        <text class="notfound-card__desc">{{ t("profile.shareVillage") }}</text>
         <view class="notfound-card__actions">
           <view
             class="notfound-card__btn notfound-card__btn--ghost press-feedback"
@@ -2991,7 +2995,15 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .notfound-card__btn {
-  padding: 16rpx 36rpx;
+  /* R11-L03-D04（可达性 P2）：原上下内距 16rpx + 24rpx 文本 ≈66rpx(33px) 热区，
+     低于 88rpx 口径；顶部导航返回箭头虽可替代出口，但「返回广场」是主恢复动作
+     ⇒ min-height:88rpx + 纵向 padding 改 0、flex 居中，热区达标且文字基线不塌。 */
+  min-height: 88rpx;
+  padding: 0 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   border-radius: var(--r-full, 9999rpx);
   /* 主按钮底取 brand 同族深档：白字压 --c-brand-500 复算仅 2.24:1、
      --c-brand-700 = 4.14:1 都达不到 4.5:1，--c-brand-800 #156B51 = 6.45:1 过 AA */

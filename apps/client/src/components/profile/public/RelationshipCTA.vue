@@ -170,12 +170,18 @@ const helloLabel = computed(() => (props.matched ? "发消息" : "打招呼"));
   color: #FFFFFF;
 }
 
-/* R2b-L06-D21：浅粉底上的「喜欢」必须是粉字（原白字白心是为实心渐变底写的） */
+/* R2b-L06-D21：浅粉底上的「喜欢」必须是粉字（原白字白心是为实心渐变底写的）。
+   R11-L10-D04（可达性 P1）：--c-love #FF6B81 压 --c-tint-pink-50 #FCE4EC 实测 2.27:1，
+   28rpx 正文级标签不达 4.5:1；与同页身份卡「喜欢」同值收深到 #B3264A（5.30:1），
+   同一动作两处不再出现两种可读档。 */
 .relationship-cta__text.relationship-cta__text--like {
-  color: var(--c-love, #FF6B81);
+  color: #B3264A;
 }
 
+/* R11-L10-D04：--c-brand #36C99A 压白底实测 2.10:1，同样不达 4.5:1；
+   与身份卡「打招呼」（PublicIdentity.vue:284）同档收 --c-brand-800 #156B51（6.45:1），
+   沿用本页已验证的深色系，不新增色值。 */
 .relationship-cta__text.relationship-cta__text--follow {
-  color: var(--c-brand, #36C99A);
+  color: var(--c-brand-800, #156B51);
 }
 </style>

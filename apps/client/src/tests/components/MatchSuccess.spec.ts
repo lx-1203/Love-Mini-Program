@@ -51,12 +51,15 @@ describe("MatchSuccess", () => {
     }
   });
 
-  it("匹配度只有一个数字，且来自 props.matchScore 真值", () => {
-    const wrapper = mountSuccess({ matchScore: 87 });
-    const percents = wrapper.findAll(".match-success__score-percent");
-    expect(percents).toHaveLength(1);
-    expect(percents[0]!.text()).toBe("匹配度 87%");
-    // 旧实现写死 [90,85,80,79]——任何一个都不许再出现在画面上
+  /**
+   * R11-L06-D05 / §12.3 反转了这条契约：`matchScore` 由 constants/match.ts 的 80+n×5
+   * 常量式派生，共同圈为 0 也报 80%，同样不是后端真分。故本组件**不渲染任何百分比**，
+   * 连「卡头一个数」也不留；真分列就绪前只显示后端真给的共同点理由。
+   */
+  it("不渲染任何匹配度百分比（常量式分值不是真值）", () => {
+    const wrapper = mountSuccess();
+    expect(wrapper.findAll(".match-success__score-percent")).toHaveLength(0);
+    expect(wrapper.text()).not.toContain("匹配度");
     for (const fake of ["90%", "85%", "80%", "79%"]) {
       expect(wrapper.text()).not.toContain(fake);
     }

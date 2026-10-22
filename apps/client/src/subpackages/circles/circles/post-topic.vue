@@ -148,8 +148,11 @@ function toggleFavorite() {
   favoriteEnabled.value = !favoriteEnabled.value;
 }
 
-/** 最大字数 */
-const MAX_LENGTH = 500;
+/** 最大字数
+ *  R11-L04-D09（文案 P2）：改前 500，规范 §3.14 对发布类正文的统一口径是 1000，
+ *  「发布话题」比同族广场帖少一半额度、会提前截断。后端 CircleController 的
+ *  content 上限是 5000（apps/api/.../discover/CircleController.java:248），1000 不越界。 */
+const MAX_LENGTH = 1000;
 /** 最大图片数 */
 const MAX_IMAGES = 9;
 /** 发布成功 toast 展示后跳转返回的延时（R4-batch4：魔法数字提取） */
@@ -496,15 +499,11 @@ onLoad((query) => {
         <text class="back-icon">{{ t("circle.postTopicBack") }}</text>
       </view>
       <text class="post-header__title">{{ t("circle.postTopicNavTitle") }}</text>
-      <view
-        class="post-header__submit press-feedback"
-        :class="{ 'post-header__submit--disabled': !title.trim() || !content.trim() || isOverLimit || isSubmitting }"
-        hover-class="press-feedback--active"
-        hover-stay-time="120"
-        @tap="submitTopic"
-      >
-        <text class="submit-text">{{ isSubmitting ? t("common.submitting") : t("circle.postTopicSubmit") }}</text>
-      </view>
+      <!-- R11-L04-D10（位置 P2）：导航标题旁的「发布」胶囊与底部「发布话题」共用 submitTopic，
+           两枚同屏且禁用态互相矛盾（帧上页头那颗看着可点、底部那颗看着不可点）。
+           按 §3.14 只保留一处发布出口（底部主 CTA）⇒ 页头胶囊撤除；留同宽占位块
+           保持标题横向位置不变（与左侧「返回」胶囊等宽 96rpx）。 -->
+      <view class="post-header__spacer" aria-hidden="true" />
     </view>
 
     <scroll-view class="post-body" scroll-y>
@@ -526,7 +525,7 @@ onLoad((query) => {
           v-model="content"
           class="content-input"
           :placeholder="t('circle.postTopicContentPlaceholder')"
-          maxlength="500"
+          :maxlength="MAX_LENGTH"
           :show-confirm-bar="false" :aria-label="t('circle.postTopicContentAria')"
         />
         <view class="content-count" :class="{ 'content-count--over': isOverLimit }">
@@ -830,45 +829,20 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   color: var(--c-text-primary);
 }
 
-.post-header__submit {
-  padding: 14rpx 32rpx;
-  border-radius: var(--r-full, 9999rpx);
-  background: var(--c-overlay-bg-pure);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--d-fast, 120ms) ease;
-  box-shadow: 0 4rpx 12rpx var(--c-black-shadow-md);
-}
-
-/* #ifdef H5 */
-.post-header__submit:active {
-  transform: scale(0.96);
-}
-/* #endif */
-
-.post-header__submit--disabled {
-  background: var(--c-overlay-white-bg-stronger);
-  box-shadow: none;
-}
-
-.submit-text {
-  font-size: var(--fs-md, 26rpx);
-  /* R10-L04-D08 同带修复：$green-primary=--c-brand 真值 #36C99A 压 rgba(255,255,255,.95) 钮面 = 2.10:1
-     （已知机制 §2：brand-600 2.81 / brand-700 4.14 都不达标）⇒ 取 brand-800 = 6.45:1。 */
-  color: var(--c-brand-800, #156B51);
-  font-weight: 600;
-}
-
-.post-header__submit--disabled .submit-text {
-  /* 禁用态原本是 rgba(255,255,255,.8) 压 rgba(255,255,255,.4) 胶囊 ⇒ 逐像素糊掉（≈1.1:1）。
-     改深墨次要色压半透明白胶囊（≈#9BE9CF）= 5.1:1，仍靠「无阴影 + 半透底」表达禁用。 */
-  color: var(--c-text-secondary);
+/* R11-L04-D10：页头「发布」胶囊已撤除（只留底部主 CTA）⇒ 原
+   .post-header__submit / --disabled / .submit-text 三组规则一并删除，不再留死样式。
+   等宽占位块保持标题横向位置不变（左侧「返回」胶囊 = 20rpx×2 内衬 + 2×28rpx 字 = 96rpx）。 */
+.post-header__spacer {
+  width: 96rpx;
+  flex-shrink: 0;
 }
 
 .post-body {
   flex: 1;
-  padding: 24rpx;
+  /* R11-L04-D08（间距 P2）：改前四边 24rpx，实测卡左缘 x=13px（≈26rpx），比规范 §1.4 的
+     32rpx 窄一档，也比同包 hub.vue 的页边距窄。左右改走 --page-padding（令牌真值 32rpx），
+     纵向保持 24rpx（卡与卡之间的呼吸不属于页边距轴）。 */
+  padding: 24rpx var(--page-padding, 32rpx);
 }
 
 .section-label {

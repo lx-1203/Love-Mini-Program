@@ -49,9 +49,19 @@ const iconSrc = computed(() => {
   align-items: center;
   gap: 6rpx;
   width: fit-content;
-  padding: 8rpx 16rpx;
+  /* R11-L13-D08（字号 P2 · discussions bottom 帧）：这枚药丸是讨论列表里唯一带数量的一行字
+     （后端 heatLabel，帧上 12/10/9/9/8 的排序键就靠它），原取 --fs-sm（真值 22rpx=11px，
+     theme/design-variables.scss:561）—— §1.3 把这一档只分配给「角标 · 法务」，
+     帧上 5 枚药丸（y=197..218 / 272..292 / 388..407 / 462..482 / 554..575，均 x=33..105）
+     墨高仅 11px、整枚 20~22px 高，比同页 12px 摘要还小一档。
+     按卡上改法升到 --fs-md（26rpx=13px，§1.3「标签」档下限），并把写死的
+     `8rpx 16rpx` 换成同值的 --sp-2 / --sp-4（design-variables.scss:548/550 真值 8/16rpx，
+     逐像素不变，只是把这枚内衬挂回 §1.4 阶梯）。
+     行高仍 1（本文件 .pill-label），药丸总高由 28rpx 图标决定 ⇒ 高度不动、只有字号动，
+     不引入溢出；色档一律不动（--c-text-warning-dark 压底实测 6.57:1，见本文件下方 .pill--heat 的 R9-L13-D03）。 */
+  padding: var(--sp-2) var(--sp-4);
   border-radius: var(--r-full);
-  font-size: var(--fs-sm, 22rpx);
+  font-size: var(--fs-md);
   font-weight: 600;
 }
 

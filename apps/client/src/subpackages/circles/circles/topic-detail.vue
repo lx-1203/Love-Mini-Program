@@ -222,8 +222,13 @@ onLoad((query) => {
     void circleStore.fetchTopicDetail(topicId.value);
     void circleStore.fetchReplies(topicId.value, 1);
   } else {
-    // infra R2-00074: topicId 缺失时给出错误态提示，避免直开链接白屏
-    uni.showToast({ title: t("storeErrors.circle.topicIdInvalid"), icon: "none" });
+    // infra R2-00074 / R11-L04-D06：topicId 缺失（直开分享链接、参数名不对）是「链接不完整」，
+    // 不是「话题已被删除」。原先只弹一条 2 秒 toast，页面随后落到「不存在」空态，
+    // 用户拿不到真实成因也没有可点出口 ⇒ 现由模板的 missing-id 空态分支承接（含返回出口）。
+    // 先清掉上一跳留在 store 里的 currentTopic/errorMessage，否则 v-if="currentTopic" 会
+    // 展示陈旧话题、把这次空态整支短路掉。
+    circleStore.clearCurrentTopic();
+    circleStore.errorMessage = null;
   }
 });
 
@@ -387,6 +392,20 @@ onShareAppMessage(() => {
       <!-- 底部留白 -->
       <view class="body-footer" />
     </scroll-view>
+
+    <!-- R11-L04-D06（空态文案 P1）：topicId 缺失单独一档——原实现落到下面「不存在或已被删除」
+         分支，把「参数缺失」谎报成「话题被删」，且没有自助出口。EmptyState 只支持一个动作
+         （EmptyState.vue:31 单 actionText），故保留唯一有意义的「返回」出口（栈底时 goBack
+         会 reLaunch 回圈子列表，见 :145-153），不做无 topicId 可重试的死按钮。 -->
+    <EmptyState
+      v-else-if="!loading && !topicId"
+      class="empty-state"
+      :hide-sub="true"
+      :title="t('storeErrors.circle.topicIdInvalid')"
+      :action-text="t('circle.topicDetailBack')"
+      type="no-data"
+      @action="goBack"
+    />
 
     <!-- MP-R1-TOPICDETAIL-001：加载失败错误态（与"话题不存在"区分，提供重试）
          R10-L04-D04（位置 P2）：把模板上真实存在的宿主 class `empty-state` 挂到组件标签自身

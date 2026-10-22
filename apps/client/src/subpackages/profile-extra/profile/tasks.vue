@@ -268,8 +268,10 @@ const progressPercent = computed(() =>
  * cdn-buckets.json 的 localPrefixes：assets/svg-spec/、assets/icons/register/、
  * assets/icons/tabbar/ ⇒ real 档恒走包内路径，实测 dist/build/mp-weixin-real/static/assets/icons
  * 三目录俱在，不会 404），四枚图形互不相同、且与薄荷底同色族；未新增任何素材。
- * 色值逐枚核过：check-green.svg / 03-icons/edit.svg / 03-icons/star.svg 均 fill|stroke #36C99A，
+ * 色值逐枚核过：03-icons/edit.svg / 03-icons/star.svg 均 fill|stroke #36C99A，
  * tabbar/chat-active.png 像素主色 rgb(54,201,154)=#36C99A。
+ * R11-L11-D04 追加：签到位不再用 check-green.svg（对勾与 :476 已完成态撞语义），改 icons/plus.svg
+ * （同 #36C99A 档），四枚图形互不相同这一条不变。
  */
 function taskIcon(taskId: string): string {
   switch (taskId) {
@@ -279,8 +281,18 @@ function taskIcon(taskId: string): string {
       return IMAGE_PATHS.ICONS_EMOJI.EDIT;
     case "checkin":
     case "daily-checkin":
-      // ✓ 每日签到（assets/icons/register/check-green.svg，#36C99A）
-      return IMAGE_PATHS.REGISTER_ICONS.CHECK_GREEN;
+      // R11-L11-D04（文案 P2）：此位原为 assets/icons/register/check-green.svg（✓ 绿对勾）。
+      // 本页「已完成态」另有 :476 的 ICONS_EMOJI.CHECK_CIRCLE ⇒ 同页两枚对勾两套解释，
+      // 而未完成（帧上实测四张卡全为「去完成」、页头 0/4）的签到任务在行首先长出「已完成」图形。
+      // 现取不带完成语义的加号打卡图形（✓ 只留给 :476 那一处）。
+      // 素材约束自查（硬规矩 5/8）：仓内唯一「日历」图形三枚（assets/icons/common/calendar.svg、
+      // assets/svg-spec/03-icons/calendar.svg 均 stroke #94A3B8；assets/message/svg/calendar.svg
+      // 属 cdnPrefixes ⇒ real 档不出包）——前两枚会把 R8-L11-D02 刚清掉的「蓝灰字形压薄荷胶囊」
+      // 再引回来，第三枚 real 档是空槽；仓内没有品牌绿日历素材，不许下载/生成 ⇒ 取同为
+      // --c-brand(#36C99A) 实色的 icons/plus.svg（stroke #36C99A，已在 config/images.ts 的
+      // IN_PACKAGE_ASSETS 以 ICONS_PLUS_SVG pkg+tail 双登记，实测 real 包内
+      // dist/build/mp-weixin-real/static/assets/icons/plus.svg 在盘），与同列另三枚图形互不相同。
+      return IMAGE_PATHS.ICONS_EMOJI.PLUS;
     case "first-post":
       // 💬 发布首条动态（tabbar/chat-active.png，#36C99A 实心底）
       return IMAGE_PATHS.ICONS_TABBAR.CHAT_ACTIVE;
@@ -491,7 +503,13 @@ onShow(async () => {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: var(--c-gradient-page);
+  /* R11-L11-D05（颜色token P3）：原 var(--c-gradient-page)
+     = linear-gradient(180deg,#DFF3EA,#EEF7F2)（design-variables.scss:181），帧上实测上缘
+     (8,120)=#E1F3EB、下缘 (8,700)=#EDF7F1 ⇒ 顶部比同域规范值 #EEF7F2 深 13/255 一档。
+     同 subpackage 的 feedback/history 与 chat 两页恒为 #EEF7F2（--c-bg-page，:127）⇒ 同域底色取档不一。
+     本页不是登录/引导/沉浸页，没有需要渐变铺底的场景 ⇒ 归口 var(--c-bg-page)，与同域各页同轨。
+     注：卡上「确需渐变时给这档渐变在规范 §1.2 立一个令牌再引用」属规范文档侧，不在本车道可写集。 */
+  background: var(--c-bg-page, #EEF7F2);
   padding: var(--sp-6) var(--sp-8);
   padding-top: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-6));
   box-sizing: border-box;
@@ -511,8 +529,16 @@ onShow(async () => {
 .tasks-header__back {
   flex-shrink: 0;
   align-self: center;
-  width: 64rpx;
-  height: 64rpx;
+  /* R11-L11-D02（可达性 P1）：原 64rpx×64rpx（=32px，帧实测白色圆底跨 x18-46、y56-87，
+     圆径约 29px）低于 88rpx 门槛。本页 navigationStyle: custom（:237 注释自证）且无 TabBar、
+     无底部操作栏 ⇒ 这枚小圆键是帧上唯一出口，只能靠猜命中。
+     配方与同仓共享页头逐字同档：AppShell.vue:362-363 的 .shell__back 已声明
+     min-height/min-width: 88rpx（44px）。图标 .tasks-header__back-icon（:550-553）保持 40rpx 不动，
+     放大的是热区/圆底，不是字形。 */
+  width: 88rpx;
+  height: 88rpx;
+  min-width: 88rpx;
+  min-height: 88rpx;
   border-radius: var(--r-full);
   background: var(--c-bg-container);
   border: var(--c-border-card);
@@ -644,7 +670,15 @@ onShow(async () => {
 .task-item__status {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--sp-1);
+  /* R11-L11-D03（尺寸比例 P2）：胶囊实测 50×21px（x296-345 / y191-211）=100×42rpx，
+     高度只有 88rpx 门槛的一半——原内衬纵向仅 --sp-2(8rpx)，11px 字撑不出可点体量。
+     按卡上第一条补 min-height:88rpx（既有 align-items/justify-content 让文本仍在原位居中），
+     与已完成态同一套体量（两态同规则、不再一个 42rpx 一个自适）。
+     实高即 88rpx：theme/global.scss:1-3 已对 view/text/image 全局设 box-sizing:border-box，
+     min-height 落在边框盒上。 */
+  min-height: 88rpx;
   padding: var(--sp-2) var(--sp-5);
   border-radius: var(--r-full);
   flex-shrink: 0;
@@ -654,12 +688,24 @@ onShow(async () => {
   background: var(--c-bg-brand);
 }
 
+/* R11-L11-D01（可达性 P1）：「去完成」底原为 --c-brand #36C99A（帧采样 (54,201,154)），
+   标签走 --c-neutral-0 纯白 ⇒ 白字压品牌绿实测 2.10:1（L 1.0 / #36C99A=0.4490 ⇒ 1.05/0.4990），
+   字号 --fs-sm 22rpx=11px/600（.task-item__status-text，:720-723）不达 WCAG 大字豁免
+   （需 ≥24px/700 或 18.7px/700），
+   距 4.5:1 下限差一半 ⇒ 本页唯一主操作的三字动作读不出来。
+   按 §2 在册算法取 --c-brand-800 #156B51（design-variables.scss:18）实底：
+   纯白压 #156B51 = 1.05/0.16282 = 6.45:1（同仓已定档配方：BottomActionBar.vue:104、
+   dnd.vue 保存键、本页 R9 那轮收的 .process-step__badge 同族）。
+   未采纳卡上「不要照抄」的 --c-brand-700 #1F8D6A（白字仅 4.14:1，同样不过线）。 */
 .task-item__status--go {
-  background: var(--c-brand);
+  background: var(--c-brand-800, #156B51);
 }
 
+/* 同根顺手项（不另开卡）：已完成态文字原为 --c-brand-700 #1F8D6A 压 --c-bg-brand #E8FBF2，
+   按同一把尺算 = 0.97569/0.25379 = 3.84:1，与本卡 :662 实测「约 3.8:1」吻合，同档文字同档判点；
+   一并收到 --c-brand-800（0.97569/0.16282 = 5.99:1 ≥ 4.5:1）。底色 --c-bg-brand 不动。 */
 .task-item__status--done .task-item__status-text {
-  color: var(--c-brand-700);
+  color: var(--c-brand-800, #156B51);
 }
 
 .task-item__status--go .task-item__status-text {

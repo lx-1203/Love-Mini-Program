@@ -18,6 +18,8 @@ import { TOAST_DURATION } from "../../../constants/limits";
 import { useMock } from "../../../stores/helpers/use-mock";
 import { request } from "../../../services/http";
 import { clientApi } from "../../../services/api";
+// R11-L09-D18：实名通过态补通往校园认证（学历认证）的出口
+import { ROUTES } from "../../../constants/routes";
 // infra R2-00131：统一图片选择封装（含隐私授权守卫 + 大小校验）
 import { chooseImages, isUploadedMediaUrl, resolveMediaUrl } from "../../../utils/media";
 // R10-P2-012：注入 --statusbar（safe-top 依赖该变量，DevTools env 恒 0）
@@ -415,6 +417,18 @@ function goBack() {
 function onBlur() {
   lightHaptic();
 }
+
+/**
+ * R11-L09-D18（可达性 P1）：实名通过态原先只有一个状态卡 + 两行信息，而状态卡描述
+ * （realName.statusVerifiedDesc）明写「可进行校园认证（学历认证）」，页面上却没有任何
+ * 按钮/链接指向认证中心——唯一可点节点是页头返回键（goBack 里的跳转只在页面栈=1 时兜底）
+ * ⇒ 用户读完指引只能退回设置页重找入口。补一枚跳到 ROUTES.VERIFICATION 的主操作，
+ * 文案复用既有 verification.navTitle（「恋爱认证」，即该页自己的标题），不新增假数据。
+ */
+function goVerificationCenter() {
+  lightHaptic();
+  uni.navigateTo({ url: ROUTES.VERIFICATION });
+}
 </script>
 
 <template>
@@ -462,6 +476,18 @@ function onBlur() {
             <text class="verified-card__value">{{ maskedIdCardNo }}</text>
           </view>
         </view>
+      </view>
+
+      <!-- R11-L09-D18：状态卡文案承诺的「可进行校园认证（学历认证）」在这里给出出口 -->
+      <view
+        class="action-btn press-feedback"
+        role="button"
+        :aria-label="t('verification.navTitle')"
+        hover-class="action-btn--hover"
+        hover-stay-time="100"
+        @tap="goVerificationCenter"
+      >
+        <text class="action-btn__text">{{ t('verification.navTitle') }}</text>
       </view>
     </template>
 
@@ -678,7 +704,10 @@ function onBlur() {
 .status-card {
   position: relative;
   z-index: 1;
-  margin: 24rpx;
+  /* R11-L09-D16（间距 P2）：横向外缘原为裸 24rpx(=12px)，帧上卡片左缘 x=11，而同分包
+     verification/index.vue:840 与 settings/index.vue:803 已归口 --page-padding（左缘 17–18）
+     ⇒ 两页差 5–6px、卡片左缘不成同一条竖轨。纵向仍留 --sp-6(24rpx) 不动。 */
+  margin: var(--sp-6, 24rpx) var(--page-padding, 32rpx);
   padding: 48rpx 32rpx;
   border-radius: var(--r-xl, 24rpx);
   display: flex;
@@ -723,7 +752,9 @@ function onBlur() {
 .minor-banner {
   position: relative;
   z-index: 1;
-  margin: 0 24rpx;
+  /* R11-L09-D16 同根（不另开卡）：本横幅与状态卡/分组卡同处一条水平轨，原也写裸 24rpx，
+     只改 .status-card/.section 会让未成年提示比上下卡片各宽 4px ⇒ 一并归口 --page-padding。 */
+  margin: 0 var(--page-padding, 32rpx);
   padding: 24rpx 28rpx;
   border-radius: var(--r-lg, 20rpx);
   background: var(--c-tint-amber-50, #FFF8E7);
@@ -740,7 +771,9 @@ function onBlur() {
 .section {
   position: relative;
   z-index: 1;
-  margin: 24rpx 24rpx 0;
+  /* R11-L09-D16：同 .status-card，水平外边距归口 var(--page-padding)；
+     纵向上缘仍 --sp-6(24rpx)、下缘仍 0，与 .status-card 的纵向外边距衔接成原有节奏。 */
+  margin: var(--sp-6, 24rpx) var(--page-padding, 32rpx) 0;
 }
 
 .section__title {
@@ -918,12 +951,17 @@ function onBlur() {
 }
 
 .verified-card__label {
-  font-size: var(--fs-md, 24rpx);
+  /* R11-L09-D17（字号 P2）：兜底字面量原写 24rpx，与令牌真值 --fs-md=26rpx
+     （design-variables.scss:563）不符 ⇒ 令牌解析失败时数据行会比同域正文再小一档。归口真值。 */
+  font-size: var(--fs-md, 26rpx);
   color: var(--c-text-tertiary);
 }
 
 .verified-card__value {
-  font-size: var(--fs-md, 24rpx);
+  /* R11-L09-D17：已认证信息行的值（真实姓名/脱敏身份证号，本页唯一正文级数据）原与标签
+     同取 --fs-md(26rpx=13px)，两档同字号无主次。值升到 --fs-xl(30rpx=15px，
+     design-variables.scss:565)，标签留 --fs-md；500 字重保留。 */
+  font-size: var(--fs-xl, 30rpx);
   color: var(--c-text-primary);
   font-weight: 500;
 }
@@ -937,7 +975,9 @@ function onBlur() {
 .action-btn {
   position: relative;
   z-index: 1;
-  margin: 32rpx 24rpx 0;
+  /* R11-L09-D16 同根（不另开卡）：本页主按钮原也写裸 24rpx，只改卡片会让未认证态的提交键
+     比上方表单/上传卡左缘外凸 4px ⇒ 水平 margin 一并归口 var(--page-padding)。 */
+  margin: 32rpx var(--page-padding, 32rpx) 0;
   padding: 28rpx;
   /* 同根顺手项（与 R9-L09-D06 同型）：原 brand→brand-300 渐变压 --c-text-inverse 只有
      ~1.83:1（95% 白字最亮端 2.02:1）。本页提交按钮与认证页同口径压深成 brand-900→brand-800，

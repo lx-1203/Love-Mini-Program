@@ -638,6 +638,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .post-header__back {
+  /* R11-L05-D07（可达性 P2）：改前 12rpx×2 内衬 + 28rpx 标签 ≈52rpx，低于 88rpx 标准。
+     补 min-height + 盒模型 + flex 居中（同 certification.vue:512 的 R10-L05-D09 口径）。 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  box-sizing: border-box;
   padding: 12rpx 20rpx;
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-overlay-white-bg-mid-strong);
@@ -672,6 +679,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .post-header__submit {
+  /* R11-L05-D07（可达性 P2）：改前 14rpx×2 内衬 + 26rpx 标签 ≈64rpx，低于 88rpx。
+     补 min-height + box-sizing，胶囊高度即命中区。 */
+  min-height: 88rpx;
+  box-sizing: border-box;
   padding: 14rpx 32rpx;
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-overlay-bg-pure);
@@ -717,6 +728,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .post-body {
   flex: 1;
+  /* R11-L05-D08（层级遮挡 P1）：改前只有 flex:1，没有 min-height:0——flex 项默认
+     min-height:auto 会被内容撑高，在 .post-page{height:100%;overflow:hidden} 下由父级裁掉：
+     bottom 帧与 top 帧逐像素同图，话题选择区/匿名开关/底部提交条整块不可见且滚不到。
+     照抄 certification.vue:551-556 的 R6-L06-D15 同机理修复。 */
+  min-height: 0;
+  box-sizing: border-box;
   padding: 24rpx;
 }
 
@@ -754,6 +771,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .cert-banner__btn {
   flex-shrink: 0;
+  /* R11-L05-D06（可达性 P1）：改前 12rpx×2 + 22rpx 标签 ≈51rpx；未认证态下这是全页唯一的
+     前进出口（表单本身填不动），必须达到 88rpx。补 min-height + 盒模型，标签一并提到 24rpx。 */
+  min-height: 88rpx;
+  box-sizing: border-box;
   padding: 12rpx 24rpx;
   border-radius: var(--r-full, 9999rpx);
   /* R9-L05-D06：改前底 --c-warning #F59E0B 配 --c-text-inverse(rgba(255,255,255,.95)) 的
@@ -774,7 +795,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* #endif */
 
 .cert-banner__btn-text {
-  font-size: var(--fs-sm, 22rpx);
+  /* R11-L05-D06：22rpx → 24rpx（与 88rpx 命中区同批；标签仍单行） */
+  font-size: var(--fs-base, 24rpx);
   font-weight: 600;
   color: var(--c-text-inverse);
   white-space: nowrap;
@@ -794,7 +816,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   padding: 28rpx;
   /* R4-02524：卡片底色改用 --c-bg-container（深色模式自动适配） */
   background: var(--c-bg-container);
-  border-radius: var(--r-xl, 24rpx);
+  /* R11-L05-D09（圆角 P2）：卡片档从 --r-xl(24rpx) 收到规范 --card-radius(40rpx)，
+     与 theme/global.scss .card-base 同一出口；瓷片/输入框仍保留 --r-lg 档。 */
+  border-radius: var(--card-radius, 40rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
 }
@@ -851,7 +875,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   padding: 28rpx;
   /* R4-02524：卡片底色改用 --c-bg-container（深色模式自动适配） */
   background: var(--c-bg-container);
-  border-radius: var(--r-xl, 24rpx);
+  /* R11-L05-D09：卡片档统一 --card-radius(40rpx) */
+  border-radius: var(--card-radius, 40rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
 }
@@ -878,7 +903,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   padding: 28rpx;
   /* R4-02524：卡片底色改用 --c-bg-container（深色模式自动适配） */
   background: var(--c-bg-container);
-  border-radius: var(--r-xl, 24rpx);
+  /* R11-L05-D09：卡片档统一 --card-radius(40rpx) */
+  border-radius: var(--card-radius, 40rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
 }
@@ -920,7 +946,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   padding: 28rpx;
   /* R4-02524：卡片底色改用 --c-bg-container（深色模式自动适配） */
   background: var(--c-bg-container);
-  border-radius: var(--r-xl, 24rpx);
+  /* R11-L05-D09：卡片档统一 --card-radius(40rpx) */
+  border-radius: var(--card-radius, 40rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
 }
@@ -1034,7 +1061,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   padding: 28rpx;
   /* R4-02524：卡片底色改用 --c-bg-container（深色模式自动适配） */
   background: var(--c-bg-container);
-  border-radius: var(--r-xl, 24rpx);
+  /* R11-L05-D09：卡片档统一 --card-radius(40rpx) */
+  border-radius: var(--card-radius, 40rpx);
   margin-bottom: 24rpx;
   box-shadow: $card-soft-shadow;
 }
@@ -1044,7 +1072,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   padding: 28rpx;
   /* R4-02524：卡片底色改用 --c-bg-container（深色模式自动适配） */
   background: var(--c-bg-container);
-  border-radius: var(--r-xl, 24rpx);
+  /* R11-L05-D09：卡片档统一 --card-radius(40rpx) */
+  border-radius: var(--card-radius, 40rpx);
   margin-bottom: 20rpx;
   box-shadow: $card-soft-shadow;
 }

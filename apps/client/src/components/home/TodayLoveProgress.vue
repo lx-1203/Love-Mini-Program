@@ -1,12 +1,20 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import type { LoveProgressStepViewModel } from "../../view-models/home-dashboard";
 
 const { t } = useI18n();
 
-defineProps<{ completed: number; total: number; steps: LoveProgressStepViewModel[] }>();
+const props = defineProps<{ completed: number; total: number; steps: LoveProgressStepViewModel[] }>();
 defineEmits<{ (e: "step", action: string): void }>();
+
+/**
+ * R11-L01-D17（文案 P0）：卡头计数与四格「已完成」原来取同一 feed 的两个字段
+ * （props.completed / steps[].completed），无人对齐，帧上出现 1/4 对上两格已完成。
+ * 四格才是用户眼前的事实，计数与进度条一律按四格现算；props.completed 不再作分母来源。
+ */
+const completedCount = computed(() => props.steps.filter((s) => s.completed).length);
 
 const STEP_META: Record<string, { bg: string; softBg: string; icon: string; iconSrc: string; todo: string }> = {
   profile: { bg: "#36C99A", softBg: "#E8FAF3", icon: IMAGE_PATHS.ICONS_EMOJI.CHECK, iconSrc: IMAGE_PATHS.HOME_ICONS.TASK_PROFILE, todo: "已完成" },
@@ -48,10 +56,10 @@ function stepTitle(step: { id: string; title?: string }): string {
           <text class="love-progress__help-text">?</text>
         </view>
       </view>
-      <text class="love-progress__count">{{ completed }}/{{ total }}项完成</text>
+      <text class="love-progress__count">{{ completedCount }}/{{ total }}项完成</text>
     </view>
     <view class="love-progress__bar">
-      <view class="love-progress__bar-fill" :style="{ width: total > 0 ? ((completed / total) * 100) + '%' : '0%' }"></view>
+      <view class="love-progress__bar-fill" :style="{ width: total > 0 ? ((completedCount / total) * 100) + '%' : '0%' }"></view>
     </view>
     <view class="love-progress__steps">
       <view v-for="step in steps" :key="step.id" class="love-step" :style="{ background: stepMeta(step.id).softBg }" @tap="$emit('step', step.action)">
@@ -96,9 +104,10 @@ function stepTitle(step: { id: string; title?: string }): string {
 }
 
 .love-progress__title {
-  font-size: 36rpx;
+  /* R11-L01-D18（字号 P2）：字号/色值归口令牌，不再裸写 rpx/hex */
+  font-size: var(--fs-3xl, 36rpx);
   font-weight: 600;
-  color: #333A37;
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .love-progress__help {
@@ -112,13 +121,13 @@ function stepTitle(step: { id: string; title?: string }): string {
 }
 
 .love-progress__help-text {
-  font-size: 20rpx;
-  color: #9AA39F;
+  font-size: var(--fs-xs, 20rpx);
+  color: var(--c-text-quaternary, #9AA39F);
 }
 
 .love-progress__count {
-  font-size: 28rpx;
-  color: #36C99A;
+  font-size: var(--fs-lg, 28rpx);
+  color: var(--c-brand, #36C99A);
   font-weight: 500;
 }
 
@@ -183,7 +192,8 @@ function stepTitle(step: { id: string; title?: string }): string {
 }
 
 .love-step__title {
-  font-size: 22rpx;
+  /* R11-L01-D18（字号 P2）：22rpx(≈11px) 落到 §1.3 极小档，归口 --fs-md(26rpx≈13px) */
+  font-size: var(--fs-md, 26rpx);
   font-weight: 600;
   text-align: center;
   /* R21：允许换行——「参与兴趣互动」5 字标题此前单行截断成「参与兴趣…」 */
@@ -193,7 +203,8 @@ function stepTitle(step: { id: string; title?: string }): string {
 }
 
 .love-step__meta {
-  font-size: 20rpx;
+  /* R11-L01-D18（字号 P2）：20rpx(≈10px) → --fs-sm(22rpx≈11px) */
+  font-size: var(--fs-sm, 22rpx);
   font-weight: 400;
   text-align: center;
 }

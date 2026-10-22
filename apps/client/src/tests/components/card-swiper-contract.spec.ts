@@ -95,30 +95,22 @@ describe("匹配卡片纯匹配版 DOM 契约（2026-08-14）", () => {
     vi.clearAllMocks();
   });
 
-  it("匹配度粉色胶囊置底且 >=85 显示「高匹配」", () => {
-    const wrapper = mountSwiper([makeCard({ commonCircleCount: 3 })]);
-    const badge = wrapper.find(".card__match-badge");
-    expect(badge.exists()).toBe(true);
-    // 2026-09-17：mp-weixin 禁 emoji 图标约束落地后，胶囊内 ♥ 字符已改为
-    // SVG 爱心图标（IMAGE_PATHS.ICONS_MATCH.HEART）渲染，断言改为校验图标存在（语义不变）。
-    expect(badge.find(".card__match-badge__heart").exists()).toBe(true);
-    expect(badge.text()).toContain("95%"); // 80 + 3*5 = 95
-    expect(badge.text()).toContain("高匹配");
-
-    const content = wrapper.find(".card__content");
-    const children = Array.from(content.element.children);
-    expect(children[children.length - 1].classList.contains("card__match-badge")).toBe(true);
+  /**
+   * R11-L08-D18（文案 P0）/ §12.3 反转了 2026-08-14 的这条契约：
+   * 原胶囊里的 95%/80% 来自 `min(98, 80 + commonCircleCount×5)`（constants/match.ts:92/95/98），
+   * 共同圈为 0 时照样报 80%，是常量算式而非兼容度真值 ⇒ 整枚胶囊撤除。
+   * 断言从"胶囊里显示多少"改为"胶囊不存在且任何位置都不出现百分比"，后者更强。
+   */
+  it("不渲染匹配度胶囊，且卡片不出现任何百分比读数", () => {
+    for (const count of [0, 3]) {
+      const wrapper = mountSwiper([makeCard({ commonCircleCount: count })]);
+      expect(wrapper.find(".card__match-badge").exists()).toBe(false);
+      expect(wrapper.text()).not.toMatch(/\d+%/);
+      expect(wrapper.text()).not.toContain("高匹配");
+    }
   });
 
-  it("匹配度 <85 时粉圈小字为「匹配」", () => {
-    const wrapper = mountSwiper([makeCard({ commonCircleCount: 0 })]);
-    // 80 + 0*5 = 80 < 85
-    expect(wrapper.find(".card__match-badge").text()).toContain("80%");
-    expect(wrapper.find(".card__match-badge").text()).toContain("匹配");
-    expect(wrapper.find(".card__match-badge").text()).not.toContain("高匹配");
-  });
-
-  it("内容区顺序：昵称 → 学校/年级/距离 → 兴趣标签 → 简介 → 匹配度", () => {
+  it("内容区顺序：昵称 → 学校/年级/距离 → 兴趣标签 → 简介", () => {
     const wrapper = mountSwiper([makeCard()]);
     const content = wrapper.find(".card__content");
     const order = Array.from(content.element.children).map(
@@ -129,7 +121,6 @@ describe("匹配卡片纯匹配版 DOM 契约（2026-08-14）", () => {
       "card__meta-row",
       "card__tags",
       "card__bio-block",
-      "card__match-badge",
     ];
     for (const cls of expectOrder) {
       const idx = order.findIndex((c) => c.includes(cls));

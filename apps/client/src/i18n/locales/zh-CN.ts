@@ -918,9 +918,6 @@ export default {
         "lecturer": "讲师：心理咨询师 王老师",
         "desc": "化解矛盾，重建信任与亲密"
       },
-      "pricePrefix": "¥{price}",
-      "signup": "报名",
-      "signupSuccess": "报名成功，请留意课程通知"
     }
   },
   "discover": {
@@ -3395,10 +3392,6 @@ export default {
     "statusUnverifiedDesc": "完成校园身份认证\n解锁专属权益与信任标识",
     "benefitBadgeTitle": "专属标识",
     "benefitBadgeDesc": "个人主页展示认证徽章",
-    "benefitTrustTitle": "信任优先",
-    "benefitTrustDesc": "认证用户优先推荐排序",
-    "benefitMatchTitle": "匹配加权",
-    "benefitMatchDesc": "匹配概率提升 1.5 倍",
     "benefitPerksTitle": "专属权益",
     "benefitPerksDesc": "解锁认证用户专属功能",
     "benefitInteractTitle": "互动资格",
@@ -3762,7 +3755,6 @@ export default {
     "bannerDesc": "加入兴趣圈，结识志同道合的小伙伴",
     "postTopicNavTitle": "发布话题",
     "postTopicBack": "返回",
-    "postTopicSubmit": "发布",
     "postTopicTitlePlaceholder": "话题标题",
     "postTopicTitleAria": "话题标题",
     "postTopicContentPlaceholder": "分享你的想法...",

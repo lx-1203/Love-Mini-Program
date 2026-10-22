@@ -3,7 +3,7 @@
  * 寻觅助手会话页 — 理想图还原版
  * 绿色渐变头部 + 吉祥物 + 聊天气泡 + 活动卡片 + 操作按钮 + 输入栏
  */
-import { computed, ref, nextTick } from "vue";
+import { computed, ref, nextTick, onMounted } from "vue";
 import { resolveMediaUrl } from "@/utils/media";
 import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
@@ -12,6 +12,9 @@ import { useProfileStore } from "../../../stores/profile";
 import { usePageAccess } from "../../../composables/usePageAccess";
 // 2026-09-04 视觉验收：statusBarHeight 注入，var(--statusbar, env(safe-area-inset-top)) 模拟器为 0 会压刘海
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
+// R11-L11-D22（层级遮挡 P2）：本页自绘导航右侧「···」被微信原生胶囊盖住，按实测胶囊左缘让位
+// ——与同仓 components/chat/ChatHeader.vue:20-40 同一配方（env/静态 rpx 与本运行档不成比例）。
+import { getMenuButtonRect, getWindowWidth } from "../../../compat";
 import { chatPageRequirements } from "../../../config/page-access";
 import LockScreen from "../../../components/common/LockScreen.vue";
 import { request } from "../../../services/http";
@@ -43,6 +46,35 @@ type ChatMessageView = Omit<OfficialMessageView, "messageType"> & {
 
 const { t } = useI18n();
 const statusBarHeightPx = useStatusBarHeight();
+
+/* R11-L11-D22（层级遮挡 P2，2026-10-21）：自绘「···」盒原右缘贴 24rpx 内衬落在 x326-366，
+ * 整块压在微信原生胶囊（实测 x288-368 / y50-78）之下 ⇒ 会话设置入口（onSessionMoreTap 唯一出口）
+ * 不可见不可点。照同仓 components/chat/ChatHeader.vue:13-40 的在册配方按实测胶囊左缘反推右内衬：
+ * paddingRight = windowWidth − rect.left + 4px（4px 视觉间隙，本帧 378−288+4=94px）；
+ * 测不到时退回样式表里同量级的 184rpx 兜底（92.7px ⇒ 右缘仍在胶囊左缘 288px 之外）。
+ * 只在 MP-WEIXIN 给兜底值：H5/其他端没有胶囊，不该凭空吃掉 92px 页头宽度。 */
+const capsulePadRightPx = ref(0);
+onMounted(() => {
+  try {
+    const rect = getMenuButtonRect();
+    const windowWidth = getWindowWidth();
+    if (rect && windowWidth && rect.left > 0) {
+      capsulePadRightPx.value = Math.max(0, windowWidth - rect.left) + 4;
+    }
+  } catch (_e) {
+    capsulePadRightPx.value = 0;
+  }
+});
+/** 页头内联样式：状态栏让位（已知机制 §4，env() 本档恒 0）+ 胶囊避让（R11-L11-D22） */
+const navBarStyle = computed(() => {
+  const style: Record<string, string> = {
+    paddingTop: Math.max(statusBarHeightPx.value, 24) + "px",
+  };
+  if (capsulePadRightPx.value > 0) {
+    style.paddingRight = capsulePadRightPx.value + "px";
+  }
+  return style;
+});
 const sessionStore = useSessionStore();
 const profileStore = useProfileStore();
 const isUnlocked = computed(() => sessionStore.isLoggedIn || useMock());
@@ -389,9 +421,9 @@ onLoad((query) => {
     <template v-else>
       <!-- 2026-08-31 Phase 1：进入骨架（消除 1~1.5s 纯白过渡） -->
       <SkeletonBlock v-if="!ready" variant="chat" :rows="4" label="加载中" />
-      <!-- ===== 顶部导航栏（statusBarHeight 注入，避免模拟器 env()=0 压刘海；
+      <!-- ===== 顶部导航栏（navBarStyle：statusBarHeight 注入 + R11-L11-D22 胶囊避让；
            R20：Math.max 兜底 24px，标题不再贴刘海/压状态栏） ===== -->
-      <view class="nav-bar" :style="{ paddingTop: Math.max(statusBarHeightPx, 24) + 'px' }">
+      <view class="nav-bar" :style="navBarStyle">
         <view class="nav-left press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="goBack">
           <!-- 2026-08-25 P0：返回箭头改为 ‹（规格书 9.1） -->
           <text class="nav-back-icon">‹</text>
@@ -421,25 +453,8 @@ onLoad((query) => {
 
       <!-- ===== 聊天主体 ===== -->
       <view v-else class="chat-body">
-        <!-- 绿色渐变区域 + 吉祥物 -->
-        <view class="hero-section">
-          <image class="hero-deco hero-deco-1" :src="IMAGE_PATHS.ICONS_EMOJI.LEAF" mode="aspectFit" alt="" />
-          <image class="hero-deco hero-deco-2" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
-          <image class="hero-deco hero-deco-3" :src="IMAGE_PATHS.ICONS_EMOJI.LEAF" mode="aspectFit" alt="" />
-          <image class="hero-deco hero-deco-4" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
-          <image class="hero-mascot" :src="mascotSmileSrc" mode="aspectFill" />
-          <view class="hero-greeting">
-            <text>Hi~ 我是寻觅助手</text>
-            <image class="hero-greeting-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
-          </view>
-          <text class="hero-desc">我会帮你发现有趣的人和活动</text>
-          <view class="hero-desc">
-            <text>让每一次相遇都更有意义</text>
-            <image class="hero-desc-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
-          </view>
-        </view>
-
-        <!-- 消息流 -->
+        <!-- 消息流（R11-L11-D20：英雄区已从 .chat-body 常驻位移进本滚动容器首块，
+             消息流拿到导航与输入栏之间的全部高度，装饰区随消息滚走） -->
         <scroll-view
           :id="scrollContainerId"
           class="chat-scroll"
@@ -448,6 +463,27 @@ onLoad((query) => {
           :scroll-into-view="scrollIntoViewId"
           scroll-with-animation
         >
+          <!-- R11-L11-D20（尺寸比例 P2，2026-10-21）：绿色渐变吉祥物区 + 吉祥物。
+               原先它是 .chat-body 里 flex-shrink:0 的常驻块（实测 y83-270 高 187px = 23% 屏高），
+               把本页主区（消息流）压到 y270-730 共 460px，一屏只装得下 5 条气泡 + 1 条被裁顶边的，
+               历史消息要反复推屏才看得完。按卡上建议改法把它移进 .chat-scroll 作首块 ⇒ 随消息滚走。 -->
+          <view class="hero-section">
+            <image class="hero-deco hero-deco-1" :src="IMAGE_PATHS.ICONS_EMOJI.LEAF" mode="aspectFit" alt="" />
+            <image class="hero-deco hero-deco-2" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
+            <image class="hero-deco hero-deco-3" :src="IMAGE_PATHS.ICONS_EMOJI.LEAF" mode="aspectFit" alt="" />
+            <image class="hero-deco hero-deco-4" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
+            <image class="hero-mascot" :src="mascotSmileSrc" mode="aspectFill" />
+            <view class="hero-greeting">
+              <text>Hi~ 我是寻觅助手</text>
+              <image class="hero-greeting-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
+            </view>
+            <text class="hero-desc">我会帮你发现有趣的人和活动</text>
+            <view class="hero-desc">
+              <text>让每一次相遇都更有意义</text>
+              <image class="hero-desc-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
+            </view>
+          </view>
+
           <view class="chat-list">
             <template v-for="(msg, idx) in messages" :key="msg.id">
               <!-- 时间戳（每隔几条显示） -->
@@ -596,6 +632,12 @@ onLoad((query) => {
   align-items: center;
   justify-content: space-between;
   padding: 0 24rpx;
+  /* R11-L11-D22（层级遮挡 P2）：测量成功时由 navBarStyle 注入 paddingRight
+     （windowWidth − rect.left + 4px）；此处仅测量失败时的同量级兜底，
+     同 ChatHeader.vue:130。MP-WEIXIN 之外没有胶囊，不给这 92px 空档。 */
+  /* #ifdef MP-WEIXIN */
+  padding-right: 184rpx;
+  /* #endif */
   /* R20：去掉固定 height:88rpx（与内联 paddingTop 叠加计算不稳），改最小高度自适应 */
   min-height: 88rpx;
   padding-top: var(--statusbar, env(safe-area-inset-top));
@@ -655,11 +697,19 @@ onLoad((query) => {
   padding: 2rpx 12rpx;
   border-radius: 8rpx;
   background: #FFFFFF;
-  border: 1rpx solid #36C99A;
+  /* R11-L11-D21（可达性 P2）：描边值不变，仅把硬写 #36C99A 归位到它本来的令牌 --c-brand
+     （design-variables.scss:15 $brand-500 = #36C99A，逐字节同值 ⇒ 零像素，消私有色字面量） */
+  border: 1rpx solid var(--c-brand, #36C99A);
 }
+/* R11-L11-D21（可达性 P2，2026-10-21）：「官方」是判定这枚号是官方号还是真人的可信度标记，
+ * 原文字硬写 #1F9A75（非令牌，仓内既有档是 brand-600 #2AAE83 / brand-700 #1F8D6A），
+ * 压白底实测 3.54:1 + 20rpx=10px 已到极小档下沿（整块角标仅 25px 高）⇒ 几乎读不出笔画。
+ * 改 --c-brand-800 #156B51（白底 6.45:1，design-variables.scss:18/267 既有档）。
+ * 字号：卡上写「抬到 --fs-xs 22rpx」，但 --fs-xs 真值是 20rpx（design-variables.scss:560），
+ * 照抄等于不动 ⇒ FIXNOTVISIBLE；按卡的目标值 22rpx 取 --fs-sm（:561 真值正是 22rpx）。 */
 .official-badge__text {
-  font-size: 20rpx;
-  color: #1F9A75;
+  font-size: var(--fs-sm);
+  color: var(--c-brand-800, #156B51);
   font-weight: 600;
   line-height: 1.4;
 }
@@ -698,16 +748,20 @@ onLoad((query) => {
   overflow: hidden;
 }
 
-/* ===== 吉祥物英雄区 ===== */
+/* ===== 吉祥物英雄区 =====
+   R11-L11-D20（尺寸比例 P2）：本块已从 .chat-body 的常驻 flex 项移进 .chat-scroll 首块
+   ⇒ 原来的 flex-shrink: 0（正是它把 187px=23% 屏高钉死在消息带上）随之删除，
+   改由 width:100% + box-sizing 铺满滚动内容宽度，滚动即滚走。 */
 .hero-section {
   display: flex;
   flex-direction: column;
   align-items: center;
+  box-sizing: border-box;
+  width: 100%;
   padding: 40rpx 40rpx 28rpx;
   background: linear-gradient(180deg, #e8faf0 0%, #f0fdf5 60%, #f5f6f8 100%);
   position: relative;
   overflow: hidden;
-  flex-shrink: 0;
 }
 .hero-deco {
   position: absolute;
@@ -792,9 +846,17 @@ onLoad((query) => {
   justify-content: center;
   padding: 12rpx 0 4rpx;
 }
+/* R11-L11-D19（可达性 P1，2026-10-21）：原硬写 #bbb 未过令牌，压页面底 --c-bg-page #EEF7F2
+ * 实测 1.60:1（帧上 y464-474 最暗墨像素 (196,196,196)），22rpx=11px 又在 --fs-base 档以下
+ * ⇒ 用户拿不到消息时间。字号抬到 --fs-md 26rpx（design-variables.scss:563）。
+ * ⚠️ 偏离卡上建议（已知机制 §2「对比度要算」）：建议值 --c-text-tertiary #6B7571 压 #EEF7F2
+ * 只有 4.36:1（L=0.170388 vs 0.910454 ⇒ 0.960454/0.220388），不达本卡自陈的 4.5:1；
+ * 且卡上「与私聊页时间档同轨」的参照物本身就不是 tertiary —— 私聊页时间条
+ * chat-session/index.vue:2617 走的是 --c-text-secondary。故取 --c-text-secondary #4A524E
+ * （同底 7.37:1），既过 4.5:1 又真正与私聊页同轨，两档均为既有令牌，不新增色值。 */
 .msg-time__text {
-  font-size: 22rpx;
-  color: #bbb;
+  font-size: var(--fs-md);
+  color: var(--c-text-secondary);
 }
 
 /* ===== 消息行 ===== */
@@ -819,7 +881,10 @@ onLoad((query) => {
   background: #e8e8e8;
 }
 .msg-content {
-  max-width: 70%;
+  /* R11-L11-D24（尺寸比例 P2，2026-10-21）：原自绘 max-width:70% ⇒ 帧上助手气泡宽 246px
+     （x57-302，占屏 65%），比令牌规定的 --bubble-max-width 58%（design-variables.scss:646，=219px）
+     宽 27px，长句右缘几乎贴屏边，与私聊页 ChatBubble 并排看宽窄不同轨 ⇒ 收敛到同一枚令牌。 */
+  max-width: var(--bubble-max-width);
   display: flex;
   flex-direction: column;
 }
@@ -827,15 +892,21 @@ onLoad((query) => {
   align-items: flex-end;
 }
 
-/* ===== 气泡 ===== */
+/* ===== 气泡 =====
+   R11-L11-D24（尺寸比例 P2，2026-10-21）：原 .bubble{border-radius:24rpx} 四角等圆，
+   缺规格里的 4rpx 尾角 ⇒ 与私聊页 ChatBubble（:309/:320/:327/:334 全部走 --bubble-radius-*）
+   两套规格。改走令牌并按左右行取镜像尾角档，方向判据同 ChatBubble 的 PRD E4
+   （头像所在一侧的上角收小）。 */
 .bubble {
-  border-radius: 24rpx;
+  border-radius: var(--bubble-radius-main);
   padding: 20rpx 28rpx;
 }
 .bubble--assistant {
   background: #fff;
   border: 1rpx solid #f0f0f0;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  /* R11-L11-D24：助手行头像在左 ⇒ 尾角取左上（同 ChatBubble.vue:327/334 的 peer/assistant 档） */
+  border-radius: var(--bubble-radius-tail) var(--bubble-radius-main) var(--bubble-radius-main) var(--bubble-radius-main);
 }
 .bubble--card {
   padding-bottom: 12rpx;
@@ -844,6 +915,8 @@ onLoad((query) => {
   /* R20（2026-09-08）：青绿渐变（#43e97b→#38f9d7）与私聊页品牌绿气泡不统一，
      对齐 ChatBubble --c-brand 品牌绿实色 */
   background: var(--c-brand, #36C99A);
+  /* R11-L11-D24：用户行头像在右 ⇒ 尾角取右上（同 ChatBubble.vue:320 的 self 档，与上方左行镜像） */
+  border-radius: var(--bubble-radius-main) var(--bubble-radius-tail) var(--bubble-radius-main) var(--bubble-radius-main);
 }
 .bubble__text {
   font-size: 28rpx;
@@ -963,9 +1036,15 @@ onLoad((query) => {
   gap: 12rpx;
   flex-shrink: 0;
 }
+/* R11-L11-D23（可达性 P1，2026-10-21）：表情与「+」宿主原为 64rpx=32px 见方，低于 88rpx(44px)
+ * 触控下限；而本页表情只有 :540 一枚入口（toggleEmojiPanel）、「+」只有 :543 一枚（onPlusTap），
+ * 页内无替代出口 ⇒ 想插表情只能命中 32px 目标。按卡上建议把宿主热区抬到 88rpx，
+ * 图标本体（.input-icon-text 40rpx / .plus-btn 56rpx）不动，与私聊页 ChatInput 同轨。 */
 .input-bar__icon {
   width: 64rpx;
   height: 64rpx;
+  min-width: 88rpx;
+  min-height: 88rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1028,7 +1107,10 @@ onLoad((query) => {
    R6-B38/D08（颜色token P2，2026-10-20）：#36C99A 与下面的 #C7E9DC 都是硬写字面量，
    仓内已有档位令牌 ⇒ 常态底改 var(--c-brand-500)（真值同为 #36C99A，零像素变化）。 */
 .input-bar__send {
-  height: 72rpx;
+  /* R11-L11-D23（可达性 P1）：原 height:72rpx=36px 低于 88rpx(44px) 下限，
+     且本页发送只有此键 + input @confirm 一条路（mp 软键盘 send 不可靠，见 :561 P2 注）
+     ⇒ 抬到 88rpx，与同排表情/「+」热区同档；底色与字色不动（保持 R6-B38/D08 在册档）。 */
+  height: 88rpx;
   padding: 0 32rpx;
   border-radius: 999rpx;
   background: var(--c-brand-500);

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { onLoad } from "@dcloudio/uni-app";
+import { onLoad, onShareAppMessage } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useMatchStore } from "../../../stores/match";
 import { useProfileStore } from "../../../stores/profile";
@@ -23,6 +23,8 @@ const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 const fallbackPartner = ref<MatchCardUser | null>(null);
 const loading = ref(false);
+/** R11-L06-D01：query.userId 留存——store 残留与补拉都拿不到对象时，它仍是唯一真身份入参 */
+const queryUserId = ref("");
 /* R2b-L06-D04（素材缺失 P1）：右上相机图标加载失败兜底——原取 IMAGE_PATHS.LOGIN_SPLIT['r06_c01']
    （登录总览图网格裁片，非本页图标）导致实帧该位是一枚空白白圆。换成 icons 目录线性相机图标后，
    仍保留 @error 兜底：加载失败时隐藏 <image>，只留干净圆底，不再出现坏图占位。 */
@@ -40,14 +42,24 @@ const partner = computed(() => {
   return stored ?? fb;
 });
 /**
- * R10-L06-D02（文案 P1）：partner 缺 name 时不再静默落 i18n「TA」（=匿名冒充），
- * 改为可见的加载状态文案：补拉中⇒「对方昵称加载中…」，补拉失败/无结果⇒「对方昵称加载失败」，
- * 同时 goChat 禁用「立即聊天」（见 goChat 守卫）。
+ * R10-L06-D02（文案 P1）：partner 缺 name 时不再静默落 i18n「TA」（=匿名冒充）。
+ * R11-L06-D01（文案 P0）修订其回落形态：原实现把内部取证串「对方昵称加载失败」直出到
+ * 用户名槽位（实帧读作「你和 对方昵称加载失败 互相喜欢上了」，且 goChat 被拦成 toast），
+ * 按缺陷卡口径改为两种可识别出口——
+ * ① 有真 userId（query 或 store 残留，均为真入参、非编造）⇒ 渲染「TA（@id）」，
+ *    且「立即聊天」照常可发（chat 会话只需 userId，见 goChat）；
+ * ② 无 id（直开缺参，无从识别）⇒ 落既有 i18n「TA」（discover.partnerDefaultName，
+ *    zh-CN.ts:946；即组件 MatchSuccess.vue:93 的缺省槽位），聊天出口给可重试导向文案。
+ * 加载中不再占用用户名槽位。
  */
+const partnerUserId = computed(() =>
+  String(partner.value?.userId || queryUserId.value || ""),
+);
 const partnerName = computed(() => {
   const name = (partner.value?.name || "").trim();
   if (name) return name;
-  return loading.value ? "对方昵称加载中…" : "对方昵称加载失败";
+  if (partnerUserId.value) return `TA（@${partnerUserId.value}）`;
+  return t("discover.partnerDefaultName");
 });
 const myAvatar = computed(
   () =>
@@ -91,6 +103,8 @@ onLoad((query) => {
   // 以入口参数为准（matchedUser 在 matched/chat_ready 态跨页存续，直达分享链接
   // 会展示旧匹配对象且「立即聊天」跳错人）
   const qUserId = q.userId || "";
+  // R11-L06-D01：留存真入参，供昵称缺失时的「TA（@id）」识别与聊天/分享出口使用
+  queryUserId.value = qUserId;
   if (qUserId && matchStore.matchedUser && String(matchStore.matchedUser.userId) !== qUserId) {
     matchStore.reset();
   }
@@ -120,15 +134,17 @@ async function loadFallbackPartner(userId: string) {
 }
 
 function goChat() {
-  // R10-L06-D02（文案 P1）：无对象或昵称取不到 ⇒ 身份不明，禁用「立即聊天」出口
-  // （MatchSuccess.vue:159 的聊天钮无 disabled prop，禁用落在页面侧行为守卫 + toast 回执）。
-  if (!partner.value || !(partner.value.name || "").trim()) {
-    uni.showToast({ title: "对方昵称加载失败，暂时无法发起聊天", icon: "none" });
+  // R11-L06-D01（文案 P0）：聊天对象身份 = userId（真入参），不再被「昵称为空」拦死——
+  // 原实现补拉失败即把「立即聊天」toast 掉，用户既不知道对方是谁也发不出第一条消息。
+  // 仅当连 id 都拿不到（直开缺参）才拦，且给可重试导向而非取证串。
+  const targetId = partnerUserId.value;
+  if (!targetId) {
+    uni.showToast({ title: "暂时无法识别对方身份，请到寻觅页重新匹配", icon: "none" });
     return;
   }
   matchStore.markChatReady();
   openAppPath(
-    `${ROUTES.CHAT.SESSION}?userId=${encodeURIComponent(partner.value.userId)}`
+    `${ROUTES.CHAT.SESSION}?userId=${encodeURIComponent(targetId)}`
   );
 }
 
@@ -137,8 +153,28 @@ function keepExploring() {
 }
 
 function handleShare() {
-  uni.showToast({ title: "分享功能即将上线", icon: "none" });
+  // R11-L06-D06（需新建 P2）：不再用「即将上线」toast 冒充不存在的链路。
+  // 微信不允许脚本化调起转发面板，页内「分享喜悦」节点在组件 MatchSuccess.vue:173
+  // （view，非 <button open-type="share">，该文件不在本车道可写集）⇒ 本侧先把
+  // 回复改成真存在的出口导向（onShareAppMessage 已注册，胶囊菜单转发为真能力）。
+  uni.showToast({ title: "点右上角「···」选择发送给朋友即可转发", icon: "none" });
 }
+
+/* R11-L06-D06（需新建 P2）：真分享出口——注册页面级 onShareAppMessage，系统胶囊
+   「···→发送给朋友」由此产出真转发卡片。标题只携页上已有的显示昵称做脱敏首字（无真名
+   落「TA」，不编造）；分享卡片图：仓内没有本页现成素材、硬规矩 5 禁生成/下载 ⇒ 不指定
+   imageUrl，走微信默认页面截图卡。接收方按 query.userId 落地可识别对方（R11-L06-D01 链）。 */
+onShareAppMessage(() => {
+  const name = (partner.value?.name || "").trim();
+  const masked = name ? `${name.slice(0, 1)}**` : t("discover.partnerDefaultName");
+  const base = { title: `我和 ${masked} 匹配成功啦` };
+  return partnerUserId.value
+    ? {
+        ...base,
+        path: `${ROUTES.DISCOVER.MATCH_SUCCESS}?userId=${encodeURIComponent(partnerUserId.value)}`,
+      }
+    : base;
+});
 
 /** 2026-08-25 P0：左上返回（规格书 7.1） */
 function goBack() {
@@ -188,25 +224,22 @@ function handleScreenshot() {
             @error="onNavIconError"
           />
         </view>
-        <view
-          class="success-nav__btn press-feedback"
-          hover-class="press-feedback--active"
-          hover-stay-time="120"
-          role="button"
-          :aria-label="'更多'"
-          @tap="handleShare"
-        >
-          <text class="success-nav__icon">···</text>
-        </view>
+        <!-- R11-L06-D04（位置 P2）：删除页内自绘「···」钮——原与系统胶囊 ••• 同形同义、
+             相距仅 17px 并排重复，点击只弹 toast，是假控件；右上收成唯一一枚图标位。 -->
       </view>
     </view>
 
+    <!-- §12.3（R11 在册裁定，派单前定案）：match-score 不再接 partner?.matchScore——
+         它由 constants/match.ts:92/95/98 写死 80+n×5（共同圈为 0 也报 80%）派生，非真值。
+         后端出真 match_score 列之前本页不显示匹配度百分比（冻结契约 §12，
+         MatchLoading.vue:48-54 已认同一口径），R10 的 defaultScores/DEFAULT_REASON_LABELS
+         假补位不回归（§11.2：真理由为空 ⇒ 整卡隐藏的判据保持不动）。
+         登记缺列：后端匹配度真值列。 -->
     <MatchSuccess
       :my-avatar="myAvatar"
       :partner-avatar="partnerAvatar"
       :partner-name="partnerName"
       :reasons="reasons"
-      :match-score="partner?.matchScore"
       @chat="goChat"
       @explore="keepExploring"
       @share="handleShare"

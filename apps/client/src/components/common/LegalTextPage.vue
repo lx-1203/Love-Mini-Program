@@ -132,17 +132,35 @@ const updatedAtText = computed<string>(() => {
   return `${label}：${displayUpdatedAt.value}`;
 });
 
-/** 版本号（后端返回时展示，否则展示本地 fallback 标识） */
+/**
+ * 是否走「本地兜底文本」分支。
+ *
+ * R11-L13-D19（P0 · agreement top 帧）：本判定原先只用来把版本号抹成空串，
+ * 注释写的理由是「避免误导用户」，实测效果相反 —— 帧上卡片头只剩一行
+ * 「最后更新：2026-10-22」（该日期由 config/legal-texts.ts:142 `new Date()` 现造），
+ * 唯一能揭穿「这不是后台正式文本」的状态被吞掉 ⇒ 用户把兜底文案当成 CMS 正式文本签署。
+ * 现把同一判定翻出来当**披露**用：兜底态出提示药丸（见 .legal-header__fallback），
+ * 且不再出日期（见 displayUpdatedAt）。
+ */
+const isLocalFallback = computed<boolean>(() => legalText.value?.version === "local-fallback");
+
+/** 版本号（仅后端 CMS 返回时展示；兜底态不印假版本号，改由提示药丸披露状态） */
 const displayVersion = computed<string>(() => {
   if (!legalText.value?.version) return "";
-  // 本地 fallback 文案不展示版本号（避免误导用户）
-  if (legalText.value.version === "local-fallback") return "";
+  if (isLocalFallback.value) return "";
   return legalText.value.version;
 });
 
 /** 最后更新时间（ISO 8601 → YYYY-MM-DD） */
 const displayUpdatedAt = computed<string>(() => {
   if (!legalText.value?.updatedAt) return "";
+  // R11-L13-D16（P0 · privacy top 帧）：`local-fallback` 时 updatedAt 是
+  // config/legal-texts.ts:142 在渲染当天现造的 `new Date().toISOString()`，
+  // 不是这份政策的修订日期 —— 帧上读数 2026-10-22 与本批取景日逐字相同。
+  // 合规文本的时间戳不许由前端自造 ⇒ 兜底支一律不印日期（模板 .legal-header__updated
+  // 的 v-if 随之不出，整行不留空带），
+  // 正式口径只认后端 CMS 的 updatedAt 单点供给；缺列登记见交件「缺列 / 移交登记」。
+  if (isLocalFallback.value) return "";
   try {
     const date = new Date(legalText.value.updatedAt);
     if (Number.isNaN(date.getTime())) return "";
@@ -155,9 +173,9 @@ const displayUpdatedAt = computed<string>(() => {
   }
 });
 
-/** 是否展示元信息（版本号或更新时间至少一项存在） */
+/** 是否展示元信息（版本号 / 更新时间 / 兜底态提示，任一即出） */
 const showMeta = computed<boolean>(() => {
-  return displayVersion.value !== "" || displayUpdatedAt.value !== "";
+  return displayVersion.value !== "" || displayUpdatedAt.value !== "" || isLocalFallback.value;
 });
 
 /** 卡片头整体是否还有内容可渲染（标题 + 版本 + 更新时间全空时不留一条空带） */
@@ -206,6 +224,11 @@ function handleRetry(): void {
       <view v-if="showHeader" class="legal-header">
         <text v-if="cardTitle" class="legal-header__title">{{ cardTitle }}</text>
         <view v-if="showMeta" class="legal-header__meta">
+          <!-- R11-L13-D19：兜底态必须上屏披露（原文案走 i18n，本行是状态标识、
+               非业务文案；i18n 键抽取登记给文案车道，见交件） -->
+          <text v-if="isLocalFallback" class="legal-header__fallback">
+            本地兜底文本 · 非正式版本
+          </text>
           <text v-if="displayVersion" class="legal-header__version">
             {{ displayVersion }}
           </text>
@@ -284,16 +307,18 @@ function handleRetry(): void {
   /* R8-L13-D12/D16：.legal-footer 出流吸底后按等高占位补白，
      避免滚到文末时最后一段正文被固定条压住（钮高 --btn-height-md 96rpx + 上下内距）。
      R9-L13-D08/D10（间距 P2 · privacy + agreement 同根因）：上一版占位写死 200rpx，
-     而吸底条实高 = --sp-4(16) + --btn-height-md(96) + --sp-6(24) + 上描边 1rpx
+     而吸底条实高 = --sp-4(16) + --btn-height-md(96) + --sp-6(24)（当时另加 1rpx 上描边）
      = 137rpx（design-variables.scss:550/552/666 三枚令牌真值，env=0 档）
      ⇒ 滚到底时白卡圆角底与白底吸底条之间露出 200−137 = 63rpx(~32px) 的
      --c-bg-page 绿带，把「一张白卡」切成两截（bottom 帧实测）。
      现改为与吸底条同源算式（含真机安全区，两侧同步增长），占位恒等于条高，
      差值 0 ⇒ 绿缝消失；不再出现「补多/补少」两轮来回。
+     R11-L13-D18/D21 把吸底条底色改成 --c-bg-page 并删掉那条 1rpx 上描边 ⇒ 算式同步去掉
+     +1rpx，占位仍恒等于条高（136rpx + env）。
      直接写 calc（与本文件 .legal-footer 的 padding 同一种写法，env/var 均为已在跑的组合），
      不经自定义属性中转，避免中转变量在 WXSS 里解析失败时整条 padding 退化成 0。 */
   padding-bottom: calc(
-    var(--btn-height-md, 96rpx) + var(--sp-4) + var(--sp-6) + 1rpx +
+    var(--btn-height-md, 96rpx) + var(--sp-4) + var(--sp-6) +
       env(safe-area-inset-bottom)
   );
   box-sizing: border-box;
@@ -314,7 +339,10 @@ function handleRetry(): void {
    + content 的 padding-top --page-padding(32rpx=16px) = 24px 偏紧，padding-bottom 提到
    --sp-6(24rpx=12px) ⇒ 间距 28px，读起来仍是"同一段落前的呼吸位"而不是两个区块。 */
 .legal-header {
-  margin: var(--sp-4) var(--page-padding, 32rpx) 0;
+  /* R11-L13-D17（位置 P2 · privacy top 帧）：与 .legal-content 同步去掉左右 margin。
+     两段是「同一张白卡」的上下两截（R8-L13-D13 连卡口径），只改下半截会把卡从中间
+     错开成两个宽度 ⇒ 一并归零，宽度交给外层内容列（AppShell 已给 --page-padding）。 */
+  margin: var(--sp-4) 0 0;
   padding: var(--sp-6) var(--page-padding, 32rpx) var(--sp-6);
   display: flex;
   flex-direction: column;
@@ -344,6 +372,20 @@ function handleRetry(): void {
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-brand);
   color: var(--c-brand-700);
+}
+
+/* R11-L13-D19（文案 P0 · agreement top 帧）：本地兜底态的披露药丸。
+   卡上建议「走 --c-warning 档」——按 §2 的算法否掉：--c-warning #F59E0B 压白只有 2.15:1
+   （StatusState.vue 的 .pill--heat 注释里 R9-L13-D03 同一条实测已记），
+   故取仓内既有的 warning 深档文字令牌 --c-text-warning-dark #92400E（design-variables.scss:820）
+   压 --c-warning-bg-tint（:838 = rgba(245,158,11,0.1)，叠白 #FEF5E6）= 6.57:1 ≥ 4.5:1，
+   与 StatusState.vue 的 .pill--heat 同一把尺，不新造色。 */
+.legal-header__fallback {
+  font-size: var(--fs-xs);
+  padding: 2rpx 12rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-warning-bg-tint, rgba(245, 158, 11, 0.1));
+  color: var(--c-text-warning-dark, #92400e);
 }
 
 .legal-header__updated {
@@ -406,7 +448,15 @@ function handleRetry(): void {
    x=33..345 各宽 4px ⇒ 页边距必须吃页面令牌 --page-padding（:575，32rpx=16px），不是间距阶梯。 */
 .legal-content {
   flex: 1;
-  margin: 0 var(--page-padding, 32rpx);
+  /* R11-L13-D17（位置 P2 · privacy top 帧）：原写 `margin: 0 var(--page-padding)`。
+     本元素是模板里 class="legal-content" 那个 `scroll-view`，其宽度按父容器 100% 解析、**不随右边距收缩**
+     ⇒ 左缘被外层内容列的 16px 与自身 16px 叠成 32px，整张卡右移 16px、右侧页边距归零。
+     帧上实测白卡 x=33..376（y=250/400/550/700 四行同读，右缘只剩 2px 内缩），
+     而同批另三页的卡片列是 x=17..361（左右各 16px）⇒ 本卡脱离站点内容列并贴出屏外，
+     本规则下方的 40rpx 下圆角与 --card-shadow 被推到屏外没有落点。
+     改法取卡上第一条：去掉左右 margin，宽度交给外层内容列；内距仍吃 --page-padding，
+     于是墨列回到 x=32..343（站点标准内容列 x=33..345），卡片列与同批三页同宽。 */
+  margin: 0;
   padding: var(--page-padding, 32rpx);
   background: var(--c-bg-container);
   border-radius: 0 0 var(--card-radius, 40rpx) var(--card-radius, 40rpx);
@@ -456,8 +506,19 @@ function handleRetry(): void {
   z-index: 90;
   padding: var(--sp-4) var(--page-padding, 32rpx)
     calc(env(safe-area-inset-bottom) + var(--sp-6));
-  background: var(--c-bg-container);
-  border-top: 1rpx solid var(--c-border-light, rgba(15, 23, 42, 0.04));
+  /* R11-L13-D18 / R11-L13-D21（圆角 P2 · privacy + agreement 两条同根因）：
+     吸底条底色原取 --c-bg-container（白），与上方白卡无缝相接 ——
+     帧上实测（privacy bottom，x=200 逐像素）白卡内容到 y=711 为止，y=714..718 是
+     本规则此前那条 1rpx border-top，其下仍是白，品牌绿按钮 y=722..768：卡底与条之间
+     0 个 --c-bg-page 像素 ⇒ 本文件 .legal-content 的 40rpx 下圆角与它的 --card-shadow 没有落点，
+     这份 2000px 长文在屏幕上没有可见的结尾。
+     取卡上第一条改法：底色改回 --c-bg-page，与 BottomActionBar.vue:89 的吸底变体同口径
+     （那条本来就是 `background: var(--c-bg-page, #EEF7F2)`，全站吸底动作条一把尺）。
+     不取第二条（padding-bottom 追加 --section-gap 留绿缝）：那正是 R9-L13-D08/D10
+     上一轮按「63rpx 绿带把一张白卡切成两截」判掉的东西，再加回去是两轮来回。
+     描边随之删除：底面与页面同色后它是一条悬空发丝线，BottomActionBar 亦无描边。
+     钮底 brand-800 压 --c-bg-page #EEF7F2 实算 5.91:1（L 0.11271 / 0.91110）≥ 非文本 3:1。 */
+  background: var(--c-bg-page, #EEF7F2);
 }
 
 .legal-footer__btn {

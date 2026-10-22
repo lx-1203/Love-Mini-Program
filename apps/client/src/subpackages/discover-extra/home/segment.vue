@@ -110,6 +110,17 @@ function isOnline(status?: string): boolean {
   return status === "online" || status === "just_now";
 }
 /**
+ * R11-L06-D08（文案 P2）：实帧顶帧 9 行里 4 行把 QA 种子数据的取证前缀当用户名渲染
+ * （「演示·中山大学」等）。渲染昵称前剥掉取证前缀——判据与 components/home/
+ * NearbyPeople.vue:20 DEMO_NAME_PREFIX 同源（该组件文件不在本车道，此处页内自备
+ * 同口径正则，NearbyPeople.vue:22 调用口径同）；剥空则留空不编造名字（宁缺不造，
+ * 同 NearbyPeople.vue:18 注释口径）。前缀根因归 seed 数据治理车道。
+ */
+const DEMO_NAME_PREFIX = /^\s*(?:演示|示例|测试|QA|qa)\s*[·・•\-–—/|]\s*/;
+function displayName(raw?: string): string {
+  return String(raw ?? "").replace(DEMO_NAME_PREFIX, "").trim();
+}
+/**
  * R8-L06-D10（文案 P3）：meta 行句式同构。
  * 原模板把分隔符写成条件拼接（item.campusName && item.distanceText ? ' · ' : ''），
  * distanceText 为空时整段消失 ⇒ 首帧 8 行里只有「浙江大学 · 230km」一行带距离，
@@ -157,13 +168,13 @@ function openProfile(userId: string) {
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
-        :aria-label="item.name"
+        :aria-label="displayName(item.name)"
         @tap="openProfile(item.userId)"
       >
         <image class="segment-row__avatar" :src="resolveMediaUrl(item.avatar) || resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR)" mode="aspectFill" alt="" />
         <view class="segment-row__info">
           <view class="segment-row__name-row">
-            <text class="segment-row__name">{{ item.name }}</text>
+            <text class="segment-row__name">{{ displayName(item.name) }}</text>
             <!-- R8-L06-D09（素材缺失 P1）：绿点整帧不出现，两个叠加成因都在本行——
                  ① 外层是 <text>：mp-weixin 的 text 组件只接受字符串/text 子节点，
                     嵌进去的 <image> 不渲染（同行「在线」二字正常，圆点位恒白 #FFFFFF）；
@@ -213,18 +224,37 @@ function openProfile(userId: string) {
 }
 
 .segment-header__back {
-  width: 56rpx;
-  height: 56rpx;
+  /* R11-L06-D07（可达性 P1）：帧上返回白块实测 26×25px（源码 56rpx），低于 88rpx 热区口径，
+     且本页正文全是列表行、返回钮是唯一退出件（胶囊无返回箭头）。按缺陷卡口径：热区撑到
+     88rpx，视觉白圆仍 56rpx——父节点转透明只承热区，圆底/阴影挪 ::before 居中，
+     字形 position:relative 提到伪元素之上。
+     布局补偿：四边 -16rpx 负外边距抵掉外扩，元素占位仍是 56rpx，::before(left/top 16rpx)
+     落在原白圆的同一像素位 ⇒ 标题与行距不因热区改动移位。 */
+  position: relative;
+  width: 88rpx;
+  height: 88rpx;
+  margin: -16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--r-circle, 50%);
-  background: var(--c-bg-container, #ffffff);
-  box-shadow: var(--card-shadow, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
   flex-shrink: 0;
 }
 
+.segment-header__back::before {
+  content: '';
+  position: absolute;
+  left: 16rpx;
+  top: 16rpx;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: var(--r-circle, 50%);
+  background: var(--c-bg-container, #ffffff);
+  box-shadow: var(--card-shadow, 0 4rpx 20rpx rgba(0, 0, 0, 0.06));
+}
+
 .segment-header__back-icon {
+  /* R11-L06-D07：::before 为定位盒，会盖过普通流字形，需让 ‹ 入定位层 */
+  position: relative;
   font-size: 40rpx;
   font-weight: 700;
   color: var(--c-text-primary, #222222);
@@ -333,13 +363,20 @@ function openProfile(userId: string) {
 }
 
 .segment-row__meta {
-  font-size: 22rpx;
+  /* R11-L06-D09（字号 P2）：22rpx=11px 落 §1.3 极小档而非列表辅文档；同页 __online 在
+     R8-L06-D11 已提到 --fs-base(24rpx)，meta 这行漏收 ⇒ 同档补齐，行内 30/24/24rpx 取档齐。 */
+  font-size: var(--fs-base, 24rpx);
   color: var(--c-text-tertiary, #666666);
 }
 
 .segment-row__arrow {
+  /* R11-L06-D10（可达性 P2）：帧上「›」最暗像素 RGB(190,195,193) 压白卡约 1.8:1，低于
+     非文本图形 3:1；令牌 --c-text-quaternary 真值 #9AA39F（白底 2.59:1）本身已不达，
+     行内兜底 #C8CFCD(1.5:1) 又与令牌真值不一致。改走 --c-text-tertiary（真值 #6B7571，
+     白底 4.76:1，design-variables.scss:125），兜底写成与令牌同值防静默变浅。
+     全站其余 --c-text-quaternary 消费点按缺陷卡归另车道统一核档，此处不动。 */
   font-size: 30rpx;
-  color: var(--c-text-quaternary, #C8CFCD);
+  color: var(--c-text-tertiary, #6B7571);
 }
 </style>
 

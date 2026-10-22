@@ -496,8 +496,18 @@ function browsePublic() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-8)) var(--sp-8) var(--sp-6);
+  /* R11-L08-D10（间距 P2 · heart-signals bottom 帧）：原 `justify-content:center` 把
+     「插画 / 文案+权益 / 操作区」三组当成一个整块居中，内容矮于 body 时余量全部堆到
+     块外 —— 帧上实测「先逛逛公开内容」墨迹止于 y=601、底部提示起于 y=732，中间 131px
+     (≈260rpx) 是一条不落在 §1.4 sp 阶梯上的无主空带。
+     按卡上给的第二种形态收口：三组各自贴顶/贴底铺开（space-between），钮下的空带被三组
+     之间的呼吸位吃掉；内容超长时 space-between 退化成 flex-start，仍由 overflow-y:auto 滚，
+     不会裁切。body 下内距同时从 --sp-6(24rpx) 提到 --sp-9(48rpx) —— 卡上第一条口径要的
+     「由 --sp-9/--sp-10 定值收口」，即钮下间隙从此只有这一枚令牌 + 页脚自己的 --sp-4，
+     不再有 260rpx 的浮动余量。5 个宿主（village / heart-signals / likes-visitors /
+     messages / 官方号）共用本组件，同批同治。 */
+  justify-content: space-between;
+  padding: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-8)) var(--sp-8) var(--sp-9);
 }
 
 /* ========== 主题插画：解锁徽章 + 同校头像 + 漂浮爱心 ========== */
@@ -713,7 +723,16 @@ function browsePublic() {
 }
 
 .benefit__text {
-  font-size: var(--fs-md);
+  /* R11-L08-D08（字号 P2 · heart-signals top 帧）：这三条权益清单是本屏唯一的
+     「解锁后能拿到什么」正文，原取 --fs-md（真值 26rpx=13.5px，design-variables.scss:563），
+     帧上三行墨迹带高仅 12-13px（y=441..453 / 464..476 / 488..499），落在 §1.3 只分配给
+     「标签·时间戳」的档，比同屏主标题（--fs-3xl）低两级，与它的层级不匹配。
+     按卡上改法升 --fs-xl（30rpx=15px，§1.3 正文档）并显式写 1.5 行距（卡上口径）：
+     行盒 26→45rpx，三行合计约 +57rpx，全部落进 .lock-screen__body 那条本来无主的底部空带（见 R11-L08-D10），
+     不产生溢出/遮挡。颜色不动 —— --c-text-secondary #4A524E 压页面底 #EEF7F2 本就 7.37:1
+     （R6-L08-D13 / R8-L08-D05 已裁），升字号只会更好读。 */
+  font-size: var(--fs-xl);
+  line-height: 1.5;
   color: var(--c-text-secondary);
 }
 
