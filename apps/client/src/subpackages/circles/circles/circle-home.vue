@@ -302,6 +302,18 @@ const displayFeed = computed<FeedItem[]>(() => {
   return useMock() ? feedItems.value : [];
 });
 
+/** R13-L04-D07：hero 话题直达 chips——displayFeed（真实话题优先）里取前 4 条有标题的话题，
+ *  标题截 12 字防 chips 行被超长话题名撑爆；无标题/无数据 ⇒ 空数组 ⇒ 整行不渲染。 */
+const heroTopicChips = computed<FeedItem[]>(() =>
+  displayFeed.value
+    .filter((item) => Boolean(item.title))
+    .slice(0, 4)
+    .map((item) => ({
+      ...item,
+      title: item.title && item.title.length > 12 ? `${item.title.slice(0, 12)}…` : item.title,
+    })),
+);
+
 onLoad((query) => {
   if (query?.circleId) {
     circleId.value = String(query.circleId);
@@ -555,6 +567,24 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
         <view v-if="circleTags.length" class="tag-row">
           <view v-for="tag in circleTags" :key="tag" class="tag-chip">
             <text class="tag-chip-text">{{ tag }}</text>
+          </view>
+        </view>
+
+        <!-- R13-L04-D07（P1 · 需新建）：理想图要求的圈子话题直达 chips 行——原话题入口只收在
+             feed 尾部「查看全部话题」，首屏（hero+页签）零话题入口，必须滚完整个 feed 才能进话题列表。
+             数据接既有 circleStore.fetchTopics 真话题（与下方 feed 同源 displayFeed），取前 4 条
+             有标题的；接口无数据 ⇒ 空数组 ⇒ 整行不渲染，不编常量话题名。点击走 openFeedDetail
+             既有链路直达话题详情（非空 id 直跳，详情页有不存在降级态）。 -->
+        <view v-if="heroTopicChips.length" class="topic-chip-row">
+          <view
+            v-for="chip in heroTopicChips"
+            :key="chip.id"
+            class="topic-chip"
+            hover-class="topic-chip--active"
+            hover-stay-time="120"
+            @tap="openFeedDetail(chip)"
+          >
+            <text class="topic-chip-text"># {{ chip.title }}</text>
           </view>
         </view>
       </view>
@@ -977,6 +1007,36 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 }
 
 .tag-chip-text {
+  font-size: 24rpx;
+  color: var(--c-badge-on-image-text, rgba(255, 255, 255, 0.95));
+}
+
+/* ===== 3b. 话题直达 chips（R13-L04-D07，压 hero 遮罩）===== */
+.topic-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  /* 紧跟圈标签 chips 行之后，留一半行距区隔两组 */
+  margin-top: 16rpx;
+}
+
+.topic-chip {
+  /* 与上方 .tag-chip 同族「图上玻璃片」成对令牌（R2b-L05-D01 口径）：底
+     --c-badge-on-image-bg（深色半透明）+ 白字 --c-badge-on-image-text，压遮罩仍 ≥4.5:1；
+     不自造色值。 */
+  background: var(--c-badge-on-image-bg, rgba(15, 23, 42, 0.7));
+  border: 1rpx solid var(--c-overlay-border-light, rgba(255, 255, 255, 0.18));
+  border-radius: 999rpx;
+  padding: 10rpx 24rpx;
+  max-width: 100%;
+  transition: all var(--d-fast, 120ms) ease;
+}
+
+.topic-chip--active {
+  background: var(--c-overlay-stronger, rgba(15, 23, 42, 0.85));
+}
+
+.topic-chip-text {
   font-size: 24rpx;
   color: var(--c-badge-on-image-text, rgba(255, 255, 255, 0.95));
 }

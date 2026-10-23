@@ -328,13 +328,11 @@ function openActivity(activityId: number | string) {
           <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART" mode="aspectFit" alt="" />
           <text v-if="post.likes > 0" class="action-btn__count" :class="{ 'action-btn__count--liked': post.isLiked }">{{ post.likes }}</text>
         </view>
-        <!-- 分享
-             R1-L02-D07 未修（@tap 仍是 noop 死按钮）：本卡片只有 emit 通道、附近页无分享处理
-             函数也无 onShareAppMessage，分享要接的是尚未落地的功能，不在本文件发明行为；
-             因此这枚也不补 role/aria-label——给死按钮播报「分享」是假可达 -->
-        <view class="action-btn" @tap.stop="noop">
-          <image class="action-btn__icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
-        </view>
+        <!-- R13-L01-D11（2026-10-22）：原第三枚「分享」键 @tap.stop="noop" 死钮整枚撤除
+             （R1-L02-D07 挂账至今）——本组件只有 emit 通道，组件内接不到页面级 onShareAppMessage
+             （周边页仅 village/index.vue:596、profile/index.vue:1500 有，nearby/index 没有），
+             按「撤掉图标、不放空承诺」处置；将来接真分享须页面级 onShareAppMessage +
+             button open-type="share" 落地后再恢复，不许回填 noop 死钮。 -->
         <!-- 收藏 -->
         <view
           class="action-btn"

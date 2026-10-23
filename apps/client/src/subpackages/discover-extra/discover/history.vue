@@ -306,16 +306,34 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .back-btn {
-  width: 72rpx;
-  height: 72rpx;
+  /* R13-L06-D07（可达性 P1）：返回白圆原 72×72rpx=36px，低于 88rpx 热区口径，
+     且返回是本页唯一退出件（goBack 的 switchTab 只是 navigateBack fail 兜底，帧上胶囊
+     只有 ···/◎ 无返回箭头）；同分包 segment/people 返回钮 R11 已扩到 88rpx，本页漏改。
+     按 segment.vue:226 配方：热区撑到 88rpx，视觉白圆仍 72rpx——父节点转透明只承热区，
+     圆底/阴影挪 ::before 居中，四边 -8rpx 负外边距抵掉外扩 ⇒ 元素占位仍 72rpx，
+     标题与右侧占位（.header-placeholder 72rpx）不因热区改动移位。 */
+  position: relative;
+  width: 88rpx;
+  height: 88rpx;
+  margin: -8rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--d-fast, 120ms) ease;
+}
+
+.back-btn::before {
+  content: '';
+  position: absolute;
+  left: 8rpx;
+  top: 8rpx;
+  width: 72rpx;
+  height: 72rpx;
   /* R4-02529：卡片底色改用 --c-bg-container（深色模式自动适配） */
   background-color: var(--c-bg-container);
   border-radius: var(--r-circle, 50%);
   box-shadow: 0 4rpx 16rpx var(--c-black-shadow-sm);
-  transition: all var(--d-fast, 120ms) ease;
 }
 
 /* #ifdef H5 */
@@ -325,6 +343,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 /* #endif */
 
 .back-icon {
+  /* R13-L06-D07：::before 为定位盒，会盖过普通流字形，需让 ‹ 入定位层（同 segment.vue:256） */
+  position: relative;
   font-size: var(--fs-3xl, 36rpx);
   /* R8-L06-D18（颜色 token P2）：返回箭头原取 $green-primary(--c-brand #3CCA9C)，
      与同页主标题「今日已看」同色抢强调位，违反 §1.1.2「绿色=行动」；
@@ -361,7 +381,9 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   justify-content: space-around;
   padding: 28rpx 32rpx;
-  margin: 0 24rpx 28rpx;
+  /* R13-L06-D08（间距 P3）：左右留白原 24rpx=12px，低于 §1.4 --page-padding 32rpx=16px，
+     同分包 likes/segment/people 页左右均 32rpx ⇒ 统一吃 --page-padding 令牌。 */
+  margin: 0 var(--page-padding, 32rpx) 28rpx;
   /* R4-02529：卡片底色改用 --c-bg-container（深色模式自动适配） */
   background-color: var(--c-bg-container);
   border-radius: var(--r-xl, 24rpx);
@@ -403,7 +425,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 /* ===== 历史列表 ===== */
 .history-list {
-  padding: 0 24rpx;
+  /* R13-L06-D08（间距 P3）：列表与统计卡左右留白统一 --page-padding（同上条） */
+  padding: 0 var(--page-padding, 32rpx);
   display: flex;
   flex-direction: column;
   gap: 20rpx;

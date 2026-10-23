@@ -429,6 +429,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .detail-header__back {
+  /* R13-L05-D04（P3 · 可达性）：改前仅 padding 12rpx 20rpx + 28rpx 图标 ≈57.6rpx（帧上 ≈29px），
+     低于全站 88rpx 热区档；同域 certification.vue:512 / post-topic.vue:654 的返回/取消钮均已达标。
+     照抄同款改法：补 min-height + 盒模型并立成 flex，让图标在新高度里垂直居中。 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 88rpx;
   padding: 12rpx 20rpx;
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-overlay-white-bg-mid-strong);
@@ -833,6 +841,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .anonymous-toggle {
+  /* R13-L05-D05（P1 · 可达性）：改前仅 padding 14rpx 22rpx + 24rpx 字，热区高 ≈57–62rpx
+     （帧上 ≈29px）<88rpx；这是回复身份（实名/匿名）的唯一开关、页面内无替代出口。
+     补 min-height 88rpx（与同页顶栏返回钮 D04 同批），flex 立起让文字在新高度垂直居中。 */
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: 88rpx;
   padding: 14rpx 22rpx;
   border-radius: var(--r-full, 9999rpx);
   background: $bg-page;

@@ -207,7 +207,10 @@ const genderIconSrc = computed(() => {
   justify-content: center;
   padding: 2rpx 14rpx;
   border-radius: 999rpx;
-  background: #36C99A;
+  /* R13-L02-D03（2026-10-22）：#36C99A 上白字 20rpx 实算 2.10:1，低于 P2 档 3:1。
+     底色改 --c-brand-800 #156B51（theme/design-variables.scss:267），白字 6.45:1。
+     不取「浅底深字」档：--c-brand-100 底会把徽标从实心变浅底，与卡内其余实心徽标不同族。 */
+  background: var(--c-brand-800, #156B51);
 }
 
 .my-header__online-text {

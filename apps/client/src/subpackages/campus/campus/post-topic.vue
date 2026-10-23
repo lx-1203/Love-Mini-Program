@@ -750,11 +750,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* R12-L05-D05（P3 间距）：R9 注释声称的「整句仍是单行」在 real 帧（378px 宽）被证伪——
-     第二行只剩孤字「证」。正文 24 字 × --fs-base 24rpx = 576rpx，原可用宽 ≈540rpx，
-     缺口恰 1 字（24rpx）。这里把横幅水平内衬 28→20rpx（+16rpx）、gap 12→8rpx（+4rpx）、
-     按钮水平 padding 24→16rpx（+16rpx），合计还 36rpx ≈ 1.5 字宽给文本 ⇒ 回到单行，
-     横幅不增高；按钮 16rpx 侧衬仍满胶囊形（文案「去认证」3 字 nowrap 不受影响）。 */
+  /* R12-L05-D05 的「收内衬还宽保单行」方案被 R13-L05-D01 证伪：正文 24 字 × 24rpx = 576rpx，
+     R13 帧（real-f0677920/top）实测正文可用仍 ≈544rpx——收内衬 +36rpx 没够到 576rpx 门槛，
+     第二行依旧孤字「证」，帧 sha 67dc12e7 → f07171e6 但折行未消。R13 卡明令「别再压缩内衬」，
+     改走卡上的第一方案：正文独占首行（flex-basis 100%），「去认证」换行到第二行右对齐。
+     正文独占宽 = 横幅内宽 656rpx（750 − .post-body 48 − 横幅内衬 40 − 左轨 6）≥ 576rpx，
+     单行为真值不再依赖字宽估计；按钮整枚（88rpx 命中区）换行，高度增加但不再折行。 */
+  flex-wrap: wrap;
   gap: 8rpx;
   padding: 22rpx 20rpx;
   margin-bottom: 20rpx;
@@ -764,15 +766,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
      顶部渐变 13.5% 处的浅绿 (236,248,242) ⇒ 合成 (237,239,219)，L=0.84859），
      warning 的「强度提示」改由这条左轨承担。
      左轨取 warning 深色档 --c-text-warning-dark #92400E（design-variables.scss:820，L=0.09809）：
-     对条底 (0.89859)/(0.14809) = 6.07:1 ≥ 非文本 3:1；若直接用 --c-warning #F59E0B 只有 1.84:1，故不取。
-     左轨 6rpx 比原 2rpx 多占 2px，同步把 gap 由 16rpx 收到 12rpx 还这 2px ⇒ 正文可用宽不变，
-     整句仍是单行（不引入新的折行/增高）。 */
+     对条底 (0.89859)/(0.14809) = 6.07:1 ≥ 非文本 3:1；若直接用 --c-warning #F59E0B 只有 1.84:1，故不取。 */
   border-left: 6rpx solid var(--c-text-warning-dark, #92400E);
   background: var(--c-warning-bg-tint);
 }
 
 .cert-banner__text {
-  flex: 1;
+  /* R13-L05-D01：flex-basis 100% 独占首行，见 .cert-banner 注释 */
+  flex: 1 0 100%;
   min-width: 0;
   font-size: var(--fs-base, 24rpx);
   line-height: 1.5;
@@ -784,11 +785,12 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .cert-banner__btn {
   flex-shrink: 0;
+  /* R13-L05-D01：随正文独占首行换到第二行，margin-left:auto 右对齐 */
+  margin-left: auto;
   /* R11-L05-D06（可达性 P1）：改前 12rpx×2 + 22rpx 标签 ≈51rpx；未认证态下这是全页唯一的
      前进出口（表单本身填不动），必须达到 88rpx。补 min-height + 盒模型，标签一并提到 24rpx。 */
   min-height: 88rpx;
   box-sizing: border-box;
-  /* R12-L05-D05：水平 24→16rpx，还 16rpx 宽给横幅正文保单行（见 .cert-banner 注释） */
   padding: 12rpx 16rpx;
   border-radius: var(--r-full, 9999rpx);
   /* R9-L05-D06：改前底 --c-warning #F59E0B 配 --c-text-inverse(rgba(255,255,255,.95)) 的
@@ -1120,7 +1122,11 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 /* MP-R1-CAMPUSPOSTTOPIC-202：real 下匿名开关不会生效时的替换文案态 */
 .option-desc--warn {
-  color: var(--c-warning);
+  /* R13-L05-D02（P1 · 可达性）：改前 --c-warning #F59E0B 压白卡（--c-bg-container #FFFFFF）
+     实测 2.01:1，连 3:1 下限都不到——这是全页唯一解释「开了也不会匿名」的告知。
+     改 warning 同族深色档 --c-text-warning-dark #92400E（design-variables.scss:820，
+     本页横幅左轨/去认证钮同款），白底 ≈7.1:1 ≥4.5:1，不加新色。 */
+  color: var(--c-text-warning-dark, #92400E);
 }
 
 /* ========== 底部提交 ========== */
@@ -1159,6 +1165,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .bottom-submit__btn--disabled .bottom-submit__text {
-  color: $text-tertiary;
+  /* R13-L05-D03（P2 · 可达性）：禁用态文字改前 $text-tertiary（--c-text-tertiary #6B7571）
+     压禁用底 $border-light（--c-border-light #EEF2F0）= 4.22:1 <4.5:1；顶栏「发布」禁用态
+     （R7-L05-D03/D04，本文件 :728）已按「禁用≠不可读」收口到 --c-text-secondary ≈7.4:1，
+     两处提交钮取档对齐同口径。 */
+  color: var(--c-text-secondary, #4A524E);
 }
 </style>

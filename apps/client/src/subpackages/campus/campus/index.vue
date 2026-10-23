@@ -592,7 +592,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .cert-guide-card {
   display: flex;
   align-items: center;
-  gap: 20rpx;
+  /* R13-L04-D10（P3 · 文案）：描述「上传学生证即可认证，与同校同学畅聊校园话题」21 字×24rpx
+     需 504rpx。R13 帧实证：第一行恰容纳 20 字 ⇒ 改前描述区宽 ∈ [480,504)rpx，孤字「题」独占第二行。
+     词条在 i18n/locales（不在本车道文件集）⇒ 按卡的第二方案收容器让位：gap 20→12（两处间隙 +16）、
+     钮横向内衬 32→24（+16），描述区 +32rpx ⇒ ≥512rpx ≥ 504rpx，整句真实单行。
+     注意：图标 64→56 那一路是死改动——本卡图标走 SafeImage custom-class（任务书已知机制 §1：
+     作用域边界使该规则命中 0 节点），帧上图标本就不可见、不占宽，故不计入还宽账。 */
+  gap: 12rpx;
   margin: 20rpx 24rpx;
   padding: 28rpx;
   background: linear-gradient(135deg, $green-light, var(--c-tint-green-50));
@@ -602,8 +608,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .cert-guide-card__icon {
-  width: 64rpx;
-  height: 64rpx;
+  /* R13-L04-D10：64→56rpx 保留为语义尺寸档（该规则经 custom-class 挂载，实不命中渲染节点，
+     见 .cert-guide-card 注释；若日后图标改走组件标签尺寸写法，此档即生效）。 */
+  width: 56rpx;
+  height: 56rpx;
   flex-shrink: 0;
 }
 
@@ -635,7 +643,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   justify-content: center;
   box-sizing: border-box;
   min-height: 88rpx;
-  padding: 16rpx 32rpx;
+  /* R13-L04-D10：横向内衬 32→24rpx（描述区 +16rpx），88rpx 热区与文字不变 */
+  padding: 16rpx 24rpx;
   border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300));
   flex-shrink: 0;
@@ -846,7 +855,10 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .topic-card__author {
   font-size: var(--fs-base, 24rpx);
-  color: $pink-primary;
+  /* R13-L04-D09（P1 · 颜色token）：作者名原取 $pink-primary（--c-romance-500 #FF6B81）压白卡
+     ≈2.7:1，低于次级文字 3:1 下限，且把「喜欢粉」挪用到普通用户名。改同域卡片作者名通用档
+     $text-secondary（--c-text-secondary #4A524E，对白 ≈7.1:1）；粉色保留给喜欢/匹配语义。 */
+  color: $text-secondary;
   font-weight: 500;
 }
 .topic-card__avatar {

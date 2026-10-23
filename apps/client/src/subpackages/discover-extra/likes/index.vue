@@ -1121,19 +1121,38 @@ onShareAppMessage(() => {
 }
 
 .likes-header__back {
+  /* R13-L06-D09（可达性 P1）：返回白圆原 64×64rpx=32px，低于 88rpx 热区口径，
+     且返回是本页唯一退出控件（navigationStyle:custom 全局无系统返回栏）；
+     同分包 segment/people 同件均已是 88rpx 热区档，本页漏改。
+     按 segment.vue:226 配方：热区撑到 88rpx，视觉白圆仍 64rpx——父节点转透明只承热区，
+     圆底/描边挪 ::before 居中，四边 -12rpx 负外边距抵掉外扩 ⇒ 元素占位仍 64rpx，
+     标题与右侧信号丸不因热区改动移位。 */
+  position: relative;
   flex-shrink: 0;
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: var(--r-full);
-  background: var(--c-bg-container);
-  border: var(--c-border-card);
+  width: 88rpx;
+  height: 88rpx;
+  margin: -12rpx;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+.likes-header__back::before {
+  content: '';
+  position: absolute;
+  left: 12rpx;
+  top: 12rpx;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-full);
+  background: var(--c-bg-container);
+  border: var(--c-border-card);
+}
+
 .likes-header__back-icon {
-  /* R10-L06-D26：位图改深色字形后的排布（同 people.vue:284-288 返回钮口径） */
+  /* R10-L06-D26：位图改深色字形后的排布（同 people.vue:284-288 返回钮口径）
+     R13-L06-D09：::before 为定位盒，会盖过普通流字形，需让 ‹ 入定位层（同 segment.vue:256） */
+  position: relative;
   font-size: 40rpx;
   line-height: 1;
   color: var(--c-text-primary, #1A1E1C);
@@ -1268,7 +1287,10 @@ onShareAppMessage(() => {
   gap: var(--sp-6);
   padding: var(--sp-7);
   background: var(--c-bg-container);
-  border-radius: var(--r-xl);
+  /* R13-L06-D10（圆角 P3）：原 --r-xl=24rpx=12px 只有卡片档 --card-radius 40rpx=20px 的六成；
+     同域 likes-visitors 页卡片 R11-L07-D05 已统一 --card-radius 40rpx，likes 页漏收
+     ⇒ 收口同档，同域卡片圆角归一。 */
+  border-radius: var(--card-radius, 40rpx);
   border: var(--c-border-card);
   box-shadow: var(--s-card-soft);
   transition: all var(--d-fast, 120ms) ease;

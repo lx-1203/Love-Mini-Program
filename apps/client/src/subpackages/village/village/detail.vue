@@ -889,9 +889,13 @@ onShareTimeline(() => {
         <view class="author-inline__info">
           <view class="author-inline__name-row">
             <text class="author-inline__name">{{ currentPost.author.name }}</text>
-            <view v-if="currentPost.isAlumni" class="author-inline__badge">
+            <!-- R13-L03-D01（P1 素材缺失）：校徽 chip 原只挂在 isAlumni 上 ⇒ 帧上作者行
+                 （campusName=南开大学 有真值）右侧无任何校徽，学校身份只剩演示昵称里的前缀。
+                 campusName 是真字段（本帖 :1001 位置行已消费）⇒ 按 §12 接真字段：
+                 有 campusName 即渲染校徽，文案取该字段；不再借 isAlumni 做门。 -->
+            <view v-if="currentPost.author.campusName" class="author-inline__badge">
               <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SCHOOL)" custom-class="author-inline__badge-icon" mode="aspectFit" />
-              <text class="author-inline__badge-text">{{ currentPost.author.campusName || t("village.alumni") }}</text>
+              <text class="author-inline__badge-text">{{ currentPost.author.campusName }}</text>
             </view>
           </view>
           <!-- 频道 · 时间（2026-08-27 理想图：分类标签如「摄影圈」· 相对时间） -->
@@ -1057,7 +1061,8 @@ onShareTimeline(() => {
           <text class="comments-title">{{ t("village.detail.commentsTitle") }}</text>
           <!-- P1-02：计数改用服务端总数（currentPost.comments 来自详情 commentCount），
                替代本地 comments.length（树形结构下根评论数 ≠ 总评论数） -->
-          <text class="comments-count">({{ currentPost.comments }})</text>
+          <!-- R13-L03-D03（P3 文案）：计数括号原为半角 ( )，与理想图全角（）取档不一 ⇒ 换全角。 -->
+          <text class="comments-count">（{{ currentPost.comments }}）</text>
           <view
             class="comments-sort press-feedback"
             hover-class="press-feedback--active"
@@ -2206,6 +2211,16 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
    原「首图 width:100%/height:400rpx 横幅 + 其余 220rpx 小方格」是"横着/并排"混排的源头，已删 */
 .post-images {
   margin-bottom: 20rpx;
+}
+
+/* R13-L03-D04（P2 尺寸比例）：详情页单图帖 grid--1 沿用 global.scss 两列口径 ⇒ 单图只占
+   半幅宽（帧上 ≈170/378≈45% 屏宽的 1:1 方格），理想图为 ≈90% 屏宽通栏横幅。
+   本页 scoped 覆写 --1 档为单列全宽（scoped 规则 .post-media-grid--1 .post-media-grid__cell[data-v]
+   特异度高于 global 同名规则，只影响详情页）；2 图及以上方格口径不变。
+   单元格仍保持 global 的 1:1 + aspectFill 几何，未另造横幅比例（理想图未给比例值，
+   不在前端发明，若产品要横幅比例需在规范文档登记）。 */
+.post-media-grid--1 .post-media-grid__cell {
+  width: 100%;
 }
 
 /* R2b-L04-D01：无配图时的占位格——几何沿用 global.scss .post-media-grid__cell（1:1 方格），

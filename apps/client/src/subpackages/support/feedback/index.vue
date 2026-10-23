@@ -558,15 +558,14 @@ function formatSubmissionTime(iso: string): string {
 
       <!-- R7-L13-D04（位置 P3）：主 CTA「提交」原未传 fixed ⇒ 走内容流，
            bottom 帧实测悬在视口中部 y=461..501、吸底位 y≥770 零墨迹，长表单填完要滚回顶部才能提交。
-           BottomActionBar.vue:11-19 的吸底变体（传 fixed）是既有出口，本页接上；
-           出流后由下面的 .action-bar-spacer 在原位保留同等高度，避免卡片塌陷、末行被吸底条遮挡。 -->
+           BottomActionBar.vue:11-19 的吸底变体（传 fixed）是既有出口，本页接上。
+           R13-L12-D11（2026-10-22）：原位占位 .action-bar-spacer 已撤——CTA 实为吸底 fixed，
+           卡内 120rpx 是纯死空间；滚动避让由页面级 .fixed-bar-clear 全权承担。 -->
       <BottomActionBar
         fixed
         :primary-label="isSubmitting ? t('common.submitting') : t('common.submit')"
         @primary="submit"
       />
-      <!-- 吸底条出流占位：88rpx 按钮 + 上下 16rpx 内边距（BottomActionBar .bar--fixed） -->
-      <view class="action-bar-spacer" aria-hidden="true" />
     </SectionCard>
 
     <!-- 功能10：提交记录列表 + 历史入口 -->
@@ -656,10 +655,17 @@ function formatSubmissionTime(iso: string): string {
   line-height: 40rpx;
 }
 
+/* R13-L12-D10（2026-10-22）：选中档原为白字压 --c-brand #36C99A，实算 ≈2.1:1，远低于正文级
+   4.5:1——切到任何分类后，被选中的 chip 永远是画面上最不可读的标签。改「浅底深字 + 描边」档：
+   --c-bg-brand #E8FBF2 底 + --c-brand-800 #156B51 文字（实算 5.5:1 ✓）+ --c-brand-700 描边
+   （参考 setup/recommend-pref/index.vue .option-item--active 同族定档；该处文字用的
+   --c-brand-700 压同底实算 3.85:1 不达 4.5:1，故文字取更深一档 --c-brand-800）。
+   .chip 已是 box-sizing:border-box + 定高 88rpx，加 2rpx 描边不改盒高。 */
 .chip--active {
-  background: var(--c-brand);
-  color: var(--c-text-inverse, #ffffff);
+  background: var(--c-bg-brand);
+  color: var(--c-brand-800);
   font-weight: 600;
+  border: 2rpx solid var(--c-brand-700);
 }
 
 .field {
@@ -890,10 +896,9 @@ function formatSubmissionTime(iso: string): string {
   color: var(--c-text-tertiary);
 }
 
-/* R7-L13-D04：吸底条出流后的原位占位（88rpx 按钮 + .bar--fixed 上下 16rpx 内边距） */
-.action-bar-spacer {
-  height: 120rpx;
-}
+/* R13-L12-D11（2026-10-22）：.action-bar-spacer（120rpx 卡内占位）已撤。
+   R7-L13-D04 当初立它是给「CTA 出流后在原位保留同等高度」，但 CTA 实为吸底 fixed，
+   本页另有页面级占位——保留只剩相机格下方约 60px 死空白。 */
 
 /* R7-L13-D04：滚动内容底部安全区，避免末行被 fixed 条遮挡 */
 .fixed-bar-clear {

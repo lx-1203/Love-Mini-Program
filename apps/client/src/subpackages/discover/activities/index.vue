@@ -431,7 +431,11 @@ defineExpose({ toggleEnroll });
                 <text v-if="item.category" class="row-category-tag">{{ t(`activities.category.${item.category}`) }}</text>
               </view>
               <!-- 参与意向人数标记（同校可见） -->
-              <view v-if="(item.enrollmentCount ?? item.enrollCount ?? 0) > 0" class="row-enrollment">
+              <!-- R13-L13-D07（P3 素材缺失）：原 v-if 在计数为 0 时把整块撤掉 ⇒ 同列卡片
+                   头部右缘取档不一、标题行右侧留白宽度逐卡漂移（bottom 帧两卡无计数）。
+                   改为恒渲染「0 人已报名」占位，行头三件套结构恒在；计数真值仍取后端
+                   enrollmentCount/enrollCount（两字段皆缺时按 0 展示，不造常量）。 -->
+              <view class="row-enrollment">
                 <text class="enrollment-count">{{ item.enrollmentCount ?? item.enrollCount ?? 0 }}</text>
                 <text class="enrollment-label">{{ t("activities.enrolledLabel") }}</text>
               </view>
@@ -703,7 +707,11 @@ defineExpose({ toggleEnroll });
 }
 
 .view-toggle__btn--active {
-  background: var(--c-brand-700);
+  /* R13-L13-D03（颜色token P1）：选中底原取 --c-brand-700 #1F8D6A，配白字
+     --c-text-inverse rgba(255,255,255,.95) 实算约 4.0-4.14:1 <4.5:1（24rpx/600 非大字号
+     不享豁免）⇒ 按同族深档收 --c-brand-800 #156B51（白字 6.45:1，design-variables.scss:267
+     真值算得；LegalTextPage.vue:554 同一结论同口径已落地）。 */
+  background: var(--c-brand-800);
 }
 
 .view-toggle__text {
@@ -713,7 +721,9 @@ defineExpose({ toggleEnroll });
 }
 
 .view-toggle__btn--active .view-toggle__text {
-  color: var(--c-text-inverse);
+  /* R13-L13-D03：前景同步归位 --c-neutral-0（#FFFFFF），不再借用图片遮罩档
+     --c-text-inverse（语义为「图片遮罩白字」，LegalTextPage 同款更正）。 */
+  color: var(--c-neutral-0, #ffffff);
   font-weight: 600;
 }
 
@@ -795,7 +805,10 @@ defineExpose({ toggleEnroll });
   flex-shrink: 0;
   padding: 4rpx 14rpx;
   border-radius: 999rpx;
-  font-size: var(--fs-xs, 20rpx);
+  /* R13-L13-D04（字号 P3）：原 --fs-xs 20rpx=10px 落在极小（角标/法务）档，比同卡 12px
+     描述行还小一档，低于标签档 12-13px 下限两格 ⇒ 提到 --fs-md 26rpx=13px（标签档下限），
+     padding/圆角不动。 */
+  font-size: var(--fs-md, 26rpx);
   line-height: 1.4;
   /* R6-L16-D08（P3 颜色token）：原写 `var(--c-primary, #36C99A)`——全仓 `--c-primary:` 定义
      **0 处**（本车道 grep apps/client/src 实测；theme 只有 --c-brand/--c-brand-500），
@@ -866,7 +879,10 @@ defineExpose({ toggleEnroll });
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2rpx solid var(--c-border-light);
+  /* R13-L13-D05（颜色token P2）：描边原取 --c-border-light #EEF2F0，压白卡 #FFFFFF
+     实算约 1.07:1，按钮边界形近虚设 ⇒ 取同族上一档 --c-border-default #DDE3E0，
+     其余样式不动。 */
+  border: 2rpx solid var(--c-border-default);
   border-radius: var(--r-md, 14rpx);
   background: transparent;
   font-size: var(--fs-base, 24rpx);
@@ -895,7 +911,10 @@ defineExpose({ toggleEnroll });
 
 .loading-more__text {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-text-tertiary);
+  /* R13-L13-D06（颜色token P2）：原 --c-text-tertiary #6B7571 直接铺页底 #EEF7F2
+     实算 4.36:1 <4.5:1（11px 次级文字落不达标区间）⇒ 提一档 --c-text-secondary #4A524E
+     （同页底 7.37:1；market/detail/index.vue:559 同口径已落地），字号不动。 */
+  color: var(--c-text-secondary);
 }
 
 /* ================================================================

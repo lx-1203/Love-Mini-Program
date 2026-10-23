@@ -590,7 +590,11 @@ async function submitDeleteAccount(): Promise<void> {
           :aria-label="t('thirdPartyLogin.bindWechat')"
           @tap="onThirdPartyBindTap"
         >
-          <view class="sec-item__icon-wrap" :style="{ background: 'var(--c-tint-green-soft, #E8FAF3)' }">
+          <!-- R13-L07-D08（P3 · 颜色token）：--c-tint-green-soft 全仓无注册（design-variables.scss
+               只注册了 tint-pink-soft / tint-blue-soft），此处一路吃私值 #E8FAF3。改引已注册的
+               --c-bg-brand（#E8FBF2，design-variables.scss:379，help 页 R11-L07-D22 同款改法），
+               不新增页面级私值。 -->
+          <view class="sec-item__icon-wrap" :style="{ background: 'var(--c-bg-brand)' }">
             <!-- R6-L09-D08（素材缺失 P1）：裸绑 IMAGE_PATHS.ICONS_V2.WECHAT_GREEN_SVG 出的是
                  `/static/assets/icons/login/wechat-green.svg`，而 src/static 下 icons/login 目录
                  在发布形态已被裁掉（实测 dist/build/mp-weixin-real/static/assets/icons/ 只剩
@@ -631,7 +635,11 @@ async function submitDeleteAccount(): Promise<void> {
           :key="device.id"
           class="sec-item"
         >
-          <view class="sec-item__icon-wrap" :style="{ background: 'var(--c-tint-green-soft, #E8FAF3)' }">
+          <!-- R13-L07-D08（P3 · 颜色token）：--c-tint-green-soft 全仓无注册（design-variables.scss
+               只注册了 tint-pink-soft / tint-blue-soft），此处一路吃私值 #E8FAF3。改引已注册的
+               --c-bg-brand（#E8FBF2，design-variables.scss:379，help 页 R11-L07-D22 同款改法），
+               不新增页面级私值。 -->
+          <view class="sec-item__icon-wrap" :style="{ background: 'var(--c-bg-brand)' }">
             <image class="sec-item__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LIST" mode="aspectFit" alt="" />
           </view>
           <view class="sec-item__info">
@@ -963,6 +971,15 @@ async function submitDeleteAccount(): Promise<void> {
   gap: 12rpx;
 }
 
+/* R13-L07-D06（P2 · 尺寸比例）：徽章已 nowrap+flex-shrink:0，长设备名必须自己让位，
+   否则整行溢出。min-width:0 解除 flex 项的自动最小宽度，走单行省略号。 */
+.sec-item__label-row .sec-item__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .sec-item__label {
   font-size: var(--fs-lg, 28rpx);
   font-weight: 600;
@@ -971,6 +988,13 @@ async function submitDeleteAccount(): Promise<void> {
 
 .sec-item__label--danger {
   color: var(--c-error, #f43f5e);
+  /* R13-L07-D07（P2 · 可达性）：--c-error #E5454D 15px/600 压白卡实测 3.97:1，落在 3:1–4.5:1
+     次级带，是页内对比最低的大字之一，而这是本页最高危操作。错误色深档令牌归 theme 车道
+     （本车道只有这一个文件），按任务书备用改法升 700 字重 + 大字号进入大字档 ⇒ 适用 3:1，
+     3.97:1 合格。取 38rpx(19px) 而非卡面字面 18px：大字档下沿是 14pt bold ≈ 18.66px，
+     18px(13.5pt) 差半点进不了档，19px 才是无歧义落点。 */
+  font-size: 38rpx;
+  font-weight: 700;
 }
 
 .sec-item__desc {
@@ -980,10 +1004,21 @@ async function submitDeleteAccount(): Promise<void> {
 
 .sec-item__badge {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-brand-600);
-  background: var(--c-tint-brand, #E8FAF3);
+  /* R13-L07-D05（P1 · 可达性）：--c-brand-600 #2AAE83 压未注册令牌 --c-tint-brand 的私值
+     #E8FAF3 实测 2.62:1，11px 小字既低于 4.5:1 也低于 3:1 ⇒ 设备列表读不出「当前设备」标记
+     （同型配对 help 页已由 R11-L07-D21 定 P1 修复，本页同步同款改法）：
+     --c-brand-800 #156B51 压 --c-bg-brand #E8FBF2 = 6.00:1（design-variables.scss 真值算得）。
+     R13-L07-D08（P3 · 颜色token）：--c-tint-brand 全仓无注册，改引已注册的 --c-bg-brand，
+     不新增页面级私值。 */
+  color: var(--c-brand-800);
+  background: var(--c-bg-brand);
   padding: 4rpx 14rpx;
   border-radius: var(--r-full);
+  /* R13-L07-D06（P2 · 尺寸比例）：「手机号登录 · iPhone 12/13 (Pro)」长标题把徽章挤窄后
+     CJK 逐字折行成两行胶囊「当前设/备」，pill 高度翻倍、圆角语义破坏。
+     nowrap + flex-shrink:0 保住单行胶囊；让出的宽度由标题走省略号（见 .sec-item__label-row）。 */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .sec-item__arrow {

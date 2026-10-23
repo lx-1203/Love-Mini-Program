@@ -476,25 +476,32 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
         <template #default>
           <!-- ========== Quick Action Cards ========== -->
           <view class="quick-cards">
+            <!-- R13-L02-D01（P2）：图标圆与标题/副标包进一行横向头部（图标左、文案右），
+                 消除「64rpx 图标圆独占一行、标题压在图标下方」的单列堆叠，
+                 整卡高度回落一档，与理想图横排头部同位；按钮保持右下角。 -->
             <view class="quick-card" hover-class="quick-card--hover" @tap="goLikes">
-              <view class="quick-card__icon-wrap quick-card__icon-wrap--pink">
-                <image class="quick-card__icon-img" :src="resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART_GREEN)" mode="aspectFit" />
-              </view>
-              <view class="quick-card__body">
-                <text class="quick-card__title">有人喜欢你</text>
-                <text class="quick-card__desc">{{ likedMeCount }} 人喜欢了你</text>
+              <view class="quick-card__head">
+                <view class="quick-card__icon-wrap quick-card__icon-wrap--pink">
+                  <image class="quick-card__icon-img" :src="resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART_GREEN)" mode="aspectFit" />
+                </view>
+                <view class="quick-card__body">
+                  <text class="quick-card__title">有人喜欢你</text>
+                  <text class="quick-card__desc">{{ likedMeCount }} 人喜欢了你</text>
+                </view>
               </view>
               <view class="quick-card__btn">
                 <text class="quick-card__btn-text">去看看</text>
               </view>
             </view>
             <view v-if="waitingReplyCount > 0" class="quick-card" hover-class="quick-card--hover" @tap="goReply">
-              <view class="quick-card__icon-wrap quick-card__icon-wrap--green">
-                <image class="quick-card__icon-img" :src="resolveMediaUrl(IMAGE_PATHS.MASCOT.CHAT_HI)" mode="aspectFit" />
-              </view>
-              <view class="quick-card__body">
-                <text class="quick-card__title">正在等待回复</text>
-                <text class="quick-card__desc">{{ waitingReplyCount }} 个聊天正在继续</text>
+              <view class="quick-card__head">
+                <view class="quick-card__icon-wrap quick-card__icon-wrap--green">
+                  <image class="quick-card__icon-img" :src="resolveMediaUrl(IMAGE_PATHS.MASCOT.CHAT_HI)" mode="aspectFit" />
+                </view>
+                <view class="quick-card__body">
+                  <text class="quick-card__title">正在等待回复</text>
+                  <text class="quick-card__desc">{{ waitingReplyCount }} 个聊天正在继续</text>
+                </view>
               </view>
               <view class="quick-card__btn">
                 <text class="quick-card__btn-text">去回复</text>
@@ -1003,6 +1010,17 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
   opacity: 0.85;
   transform: scale(0.98);
 }
+/* R13-L02-D01（P2）：横排头部槽——图标圆 64rpx 靠左，标题/副标列在其右侧同水平行；
+   卡本体仍为列方向，头部与右下角按钮之间走既有 16rpx gap。 */
+.quick-card__head {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.quick-card__head .quick-card__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 .quick-card__icon-wrap {
   width: 64rpx;
   height: 64rpx;
@@ -1349,15 +1367,18 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
   gap: 4rpx;
   margin-top: 4rpx;
 }
+/* R13-L02-D02（P1）：--c-brand #36C99A 压白卡实算 2.10:1，低于正文级 4.5:1，
+   文字与箭头同升 --c-brand-800 #156B51（design-variables.scss:267 真值，白底 6.45:1），
+   22rpx 字号不动；箭头 28rpx 常规重不属大字豁免（<3:1 也不达），与文字同一 CTA 同步提档。 */
 .activity-rec-card__cta-text {
   font-size: 22rpx;
   font-weight: 600;
-  color: var(--c-brand, #36C99A);
+  color: var(--c-brand-800, #156B51);
 }
 .activity-rec-card__cta-arrow {
   font-size: 28rpx;
   line-height: 1;
-  color: var(--c-brand, #36C99A);
+  color: var(--c-brand-800, #156B51);
 }
 
 /* ========== 最近聊天 ========== */

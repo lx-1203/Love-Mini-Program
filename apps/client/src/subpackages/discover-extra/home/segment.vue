@@ -262,7 +262,11 @@ function openProfile(userId: string) {
 }
 
 .segment-header__title {
-  font-size: 44rpx;
+  /* R13-L06-D02（字号 P2）：原 44rpx=22px 低于 §1.3 页面主标题档 26-28px 下限 4px；
+     同分包 nearby/people 页头同角色标题 R12-L06-D08 已收到 52rpx=26px（people.vue:340，
+     其注释点名「segment 44rpx」为三页三档之一），本页漏改 ⇒ 同档收到 52rpx。
+     字号令牌阶梯无 52rpx 档（--fs-6xl 48rpx / --fs-7xl 56rpx），与 people 页同取字面值同档。 */
+  font-size: 52rpx;
   font-weight: 800;
   color: var(--c-text-primary, #222222);
 }
@@ -305,8 +309,11 @@ function openProfile(userId: string) {
   padding: 20rpx 24rpx;
   background: var(--c-bg-container, #ffffff);
   /* R8-L06-D14（圆角 P3）：18rpx 不在规范圆角阶梯上（同页 people.vue:373 行为 20rpx）
-     ⇒ 收敛到 --r-lg(20rpx)，两页同一档。 */
-  border-radius: var(--r-lg, 20rpx);
+     ⇒ 收敛到 --r-lg(20rpx)，两页同一档。
+     R13-L06-D03（圆角 P2）：--r-lg=10px 只有 §1.4 卡片档 --card-radius 40rpx=20px 的一半；
+     同域 nearby/people 同角色列表行 R12-L06-D09 已收口 var(--card-radius, 40rpx)，
+     segment 漏网 ⇒ 收口同档，同域卡片圆角归一。 */
+  border-radius: var(--card-radius, 40rpx);
   border: 1rpx solid var(--c-line, #EEF2F0);
 }
 

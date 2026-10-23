@@ -1494,13 +1494,17 @@ async function save() {
    与 --fs-sm(22rpx) 两档之间，非档位且是硬编码字面量（theme/design-variables.scss:560-561）；
    正文色取 --c-text-placeholder（=--c-text-quaternary #9AA39F，对白底对比度≈2.6:1，
    低于 4.5:1）承载法务说明。按建议改法升到 --fs-sm，正文色换 --c-text-tertiary
-   （#6B7571，对白底≈4.8:1）。 */
+   （#6B7571，对白底≈4.8:1）。
+   R13-L11-D11（可达性 P2，2026-10-22）：--c-text-tertiary 压本页浅绿底（帧测行底≈#EDF6F1）
+   实算 4.32:1，落在 3:1–4.5:1 次级文字不达标带，且是本页唯一的数据用途告知。按卡升
+   --c-text-secondary #4A524E（design-variables.scss:122 真值，同底实算 7.31:1）；
+   字号 --fs-sm 与行高 1.75 不动。 */
 .safety-note {
   display: block;
   margin: 28rpx 48rpx 0;
   font-size: var(--fs-sm);
   line-height: 1.75;
-  color: var(--c-text-tertiary);
+  color: var(--c-text-secondary, #4A524E);
   text-align: center;
 }
 
@@ -1561,6 +1565,10 @@ async function save() {
   box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.08);
 }
 
+/* R13-L11-D09（可达性 P1，2026-10-22）：原底 --c-brand #36C99A 压白字 2.10:1（令牌真值
+   design-variables.scss:267/$brand-500 实算），是 R10-L04-D05 已在全站判废的「品牌绿实底+白字」
+   同型组合，本页漏改。按卡改 --c-brand-800 #156B51（白字 6.45:1，与 BottomActionBar/LegalTextPage
+   主 CTA 同档）；字号 20rpx→var(--fs-sm)（22rpx 档，design-variables.scss:561），10px 糊字升档。 */
 .media-avatar__edit-badge {
   position: absolute;
   left: 50%;
@@ -1568,12 +1576,12 @@ async function save() {
   transform: translateX(-50%);
   padding: 4rpx 16rpx;
   border-radius: 999rpx;
-  background: var(--c-brand, #36c99a);
+  background: var(--c-brand-800, #156B51);
   white-space: nowrap;
 }
 
 .media-avatar__edit-text {
-  font-size: 20rpx;
+  font-size: var(--fs-sm, 22rpx);
   font-weight: 600;
   color: #ffffff;
 }
@@ -1708,6 +1716,12 @@ async function save() {
   color: var(--c-brand-800, #156B51);
 }
 
+/* R13-L11-D10（热区，2026-10-22）判「不成立」，本块不改：× 徽标自身无任何 tap 处理，
+   也没有 catchtap/@tap.stop（全文件 grep 为 0）⇒ 点它（或点照片本体）都冒泡到槽位根的
+   @tap="onPhotoSlotTap(idx)"（:792-799），占用槽分支弹删除确认（:380-389）→ deletePhotoAt（:444）。
+   即删除出口是整颗槽位 186×186rpx（=93px 见方，750 设计宽 − 页边 80 − 卡内衬 80 − 列距 32 后 /3），
+   是 88rpx(44px) 下限的两倍有余；40rpx 只是视觉指示，不构成也不限制热区。
+   卡面「照片本体无点击处理 ⇒ × 是唯一出口」漏看了槽位根上的处理器，属误报。 */
 .photo-grid__del {
   position: absolute;
   top: 8rpx;

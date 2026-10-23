@@ -108,6 +108,13 @@ const closeIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.CLO
 const lockIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.REGISTER_ICONS.LOCK));
 const checkIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.REGISTER_ICONS.CHECK_GREEN));
 /**
+ * R13-L02-D05（语义 P3 · village top 帧）：权益清单行首原也吃 checkIconSrc——
+ * ✓ 的既定语义是「已完成」，而同屏明写「当前完善度 30%」、三条权益恰恰全部未解锁，
+ * 勾选图形与门槛事实相反。行首改吃 lockIconSrc（register/lock.svg，stroke="#4A524E"
+ * = --c-text-secondary 档，压页底 #EEF7F2 实测 7.37:1，同 :722 的既有实算），
+ * ✓ 只留给环上完成徽章一处真正的「已完成」图形。
+ */
+/**
  * 漂浮爱心（R6-L03-D02 / R6-L08-D09 / R6-L09-D22 · R8-L07-D01 颜色token P2）：
  * 上一档取 ICONS_SOCIAL.LIKE_FILLED，该文件第 1 行写死 fill="#EF4444" —— §1.2 色板里没有的
  * 正红（帧上左颗 24×20px / 右颗 17×15px 区域众数色实测 #EF4444，211 px 命中），
@@ -118,28 +125,17 @@ const checkIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.REGISTER_ICONS.C
  */
 const heartIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.HEART_FILLED_SVG));
 /**
- * 同校头像（R6-L09-D26）：原绑 IMAGE_PATHS.AVATARS.AVATAR_1/2，实盘逐张打开是
- * 航拍树冠 / 暗水面礁石（apps/api/uploads/app-assets/assets/images/avatars/avatar-1.jpg 平均色
- * #3C3A21），不是人像 ⇒ 锁屏「和你一样的同学在寻觅」这层叙事崩掉。
- * 改绑同一摄影体系的**人像裁切**档 PEOPLE.AVATAR_1/2（person-01-avatar.png ~ person-09-avatar.png，
- * 后端 app-assets 盘上 9 张齐全，全站人卡同源），缺图时由 @error 整块隐藏不留灰洞。
- *
- * R12-L02-D08（素材缺失 P3 · village top 帧）：改绑后帧上仍是「深绿黑团块 / 暗底竖形亮条」。
- * 本轮逐张目检实锤根因：AVATAR_1 是电车车厢里坐着女生的**大远景**（暗色车厢内景占画面大半，
- * 人只占两三成），AVATAR_2 是持花女生的**全身**站姿（暗门口前白裤拉成一条竖形亮条）——
- * 素材文件本身已是真人像，败在 56px 圆泡里景别太远读不出人。九张 person-0X-avatar 全系
- * 目检+三棵树 md5 比对（src/static 与 app-assets 9/9 逐字节一致）：仅 AVATAR_3（窗边持书
- * 男生，上半身近景、面部清晰）与 AVATAR_8（街头白衫女生，中近景）无水印且景别够近
- * （AVATAR_7/09 右下有水印字样，按硬规矩禁用；AVATAR_4/5 也是全身远景）。
- * 改绑 AVATAR_8（左）/ AVATAR_3（右）：仍是同源人像档，键已在 images.ts:328-335 注册，
- * 运行时取值与解析路径不变，仅换指向的素材文件。 PEOPLE.AVATAR_1/2 的另两组消费者
- * （NotLoggedWaiting.vue:113、circles/index.vue:306）不在本卡范围，不动。
+ * R13-L02-D06（捏造用户 P3 · village bottom 帧）：插画两侧「同校头像」原是静态素材
+ * PEOPLE.AVATAR_8 / AVATAR_3（R12-L02-D08 换绑、:138-139 写死），并非真实同校用户——
+ * 画面在暗示「同校校友在等你」，后端并无这两人，与 messages 页删除捏造用户
+ * （pages/messages/index.vue:125-127）的全站口径相悖。
+ * 卡上两条合法形态取「撤掉人像」：本组件只在前置门槛（未登录 / 资料未完善）时渲染，
+ * 此刻用户连归属学校都没有，「真实同校用户」在这个流程位上没有真相源可接
+ * （同校列表接口要求已登录 + 资料完善，恰是本屏拦住的前置；游客态调用只会 401），
+ * 接真形态在本组件不成立 ⇒ 删掉两侧人像节点，插画只留解锁徽章 + 漂浮爱心。
+ * PEOPLE.AVATAR_1/2 的另两组消费者（NotLoggedWaiting.vue:113、circles/index.vue:306）
+ * 不在本卡范围，不动。
  */
-const avatarLeftSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.PEOPLE.AVATAR_8));
-const avatarRightSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.PEOPLE.AVATAR_3));
-/** 头像取不到时不留空洞（与漂浮爱心同口径） */
-const avatarLeftVisible = ref(true);
-const avatarRightVisible = ref(true);
 const heartsVisible = ref(true);
 
 /**
@@ -252,7 +248,8 @@ function browsePublic() {
 
     <!-- 主体内容区（纵向铺满并居中） -->
     <view class="lock-screen__body">
-      <!-- 主题插画：解锁徽章 + 同校头像 + 漂浮爱心（对应「解锁同校匹配」） -->
+      <!-- 主题插画：解锁徽章 + 漂浮爱心
+           （R13-L02-D06：静态写死的「同校头像」已撤，无真值支撑的画面承诺不留，见 script 注） -->
       <view class="lock-screen__illustration">
         <view class="illustration__ring">
           <image
@@ -269,24 +266,6 @@ function browsePublic() {
               alt=""
             />
           </view>
-        </view>
-        <view v-if="avatarLeftVisible" class="illustration__avatar illustration__avatar--left">
-          <image
-            class="illustration__avatar-img"
-            :src="avatarLeftSrc"
-            mode="aspectFill"
-            alt=""
-            @error="avatarLeftVisible = false"
-          />
-        </view>
-        <view v-if="avatarRightVisible" class="illustration__avatar illustration__avatar--right">
-          <image
-            class="illustration__avatar-img"
-            :src="avatarRightSrc"
-            mode="aspectFill"
-            alt=""
-            @error="avatarRightVisible = false"
-          />
         </view>
         <view v-if="heartsVisible" class="illustration__heart illustration__heart--1">
           <image
@@ -312,11 +291,13 @@ function browsePublic() {
         <text class="lock-screen__title">{{ title }}</text>
         <text class="lock-screen__subtitle">{{ subtitle }}</text>
         <text v-if="progressText" class="lock-screen__progress">{{ progressText }}</text>
+        <!-- R13-L02-D05：三条权益此刻均未解锁，行首语义用「锁」不用「✓」（✓ 留给真正的已完成态；
+             素材 = 仓内既有 register/lock.svg，经 lockIconSrc 同一出口解析） -->
         <view class="lock-screen__benefits">
           <view v-for="benefit in benefits" :key="benefit" class="benefit">
             <image
               class="benefit__icon"
-              :src="checkIconSrc"
+              :src="lockIconSrc"
               mode="aspectFit"
               alt=""
             />
@@ -539,7 +520,7 @@ function browsePublic() {
   padding: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-8)) var(--sp-8) var(--sp-9);
 }
 
-/* ========== 主题插画：解锁徽章 + 同校头像 + 漂浮爱心 ========== */
+/* ========== 主题插画：解锁徽章 + 漂浮爱心 ========== */
 .lock-screen__illustration {
   position: relative;
   width: 440rpx;
@@ -608,48 +589,18 @@ function browsePublic() {
   height: 48rpx;
 }
 
-/* R9-L08-D04（可达性 P2 · heart-signals）：checkIconSrc（:109）指向 REGISTER_ICONS.CHECK_GREEN，
-   该 SVG 第 1 行写死 stroke="#36C99A"（= --c-brand），同一枚素材被两处消费——
-   徽章白圆内的 .illustration__badge-icon 与权益清单三条前的 .benefit__icon：
+/* R9-L08-D04（可达性 P2 · heart-signals）：环上徽章白圆内的勾（checkIconSrc，
+   REGISTER_ICONS.CHECK_GREEN 第 1 行写死 stroke="#36C99A" = --c-brand）：
      #36C99A L=0.44896 压 --c-bg-container 白 L=1 ⇒ 1.05/0.49896 = 2.10:1
-                          压浅绿页底 #EEF7F2 L=0.91111 ⇒ 0.96111/0.49896 = 1.93:1
-   两处都低于非文字 3:1；R8-L08-D03 为让勾与环同色把描线定成 brand-500，浅/白底上反而更糊。
-   本车道不许动 static/** 素材，盘上也没有 #156B51/#1F8D6A 描线的勾素材
-   （已 grep static/assets 全量 *.svg），故按缺陷卡第二条口径在组件内压深，
-   与 :484 的 .lock-screen__close-icon 同一种 filter 杠杆：brightness(0.53) 把
-   (54,201,154) 逐通道乘成 (28.6,106.5,81.6) ≈ #1D6B52，L=0.11382
-   ⇒ 压白 1.05/0.16382 = 6.41:1、压 #EEF7F2 0.96111/0.16382 = 5.87:1，两处均 ≥3:1，
-   并与 :717 主 CTA 的 brand-800 同族。图标形状/尺寸/位置不变，仅换墨色。 */
-.illustration__badge-icon,
-.benefit__icon {
+   低于非文字 3:1；本车道不许动 static/** 素材，盘上也没有 #156B51/#1F8D6A 描线的勾素材
+   （已 grep static/assets 全量 *.svg），故按缺陷卡第二条口径在组件内压深：
+   brightness(0.53) 把 (54,201,154) 逐通道乘成 ≈#1D6B52，L=0.11382
+   ⇒ 压白 1.05/0.16382 = 6.41:1 ≥3:1，与 :717 主 CTA 的 brand-800 同族。
+   R13-L02-D05 之后 .benefit__icon 不再消费勾素材（行首改 lockIconSrc，
+   register/lock.svg stroke="#4A524E" = --c-text-secondary 档，压页底 #EEF7F2 7.37:1，
+   同 :722 既有实算，本就达标），filter 再压反而偏离正文墨档 ⇒ 收窄到徽章一处。 */
+.illustration__badge-icon {
   filter: brightness(0.53);
-}
-
-/* 同校头像：环左右两侧，暗示「同校匹配」 */
-.illustration__avatar {
-  position: absolute;
-  bottom: 0;
-  width: 112rpx;
-  height: 112rpx;
-  border-radius: var(--r-circle);
-  border: 8rpx solid var(--c-bg-container);
-  box-shadow: var(--s-lg);
-  overflow: hidden;
-
-  &--left {
-    left: 40rpx;
-  }
-
-  &--right {
-    right: 40rpx;
-  }
-}
-
-.illustration__avatar-img {
-  border-radius: var(--r-full);
-
-  width: 100%;
-  height: 100%;
 }
 
 /* 漂浮爱心点缀 */
@@ -730,7 +681,7 @@ function browsePublic() {
   text-align: center;
 }
 
-/* 权益清单：左对齐，勾选图标 + 文案 */
+/* 权益清单：左对齐，锁形图标 + 文案（R13-L02-D05：✓ → 锁，语义见 script 注） */
 .lock-screen__benefits {
   width: 100%;
   display: flex;
