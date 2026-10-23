@@ -1,0 +1,27 @@
+{
+  "schema": "mp-fidelity-fixvis-expected-unchanged/v1",
+  "round": "R14",
+  "note": "R13fix 派单批里「按书面处置就不动像素 / 改动区不在该状态视口」的行豁免件（R13→R14 比较）。每条 frame 须能引用对应 FX 交件处置或同批另一状态的 FIX_VISIBLE 判定；豁免不进 notVisible/clockOnly，单列 expectedUnchanged 读数。判据本身（改动必须上屏）不放宽。",
+  "rows": [
+    {
+      "frame": "pages/home/index__top",
+      "reason": "R13-B04（FXB，R13-L01-D07）按 R13-p0-adjudication §三裁决不修：home 推荐卡 4 格相册条需后端 photos 数组列，在册 NEEDS-DATA，组件一字未动，R13→R14 内容不变是处置的预期结果。"
+    },
+    {
+      "frame": "pages/home/index__bottom",
+      "reason": "同 home top：R13-L01-D07 按裁决不修（在册缺 photos 列），FXB 交件明记「TodayRecommendationCard.vue 一字未动、无占位卡」。"
+    },
+    {
+      "frame": "pages/nearby/index__top",
+      "reason": "R13-B11（FXB，R13-L01-D11）撤 PostCard 分享死钮的改动已在同批 nearby bottom 态判 FIX_VISIBLE；top 帧视口不含该钮所在卡行，内容区逐像素相同是视口构成使然。"
+    },
+    {
+      "frame": "pages/profile/index__bottom",
+      "reason": "R13-B09（FXC，R13-L02-D02）「在线」徽标改色的改动区在页头，profile top 态已判 FIX_VISIBLE；bottom 帧滚动后页头不在视口，内容区相同是视口构成使然。"
+    },
+    {
+      "frame": "subpackages/circles/circles/circle-home__bottom",
+      "reason": "R13-B23（FXD）：R13-L04 circle-home hero 话题 chips 行修复已在同批 circle-home top 态判 FIX_VISIBLE；bottom 帧滚动后 hero 区不在视口，内容区逐像素相同是视口构成使然。"
+    }
+  ]
+}
