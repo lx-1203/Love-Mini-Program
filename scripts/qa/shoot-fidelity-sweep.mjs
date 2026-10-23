@@ -251,6 +251,17 @@ try {
   } catch (e) {
     console.log(`SWEEP_SESSION_READBACK=UNAVAILABLE err=${String(e && e.message).slice(0, 90)} ⇒ 落点核对仍是这张帧的判据`);
   }
+  /* R13 实测补的显式水合（cli-automator.mjs bootSession 同语义）：只写 storage 不引导 store，
+     chat-session / official-chat / discover-activities 三页的 usePageAccess 在 userSession
+     未水合的窗口期把已登录用户弹去登录页（同窗同票对照：带 bootstrap 的 warm reLaunch
+     稳定落点本页，不带则 5 连弹 login；探针 tmp/qa/_r13-chat-probe3/4.mjs）。
+     引导失败不拦停：落点核对仍是每张帧的判据。 */
+  try {
+    const boot = await mp.evaluate(new Function('var app=getApp();var vm=app["$vm"];var gp=(vm.$&&vm.$.appContext.config.globalProperties)||{};var p=vm["$pinia"]||gp["$pinia"];var s=p._s.get("session");if(s&&s.bootstrap){s.bootstrap();return "boot-ok";}return "no-bootstrap";'));
+    console.log(`SWEEP_SESSION_BOOTSTRAP=${String(boot).slice(0, 20)}`);
+  } catch (e) {
+    console.log(`SWEEP_SESSION_BOOTSTRAP=skip err=${String(e && e.message).slice(0, 80)}`);
+  }
 } catch (e) {
   console.log(`${RK}=NOT-EVIDENCED reason=connect-failed ws=${WS} err=${String(e && e.message).slice(0, 140)} hint=先 node scripts/qa/ws-channel-up.mjs；重建过产物则须重接设备腿`);
   process.exit(2);

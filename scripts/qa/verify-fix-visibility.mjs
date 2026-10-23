@@ -108,11 +108,11 @@ function contentHash(absPath) {
   } catch { return ""; }
 }
 
-function judge(prev, cur, fixlist, repoDir) {
+function judge(prev, cur, fixlist, repoDir, expectedUnchanged = new Map()) {
   const P = indexManifest(prev), C = indexManifest(cur);
   const touched = touchedRoutes(fixlist);
   const rows = [];
-  let visible = 0, notVisible = 0, untouched = 0, gaps = 0;
+  let visible = 0, notVisible = 0, untouched = 0, gaps = 0, expectedUnchangedCount = 0;
   const routes = new Set([...[...P.values()].map((f) => f.route), ...[...C.values()].map((f) => f.route)]);
   for (const route of [...routes].sort()) {
     const isTouched = touched.has(route);
@@ -137,6 +137,19 @@ function judge(prev, cur, fixlist, repoDir) {
       } else if (contentMeasurable) { verdict = "FIX_VISIBLE"; visible++; }
       else if (hp === hc) { verdict = "FIXNOTVISIBLE"; notVisible++; }
       else { verdict = "FIX_VISIBLE_RAWONLY"; visible++; }
+      /* R13 实测补的第三条腿（--expected-unchanged）：派单批里确有「按处置就不动像素」的行——
+        en-only 语景修复（FXA-R12-L13-D11 交件自陈「zh 取景帧逐像素不变属预期」）、纯逻辑守卫
+        （FXE-R12-L13-D05 去重守卫零像素）、以及改动区不在该状态视口内（FXD-R12-L04-D08 的
+        P0 行在 top 态 FIX_VISIBLE、bottom 帧滚过了改动区）。这些行拿 written 处置换豁免：
+        豁免件必须逐条带 route__state + reason（引用交件出处），进 stats.expectedUnchanged
+        单列读数，不进 notVisible/clockOnly——判据本身（改动必须上屏）一寸不让。 */
+      const exemptKey = route + "__" + st;
+      if ((verdict === "FIXNOTVISIBLE" || verdict === "CLOCK_ONLY_CHANGE") && expectedUnchanged.has(exemptKey)) {
+        verdict = "EXPECTED_UNCHANGED";
+        notVisible--;
+        expectedUnchangedCount++;
+        console.log(`FIXVIS_EXPECTED_UNCHANGED ${exemptKey} ⇒ ${expectedUnchanged.get(exemptKey)}`);
+      }
       if (verdict === "UNTOUCHED") untouched++;
       rows.push({ route, state: st, verdict, prev: hp.slice(0, 8), cur: hc.slice(0, 8), prevContent: cp, curContent: cc, contentMeasurable, batches: isTouched ? touched.get(route).join(" ") : "" });
     }
@@ -146,7 +159,7 @@ function judge(prev, cur, fixlist, repoDir) {
   const problems = rows.filter((r) => r.verdict === "FIXNOTVISIBLE" || r.verdict === "CLOCK_ONLY_CHANGE");
   const clockOnly = rows.filter((r) => r.verdict === "CLOCK_ONLY_CHANGE").length;
   const rawOnly = rows.filter((r) => r.verdict === "FIX_VISIBLE_RAWONLY").length;
-  return { rows, problems, stats: { visible, notVisible, untouched, gaps, routes: routes.size, clockOnly, rawOnly, cropTopPx: CROP_TOP, contentDecoder: PNG ? "pngjs" : "不可用(退回原始哈希，只能判同字节)" } };
+  return { rows, problems, stats: { visible, notVisible, untouched, gaps, routes: routes.size, clockOnly, rawOnly, expectedUnchanged: expectedUnchangedCount, cropTopPx: CROP_TOP, contentDecoder: PNG ? "pngjs" : "不可用(退回原始哈希，只能判同字节)" } };
 }
 
 function selfTest() {
@@ -246,12 +259,22 @@ for (const [k, v] of [["prev", prevP], ["cur", curP], ["fixlist", flP]]) {
     process.exit(2);
   }
 }
-const { rows, problems, stats } = judge(readFileSync(resolve(REPO, prevP), "utf-8"), readFileSync(resolve(REPO, curP), "utf-8"), JSON.parse(readFileSync(resolve(REPO, flP), "utf-8")));
+/* R13 实测补的 --expected-unchanged：书面处置豁免件（route__state → 处置出处）。
+   每条豁免必须能在修车泳道交件里找到对应处置原文；豁免件随轮入库可审计。
+   没传就是空集，判据原样。 */
+const expectedUnchanged = new Map();
+const euP = arg("expected-unchanged", "");
+if (euP) {
+  const eu = JSON.parse(readFileSync(resolve(REPO, euP), "utf-8"));
+  for (const row of (eu.rows || [])) expectedUnchanged.set(String(row.frame || ""), String(row.reason || ""));
+  console.log(`FIXVIS_EXPECTED_UNCHANGED_LOADED=${expectedUnchanged.size} from ${euP}`);
+}
+const { rows, problems, stats } = judge(readFileSync(resolve(REPO, prevP), "utf-8"), readFileSync(resolve(REPO, curP), "utf-8"), JSON.parse(readFileSync(resolve(REPO, flP), "utf-8")), "", expectedUnchanged);
 const outPath = resolve(arg("out", join(REPO, "reports/audit/mp-fidelity-2026-10-18/fix-visibility.json")));
 mkdirSync(dirname(outPath), { recursive: true });
-writeFileSync(outPath, JSON.stringify({ schema: "mp-fidelity-fix-visibility/v1", prev: prevP, cur: curP, fixlist: flP, stats, rows }, null, 2) + "\n", "utf-8");
+writeFileSync(outPath, JSON.stringify({ schema: "mp-fidelity-fix-visibility/v1", prev: prevP, cur: curP, fixlist: flP, expectedUnchanged: euP || "(未传)", stats, rows }, null, 2) + "\n", "utf-8");
 for (const r of problems) console.log(`${r.verdict} ${r.route}__${r.state} 原始 sha16 ${r.prev}→${r.cur}${r.contentMeasurable ? ` 内容区 sha16 ${r.prevContent}→${r.curContent}` : " 内容区量不到"} ⇒ 批次 ${r.batches} 的改动没上屏，缺陷重开`);
 for (const r of rows.filter((x) => x.verdict.startsWith("NO_"))) console.log(`FIXVIS_GAP ${r.route}__${r.state} ${r.verdict}（缺读数，不判成"没变"也不判成"变了"）`);
-console.log(`FIXVIS_STATS routes=${stats.routes} visible=${stats.visible} notVisible=${stats.notVisible} clockOnly=${stats.clockOnly} rawOnly=${stats.rawOnly} untouched=${stats.untouched} gaps=${stats.gaps} cropTop=${stats.cropTopPx}px decoder=${stats.contentDecoder} out=${outPath.replace(REPO + "/", "").split("\\").join("/")}`);
+console.log(`FIXVIS_STATS routes=${stats.routes} visible=${stats.visible} notVisible=${stats.notVisible} clockOnly=${stats.clockOnly} rawOnly=${stats.rawOnly} untouched=${stats.untouched} gaps=${stats.gaps} expectedUnchanged=${stats.expectedUnchanged} cropTop=${stats.cropTopPx}px decoder=${stats.contentDecoder} out=${outPath.replace(REPO + "/", "").split("\\").join("/")}`);
 console.log(problems.length ? `${RK}=FAIL fixNotVisible=${problems.length}（含时钟污染 ${stats.clockOnly}）gaps=${stats.gaps}` : `${RK}=PASS visible=${stats.visible} fixNotVisible=0 gaps=${stats.gaps} rawOnly=${stats.rawOnly}`);
 process.exit(problems.length ? 1 : 0);

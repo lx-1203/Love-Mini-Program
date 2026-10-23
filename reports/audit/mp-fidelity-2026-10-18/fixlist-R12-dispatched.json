@@ -1,0 +1,418 @@
+{
+ "schema": "mp-fidelity-fixlist/v1",
+ "round": "R12",
+ "generatedAt": "2026-10-22T11:10:03.734Z",
+ "lanes": 14,
+ "defects": 159,
+ "rejected": [],
+ "batches": [
+  {
+   "batch_id": "R12-B01",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L11.md",
+   "files": [
+    "apps/client/src/components/common/EmptyState.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L11-D08"
+   ],
+   "pages": [
+    "subpackages/chat/chat-session/index"
+   ],
+   "axes": [
+    "素材缺失"
+   ]
+  },
+  {
+   "batch_id": "R12-B02",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L13.md",
+   "files": [
+    "apps/client/src/components/common/LegalTextPage.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L13-D09",
+    "R12-L13-D11"
+   ],
+   "pages": [
+    "subpackages/legal/privacy/index",
+    "subpackages/legal/agreement/index"
+   ],
+   "axes": [
+    "需新建",
+    "文案"
+   ]
+  },
+  {
+   "batch_id": "R12-B03",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L02.md",
+   "files": [
+    "apps/client/src/components/common/LockScreen.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L02-D08",
+    "R12-L02-D09"
+   ],
+   "pages": [
+    "subpackages/village/village/index"
+   ],
+   "axes": [
+    "素材缺失",
+    "可达性"
+   ]
+  },
+  {
+   "batch_id": "R12-B09",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L01.md",
+   "files": [
+    "apps/client/src/components/match/MatchInfo.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L01-D09"
+   ],
+   "pages": [
+    "pages/discover/index"
+   ],
+   "axes": [
+    "文案"
+   ]
+  },
+  {
+   "batch_id": "R12-B11",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L06.md",
+   "files": [
+    "apps/client/src/components/match/MatchSuccess.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L06-D01",
+    "R12-L06-D03"
+   ],
+   "pages": [
+    "subpackages/discover-extra/discover/match-success"
+   ],
+   "axes": [
+    "需新建",
+    "颜色token"
+   ]
+  },
+  {
+   "batch_id": "R12-B17",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L05.md",
+   "files": [
+    "apps/client/src/components/village/TopicSelector.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L05-D07",
+    "R12-L05-D08"
+   ],
+   "pages": [
+    "subpackages/campus/campus/post-topic"
+   ],
+   "axes": [
+    "需新建",
+    "文案"
+   ]
+  },
+  {
+   "batch_id": "R12-B21",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L02.md",
+   "files": [
+    "apps/client/src/pages/nearby/index.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L02-D01",
+    "R12-L02-D02",
+    "R12-L02-D03"
+   ],
+   "pages": [
+    "pages/nearby/index"
+   ],
+   "axes": [
+    "素材缺失",
+    "尺寸比例"
+   ]
+  },
+  {
+   "batch_id": "R12-B22",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L01.md",
+   "files": [
+    "apps/client/src/pages/register/index.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L01-D04",
+    "R12-L01-D05"
+   ],
+   "pages": [
+    "pages/register/index"
+   ],
+   "axes": [
+    "字号",
+    "颜色token"
+   ]
+  },
+  {
+   "batch_id": "R12-B27",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L05.md",
+   "files": [
+    "apps/client/src/subpackages/campus/campus/post-topic.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L05-D05",
+    "R12-L05-D06",
+    "R12-L05-D09"
+   ],
+   "pages": [
+    "subpackages/campus/campus/post-topic"
+   ],
+   "axes": [
+    "间距",
+    "可达性",
+    "需新建"
+   ]
+  },
+  {
+   "batch_id": "R12-B28",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L05.md",
+   "files": [
+    "apps/client/src/subpackages/campus/campus/topic-detail.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L05-D10",
+    "R12-L05-D11"
+   ],
+   "pages": [
+    "subpackages/campus/campus/topic-detail"
+   ],
+   "axes": [
+    "需新建",
+    "文案"
+   ]
+  },
+  {
+   "batch_id": "R12-B30",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L11.md",
+   "files": [
+    "apps/client/src/subpackages/chat/official-chat/index.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L11-D10",
+    "R12-L11-D11",
+    "R12-L11-D12"
+   ],
+   "pages": [
+    "subpackages/chat/official-chat/index"
+   ],
+   "axes": [
+    "可达性",
+    "颜色token"
+   ]
+  },
+  {
+   "batch_id": "R12-B31",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L04.md",
+   "files": [
+    "apps/client/src/subpackages/circles/circles/circle-home.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L04-D08",
+    "R12-L04-D09"
+   ],
+   "pages": [
+    "subpackages/circles/circles/circle-home"
+   ],
+   "axes": [
+    "需新建",
+    "间距"
+   ]
+  },
+  {
+   "batch_id": "R12-B33",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L04.md",
+   "files": [
+    "apps/client/src/subpackages/circles/circles/post-topic.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L04-D06",
+    "R12-L04-D07"
+   ],
+   "pages": [
+    "subpackages/circles/circles/post-topic"
+   ],
+   "axes": [
+    "可达性",
+    "需新建"
+   ]
+  },
+  {
+   "batch_id": "R12-B35",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L04.md",
+   "files": [
+    "apps/client/src/subpackages/circles/circles/topics.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L04-D01",
+    "R12-L04-D02",
+    "R12-L04-D03"
+   ],
+   "pages": [
+    "subpackages/circles/circles/topics"
+   ],
+   "axes": [
+    "文案",
+    "层级遮挡",
+    "可达性"
+   ]
+  },
+  {
+   "batch_id": "R12-B38",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L07.md",
+   "files": [
+    "apps/client/src/subpackages/discover-extra/likes-visitors/index.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L07-D01",
+    "R12-L07-D02"
+   ],
+   "pages": [
+    "subpackages/discover-extra/likes-visitors/index"
+   ],
+   "axes": [
+    "需新建",
+    "颜色token"
+   ]
+  },
+  {
+   "batch_id": "R12-B39",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L06.md",
+   "files": [
+    "apps/client/src/subpackages/discover-extra/nearby/people.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L06-D07",
+    "R12-L06-D08",
+    "R12-L06-D09"
+   ],
+   "pages": [
+    "subpackages/discover-extra/nearby/people"
+   ],
+   "axes": [
+    "需新建",
+    "字号",
+    "圆角"
+   ]
+  },
+  {
+   "batch_id": "R12-B41",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L13.md",
+   "files": [
+    "apps/client/src/subpackages/discover/discussions/index.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L13-D04",
+    "R12-L13-D05"
+   ],
+   "pages": [
+    "subpackages/discover/discussions/index"
+   ],
+   "axes": [
+    "需新建",
+    "文案"
+   ]
+  },
+  {
+   "batch_id": "R12-B50",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L11.md",
+   "files": [
+    "apps/client/src/subpackages/profile-extra/profile/tasks.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L11-D01",
+    "R12-L11-D02",
+    "R12-L11-D03"
+   ],
+   "pages": [
+    "subpackages/profile-extra/profile/tasks"
+   ],
+   "axes": [
+    "颜色token"
+   ]
+  },
+  {
+   "batch_id": "R12-B71",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L03.md",
+   "files": [
+    "apps/client/src/subpackages/village/village/detail.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L03-D04",
+    "R12-L03-D05"
+   ],
+   "pages": [
+    "/subpackages/village/village/detail"
+   ],
+   "axes": [
+    "需新建",
+    "颜色token"
+   ]
+  },
+  {
+   "batch_id": "R12-B73",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L03.md",
+   "files": [
+    "apps/client/src/subpackages/village/village/post.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L03-D01",
+    "R12-L03-D02",
+    "R12-L03-D03"
+   ],
+   "pages": [
+    "/subpackages/village/village/post"
+   ],
+   "axes": [
+    "素材缺失",
+    "文案",
+    "颜色token"
+   ]
+  },
+  {
+   "batch_id": "R12-B75",
+   "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R12/R12-L03.md",
+   "files": [
+    "apps/client/src/subpackages/village/village/tag-posts.vue"
+   ],
+   "shared": false,
+   "defects": [
+    "R12-L03-D06",
+    "R12-L03-D07"
+   ],
+   "pages": [
+    "/subpackages/village/village/tag-posts"
+   ],
+   "axes": [
+    "文案",
+    "可达性"
+   ]
+  }
+ ],
+ "ownership": "批次互斥由 files[] 保证；同一文件绝不进两个批次（本文件自证第 2/3 例）",
+ "_note": "R12fix 派单台账过滤版：只含 dispatch-manifest.json dispatchedBatches 的批次（修车波的真实合同范围）；未派的 54 批登记为本轮不派（EMITFIXLANES_RESULT_UNASSIGNED），不应进 fixvis 比较全集。"
+}
