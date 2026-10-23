@@ -24,6 +24,8 @@ import { useI18n } from "vue-i18n";
 import { openAppPath } from "../../../utils/navigation";
 // 2026-09-04 视觉验收：statusBarHeight 注入，var(--statusbar, env(safe-area-inset-top)) 模拟器为 0 会压刘海
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
+// R14-L10-D32（位置 P3）：页头右侧安全距改走实测胶囊位，须注入 --capsule-right
+import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import { lightHaptic, successHaptic } from "../../../utils/haptic";
 import { IMAGE_PATHS } from "../../../config/images";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
@@ -96,6 +98,7 @@ function taskPathForCode(code: string): string | undefined {
 
 const { t } = useI18n();
 const statusBarHeightPx = useStatusBarHeight();
+const { styleVars: menuStyleVars } = useMenuButtonRect();
 const sessionStore = useSessionStore();
 
 /**
@@ -418,8 +421,10 @@ onShow(async () => {
 </script>
 
 <template>
-  <!-- 2026-09-04 视觉验收：statusBarHeight 注入，var(--statusbar, env(safe-area-inset-top)) 模拟器为 0 会压刘海 -->
-  <view class="tasks-page" :style="{ paddingTop: `calc(${statusBarHeightPx}px + var(--sp-6))` }">
+  <!-- 2026-09-04 视觉验收：statusBarHeight 注入，var(--statusbar, env(safe-area-inset-top)) 模拟器为 0 会压刘海
+       R14-L10-D32：根节点同时绑 useMenuButtonRect 的 styleVars（--capsule-right / --statusbar），
+       页头右侧安全距才有实测值可用（同 album.vue / favorites.vue 的标准配方）。 -->
+  <view class="tasks-page" :style="{ ...menuStyleVars, paddingTop: `calc(${statusBarHeightPx}px + var(--sp-6))` }">
     <!-- 页面标题（2026-08-09：左侧补返回键） -->
     <view class="tasks-header">
       <view
@@ -430,7 +435,18 @@ onShow(async () => {
         :aria-label="t('common.back')"
         @tap="goBack"
       >
-        <image class="tasks-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+        <!-- R14-L10-D27（可达性 P1）+ R14-L10-D28（尺寸比例 P3）同批，配方同 location.vue:189-193 /
+             album.vue:672-691：
+             ① 圆底里那枚 ICONS_COMMON.BACK 是 common/back.svg 的栅格图（stroke #94A2B7/#94A3B8 蓝灰，
+                24 viewBox 里折线只占 x9..15 / y6..18），旧 :551 给 40rpx×40rpx ⇒ 帧上白圆里的箭头只是
+                一道浅灰痕（字形墨色实测 ≈1.6:1），读不出方向；本页 navigationStyle: custom（:237 注释
+                自证）、无 TabBar、无底部操作栏 ⇒ 这枚是唯一退出口。换成 52rpx 深色 ‹ 字形。
+             ② 旧 :543-544 把白底与卡片描边直接挂在 88rpx 热区节点上，可见圆底 = 热区 = 88rpx(44px)，
+                比同域其余四页的 64rpx(32px) 圆底大一圈 ⇒ 把 64rpx 圆底（background/border/radius）
+                移进新建的 __back-circle，:538-541 的 88rpx 只留透明热区（location.vue:303-324 同款）。 -->
+        <view class="tasks-header__back-circle">
+          <text class="tasks-header__back-glyph">‹</text>
+        </view>
       </view>
       <text class="tasks-header__title">{{ t('profile.taskCenter') }}</text>
       <text class="tasks-header__count">{{ t('profile.tasksCompletedCount', { done: doneCount, total: tasks.length }) }}</text>
@@ -520,12 +536,19 @@ onShow(async () => {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  /* 2026-09-04 视觉验收：右侧为完成度文案，预留胶囊按钮宽度避免遮挡 */
-  padding-right: 180rpx;
+  /* 2026-09-04 视觉验收：右侧为完成度文案，预留胶囊按钮宽度避免遮挡
+     R14-L10-D32（位置 P3）：原裸值 180rpx=90px 是按当前中文胶囊宽手调的，没走同域 album.vue:653
+     由 useMenuButtonRect 注入的 --capsule-right 实测式（本页根节点 :422 原先也没绑 styleVars）
+     ⇒ 切 en-US locale 或胶囊加宽时「0/4 已完成」会直接压进胶囊（album.vue:645-651 记的正是同一次
+     踩坑）。换成已验证原式 calc(var(--capsule-right, 7px) + 104px)：兜底档 7+104=111px 比原 90px
+     更宽，实测档按胶囊右缘间隙取值；根节点同时绑 menuStyleVars（--capsule-right + --statusbar）。 */
+  padding-right: calc(var(--capsule-right, 7px) + 104px);
   margin-bottom: var(--section-gap);
 }
 
-/* 2026-08-09：返回键（圆角图标按钮） */
+/* 2026-08-09：返回键（圆角图标按钮）
+   R14-L10-D28：白底/描边/圆角从本节点移入 .tasks-header__back-circle —— 本节点只保留 88rpx
+   透明热区（同 location.vue:303-311）。 */
 .tasks-header__back {
   flex-shrink: 0;
   align-self: center;
@@ -533,12 +556,22 @@ onShow(async () => {
      圆径约 29px）低于 88rpx 门槛。本页 navigationStyle: custom（:237 注释自证）且无 TabBar、
      无底部操作栏 ⇒ 这枚小圆键是帧上唯一出口，只能靠猜命中。
      配方与同仓共享页头逐字同档：AppShell.vue:362-363 的 .shell__back 已声明
-     min-height/min-width: 88rpx（44px）。图标 .tasks-header__back-icon（:550-553）保持 40rpx 不动，
-     放大的是热区/圆底，不是字形。 */
+     min-height/min-width: 88rpx（44px）。 */
   width: 88rpx;
   height: 88rpx;
   min-width: 88rpx;
   min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* R14-L10-D28（尺寸比例 P3）：可见圆底 64rpx=32px，与同域 album.vue:672-681 /
+   location.vue:313-324 / favorites.vue:182-194 五页同档；热区仍是外层 88rpx，两者解耦。 */
+.tasks-header__back-circle {
+  width: 64rpx;
+  height: 64rpx;
+  box-sizing: border-box;
   border-radius: var(--r-full);
   background: var(--c-bg-container);
   border: var(--c-border-card);
@@ -547,13 +580,23 @@ onShow(async () => {
   justify-content: center;
 }
 
-.tasks-header__back-icon {
-  width: 40rpx;
-  height: 40rpx;
+/* R14-L10-D27（可达性 P1）：原 .tasks-header__back-icon（40rpx×40rpx 蓝灰 PNG，墨色实测 ≈1.6:1）
+   换成 52rpx 深色 ‹ 字形压白圆底 —— --c-text-primary #1A1E1C 对 #FFFFFF 实算 16.85:1。
+   52rpx 高于字号档位上限 --fs-5xl=44rpx，按 location.vue:330 / album.vue:686 既有口径保留为
+   固定布局尺寸，不写永不生效的假兜底。 */
+.tasks-header__back-glyph {
+  font-size: 52rpx;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--c-text-primary);
 }
 
 .tasks-header__title {
-  font-size: var(--fs-5xl);
+  /* R14-L10-D26（字号 P2）：原 var(--fs-5xl)=44rpx=22px 是「卡片大标题」档充当页头，
+     比 §1.3 页头档下限 26px 低 4px；同分包同批收敛过的 location.vue:345 / privacy.vue:312 /
+     album.vue:699 三页均已升 --fs-7xl=56rpx=28px（design-variables.scss:572，与 AppShell
+     .shell__title 同值），本页与 favorites 同条链路上留旧档 ⇒ 归同域页头档。 */
+  font-size: var(--fs-7xl);
   font-weight: 700;
   color: var(--c-text-primary);
 }
@@ -614,7 +657,13 @@ onShow(async () => {
 .tasks-list {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-5);
+  /* R14-L10-D31（间距 P3）：同一列白卡原先两档间隙 —— :573 概览卡到第一张任务是
+     margin-bottom var(--sp-6)=24rpx，本处任务卡之间是 gap var(--sp-5)=20rpx，帧上后三道白缝
+     比第一道窄 2px，四张同族卡被排成「头一张松、后面紧」。§1.4 只登记 24rpx 这一档区块间距，
+     且 --section-gap(:427)=24rpx 正是区块间隙令牌（album.vue:654 同款用法）⇒ 归此档。
+     实算：任务卡 1..4 之间的间隙 20rpx→24rpx（+2px/缝，共 3 缝 ⇒ 列表整体下移 6px，
+     与概览卡到第一张的 24rpx 同值 ⇒ 复拍门 bottom 帧可见四缝等宽）。 */
+  gap: var(--section-gap, 24rpx);
 }
 
 .task-item {
@@ -665,7 +714,15 @@ onShow(async () => {
    收 --c-brand-800 #156B51（对白 6.45:1），与同页 .task-item__status--done 文字同一档（R11 同轴漏网补齐）。
    字号字重不动。 */
 .task-item__points {
-  font-size: var(--fs-sm);
+  /* R14-L10-D30（字号 P2）：奖励值「+5/+50/+20/+100 积分」是每行的激励值（用户据此决定
+     先做哪条），原与 :674 的任务说明行同为 var(--fs-sm)=22rpx=11px —— 深色强调（:669 的
+     --c-brand-800）被同档字号抵消回去。升 var(--fs-md)=26rpx=13px（§1.3 小字档），
+     说明行 .task-item__desc 保持 --fs-sm 11px ⇒ 两档拉开（13px vs 11px），
+     与左边任务名 15px 形成 15/13/11 三级读法。行内标题+奖励值同行（:490 title-row，
+     gap --sp-3），13px 下最长「+100 积分」≈ 6 字×13px≈70px + 任务名「完善个人资料」
+     6 字×15px≈90px + 6px 间隙 = 166px < 内容列可用宽（.task-item__content 为 flex:1
+     min-width:0，实测列宽 ≈ 375 − 32 页衬 − 36 图标 − 10 间隙 − 80 状态胶囊 ≈ 200px）⇒ 不换行。 */
+  font-size: var(--fs-md);
   color: var(--c-brand-800, #156B51);
   font-weight: 600;
 }
@@ -730,7 +787,16 @@ onShow(async () => {
 }
 
 .task-item__status-text {
-  font-size: var(--fs-sm);
+  /* R14-L10-D29（字号 P2）：「去完成」是本页 4 张任务卡上唯一的主动作文案，原取
+     var(--fs-sm)=22rpx=11px 落在 §1.3「角标·法务」档 —— 帧上深绿胶囊里的三字比左边
+     任务名（--fs-xl 15px）小近四成，读起来像胶囊角标而不是按钮文字（控件本身 min-height
+     88rpx 已够点，问题只在字号取档）。升 var(--fs-lg)=28rpx=14px，与同域 album.vue:898-904
+     那颗主 CTA「添加照片」文案同档（该处 R8-L10-D11 已收同档）。
+     同规则也吃进「已完成」态文案（同一枚 .task-item__status-text）——两态同体量，不出现
+     一个 11px 一个 14px 的新错位。白字压 --c-brand-800 #156B51 仍 6.45:1（字号升档只增
+     可读性，不改色值）；胶囊高由 :693 min-height:88rpx 兜住（14px 字 + 上下 8rpx 内衬
+     ≈ 27px < 44px），无溢出。 */
+  font-size: var(--fs-lg);
   font-weight: 600;
 }
 </style>

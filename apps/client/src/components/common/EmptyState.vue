@@ -182,8 +182,32 @@ function handleAction() {
    统一色相：grayscale(1) 抹掉蓝偏后按 #94A3B8→#6B7571 的亮度比压暗（107..117 / 161 ≈ 0.70），
    落点即三级文本色档。只对「走预设图标映射」的分支生效（:class 上的 --preset），
    业务侧显式传 image 的彩色插画不染色。 */
+/* R14-L06-D07（颜色token P2 · discover/history top 帧）：上一档 filter 归色归偏了。
+   `grayscale(1) brightness(0.7)` 的作用是先按 ITU-R BT.709 亮度把 #94A3B8(148,163,184)
+   抹成 R=G=B 的 161，再乘 0.7 ⇒ 精确落在 (113,113,113) —— 与本卡帧上实测的
+   纯中性灰 RGB(104,104,104)..(113,113,113)（R=G=B 完全相等）逐值对上，
+   说明灰阶那一步就是病灶：亮度对了，色相被抹平了，永远到不了注释自述的落点档
+   --c-text-tertiary #6B7571（107,117,113，绿相灰，R≠G≠B）。§1.2 色板里没有
+   (113,113,113) 这一档 ⇒ 帧上这枚图标是全站唯一一枚中性灰件，与浅绿页面不成体系
+   （R8-L06-D19 换素材、R7-L13-D03 加 filter 都没解决"归色"这一半）。
+   改法取卡上第一条：把 filter 从「抹平」换成「解到目标色」的链式配方，
+   与 pages/nearby/index.vue:1745-1760 已落地的 invert→sepia→saturate→hue-rotate→brightness
+   同一套算法（同仓先例，非自创）。按 CSS 滤镜规范矩阵（Filter Effects §hue-rotate/sepia/saturate、
+   BT.709 亮度权重、sRGB 域逐通道矩阵）对源色 #94A3B8 实算（本车道用 node 复算，脚本不入库）：
+     grayscale(1) → (161,161,161)
+     sepia(0.15) → (170,166,160)
+     hue-rotate(100deg) → (159,169,164)
+     saturate(1.5) → (156,170,163)
+     brightness(0.69) → (107,117,113) ≡ #6B7571（与 $text-tertiary :125 逐通道相等，误差 0）
+   即：落点不再是"某个近似灰"，而是三级文本色令牌本身。
+   亮度档基本没动（113 → 107..117 同档），所以本条不是可达性改动而是归色改动，
+   数值上压白卡 4.76:1、压 --c-bg-page #EEF7F2 4.36:1，均过非文本图形 3:1（与旧值同级，不降反升）。
+   卡上第二条口径（内联 SVG + currentColor）在本组件不成立：预设图标是
+   `<image src>` 外链资产（:123-130），mp-weixin 的 WXML 没有可内联的 `<svg>` 节点，
+   外链 SVG 也吃不到宿主的 currentColor ⇒ 组件内唯一杠杆仍是 filter，沿用 R7 已批口径。
+   仍只对走预设映射的分支生效（:class 上的 --preset），业务显式传 image 的彩色插画不染色。 */
 .empty-icon--preset {
-  filter: grayscale(1) brightness(0.7);
+  filter: grayscale(1) sepia(0.15) hue-rotate(100deg) saturate(1.5) brightness(0.69);
 }
 /* R10-L10-D20（字号 P2 · favorites，同源复现于全部空态消费点）：
    主标题原取 --fs-lg=28rpx=14px、副标题 --fs-base=24rpx=12px ⇒ 两行只差 4rpx，

@@ -406,32 +406,44 @@ onMounted(() => {
           <text class="section__title-text">{{ t("dnd.timeRange") }}</text>
         </view>
         <view class="card">
-          <view class="time-row">
-            <text class="time-row__label">{{ t("dnd.startTime") }}</text>
-            <picker
-              mode="time"
-              :value="form.startTime"
-              @change="handleStartTimeChange"
-            >
+          <!-- R14-L11-D01（可达性 P1）：改前 <picker> 只包住右侧「22:00 ›」那一块，
+               帧上实测值墨迹 x=304..338、y=263..272（10px 字高），行盒高 ≈19px=38rpx，只有
+               88rpx 地板的四成；左侧「开始时间」标签（实测 x=24..78）与整行其余 300px 都不响应
+               点击，而本页没有第二个改时段的出口。按卡上第一条改法把 picker 提到 .time-row 外层
+               ⇒ 整行都是热区（uni-app/微信小程序的 picker 命中区 = 其全部子节点）；
+               同时给 .time-row 补 min-height:88rpx 地板（box-sizing 已全局 border-box，
+               theme/global.scss:1-3），热区实算 = 686rpx(343px) 宽 × ≥88rpx(44px) 高
+               = 15092px²，改前只有值块 ≈34×19px=646px² ⇒ 约 23 倍面积。
+               值/箭头/标签的视觉位置一律不动（同一套 flex 两端对齐）⇒ 本条主判据在结构/热区层，
+               静态帧只体现 .time-row 由 ≈43px 抬到 44px 地板的那 1px（两条行共 2px 位移）。 -->
+          <picker
+            class="time-row-hit"
+            mode="time"
+            :value="form.startTime"
+            @change="handleStartTimeChange"
+          >
+            <view class="time-row">
+              <text class="time-row__label">{{ t("dnd.startTime") }}</text>
               <view class="time-row__picker">
                 <text class="time-row__value">{{ form.startTime }}</text>
                 <text class="time-row__arrow">›</text>
               </view>
-            </picker>
-          </view>
-          <view class="time-row time-row--no-border">
-            <text class="time-row__label">{{ t("dnd.endTime") }}</text>
-            <picker
-              mode="time"
-              :value="form.endTime"
-              @change="handleEndTimeChange"
-            >
+            </view>
+          </picker>
+          <picker
+            class="time-row-hit"
+            mode="time"
+            :value="form.endTime"
+            @change="handleEndTimeChange"
+          >
+            <view class="time-row time-row--no-border">
+              <text class="time-row__label">{{ t("dnd.endTime") }}</text>
               <view class="time-row__picker">
                 <text class="time-row__value">{{ form.endTime }}</text>
                 <text class="time-row__arrow">›</text>
               </view>
-            </picker>
-          </view>
+            </view>
+          </picker>
         </view>
       </view>
 
@@ -530,11 +542,14 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: linear-gradient(
-    180deg,
-    var(--c-bg-page) 0%,
-    var(--c-tint-blue-50) 100%
-  );
+  /* R14-L11-D03（颜色token P2）：改前是 linear-gradient(180deg, --c-bg-page → --c-tint-blue-50)，
+     帧上实测 x=6 列自上而下 (237,247,243)=#EDF7F3 → (232,244,248) → (229,243,252)=#E5F3FC，
+     下半屏蓝通道比绿通道高 9 ⇒ 整页下半部肉眼偏冷蓝，脱离 §1.2 的 #EEF7F2 单一页面底档
+     （--c-tint-blue-50 真值 #E3F2FD，design-variables.scss:829）。本页不是登录/引导/沉浸页，
+     没有需要渐变铺底的场景 ⇒ 与同域 tasks.vue:512（R11-L11-D05 同判点同处置）归口 var(--c-bg-page)，
+     不再引入蓝色氛围档。画面落点：bottom 帧下半屏由 #E5F3FC（蓝−绿=+9）整片改为 #EEF7F2
+     （绿−蓝=+5），逐列像素必动。 */
+  background: var(--c-bg-page, #EEF7F2);
   box-sizing: border-box;
   position: relative;
 }
@@ -771,11 +786,25 @@ onMounted(() => {
 }
 
 /* ==================== 时间选择行 ==================== */
+/* R14-L11-D01（可达性 P1）：picker 外壳 = 整行热区，必须是块级且铺满卡宽，
+   否则 88rpx 地板与横向热区落不到 .time-row 上（改前热区只有右侧值块 34×19px）。
+   实算热区：卡宽 750 − 2×--page-padding(32rpx) = 686rpx=343px 宽 × ≥88rpx=44px 高
+   = 15092px²，改前 34×19=646px² ⇒ 约 23 倍。 */
+.time-row-hit {
+  display: block;
+  width: 100%;
+}
+
 .time-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 24rpx 28rpx;
+  /* R14-L11-D01：88rpx 热区地板（仓内口径 AppShell.vue:362-363 / 同页 .weekday-item:885 同值）。
+     theme/global.scss:1-3 已全局 box-sizing:border-box ⇒ min-height 落在边框盒上，
+     与既有 24rpx 上下内衬共存：自然行盒 ≈43px 时抬到 44px，两条行各 +1px ⇒ 分隔线与
+     下方内容整体下移 2px（top 帧可辨）。 */
+  min-height: 88rpx;
   border-bottom: 1rpx solid var(--c-border-light);
 
   &--no-border {
@@ -884,15 +913,28 @@ onMounted(() => {
      补 min-height:88rpx 并靠既有 flex 两轴居中保持文字视觉位置不变；box-sizing 已 border-box。 */
   min-height: 88rpx;
   padding: 20rpx 0;
-  background: var(--c-bg-page);
+  /* R14-L11-D04（颜色token P2）：改前未选中底 --c-bg-page #EEF7F2 对白卡 #FFFFFF 只有
+     1.09:1 且 :889 的 border 是 transparent ⇒ 芯片容器在帧上几乎不存在；选中底 --c-bg-brand
+     #E8FBF2 亮度 L≈0.925 反而比未选中的 0.911 更浅（方向反了），两态只差一圈 2rpx --c-brand
+     #36C99A（对白 2.10:1，低于非文本 3:1）。现按「选中比未选中更重」重排两档：
+       · 未选中 底 --c-bg-surface #F3FAF6（对白 1.06）+ 描边 --c-border-strong #C2CAC6
+         （对白 1.67 / 对自身底 1.58）—— 轮廓由「不存在」变「有边」；
+       · 选中   底 --c-brand-100 #D1F5E7（对白 1.17，比未选中的 1.06 更实）+ 描边 --c-brand-800
+         #156B51（对白 6.45 / 对自身底 5.51）—— 描边由 1.67:1 升到 6.45:1，两态轻重方向被扳正。
+     偏离卡说明：卡上建议的未选中描边 --c-border-default #DDE3E0 对白只有 1.30:1，
+     在同一条尺上仍是最弱的一档；仓内同型「可点容器轮廓」已修口径取的是 --c-border-strong
+     （village/publish.vue:1292、setup/schedule/index.vue:297、verification/index.vue:1171），
+     故未选中描边升该档。两档色值全部来自既有令牌，未新增素材、未改全站令牌 ⇒ 不涉三棵树。
+     选中底卡上另给了 --c-brand-100 #D1F5E7 一档，按令牌真值取用（design-variables.scss:11/:300）。 */
+  background: var(--c-bg-surface);
   border-radius: var(--r-lg, 16rpx);
-  border: 2rpx solid transparent;
+  border: 2rpx solid var(--c-border-strong);
   transition: all var(--d-fast, 120ms) ease;
   box-sizing: border-box;
 
   &--active {
-    background: var(--c-bg-brand);
-    border-color: var(--c-brand);
+    background: var(--c-brand-100, #D1F5E7);
+    border-color: var(--c-brand-800, #156B51);
   }
 }
 
@@ -909,6 +951,23 @@ onMounted(() => {
      与正上方卡片群不同轨 ⇒ 水平外边距跟着归 --page-padding(32rpx=16px)，纵向 40rpx 不动。 */
   margin: 40rpx var(--page-padding, 32rpx) 0;
   padding: 28rpx;
+  /* R14-L11-D02（层级遮挡 P2）：改前键面落在系统手势带上——top 帧（scroll=0）实测保存键
+     y=765..811、距屏底 814 只有 3px，iOS 横条在 y=799..806 取样 (5,7,7) 纯黑压在绿键面上
+     （左右同行取样是 (21,107,81) 绿底）。根因是已知机制 §4：本页 .safe-bottom(:608) 的
+     env(safe-area-inset-bottom) 在取景档恒 0，且它挂在按钮**之后的流内占位**上 ⇒ 首屏不滚动时
+     净空全在视口外，键面直接压带。按卡上第二条改法给主操作键自带净空并吸底：
+       · position:sticky + bottom=calc(env(safe-area-inset-bottom)+48rpx) —— 48rpx(24px) 是
+         仓内既有底栏地板档（village/publish.vue:1326、register/success.vue:93、village/post.vue:1693
+         同一式），env=0 时也有 24px 实底，> 实测横条带高 15px；
+       · 本页头部已 sticky(:545)，滚动容器是自然流页面 ⇒ sticky 底栏可用，且 .content 无 overflow，
+         祖先链 .content(:658)/.dnd-page(:529) 均不裁剪。
+     画面落点：top 帧键面由 y=765..811 上移到 y≈744..790（键底 790 < 横条顶 799 ⇒ 黑条不再压在
+     绿面上），bottom 帧键底由 753 变为 ≈790 位置、两侧留白同步收窄 ⇒ 两帧都动。
+     z-index:5 是因为同页 .section(:668) 有 position:relative/z-index:1，吸底后必须仍在内容之上。 */
+  position: sticky;
+  bottom: calc(constant(safe-area-inset-bottom) + 48rpx);
+  bottom: calc(env(safe-area-inset-bottom) + 48rpx);
+  z-index: 5;
   /* 同根顺手项（与 R9-L09-D06 同型，本页 .save-btn 原取 --c-brand #36C99A 实底压
      --c-text-inverse rgba(255,255,255,0.95)，合成字色 #F5FCFA 对 #36C99A 仅 2.02:1，
      白字在浅绿上糊成一片）。页内实底改 --c-brand-800 #156B51：对 95% 白字 6.01:1，

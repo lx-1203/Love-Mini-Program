@@ -1313,6 +1313,18 @@ onShareAppMessage(() => {
   background: linear-gradient(135deg, var(--c-romance-200) 0%, var(--c-romance-100) 100%);
 }
 
+/* R14-L06-D12（颜色token P2）：互相喜欢卡右侧圆钮底已是粉渐变（上方 :1313），
+   但里面的「›」字形仍吃基础 .likes-card__arrow-icon 的行动绿 --c-brand #36C99A（:1455），
+   粉底绿字实测 1.41:1（帧上最暗像素 RGB(54,201,154)），既是两色混用又让「可点进聊天」这枚唯一
+   提示几乎读不出 ⇒ mutual 态单列一条深粉字形，绿只留给非 mutual 态（基础规则不动）。
+   卡建议 romance-500 #FF6B81 未采纳：按真值算 romance-500 压粉底 romance-200/100 仅 1.62/2.12:1，
+   仍不达非文本 UI 3:1（已知机制 §2「不要看着改，要算」）；取 romance 档最深可用档
+   --c-romance-700 #CC4A5F（design-variables.scss:43）⇒ 压字形中心（渐变中段≈#FFC6CF）3.05:1，
+   压最深渐变端 romance-200 最不利处 2.64:1，较原 1.41:1 显著达标并归一为单色粉。 */
+.likes-card--mutual .likes-card__arrow-icon {
+  color: var(--c-romance-700, #CC4A5F);
+}
+
 .likes-card__avatar-wrap {
   position: relative;
   flex-shrink: 0;
@@ -1729,11 +1741,24 @@ onShareAppMessage(() => {
   border-radius: var(--r-full);
   box-shadow: var(--s-card-soft);
   border: var(--c-border-card);
+  /* R14-L06-D10（可达性 P1）：原胶囊仅 padding(12rpx×2)+--fs-md 行高 ≈62rpx=31px，低于 88rpx(44px)
+     拇指下限；本页 navigationStyle:custom 无系统返回栏，这枚「管理/完成」是进入与退出批量模式的唯一出口
+     （模板 :655 batchMode ? finish : manage），批量态下按不准 ⇒ 撑到 88rpx 热区，flex 居中让文字在扩出的
+     胶囊内垂直居中（容器已是 display:flex，align/justify 有生效前提，见已知机制 §7.4）；同页 R10-L02-D18、
+     R13-L06-D09 返回钮均已是 88rpx 档，本页漏收。 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
 }
 
 .likes-header__manage-text {
   font-size: var(--fs-md);
   font-weight: 600;
-  color: var(--c-brand);
+  /* R14-L06-D10（对比度 P1）：标签色原 --c-brand #36C99A 压白胶囊，按 theme/design-variables.scss:15
+     真值算得 2.10:1（帧上最暗字素实测 RGB(61,203,158)≈2.05:1），13px 文字远低于正文 4.5:1 下限；
+     改 --c-brand-800 #156B51（$brand-800 见 design-variables.scss:18）⇒ 压白 6.45:1，
+     与本页 R10-L02-D13 主 CTA、R9 BottomActionBar.vue:104 全站深档白字口径一致（§2 表内采用档）。 */
+  color: var(--c-brand-800, #156B51);
 }
 </style>

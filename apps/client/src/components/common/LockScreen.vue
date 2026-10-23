@@ -74,17 +74,32 @@ const primaryText = computed(() =>
   t(loggedIn.value ? "lock.primaryLoggedIn" : "lock.primaryLoggedOut")
 );
 
-/** 完善进度（已登录且进度 >0 时展示，支持中途退出后继续完善） */
-const progressText = computed(() => {
-  if (
-    loggedIn.value &&
-    props.completionPercent !== undefined &&
-    props.completionPercent > 0
-  ) {
-    return t("lock.completionProgress", { n: props.completionPercent });
-  }
-  return "";
-});
+/** 完善进度是否展示：已登录且进度 >0（文字行与进度条共用同一判据，不两处各写一遍） */
+const showProgress = computed(
+  () => loggedIn.value && props.completionPercent !== undefined && props.completionPercent > 0
+);
+
+/** 进度文字（已登录且进度 >0 时展示，支持中途退出后继续完善） */
+// `?? 0` 只喂类型（showProgress 已保证此处非 undefined），不改变任何取值
+const progressText = computed(() =>
+  showProgress.value ? t("lock.completionProgress", { n: props.completionPercent ?? 0 }) : ""
+);
+
+/**
+ * R14-L08-D02（需新建 P2 · heart-signals bottom 帧）：进度条填充宽度。
+ * 真值来源＝宿主传入的 completionPercent（heart-signals/index.vue:41 / chat-session:555 /
+ * official-chat:81 均由 sessionStore.profileCompletion 派生，village 同口径），
+ * 与上方「当前完善度 N%」那一行是同一个数、同一个 v-if 判据 ⇒ 不存在「有条没数」。
+ * 钳到 0..100 只防后端越界值把条撑爆，不改写、不补位（口径同既有
+ * components/profile/mine/MyCompletion.vue:18 的同型钳位）。
+ * ⚠️ 卡上「看不出解锁线在哪」那一半不接：解锁阈值没有真相源——后端没有
+ * 「解锁所需完善度」这一列，本组件只知 props.completionPercent；画一条 70%/80% 的
+ * 阈值线就是造一个没有真相源的承诺（§12.4 第三形态）。槽的右端＝100%＝资料完整，
+ * 这一条线由条本身的总宽度给出，不额外发明第二个数。
+ */
+const progressBarStyle = computed(() => ({
+  width: `${Math.min(100, Math.max(0, props.completionPercent ?? 0))}%`,
+}));
 
 /** 权益清单：具象化完善资料的收益；宿主可按页覆盖 */
 const benefits = computed(() =>
@@ -103,16 +118,28 @@ const benefits = computed(() =>
      过非文本 3:1 门槛；原 #94A3B8 压环色 #4FD3A5 只有 1.37:1。
    · check-circle.svg stroke="#94A3B8" → register/check-green.svg stroke="#36C99A" = --c-brand，
      勾选语义全站为品牌绿；环上徽章的 6rpx --c-brand 描边（:503 上一轮刚改）与勾本身终于同色。
+     ⚠️ R14-L02-D05 之后本组件不再消费勾素材：主视觉环底的 ✓ 徽章整枚撤掉（理由见 lockIconSrc 下方注），
+     checkIconSrc 出口随之删除，REGISTER_ICONS.CHECK_GREEN 键保持注册（他处仍在用），未动。
    × close.svg 无同语义的色板档素材可换 ⇒ 落在样式侧 filter（见 .lock-screen__close-icon）。 */
 const closeIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.CLOSE_SVG));
 const lockIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.REGISTER_ICONS.LOCK));
-const checkIconSrc = computed(() => resolveMediaUrl(IMAGE_PATHS.REGISTER_ICONS.CHECK_GREEN));
 /**
  * R13-L02-D05（语义 P3 · village top 帧）：权益清单行首原也吃 checkIconSrc——
  * ✓ 的既定语义是「已完成」，而同屏明写「当前完善度 30%」、三条权益恰恰全部未解锁，
  * 勾选图形与门槛事实相反。行首改吃 lockIconSrc（register/lock.svg，stroke="#4A524E"
- * = --c-text-secondary 档，压页底 #EEF7F2 实测 7.37:1，同 :722 的既有实算），
- * ✓ 只留给环上完成徽章一处真正的「已完成」图形。
+ * = --c-text-secondary 档，压页底 #EEF7F2 实测 7.37:1，同 .benefit__text 注的既有实算）。
+ *
+ * R14-L02-D05（文案 P3 · village top 帧）：上一轮只改了权益清单行首那一处 ✓，
+ * 主视觉（280rpx 品牌绿大圆里一枚锁）底部叠的那枚 76rpx「白圆 + 绿 ✓」徽章漏改，
+ * 新帧上仍然在场 ⇒ 同一屏里锁（未解锁）与 ✓（已完成/已解锁）同时承诺，矛盾没消除。
+ * 卡给两条形态（改中性/进度语义，或撤掉 ✓），取「撤掉」：
+ * 本屏三条权益全锁、完善度是 30%，画面没有任何一处真的「完成」可被 ✓ 指认，
+ * ✓ 属没有真相源支撑的画面承诺 ⇒ §12.4 第二合法形态是撤掉它，而不是换成另一枚
+ * 自造的完成图形。进度语义不消失，改由下方按 completionPercent 真值渲染的
+ * 进度条承载（同批 R14-L08-D02），比在 38px 白圆里塞百分比数字更少重复、更少误读。
+ * 连带删除的死码：.illustration__badge / .illustration__badge-icon 两处样式
+ * （含 R9-L08-D04 为绿勾校准的 brightness(0.53) filter，节点没了它就是死样式）、
+ * checkIconSrc 出口、模板里的徽章节点。
  */
 /**
  * 漂浮爱心（R6-L03-D02 / R6-L08-D09 / R6-L09-D22 · R8-L07-D01 颜色token P2）：
@@ -246,10 +273,12 @@ function browsePublic() {
       />
     </button>
 
-    <!-- 主体内容区（纵向铺满并居中） -->
+    <!-- 主体内容区（纵向铺满、三组贴顶铺开，R14-L08-D01） -->
     <view class="lock-screen__body">
-      <!-- 主题插画：解锁徽章 + 漂浮爱心
-           （R13-L02-D06：静态写死的「同校头像」已撤，无真值支撑的画面承诺不留，见 script 注） -->
+      <!-- 主题插画：锁形主视觉 + 漂浮爱心
+           （R13-L02-D06：静态写死的「同校头像」已撤；R14-L02-D05：环底那枚白圆绿 ✓
+           徽章一并撤——✓ 的既定语义是「已完成/已解锁」，与本屏的门槛事实相反，
+           「进度」这一语义改由下方真值进度条承载，见 R14-L08-D02） -->
       <view class="lock-screen__illustration">
         <view class="illustration__ring">
           <image
@@ -258,14 +287,6 @@ function browsePublic() {
             mode="aspectFit"
             alt=""
           />
-          <view class="illustration__badge">
-            <image
-              class="illustration__badge-icon"
-              :src="checkIconSrc"
-              mode="aspectFit"
-              alt=""
-            />
-          </view>
         </view>
         <view v-if="heartsVisible" class="illustration__heart illustration__heart--1">
           <image
@@ -290,8 +311,14 @@ function browsePublic() {
       <view class="lock-screen__content">
         <text class="lock-screen__title">{{ title }}</text>
         <text class="lock-screen__subtitle">{{ subtitle }}</text>
-        <text v-if="progressText" class="lock-screen__progress">{{ progressText }}</text>
-        <!-- R13-L02-D05：三条权益此刻均未解锁，行首语义用「锁」不用「✓」（✓ 留给真正的已完成态；
+        <text v-if="showProgress" class="lock-screen__progress">{{ progressText }}</text>
+        <!-- R14-L08-D02：与上一行同一判据、同一个数——条状档（不是环形），
+             槽的右端即「资料完整 100%」，填充宽度按 completionPercent 真值 -->
+        <view v-if="showProgress" class="lock-screen__progress-bar">
+          <view class="lock-screen__progress-fill" :style="progressBarStyle" />
+        </view>
+        <!-- R13-L02-D05：三条权益此刻均未解锁，行首语义用「锁」不用「✓」
+             （R14-L02-D05 起主视觉环底那枚 ✓ 也已撤——本屏没有任何真正的已完成态；
              素材 = 仓内既有 register/lock.svg，经 lockIconSrc 同一出口解析） -->
         <view class="lock-screen__benefits">
           <view v-for="benefit in benefits" :key="benefit" class="benefit">
@@ -496,7 +523,8 @@ function browsePublic() {
   /* #endif */
 }
 
-/* ========== 主体内容区：纵向铺满并居中（固定层内部可滚，见 .lock-screen 注释） ========== */
+/* ========== 主体内容区：纵向铺满、三组贴顶铺开（固定层内部可滚，见 .lock-screen 注释；
+   组间定值 + 余量集中一处由 R14-L08-D01 收口） ========== */
 .lock-screen__body {
   position: relative;
   z-index: 1;
@@ -516,11 +544,23 @@ function browsePublic() {
      「由 --sp-9/--sp-10 定值收口」，即钮下间隙从此只有这一枚令牌 + 页脚自己的 --sp-4，
      不再有 260rpx 的浮动余量。5 个宿主（village / heart-signals / likes-visitors /
      messages / 官方号）共用本组件，同批同治。 */
-  justify-content: space-between;
+  /* R14-L08-D01（间距 P2 · heart-signals top 帧）：上面那条 space-between 是 R11-L08-D10
+     为「钮下 131px 无主空带」引入的，但它把视口余量按 1/n 摊到组间，帧上实测反而造出两条
+     不落在 §1.4 sp 阶梯上的浮动空带——插画块底缘 y≈241 → 主标题墨迹起 y=353 = 112px(222rpx)，
+     权益清单第 3 行墨迹止 y=507 → 主按钮顶缘 y=601 = 94px(187rpx)，两值都随屏高浮动，
+     声明的 --sp-8/--sp-6 被余量吃掉（屏高一变就不是这两个数）。
+     按卡上改法收口：组间一律定值（插画 margin-bottom --sp-8 已在 .lock-screen__illustration
+     声明，.lock-screen__action 的 margin-top 由 --sp-8 提到 --sp-9），视口余量集中交给
+     .lock-screen__footer 那一处吸收——body 是 flex:1 的内容区、footer 是它的兄弟节点，
+     body 贴顶铺开后余量只剩「action 之下」这一条带，不再两处分摊。
+     内容超长时 flex-start 与 space-between 行为一致（首组仍贴顶），由 overflow-y:auto 滚，
+     不裁切。5 个宿主（village / heart-signals / likes-visitors / messages / 官方号）
+     共用本组件，同批同治。 */
+  justify-content: flex-start;
   padding: calc(var(--statusbar, env(safe-area-inset-top)) + var(--sp-8)) var(--sp-8) var(--sp-9);
 }
 
-/* ========== 主题插画：解锁徽章 + 漂浮爱心 ========== */
+/* ========== 主题插画：锁形主视觉 + 漂浮爱心 ========== */
 .lock-screen__illustration {
   position: relative;
   width: 440rpx;
@@ -528,7 +568,7 @@ function browsePublic() {
   margin-bottom: var(--sp-8);
 }
 
-/* 解锁徽章圆环（品牌渐变，承载锁图标与完成对勾） */
+/* 解锁徽章圆环（品牌渐变，承载锁图标；R14-L02-D05 起环底不再有 ✓ 徽章） */
 .illustration__ring {
   position: absolute;
   top: 30rpx;
@@ -549,59 +589,17 @@ function browsePublic() {
   height: 120rpx;
 }
 
-/* 完成对勾徽章：白色圆底 + 绿色对勾 + 绿色描边
-   R6-L08-D12（颜色token P2）：原写 `border: 6rpx solid var(--c-gradient-brand)`，
-   而 --c-gradient-brand 的值是 linear-gradient(...)（theme/design-variables.scss:171），
-   它是 <background-image> 值、不是 <color>，用作 border-color 属非法声明
-   ⇒ 整条 border 不生效（帧上实测 y341 一行从环绿 #4FD3A5 直接进白 #FEFEFE，
-   出白圆后 x272 起即页面底 #EEF7F2，白底外没有任何品牌绿环带）。
-   改纯色令牌 var(--c-brand)（#36C99A）；渐变只留给 background 用。
-
-   R8-L02-D19（层级遮挡 P2 · village）+ R8-L08-D04（层级遮挡 P2 · heart-signals）同一条碰撞：
-   徽章原挂环右下 `right:-12rpx; bottom:-12rpx` ⇒ 按两套坐标算落在盒内 x296..372 / y246..322；
-   右侧同校头像 `bottom:0; right:40rpx`（112rpx + 8rpx 白描边）落在 x288..400 / y288..400，
-   两盒交叠 76×34rpx ⇒ 帧上白色对勾圆徽章直接压在右头像照片上缘（x≈228..266/y≈288..322），
-   人像头部被整块切掉；且两块同为 position:absolute 都没写 z-index，
-   头像节点（模板 :220）排在徽章节点（:202）之后 ⇒ 后画者压上，
-   绿环带在底部断成不闭合弧（实测只到 x215..263/y288..325 = 49×38px，比声明的 44px 少 6px 竖口）。
-   改法取缺陷卡给的「徽章挂环正下」：left:50% 居中到环底缘（x162..238），
-   左头像 x40..152、右头像 x288..400 —— 两侧包围盒都不再与徽章相交（不靠 z-index 硬压，
-   几何上真正分开）；同时按 L08-D04 补 z-index:2 兜住绘制顺序，避免后续节点再盖上来。 */
-.illustration__badge {
-  position: absolute;
-  left: 50%;
-  bottom: -14rpx;
-  transform: translateX(-50%);
-  z-index: 2;
-  width: 76rpx;
-  height: 76rpx;
-  border-radius: var(--r-circle);
-  background: var(--c-bg-container);
-  border: 6rpx solid var(--c-brand);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--s-sm);
-}
-
-.illustration__badge-icon {
-  width: 48rpx;
-  height: 48rpx;
-}
-
-/* R9-L08-D04（可达性 P2 · heart-signals）：环上徽章白圆内的勾（checkIconSrc，
-   REGISTER_ICONS.CHECK_GREEN 第 1 行写死 stroke="#36C99A" = --c-brand）：
-     #36C99A L=0.44896 压 --c-bg-container 白 L=1 ⇒ 1.05/0.49896 = 2.10:1
-   低于非文字 3:1；本车道不许动 static/** 素材，盘上也没有 #156B51/#1F8D6A 描线的勾素材
-   （已 grep static/assets 全量 *.svg），故按缺陷卡第二条口径在组件内压深：
-   brightness(0.53) 把 (54,201,154) 逐通道乘成 ≈#1D6B52，L=0.11382
-   ⇒ 压白 1.05/0.16382 = 6.41:1 ≥3:1，与 :717 主 CTA 的 brand-800 同族。
-   R13-L02-D05 之后 .benefit__icon 不再消费勾素材（行首改 lockIconSrc，
-   register/lock.svg stroke="#4A524E" = --c-text-secondary 档，压页底 #EEF7F2 7.37:1，
-   同 :722 既有实算，本就达标），filter 再压反而偏离正文墨档 ⇒ 收窄到徽章一处。 */
-.illustration__badge-icon {
-  filter: brightness(0.53);
-}
+/* R14-L02-D05（文案 P3 · village top 帧）：环底那枚「白圆 + 绿 ✓」徽章整枚撤除
+   （模板节点 + checkIconSrc 出口 + 本节样式一起删，处置注与理由见 script 中
+   lockIconSrc 下方的 R14-L02-D05 注），
+   因此以下三段历史裁量记录所描述的规则已不存在，只留结论备查，不再各挂一份死样式：
+   · R6-L08-D12：`border: 6rpx solid var(--c-gradient-brand)` 是非法声明（<background-image>
+     值当 border-color 用 ⇒ 整条 border 不生效），当年改成 var(--c-brand) 纯色；
+   · R8-L02-D19 / R8-L08-D04：徽章原挂环右下会与「同校头像」交叠压人像，故挪到环底居中
+     （头像本身已在 R13-L02-D06 撤掉，这条碰撞随之失效）；
+   · R9-L08-D04：白圆内的 ✓ 描线色 #36C99A 压白只有 2.10:1，曾用 brightness(0.53) 压到
+     ≈#1D6B52（6.41:1）——本轮节点撤了，该 filter 一并删，不留惰性声明。
+   盘上素材 register/check-green.svg 未动（他处仍在消费）。 */
 
 /* 漂浮爱心点缀 */
 .illustration__heart {
@@ -681,6 +679,36 @@ function browsePublic() {
   text-align: center;
 }
 
+/* R14-L08-D02（需新建 P2 · heart-signals bottom 帧）：完善度此前只有一行 12px 文字
+   （帧上实测墨迹 y=469..480），整屏没有任何可视进度形态 ⇒ 30% 离解锁还差多少读不出来。
+   按卡上口径补条状档（不引圆形：卡上点名「同域我的页已用条状档」，且本组件上一轮刚撤掉
+   环底 ✓ 徽章，再往环上挂进度只会与主视觉打架）。
+   形制复用仓内既有同型件 subpackages/profile-extra/profile/tasks.vue:599-610
+   （height 16rpx + --r-full + overflow:hidden + transition width），不自创尺寸档；
+   宽度由 progressBarStyle 按 completionPercent 真值内联，槽右端 = 100% = 资料完整。
+   取色（本卡建议的 --c-brand 填充 + --c-brand-100 槽按 §2 算法不达标，已实算否掉）：
+     填充 --c-brand #36C99A 压槽 --c-brand-100 #D1F5E7 = 1.80:1、压页面底 #E7F5EE（--c-gradient-page
+       :181 在 y≈470 处的插值）= 1.93:1 —— 都低于非文本图形 3:1 下限，进度条等于糊在底上；
+     填充改同族深档 --c-brand-800 #156B51（design-variables.scss:18）压槽 --c-brand-100 = 5.51:1，
+       但与页面底仅 1.04:1 的槽几乎看不见，「还差多少」的那半条没落点；
+     终值：槽 = --c-brand-200 #A3EBCF（品牌梯内，压页面底 1.22:1，帧上每通道差 20~40 的实色带，
+       可辨且不与氛围层抢），填充 = --c-brand-800 #156B51（压槽 4.72:1、压页面底 5.75:1，
+       ≥非文本 3:1；与本文件 .lock-screen__btn 主 CTA 同档，选中/主操作与进度同源一把尺）。 */
+.lock-screen__progress-bar {
+  align-self: stretch;
+  height: 16rpx;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-brand-200, #A3EBCF);
+  overflow: hidden;
+}
+
+.lock-screen__progress-fill {
+  height: 100%;
+  border-radius: var(--r-full, 9999rpx);
+  background: var(--c-brand-800, #156B51);
+  transition: width var(--d-normal, 200ms) ease;
+}
+
 /* 权益清单：左对齐，锁形图标 + 文案（R13-L02-D05：✓ → 锁，语义见 script 注） */
 .lock-screen__benefits {
   width: 100%;
@@ -720,7 +748,10 @@ function browsePublic() {
 .lock-screen__action {
   width: 100%;
   max-width: 560rpx;
-  margin-top: var(--sp-8);
+  /* R14-L08-D01：原 --sp-8(32rpx=16px) 在 space-between 下被余量顶成帧上 94px 的浮动带；
+     body 改贴顶后这里才是真正生效的定值，按卡上口径提到 --sp-9(48rpx=24px)
+     ——权益清单与主按钮之间的呼吸位由这一枚令牌单独决定，不再随屏高漂移。 */
+  margin-top: var(--sp-9);
   display: flex;
   flex-direction: column;
   align-items: center;

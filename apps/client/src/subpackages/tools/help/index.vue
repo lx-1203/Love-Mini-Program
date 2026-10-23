@@ -163,6 +163,12 @@ function copyEmail(): void {
           </view>
           <view class="help-contact__info">
             <text class="help-contact__label">{{ t('help.contactEmail') }}</text>
+            <!-- R14-L07-D11（文案 P1）：原副行只绑 help.serviceHours，邮箱地址一个字符都不上屏，
+                 地址仅存在于 :79 copyEmail 静默写进剪贴板 ⇒ 用户既看不到、也无法核对自己复制到什么。
+                 §12 铁律「画面上不许出现没有真相源的承诺」的合法形态之一 = 接真值：
+                 这里把同一个 APP_CONFIG.SUPPORT_EMAIL（与 :79 剪贴板产物同一真相源，非前端编造）
+                 直接渲染成明文一行 + selectable 可选中，服务时间挪到其后第三档，「复制」保留为快捷出口。 -->
+            <text class="help-contact__email" selectable>{{ APP_CONFIG.SUPPORT_EMAIL }}</text>
             <text class="help-contact__desc">{{ t('help.serviceHours') }}</text>
           </view>
           <text class="help-contact__copy">{{ t('help.copy') }}</text>
@@ -185,7 +191,12 @@ function copyEmail(): void {
 }
 
 .help-faq__item {
-  background: var(--c-neutral-0);
+  /* R14-L07-D09（颜色token P2）：原底色 --c-neutral-0(#FFFFFF) 与 SectionCard 容器
+     --c-bg-container(#FFFFFF, SectionCard.vue:38) 同色，条目间 gap 只有 2rpx(1px)
+     ⇒ top 帧 y=248..476 六行之间零像素分隔，6 个独立可点条目读成一整段连续文字。
+     改引一档浅底 --c-bg-surface（design-variables.scss:129 真值 #F3FAF6），
+     使每个条目成为可辨的浅绿卡块、1px 白缝显形，「一行一个可点条目」在帧上读得出来。 */
+  background: var(--c-bg-surface);
   border-radius: var(--r-md);
   padding: 24rpx 28rpx;
   display: flex;
@@ -212,7 +223,9 @@ function copyEmail(): void {
 }
 
 .help-faq__chevron {
-  font-size: var(--f-lg);
+  /* R14-L07-D10（字号 P3）：同一次字号归位只落到 :208，本行仍吃短名族 var(--f-lg)
+     （tokens.scss:147 只是 --fs-lg 别名，值不变）⇒ 同页两套命名并存。换成标准名。 */
+  font-size: var(--fs-lg);
   color: var(--c-text-tertiary);
   transform: rotate(90deg);
   transition: transform 0.2s ease;
@@ -228,7 +241,8 @@ function copyEmail(): void {
 }
 
 .help-faq__answer-text {
-  font-size: var(--f-sm);
+  /* R14-L07-D10：短名 --f-sm → 标准 --fs-sm（值不变，同页命名归口） */
+  font-size: var(--fs-sm);
   color: var(--c-text-secondary);
   line-height: 1.7;
 }
@@ -287,7 +301,8 @@ function copyEmail(): void {
 }
 
 .help-contact__arrow {
-  font-size: var(--f-lg);
+  /* R14-L07-D10：短名 --f-lg → 标准 --fs-lg（值不变） */
+  font-size: var(--fs-lg);
   color: var(--c-text-tertiary);
 }
 
@@ -304,6 +319,15 @@ function copyEmail(): void {
   background: var(--c-bg-brand);
   padding: 8rpx 20rpx;
   border-radius: var(--r-full);
+  /* R14-L07-D12（可达性 P2）：「复制」胶囊实测 78×42rpx（39×21px），两向都低于全站
+     88rpx 最小热区（只有下限 48%），是全页最小可点控件。补 min-height/min-width:88rpx
+     撑到热区下限，box-sizing:border-box + flex 居中保住胶囊观感（border-radius:full 不变）。 */
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88rpx;
+  min-height: 88rpx;
 }
 
 .help-footer {
@@ -317,10 +341,23 @@ function copyEmail(): void {
 }
 
 .help-footer__text {
-  font-size: var(--f-xs);
-  color: var(--c-text-tertiary);
+  /* R14-L07-D13（字号 P2）：页脚是一整句说明文案（非角标/法务），原吃 --f-xs(20rpx=10px)
+     落进只该给极小档的尺寸，且 --c-text-tertiary #6B7571 压页底 #EEF7F2 实测 4.36:1
+     落 3:1–4.5:1 次级带、不达正文线。与同页 :285（R11-L07-D24）同口径升到 --fs-lg(28rpx=14px)
+     说明档；14px 不享大字号豁免仍要 ≥4.5:1，故一并把色档提到 --c-text-secondary #4A524E
+     压 #EEF7F2 实算 (0.9608/0.13202)=7.28:1 ≥4.5:1。 */
+  font-size: var(--fs-lg);
+  color: var(--c-text-secondary);
   text-align: center;
   line-height: 1.6;
+}
+
+/* R14-L07-D11：明文邮箱行样式，压在白色 SectionCard 容器（--c-bg-container #FFFFFF）上。
+   --c-text-secondary #4A524E 白底实算 (1.05/0.13202)=7.95:1 ≥4.5:1；可选中便于跨设备手输。 */
+.help-contact__email {
+  font-size: var(--fs-base);
+  color: var(--c-text-secondary);
+  word-break: break-all;
 }
 </style>
 

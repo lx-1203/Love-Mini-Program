@@ -124,7 +124,17 @@ const emit = defineEmits<{
 /** 当前激活颜色：优先使用 props 传入，否则使用品牌色 CSS 变量 */
 // 修复（严格模式 noUnusedLocals）：activeColorValue 计算属性未被模板/脚本引用，
 // 模板内通过 CSS 类切换激活样式，无需读取 activeColor 值，故移除。
-const badgeColorValue = computed(() => props.badgeColor || `var(--c-brand, ${designTokens.color.brand[500]})`);
+/* R14-L06-D11（颜色token P1 · likes top 帧）连带：徽章底原取 --c-brand #36C99A
+   （design-variables.scss:270 → $brand-500 :15），前景是 .95 透明白 ⇒ 白字压 #36C99A
+   实测 2.10:1（与本页签选中态同一个数，见样式段），低于正文 4.5:1。
+   与选中态胶囊同批归到全站「深绿实心 + 白字」口径：底色改 --c-brand-800 #156B51
+   （design-variables.scss:18 / theme/tokens.ts:27 同值），纯白压其 6.45:1。
+   ⚠️ 为什么必须连带改徽章：选中态胶囊底本轮从 #36C99A 换成 #156B51，徽章若仍吃 #36C99A
+   就从「与底同色（整块 2.10:1）」变成「深色胶囊上的一枚亮绿孤岛，孤岛上的白字仍是 2.10:1」
+   —— 把一条没修的低对比从隐身改成显身，等于新增缺陷。
+   未传 badgeColor 的消费点全仓只有 likes/index.vue:433-435 一处（BaseTabs 全仓唯一消费者，
+   grep "<BaseTabs" 证；badgeColor/badgeColor prop 无任何调用点传值，已 grep 证）⇒ 零外溢。 */
+const badgeColorValue = computed(() => props.badgeColor || `var(--c-brand-800, ${designTokens.color.brand[800]})`);
 
 /** 徽章内联样式 */
 const badgeStyle = computed(() => ({
@@ -205,7 +215,11 @@ function formatBadge(badge: number | string): string {
   padding: 0 var(--sp-2);
   border-radius: var(--r-lg, 16rpx);
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-text-inverse, #FFFFFF);
+  /* R14-L06-D11 连带：原 --c-text-inverse（= rgba(255,255,255,.95)，design-variables.scss:369）
+     的语义是「图片遮罩白字」，用作实心色片前景属令牌误配，且那 5% 透明白把
+     白压 brand-800 从 6.45:1 削到 6.01:1 —— 与 EmptyState.vue:241-248、
+     LegalTextPage.vue:568 的已修口径一致，归位到 --c-neutral-0（纯白）。 */
+  color: var(--c-neutral-0, #FFFFFF);
   line-height: 32rpx;
   text-align: center;
 }
@@ -262,12 +276,30 @@ function formatBadge(badge: number | string): string {
   text-overflow: ellipsis;
 }
 
+/* R14-L06-D11（颜色token P1 · likes/index top 帧「喜欢我的 1」）：选中态出口漏改。
+   原底 var(--c-brand)（真值 36C99A，:266）+ 前景 var(--c-text-inverse)（= rgba(255,255,255,.95)，:270）
+   ⇒ 帧上实测底 RGB(54,201,154) 逐像素同值，13px（--fs-md 26rpx）页签白字对比 =
+     (1.0+0.05)/(0.44896+0.05) = 2.10:1，不达正文 4.5:1（本环境裸 node 复算，与
+     EmptyState.vue:222-227 记的同一条数一致）。
+   同一判据 R10-L06-D18 已在 EmptyState.vue:230 收口过（空态主按钮底 → --c-brand-800），
+   pill / block 两个变体的选中态是漏网的同型出口 ⇒ 复用同档同口径，不自创值：
+   --c-brand-800（真值 156B51，design-variables.scss:18）压纯白 = 6.45:1 ≥ 4.5:1。
+   卡上第二条口径（浅绿底 + brand-800 深绿字，同分包 nearby/people.vue:372-380 的
+   `.people-tab--active`：--c-brand-100 底 + --c-brand-800 字，复算 5.49:1）不取，
+   理由是这里的「选中」信号算不过账：本组件非选中胶囊的底是 --c-bg-page（真值 EEF7F2），
+   而 --c-brand-100（D1F5E7）压它只有 1.07:1 —— people.vue 那一页靠 2rpx 描边撑块边界，
+   本胶囊没有描边档，浅底档会把「选中 / 未选中」两块压成同一块；
+   深档 --c-brand-800 压非选中底 EEF7F2 = 5.91:1（LegalTextPage.vue 吸底条注、
+   LockScreen.vue .lock-screen__btn-link-text 注两处同数实算），
+   选中态在帧上是唯一深块，一眼分得出。
+   另外浅底档下徽章（--c-brand 底 + 白字 2.10:1）会原样留在选中胶囊里，
+   深底白字档连同前景一起归到已修口径，不留第二个 2.10:1 出口。 */
 .base-tabs--pill .base-tab-item.is-active {
-  background: var(--c-brand, #36C99A);
+  background: var(--c-brand-800, #156B51);
 }
 
 .base-tabs--pill .base-tab-item.is-active .base-tab-label {
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-neutral-0, #FFFFFF);
 }
 
 /* 块状变体（扁平化：避免 4 层嵌套） */
@@ -287,12 +319,16 @@ function formatBadge(badge: number | string): string {
   font-size: var(--fs-md, 26rpx);
 }
 
+/* R14-L06-D11 同型出口：block 变体的选中态与 pill 是同一对写死的
+   `--c-brand` 底 + `--c-text-inverse` 前景（原 :291 / :295），同一把尺一次收口。
+   当前全仓无 block 消费者（grep variant="block" = 0 命中），改它是为了不留第二个
+   2.10:1 的出口给下一个调用点，对本批帧零像素影响。 */
 .base-tabs--block .base-tab-item.is-active {
-  background: var(--c-brand, #36C99A);
+  background: var(--c-brand-800, #156B51);
 }
 
 .base-tabs--block .base-tab-item.is-active .base-tab-label {
-  color: var(--c-text-inverse, #FFFFFF);
+  color: var(--c-neutral-0, #FFFFFF);
 }
 
 // scroll-view 兼容

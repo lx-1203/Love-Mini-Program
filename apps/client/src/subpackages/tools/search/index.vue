@@ -377,6 +377,14 @@ function goToActivity(activityId: number) {
         <view class="section-head">
           <text class="section-title">{{ t("search.tabSchools") }}</text>
         </view>
+        <!-- R14-L07-D20（文案 P2）：分组条（用户/标签/学校）承诺「切换内容区」，但本块 :152 的
+             showPreSearchEntries 判据与 activeTab 无关、只兜一份 SCHOOLS 静态名录 ⇒ 帧上选中
+             「用户」时内容区标题写「学校」+8 枚学校 chip，两枚 tab 一切换画面一字不变。
+             按卡上第二条改法（不动判据、不造用户/标签名录 = 二者皆无客户端名录真相源，属 §12.4 禁线）：
+             在标题下补一行说明，把「这块是与所选分组无关的通用检索起点」如实讲出来，让分组条
+             承诺与内容区语义对齐。文案是页面自身状态描述（非承诺/非数据）；本页 :462 已有
+             「校园主页/收起」两枚同型 inline 中文（未接 i18n 的在册口径），本行沿用同一惯例。 -->
+        <text class="section-note">预检索起点，与所选分组无关</text>
         <view class="entry-list">
           <view
             v-for="s in preSearchSchoolEntries"
@@ -663,11 +671,16 @@ function goToActivity(activityId: number) {
 }
 
 .suggest-wrap {
-  /* R6-L09-D20：未搜索态撑满头部/分组 tab 之外的剩余视口，内容垂直居中 */
+  /* R6-L09-D20：未搜索态撑满头部/分组 tab 之外的剩余视口 */
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  /* R14-L07-D19（间距 P2）：原 justify-content:center 把内容块顶到视口中线 ⇒ 帧上内容块只占
+     y=314..589（275px）、可用区 y≈153..799（646px）⇒ 分组 tab 下缘到「学校」标题之间 161px
+     纯页面底空带（--section-gap 的 13 倍）、空态文案下方另留 210px。
+     改 justify-content:flex-start 让内容贴着分组条上缘起排，把居中留给空态组件自身
+     （EmptyState 内部 flex:1，剩余高度由它吸收），顶部留白走 --sp-6(24rpx=12px) 一档标准内衬。 */
+  justify-content: flex-start;
   /* R11-L08-D05（间距 P2）：横向内衬 24rpx 是裸值，比规范 §1.4 页边距 --page-padding(32rpx)
      少 8rpx ⇒ 与同页其余内容容器各写一档。纵向 24rpx 有 --sp-6 可引，一并归令牌。 */
   padding: var(--sp-6) var(--page-padding);
@@ -717,6 +730,17 @@ function goToActivity(activityId: number) {
   font-size: var(--fs-3xl, 36rpx);
   font-weight: 600;
   color: var(--c-text-primary, #1f2329);
+}
+
+/* R14-L07-D20（文案 P2）：预检索块下方的一行说明（详见模板同 id 注释）。
+   字号走 §1.3 说明档下限 --fs-lg（28rpx=14px），与本页 R11-L07-D24 已把 :285 三条说明行
+   升到 --fs-lg 的口径一致；色走 --c-text-secondary #4A524E（design-variables.scss:122
+   真值）压 --c-bg-page #EEF7F2 实算 0.9608/0.13202 = 7.28:1 ≥4.5:1。 */
+.section-note {
+  display: block;
+  margin-bottom: 16rpx;
+  font-size: var(--fs-lg, 28rpx);
+  color: var(--c-text-secondary, #4A524E);
 }
 
 .section-fire {
@@ -866,7 +890,14 @@ function goToActivity(activityId: number) {
 }
 
 .search-tab--active {
-  background: var(--c-brand, #36C99A);
+  /* R14-L07-D18（可达性 P1）：选中分组「用户」= 白字压实心主色胶囊，帧上底采样 (32,195,143)≈#36C99A
+     与令牌 --c-brand 逐字对上，白字对它的对比度 2.10:1（§2 已实测），既不达 4.5:1 也不达 3:1；
+     标签 .search-tab__text 是 --fs-md 26rpx(13px)/600，不享 WCAG 大字号豁免 ⇒ 当前选中哪一个
+     分组是靠「绿底」而非「读得出字」表达的。与 daily-question:518（R9 同口径）一致，
+     选中档底色降到 --c-brand-800 #156B51（design-variables.scss:18）：
+       L(#156B51)=0.2126*0.00750+0.7152*0.14712+0.0722*0.08227=0.11269
+       ⇒ 纯白 1.05/0.16269=6.45:1 ≥4.5:1（13px 白字达标）。 */
+  background: var(--c-brand-800, #156B51);
   /* R11-L08-D02：选中档继承上面的描边会在实心胶囊外圈留一圈灰边，与「实心」读法冲突 ⇒ 收掉，
      透明描边保留占位，几何逐像素不变（同 .search-tab 的 88rpx 下限） */
   border-color: transparent;
@@ -879,7 +910,10 @@ function goToActivity(activityId: number) {
 }
 
 .search-tab--active .search-tab__text {
-  color: #ffffff;
+  /* R14-L07-D21（颜色token P3）：反白字色原写裸字面量 #ffffff，本页其余文字节点一律走 var(--c-text-*)，
+     同仓已有反白令牌 --c-text-inverse（daily-question:530 同场景即用）⇒ 换成令牌，主题翻色时跟随。
+     兜底 #ffffff 与 --c-text-overlay-text-primary 合成档一致（design-variables.scss:369→:749）。 */
+  color: var(--c-text-inverse, #ffffff);
 }
 
 .group-list {

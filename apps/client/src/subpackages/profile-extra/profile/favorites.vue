@@ -9,9 +9,15 @@
         :aria-label="t('common.back')"
         @tap="goBack"
       >
-        <!-- R11-L10-D19：热区 88rpx，64rpx 白圆底移进 __back-circle（同域 location.vue:294-315 配方） -->
+        <!-- R11-L10-D19：热区 88rpx，64rpx 白圆底移进 __back-circle（同域 location.vue:294-315 配方）
+             R14-L10-D20（可达性 P1，2026-10-22）：圆底里那枚 ICONS_COMMON.BACK 是 common/back.svg 的
+             栅格图（stroke #94A3B8 蓝灰，24 viewBox 里折线只占 x9..15 / y6..18，留白过大），旧 :196 还把它
+             压到 36rpx×36rpx（比 location.vue 当年实测的 40rpx 更小）⇒ 帧上白圆里只剩一道浅灰痕，与圆底
+             几乎分不开；本页 navigationStyle=custom、无系统返回栏，这枚是唯一退出口。
+             按 location.vue:189-193 / album.vue:686-691 已验证配方换成 52rpx 深色 ‹ 字形（同域 other.vue:515
+             同一枚字形），未新增素材。 -->
         <view class="favorites-header__back-circle">
-          <image class="favorites-header__back-icon" :src="IMAGE_PATHS.ICONS_COMMON.BACK" mode="aspectFit" alt="" />
+          <text class="favorites-header__back-glyph">‹</text>
         </view>
       </view>
       <text class="favorites-header__title">{{ t('profile.favoritesTitle', { n: favorites.length }) }}</text>
@@ -39,14 +45,31 @@
          品牌绿星标：ICONS_EMOJI.STAR = assets/svg-spec/03-icons/star.svg（描边 #36C99A，
          即 --c-brand 真值；dist/build/mp-weixin-real/static/assets/svg-spec/03-icons/star.svg
          实存，且 svg-spec 属 localPrefixes 恒走包内路径，不会 404）。未新增素材、未改组件。 -->
-    <EmptyState
-      v-else-if="favorites.length === 0"
-      :image="IMAGE_PATHS.ICONS_EMOJI.STAR"
-      :title="t('profile.favoritesEmpty')"
-      :description="t('profile.favoritesEmptyDesc')"
-      :action-text="t('village.history.backToVillage')"
-      @action="goVillage"
-    />
+    <!-- R14-L10-D22（颜色token P2，2026-10-22）：上面 R7-L10-D16 那轮为去掉蓝灰外来色，把空态主视觉
+         换成 ICONS_EMOJI.STAR = assets/svg-spec/03-icons/star.svg（描边写死 #36C99A = --c-brand 主绿）。
+         色族脏了，但语义用反了：本页空态说的是「收藏 / 喜欢的帖子」（:46 的 favoritesEmptyDesc 原文
+         「喜欢的帖子会出现在这里」），按 §1.1 原则 2「喜欢」语义全站归心动粉 #FF6B81；主绿应当只留给
+         :47 那颗行动按钮（EmptyState.vue:230 --c-brand-800）。现改绑仓内既有、已在 IN_PACKAGE_ASSETS
+         双登记的 ICONS_EMOJI.DOUBLE_HEART = assets/icons/common/heart-filled.svg
+         （fill|stroke #FF6B81，逐字等于 --c-romance-500 真值 design-variables.scss:41），
+         与 :44 原星标的加载路径同级（svg-spec 与 icons/common 都在 localPrefixes，且本值经
+         EmptyState.vue:93 的 resolveMediaUrl），real 档不空源；未新增素材、未改组件、未改文案。 -->
+    <!-- R14-L10-D23（位置 P2，2026-10-22）：:145 那条 R11-L10-D18 注释写「改明确 height:100vh，
+         EmptyState 的 flex:1 0 auto 才有伸展对象」，帧读数证明没生效（块中心 y≈231，可用区中心
+         y≈454）。根因是已知机制 §1/§3：mp-weixin 里 EmptyState 的 `flex:1 0 auto` 挂在组件**内部**
+         .empty 上，而 .favorites-page 的 flex 子项是组件**宿主节点**（拿不到那条声明）⇒ .empty 只按
+         自身内容高（40+内容+40≈255px）排在页头下面。宿主节点跨边界不可靠（§1 已证 custom-class/
+         root-class 恒无效），故在宿主侧加一层纯宿主 view 作可解析高度的容器，靠它自己的
+         flex:1 + justify-content:center 把空态块落到可用区中线；EmptyState 内部声明一律不动。 -->
+    <view v-else-if="favorites.length === 0" class="favorites-empty-slot">
+      <EmptyState
+        :image="IMAGE_PATHS.ICONS_EMOJI.DOUBLE_HEART"
+        :title="t('profile.favoritesEmpty')"
+        :description="t('profile.favoritesEmptyDesc')"
+        :action-text="t('village.history.backToVillage')"
+        @action="goVillage"
+      />
+    </view>
 
     <scroll-view v-else scroll-y class="favorites-list">
       <view
@@ -186,27 +209,59 @@ onShow(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--r-circle, 50%);
+  /* R14-L10-D24（圆角 P3）：原 var(--r-circle, 50%) 里的 --r-circle 在 design-variables.scss
+     0 命中（全站圆底真令牌是 --r-full: 9999rpx，:448/:204），这条 var() 恒走兜底 ⇒ 与同域
+     album.vue:675 / location.vue:317 / tasks.vue:542 三处写法不同轨。渲染色值不变（两者都圆），
+     纯代码口径收口。 */
+  border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-container, #FFFFFF);
   /* 白圆压薄荷页底只有 ≈1.08:1；补卡片描边让「可点圆钮」的边界可见
      （同域 album.vue:672-681 / location.vue:304-315 的圆底均带此描边）。 */
   border: var(--c-border-card);
 }
 
-.favorites-header__back-icon { width: 36rpx; height: 36rpx; }
+/* R14-L10-D20（可达性 P1）：原 .favorites-header__back-icon（36rpx×36rpx 蓝灰 PNG）换成
+   52rpx 深色 ‹ 字形。52rpx 高于字号档位上限 --fs-5xl=44rpx，按同域 location.vue:330-335 /
+   album.vue:686-691 / other.vue:515 既有口径保留为固定布局尺寸，不写永不生效的假兜底。
+   深色字形压白圆底：--c-text-primary #1A1E1C 对 #FFFFFF 实算 16.85:1（远过 4.5:1），
+   而原 PNG 可见带高≈8px、字形墨色实测 ≈1.6:1。 */
+.favorites-header__back-glyph {
+  font-size: 52rpx;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--c-text-primary);
+}
+
 .favorites-header__title {
-  font-size: var(--fs-xl, 32rpx);
+  /* R14-L10-D21（字号 P2）：原 var(--fs-xl, 32rpx) —— 令牌真值是 30rpx=15px（:565），
+     兜底 32rpx 是假兜底，且 15px 比 §1.3 页头档下限 26px 低 11px，帧上「我的收藏（0）」
+     明显比同分包同批收敛过的 location/privacy/album 三页（均 var(--fs-7xl)=56rpx=28px）
+     小一圈。归同域页头档 --fs-7xl，并删假兜底（同 location.vue:345 / album.vue:699）。 */
+  font-size: var(--fs-7xl);
   font-weight: 700;
   color: var(--c-text-primary, #1E1E1E);
 }
 
-.favorites-state { padding: 120rpx 0; text-align: center; }
-.favorites-state__text { color: var(--c-text-secondary, #666666); font-size: 26rpx; }
+/* R14-L10-D23（位置 P2）：空态槽 —— 纯宿主 view，给 EmptyState 一个高度可解析的居中容器。
+   .favorites-page 已是 height:100vh + flex 列，本槽 flex:1 1 auto 取到「页头以下的全部可用区」
+   （实算：视口 814px − 页头 (statusbar+16rpx padding+88rpx 热区+24rpx 下衬) ≈ 814 − 95 = 719px），
+   justify-content:center 把空态块中心落到 y≈95+719/2=454（原实测 y≈231，下移 ≈223px ⇒ 复拍门可见）。 */
+.favorites-empty-slot {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 
-.favorites-empty { margin-top: 40rpx; padding: 80rpx 40rpx; text-align: center; }
-.favorites-empty__icon { width: 80rpx; height: 80rpx; margin-bottom: 16rpx; }
-.favorites-empty__title { font-size: 30rpx; font-weight: 600; color: var(--c-text-primary, #1E1E1E); display: block; }
-.favorites-empty__desc { font-size: 24rpx; color: var(--c-text-secondary, #666666); margin-top: 8rpx; }
+.favorites-state { padding: 120rpx 0; text-align: center; }
+
+/* R14-L10-D25（尺寸比例 P3）：原 :204 .favorites-state__text 与 :206-209 .favorites-empty{,__icon,
+   __title,__desc} 五条规则在本文件模板段（改前 1..141 行）grep 命中 0 次——空态自 R6-B56/D01 起
+   已整体改走 <EmptyState>（渲染的是组件内部 .empty / .empty-icon，图标 120rpx，EmptyState.vue:170），
+   这套死样式里写死的 80rpx×80rpx 与帧上真正渲出的 120rpx 差 40rpx，照它调图标必然调不到东西上。
+   按卡删除，空态尺寸只在 EmptyState 侧维护。删除体本身不改画面（零像素），故不作为任何缺陷的
+   唯一修复面：同页 D20/D21/D22/D23 四条都有各自的画面落点。 */
 
 .favorites-list { /* MP-R2-FAVORITES-002：高度随页头自适应 */ flex: 1; min-height: 0; }
 .favorite-card {

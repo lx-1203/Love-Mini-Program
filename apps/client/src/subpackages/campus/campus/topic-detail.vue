@@ -880,6 +880,16 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .reply-btn {
+  /* R14-L05-D04（P2 · 可达性）：改前 padding 18rpx×2 + 26rpx 文本行高 ≈36rpx ⇒ 热区 ≈73rpx
+     （实帧 37px）< 88rpx；键盘 confirm-type="send"（:366）是替代出口故仅 P2，但 R13-L05-D05 已把
+     同排 .anonymous-toggle（:843）补到 88rpx，同条控件不许只修一半。照同页 D04/D05 同批写法补
+     min-height:88rpx + box-sizing，flex 立起让「发送」在新高度居中；padding 保留作横向内衬。
+     底栏行高由 .anonymous-toggle 的 88rpx 定档不变，钮自身 73→88rpx（37→44px）底帧必变。 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 88rpx;
   padding: 18rpx 32rpx;
   border-radius: var(--r-full, 9999rpx);
   background: linear-gradient(135deg, $green-primary, var(--c-brand-300));

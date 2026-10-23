@@ -1644,7 +1644,13 @@ async function save() {
 
 .media-photo-head__hint {
   font-size: 22rpx;
-  color: var(--c-text-placeholder, #9aa39f);
+  /* R14-L11-D18（可达性 P2）：本页唯一的功能指引「最多 6 张，点击空位添加」原取
+     --c-text-placeholder #9AA39F（design-variables.scss:126/:373）压白卡 #FFFFFF 只有 2.59:1
+     （帧上实测最暗墨像素 (153,162,158)），22rpx=11px 不享大字号豁免，比同屏上一行「照片墙」
+     标题低两档。归 var(--c-text-tertiary) #6B7571（:125/:364）= 对白卡 4.76:1 ≥ 4.5:1；
+     placeholder 档按 §1.2 只留给输入框占位符（本页 .field 的 placeholder 仍走它）。
+     字号/字重不动，画面落点是这一行墨色由浅灰转中灰（top 帧）。 */
+  color: var(--c-text-tertiary, #6b7571);
 }
 
 .photo-grid {
@@ -1688,7 +1694,17 @@ async function save() {
   justify-content: center;
   width: 100%;
   height: 100%;
-  border: 2rpx dashed var(--c-border-default, #dde3e0);
+  /* R14-L11-D19（可达性 P2）：改前 5 枚空槽的边界只有 2rpx dashed --c-border-default
+     #DDE3E0（对白卡 1.30:1）+ 底 --c-bg-surface #F3FAF6（对白 1.09:1）⇒ 帧上槽位边缘实测
+     (239,242,241)，「点击空位添加」的 5 枚可点目标在画面上基本等于一片空白，只有中间那枚
+     56rpx 深绿加号在表意。目标是非文本 3:1（对白卡需 L ≤ 0.300）：
+       · 卡上建议的 --c-border-strong #C2CAC6 实算只有 1.67:1（卡上写 2.1:1 偏高），仍不过线；
+       · 仓内中性阶同族只有两档能过线 —— --c-neutral-400 #9AA39F = 2.59:1 也不过，
+         --c-neutral-500 #6B7571 = 对白卡 4.76:1 / 对槽内底 #F3FAF6 4.50:1 ⇒ 取后者，
+         与本页 R14-L11-D18 刚归位的 --c-text-tertiary 同值（$neutral-500 是同一档真值）。
+     偏离卡说明：不在卡给的三档之内，因为卡给的档按同一把尺算出来不达标（§2 明确禁止照抄建议值）。
+     底色 --c-bg-surface 与 24rpx 圆角不动 ⇒ 只加深轮廓，不引入新色族、不改槽位几何。 */
+  border: 2rpx dashed var(--c-neutral-500, #6b7571);
   border-radius: 24rpx;
   background: var(--c-bg-surface, #f7faf9);
 }
@@ -1757,7 +1773,18 @@ async function save() {
   padding: 20rpx 28rpx;
   border-radius: 24rpx;
   background: var(--c-bg-surface, #f7faf9);
-  border: 2rpx solid var(--c-border-light, #eef2f0);
+  /* R14-L11-D21（颜色token P2）：未选中项描边原取 --c-border-light #EEF2F0，压在比它更深的底
+     --c-bg-surface #F3FAF6 上只有 1.07:1（帧上实测边界 (239,242,241)）⇒ 未选项读起来是一块没有
+     轮廓的浅底。同页上方三行输入框 .field 的同一角色描边在 R11-L12-D06 已抬到
+     var(--c-border-default, #DDE3E0)（该文件 :1337 注释自证），两档并存在同一屏 ⇒ 与 .field 同轨，
+     未选/已选两态都靠描边区分（已选仍是 --c-brand 3rpx + 阴影环）。
+     实算：#DDE3E0 对槽底 #F3FAF6 = 1.23:1（改前 #EEF2F0 只有 1.07:1）、对白卡 = 1.30:1、对页底
+     #EEF7F2 = 1.19:1。
+     本条是令牌档位收口（P2 颜色token），卡面落点 = 未选身份卡外圈出现一条可辨轮廓线（bottom 帧）；
+     它不是按非文本 3:1 立的判点，3:1 那一档在本色板的 border 阶里不存在（最高档 border-strong
+     也只有 1.67:1），故不越轨改用中性阶深色 —— 与 D19 的处置不同，因为 D19 判点是 3:1、本条判点是
+     「与 .field 同档」。 */
+  border: 2rpx solid var(--c-border-default, #dde3e0);
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 
   &--selected {
@@ -1812,7 +1839,13 @@ async function save() {
 }
 
 .identity-option--selected .identity-option__label {
-  color: #1f8d6a;
+  /* R14-L11-D20（可达性 P1）：改前写死 #1f8d6a（= --c-brand-700 真值 #1F8D6A，:17，未走令牌），
+     压本项白底 #FFFFFF 实算 4.14:1，28rpx=14px/600 不享 WCAG 大字号豁免（需 ≥24px/700）
+     ⇒ 本页唯一决定后续认证链路的选择项标题低于正文 4.5:1 地板。
+     归同页已收口的深绿档 var(--c-brand-800, #156B51)（:18 真值）= 对白 6.45:1，
+     与本页 R13-L11-D09 收口的更换头像徽标底、R11-L10-D15 收口的照片墙加号墨色同档同尺；
+     字号/字重/描边不动 ⇒ 画面落点是选中项主句墨色由中绿转深绿（bottom 帧）。 */
+  color: var(--c-brand-800, #156b51);
 }
 
 /* 页面背景与注册页统一浅绿（设计规范 §2.2：不得出现白/灰断层） */

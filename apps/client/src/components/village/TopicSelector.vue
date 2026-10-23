@@ -462,7 +462,9 @@ function clearAll(): void {
 
 .topic-selector__create-input {
   flex: 1;
-  height: 72rpx;
+  /* R14-L05-D02（可达性 P1）：改前 72rpx，整行命中高被钉死在 88rpx 线下；
+     与创建钮同批抬齐（卡上「输入框行高同步抬齐」）。 */
+  height: 88rpx;
   padding: 0 var(--sp-3);
   border-radius: var(--r-md);
   background: var(--c-bg-page);
@@ -472,6 +474,16 @@ function clearAll(): void {
 }
 
 .topic-selector__create-btn {
+  /* R14-L05-D02（可达性 P1）：改前无自身高度/宽度定义，随 .create-input-wrap 的
+     align-items:stretch 贴 72rpx 输入框，实帧实测 31×35px ≈62×70rpx，两维均 <88rpx；
+     这是创建热门列表之外新话题的唯一入口、无替代出口。
+     补 min-height/min-width + box-sizing（同 post-topic.vue .cert-banner__btn 的
+     R11-L05-D06 盒模型写法；min-width 同 .post-header__submit 的 R11-L05-D07 口径）。
+     实算：sp-4=16rpx、fs-sm=22rpx（design-variables.scss:550/561），改前自然宽
+     2×16+2×22=76rpx<88rpx ⇒ 宽高都需下限兜底。88rpx÷2=44px 命中区达标。 */
+  min-height: 88rpx;
+  min-width: 88rpx;
+  box-sizing: border-box;
   padding: 0 var(--sp-4);
   border-radius: var(--r-md);
   background: var(--c-brand);

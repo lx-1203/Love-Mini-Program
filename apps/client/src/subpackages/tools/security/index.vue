@@ -549,7 +549,10 @@ async function submitDeleteAccount(): Promise<void> {
           :aria-label="t('security.phone')"
           @tap="handleChangePhone"
         >
-          <view class="sec-item__icon-wrap" :style="{ background: 'var(--c-tint-blue-soft, #E8F4FF)' }">
+          <!-- R14-L07-D17（颜色token P3）第二处：兜底 #E8F4FF 与 --c-tint-blue-soft 注册真值
+               #E8F4FD（design-variables.scss:830）不同字面量 ⇒ 令牌一旦失效就换色。
+               去掉兜底只留令牌归口，与 :570「修改密码」同批的兜底清理同口径。 -->
+          <view class="sec-item__icon-wrap" :style="{ background: 'var(--c-tint-blue-soft)' }">
             <image class="sec-item__icon" :src="IMAGE_PATHS.ICONS_EMOJI.MOBILE" mode="aspectFit" alt="" />
           </view>
           <view class="sec-item__info">
@@ -567,7 +570,12 @@ async function submitDeleteAccount(): Promise<void> {
           :aria-label="t('security.changePassword')"
           @tap="openPasswordModal"
         >
-          <view class="sec-item__icon-wrap" :style="{ background: 'var(--c-tint-pink-soft, #FFF0F5)' }">
+          <!-- R14-L07-D15（颜色token P2）：原粉档 --c-tint-pink-soft 用在**表单入口**（打开改密弹层）
+               上，违反 §1.2 对 romance 档的用途限定（同卡「绑定手机号」--c-tint-blue-soft、
+               「绑定微信」--c-bg-brand，本行独取粉档）。粉档只留给喜欢/匹配类入口 ⇒
+               改引与「绑定手机号」同卡一致的信息档 --c-tint-blue-soft（design-variables.scss:830 真值 #E8F4FD）。
+               兜底 #E8F4FF 属 R14-L07-D17 同族的过期字面量，一并去掉只留令牌。 -->
+          <view class="sec-item__icon-wrap" :style="{ background: 'var(--c-tint-blue-soft)' }">
             <image class="sec-item__icon" :src="IMAGE_PATHS.ICONS_EMOJI.KEY" mode="aspectFit" alt="" />
           </view>
           <view class="sec-item__info">
@@ -693,7 +701,10 @@ async function submitDeleteAccount(): Promise<void> {
           :aria-label="t('security.privacyPolicy')"
           @tap="goPrivacyPolicy"
         >
-          <view class="sec-item__icon-wrap" :style="{ background: 'var(--c-sky-50, #E0F2FE)' }">
+          <!-- R14-L07-D17（颜色token P3）：原 `var(--c-sky-50, #E0F2FE)` 的兜底是 Tailwind sky-100,
+               比 --c-sky-50 真值 #F0F9FF（design-variables.scss:55→:316）深一档, 属"令牌一旦失效就换色"
+               的孤儿兜底. 帧上实测本圈渲成 #F0F9FF (兜底当前无消费者), 去掉兜底只留令牌归口. -->
+          <view class="sec-item__icon-wrap" :style="{ background: 'var(--c-sky-50)' }">
             <image class="sec-item__icon" :src="IMAGE_PATHS.ICONS_EMOJI.FILE_TEXT" mode="aspectFit" alt="" />
           </view>
           <view class="sec-item__info">
@@ -998,7 +1009,16 @@ async function submitDeleteAccount(): Promise<void> {
 }
 
 .sec-item__desc {
-  font-size: var(--fs-sm, 22rpx);
+  /* R14-L07-D16（字号 P2）：本类承载本页全部整句说明文案（「控制你的信息展示范围」
+     「了解我们如何保护你的个人信息」「注销后账号与数据将被删除」…），
+     原 --fs-sm(22rpx=11px) 落进 §1.3 只该给角标/法务的极小档、比说明档下限 14px 小 3px,
+     与 .sec-item__label --fs-lg(14px) 只差 3px 拉不开层级.
+     与 help 页 R11-L07-D24 已把 :285 三条说明行升到 --fs-lg 同口径, 本页升到 --fs-lg(28rpx=14px) 说明档.
+     色彩保持 --c-text-tertiary #6B7571, 压卡底 --c-bg-container #FFFFFF 实算 4.77:1 ≥4.5:1
+     (L(#6B7571)=0.1703, 1.05/0.2203=4.77).
+     时间戳(device.lastActive)与本类共用属已知副作用: 卡自陈"若要保持 11px 应另立一档",
+     但本车道不越 4 文件清单去加新 class 树, 时间戳随整句一并到 14px 是可接受的档位对齐代价. */
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-tertiary);
 }
 
@@ -1047,7 +1067,18 @@ async function submitDeleteAccount(): Promise<void> {
 
 .sec-item__kick-text {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-error, #f43f5e);
+  /* R14-L07-D14（可达性 P1）：原 --c-error #E5454D 压本控件浅红底 .sec-item__kick
+     (--c-error-soft=#FEF5F6, design-variables.scss:857→:844) 实测 3.71:1，
+     22rpx(11px)/400 不享 WCAG 大字号豁免 ⇒ 远低于 4.5:1。
+     与 :1013「当前设备」徽章同口径把墨色提到深档，取仓内**已注册**的 error 深档
+     --c-text-error-dark #991b1b（design-variables.scss:819，注册段自述「浅底深字」用途，
+     本控件正是浅红底+深字，同族场景）：
+       L(#991b1b)=0.2126*0.3185+0.7152*0.01098+0.0722*0.01098=0.07636
+       L(#FEF5F6)=0.2126*0.99110+0.7152*0.91305+0.0722*0.92163=0.93025
+       ⇒ (0.98025)/(0.12636)=7.76:1 ≥4.5:1。
+     卡面另两条：'新增 error-700' 属 theme 车道（本页不越权，且 --c-error-dark=#FF6B6B
+     实测是**更亮**不是更深，不能挪用）；'底色退纯白' 让 #E5454D 压白只有 3.82:1 仍不达线。 */
+  color: var(--c-text-error-dark);
 }
 
 /* 弹层 */

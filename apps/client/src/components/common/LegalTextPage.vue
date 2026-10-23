@@ -163,6 +163,39 @@ const fallbackBadgeText = computed<string>(() =>
     : "本地兜底文本 · 非正式版本"
 );
 
+/**
+ * 上屏法务正文的标点归一（R14-L13-D05 / R14-L13-D07 / R14-L13-D08 · 文案 P3 ·
+ * privacy + agreement 两页 top/bottom 帧，三条同根因一次收编）。
+ *
+ * 病灶在正文**数据源**：兜底文本是 i18n/locales/zh-CN.ts:4719（用户协议）/ :4727（隐私政策）
+ * 里以 `\"` 转义写死的半角直引号——「我们（"校园恋爱"运营方）」「（以下简称"本服务"）」「点击"同意并继续"」
+ * 与同页全角（）《」「」混排；D08 的另一半是同一入口术语在同一帧里两种标注
+ * （agreement 第 8 条裸写「反馈中心」、第 11 条写「小程序内『反馈中心』」）。
+ * 键值文件 `i18n/**` 不在本车道可写集（硬规矩 1），与本文件 :114-133 的
+ * `updatedAtText` 同一先例——先在**消费点**把形态归一，键值改干净后本逻辑自动等价、
+ * 不留语义差；标点归一同时作用于 CMS 正文（幂等：CMS 若已用全角引号与「」，两条正则
+ * 原样返回，不改一个字），所以这是"上屏形态"的一把尺，不是"兜底文本特供"。
+ *
+ * 两条正则都是**幂等**且不改语义：
+ * ① `"…"` → “…”：只配对同一行内的成对半角双引号（`[^"\n]*` 保证不跨段乱配、
+ *    不把两个不同段落的孤立引号强行成对）；落单的半个引号一律不动，不自造配对。
+ * ② 反馈中心 / 「反馈中心」 → 「反馈中心」：产品内入口名统一带「」，
+ *    `(?:「)?…(?:」)?` 让已带的与裸写的收敛到同一形态，重复执行结果不变。
+ * 不用后行断言 `(?<!「)`：mp-weixin iOS 端是 JavaScriptCore，老版本基础库对
+ * lookbehind 不保证可解析（§10 平台兼容是 error 级、类型与单测都不覆盖），改写成可选组。
+ */
+function normalizeLegalPunctuation(raw: string): string {
+  if (!raw) return "";
+  return raw
+    .replace(/"([^"\n]*)"/g, "“$1”")
+    .replace(/(?:「)?反馈中心(?:」)?/g, "「反馈中心」");
+}
+
+/** 真正上屏的正文（= 后端 CMS / 兜底文本经标点归一后的形态） */
+const legalContentText = computed<string>(() =>
+  normalizeLegalPunctuation(legalText.value?.content || "")
+);
+
 /** 版本号（仅后端 CMS 返回时展示；兜底态不印假版本号，改由提示药丸披露状态） */
 const displayVersion = computed<string>(() => {
   if (!legalText.value?.version) return "";
@@ -238,7 +271,7 @@ function handleRetry(): void {
 <template>
   <!-- MP-R1-APPSHELL-101：传 fixed 吸顶（滚动时正文不入状态栏区） -->
   <AppShell :title="shellTitle" :show-tab-bar="false" show-back fixed>
-    <view class="legal-page">
+    <view class="legal-page" :class="{ 'legal-page--fallback': isLocalFallback }">
       <!-- 顶部标题区：R6-L16-D13/D18 —— 卡片头标题与页头同文时不再重排（见 cardTitle 注释） -->
       <view v-if="showHeader" class="legal-header">
         <text v-if="cardTitle" class="legal-header__title">{{ cardTitle }}</text>
@@ -298,11 +331,13 @@ function handleRetry(): void {
         :enhanced="true"
         :show-scrollbar="false"
       >
-        <text class="legal-content__text" user-select>{{ legalText?.content }}</text>
+        <text class="legal-content__text" user-select>{{ legalContentText }}</text>
       </scroll-view>
 
-      <!-- 底部"我已阅读"按钮（loading/error/empty 状态也保留，确保用户可返回） -->
+      <!-- 底部"我已阅读"按钮（loading/error/empty 状态也保留，确保用户可返回）
+           R14-L13-D06（位置 P2 · privacy bottom 帧）：兜底态的披露在签署动作那一刻必须在场 -->
       <view class="legal-footer">
+        <text v-if="isLocalFallback" class="legal-footer__fallback">{{ fallbackBadgeText }}</text>
         <view
           class="legal-footer__btn press-feedback"
           hover-class="press-feedback--active"
@@ -343,6 +378,20 @@ function handleRetry(): void {
   );
   box-sizing: border-box;
   background: var(--c-bg-page);
+}
+
+/* R14-L13-D06：本文件自陈的口径是「占位恒等于吸底条高，差值 0」（见 .legal-page
+   上方 R9-L13-D08/D10 那段注），
+   而兜底态的吸底条比常规态高出一行披露小字（.legal-footer__fallback 的
+   line-height 28rpx + margin-bottom --sp-2(8rpx) = 36rpx），所以只在 isLocalFallback
+   为真时把占位同步加高 36rpx —— 不用无条件加高：非兜底态多出的 36rpx 又是一条
+   R9-L13-D08/D10 判过的"无主空带"。写全 calc 表达式（与 :340 同一种已在跑的写法），
+   不经自定义属性中转。 */
+.legal-page--fallback {
+  padding-bottom: calc(
+    var(--btn-height-md, 96rpx) + var(--sp-4) + var(--sp-6) + 36rpx +
+      env(safe-area-inset-bottom)
+  );
 }
 
 /* ========== 顶部标题区 ========== */
@@ -539,6 +588,32 @@ function handleRetry(): void {
      描边随之删除：底面与页面同色后它是一条悬空发丝线，BottomActionBar 亦无描边。
      钮底 brand-800 压 --c-bg-page #EEF7F2 实算 5.91:1（L 0.11271 / 0.91110）≥ 非文本 3:1。 */
   background: var(--c-bg-page, #EEF7F2);
+}
+
+/* R14-L13-D06（位置 P2 · privacy bottom 帧 · 手指点在吸底钮上的签署那一刻）：
+   兜底披露原先只挂在 .legal-header 的元信息行（:249），而 header 在正文滚到第 7 条时
+   早已出视口，吸底条内没有任何状态标识 ⇒ 用户作出"同意"动作的那一刻看不到
+   「这不是 CMS 正式文本」——这是 §12「画面上不许出现没有真相源的承诺」的反向问题
+   （真状态在场、但只在用户看不见的地方在场）。
+   取卡上第一条：吸底条内、按钮上方出一行 --fs-xs（20rpx=10px）法务小字，
+   文字复用 fallbackBadgeText（:160 已有 locale 分支，逐字与文首药丸同句），
+   不新增第二条字面量、不改写措辞（披露内容只有一个真相源）。
+   刻意保留文首药丸不撤：R12-L13-D09 已把「兜底披露不许撤」立为红线，且两处分工成立
+   ——文首是这份文本的**状态元信息**（与版本号/最后更新同行），吸底条是**签署时刻的在场披露**；
+   两处同字面同组件同 computed，永远不会漂移成两个说法。
+   取色复用同文件 .legal-header__fallback（:403）已有的 --c-text-warning-dark #92400e
+   （design-variables.scss:820），压吸底条底 --c-bg-page #EEF7F2（:127）：
+   L(#92400e)=0.09813、L(#EEF7F2)=0.91110 ⇒ (0.91110+0.05)/(0.09813+0.05) = 6.49:1
+   （本车道 node 按 WCAG 相对亮度复算），≥正文 4.5:1，10px 小字读得出；
+   不自创新色、不加告警底色（白/绿条上浮一枚橙色药丸会把吸底条切成两块，
+   与 R11-L13-D18/D21「吸底条与页面同色、无描边」的结论相抵）。 */
+.legal-footer__fallback {
+  display: block;
+  font-size: var(--fs-xs);
+  line-height: 28rpx;
+  margin-bottom: var(--sp-2);
+  text-align: center;
+  color: var(--c-text-warning-dark, #92400e);
 }
 
 .legal-footer__btn {

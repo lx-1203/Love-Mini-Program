@@ -639,8 +639,19 @@ function goBack() {
 }
 
 .campus-hub__tab {
+  /* R14-L04-D07（P1 · 可达性）：改前纵向 padding 20rpx×2 + 28rpx 文本行高 ≈39rpx（默认 1.4 倍行距）
+     ⇒ 热区 ≈79rpx ≈ 39.5px < 88rpx（44px）项目口径，且「我加入的」学校列表没有第二条入口，
+     点偏上下约 5px 即落空。补 min-height:88rpx（与 R12-L04-D06 返回钮、R13-L05-D05 同批口径：
+     circles/post-topic.vue:819 写法），纵向 padding 归 12rpx 让 min-height 定高，
+     flex 居中吸收增高 ⇒ 文字视觉中心线不动，行高 79→88rpx（+9rpx ≈4.5px）。
+     下沿指示条 .campus-hub__tab-indicator 绝对定位 bottom:-2rpx 随框底走，仍贴行底边框。 */
   position: relative;
-  padding: 20rpx 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 88rpx;
+  padding: 12rpx 0;
   margin-right: 48rpx;
 }
 

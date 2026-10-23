@@ -882,7 +882,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .category-option--selected .category-option__text {
-  color: $green-primary;
+  /* R14-L05-D01（P1 · 颜色token）：改前 $green-primary = --c-brand #36C99A（L=0.4489）压 selected 底
+     linear-gradient(--c-brand-50 #E8FAF3 L=0.9200 → --c-tint-green-50 #E8F5E9 L=0.8834)，
+     实算 (0.9700)/(0.4989)=1.94:1（左端）/(0.9334)/(0.4989)=1.87:1（右端），26rpx/600 读不出选中态。
+     卡荐 --c-brand-700 #1F8D6A（L=0.2038）实算 3.82:1 / 3.68:1，仍 <4.5:1（已知机制 §2「要算不要看着改」）；
+     改取仓内在册同型口径 --c-brand-800 #156B51（L=0.1127，同 R10-L04-D18 hub.vue:659、§2 表"采用"档）：
+     (0.9700)/(0.1627)=5.96:1（左端）、(0.9334)/(0.1627)=5.74:1（右端）≥4.5:1。
+     保留绿色身份，浅底与 $green-primary 描边、投影档位不动（非选中态 $text-secondary 不受影响）。 */
+  color: var(--c-brand-800, #156B51);
   font-weight: 600;
 }
 

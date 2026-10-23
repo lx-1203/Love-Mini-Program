@@ -553,8 +553,15 @@ onShareTimeline(() => ({
 .detail-page {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
-  background: var(--c-bg-page, #f4f6fa);
+  /* R14-L08-D03/D04（位置 P1，同一根因）：原 `min-height:100%` 在祖先无确定高时按 §3
+     退化成 auto ⇒ .detail-scroll:630 的 `flex:1;height:0` 拿不到确定高度、scroll-view 不内部滚，
+     整页改由 uni 页面滚动：.detail-action-bar 随内容沉到文档底（top 帧报名钮只露 8px）、
+     .detail-header 随阅读滚走（bottom 帧返回钮整枚离屏、页内唯一返回出口消失）。
+     改 `height:100vh` 立成确定高的 flex 列 ⇒ header 与 action-bar 都是 .detail-page 的
+     直接 flex 子（scroll-view 之外），一钉顶一钉底，.detail-scroll 吃满剩余高度内部滚。
+     .detail-footer-space 保留作 scroll 内容底部呼吸位（无重叠，无害）。 */
+  height: 100vh;
+  background: var(--c-bg-page, #EEF7F2);
 }
 
 /* ========== 顶部栏 ========== */
@@ -775,7 +782,7 @@ onShareTimeline(() => ({
   gap: var(--sp-3);
   margin-top: var(--sp-5);
   padding-top: var(--sp-4);
-  border-top: 1rpx solid var(--c-border-light, #eef0f4);
+  border-top: 1rpx solid var(--c-border-light, #EEF2F0);
 }
 
 .detail-meta__item {
@@ -821,7 +828,7 @@ onShareTimeline(() => ({
      与「时间/地点」值行同档、比卡内大标题(.detail-title --fs-2xl 16px)低两档 ⇒ 正文落进 §1.3
      的标签档。提到 --fs-xl(30rpx=15px)，行高保持 1.7；兜底字面量同步改成令牌真值 30rpx。 */
   font-size: var(--fs-xl, 30rpx);
-  color: var(--c-text-secondary, #5b6470);
+  color: var(--c-text-secondary, #4A524E);
   line-height: 1.7;
 }
 
@@ -863,7 +870,7 @@ onShareTimeline(() => ({
 .detail-error__retry-text {
   font-size: var(--fs-base, 26rpx);
   font-weight: 600;
-  color: var(--c-brand-700, #1d9e63);
+  color: var(--c-brand-700, #1F8D6A);
 }
 
 /* ========== 底部报名栏 ========== */
@@ -883,7 +890,7 @@ onShareTimeline(() => ({
   height: 88rpx;
   padding: 0 var(--sp-6);
   border-radius: var(--r-full);
-  background: var(--c-bg-surface, #F1F5F9);
+  background: var(--c-bg-surface, #F3FAF6);
   border: 1rpx solid var(--c-border-strong, #C2CAC6);
   flex-shrink: 0;
   line-height: 1.2;
@@ -897,7 +904,7 @@ onShareTimeline(() => ({
 .detail-share-btn__text {
   font-size: var(--fs-lg, 32rpx);
   font-weight: 600;
-  color: var(--c-text-secondary, #475569);
+  color: var(--c-text-secondary, #4A524E);
 }
 
 .detail-signup-btn {
@@ -929,7 +936,7 @@ onShareTimeline(() => ({
   justify-content: center;
   height: 88rpx;
   border-radius: var(--r-full);
-  background: var(--c-bg-surface, #F1F5F9);
+  background: var(--c-bg-surface, #F3FAF6);
   border: 1rpx solid var(--c-border-strong, #C2CAC6);
 }
 

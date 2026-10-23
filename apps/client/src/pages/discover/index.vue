@@ -254,15 +254,23 @@ onUnload(() => {
           <text class="discover-header__title">{{ t('discover.title') }}</text>
           <image class="discover-header__heart" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
         </view>
+        <!-- R14-B18（R14-L01-D05）：筛选是全页唯一筛选出口（FilterDrawer 只由本钮 :263
+             openFilterDrawer 打开，页内无其它筛选入口），属"必点控件"，热区须 ≥88rpx。
+             原实体圆钮 72×72rpx（=36px）低于口径。修法沿用 register/index.vue .agree__hit
+             的热区口径：外层 .discover-header__filter-hit 补 padding 8rpx 使热区达
+             72+8+8=88rpx，等值负 margin 回拉保证可见圆钮像素位置不变；tap/hover/aria
+             移到热区层。视觉 72rpx 圆钮（背景/阴影/圆角/图标）保持原样。 -->
         <view
-          class="discover-header__filter"
+          class="discover-header__filter-hit"
           hover-class="discover-header__filter--pressed"
           hover-stay-time="40"
           role="button"
           :aria-label="t('discover.filter')"
           @tap="discoverStore.openFilterDrawer()"
         >
-          <image class="discover-header__filter-icon" :src="IMAGE_PATHS.ICONS_V2.SLIDERS" mode="aspectFit" alt="" />
+          <view class="discover-header__filter">
+            <image class="discover-header__filter-icon" :src="IMAGE_PATHS.ICONS_V2.SLIDERS" mode="aspectFit" alt="" />
+          </view>
         </view>
       </view>
       <view class="discover-header__tabs">
@@ -487,6 +495,22 @@ onUnload(() => {
      属无效声明，故删除而非令牌化 */
 }
 
+/* R14-B18（R14-L01-D05）：透明热区层。padding 8rpx ⇒ 热区 88×88rpx（72+8+8），
+   满足"必点控件 ≥88rpx"最小可点件口径；四向等值负 margin 把 padding 撑出的 16rpx
+   回拉，故 flex 行内圆钮占位、可见圆钮像素位置与改前完全一致。
+   胶囊避让量（原写在 .discover-header__filter 的 margin-right）改由本层承担，
+   并扣掉 padding 的 8rpx（calc(--capsule-right - 8rpx)），
+   使热区 padding-box 右缘 = 原圆钮右缘 + 8rpx、圆钮右缘回落原值 ⇒ 逐像素不变。
+   hover-class 的 opacity 压在本层，整棵子树（含圆钮）随按淡化，观感与原实现一致。 */
+.discover-header__filter-hit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 8rpx;
+  margin: -8rpx calc(var(--capsule-right, 7px) - 8rpx) -8rpx -8rpx;
+}
+
 .discover-header__filter {
   width: 72rpx;
   height: 72rpx;
@@ -496,12 +520,10 @@ onUnload(() => {
   border-radius: 50%;
   background: var(--c-bg-container, #ffffff);
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
-  /* R1-B23（R1-L01-D05）：胶囊避让量只落在本按钮上（原写在整行 padding-right 上，
-     连带把标题行一起左推）。钮右缘距屏幕右缘 = 胶囊右缘间隙，与理想图贴右基线一致。
-     残余：胶囊下缘（statusbar+36px）与本钮上缘（statusbar+32.8px）尚有约 3px 交叠，
-     落在圆钮顶部弧带上，图标与点击中心不受影响；如需彻底错开需下移整行标题基线，
-     那会破掉理想图的「同一水平线」，故不在此轮处理。 */
-  margin-right: var(--capsule-right, 7px);
+  /* R1-B23（R1-L01-D05）：胶囊避让量原落在此钮 margin-right。R14-L01-D05 把热区
+     外包到 .discover-header__filter-hit 后，避让量随之上移到热区层（见上），本钮
+     只保留 72rpx 视觉圆（背景/阴影/圆角/居中图标），不再自持 margin-right。
+     残余 3px 上缘交叠说明仍适用：落点在圆钮顶部弧带，图标与点击中心不受影响。 */
 }
 
 .discover-header__filter--pressed {
