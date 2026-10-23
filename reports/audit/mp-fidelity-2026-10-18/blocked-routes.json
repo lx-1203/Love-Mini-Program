@@ -18,11 +18,7 @@
       "route": "subpackages/vip/bills",
       "reason": "同 subpackages/vip/index：会员子系统整组在旗标关闭时不可达",
       "evidence": "R2b CLI 巡检实测：帧落点读到 pages/profile/index，图 10,206B，与上两页逐字节同图；禁令出处＝用户长期约束「不开会员/showcase 旗标」"
-    },
-    {
-      "route": "pages/login/index",
-      "reason": "现行取景通道构造上拍不到登录表单：登录页自身把已登录用户转发走（login/index.vue 转发判定），无票直开又被游客落地策略先送到 pages/discover/index（R8 游客落地），登录表单只剩页内显式登录动作可达，而 automator 直开腿没有「先落 discover 再点登录入口」这只手",
-      "evidence": "R13 实测四连：identity=A 主扫两帧落 discover（sweep-R13.log L14-15）；identity=A 定向补拍落 discover；identity=none 两跑 token 回读=0（确实无票）仍两帧落 discover（sweep-R13d/e.log）。R11 的两张真登录帧（398eb3fc/d9cd1632）是 store 未水合窗口期的转发竞态漏网，R12 的「登录帧」210087B 经查实为 discover 误录（与 discover 帧 204584B 同源、落点核对竞态放行）——仪器在 R13 起如实拒证。哪轮取景腿补上「页内显式动作」这只手，此行按门判点自动作废"
     }
-  ]
+  ],
+  "_note_login_retired": "pages/login/index 已于 2026-10-23 从够不着名册删除：取景腿加 --no-bootstrap 后该页每轮真拍得到（R10-R14 五轮清单为证），按覆盖门自己的判点（名册页一旦拍到可用帧即判红）这行不留。全过程与实测读数见 login-frame-reachability-2026-10-23.md"
 }

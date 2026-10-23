@@ -17,7 +17,7 @@
  *      （实测 grep 过 out/ 的导出面），我不假装 hook 上了。
  *
  * 用法：node scripts/qa/shoot-fidelity-sweep.mjs --ledger <baseline-ledger.json> --round R1
- *        [--identity A|B|none] [--project <产物目录>] [--out <帧根目录>] [--only a,b] [--limit n]
+ *        [--identity A|B|none] [--no-bootstrap] [--project <产物目录>] [--out <帧根目录>] [--only a,b] [--limit n]
  *        [--settle 2600] [--harness automator] [--dry]
  *        [--params <route→query 表，见 scripts/qa/fidelity-sweep-params.json>]
  *   · none = 不铸票并清会话：登录即转发那类页（账本 identityPrecondition 现读 none）只有这一档拍得到；
@@ -255,8 +255,14 @@ try {
      chat-session / official-chat / discover-activities 三页的 usePageAccess 在 userSession
      未水合的窗口期把已登录用户弹去登录页（同窗同票对照：带 bootstrap 的 warm reLaunch
      稳定落点本页，不带则 5 连弹 login；探针 tmp/qa/_r13-chat-probe3/4.mjs）。
-     引导失败不拦停：落点核对仍是每张帧的判据。 */
-  try {
+     引导失败不拦停：落点核对仍是每张帧的判据。
+     --no-bootstrap 是它的对偶：水合是全局一次性的，所以"未水合窗口"在 R13 之后对**所有**页都关死了，
+     连 pages/login/index 也被一起关掉——而登录页要拍的正是"store 还没水合 ⇒ isLoggedIn=false"那张画面。
+     R10/R11/R12 三轮的 login 帧都是这个条件下真落点（各轮清单 landingMismatch=false），
+     R13 起才改落 discover。加这个旗标把该条件变成可显式复现的拍法，而不是靠竞态撞。 */
+  if (flag("no-bootstrap")) {
+    console.log(`SWEEP_SESSION_BOOTSTRAP=skipped-by-flag ⇒ 不水合（login 这类"未水合才存在"的页用）；identity=${IDENTITY} 的票仍写进 storage`);
+  } else try {
     const boot = await mp.evaluate(new Function('var app=getApp();var vm=app["$vm"];var gp=(vm.$&&vm.$.appContext.config.globalProperties)||{};var p=vm["$pinia"]||gp["$pinia"];var s=p._s.get("session");if(s&&s.bootstrap){s.bootstrap();return "boot-ok";}return "no-bootstrap";'));
     console.log(`SWEEP_SESSION_BOOTSTRAP=${String(boot).slice(0, 20)}`);
   } catch (e) {
@@ -360,6 +366,18 @@ try {
   let wp = ""; try { const c = await mp.currentPage(); wp = c && c.path ? String(c.path) : ""; } catch { /* 预热读数失败不影响正式拍 */ }
   console.log(`SWEEP_WARMUP done ms=${Date.now() - w0} 落点=${wp || "(未读到)"}`);
 } catch (e) { console.log(`SWEEP_WARMUP failed ${String(e && e.message).slice(0, 80)} ⇒ 仍继续，但前几帧的超时读数要按仪器噪声读`); }
+
+/* --no-bootstrap 的后半段，必须落在 warmup **之后**：warmup 会真启动应用，App.onLaunch 自己就
+   bootstrap 了，所以"开场不引导"单独用是无效的（2026-10-23 实测：只跳过引导 → login 两帧仍落
+   discover）。 isLoggedIn 只读 state.userSession?.loggedIn（stores/session.ts:340），
+   所以把 store 上的 userSession 清掉、storage 里的票留着，就得到 R10/R11/R12 拍到登录页时
+   那个条件：有票、但 store 未水合 ⇒ 登录页的转发判定不成立。这是把竞态变成显式拍法。 */
+if (flag("no-bootstrap")) {
+  try {
+    const de = await mp.evaluate(new Function('var app=getApp();var vm=app["$vm"];var gp=(vm.$&&vm.$.appContext.config.globalProperties)||{};var p=vm["$pinia"]||gp["$pinia"];var s=p._s.get("session");if(!s)return "no-store";var b=!!(s.userSession&&s.userSession.loggedIn);s.userSession=null;var a=!!(s.userSession&&s.userSession.loggedIn);return "loggedIn:"+b+"->"+a;'));
+    console.log(`SWEEP_SESSION_DEHYDRATE=${String(de).slice(0, 40)}（只清 store，storage 的票不动）`);
+  } catch (e) { console.log(`SWEEP_SESSION_DEHYDRATE=skip err=${String(e && e.message).slice(0, 80)}`); }
+}
 
 for (const r of targets) {
   /* 账本写的前提与本跑身份对不对得上，先在这里判一次并留在件上。
