@@ -1,0 +1,31 @@
+{
+  "schema": "mp-fidelity-fixvis-expected-unchanged/v1",
+  "round": "R15",
+  "note": "R14fix 派单批里「按车道书面处置就不动内容区像素」的行豁免件（R14→R15 比较）。每条须能引用对应 FX 交件原文的自陈读数；豁免不进 notVisible/clockOnly，单列 expectedUnchanged。判据本身（比内容区像素、不比状态栏时钟）不放宽。零像素不是免检：这些行是车道自己声明「复拍门按定义看不到差异」，若复拍真出现差异反而要回头查是谁改的。",
+  "rows": [
+    {
+      "frame": "pages/discover/index__top",
+      "reason": "R14-L01-D05（FXC）：交付件 :16 自陈「命中区从 72rpx 扩到 88rpx（圆钮四周各外扩 8rpx 透明带）……圆钮本体墨迹位置像素不变属预期（本卡诉求是热区，不是视觉重绘）」，并给了 padding-box 右缘与圆钮右缘的逐像素回推算式。透明热区在静态截图上不可见，是这类缺陷的定义而非修得不够。"
+    },
+    {
+      "frame": "subpackages/profile-extra/profile/favorites__bottom",
+      "reason": "R14-L10-D24（圆角·幽灵令牌 --r-circle）与 R14-L10-D25（已废弃自绘空态死样式）两行，FXF 交付件两条标题均自陈「已修（零像素，如实登记）」，并在 :66 写明「登记为代码口径收口，不是拿零像素顶掉画面修复——同页 D20/D21/D22/D23 各自带画面落点」。同页带落点的行由该帧的 FIX_VISIBLE 判定作证，本豁免只覆盖这两条自陈零像素行。"
+    },
+    {
+      "frame": "subpackages/tools/activities/detail__bottom",
+      "reason": "R14-L08-D05（FXG）：交付件 :48 自陈画面落点为「零像素变化——卡自陈 bottom 帧上令牌全部命中（卡底实测 #FFFFFF、页底 #EEF7F2、钮面 #136A4F），兜底不显形」，属无消费者一致性债。同页 D03/D04（底栏 fixed 与导航栏滚出）是有像素差的另一批，由该批判定作证。"
+    },
+    {
+      "frame": "subpackages/tools/help/index__top",
+      "reason": "R14-L07-D10（FXG）：交付件 :66-:67 自陈 `--f-*` 仅是 `--fs-*` 别名（值 22rpx/28rpx/20rpx 未动），「零像素变化……属卡自陈的命名归口一致性债，画面看不出是归口的定义所决定的，不是修得不够」。同页 D11（客服邮箱明文上屏）与 D12/D13 带真实落点，由那批判定作证。"
+    },
+    {
+      "frame": "subpackages/tools/security/index__bottom",
+      "reason": "R14-L07-D17（FXG）：交付件 :164 自陈「零像素变化（当前令牌命中，兜底无消费者）。与 D05/D10/D21 同族登记性归口修复」。同页 D14（「下线」文案换 #991b1b 深档 7.76:1）与 D15/D16 带像素差，由那批判定作证。"
+    },
+    {
+      "frame": "subpackages/tools/search/index__bottom",
+      "reason": "R14-L07-D21（FXG）：交付件 :125 自陈「零像素变化（当前浅色档下 --c-text-inverse 就是白，兜底也是白；只在深色主题翻色时才会显形）」，属令牌翻色跟随的登记性归口。同页 D18（选中分组白字压 brand-800）与 D19/D20 带真实落点，由那批判定作证。"
+    }
+  ]
+}
