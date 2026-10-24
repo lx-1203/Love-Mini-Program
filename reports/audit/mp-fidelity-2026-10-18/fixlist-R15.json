@@ -1,0 +1,1597 @@
+{
+  "schema": "mp-fidelity-fixlist/v1",
+  "round": "R15",
+  "generatedAt": "2026-10-23T15:19:27.216Z",
+  "lanes": 14,
+  "defects": 210,
+  "rejected": [],
+  "batches": [
+    {
+      "batch_id": "R15-B01",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L02.md",
+      "files": [
+        "apps/client/src/App.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L02-D12"
+      ],
+      "pages": [
+        "pages/profile/index"
+      ],
+      "axes": [
+        "层级遮挡"
+      ]
+    },
+    {
+      "batch_id": "R15-B02",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L06.md",
+      "files": [
+        "apps/client/src/components/common/BaseTabs.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L06-D11"
+      ],
+      "pages": [
+        "subpackages/discover-extra/likes/index"
+      ],
+      "axes": [
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B03",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L13.md",
+      "files": [
+        "apps/client/src/components/common/LegalTextPage.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L13-D08",
+        "R15-L13-D09",
+        "R15-L13-D10",
+        "R15-L13-D11"
+      ],
+      "pages": [
+        "subpackages/legal/privacy/index",
+        "subpackages/legal/agreement/index"
+      ],
+      "axes": [
+        "间距",
+        "尺寸比例",
+        "字号",
+        "文案"
+      ]
+    },
+    {
+      "batch_id": "R15-B04",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L02.md",
+      "files": [
+        "apps/client/src/components/common/LockScreen.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L02-D13",
+        "R15-L02-D14",
+        "R15-L08-D05",
+        "R15-L08-D06",
+        "R15-L08-D07",
+        "R15-L08-D08"
+      ],
+      "pages": [
+        "subpackages/village/village/index",
+        "subpackages/tools/heart-signals/index"
+      ],
+      "axes": [
+        "素材缺失",
+        "尺寸比例",
+        "间距",
+        "字号",
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B05",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L08.md",
+      "files": [
+        "apps/client/src/components/discover/CardSwiper.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L08-D13"
+      ],
+      "pages": [
+        "subpackages/tools/love-center/nearby"
+      ],
+      "axes": [
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B06",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L01.md",
+      "files": [
+        "apps/client/src/components/home/NearbyPeople.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L01-D16"
+      ],
+      "pages": [
+        "pages/home/index"
+      ],
+      "axes": [
+        "位置"
+      ]
+    },
+    {
+      "batch_id": "R15-B07",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L01.md",
+      "files": [
+        "apps/client/src/components/home/TodayLoveProgress.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L01-D15"
+      ],
+      "pages": [
+        "pages/home/index"
+      ],
+      "axes": [
+        "尺寸比例"
+      ]
+    },
+    {
+      "batch_id": "R15-B08",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L01.md",
+      "files": [
+        "apps/client/src/components/home/TodayRecommendationCard.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L01-D14"
+      ],
+      "pages": [
+        "pages/home/index"
+      ],
+      "axes": [
+        "素材缺失"
+      ]
+    },
+    {
+      "batch_id": "R15-B09",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L07.md",
+      "files": [
+        "apps/client/src/components/layout/AppShell.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L07-D25",
+        "R15-L12-D07"
+      ],
+      "pages": [
+        "subpackages/tools/security/index",
+        "subpackages/setup/campus/index"
+      ],
+      "axes": [
+        "层级遮挡"
+      ]
+    },
+    {
+      "batch_id": "R15-B10",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L05.md",
+      "files": [
+        "apps/client/src/components/match/MatchLoading.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L05-D12",
+        "R15-L05-D13"
+      ],
+      "pages": [
+        "subpackages/discover-extra/discover/matching"
+      ],
+      "axes": [
+        "层级遮挡",
+        "尺寸比例"
+      ]
+    },
+    {
+      "batch_id": "R15-B11",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L06.md",
+      "files": [
+        "apps/client/src/components/match/MatchSuccess.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L06-D01",
+        "R15-L06-D02",
+        "R15-L06-D03"
+      ],
+      "pages": [
+        "subpackages/discover-extra/discover/match-success"
+      ],
+      "axes": [
+        "需新建",
+        "文案",
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B12",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L02.md",
+      "files": [
+        "apps/client/src/components/profile/mine/MyCompletion.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L02-D10"
+      ],
+      "pages": [
+        "pages/profile/index"
+      ],
+      "axes": [
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B13",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L02.md",
+      "files": [
+        "apps/client/src/components/profile/mine/MyHeader.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L02-D11"
+      ],
+      "pages": [
+        "pages/profile/index"
+      ],
+      "axes": [
+        "文案"
+      ]
+    },
+    {
+      "batch_id": "R15-B14",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L10.md",
+      "files": [
+        "apps/client/src/components/profile/public/PublicGallery.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L10-D03"
+      ],
+      "pages": [
+        "subpackages/profile-extra/profile/other"
+      ],
+      "axes": [
+        "空态文案"
+      ]
+    },
+    {
+      "batch_id": "R15-B15",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L10.md",
+      "files": [
+        "apps/client/src/components/profile/public/PublicIdentity.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L10-D01",
+        "R15-L10-D02"
+      ],
+      "pages": [
+        "subpackages/profile-extra/profile/other"
+      ],
+      "axes": [
+        "位置",
+        "尺寸比例"
+      ]
+    },
+    {
+      "batch_id": "R15-B16",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L12.md",
+      "files": [
+        "apps/client/src/components/profile/TagSelector.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L12-D13"
+      ],
+      "pages": [
+        "subpackages/setup/interest/index"
+      ],
+      "axes": [
+        "空态文案"
+      ]
+    },
+    {
+      "batch_id": "R15-B17",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L02.md",
+      "files": [
+        "apps/client/src/components/village/PostCard.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L02-D04",
+        "R15-L02-D05"
+      ],
+      "pages": [
+        "pages/nearby/index"
+      ],
+      "axes": [
+        "位置",
+        "字号"
+      ]
+    },
+    {
+      "batch_id": "R15-B18",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L05.md",
+      "files": [
+        "apps/client/src/components/village/TopicSelector.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L05-D06",
+        "R15-L05-D07"
+      ],
+      "pages": [
+        "subpackages/campus/campus/post-topic"
+      ],
+      "axes": [
+        "可达性"
+      ]
+    },
+    {
+      "batch_id": "R15-B19",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L10.md",
+      "files": [
+        "apps/client/src/pages.json"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L10-D07"
+      ],
+      "pages": [
+        "subpackages/profile-extra/profile/privacy"
+      ],
+      "axes": [
+        "可达性"
+      ]
+    },
+    {
+      "batch_id": "R15-B20",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L01.md",
+      "files": [
+        "apps/client/src/pages/discover/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L01-D12",
+        "R15-L01-D13"
+      ],
+      "pages": [
+        "pages/discover/index"
+      ],
+      "axes": [
+        "素材缺失",
+        "尺寸比例"
+      ]
+    },
+    {
+      "batch_id": "R15-B21",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L01.md",
+      "files": [
+        "apps/client/src/pages/login/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L01-D01",
+        "R15-L01-D02",
+        "R15-L01-D03",
+        "R15-L01-D04"
+      ],
+      "pages": [
+        "pages/login/index"
+      ],
+      "axes": [
+        "字号",
+        "素材缺失",
+        "文案",
+        "圆角"
+      ]
+    },
+    {
+      "batch_id": "R15-B22",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L02.md",
+      "files": [
+        "apps/client/src/pages/messages/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L02-D06",
+        "R15-L02-D07",
+        "R15-L02-D08",
+        "R15-L02-D09"
+      ],
+      "pages": [
+        "pages/messages/index"
+      ],
+      "axes": [
+        "颜色token",
+        "可达性",
+        "文案",
+        "位置"
+      ]
+    },
+    {
+      "batch_id": "R15-B23",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L02.md",
+      "files": [
+        "apps/client/src/pages/nearby/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L02-D01",
+        "R15-L02-D02",
+        "R15-L02-D03"
+      ],
+      "pages": [
+        "pages/nearby/index"
+      ],
+      "axes": [
+        "颜色token",
+        "字号"
+      ]
+    },
+    {
+      "batch_id": "R15-B24",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L01.md",
+      "files": [
+        "apps/client/src/pages/register/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L01-D05",
+        "R15-L01-D06",
+        "R15-L01-D07",
+        "R15-L01-D08"
+      ],
+      "pages": [
+        "pages/register/index"
+      ],
+      "axes": [
+        "间距",
+        "字号",
+        "文案"
+      ]
+    },
+    {
+      "batch_id": "R15-B25",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L01.md",
+      "files": [
+        "apps/client/src/pages/register/success.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L01-D09",
+        "R15-L01-D10",
+        "R15-L01-D11"
+      ],
+      "pages": [
+        "pages/register/success"
+      ],
+      "axes": [
+        "间距",
+        "可达性",
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B26",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L05.md",
+      "files": [
+        "apps/client/src/subpackages/campus/campus/certification.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L05-D10",
+        "R15-L05-D11"
+      ],
+      "pages": [
+        "subpackages/campus/campus/certification"
+      ],
+      "axes": [
+        "圆角",
+        "文案"
+      ]
+    },
+    {
+      "batch_id": "R15-B27",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L04.md",
+      "files": [
+        "apps/client/src/subpackages/campus/campus/hub.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L04-D12",
+        "R15-L04-D13"
+      ],
+      "pages": [
+        "subpackages/campus/campus/hub"
+      ],
+      "axes": [
+        "颜色token",
+        "尺寸比例"
+      ]
+    },
+    {
+      "batch_id": "R15-B28",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L05.md",
+      "files": [
+        "apps/client/src/subpackages/campus/campus/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L05-D01",
+        "R15-L05-D02",
+        "R15-L05-D03"
+      ],
+      "pages": [
+        "subpackages/campus/campus/index"
+      ],
+      "axes": [
+        "可达性",
+        "字号",
+        "位置"
+      ]
+    },
+    {
+      "batch_id": "R15-B29",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L05.md",
+      "files": [
+        "apps/client/src/subpackages/campus/campus/post-topic.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L05-D04",
+        "R15-L05-D05"
+      ],
+      "pages": [
+        "subpackages/campus/campus/post-topic"
+      ],
+      "axes": [
+        "颜色token",
+        "间距"
+      ]
+    },
+    {
+      "batch_id": "R15-B30",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L05.md",
+      "files": [
+        "apps/client/src/subpackages/campus/campus/topic-detail.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L05-D08",
+        "R15-L05-D09"
+      ],
+      "pages": [
+        "subpackages/campus/campus/topic-detail"
+      ],
+      "axes": [
+        "位置",
+        "可达性"
+      ]
+    },
+    {
+      "batch_id": "R15-B31",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L11.md",
+      "files": [
+        "apps/client/src/subpackages/chat/chat-session/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L11-D07",
+        "R15-L11-D08"
+      ],
+      "pages": [
+        "subpackages/chat/chat-session/index"
+      ],
+      "axes": [
+        "文案",
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B32",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L11.md",
+      "files": [
+        "apps/client/src/subpackages/chat/official-chat/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L11-D09",
+        "R15-L11-D10"
+      ],
+      "pages": [
+        "subpackages/chat/official-chat/index"
+      ],
+      "axes": [
+        "位置",
+        "可达性"
+      ]
+    },
+    {
+      "batch_id": "R15-B33",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L04.md",
+      "files": [
+        "apps/client/src/subpackages/circles/circles/circle-home.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L04-D09",
+        "R15-L04-D10",
+        "R15-L04-D11"
+      ],
+      "pages": [
+        "subpackages/circles/circles/circle-home"
+      ],
+      "axes": [
+        "尺寸比例",
+        "可达性",
+        "圆角"
+      ]
+    },
+    {
+      "batch_id": "R15-B34",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L03.md",
+      "files": [
+        "apps/client/src/subpackages/circles/circles/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L03-D15",
+        "R15-L03-D16",
+        "R15-L03-D17"
+      ],
+      "pages": [
+        "subpackages/circles/circles/index"
+      ],
+      "axes": [
+        "颜色token",
+        "素材缺失"
+      ]
+    },
+    {
+      "batch_id": "R15-B35",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L04.md",
+      "files": [
+        "apps/client/src/subpackages/circles/circles/post-topic.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L04-D06",
+        "R15-L04-D07",
+        "R15-L04-D08"
+      ],
+      "pages": [
+        "subpackages/circles/circles/post-topic"
+      ],
+      "axes": [
+        "颜色token",
+        "圆角",
+        "可达性"
+      ]
+    },
+    {
+      "batch_id": "R15-B36",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L04.md",
+      "files": [
+        "apps/client/src/subpackages/circles/circles/topic-detail.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L04-D04",
+        "R15-L04-D05"
+      ],
+      "pages": [
+        "subpackages/circles/circles/topic-detail"
+      ],
+      "axes": [
+        "间距",
+        "素材缺失"
+      ]
+    },
+    {
+      "batch_id": "R15-B37",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L04.md",
+      "files": [
+        "apps/client/src/subpackages/circles/circles/topics.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L04-D01",
+        "R15-L04-D02",
+        "R15-L04-D03"
+      ],
+      "pages": [
+        "subpackages/circles/circles/topics"
+      ],
+      "axes": [
+        "位置",
+        "圆角",
+        "间距"
+      ]
+    },
+    {
+      "batch_id": "R15-B38",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L06.md",
+      "files": [
+        "apps/client/src/subpackages/discover-extra/discover/history.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L06-D08",
+        "R15-L06-D09"
+      ],
+      "pages": [
+        "subpackages/discover-extra/discover/history"
+      ],
+      "axes": [
+        "圆角",
+        "间距"
+      ]
+    },
+    {
+      "batch_id": "R15-B39",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L06.md",
+      "files": [
+        "apps/client/src/subpackages/discover-extra/home/segment.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L06-D04",
+        "R15-L06-D05"
+      ],
+      "pages": [
+        "subpackages/discover-extra/home/segment"
+      ],
+      "axes": [
+        "文案",
+        "间距"
+      ]
+    },
+    {
+      "batch_id": "R15-B40",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L07.md",
+      "files": [
+        "apps/client/src/subpackages/discover-extra/likes-visitors/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L07-D01",
+        "R15-L07-D02",
+        "R15-L07-D03",
+        "R15-L07-D04",
+        "R15-L07-D05"
+      ],
+      "pages": [
+        "subpackages/discover-extra/likes-visitors/index"
+      ],
+      "axes": [
+        "字号",
+        "尺寸比例",
+        "间距",
+        "空态文案"
+      ]
+    },
+    {
+      "batch_id": "R15-B41",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L06.md",
+      "files": [
+        "apps/client/src/subpackages/discover-extra/likes/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L06-D10",
+        "R15-L06-D12"
+      ],
+      "pages": [
+        "subpackages/discover-extra/likes/index"
+      ],
+      "axes": [
+        "圆角",
+        "间距"
+      ]
+    },
+    {
+      "batch_id": "R15-B42",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L06.md",
+      "files": [
+        "apps/client/src/subpackages/discover-extra/nearby/people.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L06-D06",
+        "R15-L06-D07"
+      ],
+      "pages": [
+        "subpackages/discover-extra/nearby/people"
+      ],
+      "axes": [
+        "文案",
+        "尺寸比例"
+      ]
+    },
+    {
+      "batch_id": "R15-B43",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L13.md",
+      "files": [
+        "apps/client/src/subpackages/discover/activities/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L13-D05",
+        "R15-L13-D06",
+        "R15-L13-D07"
+      ],
+      "pages": [
+        "subpackages/discover/activities/index"
+      ],
+      "axes": [
+        "颜色token",
+        "字号"
+      ]
+    },
+    {
+      "batch_id": "R15-B44",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L13.md",
+      "files": [
+        "apps/client/src/subpackages/discover/discussions/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L13-D03",
+        "R15-L13-D04"
+      ],
+      "pages": [
+        "subpackages/discover/discussions/index"
+      ],
+      "axes": [
+        "字号"
+      ]
+    },
+    {
+      "batch_id": "R15-B45",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L14.md",
+      "files": [
+        "apps/client/src/subpackages/market/detail/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L14-D01",
+        "R15-L14-D02",
+        "R15-L14-D03",
+        "R15-L14-D04",
+        "R15-L14-D05"
+      ],
+      "pages": [
+        "subpackages/market/detail/index"
+      ],
+      "axes": [
+        "可达性",
+        "字号",
+        "颜色token",
+        "间距",
+        "位置"
+      ]
+    },
+    {
+      "batch_id": "R15-B46",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L14.md",
+      "files": [
+        "apps/client/src/subpackages/market/shop/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L14-D06",
+        "R15-L14-D07",
+        "R15-L14-D08",
+        "R15-L14-D09"
+      ],
+      "pages": [
+        "subpackages/market/shop/index"
+      ],
+      "axes": [
+        "可达性",
+        "需新建",
+        "空态文案",
+        "圆角"
+      ]
+    },
+    {
+      "batch_id": "R15-B47",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L14.md",
+      "files": [
+        "apps/client/src/subpackages/market/wallet/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L14-D10",
+        "R15-L14-D11",
+        "R15-L14-D12",
+        "R15-L14-D13"
+      ],
+      "pages": [
+        "subpackages/market/wallet/index"
+      ],
+      "axes": [
+        "颜色token",
+        "可达性",
+        "间距",
+        "圆角"
+      ]
+    },
+    {
+      "batch_id": "R15-B48",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L11.md",
+      "files": [
+        "apps/client/src/subpackages/profile-extra/feedback/history.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L11-D05",
+        "R15-L11-D06"
+      ],
+      "pages": [
+        "subpackages/profile-extra/feedback/history"
+      ],
+      "axes": [
+        "位置",
+        "空态文案"
+      ]
+    },
+    {
+      "batch_id": "R15-B49",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L10.md",
+      "files": [
+        "apps/client/src/subpackages/profile-extra/profile/album.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L10-D08",
+        "R15-L10-D09"
+      ],
+      "pages": [
+        "subpackages/profile-extra/profile/album"
+      ],
+      "axes": [
+        "字号",
+        "尺寸比例"
+      ]
+    },
+    {
+      "batch_id": "R15-B50",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L10.md",
+      "files": [
+        "apps/client/src/subpackages/profile-extra/profile/favorites.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L10-D10",
+        "R15-L10-D11"
+      ],
+      "pages": [
+        "subpackages/profile-extra/profile/favorites"
+      ],
+      "axes": [
+        "字号",
+        "位置"
+      ]
+    },
+    {
+      "batch_id": "R15-B51",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L10.md",
+      "files": [
+        "apps/client/src/subpackages/profile-extra/profile/location.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L10-D04",
+        "R15-L10-D05"
+      ],
+      "pages": [
+        "subpackages/profile-extra/profile/location"
+      ],
+      "axes": [
+        "空态文案",
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B52",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L10.md",
+      "files": [
+        "apps/client/src/subpackages/profile-extra/profile/privacy.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L10-D06"
+      ],
+      "pages": [
+        "subpackages/profile-extra/profile/privacy"
+      ],
+      "axes": [
+        "字号"
+      ]
+    },
+    {
+      "batch_id": "R15-B53",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L11.md",
+      "files": [
+        "apps/client/src/subpackages/profile-extra/profile/tasks.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L11-D01",
+        "R15-L11-D02"
+      ],
+      "pages": [
+        "subpackages/profile-extra/profile/tasks"
+      ],
+      "axes": [
+        "尺寸比例",
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B54",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L09.md",
+      "files": [
+        "apps/client/src/subpackages/profile-extra/profile/visitors.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L09-D15",
+        "R15-L09-D16",
+        "R15-L09-D17",
+        "R15-L09-D18"
+      ],
+      "pages": [
+        "subpackages/profile-extra/profile/visitors"
+      ],
+      "axes": [
+        "颜色token",
+        "字号",
+        "文案",
+        "可达性"
+      ]
+    },
+    {
+      "batch_id": "R15-B55",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L11.md",
+      "files": [
+        "apps/client/src/subpackages/profile-extra/settings/dnd.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L11-D03",
+        "R15-L11-D04"
+      ],
+      "pages": [
+        "subpackages/profile-extra/settings/dnd"
+      ],
+      "axes": [
+        "层级遮挡",
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B56",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L09.md",
+      "files": [
+        "apps/client/src/subpackages/profile-extra/settings/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L09-D04",
+        "R15-L09-D05",
+        "R15-L09-D06",
+        "R15-L09-D07",
+        "R15-L09-D08"
+      ],
+      "pages": [
+        "subpackages/profile-extra/settings/index"
+      ],
+      "axes": [
+        "素材缺失",
+        "可达性",
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B57",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L09.md",
+      "files": [
+        "apps/client/src/subpackages/profile-extra/verification/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L09-D09",
+        "R15-L09-D10",
+        "R15-L09-D11"
+      ],
+      "pages": [
+        "subpackages/profile-extra/verification/index"
+      ],
+      "axes": [
+        "颜色token",
+        "可达性"
+      ]
+    },
+    {
+      "batch_id": "R15-B58",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L09.md",
+      "files": [
+        "apps/client/src/subpackages/profile-extra/verification/real-name.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L09-D12",
+        "R15-L09-D13",
+        "R15-L09-D14"
+      ],
+      "pages": [
+        "subpackages/profile-extra/verification/real-name"
+      ],
+      "axes": [
+        "文案",
+        "颜色token",
+        "字号"
+      ]
+    },
+    {
+      "batch_id": "R15-B59",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L12.md",
+      "files": [
+        "apps/client/src/subpackages/setup/campus/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L12-D05",
+        "R15-L12-D06"
+      ],
+      "pages": [
+        "subpackages/setup/campus/index"
+      ],
+      "axes": [
+        "可达性",
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B60",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L12.md",
+      "files": [
+        "apps/client/src/subpackages/setup/interest/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L12-D14"
+      ],
+      "pages": [
+        "subpackages/setup/interest/index"
+      ],
+      "axes": [
+        "字号"
+      ]
+    },
+    {
+      "batch_id": "R15-B61",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L12.md",
+      "files": [
+        "apps/client/src/subpackages/setup/profile/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L12-D01",
+        "R15-L12-D02",
+        "R15-L12-D03",
+        "R15-L12-D04"
+      ],
+      "pages": [
+        "subpackages/setup/profile/index"
+      ],
+      "axes": [
+        "间距",
+        "字号",
+        "尺寸比例",
+        "文案"
+      ]
+    },
+    {
+      "batch_id": "R15-B62",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L12.md",
+      "files": [
+        "apps/client/src/subpackages/setup/recommend-pref/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L12-D11",
+        "R15-L12-D12"
+      ],
+      "pages": [
+        "subpackages/setup/recommend-pref/index"
+      ],
+      "axes": [
+        "间距",
+        "文案"
+      ]
+    },
+    {
+      "batch_id": "R15-B63",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L12.md",
+      "files": [
+        "apps/client/src/subpackages/setup/schedule/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L12-D08",
+        "R15-L12-D09",
+        "R15-L12-D10"
+      ],
+      "pages": [
+        "subpackages/setup/schedule/index"
+      ],
+      "axes": [
+        "位置",
+        "空态文案",
+        "可达性"
+      ]
+    },
+    {
+      "batch_id": "R15-B64",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L13.md",
+      "files": [
+        "apps/client/src/subpackages/support/feedback/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L13-D01",
+        "R15-L13-D02"
+      ],
+      "pages": [
+        "subpackages/support/feedback/index"
+      ],
+      "axes": [
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B65",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L08.md",
+      "files": [
+        "apps/client/src/subpackages/tools/activities/detail.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L08-D09",
+        "R15-L08-D10",
+        "R15-L08-D11"
+      ],
+      "pages": [
+        "subpackages/tools/activities/detail"
+      ],
+      "axes": [
+        "字号",
+        "文案",
+        "间距"
+      ]
+    },
+    {
+      "batch_id": "R15-B66",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L07.md",
+      "files": [
+        "apps/client/src/subpackages/tools/daily-question/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L07-D06",
+        "R15-L07-D07",
+        "R15-L07-D08",
+        "R15-L07-D09",
+        "R15-L07-D10"
+      ],
+      "pages": [
+        "subpackages/tools/daily-question/index"
+      ],
+      "axes": [
+        "尺寸比例",
+        "文案",
+        "间距",
+        "可达性",
+        "位置"
+      ]
+    },
+    {
+      "batch_id": "R15-B67",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L07.md",
+      "files": [
+        "apps/client/src/subpackages/tools/help/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L07-D17",
+        "R15-L07-D18",
+        "R15-L07-D19",
+        "R15-L07-D20"
+      ],
+      "pages": [
+        "subpackages/tools/help/index"
+      ],
+      "axes": [
+        "可达性",
+        "字号",
+        "间距"
+      ]
+    },
+    {
+      "batch_id": "R15-B68",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L09.md",
+      "files": [
+        "apps/client/src/subpackages/tools/love-center/consulting.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L09-D01",
+        "R15-L09-D02",
+        "R15-L09-D03"
+      ],
+      "pages": [
+        "subpackages/tools/love-center/consulting"
+      ],
+      "axes": [
+        "字号",
+        "空态文案",
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B69",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L07.md",
+      "files": [
+        "apps/client/src/subpackages/tools/love-center/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L07-D11",
+        "R15-L07-D12",
+        "R15-L07-D13",
+        "R15-L07-D14",
+        "R15-L07-D15",
+        "R15-L07-D16"
+      ],
+      "pages": [
+        "subpackages/tools/love-center/index"
+      ],
+      "axes": [
+        "可达性",
+        "间距",
+        "字号",
+        "文案",
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B70",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L08.md",
+      "files": [
+        "apps/client/src/subpackages/tools/love-center/mbti.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L08-D16",
+        "R15-L08-D17",
+        "R15-L08-D18",
+        "R15-L08-D19"
+      ],
+      "pages": [
+        "subpackages/tools/love-center/mbti"
+      ],
+      "axes": [
+        "颜色token",
+        "字号",
+        "间距"
+      ]
+    },
+    {
+      "batch_id": "R15-B71",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L08.md",
+      "files": [
+        "apps/client/src/subpackages/tools/love-center/nearby.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L08-D12",
+        "R15-L08-D14",
+        "R15-L08-D15"
+      ],
+      "pages": [
+        "subpackages/tools/love-center/nearby"
+      ],
+      "axes": [
+        "字号",
+        "位置",
+        "间距"
+      ]
+    },
+    {
+      "batch_id": "R15-B72",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L08.md",
+      "files": [
+        "apps/client/src/subpackages/tools/search/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L08-D01",
+        "R15-L08-D02",
+        "R15-L08-D03",
+        "R15-L08-D04"
+      ],
+      "pages": [
+        "subpackages/tools/search/index"
+      ],
+      "axes": [
+        "可达性",
+        "颜色token",
+        "间距"
+      ]
+    },
+    {
+      "batch_id": "R15-B73",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L07.md",
+      "files": [
+        "apps/client/src/subpackages/tools/security/index.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L07-D21",
+        "R15-L07-D22",
+        "R15-L07-D23",
+        "R15-L07-D24",
+        "R15-L07-D26"
+      ],
+      "pages": [
+        "subpackages/tools/security/index"
+      ],
+      "axes": [
+        "文案",
+        "可达性",
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B74",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L03.md",
+      "files": [
+        "apps/client/src/subpackages/village/village/detail.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L03-D05",
+        "R15-L03-D06",
+        "R15-L03-D07"
+      ],
+      "pages": [
+        "subpackages/village/village/detail"
+      ],
+      "axes": [
+        "颜色token",
+        "需新建"
+      ]
+    },
+    {
+      "batch_id": "R15-B75",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L03.md",
+      "files": [
+        "apps/client/src/subpackages/village/village/history.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L03-D11",
+        "R15-L03-D12",
+        "R15-L03-D13",
+        "R15-L03-D14"
+      ],
+      "pages": [
+        "subpackages/village/village/history"
+      ],
+      "axes": [
+        "可达性",
+        "颜色token",
+        "文案"
+      ]
+    },
+    {
+      "batch_id": "R15-B76",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L03.md",
+      "files": [
+        "apps/client/src/subpackages/village/village/post.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L03-D01",
+        "R15-L03-D02",
+        "R15-L03-D03",
+        "R15-L03-D04"
+      ],
+      "pages": [
+        "subpackages/village/village/post"
+      ],
+      "axes": [
+        "素材缺失",
+        "文案",
+        "颜色token"
+      ]
+    },
+    {
+      "batch_id": "R15-B77",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L02.md",
+      "files": [
+        "apps/client/src/subpackages/village/village/publish.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L02-D15",
+        "R15-L02-D16"
+      ],
+      "pages": [
+        "subpackages/village/village/publish"
+      ],
+      "axes": [
+        "文案",
+        "字号"
+      ]
+    },
+    {
+      "batch_id": "R15-B78",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L03.md",
+      "files": [
+        "apps/client/src/subpackages/village/village/tag-posts.vue"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L03-D08",
+        "R15-L03-D09",
+        "R15-L03-D10"
+      ],
+      "pages": [
+        "subpackages/village/village/tag-posts"
+      ],
+      "axes": [
+        "颜色token",
+        "文案",
+        "可达性"
+      ]
+    },
+    {
+      "batch_id": "R15-B79",
+      "owner_lane": "D:/6/恋爱小程序/tmp/qa/lanes/R15/R15-L01.md",
+      "files": [
+        "unknown:R15-L01-D17"
+      ],
+      "shared": false,
+      "defects": [
+        "R15-L01-D17"
+      ],
+      "pages": [
+        "pages/home/index"
+      ],
+      "axes": [
+        "字号"
+      ]
+    }
+  ],
+  "ownership": "批次互斥由 files[] 保证；同一文件绝不进两个批次（本文件自证第 2/3 例）"
+}

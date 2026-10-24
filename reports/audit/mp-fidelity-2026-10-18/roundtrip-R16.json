@@ -1,0 +1,30 @@
+{
+  "schema": "qafid-roundtrip-v1",
+  "at": "2026-10-24T03:35:28.686Z",
+  "round": "R16",
+  "dry": false,
+  "verdict": "PASS",
+  "created_id": "418",
+  "fields_same": 5,
+  "fields_total": 5,
+  "client_read": 200,
+  "admin_read": 200,
+  "delete_status": "200",
+  "client_total": [
+    188,
+    188
+  ],
+  "admin_total": [
+    195,
+    195
+  ],
+  "admin_total_delta": 0,
+  "admin_total_note": "后台列表 total 把 status=deleted 的行算在内（R2b 实测）⇒ 等号不是这套接口的承诺",
+  "row_gone": true,
+  "after_row_http": "200",
+  "after_row_status": "deleted",
+  "conserved": true,
+  "torn_down": "yes",
+  "backup": "database/backup/qafid-R16-20261024T033527.sql",
+  "problems": []
+}
