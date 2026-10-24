@@ -430,8 +430,8 @@ const onPhoneLoginGuarded = createButtonGuard(onPhoneLogin, 2000);
  * 体验账号一键登录（登录页「临时体验号」入口）。
  *
  * <p>委托 services/auth.ts 的 loginAsGuest() 调用 POST /v1/auth/guest-login：
- * 后端首次自动创建固定体验账号并签发 JWT，后续复用同一账号（幂等），
- * 无需注册/输入密码即可体验全部功能。</p>
+ * 后端每次调用创建一个独立临时体验账号并签发 JWT（P0-4 访客账号隔离，
+ * 不复用同一账号），无需注册/输入密码即可体验全部功能。</p>
  *
  * <p>错误处理：失败时展示后端返回的具体错误（含入口被配置关闭的场景），
  * 并上报 Sentry（source=login.guest）便于后台监控。</p>

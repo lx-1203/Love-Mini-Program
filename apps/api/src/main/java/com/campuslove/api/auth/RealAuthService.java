@@ -713,12 +713,16 @@ public class RealAuthService implements AuthService {
     /**
      * 体验账号一键登录（临时体验号）。
      *
-     * <p>实现要点（R4-00251 会话隔离重构）：</p>
+     * <p>实现要点（R4-00251 会话隔离重构 + P0-4 访客账号隔离收口）：</p>
      * <ul>
-     *   <li><b>每次登录创建独立临时账号</b>（openid={@code guest:{UUID}} 全局唯一，
+     *   <li><b>每次调用创建独立临时账号</b>（openid={@code guest:{UUID}} 全局唯一，
      *       phone 为空，昵称「体验用户」）：会话身份完全隔离——体验用户的私信/匹配/
      *       点赞数据互不污染，不再共用固定账号（原 13900000000 固定账号方案已废弃，
-     *       该手机号仍处于注册/登录黑名单防占用）</li>
+     *       该手机号仍处于注册/登录黑名单防占用）。
+     *       <b>P0-4</b>：不得「先查库中最近体验号、命中即复用」——那会让不同访客拿到
+     *       同一个 userId 与同一枚 JWT；deviceId 也不构成复用键（无 deviceId→体验号
+     *       持久映射），连续体验所需的演示数据由资料预填与
+     *       {@link GuestDemoDataProvisioner} 按新 userId 灌入</li>
      *   <li>体验账号密码为随机 BCrypt 哈希、无手机号，无法通过手机号+密码登录，
      *       仅体验入口可进入</li>
      *   <li>一键体验：自动预填完整资料（基本资料/校园认证/课表），
@@ -742,20 +746,13 @@ public class RealAuthService implements AuthService {
             log.warn("体验账号登录入口已被配置禁用（app.guest-login.enabled=false）");
             throw new com.campuslove.api.common.OperationForbiddenException(ErrorMessages.TRIAL_LOGIN_DISABLED);
         }
-        // 2026-09-06 稳定体验账号：优先复用最近创建的体验号（体验者每次进入
-        // 都是同一身份，帖子/会话/资料可持续累积，符合「稳定体验账号」需求）；
-        // 仅当无可复用体验号时才走新建流程。
-        User reused = userRepository.findFirstByOpenidStartingWithAndRoleAndStatusOrderByIdDesc(
-                "guest:", "GUEST", "active");
-        if (reused != null) {
-            log.info("体验会话复用既有体验号: userId={}", reused.getId());
-            // provisionGuestProfile 幂等：已有完整资料的账号不会被覆盖
-            provisionGuestProfile(reused);
-            String reusedToken = jwtTokenProvider.generateToken(String.valueOf(reused.getId()));
-            recordOnlineSession(reused.getId(), reusedToken, "guest");
-            recordLoginDevice(reused.getId(), deviceId, "guest", reusedToken);
-            return buildSessionView(reused, reusedToken, "guest");
-        }
+        // 2026-09-06「稳定体验账号」曾在此加入「优先复用最近创建的体验号」分支
+        // （findFirstByOpenidStartingWithAndRoleAndStatusOrderByIdDesc 命中即返回同一
+        // userId/同一枚 JWT）。P0-4 判定其为账号隔离缺陷并摘除：真实库只要存在任意一条
+        // guest 记录，所有访客就会共用同一个账号——资料/帖子/点赞/私信/钱包跨访客互串。
+        // 访客身份按「会话」隔离，不建立 deviceId→体验号的持久映射（P0-4 裁定）；
+        // 体验流程所需数据由 provisionGuestProfile + GuestDemoDataProvisioner 按
+        // userId 为新账号灌入，不靠复用旧账号获得「连续体验」。
         // R4-00251：体验号缺省时创建新临时账号（openid 全局唯一，phone 为空）
         // R4-00252：并发首登/极端碰撞场景捕获 DataIntegrityViolationException（uk_users_openid），
         // 更换新 UUID 重试一次（对齐 registerUser 的 A-34 兜底），避免返回 500。

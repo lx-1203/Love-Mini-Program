@@ -378,8 +378,8 @@ export async function registerUser(
 /**
  * 体验账号一键登录（登录页「一键体验全部功能」临时号）。
  *
- * <p>调用 {@code POST /v1/auth/guest-login}：后端首次调用自动创建固定体验账号并签发 JWT，
- * 后续复用同一账号（幂等），无需注册/输入密码即可体验全部功能。</p>
+ * <p>调用 {@code POST /v1/auth/guest-login}：后端每次调用创建一个独立临时体验账号并签发
+ * JWT（P0-4 访客账号隔离，不再复用同一账号），无需注册/输入密码即可体验全部功能。</p>
  *
  * <p>不含 Mock fallback——后端不可达时抛出错误,由调用方提示。
  * 商业化上线前后端若关闭体验入口（app.guest-login.enabled=false），

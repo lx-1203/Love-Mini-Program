@@ -104,15 +104,17 @@ public interface AuthService {
     /**
      * 体验账号一键登录（临时体验号）。
      *
-     * <p>用于登录页「一键体验全部功能」：首次调用自动创建固定体验账号，
-     * 后续复用该账号（幂等），并直接签发 JWT 会话，无需注册/输入密码。</p>
+     * <p>用于登录页「一键体验全部功能」：每次调用创建一个独立临时体验账号并直接签发
+     * JWT 会话，无需注册/输入密码。P0-4 访客账号隔离：real 档不得复用库中既有体验号
+     * （否则不同访客共用同一 userId，资料/帖子/点赞/私信/钱包互串），deviceId 也
+     * 不构成复用键；mock 档仍返回固定演示会话。</p>
      *
      * <p>安全说明：体验账号使用随机密码（不可通过手机号密码登录），
      * 上线前可通过配置 {@code app.guest-login.enabled=false} 关闭该入口。</p>
      *
      * @param deviceId 客户端设备标识（可空，登录成功后记录到设备会话表；空则 "unknown"）
      * @return 用户会话视图(包含 JWT 令牌)
-     * @throws IllegalStateException 体验登录入口被禁用时抛出
+     * @throws com.campuslove.api.common.OperationForbiddenException 体验登录入口被禁用时抛出（403）
      */
     UserSessionView loginAsGuest(String deviceId);
 
