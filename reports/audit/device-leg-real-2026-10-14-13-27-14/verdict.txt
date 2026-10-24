@@ -1,0 +1,42 @@
+
+===== 载具 real · apps/client/dist/build/mp-weixin-real · 出帧目录 reports/audit/device-leg-real-2026-10-14-13-27-14 =====
+PASS  载具自证 MODE 与 --band 一致（跑错档位=整条腿白跑） — MODE=real --band=real apiMode=real base=http://127.0.0.1:8080/api
+PASS  real 档指向本机后端（不是 8081/占位符） — http://127.0.0.1:8080/api
+PASS  自动化通道可用（evaluate 有答案） — 2
+PASS  演示学员号能铸出真票（real 后端 phone-login） — http=200 userId=100166
+   清掉设备上可能残留的旧会话（游客态起步，避免拿上一轮的票冒充这一轮）
+PASS  设备会话=刚铸的那张真票（不是 mock 会话） — boot=boot-ok 设备侧=logged-in userId=100166 期望 userId=100166
+PASS  01-home 路由落在 /pages/home/index — routeStack=pages/home/index
+PASS  01-home 出帧已写出且非空帧（>=6KB） — 13097B 193x413
+PASS  02-nearby 路由落在 /pages/nearby/index — routeStack=pages/nearby/index
+PASS  02-nearby 出帧已写出且非空帧（>=6KB） — 12501B 193x413
+PASS  03-discover 路由落在 /pages/discover/index — routeStack=pages/discover/index
+PASS  03-discover 出帧已写出且非空帧（>=6KB） — 12342B 193x413
+PASS  04-messages 路由落在 /pages/messages/index — routeStack=pages/messages/index
+PASS  04-messages 出帧已写出且非空帧（>=6KB） — 6649B 193x413
+PASS  05-profile 路由落在 /pages/profile/index — routeStack=pages/profile/index
+PASS  05-profile 出帧已写出且非空帧（>=6KB） — 9659B 193x413
+PASS  06-village-feed 路由落在 /subpackages/village/village/index — routeStack=subpackages/village/village/index
+PASS  06-village-feed 出帧已写出且非空帧（>=6KB） — 9461B 193x413
+PASS  设备侧 village store 真收到帖子列表（>=5 条） — n=20 探针={"n":20,"id":"146","title":"汉服出行日，路上好多同袍","loading":false}
+PASS  设备首条卡片能在后台按同一个 ID 读到（数据同源，不是本地假数据） — id=146 后台 http=200（mock 档此条应读不到）
+   卡片标题读数=「汉服出行日，路上好多同袍」
+FAIL  超管票可铸（公告由后台侧发出） — http=409 SUPER_PASSWORD 长度=18 body={"error":"Conflict","message":"重复请求已被拦截，请勿使用相同的 Idempotency-Key","status":409,"code":"IDEMPOTENT_CONFLICT","traceId":"e57541cefc5f45e794d66c35e563b52e
+   toast 钩子=hooked
+PASS  发布页正文可输入（真 textarea 被写进去了） — [object Object]
+PASS  输入框回读含 marker（内容真进了表单，不是只写了变量） — 回读=设备腿验收 DEVSYNC1791984434312 这条帖子是小程序真机发出来的，后台应当按同一个 ID 读到它。
+PASS  替身选图用的本地图真实存在
+PASS  选图替身装得上（wx.chooseImage 可覆盖） — mocked 3
+FAIL  点加图后 3 张图进了九宫格（选图结果被页面自己的 images 收到） — n=0 toast=[] 样本=[]
+   [deviation] 设备侧没凑齐 3 张图：本腿降级为纯文字帖继续跑同步断言，图片链路另由后台上传腿与浏览器门覆盖
+   提交后路由=subpackages/village/village/publish toast=["图片上传失败，请重试"]
+FAIL  设备发的帖子 30 秒内在后台列表出现（同一条记录） — 后台按 marker 查不到 toast=["图片上传失败，请重试"]
+FAIL  后台读到的这条与设备发的一致（正文前缀=设备输入、作者为发帖学员） — 无记录
+PASS  同一把尺子量不到一个不存在的 marker（断言不是恒真） — total=0
+PASS  设备侧确有打到本机后端的请求（真链路，不是内存里的假数据） — 命中 36 行，落盘 simulator-network.log
+PASS  设备侧没有失败的接口请求 — 0 行
+PASS  设备控制台没有 error 级输出 — 0 行
+
+出帧目录 reports/audit/device-leg-real-2026-10-14-13-27-14（6 页 + 官方号 + 发帖后）
+
+失败 4 项

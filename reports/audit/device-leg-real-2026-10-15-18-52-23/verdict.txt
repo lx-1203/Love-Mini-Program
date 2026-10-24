@@ -1,0 +1,49 @@
+
+===== 载具 real · apps/client/dist/build/mp-weixin-real · 出帧目录 reports/audit/device-leg-real-2026-10-15-18-52-23 =====
+PASS  载具自证 MODE 与 --band 一致（跑错档位=整条腿白跑） — MODE=real VITE_API_MODE=real --band=real base=http://127.0.0.1:8080/api
+PASS  real 档指向本机后端（不是 8081/占位符） — http://127.0.0.1:8080/api
+   覆盖率门 band=real@f0677920（尺=D:\6\恋爱小程序\apps\client\dist\build\mp-weixin-real\config\env.js 内容 sha8，同源 artifact-band.mjs:22）
+PASS  自动化通道可用（evaluate 有答案） — 2
+PASS  演示学员号能铸出真票（real 后端 phone-login） — http=200 userId=100166
+   清掉设备上可能残留的旧会话（游客态起步，避免拿上一轮的票冒充这一轮）
+PASS  设备会话=刚铸的那张真票（mock 载具做不到，这条在 mock 档必须反过来） — boot=boot-ok 设备侧=logged-in userId=100166 真票 userId=100166
+PASS  学员号可用产品接口选定校区（PUT /profile/campus） — http=200 body={"city":"北京","campusName":"北京大学","department":"计算机学院","verificationStatus":"pending"}
+UNVERIFIED-INSTRUMENT  圈层树上有这个校区节点（没有就只能落未归属，断言要如实说明） — campus=北京大学 节点=-
+UNVERIFIED-INSTRUMENT  选定校区后学员已挂上该校圈层节点（users.circle_path 由后端回填，不是脚本刷的） — 命中=false circlePath=- 期望=-
+PASS  01-home 路由落在 /pages/home/index — routeStack=pages/home/index（首读=，等稳后才落上 ⇒ 首读不可信这条又中一次）
+PASS  01-home 出帧已写出且非空帧（>=6KB） — 13369B 192x413
+PASS  02-nearby 路由落在 /pages/nearby/index — routeStack=pages/nearby/index（首读=，等稳后才落上 ⇒ 首读不可信这条又中一次）
+PASS  02-nearby 出帧已写出且非空帧（>=6KB） — 12702B 192x413
+PASS  03-discover 路由落在 /pages/discover/index — routeStack=pages/discover/index（首读=，等稳后才落上 ⇒ 首读不可信这条又中一次）
+PASS  03-discover 出帧已写出且非空帧（>=6KB） — 14706B 192x413
+PASS  04-messages 路由落在 /pages/messages/index — routeStack=pages/messages/index（首读=，等稳后才落上 ⇒ 首读不可信这条又中一次）
+PASS  04-messages 出帧已写出且非空帧（>=6KB） — 6718B 192x413
+PASS  05-profile 路由落在 /pages/profile/index — routeStack=pages/profile/index
+PASS  05-profile 出帧已写出且非空帧（>=6KB） — 9990B 192x413
+PASS  06-village-feed 路由落在 /subpackages/village/village/index — routeStack=subpackages/village/village/index（首读=，等稳后才落上 ⇒ 首读不可信这条又中一次）
+PASS  06-village-feed 出帧已写出且非空帧（>=6KB） — 9932B 192x413
+PASS  设备侧 village store 真收到帖子列表（>=5 条） — n=20 探针={"n":20,"id":"146","title":"汉服出行日，路上好多同袍","loading":false}
+FAIL  设备首条卡片能在后台按同一个 ID 读到（数据同源，不是本地假数据） — id=146 后台 http=401（mock 档此条应读不到）
+   卡片标题读数=「汉服出行日，路上好多同袍」
+FAIL  超管票可铸（公告由后台侧发出） — http=400 SUPER_PASSWORD 长度=0 body={"error":"Validation Failed","message":"password: 不能为空","status":400}
+   toast 钩子=hooked
+PASS  发布页正文可输入（真 textarea 被写进去了） — [object Object]
+PASS  输入框回读含 marker（内容真进了表单，不是只写了变量） — 回读=设备腿验收 DEVSYNC1792090343591 这条帖子是小程序真机发出来的，后台应当按同一个 ID 读到它。
+FAIL  能从后台图片资产台账取到一张真图当相册素材（不造空壳图） — key=台账里没有通过的图 台账 size=-1
+UNVERIFIED-INSTRUMENT  学员票读这张图：200 且字节数与台账一致（不是错误体的伪成功） — http=0 实读=-1B 台账=-1B url=…
+FAIL  3 张真图已写进模拟器本地目录，字节数与服务端逐张一致 — kick=kicked 期望=-1B 读数={"files":["devleg-1792090343591-1.jpg=MISSING","devleg-1792090343591-2.jpg=MISSING","devleg-1792090343591-3.jpg=MISSING"],"w":["devleg-1792090343591-1.jpg:RFAIL{\"errno\":1001,\"errMsg\":\"request:fail invalid url \\\"\\
+PASS  选图替身装得上（wx.chooseImage 可覆盖） — mocked 3
+PASS  点加图后 3 张图进了九宫格（页面自己的 images 收到选图结果） — top={"k":"y","n":3,"sample":["[object Object]","[object Object]"]} 数组键=["uS:0","y:3"] toast=[]
+   提交后路由=subpackages/village/village/publish toast=["图片上传失败，请重试"]
+FAIL  设备发的帖子 30 秒内在后台列表出现（同一条记录） — 后台按 marker 查不到 toast=["图片上传失败，请重试"]
+FAIL  后台读到的这条与设备发的一致（正文前缀=设备输入、作者为发帖学员） — 无记录
+FAIL  同一把尺子量不到一个不存在的 marker（断言不是恒真） — total=-1
+PASS  设备侧确有打到本机后端的请求（真链路，不是内存里的假数据） — 命中 34 行，落盘 simulator-network.log
+PASS  设备侧没有失败的接口请求 — 0 行
+PASS  设备控制台没有 error 级输出 — 0 行
+   设备会话复原=boot-ok 最终路由=subpackages/village/village/publish
+
+出帧目录 reports/audit/device-leg-real-2026-10-15-18-52-23（6 页 + 官方号 + 发帖后）
+
+失败 7 项｜未证实(仪表) 3 项
+DEVICELEG_RESULT=FAIL pass=26 fail=7 unverified=3 dir=reports/audit/round-7/exec-v38-devicleg band=real@f0677920

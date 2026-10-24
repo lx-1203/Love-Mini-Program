@@ -1,0 +1,40 @@
+{
+ "round": "expired-reshoot-r1",
+ "gitSha": "8edb5bc6",
+ "identity": "guest",
+ "identities": [
+  "guest"
+ ],
+ "project": "apps/client/dist/build/mp-weixin-real",
+ "band": "real@f0677920",
+ "loginVerify": "logged-in userId=100151",
+ "updatedAt": "2026-10-17T13:08:25.208Z",
+ "admissible": true,
+ "outcome": "judged",
+ "runner": "scripts/qa/r-exec-ws.mjs（WS 取证 + 桥出帧，完整跑完）",
+ "results": [
+  {
+   "suite": "C-次要19",
+   "manifest": "次要19",
+   "id": "LK04",
+   "page": "subpackages/discover-extra/likes/index",
+   "tier": "critical",
+   "band": "real@f0677920",
+   "identity": "guest",
+   "loginVerify": "logged-in userId=100151",
+   "sessionSource": "guest-login",
+   "requiresReal": true,
+   "title": "解锁全部：封存态入口隐藏（不可达前置确证）与放行后扣费/幂等拆两判定点",
+   "status": "SKIPPED",
+   "observed": "top=subpackages/discover-extra/likes/index | pre: .likes-unlock-bar__btn:absent | tap-skipped",
+   "missingEvidence": [],
+   "failureReason": "目标元素 .likes-unlock-bar__btn 当前不在页上（可能要先展开/滚动/登录态）⇒ 不盲点，待补前置态",
+   "route": "subpackages/discover-extra/likes/index",
+   "toast": "",
+   "console": "",
+   "evidence": "",
+   "durationMs": 0,
+   "transport": "ws+cli-shot"
+  }
+ ]
+}

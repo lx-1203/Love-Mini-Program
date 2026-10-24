@@ -1,0 +1,63 @@
+{
+ "round": "expired-reshoot-r1",
+ "gitSha": "a79771ae",
+ "identity": "A",
+ "identities": [
+  "A"
+ ],
+ "project": "apps/client/dist/build/mp-weixin-real",
+ "band": "real@f0677920",
+ "loginVerify": "logged-in userId=100158",
+ "updatedAt": "2026-10-17T13:10:36.610Z",
+ "admissible": true,
+ "outcome": "judged",
+ "runner": "scripts/qa/r-exec-ws.mjs（WS 取证 + 桥出帧，完整跑完）",
+ "results": [
+  {
+   "suite": "C-次要22",
+   "manifest": "次要22",
+   "id": "PC06",
+   "page": "subpackages/vip/promo-code",
+   "tier": "critical",
+   "band": "real@f0677920",
+   "identity": "A",
+   "loginVerify": "logged-in userId=100158",
+   "sessionSource": "phone-login",
+   "requiresReal": true,
+   "title": "校验返回不可用（available=false）：展示原因、兑换按钮不得出现、结果卡走 invalid 样式",
+   "status": "FAILED",
+   "observed": "top=pages/profile/index ≠ subpackages/vip/promo-code | dom: .footer__btn:absent | ws-route+ws-probe",
+   "missingEvidence": [],
+   "failureReason": "落在别的页（页内守卫或路由重定向），须人判（跑 scripts/qa/triage-cold-entry.mjs 可定位到具体守卫行）",
+   "route": "pages/profile/index",
+   "toast": "",
+   "console": "",
+   "evidence": "",
+   "durationMs": 0,
+   "transport": "ws+cli-shot"
+  },
+  {
+   "suite": "C-次要22",
+   "manifest": "次要22",
+   "id": "VB10",
+   "page": "subpackages/vip/bills",
+   "tier": "normal",
+   "band": "real@f0677920",
+   "identity": "A",
+   "loginVerify": "logged-in userId=100158",
+   "sessionSource": "phone-login",
+   "requiresReal": true,
+   "title": "空账单与长列表结构：EmptyState 文案/类型正确、无重复卡片、key 稳定不串数据",
+   "status": "FAILED",
+   "observed": "top=pages/profile/index ≠ subpackages/vip/bills | dom: (本条没点名类名) | ws-route+ws-probe",
+   "missingEvidence": [],
+   "failureReason": "落在别的页（页内守卫或路由重定向），须人判（跑 scripts/qa/triage-cold-entry.mjs 可定位到具体守卫行）",
+   "route": "pages/profile/index",
+   "toast": "",
+   "console": "",
+   "evidence": "",
+   "durationMs": 0,
+   "transport": "ws+cli-shot"
+  }
+ ]
+}

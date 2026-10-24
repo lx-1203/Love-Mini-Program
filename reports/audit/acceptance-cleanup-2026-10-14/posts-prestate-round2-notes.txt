@@ -1,0 +1,2 @@
+-- 第二轮清理（本轮写门/浏览器门新产的 3 条）：恢复=把 status 改回 active
+-- 这些行在清理前都是 status=active / audit_status=approved
