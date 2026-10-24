@@ -61,6 +61,8 @@ class BillingServicePurchaseServerPricingTest {
     private WalletService walletService;
     private PromoCodeService promoCodeService;
     private BillingService service;
+    /** 被测服务共用的目录实例（生产由容器注入同一颗 bean，这里显式传入同一实例） */
+    private VipPlanCatalog catalog;
 
     @BeforeEach
     void setUp() {
@@ -68,8 +70,9 @@ class BillingServicePurchaseServerPricingTest {
         PaymentCallbackLogRepository callbackLogRepository = mock(PaymentCallbackLogRepository.class);
         walletService = mock(WalletService.class);
         promoCodeService = mock(PromoCodeService.class);
+        catalog = new VipPlanCatalog();
 
-        service = new BillingService(vipBillRepository, callbackLogRepository);
+        service = new BillingService(vipBillRepository, callbackLogRepository, catalog);
         ReflectionTestUtils.setField(service, "walletService", walletService);
         ReflectionTestUtils.setField(service, "promoCodeService", promoCodeService);
 
@@ -248,11 +251,15 @@ class BillingServicePurchaseServerPricingTest {
     @Test
     @DisplayName("已下架套餐（active=false）拒绝成交：不扣钱包、不写账单")
     void inactivePlanIsRejectedWithoutDeductingWallet() {
-        ReflectionTestUtils.setField(service, "planCatalog", new VipPlanCatalog(Map.of(
-                "monthly", new VipPlanCatalog.VipPlanDef("monthly", "月卡", 1800, 30, false))));
+        BillingService offlineService = new BillingService(
+                vipBillRepository, mock(PaymentCallbackLogRepository.class),
+                new VipPlanCatalog(Map.of(
+                        "monthly", new VipPlanCatalog.VipPlanDef("monthly", "月卡", 1800, 30, false))));
+        ReflectionTestUtils.setField(offlineService, "walletService", walletService);
+        ReflectionTestUtils.setField(offlineService, "promoCodeService", promoCodeService);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> service.purchaseVip(USER_ID, "monthly", null));
+                () -> offlineService.purchaseVip(USER_ID, "monthly", null));
 
         assertEquals("套餐已下架: monthly", ex.getMessage());
         verifyNoInteractions(walletService);
@@ -262,29 +269,59 @@ class BillingServicePurchaseServerPricingTest {
     /* ==================== 5. 目录唯一真相源 + 失败回滚 ==================== */
 
     @Test
-    @DisplayName("钱包购买与微信下单共用同一份套餐目录实例（不存在第二套定价）")
+    @DisplayName("钱包购买与微信下单共用注入的同一目录实例（不存在第二套定价）")
     void walletAndWechatOrderPathsShareOneCatalog() {
+        // 两条链路注入同一颗目录实例；真实容器装配的唯一性由
+        // VipPlanCatalogContainerWiringTest 断言，本用例断言「链路只认注入的目录，
+        // 不再存在静态回退的第二份常量」。
         VipOrderService orderService = new VipOrderService(
                 mock(com.campuslove.api.repository.VipOrderRepository.class),
                 mock(BillingService.class),
-                mock(PaymentCallbackLogRepository.class));
+                mock(PaymentCallbackLogRepository.class),
+                catalog);
 
-        // 同一条目录：两条链路都指向生产默认目录实例（VipPlanCatalog 内部常量是唯一来源）
-        assertSame(VipPlanCatalog.defaultCatalog(), ReflectionTestUtils.getField(service, "planCatalog"));
-        assertSame(VipPlanCatalog.defaultCatalog(), ReflectionTestUtils.getField(orderService, "planCatalog"));
+        assertSame(catalog, ReflectionTestUtils.getField(service, "planCatalog"));
+        assertSame(catalog, ReflectionTestUtils.getField(orderService, "planCatalog"));
 
-        VipPlanCatalog shared = VipPlanCatalog.defaultCatalog();
-        assertEquals(Set.of("monthly", "quarterly", "yearly"), shared.purchasablePlanIds());
-        assertEquals(1800, shared.requirePurchasable("monthly").priceCents());
-        assertEquals(30, shared.requirePurchasable("monthly").days());
-        assertEquals(4800, shared.requirePurchasable("quarterly").priceCents());
-        assertEquals(90, shared.requirePurchasable("quarterly").days());
-        assertEquals(15800, shared.requirePurchasable("yearly").priceCents());
-        assertEquals(365, shared.requirePurchasable("yearly").days());
+        assertEquals(1800, catalog.requirePurchasable("monthly").priceCents());
+        assertEquals(30, catalog.requirePurchasable("monthly").days());
+        assertEquals(4800, catalog.requirePurchasable("quarterly").priceCents());
+        assertEquals(90, catalog.requirePurchasable("quarterly").days());
+        assertEquals(15800, catalog.requirePurchasable("yearly").priceCents());
+        assertEquals(365, catalog.requirePurchasable("yearly").days());
 
         service.purchaseVip(USER_ID, "yearly", null);
         assertEquals(15800L, deductedCents());
         assertEquals(365, grantedDays(savedBill()));
+    }
+
+    @Test
+    @DisplayName("三条资金链路都显式声明目录依赖：无目录即无法构造（杜绝静默回退）")
+    void allMoneyPathsDeclareCatalogDependency() {
+        assertTrue(parameterTypes(BillingService.class).contains(VipPlanCatalog.class),
+                "BillingService 必须显式声明目录依赖");
+        assertTrue(parameterTypes(VipOrderService.class).contains(VipPlanCatalog.class),
+                "VipOrderService 必须显式声明目录依赖");
+        assertTrue(parameterTypes(AutoRenewService.class).contains(VipPlanCatalog.class),
+                "AutoRenewService 必须显式声明目录依赖（续费定价与购买同源）");
+
+        // 目录类不再暴露「生产默认实例」这类静态回退入口（回退会让容器 bean 与常量并存）
+        assertTrue(java.util.Arrays.stream(VipPlanCatalog.class.getDeclaredMethods())
+                        .noneMatch(m -> java.lang.reflect.Modifier.isStatic(m.getModifiers())),
+                "VipPlanCatalog 不应再有静态方法（defaultCatalog 一类的第二份目录）");
+
+        // 目录实例不可变：外部改动目录 Map 也影响不到已构造的目录
+        Map<String, VipPlanCatalog.VipPlanDef> mutable = new java.util.HashMap<>();
+        mutable.put("monthly", new VipPlanCatalog.VipPlanDef("monthly", "月卡", 1800, 30, true));
+        VipPlanCatalog defensive = new VipPlanCatalog(mutable);
+        mutable.remove("monthly");
+        assertEquals(1800, defensive.requirePurchasable("monthly").priceCents());
+    }
+
+    private static List<Class<?>> parameterTypes(Class<?> type) {
+        return java.util.Arrays.stream(type.getConstructors())
+                .flatMap(c -> java.util.Arrays.stream(c.getParameterTypes()))
+                .toList();
     }
 
     @Test

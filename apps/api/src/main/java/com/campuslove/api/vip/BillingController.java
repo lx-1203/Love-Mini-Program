@@ -268,11 +268,13 @@ public class BillingController {
  * 现两字段已从契约移除，套餐名称/价格/时长由 {@link VipPlanCatalog} 权威给出；
  * 旧客户端继续上送这两个字段时会被 Jackson 忽略（未知属性不失败）。</p>
  *
- * @param planId    套餐 ID（必填；非法或已下架一律业务错误，不产生扣款）
+ * @param planId    套餐 ID（必填，最长 32 字符，与 {@code vip_bills.plan_id} 列宽一致；
+ *                  非法或已下架一律业务错误，不产生扣款）
  * @param promoCode 优惠码（可空；折扣以服务端原价计算）
  */
 record VipPurchaseRequest(
-        @NotBlank(message = ErrorMessages.PLAN_ID_REQUIRED) @Size(max = 64) String planId,
+        @NotBlank(message = ErrorMessages.PLAN_ID_REQUIRED)
+        @Size(max = 32, message = ErrorMessages.PLAN_ID_TOO_LONG) String planId,
         @Size(max = 64) String promoCode
 ) {
 }

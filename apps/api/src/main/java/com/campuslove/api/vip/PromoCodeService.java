@@ -83,7 +83,45 @@ public class PromoCodeService {
     }
 
     /**
+     * 兑换预览（公开 {@code POST /api/v1/vip/promo-codes/redeem} 端点专用，P0-3 B）。
+     *
+     * <p><b>为什么预览而非消耗</b>：唯一真实扣钱的优惠码消费方是钱包购买
+     * （{@link BillingService#purchaseVip} 在同一事务内调用 {@link #redeem}）。
+     * 客户端调用本端点的只有「优惠码」独立页
+     * （{@code apps/client/src/subpackages/vip/promo-code.vue}：手工输入订单金额 →
+     * 校验 → 兑换 → 弹窗展示折扣），它既不创建订单也不扣款，全客户端也没有
+     * 任何 {@code /vip/bills/purchase} 调用；若这里消耗，单次可用码会被直接吃掉，
+     * 用户此后拿同一个码购买必然「已达使用次数上限」——码耗尽而资金事件为零。</p>
+     *
+     * <p>「购买时复用已存在的用量记录」不可行：{@code promo_code_usages}
+     * 没有任何标记「已被某笔购买消费」的列（本次禁止新增迁移），
+     * 复用会让同一份折扣被套用到无限次购买，比现状更危险。</p>
+     *
+     * <p>因此本方法与 {@link #validate} 同口径校验（状态/有效期/剩余次数/单用户上限）、
+     * 同一事务只读，<b>零副作用</b>：不扣 {@code remaining_uses}、不累加
+     * {@code used_count}、不写 {@code promo_code_usages}；返回体保持端点原契约
+     * （{@link RedeemResultView}），不新造协议。</p>
+     *
+     * @param code       优惠码字符串
+     * @param userId     当前用户 ID
+     * @param baseAmount 计算折扣预览的基础金额（分）
+     * @return 兑换预览视图（折扣与折后金额，未发生任何消耗）
+     * @throws IllegalArgumentException 优惠码不存在/已禁用/已过期/已用完/已达单用户上限时抛出
+     */
+    @Transactional(readOnly = true)
+    public RedeemResultView previewRedeem(String code, Long userId, Integer baseAmount) {
+        ValidateResultView preview = validate(code, userId, baseAmount);
+        return new RedeemResultView(preview.promoCodeId(), preview.code(),
+                preview.discountAmount(), preview.finalAmount());
+    }
+
+    /**
      * 兑换优惠码（消耗使用次数）。
+     *
+     * <p><b>唯一生产消费方</b>：{@link BillingService#purchaseVip}（购买事务内）。
+     * P0-3 B 起，公开端点不再调用本方法（改为 {@link #previewRedeem}），
+     * 使「消耗一次」与「成交一笔」在账本上严格一一对应；
+     * 传入的 baseAmount 也由此恒为服务端目录原价，客户端上送金额不再参与折扣。</p>
      *
      * <p>Task 12.4（REAUDIT-REPORT-100+ 编号 41）：并发安全改造。</p>
      *

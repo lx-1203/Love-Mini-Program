@@ -34,6 +34,7 @@ import com.campuslove.api.repository.VipOrderRepository;
 import com.campuslove.api.wallet.WalletService;
 import com.campuslove.api.wxpay.WxPayModels;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -286,7 +287,7 @@ class Task12ConcurrencyTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         VipOrderService service = new VipOrderService(
-                vipOrderRepository, billing, paymentCallbackLogRepository);
+                vipOrderRepository, billing, paymentCallbackLogRepository, new VipPlanCatalog());
 
         // 支付结果通知载荷（成功，金额与订单一致）
         WxPayModels.WxPayTransaction tx = new WxPayModels.WxPayTransaction(
@@ -401,10 +402,28 @@ class Task12ConcurrencyTest {
                 any(String.class), any(String.class)))
                 .thenReturn(0L);
 
+        // P0-3 A：续费按「订阅账单 planId → 服务端目录」定价，
+        // 故并发用例必须给出一笔 SUCCESS 订阅账单（月卡目录价 1800 分/30 天）
+        VipBill subscription = new VipBill();
+        subscription.setId(800L);
+        subscription.setUserId(userId);
+        subscription.setPlanId("monthly");
+        subscription.setPlanName("月卡");
+        subscription.setAmount(1800);
+        subscription.setOriginalAmount(1800);
+        subscription.setType("SUBSCRIBE");
+        subscription.setStatus("SUCCESS");
+        subscription.setPeriodStart(LocalDateTime.now().minusDays(1));
+        subscription.setPeriodEnd(LocalDateTime.now().plusDays(3));
+        lenient().when(vipBillRepository.findByUserIdOrderByCreatedAtDesc(userId))
+                .thenReturn(List.of(subscription));
+
         // 构造 AutoRenewService（Task 2：新增 walletService 依赖；
-        // R4-00316：新增 vipBillRepository 依赖——构造器签名 5 参）
+        // R4-00316：新增 vipBillRepository 依赖——构造器签名 5 参；
+        // P0-3 A：新增 VipPlanCatalog 依赖——续费定价与时长唯一来源）
         AutoRenewService service = new AutoRenewService(
-                userRepository, vipBillingLogRepository, vipBillRepository, redissonClient, walletService);
+                userRepository, vipBillingLogRepository, vipBillRepository, redissonClient, walletService,
+                new VipPlanCatalog());
 
         // Act：10 个线程并发触发续费
         AtomicInteger successCount = new AtomicInteger(0);

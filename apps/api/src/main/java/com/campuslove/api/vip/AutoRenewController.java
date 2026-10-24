@@ -1,5 +1,6 @@
 package com.campuslove.api.vip;
 
+import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.config.FeatureSwitch;
 import com.campuslove.api.config.FeatureSwitchKeys;
 import com.campuslove.api.config.SecurityUtils;
@@ -103,9 +104,14 @@ public class AutoRenewController {
 /**
  * 开启自动续费请求体。
  *
- * @param planId 套餐 ID（可选，用于将来绑定支付渠道等扩展）
+ * <p>P0-3 A：{@code planId} 为必填且必须是服务端目录内的在售套餐
+ * （月/季/年）——历史注释写作「可选，用于将来扩展」，而实际 {@code @NotBlank}
+ * 必填、且服务层此前不校验目录，客户端可传任意 planId 建立续费意图。</p>
+ *
+ * @param planId 套餐 ID（必填，最长 32 字符，须命中 {@link VipPlanCatalog}）
  */
 record EnableAutoRenewRequest(
-        @NotBlank @Size(max = 64) String planId
+        @NotBlank(message = ErrorMessages.PLAN_ID_REQUIRED)
+        @Size(max = 32, message = ErrorMessages.PLAN_ID_TOO_LONG) String planId
 ) {
 }

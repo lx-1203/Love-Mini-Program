@@ -123,6 +123,12 @@ public final class ErrorMessages {
     /** 套餐 ID 不能为空 */
     public static final String PLAN_ID_REQUIRED = "套餐 ID 不能为空";
 
+    /**
+     * 套餐 ID 超长（P0-3：与 {@code vip_bills.plan_id} / {@code vip_orders.plan_id}
+     * 列宽 32 对齐，契约层即拒绝，不进业务与数据库）。
+     */
+    public static final String PLAN_ID_TOO_LONG = "套餐 ID 长度不能超过 32 个字符";
+
     /** 规则 ID 不能为空 */
     public static final String RULE_ID_REQUIRED = "规则 ID 不能为空";
 
@@ -335,9 +341,6 @@ public final class ErrorMessages {
 
     /** 签名不能为空 */
     public static final String SIGNATURE_REQUIRED = "签名不能为空";
-
-    /** 套餐价格不能为负数 */
-    public static final String PLAN_PRICE_NOT_NEGATIVE = "套餐价格不能为负数";
 
     // ============ 认证/登录 ============
     /** 微信登录凭证无效，请重新登录 */

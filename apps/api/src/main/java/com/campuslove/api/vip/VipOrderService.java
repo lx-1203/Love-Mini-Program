@@ -75,11 +75,11 @@ public class VipOrderService {
      * 进程内常量，读取零远程 IO，可在下单事务内安全调用）。
      *
      * <p>P0-3：目录常量由本类私有 {@code PLAN_CATALOG} 迁出至 {@link VipPlanCatalog}，
-     * 使钱包购买链路（{@code BillingService#purchaseVip}）与微信支付下单链路共用
-     * 同一份价格/时长，避免两处各自维护定价。</p>
+     * 使钱包购买链路（{@code BillingService#purchaseVip}）、微信支付下单链路与
+     * 自动续费链路共用同一份价格/时长。构造器注入容器里唯一的目录 bean，
+     * 不提供静态回退（缺失即启动失败）。</p>
      */
-    @Autowired(required = false)
-    private VipPlanCatalog planCatalog = VipPlanCatalog.defaultCatalog();
+    private final VipPlanCatalog planCatalog;
 
     /** 订单状态机合法迁移表（终点态 CLOSED/FAILED/REFUNDED 无出边） */
     private static final Map<String, Set<String>> ALLOWED_TRANSITIONS = Map.of(
@@ -110,10 +110,12 @@ public class VipOrderService {
 
     public VipOrderService(VipOrderRepository vipOrderRepository,
                            BillingService billingService,
-                           PaymentCallbackLogRepository paymentCallbackLogRepository) {
+                           PaymentCallbackLogRepository paymentCallbackLogRepository,
+                           VipPlanCatalog planCatalog) {
         this.vipOrderRepository = vipOrderRepository;
         this.billingService = billingService;
         this.paymentCallbackLogRepository = paymentCallbackLogRepository;
+        this.planCatalog = planCatalog;
     }
 
     /* ==================== 下单 ==================== */

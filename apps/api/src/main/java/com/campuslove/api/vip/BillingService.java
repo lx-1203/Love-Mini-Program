@@ -60,17 +60,20 @@ public class BillingService {
     private WalletService walletService;
 
     /**
-     * VIP 套餐目录（P0-3：服务端权威定价与时长，与微信支付下单链路同源）。
-     * 字段初始化为生产默认目录，保证非 Spring 上下文（单测直接 new）同样走权威定价；
-     * required=false 注入后由容器实例接管。
+     * VIP 套餐目录（P0-3：服务端权威定价与时长，与微信支付下单/自动续费链路同源）。
+     *
+     * <p>构造器注入容器里唯一的目录 bean——不再有 {@code required=false} 字段
+     * 与静态回退实例：资金链路缺少目录时必须启动失败（fail-fast），
+     * 而不是悄悄用第二份常量继续定价。</p>
      */
-    @Autowired(required = false)
-    private VipPlanCatalog planCatalog = VipPlanCatalog.defaultCatalog();
+    private final VipPlanCatalog planCatalog;
 
     public BillingService(VipBillRepository vipBillRepository,
-                          PaymentCallbackLogRepository paymentCallbackLogRepository) {
+                          PaymentCallbackLogRepository paymentCallbackLogRepository,
+                          VipPlanCatalog planCatalog) {
         this.vipBillRepository = vipBillRepository;
         this.paymentCallbackLogRepository = paymentCallbackLogRepository;
+        this.planCatalog = planCatalog;
     }
 
     /**

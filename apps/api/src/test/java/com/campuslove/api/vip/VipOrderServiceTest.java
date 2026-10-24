@@ -56,7 +56,8 @@ class VipOrderServiceTest {
     @BeforeEach
     void setUp() {
         billingService = mock(BillingService.class);
-        service = new VipOrderService(vipOrderRepository, billingService, paymentCallbackLogRepository);
+        service = new VipOrderService(vipOrderRepository, billingService, paymentCallbackLogRepository,
+                new VipPlanCatalog());
         lenient().when(paymentCallbackLogRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
     }
 
