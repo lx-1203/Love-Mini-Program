@@ -311,6 +311,8 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   // 两条都只读（一条 HTTP+fs、一条全程 SELECT），不取模拟器租约、不写库 ⇒ 放并发段成立。
   // 超时两侧取同值 120 s：实测 6 桶 166 件 1.7 s、11 桶 1052 件约 10 s；比需求小的上限会读成假红。
   { name: "后端资产覆盖与同字节 verify-app-assets-coverage", args: ["scripts/qa/verify-app-assets-coverage.mjs", "--base", "http://127.0.0.1:8080"], timeoutMs: 120000 },
+  { name: "包内素材引用对账 verify-static-refs", args: ["scripts/qa/verify-static-refs.mjs"], timeoutMs: 60000 },
+  { name: "包内素材引用对账自测 verify-static-refs-selftest", args: ["scripts/qa/verify-static-refs.mjs", "--self-test"], timeoutMs: 60000 },
   { name: "用户可见文案卫生 verify-data-hygiene", args: ["scripts/qa/verify-data-hygiene.mjs"], timeoutMs: 120000 },
   // 本轮登记 10 条孤儿门进终验：它们此前在两个载具都不点名，从未参与一发终验（实测：印 _RESULT= 的
   // 门/探针 45 个，登记前被任一载具点名的只有 25 个）。全部只读、不取租约、不写库 ⇒ 放并发段是对的。

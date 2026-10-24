@@ -155,6 +155,8 @@ g settle-discipline          60 scripts/qa/verify-settle-discipline.mjs
 # 不取模拟器租约、不写库 ⇒ 放并发段。120 s 两侧齐平，依据：11 桶 1052 件实测约 10 s、卫生门 3560 格约 4 s。
 # 前置不齐落 NOT-EVIDENCED 退 2（后端没起 / .env 缺 DB_*），那是"未取证"第四格，不记绿也不记产品红。
 g verify-app-assets-coverage 120 scripts/qa/verify-app-assets-coverage.mjs --base http://127.0.0.1:8080
+g verify-static-refs        60 scripts/qa/verify-static-refs.mjs
+g verify-static-refs-selftest 60 scripts/qa/verify-static-refs.mjs --self-test
 g verify-data-hygiene        120 scripts/qa/verify-data-hygiene.mjs
 
 echo "--- QA 自测汇总器（19+ 条离线）---"
