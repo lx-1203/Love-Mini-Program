@@ -156,6 +156,8 @@ g settle-discipline          60 scripts/qa/verify-settle-discipline.mjs
 # 前置不齐落 NOT-EVIDENCED 退 2（后端没起 / .env 缺 DB_*），那是"未取证"第四格，不记绿也不记产品红。
 g verify-app-assets-coverage 120 scripts/qa/verify-app-assets-coverage.mjs --base http://127.0.0.1:8080
 g verify-static-refs        60 scripts/qa/verify-static-refs.mjs
+g verify-asset-registry    120 scripts/qa/verify-asset-registry.mjs
+g verify-asset-registry-selftest 60 scripts/qa/verify-asset-registry.mjs --self-test
 g verify-static-refs-selftest 60 scripts/qa/verify-static-refs.mjs --self-test
 g verify-data-hygiene        120 scripts/qa/verify-data-hygiene.mjs
 
