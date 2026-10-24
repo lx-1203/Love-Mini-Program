@@ -318,8 +318,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * <p>两条规则：</p>
      * <ol>
      *   <li>请求必须是媒体读取（GET/HEAD 的 {@code /api/v1/media/{userId}/{资源路径}}，
-     *       判定真源 {@link MediaTokenPolicy#isMediaReadRequest}）——此时只注入
-     *       {@code ROLE_MEDIA}，<b>不注入</b> {@code ROLE_USER} 与任何管理角色；
+     *       判定真源 {@link MediaTokenPolicy#isMediaReadRequest}；其中还含一道
+     *       「原始 URI 必须已归一化」的前置闸 {@link MediaTokenPolicy#isNormalizedRequestPath}，
+     *       带 {@code ..} 段、百分号编码、{@code //} 的原始串不参与媒体读取判定，
+     *       防止「按原始串放行、按归一化串路由」的错位把媒体令牌送到别的资源上）；
+     *       此时只注入 {@code ROLE_MEDIA}，<b>不注入</b> {@code ROLE_USER} 与任何管理角色；
      *       principal 仍是令牌属主的 userId，媒体归属/分级校验
      *       （{@link com.campuslove.api.media.MediaAccessService} +
      *       {@link com.campuslove.api.media.MediaTierPolicy}）照旧生效，

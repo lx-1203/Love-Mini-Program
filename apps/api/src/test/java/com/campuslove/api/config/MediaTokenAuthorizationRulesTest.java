@@ -1,21 +1,42 @@
 package com.campuslove.api.config;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import com.campuslove.api.media.MediaTokenPolicy;
 import com.campuslove.api.testdata.MockAllRepositoriesConfig;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer.AuthorizationManagerRequestMatcherRegistry;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer.AuthorizedUrl;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
@@ -39,6 +60,14 @@ import org.springframework.test.web.servlet.MockMvc;
  * <p>第四节改为用<b>真实签发的 JWT</b>（Authorization 头与 {@code ?token=} 两种方式）
  * 走完整安全链，钉住「demo/mock 档的免真实认证注入不得成为媒体令牌的升格通道」——
  * 该档只按凭据的 scope 决定注入 ROLE_USER 还是 ROLE_MEDIA，规则本体与 real 档同源。</p>
+ *
+ * <p>P0-2 收口补充：第五节钉「原始请求 URI 未归一化（{@code ..} 段 / 百分号编码 / {@code //}）
+ * 时不得命中媒体读取放行规则」；第六、七节把漂移守卫从「只锚调用点的文本对账」升级成
+ * 「文本对账 + 用假注册表真实执行装配方法、逐条按行为断言两条规则本体」——
+ * 把 deny 规则整段删掉，第七节当场红（实测 11 条用例红）。</p>
+ *
+ * <p>会话端点侧（{@code /auth/me}、{@code /auth/refresh} 的 HTTP 链）不在本类，
+ * 见 {@code com.campuslove.api.auth.AuthSessionEndpointHttpChainTest}。</p>
  */
 @SpringBootTest(properties = "JWT_SECRET=test-jwt-secret-for-media-token-authz-rules-32-chars-min")
 @AutoConfigureMockMvc
@@ -362,7 +391,95 @@ class MediaTokenAuthorizationRulesTest {
     }
 
     // ========================================================================
-    // 五、real 档规则装配的漂移守卫
+    // 五、原始 URI 未归一化时，媒体读取规则不得放行（P0-2 收口）
+    // ========================================================================
+    //
+    // 授权规则用的匹配器读的是 HttpServletRequest#getRequestURI()（原始串：不解码、不折叠
+    // "."/".."、不折叠空段），而 Spring MVC 的路由输入是「解码 + 归一化之后」的串。两者不等价时，
+    // 「按原始串命中媒体读取规则」就是拿一把钥匙开另一扇门——媒体令牌会拿到 ROLE_MEDIA 会话并被
+    // 放行，而真正被路由的却是别的资源路径。
+    //
+    // 分层说明（避免把这条规则测成空转）：
+    // * 字面 ".."/"%2e%2e"/"//"/"%2f" 这类形态，StrictHttpFirewall 在安全链<b>之前</b>就
+    //   拒成 400（实测 @WithMockUser(roles=MEDIA) 与完整会话同样 400），链上的授权判定根本
+    //   来不及执行——所以那几类只能在 MediaTokenPolicyTest（单元，直接喂原始 URI）与
+    //   applyMediaTokenRules 规则本体对账里钉住，这里只钉「绝不被当成媒体读取成功服务」。
+    // * 而「百分号编码但解码后无害」的形态（%41 → 'A'）防火墙放行、MVC 也照路由，
+    //   此时唯一能守住 fail-closed 的就是 P0-2 的归一化判定：媒体令牌必须被 deny 规则
+    //   拒成 403（带 traceId，来自 JwtAccessDeniedHandler）。收紧前这条会命中媒体读取放行
+    //   规则并穿透到 MVC（实测 404），是本节的红/绿分界。
+
+    @Test
+    @DisplayName("真媒体 JWT + 百分号编码的媒体路径（防火墙与 MVC 都放行）→ 安全链 403")
+    void realMediaJwtInHeader_onPercentEncodedMediaPath_isDeniedBySecurityChain() throws Exception {
+        // 用 URI 形态构造请求：String 形态会被 MockMvc 再编码一次（%41 → %2541），
+        // 而 %2541 会被防火墙拦在链外，测不到授权层
+        mockMvc.perform(get(new java.net.URI("/api/v1/media/100/202607/%41b.jpg"))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + mediaJwt()))
+                .andExpect(this::assertDeniedBySecurityChain);
+        mockMvc.perform(get(new java.net.URI("/api/v1/media/100/202607/a%7fb.jpg"))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + mediaJwt()))
+                .andExpect(this::assertDeniedBySecurityChain);
+    }
+
+    @Test
+    @DisplayName("正控：完整会话走同一条百分号编码路径不被媒体降权规则拒绝")
+    void realFullJwtInHeader_onPercentEncodedMediaPath_isNotDeniedByMediaRules() throws Exception {
+        mockMvc.perform(get(new java.net.URI("/api/v1/media/100/202607/%41b.jpg"))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + fullJwt()))
+                .andExpect(result -> {
+                    int code = result.getResponse().getStatus();
+                    String body = result.getResponse()
+                            .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+                    if (code == 403 && body.contains("\"traceId\"")) {
+                        throw new AssertionError("完整会话不得被媒体令牌 deny 规则拒绝，响应体: " + body);
+                    }
+                });
+    }
+
+    @Test
+    @DisplayName("穿越与编码穿越形态：媒体令牌绝不被当作媒体读取成功服务（链外防火墙或链内拒绝）")
+    void realMediaJwtInHeader_onTraversalPaths_isNeverServedAsMediaRead() throws Exception {
+        String[] dangerous = {
+            "/api/v1/media/x/y/../../../posts/1",
+            "/api/v1/media/100/../../posts/1",
+            "/api/v1/media/x/y/%2e%2e/%2e%2e/posts/1",
+            "/api/v1/media/x/y/..%2f..%2fposts/1",
+            "/api/v1/media//100/202607/a.jpg",
+        };
+        for (String path : dangerous) {
+            org.springframework.mock.web.MockHttpServletRequest raw =
+                    new org.springframework.mock.web.MockHttpServletRequest("GET", path);
+            raw.setRequestURI(path);
+            // 判定真源必须判否（这一断言与防火墙/MVC 无关，是 P0-2 自身的那道闸）
+            assertFalse(MediaTokenPolicy.isMediaReadRequest(raw),
+                    "原始 URI 未归一化，媒体令牌不得被当成媒体读取: " + path);
+
+            // 用 URI 形态发请求：String 形态会被 MockMvc 重新编码/折叠（%2e → %252e、// → /），
+            // 原始串就不再是我们想验的那个形态了
+            int code = mockMvc.perform(get(new java.net.URI(path))
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + mediaJwt()))
+                    .andReturn().getResponse().getStatus();
+            assertTrue(code == 401 || code == 403 || code == 400,
+                    "非归一化路径不得被服务成媒体读取（2xx/3xx 即为越权），实际: " + code + "，路径: " + path);
+        }
+    }
+
+    @Test
+    @DisplayName("正控：真媒体 JWT 读取合法媒体路径（含带点文件名）仍然放行")
+    void realMediaJwtInHeader_onNormalizedMediaReadWithDots_isPermitted() throws Exception {
+        mockMvc.perform(get("/api/v1/media/private/1/avatar.png")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + mediaJwt()))
+                .andExpect(result -> {
+                    int code = result.getResponse().getStatus();
+                    if (code == 401 || code == 403) {
+                        throw new AssertionError("收紧归一化判定不得误伤合法媒体读取，实际: " + code);
+                    }
+                });
+    }
+
+    // ========================================================================
+    // 六、real 档规则装配的漂移守卫
     // ========================================================================
     //
     // 本类前四节跑在默认（mock）档，验的是 MediaTokenPolicy 规则本体；
@@ -429,5 +546,88 @@ class MediaTokenAuthorizationRulesTest {
         assertTrue(java.nio.file.Files.exists(fromRepoRoot),
                 "找不到安全配置源文件，无法对账规则装配位置: " + relative.toAbsolutePath());
         return fromRepoRoot.toAbsolutePath();
+    }
+
+    // ========================================================================
+    // 七、规则本体的装配对账（不依赖文本，也不依赖 real 档数据库）
+    // ========================================================================
+    //
+    // 上一条守卫只能证明「两份配置都调用了装配方法」，证明不了方法体内两条规则是否还在、
+    // 顺序是否还对、决策是否还对症——把 `.requestMatchers(mediaOnlyAuthenticationMatcher())`
+    // 与 `.denyAll()` 整段删掉，文本守卫仍然绿（它只锚定调用点）。这里改用假注册表把
+    // MediaTokenPolicy#applyMediaTokenRules 真实执行一遍，捕获它往授权链里塞的
+    // 匹配器与决策，再逐一按行为断言：装配位置对，规则本体也必须对。
+
+    @Test
+    @DisplayName("漂移守卫：装配方法确实注册「媒体读取放行 + 媒体会话 denyAll」两条规则")
+    void applyMediaTokenRules_registersAllowRuleThenMediaSessionDenyRule() {
+        AuthorizationManagerRequestMatcherRegistry registry =
+                mock(AuthorizeHttpRequestsConfigurer.AuthorizationManagerRequestMatcherRegistry.class);
+        AuthorizedUrl authorizedUrl = mock(AuthorizeHttpRequestsConfigurer.AuthorizedUrl.class);
+        // fluent 链：registry.requestMatchers(m) → authorizedUrl → hasAnyRole/denyAll → registry
+        when(registry.requestMatchers(any(RequestMatcher.class))).thenReturn(authorizedUrl);
+        when(authorizedUrl.hasAnyRole(any(String[].class))).thenReturn(registry);
+        when(authorizedUrl.denyAll()).thenReturn(registry);
+
+        MediaTokenPolicy.applyMediaTokenRules(registry);
+
+        ArgumentCaptor<RequestMatcher> captor = ArgumentCaptor.forClass(RequestMatcher.class);
+        InOrder inOrder = inOrder(registry, authorizedUrl);
+        inOrder.verify(registry).requestMatchers(captor.capture());
+        inOrder.verify(authorizedUrl).hasAnyRole("USER", "MEDIA");
+        inOrder.verify(registry).requestMatchers(captor.capture());
+        inOrder.verify(authorizedUrl).denyAll();
+        // 规则条数也要钉住：多塞一条（例如把 deny 换成 permitAll）同样当场红
+        verify(registry, times(2)).requestMatchers(any(RequestMatcher.class));
+        verify(authorizedUrl, times(1)).denyAll();
+        verify(authorizedUrl, never()).permitAll();
+
+        List<RequestMatcher> rules = captor.getAllValues();
+        assertEquals(2, rules.size(),
+                "媒体令牌规则必须是两条（放行 + 拒绝），少一条就是越权面或误伤");
+        RequestMatcher allowRule = rules.get(0);
+        RequestMatcher denyRule = rules.get(1);
+
+        // 第一条（放行）规则：只认真实归一化的媒体读取
+        assertTrue(allowRule.matches(request("GET", "/api/v1/media/private/1/avatar.png")),
+                "合法媒体读取必须仍被第一条规则放行，否则小程序图片黑屏");
+        assertFalse(allowRule.matches(request("GET", "/api/v1/media/x/y/../../../posts/1")),
+                "未归一化的穿越路径不得命中放行规则（P0-2 收口）");
+        assertFalse(allowRule.matches(request("POST", MEDIA_READ_PATH)), "写方法不属读取");
+        assertFalse(allowRule.matches(request("GET", "/api/v1/posts/1")), "业务路径不属读取");
+
+        // 第二条（拒绝）规则：只作用于纯媒体会话，与当前路径无关（漏配业务路由也兜得住）
+        try {
+            SecurityContextHolder.getContext().setAuthentication(authentication(List.of("ROLE_MEDIA")));
+            assertTrue(denyRule.matches(request("GET", "/api/v1/posts/1")),
+                    "deny 规则必须命中纯媒体会话，否则媒体令牌可访问任意业务接口");
+            assertTrue(denyRule.matches(request("GET", "/api/v1/media/x/y/../../../posts/1")),
+                    "未归一化路径上的媒体会话也必须被 deny 规则命中");
+
+            SecurityContextHolder.getContext().setAuthentication(
+                    authentication(List.of("ROLE_USER", "ROLE_ADMIN")));
+            assertFalse(denyRule.matches(request("GET", "/api/v1/posts/1")),
+                    "完整会话不得命中 deny 规则（否则正常用户一起被拒）");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    /* ========== 规则本体对账用的辅助方法 ========== */
+
+    /** 构造带指定权限的已认证主体（principal 固定为媒体令牌属主 100）。 */
+    private static Authentication authentication(List<String> roles) {
+        PreAuthenticatedAuthenticationToken authentication = new PreAuthenticatedAuthenticationToken(
+                100L, "credentials",
+                roles.stream().map(SimpleGrantedAuthority::new).toList());
+        authentication.setAuthenticated(true);
+        return authentication;
+    }
+
+    /** 构造请求，requestURI 用原始串（与安全链匹配器实际读到的形态一致）。 */
+    private static MockHttpServletRequest request(String method, String path) {
+        MockHttpServletRequest request = new MockHttpServletRequest(method, path);
+        request.setRequestURI(path);
+        return request;
     }
 }

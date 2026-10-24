@@ -33,7 +33,9 @@ import org.springframework.util.AntPathMatcher;
  *       不因降权而新增可读范围。</li>
  * </ul>
  *
- * <p><b>fail-closed 方向</b>：路径为 null/空白、方法非 GET/HEAD、主体为 null/匿名，
+ * <p><b>fail-closed 方向</b>：路径为 null/空白、路径为<b>未归一化形态</b>（含 {@code .}/{@code ..}
+ * 段、百分号编码、{@code //}、反斜杠——见 {@link #isNormalizedRequestPath(String)}）、
+ * 方法非 GET/HEAD、主体为 null/匿名，
  * 一律判定为「不是媒体读取」，宁可多拒一次也不放开业务接口。</p>
  */
 public final class MediaTokenPolicy {
@@ -87,6 +89,89 @@ public final class MediaTokenPolicy {
     }
 
     /**
+     * 判断路径是否为「已经归一化的原始请求路径」——媒体读取判定的前置闸（P0-2 收口）。
+     *
+     * <p><b>为什么需要这一步</b>：授权判定读的是 {@link HttpServletRequest#getRequestURI()}，
+     * 那是容器交给安全链的<b>原始</b>串（不解码、不折叠 {@code .}/{@code ..}、不折叠空段）；
+     * 而 Spring MVC 用来路由与授权规则匹配的是「解码 + 归一化之后」的串。两个串一旦不等价，
+     * 「按原始串放行媒体读取」就变成了用一把钥匙开另一扇门：
+     * {@code /api/v1/media/x/y/../../../posts/1} 会被读取模式里的 {@code **} 段当成媒体读取
+     * 而授予 ROLE_MEDIA，真实路由却是业务接口（此前只是碰巧被框架自己的 400 兜住，
+     * 不是 P0-2 的功劳）。</p>
+     *
+     * <p><b>为什么不调用 {@code getServletPath()}/{@code getPathInfo()} 来"归一化后再比"</b>：
+     * 那两个方法本身就是 MVC 的路由输入（{@code UrlPathHelper} 会做解码 + 归一化 + 后缀裁剪），
+     * 拿它当判定依据等于让路由自己给自己的授权结论背书；且再手工解码一次会引入
+     * 双重解码缺陷（{@code %252e} 一类）。因此这里只在原始串上做「形态是否已归一」的
+     * 白名单式判定，不做任何解码。</p>
+     *
+     * <p>判否的形态（一律 fail-closed，不按媒体读取放行）：</p>
+     * <ul>
+     *   <li>为 {@code null}/空白、不以 {@code '/'} 开头（不像是请求 URI）；</li>
+     *   <li>含 {@code .}/{@code ..}/纯点段（{@code ...} 等）——即路径遍历段；</li>
+     *   <li>含任何百分号转义（{@code %2e}/{@code %2f}/{@code %5c} 与双重编码 {@code %252e}
+     *       都只在这一步被排除；服务端产出的媒体 URL 是 {@code UUID.扩展名} 与应用资产 ASCII
+     *       路径，本身不含百分号，公开应用资产又由 permitAll 规则先行放行，故收紧不影响
+     *       任何真实读取）；</li>
+     *   <li>含反斜杠（部分容器/操作系统视作分隔符）、裸空格、控制字符；</li>
+     *   <li>含空段 {@code //}（归一化会折叠，说明原始串不是规范形态）。</li>
+     * </ul>
+     *
+     * <p>合法形态里的点是允许的：{@code avatar.png}、{@code a.b.c.svg}、
+     * 以点开头的 {@code .svg} 都不是遍历段。</p>
+     *
+     * @param path 原始请求路径（通常来自 {@code getRequestURI()}）
+     * @return true 表示该路径已是归一化形态，可以放心参与媒体读取判定
+     */
+    public static boolean isNormalizedRequestPath(String path) {
+        if (path == null || path.isBlank() || path.charAt(0) != '/') {
+            return false; // fail-closed：不像是请求 URI
+        }
+        if (path.indexOf('%') >= 0) {
+            return false; // 任何百分号转义：原始串 ≠ 容器解码后的路由输入
+        }
+        if (path.indexOf('\\') >= 0) {
+            return false; // 反斜杠：可能被当作分隔符，等价于多插一段
+        }
+        int segmentStart = 1;
+        for (int i = 1; i < path.length(); i++) {
+            char c = path.charAt(i);
+            if (c == ' ' || c < 0x20 || c == 0x7F) {
+                return false; // 原始请求 URI 不该出现裸空格/控制字符
+            }
+            if (c == '/') {
+                if (i == segmentStart) {
+                    return false; // 空段（"//"）：归一化会把它折叠掉
+                }
+                if (isDotOnlySegment(path.substring(segmentStart, i))) {
+                    return false; // "." / ".." / "..." 遍历段
+                }
+                segmentStart = i + 1;
+            }
+        }
+        // 最后一段允许为空（尾随 '/'），但不允许是纯点段
+        return !isDotOnlySegment(path.substring(segmentStart));
+    }
+
+    /**
+     * 是否为「全是点」的路径段（{@code .}、{@code ..}、{@code ...}……）。
+     *
+     * @param segment 待判定的路径段（可为空串）
+     * @return true 表示该段等价于遍历段
+     */
+    private static boolean isDotOnlySegment(String segment) {
+        if (segment.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < segment.length(); i++) {
+            if (segment.charAt(i) != '.') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * 判断 HTTP 方法是否属于媒体读取方法（GET/HEAD）。
      *
      * @param method 请求方法（可为 null）
@@ -102,12 +187,20 @@ public final class MediaTokenPolicy {
     /**
      * 判断路径是否为媒体读取路径（不含方法判定）。
      *
+     * <p>P0-2 收口：先要 {@link #isNormalizedRequestPath(String)} 判定「原始串已归一」，
+     * 未归一（含 {@code ..} 段、百分号编码、{@code //}、反斜杠）的路径一律不按媒体读取处理——
+     * 这类请求既不该由过滤器拿到 ROLE_MEDIA 会话，也不该命中安全链的媒体放行规则，
+     * 会落到其后的 {@link #mediaOnlyAuthenticationMatcher()} deny 规则上被拒。</p>
+     *
      * @param path 请求路径（可为 null）
      * @return true 表示是媒体文件读取路径
      */
     public static boolean isMediaReadPath(String path) {
         if (path == null || path.isBlank()) {
             return false; // fail-closed
+        }
+        if (!isNormalizedRequestPath(path)) {
+            return false; // fail-closed：原始串与路由输入不等价时不做媒体读取判定
         }
         for (String blocked : NON_READ_MEDIA_PATH_PATTERNS) {
             if (PATH_MATCHER.match(blocked, path)) {
@@ -119,6 +212,11 @@ public final class MediaTokenPolicy {
 
     /**
      * 判断请求是否为「媒体读取请求」= 只读方法 + 媒体读取路径。
+     *
+     * <p>路径取 {@link HttpServletRequest#getRequestURI()}（原始串，不解码不归一化），
+     * 因此必须先过 {@link #isNormalizedRequestPath(String)}：原始串与容器解码归一化后的
+     * 路由输入不等价时（{@code ..} 段、{@code %2e}/{@code %2f}、{@code //} 等）判否，
+     * 避免「按原始串放行、按归一化串路由」的错位越权。</p>
      *
      * @param request HTTP 请求（可为 null）
      * @return true 表示媒体令牌可以服务该请求
