@@ -37,7 +37,7 @@
  *       造夹具并自行清理（该目录永不入库）。
  */
 import { readFileSync, existsSync, statSync, readdirSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
-import { join, resolve, dirname, sep } from "node:path";
+import { join, resolve, dirname, sep, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { createServer } from "node:http";
@@ -55,7 +55,7 @@ const PROBE_READY = typeof fetch === "function" && typeof AbortSignal !== "undef
 
 /* 拼错的旗标会被 arg() 当成"没传"而静默回落默认路径 —— 那正好制造"按 mock 产物判 real 守恒"这种
    看起来像绿的假读数。宁可 exit 2。 */
-const KNOWN_FLAGS = ["buckets", "static", "base", "dist", "concurrency", "timeout-ms", "selftest"];
+const KNOWN_FLAGS = ["buckets", "static", "base", "dist", "concurrency", "timeout-ms", "backup", "selftest"];
 {
   const bad = argv.filter((a) => a.startsWith("--") && !KNOWN_FLAGS.includes(a.slice(2)));
   if (bad.length) {
@@ -100,6 +100,61 @@ function walkFiles(dir) {
     }
   }
   return out.sort();
+}
+
+/**
+ * 输入树一致性（P0 的验证判据）。sync 读的是备份桶，而这把门以前只比"包内 vs HTTP"，
+ * 于是 assets-images 桶里躺 292K 未压缩原图、包内是 45K 压缩版这件事在门上完全隐形——
+ * 它能活过一整轮素材统一就是因为这个。这里把桶本身当被测物：
+ * 桶里每一个"存在的"件必须与包内同哈希（文本型先按 cmpHash 同一把尺归一行尾）。
+ *
+ * 包内有、桶里没有 ⇒ 只报不红：备份树本就只跟踪一部分（实测 1345 件里 git 只存 490 件），
+ * 判红等于逼人在仓里补副本，那是为了喂饱判据而改产物。
+ */
+const SRC_BUCKETS = [["full-static", ""], ["generated", "generated"], ["assets-images", "assets/images"]];
+function sourceCheck(cfg, say, unmeasured) {
+  const hard = [];
+  let cmp = 0, same = 0, eolOnly = 0, drift = 0, ghost = 0;
+  if (!existsSync(cfg.backupRoot)) {
+    say(`ASSETCOV_SOURCE=NOT-EVIDENCED 备份根=${norm(cfg.backupRoot)} 不存在 ⇒ 桶与包内的一致性一个字节都没比，不许当达标`);
+    unmeasured.push("输入树未测量（备份根不存在）");
+    return { hard, skipped: true, cmp: 0, eolOnly: 0 };
+  }
+  for (const [bucket, sub] of SRC_BUCKETS) {
+    const dir = join(cfg.backupRoot, bucket);
+    if (!existsSync(dir)) {
+      hard.push(`${bucket} 桶目录不存在`);
+      say(`ASSETCOV_SRC bucket=${bucket} 目录=${norm(dir)} 存在=否 ⇒ sync 的输入这一路整个没了，判红`);
+      continue;
+    }
+    const files = walkFiles(dir);
+    let bSame = 0, bEol = 0, bDrift = 0, bGhost = 0;
+    for (const abs of files) {
+      const relInBucket = norm(relative(dir, abs));
+      const relPkg = sub ? `${sub}/${relInBucket}` : relInBucket;
+      const pkgAbs = join(cfg.staticRoot, "static", ...relPkg.split("/"));
+      cmp++;
+      if (!existsSync(pkgAbs)) {
+        bGhost++;
+        hard.push(`${bucket} 里有 ${relPkg} 而包内没有`);
+        say(`ASSETCOV_SRC_GHOST bucket=${bucket} rel=${relPkg} 桶字节=${statSync(abs).size} ⇒ 包内已无此件（真源里没有的东西不许经桶被同步进 uploads）`);
+        continue;
+      }
+      let a, b;
+      try { a = readFileSync(abs); b = readFileSync(pkgAbs); } catch (e) { unmeasured.push(`${bucket}/${relPkg} 读不动`); continue; }
+      if (a.equals(b)) { bSame++; same++; continue; }
+      const na = cmpHash(a, relInBucket), nb = cmpHash(b, relPkg);
+      if (na === nb) { bEol++; eolOnly++; say(`ASSETCOV_SRC_EOLNOTE bucket=${bucket} rel=${relPkg} 原始 sha8 不同但行尾归一后一致（core.autocrlf 差异，不是内容漂移）`); }
+      else {
+        bDrift++; drift++;
+        hard.push(`${bucket} 与包内字节不一致 ${relPkg}`);
+        say(`ASSETCOV_SRC_DRIFT bucket=${bucket} rel=${relPkg} 桶=${statSync(abs).size}B(${na}) 包内=${statSync(pkgAbs).size}B(${nb}) ⇒ 谁跑 sync 就把这份盖进 uploads；本门已让包内优先，但桶烂本身必须留痕`);
+      }
+    }
+    say(`ASSETCOV_SRC bucket=${bucket} 目录=${norm(dir)} 比对=${files.length} 全等=${bSame} 仅行尾=${bEol} 内容差=${bDrift} 包内无此件=${bGhost}`);
+  }
+  say(`ASSETCOV_SOURCE 备份根=${norm(cfg.backupRoot)} 比对=${cmp} 一致=${same} 仅行尾=${eolOnly} 内容差=${drift} 桶独有=${ghost}（判红项=内容差+桶独有+桶目录缺失；"包内有、桶里没有"只报不红）`);
+  return { hard, skipped: false, cmp, eolOnly };
 }
 
 /** 契约加载 + 合法性判定（非法 ⇒ 前置失败，不给"空契约所以零缺陷"）。 */
@@ -283,6 +338,14 @@ async function evaluate(cfg, say) {
     unmeasured.push(`本地件读不动 ${x.f.relPkg}（${x.f.readErr}）`);
   }
 
+  /* ⑤ 输入树一致性：先比桶与包内，再问后端。桶烂是"输入侧"的缺陷，后端在不在都得报；
+     而且它正是上一轮那 6 张未压缩封门的成因，只靠 sync 的包内优先兜着、门上看不见就等于没门。 */
+  const src = sourceCheck(cfg, say, unmeasured);
+  if (src.hard.length) {
+    say(`ASSETCOV_RESULT=FAIL 输入树与包内不一致 ${src.hard.length} 项（比对=${src.cmp}）⇒ ${src.hard.slice(0, 8).join("；")}${src.hard.length > 8 ? ` …共 ${src.hard.length} 项` : ""}`);
+    return 1;
+  }
+
   /* 活体探针：拿第一个可量到的件试连通性。网络两发都失败 ⇒ 整轮未测量，exit 2。 */
   const sample = localReadable[0]?.f.urlRel || "generated/images/campus/campus-gate.jpg";
   const live = await assertLive(cfg.base, cfg.timeoutMs, sample);
@@ -348,7 +411,7 @@ async function evaluate(cfg, say) {
     say(`ASSETCOV_RESULT=ERROR 分母=${tot.n} 200同字节=${tot.ok} 404=0 DRIFT=0 但 ${[...unmeasured, rev.notEvidence || ""].filter(Boolean).join("；")} ⇒ 量不到 ≠ 达标`);
     return 2;
   }
-  say(`ASSETCOV_RESULT=PASS 分母=${tot.n}（${buckets.length} 桶逐件 HTTP 探测，无抽样）200同字节=${tot.ok} 404=0 DRIFT=0 其它状态=0 空集桶=0 反向命中=0 守恒证据=${rev.evidence}`);
+  say(`ASSETCOV_RESULT=PASS 分母=${tot.n}（${buckets.length} 桶逐件 HTTP 探测，无抽样）200同字节=${tot.ok} 404=0 DRIFT=0 其它状态=0 空集桶=0 反向命中=0 输入树比对=${src.cmp}${src.eolOnly ? `（其中仅行尾差=${src.eolOnly}，已按类型归一判一致）` : ""} 守恒证据=${rev.evidence}`);
   return 0;
 }
 
@@ -393,6 +456,7 @@ const DEFAULTS = {
   staticRoot: resolve(REPO, "apps/client/src"),
   base: "http://127.0.0.1:8080/api/v1/media/app-assets/",
   distRoot: resolve(REPO, "apps/client/dist/build/mp-weixin"),
+  backupRoot: resolve(REPO, "apps/client/static-local-backup"),
   concurrency: 8,
   timeoutMs: 15000,
 };
@@ -404,6 +468,7 @@ function cliCfg() {
     /* --base 允许传 apiRoot（http://127.0.0.1:8080）或完整端点：统一到端点形态，避免两头各拼各的 */
     base: /app-assets\/?$/.test(b) ? (b.endsWith("/") ? b : b + "/") : `${b.replace(/\/+$/, "")}/api/v1/media/app-assets/`,
     distRoot: resolve(REPO, arg("dist", DEFAULTS.distRoot)),
+    backupRoot: resolve(REPO, arg("backup", DEFAULTS.backupRoot)),
     concurrency: Math.max(1, Math.min(32, Number(arg("concurrency", DEFAULTS.concurrency)) || DEFAULTS.concurrency)),
     timeoutMs: Math.max(500, Number(arg("timeout-ms", DEFAULTS.timeoutMs)) || DEFAULTS.timeoutMs),
   };
@@ -425,7 +490,8 @@ function buildFixture(caseDir, mut) {
     "static/assets/images/covers/circle-food.png": Buffer.from("LOCAL-COVER-FOOD-v1"),
     "static/assets/images/posters/login-poster.png": Buffer.from("LOCAL-POSTER-LOGIN-v1"),
     "static/assets/icons/tabbar/chat.png": Buffer.from("LOCAL-ICON-CHAT-v1"),
-    "static/assets/svg-spec/spec-home.svg": Buffer.from("LOCAL-SVGSPEC-HOME-v1"),
+    /* 文本件带换行，才造得出"只差行尾"这种形态（无换行的话 CRLF 版是多出一行，属真内容差） */
+    "static/assets/svg-spec/spec-home.svg": Buffer.from("LOCAL-SVGSPEC-HOME-v1\n", "binary"),
   };
   /* 后端默认与包内逐字节一致 ⇒ 绿基线；坏件用例靠改这张表模拟"后端缺/后端是旧版" */
   const srv = {};
@@ -446,8 +512,19 @@ function buildFixture(caseDir, mut) {
   mkin(join(dist, "utils", "media.js"), `const P="/api/v1/media/app-assets/";exports.P=P;`);
   mkin(join(dist, "app.json"), `{"pages":["pages/index/index"]}`);
 
-  const note = mut ? mut({ root, dist, caseDir, bucketsPath, srv, mkin }) : null;
-  return { root, dist, bucketsPath, srv, note };
+  /* 备份树默认逐字节等于包内 ⇒ 输入树判点是绿的，而且带真分母（三棵桶都在、件都在），不是空集恒过。
+     full-static 是整棵 static 的镜像；generated / assets-images 是 sync 实际读的两个输入桶。 */
+  const backup = join(caseDir, "_backup");
+  for (const [relPkg, buf] of Object.entries(pkg)) mkin(join(backup, "full-static", relPkg.replace(/^static\//, "")), buf);
+  for (const [bucket, sub] of [["generated", "generated"], ["assets-images", "assets/images"]]) {
+    for (const [relPkg, buf] of Object.entries(pkg)) {
+      const p = relPkg.replace(/^static\//, "");
+      if (p.startsWith(sub + "/")) mkin(join(backup, bucket, p.slice(sub.length + 1)), buf);
+    }
+  }
+
+  const note = mut ? mut({ root, dist, caseDir, bucketsPath, srv, backup, mkin }) : null;
+  return { root, dist, bucketsPath, srv, backup, note };
 }
 
 const ACTIVE = { srv: {} };
@@ -480,6 +557,7 @@ async function selftest() {
         staticRoot: fx.root,
         base: opts.base || base,
         distRoot: opts.distRoot === "missing" ? join(caseDir, "no-such-dist") : (opts.distRoot || fx.dist),
+        backupRoot: opts.backupRoot === "absent" ? join(caseDir, "no-such-backup") : (opts.backupRoot || fx.backup),
         concurrency: 4,
         timeoutMs: 6000,
       },
@@ -573,13 +651,45 @@ async function selftest() {
   const c7 = await run("backend-unreachable", null, { base: DEAD_BASE });
   check("backend-unreachable", 2, c7, ["ASSETCOV_PROBE=UNREACHABLE", "ASSETCOV_COVERAGE 分母=", "ASSETCOV_RESULT=ERROR"]);
 
+  /* 7a. 输入树坏件 A：桶里的件与包内不一致（就是那 6 张未压缩封门的形态）⇒ 必须红并点名
+     注：输入桶的布局是"相对映射基名"的（assets-images 桶里直接是 covers/…），夹具照同一形态注入。 */
+  const c8 = await run("src-drift", ({ backup, mkin }) => {
+    mkin(join(backup, "assets-images", "covers/circle-food.png"), Buffer.from("UNCOMPRESSED-ORIGINAL-BYTES"));
+    return "把 assets-images 桶里 circle-food 换成另一份字节";
+  });
+  check("inject-src-drift", 1, c8, ["ASSETCOV_SRC_DRIFT bucket=assets-images rel=assets/images/covers/circle-food.png", "ASSETCOV_RESULT=FAIL"]);
+  /* 7a′. 后端同时不可达也遮不住它：输入树先判，红就是红（防"后端挂了就把桶的缺陷一起吞成未测量"） */
+  const c8b = await run("src-drift-with-dead-backend", ({ backup, mkin }) => {
+    mkin(join(backup, "assets-images", "covers/circle-food.png"), Buffer.from("UNCOMPRESSED-ORIGINAL-BYTES"));
+    return "桶漂移 + 后端不可达";
+  }, { base: DEAD_BASE });
+  check("src-drift 不被后端不可达吞掉", 1, c8b, ["ASSETCOV_SRC_DRIFT", "ASSETCOV_RESULT=FAIL"]);
+
+  /* 7b. 输入树坏件 B：桶里有个包内没有的件（真源里不存在的东西不该经桶进 uploads）*/
+  const c9 = await run("src-ghost", ({ backup, mkin }) => {
+    mkin(join(backup, "generated", "images/campus/z-ghost.jpg"), Buffer.from("GHOST"));
+    return "只在桶里加一件";
+  });
+  check("inject-src-ghost", 1, c9, ["ASSETCOV_SRC_GHOST", "ASSETCOV_RESULT=FAIL"]);
+
+  /* 7c. 输入树正例：只差行尾的文本件必须判一致（否则 autocrlf 会把 6 个 SVG 虚报成画面漂移）*/
+  const c10 = await run("src-eolonly", ({ backup, mkin }) => {
+    mkin(join(backup, "full-static", "assets/svg-spec/spec-home.svg"), Buffer.from("LOCAL-SVGSPEC-HOME-v1\r\n", "binary"));
+    return "full-static 里那份 svg 换成 CRLF";
+  });
+  check("src 仅行尾差⇒仍判绿", 0, c10, ["ASSETCOV_SRC_EOLNOTE", "ASSETCOV_RESULT=PASS"]);
+
+  /* 7d. 量不到不许当绿 D：备份根整个不在 ⇒ 输入树一个字节都没比，exit 2 */
+  const c11 = await run("src-backup-absent", null, { backupRoot: "absent" });
+  check("backup-root-absent→NOT-EVIDENCED", 2, c11, ["ASSETCOV_SOURCE=NOT-EVIDENCED", "ASSETCOV_RESULT=ERROR"]);
+
   /* 6. 收尾复量：所有坏件撤掉后必须仍是绿（证明前面那些红不是"死红"） */
   const gEnd = await run("green-final", null);
   check("green-final-restored", 0, gEnd, ["ASSETCOV_RESULT=PASS"]);
 
   await new Promise((r) => server.close(r));
   const bad = cases.filter((x) => !x).length;
-  console.log(`ASSETCOV_SELFTEST 用例=${cases.length} 通过=${cases.length - bad} 失败=${bad} 注入坏件类=6（后端缺件404 / 后端字节不符 / 桶目录空集 / 清单cdnPrefixes空 / 产物对localPrefixes的http引用 / 量不到三例[产物缺·档位非real·后端不可达]）每类都跑了"注入→红"与"撤掉→绿"`);
+  console.log(`ASSETCOV_SELFTEST 用例=${cases.length} 通过=${cases.length - bad} 失败=${bad} 注入坏件类=9（后端缺件404 / 后端字节不符 / 桶目录空集 / 清单cdnPrefixes空 / 产物对localPrefixes的http引用 / 量不到四例[产物缺·档位非real·后端不可达·备份根缺失] / 输入树桶内容与包内不符 / 桶独有件 / 桶漂移+后端不可达）另含 1 例输入树正例（仅行尾差判绿）。每类都跑了"注入→红"与"撤掉→绿"`);
   console.log(`ASSETCOV_SELFTEST_FIXTURE 夹具目录=${norm(FIX_ROOT)}（永不入库；本轮已清理，重跑 --selftest 会重建）`);
   rmSync(FIX_ROOT, { recursive: true, force: true });
   console.log(bad ? `ASSETCOV_SELFTEST_RESULT=FAIL 失败=${bad} ⇒ 本门自己都不能红，不能接线` : "ASSETCOV_SELFTEST_RESULT=PASS 每个坏件都翻红、撤掉都翻绿（含 NOT-EVIDENCED 不许当绿）");

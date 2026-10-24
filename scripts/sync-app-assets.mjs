@@ -79,6 +79,13 @@ if (all.length === 0) {
 /* 路径泄漏守卫见下方"同步集完全定好"之后——这里不能放，因为后面还会从包内补件，
    放前面会让补入的件绕过检查。 */
 
+/* 比对口径与 verify-app-assets-coverage 同一把尺：文本型先归一行尾再比。
+   不这么做的话，core.autocrlf 会让桶里 6 个 SVG 每次都被报成"与包内不一致"，
+   把真正的 6 张封面漂移淹在噪声里——门和输入侧各用一套口径，就一定会互相打脸。 */
+const TEXT_EXT = /\.(svg|js|cjs|mjs|ts|css|scss|json|html|txt|md)$/i;
+const deol = (buf) => buf.toString("binary").replace(/\r\n/g, "\n");
+const sameContent = (a, b, name) => (a.equals(b) ? true : TEXT_EXT.test(name) ? deol(a) === deol(b) : false);
+
 /* 包内优先：cdn 素材的唯一真源是 apps/client/src/static/，备份桶只是它的副本。
    实测桶会烂——2026-10-24 查出 assets-images 桶里 6 张圈子封面还是**未压缩原图**
    （桶 292K–380K vs 包内 36K–48K），谁跑一次 sync 就把裁定过的压缩版盖回原图、资产门当场变红。
@@ -90,7 +97,7 @@ for (const e of all) {
   const pkg = join(PKG_STATIC, norm2(e.rel));
   if (!existsSync(pkg)) continue;
   let same = false;
-  try { const a = readFileSync(e.abs), b = readFileSync(pkg); same = a.length === b.length && a.equals(b); } catch { same = false; }
+  try { same = sameContent(readFileSync(e.abs), readFileSync(pkg), norm2(e.rel)); } catch { same = false; }
   if (!same) { bucketStale++; e.srcWas = e.abs; e.abs = pkg; }
 }
 if (bucketStale) {
