@@ -120,7 +120,9 @@ Thumbs.db
 .claude/
 .design_library/
 **/.mimosa/
-.qoder/
+# 2026-10-24 裁定：仅 repowiki（Qoder 生成的仓库 Wiki 快照）入库，.qoder 其余内容仍忽略
+.qoder/*
+!.qoder/repowiki/
 
 # ---------- 本机运行时产物 ----------
 /appendonly.aof
