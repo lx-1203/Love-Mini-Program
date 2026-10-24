@@ -87,3 +87,33 @@ bbox 铺满全屏而不是集中在某一块版面 ⇒ 这是采集抖动（页�
    下一程把这条页写进慢页清单，别把「仪器超时沿用了上一跑帧」当成「画面没变」。
 3. R16 的 214 条 P2/P3 是下一轮修车波的输入；派单仍走 `emit-fix-lanes --severity P1` 那条互斥切分，
    比较基准用 `fixlist-R16-dispatched.json`（本轮还没切，下一程切）。
+
+## 八、47 步载具实跑读数（2026-10-24，跑到第 26 步被本机进程额度打断）
+
+载具在离线门段跑完后死于 `bash: fork: Resource temporarily unavailable`（Win32 0xC0000142），
+**不是门坏**——设备腿那一段没跑到。离线段的四条红逐条复跑定位如下：
+
+| 门 | 读数 | 定性 |
+|---|---|---|
+| `prove-gates-can-fail` | 曾 `5/7 + INCONCLUSIVE=2` ⇒ **现 PASS 7/7** | 已修：两条 INCONCLUSIVE 不是它自己的问题，是被 lint 欠账拖住（基线 errors=5/budget=2 ⇒ 两条 lint 负例"基线本就不绿，无法判"）。合并三处重复 `utils/media` 导入后 errors 回到 2，负例全部拿到证据。**没有抬阈值、没有动预算。** |
+| `verify-source-shape` | `FAIL 判据台缺席判点不成立（2 条：CS26 CH22）` | **两条性质不同**，见下 |
+| `verify-real-coverage` | `FAIL`，守恒 OK（免检28+覆盖198+欠账5+待判4+过期1=236/236） | 5 条欠账全是 `缺=login` / `缺=login+guest` 的**轴欠账**（OT05/OT06/OT09/VRN07/OC09），要的是把这几条用例在真档按登录/游客身份各跑一遍，属设备腿活儿，不是判据坏 |
+| `verify-provenance-all` | `FAIL`（STALE=1、UNRESOLVABLE=5、PRE_STAMP=4880 已走在册 LEGACY 豁免、DERIVED_OK=12/12） | 1 条过期戳记 + 5 条断链帧，量小且可逐条定位，属证据侧收口 |
+
+### CS26 与 CH22 必须分开处理（别再混成"一条红"）
+
+- **CS26（chat-session 错误态互斥渲染）＝纯形状漂移，不变量仍然成立。**
+  判据钉的是老写法 `<view v-if="pageErrorMessage" class="meta-copy meta-copy--padded">{{ pageErrorMessage }}</view>`
+  紧接 `<template v-else>`；盘上现在是 `index.vue:2089` 的 `<view v-if="pageErrorMessage" class="chat-error-state">`
+  （内挂 EmptyState）→ `v-else-if loading` → `v-else-if errorMessage` → `v-else` 的 `.chat-list`，
+  而输入栏 `wechat-input-bar__input` 全页只有一枚（:2290）且就在最后那个 `v-else` 分支里
+  ⇒ **"出错时输入栏结构性不可达"这条不变量没破**，破的只是判据引用的标签/类名/变量名。
+  重钉形状是"把纠正落进真相源"，但按本仓惯例要同步 ops 判据台正文并重打语料戳，故未擅自改。
+- **CH22（hub「查看更多」禁可点假象）＝产品方向问题，不是形状问题。**
+  判据判的是"无展开箭头、无可点动作"的死元素不得回归；盘上 `hub.vue:365-373` 现在是
+  `class="campus-hub__more"` + `role="button"` + `@tap="toggleSchools"` + `:aria-expanded` + 条件箭头
+  `campus-hub__more-arrow`（`canToggleMore` 为假时挂 `--static` 且不渲染箭头）——
+  即它已是一枚**真的折叠/展开控件**，而判据把"有可点动作"本身当禁用写法。
+  把它改成"必须绑真实 handler"会比原判据更强，但那是改判据的**实质**，属裁定范围（decisions#N 那条路），
+  不自作主张。
+
