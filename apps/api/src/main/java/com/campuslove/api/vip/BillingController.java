@@ -16,7 +16,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -217,16 +216,21 @@ public class BillingController {
     }
 
     /**
-     * VIP 购买（钱包支付，R4-00320：优惠码折扣消费方）。
+     * VIP 购买（钱包支付，R4-00320：优惠码折扣消费方；P0-3：服务端权威定价）。
      * POST /api/v1/vip/bills/purchase
+     *
+     * <p>客户端仅被信任传 {@code planId} 与可选 {@code promoCode}；套餐名称、价格、
+     * 授予天数一律由服务端 {@link VipPlanCatalog} 决定。历史请求体中的
+     * {@code planName}/{@code baseAmount} 字段不再属于契约：Spring Boot 默认
+     * {@code fail-on-unknown-properties=false}，旧客户端多带上送的两个字段会被直接忽略
+     * （fail-closed——服务端绝不据其定价），缺失 {@code planId} 一律 400。</p>
      */
     @PostMapping("/purchase")
     @FeatureSwitch(FeatureSwitchKeys.COMMERCE_VIP)
     @PreAuthorize("hasRole('USER')")
     public BillingService.PurchaseResultView purchase(@Valid @RequestBody VipPurchaseRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
-        return billingService.purchaseVip(userId, request.planId(), request.planName(),
-                request.baseAmount(), request.promoCode());
+        return billingService.purchaseVip(userId, request.planId(), request.promoCode());
     }
 
     /** 关键请求头快照（留痕 JSON，不含签名原文——签名已由验签环节校验）。 */
@@ -257,17 +261,18 @@ public class BillingController {
 }
 
 /**
- * VIP 购买请求体（R4-00320）。
+ * VIP 购买请求体（R4-00320；P0-3 收敛为服务端权威定价契约）。
  *
- * @param planId     套餐 ID
- * @param planName   套餐名称（可空）
- * @param baseAmount 原价（分）
- * @param promoCode  优惠码（可空）
+ * <p>P0-3 前本契约含客户端上送的 {@code planName} 与 {@code baseAmount}（原价分），
+ * 服务端据此计算优惠并扣款，等于把定价权交给客户端（1 分即可买走 18 元月卡）。
+ * 现两字段已从契约移除，套餐名称/价格/时长由 {@link VipPlanCatalog} 权威给出；
+ * 旧客户端继续上送这两个字段时会被 Jackson 忽略（未知属性不失败）。</p>
+ *
+ * @param planId    套餐 ID（必填；非法或已下架一律业务错误，不产生扣款）
+ * @param promoCode 优惠码（可空；折扣以服务端原价计算）
  */
 record VipPurchaseRequest(
-        @NotBlank @Size(max = 64) String planId,
-        @Size(max = 64) String planName,
-        @NotNull @Min(1) Integer baseAmount,
+        @NotBlank(message = ErrorMessages.PLAN_ID_REQUIRED) @Size(max = 64) String planId,
         @Size(max = 64) String promoCode
 ) {
 }
