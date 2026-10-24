@@ -85,8 +85,18 @@ export function readMenu(menuPath) {
 }
 
 const numOf = (id) => String(id).replace(/^decisions#/, "");
-/** 标题里的版本从名册文件名取，不写死 v3.8 —— 写死了下一册一换，标题就成了假话。 */
-const verOf = (p) => { const m = /v(\d+)/.exec(String(p)); return m ? `v${m[1]}` : "本版"; };
+/**
+ * 版本标记从名册文件里取，不写死 v3.8 —— 写死了下一册一换，标题就成了假话。
+ * 先取 `v3.8` 这种带点的写法（名册正文里就是这么叫的），取不到再退回文件名里的 `v38`。
+ */
+const verOf = (p) => {
+  let body = "";
+  try { body = readFileSync(p, "utf8").slice(0, 4000); } catch { body = ""; }
+  const dotted = /v(\d+\.\d+)/.exec(body);
+  if (dotted) return `v${dotted[1]}`;
+  const m = /v(\d+)/.exec(String(p));
+  return m ? `v${m[1]}` : "本版";
+};
 
 /** 派生菜单全文。老菜单的分组与措辞原样保留，缺的就地补录。 */
 export function render(roster, oldMenu, srcLabel, ver) {
@@ -247,6 +257,77 @@ function checkOne(rosterPath, menuPath, say = console.log) {
   return { code: bad ? 1 : 0, out };
 }
 
+/**
+ * 决策包（P3b）：把 28 条待裁连名册里的 premise/basis **原样**搬到一份可逐条回答的文件里。
+ * 这里刻意不"改写成一句话说清"——名册那句 basis 本身就是带文件:行号的实测依据，
+ * 我转写成"一句话现状"只会丢掉可核性，还可能把归因写错（本仓已多次栽在转述上）。
+ * 所以本包只加三样派生信息：分组（承自菜单，粗筛非权威）、这条有没有实测依据、
+ * 以及文内是否自带"建议"字样（实测数出来的，不是我补写的建议）。
+ */
+export function renderPacket(roster, oldMenu, parkedText, parkedSrc, ver) {
+  const noBasis = [], noPremise = [], withAdvice = [];
+  const L = [];
+  roster.open.forEach((r, i) => {
+    const n = numOf(r.id);
+    if (!r.meta || !/basis=/.test(r.meta)) noBasis.push(n);
+    if (!r.meta || !/premise=/.test(r.meta)) noPremise.push(n);
+    if (/建议/.test(r.options) || /建议/.test(r.meta)) withAdvice.push(n);
+  });
+  L.push(`# ${ver || "本版"} 决策包（${roster.open.length} 条待裁 + 挂起项，机器派生）`);
+  L.push(``);
+  L.push(`> 生成器：scripts/qa/emit-ruling-menu.mjs --packet。**title/options/premise/basis 全部原样抄自名册机器块**，我没有改写任何选项文字或依据文字。`);
+  L.push(`> 名册块行区间 ${roster.beginLine}-${roster.endLine}；status=open 逐行数出 ${roster.open.length} 条，本包渲染 ${roster.open.length} 条（守恒由同一把尺判，见文末）。`);
+  L.push(`> 回答方式与菜单一致：回「编号+字母」（如「69c 50d」），不想选的写 skip。`);
+  L.push(``);
+  L.push(`## 先看这三行`);
+  L.push(``);
+  L.push(`- 有实测依据（名册带 basis=）的：**${roster.open.length - noBasis.length}/${roster.open.length}**；缺依据的 ${noBasis.length} 条：${noBasis.length ? "№" + noBasis.join("、№") : "无"}。缺依据 ≠ 不能裁，而是拍之前要有人去量。`);
+  L.push(`- 名册文内自带"建议"字样的：**${withAdvice.length}** 条：${withAdvice.length ? "№" + withAdvice.join("、№") : "无"}（这些建议出自名册原文，不是我给的）。`);
+  L.push(`- 分组承自 ruling-menu（人按关键词粗筛），**不是权威归类**；分错请直接无视分组。`);
+  L.push(``);
+  L.push(`## 逐条`);
+  L.push(``);
+  let seq = 0;
+  for (const r of roster.open) {
+    const n = numOf(r.id);
+    const old = oldMenu && oldMenu.items.get(n);
+    seq++;
+    L.push(`### ${seq}. №${n} — ${r.title}`);
+    L.push(``);
+    L.push(`- 分组：${old ? old.group : "（菜单里没有这条 ⇒ 未分组）"}`);
+    L.push(`- 选项（原样）：${r.options}`);
+    const m = r.meta || "";
+    const pr = /premise=("[^"]*"|\S+)/.exec(m);
+    const bs = /basis=("[^"]*"|\S+)/.exec(m);
+    L.push(`- 前提（原样）：${pr ? pr[1] : "（名册这条没有 premise=，实测缺）"}`);
+    L.push(`- 依据（原样，含文件:行号）：${bs ? bs[1] : "（名册这条没有 basis= ⇒ 拍之前要先有人量）"}`);
+    L.push(``);
+  }
+  L.push(`## 守恒自证`);
+  L.push(``);
+  L.push(`- 名册 open=${roster.open.length} ｜ 本包逐条=${seq} ｜ 相等=${seq === roster.open.length ? "是" : "否"}`);
+  L.push(`- 口径只认 \`RULING id=… status=open\` 行；散文里的"待裁 N 条"一律不算数。`);
+  L.push(``);
+  if (parkedText) {
+    L.push(`## 挂起项（原文照抄自 ${parkedSrc}，不是我复述的）`);
+    L.push(``);
+    L.push(parkedText);
+    L.push(``);
+  }
+  return { text: L.join("\n"), count: seq, noBasis, noPremise, withAdvice };
+}
+
+/** 从 parked.md 里切出"任务清单里挂起的三条"那一节（按标题取，取不到就说取不到）。 */
+export function extractParked(parkedPath, heading) {
+  if (!existsSync(parkedPath)) return { text: "", err: `挂起项文件不存在 ${parkedPath}` };
+  const lines = readFileSync(parkedPath, "utf8").split(/\r?\n/);
+  const b = lines.findIndex((l) => l.startsWith("## ") && l.includes(heading));
+  if (b < 0) return { text: "", err: `挂起项文件里没有含"${heading}"的 ## 小节` };
+  let e = lines.length;
+  for (let i = b + 1; i < lines.length; i++) if (/^## /.test(lines[i])) { e = i; break; }
+  return { text: lines.slice(b + 1, e).join("\n").trim(), heading: lines[b].replace(/^## /, "").trim(), lines: e - b - 1 };
+}
+
 /* ── --selftest：少印必须红、补上必须绿；多印也必须红 ── */
 if (flag("selftest")) {
   const FX = join(REPO, "tmp", "qa", "fixtures", "rulingmenu");
@@ -330,8 +411,22 @@ if (flag("selftest")) {
   const scrub = w4.code === 0 && !/^合计列出/m.test(afterL) && afterL.includes("撤掉的散文计数") && afterL.includes("名册实际 open=2（一致）") && afterL.includes("## 实测补充");
   ok += scrub ? 1 : 0;
   console.log(`${scrub ? "PASS" : "FAIL"}  自称一致的散文计数句被撤走、原文抄进守恒自证、附注仍在（假"已核过"不许留在人回答的地方）`);
+
+  /* 决策包：走真入口 spawn --packet。夹具里 №30/№69 没有 premise/basis ⇒ 必须点名，
+     不许为了"包看起来齐全"把缺依据的条写成有依据。 */
+  const packetOut = join(FX, "packet.md");
+  const parkedFile = mk("parked.md", "## 任务清单里挂起的三条\n\n- **#99 举例挂起项**：原文照抄测试。\n\n## 下一节不该被卷进来\n\n不该出现的文字\n");
+  const wp = spawnSync(process.execPath, [SELF, "--roster", rp, "--menu", withApp, "--packet", packetOut, "--parked", parkedFile], { encoding: "utf8" });
+  const po = String(wp.stdout || "") + String(wp.stderr || "");
+  const ptext = existsSync(packetOut) ? readFileSync(packetOut, "utf8") : "";
+  const pOk = wp.status === 0 && (ptext.match(/^### \d+\./gm) || []).length === 3 && ptext.includes("№30") && ptext.includes("№69") && ptext.includes("名册这条没有 basis=");
+  ok += pOk ? 1 : 0;
+  console.log(`${pOk ? "PASS" : "FAIL"}  --packet 逐条数=名册 open(3)、缺 basis 的 №30/№69 如实点名（exit=${wp.status}）`);
+  const pParked = ptext.includes("#99 举例挂起项") && !ptext.includes("不该出现的文字") && ptext.includes("## 守恒自证");
+  ok += pParked ? 1 : 0;
+  console.log(`${pParked ? "PASS" : "FAIL"}  挂起项只并入那一节（按标题切，下一节的文字不许卷进决策包）`);
   rmSync(FX, { recursive: true, force: true });
-  const total = cases.length + 7;
+  const total = cases.length + 9;
   console.log(`\nRULINGMENU_SELFTEST=${ok === total ? "PASS" : "FAIL"} ${ok}/${total}`);
   process.exit(ok === total ? 0 : 1);
 }
@@ -339,6 +434,23 @@ if (flag("selftest")) {
 const ROSTER = resolve(arg("roster", ""));
 const MENU = resolve(arg("menu", join(dirname(ROSTER), "ruling-menu-v38.md")));
 if (!existsSync(ROSTER)) { console.log(`${RK}=NOT-EVIDENCED reason=--roster 读不到`); process.exit(2); }
+
+/* 决策包：同一份名册、同一把守恒尺，输出成可逐条回答的文件。 */
+if (flag("packet")) {
+  const roster = readRoster(ROSTER);
+  if (roster.err || !roster.selfAgree) { console.log(`${RK}=FAIL reason=名册不可信（${roster.err || "块尾自述与逐行数不一致"}）⇒ 拒绝据它出决策包`); process.exit(1); }
+  const outP = resolve(arg("packet", join(dirname(ROSTER), `ruling-packet-${verOf(ROSTER).replace(/\./g, "")}.md`)));
+  const parkedPath = resolve(arg("parked", join(REPO, "reports/audit/mp-fidelity-2026-10-18/parked.md")));
+  const pk = extractParked(parkedPath, "挂起");
+  if (pk.err) console.log(`${RK}=NOTE 挂起项没并进决策包：${pk.err}（待裁 ${roster.open.length} 条照出，缺的那半要人去补，不假装齐）`);
+  const old = existsSync(MENU) ? readMenu(MENU) : null;
+  const p = renderPacket(roster, old, pk.text || "", pk.err ? "" : parkedPath.replace(REPO + "/", ""), verOf(ROSTER));
+  mkdirSync(dirname(outP), { recursive: true });
+  writeFileSync(outP, p.text + "\n", "utf-8");
+  const conserved = p.count === roster.open.length;
+  console.log(`${RK}=PACKET ${outP} 逐条=${p.count} 名册open=${roster.open.length} 守恒=${conserved ? "成立" : "不成立"} 缺basis=${p.noBasis.length}${p.noBasis.length ? "（№" + p.noBasis.join("、№") + "）" : ""} 自带建议=${p.withAdvice.length} 挂起项=${pk.err ? "未并入" : pk.lines + " 行"}`);
+  process.exit(conserved ? 0 : 1);
+}
 
 if (flag("write")) {
   const roster = readRoster(ROSTER);
