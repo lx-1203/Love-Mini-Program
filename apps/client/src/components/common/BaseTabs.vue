@@ -36,7 +36,7 @@
           <view
             v-if="tab.badge !== undefined && tab.badge !== null && tab.badge !== ''"
             class="base-tab-badge"
-            :style="badgeStyle"
+            :style="badgeStyleFor(isActive(tab.key))"
           >{{ formatBadge(tab.badge) }}</view>
           <view v-if="variant === 'underline'" class="base-tab-underline" />
         </view>
@@ -61,7 +61,7 @@
         <view
           v-if="tab.badge !== undefined && tab.badge !== null && tab.badge !== ''"
           class="base-tab-badge"
-          :style="badgeStyle"
+          :style="badgeStyleFor(isActive(tab.key))"
         >{{ formatBadge(tab.badge) }}</view>
         <view v-if="variant === 'underline'" class="base-tab-underline" />
       </view>
@@ -136,10 +136,29 @@ const emit = defineEmits<{
    grep "<BaseTabs" 证；badgeColor/badgeColor prop 无任何调用点传值，已 grep 证）⇒ 零外溢。 */
 const badgeColorValue = computed(() => props.badgeColor || `var(--c-brand-800, ${designTokens.color.brand[800]})`);
 
-/** 徽章内联样式 */
-const badgeStyle = computed(() => ({
-  backgroundColor: badgeColorValue.value,
-}));
+/**
+ * 徽章内联样式。
+ *
+ * R15-L06-D11（颜色token P2 · likes top 帧）：R14-L06-D11 把选中胶囊底从 #36C99A 换到
+ * --c-brand-800（:301），却没复算「徽章默认底也是 --c-brand-800」（:137）——同色共存后
+ * 徽章圆片在帧上整枚消失，只剩一枚裸白「1」；未选中行的徽章仍是深片压浅底、清晰成块。
+ * 对比度本身没坏（白字压 brand-800 仍 6.45:1），坏的是「片 vs 底」这对非文本边界 = 1:1。
+ * 修法取卡上第一条（选中行反相）：徽章底 --c-neutral-0 纯白 + 字 --c-brand-800，
+ * 白片压 #156B51 胶囊 = 6.45:1（≥非文本 3:1），片内 brand-800 字压白片 = 6.45:1（≥正文 4.5:1），
+ * 两个方向同时达标；未选中行（深片压 --c-bg-page #EEF7F2 = 5.91:1）一个像素不动。
+ * 只在 variant 有实心选中底（pill / block）时反相：underline 变体选中行无底色，
+ * 深片仍成立，不动。只在消费点未显式传 badgeColor 时反相：传了自定义色即由消费点自管
+ * 徽章取色，组件不去猜它与选中底的关系（全仓当前零调用点传值，见 :135 注）。
+ */
+function badgeStyleFor(active: boolean): Record<string, string> {
+  if (active && props.variant !== "underline" && !props.badgeColor) {
+    return {
+      backgroundColor: "var(--c-neutral-0, #FFFFFF)",
+      color: badgeColorValue.value,
+    };
+  }
+  return { backgroundColor: badgeColorValue.value };
+}
 
 /** 判断 tab 是否激活 */
 function isActive(key: string): boolean {
@@ -297,6 +316,10 @@ function formatBadge(badge: number | string): string {
 .base-tabs--pill .base-tab-item.is-active {
   background: var(--c-brand-800, #156B51);
 }
+
+/* R15-L06-D11（颜色token P2 · likes top 帧）：选中行徽章改由脚本反相（白片 + brand-800 字，
+   badgeStyleFor 内联输出；内联样式优先级高于本段类规则，故不在此处写 background 覆盖），
+   理由与实算见 script 段 badgeStyleFor 上方注。 */
 
 .base-tabs--pill .base-tab-item.is-active .base-tab-label {
   color: var(--c-neutral-0, #FFFFFF);

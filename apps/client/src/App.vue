@@ -739,6 +739,17 @@ page {
   padding-bottom: calc(112rpx + env(safe-area-inset-bottom));
 }
 
+/* R15-L02-D12（层级遮挡 P1 / R15-B01）：本人主页末卡「推荐给好友」被 custom-tabBar 切断。
+   共用类 .page-bottom-safe 只让 112rpx + 单 env，比 tabBar 实高少 72rpx + 一份安全区
+   （口径见 theme/design-variables.scss:483；tabBar 真值源 custom-tab-bar/index.wxss:17-19）。
+   只对本人主页根节点（pages/profile/index.vue:1643 「profile-page page-bottom-safe」）
+   抬到单点令牌 --tab-bar-total-h（184rpx + 双 env），与 discover/messages/nearby 同口径。
+   不动共用值：home/index.vue:520 明确归零、nearby/index.vue:994 自持口径、
+   subpackages/village/village/index.vue:603 是非 tabBar 页（抬共用值会凭空多出底部死白）。 */
+.profile-page.page-bottom-safe {
+  padding-bottom: var(--tab-bar-total-h, calc(184rpx + env(safe-area-inset-bottom) + env(safe-area-inset-bottom)));
+}
+
 /* 带缩进的底部安全区（内边距与左右边距一致） */
 .page-bottom-safe--inset {
   padding-bottom: calc(112rpx + env(safe-area-inset-bottom));

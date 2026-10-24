@@ -118,7 +118,13 @@ const statusInfo = computed(() => {
         // 较原值 #36C99A 压 #E8F4FD 的 1.88:1 提升 2.05 倍），并与仓内已定案的
         // 未认证处理逐字同构（campus/campus/hub.vue:804-808 R1-L05-D15「未认证=淡紫底+紫字」）。
         // brand 绿自此只留给已认证/可行动态（:85 不动）。
-        color: "var(--c-lavender-500, #8B5CF6)",
+        // R15-L09-D09（颜色token P2）：--c-lavender-500 #8B5CF6 压 --c-lavender-50 #F5F3FF
+        // 实算 3.86:1（帧上墨迹 #9063F6 ⇒ 3.61:1），而本行 36rpx/700 未达 24px 或 18.66px 粗体
+        // 的「大字号」档 ⇒ 必须 ≥4.5:1。lavender 族在 design-variables.scss:313-315 只发了
+        // 50/100/500 三阶、无更深档，故取仓内同一枚未认证紫的定案实色 #6D28D9
+        // （campus/campus/hub.vue:840 R10-L04-D20 同值同语义「未认证=淡紫底+紫字」），
+        // 压 #F5F3FF 实算 6.48:1、压 lavender-100 5.98:1，色相仍是紫、与已认证绿分家。底色不动。
+        color: "#6D28D9",
         // R8-L09-D14（颜色token）：原 --c-tint-blue-soft 让同一张状态卡在未认证态走蓝调、
         // 已认证态走 real-name.vue:91 的 --c-brand-50 绿调 ⇒ 两态两套色相，且蓝调与本道
         // 其余帧的浅绿体系（--c-bg-page #EEF7F2）断层。改取紫色族 50 阶浅底

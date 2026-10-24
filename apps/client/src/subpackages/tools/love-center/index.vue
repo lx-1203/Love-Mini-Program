@@ -251,7 +251,14 @@ onShareAppMessage(() => {
    改按 §1.2 的分级降饱和：卡底保持 --c-bg-container（不乘透明度）、图标单独降饱和、
    标题/说明走 --c-text-tertiary #6B7571（白底 4.76:1）、角标单独给一档浅底（见下）。 */
 .love-center__board--sealed {
-  border: 2rpx solid var(--c-status-disabled, #DCE5E2);
+  /* R15-L07-D16（颜色token P2）：封存态原只有一条 2rpx=1px 的 --c-status-disabled #DCE5E2 描边
+     （帧 x=194 取样 rgb(220,229,226)），卡底仍 #FFFFFF 与左列开放卡完全同色，两态只靠 1px 灰线分辨。
+     按 §1.2「浅底块 = --c-bg-surface」把封存卡底落到 #F3FAF6（design-variables.scss:129），
+     描边取消（那 1px 灰线不再承担状态语义）。注意 box-sizing 由 global.scss 的 view{border-box} 兜住，
+     去掉 2rpx 描边后外框尺寸不变，只有内衬多 2rpx，不产生卡片位移。
+     卡底 #F3FAF6 对开放卡白底 #FFFFFF = 1.06:1、对页底 #EEF7F2 = 1.03:1 —— 差异读得出但很轻，
+     属 §1.2 分级降饱和的浅底档，不是「换成另一个品牌色」。 */
+  background: var(--c-bg-surface, #F3FAF6);
 }
 
 .love-center__board--sealed .love-center__board-icon {
@@ -261,16 +268,22 @@ onShareAppMessage(() => {
 
 .love-center__board--sealed .love-center__board-title,
 .love-center__board--sealed .love-center__board-desc {
-  color: var(--c-text-tertiary, #6B7571);
+  /* R15-L07-D16 连带（实算驱动，不是随手加深）：卡底从 #FFFFFF 落到 #F3FAF6 后，
+     --c-text-tertiary #6B7571 压新底 = 4.4953:1（node 实算，差 0.005 不达 4.5:1，14px/15px 不享大字号豁免）
+     ⇒ 两行墨色提到 --c-text-secondary #4A524E，压 #F3FAF6 = 7.60:1。 */
+  color: var(--c-text-secondary, #4A524E);
 }
 
 .love-center__board-sealed {
   align-self: flex-start;
   /* R8-L07-D09 连带：角标自成一档浅底（--c-status-disabled #DCE5E2）+ --c-text-secondary 墨，
-     对比 6.28:1；字号由 --fs-xs(20rpx) 提到 --fs-sm(22rpx)，不再依赖整卡透明度表达封存。 */
+     对比 6.28:1；字号由 --fs-xs(20rpx) 提到 --fs-sm(22rpx)，不再依赖整卡透明度表达封存。
+     R15-L07-D16 连带：卡底改 #F3FAF6 后，同档浅底角标压卡底只剩 1.21:1，读成「没有底」⇒
+     角标底深一档取已注册的 --c-border-strong #C2CAC6（design-variables.scss:191/404），
+     对卡底 1.58:1、角标墨 #4A524E 压它的实算 4.81:1 ≥4.5:1（22rpx 小字不享豁免，故不再加深）。 */
   font-size: var(--fs-sm, 22rpx);
   color: var(--c-text-secondary, #4A524E);
-  background: var(--c-status-disabled, #DCE5E2);
+  background: var(--c-border-strong, #C2CAC6);
   padding: 4rpx 12rpx;
   border-radius: var(--r-full, 999rpx);
 }
@@ -296,8 +309,11 @@ onShareAppMessage(() => {
 
 .love-center__board-desc {
   /* R8-L07-D10：说明行原 --fs-xs（真值 20rpx，实测 9.7px/字≈19.2rpx，属 §1.3「极小：角标·法务」档），
-     提到 --fs-md（26rpx）与 §1.3 的正文/说明两档对齐。 */
-  font-size: var(--fs-md, 26rpx);
+     提到 --fs-md（26rpx）与 §1.3 的正文/说明两档对齐。
+     R15-L07-D13（字号 P2）：--fs-md 真值 26rpx=13px（design-variables.scss:563），帧 y=358..371
+     墨高 13px，与同卡标题 --fs-xl(30rpx=15px) 只差 2px、比 §1.3 说明档 14px 小 1px，四张卡副行读成标签
+     ⇒ 再升一档到 --fs-lg（design-variables.scss:564 =28rpx=14px），行高 1.5 不动。 */
+  font-size: var(--fs-lg, 28rpx);
   color: var(--c-text-secondary, #6b7280);
   line-height: 1.5;
 }

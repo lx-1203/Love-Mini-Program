@@ -12,11 +12,13 @@
  * 推荐偏好；非学生：基本资料→日程→推荐偏好）。完成度链路：
  * 基本资料30 + 校园30(学生) + 日程20 = 80 → profileCompleted=true → 解锁全部功能。
  */
-import { computed, onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import { IMAGE_PATHS } from "../../../config/images";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
+// R15-L12-D08：注册流程进度条（第 3 步「时间安排」），与 campus:26 / recommend-pref:181 同一组件（variant 取法见模板注释）
+import SetupProgress from "../../../components/setup/SetupProgress.vue";
 import { useProfileStore } from "../../../stores/profile";
 import { replaceAppPath } from "../../../utils/navigation";
 import { SUBPACKAGE_ROUTES } from "../../../constants/routes";
@@ -65,19 +67,14 @@ function removeTimeWindow(idx: number) {
 const saving = ref(false);
 
 /**
- * R9-L12-D11（颜色token P2）：主 CTA 原无论空态与否都取 --c-gradient-brand 全亮（帧上
- * y729-773 实测 #4BD0A3），而同流程 campus 在 0/3 时是 --c-status-disabled 灰钮，
- * 两页对「未完成」的状态色口径相反，用户无法从按钮判断能否继续。
- * 这里给出与 save() 既有校验（见下 :85-94 两处 toast 守卫）同源的可用性判据：
- * 常去区域非空 且 至少一个非空时段。判据只看用户已填内容，不引入任何后端字段。
- * 直接复用 BottomActionBar 既有禁用档（BottomActionBar.vue:120，底 #DCE5E2 / 字 #4A524E，
- * 6.27:1），save() 的两条 toast 守卫保留为兜底，不删。
+ * R15-L12-D10（可达性 P1）：撤回 R9-L12-D11 引入的 canSave 禁用档。
+ * 该判据在空态把主 CTA 压成 --c-status-disabled #DCE5E2、并由 BottomActionBar:64 的
+ * `@tap="!disabled && emit('primary')"` 吞掉点击 ⇒ 本文件 save() 里 :82-90 两条 toast 守卫
+ * （locationRequired / timeWindowRequired）在空态永不可达：用户点灰钮零反馈，
+ * 也不知道本步缺哪项才能交付。campus:316-320 已在 R11-L12-D09 按同一裁定去掉 :disabled
+ * （按钮常亮、缺项交给 save() 的 toast 定位），本页自此与 campus 同口径。
+ * canSave 的唯一消费点就是那条 :disabled，随之一并删除（tsconfig.base.json:41 noUnusedLocals）。
  */
-const canSave = computed(
-  () =>
-    form.preferredCampusArea.trim().length > 0 &&
-    (form.preferredTimeWindows || []).some((w: string) => !!w && w.trim().length > 0),
-);
 
 async function save() {
   if (saving.value) return;
@@ -123,17 +120,35 @@ async function save() {
          两张卡套一层普通 view 作纵向堆叠容器——不给 SectionCard 标签本身写宿主页 scoped 类，
          因为 uni-app mp-weixin 把子组件编译成自定义组件，宿主 scoped 选择器落在组件根上不可靠
          （SafeImage 同型前例，见共享基件车道结论）。 -->
+    <!-- R15-L12-D08（位置 P2）：campus:221 与 recommend-pref:181 在本页同一位置
+         （页头副标题之下、正文首卡之上）都有这一块；本页此前直接起「偏好设置」卡，
+         学生在第 3/5 步看不到任何进度指示。按另两页同一组件、同一 5 步表补回
+         （shell__body 已是 flex 列 + 24rpx gap，无需另写间距）。
+         偏离卡上 `variant="student"` 一字：SetupProgress.vue:143-146 的 LEGACY_STEP_MAP.student
+         是旧表 {1:1,2:2,3:4,4:5}，**没有任何键映射到新位置 3**——按卡传 student+3 会被
+         映射成 4「推荐偏好」，画面会把第 3 步报成 4/5。本页传的是真实链路序号（3=时间安排），
+         故走 variant="full"（STEP_DEFS_FULL 与 STEP_DEFS_STUDENT 在 :79-97 逐条同值，
+         圆点/连线/计数口径与另两页完全一致），实得「第 3/5 步 · 时间安排」。
+         改 LEGACY_STEP_MAP 属组件车道，不在本车道可写集。 -->
+    <SetupProgress :current-step="3" variant="full" />
+
     <view class="card-stack">
       <SectionCard :title="t('setup.schedule.prefTitle')" compact>
         <!-- R11-L12-D13（可达性）：本框原先只有灰占位文「常去区域」（zh-CN.ts:3223），
              输入后占位消失、画面上再无任何文字说明这一栏是什么；占位本身 #A0A2A1 压
              #F3FAF6 也只有 2.42:1，不足以承载字段语义。现按卡在框上方补一行可见标签，
              文案复用 setup.schedule 命名空间既有 key placePlaceholder（locale 属并行车道，
-             不自造文案）；字段名从占位提升为常驻标签后，框内占位不再重复同一串，留空。
+             不自造文案）；字段名从占位提升为常驻标签。框内占位此后曾留空，R15-L12-D09 起
+             改为示例值（见下一条），不再重复字段名。
              档位与 campus .form-row__label 同值（--fs-sm / --c-text-secondary / 500）。 -->
         <text class="field-label">{{ t('setup.schedule.placePlaceholder') }}</text>
+        <!-- R15-L12-D09（空态文案 P2）：:placeholder="''" 让 88rpx×296px 的框内零字符引导，
+             而同一卡下方的时段框有完整示例句。仓内 setup.schedule 块（zh-CN.ts:3214-3232）
+             没有「常去区域」的示例值键、locale 属并行车道不可改，故按卡给示例值直接落字面量
+             （两框都没挂 placeholder-class ⇒ 与下方时段框走同一档 UA 占位灰，视觉同源）；常驻标签行不动，
+             占位只承担「该怎么填」的示例，不重复字段名。 -->
         <input
-          cursor-spacing="20" v-model="form.preferredCampusArea" class="field" :placeholder="''" :aria-label="t('setup.schedule.placePlaceholder')" />
+          cursor-spacing="20" v-model="form.preferredCampusArea" class="field" placeholder="如：图书馆 / 北草坪" :aria-label="t('setup.schedule.placePlaceholder')" />
       </SectionCard>
 
       <!-- R8-L12-D07：分区二「空闲时段」。标题/副标题走仓内既有 i18n 键 homeSetup.scheduleTitle /
@@ -194,11 +209,15 @@ async function save() {
          「保存并继续」这一档，locale 属并行车道不可改，故复用同一 setup 命名空间下
          上一步 campus（campus/index.vue:306 同一个键、同一语义「保存后进下一步」）
          的 saveLabel「保存并继续」（zh-CN.ts:3208）。
-         R9-L12-D11：空态禁用档由 canSave 判据给出，口径与 campus 一致。 -->
+         R9-L12-D11（已被 R15-L12-D10 撤回）：空态禁用档曾由 canSave 判据给出。
+         R15-L12-D10（可达性 P1）：该禁用档已撤回——:disabled="!canSave || saving" 在空态
+         把整条 CTA 填成 #DCE5E2 且吞掉点击，画面上没有任何「缺哪项」的就地说明，
+         save() 的两条 toast 守卫也永不可达。现改为常亮可点（与 campus:316-320 同口径），
+         缺项由 save() 的 toast（locationRequired / timeWindowRequired）就地定位；
+         防重复提交仍由 save() 开头的 saving 守卫承担。 -->
     <view class="cta-spacer" />
     <BottomActionBar
       :primary-label="t('setup.campus.saveLabel')"
-      :disabled="!canSave || saving"
       fixed
       @primary="save"
     />

@@ -433,7 +433,11 @@ function skip() {
 .value-card__text {
   font-size: var(--fs-base);
   line-height: 1.7;
-  color: var(--c-brand-700);
+  /* R15-L12-D06（颜色token P2）：原 --c-brand-700 #1F8D6A 压 --c-bg-brand #E8FBF2
+     实算 3.84:1（帧上最深墨 #2C9372 ⇒ 3.53:1），24rpx=12px 正文远低于 4.5:1。
+     改同族下一档 --c-brand-800 #156B51：压 #E8FBF2 实算 6.00:1。
+     #E8FBF2 底与 --c-brand-200 边框保留不动。 */
+  color: var(--c-brand-800, #156B51);
 }
 
 /* ========== 跳过入口（强化：醒目文字按钮 + 箭头，置于主按钮上方） ========== */
@@ -453,7 +457,11 @@ function skip() {
 
 .skip-bar__text {
   font-size: var(--fs-md);
-  color: var(--c-brand-700);
+  /* R15-L12-D05（可达性 P1）：原 --c-brand-700 #1F8D6A 压页面底 --c-bg-page #EEF7F2
+     实算 3.79:1（帧上最深墨 #2C9372 ⇒ 3.48:1），而跳过入口是非学生用户在本页的唯一出口
+     （主按钮三项未选全前不可用）。改同族下一档 --c-brand-800 #156B51：同底实算 5.91:1。
+     字号 26rpx、下划线、.skip-bar 的 88rpx 热区均不动。 */
+  color: var(--c-brand-800, #156B51);
   font-weight: 600;
   text-decoration: underline;
 }

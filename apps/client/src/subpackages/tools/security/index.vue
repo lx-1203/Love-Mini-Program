@@ -132,6 +132,19 @@ function currentDeviceModel(): string {
 }
 
 /**
+ * R15-L07-D22（文案 P2）：当前设备型号收口 —— 帧上主标题被单行省略号切成
+ * 「手机号登录 · iPhone 12/13 (…」（y=651..663，墨迹止于 x≈255），型号后半段丢失、括号未闭合。
+ * 处置只动本文件里的字符串生成，不借「把徽章挪走」去换版面：
+ * ① 先去掉尾部括号段（` (Pro)` / `（Pro）`），② 再按 12 字截断补「…」。
+ * 型号来自 uni.getDeviceInfo().model（:119），不新增后端字段、不新增 i18n 键。
+ */
+function trimModelLabel(model: string): string {
+  const stripped = model.replace(/\s*[(（][^()（）]*[)）]\s*$/, "").trim();
+  const base = stripped || model.trim();
+  return base.length > 12 ? `${base.slice(0, 12)}…` : base;
+}
+
+/**
  * R6-L09-D13（文案 P2）：设备行的主标题。
  *
  * 缺陷实况：real 档两帧合计 9 行设备，主标题逐字都是「手机号登录」（`platformLabel(item.platform)`
@@ -142,13 +155,23 @@ function currentDeviceModel(): string {
  * - `location` 字段后端 View 里根本没有（RealDeviceView:180-185 只有 id/deviceId/platform/
  *   lastActiveAt/revoked/createdAt）⇒ 「未知位置」占位需要 ① 后端补字段（NEEDS-DATA）
  *   ② i18n 新增键（i18n/** 归 F7），本车道不糊字符串、不私加文案。
+ * R15-L07-D22/D24：型号收口见 trimModelLabel（:141）；非当前设备改用 createdAt，
+ * 上一段「deviceId 末四位」只在 createdAt 缺失时兜底。
  */
-function deviceRowLabel(platform: string, deviceId: string, isCurrent: boolean): string {
+function deviceRowLabel(
+  platform: string,
+  deviceId: string,
+  isCurrent: boolean,
+  createdAt?: string | null,
+): string {
   const method = platformLabel(platform);
   if (isCurrent) {
     const model = currentDeviceModel();
-    return model ? `${method} · ${model}` : method;
+    const shown = model ? trimModelLabel(model) : "";
+    return shown ? `${method} · ${shown}` : method;
   }
+  const firstSeen = formatDeviceDate(createdAt ?? null);
+  if (firstSeen) return `${method} · ${firstSeen}`;
   const tail = deviceId && deviceId !== "unknown" ? deviceId.slice(-4) : "";
   return tail ? `${method} · ${tail}` : method;
 }
@@ -236,6 +259,14 @@ function formatDeviceTime(isoString: string | null): string {
   return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
+/** R15-L07-D24：设备主标题用的首登日期（只取月/日，后端 createdAt），无需新增 i18n 键 */
+function formatDeviceDate(isoString: string | null): string {
+  if (!isoString) return "";
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
 /**
  * real 模式拉取设备列表（3-D）。
  * mock 模式保留本地演示设备（buildInitialDevices）。
@@ -248,7 +279,8 @@ async function loadDevices(): Promise<void> {
       // 展示 ID 与后端记录 ID 保持一致（下线接口按 id 吊销）
       id: String(item.id),
       // R6-L09-D13：主标题带上「本机型号 / deviceId 末四位」，不再 9 行同名
-      device: deviceRowLabel(item.platform, item.deviceId, index === 0 && !item.revoked),
+      // R15-L07-D24：非当前设备的主标题改用「平台 · 首登日期」（createdAt 是后端已有列）
+      device: deviceRowLabel(item.platform, item.deviceId, index === 0 && !item.revoked, item.createdAt),
       location: "",
       // 按活跃时间倒序，首条即当前会话（真实会话活跃度最高）
       lastActive: item.revoked
@@ -1060,8 +1092,14 @@ async function submitDeleteAccount(): Promise<void> {
   /* R6-L09-D14（颜色token P2）：删掉行内兜底 `#fee2e2`（Tailwind red-200，§1.2 表内无此值）。
      根因是 `--c-error-soft` 全仓无定义 ⇒ 每处都落到私值，违反 §1.1 第 3 条「一令牌一值」；
      令牌定义侧已由 F1 车道补上（theme/design-variables.scss:857 `--c-error-soft: var(--c-error-bg-solid)`），
-     本车道只把页面侧的兜底字面量清掉，页面只引令牌。 */
+     本车道只把页面侧的兜底字面量清掉，页面只引令牌。
+     R15-L07-D26（颜色token P2）：#FEF5F6 压白卡 #FFFFFF 实算 1.07:1（帧取样 rgb(254,245,246)），
+     胶囊边界在白底上等于 0 像素，只能靠 11px 深红字猜热区 ⇒ 补 2rpx 实色描边定边界。
+     卡面建议的 #F3C9CB 实算只有 1.50:1（对白卡），不达非文本 3:1；改用已注册的 --c-error #E5454D
+     （design-variables.scss:66），对白卡 3.97:1 ≥3:1，且与 11px 墨色 #991B1B 同族不抢读。
+     box-sizing 已是 border-box（:1054），加描边不回涨盒高，88rpx 热区与行高逐像素不变。 */
   background: var(--c-error-soft);
+  border: 2rpx solid var(--c-error, #E5454D);
   flex-shrink: 0;
 }
 

@@ -388,15 +388,22 @@ onMounted(async () => {
                    头像位重新有 40×40 的确定锚点；src 取不到时由 SafeImage 的
                    fallback=/static/assets/default-avatar.jpg 兜底（real 包内在盘：
                    dist/build/mp-weixin-real/static/assets/default-avatar.jpg）。 -->
-              <SafeImage
-                v-if="!topic.isAnonymous && topic.author?.avatar"
-                class="topic-card__avatar"
-                :src="resolveMediaUrl(topic.author.avatar)"
-                mode="aspectFill"
-              />
-              <text class="topic-card__author">
-                {{ topic.isAnonymous ? t('campus.index.anonymousAuthor') : topic.author.name }}
-              </text>
+              <!-- R15-L05-D03（P2 · 位置）：卡片底栏原为「头像 / 作者名 / 回复胶囊」三子项
+                   space-between 平铺 ⇒ 作者名被顶到卡片水平中心，与左侧头像脱开约 140px，
+                   帧上读成「头像…（空）…远山…（空）…12」。R10-L05-D03 只修了头像锚点没修归位。
+                   现头像 + 作者名包进 .topic-card__author-row 左聚簇（gap 8rpx），
+                   底栏只剩两子项，space-between 把回复胶囊单独推右。 -->
+              <view class="topic-card__author-row">
+                <SafeImage
+                  v-if="!topic.isAnonymous && topic.author?.avatar"
+                  class="topic-card__avatar"
+                  :src="resolveMediaUrl(topic.author.avatar)"
+                  mode="aspectFill"
+                />
+                <text class="topic-card__author">
+                  {{ topic.isAnonymous ? t('campus.index.anonymousAuthor') : topic.author.name }}
+                </text>
+              </view>
               <view class="topic-card__replies">
                 <!-- R10-L05-D04（P2 · 可达性）：两处一起修——
                      ① 图标：原 IMAGE_PATHS.ICONS_SOCIAL.COMMENT = assets/icons/social/comment.svg，
@@ -510,7 +517,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .school-name {
   font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
-  color: var(--c-text-inverse);
+  /* R15-L05-D01（P1 · 可达性）：改前 --c-text-inverse = rgba(255,255,255,.95)，压在页头
+     135° 渐变起点 $green-primary = --c-brand #36C99A 上：0.95 白合成为 #F5FCFA，实测 2.02:1
+     （卡里帧测 2.1 同档），36rpx/700 属大字档也仍需 3:1 ⇒ 连豁免线都不到，校名读不出。
+     同页返回键(:496)、认证徽章(:547)以及同域页头标题（topic-detail.vue:459/469、
+     post-topic.vue:678/686、certification.vue:530/541 均取 --c-text-primary）都收深色墨，
+     此处补齐口径：改 --c-text-primary #1A1E1C，压 #36C99A = 8.01:1，
+     压渐变 50% 的 --c-brand-300 #75E1B7 = 10.60:1（右端渐浅只会更亮 ⇒ 只增不减）。 */
+  color: var(--c-text-primary);
 }
 
 .cert-badge {
@@ -822,8 +836,14 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 }
 
 .topic-card__time {
-  font-size: var(--fs-sm, 22rpx);
-  color: $text-tertiary;
+  /* R15-L05-D02（P3 · 字号）：改前 --fs-sm 22rpx = 11px，落在全站时间戳 12–13px 档之下；
+     且 $text-tertiary #6B7571 压胶囊底 $bg-page #EEF7F2 实算 4.36:1（卡里帧测 4.3 同档），
+     24rpx/12px 正体不属大字豁免 ⇒ 需 4.5:1，双档都取低了。
+     字号提到 --fs-base 24rpx（全站时间戳档）；墨色同步一档到 $text-secondary
+     （--c-text-secondary #4A524E，对 #EEF7F2 = 7.37:1）——只提字号不提墨，4.36:1 仍不达标，
+     故两处一起收，语义仍是「时间戳 = 次要信息」。 */
+  font-size: var(--fs-base, 24rpx);
+  color: $text-secondary;
   flex-shrink: 0;
   background: $bg-page;
   padding: 4rpx 12rpx;
@@ -853,6 +873,16 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   border-top: 1rpx solid $border-light;
 }
 
+/* R15-L05-D03：头像 + 作者名左聚簇。底栏 space-between 只负责把回复胶囊推到右端，
+   作者名紧贴头像右侧 8rpx，不再被顶到卡片水平中心。 */
+.topic-card__author-row {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
 .topic-card__author {
   font-size: var(--fs-base, 24rpx);
   /* R13-L04-D09（P1 · 颜色token）：作者名原取 $pink-primary（--c-romance-500 #FF6B81）压白卡
@@ -869,7 +899,8 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   width: 40rpx;
   height: 40rpx;
   border-radius: 50%;
-  margin-right: 8rpx;
+  /* R15-L05-D03：横距改由 .topic-card__author-row 的 gap 8rpx 提供；
+     留着原 margin-right 会变成 8+8=16rpx 双份，作者名反而离头像更远。 */
   flex-shrink: 0;
 }
 

@@ -108,6 +108,33 @@ const benefits = computed(() =>
     : [t("lock.benefitMatch"), t("lock.benefitCampus"), t("lock.benefitChat")]
 );
 
+/**
+ * R15-L02-D13（素材缺失 P2 · village top 帧）：三行权益原共用 :326 的 lockIconSrc，
+ * 帧上三枚图标逐像素同形同尺寸（约 12px 见方的同一枚锁），三条不同能力在图标层 0 区分。
+ * 按卡上口径给三行各配一枚**仓内既有**图标（register/ 系，与 lock.svg 同一描线档
+ * stroke="#4A524E" = --c-text-secondary，压页底 #EEF7F2 实算 7.37:1 ≥ 非文本 3:1，
+ * 三枚同档不存在「一枚深一枚浅」）：
+ *   解锁精准匹配推荐 → register/heart.svg（匹配 / 心动）
+ *   查看同校校友主页 → register/graduation-cap.svg（校园 / 学历）
+ *   发起私信与匿名聊天 → register/message.svg（私信）
+ * 锁形只保留在主插画（.illustration__lock），不再兼任清单行首。
+ * 不新增/下载/生成素材：三枚均已注册在 config/images.ts 的 REGISTER_ICONS（HEART / GRADUATION /
+ * MESSAGE），且 icons/register 随 real 包发布（文件头 :28-30 已证），不依赖 CDN 桶。
+ * ⚠️ 只对组件自带的默认三条生效：宿主 benefitsOverride 的行语义组件无从得知
+ * （heart-signals/index.vue:76-80 的第二行是 slogan「双向心动，从这里开始」，不是校园能力），
+ * 按序号硬套会给出语义相悖的图标 ⇒ 覆盖态保留中性锁形（= 原行为，不制造新错配）。
+ */
+const DEFAULT_BENEFIT_ICONS: readonly string[] = [
+  IMAGE_PATHS.REGISTER_ICONS.HEART,
+  IMAGE_PATHS.REGISTER_ICONS.GRADUATION,
+  IMAGE_PATHS.REGISTER_ICONS.MESSAGE,
+];
+const benefitIcons = computed<string[]>(() =>
+  props.benefitsOverride && props.benefitsOverride.length > 0
+    ? []
+    : DEFAULT_BENEFIT_ICONS.map((path) => resolveMediaUrl(path))
+);
+
 /* ========== 素材出口：一律过 resolveMediaUrl（R6-B06，见文件头注释） ========== */
 /* R8-L08-D03（颜色token P2 · heart-signals）+ R8-L02-D18（可达性 P2 · village）：
    本组件三枚图标出口的描线色都写死在 SVG 源文件里，页面令牌覆盖不到，
@@ -318,13 +345,15 @@ function browsePublic() {
           <view class="lock-screen__progress-fill" :style="progressBarStyle" />
         </view>
         <!-- R13-L02-D05：三条权益此刻均未解锁，行首语义用「锁」不用「✓」
-             （R14-L02-D05 起主视觉环底那枚 ✓ 也已撤——本屏没有任何真正的已完成态；
-             素材 = 仓内既有 register/lock.svg，经 lockIconSrc 同一出口解析） -->
+             （R14-L02-D05 起主视觉环底那枚 ✓ 也已撤——本屏没有任何真正的已完成态）。
+             R15-L02-D13：默认三条各配一枚同档既有图标（heart / graduation-cap / message，
+             见 script 的 DEFAULT_BENEFIT_ICONS 注），锁形只留在主插画；
+             宿主覆盖清单时 benefitIcons 为空 ⇒ 回落到 lockIconSrc（中性锁，不猜语义）。 -->
         <view class="lock-screen__benefits">
-          <view v-for="benefit in benefits" :key="benefit" class="benefit">
+          <view v-for="(benefit, index) in benefits" :key="benefit" class="benefit">
             <image
               class="benefit__icon"
-              :src="lockIconSrc"
+              :src="benefitIcons[index] || lockIconSrc"
               mode="aspectFit"
               alt=""
             />
@@ -564,7 +593,13 @@ function browsePublic() {
 .lock-screen__illustration {
   position: relative;
   width: 440rpx;
-  height: 400rpx;
+  /* R15-L08-D05（间距 P2 · heart-signals top 帧）：原定高 400rpx(200px)，而环只有 280rpx
+     且 top:30rpx ⇒ 环底缘距容器底缘余 400−30−280 = 90rpx(45px) 的空尾，
+     再加 --sp-8(16px) 的 margin-bottom，帧上环底 y=214 → 主标题墨迹 y=281 净空 67px，
+     声明的 --sp-8 被放大 4 倍。按卡上第一条把容器高收到 30 + 280 = 310rpx：
+     环底缘与容器底缘重合，环下净空回到 --sp-8 一档（16px + 标题行盒上缘 ~6px）。
+     漂浮爱心挂在 top:0 / top:60rpx，全部在 310rpx 以内，收高不裁切任何一个子节点。 */
+  height: 310rpx;
   margin-bottom: var(--sp-8);
 }
 
@@ -660,6 +695,19 @@ function browsePublic() {
   color: var(--c-text-secondary);
   text-align: center;
   line-height: 1.5;
+  /* R15-L02-D14（尺寸比例 P3 · village top 帧）：副标题在 :643 的 560rpx 内容列里折两行，
+     且断点落在词中间——实测容器 560rpx(280px) / 字宽 --fs-lg 28rpx(14px) = 20 字，
+     默认句（zh-CN.ts:2906「完成基础资料填写，即可开启匹配、聊天、校园活动等全部功能」共 28 字）
+     断在第 20/21 字之间，把「校园」拆成「校」「园活动…」，次行只剩 8 字。
+     ⚠️ 卡上写的「校园圈」是 R14 之前的旧文案；现行值是「校园活动」（28 字、无「圈」），
+     故卡上建议的 620rpx 在这里不成立：620rpx(310px)/14px = 22.14 字 ⇒ 断在第 22/23 字之间，
+     把「活动」拆开（校园活 | 动等全部功能），比现状更糟。
+     按卡上第二条口径「按语义手动断成两行、首行≈次行」落到盒宽上：取 550rpx(275px)
+     = 19.6 字 ⇒ 断在第 19/20 字之间，正好落在顿号后（…聊天、| 校园活动等全部功能），
+     两个词都完整、次行 9 字(126px) 是首行 19 字(266px) 的 47%（原 8/20=40%）。
+     取 550rpx 而不是 546rpx(=19.5 字) 是为了留 5px 余量，避开断点正落在字宽整数倍上的边界。
+     内容列的 560rpx 不动：标题/权益两行本来不折，改列宽只会动它们的左对齐起点。 */
+  max-width: 550rpx;
 }
 
 /* R9-L02-D21（可达性 P1 · village）+ R9-L08-D03（可达性 P2 · heart-signals）同一条：
@@ -674,7 +722,15 @@ function browsePublic() {
    （R10-L02-D12 之后 .lock-screen__btn-link-text 改吃 --c-brand-800（:800-804），
      那是「像不像可点」轴要的链接色，与本行的「唯一数值读数」轴不冲突，两档都 ≥4.5:1。） */
 .lock-screen__progress {
-  font-size: var(--fs-base);
+  /* R15-L08-D06（字号 P2 · heart-signals top 帧）：「当前完整度 30%」是整屏唯一的进度读数，
+     却吃 --fs-base(24rpx=12px)，帧上墨迹仅 10px 高，比同屏权益正文（--fs-xl 15px）低一档，
+     还紧贴在 16rpx(8px) 的进度条上方。按卡上第二条升到 --fs-xl(30rpx=15px) 并加 600 字重：
+     字号与 .benefit__text 同档、与它承载的数值同权重；行盒 12→15px 使该行 +4px，
+     全部被 body 的余量吸收（action 已由 R15-L08-D07 贴底，不再往下推内容）。
+     取色不动：--c-text-secondary #4A524E 压页面底 #EEF7F2 实算 7.37:1（≥正文 4.5:1），
+     加粗只增不减。 */
+  font-size: var(--fs-xl);
+  font-weight: 600;
   color: var(--c-text-secondary);
   text-align: center;
 }
@@ -700,6 +756,16 @@ function browsePublic() {
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-brand-200, #A3EBCF);
   overflow: hidden;
+  /* R15-L08-D08（颜色token P2 · heart-signals top 帧）：槽底 --c-brand-200 #A3EBCF 压在页面底
+     #D5ECE3 上实算 1.10:1（<3:1），「还差 70%」那 192px 槽段在帧上几乎看不出边界——
+     填充段本身是达标的（#156B51 压槽 4.72:1），坏的是槽与页底的边界。
+     按卡上口径加 2rpx solid --c-brand-700 #1F8D6A 描边：边 vs 页底 #D5ECE3 实算 3.34:1、
+     边 vs 槽 #A3EBCF 3.02:1（两侧都 ≥ 非文本 3:1），槽右端=100% 的终点由这圈线给出。
+     配 box-sizing: border-box：条的总高仍是 16rpx(8px)，描边向内收，
+     不让 2rpx 描边把整条撑高 4rpx 并推动下方文案（帧上只该多一圈线，不该整体位移）；
+     槽底与填充色都不动（槽底仍只作填充背景）。 */
+  border: 2rpx solid var(--c-brand-700, #1F8D6A);
+  box-sizing: border-box;
 }
 
 .lock-screen__progress-fill {
@@ -716,6 +782,9 @@ function browsePublic() {
   flex-direction: column;
   gap: var(--sp-3);
   margin-top: var(--sp-6);
+  /* R15-L08-D07 兜底：action 的 margin-top:auto 在内容溢出时解析为 0，
+     这一枚保证「权益清单 → 主按钮」永远至少 --sp-9(24px)，不与按钮贴死。 */
+  margin-bottom: var(--sp-9);
 }
 
 .benefit {
@@ -750,8 +819,18 @@ function browsePublic() {
   max-width: 560rpx;
   /* R14-L08-D01：原 --sp-8(32rpx=16px) 在 space-between 下被余量顶成帧上 94px 的浮动带；
      body 改贴顶后这里才是真正生效的定值，按卡上口径提到 --sp-9(48rpx=24px)
-     ——权益清单与主按钮之间的呼吸位由这一枚令牌单独决定，不再随屏高漂移。 */
-  margin-top: var(--sp-9);
+     ——权益清单与主按钮之间的呼吸位由这一枚令牌单独决定，不再随屏高漂移。
+     R15-L08-D07（间距 P2 · heart-signals top 帧）：R14 把 body 收到 flex-start 后，
+     视口余量全部沉到 action 之下——帧上「先去逛逛匹配推荐」墨迹止 y=561、页脚提示起 y=732，
+     中间 171px(342rpx) 无内容空带（R11 实测 131px，本轮反而涨了）。
+     按卡上第一条让 body 自己吸收余量：action 用 margin-top:auto 贴到 body 内容盒底缘，
+     余量上移到「权益清单 → 主按钮」这一段（CTA 下沉到拇指区，是这一屏该有的构图），
+     action 之下只剩 body 的 --sp-9 下内距 + 页脚自己的 --sp-4 上内距。
+     实算（1rpx=0.5px，同帧）：盒间距 = body 下内距 48rpx(24px) + 页脚上内距 16rpx(8px) = 32px，
+     再扣掉 link 自身下内距 24rpx(12px) 与两侧行盒留白 ⇒ 墨迹净空 ≈ 24~25px ≈ --sp-9 一档。
+     溢出（内容高于 body）时 auto 解析为 0，最小呼吸位由 .lock-screen__benefits 的
+     margin-bottom:--sp-9 兜住，不会把按钮摁到权益行上。 */
+  margin-top: auto;
   display: flex;
   flex-direction: column;
   align-items: center;

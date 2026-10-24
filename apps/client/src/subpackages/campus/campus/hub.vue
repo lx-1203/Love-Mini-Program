@@ -607,8 +607,15 @@ function goBack() {
      的当前值，且 R2b-L05-D03 的 circle-home 主 CTA（理想 #33A06E）唯一收敛解是 600 档
      （dE=7.3），两条缺陷要求「与 circle-home 的 CTA 一起收敛到同一档」⇒ 取 --c-brand-600。
      缺陷建议的「在 design-variables.scss 增设 --c-brand-action」不可执行：theme/ 为只读集，
-     故映射到既有最近档位令牌。渐变两端同色＝纯色，保留写法不动结构。 */
-  background: linear-gradient(135deg, var(--c-brand-600, #2AAE83) 0%, var(--c-brand-600, #2AAE83) 100%);
+     故映射到既有最近档位令牌。渐变两端同色＝纯色，保留写法不动结构。
+     R15-L04-D12（P1 · 颜色token）：R2b 的 600 档取色对「理想图取色」成立，但对「白字可读」不成立——
+     字色 --c-text-inverse = rgba(255,255,255,.95)，0.95 白压 #2AAE83 合成为 #F4FBF9，实测
+     2.68:1（按纯白算 2.81:1），24rpx/700 不属大字豁免档，需 4.5:1。同页「申请加入」描边钮
+     (:893/:900) 与分段 tab (:670/:682) 在 R10-L04-D17/D18 已收到 --c-brand-800，
+     本颗实心 CTA 是页内最后一颗低档绿 ⇒ 随同档收深到 --c-brand-800 #156B51
+     （合成为 #F3F8F6，6.01:1；纯白 6.45:1，design-variables.scss:18）。画面即「按钮填充变深」。
+     同一 600 档白字的 .campus-school-card__cta(:918 声明 / :930 取色) 属另一条未派发行，本车道不动，见交付件备注。 */
+  background: linear-gradient(135deg, var(--c-brand-800, #156B51) 0%, var(--c-brand-800, #156B51) 100%);
 }
 
 .campus-guide__btn-text {
@@ -711,8 +718,16 @@ function goBack() {
 }
 
 .campus-school-card__cover {
-  width: 160rpx;
-  height: 160rpx;
+  /* R15-L04-D13（P2 · 尺寸比例）：改前 160rpx×160rpx，帧上实测 ≈81×80px（同济/上交两张卡同尺寸），
+     卡高随之 160+内衬 40 = 200rpx（帧 202rpx），而理想图同位置封面 150px@853 宽 = 132rpx、
+     卡高 ≈175rpx。28rpx 的大出的封面把整卡抬高一档、同屏少一条学校。
+     故封面收 132rpx（132×0.504 ≈ 66.5px）。卡片内衬保持 20rpx 不动：卡高由三者最高者
+     （封面 132 / CTA min-height 88 / 校名行 ≈42）+ 内衬 40 决定，改后 = 172rpx ≈ 理想 175rpx
+     （改前 160+40 = 200rpx，与帧上 202rpx 吻合）；若同时把内衬放到 --card-padding 32rpx，
+     卡高又回到 196rpx，且卡内可用宽再少 24rpx，R11-L04-D18 刚压回一行的 7 字校名 + 未认证
+     胶囊（需 292rpx）会再次换行 ⇒ 只改封面，内衬不动。 */
+  width: 132rpx;
+  height: 132rpx;
   border-radius: 16rpx;
   overflow: hidden;
   flex-shrink: 0;

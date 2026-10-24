@@ -273,7 +273,7 @@ function handleRetry(): void {
   <AppShell :title="shellTitle" :show-tab-bar="false" show-back fixed>
     <view class="legal-page" :class="{ 'legal-page--fallback': isLocalFallback }">
       <!-- 顶部标题区：R6-L16-D13/D18 —— 卡片头标题与页头同文时不再重排（见 cardTitle 注释） -->
-      <view v-if="showHeader" class="legal-header">
+      <view v-if="showHeader" class="legal-header" :class="{ 'legal-header--meta-only': !cardTitle }">
         <text v-if="cardTitle" class="legal-header__title">{{ cardTitle }}</text>
         <view v-if="showMeta" class="legal-header__meta">
           <!-- R11-L13-D19：兜底态必须上屏披露（本行是状态标识、非业务文案）。
@@ -372,8 +372,10 @@ function handleRetry(): void {
      +1rpx，占位仍恒等于条高（136rpx + env）。
      直接写 calc（与本文件 .legal-footer 的 padding 同一种写法，env/var 均为已在跑的组合），
      不经自定义属性中转，避免中转变量在 WXSS 里解析失败时整条 padding 退化成 0。 */
+  /* R15-L13-D09 连带：吸底钮高由 --btn-height-md(96rpx) 收到 88rpx 后，本占位算式
+     同步换成 88rpx，仍是「占位恒等于条高」= 88 + --sp-4(16) + --sp-6(24) = 128rpx。 */
   padding-bottom: calc(
-    var(--btn-height-md, 96rpx) + var(--sp-4) + var(--sp-6) +
+    88rpx + var(--sp-4) + var(--sp-6) +
       env(safe-area-inset-bottom)
   );
   box-sizing: border-box;
@@ -388,8 +390,9 @@ function handleRetry(): void {
    R9-L13-D08/D10 判过的"无主空带"。写全 calc 表达式（与 :340 同一种已在跑的写法），
    不经自定义属性中转。 */
 .legal-page--fallback {
+  /* R15-L13-D09 连带：与 .legal-page 同源换成 88rpx（+ 兜底披露行 36rpx），两处恒等。 */
   padding-bottom: calc(
-    var(--btn-height-md, 96rpx) + var(--sp-4) + var(--sp-6) + 36rpx +
+    88rpx + var(--sp-4) + var(--sp-6) + 36rpx +
       env(safe-area-inset-bottom)
   );
 }
@@ -428,6 +431,17 @@ function handleRetry(): void {
   line-height: 1.4;
 }
 
+/* R15-L13-D08（间距 P3 · privacy top 帧 · 本地兜底态）：无 cardTitle 时卡片头只剩一行
+   披露药丸（:282），却仍吃 .legal-header 的对称下内距 --sp-6(24rpx=12px)；
+   再叠正文 .legal-content 的 --page-padding(32rpx=16px) 上内距 ⇒ 药丸墨迹到正文首行
+   净空 12+16 = 28px，白卡里先出现一条与内容无关的空带，正文首行被推离它唯一的状态标识。
+   本行只收下内距到 --sp-3(12rpx=6px)：净空 6+16 = 22px，仍是一档呼吸位而不是两块分开。
+   上内距不动（它量的是「卡顶 → 第一行字」，与有无标题无关）；-meta-only 只在
+   cardTitle 为空时挂上，有标题的两页逐像素不变。 */
+.legal-header--meta-only {
+  padding-bottom: var(--sp-3);
+}
+
 .legal-header__meta {
   display: flex;
   flex-wrap: wrap;
@@ -450,7 +464,17 @@ function handleRetry(): void {
    压 --c-warning-bg-tint（:838 = rgba(245,158,11,0.1)，叠白 #FEF5E6）= 6.57:1 ≥ 4.5:1，
    与 StatusState.vue 的 .pill--heat 同一把尺，不新造色。 */
 .legal-header__fallback {
-  font-size: var(--fs-xs);
+  /* R15-L13-D10（字号 P3 · agreement top 帧）：本药丸是 R11-L13-D19 定为 P0 的
+     「非正式版本」状态标识，却吃 --fs-xs(20rpx=10px)——§1.3 里最小的「角标·法务」档，
+     10px 字承载整页合规状态，弱于它的披露优先级。按卡上第二条升到 --fs-base(24rpx=12px)：
+     药丸宽 13 个全角字 ×12 ≈ 156px + 左右内距 12rpx(6px)，仍远窄于卡片内容列（≈344px），
+     不折行、不改卡片高度以外的任何尺度（行盒 +2px，卡头整体 +2px）。
+     不取 --fs-sm(22rpx=11px)：11px 仍是 §1.3 的「角标」档，卡上「弱于披露优先级」那一半没落地。
+     吸底条内同名小字（.legal-footer__fallback :634 的 --fs-xs）不在本行范围、且角色不同
+     （文首=文本状态元信息，吸底条=签署时刻的在场脚注），未动，避免把一行拔成两块正文。
+     取色不动：--c-text-warning-dark #92400E 压 --c-warning-bg-tint 叠白 #FEF5E6 实算 6.56:1
+     （≥正文 4.5:1），本条纯字号轴。 */
+  font-size: var(--fs-base);
   padding: 2rpx 12rpx;
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-warning-bg-tint, rgba(245, 158, 11, 0.1));
@@ -618,7 +642,14 @@ function handleRetry(): void {
 
 .legal-footer__btn {
   width: 100%;
-  height: var(--btn-height-md, 96rpx);
+  /* R15-L13-D09（尺寸比例 P3 · agreement/privacy bottom 帧）：同档主 CTA 两页取高不一——
+     本钮原吃 --btn-height-md(96rpx=48px)，而全站吸底主按钮 BottomActionBar.vue:96 是
+     height: 88rpx(44px)。按卡上第一条把本钮对齐 88rpx，并用同一枚字面量收口页面占位
+     （见 .legal-page / .legal-page--fallback 的 padding-bottom，两处恒等，不留绿缝）。
+     不取卡上第二条「统一 --btn-height-md=88rpx」：该令牌写在 theme/design-variables.scss
+     （不在本车道可写集，硬规矩 1），且它在 profile/orders 等非吸底场景共用，
+     改它会外溢到别的车道正在取景的帧。 */
+  height: 88rpx;
   border-radius: var(--r-xl, 24rpx);
   /* R9-L13-D07/D09（可达性 P2 · privacy + agreement 同根因）：钮底原取 --c-brand #36C99A，
      文字取 --c-text-inverse（= --c-overlay-text-primary，rgba(255,255,255,.95)，
@@ -641,6 +672,11 @@ function handleRetry(): void {
   font-size: var(--fs-lg);
   font-weight: 600;
   color: var(--c-neutral-0, #ffffff);
-  letter-spacing: 2rpx;
+  /* R15-L13-D11（文案 P3 · agreement/privacy bottom 帧）：原 letter-spacing: 2rpx 把
+     7 个 CJK 字逐字撑开（含末字后一格），同档主 CTA 全站不设字距（BottomActionBar.vue
+     .bar__primary 与本文件同档钮文字均 0 字距）⇒ 删除，与全站主 CTA 归一。
+     字串宽度 7×28rpx = 196rpx，删距后少 14rpx(7px)，flex 居中 ⇒ 墨迹左移 3.5px、右移 3.5px，
+     帧上可测。 */
+  letter-spacing: normal;
 }
 </style>

@@ -136,6 +136,24 @@ function getScoreIcon(index: number): string {
           </view>
         </view>
       </view>
+      <view v-else class="match-success__score-empty">
+        <!-- R15-L06-D01（P1 / R15-B11）：共同点真值（后端 match_reasons）与匹配度真分列（§12.3 在册缺列）
+             未就绪 ⇒ 双头像与「立即聊天」之间不留整屏空洞。此处只给「卡头标题 + 骨架行」空态占位：
+             不写任何理由文案、不写任何百分比（沿用 §1.1 禁假分数口径），也不占用 __score-card 类名，
+             ops 用例 MS10 的「.match-success__score-card 存在性 = false」断言仍成立。
+             真值列就绪后按理想图重建为真实共同点卡。 -->
+        <view class="match-success__score-empty-head">
+          <text class="match-success__score-title">{{ t('matchSuccess.scoreTitle') }}</text>
+        </view>
+        <view class="match-success__score-empty-row">
+          <view class="match-success__score-empty-box"></view>
+          <view class="match-success__score-empty-bar"></view>
+        </view>
+        <view class="match-success__score-empty-row">
+          <view class="match-success__score-empty-box"></view>
+          <view class="match-success__score-empty-bar match-success__score-empty-bar--short"></view>
+        </view>
+      </view>
     </view>
 
     <view class="match-success__actions">
@@ -449,6 +467,54 @@ function getScoreIcon(index: number): string {
 /* R11-L06-D05 / §12.3：match-success__score-percent / score-track / score-fill 三条
    假匹配度样式随百分比与进度条一并删除；真分列就绪后再按 §3.2 重建。 */
 
+/* R15-L06-D01：真值缺列期的空态占位（卡头标题 + 两条骨架行）。
+   只用中性底衬与骨架条，不含任何文案/数字 ⇒ 不是"假共同点"，也不与 __score-card 共存。 */
+.match-success__score-empty {
+  margin-top: 40rpx;
+  width: 100%;
+  padding: 32rpx;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-radius: 24rpx;
+  box-shadow: 0 8rpx 32rpx rgba(54, 201, 154, 0.10);
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.match-success__score-empty-head {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.match-success__score-empty-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.match-success__score-empty-box {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-lg, 20rpx);
+  background: var(--c-tint-green-50, #E8F5E9);
+  flex-shrink: 0;
+}
+
+.match-success__score-empty-bar {
+  flex: 1;
+  min-width: 0;
+  height: 24rpx;
+  border-radius: 999rpx;
+  background: #EEF3F1;
+}
+
+.match-success__score-empty-bar--short {
+  flex: 0 0 60%;
+}
+
 .match-success__actions {
   margin-top: auto;
   display: flex;
@@ -465,15 +531,19 @@ function getScoreIcon(index: number): string {
      R11-L06-D02（颜色token P2）：R10 把单色一路压到 --c-brand-800 #156B51，比理想图 #21BC7A
      深两档（ΔL≈40）。现按卡回到 §1.2 主按钮档 --c-brand #36C99A；白字在该底上只有约 1.9:1，
      故字色改同族最深档 --c-brand-900 #0B4A38（对 #36C99A 实算 4.87:1 ≥4.5:1，30rpx/800 正文档）。
-     这是"达标的理想同色档 + 深色字"，不是把主 CTA 渐变翻回实色（§11.3 的在册项）。 */
-  background: var(--c-brand, #36C99A);
+     这是"达标的理想同色档 + 深色字"，不是把主 CTA 渐变翻回实色（§11.3 的在册项）。
+     R15-L06-D03（颜色token P2）：深绿字压绿与理想图「纯白字」语义相悖（§1.1.5）。
+     按本仓同判据的第三条出口（common/EmptyState.vue:250-254 主按钮：深底 --c-brand-800 + 纯白字）落地——
+     底降一档到 --c-brand-800 #156B51，字归 --c-neutral-0 #FFFFFF，实算 6.45:1 ≥4.5:1。 */
+  background: var(--c-brand-800, #156B51);
   text-align: center;
 }
 
 .match-success__primary-text {
   font-size: 30rpx;
   font-weight: 800;
-  color: var(--c-brand-900, #0B4A38);
+  /* R15-L06-D03：--c-brand-900 #0B4A38 深绿字压 --c-brand 绿底（4.87:1 达标但读作绿压绿）→ 纯白，6.45:1 */
+  color: var(--c-neutral-0, #FFFFFF);
 }
 
 .match-success__secondary {

@@ -411,13 +411,21 @@ function goToActivity(activityId: number) {
            未新增/未下载/未生成素材；EmptyState 内部一律过 resolveMediaUrl ⇒ real 档不空槽。
            同页三处结果空态（用户 / 学校 / 标签分组）继续吃 type="no-data" 的空箱，
            两态配图自此可区分。 -->
-      <EmptyState
-        v-if="searchStore.hotSearches.length === 0"
-        type="no-data"
-        :image="IMAGE_PATHS.ICONS_V2.SEARCH"
-        :message="t('search.emptyHint')"
-        hide-sub
-      />
+      <!-- R15-L08-D03（间距 P2）：EmptyState 原是本页 flex 列的直接子节点，而 EmptyState.vue:165 的
+           `flex:1 0 auto` 写在组件内部根节点 .empty 上，管不到 mp-weixin 的自定义组件宿主节点
+           （宿主是 <empty-state>，页面 scoped 选择器）⇒ 空态块高度退化成内容高，R14-L07-D19 把
+           .suggest-wrap 顶成 flex-start 后余量整段落到底部（帧上空态文案止于 y=375，其下 425px 无主空带）。
+           给空态包一层宿主页自己的 view，让它吃满剩余高度并在其中居中：宿主节点是普通 view，
+           flex:1 能落地；组件根节点高度仍旧等于内容高，不会把 80rpx 内衬拉成大白块。 -->
+      <view class="suggest-empty">
+        <EmptyState
+          v-if="searchStore.hotSearches.length === 0"
+          type="no-data"
+          :image="IMAGE_PATHS.ICONS_V2.SEARCH"
+          :message="t('search.emptyHint')"
+          hide-sub
+        />
+      </view>
     </view>
 
     <!-- 搜索结果 -->
@@ -607,7 +615,16 @@ function goToActivity(activityId: number) {
   min-width: 0;
   display: flex;
   align-items: center;
-  height: 72rpx;
+  /* R15-L08-D01（可达性 P1）：定高由 72rpx 提到 88rpx —— 帧上输入胶囊 y=57..92 只有 36px(72rpx)，
+     比同帧「用户」选中胶囊（y=112..152，41px）矮一档、也低于 AppShell.vue:334 的 88rpx(44px) 下限，
+     而它是本页唯一输入入口。这里保留「定高」而不只写 min-height：72rpx 是声明式的 height，
+     实测渲染就是 72rpx，没有任何 flex 拉伸参与，故换成 88rpx 直接决定盒高；
+     min-height 同值兜底，box-sizing: border-box 由 global.scss 的 view{border-box} 保证，
+     1rpx 描边与 0 纵向内衬不会把 44px 撑破。
+     头部行高不变（左侧 .search-back 已是 88rpx），只让胶囊在行内长高 8px —— 画面必然动，
+     且分组条/历史区左缘与 y 坐标不受影响。 */
+  height: 88rpx;
+  min-height: 88rpx;
   /* R6-L09-D17（颜色token P2）：原引卡片令牌 --c-bg-container（真值 #FFFFFF）压在同样白底的
      sticky 头部上 ⇒ 输入区与头部同色、圆角容器边界 0 像素。规范 §1.2「输入底 --c-bg-surface
      #F3FAF6：输入框·浅底块」才是这里的语义令牌；再加一条浅描边保证深色主题下也浮得出来。
@@ -686,6 +703,19 @@ function goToActivity(activityId: number) {
   padding: var(--sp-6) var(--page-padding);
 }
 
+/* R15-L08-D03（间距 P2）：空态槽 —— 吃满「历史/名录区块之后」的剩余高度，并把空态块在其中垂直居中
+   （模板同 id 注释：EmptyState 的 flex:1 写在组件内部根节点，跨不过 mp-weixin 的组件宿主边界，
+   这里改由宿主页自己的 view 承担 flex:1 与居中两侧；flex-basis:0 让剩余高度只按可用空间分配，
+   min-height:0 防内容反向撑开）。画面落点：空态插画+文案整体下移，底部无主空带由 425px 收到
+   「剩余区高度 - 空态内容高」的一半。 */
+.suggest-empty {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 /* R11-L08-D04（空态文案 P1）：预检索兜底条目（校园名录 chip）。
    配方与同页 .hot-item/.history-item 同一档（白底胶囊 + 12/24rpx 内衬），只多一条描边，
    因为它是本页在 real 档唯一可点的预检索入口，需要在 #EEF7F2 页底上读得出「可点」。 */
@@ -702,7 +732,12 @@ function goToActivity(activityId: number) {
   border: 1rpx solid var(--c-border-default, #DDE3E0);
   border-radius: 30rpx;
   padding: 12rpx 24rpx;
-  min-height: 56rpx;
+  /* R15-L08-D04（可达性 P2）：原名录 chip 只有 12rpx 纵向内衬 + 26rpx 文字 ⇒ 实测 52rpx 高，
+     与同页「用户」分组胶囊（88rpx）差一档；点 chip = 复跑该词的最短路径。三处同配方补 88rpx 定高
+     （.hot-item / .history-item 同改，模板里三处都是 flex 列/行包裹的普通 view ⇒ min-height 直接生效），
+     文字由 align-items:center 居中，胶囊形由 30rpx 圆角维持。 */
+  min-height: 88rpx;
+  box-sizing: border-box;
 }
 
 .entry-word {
@@ -750,7 +785,12 @@ function goToActivity(activityId: number) {
 
 .section-clear {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-tertiary, #8f959e);
+  /* R15-L08-D02（颜色token P2）：「清除」是本页唯一带清除动作的文字控件，原取 --c-text-tertiary
+     （真值 #6B7571，design-variables.scss:125 —— 兜底 #8f959e 是过期字面量）压页底 --c-bg-page
+     #EEF7F2 实算 4.36:1 <4.5:1（帧上墨迹最暗采样 rgb(108,118,114)≈#6C7672 与此一致），12px 不享豁免
+     ⇒ 提到 --c-text-secondary #4A524E（design-variables.scss:122），压 #EEF7F2 实算 7.37:1。
+     字号按卡要求保持 24rpx，不借「加深即算过大字号」蒙混。 */
+  color: var(--c-text-secondary, #4A524E);
 }
 
 .hot-list {
@@ -766,6 +806,9 @@ function goToActivity(activityId: number) {
   background: var(--c-bg-container, #ffffff);
   border-radius: 30rpx;
   padding: 12rpx 24rpx;
+  /* R15-L08-D04：同 .entry-item —— 12rpx 纵内衬 + 26rpx 文字 = 52rpx 热区，补到 88rpx 下限 */
+  min-height: 88rpx;
+  box-sizing: border-box;
 }
 
 .hot-rank {
@@ -796,6 +839,9 @@ function goToActivity(activityId: number) {
   background: var(--c-bg-container, #ffffff);
   border-radius: 30rpx;
   padding: 12rpx 24rpx;
+  /* R15-L08-D04：帧上历史 chip 实测 81×26px（x=17..97、y=205..231），高向只有 52rpx ⇒ 补 88rpx 下限 */
+  min-height: 88rpx;
+  box-sizing: border-box;
 }
 
 .history-clock {
