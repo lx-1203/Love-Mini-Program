@@ -228,8 +228,9 @@ onLaunch(() => {
     };
 
     if (isShowcaseMode && !getToken()) {
-      // 展示模式：自动以演示者身份登录（POST /v1/auth/guest-login，后端 mock 幂等），
-      // 使资料/匹配/聊天等页面可获得真实会话与数据，无需人工走登录流程。
+      // 展示模式：自动以演示者身份登录（POST /v1/auth/guest-login，P0-4 访客账号隔离：
+      // 后端每次调用签发独立会话身份，不再复用固定体验号），使资料/匹配/聊天等页面可获得
+      // 真实会话与数据，无需人工走登录流程。注意：showcase 冷启动可能每次创建一个新访客。
       loginAsGuest()
         .then(() => startBootstrap())
         .catch((err: unknown) => {

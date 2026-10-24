@@ -731,8 +731,14 @@ public class RealAuthService implements AuthService {
      *   <li>商业化上线前可通过配置 {@code app.guest-login.enabled=false} 关闭该入口</li>
      * </ul>
      *
-     * <p>已知代价：每次体验登录新增一条用户记录（无手机号、不可再登录），
-     * 由 guest-login 开关（默认关闭）与运营侧定期清理承担；换取会话数据隔离。
+     * <p>已知代价（P0-4 写放大）：每次体验登录会新建一个独立访客身份并落库约 70 行——
+     * users 1 行 + 基本/校园/日程资料与实名认证各 1 行（合计 4 行） +
+     * {@link GuestDemoDataProvisioner} 按新 userId 灌入的演示数据（3 会话 + 25 条私信 +
+     * 15 条喜欢 + 10 条访客 + 7 条通知 + 2 互关注 + 2 活动报名 + 2 悄悄话 ≈ 66 行），
+     * 成本随登录次数为 O(logins) 而非 O(accounts)。该入口默认由
+     * {@code app.guest-login.enabled}（默认关闭）与 {@code AuthController#guestLogin} 上的
+     * IP 限流（capacity=10、refill=0.1/s，与兄弟认证写入口同口径）共同约束；
+     * 定期清理归运营侧数据卫生策略承担（见 {@code reports/audit} 收口记录，本提交不实现清理）。
      * 本地演示语义不变。</p>
      */
     @Override
