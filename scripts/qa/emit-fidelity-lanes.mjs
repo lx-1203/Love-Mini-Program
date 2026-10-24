@@ -14,8 +14,10 @@
  *   缺省只分"有基准"的页（可比理想图）；--all 把无基准页也编进去（它们按规范文档 §3 与组件库比）。
  * 退出码：0 派出且守恒；1 守恒不成立；2 输入读不到。
  */
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
-import { resolve, dirname, join } from "node:path";
+import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, rmSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { resolve, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -29,6 +31,60 @@ const ledgerP = resolve(arg("ledger", ""));
 const manifestP = resolve(arg("manifest", ""));
 const perLane = Math.max(1, Number(arg("per-lane", "2")));
 const outDir = resolve(arg("out", join(REPO, "tmp/qa/lanes", round)));
+
+/* --selftest：基准图那两道判据（存在性 + 字节指纹）必须有阳性对照。
+   没这对照的话，以后谁把它们降级成 console.warn、或整段删掉，没有任何东西会报错——
+   正是本文件注释里反复写的那种"静默回退"。夹具全在 tmp/ 下，永不入库。
+   注：夹具跑的是复刻的 8 字节假 PNG，证明的是"链路会红"，不是"真基准图的性能"。 */
+if (flag("selftest")) {
+  const FX = join(REPO, "tmp", "qa", "fixtures", "emitlanes");
+  const SELF = join(HERE, "emit-fidelity-lanes.mjs");
+  const BASE_REL = "tmp/qa/fixtures/emitlanes/base.png";
+  const sha256 = (buf) => createHash("sha256").update(buf).digest("hex");
+  const manifest = {
+    band: "selftest",
+    results: [{ route: "pages/x/index", query: "", frames: [{ state: "默认", path: join(FX, "frame.png"), contentHash: "a".repeat(40), bytes: 5000, landingVerified: true }] }],
+  };
+  /* [用例名, baselineStatus, baselineImages, 基准清单处置, 额外 flag, 期望退出码, 判据必须出现的字样, 说明] */
+  const cases = [
+    ["有基准+图在盘上+指纹相符", "有基准", [BASE_REL], "ok", [], 0, `${RK}=PASS`, "正路：能派发"],
+    ["有基准+图不存在", "有基准", ["tmp/qa/fixtures/emitlanes/nope.png"], "ok", [], 1, "BASELINE_MISSING", "注入缺图必须红（P1② 修的就是它）"],
+    ["有基准+一条图都没登记", "有基准", [], "ok", [], 1, "BASELINE_MISSING", "空引用同样不许派"],
+    ["有基准+部分缺图", "有基准", [BASE_REL, "tmp/qa/fixtures/emitlanes/nope.png"], "ok", [], 1, "BASELINE_MISSING", "缺一张也算红：任务书会逐张点名 Read"],
+    ["有基准+图被换过(指纹不符)", "有基准", [BASE_REL], "drift", [], 1, "BASEMANI_DRIFT", "同名换图是存在性检查看不见的，靠清单兜住（P1③）"],
+    ["有基准+图未登记进清单", "有基准", [BASE_REL], "empty", [], 1, "BASELINE_NOFP", "盘上有图但没指纹锚 ⇒ 跨轮无法核对同一张图"],
+    ["有基准+清单文件缺失", "有基准", [BASE_REL], "absent", [], 1, "基准指纹清单缺失", "清单本身没了不许当免检"],
+    ["无基准页（--all）", "无基准", [], "ok", ["--all"], 0, `${RK}=PASS`, "不许误杀：无基准本来就没图，走规范文档口径"],
+  ];
+  let ok = 0;
+  for (const [name, status, imgs, maniKind, extra, wantExit, wantIn, why] of cases) {
+    rmSync(FX, { recursive: true, force: true });
+    mkdirSync(FX, { recursive: true });
+    const baseBuf = Buffer.from("89504e470d0a1a0a", "hex");
+    writeFileSync(join(FX, "base.png"), baseBuf); // 只验指纹与存在性，脚本不解析像素
+    writeFileSync(join(FX, "manifest.json"), JSON.stringify(manifest));
+    const lp = join(FX, "ledger.json");
+    writeFileSync(lp, JSON.stringify({ rows: [{ route: "pages/x/index", baselineStatus: status, baselineImages: imgs, identityPrecondition: "-" }] }));
+    const bp = join(FX, "baseline-manifest.json");
+    if (maniKind !== "absent") {
+      const rows = maniKind === "empty" ? [] : [{ rel: BASE_REL, sha256: maniKind === "drift" ? "0".repeat(64) : sha256(baseBuf), sha16: (maniKind === "drift" ? "0".repeat(64) : sha256(baseBuf)).slice(0, 16), bytes: baseBuf.length }];
+      writeFileSync(bp, JSON.stringify({ schema: "mp-baseline-manifest/v1", dir: "tmp/qa/fixtures/emitlanes", hash: "sha256", rows }));
+    }
+    const laneOut = join(FX, "out");
+    const r = spawnSync(process.execPath, [SELF, "--ledger", lp, "--manifest", join(FX, "manifest.json"), "--baseline-manifest", bp, "--round", "ST", "--per-lane", "1", "--out", laneOut, ...extra], { encoding: "utf8" });
+    const out = String(r.stdout || "") + String(r.stderr || "");
+    const briefed = existsSync(laneOut) && readdirSync(laneOut).some((f) => f.endsWith(".brief.md"));
+    /* 红用例必须"既红又没派发"：只红但照样写出任务书，等于警告，泳道还是会拿到缺图的参照。 */
+    const passCase = r.status === wantExit && out.includes(wantIn) && (wantExit === 0 ? briefed : !briefed);
+    ok += passCase ? 1 : 0;
+    console.log(`${passCase ? "PASS" : "FAIL"}  ${name} 期望exit=${wantExit}/含"${wantIn}"/派发=${wantExit === 0 ? "有" : "无"} 实测exit=${r.status}/命中=${out.includes(wantIn)}/写了任务书=${briefed ? "有" : "无"}  ${why}`);
+    if (!passCase) console.log(`      输出尾部=${out.replace(/\s+$/, "").split("\n").slice(-2).join(" ⏎ ")}`);
+  }
+  rmSync(FX, { recursive: true, force: true });
+  console.log(`\nEMITLANES_SELFTEST=${ok === cases.length ? "PASS" : "FAIL"} ${ok}/${cases.length}（4 个红用例各自实注入、绿用例走正路；夹具目录已清理）`);
+  process.exit(ok === cases.length ? 0 : 1);
+}
+
 if (!existsSync(ledgerP) || !existsSync(manifestP)) { console.log(`${RK}=NOT-EVIDENCED reason=ledger|manifest 读不到`); process.exit(2); }
 
 const ledger = JSON.parse(readFileSync(ledgerP, "utf-8"));
@@ -37,6 +93,66 @@ const byRoute = new Map();
 for (const rec of (manifest.results || [])) byRoute.set(rec.route, rec);
 
 const wantRows = (ledger.rows || []).filter((r) => flag("all") ? true : r.baselineStatus === "有基准");
+
+/* 声明"有基准"的页，它引用的理想效果图必须真在盘上——这里当场核对，缺一张就整发失败。
+   为什么不能放过去：任务书里那行兜底文案（"无基准页：按规范文档 §3 比"）只看 p.images 是否为空数组，
+   不看图打不打得开。ledger 写了路径、文件却被改名/删掉时，images 非空 ⇒ 泳道仍被告知"逐张 Read"，
+   读不到就自己找参照物，产出的必然是拿规范文档比截图的那类假缺陷（R1 同款的失效方式）。
+   宁可这里红、让人去修 ledger，也不派一批注定产出假缺陷的泳道。 */
+const baselineGaps = [];
+for (const r of wantRows) {
+  if (r.baselineStatus !== "有基准") continue;
+  const imgs = (r.baselineImages || []).filter(Boolean);
+  const gone = imgs.filter((p) => !existsSync(resolve(REPO, String(p))));
+  if (!imgs.length) baselineGaps.push({ route: r.route, kind: "声明有基准但一条基准图都没登记", gone: [] });
+  else if (gone.length === imgs.length) baselineGaps.push({ route: r.route, kind: "引用的基准图全部不存在", gone });
+  else if (gone.length) baselineGaps.push({ route: r.route, kind: `引用的基准图部分不存在（${gone.length}/${imgs.length}）`, gone });
+}
+if (baselineGaps.length) {
+  console.log(`${RK}=FAIL reason=基准图缺失（ledger 声明"有基准"却读不到文件，派发下去只会产出假缺陷）`);
+  for (const g of baselineGaps) {
+    console.log(`BASELINE_MISSING route=${g.route} ${g.kind}`);
+    for (const p of g.gone) console.log(`  读不到=${p}`);
+  }
+  console.log(`BASELINE_MISSING_COUNT=${baselineGaps.length}  修法：把 ledger 的 baselineImages 指到素材/理想效果图/ 下真实存在的文件，或把该行改成 baselineStatus=无基准 并走规范文档口径。`);
+  process.exit(1);
+}
+
+/* "文件在" ≠ "文件还是当初那张图"。同名换图（基准被重新生成/覆盖）上面那道存在性检查是看不见的，
+   而泳道会拿新图去核对旧裁决依据，产出的整批缺陷级别都失去可比性。
+   所以基准图必须落在一张 tracked 的 sha256 清单上；清单默认取 ledger 同目录的 baseline-manifest.json
+   （一次审查一份，跟 ledger 放一起），字节核对本身交给 emit-baseline-manifest.mjs，这里只转发它的结论，
+   免得出两处口径不一致的判决。 */
+const MANI_P = resolve(arg("baseline-manifest", join(dirname(ledgerP), "baseline-manifest.json")));
+const normRel = (p) => String(p).split(/[\\/]+/).join("/");
+if (!existsSync(MANI_P)) {
+  console.log(`${RK}=FAIL reason=基准指纹清单缺失 ${normRel(relative(REPO, MANI_P))} ⇒ 基准图没有字节指纹，跨轮无法核对是不是同一张图`);
+  console.log(`  生成：node scripts/qa/emit-baseline-manifest.mjs --write --out ${normRel(relative(REPO, MANI_P))}`);
+  process.exit(1);
+}
+const MANI_ROWS = new Map((JSON.parse(readFileSync(MANI_P, "utf-8")).rows || []).map((r) => [normRel(r.rel), r]));
+const noFp = [];
+for (const r of wantRows) {
+  if (r.baselineStatus !== "有基准") continue;
+  for (const p of (r.baselineImages || []).filter(Boolean)) if (!MANI_ROWS.has(normRel(p))) noFp.push(`${r.route} → ${normRel(p)}`);
+}
+if (noFp.length) {
+  console.log(`${RK}=FAIL reason=引用的基准图不在指纹清单覆盖范围内（盘上有图、清单无指纹）`);
+  for (const x of noFp) console.log(`BASELINE_NOFP ${x}`);
+  console.log(`  修法：node scripts/qa/emit-baseline-manifest.mjs --write（把当前盘上现状登记进清单），或确认这张图是不是不该当基准。`);
+  process.exit(1);
+}
+{
+  const chk = spawnSync(process.execPath, [join(HERE, "emit-baseline-manifest.mjs"), "--out", MANI_P], { encoding: "utf8" });
+  const out = String(chk.stdout || "") + String(chk.stderr || "");
+  const verdict = (out.split(/\r?\n/).find((l) => l.startsWith("BASEMANI_RESULT")) || "BASEMANI_RESULT=未输出判决行").trim();
+  if (chk.status !== 0) {
+    console.log(`${RK}=FAIL reason=基准图字节与清单不符 ⇒ 基准被换过，此前引用它的裁决要重看`);
+    for (const line of out.split(/\r?\n/).filter((l) => l.startsWith("BASEMANI_"))) console.log(`  ${line}`);
+    process.exit(1);
+  }
+  console.log(`EMITLANES_BASELINE 指纹核对=${verdict}`);
+}
 const pages = [];
 const excluded = [];
 for (const r of wantRows) {
@@ -147,7 +263,13 @@ for (const l of lanes) {
     lines.push(``);
     lines.push(`### ${p.route}`);
     lines.push(`- 身份前提：${p.identity}`);
-    lines.push(`- 理想效果图（Read 可看图）：${p.images.length ? p.images.map((x) => x).join(" ｜ ") : "（无基准页：按 deliverables/全站素材补齐-2026-09-12/全站设计规范与逐页设计稿说明.md §3 该页说明 + src/components/common/ 组件规范比）"}`);
+    const withFp = (x) => {
+      const fp = MANI_ROWS.get(normRel(x));
+      return fp ? `${x}（sha16=\`${fp.sha16}\`，${fp.bytes}B）` : x;
+    };
+    const noBaselineHint = "（无基准页：按 deliverables/全站素材补齐-2026-09-12/全站设计规范与逐页设计稿说明.md §3 该页说明 + src/components/common/ 组件规范比）";
+    lines.push(`- 理想效果图（Read 可看图）：${p.images.length ? p.images.map(withFp).join(" ｜ ") : noBaselineHint}`);
+    if (p.images.length) lines.push(`  ↳ 缺陷卡片里"理想图依据"请连 sha16 一起抄；对不上这个指纹说明你比的是换过的图，那条缺陷作废。`);
     for (const f of p.frames) lines.push(`- 帧：\`${f.path}\`（sha16=\`${f.hash}\`，${f.bytes}B，状态=${f.state}）`);
   }
   lines.push(``);

@@ -1,0 +1,123 @@
+{
+  "schema": "mp-baseline-manifest/v1",
+  "purpose": "保真审查唯一视觉基准的字节指纹；比图前先看这张表，指纹变了说明比的不是裁决时那张",
+  "dir": "素材/理想效果图",
+  "hash": "sha256",
+  "generatedAt": "2026-10-24T13:47:55.729Z",
+  "rows": [
+    {
+      "rel": "素材/理想效果图/ChatGPT Image 2026年8月20日 11_37_17.png",
+      "sha256": "2faebd2505609d1f3a9a6352143c47bcc36f79c003443252daf8f14971bd1c1d",
+      "sha16": "2faebd2505609d1f",
+      "bytes": 1213875
+    },
+    {
+      "rel": "素材/理想效果图/他人显示主页.png",
+      "sha256": "b2f5fde16b33dde17b6a5db89e9361b2f7ef13a447c179b173f1ecd179518165",
+      "sha16": "b2f5fde16b33dde1",
+      "bytes": 1246189
+    },
+    {
+      "rel": "素材/理想效果图/兴趣圈列表.png",
+      "sha256": "15f5050bb32e9a8873db778ca021b20359cf39c136bdcf8e4709b6a72fd7761f",
+      "sha16": "15f5050bb32e9a88",
+      "bytes": 1328402
+    },
+    {
+      "rel": "素材/理想效果图/匹配中页面.png",
+      "sha256": "2e2baa41631338ce0976c34310ddf0db71689c8d3418de1834232d1a55adb359",
+      "sha16": "2e2baa41631338ce",
+      "bytes": 1119388
+    },
+    {
+      "rel": "素材/理想效果图/匹配成功页面.png",
+      "sha256": "e6aefc0fa8f3f6d3441532016e669caa9fcd24e64715a103b32e8304e770fe2a",
+      "sha16": "e6aefc0fa8f3f6d3",
+      "bytes": 1165232
+    },
+    {
+      "rel": "素材/理想效果图/发布帖子页面.png",
+      "sha256": "06fe66be76ee4dc8091e4c0c5ac9261c9e958ef4e841220a14b411c60d085667",
+      "sha16": "06fe66be76ee4dc8",
+      "bytes": 1005622
+    },
+    {
+      "rel": "素材/理想效果图/圈子详情，摄影圈参考.png",
+      "sha256": "957c757c6123ee3ba3bad2d198089cd705ea09e9299b9ba5d32a1acfa84de408",
+      "sha16": "957c757c6123ee3b",
+      "bytes": 1539086
+    },
+    {
+      "rel": "素材/理想效果图/寻觅匹配卡片页面.png",
+      "sha256": "6d7ad05c366aa5743b5536b751016fb6bbbcc4195d3bd7c97c2b9bb23f7f9026",
+      "sha16": "6d7ad05c366aa574",
+      "bytes": 1352244
+    },
+    {
+      "rel": "素材/理想效果图/已经填完资料的个人主页.png",
+      "sha256": "9b64cdaf4aaf319b44d7a796ba51c086d5f7631ad41da341da3c4d6ff2381043",
+      "sha16": "9b64cdaf4aaf319b",
+      "bytes": 1101409
+    },
+    {
+      "rel": "素材/理想效果图/帖子.png",
+      "sha256": "2af58bfa5f40d2a96fbe30787e047cd5ad0c11594890702e825d4e1e6ca2bbff",
+      "sha16": "2af58bfa5f40d2a9",
+      "bytes": 1379319
+    },
+    {
+      "rel": "素材/理想效果图/未登录个人主页.png",
+      "sha256": "49de92aeb8c7162a4ebd491116884fb4ab2c2a66df420a22115298e3f9579813",
+      "sha16": "49de92aeb8c7162a",
+      "bytes": 950896
+    },
+    {
+      "rel": "素材/理想效果图/未登录等待页面.png",
+      "sha256": "3e6fc604b881f1406a76cfcd81a4ff8eec8ccafb649ff16f1c5632a73f44751f",
+      "sha16": "3e6fc604b881f140",
+      "bytes": 998732
+    },
+    {
+      "rel": "素材/理想效果图/校园圈.png",
+      "sha256": "75747ce3081d2a4ba69cbaf89fd604687711ef3cd6534bfa41b5ea4e22cbc635",
+      "sha16": "75747ce3081d2a4b",
+      "bytes": 1290351
+    },
+    {
+      "rel": "素材/理想效果图/消息.png",
+      "sha256": "531fa9d3098d4432a96d1eece4ad91cb4c46e2443526d5d5355931c45922519e",
+      "sha16": "531fa9d3098d4432",
+      "bytes": 1294217
+    },
+    {
+      "rel": "素材/理想效果图/登录页.png",
+      "sha256": "3742c3fb99344c181b900aa42f5cc48c22e70c940f7d3e76a72156591909a7ec",
+      "sha16": "3742c3fb99344c18",
+      "bytes": 1631552
+    },
+    {
+      "rel": "素材/理想效果图/登录页面.png",
+      "sha256": "f4e54ae830e0864f73b1ffd5f8b9697a9cc871134af7c15368160eb6ae65f91d",
+      "sha16": "f4e54ae830e0864f",
+      "bytes": 1128699
+    },
+    {
+      "rel": "素材/理想效果图/等待页面.png",
+      "sha256": "ee099ba0f621783f73ae753cdd89300a321e06912aae49a8a4e08d14cdc063c1",
+      "sha16": "ee099ba0f621783f",
+      "bytes": 1002204
+    },
+    {
+      "rel": "素材/理想效果图/附近的首页.png",
+      "sha256": "2d964d805ef92a4349a05812ed9c0005fdab3a039f53a4311228a6a6404365fa",
+      "sha16": "2d964d805ef92a43",
+      "bytes": 1482035
+    },
+    {
+      "rel": "素材/理想效果图/首页.png",
+      "sha256": "9881c3e810d515a8df1293f8d2465795493695f298a3a2a2416e0237a48c36df",
+      "sha16": "9881c3e810d515a8",
+      "bytes": 1516720
+    }
+  ]
+}
