@@ -44,6 +44,12 @@ deliverables/**/*.png         filter=lfs diff=lfs merge=lfs -text
 deliverables/**/*.jpg         filter=lfs diff=lfs merge=lfs -text
 deliverables/**/*.jpeg        filter=lfs diff=lfs merge=lfs -text
 
+# --- 审查的整页基准图（2026-10-24）---
+# 与 deliverables 同类：是设计输入/交付像素，不是 reports/ 下的运行证据帧，
+# 也不随小程序包发布（不同于 apps/client/src/static/**，那条明确排除在 LFS 外）。
+# 走 LFS 的意义正是本仓当初立规矩要防的那件事：别让 23 MB 像素静默变成普通 blob。
+素材/理想效果图/**/*.png      filter=lfs diff=lfs merge=lfs -text
+
 # --- 明确排除：业务静态资源随构建走，不进 LFS ---
 apps/client/src/static/**     -filter -lfs
 apps/admin/public/**          -filter -lfs

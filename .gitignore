@@ -98,6 +98,12 @@ verify-admin-out.txt
 !apps/admin/public/**/*.ico
 !docs/assets/**/*.png
 !docs/assets/**/*.jpg
+# 审查的整页基准图（2026-10-24 开例外）：这是保真审计的**输入**，不是证据帧。
+# 14 张找茬任务书点名引用其中 16 张当整页基准；不入库 ⇒ 换机器 clone 后基准全不在，
+# 找茬只能静默降级成"按规范文档比"，整套审计的可复现性绑在一台机器上。
+# 与 .gitattributes 里"证据帧走仓外库、reports/ 的 *.png 继续挡"那条裁定不冲突——
+# 那条针对的是产物像素；这里走 LFS（见 .gitattributes 同名规则），git 里只落指针。
+!素材/理想效果图/**/*.png
 !**/avatar*.png
 !**/avatar*.jpg
 
