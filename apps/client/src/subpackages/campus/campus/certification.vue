@@ -16,7 +16,8 @@ import { onShow } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 // R6 §1.6 铁律 3：本页图片绑定改为统一经 resolveMediaUrl 解析
 // （mock 档留包内 /static、real 档按 cdn-buckets 出后端 app-assets URL、/uploads/** 补鉴权 token）
-import { resolveMediaUrl } from "../../../utils/media";
+// infra R2-00131：统一图片选择封装（隐私授权守卫 + 大小校验）
+import { resolveMediaUrl, chooseImages, isUploadedMediaUrl } from "../../../utils/media";
 import { useI18n } from "vue-i18n";
 // 修复 no-duplicate-imports：合并 ../../stores/campus 的重复 import
 import { useCampusStore, CERT_STATUS_MAP, type CertificationStatus } from "../../../stores/campus";
@@ -29,8 +30,6 @@ import { useMock } from "../../../stores/helpers/use-mock";
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
-// infra R2-00131：统一图片选择封装（隐私授权守卫 + 大小校验）
-import { chooseImages, isUploadedMediaUrl } from "../../../utils/media";
 
 const campusStore = useCampusStore();
 // 修复（严格模式 noUnusedLocals）：loading 未在模板/脚本中引用，已从解构中移除。

@@ -19,7 +19,8 @@ import { ref, computed, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 // R6 §1.6 铁律 3：本页图片绑定改为统一经 resolveMediaUrl 解析
 // （mock 档留包内 /static、real 档按 cdn-buckets 出后端 app-assets URL、/uploads/** 补鉴权 token）
-import { resolveMediaUrl } from "../../../utils/media";
+// MP-R7-REALNAME-001：本地临时路径判定统一走 isUploadedMediaUrl（DevTools http://tmp/ 误判修复）
+import { resolveMediaUrl, isUploadedMediaUrl } from "../../../utils/media";
 // 修复 no-duplicate-imports：合并 ../../stores/campus 的重复 import
 import { useCampusStore, CAMPUS_CATEGORY_MAP, type CampusTopicCategory, type CampusTopicItem } from "../../../stores/campus";
 import { useMock } from "../../../stores/helpers/use-mock";
@@ -34,8 +35,6 @@ import { ensurePrivacyAuthorized } from "../../../utils/privacy";
 import { ROUTES } from "../../../constants/routes";
 // 认证引导跳转统一走 openAppPath（含 tab 页/栈底兜底），与 campus/campus/index.vue 同源
 import { openAppPath } from "../../../utils/navigation";
-// MP-R7-REALNAME-001：本地临时路径判定统一走 isUploadedMediaUrl（DevTools http://tmp/ 误判修复）
-import { isUploadedMediaUrl } from "../../../utils/media";
 import { UI_LIMITS } from "../../../constants/limits";
 // 功能4：帖子创建话题选择器（带搜索 + 自定义创建）
 import TopicSelector from "../../../components/village/TopicSelector.vue";

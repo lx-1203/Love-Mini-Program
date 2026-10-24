@@ -8,7 +8,8 @@ import { onLoad } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 // R6 §1.6 铁律 3：本页图片绑定改为统一经 resolveMediaUrl 解析
 // （mock 档留包内 /static、real 档按 cdn-buckets 出后端 app-assets URL、/uploads/** 补鉴权 token）
-import { resolveMediaUrl } from "../../../utils/media";
+// MP-R7-REALNAME-001：本地临时路径判定统一走 isUploadedMediaUrl（DevTools http://tmp/ 误判修复）
+import { resolveMediaUrl, isUploadedMediaUrl } from "../../../utils/media";
 import { useCircleStore } from "../../../stores/circle";
 import { useVillageStore } from "../../../stores/village";
 import { useActivityStore, type ActivityItem } from "../../../stores/activity";
@@ -17,8 +18,6 @@ import { useMock } from "../../../stores/helpers/use-mock";
 import { clientApi } from "../../../services/api";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
-// MP-R7-REALNAME-001：本地临时路径判定统一走 isUploadedMediaUrl（DevTools http://tmp/ 误判修复）
-import { isUploadedMediaUrl } from "../../../utils/media";
 // MP-R1-POSTTOPIC-007：与 campus/post-topic（R10-P1-003）对齐——根 view 注入
 // --statusbar/--capsule-right，头部 padding 走 CSS var 链单一来源
 // （原 useStatusBarHeight 内联注入方案已由本方案替代）
