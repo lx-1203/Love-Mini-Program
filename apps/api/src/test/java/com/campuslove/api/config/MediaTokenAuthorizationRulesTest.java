@@ -61,8 +61,8 @@ import org.springframework.test.web.servlet.MockMvc;
  * 走完整安全链，钉住「demo/mock 档的免真实认证注入不得成为媒体令牌的升格通道」——
  * 该档只按凭据的 scope 决定注入 ROLE_USER 还是 ROLE_MEDIA，规则本体与 real 档同源。</p>
  *
- * <p>P0-2 收口补充：第五节钉「原始请求 URI 未归一化（{@code ..} 段 / 百分号编码 / {@code //}）
- * 时不得命中媒体读取放行规则」；第六、七节把漂移守卫从「只锚调用点的文本对账」升级成
+ * <p>P0-2 收口补充：第五节钉「原始请求 URI 未归一化（{@code ..} 段 / 百分号编码 / 矩阵参数分号
+ * {@code ;} / {@code //}）时不得命中媒体读取放行规则」；第六、七节把漂移守卫从「只锚调用点的文本对账」升级成
  * 「文本对账 + 用假注册表真实执行装配方法、逐条按行为断言两条规则本体」——
  * 把 deny 规则整段删掉，第七节当场红（实测 11 条用例红）。</p>
  *
@@ -404,6 +404,12 @@ class MediaTokenAuthorizationRulesTest {
     //   拒成 400（实测 @WithMockUser(roles=MEDIA) 与完整会话同样 400），链上的授权判定根本
     //   来不及执行——所以那几类只能在 MediaTokenPolicyTest（单元，直接喂原始 URI）与
     //   applyMediaTokenRules 规则本体对账里钉住，这里只钉「绝不被当成媒体读取成功服务」。
+    // * 分号矩阵参数伪装（"..;"/".;."/";jsessionid="）同理：容器/MVC 会剥掉 ';' 及其后参数，
+    //   '..;' 剥参后就是 '..' 穿越段。StrictHttpFirewall 今天先把分号拦成 400，但授权判定
+    //   <b>不能只靠这一层兜底</b>（防火墙配置一旦放宽或换容器即失守）；合法媒体 URL 本就禁分号
+    //   （MediaAccessService#validateSubPath）。因此循环里的单元断言 assertFalse(isMediaReadRequest)
+    //   钉的是 P0-2 自身那道闸，与防火墙无关；HTTP 侧只需证明它绝不被服务成媒体读取（非 2xx/3xx：
+    //   无论防火墙 400、deny 403，还是剥参后 MVC 落空的 404，都算守住）。
     // * 而「百分号编码但解码后无害」的形态（%41 → 'A'）防火墙放行、MVC 也照路由，
     //   此时唯一能守住 fail-closed 的就是 P0-2 的归一化判定：媒体令牌必须被 deny 规则
     //   拒成 403（带 traceId，来自 JwtAccessDeniedHandler）。收紧前这条会命中媒体读取放行
@@ -462,6 +468,35 @@ class MediaTokenAuthorizationRulesTest {
                     .andReturn().getResponse().getStatus();
             assertTrue(code == 401 || code == 403 || code == 400,
                     "非归一化路径不得被服务成媒体读取（2xx/3xx 即为越权），实际: " + code + "，路径: " + path);
+        }
+    }
+
+    @Test
+    @DisplayName("分号矩阵参数伪装的媒体路径：授权判定不认（不依赖防火墙），且绝不被服务成媒体读取")
+    void realMediaJwtInHeader_onMatrixParameterPaths_isNeverServedAsMediaRead() throws Exception {
+        String[] matrixPaths = {
+            "/api/v1/media/100/..;/posts/1",
+            "/api/v1/media/100/.;./202607/a.jpg",
+            "/api/v1/media/100/202607/a.jpg;jsessionid=ABC",
+            "/api/v1/media/100/;jsessionid=ABC/202607/a.jpg",
+        };
+        for (String path : matrixPaths) {
+            // 单元闸（与 StrictHttpFirewall 是否拦分号无关）：判定真源必须把带分号的原始 URI
+            // 判成「不是归一化媒体读取」。这是本用例的红/绿分界——收紧前此处为真，媒体令牌
+            // 会拿到 ROLE_MEDIA 会话并被授权层放行，越权面完全依赖防火墙这一层兜底。
+            MockHttpServletRequest raw = new MockHttpServletRequest("GET", path);
+            raw.setRequestURI(path);
+            assertFalse(MediaTokenPolicy.isMediaReadRequest(raw),
+                    "含分号的矩阵参数伪装不得被当成归一化媒体读取路径: " + path);
+
+            // HTTP 链：无论防火墙把分号拦成 400、还是 MVC/控制器处理后落到别处，
+            // 都不得被服务成一次成功的媒体读取（2xx/3xx 即为越权）。
+            int code = mockMvc.perform(get(new java.net.URI(path))
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + mediaJwt()))
+                    .andReturn().getResponse().getStatus();
+            assertTrue(code < 200 || code >= 400,
+                    "矩阵参数伪装路径不得被服务成媒体读取（2xx/3xx 即为越权），实际: "
+                            + code + "，路径: " + path);
         }
     }
 
@@ -593,6 +628,8 @@ class MediaTokenAuthorizationRulesTest {
                 "合法媒体读取必须仍被第一条规则放行，否则小程序图片黑屏");
         assertFalse(allowRule.matches(request("GET", "/api/v1/media/x/y/../../../posts/1")),
                 "未归一化的穿越路径不得命中放行规则（P0-2 收口）");
+        assertFalse(allowRule.matches(request("GET", "/api/v1/media/100/..;/posts/1")),
+                "分号矩阵参数伪装路径不得命中放行规则（P0-2 收口：授权不依赖防火墙兜底）");
         assertFalse(allowRule.matches(request("POST", MEDIA_READ_PATH)), "写方法不属读取");
         assertFalse(allowRule.matches(request("GET", "/api/v1/posts/1")), "业务路径不属读取");
 
@@ -603,6 +640,8 @@ class MediaTokenAuthorizationRulesTest {
                     "deny 规则必须命中纯媒体会话，否则媒体令牌可访问任意业务接口");
             assertTrue(denyRule.matches(request("GET", "/api/v1/media/x/y/../../../posts/1")),
                     "未归一化路径上的媒体会话也必须被 deny 规则命中");
+            assertTrue(denyRule.matches(request("GET", "/api/v1/media/100/..;/posts/1")),
+                    "分号矩阵参数伪装路径上的媒体会话也必须被 deny 规则命中");
 
             SecurityContextHolder.getContext().setAuthentication(
                     authentication(List.of("ROLE_USER", "ROLE_ADMIN")));

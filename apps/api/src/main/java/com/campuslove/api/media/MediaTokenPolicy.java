@@ -34,7 +34,7 @@ import org.springframework.util.AntPathMatcher;
  * </ul>
  *
  * <p><b>fail-closed 方向</b>：路径为 null/空白、路径为<b>未归一化形态</b>（含 {@code .}/{@code ..}
- * 段、百分号编码、{@code //}、反斜杠——见 {@link #isNormalizedRequestPath(String)}）、
+ * 段、百分号编码、矩阵参数分号 {@code ;}、{@code //}、反斜杠——见 {@link #isNormalizedRequestPath(String)}）、
  * 方法非 GET/HEAD、主体为 null/匿名，
  * 一律判定为「不是媒体读取」，宁可多拒一次也不放开业务接口。</p>
  */
@@ -110,10 +110,21 @@ public final class MediaTokenPolicy {
      *   <li>为 {@code null}/空白、不以 {@code '/'} 开头（不像是请求 URI）；</li>
      *   <li>含 {@code .}/{@code ..}/纯点段（{@code ...} 等）——即路径遍历段；</li>
      *   <li>含任何百分号转义（{@code %2e}/{@code %2f}/{@code %5c} 与双重编码 {@code %252e}
-     *       都只在这一步被排除；服务端产出的媒体 URL 是 {@code UUID.扩展名} 与应用资产 ASCII
-     *       路径，本身不含百分号，公开应用资产又由 permitAll 规则先行放行，故收紧不影响
-     *       任何真实读取）；</li>
+     *       都只在这一步被排除）。<b>更正一处易误导的说法</b>：本仓库的应用资产里确有中文名
+     *       文件（如 {@code app-assets/assets/images/login-split/登录页_r01_c01.png}），它们在
+     *       URL 中必然以百分号编码出现，所以「应用资产都是 ASCII、不含百分号」并不成立；但
+     *       百分比一律拒掉<b>不会</b>误伤它们——真正的理由是
+     *       {@code /api/v1/media/app-assets/**} 的 permitAll 规则排在媒体读取匹配器<b>之前</b>，
+     *       公开应用资产（ASCII 或中文名皆然）由那条规则先行放行，根本不经过本归一化闸；而
+     *       服务端为<b>用户</b>产出的媒体 URL 是 {@code UUID.扩展名} 形态，本身不含百分号。
+     *       因此保持「任何百分号一律 fail-closed」，既守住归一化不变式又不影响真实读取；</li>
      *   <li>含反斜杠（部分容器/操作系统视作分隔符）、裸空格、控制字符；</li>
+     *   <li>含分号 {@code ;}（矩阵参数：容器/MVC 在路由前会剥掉段内 ';' 及其后的参数，
+     *       {@code '..;'} 剥参后即 {@code '..'} 穿越段、{@code 'a.jpg;jsessionid=…'} 剥参后
+     *       才是真实文件名，原始串因此不再唯一标识被路由资源）。即便 {@code StrictHttpFirewall}
+     *       今天会把分号拦在链外，授权判定也不能只依赖这层兜底（换容器或放宽防火墙即失守），
+     *       且合法媒体 URL 本就禁分号（见 {@link MediaAccessService} 的 {@code validateSubPath}），
+     *       故对 ';' 一律 fail-closed；</li>
      *   <li>含空段 {@code //}（归一化会折叠，说明原始串不是规范形态）。</li>
      * </ul>
      *
@@ -132,6 +143,15 @@ public final class MediaTokenPolicy {
         }
         if (path.indexOf('\\') >= 0) {
             return false; // 反斜杠：可能被当作分隔符，等价于多插一段
+        }
+        if (path.indexOf(';') >= 0) {
+            // 分号矩阵参数：容器/Spring MVC 在路由前会剥掉路径段里 ';' 及其后的矩阵参数
+            // （'..;' → '..'，'a.jpg;jsessionid=...' → 'a.jpg'），因此带 ';' 的原始串
+            // 不再唯一标识被路由的资源——用它放行媒体读取，等于拿一把钥匙开另一扇门。
+            // StrictHttpFirewall 今天虽会把分号拦在链外（400），但授权判定不能只依赖这一层
+            // 兜底（换容器/放宽防火墙即失守），故对 ';' 一律 fail-closed；
+            // 合法媒体 URL 本就不含分号（见 MediaAccessService#validateSubPath 明确禁止）。
+            return false;
         }
         int segmentStart = 1;
         for (int i = 1; i < path.length(); i++) {
@@ -188,7 +208,8 @@ public final class MediaTokenPolicy {
      * 判断路径是否为媒体读取路径（不含方法判定）。
      *
      * <p>P0-2 收口：先要 {@link #isNormalizedRequestPath(String)} 判定「原始串已归一」，
-     * 未归一（含 {@code ..} 段、百分号编码、{@code //}、反斜杠）的路径一律不按媒体读取处理——
+     * 未归一（含 {@code ..} 段、百分号编码、矩阵参数分号 {@code ;}、{@code //}、反斜杠）的路径
+     * 一律不按媒体读取处理——
      * 这类请求既不该由过滤器拿到 ROLE_MEDIA 会话，也不该命中安全链的媒体放行规则，
      * 会落到其后的 {@link #mediaOnlyAuthenticationMatcher()} deny 规则上被拒。</p>
      *
