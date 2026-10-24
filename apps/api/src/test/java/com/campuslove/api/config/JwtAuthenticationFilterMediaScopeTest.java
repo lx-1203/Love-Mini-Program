@@ -187,6 +187,30 @@ class JwtAuthenticationFilterMediaScopeTest {
         assertNull(currentAuthentication(), "媒体令牌不得换取新的媒体令牌/完整会话");
     }
 
+    @Test
+    @DisplayName("头携带媒体令牌对媒体读取路径发起写方法（PUT/DELETE/PATCH/POST）：一律不注入认证")
+    void headerMediaToken_onMediaPathWithWriteMethods_doesNotAuthenticate() throws Exception {
+        mockActiveUser();
+
+        for (String writeMethod : List.of("PUT", "DELETE", "PATCH", "POST")) {
+            SecurityContextHolder.clearContext();
+            doFilter(writeMethod, MEDIA_READ_PATH, mediaToken(), null);
+            assertNull(currentAuthentication(),
+                    writeMethod + " 不是只读方法，媒体令牌不得借媒体前缀发起变更");
+        }
+    }
+
+    @Test
+    @DisplayName("头携带媒体令牌访问账号安全端点（/auth/** 下的需登录接口）：不注入认证")
+    void headerMediaToken_onSecuredAccountEndpoint_doesNotAuthenticate() throws Exception {
+        mockActiveUser();
+
+        doFilter("POST", "/api/v1/auth/deactivate", mediaToken(), null);
+
+        assertNull(currentAuthentication(),
+                "账号写操作必须由完整会话发起，媒体令牌不得触达");
+    }
+
     // ========================================================================
     // 二、媒体读取：只注入 ROLE_MEDIA
     // ========================================================================

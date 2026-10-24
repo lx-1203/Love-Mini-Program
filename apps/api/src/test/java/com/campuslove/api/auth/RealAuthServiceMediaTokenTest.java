@@ -174,4 +174,67 @@ class RealAuthServiceMediaTokenTest {
         assertNotNull(view);
         assertTrue(view.loggedIn(), "完整会话的 /auth/me 行为不应被本次改动破坏");
     }
+
+    // ========================================================================
+    // 三、HTTP 表层（AuthController + Authorization 头）
+    // ========================================================================
+    //
+    // 上面第二节直接调服务；本节的差别在于「Bearer 前缀剥离 + 头注入」这一段
+    // 真实 HTTP 绑定路径也必须被覆盖：/api/v1/auth/** 在安全链里是 permitAll，
+    // 媒体令牌不会被过滤器拦下，唯一能拦住它的就是控制器→服务这条链本身。
+    // 换句话说，只要有人把控制器的入参从「提取后的 token」改成别的来源
+    // （例如改从 SecurityContext 取），本节的用例就会红。
+
+    /** 以真实 RealAuthService 装配 AuthController，走控制器的 Bearer 头解析 */
+    private AuthController authController() {
+        com.campuslove.api.repository.UserRepository repo =
+                (com.campuslove.api.repository.UserRepository) userRepository;
+        org.springframework.beans.factory.support.DefaultListableBeanFactory beanFactory =
+                new org.springframework.beans.factory.support.DefaultListableBeanFactory();
+        beanFactory.registerSingleton("userRepository", repo);
+        org.springframework.beans.factory.ObjectProvider<com.campuslove.api.repository.UserRepository> provider =
+                beanFactory.getBeanProvider(com.campuslove.api.repository.UserRepository.class);
+        return new AuthController(authService,
+                org.mockito.Mockito.mock(com.campuslove.api.monitor.AuthMetrics.class),
+                provider,
+                new org.springframework.core.env.StandardEnvironment());
+    }
+
+    @Test
+    @DisplayName("Authorization 头携带媒体 JWT 调 GET /auth/me → 未登录视图（无 userId/昵称/令牌）")
+    void authControllerMe_withMediaJwtInHeader_returnsLoggedOutView() {
+        String mediaToken = jwtTokenProvider.generateMediaToken(String.valueOf(USER_ID));
+        assertTrue(jwtTokenProvider.isMediaToken(mediaToken), "前置：构造的确实是 scope=media 令牌");
+
+        UserSessionView view = authController().getCurrentSession("Bearer " + mediaToken);
+
+        assertNotNull(view);
+        assertTrue(!view.loggedIn(), "媒体令牌不得经 /auth/me 换到登录会话");
+        org.junit.jupiter.api.Assertions.assertNull(view.userId(), "不得回显属主 userId");
+        org.junit.jupiter.api.Assertions.assertNull(view.token(), "不得回显任何令牌");
+        assertNotEquals("测试用户", view.displayName(), "不得回显属主昵称等账号信息");
+    }
+
+    @Test
+    @DisplayName("正控：Authorization 头携带完整会话 JWT 调 GET /auth/me → 仍是本人会话")
+    void authControllerMe_withFullJwtInHeader_returnsOwnSession() {
+        String fullToken = jwtTokenProvider.generateToken(String.valueOf(USER_ID));
+
+        UserSessionView view = authController().getCurrentSession("Bearer " + fullToken);
+
+        assertNotNull(view);
+        assertTrue(view.loggedIn(), "完整会话的 /auth/me 必须照常可用");
+        org.junit.jupiter.api.Assertions.assertEquals(String.valueOf(USER_ID), view.userId());
+    }
+
+    @Test
+    @DisplayName("Authorization 头携带媒体 JWT 调 POST /auth/refresh → 401 语义且不换发令牌")
+    void authControllerRefresh_withMediaJwtInHeader_isRejectedAndIssuesNoToken() {
+        String mediaToken = jwtTokenProvider.generateMediaToken(String.valueOf(USER_ID));
+
+        assertThrows(InvalidTokenException.class,
+                () -> authController().refreshToken("Bearer " + mediaToken));
+
+        verify(jwtTokenProvider, never()).generateToken(anyString());
+    }
 }

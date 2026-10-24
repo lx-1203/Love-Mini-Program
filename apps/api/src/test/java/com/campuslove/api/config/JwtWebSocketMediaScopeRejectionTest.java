@@ -193,4 +193,91 @@ class JwtWebSocketMediaScopeRejectionTest {
     private WebSocketConfig.JwtHandshakeInterceptor handshakeInterceptor() {
         return new WebSocketConfig.JwtHandshakeInterceptor(jwtTokenProvider, environment, 1L);
     }
+
+    // ========================================================================
+    // 三、mock（demo）档：跳过真实 JWT 校验的分支同样不得给媒体令牌开长连接
+    // ========================================================================
+    //
+    // R4-00280 让 mock profile 的握手/CONNECT 跳过真实 JWT 校验（demo 令牌形如
+    // "mock-token-xxx"，本来就不是合法 JWT），并在<b>能解析出 userId 时优先用它</b>。
+    // 一个真签发的 scope=media 令牌恰好能被解析 ⇒ 在 demo 档它会被当成完整会话
+    // 建立长连接（以属主身份收发私信）。P0-2 约束：媒体降权对「任何」媒体 scope
+    // JWT 生效，与 profile 无关，故媒体令牌在 mock 分支也必须拒绝；
+    // 解析不出 userId 的 demo 令牌仍按既有语义回退 mock 用户（正控钉住，不许顺手收紧）。
+
+    /** mock profile 环境（R4-00280：握手/CONNECT 走 mock 分支） */
+    private Environment mockEnvironment() {
+        Environment mockEnv = mock(Environment.class);
+        when(mockEnv.getActiveProfiles()).thenReturn(new String[]{"mock"});
+        return mockEnv;
+    }
+
+    private JwtChannelInterceptor mockChannelInterceptor() {
+        JwtChannelInterceptor interceptor =
+                new JwtChannelInterceptor(jwtTokenProvider, mockEnvironment());
+        org.springframework.test.util.ReflectionTestUtils.setField(interceptor, "userRepository", userRepository);
+        org.springframework.test.util.ReflectionTestUtils.setField(interceptor, "mockPrincipalUserId", 1L);
+        return interceptor;
+    }
+
+    @Test
+    @DisplayName("mock 档 CONNECT 用真媒体令牌 → 仍拒绝建立长连接")
+    void connect_withMediaTokenInMockProfile_isRejected() {
+        JwtChannelInterceptor interceptor = mockChannelInterceptor();
+        Message<byte[]> message = connectMessage("Bearer " + mediaToken(), null);
+
+        MessageDeliveryException ex = assertThrows(MessageDeliveryException.class,
+                () -> interceptor.preSend(message, mock(MessageChannel.class)));
+        assertTrue(ex.getMessage() != null && ex.getMessage().toLowerCase().contains("media"),
+                "mock 档也应指明媒体令牌不可建立 WebSocket，实际: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("mock 档 CONNECT 用 token 原生头携带媒体令牌 → 同样拒绝")
+    void connect_withMediaTokenInNativeHeaderUnderMockProfile_isRejected() {
+        JwtChannelInterceptor interceptor = mockChannelInterceptor();
+        Message<byte[]> message = connectMessage(null, mediaToken());
+
+        assertThrows(MessageDeliveryException.class,
+                () -> interceptor.preSend(message, mock(MessageChannel.class)));
+    }
+
+    @Test
+    @DisplayName("正控：mock 档 CONNECT 用 demo 令牌 → 仍按既有语义回退 mock 用户放行")
+    void connect_withDemoTokenInMockProfile_stillAccepted() {
+        JwtChannelInterceptor interceptor = mockChannelInterceptor();
+        Message<byte[]> message = connectMessage("Bearer mock-token-abc", null);
+
+        Message<?> result = assertDoesNotThrow(
+                () -> interceptor.preSend(message, mock(MessageChannel.class)));
+
+        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(result);
+        assertNotNull(accessor.getUser(), "demo 令牌的 mock 联调语义不应被本次收口打断");
+        assertEquals("1", accessor.getUser().getName());
+    }
+
+    @Test
+    @DisplayName("mock 档握手携带真媒体令牌 → 拒绝升级")
+    void handshake_withMediaTokenInMockProfile_isRejected() {
+        WebSocketConfig.JwtHandshakeInterceptor interceptor =
+                new WebSocketConfig.JwtHandshakeInterceptor(jwtTokenProvider, mockEnvironment(), 1L);
+        ServerHttpRequest request = handshakeRequest("Authorization", "Bearer " + mediaToken());
+
+        assertFalse(interceptor.beforeHandshake(request, handshakeResponse(),
+                mock(org.springframework.web.socket.WebSocketHandler.class), new HashMap<>()),
+                "媒体令牌在 mock 档也不得建立 WebSocket 会话");
+    }
+
+    @Test
+    @DisplayName("正控：mock 档握手携带 demo 令牌 → 仍放行并回退 mock 用户")
+    void handshake_withDemoTokenInMockProfile_stillAccepted() {
+        WebSocketConfig.JwtHandshakeInterceptor interceptor =
+                new WebSocketConfig.JwtHandshakeInterceptor(jwtTokenProvider, mockEnvironment(), 1L);
+        ServerHttpRequest request = handshakeRequest("Authorization", "Bearer mock-token-abc");
+        Map<String, Object> attributes = new HashMap<>();
+
+        assertTrue(interceptor.beforeHandshake(request, handshakeResponse(),
+                mock(org.springframework.web.socket.WebSocketHandler.class), attributes));
+        assertEquals("1", attributes.get(WebSocketConfig.JwtHandshakeInterceptor.USER_ID_ATTR));
+    }
 }

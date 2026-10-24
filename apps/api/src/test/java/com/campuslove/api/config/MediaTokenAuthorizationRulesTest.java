@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -33,6 +34,10 @@ import org.springframework.test.web.servlet.MockMvc;
  *
  * <p>每条拒绝断言都配一条完整会话（ROLE_USER）的正控，防止规则写宽把正常用户一起挡掉，
  * 也防止断言空转通过。</p>
+ *
+ * <p>第四节改为用<b>真实签发的 JWT</b>（Authorization 头与 {@code ?token=} 两种方式）
+ * 走完整安全链，钉住「demo/mock 档的免真实认证注入不得成为媒体令牌的升格通道」——
+ * 该档只按凭据的 scope 决定注入 ROLE_USER 还是 ROLE_MEDIA，规则本体与 real 档同源。</p>
  */
 @SpringBootTest(properties = "JWT_SECRET=test-jwt-secret-for-media-token-authz-rules-32-chars-min")
 @AutoConfigureMockMvc
@@ -46,6 +51,25 @@ class MediaTokenAuthorizationRulesTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    /**
+     * 真源令牌签发器：本节的用例用<b>真签发的 JWT</b>（而不是 {@code @WithMockUser} 伪造的
+     * 角色）走完整安全链，覆盖「认证注入 → 授权判定」全链路。
+     * mock 档的 {@code MockAuthenticationFilter} 与 real 档的 JwtAuthenticationFilter
+     * 共用 {@link MediaTokenPolicy} 的 deny 规则，因此这里验证的正是生产环境那条规则。
+     */
+    @Autowired
+    private com.campuslove.api.config.JwtTokenProvider jwtTokenProvider;
+
+    /** 真实签发的媒体访问令牌（scope=media） */
+    private String mediaJwt() {
+        return jwtTokenProvider.generateMediaToken("100");
+    }
+
+    /** 真实签发的完整用户会话令牌（无 scope） */
+    private String fullJwt() {
+        return jwtTokenProvider.generateToken("100");
+    }
 
     /** 真实媒体读取 URL 形态：/api/v1/media/{userId}/{yyyyMM}/{uuid}.{ext} */
     private static final String MEDIA_READ_PATH = "/api/v1/media/100/202607/abc.jpg";
@@ -208,6 +232,130 @@ class MediaTokenAuthorizationRulesTest {
                     int code = result.getResponse().getStatus();
                     if (code == 401 || code == 403) {
                         throw new AssertionError("完整会话读媒体不应被降权规则影响，实际: " + code);
+                    }
+                });
+    }
+
+    // ========================================================================
+    // 四、真签发令牌走完整安全链（认证注入 + 授权判定同源）
+    // ========================================================================
+    //
+    // 上面一二三节用 @WithMockUser 直接放置角色，验证的是「规则本体」；本节把
+    // 真实签发的 scope=media JWT 放进 Authorization 头 / ?token= 查询参数，
+    // 验证「凭据 → 认证主体 → 授权结果」整条链路对媒体令牌都降权。
+    // 这一节的用例同时是 demo（mock）档的回归锁：demo 档的免真实认证注入
+    // 不能成为媒体令牌的升格通道——凡以 media scope JWT 进来的请求，
+    // 一律只按媒体会话处理（P0-2 约束「MockSecurityConfig 的特殊 demo 行为
+    // 不得放宽任何媒体 scope JWT 的限制」）。
+
+    @Test
+    @DisplayName("真媒体 JWT（Authorization 头）访问业务接口 → 安全链 403")
+    void realMediaJwtInHeader_onBusinessEndpoint_isForbidden() throws Exception {
+        mockMvc.perform(post("/api/v1/users/123/follow")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + mediaJwt()))
+                .andExpect(this::assertDeniedBySecurityChain);
+    }
+
+    @Test
+    @DisplayName("真媒体 JWT（Authorization 头）访问管理端 → 安全链 403（属主是管理员也不例外）")
+    void realMediaJwtInHeader_onAdminEndpoint_isForbidden() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/users")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + mediaJwt()))
+                .andExpect(this::assertDeniedBySecurityChain);
+    }
+
+    @Test
+    @DisplayName("真媒体 JWT（Authorization 头）调用上传端点 → 安全链 403")
+    void realMediaJwtInHeader_onUploadEndpoint_isForbidden() throws Exception {
+        mockMvc.perform(post("/api/v1/media/upload")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + mediaJwt()))
+                .andExpect(this::assertDeniedBySecurityChain);
+    }
+
+    @Test
+    @DisplayName("真媒体 JWT（Authorization 头）对媒体路径发起写操作 → 安全链 403（只读不等于放行）")
+    void realMediaJwtInHeader_onMediaPathWriteMethod_isForbidden() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .put(MEDIA_READ_PATH)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + mediaJwt()))
+                .andExpect(this::assertDeniedBySecurityChain);
+    }
+
+    @Test
+    @DisplayName("真媒体 JWT（Authorization 头）调用令牌签发端点 → 安全链 403（不得自我续期）")
+    void realMediaJwtInHeader_onMediaTokenIssuance_isForbidden() throws Exception {
+        mockMvc.perform(get("/api/v1/media/token")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + mediaJwt()))
+                .andExpect(this::assertDeniedBySecurityChain);
+    }
+
+    @Test
+    @DisplayName("真媒体 JWT 经 ?token= 查询参数调用令牌签发端点 → 安全链 403")
+    void realMediaJwtInQuery_onMediaTokenIssuance_isForbidden() throws Exception {
+        mockMvc.perform(get("/api/v1/media/token").param("token", mediaJwt()))
+                .andExpect(this::assertDeniedBySecurityChain);
+    }
+
+    @Test
+    @DisplayName("真媒体 JWT（Authorization 头）读取媒体文件 → 安全链放行（降权不等于关掉媒体读取）")
+    void realMediaJwtInHeader_onMediaRead_isPermitted() throws Exception {
+        mockMvc.perform(get(MEDIA_READ_PATH)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + mediaJwt()))
+                .andExpect(result -> {
+                    int code = result.getResponse().getStatus();
+                    if (code == 401 || code == 403) {
+                        throw new AssertionError("媒体 JWT 应能读取媒体文件，实际: " + code);
+                    }
+                });
+    }
+
+    @Test
+    @DisplayName("真媒体 JWT 经 ?token= 查询参数读取媒体文件 → 安全链放行")
+    void realMediaJwtInQuery_onMediaRead_isPermitted() throws Exception {
+        mockMvc.perform(get(MEDIA_READ_PATH).param("token", mediaJwt()))
+                .andExpect(result -> {
+                    int code = result.getResponse().getStatus();
+                    if (code == 401 || code == 403) {
+                        throw new AssertionError("?token= 的媒体 JWT 应能读取媒体文件，实际: " + code);
+                    }
+                });
+    }
+
+    @Test
+    @DisplayName("真媒体 JWT 读取公开应用资产 → 放行（permitAll 不受降权规则影响）")
+    void realMediaJwtInHeader_onAppAsset_isPermitted() throws Exception {
+        mockMvc.perform(get("/api/v1/media/app-assets/generated/images/campus/a.jpg")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + mediaJwt()))
+                .andExpect(result -> {
+                    int code = result.getResponse().getStatus();
+                    if (code == 401 || code == 403) {
+                        throw new AssertionError("app-assets 是 permitAll 公开读取，实际: " + code);
+                    }
+                });
+    }
+
+    @Test
+    @DisplayName("正控：真完整会话 JWT（Authorization 头）访问业务接口 → 非 401/403")
+    void realFullJwtInHeader_onBusinessEndpoint_isPermitted() throws Exception {
+        mockMvc.perform(post("/api/v1/users/123/follow")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + fullJwt()))
+                .andExpect(result -> {
+                    int code = result.getResponse().getStatus();
+                    if (code == 401 || code == 403) {
+                        throw new AssertionError("完整会话 JWT 不应被媒体降权规则拒绝，实际: " + code);
+                    }
+                });
+    }
+
+    @Test
+    @DisplayName("正控：真完整会话 JWT（Authorization 头）调用上传端点 → 非 401/403")
+    void realFullJwtInHeader_onUploadEndpoint_isPermitted() throws Exception {
+        mockMvc.perform(post("/api/v1/media/upload")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + fullJwt()))
+                .andExpect(result -> {
+                    int code = result.getResponse().getStatus();
+                    if (code == 401 || code == 403) {
+                        throw new AssertionError("完整会话应可继续走上传流程，实际: " + code);
                     }
                 });
     }
