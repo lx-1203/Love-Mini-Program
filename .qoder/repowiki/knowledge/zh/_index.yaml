@@ -1,0 +1,20 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: zh-CN
+commit: f9fd17b17dcd58787cca12adecca106d4fbd612e
+branch: main
+exported_at: "2026-10-11T06:25:32Z"
+modules:
+    root:
+        dir_name: 校园恋爱平台 Monorepo 根配置
+        title: 校园恋爱平台 Monorepo 根配置
+        scope:
+            - package.json
+            - pnpm-workspace.yaml
+            - .gitignore
+            - .editorconfig
+            - docker-compose.yml
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []

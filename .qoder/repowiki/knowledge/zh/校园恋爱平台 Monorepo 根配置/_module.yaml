@@ -1,0 +1,54 @@
+schema_version: 1
+module_path: root
+title: 校园恋爱平台 Monorepo 根配置
+scope:
+    - package.json
+    - pnpm-workspace.yaml
+    - .gitignore
+    - .editorconfig
+    - docker-compose.yml
+source_files: []
+depends_on: []
+related_to: []
+kk_module_id: d6880d28-bde0-4b01-b15b-2f62becb9593
+kk_cards:
+    architecture_design:
+        id: 7efb72fb-6a08-4101-9cba-97600128b0cb
+        title: 校园恋爱平台 Monorepo 根配置
+    coding_conventions:
+        id: b255706a-2646-4a81-880d-ac3252816fa0
+        title: 校园恋爱平台 Monorepo 根配置
+    overview:
+        id: 07fb5f86-b5b1-44fd-b5bd-18634db03473
+        title: 校园恋爱平台 Monorepo 根配置
+    tech_stack:
+        id: 84f17693-93fb-4d95-8e9c-a0b030335b5c
+        title: 校园恋爱平台 Monorepo 根配置
+    unique_setup_and_commands:
+        id: 0afef93d-5b9a-40cf-811a-42b996fc35c8
+        title: 校园恋爱平台 Monorepo 根配置
+    build_system:
+        id: 11e57d85-bd41-48cf-b758-4a5e57275971
+        title: pnpm monorepo + GitHub Actions CI 构建与容器编排体系
+    configuration_system:
+        id: 19f38481-5021-4d18-b123-7a71661332d3
+        title: 客户端 Vite 环境变量 + 运行时配置中心（含 Feature Flags）
+    dependency_management:
+        id: ac5f2172-6189-4b1f-a9c6-f9f74887ff91
+        title: pnpm Monorepo 依赖管理（Workspace + Lockfile + Overrides）
+    error_handling:
+        id: 0f0ed3e6-ff1c-41e5-bb64-8f2b954c7fca
+        title: 跨端错误处理体系：后端 GlobalExceptionHandler + 前端 AppApiError/EnhancedApiError 统一模型
+    frontend_style:
+        id: 21771644-3720-4cba-a09f-7c0105924faf
+        title: uni-app 小程序前端样式体系：SCSS + 设计令牌 + 原子类
+    logging_system:
+        id: 94b1b190-86fd-4d10-b805-79e8c2988bfc
+        title: 多端日志体系：后端 Logback + 前端 Sentry + 统一 logger 工具
+kk_repo_cards:
+    - build_system
+    - configuration_system
+    - dependency_management
+    - error_handling
+    - frontend_style
+    - logging_system
