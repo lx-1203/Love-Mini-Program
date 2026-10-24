@@ -1,21 +1,21 @@
 {
   "schemaVersion": "gates-2",
   "gateSet": "真实模式三道 Gate G7/G8/G9 + 后端已重启前置件",
-  "gitSha": "57511b74",
+  "gitSha": "29782a3c",
   "gitShaSource": "运行时 git rev-parse --short HEAD（本文件不写死 SHA）",
-  "capturedAt": "2026-10-18T03:37:58.768Z",
-  "headSubject": "docs(qa): corpus-denominator 那行补上今日再复量——7 条断言里 6 条是前提腐烂、1 条是当下真问题，不许混着消",
+  "capturedAt": "2026-10-24T03:50:05.576Z",
+  "headSubject": "docs(qa): R15 缺陷册 210 条 + R16 复判 214 条落盘，收口门八条全中",
   "supersedes": {
     "gitSha": "57511b74",
-    "capturedAt": "2026-10-18T03:35:21.070Z",
-    "G8rings": "7/10"
+    "capturedAt": "2026-10-18T03:37:58.768Z",
+    "G8rings": "10/10"
   },
   "precondition": {
     "check": "scripts/qa/verify-backend-restarted.mjs",
     "result": "PASS",
-    "jvmPid": 10708,
-    "jvmStartedAt": "2026-10-17 20:55:57",
-    "note": "RESTARTED_NEWEST_SOURCE=D:/6/恋爱小程序/apps/api/src/main/java/com/campuslove/api/admin/AdminUserController.java mtime=2026-10-14T15:37:56.814Z ; RESTARTED_HEAD_COMMIT_TIME=2026-10-18T03:29:08.000Z ; RESTARTED_HEAD_DRIFT=content-identical（HEAD 提交晚于 JVM 只是记账，apps/api 相对 HEAD 干净且无 .java 比 JVM 新 ⇒ 不否决） ; RESTARTED_STALE_SOURCE=none  HEAD_NEWER_THAN_JVM=no  APPS_API_CLEAN_VS_HEAD=yes"
+    "jvmPid": 21692,
+    "jvmStartedAt": "2026-10-24 11:20:26",
+    "note": "RESTARTED_NEWEST_SOURCE=D:/6/恋爱小程序/apps/api/src/main/java/com/campuslove/api/home/HomeFeedFallbackProvider.java mtime=2026-10-24T03:03:32.765Z ; RESTARTED_HEAD_COMMIT_TIME=2026-10-24T03:47:53.000Z ; RESTARTED_HEAD_DRIFT=content-identical（HEAD 提交晚于 JVM 只是记账，apps/api 相对 HEAD 干净且无 .java 比 JVM 新 ⇒ 不否决） ; RESTARTED_STALE_SOURCE=none  HEAD_NEWER_THAN_JVM=no  APPS_API_CLEAN_VS_HEAD=yes"
   },
   "G7_RESULT": "PASS",
   "G8_RESULT": "PASS",
@@ -35,10 +35,10 @@
     "G9": {
       "result": "PASS",
       "exitCode": 0,
-      "probed": 443,
-      "ok": 443,
+      "probed": 442,
+      "ok": 442,
       "controlTable": {
-        "在盘且200": 443,
+        "在盘且200": 442,
         "在盘但失败": 0,
         "不在盘但200": 0,
         "不在盘且失败": 0
@@ -46,10 +46,10 @@
     }
   },
   "newDbKeysThisRound": {
-    "posts": 377,
-    "comments": 1287,
-    "campus_topics": 348,
-    "campus_replies": 80
+    "posts": 420,
+    "comments": 1311,
+    "campus_topics": 354,
+    "campus_replies": 86
   },
   "dbWriteDisclosure": "G8 每跑一次都会真写库（发帖/评论/点赞/校园话题/匿名回复），按既定裁定这些行保留不删；本载体的 newDbKeysThisRound 就是本轮新增主键的清单。",
   "notEvidenced": [
