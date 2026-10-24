@@ -1,8 +1,8 @@
 {
- "generatedAt": "2026-09-29T11:46:36.387Z",
+ "generatedAt": "2026-10-24T04:52:59.560Z",
  "source": "verify-source-shape.mjs",
- "passed": 99,
- "failed": 0,
+ "passed": 88,
+ "failed": 11,
  "patches": [
   {
    "id": "MP-R2-POST-009",
@@ -48,12 +48,6 @@
   },
   {
    "id": "MP-R2-PAGES-LOGIN-INDEX-016",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003",
    "col": 6,
    "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
    "why": "不借帧的名义给绿，也不再挂着待修复"
@@ -221,12 +215,6 @@
    "why": "不借帧的名义给绿，也不再挂着待修复"
   },
   {
-   "id": "MP-R2-CAMPUS-HUB-012",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
    "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
    "col": 6,
    "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
@@ -252,12 +240,6 @@
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-014",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
-   "id": "MP-R2-CAMPUS-HUB-009",
    "col": 6,
    "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
    "why": "不借帧的名义给绿，也不再挂着待修复"
@@ -306,12 +288,6 @@
   },
   {
    "id": "MP-R2VIS-CONFIG-IMAGES-001",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
-   "id": "MP-R2-PAGES-MESSAGES-INDEX-019",
    "col": 6,
    "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
    "why": "不借帧的名义给绿，也不再挂着待修复"
@@ -371,12 +347,6 @@
    "why": "不借帧的名义给绿，也不再挂着待修复"
   },
   {
-   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
    "id": "MP-R2-POSTTOPIC-011",
    "col": 6,
    "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
@@ -384,12 +354,6 @@
   },
   {
    "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
-   "id": "MP-R2-PROFILE-024",
    "col": 6,
    "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
    "why": "不借帧的名义给绿，也不再挂着待修复"
@@ -467,24 +431,6 @@
    "why": "不借帧的名义给绿，也不再挂着待修复"
   },
   {
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-004",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
-   "id": "MP-R2-POSTTOPIC-013",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
    "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
    "col": 6,
    "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
@@ -492,12 +438,6 @@
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
    "col": 6,
    "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
    "why": "不借帧的名义给绿，也不再挂着待修复"
@@ -528,12 +468,6 @@
   },
   {
    "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
-   "id": "MP-R2-CIRCLES-INDEX-007",
    "col": 6,
    "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
    "why": "不借帧的名义给绿，也不再挂着待修复"
@@ -596,12 +530,6 @@
    "id": "MP-R2-PAGES-LOGIN-INDEX-016",
    "col": 9,
    "new": "源码判点：H5 手机号入口的 aria-label 与可见文本同取一个 i18n 键（WCAG 2.5.3 名称同源） ｜承载 apps/client/src/pages/login/index.vue",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-003",
-   "col": 9,
-   "new": "源码判点：朋友加入数在列表页与圈主页按同一规则派生（真实字段优先、非 mock 直接 0、mock 才用 5+(seed%8)） ｜承载 apps/client/src/subpackages/circles/circles/index.vue ＋ apps/client/src/subpackages/circles/circles/circle-home.vue",
    "why": "写明这条是靠哪个谓词成立的"
   },
   {
@@ -697,7 +625,7 @@
   {
    "id": "MP-R2VIS-PAGES-MESSAGES-INDEX-002",
    "col": 9,
-   "new": "源码判点：副标恒取静态键 notLoggedWaiting.subtitle，不接任何游客计数（原判据按既有裁定作废） ｜承载 apps/client/src/components/discover/NotLoggedWaiting.vue",
+   "new": "源码判点：副标恒取静态键 notLoggedWaiting.subtitle，不接任何游客计数（原判据按既有裁定作废；复验带=real，mock 侧 MOCK_UNJUDGEABLE 豁免——2026-10-06 采纳建议书 #3） ｜承载 apps/client/src/components/discover/NotLoggedWaiting.vue",
    "why": "写明这条是靠哪个谓词成立的"
   },
   {
@@ -767,12 +695,6 @@
    "why": "写明这条是靠哪个谓词成立的"
   },
   {
-   "id": "MP-R2-CAMPUS-HUB-012",
-   "col": 9,
-   "new": "源码判点：成员数/动态数每卡只计算一次（模板不得反复调 statsOf） ｜承载 apps/client/src/subpackages/campus/campus/hub.vue",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
    "id": "MP-R2-PAGES-MESSAGES-INDEX-021",
    "col": 9,
    "new": "源码判点：头像失败的置位集合必须有清除点（否则重载后永远占位） ｜承载 apps/client/src/pages/messages/index.vue",
@@ -800,12 +722,6 @@
    "id": "MP-R2-PAGES-REGISTER-INDEX-014",
    "col": 9,
    "new": "源码判点：(A) 三处彩色底上的白色前景改用 var(--c-text-inverse)，并明令禁改 var(--c-bg-container) ｜承载 apps/client/src/pages/register/index.vue",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
-   "id": "MP-R2-CAMPUS-HUB-009",
-   "col": 9,
-   "new": "源码判点：同文件两处 --c-bg-page 兜底值统一：:372 用 #EEF7F2，另一处不得再留 #F0F4F2 ｜承载 apps/client/src/subpackages/campus/campus/hub.vue",
    "why": "写明这条是靠哪个谓词成立的"
   },
   {
@@ -854,12 +770,6 @@
    "id": "MP-R2VIS-CONFIG-IMAGES-001",
    "col": 9,
    "new": "源码判点：config/images.ts 引用的 paw/cat/planet 三枚图标文件确实在盘上（非 0 字节） ｜承载 apps/client/src/config/images.ts",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
-   "id": "MP-R2-PAGES-MESSAGES-INDEX-019",
-   "col": 9,
-   "new": "源码判点：活动推荐卡的 CTA 按 act.targetUrl 条件渲染（无跳转目标就不出「查看详情」） ｜承载 apps/client/src/pages/messages/index.vue",
    "why": "写明这条是靠哪个谓词成立的"
   },
   {
@@ -917,12 +827,6 @@
    "why": "写明这条是靠哪个谓词成立的"
   },
   {
-   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-INDEX-001",
-   "col": 9,
-   "new": "源码判点：激活态频道页签是品牌绿底 + 反白字（令牌而非浅底字面量） ｜承载 apps/client/src/subpackages/circles/circles/index.vue",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
    "id": "MP-R2-POSTTOPIC-011",
    "col": 9,
    "new": "源码判点：遮罩用已定义令牌 --c-bg-overlay，且 --c-bg-brand-soft 在主题层有亮/暗双值（页面代码不再自带字面量兜底） ｜承载 apps/client/src/subpackages/circles/circles/post-topic.vue ＋ apps/client/src/styles/tokens.scss",
@@ -932,12 +836,6 @@
    "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
    "col": 9,
    "new": "源码判点：「标为未读」后有 toast 明示只在本地生效（zh/en 键都在），且「全部已读」只在数据加载完成那一处发生（锁定态的 onShow 不再无条件清）；后端未读元数据同步那半段仍是欠项 ｜承载 apps/client/src/pages/messages/index.vue ＋ apps/client/src/i18n/locales/zh-CN.ts ＋ apps/client/src/i18n/locales/en-US.",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
-   "id": "MP-R2-PROFILE-024",
-   "col": 9,
-   "new": "源码判点：页底安全区分两档：游客档让开 .nlp-footer-btn 顶缘(+108rpx)，本人档让开 GlobalPublishFab 顶缘(+112rpx)，都以 --tab-bar-total-h 令牌为基准而不是重抄 184rpx ｜承载 apps/client/src/components/profile/NotLoggedProfile.vue ＋ apps/client/src/components/profile/m",
    "why": "写明这条是靠哪个谓词成立的"
   },
   {
@@ -1013,24 +911,6 @@
    "why": "写明这条是靠哪个谓词成立的"
   },
   {
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-004",
-   "col": 9,
-   "new": "源码判点：24rpx 两处走等值令牌 var(--r-xl, 24rpx)；本文件一次都不许出现 --card-radius（那是 40rpx，换上就是视觉变更，须另立裁决） ｜承载 apps/client/src/subpackages/village/village/publish.vue",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
-   "id": "MP-R2-POSTTOPIC-013",
-   "col": 9,
-   "new": "源码判点：提交中的防重在途有可见反馈：两处提交按钮文案在 isSubmitting 时切成 common.submitting（复用既有键） ｜承载 apps/client/src/subpackages/circles/circles/post-topic.vue",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-DETAIL-002",
-   "col": 9,
-   "new": "源码判点：两张图时等宽 50/50（首图不再独占整行），与 PostCard 两图口径同算法 ｜承载 apps/client/src/subpackages/village/village/detail.vue",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
    "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
    "col": 9,
    "new": "源码判点：圈内置顶公告不再是写死的中文字面量：组件走 i18n 键，且两个语种都真的有这个键 ｜承载 apps/client/src/subpackages/circles/circles/circle-home.vue ＋ apps/client/src/i18n/locales/zh-CN.ts ＋ apps/client/src/i18n/locales/en-US.ts",
@@ -1040,12 +920,6 @@
    "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
    "col": 9,
    "new": "源码判点：两个发布入口的圈子候选行结构一致：不再有独立的「已加入」pill 类，成员数并进同一句 desc ｜承载 apps/client/src/subpackages/village/village/post.vue ＋ apps/client/src/subpackages/village/village/publish.vue",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-006",
-   "col": 9,
-   "new": "源码判点：校园域两级键命名空间已统一：hub 页不再用顶层扁平 campusHub.*，而是与同域其余四页一样的 campus.hub.*（两份语言包都真有这么一层） ｜承载 apps/client/src/subpackages/campus/campus/hub.vue ＋ apps/client/src/i18n/locales/zh-CN.ts ＋ apps/client/src/i18n/locales/en-US.ts",
    "why": "写明这条是靠哪个谓词成立的"
   },
   {
@@ -1076,12 +950,6 @@
    "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-LOCATION-001",
    "col": 9,
    "new": "源码判点：IP 城市与坐标不同源（>100km 或量不出距离）时页面不再渲染该城市，改渲染「地址解析不可用」；阈值常量在工具层单一来源 ｜承载 apps/client/src/utils/location.ts ＋ apps/client/src/subpackages/profile-extra/profile/location.vue",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
-   "id": "MP-R2-CIRCLES-INDEX-007",
-   "col": 9,
-   "new": "源码判点：裁决：热门徽标底/字就近成对声明为页面局部变量并原值保留；不收编语义不同的 --c-badge-on-image-*（那是图上角标的深色底，收编会改观感），也不自造暗色令牌 ｜承载 apps/client/src/subpackages/circles/circles/index.vue",
    "why": "写明这条是靠哪个谓词成立的"
   },
   {
@@ -1318,42 +1186,48 @@
     "real"
    ],
    "needsRuling": "",
-   "claim": "判据 expected「不得渲染『破冰引导＋空会话＋可用输入栏』」判的是互斥渲染：错误文案节点紧接 <template v-else>，整枚输入栏只活在 v-else 里 ⇒ pageErrorMessage 为真时输入栏结构性不可达。把输入栏搬出 v-else 即反红，故判「唯一一枚且在 else 块内」；产物档另判编译后的 <block wx:else> 同形",
+   "claim": "判据 expected「不得渲染『破冰引导＋空会话＋可用输入栏』」判的是互斥渲染：错误分支 v-if=\"pageErrorMessage\" 与承载输入栏的 v-else 分支同链互斥 ⇒ pageErrorMessage 为真时输入栏结构性不可达。把输入栏搬出该 v-else、或在错误分支里塞一枚输入栏，即反红（2026-10-24 按盘上现形体重钉形状，不变量未动）；产物档另判编译后的 wx:if / wx:else 同形",
    "neg": [
     {
      "file": "apps/client/src/subpackages/chat/chat-session/index.vue",
      "status": "RED",
-     "grew": 48,
-     "why": "apps/client/src/subpackages/chat/chat-session/index.vue :: 计数应为 1，实测 2（/class=\"wechat-input-bar__input\"/g）"
+     "grew": -48,
+     "why": "apps/client/src/subpackages/chat/chat-session/index.vue :: <template> 内计数应为 1，实测 0"
     },
     {
      "file": "apps/client/src/subpackages/chat/chat-session/index.vue",
      "status": "RED",
-     "grew": 11,
-     "why": "apps/client/src/subpackages/chat/chat-session/index.vue :: 计数应为 1，实测 0（/<view v-if=\"pageErrorMessage\" class=\"me）"
+     "grew": -25,
+     "why": "apps/client/src/subpackages/chat/chat-session/index.vue :: <template> 内计数应为 1，实测 0"
+    },
+    {
+     "file": "apps/client/src/subpackages/chat/chat-session/index.vue",
+     "status": "RED",
+     "grew": 42,
+     "why": "apps/client/src/subpackages/chat/chat-session/index.vue :: 计数应为 1，实测 2（/class=\"wechat-input-bar__input\"/g）"
     },
     {
      "file": "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml",
      "status": "RED",
-     "grew": 22,
-     "why": "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml :: 计数应为 1，实测 2（/<input[\\s>]/g）"
+     "grew": -29,
+     "why": "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml :: 计数应为 1，实测 0（/class=\"chat-error-state[\\s\\S]{0,520}<vi）"
     },
     {
      "file": "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml",
      "status": "RED",
-     "grew": 7,
+     "grew": 24,
      "why": "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml :: 计数应为 1，实测 2（/<input[\\s>]/g）"
     },
     {
      "file": "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml",
      "status": "RED",
-     "grew": 22,
-     "why": "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml :: 计数应为 1，实测 2（/<input[\\s>]/g）"
+     "grew": -29,
+     "why": "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml :: 计数应为 1，实测 0（/class=\"chat-error-state[\\s\\S]{0,520}<vi）"
     },
     {
      "file": "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml",
      "status": "RED",
-     "grew": 7,
+     "grew": 24,
      "why": "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml :: 计数应为 1，实测 2（/<input[\\s>]/g）"
     }
    ]
@@ -1407,27 +1281,37 @@
    "carrier": [
     "apps/client/src/subpackages/campus/campus/hub.vue",
     "apps/client/src/i18n/locales/zh-CN.ts",
-    "apps/client/dist/build/mp-weixin/subpackages/campus/campus/hub.wxml",
     "apps/client/dist/build/mp-weixin-real/subpackages/campus/campus/hub.wxml"
    ],
    "bands": [
-    "mock",
     "real"
    ],
-   "needsRuling": "判据 ACTION 写「页级 window 滚动，非 scroll-view」，而 hub.vue:269-271 起列表包在 <scroll-view class=\"campus-hub__feed\"> 里、:334 才闭合 ⇒ 底部文案在 scroll-view 内不在 window 滚动流上；判据引用的 hub.vue:336-339 也已漂到 :330-332。两句冲突未裁，本行不预设任一解释。",
-   "claim": "本条只落「无展开箭头、无可点动作」这一半（MP-R1-CAMPUS-HUB-003 死元素已移除，不得回归出带箭头的可点假象）；补回箭头或可点「查看更多」即反红。⚠ src 的 HTML 注释里留着旧箭头字符，故箭头字符级缺席只能在产物档判；「滚到底完整可见＋scrollTop/scrollHeight 回填」那一半未落（见 NEG/RULING 说明）",
+   "needsRuling": "",
+   "claim": "2026-10-24 业主裁定改写判据：本条不再禁「可点动作」，改判「查看更多必须绑真实动作、不可折叠时必须静态化、箭头只能条件渲染」——MP-R1-CAMPUS-HUB-003 的病根是死元素与可点假象，不是可点本身；摘掉 @tap、摘掉 --static 兜底、或把箭头改成无条件渲染，任一即反红（三条都有注入负例）。滚动归属同日按实测回正：本页是 window 级滚动（R1-L05-D19 已移除内层 scroll-view，见 hub.vue:37 与 :312-314/:412 注释自述，campus-hub__feed 现为普通 <view> 于 :316），2026-10-06 建议书 #28 把它写成 <scroll-view class=\"campus-hub__feed\"> 与盘上不符（该文件里 scroll-view 只存在于注释中），本行不再沿用；「滚到底完整可见＋scrollTop/scrollHeight 回填」那一半仍属运行时量、不在本静态判点内（载具 --scroll 通道已有原语）",
    "neg": [
     {
      "file": "apps/client/src/subpackages/campus/campus/hub.vue",
      "status": "RED",
-     "grew": 52,
-     "why": "apps/client/src/subpackages/campus/campus/hub.vue :: <template> 内计数应为 0，实测 1"
+     "grew": -20,
+     "why": "apps/client/src/subpackages/campus/campus/hub.vue :: <template> 内计数应为 1，实测 0"
     },
     {
      "file": "apps/client/src/subpackages/campus/campus/hub.vue",
      "status": "RED",
-     "grew": 19,
-     "why": "apps/client/src/subpackages/campus/campus/hub.vue :: 禁用写法仍在：class=\"campus-hub__more\"> @tap"
+     "grew": -42,
+     "why": "apps/client/src/subpackages/campus/campus/hub.vue :: <template> 内计数应为 1，实测 0"
+    },
+    {
+     "file": "apps/client/src/subpackages/campus/campus/hub.vue",
+     "status": "RED",
+     "grew": -51,
+     "why": "apps/client/src/subpackages/campus/campus/hub.vue :: <template> 内计数应为 1，实测 0"
+    },
+    {
+     "file": "apps/client/src/subpackages/campus/campus/hub.vue",
+     "status": "RED",
+     "grew": 45,
+     "why": "apps/client/src/subpackages/campus/campus/hub.vue :: <template> 内计数应为 0，实测 1"
     },
     {
      "file": "apps/client/src/i18n/locales/zh-CN.ts",
@@ -1436,16 +1320,10 @@
      "why": "apps/client/src/i18n/locales/zh-CN.ts :: 计数应为 1，实测 0（/\"moreHint\": \"更多校园圈持续接入中\"/g）"
     },
     {
-     "file": "apps/client/dist/build/mp-weixin/subpackages/campus/campus/hub.wxml",
-     "status": "RED",
-     "grew": 63,
-     "why": "apps/client/dist/build/mp-weixin/subpackages/campus/campus/hub.wxml :: 禁用写法仍在：campus-hub__more-arrow"
-    },
-    {
      "file": "apps/client/dist/build/mp-weixin-real/subpackages/campus/campus/hub.wxml",
      "status": "RED",
-     "grew": 63,
-     "why": "apps/client/dist/build/mp-weixin-real/subpackages/campus/campus/hub.wxml :: 禁用写法仍在：campus-hub__more-arrow"
+     "grew": -38,
+     "why": "apps/client/dist/build/mp-weixin-real/subpackages/campus/campus/hub.wxml :: 计数应为 1，实测 0（/class=\"\\{\\{\\['campus-hub__more',[^\\]]*&）"
     }
    ]
   },

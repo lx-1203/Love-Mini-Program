@@ -1,12 +1,12 @@
 {
  "kind": "ops-corpus-stamp",
- "at": "2026-10-06T10:52:34.581Z",
- "gitSha": "c088e2d6",
+ "at": "2026-10-24T04:52:58.558Z",
+ "gitSha": "6554fe4d",
  "opsDir": "reports/audit/round-6/ops",
  "files": 24,
  "cases": 1107,
- "canonSha": "4afc5c3d674fca9a86967286abade33f867551dcd2f2f6ca74fa28580ec48228",
- "byteSha": "9f111e4df8892596ee12043b5fe3e1a5aa3ef84e4f26470985cd7bb1f78a73de",
+ "canonSha": "76271fa33ba6e1279f1f349698de865600c0680d1f66e870da044880bff22812",
+ "byteSha": "2d4518dc8fd0c5aa3c530c83a37b44e566698f19ecb70584e904a63e4eec47b8",
  "perFile": [
   {
    "file": "PAGES-DISCOVER-INDEX.json",
@@ -67,8 +67,8 @@
   {
    "file": "SUBPACKAGES-CAMPUS-CAMPUS-HUB.json",
    "n": 27,
-   "canon": "882a4c51791ac18a9152214dfb6a6f9b672722110d86b865c394c4425e619137",
-   "bytes": "855507137e64832a45a7635cf97c890e72550fa7a10da90e48e712e82d3626f3",
+   "canon": "00892b23e2a3177e9e2e8b4312270bd3571e0bb7e613faeada2ccd33546df48b",
+   "bytes": "7883c01bcc54f1bb1b95b2a1ecc212da6769771beafbd1781f6a8bcb729245e8",
    "ids": "bacbe3a2305b81e9615f158fbf7a9c1fa35bb5566b7bd2ea56b632c386702d9e"
   },
   {

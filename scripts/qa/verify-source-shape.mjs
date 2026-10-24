@@ -1348,16 +1348,34 @@ const SPEC = [
     ],
   },
   {
+    /* ══ CS26 形状重钉（2026-10-24）═══════════════════════════════════════════════════
+       不变量一个字没改：pageErrorMessage 为真时，整枚输入栏必须结构性不可达。
+       改的只是判点引用的形状——原判点钉的是老写法「错误文案节点紧接 <template v-else>」，
+       而 R11-L11-D15 之后盘上长这样（chat-session/index.vue 实测）：
+         :2089 <view v-if="pageErrorMessage" class="chat-error-state"> ＋ <EmptyState :title="pageErrorMessage">
+         :2093 v-else-if loading → :2096 v-else-if errorMessage → :2101 <view v-else class="chat-list">
+         输入栏 wechat-input-bar__input 全页恰 1 枚，且在这条链的 v-else 分支内
+       ⇒ "出错就看不到输入栏"这条判据要的语义仍然成立，破的只是老正则的字面。
+       逐条实测（当场量的，不是抄来的行号）：
+         · src：错误分支→v-else 实距 171–178 字符、→chat-list 696、→输入栏 8996（窗口取 760/8500，
+                越窗不会串到邻元素；class="chat-error-state" 与 :title="pageErrorMessage" 各恰 1）。
+         · 两档产物：错误分支 <view wx:if="{{J}}" class="chat-error-state → <view wx:else class="{{['chat-list'
+                实距 426（窗口 520）、→输入栏 3971（窗口 4100）；<input 恰 1、<textarea 0。
+         · ⚠ 本轮先把 mock 档产物重建到 HEAD 再钉这两档判点：重建前 mock 里 chat-error-state 命中 0
+                （该档早于 R11-L11-D15），原判据在它上面"绿"是过期产物白送的假通过。
+                重建后 mock 与 real 的偏移逐值相同（listAt/inputAt/距离全等），两档才真的可比。 */
     id: "MP-R7CRIT-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS26",
     criteria: true, manifest: "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json", caseId: "CS26", page: "subpackages/chat/chat-session/index",
-    claim: "判据 expected「不得渲染『破冰引导＋空会话＋可用输入栏』」判的是互斥渲染：错误文案节点紧接 <template v-else>，整枚输入栏只活在 v-else 里 ⇒ pageErrorMessage 为真时输入栏结构性不可达。把输入栏搬出 v-else 即反红，故判「唯一一枚且在 else 块内」；产物档另判编译后的 <block wx:else> 同形",
+    claim: "判据 expected「不得渲染『破冰引导＋空会话＋可用输入栏』」判的是互斥渲染：错误分支 v-if=\"pageErrorMessage\" 与承载输入栏的 v-else 分支同链互斥 ⇒ pageErrorMessage 为真时输入栏结构性不可达。把输入栏搬出该 v-else、或在错误分支里塞一枚输入栏，即反红（2026-10-24 按盘上现形体重钉形状，不变量未动）；产物档另判编译后的 wx:if / wx:else 同形",
     bands: ["mock", "real"],
     files: [
       {
         file: "apps/client/src/subpackages/chat/chat-session/index.vue",
         checks: [
-          { kind: "countEq", re: /<view v-if="pageErrorMessage" class="meta-copy meta-copy--padded">\{\{ pageErrorMessage \}\}<\/view>\s*<template v-else>/g, n: 1 },
-          { kind: "countEq", re: /<template v-else>(?:(?!<\/template>)[\s\S])*?class="wechat-input-bar__input"/g, n: 1 },
+          { kind: "countTemplateEq", re: /<view v-if="pageErrorMessage" class="chat-error-state">/g, n: 1 },
+          { kind: "countTemplateEq", re: /:title="pageErrorMessage"/g, n: 1 },
+          { kind: "countTemplateEq", re: /class="chat-error-state"[\s\S]{0,760}<view\s+v-else\s+class="chat-list"/g, n: 1 },
+          { kind: "countTemplateEq", re: /class="chat-list"[\s\S]{0,8500}class="wechat-input-bar__input"/g, n: 1 },
           { kind: "countEq", re: /class="wechat-input-bar__input"/g, n: 1 },
           { kind: "absent", re: /class="wechat-input-bar__input"[\s\S]{0,4000}v-if="pageErrorMessage"/g },
         ],
@@ -1365,29 +1383,34 @@ const SPEC = [
       {
         file: "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml",
         checks: [
-          { kind: "countEq", re: /class="meta-copy meta-copy--padded[^"]*">[\s\S]{0,60}<\/view><block wx:else>/g, n: 1 },
-          { kind: "countEq", re: /<block wx:else>(?:(?!<\/block>)[\s\S])*?class="wechat-input-bar__input/g, n: 1 },
+          { kind: "countEq", re: /<view wx:if="\{\{\w+\}\}" class="chat-error-state/g, n: 1 },
+          { kind: "countEq", re: /class="chat-error-state[\s\S]{0,520}<view wx:else class="\{\{\['chat-list'/g, n: 1 },
+          { kind: "countEq", re: /class="\{\{\['chat-list'[\s\S]{0,4100}class="wechat-input-bar__input/g, n: 1 },
           { kind: "countEq", re: /<input[\s>]/g, n: 1 },
           { kind: "absent", re: /<textarea[\s>]/g },
+          { kind: "absent", re: /class="wechat-input-bar__input[\s\S]{0,6000}chat-error-state/g },
         ],
       },
       {
         file: "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml",
         checks: [
-          { kind: "countEq", re: /class="meta-copy meta-copy--padded[^"]*">[\s\S]{0,60}<\/view><block wx:else>/g, n: 1 },
-          { kind: "countEq", re: /<block wx:else>(?:(?!<\/block>)[\s\S])*?class="wechat-input-bar__input/g, n: 1 },
+          { kind: "countEq", re: /<view wx:if="\{\{\w+\}\}" class="chat-error-state/g, n: 1 },
+          { kind: "countEq", re: /class="chat-error-state[\s\S]{0,520}<view wx:else class="\{\{\['chat-list'/g, n: 1 },
+          { kind: "countEq", re: /class="\{\{\['chat-list'[\s\S]{0,4100}class="wechat-input-bar__input/g, n: 1 },
           { kind: "countEq", re: /<input[\s>]/g, n: 1 },
           { kind: "absent", re: /<textarea[\s>]/g },
+          { kind: "absent", re: /class="wechat-input-bar__input[\s\S]{0,6000}chat-error-state/g },
         ],
       },
     ],
     neg: [
-      { file: "apps/client/src/subpackages/chat/chat-session/index.vue", marker: '<view class="chat-input-area"', insertAfter: ' v="x"><input class="wechat-input-bar__input" />' },
-      { file: "apps/client/src/subpackages/chat/chat-session/index.vue", marker: '<template v-else>\n        <!-- 引用上下文卡片', insertBefore: '</template>' },
-      { file: "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml", marker: '<input cursor-spacing="20"', insertBefore: '<input class="leak" />' },
-      { file: "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml", marker: 'class="wechat-input-bar__input', insertBefore: '<input ' },
-      { file: "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml", marker: '<input cursor-spacing="20"', insertBefore: '<input class="leak" />' },
-      { file: "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml", marker: 'class="wechat-input-bar__input', insertBefore: '<input ' },
+      { file: "apps/client/src/subpackages/chat/chat-session/index.vue", removeRe: /v-if="pageErrorMessage" class="chat-error-state"/ },
+      { file: "apps/client/src/subpackages/chat/chat-session/index.vue", removeRe: /:title="pageErrorMessage"/ },
+      { file: "apps/client/src/subpackages/chat/chat-session/index.vue", marker: 'class="chat-error-state"', insertAfter: '><input class="wechat-input-bar__input" />' },
+      { file: "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml", removeRe: /wx:else class="\{\{\['chat-list'/ },
+      { file: "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml", marker: 'class="chat-error-state', insertAfter: '"><input class="leak" />' },
+      { file: "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml", removeRe: /wx:else class="\{\{\['chat-list'/ },
+      { file: "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml", marker: 'class="chat-error-state', insertAfter: '"><input class="leak" />' },
     ],
   },
   {
@@ -1426,18 +1449,45 @@ const SPEC = [
     ],
   },
   {
+    /* ══ CH22 改写（业主 2026-10-24 裁定「绑真 handler 才算绿」）════════════════════════
+       原判据钉的是「无展开箭头、无可点动作」这一半（MP-R1-CAMPUS-HUB-003 的死元素不得回归成可点假象）。
+       盘上现状已不是假象，而是一枚绑了真实动作的折叠/展开控件：hub.vue:365 元素 → :366 不可折叠时挂
+       --static → :367 role=button → :369 :aria-expanded → :370 @tap="toggleSchools"，而 :173
+       function toggleSchools() 真的翻 :166 schoolsExpanded、:167 canToggleMore =
+       filteredSchools.length > SCHOOL_PREVIEW 为假时箭头整枚不渲染（:373 v-if="canToggleMore"）。
+       hub.vue:360-363 的注释自述这是 R2b-L05-D15 有意恢复理想图「灰字＋向下箭头」入口。
+       ⇒ 继续禁「有可点动作」等于把真控件判回死元素。判点因此由「禁可点」翻成
+         「必须可点＋动作真实存在＋不可折叠时必须静态化＋箭头只能条件渲染」——比原判据更严，不是放宽。
+       逐条实测（写判点前当场量的，不抄旧行号）：
+         · src 模板内 class="campus-hub__more" 恰 1；元素开标签到 @tap="toggleSchools" 实距 218 字符
+           （故窗口取 240：更-text 在 264 字符处，越窗不会串到邻元素）。
+         · real 档产物 <view class="{{['campus-hub__more', …, X && 'campus-hub__more--static']}}"
+           role="button" aria-label="{{Y}}" aria-expanded="{{Z}}" bindtap="{{aa}}"> 恰 1，
+           箭头 wx:if="{{V}}" class="{{['campus-hub__more-arrow', …]}}">⌄ 恰 1。
+         · ⚠ mock 档产物**不能为这条背书**，故本行移除 mock 档文件项并在此点名：
+           其 hub.wxml 里该枚是 class="campus-hub__more data-v-e598cade" 纯串、
+           campus-hub__more-arrow 命中 0 ⇒ 这档产物早于 R2b-L05-D15，是旧构建。
+           原判据在 mock 档"绿"恰恰是产物过期给的（禁箭头的判点在旧件上恒真）——
+           不给"因过期而恒真"的判点留位置；bands 随之只留 real（该字段只进报告，不参与判点）。 */
     id: "MP-R7CRIT-SUBPACKAGES-CAMPUS-CAMPUS-HUB-CH22",
     criteria: true, manifest: "SUBPACKAGES-CAMPUS-CAMPUS-HUB.json", caseId: "CH22", page: "subpackages/campus/campus/hub",
-    claim: "本条只落「无展开箭头、无可点动作」这一半（MP-R1-CAMPUS-HUB-003 死元素已移除，不得回归出带箭头的可点假象）；补回箭头或可点「查看更多」即反红。⚠ src 的 HTML 注释里留着旧箭头字符，故箭头字符级缺席只能在产物档判。滚动归属按 2026-10-06 采纳建议书 #28（ruling-recommendations-2026-10-06.md）裁定改记：实际滚动容器就是 <scroll-view class=\"campus-hub__feed\">（hub.vue:269-271 起、:334 闭合，scroll-y），底部文案 campus-hub__more-text 在 hub.vue:330-332 即该 scroll-view 之内——原判据 ACTION 句「页级 window 滚动，非 scroll-view」属笔误，判据引用的 hub.vue:336-339 行号漂移一并校正为 :330-332（zh-CN.ts 锚点校正为 :3628）；「滚到底完整可见＋scrollTop/scrollHeight 回填」那一半不在本静态判点内（运行时量，载具 --scroll 通道已有原语）——本裁定只更正其归属与行号，不新增判据、不销任何红",
-    bands: ["mock", "real"],
+    claim: "2026-10-24 业主裁定改写判据：本条不再禁「可点动作」，改判「查看更多必须绑真实动作、不可折叠时必须静态化、箭头只能条件渲染」——MP-R1-CAMPUS-HUB-003 的病根是死元素与可点假象，不是可点本身；摘掉 @tap、摘掉 --static 兜底、或把箭头改成无条件渲染，任一即反红（三条都有注入负例）。滚动归属同日按实测回正：本页是 window 级滚动（R1-L05-D19 已移除内层 scroll-view，见 hub.vue:37 与 :312-314/:412 注释自述，campus-hub__feed 现为普通 <view> 于 :316），2026-10-06 建议书 #28 把它写成 <scroll-view class=\"campus-hub__feed\"> 与盘上不符（该文件里 scroll-view 只存在于注释中），本行不再沿用；「滚到底完整可见＋scrollTop/scrollHeight 回填」那一半仍属运行时量、不在本静态判点内（载具 --scroll 通道已有原语）",
+    bands: ["real"],
     needsRuling: "",
     files: [
       {
         file: "apps/client/src/subpackages/campus/campus/hub.vue",
         checks: [
+          { kind: "countTemplateEq", re: /class="campus-hub__more"/g, n: 1 },
+          { kind: "countTemplateEq", re: /class="campus-hub__more"[\s\S]{0,240}@tap="toggleSchools"/g, n: 1 },
+          { kind: "countTemplateEq", re: /class="campus-hub__more"[\s\S]{0,240}role="button"/g, n: 1 },
+          { kind: "countTemplateEq", re: /class="campus-hub__more"[\s\S]{0,240}:aria-expanded=/g, n: 1 },
+          { kind: "countTemplateEq", re: /'campus-hub__more--static': !canToggleMore/g, n: 1 },
+          { kind: "countTemplateEq", re: /v-if="canToggleMore" class="campus-hub__more-arrow"/g, n: 1 },
+          { kind: "countTemplateEq", re: /<text class="campus-hub__more-arrow"/g, n: 0 },
+          { kind: "countEq", re: /function toggleSchools\(\)/g, n: 1 },
+          { kind: "countEq", re: /const canToggleMore = computed/g, n: 1 },
           { kind: "countEq", re: /class="campus-hub__more-text"/g, n: 1 },
-          { kind: "absent", re: /class="campus-hub__more["'][\s\S]{0,260}(?:@tap|bindtap|role="button")/g },
-          { kind: "countTemplateEq", re: /campus-hub__more-arrow/g, n: 0 },
           { kind: "countTemplateEq", re: /class="campus-hub__feed"/g, n: 1 },
         ],
       },
@@ -1449,28 +1499,21 @@ const SPEC = [
         ],
       },
       {
-        file: "apps/client/dist/build/mp-weixin/subpackages/campus/campus/hub.wxml",
-        checks: [
-          { kind: "countEq", re: /campus-hub__more-text/g, n: 1 },
-          { kind: "absent", re: /⌄|campus-hub__more-arrow/g },
-          { kind: "absent", re: /class="campus-hub__more[\s\S]{0,260}bindtap/g },
-        ],
-      },
-      {
         file: "apps/client/dist/build/mp-weixin-real/subpackages/campus/campus/hub.wxml",
         checks: [
           { kind: "countEq", re: /campus-hub__more-text/g, n: 1 },
-          { kind: "absent", re: /⌄|campus-hub__more-arrow/g },
-          { kind: "absent", re: /class="campus-hub__more[\s\S]{0,260}bindtap/g },
+          { kind: "countEq", re: /class="\{\{\['campus-hub__more',[^\]]*&& 'campus-hub__more--static'\]\}\}" role="button" aria-label="\{\{\w+\}\}" aria-expanded="\{\{\w+\}\}" bindtap="\{\{\w+\}\}"/g, n: 1 },
+          { kind: "countEq", re: /wx:if="\{\{\w+\}\}" class="\{\{\['campus-hub__more-arrow/g, n: 1 },
         ],
       },
     ],
     neg: [
-      { file: "apps/client/src/subpackages/campus/campus/hub.vue", marker: '<view class="campus-hub__more">', insertAfter: '\n      <text class="campus-hub__more-arrow">⌄</text>' },
-      { file: "apps/client/src/subpackages/campus/campus/hub.vue", marker: '<view class="campus-hub__more">', insertAfter: ' @tap="expandMore">' },
+      { file: "apps/client/src/subpackages/campus/campus/hub.vue", removeRe: /@tap="toggleSchools"/ },
+      { file: "apps/client/src/subpackages/campus/campus/hub.vue", removeRe: /'campus-hub__more--static': !canToggleMore/ },
+      { file: "apps/client/src/subpackages/campus/campus/hub.vue", removeRe: /v-if="canToggleMore" class="campus-hub__more-arrow"/ },
+      { file: "apps/client/src/subpackages/campus/campus/hub.vue", marker: 'class="campus-hub__more"', insertAfter: '><text class="campus-hub__more-arrow">⌄</text' },
       { file: "apps/client/src/i18n/locales/zh-CN.ts", marker: '更多校园圈持续接入中', insertAfter: '⌄' },
-      { file: "apps/client/dist/build/mp-weixin/subpackages/campus/campus/hub.wxml", marker: '<view class="campus-hub__more', insertAfter: ' bindtap="{{cm}}"><text class="campus-hub__more-arrow">⌄</text>' },
-      { file: "apps/client/dist/build/mp-weixin-real/subpackages/campus/campus/hub.wxml", marker: '<view class="campus-hub__more', insertAfter: ' bindtap="{{cm}}"><text class="campus-hub__more-arrow">⌄</text>' },
+      { file: "apps/client/dist/build/mp-weixin-real/subpackages/campus/campus/hub.wxml", removeRe: /aria-expanded="\{\{\w+\}\}" bindtap="\{\{\w+\}\}"/ },
     ],
   },
   {
