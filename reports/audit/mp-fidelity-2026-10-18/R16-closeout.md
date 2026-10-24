@@ -117,3 +117,32 @@ bbox 铺满全屏而不是集中在某一块版面 ⇒ 这是采集抖动（页�
   把它改成"必须绑真实 handler"会比原判据更强，但那是改判据的**实质**，属裁定范围（decisions#N 那条路），
   不自作主张。
 
+
+---
+
+## 六、收口门复现命令与一个读数陷阱（2026-10-24 补）
+
+本文第一节的 `PASS 判据=8 不中=0` 是**带轮窗**跑的。照抄这条才能复现同一读数：
+
+```bash
+NODE=/d/codex-tools/node-v22.17.0-win-x64/node.exe   # PATH 上的 node 是微信自带 v16，缺 fetch
+$NODE scripts/qa/verify-fidelity-closeout.mjs \
+  --ledger reports/audit/mp-fidelity-2026-10-18/baseline-ledger.json \
+  --rounds R13,R14,R15,R16
+```
+
+**陷阱：不带 `--rounds` 会量出另一件事，而且它不是本文那件事。** 实测 2026-10-24 不传窗跑一遍，
+读数是 `不中=4`，四条都归到同一个成因——门把"末轮"派生成
+`tmp/qa/frames/*/*/sweep-manifest.json` 里 **mtime 最新**的那一轮，而本文 §附 提到的
+`R16spot`（3 页 6 帧、跨构建逐像素比对用的补拍件）**恰好是盘上最新的清单**：
+
+- `newdefects` 去读 `tmp/qa/lanes/R16spot` ⇒ 目录不存在 ⇒ NOT-EVIDENCED 级红；
+- `fixvis` 退回去找 `fix-visibility-R16spot.json`，没有 ⇒ 落到无后缀那份（上一轮的判决）；
+- `roundtrip` 同理 MISS；
+- `coverage` 的 5 个红点里有 4 个是 R3/R4/R5/R6——那几轮在登录页可达性修好（10-23）之前，
+  覆盖门本来就红，是历史状态，不是今天的回归（第 5 个就是 R16spot）。
+
+补拍件不是轮：它没有派单件、没有泳道卡、分母是 3 页而不是 71 页。
+它留在 `tmp/qa/frames/` 里是被本文 §附 引用的证据，**不移动、不删除**；
+改判据去"认不出补拍件"也不做——那等于用改尺子的方式把读数搬绿。
+所以这里的处置只有一条：**复现与收口一律显式给 `--rounds`**，并在报告里把窗口写死。

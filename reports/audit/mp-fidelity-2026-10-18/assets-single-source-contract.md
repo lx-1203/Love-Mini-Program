@@ -102,33 +102,56 @@ ASSETCOV_RESULT=PASS 分母=924（10 桶逐件 HTTP 探测，无抽样）
 ```bash
 cd "D:/6/恋爱小程序"
 # 前置：后端 real profile 在 :8080 活着，/actuator/health 返回 UP
-node scripts/qa/test-sync-path-guard.mjs                       # 守卫 6 例
-node scripts/sync-app-assets.mjs --dry-run                     # 应打印"跳过拷贝"且不写盘
-node scripts/qa/verify-app-assets-coverage.mjs \
-     --dist apps/client/dist/build/mp-weixin-real              # 期望 PASS
+# 注意 PATH 上的 node 是微信工具自带 v16（无 fetch），资产门要用 Node≥22 的绝对路径
+NODE=/d/codex-tools/node-v22.17.0-win-x64/node.exe
+$NODE scripts/qa/test-sync-path-guard.mjs                       # 守卫 7 例（含"测试与守卫不许分家"的源码锚）
+$NODE scripts/sync-app-assets.mjs --dry-run                     # 应打印"跳过拷贝"且不写盘
+$NODE scripts/qa/verify-app-assets-coverage.mjs \
+     --dist apps/client/dist/build/mp-weixin-real               # 期望 PASS，并打印 ASSETCOV_SOURCE 输入树行
+$NODE scripts/qa/verify-asset-registry.mjs                      # 期望 ASSETREG_RESULT=PASS
+$NODE scripts/qa/verify-static-refs.mjs                         # 期望 STATICREF_RESULT=PASS
+$NODE scripts/qa/emit-baseline-manifest.mjs --check             # 期望 BASEMANI_RESULT=PASS 条目=19
+$NODE scripts/qa/emit-ruling-menu.mjs \
+     --roster reports/audit/ui-audit-2026-10-16/decisions-v38.md \
+     --menu   reports/audit/ui-audit-2026-10-16/ruling-menu-v38.md   # 期望 RULINGMENU_RESULT=PASS
 # 泄漏残留必须全 0：
 find apps/api/uploads/app-assets -path "*assets-images*" -type f | wc -l
 ```
+
+四把门的自测（判据自己能不能红）分别跑：
+`--selftest` → `ASSETCOV_SELFTEST 23/23`、`BASEMANI_SELFTEST 5/5`、
+`EMITLANES_SELFTEST 8/8`（派发前的基准图硬门）、`RULINGMENU_SELFTEST 14/14`。
 
 ⚠ 两个已知的"看起来对其实不对"：
 1. `verify-app-assets-coverage` **不带 `--dist` 时默认读 mock 产物**，会如实报
    `ERROR 产物档位不是 real`——不会假绿，但也别误读成素材坏了。
 2. 判"有没有被写脏"要看 **`git status`**，不要看 mtime（拷贝保留源 mtime）。
+   本程就是靠这条抓到我自己：`--dry-run` 名义上只看不动，实际往 uploads 写了 6 个文件，
+   现在 `--dry-run` 连拷贝一起挡（打印 `DRY-RUN：跳过拷贝（本应写 N 个文件）`）。
 
 ---
 
 ## 五、还没解决的一条（别把门绿读成已根治）
 
-先纠正本文件初版的一处口径错：我原先写"后端 `uploads/app-assets/**` 不在版本控制里"，
+**2026-10-24 更新**：本节的"根治"两条路里第二条的一半已经落地——
+`sync-app-assets.mjs` 现在**一律以包内为准**（同路径不同字节 ⇒ 取包内，打印 `SYNC_OVERRIDE`），
+资产门新增输入树判点 `ASSETCOV_SRC`（实测比对 1479 件 = full-static 1345 + generated 18 + assets-images 116），
+所以"桶里躺着未压缩原图"这件事在任何机器上都会当场红，不再依赖人肉归一。
+默认 `--apply` 的落盘面仍是 134 件不变；"包内有、桶里没有"的 592 件要显式 `--with-pkg-only` 才纳入。
+
+**仍然没根治的是这一条**：先纠正本文件初版的一处口径错：我原先写"后端 `uploads/app-assets/**` 不在版本控制里"，
 这只对了一半。实测这 110 个泄漏文件里 **62 个是跟踪的（全是 `.jpg`）、48 个未跟踪（`.png`，
 被 `.gitignore:80` 的 `*.png` 挡住）**——`uploads` 下总共跟踪 557 个文件。
 所以：
 
-- 那 62 个泄漏 JPG 的删除**会随本提交进 git**，这一半是持久的；
+- 那 62 个泄漏 JPG 的删除**已随 `e3425ae1` 进 git**，这一半是持久的；
 - 48 个泄漏 PNG 只是从盘上消失（已备份），而**规范路径下的 PNG 本来也未跟踪**，
   所以换机器 clone 或 `uploads/` 被重置时，**PNG 这一半仍需重跑一次同步**才会对上字节。
 
-守卫能拦住"泄漏形态"重新出现，但拦不住"规范路径的 PNG 没同步"这件事——两回事，别混。
+守卫能拦住"泄漏形态"重新出现，输入树判点能拦住"桶比包内旧"，
+但两者都拦不住"规范路径的 PNG 没同步进 uploads"——`ASSETCOV` 靠 HTTP 探测量这件事，
+而后端没起 / 未重跑同步时它报的是 `NOT-EVIDENCED`（退 2），不是 PASS，别把"没跑"读成"过了"。
+
 
 根治的两条路，都需另裁，不在本次范围：
 - 给"随包发布的那一小撮 PNG"开具名例外入库——与既有裁定"证据帧不进库、仓外证据库 + manifest 内

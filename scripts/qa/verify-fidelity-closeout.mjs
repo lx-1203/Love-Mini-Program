@@ -344,8 +344,12 @@ function runSelfTest() {
 }
 if (flag("self-test")) runSelfTest();
 
-const LEDGER = resolve(arg("ledger", ""));
-if (!LEDGER || !existsSync(LEDGER)) { console.log(`${RK}=NOT-EVIDENCED reason=no-ledger path=${arg("ledger", "") || "(没传 --ledger)"}`); process.exit(2); }
+const ledgerArg = arg("ledger", "");
+const LEDGER = ledgerArg ? resolve(ledgerArg) : "";
+/* resolve("") 会得到 cwd，而 cwd 一定 existsSync ⇒ 原来那句"没传 --ledger"的分支根本进不去，
+   真跑起来是 readFileSync(目录) 抛 EISDIR：崩掉的收口在 CI 里长得像环境故障，
+   不像"这轮压根没账本"。所以既查没传，也传了但不是文件的情况。 */
+if (!LEDGER || !existsSync(LEDGER) || !statSync(LEDGER).isFile()) { console.log(`${RK}=NOT-EVIDENCED reason=no-ledger path=${ledgerArg || "(没传 --ledger)"}`); process.exit(2); }
 const ledger = JSON.parse(readFileSync(LEDGER, "utf-8"));
 const wantRoutes = (ledger.rows || []).map((r) => r.route);
 if (!wantRoutes.length) { console.log(`${RK}=NOT-EVIDENCED reason=empty-ledger（空账本没有分母，收口就是空话）`); process.exit(2); }
