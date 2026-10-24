@@ -1,5 +1,6 @@
 package com.campuslove.api.config;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -358,5 +359,75 @@ class MediaTokenAuthorizationRulesTest {
                         throw new AssertionError("完整会话应可继续走上传流程，实际: " + code);
                     }
                 });
+    }
+
+    // ========================================================================
+    // 五、real 档规则装配的漂移守卫
+    // ========================================================================
+    //
+    // 本类前四节跑在默认（mock）档，验的是 MediaTokenPolicy 规则本体；
+    // 生产档 SecurityConfig 只有在「调用点存在且插在正确位置」时才有同样的语义
+    // （authorizeHttpRequests 取首个匹配：插到 app-assets permitAll 之前会把公开图片
+    // 变成需 ROLE_MEDIA，插到通用 /api/v1/media/** authenticated 之后则等于没插）。
+    // 这一位置约束在 real 档没有任何行为测试可依赖（real 档要连数据库/Redis，
+    // 仓库既有约定就是用 mock 档镜像 real 档规则），故这里对两份配置做结构性对账，
+    // 保证「real 收紧了、mock 没跟上」或「将来有人重排规则」都会当场红。
+
+    @Test
+    @DisplayName("漂移守卫：real 与 mock 两份配置都在同一位置装配媒体令牌规则")
+    void bothSecurityConfigsWireMediaTokenRulesAtTheSamePosition() throws Exception {
+        assertMediaRulesWiredInOrder("SecurityConfig.java");
+        assertMediaRulesWiredInOrder("MockSecurityConfig.java");
+    }
+
+    /**
+     * 断言指定安全配置里媒体令牌规则的装配位置：
+     * {@code app-assets permitAll} → {@code applyMediaTokenRules(auth)} →
+     * {@code /api/v1/media/** authenticated}。
+     *
+     * <p>只匹配带引号/带实参的代码文本，注释里的同名字样不参与判定，
+     * 避免「注释写到了就算装配了」的假绿。</p>
+     *
+     * @param simpleFileName 位于 com/campuslove/api/config 下的源文件名
+     */
+    private void assertMediaRulesWiredInOrder(String simpleFileName) throws java.io.IOException {
+        java.nio.file.Path source = securityConfigSource(simpleFileName);
+        String code = java.nio.file.Files.readString(source);
+
+        int appAssetsPermitAll = code.indexOf("\"/api/v1/media/app-assets/**\"");
+        int mediaRulesWired = code.indexOf("MediaTokenPolicy.applyMediaTokenRules(auth)");
+        int mediaAuthenticated = code.indexOf("\"/api/v1/media/**\").authenticated()");
+
+        assertTrue(appAssetsPermitAll >= 0,
+                simpleFileName + " 缺少 app-assets permitAll 规则（锚点丢失，守卫失效）");
+        assertTrue(mediaRulesWired >= 0,
+                simpleFileName + " 没有装配 MediaTokenPolicy.applyMediaTokenRules —— "
+                        + "媒体令牌在该档不降权（P0-2 回归）");
+        assertTrue(mediaAuthenticated >= 0,
+                simpleFileName + " 缺少 /api/v1/media/** authenticated 规则（锚点丢失，守卫失效）");
+        assertTrue(appAssetsPermitAll < mediaRulesWired,
+                simpleFileName + "：媒体规则必须插在 app-assets permitAll 之后，否则会接管公开图片路由");
+        assertTrue(mediaRulesWired < mediaAuthenticated,
+                simpleFileName + "：媒体规则必须插在 /api/v1/media/** authenticated 之前，"
+                        + "否则首个匹配规则就是通用 authenticated，deny 规则永不生效");
+    }
+
+    /**
+     * 定位待对账的安全配置源文件（surefire 工作目录为 apps/api，兼容从仓库根运行）。
+     *
+     * @param simpleFileName 源文件名
+     * @return 源文件路径
+     */
+    private java.nio.file.Path securityConfigSource(String simpleFileName) {
+        java.nio.file.Path relative = java.nio.file.Path.of(
+                "src/main/java/com/campuslove/api/config", simpleFileName);
+        if (java.nio.file.Files.exists(relative)) {
+            return relative.toAbsolutePath();
+        }
+        java.nio.file.Path fromRepoRoot =
+                java.nio.file.Path.of("apps/api/src/main/java/com/campuslove/api/config", simpleFileName);
+        assertTrue(java.nio.file.Files.exists(fromRepoRoot),
+                "找不到安全配置源文件，无法对账规则装配位置: " + relative.toAbsolutePath());
+        return fromRepoRoot.toAbsolutePath();
     }
 }
