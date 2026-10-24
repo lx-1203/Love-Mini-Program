@@ -16,7 +16,7 @@
 `ASSETCOV_RESULT=FAIL 分母=924 404=0 DRIFT=6` 是第一发；第二发同一把尺量出 12。
 **这个 6→12 的差本身是这条记录里最该记住的事**，见第三节。
 
-## 二、12 个漂移是两类问题，修法相反
+## 二、当时数出的 12 个漂移（本节按原样留痕；其中 B 类的归因在第三节已更正）
 
 ### A 类：6 张圈子封面 PNG——真·两代素材不同（要用户裁定方向）
 
@@ -96,7 +96,67 @@ B 类那 6 个是我拿"dry-run"写进 uploads 的另一代副本造成的假警
 2. 两代 SVG 的字节差是行尾不是内容；仓库存 LF、工作树两侧都是 CRLF，
    实际服务的是同一份字节，因此不需要新增 `* text=auto`（理由见第二节，本仓已逐字否过）。
 
-## 四、这次为量它而拉起的东西（环境状态，供接手判断）
+## 四、结案（2026-10-24 用户裁定：以包内压缩版为准）
+
+方向定了之后重查，发现这**不是"两代素材要选一代"**，而是**同一次压缩的两份产物落在了后端两个路径上**：
+
+```
+apps/api/uploads/app-assets/assets/images/covers/circle-food.png            292,002  ← 服务的是这个（原图）
+apps/api/uploads/app-assets/assets/images/assets-images/covers/circle-food.png 45,594  ← 压缩版早就在后端，只是没被这个 URL 指向
+```
+
+即后端一直同时存着原图与压缩图，`<image>` 请求的那条路径恰好落在原图上。
+所以"选包内压缩版"落到实处 = 把压缩版放到**被服务的那条路径**上，不涉及重新生成素材。
+
+做法与读数：
+1. 先把 6 张原图具名备份到 `database/backup/assets-sync-20261024T081657Z/`
+   （本仓纪律"删之前有具名备份"，虽然这里是覆盖不是删）。
+2. 用包内 6 张覆盖被服务路径：`cp apps/client/src/static/assets/images/covers/circle-*.png`
+   → `apps/api/uploads/app-assets/assets/images/covers/`。
+3. **没有写库**：`media_asset` 虽有 `size` 列，但 `sync-app-assets.mjs` 自己那一发 INSERT
+   恒写 `size=0`（连 width/height 都是 400/400 占位），所以行里本就没有尺寸真值可被这次替换弄脏；
+   门的判点也只是"HTTP 响应体 sha256 == 本地同名文件 sha256"。DB 写授权这条因此不需要动用。
+4. 门第一发把 924 个全量对上了字节，却改报 `ERROR …产物档位不是 real（MODE:mp-weixin-mock）`——
+   它默认读 `dist/build/mp-weixin`（mock 档）。加 `--dist apps/client/dist/build/mp-weixin-real` 才是真档：
+
+```
+ASSETCOV_RESULT=PASS 分母=924（10 桶逐件 HTTP 探测，无抽样）
+200同字节=924 404=0 DRIFT=0 其它状态=0 空集桶=0 反向命中=0
+守恒证据=档位 MODE:real API:real，807 个文本件、7 处 app-assets 串中 0 处指向 localPrefixes
+```
+
+5. 收口门在替换后复跑：`FIDELITY_CLOSEOUT_RESULT=PASS 判据=8 全中`（未受影响）。
+
+## 五、这次修完仍然留着的一个真实边界（别把门绿读成问题已根治）
+
+后端那 6 张 PNG **不在版本控制里**：`git ls-files --error-unmatch` 报未跟踪，
+`git check-ignore` 指到 `.gitignore:80` 的 `*.png`。
+⇒ 本次修复是**本机运行态**的修复。换一台机器 clone、或后端 `uploads/` 被重置，
+这 6 张会重新漂回原图，门会再次 FAIL。
+
+要根治只有两条路，都要人拍（都不在这次范围内）：
+- 给 `uploads/app-assets` 里"随包发布的那一小撮"开具名例外入库（与 `.gitignore` 现有
+  "证据帧不进库"的裁定不冲突，但会往库里塞像素，正是当初要止住的膨胀路径）；
+- 或者把这条同步固化成发布链的一步（`sync-app-assets.mjs` 已经有拷贝能力，
+  但它的来源是备份树、且会写库，口径与本次不同，不能直接挂上去）。
+
+复现本次修复的命令（备份 → 覆盖 → 量）：
+```bash
+cd "D:/6/恋爱小程序"
+mkdir -p database/backup/assets-sync-$(date -u +%Y%m%dT%H%M%SZ)
+for n in circle-food circle-music circle-photo circle-sky circle-sports circle-travel; do
+  cp -p apps/api/uploads/app-assets/assets/images/covers/$n.png \
+        database/backup/assets-sync-<stamp>/$n.png
+  cp apps/client/src/static/assets/images/covers/$n.png \
+     apps/api/uploads/app-assets/assets/images/covers/$n.png
+done
+node scripts/qa/verify-app-assets-coverage.mjs --dist apps/client/dist/build/mp-weixin-real
+```
+（前置：后端 real profile 在 :8080 活着，`/actuator/health` = UP；
+门不带 `--dist` 会读 mock 产物并如实报 ERROR，不会假绿。）
+
+
+## 六、这次为量它而拉起的东西（环境状态，供接手判断）
 
 - Redis 3.0.504：`--port 6379`，数据目录指到 `tmp/qa/redis-fresh`。
   原因：仓库根那份 `dump.rdb` 是 **RDB format 9**（新版 Redis 写的），
