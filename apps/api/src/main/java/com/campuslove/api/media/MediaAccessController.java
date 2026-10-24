@@ -162,8 +162,15 @@ public class MediaAccessController {
             operationId = "issueMediaToken"
     )
     public MediaTokenView issueMediaToken() {
-        Long currentUserId = extractCurrentUserId(
-                SecurityContextHolder.getContext().getAuthentication());
+        Authentication currentAuthentication = SecurityContextHolder.getContext().getAuthentication();
+        // P0-2 媒体令牌降权：本端点是「用完整用户会话换取短期媒体令牌」的入口，
+        // 媒体令牌自己再来换一枚就成了自我续期（短期凭据变相长会话）。
+        // 安全链已把 GET /api/v1/media/token 排除在媒体读取之外（403），这里再设一道
+        // 代码闸：即使将来规则顺序被改动，媒体令牌也换不到新令牌。
+        if (MediaTokenPolicy.isMediaOnlyAuthentication(currentAuthentication)) {
+            throw new AccessDeniedException("媒体访问令牌不能续签，请使用完整用户会话重新获取");
+        }
+        Long currentUserId = extractCurrentUserId(currentAuthentication);
         if (currentUserId == null) {
             throw new AccessDeniedException("未认证，无法签发媒体访问令牌");
         }

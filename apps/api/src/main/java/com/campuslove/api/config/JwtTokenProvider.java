@@ -149,6 +149,36 @@ public class JwtTokenProvider {
     public static final long MEDIA_TOKEN_TTL_SECONDS = MEDIA_TOKEN_TTL_MS / 1000;
 
     /**
+     * 判断 scope 声明是否为媒体范围（P0-2：scope 口径唯一真源）。
+     *
+     * <p>只认精确值 {@code "media"}（大小写敏感，与 {@link #MEDIA_SCOPE} 签发值一致）：
+     * 任何变形（{@code media:read}、空串、多余空格）都不视为媒体令牌，
+     * 由调用方按完整会话/无效凭据处理，避免因宽松匹配放大权限面。</p>
+     *
+     * @param scope {@link #getTokenScope} 提取到的 scope 值，可为 null
+     * @return true 表示媒体访问令牌
+     */
+    public static boolean isMediaScope(String scope) {
+        return MEDIA_SCOPE.equals(scope);
+    }
+
+    /**
+     * 判断令牌是否为媒体访问令牌（{@code scope=media}）。
+     *
+     * <p>P0-2 收敛点：媒体令牌的能力边界（只读媒体）由
+     * {@link com.campuslove.api.media.MediaTokenPolicy} 定义，认证过滤器、刷新接口与
+     * WebSocket 握手/通道拦截器都通过本方法识别媒体令牌，保证「不论令牌从请求头还是
+     * 查询参数进来」判定口径一致——历史上只有查询参数路径做过 scope 校验，
+     * 请求头路径把媒体令牌当完整会话用。</p>
+     *
+     * @param token JWT 令牌字符串，可为 null
+     * @return true 表示签名有效且 scope=media；无效令牌返回 false（fail-closed 交给后续签名校验）
+     */
+    public boolean isMediaToken(String token) {
+        return token != null && isMediaScope(getTokenScope(token));
+    }
+
+    /**
      * 提取令牌的 scope 声明。
      *
      * <p>媒体访问令牌（{@link #generateMediaToken}）携带 {@code scope=media}；

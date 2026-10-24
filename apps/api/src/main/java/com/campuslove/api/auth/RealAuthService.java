@@ -254,6 +254,20 @@ public class RealAuthService implements AuthService {
             );
         }
 
+        // P0-2 媒体令牌降权：/api/v1/auth/** 属 permitAll，过滤器不参与本方法的认证判定，
+        // 本方法自己解析令牌——若放过 scope=media 的短期媒体令牌，泄露在访问日志/URL 里的
+        // 5 分钟降权凭据就能持续读出属主昵称、校园/手机绑定状态与功能开关，等于半个会话接口。
+        // 口径与「禁用用户」分支一致：返回 loggedIn=false 的未登录视图，不抛 401/403，
+        // 避免破坏前端会话状态机（前端据此跳登录页）。
+        if (jwtTokenProvider.isMediaToken(token)) {
+            log.warn("媒体访问令牌尝试获取登录会话（/auth/me），按未登录返回");
+            return UserSessionView.withoutToken(
+                    null, false, null, null,
+                    false, false, false, false,
+                    null, Map.of("chat_ai_enabled", false)
+            );
+        }
+
         // 根据 JWT 中的 userId 查找用户
         User user;
         try {
@@ -481,6 +495,18 @@ public class RealAuthService implements AuthService {
         String userId = jwtTokenProvider.getUserIdFromToken(oldToken);
         if (userId == null) {
             throw new IllegalArgumentException(ErrorMessages.TOKEN_USER_EXTRACTION_FAILED);
+        }
+
+        // 2.5 P0-2 媒体令牌降权：scope=media 的短期令牌不得换发完整会话令牌。
+        //     媒体令牌是给 <image src> 这类无法携带 Authorization 头的场景签发的降权凭据
+        //     （TTL 5 分钟、只读媒体），它同样能通过上面的签名/黑名单/用户校验——
+        //     若放行刷新，泄露在访问日志/浏览器历史里的媒体令牌就被升级成一份 2 小时完整会话，
+        //     「降权」形同虚设。这里只拒绝换发，不撤销原 jti：撤销会让正在加载的图片 404，
+        //     而对已经泄露的令牌本身也没有额外收益（它自然过期即失效）。
+        //     异常口径沿用既有认证失败约定：InvalidTokenException → 401 + code=UNAUTHORIZED。
+        if (jwtTokenProvider.isMediaToken(oldToken)) {
+            log.warn("媒体访问令牌尝试刷新完整会话，已拒绝换发: userId={}", userId);
+            throw new InvalidTokenException(ErrorMessages.TOKEN_INVALID_OR_EXPIRED);
         }
 
         // 3. R4-00255：先校验用户存在且未被禁用，再签发新令牌——

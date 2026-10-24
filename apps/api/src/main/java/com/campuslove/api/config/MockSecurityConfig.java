@@ -2,6 +2,7 @@ package com.campuslove.api.config;
 
 import com.campuslove.api.auth.JwtAccessDeniedHandler;
 import com.campuslove.api.auth.JwtAuthenticationEntryPoint;
+import com.campuslove.api.media.MediaTokenPolicy;
 import java.io.IOException;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
@@ -180,7 +181,12 @@ public class MockSecurityConfig {
                     .maxAgeInSeconds(WebConfig.HSTS_MAX_AGE_SECONDS)
                 )
             )
-            .authorizeHttpRequests(auth -> auth
+            // 配置请求授权
+            // P0-2：与 SecurityConfig 同步改为块状 lambda，以便在 app-assets permitAll 之后
+            // 注入同一份媒体令牌规则（MediaTokenPolicy.applyMediaTokenRules），
+            // 保证 mock 档验证的规则链与生产环境是同一份代码。
+            .authorizeHttpRequests(auth -> {
+                auth
                 // 登录端点不需要认证（与 real profile 一致）
                 // Task 2.4.1：所有路径统一升级为 /api/v1/**
                 .requestMatchers("/api/v1/auth/**").permitAll()
@@ -216,7 +222,11 @@ public class MockSecurityConfig {
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 // 公开端点：应用资产（/api/v1/media/app-assets/**）——后端托管的
                 // 装饰性图片，免登录可看图（与 real profile 对齐；须在 media/** 规则之前）
-                .requestMatchers("/api/v1/media/app-assets/**").permitAll()
+                .requestMatchers("/api/v1/media/app-assets/**").permitAll();
+                // P0-2 媒体令牌降权（与 real profile 共用同一份规则实现）：
+                // 媒体会话只能 GET/HEAD 读媒体文件，其余路径一律 403。
+                MediaTokenPolicy.applyMediaTokenRules(auth);
+                auth
                 // Task 0.3.2：媒体鉴权代理端点需认证
                 .requestMatchers("/api/v1/media/**").authenticated()
                 // 媒体上传端点 /api/v1/media/upload 由 /api/v1/** 规则覆盖（需认证），
@@ -224,8 +234,8 @@ public class MockSecurityConfig {
                 // 其他 /api/v1/** 路径需要认证
                 .requestMatchers("/api/v1/**").authenticated()
                 // 其他请求放行（静态资源等）
-                .anyRequest().permitAll()
-            )
+                .anyRequest().permitAll();
+            })
             .addFilterBefore(new MockAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

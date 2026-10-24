@@ -268,6 +268,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 return false;
             }
 
+            // P0-2 媒体令牌降权：scope=media 的短期令牌仅可读取媒体文件，不得建立 WebSocket 会话。
+            // 判定与 HTTP 过滤器/STOMP 通道拦截器同源（JwtTokenProvider#isMediaToken），
+            // 覆盖 Authorization 头与 Sec-WebSocket-Protocol 子协议两种携带方式。
+            if (jwtTokenProvider.isMediaToken(token)) {
+                handshakeLog.warn("WebSocket 握手拒绝: 媒体访问令牌（media scope）不可建立长连接, remoteAddress={}",
+                        request.getRemoteAddress());
+                return false;
+            }
+
             String userId = jwtTokenProvider.getUserIdFromToken(token);
             if (userId == null || userId.isBlank()) {
                 handshakeLog.warn("WebSocket 握手拒绝: 无法从 JWT 提取用户ID, remoteAddress={}",

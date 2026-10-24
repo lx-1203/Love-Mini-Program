@@ -151,6 +151,18 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
             throw new org.springframework.messaging.MessageDeliveryException("Unauthorized: invalid JWT token");
         }
 
+        // P0-2 媒体令牌降权：scope=media 的短期令牌只具备「读媒体文件」这一项能力，
+        // WebSocket 是完整登录会话的能力面（收发消息、订阅私有队列），必须拒绝。
+        // 与 HTTP 侧同源判定（JwtTokenProvider#isMediaToken），不区分令牌来自
+        // Authorization 头还是 token 原生头——历史上两条通道都只看签名与有效期，
+        // 一个泄露的 5 分钟媒体令牌即可建立长连接并以属主身份收发私信。
+        if (jwtTokenProvider.isMediaToken(token)) {
+            log.warn("WebSocket CONNECT 拒绝: 媒体访问令牌（media scope）不可建立长连接, sessionId={}",
+                    accessor.getSessionId());
+            throw new org.springframework.messaging.MessageDeliveryException(
+                    "Unauthorized: media-scoped token cannot open WebSocket session");
+        }
+
         // 修复（R2）：校验 jti 黑名单——登出/撤销后的 token 不得建立 WebSocket 连接
         if (jwtTokenProvider.isTokenRevoked(token)) {
             log.warn("WebSocket CONNECT 拒绝: JWT 令牌已撤销, sessionId={}", accessor.getSessionId());
