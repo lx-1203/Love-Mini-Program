@@ -14,10 +14,16 @@
  *      打印可执行语句；默认输出到 stdout，可用 --apply 直接写库
  *
  * 用法：
- *   node scripts/sync-app-assets.mjs              # 拷贝 + 打印 SQL
- *   node scripts/sync-app-assets.mjs --apply      # 拷贝 + 直接执行 SQL（需 mysql 客户端与连接参数）
+ *   node scripts/sync-app-assets.mjs                   # 拷贝 + 打印 SQL
+ *   node scripts/sync-app-assets.mjs --dry-run         # 什么都不写，只报同步集与桶漂移
+ *   node scripts/sync-app-assets.mjs --with-pkg-only    # 把"桶里没有、包内独有"的件也纳入同步集
+ *   node scripts/sync-app-assets.mjs --apply           # 拷贝 + 直接执行 SQL（需 mysql 客户端与连接参数）
+ *
+ * 源优先级：apps/client/src/static/ 是真源，static-local-backup 的桶只是副本。
+ * 两者同路径不同字节时一律取包内（2026-10-24：桶里 6 张圈子封面还是未压缩原图，
+ * 谁跑一次 sync 就把裁定过的压缩版盖回原图）。
  */
-import { cpSync, existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
@@ -34,6 +40,10 @@ const APPLY = process.argv.includes("--apply");
    把 110 个副本写进了 uploads/app-assets，事后要靠 git status 才发现）。
    名字承诺"只看不做"，那就得真只看不做——这里把拷贝一起挡掉。 */
 const DRY_RUN = process.argv.includes("--dry-run");
+/* 桶里没有、包内独有的件默认**不**进同步集：实测桶只覆盖 134 件、包内这两个目录有 726 件，
+   默认全补等于把 --apply 的落盘面和注册面一次放大 5 倍，这比"修漂移"要的范围大得多。
+   要真做全量补齐，显式加 --with-pkg-only；不加时只点名数量，让人自己决定。 */
+const WITH_PKG_ONLY = process.argv.includes("--with-pkg-only");
 const MYSQL = process.env.MYSQL_BIN || "mysql"; // mysql 客户端走 PATH（或 MYSQL_BIN 显式指），不写盘符死路径
 const DB_URL = "jdbc:mysql://127.0.0.1:3307/campus_love";
 
@@ -66,18 +76,53 @@ if (all.length === 0) {
   process.exit(1);
 }
 
-/* 路径泄漏守卫：桶目录名不该出现在**自己映射后的目标基名之下**。
-   历史事故是有人把源根写成 BACKUP 本身（而不是 BACKUP/assets-images），
-   于是 rel 变成 assets/images/assets-images/covers/x.png —— 与规范路径
-   assets/images/covers/x.png **字节相同、路径不同**，两代并存：
-   110 个文件 + 110 条 media_asset 注册行，且被服务的那条恰好是旧原图，
-   直接表现为"包内已压缩、后端还在发原图"的字节漂移（2026-10-24 结案）。
-   这类东西不会 404、不会报错，只会让画面静默回退，所以在这里当场拦死。
+/* 路径泄漏守卫见下方"同步集完全定好"之后——这里不能放，因为后面还会从包内补件，
+   放前面会让补入的件绕过检查。 */
 
-   注意判的是"映射基名**之后**还出现桶名"，不是"路径里任何一段等于桶名"——
-   generated 桶的目标基名本身就是 generated，按后者判会把 18 个合法路径
-   （generated/images/activities/art-exhibition.jpg 等）全部误杀，
-   第一版就是这么错的，实测拦下后修正。 */
+/* 包内优先：cdn 素材的唯一真源是 apps/client/src/static/，备份桶只是它的副本。
+   实测桶会烂——2026-10-24 查出 assets-images 桶里 6 张圈子封面还是**未压缩原图**
+   （桶 292K–380K vs 包内 36K–48K），谁跑一次 sync 就把裁定过的压缩版盖回原图、资产门当场变红。
+   与其定期人肉归一桶，不如让同步自己以包内为准：桶与包内不一致 ⇒ 取包内并点名。 */
+const PKG_STATIC = join(REPO, "apps", "client", "src", "static");
+const norm2 = (p) => String(p).split(/[\\/]+/).join("/");
+let bucketStale = 0, pkgOnly = 0;
+for (const e of all) {
+  const pkg = join(PKG_STATIC, norm2(e.rel));
+  if (!existsSync(pkg)) continue;
+  let same = false;
+  try { const a = readFileSync(e.abs), b = readFileSync(pkg); same = a.length === b.length && a.equals(b); } catch { same = false; }
+  if (!same) { bucketStale++; e.srcWas = e.abs; e.abs = pkg; }
+}
+if (bucketStale) {
+  console.log(`[sync-app-assets] SYNC_PKG_PRIORITY 桶与包内不一致=${bucketStale} 件 ⇒ 全部改取包内版本（桶是副本，不是真源）`);
+  for (const e of all.filter((x) => x.srcWas).slice(0, 12)) {
+    console.log(`[sync-app-assets] SYNC_OVERRIDE rel=${norm2(e.rel)} 桶=${statSync(e.srcWas).size}B 包内=${statSync(e.abs).size}B`);
+  }
+}
+
+/* 桶里没有、包内有的件：默认只点名，加 --with-pkg-only 才补进同步集。 */
+const have = new Set(all.map((e) => norm2(e.rel)));
+for (const [srcDir, destBase] of [
+  [join(BACKUP, "generated"), "generated"],
+  [join(BACKUP, "assets-images"), "assets/images"],
+]) {
+  const base = norm2(destBase);
+  for (const f of collectFiles(join(PKG_STATIC, base), join(PKG_STATIC, base))) {
+    const rel = join(base, f.rel);
+    if (have.has(norm2(rel))) continue;
+    have.add(norm2(rel)); pkgOnly++;
+    if (WITH_PKG_ONLY) all.push({ abs: f.abs, rel, bucket: srcDir.split(/[\\/]/).pop(), baseSegs: base.split("/").length, pkgOnly: true });
+  }
+}
+if (pkgOnly) {
+  console.log(`[sync-app-assets] SYNC_PKG_ONLY 桶里没有、包内已有 ${pkgOnly} 件 ⇒ ${WITH_PKG_ONLY ? "已按 --with-pkg-only 补入同步集" : "默认不入同步集（要全量补齐加 --with-pkg-only）"}`);
+}
+
+/* 泄漏守卫在这里跑，而不是在收集完备份桶之后——同步集后面还会从包内补件，
+   守卫放前面就等于让补入的件绕过检查。判的是"映射基名**之后**还出现桶名"：
+   历史事故是把源根写成 BACKUP 本身，rel 变成 assets/images/assets-images/covers/x.png，
+   与规范路径字节相同、路径不同，两代并存 110 文件 + 110 注册行，被服务的恰好是旧原图。
+   这类东西不 404、不报错，只让画面静默回退，所以当场拦死。 */
 const leaked = all.filter((e) => String(e.rel).split(/[\\/]+/).slice(e.baseSegs).includes(e.bucket));
 if (leaked.length) {
   console.error(`[sync-app-assets] SYNC_RESULT=FAIL reason=路径泄漏：${leaked.length} 个目标路径在映射基名之下又套了一层桶名（首个：${leaked[0].rel}）`);
