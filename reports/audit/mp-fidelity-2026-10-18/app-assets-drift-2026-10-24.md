@@ -73,18 +73,28 @@
 要么加**窄口径**规则 `*.svg text eol=lf`（只圈 svg，不触发全仓重归一化）。
 两个都比"同步素材"便宜，且都不会把 CRLF 当正版写进后端。
 
-## 三、6→12 这个不自洽已经结案：是 `git add` 当场改写了工作树
+## 三、6→12 结案：**是我自己污染的，B 类不是真缺陷**（本节上一版的归因错了，在此更正）
 
-第一发门跑在我 `git add -- apps/client/src/static` **之前**，第二发在**之后**。
-`core.autocrlf=true` 下，`git add` 会按规则重写工作树副本——git 当时就警告过
-"LF will be replaced by CRLF the next time Git touches it"（那批警告里正有
-`heart-filled-white.svg` 与 `svg-spec/03-icons/heart-filled.svg`）。
-⇒ 那 6 个 SVG 的 CR 是**我这一发 `git add` 加到工作树上的**，
-HEAD 里存的是 LF，所以仓库内容没变、变的是盘上副本。
+上一版写的是"我那一发 `git add` 在 autocrlf 下改写了工作树"。**这个因果是错的**，追下去是另一回事：
 
-这条我按"门跑两次结果不同"抓出来并逐字节核过（盘上 vs `git show HEAD:`），
-不是猜的。它同时说明：**A 类 6 张封面才是真素材漂移**（45KB vs 292KB 这种量级差，
-换行符解释不了），B 类 6 个是行尾假警。两类的 12 个里只有 6 个需要人裁方向。
+两次门之间我只多做了一件事——跑 `sync-app-assets.mjs --dry-run`。
+`git status` 随后指出被改的是**后端 uploads 那一侧**的 6 个 SVG（不是包内那侧）；
+`git checkout --` 还原那 6 个之后，门立刻回到 **DRIFT=6 且稳定复现**。
+再逐字节对：包内 `heart-gradient.svg` 508/CR=7，还原后的 uploads 同一份 508/CR=7 —— **两边一致**，
+所以那 6 个根本不叫漂移。
+
+⇒ 更正后的结论：**真漂移只有 A 类 6 张圈子封面**（45KB vs 292KB 这种量级差，行尾解释不了）。
+B 类那 6 个是我拿"dry-run"写进 uploads 的另一代副本造成的假警。
+第二节里"盘上 CRLF / `git show HEAD:` 是 LF"那个差异本身是真的（508 vs 501），
+但它不是门报出那 6 个的原因——我把两件同时观察到的事写成了因果，这是这条记录里的一处错。
+
+两条要记住的教训：
+1. `--dry-run` 会动盘这件事这次**不只是风险，是真动了** uploads。
+   我先前用 `find -newermt` 数出 `count_new=0` 是**假阴性**（拷贝保留了源 mtime）
+   ⇒ "mtime 没变"不能当"没写盘"的证据。判"有没有被我写脏"要看 **`git status`**，
+   不要看 mtime——uploads 那 6 个是跟踪文件，被改立刻现形。
+2. 两代 SVG 的字节差是行尾不是内容；仓库存 LF、工作树两侧都是 CRLF，
+   实际服务的是同一份字节，因此不需要新增 `* text=auto`（理由见第二节，本仓已逐字否过）。
 
 ## 四、这次为量它而拉起的东西（环境状态，供接手判断）
 
