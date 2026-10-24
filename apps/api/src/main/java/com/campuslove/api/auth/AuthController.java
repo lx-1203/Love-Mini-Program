@@ -150,9 +150,18 @@ public class AuthController {
      * <p>安全说明：体验账号密码为随机值，无法通过手机号密码登录；
      * 商业化上线前可通过配置 {@code app.guest-login.enabled=false} 关闭该入口。</p>
      *
+     * <p>P0-4 写放大防护：访客身份隔离后，每次体验登录都会新建独立访客并落库
+     * （users + 基本/校园/日程资料 + {@link GuestDemoDataProvisioner} 灌入的私信/喜欢/
+     * 访客/通知/悄悄话等，合计约 70 行）。本公开 POST 与兄弟认证写入口
+     * （register / phone-login / wechat-login / admin-login）同口径挂
+     * {@code @RateLimit}（桶容量 10，每 10 秒补 1 个令牌，按客户端 IP 限流）——
+     * 支持正常冷启动（一次启动一次体验），但挡住同一出口 IP 的刷量写放大；
+     * 触发限流返回 429，不引入全局限流。</p>
+     *
      * @return 用户会话视图(包含 JWT 令牌)
      */
     @PostMapping("/guest-login")
+    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
     public UserSessionView guestLogin(
             @Parameter(description = "客户端设备标识（可选，用于设备管理；缺失时后端记为 unknown）", required = false)
             @org.springframework.web.bind.annotation.RequestParam(name = "deviceId", required = false) String deviceId) {

@@ -848,6 +848,115 @@ class RealAuthServiceTest {
     }
 
     /**
+     * P0-4 装配漂移守卫（结构级 · loginAsGuest 调用图）：体验登录体内不得调用任何
+     * 「查已有体验号」helper。
+     *
+     * <p>文本守卫只锁死了字面量 {@code userRepository.find}；但「先查最近体验号 → 命中即复用」
+     * 的缺陷可以被搬迁到私有 helper（如 {@code findLatestGuest()} / {@code queryGuest()}）
+     * 再从 loginAsGuest 调用，从而绕过字面量守卫。这里不做大范围正则，而是扫描体内所有被
+     * 调用的标识符，凡是「名字含 guest 且含取数动词」的一律判红。为证明扫描有效（非空断言），
+     * 保留正锚：合法的资料预填 helper {@code provisionGuestProfile(} 仍在体内被调用——
+     * 它含 guest 但不含取数动词，故不被误伤，说明本守卫是「按语义」而非「按 guest 子串」拦截。</p>
+     */
+    @Test
+    @DisplayName("P0-4 漂移守卫（结构级）：loginAsGuest 体内无「guest 取数 helper」调用")
+    void guestLoginBody_shouldNotCallAnyGuestLookupHelper() throws java.io.IOException {
+        String serviceSource = java.nio.file.Files.readString(
+                mainSourceOf("com/campuslove/api/auth", "RealAuthService.java"));
+        String guestLoginBody = extractMethodBody(serviceSource, "UserSessionView loginAsGuest(String deviceId)");
+
+        java.util.regex.Matcher invoked =
+                java.util.regex.Pattern.compile("\\b([A-Za-z_][A-Za-z0-9_]*)\\s*\\(").matcher(guestLoginBody);
+        int scannedCallSites = 0;
+        while (invoked.find()) {
+            scannedCallSites++;
+            String callee = invoked.group(1).toLowerCase(java.util.Locale.ROOT);
+            boolean guestNamed = callee.contains("guest");
+            boolean lookupVerb = callee.contains("find") || callee.contains("latest")
+                    || callee.contains("first") || callee.contains("top") || callee.contains("query")
+                    || callee.contains("load") || callee.contains("select") || callee.contains("fetch")
+                    || callee.contains("lookup") || callee.contains("resolve");
+            assertFalse(guestNamed && lookupVerb,
+                    "P0-4 回归：loginAsGuest 调用了疑似「查已有体验号」的 helper "
+                            + invoked.group(1) + "——把复用搬到 helper 里同样会让所有访客共用同一账号");
+        }
+        assertTrue(scannedCallSites >= 3,
+                "守卫失效告警：loginAsGuest 体内只扫到 " + scannedCallSites
+                        + " 处调用点，方法体可能被改写，守卫已失去意义");
+        // 正锚：资料预填 helper（含 guest、不含取数动词）仍应在体内被调用，证明扫描确实在看 guest 令牌
+        assertTrue(guestLoginBody.contains("provisionGuestProfile("),
+                "守卫失效告警：loginAsGuest 里 provisionGuestProfile 预填正锚丢失，本用例的 guest 语义扫描将空转");
+    }
+
+    /**
+     * P0-4 装配漂移守卫（结构级 · 反射枚举 RealAuthService 方法）：不得存在
+     * 「返回 User 且名字含 findGuest/latestGuest」的方法。
+     *
+     * <p>即便复用逻辑从 loginAsGuest 体内搬进一个新的私有取数方法，方法名一旦被反射枚举命中即判红。
+     * 正锚（防断言空转）：枚举确实看到了返回 User 的方法（{@code findOrCreateUserForWechatLogin}）
+     * 与名字含 guest 的方法（{@code provisionGuestProfile}，返回 void 不被拦截），二者同时存在
+     * 才证明「返回 User」且「guest 取数名」两条判据都在实际生效，而不是集合为空导致的假绿。</p>
+     */
+    @Test
+    @DisplayName("P0-4 漂移守卫（反射）：RealAuthService 无返回 User 的 guest 取数方法")
+    void realAuthService_shouldNotDeclareAnyGuestLookupMethod() {
+        java.lang.reflect.Method[] methods = RealAuthService.class.getDeclaredMethods();
+        boolean sawUserReturningMethod = false;
+        boolean sawGuestNamedMethod = false;
+        for (java.lang.reflect.Method method : methods) {
+            String name = method.getName().toLowerCase(java.util.Locale.ROOT);
+            Class<?> returnType = method.getReturnType();
+            boolean returnsSingleUserLike = returnType == User.class
+                    || returnType == java.util.List.class
+                    || returnType == java.util.Optional.class;
+            if (returnType == User.class) {
+                sawUserReturningMethod = true;
+            }
+            if (name.contains("guest")) {
+                sawGuestNamedMethod = true;
+            }
+            boolean guestLookupName = name.contains("findguest") || name.contains("latestguest")
+                    || name.contains("guestlookup") || (name.contains("guest") && name.contains("find"));
+            assertFalse(returnsSingleUserLike && guestLookupName,
+                    "P0-4 回归：RealAuthService 新增了返回 User 的 guest 取数方法 " + method.getName()
+                            + "——复用既有体验号的缺陷换了承载点后，本守卫仍须判红");
+        }
+        assertTrue(methods.length > 0, "反射枚举 RealAuthService 方法失败：方法集为空，守卫无意义");
+        assertTrue(sawUserReturningMethod,
+                "守卫失效告警：未发现任何返回 User 的方法（findOrCreateUserForWechatLogin 应存在），正锚丢失");
+        assertTrue(sawGuestNamedMethod,
+                "守卫失效告警：未发现任何名字含 guest 的方法（provisionGuestProfile 应存在），正锚丢失");
+    }
+
+    /**
+     * P0-4 装配漂移守卫（结构级 · 反射枚举 UserRepository 派生查询）：不得存在
+     * 「按 openid 前缀取用户」的派生查询（P0-4 摘除的 {@code findFirstByOpenidStartingWith...} 契约
+     * 就是「体验登录优先复用同一账号」）。
+     *
+     * <p>正锚：精确匹配用的 {@code findByOpenid} 必须仍在（防枚举空转），且它不是前缀派生查询、
+     * 不被拦截——证明本守卫区分「等值查单个」与「前缀查最近一条」。</p>
+     */
+    @Test
+    @DisplayName("P0-4 漂移守卫（反射）：UserRepository 无 openid 前缀派生查询")
+    void userRepository_shouldNotDeclareOpenidPrefixDerivedQuery() {
+        java.lang.reflect.Method[] methods = UserRepository.class.getMethods();
+        boolean sawExactFindByOpenid = false;
+        for (java.lang.reflect.Method method : methods) {
+            String name = method.getName();
+            if ("findByOpenid".equals(name)) {
+                sawExactFindByOpenid = true;
+            }
+            boolean openidPrefixDerived = name.contains("OpenidStartingWith")
+                    || name.contains("OpenidContaining") || name.contains("OpenidEndingWith");
+            assertFalse(openidPrefixDerived,
+                    "P0-4：UserRepository 不得保留/新增「按 openid 前缀取用户」的派生查询 " + name
+                            + "——其契约即复用体验号，须先推翻会话隔离裁定并重新评审");
+        }
+        assertTrue(sawExactFindByOpenid,
+                "守卫失效告警：UserRepository.findByOpenid（等值查单个）正锚丢失，本前缀派生守卫将空转");
+    }
+
+    /**
      * 按大括号配对截取方法体（只用于源码装配对账，不做语法解析）。
      *
      * @param source            源文件全文
