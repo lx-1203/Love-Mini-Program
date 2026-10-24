@@ -30,6 +30,10 @@ const DEST = join(UPLOADS_ROOT, "app-assets");
 const URL_PREFIX = "/api/v1/media/app-assets/";
 
 const APPLY = process.argv.includes("--apply");
+/* --dry-run 以前只挡得住写库那一步，**拷贝照样落盘**（2026-10-24 实测：跑一次"dry-run"
+   把 110 个副本写进了 uploads/app-assets，事后要靠 git status 才发现）。
+   名字承诺"只看不做"，那就得真只看不做——这里把拷贝一起挡掉。 */
+const DRY_RUN = process.argv.includes("--dry-run");
 const MYSQL = process.env.MYSQL_BIN || "mysql"; // mysql 客户端走 PATH（或 MYSQL_BIN 显式指），不写盘符死路径
 const DB_URL = "jdbc:mysql://127.0.0.1:3307/campus_love";
 
@@ -51,8 +55,9 @@ for (const [srcDir, destBase] of [
   [join(BACKUP, "generated"), "generated"],
   [join(BACKUP, "assets-images"), "assets/images"],
 ]) {
+  const bucket = srcDir.split(/[\\/]/).pop();
   for (const f of collectFiles(srcDir, srcDir)) {
-    all.push({ abs: f.abs, rel: join(destBase, f.rel) });
+    all.push({ abs: f.abs, rel: join(destBase, f.rel), bucket, baseSegs: destBase.split(/[\\/]+/).length });
   }
 }
 
@@ -61,13 +66,36 @@ if (all.length === 0) {
   process.exit(1);
 }
 
-// 1. 拷贝到 uploads/app-assets/{rel}
-for (const f of all) {
-  const target = join(DEST, f.rel);
-  mkdirSync(dirname(target), { recursive: true });
-  cpSync(f.abs, target);
+/* 路径泄漏守卫：桶目录名不该出现在**自己映射后的目标基名之下**。
+   历史事故是有人把源根写成 BACKUP 本身（而不是 BACKUP/assets-images），
+   于是 rel 变成 assets/images/assets-images/covers/x.png —— 与规范路径
+   assets/images/covers/x.png **字节相同、路径不同**，两代并存：
+   110 个文件 + 110 条 media_asset 注册行，且被服务的那条恰好是旧原图，
+   直接表现为"包内已压缩、后端还在发原图"的字节漂移（2026-10-24 结案）。
+   这类东西不会 404、不会报错，只会让画面静默回退，所以在这里当场拦死。
+
+   注意判的是"映射基名**之后**还出现桶名"，不是"路径里任何一段等于桶名"——
+   generated 桶的目标基名本身就是 generated，按后者判会把 18 个合法路径
+   （generated/images/activities/art-exhibition.jpg 等）全部误杀，
+   第一版就是这么错的，实测拦下后修正。 */
+const leaked = all.filter((e) => String(e.rel).split(/[\\/]+/).slice(e.baseSegs).includes(e.bucket));
+if (leaked.length) {
+  console.error(`[sync-app-assets] SYNC_RESULT=FAIL reason=路径泄漏：${leaked.length} 个目标路径在映射基名之下又套了一层桶名（首个：${leaked[0].rel}）`);
+  console.error("[sync-app-assets] 说明源根写错了——应逐个映射 BACKUP/<bucket> → 目标基名，而不是把 BACKUP 整棵拷进来。拒绝落盘。");
+  process.exit(1);
 }
-console.log(`[sync-app-assets] 已拷贝 ${all.length} 个文件 → ${DEST}`);
+
+// 1. 拷贝到 uploads/app-assets/{rel}
+if (DRY_RUN) {
+  console.log(`[sync-app-assets] DRY-RUN：跳过拷贝（本应写 ${all.length} 个文件到 ${DEST}）`);
+} else {
+  for (const f of all) {
+    const target = join(DEST, f.rel);
+    mkdirSync(dirname(target), { recursive: true });
+    cpSync(f.abs, target);
+  }
+  console.log(`[sync-app-assets] 已拷贝 ${all.length} 个文件 → ${DEST}`);
+}
 
 // 2. 生成注册 SQL（幂等：按本脚本写入的 url 清理后重建）
 const paths = all.map((f) => f.rel.replace(/\\/g, "/"));
