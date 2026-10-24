@@ -1586,7 +1586,7 @@
 
 ### R15-L08-D01　P1 / 可达性　批次 R15-B72
 - 帧：`tmp/qa/frames/R15/real-f0677920/subpackages__tools__search__index__top.png`（sha16=`42a48d6f1cd3e2f8`）
-- 源码证据：`apps/client/src/subpackages/tools/search/index.vue:610`
+- 源码证据：`apps/client/src/subpackages/tools/search/index.vue:611`
 - 理想图依据：无基准，依据=规范文档 §1.4 与仓内自陈触控下限 88rpx（AppShell.vue:334「min-height: 88rpx(44px)」），同页 .search-tab 已按此档落地
 - 现象：搜索输入胶囊在帧上实测 y=57..92、x=68..254（36px 高 = 72rpx），比同帧「用户」选中胶囊（y=112..152，41px）矮一档，也低于 88rpx 下限 8px；这是本页唯一的输入入口，失焦后只能再点这枚 36px 高的胶囊，没有第二个出口。
 - 建议改法：.search-box 的 height 由 72rpx 提到 88rpx（min-height:88rpx 兜底），头部行高随之 +8px，不影响下方分组条与历史区左缘。
@@ -1594,7 +1594,7 @@
 
 ### R15-L08-D02　P2 / 颜色token　批次 R15-B72
 - 帧：`tmp/qa/frames/R15/real-f0677920/subpackages__tools__search__index__top.png`（sha16=`42a48d6f1cd3e2f8`，自同段前条继承）
-- 源码证据：`apps/client/src/subpackages/tools/search/index.vue:753`
+- 源码证据：`apps/client/src/subpackages/tools/search/index.vue:786`
 - 理想图依据：无基准，依据=规范文档 §1.2 次/三级文本令牌表 + §1.3 小字 12px 档；同页其余正文已按 7:1 档取色
 - 现象：右侧「清除」取 --c-text-tertiary，帧上墨迹最暗采样 (108,118,114)=#6C7672，压页底 #EEF7F2 实算 4.27:1（<4.5:1），字号仅 12px（墨迹 y=181..190 高 10px），是本页唯一带清除动作的文字控件。
 - 建议改法：.section-clear 的 color 由 --c-text-tertiary 提到 --c-text-secondary #4A524E（压 #EEF7F2 7.28:1），字号保持 24rpx。
