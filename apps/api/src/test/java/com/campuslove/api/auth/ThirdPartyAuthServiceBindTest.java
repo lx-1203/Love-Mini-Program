@@ -1,14 +1,20 @@
 package com.campuslove.api.auth;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.campuslove.api.common.ErrorMessages;
@@ -16,6 +22,7 @@ import com.campuslove.api.config.JwtTokenProvider;
 import com.campuslove.api.entity.ThirdPartyAccount;
 import com.campuslove.api.repository.ThirdPartyAccountRepository;
 import com.campuslove.api.repository.UserRepository;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Optional;
@@ -24,6 +31,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
 
 /**
  * {@link ThirdPartyAuthService#bindThirdParty} 绑定安全加固单元测试（P0-1 第三方绑定验证加固）。
@@ -41,6 +55,18 @@ import org.mockito.MockitoAnnotations;
  *
  * <p>测试策略：与 {@link RealAuthServiceTest} 一致，采用纯 Mockito、不加载 Spring 上下文，
  * 直接 new {@link ThirdPartyAuthService}。断言均针对<b>服务端派生并哈希后的身份</b>。</p>
+ *
+ * <p>独立复核后的两条 Important 修复同时被本类锁定：</p>
+ * <ul>
+ *   <li><b>I-1 凭据异常映射</b>：生产 {@link WeChatClient#code2Session} 对无效 code 抛
+ *       {@code WeChatAuthException}，绑定必须按 {@code RealAuthService#loginWithWechat} 的既有
+ *       约定映射为可区分错误（40029 → 401 INVALID_CODE；其他 errcode / 网络异常 / 熔断降级
+ *       null → 502 WECHAT_API_ERROR），而不是落进 catch-all 500；openid 空白的响应仍是
+ *       凭据无效（400）。任何失败路径都<b>零数据库写入</b>，且原始 code 不回显。</li>
+ *   <li><b>I-2 事务边界</b>：公开编排方法 {@code bindThirdParty} 不得携带
+ *       {@code @Transactional}（反射断言 + 未来自空转的正向对照），并经事务感知 AOP 代理
+ *       实测：供应商失败时不开启数据库事务、供应商调用不被事务重放。</li>
+ * </ul>
  */
 class ThirdPartyAuthServiceBindTest {
 
@@ -102,18 +128,25 @@ class ThirdPartyAuthServiceBindTest {
     }
 
     /* ============================================================
-     * 场景 2：伪造 openId（当作 code 传入，无法被 code2session 换取）→ 拒绝且零写入
+     * 场景 2：伪造 openId（当作 code 传入，微信侧判为无效 code）→ 拒绝且零写入
+     *
+     * <p>I-1 校正：生产 {@link WeChatClient#code2Session} 对无效 code 是<b>抛</b>
+     * {@code WeChatAuthException(errcode=40029)}，而不是返回 null（null 只在熔断/重试
+     * 耗尽的降级路径出现）。故本场景按生产真实行为打桩，并断言映射为
+     * 凭据类客户端错误（401 INVALID_CODE）而非 catch-all 500。</p>
      * ============================================================ */
     @Test
     void bindThirdParty_forgedOpenIdThatCode2SessionRejects_shouldNotWriteDb() {
-        // Arrange：攻击者把"想绑定的他人 openId"塞进 code 字段，但 code2session 无法换取（返回 null）
+        // Arrange：攻击者把"想绑定的他人 openId"塞进 code 字段，微信侧判为无效 code 抛 40029
         String forgedOpenId = "victim-openid-attacker-wants";
-        when(weChatClient.code2Session(forgedOpenId)).thenReturn(null);
+        when(weChatClient.code2Session(forgedOpenId)).thenThrow(
+                new WeChatClient.WeChatAuthException("WeChat auth failed: invalid code", 40029));
 
-        // Act & Assert：应因凭据不可验证被拒绝
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+        // Act & Assert：凭据不可验证被拒绝，且是"提供方正确的"客户端错误
+        WechatLoginException ex = assertThrows(WechatLoginException.class,
                 () -> service.bindThirdParty(8L, ThirdPartyAuthService.PROVIDER_WECHAT, forgedOpenId, null));
-        assertEquals(ErrorMessages.WECHAT_CREDENTIAL_INVALID, ex.getMessage());
+        assertEquals(WechatLoginException.ErrorCode.INVALID_CODE, ex.getErrorCode());
+        assertEquals(401, ex.getStatus().value(), "无效 code 属客户端可修复错误，不得是 500");
 
         // Assert：关键安全断言——没有任何绑定记录写入数据库
         verify(thirdPartyAccountRepository, never()).save(any());
@@ -246,6 +279,176 @@ class ThirdPartyAuthServiceBindTest {
                 () -> service.bindThirdParty(9L, ThirdPartyAuthService.PROVIDER_APPLE, null, null));
         assertEquals(ErrorMessages.IDENTITY_TOKEN_REQUIRED, ex.getMessage());
         verify(thirdPartyAccountRepository, never()).save(any());
+    }
+
+    /* ============================================================
+     * 场景 9（I-1）：code2session 抛 errcode=40029（code 无效/已过期）
+     *               → 与 RealAuthService.loginWithWechat 同尺子：INVALID_CODE（401），零写入
+     * ============================================================ */
+    @Test
+    void bindThirdParty_wechatInvalidCodeErrcode40029_shouldMapToClientCredentialErrorAndNotWrite() {
+        String clientCode = "expired-wx-code-from-client";
+        when(weChatClient.code2Session(clientCode)).thenThrow(
+                new WeChatClient.WeChatAuthException("WeChat auth failed: invalid code", 40029));
+
+        WechatLoginException ex = assertThrows(WechatLoginException.class,
+                () -> service.bindThirdParty(7L, ThirdPartyAuthService.PROVIDER_WECHAT, clientCode, null));
+
+        assertEquals(WechatLoginException.ErrorCode.INVALID_CODE, ex.getErrorCode(),
+                "errcode 40029 应映射为 INVALID_CODE（既有 loginWithWechat 约定）");
+        assertEquals(401, ex.getStatus().value(), "40029 属客户端可修复错误：401，不是 500");
+        // 上游细节仅进日志：面向用户的消息不得回显原始 code / 上游 errmsg 细节
+        assertFalse(ex.getMessage().contains(clientCode), "客户端错误消息禁止包含原始 code");
+        assertInstanceOf(WeChatClient.WeChatAuthException.class, ex.getCause(),
+                "原始微信异常应保留为 cause 供日志排查");
+        // 验证阶段失败即拒绝，数据库层完全不被触碰（零写入，也零查询）
+        verifyNoInteractions(thirdPartyAccountRepository, userRepository);
+    }
+
+    /* ============================================================
+     * 场景 10（I-1）：code2session 抛非 40029 的业务 errcode（如 45011 限流）
+     *                → 可区分的上游服务失败：WECHAT_API_ERROR（502），零写入
+     * ============================================================ */
+    @Test
+    void bindThirdParty_wechatOtherErrcode_shouldMapToUpstreamServiceFailureAndNotWrite() {
+        String clientCode = "rate-limited-wx-code";
+        when(weChatClient.code2Session(clientCode)).thenThrow(
+                new WeChatClient.WeChatAuthException("WeChat auth failed: api freq is limited", 45011));
+
+        WechatLoginException ex = assertThrows(WechatLoginException.class,
+                () -> service.bindThirdParty(7L, ThirdPartyAuthService.PROVIDER_WECHAT, clientCode, null));
+
+        assertEquals(WechatLoginException.ErrorCode.WECHAT_API_ERROR, ex.getErrorCode(),
+                "非 40029 的微信错误码属上游服务失败");
+        assertEquals(502, ex.getStatus().value(), "上游失败须为可区分的 502，不得是 catch-all 500");
+        assertFalse(ex.getMessage().contains(clientCode), "客户端错误消息禁止包含原始 code");
+        verifyNoInteractions(thirdPartyAccountRepository, userRepository);
+    }
+
+    /* ============================================================
+     * 场景 11（I-1）：网络故障（RestClientException 包装，errcode 为 null）
+     *                → 可区分的上游服务失败：WECHAT_API_ERROR（502），零写入
+     * ============================================================ */
+    @Test
+    void bindThirdParty_wechatNetworkFailure_shouldMapToUpstreamServiceFailureAndNotWrite() {
+        String clientCode = "wx-code-while-wechat-down";
+        when(weChatClient.code2Session(clientCode)).thenThrow(
+                new WeChatClient.WeChatAuthException(
+                        "Network error calling WeChat API: read timed out",
+                        new java.net.SocketTimeoutException("read timed out")));
+
+        WechatLoginException ex = assertThrows(WechatLoginException.class,
+                () -> service.bindThirdParty(7L, ThirdPartyAuthService.PROVIDER_WECHAT, clientCode, null));
+
+        assertEquals(WechatLoginException.ErrorCode.WECHAT_API_ERROR, ex.getErrorCode());
+        assertEquals(502, ex.getStatus().value());
+        assertFalse(ex.getMessage().contains(clientCode));
+        verifyNoInteractions(thirdPartyAccountRepository, userRepository);
+    }
+
+    /* ============================================================
+     * 场景 12（I-1）：熔断打开 / 重试耗尽的降级（code2Session 返回 null）
+     *                → 与 RealAuthService 一致视为服务不可用：502，而非"凭据无效"400
+     * ============================================================ */
+    @Test
+    void bindThirdParty_wechatCircuitBreakerFallbackNull_shouldMapToUpstreamOutageAndNotWrite() {
+        String clientCode = "wx-code-during-outage";
+        when(weChatClient.code2Session(clientCode)).thenReturn(null);
+
+        WechatLoginException ex = assertThrows(WechatLoginException.class,
+                () -> service.bindThirdParty(7L, ThirdPartyAuthService.PROVIDER_WECHAT, clientCode, null));
+
+        assertEquals(WechatLoginException.ErrorCode.WECHAT_API_ERROR, ex.getErrorCode(),
+                "null 只会来自熔断/重试降级，属上游不可用，必须与'凭据无效'可区分");
+        assertEquals(502, ex.getStatus().value());
+        verifyNoInteractions(thirdPartyAccountRepository, userRepository);
+    }
+
+    /* ============================================================
+     * 场景 13（I-1 补齐缺口）：session 非空但 openid 为空白
+     *                        → 仍是凭据无效（400 WECHAT_CREDENTIAL_INVALID），零写入
+     * ============================================================ */
+    @Test
+    void bindThirdParty_wechatSessionWithBlankOpenId_shouldRejectAsInvalidCredentialAndNotWrite() {
+        String clientCode = "wx-code-with-blank-openid";
+        WeChatClient.WeChatSessionResponse session = new WeChatClient.WeChatSessionResponse();
+        session.setOpenid("   ");
+        session.setUnionid("should-not-be-persisted");
+        when(weChatClient.code2Session(clientCode)).thenReturn(session);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.bindThirdParty(7L, ThirdPartyAuthService.PROVIDER_WECHAT, clientCode, null));
+        assertEquals(ErrorMessages.WECHAT_CREDENTIAL_INVALID, ex.getMessage());
+
+        verify(thirdPartyAccountRepository, never()).save(any());
+        verifyNoInteractions(thirdPartyAccountRepository, userRepository);
+    }
+
+    /* ============================================================
+     * 场景 14（I-2）：绑定的公开编排方法不得带 @Transactional
+     *               （出站 code2Session / JWKS 验签必须落在数据库事务之外）
+     * ============================================================ */
+    @Test
+    void bindThirdParty_shouldNotBeAnnotatedTransactional_soVerificationStaysOutsideDbTransaction()
+            throws NoSuchMethodException {
+        Method bind = ThirdPartyAuthService.class.getMethod(
+                "bindThirdParty", Long.class, String.class, String.class, String.class);
+
+        assertNull(bind.getDeclaredAnnotation(Transactional.class),
+                "bindThirdParty 携带 @Transactional 会把出站供应商调用圈进数据库事务");
+        assertNull(bind.getAnnotation(Transactional.class),
+                "方法级（含继承）@Transactional 会让代理在 code2Session 之前开启事务");
+        assertNull(ThirdPartyAuthService.class.getDeclaredAnnotation(Transactional.class),
+                "类级 @Transactional 同样会让 bindThirdParty 落入事务");
+
+        // 正向对照（防止断言空转）：纯 DB 操作方法仍应保留 @Transactional
+        Method unbind = ThirdPartyAuthService.class.getMethod(
+                "unbindThirdParty", Long.class, String.class);
+        assertNotNull(unbind.getDeclaredAnnotation(Transactional.class),
+                "对照基准：unbindThirdParty 仅做 DB 操作，必须仍带 @Transactional");
+    }
+
+    /* ============================================================
+     * 场景 15（I-2）：经事务感知 AOP 代理调用时，供应商异常
+     *               既不得开启数据库事务，也不得被数据库事务重试
+     * ============================================================ */
+    @Test
+    void bindThirdParty_throughTxAwareProxy_providerFailureOpensNoDbTransactionAndIsNotRetried() {
+        PlatformTransactionManager txManager = mock(PlatformTransactionManager.class);
+        doReturn(mock(TransactionStatus.class)).when(txManager).getTransaction(any(TransactionDefinition.class));
+
+        TransactionInterceptor interceptor =
+                new TransactionInterceptor(txManager, new AnnotationTransactionAttributeSource());
+        ProxyFactory proxyFactory = new ProxyFactory(service);
+        proxyFactory.setProxyTargetClass(true);
+        proxyFactory.addAdvice(interceptor);
+        ThirdPartyAuthService proxied = (ThirdPartyAuthService) proxyFactory.getProxy();
+
+        String clientCode = "wx-code-fails-through-proxy";
+        when(weChatClient.code2Session(clientCode)).thenThrow(
+                new WeChatClient.WeChatAuthException(
+                        "Network error calling WeChat API: connection reset",
+                        new java.io.IOException("connection reset")));
+
+        Throwable thrown = null;
+        try {
+            proxied.bindThirdParty(7L, ThirdPartyAuthService.PROVIDER_WECHAT, clientCode, null);
+        } catch (Throwable ex) {
+            thrown = ex;
+        }
+
+        assertNotNull(thrown, "供应商失败必须拒绝绑定");
+        // 事务边界断言优先：验证阶段整个过程中事务管理器一次都没被调用
+        verifyNoInteractions(thirdPartyAccountRepository, userRepository);
+        verify(weChatClient, times(1)).code2Session(clientCode);
+        verify(txManager, never()).getTransaction(any(TransactionDefinition.class));
+        verify(txManager, never()).commit(any(TransactionStatus.class));
+        verify(txManager, never()).rollback(any(TransactionStatus.class));
+
+        // I-1：映射为可区分的上游失败（502），而不是 catch-all 500
+        assertInstanceOf(WechatLoginException.class, thrown);
+        assertEquals(WechatLoginException.ErrorCode.WECHAT_API_ERROR,
+                ((WechatLoginException) thrown).getErrorCode());
     }
 
     /** SHA-256 hex（小写），与服务端 hashIdentifier 算法保持一致，用于断言落库的派生哈希。 */
