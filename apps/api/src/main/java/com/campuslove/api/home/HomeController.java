@@ -133,7 +133,9 @@ record TodayRecommendationView(
     String photoUrl,
     String constellation,
     /** 当前请求者是否已喜欢此人（likes 表真源；未登录/无记录为 false） */
-    boolean liked
+    boolean liked,
+    /** 照片墙缩略图：与寻觅推荐位同源，已按隐私白名单（photoGallery）+ 媒体审核过滤 */
+    List<String> photos
 ) {
 }
 

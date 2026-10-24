@@ -507,7 +507,8 @@ public class RealHomeService implements HomeService {
             matchScore,
             photoUrl,
             view.constellation(),
-            view.id() != null && myLiked.contains(view.id())
+            view.id() != null && myLiked.contains(view.id()),
+            view.photoGallery() == null ? List.of() : view.photoGallery()
         );
     }
 

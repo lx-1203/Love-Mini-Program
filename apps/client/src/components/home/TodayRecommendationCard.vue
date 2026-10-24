@@ -65,6 +65,9 @@ const hasProfileInfo = computed(() => {
       distanceLine.value
   );
 });
+
+/** R15-L01-D14：照片墙缩略图——真实 photos 最多取 4 张，无照片则整行不占位（不伪造占位图）。 */
+const galleryPhotos = computed(() => (props.item?.photos ?? []).filter(Boolean).slice(0, 4));
 </script>
 
 <template>
@@ -124,6 +127,18 @@ const hasProfileInfo = computed(() => {
         </template>
         <!-- R2b-L01-D12：右栏资料字段全空时给明确空态，不再留一片空白让按钮悬空 -->
         <text v-else class="today-card__empty-hint">TA 还没有填写资料</text>
+        <!-- R15-L01-D14：理想图 首页.png 今日推荐右栏在距离行与按钮之间放 4 联缩略图照片墙 -->
+        <view v-if="galleryPhotos.length" class="today-card__gallery">
+          <image
+            v-for="(url, idx) in galleryPhotos"
+            :key="idx"
+            class="today-card__thumb"
+            :src="resolveMediaUrl(url)"
+            mode="aspectFill"
+            lazy-load
+            alt=""
+          />
+        </view>
         <view class="today-card__actions">
           <view class="today-card__btn today-card__btn--outline" @tap.stop="$emit('view')">看看TA</view>
           <view class="today-card__btn today-card__btn--love" :class="{ 'today-card__btn--loading': likeLoading }" @tap.stop="$emit('like')">
@@ -363,6 +378,22 @@ const hasProfileInfo = computed(() => {
   margin-top: 10rpx;
   font-size: 22rpx;
   color: #36C99A;
+}
+
+/* R15-L01-D14：照片墙缩略图行。右栏内容宽约 298rpx（750 − 2×32 margin − 2×24 padding
+   − 320 photo − 20 gap），4×80rpx+3×12rpx=356rpx 会溢出，故用 flex:1 1 0 + min-width:0
+   让 4 枚缩略图按列宽自适应（gap 8rpx → 每张约 68.5rpx），高度 52rpx 贴合理想图横向比例。 */
+.today-card__gallery {
+  display: flex;
+  gap: 8rpx;
+  margin-top: 12rpx;
+}
+
+.today-card__thumb {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 52rpx;
+  border-radius: 8rpx;
 }
 
 .today-card__actions {

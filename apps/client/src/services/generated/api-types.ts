@@ -362,6 +362,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/profile/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the unified profile DTO of the current user
+         * @description Returns the unified `UserProfileDTO` consumed by the new profile page
+         *     (`UserProfileController#getMyProfile`, real profile only).
+         *     Self view carries no viewer-relative data: `relation.commonPoints` and
+         *     `relation.commonInterests` are empty lists and `distanceText` is always null.
+         */
+        get: operations["getSelfUnifiedProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/profile/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get another user's unified profile DTO
+         * @description Returns the unified `UserProfileDTO` rendered by the "other user" profile page
+         *     (`UserProfileController#getPublicProfile`, real profile only).
+         *     Fidelity contract (R6/L07): `distanceText`, `online` and `relation.commonPoints[].subtitle/icon`
+         *     are derived **only** from persisted columns; when the backing column has no value the field is
+         *     `null` (never a fabricated placeholder), and `online` additionally distinguishes
+         *     `false` (known account, currently inactive) from `null` (no presence evidence at all).
+         */
+        get: operations["getOtherUnifiedProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/home/dashboard": {
         parameters: {
             query?: never;
@@ -1054,6 +1102,8 @@ export interface components {
             photoUrl: string;
             /** @description 星座（由出生日期推导，可空） */
             constellation?: string | null;
+            /** @description 照片墙缩略图（与寻觅推荐位同源，已按隐私白名单+媒体审核过滤） */
+            photos: string[];
         };
         LoveProgress: {
             completed: number;
@@ -1320,6 +1370,141 @@ export interface components {
             countdownMinutes: number;
             recommendedPrompt: string;
             tempChatSessionId?: string | null;
+        };
+        /**
+         * @description Unified profile contract (`UserProfileDTO`). One shape serves both the self page
+         *     and the "other user" page; viewer-relative members (`relation`, `distanceText`)
+         *     are only populated for the latter.
+         */
+        UnifiedProfileView: {
+            /** Format: int64 */
+            id: number;
+            basic: components["schemas"]["UnifiedProfileBasic"];
+            identity: components["schemas"]["UnifiedProfileIdentity"];
+            intro: components["schemas"]["UnifiedProfileIntro"];
+            relationship: components["schemas"]["UnifiedProfileRelationship"];
+            media: components["schemas"]["UnifiedProfileMedia"];
+            socialProof: components["schemas"]["UnifiedProfileSocialProof"];
+            relation: components["schemas"]["UnifiedProfileRelation"];
+            posts: components["schemas"]["UnifiedProfilePost"][];
+            stories?: components["schemas"]["UnifiedProfileStory"][];
+            circles?: string[];
+            /**
+             * @description Profile quality gate derived from completion / photo count / campus verification.
+             * @enum {string}
+             */
+            state?: "NEW" | "INCOMPLETE" | "NORMAL" | "HIGH_QUALITY" | "PRIVATE";
+            /**
+             * @description Haversine distance between viewer and target, fuzzy-floored per ADR-16
+             *     ("<1km" / "3km"). Source: `users.latitude`/`users.longitude` (gcj02, 271/292 populated).
+             *     Null when either side has no stored coordinates, when both users share the same campus,
+             *     or when the computed distance exceeds 300 km (treated as GPS drift).
+             */
+            distanceText?: string | null;
+            /**
+             * @description Three-state presence flag. `true` = live session record (Redis `online:user:{userId}`,
+             *     same source as the admin "在线用户" list) or a `user_online_status.last_heartbeat`
+             *     within 5 minutes. `false` = the account has session/heartbeat rows but none is active.
+             *     `null` = no presence evidence at all (unknown, rendered as an explicit placeholder).
+             */
+            online?: boolean | null;
+        };
+        UnifiedProfileBasic: {
+            name: string;
+            avatar: string;
+            /** @description Derived from `user_basic_profile.birth_year`; null when absent. */
+            age?: number | null;
+            location: string;
+            gender?: string | null;
+        };
+        UnifiedProfileIdentity: {
+            verified: boolean;
+            student: boolean;
+            mbti: string;
+            personality: string[];
+        };
+        UnifiedProfileIntro: {
+            bio: string;
+            tags: string[];
+        };
+        UnifiedProfileRelationship: {
+            goal: string;
+            expectation: string[];
+        };
+        UnifiedProfileMedia: {
+            cover: string;
+            photos: string[];
+            videos: string[];
+            voiceIntro: string;
+        };
+        /** @description Aggregated counters (single COUNT/SUM queries, see R16 performance note). */
+        UnifiedProfileSocialProof: {
+            /** Format: int64 */
+            likedMeCount: number;
+            /** Format: int64 */
+            likesCount: number;
+            /** Format: int64 */
+            visitorCount: number;
+            /** Format: int64 */
+            matchCount: number;
+        };
+        /** @description Viewer-to-target relation block; empty on the self view. */
+        UnifiedProfileRelation: {
+            liked: boolean;
+            matched: boolean;
+            chatted: boolean;
+            blocked: boolean;
+            matchScore: number;
+            matchReasons: string[];
+            /**
+             * @description Legacy flat word list, kept for existing consumers (client + admin).
+             *     One entry per `commonPoints` item, equal order and equal length; the entry equals
+             *     the point title. The historical "tag/subtitle" slash-encoding convention is NOT used
+             *     by the real backend — read `commonPoints` instead.
+             */
+            commonInterests: string[];
+            /** @description Structured "我们有 N 个共同点" cards (max 3). */
+            commonPoints: components["schemas"]["UnifiedProfileCommonPoint"][];
+        };
+        /**
+         * @description A single common point. Every member is persisted-data derived; `subtitle`/`icon`
+         *     stay null whenever the backing column is empty (no client-side lookup tables).
+         */
+        UnifiedProfileCommonPoint: {
+            /**
+             * @description Shared interest tag as stored in `user_basic_profile.interest_tags`,
+             *     or a relation label (同校 / 同城 / 同龄) derived from
+             *     `user_campus_profile.campus_name` / `city_name` / `user_basic_profile.birth_year`.
+             */
+            title: string;
+            /**
+             * @description Grey second line. Populated for relation points (campus name, city name, target age).
+             *     For interest tags it comes from `interest_tag.category`, currently 0/8 rows populated,
+             *     so real traffic returns null.
+             */
+            subtitle?: string | null;
+            /**
+             * @description Icon identifier from `interest_tag.icon`. Currently 0/8 rows populated ⇒ null;
+             *     once the admin tag dictionary is filled this becomes real without a code change.
+             */
+            icon?: string | null;
+        };
+        UnifiedProfilePost: {
+            id: string;
+            content: string;
+            images: string[];
+            /** Format: int64 */
+            likes: number;
+            /** Format: int64 */
+            comments: number;
+            createdAt: string;
+        };
+        UnifiedProfileStory: {
+            id: string;
+            cover: string;
+            title: string;
+            location: string;
+            dateText: string;
         };
     };
     responses: {
@@ -2004,6 +2189,56 @@ export interface operations {
                     "application/json": components["schemas"]["UserDto"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getSelfUnifiedProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unified profile payload of the caller */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnifiedProfileView"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getOtherUnifiedProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Target user id. */
+                userId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unified profile payload of the target user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnifiedProfileView"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalServerError"];

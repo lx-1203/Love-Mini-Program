@@ -1130,6 +1130,7 @@ function buildHomeDashboard(): HomeDashboard {
         matchScore: 92,
         photoUrl: IMAGE_PATHS.PEOPLE.CARD_1,
         constellation: "双鱼座",
+        photos: [],
       },
       loveProgress: {
         completed: 2,
@@ -1459,6 +1460,7 @@ export const mockFixtures = {
       matchScore: 90,
       photoUrl: IMAGE_PATHS.PEOPLE.CARD_2,
       constellation: "双子座",
+      photos: [],
     });
   },
   getChatOverview(): ChatOverview {

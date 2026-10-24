@@ -1873,7 +1873,11 @@ components:
           type: string
           nullable: true
           description: 星座（由出生日期推导，可空）
-      required: [userId, name, age, campusName, tags, bio, certified, online, matchScore, photoUrl]
+        photos:
+          type: array
+          items: { type: string }
+          description: 照片墙缩略图（与寻觅推荐位同源，已按隐私白名单+媒体审核过滤）
+      required: [userId, name, age, campusName, tags, bio, certified, online, matchScore, photoUrl, photos]
     LoveProgress:
       type: object
       properties:

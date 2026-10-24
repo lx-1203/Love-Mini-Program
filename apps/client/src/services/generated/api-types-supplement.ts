@@ -295,6 +295,7 @@ export interface TodayRecommendationView {
   matchScore: number;
   photoUrl: string | null;
   constellation: string | null;
+  photos: string[];
 }
 
 export interface MatchCenterView {

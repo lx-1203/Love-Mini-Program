@@ -30,7 +30,8 @@ public class HomeFeedFallbackProvider {
             92,
             "/static/assets/images/people/person-01.png",
             null, // V2026.08.17.0001 星座（mock/fallback 未维护）
-            false
+            false,
+            List.of() // 兜底视图不声称拥有照片墙
         );
     }
 
