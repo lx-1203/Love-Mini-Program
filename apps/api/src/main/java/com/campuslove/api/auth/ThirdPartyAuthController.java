@@ -104,10 +104,15 @@ public class ThirdPartyAuthController {
     /**
      * 为当前用户绑定第三方账号。
      *
-     * @param request 包含 provider / openId / unionId 的请求体
+     * <p>P0-1 安全加固：不再接受客户端传入的原始 openId/unionId 作为所有权证明。
+     * 微信绑定必须携带一次性 {@code code}（服务端经 code2session 换取真实 openid/unionid），
+     * Apple 绑定必须携带 {@code identityToken}（服务端验签取 sub）。
+     * 客户端无法指定要绑定的第三方身份，仅服务端派生的已验证身份会被落库。</p>
+     *
+     * @param request 包含 provider 与对应一次性凭据（WECHAT→code / APPLE→identityToken）的请求体
      * @return 包含 success 标志的响应体
      * @throws HttpClientErrorException.Unauthorized 未登录时抛出 401
-     * @throws HttpClientErrorException.BadRequest provider 取值非法或参数缺失时抛出 400
+     * @throws HttpClientErrorException.BadRequest provider 取值非法时抛出 400
      */
     @PostMapping("/bind")
     @PreAuthorize("hasRole('USER')")
@@ -115,7 +120,7 @@ public class ThirdPartyAuthController {
         Long userId = SecurityUtils.getCurrentUserId();
         String provider = normalizeProvider(request.provider());
         boolean ok = thirdPartyAuthService.bindThirdParty(
-                userId, provider, request.openId(), request.unionId());
+                userId, provider, request.code(), request.identityToken());
         return Map.of("success", ok);
     }
 
@@ -182,16 +187,19 @@ record AppleLoginRequest(@NotBlank String identityToken, String deviceId) {
 }
 
 /**
- * 绑定第三方账号请求体。
+ * 绑定第三方账号请求体（P0-1 安全加固）。
  *
- * @param provider 第三方平台标识（WECHAT / APPLE，必填）
- * @param openId   第三方 openId（必填）
- * @param unionId  第三方 unionId（可空）
+ * <p>不再包含 {@code openId}/{@code unionId} 字段：客户端无法直接指定要绑定的第三方身份。
+ * 仅接受一次性凭据，由服务端验证后派生真实身份：</p>
+ *
+ * @param provider      第三方平台标识（WECHAT / APPLE，必填）
+ * @param code          微信 wx.login() 返回的临时 code（WECHAT 绑定必填；APPLE 忽略）
+ * @param identityToken Sign in with Apple 返回的 identityToken JWT（APPLE 绑定必填；WECHAT 忽略）
  */
 record BindThirdPartyRequest(
         @NotBlank String provider,
-        @NotBlank String openId,
-        String unionId
+        String code,
+        String identityToken
 ) {
 }
 
