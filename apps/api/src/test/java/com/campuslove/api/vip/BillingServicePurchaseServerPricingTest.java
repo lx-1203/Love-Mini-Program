@@ -305,8 +305,12 @@ class BillingServicePurchaseServerPricingTest {
         assertTrue(parameterTypes(AutoRenewService.class).contains(VipPlanCatalog.class),
                 "AutoRenewService 必须显式声明目录依赖（续费定价与购买同源）");
 
-        // 目录类不再暴露「生产默认实例」这类静态回退入口（回退会让容器 bean 与常量并存）
+        // 目录类不再暴露「生产默认实例」这类静态回退入口（回退会让容器 bean 与常量并存）。
+        // 只按「源码声明的静态方法」判定：JaCoCo agent 在运行期给每个被 instrument 的类
+        // 注入一个 static synthetic $jacocoInit，若不过滤 synthetic，本断言会随覆盖率
+        // 开关漂移（mvn test 带 agent 时假红、不带 agent 时假绿）。
         assertTrue(java.util.Arrays.stream(VipPlanCatalog.class.getDeclaredMethods())
+                        .filter(m -> !m.isSynthetic() && !m.isBridge())
                         .noneMatch(m -> java.lang.reflect.Modifier.isStatic(m.getModifiers())),
                 "VipPlanCatalog 不应再有静态方法（defaultCatalog 一类的第二份目录）");
 
