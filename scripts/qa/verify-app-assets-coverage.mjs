@@ -71,6 +71,18 @@ if (!PROBE_READY) {
 /* ── 小工具 ─────────────────────────────────────────────────────────────────────────────── */
 const norm = (p) => String(p || "").replace(/^\/+/, "").replace(/\\/g, "/");
 const sha8 = (buf) => createHash("sha256").update(buf).digest("hex").slice(0, 8);
+/* 比对用哈希：文本型素材（svg 等）先把 CRLF 归一成 LF 再算，二进制（png/jpg/webp/gif）按字节全等。
+   为什么必须分：本机 core.autocrlf=true，同一份 svg 在"包内工作树 / uploads / 备份桶"三处
+   可能分别是 CRLF 与 LF（实测 heart-gradient.svg 盘上 508 / git HEAD 501 / 备份桶 501），
+   纯字节比会把**行尾差异报成画面漂移**——2026-10-24 就被这样虚报过 6 个 SVG，
+   而真正的 6 张封面内容漂移混在里面，两者读数相同、修法完全相反，一度把归因带偏。
+   归一行尾不等于放宽：内容改一个字节照样不同哈希（见 --selftest 开头的两侧对照）。 */
+const TEXT_EXT = /\.(svg|js|cjs|mjs|ts|css|scss|json|html|txt|md)$/i;
+const cmpHash = (buf, name) => {
+  if (!TEXT_EXT.test(String(name))) return sha8(buf);
+  const s = buf.toString("binary").replace(/\r\n/g, "\n");
+  return sha8(Buffer.from(s, "binary"));
+};
 const readJsonSafe = (p) => { try { return JSON.parse(readFileSync(p, "utf8")); } catch { return null; } };
 
 /** 递归列出目录下全部真实文件（不用 glob/find：本仓大目录 `**` 会静默零命中）。返回 win 安全排序的绝对路径。 */
@@ -118,24 +130,25 @@ function enumeratePrefix(staticRoot, prefix) {
   if (!existsSync(dir)) return { dir, dirMissing: true, files: [] };
   const files = walkFiles(dir).map((abs) => {
     const relPkg = norm(prefix + abs.slice(dir.length + 1).split(sep).join("/"));
-    let bytes = null, sha = null, readErr = null;
+    let bytes = null, sha = null, csha = null, readErr = null;
     try {
       const buf = readFileSync(abs);
       bytes = buf.byteLength;
       sha = sha8(buf);
+      csha = cmpHash(buf, relPkg);
     } catch (e) { readErr = e.message; }
-    return { abs, relPkg, urlRel: relPkg.slice("static/".length), bytes, sha, readErr };
+    return { abs, relPkg, urlRel: relPkg.slice("static/".length), bytes, sha, csha, readErr };
   });
   return { dir, dirMissing: false, files };
 }
 
 const urlOf = (base, rel) => `${base.replace(/\/+$/, "")}/${String(rel).split("/").map(encodeURIComponent).join("/")}`;
 
-async function fetchOnce(url, timeoutMs) {
+async function fetchOnce(url, timeoutMs, nameForHash) {
   try {
     const r = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), redirect: "manual" });
     const buf = Buffer.from(await r.arrayBuffer());
-    return { status: r.status, bytes: buf.byteLength, sha: sha8(buf) };
+    return { status: r.status, bytes: buf.byteLength, sha: sha8(buf), csha: cmpHash(buf, nameForHash ?? url) };
   } catch (e) {
     /* undici 把底层错误挂在 cause 上，且 ECONNREFUSED 这类码可能藏到 cause.cause：
        取不到码就退化成 message —— 但必须带上，否则"后端没起"会被读成"404 缺件"或"0 个问题"。 */
@@ -147,8 +160,8 @@ async function fetchOnce(url, timeoutMs) {
 /** GET 一发；网络类错误重试一次（网络抖动不该被读成"后端缺这张图"）。 */
 async function probe(base, rel, timeoutMs) {
   const url = urlOf(base, rel);
-  let a = await fetchOnce(url, timeoutMs);
-  if (a.net) a = await fetchOnce(url, timeoutMs);
+  let a = await fetchOnce(url, timeoutMs, rel);
+  if (a.net) a = await fetchOnce(url, timeoutMs, rel);
   return { url, ...a };
 }
 
@@ -288,14 +301,17 @@ async function evaluate(cfg, say) {
     if (r.net) { b.net.push({ rel: f.relPkg, err: r.err }); continue; }
     if (r.status === 404) { b.missing.push({ rel: f.relPkg, status: 404, localBytes: f.bytes }); continue; }
     if (r.status !== 200) { b.other.push({ rel: f.relPkg, status: r.status, localBytes: f.bytes }); continue; }
-    if (r.sha === f.sha) { b.ok++; continue; }
+    /* 判漂移用归一哈希（文本型先去 CRLF），报账仍给两侧原始 sha8 ——
+       这样"只差行尾"会被判为一致，而真内容差照样红，且报出来的数字仍是可复核的原始字节。 */
+    if (r.csha === f.csha) { b.ok++; if (r.sha !== f.sha) b.eolOnly = (b.eolOnly || 0) + 1; continue; }
     b.drift.push({ rel: f.relPkg, localSha8: f.sha.slice(0, 8), remoteSha8: r.sha.slice(0, 8), localBytes: f.bytes, remoteBytes: r.bytes });
   }
 
   let tot = { n: 0, ok: 0, missing: 0, drift: 0, other: 0, net: 0 };
   for (const b of buckets) {
     const bytes = b.files.reduce((a, f) => a + (f.bytes || 0), 0);
-    say(`ASSETCOV_BUCKET prefix=${b.prefix} 分母=${b.files.length} 字节=${bytes} 200同字节=${b.ok} 404=${b.missing.length} DRIFT=${b.drift.length} 其它状态=${b.other.length} 网络失败=${b.net.length}`);
+    const eolNote = b.eolOnly ? ` 仅行尾差(已判一致)=${b.eolOnly}` : "";
+    say(`ASSETCOV_BUCKET prefix=${b.prefix} 分母=${b.files.length} 字节=${bytes} 200同字节=${b.ok} 404=${b.missing.length} DRIFT=${b.drift.length} 其它状态=${b.other.length} 网络失败=${b.net.length}${eolNote}`);
     tot.n += b.files.length; tot.ok += b.ok; tot.missing += b.missing.length; tot.drift += b.drift.length; tot.other += b.other.length; tot.net += b.net.length;
   }
   say(`ASSETCOV_COVERAGE 桶=${buckets.length} 分母=${tot.n} 200同字节=${tot.ok} 404=${tot.missing} DRIFT=${tot.drift} 其它状态=${tot.other} 网络失败=${tot.net}`);
@@ -473,6 +489,24 @@ async function selftest() {
   };
 
   const cases = [];
+  /* 归一哈希的两侧对照（本发改动的直接判点，不靠起服务）：
+     ① 只差行尾 ⇒ 归一后必须相同（否则 6 个 SVG 会继续被虚报成画面漂移）；
+     ② 真改一个字节 ⇒ 归一后必须仍不同（否则"归一"就是把门焊死在绿上）。
+     只验①不验，等于用"消除假红"的名义把判据废掉。 */
+  {
+    const lf = Buffer.from('<svg a="1"/>\n<b/>\n', "binary");
+    const crlf = Buffer.from('<svg a="1"/>\r\n<b/>\r\n', "binary");
+    const edited = Buffer.from('<svg a="2"/>\r\n<b/>\r\n', "binary");
+    const a1 = cmpHash(lf, "x.svg") === cmpHash(crlf, "x.svg");
+    const a2 = cmpHash(crlf, "x.svg") !== cmpHash(edited, "x.svg");
+    const a3 = sha8(lf) !== sha8(crlf);
+    const a4 = cmpHash(lf, "x.png") !== cmpHash(crlf, "x.png");
+    console.log(`${a1 ? "PASS" : "FAIL"}  文本型只差行尾 ⇒ 归一后同哈希（假漂移必须消失）`);
+    console.log(`${a2 ? "PASS" : "FAIL"}  文本型真改内容 ⇒ 归一后仍不同（归一≠放宽）`);
+    console.log(`${a3 ? "PASS" : "FAIL"}  原始 sha8 仍能看出行尾差异（报账口径未被改动）`);
+    console.log(`${a4 ? "PASS" : "FAIL"}  二进制型不做行尾归一（png 里出现 \\r\\n 是真内容差）`);
+    cases.push(a1, a2, a3, a4);
+  }
   const check = (name, expectCode, res, mustHave) => {
     const joined = res.captured.join("\n");
     const lineOk = mustHave.every((m) => joined.includes(m));
