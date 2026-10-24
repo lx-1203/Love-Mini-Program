@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 28">
+  <rect width="72" height="28" rx="14" fill="#FFE4E9"/>
+  <path d="M12 16s-3-2-3-4.5a2 2 0 0 1 3.5-1.2l.5.8.5-.8a2 2 0 0 1 3.5 1.2c0 2.5-3 4.5-3 4.5z" fill="#FF6B81"/>
+  <text x="26" y="18" fill="#FF6B81" font-family="Arial, sans-serif" font-size="11" font-weight="500">暧昧中</text>
+</svg>

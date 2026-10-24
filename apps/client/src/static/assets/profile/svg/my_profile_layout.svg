@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="375" height="812" viewBox="0 0 375 812">
+<defs><linearGradient id="mint" x2="0" y2="1"><stop stop-color="#65E6B5"/><stop offset="1" stop-color="#20C997"/></linearGradient></defs>
+<rect width="375" height="812" fill="#F8FFFC"/>
+<rect width="375" height="220" fill="url(#mint)"/>
+<text x="20" y="270" font-size="20" fill="#333">My Profile</text>
+<text x="20" y="305" font-size="14" fill="#999">Completion / Stats / Story / Settings</text>
+</svg>

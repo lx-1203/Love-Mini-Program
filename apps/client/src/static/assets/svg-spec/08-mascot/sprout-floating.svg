@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 160">
+  <defs>
+    <linearGradient id="sprout-float-body" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D4F5E4"/>
+      <stop offset="100%" stop-color="#7DDEBB"/>
+    </linearGradient>
+  </defs>
+  <!-- Body -->
+  <ellipse cx="60" cy="75" rx="38" ry="36" fill="url(#sprout-float-body)"/>
+  <!-- Sprout leaves -->
+  <path d="M55 38c-2-6-7-10-12-10-3 5-1 12 4 14 4 1 7-1 8-4z" fill="#36C99A"/>
+  <path d="M65 38c2-6 7-10 12-10 3 5 1 12-4 14-4 1-7-1-8-4z" fill="#36C99A"/>
+  <path d="M60 40c0-8 4-14 10-16 0 6-2 12-8 16-2 0-2 0-2 0z" fill="#2BA87E"/>
+  <!-- Eyes -->
+  <circle cx="48" cy="70" r="5" fill="#333"/>
+  <circle cx="72" cy="70" r="5" fill="#333"/>
+  <circle cx="50" cy="68" r="1.5" fill="#fff"/>
+  <circle cx="74" cy="68" r="1.5" fill="#fff"/>
+  <!-- Cheeks -->
+  <ellipse cx="40" cy="82" rx="6" ry="4" fill="#FFB6C1" opacity="0.6"/>
+  <ellipse cx="80" cy="82" rx="6" ry="4" fill="#FFB6C1" opacity="0.6"/>
+  <!-- Smile -->
+  <path d="M54 86c2 3 4 5 6 5s4-2 6-5" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+  <!-- Arms -->
+  <ellipse cx="22" cy="80" rx="10" ry="6" fill="#7DDEBB" transform="rotate(-15 22 80)"/>
+  <ellipse cx="98" cy="80" rx="10" ry="6" fill="#7DDEBB" transform="rotate(15 98 80)"/>
+  <!-- Lower body/feet -->
+  <ellipse cx="48" cy="118" rx="12" ry="8" fill="#7DDEBB"/>
+  <ellipse cx="72" cy="118" rx="12" ry="8" fill="#7DDEBB"/>
+  <!-- Floating sparkles -->
+  <path d="M20 130l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="#FFD700" opacity="0.7"/>
+  <path d="M100 140l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" fill="#FFD700" opacity="0.6"/>
+  <path d="M105 60l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" fill="#FFD700" opacity="0.5"/>
+</svg>

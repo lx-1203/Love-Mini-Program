@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240">
+  <defs>
+    <linearGradient id="login-mascot-body" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D4F5E4"/>
+      <stop offset="100%" stop-color="#7DDEBB"/>
+    </linearGradient>
+    <radialGradient id="login-glow" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#E8F8F0" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="100" cy="100" r="90" fill="url(#login-glow)"/>
+  <!-- Mascot full body -->
+  <ellipse cx="100" cy="110" rx="55" ry="52" fill="url(#login-mascot-body)"/>
+  <path d="M87 55c-3-8-10-14-16-14-4 7-2 16 5 18 5 2 9-1 11-5z" fill="#36C99A"/>
+  <path d="M113 55c3-8 10-14 16-14 4 7 2 16-5 18-5 2-9-1-11-5z" fill="#36C99A"/>
+  <path d="M100 58c0-10 5-18 13-20 0 7-2 15-11 20-2 1-2 0-2 0z" fill="#2BA87E"/>
+  <circle cx="82" cy="100" r="6" fill="#333"/>
+  <circle cx="118" cy="100" r="6" fill="#333"/>
+  <circle cx="84" cy="98" r="2" fill="#fff"/>
+  <circle cx="120" cy="98" r="2" fill="#fff"/>
+  <ellipse cx="72" cy="120" rx="8" ry="5" fill="#FFB6C1" opacity="0.6"/>
+  <ellipse cx="128" cy="120" rx="8" ry="5" fill="#FFB6C1" opacity="0.6"/>
+  <path d="M90 128c4 6 8 9 10 9s6-3 10-9" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Arms open -->
+  <ellipse cx="45" cy="115" rx="14" ry="8" fill="#7DDEBB" transform="rotate(-20 45 115)"/>
+  <ellipse cx="155" cy="115" rx="14" ry="8" fill="#7DDEBB" transform="rotate(20 155 115)"/>
+  <!-- Feet -->
+  <ellipse cx="82" cy="175" rx="16" ry="8" fill="#7DDEBB"/>
+  <ellipse cx="118" cy="175" rx="16" ry="8" fill="#7DDEBB"/>
+  <!-- Sparkles -->
+  <path d="M30 80l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="#FFD700" opacity="0.7"/>
+  <path d="M170 60l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" fill="#FFD700" opacity="0.6"/>
+  <path d="M165 150l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" fill="#FFD700" opacity="0.5"/>
+</svg>

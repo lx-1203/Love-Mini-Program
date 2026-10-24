@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+<defs><linearGradient id="heartGrad" x1="6" y1="5" x2="18" y2="20" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFB3C9"/><stop offset=".45" stop-color="#FF7FA7"/><stop offset="1" stop-color="#FF5A91"/>
+</linearGradient></defs>
+<path d="M12 20.1 4.7 12.9A5.1 5.1 0 0 1 12 5.7a5.1 5.1 0 0 1 7.3 7.2L12 20.1Z"
+fill="url(#heartGrad)" stroke="#FF5A91" stroke-width="1.2" stroke-linejoin="round"/>
+</svg>

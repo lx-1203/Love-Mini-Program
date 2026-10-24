@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="logo-mark-body" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D4F5E4"/>
+      <stop offset="100%" stop-color="#7DDEBB"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="#fff" stroke="#E8F8F0" stroke-width="2"/>
+  <ellipse cx="32" cy="36" rx="20" ry="19" fill="url(#logo-mark-body)"/>
+  <path d="M27 16c-1-4-4-7-7-7-2 3-1 7 2 9 3 1 5-1 5-2z" fill="#36C99A"/>
+  <path d="M37 16c1-4 4-7 7-7 2 3 1 7-2 9-3 1-5-1-5-2z" fill="#36C99A"/>
+  <path d="M32 18c0-6 3-10 6-12 0 4-1 8-5 10-1 1-1 1-1 2z" fill="#2BA87E"/>
+  <circle cx="26" cy="34" r="3" fill="#333"/>
+  <circle cx="38" cy="34" r="3" fill="#333"/>
+  <ellipse cx="22" cy="40" rx="3" ry="2" fill="#FFB6C1" opacity="0.6"/>
+  <ellipse cx="42" cy="40" rx="3" ry="2" fill="#FFB6C1" opacity="0.6"/>
+  <path d="M28 44c1 2 2 3 4 3s3-1 4-3" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

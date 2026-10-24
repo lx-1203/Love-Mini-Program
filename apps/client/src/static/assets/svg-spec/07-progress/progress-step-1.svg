@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 24">
+  <defs>
+    <linearGradient id="step1-fill" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6FD4AA"/>
+      <stop offset="100%" stop-color="#36C99A"/>
+    </linearGradient>
+  </defs>
+  <line x1="20" y1="12" x2="220" y2="12" stroke="#E0E0E0" stroke-width="4" stroke-linecap="round"/>
+  <line x1="20" y1="12" x2="70" y2="12" stroke="url(#step1-fill)" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="20" cy="12" r="8" fill="#36C99A"/>
+  <text x="20" y="16" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-size="10" font-weight="bold">1</text>
+  <circle cx="86" cy="12" r="8" fill="#fff" stroke="#E0E0E0" stroke-width="2"/>
+  <text x="86" y="16" text-anchor="middle" fill="#CCC" font-family="Arial, sans-serif" font-size="10" font-weight="bold">2</text>
+  <circle cx="154" cy="12" r="8" fill="#fff" stroke="#E0E0E0" stroke-width="2"/>
+  <text x="154" y="16" text-anchor="middle" fill="#CCC" font-family="Arial, sans-serif" font-size="10" font-weight="bold">3</text>
+  <circle cx="220" cy="12" r="8" fill="#fff" stroke="#E0E0E0" stroke-width="2"/>
+  <text x="220" y="16" text-anchor="middle" fill="#CCC" font-family="Arial, sans-serif" font-size="10" font-weight="bold">4</text>
+</svg>

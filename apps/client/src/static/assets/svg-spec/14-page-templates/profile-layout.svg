@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 812">
+  <!-- Status bar -->
+  <rect width="375" height="44" fill="#36C99A"/>
+  <text x="30" y="28" fill="#fff" font-size="14" font-weight="600">9:41</text>
+  <rect x="280" y="15" width="20" height="12" rx="2" fill="#fff"/>
+  <rect x="305" y="17" width="25" height="10" rx="2" fill="#fff"/>
+  <rect x="335" y="16" width="20" height="12" rx="3" fill="none" stroke="#fff" stroke-width="1"/>
+  <rect x="337" y="18" width="16" height="8" rx="1" fill="#fff"/>
+
+  <!-- Header with gradient -->
+  <defs>
+    <linearGradient id="profile-header" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6FD4AA"/>
+      <stop offset="100%" stop-color="#36C99A"/>
+    </linearGradient>
+  </defs>
+  <rect y="44" width="375" height="180" fill="url(#profile-header)"/>
+
+  <!-- Settings icon -->
+  <circle cx="340" cy="74" r="14" fill="#fff" fill-opacity="0.2"/>
+  <circle cx="340" cy="74" r="14" fill="none" stroke="#fff" stroke-width="1" stroke-opacity="0.5"/>
+
+  <!-- Avatar -->
+  <circle cx="187" cy="180" r="52" fill="#fff"/>
+  <circle cx="187" cy="180" r="48" fill="#E8F8F0"/>
+  <circle cx="187" cy="170" r="20" fill="#7DDEBB"/>
+  <path d="M160 215c0-15 12-25 27-25s27 10 27 25" fill="#7DDEBB"/>
+
+  <!-- Username -->
+  <rect x="140" y="245" width="95" height="16" rx="8" fill="#333" opacity="0.8"/>
+  <rect x="165" y="268" width="45" height="10" rx="5" fill="#999"/>
+
+  <!-- Stats row -->
+  <rect x="20" y="295" width="335" height="70" rx="16" fill="#fff" stroke="#F0F0F0" stroke-width="1"/>
+  <text x="76" y="320" text-anchor="middle" fill="#333" font-size="18" font-weight="bold">128</text>
+  <text x="76" y="340" text-anchor="middle" fill="#999" font-size="11">关注</text>
+  <line x1="130" y1="310" x2="130" y2="350" stroke="#F0F0F0" stroke-width="1"/>
+  <text x="187" y="320" text-anchor="middle" fill="#36C99A" font-size="18" font-weight="bold">256</text>
+  <text x="187" y="340" text-anchor="middle" fill="#999" font-size="11">粉丝</text>
+  <line x1="245" y1="310" x2="245" y2="350" stroke="#F0F0F0" stroke-width="1"/>
+  <text x="299" y="320" text-anchor="middle" fill="#FF6B81" font-size="18" font-weight="bold">42</text>
+  <text x="299" y="340" text-anchor="middle" fill="#999" font-size="11">匹配</text>
+
+  <!-- Menu list -->
+  <rect x="20" y="385" width="335" height="320" rx="16" fill="#fff" stroke="#F0F0F0" stroke-width="1"/>
+  <g fill="#E8E8E8">
+    <circle cx="45" cy="425" r="12"/>
+    <rect x="70" y="418" width="80" height="14" rx="7"/>
+    <path d="M330 425h-10l-5-5 5-5h10z" fill="#CCC"/>
+  </g>
+  <line x1="30" y1="455" x2="345" y2="455" stroke="#F5F5F5" stroke-width="1"/>
+  <g fill="#E8E8E8">
+    <circle cx="45" cy="475" r="12"/>
+    <rect x="70" y="468" width="80" height="14" rx="7"/>
+    <path d="M330 475h-10l-5-5 5-5h10z" fill="#CCC"/>
+  </g>
+  <line x1="30" y1="505" x2="345" y2="505" stroke="#F5F5F5" stroke-width="1"/>
+  <g fill="#E8E8E8">
+    <circle cx="45" cy="525" r="12"/>
+    <rect x="70" y="518" width="80" height="14" rx="7"/>
+    <path d="M330 525h-10l-5-5 5-5h10z" fill="#CCC"/>
+  </g>
+  <line x1="30" y1="555" x2="345" y2="555" stroke="#F5F5F5" stroke-width="1"/>
+  <g fill="#E8E8E8">
+    <circle cx="45" cy="575" r="12"/>
+    <rect x="70" y="568" width="80" height="14" rx="7"/>
+    <path d="M330 575h-10l-5-5 5-5h10z" fill="#CCC"/>
+  </g>
+  <line x1="30" y1="605" x2="345" y2="605" stroke="#F5F5F5" stroke-width="1"/>
+  <g fill="#E8E8E8">
+    <circle cx="45" cy="625" r="12"/>
+    <rect x="70" y="618" width="80" height="14" rx="7"/>
+    <path d="M330 625h-10l-5-5 5-5h10z" fill="#CCC"/>
+  </g>
+  <line x1="30" y1="655" x2="345" y2="655" stroke="#F5F5F5" stroke-width="1"/>
+  <g fill="#E8E8E8">
+    <circle cx="45" cy="675" r="12"/>
+    <rect x="70" y="668" width="80" height="14" rx="7"/>
+    <path d="M330 675h-10l-5-5 5-5h10z" fill="#CCC"/>
+  </g>
+
+  <!-- Bottom tab bar -->
+  <rect y="728" width="375" height="84" fill="#fff"/>
+  <line x1="0" y1="728" x2="375" y2="728" stroke="#F0F0F0" stroke-width="1"/>
+  <circle cx="56" cy="760" r="4" fill="#CCC"/>
+  <rect x="44" y="770" width="24" height="10" rx="5" fill="#E0E0E0"/>
+  <circle cx="131" cy="760" r="4" fill="#CCC"/>
+  <rect x="119" y="770" width="24" height="10" rx="5" fill="#E0E0E0"/>
+  <circle cx="206" cy="760" r="4" fill="#CCC"/>
+  <rect x="194" y="770" width="24" height="10" rx="5" fill="#E0E0E0"/>
+  <circle cx="281" cy="760" r="4" fill="#CCC"/>
+  <rect x="269" y="770" width="24" height="10" rx="5" fill="#E0E0E0"/>
+  <circle cx="344" cy="760" r="4" fill="#36C99A"/>
+  <rect x="332" y="770" width="24" height="10" rx="5" fill="#36C99A" opacity="0.3"/>
+  <text x="56" y="798" text-anchor="middle" fill="#999" font-size="10">首页</text>
+  <text x="131" y="798" text-anchor="middle" fill="#999" font-size="10">附近</text>
+  <text x="206" y="798" text-anchor="middle" fill="#999" font-size="10">匹配</text>
+  <text x="281" y="798" text-anchor="middle" fill="#999" font-size="10">消息</text>
+  <text x="344" y="798" text-anchor="middle" fill="#36C99A" font-size="10">我的</text>
+</svg>

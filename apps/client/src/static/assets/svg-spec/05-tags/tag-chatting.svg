@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 28">
+  <rect width="72" height="28" rx="14" fill="#E8F8F0"/>
+  <circle cx="12" cy="14" r="4" fill="#36C99A"/>
+  <text x="22" y="18" fill="#2BA87E" font-family="Arial, sans-serif" font-size="11" font-weight="500">聊天中</text>
+</svg>

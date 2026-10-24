@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 200">
+  <defs>
+    <linearGradient id="circle-card" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fff"/>
+      <stop offset="100%" stop-color="#F8FFF8"/>
+    </linearGradient>
+    <filter id="circle-shadow" x="-10%" y="-5%" width="120%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="#36C99A" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+  <rect width="160" height="200" rx="20" fill="url(#circle-card)" filter="url(#circle-shadow)" stroke="#E8F8F0" stroke-width="1"/>
+  <circle cx="80" cy="70" r="36" fill="#E8F8F0"/>
+  <path d="M80 40c3 4 8 6 14 6-2 6-7 10-14 10-7 0-12-4-14-10 6 0 11-2 14-6z" fill="#36C99A"/>
+  <text x="80" y="130" text-anchor="middle" fill="#333" font-family="Arial, sans-serif" font-size="14" font-weight="bold">旅行圈</text>
+  <text x="80" y="155" text-anchor="middle" fill="#999" font-family="Arial, sans-serif" font-size="11">128人</text>
+</svg>

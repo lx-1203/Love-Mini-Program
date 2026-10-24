@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="empty-story-body" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D4F5E4"/>
+      <stop offset="100%" stop-color="#7DDEBB"/>
+    </linearGradient>
+  </defs>
+  <!-- Photo frame -->
+  <rect x="40" y="40" width="120" height="120" rx="12" fill="#fff" stroke="#E0E0E0" stroke-width="2" stroke-dasharray="6 4"/>
+  <rect x="55" y="55" width="90" height="60" rx="6" fill="#F5F5F5"/>
+  <path d="M55 115l20-20 15 15 25-30 20 25" fill="#E8E8E8"/>
+  <circle cx="110" cy="80" r="12" fill="#E0E0E0"/>
+  <!-- Mascot peeking from bottom -->
+  <ellipse cx="100" cy="175" rx="35" ry="25" fill="url(#empty-story-body)"/>
+  <path d="M82 150c-2-5-7-9-11-9-2 4-1 10 3 12 3 1 6-1 7-4z" fill="#36C99A"/>
+  <path d="M118 150c2-5 7-9 11-9 2 4 1 10-3 12-3 1-6-1-7-4z" fill="#36C99A"/>
+  <circle cx="90" cy="172" r="4" fill="#333"/>
+  <circle cx="110" cy="172" r="4" fill="#333"/>
+  <ellipse cx="82" cy="180" rx="5" ry="3" fill="#FFB6C1" opacity="0.5"/>
+  <ellipse cx="118" cy="180" rx="5" ry="3" fill="#FFB6C1" opacity="0.5"/>
+  <path d="M94 186c1.5 2.5 3 4 6 4s4.5-1.5 6-4" fill="none" stroke="#333" stroke-width="1.8" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="343" height="120">
+<rect width="343" height="120" rx="20" fill="#FFFFFF"/>
+<text x="20" y="35" font-size="16" fill="#333">你们有3个共同点</text>
+<circle cx="60" cy="75" r="20" fill="#E8FFFC"/>
+<circle cx="160" cy="75" r="20" fill="#E8FFFC"/>
+<circle cx="260" cy="75" r="20" fill="#E8FFFC"/>
+</svg>

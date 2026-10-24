@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="sprout-love-body" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D4F5E4"/>
+      <stop offset="100%" stop-color="#7DDEBB"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="60" cy="68" rx="40" ry="38" fill="url(#sprout-love-body)"/>
+  <path d="M55 30c-2-6-7-10-12-10-3 5-1 12 4 14 4 1 7-1 8-4z" fill="#36C99A"/>
+  <path d="M65 30c2-6 7-10 12-10 3 5 1 12-4 14-4 1-7-1-8-4z" fill="#36C99A"/>
+  <path d="M60 32c0-8 4-14 10-16 0 6-2 12-8 16-2 0-2 0-2 0z" fill="#2BA87E"/>
+  <!-- Heart eyes -->
+  <path d="M44 58c-2-3-6-2-6 2 0 3 6 7 8 7s8-4 8-7c0-4-4-5-6-2-1-2-3-2-4 0z" fill="#FF6B81"/>
+  <path d="M68 58c-2-3-6-2-6 2 0 3 6 7 8 7s8-4 8-7c0-4-4-5-6-2-1-2-3-2-4 0z" fill="#FF6B81"/>
+  <!-- Cheeks -->
+  <ellipse cx="38" cy="72" rx="6" ry="4" fill="#FFB6C1" opacity="0.6"/>
+  <ellipse cx="82" cy="72" rx="6" ry="4" fill="#FFB6C1" opacity="0.6"/>
+  <!-- Smile -->
+  <path d="M52 78c2 3 4 5 8 5s6-2 8-5" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+  <!-- Small heart held by mascot -->
+  <path d="M60 92s-5-3-5-7a3 3 0 0 1 5-2l1 1.5 1-1.5a3 3 0 0 1 5 2c0 4-5 7-5 7h-2z" fill="#FF6B81"/>
+</svg>

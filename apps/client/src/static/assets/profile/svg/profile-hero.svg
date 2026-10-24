@@ -1,0 +1,9 @@
+<svg width="390" height="360" viewBox="0 0 390 360" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="g" x2="0" y2="1"><stop stop-color="#dff8ef"/><stop offset="1" stop-color="#ffffff"/></linearGradient></defs>
+<rect width="390" height="360" rx="28" fill="url(#g)"/>
+<rect x="0" y="0" width="390" height="260" fill="#cfeee5"/>
+<circle cx="70" cy="220" r="48" fill="#fff"/>
+<circle cx="70" cy="220" r="42" fill="#35C99A"/>
+<text x="130" y="215" font-size="24" font-family="Arial">昵称 / 认证</text>
+<text x="130" y="250" font-size="14" fill="#777">年龄 · 城市 · 在线状态</text>
+</svg>

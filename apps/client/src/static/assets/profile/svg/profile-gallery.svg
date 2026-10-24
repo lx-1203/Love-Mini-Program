@@ -1,0 +1,7 @@
+<svg width="360" height="110" xmlns="http://www.w3.org/2000/svg">
+<rect width="360" height="110" rx="20" fill="white"/>
+<rect x="15" y="15" width="75" height="75" rx="12" fill="#d9eee8"/>
+<rect x="100" y="15" width="75" height="75" rx="12" fill="#d9eee8"/>
+<rect x="185" y="15" width="75" height="75" rx="12" fill="#d9eee8"/>
+<text x="280" y="55" font-size="14">故事照片</text>
+</svg>

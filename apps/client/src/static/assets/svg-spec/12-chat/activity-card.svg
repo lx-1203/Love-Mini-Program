@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 120">
+  <defs>
+    <linearGradient id="activity-card" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fff"/>
+      <stop offset="100%" stop-color="#F8FFF8"/>
+    </linearGradient>
+    <filter id="act-shadow" x="-2%" y="-5%" width="104%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-color="#36C99A" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+  <rect width="280" height="120" rx="16" fill="url(#activity-card)" filter="url(#act-shadow)" stroke="#E8F8F0" stroke-width="1"/>
+  <!-- Image area -->
+  <rect x="10" y="10" width="100" height="100" rx="10" fill="#E8F8F0"/>
+  <path d="M40 55c3 10 12 20 27 20s24-10 27-20l-10 5-17-20z" fill="#6FD4AA" opacity="0.5"/>
+  <circle cx="55" cy="45" r="10" fill="#fff" opacity="0.7"/>
+  <!-- Text area -->
+  <rect x="125" y="18" width="140" height="10" rx="5" fill="#E8E8E8"/>
+  <rect x="125" y="36" width="100" height="8" rx="4" fill="#F0F0F0"/>
+  <rect x="125" y="52" width="120" height="8" rx="4" fill="#F5F5F5"/>
+  <!-- Tags -->
+  <rect x="125" y="75" width="40" height="20" rx="10" fill="#E8F8F0"/>
+  <text x="145" y="89" text-anchor="middle" fill="#36C99A" font-size="10">线下</text>
+  <rect x="170" y="75" width="50" height="20" rx="10" fill="#FFE4E9"/>
+  <text x="195" y="89" text-anchor="middle" fill="#FF6B81" font-size="10">约会</text>
+  <!-- Arrow -->
+  <path d="m260 95 5 5-5 5" stroke="#CCC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

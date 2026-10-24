@@ -1,0 +1,7 @@
+<svg width="350" height="100" xmlns="http://www.w3.org/2000/svg">
+<rect width="350" height="100" rx="20" fill="white"/>
+<rect x="20" y="45" width="70" height="28" rx="14" fill="#dff8ef"/>
+<rect x="100" y="45" width="70" height="28" rx="14" fill="#ffe4ec"/>
+<text x="35" y="65" font-size="14">旅行</text>
+<text x="115" y="65" font-size="14">音乐</text>
+</svg>

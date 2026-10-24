@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 400">
+  <defs>
+    <filter id="feed-shadow" x="-2%" y="-2%" width="104%" height="106%">
+      <feDropShadow dx="0" dy="2" stdDeviation="10" flood-color="#000" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+  <rect width="340" height="400" rx="16" fill="#fff" filter="url(#feed-shadow)"/>
+  <circle cx="28" cy="28" r="14" fill="#F0F0F0"/>
+  <line x1="50" y1="24" x2="150" y2="24" stroke="#E0E0E0" stroke-width="3" stroke-linecap="round"/>
+  <line x1="50" y1="36" x2="100" y2="36" stroke="#F0F0F0" stroke-width="2" stroke-linecap="round"/>
+  <rect x="16" y="56" width="308" height="280" rx="12" fill="#F8F8F8"/>
+  <line x1="16" y1="360" x2="80" y2="360" stroke="#E0E0E0" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <defs>
+    <linearGradient id="login-frame-bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E8F8F0"/>
+      <stop offset="100%" stop-color="#D4F5E4"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="200" rx="24" fill="url(#login-frame-bg)" stroke="#6FD4AA" stroke-width="1.5" stroke-dasharray="8 4" opacity="0.6"/>
+  <!-- Simple campus couple scene placeholder -->
+  <circle cx="110" cy="100" r="28" fill="#FFE4E9"/>
+  <circle cx="110" cy="90" r="12" fill="#FFB6C1"/>
+  <path d="M95 140c0-8 7-14 15-14s15 6 15 14" fill="#FFB6C1"/>
+  <circle cx="190" cy="100" r="28" fill="#D4F5E4"/>
+  <circle cx="190" cy="90" r="12" fill="#7DDEBB"/>
+  <path d="M175 140c0-8 7-14 15-14s15 6 15 14" fill="#7DDEBB"/>
+  <!-- Heart between them -->
+  <path d="M150 100s-5-3-6-6a3 3 0 0 1 5-2l1 2 1-2a3 3 0 0 1 5 2c0 3-5 6-5 6h-1z" fill="#FF6B81"/>
+  <!-- Ground -->
+  <ellipse cx="150" cy="170" rx="120" ry="10" fill="#36C99A" opacity="0.2"/>
+</svg>

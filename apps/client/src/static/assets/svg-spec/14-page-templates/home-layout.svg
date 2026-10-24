@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 812">
+  <!-- Status bar -->
+  <rect width="375" height="44" fill="#fff"/>
+  <text x="30" y="28" fill="#333" font-size="14" font-weight="600">9:41</text>
+  <rect x="280" y="15" width="20" height="12" rx="2" fill="#333"/>
+  <rect x="305" y="17" width="25" height="10" rx="2" fill="#333"/>
+  <rect x="335" y="16" width="20" height="12" rx="3" fill="none" stroke="#333" stroke-width="1"/>
+  <rect x="337" y="18" width="16" height="8" rx="1" fill="#333"/>
+
+  <!-- Header -->
+  <rect y="44" width="375" height="60" fill="#fff"/>
+  <text x="20" y="82" fill="#333" font-size="22" font-weight="bold">发现</text>
+  <circle cx="335" cy="74" r="14" fill="#F5F5F5"/>
+  <circle cx="335" cy="74" r="14" fill="none" stroke="#E0E0E0" stroke-width="1"/>
+
+  <!-- Search bar -->
+  <rect x="20" y="114" width="335" height="40" rx="20" fill="#F5F5F5"/>
+  <circle cx="40" cy="134" r="8" fill="none" stroke="#999" stroke-width="1.5"/>
+  <line x1="46" y1="140" x2="52" y2="146" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+  <rect x="65" y="128" width="80" height="12" rx="6" fill="#E0E0E0"/>
+
+  <!-- Filter tags -->
+  <rect x="20" y="170" width="60" height="28" rx="14" fill="#E8F8F0"/>
+  <rect x="90" y="170" width="60" height="28" rx="14" fill="#F5F5F5"/>
+  <rect x="160" y="170" width="60" height="28" rx="14" fill="#F5F5F5"/>
+  <rect x="230" y="170" width="60" height="28" rx="14" fill="#F5F5F5"/>
+
+  <!-- Match card area -->
+  <rect x="20" y="218" width="335" height="380" rx="24" fill="#F8F8F8" stroke="#EEE" stroke-width="1"/>
+  <rect x="20" y="420" width="335" height="178" rx="24" fill="url(#home-card-gradient)"/>
+  <defs>
+    <linearGradient id="home-card-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="520" r="22" fill="#fff" opacity="0.3"/>
+  <rect x="80" y="510" width="120" height="14" rx="7" fill="#fff" opacity="0.9"/>
+  <rect x="80" y="530" width="180" height="10" rx="5" fill="#fff" opacity="0.7"/>
+  <rect x="80" y="550" width="60" height="20" rx="10" fill="#36C99A" opacity="0.8"/>
+  <rect x="150" y="550" width="50" height="20" rx="10" fill="#FF6B81" opacity="0.8"/>
+
+  <!-- Action buttons -->
+  <circle cx="120" cy="640" r="28" fill="#fff" stroke="#E0E0E0" stroke-width="2"/>
+  <path d="M110 630 130 650M130 630 110 650" stroke="#999" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="187" cy="640" r="24" fill="#fff" stroke="#36C99A" stroke-width="2"/>
+  <path d="M178 632h14v10h-10l-6 5z" fill="none" stroke="#36C99A" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="255" cy="640" r="32" fill="#FF6B81"/>
+  <path d="M255 656s-10-5-10-11a4.5 4.5 0 0 1 8-2l2 2 2-2a4.5 4.5 0 0 1 8 2c0 6-10 11-10 11h-2z" fill="#fff"/>
+
+  <!-- Bottom tab bar -->
+  <rect y="728" width="375" height="84" fill="#fff"/>
+  <line x1="0" y1="728" x2="375" y2="728" stroke="#F0F0F0" stroke-width="1"/>
+  <circle cx="56" cy="760" r="4" fill="#36C99A"/>
+  <rect x="44" y="770" width="24" height="10" rx="5" fill="#36C99A" opacity="0.3"/>
+  <circle cx="131" cy="760" r="4" fill="#CCC"/>
+  <rect x="119" y="770" width="24" height="10" rx="5" fill="#E0E0E0"/>
+  <circle cx="206" cy="760" r="4" fill="#CCC"/>
+  <rect x="194" y="770" width="24" height="10" rx="5" fill="#E0E0E0"/>
+  <circle cx="281" cy="760" r="4" fill="#CCC"/>
+  <rect x="269" y="770" width="24" height="10" rx="5" fill="#E0E0E0"/>
+  <circle cx="344" cy="760" r="4" fill="#CCC"/>
+  <rect x="332" y="770" width="24" height="10" rx="5" fill="#E0E0E0"/>
+  <text x="56" y="798" text-anchor="middle" fill="#36C99A" font-size="10">首页</text>
+  <text x="131" y="798" text-anchor="middle" fill="#999" font-size="10">附近</text>
+  <text x="206" y="798" text-anchor="middle" fill="#999" font-size="10">匹配</text>
+  <text x="281" y="798" text-anchor="middle" fill="#999" font-size="10">消息</text>
+  <text x="344" y="798" text-anchor="middle" fill="#999" font-size="10">我的</text>
+</svg>

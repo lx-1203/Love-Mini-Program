@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="sprout-think-body" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D4F5E4"/>
+      <stop offset="100%" stop-color="#7DDEBB"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="60" cy="68" rx="40" ry="38" fill="url(#sprout-think-body)"/>
+  <path d="M55 30c-2-6-7-10-12-10-3 5-1 12 4 14 4 1 7-1 8-4z" fill="#36C99A"/>
+  <path d="M65 30c2-6 7-10 12-10 3 5 1 12-4 14-4 1-7-1-8-4z" fill="#36C99A"/>
+  <path d="M60 32c0-8 4-14 10-16 0 6-2 12-8 16-2 0-2 0-2 0z" fill="#2BA87E"/>
+  <!-- Eyes looking up/side -->
+  <circle cx="50" cy="62" r="4" fill="#333"/>
+  <circle cx="70" cy="62" r="4" fill="#333"/>
+  <circle cx="51" cy="61" r="1" fill="#fff"/>
+  <circle cx="71" cy="61" r="1" fill="#fff"/>
+  <!-- Cheeks -->
+  <ellipse cx="40" cy="74" rx="5" ry="3.5" fill="#FFB6C1" opacity="0.5"/>
+  <ellipse cx="80" cy="74" rx="5" ry="3.5" fill="#FFB6C1" opacity="0.5"/>
+  <!-- Thinking mouth -->
+  <path d="M56 80c0 0 1-2 4-2s4 2 4 2" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+  <!-- Hand on chin -->
+  <ellipse cx="82" cy="88" rx="10" ry="6" fill="#7DDEBB"/>
+  <!-- Thought bubble -->
+  <circle cx="95" cy="35" r="4" fill="#fff" stroke="#36C99A" stroke-width="1"/>
+  <circle cx="102" cy="28" r="6" fill="#fff" stroke="#36C99A" stroke-width="1"/>
+  <circle cx="110" cy="18" r="10" fill="#fff" stroke="#36C99A" stroke-width="1.5"/>
+  <text x="110" y="22" text-anchor="middle" fill="#36C99A" font-size="10" font-weight="bold">?</text>
+</svg>

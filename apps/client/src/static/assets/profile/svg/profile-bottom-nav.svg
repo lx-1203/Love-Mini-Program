@@ -1,0 +1,5 @@
+<svg width="390" height="80" xmlns="http://www.w3.org/2000/svg">
+<rect width="390" height="80" fill="white"/>
+<circle cx="195" cy="20" r="20" fill="#35C99A"/>
+<text x="35" y="55">首页</text><text x="120" y="55">附近</text><text x="185" y="55">寻觅</text><text x="300" y="55">我的</text>
+</svg>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 80">
+  <defs>
+    <filter id="h-card-shadow" x="-2%" y="-10%" width="104%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-color="#000" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+  <rect width="340" height="80" rx="16" fill="#fff" filter="url(#h-card-shadow)"/>
+  <circle cx="40" cy="40" r="24" fill="#F0F0F0"/>
+  <line x1="74" y1="32" x2="200" y2="32" stroke="#E0E0E0" stroke-width="4" stroke-linecap="round"/>
+  <line x1="74" y1="48" x2="150" y2="48" stroke="#F0F0F0" stroke-width="3" stroke-linecap="round"/>
+</svg>
