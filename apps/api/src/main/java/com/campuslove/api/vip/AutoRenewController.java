@@ -58,9 +58,12 @@ public class AutoRenewController {
 
     /**
      * 开启自动续费。
-     * <p>POST /api/vip/auto-renew</p>
+     * <p>POST /api/v1/vip/auto-renew</p>
      *
-     * @param request 开启请求体（可指定套餐 ID，预留扩展）
+     * <p>P0-3 A：请求体的 {@code planId} 不是「预留扩展」的可选项——它必填，且必须
+     * 命中服务端 {@link VipPlanCatalog} 的在售套餐，否则 400 且不产生任何状态变更。</p>
+     *
+     * @param request 开启请求体（planId 必填，须为目录内在售套餐）
      * @return 更新后的状态视图
      */
     @PostMapping
