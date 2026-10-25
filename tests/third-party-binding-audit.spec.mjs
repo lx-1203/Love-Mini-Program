@@ -48,12 +48,18 @@ const cutoffHits = (code.match(/t\.created_at\s*<\s*@cutoff/gu) ?? []).length;
 assert.ok(cutoffHits >= 3, `cutoff 谓词只剩 ${cutoffHits} 处，掏空判据即等于放行全部历史行`);
 
 // 「身份自然主人是另一个账号」这条形状判据是本核查的核心，两处连接条件都要在。
+// 别名必须是 natural_owner：`natural` 是 MySQL 8 保留字，真库实测报 1064。
 assert.match(
   code,
-  /natural\.openid\s*=\s*CONCAT\(LOWER\(t\.provider\),\s*':',\s*t\.open_id\)/u,
+  /natural_owner\.openid\s*=\s*CONCAT\(LOWER\(t\.provider\),\s*':',\s*t\.open_id\)/u,
   "缺少按 provider:hash 反查身份自然主人的连接条件",
 );
-assert.match(code, /natural\.id\s*<>\s*t\.user_id/u, "缺少「自然主人必须是另一个账号」的排除条件");
+assert.match(code, /natural_owner\.id\s*<>\s*t\.user_id/u, "缺少「自然主人必须是另一个账号」的排除条件");
+assert.equal(
+  /\bJOIN\s+users\s+natural\s/i.test(code),
+  false,
+  "别名不许退回保留字 natural（MySQL 8 报 1064）",
+);
 
 // 判读词表：SUSPECT / UNVERIFIED 是下游唯一能分桶的两个值，改名必须同步消费方。
 for (const token of ["SUSPECT", "UNVERIFIED"]) {

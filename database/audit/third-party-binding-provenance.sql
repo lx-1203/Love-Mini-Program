@@ -48,7 +48,7 @@ GROUP BY t.provider;
 -- ---------------------------------------------------------------------------
 -- 2) 强嫌疑：第三方身份的自然主人是另一个账号
 --    （ThirdPartyAuthService#createNewUserAndBind 以 provider:hash 作为 openid 建用户，
---      故 natural.openid 命中同一条哈希即说明该真实身份本属于 natural 账号）
+--      故 natural_owner.openid 命中同一条哈希即说明该真实身份本属于 natural_owner 账号）
 -- ---------------------------------------------------------------------------
 SELECT
     t.id                                                              AS 绑定ID,
@@ -59,14 +59,14 @@ SELECT
     b.nickname                                                        AS 被绑到的账号昵称,
     b.role                                                            AS 被绑到的账号角色,
     b.status                                                          AS 被绑到的账号状态,
-    natural.id                                                        AS 该身份的自然主人,
-    natural.nickname                                                  AS 自然主人昵称,
+    natural_owner.id                                                        AS 该身份的自然主人,
+    natural_owner.nickname                                                  AS 自然主人昵称,
     CASE WHEN t.created_at < @cutoff THEN 'cutoff前' ELSE 'cutoff后' END AS 来源窗口
 FROM third_party_account t
 JOIN users b ON b.id = t.user_id
-JOIN users natural
-     ON natural.openid = CONCAT(LOWER(t.provider), ':', t.open_id)
-    AND natural.id <> t.user_id
+JOIN users natural_owner
+     ON natural_owner.openid = CONCAT(LOWER(t.provider), ':', t.open_id)
+    AND natural_owner.id <> t.user_id
 WHERE t.created_at < @cutoff
 ORDER BY t.created_at;
 
@@ -82,12 +82,12 @@ SELECT
     t.created_at                                                      AS 绑定时间,
     t.user_id                                                         AS 被绑到的账号,
     b.role                                                            AS 被绑到的账号角色,
-    IFNULL(natural.id, 0)                                             AS 身份自然主人ID,
-    CASE WHEN natural.id IS NOT NULL THEN 'SUSPECT' ELSE 'UNVERIFIED' END AS 判定
+    IFNULL(natural_owner.id, 0)                                             AS 身份自然主人ID,
+    CASE WHEN natural_owner.id IS NOT NULL THEN 'SUSPECT' ELSE 'UNVERIFIED' END AS 判定
 FROM third_party_account t
 JOIN users b ON b.id = t.user_id
-LEFT JOIN users natural
-     ON natural.openid = CONCAT(LOWER(t.provider), ':', t.open_id)
-    AND natural.id <> t.user_id
+LEFT JOIN users natural_owner
+     ON natural_owner.openid = CONCAT(LOWER(t.provider), ':', t.open_id)
+    AND natural_owner.id <> t.user_id
 WHERE t.created_at < @cutoff
 ORDER BY 判定, t.created_at;

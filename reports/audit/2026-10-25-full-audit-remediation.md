@@ -155,10 +155,17 @@ P0-1…P0-4、P1-5…P1-8、P2-10…P2-13 的**主修法成立**；但复量暴�
    需要裁定的是三选一（图片本地缓存键改为忽略 token 参数 / 接受下载churn / 后端改签名 URL），
    不属于「按最优建议」可直接代劳的收口动作。
 2. **P0-1 的处置半句**：核查件已就位（`database/audit/third-party-binding-provenance.sql`，
-   只 SELECT、有只读性契约测试），但**没有实跑**——本机无目标库，
-   三段查询的语法与结果集未经真实 MySQL 验证，目前只过静态契约。
-   第一次实跑需在 staging 用只读账号执行并回填读数；SUSPECT 行的处置（解绑/要求重新验证/保留）
-   仍需产品与运营裁定，且须先按 `database/backup` 协议备份 + ROLLBACK 干跑。
+   只 SELECT、有只读性契约测试）。本轮已在**本机 MySQL 8（campus_love，110 表）真跑通**：
+   `SET @cutoff='2026-10-24 22:44:29'` + 整份脚本 SQL_EXIT=0，
+   `third_party_account` 实测 **0 行**（cutoff 前后皆 0）⇒ 本机没有待处置的绑定行。
+   这一跑还抓出一个静态检查看不见的缺陷：别名 `natural` 是 MySQL 8 保留字，
+   原稿在真库上直接 ERROR 1064（此前只过静态契约，从未执行）；已改 `natural_owner`
+   并给契约测试补一条「别名不许退回保留字」的反向判据（变异对照：改回 natural 即红）。
+   ⚠ 本机 0 行**不等于生产 0 行**：真实结论取决于「带漏洞的 /bind 是否曾对真实用户上线过」，
+   这只有部署方知道。仍需要：① 在 staging/生产副本上用只读账号实跑并回填 SUSPECT/UNVERIFIED 数；
+   ② 给出 P0-1 在生产的**实际上线时刻**作为 @cutoff（脚本默认值是提交时间，上线晚于提交须改）；
+   ③ SUSPECT 行的处置裁定（解绑 / 要求重新验证 / 保留），且须先按 `database/backup` 协议
+   备份 + ROLLBACK 干跑。**本件不臆造任何清理。**
 3. **P1-9 发布实机**：仍为外部阻断（真实 HTTPS 域名、`WX_APPID`、`WECHAT_APPID/SECRET`、
    部署级密钥），见 §8。真机 `wx.login` 链路、生产包上传与审核未验。
 4. **P3 历史欠账**：R16 的 214 条仍全部是 `UNVERIFIED_AT_CURRENT_HEAD`
