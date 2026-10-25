@@ -253,8 +253,13 @@ function uploadFileViaUni<TResponse>(
         Authorization: `Bearer ${getToken()}`,
         // MP-R7-UPLOAD-001（2026-09-15）：后端 @Idempotent 对写端点（含 /media/upload）
         // 强制要求 Idempotency-Key 头，缺失返回 422「缺少 Idempotency-Key」。uni.uploadFile
-        // 不经过 http.ts 请求拦截器（写请求在那里自动补幂等键），须在此手动补齐；
-        // 与拦截器同口径按 endpoint+文件名稳定生成，同操作重试命中同一 key 被后端去重。
+        // 不经过 http.ts 请求拦截器（写请求在那里自动补幂等键），须在此手动补齐。
+        // P1-1（2026-10-25）评估：拦截器的自动键已改为「一次逻辑调用一把键」，本处**刻意保留**
+        // endpoint+文件名的稳定口径——uni.uploadFile 无自动重试层，「同一次操作的重试须复用
+        // 同键」这条不变式在此不适用，改动只会动到上传的连点去重语义；调用方已按「每次选择
+        // 生成唯一文件名」自行界定操作边界（见 village/detail.vue、campus/post-topic.vue 的
+        // MP-R1-CAMPUSPOST-002 注释）。遗留风险：同一文件在 4h TTL 内二次上传（如换回旧头像）
+        // 仍会撞 409，需连同页面防重一起另案处理。
         "Idempotency-Key": `idem-UPLOAD-${hashString(`${endpoint}|${file.name ?? file.path ?? ""}`)}`,
       },
       success: (res) => {

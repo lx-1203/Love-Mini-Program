@@ -768,11 +768,10 @@ async function submitPublish() {
   if (pageDestroyed) return;
   // 两页一致（MP-R2-PUB-112 能力分叉的一项）：成功后清空表单——post.vue 成功即清、
   // 本页不清，于是「submitting 已复位 + 400ms 导航窗口内按钮仍可点 + 表单仍是已发内容」
-  // 在本页成为重复提交通道。注意 services/http.ts 对写请求注入的是
-  // 「method+URL+body 哈希」的稳定 Idempotency-Key，而 POST /posts 带 @Idempotent：
-  // 同 payload 的二次提交被后端以 409 Conflict 拦下（键成功后保留 4h）——
-  // 于是「只发出一帖」的运行时取证可能只是服务端兜底，客户端防连点是否生效被掩盖，
-  // 用户还会在发布成功后额外看到一条失败 toast。清空后 canSubmit 恒 false，
+  // 在本页成为重复提交通道。注意 P1-1（2026-10-25）后 services/http.ts 对写请求注入的是
+  // 「一次逻辑调用一把唯一键」的 Idempotency-Key（旧「method+URL+body 哈希」稳定键会把
+  // 合法的二次操作一并拦成 409，已废弃）：同 payload 的二次提交不再有后端兜底，
+  // 会真的发出两帖——清表单因此从「双保险」升级为唯一防重通道。清空后 canSubmit 恒 false，
   // 二次点按不可能再产出同一 payload；空快照又被 hasDraftContent 闸挡住，草稿不会复活
   content.value = "";
   images.value = [];

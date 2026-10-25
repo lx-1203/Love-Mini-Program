@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
  * <ul>
  *   <li>幂等键来源：客户端在请求头中携带 {@code Idempotency-Key}（UUID 或业务唯一标识）</li>
  *   <li>Redis Key 格式：{@code idempotent:{key}:{userId}}，按用户隔离避免冲突</li>
- *   <li>TTL：默认 24 小时（{@link #ttlSeconds()}），可通过注解参数覆盖</li>
+ *   <li>TTL：默认 4 小时（{@link #DEFAULT_TTL_SECONDS}，infra R2-00249 已缩短），可通过注解参数覆盖</li>
  *   <li>重复请求处理：返回 HTTP 409 Conflict + 错误码 {@code IDEMPOTENT_CONFLICT}，
  *       提示客户端"重复请求已被拦截"</li>
  *   <li>仅作用于写操作（POST/PUT/DELETE），GET 请求不应使用本注解</li>

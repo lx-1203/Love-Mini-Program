@@ -224,25 +224,157 @@ addRequestInterceptor((config) => {
 /* ========== 默认请求拦截器：写操作自动附加幂等键 ========== */
 
 /**
- * P0-01 修复：为写操作（POST/PUT/DELETE/PATCH）自动附加幂等键。
+ * 需要幂等键的写方法（后端 @Idempotent 挂在 POST/PUT/DELETE 上，PATCH 一并覆盖）。
+ */
+const IDEMPOTENT_WRITE_METHODS = ["POST", "PUT", "PATCH", "DELETE"];
+
+/**
+ * 写操作（POST/PUT/DELETE/PATCH）自动附加幂等键。
  *
  * 后端 {@code @Idempotent}（IdempotentInterceptor）对标注的写端点强制要求
- * {@code Idempotency-Key} 请求头（缺失返回 400「缺少 Idempotency-Key 请求头」），
- * 但客户端大量调用点未手动设置该头，real 模式下会被后端拒绝。
+ * {@code Idempotency-Key} 请求头（缺失时抛 InvalidOperationException → 422
+ * 「缺少 Idempotency-Key 请求头」），但客户端大量调用点未手动设置该头，
+ * real 模式下会被后端拒绝。此拦截器在请求发出前兜底补齐。
  *
- * 此拦截器在请求发出前为写操作自动生成幂等键，兼容性设计：
- * - 调用方已手动设置 Idempotency-Key 的请求（签到 / 充值 / 活动报名 / 解锁等）不覆盖，
- *   保留业务语义（如同一用户当日签到固定 key，重复点击被后端幂等去重）；
+ * ── 键的语义（P1-1 修复，2026-10-25）───────────────────────────────
+ * **幂等键标识「一次逻辑调用」，而不是「这个端点 + 这份 body」。**
+ * 一次 {@link request} 调用 = 一次逻辑操作 = 一把唯一的新键；这一次操作在底层的
+ * 全部投递（网络层指数退避重试、401 刷新令牌后重发）复用同一把键——这才是
+ * {@code @Idempotent} 要防的「一次操作被送达两次」。
+ *
+ * 为什么必须每次生成新键（R4-00168 引入的稳定键方案已废弃）：
+ * 原实现按 {@code method + URL + body} 做 FNV 哈希生成稳定键，同一端点的第二次
+ * **合法业务动作**必然撞上第一次的键（成功请求的键在后端保留 4 小时）：
+ * - {@code POST /v1/village/{id}/favorite} 是 toggle——第二次点击（取消收藏）被 409；
+ * - {@code POST → DELETE → POST /v1/users/{id}/follow}（取关后再关注）第二次被 409。
+ * 即「收藏取消不了、关注加不回来」。@Idempotent 的防重对象是重复投递，
+ * 不是重复出现的合法业务意图——用端点级稳定键去拦后者属于误用。
+ *
+ * 实现前提（改动此处前务必确认）：
+ * {@link request} 在重试循环**之外**执行一次请求拦截器链，网络重试复用同一个
+ * requestConfig，401 分支的重发只覆盖 Authorization、其余头原样继承，
+ * 故键天然「一次操作内稳定、跨操作不复用」。**切勿把键生成下沉到 doRequest 或
+ * 重试循环内**——那会让每次投递换一把键，幂等保护归零（正是 R4-00168 当年报的 bug）。
+ *
+ * 兼容性设计保持不变：
+ * - 调用方已手动设置 Idempotency-Key 的请求（签到 / 充值 / 解锁 / 活动报名 / 扣费
+ *   orderId 等）不覆盖，保留其业务语义（如同一用户当日签到固定 key，重复点击被
+ *   后端幂等去重）；
  * - GET 请求不加（幂等键仅用于写操作去重）。
  *
- * 修复（R4-00168）：原实现每次请求生成全新随机 key（idem-{ts}-{random}），
- * 双击/重试产生的不同 key 无法被后端 {@code @Idempotent} 按 key 去重，
- * 写操作重复提交防护形同虚设。现改为按业务语义生成稳定 key——
- * method + 归一化 URL + body 内容哈希。相同操作（同 URL 同 body）的重试
- * 命中同一 key，被后端幂等去重；不同操作（body 不同）key 不同，互不影响。
+ * 因此「双击/连点」= 两个独立逻辑操作 = 两次都放行，这是有意取舍：
+ * 防连点是页面职责（submitting 标志 + 成功即清表单，见 village/post.vue、
+ * village/publish.vue、village/index.vue），服务端幂等键不再替页面兜底。
+ */
+addRequestInterceptor((config) => {
+  const method = String(config.method || "GET").toUpperCase();
+  if (!IDEMPOTENT_WRITE_METHODS.includes(method)) {
+    return config;
+  }
+  if (!config.header) {
+    config.header = {};
+  }
+  const header = config.header as Record<string, string>;
+  // 已有手动设置的幂等键不覆盖（签到/充值/解锁等固定 key 场景）
+  if (!header["Idempotency-Key"]) {
+    header["Idempotency-Key"] = generateIdempotencyKey(method);
+  }
+  return config;
+});
+
+/**
+ * 逻辑操作序号：模块内单调递增。
+ *
+ * 与时间戳/随机段组合后，保证「同一毫秒内并发发起的两次调用」也拿到不同幂等键——
+ * {@code Date.now()} 与 {@code Math.random()} 单独都不保证唯一，序号是防撞的底线。
+ */
+let operationSeq = 0;
+
+/**
+ * 读取平台 UUID：H5 / Node / 较新小程序基础库提供 {@code crypto.randomUUID}，
+ * 其余环境（含旧版 mp-weixin）返回空串由调用方走兜底。
+ */
+function readRandomUuid(): string {
+  const g = globalThis as { crypto?: { randomUUID?: () => string } };
+  if (typeof g.crypto?.randomUUID !== "function") {
+    return "";
+  }
+  try {
+    return g.crypto.randomUUID();
+  } catch (_e) {
+    // 个别运行时暴露了 randomUUID 但实现不完整：按不可用处理
+    return "";
+  }
+}
+
+/**
+ * 读取加密随机 hex 串（无 WebCrypto {@code getRandomValues} 时返回空串）。
+ *
+ * @param charCount 期望的十六进制字符数（偶数）
+ */
+function readCryptoHex(charCount: number): string {
+  const g = globalThis as {
+    crypto?: { getRandomValues?: (buffer: Uint8Array) => Uint8Array };
+  };
+  if (typeof g.crypto?.getRandomValues !== "function") {
+    return "";
+  }
+  try {
+    const bytes = new Uint8Array(Math.ceil(charCount / 2));
+    g.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0"))
+      .join("")
+      .slice(0, charCount);
+  } catch (_e) {
+    return "";
+  }
+}
+
+/**
+ * 非加密兜底随机段（mp-weixin 等完全无 WebCrypto 的环境使用）。
+ * 唯一性由 {@link generateIdempotencyKey} 内的序号 + 时间戳兜住，这里只加大离散度。
+ */
+function randomBase36(charCount: number): string {
+  let out = "";
+  while (out.length < charCount) {
+    out += Math.random().toString(36).slice(2);
+  }
+  return out.slice(0, charCount);
+}
+
+/**
+ * 生成一把标识「一次逻辑调用」的幂等键。
+ *
+ * 键格式：{@code idem-{METHOD}-{operationId}}，其中 operationId 优先取平台 UUID
+ * （crypto-safe，122 bit 熵），无 WebCrypto 时退化为
+ * {@code 时间戳36进制-单调序号36进制-随机段}——序号保证同实例同毫秒不撞键，
+ * 随机段保证跨实例（多页面 / 多设备）几乎不撞键。
+ *
+ * 总长度远小于后端 IdempotentInterceptor 的 MAX_KEY_LENGTH（128）。
+ *
+ * @param method 请求方法（大写），保留在键内便于服务端按端点排查 Redis 幂等键
+ * @returns 本次逻辑调用的唯一幂等键
+ */
+export function generateIdempotencyKey(method: string): string {
+  operationSeq += 1;
+  const uuid = readRandomUuid();
+  const operationId =
+    uuid ||
+    `${Date.now().toString(36)}-${operationSeq.toString(36)}-${
+      readCryptoHex(16) || randomBase36(16)
+    }`;
+  return `idem-${method}-${operationId}`;
+}
+
+/**
+ * FNV-1a 32 位字符串哈希（非加密用途）。
+ *
+ * P1-1（2026-10-25）后，自动补键拦截器已不再用它生成幂等键（稳定性正是本次修掉的
+ * 缺陷）；保留导出是因为 {@code services/api.ts} 的手动上传幂等键
+ * （{@code idem-UPLOAD-{endpoint|filename}}）与本地文件名指纹仍依赖它。
+ * 该键属「调用方显式提供业务键」范畴，按上方说明不被拦截器覆盖。
  */
 export function hashString(input: string): string {
-  // FNV-1a 32 位哈希（非加密用途：仅用于幂等键稳定性，无需强哈希）
   let hash = 0x811c9dc5;
   for (let i = 0; i < input.length; i++) {
     hash ^= input.charCodeAt(i);
@@ -250,32 +382,6 @@ export function hashString(input: string): string {
   }
   return hash.toString(36);
 }
-
-addRequestInterceptor((config) => {
-  const method = String(config.method || "GET").toUpperCase();
-  if (method === "POST" || method === "PUT" || method === "DELETE" || method === "PATCH") {
-    if (!config.header) {
-      config.header = {};
-    }
-    const header = config.header as Record<string, string>;
-    // 已有手动设置的幂等键不覆盖（签到/充值/解锁等固定 key 场景）
-    if (!header["Idempotency-Key"]) {
-      let bodySig = "";
-      try {
-        bodySig =
-          config.data !== undefined
-            ? JSON.stringify(config.data)
-            : "";
-      } catch (_e) {
-        // 序列化失败（如循环引用）：body 不参与签名，仍保证 URL+method 维度稳定
-        bodySig = "";
-      }
-      const stableKey = `idem-${method}-${hashString(String(config.url) + "|" + bodySig)}`;
-      header["Idempotency-Key"] = stableKey;
-    }
-  }
-  return config;
-});
 
 /* ========== 默认响应拦截器：规范化错误码 ========== */
 
@@ -428,11 +534,12 @@ async function tryRefreshToken(): Promise<boolean> {
         url: `${appEnv.apiBaseUrl}${normalizeApiPath("/auth/refresh")}`,
         method: "POST",
         // P0-02：不放 body，旧令牌通过 Authorization 头传递；
-        // 每次刷新生成唯一幂等键（后端 @Idempotent 强制要求 Idempotency-Key 头）
+        // 每次刷新是一枚新的逻辑操作，按 P1-1 口径生成唯一幂等键
+        // （后端 /auth/refresh 也标了 @Idempotent，缺键会被 422 拒绝）
         header: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-          "Idempotency-Key": `idem-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+          "Idempotency-Key": generateIdempotencyKey("POST"),
         },
         // 修复（P1 BUG）：刷新请求必须带超时，避免刷新接口无响应时
         // refreshPromise 永久挂起，导致所有后续 401 请求全部被阻塞。
