@@ -27,8 +27,10 @@ import { ApiError } from "../../api/http";
 import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { formatDateTime } from "../../utils/format";
+import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
 // ===== 角色列表 =====
 const roles = ref<RoleView[]>([]);
@@ -120,6 +122,7 @@ function closeForm() {
 }
 
 async function handleSubmit() {
+  if (!sessionStore.canWrite) return;
   if (saving.value) return;
   if (!form.value.name.trim()) {
     formError.value = t("roles.nameRequired");
@@ -166,6 +169,7 @@ function askDelete(role: RoleView) {
 }
 
 async function confirmDelete() {
+  if (!sessionStore.canWrite) return;
   const target = deleteTarget.value;
   if (!target || deleting.value) return;
   deleting.value = true;
@@ -269,6 +273,7 @@ function closeAssign() {
 
 /** 保存菜单分配 */
 async function confirmAssign() {
+  if (!sessionStore.canWrite) return;
   const role = assignRole.value;
   if (!role || savingAssign.value) return;
   savingAssign.value = true;
@@ -298,7 +303,7 @@ onMounted(() => {
     </view>
 
     <view class="toolbar">
-      <button class="primary-button" @click="openCreate">{{ t("roles.createButton") }}</button>
+      <button v-if="sessionStore.canWrite" class="primary-button" @click="openCreate">{{ t("roles.createButton") }}</button>
       <button class="secondary-button" :disabled="loading" @click="fetchRoles">{{ t("common.refresh") }}</button>
     </view>
 
@@ -339,9 +344,9 @@ onMounted(() => {
             <td>{{ formatDateTime(role.createdAt) }}</td>
             <td>
               <view class="action-cell">
-                <button class="action-button edit" @click="openEdit(role)">{{ t("roles.actionEdit") }}</button>
-                <button class="action-button handle" @click="openAssign(role)">{{ t("roles.actionAssign") }}</button>
-                <button class="action-button delete" @click="askDelete(role)">{{ t("roles.actionDelete") }}</button>
+                <button v-if="sessionStore.canWrite" class="action-button edit" @click="openEdit(role)">{{ t("roles.actionEdit") }}</button>
+                <button v-if="sessionStore.canWrite" class="action-button handle" @click="openAssign(role)">{{ t("roles.actionAssign") }}</button>
+                <button v-if="sessionStore.canWrite" class="action-button delete" @click="askDelete(role)">{{ t("roles.actionDelete") }}</button>
               </view>
             </td>
           </tr>

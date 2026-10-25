@@ -19,6 +19,7 @@
 
 import { env } from "../config/env";
 import { t } from "../i18n";
+import { persistedSessionRole, roleCanWrite } from "../utils/write-policy";
 
 /** 后端通用分页响应结构（对应 com.campuslove.api.admin.AdminPageView） */
 export interface AdminPageView<T> {
@@ -362,6 +363,14 @@ async function request<T>(path: string, init: RequestInit, timeout: number = REQ
   // 弱网重试/双击时后端可据幂等键去重
   const method = (init.method || "GET").toUpperCase();
   if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
+    // 只读角色（AUDITOR 及任何未知角色）在请求发出前就被拦下。
+    // 后端 URL 层本会回 403，但把「这个账号是只读的」说在调用方一侧有两点好处：
+    // 少一次注定失败的往返，且尚未接 v-if="canWrite" 的写控件也不会再让
+    // 审核员看到一句没头没尾的「权限不足」。本地无会话记录时不拦截（登录/登出走后端 401）。
+    const sessionRole = persistedSessionRole();
+    if (sessionRole !== null && !roleCanWrite(sessionRole)) {
+      throw new ApiError(403, t("errors.readOnlyRole"));
+    }
     headers.set("Idempotency-Key", getIdempotencyKey(method, path, init.body));
   }
 

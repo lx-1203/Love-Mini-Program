@@ -5,7 +5,7 @@
  * 只读角色 AUDITOR（审核员）隐藏删除按钮 —— 写权限开关统一取 sessionStore.canWrite，
  * 不在视图内比较 role 字符串；即便绕过 UI，后端也会 403。
  */
-import { computed, onMounted, ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { listWhispers, deleteWhisper, type AdminWhisperView } from "@/api/whisper";
 import { ApiError } from "@/api/http";
@@ -16,9 +16,6 @@ import { formatDateTime } from "@/utils/format";
 
 const { t } = useI18n();
 const sessionStore = useSessionStore();
-
-/** 当前账号可写（ADMIN / SUPER_ADMIN）；AUDITOR 为 false */
-const canWrite = computed(() => sessionStore.canWrite);
 
 const items = ref<AdminWhisperView[]>([]);
 const total = ref(0);
@@ -56,6 +53,7 @@ function askDelete(item: AdminWhisperView) {
 }
 
 async function confirmDelete() {
+  if (!sessionStore.canWrite) return;
   if (!deleteTarget.value) return;
   try {
     await deleteWhisper(deleteTarget.value.id);
@@ -101,7 +99,7 @@ onMounted(fetchList);
             <td>{{ formatDateTime(item.createdAt) }}</td>
             <td>
               <button class="btn btn--sm" @click="view(item)">{{ t('common.view') }}</button>
-              <button v-if="canWrite" class="btn btn--sm btn--danger" @click="askDelete(item)">{{ t('common.delete') }}</button>
+              <button v-if="sessionStore.canWrite" class="btn btn--sm btn--danger" @click="askDelete(item)">{{ t('common.delete') }}</button>
             </td>
           </tr>
         </tbody>

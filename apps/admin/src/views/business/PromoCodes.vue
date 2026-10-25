@@ -29,10 +29,12 @@ import { ApiError } from "../../api/http";
 import Pagination from "../../components/Pagination.vue";
 import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
+import { useSessionStore } from "../../stores/session";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE, TOAST_DURATION_MS } from "../../utils/constants";
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
 /** 兑换码列表数据 */
 const promoCodes = ref<PromoCodeView[]>([]);
@@ -188,6 +190,7 @@ function handlePageChange() {
 
 /** 打开批量生成弹窗（重置表单） */
 function openCreate() {
+  if (!sessionStore.canWrite) return;
   createCount.value = 50;
   createDiscountType.value = "AMOUNT";
   createDiscountValue.value = "";
@@ -212,6 +215,7 @@ function closeCreate() {
  * - validFrom/validTo 必填且 validTo 晚于 validFrom
  */
 async function handleCreate() {
+  if (!sessionStore.canWrite) return;
   if (creating.value) return;
   const count = createCount.value;
   if (!Number.isInteger(count) || count < 1 || count > 500) {
@@ -263,12 +267,14 @@ async function handleCreate() {
 
 /** 点击作废 → 打开确认弹窗 */
 function askDisable(code: PromoCodeView) {
+  if (!sessionStore.canWrite) return;
   disableTarget.value = code;
   disableVisible.value = true;
 }
 
 /** 执行作废 */
 async function handleDisableConfirm() {
+  if (!sessionStore.canWrite) return;
   const target = disableTarget.value;
   if (!target || disabling.value) return;
   disabling.value = true;
@@ -343,7 +349,7 @@ onBeforeUnmount(() => {
       </select>
       <button class="primary-button" @click="handleSearch">{{ t("common.search") }}</button>
       <button class="ghost-button" @click="handleReset">{{ t("common.reset") }}</button>
-      <button class="primary-button" @click="openCreate">{{ t("promoCodes.batchCreateButton") }}</button>
+      <button v-if="sessionStore.canWrite" class="primary-button" @click="openCreate">{{ t("promoCodes.batchCreateButton") }}</button>
       <button class="ghost-button" :disabled="exporting || promoCodes.length === 0" @click="handleExport">
         {{ exporting ? t("promoCodes.exporting") : t("promoCodes.exportButton") }}
       </button>
@@ -391,11 +397,11 @@ onBeforeUnmount(() => {
             <td class="time-cell">{{ formatDateTime(code.createdAt) }}</td>
             <td class="action-cell">
               <button
-                v-if="code.status === 'ACTIVE'"
+                v-if="sessionStore.canWrite && code.status === 'ACTIVE'"
                 class="action-button danger"
                 @click="askDisable(code)"
               >{{ t("promoCodes.actionDisable") }}</button>
-              <text v-else class="disabled-text">{{ t("promoCodes.disabledText") }}</text>
+              <text v-else-if="code.status !== 'ACTIVE'" class="disabled-text">{{ t("promoCodes.disabledText") }}</text>
             </td>
           </tr>
         </tbody>

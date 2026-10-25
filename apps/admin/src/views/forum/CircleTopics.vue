@@ -30,9 +30,11 @@ import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE } from "../../utils/constants";
+import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
 const route = useRoute();
+const sessionStore = useSessionStore();
 
 /** 圈子 ID 输入（从路由 query 初始化，可手输/下拉选择） */
 const circleIdInput = ref("");
@@ -126,6 +128,7 @@ function handlePageChange(): void {
 const pinningId = ref<number | null>(null);
 
 async function togglePin(topic: TopicSummary): Promise<void> {
+  if (!sessionStore.canWrite) return;
   if (pinningId.value !== null) return;
   pinningId.value = topic.id;
   errorMsg.value = "";
@@ -154,6 +157,7 @@ function askDelete(topic: TopicSummary): void {
 }
 
 async function handleConfirmDelete(): Promise<void> {
+  if (!sessionStore.canWrite) return;
   const target = deleteTarget.value;
   if (!target || deleting.value) return;
   deleting.value = true;
@@ -267,11 +271,12 @@ watch(
             <td class="time-cell">{{ formatDateTime(topic.createdAt) }}</td>
             <td class="action-cell">
               <button
+                v-if="sessionStore.canWrite"
                 class="action-button pin"
                 :disabled="pinningId !== null"
                 @click="togglePin(topic)"
               >{{ topic.isPinned ? t("circleTopics.actionUnpin") : t("circleTopics.actionPin") }}</button>
-              <button class="action-button delete" @click="askDelete(topic)">{{ t("common.delete") }}</button>
+              <button v-if="sessionStore.canWrite" class="action-button delete" @click="askDelete(topic)">{{ t("common.delete") }}</button>
             </td>
           </tr>
         </tbody>

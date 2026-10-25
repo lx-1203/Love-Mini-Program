@@ -2,6 +2,7 @@ package com.campuslove.api.config;
 
 import com.campuslove.api.auth.JwtAccessDeniedHandler;
 import com.campuslove.api.auth.JwtAuthenticationEntryPoint;
+import com.campuslove.api.media.MediaTokenPolicy;
 import java.io.IOException;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
@@ -49,6 +50,12 @@ import jakarta.servlet.http.HttpServletResponse;
  * </ul>
  * 这样既保留了 mock 模式的便利性，又验证了 SecurityFilterChain 的鉴权规则配置正确。</p>
  *
+ * <p>P0-2 媒体令牌降权：上述 demo 注入<b>不适用于</b> {@code scope=media} 的短期媒体令牌——
+ * mock filter 会用与 real 档同一口径（{@link JwtTokenProvider#isMediaToken}）认出它，
+ * 只注入 {@link MediaTokenPolicy#ROLE_MEDIA}，再由与 real 档共用的
+ * {@link MediaTokenPolicy#applyMediaTokenRules} 把它限制在「GET/HEAD 读媒体文件」内。
+ * demo 档的免真实认证便利只留给非 JWT 的演示令牌，不给任何降权凭据升格。</p>
+ *
  * <p>同时启用 {@link EnableMethodSecurity}，让 real profile 中已有的 @PreAuthorize 注解
  * 在 mock profile 下也能生效（虽然 admin controller 在 mock profile 不激活，但为对称起见保留）。</p>
  */
@@ -60,6 +67,13 @@ public class MockSecurityConfig {
 
     /** 管理端路径前缀，用于 mock filter 自动注入 ROLE_ADMIN */
     private static final String ADMIN_PATH_PATTERN = "/api/v1/admin/**";
+
+    /**
+     * 媒体代理端点路径前缀（P0-2）：与 real 档 {@link JwtAuthenticationFilter} 的
+     * {@code MEDIA_PROXY_PATH_PATTERN} 对齐——只有该前缀允许 {@code ?token=} 查询参数
+     * 携带令牌，其余端点不接受 URL 里的凭据。
+     */
+    private static final String MEDIA_PROXY_PATH_PATTERN = "/api/v1/media/**";
 
     // R4-00432：mock filter 需为 hasRole('ADMIN') 路径注入 ROLE_ADMIN 的补充模式
     private static final String ADMIN_ONLY_PATH_PATTERN_ACTUATOR = "/actuator/**";
@@ -142,15 +156,31 @@ public class MockSecurityConfig {
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
     /**
+     * P0-2 媒体令牌降权：mock（demo）档也要认出 {@code scope=media} 的短期令牌。
+     *
+     * <p>本档的 demo 便利语义是「按请求路径自动注入角色、不验真实 JWT」，注入的令牌形如
+     * {@code mock-token-xxx}，本就不是合法 JWT。但一份<b>真签发的媒体令牌</b>如果被丢进
+     * 本档，按路径注入 ROLE_USER/ROLE_ADMIN 就等于把它当完整会话用——与 real 档的越权面同源。
+     * 故这里按 scope 认令牌：媒体 scope 一律只注入 {@code ROLE_MEDIA}，
+     * 让 {@link MediaTokenPolicy} 的 deny 规则（与 real 档同一份代码）照常生效。
+     * 判定口径真源是 {@link JwtTokenProvider#isMediaToken}，demo 令牌解析失败即视为非媒体
+     * 令牌，保持既有联调语义不变。</p>
+     */
+    private final JwtTokenProvider jwtTokenProvider;
+
+    /**
      * Task 11.1：构造函数注入 JWT 异常处理器。
      *
      * @param jwtAuthenticationEntryPoint JWT 认证失败入口点
      * @param jwtAccessDeniedHandler      JWT 权限不足处理器
+     * @param jwtTokenProvider            P0-2：识别媒体访问令牌（scope=media）
      */
     public MockSecurityConfig(JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
-                              JwtAccessDeniedHandler jwtAccessDeniedHandler) {
+                              JwtAccessDeniedHandler jwtAccessDeniedHandler,
+                              JwtTokenProvider jwtTokenProvider) {
         this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
         this.jwtAccessDeniedHandler = jwtAccessDeniedHandler;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @Bean
@@ -180,7 +210,12 @@ public class MockSecurityConfig {
                     .maxAgeInSeconds(WebConfig.HSTS_MAX_AGE_SECONDS)
                 )
             )
-            .authorizeHttpRequests(auth -> auth
+            // 配置请求授权
+            // P0-2：与 SecurityConfig 同步改为块状 lambda，以便在 app-assets permitAll 之后
+            // 注入同一份媒体令牌规则（MediaTokenPolicy.applyMediaTokenRules），
+            // 保证 mock 档验证的规则链与生产环境是同一份代码。
+            .authorizeHttpRequests(auth -> {
+                auth
                 // 登录端点不需要认证（与 real profile 一致）
                 // Task 2.4.1：所有路径统一升级为 /api/v1/**
                 .requestMatchers("/api/v1/auth/**").permitAll()
@@ -216,7 +251,11 @@ public class MockSecurityConfig {
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 // 公开端点：应用资产（/api/v1/media/app-assets/**）——后端托管的
                 // 装饰性图片，免登录可看图（与 real profile 对齐；须在 media/** 规则之前）
-                .requestMatchers("/api/v1/media/app-assets/**").permitAll()
+                .requestMatchers("/api/v1/media/app-assets/**").permitAll();
+                // P0-2 媒体令牌降权（与 real profile 共用同一份规则实现）：
+                // 媒体会话只能 GET/HEAD 读媒体文件，其余路径一律 403。
+                MediaTokenPolicy.applyMediaTokenRules(auth);
+                auth
                 // Task 0.3.2：媒体鉴权代理端点需认证
                 .requestMatchers("/api/v1/media/**").authenticated()
                 // 媒体上传端点 /api/v1/media/upload 由 /api/v1/** 规则覆盖（需认证），
@@ -224,8 +263,8 @@ public class MockSecurityConfig {
                 // 其他 /api/v1/** 路径需要认证
                 .requestMatchers("/api/v1/**").authenticated()
                 // 其他请求放行（静态资源等）
-                .anyRequest().permitAll()
-            )
+                .anyRequest().permitAll();
+            })
             .addFilterBefore(new MockAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -250,6 +289,22 @@ public class MockSecurityConfig {
                 // 账号安全端点（SECURED_AUTH_PATTERNS）虽在 /api/v1/auth/** permitAll
                 // 前缀下，仍需登录（与 real 的 @PreAuthorize 语义对齐）
                 if (!isPermitPath(requestPath) || isSecuredAuthPath(requestPath)) {
+                    // P0-2 媒体令牌降权：请求携带的凭据若是 scope=media 的短期令牌，
+                    // 只注入 ROLE_MEDIA（不得按路径升格为 ROLE_USER/ROLE_ADMIN）。
+                    // 授权规则 MediaTokenPolicy.applyMediaTokenRules 与 real 档同源，
+                    // 于是媒体令牌在本档同样只能 GET/HEAD 读媒体文件，其余路径 403。
+                    Long mediaTokenUserId = mediaScopedTokenUserId(request);
+                    if (mediaTokenUserId != null) {
+                        PreAuthenticatedAuthenticationToken mediaAuth =
+                                new PreAuthenticatedAuthenticationToken(
+                                        mediaTokenUserId, "media",
+                                        MediaTokenPolicy.mediaAuthorities());
+                        mediaAuth.setAuthenticated(true);
+                        SecurityContextHolder.getContext().setAuthentication(mediaAuth);
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
+
                     List<SimpleGrantedAuthority> authorities;
                     // R4-00432：mock 下 /actuator/** 与 /swagger-ui/** 等 hasRole('ADMIN')
                     // 路径同样注入 ROLE_ADMIN——原实现仅 /api/v1/admin/** 注入，
@@ -276,6 +331,57 @@ public class MockSecurityConfig {
                 }
             }
             filterChain.doFilter(request, response);
+        }
+
+        /**
+         * P0-2：识别请求携带的凭据是否为媒体访问令牌（{@code scope=media}）。
+         *
+         * <p>凭据来源与 real 档 {@link JwtAuthenticationFilter} 对齐：
+         * {@code Authorization: Bearer} 头优先；仅当路径落在媒体代理前缀
+         * {@code /api/v1/media/**} 内才接受 {@code ?token=} 查询参数（其他端点不接受
+         * URL 携带令牌，避免把令牌面扩大到业务接口）。判定口径用
+         * {@link JwtTokenProvider#isMediaToken}（验签 + scope 精确匹配），
+         * demo 令牌（非合法 JWT）解析不出 scope ⇒ 返回 null ⇒ 保持既有 mock 注入语义。</p>
+         *
+         * <p>日志纪律：只记录 userId，不记录令牌内容。</p>
+         *
+         * @param request 当前请求
+         * @return 媒体令牌的属主 userId；请求凭据不是媒体令牌时返回 null
+         */
+        private Long mediaScopedTokenUserId(HttpServletRequest request) {
+            String token = presentedToken(request);
+            if (token == null || !jwtTokenProvider.isMediaToken(token)) {
+                return null;
+            }
+            String userId = jwtTokenProvider.getUserIdFromToken(token);
+            try {
+                return Long.valueOf(userId);
+            } catch (NumberFormatException | NullPointerException ex) {
+                // scope 已确认是媒体令牌，subject 非法时按 mock 用户降权处理，
+                // 关键是绝不升格为 ROLE_USER/ROLE_ADMIN
+                return mockPrincipalUserId;
+            }
+        }
+
+        /**
+         * 提取请求携带的令牌原文（头优先，媒体路径兼容 {@code ?token=}）。
+         *
+         * @param request 当前请求
+         * @return 令牌字符串；未携带时返回 null
+         */
+        private String presentedToken(HttpServletRequest request) {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7).trim();
+                return token.isEmpty() ? null : token;
+            }
+            if (pathMatcher.match(MEDIA_PROXY_PATH_PATTERN, request.getRequestURI())) {
+                String queryToken = request.getParameter("token");
+                if (queryToken != null && !queryToken.isBlank()) {
+                    return queryToken.trim();
+                }
+            }
+            return null;
         }
     }
 

@@ -38,17 +38,16 @@
  * <ul>
  *   <li>不使用 {@code import.meta.env.DEV}（mp-weixin 不支持，详见 project_memory）</li>
  *   <li>不使用 {@code URL} 全局对象（部分 mp-weixin 版本不支持），手动拼接查询参数</li>
- *   <li>token 通过 {@link ../services/http} 的 {@code getToken()} 读取，避免循环依赖
- *       （http.ts 已封装 STORAGE_KEYS.AUTH_TOKEN 的读写）</li>
+ *   <li>凭据不再由本文件读取：P0-2 起媒体 URL 用 {@code POST /api/v1/media/sign}
+ *       签发的能力型签名（见 {@link ./media-sign-cache}），本文件不接触任何令牌，
+ *       也就不会重建 http &lt;-&gt; media 那条循环依赖</li>
  * </ul>
  * </p>
  */
 
 // 修复（R4-00205）：环境配置统一入口
 import { clientEnv } from "../config/env";
-import { getToken } from "../services/http";
-// 2026-08-25：独立失效标记模块，打破 http <-> media 循环依赖（http.ts 不再 import 本文件）
-import { getMediaTokenCacheVersion } from "./media-token-cache";
+import { mediaSignVersion, signedMediaUrl } from "./media-sign-cache";
 // infra R2-00131: 统一图片选择封装复用隐私授权守卫（chooseImages）
 import { ensurePrivacyAuthorized } from "./privacy";
 // 2026-08-16：pexels 外链本地化兜底（mp 端无法加载外链图，见 image-local.ts），
@@ -227,15 +226,7 @@ export function isUploadedMediaUrl(path: string | null | undefined): boolean {
 }
 
 /**
- * 查询参数 token 的参数名。
- *
- * <p>与后端 {@code JwtAuthenticationFilter.TOKEN_QUERY_PARAM} 保持一致。
- * 用于在 {@code <image src>} 直接请求鉴权代理端点时携带 JWT。</p>
- */
-const TOKEN_QUERY_PARAM = "token";
-
-/**
- * 解析媒体 URL：将上传路径重写为鉴权代理 URL，附加当前 JWT。
+ * 解析媒体 URL：将上传路径重写为鉴权代理 URL，附加能力型签名（P0-2 起不再拼会话 JWT）。
  *
  * <p>处理规则：
  * <ol>
@@ -369,29 +360,8 @@ export function resolveMediaUrl(rawPath: string | null | undefined): string {
 }
 
 /**
- * 模块级 token 缓存：避免列表模板每项每图每次渲染都同步读 storage。
- * 2026-08-10 切换提速：getToken() 底层是 uni.getStorageSync（原生桥接），
- * 长列表（PostCard 九宫格）重渲染时会触发 N×M 次同步读，
- * 此处以 30s TTL 缓存，登录/登出或 401 时调用 invalidateMediaTokenCache() 主动失效。
- */
-const TOKEN_CACHE_TTL_MS = 30_000;
-let cachedMediaToken: { token: string | null; ts: number; ver: number } | null = null;
-
-/** 读取当前 token（优先缓存，TTL 内不重复读 storage；失效标记变化时强制重读） */
-function getCachedToken(): string | null {
-  const now = Date.now();
-  const ver = getMediaTokenCacheVersion();
-  if (cachedMediaToken && now - cachedMediaToken.ts < TOKEN_CACHE_TTL_MS && cachedMediaToken.ver === ver) {
-    return cachedMediaToken.token;
-  }
-  const token = getToken();
-  cachedMediaToken = { token, ts: now, ver };
-  return token;
-}
-
-/**
- * 主动失效 token 缓存（登录/登出/401 时调用）。
- * 2026-08-25：实现迁至 utils/media-token-cache.ts（打破 http <-> media 循环依赖），
+ * 主动失效媒体凭据缓存（登录/登出/401 时调用）。
+ * 2026-08-25：token 缓存失效标记迁至 utils/media-token-cache.ts（打破 http <-> media 循环依赖），
  * 此处保留 re-export 以兼容旧引用。
  */
 export { invalidateMediaTokenCache } from "./media-token-cache";
@@ -402,41 +372,57 @@ export { invalidateMediaTokenCache } from "./media-token-cache";
  * <p>如果 URL 已包含 {@code ?token=} 参数，则不重复附加；
  * 否则在 URL 末尾追加 {@code ?token=xxx} 或 {@code &token=xxx}。</p>
  *
- * <p>token 来源：{@link ../services/http.getToken}（经 30s 模块级缓存），与
- * {@code Authorization} 头使用同一 JWT。token 不存在时返回原 URL
- * （鉴权代理端点会返回 403，由 SafeImage 触发 fallback）。</p>
+ * <p>P0-2 收口最后一寸：这里**不再拼任何会话凭据**。历史上它把完整 24 小时 JWT
+ * 塞进 {@code ?token=}，于是会话凭据常驻浏览器历史与上游代理/CDN 日志
+ * （自家 Tomcat 访问日志已在 R4-00407 改为不记 query，但管不到上游）。</p>
+ *
+ * <p>现在改用后端 {@code POST /api/v1/media/sign} 签发的能力型 URL：
+ * 逐路径绑定、15 分钟过期、签发时穿过与 GET 同一套归属/档位判定，
+ * 泄露后既读不到别的文件也换不到任何业务权限。签名由
+ * {@link ./media-sign-cache} 批量获取并缓存；本函数读它的版本号 ref，
+ * 因此签名到达时调用方的 computed 会重算并补上图片。</p>
+ *
+ * <p>尚未签出时返回原 URL：由后端 401 触发 SafeImage fallback（与历史
+ * 「无 token 时返回原 URL」同一约定），不返回空串，避免音频/视频播放等
+ * 非图片消费者拿到空 URL 时报错点跑偏。</p>
  *
  * @param url 已构造的鉴权代理 URL（可能含其他查询参数）
- * @returns 附加 token 后的 URL；token 缺失时返回原 URL
+ * @returns 带签名的 URL；未签出或已关闭拼接时返回原 URL
  */
 function appendTokenIfMissing(url: string): string {
-  // 修复（R4-00244）：后端改签短期签名 URL 后，通过环境变量
-  // VITE_MEDIA_TOKEN_QUERY=false 即可整体关闭 token 拼接（无需发版改代码）；
-  // 关闭后返回原 URL，由后端签名/权限策略决定可否访问。
+  // 逃生开关（R4-00244 沿用至今）：置 false 时 URL 上不带任何凭据，
+  // 由后端自身的权限策略决定可否访问。
   if (!clientEnv.mediaTokenQuery) {
     return url;
   }
-  // 已含 token 参数，不重复附加（避免双查询参数）
-  if (url.includes(`?${TOKEN_QUERY_PARAM}=`) || url.includes(`&${TOKEN_QUERY_PARAM}=`)) {
+  // 只有 real 档才走后端签名；mock/dev/showcase 的媒体由包内资源或 mock 服务承接
+  if (!isRealApiMode()) {
     return url;
   }
-  const token = getCachedToken();
-  if (!token) {
-    // 未登录或 token 已过期：返回原 URL，由后端 401/403 触发 SafeImage fallback
-    return url;
+  // 读版本号以建立响应式依赖：签名异步回来后，模板里的 computed 会重算
+  mediaSignVersion();
+  const signed = signedMediaUrl(mediaPathOf(url));
+  if (signed) {
+    return withApiRoot(signed);
   }
-  // ⚠️ 安全警告（已知风险，R4-00244）：把 JWT 拼入图片 URL 的 query 参数，token 会暴露在：
-  // 1. 浏览器 Referer 头（图片请求会携带 Referer 给图片服务器/CDN）；
-  // 2. 代理/CDN 访问日志与浏览器历史记录；
-  // 3. 小程序网络面板（开发者工具可查）。
-  // 因此生产环境不应依赖此方案长期运行。替代方案（推荐）：
-  // - 使用 Authorization 头无法覆盖 <image> 标签请求，故可改为
-  //   后端签发短期有效（如 5 分钟）的一次性签名 URL（如 OSS 签名）；
-  // - 或由后端在登录后返回已带签名的图片 URL，前端不做拼接。
-  // 后端完成签名 URL 改造后，设置 VITE_MEDIA_TOKEN_QUERY=false 关闭拼接。
-  // 此处保留拼接能力仅为满足现有鉴权代理端点（/api/v1/media/*）的契约。
-  const separator = url.includes("?") ? "&" : "?";
-  return `${url}${separator}${TOKEN_QUERY_PARAM}=${encodeURIComponent(token)}`;
+  // 已排队等待签发；这一帧先按无凭据 URL 渲染（401 → SafeImage fallback）
+  return url;
+}
+
+/** 从已构造的 URL 里取出后端可识别的媒体路径（去掉站点前缀与既有 query）。 */
+function mediaPathOf(url: string): string {
+  const withoutQuery = url.split("?")[0] ?? "";
+  const apiRoot = (clientEnv.apiBaseUrl || "").replace(/\/api\/?$/, "");
+  const path = withoutQuery.startsWith(apiRoot)
+    ? withoutQuery.slice(apiRoot.length)
+    : withoutQuery;
+  return path.startsWith("/") ? path : `/${path}`;
+}
+
+/** 把签名后的 path 重新贴回站点前缀。 */
+function withApiRoot(signedPath: string): string {
+  const apiRoot = (clientEnv.apiBaseUrl || "").replace(/\/api\/?$/, "");
+  return `${apiRoot}${signedPath}`;
 }
 
 /**
@@ -460,6 +446,27 @@ export function resolveMediaUrls(paths: Array<string | null | undefined> | null 
     }
   }
   return result;
+}
+
+/**
+ * 预热一批原始媒体路径的访问签名（P0-2 首帧优化）。
+ *
+ * 列表数据到手时调用一次，可以让整屏图片共用**一次**批量签发请求，
+ * 而不是等渲染逐张触发、首帧先吃一批 401 再由签名到达后重算补图。
+ *
+ * 为什么这里直接调 resolveMediaUrl 而不自己重写路径：
+ * 签名是**逐路径绑定**的，签发时的 key 必须与渲染时问缓存用的 key 逐字一致；
+ * 重写规则（/uploads/… → /api/v1/media/…、去 apiRoot 尾斜杠等）的真源只有
+ * resolveMediaUrl 一处，另抄一遍就是给下一次漂移留口子。
+ * 返回值丢弃即可——副作用（排队签发）已经发生。
+ *
+ * @param paths 后端下发的原始媒体路径数组
+ */
+export function warmMediaUrls(paths: Array<string | null | undefined> | null | undefined): void {
+  if (!paths || !Array.isArray(paths)) return;
+  for (const p of paths) {
+    resolveMediaUrl(p);
+  }
 }
 
 /* ========== 上传扩展名白名单（客户端唯一真源） ========== */

@@ -366,24 +366,30 @@ class IdempotentInterceptorTest {
                 anyString(), any(), eq(Duration.ofSeconds(60L)));
     }
 
-    /* ========== 场景 14：默认 TTL（24 小时）应正确传递给 Redis ========== */
+    /* ========== 场景 14：默认 TTL（4 小时 = 14400 秒）应正确传递给 Redis ========== */
 
     @Test
-    @DisplayName("默认 TTL（24 小时 = 86400 秒）应正确传递给 Redis setIfAbsent")
+    @DisplayName("默认 TTL 应把 4 小时（14400 秒）字面值传给 Redis setIfAbsent")
     void preHandle_withDefaultTtl_shouldPassToRedis() throws Exception {
-        // Arrange
+        // Arrange：TTL 用字面量而不是 Idempotent.DEFAULT_TTL_SECONDS——
+        // 原先两端同源（断言 eq(Duration.ofSeconds(DEFAULT_TTL_SECONDS))），
+        // 常量改成任何值本用例都照绿，等于没量（infra R2-00249 把 24h 缩到 4h 时它就没响）。
+        final Duration expectedTtl = Duration.ofSeconds(14_400L);
         when(request.getHeader(IdempotentInterceptor.HEADER_IDEMPOTENCY_KEY)).thenReturn(TEST_KEY);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.setIfAbsent(anyString(), any(), eq(Duration.ofSeconds(Idempotent.DEFAULT_TTL_SECONDS))))
-                .thenReturn(true);
+        when(valueOperations.setIfAbsent(anyString(), any(), eq(expectedTtl))).thenReturn(true);
 
         // Act
         boolean result = interceptor.preHandle(request, response, handlerMethod("createOrder"));
 
         // Assert
         assertTrue(result, "默认 TTL 的请求应放行");
-        verify(valueOperations).setIfAbsent(
-                anyString(), any(), eq(Duration.ofSeconds(Idempotent.DEFAULT_TTL_SECONDS)));
+        verify(valueOperations).setIfAbsent(anyString(), any(), eq(expectedTtl));
+        // 常量本身也钉一次：4h = 14400s，且不许悄悄回到 24h
+        assertEquals(4L * 3600L, Idempotent.DEFAULT_TTL_SECONDS,
+                "Idempotent.DEFAULT_TTL_SECONDS 必须是 4 小时（infra R2-00249）");
+        assertEquals(14_400L, Idempotent.DEFAULT_TTL_SECONDS,
+                "默认幂等 TTL 的字面秒数漂移");
     }
 
     /* ========== 场景 15：placeholder value 应为 "1" ========== */

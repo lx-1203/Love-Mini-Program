@@ -155,6 +155,7 @@ function switchRole(role: "ADMIN" | "SUPER_ADMIN") {
 
 /** 提交创建管理员（前端校验与后端 AdminCreateAdminRequest 对齐） */
 async function handleCreate() {
+  if (!sessionStore.canWrite) return;
   if (creating.value) return;
   const phone = createPhone.value.trim();
   if (!/^1[3-9]\d{9}$/.test(phone)) {
@@ -203,6 +204,7 @@ function askToggle(admin: AdminUserSummary, action: "disable" | "enable") {
 
 /** 执行禁用/启用 */
 async function confirmToggle() {
+  if (!sessionStore.canWrite) return;
   const target = confirmTarget.value;
   if (!target || confirming.value) return;
   confirming.value = true;
@@ -233,6 +235,7 @@ function roleLabel(role: string, campusName: string | null): string {
  * 与后端 toggleUserStatus 权限模型对齐：SUPER_ADMIN 目标禁止操作、自己的账号禁止操作。
  */
 function canToggle(admin: AdminUserSummary): boolean {
+  if (!sessionStore.canWrite) return false;
   if (admin.role === "SUPER_ADMIN") return false;
   return admin.id !== sessionStore.user?.id;
 }
@@ -266,7 +269,7 @@ onMounted(() => {
       />
       <button class="primary-button" @click="handleSearch">{{ t("common.search") }}</button>
       <button class="secondary-button" @click="handleReset">{{ t("common.reset") }}</button>
-      <button class="primary-button" @click="openCreate">{{ t("admins.actionCreateAdmin") }}</button>
+      <button v-if="sessionStore.canWrite" class="primary-button" @click="openCreate">{{ t("admins.actionCreateAdmin") }}</button>
     </view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchAdmins" />

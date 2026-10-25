@@ -36,9 +36,11 @@ import { ApiError } from "../../api/http";
 import Pagination from "../../components/Pagination.vue";
 import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
+import { useSessionStore } from "../../stores/session";
 import { DEFAULT_PAGE_SIZE, TOAST_DURATION_MS } from "../../utils/constants";
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
 /** 商品列表数据 */
 const items = ref<ShopItemView[]>([]);
@@ -192,6 +194,7 @@ function handlePageChange() {
 
 /** 打开新增弹窗（重置表单） */
 function openCreate() {
+  if (!sessionStore.canWrite) return;
   editingItem.value = null;
   formTitle.value = "";
   formCategory.value = "goods";
@@ -208,6 +211,7 @@ function openCreate() {
 
 /** 打开编辑弹窗（回显当前行数据，分转元） */
 function openEdit(item: ShopItemView) {
+  if (!sessionStore.canWrite) return;
   editingItem.value = item;
   formTitle.value = item.title;
   formCategory.value = item.category || "goods";
@@ -234,6 +238,7 @@ function closeEditor() {
  * 金额单位：表单以元录入，提交时转分（×100 取整）。
  */
 async function handleSave() {
+  if (!sessionStore.canWrite) return;
   if (saving.value) return;
   const title = formTitle.value.trim();
   if (!title) {
@@ -291,6 +296,7 @@ async function handleSave() {
 
 /** 上架/下架切换（直接调用对应端点） */
 async function handleTogglePublished(item: ShopItemView) {
+  if (!sessionStore.canWrite) return;
   if (togglingId.value !== null) return;
   togglingId.value = item.id;
   try {
@@ -311,12 +317,14 @@ async function handleTogglePublished(item: ShopItemView) {
 
 /** 点击删除 → 打开确认弹窗 */
 function askDelete(item: ShopItemView) {
+  if (!sessionStore.canWrite) return;
   deleteTarget.value = item;
   deleteVisible.value = true;
 }
 
 /** 执行删除 */
 async function handleDeleteConfirm() {
+  if (!sessionStore.canWrite) return;
   const target = deleteTarget.value;
   if (!target || deleting.value) return;
   deleting.value = true;
@@ -382,7 +390,7 @@ onBeforeUnmount(() => {
       </select>
       <button class="primary-button" @click="handleSearch">{{ t("common.search") }}</button>
       <button class="ghost-button" @click="handleReset">{{ t("common.reset") }}</button>
-      <button class="primary-button" @click="openCreate">{{ t("shop.createTitle") }}</button>
+      <button v-if="sessionStore.canWrite" class="primary-button" @click="openCreate">{{ t("shop.createTitle") }}</button>
     </view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchItems" />
@@ -430,15 +438,16 @@ onBeforeUnmount(() => {
             <td>{{ item.campusName || t("shop.campusGlobal") }}</td>
             <td>{{ item.sortOrder }}</td>
             <td class="action-cell">
-              <button class="action-button edit" @click="openEdit(item)">{{ t("shop.actionEdit") }}</button>
+              <button v-if="sessionStore.canWrite" class="action-button edit" @click="openEdit(item)">{{ t("shop.actionEdit") }}</button>
               <button
+                v-if="sessionStore.canWrite"
                 class="action-button toggle"
                 :disabled="togglingId === item.id"
                 @click="handleTogglePublished(item)"
               >
                 {{ item.published ? t("shop.actionUnpublish") : t("shop.actionPublish") }}
               </button>
-              <button class="action-button danger" @click="askDelete(item)">{{ t("shop.actionDelete") }}</button>
+              <button v-if="sessionStore.canWrite" class="action-button danger" @click="askDelete(item)">{{ t("shop.actionDelete") }}</button>
             </td>
           </tr>
         </tbody>

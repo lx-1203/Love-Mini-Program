@@ -238,6 +238,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             // 与 JwtChannelInterceptor 的 mock 分支保持一致；有 token 时尽力解析 userId，
             // 解析失败回退配置的 mock 用户。
             if (isMockProfile()) {
+                // P0-2 媒体令牌降权：demo 档免的是「真实 JWT 校验」，不给媒体 scope 升格。
+                // 真签发的 scope=media 令牌在这里能解析出 userId，照旧放行就等于
+                // 让降权凭据在 mock 档建立长连接；判定与 HTTP/STOMP 侧同源。
+                if (token != null && !token.isBlank() && jwtTokenProvider.isMediaToken(token)) {
+                    handshakeLog.warn("WebSocket 握手拒绝（mock 档）: 媒体访问令牌（media scope）不可建立长连接, remoteAddress={}",
+                            request.getRemoteAddress());
+                    return false;
+                }
                 String userId = null;
                 if (token != null && !token.isBlank()) {
                     try {
@@ -264,6 +272,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
             if (!jwtTokenProvider.validateToken(token)) {
                 handshakeLog.warn("WebSocket 握手拒绝: JWT 令牌无效或已过期, remoteAddress={}",
+                        request.getRemoteAddress());
+                return false;
+            }
+
+            // P0-2 媒体令牌降权：scope=media 的短期令牌仅可读取媒体文件，不得建立 WebSocket 会话。
+            // 判定与 HTTP 过滤器/STOMP 通道拦截器同源（JwtTokenProvider#isMediaToken），
+            // 覆盖 Authorization 头与 Sec-WebSocket-Protocol 子协议两种携带方式。
+            if (jwtTokenProvider.isMediaToken(token)) {
+                handshakeLog.warn("WebSocket 握手拒绝: 媒体访问令牌（media scope）不可建立长连接, remoteAddress={}",
                         request.getRemoteAddress());
                 return false;
             }

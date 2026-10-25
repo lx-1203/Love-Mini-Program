@@ -28,8 +28,10 @@ import {
 import { ApiError } from "../../api/http";
 import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
+import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
 // ===== 字典列表 =====
 const dicts = ref<DictView[]>([]);
@@ -86,6 +88,7 @@ function closeDictForm() {
 }
 
 async function handleDictSubmit() {
+  if (!sessionStore.canWrite) return;
   if (dictSaving.value) return;
   if (!dictForm.value.name.trim()) {
     dictFormError.value = t("dicts.nameRequired");
@@ -130,6 +133,7 @@ function askDictDelete(dict: DictView) {
 }
 
 async function confirmDictDelete() {
+  if (!sessionStore.canWrite) return;
   const target = dictDeleteTarget.value;
   if (!target || dictDeleting.value) return;
   dictDeleting.value = true;
@@ -223,6 +227,7 @@ function closeItemForm() {
 }
 
 async function handleItemSubmit() {
+  if (!sessionStore.canWrite) return;
   const dict = expandedDict.value;
   if (!dict || itemSaving.value) return;
   if (!itemForm.value.label.trim()) {
@@ -270,6 +275,7 @@ function askItemDelete(item: DictItemView) {
 }
 
 async function confirmItemDelete() {
+  if (!sessionStore.canWrite) return;
   const target = itemDeleteTarget.value;
   const dict = expandedDict.value;
   if (!target || !dict || itemDeleting.value) return;
@@ -301,7 +307,7 @@ onMounted(() => {
     </view>
 
     <view class="toolbar">
-      <button class="primary-button" @click="openDictCreate">{{ t("dicts.createButton") }}</button>
+      <button v-if="sessionStore.canWrite" class="primary-button" @click="openDictCreate">{{ t("dicts.createButton") }}</button>
       <button class="secondary-button" :disabled="loading" @click="fetchDicts">{{ t("common.refresh") }}</button>
     </view>
 
@@ -337,8 +343,8 @@ onMounted(() => {
                 <span class="item-count-badge">{{ dict.itemCount }}</span>
               </td>
               <td class="action-cell" @click.stop>
-                <button class="action-button edit" @click="openDictEdit(dict)">{{ t("dicts.actionEdit") }}</button>
-                <button class="action-button delete" @click="askDictDelete(dict)">{{ t("dicts.actionDelete") }}</button>
+                <button v-if="sessionStore.canWrite" class="action-button edit" @click="openDictEdit(dict)">{{ t("dicts.actionEdit") }}</button>
+                <button v-if="sessionStore.canWrite" class="action-button delete" @click="askDictDelete(dict)">{{ t("dicts.actionDelete") }}</button>
               </td>
             </tr>
             <!-- 条目管理子区域（展开行） -->
@@ -349,7 +355,7 @@ onMounted(() => {
                     <text class="items-title">
                       {{ t("dicts.itemsTitle", { name: expandedDict?.name ?? "", code: expandedDict?.code ?? "" }) }}
                     </text>
-                    <button class="primary-button items-add" @click="openItemCreate">{{ t("dicts.addItemButton") }}</button>
+                    <button v-if="sessionStore.canWrite" class="primary-button items-add" @click="openItemCreate">{{ t("dicts.addItemButton") }}</button>
                   </view>
 
                   <text v-if="itemsError" class="items-error">{{ itemsError }}</text>
@@ -383,8 +389,8 @@ onMounted(() => {
                           </td>
                           <td>
                             <view class="action-cell">
-                              <button class="action-button edit" @click="openItemEdit(item)">{{ t("dicts.actionEdit") }}</button>
-                              <button class="action-button delete" @click="askItemDelete(item)">{{ t("dicts.actionDelete") }}</button>
+                              <button v-if="sessionStore.canWrite" class="action-button edit" @click="openItemEdit(item)">{{ t("dicts.actionEdit") }}</button>
+                              <button v-if="sessionStore.canWrite" class="action-button delete" @click="askItemDelete(item)">{{ t("dicts.actionDelete") }}</button>
                             </view>
                           </td>
                         </tr>

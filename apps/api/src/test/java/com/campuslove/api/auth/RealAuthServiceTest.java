@@ -5,17 +5,23 @@ import com.campuslove.api.config.AesEncryptor;
 import com.campuslove.api.config.JwtTokenProvider;
 import com.campuslove.api.config.PasswordEncoderConfig;
 import com.campuslove.api.entity.User;
+import com.campuslove.api.entity.UserBasicProfile;
 import com.campuslove.api.repository.SchoolRepository;
 import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -27,8 +33,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -486,5 +495,506 @@ class RealAuthServiceTest {
         // Act & Assert
         // 修复（R4-02553）：禁用态抛 OperationForbiddenException（403），不再抛 IllegalStateException（500）
         assertThrows(OperationForbiddenException.class, () -> disabledService.loginAsGuest(null));
+    }
+
+    /* ============================================================
+     * P0-4 体验账号会话隔离：每次体验登录一个独立访客身份
+     * ============================================================
+     *
+     * <p><b>本组用例为什么必须把仓储桩做成「有状态的库」</b>：上面 场景 1/2 都没给
+     * 「取最近体验号」查询打桩，Mockito 默认返回 null，复用分支在单测里永远走不到；
+     * 而真实库只要有任意一条 {@code openid} 以 {@code guest:} 开头且 role=GUEST、
+     * status=active 的记录，loginAsGuest 就会把同一个 userId、同一枚 JWT 发给所有访客
+     * ——资料/帖子/点赞/私信/钱包跨访客互串（P0-4）。所以这里的替身必须表达真实库语义：
+     * {@code save} 分配自增主键并把新体验号登记为「库中最近体验号」，
+     * <b>任何</b>以 openid 为键、返回单个用户的查询都命中那条记录。</p>
+     *
+     * <p>查询应答按「方法名含 openid + 返回单个 User/Optional&lt;User&gt;」的<b>签名形状</b>
+     * 判定，而不是按具体方法名打桩：一则是 P0-4 修复会把该派生查询方法一并摘除（按名打桩
+     * 就编译不过了），二则是将来换一个方法名把「复用既有体验号」接回来时，本组用例会
+     * 第一时间判红，而不是重演「mock 默认 null ⇒ 缺陷不可见」。</p>
+     */
+
+    /** 模拟真实库中已存在的历史体验号 id（P0-4 之后不得被任何访客复用）。 */
+    private static final long LEGACY_GUEST_ID = 777L;
+
+    /** 模拟真实库中已存在的历史体验号 openid。 */
+    private static final String LEGACY_GUEST_OPENID = "guest:0123456789abcdef0123456789abcdef";
+
+    /** 假库自增 id 起点，与 {@link #LEGACY_GUEST_ID} 区隔，便于断言「这是新身份」。 */
+    private static final long FAKE_GUEST_ID_START = 9000L;
+
+    /** 假库的自增 id 计数器（JUnit5 每个用例一个新测试实例，故无需重置）。 */
+    private final AtomicLong fakeGuestIdSequence = new AtomicLong(FAKE_GUEST_ID_START);
+
+    /** 假库中「最近一条体验号」——真实库语义下任何按 openid 取用户的查询都命中它。 */
+    private final AtomicReference<User> latestGuestInDb = new AtomicReference<>();
+
+    /**
+     * 构造真实库中已存在的那条历史体验号记录（openid 前缀 guest:、角色 GUEST、active）。
+     *
+     * @return 历史体验号 User
+     */
+    private User legacyGuestRow() {
+        User legacy = new User();
+        legacy.setId(LEGACY_GUEST_ID);
+        legacy.setOpenid(LEGACY_GUEST_OPENID);
+        legacy.setNickname("星野");
+        legacy.setRole("GUEST");
+        legacy.setStatus("active");
+        legacy.setProfileCompletion(100);
+        legacy.setFollowingCount(0);
+        legacy.setFollowersCount(0);
+        return legacy;
+    }
+
+    /**
+     * 假库落库：无 id 的记录分配自增 id（模拟 JPA 主键回填），guest 前缀记录登记为
+     * 「库中最近体验号」。
+     *
+     * @param candidate 待保存的用户
+     * @return 带 id 的托管态用户
+     */
+    private User persistRowIntoFakeDb(User candidate) {
+        if (candidate == null) {
+            return null;
+        }
+        if (candidate.getId() == null) {
+            candidate.setId(fakeGuestIdSequence.incrementAndGet());
+        }
+        if (candidate.getOpenid() != null && candidate.getOpenid().startsWith("guest:")) {
+            latestGuestInDb.set(candidate);
+        }
+        return candidate;
+    }
+
+    /**
+     * 「库里已有一条体验号」形态的 UserRepository 替身。
+     *
+     * @return 带状态应答的仓储 mock（save 落库并回填主键；按 openid 取单个用户命中库中体验号）
+     */
+    private UserRepository statefulGuestRepositoryMock() {
+        latestGuestInDb.set(legacyGuestRow());
+        return mock(UserRepository.class, invocation -> {
+            String methodName = invocation.getMethod().getName();
+            Class<?> returnType = invocation.getMethod().getReturnType();
+            if ("save".equals(methodName) || "saveAndFlush".equals(methodName)) {
+                return persistRowIntoFakeDb(invocation.getArgument(0));
+            }
+            boolean openidKeyedSingleUserLookup = methodName.toLowerCase().contains("openid")
+                    && (returnType == User.class || returnType == Optional.class);
+            if (openidKeyedSingleUserLookup) {
+                User latest = latestGuestInDb.get();
+                if (latest == null) {
+                    return returnType == Optional.class ? Optional.empty() : null;
+                }
+                return returnType == Optional.class ? Optional.of(latest) : latest;
+            }
+            return org.mockito.Mockito.RETURNS_DEFAULTS.answer(invocation);
+        });
+    }
+
+    /**
+     * 用指定仓储替身构造 service（体验入口开关可控），复用与被测 service 相同的构造口径。
+     *
+     * @param repository       仓储替身
+     * @param guestLoginEnabled 体验登录开关
+     * @return RealAuthService 实例
+     */
+    private RealAuthService newRealAuthService(UserRepository repository, boolean guestLoginEnabled) {
+        return new RealAuthService(
+                weChatClient,
+                jwtTokenProvider,
+                repository,
+                userBasicProfileRepository,
+                userCampusProfileRepository,
+                userScheduleProfileRepository,
+                passwordEncoder,
+                aesEncryptor,
+                tokenBlacklistService,
+                onlineUserService,
+                schoolRepository,
+                guestLoginEnabled,
+                "13900000000",
+                smsCodeService
+        );
+    }
+
+    /**
+     * token 按 userId 派生（{@code jwt-for-<userId>}）。
+     *
+     * <p>这样「同一枚 JWT 发给两个访客」这种共用身份的表现能被断言直接捕获，
+     * 而不是只比对一个固定 mock 串。</p>
+     */
+    private void stubTokenDerivedFromUserId() {
+        when(jwtTokenProvider.generateToken(any())).thenAnswer(invocation -> "jwt-for-" + invocation.getArgument(0));
+    }
+
+    /**
+     * 反射注入 {@code @Autowired(required = false)} 的可选字段
+     * （与 RedisTokenBlacklistServiceTest 注入 redisTemplate 同法）。
+     *
+     * @param target    目标 service 实例
+     * @param fieldName 字段名
+     * @param value     注入值
+     */
+    private static void injectOptionalField(Object target, String fieldName, Object value) {
+        try {
+            java.lang.reflect.Field field = RealAuthService.class.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.set(target, value);
+        } catch (ReflectiveOperationException ex) {
+            throw new IllegalStateException("注入 " + fieldName + " 失败", ex);
+        }
+    }
+
+    /**
+     * P0-4 场景 1：库里已有体验号时，体验登录仍必须创建独立新身份，不得复用既有账号。
+     */
+    @Test
+    @DisplayName("P0-4：库中已有体验号时仍创建独立新身份（不复用 userId/token）")
+    void loginAsGuest_existingGuestInDb_shouldCreateNewIdentityInsteadOfReusing() {
+        UserRepository guestDb = statefulGuestRepositoryMock();
+        stubTokenDerivedFromUserId();
+
+        UserSessionView session = newRealAuthService(guestDb, true).loginAsGuest("device-p04");
+
+        assertNotEquals(String.valueOf(LEGACY_GUEST_ID), session.userId(),
+                "P0-4：体验登录不得复用库中既有体验号——同一 userId 意味着资料/帖子/点赞/私信/钱包跨访客共享");
+        assertNotEquals("jwt-for-" + LEGACY_GUEST_ID, session.token(),
+                "P0-4：体验登录不得把既有体验号的 JWT 发给新访客");
+
+        org.mockito.ArgumentCaptor<User> saved = org.mockito.ArgumentCaptor.forClass(User.class);
+        verify(guestDb, times(3)).save(saved.capture());
+        User created = saved.getAllValues().get(0);
+        assertTrue(created.getOpenid().startsWith("guest:"), "新体验号 openid 应为 guest: 前缀");
+        assertNotEquals(LEGACY_GUEST_OPENID, created.getOpenid(),
+                "P0-4：新体验号 openid 必须是新随机 UUID，不能是库中既有那条");
+    }
+
+    /**
+     * P0-4 场景 2：连续两次体验登录返回两个不同的 userId 与两枚不同的 token。
+     */
+    @Test
+    @DisplayName("P0-4：两次体验登录返回不同 userId 与不同 token")
+    void loginAsGuest_twoSequentialCalls_shouldReturnDifferentUserIdAndToken() {
+        UserRepository guestDb = statefulGuestRepositoryMock();
+        stubTokenDerivedFromUserId();
+        RealAuthService service = newRealAuthService(guestDb, true);
+
+        UserSessionView first = service.loginAsGuest(null);
+        UserSessionView second = service.loginAsGuest(null);
+
+        assertNotEquals(first.userId(), second.userId(),
+                "P0-4：第二次体验登录复用第一次的身份（第一次落库后库中已有体验号），访客数据将互串");
+        assertNotEquals(first.token(), second.token(),
+                "P0-4：两次体验登录签发同一枚 JWT，等同于共用账号");
+    }
+
+    /**
+     * P0-4 场景 3：同一 deviceId 连续两次登录仍是两个独立身份。
+     *
+     * <p>产品裁定（P0-4）：访客身份按「会话」隔离，<b>不</b>建立 deviceId→体验号的
+     * 持久映射（那等于把共用账号换个键名回来，且需要新的表/字段）。</p>
+     */
+    @Test
+    @DisplayName("P0-4：同一 deviceId 两次登录不产生设备级持久体验号")
+    void loginAsGuest_sameDeviceIdTwice_shouldStillCreateIndependentIdentities() {
+        UserRepository guestDb = statefulGuestRepositoryMock();
+        stubTokenDerivedFromUserId();
+        RealAuthService service = newRealAuthService(guestDb, true);
+
+        UserSessionView first = service.loginAsGuest("device-same");
+        UserSessionView second = service.loginAsGuest("device-same");
+
+        assertNotEquals(first.userId(), second.userId(),
+                "P0-4：deviceId 不得作为体验号复用键——同设备两次进入也必须是独立身份");
+    }
+
+    /**
+     * P0-4 场景 4：每次体验登录为新 userId 各自预填一份基本资料。
+     */
+    @Test
+    @DisplayName("P0-4：两次体验登录为两个不同 userId 各自预填资料")
+    void loginAsGuest_twoSequentialCalls_shouldProvisionProfilePerNewIdentity() {
+        UserRepository guestDb = statefulGuestRepositoryMock();
+        stubTokenDerivedFromUserId();
+        RealAuthService service = newRealAuthService(guestDb, true);
+
+        service.loginAsGuest(null);
+        service.loginAsGuest(null);
+
+        org.mockito.ArgumentCaptor<Long> profiledUserIds = org.mockito.ArgumentCaptor.forClass(Long.class);
+        verify(userBasicProfileRepository, times(2)).findByUserId(profiledUserIds.capture());
+        assertEquals(2, new HashSet<>(profiledUserIds.getAllValues()).size(),
+                "P0-4：两次体验的资料预填落在同一个 userId 上，说明访客共用了账号");
+        verify(userBasicProfileRepository, times(2)).save(any(UserBasicProfile.class));
+    }
+
+    /**
+     * P0-4 场景 5：在线会话与设备记录归属到新体验号，而非库中既有体验号。
+     */
+    @Test
+    @DisplayName("P0-4：在线会话/设备记录属于新建体验号")
+    void loginAsGuest_shouldRecordOnlineSessionAndDeviceForNewIdentity() {
+        UserRepository guestDb = statefulGuestRepositoryMock();
+        stubTokenDerivedFromUserId();
+        RealAuthService service = newRealAuthService(guestDb, true);
+        DeviceSessionService deviceSessionService = mock(DeviceSessionService.class);
+        injectOptionalField(service, "deviceSessionService", deviceSessionService);
+        when(jwtTokenProvider.getJtiFromToken(any())).thenReturn("jti-p04");
+
+        UserSessionView session = service.loginAsGuest("device-p04");
+        long newGuestId = Long.parseLong(session.userId());
+
+        assertNotEquals(LEGACY_GUEST_ID, newGuestId, "前置：会话身份应是新建体验号");
+        verify(onlineUserService).recordLogin(eq(newGuestId), eq("jti-p04"), eq("guest"), anyLong());
+        verify(deviceSessionService).recordLogin(eq(newGuestId), eq("device-p04"), eq("guest"), eq("jti-p04"));
+        verify(onlineUserService, never()).recordLogin(eq(LEGACY_GUEST_ID), any(), any(), anyLong());
+        verify(deviceSessionService, never()).recordLogin(eq(LEGACY_GUEST_ID), any(), any(), any());
+    }
+
+    /**
+     * P0-4 场景 6：入口关闭时仍返回 403 文案，且不新建、也不查询可复用的体验号。
+     *
+     * <p>本用例断言的是「禁用态必须先于任何仓储写入」这一保持不变的性质
+     * （既有 场景 3 只断言了异常类型）。它是修复前后都为绿的保全守卫，
+     * 不是 P0-4 缺陷的复现——复现见本组其余用例。</p>
+     */
+    @Test
+    @DisplayName("P0-4：禁用开关仍 403，且不触碰体验号仓储")
+    void loginAsGuest_disabledEntry_shouldRejectWithoutTouchingGuestRepository() {
+        UserRepository guestDb = statefulGuestRepositoryMock();
+        stubTokenDerivedFromUserId();
+        RealAuthService disabledService = newRealAuthService(guestDb, false);
+
+        OperationForbiddenException ex = assertThrows(OperationForbiddenException.class,
+                () -> disabledService.loginAsGuest("device-p04"));
+
+        assertEquals(com.campuslove.api.common.ErrorMessages.TRIAL_LOGIN_DISABLED, ex.getMessage(),
+                "禁用态应返回面向用户的 403 文案（TRIAL_LOGIN_DISABLED）");
+        verify(guestDb, never()).save(any(User.class));
+        verify(userBasicProfileRepository, never()).save(any(UserBasicProfile.class));
+    }
+
+    /**
+     * P0-4 场景 7：并发首登撞 uk_users_openid 时，重试仍必须换出新 UUID 并创建独立新身份。
+     *
+     * <p>模拟真实库：库中已有历史体验号，本次 INSERT 与其 openid 碰撞（唯一约束冲突），
+     * 第一次 save 抛 DataIntegrityViolationException，重试应使用<b>另一个</b>随机 UUID
+     * 成功建号；既不能退化成复用既有账号，也不能漏成 500。</p>
+     */
+    @Test
+    @DisplayName("P0-4：openid 唯一约束冲突重试后创建全新独立身份")
+    void loginAsGuest_openidCollisionRetry_shouldCreateFreshIdentity() {
+        UserRepository guestDb = statefulGuestRepositoryMock();
+        stubTokenDerivedFromUserId();
+        RealAuthService service = newRealAuthService(guestDb, true);
+        org.mockito.Mockito.doThrow(new DataIntegrityViolationException("uk_users_openid"))
+                .doAnswer(invocation -> persistRowIntoFakeDb(invocation.getArgument(0)))
+                .when(guestDb).save(any(User.class));
+
+        UserSessionView session = service.loginAsGuest("device-p04");
+
+        assertNotEquals(String.valueOf(LEGACY_GUEST_ID), session.userId(),
+                "P0-4：唯一约束冲突不得退化为复用库中既有体验号");
+        assertEquals(String.valueOf(FAKE_GUEST_ID_START + 1), session.userId(),
+                "P0-4：重试成功应落在新建的体验号上");
+
+        org.mockito.ArgumentCaptor<User> saved = org.mockito.ArgumentCaptor.forClass(User.class);
+        // 4 次：碰撞的 INSERT + 换 UUID 后的 INSERT + 人格昵称回写 + 完善度 100 回写
+        verify(guestDb, times(4)).save(saved.capture());
+        List<String> attemptedOpenids = List.of(
+                saved.getAllValues().get(0).getOpenid(),
+                saved.getAllValues().get(1).getOpenid());
+        assertTrue(attemptedOpenids.stream().allMatch(id -> id.startsWith("guest:")),
+                "两次尝试的 openid 都应为 guest: 前缀");
+        assertNotEquals(attemptedOpenids.get(0), attemptedOpenids.get(1),
+                "R4-00252：碰撞重试必须更换新的随机 UUID");
+        assertNotEquals(LEGACY_GUEST_OPENID, attemptedOpenids.get(0));
+        assertNotEquals(LEGACY_GUEST_OPENID, attemptedOpenids.get(1));
+    }
+
+    /**
+     * P0-4 装配漂移守卫（源码级）：体验登录方法体内不得再有任何「查已有用户」的仓储读取。
+     *
+     * <p>为什么还要一条文本守卫：mock 档只能证明「现在这条路不被走」，证明不了将来
+     * 换一种写法（另一个派生查询名、或先查后建的老逻辑以别的形态回来）把复用接回来；
+     * 而「先查最近体验号 → 非空就复用」正是本次 P0 的缺陷本体。这里按方法体文本判：
+     * loginAsGuest 内不得出现 {@code userRepository.find}（体验登录除了建号不该读库），
+     * 同时必须保留独立身份的三条正锚（随机 UUID 创建、碰撞重试、禁用 403）。</p>
+     */
+    @Test
+    @DisplayName("P0-4 漂移守卫：体验登录方法体内无「查已有体验号」接线")
+    void guestLoginSource_shouldNotWireAnyReusableGuestLookup() throws java.io.IOException {
+        String serviceSource = java.nio.file.Files.readString(
+                mainSourceOf("com/campuslove/api/auth", "RealAuthService.java"));
+        String repositorySource = java.nio.file.Files.readString(
+                mainSourceOf("com/campuslove/api/repository", "UserRepository.java"));
+        String guestLoginBody = extractMethodBody(serviceSource, "UserSessionView loginAsGuest(String deviceId)");
+
+        assertFalse(guestLoginBody.contains("userRepository.find"),
+                "P0-4 回归：体验登录又接回了「查已有用户」的仓储读取——无论叫什么名字，"
+                        + "只要先查再复用，所有访客就会共用同一账号");
+        assertTrue(guestLoginBody.contains("\"guest:\" + UUID.randomUUID()"),
+                "守卫失效告警：loginAsGuest 里「每次创建独立 guest:{UUID}」的正锚丢失");
+        assertTrue(guestLoginBody.contains("DataIntegrityViolationException"),
+                "守卫失效告警：loginAsGuest 的 openid 碰撞重试正锚丢失（R4-00252）");
+        assertTrue(guestLoginBody.contains("OperationForbiddenException"),
+                "守卫失效告警：loginAsGuest 的禁用态 403 正锚丢失（R4-02553）");
+        assertFalse(repositorySource.contains("findFirstByOpenidStartingWithAndRoleAndStatusOrderByIdDesc"),
+                "P0-4：该派生查询的契约就是「体验登录优先复用同一账号」，已随复用分支一并摘除；"
+                        + "若要重新引入，必须先推翻 P0-4 的会话隔离裁定并重新评审");
+    }
+
+    /**
+     * P0-4 装配漂移守卫（结构级 · loginAsGuest 调用图）：体验登录体内不得调用任何
+     * 「查已有体验号」helper。
+     *
+     * <p>文本守卫只锁死了字面量 {@code userRepository.find}；但「先查最近体验号 → 命中即复用」
+     * 的缺陷可以被搬迁到私有 helper（如 {@code findLatestGuest()} / {@code queryGuest()}）
+     * 再从 loginAsGuest 调用，从而绕过字面量守卫。这里不做大范围正则，而是扫描体内所有被
+     * 调用的标识符，凡是「名字含 guest 且含取数动词」的一律判红。为证明扫描有效（非空断言），
+     * 保留正锚：合法的资料预填 helper {@code provisionGuestProfile(} 仍在体内被调用——
+     * 它含 guest 但不含取数动词，故不被误伤，说明本守卫是「按语义」而非「按 guest 子串」拦截。</p>
+     */
+    @Test
+    @DisplayName("P0-4 漂移守卫（结构级）：loginAsGuest 体内无「guest 取数 helper」调用")
+    void guestLoginBody_shouldNotCallAnyGuestLookupHelper() throws java.io.IOException {
+        String serviceSource = java.nio.file.Files.readString(
+                mainSourceOf("com/campuslove/api/auth", "RealAuthService.java"));
+        String guestLoginBody = extractMethodBody(serviceSource, "UserSessionView loginAsGuest(String deviceId)");
+
+        java.util.regex.Matcher invoked =
+                java.util.regex.Pattern.compile("\\b([A-Za-z_][A-Za-z0-9_]*)\\s*\\(").matcher(guestLoginBody);
+        int scannedCallSites = 0;
+        while (invoked.find()) {
+            scannedCallSites++;
+            String callee = invoked.group(1).toLowerCase(java.util.Locale.ROOT);
+            boolean guestNamed = callee.contains("guest");
+            boolean lookupVerb = callee.contains("find") || callee.contains("latest")
+                    || callee.contains("first") || callee.contains("top") || callee.contains("query")
+                    || callee.contains("load") || callee.contains("select") || callee.contains("fetch")
+                    || callee.contains("lookup") || callee.contains("resolve");
+            assertFalse(guestNamed && lookupVerb,
+                    "P0-4 回归：loginAsGuest 调用了疑似「查已有体验号」的 helper "
+                            + invoked.group(1) + "——把复用搬到 helper 里同样会让所有访客共用同一账号");
+        }
+        assertTrue(scannedCallSites >= 3,
+                "守卫失效告警：loginAsGuest 体内只扫到 " + scannedCallSites
+                        + " 处调用点，方法体可能被改写，守卫已失去意义");
+        // 正锚：资料预填 helper（含 guest、不含取数动词）仍应在体内被调用，证明扫描确实在看 guest 令牌
+        assertTrue(guestLoginBody.contains("provisionGuestProfile("),
+                "守卫失效告警：loginAsGuest 里 provisionGuestProfile 预填正锚丢失，本用例的 guest 语义扫描将空转");
+    }
+
+    /**
+     * P0-4 装配漂移守卫（结构级 · 反射枚举 RealAuthService 方法）：不得存在
+     * 「返回 User 且名字含 findGuest/latestGuest」的方法。
+     *
+     * <p>即便复用逻辑从 loginAsGuest 体内搬进一个新的私有取数方法，方法名一旦被反射枚举命中即判红。
+     * 正锚（防断言空转）：枚举确实看到了返回 User 的方法（{@code findOrCreateUserForWechatLogin}）
+     * 与名字含 guest 的方法（{@code provisionGuestProfile}，返回 void 不被拦截），二者同时存在
+     * 才证明「返回 User」且「guest 取数名」两条判据都在实际生效，而不是集合为空导致的假绿。</p>
+     */
+    @Test
+    @DisplayName("P0-4 漂移守卫（反射）：RealAuthService 无返回 User 的 guest 取数方法")
+    void realAuthService_shouldNotDeclareAnyGuestLookupMethod() {
+        java.lang.reflect.Method[] methods = RealAuthService.class.getDeclaredMethods();
+        boolean sawUserReturningMethod = false;
+        boolean sawGuestNamedMethod = false;
+        for (java.lang.reflect.Method method : methods) {
+            String name = method.getName().toLowerCase(java.util.Locale.ROOT);
+            Class<?> returnType = method.getReturnType();
+            boolean returnsSingleUserLike = returnType == User.class
+                    || returnType == java.util.List.class
+                    || returnType == java.util.Optional.class;
+            if (returnType == User.class) {
+                sawUserReturningMethod = true;
+            }
+            if (name.contains("guest")) {
+                sawGuestNamedMethod = true;
+            }
+            boolean guestLookupName = name.contains("findguest") || name.contains("latestguest")
+                    || name.contains("guestlookup") || (name.contains("guest") && name.contains("find"));
+            assertFalse(returnsSingleUserLike && guestLookupName,
+                    "P0-4 回归：RealAuthService 新增了返回 User 的 guest 取数方法 " + method.getName()
+                            + "——复用既有体验号的缺陷换了承载点后，本守卫仍须判红");
+        }
+        assertTrue(methods.length > 0, "反射枚举 RealAuthService 方法失败：方法集为空，守卫无意义");
+        assertTrue(sawUserReturningMethod,
+                "守卫失效告警：未发现任何返回 User 的方法（findOrCreateUserForWechatLogin 应存在），正锚丢失");
+        assertTrue(sawGuestNamedMethod,
+                "守卫失效告警：未发现任何名字含 guest 的方法（provisionGuestProfile 应存在），正锚丢失");
+    }
+
+    /**
+     * P0-4 装配漂移守卫（结构级 · 反射枚举 UserRepository 派生查询）：不得存在
+     * 「按 openid 前缀取用户」的派生查询（P0-4 摘除的 {@code findFirstByOpenidStartingWith...} 契约
+     * 就是「体验登录优先复用同一账号」）。
+     *
+     * <p>正锚：精确匹配用的 {@code findByOpenid} 必须仍在（防枚举空转），且它不是前缀派生查询、
+     * 不被拦截——证明本守卫区分「等值查单个」与「前缀查最近一条」。</p>
+     */
+    @Test
+    @DisplayName("P0-4 漂移守卫（反射）：UserRepository 无 openid 前缀派生查询")
+    void userRepository_shouldNotDeclareOpenidPrefixDerivedQuery() {
+        java.lang.reflect.Method[] methods = UserRepository.class.getMethods();
+        boolean sawExactFindByOpenid = false;
+        for (java.lang.reflect.Method method : methods) {
+            String name = method.getName();
+            if ("findByOpenid".equals(name)) {
+                sawExactFindByOpenid = true;
+            }
+            boolean openidPrefixDerived = name.contains("OpenidStartingWith")
+                    || name.contains("OpenidContaining") || name.contains("OpenidEndingWith");
+            assertFalse(openidPrefixDerived,
+                    "P0-4：UserRepository 不得保留/新增「按 openid 前缀取用户」的派生查询 " + name
+                            + "——其契约即复用体验号，须先推翻会话隔离裁定并重新评审");
+        }
+        assertTrue(sawExactFindByOpenid,
+                "守卫失效告警：UserRepository.findByOpenid（等值查单个）正锚丢失，本前缀派生守卫将空转");
+    }
+
+    /**
+     * 按大括号配对截取方法体（只用于源码装配对账，不做语法解析）。
+     *
+     * @param source            源文件全文
+     * @param signatureMarker   方法签名锚点文本
+     * @return 方法体文本（含首尾大括号）
+     */
+    private String extractMethodBody(String source, String signatureMarker) {
+        int signatureAt = source.indexOf(signatureMarker);
+        assertTrue(signatureAt >= 0,
+                "守卫失效告警：源码里找不到签名锚点「" + signatureMarker + "」，方法已改名/改签名，请同步更新守卫");
+        int bodyStart = source.indexOf('{', signatureAt);
+        int depth = 0;
+        for (int i = bodyStart; i < source.length(); i++) {
+            char current = source.charAt(i);
+            if (current == '{') {
+                depth++;
+            } else if (current == '}' && --depth == 0) {
+                return source.substring(bodyStart, i + 1);
+            }
+        }
+        throw new IllegalStateException("未找到方法体结束括号: " + signatureMarker);
+    }
+
+    /**
+     * 定位待对账的源码文件（surefire 工作目录为 apps/api，兼容从仓库根运行）。
+     *
+     * @param packagePath    com/campuslove/api 之下的包路径
+     * @param simpleFileName 源文件名
+     * @return 源文件绝对路径
+     */
+    private java.nio.file.Path mainSourceOf(String packagePath, String simpleFileName) {
+        java.nio.file.Path relative = java.nio.file.Path.of("src/main/java", packagePath, simpleFileName);
+        if (java.nio.file.Files.exists(relative)) {
+            return relative.toAbsolutePath();
+        }
+        java.nio.file.Path fromRepoRoot = java.nio.file.Path.of("apps/api/src/main/java", packagePath, simpleFileName);
+        assertTrue(java.nio.file.Files.exists(fromRepoRoot),
+                "找不到待对账的源文件，装配守卫失效: " + relative.toAbsolutePath());
+        return fromRepoRoot.toAbsolutePath();
     }
 }

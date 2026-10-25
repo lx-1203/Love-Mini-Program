@@ -4154,6 +4154,7 @@ export default {
     "activity": {
       "loadActivitiesFailed": "加载活动失败",
       "loadMoreFailed": "加载更多活动失败",
+      "pageShapeMismatch": "活动列表返回结构不符合分页契约",
       "registerFailed": "报名操作失败",
       "loadDetailFailed": "获取活动详情失败"
     },

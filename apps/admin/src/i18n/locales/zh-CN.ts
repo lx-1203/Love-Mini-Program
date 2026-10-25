@@ -2240,6 +2240,7 @@ export default {
     network: "网络异常，请稍后重试",
     auth: "登录已过期，请重新登录",
     permission: "权限不足",
+    readOnlyRole: "当前账号为只读角色，无法提交修改",
     notFound: "资源不存在",
     server: "服务器异常，请稍后重试",
     unknown: "未知错误，请重试",

@@ -31,9 +31,11 @@ import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE } from "../../utils/constants";
+import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
 const router = useRouter();
+const sessionStore = useSessionStore();
 
 // ===== 列表状态 =====
 const circles = ref<CircleView[]>([]);
@@ -141,6 +143,7 @@ function closeForm(): void {
 
 /** 提交新增/编辑（新增时 name 必填，与后端 AdminCircleRequest 校验对齐） */
 async function handleSave(): Promise<void> {
+  if (!sessionStore.canWrite) return;
   if (saving.value) return;
   const f = form.value;
   if (editingId.value === null && !f.name.trim()) {
@@ -193,6 +196,7 @@ function askDelete(circle: CircleView): void {
 }
 
 async function handleConfirmDelete(): Promise<void> {
+  if (!sessionStore.canWrite) return;
   const target = deleteTarget.value;
   if (!target || deleting.value) return;
   deleting.value = true;
@@ -246,7 +250,7 @@ onMounted(() => {
         @keyup.enter="handleSearch"
       />
       <button class="ghost-button" @click="handleResetFilters">{{ t("common.reset") }}</button>
-      <button class="primary-button" @click="openCreate">{{ t("interestCircles.createButton") }}</button>
+      <button v-if="sessionStore.canWrite" class="primary-button" @click="openCreate">{{ t("interestCircles.createButton") }}</button>
     </view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchCircles" />
@@ -281,9 +285,9 @@ onMounted(() => {
             <td>{{ circle.sortOrder }}</td>
             <td class="time-cell">{{ formatDateTime(circle.createdAt) }}</td>
             <td class="action-cell">
-              <button class="action-button edit" @click="openEdit(circle)">{{ t("common.edit") }}</button>
+              <button v-if="sessionStore.canWrite" class="action-button edit" @click="openEdit(circle)">{{ t("common.edit") }}</button>
               <button class="action-button handle" @click="viewTopics(circle)">{{ t("interestCircles.actionViewTopics") }}</button>
-              <button class="action-button delete" @click="askDelete(circle)">{{ t("common.delete") }}</button>
+              <button v-if="sessionStore.canWrite" class="action-button delete" @click="askDelete(circle)">{{ t("common.delete") }}</button>
             </td>
           </tr>
         </tbody>

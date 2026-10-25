@@ -27,11 +27,13 @@ import {
 import { ApiError } from "../../api/http";
 import Pagination from "../../components/Pagination.vue";
 import ErrorState from "../../components/ErrorState.vue";
+import { useSessionStore } from "../../stores/session";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE, TOAST_DURATION_MS } from "../../utils/constants";
 import { useRequestRace } from "../../composables/useRequestRace";
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
 /** Tab 类型：list=钱包列表 / transactions=钱包流水 */
 type TabKey = "list" | "transactions";
@@ -228,6 +230,7 @@ function handleTxPageChange() {
 /* ========== 调整余额 ========== */
 /** 打开调整弹窗（预填当前行用户 ID，可手动修改） */
 function openAdjust(wallet: WalletView | null) {
+  if (!sessionStore.canWrite) return;
   adjustUserId.value = wallet ? String(wallet.userId) : "";
   adjustAmount.value = "";
   adjustReason.value = "";
@@ -246,6 +249,7 @@ function closeAdjust() {
  * 金额单位：前端以元录入，提交时转分。
  */
 async function handleAdjust() {
+  if (!sessionStore.canWrite) return;
   if (adjusting.value) return;
   const userId = Number(adjustUserId.value.trim());
   if (!Number.isInteger(userId) || userId <= 0) {
@@ -352,7 +356,7 @@ onBeforeUnmount(() => {
         />
         <button class="primary-button" @click="handleSearch">{{ t("common.search") }}</button>
         <button class="ghost-button" @click="handleReset">{{ t("common.reset") }}</button>
-        <button class="primary-button" @click="openAdjust(null)">{{ t("wallets.adjustButton") }}</button>
+        <button v-if="sessionStore.canWrite" class="primary-button" @click="openAdjust(null)">{{ t("wallets.adjustButton") }}</button>
       </view>
 
       <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchWallets" />
@@ -389,7 +393,7 @@ onBeforeUnmount(() => {
               </td>
               <td class="time-cell">{{ formatDateTime(wallet.updatedAt) }}</td>
               <td class="action-cell">
-                <button class="action-button edit" @click="openAdjust(wallet)">{{ t("wallets.adjustButton") }}</button>
+                <button v-if="sessionStore.canWrite" class="action-button edit" @click="openAdjust(wallet)">{{ t("wallets.adjustButton") }}</button>
               </td>
             </tr>
           </tbody>

@@ -2,6 +2,9 @@
 import { onMounted, ref } from "vue";
 import { getProfileConfig, saveProfileConfig, type ProfileConfigView } from "@/api/config";
 import { ApiError } from "@/api/http";
+import { useSessionStore } from "../../stores/session";
+
+const sessionStore = useSessionStore();
 
 const loading = ref(false);
 const saving = ref(false);
@@ -28,6 +31,7 @@ onMounted(async () => {
 });
 
 async function handleSave() {
+  if (!sessionStore.canWrite) return;
   saving.value = true;
   errorMsg.value = "";
   successMsg.value = "";
@@ -73,7 +77,7 @@ async function handleSave() {
       <p v-if="errorMsg" class="error">{{ errorMsg }}</p>
       <p v-if="successMsg" class="success">{{ successMsg }}</p>
 
-      <button class="save-btn" :disabled="saving" @click="handleSave">
+      <button v-if="sessionStore.canWrite" class="save-btn" :disabled="saving" @click="handleSave">
         {{ saving ? "保存中..." : "保存" }}
       </button>
     </div>

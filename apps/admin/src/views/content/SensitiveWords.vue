@@ -101,6 +101,7 @@ function handleFilter() {
  * 校验：非空、长度上限、与已有词去重（大小写不敏感）。
  */
 async function handleCreate() {
+  if (!sessionStore.canWrite) return;
   const word = newWord.value.trim();
   if (!word) {
     error.value = t("sensitiveWords.wordRequired");
@@ -152,6 +153,7 @@ function handleDeleteClick(word: SensitiveWordView) {
  * ConfirmDialog 确认回调，执行真实删除调用。
  */
 async function handleConfirmDelete() {
+  if (!sessionStore.canWrite) return;
   const target = deleteTarget.value;
   if (!target) return;
   deleting.value = true;
@@ -228,7 +230,7 @@ onMounted(() => {
         </option>
       </select>
 
-      <template v-if="isSuperAdmin">
+      <template v-if="isSuperAdmin && sessionStore.canWrite">
         <view class="divider"></view>
 
         <input
@@ -294,7 +296,7 @@ onMounted(() => {
                 {{ t("sensitiveWords.copyButton") }}
               </button>
               <button
-                v-if="isSuperAdmin"
+                v-if="isSuperAdmin && sessionStore.canWrite"
                 class="danger-button"
                 :disabled="deleting"
                 @click="handleDeleteClick(word)"

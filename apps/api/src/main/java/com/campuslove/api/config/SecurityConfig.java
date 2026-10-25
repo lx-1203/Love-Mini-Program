@@ -2,6 +2,7 @@ package com.campuslove.api.config;
 
 import com.campuslove.api.auth.JwtAccessDeniedHandler;
 import com.campuslove.api.auth.JwtAuthenticationEntryPoint;
+import com.campuslove.api.media.MediaTokenPolicy;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -114,7 +115,10 @@ public class SecurityConfig {
                 )
             )
             // 配置请求授权
-            .authorizeHttpRequests(auth -> auth
+            // P0-2：媒体令牌规则需要在「app-assets permitAll 之后、通用 authenticated 之前」
+            // 注入（authorizeHttpRequests 取首个匹配规则），故改为块状 lambda 以便插入共享规则。
+            .authorizeHttpRequests(auth -> {
+                auth
                 // 登录端点不需要认证
                 // Task 2.4.1：所有路径统一升级为 /api/v1/**
                 .requestMatchers("/api/v1/auth/**").permitAll()
@@ -198,7 +202,13 @@ public class SecurityConfig {
                 // 公开端点：应用资产（/api/v1/media/app-assets/**）——小程序主包瘦身后
                 // 后端托管的装饰性图片（campus 场景/活动海报/插画等），免登录可看图。
                 // 注意：必须声明在 /api/v1/media/** 鉴权规则之前（Spring 按声明顺序取首个匹配）。
-                .requestMatchers("/api/v1/media/app-assets/**").permitAll()
+                .requestMatchers("/api/v1/media/app-assets/**").permitAll();
+                // P0-2 媒体令牌降权：媒体令牌（仅 ROLE_MEDIA）只可 GET/HEAD 读取媒体文件，
+                // 其余路径（业务接口 / 管理端 / 上传 / /api/v1/media/token 签发）一律 403。
+                // 规则本体见 MediaTokenPolicy#applyMediaTokenRules（real 与 mock 共用同一份，
+                // 防止两套配置漂移）；JwtAuthenticationFilter 侧另有同源的第一道防线。
+                MediaTokenPolicy.applyMediaTokenRules(auth);
+                auth
                 // Task 0.3.2：媒体鉴权代理端点（/api/v1/media/**）需要认证，
                 // 支持 Authorization 头与 ?token= 查询参数两种方式（详见 MediaAccessController）。
                 // MediaAccessController 内部按 JWT 中的 userId 校验文件归属；
@@ -216,8 +226,8 @@ public class SecurityConfig {
                 //   - /error 由 Servlet 容器错误分发，放行避免 401 循环
                 // 若未来需要新增公开端点，必须在此显式加入白名单。
                 .requestMatchers("/error").permitAll()
-                .anyRequest().authenticated()
-            )
+                .anyRequest().authenticated();
+            })
             // 在 UsernamePasswordAuthenticationFilter 之前添加 JWT 过滤器
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

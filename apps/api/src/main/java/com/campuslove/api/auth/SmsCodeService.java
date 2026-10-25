@@ -7,9 +7,8 @@
  *       sendCode 返回验证码供联调回填；写入 Redis（key: sms:code:{phone}，TTL 5 分钟），
  *       无 Redis 时回退内存 Map。</li>
  *   <li><b>非 mock（real 等）</b>：验证码一律不下发——未配置真实短信网关
- *       （{@code app.sms.gateway-enabled=false}，默认）时 send-code 返回 503 配置缺失错误；
- *       网关就绪时生成随机 6 位验证码落 Redis/内存并由网关下发，
- *       <b>任何路径都不把验证码本体返回给调用方/打进日志</b>。</li>
+ *       （{@code app.sms.gateway-enabled=false}，默认）或仅打开开关但尚未接入 provider 时，
+ *       send-code 均返回 503 配置缺失错误，且不生成、不保存任何验证码。</li>
  * </ul>
  *
  * <p>verify(phone, code)：校验逻辑与 profile 无关（与已发送验证码一致即通过，
@@ -17,7 +16,6 @@
  */
 package com.campuslove.api.auth;
 
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,8 +48,8 @@ public class SmsCodeService {
 
     /**
      * 真实短信网关就绪开关（配置 app.sms.gateway-enabled，默认 false）。
-     * 非 mock profile 下为 false 时 send-code 直接 503（fail-closed），
-     * 接入真实短信网关后通过 APP_SMS_GATEWAY_ENABLED=true 开启。
+     * 当前仓库尚无真实 provider：即使误设为 true，send-code 仍 fail-closed 返回 503，
+     * 绝不生成验证码或向客户端声称已发送。接入 provider 后才可在此路径实现下发。
      */
     @Value("${app.sms.gateway-enabled:${APP_SMS_GATEWAY_ENABLED:false}}")
     private boolean gatewayEnabled;
@@ -64,9 +62,6 @@ public class SmsCodeService {
 
     /** 内存回退存储（仅当 Redis 不可用时使用；key=phone, value=code） */
     private final Map<String, String> memoryStore = new ConcurrentHashMap<>();
-
-    /** 验证码随机数生成器（真实网关路径使用，替代固定 mock 码） */
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     public SmsCodeService(ObjectProvider<StringRedisTemplate> redisTemplateProvider,
                           Environment environment) {
@@ -108,12 +103,12 @@ public class SmsCodeService {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                     "短信服务未配置，暂时无法发送验证码，请联系管理员");
         }
-        // 真实短信网关路径：随机 6 位验证码（不写日志、不返回给调用方）
-        String code = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
-        store(phone, code);
-        log.info("短信验证码已发送（真实网关）: phone={}", maskPhone(phone));
-        // TODO: 接入真实短信网关时在此调用服务商 SDK 下发 code
-        return code;
+        // 仅打开开关不等于网关可用：本仓尚无真实短信 provider 接入。
+        // 绝不能先生成/保存验证码再向客户端返回“已发送”——那会让用户收到成功提示却永远收不到短信。
+        log.error("短信验证码发送被拒绝：gateway-enabled=true 但 provider 尚未接入, phone={}",
+                maskPhone(phone));
+        throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                "短信网关尚未接入，暂时无法发送验证码，请联系管理员");
     }
 
     /** 存储验证码：Redis 优先，异常回退内存 Map。 */

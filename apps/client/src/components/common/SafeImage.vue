@@ -116,8 +116,26 @@ function resolveOnce(raw: string): string {
     resolvedUrlCache.clear();
   }
   const resolved = localizeHttpIfNeeded(toLocalImage(resolveMediaUrl(raw)));
-  resolvedUrlCache.set(raw, resolved);
+  // 还没签出来的私有媒体 URL 不写缓存：签名是异步批量到达的，到达后调用方的
+  // computed 会重算；若这里把无凭据的 URL 缓存住，重算仍命中旧值，
+  // 图片会永久停在 401 之后的占位上（换账号后也不会自愈）。
+  if (!isUnsignedPrivateMedia(resolved)) {
+    resolvedUrlCache.set(raw, resolved);
+  }
   return resolved;
+}
+
+/**
+ * 是否为「需要签名但尚未签出」的私有媒体 URL。
+ *
+ * 公开应用资产（app-assets）本就 permitAll、不需要签名，不在其列。
+ */
+function isUnsignedPrivateMedia(url: string): boolean {
+  return (
+    url.includes("/api/v1/media/") &&
+    !url.includes("app-assets/") &&
+    !url.includes("sig=")
+  );
 }
 
 /* ===== MP-R5-HTTPIMG（2026-09-13）：http 图片源运行时本地化 =====
@@ -138,6 +156,18 @@ function hashString(input: string): number {
   }
   return Math.abs(h);
 }
+
+/**
+ * 本地化缓存键：去掉 query 串。
+ *
+ * 媒体 URL 现在带能力型签名（{@code ?exp=&sig=}，15 分钟过期），
+ * 若按整条 URL 做键，每次换签都会算成「另一张图」——本地文件命名、
+ * 缓存命中与在途去重三处同时失效，等于每张图每 15 分钟重下一遍。
+ * 同一文件的路径才是缓存身份，签名只是访问凭据。
+ */
+function localCacheKey(url: string): string {
+  return url.split("?")[0] ?? url;
+}
 /** http 源本地化进行中（抑制 onError 降级竞态：DevTools/基础库会立刻
  * 对 http 源报 error，若不抑制会在 base64 就绪前就切到 fallback） */
 const localizingHttp = ref(false);
@@ -155,12 +185,13 @@ function localizeHttpIfNeeded(resolved: string): string {
   if (!userDataPath) {
     return resolved;
   }
-  const cached = httpLocalCache.get(resolved);
+  const cacheKey = localCacheKey(resolved);
+  const cached = httpLocalCache.get(cacheKey);
   if (cached) {
     return cached;
   }
-  if (!httpInFlight.has(resolved)) {
-    httpInFlight.add(resolved);
+  if (!httpInFlight.has(cacheKey)) {
+    httpInFlight.add(cacheKey);
     // MP-R5-HTTPIMG-RACE：本地化在途时置位，onError 据此抑制降级竞态
     localizingHttp.value = true;
     // 两段式本地化：downloadFile → copyFile 到 USER_DATA_PATH 常驻本地文件。
@@ -174,12 +205,12 @@ function localizeHttpIfNeeded(resolved: string): string {
           localizingHttp.value = false;
           return;
         }
-        const destPath = `${userDataPath}/safeimg-${hashString(resolved)}.jpg`;
+        const destPath = `${userDataPath}/safeimg-${hashString(cacheKey)}.jpg`;
         uni.getFileSystemManager().copyFile({
           srcPath: res.tempFilePath,
           destPath,
           success: () => {
-            httpLocalCache.set(resolved, destPath);
+            httpLocalCache.set(cacheKey, destPath);
             // 同步改写 URL 缓存：resolveOnce 在下载完成前已缓存 http 原串
             for (const [key, value] of resolvedUrlCache) {
               if (value === resolved) {
@@ -210,7 +241,7 @@ function localizeHttpIfNeeded(resolved: string): string {
         }
       },
       complete: () => {
-        httpInFlight.delete(resolved);
+        httpInFlight.delete(cacheKey);
       },
     });
   } else {

@@ -83,14 +83,29 @@ function runBuild({ label, command }) {
   });
 }
 
-for (const build of builds) {
-  await runBuild(build);
-}
+/**
+ * 顶层驱动。
+ *
+ * 为什么要显式 catch：原先任一步失败都会以未捕获的 Promise 拒绝崩出栈，
+ * 退出码虽然正确（1），但输出长得像「载具坏了」而不是「这一步没通过」——
+ * 排查的人会先去查环境，而真正要看的只有那一行业务错误。
+ * 现在保留退出码语义，只把呈现换成一行可读结论。
+ */
+try {
+  for (const build of builds) {
+    await runBuild(build);
+  }
 
-// 校验微信小程序产物关键入口文件存在
-const mpWeixinAppJsonPath = "apps/client/dist/build/mp-weixin/app.json";
-if (!existsSync(mpWeixinAppJsonPath)) {
-  throw new Error(`mp-weixin build artifact missing: ${mpWeixinAppJsonPath}`);
-}
+  // 校验微信小程序产物关键入口文件存在
+  const mpWeixinAppJsonPath = "apps/client/dist/build/mp-weixin/app.json";
+  if (!existsSync(mpWeixinAppJsonPath)) {
+    throw new Error(`mp-weixin build artifact missing: ${mpWeixinAppJsonPath}`);
+  }
 
-console.log("all client builds passed");
+  console.log("all client builds passed");
+} catch (error) {
+  console.error(
+    `CLIENT_BUILDS=FAIL ${error instanceof Error ? error.message : String(error)}`
+  );
+  process.exit(1);
+}

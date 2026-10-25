@@ -20,8 +20,10 @@ import { ApiError, getToken } from "@/api/http";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import ErrorState from "@/components/ErrorState.vue";
 import { formatDateTime } from "@/utils/format";
+import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
 /**
  * MP-R7-ADMIN-IMG（2026-09-15）：媒体鉴权代理端点要求 Authorization 头，
@@ -118,6 +120,7 @@ function handleRejectClick(cert: RealNameCertificationView) {
 
 /** ConfirmDialog 确认回调：执行通过/拒绝审核 */
 async function handleConfirmReview() {
+  if (!sessionStore.canWrite) return;
   const target = confirmTarget.value;
   if (!target || reviewing.value) return;
   reviewing.value = true;
@@ -230,12 +233,12 @@ onMounted(() => {
                 {{ t("realNameCertifications.actionView") }}
               </button>
               <button
-                v-if="cert.status === 'PENDING'"
+                v-if="cert.status === 'PENDING' && sessionStore.canWrite"
                 class="action-button enable"
                 @click="handleApproveClick(cert)"
               >{{ t("realNameCertifications.actionApprove") }}</button>
               <button
-                v-if="cert.status === 'PENDING'"
+                v-if="cert.status === 'PENDING' && sessionStore.canWrite"
                 class="action-button delete"
                 @click="handleRejectClick(cert)"
               >{{ t("realNameCertifications.actionReject") }}</button>

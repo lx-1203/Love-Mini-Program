@@ -41,12 +41,6 @@ public class BillingService {
 
     private static final Logger log = LoggerFactory.getLogger(BillingService.class);
 
-    /**
-     * 支付成功后授予的 VIP 时长（天）：30 天（月度套餐）。
-     * FIN HIGH-11：支付回调成功时按此天数延长 {@code vip_bills.period_end}。
-     */
-    private static final int VIP_GRANT_DAYS = 30;
-
     private final VipBillRepository vipBillRepository;
     private final PaymentCallbackLogRepository paymentCallbackLogRepository;
 
@@ -65,50 +59,62 @@ public class BillingService {
     @Autowired(required = false)
     private WalletService walletService;
 
+    /**
+     * VIP 套餐目录（P0-3：服务端权威定价与时长，与微信支付下单/自动续费链路同源）。
+     *
+     * <p>构造器注入容器里唯一的目录 bean——不再有 {@code required=false} 字段
+     * 与静态回退实例：资金链路缺少目录时必须启动失败（fail-fast），
+     * 而不是悄悄用第二份常量继续定价。</p>
+     */
+    private final VipPlanCatalog planCatalog;
+
     public BillingService(VipBillRepository vipBillRepository,
-                          PaymentCallbackLogRepository paymentCallbackLogRepository) {
+                          PaymentCallbackLogRepository paymentCallbackLogRepository,
+                          VipPlanCatalog planCatalog) {
         this.vipBillRepository = vipBillRepository;
         this.paymentCallbackLogRepository = paymentCallbackLogRepository;
+        this.planCatalog = planCatalog;
     }
 
     /**
-     * VIP 购买（钱包支付，R4-00320：优惠码折扣消费方）。
+     * VIP 购买（钱包支付，R4-00320：优惠码折扣消费方；P0-3：服务端权威定价）。
      *
-     * <p>背景：PromoCodeService.redeem 兑换的折扣金额此前无任何消费方——兑换成功
-     * 但购买时无人读取折扣，营销链路断裂。本方法将折扣接入支付/下单链路：</p>
+     * <p><b>P0-3 安全变更</b>：原实现使用客户端上送的 {@code baseAmount} 作为原价计算
+     * 优惠并扣款、固定授予 30 天，「1 分买月卡」「负数/巨额」均可绕过定价。现改为：
+     * 套餐名称、价格（分）、授予天数一律取服务端 {@link VipPlanCatalog} 权威目录
+     * （与微信支付下单链路同一来源），客户端只被信任传 {@code planId} 与 {@code promoCode}。</p>
+     *
+     * <p>流程：</p>
      * <ol>
-     *   <li>携带 promoCode 时调用 {@link PromoCodeService#redeem} 真实消耗优惠码
-     *       （原子扣减剩余次数 + 写入使用记录），得到折扣金额与折后价</li>
+     *   <li>{@link VipPlanCatalog#requirePurchasable} 校验套餐存在且在售（缺失/下架即业务错误，
+     *       此刻尚未触碰钱包与账单，无任何资金副作用）</li>
+     *   <li>携带 promoCode 时以<b>服务端原价</b>为基数调用 {@link PromoCodeService#redeem}
+     *       原子消耗优惠码，得到折扣金额</li>
      *   <li>按折后价调用 {@link WalletService#deduct} 扣减钱包（orderId 唯一索引幂等）</li>
-     *   <li>写入 VIP 账单（amount=实付、originalAmount=原价，type=SUBSCRIBE，
-     *       paymentMethod=WALLET）并顺延 VIP 到期时间 30 天</li>
+     *   <li>写入 VIP 账单（amount=实付、originalAmount=服务端目录原价、planName=目录名称、
+     *       type=SUBSCRIBE、paymentMethod=WALLET）并按<b>套餐时长</b>顺延 VIP 到期时间</li>
      * </ol>
      *
-     * <p>余额不足抛 {@link InsufficientBalanceException}（HTTP 409）；
-     * 优惠码无效/过期/已用完抛 IllegalArgumentException（HTTP 400）。
-     * 全部操作在同一事务内，任一步失败整体回滚（优惠码使用记录一并回滚）。</p>
+     * <p>余额不足抛 {@link InsufficientBalanceException}（HTTP 400 INSUFFICIENT_BALANCE）；
+     * 套餐非法/已下架/优惠码无效抛 IllegalArgumentException（HTTP 400）。
+     * 全部操作在同一事务内，任一步失败整体回滚（优惠码使用记录与扣款一并回滚）。
+     * 事务内仅远程数据库读写，目录为进程内常量，无外部网络调用。</p>
      *
-     * @param userId     购买用户 ID
-     * @param planId     套餐 ID
-     * @param planName   套餐名称
-     * @param baseAmount 原价（分）
-     * @param promoCode  优惠码（可空，空表示不参与优惠）
+     * @param userId    购买用户 ID
+     * @param planId    套餐 ID（唯一由客户端决定的量；价格/时长由服务端目录给出）
+     * @param promoCode 优惠码（可空，空表示不参与优惠）
      * @return 购买结果视图（订单号 / 原价 / 折扣 / 实付 / 扣费后余额 / 新 VIP 到期时间）
      */
     @Transactional
-    public PurchaseResultView purchaseVip(Long userId, String planId, String planName,
-                                          Integer baseAmount, String promoCode) {
+    public PurchaseResultView purchaseVip(Long userId, String planId, String promoCode) {
         if (userId == null) {
             throw new IllegalArgumentException(ErrorMessages.USER_ID_CN_REQUIRED);
         }
-        if (baseAmount == null || baseAmount < 0) {
-            throw new IllegalArgumentException(ErrorMessages.PLAN_PRICE_NOT_NEGATIVE);
-        }
-        if (planId == null || planId.isBlank()) {
-            throw new IllegalArgumentException(ErrorMessages.PLAN_ID_REQUIRED);
-        }
+        // 1. 服务端权威套餐（P0-3）：非法/下架套餐在此拒绝，后续零资金副作用
+        VipPlanCatalog.VipPlanDef plan = planCatalog.requirePurchasable(planId);
+        int baseAmount = plan.priceCents();
 
-        // 1. 优惠码折扣消费（R4-00320）：redeem 原子消耗使用次数并返回折扣
+        // 2. 优惠码折扣消费（R4-00320）：redeem 原子消耗使用次数并返回折扣，基数为服务端原价
         int discountAmount = 0;
         String usedCode = null;
         if (promoCode != null && !promoCode.isBlank()) {
@@ -121,7 +127,7 @@ public class BillingService {
         }
         int finalAmount = Math.max(0, baseAmount - discountAmount);
 
-        // 2. 钱包扣费（折后价；orderId 唯一索引幂等防重复扣款）
+        // 3. 钱包扣费（折后价；orderId 唯一索引幂等防重复扣款）
         String orderNo = "VIP-PURCHASE-" + UUID.randomUUID().toString().replace("-", "");
         Long balanceAfter = null;
         if (finalAmount > 0) {
@@ -136,19 +142,19 @@ public class BillingService {
                     orderNo);
         }
 
-        // 3. 写入账单并顺延 VIP 到期时间（与支付回调开通逻辑对齐：max(now, 当前 periodEnd) + 套餐天数）
+        // 4. 写入账单并顺延 VIP 到期时间（与支付回调开通逻辑对齐：max(now, 当前 periodEnd) + 套餐天数）
         LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
-        LocalDateTime newExpiry = grantVipExpiry(userId, VIP_GRANT_DAYS);
-        BillView bill = createBill(userId, planId, planName != null ? planName : "月度会员",
+        LocalDateTime newExpiry = grantVipExpiry(userId, plan.days());
+        BillView bill = createBill(userId, plan.planId(), plan.planName(),
                 finalAmount, baseAmount, "SUBSCRIBE", "SUCCESS", "WALLET",
                 orderNo, now.toString(), newExpiry.toString(),
                 usedCode != null
                         ? "VIP 购买（钱包支付），优惠码 " + usedCode + " 抵扣 " + discountAmount + " 分"
                         : "VIP 购买（钱包支付）");
-        log.debug("VIP 购买账单已写入：billId={}, orderNo={}", bill.id(), orderNo);
+        log.debug("VIP 购买账单已写入：billId={}, orderNo={}, planId={}", bill.id(), orderNo, plan.planId());
 
-        log.info("VIP 购买成功：userId={}, orderNo={}, baseAmount={}, discount={}, finalAmount={}",
-                userId, orderNo, baseAmount, discountAmount, finalAmount);
+        log.info("VIP 购买成功：userId={}, orderNo={}, planId={}, baseAmount={}, discount={}, finalAmount={}, grantDays={}",
+                userId, orderNo, plan.planId(), baseAmount, discountAmount, finalAmount, plan.days());
         return new PurchaseResultView(orderNo, baseAmount, discountAmount, finalAmount,
                 balanceAfter, newExpiry.toString());
     }

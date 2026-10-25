@@ -208,17 +208,23 @@ app:
   location:
     default-city: ${APP_LOCATION_DEFAULT_CITY:南京}
     demo-city-nets-enabled: ${APP_LOCATION_DEMO_CITY_NETS_ENABLED:false}
-  # R4-00273：媒体查询参数 token 严格模式。
-  # false（默认，兼容旧客户端）：/api/v1/media/** 的 ?token= 仍接受完整用户 JWT。
-  # true：仅接受 scope=media 的短期媒体令牌（GET /api/v1/media/token 签发，TTL 5 分钟），
-  #       完整用户 JWT 不再允许进入 URL，杜绝访问日志/浏览器历史泄露面。
-  # ⚠️ 前端（apps/client/src/utils/media.ts）迁移到媒体令牌前请保持 false。
+  # R4-00273 / P0-2：媒体查询参数 token 严格模式。
+  # true（现默认）：/api/v1/media/** 的 ?token= 仅接受 scope=media 的短期媒体令牌
+  #       （GET /api/v1/media/token 签发，TTL 5 分钟），完整用户 JWT 不再允许进入 URL。
+  # false：兼容旧客户端，允许完整会话 JWT 出现在查询参数——即把 24 小时会话凭据
+  #       常驻浏览器历史与上游代理/CDN 日志（自家 Tomcat 访问日志已在 R4-00407
+  #       改为不记 query，但管不到上游）。
+  # 翻正理由：客户端已改用 POST /api/v1/media/sign 签发的能力型 URL
+  #       （逐路径绑定 + 15 分钟过期 + 签发时穿过与 GET 同一套归属/档位判定），
+  #       不再需要把会话 JWT 拼进图片地址。
+  # ⚠️ 仅当线上仍存在未升级的旧客户端时才显式置 APP_MEDIA_QUERY_TOKEN_STRICT=false，
+  #    并在收口记录里写明受影响的客户端版本与回退期限；不要靠默认值长期兜底。
   # R4-00378：可信代理 IP/CIDR 列表（逗号分隔，默认空 = 不信任任何代理）。
   # 限流键仅在直连来源命中此列表时才信任 X-Forwarded-For 首地址；否则 XFF 不可信，
   # 客户端伪造 XFF 头无法更换限流桶。部署在 Nginx/网关后时须将网关 IP 加入，
   # 且网关必须负责清理/覆盖客户端传入的 XFF（否则直接来源伪造）。
   security:
-    media-query-token-strict: ${APP_MEDIA_QUERY_TOKEN_STRICT:false}
+    media-query-token-strict: ${APP_MEDIA_QUERY_TOKEN_STRICT:true}
     trusted-proxies: ${APP_TRUSTED_PROXIES:}
   jwt:
     # JWT 签名密钥：必须通过环境变量 JWT_SECRET 设置，不允许使用默认值。

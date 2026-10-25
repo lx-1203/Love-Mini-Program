@@ -216,6 +216,11 @@ services:
       # Task 22（FIN-00272）：移除默认 JWT 密钥，强制通过环境变量注入（>=48 字符）
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required (>=48 chars)}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      # ---------- 敏感数据加密 / WebSocket 来源 ----------
+      # real profile 下两项均有启动 fail-fast（AesEncryptor / WebSocketConfig），
+      # 必须经 Compose 显式注入，不能只在宿主 .env 中存在。
+      APP_AES_SECRET: ${APP_AES_SECRET:?APP_AES_SECRET is required (>=32 chars)}
+      WEBSOCKET_ALLOWED_ORIGIN_PATTERNS: ${WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:?WEBSOCKET_ALLOWED_ORIGIN_PATTERNS is required}
       # ---------- 微信小程序 ----------
       WECHAT_APPID: ${WECHAT_APPID:-}
       WECHAT_SECRET: ${WECHAT_SECRET:-}

@@ -259,6 +259,7 @@ function onAuditKeydown(e: KeyboardEvent): void {
 
 /** 提交审核（拒绝时必须填写备注，供留痕与客户端提示） */
 async function handleSaveAudit(): Promise<void> {
+  if (!sessionStore.canWrite) return;
   const post = auditingPost.value;
   if (!post || savingAudit.value) return;
   if (auditDecision.value === "rejected" && !auditRemark.value.trim()) {
@@ -286,6 +287,7 @@ async function handleSaveAudit(): Promise<void> {
 const pinningId = ref<number | null>(null);
 
 async function togglePin(post: VillagePostSummary): Promise<void> {
+  if (!sessionStore.canWrite) return;
   if (pinningId.value !== null) return; // 防并发重复操作
   pinningId.value = post.id;
   errorMsg.value = "";
@@ -314,6 +316,7 @@ function askDelete(post: VillagePostSummary): void {
 }
 
 async function handleConfirmDelete(): Promise<void> {
+  if (!sessionStore.canWrite) return;
   const target = deleteTarget.value;
   if (!target || deleting.value) return;
   deleting.value = true;
@@ -655,18 +658,19 @@ onMounted(() => {
             <td class="action-cell">
               <button class="action-button handle" @click="openDetail(post)">{{ t("common.view") }}</button>
               <button
-                v-if="post.auditStatus === 'pending'"
+                v-if="sessionStore.canWrite && post.auditStatus === 'pending'"
                 class="action-button audit"
                 @click="openAudit(post)"
               >{{ t("villagePosts.actionAudit") }}</button>
               <button
+                v-if="sessionStore.canWrite"
                 class="action-button pin"
                 :disabled="pinningId !== null"
                 @click="togglePin(post)"
               >{{ post.isPinned ? t("villagePosts.actionUnpin") : t("villagePosts.actionPin") }}</button>
               <button class="action-button handle" @click="openComments(post)">{{ t("villagePosts.actionComments") }}</button>
               <button class="action-button handle" @click="openViewers(post)">{{ t("villagePosts.actionViewers") }}</button>
-              <button class="action-button delete" @click="askDelete(post)">{{ t("common.delete") }}</button>
+              <button v-if="sessionStore.canWrite" class="action-button delete" @click="askDelete(post)">{{ t("common.delete") }}</button>
             </td>
           </tr>
         </tbody>

@@ -115,8 +115,11 @@ jobs:
       - name: Run Spectral lint
         run: npm run lint:openapi:spectral
 
-      - name: Run structure tests
-        run: npm run test:structure
+      - name: Run root contract gates
+        # 根级契约门全量执行（结构/部署/CI/终验汇总/R16 台账/E2E 路由单源/
+        # 后台只读角色写门禁/绑定核查件只读性/门禁接线自证）。
+        # 此前 CI 只跑 test:structure 一条，其余八条仅本地执行 —— 等于「建了没人跑」。
+        run: npm run test:contracts
 
   # ----------------------------------------------------------------
   # Job 2: 客户端类型检查 + H5 / mp-weixin 构建
@@ -171,8 +174,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run client unit tests
-        run: pnpm --filter @campus-love/client run test:unit
+      - name: Run client unit tests with coverage thresholds
+        run: pnpm --filter @campus-love/client run test:coverage
 
   # ----------------------------------------------------------------
   # Job 4: 管理后台类型检查 + 构建
@@ -198,6 +201,9 @@ jobs:
 
       - name: Admin typecheck
         run: pnpm --filter @campus-love/admin run typecheck
+
+      - name: Admin unit tests
+        run: pnpm --filter @campus-love/admin run test:unit
 
       - name: Admin build
         run: pnpm --filter @campus-love/admin run build
@@ -238,8 +244,8 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Maven test
-        run: mvn -B -f apps/api/pom.xml test
+      - name: Maven verify (tests + JaCoCo check)
+        run: mvn -B -f apps/api/pom.xml verify
 
   # ----------------------------------------------------------------
   # Job 7: Trivy 安全扫描 + GHCR 镜像推送 + cosign 签名
@@ -338,7 +344,6 @@ jobs:
           images: ghcr.io/${{ github.repository }}/api
           tags: |
             type=raw,value=${{ steps.tag.outputs.TAG }}
-            type=sha
 
       - name: Docker meta (Admin)
         id: meta-admin
@@ -347,7 +352,6 @@ jobs:
           images: ghcr.io/${{ github.repository }}/admin
           tags: |
             type=raw,value=${{ steps.tag.outputs.TAG }}
-            type=sha
 
       - name: Log in to GHCR
         # 2026-10-05 推送闸：refuse 档不登录 GHCR（PR 场景本就不推送）
@@ -359,6 +363,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push API image
+        id: build-api
         uses: docker/build-push-action@v6
         with:
           context: ./apps/api
@@ -366,10 +371,14 @@ jobs:
           tags: ${{ steps.meta-api.outputs.tags }}
           # 2026-10-05 推送闸：refuse 档只构建不推送（配合上方显式 fail 步骤）
           push: ${{ github.event_name != 'pull_request' && steps.push-gate.outputs.mode != 'refuse' }}
+          # PR/refuse 不推送时必须载入本地 daemon，后续 Trivy 才有真实镜像可扫；
+          # 修复原链「PR push=false 且未 load，却按 GHCR 引用扫描」的断点。
+          load: ${{ github.event_name == 'pull_request' || steps.push-gate.outputs.mode == 'refuse' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Build and push Admin image
+        id: build-admin
         uses: docker/build-push-action@v6
         with:
           context: ./apps/admin
@@ -377,24 +386,42 @@ jobs:
           tags: ${{ steps.meta-admin.outputs.tags }}
           # 2026-10-05 推送闸：refuse 档只构建不推送（配合上方显式 fail 步骤）
           push: ${{ github.event_name != 'pull_request' && steps.push-gate.outputs.mode != 'refuse' }}
+          load: ${{ github.event_name == 'pull_request' || steps.push-gate.outputs.mode == 'refuse' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       # ---------- 阶段 3：镜像漏洞扫描（P3-D.1）----------
-      # infra R2-00006：metadata-action 的 outputs.tags 为逗号分隔多 tag
-      # （如 ci-<sha>,sha-<sha>），Trivy image-ref 只接受单镜像引用，
-      # 取第一个 tag 扫描即可覆盖同一镜像内容
-      - name: Trivy scan API image
+      # GitHub Actions 表达式不支持 JS 的 .split()：metadata 固定只产出一个 raw tag。
+      # PR/refuse 档扫刚 load 的本地镜像；push 档扫刚推送的 digest，两个目标都真实存在。
+      - name: Trivy scan API image (local build)
+        if: ${{ github.event_name == 'pull_request' || steps.push-gate.outputs.mode == 'refuse' }}
         uses: aquasecurity/trivy-action@v0.23.0
         with:
-          image-ref: ${{ steps.meta-api.outputs.tags.split(',')[0] }}
+          image-ref: ${{ steps.meta-api.outputs.tags }}
           severity: HIGH,CRITICAL
           exit-code: '1'
 
-      - name: Trivy scan Admin image
+      - name: Trivy scan Admin image (local build)
+        if: ${{ github.event_name == 'pull_request' || steps.push-gate.outputs.mode == 'refuse' }}
         uses: aquasecurity/trivy-action@v0.23.0
         with:
-          image-ref: ${{ steps.meta-admin.outputs.tags.split(',')[0] }}
+          image-ref: ${{ steps.meta-admin.outputs.tags }}
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+
+      - name: Trivy scan API image (pushed digest)
+        if: ${{ github.event_name != 'pull_request' && steps.push-gate.outputs.mode != 'refuse' }}
+        uses: aquasecurity/trivy-action@v0.23.0
+        with:
+          image-ref: ghcr.io/${{ github.repository }}/api@${{ steps.build-api.outputs.digest }}
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+
+      - name: Trivy scan Admin image (pushed digest)
+        if: ${{ github.event_name != 'pull_request' && steps.push-gate.outputs.mode != 'refuse' }}
+        uses: aquasecurity/trivy-action@v0.23.0
+        with:
+          image-ref: ghcr.io/${{ github.repository }}/admin@${{ steps.build-admin.outputs.digest }}
           severity: HIGH,CRITICAL
           exit-code: '1'
 
@@ -496,11 +523,11 @@ jobs:
             playwright-${{ runner.os }}-
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       # FIN-00278：根目录无 playwright.config，必须显式指定配置（tests/e2e/）
       - name: Run Playwright tests
-        run: npx playwright test --config=tests/e2e/playwright.config.ts
+        run: pnpm exec playwright test --config=tests/e2e/playwright.config.ts
 
       # FIN-00867：报告 artifact 设置保留期限
       - name: Upload Playwright report

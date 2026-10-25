@@ -70,15 +70,16 @@ public class VipOrderService {
     /** orderNo 前缀 + 时间戳 + 短随机串（总长 ≤32，微信 out_trade_no 上限 6-32 位） */
     private static final DateTimeFormatter ORDER_NO_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
-    /** 套餐定义（服务端定价唯一真相源，与客户端 config/vip-plans.ts 价格对齐） */
-    public record VipPlanDef(String planId, String planName, int priceCents, int days) {
-    }
-
-    /** 套餐目录：monthly=1800 分/30 天，quarterly=4800 分/90 天，yearly=15800 分/365 天 */
-    private static final Map<String, VipPlanDef> PLAN_CATALOG = Map.of(
-            "monthly", new VipPlanDef("monthly", "月卡", 1800, 30),
-            "quarterly", new VipPlanDef("quarterly", "季卡", 4800, 90),
-            "yearly", new VipPlanDef("yearly", "年卡", 15800, 365));
+    /**
+     * 套餐目录（服务端定价与唯一真相源，见 {@link VipPlanCatalog}；
+     * 进程内常量，读取零远程 IO，可在下单事务内安全调用）。
+     *
+     * <p>P0-3：目录常量由本类私有 {@code PLAN_CATALOG} 迁出至 {@link VipPlanCatalog}，
+     * 使钱包购买链路（{@code BillingService#purchaseVip}）、微信支付下单链路与
+     * 自动续费链路共用同一份价格/时长。构造器注入容器里唯一的目录 bean，
+     * 不提供静态回退（缺失即启动失败）。</p>
+     */
+    private final VipPlanCatalog planCatalog;
 
     /** 订单状态机合法迁移表（终点态 CLOSED/FAILED/REFUNDED 无出边） */
     private static final Map<String, Set<String>> ALLOWED_TRANSITIONS = Map.of(
@@ -109,10 +110,12 @@ public class VipOrderService {
 
     public VipOrderService(VipOrderRepository vipOrderRepository,
                            BillingService billingService,
-                           PaymentCallbackLogRepository paymentCallbackLogRepository) {
+                           PaymentCallbackLogRepository paymentCallbackLogRepository,
+                           VipPlanCatalog planCatalog) {
         this.vipOrderRepository = vipOrderRepository;
         this.billingService = billingService;
         this.paymentCallbackLogRepository = paymentCallbackLogRepository;
+        this.planCatalog = planCatalog;
     }
 
     /* ==================== 下单 ==================== */
@@ -135,7 +138,7 @@ public class VipOrderService {
         if (userId == null) {
             throw new IllegalArgumentException("用户 ID 不能为空");
         }
-        VipPlanDef plan = planOf(planId);
+        VipPlanCatalog.VipPlanDef plan = planOf(planId);
 
         User user = userRepository != null ? userRepository.findById(userId).orElse(null) : null;
         String openid = user != null ? user.getOpenid() : null;
@@ -631,16 +634,12 @@ public class VipOrderService {
                 "VIP 微信支付成功，订单号 " + order.getOrderNo());
     }
 
-    /** 校验并取套餐定义。 */
-    private VipPlanDef planOf(String planId) {
-        if (planId == null || planId.isBlank()) {
-            throw new IllegalArgumentException("套餐 ID 不能为空");
-        }
-        VipPlanDef plan = PLAN_CATALOG.get(planId);
-        if (plan == null) {
-            throw new IllegalArgumentException("非法套餐: " + planId + "，仅支持 " + PLAN_CATALOG.keySet());
-        }
-        return plan;
+    /**
+     * 校验并取套餐定义（P0-3：统一走 {@link VipPlanCatalog} 权威目录，
+     * 与钱包购买链路同源；非法或已下架均业务错误，不产生订单）。
+     */
+    private VipPlanCatalog.VipPlanDef planOf(String planId) {
+        return planCatalog.requirePurchasable(planId);
     }
 
     /** 生成全局唯一订单号：VIP + yyyyMMddHHmmss + 8 位随机（共 25 位，≤32 上限）。 */

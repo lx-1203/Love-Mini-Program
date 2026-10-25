@@ -54,7 +54,8 @@ class VipOrderRefundInitiationTest {
     @BeforeEach
     void setUp() {
         billingService = mock(BillingService.class);
-        service = new VipOrderService(vipOrderRepository, billingService, paymentCallbackLogRepository);
+        service = new VipOrderService(vipOrderRepository, billingService, paymentCallbackLogRepository,
+                new VipPlanCatalog());
         wxPayProperties = new WxPayProperties();
         wxPayProperties.setEnabled(true);
         wxPayJsapiService = mock(WxPayJsapiService.class);

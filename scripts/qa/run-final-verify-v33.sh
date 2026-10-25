@@ -9,6 +9,8 @@ set -u
 # 仓库根从本脚本位置推导（scripts/qa/ 的上两级），不写盘符死路径。
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT" || exit 1
+# 汇总逻辑独立成可测试脚本：目录内全部 *.exit 都进 summary，红项决定进程退出码。
+source "$REPO_ROOT/scripts/qa/final-verify-summary.sh"
 # node 解析序：NODE22_EXE 显式 > PATH 上的 node（本项目纪律是 PATH 前置 Node22）。
 # 老 node 会让 import.meta.dirname 的门假红（本文件头注释第 1 条）⇒ 版本闸大声失败，不回落盘符死路径。
 N22="${NODE22_EXE:-$(command -v node 2>/dev/null || true)}"
@@ -17,6 +19,8 @@ case "$N22_MAJOR" in ''|*[!0-9]*) N22_MAJOR=0 ;; esac
 [ "$N22_MAJOR" -ge 20 ] || { echo "FINAL_VERIFY=FAIL reason=解析到的 node 太老（$("$N22" -v 2>/dev/null || echo 未知)），设 NODE22_EXE 指一个 >=20 的 node 再跑"; exit 2; }
 OUT=.zcode/tmp/final-verify
 mkdir -p "$OUT"
+# 必须清掉上一发的 .exit，否则汇总会把陈旧结果算进本轮（正是本次要修的漏读/误读源）。
+rm -f "$OUT"/*.exit
 HEAD_BEFORE=$(git rev-parse --short HEAD)
 echo "HEAD=$HEAD_BEFORE  node=$("$N22" -v)"
 
@@ -228,20 +232,13 @@ echo "--- 暂存区密钥预检（两个载具的判域不同：这里量的是�
 # 口令不回显：本门只印 path:line + 掩码值（该脚本 :36-38 的输出纪律），侧车同样只落掩码。
 g verify-staged-secrets   120 scripts/qa/verify-staged-secrets.mjs --against HEAD~1 --json "$OUT/staged-secrets-postcommit.json"
 
-echo "=== 汇总 ==="
-FAIL=0
-REDS=""
-for f in "$OUT"/*.exit; do
-  n=$(basename "$f" .exit); e=$(cat "$f")
-  [ "$e" = "0" ] || { echo "RED: $n exit=$e"; FAIL=$((FAIL+1)); REDS="$REDS\"$n\","; }
-done
+# 报告回填前先汇总到此为止的全部 .exit，供 gen-round8-report 的 §7 读取。
+# 注意：这只是中间读数；emit/gen 本身也是 g 步骤，跑完后必须再汇总一次。
 HEAD_AFTER=$(git rev-parse --short HEAD)
-# 写成 JSON 给 scripts/qa/gen-round8-report.mjs 的 §7 直接读，避免报告与读数脱节
-printf '{"headBefore":"%s","headAfter":"%s","gates":{%s},"reds":[%s]}\n' \
-  "$HEAD_BEFORE" "$HEAD_AFTER" \
-  "$(for f in "$OUT"/*.exit; do n=$(basename "$f" .exit); printf '"%s":%s,' "$n" "$(cat "$f")"; done | sed 's/,$//')" \
-  "$(echo "$REDS" | sed 's/,$//')" > "$OUT/summary.json"
-echo "GREEN/RED 计数：红=$FAIL  HEAD 前=$HEAD_BEFORE 后=$HEAD_AFTER（相同则 sha 敏感门读数未受提交漂移影响）"
+SUMMARY_OUTPUT=$(final_verify_summarize "$OUT" "$HEAD_BEFORE" "$HEAD_AFTER")
+FAIL=$(printf '%s\n' "$SUMMARY_OUTPUT" | tail -n 1)
+printf '%s\n' "$SUMMARY_OUTPUT" | sed '$d'
+
 # 总报告回填：这一步此前**只是一句 echo**（"下一步跑 …"），等于清单里的一条门在 bash 载具没接线——
 # 收口者把本脚本当"全清单"跑完就撒手时，reports 里的 §7 还是上一轮的 summary 读数，且没有门能看见这次漏跑
 #（DSL :1048 一直在跑它，两载具就此不一致；现由 verify-gate-list-sync 的差集判据盯着）。
@@ -257,5 +254,15 @@ echo "GREEN/RED 计数：红=$FAIL  HEAD 前=$HEAD_BEFORE 后=$HEAD_AFTER（相�
 # 超时 420 秒：它现跑覆盖门两次（自己一次 + 去向册门内部再 spawn 一次，单发实测约 60–90 s）。
 g emit-round-bill        420 scripts/qa/emit-round-bill.mjs --closure reports/audit/ui-audit-2026-10-16 --tag v38 --ledger reports/audit/ui-audit-2026-10-16/decisions-v38.md --dir reports/audit/round-7 --ops reports/audit/round-6/ops
 g gen-round8-report      180 scripts/qa/gen-round8-report.mjs --ledger reports/audit/ui-audit-2026-10-16/decisions-v38.md --out reports/audit/ui-audit-2026-10-16/round-final-report-v38.md --round v3.8 --date 2026-10-16 --prose reports/audit/ui-audit-2026-10-16/closing-prose-v38.md --baseline "$HEAD_BEFORE" --summary "$OUT/summary.json" --gapbill reports/audit/ui-audit-2026-10-16/gapbill-v38.json --openrows reports/audit/ui-audit-2026-10-16/openrows-blockers-v38.json
+
+# 最终汇总必须覆盖 emit-round-bill / gen-round8-report 的 .exit：
+# 旧载具在第一次汇总之后才跑这两步，红项不进 summary，且脚本最后仍 exit 0。
+echo "=== 最终汇总（含报告生产者）==="
+HEAD_AFTER=$(git rev-parse --short HEAD)
+SUMMARY_OUTPUT=$(final_verify_summarize "$OUT" "$HEAD_BEFORE" "$HEAD_AFTER")
+FAIL=$(printf '%s\n' "$SUMMARY_OUTPUT" | tail -n 1)
+printf '%s\n' "$SUMMARY_OUTPUT"
 echo "汇总已写 $OUT/summary.json；总报告回填的读数与落点见 $OUT/gen-round8-report.log"
-echo "FINAL_VERIFY_DONE reds=$FAIL（注：红数只统计上面那一轮汇总，总报告回填排在其后，单独看它的 .exit）"
+echo "FINAL_VERIFY_DONE reds=$FAIL"
+exit "$FAIL"
+

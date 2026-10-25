@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.ratelimit.RateLimit;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
@@ -52,12 +53,13 @@ public class SmsCodeController {
      * @return 发送结果（mock profile 附带 mockCode；真实环境不含验证码字段）
      */
     @PostMapping("/send-code")
-    @RateLimit(capacity = 1, refillTokens = 1.0 / 60, key = "#request.phone")
-    public ApiResponse<Map<String, Object>> sendCode(@RequestBody SendCodeRequest request) {
-        log.info("验证码发送请求: phone={}", maskPhone(request.phone()));
+    @RateLimit(capacity = 1, refillTokens = 1.0 / 60, key = "#payload.phone")
+    public ApiResponse<Map<String, Object>> sendCode(
+            @Valid @RequestBody SendCodeRequest payload) {
+        log.info("验证码发送请求: phone={}", maskPhone(payload.phone()));
         // mock profile：模拟发送并回传 mockCode（本地演示契约保持不变）
         if (smsCodeService.isMockProfile()) {
-            String code = smsCodeService.sendCode(request.phone());
+            String code = smsCodeService.sendCode(payload.phone());
             return ApiResponse.ok(Map.of(
                     "success", true,
                     "mockCode", code,
@@ -66,7 +68,7 @@ public class SmsCodeController {
             ));
         }
         // 真实环境：网关未配置时抛 503；网关就绪时下发且响应不含验证码本体
-        smsCodeService.sendCode(request.phone());
+        smsCodeService.sendCode(payload.phone());
         return ApiResponse.ok(Map.of(
                 "success", true,
                 "expiresIn", "300秒",

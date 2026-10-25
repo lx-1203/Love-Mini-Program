@@ -22,8 +22,11 @@ import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE } from "../../utils/constants";
+import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
+
+const sessionStore = useSessionStore();
 
 const comments = ref<PostCommentView[]>([]);
 const loading = ref(false);
@@ -85,6 +88,7 @@ function handleDeleteClick(comment: PostCommentView): void {
 
 /** ConfirmDialog 确认回调：执行删除 */
 async function handleConfirmDelete(): Promise<void> {
+  if (!sessionStore.canWrite) return;
   const target = deleteTarget.value;
   if (!target || deleting.value) return;
   deleting.value = true;
@@ -159,7 +163,7 @@ onMounted(() => {
             <td class="content-cell">{{ comment.content }}</td>
             <td class="time-cell">{{ formatDateTime(comment.createdAt) }}</td>
             <td class="action-cell">
-              <button class="action-button delete" @click="handleDeleteClick(comment)">
+              <button v-if="sessionStore.canWrite" class="action-button delete" @click="handleDeleteClick(comment)">
                 {{ t("comments.actionDelete") }}
               </button>
             </td>

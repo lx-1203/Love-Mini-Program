@@ -4154,6 +4154,7 @@ export default {
     activity: {
       loadActivitiesFailed: "Failed to load activities",
       loadMoreFailed: "Failed to load more activities",
+      pageShapeMismatch: "Activity list response does not match the paging contract",
       registerFailed: "Failed to register",
       loadDetailFailed: "Failed to load activity details",
     },

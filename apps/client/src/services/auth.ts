@@ -376,17 +376,16 @@ export async function registerUser(
 }
 
 /**
- * 体验账号一键登录（登录页「一键体验全部功能」临时号）。
+ * 发送注册短信验证码（模拟短信）。
  *
- * <p>调用 {@code POST /v1/auth/guest-login}：后端首次调用自动创建固定体验账号并签发 JWT，
- * 后续复用同一账号（幂等），无需注册/输入密码即可体验全部功能。</p>
+ * <p>调用 {@code POST /v1/sms/send-code}：向目标手机号下发 6 位验证码，注册时回填校验。
+ * mock/dev 档响应可能携带 {@code mockCode}（前端可直接提示），real 档不下发验证码内容。</p>
  *
- * <p>不含 Mock fallback——后端不可达时抛出错误,由调用方提示。
- * 商业化上线前后端若关闭体验入口（app.guest-login.enabled=false），
- * 本接口将返回业务错误，调用方应提示用户改用其他登录方式。</p>
+ * <p>频控/参数类预期业务拒绝由调用方 toast 展示，不进 http 层上报。</p>
  *
- * @returns 用户会话信息
- * @throws Error 网络错误/入口关闭时抛出(含后端 message)
+ * @param phone 手机号（1[3-9] 开头 11 位）
+ * @returns { success, mockCode?, message? }
+ * @throws Error 网络错误时抛出(含后端 message)
  */
 export async function sendSmsCode(
   phone: string,
@@ -403,6 +402,19 @@ export async function sendSmsCode(
   return response;
 }
 
+/**
+ * 体验账号一键登录（登录页「一键体验全部功能」临时号）。
+ *
+ * <p>调用 {@code POST /v1/auth/guest-login}：后端每次调用创建一个独立临时体验账号并签发
+ * JWT（P0-4 访客账号隔离，不再复用同一账号），无需注册/输入密码即可体验全部功能。</p>
+ *
+ * <p>不含 Mock fallback——后端不可达时抛出错误,由调用方提示。
+ * 商业化上线前后端若关闭体验入口（app.guest-login.enabled=false），
+ * 本接口将返回业务错误，调用方应提示用户改用其他登录方式。入口现按客户端 IP 限流。</p>
+ *
+ * @returns 用户会话信息
+ * @throws Error 网络错误/入口关闭/触发限流时抛出(含后端 message)
+ */
 export async function loginAsGuest(): Promise<UserSession> {
   const response = await request<UserSession, never>({
     url: "/v1/auth/guest-login",

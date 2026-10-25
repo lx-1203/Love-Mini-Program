@@ -25,6 +25,8 @@ export interface AppApiErrorShape {
   status: number;
   /** 错误码字符串（业务侧分支处理依据） */
   error: string;
+  /** 后端独立业务码（如 DAILY_LIMIT_EXCEEDED）；与 HTTP 短语分离保留 */
+  code?: string;
   /** 用户可读的错误文案（直接展示给用户） */
   message: string;
   /** 可选错误详情（字段级校验信息、调试上下文等） */
@@ -42,6 +44,8 @@ export class AppApiError extends Error {
   status: number;
   /** 错误码字符串 */
   error: string;
+  /** 后端独立业务码（与 error 分开保留，便于调用方精确分支） */
+  code?: string;
   /** 错误详情（字段级校验信息等） */
   details?: unknown;
 
@@ -53,6 +57,7 @@ export class AppApiError extends Error {
     this.name = "AppApiError";
     this.status = shape.status;
     this.error = shape.error;
+    this.code = shape.code;
     this.details = shape.details;
   }
 }
@@ -145,13 +150,20 @@ export function toAppApiError(status: number, payload: unknown): AppApiError {
   if (payload && typeof payload === "object") {
     const record = payload as Record<string, unknown>;
     const fallback = fallbackErrorShape(status);
+    const backendCode =
+      typeof record.code === "string" && record.code.trim().length > 0
+        ? record.code
+        : undefined;
 
     return new AppApiError({
       status,
+      // 后端 code 是精确业务码；HTTP 短语 error 仅作兼容兜底。
       error:
-        typeof record.error === "string" && record.error.trim().length > 0
+        backendCode ??
+        (typeof record.error === "string" && record.error.trim().length > 0
           ? record.error
-          : fallback.error,
+          : fallback.error),
+      code: backendCode,
       message:
         typeof record.message === "string" && record.message.trim().length > 0
           ? record.message

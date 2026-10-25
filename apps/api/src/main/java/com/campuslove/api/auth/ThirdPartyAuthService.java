@@ -234,31 +234,149 @@ public class ThirdPartyAuthService {
     }
 
     /**
-     * 为已登录用户绑定第三方账号。
+     * 为已登录用户绑定第三方账号（P0-1 安全加固：不再信任客户端传入的原始 openId/unionId）。
      *
-     * <p>约束：</p>
+     * <p>客户端无法直接指定"要绑定的第三方身份"，只能提交一次性凭据，由服务端验证后派生真实身份：</p>
      * <ul>
-     *   <li>同一 (provider, openId) 仅允许绑定一个本系统用户（数据库唯一约束）</li>
-     *   <li>同一用户同一 provider 仅允许绑定一个 openId（业务约束）</li>
+     *   <li>WECHAT：必须携带微信 {@code code}，服务端调用 {@link WeChatClient#code2Session}
+     *       换取真实 openid/unionid；换取失败（null / 空 openid）时拒绝绑定。</li>
+     *   <li>APPLE：必须携带 {@code identityToken}，服务端调用
+     *       {@link AppleIdentityTokenVerifier#verifyAndGetSubject} 验签（RS256 + iss/aud/exp/nonce）
+     *       取 sub；验签失败时拒绝绑定。</li>
      * </ul>
      *
-     * @param userId   当前用户 ID（来自 SecurityUtils.getCurrentUserId()）
-     * @param provider 第三方平台标识
-     * @param openId   第三方 openId（明文）
-     * @param unionId  第三方 unionId（可空）
-     * @return 绑定成功返回 true；用户已绑定该平台或 openId 已被其他用户绑定时返回 false
-     * @throws IllegalArgumentException userId / provider / openId 为空时抛出
+     * <p>仅<b>服务端派生的已验证身份</b>会被落库（沿用既有 SHA-256 派生哈希），
+     * 客户端传入的原始 code/identityToken 绝不入库。跨用户冲突（OPENID_TAKEN）
+     * 与"已绑定该平台"（ALREADY_BOUND）的既有行为保持不变，且冲突判定基于派生的真实身份。</p>
+     *
+     * <p>失败映射（I-1，与 {@link RealAuthService#loginWithWechat} 同一把尺子）：
+     * {@link WeChatClient#code2Session} 对无效 code 是<b>抛</b>
+     * {@link WeChatClient.WeChatAuthException}（而不是返回 null），本方法必须映射而非任其冒泡，
+     * 否则 {@code GlobalExceptionHandler} 无对应 handler → catch-all 500：</p>
+     * <ul>
+     *   <li>errcode 40029（code 无效/已过期）→ {@link WechatLoginException.ErrorCode#INVALID_CODE}（401）
+     *       —— 客户端可修复（重新拉起 wx.login）</li>
+     *   <li>其他 errcode / 网络异常（微信侧服务故障）→
+     *       {@link WechatLoginException.ErrorCode#WECHAT_API_ERROR}（502）—— 可区分的上游失败</li>
+     *   <li>返回 null（熔断打开 / 重试耗尽的降级）→ 同上 WECHAT_API_ERROR（502）：
+     *       这是服务不可用，不是"凭据无效"，必须与客户端错误可区分</li>
+     *   <li>session 非空但 openid 空白 → {@link ErrorMessages#WECHAT_CREDENTIAL_INVALID}
+     *       （IllegalArgumentException → 400），拒绝落库</li>
+     * </ul>
+     *
+     * <p>日志仅输出 code 长度与 errcode，绝不输出原始 code（infra R2-00227 口径）。</p>
+     *
+     * <p>事务边界（I-2）：本方法<b>刻意不加</b> {@code @Transactional}。绑定的编排要先做
+     * 出站供应商调用（微信 code2session 最坏 3 次重试 + 熔断试探、Apple JWKS 验签），
+     * 若置于事务内，数据库连接会被这些远程调用整段占用，高并发下耗尽连接池——
+     * 与 {@code RealAuthService#loginWithWechat}（Task 2.5.5）拆除方法级事务的处理一致。
+     * 落库本身是单次 {@code repository.save}，原子性由 Spring Data JPA
+     * {@code SimpleJpaRepository#save} 自带事务兜底。</p>
+     *
+     * <p>残留竞态：无事务包裹后，"查 (provider, openId) 未占用 → 插入"两步之间可能被并发插入
+     * 抢先。该竞态由数据库唯一约束 {@code uk_third_party_provider_open_id}
+     * （见 {@link com.campuslove.api.entity.ThirdPartyAccount}）兜住——后提交者收到
+     * {@code DataIntegrityViolationException}，由 {@code GlobalExceptionHandler} 标准化为 409，
+     * 不会出现两个用户绑定同一第三方身份。事务在此换不来额外保护（长事务只是把竞态窗口
+     * 换成连接占用），故不加。</p>
+     *
+     * @param userId        当前用户 ID（来自 SecurityUtils.getCurrentUserId()）
+     * @param provider      第三方平台标识（WECHAT / APPLE）
+     * @param code          微信一次性登录凭证（WECHAT 必填；APPLE 忽略）
+     * @param identityToken Apple identityToken JWT（APPLE 必填；WECHAT 忽略）
+     * @return 绑定成功返回 true
+     * @throws IllegalArgumentException userId / provider 为空、缺少对应凭据，或换取到的 openid 为空白时抛出
+     * @throws WechatLoginException     微信 code 无效（401 INVALID_CODE）或微信服务不可用（502 WECHAT_API_ERROR）
+     * @throws ThirdPartyBindConflictException 该第三方身份已被他人绑定 / 当前用户已绑定该平台时抛出
      */
-    @Transactional
-    public boolean bindThirdParty(Long userId, String provider, String openId, String unionId) {
+    public boolean bindThirdParty(Long userId, String provider, String code, String identityToken) {
         if (userId == null) {
             throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
         if (provider == null || provider.isBlank()) {
             throw new IllegalArgumentException(ErrorMessages.PROVIDER_REQUIRED);
         }
+
+        // 服务端验证一次性凭据，派生真实第三方身份（客户端无法选择被绑定的身份）
+        String verifiedOpenId;
+        String verifiedUnionId;
+        if (PROVIDER_WECHAT.equals(provider)) {
+            if (code == null || code.isBlank()) {
+                throw new IllegalArgumentException(ErrorMessages.CODE_REQUIRED);
+            }
+            // I-1：code2Session 对无效 code 抛 WeChatAuthException，必须就地映射为
+            // 带业务错误码的 WechatLoginException（401/502），不得任其冒泡成 catch-all 500。
+            WeChatClient.WeChatSessionResponse session;
+            try {
+                session = weChatClient.code2Session(code);
+            } catch (WeChatClient.WeChatAuthException ex) {
+                Integer errcode = ex.getErrcode();
+                // R4-00254：上游细节（errmsg / 网络信息）只进日志，不拼进用户可见消息；
+                // 原始 code 不落日志，仅记长度（infra R2-00227）。
+                log.warn("第三方绑定微信 code2session 异常, provider=WECHAT, userId={}, code(length={}): errcode={}, message={}",
+                        userId, code.length(), errcode, ex.getMessage(), ex);
+                if (errcode != null && errcode == 40029) {
+                    throw new WechatLoginException(
+                            WechatLoginException.ErrorCode.INVALID_CODE,
+                            "微信登录凭证已失效，请重新登录",
+                            ex);
+                }
+                throw new WechatLoginException(
+                        WechatLoginException.ErrorCode.WECHAT_API_ERROR,
+                        "微信服务暂时不可用，请稍后重试",
+                        ex);
+            }
+            // null 仅出自熔断打开 / 重试耗尽的降级（见 WeChatClient#code2SessionFallback），
+            // 属上游不可用，须与"凭据无效"可区分 → WECHAT_API_ERROR（502）。
+            if (session == null) {
+                log.warn("第三方绑定微信 code2session 返回 null（熔断/重试耗尽降级）, userId={}, code(length={})",
+                        userId, code.length());
+                throw new WechatLoginException(
+                        WechatLoginException.ErrorCode.WECHAT_API_ERROR,
+                        "微信服务暂时不可用，请稍后重试");
+            }
+            // 换取到响应但 openid 空白：凭据本身不可用，拒绝绑定且不落库
+            if (session.getOpenid() == null || session.getOpenid().isBlank()) {
+                log.warn("第三方绑定微信 code2session 未能换取 openid，拒绝绑定（不记录任何原始凭据）, userId={}, code(length={})",
+                        userId, code.length());
+                throw new IllegalArgumentException(ErrorMessages.WECHAT_CREDENTIAL_INVALID);
+            }
+            verifiedOpenId = session.getOpenid();
+            verifiedUnionId = session.getUnionid();
+        } else if (PROVIDER_APPLE.equals(provider)) {
+            if (identityToken == null || identityToken.isBlank()) {
+                throw new IllegalArgumentException(ErrorMessages.IDENTITY_TOKEN_REQUIRED);
+            }
+            // 验签失败（非法 / 过期 / 重放）由验签器抛 IllegalArgumentException，绑定被拒绝、不落库
+            verifiedOpenId = appleIdentityTokenVerifier.verifyAndGetSubject(identityToken);
+            verifiedUnionId = null;
+        } else {
+            throw new IllegalArgumentException("provider 取值非法，仅支持 WECHAT / APPLE");
+        }
+
+        return bindVerifiedIdentity(userId, provider, verifiedOpenId, verifiedUnionId);
+    }
+
+    /**
+     * 落库服务端已验证的第三方身份（内部方法，仅由 {@link #bindThirdParty} 调用）。
+     *
+     * <p>约束：</p>
+     * <ul>
+     *   <li>同一 (provider, openIdHash) 仅允许绑定一个本系统用户（数据库唯一约束）</li>
+     *   <li>同一用户同一 provider 仅允许绑定一个 openId（业务约束）</li>
+     * </ul>
+     *
+     * @param userId  当前用户 ID
+     * @param provider 第三方平台标识
+     * @param openId   服务端派生的真实 openId（明文，方法内哈希后落库）
+     * @param unionId  服务端派生的真实 unionId（可空，哈希后落库）
+     * @return 绑定成功返回 true
+     * @throws ThirdPartyBindConflictException 冲突时抛出
+     */
+    private boolean bindVerifiedIdentity(Long userId, String provider, String openId, String unionId) {
         if (openId == null || openId.isBlank()) {
-            throw new IllegalArgumentException(ErrorMessages.OPEN_ID_REQUIRED);
+            // 服务端派生身份为空属异常状态，拒绝落库（绝不写入未经验证的身份）
+            throw new IllegalArgumentException(ErrorMessages.WECHAT_CREDENTIAL_INVALID);
         }
 
         String openIdHash = hashIdentifier(openId);
@@ -267,8 +385,8 @@ public class ThirdPartyAuthService {
         Optional<ThirdPartyAccount> existing = thirdPartyAccountRepository
                 .findByProviderAndOpenId(provider, openIdHash);
         if (existing.isPresent() && !existing.get().getUserId().equals(userId)) {
-            log.warn("第三方账号已被其他用户绑定, provider={}, openIdHash={}, ownerId={}",
-                    provider, openIdHash, existing.get().getUserId());
+            log.warn("第三方账号已被其他用户绑定, provider={}, ownerId={}",
+                    provider, existing.get().getUserId());
             // R4-00262：区分业务错误码，客户端可明确提示"该账号已被其他用户绑定"
             throw new ThirdPartyBindConflictException(
                     ThirdPartyBindConflictException.CODE_OPENID_TAKEN,
@@ -286,7 +404,7 @@ public class ThirdPartyAuthService {
                     "当前账号已绑定该平台，请先解绑后再操作");
         }
 
-        // 3. 写入绑定记录
+        // 3. 写入绑定记录（仅服务端派生的已验证身份，且经哈希不可逆落库）
         ThirdPartyAccount account = new ThirdPartyAccount();
         account.setUserId(userId);
         account.setProvider(provider);

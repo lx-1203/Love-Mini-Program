@@ -27,6 +27,7 @@ import {
   hasDevUserFromLaunch,
   useSessionStore,
 } from "../stores/session";
+import { isDevUserEntryAllowed } from "./dev-user-gate";
 
 /** dev-user 演示入口 query key（与 stores/session.ts 中常量保持一致） */
 const DEV_USER_QUERY_KEY = "dev-user";
@@ -66,6 +67,7 @@ function urlHasDevUser(url: string): boolean {
  * pinia 未就绪 / store 异常时静默（dev-user 是增强能力，不阻塞主流程）。
  */
 function applyDevUserIfNeeded(): void {
+  if (!isDevUserEntryAllowed()) return;
   try {
     const sessionStore = useSessionStore();
     if (!sessionStore.isLoggedIn) {
@@ -115,6 +117,7 @@ let interceptorRegistered = false;
  * 由 App.vue onLaunch 调用一次（应用生命周期内仅注册一次）。
  */
 export function registerDevUserEntry(): void {
+  if (!isDevUserEntryAllowed()) return;
   if (interceptorRegistered) return;
   interceptorRegistered = true;
 

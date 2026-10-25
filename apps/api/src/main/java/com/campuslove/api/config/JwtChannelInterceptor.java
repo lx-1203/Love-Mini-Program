@@ -124,6 +124,16 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
         // 与 MockSecurityConfig 的 HTTP mock 认证语义保持一致，保证 mock 模式
         // WebSocket 联调可用。有 token 时尽力解析 userId，解析失败回退配置的 mock 用户。
         if (isMockProfile()) {
+            // P0-2 媒体令牌降权：mock 档跳过的是「真实 JWT 校验」这份 demo 便利，
+            // 不是媒体 scope 的能力边界——一份真签发的 scope=media 令牌在这里同样能被
+            // 解析出 userId，若照旧放行就等于「demo 档里 5 分钟降权凭据 = 长连接会话」。
+            // 判定与 HTTP 过滤器/握手拦截器同源（JwtTokenProvider#isMediaToken）。
+            if (token != null && !token.isBlank() && jwtTokenProvider.isMediaToken(token)) {
+                log.warn("WebSocket CONNECT 拒绝（mock 档）: 媒体访问令牌（media scope）不可建立长连接, sessionId={}",
+                        accessor.getSessionId());
+                throw new org.springframework.messaging.MessageDeliveryException(
+                        "Unauthorized: media-scoped token cannot open WebSocket session");
+            }
             String userId = null;
             if (token != null && !token.isBlank()) {
                 try {
@@ -149,6 +159,18 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
         if (!jwtTokenProvider.validateToken(token)) {
             log.warn("WebSocket CONNECT 拒绝: JWT 令牌无效或已过期, sessionId={}", accessor.getSessionId());
             throw new org.springframework.messaging.MessageDeliveryException("Unauthorized: invalid JWT token");
+        }
+
+        // P0-2 媒体令牌降权：scope=media 的短期令牌只具备「读媒体文件」这一项能力，
+        // WebSocket 是完整登录会话的能力面（收发消息、订阅私有队列），必须拒绝。
+        // 与 HTTP 侧同源判定（JwtTokenProvider#isMediaToken），不区分令牌来自
+        // Authorization 头还是 token 原生头——历史上两条通道都只看签名与有效期，
+        // 一个泄露的 5 分钟媒体令牌即可建立长连接并以属主身份收发私信。
+        if (jwtTokenProvider.isMediaToken(token)) {
+            log.warn("WebSocket CONNECT 拒绝: 媒体访问令牌（media scope）不可建立长连接, sessionId={}",
+                    accessor.getSessionId());
+            throw new org.springframework.messaging.MessageDeliveryException(
+                    "Unauthorized: media-scoped token cannot open WebSocket session");
         }
 
         // 修复（R2）：校验 jti 黑名单——登出/撤销后的 token 不得建立 WebSocket 连接

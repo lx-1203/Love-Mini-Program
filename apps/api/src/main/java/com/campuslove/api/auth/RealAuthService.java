@@ -254,6 +254,20 @@ public class RealAuthService implements AuthService {
             );
         }
 
+        // P0-2 媒体令牌降权：/api/v1/auth/** 属 permitAll，过滤器不参与本方法的认证判定，
+        // 本方法自己解析令牌——若放过 scope=media 的短期媒体令牌，泄露在访问日志/URL 里的
+        // 5 分钟降权凭据就能持续读出属主昵称、校园/手机绑定状态与功能开关，等于半个会话接口。
+        // 口径与「禁用用户」分支一致：返回 loggedIn=false 的未登录视图，不抛 401/403，
+        // 避免破坏前端会话状态机（前端据此跳登录页）。
+        if (jwtTokenProvider.isMediaToken(token)) {
+            log.warn("媒体访问令牌尝试获取登录会话（/auth/me），按未登录返回");
+            return UserSessionView.withoutToken(
+                    null, false, null, null,
+                    false, false, false, false,
+                    null, Map.of("chat_ai_enabled", false)
+            );
+        }
+
         // 根据 JWT 中的 userId 查找用户
         User user;
         try {
@@ -483,6 +497,18 @@ public class RealAuthService implements AuthService {
             throw new IllegalArgumentException(ErrorMessages.TOKEN_USER_EXTRACTION_FAILED);
         }
 
+        // 2.5 P0-2 媒体令牌降权：scope=media 的短期令牌不得换发完整会话令牌。
+        //     媒体令牌是给 <image src> 这类无法携带 Authorization 头的场景签发的降权凭据
+        //     （TTL 5 分钟、只读媒体），它同样能通过上面的签名/黑名单/用户校验——
+        //     若放行刷新，泄露在访问日志/浏览器历史里的媒体令牌就被升级成一份 2 小时完整会话，
+        //     「降权」形同虚设。这里只拒绝换发，不撤销原 jti：撤销会让正在加载的图片 404，
+        //     而对已经泄露的令牌本身也没有额外收益（它自然过期即失效）。
+        //     异常口径沿用既有认证失败约定：InvalidTokenException → 401 + code=UNAUTHORIZED。
+        if (jwtTokenProvider.isMediaToken(oldToken)) {
+            log.warn("媒体访问令牌尝试刷新完整会话，已拒绝换发: userId={}", userId);
+            throw new InvalidTokenException(ErrorMessages.TOKEN_INVALID_OR_EXPIRED);
+        }
+
         // 3. R4-00255：先校验用户存在且未被禁用，再签发新令牌——
         //    原实现先 generateToken 再查用户，被禁用用户刷新仍返回 loggedIn=true 会话
         //    （受保护端点 401，行为不一致）。现与 loginWithWechat 的 USER_DISABLED 语义对齐。
@@ -687,12 +713,16 @@ public class RealAuthService implements AuthService {
     /**
      * 体验账号一键登录（临时体验号）。
      *
-     * <p>实现要点（R4-00251 会话隔离重构）：</p>
+     * <p>实现要点（R4-00251 会话隔离重构 + P0-4 访客账号隔离收口）：</p>
      * <ul>
-     *   <li><b>每次登录创建独立临时账号</b>（openid={@code guest:{UUID}} 全局唯一，
+     *   <li><b>每次调用创建独立临时账号</b>（openid={@code guest:{UUID}} 全局唯一，
      *       phone 为空，昵称「体验用户」）：会话身份完全隔离——体验用户的私信/匹配/
      *       点赞数据互不污染，不再共用固定账号（原 13900000000 固定账号方案已废弃，
-     *       该手机号仍处于注册/登录黑名单防占用）</li>
+     *       该手机号仍处于注册/登录黑名单防占用）。
+     *       <b>P0-4</b>：不得「先查库中最近体验号、命中即复用」——那会让不同访客拿到
+     *       同一个 userId 与同一枚 JWT；deviceId 也不构成复用键（无 deviceId→体验号
+     *       持久映射），连续体验所需的演示数据由资料预填与
+     *       {@link GuestDemoDataProvisioner} 按新 userId 灌入</li>
      *   <li>体验账号密码为随机 BCrypt 哈希、无手机号，无法通过手机号+密码登录，
      *       仅体验入口可进入</li>
      *   <li>一键体验：自动预填完整资料（基本资料/校园认证/课表），
@@ -701,8 +731,14 @@ public class RealAuthService implements AuthService {
      *   <li>商业化上线前可通过配置 {@code app.guest-login.enabled=false} 关闭该入口</li>
      * </ul>
      *
-     * <p>已知代价：每次体验登录新增一条用户记录（无手机号、不可再登录），
-     * 由 guest-login 开关（默认关闭）与运营侧定期清理承担；换取会话数据隔离。
+     * <p>已知代价（P0-4 写放大）：每次体验登录会新建一个独立访客身份并落库约 70 行——
+     * users 1 行 + 基本/校园/日程资料与实名认证各 1 行（合计 4 行） +
+     * {@link GuestDemoDataProvisioner} 按新 userId 灌入的演示数据（3 会话 + 25 条私信 +
+     * 15 条喜欢 + 10 条访客 + 7 条通知 + 2 互关注 + 2 活动报名 + 2 悄悄话 ≈ 66 行），
+     * 成本随登录次数为 O(logins) 而非 O(accounts)。该入口默认由
+     * {@code app.guest-login.enabled}（默认关闭）与 {@code AuthController#guestLogin} 上的
+     * IP 限流（capacity=10、refill=0.1/s，与兄弟认证写入口同口径）共同约束；
+     * 定期清理归运营侧数据卫生策略承担（见 {@code reports/audit} 收口记录，本提交不实现清理）。
      * 本地演示语义不变。</p>
      */
     @Override
@@ -716,20 +752,13 @@ public class RealAuthService implements AuthService {
             log.warn("体验账号登录入口已被配置禁用（app.guest-login.enabled=false）");
             throw new com.campuslove.api.common.OperationForbiddenException(ErrorMessages.TRIAL_LOGIN_DISABLED);
         }
-        // 2026-09-06 稳定体验账号：优先复用最近创建的体验号（体验者每次进入
-        // 都是同一身份，帖子/会话/资料可持续累积，符合「稳定体验账号」需求）；
-        // 仅当无可复用体验号时才走新建流程。
-        User reused = userRepository.findFirstByOpenidStartingWithAndRoleAndStatusOrderByIdDesc(
-                "guest:", "GUEST", "active");
-        if (reused != null) {
-            log.info("体验会话复用既有体验号: userId={}", reused.getId());
-            // provisionGuestProfile 幂等：已有完整资料的账号不会被覆盖
-            provisionGuestProfile(reused);
-            String reusedToken = jwtTokenProvider.generateToken(String.valueOf(reused.getId()));
-            recordOnlineSession(reused.getId(), reusedToken, "guest");
-            recordLoginDevice(reused.getId(), deviceId, "guest", reusedToken);
-            return buildSessionView(reused, reusedToken, "guest");
-        }
+        // 2026-09-06「稳定体验账号」曾在此加入「优先复用最近创建的体验号」分支
+        // （findFirstByOpenidStartingWithAndRoleAndStatusOrderByIdDesc 命中即返回同一
+        // userId/同一枚 JWT）。P0-4 判定其为账号隔离缺陷并摘除：真实库只要存在任意一条
+        // guest 记录，所有访客就会共用同一个账号——资料/帖子/点赞/私信/钱包跨访客互串。
+        // 访客身份按「会话」隔离，不建立 deviceId→体验号的持久映射（P0-4 裁定）；
+        // 体验流程所需数据由 provisionGuestProfile + GuestDemoDataProvisioner 按
+        // userId 为新账号灌入，不靠复用旧账号获得「连续体验」。
         // R4-00251：体验号缺省时创建新临时账号（openid 全局唯一，phone 为空）
         // R4-00252：并发首登/极端碰撞场景捕获 DataIntegrityViolationException（uk_users_openid），
         // 更换新 UUID 重试一次（对齐 registerUser 的 A-34 兜底），避免返回 500。

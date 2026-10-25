@@ -38,14 +38,23 @@ interface UniAppSwitchProps {
   color?: string;
   /** 是否禁用 */
   disabled?: boolean;
-  /** 载荷由小程序运行时注入，结构与 DOM Event 不同，故不做窄化 */
+  /**
+   * 载荷由小程序运行时注入，实际结构是 `{ detail: { value } }`，与 DOM Event 不同。
+   * 刻意不做窄化：现存 11 处 `<switch @change>` 处理函数按 DOM `Event` 标注形参，
+   * 一旦收窄成 MP 载荷形态，全部调用点在 vue-tsc 下互相不兼容（实测 typecheck 红）。
+   * 这是有意的类型逃生口，`@typescript-eslint/no-explicit-any` 在其余文件保持启用。
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onChange?: (payload: any) => void;
 }
 
 declare module "vue/jsx-runtime" {
   namespace JSX {
     interface IntrinsicElements {
-      // 与 vue/jsx-runtime 原声明保持一致的兜底索引签名（覆盖后不能丢，否则 view/text 等标签全报错）
+      // 与 vue/jsx-runtime 原声明保持一致的兜底索引签名（覆盖后不能丢，否则 view/text 等标签全报错）。
+      // 索引签名必须是 any：改成 unknown/Record 会让每个小程序标签的属性检查失去弹性，
+      // view/text/image 一类标签全线报错。本行是有意的类型逃生口，规则在其余文件保持启用。
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       [name: string]: any;
       switch: UniAppSwitchProps;
     }

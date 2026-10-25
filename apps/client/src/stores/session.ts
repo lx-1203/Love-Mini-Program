@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { clientApi } from "../services/api";
 import { isDev } from "../config/env";
+import { isDevUserEntryAllowed } from "../utils/dev-user-gate";
 // 微信登录真实链路（Task 0.1.1）：services/auth.ts 封装 wx.login + POST /v1/auth/wechat
 import { loginWithWechat as authLoginWithWechat } from "../services/auth";
 // JWT token 存取：bootstrap 检测到失效 token 时清除并以体验账号重登
@@ -9,6 +10,8 @@ import { getToken, clearTokens } from "../services/http";
 import { wsClient } from "../services/websocket";
 // 2026-08-10 切换提速：登出时清空 TTL 缓存（防跨账号数据泄漏）
 import { clearAllCaches } from "../utils/cache-ttl";
+// P0-2：媒体能力型 URL 是「上一账号可读这些文件」的凭据，跨账号必须清掉
+import { clearMediaSignCache } from "../utils/media-sign-cache";
 // Sentry 监控：登录成功关联用户身份，退出登录清除用户上下文
 import { setUser, clearUser } from "../services/sentry";
 import { toLoginHeroView } from "../view-models/login";
@@ -104,6 +107,7 @@ function readQueryParam(query: Record<string, unknown> | undefined | null, key: 
  * @returns true 表示当前页面请求以 mock 用户身份进入
  */
 export function hasDevUserFlag(query?: Record<string, unknown> | null): boolean {
+  if (!isDevUserEntryAllowed()) return false;
   return readQueryParam(query, DEV_USER_QUERY_KEY) === DEV_USER_QUERY_VALUE;
 }
 
@@ -567,6 +571,7 @@ export const useSessionStore = defineStore("session", {
       } finally {
         // 2026-08-10 切换提速：清空 TTL 缓存，防跨账号数据泄漏
         clearAllCaches();
+        clearMediaSignCache();
         // 2. 清空 store 状态，确保下次登录从干净状态开始
         this.userSession = null;
         this.loginHero = null;
@@ -712,6 +717,7 @@ export const useSessionStore = defineStore("session", {
 
         // 2026-08-10 切换提速：新账号登录成功，清空 TTL 缓存（防跨账号数据泄漏）
         clearAllCaches();
+        clearMediaSignCache();
         // 登录成功：同步用户身份到 Sentry，后续异常上报将自动关联该用户
         syncSentryUser(this.userSession);
         // 2026-08-31 待办：IM 实时推送——登录成功后建立 WebSocket 连接

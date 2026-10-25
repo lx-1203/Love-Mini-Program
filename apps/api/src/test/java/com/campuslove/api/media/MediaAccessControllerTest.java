@@ -72,7 +72,7 @@ class MediaAccessControllerTest {
         tempRoot = Files.createTempDirectory("media-access-test");
         mediaAccessService = new MediaAccessService(tempRoot.toString());
         // R4-00273：构造器新增 JwtTokenProvider（媒体令牌签发），本测试不调用该端点，传 null
-        mediaAccessController = new MediaAccessController(mediaAccessService, null);
+        mediaAccessController = new MediaAccessController(mediaAccessService, null, new com.campuslove.api.media.MediaUrlSigner("", "unit-test-jwt-secret"));
 
         // 在 storageRoot/{OWNER_USER_ID}/{MONTH_SEGMENT}/ 下创建测试文件
         Path ownerDir = tempRoot.resolve(OWNER_USER_ID.toString())

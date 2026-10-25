@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
  * <ul>
  *   <li>幂等键来源：客户端在请求头中携带 {@code Idempotency-Key}（UUID 或业务唯一标识）</li>
  *   <li>Redis Key 格式：{@code idempotent:{key}:{userId}}，按用户隔离避免冲突</li>
- *   <li>TTL：默认 24 小时（{@link #ttlSeconds()}），可通过注解参数覆盖</li>
+ *   <li>TTL：默认 4 小时（{@link #DEFAULT_TTL_SECONDS}，infra R2-00249 已缩短），可通过注解参数覆盖</li>
  *   <li>重复请求处理：返回 HTTP 409 Conflict + 错误码 {@code IDEMPOTENT_CONFLICT}，
  *       提示客户端"重复请求已被拦截"</li>
  *   <li>仅作用于写操作（POST/PUT/DELETE），GET 请求不应使用本注解</li>
@@ -56,7 +56,10 @@ public @interface Idempotent {
     /**
      * 是否强制要求 Idempotency-Key 头。
      *
-     * <p>true（默认）：缺失时返回 400 Bad Request，提示客户端补全；
+     * <p>true（默认）：缺失时抛 {@link InvalidOperationException}，
+     * 即 HTTP 422 Unprocessable Entity + 错误码 {@code INVALID_OPERATION}
+     * （不是 400——IdempotentInterceptor 走的是业务异常通道，
+     * 实测映射见 InvalidOperationException 构造器与 GlobalExceptionHandler#handleBusinessException）；
      * false：缺失时跳过幂等校验，按非幂等方式处理（仅适用于可重写的接口）。</p>
      *
      * @return 是否强制

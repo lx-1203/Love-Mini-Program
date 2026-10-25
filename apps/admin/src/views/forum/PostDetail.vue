@@ -33,6 +33,7 @@ import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import Pagination from "../../components/Pagination.vue";
 import { findFirstMenuPath, useMenuStore } from "../../stores/menu";
+import { useSessionStore } from "../../stores/session";
 import { DEFAULT_PAGE_SIZE, REMARK_MAX_LENGTH } from "../../utils/constants";
 import { formatDateTime } from "../../utils/format";
 
@@ -40,6 +41,7 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const menuStore = useMenuStore();
+const sessionStore = useSessionStore();
 
 /** 路由参数 id → 数字；非法（非正整数）返回 null，不发请求 */
 const postId = computed<number | null>(() => {
@@ -143,6 +145,7 @@ const savingAudit = ref(false);
 const canAudit = computed<boolean>(() => detail.value?.auditStatus === "pending");
 
 async function submitAudit(): Promise<void> {
+  if (!sessionStore.canWrite) return;
   const id = postId.value;
   if (id === null) return;
   const remark = auditRemark.value.trim();
@@ -170,6 +173,7 @@ const deleteVisible = ref(false);
 const deleting = ref(false);
 
 async function togglePin(): Promise<void> {
+  if (!sessionStore.canWrite) return;
   const id = postId.value;
   const post = detail.value;
   if (id === null || !post) return;
@@ -187,6 +191,7 @@ async function togglePin(): Promise<void> {
 }
 
 async function handleConfirmDelete(): Promise<void> {
+  if (!sessionStore.canWrite) return;
   const id = postId.value;
   if (id === null) return;
   deleting.value = true;
@@ -497,7 +502,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div v-if="canAudit" class="card">
+          <div v-if="canAudit && sessionStore.canWrite" class="card">
             <div class="section-title">{{ t("postDetail.auditTitle") }}</div>
             <div class="radio-group">
               <label class="radio-item">
@@ -528,10 +533,10 @@ onBeforeUnmount(() => {
             <div class="section-title">{{ t("common.actions") }}</div>
             <div v-if="pinError" class="error-message">{{ pinError }}</div>
             <div class="action-row">
-              <button class="secondary-button" :disabled="pinning" @click="togglePin">
+              <button v-if="sessionStore.canWrite" class="secondary-button" :disabled="pinning" @click="togglePin">
                 {{ detail.isPinned ? t("villagePosts.actionUnpin") : t("villagePosts.actionPin") }}
               </button>
-              <button class="danger-button" @click="deleteVisible = true">{{ t("common.delete") }}</button>
+              <button v-if="sessionStore.canWrite" class="danger-button" @click="deleteVisible = true">{{ t("common.delete") }}</button>
             </div>
             <p class="modal-hint">{{ t("postDetail.contentLockedHint") }}</p>
           </div>

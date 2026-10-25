@@ -26,8 +26,10 @@ import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE, REMARK_MAX_LENGTH } from "../../utils/constants";
+import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
 // ===== 列表状态 =====
 const topics = ref<CampusTopicSummary[]>([]);
@@ -123,6 +125,7 @@ function onAuditKeydown(e: KeyboardEvent): void {
 
 /** 提交审核（拒绝时必须填写备注） */
 async function handleSaveAudit(): Promise<void> {
+  if (!sessionStore.canWrite) return;
   const topic = auditingTopic.value;
   if (!topic || savingAudit.value) return;
   if (auditDecision.value === "rejected" && !auditRemark.value.trim()) {
@@ -157,6 +160,7 @@ function askDelete(topic: CampusTopicSummary): void {
 }
 
 async function handleConfirmDelete(): Promise<void> {
+  if (!sessionStore.canWrite) return;
   const target = deleteTarget.value;
   if (!target || deleting.value) return;
   deleting.value = true;
@@ -289,11 +293,11 @@ onMounted(() => {
             <td class="time-cell">{{ formatDateTime(topic.createdAt) }}</td>
             <td class="action-cell">
               <button
-                v-if="topic.auditStatus === 'pending'"
+                v-if="topic.auditStatus === 'pending' && sessionStore.canWrite"
                 class="action-button audit"
                 @click="openAudit(topic)"
               >{{ t("campusTopics.auditButton") }}</button>
-              <button class="action-button delete" @click="askDelete(topic)">{{ t("common.delete") }}</button>
+              <button v-if="sessionStore.canWrite" class="action-button delete" @click="askDelete(topic)">{{ t("common.delete") }}</button>
             </td>
           </tr>
         </tbody>

@@ -77,7 +77,7 @@ const WORKFLOW = {
 const REAL_ENV = [
   `【真实环境（真实审查模式必读）】`,
   `- 后端：real profile，http://127.0.0.1:8080；健康检查 curl http://127.0.0.1:8080${WORKFLOW.realEnv.healthPath} 应返回 {"status":"UP"}；API 前缀 /api/v1。`,
-  `- 游客登录 POST /api/v1/auth/guest-login（幂等签发体验账号 JWT，账号 100151「阿辰」）。注意 real profile 下 app.guest-login.enabled 默认 false → 403 TRIAL_LOGIN_DISABLED，只有后端以 APP_GUEST_LOGIN_ENABLED=true 启动才放开；取到 403 记「环境未启用体验入口」，不得记产品缺陷。`,
+  `- 游客登录 POST /api/v1/auth/guest-login（P0-4 访客账号隔离：每次调用创建一个独立临时体验账号并签发 JWT，不复用固定体验号——旧「幂等签发账号 100151」口径已废弃）。注意 real profile 下 app.guest-login.enabled 默认 false → 403 TRIAL_LOGIN_DISABLED，只有后端以 APP_GUEST_LOGIN_ENABLED=true 启动才放开；取到 403 记「环境未启用体验入口」，不得记产品缺陷。该公开写入口现按客户端 IP 限流（capacity=10、每 10 秒补 1），刷量第 11 次起记 429 RATE_LIMITED 属预期防护、非缺陷。因每次签独立身份，real 轮 A/B 双身份现可各签各的、userId 允许不同（不再同指一个体验号）。`,
   `- 微信一键登录 POST /api/v1/auth/wechat-login 在本机必 502（WECHAT_DEV_FALLBACK_ENABLED=false 且未配 WECHAT_SECRET）；上游返回 errcode=40029 时是 401，不在此列。该路一律记 NOT-EVIDENCED。`,
   `- 依赖（只读核对，禁止写库/清库/重启服务）：MySQL 127.0.0.1:3306（库 campus_love）；Redis 127.0.0.1:6379。口令见仓库根 .env，禁止内联进命令行（内联会在传递中被改写）。`,
   `- 管理员（SUPER_ADMIN）凭据同样只在 .env；用于管理后台侧核对与权限/风控类用例；只操作演示数据，禁止删除既有业务数据。`,
