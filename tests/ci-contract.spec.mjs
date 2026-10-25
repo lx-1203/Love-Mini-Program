@@ -47,4 +47,17 @@ assert.equal(
   "API and Admin metadata should each produce exactly one raw tag",
 );
 
+// E2E spec imports must be direct dependencies of the workspace, not ambient npx packages.
+const rootPkg = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+);
+assert.ok(rootPkg.devDependencies["@playwright/test"], "root must declare @playwright/test");
+assert.ok(
+  rootPkg.devDependencies["@axe-core/playwright"],
+  "root must declare @axe-core/playwright",
+);
+assert.match(ci, /pnpm exec playwright install/u, "CI must install Playwright from pnpm deps");
+assert.match(ci, /pnpm exec playwright test/u, "CI must run Playwright from pnpm deps");
+assert.doesNotMatch(ci, /npx playwright/u, "CI must not rely on ambient npx Playwright");
+
 console.log("ci image scan contract ok");

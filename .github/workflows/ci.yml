@@ -517,11 +517,11 @@ jobs:
             playwright-${{ runner.os }}-
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       # FIN-00278：根目录无 playwright.config，必须显式指定配置（tests/e2e/）
       - name: Run Playwright tests
-        run: npx playwright test --config=tests/e2e/playwright.config.ts
+        run: pnpm exec playwright test --config=tests/e2e/playwright.config.ts
 
       # FIN-00867：报告 artifact 设置保留期限
       - name: Upload Playwright report
