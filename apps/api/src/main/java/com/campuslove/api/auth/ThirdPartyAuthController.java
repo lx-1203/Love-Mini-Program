@@ -1,6 +1,7 @@
 package com.campuslove.api.auth;
 
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
@@ -67,6 +68,7 @@ public class ThirdPartyAuthController {
      * @return 用户会话视图（包含 JWT 令牌）
      */
     @PostMapping("/wechat")
+    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
     public UserSessionView loginWithWechat(@Valid @RequestBody WechatThirdPartyLoginRequest request) {
         return thirdPartyAuthService.loginWithWechat(request.code(), request.deviceId());
     }
@@ -82,6 +84,7 @@ public class ThirdPartyAuthController {
      * @return 用户会话视图（包含 JWT 令牌）
      */
     @PostMapping("/apple")
+    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
     public UserSessionView loginWithApple(@Valid @RequestBody AppleLoginRequest request) {
         return thirdPartyAuthService.loginWithApple(request.identityToken(), request.deviceId());
     }
