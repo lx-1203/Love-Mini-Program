@@ -213,6 +213,21 @@ function resolveUploadMediaKind(typeValue: string | undefined): UploadMediaKind 
  * @param extraFields - 附带到 FormData 的额外字段（如 index、media/upload 的 type）
  * @returns 解析后的服务端响应体
  */
+/**
+ * 从上传响应中取 URL：后端返回 `ApiResponse<UploadResponse>` 信封时取 data.url，
+ * 个别环境扁平返回 {url} 时直接使用。
+ */
+function unwrapUploadUrl(
+  raw: { url?: string; data?: { url?: string } },
+  missingMessage = "上传响应缺少资源 URL",
+): string {
+  const url = raw?.url ?? raw?.data?.url;
+  if (!url) {
+    throw new Error(missingMessage);
+  }
+  return url;
+}
+
 function uploadFileViaUni<TResponse>(
   file: UniUploadFileLike,
   endpoint: string,
@@ -912,10 +927,15 @@ export const clientApi = {
     if (useMock()) {
       return mockFixtures.uploadProfileVoice(file);
     }
-    return uploadFileViaUni<{ url: string }>(file, "/media/upload", {
-      type: "audio",
-      durationMs: String(Math.round(durationMs)),
-    });
+    const raw = await uploadFileViaUni<{ url?: string; data?: { url?: string } }>(
+      file,
+      "/media/upload",
+      {
+        type: "audio",
+        durationMs: String(Math.round(durationMs)),
+      },
+    );
+    return { url: unwrapUploadUrl(raw, "上传响应缺少语音 URL") };
   },
 
   /**
@@ -944,12 +964,7 @@ export const clientApi = {
       // 契约：POST /api/v1/media/upload?type=image&category=ID_CARD（formData 字段透传）
       ...(category ? { category } : {}),
     });
-    // 兼容信封（{data:{url}}）与扁平（{url}）两种响应形态
-    const url = raw?.url ?? raw?.data?.url;
-    if (!url) {
-      throw new Error("上传响应缺少图片 URL");
-    }
-    return { url };
+    return { url: unwrapUploadUrl(raw, "上传响应缺少图片 URL") };
   },
 
   /**
