@@ -75,3 +75,98 @@ WX_APPID=wx... pnpm --filter @campus-love/client run build:mp-weixin:real
 
 在以上证据齐全前：P1-5 保持“外部阻断”，不得声称可发布、已上传或真机登录已验。
 
+## 9. 第二轮复量与补齐（2026-10-25 下午，HEAD 起点 `4b2bb72e`）
+
+本节只记本轮**实测**结果。上文 §1–§8 原文一字不动。
+
+### 9.1 复量方法与结论
+
+对 P0–P3 十五项逐条回源码复核（不采信提交信息），并给每条找阳性对照。结论：
+P0-1…P0-4、P1-5…P1-8、P2-10…P2-13 的**主修法成立**；但复量暴露出 8 处真残口，
+其中 5 处是「上一轮声称已收口、实测只覆盖一部分」，另有 3 处 HEAD 级基础设施红。
+
+| 残口 | 实测事实 | 本轮处置 |
+| --- | --- | --- |
+| AUDITOR 写按钮（计划 14d） | 上轮只接了 4 个视图；按「api 模块真发写请求的导出函数 ∩ 各视图 import 的符号」重取，写页面共 **32 个**，**28 个**零 `canWrite` | `1c566852` |
+| 上传幂等键（计划 5 的另案） | `idem-UPLOAD-<hash(endpoint\|文件名)>` 让同一文件 4h 内二次上传必撞 409，注释自认「另案处理」 | `6501e2bd` |
+| 反馈图上传（计划 7 同类） | `uploadFeedbackImage` 未解 `ApiResponse` 信封，真机上传成功后调用方必然报错 | `6501e2bd` |
+| 活动分页读取（计划 6） | `data.content.map` 无形态守卫；首屏失败后 `hasMore` 留在 true | `e42935eb` |
+| 幂等 TTL 断言（计划 5） | 断言两端同源（都取 `DEFAULT_TTL_SECONDS`），常量改任何值都绿；文案仍写 24h | `0f23f116` |
+| Compose 判据（计划 8） | 全文正则，挂到 admin 服务上也算过 | `fc55ddd4` |
+| CI 扫描判据（计划 10） | 只查全文出现过 metadata tag，build 步骤自己的 `with.tags` 就满足它 | `f062b291` |
+| 全页冒烟落点（计划 11） | `redirectFallbacks` 把首页/寻觅/我的列为合法落点 ⇒ 整站弹回首页可 73 绿 | `eb7f268c` |
+
+### 9.2 本轮新发现的 HEAD 级基础设施红（此前不在任何册子里）
+
+1. **H5 根本构建不过**：`npm run build:h5` 在 `4b2bb72e` 上 REAL_EXIT=1，
+   报 `[vite:css] [sass] expected "{".` 指向 App.vue 的 @import 行；真因是
+   `apps/client/src/styles/tokens.scss` 首字节是 UTF-8 BOM（`EF BB BF`）。
+   uni/vite 走 sass legacy API，把 @import 目标当字符串再解析 ⇒ BOM 不在 0 位即语法错。
+   误导性在于：同一份内容用 `sass.compile` 当独立文件编译是**成功**的（101KB CSS）。
+   摘 BOM 后 `DONE Build complete.` / REAL_EXIT=0。判点与因果写进 `1b2d366b`。
+   先量再改：`apps/client/src` 下 14 个 .scss/.css 只有这 1 个带 BOM；
+   另有 58 个 .vue 带 BOM 但构建不受影响，故不顺手清理。
+2. **CI 的 lint 步骤在 HEAD 是红的**：`npm run lint` 2 errors（`env.d.ts:42/:49` 的 any）。
+   按既有裁定根级 lint 不属预期红名单 ⇒ 红了就是真红。两处 any 都有承重
+   （IntrinsicElements 兜底索引签名、`<switch @change>` 载荷），
+   收窄载荷会让 11 处按 DOM `Event` 标注的处理函数在 vue-tsc 下全线不兼容（实测撞过），
+   故处置只到行级 disable + 原因注释，不动规则、不放宽 exclude（`b4d37dcb`）。
+3. **根级 10 条契约门 CI 只跑 1 条**：ci.yml 仅执行 `test:structure`，其余 9 条只在本地。
+   现并成 `test:contracts` 单入口接进 CI，并把接线判据升级为**磁盘枚举对账**
+   （新增一条 spec 忘记接线即红，阳性对照已验）（`44dd0f69`）。
+
+### 9.3 判据活性（本轮每条新门都做了变异对照）
+
+| 门 | 变异 | 读数 |
+| --- | --- | --- |
+| `tests/admin-write-gate.spec.mjs` | 关掉 http 层守卫 | 4 拦截用例红 / 4 放行用例仍绿 |
+| `tests/third-party-binding-audit.spec.mjs` | SQL 追加 `DELETE FROM` | 红并点名被禁语句，还原即绿 |
+| `tests/gate-wiring.spec.mjs` | 放一条未接线的 spec | 红「存在于磁盘但没有任何根脚本执行它」 |
+| `tests/ci-contract.spec.mjs` | 把本地扫描 `if` 翻成 push 档 | 红「必须与 build-api.with.load 同文」 |
+| `tests/deployment-config.spec.mjs` | 把必填项从 api 挪到 admin | MUTATED_SPEC_EXIT=1；旧全文正则同情形**照样绿**（实测命中 true） |
+| `IdempotentInterceptorTest` 场景 14 | `DEFAULT_TTL_SECONDS` 改回 24h | 15 run / 1 failure，红的正是本用例 |
+| `tests/project-structure.spec.mjs` BOM 判点 | BOM 加回 | 红并点名文件 |
+
+### 9.4 本轮实测读数汇总
+
+- 根级契约链 `npm run test:contracts`：CHAIN_EXIT=0（10 条，其中 prototype 为设计内 skipped）。
+- 客户端：`vitest run` 127 files / **1414** tests 绿；`vue-tsc --noEmit` REAL_EXIT=0。
+- 管理端：`vitest run` 5 files / **38** tests 绿；`vue-tsc --noEmit` REAL_EXIT=0。
+- 后端定向：`IdempotentInterceptorTest` 15/15 绿（REAL_EXIT=0）。
+- E2E（chromium-mobile，本机 dev server，`E2E_API_MODE` 缺省 mock）：
+  判据收紧后全量首跑 **69 passed / 4 failed**；三条误红经源码派生转绿、
+  `setup/dev` 经 devOnly 派生转绿；**定版全量复跑 73 passed / 1 failed（REAL_EXIT=1）**。
+  那 1 条真红保持不掰：`/subpackages/setup/showcase/index` 游客态渲染空白
+  （截图只有底色、零内容、无 JS 错误、模板根无条件），属产品侧待查缺陷，
+  不是测试该容忍的东西。
+  ⚠ 同一次全量跑里另有 a11y 与 core-journey 两个 spec 的红（收紧前整批 26 failed），
+  本轮未动它们的判据，也未逐条归因——它们与 §9.1 那 8 条不同源，另册处理。
+
+### 9.5 仍开放（不冒充已闭）
+
+1. **P0-2 的最后一寸**：媒体令牌降权、刷新/STOMP/Header 各腿均已闭并有 HTTP 链验证；
+   但 `app.security.media-query-token-strict` 默认仍是 **false**，
+   即完整 24h 会话 JWT 还可以出现在 `?token=` 里（进访问日志/历史/Referer）。
+   翻默认的前提是客户端改用 `GET /api/v1/media/token` 的 5 分钟短期令牌，
+   而客户端今天仍把完整 JWT 拼进图片 URL（`apps/client/src/utils/media.ts` 的 `appendTokenIfMissing`）。
+   **本轮未做，因为它有实测代价**：`SafeImage.vue:177` 的本地缓存键是
+   `safeimg-${hashString(resolved)}.jpg`，`resolved` 含 `?token=` ⇒
+   令牌每 5 分钟轮换会让每张图判为不同资源并重新下载。
+   需要裁定的是三选一（图片本地缓存键改为忽略 token 参数 / 接受下载churn / 后端改签名 URL），
+   不属于「按最优建议」可直接代劳的收口动作。
+2. **P0-1 的处置半句**：核查件已就位（`database/audit/third-party-binding-provenance.sql`，
+   只 SELECT、有只读性契约测试），但**没有实跑**——本机无目标库，
+   三段查询的语法与结果集未经真实 MySQL 验证，目前只过静态契约。
+   第一次实跑需在 staging 用只读账号执行并回填读数；SUSPECT 行的处置（解绑/要求重新验证/保留）
+   仍需产品与运营裁定，且须先按 `database/backup` 协议备份 + ROLLBACK 干跑。
+3. **P1-9 发布实机**：仍为外部阻断（真实 HTTPS 域名、`WX_APPID`、`WECHAT_APPID/SECRET`、
+   部署级密钥），见 §8。真机 `wx.login` 链路、生产包上传与审核未验。
+4. **P3 历史欠账**：R16 的 214 条仍全部是 `UNVERIFIED_AT_CURRENT_HEAD`
+   （`reports/audit/2026-10-25-r16-disposition-ledger.json`），本轮没有重跑 UI 帧与逐条复判，
+   不承接为全产品验收，也不关闭任何历史行。
+5. **游客内容页空白态**：`subpackages/setup/showcase/index`（本轮实测真红）
+   与全量首跑里偶发的 `circles/circles/index`、`chat/chat-session/index`、
+   `tools/love-center/nearby` 空白读数，需按「游客不得浏览内容流」的既有裁定
+   逐页定处置（补弹走闸、补 mock 夹具，还是判为不应进游客巡检），不在测试侧掰绿。
+
+
