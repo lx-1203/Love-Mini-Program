@@ -33,3 +33,10 @@
 
 - `AuthControllerGuestLoginRateLimitTest` 3/3 通过；`RealAuthServiceTest` 27/27（新增 3 条结构级反复用守卫，含正锚防空转）。
 - 反复用守卫从「仅字面量 `userRepository.find`」升级为：方法体调用图扫描（禁止 guest+取数动词的 helper 调用）、`RealAuthService` 反射枚举（禁止返回 User 且名字含 findGuest/latestGuest 的方法）、`UserRepository` 反射枚举（禁止 openid 前缀派生查询），各配正锚。
+
+## 6. 测试门禁真实接线（P2-4）
+
+- 根 `test` 现实际串行执行：结构/部署/CI/终验汇总契约、Admin 单测、Client 覆盖率、`api:verify`、Client 单测；不再只声明脚本而无人调用。
+- CI 对应步骤：Admin job 执行 `pnpm --filter @campus-love/admin run test:unit`；Client job 执行 `test:coverage`；API job 执行 `mvn verify`（JaCoCo `check` 绑定 verify）。
+- 首次执行 Client 覆盖率（124 files / 1403 tests 全绿）实测：lines/statements **23.9%**、functions **38.81%**、branches **63.47%**；旧阈值 80/75 从未被任何 CI/根命令执行。现按实测基线安装棘轮阈值 23/38/63（只允许后续上调），不通过扩大 exclude 伪造达标。
+- 本地 Windows 因仓库路径含非 ASCII，Spring Boot `repackage` 重命名 `target/*.jar` 会失败；根 `api:verify` 仅跳过 repackage 以执行测试 + JaCoCo check，CI 的 `mvn verify` 不跳过打包。该边界不改变 Linux CI 的打包验证。

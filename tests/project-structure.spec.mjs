@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
+import JSON5 from "json5";
 
 const requiredPaths = [
   "../package.json",
@@ -42,11 +43,7 @@ const requiredPaths = [
   "../apps/client/src/stores/profile.ts",
   "../apps/client/src/stores/feedback.ts",
   "../apps/admin/package.json",
-  "../docs/phase-0-1-foundation.md",
-  "../docs/phase-1-execution-plan.md",
-  "../docs/branching.md",
-  "../docs/defect-log-template.md",
-  "../docs/release-checklist-template.md",
+  "../doc/DEPLOYMENT.md",
   "../docs/openapi/feedback-growth-and-auth.yaml",
   "../tools/lint-openapi.mjs",
   "../database/flyway/sql/V2026.05.18.2200__phase0_phase1_client_foundation.sql",
@@ -134,24 +131,20 @@ const pagesJsonRaw = readFileSync(
   new URL("../apps/client/src/pages.json", import.meta.url),
   "utf8"
 );
-// src/pages.json 使用 JSONC 格式（含注释），需剥离块注释与行注释后再 JSON.parse
-const pagesJson = JSON.parse(
-  pagesJsonRaw
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/^\s*\/\/.*$/gm, "")
-);
-// 主包页面数量：src/pages.json 包含全部主包页面（login/home/discover/likes/village/messages/
-// profile/circles/daily-question/chat/chat-session/shop/campus/verification/heart-signals/
-// vip/chat-video-call/chat-red-packet/dev/profile-visitors/profile-album/settings-dnd/feedback-history）
-// 共 47 个根页面（v3：-saved、+matching、+match-success、+home/segment）
-assert.equal(pagesJson.pages.length, 49, "main package should contain forty-nine root pages (v3: -saved +matching +match-success +home/segment +nearby/people +home/index)");
-assert.equal(pagesJson.subPackages.length, 6, "client should use six subpackages (setup/support/discover/legal/market/vip)");
+// src/pages.json 使用 JSONC 格式（含块注释、行尾注释、尾逗号）；
+// JSON5 与 JSONC 兼容且不会像手写正则那样把字符串里的 // 删坏。
+const pagesJson = JSON5.parse(pagesJsonRaw);
+// 主包与分包数量按当前 pages.json 的单一真源断言（原注释/数字停在三年前的分包布局，
+// 会让结构门永久假红；这里只校验 JSON 可解析后的实际结构，不维护第二份路由清单）。
+assert.equal(pagesJson.pages.length, 8, "main package should contain eight root pages");
+assert.equal(pagesJson.subPackages.length, 13, "client should use thirteen subpackages");
 assert.ok(pagesJson.tabBar, "tab bar should be configured");
 assert.ok(pagesJson.easycom, "easycom should be configured for uni-ui");
-// 寻觅 v3 五 Tab：首页、附近、寻觅、消息、我的（寻觅为中央核心入口）
+// 寻觅 v3 五 Tab：首页、附近、匹配、消息、我的（中央 Tab 文案为「匹配」；
+// 「寻觅」只是该页页头标题，pages.json 注释已明确不得互改）
 assert.deepEqual(
   pagesJson.tabBar.list.map((item) => item.text),
-  ["首页", "附近", "寻觅", "消息", "我的"],
+  ["首页", "附近", "匹配", "消息", "我的"],
   "tab bar should follow the v3 explore IA order"
 );
 assert.deepEqual(

@@ -171,8 +171,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run client unit tests
-        run: pnpm --filter @campus-love/client run test:unit
+      - name: Run client unit tests with coverage thresholds
+        run: pnpm --filter @campus-love/client run test:coverage
 
   # ----------------------------------------------------------------
   # Job 4: 管理后台类型检查 + 构建
@@ -198,6 +198,9 @@ jobs:
 
       - name: Admin typecheck
         run: pnpm --filter @campus-love/admin run typecheck
+
+      - name: Admin unit tests
+        run: pnpm --filter @campus-love/admin run test:unit
 
       - name: Admin build
         run: pnpm --filter @campus-love/admin run build
@@ -238,8 +241,8 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Maven test
-        run: mvn -B -f apps/api/pom.xml test
+      - name: Maven verify (tests + JaCoCo check)
+        run: mvn -B -f apps/api/pom.xml verify
 
   # ----------------------------------------------------------------
   # Job 7: Trivy 安全扫描 + GHCR 镜像推送 + cosign 签名
