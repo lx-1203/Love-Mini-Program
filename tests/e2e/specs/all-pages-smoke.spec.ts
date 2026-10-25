@@ -1,88 +1,13 @@
 import { test, expect, type Page } from '@playwright/test';
+import { ROUTES } from '../routes.generated';
 
 /**
- * 全页面冒烟测试（2026-08-10 建立）。
+ * 全页面冒烟测试（2026-08-10 建立；2026-10-25 改为 pages.json 单源派生）。
  *
- * <p>目标：保证「所有页面没有出错」——遍历 pages.json 注册的全部路由，
- * 逐个访问并断言：页面可渲染（无致命 JS 错误）、无 console error。
- * 覆盖小程序端（mp-weixin 路由表）与 H5 共用路由。</p>
- *
- * <p>判定标准（不过度断言，避免脆测）：</p>
- * <ul>
- *   <li>页面加载后无 pageerror（未捕获异常）与 console error（网络失败/渲染异常）；</li>
- *   <li>页面 body 有实际渲染内容（非全空白）；</li>
- *   <li>带参页面（detail/topic-detail 等）以无参访问验证「空态/错误态」路径——空态渲染无错同样视为通过；</li>
- *   <li>需登录页面在未登录时重定向到登录页/展示 LockScreen 属预期行为，不计为失败。</li>
- * </ul>
- *
- * <p>运行方式：起 H5 dev server 后</p>
- * <pre>npx playwright test --grep="@all-pages" --config=tests/e2e/playwright.config.ts</pre>
+ * <p>目标：遍历 pages.json 注册的全部路由，逐个访问并断言：页面可渲染（无致命 JS 错误）、
+ * 无 console error、最终落到预期路由。原实现硬编码 63 条旧路由且用裸路径访问 hash 路由，
+ * 实际可能全部落到首页仍显示通过。</p>
  */
-
-const ROUTES: string[] = [
-  // ── 主包（47 页，取自 pages.json；dev 调试页与 showcase 为演示页，不纳入） ──
-  '/pages/discover/index',
-  '/pages/discover/matching',
-  '/pages/discover/match-success',
-  '/pages/login/index',
-  '/pages/home/index',
-  '/pages/home/segment',
-  '/pages/nearby/index',
-  '/pages/discover/history',
-  '/pages/likes/index',
-  '/pages/likes-visitors/index',
-  '/pages/village/index',
-  '/pages/village/post',
-  '/pages/village/detail',
-  '/pages/messages/index',
-  '/pages/profile/index',
-  '/pages/circles/index',
-  '/pages/circles/topics',
-  '/pages/circles/topic-detail',
-  '/pages/circles/post-topic',
-  '/pages/daily-question/index',
-  '/pages/love-center/index',
-  '/pages/chat-session/index',
-  '/pages/official-chat/index',
-  '/pages/help/index',
-  '/pages/security/index',
-  '/pages/campus/index',
-  '/pages/campus/post-topic',
-  '/pages/campus/topic-detail',
-  '/pages/campus/certification',
-  '/pages/village/tag-posts',
-  '/pages/village/history',
-  '/pages/settings/index',
-  '/pages/verification/index',
-  '/pages/heart-signals/index',
-  '/pages/profile/visitors',
-  '/pages/profile/other',
-  '/pages/profile/privacy',
-  '/pages/profile/album',
-  '/pages/profile/tasks',
-  '/pages/settings/dnd',
-  '/pages/feedback/history',
-  '/pages/activities/detail',
-  '/pages/love-center/nearby',
-  '/pages/love-center/mbti',
-  '/pages/love-center/consulting',
-  // ── 分包（15 页） ──
-  '/subpackages/setup/profile/index',
-  '/subpackages/setup/campus/index',
-  '/subpackages/setup/schedule/index',
-  '/subpackages/setup/recommend-pref/index',
-  '/subpackages/support/feedback/index',
-  '/subpackages/discover/discussions/index',
-  '/subpackages/discover/activities/index',
-  '/subpackages/legal/privacy/index',
-  '/subpackages/legal/agreement/index',
-  '/subpackages/market/detail/index',
-  '/subpackages/market/shop/index',
-  '/subpackages/market/wallet/index',
-  '/subpackages/vip/index',
-  '/subpackages/vip/promo-code',
-  '/subpackages/vip/bills',
-];
 
 /** 访问单个页面并断言无 JS 错误 + 有渲染内容 */
 async function visitPage(page: Page, route: string) {
@@ -114,7 +39,7 @@ async function visitPage(page: Page, route: string) {
   const publicExactRoutes = new Set([
     "/pages/login/index",
     "/pages/discover/index",
-    "/pages/village/index",
+    "/subpackages/village/village/index",
   ]);
   if (publicExactRoutes.has(route)) {
     expect.soft(finalPath, `${route} 应能在匿名态直接到达，不能被统一重定向`).toBe(route);
