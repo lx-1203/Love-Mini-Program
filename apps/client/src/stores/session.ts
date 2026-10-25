@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { clientApi } from "../services/api";
 import { isDev } from "../config/env";
+import { isDevUserEntryAllowed } from "../utils/dev-user-gate";
 // 微信登录真实链路（Task 0.1.1）：services/auth.ts 封装 wx.login + POST /v1/auth/wechat
 import { loginWithWechat as authLoginWithWechat } from "../services/auth";
 // JWT token 存取：bootstrap 检测到失效 token 时清除并以体验账号重登
@@ -104,6 +105,7 @@ function readQueryParam(query: Record<string, unknown> | undefined | null, key: 
  * @returns true 表示当前页面请求以 mock 用户身份进入
  */
 export function hasDevUserFlag(query?: Record<string, unknown> | null): boolean {
+  if (!isDevUserEntryAllowed()) return false;
   return readQueryParam(query, DEV_USER_QUERY_KEY) === DEV_USER_QUERY_VALUE;
 }
 

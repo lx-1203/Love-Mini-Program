@@ -207,4 +207,23 @@ describe("websocket client - token 传递方式（Phase 3 任务 15）", () => {
     expect(capturedArgs!.url).toBe(firstUrl);
     expect(capturedArgs!.protocols).toContain("bearer.first-token");
   });
+
+  it("断线重连优先使用刷新后的最新 token，而非首次连接时的旧 token", async () => {
+    vi.useFakeTimers();
+    try {
+      wsClient.connect("old-token-before-refresh");
+      expect(capturedArgs!.protocols).toContain("bearer.old-token-before-refresh");
+
+      capturedArgs = null;
+      mockTask!.onCloseCallback?.({ code: 1006, reason: "network lost" });
+      await vi.advanceTimersByTimeAsync(1_000);
+
+      expect(capturedArgs).not.toBeNull();
+      // getToken() 在本测试的 http mock 中返回 fallback-token，模拟 HTTP 层刷新后的新值。
+      expect(capturedArgs!.protocols).toContain("bearer.fallback-token");
+      expect(capturedArgs!.protocols).not.toContain("bearer.old-token-before-refresh");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

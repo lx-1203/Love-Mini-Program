@@ -29,6 +29,7 @@ import Pagination from "@/components/Pagination.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import ErrorState from "@/components/ErrorState.vue";
 import { useRequestRace } from "../../composables/useRequestRace";
+import { useSessionStore } from "@/stores/session";
 import { useI18n } from "vue-i18n";
 import { DEFAULT_PAGE_SIZE, NICKNAME_MAX_LENGTH } from "@/utils/constants";
 
@@ -46,6 +47,7 @@ const page = ref(1);
 const pageSize = ref(DEFAULT_PAGE_SIZE);
 const total = ref(0);
 const totalPages = ref(1);
+const sessionStore = useSessionStore();
 
 const editingUser = ref<AdminUserSummary | null>(null);
 const editNickname = ref("");
@@ -121,6 +123,7 @@ function clearSelection(): void {
  * 部分失败时聚合提示，结束后刷新列表并保留失败项勾选。
  */
 async function runBatch(action: "disable" | "enable"): Promise<void> {
+  if (!sessionStore.canWrite) return;
   if (batchRunning.value || selectedIds.value.size === 0) return;
   batchRunning.value = true;
   batchTip.value = "";
@@ -217,6 +220,7 @@ const currentAdminRole = computed<string>(() => {
  * - 自己的账号：不允许
  */
 function canToggleUser(user: { id: number; role?: string }): boolean {
+  if (!sessionStore.canWrite) return false;
   if (user.id === currentAdminId.value) return false;
   const role = String(user.role ?? "").toUpperCase();
   if (role === "SUPER_ADMIN") return false;
@@ -295,6 +299,7 @@ function handlePageChange(newPage: number): void {
 }
 
 async function handleEdit(user: AdminUserSummary) {
+  if (!sessionStore.canWrite) return;
   editingUser.value = user;
   editNickname.value = user.nickname;
   editBio.value = "";
@@ -610,6 +615,7 @@ onBeforeUnmount(() => {
 
 /** 打开新增用户弹窗（打开时重置表单与错误提示） */
 function openCreateUser() {
+  if (!sessionStore.canWrite) return;
   createPhone.value = "";
   createPassword.value = "";
   createNickname.value = "";
@@ -757,7 +763,7 @@ onMounted(() => {
       </view>
       <!-- 新增用户 + 修改密码入口：仅超级管理员显示（后端 @PreAuthorize SUPER_ADMIN） -->
       <template v-if="currentAdminRole === 'SUPER_ADMIN'">
-        <button class="primary-button" @click="openCreateUser">{{ t("users.actionCreateUser") }}</button>
+        <button v-if="sessionStore.canWrite" class="primary-button" @click="openCreateUser">{{ t("users.actionCreateUser") }}</button>
         <button class="ghost-button" @click="openChangePwd">{{ t("users.actionChangePassword") }}</button>
       </template>
     </view>
@@ -765,7 +771,7 @@ onMounted(() => {
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchUsers" />
 
     <!-- 批量操作条（design Frame 03：已选 N 项 + 批量动作） -->
-    <view v-if="selectedCount > 0" class="batch-bar">
+    <view v-if="sessionStore.canWrite && selectedCount > 0" class="batch-bar">
       <text class="batch-bar__count">{{ t("users.batchSelected", { n: selectedCount }) }}</text>
       <view class="batch-bar__actions">
         <button class="link-button link-button--danger" :disabled="batchRunning" @click="runBatch('disable')">
@@ -785,6 +791,7 @@ onMounted(() => {
           <tr>
             <th class="col-check" scope="col">
               <input
+                v-if="sessionStore.canWrite"
                 type="checkbox"
                 :checked="allSelectableSelected"
                 :aria-label="t('users.selectAll')"
@@ -850,7 +857,7 @@ onMounted(() => {
             <td>{{ formatDate(user.createdAt) }}</td>
             <td class="action-cell">
               <button class="action-button view" @click="handleViewDetail(user)">{{ t("users.actionView") }}</button>
-              <button class="action-button edit" @click="handleEdit(user)">{{ t("users.actionEdit") }}</button>
+              <button v-if="sessionStore.canWrite" class="action-button edit" @click="handleEdit(user)">{{ t("users.actionEdit") }}</button>
               <!-- 权限对齐：SUPER_ADMIN 行禁止操作（后端 400）、自身不可操作、
                     ADMIN 行仅超级管理员可操作 -->
               <button

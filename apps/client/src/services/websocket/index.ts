@@ -903,8 +903,8 @@ class WebSocketClient {
     const scheduled = this.reconnectManager.schedule(() => {
       // 复位防重入标志：允许下一次断线触发新的重连流程
       this.reconnectScheduled = false;
-      // 重新获取最新 token
-      const token = this.currentToken || getToken();
+      // 重新获取最新 token：HTTP 层刷新后本地 token 已更新，必须优先于首次连接时固化的旧值
+      const token = getToken() || this.currentToken;
       if (token) {
         this.connect(token);
       } else {
