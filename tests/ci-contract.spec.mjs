@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import YAML from "yaml";
 
 const ci = readFileSync(
   new URL("../.github/workflows/ci.yml", import.meta.url),
@@ -33,11 +34,61 @@ assert.match(
   /image-ref:\s*ghcr\.io\/\$\{\{\s*github\.repository\s*\}\}\/admin@\$\{\{\s*steps\.build-admin\.outputs\.digest\s*\}\}/u,
   "pushed Admin image must be scanned by its actual digest",
 );
-assert.match(
-  ci,
-  /steps\.meta-api\.outputs\.tags\s*\}\}/u,
-  "local API scan should reference the deterministic metadata tag",
-);
+// 本地扫描必须扫「真的存在的那枚镜像」：扫描步骤的 if 条件要与 build 的 load 条件同文，
+// 推送扫描的 if 要与 push 条件同文。
+//
+// 为什么不再用正则：原判据 `image-ref` 只写 `steps.meta-api.outputs.tags` 是否存在于全文，
+// 而 build 步骤自己的 `tags:` 输入就是这个串（ci.yml 里 build-api 的 with.tags），
+// 于是把 Trivy 的 image-ref 指到一处不存在的引用、或把它的 if 翻成 push 档
+// （那一档本地 daemon 里根本没有镜像）时，本门照样绿。
+// 现在按 YAML 结构取「哪一步是 Trivy」「哪一步是 build」，再逐对同文比较。
+const workflow = YAML.parse(ci);
+const jobs = workflow.jobs ?? {};
+
+function findSteps(predicate) {
+  const found = [];
+  for (const [jobId, job] of Object.entries(jobs)) {
+    for (const step of job?.steps ?? []) {
+      if (predicate(step)) found.push({ jobId, step });
+    }
+  }
+  return found;
+}
+
+const norm = (expr) => String(expr ?? "").replace(/\s+/g, " ").trim();
+
+for (const app of ["api", "admin"]) {
+  const build = findSteps((s) => s.id === `build-${app}`);
+  assert.equal(build.length, 1, `必须且只能有一个 build-${app} 步骤`);
+  const loadExpr = norm(build[0].step.with?.load);
+  const pushExpr = norm(build[0].step.with?.push);
+  assert.ok(loadExpr, `build-${app} 必须显式声明 with.load`);
+  assert.ok(pushExpr, `build-${app} 必须显式声明 with.push`);
+
+  const scans = findSteps(
+    (s) => typeof s.uses === "string" && s.uses.startsWith("aquasecurity/trivy-action") &&
+      typeof s.with?.["image-ref"] === "string" &&
+      s.with["image-ref"].includes(`meta-${app}.outputs.tags`),
+  );
+  assert.equal(scans.length, 1, `必须恰有一条按本地 tag 扫描 ${app} 的 Trivy 步骤`);
+  assert.equal(
+    norm(scans[0].step.if),
+    loadExpr,
+    `本地扫描 ${app} 的 if 必须与 build-${app}.with.load 同文，否则会在没载入镜像的那一档去扫`,
+  );
+
+  const digestScans = findSteps(
+    (s) => typeof s.uses === "string" && s.uses.startsWith("aquasecurity/trivy-action") &&
+      typeof s.with?.["image-ref"] === "string" &&
+      s.with["image-ref"].includes(`steps.build-${app}.outputs.digest`),
+  );
+  assert.equal(digestScans.length, 1, `必须恰有一条按推送 digest 扫描 ${app} 的 Trivy 步骤`);
+  assert.equal(
+    norm(digestScans[0].step.if),
+    pushExpr,
+    `推送扫描 ${app} 的 if 必须与 build-${app}.with.push 同文，否则会扫一枚没推上去的 digest`,
+  );
+}
 
 // metadata 只产生单一 tag；多 tag 会让 image-ref 变成逗号串。
 assert.doesNotMatch(ci, /type=sha/u, "metadata must not add a second tag when scan uses outputs.tags");
