@@ -103,17 +103,8 @@ export function signedMediaUrl(path: string): string | null {
   return null;
 }
 
-/** 批量预热（列表加载完就能把这一屏的图先签掉，减少首屏空白）。 */
-export function prefetchMediaSignatures(paths: Array<string | null | undefined>): void {
-  assertSameSession();
-  for (const path of paths) {
-    if (typeof path === "string" && path.length > 0) {
-      scheduleSign(path);
-    }
-  }
-}
-
-/** 登出/401/切换账号时清空（签名是能力凭据，不能跨会话复用）。 */
+/** 登出/切换账号时清空（签名是能力凭据，不能跨会话复用）。
+ * 消费点：stores/session.ts 的 logout 与登录成功两处（与 clearAllCaches 同批）。 */
 export function clearMediaSignCache(): void {
   signed.clear();
   pending.clear();

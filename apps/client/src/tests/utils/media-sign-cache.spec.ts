@@ -19,7 +19,6 @@ vi.mock("../../services/http", () => ({
 import {
   clearMediaSignCache,
   mediaSignVersion,
-  prefetchMediaSignatures,
   signedMediaUrl,
 } from "../../utils/media-sign-cache";
 
@@ -116,17 +115,6 @@ describe("media-sign-cache", () => {
     await flushTick();
 
     expect(request).toHaveBeenCalledTimes(1);
-  });
-
-  it("prefetchMediaSignatures 忽略空值并把有效路径排队", async () => {
-    const future = Math.floor(Date.now() / 1000) + 900;
-    request.mockResolvedValueOnce(signResponse(["/api/v1/media/7/a.jpg"], future));
-
-    prefetchMediaSignatures(["/api/v1/media/7/a.jpg", "", null, undefined]);
-    await flushTick();
-
-    const call = request.mock.calls[0][0] as { data: { paths: string[] } };
-    expect(call.data.paths).toEqual(["/api/v1/media/7/a.jpg"]);
   });
 
   it("clearMediaSignCache 之后同一路径重新签发（凭据不跨会话复用）", async () => {

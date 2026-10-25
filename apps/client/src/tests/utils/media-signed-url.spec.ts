@@ -18,7 +18,6 @@ const mediaSignVersion = vi.fn(() => 0);
 vi.mock("../../utils/media-sign-cache", () => ({
   signedMediaUrl: (path: string) => signedMediaUrl(path),
   mediaSignVersion: () => mediaSignVersion(),
-  prefetchMediaSignatures: vi.fn(),
   clearMediaSignCache: vi.fn(),
 }));
 
