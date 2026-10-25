@@ -338,7 +338,6 @@ jobs:
           images: ghcr.io/${{ github.repository }}/api
           tags: |
             type=raw,value=${{ steps.tag.outputs.TAG }}
-            type=sha
 
       - name: Docker meta (Admin)
         id: meta-admin
@@ -347,7 +346,6 @@ jobs:
           images: ghcr.io/${{ github.repository }}/admin
           tags: |
             type=raw,value=${{ steps.tag.outputs.TAG }}
-            type=sha
 
       - name: Log in to GHCR
         # 2026-10-05 推送闸：refuse 档不登录 GHCR（PR 场景本就不推送）
@@ -359,6 +357,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push API image
+        id: build-api
         uses: docker/build-push-action@v6
         with:
           context: ./apps/api
@@ -366,10 +365,14 @@ jobs:
           tags: ${{ steps.meta-api.outputs.tags }}
           # 2026-10-05 推送闸：refuse 档只构建不推送（配合上方显式 fail 步骤）
           push: ${{ github.event_name != 'pull_request' && steps.push-gate.outputs.mode != 'refuse' }}
+          # PR/refuse 不推送时必须载入本地 daemon，后续 Trivy 才有真实镜像可扫；
+          # 修复原链「PR push=false 且未 load，却按 GHCR 引用扫描」的断点。
+          load: ${{ github.event_name == 'pull_request' || steps.push-gate.outputs.mode == 'refuse' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Build and push Admin image
+        id: build-admin
         uses: docker/build-push-action@v6
         with:
           context: ./apps/admin
@@ -377,24 +380,42 @@ jobs:
           tags: ${{ steps.meta-admin.outputs.tags }}
           # 2026-10-05 推送闸：refuse 档只构建不推送（配合上方显式 fail 步骤）
           push: ${{ github.event_name != 'pull_request' && steps.push-gate.outputs.mode != 'refuse' }}
+          load: ${{ github.event_name == 'pull_request' || steps.push-gate.outputs.mode == 'refuse' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       # ---------- 阶段 3：镜像漏洞扫描（P3-D.1）----------
-      # infra R2-00006：metadata-action 的 outputs.tags 为逗号分隔多 tag
-      # （如 ci-<sha>,sha-<sha>），Trivy image-ref 只接受单镜像引用，
-      # 取第一个 tag 扫描即可覆盖同一镜像内容
-      - name: Trivy scan API image
+      # GitHub Actions 表达式不支持 JS 的 .split()：metadata 固定只产出一个 raw tag。
+      # PR/refuse 档扫刚 load 的本地镜像；push 档扫刚推送的 digest，两个目标都真实存在。
+      - name: Trivy scan API image (local build)
+        if: ${{ github.event_name == 'pull_request' || steps.push-gate.outputs.mode == 'refuse' }}
         uses: aquasecurity/trivy-action@v0.23.0
         with:
-          image-ref: ${{ steps.meta-api.outputs.tags.split(',')[0] }}
+          image-ref: ${{ steps.meta-api.outputs.tags }}
           severity: HIGH,CRITICAL
           exit-code: '1'
 
-      - name: Trivy scan Admin image
+      - name: Trivy scan Admin image (local build)
+        if: ${{ github.event_name == 'pull_request' || steps.push-gate.outputs.mode == 'refuse' }}
         uses: aquasecurity/trivy-action@v0.23.0
         with:
-          image-ref: ${{ steps.meta-admin.outputs.tags.split(',')[0] }}
+          image-ref: ${{ steps.meta-admin.outputs.tags }}
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+
+      - name: Trivy scan API image (pushed digest)
+        if: ${{ github.event_name != 'pull_request' && steps.push-gate.outputs.mode != 'refuse' }}
+        uses: aquasecurity/trivy-action@v0.23.0
+        with:
+          image-ref: ghcr.io/${{ github.repository }}/api@${{ steps.build-api.outputs.digest }}
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+
+      - name: Trivy scan Admin image (pushed digest)
+        if: ${{ github.event_name != 'pull_request' && steps.push-gate.outputs.mode != 'refuse' }}
+        uses: aquasecurity/trivy-action@v0.23.0
+        with:
+          image-ref: ghcr.io/${{ github.repository }}/admin@${{ steps.build-admin.outputs.digest }}
           severity: HIGH,CRITICAL
           exit-code: '1'
 
