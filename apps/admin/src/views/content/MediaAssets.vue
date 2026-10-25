@@ -13,7 +13,7 @@
  * 只读角色 AUDITOR（审核员）隐藏「审核」按钮 —— 写权限开关统一取 sessionStore.canWrite，
  * 不在视图内比较 role 字符串；即便绕过 UI，后端也会 403。
  */
-import { computed, onMounted, ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import {
@@ -31,9 +31,6 @@ import { DEFAULT_PAGE_SIZE, REMARK_MAX_LENGTH } from "../../utils/constants";
 
 const { t } = useI18n();
 const sessionStore = useSessionStore();
-
-/** 当前账号可写（ADMIN / SUPER_ADMIN）；AUDITOR 为 false */
-const canWrite = computed(() => sessionStore.canWrite);
 
 // ===== 列表状态 =====
 const assets = ref<MediaAssetSummary[]>([]);
@@ -162,6 +159,7 @@ function onAuditKeydown(e: KeyboardEvent): void {
 
 /** 提交审核（拒绝时必须填写备注，供留痕与客户端提示） */
 async function handleSaveAudit(): Promise<void> {
+  if (!sessionStore.canWrite) return;
   const asset = auditingAsset.value;
   if (!asset || savingAudit.value) return;
   if (auditDecision.value === "rejected" && !auditRemark.value.trim()) {
@@ -355,7 +353,7 @@ onMounted(() => {
             <td class="action-cell">
               <button class="action-button audit" @click="openPreview(item)">{{ t("mediaAssets.actionPreview") }}</button>
               <button
-                v-if="canWrite && item.auditStatus === 'pending'"
+                v-if="sessionStore.canWrite && item.auditStatus === 'pending'"
                 class="action-button audit"
                 @click="openAudit(item)"
               >{{ t("mediaAssets.actionAudit") }}</button>

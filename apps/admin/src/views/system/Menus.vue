@@ -25,8 +25,10 @@ import {
 import { ApiError } from "../../api/http";
 import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
+import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
 // ===== 列表数据 =====
 const menuTree = ref<MenuTreeNode[]>([]);
@@ -171,6 +173,7 @@ function switchType(type: "DIR" | "MENU") {
 
 /** 提交新增/编辑 */
 async function handleSubmit() {
+  if (!sessionStore.canWrite) return;
   if (saving.value) return;
   // 基础校验（title/name/path 必填；MENU 类型 component 必填）
   if (!form.value.title.trim()) {
@@ -231,6 +234,7 @@ function askDelete(node: MenuTreeNode) {
 }
 
 async function confirmDelete() {
+  if (!sessionStore.canWrite) return;
   const target = deleteTarget.value;
   if (!target || deleting.value) return;
   deleting.value = true;
@@ -268,7 +272,7 @@ onMounted(() => {
     </view>
 
     <view class="toolbar">
-      <button class="primary-button" @click="openCreateTop">{{ t("menus.createTopButton") }}</button>
+      <button v-if="sessionStore.canWrite" class="primary-button" @click="openCreateTop">{{ t("menus.createTopButton") }}</button>
       <button class="secondary-button" :disabled="loading" @click="fetchMenus">{{ t("common.refresh") }}</button>
     </view>
 
@@ -324,11 +328,11 @@ onMounted(() => {
             </td>
             <td>
               <view class="action-cell">
-                <button class="action-button edit" @click="openEdit(row.node)">{{ t("menus.actionEdit") }}</button>
-                <button v-if="row.node.menuType === 'DIR'" class="action-button handle" @click="openCreateChild(row.node)">
+                <button v-if="sessionStore.canWrite" class="action-button edit" @click="openEdit(row.node)">{{ t("menus.actionEdit") }}</button>
+                <button v-if="sessionStore.canWrite && row.node.menuType === 'DIR'" class="action-button handle" @click="openCreateChild(row.node)">
                   {{ t("menus.actionCreateChild") }}
                 </button>
-                <button class="action-button delete" @click="askDelete(row.node)">{{ t("menus.actionDelete") }}</button>
+                <button v-if="sessionStore.canWrite" class="action-button delete" @click="askDelete(row.node)">{{ t("menus.actionDelete") }}</button>
               </view>
             </td>
           </tr>

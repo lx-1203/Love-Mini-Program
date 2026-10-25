@@ -40,11 +40,13 @@ import { ApiError } from "../../api/http";
 import Pagination from "../../components/Pagination.vue";
 import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
+import { useSessionStore } from "../../stores/session";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE } from "../../utils/constants";
 
 const { t } = useI18n();
 const router = useRouter();
+const sessionStore = useSessionStore();
 
 // ===== 列表状态 =====
 const activities = ref<ActivitySummary[]>([]);
@@ -170,6 +172,7 @@ function resetForm(): void {
 
 /** 打开新增弹窗 */
 function openCreate(): void {
+  if (!sessionStore.canWrite) return;
   editingId.value = null;
   resetForm();
   modalError.value = "";
@@ -178,6 +181,7 @@ function openCreate(): void {
 
 /** 打开编辑弹窗（先拉详情回填，列表摘要不含 description） */
 async function openEdit(activity: ActivitySummary): Promise<void> {
+  if (!sessionStore.canWrite) return;
   errorMsg.value = "";
   try {
     const detail = await getActivity(activity.id);
@@ -209,6 +213,7 @@ function closeForm(): void {
 
 /** 提交新增/编辑（必填校验与后端 AdminActivityRequest 对齐） */
 async function handleSave(): Promise<void> {
+  if (!sessionStore.canWrite) return;
   if (saving.value) return;
   const f = form.value;
   // 必填字段前端预校验（title/location/scheduleText/description）
@@ -285,6 +290,7 @@ const confirmMessage = () => {
 
 /** 打开确认弹窗（上架/下架/删除共用） */
 function askConfirm(action: ConfirmAction, activity: ActivitySummary): void {
+  if (!sessionStore.canWrite) return;
   confirmAction.value = action;
   confirmTarget.value = activity;
   confirmVisible.value = true;
@@ -292,6 +298,7 @@ function askConfirm(action: ConfirmAction, activity: ActivitySummary): void {
 
 /** ConfirmDialog 确认回调：按 action 执行对应操作 */
 async function handleConfirm(): Promise<void> {
+  if (!sessionStore.canWrite) return;
   const target = confirmTarget.value;
   if (!target || confirming.value) return;
   confirming.value = true;
@@ -377,7 +384,7 @@ onMounted(() => {
         <option v-for="(label, code) in ACTIVITY_CATEGORY_LABELS" :key="code" :value="code">{{ label }}</option>
       </select>
       <button class="ghost-button" @click="handleResetFilters">{{ t("common.reset") }}</button>
-      <button class="primary-button" @click="openCreate">{{ t("activities.createButton") }}</button>
+      <button v-if="sessionStore.canWrite" class="primary-button" @click="openCreate">{{ t("activities.createButton") }}</button>
     </view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchActivities" />
@@ -429,15 +436,15 @@ onMounted(() => {
             <td>{{ activity.activityDate ?? "—" }}</td>
             <td class="time-cell">{{ formatDateTime(activity.createdAt) }}</td>
             <td class="action-cell">
-              <button class="action-button edit" @click="openEdit(activity)">{{ t("common.edit") }}</button>
+              <button v-if="sessionStore.canWrite" class="action-button edit" @click="openEdit(activity)">{{ t("common.edit") }}</button>
               <button
-                v-if="activity.published"
+                v-if="sessionStore.canWrite && activity.published"
                 class="action-button delete"
                 @click="askConfirm('unpublish', activity)"
               >{{ t("activities.actionUnpublish") }}</button>
-              <button v-else class="action-button enable" @click="askConfirm('publish', activity)">{{ t("activities.actionPublish") }}</button>
+              <button v-else-if="sessionStore.canWrite" class="action-button enable" @click="askConfirm('publish', activity)">{{ t("activities.actionPublish") }}</button>
               <button class="action-button handle" @click="viewEnrollments(activity)">{{ t("activities.actionViewEnrollments") }}</button>
-              <button class="action-button delete" @click="askConfirm('delete', activity)">{{ t("common.delete") }}</button>
+              <button v-if="sessionStore.canWrite" class="action-button delete" @click="askConfirm('delete', activity)">{{ t("common.delete") }}</button>
             </td>
           </tr>
         </tbody>

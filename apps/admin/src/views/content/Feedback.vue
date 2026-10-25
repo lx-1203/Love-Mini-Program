@@ -12,7 +12,7 @@
  *   故此处用 sessionStore.canWrite 隐藏「处理」按钮（绕过去后端也会 403）。
  * - loading / empty / error 三态处理 + 请求竞态防护。
  */
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import {
   listFeedbackTickets,
   handleFeedbackTicket,
@@ -33,9 +33,6 @@ import { TOAST_DURATION_MS, REMARK_MAX_LENGTH, DEFAULT_PAGE_SIZE } from "@/utils
 
 const { t } = useI18n();
 const sessionStore = useSessionStore();
-
-/** 当前账号可写（ADMIN / SUPER_ADMIN）；AUDITOR 为 false */
-const canWrite = computed(() => sessionStore.canWrite);
 
 const feedbacks = ref<FeedbackTicketView[]>([]);
 const loading = ref(false);
@@ -153,6 +150,7 @@ function handleProcess(feedback: FeedbackTicketView) {
 
 /** ConfirmDialog 确认回调，调用工单处理接口（状态推进为 REVIEWED，支持自定义回复摘要） */
 async function handleConfirmProcess() {
+  if (!sessionStore.canWrite) return;
   const target = processTarget.value;
   if (!target) return;
   processLoading.value = true;
@@ -336,7 +334,7 @@ onBeforeUnmount(() => {
             <td class="action-cell">
               <button class="action-button view" @click="handleView(feedback)">{{ t("feedback.actionView") }}</button>
               <!-- 只读角色 AUDITOR 隐藏写按钮（后端 POST /api/v1/admin/** 仅 ADMIN/SUPER_ADMIN） -->
-              <button v-if="canWrite" class="action-button process" @click="handleProcess(feedback)">{{ t("feedback.actionProcess") }}</button>
+              <button v-if="sessionStore.canWrite" class="action-button process" @click="handleProcess(feedback)">{{ t("feedback.actionProcess") }}</button>
             </td>
           </tr>
         </tbody>

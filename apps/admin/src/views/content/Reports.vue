@@ -22,8 +22,10 @@ import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import { formatDateTime } from "@/utils/format";
 import { DEFAULT_PAGE_SIZE, REMARK_MAX_LENGTH } from "@/utils/constants";
+import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
 /** 举报列表数据 */
 const reports = ref<AdminReportView[]>([]);
@@ -202,6 +204,7 @@ function closeHandleModal() {
  * 调用后端 handleReport 接口，成功后关闭弹窗并刷新列表。
  */
 async function submitHandle() {
+  if (!sessionStore.canWrite) return;
   if (!handlingReport.value) return;
   submitting.value = true;
   try {
@@ -366,7 +369,7 @@ onMounted(() => {
             <td>{{ formatDate(report.handledAt) }}</td>
             <td class="action-cell">
               <button
-                v-if="report.status === 'PENDING'"
+                v-if="report.status === 'PENDING' && sessionStore.canWrite"
                 class="action-button handle"
                 @click="openHandleModal(report)"
               >{{ t("reports.actionProcess") }}</button>

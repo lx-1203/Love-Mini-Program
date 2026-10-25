@@ -87,8 +87,11 @@ import {
 import { withMediaToken } from "../../api/media";
 import { ApiError } from "../../api/http";
 import { formatDateTime } from "../../utils/format";
+import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
+
+const sessionStore = useSessionStore();
 
 /** 帖子分类选项（与后端 Post.PostCategory 枚举一一对应） */
 const CATEGORY_OPTIONS: PostCategory[] = [
@@ -217,6 +220,7 @@ function openFilePicker(): void {
 const ACCEPTED_IMAGE_MIME = ["image/jpeg", "image/png", "image/webp"];
 
 async function onFilesChosen(event: Event): Promise<void> {
+  if (!sessionStore.canWrite) return;
   const input = event.target as HTMLInputElement | null;
   const files = input?.files;
   if (!files || files.length === 0) return;
@@ -276,6 +280,7 @@ function handleComposeError(err: unknown, fallbackScene: string): void {
 
 // ===== 提交 =====
 async function submitPost(): Promise<void> {
+  if (!sessionStore.canWrite) return;
   resetErrors();
   if (titleLength.value < COMPOSE_LIMITS.titleMin || titleLength.value > COMPOSE_LIMITS.titleMax) {
     formError.value = t("postCompose.titleLengthInvalid", {
@@ -358,7 +363,7 @@ onBeforeUnmount(() => {
     <text v-if="authorErrorFlag" class="hint-text">{{ t("postCompose.authorMisconfiguredHint") }}</text>
     <text v-if="formError" class="error-message">{{ formError }}</text>
 
-    <form class="compose-form" @submit.prevent="submitPost">
+    <form v-if="sessionStore.canWrite" class="compose-form" @submit.prevent="submitPost">
       <view class="form-row">
         <label class="form-label" for="compose-title">
           {{ t("postCompose.titleLabel") }}

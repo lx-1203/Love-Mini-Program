@@ -161,6 +161,7 @@ function resetForm() {
 
 /** 提交发布公告 */
 async function handlePublish() {
+  if (!sessionStore.canWrite) return;
   if (!canBroadcast.value || publishing.value) return;
   const invalid = validateForm();
   if (invalid) {
@@ -210,6 +211,7 @@ function cancelDelete() {
 
 /** 确认下架：硬删除该行并刷新消息流 */
 async function handleDeleteConfirm() {
+  if (!sessionStore.canWrite) return;
   const target = deleteTarget.value;
   if (!target || deleting.value) return;
   deleting.value = true;
@@ -317,7 +319,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- 发布广播公告表单（仅超级管理员可见） -->
-      <form v-if="canBroadcast" class="publish-form" @submit.prevent="handlePublish">
+      <form v-if="canBroadcast && sessionStore.canWrite" class="publish-form" @submit.prevent="handlePublish">
         <div class="publish-form__header">
           <span class="publish-form__title">{{ t("officialAccounts.publishTitle") }}</span>
           <span class="publish-form__hint">{{ t("officialAccounts.publishHint") }}</span>
@@ -446,7 +448,7 @@ onBeforeUnmount(() => {
               <th>推荐理由 / 人数</th>
               <th>{{ t("officialAccounts.colTarget") }}</th>
               <th>{{ t("officialAccounts.colPublishedAt") }}</th>
-              <th v-if="canBroadcast">{{ t("officialAccounts.colActions") }}</th>
+              <th v-if="canBroadcast && sessionStore.canWrite">{{ t("officialAccounts.colActions") }}</th>
             </tr>
           </thead>
           <tbody>
@@ -486,7 +488,7 @@ onBeforeUnmount(() => {
                 <span v-else>-</span>
               </td>
               <td class="cell-time">{{ formatDateTime(msg.publishedAt) }}</td>
-              <td v-if="canBroadcast" class="action-cell">
+              <td v-if="canBroadcast && sessionStore.canWrite" class="action-cell">
                 <button class="btn btn-danger" :disabled="deleting" @click="askDelete(msg)">
                   {{ t("officialAccounts.takeDown") }}
                 </button>

@@ -25,8 +25,11 @@ import Pagination from "../../components/Pagination.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE } from "../../utils/constants";
+import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
+
+const sessionStore = useSessionStore();
 
 // ===== 列表状态 =====
 const posts = ref<VillagePostSummary[]>([]);
@@ -98,6 +101,7 @@ function closeBoost(): void {
 }
 
 async function handleSaveBoost(): Promise<void> {
+  if (!sessionStore.canWrite) return;
   const target = boostTarget.value;
   if (!target || savingBoost.value) return;
   const v = Number(boostValue.value);
@@ -122,6 +126,7 @@ async function handleSaveBoost(): Promise<void> {
 const banningId = ref<number | null>(null);
 
 async function toggleBan(post: VillagePostSummary): Promise<void> {
+  if (!sessionStore.canWrite) return;
   if (banningId.value !== null) return;
   banningId.value = post.id;
   errorMsg.value = "";
@@ -139,6 +144,7 @@ async function toggleBan(post: VillagePostSummary): Promise<void> {
 const recalcId = ref<number | null>(null);
 
 async function handleRecalc(post: VillagePostSummary): Promise<void> {
+  if (!sessionStore.canWrite) return;
   if (recalcId.value !== null) return;
   recalcId.value = post.id;
   errorMsg.value = "";
@@ -220,8 +226,9 @@ onMounted(() => {
             </td>
             <td class="time-cell">{{ formatDateTime(post.createdAt) }}</td>
             <td class="action-cell">
-              <button class="action-button handle" @click="openBoost(post)">{{ t("hotBoardManage.actionBoost") }}</button>
+              <button v-if="sessionStore.canWrite" class="action-button handle" @click="openBoost(post)">{{ t("hotBoardManage.actionBoost") }}</button>
               <button
+                v-if="sessionStore.canWrite"
                 class="action-button"
                 :class="post.hotBanned ? 'pin' : 'delete'"
                 :disabled="banningId !== null"
@@ -229,7 +236,7 @@ onMounted(() => {
               >
                 {{ post.hotBanned ? t("hotBoardManage.actionUnban") : t("hotBoardManage.actionBan") }}
               </button>
-              <button class="action-button handle" :disabled="recalcId !== null" @click="handleRecalc(post)">
+              <button v-if="sessionStore.canWrite" class="action-button handle" :disabled="recalcId !== null" @click="handleRecalc(post)">
                 {{ t("hotBoardManage.actionRecalc") }}
               </button>
             </td>

@@ -12,10 +12,12 @@ import {
 } from "@/api/notify-config";
 import { ApiError } from "@/api/http";
 import ErrorState from "@/components/ErrorState.vue";
+import { useSessionStore } from "@/stores/session";
 import { useI18n } from "vue-i18n";
 import { TOAST_DURATION_MS } from "@/utils/constants";
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
 // 通知配置列表（每行直接可编辑）
 const configs = ref<NotifyConfigView[]>([]);
@@ -92,6 +94,7 @@ async function fetchConfigs() {
  * 无变更时直接跳过请求；保存前校验模板长度。
  */
 async function handleSave() {
+  if (!sessionStore.canWrite) return;
   if (!hasChanges.value) {
     return;
   }
@@ -171,7 +174,7 @@ onBeforeUnmount(() => {
     </view>
 
     <view class="toolbar">
-      <button class="primary-button" :disabled="saving || loading || !hasChanges" @click="handleSave">
+      <button v-if="sessionStore.canWrite" class="primary-button" :disabled="saving || loading || !hasChanges" @click="handleSave">
         {{ saving ? t("common.saving") : t("notifyConfig.saveButtonShort") }}
       </button>
       <!-- 未保存修改提示 -->

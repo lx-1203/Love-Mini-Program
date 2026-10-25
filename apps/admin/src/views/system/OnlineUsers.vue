@@ -15,8 +15,10 @@ import ErrorState from "../../components/ErrorState.vue";
 import { useI18n } from "vue-i18n";
 import { formatDateTime } from "../../utils/format";
 import { useRequestRace } from "../../composables/useRequestRace";
+import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
 const onlineUsers = ref<OnlineUserView[]>([]);
 const loading = ref(false);
@@ -67,6 +69,7 @@ function handleKickClick(user: OnlineUserView) {
 
 /** 确认踢下线 */
 async function handleKickConfirm() {
+  if (!sessionStore.canWrite) return;
   const target = kickTarget.value;
   if (!target || kicking.value) return;
   kicking.value = true;
@@ -158,7 +161,7 @@ onMounted(() => {
             </td>
             <td>{{ formatTime(user.loginAt) }}</td>
             <td>
-              <button class="action-button kick" @click="handleKickClick(user)">
+              <button v-if="sessionStore.canWrite" class="action-button kick" @click="handleKickClick(user)">
                 {{ t("onlineUsers.actionKick") }}
               </button>
             </td>

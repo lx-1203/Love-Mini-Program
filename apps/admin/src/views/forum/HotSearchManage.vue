@@ -22,8 +22,11 @@ import { ApiError } from "../../api/http";
 import Pagination from "../../components/Pagination.vue";
 import ErrorState from "../../components/ErrorState.vue";
 import { DEFAULT_PAGE_SIZE } from "../../utils/constants";
+import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
+
+const sessionStore = useSessionStore();
 
 const items = ref<HotSearchAdminView[]>([]);
 const loading = ref(false);
@@ -63,6 +66,7 @@ const opKey = ref("");
 const opLoading = ref(false);
 
 async function toggleRemove(item: HotSearchAdminView): Promise<void> {
+  if (!sessionStore.canWrite) return;
   if (opLoading.value) return;
   opKey.value = item.keyword;
   opLoading.value = true;
@@ -128,6 +132,7 @@ onMounted(() => {
             </td>
             <td class="action-cell">
               <button
+                v-if="sessionStore.canWrite"
                 class="action-button"
                 :class="item.isRemoved ? 'pin' : 'delete'"
                 :disabled="opLoading"

@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { env } from "../config/env";
 import { logger } from "../utils/logger";
+import { roleCanWrite } from "../utils/write-policy";
 import { t } from "../i18n";
 
 /**
@@ -59,12 +60,14 @@ export const useSessionStore = defineStore("session", () => {
   /**
    * 当前账号能否执行写操作（后台「新增/编辑/删除/审核」等控件的唯一开关）。
    *
-   * 单一来源约定：视图一律 `v-if="sessionStore.canWrite"`，不要各自比较 role 字符串。
+   * 单一来源约定：判定口径在 utils/write-policy.ts 的 roleCanWrite，视图一律
+   * `v-if="sessionStore.canWrite"`，不要各自比较 role 字符串。
    * 后端同样按 HTTP 方法分级拦截（/api/v1/admin/** 的 POST/PUT/PATCH/DELETE 仅
-   * ADMIN / SUPER_ADMIN，见 SecurityConfig），前端隐藏控件只是体验优化，
-   * 越权提交仍由后端 403 兜底。未知角色一律按只读处理（fail-closed）。
+   * ADMIN / SUPER_ADMIN，见 SecurityConfig），前端隐藏控件只是体验优化；
+   * api/http.ts 还会在写请求发出前按同一口径本地拦截，未接 v-if 的写控件
+   * 也不会漏出一次 403 往返。未知角色一律按只读处理（fail-closed）。
    */
-  const canWrite = computed(() => currentRole.value === "ADMIN" || currentRole.value === "SUPER_ADMIN");
+  const canWrite = computed(() => roleCanWrite(currentRole.value));
 
   /**
    * 从 localStorage 恢复管理员会话。

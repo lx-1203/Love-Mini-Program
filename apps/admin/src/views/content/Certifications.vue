@@ -20,8 +20,10 @@ import { ApiError } from "@/api/http";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import ErrorState from "@/components/ErrorState.vue";
 import { formatDateTime } from "@/utils/format";
+import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
 type StatusFilter = "ALL" | "PENDING" | "APPROVED" | "REJECTED";
 type ReviewAction = "APPROVED" | "REJECTED";
@@ -96,6 +98,7 @@ function handleRejectClick(cert: CertificationView) {
 
 /** ConfirmDialog 确认回调：执行通过/拒绝审核 */
 async function handleConfirmReview() {
+  if (!sessionStore.canWrite) return;
   const target = confirmTarget.value;
   if (!target || reviewing.value) return;
   reviewing.value = true;
@@ -210,12 +213,12 @@ onMounted(() => {
                 {{ t("certifications.actionView") }}
               </button>
               <button
-                v-if="cert.status === 'PENDING'"
+                v-if="cert.status === 'PENDING' && sessionStore.canWrite"
                 class="action-button enable"
                 @click="handleApproveClick(cert)"
               >{{ t("certifications.actionApprove") }}</button>
               <button
-                v-if="cert.status === 'PENDING'"
+                v-if="cert.status === 'PENDING' && sessionStore.canWrite"
                 class="action-button delete"
                 @click="handleRejectClick(cert)"
               >{{ t("certifications.actionReject") }}</button>

@@ -2235,6 +2235,7 @@ export default {
     network: "Network error, please retry",
     auth: "Session expired, please log in again",
     permission: "Permission denied",
+    readOnlyRole: "This account is read-only; changes cannot be submitted",
     notFound: "Resource not found",
     server: "Server error, please retry",
     unknown: "Unknown error, please retry",

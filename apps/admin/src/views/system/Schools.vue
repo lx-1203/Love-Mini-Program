@@ -29,8 +29,10 @@ import ErrorState from "../../components/ErrorState.vue";
 import { formatDateTime } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE } from "../../utils/constants";
 import { useRequestRace } from "../../composables/useRequestRace";
+import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
+const sessionStore = useSessionStore();
 
 // ===== 列表数据 =====
 const schools = ref<SchoolView[]>([]);
@@ -129,6 +131,7 @@ function closeForm() {
 }
 
 async function handleSubmit() {
+  if (!sessionStore.canWrite) return;
   if (saving.value) return;
   if (!form.value.name.trim()) {
     formError.value = t("schools.nameRequired");
@@ -176,6 +179,7 @@ function askToggle(school: SchoolView) {
 }
 
 async function confirmToggle() {
+  if (!sessionStore.canWrite) return;
   const target = toggleTarget.value;
   if (!target || toggling.value) return;
   toggling.value = true;
@@ -203,6 +207,7 @@ function askDelete(school: SchoolView) {
 }
 
 async function confirmDelete() {
+  if (!sessionStore.canWrite) return;
   const target = deleteTarget.value;
   if (!target || deleting.value) return;
   deleting.value = true;
@@ -247,7 +252,7 @@ onMounted(() => {
       </select>
       <button class="primary-button" @click="handleSearch">{{ t("common.search") }}</button>
       <button class="secondary-button" @click="handleReset">{{ t("common.reset") }}</button>
-      <button class="primary-button" @click="openCreate">{{ t("schools.createTitle") }}</button>
+      <button v-if="sessionStore.canWrite" class="primary-button" @click="openCreate">{{ t("schools.createTitle") }}</button>
     </view>
 
     <!-- 停用说明文案：停用高校后该校管理员无法登录 -->
@@ -288,15 +293,16 @@ onMounted(() => {
             <td>{{ formatDateTime(school.createdAt) }}</td>
             <td>
               <view class="action-cell">
-                <button class="action-button edit" @click="openEdit(school)">{{ t("schools.actionEdit") }}</button>
+                <button v-if="sessionStore.canWrite" class="action-button edit" @click="openEdit(school)">{{ t("schools.actionEdit") }}</button>
                 <button
+                  v-if="sessionStore.canWrite"
                   class="action-button"
                   :class="school.status === 'enabled' ? 'delete' : 'enable'"
                   @click="askToggle(school)"
                 >
                   {{ school.status === "enabled" ? t("schools.actionDisable") : t("schools.actionEnable") }}
                 </button>
-                <button class="action-button delete" @click="askDelete(school)">{{ t("schools.actionDelete") }}</button>
+                <button v-if="sessionStore.canWrite" class="action-button delete" @click="askDelete(school)">{{ t("schools.actionDelete") }}</button>
               </view>
             </td>
           </tr>
