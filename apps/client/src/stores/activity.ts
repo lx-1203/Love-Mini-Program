@@ -1,6 +1,4 @@
 import { defineStore } from "pinia";
-// 修复（严格模式 noUnusedLocals）：clientApi 已不再被本文件使用（分页契约统一后
-// fetchActivities 与 fetchMoreActivities 均直接使用 request），移除 import。
 import { request } from "../services/http";
 import { useMock } from "./helpers/use-mock";
 // 2026-08-10 切换提速：活动列表 30s TTL 缓存（home/village/discover 多入口去重）
@@ -8,13 +6,10 @@ import { isCacheFresh, setCachedValue } from "../utils/cache-ttl";
 
 /** 活动列表新鲜度窗口 */
 const ACTIVITIES_TTL_MS = 30_000;
-import type { components } from "../services/generated/api-types";
 // 统一图片资源路径常量，避免在 store 中硬编码字符串
 import { IMAGE_PATHS } from "@/config/images";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
-
-type Schemas = components["schemas"];
 
 export interface ActivityItem {
   id: string;
@@ -38,6 +33,27 @@ export interface ActivityItem {
   coverImage?: string;
   /** 活动分类 code（social/sports/game/study/volunteer/food/music/other，R4 2026-08-09） */
   category?: string;
+}
+
+/** `GET /activities` 的 Spring Page 响应内层结构。 */
+interface ActivityPageResponse {
+  content: Array<{
+    id: string | number;
+    title: string;
+    location: string;
+    scheduleText: string;
+    description?: string;
+    enrollmentCount?: number;
+    participantAvatars?: string[];
+    status?: ActivityItem["status"];
+    activityDate?: string;
+    category?: string;
+    coverImage?: string;
+    isEnrolled?: boolean;
+  }>;
+  number?: number;
+  totalPages?: number;
+  last?: boolean;
 }
 
 /* ========== Mock 数据 ========== */
@@ -159,11 +175,11 @@ export const useActivityStore = defineStore("activity", {
   actions: {
     /**
      * 获取活动列表（首次加载或刷新）
-     * Real 模式调用 GET /api/recommendations/activities
+     * Real 模式调用 GET /activities?page=0&size={pageSize}
      *
-     * 修复（P1 BUG）：原实现调用 clientApi.getActivityRecommendations()（无分页参数），
-     * 与 fetchMoreActivities 的 ?page=N&pageSize=M 契约不一致。现统一走 request 并
-     * 显式传 page=1&pageSize，保证首次加载与加载更多使用同一分页契约，hasMore 判断一致。
+     * 后端 `/recommendations/activities` 没有分页参数，且固定只返回前 10 条。
+     * 列表分页必须使用 `/activities` 的 Spring Page 契约；store 对外仍保留
+     * 1 基页码，换算关系为 serverPage = this.page - 1。
      */
     async fetchActivities(force = false) {
       // 2026-08-10 切换提速：30s 内已加载且有数据时直接跳过
@@ -181,15 +197,14 @@ export const useActivityStore = defineStore("activity", {
           return;
         }
 
-        // 调用后端 API: GET /api/recommendations/activities?page=1&pageSize={pageSize}
-        // 后端返回 Page<ActivityView>
-        const data = await request<Schemas["ActivityRecommendation"][]>({
-          url: `/recommendations/activities?page=1&pageSize=${this.pageSize}`,
+        const data = await request<ActivityPageResponse>({
+          url: `/activities?page=0&size=${this.pageSize}`,
           method: "GET",
         });
-        this.activities = data.map((item) => this.mapToActivityItem(item));
+        const mapped = data.content.map((item) => this.mapToActivityItem(item));
+        this.activities = this.dedupeActivities(mapped);
         this.page = 1;
-        this.hasMore = data.length >= this.pageSize;
+        this.hasMore = data.content.length > 0 && data.last !== true;
         // 2026-08-10 切换提速：拉取成功后刷新缓存时间戳
         setCachedValue("activities:list", true);
       } catch (error) {
@@ -203,17 +218,13 @@ export const useActivityStore = defineStore("activity", {
     /**
      * 加载更多活动（分页追加）
      *
-     * 修复（P1 BUG）：原实现未将 nextPage 传递给后端，每次都请求第一页数据，
-     * 导致分页失效（永远只能加载到第一页内容，造成数据重复展示）。
-     * 现通过 query 参数 `page` 将目标页码传给后端，并使用 nextPage 局部变量
-     * 避免请求失败时污染 this.page 状态。
+     * store.page 是 1 基页码，后端 Spring Page 是 0 基：请求第 N+1 屏时传
+     * page=N。只有请求成功且拿到新数据才推进 page；空页或 last=true 立即停止。
      */
     async fetchMoreActivities() {
       if (this.loading || !this.hasMore) return;
 
       this.loading = true;
-      // 使用局部变量保存 nextPage，仅在请求成功后才更新 this.page
-      // 避免请求失败后 this.page 仍被错误推进
       const nextPage = this.page + 1;
       try {
         if (useMock()) {
@@ -222,18 +233,18 @@ export const useActivityStore = defineStore("activity", {
           return;
         }
 
-        // 修复（P1 BUG）：将 nextPage 作为 query 参数传递给后端
-        // 直接调用 request 以避免破坏 clientApi.getActivityRecommendations 的签名
-        const data = await request<Schemas["ActivityRecommendation"][]>({
-          url: `/recommendations/activities?page=${nextPage}&pageSize=${this.pageSize}`,
+        const data = await request<ActivityPageResponse>({
+          url: `/activities?page=${this.page}&size=${this.pageSize}`,
           method: "GET",
         });
-        const mapped = data.map((item) => this.mapToActivityItem(item));
-        // 将新数据追加到列表末尾
-        this.activities = [...this.activities, ...mapped];
-        // 仅在请求成功后更新 this.page
+        const mapped = data.content.map((item) => this.mapToActivityItem(item));
+        this.activities = this.dedupeActivities([...this.activities, ...mapped]);
+        if (data.content.length === 0) {
+          this.hasMore = false;
+          return;
+        }
         this.page = nextPage;
-        this.hasMore = data.length >= this.pageSize;
+        this.hasMore = data.last !== true;
       } catch (error) {
         this.errorMessage =
           error instanceof Error ? error.message : t("storeErrors.activity.loadMoreFailed");
@@ -368,37 +379,34 @@ export const useActivityStore = defineStore("activity", {
       }
     },
 
+    /** 合并分页结果时按活动 id 去重，避免后端边界重叠导致重复卡片。 */
+    dedupeActivities(items: ActivityItem[]): ActivityItem[] {
+      const seen = new Set<string>();
+      return items.filter((item) => {
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      });
+    },
+
     /**
      * 将 API 返回的活动数据映射为 ActivityItem
      */
     mapToActivityItem(
-      raw: {
-        id: string;
-        title: string;
-        location: string;
-        scheduleText: string;
-        date?: string;
-        description?: string;
-        enrollmentCount?: number;
-        enrollCount?: number;
-        participantAvatars?: string[];
-        isEnrolled?: boolean;
-        // R4（2026-08-09）：活动分类与封面（场景展示）
-        category?: string;
-        coverImage?: string;
-      },
+      raw: ActivityPageResponse["content"][number],
     ): ActivityItem {
       return {
-        id: raw.id,
+        id: String(raw.id),
         title: raw.title,
         location: raw.location,
         scheduleText: raw.scheduleText,
-        date: raw.date ?? "",
-        enrollCount: raw.enrollCount ?? raw.enrollmentCount ?? 0,
+        date: raw.activityDate ?? "",
+        enrollCount: raw.enrollmentCount ?? 0,
         description: raw.description ?? "",
-        enrollmentCount: raw.enrollmentCount ?? raw.enrollCount ?? 0,
+        enrollmentCount: raw.enrollmentCount ?? 0,
         participantAvatars: raw.participantAvatars ?? [],
         isEnrolled: raw.isEnrolled ?? false,
+        status: raw.status,
         category: raw.category ?? "other",
         coverImage: raw.coverImage ?? undefined,
       };
