@@ -20,7 +20,7 @@ import type {
 import { mockFixtures } from "./mocks/fixtures";
 import { featureFlags } from "@/config/feature-flags";
 import { appEnv, isDev, isMockMode } from "./env";
-import { getToken, request, setToken, setRefreshToken, clearTokens, withTimeout, normalizeApiPath, hashString } from "./http";
+import { getToken, request, setToken, setRefreshToken, clearTokens, withTimeout, normalizeApiPath } from "./http";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES } from "../constants/routes";
 // 2026-09-27（上传扩展名门禁）：白名单唯一真源在 utils/media.ts（镜像后端
@@ -248,6 +248,43 @@ function uploadFileViaUni<TResponse>(
     );
   }
 
+  // 连点保护改由「在途请求去重」承担，不再靠稳定幂等键：
+  // 同一 endpoint + 同一文件在网络上仍在传输时，第二次调用复用同一个 Promise，
+  // 因此只会真正上传一次；而已完成的上传再次发起会拿到全新幂等键。
+  const dedupeKey = `${endpoint}|${filePath ?? ""}|${extraFields?.type ?? ""}`;
+  const inFlight = uploadInFlight.get(dedupeKey);
+  if (inFlight) {
+    return inFlight as Promise<TResponse>;
+  }
+
+  const run = performUpload<TResponse>(filePath, endpoint, extraFields);
+  uploadInFlight.set(dedupeKey, run);
+  // 无论成功/失败都要摘掉在途记录，否则下一次同文件上传会被永久复用同一个已结算 Promise
+  run.finally(() => {
+    if (uploadInFlight.get(dedupeKey) === run) {
+      uploadInFlight.delete(dedupeKey);
+    }
+  });
+  return run;
+}
+
+/** 同一 endpoint+文件当前在途的上传（用于连点去重），结算后即清除 */
+const uploadInFlight = new Map<string, Promise<unknown>>();
+
+/** 生成一次上传操作的幂等键：每次逻辑调用唯一，不在 4h TTL 内复用 */
+function createUploadIdempotencyKey(endpoint: string): string {
+  const rand =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  return `idem-UPLOAD-${endpoint}-${rand}`;
+}
+
+function performUpload<TResponse>(
+  filePath: string | undefined,
+  endpoint: string,
+  extraFields: Record<string, string> | undefined
+): Promise<TResponse> {
   // Task 31：使用 AbortController 实现超时控制
   const controller = new AbortController();
   // 修复（P1 BUG）：保存 uni.uploadFile 返回的 UploadTask 引用，
@@ -269,13 +306,11 @@ function uploadFileViaUni<TResponse>(
         // MP-R7-UPLOAD-001（2026-09-15）：后端 @Idempotent 对写端点（含 /media/upload）
         // 强制要求 Idempotency-Key 头，缺失返回 422「缺少 Idempotency-Key」。uni.uploadFile
         // 不经过 http.ts 请求拦截器（写请求在那里自动补幂等键），须在此手动补齐。
-        // P1-1（2026-10-25）评估：拦截器的自动键已改为「一次逻辑调用一把键」，本处**刻意保留**
-        // endpoint+文件名的稳定口径——uni.uploadFile 无自动重试层，「同一次操作的重试须复用
-        // 同键」这条不变式在此不适用，改动只会动到上传的连点去重语义；调用方已按「每次选择
-        // 生成唯一文件名」自行界定操作边界（见 village/detail.vue、campus/post-topic.vue 的
-        // MP-R1-CAMPUSPOST-002 注释）。遗留风险：同一文件在 4h TTL 内二次上传（如换回旧头像）
-        // 仍会撞 409，需连同页面防重一起另案处理。
-        "Idempotency-Key": `idem-UPLOAD-${hashString(`${endpoint}|${file.name ?? file.path ?? ""}`)}`,
+        // P1-5（2026-10-25）：改为「一次上传逻辑调用一把新键」。原口径
+        // idem-UPLOAD-<hash(endpoint|文件名)> 会让同一文件在 4h TTL 内的二次上传
+        // （换回旧头像、二次上传同名反馈图）必然撞 409；连点去重已上移到
+        // uploadFileViaUni 的在途请求复用，不依赖幂等键的稳定口径。
+        "Idempotency-Key": createUploadIdempotencyKey(endpoint),
       },
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -1261,8 +1296,12 @@ async getWhisper(userId: string): Promise<WhisperUnlockView> {
   /**
    * 上传反馈图片（功能9）。
    *
-   * 对应后端 POST /api/feedback/images 端点，使用 multipart/form-data。
+   * 对应后端 POST /api/v1/feedback/images 端点，使用 multipart/form-data。
    * 限制：jpg/png/webp，单张 ≤5MB。
+   *
+   * 后端返回 ApiResponse<UploadedImageResult> 信封（FeedbackController#uploadImage），
+   * 而 uni.uploadFile 不经过 http.ts 的解包拦截器，必须在此显式解包，否则调用方
+   * 拿到的是整个信封、`result.url` 恒为 undefined（与 P1-7 语音上传同一类缺陷）。
    *
    * @param file - 图片文件
    * @returns 服务端返回的图片 URL
@@ -1271,7 +1310,11 @@ async getWhisper(userId: string): Promise<WhisperUnlockView> {
     if (useMock()) {
       return mockFixtures.uploadFeedbackImage(file);
     }
-    return uploadFileViaUni<{ url: string }>(file, "/feedback/images");
+    const raw = await uploadFileViaUni<{ url?: string; data?: { url?: string } }>(
+      file,
+      "/feedback/images"
+    );
+    return { url: unwrapUploadUrl(raw, "反馈图片上传响应缺少资源 URL") };
   },
 
   /**
