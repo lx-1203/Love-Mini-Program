@@ -56,7 +56,10 @@ public @interface Idempotent {
     /**
      * 是否强制要求 Idempotency-Key 头。
      *
-     * <p>true（默认）：缺失时返回 400 Bad Request，提示客户端补全；
+     * <p>true（默认）：缺失时抛 {@link InvalidOperationException}，
+     * 即 HTTP 422 Unprocessable Entity + 错误码 {@code INVALID_OPERATION}
+     * （不是 400——IdempotentInterceptor 走的是业务异常通道，
+     * 实测映射见 InvalidOperationException 构造器与 GlobalExceptionHandler#handleBusinessException）；
      * false：缺失时跳过幂等校验，按非幂等方式处理（仅适用于可重写的接口）。</p>
      *
      * @return 是否强制
