@@ -56,6 +56,22 @@ interface ActivityPageResponse {
   last?: boolean;
 }
 
+/**
+ * 把 /activities 的响应收敛成 { items, last }。
+ *
+ * 后端是 Spring Page（{content, last}），http.ts 已剥掉 ApiResponse 信封。
+ * 这里刻意不允许「拿不到 content 就当空页」：那会把契约漂移（改信封、改字段名、
+ * 误指到不分页的推荐端点）读成「没有更多了」——列表停在半路而一个错都不报，
+ * 正是本 store 原来 `data.content.map(...)` 直接崩 TypeError 的另一个方向。
+ */
+function readActivityPage(data: unknown): { items: ActivityPageResponse["content"]; last: boolean } {
+  const record = data as Partial<ActivityPageResponse> | null | undefined;
+  if (!record || !Array.isArray(record.content)) {
+    throw new Error(t("storeErrors.activity.pageShapeMismatch"));
+  }
+  return { items: record.content, last: record.last === true };
+}
+
 /* ========== Mock 数据 ========== */
 
 /**
@@ -201,15 +217,18 @@ export const useActivityStore = defineStore("activity", {
           url: `/activities?page=0&size=${this.pageSize}`,
           method: "GET",
         });
-        const mapped = data.content.map((item) => this.mapToActivityItem(item));
-        this.activities = this.dedupeActivities(mapped);
+        const { items, last } = readActivityPage(data);
+        this.activities = this.dedupeActivities(items.map((item) => this.mapToActivityItem(item)));
         this.page = 1;
-        this.hasMore = data.content.length > 0 && data.last !== true;
+        this.hasMore = items.length > 0 && !last;
         // 2026-08-10 切换提速：拉取成功后刷新缓存时间戳
         setCachedValue("activities:list", true);
       } catch (error) {
         this.errorMessage =
           error instanceof Error ? error.message : t("storeErrors.activity.loadActivitiesFailed");
+        // 首页没起来就没有「更多」可加载：视图此刻按 errorMessage 显示 ErrorState，
+        // 若把 hasMore 留在 true，onReachBottom 会在空列表上反复打下一页。
+        this.hasMore = false;
       } finally {
         this.loading = false;
       }
@@ -237,14 +256,17 @@ export const useActivityStore = defineStore("activity", {
           url: `/activities?page=${this.page}&size=${this.pageSize}`,
           method: "GET",
         });
-        const mapped = data.content.map((item) => this.mapToActivityItem(item));
-        this.activities = this.dedupeActivities([...this.activities, ...mapped]);
-        if (data.content.length === 0) {
+        const { items, last } = readActivityPage(data);
+        if (items.length === 0) {
           this.hasMore = false;
           return;
         }
+        this.activities = this.dedupeActivities([
+          ...this.activities,
+          ...items.map((item) => this.mapToActivityItem(item)),
+        ]);
         this.page = nextPage;
-        this.hasMore = data.last !== true;
+        this.hasMore = !last;
       } catch (error) {
         this.errorMessage =
           error instanceof Error ? error.message : t("storeErrors.activity.loadMoreFailed");

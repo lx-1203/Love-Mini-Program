@@ -144,4 +144,39 @@ describe("activity store - 真实活动分页契约", () => {
     expect(store.hasMore).toBe(true);
     expect(store.errorMessage).toContain("network down");
   });
+
+  it("响应不是 Spring Page 形态时报契约错，而不是崩 TypeError 或当成空页", async () => {
+    // 后端改信封 / 误指到不分页端点时的两种真实形态
+    for (const bad of [
+      { data: [row(11)] },            // 双层信封没剥干净
+      [row(11)],                      // 裸数组（旧推荐端点形态）
+      null,                          // 空响应
+      { items: [row(11)], last: false }, // 字段名换成 admin 形态
+    ]) {
+      requestMock.mockReset();
+      requestMock.mockResolvedValueOnce(bad as never);
+
+      const store = useActivityStore();
+      await store.fetchActivities(true);
+
+      expect(store.errorMessage).toContain("分页契约");
+      expect(store.activities).toEqual([]);
+      // 首页没起来就不该留下「还能加载更多」的假状态
+      expect(store.hasMore).toBe(false);
+    }
+  });
+
+  it("加载更多遇到非分页形态时同样报契约错且不推进页码", async () => {
+    requestMock
+      .mockResolvedValueOnce(pageResult(0, [row(11)], false))
+      .mockResolvedValueOnce({ items: [row(12)] } as never);
+
+    const store = useActivityStore();
+    await store.fetchActivities(true);
+    await store.fetchMoreActivities();
+
+    expect(store.page).toBe(1);
+    expect(store.activities.map((item) => item.id)).toEqual(["11"]);
+    expect(store.errorMessage).toContain("分页契约");
+  });
 });
