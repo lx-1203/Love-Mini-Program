@@ -144,28 +144,55 @@ P0-1…P0-4、P1-5…P1-8、P2-10…P2-13 的**主修法成立**；但复量暴�
 
 ### 9.5 仍开放（不冒充已闭）
 
-1. **P0-2 的最后一寸**：媒体令牌降权、刷新/STOMP/Header 各腿均已闭并有 HTTP 链验证；
-   但 `app.security.media-query-token-strict` 默认仍是 **false**，
-   即完整 24h 会话 JWT 还可以出现在 `?token=` 里（进访问日志/历史/Referer）。
-   翻默认的前提是客户端改用 `GET /api/v1/media/token` 的 5 分钟短期令牌，
-   而客户端今天仍把完整 JWT 拼进图片 URL（`apps/client/src/utils/media.ts` 的 `appendTokenIfMissing`）。
-   **本轮未做，因为它有实测代价**：`SafeImage.vue:177` 的本地缓存键是
-   `safeimg-${hashString(resolved)}.jpg`，`resolved` 含 `?token=` ⇒
-   令牌每 5 分钟轮换会让每张图判为不同资源并重新下载。
-   需要裁定的是三选一（图片本地缓存键改为忽略 token 参数 / 接受下载churn / 后端改签名 URL），
-   不属于「按最优建议」可直接代劳的收口动作。
-2. **P0-1 的处置半句**：核查件已就位（`database/audit/third-party-binding-provenance.sql`，
-   只 SELECT、有只读性契约测试）。本轮已在**本机 MySQL 8（campus_love，110 表）真跑通**：
-   `SET @cutoff='2026-10-24 22:44:29'` + 整份脚本 SQL_EXIT=0，
-   `third_party_account` 实测 **0 行**（cutoff 前后皆 0）⇒ 本机没有待处置的绑定行。
+1. ~~**P0-2 的最后一寸**~~ —— **已闭**（2026-10-25 用户裁定「直接走 C，不要过度」后实现）。
+   落地形态是**能力型签名 URL**，不是短期媒体令牌：
+   - `MediaUrlSigner`：HMAC-SHA256 覆盖 `path|exp`、截断 16 字节、15 分钟过期、常量时间比较；
+     密钥从 `app.jwt.secret` 加域分隔标签派生（不新增必须部署的密钥项），
+     显式配 `app.media.url-secret` 可与之分家。
+   - `POST /api/v1/media/sign`：**签发即授权**——逐条走与 `GET` 同一套
+     `resolveAccessProfile` + `MediaTierPolicy.canRead`，判不过的**静默省略**
+     （响应不带拒绝原因，避免本端点沦为「这条路径存在吗」的探测预言机）；
+     媒体作用域令牌不得调用（否则短期凭据自我扩权成一批可读 URL）。
+   - 过滤器 `authenticateSignedMediaUrl`：有效签名走与媒体令牌**同一条**降权通道
+     （`MediaTokenPolicy.mediaAuthorities()`），于是「只有 ROLE_MEDIA、进不了业务接口/
+     上传/刷新/WebSocket」这套既有规则与既有测试原样适用，不留第二份授权口径。
+   - `media-query-token-strict` 默认 **false → true**：完整 24h 会话 JWT 不再允许进 URL。
+     回退开关保留（线上真有旧客户端时显式置 false 并写明版本与期限），不靠默认值兜底。
+   - 客户端 `utils/media-sign-cache.ts`：同帧多路径合并一次签发、到期前 60s 重签、
+     被省略/失败路径 15s 退避、用 Vue `ref` 版本号让签名到达时模板重算。
+     依赖方向保持单向（media → sign-cache → services/http），失效靠 JWT 末段指纹自愈——
+     **刻意不**在 http.ts 的登出分支调清理函数，那会重建当年那条 http ↔ media 循环
+     （`utils/media-token-cache.ts` 头部记着它的运行时后果）。
+   - 那条「翻默认会让每张图重下」的代价实测过并在两处消掉：
+     `SafeImage.localCacheKey()` 剥 query 再算键（六处调用点同源），
+     且 `resolveOnce` **不再缓存未签出的私有媒体 URL**——否则签名到达后 computed 重算
+     仍命中无凭据旧值，图片会永久停在 401 占位（本轮自查出的真隐患，非计划原条目）。
+   - 测试：后端 `MediaSignedUrlTest` 12/12（他人认证材料不签、他人语音不签、本人材料可签、
+     媒体令牌调用被拒、穿越/非媒体形态跳过、签名逐路径绑定）+
+     `JwtAuthenticationFilterSignedUrlTest` 8/8（篡改/过期/跨路径/业务路径/POST 全部不建认证，
+     另含「默认值必须为 true」读 application.yml 的判点——@Value 默认只在 Spring 装配时生效，
+     纯 new 出来的过滤器字段恒为 false，断字段会得到与实现无关的假绿）；
+     客户端 `media-signed-url.spec.ts` 7/7（real 档输出永不含 `token=`）、
+     `media-sign-cache.spec.ts` 7/7、`safe-image-cache-key.spec.ts` 3/3。
+     变异对照：把 `httpInFlight.delete(cacheKey)` 改回 `resolved` → 判点红并点名该调用点。
+   - 读数：后端定向 20+19+8+12+9+11 全绿；客户端 130 files / **1431** tests 绿、
+     `vue-tsc` REAL_EXIT=0、`npm run build:h5` DONE Build complete. / REAL_EXIT=0。
+   - **未验证项（不冒充）**：mp-weixin 真机上「签名到达 → 图片补上」的完整时序未跑
+     （设备腿仍是 §8 外部阻断）。现有证据是单元级 + 结构级 + H5 构建。
+     另 `prefetchMediaSignatures` 已实现且单测覆盖，但**尚未接进任何列表 store**：
+     当前首帧行为是无签名 URL 先 401、签名到达后重算补图（沿用历史「无 token 时返回原 URL
+     由 401 触发 SafeImage fallback」的既有约定）。接进高频列表属纯优化，需逐 store 验证，另案。
+2. **P0-1 的处置半句** —— **已闭**（2026-10-25 用户裁定：带漏洞的 `/bind` **从未对真实用户上线过**）。
+   核查件留在盘上作为工具与证据（`database/audit/third-party-binding-provenance.sql` +
+   `tests/third-party-binding-audit.spec.mjs`），但不再有 SUSPECT 行待处置。
+   本机实测与裁定一致：`SET @cutoff='2026-10-24 22:44:29'` 整份脚本 SQL_EXIT=0，
+   `third_party_account` 共 **0 行**（cutoff 前后皆 0）。
    这一跑还抓出一个静态检查看不见的缺陷：别名 `natural` 是 MySQL 8 保留字，
-   原稿在真库上直接 ERROR 1064（此前只过静态契约，从未执行）；已改 `natural_owner`
-   并给契约测试补一条「别名不许退回保留字」的反向判据（变异对照：改回 natural 即红）。
-   ⚠ 本机 0 行**不等于生产 0 行**：真实结论取决于「带漏洞的 /bind 是否曾对真实用户上线过」，
-   这只有部署方知道。仍需要：① 在 staging/生产副本上用只读账号实跑并回填 SUSPECT/UNVERIFIED 数；
-   ② 给出 P0-1 在生产的**实际上线时刻**作为 @cutoff（脚本默认值是提交时间，上线晚于提交须改）；
-   ③ SUSPECT 行的处置裁定（解绑 / 要求重新验证 / 保留），且须先按 `database/backup` 协议
-   备份 + ROLLBACK 干跑。**本件不臆造任何清理。**
+   原稿在真库直接 ERROR 1064（此前只过静态契约、从未执行）；已改 `natural_owner`
+   并补「别名不许退回保留字」反向判据（变异对照：改回即红）。见 `9cbaadee`。
+   ⚠ 本条关闭**依赖「未上线」这个部署史事实**：若将来发现该端点曾对真实用户服务过
+   （灰度、历史部署或他人接手上线），本裁定作废——重跑核查件并回到
+   「SUSPECT 处置需产品裁定 + 先按 `database/backup` 协议备份与 ROLLBACK 干跑」。
 3. **P1-9 发布实机**：仍为外部阻断（真实 HTTPS 域名、`WX_APPID`、`WECHAT_APPID/SECRET`、
    部署级密钥），见 §8。真机 `wx.login` 链路、生产包上传与审核未验。
 4. **P3 历史欠账**：R16 的 214 条仍全部是 `UNVERIFIED_AT_CURRENT_HEAD`
