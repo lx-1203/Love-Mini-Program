@@ -142,7 +142,45 @@ P0-1…P0-4、P1-5…P1-8、P2-10…P2-13 的**主修法成立**；但复量暴�
   ⚠ 同一次全量跑里另有 a11y 与 core-journey 两个 spec 的红（收紧前整批 26 failed），
   本轮未动它们的判据，也未逐条归因——它们与 §9.1 那 8 条不同源，另册处理。
 
-### 9.5 仍开放（不冒充已闭）
+### 9.6 真机（微信开发者工具）实跑与它抓到的一个真 bug
+
+用户要求「在小程序上跑看效果」。为凑齐这条链路，本机做了以下准备（均为本地开发值，
+`.env` 已被 gitignore，未入库任何凭据）：后端以 real profile 启动成功
+（`{"status":"UP"}`，26.9 秒），`app.guest-login.enabled=true` 后经
+`POST /api/v1/auth/guest-login` 取到真令牌，`wx.setStorageSync("token", …)` 注入模拟器，
+`simulator_open_page` 导航到 `/subpackages/village/village/index`（`currentPage` 已确认落在该路由）。
+
+**这一跑抓到只有真跑才能抓到的缺陷**（`5d5a219d`）：签名认证分支建立认证后
+调用方直接 `return`，没有 `filterChain.doFilter` —— 请求根本没往下走。
+表现是 **HTTP 200 + 0 字节**，极具欺骗性：
+
+| 同一份真上传件（70 字节 PNG） | 结果 |
+| --- | --- |
+| 签名 URL GET（修复前） | 200 / **0 字节** |
+| Authorization 头 GET（对照） | 200 / 70 字节 |
+| 签名 URL GET（修复后） | 200 / 70 字节，与原图 `cmp` 逐字节一致，`image/png` |
+| 无凭据 GET | 401 |
+| **`?token=<完整会话 JWT>`（P0-2 那个洞）** | **401** |
+| 篡改 sig | 401 |
+
+我原来那 8 条过滤器单测**全绿却漏过它**——因为只断言了 SecurityContext 里的权限集合，
+没断言「请求被放行到下游」。已补 `assertNotNull(chain.getRequest())` 并把因果写进测试名。
+
+**小程序侧未能拿到"图片正常显示"的画面，原因与 §8 是同一个外部阻断**：
+`--mode real` 直连构建（`apps/client/node_modules/.bin/uni`，注意 `npx uni` 会拉到同名无关包）
+绕开了 `release-chain.mjs`，产物缺 chunk，模拟器 console 报
+`module 'services/mocks/fixtures.js' is not defined`，村口页渲染为全空白
+（截图留档于本机 `reports/audit/2026-10-25-signed-url-mp/village-feed.jpg`——按本仓既定裁定
+截图不入版本库（根 `.gitignore` 挡 `*.jpg`/`reports/screenshots/`，用户 2026-09-30 裁定过同类问题），
+故此处只留路径不强行 `-f` 入库；它记录的是**无效构建**，不是产品外观结论）。而正规 real 产物必须走 release-chain，其第一步 `verify-env-release`
+会因 `.env.real` 是 loopback HTTP 拒绝——**守卫在正确工作，不为跑通而放宽**。
+⇒ 真机媒体链路验证与发布实机同因：缺真实 HTTPS 域名。
+
+顺带被本仓构建门抓住的一处：`media-sign-cache.ts` 用了可选 catch 绑定 `catch {}`，
+`check-project-rules` 判 `R3 [catch]` 违规使 `build:mp-weixin:real` FAIL（448 files / 1 errors）——
+vitest 在 Node 上跑不会发现它（`d6b85862`）。
+
+### 9.7 仍开放（不冒充已闭）
 
 1. ~~**P0-2 的最后一寸**~~ —— **已闭**（2026-10-25 用户裁定「直接走 C，不要过度」后实现）。
    落地形态是**能力型签名 URL**，不是短期媒体令牌：
