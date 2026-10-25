@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import JSON5 from "json5";
 
 const requiredPaths = [
@@ -205,6 +207,39 @@ assert.match(
   /^WEBSOCKET_ALLOWED_ORIGIN_PATTERNS=$/mu,
   ".env.example must document WEBSOCKET_ALLOWED_ORIGIN_PATTERNS"
 );
+
+/**
+ * SCSS/CSS 不许带 UTF-8 BOM。
+ *
+ * 实测因果（2026-10-25）：apps/client/src/styles/tokens.scss 带 BOM 时
+ * `npm run build:h5` 直接失败——uni/vite 的 sass 走 legacy JS API，把 @import 目标
+ * 当字符串再解析，BOM 落到非 0 位置就报 `[vite:css] [sass] expected "{".`
+ * 指向 App.vue 里那行 @import（报错位置不在真正的坏点上，人肉排查会绕远）。
+ * 摘掉 BOM 后同一命令 DONE Build complete. / REAL_EXIT=0。
+ * .vue 文件带 BOM 不受影响（现存 58 个照常构建），所以判点只覆盖独立样式文件。
+ */
+const styleFiles = [];
+for (const app of ["client", "admin"]) {
+  const dir = new URL(`../apps/${app}/src`, import.meta.url);
+  walkStyles(fileURLToPath(dir), styleFiles);
+}
+function walkStyles(dir, out) {
+  for (const entry of readdirSync(dir)) {
+    const p = join(dir, entry);
+    if (statSync(p).isDirectory()) walkStyles(p, out);
+    else if (/\.(scss|css)$/u.test(p)) out.push(p);
+  }
+}
+assert.ok(styleFiles.length >= 10, `只扫到 ${styleFiles.length} 个样式文件，扫描面可疑`);
+for (const file of styleFiles) {
+  const bytes = readFileSync(file);
+  const hasBom = bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf;
+  assert.equal(
+    hasBom,
+    false,
+    `${file} 以 UTF-8 BOM 开头：uni/vite 的 sass legacy 管道会因此报 expected "{" 并让 H5 构建失败`,
+  );
+}
 
 console.log("project structure ok");
 
