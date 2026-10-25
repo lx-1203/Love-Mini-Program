@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.context.annotation.Profile;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -26,6 +27,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -122,6 +124,9 @@ public class MediaAccessController {
     /** R4-00273：短期媒体访问令牌签发器（5 分钟 TTL、scope=media） */
     private final com.campuslove.api.config.JwtTokenProvider jwtTokenProvider;
 
+    /** P0-2：能力型签名 URL 签发器（把会话凭据从图片 URL 里彻底拿掉） */
+    private final MediaUrlSigner mediaUrlSigner;
+
     /**
      * 应用资产注册校验用的资产仓库（2026-08-10，可选注入）。
      *
@@ -140,9 +145,111 @@ public class MediaAccessController {
      * @param jwtTokenProvider   R4-00273：用于签发短期媒体访问令牌
      */
     public MediaAccessController(MediaAccessService mediaAccessService,
-                                 com.campuslove.api.config.JwtTokenProvider jwtTokenProvider) {
+                                 com.campuslove.api.config.JwtTokenProvider jwtTokenProvider,
+                                 MediaUrlSigner mediaUrlSigner) {
         this.mediaAccessService = mediaAccessService;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.mediaUrlSigner = mediaUrlSigner;
+    }
+
+    /** 单次批量签发的路径上限：够覆盖一屏九宫格 + 头像，又限制被滥用时的放大面。 */
+    private static final int SIGN_BATCH_MAX = 100;
+
+    /** 媒体读取 URL 的形态：{@code /api/v1/media/{userId}/{子路径}}。 */
+    private static final Pattern SIGNABLE_PATH_PATTERN =
+            Pattern.compile("^/api/v1/media/(\\d+)/(.+)$");
+
+    /**
+     * 批量签发能力型媒体 URL（P0-2 收口最后一寸）。
+     *
+     * <p>为什么需要它：{@code <image src>} 带不了 Authorization 头，此前只能把
+     * **完整 24 小时会话 JWT** 拼进 {@code ?token=}，于是会话凭据长期驻留在
+     * 浏览器历史、上游代理日志与开发者工具里（自家 Tomcat 访问日志已在 R4-00407
+     * 改为不记 query，但管不到上游）。</p>
+     *
+     * <p>安全要点：<b>签发即授权</b>。每条路径都走与 {@link #getMedia} 同一套
+     * 归属/档位判定（{@code resolveAccessProfile} + {@link MediaTierPolicy#canRead}），
+     * 判定不过的路径一律不签——否则「能签名」本身会变成绕过媒体分级读取的越权面，
+     * 尤其是认证材料档。返回体不带拒绝原因，避免把本端点变成
+     * 「这条路径存在吗 / 我能读吗」的探测预言机。</p>
+     *
+     * <p>媒体令牌（scope=media）不能调用本端点：与 {@code /token} 同理，
+     * 否则短期凭据就能自我扩权成一批可读 URL。</p>
+     *
+     * @param request 待签发路径集合
+     * @return 已签发的路径与对应 URL（无权限的路径不在其中）
+     */
+    @PostMapping("/sign")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
+                    description = "返回调用者可读路径的签名（不可读路径静默省略）"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403",
+                    description = "FORBIDDEN：未登录或使用媒体作用域令牌")
+    })
+    public MediaSignView signMediaUrls(@org.springframework.web.bind.annotation.RequestBody MediaSignRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (MediaTokenPolicy.isMediaOnlyAuthentication(authentication)) {
+            throw new AccessDeniedException("媒体作用域令牌不能签发签名 URL，请使用完整会话重新获取");
+        }
+        Long requesterId = extractCurrentUserId(authentication);
+        if (requesterId == null) {
+            throw new AccessDeniedException("未认证，无法签发媒体签名 URL");
+        }
+
+        List<String> paths = request == null || request.paths() == null
+                ? List.of()
+                : request.paths().stream().filter(java.util.Objects::nonNull).distinct().limit(SIGN_BATCH_MAX).toList();
+
+        List<MediaSignView.SignedPath> signed = new java.util.ArrayList<>(paths.size());
+        for (String path : paths) {
+            java.util.regex.Matcher matcher = SIGNABLE_PATH_PATTERN.matcher(path);
+            if (!matcher.matches()) {
+                // 非本人可读形态（含 app-assets 这类本就 permitAll 的公开资产）直接跳过
+                continue;
+            }
+            Long ownerUserId;
+            try {
+                ownerUserId = Long.valueOf(matcher.group(1));
+            } catch (NumberFormatException notNumeric) {
+                continue;
+            }
+            String subPath = matcher.group(2);
+            if (subPath.contains("..") || subPath.contains("//")) {
+                continue;
+            }
+            MediaAccessService.AccessProfile profile =
+                    mediaAccessService.resolveAccessProfile(ownerUserId, subPath);
+            MediaTierPolicy.Tier tier = profile.tier();
+            MediaType mediaType = MediaType.valueOf(profile.category().name());
+            boolean isOwner = requesterId.equals(ownerUserId);
+            boolean imagePublicRead = mediaType == MediaType.IMAGE;
+            if (!MediaTierPolicy.canRead(tier, isOwner, imagePublicRead, authentication)) {
+                AUDIT_LOG.warn("media.sign.denied tier={} targetUserId={} requesterId={} subPath={}",
+                        tier, ownerUserId, requesterId, subPath);
+                continue;
+            }
+            long expiresAt = mediaUrlSigner.expiresAtNow();
+            signed.add(new MediaSignView.SignedPath(
+                    path, mediaUrlSigner.signedUrl(path, expiresAt), expiresAt));
+        }
+        return new MediaSignView(signed);
+    }
+
+    /** 批量签发请求体。 */
+    public record MediaSignRequest(List<String> paths) {
+    }
+
+    /** 批量签发响应：只含调用者有权读取的路径。 */
+    public record MediaSignView(List<SignedPath> items) {
+        /**
+         * 单条签名结果。
+         *
+         * @param path      原始媒体路径（客户端用它做缓存键，不含签名）
+         * @param url       可直接用于 {@code <image src>} 的带签名 URL
+         * @param expiresAt 过期时刻（epoch 秒）
+         */
+        public record SignedPath(String path, String url, long expiresAt) {
+        }
     }
 
     /**

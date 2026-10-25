@@ -93,7 +93,8 @@ class MediaTokenReadAuthorityTest {
     @DisplayName("媒体会话调用 /api/v1/media/token → 拒绝签发（不得自我续期）")
     void issueMediaToken_withMediaOnlySession_isDenied() {
         MediaAccessController controller = new MediaAccessController(
-                mediaAccessService, newProvider());
+                mediaAccessService, newProvider(),
+                new com.campuslove.api.media.MediaUrlSigner("", "unit-test-jwt-secret"));
         SecurityContextHolder.getContext().setAuthentication(
                 authentication(OWNER_USER_ID, List.of(MediaTokenPolicy.ROLE_MEDIA)));
 
@@ -105,7 +106,7 @@ class MediaTokenReadAuthorityTest {
     @DisplayName("正控：完整用户会话调用 /api/v1/media/token → 正常签出 scope=media 短期令牌")
     void issueMediaToken_withFullSession_issuesMediaToken() {
         com.campuslove.api.config.JwtTokenProvider provider = newProvider();
-        MediaAccessController controller = new MediaAccessController(mediaAccessService, provider);
+        MediaAccessController controller = new MediaAccessController(mediaAccessService, provider, new com.campuslove.api.media.MediaUrlSigner("", "unit-test-jwt-secret"));
         SecurityContextHolder.getContext().setAuthentication(
                 authentication(OWNER_USER_ID, List.of("ROLE_USER")));
 

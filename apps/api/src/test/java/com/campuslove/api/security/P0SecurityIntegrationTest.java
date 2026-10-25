@@ -224,7 +224,7 @@ class P0SecurityIntegrationTest {
             );
 
             jwtAuthenticationFilter = new JwtAuthenticationFilter(
-                    jwtTokenProvider, userRepository, tokenBlacklistService);
+                    jwtTokenProvider, userRepository, tokenBlacklistService, new com.campuslove.api.media.MediaUrlSigner("", "unit-test-jwt-secret"));
 
             SecurityContextHolder.clearContext();
         }
@@ -512,7 +512,7 @@ class P0SecurityIntegrationTest {
             tempRoot = Files.createTempDirectory("p0-media-access-test");
             mediaAccessService = new MediaAccessService(tempRoot.toString());
             // R4-00273：构造器新增 JwtTokenProvider（媒体令牌签发），本测试不调用该端点，传 null
-            mediaAccessController = new MediaAccessController(mediaAccessService, null);
+            mediaAccessController = new MediaAccessController(mediaAccessService, null, new com.campuslove.api.media.MediaUrlSigner("", "unit-test-jwt-secret"));
 
             // 在 storageRoot/{OWNER_USER_ID}/{MONTH_SEGMENT}/ 下创建测试文件
             // infra R2-00013:与 VALID_SUBPATH 一致,语音目录下创建

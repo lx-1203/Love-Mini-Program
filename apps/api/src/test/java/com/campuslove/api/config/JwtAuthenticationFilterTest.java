@@ -81,7 +81,8 @@ class JwtAuthenticationFilterTest {
     @BeforeEach
     void setUp() {
         // 手动构造 filter，注入 mock 依赖
-        filter = new JwtAuthenticationFilter(jwtTokenProvider, userRepository, tokenBlacklistService);
+        filter = new JwtAuthenticationFilter(
+                    jwtTokenProvider, userRepository, tokenBlacklistService, new com.campuslove.api.media.MediaUrlSigner("", "unit-test-jwt-secret"));
         // 清除 SecurityContext（线程局部，避免上一用例残留）
         SecurityContextHolder.clearContext();
     }

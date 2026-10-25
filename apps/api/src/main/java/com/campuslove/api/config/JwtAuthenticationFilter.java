@@ -79,6 +79,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      */
     private static final String MEDIA_PROXY_PATH_PATTERN = "/api/v1/media/**";
 
+    /** {@link #MEDIA_PROXY_PATH_PATTERN} 的定长前缀，用于从媒体路径里切出 {userId} 段。 */
+    private static final String MEDIA_PROXY_PATH_PREFIX = "/api/v1/media/";
+
     /** 查询参数 token 的参数名 */
     private static final String TOKEN_QUERY_PARAM = "token";
 
@@ -117,22 +120,90 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * 通过构造器注入，real profile 下由 {@link com.campuslove.api.auth.RedisTokenBlacklistService} 提供。
      */
     private final TokenBlacklistService tokenBlacklistService;
+    /**
+     * P0-2：能力型媒体 URL 签名校验器。构造器注入（不给可选注入留「签名器为 null
+     * 就静默放行/静默拒绝」两种歧义），因此三个测试构造点需同步补参。
+     */
+    private final com.campuslove.api.media.MediaUrlSigner mediaUrlSigner;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     /**
-     * R4-00273：媒体查询参数 token 严格模式（默认 false 兼容旧客户端）。
-     * 开启后 /api/v1/media/** 的 ?token= 仅接受 scope=media 的短期媒体令牌，
-     * 拒绝完整用户 JWT 进入 URL（防访问日志/浏览器历史泄露）。
+     * R4-00273：媒体查询参数 token 严格模式。
+     *
+     * <p>开启后 /api/v1/media/** 的 {@code ?token=} 仅接受 scope=media 的短期媒体令牌，
+     * 拒绝完整用户 JWT 进入 URL（防访问日志/浏览器历史/上游代理日志泄露）。</p>
+     *
+     * <p>默认值由 false 翻为 **true**（P0-2 收口最后一寸）：客户端已改用
+     * {@code POST /api/v1/media/sign} 签发的能力型 URL，不再需要把会话 JWT 拼进图片地址。
+     * 保留开关是为了给「线上仍有旧版本客户端」留一条回退路——那种情况下应显式
+     * 设 {@code APP_MEDIA_QUERY_TOKEN_STRICT=false} 并在收口记录里写明版本与期限，
+     * 而不是让默认值长期替旧客户端兜底。</p>
      */
-    @org.springframework.beans.factory.annotation.Value("${app.security.media-query-token-strict:false}")
+    @org.springframework.beans.factory.annotation.Value("${app.security.media-query-token-strict:true}")
     private boolean strictMediaQueryToken;
 
     public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider,
                                    UserRepository userRepository,
-                                   TokenBlacklistService tokenBlacklistService) {
+                                   TokenBlacklistService tokenBlacklistService,
+                                   com.campuslove.api.media.MediaUrlSigner mediaUrlSigner) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.userRepository = userRepository;
         this.tokenBlacklistService = tokenBlacklistService;
+        this.mediaUrlSigner = mediaUrlSigner;
+    }
+
+    /**
+     * 认「能力型媒体 URL」：{@code GET /api/v1/media/{userId}/...?exp=<epochSec>&sig=<hex>}。
+     *
+     * <p>只在同时满足三条时建立认证：签名对该路径未过期且逐字匹配、请求是媒体读取
+     * （GET/HEAD + 已归一化路径 + 媒体读路径，判定与媒体令牌同源）、路径里的 userId 是数字。
+     * 任一条不过即返回 false，让既有的令牌通道与 401 兜底继续处理——
+     * 本方法**不会**因为签名无效而放行，也不会给出比 401 更细的原因。</p>
+     *
+     * @return 是否已按签名建立认证（true 时调用方应直接继续过滤器链）
+     */
+    private boolean authenticateSignedMediaUrl(HttpServletRequest request, String requestPath,
+                                               FilterChain filterChain) throws java.io.IOException {
+        if (!pathMatcher.match(MEDIA_PROXY_PATH_PATTERN, requestPath)) {
+            return false;
+        }
+        String expiresRaw = request.getParameter(com.campuslove.api.media.MediaUrlSigner.PARAM_EXPIRES);
+        String signature = request.getParameter(com.campuslove.api.media.MediaUrlSigner.PARAM_SIGNATURE);
+        if (expiresRaw == null || signature == null) {
+            return false;
+        }
+        long expiresAt;
+        Long subjectUserId;
+        try {
+            expiresAt = Long.parseLong(expiresRaw.trim());
+            subjectUserId = mediaSubjectUserIdFromPath(requestPath);
+        } catch (NumberFormatException notNumeric) {
+            return false;
+        }
+        if (subjectUserId == null
+                || !mediaUrlSigner.verify(requestPath, expiresAt, signature)
+                || !MediaTokenPolicy.isMediaReadRequest(request)) {
+            if (log.isDebugEnabled()) {
+                log.debug("媒体签名 URL 校验未通过，按未认证处理: path={}", requestPath);
+            }
+            return false;
+        }
+        authenticateMediaOnlyRequest(request, requestPath, subjectUserId, SIGNED_URL_CREDENTIALS);
+        return true;
+    }
+
+    /** 签名 URL 建立认证时写入 credentials 的占位串（不参与任何授权判定）。 */
+    private static final String SIGNED_URL_CREDENTIALS = "signed-media-url";
+
+    /** 媒体路径形态：{@code /api/v1/media/{userId}/...}；不符合返回 null。 */
+    private Long mediaSubjectUserIdFromPath(String requestPath) {
+        String remainder = requestPath.substring(MEDIA_PROXY_PATH_PREFIX.length());
+        int slash = remainder.indexOf('/');
+        String userIdSegment = slash >= 0 ? remainder.substring(0, slash) : remainder;
+        if (userIdSegment.isEmpty() || userIdSegment.indexOf('*') >= 0) {
+            return null;
+        }
+        return Long.valueOf(userIdSegment);
     }
 
     /**
@@ -191,6 +262,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 token = queryToken.trim();
                 tokenFromQuery = true;
             }
+        }
+
+        // P0-2 收口最后一寸：能力型签名 URL（?exp=&sig=）不携带任何会话凭据，
+        // 因此必须在「找令牌」之前先认它——否则图片请求会因为没带 JWT 而 401。
+        // 认证走与媒体令牌同一条通道（authenticateMediaOnlyRequest），
+        // 所以「只有 ROLE_MEDIA、进不了业务接口/上传/刷新/WebSocket」这套既有规则
+        // 与既有测试原样适用，不新增第二份授权口径。
+        if (authenticateSignedMediaUrl(request, requestPath, filterChain)) {
+            return;
         }
 
         if (token == null) {

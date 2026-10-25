@@ -66,7 +66,8 @@ class JwtAuthenticationFilterMediaScopeTest {
         jwtTokenProvider = new JwtTokenProvider(buildConfig());
         userRepository = Mockito.mock(UserRepository.class);
         tokenBlacklistService = Mockito.mock(TokenBlacklistService.class);
-        filter = new JwtAuthenticationFilter(jwtTokenProvider, userRepository, tokenBlacklistService);
+        filter = new JwtAuthenticationFilter(
+                    jwtTokenProvider, userRepository, tokenBlacklistService, new com.campuslove.api.media.MediaUrlSigner("", "unit-test-jwt-secret"));
         SecurityContextHolder.clearContext();
     }
 
