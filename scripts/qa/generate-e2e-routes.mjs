@@ -190,7 +190,12 @@ if (check) {
   } catch {
     // missing is stale
   }
-  if (current !== content) {
+  // 行尾不许冒充漂移：Windows 上 git 按 core.autocrlf 检出会把本文件变成 CRLF，
+  // 而生成器写的是 LF —— 直接 !== 比较会在内容完全一致时报 STALE
+  // （合并后在 main 上实测复现：959 个 CRLF 造成一条假红）。
+  // 本仓资产门修过同一类问题（「行尾不许冒充图片漂移」），此处同一处理口径。
+  const normalize = (text) => text.replace(/\r\n/g, "\n");
+  if (normalize(current) !== normalize(content)) {
     console.error("E2E_ROUTES=STALE 请运行 node scripts/qa/generate-e2e-routes.mjs");
     process.exit(1);
   }
