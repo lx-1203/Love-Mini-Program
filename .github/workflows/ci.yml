@@ -115,8 +115,11 @@ jobs:
       - name: Run Spectral lint
         run: npm run lint:openapi:spectral
 
-      - name: Run structure tests
-        run: npm run test:structure
+      - name: Run root contract gates
+        # 根级契约门全量执行（结构/部署/CI/终验汇总/R16 台账/E2E 路由单源/
+        # 后台只读角色写门禁/绑定核查件只读性/门禁接线自证）。
+        # 此前 CI 只跑 test:structure 一条，其余八条仅本地执行 —— 等于「建了没人跑」。
+        run: npm run test:contracts
 
   # ----------------------------------------------------------------
   # Job 2: 客户端类型检查 + H5 / mp-weixin 构建

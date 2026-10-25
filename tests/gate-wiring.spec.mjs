@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const rootPkg = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),
@@ -8,6 +9,39 @@ const ci = readFileSync(
   new URL("../.github/workflows/ci.yml", import.meta.url),
   "utf8",
 );
+
+// 磁盘对账：tests/ 根下每一条 node 契约门都必须被某个根脚本真正执行。
+// 只列不接＝建了没人跑（本仓踩过：新门的 --selftest 全仓零调用点）。
+const TESTS_DIR = fileURLToPath(new URL("../tests", import.meta.url));
+const specsOnDisk = readdirSync(TESTS_DIR).filter((f) => f.endsWith(".spec.mjs"));
+const scriptBody = Object.entries(rootPkg.scripts)
+  .map(([k, v]) => `${k} ${v}`)
+  .join(" \n ");
+for (const spec of specsOnDisk) {
+  assert.ok(
+    scriptBody.includes(`tests/${spec}`),
+    `tests/${spec} 存在于磁盘但没有任何根脚本执行它（漏接线）`,
+  );
+}
+if (specsOnDisk.length < 10) {
+  throw new Error(`tests/ 根下只枚举到 ${specsOnDisk.length} 条契约门，扫描面可疑`);
+}
+
+// test:contracts 必须把每条 node 门都并进来，且根 test 与 CI 都吃这个入口。
+const contracts = rootPkg.scripts["test:contracts"];
+assert.equal(typeof contracts, "string", "root script test:contracts must exist");
+for (const spec of specsOnDisk) {
+  const key = Object.keys(rootPkg.scripts).find(
+    (k) => rootPkg.scripts[k] === `node tests/${spec}`,
+  );
+  assert.ok(key, `tests/${spec} 没有对应的根脚本键（写法须为 "node tests/${spec}"）`);
+  assert.ok(
+    contracts.includes(`npm run ${key}`),
+    `test:contracts 未包含 ${spec}（缺 npm run ${key}）`,
+  );
+}
+assert.match(rootPkg.scripts.test, /test:contracts/u, "root test chain must run test:contracts");
+assert.match(ci, /npm run test:contracts/u, "CI must execute the root contract gates");
 
 for (const key of [
   "test:admin",
@@ -20,7 +54,8 @@ for (const key of [
   assert.equal(typeof rootPkg.scripts[key], "string", `root script ${key} must exist`);
 }
 
-const rootTest = rootPkg.scripts.test;
+// 展开后的整条链：根 test 直接挂的 + test:contracts 里挂的，两处算一处。
+const effectiveChain = `${rootPkg.scripts.test} && ${rootPkg.scripts["test:contracts"]}`;
 for (const cmd of [
   "test:deployment-config",
   "test:ci-contract",
@@ -29,7 +64,7 @@ for (const cmd of [
   "test:coverage",
   "api:verify",
 ]) {
-  assert.ok(rootTest.includes(cmd), `root test chain must execute ${cmd}`);
+  assert.ok(effectiveChain.includes(cmd), `root test chain must execute ${cmd}`);
 }
 
 assert.match(
