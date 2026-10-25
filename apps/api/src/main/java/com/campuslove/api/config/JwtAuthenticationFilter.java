@@ -162,8 +162,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      *
      * @return 是否已按签名建立认证（true 时调用方应直接继续过滤器链）
      */
-    private boolean authenticateSignedMediaUrl(HttpServletRequest request, String requestPath,
-                                               FilterChain filterChain) throws java.io.IOException {
+    private boolean authenticateSignedMediaUrl(HttpServletRequest request, String requestPath) {
         if (!pathMatcher.match(MEDIA_PROXY_PATH_PATTERN, requestPath)) {
             return false;
         }
@@ -269,7 +268,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 认证走与媒体令牌同一条通道（authenticateMediaOnlyRequest），
         // 所以「只有 ROLE_MEDIA、进不了业务接口/上传/刷新/WebSocket」这套既有规则
         // 与既有测试原样适用，不新增第二份授权口径。
-        if (authenticateSignedMediaUrl(request, requestPath, filterChain)) {
+        //
+        // ⚠ 建立认证后必须继续走 filterChain.doFilter：本方法只负责「认不认」，
+        // 不代替容器放行。真机验证时发现过只 return 不 doFilter 的写法——
+        // 表现是 HTTP 200 + 0 字节（Authorization 头同一路径能拿到 70 字节），
+        // 只看状态码的测试全绿，图片实际一张都下不来。
+        if (authenticateSignedMediaUrl(request, requestPath)) {
+            filterChain.doFilter(request, response);
             return;
         }
 

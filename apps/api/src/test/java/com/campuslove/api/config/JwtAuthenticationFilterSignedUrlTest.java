@@ -63,18 +63,22 @@ class JwtAuthenticationFilterSignedUrlTest {
     }
 
     @Test
-    @DisplayName("有效签名（无 Authorization 头）→ 只建立 ROLE_MEDIA，principal 为路径属主")
-    void validSignature_authenticatesAsMediaOnly() throws Exception {
+    @DisplayName("有效签名（无 Authorization 头）→ 只建立 ROLE_MEDIA，且请求确实放行到下游")
+    void validSignature_authenticatesAsMediaOnlyAndContinuesChain() throws Exception {
         long exp = signer.expiresAtNow();
         MockHttpServletRequest request = mediaRequest("GET", MEDIA_READ_PATH, exp, signer.sign(MEDIA_READ_PATH, exp));
+        MockFilterChain chain = new MockFilterChain();
 
-        filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+        filter.doFilter(request, new MockHttpServletResponse(), chain);
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         assertNotNull(authentication, "有效签名必须建立认证，否则真机全黑图");
         assertEquals(OWNER_USER_ID, authentication.getPrincipal());
         assertEquals(MediaTokenPolicy.ROLE_MEDIA, authorities(authentication),
                 "签名只应换到 ROLE_MEDIA，实际：" + authorities(authentication));
+        // 建立认证 ≠ 放行：只 return 不 doFilter 会得到 HTTP 200 + 0 字节，
+        // 状态码看着全绿而一张图都下不来（真机验证实测抓到过）。
+        assertNotNull(chain.getRequest(), "认证通过后必须继续走 filterChain，否则响应体为空");
     }
 
     @Test
