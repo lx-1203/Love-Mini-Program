@@ -49,3 +49,29 @@
 - 视觉基准：`素材/理想效果图` 的 19 张基准图已入库；按 `baseline-manifest.json` 逐文件重算 SHA-256，19/19 **MATCH**、0 drift。字节一致只证明比对输入未变，不证明 UI 与基准一致。
 - 复算命令：`node scripts/qa/build-r16-disposition-ledger.mjs`；契约测试：`node tests/r16-disposition-ledger.spec.mjs`。
 - 未验证项：当前 HEAD 的微信开发者工具/真机帧、R16 P2/P3 逐条视觉复判、`wx.login` 真机链路、生产包上传与审核。没有这些证据前，P3 不得批量销账。
+
+## 8. P1-5 发布实机：外部阻断（未执行，不冒充上线）
+
+本仓当前环境值明确不是可发布配置：
+
+- `apps/client/.env.production`：`https://api.campuslove.example.com/api`（example.com，发布守卫拒绝）。
+- `apps/client/.env.real` 与 `.env.mp-weixin`：`http://127.0.0.1:8080/api`（loopback + HTTP，微信合法域名不通过）。
+- `node scripts/verify-env-release.mjs` 自测 7/7 通过，但其对当前真实配置的拒绝是**正确行为**，不得通过放宽守卫“修复”。
+
+解除阻断所需外部输入（Secret 不进聊天/不进仓库，由部署方在本地或密钥系统注入）：
+
+1. 真实 HTTPS API 域名（例如 `https://api.<domain>/api`），写入 `.env.production` / `.env.real` / `.env.mp-weixin` 的 `VITE_API_BASE_URL`。
+2. 微信小程序 AppID（`WX_APPID`），以及服务端 `WECHAT_APPID` / `WECHAT_SECRET`。
+3. 部署级 `APP_AES_SECRET`、`WEBSOCKET_ALLOWED_ORIGIN_PATTERNS`、CORS/域名白名单与其余 Compose 必填项。
+
+具备输入后的执行顺序（尚未运行）：
+
+```bash
+node scripts/verify-env-release.mjs
+WX_APPID=wx... pnpm --filter @campus-love/client run build:mp-weixin:real
+# 微信开发者工具导入 dist/build/mp-weixin-real；真机 wx.login → /auth/wechat → 会话
+# 然后在 staging 记录当前 HEAD、域名、AppID、构建 band 与截图/请求证据
+```
+
+在以上证据齐全前：P1-5 保持“外部阻断”，不得声称可发布、已上传或真机登录已验。
+
