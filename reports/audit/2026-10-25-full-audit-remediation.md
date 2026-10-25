@@ -40,3 +40,12 @@
 - CI 对应步骤：Admin job 执行 `pnpm --filter @campus-love/admin run test:unit`；Client job 执行 `test:coverage`；API job 执行 `mvn verify`（JaCoCo `check` 绑定 verify）。
 - 首次执行 Client 覆盖率（124 files / 1403 tests 全绿）实测：lines/statements **23.9%**、functions **38.81%**、branches **63.47%**；旧阈值 80/75 从未被任何 CI/根命令执行。现按实测基线安装棘轮阈值 23/38/63（只允许后续上调），不通过扩大 exclude 伪造达标。
 - 本地 Windows 因仓库路径含非 ASCII，Spring Boot `repackage` 重命名 `target/*.jar` 会失败；根 `api:verify` 仅跳过 repackage 以执行测试 + JaCoCo check，CI 的 `mvn verify` 不跳过打包。该边界不改变 Linux CI 的打包验证。
+
+## 7. R16 历史欠账与视觉基准（P3-1）
+
+- 生成 `reports/audit/2026-10-25-r16-disposition-ledger.json`：214 条逐条入账（P2=150 / P3=64），每条保留 id、严重度、轴、批次、页面、文件、源码锚点与当前 HEAD 处置。
+- **默认状态全部为 `UNVERIFIED_AT_CURRENT_HEAD`**：本轮没有重跑 UI 帧、像素对照与逐条复判，不承接 R16 的 8/8 收口门为全产品验收，也不关闭任何历史行。
+- 源码锚点：214/214 在生成时路径可读且行号未越界（`ANCHOR_PRESENT_UNVERIFIED`）；这只证明引用可读，不证明缺陷仍可复现。
+- 视觉基准：`素材/理想效果图` 的 19 张基准图已入库；按 `baseline-manifest.json` 逐文件重算 SHA-256，19/19 **MATCH**、0 drift。字节一致只证明比对输入未变，不证明 UI 与基准一致。
+- 复算命令：`node scripts/qa/build-r16-disposition-ledger.mjs`；契约测试：`node tests/r16-disposition-ledger.spec.mjs`。
+- 未验证项：当前 HEAD 的微信开发者工具/真机帧、R16 P2/P3 逐条视觉复判、`wx.login` 真机链路、生产包上传与审核。没有这些证据前，P3 不得批量销账。
