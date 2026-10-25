@@ -448,6 +448,27 @@ export function resolveMediaUrls(paths: Array<string | null | undefined> | null 
   return result;
 }
 
+/**
+ * 预热一批原始媒体路径的访问签名（P0-2 首帧优化）。
+ *
+ * 列表数据到手时调用一次，可以让整屏图片共用**一次**批量签发请求，
+ * 而不是等渲染逐张触发、首帧先吃一批 401 再由签名到达后重算补图。
+ *
+ * 为什么这里直接调 resolveMediaUrl 而不自己重写路径：
+ * 签名是**逐路径绑定**的，签发时的 key 必须与渲染时问缓存用的 key 逐字一致；
+ * 重写规则（/uploads/… → /api/v1/media/…、去 apiRoot 尾斜杠等）的真源只有
+ * resolveMediaUrl 一处，另抄一遍就是给下一次漂移留口子。
+ * 返回值丢弃即可——副作用（排队签发）已经发生。
+ *
+ * @param paths 后端下发的原始媒体路径数组
+ */
+export function warmMediaUrls(paths: Array<string | null | undefined> | null | undefined): void {
+  if (!paths || !Array.isArray(paths)) return;
+  for (const p of paths) {
+    resolveMediaUrl(p);
+  }
+}
+
 /* ========== 上传扩展名白名单（客户端唯一真源） ========== */
 
 /**

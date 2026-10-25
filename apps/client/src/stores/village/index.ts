@@ -22,6 +22,8 @@ import type { CampusFeedView } from "../../services/generated/api-types-suppleme
 import { t } from "@/i18n";
 // infra R2-00037: mock 头像统一走 IMAGE_PATHS 体系
 import { IMAGE_PATHS } from "../../config/images";
+// P0-2：列表数据到手即预热媒体签名（真源仍是 resolveMediaUrl，见 utils/media.ts）
+import { warmMediaUrls } from "../../utils/media";
 import {
   COMMENT_DEBOUNCE_MS,
   MAX_CONTENT_LENGTH,
@@ -91,6 +93,21 @@ export * from "./constants";
 export * from "./utils";
 export * from "./mock-data";
 export * from "./api";
+
+/**
+ * 收集一屏帖子里需要访问签名的媒体路径（帖子配图 + 作者头像）。
+ *
+ * 交给 warmMediaUrls 走 resolveMediaUrl 同一套重写，所以这里只收集后端原始路径，
+ * 不自己拼 /api/v1/media/… —— 签名逐路径绑定，键必须与渲染时逐字一致。
+ */
+function collectFeedMediaPaths(items: PostItem[]): string[] {
+  const paths: string[] = [];
+  for (const item of items) {
+    if (item.images?.length) paths.push(...item.images);
+    if (item.author?.avatar) paths.push(item.author.avatar);
+  }
+  return paths;
+}
 
 /**
  * 当前 fetchPosts 请求的 AbortController。
@@ -279,6 +296,9 @@ export const useVillageStore = defineStore("village", {
 
         const newPosts = data.items.map(mapToPostItem);
         this.posts = reset ? newPosts : [...this.posts, ...newPosts];
+        // P0-2 首帧优化：数据一到手就把这一屏的帖子图与作者头像排队签发，
+        // 让整屏共用一次 POST /media/sign，而不是渲染时逐张触发、首帧先吃一批 401。
+        warmMediaUrls(collectFeedMediaPaths(newPosts));
         this.page = currentPage;
         // 当返回数据不足一页时，说明没有更多数据
         this.hasMore = data.items.length >= PAGE_SIZE;
@@ -367,6 +387,7 @@ export const useVillageStore = defineStore("village", {
         const realItems = data.items.map(mapToPostItem);
         // MP-R3-VILLAGE-INDEX-002：real 分支同样按页追加
         this.posts = page === 1 ? realItems : [...this.posts, ...realItems];
+        warmMediaUrls(collectFeedMediaPaths(realItems));
         this.page = page;
         this.hasMore = data.items.length >= PAGE_SIZE;
       } catch (error) {

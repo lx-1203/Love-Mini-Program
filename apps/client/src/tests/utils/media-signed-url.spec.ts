@@ -22,7 +22,7 @@ vi.mock("../../utils/media-sign-cache", () => ({
   clearMediaSignCache: vi.fn(),
 }));
 
-import { resolveMediaUrl } from "../../utils/media";
+import { resolveMediaUrl, warmMediaUrls } from "../../utils/media";
 
 const API_ROOT = (clientEnv.apiBaseUrl || "").replace(/\/api\/?$/, "");
 
@@ -109,6 +109,48 @@ describe("resolveMediaUrl 改用能力型签名 URL", () => {
     withApiMode("real", () => {
       const resolved = resolveMediaUrl("/api/v1/media/app-assets/generated/a.png");
       expect(resolved).not.toContain("token=");
+    });
+    expect(signedMediaUrl).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * warmMediaUrls：列表数据到手即预热，让整屏共用一次批量签发。
+ *
+ * 判的重点是「键与渲染时逐字一致」——预热和渲染必须走同一个重写出口，
+ * 否则签的是 /uploads/x、问的是 /api/v1/media/x，缓存永不命中，
+ * 首帧那批 401 一张都没省掉，而这个优化看起来"接上了"。
+ */
+describe("warmMediaUrls 预热", () => {
+  it("对每个原始路径触发签发，且用的就是渲染时那把键", () => {
+    withApiMode("real", () => {
+      warmMediaUrls(["/uploads/7/202610/a.jpg", "/api/v1/media/8/b.png"]);
+    });
+
+    expect(signedMediaUrl.mock.calls.map((call) => call[0])).toEqual([
+      "/api/v1/media/7/202610/a.jpg",
+      "/api/v1/media/8/b.png",
+    ]);
+    // 与渲染路径同键：再走一次 resolveMediaUrl 不应产生第三种键
+    withApiMode("real", () => {
+      resolveMediaUrl("/uploads/7/202610/a.jpg");
+    });
+    const keys = new Set(signedMediaUrl.mock.calls.map((call) => call[0]));
+    expect([...keys]).toEqual(["/api/v1/media/7/202610/a.jpg", "/api/v1/media/8/b.png"]);
+  });
+
+  it("空值与非数组输入不炸", () => {
+    withApiMode("real", () => {
+      warmMediaUrls(null);
+      warmMediaUrls(undefined);
+      warmMediaUrls(["", null, undefined]);
+    });
+    expect(signedMediaUrl).not.toHaveBeenCalled();
+  });
+
+  it("mock 档不预热（这些档不依赖后端，也没有签发端点）", () => {
+    withApiMode("mock", () => {
+      warmMediaUrls(["/uploads/7/202610/a.jpg"]);
     });
     expect(signedMediaUrl).not.toHaveBeenCalled();
   });

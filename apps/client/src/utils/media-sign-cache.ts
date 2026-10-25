@@ -160,7 +160,7 @@ async function flushPending(): Promise<void> {
       if (!signed.has(path)) failedAt.set(path, Date.now());
     }
     if (touched) signVersion.value += 1;
-  } catch {
+  } catch (_e) {
     for (const path of batch) failedAt.set(path, Date.now());
   }
 }
