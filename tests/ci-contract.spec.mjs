@@ -228,4 +228,25 @@ assert.match(ci, /pnpm exec playwright install/u, "CI must install Playwright fr
 assert.match(ci, /pnpm exec playwright test/u, "CI must run Playwright from pnpm deps");
 assert.doesNotMatch(ci, /npx playwright/u, "CI must not rely on ambient npx Playwright");
 
+// 资产覆盖门的**盘上轴**（scripts/qa/verify-app-assets-coverage.mjs --source-only）必须在 CI 有一发。
+// 为什么点的是 --selftest 而不是真读数：CI 检出树里两个盘上根（apps/api/uploads/app-assets、
+// apps/client/static-local-backup/full-static）都被 .gitignore 的 *.png/*.jpg/*.jpeg/*.gif/*.webp
+// 挡掉了大半（本机实测 495/1354、613/1496 进了 git），真读数每轮必然报几百条"缺件"——
+// 那是检出面缺口不是产品缺陷，挂上来就是一条恒红的门。
+// 判的是形状而不是字面：CI 若哪天悄悄把这一发删掉（"写了没人跑"的同族事故），本条必须红。
+const assetCovSteps = findSteps(
+  (step) => typeof step.run === "string" && step.run.includes("verify-app-assets-coverage.mjs"),
+);
+assert.equal(assetCovSteps.length, 1, "CI 必须恰有一发 verify-app-assets-coverage（多了要核对是哪两条轴）");
+assert.match(
+  assetCovSteps[0].step.run,
+  /--source-only\s+--selftest/u,
+  "CI 没有后端 ⇒ 这一发必须走盘上轴的自证（--source-only --selftest），不是 --base 那一档",
+);
+assert.doesNotMatch(
+  ci,
+  /verify-app-assets-coverage\.mjs[^\n]*--base/u,
+  "CI 不许点 http 轴（--base 在无后端的 CI 只会读成 NOT-EVIDENCED，等于装一扇不表态的门）",
+);
+
 console.log("ci image scan contract ok");

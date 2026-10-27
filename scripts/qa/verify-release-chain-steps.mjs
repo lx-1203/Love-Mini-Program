@@ -85,6 +85,10 @@ const REQUIRED = [
   "strip-mock-for-mp.mjs",
   "add-lazy-code-loading.mjs",
   "prune-unreferenced-static.mjs",
+  /* 2026-10-27：资产引用的盘上轴进链（--source-only，不需要后端）。它补的是 prune 那句
+     "匿名 GET 200 由 verify-app-assets-coverage 量"的债 —— 那把门以前只有 http 轴，发布链上
+     没有后端，等于这句话在链上没人接；real 包可以带着一条盘上无件的 /api-assets/… 引用出仓。 */
+  "verify-app-assets-coverage.mjs",
   "verify-package-size.mjs",
 ];
 for (const s of REQUIRED) {
@@ -134,6 +138,13 @@ else {
     problems.push(`prune-unreferenced-static 没带 --dist ${outDir} ⇒ 它会回到缺省的 mock 目录去删文件（D-A0 复发）`);
   }
   if (size && !size.includes(outDir)) problems.push(`verify-package-size 没带位置参数 ${outDir} ⇒ 它量的是缺省 mock 目录，包体结论记错对象`);
+  /* 资产覆盖门（盘上轴）读的也是产物 ⇒ 同一条改道纪律：不带 out 目录就是去量 mock 档（D-A0 复发）。
+     它另外必须带 --source-only：发布链没有后端，带 --base 的那一档在链上只会 exit 2 报"量不到"。 */
+  const cov = stepLine("verify-app-assets-coverage.mjs");
+  if (cov) {
+    if (!/--source-only\b/.test(cov)) problems.push("链上的 verify-app-assets-coverage 没带 --source-only ⇒ 发布链没有后端，http 轴必然按 NOT-EVIDENCED 退 2，这一步等于没跑");
+    if (!cov.includes(outDir)) problems.push(`verify-app-assets-coverage 没把产物目录 ${outDir} 传下去 ⇒ 它 --source-only 扫的是缺省 mock 目录，"引用↔盘上"对账记错对象（D-A0 复发）`);
+  }
 }
 if (prep && !/--scan\s+src/.test(prep)) problems.push("prepare-static 没带 --scan src ⇒ 保留集又由上一轮别的档决定（D-A1 复发）");
 
