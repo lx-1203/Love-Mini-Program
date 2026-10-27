@@ -86,6 +86,10 @@ const GATE_SELFTESTS = [
   // assetcov：真起一个临时 HTTP 服务注入 6 类坏件（缺件 404/字节不符/桶空/清单空/产物 http 引用/量不到三例），
   // 每类都跑"注入⇒红"与"撤掉⇒绿"，所以它证的是判据会红，不是"今天盘上干净"。
   { name: "verify-app-assets-coverage", cmd: ["scripts/qa/verify-app-assets-coverage.mjs", "--selftest"], want: /ASSETCOV_SELFTEST 用例=(\d+) 通过=\d+ 失败=0/ },
+  // 同一把门的**盘上轴**单独再点一发（--source-only --selftest 只跑盘上那一组 18 例，一个 fetch 都不发）：
+  // 这轴是进 real 发布链与 CI 的那一档，它能不能红必须在没有后端的环境里也被证出来（实测 用例=18 通过=18 失败=0）。
+  // CI 侧点的就是这一发（.github/workflows/ci.yml 的 Asset coverage source-axis self-test）。
+  { name: "verify-app-assets-coverage-source", cmd: ["scripts/qa/verify-app-assets-coverage.mjs", "--source-only", "--selftest"], want: /ASSETCOV_SELFTEST 用例=(\d+) 通过=\d+ 失败=0/ },
   // data-hygiene 的 --self-test 原版注入后直接落 FAIL 分支 exit 1 ⇒ 永远进不了本清单（这里要求
   // 退出码 0 + 自报 PASS 行才判承重）。已改成自己判"红得起来没有"，真件读数另印 HYGIENE_REAL 不发判决。
   { name: "verify-data-hygiene", cmd: ["scripts/qa/verify-data-hygiene.mjs", "--self-test"], want: /HYGIENE_SELFTEST PASS cases=1 bad=0/ },

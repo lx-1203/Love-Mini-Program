@@ -121,6 +121,19 @@ jobs:
         # 此前 CI 只跑 test:structure 一条，其余八条仅本地执行 —— 等于「建了没人跑」。
         run: npm run test:contracts
 
+      # 资产覆盖门的**盘上轴**（verify-app-assets-coverage --source-only）自证（2026-10-27）。
+      # 为什么 CI 只能跑它的 --selftest 而不是真读数：本轴的两个盘上根在 CI 检出树里是残缺的 ——
+      # .gitignore 全局挡掉 *.png/*.jpg/*.jpeg/*.gif/*.webp，只白名单 apps/client/src/static 那一棵，
+      # 所以 apps/api/uploads/app-assets 只有 495/1354 个件进了 git、static-local-backup 只有
+      # 613/1496（本机 git ls-files 实测）。真读数在 CI 跑出来必然是「分母=929 盘上=156 缺件=773」，
+      # 那是检出面的缺口而不是产品缺陷 —— 挂上去就是一条永远红的门（本仓口径：假红的门等于没有门）。
+      # 所以 CI 这一发跑 --source-only --selftest：夹具自己造两棵盘上根（tmp/qa/fixtures/assetcov），
+      # 不依赖仓内素材、不依赖后端，判的是"这条轴能不能红"；真读数由
+      # ① apps/client/scripts/release-chain.mjs 的 --source-only 步（构建期必然经过，素材在全机的仓里）
+      # ② scripts/qa/run-final-verify-v33.sh 的 g verify-app-assets-coverage-source（人跑的终验）两处出。
+      - name: Asset coverage source-axis self-test (no backend needed)
+        run: node scripts/qa/verify-app-assets-coverage.mjs --source-only --selftest
+
   # ----------------------------------------------------------------
   # Job 2: 客户端类型检查 + H5 / mp-weixin 构建
   # ----------------------------------------------------------------

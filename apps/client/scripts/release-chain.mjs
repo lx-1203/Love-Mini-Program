@@ -143,6 +143,13 @@ const STEPS = [
      prune 那边才是 --dist（本轮给它加的旗标）。两个形状各按各的传，别统一。 */
   { name: "add-lazy-code-loading", args: ["scripts/add-lazy-code-loading.mjs", outDir], snapshotBefore: false },
   { name: "prune-unreferenced-static", args: ["scripts/prune-unreferenced-static.mjs", "--dist", outDir, "--buckets", bucketsPath], snapshotBefore: false },
+  /* 资产引用的**盘上轴**（2026-10-27）：prune 刚把 cdn 桶那批文件从包里删掉、并在清单里写明
+     「本清单不证明 HTTP 200，只证明盘上有同名文件；匿名 GET 200 由 verify-app-assets-coverage 量」，
+     而那把门以前只有 http 轴（要 --base + 活后端）⇒ 发布链上这句话没人接，real 包可以带着
+     一条盘上无件的 /api-assets/… 引用出仓（空白图标族：96d4c172 / aa6c4708）。
+     --source-only 就是补这一格：同一批桶逐件在盘上解析（uploads + 同步镜像两根），不需要后端。
+     改道形状与 prune 一致（--dist 指向本链 out，缺省目录是 mock 档；D-A0 的教训：不带就是量别人的产物）。 */
+  { name: "verify-app-assets-coverage --source-only", args: ["../../scripts/qa/verify-app-assets-coverage.mjs", "--source-only", "--dist", outDir, "--buckets", bucketsPath], snapshotBefore: false },
   { name: "verify-package-size", args: ["../../scripts/verify-package-size.mjs", outDir, "--buckets", bucketsPath], snapshotBefore: false },
 ];
 

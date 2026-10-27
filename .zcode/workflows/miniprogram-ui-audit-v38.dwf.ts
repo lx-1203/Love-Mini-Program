@@ -311,6 +311,11 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   // 两条都只读（一条 HTTP+fs、一条全程 SELECT），不取模拟器租约、不写库 ⇒ 放并发段成立。
   // 超时两侧取同值 120 s：实测 6 桶 166 件 1.7 s、11 桶 1052 件约 10 s；比需求小的上限会读成假红。
   { name: "后端资产覆盖与同字节 verify-app-assets-coverage", args: ["scripts/qa/verify-app-assets-coverage.mjs", "--base", "http://127.0.0.1:8080"], timeoutMs: 120000 },
+  // 同一把门的**第二条探针轴**（2026-10-27）：--source-only 把逐件匿名 GET 换成逐件盘上解析
+  // （uploads + 同步镜像两根），不要后端 ⇒ 服务没起的轮次也能量"引用背后有没有件"。
+  // 它不替上面那条 http 档顶班：盘上读数明写"档=source"，不声明取到/可达（判据弱一档就少说一档）。
+  // 与 bash 载具同一条 g 行同名同参；超时取同值 60 s（实测 929 件 10 桶 2.6 s，留 20 倍余量）。
+  { name: "资产引用盘上对账（无后端档） verify-app-assets-coverage-source", args: ["scripts/qa/verify-app-assets-coverage.mjs", "--source-only"], timeoutMs: 60000 },
   { name: "包内素材引用对账 verify-static-refs", args: ["scripts/qa/verify-static-refs.mjs"], timeoutMs: 60000 },
   { name: "素材注册表双向对账 verify-asset-registry", args: ["scripts/qa/verify-asset-registry.mjs"], timeoutMs: 120000 },
   { name: "素材注册表对账自测 verify-asset-registry-selftest", args: ["scripts/qa/verify-asset-registry.mjs", "--self-test"], timeoutMs: 60000 },

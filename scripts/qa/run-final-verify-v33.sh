@@ -163,6 +163,11 @@ g settle-discipline          60 scripts/qa/verify-settle-discipline.mjs
 # 不取模拟器租约、不写库 ⇒ 放并发段。120 s 两侧齐平，依据：11 桶 1052 件实测约 10 s、卫生门 3560 格约 4 s。
 # 前置不齐落 NOT-EVIDENCED 退 2（后端没起 / .env 缺 DB_*），那是"未取证"第四格，不记绿也不记产品红。
 g verify-app-assets-coverage 120 scripts/qa/verify-app-assets-coverage.mjs --base http://127.0.0.1:8080
+# 同一批桶的第二条探针轴（2026-10-27）：--source-only 在**盘上**逐件解析（uploads + 同步镜像两根），
+# 不要后端 ⇒ 没起服务的轮次也能量。判据比 http 档弱一档且明写在读数里（档=source 只说"盘上有件"，
+# 不说取到/可达），所以这条不是来替上面那条顶班的：两条各测一件事，缺件/404 两边都点得名。
+# 实测 929 件（10 桶，无抽样）约 2.6 s；60 s 上限留 20 倍余量。
+g verify-app-assets-coverage-source 60 scripts/qa/verify-app-assets-coverage.mjs --source-only
 g verify-static-refs        60 scripts/qa/verify-static-refs.mjs
 g verify-asset-registry    120 scripts/qa/verify-asset-registry.mjs
 g verify-asset-registry-selftest 60 scripts/qa/verify-asset-registry.mjs --self-test
