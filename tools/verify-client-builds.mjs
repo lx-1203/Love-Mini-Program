@@ -27,16 +27,23 @@ function canUsePnpm() {
 
 const usePnpm = await canUsePnpm();
 const clientDir = "apps/client";
+// CI 用占位档：只验证 real 构建可编译，产物标 shippable=no；本地仍走严格发布守卫。
+const realBuildScript = process.env.CI ? "build:h5:real:ci" : "build:h5:real";
+// pnpm 不可用时的回退路径同样必须先过守卫——原实现直接 uni build --mode real，
+// 等于在 Windows/EBUSY 场景静默绕开 release 域名校验。
+const realGuardCommand = process.env.CI
+  ? "node ../../scripts/verify-env-release.mjs --ci-placeholder"
+  : "node ../../scripts/verify-env-release.mjs";
 
 const builds = usePnpm
   ? [
       { label: "mock build", command: "pnpm --filter @campus-love/client run build:h5" },
-      { label: "real build", command: "pnpm --filter @campus-love/client run build:h5:real" },
+      { label: "real build", command: `pnpm --filter @campus-love/client run ${realBuildScript}` },
       { label: "mp-weixin build", command: "pnpm --filter @campus-love/client run build:mp-weixin" },
     ]
   : [
       { label: "mock build", command: `"node_modules/.bin/uni.CMD" build --platform h5` },
-      { label: "real build", command: `"node_modules/.bin/uni.CMD" build --platform h5 --mode real` },
+      { label: "real build", command: `${realGuardCommand} && "node_modules/.bin/uni.CMD" build --platform h5 --mode real` },
       { label: "mp-weixin build", command: `"node_modules/.bin/uni.CMD" build --platform mp-weixin` },
     ];
 

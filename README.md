@@ -169,9 +169,10 @@ npm --workspace apps/client run dev:h5:real         # H5 real 模式
 npm --workspace apps/client run dev:mp-weixin       # 微信小程序开发
 
 # 构建
-npm --workspace apps/client run build:h5            # H5 生产构建
-npm --workspace apps/client run build:mp-weixin     # mp-weixin 生产构建
-npm --workspace apps/client run build:mp-weixin:real # mp-weixin 生产构建（含 appid 注入）
+npm --workspace apps/client run build:h5              # H5 mock 构建（非发布）
+npm --workspace apps/client run build:h5:real         # H5 release 构建（需真实 HTTPS 域名，走发布守卫）
+npm --workspace apps/client run build:mp-weixin       # mp-weixin real API dev 构建（strip-mock 后可直接进 DevTools；mock 档用 build:mp-weixin:mock）
+npm --workspace apps/client run build:mp-weixin:real  # mp-weixin release 构建（含 appid 注入）
 
 # 检查与测试
 npm --workspace apps/client run typecheck           # vue-tsc 类型检查

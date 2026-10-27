@@ -26,6 +26,8 @@
  * 使用方式：
  *   已接入 apps/client/package.json 的 build:h5:real / build:mp-weixin:real，无需手动执行。
  *   在座发布形态：node scripts/verify-env-release.mjs --allow-loopback --carrier release-chain
+ *   CI 构建验证：CI=true node scripts/verify-env-release.mjs --ci-placeholder
+ *               （只接受 https://ci.invalid/api，输出 CI_PLACEHOLDER + shippable=no；不是 PASS）
  *   自证：      node scripts/verify-env-release.mjs --self-test
  *
  * 退出码：
@@ -45,6 +47,11 @@ const SELF = fileURLToPath(import.meta.url);
 const RK = "ENVCHECK_RESULT";
 /** 允许取得 loopback 豁免的载具名（只有这两个；写错或匿名一律退 2）。 */
 const WAIVER_CARRIERS = ["release-chain", "build-real-isolated"];
+/**
+ * CI 专用占位域名：只用于在 CI 里验证 real 构建可编译，绝不能发布。
+ * 精确匹配这一个 URL；换成任何真实域名都不会进入本模式，release 仍需真域名。
+ */
+const CI_PLACEHOLDER_URL = "https://ci.invalid/api";
 
 const arg = (k, dflt) => {
   const i = process.argv.indexOf("--" + k);
@@ -141,8 +148,25 @@ function stateOf(out) {
 function runGate() {
   const clientDir = resolve(arg("client-dir", join(REPO, "apps/client")));
   const allowLoopback = flag("allow-loopback");
+  const ciPlaceholder = flag("ci-placeholder");
   const carrier = String(arg("carrier", "")).trim();
   const waiverDir = String(arg("write-waiver-to", "")).trim();
+
+  if (ciPlaceholder && allowLoopback) {
+    console.error("[verify-env-release] NOT-EVIDENCED: --ci-placeholder 与 --allow-loopback 不能同时使用（一个产物只能有一个身份）");
+    console.error(`${RK}=NOT-EVIDENCED reason=ci-placeholder-with-loopback-waiver`);
+    return 2;
+  }
+  if (ciPlaceholder && process.env.NODE_ENV === "production") {
+    console.error("[verify-env-release] NOT-EVIDENCED: --ci-placeholder 不得在 NODE_ENV=production 下使用");
+    console.error(`${RK}=NOT-EVIDENCED reason=ci-placeholder-in-production`);
+    return 2;
+  }
+  if (ciPlaceholder && !process.env.CI) {
+    console.error("[verify-env-release] NOT-EVIDENCED: --ci-placeholder 仅允许在 CI=true 下使用；本地发布请用真实 HTTPS 域名");
+    console.error(`${RK}=NOT-EVIDENCED reason=ci-placeholder-outside-ci`);
+    return 2;
+  }
 
   if (allowLoopback && !carrier) {
     console.error("[verify-env-release] NOT-EVIDENCED: --allow-loopback 没带 --carrier ⇒ 匿名豁免不收（旗标用错既不算通过，也不算产品判红）");
@@ -169,9 +193,22 @@ function runGate() {
   }
 
   const apiBaseUrl = String(env.VITE_API_BASE_URL ?? "").trim();
-  const { errors, waivedHttps, waivedLoopback } = checkReleaseEnv(apiBaseUrl, allowLoopback);
   const git = shortSha();
   const at = new Date().toISOString();
+
+  if (ciPlaceholder) {
+    if (apiBaseUrl !== CI_PLACEHOLDER_URL) {
+      console.error("[verify-env-release] FAIL: --ci-placeholder 只接受 CI 专用占位 URL：" + CI_PLACEHOLDER_URL);
+      console.error(`  当前值: ${apiBaseUrl || "(未配置)"}`);
+      console.error(`${RK}=FAIL reason=ci-placeholder-url-mismatch api=${apiBaseUrl || "(未配置)"} expected=${CI_PLACEHOLDER_URL} git=${git} at=${at}`);
+      return 1;
+    }
+    console.error("[verify-env-release] CI_PLACEHOLDER: 本产物仅用于 CI 构建验证，不可发布（shippable=no）");
+    console.error(`${RK}=CI_PLACEHOLDER shippable=no api=${apiBaseUrl} git=${git} at=${at}`);
+    return 0;
+  }
+
+  const { errors, waivedHttps, waivedLoopback } = checkReleaseEnv(apiBaseUrl, allowLoopback);
 
   if (errors.length > 0) {
     console.error("[verify-env-release] FAIL: release 构建环境校验未通过：");
@@ -251,14 +288,19 @@ function selfTest() {
     writeFileSync(script, scriptText, "utf-8");
     return { root, client, script };
   };
-  const exec = (t, args) => {
-    const r = spawnSync(process.execPath, [t.script, ...args], { cwd: REPO, encoding: "utf8" });
+  const exec = (t, args, extraEnv = {}) => {
+    const r = spawnSync(process.execPath, [t.script, ...args], {
+      cwd: REPO,
+      encoding: "utf8",
+      env: { ...process.env, ...extraEnv },
+    });
     return { code: r.status, out: `${r.stdout || ""}${r.stderr || ""}` };
   };
 
   const HTTP = 'VITE_API_BASE_URL="http://127.0.0.1:8080/api"\n';
   const HTTPS = 'VITE_API_BASE_URL="https://api.campus-prod.internal"\n';
   const BADDOM = 'VITE_API_BASE_URL="https://api.example.com/v1"\n';
+  const PLACEHOLDER = `VITE_API_BASE_URL="${CI_PLACEHOLDER_URL}"\n`;
 
   const A = mkTree("A-guarded", src, HTTP);
   // B 是**宽松桩变异体**（不是删段崩掉的变异体）：守卫换成永不判红的桩，其余代码原样。
@@ -268,6 +310,9 @@ function selfTest() {
   const C = mkTree("C-guarded-https", src, HTTPS);
   const E = mkTree("E-guarded-waived", src, HTTP);
   const F = mkTree("F-guarded-example", src, BADDOM);
+  const H = mkTree("H-ci-placeholder", src, PLACEHOLDER);
+  const I = mkTree("I-ci-real-url", src, HTTPS);
+  const J = mkTree("J-placeholder-outside-ci", src, PLACEHOLDER);
 
   const problems = [];
 
@@ -303,8 +348,26 @@ function selfTest() {
   console.log(`ENVCHECK_SELFTEST_G 白名单外载具：exit=${g.code} 态=${stateOf(g.out)}`);
   if (g.code !== 2) problems.push(`G：--carrier=whoever 应退 2，实测 ${g.code} ⇒ 载具白名单是摆设`);
 
+  const h = exec(H, ["--client-dir", H.client, "--ci-placeholder"], { CI: "true" });
+  console.log(`ENVCHECK_SELFTEST_H CI 占位：exit=${h.code} 态=${stateOf(h.out)}`);
+  if (h.code !== 0 || stateOf(h.out) !== "CI_PLACEHOLDER") {
+    problems.push(`H：CI 占位应退 0 且打 CI_PLACEHOLDER，实测 exit=${h.code} 态=${stateOf(h.out)} ⇒ CI 构建验证无法跑通或冒充了 PASS`);
+  }
+
+  const i = exec(I, ["--client-dir", I.client, "--ci-placeholder"], { CI: "true" });
+  console.log(`ENVCHECK_SELFTEST_I CI 占位+真实域名：exit=${i.code} 态=${stateOf(i.out)}`);
+  if (i.code !== 1 || stateOf(i.out) !== "FAIL") {
+    problems.push(`I：--ci-placeholder 下真实域名应退 1，实测 exit=${i.code} 态=${stateOf(i.out)} ⇒ 占位模式会被当成发布通道`);
+  }
+
+  const j = exec(J, ["--client-dir", J.client, "--ci-placeholder"], { CI: "" });
+  console.log(`ENVCHECK_SELFTEST_J 非 CI 用占位：exit=${j.code} 态=${stateOf(j.out)}`);
+  if (j.code !== 2 || stateOf(j.out) !== "NOT-EVIDENCED") {
+    problems.push(`J：非 CI 环境用 --ci-placeholder 应退 2，实测 exit=${j.code} 态=${stateOf(j.out)} ⇒ 占位模式可被本地误用`);
+  }
+
   rmSync(scratch, { recursive: true, force: true });
-  console.log(problems.length ? `${SRK}=FAIL cases=7 problems=${problems.length}` : `${SRK}=PASS cases=7 负例可红=是`);
+  console.log(problems.length ? `${SRK}=FAIL cases=10 problems=${problems.length}` : `${SRK}=PASS cases=10 负例可红=是`);
   for (const p of problems) console.error(`  - ${p}`);
   return problems.length ? 1 : 0;
 }

@@ -271,6 +271,10 @@ jobs:
       - api-test
       - admin-typecheck-and-build
     timeout-minutes: 30
+    # 镜像命名单一来源：本地 compose 默认 campus-love，CI 默认 ghcr.io/<repo>。
+    # 仓库变量 IMAGE_PREFIX 可覆盖两者，避免再出现 ghcr.io/<repo>/api 与 campus-love-api 第三套写法。
+    env:
+      IMAGE_PREFIX: ${{ vars.IMAGE_PREFIX || format('ghcr.io/{0}', github.repository) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -341,7 +345,7 @@ jobs:
         id: meta-api
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}/api
+          images: ${{ env.IMAGE_PREFIX }}/api
           tags: |
             type=raw,value=${{ steps.tag.outputs.TAG }}
 
@@ -349,7 +353,7 @@ jobs:
         id: meta-admin
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}/admin
+          images: ${{ env.IMAGE_PREFIX }}/admin
           tags: |
             type=raw,value=${{ steps.tag.outputs.TAG }}
 
@@ -381,7 +385,11 @@ jobs:
         id: build-admin
         uses: docker/build-push-action@v6
         with:
-          context: ./apps/admin
+          # Admin Dockerfile 需要仓库根的 pnpm-workspace.yaml/pnpm-lock.yaml，
+          # 因此 context 必须是仓库根（与 docker-compose.yml 的 admin 服务一致）；
+          # 指到 ./apps/admin 会让 COPY pnpm-workspace.yaml 直接失败。
+          context: .
+          file: apps/admin/Dockerfile
           target: runtime
           tags: ${{ steps.meta-admin.outputs.tags }}
           # 2026-10-05 推送闸：refuse 档只构建不推送（配合上方显式 fail 步骤）
@@ -413,7 +421,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' && steps.push-gate.outputs.mode != 'refuse' }}
         uses: aquasecurity/trivy-action@v0.23.0
         with:
-          image-ref: ghcr.io/${{ github.repository }}/api@${{ steps.build-api.outputs.digest }}
+          image-ref: ${{ env.IMAGE_PREFIX }}/api@${{ steps.build-api.outputs.digest }}
           severity: HIGH,CRITICAL
           exit-code: '1'
 
@@ -421,7 +429,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' && steps.push-gate.outputs.mode != 'refuse' }}
         uses: aquasecurity/trivy-action@v0.23.0
         with:
-          image-ref: ghcr.io/${{ github.repository }}/admin@${{ steps.build-admin.outputs.digest }}
+          image-ref: ${{ env.IMAGE_PREFIX }}/admin@${{ steps.build-admin.outputs.digest }}
           severity: HIGH,CRITICAL
           exit-code: '1'
 
@@ -479,8 +487,61 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # CI 专用 release 占位：只验证 real 构建可编译，产物 shippable=no。
+      # 真实发布域名/AppID 走独立的 release-gate（缺 secret 即失败），不在这里伪造 PASS。
+      - name: Prepare CI-only release placeholder env (non-shippable)
+        run: |
+          printf 'VITE_API_BASE_URL=https://ci.invalid/api\n' > apps/client/.env.real.local
+          echo "ENVCHECK_CI_PLACEHOLDER=1 shippable=no"
+
       - name: Run verify:phase01
         run: npm run verify:phase01
+
+  # ----------------------------------------------------------------
+  # Job 8b: Release Gate（真实发布输入门；手动/打 tag 触发）
+  # PR CI 用 ci.invalid 占位只证明 real 构建可编译；本 job 反向要求真实
+  # HTTPS 域名、WX_APPID、服务端微信凭据与管理员初始哈希，缺一即失败。
+  # 它只做门禁，不代替上传/审核，也不把占位产物冒充成可发布。
+  # ----------------------------------------------------------------
+  release-gate:
+    name: Release Gate (real domain/secrets; manual/tag)
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 11.17.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Require real release inputs and run env guard
+        env:
+          RELEASE_API_BASE_URL: ${{ secrets.RELEASE_API_BASE_URL }}
+          WX_APPID: ${{ secrets.WX_APPID }}
+          WECHAT_APPID: ${{ secrets.WECHAT_APPID }}
+          WECHAT_SECRET: ${{ secrets.WECHAT_SECRET }}
+          ADMIN_INITIAL_PASSWORD_HASH: ${{ secrets.ADMIN_INITIAL_PASSWORD_HASH }}
+        run: |
+          missing=0
+          for name in RELEASE_API_BASE_URL WX_APPID WECHAT_APPID WECHAT_SECRET ADMIN_INITIAL_PASSWORD_HASH; do
+            if [ -z "${!name}" ]; then
+              echo "RELEASE_GATE=FAIL missing=$name"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
+          printf 'VITE_API_BASE_URL=%s\n' "$RELEASE_API_BASE_URL" > apps/client/.env.real.local
+          node scripts/verify-env-release.mjs
+          echo "RELEASE_GATE=OK env-guard passed; upload/review still requires the real build and manual steps"
 
   # ----------------------------------------------------------------
   # Job 9: E2E 测试（依赖所有前置 job 通过，含安全扫描与 Phase 01 验证）
@@ -489,6 +550,7 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     needs:
+      - gitleaks-scan
       - lint-and-structure
       - client-typecheck-and-build
       - client-test
@@ -536,4 +598,128 @@ jobs:
         with:
           name: playwright-report
           path: tests/e2e/report
+          retention-days: 7
+
+  # ----------------------------------------------------------------
+  # Job 10: 真实栈冒烟（2026-10-25）
+  # mock E2E 不触达后端；本 job 用 MySQL+Redis+API real+H5 real 跑
+  # 游客登录 → 村口列表 → 上传 PNG → 签名 URL → 无凭据取回原字节 → 401 对照。
+  # 这条链路专门抓「状态码 200 但响应 0 字节」这类只断言状态码会漏的缺陷。
+  # ----------------------------------------------------------------
+  e2e-real:
+    name: E2E Real Stack (guest → upload → signed media)
+    runs-on: ubuntu-latest
+    needs:
+      - api-compile
+      - client-typecheck-and-build
+    timeout-minutes: 45
+    services:
+      mysql:
+        image: mysql:8.0.39
+        env:
+          MYSQL_ROOT_PASSWORD: ci-root-pass
+          MYSQL_DATABASE: campus_love
+          MYSQL_USER: campus
+          MYSQL_PASSWORD: ci-db-pass
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pci-root-pass"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=30
+      redis:
+        image: redis:7.2.5-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      SPRING_PROFILES_ACTIVE: real
+      DB_URL: jdbc:mysql://127.0.0.1:3306/campus_love?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      DB_USERNAME: campus
+      DB_PASSWORD: ci-db-pass
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: '6379'
+      REDIS_PASSWORD: ''
+      JWT_SECRET: ci-only-jwt-secret-please-change-0123456789abcdef
+      APP_AES_SECRET: ci-only-aes-secret-please-change-0123456789abcdef
+      WEBSOCKET_ALLOWED_ORIGIN_PATTERNS: http://127.0.0.1:5173,http://localhost:5173
+      APP_GUEST_LOGIN_ENABLED: 'true'
+      APP_ADMIN_STRICT_PASSWORD: 'false'
+      APP_ADMIN_DB_PASSWORD_AUDIT: warn
+      DEMO_SEED: 'false'
+      APP_MEDIA_QUERY_TOKEN_STRICT: 'true'
+      APP_EVENTS_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 11.17.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Start API (real profile)
+        run: |
+          nohup mvn -B -f apps/api/pom.xml spring-boot:run > api-real.log 2>&1 &
+          for i in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:8080/actuator/health >/dev/null; then
+              echo "API_UP=OK"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API_UP=FAIL"
+          tail -150 api-real.log
+          exit 1
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Start H5 real dev server
+        run: |
+          nohup pnpm --filter @campus-love/client run dev:h5:real > h5-real.log 2>&1 &
+          for i in $(seq 1 120); do
+            if curl -fsS http://localhost:5173 >/dev/null; then
+              echo "H5_UP=OK"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "H5_UP=FAIL"
+          tail -150 h5-real.log
+          exit 1
+
+      - name: Run real-stack smoke
+        env:
+          E2E_BASE_URL: http://127.0.0.1:5173
+          E2E_API_BASE_URL: http://127.0.0.1:8080/api
+          E2E_API_MODE: real
+        run: pnpm exec playwright test --config=tests/e2e/playwright.config.ts real-stack-smoke.spec.ts
+
+      - name: Upload real-stack logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-real-logs
+          path: |
+            api-real.log
+            h5-real.log
+            tests/e2e/report
           retention-days: 7

@@ -253,7 +253,8 @@ java -Xms512m -Xmx2g -Dspring.profiles.active=real -jar campus-love-api-0.1.0.ja
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm client:build:h5:real
+pnpm --filter @campus-love/client run build:h5:real
+# CI 构建验证可用占位档（产物 shippable=no）：build:h5:real:ci
 ```
 
 构建产物：`apps/client/dist/build/h5`
@@ -321,8 +322,8 @@ docker compose exec backup /backup.sh
 |------|------|---------------------|----------|---------|----------|----------|
 | `mysql` | `mysql:8.0` | `${MYSQL_PORT:-3306}` | 3306 | 默认 | `mysqladmin ping` (10s/5s/10次/start 30s) | json-file (10m×5) |
 | `redis` | `redis:7-alpine` | `${REDIS_PORT:-6379}` | 6379 | 默认 | `redis-cli ping` (10s/5s/5次/start 10s) | json-file (10m×5) |
-| `api` | `campus-love/api:${TAG:-dev}` | `${API_PORT:-8080}` | 8080 | 默认 | `curl /actuator/health` (30s/5s/5次/start 90s) | json-file (10m×5) |
-| `admin` | `campus-love/admin:${TAG:-dev}` | `${ADMIN_PORT:-5177}` | 8080 | 默认 | `curl /healthz` (30s/5s/3次/start 10s) | json-file (10m×5) |
+| `api` | `${IMAGE_PREFIX:-campus-love}/api:${TAG:-dev}` | `${API_PORT:-8080}` | 8080 | 默认 | `curl /actuator/health` (30s/5s/5次/start 90s) | json-file (10m×5) |
+| `admin` | `${IMAGE_PREFIX:-campus-love}/admin:${TAG:-dev}` | `${ADMIN_PORT:-5177}` | 8080 | 默认 | `curl /healthz` (30s/5s/3次/start 10s) | json-file (10m×5) |
 | `client` | `nginx:1.27-alpine` | `${CLIENT_PORT:-5173}` | 80 | `client-h5` | `wget /` (30s/5s/3次/start 10s) | json-file (10m×5) |
 | `prometheus` | `prom/prometheus:v2.55.0` | `${PROMETHEUS_PORT:-9090}` | 9090 | 默认 | `wget /-/healthy` (30s/5s/3次) | json-file (10m×5) |
 | `grafana` | `grafana/grafana:11.3.0` | `${GRAFANA_PORT:-3001}` | 3000 | 默认 | `wget /api/health` (30s/5s/3次/start 30s) | json-file (10m×5) |
@@ -357,15 +358,18 @@ docker compose exec backup /backup.sh
 | `REDIS_PORT` | - | `6379` | Redis 宿主机端口 | redis |
 | `JWT_SECRET` | ✅ | - | JWT 签名密钥（≥ 48 字符） | api |
 | `JWT_EXPIRATION_MS` | - | `86400000` | JWT 有效期（毫秒） | api |
-| `WECHAT_APPID` | - | - | 微信小程序 AppID | api |
-| `WECHAT_SECRET` | - | - | 微信小程序 AppSecret | api |
+| `APP_AES_SECRET` | ✅（real） | - | AES-GCM 加密密钥（≥ 32 字符；AesEncryptor real 档 fail-fast） | api |
+| `WEBSOCKET_ALLOWED_ORIGIN_PATTERNS` | ✅（real） | - | WebSocket 允许的 Origin 模式（WebSocketConfig real 档 fail-fast） | api |
+| `APP_MEDIA_QUERY_TOKEN_STRICT` | - | `true` | 媒体 `?token=` 只接受 media scope；完整会话 JWT 不得进 URL | api |
+| `WECHAT_APPID` | ✅（真机/发布） | - | 微信小程序 AppID（服务端 code2session 使用） | api |
+| `WECHAT_SECRET` | ✅（真机/发布） | - | 微信小程序 AppSecret | api |
 | `CORS_ALLOWED_ORIGINS` | - | `http://localhost:5173,http://localhost:5174,http://localhost:5177`（仅本地；生产必须注入真实域名，R4-02094） | CORS 白名单 | api |
 | `AGNES_API_KEY` | - | - | Agnes AI 服务密钥 | api |
 | `AGNES_API_BASE` | - | `https://api.agnes-ai.com/api` | Agnes AI 服务地址 | api |
 | `AGNES_TIMEOUT_MS` | - | `30000` | Agnes AI 超时 | api |
 | `ADMIN_OPENID` | ✅（生产） | - | 管理员 OpenID（默认空，生产必填） | api |
 | `ADMIN_NICKNAME` | - | `系统管理员` | 管理员昵称 | api |
-| `ADMIN_INITIAL_PASSWORD_HASH` | - | - | 管理员初始密码 BCrypt 哈希 | api |
+| `ADMIN_INITIAL_PASSWORD_HASH` | ✅（real） | - | 管理员初始密码 BCrypt 哈希（real 档 AdminPasswordValidator fail-fast；不得使用仓库内出现过的口令） | api |
 | `RABBITMQ_HOST` / `RABBITMQ_PORT` / `RABBITMQ_USERNAME` / `RABBITMQ_PASSWORD` | - | 空（本编排未部署 MQ，应用自动降级；启用 MQ 时必填强凭据，禁止 guest，R4-02089） | RabbitMQ 连接（可选） | api |
 | `API_PORT` | - | `8080` | API 宿主机端口 | api |
 | `ADMIN_PORT` | - | `5177` | Admin 宿主机端口 | admin |
@@ -388,8 +392,9 @@ docker compose exec backup /backup.sh
 ### 镜像签名验证（P3-D.2）
 
 CI 流水线在 `security-scan` job 中使用 [cosign](https://github.com/sigstore/cosign)
-对构建产物 `campus-love-api` / `campus-love-admin` 镜像进行签名。部署端可在拉取镜像后
-验证签名，确保镜像未被篡改。
+对构建产物 `${IMAGE_PREFIX}/api` / `${IMAGE_PREFIX}/admin` 镜像进行签名。部署端可在拉取镜像后
+验证签名，确保镜像未被篡改。`IMAGE_PREFIX` 在本地 compose 默认 `campus-love`，
+在 CI 默认 `ghcr.io/<owner>/<repo>`；三处必须使用同一前缀。
 
 **部署端验证签名：**
 
@@ -402,11 +407,11 @@ CI 流水线在 `security-scan` job 中使用 [cosign](https://github.com/sigsto
 #    将 cosign.pub 放到部署机（不入库）
 export COSIGN_PUB_PATH=/etc/campus-love/cosign.pub
 
-# 3. 验证镜像签名（R4-02087：CI 推送地址为 ghcr.io/<repo>/api 与 /admin，
+# 3. 验证镜像签名（R4-02087：CI 推送地址由 IMAGE_PREFIX 派生，
 #    与 ci.yml metadata-action 镜像地址对齐）
-GHCR_REPO=<your-ghcr-namespace>/<repo>
-cosign verify --key $COSIGN_PUB_PATH ghcr.io/$GHCR_REPO/api:ci-<commit-sha>
-cosign verify --key $COSIGN_PUB_PATH ghcr.io/$GHCR_REPO/admin:ci-<commit-sha>
+export IMAGE_PREFIX=ghcr.io/<your-ghcr-namespace>/<repo>
+cosign verify --key $COSIGN_PUB_PATH $IMAGE_PREFIX/api:ci-<commit-sha>
+cosign verify --key $COSIGN_PUB_PATH $IMAGE_PREFIX/admin:ci-<commit-sha>
 # 验证通过返回 0，并在输出中显示签名者与证书信息；失败返回非 0
 ```
 
@@ -415,10 +420,10 @@ cosign verify --key $COSIGN_PUB_PATH ghcr.io/$GHCR_REPO/admin:ci-<commit-sha>
 ```bash
 # 拉取镜像后先验证签名，通过再 docker compose up
 TAG=ci-abc1234
-GHCR_REPO=<your-ghcr-namespace>/<repo>
-cosign verify --key /etc/campus-love/cosign.pub ghcr.io/$GHCR_REPO/api:$TAG || exit 1
-cosign verify --key /etc/campus-love/cosign.pub ghcr.io/$GHCR_REPO/admin:$TAG || exit 1
-TAG=$TAG docker compose up -d api admin
+export IMAGE_PREFIX=ghcr.io/<your-ghcr-namespace>/<repo>
+cosign verify --key /etc/campus-love/cosign.pub $IMAGE_PREFIX/api:$TAG || exit 1
+cosign verify --key /etc/campus-love/cosign.pub $IMAGE_PREFIX/admin:$TAG || exit 1
+IMAGE_PREFIX=$IMAGE_PREFIX TAG=$TAG docker compose up -d api admin
 ```
 
 **密钥配置说明：**
@@ -890,8 +895,8 @@ docker compose logs --since 7d api > api-logs-$(date +%Y%m%d).log
 2. **变更日志**：查阅 `CHANGELOG.md` 与 `docs/release-checklist.md`，确认本次升级范围
 3. **镜像签名**（如启用 cosign）：验证新镜像签名
    ```bash
-   cosign verify --key /etc/campus-love/cosign.pub campus-love-api:$TAG_NEW
-   cosign verify --key /etc/campus-love/cosign.pub campus-love-admin:$TAG_NEW
+   cosign verify --key /etc/campus-love/cosign.pub $IMAGE_PREFIX/api:$TAG_NEW
+   cosign verify --key /etc/campus-love/cosign.pub $IMAGE_PREFIX/admin:$TAG_NEW
    ```
 4. **数据库迁移预演**：在 staging 环境执行 `./mvnw flyway:info` 与 `flyway:migrate`，确认无破坏性 DDL
 

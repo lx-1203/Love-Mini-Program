@@ -191,7 +191,7 @@ services:
     build:
       context: ./apps/api
       dockerfile: Dockerfile
-    image: campus-love/api:${TAG:-dev}
+    image: ${IMAGE_PREFIX:-campus-love}/api:${TAG:-dev}
     container_name: campus-api
     restart: unless-stopped
     depends_on:
@@ -311,7 +311,7 @@ services:
       args:
         VITE_API_BASE_URL: /api
         VITE_APP_VERSION: ${TAG:-0.1.0}
-    image: campus-love/admin:${TAG:-dev}
+    image: ${IMAGE_PREFIX:-campus-love}/admin:${TAG:-dev}
     container_name: campus-admin
     restart: unless-stopped
     depends_on:

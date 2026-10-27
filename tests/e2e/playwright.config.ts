@@ -70,14 +70,19 @@ export default defineConfig({
   // WebServer 自动启动：本地与 CI 均自动启动 mock 模式 dev server
   // （infra R2-00005：CI 无 docker-compose 服务编排，若禁用 webServer 则
   //  E2E 无任何服务可测；mock 模式避免真实微信登录依赖）
-  webServer: {
-    command: 'pnpm --filter @campus-love/client run dev:h5',
-    url: 'http://localhost:5173',
-    timeout: 180_000,
-    reuseExistingServer: true,
-    env: {
-      // Mock 模式：避免真实微信登录依赖
-      NODE_ENV: 'development',
-    },
-  },
+  //
+  // 2026-10-25：真实栈 job 自己启动 H5 real + API，并用 E2E_BASE_URL 注入；
+  // 此时不能再起 mock server，否则真实栈的页面会被 mock 服务覆盖。
+  webServer: process.env.E2E_BASE_URL
+    ? undefined
+    : {
+        command: 'pnpm --filter @campus-love/client run dev:h5',
+        url: 'http://localhost:5173',
+        timeout: 180_000,
+        reuseExistingServer: true,
+        env: {
+          // Mock 模式：避免真实微信登录依赖
+          NODE_ENV: 'development',
+        },
+      },
 });

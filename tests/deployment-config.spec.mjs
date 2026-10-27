@@ -64,5 +64,68 @@ assert.match(
   /^WEBSOCKET_ALLOWED_ORIGIN_PATTERNS=$/mu,
   ".env.example must document WEBSOCKET_ALLOWED_ORIGIN_PATTERNS",
 );
+assert.match(
+  envExample,
+  /^IMAGE_PREFIX=/mu,
+  ".env.example must document IMAGE_PREFIX (single source for compose/CI/docs)",
+);
+
+// 镜像命名单一来源：compose、CI metadata、部署文档不得再各自写死一套。
+for (const [serviceId, suffix] of [["api", "/api"], ["admin", "/admin"]]) {
+  const image = compose.services?.[serviceId]?.image;
+  assert.ok(
+    typeof image === "string" && image.startsWith("${IMAGE_PREFIX"),
+    `services.${serviceId}.image 必须以 \${IMAGE_PREFIX…} 开头（当前: ${image}）`,
+  );
+  assert.match(
+    image,
+    new RegExp(`\\$\\{IMAGE_PREFIX[^}]*\\}${suffix}:`, "u"),
+    `services.${serviceId}.image 必须由 IMAGE_PREFIX 派生 ${suffix}`,
+  );
+}
+
+const deploymentDoc = readFileSync(
+  new URL("../doc/DEPLOYMENT.md", import.meta.url),
+  "utf8",
+);
+assert.match(
+  deploymentDoc,
+  /\$\{IMAGE_PREFIX:-campus-love\}\/api:/u,
+  "DEPLOYMENT 镜像表必须使用 IMAGE_PREFIX 派生 api 镜像",
+);
+assert.match(
+  deploymentDoc,
+  /\$\{IMAGE_PREFIX:-campus-love\}\/admin:/u,
+  "DEPLOYMENT 镜像表必须使用 IMAGE_PREFIX 派生 admin 镜像",
+);
+assert.match(
+  deploymentDoc,
+  /\$IMAGE_PREFIX\/api:/u,
+  "DEPLOYMENT 的 cosign 示例必须使用 IMAGE_PREFIX",
+);
+assert.doesNotMatch(
+  deploymentDoc,
+  /campus-love-api:\$TAG|campus-love-admin:\$TAG/u,
+  "DEPLOYMENT 不得再出现第三套镜像名（campus-love-api:$TAG / campus-love-admin:$TAG）",
+);
+
+const ciWorkflow = YAML.parse(
+  readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8"),
+);
+const securityScan = ciWorkflow.jobs?.["security-scan"];
+assert.ok(securityScan, "CI 必须保留 security-scan job");
+assert.match(
+  String(securityScan.env?.IMAGE_PREFIX ?? ""),
+  /vars\.IMAGE_PREFIX|github\.repository/u,
+  "security-scan 必须从 vars.IMAGE_PREFIX / github.repository 派生 IMAGE_PREFIX",
+);
+const metaImages = (securityScan.steps ?? [])
+  .filter((step) => String(step.uses ?? "").startsWith("docker/metadata-action"))
+  .map((step) => String(step.with?.images ?? ""));
+assert.deepEqual(
+  metaImages.sort(),
+  ["${{ env.IMAGE_PREFIX }}/admin", "${{ env.IMAGE_PREFIX }}/api"].sort(),
+  "metadata-action 的镜像名必须统一由 env.IMAGE_PREFIX 派生",
+);
 
 console.log("deployment config contract ok");
