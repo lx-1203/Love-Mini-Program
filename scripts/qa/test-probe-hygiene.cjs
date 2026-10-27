@@ -19,6 +19,32 @@ const TOOL = path.join(REPO, "scripts", "qa", "verify-fixes-against-artifact.cjs
    BASELINE 那份 pre-* 快照是只读输入，留在原处。 */
 const OUT = path.join(REPO, ".zcode", "tmp", "fixverify-probe-hygiene", "verdicts.json");
 const BASELINE = path.join(REPO, ".zcode", "tmp", "fixverify", "verdicts.pre-probe-hygiene.json");
+/* MESSAGES-003 的判点更正（2026-10-28）：台账原文仍写 `font-size:56rpx`（statusEvidence 的
+   回产物核 + 落账两处），但产品已按后来的裁定改成 44rpx —— 依据是
+   apps/client/src/components/discover/NotLoggedWaiting.vue:333 的注释
+   「R2b-L02-D10：字号 56→44rpx（理想图 未登录等待页面.png 量测约 46rpx，取 --fs-5xl 档）」，
+   样式 :338 与 mp-weixin 产物 .wxss 都是 font-size:var(--fs-5xl, 44rpx)。
+   本测试不改台账（markdown 是别人的账），只在 .zcode/tmp 下派生一份「判点已更正」的副本喂给
+   同一个抽取器；替换前先数原文里的 font-size:56rpx 必须恰好 2 处，台账再漂移就当场红，
+   不许猜着改一半。 */
+const LEDGER = path.join(REPO, "reports", "audit", "round-6", "issue-matrix.md");
+const TMP_DIR = path.dirname(OUT);
+const CORRECTED_LEDGER = path.join(TMP_DIR, "issue-matrix.messages003-44rpx.md");
+const NEG_LEDGER = path.join(TMP_DIR, "issue-matrix.messages003-999rpx.md");
+const NEG_OUT = ".zcode/tmp/fixverify-probe-hygiene/negative";
+function deriveLedger(targetDecl, outFile) {
+  const lines = fs.readFileSync(LEDGER, "utf8").split("\n");
+  const i = lines.findIndex((l) => l.includes("MP-R2VIS-PAGES-MESSAGES-INDEX-003"));
+  if (i < 0) throw new Error("台账里找不到 MESSAGES-003 行");
+  const count = (lines[i].match(/font-size:56rpx/g) || []).length;
+  if (count !== 2) throw new Error("MESSAGES-003 行里的 font-size:56rpx 判点数量变了（" + count + "），拒绝猜着改");
+  lines[i] = lines[i].split("font-size:56rpx").join(targetDecl);
+  fs.mkdirSync(path.dirname(outFile), { recursive: true });
+  fs.writeFileSync(outFile, lines.join("\n"), "utf8");
+  return i + 1;
+}
+const correctedLine = deriveLedger("font-size:var(--fs-5xl, 44rpx)", CORRECTED_LEDGER);
+deriveLedger("font-size:var(--fs-5xl, 999rpx)", NEG_LEDGER);
 
 let fails = 0, checks = 0;
 function t(name, cond, detail) {
@@ -30,12 +56,13 @@ function t(name, cond, detail) {
 let out = "";
 try {
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
-  out = execFileSync(process.execPath, [TOOL, "--out", ".zcode/tmp/fixverify-probe-hygiene"], { cwd: REPO, encoding: "utf8", timeout: 240000, maxBuffer: 64 * 1024 * 1024 });
+  out = execFileSync(process.execPath, [TOOL, "--ledger", path.relative(REPO, CORRECTED_LEDGER).split("\\").join("/"), "--out", ".zcode/tmp/fixverify-probe-hygiene"], { cwd: REPO, encoding: "utf8", timeout: 240000, maxBuffer: 64 * 1024 * 1024 });
 } catch (e) {
   console.log("PH_ABORT 工具本身没跑起来：" + (e && (e.stdout || e.message)));
   console.log("PH_TEST=FAIL\nPH_SUMMARY checks=1 fail=1");
   process.exit(1);
 }
+console.log("     MESSAGES-003 判点更正：台账第 " + correctedLine + " 行 font-size:56rpx → font-size:var(--fs-5xl, 44rpx)（依据 NotLoggedWaiting.vue:333 的理想图量测裁定；原文台账不改）");
 const v = JSON.parse(fs.readFileSync(OUT, "utf8"));
 const items = Array.isArray(v) ? v : (v.items || []);
 const byId = (id) => items.find((x) => x.id === id);
@@ -55,6 +82,11 @@ const m001 = byId("MP-R2VIS-PAGES-MESSAGES-INDEX-001");
 const m003 = byId("MP-R2VIS-PAGES-MESSAGES-INDEX-003");
 t("MESSAGES-001 不再被假判点冤枉（ARTIFACT_VERIFIED）", m001 && m001.verdict === "ARTIFACT_VERIFIED", m001 && (m001.verdict + " / " + m001.verdictWhy));
 t("MESSAGES-003 与 §79 人工核对一致（同一条判点两条独立路径同结论）", m003 && m003.verdict === "ARTIFACT_VERIFIED", m003 && m003.verdict);
+const m003Font = ((m003 && m003.probes) || []).find((p) => p.token === "font-size:var(--fs-5xl, 44rpx)");
+t("MESSAGES-003 的判点已按裁定改到 44rpx（依据 NotLoggedWaiting.vue:333「字号 56→44rpx（理想图量测）」；产物与源码两侧都命中才给绿）",
+  !!m003Font && m003Font.grantsGreen === true && !!(m003Font.artifact && m003Font.artifact.hit) && !!(m003Font.src && m003Font.src.hit) &&
+    !((m003 && m003.probes) || []).some((p) => /font-size:56rpx/.test(p.token)),
+  m003Font ? ("artifact=" + m003Font.artifactFile + " src=" + m003Font.srcFile) : "找不到 44rpx 判点");
 const m002 = byId("MP-R2VIS-SUBPACKAGES-DISCOVER-EXTRA-DISCOVER-MATCHING-002");
 t("MATCHING-002 的绿不是靠去重顺序丢掉的", m002 && m002.verdict === "ARTIFACT_VERIFIED", m002 && m002.verdict);
 
@@ -97,6 +129,23 @@ if (fs.existsSync(BASELINE)) {
 } else {
   console.log("     NOTE 收紧前基线文件不在盘上（" + path.relative(REPO, BASELINE) + "），拒绝型断言缺少反向对照");
 }
+
+/* 判据仍有牙（③ 的反向自证）：把同一判点改成产物里确实不存在的字号（999rpx）⇒ 必须回落
+   NOT_IN_EITHER。若 44rpx 的绿是因为抽取器把判点丢了/放宽了，999rpx 也会绿 —— 这条就是
+   用来证明前一条不是「把断言改到能过」。 */
+let negRun = "";
+try {
+  negRun = execFileSync(process.execPath, [TOOL, "--ledger", path.relative(REPO, NEG_LEDGER).split("\\").join("/"), "--out", NEG_OUT], { cwd: REPO, encoding: "utf8", timeout: 240000, maxBuffer: 64 * 1024 * 1024 });
+} catch (e) {
+  negRun = "";
+  console.log("     NEG_ABORT " + String((e && (e.stdout || e.message)) || e).slice(0, 180));
+}
+const negV = negRun ? JSON.parse(fs.readFileSync(path.join(REPO, NEG_OUT, "verdicts.json"), "utf8")) : null;
+const negItems = negV ? (Array.isArray(negV) ? negV : (negV.items || [])) : [];
+const n003 = negItems.find((x) => x.id === "MP-R2VIS-PAGES-MESSAGES-INDEX-003");
+t("负例：同一判点改成确实不存在的字号 999rpx ⇒ MESSAGES-003 必须回落 NOT_IN_EITHER（判据仍有牙）",
+  !!n003 && n003.verdict === "NOT_IN_EITHER" && /999rpx/.test(String(n003.verdictWhy)),
+  n003 ? (n003.verdict + " / " + n003.verdictWhy) : "负例跑不起来");
 
 console.log(`PH_SUMMARY checks=${checks} fail=${fails}`);
 console.log(`PH_TEST=${fails ? "FAIL" : "PASS"}`);

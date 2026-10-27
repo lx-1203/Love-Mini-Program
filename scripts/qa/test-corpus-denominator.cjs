@@ -11,7 +11,8 @@
  *   A 真仓全域：五行 CORPUS_DENOM_* 都存在，且与本文件**独立复算**的数相等；盲区数必须非零且是主导项；
  *   B 真仓窄 scope：--strict 把被删除集背书的那一份退回判红，且退回改前的逐字写法（复现旧判据）；
  *   C 一次性夹具仓（.zcode/tmp 下自己的独立 git 仓库，绝不碰 reports/screenshots/**）：
- *      C1 在册后删除 ⇒ advisory、不进 PROBLEMS；未被点名的那帧 ⇒ BLINDSPOT=1（真仓那 3846 的缩小版）；
+ *      C1 在册后删除 ⇒ advisory、不进 PROBLEMS；未被点名的那帧 ⇒ BLINDSPOT=1（当前盲区的缩小版；
+ *         真仓今天没有当前盲区，3965 是历史删除账的残留，见 2026-10-28 段）；
  *      C2 **关键反证**：把这些帧重新放回盘上 ⇒ advisory / ABSENT / BLINDSPOT 三格读数必须全部变化
  *         （不变就说明这条轴量的是常数而不是盘，正是本轮点名要治的死代码形状）；删掉后读数复现 C1；
  *      C3 从未入库的缺席 ⇒ 删除集给不出凭据 ⇒ 照旧判红（advisory 不是万能豁免，红不许被洗成绿）；
@@ -29,6 +30,31 @@
  * 〔2026-09-30 复量：安静盘（无并发车道）全域一发 21s、本文件整发 21s 跑完 56 格。
  *   289s 那一发是三车道并发 + 冷缓存时量到的 ⇒ "不许跑第二发全域"这条约束继续成立，
  *   但聚合器 300s 上限的余量并不是恒定的 11s —— 别把它当舒适区。〕
+ *
+ * 2026-10-28 重钉（接手的盘上实测，不是猜；判成 (b) 不是 (a)）：
+ *   2026-09-30 用户删盘上截图确曾是书面裁定（本文件上面的起因段与门里 2026-09-30 那段都记着）；
+ *   但后续两个提交把「选定删除集」从**当前**语料的凭据改成了历史账：
+ *     · bfdec13d（2026-10-09，一个 API 功能提交）把 3851 张截图的删除连带提交进了库；
+ *     · 04a0a221（2026-10-24）又把其中被清单点名的 5 张 round-7 执行帧放回盘上，提交说明逐字写着
+ *       它们是「被无关提交连带删掉」的 —— 这 5 张正是 exec-a-mock-final 清单里那 5 条历史具名路径。
+ *   今天 `git ls-files --deleted -- reports` = 0（瞬时删除集为空），`git log --diff-filter=D -- reports`
+ *   = 3970 条历史删除账（3851 截图 + 119 非截图）；其中 6 条又被跟踪：
+ *     · 04a0a221 放回 5 张被清单点名的 round-7 执行帧（exec-a-mock-final 那 5 条）；
+ *     · 61315a93 把 8e69c124 按裁定移出跟踪的 `exec-v37-nearby/exec-results.json` 又加了回来
+ *       （这条没有任何清单点名它）。
+ *   ⇒ 3964 条已不在当前索引里。门的 BLINDSPOT 报 3965 = 这 3964 + 那条回盘但未具名的台账，
+ *   所以它既不是当前缺席、也不是当前盲区。当前真正缺席的具名帧 = 144（round-1），它们从未入库，
+ *   历史账也给不出凭据 ⇒ 仍 blocking。
+ *   所以 (a)「删除集本来就该为空、3970 是分母算错」不成立：3846 张确实已出册（只是不再被任何清单点名，
+ *   构不成当前缺席）；成立的是 (b)「删除曾是裁定、被后来的补录覆盖」。
+ *   原判据「门点名的缺席 == 复算的交集」把 3970 当成了当前分母 ⇒ 门按历史账点名 5 条已回盘的帧，
+ *   复算按当前缺席数 0 条，两边量的不是同一件事。本文件从此只守**当前基线**三件事：
+ *     ① 门报的当前缺席（gateNamedAbsent=144）与独立遍历逐条相等，且全部无凭据 ⇒ blocking；
+ *     ② 历史账里被清单点名的路径全部已回盘（5/5，均在盘且被跟踪）⇒ 不许再把它们读成「又丢了」；
+ *     ③ 历史账余数拆成「已出册 3964 + 回盘未具名 1」如实记录（两者都不是当前缺席）；
+ *        advisory 轴的活体证明仍由 C1/C3 夹具承担（真仓今天 advisory=0，不是把这条轴关了）。
+ *   ⚠ 94c286bf（2026-09-29「补录 round-1~8 截图」）发生在 09-30 删除**之前**，它不是让删除集失效的
+ *   那个提交；真正的恢复是 04a0a221。别把这两枚提交记混 —— 本判据的日期/提交号都以 git 读数为准。
  *
  * 标签写法守同门两条硬规矩（test-corpus-legacy-window.cjs:19-21、test-corpus-sha-axis.cjs:17-19）：
  * 断言标签里不能出现 `CORPUS_RESULT=FAIL` 原形（聚合器 run-qa-selftests.mjs:52 取输出里**第一个**
@@ -121,9 +147,12 @@ function walkManifests(dir, out = []) {
 }
 function independentSets(repoRoot, rootRel) {
   const trackedList = git(repoRoot, "ls-files", "--", rootRel).split(/\r?\n/).filter(Boolean);
+  const trackedSet = new Set(trackedList.map(norm));
   /* 2026-10-18：与门同源但**独立算**——缺席凭据取两源并集：
      ①工作树瞬时 ls-files --deleted；②git log --diff-filter=D（被提交删掉的路径）。
-     账主把选定删除提交进去后 ① 归零，只靠 ① 就会把"按裁定删的"读成"拿不出凭据的"。 */
+     账主把选定删除提交进去后 ① 归零，只靠 ① 就会把"按裁定删的"读成"拿不出凭据的"。
+     2026-10-28 补：两源并集是**历史删除账**，不是"当前缺席"。其中「历史删过、今天又被跟踪」的
+     路径（今天=04a0a221 放回的 5 帧）必须单独数出来，否则门按历史账点名它们时会被误读成当前缺席。 */
   const transientList = git(repoRoot, "-c", "core.quotepath=off", "ls-files", "--deleted", "--", rootRel)
     .split(/\r?\n/).filter(Boolean).map(norm);
   const committedList = git(repoRoot, "-c", "core.quotepath=off", "log", "--diff-filter=D", "--name-only", "--pretty=format:", "--", rootRel)
@@ -146,48 +175,82 @@ function independentSets(repoRoot, rootRel) {
       if (!existsSync(abs)) { namedAbsent++; if (absent.has(k)) absentNamed++; }
     }
   }
-  return { trackedCount: trackedList.length, absentCount: absent.size, named: named.size, items, absentNamed, namedAbsent };
+  /* 四个只服务**当前基线**的派生量（与门的同名读数一一对账，而不是把 3970 当分母）：
+       namedInAbsent  = 清单点名的路径 ∩ 历史删除账（不管今天在不在盘上）→ 对应门的 absentNamedByGate；
+       restoredNamed  = 上一格中今天又被跟踪的（= 已回盘）→ 必须等于 namedInAbsent，否则有帧"回盘没回册"；
+       restoredUnnamed = 回了索引但没有任何清单点名的历史删除路径 → 它仍在门的 BLINDSPOT 里，
+                         但它不是当前缺席，必须单独扣出来；
+       stillGone      = 历史删除账里今天已不在索引中的 → 历史残留（门的 BLINDSPOT 减掉 restoredUnnamed）。 */
+  let namedInAbsent = 0, restoredNamed = 0, restoredCount = 0;
+  for (const k of named) {
+    if (!absent.has(k)) continue;
+    namedInAbsent++;
+    if (trackedSet.has(k)) restoredNamed++;
+  }
+  let stillGone = 0;
+  for (const k of absent) {
+    if (trackedSet.has(k)) restoredCount++;
+    else stillGone++;
+  }
+  /* restoredUnnamed = 回了索引、但没有任何清单点名的历史删除路径（今天=61315a93 加回的
+     exec-v37-nearby/exec-results.json）。门的 BLINDSPOT 会把它也算进 "never opened"，
+     所以它的 3965 必须拆成 stillGone(3964)+restoredUnnamed(1)，不能整块读成当前盲区。 */
+  const restoredUnnamed = restoredCount - restoredNamed;
+  return { trackedCount: trackedList.length, absentCount: absent.size, transientCount: transientList.length, committedCount: committedList.length,
+    named: named.size, items, absentNamed, namedAbsent, namedInAbsent, restoredNamed, restoredUnnamed, stillGone };
 }
 
 /* ================= A. 真仓全域：读数存在且等于独立复算 =================
    盘在被并发车道动（本车道实测：缺席总数 12:40=3850、点名缺席 3 帧→4 帧），而全域一发要 113s，
    门的数落在**跑前**与**跑后**两次独立复算之间即算对上；readdir 或 manifest 并集当分母的话两个都对不上。
-   漂移本身印成 DIAGNOSTIC 行，不靠"容忍"把它藏起来。 */
+   漂移本身印成 DIAGNOSTIC 行，不靠"容忍"把它藏起来。
+   2026-10-28：诊断行把三个数分开印，别再拿一个 "namedAbsent" 混指两件事 ——
+     历史删除账（门 trackedAbsent / 复算 absentCount）、当前具名缺席（门 namedAbsent / 复算 namedAbsent）、
+     历史账里被清单点名的回盘帧（门 namedByGate / 复算 namedInAbsent）。上一版把 absentNamed 印成
+     namedAbsent，读的人会把「历史账里缺且被点名=0」看成「当前没有缺席」，正是这次要治的混读。 */
 const SETS0 = independentSets(REPO, "reports");
 const LIVE_SHA = sha16(readFileSync(LIVE_GATE));
 const GA = runGate(GATE, []);
 const SETS1 = independentSets(REPO, "reports");
-const drift = SETS0.absentCount !== SETS1.absentCount || SETS0.items !== SETS1.items || SETS0.absentNamed !== SETS1.absentNamed;
+const drift = SETS0.absentCount !== SETS1.absentCount || SETS0.items !== SETS1.items
+  || SETS0.namedAbsent !== SETS1.namedAbsent || SETS0.namedInAbsent !== SETS1.namedInAbsent;
 const setEq = (gateVal, k) => gateVal === SETS0[k] || gateVal === SETS1[k];
-console.log(`A_DIAGNOSTIC 盘漂移=${drift ? "有" : "无"} 复算(跑前) absent=${SETS0.absentCount} namedAbsent=${SETS0.absentNamed} items=${SETS0.items} :: (跑后) absent=${SETS1.absentCount} namedAbsent=${SETS1.absentNamed} items=${SETS1.items} :: 门=${GA.trackedAbsent}/${GA.namedAbsent}/${GA.gateItems}`);
+console.log(`A_DIAGNOSTIC 盘漂移=${drift ? "有" : "无"} 复算(跑前) 历史删除=${SETS0.absentCount}(瞬时${SETS0.transientCount}+提交${SETS0.committedCount}) 当前具名缺席=${SETS0.namedAbsent} 其中历史账背书=${SETS0.absentNamed} 历史账具名回盘=${SETS0.restoredNamed} 回盘未具名=${SETS0.restoredUnnamed} 已出册=${SETS0.stillGone} items=${SETS0.items} :: (跑后) 历史删除=${SETS1.absentCount} 当前具名缺席=${SETS1.namedAbsent} 其中历史账背书=${SETS1.absentNamed} 历史账具名回盘=${SETS1.restoredNamed} 回盘未具名=${SETS1.restoredUnnamed} 已出册=${SETS1.stillGone} items=${SETS1.items} :: 门=历史${GA.trackedAbsent}/当前缺席${GA.namedAbsent}/遍历${GA.gateItems}`);
 ok(GA.hasDenomLines.length === 5, "A 门确实印出五行 CORPUS_DENOM_*（TRACKED/ABSENT/SCANNED/BLINDSPOT/AXIS，全是可 grep 的机器行）",
   "命中=" + GA.hasDenomLines.join(","));
-ok(setEq(GA.trackedAbsent, "absentCount"), `A 分母==独立复算的两源并集（瞬时 --deleted ∪ 提交删除；在册缺席 ${SETS0.absentCount}~${SETS1.absentCount}）`,
+ok(setEq(GA.trackedAbsent, "absentCount"), `A 历史删除账==独立复算的两源并集（瞬时 --deleted ${SETS0.transientCount} ∪ 提交删除 ${SETS0.committedCount}；${SETS0.absentCount}~${SETS1.absentCount}）——这是历史账，别再当当前分母`,
   `门=${GA.trackedAbsent} 复算=${SETS0.absentCount}/${SETS1.absentCount}`);
-ok(setEq(GA.namedByGate, "absentNamed"), "A 被门点名到的在册缺席==独立复算的交集",
-  `门=${GA.namedByGate} 复算=${SETS0.absentNamed}/${SETS1.absentNamed}`);
+ok(setEq(GA.namedAbsent, "namedAbsent"), `A 门点名的**当前**缺席（帧不存在）==独立复算（${SETS0.namedAbsent}~${SETS1.namedAbsent}，全部 round-1；这批从未入库）`,
+  `门=${GA.namedAbsent} 复算=${SETS0.namedAbsent}/${SETS1.namedAbsent}`);
+ok(setEq(GA.namedByGate, "namedInAbsent"), "A 门 BLINDSPOT 的『具名历史删除』==独立复算（5 条已由 04a0a221 放回盘上，不是当前缺席）",
+  `门=${GA.namedByGate} 复算=${SETS0.namedInAbsent}/${SETS1.namedInAbsent}`);
 ok(setEq(GA.gateItems, "items") && setEq(GA.namedPaths, "named"), "A 门的遍历集==独立复算（条目数与去重路径数）",
   `items 门=${GA.gateItems}/复算=${SETS0.items}~${SETS1.items}，paths 门=${GA.namedPaths}/复算=${SETS0.named}~${SETS1.named}`);
 ok(GA.neverOpened === GA.trackedAbsent - GA.namedByGate,
-  "A 盲区数==在册缺席减去门点名的缺席（对账闭合，不是另算一套）",
-  `absent=${GA.trackedAbsent} named=${GA.namedByGate} gap=${GA.neverOpened}`);
-ok(GA.neverOpened > 1000 && GA.namedByGate < GA.neverOpened,
-  "A 盲区非零且是主导项（>1000）⇒「删了几千张、门只点名看见几个」这一类静默以后一眼可见",
-  `neverOpened=${GA.neverOpened} namedByGate=${GA.namedByGate}`);
-ok(GA.vouched + GA.notVouched === GA.namedAbsent, "A 两轴相加==点名缺席总数（不许有一格悄悄蒸发）",
+  "A BLINDSPOT 余数==历史删除账减去门点名的历史具名路径（对账闭合，不是另算一套）",
+  `历史=${GA.trackedAbsent} 具名=${GA.namedByGate} 余=${GA.neverOpened}`);
+ok(GA.neverOpened === SETS0.stillGone + SETS0.restoredUnnamed
+  || GA.neverOpened === SETS1.stillGone + SETS1.restoredUnnamed,
+  "A BLINDSPOT 余数==已出册 + 回盘但未被点名的（今天 3964+1=3965；后者=61315a93 加回的 exec-v37-nearby 台账，两者都不是当前缺席）",
+  `neverOpened=${GA.neverOpened} 已出册=${SETS0.stillGone}/${SETS1.stillGone} 回盘未具名=${SETS0.restoredUnnamed}/${SETS1.restoredUnnamed}`);
+ok(GA.vouched + GA.notVouched === GA.namedAbsent, "A 两轴相加==当前点名缺席总数（不许有一格悄悄蒸发）",
   `${GA.vouched}+${GA.notVouched} vs ${GA.namedAbsent}`);
 ok(GA.advisoryFrames === GA.vouched && GA.blockingFrames === GA.notVouched,
   "A AXIS 的 advisory/blocking 与 SCANNED 的两格同源（同一件事不许有两个数）",
   `advisory=${GA.advisoryFrames} blocking=${GA.blockingFrames}`);
+ok(setEq(GA.vouched, "absentNamed"), "A 当前缺席里能在历史删除账找到凭据的==独立复算（今天=0：5 条历史具名路径已全部回盘）",
+  `门=${GA.vouched} 复算=${SETS0.absentNamed}/${SETS1.absentNamed}`);
 const EXEC_MANIFEST = "reports/audit/round-7/exec-a-mock-final/manifest-detail.json";
 const ROUND1_MANIFEST = "reports/screenshots/round-1/manifest.json";
-ok(GA.advisoryFiles.includes(EXEC_MANIFEST), "A exec-a-mock-final 的缺席被 advisory 具名点名（不判红也要说得出是哪一份）",
-  GA.advisoryFiles.join("|"));
-ok(!GA.problemFiles.includes(EXEC_MANIFEST) && /选定删除集内缺席=\d+/.test(GA.body),
-  "A 这批帧属用户选定删除集 ⇒ 已从 CORPUS_PROBLEM 移到 CORPUS_ADVISORY_FILE，行内写明凭据来源",
+ok(!GA.advisoryFiles.includes(EXEC_MANIFEST) && GA.advisoryFrames === 0,
+  "A exec-a-mock-final 的 650 帧全在盘上（含 04a0a221 放回的 5 帧）⇒ 不再走 CORPUS_ADVISORY_FILE；advisory 轴由 C1 夹具继续承担",
+  `advisoryFiles=${GA.advisoryFiles.length} advisoryFrames=${GA.advisoryFrames}`);
+ok(!GA.problemFiles.includes(EXEC_MANIFEST) && GA.problemFiles.includes(ROUND1_MANIFEST) && GA.problemFiles.length === 1,
+  "A 唯一的 problem 是 round-1（144 帧从未入库 ⇒ 无凭据 blocking）；exec-a-mock-final 不判红",
   "problemFiles=" + GA.problemFiles.join("|"));
-ok(GA.problemFiles.includes(ROUND1_MANIFEST), "A round-1 那 144 帧仍判红：它们从未入库、删除集给不出凭据 ⇒ 不许被 advisory 洗掉",
-  "problemFiles=" + GA.problemFiles.join("|"));
+ok(SETS0.namedInAbsent === SETS0.restoredNamed && SETS0.namedInAbsent > 0,
+  "A 历史删除账里被清单点名的路径全部已回盘（5/5，均在盘且被跟踪）⇒ 没有『已回盘却仍被算作缺席』的具名残余",
+  `具名历史=${SETS0.namedInAbsent} 已回盘=${SETS0.restoredNamed}`);
 ok(GA.problemsTokenHits === 1,
   "A 门体里 `CORPUS_PROBLEMS=<数字>` 只出现一次（解释句不得复用这个键的字面形式：面板与下游都按首匹配取数，散文里再出现一个 0 就会被读成门的判决）",
   "hits=" + GA.problemsTokenHits);
@@ -197,32 +260,34 @@ ok(GA.problems >= 1 && GA.code === 1, "A 全域默认档：PROBLEMS>=1 且退出
   `problems=${GA.problems} exit=${GA.code}`);
 ok(GA.trackedAbsentFrames !== null && GA.trackedAbsentNonImage !== null
   && GA.trackedAbsentFrames + GA.trackedAbsentNonImage === GA.trackedAbsent,
-  "A 图扩展缺席 + 非图扩展缺席 == 全部在册缺席（对账闭合；两个数本就不该相等，缺席里混着 .tsv/.json/.log）",
+  "A 图扩展 + 非图扩展 == 全部历史删除账（对账闭合；两个数本就不该相等，账里混着 .tsv/.json/.log）",
   `frames=${GA.trackedAbsentFrames} nonImage=${GA.trackedAbsentNonImage} files=${GA.trackedAbsent}`);
 
-/* ================= B. 真仓窄 scope：--strict 复现改前判据 =================
-   真仓、真清单、真删除集，只是把扫描集收到 exec-a-mock-final 一棵子树 ⇒ 实测 16s/23s 而不是 113s×2。
+/* ================= B. 真仓窄 scope：当前基线＋--strict 的 +1 是哪一格 =================
+   真仓、真清单、真删除账，只是把扫描集收到 exec-a-mock-final 一棵子树 ⇒ 实测 16s/23s 而不是 113s×2。
    为什么不再跑第二发全域（实测出来的约束）：全域一发 113s，两发 + 夹具 = **289s**（本车道 12:47 实跑量到），
    距聚合器 run-qa-selftests.mjs 的 spawnSync timeout:300000 只剩 11s ⇒ 并发车道一挤就被误杀成测试失败。
    分母**不随 scope 缩**（它按 --root=reports 算），所以两档的 DENOM 读数必须逐字相同 —— 这正是
-   "旗标只改判决、不改读数"的实证。 */
+   "旗标只改判决、不改读数"的实证。
+   2026-10-28 重钉：这棵子树的 650 帧今天全在盘上（04a0a221 放回 5 帧）⇒ 默认档 problems=0 是**当前基线**，
+   不是判据放宽；--strict 的 +1 只来自 CORPUS_DENOM_BLINDSPOT（3964 条已出册 + 1 条回盘未具名），
+   不再有「帧不存在」行。别把 +1 读回「那 5 帧又丢了」—— 它们已在盘上且被跟踪。 */
 const SCOPE_B = "reports/audit/round-7/exec-a-mock-final/";
 const GB = runGate(GATE, ["--scope", SCOPE_B]);
 const GS = runGate(GATE, ["--scope", SCOPE_B, "--strict"]);
 ok(GB.problems === 0 && GB.code === 0,
-  "B 真仓窄 scope 默认档：被删除集背书的那一份不判红（⇒ run-round7-closeout 的**本轮轴**由改前的红翻成 PASS；这是用户裁定的直接后果，红挪到了本轮轴以外的具名读数上）",
+  "B 真仓窄 scope 默认档：650 帧全在盘上 ⇒ problems=0（改前那 5 帧缺席已被 04a0a221 放回；advisory 不再被真仓这一份撑着）",
   `problems=${GB.problems} exit=${GB.code}`);
-ok(GB.advisoryFiles.includes(EXEC_MANIFEST), "B 默认档那一发的缺席仍被 CORPUS_ADVISORY_FILE 具名点名（不判红也要说得出是哪一份）",
-  GB.advisoryFiles.join("|"));
-const strictFrames = Number(((GS.body.match(/CORPUS_PROBLEM reports\/audit\/round-7\/exec-a-mock-final\/manifest-detail\.json 共 \d+ 帧 :: 帧不存在=(\d+)/) || [])[1]) || -1);
-ok(strictFrames === GB.vouched && strictFrames > 0,
-  `B --strict：那一份的"帧不存在"退回 ${GB.vouched} 帧＝默认档豁免掉的那一集 ⇒ 逐字复现改前判据，不是新增语义`,
-  `strict 行取到=${strictFrames} 默认档 vouched=${GB.vouched}`);
-ok(GS.problems === GB.problems + 2,
-  "B --strict：恢复的那一份计红 + 盲区那一格再计一处 ⇒ 相对默认档恰好 +2",
+ok(GB.advisoryFiles.length === 0 && GB.namedAbsent === 0 && GB.vouched === 0 && GB.blockingFrames === 0,
+  "B 默认档：这份清单没有缺席 / 没有 advisory / 没有 blocking（advisory 轴的活体证明在 C1/C3，不靠真仓回盘帧）",
+  `advisoryFiles=${GB.advisoryFiles.length} namedAbsent=${GB.namedAbsent} vouched=${GB.vouched} blocking=${GB.blockingFrames}`);
+ok(!/CORPUS_PROBLEM .*exec-a-mock-final.*帧不存在=/.test(GS.body),
+  "B --strict：不再给这份清单补『帧不存在』（650 帧全在盘上；strict 只恢复无凭据缺席那一格，不伪造缺席）", "");
+ok(GS.problems === GB.problems + 1,
+  "B --strict：相对默认档只多历史盲区那一格（+1），不是回盘帧的 +1",
   `strict=${GS.problems} default=${GB.problems}`);
-ok(!/（另有/.test(GS.body) && /帧不存在=\d+$/m.test(GS.body),
-  "B --strict：问题行回到改前写法（帧不存在=N 后面不跟 advisory 附注）", "");
+ok(/CORPUS_PROBLEM .*不在任何被遍历的 manifest 点名列里/.test(GS.body) && !/（另有/.test(GS.body),
+  "B --strict：问题行只讲历史盲区（3964 已出册 + 1 回盘未具名），没有『另有 N 帧属选定删除集』的附注", "");
 ok(GS.strictInLine === "on" && GB.strictInLine === "off", "B 两发 AXIS 行各自自报档位（读者不用猜这一发是哪一档）",
   `default=${GB.strictInLine} strict=${GS.strictInLine}`);
 ok(GS.trackedAbsent === GB.trackedAbsent && GS.neverOpened === GB.neverOpened
@@ -340,7 +405,7 @@ ok(C1.advisoryFrames === 2 && C1.vouched === 2, "C1 被清单点名的 2 帧走 
 ok(C1.problems === 0 && C1.code === 0, "C1 默认档不判红：用户选定删除的缺席不计进 PROBLEMS（裁定明写不许把他行使选择权做成默认红）",
   `problems=${C1.problems} exit=${C1.code}`);
 ok(C1.neverOpened === 1 && C1.namedByGate === 2,
-  "C1 F03 没被任何清单点名 ⇒ 门结构上打不开它，BLINDSPOT 行把这一格报成 1（真仓那一发是同一个形状：3846 vs 3）",
+  "C1 F03 没被任何清单点名 ⇒ 门结构上打不开它，BLINDSPOT 行把这一格报成 1（夹具里这是当前盲区；真仓今天 3965 是历史删除残留，不是同一件事）",
   `gap=${C1.neverOpened} named=${C1.namedByGate}`);
 ok(C1.blockingFrames === 0, "C1 无凭据那一格==0（这一发的点名缺席全部有凭据，符合夹具设定）", "blocking=" + C1.blockingFrames);
 

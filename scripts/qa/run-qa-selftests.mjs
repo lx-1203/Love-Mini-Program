@@ -15,6 +15,20 @@ import { join, resolve, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
+/* ── 解释器闸：先判仪器，再判产品 ──────────────────────────────────────────────
+   踩过的坑（2026-10-27）：PATH 上排第一的 node 是微信开发者工具自带的 v16，拿它起聚合器时
+   会得到 12 条"纯环境红"——`import.meta.dirname` 未定义（v20.11 才有）、各测试自己的 `<20` 闸、
+   缺内置 fetch——它们与真红混在同一张 FAILED 清单里，下一个人无法归因，只会以为产品坏了。
+   所以这里在**扫描之前**就把解释器不达标印成 NOT-EVIDENCED（未取证）并 exit 2：
+   这不是产品判决，不能记成 FAIL 让产品背锅，也不能"跳过几条继续跑"——跳过会留下一个
+   看起来跑过的绿盘子，正是本聚合器开头反对的"什么都没跑到却报绿"。
+   解释器路径写死在 reason 里：下一个踩坑的人不该还需要回来翻日志找正确 node 在哪。 */
+const NODE_MAJOR = Number(String(process.versions.node).split(".")[0]);
+if (!(NODE_MAJOR >= 20)) {
+  console.log(`SELFTEST_RESULT=NOT-EVIDENCED reason=聚合器要求 Node >= 20（当前 ${process.version}，解释器=${process.execPath}）；请改用 D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/run-qa-selftests.mjs 重跑`);
+  process.exit(2);
+}
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "..", "..");
 const UI_BOUND = new Set(["test-stop-flag.cjs"]); // 要占 UI 租约/连模拟器的，默认跳过

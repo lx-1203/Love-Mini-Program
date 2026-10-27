@@ -30,7 +30,7 @@ const CARRIER = resolve(REPO, "scripts/qa/verify-source-shape.mjs");
 const GATE = "scripts/qa/verify-source-shape.mjs";
 const OPS = "reports/audit/round-7/ops/PAGES-LOGIN-INDEX.json";
 const KEEP = process.argv.includes("--keep");
-const { SPEC, CRIT_ROWS, stripComments, templateOf, inject, runRow } = await import(pathToFileURL(CARRIER).href);
+const { SPEC, CRIT_ROWS, stripComments, templateOf, inject, runRow, BANDS, bandOf } = await import(pathToFileURL(CARRIER).href);
 
 /* 变异副本放仓外：os.tmpdir()，绝不落在 REPO 里（本项目在册教训是"临时件混进仓库就被当成产物"）。 */
 const TMP = join(tmpdir(), "lg31-nonframe-r10b");
@@ -74,8 +74,12 @@ const kinds = carriersOf(row).flatMap((t) => (t.checks || []).map((c) => c.kind)
 ok(kinds.every((k) => ALLOWED.includes(k)), "B1 新增判点只用 absent/present/countEq/countTemplateEq", [...new Set(kinds)].join(","));
 ok(kinds.length >= 10, "B2 判点数量 " + kinds.length + "（一屏事实要能拆开判）", kinds.length);
 {
-  const head = readFileSync(CARRIER, "utf8").split(/\r?\n/).slice(25, 29).join("\n");
-  ok(/absent/.test(head) && /present/.test(head) && /countEq/.test(head) && /countTemplateEq/.test(head), "B3 词表出处仍在（SPEC 头部注释未被人改写以放行新谓词）");
+  /* 词表出处原来按行号窗口取（读判据台第 25-29 行）：判据台头部一插注释，窗口就漂成别的段落，
+     本轮给 bands 加单一来源后 B3 就假红了一次——和 D5 那个「行号恰为 129」同一种病。
+     改成按内容定位：恰有一行声明「谓词只允许四种」，且那一行把四种都点齐。 */
+  const vocab = readFileSync(CARRIER, "utf8").split(/\r?\n/).filter((l) => /谓词只允许/.test(l));
+  ok(vocab.length === 1, "B3a 判据台里恰有一行声明谓词词表（两行＝有人另开了第二张词表）", vocab.length);
+  ok(vocab.length === 1 && ALLOWED.every((k) => vocab[0].includes(k)), "B3b 词表出处仍在、四种谓词都在（SPEC 头部注释未被人改写以放行新谓词）", vocab[0] || "");
 }
 
 /* ── C. 正例锚点：每个承载层都要有一条能变绿的判点（规则 3） ── */
@@ -84,11 +88,18 @@ for (const t of carriersOf(row)) {
   ok(pos.length > 0, "C " + basename(t.file) + " 有正例锚点 " + pos.length + " 条（只有 absent 就是『读不到=成立』）");
 }
 {
-  const bands = carriersOf(row).map((t) => t.file).filter((f) => f.includes("/dist/build/"));
-  const mock = bands.filter((f) => f.startsWith("apps/client/dist/build/mp-weixin/"));
-  const real = bands.filter((f) => f.startsWith("apps/client/dist/build/mp-weixin-real/"));
-  ok(mock.length > 0 && real.length > 0, "C2 两档产物各读了一次（mock=" + mock.length + " real=" + real.length + "）");
-  for (const f of bands) ok(existsSync(resolve(REPO, f)) && statSync(resolve(REPO, f)).size > 0, "C3 产物承载在盘上且非空（" + f + "）");
+  /* 产物档不再在测试里抄一张两档表：档名→构建根的表由判据台 import（BANDS），
+     声明了几档就核几档（行上 bands 与 files 实读的档是否对得上，判据台开跑前已经对过账，
+     见 verify-source-shape.mjs 的 SRC_SHAPE_BANDS）。 */
+  const declared = [...new Set(row.bands || [])].sort();
+  const read = [...new Set(carriersOf(row).map((t) => bandOf(t.file)).filter(Boolean))].sort();
+  ok(declared.length > 0, "C2a 本行声明了要验的产物档", declared.join(",") || "空");
+  ok(declared.join(",") === read.join(","), "C2b 声明档＝实读档（" + (declared.join("+") || "空") + " vs " + (read.join("+") || "无产物承载") + "）");
+  for (const band of declared) {
+    const hit = carriersOf(row).map((t) => t.file).filter((f) => bandOf(f) === band);
+    ok(hit.length > 0, "C3a " + band + " 档有产物承载 " + hit.length + " 个");
+    for (const f of hit) ok(existsSync(resolve(REPO, f)) && statSync(resolve(REPO, f)).size > 0, "C3b 产物承载在盘上且非空（" + f + "）");
+  }
 }
 
 /* ── D. 活树必须绿：判据点名的物件确实不在，六位谓词确实在 ── */
@@ -99,8 +110,16 @@ for (const t of carriersOf(row)) {
   ok((stripComments(lg).match(/login-sms-code/g) || []).length === 0, "D2 登录页剥注释后 login-sms-code 0 命中");
   ok((lg.match(/login-sms-code/g) || []).length === 0, "D3 连 HTML 注释里都没有 login-sms-code（不是『剥掉了才看不见』）");
   ok(/password\.value\.length >= 6 && password\.value\.length <= 64/.test(lg), "D4 六位谓词真在登录页源码里（判据引的 :143 已漂到这里）");
-  const ln = lg.split(/\r?\n/).findIndex((l) => /const isCodeValid = computed/.test(l)) + 1;
-  ok(ln === 129, "D5 实测行号＝129（写进证据的行号是量出来的，判据的 :143 是 heroDesc computed）", "实测 :129=" + ln);
+  /* D5 原来钉的是「行号恰为 129」。行号不是形状：多一个 import、多一行注释它就漂，
+     而这条判据要的是"六位谓词长在 isCodeValid 这个 computed 里"（放行口径只有这一处）。
+     所以改成结构判定：找出 isCodeValid 这条 computed 的**唯一**声明行，再从它往下取三行
+     看谓词在不在它的体内；行号只当读数打进证据，不参与判等。 */
+  const lines = lg.split(/\r?\n/);
+  const heads = lines.reduce((acc, l, i) => (/const isCodeValid = computed/.test(l) ? acc.concat(i + 1) : acc), []);
+  ok(heads.length === 1, "D5a 登录页恰一处 isCodeValid computed（多一处＝又开了一个放行口径）", heads.join(","));
+  const body = heads.length === 1 ? lines.slice(heads[0] - 1, heads[0] + 3).join("\n") : "";
+  ok(/password\.value\.length >= 6 && password\.value\.length <= 64/.test(body), "D5b 六位谓词就长在 isCodeValid 的 computed 体内（实测 :" + heads[0] + "，读数不参与判等）", body.replace(/\n/g, "\\n").slice(0, 160));
+  ok((lg.match(/password\.value\.length >= 6/g) || []).length === 1, "D6 六位比较全页只此一处（第二处等于又开了一条放行判据）", (lg.match(/password\.value\.length >= 6/g) || []).length);
 }
 
 /* ── E. 负例：内存注入必须红，且红在被注入的那个承载上 ── */
@@ -126,6 +145,20 @@ for (let i = 0; i < negs.length; i++) {
 /* ── F. 端到端真退出码：变异副本必须在仓外，且必须让真门 exit 1；活树回绿 ── */
 const CHILD_ENV = { ...process.env };
 delete CHILD_ENV.QA_SHAPE_LIB;                 // 漏进 spawn 就会退化成"不跑 CLI、不输出、exit 0"的哑门
+/* 活树读数不再抄「total=99 成立=88 不成立=0」这一串数：门只对"不成立"逐条打 SHAPE_FAIL 点名行，
+   于是「在册不成立的 id 名单」直接从门自己的输出里取。本轮活树上就有 11 条**台账行**不成立
+   （源码按后续裁定改过、判据台那几行的字面还停在旧源码上，由判据台按 PARTIAL 语义记账），
+   抄成常数只会让本测试隔一轮再红一次，而且抄的常数一旦对上旧值，真回归反倒看不出来。
+   本测试要钉的东西一条没少：变异副本的不成立集合**减**基线集合必须恰好等于这一条变异行的 id
+   （逐个对 id，不数个数），基线里那 11 条也不许被变异洗绿；判据台行（LG31 一族）另按
+   SRC_SHAPE_CRIT 行断言全成立——那是本测试真正背书的范围。 */
+const runGate = (extra) => {
+  const args = [GATE, "--dry"].concat(extra ? ["--spec-extra", extra] : []);
+  const r = spawnSync(process.execPath, args, { cwd: REPO, encoding: "utf8", timeout: 300000, env: CHILD_ENV });
+  const out = `${r.stdout || ""}${r.stderr || ""}`;
+  return { status: r.status, out, ids: [...out.matchAll(/^SHAPE_FAIL (\S+) :: /gm)].map((m) => m[1]),
+    tot: (out.match(/^SRC_SHAPE total=(\d+) 成立=(\d+) 不成立=(\d+)/m) || []).slice(1).map(Number) };
+};
 {
   const rows = mutants.map((m) => ({
     id: "NEG-LG31-" + m.i, criteria: true, caseId: "LG31-" + m.i, manifest: row.manifest, page: row.page,
@@ -137,28 +170,36 @@ delete CHILD_ENV.QA_SHAPE_LIB;                 // 漏进 spawn 就会退化成"�
   }));
   const plan = join(TMP, "neg-spec.json");
   writeFileSync(plan, JSON.stringify({ rows }, null, 1), "utf8");
-  ok(!!rows.length, "F0 变异副本清单非空（空清单会让下面所有断言空跑）", rows.length);
+  ok(!!rows.length, "F0a 变异副本清单非空（空清单会让下面所有断言空跑）", rows.length);
   ok(rows.every((r) => r.files.some((f) => f.file.startsWith(TMP))), "F8 每个变异行都真指了一份临时副本（指回仓内就是改产品，不是做负例）");
+  /* 基线与每个变异副本背靠背跑：中间不隔时间窗，"多出来的那一条"才只能是变异造成的。 */
+  const clean = runGate("");
+  ok(clean.status === 0, "F0b 干净活树上门 exit 0（下面所有「多了几条」都拿这次读数当基线，不抄常数）",
+    "exit=" + clean.status + " 基线不成立=" + clean.ids.length + " " + (clean.out.match(/^SRC_SHAPE_RESULT=.*$/m) || ["没打出 RESULT 行"])[0]);
   let reds = 0;
   for (const r of rows) {
     const one = join(TMP, "spec-" + r.id + ".json");
     writeFileSync(one, JSON.stringify({ rows: [r] }, null, 1), "utf8");
-    const g = spawnSync(process.execPath, [GATE, "--dry", "--spec-extra", one], { cwd: REPO, encoding: "utf8", timeout: 300000, env: CHILD_ENV });
-    const out = `${g.stdout || ""}${g.stderr || ""}`;
-    const failLine = (out.match(new RegExp("^SHAPE_FAIL " + r.id + " :: .*$", "m")) || [""])[0];
+    const g = runGate(one);
+    const failLine = (g.out.match(new RegExp("^SHAPE_FAIL " + r.id + " :: .*$", "m")) || [""])[0];
     const fired = !!failLine && failLine.replace(/\\/g, "/").includes(TMP.replace(/\\/g, "/"));
     ok(g.status === 1, "F1 " + r.id + " 变异副本跑真门 ⇒ exit 1（不是 0、不是 2）", "exit=" + g.status);
     ok(fired, "F2 " + r.id + " 的红点打在临时副本上（不是活树）", failLine || "没打出 SHAPE_FAIL " + r.id);
-    ok(/SRC_SHAPE_RESULT=FAIL reason=判据台缺席判点不成立/.test(out), "F3 " + r.id + " 走的是「判据台缺席判点不成立」这条分支", (out.match(/^SRC_SHAPE_RESULT=.*$/m) || ["没打出 RESULT 行"])[0]);
-    const d = (out.match(/^SRC_SHAPE total=(\d+) 成立=(\d+) 不成立=(\d+)/m) || []).slice(1).map(Number);
-    ok(d.length === 3 && d[0] === d[1] + d[2] && d[2] === 1 && d[1] === d[0] - 1, "F4 " + r.id + " 只破了注入的那一条（在册判点一条没被牵连）", d.join("/"));
-    if (g.status === 1 && fired && d[2] === 1) reds++;
+    ok(/SRC_SHAPE_RESULT=FAIL reason=判据台缺席判点不成立/.test(g.out), "F3 " + r.id + " 走的是「判据台缺席判点不成立」这条分支", (g.out.match(/^SRC_SHAPE_RESULT=.*$/m) || ["没打出 RESULT 行"])[0]);
+    const grew = g.ids.filter((id) => !clean.ids.includes(id));
+    ok(grew.length === 1 && grew[0] === r.id, "F4 " + r.id + " 比基线**只**多了这一条（差集逐个对 id，不数个数）", "多出 " + grew.length + " 条：" + grew.join(" ") + "；基线 " + clean.ids.length + " 条");
+    const gone = clean.ids.filter((id) => !g.ids.includes(id));
+    ok(gone.length === 0, "F4b " + r.id + " 都没把基线里在册不成立的判点洗绿（差集只许增不许减）", gone.join(" ") || "");
+    ok(g.tot.length === 3 && g.tot[0] === g.tot[1] + g.tot[2] && g.tot[0] === clean.tot[0] + 1, "F4c " + r.id + " 守恒且条目数只多 1 条", g.tot.join("/") + "（基线 " + clean.tot.join("/") + "）");
+    if (g.status === 1 && fired && grew.length === 1 && grew[0] === r.id) reds++;
   }
   ok(reds === rows.length, "F5 " + reds + "/" + rows.length + " 个变异副本各自在真门里红了一次");
-  const clean = spawnSync(process.execPath, [GATE, "--dry"], { cwd: REPO, encoding: "utf8", timeout: 300000, env: CHILD_ENV });
-  const cout = `${clean.stdout || ""}${clean.stderr || ""}`;
-  ok(clean.status === 0, "F6 撤掉变异副本后活树回绿（同一扇门、同一个命令）", "exit=" + clean.status + " " + (cout.match(/^SRC_SHAPE_RESULT=.*$/m) || [""])[0]);
-  ok(/^SRC_SHAPE total=\d+ 成立=\d+ 不成立=0 补丁=\d+（守恒：yes）$/m.test(cout), "F7 活树读数守恒且不成立=0", (cout.match(/^SRC_SHAPE total=.*$/m) || ["没打出行"])[0]);
+  const after = runGate("");
+  ok(after.status === 0 && after.ids.join(",") === clean.ids.join(","), "F6 撤掉变异副本后活树回绿，且不成立名单与基线逐条相同（同一扇门、同一个命令）",
+    "exit=" + after.status + " " + (after.out.match(/^SRC_SHAPE_RESULT=.*$/m) || [""])[0]);
+  const crit = (after.out.match(/^SRC_SHAPE_CRIT 判据台行=(\d+) 成立=(\d+) 不成立=(\d+)/m) || []).slice(1).map(Number);
+  ok(crit.length === 3 && crit[2] === 0 && crit[1] + crit[2] === crit[0], "F7 判据台行在活树上全成立（台账行的在册红归判据台的 PARTIAL 记账，不在本测试背书范围）", (after.out.match(/^SRC_SHAPE_CRIT.*$/m) || ["没打出 CRIT 行"])[0]);
+  ok(after.tot.length === 3 && after.tot[1] + after.tot[2] === after.tot[0] && after.ids.length === after.tot[2], "F7b 守恒，且每个「不成立」都有 SHAPE_FAIL 行点名（没有静默吞掉的红）", "不成立=" + after.tot[2] + " 点名行=" + after.ids.length);
 }
 
 /* ── G. 变异没有写坏产品，也没在仓里留下临时件 ── */

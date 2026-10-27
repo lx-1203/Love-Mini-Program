@@ -29,7 +29,7 @@ import { spawnSync } from "node:child_process";
 process.env.QA_SHAPE_LIB = "1";            // 只借引擎，不在 import 时跑 CLI（那是第二台解析器的开始）
 const REPO = resolve(import.meta.dirname, "..", "..");
 const CARRIER = resolve(REPO, "scripts/qa/verify-source-shape.mjs");
-const { SPEC, CRIT_ROWS, inject, runRow } = await import(pathToFileURL(CARRIER).href);
+const { SPEC, CRIT_ROWS, BANDS, bandOf, inject, runRow } = await import(pathToFileURL(CARRIER).href);
 
 const GATE = "scripts/qa/verify-source-shape.mjs";
 const FXREL = ".zcode/tmp/lane-abs7/negfix";
@@ -109,16 +109,28 @@ for (const s of crit) {
   }
 }
 
-/* ── D. 两档产物都要验（mock 与 real），只验一档＝"产物里查不到"没被证伪过 ── */
-const BANDS = { mock: "apps/client/dist/build/mp-weixin/", real: "apps/client/dist/build/mp-weixin-real/" };
+/* ── D. 产物档：判据行声明了几档，就必须真读几档，且档上的承载都在盘上非空 ──
+ * 旧写法在这里手抄了一张 { mock, real } 两档表，对**每条**判据都要求"每档各一个产物承载"。
+ * 2026-10-24 业主裁定后 CH22 把 mock 档整项移出（那档产物早于 R2b-L05-D15，在旧件上判"禁箭头"
+ * 恒真＝过期产物白送的假通过，见判据台 CH22 注释），行上 bands=["real"] 已经写明，
+ * 测试却还按两档要 ⇒ 假红。判据台本体没有退化，是这张表和真相对不上了。
+ * 所以改成**从行上派生**：`s.bands`（声明档）必须与 files 实读的档（由判据台导出的 bandOf 判定）
+ * 逐一相等，且每个声明档至少一个承载、承载在盘上非空。
+ * 两边任一边脱钩都判红：多声明一档＝"验了一档却勾两档"，实读多一档＝"勾了这档却没验"。
+ * 档名→构建根的表由判据台 import（BANDS），不再在测试里抄第二份。 */
+let bandPairs = 0;
 for (const s of crit) {
-  const reads = (s.files || []).map((t) => t.file);
-  const dist = reads.filter((f) => f.includes("/dist/build/"));
-  for (const [band, root] of Object.entries(BANDS)) {
-    const hit = dist.filter((f) => f.startsWith(root));
-    if (!WANT.some(([, , page]) => page === s.page)) continue;
-    ok(hit.length > 0, `D ${s.caseId} 在 ${band} 档各验了一次（${hit.length} 个产物承载）`, "该条没读这档产物");
-    for (const f of hit) ok(existsSync(resolve(REPO, f)) && statSync(resolve(REPO, f)).size > 0, `D2 ${s.caseId} 的 ${band} 档承载在盘上且非空`, f);
+  const declared = [...new Set(s.bands || [])].sort();
+  const read = [...new Set((s.files || []).map((t) => bandOf(t.file)).filter(Boolean))].sort();
+  ok(declared.length > 0, `D1 ${s.caseId} 声明了要验的产物档（没声明＝这条行的产物侧没人对账）`, declared.join(",") || "空");
+  ok(declared.join(",") === read.join(","),
+    `D2 ${s.caseId} 声明档＝实读档（${declared.join("+") || "空"} vs ${read.join("+") || "无产物承载"}）`,
+    "多声明/漏声明都等于报告里那句「验过哪几档」是编的");
+  for (const band of declared) {
+    const hit = (s.files || []).map((t) => t.file).filter((f) => bandOf(f) === band);
+    bandPairs++;
+    ok(hit.length > 0, `D3 ${s.caseId} 的 ${band} 档有产物承载（${hit.length} 个）`, "声明了这档却一个承载都没有");
+    for (const f of hit) ok(existsSync(resolve(REPO, f)) && statSync(resolve(REPO, f)).size > 0, `D4 ${s.caseId} 的 ${band} 档承载在盘上且非空`, f);
   }
 }
 
@@ -137,6 +149,21 @@ for (const s of crit) {
    门就变成"不跑 CLI、不输出、exit 0"的哑门（本车道实测：F1-F6 全报"没打出行"就是这个）。 */
 const CHILD_ENV = { ...process.env };
 delete CHILD_ENV.QA_SHAPE_LIB;
+/* 期望值不再抄「98 条在册判点」「不成立=0」这种数：门自己只对"不成立"打 SHAPE_FAIL 点名行，
+   于是「在册不成立的 id 名单」可以从门自己的输出里取，而不是由测试假定它为空。
+   本轮活树上就有 11 条台账行不成立（源码按后续裁定改过、判据台那几行字面还停在旧源码上，
+   由判据台按 PARTIAL 语义记账，不归本测试），把它们抄成常数只会让本测试隔一轮再红一次。
+   本测试要钉的东西一条没少，而且更强了：注入档的不成立集合 **减** 基线集合必须恰好等于注入的
+   那几条 id（差集逐个对 id，不数个数）⇒ 任何一条在册判点被牵连、任何一条旧红被注入"洗绿"，
+   都会当场红。 */
+const runGate = (extra) => {
+  const args = [GATE, "--dry"].concat(extra ? ["--spec-extra", extra] : []);
+  const r = spawnSync(process.execPath, args, { cwd: REPO, encoding: "utf8", timeout: 300000, env: CHILD_ENV });
+  const out = `${r.stdout || ""}${r.stderr || ""}`;
+  const ids = [...out.matchAll(/^SHAPE_FAIL (\S+) :: /gm)].map((m) => m[1]);
+  const tot = (out.match(/^SRC_SHAPE total=(\d+) 成立=(\d+) 不成立=(\d+)/m) || []).slice(1).map(Number);
+  return { status: r.status, out, ids, tot };
+};
 {
   const rows = [];
   for (const s of crit) {
@@ -158,19 +185,26 @@ delete CHILD_ENV.QA_SHAPE_LIB;
   }
   const plan = FXREL + "/neg-spec.json";
   writeFileSync(resolve(REPO, plan), JSON.stringify({ rows }, null, 1), "utf8");
-  const gr = spawnSync(process.execPath, [GATE, "--dry", "--spec-extra", plan], { cwd: REPO, encoding: "utf8", timeout: 300000, env: CHILD_ENV });
-  const out = `${gr.stdout || ""}${gr.stderr || ""}`;
   const lines = rows.map((r) => r.id);
-  const hitLines = lines.filter((id) => new RegExp("^SHAPE_FAIL " + id + " :: " + FXREL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "m").test(out));
+  /* 基线与注入档背靠背两次跑：中间不隔时间窗，"多出来的那几条"才只能是注入造成的。 */
+  const clean = runGate("");
+  ok(clean.status === 0, "F0 干净活树上门 exit 0（下面所有「多了几条」都拿这次读数当基线，不抄常数）",
+    "exit=" + clean.status + " " + (clean.out.match(/^SRC_SHAPE_RESULT=.*$/m) || ["没打出 RESULT 行"])[0] + " 基线不成立=" + clean.ids.length);
+  const gr = runGate(plan);
+  const hitLines = lines.filter((id) => new RegExp("^SHAPE_FAIL " + id + " :: " + FXREL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "m").test(gr.out));
   ok(gr.status === 1, "F1 注入档跑真门 ⇒ exit 1（不是 0、不是 2）", "exit=" + gr.status);
-  ok(/SRC_SHAPE_RESULT=FAIL reason=判据台缺席判点不成立/.test(out), "F2 红是从「判据台缺席判点不成立」这条分支出来的", (out.match(/^SRC_SHAPE_RESULT=.*$/m) || ["没打出 RESULT 行"])[0]);
-  ok(hitLines.length === lines.length, "F3 每条判据的注入都在真门里各红了一次（红点还在被注入的 fixture 上）", hitLines.length + "/" + lines.length + "；" + (out.match(/^SHAPE_FAIL NEG-.*$/gm) || []).slice(0, 2).join(" | "));
-  const dup = (out.match(/^SRC_SHAPE total=(\d+) 成立=(\d+) 不成立=(\d+)/m) || []).slice(1).map(Number);
-  ok(dup.length === 3 && dup[1] + dup[2] === dup[0] && dup[2] === lines.length, "F4 守恒仍然成立，且破的全是注入行（98 条在册判点没被牵连）", "total/成立/不成立=" + dup.join("/"));
-  const clean = spawnSync(process.execPath, [GATE, "--dry"], { cwd: REPO, encoding: "utf8", timeout: 300000, env: CHILD_ENV });
-  const cout = `${clean.stdout || ""}${clean.stderr || ""}`;
-  ok(clean.status === 0, "F5 撤掉注入档后回绿（同一扇门、同一个命令）", "exit=" + clean.status + " " + (cout.match(/^SRC_SHAPE_RESULT=.*$/m) || [""])[0]);
-  ok(/^SRC_SHAPE_NEG 注入点=\d+ 已变红=\d+ 咬不动=0 没挂负例的判据行=0$/m.test(cout), "F6 门自己也在每次跑里复查负例（咬不动=0 且没挂=0）", (cout.match(/^SRC_SHAPE_NEG.*$/m) || ["没打出 NEG 行"])[0]);
+  ok(/SRC_SHAPE_RESULT=FAIL reason=判据台缺席判点不成立/.test(gr.out), "F2 红是从「判据台缺席判点不成立」这条分支出来的", (gr.out.match(/^SRC_SHAPE_RESULT=.*$/m) || ["没打出 RESULT 行"])[0]);
+  ok(hitLines.length === lines.length, "F3 每条判据的注入都在真门里各红了一次（红点还在被注入的 fixture 上）", hitLines.length + "/" + lines.length + "；" + (gr.out.match(/^SHAPE_FAIL NEG-.*$/gm) || []).slice(0, 2).join(" | "));
+  const grew = gr.ids.filter((id) => !clean.ids.includes(id));
+  ok(grew.length === lines.length && lines.every((id) => grew.includes(id)), "F4 注入档比基线**只**多了注入的那几条（差集逐个对 id，不数个数）", "多出 " + grew.length + "/" + lines.length + " 条：" + grew.slice(0, 3).join(" ") + "；基线 " + clean.ids.length + " 条");
+  const gone = clean.ids.filter((id) => !gr.ids.includes(id));
+  ok(gone.length === 0, "F5 基线里在册不成立的判点一条都没被注入洗绿（差集只许增不许减）", gone.join(" ") || "");
+  ok(gr.tot.length === 3 && gr.tot[1] + gr.tot[2] === gr.tot[0] && gr.tot[0] === clean.tot[0] + lines.length,
+    "F6 守恒成立，且条目数只多了注入的 " + lines.length + " 条", "total/成立/不成立=" + gr.tot.join("/") + "（基线 " + clean.tot.join("/") + "）");
+  const after = runGate("");
+  ok(after.status === 0 && after.ids.join(",") === clean.ids.join(","), "F7 撤掉注入档后回绿，且不成立名单与基线逐条相同（同一扇门、同一个命令）",
+    "exit=" + after.status + " " + (after.out.match(/^SRC_SHAPE_RESULT=.*$/m) || [""])[0]);
+  ok(/^SRC_SHAPE_NEG 注入点=\d+ 已变红=\d+ 咬不动=0 没挂负例的判据行=0$/m.test(after.out), "F8 门自己也在每次跑里复查负例（咬不动=0 且没挂=0）", (after.out.match(/^SRC_SHAPE_NEG.*$/m) || ["没打出 NEG 行"])[0]);
 }
 
 /* ── G. 注入没有写坏产品（这是本测试自己的纪律，不是信任问题） ── */
@@ -178,7 +212,7 @@ let drift = 0;
 for (const [p, h] of before) { const now = sha(p); if (now !== h) { drift++; console.log("  DRIFT " + p + " " + h + "→" + now); } }
 ok(drift === 0, "G 全部 " + carrierFiles.length + " 个承载文件 sha256 未变（注入只在内存）", drift + " 个文件被改动了");
 
-console.log(`ABSENT_SUMMARY cases=${cases} fail=${fail} 判据行=${crit.length} 注入点=${negCount} 承载文件=${carrierFiles.length}`);
+console.log(`ABSENT_SUMMARY cases=${cases} fail=${fail} 判据行=${crit.length} 注入点=${negCount} 承载文件=${carrierFiles.length} 产物档对=${bandPairs}`);
 console.log(`SUMMARY: assertion failures = ${fail}`);
 console.log(`ABSENT_TEST=${fail ? "FAIL" : "PASS"}`);
 process.exit(fail ? 1 : 0);

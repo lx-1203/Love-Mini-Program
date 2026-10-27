@@ -1,81 +1,70 @@
 {
- "$schema": "一页一条游客落点裁定。page=用例声明的页；landing=游客身份实测落点；family=落点机制类别；landingMarker=落点页必须 present 的类名；registerEntry=按既定裁定该落地页在默认态必须可见的注册入口类名（null=不适用）。",
- "$ruling": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。",
+ "$schema": "一页一条游客落点裁定。page=用例声明的页；landing=游客身份实测落点；family=落点机制类别；landingMarker=落点页必须 present 的类名；registerEntry=按既定裁定该落地页在默认态必须可见的注册入口类名（null=不适用）。anchors 的判据是 {file,needle}：needle（允许跨行，比较前折叠空白）必须在 file 里存在且只出现一次；line 只是阅读提示，不参与判决 —— 行号会随源码排版漂，标识符没了才是依据真没了。",
+ "$ruling": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。",
  "anchors": [
   {
    "claim": "游客被弹到登录页的动作出自 HTTP 401 兜底，不是路由守卫",
    "file": "apps/client/src/services/http.ts",
-   "line": 493,
    "needle": "uni.reLaunch"
   },
   {
    "claim": "跳转前有 LOGIN_REDIRECT_DELAY_MS 的延迟 ⇒ 判定窗必须等它",
    "file": "apps/client/src/services/http.ts",
-   "line": 494,
-   "needle": "LOGIN_REDIRECT_DELAY_MS"
+   "needle": "}, LOGIN_REDIRECT_DELAY_MS);"
   },
   {
    "claim": "延迟常量实测 500ms",
    "file": "apps/client/src/constants/app.ts",
-   "line": 40,
    "needle": "LOGIN_REDIRECT_DELAY_MS = 500"
   },
   {
    "claim": "路由守卫对「无 token 的游客」一律放行 ⇒ 它不可能是这批落点的来源（挡住没有证据的归因）",
    "file": "apps/client/src/composables/usePageAccess.ts",
-   "line": 79,
-   "needle": "!getToken()"
+   "needle": "if (!current?.loggedIn && !getToken())"
   },
   {
    "claim": "登录页落地判定用的类名锚点",
    "file": "apps/client/src/pages/login/index.vue",
-   "line": 569,
-   "needle": "login-page__brand"
+   "needle": "class=\"login-page__brand\""
   },
   {
    "claim": "登录页默认态（未展开手机号表单）是 .login-quick 分支 ⇒ 注册入口要加就加在这里",
    "file": "apps/client/src/pages/login/index.vue",
-   "line": 604,
-   "needle": "login-quick"
+   "needle": "class=\"login-quick\""
   },
   {
    "claim": "「去注册」在 v-else 的 login-form 分支里 ⇒ 游客落地时默认看不见它（产品缺口的落点）",
    "file": "apps/client/src/pages/login/index.vue",
-   "line": 704,
    "needle": "class=\"login-form\""
   },
   {
    "claim": "注册入口本身受 isRegisterOpen 开关控制（后台 register_open=false 时连表单里都不露）",
    "file": "apps/client/src/pages/login/index.vue",
-   "line": 762,
-   "needle": "isRegisterOpen"
+   "needle": "v-if=\"isRegisterOpen\" class=\"btn-text login-register-entry press-feedback\""
   },
   {
    "claim": "VIP 三页落「我的」页是功能开关弹回，与身份无关",
    "file": "apps/client/src/subpackages/vip/index.vue",
-   "line": 53,
-   "needle": "featureFlags.membershipEnabled"
+   "needle": "if (!featureFlags.membershipEnabled) {"
   },
   {
    "claim": "开关为假时的落点 = switchTab 到我的页",
    "file": "apps/client/src/subpackages/vip/index.vue",
-   "line": 66,
    "needle": "ROUTES.TAB.PROFILE"
   },
   {
    "claim": "我的页落地判定用的类名锚点",
    "file": "apps/client/src/pages/profile/index.vue",
-   "line": 1643,
    "needle": "class=\"profile-page"
   }
  ],
  "$basisKeys": {
-  "http401": "apps/client/src/services/http.ts:494 uni.reLaunch(ROUTES.LOGIN)（游客无 token 分支文案走 apiErrors.loginRequired，见同文件 473-482）",
-  "guardPassthrough": "apps/client/src/composables/usePageAccess.ts:79 未登录且无 token ⇒ 直接 return 放行 ⇒ 路由守卫不是这批落点的来源（这条锚点用来挡住「守卫弹的」这种没证据的说法）",
-  "delay": "apps/client/src/constants/app.ts:40 LOGIN_REDIRECT_DELAY_MS = 500 ⇒ 判定窗取 500+900ms",
-  "loginMarker": "apps/client/src/pages/login/index.vue:569 class=\"login-page__brand\"",
-  "profileMarker": "apps/client/src/pages/profile/index.vue:1643 class=\"profile-page\"",
-  "vipFlag": "apps/client/src/subpackages/vip/index.vue:53 membershipEnabled 为假 ⇒ switchTab 到我的页（:66），与身份无关（2026-10-06 按行漂移重锚：工作树微信支付管道改动在 :36-38 净增 3 行，50→53、63→66；needle 逐字未动）"
+  "http401": "apps/client/src/services/http.ts 的 redirectToLogin 里 uni.reLaunch({ url: ROUTES.LOGIN })（游客无 token 分支文案走 apiErrors.loginRequired）",
+  "guardPassthrough": "apps/client/src/composables/usePageAccess.ts 的 if (!current?.loggedIn && !getToken()) ⇒ 直接 return 放行 ⇒ 路由守卫不是这批落点的来源（这条锚点用来挡住「守卫弹的」这种没证据的说法）",
+  "delay": "apps/client/src/constants/app.ts 的 LOGIN_REDIRECT_DELAY_MS = 500 ⇒ 判定窗取 500+900ms",
+  "loginMarker": "apps/client/src/pages/login/index.vue 的 class=\"login-page__brand\"",
+  "profileMarker": "apps/client/src/pages/profile/index.vue 的 class=\"profile-page\"",
+  "vipFlag": "apps/client/src/subpackages/vip/index.vue 的 featureFlags.membershipEnabled 为假 ⇒ switchTab 到我的页（ROUTES.TAB.PROFILE），与身份无关（2026-10-06 曾按行号重锚过一次；2026-10-27 起锚点改核标识符存在且唯一，行号不再参与判决 —— 同一类行号锚遇到源码增删行就把 7 条仍指得到标识符的依据整排打红，那才是假红）"
  },
  "rows": [
   {
@@ -245,13 +234,13 @@
    "landing": "pages/login/index",
    "family": "guide-401",
    "entry": "附近的人（个人数据/距离列表）",
-   "basis": "2026-09-27 由 exec-guest-real-r7final 实测补进：游客档该页 57 行里 42 行实测栈顶=pages/login/index（3 条 FAILED 是 N25/N26/N27 交互腿，39 条 SKIPPED-interact-off-page），机制同源 apps/client/src/pages/nearby/index.vue:63/204「未登录发起必 401 → http 层 redirectToLogin 强踢登录页」+ anchors 里的 services/http.ts:493。该页另有页内引导 .nearby-login-guide（:622），所以「没被踢」时页内引导才是判点 —— 本行只声明「被踢时落点应为登录页」，不把页内引导判成缺陷。"
+   "basis": "2026-09-27 由 exec-guest-real-r7final 实测补进：游客档该页 57 行里 42 行实测栈顶=pages/login/index（3 条 FAILED 是 N25/N26/N27 交互腿，39 条 SKIPPED-interact-off-page），机制同源 apps/client/src/pages/nearby/index.vue「未登录发起必 401 → http 层 redirectToLogin 强踢登录页」+ anchors 里的 services/http.ts 的 uni.reLaunch。该页另有页内引导 .nearby-login-guide，所以「没被踢」时页内引导才是判点 —— 本行只声明「被踢时落点应为登录页」，不把页内引导判成缺陷。"
   }
  ],
  "loggedOutOnly": [
   {
    "page": "pages/login/index",
-   "reason": "已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。",
+   "reason": "已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。",
    "evidence": "2026-09-27 exec-A-mock-stage7 现量（PAGES-LOGIN-INDEX 38 行全采完）：15 行 SKIPPED「action 含交互动词但本页没落在声明页（栈顶=pages/discover/index）」+ 9 行 FAILED「落在别的页…须人判」+ 12 行已盖章不可自动化 ⇒ A 腿在这一页一条正向证据都没产出。逐行复核 38 条后只有 2 条（LG02/LG03）的前置真是「已登录」。",
    "keepOnLoginLeg": "只有**前置写明已登录**的行留在登录腿：① 名单里点名的 id；② 判据文本含 已登录 或 isLoggedIn=true。不按「提没提 redirect/自动前进」放行：实测那会把 LG01 清登录态冷启动、LG08 协议链接、LG10 401 兜底、LG21/LG22 登录成功导航、LG37 幽灵参数共 6 条未登录前置的行伪装成 A 侧判点（它们的 redirect 字样来自 storage 键名 pending-login-redirect 或「不消费 redirect 参数」这类断言）。反向也要防：LG03 讲「重复进出登录页每次仍自动前进」，前置真是已登录，但正文只写「新实例/自动前进」⇒ 纯关键词会把它误收进游客腿，游客腿必然得到「停在登录页不动」，那是我自己造的假红 ⇒ 点名列出来。",
    "keepOnLoginLegIds": [
@@ -270,7 +259,7 @@
     "A",
     "B"
    ],
-   "source": "apps/client/src/pages/login/index.vue:98-101（onShow 检到已登录即前进）与 :122-136（watch(!loading && isLoggedIn)）",
+   "source": "apps/client/src/pages/login/index.vue 的 onShow（检到已登录即前进）与 watch(!loading && isLoggedIn)",
    "carrierRows": [
     "LG02",
     "LG03"
@@ -283,13 +272,13 @@
  "markers": {
   "guide-401": {
    "landingMarker": ".login-page__brand",
-   "markerSource": "apps/client/src/pages/login/index.vue:569",
+   "markerSource": "apps/client/src/pages/login/index.vue 的 class=\"login-page__brand\"",
    "registerEntry": ".login-register-entry",
-   "registerEntrySource": "apps/client/src/pages/login/index.vue:604（.login-quick 默认分支；MP-R7-GUEST-LANDING-REGENTRY-001 修复后该分支内已有 .login-register-entry，见 :692-698）"
+   "registerEntrySource": "apps/client/src/pages/login/index.vue 的 .login-quick 默认分支（MP-R7-GUEST-LANDING-REGENTRY-001 修复后该分支内已有 .login-register-entry，且由 v-if=\"isRegisterOpen\" 守着）"
   },
   "flag-bounce": {
    "landingMarker": ".profile-page",
-   "markerSource": "apps/client/src/pages/profile/index.vue:1643",
+   "markerSource": "apps/client/src/pages/profile/index.vue 的 class=\"profile-page",
    "registerEntry": null,
    "registerEntrySource": null
   }

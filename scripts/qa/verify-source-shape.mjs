@@ -24,6 +24,15 @@ const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i >= 0 
 let DRY = process.argv.includes("--dry");
 const SPEC_EXTRA = arg("spec-extra", "");const OUT = resolve(REPO, arg("out", "reports/audit/round-7/cellplan-source-shape.json"));
 
+/* 产物档＝两档构建根。这张表是**单一来源**，三处读者共用：本门的 flux 预检、
+   各判据行「声明档 vs 实读档」对账、以及两台钉门的测试（import 拿同一份）。
+   旧测试在自己文件里又抄了一张同样的两档表 —— 于是 CH22 按 2026-10-24 裁定把 mock 档整项
+   移出（那档产物早于 R2b-L05-D15，见下方 CH22 那段裁定注释）之后，行上写着 bands=["real"]，
+   测试却仍照抄「每档都要一个产物承载」⇒ 假红。同一张表抄两遍，迟早有一遍停在旧源码上。 */
+const BANDS = { mock: "apps/client/dist/build/mp-weixin", real: "apps/client/dist/build/mp-weixin-real" };
+/** 路径 → 产物档名；不在任何档的构建根下就返回空串（源码/语言包/临时副本都走这条）。 */
+const bandOf = (f) => { for (const [b, root] of Object.entries(BANDS)) if (String(f).startsWith(root + "/")) return b; return ""; };
+
 /* 每条判点：id=台账行号，file=承载文件，claim=判据原文要求，checks=可重跑谓词。
    谓词只允许四种：absent / present / countEq / countTemplateEq。 */
 const SPEC = [
@@ -1690,7 +1699,7 @@ function runRow(s, overrideFile, overrideText) {
   }
   return null;
 }
-export { SPEC, stripComments, templateOf, inject, runChecks, runRow, REPO };
+export { SPEC, stripComments, templateOf, inject, runChecks, runRow, REPO, BANDS, bandOf };
 export const CRIT_ROWS = SPEC.filter((s) => s.criteria);
 /* 只在被当模块 import 时短路：库模式必须由 import 方**显式**声明（QA_SHAPE_LIB=1），
    不靠"argv[1 是不是本文件"去猜——猜错就会退化成"不跑 CLI、不输出、exit 0"的哑门，
@@ -1727,6 +1736,7 @@ if (SPEC_EXTRA) {
   };
   for (const r of rows) {
     r.criteria = true;                       // 注入行一律按判据台行记 ⇒ 不发台账补丁
+    r.__injected = true;                     // 承载是临时副本 ⇒ 不进 bands×files 对账（见上方 SRC_SHAPE_BANDS 那段）
     const ts = r.files || (r.file ? [{ file: r.file, checks: r.checks }] : []);
     for (const t of ts) {
       for (const c of (t.checks || [])) if (typeof c.re === "string") c.re = toRe(c.re);
@@ -1756,7 +1766,6 @@ for (const p of ["apps/client/src/i18n/locales/en-US.ts", "apps/client/src/i18n/
    缺席判点的两档产物（mock / real）一旦被构建脚本清空或写成半截，absent 会"读成成立"＝假绿。
    所以判点开跑前先验：档目录在不在、每条判据点名的产物文件在不在且非 0 字节。缺就拒绝出判决。 */
 {
-  const BANDS = { mock: "apps/client/dist/build/mp-weixin", real: "apps/client/dist/build/mp-weixin-real" };
   const missing = [];
   for (const [band, root] of Object.entries(BANDS)) {
     if (!existsSync(resolve(REPO, root))) missing.push(band + " 整档不在盘上（" + root + "）");
@@ -1772,6 +1781,31 @@ for (const p of ["apps/client/src/i18n/locales/en-US.ts", "apps/client/src/i18n/
   if (missing.length) {
     console.log("SRC_SHAPE_RESULT=FAIL reason=产物档处于构建 flux（" + missing.length + " 项）⇒ 不在 flux 上出判决");
     for (const m of missing.slice(0, 8)) console.log("  ✗ " + m);
+    process.exit(2);
+  }
+}
+/* 判据台行的 bands 是「这条判点在哪些产物档上真的验过」的**唯一声明源**：报告、判据台侧盖章、
+   两台测试的产物档断言都引它。它一旦与 files 实读的档脱钩 —— 多声明一档（那档没有承载＝
+   「验了一档却勾了两档」）或实读了没声明的一档（「勾了这一档却没验」）—— 下游就拿着错的真相
+   对账：CH22 那次假红正是这么来的（行上按裁定只留 real，测试自己那张两档表还在要 mock）。
+   这是载体自己的账实不符，不是产品判点，故与 flux 门同档：先拒出判决，exit 2。
+   --spec-extra 注入行不参与：它们的承载是仓内/仓外的临时副本，本来就不在任何构建根下
+   （bandOf 对副本返回空串），拿它们对账只会把"注入"读成"漏声明"。 */
+{
+  const bad = [];
+  const critAll = SPEC.filter((x) => x.criteria);
+  for (const s of critAll) {
+    if (s.__injected) continue;
+    const want = [...new Set(s.bands || [])].sort();
+    const read = [...new Set((s.files || [{ file: s.file }]).map((t) => bandOf(t.file)).filter(Boolean))].sort();
+    if (want.join(",") !== read.join(",")) {
+      bad.push((s.caseId || s.id) + " 声明=" + (want.join("+") || "空") + " 实读=" + (read.join("+") || "无产物承载"));
+    }
+  }
+  console.log("SRC_SHAPE_BANDS 判据台行=" + critAll.length + " 声明与实读一致=" + (critAll.length - bad.length));
+  if (bad.length) {
+    console.log("SRC_SHAPE_RESULT=FAIL reason=判据台行的 bands 与 files 实读的产物档对不上（" + bad.length + " 条）⇒ 报告与测试会拿错的档对账，先修行再出判决");
+    for (const b of bad.slice(0, 8)) console.log("  ✗ " + b);
     process.exit(2);
   }
 }

@@ -214,13 +214,30 @@ let realOut = ""; // 块 1 存一份真数据 stdout，块 3 的守恒可见性�
   const r = run("empty", ["--policy", POLICY, "--triage", p]);
   t("空集 ⇒ 红", r.code === 2 && /空集/.test(r.out), "exit=" + r.code + "\n" + r.out.slice(0, 300));
 }
-/* 5) 锚点行漂移必须红（改了代码没改依据） */
+/* 5) 锚点判据必须红（2026-10-27 换尺：核标识符存在且唯一，不再核行号）
+   原注入是 pol.anchors[0].line = 1，期望载具喊「行漂移」。那把尺把"源码排版"当依据：
+   登录页补注册入口等改动让被锚文件整体下移，11 条锚点里 7 条仍指得到 uni.reLaunch /
+   login-page__brand 却整排变红（真数据实测 锚点可核=4/11）—— 门红了，依据却一条没丢，这是假红。
+   改成两向负例，正好钉住新判据的两半：
+     ① needle 改成源码里不存在的标识符 ⇒ 必须红（存在性）；
+     ② needle 换成同文件里出现多处的标识符 ⇒ 必须红（唯一性；只核存在的话，
+        锚点指回四处中的哪一处说不清，复核仍然不成立）。
+   行号不再参与判决，所以这里也不再去改 line —— 行号漂移是合法变更，红它才是假红。 */
 {
   const pol = JSON.parse(realPolicy);
-  pol.anchors[0].line = 1;
-  const p = writeJson(resolve(TMP, "drift-policy.json"), pol);
-  const r = run("drift", ["--policy", p, "--triage", resolve(REPO, ".zcode/tmp/triage-r7-guest.json")]);
-  t("锚点行漂移 ⇒ 红", r.code === 2 && /行漂移/.test(r.out), "exit=" + r.code + "\n" + r.out.slice(0, 300));
+  pol.anchors[0].needle = "uni.reLaunch_NOT_A_REAL_IDENTIFIER_20261027";
+  const p = writeJson(resolve(TMP, "anchor-missing-policy.json"), pol);
+  const r = run("anchor-missing", ["--policy", p, "--triage", resolve(REPO, ".zcode/tmp/triage-r7-guest.json")]);
+  t("锚点标识符不存在 ⇒ 红", r.code === 2 && /标识符不存在/.test(r.out), "exit=" + r.code + "\n" + r.out.slice(0, 300));
+}
+{
+  const pol = JSON.parse(realPolicy);
+  pol.anchors[0].file = "apps/client/src/pages/login/index.vue";
+  pol.anchors[0].needle = "isRegisterOpen";
+  const p = writeJson(resolve(TMP, "anchor-dup-policy.json"), pol);
+  const r = run("anchor-dup", ["--policy", p, "--triage", resolve(REPO, ".zcode/tmp/triage-r7-guest.json")]);
+  t("锚点标识符在文件里出现多处 ⇒ 红（唯一性也是判据，不只看存在）",
+    r.code === 2 && /标识符不唯一/.test(r.out), "exit=" + r.code + "\n" + r.out.slice(0, 300));
 }
 /* 6) guardCaseId 撞号必须红（subpackages/a/b-c 与 subpackages/a-b/c 归一化后同号 ⇒ 复测腿归属不清） */
 {

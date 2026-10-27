@@ -35,5 +35,14 @@ for (const [rel, bucket, baseSegs, want, why] of cases) {
 console.log(`${srcHas ? "PASS" : "FAIL"}  sync-app-assets.mjs 里逐字存在同一谓词（防止测试与守卫分家）`);
 pass += srcHas ? 1 : 0;
 const total = cases.length + 1;
+/* 聚合器只认两类自报计数（run-qa-selftests.mjs 的 mNew / mOld 两条正则）：
+   `SUMMARY: assertion failures = N` 或 `XXX_SUMMARY … fail=N`。本文件原先只印 `GUARD_SELFTEST=PASS 7/7` —— 它不是聚合器认的
+   计数行（`_SELFTEST=` 里没有 `_TEST=` 这个子串），于是 exit=0 也被记成「无自报断言计数（不可信）」，
+   一条本来 7/7 全绿的测试整发判红（2026-10-27 复现）。
+   这里补一行聚合器认得的 SUMMARY，而不是去放宽聚合器的判据：聚合器「每个测试必须自报断言数」
+   这条约束是它敢把 exit=0 当证据的前提，为单个测试松它，等于给所有不报数的测试开后门。
+   失败数由 total-pass 现算而不是写死 0：判据一红，聚合器读到的就是同一笔账，不会出现
+   「自报 0 失败但退出码 1」这种自相矛盾。 */
+console.log(`SUMMARY: assertion failures = ${total - pass}`);
 console.log(`\nGUARD_SELFTEST=${pass === total ? "PASS" : "FAIL"} ${pass}/${total}`);
 process.exit(pass === total ? 0 : 1);

@@ -46,12 +46,31 @@ const problems = [];
 const markProblem = (m) => { problems.push(m); };
 const key = (page, landing) => page + " → " + landing;
 
-/* ---------- 锚点可核：policy 每条依据都得是 {file,line,needle} 且那一行真写着 needle ---------- */
+/* ---------- 锚点可核：policy 每条依据都得是 {file,needle}，且 needle 在该文件里存在且唯一 ----------
+   为什么不再核行号（2026-10-27 实测）：行号是"源码排版"的快照，不是依据本身。登录页补注册入口
+   等改动让被锚文件整体下移（policy 11 条锚点里 7 条报"行漂移"，锚点可核=4/11），而它们
+   指着的 uni.reLaunch / class="login-page__brand" / class="login-form" 一个都没消失 ——
+   这不是产品退化，是判据把"行号相等"错当成了"依据还在"。行号还会持续漂：每改一次源码就得
+   有人去数一次新行号，数错一次就再红一次，最后所有人学会的做法一定是"把行号改到绿"，
+   而不是"去复核依据"。
+   新判据只问两件事：① needle 还在不在；② 在文件里是不是只出现一处（锚点必须能指回唯一位置，
+   出现两处就无法判断裁定指的是哪一处，和行号一样不可复核）。
+   比较前把连续空白折叠成一个空格（squashWs）：needle 允许跨行（例如 v-if 守卫和它守着的
+   class 分居两行），重排缩进/换行不算依据变化，只有标识符被改名、删除或复制才会红。
+   policy 里的 line 字段从此只是阅读提示，不参与判决，缺了也不红。 */
+const squashWs = (s) => String(s).replace(/\s+/g, " ").trim();
 function checkAnchor(a) {
   const p = resolve(REPO, a.file);
   if (!existsSync(p)) return "文件不存在 " + a.file;
-  const line = (readFileSync(p, "utf8").split(/\r?\n/)[a.line - 1] || "").trim();
-  if (!line.includes(a.needle)) return `行漂移 ${a.file}:${a.line} 里没有「${a.needle}」，该行实为 ${line.slice(0, 70)}`;
+  const needle = squashWs(a.needle || "");
+  if (!needle) return `锚点没有 needle（${a.file}）⇒ 无法复核它指的是什么`;
+  let text;
+  try { text = readFileSync(p, "utf8"); } catch (e) { return "文件读不动 " + a.file + "：" + String(e && e.message).slice(0, 60); }
+  const hay = squashWs(text);
+  let hits = 0, at = hay.indexOf(needle);
+  while (at !== -1) { hits++; at = hay.indexOf(needle, at + needle.length); }
+  if (hits === 0) return `标识符不存在：${a.file} 里找不到「${a.needle}」⇒ 依据已经不在源码里（行号漂移不再算错，标识符真没了才红）`;
+  if (hits > 1) return `标识符不唯一：${a.file} 里「${a.needle}」出现 ${hits} 处 ⇒ 锚点指不回唯一位置（请把 needle 写长到唯一，别退回行号）`;
   return null;
 }
 

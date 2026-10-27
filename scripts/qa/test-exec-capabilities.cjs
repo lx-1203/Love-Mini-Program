@@ -136,9 +136,35 @@ async function main() {
   t("case-recipes.json 可解析且 kind 名正", !!recipes && recipes.kind === "case-recipes", recipes ? "recipes=" + Object.keys(recipes.recipes || {}).length : "解析失败");
   if (recipes && C) {
     const keys = Object.keys(recipes.recipes || {});
-    t("八条欠账逐例有配方（PFI25/VI25/VI34/OT05/OT06/OT09/OC09/VB03）",
-      ["PAGES-PROFILE-INDEX|PFI25", "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25", "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34",
-       "次要20|OT05", "次要20|OT06", "次要20|OT09", "次要21|OC09", "次要22|VB03"].every((k) => keys.includes(k)), keys.join(" "));
+    /* 欠账清单（人看的账，8 条，别为了出绿删条目）：判据台 10 条 real-coverage 欠账里由配方通道
+       认领的 8 条（另两条 次要20|VRN07/次要18|TD03 不归本通道，见 test-cap-recipes.cjs §11）。
+       2026-10-28 的判据台现状（复跑 verify-real-coverage.mjs）：
+         · 仍在 REALCOV_UNCOVERED 的 4 条：OT05/OT06/OT09/OC09（缺 login 或 login+guest 真实腿）；
+         · 已进 REALCOV_VOIDED 的 4 条：PFI25/VI25/VI34/VB03（待拍板/待重跑，不是"已修好"，也不是
+           "欠账已销"）；
+         · PFI25 的配方于 2026-10-28 移入 retiredRecipes：语音介绍段按设计裁定撤下（66c1ddf5 把
+           pages/profile/index.vue 的 voice-preview 段 23 行删到 0；src 与 mp-weixin-real 产物 grep
+           voice-preview 均 0 命中），判据台仍钉 .voice-preview__delete 是判据侧过期，配方通道没有
+           可命中的等价选择器 ⇒ 造一条碰不到目标的假配方比退役更坏。
+       所以预期配方集合按文件**动态取**：在册 = 欠账 8 条 - 显式退役；退役必须登记且带理由，
+       不能靠从欠账清单里删掉一条来让这条断言变绿。 */
+    const DEBTS = [
+      "PAGES-PROFILE-INDEX|PFI25", "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25",
+      "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI34", "次要20|OT05", "次要20|OT06",
+      "次要20|OT09", "次要21|OC09", "次要22|VB03",
+    ];
+    const RETIRED = Object.keys(recipes.retiredRecipes || {}).filter((k) => k !== "_note");
+    const liveDebts = DEBTS.filter((k) => !RETIRED.includes(k));
+    t(`八条欠账的账没丢（在册 ${liveDebts.length} + 退役 ${RETIRED.length} = ${DEBTS.length}）；在册的逐例有配方`,
+      liveDebts.length + RETIRED.length === DEBTS.length && liveDebts.every((k) => keys.includes(k)),
+      `在册=${liveDebts.join(" ")} 退役=${RETIRED.join(" ")} 实际配方=${keys.join(" ")}`);
+    t("配方集合正好等于「欠账 - 显式退役」（不许多一条、不许少一条；不手抄八条）",
+      keys.length === liveDebts.length && keys.every((k) => liveDebts.includes(k)),
+      `recipes=${keys.length} 未退役欠账=${liveDebts.length}`);
+    t("退役是显式登记：键都在欠账清单里、不在 recipes 里，且 retiredRecipes._note 写明理由",
+      RETIRED.length > 0 && RETIRED.every((k) => DEBTS.includes(k) && !keys.includes(k))
+        && String(recipes.retiredRecipes?._note || "").trim().length > 0,
+      `retired=${RETIRED.join(" ")} note=${String(recipes.retiredRecipes?._note || "").length} 字`);
     for (const k of keys) {
       const r = recipes.recipes[k];
       const fx = C.validateFixture(r.fixture);

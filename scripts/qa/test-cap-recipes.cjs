@@ -41,7 +41,8 @@ function t(name, cond, detail) {
 
 /* ══════════════════════════════════════════════════════════════════════════════
    §8 用**编译产物**数选择器命中几枚（配方车道 2026-10-13，PFI25/v37 那条
-   UNVERIFIED-INSTRUMENT 直接要补的判点）。
+   UNVERIFIED-INSTRUMENT 直接要补的判点；PFI25 配方本身已于 2026-10-28 退役，
+   判点与计数器保留，自证锚点改钉现存的真实同构兄弟 —— 见本节正文）。
    ── 为什么要离线数产物 ──
    配方里的 tap 走 r-exec-ws.mjs 的 deepOne ⇒ automator 的 page.$，**永远取第一个命中**（实测：
    exec-v37-pfi25 的 step#6 probe 报 .voice-preview__delete present(2)，step#10 tap 打到 idx0「重录」，
@@ -583,14 +584,16 @@ async function main() {
   t("§7 缺省基底页在册且桥开得住（tabBar 限制只作用于 navigateTo 的目标页，不作用于基底页）",
     C.isTabBarPage(C.NAVTO_BASE_PAGE) === true &&
       C.resolveOpenForm({ page: "subpackages/vip/bills", query: "" }, { navTo: true }).base === C.NAVTO_BASE_PAGE);
-  /* 反面：语料里 PFI25 的真实页 pages/profile/index 在 pages.json 的 tabBar 里 ⇒ navigateTo 打不开。
-     钉这一条是因为「tabBar 页也走 navigateTo」在设备上必然 fail，而行上会读成「页打不开=产品问题」。 */
-  const tabbarPageInCorpus = openSteps.map((x) => x.s.page).find((p) => C.isTabBarPage(p));
-  t("§7 语料里真有 tabBar 页的 open 步（反面样本非凭空造）：" + tabbarPageInCorpus,
-    !!tabbarPageInCorpus, tabbarPageInCorpus);
+  /* 反面：pages/profile/index 在 pages.json 的 tabBar 里 ⇒ navigateTo 打不开。
+     钉这一条是因为「tabBar 页也走 navigateTo」在设备上必然 fail，而行上会读成「页打不开=产品问题」。
+     PFI25 配方 2026-10-28 退役后语料里已没有打开 tabBar 页的 open 步，但这条判点不能跟着消失：
+     反面样本改为从 pages.json 现查（isTabBarPage 读配置，不凭记忆），证明平台限制仍被拦。 */
+  const tabbarPage = "pages/profile/index";
+  t("§7 反面样本是真实 tabBar 页（pages.json 的 tabBar.list 里确有 " + tabbarPage + "；PFI25 退役后语料已无打开它的 open 步，故不再从语料取）",
+    C.isTabBarPage(tabbarPage) === true, tabbarPage);
   t("§7 负例：tabBar 页即使带 --navto-open 也必须退回桥 open（平台限制，不许记成 navigateTo 失败的产品判决）",
-    !!tabbarPageInCorpus && (function () {
-      const f = C.resolveOpenForm({ page: tabbarPageInCorpus, query: "userId=1" }, { navTo: true });
+    (function () {
+      const f = C.resolveOpenForm({ page: tabbarPage, query: "userId=1" }, { navTo: true });
       return f.via === "bridge" && f.kind === "tabbar";
     })());
   t("§7 负例：目标页==基底页时必须退回桥 open（navigateTo 只会叠一层自己）；空 page / 缺 step 不许发 navigateTo",
@@ -797,62 +800,80 @@ async function main() {
     [C.navigateToSource("/a"), C.navigateToSyncSource("/a"), C.navReadSource(), hSrc, C.handlerDrainSource(), C.netFaultArmReceiptSource()]
       .every((s) => !/\buni\b/.test(s)));
 
-  /* ── §8 产物命中数：判点自身先自证，再上活语料，最后拿真配方搬回旧形状 ── */
+  /* ── §8 产物命中数：判点自身先自证，再上活语料，最后拿真实同构兄弟搬回旧形状 ──
+     PFI25 配方 2026-10-28 退役（语音段按设计裁定撤下，.voice-preview__delete 在 src 与产物里
+     都 0 命中）⇒ 原来借它做的那组 2/1/0 自证必须换锚点，否则「计数器不是恒真」这条会随
+     被测物一起消失。改钉 pages/messages/index 顶部两枚 .header__icon-btn：同一 .header__right
+     下的同构兄弟，产物命中 2；第二枚是父级最后一个子元素 ⇒ :last-child 命中 1；编造类名 0。
+     三档仍是现场从产物数出来的（不是把期望值写成常量），与 PFI25 当时同形，且是现存真实节点。 */
+  const pairPage = "pages/messages/index";
+  const pairBare = ".header__icon-btn";
+  const pairLast = pairBare + ":last-child";
+  const pairRecipe = () => ({
+    page: pairPage,
+    steps: [
+      { do: "tap", selector: pairLast, expectMatches: 1 },
+      { do: "probe", selectors: [pairBare, pairLast], expectMatches: { [pairBare]: 2, [pairLast]: 1 } },
+    ],
+  });
   t("§8 编译产物在盘可数（" + path.relative(REPO, BAND) + "；只读，本车道不重编译）", fs.existsSync(path.join(BAND, "pages", "profile", "index.wxml")), "");
-  const c2 = countSelector("pages/profile/index", ".voice-preview__delete");
-  const c1 = countSelector("pages/profile/index", ".voice-preview__delete:last-child");
-  const c0 = countSelector("pages/profile/index", ".voice-preview__no-such-class-xyz");
-  const cCard = countSelector("pages/profile/index", ".voice-preview__card > .voice-preview__delete");
+  const c2 = countSelector(pairPage, pairBare);
+  const c1 = countSelector(pairPage, pairLast);
+  const c0 = countSelector(pairPage, ".header__icon-btn--no-such-modifier-xyz");
+  const cCard = countSelector(pairPage, ".header__right > " + pairBare);
   const cChain = countSelector("subpackages/profile-extra/profile/other", "profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--like");
-  /* 计数器的自证：三档不同的数（2 / 1 / 0）+ 子代组合符 + 穿透链下钻到组件文件。
-     钉住 2 不是随手写的期望值：exec-v37-pfi25 的 step#6 在同一份产物上设备读数就是 present(2)，
-     离线数与设备数同向 ⇒ 这条判点数的东西就是设备上那几枚节点。 */
-  t("§8 计数器不是恒真：同页三类选择器数出 2/1/0（.voice-preview__delete=" + c2.count + "（设备 step#6 实测 present(2) 同数）, :last-child=" + c1.count + ", 编造类名=" + c0.count + "）",
+  /* 计数器的自证：三档不同的数（2 / 1 / 0）+ 子代组合符 + 穿透链下钻到组件文件。 */
+  t("§8 计数器不是恒真：同页三类选择器数出 2/1/0（" + pairBare + "=" + c2.count + ", :last-child=" + c1.count + ", 编造类名=" + c0.count + "）",
     c2.count === 2 && c1.count === 1 && c0.count === 0, "files=" + c2.file + "/" + c1.file);
-  t("§8 计数器认得子代组合符（.voice-preview__card > .voice-preview__delete=" + cCard.count + " 枚，仍两枚 ⇒ 单靠父级收窄不解决 PFI25）",
+  t("§8 计数器认得子代组合符（.header__right > " + pairBare + "=" + cCard.count + " 枚，仍两枚 ⇒ 单靠父级收窄不解决歧义）",
     cCard.count === 2, cCard.file);
   t("§8 计数器能沿 usingComponents 下钻到组件文件（OT05 的穿透链末段在 " + cChain.file + " 命中 " + cChain.count + " 枚）",
     cChain.count === 1 && /RelationshipCTA\.wxml$/.test(String(cChain.file)), cChain.error ? "error=" + cChain.error : cChain.file);
   t("§8 活配方全体动作步在产物里唯一致命中，且 expectMatches 与产物实测一致（" + (RECIPES_FILE ? path.relative(REPO, RECIPES_FILE) : "") + "）",
     liveProblems.length === 0, liveProblems.join(" ｜ ").slice(0, 280));
-  /* 负例 A（真配方搬回旧形状）：把 PFI25 的 tap 选择器脱掉 :last-child —— 这正是 v37 在盘的那一版。
+  /* 负例 A（真实同构兄弟搬回旧形状）：把 tap 的 :last-child 脱掉 —— 这正是 PFI25/v37 在盘的那一版。
      这条是 §8 的承重墙：它证明唯一性判点会真红，而红只来自这一刀。 */
-  t("§8 负例（活配方搬回 v37 旧形状）：把 PFI25 的 tap .voice-preview__delete:last-child 脱掉伪类 ⇒ 必须判「命中 2 枚」，且只多出这一条",
+  t("§8 负例（真实同构兄弟脱伪类）：把 tap " + pairLast + " 脱成裸形 ⇒ 必须判「命中 2 枚」，且只多出这一条",
     (function () {
       const mut = deepClone(RECIPES);
-      const st = mut.recipes["PAGES-PROFILE-INDEX|PFI25"].steps;
-      const tap = st.find((s) => s && s.do === "tap" && /:last-child/.test(String(s.selector || "")));
-      if (!tap) return false;
-      tap.selector = ".voice-preview__delete";
+      mut.recipes["§8-NEG|ambiguous-siblings"] = pairRecipe();
+      const before = matchCountProblems(mut);
+      if (before.length !== liveProblems.length) return false;
+      const tap = mut.recipes["§8-NEG|ambiguous-siblings"].steps[0];
+      tap.selector = pairBare;
       delete tap.expectMatches;
-      const before = matchCountProblems(RECIPES).length;
       const after = matchCountProblems(mut);
-      return after.length === before + 1 && /PFI25/.test(after.join("")) && /命中 2 枚/.test(after.join(""));
+      return after.length === before.length + 1 && /命中 2 枚/.test(after.join(""));
     })());
   /* 负例 B：把对照 probe 里的伪类形摘掉（裸形读数还在，但「引擎认没认伪类」就没证据了）⇒ 必须红。 */
-  t("§8 负例：把 PFI25 各 probe 里的 .voice-preview__delete:last-child 摘掉 ⇒ 「用位置伪类收窄却没有裸形+伪类并列的对照读数」必须判红",
+  t("§8 负例：把对照 probe 里的 " + pairLast + " 摘掉 ⇒ 「用位置伪类收窄却没有裸形+伪类并列的对照读数」必须判红",
     (function () {
       const mut = deepClone(RECIPES);
-      mut.recipes["PAGES-PROFILE-INDEX|PFI25"].steps.forEach((p) => {
-        if (p && p.do === "probe") {
-          p.selectors = (p.selectors || []).filter((x) => x !== ".voice-preview__delete:last-child");
-          if (p.expectMatches && typeof p.expectMatches === "object") delete p.expectMatches[".voice-preview__delete:last-child"];
-        }
-      });
+      mut.recipes["§8-NEG|pseudo-pair"] = pairRecipe();
+      const before = matchCountProblems(mut);
+      if (before.length !== liveProblems.length) return false;
+      const p = mut.recipes["§8-NEG|pseudo-pair"].steps[1];
+      p.selectors = p.selectors.filter((x) => x !== pairLast);
+      delete p.expectMatches[pairLast];
       const after = matchCountProblems(mut);
       return after.length === liveProblems.length + 1 && /位置伪类/.test(after.join(""));
     })());
   /* 负例 C：expectMatches 半填（本仓立过案的两条原病：没测的值写进判决字段、expected=undefined 上行）。 */
   t("§8 负例：expectMatches 写成字符串 / 写成 undefined / 点名了没 probe 的选择器 ⇒ 三种都判红，不许读成通过（expected=undefined 那一类形状）",
     (function () {
-      const m1 = deepClone(RECIPES);
-      m1.recipes["PAGES-PROFILE-INDEX|PFI25"].steps.find((s) => s.do === "probe" && s.expectMatches).expectMatches[".voice-preview__delete"] = "2";
-      const m2 = deepClone(RECIPES);
-      m2.recipes["PAGES-PROFILE-INDEX|PFI25"].steps.find((s) => s.do === "probe" && s.expectMatches).expectMatches[".voice-preview__delete"] = undefined;
-      const m3 = deepClone(RECIPES);
-      m3.recipes["PAGES-PROFILE-INDEX|PFI25"].steps.find((s) => s.do === "probe" && s.expectMatches).expectMatches[".ghost-class"] = 1;
-      const a = matchCountProblems(m1).join(""), b = matchCountProblems(m2).join(""), c = matchCountProblems(m3).join("");
-      return /不是非负整数/.test(a) && /不是非负整数/.test(b) && /没被 probe 的选择器/.test(c);
+      const mk = () => {
+        const m = deepClone(RECIPES);
+        m.recipes["§8-NEG|expect-half"] = { page: pairPage, steps: [{ do: "probe", selectors: [pairBare], expectMatches: { [pairBare]: 2 } }] };
+        return m;
+      };
+      const base = matchCountProblems(mk()).length;
+      if (base !== liveProblems.length) return false;
+      const m1 = mk(); m1.recipes["§8-NEG|expect-half"].steps[0].expectMatches[pairBare] = "2";
+      const m2 = mk(); m2.recipes["§8-NEG|expect-half"].steps[0].expectMatches[pairBare] = undefined;
+      const m3 = mk(); m3.recipes["§8-NEG|expect-half"].steps[0].expectMatches[".ghost-class"] = 1;
+      const a = matchCountProblems(m1), b = matchCountProblems(m2), c = matchCountProblems(m3);
+      return a.length === base + 1 && b.length === base + 1 && c.length === base + 1 &&
+        /不是非负整数/.test(a.join("")) && /不是非负整数/.test(b.join("")) && /没被 probe 的选择器/.test(c.join(""));
     })());
   /* 正例反面都要有牙：给一条本来没动作步的配方塞一个产物上不存在的选择器当 tap ⇒ 死选择器也要判红。 */
   t("§8 负例：往 VI25 里插一步产物中命中 0 枚的 tap（死选择器）⇒ 与歧义同类拦下，不许「不在页上」到设备上才发现",
@@ -876,11 +897,13 @@ async function main() {
     if (!r) continue;
     (r.steps || []).forEach((s) => { const h = s && s.handler; if (h && Array.isArray(h.componentChain)) declaredChains.push({ key: k, chain: h.componentChain }); });
   }
-  t("§9 四例的每个 handler 步都显式声明了 componentChain（OT05/OT06/OT09=三层 CTA 链；OC09=空链页级 loadOfficialChat）",
-    declaredChains.length >= 6 && declaredChains.every((x) => x.key !== "次要21|OC09" ? x.chain.join(">") === "profile-shell>public-profile>relationship-c-t-a" : x.chain.length === 0),
+  t("§9 四例的每个 handler 步都显式声明了 componentChain（OT05/OT06=三层 CTA 链；OT09/OC09=空链页级 handler —— OT09 的 whisper 钮已随 CTA 改版消失，现直调页级 openWhisperSheet）",
+    declaredChains.length >= 6 && declaredChains.every((x) => ["次要20|OT05", "次要20|OT06"].includes(x.key)
+      ? x.chain.join(">") === "profile-shell>public-profile>relationship-c-t-a"
+      : x.chain.length === 0),
     "声明链步=" + declaredChains.length);
   const ctaChainRes = resolveChainRegistration("subpackages/profile-extra/profile/other", ["profile-shell", "public-profile", "relationship-c-t-a"]);
-  t("§9 OT05/OT06/OT09 声明的链逐跳在产物 .json 的 usingComponents 里查得到，叶子落在 RelationshipCTA.json（从 *.json 现查，不抄文档）",
+  t("§9 OT05/OT06 声明的链逐跳在产物 .json 的 usingComponents 里查得到，叶子落在 RelationshipCTA.json（从 *.json 现查，不抄文档）",
     ctaChainRes.ok === true && /RelationshipCTA\.json$/.test(String(ctaChainRes.leaf).replace(/\\/g, "/")), ctaChainRes.error || ctaChainRes.leaf);
   t("§9 活配方全体 handler 步的声明链与注册表零冲突（" + path.relative(REPO, RECIPES_FILE) + "）",
     liveChainProblems.length === 0, liveChainProblems.join(" ｜ ").slice(0, 260));
@@ -894,8 +917,9 @@ async function main() {
       const after = handlerChainProblems(mut);
       return after.length === liveChainProblems.length + 1 && /relationship-cta/.test(after.join("")) && /usingComponents/.test(after.join(""));
     })());
-  /* 负例 B：换顺序（public-profile 放到页根去找）⇒ 该层 usingComponents 没有 public-profile（它在 ProfileShell 层）⇒ 红。 */
-  t("§9 负例：把 OT09 链换顺序（public-profile 提到最前）⇒ 页根注册表里没有 public-profile，判红（链跳错层当场可知）",
+  /* 负例 B：给 OT09 的页级 handler（空链）塞一条错链（public-profile 放到页根去找）⇒
+     该层 usingComponents 没有 public-profile（它在 ProfileShell 层）⇒ 红。空链不是免检口子。 */
+  t("§9 负例：给 OT09 的页级 handler 塞一条错链（public-profile 提到最前）⇒ 页根注册表里没有 public-profile，判红（链跳错层当场可知）",
     (function () {
       const mut = deepClone(RECIPES);
       mut.recipes["次要20|OT09"].steps.forEach((s) => { if (s && s.handler && Array.isArray(s.handler.componentChain)) s.handler.componentChain = ["public-profile", "profile-shell", "relationship-c-t-a"]; });
@@ -912,15 +936,14 @@ async function main() {
       const after = handlerChainProblems(mut);
       return after.length === liveChainProblems.length + 1 && /没声明 componentChain/.test(after.join(""));
     })());
-  /* §9 不是 §8 的后门：把 PFI25 的动作步放宽成歧义选择器（它没有链声明），§8 仍判红、§9 不掺和。 */
-  t("§9 与 §8 互不解锁：PFI25 动作步放宽成命中 2 枚的歧义选择器时，§8 照旧拦死（§9 不给动作步开后门）",
+  /* §9 不是 §8 的后门：把真实同构兄弟的动作步放宽成歧义选择器（这条配方没有链声明），
+     §8 仍判红、§9 不掺和。PFI25 退役后锚点换成同一对 .header__icon-btn。 */
+  t("§9 与 §8 互不解锁：真实同构兄弟的动作步放宽成命中 2 枚的歧义选择器时，§8 照旧拦死（§9 不给动作步开后门）",
     (function () {
       const mut = deepClone(RECIPES);
-      const st = mut.recipes["PAGES-PROFILE-INDEX|PFI25"].steps;
-      const tap = st.find((s) => s && s.do === "tap" && /:last-child/.test(String(s.selector || "")));
-      if (!tap) return false;
-      tap.selector = ".voice-preview__delete";
-      delete tap.expectMatches;
+      mut.recipes["§9-NEG|no-chain"] = pairRecipe();
+      mut.recipes["§9-NEG|no-chain"].steps[0].selector = pairBare;
+      delete mut.recipes["§9-NEG|no-chain"].steps[0].expectMatches;
       const s8 = matchCountProblems(mut), s9 = handlerChainProblems(mut);
       return s8.length >= 1 && /命中 2 枚/.test(s8.join("")) && s9.length === liveChainProblems.length;
     })());

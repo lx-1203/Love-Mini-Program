@@ -34,7 +34,8 @@
    "evidence": "apps/client/src/subpackages/discover-extra/likes/index.vue:48-50,:58-66,:191-215,:606-609,:716-723,:1002-1010；reports/audit/round-6/ops/次要19.json（LK04.pre 的「⚠ 不可达前置」原文）；scripts/qa/verify-real-coverage.mjs:237；scripts/qa/ui-queue.round8e-close.json:3,:121（guest 轴 5 行点名 LK04）"
   }
  },
- "recipes": {
+ "retiredRecipes": {
+  "_note": "PFI25 配方于 2026-10-28 退役（不进 recipes，不参与任何断言）。依据：语音介绍段已按设计裁定撤下（66c1ddf5 里 apps/client/src/pages/profile/index.vue 的 voice-preview 段 23 行→0，设计任务「个人主页撤下语音/背景/推荐三段，严格等于理想图 6 段」）；全仓 src 与 apps/client/dist/build/mp-weixin-real 产物 grep voice-preview 均 0 命中 ⇒ 不存在可改钉的等价选择器。判据台 PFI25 仍钉 .voice-preview__delete 属判据侧过期，需台账 owner 重新裁定；配方通道不为出绿去放宽「配方必须能在产物里命中」，故整条退役而非造一条碰不到目标的假配方。原配方全文留档于此，供重裁后改写。",
   "PAGES-PROFILE-INDEX|PFI25": {
    "page": "pages/profile/index",
    "caps": { "nativeModal": true },
@@ -81,7 +82,9 @@
     { "do": "restoreModal" },
     { "do": "fixture", "phase": "teardown" }
    ]
-  },
+  }
+ },
+ "recipes": {
   "SUBPACKAGES-VILLAGE-VILLAGE-INDEX|VI25": {
    "page": "subpackages/village/village/index",
    "caps": { "fixtureApi": true },
@@ -220,12 +223,12 @@
    "query": "userId=10001",
    "caps": { "networkFault": true, "rapidTap": true },
    "netFault": { "mode": "fail-all", "statusCode": 500, "data": { "qaFault": "ot09-send-fail" } },
-   "why": "pre 态2=已实名登录（recon 实测 A=100158 实名 APPROVED，other.vue openWhisperSheet 的 ensureCertified('realname') 放行）。sheet 弹出用真实 tap（CTA 心动卡钮，RelationshipCTA.vue:58 → @whisper → openWhisperSheet；选择器走组件穿透 profile-shell >>> public-profile >>> relationship-c-t-a —— REAL-OT-06：类名本身没错，错在页级 $ 探不进三层自定义组件子树）。输入四态用 WS el.input（组件子树）+ readValue 回填实测截断值；whisper-sheet 系列同理走 whisper-compose-sheet 组件穿透（组件挂在页级，other.json usingComponents）。发送全部在 netFault 窗口内做 ⇒ 走失败支路（showErrorToast(whisper.sendFailed)、sheet 不关、内容不丢），零后端写入零残留；成功发送的服务端回读不在本腿（付费 unlock 不可构造，行上如实记）。替代通道（R3-OT-01/R3-02）：深链开页走 via=navto（需 --navto-open），CTA 的 whisper 钮在三层组件子树内取不到时走 handler 直调 openWhisperSheet（需 --handler-call，other.vue:250/:428）；两旗标默认关。关闭三路：遮罩 tap（.whisper-mask）、右上 × tap（.whisper-sheet__close）、发送后自动关（失败支路下 sheet 不关是判点本身）。",
+   "why": "pre 态2=已实名登录（recon 实测 A=100158 实名 APPROVED，other.vue openWhisperSheet 的 ensureCertified('realname') 放行）。⚠ 2026-10-28 复量：CTA 上的 .relationship-cta__btn--whisper 已随 R11 改版消失（RelationshipCTA 现只发 like/message/follow），whisper 的 UI 入口改为身份卡「打招呼」胶囊长按（PublicIdentity.vue:85 的 @longpress=\"emit('whisper')\" → other.vue:408）；配方 DSL 没有 longpress 动作 ⇒ UI 那半在本载体上结构性不可拍，不许拿 tap 冒充长按。sheet 弹出改走 C8 直调页级 openWhisperSheet（handler 在 other.vue:226，componentChain=[]；需 --handler-call），输入四态用 WS el.input（组件子树）+ readValue 回填实测截断值；whisper-sheet 系列同理走 whisper-compose-sheet 组件穿透（组件挂在页级，other.json usingComponents）。发送全部在 netFault 窗口内做 ⇒ 走失败支路（showErrorToast(whisper.sendFailed)、sheet 不关、内容不丢），零后端写入零残留；成功发送的服务端回读不在本腿（付费 unlock 不可构造，行上如实记）。开页仍保留 via=navto（需 --navto-open）作为深链通道；两旗标默认关。关闭三路：遮罩 tap（.whisper-mask）、右上 × tap（.whisper-sheet__close）、发送后自动关（失败支路下 sheet 不关是判点本身）。",
    "steps": [
     { "do": "open", "page": "subpackages/profile-extra/profile/other", "query": "userId=10001", "via": "navto" },
     { "do": "wait", "ms": 2600 },
     { "do": "assertRoute", "routeIncludes": "profile-extra/profile/other" },
-    { "do": "tap", "selector": "profile-shell >>> public-profile >>> relationship-c-t-a >>> .relationship-cta__btn--whisper", "handler": { "method": "openWhisperSheet", "routeIncludes": "profile-extra/profile/other", "componentChain": ["profile-shell", "public-profile", "relationship-c-t-a"] } },
+    { "do": "callHandler", "handler": { "method": "openWhisperSheet", "routeIncludes": "profile-extra/profile/other", "componentChain": [] } },
     { "do": "wait", "ms": 1200 },
     { "do": "probe", "selectors": ["whisper-compose-sheet >>> .whisper-sheet__input", "whisper-compose-sheet >>> .whisper-sheet__send", "whisper-compose-sheet >>> .whisper-sheet", "whisper-compose-sheet >>> .whisper-mask"] },
     { "do": "shot", "label": "a-sheet-open" },

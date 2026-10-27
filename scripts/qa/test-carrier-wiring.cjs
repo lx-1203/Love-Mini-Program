@@ -42,6 +42,16 @@ const USER = TAG + "-user.mjs";
 const FIX_REL = "scripts/qa/" + FIX;
 const USER_REL = "scripts/qa/" + USER;
 const EXEMPT_TMP = "tmp/l18-exempt-" + process.pid + "-fixture.json";
+/* 启动清扫：本测试正常收尾会删自己的夹具，但**崩在中途**时（实测 2026-10-27 一次聚合器整跑
+   留下 4 份不同 pid 的夹具）残留就躺在 scripts/qa 里，而引用完整性门把"目录里有未入库文件"
+   判成缺陷 ⇒ 一台测试的崩溃会让另一扇门持续变红。前缀是这测试独有的，按前缀清自己人的残留是安全的。 */
+try {
+  for (const f of readdirSync(join(REPO, QA_DIR))) {
+    if (/^tmp-l18-carrier-\d+-(fixture|user)\.mjs$/.test(f)) {
+      try { require("node:fs").unlinkSync(join(REPO, QA_DIR, f)); } catch (e) { /* 并发实例刚删掉，无事 */ }
+    }
+  }
+} catch (e) { /* 目录读不到就让后面的断言去报 */ }
 
 let failures = 0;
 const notes = [];
