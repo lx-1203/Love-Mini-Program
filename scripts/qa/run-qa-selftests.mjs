@@ -105,6 +105,10 @@ const GATE_SELFTESTS = [
   // check-fidelity-manifest（2026-10-27）：取景账只有落在 git 里才算证据；像素按 2026-09-29 裁定走仓外库。
   // 负例三向：少一页⇒缺页判据红、覆盖帧文件⇒哈希必变、一帧既不在盘也不在库⇒不许默认放行。
   { name: "check-fidelity-manifest", cmd: ["scripts/qa/check-fidelity-manifest.mjs", "--self-test"], want: /FIDELITY_SELFTEST=PASS cases=(\d+) 负例可红=([1-9]\d*)/ },
+  // audit-fallback-literals（2026-10-27）：var() 兜底字面量与登记值漂移的量具。
+  // 自证 12 例钉住"漂移可红/等值可绿/未解析可归因"，含时长归一（2s vs 2000ms 必须判等）
+  // 与自指双包裹（var(--x, var(--x, 字面量)) 按登记值展开内层会恒判等值 ⇒ 假绿）。
+  { name: "audit-fallback-literals", cmd: ["scripts/qa/audit-fallback-literals.cjs", "--self-test"], want: /SELFTEST=PASS cases=(\d+) 漂移可红=是/ },
 ];
 let gateRan = 0, gateFailed = 0;
 for (const g of GATE_SELFTESTS) {

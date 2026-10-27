@@ -806,6 +806,53 @@ const realRisk = g1;
 const typo = g3;
 const midGroup = g2;
 const outsideDrift = outside.filter((r) => r.oc === "漂移");
+
+/* ── 棘轮（--ratchet）：组1 存量进基线，只减不增 ──────────────────────────
+   只棘轮"名字与值不同族"（明暗反转 + 跨色相），不棘轮全部 924 条：后者含大量一两位手抄
+   （#fff ↔ rgba(255,255,255,.95) 这类），一起钉进基线会让清单不可读、最后被人整体关掉；
+   而真正会看错的就是"名字说浅色、兜底是深色"这种。
+   键取 file:tok:lit 而不是带行号：行号会随任何无关改动漂，那样棘轮天天红、很快就没人看。
+   基线必须**只许收缩**：条目消失（修好了、或兜底字面量被改）
+   也必须同步，否则基线会变成永久免检。 */
+const BASELINE = path.join(__dirname, "fallback-drift-baseline.json");
+const g1Keys = [...new Set(g1.map((d) => `${d.file}:${d.tok}:${d.lit}`))];
+if (process.argv.includes("--ratchet") || process.argv.includes("--update-baseline")) {
+  const update = process.argv.includes("--update-baseline");
+  let base = [];
+  try {
+    base = JSON.parse(fs.readFileSync(BASELINE, "utf8")).entries || [];
+  } catch {
+    if (!update) {
+      console.log("FALLBACKLIT_RATCHET=NOT-EVIDENCED reason=基线文件读不到（没有存量账就不能判「新增」）");
+      process.exit(2);
+    }
+  }
+  const baseSet = new Set(base);
+  const nowSet = new Set(g1Keys);
+  if (update) {
+    fs.writeFileSync(
+      BASELINE,
+      JSON.stringify({
+        note: "组1（名字与值不同族：明暗反转 + 跨色相）的存量账。只许收缩：修好或改了兜底字面量之后要 --update-baseline 同步，否则 --ratchet 会红。键=file:token:兜底字面量（不含行号：行号会随无关改动漂）。",
+        generatedAt: new Date().toISOString(),
+        count: g1Keys.length,
+        entries: g1Keys,
+      }, null, 2) + "\n",
+      "utf8",
+    );
+    console.log(`FALLBACKLIT_RATCHET=UPDATED 基线=${g1Keys.length}`);
+    process.exit(0);
+  }
+  const added = g1Keys.filter((k) => !baseSet.has(k));
+  const gone = base.filter((k) => !nowSet.has(k));
+  for (const k of added) console.log(`  新增漂移 ${k}`);
+  for (const k of gone) console.log(`  基线条目已消失（修好了就该收缩）${k}`);
+  const bad = added.length + gone.length;
+  console.log(`FALLBACKLIT_RATCHET=${bad ? "FAIL" : "OK"} 基线=${baseSet.size} 当前=${g1Keys.length} 新增=${added.length} 该收缩=${gone.length}`);
+  process.exit(bad ? 1 : 0);
+}
+
+
 /** 等值但写法不同 ⇒ 证明归一化在干活（不是字符串恒等），也是「门判等口径」的样本量。 */
 const normWork = equal.filter((r) => {
   const a = String(r.tokenVal).trim().toLowerCase().replace(/\s+/g, "");
