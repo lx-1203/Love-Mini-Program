@@ -82,6 +82,10 @@ g verify-fix-visibility-selftest 60 scripts/qa/verify-fix-visibility.mjs --self-
 # 它自己从不重测，只收集各生产者的话——所以载具里点的是 --self-test（六例，含"空表不许当绿"
 # 与变异翻绿）；真收口要按轮输入，由本轮手动跑，跑出来的 FAIL 逐条点名。
 g verify-fidelity-closeout-selftest 60 scripts/qa/verify-fidelity-closeout.mjs --self-test
+# 实况帧清单门（2026-10-27）：查的是**已入库**那份取景账本身——覆盖等于取景腿的 PAGES 表、
+# 页数/帧数不倒退、每帧指纹与盘上或仓外库对得上。它不需要轮输入，所以载具里点真判（--strict），
+# 不只点自证。CI 不接：一轴绑仓外库，无库时每轮都只能报 NOT-EVIDENCED，等于装一扇不表态的门。
+g check-fidelity-manifest   120 scripts/qa/check-fidelity-manifest.mjs --strict
 # 前后端↔后台连通门：登记 --dry 形状（只铸票 + 只读两端列表，一行都不写）。
 # 真往返（POST /posts → 后台按 id 读到 → DELETE → 计数回原）由本轮腿手动跑：
 # 它会写库，塞进终验载具等于每次全清单跑一遍都往 posts 表插一行——那正是"载具不许有写"的边界。

@@ -1,0 +1,293 @@
+{
+  "schema": "reshoot-hires-goal/v1",
+  "generatedAt": "2026-10-27T11:30:07.000Z",
+  "project": "apps/client/dist/build/mp-weixin-real",
+  "band": "real@f0677920",
+  "out": "reports/verify/2026-10-26/50-fidelity/frames",
+  "reconstructedFrom": [
+    "reshoot.out",
+    "reshoot-assets-r2.log",
+    "reshoot-assets.log",
+    "reshoot-final-r2.log",
+    "reshoot-final.log",
+    "reshoot-full.log",
+    "reshoot-profile.log",
+    "reshoot.log"
+  ],
+  "note": "由日志复原 + 逐帧与盘上 sha256[:16]/字节核对；附近首页来自第二次取景（载具补上路由断言后重拍）。",
+  "results": [
+    {
+      "route": "pages/discover/index",
+      "name": "寻觅匹配卡片",
+      "frames": [
+        {
+          "route": "pages/discover/index",
+          "state": "top",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/寻觅匹配卡片-1-top.png",
+          "contentHash": "cb935d7ea8bd4a88",
+          "bytes": 163287
+        }
+      ],
+      "provenance": "reshoot.out"
+    },
+    {
+      "route": "pages/profile/index",
+      "name": "个人主页-已登录",
+      "frames": [
+        {
+          "route": "pages/profile/index",
+          "state": "top",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/个人主页-已登录-1-top.png",
+          "contentHash": "6f98bbdd09959728",
+          "bytes": 125318
+        },
+        {
+          "route": "pages/profile/index",
+          "state": "bottom",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/个人主页-已登录-2-bottom.png",
+          "contentHash": "95bd418cf6f66679",
+          "bytes": 57676
+        }
+      ],
+      "provenance": "reshoot.out"
+    },
+    {
+      "route": "subpackages/village/village/detail",
+      "name": "帖子详情",
+      "frames": [
+        {
+          "route": "subpackages/village/village/detail",
+          "state": "top",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/帖子详情-1-top.png",
+          "contentHash": "992e5639810fec08",
+          "bytes": 166520
+        }
+      ],
+      "provenance": "reshoot.out"
+    },
+    {
+      "route": "pages/login/index",
+      "name": "登录页",
+      "frames": [
+        {
+          "route": "pages/login/index",
+          "state": "top",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/登录页-1-top.png",
+          "contentHash": "a9305752ba38f96f",
+          "bytes": 210185
+        }
+      ],
+      "provenance": "reshoot-assets-r2.log"
+    },
+    {
+      "route": "pages/home/index",
+      "name": "首页",
+      "frames": [
+        {
+          "route": "pages/home/index",
+          "state": "top",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/首页-1-top.png",
+          "contentHash": "5d1c0704fd1dded1",
+          "bytes": 152658
+        },
+        {
+          "route": "pages/home/index",
+          "state": "bottom",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/首页-2-bottom.png",
+          "contentHash": "e3f1aa7bedde3072",
+          "bytes": 164637
+        }
+      ],
+      "provenance": "reshoot-assets-r2.log"
+    },
+    {
+      "route": "subpackages/discover-extra/discover/matching",
+      "name": "匹配中",
+      "frames": [
+        {
+          "route": "subpackages/discover-extra/discover/matching",
+          "state": "top",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/匹配中-1-top.png",
+          "contentHash": "1e7d2f516a3c2eb2",
+          "bytes": 148835
+        }
+      ],
+      "provenance": "reshoot-assets-r2.log"
+    },
+    {
+      "route": "subpackages/discover-extra/discover/match-success",
+      "name": "匹配成功",
+      "frames": [
+        {
+          "route": "subpackages/discover-extra/discover/match-success",
+          "state": "top",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/匹配成功-1-top.png",
+          "contentHash": "c82c95b5def8f79b",
+          "bytes": 162858
+        }
+      ],
+      "provenance": "reshoot-assets-r2.log"
+    },
+    {
+      "route": "pages/messages/index",
+      "name": "消息",
+      "frames": [
+        {
+          "route": "pages/messages/index",
+          "state": "top",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/消息-1-top.png",
+          "contentHash": "cf475767cbe921eb",
+          "bytes": 91389
+        }
+      ],
+      "provenance": "reshoot-assets-r2.log"
+    },
+    {
+      "route": "pages/profile/index",
+      "name": "个人主页-未登录",
+      "frames": [
+        {
+          "route": "pages/profile/index",
+          "state": "top",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/个人主页-未登录-1-top.png",
+          "contentHash": "b68bc46d340eacfe",
+          "bytes": 91892
+        },
+        {
+          "route": "pages/profile/index",
+          "state": "bottom",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/个人主页-未登录-2-bottom.png",
+          "contentHash": "a61f97e163cdc3f7",
+          "bytes": 61950
+        }
+      ],
+      "provenance": "reshoot-assets-r2.log"
+    },
+    {
+      "route": "subpackages/profile-extra/profile/other",
+      "name": "他人主页",
+      "frames": [
+        {
+          "route": "subpackages/profile-extra/profile/other",
+          "state": "top",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/他人主页-1-top.png",
+          "contentHash": "0670c180e119951c",
+          "bytes": 197229
+        },
+        {
+          "route": "subpackages/profile-extra/profile/other",
+          "state": "bottom",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/他人主页-2-bottom.png",
+          "contentHash": "416131b4fcad6a5c",
+          "bytes": 185411
+        }
+      ],
+      "provenance": "reshoot-assets-r2.log"
+    },
+    {
+      "route": "subpackages/circles/circles/index",
+      "name": "兴趣圈列表",
+      "frames": [
+        {
+          "route": "subpackages/circles/circles/index",
+          "state": "top",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/兴趣圈列表-1-top.png",
+          "contentHash": "87142cd54eb20dcb",
+          "bytes": 174027
+        },
+        {
+          "route": "subpackages/circles/circles/index",
+          "state": "bottom",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/兴趣圈列表-2-bottom.png",
+          "contentHash": "5f250e1a9a16a253",
+          "bytes": 189101
+        }
+      ],
+      "provenance": "reshoot-assets-r2.log"
+    },
+    {
+      "route": "subpackages/circles/circles/circle-home",
+      "name": "圈子详情",
+      "frames": [
+        {
+          "route": "subpackages/circles/circles/circle-home",
+          "state": "top",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/圈子详情-1-top.png",
+          "contentHash": "93c2f678020a97a9",
+          "bytes": 209596
+        },
+        {
+          "route": "subpackages/circles/circles/circle-home",
+          "state": "bottom",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/圈子详情-2-bottom.png",
+          "contentHash": "5eeb98fc70d2b322",
+          "bytes": 98431
+        }
+      ],
+      "provenance": "reshoot-assets-r2.log"
+    },
+    {
+      "route": "subpackages/campus/campus/hub",
+      "name": "校园圈",
+      "frames": [
+        {
+          "route": "subpackages/campus/campus/hub",
+          "state": "top",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/校园圈-1-top.png",
+          "contentHash": "e0a7e8b7112215b0",
+          "bytes": 135651
+        },
+        {
+          "route": "subpackages/campus/campus/hub",
+          "state": "bottom",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/校园圈-2-bottom.png",
+          "contentHash": "6f2dc2641edc85da",
+          "bytes": 126284
+        }
+      ],
+      "provenance": "reshoot-assets-r2.log"
+    },
+    {
+      "route": "subpackages/village/village/publish",
+      "name": "发布帖子",
+      "frames": [
+        {
+          "route": "subpackages/village/village/publish",
+          "state": "top",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/发布帖子-1-top.png",
+          "contentHash": "ac9b11270c71094c",
+          "bytes": 59585
+        },
+        {
+          "route": "subpackages/village/village/publish",
+          "state": "bottom",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/发布帖子-2-bottom.png",
+          "contentHash": "ac9b11270c71094c",
+          "bytes": 59585
+        }
+      ],
+      "provenance": "reshoot-assets-r2.log"
+    },
+    {
+      "route": "pages/nearby/index",
+      "name": "附近首页",
+      "frames": [
+        {
+          "route": "pages/nearby/index",
+          "state": "top",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/附近首页-1-top.png",
+          "contentHash": "5de17d0fee5bf74d",
+          "bytes": 157671
+        },
+        {
+          "route": "pages/nearby/index",
+          "state": "bottom",
+          "path": "reports/verify/2026-10-26/50-fidelity/frames/附近首页-2-bottom.png",
+          "contentHash": "ff91f4a4c0e2e2c2",
+          "bytes": 135392
+        }
+      ],
+      "provenance": "reshoot2.out"
+    }
+  ]
+}

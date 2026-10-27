@@ -98,6 +98,9 @@ const GATE_SELFTESTS = [
   // 只有干净 checkout 才炸。负例来自当场造的靶件（存在性/未入库/孤儿三轴各测两向），
   // 另钉死本程实测的两类假阳：git quotePath 转义（虚报 372 条）与 ../ 未归一。
   { name: "check-tracked-references", cmd: ["scripts/qa/check-tracked-references.mjs", "--self-test"], want: /TRACKEDREFS_SELFTEST=PASS cases=(\d+) 负例可红=([1-9]\d*)/ },
+  // check-fidelity-manifest（2026-10-27）：取景账只有落在 git 里才算证据；像素按 2026-09-29 裁定走仓外库。
+  // 负例三向：少一页⇒缺页判据红、覆盖帧文件⇒哈希必变、一帧既不在盘也不在库⇒不许默认放行。
+  { name: "check-fidelity-manifest", cmd: ["scripts/qa/check-fidelity-manifest.mjs", "--self-test"], want: /FIDELITY_SELFTEST=PASS cases=(\d+) 负例可红=([1-9]\d*)/ },
 ];
 let gateRan = 0, gateFailed = 0;
 for (const g of GATE_SELFTESTS) {

@@ -347,6 +347,10 @@ const GATE_SUITE: { name: string; args: string[]; timeoutMs: number }[] = [
   // 改前/改后像素对照自证：钉住 visible 计数，防"夹具自己坏掉时空转蒙绿"（与 bash 侧同值 60000）。
   { name: "改动可见性门自证 verify-fix-visibility-selftest", args: ["scripts/qa/verify-fix-visibility.mjs", "--self-test"], timeoutMs: 60000 },
   { name: "保真收口门自证 verify-fidelity-closeout-selftest", args: ["scripts/qa/verify-fidelity-closeout.mjs", "--self-test"], timeoutMs: 60000 },
+  // 实况帧清单门：查**已入库**那份取景账本身（覆盖=取景腿的 PAGES 表、页数/帧数不倒退、
+  // 每帧指纹要么在盘上要么在仓外库里对得上）。不需要轮输入 ⇒ 两个载具点的都是真判 --strict。
+  // 没有仓外库的那一格报 NOT-EVIDENCED（exit 2）——它不是绿，也不该被当成缺陷红去放宽。
+  { name: "实况帧清单门 check-fidelity-manifest", args: ["scripts/qa/check-fidelity-manifest.mjs", "--strict"], timeoutMs: 120000 },
   // 前后端↔后台连通（只读形态：铸票 + 两端列表 200）。写回环那一半由本轮腿手动跑，不进载具——
   // 载具每跑一次就往 posts 表插一行，是"结果打印门不许写权威件/库"这条边界的另一种形态。
   { name: "后台往返预检 verify-admin-roundtrip-dry", args: ["scripts/qa/verify-admin-roundtrip.mjs", "--round", "CARRIER", "--dry"], timeoutMs: 120000 },
