@@ -101,4 +101,19 @@ describe("admin http 只读角色写拦截", () => {
     await expect(del("/v1/admin/menus/1")).resolves.toBeTruthy();
     expect(fetch).toHaveBeenCalledTimes(1);
   });
+
+  it("readOnlySafe 的读语义端点（/media/sign 签名）AUDITOR 也放行——否则审核员看不到待审图", async () => {
+    // 2026-10-26：媒体签名 URL 签发是「读凭据」不是写操作，AUDITOR 必须能调用
+    // （后端 /api/v1/media/** 仅要求 authenticated，档位判定在签发时逐路径执行）。
+    installStorage({ admin_v2_user: JSON.stringify({ role: "AUDITOR" }) });
+    await expect(
+      post("/v1/media/sign", { paths: ["/api/v1/media/7/202610/a.jpg"] }, undefined, {
+        readOnlySafe: true,
+      })
+    ).resolves.toBeTruthy();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    // 豁免必须显式 opt-in：不带 options 的同端点 POST 仍按写请求拦下
+    await expect(post("/v1/media/sign", { paths: [] })).rejects.toThrow(/只读/);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
 });

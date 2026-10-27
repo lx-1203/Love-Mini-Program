@@ -13,7 +13,7 @@
  * 只读角色 AUDITOR（审核员）隐藏「审核」按钮 —— 写权限开关统一取 sessionStore.canWrite，
  * 不在视图内比较 role 字符串；即便绕过 UI，后端也会 403。
  */
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRequestRace } from "../../composables/useRequestRace";
 import { useI18n } from "vue-i18n";
 import {
@@ -105,13 +105,16 @@ function handlePageChange(): void {
 
 // ===== 图片预览弹窗 =====
 const previewVisible = ref(false);
-const previewUrl = ref("");
 const previewAsset = ref<MediaAssetSummary | null>(null);
+// 2026-10-26：改为 computed —— withMediaToken 现在走 /media/sign 能力型签名（异步到达，
+// 读签名版本号建立响应式依赖）。此前在 openPreview 里一次性赋值，签名晚到时大图不刷新。
+const previewUrl = computed(() =>
+  previewAsset.value ? withMediaToken(previewAsset.value.url) : ""
+);
 
 /** 打开大图预览（缩略图点击触发） */
 function openPreview(item: MediaAssetSummary): void {
   previewAsset.value = item;
-  previewUrl.value = withMediaToken(item.url);
   previewVisible.value = true;
 }
 

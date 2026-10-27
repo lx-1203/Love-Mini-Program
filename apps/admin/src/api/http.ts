@@ -205,16 +205,36 @@ export async function put<T>(path: string, body?: unknown, timeout?: number): Pr
 }
 
 /**
- * 发起 POST 请求。
- * @param path 接口路径
- * @param body 请求体对象
+ * 读语义 POST 的豁免标记（2026-10-26）。
+ *
+ * 默认所有 POST 在本地就按「写请求」预检（只读角色 AUDITOR 直接 403，省一次
+ * 注定失败的往返）。个别 POST 端点本质是「读凭据签发」——如
+ * POST /api/v1/media/sign（媒体签名 URL）：只读审核员必须能调用，否则媒体
+ * 审核页看不到待审图片。带此标记的请求跳过本地写权限预检；后端仍按自身
+ * 授权规则细粒度放行（/media/sign 对无权路径静默省略）。
  */
-export async function post<T>(path: string, body?: unknown, timeout?: number): Promise<T> {
+export interface ReadOnlySafePostOptions {
+  readOnlySafe?: boolean;
+}
+
+/**
+ * 发起 POST 请求。
+ * @param path     接口路径
+ * @param body     请求体对象
+ * @param timeout  超时（毫秒）
+ * @param options  readOnlySafe=true 时跳过本地只读角色写预检（仅限读语义端点）
+ */
+export async function post<T>(
+  path: string,
+  body?: unknown,
+  timeout?: number,
+  options?: ReadOnlySafePostOptions
+): Promise<T> {
   return request<T>(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
-  }, timeout);
+  }, timeout, options);
 }
 
 /**
@@ -352,8 +372,14 @@ export async function downloadFile(
  * 401 响应自动清除 token 并跳转登录页。
  *
  * @param timeout 可选超时（毫秒），批量导入/导出等慢操作可传 LONG_REQUEST_TIMEOUT_MS
+ * @param options readOnlySafe=true 时跳过只读角色（AUDITOR）的本地写预检（见 post 注释）
  */
-async function request<T>(path: string, init: RequestInit, timeout: number = REQUEST_TIMEOUT_MS): Promise<T> {
+async function request<T>(
+  path: string,
+  init: RequestInit,
+  timeout: number = REQUEST_TIMEOUT_MS,
+  options?: ReadOnlySafePostOptions
+): Promise<T> {
   const token = getToken();
   const headers = new Headers(init.headers);
   if (token) {
@@ -367,8 +393,13 @@ async function request<T>(path: string, init: RequestInit, timeout: number = REQ
     // 后端 URL 层本会回 403，但把「这个账号是只读的」说在调用方一侧有两点好处：
     // 少一次注定失败的往返，且尚未接 v-if="canWrite" 的写控件也不会再让
     // 审核员看到一句没头没尾的「权限不足」。本地无会话记录时不拦截（登录/登出走后端 401）。
+    // 例外：readOnlySafe 的读语义端点（如 /media/sign 签名）不拦，见 post 注释。
     const sessionRole = persistedSessionRole();
-    if (sessionRole !== null && !roleCanWrite(sessionRole)) {
+    if (
+      !options?.readOnlySafe &&
+      sessionRole !== null &&
+      !roleCanWrite(sessionRole)
+    ) {
       throw new ApiError(403, t("errors.readOnlyRole"));
     }
     headers.set("Idempotency-Key", getIdempotencyKey(method, path, init.body));
