@@ -818,7 +818,7 @@ function goToActivity(activityId: number) {
 }
 
 .hot-rank--top {
-  color: var(--color-primary, #ff6b81);
+  color: var(--color-primary, #36C99A);
 }
 
 .hot-word {
@@ -851,7 +851,7 @@ function goToActivity(activityId: number) {
 
 .history-word {
   font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-secondary, #4e5969);
+  color: var(--c-text-secondary, #4A524E);
 }
 
 .result-wrap {
@@ -1015,7 +1015,7 @@ function goToActivity(activityId: number) {
   width: 72rpx;
   height: 72rpx;
   border-radius: 18rpx;
-  background: var(--c-brand-50, #EAF8F2);
+  background: var(--c-brand-50, #E8FAF3);
   display: flex;
   align-items: center;
   justify-content: center;

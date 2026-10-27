@@ -421,7 +421,7 @@ function onLoad() {
   height: 100%;
   /* 2026-08-10 切换提速：骨架层改静态（去掉 1400ms 无限 shimmer 动画），
      长列表（头像/九宫格）不再叠加大量动画层，低端机不再掉帧 */
-  background: var(--c-overlay-white-bg-tint-mid, rgba(15, 23, 42, 0.05));
+  background: var(--c-overlay-white-bg-tint-mid, rgba(255, 255, 255, 0.1));
   pointer-events: none;
 }
 </style>

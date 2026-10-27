@@ -346,7 +346,7 @@ function goHelp() {
   justify-content: space-between;
   gap: var(--sp-4);
   padding: var(--sp-5);
-  border-bottom: 1rpx solid var(--c-divider-light, #f0f0f0);
+  border-bottom: 1rpx solid var(--c-divider-light, rgba(15, 23, 42, 0.06));
 }
 
 .privacy-item:last-child {
@@ -461,7 +461,7 @@ function goHelp() {
   justify-content: space-between;
   gap: var(--sp-4);
   padding: var(--sp-5);
-  border-bottom: 1rpx solid var(--c-divider-light, #f0f0f0);
+  border-bottom: 1rpx solid var(--c-divider-light, rgba(15, 23, 42, 0.06));
 }
 
 .privacy-entry:last-child {

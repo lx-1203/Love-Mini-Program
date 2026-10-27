@@ -1030,7 +1030,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   width: 40rpx;
   height: 40rpx;
   border-radius: var(--r-circle, 50%);
-  background: var(--c-bg-overlay, rgba(0, 0, 0, 0.5));
+  background: var(--c-bg-overlay, rgba(15, 23, 42, 0.45));
   display: flex;
   align-items: center;
   justify-content: center;

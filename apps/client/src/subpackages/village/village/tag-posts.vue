@@ -511,7 +511,7 @@ onShareTimeline(() => ({
 
 <style scoped lang="scss">
 $green-primary: var(--c-brand, #36C99A);
-$green-light: var(--c-tint-green-50, #E8F9F4);
+$green-light: var(--c-tint-green-50, #E8F5E9);
 $pink-primary: var(--c-romance-500, #FF6B81);
 $pink-light: var(--c-tint-pink-soft, #FFF0F5);
 $bg-page: var(--c-bg-page, #EEF7F2);
@@ -519,7 +519,7 @@ $bg-page: var(--c-bg-page, #EEF7F2);
 $text-primary: var(--c-text-primary, #222222);
 /* ui-ux 修复：$text-secondary 语义应为文本次要色（原映射到 tertiary） */
 $text-secondary: var(--c-text-secondary, #666666);
-$text-tertiary: var(--c-text-quaternary, #B8B8C8);
+$text-tertiary: var(--c-text-quaternary, #9AA39F);
 $divider: var(--c-neutral-100, #EEF0F5);
 $white: var(--c-neutral-0, #FFFFFF);
 $red-badge: var(--c-error, #FF4757);
@@ -575,7 +575,7 @@ $red-badge: var(--c-error, #FF4757);
   /* R4-02540：品牌渐变底上的反色文字改用 --c-text-inverse（深色模式自动适配）
      R8-L03-D11：底档加深到 brand-800/900 后，白字复算 6.45..10.24:1，过 4.5:1 */
   color: var(--c-text-inverse);
-  text-shadow: 0 2rpx 8rpx var(--c-black-shadow-md, var(--c-black-shadow-md, rgba(0,0,0,0.1)));
+  text-shadow: 0 2rpx 8rpx var(--c-black-shadow-md, rgba(0,0,0,0.1)));
 }
 
 .tag-header__spacer {

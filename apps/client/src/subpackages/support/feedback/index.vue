@@ -754,7 +754,7 @@ function formatSubmissionTime(iso: string): string {
   overflow: hidden;
   /* R6-L15-D27：上传占位格与输入框同口径，取输入底令牌而非页面底 */
   background: var(--c-bg-surface, #F3FAF6);
-  border: 1rpx dashed var(--c-border-default, rgba(15, 23, 42, 0.08));
+  border: 1rpx dashed var(--c-border-default, #DDE3E0);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -814,7 +814,7 @@ function formatSubmissionTime(iso: string): string {
 .image-cell__spinner {
   width: 40rpx;
   height: 40rpx;
-  border: 4rpx solid var(--c-border-default, rgba(15, 23, 42, 0.08));
+  border: 4rpx solid var(--c-border-default, #DDE3E0);
   border-top-color: var(--c-brand);
   border-radius: var(--r-circle, 50%);
   animation: feedback-spinner var(--d-spinner, 800ms) linear infinite;
@@ -833,7 +833,7 @@ function formatSubmissionTime(iso: string): string {
   align-items: center;
   gap: 16rpx;
   padding-bottom: 12rpx;
-  border-bottom: 1rpx solid var(--c-border-light, rgba(15, 23, 42, 0.04));
+  border-bottom: 1rpx solid var(--c-border-light, #EEF2F0);
 }
 
 .history-header__hint {
@@ -884,7 +884,7 @@ function formatSubmissionTime(iso: string): string {
   flex-direction: column;
   gap: 10rpx;
   padding: 18rpx 0;
-  border-top: 1px solid var(--c-border-light, rgba(15, 23, 42, 0.04));
+  border-top: 1px solid var(--c-border-light, #EEF2F0);
 }
 
 .submission__top {

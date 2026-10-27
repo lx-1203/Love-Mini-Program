@@ -383,10 +383,10 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   opacity: 0.85;
 }
 .bubble--self .bubble__quote {
-  background: var(--c-overlay-bg-light, var(--c-overlay-bg-light, var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2))));
+  background: var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2))));
 }
 .bubble--peer .bubble__quote {
-  background: var(--c-black-shadow-xs, var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04))));
+  background: var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04))));
 }
 .bubble__quote-bar {
   width: var(--sp-1);
@@ -394,7 +394,7 @@ const checkWhiteSrc = IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG;
   flex-shrink: 0;
 }
 .bubble--self .bubble__quote-bar {
-  background: var(--c-overlay-bg-strong, var(--c-overlay-bg-mid, var(--c-overlay-bg-mid, rgba(255, 255, 255, 0.5))));
+  background: var(--c-overlay-bg-strong, var(--c-overlay-bg-mid, rgba(255, 255, 255, 0.5))));
 }
 .bubble--peer .bubble__quote-bar {
   background: var(--c-brand);

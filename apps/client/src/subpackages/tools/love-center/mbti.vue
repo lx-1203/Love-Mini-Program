@@ -366,14 +366,14 @@ function goBack() {
      升到 §1.3 区块标题档 --fs-3xl(36rpx=18px)，兜底字面量同步改成令牌真值 36rpx。 */
   font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1f2937);
+  color: var(--c-text-primary, #1A1E1C);
   margin-bottom: var(--sp-2);
 }
 
 .content-section__desc {
   display: block;
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-secondary, #5b6470);
+  color: var(--c-text-secondary, #4A524E);
   line-height: 1.6;
   margin-bottom: var(--sp-4);
 }
@@ -403,7 +403,7 @@ function goBack() {
 
 .dimension-chip__label {
   font-size: var(--fs-xs, 20rpx);
-  color: var(--c-text-secondary, #5b6470);
+  color: var(--c-text-secondary, #4A524E);
 }
 
 /* ========== 16 型速览网格 ========== */
@@ -439,7 +439,7 @@ function goBack() {
   /* R6-L10-D12（字号 P2）：18rpx=9.4px 比全站最小令牌 --fs-xs(20rpx=10.4px) 还小 1px，
      属未登记字号；而这 16 个中文人格名是网格内唯一的语义承载 ⇒ 归到 --fs-xs 档 */
   font-size: var(--fs-xs, 20rpx);
-  color: var(--c-text-secondary, #5b6470);
+  color: var(--c-text-secondary, #4A524E);
   text-align: center;
   line-height: 1.3;
 }
@@ -465,7 +465,7 @@ function goBack() {
   display: block;
   font-size: var(--fs-lg, 28rpx);
   font-weight: 600;
-  color: var(--c-text-primary, #1f2937);
+  color: var(--c-text-primary, #1A1E1C);
   margin-bottom: var(--sp-3);
 }
 
@@ -499,7 +499,7 @@ function goBack() {
      低于 §1.3 正文线），帧上 8 行墨迹带高全部 11px，落进「标签·时间戳」档；88rpx 行高与 12px 字
      留白过大，读起来像占位框。提到 --fs-xl(30rpx=15px)，与题干 --fs-lg(14px) 拉开层级。 */
   font-size: var(--fs-xl, 30rpx);
-  color: var(--c-text-primary, #1f2937);
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .quiz-option--selected .quiz-option__text {

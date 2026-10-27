@@ -1750,7 +1750,7 @@ onUnload(() => {
   z-index: 5;
   max-width: 340rpx;
   padding: var(--sp-2) var(--sp-3);
-  background: var(--c-neutral-900, #0f172a);
+  background: var(--c-neutral-900, #1A1E1C);
   border-radius: var(--r-lg);
   animation: avatar-hint-fade var(--d-normal, 200ms) ease-out;
 }
@@ -1769,7 +1769,7 @@ onUnload(() => {
   height: 0;
   border-left: 10rpx solid transparent;
   border-right: 10rpx solid transparent;
-  border-bottom: 10rpx solid var(--c-neutral-900, #0f172a);
+  border-bottom: 10rpx solid var(--c-neutral-900, #1A1E1C);
 }
 
 @keyframes avatar-hint-fade {
@@ -2154,7 +2154,7 @@ onUnload(() => {
 .user-info__chip {
   padding: 4rpx 16rpx;
   border-radius: var(--r-full);
-  background: var(--c-brand-50, #f0fdf9);
+  background: var(--c-brand-50, #E8FAF3);
   border: 1rpx solid var(--c-brand-200, #99f6e0);
   font-size: var(--fs-xs);
   font-weight: 600;
@@ -2519,7 +2519,7 @@ onUnload(() => {
   margin-bottom: var(--sp-3);
   border: 1rpx dashed var(--c-brand-200, #99f6e0);
   border-radius: var(--r-lg);
-  background: var(--c-brand-50, #f0fdf9);
+  background: var(--c-brand-50, #E8FAF3);
 }
 
 .photo-wall-empty__text {
@@ -2884,7 +2884,7 @@ onUnload(() => {
 .menu-item__hint {
   font-size: var(--fs-sm);
   color: var(--c-brand-600, #0d9488);
-  background: var(--c-brand-50, #f0fdf9);
+  background: var(--c-brand-50, #E8FAF3);
   padding: 4rpx 14rpx;
   border-radius: var(--r-full);
   flex-shrink: 0;

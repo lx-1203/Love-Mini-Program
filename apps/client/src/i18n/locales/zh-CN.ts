@@ -3199,6 +3199,8 @@ export default {
       "placeholderSchool": "请选择学校",
       "labelMajor": "专业",
       "placeholderMajor": "请选择专业",
+      "labelMajorBaseline": "专业（通用目录）",
+      "placeholderMajorBaseline": "请选择专业（该校暂无专属目录）",
       "skipLabel": "非学生？跳过此步，稍后认证",
       "saveLabel": "保存并继续",
       "saveSaving": "保存中...",

@@ -895,7 +895,7 @@ defineExpose({ toggleEnroll });
   width: 28rpx;
   height: 28rpx;
   margin-right: var(--sp-1, 8rpx);
-  color: var(--c-text-tertiary, #94a3b8);
+  color: var(--c-text-tertiary, #6B7571);
   flex-shrink: 0;
 }
 

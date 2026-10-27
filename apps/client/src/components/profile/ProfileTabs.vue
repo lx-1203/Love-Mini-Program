@@ -53,7 +53,7 @@ const { t } = useI18n();
   padding: 8rpx;
   border-radius: var(--r-full, 999rpx);
   background: var(--c-bg-container, #ffffff);
-  border: 1rpx solid var(--c-divider-light, #EEF2F0);
+  border: 1rpx solid var(--c-divider-light, rgba(15, 23, 42, 0.06));
   box-shadow: var(--s-sm, 0 2rpx 8rpx rgba(15, 23, 42, 0.04));
 }
 
@@ -79,7 +79,7 @@ const { t } = useI18n();
 .profile-tabs__item-text {
   font-size: var(--fs-md, 28rpx);
   font-weight: 600;
-  color: var(--c-text-secondary, #64748b);
+  color: var(--c-text-secondary, #4A524E);
 }
 
 .profile-tabs__item--active .profile-tabs__item-text {

@@ -62,7 +62,7 @@ const { t } = useI18n();
   align-items: center;
   padding: 6rpx 20rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-neutral-100, rgba(0, 0, 0, 0.05));
+  background: var(--c-neutral-100, #EEF2F0);
   max-width: 84%;
 }
 

@@ -1357,7 +1357,7 @@ async function submitPublish() {
   position: fixed;
   inset: 0;
   z-index: 1100;
-  background: var(--c-overlay-mid, rgba(0, 0, 0, 0.45));
+  background: var(--c-overlay-mid, rgba(15, 23, 42, 0.55));
   display: flex;
   align-items: flex-end;
 }
@@ -1489,7 +1489,7 @@ async function submitPublish() {
   width: 40rpx;
   height: 40rpx;
   border-radius: 50%;
-  background: var(--c-overlay-mid-strong, rgba(0, 0, 0, 0.5));
+  background: var(--c-overlay-mid-strong, rgba(15, 23, 42, 0.5));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1682,7 +1682,7 @@ async function submitPublish() {
   position: fixed;
   inset: 0;
   z-index: 1100;
-  background: var(--c-overlay-mid, rgba(0, 0, 0, 0.45));
+  background: var(--c-overlay-mid, rgba(15, 23, 42, 0.55));
   display: flex;
   align-items: flex-end;
 }

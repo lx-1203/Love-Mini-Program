@@ -245,12 +245,12 @@ function handleClose() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--c-black-overlay-transparent, var(--c-black-overlay-transparent, rgba(0, 0, 0, 0)));
+  background: var(--c-black-overlay-transparent, rgba(0, 0, 0, 0)));
   transition: background var(--d-slow, 250ms) ease;
 }
 
 .long-press-menu__backdrop--active {
-  background: var(--c-black-overlay-mid, var(--c-black-overlay-mid, rgba(0, 0, 0, 0.4)));
+  background: var(--c-black-overlay-mid, rgba(0, 0, 0, 0.4)));
 }
 
 /* ========== 面板 ========== */

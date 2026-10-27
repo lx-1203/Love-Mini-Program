@@ -390,7 +390,7 @@ function amountText(item: { type?: string; amount: number }): string {
   padding: var(--sp-8) var(--sp-6);
   border-radius: var(--r-2xl, 32rpx);
   background: var(--c-bg-container, #ffffff);
-  border: 1rpx solid var(--c-divider-light, #f1f5f9);
+  border: 1rpx solid var(--c-divider-light, rgba(15, 23, 42, 0.06));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -406,7 +406,7 @@ function amountText(item: { type?: string; amount: number }): string {
 .wallet__sealed-title {
   font-size: var(--fs-xl, 34rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1a2332);
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .wallet__sealed-desc {
@@ -416,7 +416,7 @@ function amountText(item: { type?: string; amount: number }): string {
      R9-L14-D11 的卡建议原文写「三页同改」，实际只落了 shop:759 / detail:563 两页 ⇒ 本页补上，
      与两页逐字同写法：--fs-md 26rpx=13.1px，并清掉过期 fallback。 */
   font-size: var(--fs-md);
-  color: var(--c-text-tertiary, #94a3b8);
+  color: var(--c-text-tertiary, #6B7571);
   text-align: center;
   line-height: 1.6;
 }
@@ -429,7 +429,7 @@ function amountText(item: { type?: string; amount: number }): string {
   display: block;
   font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1a2332);
+  color: var(--c-text-primary, #1A1E1C);
   margin-bottom: var(--sp-3);
 }
 
@@ -447,7 +447,7 @@ function amountText(item: { type?: string; amount: number }): string {
   padding: var(--sp-4);
   border-radius: var(--r-lg, 16rpx);
   background: var(--c-bg-container, #ffffff);
-  border: 1rpx solid var(--c-divider-light, #f1f5f9);
+  border: 1rpx solid var(--c-divider-light, rgba(15, 23, 42, 0.06));
 }
 
 .wallet__tx-info {
@@ -460,12 +460,12 @@ function amountText(item: { type?: string; amount: number }): string {
 .wallet__tx-type {
   font-size: var(--fs-base, 26rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1a2332);
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .wallet__tx-remark {
   font-size: var(--fs-xs, 20rpx);
-  color: var(--c-text-tertiary, #94a3b8);
+  color: var(--c-text-tertiary, #6B7571);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -474,7 +474,7 @@ function amountText(item: { type?: string; amount: number }): string {
 .wallet__tx-amount {
   font-size: var(--fs-lg, 28rpx);
   font-weight: 700;
-  color: var(--c-text-secondary, #475569);
+  color: var(--c-text-secondary, #4A524E);
   flex-shrink: 0;
 }
 
@@ -487,7 +487,7 @@ function amountText(item: { type?: string; amount: number }): string {
   padding: var(--sp-8) 0;
   text-align: center;
   font-size: var(--fs-base, 26rpx);
-  color: var(--c-text-tertiary, #94a3b8);
+  color: var(--c-text-tertiary, #6B7571);
 }
 
 .wallet__footer-space {

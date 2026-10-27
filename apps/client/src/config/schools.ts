@@ -51,6 +51,8 @@ export interface School {
    * 统计/分组」的需求仍要先做值域清洗（只有本次之后新提交的值才保证落在字典内）。
    */
   majors?: string[];
+  /** majors 的来源档：`"school"` 按校真源 / `"baseline"` 通用基线 / undefined 未知（本地常量或旧响应） */
+  majorsSource?: string;
   /** 校园圈封面图（可选；未上传时渲染浅绿背景+学校名字，上传后渲染图片——保留上传能力） */
   coverUrl?: string;
 }
@@ -191,6 +193,9 @@ export async function loadSchools(): Promise<School[]> {
         name: c.name,
         city: c.city ?? local?.city,
         majors: backendMajors ?? localMajors,
+        // 只有"后端给的目录"才谈得上档位；本地静态配过的那几所属于本仓库内置常量，
+        // 不给 majorsSource（消费方据此只对后端档位做文案区分）。
+        majorsSource: backendMajors ? (c.majorsSource ?? undefined) : undefined,
         // 对齐到本地静态项时顺带补回 i18n key / 封面，让已收录的 11 所继续走 t() 渲染；
         // 对不齐（后端独有那 6 所）就是 undefined，消费方按 name 直显，不崩。
         nameKey: local?.nameKey,

@@ -363,7 +363,7 @@ function focusMainContent(): void {
   min-width: 88rpx;
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-container, #FFFFFF);
-  border: 1rpx solid var(--c-border-light, var(--c-neutral-shadow-xs, var(--c-neutral-shadow-xs, rgba(15, 23, 42, 0.04))));
+  border: 1rpx solid var(--c-border-light, #EEF2F0);
 }
 
 .shell__back--pressed {

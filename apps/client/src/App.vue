@@ -530,7 +530,7 @@ page {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    var(--c-overlay-bg-mid, var(--c-overlay-border-strong, var(--c-overlay-border-strong, rgba(255, 255, 255, 0.3)))) 50%,
+    var(--c-overlay-bg-mid, var(--c-overlay-border-strong, rgba(255, 255, 255, 0.3)))) 50%,
     transparent 100%
   );
   background-size: 200% 100%;
@@ -705,7 +705,7 @@ page {
   align-items: center;
   justify-content: center;
   padding: var(--sp-8);
-  background: var(--c-overlay-bg-strong, rgba(15, 23, 42, 0.65));
+  background: var(--c-overlay-bg-strong, rgba(255, 255, 255, 0.6));
 }
 
 .maintenance-overlay__card {

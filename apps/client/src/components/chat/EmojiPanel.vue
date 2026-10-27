@@ -94,7 +94,7 @@ function emojiAria(emoji: string): string {
 }
 
 .emoji-panel__item:active {
-  background: var(--c-neutral-100, rgba(0, 0, 0, 0.05));
+  background: var(--c-neutral-100, #EEF2F0);
 }
 
 .emoji-panel__emoji {

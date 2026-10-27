@@ -1348,7 +1348,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   position: fixed;
   inset: 0;
   z-index: var(--z-modal, 1000);
-  background: var(--c-bg-overlay, rgba(0, 0, 0, 0.45));
+  background: var(--c-bg-overlay, rgba(15, 23, 42, 0.45));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1369,7 +1369,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   align-items: center;
   justify-content: space-between;
   padding-bottom: var(--sp-4);
-  border-bottom: 1rpx solid var(--c-divider-light, #f0f0f0);
+  border-bottom: 1rpx solid var(--c-divider-light, rgba(15, 23, 42, 0.06));
 }
 
 .activity-picker__title {

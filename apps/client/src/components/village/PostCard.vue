@@ -390,7 +390,7 @@ function openActivity(activityId: number | string) {
   width: 88rpx;
   height: 88rpx;
   border-radius: var(--r-full);
-  background: var(--c-bg-brand, #f0fdf9);
+  background: var(--c-bg-brand, #E8FBF2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -580,7 +580,7 @@ function openActivity(activityId: number | string) {
 
 .post-card__tag--green {
   color: var(--c-brand-500, #36C99A);
-  background: var(--c-bg-brand, #f0fdf9);
+  background: var(--c-bg-brand, #E8FBF2);
 }
 
 /* MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-INDEX-001：原 .post-card__tag--pink 分支已删
@@ -612,7 +612,7 @@ function openActivity(activityId: number | string) {
   height: 36rpx;
   border-radius: var(--r-full);
   flex-shrink: 0;
-  background: var(--c-bg-brand, #f0fdf9);
+  background: var(--c-bg-brand, #E8FBF2);
   display: flex;
   align-items: center;
   justify-content: center;

@@ -316,7 +316,7 @@ defineExpose({ onContentTap, selectReason, submit });
 
 .report-sheet__desc {
   font-size: var(--fs-sm, 24rpx);
-  color: var(--c-text-tertiary, #6b7280);
+  color: var(--c-text-tertiary, #6B7571);
   line-height: 1.4;
   text-align: center;
 }
@@ -343,7 +343,7 @@ defineExpose({ onContentTap, selectReason, submit });
 }
 
 .reason-item--selected {
-  background: var(--c-brand-50, #FFECEF);
+  background: var(--c-brand-50, #E8FAF3);
 }
 
 .reason-item__label {

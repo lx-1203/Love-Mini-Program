@@ -348,7 +348,7 @@ function goCertify(id: CertBadgeItem["id"]): void {
 }
 
 .cert-item__status--earned {
-  background: var(--c-brand-50, #f0fdf9);
+  background: var(--c-brand-50, #E8FAF3);
   border: 1rpx solid var(--c-brand-200, #99f6e0);
 }
 

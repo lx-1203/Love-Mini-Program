@@ -552,7 +552,7 @@ watch(commerceSealed, (sealed) => {
 .product-state__sealed-title {
   font-size: var(--fs-xl, 34rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1a2332);
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .product-state__sealed-desc {

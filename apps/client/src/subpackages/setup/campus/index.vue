@@ -67,9 +67,25 @@ const cityOptions = computed(() => getCities(schools.value));
 /** 学校选项：按已选城市筛选 */
 const schoolOptions = computed(() => getSchoolsByCity(schools.value, form.city));
 
+/** 当前选中的学校对象（专业选项与专业档位文案共用同一次查找） */
+const selectedSchool = computed(() =>
+  schoolOptions.value.find((s) => s.name === form.campusName),
+);
+
 /** 专业选项：已选学校专属目录（缺省时回退通用目录） */
-const majorOptions = computed(() =>
-  getMajorsForSchool(schoolOptions.value.find((s) => s.name === form.campusName)),
+const majorOptions = computed(() => getMajorsForSchool(selectedSchool.value));
+
+/**
+ * 专业档位文案（2026-10-28）：后端把 majors 的来源档一起下发，命中通用基线档时标签要写明，
+ * 否则 67 条通用专业会被当成「本校专业目录」（实测 17 所学校当前全部在基线档）。
+ * 档位未知（本地常量 / 旧响应没有这个键）时维持原文案——不知道就不声称。
+ */
+const majorOnBaseline = computed(() => selectedSchool.value?.majorsSource === "baseline");
+const majorLabelKey = computed(() =>
+  majorOnBaseline.value ? "setup.campus.labelMajorBaseline" : "setup.campus.labelMajor",
+);
+const majorPlaceholderKey = computed(() =>
+  majorOnBaseline.value ? "setup.campus.placeholderMajorBaseline" : "setup.campus.placeholderMajor",
 );
 
 /** 主按钮可用性：三项信息全部完成才可继续 */
@@ -280,7 +296,7 @@ function skip() {
 
       <!-- 专业（随学校联动） -->
       <view class="form-row">
-        <text class="form-row__label">{{ t('setup.campus.labelMajor') }}</text>
+        <text class="form-row__label">{{ t(majorLabelKey) }}</text>
         <picker
           mode="selector"
           :range="majorOptions"
@@ -289,7 +305,7 @@ function skip() {
         >
           <view class="field field--picker">
             <text :class="['field__text', !form.department && 'field__text--placeholder']">
-              {{ form.department || t('setup.campus.placeholderMajor') }}
+              {{ form.department || t(majorPlaceholderKey) }}
             </text>
             <image class="field__arrow" :src="IMAGE_PATHS.REGISTER_ICONS.CHEVRON_RIGHT" mode="aspectFit" alt="" />
           </view>

@@ -374,7 +374,7 @@ function ageLabel(age: number): string {
 
 .quick-filter-radio__item--active {
   border-color: var(--c-brand-400, #2dd4bf);
-  background: var(--c-brand-50, #f0fdf9);
+  background: var(--c-brand-50, #E8FAF3);
 }
 
 .quick-filter-radio__dot {

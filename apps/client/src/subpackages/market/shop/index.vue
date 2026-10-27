@@ -781,7 +781,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .shop-sealed__title {
   font-size: var(--fs-xl, 34rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1a2332);
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .shop-sealed__desc {

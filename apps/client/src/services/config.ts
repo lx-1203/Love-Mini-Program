@@ -59,6 +59,16 @@ export interface CampusView {
    * `config/schools.ts` 的 getMajorsForSchool() 回退链，不在这里区分「缺键」与「null」。
    */
   majors?: string[] | null;
+  /**
+   * majors 的来源档（2026-10-28 后端新增）：`"school"` = 命中该校专属目录，
+   * `"baseline"` = 回退通用基线档，`null`/缺键 = 连基线都取不到。
+   *
+   * 为什么要这个字段：17 所学校当前全部落在基线档，客户端只看得到「有 67 条专业」，
+   * 分不出这是本校真源还是通用目录 ⇒ 界面会让人以为看到了本校专业目录。
+   * 客户端无法自己判断（它看不到 school_majors 表），档位只能由后端说。
+   * 同样声明为可选：mock 档与历史响应没有这个键，消费方按「未知」处理，不得当成 school。
+   */
+  majorsSource?: string | null;
 }
 
 /**

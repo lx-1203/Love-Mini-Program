@@ -517,7 +517,7 @@ onShow(() => {
   padding: var(--sp-4) 22rpx;
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-bg-container);
-  border: 1rpx solid var(--c-border-light, rgba(15, 23, 42, 0.04));
+  border: 1rpx solid var(--c-border-light, #EEF2F0);
 }
 
 /* R11-L11-D13（可达性 P1）：选中态原为白字压 --c-brand #36C99A（实测 2.10:1），
@@ -590,7 +590,7 @@ onShow(() => {
 
 /* ========== 提交记录列表项 ========== */
 .record {
-  border-top: 1rpx solid var(--c-border-light, rgba(15, 23, 42, 0.04));
+  border-top: 1rpx solid var(--c-border-light, #EEF2F0);
   padding: 18rpx 0;
 }
 
@@ -666,7 +666,7 @@ onShow(() => {
 .detail-loading__spinner {
   width: 36rpx;
   height: 36rpx;
-  border: 3rpx solid var(--c-border-light, rgba(15, 23, 42, 0.08));
+  border: 3rpx solid var(--c-border-light, #EEF2F0);
   border-top-color: var(--c-brand);
   border-radius: var(--r-circle, 50%);
   animation: feedback-history-spinner var(--d-spinner, 800ms) linear infinite;
@@ -691,7 +691,7 @@ onShow(() => {
 
 .detail-section--reply {
   padding-top: 12rpx;
-  border-top: 1rpx dashed var(--c-border-light, rgba(15, 23, 42, 0.06));
+  border-top: 1rpx dashed var(--c-border-light, #EEF2F0);
 }
 
 .detail-section__label {

@@ -500,7 +500,7 @@ function handleRetry(): void {
 .legal-state__spinner {
   width: 48rpx;
   height: 48rpx;
-  border: 4rpx solid var(--c-border-default, rgba(15, 23, 42, 0.08));
+  border: 4rpx solid var(--c-border-default, #DDE3E0);
   border-top-color: var(--c-brand);
   border-radius: var(--r-circle, 50%);
   animation: legal-spinner var(--d-spinner, 800ms) linear infinite;

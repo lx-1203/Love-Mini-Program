@@ -374,7 +374,7 @@ const privacyMenus = computed<MenuItem[]>(() => [
   },
   {
     icon: IMAGE_PATHS.ICONS_PROFILE.LAB,
-    bgColor: "var(--c-tint-pink-50, #F3E8FF)",
+    bgColor: "var(--c-tint-pink-50, #FCE4EC)",
     label: t("profile.safetyCenter"),
     path: ROUTES.SECURITY,
   },
@@ -900,7 +900,7 @@ function handleMenuTap(item: MenuItem) {
 
 .menu-item__value {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-tertiary, #9AA1AB);
+  color: var(--c-text-tertiary, #6B7571);
 }
 
 .menu-item__arrow {
@@ -950,7 +950,7 @@ function handleMenuTap(item: MenuItem) {
 
 .footer-version__text {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-text-tertiary, #9AA1AB);
+  color: var(--c-text-tertiary, #6B7571);
 }
 </style>
 

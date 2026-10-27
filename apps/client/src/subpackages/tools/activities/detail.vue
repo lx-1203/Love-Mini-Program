@@ -751,7 +751,7 @@ onShareTimeline(() => ({
   flex: 1;
   font-size: var(--fs-2xl, 36rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1f2937);
+  color: var(--c-text-primary, #1A1E1C);
   line-height: 1.35;
 }
 
@@ -853,7 +853,7 @@ onShareTimeline(() => ({
 
 .detail-meta__value {
   font-size: var(--fs-base, 24rpx);
-  color: var(--c-text-primary, #1f2937);
+  color: var(--c-text-primary, #1A1E1C);
   font-weight: 500;
 }
 
@@ -861,7 +861,7 @@ onShareTimeline(() => ({
   display: block;
   font-size: var(--fs-lg, 32rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1f2937);
+  color: var(--c-text-primary, #1A1E1C);
   margin-bottom: var(--sp-3);
 }
 

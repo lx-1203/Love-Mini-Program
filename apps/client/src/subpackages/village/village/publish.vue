@@ -1321,7 +1321,7 @@ onUnmounted(() => {
 .publish-topic-chip__remove { font-size: var(--fs-base, 24rpx); color: var(--c-romance-500, #FF6B81); padding: 0 8rpx; font-weight: 600; }
 
 /* W2-PUBLISH-TOPIC：话题选择弹层（结构/间距/配色与 post.vue .post-sheet 一致，禁 grid、颜色全 token） */
-.publish-sheet { position: fixed; inset: 0; z-index: 1100; background: var(--c-overlay-mid, rgba(0, 0, 0, 0.45)); display: flex; align-items: flex-end; }
+.publish-sheet { position: fixed; inset: 0; z-index: 1100; background: var(--c-overlay-mid, rgba(15, 23, 42, 0.55)); display: flex; align-items: flex-end; }
 .publish-sheet__panel { width: 100%; box-sizing: border-box; background: var(--c-bg-container, #FFFFFF); border-radius: var(--r-xxl, 32rpx) var(--r-xxl, 32rpx) 0 0; padding: 24rpx 32rpx calc(env(safe-area-inset-bottom) + 48rpx); max-height: 70vh; overflow-y: auto; }
 .publish-sheet__head { display: flex; align-items: baseline; justify-content: space-between; padding: 8rpx 0 20rpx; }
 .publish-sheet__title { font-size: var(--fs-xl, 30rpx); font-weight: 700; color: var(--c-text-primary, #1A1E1C); }

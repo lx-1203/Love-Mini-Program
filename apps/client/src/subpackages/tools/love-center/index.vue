@@ -218,7 +218,7 @@ onShareAppMessage(() => {
      区块标题 18-20px 小 4-6px，且与同页 24rpx 正文几乎拉不开。改 --fs-3xl(36rpx=18px)。 */
   font-size: var(--fs-3xl, 36rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1f2937);
+  color: var(--c-text-primary, #1A1E1C);
   margin-bottom: var(--sp-4);
 }
 
@@ -304,7 +304,7 @@ onShareAppMessage(() => {
      §1.3 给列表主文字的 30/32rpx 档在本页没有任何一处标题使用。升到 --fs-xl（30rpx=15px）。 */
   font-size: var(--fs-xl, 30rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1f2937);
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .love-center__board-desc {
@@ -314,7 +314,7 @@ onShareAppMessage(() => {
      墨高 13px，与同卡标题 --fs-xl(30rpx=15px) 只差 2px、比 §1.3 说明档 14px 小 1px，四张卡副行读成标签
      ⇒ 再升一档到 --fs-lg（design-variables.scss:564 =28rpx=14px），行高 1.5 不动。 */
   font-size: var(--fs-lg, 28rpx);
-  color: var(--c-text-secondary, #6b7280);
+  color: var(--c-text-secondary, #4A524E);
   line-height: 1.5;
 }
 
@@ -347,12 +347,12 @@ onShareAppMessage(() => {
      一并与宫格卡主标题升到 §1.3 列表主文字档 --fs-xl（30rpx） */
   font-size: var(--fs-xl, 30rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1f2937);
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .love-center__test-arrow {
   font-size: var(--fs-2xl, 36rpx);
-  color: var(--c-text-tertiary, #9ca3af);
+  color: var(--c-text-tertiary, #6B7571);
 }
 
 /* ========== 任务 E3：快捷入口 ========== */
@@ -384,11 +384,11 @@ onShareAppMessage(() => {
   /* R8-L07-D10 连带：快捷入口行标题（「附近的人」即此项）同档升到 --fs-xl */
   font-size: var(--fs-xl, 30rpx);
   font-weight: 700;
-  color: var(--c-text-primary, #1f2937);
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .love-center__quick-arrow {
   font-size: var(--fs-2xl, 36rpx);
-  color: var(--c-text-tertiary, #9ca3af);
+  color: var(--c-text-tertiary, #6B7571);
 }
 </style>

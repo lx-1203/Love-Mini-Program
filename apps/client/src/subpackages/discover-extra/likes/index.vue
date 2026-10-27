@@ -1456,7 +1456,7 @@ onShareAppMessage(() => {
   width: var(--sp-10);
   height: var(--sp-10);
   border-radius: var(--r-full);
-  background: linear-gradient(135deg, var(--c-bg-brand), var(--c-brand-shadow-tint, var(--c-brand-shadow-tint, rgba(61, 201, 148, 0.15))));
+  background: linear-gradient(135deg, var(--c-bg-brand), var(--c-brand-shadow-tint, rgba(61, 201, 148, 0.15))));
   display: flex;
   align-items: center;
   justify-content: center;

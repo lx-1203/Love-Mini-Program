@@ -23,6 +23,11 @@ import java.util.List;
  *                    {@code null} 只出现在「连基线都取不到」的降级路径，语义是
  *                    「后端没有目录数据，客户端自行回退本地常量」——
  *                    客户端两种情况都不得当成「这所学校没有专业」渲染成空列表
+ * @param majorsSource majors 的来源档：{@code "school"} = 命中该校专属目录，
+ *                    {@code "baseline"} = 回退通用基线档，{@code null} = 连基线都没有。
+ *                    加这个字段的理由：17 所学校当前全部落在基线档，而客户端只知道"有 67 条专业"，
+ *                    分不出这是按校真源还是通用目录 ⇒ 界面会让人以为看到了本校专业。
+ *                    档位必须由后端说，客户端不得自己猜（它看不到表）。
  */
 public record CampusView(
         String id,
@@ -30,7 +35,8 @@ public record CampusView(
         String city,
         Integer memberCount,
         Integer postCount,
-        List<String> majors
+        List<String> majors,
+        String majorsSource
 ) {
 
     public CampusView {
@@ -40,13 +46,13 @@ public record CampusView(
         }
     }
 
-    /** 无统计、无专业目录的构造（降级路径使用；三个可空字段保持 null 而非伪值）。 */
+    /** 无统计、无专业目录的构造（降级路径使用；可空字段保持 null 而非伪值）。 */
     public CampusView(String id, String name, String city) {
-        this(id, name, city, null, null, null);
+        this(id, name, city, null, null, null, null);
     }
 
-    /** 只有专业目录、没有统计的构造（内置默认列表与 mock 档使用）。 */
+    /** 只有专业目录、没有统计的构造（内置默认列表与 mock 档使用）。这些目录一律来自通用基线档。 */
     public CampusView(String id, String name, String city, List<String> majors) {
-        this(id, name, city, null, null, majors);
+        this(id, name, city, null, null, majors, "baseline");
     }
 }

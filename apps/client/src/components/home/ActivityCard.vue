@@ -144,7 +144,7 @@ defineExpose({ ariaLabel });
 }
 .activity-tag.tag--neutral {
   /* 中性灰 75% 不透明度，用于活动标签底色 */
-  background: var(--c-neutral-500, rgba(100, 116, 139, 0.75));
+  background: var(--c-neutral-500, #6B7571);
 }
 .activity-tag-text {
   font-size: var(--fs-xs, 20rpx);

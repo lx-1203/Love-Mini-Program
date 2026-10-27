@@ -175,7 +175,7 @@ function onEmptyAreaTap(): void {
 
   .loading-text {
     font-size: var(--fs-md, 26rpx);
-    color: var(--c-text-tertiary, #9AA1AB);
+    color: var(--c-text-tertiary, #6B7571);
   }
 }
 

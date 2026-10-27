@@ -274,7 +274,7 @@ const durationDisplay = computed(() => {
 .voice-bubble--peer {
   border-radius: var(--bubble-radius-tail) var(--bubble-radius-main) var(--bubble-radius-main) var(--bubble-radius-main);
   background: var(--c-bubble-other, #F0F2F5);
-  color: var(--c-text-primary, #1a1a2e);
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .voice-bubble--playing {

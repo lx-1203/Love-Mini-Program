@@ -510,7 +510,7 @@ function stepLineStyles(step: StepItem, index: number) {
   font-weight: 800;
   color: var(--c-secondary-blue-400, #5B7FFF);
   line-height: 1;
-  text-shadow: 0 2rpx 4rpx var(--c-secondary-blue-bg-tint-light, var(--c-secondary-blue-bg-tint-light, rgba(91, 127, 255, 0.15)));
+  text-shadow: 0 2rpx 4rpx var(--c-secondary-blue-bg-tint-light, rgba(91, 127, 255, 0.15)));
 }
 
 .sip-header__percent-unit {
@@ -560,7 +560,7 @@ function stepLineStyles(step: StepItem, index: number) {
   justify-content: center;
   background: var(--c-bg-container, #FFFFFF);
   border-radius: var(--r-circle, 50%);
-  box-shadow: 0 4rpx 12rpx var(--c-secondary-blue-border-tint-strong, var(--c-secondary-blue-border-tint-strong, rgba(37, 99, 235, 0.12)));
+  box-shadow: 0 4rpx 12rpx var(--c-secondary-blue-border-tint-strong, rgba(37, 99, 235, 0.12)));
   flex-shrink: 0;
 }
 
@@ -746,13 +746,13 @@ function stepLineStyles(step: StepItem, index: number) {
 /* 当前步骤环形脉冲（box-shadow 扩散，与 sip-pulse 叠加） */
 @keyframes pulse-ring {
   0% {
-    box-shadow: 0 0 0 0 var(--c-secondary-blue-shadow, var(--c-secondary-blue-shadow, rgba(91, 127, 255, 0.4)));
+    box-shadow: 0 0 0 0 var(--c-secondary-blue-shadow, rgba(91, 127, 255, 0.4)));
   }
   70% {
-    box-shadow: 0 0 0 16rpx var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(91, 127, 255, 0)));
+    box-shadow: 0 0 0 16rpx var(--c-secondary-blue-bg-tint, rgba(91, 127, 255, 0)));
   }
   100% {
-    box-shadow: 0 0 0 0 var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(91, 127, 255, 0)));
+    box-shadow: 0 0 0 0 var(--c-secondary-blue-bg-tint, rgba(91, 127, 255, 0)));
   }
 }
 
@@ -798,7 +798,7 @@ function stepLineStyles(step: StepItem, index: number) {
 
 .sip-action-card__desc {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-overlay-white-text-strong, var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8)));
+  color: var(--c-overlay-white-text-strong, rgba(255, 255, 255, 0.8)));
   line-height: 1.3;
 }
 
@@ -807,7 +807,7 @@ function stepLineStyles(step: StepItem, index: number) {
   align-items: center;
   gap: 4rpx;
   padding: 12rpx 24rpx;
-  background: var(--c-overlay-bg-light, var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2)));
+  background: var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2)));
   border-radius: var(--r-full);
   flex-shrink: 0;
 }

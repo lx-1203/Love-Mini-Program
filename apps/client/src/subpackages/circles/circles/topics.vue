@@ -1351,7 +1351,7 @@ defineExpose({ goToAuthorProfile });
   margin: 0 0 20rpx;
   border-radius: 0;
   overflow: hidden;
-  background: var(--c-text-primary, #2A3A34);
+  background: var(--c-text-primary, #1A1E1C);
   z-index: 0;
 }
 

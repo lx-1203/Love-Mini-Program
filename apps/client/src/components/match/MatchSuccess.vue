@@ -606,7 +606,7 @@ function getScoreIcon(index: number): string {
   font-size: 26rpx;
   /* R2b-L06-D08（颜色token P2）：理想图「分享喜悦」为深灰（#4B5563 档）弱化文字，刻意不做强调；
      原品牌绿 #36C99A/600 读起来像第三个主按钮。改走 --c-text-secondary（#4A524E）+ 字重 500。 */
-  color: var(--c-text-secondary, #4B5563);
+  color: var(--c-text-secondary, #4A524E);
   font-weight: 500;
 }
 

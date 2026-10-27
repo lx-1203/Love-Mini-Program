@@ -364,7 +364,7 @@ onUnmounted(() => {
 
 .voice-recorder__indicator-text {
   font-size: var(--fs-sm, 24rpx);
-  color: var(--c-text-secondary, #475569);
+  color: var(--c-text-secondary, #4A524E);
 }
 
 /* ==================== 按住说话按钮 ==================== */
@@ -404,7 +404,7 @@ onUnmounted(() => {
 
 .voice-recorder__btn-text {
   font-size: var(--fs-lg, 30rpx);
-  color: var(--c-text-primary, #1a1a2e);
+  color: var(--c-text-primary, #1A1E1C);
   font-weight: 600;
 }
 

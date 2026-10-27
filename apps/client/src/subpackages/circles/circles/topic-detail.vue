@@ -905,7 +905,7 @@ onShareAppMessage(() => {
   padding: var(--sp-5) var(--sp-8);
   padding-bottom: calc(env(safe-area-inset-bottom) + var(--sp-5));
   background: var(--c-neutral-0);
-  box-shadow: 0 -4rpx 16rpx var(--c-black-shadow-xs, var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
+  box-shadow: 0 -4rpx 16rpx var(--c-black-shadow-xs, rgba(0, 0, 0, 0.04)));
 }
 
 .reply-input-wrap {

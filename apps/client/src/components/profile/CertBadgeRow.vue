@@ -170,7 +170,7 @@ function badgeIcon(id: CertBadgeItem["id"]): string {
   right: -6rpx;
   padding: 2rpx 8rpx;
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-neutral-600, #5b6470);
+  background: var(--c-neutral-600, #4A524E);
 }
 
 .cert-badge__pending-text {

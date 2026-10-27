@@ -233,13 +233,18 @@ public class RealConfigService implements ConfigService {
             for (School school : schools) {
                 List<String> own = majorsBySchoolCode.get(school.getCode());
                 List<String> majors;
+                // 档位跟着一起下发：客户端只拿到 67 条时无法分辨"本校目录"与"通用基线"，
+                // 界面就会让人以为看到了本校专业（2026-10-28 实测 17 校全部落在基线档）。
+                String majorsSource;
                 if (own != null && !own.isEmpty()) {
                     majors = own;
+                    majorsSource = "school";
                 } else {
                     // 按校档没有行 ⇒ 回退通用基线。这条分支是当前 17 所学校的常态
                     //（没有权威按校专业目录被导入过），必须可观测：不记日志的话，
                     // 运营会以为下发的是按校真值。
                     majors = baseline;
+                    majorsSource = "baseline";
                     schoolsOnBaseline.add(school.getName() + "(" + school.getCode() + ")");
                 }
                 views.add(new CampusView(
@@ -248,7 +253,8 @@ public class RealConfigService implements ConfigService {
                         SCHOOL_CITY_MAP.getOrDefault(school.getName(), null),
                         valueOrUnknown(memberCounts, school.getName()),
                         valueOrUnknown(postCounts, school.getName()),
-                        majors));
+                        majors,
+                        majorsSource));
             }
             if (!schoolsOnBaseline.isEmpty()) {
                 log.info("school_majors 无按校专业目录，回退通用基线 {} 条：{} 所 → {}",

@@ -3308,6 +3308,8 @@ export default {
       placeholderSchool: "Select school",
       labelMajor: "Major",
       placeholderMajor: "Select major",
+      labelMajorBaseline: "Major (general list)",
+      placeholderMajorBaseline: "Select major (no school-specific list yet)",
       /* 2026-08-07: campus verification skip entry (prominent text button above primary) */
       skipLabel: "Not a student? Skip this step",
       saveLabel: "Save & continue",

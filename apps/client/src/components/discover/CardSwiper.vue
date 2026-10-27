@@ -2180,7 +2180,7 @@ defineExpose({ onTouchMove });
   padding: 8rpx 22rpx;
   border-radius: var(--r-full);
   background: var(--c-overlay-bg-pure, rgba(255, 255, 255, 0.95));
-  color: var(--c-neutral-700, #334155);
+  color: var(--c-neutral-700, #333A37);
   font-size: var(--fs-base);
   font-weight: 600;
   border: 1rpx solid var(--c-overlay-bg-strong, rgba(255, 255, 255, 0.6));
@@ -2328,7 +2328,7 @@ defineExpose({ onTouchMove });
   font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--c-brand-600, #0d9488);
-  background: var(--c-brand-50, #f0fdf9);
+  background: var(--c-brand-50, #E8FAF3);
   padding: 4rpx 12rpx;
   border-radius: var(--r-full);
 }
