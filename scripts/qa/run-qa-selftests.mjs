@@ -94,6 +94,10 @@ const GATE_SELFTESTS = [
   // 夹具 5 行不读磁盘：2 条必须红（无兜底=ERROR/有兜底=WARN）、3 条必须放行（已登记/注入位/注释通配），
   // 另加一条反向负例（把已登记令牌从生产者集合抽掉必须立刻变红），证扫描集不是空的。
   { name: "check-token-refs", cmd: ["apps/client/scripts/check-token-refs.mjs", "--self-test"], want: /TOKENREFS_SELFTEST=PASS cases=(\d+) 负例可红=是/ },
+  // check-tracked-references（2026-10-27）：引用与"盘上有、库里无"的孤儿件，编译和 git status 都看不出来，
+  // 只有干净 checkout 才炸。负例来自当场造的靶件（存在性/未入库/孤儿三轴各测两向），
+  // 另钉死本程实测的两类假阳：git quotePath 转义（虚报 372 条）与 ../ 未归一。
+  { name: "check-tracked-references", cmd: ["scripts/qa/check-tracked-references.mjs", "--self-test"], want: /TRACKEDREFS_SELFTEST=PASS cases=(\d+) 负例可红=([1-9]\d*)/ },
 ];
 let gateRan = 0, gateFailed = 0;
 for (const g of GATE_SELFTESTS) {
