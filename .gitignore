@@ -11,6 +11,11 @@ dist/
 build/
 target/
 *.class
+# JaCoCo 运行时探针数据：mvn test 一次就重写一份，可再生、非源码。
+# 它落在模块根（不是 target/ 里），所以 `target/` 那条挡不住；
+# 实测后果不是脏项本身，而是 verify-backend-fresh 见"apps/api 有未提交改动"就判
+# 「运行实例不可能代表 HEAD」——一个二进制脏项能把一条真结论压成假红。
+*.exec
 # Sourcemap：生产仅用于 Sentry 上传，不提交；CI 上传后即删
 *.map
 unpackage/
