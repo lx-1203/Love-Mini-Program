@@ -144,6 +144,23 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 处理请求体不可读异常（JSON 解析失败 / Content-Type 不符）。
+     * 实测起因：改密端点收到含裸 CR 的请求体时抛 HttpMessageNotReadableException，
+     * 原实现落入 {@link #handleGenericException(Exception)} 兜底返回 500 INTERNAL_ERROR，
+     * 客户端把"我发错了"当成服务端故障重试。与缺参同一条尺子：
+     * 生产 profile 脱敏为固定文案，开发 profile 附带最具体根因便于联调。
+     */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadable(
+            org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        log.warn("请求体不可读: {}", ex.getMessage());
+        String message = isProductionProfile()
+                ? "请求体格式错误"
+                : "请求体不是合法 JSON: " + ex.getMostSpecificCause().getMessage();
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", message);
+    }
+
+    /**
      * 处理钱包余额不足异常（Task 2 / Task 15）。
      *
      * <p>触发场景：</p>
@@ -915,7 +932,7 @@ public class GlobalExceptionHandler {
      * 生成 traceId（优先从 MDC 获取，否则生成新 UUID）。
      *
      * <p>Task 0.5.4 新增：用于错误响应体的 {@code traceId} 字段，
-     * 便于客户端报错时关联服务端日志。</p>
+     * 便于客户端报错时关联服务端日志，便于排查问题。</p>
      *
      * <p>Task 2.6.4 改造：优先从 {@link org.slf4j.MDC} 的 "traceId" 字段获取
      * （由 {@link TraceIdFilter} 在请求入口注入），保证错误响应中的 traceId
@@ -929,5 +946,93 @@ public class GlobalExceptionHandler {
             return mdcTraceId;
         }
         return UUID.randomUUID().toString();
+    }
+
+    /**
+     * 推断异常经本处理器映射后客户端实际收到的 HTTP 状态码。
+     *
+     * <p>供审计切面（{@code AuditLogAspect}）在 {@code @Auditable} 方法抛异常时
+     * 记录真实状态码——原先一律硬编码 500，而业务异常（如错口令 401、参数错 400）
+     * 经本类映射后客户端实际收到 4xx，审计表因此失真。</p>
+     *
+     * <p>本方法与上面各 {@code @ExceptionHandler} 的映射保持同一张表：
+     * 新增/修改 handler 时必须同步这里（两侧同文件，改一处即见另一处）。</p>
+     *
+     * @param ex 被审计方法抛出的异常
+     * @return 客户端将收到的 HTTP 状态码（未匹配任何 handler 时为 500）
+     */
+    public static int resolveMappedStatus(Throwable ex) {
+        if (ex == null) {
+            return 500;
+        }
+        // 管理端认证家族按「最具体 handler 优先」判定：AdminDisabled/NotFound 是
+        // AdminAuthException 的子类，Spring 会命中各自的 @ExceptionHandler（403/404），
+        // 因此必须先于父类判定，否则会读成 401。
+        if (ex instanceof AdminDisabledException) {
+            return 403;
+        }
+        if (ex instanceof AdminNotFoundException) {
+            return 404;
+        }
+        if (ex instanceof InvalidCredentialsException
+                || ex instanceof AdminAuthException
+                || ex instanceof InvalidTokenException
+                || ex instanceof TokenRevokedException
+                || ex instanceof AiApiUnauthorizedException) {
+            return 401;
+        }
+        if (ex instanceof AccessDeniedException) {
+            return 403;
+        }
+        if (ex instanceof EntityNotFoundException
+                || ex instanceof org.springframework.web.servlet.resource.NoResourceFoundException) {
+            return 404;
+        }
+        // 封存类异常先于其父类 BusinessException 判定（自带 httpStatus）
+        if (ex instanceof CommerceDisabledException
+                || ex instanceof VideoUploadDisabledException) {
+            return (ex instanceof CommerceDisabledException commerce)
+                    ? commerce.getHttpStatus().value()
+                    : ((VideoUploadDisabledException) ex).getHttpStatus().value();
+        }
+        if (ex instanceof WechatLoginException wechatLogin) {
+            return wechatLogin.getStatus().value();
+        }
+        if (ex instanceof HttpClientErrorException.Unauthorized) {
+            return 401;
+        }
+        if (ex instanceof org.springframework.web.server.ResponseStatusException rse) {
+            return rse.getStatusCode().value();
+        }
+        if (ex instanceof MethodArgumentNotValidException
+                || ex instanceof ConstraintViolationException
+                || ex instanceof MissingServletRequestParameterException
+                || ex instanceof IllegalArgumentException
+                || ex instanceof org.springframework.http.converter.HttpMessageNotReadableException
+                || ex instanceof InsufficientBalanceException
+                || ex instanceof ContentSecurityException) {
+            return 400;
+        }
+        if (ex instanceof DataIntegrityViolationException) {
+            return 409;
+        }
+        if (ex instanceof MediaSizeLimitExceededException
+                || ex instanceof MaxUploadSizeExceededException) {
+            return 413;
+        }
+        if (ex instanceof org.springframework.web.HttpRequestMethodNotSupportedException) {
+            return 405;
+        }
+        if (ex instanceof RateLimitExceededException
+                || ex instanceof DailyLimitExceededException) {
+            return 429;
+        }
+        if (ex instanceof BusinessException businessException) {
+            return businessException.getHttpStatus().value();
+        }
+        if (ex instanceof AiApiException) {
+            return 502;
+        }
+        return 500;
     }
 }

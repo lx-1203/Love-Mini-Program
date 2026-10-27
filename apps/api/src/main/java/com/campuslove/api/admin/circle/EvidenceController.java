@@ -57,7 +57,7 @@ public class EvidenceController {
             return ApiResponse.ok(Map.of("items", List.of(), "total", 0));
         }
 
-        // 构造前缀匹配 WHERE：owner_circle_path LIKE 'C1%' OR ...
+        // 构造路径段匹配 WHERE：(owner_circle_path = 'C1' OR owner_circle_path LIKE 'C1/%') OR ...
         StringBuilder whereClause = new StringBuilder();
         List<Object> params = new ArrayList<>();
         if (userId != null) {
@@ -69,8 +69,9 @@ public class EvidenceController {
         whereClause.append(" AND (");
         for (int i = 0; i < viewerPaths.size(); i++) {
             if (i > 0) whereClause.append(" OR ");
-            whereClause.append("owner_circle_path LIKE ?");
-            params.add(viewerPaths.get(i) + "%");
+            whereClause.append("(owner_circle_path = ? OR owner_circle_path LIKE ?)");
+            params.add(viewerPaths.get(i));
+            params.add(viewerPaths.get(i) + "/%");
         }
         whereClause.append(")");
 
@@ -104,7 +105,8 @@ public class EvidenceController {
     public ApiResponse<List<Map<String, Object>>> getUsersInCircle(@PathVariable Long layerId) {
         var layer = circleLayerRepository.findById(layerId).orElseThrow();
         String path = layer.getCirclePath();
-        String sql = "SELECT id, openid, nickname, role, campus_name, circle_path FROM users WHERE circle_path LIKE ? LIMIT 100";
+        String sql = "SELECT id, openid, nickname, role, campus_name, circle_path FROM users"
+            + " WHERE (circle_path = ? OR circle_path LIKE ?) LIMIT 100";
         List<Map<String, Object>> users = jdbcTemplate.query(sql, (rs, i) -> {
             Map<String, Object> row = new HashMap<>();
             row.put("id", rs.getLong("id"));
@@ -114,7 +116,7 @@ public class EvidenceController {
             try { row.put("campusName", rs.getString("campus_name")); } catch (Exception e) { /* ignore */ }
             try { row.put("circlePath", rs.getString("circle_path")); } catch (Exception e) { /* ignore */ }
             return row;
-        }, path + "%");
+        }, path, path + "/%");
         return ApiResponse.ok(users);
     }
 }

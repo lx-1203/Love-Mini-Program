@@ -135,7 +135,9 @@ public class AuditLogAspect {
             responseStatus = extractResponseStatus(result);
             return result;
         } catch (Throwable ex) {
-            responseStatus = 500;
+            // 记录客户端将实际收到的状态码（与 GlobalExceptionHandler 同一张映射表），
+            // 不再硬编码 500——错口令 401、参数错 400 这类被 handler 转换的异常原先是审计表失真大头
+            responseStatus = com.campuslove.api.config.GlobalExceptionHandler.resolveMappedStatus(ex);
             // infra R2-00232: 审计库仅存异常类型与单行化摘要，避免 SQL/堆栈等内部细节入库
             errorMessage = truncate(buildSafeErrorMessage(ex), 500);
             throw ex;

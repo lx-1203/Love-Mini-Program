@@ -233,9 +233,21 @@ if (!admin) {
   check("绑本校后见「纯圈层量」（校区天花板已撤，以圈层为准）",
     scoped.total === superPku.total,
     `看到=${scoped.total} 纯圈层=${superPku.total} 旧交集=${superPkuCampus.total} 全平台=${superAll.total}`);
-  check("撤天花板的证据可见（纯圈层量 > 旧交集量，故本账号确实不再被自身校区收窄）",
-    superPku.total > superPkuCampus.total && scoped.total > superPkuCampus.total,
-    `纯圈层=${superPku.total} 旧交集=${superPkuCampus.total}`);
+  // 2026-10-26：原「纯圈层量 > 旧交集量」是**假绿**——它只由 S1 裸前缀命中 S14
+  // （superPku 的 circlePath 过滤同款泄漏）凑出来；路径段修复后干净数据下两者相等。
+  // 撤天花板的证据改由下面「绑华北大区 88 > 本校 21」承担；这里改为直接钉路径段边界：
+  // 本校作用域读他节点帖子详情必须 403（用超管可见 ∖ 本校可见的差集取样本，不硬编码 id）。
+  const listSuper = await get("/admin/forum/village-posts?page=1&pageSize=100", sup.token);
+  const listScoped = await get("/admin/forum/village-posts?page=1&pageSize=100", admin.token);
+  const scopedIds = new Set(((listScoped.json && listScoped.json.items) || []).map((p) => p.id));
+  const foreignPost = ((listSuper.json && listSuper.json.items) || []).find((p) => p && p.id != null && !scopedIds.has(p.id));
+  if (foreignPost) {
+    const foreignDetail = await get(`/admin/forum/village-posts/${foreignPost.id}`, admin.token);
+    check("路径段边界：本校作用域读他节点帖子详情被拒（S1 不得命中 S14）",
+      foreignDetail.status === 403, `postId=${foreignPost.id} status=${foreignDetail.status}`);
+  } else {
+    check("取到他节点帖子样本", false, `超管可见=${(listSuper.json?.items || []).length} 本校可见=${scopedIds.size} ⇒ 差集为空`);
+  }
 
   if (thuPostId) {
     const cross = await get(`/admin/forum/village-posts/${thuPostId}`, admin.token);

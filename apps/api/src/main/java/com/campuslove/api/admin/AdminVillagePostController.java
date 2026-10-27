@@ -83,6 +83,7 @@ public class AdminVillagePostController {
     private final AdminDataScope adminDataScope;
     /** 圈层数据域（RBAC 第二授权轴：看「谁的」数据）；与校区轴并存 */
     private final AdminScopeService adminScopeService;
+    private final RealAdminStatsService adminStatsService;
     /**
      * 2026-08-08 论坛互动真实化：帖子收藏 Repository（后台展示收藏数）。
      */
@@ -103,6 +104,7 @@ public class AdminVillagePostController {
             UserCampusProfileRepository userCampusProfileRepository,
             AdminDataScope adminDataScope,
             AdminScopeService adminScopeService,
+            RealAdminStatsService adminStatsService,
             PostFavoriteRepository postFavoriteRepository,
             PostViewHistoryRepository postViewHistoryRepository,
             com.campuslove.api.village.HotScoreScheduler hotScoreScheduler) {
@@ -112,6 +114,7 @@ public class AdminVillagePostController {
         this.userCampusProfileRepository = userCampusProfileRepository;
         this.adminDataScope = adminDataScope;
         this.adminScopeService = adminScopeService;
+        this.adminStatsService = adminStatsService;
         this.postFavoriteRepository = postFavoriteRepository;
         this.postViewHistoryRepository = postViewHistoryRepository;
         this.hotScoreScheduler = hotScoreScheduler;
@@ -277,6 +280,7 @@ public class AdminVillagePostController {
         }
 
         postRepository.save(post);
+        adminStatsService.invalidateStatsCache();
 
         Map<String, Object> body = new HashMap<>();
         body.put("id", post.getId());
@@ -338,6 +342,7 @@ public class AdminVillagePostController {
         post.setIsPinned(pinned);
         post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         postRepository.save(post);
+        adminStatsService.invalidateStatsCache();
 
         Map<String, Object> body = new HashMap<>();
         body.put("id", post.getId());
@@ -373,6 +378,7 @@ public class AdminVillagePostController {
         post.setStatus(PostStatus.deleted);
         post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         postRepository.save(post);
+        adminStatsService.invalidateStatsCache();
 
         Map<String, Object> body = new HashMap<>();
         body.put("id", post.getId());

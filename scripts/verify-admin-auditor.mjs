@@ -216,15 +216,19 @@ if (!targetId) {
 }
 
 // ===== 5. 校区 ADMIN 的跨校区写必须被拒 =====
-const otherCampus = await call(sup.token, "GET", "/admin/forum/village-posts?page=1&pageSize=50");
+// 样本不能靠「列表里随便挑一条」：那可能正好在本校区，红了也说不清是越权还是夹具。
+// 用集合差取「超管可见但校区管理员不可见」的帖子——只有作用域正确时这个集合才非空，
+// 因此它同时是越权断言的正向前提（作用域一旦退化成 S1 命中 S14，差集为空，本项会响亮失败）。
+const otherCampus = await call(sup.token, "GET", "/admin/forum/village-posts?page=1&pageSize=100");
 const otherItems = (otherCampus.json && otherCampus.json.items) || [];
-const foreign = otherItems.find((p) => p.authorId && p.id !== targetId);
+const scopedList = await call(cmp.token, "GET", "/admin/forum/village-posts?page=1&pageSize=100");
+const scopedIds = new Set(((scopedList.json && scopedList.json.items) || []).map((p) => p.id));
+const foreign = otherItems.find((p) => p.authorId && p.id !== targetId && !scopedIds.has(p.id));
 if (foreign) {
   const r = await call(cmp.token, "POST", `/admin/forum/village-posts/${foreign.id}/audit`, { decision: "approved", remark: "跨校区探针" });
-  // 北京大学校区管理员对非本校帖子：应被数据域拦下（403），至少不能悄悄成功
-  check(`校区 ADMIN 跨校区审核被拦（目标帖 ${foreign.id}）`, r.status === 403 || r.status === 400, `status=${r.status} ${r.text.slice(0, 70)}`);
+  check(`校区 ADMIN 跨校区审核被拦（目标帖 ${foreign.id}，不在其作用域列表内）`, r.status === 403 || r.status === 400, `status=${r.status} ${r.text.slice(0, 70)}`);
 } else {
-  check("取到跨校区帖子样本", false, "列表内无可用于越权测试的帖子");
+  check("取到跨校区帖子样本", false, `超管可见=${otherItems.length} 校区可见=${scopedIds.size} ⇒ 差集为空：要么作用域泄漏，要么样本不足`);
 }
 
 finish();

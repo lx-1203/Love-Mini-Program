@@ -1,3 +1,4 @@
+ADMINBROWSER_LOGIN_PROBE http=200（探针通过后再进浏览器，token 不落日志）
 ADMINBROWSER_LOGIN ok（登录后跳离 /login）
 ADMINBROWSER_SHOT 01-dashboard.png
 ADMINBROWSER_HREFS users=/content/users media=/content/media-assets village=/forum/village-posts（侧边栏共 17 条链接）
@@ -5,8 +6,9 @@ ADMINBROWSER_USERS ok tbody行=20
 ADMINBROWSER_SHOT 02-users.png
 ADMINBROWSER_SHOT 03-media-assets.png
 ADMINBROWSER_MEDIA img总数=20 真解码=20 裂图=0
-ADMINBROWSER_COUNTS overview.totalPostCount=195 posts.total=195（status=200） village-posts.total=195（status=200）
+ADMINBROWSER_COUNTS overview.totalPostCount=198 posts.total=198（status=200） village-posts.total=198（status=200）
 ADMINBROWSER_SHOT 04-village-posts.png
-ADMINBROWSER_SHOT 05-after-pin-toggle.png（点击了「取消置顶」）
-ADMINBROWSER_PIN xhr=[{"url":"http://127.0.0.1:5177/api/v1/admin/forum/village-posts/197/unpin","status":200}]
-ADMINBROWSER_PIN_RESTORE ok（二次点击还原置顶态）
+ADMINBROWSER_PIN_TARGET 帖子#427 按钮「置顶」 点击前后端isPinned=false
+ADMINBROWSER_SHOT 05-after-pin-toggle.png（帖子#427 点击了「置顶」）
+ADMINBROWSER_PIN xhr=[{"url":"http://127.0.0.1:5177/api/v1/admin/forum/village-posts/427/pin","status":200}]
+ADMINBROWSER_PIN_RESTORE ok（帖子#427 还原为 isPinned=false，与点击前一致）

@@ -185,7 +185,22 @@ public class RealAdminStatsService implements AdminStatsService {
      */
     @Override
     public UserStatsView getUserStats() {
-        return cached("userStats", () -> computeUserStats(scopedCampusName()));
+        return cached(scopedCacheKey("userStats"), () -> computeUserStats(scopedCampusName()));
+    }
+
+    /**
+     * 作用域感知的缓存 key：校区管理员与超管的统计不能共用同一个 key，
+     * 否则先读的人会把结果留给另一个作用域（2026-10-26 实测：userStats/activeStats/matchStats
+     * 三个 key 未带校区，是先读先得的跨域泄漏；总览那条早已带校区，此处补齐同一口径）。
+     */
+    private String scopedCacheKey(String base) {
+        String campusName = scopedCampusName();
+        return base + ":" + (campusName == null ? "GLOBAL" : campusName);
+    }
+
+    /** 管理端写操作后清空统计缓存：总览/用户/活跃/匹配统计应立刻反映本次写，不等 5 分钟 TTL。 */
+    public void invalidateStatsCache() {
+        statsCache.clear();
     }
 
     /**
@@ -270,7 +285,7 @@ public class RealAdminStatsService implements AdminStatsService {
      */
     @Override
     public ActiveStatsView getActiveStats() {
-        return cached("activeStats", () -> computeActiveStats(scopedCampusName()));
+        return cached(scopedCacheKey("activeStats"), () -> computeActiveStats(scopedCampusName()));
     }
 
     /**
@@ -310,7 +325,7 @@ public class RealAdminStatsService implements AdminStatsService {
      */
     @Override
     public MatchStatsView getMatchStats() {
-        return cached("matchStats", () -> computeMatchStats(scopedCampusName()));
+        return cached(scopedCacheKey("matchStats"), () -> computeMatchStats(scopedCampusName()));
     }
 
     /**

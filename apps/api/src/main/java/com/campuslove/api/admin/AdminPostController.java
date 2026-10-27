@@ -66,16 +66,19 @@ public class AdminPostController {
     private final CommentRepository commentRepository;
     /** 管理端数据隔离（多管理员多校区） */
     private final AdminDataScope adminDataScope;
+    private final RealAdminStatsService adminStatsService;
 
     public AdminPostController(
             PostRepository postRepository,
             UserRepository userRepository,
             CommentRepository commentRepository,
-            AdminDataScope adminDataScope) {
+            AdminDataScope adminDataScope,
+            RealAdminStatsService adminStatsService) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
         this.adminDataScope = adminDataScope;
+        this.adminStatsService = adminStatsService;
     }
 
     /**
@@ -187,6 +190,7 @@ public class AdminPostController {
         }
 
         postRepository.save(post);
+        adminStatsService.invalidateStatsCache();
 
         Map<String, Object> body = new HashMap<>();
         body.put("id", post.getId());
@@ -224,6 +228,7 @@ public class AdminPostController {
         post.setStatus(PostStatus.deleted);
         post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         postRepository.save(post);
+        adminStatsService.invalidateStatsCache();
 
         Map<String, Object> body = new HashMap<>();
         body.put("id", post.getId());

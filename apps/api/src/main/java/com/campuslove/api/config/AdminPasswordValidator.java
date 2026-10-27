@@ -56,9 +56,36 @@ public class AdminPasswordValidator {
             ".20cQQubK3.HZWzG3YB1tlRy.fqvM/BG"
     );
 
+    /**
+     * 已知泄露的管理员口令哈希。
+     *
+     * <p>2026-10-25 复审：迁移 V2026.08.07.0019 曾把
+     * {@code Admin@12345} 的公开 BCrypt 写进 users.password。即使账号后来被改密，
+     * 任何仍持有该哈希的 active 管理员都等于公开口令，登录与启动审计都必须拒绝。</p>
+     */
+    private static final java.util.Set<String> COMPROMISED_ADMIN_PASSWORD_HASHES = java.util.Set.of(
+            "$2a$10$CjX5HfkDnKv7gfy6oGi3g.PWizPQ2D1h1QO6D/yhqwmm/dGOJ8TYe"
+    );
+
     /** R4-00309：BCrypt 哈希格式（$2a$/$2b$/$2y$ 前缀），严格模式下校验用 */
     private static final java.util.regex.Pattern BCRYPT_HASH_PATTERN =
             java.util.regex.Pattern.compile("^\\$2[aby]\\$\\d{2}\\$[./A-Za-z0-9]{53}$");
+
+    /** 判断字符串是否为合法的 BCrypt 哈希（登录与启动审计共用同一把尺）。 */
+    public static boolean isBcryptHash(String hash) {
+        return hash != null && BCRYPT_HASH_PATTERN.matcher(hash).matches();
+    }
+
+    /**
+     * 判断哈希是否为已知泄露/默认弱口令的哈希。
+     *
+     * <p>包含历史占位哈希与 2026-10-25 复审发现的公开测试超管哈希。</p>
+     */
+    public static boolean isCompromisedAdminPasswordHash(String hash) {
+        return hash != null
+                && (UNSAFE_DEFAULT_ADMIN_PASSWORDS.contains(hash)
+                || COMPROMISED_ADMIN_PASSWORD_HASHES.contains(hash));
+    }
 
     /**
      * Task 11.2：强密码正则。
@@ -139,8 +166,8 @@ public class AdminPasswordValidator {
             log.warn("ADMIN_PASSWORD_HASH 未配置，使用默认弱密码启动（仅开发环境）");
             return;
         }
-        if (UNSAFE_DEFAULT_ADMIN_PASSWORDS.contains(adminPasswordHash)) {
-            String msg = "ADMIN_PASSWORD_HASH 配置为已知的弱默认值（" + adminPasswordHash + "），"
+        if (isCompromisedAdminPasswordHash(adminPasswordHash)) {
+            String msg = "ADMIN_PASSWORD_HASH 配置为已知的弱默认/泄露值（" + adminPasswordHash + "），"
                     + "存在严重安全风险。请通过环境变量 ADMIN_PASSWORD_HASH 设置一个安全的 BCrypt 哈希。"
                     + "生成方法：调用 PasswordEncoderConfig.encodePassword(明文密码)。";
             if (strictPassword) {
@@ -151,7 +178,7 @@ public class AdminPasswordValidator {
         }
         // R4-00309：严格模式下哈希必须为 BCrypt 格式——明文/其他格式属误配置，
         // 拒绝启动（替代原源码明文弱密码清单的兜底语义）
-        if (strictPassword && !BCRYPT_HASH_PATTERN.matcher(adminPasswordHash).matches()) {
+        if (strictPassword && !isBcryptHash(adminPasswordHash)) {
             String msg = "ADMIN_PASSWORD_HASH 不是合法的 BCrypt 哈希格式（$2a$/$2b$/$2y$ 前缀，"
                     + "疑似明文误配）。请通过环境变量 ADMIN_PASSWORD_HASH 设置 BCrypt 哈希，"
                     + "生成方法：调用 PasswordEncoderConfig.encodePassword(明文密码)。";

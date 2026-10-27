@@ -50,8 +50,8 @@ import static org.mockito.Mockito.when;
  *   <li>错误密码 + 正确哈希 -> 校验失败</li>
  *   <li>正确密码 + 错误哈希 -> 校验失败</li>
  *   <li>encodeAdminPassword 编码功能验证</li>
- *   <li>历史明文密码登录 -> 自动迁移为 BCrypt（Phase 3 任务 13 新增）</li>
- *   <li>环境变量兜底场景不迁移（Phase 3 任务 13 新增）</li>
+ *   <li>历史明文密码登录 -> 拒绝（2026-10-25 安全收口，不再自动迁移）</li>
+ *   <li>公开测试超管口令 / 已知泄露哈希 -> 拒绝</li>
  *   <li>普通用户密码编码 encodeUserPassword 功能验证（Phase 3 任务 13 新增）</li>
  *   <li>注册/密码重置场景 -> password 字段为 BCrypt 哈希（Phase 3 任务 13 新增）</li>
  * </ul>
@@ -206,41 +206,61 @@ class RealAuthServiceTest {
                 () -> realAuthService.encodeAdminPassword(null));
     }
     /**
-     * 场景 7：历史明文密码登录 -> 自动迁移为 BCrypt 哈希（Phase 3 任务 13 核心场景）。
+     * 场景 7：历史明文密码 -> 拒绝登录（2026-10-25 P0 收口）。
      *
-     * <p>构造一个 password 字段为明文密码的管理员用户（模拟 V2026.06.25.0002 迁移前
-     * 或手工录入异常场景），登录时：
-     * <ol>
-     *   <li>BCrypt 校验失败（因为 storedHash 非 BCrypt 格式）</li>
-     *   <li>明文 equals 校验通过</li>
-     *   <li>自动将明文密码迁移为 BCrypt 哈希并持久化（userRepository.save 被调用）</li>
-     *   <li>登录成功（不抛异常）</li>
-     * </ol>
-     * </p>
+     * <p>非 BCrypt 字段不再被当作明文接受。否则迁移 V2026.08.09.0009 写入的
+     * 公开 64 位字符串可直接登录 SUPER_ADMIN。</p>
      */
     @Test
-    void loginAsAdmin_withPlaintextPassword_shouldAutoMigrateToBCrypt() {
+    void loginAsAdmin_withPlaintextPassword_shouldFailClosed() {
         // Arrange：管理员用户的 password 字段为明文密码（历史遗留数据）
         String plaintextPassword = String.join("", "legacy-plaintext-", "pwd-2026");
         User adminUser = createAdminUser(plaintextPassword);
         when(userRepository.findByOpenid("admin")).thenReturn(Optional.of(adminUser));
-        when(userRepository.save(any())).thenReturn(adminUser);
-        when(jwtTokenProvider.generateToken(any())).thenReturn("mock-jwt-token");
 
-        // Act：使用明文密码登录，应成功（不抛异常）
-        assertDoesNotThrow(() -> realAuthService.loginAsAdmin("admin", plaintextPassword));
+        // Act & Assert：明文不再被接受
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> realAuthService.loginAsAdmin("admin", plaintextPassword));
+        assertEquals("管理员账号或密码错误", ex.getMessage());
 
-        // Assert：userRepository.save 应被调用一次（迁移持久化）
-        verify(userRepository).save(eq(adminUser));
+        // Assert：不得自动迁移（不再写库）
+        verify(userRepository, never()).save(any());
+    }
 
-        // Assert：user.password 应被更新为 BCrypt 哈希（非原明文）
-        String migratedHash = adminUser.getPassword();
-        assertNotNull(migratedHash, "迁移后的 password 不能为 null");
-        assertNotEquals(plaintextPassword, migratedHash,
-                "迁移后的 password 不应仍为明文");
-        assertTrue(migratedHash.startsWith("$2a$"), "迁移后的 password 应为 BCrypt 哈希格式");
-        assertTrue(passwordEncoder.matches(plaintextPassword, migratedHash),
-                "迁移后的 BCrypt 哈希应能校验原明文密码");
+    /**
+     * 场景 7b：仓库里公开的测试超管 64 位字符串必须无法登录。
+     *
+     * <p>复现 2026-10-25 复审发现的真实攻击串：openid 与 password 都能从仓库读到。</p>
+     */
+    @Test
+    void loginAsAdmin_withPublicTestCredentialPlaintext_shouldFailClosed() {
+        String publicValue = "47e0623afa20f48d5e8c396e87af741e5496f554e4334ec5b19fb929f24708cb";
+        User adminUser = createAdminUser(publicValue);
+        adminUser.setOpenid("local-dev-admin-openid-123456");
+        when(userRepository.findByOpenid("local-dev-admin-openid-123456"))
+                .thenReturn(Optional.of(adminUser));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> realAuthService.loginAsAdmin(
+                        "local-dev-admin-openid-123456", publicValue));
+        assertEquals("管理员账号或密码错误", ex.getMessage());
+        verify(userRepository, never()).save(any());
+    }
+
+    /**
+     * 场景 7c：已知泄露的公开 BCrypt 哈希（Admin@12345）即使格式合法也必须拒绝。
+     */
+    @Test
+    void loginAsAdmin_withPublicCompromisedHash_shouldFailClosed() {
+        String publicHash =
+                "$2a$10$CjX5HfkDnKv7gfy6oGi3g.PWizPQ2D1h1QO6D/yhqwmm/dGOJ8TYe";
+        User adminUser = createAdminUser(publicHash);
+        when(userRepository.findByOpenid("admin")).thenReturn(Optional.of(adminUser));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> realAuthService.loginAsAdmin("admin", String.join("", "Admin", "@12345")));
+        assertEquals("管理员账号或密码错误", ex.getMessage());
+        verify(userRepository, never()).save(any());
     }
 
     /**

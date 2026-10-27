@@ -20,6 +20,7 @@
  */
 import puppeteer from "puppeteer";
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
+import http from "node:http";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -34,6 +35,42 @@ const sleep = (ms) => new Promise((k) => setTimeout(k, ms));
 const PW = process.env.ADMIN_LOGIN_PASSWORD;
 if (!PW) { console.log(`${RK}=NOT-EVIDENCED reason=ADMIN_LOGIN_PASSWORD 未注入（口令不入 argv）`); process.exit(2); }
 mkdirSync(SHOTS, { recursive: true });
+
+/* 前置登录探针（2026-10-26 缺陷：账号被迁移 V2026.10.26.0001 收口为 disabled/password=NULL 后，
+   页面登录只会 45s 超时看不出原因）。先进登录 API 拿真实回码：红也红得明白，并点名迁移注释
+   认可的复通路径。本机 PATH 的 node 可能是 v16（无全局 fetch），用 node:http 手搓，不引新依赖；
+   口令只走环境变量→请求体，不进 argv/日志；token 不落日志。 */
+const loginProbe = () => new Promise((res) => {
+  const body = JSON.stringify({ username: "local-dev-admin-openid-123456", password: PW });
+  const req = http.request(`${BASE}/api/v1/auth/admin/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Content-Length": Buffer.byteLength(body),
+      "Idempotency-Key": `admin-browser-verify-${Date.now()}`,
+    },
+  }, (r) => {
+    let text = "";
+    r.on("data", (c) => { text += c; });
+    r.on("end", () => res({ status: r.statusCode, body: text.slice(0, 512) }));
+  });
+  req.on("error", () => res(null)); /* 网络层不可达：维持旧行为，由下面浏览器段去报 */
+  req.end(body);
+});
+const probe = await loginProbe();
+if (probe) {
+  let pj = null; try { pj = JSON.parse(probe.body); } catch { /* 回包不是 JSON：只按 http 码分流 */ }
+  if (probe.status === 403 && String(pj?.code || "") === "ADMIN_DISABLED") {
+    console.log(`${RK}=NOT-EVIDENCED reason=ADMIN_DISABLED（users 100000 已被迁移 V2026.10.26.0001 置 disabled/password=NULL）`);
+    console.log("复通路径（迁移注释点名，仅本地）：LOCAL_ADMIN_PASSWORD='<新的强口令>' node scripts/dev/reset-local-admin.mjs --apply；不得回退任何仓库内出现过的公开口令");
+    process.exit(2);
+  }
+  if (probe.status !== 200) {
+    console.log(`${RK}=NOT-EVIDENCED reason=登录探针 http=${probe.status} code=${pj?.code ?? "?"} message=${String(pj?.message ?? "").slice(0, 120)}（口令不落日志）`);
+    process.exit(2);
+  }
+  say("ADMINBROWSER_LOGIN_PROBE http=200（探针通过后再进浏览器，token 不落日志）");
+}
 
 const browser = await puppeteer.launch({
   headless: true,
@@ -126,31 +163,70 @@ try {
     await sleep(1500);
     await page.screenshot({ path: join(SHOTS, "04-village-posts.png") });
     say("ADMINBROWSER_SHOT 04-village-posts.png");
+    /* 目标帖一经选定就按帖子 ID 钉死（行首格就是 posts.id）。置顶会重排列表：
+       "还原时仍取 tbody 首行"点到的是重排后的另一帖——2026-10-26 登记过世界态漂移
+       （408 被取消置顶、420 被误置顶，脚本却报 PIN_RESTORE ok）。 */
     const pinTrace = [];
-    page.on("response", async (r) => { if (/village-posts\/\d+\/(un)?pin$/.test(r.url())) pinTrace.push({ url: r.url(), status: r.status() }); });
-    const clicked = await page.evaluate(() => {
+    page.on("response", (r) => { if (/village-posts\/\d+\/(un)?pin$/.test(r.url())) pinTrace.push({ url: r.url(), status: r.status() }); });
+    const target = await page.evaluate(() => {
       const tr = document.querySelector("tbody tr");
+      if (!tr) return null;
+      const id = (tr.querySelector("td")?.innerText || "").replace(/\s/g, "");
+      const btn = [...tr.querySelectorAll("button")].find((b) => /置顶|取消置顶/.test(b.innerText));
+      return (id && btn) ? { id, label: btn.innerText.replace(/\s/g, "") } : null;
+    });
+    const clickRowByPostId = (pid) => page.evaluate((id) => {
+      const tr = [...document.querySelectorAll("tbody tr")]
+        .find((r) => (r.querySelector("td")?.innerText || "").replace(/\s/g, "") === id);
       if (!tr) return false;
       const btn = [...tr.querySelectorAll("button")].find((b) => /置顶|取消置顶/.test(b.innerText));
       if (!btn) return false;
       btn.click();
-      return btn.innerText.replace(/\s/g, "");
-    });
-    if (!clicked) { bad("village-posts 首行没找到 置顶/取消置顶 按钮"); }
+      return true;
+    }, pid);
+    const pinListOf = async () => {
+      const r = await j("/api/v1/admin/forum/village-posts?page=1&pageSize=100");
+      return r?.j?.data?.items ?? r?.j?.items ?? [];
+    };
+    if (!target) { bad("village-posts 首行没解析出 帖子ID/置顶按钮"); }
     else {
-      await sleep(2500);
-      await page.screenshot({ path: join(SHOTS, "05-after-pin-toggle.png") });
-      say(`ADMINBROWSER_SHOT 05-after-pin-toggle.png（点击了「${clicked}」）`);
-      if (!pinTrace.length) bad("置顶点击后没有捕获到 pin/unpin XHR（UI 动作没真发请求）");
-      else say(`ADMINBROWSER_PIN xhr=${JSON.stringify(pinTrace)}`);
-      const again = await page.evaluate(() => {
-        const tr = document.querySelector("tbody tr");
-        const btn = tr && [...tr.querySelectorAll("button")].find((b) => /置顶|取消置顶/.test(b.innerText));
-        if (!btn) return false;
-        btn.click();
-        return true;
-      });
-      if (again) { await sleep(2000); say("ADMINBROWSER_PIN_RESTORE ok（二次点击还原置顶态）"); }
+      const t0 = (await pinListOf()).find((x) => String(x.id) === target.id);
+      const initialPinned = t0 ? Boolean(t0.isPinned) : null;
+      say(`ADMINBROWSER_PIN_TARGET 帖子#${target.id} 按钮「${target.label}」 点击前后端isPinned=${initialPinned}`);
+      if (initialPinned === null) bad(`列表 API 第一页找不到帖子#${target.id}，初始置顶态没有权威读数`);
+      const firstOk = await clickRowByPostId(target.id);
+      if (!firstOk) bad(`帖子#${target.id} 的置顶按钮没点出去（行或按钮消失）`);
+      else {
+        await sleep(2500);
+        await page.screenshot({ path: join(SHOTS, "05-after-pin-toggle.png") });
+        say(`ADMINBROWSER_SHOT 05-after-pin-toggle.png（帖子#${target.id} 点击了「${target.label}」）`);
+        if (!pinTrace.length) bad("置顶点击后没有捕获到 pin/unpin XHR（UI 动作没真发请求）");
+        else {
+          say(`ADMINBROWSER_PIN xhr=${JSON.stringify(pinTrace)}`);
+          if (!pinTrace.some((t) => t.url.includes(`/village-posts/${target.id}/`))) {
+            bad(`pin/unpin XHR 打的不是目标帖 #${target.id}：${pinTrace[0].url}`);
+          }
+        }
+        /* 还原 = 同一帖（按 ID 找行）再点一次，之后用后端读回复核 isPinned 回到初始值 */
+        const again = await clickRowByPostId(target.id);
+        if (!again) bad(`还原点击找不到帖子#${target.id} 的行/按钮（列表重排后不在当前页？世界态可能已漂移）`);
+        else {
+          await sleep(2500);
+          const hits = pinTrace.filter((t) => t.url.includes(`/village-posts/${target.id}/`));
+          if (hits.length < 2) bad(`还原点击没有第二个命中 #${target.id} 的 pin/unpin XHR（trace=${JSON.stringify(pinTrace)}）`);
+          else {
+            const op = (u) => (/\/unpin$/.test(u) ? "unpin" : "pin");
+            if (op(hits[0].url) === op(hits[1].url)) bad(`两次 XHR 不是互逆操作：${hits[0].url} → ${hits[1].url}`);
+          }
+          const t1 = (await pinListOf()).find((x) => String(x.id) === target.id);
+          if (!t1) bad(`还原后列表 API 第一页找不到帖子#${target.id}，终态没有权威读数`);
+          else if (initialPinned !== null && Boolean(t1.isPinned) !== initialPinned) {
+            bad(`置顶态没还原：帖子#${target.id} 初始 isPinned=${initialPinned}，还原后=${Boolean(t1.isPinned)}`);
+          } else {
+            say(`ADMINBROWSER_PIN_RESTORE ok（帖子#${target.id} 还原为 isPinned=${t1.isPinned}，与点击前一致）`);
+          }
+        }
+      }
     }
   } else { bad("侧边栏没找到 village-posts 入口，管理动作没做"); }
 } catch (e) {

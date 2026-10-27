@@ -128,6 +128,7 @@ public class AdminContentComposeController {
     private final MediaStorageService storageService;
     private final MediaAssetService mediaAssetService;
     private final AdminDataScope adminDataScope;
+    private final RealAdminStatsService adminStatsService;
 
     /**
      * 官方小编账号用户 ID（{@code app.admin.compose-author-user-id}，缺省 0 表示未配置）。
@@ -141,6 +142,7 @@ public class AdminContentComposeController {
                                         MediaStorageService storageService,
                                         MediaAssetService mediaAssetService,
                                         AdminDataScope adminDataScope,
+                                        RealAdminStatsService adminStatsService,
                                         @Value("${app.admin.compose-author-user-id:0}") long composeAuthorUserId) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
@@ -148,6 +150,7 @@ public class AdminContentComposeController {
         this.storageService = storageService;
         this.mediaAssetService = mediaAssetService;
         this.adminDataScope = adminDataScope;
+        this.adminStatsService = adminStatsService;
         this.composeAuthorUserId = composeAuthorUserId;
     }
 
@@ -200,6 +203,7 @@ public class AdminContentComposeController {
         // 否则他在圈层树里点自己学校看不到自己发的帖。超管操作时回退到小编账号的圈层。
         post.setOwnerCirclePath(resolveOwnerCirclePath(adminId, author));
         post = postRepository.save(post);
+        adminStatsService.invalidateStatsCache();
 
         String ownerCirclePath = post.getOwnerCirclePath();
 

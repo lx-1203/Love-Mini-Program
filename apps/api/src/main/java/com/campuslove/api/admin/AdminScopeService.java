@@ -38,7 +38,8 @@ import org.springframework.stereotype.Service;
  * </ul>
  *
  * <p>数据基础：{@code users.circle_path}、{@code posts.owner_circle_path}、
- * {@code private_messages.owner_circle_path} 均已回填且可按前缀匹配（{@code LIKE '前缀%'}）。
+ * {@code private_messages.owner_circle_path} 均已回填且可按路径段匹配
+ * （{@code = 节点 OR LIKE '节点/%'}，禁止裸 {@code LIKE '节点%'}：那会让 S1 命中 S14）。
  * NULL 表示「未归属」。</p>
  *
  * <p>解析失败一律 fail-closed：任何异常/账号不存在都收敛为「无可见前缀」（空列表），
@@ -131,11 +132,42 @@ public class AdminScopeService {
         }
         String value = ownerCirclePath.trim();
         for (String prefix : prefixes) {
-            if (value.startsWith(prefix)) {
+            if (isWithinScopePrefix(value, prefix)) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * 判断圈层路径 {@code value} 是否落在前缀 {@code prefix} 的子树内（含节点自身）。
+     *
+     * <p>必须按 <b>路径段</b> 比较，不能用裸 {@code startsWith}：校区节点
+     * {@code C1/R3/S1} 与另一校区 {@code C1/R3/S14} 在字符串上共享前缀，
+     * 裸前缀匹配会把 S14 误判进 S1 的数据域（实测：北大管理员可读/可审
+     * C1/R3/S14 的帖子）。大区节点 {@code C1/R3} 仍应覆盖其下全部
+     * {@code C1/R3/S*}，因此允许 {@code prefix + "/"} 前缀。</p>
+     *
+     * @param value  资源归属圈层路径
+     * @param prefix 管理员可见节点路径
+     * @return true 表示同节点或在同节点的子树内
+     */
+    public static boolean isWithinScopePrefix(String value, String prefix) {
+        if (value == null || prefix == null) {
+            return false;
+        }
+        String v = value.trim();
+        String p = prefix.trim();
+        if (v.isEmpty() || p.isEmpty()) {
+            return false;
+        }
+        while (p.endsWith("/")) {
+            p = p.substring(0, p.length() - 1);
+        }
+        if (p.isEmpty()) {
+            return false;
+        }
+        return v.equals(p) || v.startsWith(p + "/");
     }
 
     /**

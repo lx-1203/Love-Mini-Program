@@ -35,10 +35,13 @@ public interface CircleLayerRepository extends JpaRepository<CircleLayer, Long> 
     java.util.Optional<CircleLayer> findFirstByLevelAndName(Integer level, String name);
 
     @EntityGraph(attributePaths = { "parent", "parent.parent" })
-    List<CircleLayer> findByCirclePathStartingWithOrderBySortAsc(String prefix);
+    @Query("SELECT c FROM CircleLayer c WHERE c.circlePath = :prefix"
+            + " OR c.circlePath LIKE CONCAT(:prefix, '/%') ORDER BY c.sort ASC")
+    List<CircleLayer> findByCirclePathStartingWithOrderBySortAsc(@Param("prefix") String prefix);
 
     @EntityGraph(attributePaths = { "parent", "parent.parent" })
-    @Query("SELECT c FROM CircleLayer c WHERE c.circlePath LIKE CONCAT(:path, '%') ORDER BY c.sort ASC")
+    @Query("SELECT c FROM CircleLayer c WHERE c.circlePath = :path"
+            + " OR c.circlePath LIKE CONCAT(:path, '/%') ORDER BY c.sort ASC")
     List<CircleLayer> findAllDescendants(@Param("path") String path);
 
     @EntityGraph(attributePaths = { "parent", "parent.parent" })

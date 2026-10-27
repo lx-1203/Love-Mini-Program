@@ -42,7 +42,7 @@ function finish(state, reason) {
     ? `后台写路径有 ${failures} 项不成立（FAIL 行见上：公告广播/后台建帖/图片上传/社区总览/圈层过滤/自收尾六类）`
     : s === "NOT-EVIDENCED"
       ? `${transport} 个请求拿不到任何 HTTP 响应 ⇒ ${BASE} 无后端可判（8080/MySQL 不在），仪器故障不计产品 FAIL`
-      : `${passes} 项断言全绿（公告写了 C 端读得到、下架立刻读不到、校区发帖落本校、上传带 token 才出图、总览自洽、验收帖自收尾）` + (skips ? `；另有 ${skips} 项因缺件没跑` : ""));
+      : `${passes} 项断言全绿（公告写了 C 端读得到、下架立刻读不到、校区发帖落本校、上传走能力型签名 URL（?exp=&sig=）、总览自洽、验收帖自收尾）` + (skips ? `；另有 ${skips} 项因缺件没跑` : ""));
   console.log(`ADMWRITE_RESULT=${s} pass=${passes} fail=${failures} skip=${skips} transport=${transport}（${scrub(why)}）`);
   process.exit(s === "FAIL" ? 1 : s === "NOT-EVIDENCED" ? 2 : 0);
 }
@@ -182,6 +182,10 @@ const title = `后台发布验收${STAMP}`;
    相对不变量才是这句话本来的意思，且它比绝对地板更严：本次建的那一条必须真的被计进总数。 */
 const ovBefore = await get("/admin/stats/community-overview", supTok);
 const totalBefore = Number(ovBefore.json?.data?.totalPostCount ?? ovBefore.json?.totalPostCount ?? NaN);
+/* 总览有 5 分钟进程内缓存（RealAdminStatsService.cached，R4-00392 性能设计），
+   所以"新建帖立刻进总数"不能拿总览判；用**实时列表**取前后差，总览只判字段与自洽。 */
+const listBeforeRes = await get("/admin/forum/village-posts?page=1&pageSize=1", supTok);
+const listBefore = Number(listBeforeRes.json?.data?.total ?? listBeforeRes.json?.total ?? NaN);
 const created = await post("/admin/posts", {
   title, content: `这是一条由后台校区管理员发布的验收帖，时间戳 ${STAMP}。`,
   category: "campus", targetType: "general", images: [], tags: ["后台验收"],
@@ -197,7 +201,7 @@ check("普通用户在小程序侧能读到这条后台帖",
   clientPost.status === 200 && JSON.stringify(clientPost.json || "").includes(title),
   `status=${clientPost.status}`);
 
-// ===== 3. 图片上传：后台传 → 带 token 能取回字节 =====
+// ===== 3. 图片上传：后台传 → 能力型签名 URL 能取回字节（P0-2 后会话 JWT 进 query 一律 401） =====
 // 本地测试图是仪器的一部分：读不到时这两条腿没有对象，必须记 skip 而不是让 readFileSync
 // 抛异常把整个进程崩成 exit 1（那正是「连不上/缺件被读成产品失败」那一类假红）。
 const { readFileSync } = await import("node:fs");
@@ -228,12 +232,18 @@ if (buf === null) {
   check("后台上传图片成功并返回相对 key", !!up && up.status === 200 && mediaUrl.startsWith("/api/v1/media/"),
     `status=${up ? up.status : 0} url=${mediaUrl.slice(0, 60)}`);
   if (mediaUrl) {
+    /* 2026-10-26 契约变更（P0-2 收口）：完整会话 JWT 走 query 已一律 401，
+       图片必须用 POST /media/sign 的能力型 URL（?exp=&sig=）。原断言测的是旧 ?token=。 */
     const bare = await fetch(`http://127.0.0.1:8080${mediaUrl}`);
-    const tokened = await fetch(`http://127.0.0.1:8080${mediaUrl}${mediaUrl.includes("?") ? "&" : "?"}token=${supTok}`);
-    const bytes = tokened.ok ? (await tokened.arrayBuffer()).byteLength : 0;
-    check("上传的图裸 URL 会被拒、带 token 才出图（withMediaToken 是必需的）",
-      bare.status === 401 && tokened.status === 200 && bytes > 1000,
-      `bare=${bare.status} tokened=${tokened.status} bytes=${bytes}`);
+    const legacy = await fetch(`http://127.0.0.1:8080${mediaUrl}${mediaUrl.includes("?") ? "&" : "?"}token=${supTok}`);
+    const signRes = await post("/media/sign", { paths: [mediaUrl] }, supTok);
+    const signed = signRes.json?.items?.[0]?.url ?? signRes.json?.data?.items?.[0]?.url ?? "";
+    const signedAbs = signed ? (/^https?:\/\//u.test(signed) ? signed : `http://127.0.0.1:8080${signed}`) : "";
+    const okRes = signedAbs ? await fetch(signedAbs) : null;
+    const bytes = okRes && okRes.ok ? (await okRes.arrayBuffer()).byteLength : 0;
+    check("上传图：裸 URL 401、会话 JWT 进 query 401、能力型签名 URL 200 且字节非空",
+      bare.status === 401 && legacy.status === 401 && okRes?.status === 200 && bytes > 1000,
+      `bare=${bare.status} legacyToken=${legacy.status} sign=${signRes.status} signed=${okRes?.status ?? 0} bytes=${bytes}`);
   } else {
     skips += 1; // 没拿到 key ⇒ 裸 URL/带 token 那条对比断言没对象（上传本身已在上面记红）
   }
@@ -250,12 +260,15 @@ check("社区总览返回完整字段",
   `status=${ov.status} keys=${Object.keys(d).slice(0, 8).join(",")}`);
 check("总览数值自洽（待审 ≤ 总数）", pending >= 0 && pending <= total,
   `pending=${pending} total=${total}`);
-if (Number.isFinite(totalBefore)) {
-  check("总数已含本次新建的那一条（相对不变量，替代写死的绝对地板）",
-    total >= totalBefore + 1, `建帖前=${totalBefore} 建帖后=${total}`);
+if (Number.isFinite(listBefore)) {
+  const liveRes = await get("/admin/forum/village-posts?page=1&pageSize=1", supTok);
+  const liveTotal = Number(liveRes.json?.data?.total ?? liveRes.json?.total ?? NaN);
+  check("实时列表总数已含本次新建的那一条（总览有 5 分钟缓存，不拿它判同步）",
+    Number.isFinite(liveTotal) && liveTotal >= listBefore + 1,
+    `列表建帖前=${listBefore} 建帖后=${liveTotal}；总览=${total}（缓存 TTL 5min）`);
 } else {
-  skips += 1; // 建帖前那发总览没拿到数 ⇒ 前后差没有对象，记 skip 不记产品红（与 §0 的仪器前提同尺）
-  console.log("SKIP  总览前后差断言：建帖前那发 community-overview 没读到 totalPostCount，没有可比对象");
+  skips += 1; // 建帖前列表没拿到数 ⇒ 前后差没有对象，记 skip 不记产品红
+  console.log("SKIP  列表前后差断言：建帖前那发列表没读到 total");
 }
 
 // ===== 5. 圈层前缀过滤：越深结果越少（单调，能证伪） =====
@@ -280,7 +293,7 @@ if (!process.argv.includes("--keep-post") && postId) {
   const gone = await del(`/admin/forum/village-posts/${postId}`, supTok);
   // 后台列表刻意保留软删行（管理员要能看到"被删了什么"），所以判点不是"查不到"，
   // 而是"这条的状态真的翻成 deleted 且 C 端不再吐它"——前者证下架动作落库，后者证对用户生效。
-  const after = await get(`/admin/forum/village-posts?page=1&pageSize=20&keyword=${encodeURIComponent(title)}`, supTok);
+  const after = await get(`/admin/forum/village-posts?page=1&pageSize=20&status=deleted&keyword=${encodeURIComponent(title)}`, supTok);
   const hit = (after.json?.items || after.json?.data?.items || []).find((x) => x.id === postId);
   const clientFeed = await get(`/posts?page=1&pageSize=100`, userTok);
   const clientItems = clientFeed.json?.items || clientFeed.json?.data?.items || clientFeed.json?.data || [];

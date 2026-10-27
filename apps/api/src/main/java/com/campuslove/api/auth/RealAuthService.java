@@ -11,6 +11,7 @@ import com.campuslove.api.verification.RealNameCertificationRepository;
 import com.campuslove.api.admin.auth.AdminDisabledException;
 import com.campuslove.api.admin.auth.InvalidCredentialsException;
 import com.campuslove.api.config.AesEncryptor;
+import com.campuslove.api.config.AdminPasswordValidator;
 import com.campuslove.api.config.JwtTokenProvider;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.entity.User;
@@ -964,22 +965,24 @@ public class RealAuthService implements AuthService {
         //     失败计数/锁定，与手机号登录同一套 LoginAttemptService。
         assertAccountNotLocked(username);
 
-        // 4. 校验密码：仅使用数据库 password 字段（BCrypt 哈希）。
+        // 4. 校验密码：仅接受数据库中的 BCrypt 哈希。
         //
         // 2026-10-05 安全修复：移除 ADMIN_PASSWORD 环境变量明文兜底——环境变量中的
         // 明文/共享密码可被进程列表、日志、崩溃转储泄露，且多管理员共享单口令无法追责。
         // 管理员初始密码引导走 application-real.yml 的 Flyway 占位符
         // ADMIN_INITIAL_PASSWORD_HASH（BCrypt 哈希写入 users.password，机制不变）。
         //
-        // Phase 3 任务 13 引入的 matchesPasswordWithMigration 保留：
-        //   - BCrypt 哈希校验（标准路径，格式 $2a$10$...）
-        //   - 历史明文密码兼容与自动迁移（仅针对 user.password 字段，迁移后持久化）
+        // 2026-10-25 P0：不再兼容历史明文。V2026.08.09.0009 曾把公开的 64 位字符串
+        // 写进 password；matchesPasswordWithMigration 对非 BCrypt 字段按明文比对，
+        // 等于接受仓库里公开的口令。现要求格式必须是 BCrypt，且拒绝已知泄露哈希。
         String storedHash = user.getPassword();
         if (storedHash == null || storedHash.isBlank()) {
             // 数据库未配置密码哈希，管理员登录未启用（不再回退环境变量）
             throw new IllegalStateException(ErrorMessages.ADMIN_LOGIN_NOT_ENABLED);
         }
-        if (!matchesPasswordWithMigration(user, password, storedHash, true)) {
+        if (!AdminPasswordValidator.isBcryptHash(storedHash)
+                || AdminPasswordValidator.isCompromisedAdminPasswordHash(storedHash)
+                || !passwordEncoder.matches(password, storedHash)) {
             recordLoginFailure(username);
             throw new InvalidCredentialsException(ErrorMessages.ADMIN_ACCOUNT_OR_PASSWORD_WRONG);
         }
@@ -1022,98 +1025,6 @@ public class RealAuthService implements AuthService {
             throw new IllegalArgumentException(ErrorMessages.RAW_PASSWORD_REQUIRED);
         }
         return passwordEncoder.encode(rawPassword);
-    }
-
-    /**
-     * 校验明文密码与存储的哈希是否匹配，支持历史明文密码自动迁移到 BCrypt。
-     *
-     * <p>Phase 3 任务 13 新增：本方法作为通用密码校验入口，供管理员登录及未来
-     * 普通用户密码登录场景复用。校验顺序如下：
-     * <ol>
-     *   <li>优先使用 BCrypt matches 校验（标准路径，哈希格式 {@code $2a$10$...}）</li>
-     *   <li>若 BCrypt 校验失败且 storedHash 不符合 BCrypt 格式（非 {@code $2} 开头），
-     *       尝试明文 equals 比较（兼容历史明文密码，防止迁移期间登录失败）</li>
-     *   <li>若明文比较通过且 allowMigration=true，自动将明文密码迁移为 BCrypt 哈希并
-     *       持久化到 user.password（一次性升级），后续登录走 BCrypt 标准路径</li>
-     * </ol>
-     *
-     * <p>安全考虑：
-     * <ul>
-     *   <li>明文比较仅在 storedHash 非 BCrypt 格式时触发，避免对有效 BCrypt 哈希做无意义明文比较</li>
-     *   <li>迁移仅更新 user.password 字段并持久化（一次性升级）</li>
-     *   <li>迁移使用新随机 salt 生成 BCrypt 哈希，相同明文每次迁移结果不同</li>
-     * </ul>
-     *
-     * @param user            用户实体（如触发迁移则更新其 password 字段并持久化）
-     * @param rawPassword     用户输入的明文密码
-     * @param storedHash      存储的密码哈希（user.password 字段）
-     * @param allowMigration  是否允许在明文校验通过时自动迁移到 BCrypt
-     * @return true 表示密码匹配（可能已触发迁移），false 表示不匹配
-     */
-    private boolean matchesPasswordWithMigration(User user, String rawPassword,
-                                                 String storedHash, boolean allowMigration) {
-        if (storedHash == null || storedHash.isBlank()) {
-            return false;
-        }
-
-        // 1. 优先 BCrypt 校验（标准路径）
-        if (passwordEncoder.matches(rawPassword, storedHash)) {
-            return true;
-        }
-
-        // 2. 兼容历史明文：仅在 storedHash 不像 BCrypt 格式时尝试明文比较
-        //    BCrypt 哈希格式：$2a$、$2b$、$2y$ 开头
-        //    R4-00257：改用 MessageDigest.isEqual 恒定时间比较，避免
-        //    String.equals 在迁移窗口期的时序侧信道（配合 DB 泄露可探测明文）。
-        if (!isBCryptHash(storedHash) && constantTimeEquals(rawPassword, storedHash)) {
-            // 3. 自动迁移：仅当 allowMigration=true（即 storedHash 来自 user.password）时迁移
-            if (allowMigration) {
-                try {
-                    String newHash = passwordEncoder.encode(rawPassword);
-                    user.setPassword(newHash);
-                    user.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
-                    userRepository.save(user);
-                    log.info("历史明文密码已自动迁移为 BCrypt 哈希, userId={}", user.getId());
-                } catch (DataAccessException ex) {
-                    // 迁移失败不影响登录通过，仅记录日志
-                    log.error("历史明文密码迁移 BCrypt 失败, userId={}: {}",
-                            user.getId(), ex.getMessage(), ex);
-                }
-            }
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * 判断字符串是否符合 BCrypt 哈希格式。
-     * BCrypt 哈希以 {@code $2a$}、{@code $2b$} 或 {@code $2y$} 开头。
-     *
-     * @param hash 待判断的字符串
-     * @return true 表示符合 BCrypt 哈希格式
-     */
-    private boolean isBCryptHash(String hash) {
-        return hash != null
-                && hash.length() >= 4
-                && hash.charAt(0) == '$'
-                && hash.charAt(1) == '2'
-                && (hash.charAt(2) == 'a' || hash.charAt(2) == 'b' || hash.charAt(2) == 'y')
-                && hash.charAt(3) == '$';
-    }
-
-    /**
-     * R4-00257：恒定时间字符串比较。
-     * <p>使用 {@link java.security.MessageDigest#isEqual} 比较 UTF-8 字节，
-     * 执行时间与内容差异无关，避免 equals 短路比较带来的时序侧信道。
-     * 仅用于历史明文密码迁移窗口期的兼容校验（storedHash 非 BCrypt 格式时）。</p>
-     */
-    private boolean constantTimeEquals(String a, String b) {
-        if (a == null || b == null) {
-            return false;
-        }
-        return java.security.MessageDigest.isEqual(
-                a.getBytes(java.nio.charset.StandardCharsets.UTF_8),
-                b.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     /**
