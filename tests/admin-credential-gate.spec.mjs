@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -17,7 +18,26 @@ import { fileURLToPath } from "node:url";
  */
 
 const SQL_DIR = fileURLToPath(new URL("../database/flyway/sql/", import.meta.url));
+const REPO = fileURLToPath(new URL("../", import.meta.url));
 const files = readdirSync(SQL_DIR).filter((name) => name.endsWith(".sql")).sort();
+
+/**
+ * 「在盘上」不等于「在库里」：Flyway 按盘上文件应用，所以一条只存在于工作树的迁移
+ * 会让本地库和干净 checkout 的库长出不一样的一生，而本门的 existsSync 判据照样绿。
+ * 2026-10-27 实测：V2026.10.26.0001__disable_public_test_admin.sql 在盘上、不在 HEAD
+ * ⇒ 从空库跑完整**已入库**迁移链得到的是「active + 仓库里公开的口令」，
+ * 而本机已被那条未入库迁移手工收口 ⇒ 每一项本地探针都是绿的。
+ * 判据因此改为 git ls-files：干净 checkout 拿不到的东西不算存在。
+ */
+const trackedSqlNames = new Set(
+  execFileSync("git", ["-c", "core.quotePath=false", "ls-files", "--", "database/flyway/sql"], {
+    cwd: REPO,
+    encoding: "utf8",
+  })
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((p) => p.split("/").pop()),
+);
 
 /** 历史危险迁移：文件 -> 它当初写入的危险字面量（必须是唯一且仍存在）。 */
 const GRANDFATHERED = new Map([
@@ -87,7 +107,10 @@ function findDangerousLiteral(sql, label, allowed = []) {
 // 1) grandfather 文件必须仍在盘上，且仍含其登记的危险值（防止例外清单腐化）
 for (const [file, literals] of GRANDFATHERED) {
   const absolute = join(SQL_DIR, file);
-  assert.ok(existsSync(absolute), `grandfather 文件不存在：${file}（应删除该例外或恢复文件）`);
+  assert.ok(
+    trackedSqlNames.has(file) && existsSync(absolute),
+    `grandfather 文件不在库里或不在盘上：${file}（应删除该例外或恢复文件）`,
+  );
   const sql = stripComments(readFileSync(absolute, "utf8"));
   for (const literal of literals) {
     assert.ok(
@@ -107,9 +130,14 @@ for (const file of files) {
 }
 assert.deepEqual(violations, [], `管理员口令静态门未通过：\n${violations.join("\n")}`);
 
-// 3) 补偿迁移必须存在且真的把公开账号关掉
-const compensating = join(SQL_DIR, "V2026.10.26.0001__disable_public_test_admin.sql");
-assert.ok(existsSync(compensating), "缺少补偿迁移 V2026.10.26.0001__disable_public_test_admin.sql");
+// 3) 补偿迁移必须**入库**且真的把公开账号关掉（盘上有不算：干净 checkout 拿不到它，等于没有）
+const COMPENSATING_NAME = "V2026.10.26.0001__disable_public_test_admin.sql";
+const compensating = join(SQL_DIR, COMPENSATING_NAME);
+assert.ok(
+  trackedSqlNames.has(COMPENSATING_NAME),
+  `补偿迁移 ${COMPENSATING_NAME} 未入库（只在盘上）⇒ 空库跑已入库迁移链仍会产出公开口令超管`,
+);
+assert.ok(existsSync(compensating), `缺少补偿迁移 ${COMPENSATING_NAME}`);
 const fixSql = readFileSync(compensating, "utf8");
 assert.match(
   fixSql,
