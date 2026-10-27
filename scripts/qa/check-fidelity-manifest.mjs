@@ -106,6 +106,16 @@ for (const abs of trackedManifests) {
       }
     }
     if (!rec.frames || !rec.frames.length) note(`${rel} 页「${rec.name}」零帧（载具触发了但没拿到图）`);
+    // 同页两帧哈希相同 ⇒ "bottom" 不是底部的证据，只是同一张图的第二份副本。
+    // 2026-10-27 实测：帖子详情/发布帖子的内滚区（<scroll-view scroll-y>）不受 wx.pageScrollTo 影响，
+    // 取景腿照样打印 ok=true，清单里因此躺着 2 对逐字节相同的帧。
+    const seenHash = new Map();
+    for (const f of rec.frames || []) {
+      if (!f.contentHash) continue;
+      if (seenHash.has(f.contentHash)) {
+        note(`${rel} 页「${rec.name}」的 ${seenHash.get(f.contentHash)} 与 ${f.state} 是同一张图（${f.contentHash}）⇒ 后一条不算独立证据`);
+      } else seenHash.set(f.contentHash, f.state);
+    }
   }
   perRound.push({ rel, dir: basenameOf(rel), pages: names.length, frames });
 }

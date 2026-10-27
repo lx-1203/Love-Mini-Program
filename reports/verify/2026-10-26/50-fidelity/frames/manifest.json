@@ -1,20 +1,9 @@
 {
   "schema": "reshoot-hires-goal/v1",
-  "generatedAt": "2026-10-27T11:30:07.000Z",
-  "project": "apps/client/dist/build/mp-weixin-real",
+  "generatedAt": "2026-10-27T15:07:25.378Z",
+  "project": "apps\\client\\dist\\build\\mp-weixin-real",
   "band": "real@f0677920",
-  "out": "reports/verify/2026-10-26/50-fidelity/frames",
-  "reconstructedFrom": [
-    "reshoot.out",
-    "reshoot-assets-r2.log",
-    "reshoot-assets.log",
-    "reshoot-final-r2.log",
-    "reshoot-final.log",
-    "reshoot-full.log",
-    "reshoot-profile.log",
-    "reshoot.log"
-  ],
-  "note": "由日志复原 + 逐帧与盘上 sha256[:16]/字节核对；附近首页来自第二次取景（载具补上路由断言后重拍）。",
+  "out": "reports\\verify\\2026-10-26\\50-fidelity\\frames",
   "results": [
     {
       "route": "pages/discover/index",
@@ -47,20 +36,6 @@
           "path": "reports/verify/2026-10-26/50-fidelity/frames/个人主页-已登录-2-bottom.png",
           "contentHash": "95bd418cf6f66679",
           "bytes": 57676
-        }
-      ],
-      "provenance": "reshoot.out"
-    },
-    {
-      "route": "subpackages/village/village/detail",
-      "name": "帖子详情",
-      "frames": [
-        {
-          "route": "subpackages/village/village/detail",
-          "state": "top",
-          "path": "reports/verify/2026-10-26/50-fidelity/frames/帖子详情-1-top.png",
-          "contentHash": "992e5639810fec08",
-          "bytes": 166520
         }
       ],
       "provenance": "reshoot.out"
@@ -248,27 +223,6 @@
       "provenance": "reshoot-assets-r2.log"
     },
     {
-      "route": "subpackages/village/village/publish",
-      "name": "发布帖子",
-      "frames": [
-        {
-          "route": "subpackages/village/village/publish",
-          "state": "top",
-          "path": "reports/verify/2026-10-26/50-fidelity/frames/发布帖子-1-top.png",
-          "contentHash": "ac9b11270c71094c",
-          "bytes": 59585
-        },
-        {
-          "route": "subpackages/village/village/publish",
-          "state": "bottom",
-          "path": "reports/verify/2026-10-26/50-fidelity/frames/发布帖子-2-bottom.png",
-          "contentHash": "ac9b11270c71094c",
-          "bytes": 59585
-        }
-      ],
-      "provenance": "reshoot-assets-r2.log"
-    },
-    {
       "route": "pages/nearby/index",
       "name": "附近首页",
       "frames": [
@@ -288,6 +242,46 @@
         }
       ],
       "provenance": "reshoot2.out"
+    },
+    {
+      "route": "subpackages/village/village/detail",
+      "name": "帖子详情",
+      "frames": [
+        {
+          "route": "subpackages/village/village/detail",
+          "state": "top",
+          "path": "reports\\verify\\2026-10-26\\50-fidelity\\frames\\帖子详情-1-top.png",
+          "contentHash": "0938574b75581769",
+          "bytes": 165221
+        },
+        {
+          "route": "subpackages/village/village/detail",
+          "state": "bottom",
+          "path": "reports\\verify\\2026-10-26\\50-fidelity\\frames\\帖子详情-2-bottom.png",
+          "contentHash": "7f3af9309fd9c10a",
+          "bytes": 115667
+        }
+      ]
+    },
+    {
+      "route": "subpackages/village/village/publish",
+      "name": "发布帖子",
+      "frames": [
+        {
+          "route": "subpackages/village/village/publish",
+          "state": "top",
+          "path": "reports\\verify\\2026-10-26\\50-fidelity\\frames\\发布帖子-1-top.png",
+          "contentHash": "cc649e9e996eec40",
+          "bytes": 59558
+        },
+        {
+          "route": "subpackages/village/village/publish",
+          "state": "bottom",
+          "path": "reports\\verify\\2026-10-26\\50-fidelity\\frames\\发布帖子-2-bottom.png",
+          "contentHash": "2e30db8692659dd0",
+          "bytes": 57098
+        }
+      ]
     }
   ]
 }

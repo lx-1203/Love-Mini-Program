@@ -57,7 +57,7 @@ const PAGES = [
   { name: "兴趣圈列表", route: "/subpackages/circles/circles/index", long: true, guest: true },
   { name: "圈子详情", route: "/subpackages/circles/circles/circle-home?circleId=8", long: true, guest: true },
   { name: "校园圈", route: "/subpackages/campus/campus/hub", long: true, guest: true },
-  { name: "帖子详情", route: "/subpackages/village/village/detail?id={POST_ID}", long: false, guest: true, detail: true },
+  { name: "帖子详情", route: "/subpackages/village/village/detail?id={POST_ID}", long: true, guest: true, detail: true },
   { name: "发布帖子", route: "/subpackages/village/village/publish", long: true, guest: true },
 ];
 
@@ -161,11 +161,24 @@ async function shootOne(page, route) {
   let scrollMethod = "none";
   if (page.long) {
     /* pageScrollTo 滚的是页面，不是页面里的 <scroll-view>（本仓主内容多为内滚区）。
-       先试 Element.scrollTo，失败再退回 pageScrollTo，并记录实际用的机制。 */
-    try {
-      const views = await mp.$$("scroll-view");
-      if (views && views.length) { await views[0].scrollTo(0, 99999); scrollMethod = "element.scrollTo"; }
-    } catch { /* fall through */ }
+       先试内滚元素，失败再退回 pageScrollTo，并记录实际用的机制。
+       两个坑都是本程实测：① 元素查询的接收者是 **Page**（mp.currentPage()），不是 mp——
+       `mp.$$` 根本不是函数，原先被 try/catch 吞成"查不到"，于是每次都静默退回 pageScrollTo；
+       ② 内建组件按标签名可能查不全，所以按选择器多试几把、并对每把的前 3 个元素逐个滚
+       （与 shoot-fidelity-sweep.mjs:458 同一手法，那边早就踩过）。 */
+    const pg = await mp.currentPage();
+    for (const sel of ["scroll-view", "[scroll-y]", ".detail-body", ".scroll-body"]) {
+      try {
+        const views = pg && typeof pg.$$ === "function" ? await pg.$$(sel) : null;
+        if (views && views.length) {
+          let moved = 0;
+          for (const el of views.slice(0, 3)) {
+            try { await el.scrollTo(0, 99999); moved++; } catch { /* 单个滚不动就试下一个 */ }
+          }
+          if (moved) { scrollMethod = `page.$$(\"${sel}\").scrollTo×${moved}`; break; }
+        }
+      } catch { /* 换下一把选择器 */ }
+    }
     if (scrollMethod === "none") {
       try {
         await mp.callWxMethod("pageScrollTo", { scrollTop: 99999, duration: 0 });
@@ -180,13 +193,23 @@ async function shootOne(page, route) {
   }
   const hashOf = (p) => createHash("sha256").update(readFileSync(p)).digest("hex").slice(0, 16);
   const bottomStuck = !!bottom && existsSync(bottom) && existsSync(top) && hashOf(bottom) === hashOf(top);
+  /* 撞图即撤帧：bottom 与 top 逐字节相同 ⇒ 它不是"底部"的证据，只是同一张图的第二份副本。
+     原实现把副本照样记进清单并打印 ok=true（2026-10-27 实测：帖子详情/发布帖子两页的内滚区
+     没被任何一把选择器推动，清单里躺着 2 对同字节帧，而"states=25"看着像做满了）。
+     现在：撤掉副本帧、该页判失败，宁可少一帧也不留一条假证据。 */
+  let bottomUsable = !!bottom && existsSync(bottom) && !bottomStuck
+    && statSync(bottom).size >= MIN_BYTES && pngWidth(bottom) >= MIN_WIDTH;
+  if (bottomStuck) {
+    try { rmSync(bottom); } catch { /* 删不掉也不许把它当证据 */ }
+    bottomUsable = false;
+  }
   const ok = existsSync(top) && statSync(top).size >= MIN_BYTES && pngWidth(top) >= MIN_WIDTH
-    && (!page.long || (existsSync(bottom) && statSync(bottom).size >= MIN_BYTES && pngWidth(bottom) >= MIN_WIDTH));
+    && (!page.long || bottomUsable);
   const cur = (await mp.currentPage()).path;
   const rec = { route: String(cur).split("?")[0], name: page.name, frames: [] };
   if (existsSync(top)) rec.frames.push({ route: rec.route, state: "top", path: relative(REPO, top), contentHash: hashOf(top), bytes: statSync(top).size });
-  if (bottom && existsSync(bottom)) rec.frames.push({ route: rec.route, state: "bottom", path: relative(REPO, bottom), contentHash: hashOf(bottom), bytes: statSync(bottom).size });
-  console.log(`SHOT ${page.name} route=${cur} top=${existsSync(top) ? statSync(top).size + "B/" + pngWidth(top) + "w/" + hashOf(top) : "MISS"} bottom=${bottom && existsSync(bottom) ? statSync(bottom).size + "B/" + pngWidth(bottom) + "w/" + hashOf(bottom) : (page.long ? "MISS" : "n/a")} scroll=${scrollMethod}${bottomStuck ? " BOTTOM_STUCK" : ""} ok=${ok}`);
+  if (bottomUsable) rec.frames.push({ route: rec.route, state: "bottom", path: relative(REPO, bottom), contentHash: hashOf(bottom), bytes: statSync(bottom).size });
+  console.log(`SHOT ${page.name} route=${cur} top=${existsSync(top) ? statSync(top).size + "B/" + pngWidth(top) + "w/" + hashOf(top) : "MISS"} bottom=${bottomUsable ? statSync(bottom).size + "B/" + pngWidth(bottom) + "w/" + hashOf(bottom) : (page.long ? (bottomStuck ? "STUCK-已撤帧" : "MISS") : "n/a")} scroll=${scrollMethod} ok=${ok}`);
   return { ok, rec };
 }
 

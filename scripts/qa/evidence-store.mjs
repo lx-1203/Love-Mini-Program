@@ -85,20 +85,34 @@ function manifests() {
 
 function referencedFrames() {
   const rows = [];
+  ZERO_REF_MANIFESTS.length = 0;
   for (const m of manifests()) {
     let j;
     try { j = JSON.parse(readFileSync(m, "utf8")); } catch { continue; }
-    const shots = j.shots ?? j.frames ?? [];
+    /* 三种生产者形状都要认（2026-10-27 实测漏了第三种）：
+       · j.shots / j.frames —— 老取景腿的平铺清单；
+       · j.results[].frames[] —— reshoot-hires-goal/v1（实况帧整页基准）按页分组。
+       原来只认前两种，于是第三种**被枚举成清单却贡献 0 条引用**：
+       STORE_VERIFY 照样报「两边都无=0」，那是空集上的真，不是覆盖。
+       所以每次跑都点名零引用清单（见 ZERO_REF_MANIFESTS / 汇总行）。 */
+    const shots = j.shots ?? j.frames ?? (Array.isArray(j.results) ? j.results.flatMap((r) => r?.frames ?? []) : []);
     if (!Array.isArray(shots)) continue;
+    let n = 0;
     for (const s of shots) {
       const p = s.path || s.file || "";
       if (!p) continue;
       const abs = resolve(repo, p);
       rows.push({ manifest: m, rel: relPosix(abs), abs, claimHash: s.contentHash || null, claimBytes: typeof s.bytes === "number" ? s.bytes : null });
+      n++;
+    }
+    if (!n) {
+      const knownShape = ["shots", "frames", "results"].some((k) => Array.isArray(j[k]));
+      ZERO_REF_MANIFESTS.push(`${relPosix(m)}${knownShape ? "(本来就是空清单)" : "(形状没被认全)"}`);
     }
   }
   return rows;
 }
+const ZERO_REF_MANIFESTS = [];
 
 const bucketOf = (h) => h.slice(0, 2);
 const storePathOf = (h) => join(store, bucketOf(h), h.slice(0, 16) + ".img");
@@ -139,7 +153,8 @@ function cmdExport() {
     if (apply) { mkdirSync(dirname(sp), { recursive: true }); copyFileSync(r.abs, sp); copied++; }
     else wouldCopy++;
   }
-  console.log(`STORE_EXPORT mode=${apply ? "APPLY" : "DRY"} 引用行=${rows.length} 盘上缺=${missing} 哈希不符=${hashBad} 需写入=${apply ? copied : wouldCopy} 本轮内重复=${dupInRun} 库里有=${alreadyInStore}（不同字节对象=${seen.size}）`);
+  console.log(`STORE_EXPORT mode=${apply ? "APPLY" : "DRY"} 引用行=${rows.length} 盘上缺=${missing} 哈希不符=${hashBad} 需写入=${apply ? copied : wouldCopy} 本轮内重复=${dupInRun} 库里有=${alreadyInStore}（不同字节对象=${seen.size}） 清单零引用=${ZERO_REF_MANIFESTS.length}`);
+  if (ZERO_REF_MANIFESTS.length) console.log(`STORE_NOTE 这些清单被枚举到却一条引用都没取到（"两边都无=0"因此不等于覆盖）：${ZERO_REF_MANIFESTS.slice(0, 6).join(" ")}`);
   if (hashBad) console.log(`STORE_RESULT=FAIL reason=${hashBad} 行的盘上字节与 manifest 声称的 contentHash 不符 ⇒ 先修生产者，别把对不上的东西写进库`);
   else console.log("STORE_RESULT=" + (apply ? "EXPORTED" : "DRY"));
   process.exit(hashBad ? 1 : 0);
@@ -179,7 +194,7 @@ function cmdVerify() {
     else { lost++; if (lostList.length < 12) lostList.push(`${r.rel}（引用自 ${relPosix(r.manifest)}）`); }
   }
   console.log(`STORE_VERIFY_DIR=${store}`);
-  console.log(`STORE_VERIFY 引用行=${rows.length} 双证=${both} 仅库在=${storeOnly} 仅盘在=${diskOnly} 两边都无=${lost} 哈希不符=${mismatch} 无指纹且盘无=${noClaim}`);
+  console.log(`STORE_VERIFY 引用行=${rows.length} 双证=${both} 仅库在=${storeOnly} 仅盘在=${diskOnly} 两边都无=${lost} 哈希不符=${mismatch} 无指纹且盘无=${noClaim} 清单零引用=${ZERO_REF_MANIFESTS.length}`);
   for (const l of lostList) console.log(`  STORE_LOST ${l}`);
   const ok = lost === 0 && mismatch === 0;
   console.log(`STORE_RESULT=${ok ? "OK" : "FAIL"}${ok ? "" : "（断链或哈希不符 ⇒ 判红；「仅盘在」是库还没导出，不算证据丢失）"}`);
